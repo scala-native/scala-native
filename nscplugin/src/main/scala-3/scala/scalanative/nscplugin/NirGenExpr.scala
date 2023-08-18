@@ -859,6 +859,7 @@ trait NirGenExpr(using Context) {
             withFreshBlockScope(body.span) { _ =>
               symopt.foreach { sym =>
                 val cast = buf.as(excty, exc, unwind)(cd.span, getScopeId)
+                curMethodLocalNames.get.update(cast.id, genLocalName(sym))
                 curMethodEnv.enter(sym, cast)
               }
               val res = genExpr(body)

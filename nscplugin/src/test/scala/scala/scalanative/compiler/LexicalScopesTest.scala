@@ -10,6 +10,7 @@ import scala.scalanative.api.CompilationFailedException
 import scala.scalanative.linker.StaticForwardersSuite.compileAndLoad
 import scala.scalanative.buildinfo.ScalaNativeBuildInfo._
 import scala.reflect.ClassTag
+import scala.scalanative.nir.Defn.Define.DebugInfo.LexicalScope
 
 class LexicalScopesTest {
   import nir._
@@ -67,6 +68,23 @@ class LexicalScopesTest {
       .orElse { fail(s"Not found defined scope for ${localName}"); None }
       .get
 
+  def scopeParents(
+      scope: LexicalScope
+  )(implicit defn: Defn.Define): List[ScopeId] = {
+    if (scope.isTopLevel) Nil
+    else {
+      val stack = List.newBuilder[ScopeId]
+      var current = scope
+      while ({
+        val parent = defn.debugInfo.lexicalScopeOf(current.parent)
+        current = parent
+        stack += current.id
+        !parent.isTopLevel
+      }) ()
+      stack.result()
+    }
+  }
+
   // Ensure to use all the vals/vars, otherwise they might not be emmited by the compiler
   @Test def scopesHierarchy(): Unit = compileAndLoad(
     sources = "Test.scala" -> """
@@ -112,6 +130,58 @@ class LexicalScopesTest {
       assertEquals("innerB-parent", innerA.parent, innerB.parent)
       assertEquals("innerResult-parent", result.id, innerResult.parent)
       assertEquals("deep-parent", innerResult.id, deep.parent)
+    }
+  }
+
+  @Test def tryCatchFinalyBlocks(): Unit = compileAndLoad(
+    sources = "Test.scala" -> """
+    |object Test {
+    |  def main(args: Array[String]): Unit = {
+    |    val a = args.size
+    |    val b = 
+    |      try {
+    |        val inTry = args(0).toInt
+    |        inTry + 1
+    |      }catch{
+    |        case ex1: Exception => 
+    |          val n = args(0)
+    |          n.size
+    |        case ex2: Throwable => 
+    |          val m = args.size
+    |          throw ex2
+    |      } finally {
+    |        val finalVal = "fooBar"
+    |        println(finalVal) 
+    |      }
+    |  }
+    |}
+    """.stripMargin
+  ) { loaded =>
+    findDefinition(loaded).foreach { implicit defn =>
+      println(defn.show)
+      defn.debugInfo.lexicalScopes.foreach(println)
+      assertContainsAll(
+        "named vals",
+        // b passed as label argument
+        Seq("a", "inTry", "ex1", "n", "ex2", "m", "finalVal"),
+        namedLets(defn).values
+      )
+      // top-level
+      val a = scopeOf("a")
+      val inTry = scopeOf("inTry")
+      val ex1 = scopeOf("ex1")
+      val ex2 = scopeOf("ex2")
+      val n = scopeOf("n")
+      val m = scopeOf("m")
+      val finalVal = scopeOf("finalVal")
+      assertTrue("scope-a", scopeOf("a").isTopLevel)
+      assertFalse(Seq(inTry, ex1, ex2, n, m, finalVal).exists(_.isTopLevel))
+
+      assertNotEquals(a.id, inTry.id)
+      assertContains("inTry-parents", a.id, scopeParents(inTry))
+      assertEquals(ex1.id, n.parent)
+      assertEquals(ex2.id, m.parent)
+      
     }
   }
 }

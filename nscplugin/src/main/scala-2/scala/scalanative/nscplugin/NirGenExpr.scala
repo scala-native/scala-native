@@ -450,6 +450,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             withFreshBlockScope(body.pos) { _ =>
               symopt.foreach { sym =>
                 val cast = buf.as(excty, exc, unwind)
+                curMethodLocalNames.get.update(cast.id, genLocalName(sym))
                 curMethodEnv.enter(sym, cast)
               }
               val res = genExpr(body)
