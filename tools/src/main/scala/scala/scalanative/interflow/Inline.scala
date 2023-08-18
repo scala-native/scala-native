@@ -249,13 +249,14 @@ trait Inline { self: Interflow =>
             emit.updateLetInst(id)(i => i.copy()(i.pos, parentScopeId))
           case Val.Virtual(addr) =>
             endState.heap(addr) = endState.deref(addr) match {
-              case inst: EscapedInstance => println(inst); inst
+              case inst: EscapedInstance =>
+                inst.copy()(inst.srcPosition, parentScopeId)
               case inst: DelayedInstance =>
                 inst.copy()(inst.srcPosition, parentScopeId)
               case inst: VirtualInstance =>
                 inst.copy()(inst.srcPosition, parentScopeId)
             }
-          case other => ()
+          case _ => ()
         }
       }
 

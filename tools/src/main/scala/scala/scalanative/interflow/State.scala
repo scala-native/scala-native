@@ -115,7 +115,10 @@ final class State(block: Local)(preserveDebugInfo: Boolean) {
     import instance.{srcPosition, scopeId}
 
     val value = emit(op, idempotent)
-    if (preserveDebugInfo) {
+    // there might cases when virtualName for given addres might be assigned to two different instances
+    // It can happend when we deal with partially-evaluated instances, eg. arrayalloc + arraystore
+    // Don't emit local names for ops returing unit value
+    if (preserveDebugInfo && op.resty != Type.Unit) {
       virtualNames.get(addr).foreach { name =>
         this.localNames += value.id -> name
       }
