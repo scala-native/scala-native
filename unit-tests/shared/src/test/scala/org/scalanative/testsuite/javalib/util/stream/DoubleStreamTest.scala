@@ -12,7 +12,7 @@ package org.scalanative.testsuite.javalib.util.stream
 import java.{lang => jl}
 
 import java.{util => ju}
-import java.util.Arrays
+import java.util.{Arrays, ArrayList}
 import java.util.{OptionalDouble, DoubleSummaryStatistics}
 import java.util.Spliterator
 
@@ -37,11 +37,6 @@ import org.scalanative.testsuite.utils.AssertThrows.assertThrows
  *     - doubleStreamMapToInt, required IntStream
  *     - doubleStreamMapToLong, requires LongStream
  */
-
-object DoubleStreamTest {
-  @BeforeClass def checkLimitMethodCharacteristics(): Unit =
-    StreamTestHelpers.requireJDK8CompatibleCharacteristics()
-}
 
 class DoubleStreamTest {
 
@@ -740,8 +735,6 @@ class DoubleStreamTest {
   }
 
   @Test def doubleStreamLimit(): Unit = {
-    StreamTestHelpers.requireJDK8CompatibleCharacteristics()
-
     val expectedCount = 10
     var data = -1
 
@@ -1402,6 +1395,147 @@ class DoubleStreamTest {
       sortedSeqSpliter.characteristics()
     )
 
+  }
+
+  @Test def doubleStreamSortedUnknownSizeButSmall(): Unit = {
+
+    /* To fit array, nElements should be <= Integer.MAX_VALUE.
+     * Machine must have sufficient memory to support chosen number of
+     * elements.
+     */
+    val nElements = 20 // Use a few more than usual 2 or 8.
+
+    // Are the characteristics correct?
+    val rng = new ju.Random(567890123)
+
+    val wild = rng
+      .doubles(nElements, 0.0, jl.Double.MAX_VALUE)
+      .toArray()
+
+    val ordered = wild.clone()
+    Arrays.sort(ordered)
+
+    // do some contortions to get an stream with unknown size.
+    val iter0 = Spliterators.iterator(Spliterators.spliterator(wild, 0))
+    val spliter0 = Spliterators.spliteratorUnknownSize(iter0, 0)
+
+    val s0 = StreamSupport.doubleStream(spliter0, false)
+
+    val s0Spliter = s0.spliterator()
+    assertFalse(
+      "Unexpected SIZED stream",
+      s0Spliter.hasCharacteristics(Spliterator.SIZED)
+    )
+
+    // Validating un-SIZED terminated s0, so need fresh similar stream
+    val iter1 = Spliterators.iterator(Spliterators.spliterator(wild, 0))
+    val spliter1 = Spliterators.spliteratorUnknownSize(iter1, 0)
+
+    val s = StreamSupport.doubleStream(spliter1, false)
+
+    val ascending = s.sorted()
+
+    var count = 0
+
+    ascending.forEachOrdered((e) => {
+      assertEquals("mismatched elements", ordered(count), e, epsilon)
+      count += 1
+    })
+
+    val msg =
+      if (count == 0) "unexpected empty stream"
+      else "unexpected number of elements"
+
+    assertEquals(msg, nElements, count)
+
+  }
+
+  @Ignore
+  @Test def doubleStreamSortedUnknownSizeButHuge(): Unit = {
+    /* This test is for development and Issue verification.
+     * It is Ignored in normal Continuous Integration because it takes
+     * a long time.
+     *
+     * See note for similar Test in StreamTest.scala for details.
+     * No sense copying same text to DoubleStreamTest, IntStreamTest,
+     * & LongStreamTest.
+     */
+
+    val rng = new ju.Random(567890123)
+
+    // Are the characteristics correct?
+    val rs0 = rng
+      .doubles(0.0, jl.Double.MAX_VALUE) // "Infinite" stream
+
+    val iter0 = rs0.iterator()
+    val spliter0 = Spliterators.spliteratorUnknownSize(iter0, 0)
+    val s0 = StreamSupport.doubleStream(spliter0, false)
+
+    val s0Spliter = s0.spliterator()
+    assertFalse(
+      "Unexpected SIZED stream",
+      s0Spliter.hasCharacteristics(Spliterator.SIZED)
+    )
+
+    // Validating un-SIZED terminated s0, so need fresh similar stream.
+    val rs1 = rng
+      .doubles(0.0, jl.Double.MAX_VALUE) // "Infinite" stream
+
+    val spliter1 = Spliterators.spliteratorUnknownSize(iter0, 0)
+    val s = StreamSupport.doubleStream(spliter1, false)
+
+    val uut = s.sorted() // unit-under-test
+
+    // May take tens of seconds or more to get to Exception.
+    assertThrows(classOf[OutOfMemoryError], uut.findFirst())
+  }
+
+  @Test def doubleStreamSortedZeroSize(): Unit = {
+    val nElements = 0
+
+    val rng = new ju.Random(567890123)
+
+    val wild = rng
+      .doubles(nElements, 0.0, jl.Double.MAX_VALUE)
+      .toArray()
+
+    val ordered = wild.clone()
+    Arrays.sort(ordered)
+
+    val spliter = Spliterators.spliterator(wild, 0)
+
+    val s = StreamSupport.doubleStream(spliter, false)
+
+    val sorted = s.sorted()
+    val count = sorted.count()
+
+    assertEquals("expected an empty stream", 0, count)
+  }
+
+  // Issue 3378
+  @Test def doubleStreamSortedLongSize(): Unit = {
+    /* This tests streams with the SIZED characteristics and a
+     *  know length is larger than the largest possible Java array:
+     *  approximately Integer.MAX_VALUE.
+     */
+    val rng = new ju.Random(1234567890)
+
+    val s = rng
+      .doubles(0.0, jl.Double.MAX_VALUE) // "Infinite" stream
+
+    /* The sorted() implementation should be a late binding, intermediate
+     * operation. Expect no "max array size" error here, but later.
+     */
+
+    val uut = s.sorted() // unit-under-test
+
+    /* Stream#findFirst() is a terminal operation, so expect any errors
+     * to happen here, not earlier.  In particular, expect code being tested
+     * to detect and report the huge size rather than taking a long time
+     * and then running out of memory.
+     */
+
+    assertThrows(classOf[IllegalArgumentException], uut.findFirst())
   }
 
   @Test def doubleStreamSum(): Unit = {
