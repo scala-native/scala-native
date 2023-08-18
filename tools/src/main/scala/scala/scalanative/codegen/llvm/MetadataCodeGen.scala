@@ -52,6 +52,40 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
   def dbg[T <: Metadata.Node: InternedWriter](v: T)(implicit ctx: Context, sb: ShowBuilder): Unit =
     dbg("", v)
 
+  def `llvm.dbg.declare`(
+      address: Metadata.Value,
+      description: DILocalVariable,
+      expr: Metadata.DIExpression
+  )(pos: Option[Position], scope: Option[Metadata.Scope])(implicit
+      ctx: Context,
+      sb: ShowBuilder
+  ): Unit = {
+    sb.newline()
+    sb.str("call void @llvm.dbg.declare(metadata ")
+    genVal(address.value)
+    sb.str(", metadata ")
+    description.intern().write(sb)
+    sb.str(", metadata ")
+    expr.intern().write(sb)
+    sb.str(") ")
+    scope
+      .map(toDILocation(pos.getOrElse(Position.NoPosition), _))
+      .foreach(dbg(",", _))
+    sb.newline()
+  }
+  // def `llvm.dbg.assign`(
+  //     newValue: Metadata,
+  //     description: Metadata,
+  //     expr: Metadata,
+  //     id: Metadata,
+  //     address: Metadata,
+  //     addressExpr: Metadata
+  // )(implicit ctx: Context, sb: ShowBuilder): Unit = ???
+  // def `llvm.dbg.value`(newValue: Metadata, description: Metadata, expr: Metadata)(implicit
+  //     ctx: Context,
+  //     sb: ShowBuilder
+  // ): Unit = ???
+
   def compilationUnits(implicit ctx: Context): Seq[DICompileUnit] =
     ctx.writersCache
       .get(classOf[DICompileUnit])
@@ -143,12 +177,12 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
     }.toMap
   }
 
-  private def toMetadataType(
+  protected def toMetadataType(
       ty: nir.Type
   )(implicit metaCtx: Context): Metadata.Type = toMetadataTypeOpt(ty).getOrElse(
     unsupported(s"Type $ty cannot be converted to DebugInfo Type")
   )
-  private def toMetadataTypeOpt(
+  protected def toMetadataTypeOpt(
       ty: nir.Type
   )(implicit metaCtx: Context): Option[Metadata.Type] = {
     import nir.Type._
@@ -402,6 +436,7 @@ object MetadataCodeGen {
       case v: Metadata.Type   => v.writer
       case v: DILocation      => v.writer
       case v: DILocalVariable => v.writer
+      case v: DIExpression    => v.writer
     }
     implicit lazy val ofScope: Dispatch[Metadata.Scope] = _ match {
       case v: DICompileUnit => v.writer
@@ -482,6 +517,9 @@ object MetadataCodeGen {
           .field("file", file)
           .field("line", line)
           .field("type", tpe)
+    }
+    implicit lazy val ofDIExpression: Specialized[DIExpression] = {
+      case DIExpression() => identity
     }
   }
 

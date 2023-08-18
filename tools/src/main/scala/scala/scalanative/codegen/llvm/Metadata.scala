@@ -49,6 +49,9 @@ object Metadata {
       tpe: Type
   ) extends LLVMDebugInformation
 
+  // TOOD: actual DW_OP expressions as parameters
+  case class DIExpression() extends LLVMDebugInformation
+
   sealed trait Type extends LLVMDebugInformation
   case class DIBasicType(name: String, size: Int, align: Int, encoding: DW_ATE)
       extends Type

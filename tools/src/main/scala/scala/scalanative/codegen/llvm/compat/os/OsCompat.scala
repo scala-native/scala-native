@@ -3,6 +3,7 @@ package llvm
 package compat.os
 
 import scala.scalanative.nir.ControlFlow.Block
+import scala.scalanative.nir.Defn.Define.DebugInfo
 import scala.scalanative.nir.{Fresh, Next, Position}
 import scala.scalanative.util.ShowBuilder
 
@@ -19,6 +20,7 @@ private[codegen] trait OsCompat {
       fresh: Fresh,
       pos: Position,
       sb: ShowBuilder,
+      debugInfo: DebugInfo,
       dwf: MetadataCodeGen.Context
   ): Unit
   def genBlockAlloca(block: Block)(implicit sb: ShowBuilder): Unit
