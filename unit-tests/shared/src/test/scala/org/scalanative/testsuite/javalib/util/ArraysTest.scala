@@ -1401,7 +1401,7 @@ class ArraysTest {
     val srcSize = 16
 
     val arr = new Array[String](srcSize)
-    Arrays.setAll(arr, (idx: Int) => (idx + 1).toString())
+    Arrays.setAll[String](arr, (idx: Int) => (idx + 1).toString())
 
     val expectedAtFirstInRangeRange = "1"
     assertEquals("firstInRange", expectedAtFirstInRangeRange, arr(0))
