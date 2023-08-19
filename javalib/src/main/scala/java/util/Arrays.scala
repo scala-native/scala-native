@@ -1019,7 +1019,10 @@ object Arrays {
       array(j) = generator.applyAsLong(j)
   }
 
-  def setAll[T <: AnyRef](array: Array[T], generator: IntFunction[T]): Unit = {
+  def setAll[T <: AnyRef](
+      array: Array[T],
+      generator: IntFunction[_ <: T]
+  ): Unit = {
     for (j <- 0 until array.size)
       array(j) = generator.apply(j)
   }

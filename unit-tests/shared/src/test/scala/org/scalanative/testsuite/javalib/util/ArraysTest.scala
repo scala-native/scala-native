@@ -1349,7 +1349,7 @@ class ArraysTest {
     val srcSize = 16
 
     val arr = new Array[Double](srcSize)
-    Arrays.setAll(arr, e => (e + 1).toDouble)
+    Arrays.setAll(arr, (idx: Int) => (idx + 1).toDouble)
 
     val expectedAtFirstInRangeRange = 1.0
     assertEquals("firstInRange", expectedAtFirstInRangeRange, arr(0), epsilon)
@@ -1367,7 +1367,7 @@ class ArraysTest {
     val srcSize = 16
 
     val arr = new Array[Int](srcSize)
-    Arrays.setAll(arr, e => (e + 1))
+    Arrays.setAll(arr, (idx: Int) => (idx + 1))
 
     val expectedAtFirstInRangeRange = 1
     assertEquals("firstInRange", expectedAtFirstInRangeRange, arr(0))
@@ -1384,7 +1384,7 @@ class ArraysTest {
     val srcSize = 16
 
     val arr = new Array[Long](srcSize)
-    Arrays.setAll(arr, e => (e + 1).toLong)
+    Arrays.setAll(arr, (idx: Int) => (idx + 1).toLong)
 
     val expectedAtFirstInRangeRange = 1L
     assertEquals("firstInRange", expectedAtFirstInRangeRange, arr(0))
@@ -1401,7 +1401,7 @@ class ArraysTest {
     val srcSize = 16
 
     val arr = new Array[String](srcSize)
-    Arrays.setAll(arr, e => (e + 1).toString())
+    Arrays.setAll(arr, (idx: Int) => (idx + 1).toString())
 
     val expectedAtFirstInRangeRange = "1"
     assertEquals("firstInRange", expectedAtFirstInRangeRange, arr(0))
