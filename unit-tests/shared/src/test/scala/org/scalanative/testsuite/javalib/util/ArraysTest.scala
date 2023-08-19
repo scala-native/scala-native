@@ -1,4 +1,6 @@
 // Ported from Scala.js commit: ba618ed dated: 2020-10-05
+//
+// Tests for sequential "setAll()" methods added for Scala Native.
 
 package org.scalanative.testsuite.javalib.util
 
@@ -1338,4 +1340,78 @@ class ArraysTest {
       Arrays.deepToString(recArr)
     )
   }
+
+// Tests added for Scala Native.
+
+  final val epsilon = 0.0000001 // tolerance for Floating point comparisons.
+
+  @Test def setAll_Double(): Unit = {
+    val srcSize = 16
+
+    val arr = new Array[Double](srcSize)
+    Arrays.setAll(arr, e => (e + 1).toDouble)
+
+    val expectedAtFirstInRangeRange = 1.0
+    assertEquals("firstInRange", expectedAtFirstInRangeRange, arr(0), epsilon)
+
+    val expectedAtLastInRangeRange = srcSize.toDouble
+    assertEquals(
+      "lastInRange",
+      expectedAtLastInRangeRange,
+      arr(srcSize - 1),
+      epsilon
+    )
+  }
+
+  @Test def setAll_Int(): Unit = {
+    val srcSize = 16
+
+    val arr = new Array[Int](srcSize)
+    Arrays.setAll(arr, e => (e + 1))
+
+    val expectedAtFirstInRangeRange = 1
+    assertEquals("firstInRange", expectedAtFirstInRangeRange, arr(0))
+
+    val expectedAtLastInRangeRange = srcSize
+    assertEquals(
+      "lastInRange",
+      expectedAtLastInRangeRange,
+      arr(srcSize - 1)
+    )
+  }
+
+  @Test def setAll_Long(): Unit = {
+    val srcSize = 16
+
+    val arr = new Array[Long](srcSize)
+    Arrays.setAll(arr, e => (e + 1).toLong)
+
+    val expectedAtFirstInRangeRange = 1L
+    assertEquals("firstInRange", expectedAtFirstInRangeRange, arr(0))
+
+    val expectedAtLastInRangeRange = srcSize.toLong
+    assertEquals(
+      "lastInRange",
+      expectedAtLastInRangeRange,
+      arr(srcSize - 1)
+    )
+  }
+
+  @Test def setAll_AnyRef(): Unit = {
+    val srcSize = 16
+
+    val arr = new Array[String](srcSize)
+    Arrays.setAll(arr, e => (e + 1).toString())
+
+    val expectedAtFirstInRangeRange = "1"
+    assertEquals("firstInRange", expectedAtFirstInRangeRange, arr(0))
+
+    val expectedAtLastInRangeRange = srcSize.toString()
+    assertEquals(
+      "lastInRange",
+      expectedAtLastInRangeRange,
+      arr(srcSize - 1)
+    )
+  }
+
 }
