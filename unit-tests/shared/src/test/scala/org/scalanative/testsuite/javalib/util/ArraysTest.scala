@@ -1402,7 +1402,7 @@ class ArraysTest {
 
     val arr = new Array[String](srcSize)
 
-    // Scala 2 needs [String] here, Scala 3 can usually figure out its absence.
+    // Scala 2 needs [String] here, Scala 3 can usually figure out its absence
     Arrays.setAll[String](arr, (idx: Int) => (idx + 1).toString())
 
     val expectedAtFirstInRangeRange = "1"
