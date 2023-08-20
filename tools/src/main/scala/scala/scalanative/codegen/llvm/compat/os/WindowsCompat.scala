@@ -53,6 +53,7 @@ private[codegen] class WindowsCompat(protected val codegen: AbstractCodeGen)
   )(implicit
       fresh: Fresh,
       pos: Position,
+      scope: Metadata.Scope,
       sb: ShowBuilder,
       debugInfo: DebugInfo,
       metaCtx: MetadataCodeGen.Context

@@ -2,7 +2,8 @@ package scala.scalanative.codegen
 package llvm
 
 import scala.scalanative.nir
-import scala.scalanative.nir.{Position, Global, Fresh}
+import scala.scalanative.nir.{Position, Global, Fresh, Val, Local}
+import scala.scalanative.nir.Defn.Define.DebugInfo
 import scala.scalanative.util.ShowBuilder
 import scala.collection.mutable
 import scala.scalanative.util.unsupported
@@ -12,6 +13,7 @@ import scala.scalanative.codegen.llvm.MetadataCodeGen.Writer.Specialized
 import scala.scalanative.nir.Unmangle
 import scala.scalanative.nir.Global.Member
 import scala.scalanative.nir.Sig.Method
+import scala.scalanative.util.unreachable
 
 // scalafmt: { maxColumn = 100}
 trait MetadataCodeGen { self: AbstractCodeGen =>
@@ -21,6 +23,7 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
   import self.meta.platform
 
   final val generateDebugMetadata = self.meta.config.debugMetadata
+  final val FirstLineOffset = 1
 
   /* Create a name debug metadata entry and write it on the metadata section */
   def dbg(name: String)(values: Metadata.Node*)(implicit ctx: Context): Unit =
@@ -52,39 +55,45 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
   def dbg[T <: Metadata.Node: InternedWriter](v: T)(implicit ctx: Context, sb: ShowBuilder): Unit =
     dbg("", v)
 
-  def `llvm.dbg.declare`(
+  def dbgLocalValue(id: Local, ty: nir.Type, argIdx: Option[Int] = None)(
+      srcPosition: nir.Position,
+      scope: Scope
+  )(implicit debugInfo: DebugInfo, metadataCtx: Context, sb: ShowBuilder): Unit =
+    if (generateDebugMetadata) {
+      debugInfo.localNames.get(id).foreach { localName =>
+        `llvm.dbg.value`(
+          address = Metadata.Value(Val.Local(id, ty)),
+          description = Metadata.DILocalVariable(
+            name = localName,
+            arg = argIdx,
+            scope = scope,
+            file = toDIFile(srcPosition),
+            line = srcPosition.line + FirstLineOffset,
+            tpe = toMetadataType(ty)
+          ),
+          expr = Metadata.DIExpression()
+        )(srcPosition, scope)
+      }
+    }
+
+  private def `llvm.dbg.value`(
       address: Metadata.Value,
       description: DILocalVariable,
       expr: Metadata.DIExpression
-  )(pos: Option[Position], scope: Option[Metadata.Scope])(implicit
+  )(pos: Position, scope: Metadata.Scope)(implicit
       ctx: Context,
       sb: ShowBuilder
   ): Unit = {
     sb.newline()
-    sb.str("call void @llvm.dbg.declare(metadata ")
+    sb.str("call void @llvm.dbg.value(metadata ")
     genVal(address.value)
     sb.str(", metadata ")
     description.intern().write(sb)
     sb.str(", metadata ")
     expr.intern().write(sb)
-    sb.str(") ")
-    scope
-      .map(toDILocation(pos.getOrElse(Position.NoPosition), _))
-      .foreach(dbg(",", _))
-    sb.newline()
+    sb.str(")")
+    dbg(",", toDILocation(pos, scope))
   }
-  // def `llvm.dbg.assign`(
-  //     newValue: Metadata,
-  //     description: Metadata,
-  //     expr: Metadata,
-  //     id: Metadata,
-  //     address: Metadata,
-  //     addressExpr: Metadata
-  // )(implicit ctx: Context, sb: ShowBuilder): Unit = ???
-  // def `llvm.dbg.value`(newValue: Metadata, description: Metadata, expr: Metadata)(implicit
-  //     ctx: Context,
-  //     sb: ShowBuilder
-  // ): Unit = ???
 
   def compilationUnits(implicit ctx: Context): Seq[DICompileUnit] =
     ctx.writersCache
@@ -126,7 +135,7 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
       scope = unit,
       file = file,
       unit = unit,
-      line = pos.line,
+      line = pos.line + FirstLineOffset,
       tpe = DISubroutineType(
         DITypes(
           toMetadataTypeOpt(rettype),
@@ -145,7 +154,7 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
   }
 
   def toDILocation(pos: Position): DILocation = DILocation(
-    line = pos.line,
+    line = pos.line + FirstLineOffset,
     column = pos.column,
     scope = toDIFile(pos)
   )
@@ -154,7 +163,7 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
       pos: Position,
       scope: Scope
   ): DILocation = DILocation(
-    line = pos.line,
+    line = pos.line + FirstLineOffset,
     column = pos.column,
     scope = scope
   )
@@ -376,8 +385,24 @@ object MetadataCodeGen {
             .reset()
           fn(builder)
         }
+
+        trait FieldWriter[T] { def write(ctx: Context, value: T): Unit }
+        object FieldWriter {
+          implicit val IntField: FieldWriter[Int] = (ctx: Context, value: Int) =>
+            ctx.sb.str(value.toString())
+          implicit val BooleanField: FieldWriter[Boolean] = (ctx: Context, value: Boolean) =>
+            ctx.sb.str(value.toString())
+          implicit val StringField: FieldWriter[String] = (ctx: Context, value: String) =>
+            ctx.sb.quoted(value)
+          implicit def MetadataNodeField[T <: Metadata.Node: InternedWriter]: FieldWriter[T] =
+            (ctx: Context, value: T) => writeInterned(value)(implicitly, ctx)
+          implicit def MetadataField[T <: Metadata: Writer]: FieldWriter[T] =
+            (ctx: Context, value: T) => implicitly[Writer[T]].write(value)(ctx)
+        }
+
       }
       class Builder[T](implicit ctx: Context) {
+        import Builder._
         private var isEmpty = true
 
         private def reset(): this.type = {
@@ -387,22 +412,13 @@ object MetadataCodeGen {
 
         // The fields of literal types differ from typical Metadata.Str // no '!' prefix
         // Also Boolean and numeric literals don't contain type prefix
-        def field(name: String, value: Int): this.type =
-          fieldImpl[Int](name)(ctx.sb.str(value.toString()))
-        def field(name: String, value: Boolean): this.type =
-          fieldImpl[Boolean](name)(ctx.sb.str(value.toString()))
-        def field(name: String, value: String): this.type =
-          fieldImpl[String](name)(ctx.sb.quoted(value))
+        def field[T: FieldWriter](name: String, value: T): this.type =
+          fieldImpl[Int](name)(implicitly[FieldWriter[T]].write(ctx, value))
 
-        def field[T <: Metadata.Node](name: String, value: T)(implicit
-            writer: InternedWriter[T]
-        ): this.type =
-          fieldImpl[T](name) { writeInterned(value)(writer, ctx) }
+        def field[T: FieldWriter](name: String, value: Option[T]): this.type =
+          value.fold[this.type](this)(field(name, _))
 
-        def field[T <: Metadata](name: String, value: T)(implicit writer: Writer[T]): this.type =
-          fieldImpl[T](name) { writer.write(value)(ctx) }
-
-        def fieldImpl[T](name: String)(doWrite: => Unit): this.type = {
+        private def fieldImpl[T](name: String)(doWrite: => Unit): this.type = {
           def sb = ctx.sb
           if (!isEmpty) sb.str(", ")
           sb.str(name)
@@ -442,6 +458,8 @@ object MetadataCodeGen {
       case v: DICompileUnit => v.writer
       case v: DIFile        => v.writer
       case v: DISubprogram  => v.writer
+      // Dummy scope, not possible to obtain, becouse call to dbg would never actually need call it
+      case Scope.NoScope => unreachable
     }
 
     import Metadata.conversions.StringOps
@@ -511,8 +529,9 @@ object MetadataCodeGen {
           .field("scope", scope)
     }
     implicit lazy val ofDILocalVariable: Specialized[DILocalVariable] = {
-      case DILocalVariable(name, scope, file, line, tpe) =>
+      case DILocalVariable(name, arg, scope, file, line, tpe) =>
         _.field("name", name)
+          .field("arg", arg)
           .field("scope", scope)
           .field("file", file)
           .field("line", line)

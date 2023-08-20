@@ -19,6 +19,10 @@ object Metadata {
 
   sealed trait LLVMDebugInformation extends SpecializedNode
   sealed trait Scope extends LLVMDebugInformation
+  object Scope{
+    // Dummy scope used when not generating debug info
+    case object NoScope extends Scope
+  }
   case class DICompileUnit(
       file: DIFile,
       producer: String,
@@ -43,6 +47,7 @@ object Metadata {
       extends LLVMDebugInformation
   case class DILocalVariable(
       name: String,
+      arg: Option[Int],
       scope: Scope,
       file: DIFile,
       line: Int,

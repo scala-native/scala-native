@@ -19,6 +19,7 @@ private[codegen] trait OsCompat {
   )(implicit
       fresh: Fresh,
       pos: Position,
+      scope: Metadata.Scope,
       sb: ShowBuilder,
       debugInfo: DebugInfo,
       dwf: MetadataCodeGen.Context
