@@ -25,6 +25,8 @@ trait NirGenName[G <: Global with Singleton] {
       unreachable
     }
 
+  def genLocalName(sym: Symbol): String = sym.javaSimpleName.toString
+
   def genTypeName(sym: Symbol): nir.Global.Top = {
     val id = {
       val fullName = sym.fullName

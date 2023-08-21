@@ -8,20 +8,20 @@ import scalanative.linker.{Result, Ref}
 
 object UseDef {
   sealed abstract class Def {
-    def name: Local
+    def id: Local
     def deps: mutable.UnrolledBuffer[Def]
     def uses: mutable.UnrolledBuffer[Def]
     var alive: Boolean = false
   }
 
   final case class InstDef(
-      name: Local,
+      id: Local,
       deps: mutable.UnrolledBuffer[Def],
       uses: mutable.UnrolledBuffer[Def]
   ) extends Def
 
   final case class BlockDef(
-      name: Local,
+      id: Local,
       deps: mutable.UnrolledBuffer[Def],
       uses: mutable.UnrolledBuffer[Def],
       params: Seq[Def]
@@ -32,10 +32,8 @@ object UseDef {
 
     override def onVal(value: Val) = {
       value match {
-        case v @ Val.Local(n, _) =>
-          deps += n
-        case _ =>
-          ()
+        case v @ Val.Local(n, _) => deps += n
+        case _                   => ()
       }
       super.onVal(value)
     }
@@ -43,7 +41,7 @@ object UseDef {
     override def onNext(next: Next) = {
       next match {
         case next if next ne Next.None =>
-          deps += next.name
+          deps += next.id
         case _ =>
           ()
       }
@@ -65,10 +63,8 @@ object UseDef {
       Whitelist.pure.contains(name)
     case Inst.Let(_, Op.Module(name), _) =>
       Whitelist.pure.contains(name)
-    case Inst.Let(_, op, _) if op.isPure =>
-      true
-    case _ =>
-      false
+    case Inst.Let(_, op, _) if op.isPure => true
+    case _                               => false
   }
 
   def apply(cfg: ControlFlow.Graph): Map[Local, Def] = {
@@ -86,7 +82,7 @@ object UseDef {
     def enterInst(n: Local) = {
       val deps = mutable.UnrolledBuffer.empty[Def]
       val uses = mutable.UnrolledBuffer.empty[Def]
-      assert(!defs.contains(n))
+      assert(!defs.contains(n), s"duplicate local ids: $n")
       defs += ((n, InstDef(n, deps, uses)))
     }
     def deps(n: Local, deps: Seq[Local]) = {
@@ -110,24 +106,20 @@ object UseDef {
 
     // enter definitions
     blocks.foreach { block =>
-      enterBlock(block.name, block.params.map(_.name))
+      enterBlock(block.id, block.params.map(_.id))
       block.insts.foreach {
         case Inst.Let(n, _, unwind) =>
           enterInst(n)
           unwind match {
-            case Next.None =>
-              ()
-            case Next.Unwind(Val.Local(exc, _), _) =>
-              enterInst(exc)
-            case _ =>
-              util.unreachable
+            case Next.None                         => ()
+            case Next.Unwind(Val.Local(exc, _), _) => enterInst(exc)
+            case _                                 => util.unreachable
           }
         case Inst.Throw(_, Next.Unwind(Val.Local(exc, _), _)) =>
           enterInst(exc)
         case Inst.Unreachable(Next.Unwind(Val.Local(exc, _), _)) =>
           enterInst(exc)
-        case _ =>
-          ()
+        case _ => ()
       }
     }
 
@@ -135,16 +127,16 @@ object UseDef {
     blocks.foreach { block =>
       block.insts.foreach {
         case inst: Inst.Let =>
-          deps(inst.name, collect(inst))
-          if (!isPure(inst)) deps(block.name, Seq(inst.name))
+          deps(inst.id, collect(inst))
+          if (!isPure(inst)) deps(block.id, Seq(inst.id))
         case inst: Inst.Cf =>
-          deps(block.name, collect(inst))
+          deps(block.id, collect(inst))
         case inst =>
           unreachable
       }
     }
 
-    traceAlive(defs(cfg.entry.name))
+    traceAlive(defs(cfg.entry.id))
 
     defs.toMap
   }
@@ -156,7 +148,7 @@ object UseDef {
     val buf = new nir.Buffer()(fresh)
 
     cfg.all.foreach { block =>
-      if (usedef(block.name).alive) {
+      if (usedef(block.id).alive) {
         buf += block.label
         block.insts.foreach {
           case inst @ Inst.Let(n, _, _) =>

@@ -10,10 +10,10 @@ import core.Definitions
 import core.Names._
 import core.Symbols._
 import core.Types._
+import core.Flags._
 import core.StdNames._
 import core.Constants.Constant
 import NirGenUtil.ContextCached
-import dotty.tools.dotc.core.Flags
 
 /** This phase does:
  *    - handle TypeApply -> Apply conversion for intrinsic methods
@@ -66,6 +66,20 @@ class PostInlineNativeInterop extends PluginPhase {
             dealiasTypeMapper(tree.tpe.finalResultType)
         tree.withAttachment(NirDefinitions.NonErasedTypes, paramTypes)
 
+      case Apply(fun, args)
+          if defnNir.Intrinsics_stackallocAlts.contains(fun.symbol) =>
+        val tpe = fun match {
+          case TypeApply(_, Seq(argTpe)) => dealiasTypeMapper(argTpe.tpe)
+        }
+        val tpeSym = tpe.typeSymbol
+        if (tpe.isAny || tpe.isNothingType || tpe.isNullType ||
+            tpeSym.isAbstractType && !tpeSym.isAllOf(DeferredType | TypeParam))
+          report.error(
+            s"Stackalloc requires concrete type but ${tpe.show} found",
+            tree.srcPos
+          )
+        tree.withAttachment(NirDefinitions.NonErasedType, tpe)
+
       case _ => tree
 
   }
@@ -77,21 +91,21 @@ class PostInlineNativeInterop extends PluginPhase {
 
     // sizeOf[T] -> sizeOf(classOf[T])
     fun.symbol match
-      case defnNir.Intrinsics_sizeOfType =>
+      case defnNir.Intrinsics_sizeOf =>
         val tpe = dealiasTypeMapper(tArgs.head.tpe)
         cpy
           .Apply(tree)(
-            ref(defnNir.Intrinsics_sizeOf),
+            ref(defnNir.IntrinsicsInternal_sizeOf),
             List(Literal(Constant(tpe)))
           )
           .withAttachment(NirDefinitions.NonErasedType, tpe)
 
       // alignmentOf[T] -> alignmentOf(classOf[T])
-      case defnNir.Intrinsics_alignmentOfType =>
+      case defnNir.Intrinsics_alignmentOf =>
         val tpe = dealiasTypeMapper(tArgs.head.tpe)
         cpy
           .Apply(tree)(
-            ref(defnNir.Intrinsics_alignmentOf),
+            ref(defnNir.IntrinsicsInternal_alignmentOf),
             List(Literal(Constant(tpe)))
           )
           .withAttachment(NirDefinitions.NonErasedType, tpe)

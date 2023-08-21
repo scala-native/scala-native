@@ -1,6 +1,6 @@
-liTest run started
+liTest run scala.scalanative.junit.MethodNameDecodeTest started
 liTest scala.scalanative.junit.MethodNameDecodeTest.abcd ∆ƒ 😀 * #&$ started
 ldTest scala.scalanative.junit.MethodNameDecodeTest.abcd ∆ƒ 😀 * #&$ finished, took <TIME>
 e0scala.scalanative.junit.MethodNameDecodeTest.abcd ∆ƒ 😀 * #&$
-liTest run finished: 0 failed, 0 ignored, 1 total, <TIME>
+liTest run scala.scalanative.junit.MethodNameDecodeTest finished: 0 failed, 0 ignored, 1 total, <TIME>
 d

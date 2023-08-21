@@ -1,6 +1,6 @@
-ldTest run started
+ldTest run scala.scalanative.junit.BeforeAndAfterClassTest started
 ldTest scala.scalanative.junit.BeforeAndAfterClassTest.test started
 ldTest scala.scalanative.junit.BeforeAndAfterClassTest.test finished, took <TIME>
 e0scala.scalanative.junit.BeforeAndAfterClassTest.test
-ldTest run finished: 0 failed, 0 ignored, 1 total, <TIME>
+ldTest run scala.scalanative.junit.BeforeAndAfterClassTest finished: 0 failed, 0 ignored, 1 total, <TIME>
 d

@@ -9,11 +9,11 @@ import scala.scalanative.junit.utils._
 
 class AssertEqualsDoubleTest {
   @Test def failsWithDouble(): Unit = {
-    assertEquals(1.0, 1.0)
+    assertEquals(1.0, 1.0, 0.0)
   }
 
   @Test def failsWithDoubleMessage(): Unit = {
-    assertEquals("Message", 1.0, 1.0)
+    assertEquals("Message", 1.0, 1.0, 0.0)
   }
 
   @Test def worksWithEpsilon(): Unit = {

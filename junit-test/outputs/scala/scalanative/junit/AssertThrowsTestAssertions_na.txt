@@ -1,8 +1,8 @@
-ldTest run started
+ldTest run scala.scalanative.junit.AssertThrowsTest started
 ldTest scala.scalanative.junit.AssertThrowsTest.test started
 leTest scala.scalanative.junit.AssertThrowsTest.test failed: java.lang.AssertionError: unexpected exception type thrown; expected:<java.lang.UnsupportedOperationException> but was:<java.lang.IllegalArgumentException>, took <TIME>
 leCaused by: java.lang.IllegalArgumentException: Exception message
 e2scala.scalanative.junit.AssertThrowsTest.test
 ldTest scala.scalanative.junit.AssertThrowsTest.test finished, took <TIME>
-ldTest run finished: 1 failed, 0 ignored, 1 total, <TIME>
+ldTest run scala.scalanative.junit.AssertThrowsTest finished: 1 failed, 0 ignored, 1 total, <TIME>
 d

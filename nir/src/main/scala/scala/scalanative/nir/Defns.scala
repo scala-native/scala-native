@@ -8,7 +8,7 @@ sealed abstract class Defn {
   def pos: Position
   final def show: String = nir.Show(this)
   final def isEntryPoint = this match {
-    case Define(attrs, Global.Member(_, sig), _, _) =>
+    case Define(attrs, Global.Member(_, sig), _, _, _) =>
       sig.isClinit || attrs.isExtern
     case _ => false
   }
@@ -29,7 +29,8 @@ object Defn {
       attrs: Attrs,
       name: Global,
       ty: Type,
-      insts: Seq[Inst]
+      insts: Seq[Inst],
+      localNames: LocalNames = Map.empty
   )(implicit val pos: Position)
       extends Defn
 

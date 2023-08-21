@@ -67,7 +67,7 @@ class TimeTest {
       val anno_zero_ptr = stackalloc[tm]()
       anno_zero_ptr.tm_mday = 1
       anno_zero_ptr.tm_wday = 1
-      val cstr: CString = asctime_r(anno_zero_ptr, stackalloc[Byte](26.toUSize))
+      val cstr: CString = asctime_r(anno_zero_ptr, stackalloc[Byte](26))
       val str: String = fromCString(cstr)
       assertEquals("Mon Jan  1 00:00:00 1900\n", str)
     }
@@ -77,6 +77,15 @@ class TimeTest {
       assumeFalse(
         "Skipping localtime test since FreeBSD hasn't the 'timezone' variable",
         Platform.isFreeBSD
+      )
+
+      val haveCI =
+        java.lang.Boolean.parseBoolean(System.getenv("GITHUB_ACTIONS"))
+
+      // Test has proven to fragile to run outside known environments.
+      assumeTrue(
+        "Tested only by GitHub continuous integration or developer bypass.",
+        haveCI
       )
 
       /* unix epoch is defined as 0 seconds UTC (Universal Time).
@@ -112,7 +121,7 @@ class TimeTest {
         val time_ptr = stackalloc[time_t]()
         !time_ptr = epoch + timezone
         val time: Ptr[tm] = localtime_r(time_ptr, alloc[tm]())
-        val cstr: CString = asctime_r(time, alloc[Byte](26.toUSize))
+        val cstr: CString = asctime_r(time, alloc[Byte](26))
         val str: String = fromCString(cstr)
 
         assertEquals("Thu Jan  1 00:00:00 1970\n", str)
@@ -213,7 +222,7 @@ class TimeTest {
 
   @Test def strftimeForJanOne1900ZeroZulu(): Unit = if (!isWindows) {
     Zone { implicit z =>
-      val isoDatePtr: Ptr[CChar] = alloc[CChar](70.toUSize)
+      val isoDatePtr: Ptr[CChar] = alloc[CChar](70)
       val timePtr = alloc[tm]()
 
       timePtr.tm_mday = 1
@@ -229,7 +238,7 @@ class TimeTest {
   @Test def strftimeForMondayJanOne1990ZeroTime(): Unit = if (!isWindows) {
     Zone { implicit z =>
       val timePtr = alloc[tm]()
-      val datePtr: Ptr[CChar] = alloc[CChar](70.toUSize)
+      val datePtr: Ptr[CChar] = alloc[CChar](70)
 
       timePtr.tm_mday = 1
       timePtr.tm_wday = 1

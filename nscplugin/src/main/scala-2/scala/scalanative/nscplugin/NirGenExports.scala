@@ -176,7 +176,8 @@ trait NirGenExports[G <: nsc.Global with Singleton] {
           buf.ret(unboxedRes)
         }
         buf.toSeq
-      }
+      },
+      localNames = Map.empty
     )
     ExportedSymbol(member, defn)
   }

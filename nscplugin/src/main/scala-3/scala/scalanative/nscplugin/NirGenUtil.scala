@@ -5,8 +5,9 @@ import tpd._
 import dotty.tools.dotc.core
 import core.Contexts._
 import core.Types._
-import scalanative.util.ScopedVar.scoped
-import scalanative.nir.Fresh
+import scala.scalanative.util.ScopedVar
+import scalanative.nir.{Fresh, Local, LocalName}
+import scala.collection.mutable
 
 trait NirGenUtil(using Context) { self: NirCodeGen =>
 
@@ -30,13 +31,23 @@ trait NirGenUtil(using Context) { self: NirCodeGen =>
   }
 
   protected def withFreshExprBuffer[R](f: ExprBuffer ?=> R): R = {
-    scoped(
+    ScopedVar.scoped(
       curFresh := Fresh()
     ) {
       val buffer = new ExprBuffer(using curFresh)
       f(using buffer)
     }
   }
+
+  protected def localNamesBuilder(): mutable.Map[Local, LocalName] =
+    mutable.Map.empty[Local, LocalName]
+
+  extension (fresh: Fresh)
+    def namedId(name: LocalName): Local = {
+      val id = fresh()
+      curMethodLocalNames.get.update(id, name)
+      id
+    }
 }
 
 object NirGenUtil {

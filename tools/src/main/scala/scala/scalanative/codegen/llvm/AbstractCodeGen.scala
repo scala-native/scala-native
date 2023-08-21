@@ -95,7 +95,7 @@ private[codegen] abstract class AbstractCodeGen(
             defn.copy(attrs.copy(isExtern = true))
           case defn @ Defn.Declare(attrs, _, _) =>
             defn.copy(attrs.copy(isExtern = true))
-          case defn @ Defn.Define(attrs, name, ty, _) =>
+          case defn @ Defn.Define(attrs, name, ty, _, _) =>
             Defn.Declare(attrs, name, ty)
           case _ =>
             unreachable
@@ -137,11 +137,11 @@ private[codegen] abstract class AbstractCodeGen(
     case _ =>
       touch(n)
       env(n) match {
-        case Defn.Var(_, _, ty, _)     => ty
-        case Defn.Const(_, _, ty, _)   => ty
-        case Defn.Declare(_, _, sig)   => sig
-        case Defn.Define(_, _, sig, _) => sig
-        case _                         => unreachable
+        case Defn.Var(_, _, ty, _)        => ty
+        case Defn.Const(_, _, ty, _)      => ty
+        case Defn.Declare(_, _, sig)      => sig
+        case Defn.Define(_, _, sig, _, _) => sig
+        case _                            => unreachable
       }
   }
 
@@ -178,7 +178,7 @@ private[codegen] abstract class AbstractCodeGen(
       genGlobalDefn(attrs, name, isConst = true, ty, rhs)
     case Defn.Declare(attrs, name, sig) =>
       genFunctionDefn(attrs, name, sig, Seq.empty, Fresh(), defn.pos)
-    case Defn.Define(attrs, name, sig, insts) =>
+    case Defn.Define(attrs, name, sig, insts, localNames) =>
       genFunctionDefn(attrs, name, sig, insts, Fresh(insts), defn.pos)
     case defn =>
       unsupported(defn)
@@ -265,10 +265,8 @@ private[codegen] abstract class AbstractCodeGen(
       str(" {")
 
       insts.foreach {
-        case Inst.Let(n, Op.Copy(v), _) =>
-          copies(n) = v
-        case _ =>
-          ()
+        case Inst.Let(n, Op.Copy(v), _) => copies(n) = v
+        case _                          => ()
       }
 
       locally {
@@ -372,11 +370,11 @@ private[codegen] abstract class AbstractCodeGen(
     if (!block.isEntry) {
       val params = block.params
       params.zipWithIndex.foreach {
-        case (Val.Local(name, Type.Unit), n) => () // skip
-        case (Val.Local(name, ty), n) =>
+        case (Val.Local(_, Type.Unit), n) => () // skip
+        case (Val.Local(id, ty), n) =>
           newline()
           str("%")
-          genLocal(name)
+          genLocal(id)
           str(" = phi ")
           genType(ty)
           str(" ")
@@ -385,7 +383,7 @@ private[codegen] abstract class AbstractCodeGen(
               val Next.Label(_, vals) = next
               genJustVal(vals(n))
               str(", %")
-              genLocal(edge.from.name)
+              genLocal(edge.from.id)
               str(".")
               str(edge.from.splitCount)
             }
@@ -646,27 +644,27 @@ private[codegen] abstract class AbstractCodeGen(
       // select instruction.
       case Inst.If(
             cond,
-            thenNext @ Next.Label(thenName, thenArgs),
-            elseNext @ Next.Label(elseName, elseArgs)
-          ) if thenName == elseName =>
+            thenNext @ Next.Label(thenId, thenArgs),
+            elseNext @ Next.Label(elseId, elseArgs)
+          ) if thenId == elseId =>
         if (thenArgs == elseArgs) {
           genInst(Inst.Jump(thenNext)(inst.pos))
         } else {
           val args = thenArgs.zip(elseArgs).map {
             case (thenV, elseV) =>
-              val name = fresh()
+              val id = fresh()
               newline()
               str("%")
-              genLocal(name)
+              genLocal(id)
               str(" = select ")
               genVal(cond)
               str(", ")
               genVal(thenV)
               str(", ")
               genVal(elseV)
-              Val.Local(name, thenV.ty)
+              Val.Local(id, thenV.ty)
           }
-          genInst(Inst.Jump(Next.Label(thenName, args))(inst.pos))
+          genInst(Inst.Jump(Next.Label(thenId, args))(inst.pos))
         }
 
       case Inst.If(cond, thenp, elsep) =>
@@ -712,13 +710,13 @@ private[codegen] abstract class AbstractCodeGen(
       ty == Type.Unit || ty == Type.Nothing
 
     val op = inst.op
-    val name = inst.name
+    val id = inst.id
     val unwind = inst.unwind
 
     def genBind() =
       if (!isVoid(op.resty)) {
         str("%")
-        genLocal(name)
+        genLocal(id)
         str(" = ")
       }
 
@@ -1145,7 +1143,7 @@ private[codegen] abstract class AbstractCodeGen(
       case Next.Case(v, next) =>
         genVal(v)
         str(", label %")
-        genLocal(next.name)
+        genLocal(next.id)
         str(".0")
       case Next.Unwind(Val.Local(exc, _), _) =>
         str("label %_")
@@ -1153,7 +1151,7 @@ private[codegen] abstract class AbstractCodeGen(
         str(".landingpad")
       case next =>
         str("label %")
-        genLocal(next.name)
+        genLocal(next.id)
         str(".0")
     }
   }

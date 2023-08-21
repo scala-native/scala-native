@@ -12,7 +12,7 @@
 //   scripts/gyb.py \
 //     nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala.gyb \
 //     --line-directive '' \
-//     -o /nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala
+//     -o nativelib/src/main/scala/scala/scalanative/runtime/Arrays.scala
 //
 //  After executing the script, you may want to edit this file to remove
 //  personally or build-system specific identifiable information.
@@ -49,8 +49,14 @@ sealed abstract class Array[T]
   /** Pointer to the element. */
   @inline def at(i: Int): Ptr[T] = fromRawPtr[T](atRaw(i))
 
+  /** Pointer to the element without a bounds check. */
+  @inline def atUnsafe(i: Int): Ptr[T] = fromRawPtr[T](atRawUnsafe(i))
+
   /** Raw pointer to the element. */
   def atRaw(i: Int): RawPtr
+
+  /** Raw pointer to the element without a bounds check. */
+  def atRawUnsafe(i: Int): RawPtr
 
   /** Loads element at i, throws ArrayIndexOutOfBoundsException. */
   def apply(i: Int): T
@@ -179,9 +185,13 @@ final class ${T}Array private () extends Array[${T}] {
     if (i < 0 || i >= length) {
       throwOutOfBounds(i)
     } else {
-      val rawptr = castObjectToRawPtr(this)
-      elemRawPtr(rawptr, intToUSize(MemoryLayout.Array.ValuesOffset + ${sizeT} * i))
+      atRawUnsafe(i)
     }
+
+  @inline def atRawUnsafe(i: Int): RawPtr = {
+    val rawptr = castObjectToRawPtr(this)
+    elemRawPtr(rawptr, intToUSize(MemoryLayout.Array.ValuesOffset + ${sizeT} * i))
+  }
 
   @inline def apply(i: Int): ${T} = load${T}(atRaw(i))
 

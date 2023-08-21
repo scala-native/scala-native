@@ -148,8 +148,17 @@ class NIRCompilerImpl(outDir: Path) extends api.NIRCompiler {
     val procBuilder = new ProcessBuilder(args: _*)
     val cmd = args.mkString(" ")
     val proc = procBuilder.start()
-    val ret = proc.waitFor()
-    Array.empty[Path]
+    if (proc.waitFor() != 0) {
+      val stderr =
+        scala.io.Source.fromInputStream(proc.getErrorStream()).mkString
+      throw new CompilationFailedException(stderr)
+    }
+
+    val acceptedExtension = Seq(".class", ".tasty", ".nir")
+    getFiles(
+      outPath.toFile,
+      f => acceptedExtension.exists(f.getName().endsWith)
+    ).map(_.toPath()).toArray
   }
 
   /** List of the files contained in `base` that sastisfy `filter`
@@ -162,3 +171,7 @@ class NIRCompilerImpl(outDir: Path) extends api.NIRCompiler {
       )))
 
 }
+
+// TODO: integrate with api.CompilationFailedException
+class CompilationFailedException(stderr: String)
+    extends RuntimeException(stderr)

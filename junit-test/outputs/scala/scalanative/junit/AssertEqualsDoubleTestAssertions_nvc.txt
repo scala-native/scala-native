@@ -1,12 +1,10 @@
-liTest run started
+liTest run scala.scalanative.junit.AssertEqualsDoubleTest started
 liTest scala.scalanative.junit.AssertEqualsDoubleTest.failsWithDouble started
-leTest scala.scalanative.junit.AssertEqualsDoubleTest.failsWithDouble failed: Use assertEquals(expected, actual, delta) to compare floating-point numbers, took <TIME>
-e2scala.scalanative.junit.AssertEqualsDoubleTest.failsWithDouble
 ldTest scala.scalanative.junit.AssertEqualsDoubleTest.failsWithDouble finished, took <TIME>
+e0scala.scalanative.junit.AssertEqualsDoubleTest.failsWithDouble
 liTest scala.scalanative.junit.AssertEqualsDoubleTest.failsWithDoubleMessage started
-leTest scala.scalanative.junit.AssertEqualsDoubleTest.failsWithDoubleMessage failed: Use assertEquals(expected, actual, delta) to compare floating-point numbers, took <TIME>
-e2scala.scalanative.junit.AssertEqualsDoubleTest.failsWithDoubleMessage
 ldTest scala.scalanative.junit.AssertEqualsDoubleTest.failsWithDoubleMessage finished, took <TIME>
+e0scala.scalanative.junit.AssertEqualsDoubleTest.failsWithDoubleMessage
 liTest scala.scalanative.junit.AssertEqualsDoubleTest.worksWithByte started
 ldTest scala.scalanative.junit.AssertEqualsDoubleTest.worksWithByte finished, took <TIME>
 e0scala.scalanative.junit.AssertEqualsDoubleTest.worksWithByte
@@ -19,5 +17,5 @@ e0scala.scalanative.junit.AssertEqualsDoubleTest.worksWithInt
 liTest scala.scalanative.junit.AssertEqualsDoubleTest.worksWithShort started
 ldTest scala.scalanative.junit.AssertEqualsDoubleTest.worksWithShort finished, took <TIME>
 e0scala.scalanative.junit.AssertEqualsDoubleTest.worksWithShort
-liTest run finished: 2 failed, 0 ignored, 6 total, <TIME>
+liTest run scala.scalanative.junit.AssertEqualsDoubleTest finished: 0 failed, 0 ignored, 6 total, <TIME>
 d

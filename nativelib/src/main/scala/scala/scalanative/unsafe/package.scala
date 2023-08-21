@@ -145,6 +145,8 @@ package object unsafe extends unsafe.UnsafePackageCompat {
   /** Scala Native unsafe extensions to Arrays */
   implicit class UnsafeRichArray[T](val value: Array[T]) extends AnyVal {
     @inline def at(i: Int): Ptr[T] = value.asInstanceOf[runtime.Array[T]].at(i)
+    @inline def atUnsafe(i: Int): Ptr[T] =
+      value.asInstanceOf[runtime.Array[T]].atUnsafe(i)
   }
 
   /** Convert a CString to a String using given charset. */

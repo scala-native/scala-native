@@ -81,13 +81,12 @@ trait GenReflectiveInstantisation(using Context) {
     staticInitBody
       .filter(_.nonEmpty)
       .foreach { body =>
-        generatedDefns +=
-          Defn.Define(
-            Attrs(),
-            name,
-            nir.Type.Function(Seq.empty[nir.Type], Type.Unit),
-            body
-          )
+        generatedDefns += new Defn.Define(
+          Attrs(),
+          name,
+          nir.Type.Function(Seq.empty[nir.Type], Type.Unit),
+          body
+        )
       }
   }
 
@@ -178,7 +177,7 @@ trait GenReflectiveInstantisation(using Context) {
         buf.toSeq
       }
 
-      reflInstBuffer += Defn.Define(
+      reflInstBuffer += new Defn.Define(
         Attrs(),
         reflInstBuffer.name.member(Sig.Ctor(Seq.empty)),
         nir.Type.Function(Seq(Type.Ref(reflInstBuffer.name)), Type.Unit),
@@ -229,7 +228,7 @@ trait GenReflectiveInstantisation(using Context) {
         buf.toSeq
       }
 
-      reflInstBuffer += Defn.Define(
+      reflInstBuffer += new Defn.Define(
         Attrs(),
         reflInstBuffer.name.member(applyMethodSig),
         nir.Type.Function(Seq(Type.Ref(reflInstBuffer.name)), Rt.Object),
@@ -330,7 +329,7 @@ trait GenReflectiveInstantisation(using Context) {
           buf.toSeq
         }
 
-        reflInstBuffer += Defn.Define(
+        reflInstBuffer += new Defn.Define(
           Attrs.None,
           reflInstBuffer.name.member(applyMethodSig),
           nir.Type.Function(

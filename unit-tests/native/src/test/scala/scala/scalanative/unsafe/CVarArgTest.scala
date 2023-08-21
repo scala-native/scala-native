@@ -15,7 +15,7 @@ class CVarArgTest {
   def vatest(cstr: CString, output: String)(
       generator: (CString, Ptr[CChar]) => Unit
   ): Unit = {
-    val buff: Ptr[CChar] = stackalloc[CChar](1024.toUSize)
+    val buff: Ptr[CChar] = stackalloc[CChar](1024)
     generator(buff, cstr)
     val got = fromCString(buff)
     assertEquals(got, output)

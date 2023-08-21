@@ -16,7 +16,7 @@ object InstanceRef {
 }
 
 object VirtualRef {
-  type VirtulRefExtract = (Kind, Class, Array[Val], Option[Val])
+  type VirtulRefExtract = (Kind, Class, Array[Val])
   def unapply(addr: Addr)(implicit
       state: State
   ): Option[VirtulRefExtract] =
@@ -26,8 +26,8 @@ object VirtualRef {
   )(implicit state: State): Option[VirtulRefExtract] = value match {
     case Val.Virtual(addr) =>
       state.deref(addr) match {
-        case VirtualInstance(kind, cls, values, zone) =>
-          Some((kind, cls, values, zone))
+        case VirtualInstance(kind, cls, values, _) =>
+          Some((kind, cls, values))
         case _ =>
           None
       }

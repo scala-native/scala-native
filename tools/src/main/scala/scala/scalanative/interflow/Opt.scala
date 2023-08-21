@@ -3,6 +3,8 @@ package interflow
 
 import scalanative.nir._
 import scalanative.linker._
+import scala.collection.mutable
+import scala.annotation.tailrec
 
 trait Opt { self: Interflow =>
 
@@ -24,14 +26,16 @@ trait Opt { self: Interflow =>
     val origtys = argumentTypes(orig)
     val origdefn = getOriginal(orig)
     val argtys = argumentTypes(name)
+    val Inst.Label(_, origargs) = origdefn.insts.head: @unchecked
     implicit val pos = origdefn.pos
     // Wrap up the result.
-    def result(retty: Type, rawInsts: Seq[Inst]) =
+    def result(retty: Type, rawInsts: Seq[Inst], localNames: LocalNames) =
       origdefn.copy(
         name = name,
         attrs = origdefn.attrs.copy(opt = Attr.DidOpt),
         ty = Type.Function(argtys, retty),
-        insts = ControlFlow.removeDeadBlocks(rawInsts)
+        insts = ControlFlow.removeDeadBlocks(rawInsts),
+        localNames = localNames
       )(origdefn.pos)
 
     // Create new fresh and state for the first basic block.
@@ -47,24 +51,27 @@ trait Opt { self: Interflow =>
     // are always a subtype of the original declared type, but in
     // some cases they might not be obviously related, despite
     // having the same concrete allocated class inhabitants.
-    val args = argtys.zip(origtys).map {
-      case (argty, origty) =>
+    val args = argtys.zip(origtys).zip(origargs).map {
+      case ((argty, origty), origarg) =>
         val ty = if (!Sub.is(argty, origty)) {
           log(
             s"using original argument type ${origty.show} instead of ${argty.show}"
           )
           origty
-        } else {
-          argty
-        }
-        Val.Local(fresh(), ty)
+        } else argty
+
+        val id = fresh()
+        origdefn.localNames
+          .get(origarg.id)
+          .foreach(state.localNames.update(id, _))
+        Val.Local(id, ty)
     }
 
     // If any of the argument types is nothing, this method
     // is never going to be called, so we don't have to visit it.
     if (args.exists(_.ty == Type.Nothing)) {
       val insts = Seq(Inst.Label(Local(0), args), Inst.Unreachable(Next.None))
-      result(Type.Nothing, insts)
+      result(Type.Nothing, insts, Map.empty)
     } else {
       // Run a merge processor starting from the entry basic block.
       val blocks =
@@ -72,10 +79,11 @@ trait Opt { self: Interflow =>
           pushBlockFresh(fresh)
           process(
             origdefn.insts.toArray,
-            args,
-            state,
+            localNames = origdefn.localNames,
+            args = args,
+            state = state,
             doInline = false,
-            origRetTy
+            retTy = origRetTy
           )
         } finally {
           popBlockFresh()
@@ -94,6 +102,14 @@ trait Opt { self: Interflow =>
         }
         block.toInsts()
       }
+      val localNames: LocalNames = {
+        val map = mutable.OpenHashMap.empty[Local, LocalName]
+        for {
+          block <- blocks
+          state = block.end
+        } map.addMissing(block.end.localNames)
+        map.toMap
+      }
       val rets = insts.collect {
         case Inst.Ret(v) => v.ty
       }
@@ -108,12 +124,13 @@ trait Opt { self: Interflow =>
         if (retty0 == Type.Unit && origRetTy.isInstanceOf[Type.Ref]) origRetTy
         else retty0
 
-      result(retty, insts)
+      result(retty, insts, localNames)
     }
   }
 
   def process(
       insts: Array[Inst],
+      localNames: LocalNames,
       args: Seq[Val],
       state: State,
       doInline: Boolean,
@@ -122,7 +139,15 @@ trait Opt { self: Interflow =>
       originDefnPos: nir.Position
   ): Seq[MergeBlock] = {
     val processor =
-      MergeProcessor.fromEntry(insts, args, state, doInline, blockFresh, this)
+      MergeProcessor.fromEntry(
+        insts = insts,
+        args = args,
+        localNames = localNames,
+        state = state,
+        doInline = doInline,
+        blockFresh = blockFresh,
+        eval = this
+      )
 
     try {
       pushMergeProcessor(processor)
@@ -134,6 +159,8 @@ trait Opt { self: Interflow =>
       popMergeProcessor()
     }
 
-    processor.toSeq(retTy)
+    val blocks = processor.toSeq(retTy)
+    MergePostProcessor.postProcess(blocks)
   }
+
 }

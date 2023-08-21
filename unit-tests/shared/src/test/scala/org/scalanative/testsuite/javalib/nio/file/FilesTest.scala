@@ -1,11 +1,15 @@
 package org.scalanative.testsuite.javalib.nio.file
 
+import java.util.EnumSet
+
 import java.nio.file._
 import java.nio.ByteBuffer
 import java.io._
 import java.nio.file.attribute._
 
-import java.util.function.BiPredicate
+import java.util.{Arrays, TreeSet}
+import java.util.function.{BiPredicate, IntFunction}
+
 import PosixFilePermission._
 import StandardCopyOption._
 
@@ -937,33 +941,211 @@ class FilesTest {
     }
   }
 
-  @Test def filesWalkFileTreeWalksTheTree(): Unit = {
+  @Test def filesWalkMaxDepthNegative(): Unit = {
     withTemporaryDirectory { dirFile =>
       val dir = dirFile.toPath()
-      val f0 = dir.resolve("f0")
-      val f1 = dir.resolve("f1")
-      val d0 = dir.resolve("d0")
-      val f2 = d0.resolve("f2")
+      val d1 = dir.resolve("test-project") // no need to actually create
+      val maxDepth = -1
 
-      Files.createDirectory(d0)
-      Files.createFile(f0)
-      Files.createFile(f1)
-      Files.createFile(f2)
-      assertTrue("a1", Files.exists(d0) && Files.isDirectory(d0))
-      assertTrue("a2", Files.exists(f0) && Files.isRegularFile(f0))
-      assertTrue("a3", Files.exists(f1) && Files.isRegularFile(f1))
-      assertTrue("a4", Files.exists(f2) && Files.isRegularFile(f2))
+      try {
+        assertThrows(
+          classOf[IllegalArgumentException],
+          Files.walk(d1, -1)
+        )
+      } finally {}
+    }
+  }
+
+  @Test def filesWalkMaxDepthZero(): Unit = {
+    withTemporaryDirectory { dirFile =>
+      val dir = dirFile.toPath()
+      val d1 = dir.resolve("test-project")
+
+      Files.createDirectory(d1)
+
+      val result = Files.walk(d1, 0).toArray()
+
+      val expectedLength = 1
+      assertEquals("length", expectedLength, result.length)
+
+      val expectedPath = d1
+      assertEquals("content", expectedPath, result(0).asInstanceOf[Path])
+
+      // Delete files only on succcess, otherwise leave detritus for debug.
+      Files.delete(d1)
+      Files.delete(dir)
+    }
+  }
+
+  // Issue 3471, 1 of 2 broken methods
+  @Test def filesWalkMaxDepthPositive(): Unit = {
+    withTemporaryDirectory { dirFile =>
+      val dir = dirFile.toPath()
+      val d1 = dir.resolve("test-project")
+      val d1f1 = d1.resolve("default.properties")
+
+      val d2 = d1.resolve("src")
+      val d2f1 = d2.resolve("project.scala")
+      val d2f2 = d2.resolve("test.scala")
+
+      Files.createDirectory(d1)
+      Files.createFile(d1f1)
+
+      Files.createDirectory(d2)
+      Files.createFile(d2f1)
+      Files.createFile(d2f2)
+
+      assertTrue("a1", Files.exists(d1) && Files.isDirectory(d1))
+      assertTrue("a2", Files.exists(d1f1) && Files.isRegularFile(d1f1))
+
+      assertTrue("a3", Files.exists(d2) && Files.isDirectory(d2))
+      assertTrue("a4", Files.exists(d2f1) && Files.isRegularFile(d2f1))
+      assertTrue("a5", Files.exists(d2f2) && Files.isRegularFile(d2f2))
+
+      val paths = Files
+        .walk(d1, 1)
+        .toArray(
+          new IntFunction[Array[Path]]() {
+            def apply(value: Int): Array[Path] = new Array[Path](value)
+          }
+        )
+
+      val expectedLength = 3
+      assertEquals("length", expectedLength, paths.length)
+
+      // Expect the starting directory to always be the first (0-th) element.
+      assertEquals("start", d1, paths(0))
+
+      /* The order of the rest of the elements in which are visited is
+       * not defined. Sort to ease testing. We know the expected names
+       * so we know and can test the expected sorted order.
+       */
+
+      Arrays.sort(paths, java.util.Comparator.naturalOrder[Path]())
+
+      assertEquals("content_1", d1f1, paths(1))
+      assertEquals("content_2", d2, paths(2))
+
+      // Delete files only on succcess, otherwise leave detritus for debug.
+      Files.delete(d2f2) // Delete in opposite order of creation
+      Files.delete(d2f1)
+      Files.delete(d2)
+
+      Files.delete(d1f1)
+      Files.delete(d1)
+
+      Files.delete(dir)
+    }
+  }
+
+  @Test def filesWalkFileTreeMaxDepthNegative(): Unit = {
+    withTemporaryDirectory { dirFile =>
+      val dir = dirFile.toPath()
+      val d1 = dir.resolve("test-project") // no need to actually create
 
       val visitor = new QueueingVisitor
-      Files.walkFileTree(dir, visitor)
-      val expected = Map(dir -> 2, d0 -> 2, f2 -> 1, f0 -> 1, f1 -> 1)
-      val result = scala.collection.mutable.Map.empty[Path, Int]
-      while (!visitor.isEmpty()) {
-        val f = visitor.dequeue()
-        val count = result.getOrElse(f, 0)
-        result(f) = count + 1
+      val fvoSet = EnumSet.noneOf(classOf[FileVisitOption])
+
+      try {
+        assertThrows(
+          classOf[IllegalArgumentException],
+          Files.walkFileTree(d1, fvoSet, -1, visitor)
+        )
+      } finally {
+        Files.delete(dir)
       }
-      assertEquals("a5", expected, result)
+    }
+  }
+
+  @Test def filesWalkFileTreeMaxDepthZero(): Unit = {
+    withTemporaryDirectory { dirFile =>
+      val dir = dirFile.toPath()
+      val d1 = dir.resolve("test-project")
+
+      Files.createDirectory(d1)
+
+      val visitor = new WftQueueingVisitor
+
+      // do not FOLLOW_LINKS, see Test filesWalkFileTreeMaxDepthPositive
+      val fvoSet = EnumSet.noneOf(classOf[FileVisitOption])
+
+      Files.walkFileTree(d1, fvoSet, 0, visitor)
+
+      val expected = 1
+      assertEquals("a1", expected, visitor.length())
+
+      assertEquals("visitor", d1, visitor.dequeue())
+
+      // Delete files only on succcess, otherwise leave detritus for debug.
+      Files.delete(d1)
+      Files.delete(dir)
+    }
+  }
+
+  // Issue 3471, 2 of 2 broken methods.
+  @Test def filesWalkFileTreeMaxDepthPositive(): Unit = {
+    withTemporaryDirectory { dirFile =>
+      val dir = dirFile.toPath()
+      val d1 = dir.resolve("test-project")
+      val d1f1 = d1.resolve("default.properties")
+
+      val d2 = d1.resolve("src")
+      val d2f1 = d2.resolve("project.scala")
+      val d2f2 = d2.resolve("test.scala")
+
+      Files.createDirectory(d1)
+      Files.createFile(d1f1)
+
+      Files.createDirectory(d2)
+      Files.createFile(d2f1)
+      Files.createFile(d2f2)
+
+      assertTrue("a1", Files.exists(d1) && Files.isDirectory(d1))
+      assertTrue("a2", Files.exists(d1f1) && Files.isRegularFile(d1f1))
+
+      assertTrue("a3", Files.exists(d2) && Files.isDirectory(d2))
+      assertTrue("a4", Files.exists(d2f1) && Files.isRegularFile(d2f1))
+      assertTrue("a5", Files.exists(d2f2) && Files.isRegularFile(d2f2))
+
+      // Before tracing magic here, read long comment at top of the class.
+      val visitor = new OsLibLikeQueueingVisitor
+
+      /* Java doc for Files.walkFileTree(start, visitor) describes
+       * using EnumSet.noneOf(FileVisitOption.class). Use that idiom.
+       *
+       * Do not FOLLOW_LINKS, os-lib walk(), as used in Issue, does not.
+       */
+      val fvoSet = EnumSet.noneOf(classOf[FileVisitOption])
+
+      Files.walkFileTree(d1, fvoSet, 1, visitor)
+
+      val expected = 2 // JVM value
+
+      assertEquals("visitor length", expected, visitor.length())
+
+      /* The Path names within any given may be returned in arbitrary
+       * order. Waste some CPU cycles to sort them in order to avoid
+       * complicated & likely fragile "if" logic here. There are only
+       * two files and we know/have_chosen the order in which they will
+       * sort. Lazy, but done.
+       */
+
+      val sortedPaths = new TreeSet[Path]()
+      sortedPaths.add(visitor.dequeue())
+      sortedPaths.add(visitor.dequeue())
+
+      assertEquals("first path", d1f1, sortedPaths.first())
+      assertEquals("second path", d2, sortedPaths.last())
+
+      // Delete files only on succcess, otherwise leave detritus for debug.
+      Files.delete(d2f2) // Delete in opposite order of creation
+      Files.delete(d2f1)
+      Files.delete(d2)
+
+      Files.delete(d1f1)
+      Files.delete(d1)
+
+      Files.delete(dir)
     }
   }
 
@@ -1214,7 +1396,6 @@ class FilesTest {
       }
 
       // Test good symlink when following links.
-
       val itFollowGood =
         Files.find(d1, 10, predicate, FileVisitOption.FOLLOW_LINKS).iterator
 
@@ -1875,6 +2056,66 @@ class QueueingVisitor extends SimpleFileVisitor[Path] {
   override def postVisitDirectory(
       dir: Path,
       error: IOException
+  ): FileVisitResult = {
+    visited.enqueue(dir)
+    FileVisitResult.CONTINUE
+  }
+
+  override def visitFile(
+      file: Path,
+      attributes: BasicFileAttributes
+  ): FileVisitResult = {
+    visited.enqueue(file)
+    FileVisitResult.CONTINUE
+  }
+}
+
+/* Implement a FileVisitor which emulates the transfomation(s)
+ * in Li Haoyi's os-lib os.walk() call. That is, the starting
+ * directory Path name is skipped but all other directory Path names
+ * are added _before_ their contents are visited.
+ *
+ * This allows to keep number and order of files reported in the
+ * 'filesWalkFileTreeMaxDepthPositive()' Test the same as in
+ * reported issue. This makes it easier to correlate Issue & Test.
+ */
+
+class OsLibLikeQueueingVisitor extends SimpleFileVisitor[Path] {
+  private val visited = scala.collection.mutable.Queue.empty[Path]
+  def isEmpty(): Boolean = visited.isEmpty
+  def dequeue(): Path = visited.dequeue()
+  def length() = visited.length
+
+  var dirCount = 0
+
+  override def preVisitDirectory(
+      dir: Path,
+      attributes: BasicFileAttributes
+  ): FileVisitResult = {
+    if (dirCount == 0) dirCount += 1
+    else visited.enqueue(dir)
+    FileVisitResult.CONTINUE
+  }
+
+  override def visitFile(
+      file: Path,
+      attributes: BasicFileAttributes
+  ): FileVisitResult = {
+    visited.enqueue(file)
+    FileVisitResult.CONTINUE
+  }
+}
+
+// WalkFileTreeQueueingVisitor
+class WftQueueingVisitor extends SimpleFileVisitor[Path] {
+  private val visited = scala.collection.mutable.Queue.empty[Path]
+  def isEmpty(): Boolean = visited.isEmpty
+  def dequeue(): Path = visited.dequeue()
+  def length() = visited.length
+
+  override def preVisitDirectory(
+      dir: Path,
+      attributes: BasicFileAttributes
   ): FileVisitResult = {
     visited.enqueue(dir)
     FileVisitResult.CONTINUE

@@ -23,7 +23,7 @@ object Fresh {
         max = Math.max(max, local.id)
       case Inst.Label(local, params) =>
         max = Math.max(max, local.id)
-        params.foreach { param => max = Math.max(max, param.name.id) }
+        params.foreach { param => max = Math.max(max, param.id.id) }
       case Inst.Throw(_, Next.Unwind(Val.Local(exc, _), _)) =>
         max = Math.max(max, exc.id)
       case Inst.Unreachable(Next.Unwind(Val.Local(exc, _), _)) =>

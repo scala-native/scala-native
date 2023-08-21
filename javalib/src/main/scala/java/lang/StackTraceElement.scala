@@ -48,8 +48,8 @@ private[lang] object StackTraceElement {
   object Fail extends scala.util.control.NoStackTrace
 
   def fromSymbol(sym: CString): StackTraceElement = {
-    val className: Ptr[CChar] = stackalloc[CChar](1024.toUSize)
-    val methodName: Ptr[CChar] = stackalloc[CChar](1024.toUSize)
+    val className: Ptr[CChar] = stackalloc[CChar](1024)
+    val methodName: Ptr[CChar] = stackalloc[CChar](1024)
     SymbolFormatter.asyncSafeFromSymbol(sym, className, methodName)
 
     new StackTraceElement(

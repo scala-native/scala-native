@@ -292,7 +292,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, fileName: String) {
       case T.VarDefn     => Defn.Var(attrs, name, getType(), getVal())
       case T.ConstDefn   => Defn.Const(attrs, name, getType(), getVal())
       case T.DeclareDefn => Defn.Declare(attrs, name, getType())
-      case T.DefineDefn  => Defn.Define(attrs, name, getType(), getInsts())
+      case T.DefineDefn  => Defn.Define(attrs, name, getType(), getInsts(), getLocalNames())
       case T.TraitDefn   => Defn.Trait(attrs, name, getGlobals())
       case T.ClassDefn   => Defn.Class(attrs, name, getGlobalOpt(), getGlobals())
       case T.ModuleDefn  => Defn.Module(attrs, name, getGlobalOpt(), getGlobals())
@@ -463,4 +463,18 @@ final class BinaryDeserializer(buffer: ByteBuffer, fileName: String) {
     val column = getLebUnsignedInt()
     Position(file, line, column)
   }
+
+  def getLocalNames(): LocalNames = {
+    val size = getLebUnsignedInt()
+    if (size == 0) Map.empty
+    else {
+      val b = Map.newBuilder[Local, String]
+      b.sizeHint(size)
+      for (_ <- 0 until size) {
+        b += getLocal() -> getString()
+      }
+      b.result()
+    }
+  }
+
 }

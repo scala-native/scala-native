@@ -44,7 +44,7 @@ class WaitTest {
   @Test def waitBindingsShouldCompileAndLink(): Unit = {
     if (!isWindows) {
       // zero initialized placeholder
-      val wstatus = stackalloc[CInt](1.toUSize)
+      val wstatus = stackalloc[CInt](1)
 
       // idtype_t
       blackHole(P_ALL)

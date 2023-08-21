@@ -669,34 +669,56 @@ private[stream] class StreamImpl[T](
      * specifying T <: AnyRef so that the coercion will work at
      * runtime.
      */
-    val buffer = toArray()
 
-    /* Scala 3 and 2.13.11 both allow ""Arrays.sort(" here.
-     * Scala 2.12.18 requires "sort[Object](".
-     */
-    Arrays
-      .sort[Object](buffer, comparator.asInstanceOf[Comparator[_ >: Object]])
+    class SortingSpliterSupplier[T](
+        srcSpliter: Spliterator[T],
+        comparator: Comparator[_ >: T]
+    ) extends Supplier[Spliterator[T]] {
 
-    /* // FIXME
-    val newCharacteristics = _spliter.characteristics() |
-      Spliterator.SORTED | Spliterator.ORDERED |
-      Spliterator.SIZED | Spliterator.SUBSIZED
-     */ // FIXME
+      def get(): Spliterator[T] = {
+        val knownSize = _spliter.getExactSizeIfKnown()
 
-    val startingBits = _spliter.characteristics()
-    val alwaysSetBits =
-      Spliterator.SORTED | Spliterator.ORDERED |
-        Spliterator.SIZED | Spliterator.SUBSIZED
+        if (knownSize > Integer.MAX_VALUE) {
+          throw new IllegalArgumentException(
+            "Stream size exceeds max array size"
+          )
+        } else {
+          /* Sufficiently large streams, with either known or unknown size may
+           * eventually throw an OutOfMemoryError exception, same as JVM.
+           *
+           * sorting streams of unknown size is likely to be _slow_.
+           */
 
-    // Time & experience may show that additional bits need to be cleared here.
-    val alwaysClearedBits = Spliterator.IMMUTABLE
+          val buffer = toArray()
 
-    val newCharacteristics =
-      (startingBits | alwaysSetBits) & ~alwaysClearedBits
+          /* Scala 3 and 2.13.11 both allow ""Arrays.sort(" here.
+           * Scala 2.12.18 requires "sort[Object](".
+           */
+          Arrays
+            .sort[Object](
+              buffer,
+              comparator.asInstanceOf[Comparator[_ >: Object]]
+            )
 
-    val spl = Spliterators.spliterator[T](buffer, newCharacteristics)
+          val startingBits = _spliter.characteristics()
+          val alwaysSetBits =
+            Spliterator.SORTED | Spliterator.ORDERED |
+              Spliterator.SIZED | Spliterator.SUBSIZED
 
-    new StreamImpl[T](spl, _parallel, pipeline)
+          // Time & experience may show that additional bits need to be cleared
+          val alwaysClearedBits = Spliterator.IMMUTABLE
+
+          val newCharacteristics =
+            (startingBits | alwaysSetBits) & ~alwaysClearedBits
+
+          Spliterators.spliterator[T](buffer, newCharacteristics)
+        }
+      }
+    }
+
+    // Do the sort in the eventual terminal operation, not now.
+    val spl = new SortingSpliterSupplier[T](_spliter, comparator)
+    new StreamImpl[T](spl, 0, _parallel)
   }
 
   def toArray(): Array[Object] = {
@@ -719,12 +741,113 @@ private[stream] class StreamImpl[T](
     }
   }
 
+  private class ArrayBuilder[A <: Object](generator: IntFunction[Array[A]]) {
+    /* The supplied generator is used to create the final Array and
+     * to allocate the accumulated chunks.
+     *
+     * This implementation honors the spirit but perhaps not the letter
+     * of the JVM description.
+     *
+     * The 'chunks' ArrayList accumulator is allocated using the 'normal'
+     * allocator for Java Objects.  One could write a custom ArrayList
+     * (or other) implementation which uses the supplied generator
+     * to allocate & grow the accumulator.  That is outside the bounds
+     * and resources of the current effort.
+     */
+
+    final val chunkSize = 1024 // A wild guestimate, see what experience brings
+
+    class ArrayChunk(val contents: Array[A]) {
+      var nUsed = 0
+
+      def add(e: A): Unit = {
+        /* By contract, the sole caller accept() has already checked for
+         * sufficient remaining size. Minimize number of index bounds checks.
+         */
+        contents(nUsed) = e
+        nUsed += 1
+      }
+    }
+
+    var currentChunk: ArrayChunk = _
+    val chunks = new ArrayList[ArrayChunk]()
+
+    def createChunk(): Unit = {
+      currentChunk = new ArrayChunk(generator(chunkSize))
+      chunks.add(currentChunk)
+    }
+
+    createChunk() // prime the list with an initial chunk.
+
+    def accept(e: A): Unit = {
+      if (currentChunk.nUsed >= chunkSize)
+        createChunk()
+
+      currentChunk.add(e)
+    }
+
+    def getTotalSize(): Int = { // Largest possible Array size is an Int
+
+      // Be careful with a potentially partially filled trailing chunk.
+      var total = 0
+
+      val spliter = chunks.spliterator()
+
+      // Be friendly to Scala 2.12
+      val action: Consumer[ArrayChunk] = (e: ArrayChunk) => total += e.nUsed
+
+      while (spliter.tryAdvance(action)) { /* side-effect */ }
+
+      total
+    }
+
+    def build(): Array[A] = {
+      /* Unfortunately, the chunks list is traversed twice.
+       * Someday fate & cleverness may bring a better algorithm.
+       * For now, existence & correctness bring more benefit than perfection.
+       */
+      val dest = generator(getTotalSize())
+
+      var srcPos = 0
+
+      val spliter = chunks.spliterator()
+
+      // Be friendly to Scala 2.12
+      val action: Consumer[ArrayChunk] = (e: ArrayChunk) => {
+        val length = e.nUsed
+        System.arraycopy(
+          e.contents,
+          0,
+          dest,
+          srcPos,
+          length
+        )
+
+        srcPos += length
+      }
+
+      while (spliter.tryAdvance(action)) { /* side-effect */ }
+
+      dest
+    }
+  }
+
+  private def toArrayUnknownSize[A <: Object](
+      generator: IntFunction[Array[A]]
+  ): Array[A] = {
+    val arrayBuilder = new ArrayBuilder[A](generator)
+
+    _spliter.forEachRemaining((e: T) => arrayBuilder.accept(e.asInstanceOf[A]))
+
+    arrayBuilder.build()
+  }
+
   def toArray[A <: Object](generator: IntFunction[Array[A]]): Array[A] = {
     commenceOperation()
 
     val knownSize = _spliter.getExactSizeIfKnown()
     if (knownSize < 0) {
-      toArray().asInstanceOf[Array[A]]
+      toArrayUnknownSize(generator)
     } else {
       val dst = generator(knownSize.toInt)
       var j = 0

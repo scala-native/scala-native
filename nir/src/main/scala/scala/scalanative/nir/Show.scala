@@ -14,26 +14,26 @@ object Show {
     value
   }
 
-  def apply(v: Attr): String = { val b = newBuilder; b.attr_(v); b.toString }
-  def apply(v: Attrs): String = { val b = newBuilder; b.attrs_(v); b.toString }
-  def apply(v: Bin): String = { val b = newBuilder; b.bin_(v); b.toString }
-  def apply(v: Comp): String = { val b = newBuilder; b.comp_(v); b.toString }
-  def apply(v: Conv): String = { val b = newBuilder; b.conv_(v); b.toString }
-  def apply(v: Defn): String = { val b = newBuilder; b.defn_(v); b.toString }
+  def apply(v: Attr): String = { val b = newBuilder; b.onAttr(v); b.toString }
+  def apply(v: Attrs): String = { val b = newBuilder; b.onAttrs(v); b.toString }
+  def apply(v: Bin): String = { val b = newBuilder; b.onBin(v); b.toString }
+  def apply(v: Comp): String = { val b = newBuilder; b.onComp(v); b.toString }
+  def apply(v: Conv): String = { val b = newBuilder; b.onConv(v); b.toString }
+  def apply(v: Defn): String = { val b = newBuilder; b.onDefn(v); b.toString }
   def apply(v: Global): String = {
-    val b = newBuilder; b.global_(v); b.toString
+    val b = newBuilder; b.onGlobal(v); b.toString
   }
   def apply(v: Sig): String = {
-    val b = newBuilder; b.sig_(v); b.toString
+    val b = newBuilder; b.onSig(v); b.toString
   }
-  def apply(v: Inst): String = { val b = newBuilder; b.inst_(v); b.toString }
-  def apply(v: Local): String = { val b = newBuilder; b.local_(v); b.toString }
-  def apply(v: Next): String = { val b = newBuilder; b.next_(v); b.toString }
-  def apply(v: Op): String = { val b = newBuilder; b.op_(v); b.toString }
-  def apply(v: Type): String = { val b = newBuilder; b.type_(v); b.toString }
-  def apply(v: Val): String = { val b = newBuilder; b.val_(v); b.toString }
+  def apply(v: Inst): String = { val b = newBuilder; b.show(v); b.toString }
+  def apply(v: Local): String = { val b = newBuilder; b.show(v); b.toString }
+  def apply(v: Next): String = { val b = newBuilder; b.show(v); b.toString }
+  def apply(v: Op): String = { val b = newBuilder; b.show(v); b.toString }
+  def apply(v: Type): String = { val b = newBuilder; b.onType(v); b.toString }
+  def apply(v: Val): String = { val b = newBuilder; b.show(v); b.toString }
   def apply(v: nir.MemoryOrder): String = {
-    val b = newBuilder; b.memoryOrder_(v); b.toString
+    val b = newBuilder; b.onMemoryOrder(v); b.toString
   }
 
   type DefnString = (Global, String)
@@ -57,19 +57,19 @@ object Show {
   final class NirShowBuilder(val builder: ShowBuilder) extends AnyVal {
     import builder._
 
-    def attrs_(attrs: Attrs): Unit =
+    def onAttrs(attrs: Attrs): Unit =
       if (attrs == Attrs.None) {
         ()
       } else {
-        attrs_(attrs.toSeq)
+        onAttrs(attrs.toSeq)
       }
 
-    def attrs_(attrs: Seq[Attr]): Unit = {
-      rep(attrs, sep = " ")(attr_)
+    def onAttrs(attrs: Seq[Attr]): Unit = {
+      rep(attrs, sep = " ")(onAttr)
       str(" ")
     }
 
-    def attr_(attr: Attr): Unit = attr match {
+    def onAttr(attr: Attr): Unit = attr match {
       case Attr.MayInline =>
         str("mayinline")
       case Attr.InlineHint =>
@@ -119,299 +119,296 @@ object Show {
         }
         str(")")
     }
-
-    def next_(next: Next): Unit = next match {
+    def show(next: Next): Unit = onNext(next)(Map.empty)
+    def onNext(next: Next)(implicit localNames: LocalNames): Unit = next match {
       case Next.Label(name, Seq()) =>
-        local_(name)
+        onLocal(name)
       case Next.Unwind(exc, next) =>
         str("unwind ")
-        val_(exc)
+        onVal(exc)
         str(" to ")
-        next_(next)
+        onNext(next)
       case Next.Case(v, next) =>
         str("case ")
-        val_(v)
+        onVal(v)
         str(" => ")
-        next_(next)
+        onNext(next)
       case Next.Label(name, args) =>
-        local_(name)
+        onLocal(name)
         str("(")
-        rep(args, sep = ", ")(val_)
+        rep(args, sep = ", ")(onVal)
         str(")")
       case Next.None => ()
     }
 
-    def inst_(inst: Inst): Unit = inst match {
+    def show(inst: Inst): Unit = this.onInst(inst)(Map.empty)
+    def onInst(inst: Inst)(implicit localNames: LocalNames): Unit = inst match {
       case Inst.Label(name, params) =>
-        local_(name)
+        onLocal(name)
         if (params.isEmpty) {
           ()
         } else {
           str("(")
-          rep(params, sep = ", ") {
-            case Val.Local(n, ty) =>
-              local_(n)
-              str(" : ")
-              type_(ty)
-          }
+          rep(params, sep = ", ")(onVal)
           str(")")
         }
         str(":")
-      case Inst.Let(name, op, unwind) =>
-        local_(name)
+      case Inst.Let(id, op, unwind) =>
+        onLocal(id)
         str(" = ")
-        op_(op)
+        onOp(op)
         if (unwind ne Next.None) {
           str(" ")
-          next_(unwind)
+          onNext(unwind)
         }
       case Inst.Ret(value) =>
         str("ret ")
-        val_(value)
+        onVal(value)
       case Inst.Jump(next) =>
         str("jump ")
-        next_(next)
+        onNext(next)
       case Inst.If(cond, thenp, elsep) =>
         str("if ")
-        val_(cond)
+        onVal(cond)
         str(" then ")
-        next_(thenp)
+        onNext(thenp)
         str(" else ")
-        next_(elsep)
+        onNext(elsep)
       case Inst.LinktimeIf(cond, thenp, elsep) =>
         str("linktime if ")
         linktimeCondition(cond)
         str(" then ")
-        next_(thenp)
+        onNext(thenp)
         str(" else ")
-        next_(elsep)
+        onNext(elsep)
       case Inst.Switch(scrut, default, cases) =>
         str("switch ")
-        val_(scrut)
+        onVal(scrut)
         str(" {")
         rep(cases) { next =>
           str(" ")
-          next_(next)
+          onNext(next)
         }
         str(" default => ")
-        next_(default)
+        onNext(default)
         str(" }")
       case Inst.Throw(v, unwind) =>
         str("throw ")
-        val_(v)
+        onVal(v)
         if (unwind ne Next.None) {
           str(" ")
-          next_(unwind)
+          onNext(unwind)
         }
       case Inst.Unreachable(unwind) =>
         str("unreachable")
         if (unwind ne Next.None) {
           str(" ")
-          next_(unwind)
+          onNext(unwind)
         }
     }
 
-    def op_(op: Op): Unit = op match {
+    def show(op: Op): Unit = onOp(op)(Map.empty)
+    def onOp(op: Op)(implicit localNames: LocalNames): Unit = op match {
       case Op.Call(ty, f, args) =>
         str("call[")
-        type_(ty)
+        onType(ty)
         str("] ")
-        val_(f)
+        onVal(f)
         str("(")
-        rep(args, sep = ", ")(val_)
+        rep(args, sep = ", ")(onVal)
         str(")")
       case Op.Load(ty, ptr, syncAttrs) =>
         val isAtomic = syncAttrs.isDefined
         if (isAtomic) str("atomic ")
         str("load[")
-        type_(ty)
+        onType(ty)
         str("] ")
-        val_(ptr)
+        onVal(ptr)
         syncAttrs.foreach {
           str(" ")
-          syncAttrs_(_)
+          onSyncAttrs(_)
         }
       case Op.Store(ty, ptr, value, syncAttrs) =>
         val isAtomic = syncAttrs.isDefined
         if (isAtomic) str("atomic ")
         str("store[")
-        type_(ty)
+        onType(ty)
         str("] ")
-        val_(ptr)
+        onVal(ptr)
         str(", ")
-        val_(value)
+        onVal(value)
         syncAttrs.foreach {
           str(" ")
-          syncAttrs_(_)
+          onSyncAttrs(_)
         }
       case Op.Elem(ty, ptr, indexes) =>
         str("elem[")
-        type_(ty)
+        onType(ty)
         str("] ")
-        val_(ptr)
+        onVal(ptr)
         str(", ")
-        rep(indexes, sep = ", ")(val_)
+        rep(indexes, sep = ", ")(onVal)
       case Op.Extract(aggr, indexes) =>
         str("extract ")
-        val_(aggr)
+        onVal(aggr)
         str(", ")
         rep(indexes, sep = ", ")(str)
       case Op.Insert(aggr, value, indexes) =>
         str("insert ")
-        val_(aggr)
+        onVal(aggr)
         str(", ")
-        val_(value)
+        onVal(value)
         str(", ")
         rep(indexes, sep = ", ")(str)
       case Op.Stackalloc(ty, n) =>
         str("stackalloc[")
-        type_(ty)
+        onType(ty)
         str("]")
         str(" ")
-        val_(n)
+        onVal(n)
       case Op.Bin(bin, ty, l, r) =>
-        bin_(bin)
+        onBin(bin)
         str("[")
-        type_(ty)
+        onType(ty)
         str("] ")
-        val_(l)
+        onVal(l)
         str(", ")
-        val_(r)
+        onVal(r)
       case Op.Comp(comp, ty, l, r) =>
-        comp_(comp)
+        onComp(comp)
         str("[")
-        type_(ty)
+        onType(ty)
         str("] ")
-        val_(l)
+        onVal(l)
         str(", ")
-        val_(r)
+        onVal(r)
       case Op.Conv(conv, ty, v) =>
-        conv_(conv)
+        onConv(conv)
         str("[")
-        type_(ty)
+        onType(ty)
         str("] ")
-        val_(v)
+        onVal(v)
       case Op.Fence(syncAttrs) =>
         str("fence ")
-        syncAttrs_(syncAttrs)
+        onSyncAttrs(syncAttrs)
 
       case Op.Classalloc(name, zone) =>
         str("classalloc ")
-        global_(name)
+        onGlobal(name)
         zone.foreach { v =>
           str(" inZone ")
-          val_(v)
+          onVal(v)
         }
       case Op.Fieldload(ty, obj, name) =>
         str("fieldload[")
-        type_(ty)
+        onType(ty)
         str("] ")
-        val_(obj)
+        onVal(obj)
         str(", ")
-        global_(name)
+        onGlobal(name)
       case Op.Fieldstore(ty, obj, name, value) =>
         str("fieldstore[")
-        type_(ty)
+        onType(ty)
         str("] ")
-        val_(obj)
+        onVal(obj)
         str(", ")
-        global_(name)
+        onGlobal(name)
         str(", ")
-        val_(value)
+        onVal(value)
       case Op.Field(value, name) =>
         str("field ")
-        val_(value)
+        onVal(value)
         str(", ")
-        global_(name)
+        onGlobal(name)
       case Op.Method(value, sig) =>
         str("method ")
-        val_(value)
+        onVal(value)
         str(", \"")
         str(escapeQuotes(sig.mangle))
         str("\"")
       case Op.Dynmethod(value, sig) =>
         str("dynmethod ")
-        val_(value)
+        onVal(value)
         str(", \"")
         str(escapeQuotes(sig.mangle))
         str("\"")
       case Op.Module(name) =>
         str("module ")
-        global_(name)
+        onGlobal(name)
       case Op.As(ty, v) =>
         str("as[")
-        type_(ty)
+        onType(ty)
         str("] ")
-        val_(v)
+        onVal(v)
       case Op.Is(ty, v) =>
         str("is[")
-        type_(ty)
+        onType(ty)
         str("] ")
-        val_(v)
+        onVal(v)
       case Op.Copy(value) =>
         str("copy ")
-        val_(value)
+        onVal(value)
       case Op.SizeOf(ty) =>
         str("sizeOf[")
-        type_(ty)
+        onType(ty)
         str("] ")
       case Op.AlignmentOf(ty) =>
         str("alignmentOf[")
-        type_(ty)
+        onType(ty)
         str("] ")
       case Op.Box(ty, v) =>
         str("box[")
-        type_(ty)
+        onType(ty)
         str("] ")
-        val_(v)
+        onVal(v)
       case Op.Unbox(ty, v) =>
         str("unbox[")
-        type_(ty)
+        onType(ty)
         str("] ")
-        val_(v)
+        onVal(v)
       case Op.Var(ty) =>
         str("var[")
-        type_(ty)
+        onType(ty)
         str("]")
       case Op.Varload(slot) =>
         str("varload ")
-        val_(slot)
+        onVal(slot)
       case Op.Varstore(slot, value) =>
         str("varstore ")
-        val_(slot)
+        onVal(slot)
         str(", ")
-        val_(value)
+        onVal(value)
       case Op.Arrayalloc(ty, init, zone) =>
         str("arrayalloc[")
-        type_(ty)
+        onType(ty)
         str("] ")
-        val_(init)
+        onVal(init)
         zone.foreach { v =>
           str(" inZone ")
-          val_(v)
+          onVal(v)
         }
       case Op.Arrayload(ty, arr, idx) =>
         str("arrayload[")
-        type_(ty)
+        onType(ty)
         str("] ")
-        val_(arr)
+        onVal(arr)
         str(", ")
-        val_(idx)
+        onVal(idx)
       case Op.Arraystore(ty, arr, idx, value) =>
         str("arraystore[")
-        type_(ty)
+        onType(ty)
         str("] ")
-        val_(arr)
+        onVal(arr)
         str(", ")
-        val_(idx)
+        onVal(idx)
         str(", ")
-        val_(value)
+        onVal(value)
       case Op.Arraylength(arr) =>
         str("arraylength ")
-        val_(arr)
+        onVal(arr)
     }
 
-    def bin_(bin: Bin): Unit = bin match {
+    def onBin(bin: Bin): Unit = bin match {
       case Bin.Iadd => str("iadd")
       case Bin.Fadd => str("fadd")
       case Bin.Isub => str("isub")
@@ -432,7 +429,7 @@ object Show {
       case Bin.Xor  => str("xor")
     }
 
-    def comp_(comp: Comp): Unit = comp match {
+    def onComp(comp: Comp): Unit = comp match {
       case Comp.Ieq => str("ieq")
       case Comp.Ine => str("ine")
       case Comp.Ugt => str("ugt")
@@ -451,7 +448,7 @@ object Show {
       case Comp.Fle => str("fle")
     }
 
-    def conv_(conv: Conv): Unit = conv match {
+    def onConv(conv: Conv): Unit = conv match {
       case Conv.SSizeCast => str("ssizecast")
       case Conv.ZSizeCast => str("zsizecast")
       case Conv.Trunc     => str("trunc")
@@ -468,16 +465,17 @@ object Show {
       case Conv.Bitcast   => str("bitcast")
     }
 
-    def memoryOrder_(v: MemoryOrder): Unit = v match {
+    def onMemoryOrder(v: MemoryOrder): Unit = v match {
       case MemoryOrder.Unordered => str("unordered")
       case MemoryOrder.Monotonic => str("monotonic")
       case MemoryOrder.Acquire   => str("acquire")
       case MemoryOrder.Release   => str("release")
-      case MemoryOrder.AcqRel    => str("acq_rel")
-      case MemoryOrder.SeqCst    => str("seq_cst")
+      case MemoryOrder.AcqRel    => str("onAcqrel")
+      case MemoryOrder.SeqCst    => str("onSeqcst")
     }
 
-    def val_(value: Val): Unit = value match {
+    def show(value: Val): Unit = onVal(value)(Map.empty)
+    def onVal(value: Val)(implicit localNames: LocalNames): Unit = value match {
       case Val.True =>
         str("true")
       case Val.False =>
@@ -486,7 +484,7 @@ object Show {
         str("null")
       case Val.Zero(ty) =>
         str("zero[")
-        type_(ty)
+        onType(ty)
         str("]")
       case Val.Size(value) =>
         str("size ")
@@ -514,32 +512,32 @@ object Show {
         str(value)
       case Val.StructValue(values) =>
         str("structvalue {")
-        rep(values, sep = ", ")(val_)
+        rep(values, sep = ", ")(onVal)
         str("}")
       case Val.ArrayValue(ty, values) =>
         str("arrayvalue ")
-        type_(ty)
+        onType(ty)
         str(" {")
-        rep(values, sep = ", ")(val_)
+        rep(values, sep = ", ")(onVal)
         str("}")
       case v: Val.ByteString =>
         str("c\"")
         val stringValue = new String(v.bytes, StandardCharsets.ISO_8859_1)
         str(escapeNewLine(escapeQuotes(stringValue)))
         str("\"")
-      case Val.Local(name, ty) =>
-        local_(name)
+      case Val.Local(id, ty) =>
+        onLocal(id)
         str(" : ")
-        type_(ty)
+        onType(ty)
       case Val.Global(name, ty) =>
-        global_(name)
+        onGlobal(name)
         str(" : ")
-        type_(ty)
+        onType(ty)
       case Val.Unit =>
         str("unit")
       case Val.Const(v) =>
         str("const ")
-        val_(v)
+        onVal(v)
       case Val.String(v) =>
         str("\"")
         str(escapeNewLine(escapeQuotes(v)))
@@ -549,87 +547,88 @@ object Show {
         str(key)
       case Val.ClassOf(cls) =>
         str("classOf[")
-        global_(cls)
+        onGlobal(cls)
         str("]")
     }
 
-    def defns_(defns: Seq[Defn]): Unit =
+    def onDefns(defns: Seq[Defn]): Unit =
       rep(defns) { defn =>
         newline()
-        defn_(defn)
+        onDefn(defn)
       }
 
-    def defn_(defn: Defn): Unit = defn match {
+    def onDefn(defn: Defn): Unit = defn match {
       case Defn.Var(attrs, name, ty, v) =>
-        attrs_(attrs)
+        onAttrs(attrs)
         str("var ")
-        global_(name)
+        onGlobal(name)
         str(" : ")
-        type_(ty)
+        onType(ty)
         str(" = ")
-        val_(v)
+        show(v)
       case Defn.Const(attrs, name, ty, v) =>
-        attrs_(attrs)
+        onAttrs(attrs)
         str("const ")
-        global_(name)
+        onGlobal(name)
         str(" : ")
-        type_(ty)
+        onType(ty)
         str(" = ")
-        val_(v)
+        show(v)
       case Defn.Declare(attrs, name, ty) =>
-        attrs_(attrs)
+        onAttrs(attrs)
         str("decl ")
-        global_(name)
+        onGlobal(name)
         str(" : ")
-        type_(ty)
-      case Defn.Define(attrs, name, ty, insts) =>
-        attrs_(attrs)
+        onType(ty)
+      case Defn.Define(attrs, name, ty, insts, localNames) =>
+        implicit val _localNames: LocalNames = localNames
+        onAttrs(attrs)
         str("def ")
-        global_(name)
+        onGlobal(name)
         str(" : ")
-        type_(ty)
+        onType(ty)
         str(" {")
         rep(insts) {
           case inst: Inst.Label =>
             newline()
-            inst_(inst)
+            onInst(inst)
           case inst =>
             indent()
             newline()
-            inst_(inst)
+            onInst(inst)
             unindent()
         }
         newline()
         str("}")
       case Defn.Trait(attrs, name, ifaces) =>
-        attrs_(attrs)
+        onAttrs(attrs)
         str("trait ")
-        global_(name)
+        onGlobal(name)
         if (ifaces.nonEmpty) {
           str(" : ")
-          rep(ifaces, sep = ", ")(global_)
+          rep(ifaces, sep = ", ")(onGlobal)
         }
       case Defn.Class(attrs, name, parent, ifaces) =>
         val parents = parent ++: ifaces
-        attrs_(attrs)
+        onAttrs(attrs)
         str("class ")
-        global_(name)
+        onGlobal(name)
         if (parents.nonEmpty) {
           str(" : ")
-          rep(parents, sep = ", ")(global_)
+          rep(parents, sep = ", ")(onGlobal)
         }
       case Defn.Module(attrs, name, parent, ifaces) =>
         val parents = parent ++: ifaces
-        attrs_(attrs)
+        onAttrs(attrs)
         str("module ")
-        global_(name)
+        onGlobal(name)
         if (parents.nonEmpty) {
           str(" : ")
-          rep(parents, sep = ", ")(global_)
+          rep(parents, sep = ", ")(onGlobal)
         }
     }
 
-    def type_(ty: Type): Unit = ty match {
+    def onType(ty: Type): Unit = ty match {
       case Type.Vararg => str("...")
       case Type.Bool   => str("bool")
       case Type.Ptr    => str("ptr")
@@ -644,31 +643,31 @@ object Show {
 
       case Type.ArrayValue(ty, n) =>
         str("[")
-        type_(ty)
+        onType(ty)
         str(" x ")
         str(n)
         str("]")
       case Type.Function(args, ret) =>
         str("(")
-        rep(args, sep = ", ")(type_)
+        rep(args, sep = ", ")(onType)
         str(") => ")
-        type_(ret)
+        onType(ret)
       case Type.StructValue(tys) =>
         str("{")
-        rep(tys, sep = ", ")(type_)
+        rep(tys, sep = ", ")(onType)
         str("}")
 
       case Type.Null    => str("null")
       case Type.Nothing => str("nothing")
       case Type.Virtual => str("virtual")
-      case Type.Var(ty) => str("var["); type_(ty); str("]")
+      case Type.Var(ty) => str("var["); onType(ty); str("]")
       case Type.Unit    => str("unit")
       case Type.Array(ty, nullable) =>
         if (!nullable) {
           str("?")
         }
         str("array[")
-        type_(ty)
+        onType(ty)
         str("]")
       case Type.Ref(name, exact, nullable) =>
         if (exact) {
@@ -677,10 +676,10 @@ object Show {
         if (!nullable) {
           str("?")
         }
-        global_(name)
+        onGlobal(name)
     }
 
-    def global_(global: Global): Unit = global match {
+    def onGlobal(global: Global): Unit = global match {
       case Global.None =>
         unreachable
       case _ =>
@@ -689,17 +688,21 @@ object Show {
         str("\"")
     }
 
-    def sig_(sig: Sig): Unit =
+    def onSig(sig: Sig): Unit =
       str(sig.mangle)
 
-    def local_(local: Local): Unit = {
+    def show(local: Local): Unit = onLocal(local)(Map.empty)
+    def onLocal(local: Local)(implicit localNames: LocalNames): Unit = {
       str("%")
       str(local.id)
+      localNames.get(local).foreach { name =>
+        str(" <"); str(name); str(">")
+      }
     }
 
-    def syncAttrs_(attrs: SyncAttrs): Unit = {
+    def onSyncAttrs(attrs: SyncAttrs): Unit = {
       if (attrs.isVolatile) str("volatile ")
-      memoryOrder_(attrs.memoryOrder)
+      onMemoryOrder(attrs.memoryOrder)
     }
 
     def linktimeCondition(cond: LinktimeCondition): Unit = {
@@ -707,13 +710,13 @@ object Show {
       cond match {
         case SimpleCondition(propertyName, comparison, value) =>
           str(propertyName + " ")
-          comp_(comparison)
+          onComp(comparison)
           str(" ")
-          val_(value)
+          show(value)
         case ComplexCondition(op, left, right) =>
           linktimeCondition(left)
           str(" ")
-          bin_(op)
+          onBin(op)
           str(" ")
           linktimeCondition(right)
       }

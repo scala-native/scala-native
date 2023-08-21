@@ -451,6 +451,7 @@ java.util
 * ``SortedSet``
 * ``Spliterator``
 * ``Spliterators``
+* ``StringJoiner``
 * ``StringTokenizer``
 * ``TooManyListenersException``
 * ``TreeSet``
@@ -605,7 +606,7 @@ java.util.zip
 * ``ZipInputStream``
 * ``ZipOutputStream``
 
-  
+
 **Note:** This is an ongoing effort, some of the classes listed here might
 be partially implemented. Please consult `javalib sources
 <https://github.com/scala-native/scala-native/tree/main/javalib/src/main/scala/java>`_
@@ -624,7 +625,7 @@ Some notes on the implementation:
 1. The included RE2 implements a Unicode version lower than
    the version used in the Scala Native Character class (>= 7.0.0).
    The RE2 Unicode version is in the 6.n range. For reference, Java 8
-   released with Unicode 6.2.0. 
+   released with Unicode 6.2.0.
 
    The RE2 implemented may not match codepoints added or changed
    in later Unicode versions. Similarly, there may be slight differences
@@ -750,7 +751,7 @@ replacing its worthy, but venerable, predecessor IPv4.
 
 The Scala Native Java library now supports IPv6 as it is described in the
 original `Java Networking IPv6 User Guide  <https://docs.oracle.com/javase/8/docs/technotes/guides/net/ipv6_guide/index.html/>`_. The design center is that
-a Scala Java Virtual Machine (JVM) program using networking 
+a Scala Java Virtual Machine (JVM) program using networking
 will run almost identically using Scala Native.
 
 IPv6 will be used if any network interface on a system/node/host, other
@@ -770,6 +771,6 @@ network is first used.
   before the first use of the network.  There is no way to accomplish
   this from the command line or environment.::
 
-      System.setProperty("java.net.preferIPv6Addresses", "true") 
+      System.setProperty("java.net.preferIPv6Addresses", "true")
 
 Continue to :ref:`libc`.
