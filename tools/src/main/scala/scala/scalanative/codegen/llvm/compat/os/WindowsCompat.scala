@@ -53,7 +53,7 @@ private[codegen] class WindowsCompat(codegen: AbstractCodeGen)
   )(implicit
       fresh: Fresh,
       pos: Position,
-      sb: ShowBuilder,
+      sb: ShowBuilder
   ): Unit = {
     import codegen._
     import sb._

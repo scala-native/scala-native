@@ -32,7 +32,7 @@ private[codegen] class UnixCompat(codegen: AbstractCodeGen)
   )(implicit
       fresh: Fresh,
       pos: Position,
-      sb: ShowBuilder,
+      sb: ShowBuilder
   ): Unit = {
     import sb._
     val Next.Unwind(Val.Local(excname, _), next) = unwind

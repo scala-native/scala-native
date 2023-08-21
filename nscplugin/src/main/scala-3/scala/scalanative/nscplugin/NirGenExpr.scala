@@ -1040,7 +1040,9 @@ trait NirGenExpr(using Context) {
       }
     }
 
-    private def genApplyBox(st: SimpleType, argp: Tree)(using nir.Position): Val = {
+    private def genApplyBox(st: SimpleType, argp: Tree)(using
+        nir.Position
+    ): Val = {
       val value = genExpr(argp)
       buf.box(genBoxType(st), value, unwind)
     }
@@ -1312,7 +1314,9 @@ trait NirGenExpr(using Context) {
     private def negateBool(value: nir.Val)(using nir.Position): Val =
       buf.bin(Bin.Xor, Type.Bool, Val.True, value, unwind)
 
-    private def genUnaryOp(code: Int, rightp: Tree, opty: nir.Type)(using nir.Position): Val = {
+    private def genUnaryOp(code: Int, rightp: Tree, opty: nir.Type)(using
+        nir.Position
+    ): Val = {
       val right = genExpr(rightp)
       val coerced = genCoercion(right, right.ty, opty)
       val tpe = coerced.ty

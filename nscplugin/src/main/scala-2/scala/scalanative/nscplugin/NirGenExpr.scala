@@ -1446,7 +1446,9 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     def negateBool(value: nir.Val)(implicit pos: nir.Position): Val =
       buf.bin(Bin.Xor, Type.Bool, Val.True, value, unwind)
 
-    def genUnaryOp(code: Int, rightp: Tree, opty: nir.Type)(implicit pos: nir.Position): Val = {
+    def genUnaryOp(code: Int, rightp: Tree, opty: nir.Type)(implicit
+        pos: nir.Position
+    ): Val = {
       import scalaPrimitives._
 
       val right = genExpr(rightp)
@@ -2409,7 +2411,8 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     }
 
     def genApplyTypeApply(app: Apply): Val = {
-      val Apply(tapp @ TypeApply(fun @ Select(receiverp, _), targs), argsp) = app
+      val Apply(tapp @ TypeApply(fun @ Select(receiverp, _), targs), argsp) =
+        app
 
       val fromty = genType(receiverp.tpe)
       val toty = genType(targs.head.tpe)
