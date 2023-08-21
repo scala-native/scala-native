@@ -7,8 +7,8 @@ import scala.scalanative.nir._
 import scala.scalanative.nir.Defn.Define.DebugInfo
 import scala.scalanative.util.ShowBuilder
 
-private[codegen] class UnixCompat(protected val codegen: AbstractCodeGen)
-    extends OsCompat {
+private[codegen] class UnixCompat(codegen: AbstractCodeGen)
+    extends OsCompat(codegen) {
   import codegen.{pointerType => ptrT}
   val ehWrapperTy = "@_ZTIN11scalanative16ExceptionWrapperE"
   val excRecTy = s"{ $ptrT, i32 }"
@@ -32,10 +32,7 @@ private[codegen] class UnixCompat(protected val codegen: AbstractCodeGen)
   )(implicit
       fresh: Fresh,
       pos: Position,
-      scope: Metadata.Scope,
       sb: ShowBuilder,
-      debugInfo: DebugInfo,
-      metaCtx: MetadataCodeGen.Context
   ): Unit = {
     import sb._
     val Next.Unwind(Val.Local(excname, _), next) = unwind
@@ -72,7 +69,8 @@ private[codegen] class UnixCompat(protected val codegen: AbstractCodeGen)
       line(s"$exc = load i8*, i8** $w2")
     }
     line(s"call void $endCatch()")
-    codegen.genInst(Inst.Jump(next), scope)
+    str("br ")
+    codegen.genNext(next)
     unindent()
 
     line(s"$excfail:")

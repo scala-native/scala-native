@@ -19,10 +19,7 @@ object Metadata {
 
   sealed trait LLVMDebugInformation extends SpecializedNode
   sealed trait Scope extends LLVMDebugInformation
-  object Scope{
-    // Dummy scope used when not generating debug info
-    case object NoScope extends Scope
-  }
+
   case class DICompileUnit(
       file: DIFile,
       producer: String,
@@ -40,6 +37,11 @@ object Metadata {
       tpe: DISubroutineType,
       unit: DICompileUnit
   ) extends Scope {
+    override def distinct: Boolean = true
+  }
+
+  case class DILexicalBlock(scope: Scope, file: DIFile, line: Int, column: Int)
+      extends Scope {
     override def distinct: Boolean = true
   }
 

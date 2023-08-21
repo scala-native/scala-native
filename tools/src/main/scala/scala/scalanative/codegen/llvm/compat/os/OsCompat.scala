@@ -7,8 +7,9 @@ import scala.scalanative.nir.Defn.Define.DebugInfo
 import scala.scalanative.nir.{Fresh, Next, Position}
 import scala.scalanative.util.ShowBuilder
 
-private[codegen] trait OsCompat {
-  protected def codegen: AbstractCodeGen
+private[codegen] abstract class OsCompat(
+    protected val codegen: AbstractCodeGen
+) {
   protected def osPersonalityType: String
 
   def useOpaquePointers = codegen.meta.platform.useOpaquePointers
@@ -19,10 +20,7 @@ private[codegen] trait OsCompat {
   )(implicit
       fresh: Fresh,
       pos: Position,
-      scope: Metadata.Scope,
-      sb: ShowBuilder,
-      debugInfo: DebugInfo,
-      dwf: MetadataCodeGen.Context
+      sb: ShowBuilder
   ): Unit
   def genBlockAlloca(block: Block)(implicit sb: ShowBuilder): Unit
 

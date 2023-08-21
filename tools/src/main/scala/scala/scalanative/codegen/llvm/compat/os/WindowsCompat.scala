@@ -7,8 +7,8 @@ import scala.scalanative.nir.{Fresh, Next, Position, Val}
 import scala.scalanative.nir.Defn.Define.DebugInfo
 import scala.scalanative.util.ShowBuilder
 
-private[codegen] class WindowsCompat(protected val codegen: AbstractCodeGen)
-    extends OsCompat {
+private[codegen] class WindowsCompat(codegen: AbstractCodeGen)
+    extends OsCompat(codegen) {
   import codegen.{pointerType => ptrT}
   val ehWrapperTy = "\"??_R0?AVExceptionWrapper@scalanative@@@8\""
   val ehWrapperName = "c\".?AVExceptionWrapper@scalanative@@\\00\""
@@ -53,10 +53,7 @@ private[codegen] class WindowsCompat(protected val codegen: AbstractCodeGen)
   )(implicit
       fresh: Fresh,
       pos: Position,
-      scope: Metadata.Scope,
       sb: ShowBuilder,
-      debugInfo: DebugInfo,
-      metaCtx: MetadataCodeGen.Context
   ): Unit = {
     import codegen._
     import sb._

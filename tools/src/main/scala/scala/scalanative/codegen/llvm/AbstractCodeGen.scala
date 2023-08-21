@@ -183,25 +183,9 @@ private[codegen] abstract class AbstractCodeGen(
     case Defn.Const(attrs, name, ty, rhs) =>
       genGlobalDefn(attrs, name, isConst = true, ty, rhs)
     case Defn.Declare(attrs, name, sig) =>
-      genFunctionDefn(
-        attrs,
-        name,
-        sig,
-        Seq.empty,
-        Fresh(),
-        defn.pos,
-        DebugInfo.empty
-      )
+      genFunctionDefn(defn, Seq.empty, Fresh(), DebugInfo.empty)
     case Defn.Define(attrs, name, sig, insts, debugInfo) =>
-      genFunctionDefn(
-        attrs,
-        name,
-        sig,
-        insts,
-        Fresh(insts),
-        defn.pos,
-        debugInfo
-      )
+      genFunctionDefn(defn, insts, Fresh(insts), debugInfo)
     case defn =>
       unsupported(defn)
   }
@@ -228,20 +212,18 @@ private[codegen] abstract class AbstractCodeGen(
   }
 
   private[codegen] def genFunctionDefn(
-      attrs: Attrs,
-      name: Global.Member,
-      sig: Type.Function,
+      defn: nir.Defn,
       insts: Seq[Inst],
       fresh: Fresh,
-      pos: Position,
       debugInfo: DebugInfo
   )(implicit
       sb: ShowBuilder,
       metaCtx: MetadataCodeGen.Context
   ): Unit = {
     import sb._
+    import defn.{name, attrs, pos}
 
-    val Type.Function(argtys, retty) = sig
+    val Type.Function(argtys, retty) = defn.ty
 
     val isDecl = insts.isEmpty
 
@@ -276,33 +258,33 @@ private[codegen] abstract class AbstractCodeGen(
       }
     }
 
-    if (!isDecl) {
-      str(" ")
-      str(os.gxxPersonality)
+    defn match {
+      case _: nir.Defn.Declare => ()
+      case defn: nir.Defn.Define =>
+        implicit lazy val defnScopes: DefnScopes = new DefnScopes(defn)
+        str(" ")
+        str(os.gxxPersonality)
 
-      val defnScope: Metadata.Scope =
-        if (!config.debugMetadata) Metadata.Scope.NoScope
-        else toDISubprogram(attrs, name, retty, argtys, pos)
+        dbg(defnScopes.getDISubprogramScope)
+        str(" {")
+        insts.foreach {
+          case Inst.Let(n, Op.Copy(v), _) => copies(n) = v
+          case _                          => ()
+        }
 
-      dbg(defnScope)
-      str(" {")
-      insts.foreach {
-        case Inst.Let(n, Op.Copy(v), _) => copies(n) = v
-        case _                          => ()
-      }
+        locally {
+          implicit val cfg: CFG = CFG(insts)
+          implicit val _fresh: Fresh = fresh
+          implicit val _debugInfo: DebugInfo = debugInfo
+          cfg.all.foreach(genBlock)
+          cfg.all.foreach(genBlockLandingPads)
+          newline()
+        }
 
-      locally {
-        implicit val cfg: CFG = CFG(insts)
-        implicit val _fresh: Fresh = fresh
-        implicit val _debugInfo: DebugInfo = debugInfo
-        cfg.all.foreach(genBlock(_, scope = defnScope))
-        cfg.all.foreach(genBlockLandingPads(_, scope = defnScope))
-        newline()
-      }
+        str("}")
 
-      str("}")
-
-      copies.clear()
+        copies.clear()
+      case _ => unreachable
     }
   }
 
@@ -350,14 +332,12 @@ private[codegen] abstract class AbstractCodeGen(
     }
   }
 
-  private[codegen] def genBlock(
-      block: Block,
-      scope: Metadata.Scope
-  )(implicit
+  private[codegen] def genBlock(block: Block)(implicit
       cfg: CFG,
       fresh: Fresh,
       sb: ShowBuilder,
       debugInfo: DebugInfo,
+      defnScopes: DefnScopes,
       metaCtx: MetadataCodeGen.Context
   ): Unit = {
     import sb._
@@ -369,13 +349,7 @@ private[codegen] abstract class AbstractCodeGen(
     indent()
     os.genBlockAlloca(block)
     genBlockPrologue(block)
-    if (config.debugMetadata && block.isEntry) {
-      block.params.zipWithIndex.foreach {
-        case (param, idx) =>
-          dbgLocalValue(param.id, param.ty, Some(idx))(block.pos, scope)
-      }
-    }
-    rep(insts) { inst => genInst(inst, scope) }
+    rep(insts)(genInst)
     unindent()
   }
 
@@ -395,11 +369,18 @@ private[codegen] abstract class AbstractCodeGen(
 
   private[codegen] def genBlockPrologue(
       block: Block
-  )(implicit cfg: CFG, fresh: Fresh, sb: ShowBuilder): Unit = {
+  )(implicit
+      cfg: CFG,
+      fresh: Fresh,
+      sb: ShowBuilder,
+      debugInfo: DebugInfo,
+      metadataCtx: MetadataCodeGen.Context,
+      defnScopes: DefnScopes
+  ): Unit = {
     import sb._
+    val params = block.params.zipWithIndex
     if (!block.isEntry) {
-      val params = block.params
-      params.zipWithIndex.foreach {
+      params.foreach {
         case (Val.Local(_, Type.Unit), n) => () // skip
         case (Val.Local(id, ty), n) =>
           newline()
@@ -441,22 +422,38 @@ private[codegen] abstract class AbstractCodeGen(
           }
       }
     }
+    if (generateDebugMetadata) {
+      lazy val scope =
+        if (block.isEntry) defnScopes.getDISubprogramScope
+        else
+          block.insts
+            .collectFirst {
+              case let: Inst.Let => defnScopes.toDIScope(let.scopeId)
+            }
+            .getOrElse(defnScopes.getDISubprogramScope)
+      params.foreach {
+        case (Val.Local(id, ty), idx) =>
+          // arg should be non-zero value
+          val argIdx = if (block.isEntry) Some(idx + 1) else None
+          dbgLocalValue(id, ty, argIdx)(
+            srcPosition = block.pos,
+            scope = scope
+          )
+      }
+    }
   }
 
-  private[codegen] def genBlockLandingPads(
-      block: Block,
-      scope: Metadata.Scope
-  )(implicit
+  private[codegen] def genBlockLandingPads(block: Block)(implicit
       cfg: CFG,
       fresh: Fresh,
       sb: ShowBuilder,
       debugInfo: DebugInfo,
-      metaCtx: MetadataCodeGen.Context
+      metaCtx: MetadataCodeGen.Context,
+      defnScoeps: this.DefnScopes
   ): Unit = {
     block.insts.foreach {
       case inst @ Inst.Let(_, _, unwind: Next.Unwind) =>
         import inst.pos
-        implicit def _scope: Metadata.Scope = scope
         os.genLandingPad(unwind)
       case _ => ()
     }
@@ -643,19 +640,17 @@ private[codegen] abstract class AbstractCodeGen(
     }
   }
 
-  private[codegen] def genInst(
-      inst: Inst,
-      scope: Metadata.Scope
-  )(implicit
+  private[codegen] def genInst(inst: Inst)(implicit
       fresh: Fresh,
       sb: ShowBuilder,
       debugInfo: DebugInfo,
+      defnScopes: DefnScopes,
       metaCtx: MetadataCodeGen.Context
   ): Unit = {
     import sb._
     inst match {
       case inst: Inst.Let =>
-        genLet(inst, scope)
+        genLet(inst)
 
       case Inst.Unreachable(unwind) =>
         assert(unwind eq Next.None)
@@ -681,7 +676,7 @@ private[codegen] abstract class AbstractCodeGen(
             elseNext @ Next.Label(elseId, elseArgs)
           ) if thenId == elseId =>
         if (thenArgs == elseArgs) {
-          genInst(Inst.Jump(thenNext)(inst.pos), scope)
+          genInst(Inst.Jump(thenNext)(inst.pos))
         } else {
           val args = thenArgs.zip(elseArgs).map {
             case (thenV, elseV) =>
@@ -697,7 +692,7 @@ private[codegen] abstract class AbstractCodeGen(
               genVal(elseV)
               Val.Local(id, thenV.ty)
           }
-          genInst(Inst.Jump(Next.Label(thenId, args))(inst.pos), scope)
+          genInst(Inst.Jump(Next.Label(thenId, args))(inst.pos))
         }
 
       case Inst.If(cond, thenp, elsep) =>
@@ -730,13 +725,11 @@ private[codegen] abstract class AbstractCodeGen(
     }
   }
 
-  private[codegen] def genLet(
-      inst: Inst.Let,
-      scope: Metadata.Scope
-  )(implicit
+  private[codegen] def genLet(inst: Inst.Let)(implicit
       fresh: Fresh,
       sb: ShowBuilder,
       debugInfo: DebugInfo,
+      defnScopes: DefnScopes,
       metaCtx: MetadataCodeGen.Context
   ): Unit = {
     import sb._
@@ -747,6 +740,7 @@ private[codegen] abstract class AbstractCodeGen(
     val id = inst.id
     val unwind = inst.unwind
     val ty = inst.op.resty
+    val scope = defnScopes.toDIScope(inst.scopeId)
 
     def genBind() =
       if (!isVoid(ty)) {
