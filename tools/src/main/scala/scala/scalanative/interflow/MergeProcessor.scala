@@ -576,7 +576,6 @@ object MergeProcessor {
             id = newMappingOf(id),
             parent = if (id.isTopLevel) parentScopeId else newMappingOf(parent)
           )
-
           scopes += newScope
       }
       else {

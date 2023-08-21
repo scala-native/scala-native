@@ -423,21 +423,19 @@ private[codegen] abstract class AbstractCodeGen(
       }
     }
     if (generateDebugMetadata) {
-      lazy val scope =
-        if (block.isEntry) defnScopes.getDISubprogramScope
+      lazy val scopeId =
+        if (block.isEntry) nir.ScopeId.TopLevel
         else
           block.insts
-            .collectFirst {
-              case let: Inst.Let => defnScopes.toDIScope(let.scopeId)
-            }
-            .getOrElse(defnScopes.getDISubprogramScope)
+            .collectFirst { case let: Inst.Let => let.scopeId }
+            .getOrElse(nir.ScopeId.TopLevel)
       params.foreach {
         case (Val.Local(id, ty), idx) =>
           // arg should be non-zero value
           val argIdx = if (block.isEntry) Some(idx + 1) else None
           dbgLocalValue(id, ty, argIdx)(
             srcPosition = block.pos,
-            scope = scope
+            scopeId = scopeId
           )
       }
     }
@@ -769,8 +767,8 @@ private[codegen] abstract class AbstractCodeGen(
             else call.copy(ptr = Val.Global(glob, valty))
           case _ => call
         }
-        genCall(genBind, callDef, unwind, inst.pos, scope)
-        dbgLocalValue(id, ty)(inst.pos, scope)
+        genCall(genBind, callDef, unwind, inst.pos, inst.scopeId)
+        dbgLocalValue(id, ty)(inst.pos, inst.scopeId)
 
       case Op.Load(ty, ptr, syncAttrs) =>
         val pointee = fresh()
@@ -822,7 +820,7 @@ private[codegen] abstract class AbstractCodeGen(
             case _ =>
               ()
           }
-          dbgLocalValue(id, ty)(inst.pos, scope)
+          dbgLocalValue(id, ty)(inst.pos, inst.scopeId)
         }
 
       case Op.Store(ty, ptr, value, syncAttrs) =>
@@ -911,7 +909,7 @@ private[codegen] abstract class AbstractCodeGen(
           genLocal(derived)
           str(" to i8*")
         }
-        dbgLocalValue(id, Type.Ptr)(inst.pos, scope)
+        dbgLocalValue(id, Type.Ptr)(inst.pos, inst.scopeId)
 
       case Op.Stackalloc(ty, n) =>
         val pointee = fresh()
@@ -940,11 +938,13 @@ private[codegen] abstract class AbstractCodeGen(
           str(" to i8*")
         }
 
+        dbgLocalVariable(pointee, ty)(inst.pos, inst.scopeId)
+
       case _ =>
         newline()
         genBind()
         genOp(op)
-        if (!isVoid(op.resty)) dbgLocalValue(id, ty)(inst.pos, scope)
+        if (!isVoid(op.resty)) dbgLocalValue(id, ty)(inst.pos, inst.scopeId)
 
     }
 
@@ -954,12 +954,13 @@ private[codegen] abstract class AbstractCodeGen(
       genBind: () => Unit,
       call: Op.Call,
       unwind: Next,
-      pos: Position,
-      scope: Metadata.Scope
+      srcPos: Position,
+      scopeId: ScopeId
   )(implicit
       fresh: Fresh,
       sb: ShowBuilder,
-      metaCtx: MetadataCodeGen.Context
+      metaCtx: MetadataCodeGen.Context,
+      defnScopes: DefnScopes
   ): Unit = {
     import sb._
 
@@ -967,7 +968,7 @@ private[codegen] abstract class AbstractCodeGen(
      *  situations where a null check is generated (and the function call is
      *  throwNullPointer) in this case we can only use NoPosition
      */
-    val dbgPosition = toDILocation(pos, scope)
+    val dbgPosition = toDILocation(srcPos, scopeId)
     def genDbgPosition() = dbg(",", dbgPosition)
 
     call match {

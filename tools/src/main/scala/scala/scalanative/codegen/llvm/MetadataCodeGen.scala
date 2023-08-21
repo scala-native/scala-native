@@ -23,7 +23,8 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
   import self.meta.platform
 
   final val generateDebugMetadata = self.meta.config.debugMetadata
-  final val FirstLineOffset = 1
+  final val LineOffset = 1
+  final val ColumnOffset = 1
 
   /* Create a name debug metadata entry and write it on the metadata section */
   def dbg(name: => String)(values: Metadata.Node*)(implicit ctx: Context): Unit =
@@ -59,8 +60,13 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
 
   def dbgLocalValue(id: Local, ty: nir.Type, argIdx: Option[Int] = None)(
       srcPosition: nir.Position,
-      scope: Scope
-  )(implicit debugInfo: DebugInfo, metadataCtx: Context, sb: ShowBuilder): Unit =
+      scopeId: nir.ScopeId
+  )(implicit
+      debugInfo: DebugInfo,
+      defnScopes: DefnScopes,
+      metadataCtx: Context,
+      sb: ShowBuilder
+  ): Unit =
     if (generateDebugMetadata) {
       debugInfo.localNames.get(id).foreach { localName =>
         `llvm.dbg.value`(
@@ -68,13 +74,39 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
           description = Metadata.DILocalVariable(
             name = localName,
             arg = argIdx,
-            scope = scope,
+            scope = defnScopes.toDIScope(scopeId),
             file = toDIFile(srcPosition),
-            line = srcPosition.line + FirstLineOffset,
+            line = srcPosition.line + LineOffset,
             tpe = toMetadataType(ty)
           ),
           expr = Metadata.DIExpression()
-        )(srcPosition, scope)
+        )(srcPosition, scopeId)
+      }
+    }
+
+  def dbgLocalVariable(id: Local, ty: nir.Type)(
+      srcPosition: nir.Position,
+      scopeId: nir.ScopeId
+  )(implicit
+      debugInfo: DebugInfo,
+      defnScopes: DefnScopes,
+      metadataCtx: Context,
+      sb: ShowBuilder
+  ): Unit =
+    if (generateDebugMetadata) {
+      debugInfo.localNames.get(id).foreach { localName =>
+        `llvm.dbg.declare`(
+          address = Metadata.Value(Val.Local(id, ty)),
+          description = Metadata.DILocalVariable(
+            name = localName,
+            arg = None,
+            scope = defnScopes.toDIScope(scopeId),
+            file = toDIFile(srcPosition),
+            line = srcPosition.line + LineOffset,
+            tpe = toMetadataType(ty)
+          ),
+          expr = Metadata.DIExpression()
+        )(srcPosition, scopeId)
       }
     }
 
@@ -82,9 +114,10 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
       address: Metadata.Value,
       description: DILocalVariable,
       expr: Metadata.DIExpression
-  )(pos: Position, scope: Metadata.Scope)(implicit
+  )(pos: nir.Position, scopeId: nir.ScopeId)(implicit
       ctx: Context,
-      sb: ShowBuilder
+      sb: ShowBuilder,
+      defnScopes: DefnScopes
   ): Unit = {
     sb.newline()
     sb.str("call void @llvm.dbg.value(metadata ")
@@ -94,7 +127,27 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
     sb.str(", metadata ")
     expr.intern().write(sb)
     sb.str(")")
-    dbg(",", toDILocation(pos, scope))
+    dbg(",", toDILocation(pos, scopeId))
+  }
+
+  private def `llvm.dbg.declare`(
+      address: Metadata.Value,
+      description: DILocalVariable,
+      expr: Metadata.DIExpression
+  )(pos: Position, scopeId: nir.ScopeId)(implicit
+      ctx: Context,
+      sb: ShowBuilder,
+      defnScopes: DefnScopes
+  ): Unit = {
+    sb.newline()
+    sb.str("call void @llvm.dbg.declare(metadata ")
+    genVal(address.value)
+    sb.str(", metadata ")
+    description.intern().write(sb)
+    sb.str(", metadata ")
+    expr.intern().write(sb)
+    sb.str(")")
+    dbg(",", toDILocation(pos, scopeId))
   }
 
   def compilationUnits(implicit ctx: Context): Seq[DICompileUnit] =
@@ -112,15 +165,15 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
   }
 
   def toDILocation(
-      pos: Position,
-      scope: Scope
-  ): DILocation = DILocation(
-    line = pos.line + FirstLineOffset,
-    column = pos.column,
-    scope = scope
+      pos: nir.Position,
+      scopeId: nir.ScopeId
+  )(implicit defnScopes: DefnScopes): DILocation = DILocation(
+    line = pos.line + LineOffset,
+    column = pos.column + ColumnOffset,
+    scope = defnScopes.toDIScope(scopeId)
   )
 
-  class DefnScopes(defn: nir.Defn.Define)(implicit
+  class DefnScopes(val defn: nir.Defn.Define)(implicit
       metadataCtx: MetadataCodeGen.Context
   ) {
     private val scopes = mutable.Map.empty[nir.ScopeId, Metadata.Scope]
@@ -156,7 +209,7 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
         scope = unit,
         file = file,
         unit = unit,
-        line = pos.line + FirstLineOffset,
+        line = pos.line + LineOffset,
         tpe = DISubroutineType(
           DITypes(
             toMetadataTypeOpt(retty),
@@ -180,8 +233,8 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
       Metadata.DILexicalBlock(
         file = toDIFile(srcPosition),
         scope = toDIScope(scope.parent),
-        line = srcPosition.line + FirstLineOffset,
-        column = srcPosition.column
+        line = srcPosition.line + LineOffset,
+        column = srcPosition.column + ColumnOffset
       )
     }
   }
