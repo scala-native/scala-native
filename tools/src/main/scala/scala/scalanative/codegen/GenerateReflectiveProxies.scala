@@ -7,6 +7,7 @@ import scala.collection.mutable
 /** Created by lukaskellenberger on 17.12.16.
  */
 object GenerateReflectiveProxies {
+  implicit val scopeId: nir.ScopeId = nir.ScopeId.TopLevel
 
   private def genReflProxy(defn: Defn.Define): Defn.Define = {
     implicit val fresh: Fresh = Fresh()

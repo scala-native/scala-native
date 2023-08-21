@@ -225,12 +225,14 @@ final class BinaryDeserializer(buffer: ByteBuffer, fileName: String) {
     case T.XorBin  => Bin.Xor
   }
 
+  private def getScopeId() = new ScopeId(getLebUnsignedInt())
   private def getInsts(): Seq[Inst] = in(prelude.sections.insts) {
     getSeq(getInst())
   }
   private def getInst(): Inst = {
     val tag = getTag()
     implicit val pos: nir.Position = getPosition()
+    implicit def scope: nir.ScopeId = getScopeId()
     (tag: @switch) match {
       case T.LabelInst       => Inst.Label(getLocal(), getParams())
       case T.LetInst         => Inst.Let(getLocal(), getOp(), Next.None)
@@ -283,6 +285,20 @@ final class BinaryDeserializer(buffer: ByteBuffer, fileName: String) {
     case T.ZSizeCastConv => Conv.ZSizeCast
   }
 
+  import Defn.Define.DebugInfo
+
+  private def getLexicalScope() = DebugInfo.LexicalScope(
+    id = getScopeId(),
+    parent = getScopeId(),
+    srcPosition = getPosition()
+  )
+
+  private def getDebugInfo(): Defn.Define.DebugInfo =
+    Defn.Define.DebugInfo(
+      localNames = getLocalNames(),
+      lexicalScopes = getSeq(getLexicalScope())
+    )
+
   private def getDefn(): Defn = {
     val tag = getTag()
     val name = getGlobal()
@@ -292,7 +308,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, fileName: String) {
       case T.VarDefn     => Defn.Var(attrs, name, getType(), getVal())
       case T.ConstDefn   => Defn.Const(attrs, name, getType(), getVal())
       case T.DeclareDefn => Defn.Declare(attrs, name, getType())
-      case T.DefineDefn  => Defn.Define(attrs, name, getType(), getInsts(), getLocalNames())
+      case T.DefineDefn  => Defn.Define(attrs, name, getType(), getInsts(), getDebugInfo())
       case T.TraitDefn   => Defn.Trait(attrs, name, getGlobals())
       case T.ClassDefn   => Defn.Class(attrs, name, getGlobalOpt(), getGlobals())
       case T.ModuleDefn  => Defn.Module(attrs, name, getGlobalOpt(), getGlobals())

@@ -14,6 +14,8 @@ import dotty.tools.dotc.transform.SymUtils._
 
 import scala.collection.mutable
 import scala.scalanative.nir
+import scala.scalanative.nir.Defn.Define.DebugInfo
+import scala.scalanative.nir.Defn.Define.DebugInfo._
 import nir._
 import scala.scalanative.util.ScopedVar
 import scala.scalanative.util.ScopedVar.{scoped, toValue}
@@ -21,7 +23,6 @@ import scala.scalanative.util.unsupported
 import dotty.tools.FatalError
 import dotty.tools.dotc.report
 import dotty.tools.dotc.core.NameKinds
-
 trait NirGenStat(using Context) {
   self: NirCodeGen =>
   import positionsConversions.fromSpan
@@ -200,6 +201,7 @@ trait NirGenStat(using Context) {
           name = genStaticMemberName(f, classSym),
           ty = Type.Function(Nil, ty),
           insts = withFreshExprBuffer { buf ?=>
+            given ScopeId = ScopeId.TopLevel
             val fresh = curFresh.get
             buf.label(fresh())
             val module = buf.module(genModuleName(classSym), Next.None)
@@ -235,6 +237,9 @@ trait NirGenStat(using Context) {
   private def genMethod(dd: DefDef): Option[Defn] = {
     implicit val pos: nir.Position = dd.span
     val fresh = Fresh()
+    val freshScope = initFreshScope(dd.rhs)
+    val scopes = mutable.Set.empty[DebugInfo.LexicalScope]
+    scopes += DebugInfo.LexicalScope.TopLevel(dd.rhs.span)
 
     scoped(
       curMethodSym := dd.symbol,
@@ -242,6 +247,9 @@ trait NirGenStat(using Context) {
       curMethodLabels := new MethodLabelsEnv(fresh),
       curMethodInfo := CollectMethodInfo().collect(dd.rhs),
       curFresh := fresh,
+      curFreshScope := freshScope,
+      curScopeId := ScopeId.TopLevel,
+      curScopes := scopes,
       curUnwindHandler := None,
       curMethodLocalNames := localNamesBuilder()
     ) {
@@ -283,7 +291,10 @@ trait NirGenStat(using Context) {
               name,
               sig,
               insts = body,
-              localNames = curMethodLocalNames.get.toMap
+              debugInfo = Defn.Define.DebugInfo(
+                localNames = curMethodLocalNames.get.toMap,
+                lexicalScopes = scopes.toList
+              )
             )
             Some(defn)
           }
@@ -501,10 +512,13 @@ trait NirGenStat(using Context) {
       methodName: nir.Global
   )(genValue: ExprBuffer => nir.Val)(using nir.Position): nir.Defn = {
     implicit val fresh: Fresh = Fresh()
+    val freshScopes = initFreshScope(dd.rhs)
     val buf = new ExprBuffer()
 
     scoped(
       curFresh := fresh,
+      curFreshScope := freshScopes,
+      curScopeId := ScopeId.TopLevel,
       curMethodSym := dd.symbol,
       curMethodThis := None,
       curMethodEnv := new MethodEnv(fresh),
@@ -750,7 +764,8 @@ trait NirGenStat(using Context) {
           val fresh = curFresh.get
           scoped(
             curUnwindHandler := None,
-            curMethodThis := None
+            curMethodThis := None,
+            curScopeId := ScopeId.TopLevel
           ) {
             val entryParams = forwarderParamTypes.map(Val.Local(fresh(), _))
             val args = entryParams.map(ValTree(_))

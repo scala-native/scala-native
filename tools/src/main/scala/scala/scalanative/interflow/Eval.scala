@@ -2,32 +2,33 @@ package scala.scalanative
 package interflow
 
 import scala.collection.mutable
-import scalanative.nir._
-import scalanative.linker._
-import scalanative.codegen.MemoryLayout
-import scalanative.util.{unreachable, And}
+import scala.scalanative.nir._
+import scala.scalanative.nir.Defn.Define.DebugInfo
+import scala.scalanative.linker._
+import scala.scalanative.codegen.MemoryLayout
+import scala.scalanative.util.{unreachable, And}
 
 trait Eval { self: Interflow =>
-  final val preserveLocalNames: Boolean =
+  def interflow: Interflow = self
+  final val preserveDebugInfo: Boolean =
     self.config.compilerConfig.debugMetadata
 
   def run(
       insts: Array[Inst],
       offsets: Map[Local, Int],
       from: Local,
-      localNames: LocalNames
-  )(implicit
-      state: State
-  ): Inst.Cf = {
+      debugInfo: DebugInfo,
+      scopeMapping: ScopeId => ScopeId
+  )(implicit state: State): Inst.Cf = {
     import state.{materialize, delay}
 
     var pc = offsets(from)
 
-    if (preserveLocalNames && pc == 0) {
+    if (preserveDebugInfo && pc == 0) {
       val Inst.Label(_, params) = insts.head: @unchecked
       for {
         param <- params
-        name <- localNames.get(param.id)
+        name <- debugInfo.localNames.get(param.id)
       } {
         state.localNames.getOrElseUpdate(param.id, name)
       }
@@ -35,28 +36,30 @@ trait Eval { self: Interflow =>
 
     pc += 1
 
+    // Implicit scopeId required for materialization of insts other then Inst.Let
+    implicit var lastScopeId = scopeMapping(ScopeId.TopLevel)
     while (true) {
       val inst = insts(pc)
-      implicit val pos: Position = inst.pos
+      implicit val srcPosition: Position = inst.pos
       def bailOut =
         throw BailOut("can't eval inst: " + inst.show)
       inst match {
         case _: Inst.Label =>
           unreachable
-        case Inst.Let(local, op, unwind) =>
+        case let @ Inst.Let(local, op, unwind) =>
+          lastScopeId = scopeMapping(let.scopeId)
           if (unwind ne Next.None) {
             throw BailOut("try-catch")
           }
           val value = eval(op)
-          if (preserveLocalNames) {
-            localNames.get(local).foreach { localName =>
-              value match {
-                case Val.Local(id, _) =>
-                  state.localNames.getOrElseUpdate(id, localName)
-                case Val.Virtual(addr) =>
-                  state.virtualNames.getOrElseUpdate(addr, localName)
-                case _ => ()
-              }
+          if (preserveDebugInfo) {
+            val localName = debugInfo.localNames.get(local)
+            value match {
+              case Val.Local(id, _) =>
+                localName.foreach(state.localNames.getOrElseUpdate(id, _))
+              case Val.Virtual(addr) =>
+                localName.foreach(state.virtualNames.getOrElseUpdate(addr, _))
+              case _ => ()
             }
           }
           if (value.ty == Type.Nothing) {
@@ -136,7 +139,12 @@ trait Eval { self: Interflow =>
 
   def eval(
       op: Op
-  )(implicit state: State, linked: linker.Result, origPos: Position): Val = {
+  )(implicit
+      state: State,
+      linked: linker.Result,
+      srcPosition: Position,
+      scopeId: ScopeId
+  ): Val = {
     import state.{emit, materialize, delay}
     def bailOut =
       throw BailOut("can't eval op: " + op.show)
@@ -497,7 +505,8 @@ trait Eval { self: Interflow =>
 
   def eval(bin: Bin, ty: Type, l: Val, r: Val)(implicit
       state: State,
-      origPos: Position
+      srcPosition: Position,
+      scopeId: ScopeId
   ): Val = {
     import state.{emit, materialize}
     def fallback =
@@ -963,7 +972,11 @@ trait Eval { self: Interflow =>
     }
   }
 
-  def eval(value: Val)(implicit state: State, origPos: Position): Val = {
+  def eval(value: Val)(implicit
+      state: State,
+      srcPosition: nir.Position,
+      scopeId: nir.ScopeId
+  ): Val = {
     value match {
       case Val.Local(local, _) if local.id >= 0 =>
         state.loadLocal(local) match {

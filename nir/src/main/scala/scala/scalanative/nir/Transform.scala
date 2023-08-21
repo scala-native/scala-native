@@ -15,7 +15,6 @@ trait Transform {
       case defn @ Defn.Declare(_, _, ty) =>
         defn.copy(ty = onType(ty))
       case defn @ Defn.Define(_, _, ty, insts, _) =>
-        // TODO: // new localNames from onInsts?
         defn.copy(ty = onType(ty), insts = onInsts(insts))
       case defn @ Defn.Trait(_, _, _) =>
         defn
@@ -38,6 +37,7 @@ trait Transform {
         }
         Inst.Label(n, newparams)
       case inst @ Inst.Let(_, op, unwind) =>
+        implicit val scopeId: ScopeId = inst.scopeId
         inst.copy(op = onOp(op), unwind = onNext(unwind))
       case Inst.Ret(v) =>
         Inst.Ret(onVal(v))

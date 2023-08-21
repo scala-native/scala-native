@@ -165,6 +165,7 @@ trait GenNativeExports(using Context):
       insts = withFreshExprBuffer { buf ?=>
         val fresh = curFresh.get
         scoped(
+          curScopeId := ScopeId.TopLevel,
           curUnwindHandler := None,
           curMethodThis := None
         ) {

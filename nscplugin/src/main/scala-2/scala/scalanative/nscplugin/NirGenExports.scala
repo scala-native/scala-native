@@ -163,7 +163,8 @@ trait NirGenExports[G <: nsc.Global with Singleton] {
         val fresh = curFresh.get
         scoped(
           curUnwindHandler := None,
-          curMethodThis := None
+          curMethodThis := None,
+          curScopeId := ScopeId.TopLevel
         ) {
           val entryParams = externParamTypes.map(Val.Local(fresh(), _))
           buf.label(fresh(), entryParams)
@@ -176,8 +177,7 @@ trait NirGenExports[G <: nsc.Global with Singleton] {
           buf.ret(unboxedRes)
         }
         buf.toSeq
-      },
-      localNames = Map.empty
+      }
     )
     ExportedSymbol(member, defn)
   }

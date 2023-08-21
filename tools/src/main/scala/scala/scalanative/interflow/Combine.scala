@@ -13,7 +13,8 @@ trait Combine { self: Interflow =>
 
   def combine(bin: Bin, ty: Type, l: Val, r: Val)(implicit
       state: State,
-      origPos: Position
+      srcPosition: Position,
+      scopeId: ScopeId
   ): Val = {
     import state.{materialize, delay, emit}
 
@@ -388,7 +389,9 @@ trait Combine { self: Interflow =>
   }
 
   def combine(comp: Comp, ty: Type, l: Val, r: Val)(implicit
-      state: State
+      state: State,
+      srcPosition: Position,
+      scopeId: ScopeId
   ): Val = {
     import state.{materialize, delay, emit}
 
@@ -557,7 +560,11 @@ trait Combine { self: Interflow =>
     }
   }
 
-  def combine(conv: Conv, ty: Type, value: Val)(implicit state: State): Val = {
+  def combine(conv: Conv, ty: Type, value: Val)(implicit
+      state: State,
+      srcPosition: Position,
+      scopeId: ScopeId
+  ): Val = {
     import state.{materialize, delay, emit}
 
     (conv, ty, value) match {

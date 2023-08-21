@@ -48,6 +48,7 @@ final class BinarySerializer(channel: WritableByteChannel) {
     def putVal(value: Val): Unit = putLebUnsignedInt(Vals.intern(value))
     def putVals(values: Seq[Val]): Unit = putSeq(values)(putVal)
     def putLocal(local: Local): Unit = putLebUnsignedLong(local.id)
+    def putScopeId(scopeId: ScopeId) = putLebUnsignedInt(scopeId.id)
     def putGlobal(g: Global): Unit = putLebUnsignedInt(Globals.intern(g))
     def putGlobals(gs: Seq[Global]): Unit = putSeq(gs)(putGlobal)
     def putGlobalOpt(gopt: Option[Global]): Unit = putOpt(gopt)(putGlobal)
@@ -212,6 +213,20 @@ final class BinarySerializer(channel: WritableByteChannel) {
       }
     }
 
+    import nir.Defn.Define.DebugInfo
+    private def putLexicalScope(scope: DebugInfo.LexicalScope): Unit = {
+      val DebugInfo.LexicalScope(id, parent, srcPosition) = scope
+      putScopeId(id)
+      putScopeId(parent)
+      putPosition(srcPosition)
+    }
+
+    private def putDebugInfo(debugInfo: nir.Defn.Define.DebugInfo): Unit = {
+      val nir.Defn.Define.DebugInfo(localNames, lexicalScopes) = debugInfo
+      putLocalNames(localNames)
+      putSeq(lexicalScopes.sorted)(putLexicalScope)
+    }
+
     def put(defn: Defn): Unit = {
       def putHeader(tag: Byte): Unit = {
         putTag(tag)
@@ -222,11 +237,11 @@ final class BinarySerializer(channel: WritableByteChannel) {
 
       hasEntryPoints ||= defn.isEntryPoint
       defn match {
-        case defn: Defn.Define =>
+        case Defn.Define(_, _, ty, insts, debugInfo) =>
           putHeader(T.DefineDefn)
-          putType(defn.ty)
-          putInsts(defn.insts)
-          putLocalNames(defn.localNames)
+          putType(ty)
+          putInsts(insts)
+          putDebugInfo(debugInfo)
 
         case defn: Defn.Var =>
           putHeader(T.VarDefn)
@@ -567,16 +582,18 @@ final class BinarySerializer(channel: WritableByteChannel) {
           putLocal(name)
           putParams(params)
 
-        case Inst.Let(id, op, Next.None) =>
+        case let @ Inst.Let(id, op, Next.None) =>
           putTagAndPosition(T.LetInst)
           putLocal(id)
           putOp(op)
+          putScopeId(let.scopeId)
 
-        case Inst.Let(id, op, unwind) =>
+        case let @ Inst.Let(id, op, unwind) =>
           putTagAndPosition(T.LetUnwindInst)
           putLocal(id)
           putOp(op)
           putNext(unwind)
+          putScopeId(let.scopeId)
 
         case Inst.Ret(v) =>
           putTagAndPosition(T.RetInst)

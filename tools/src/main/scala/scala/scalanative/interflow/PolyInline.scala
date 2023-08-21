@@ -62,7 +62,8 @@ trait PolyInline { self: Interflow =>
   def polyInline(op: Op.Method, args: Seq[Val])(implicit
       state: State,
       linked: linker.Result,
-      origPos: Position
+      srcPosition: Position,
+      scopeIdId: ScopeId
   ): Val = {
     import state.{emit, fresh, materialize}
 

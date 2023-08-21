@@ -30,9 +30,42 @@ object Defn {
       name: Global,
       ty: Type,
       insts: Seq[Inst],
-      localNames: LocalNames = Map.empty
+      debugInfo: Define.DebugInfo = Define.DebugInfo.empty
   )(implicit val pos: Position)
       extends Defn
+  object Define {
+    case class DebugInfo(
+        localNames: LocalNames,
+        lexicalScopes: Seq[DebugInfo.LexicalScope]
+    ) {
+      lazy val lexicalScopeOf: Map[ScopeId, DebugInfo.LexicalScope] =
+        lexicalScopes.map {
+          case scope @ DebugInfo.LexicalScope(id, _, _) => (id, scope)
+        }.toMap
+    }
+    object DebugInfo {
+      val empty: DebugInfo = DebugInfo(
+        localNames = Map.empty,
+        lexicalScopes = Seq(LexicalScope.AnyTopLevel)
+      )
+
+      case class LexicalScope(
+          id: ScopeId,
+          parent: ScopeId,
+          srcPosition: Position
+      ) {
+        def isTopLevel: Boolean = id.isTopLevel
+      }
+      object LexicalScope {
+        final val AnyTopLevel =
+          LexicalScope(ScopeId.TopLevel, ScopeId.TopLevel, Position.NoPosition)
+        def TopLevel(defnPosition: Position) =
+          AnyTopLevel.copy(srcPosition = defnPosition)
+        implicit val ordering: Ordering[LexicalScope] = Ordering.by(_.id.id)
+      }
+    }
+
+  }
 
   // high-level
   final case class Trait(attrs: Attrs, name: Global, traits: Seq[Global])(

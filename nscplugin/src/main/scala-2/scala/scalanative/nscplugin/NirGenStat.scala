@@ -4,6 +4,8 @@ package nscplugin
 import scala.collection.mutable
 import scala.reflect.internal.Flags._
 import scala.scalanative.nir._
+import scala.scalanative.nir.Defn.Define.DebugInfo
+import scala.scalanative.nir.Defn.Define.DebugInfo._
 import scala.tools.nsc.Properties
 import scala.scalanative.util.unsupported
 import scala.scalanative.util.ScopedVar.scoped
@@ -256,7 +258,8 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
     def withFreshExprBuffer[R](f: ExprBuffer => R): R = {
       scoped(
-        curFresh := Fresh()
+        curFresh := Fresh(),
+        curScopeId := ScopeId.TopLevel
       ) {
         val exprBuffer = new ExprBuffer()(curFresh)
         f(exprBuffer)
@@ -275,7 +278,8 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         scoped(
           curClassSym := cd.symbol,
           curFresh := Fresh(),
-          curUnwindHandler := None
+          curUnwindHandler := None,
+          curScopeId := ScopeId.TopLevel
         ) {
           genRegisterReflectiveInstantiation(cd)
         }
@@ -643,6 +647,8 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       val env = new MethodEnv(fresh)
 
       implicit val pos: nir.Position = dd.pos
+      val scopes = mutable.Set.empty[DebugInfo.LexicalScope]
+      scopes += DebugInfo.LexicalScope.TopLevel(dd.rhs.pos)
 
       scoped(
         curMethodSym := dd.symbol,
@@ -650,7 +656,10 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         curMethodInfo := (new CollectMethodInfo).collect(dd.rhs),
         curFresh := fresh,
         curUnwindHandler := None,
-        curMethodLocalNames := localNamesBuilder()
+        curMethodLocalNames := localNamesBuilder(),
+        curFreshScope := initFreshScope(dd.rhs),
+        curScopeId := ScopeId.TopLevel,
+        curScopes := scopes
       ) {
         val sym = dd.symbol
         val owner = curClassSym.get
@@ -698,7 +707,10 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
                   name,
                   sig,
                   insts = body,
-                  localNames = curMethodLocalNames.get.toMap
+                  debugInfo = Defn.Define.DebugInfo(
+                    localNames = curMethodLocalNames.get.toMap,
+                    lexicalScopes = scopes.toList
+                  )
                 )
               )
             }
@@ -789,7 +801,8 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         curMethodThis := None,
         curMethodEnv := new MethodEnv(fresh),
         curMethodInfo := new CollectMethodInfo,
-        curUnwindHandler := None
+        curUnwindHandler := None,
+        curScopeId := ScopeId.TopLevel
       ) {
         buf.label(fresh())
         val value = genValue(buf)
@@ -1177,7 +1190,8 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             val fresh = curFresh.get
             scoped(
               curUnwindHandler := None,
-              curMethodThis := None
+              curMethodThis := None,
+              curScopeId := ScopeId.TopLevel
             ) {
               val entryParams = forwarderParamTypes.map(Val.Local(fresh(), _))
               buf.label(fresh(), entryParams)

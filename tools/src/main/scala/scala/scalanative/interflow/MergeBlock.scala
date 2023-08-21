@@ -26,6 +26,7 @@ final class MergeBlock(val label: Inst.Label, val id: Local) {
     import Interflow.LLVMIntrinsics._
     val block = this
     val result = new nir.Buffer()(Fresh(0))
+
     def mergeNext(next: Next.Label): Next.Label = {
       val nextBlock = outgoing(next.id)
 
@@ -100,6 +101,8 @@ final class MergeBlock(val label: Inst.Label, val id: Local) {
     }
     if (alreadyEmmited) false
     else {
+      // TODO: resolving actual scopeId. Currently not really important becouse used only to introduce stack guard intrinsics
+      implicit def scopeId: ScopeId = ScopeId.TopLevel
       result.let(id, op, Next.None)
       true
     }

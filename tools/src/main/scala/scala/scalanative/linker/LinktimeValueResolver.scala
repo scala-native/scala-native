@@ -88,7 +88,7 @@ trait LinktimeValueResolver { self: Reach =>
           case inst: Inst.LinktimeIf => resolveLinktimeIf(inst)
           case inst @ Inst.Let(_, ReferencedPropertyOp(propertyName), _) =>
             val resolvedVal = resolveLinktimeProperty(propertyName).nirValue
-            inst.copy(op = Op.Copy(resolvedVal))
+            inst.copy(op = Op.Copy(resolvedVal))(inst.pos, inst.scopeId)
           case inst => inst
         }
       }

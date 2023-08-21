@@ -572,7 +572,7 @@ class Reach(
         name,
         ty,
         insts = Array(),
-        localNames = Map.empty
+        debugInfo = Defn.Define.DebugInfo.empty
       )
     )
     reachAttrs(attrs)
@@ -619,6 +619,8 @@ class Reach(
           lookup(newMethod.name, ignoreIfUnavailable = true)
             .map { _ =>
               implicit val pos: nir.Position = defn.pos
+              implicit val scopeId: nir.ScopeId = nir.ScopeId.TopLevel
+
               val newType = {
                 val newArgsTpe = Type.Ref(owner) +: ty.args
                 Type.Function(newArgsTpe, ty.ret)
@@ -657,7 +659,7 @@ class Reach(
   }
 
   def reachDefine(defn: Defn.Define): Unit = {
-    val Defn.Define(attrs, name, ty, insts, localNames) = defn
+    val Defn.Define(attrs, name, ty, insts, debugInfo) = defn
     implicit val pos: nir.Position = defn.pos
     newInfo(
       new Method(
@@ -666,7 +668,7 @@ class Reach(
         name,
         ty,
         insts.toArray,
-        localNames
+        debugInfo
       )
     )
     reachAttrs(attrs)

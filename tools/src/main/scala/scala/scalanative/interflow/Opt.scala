@@ -1,10 +1,11 @@
 package scala.scalanative
 package interflow
 
-import scalanative.nir._
-import scalanative.linker._
+import scala.scalanative.nir._
+import scala.scalanative.nir.Defn.Define.DebugInfo
+import scala.scalanative.linker._
 import scala.collection.mutable
-import scala.annotation.tailrec
+import scala.scalanative.util.ScopedVar.scoped
 
 trait Opt { self: Interflow =>
 
@@ -29,18 +30,22 @@ trait Opt { self: Interflow =>
     val Inst.Label(_, origargs) = origdefn.insts.head: @unchecked
     implicit val pos = origdefn.pos
     // Wrap up the result.
-    def result(retty: Type, rawInsts: Seq[Inst], localNames: LocalNames) =
+    def result(retty: Type, rawInsts: Seq[Inst], debugInfo: DebugInfo) = {
+      val insts = ControlFlow.removeDeadBlocks(rawInsts)
+      // TODO: filter-out unreachable scopes
+      val scopes = debugInfo.lexicalScopes.sorted
       origdefn.copy(
         name = name,
         attrs = origdefn.attrs.copy(opt = Attr.DidOpt),
         ty = Type.Function(argtys, retty),
-        insts = ControlFlow.removeDeadBlocks(rawInsts),
-        localNames = localNames
+        insts = insts,
+        debugInfo = debugInfo.copy(lexicalScopes = scopes)
       )(origdefn.pos)
+    }
 
     // Create new fresh and state for the first basic block.
     val fresh = Fresh(0)
-    val state = new State(Local(0))
+    val state = new State(Local(0))(preserveDebugInfo)
 
     // Interflow usually infers better types on our erased type system
     // than scalac, yet we live it as a benefit of the doubt and make sure
@@ -61,9 +66,11 @@ trait Opt { self: Interflow =>
         } else argty
 
         val id = fresh()
-        origdefn.localNames
-          .get(origarg.id)
-          .foreach(state.localNames.update(id, _))
+        if (preserveDebugInfo) {
+          origdefn.debugInfo.localNames
+            .get(origarg.id)
+            .foreach(state.localNames.update(id, _))
+        }
         Val.Local(id, ty)
     }
 
@@ -71,82 +78,93 @@ trait Opt { self: Interflow =>
     // is never going to be called, so we don't have to visit it.
     if (args.exists(_.ty == Type.Nothing)) {
       val insts = Seq(Inst.Label(Local(0), args), Inst.Unreachable(Next.None))
-      result(Type.Nothing, insts, Map.empty)
-    } else {
-      // Run a merge processor starting from the entry basic block.
-      val blocks =
-        try {
-          pushBlockFresh(fresh)
-          process(
-            origdefn.insts.toArray,
-            localNames = origdefn.localNames,
-            args = args,
-            state = state,
-            doInline = false,
-            retTy = origRetTy
+      result(Type.Nothing, insts, DebugInfo.empty)
+    } else
+      scoped(
+        currentFreshScope := Fresh(0L),
+        currentLexicalScopes := mutable.UnrolledBuffer.empty
+      ) {
+        // Run a merge processor starting from the entry basic block.
+        val blocks =
+          try {
+            pushBlockFresh(fresh)
+            process(
+              origdefn.insts.toArray,
+              debugInfo = origdefn.debugInfo,
+              args = args,
+              state = state,
+              doInline = false,
+              retTy = origRetTy,
+              parentScopeId = ScopeId.TopLevel
+            )
+          } finally {
+            popBlockFresh()
+          }
+
+        // Collect instructions, materialize all returned values
+        // and compute the result type.
+        val insts = blocks.flatMap { block =>
+          block.cf = block.cf match {
+            case inst @ Inst.Ret(retv) =>
+              Inst.Ret(block.end.materialize(retv))(inst.pos)
+            case inst @ Inst.Throw(excv, unwind) =>
+              Inst.Throw(block.end.materialize(excv), unwind)(inst.pos)
+            case cf =>
+              cf
+          }
+          block.toInsts()
+        }
+        val debugInfo: DebugInfo = if (preserveDebugInfo) {
+          val localNames = mutable.OpenHashMap.empty[Local, LocalName]
+          for {
+            block <- blocks
+            state = block.end
+          } {
+            localNames.addMissing(block.end.localNames)
+          }
+          DebugInfo(
+            localNames = localNames.toMap,
+            lexicalScopes = currentLexicalScopes.get.toSeq
           )
-        } finally {
-          popBlockFresh()
+        } else DebugInfo.empty
+
+        val rets = insts.collect {
+          case Inst.Ret(v) => v.ty
         }
 
-      // Collect instructions, materialize all returned values
-      // and compute the result type.
-      val insts = blocks.flatMap { block =>
-        block.cf = block.cf match {
-          case inst @ Inst.Ret(retv) =>
-            Inst.Ret(block.end.materialize(retv))(inst.pos)
-          case inst @ Inst.Throw(excv, unwind) =>
-            Inst.Throw(block.end.materialize(excv), unwind)(inst.pos)
-          case cf =>
-            cf
+        val retty0 = rets match {
+          case Seq()   => Type.Nothing
+          case Seq(ty) => ty
+          case tys     => Sub.lub(tys, Some(origRetTy))
         }
-        block.toInsts()
-      }
-      val localNames: LocalNames = {
-        val map = mutable.OpenHashMap.empty[Local, LocalName]
-        for {
-          block <- blocks
-          state = block.end
-        } map.addMissing(block.end.localNames)
-        map.toMap
-      }
-      val rets = insts.collect {
-        case Inst.Ret(v) => v.ty
-      }
+        // Make sure to not override expected BoxedUnit with primitive Unit
+        val retty =
+          if (retty0 == Type.Unit && origRetTy.isInstanceOf[Type.Ref]) origRetTy
+          else retty0
 
-      val retty0 = rets match {
-        case Seq()   => Type.Nothing
-        case Seq(ty) => ty
-        case tys     => Sub.lub(tys, Some(origRetTy))
+        result(retty, insts, debugInfo)
       }
-      // Make sure to not override expected BoxedUnit with primitive Unit
-      val retty =
-        if (retty0 == Type.Unit && origRetTy.isInstanceOf[Type.Ref]) origRetTy
-        else retty0
-
-      result(retty, insts, localNames)
-    }
   }
 
   def process(
       insts: Array[Inst],
-      localNames: LocalNames,
+      debugInfo: DebugInfo,
       args: Seq[Val],
       state: State,
       doInline: Boolean,
-      retTy: Type
-  )(implicit
-      originDefnPos: nir.Position
+      retTy: Type,
+      parentScopeId: ScopeId
   ): Seq[MergeBlock] = {
     val processor =
       MergeProcessor.fromEntry(
         insts = insts,
         args = args,
-        localNames = localNames,
+        debugInfo = debugInfo,
         state = state,
         doInline = doInline,
         blockFresh = blockFresh,
-        eval = this
+        eval = this,
+        parentScopeId = parentScopeId
       )
 
     try {

@@ -28,83 +28,6 @@ class LocalNamesTest extends OptimizerSpec {
       )
     )(fn)
 
-  def assertContainsAll[T](
-      msg: String,
-      expected: Iterable[T],
-      actual: Iterable[T]
-  ) = {
-    val left = expected.toSeq
-    val right = actual.toSeq
-    val diff = left.diff(right)
-    assertTrue(s"$msg - not found ${diff} in $right", diff.isEmpty)
-  }
-  def assertContains[T](msg: String, expected: T, actual: Iterable[T]) = {
-    assertTrue(
-      s"$msg - not found ${expected} in ${actual.toSeq}",
-      actual.find(_ == expected).isDefined
-    )
-  }
-
-  def assertDistinct(localNames: Iterable[LocalName]) = {
-    val duplicated =
-      localNames.groupBy(identity).filter(_._2.size > 1).map(_._1)
-    assertTrue(s"Found duplicated names of ${duplicated}", duplicated.isEmpty)
-  }
-
-  def namedLets(defn: nir.Defn.Define): Map[Inst.Let, LocalName] =
-    defn.insts.collect {
-      case inst: Inst.Let if defn.localNames.contains(inst.id) =>
-        inst -> defn.localNames(inst.id)
-    }.toMap
-
-  private object TestMain {
-    val TestModule = Global.Top("Test$")
-    val CompanionMain =
-      TestModule.member(Rt.ScalaMainSig.copy(scope = Sig.Scope.Public))
-
-    def unapply(name: Global): Boolean = name match {
-      case CompanionMain => true
-      case Global.Member(TestModule, sig) =>
-        sig.unmangled match {
-          case Sig.Duplicate(of, _) => of == CompanionMain.sig
-          case _                    => false
-        }
-      case _ => false
-    }
-  }
-  private object TestMainForwarder {
-    val staticForwarder = Global.Top("Test").member(Rt.ScalaMainSig)
-    def unapply(name: Global): Boolean = name == staticForwarder
-  }
-
-  private def findDefinition(linked: Seq[Defn]) = {
-    val companionMethod = linked
-      .collectFirst { case defn @ Defn.Define(_, TestMain(), _, _, _) => defn }
-    def staticForwarder = linked
-      .collectFirst {
-        case defn @ Defn.Define(_, TestMainForwarder(), _, _, _) => defn
-      }
-    companionMethod
-      .orElse(staticForwarder)
-      .ensuring(_.isDefined, "Not found linked method")
-
-  }
-
-  def afterLowering(config: build.Config, optimized: => linker.Result)(
-      fn: Seq[Defn] => Unit
-  ): Unit = {
-    import scala.scalanative.codegen._
-    import scala.concurrent.ExecutionContext.Implicits.global
-    import scala.concurrent._
-    val defns = optimized.defns
-    implicit def logger: build.Logger = config.logger
-    implicit val platform: PlatformInfo = PlatformInfo(config)
-    implicit val meta: Metadata =
-      new Metadata(optimized, config.compilerConfig, Nil)
-    val lowered = llvm.CodeGen.lower(defns)
-    Await.result(lowered.map(fn), duration.Duration.Inf)
-  }
-
   // Ensure to use all the vals/vars, otherwise they might not be emmited by the compiler
   @Test def localNamesExistence(): Unit = super.optimize(
     entry = "Test",
@@ -126,8 +49,8 @@ class LocalNamesTest extends OptimizerSpec {
   ) {
     case (config, result) =>
       def checkLocalNames(defns: Seq[Defn]) =
-        findDefinition(defns).foreach { defn =>
-          val localNames = defn.localNames
+        findEntry(defns).foreach { defn =>
+          val localNames = defn.debugInfo.localNames
           val lets = namedLets(defn).values
           val expectedLetNames =
             Seq("localVal", "localVar", "innerVal", "innerVar", "scoped")
@@ -148,7 +71,7 @@ class LocalNamesTest extends OptimizerSpec {
           assertContainsAll(
             "vals defined",
             expectedNames,
-            defn.localNames.values
+            defn.debugInfo.localNames.values
           )
           assertDistinct(lets)
         }
@@ -229,7 +152,7 @@ class LocalNamesTest extends OptimizerSpec {
       val platformInfo = codegen.PlatformInfo(config)
       val usesOpaquePointers = platformInfo.useOpaquePointers
       def checkLocalNames(defns: Seq[Defn], beforeLowering: Boolean) =
-        findDefinition(defns)
+        findEntry(defns)
           .foreach { defn =>
             val lets = namedLets(defn)
             val stage = if (beforeLowering) "optimized" else "lowered"
@@ -263,7 +186,7 @@ class LocalNamesTest extends OptimizerSpec {
               assertContainsAll(
                 s"hasVal in $stage",
                 Seq(localName),
-                defn.localNames.values
+                defn.debugInfo.localNames.values
               )
             }
             checkHasLet[Op.Call]("call")
@@ -339,7 +262,7 @@ class LocalNamesTest extends OptimizerSpec {
   ) {
     case (config, result) =>
       def checkLocalNames(defns: Seq[Defn]) =
-        findDefinition(defns)
+        findEntry(defns)
           .foreach { defn =>
             val lets = namedLets(defn)
             val letsNames = lets.values.toSeq
@@ -349,14 +272,20 @@ class LocalNamesTest extends OptimizerSpec {
             val expectedNames = expectedLets ++ asParams
             assertContainsAll("lets", expectedLets, letsNames)
             assertEquals("asParams", asParams, asParams.diff(letsNames))
-            assertContainsAll("vals", expectedNames, defn.localNames.values)
+            assertContainsAll(
+              "vals",
+              expectedNames,
+              defn.debugInfo.localNames.values
+            )
             // allowed, delayed and duplicated in each if-else branch
             assertDistinct(letsNames.diff(Seq("b")))
             defn.insts
               .find {
                 case Inst.Label(_, params) =>
                   asParams
-                    .diff(params.map(_.id).flatMap(defn.localNames.get))
+                    .diff(
+                      params.map(_.id).flatMap(defn.debugInfo.localNames.get)
+                    )
                     .isEmpty
                 case _ => false
               }
@@ -395,7 +324,7 @@ class LocalNamesTest extends OptimizerSpec {
 
     case (config, result) =>
       def checkLocalNames(defns: Seq[Defn]) =
-        findDefinition(defns)
+        findEntry(defns)
           .foreach { defn =>
             val lets = namedLets(defn).values
             val expectedLets =
@@ -403,7 +332,11 @@ class LocalNamesTest extends OptimizerSpec {
             // match merge block param
             val expectedNames = expectedLets ++ Seq("temp2")
             assertContainsAll("lets", expectedLets, lets)
-            assertContainsAll("vals", expectedNames, defn.localNames.values)
+            assertContainsAll(
+              "vals",
+              expectedNames,
+              defn.debugInfo.localNames.values
+            )
           }
       checkLocalNames(result.defns)
   }
@@ -439,14 +372,18 @@ class LocalNamesTest extends OptimizerSpec {
   ) {
     case (config, result) =>
       def checkLocalNames(defns: Seq[Defn]) =
-        findDefinition(defns)
+        findEntry(defns)
           .foreach { defn =>
             val lets = namedLets(defn).values
             val expectedLets =
               Seq("argInt", "impl", "temp", "temp1", "temp2", "temp3")
             val expectedNames = expectedLets ++ Seq("result", "args")
             assertContainsAll("lets", expectedLets, lets)
-            assertContainsAll("vals", expectedNames, defn.localNames.values)
+            assertContainsAll(
+              "vals",
+              expectedNames,
+              defn.debugInfo.localNames.values
+            )
           }
       checkLocalNames(result.defns)
   }
@@ -479,14 +416,18 @@ class LocalNamesTest extends OptimizerSpec {
   ) {
     case (config, result) =>
       def checkLocalNames(defns: Seq[Defn]) =
-        findDefinition(defns)
+        findEntry(defns)
           .foreach { defn =>
             val lets = namedLets(defn).values
             val expectedLets =
               Seq("argInt", "impl")
             val expectedNames = expectedLets ++ Seq("result")
             assertContainsAll("lets", expectedLets, lets)
-            assertContainsAll("vals", expectedNames, defn.localNames.values)
+            assertContainsAll(
+              "vals",
+              expectedNames,
+              defn.debugInfo.localNames.values
+            )
           }
       checkLocalNames(result.defns)
   }
