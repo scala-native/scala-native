@@ -8,6 +8,7 @@ import scala.annotation.tailrec
 
 import scala.reflect.ClassTag
 
+import java.util.function._
 import java.{util => ju}
 import java.util.stream.StreamSupport
 
@@ -1002,7 +1003,29 @@ object Arrays {
   }
 
 // Scala Native additions --------------------------------------------------
-  import java.util.{Spliterator, Spliterators}
+
+  def setAll(array: Array[Double], generator: IntToDoubleFunction): Unit = {
+    for (j <- 0 until array.size)
+      array(j) = generator.applyAsDouble(j)
+  }
+
+  def setAll(array: Array[Int], generator: IntUnaryOperator): Unit = {
+    for (j <- 0 until array.size)
+      array(j) = generator.applyAsInt(j)
+  }
+
+  def setAll(array: Array[Long], generator: IntToLongFunction): Unit = {
+    for (j <- 0 until array.size)
+      array(j) = generator.applyAsLong(j)
+  }
+
+  def setAll[T <: AnyRef](
+      array: Array[T],
+      generator: IntFunction[_ <: T]
+  ): Unit = {
+    for (j <- 0 until array.size)
+      array(j) = generator.apply(j)
+  }
 
   private final val standardArraySpliteratorCharacteristics =
     Spliterator.SIZED |
@@ -1182,4 +1205,5 @@ object Arrays {
 
     StreamSupport.stream(spliter, parallel = false)
   }
+
 }
