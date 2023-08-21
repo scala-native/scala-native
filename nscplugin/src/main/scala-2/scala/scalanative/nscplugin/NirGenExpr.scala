@@ -1446,10 +1446,9 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     def negateBool(value: nir.Val)(implicit pos: nir.Position): Val =
       buf.bin(Bin.Xor, Type.Bool, Val.True, value, unwind)
 
-    def genUnaryOp(code: Int, rightp: Tree, opty: nir.Type): Val = {
+    def genUnaryOp(code: Int, rightp: Tree, opty: nir.Type)(implicit pos: nir.Position): Val = {
       import scalaPrimitives._
 
-      implicit val pos: nir.Position = rightp.pos
       val right = genExpr(rightp)
       val coerced = genCoercion(right, right.ty, opty)
 
@@ -1624,9 +1623,8 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         rightp: Tree,
         ref: Boolean,
         negated: Boolean
-    ): Val = {
+    )(implicit pos: nir.Position): Val = {
       val left = genExpr(leftp)
-      implicit val pos: nir.Position = rightp.pos
 
       if (ref) {
         val right = genExpr(rightp)
@@ -2411,7 +2409,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     }
 
     def genApplyTypeApply(app: Apply): Val = {
-      val Apply(TypeApply(fun @ Select(receiverp, _), targs), argsp) = app
+      val Apply(tapp @ TypeApply(fun @ Select(receiverp, _), targs), argsp) = app
 
       val fromty = genType(receiverp.tpe)
       val toty = genType(targs.head.tpe)
@@ -2419,7 +2417,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       val value = genExpr(receiverp)
       lazy val boxed = boxValue(receiverp.tpe, value)(receiverp.pos)
 
-      implicit val pos: nir.Position = fun.pos
+      implicit val pos: nir.Position = tapp.pos
 
       fun.symbol match {
         case Object_isInstanceOf =>
