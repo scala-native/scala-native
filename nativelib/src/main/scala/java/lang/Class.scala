@@ -123,31 +123,25 @@ final class _Class[A] {
     prefix + name
   }
 
-  @stub
-  def getInterfaces(): Array[_Class[_]] =
-    ???
-  @stub
-  def getSuperclass(): Class[_ >: A] =
-    ???
-  @stub
-  def getField(name: String): Field =
-    ???
-  @stub
-  def getClassLoader(): java.lang.ClassLoader = ???
-  @stub
-  def getConstructor(args: Array[_Class[_]]): java.lang.reflect.Constructor[_] =
-    ???
-  @stub
-  def getConstructors(): Array[Object] = ???
-  @stub
-  def getDeclaredFields(): Array[Field] = ???
-  @stub
-  def getMethod(
-      name: java.lang.String,
-      args: Array[Class[_]]
-  ): java.lang.reflect.Method = ???
-  @stub
-  def getMethods(): Array[Method] = ???
+  // def getInterfaces(): Array[_Class[_]] =
+  //   ???
+
+  // In theory the following 2 methods could be implemented, based on idRangeUntil from RTTI if we would have some kind of mapping between class/trait id -> Class[_] or by modifing the CodeGen
+  // def getSuperclass(): Class[_ >: A] =
+  //   ???
+  // def getField(name: String): Field =
+  //   ???
+
+  // def getClassLoader(): java.lang.ClassLoader = ???
+  // def getConstructor(args: Array[_Class[_]]): java.lang.reflect.Constructor[_] =
+  //   ???
+  // def getConstructors(): Array[Object] = ???
+  // def getDeclaredFields(): Array[Field] = ???
+  // def getMethod(
+  //     name: java.lang.String,
+  //     args: Array[Class[_]]
+  // ): java.lang.reflect.Method = ???
+  // def getMethods(): Array[Method] = ???
 
   def getResourceAsStream(
       resourceName: java.lang.String
@@ -191,12 +185,11 @@ object _Class {
   ): _Class[A] =
     cls.asInstanceOf[_Class[A]]
 
-  @stub
-  def forName(name: String): Class[_] = ???
-  @stub
-  def forName(
-      name: String,
-      init: scala.Boolean,
-      loader: ClassLoader
-  ): Class[_] = ???
+  // Could be implemented via intrinsic method resolved at compile time and generating nir.Val.ClassOf(name: String)
+  // def forName(name: String): Class[_] = ???
+  // def forName(
+  //     name: String,
+  //     init: scala.Boolean,
+  //     loader: ClassLoader
+  // ): Class[_] = ???
 }

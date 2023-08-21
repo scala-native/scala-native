@@ -3,9 +3,9 @@ package scala.scalanative.nio.fs.windows
 import java.nio.file.{LinkOption, Path}
 import java.nio.file.attribute._
 
+import scalanative.annotation.stub
 import scalanative.unsigned._
 import scalanative.unsafe._
-import scalanative.annotation.stub
 import scala.scalanative.windows._
 import java.nio.file.WindowsException
 import java.{util => ju}
