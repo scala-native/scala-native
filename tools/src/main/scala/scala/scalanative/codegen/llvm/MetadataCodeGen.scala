@@ -158,11 +158,28 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
         case nir.Type.Unit => None
         // TODO: describe RefKinds using DICompositeType
         case _: RefKind | Null | Nothing => DIBasicTypes.get(Ptr)
+        case StructValue(tys)            =>
+          // TODO: DICompositeType and DIDerivedType should have `name` attribute, but we need to modify
+          // the way of traversing NIR during codegen or add type name info into NIR.
+          val elements = tys.map { ty =>
+            DIDerivedType(
+              tag = DWTag.Member,
+              baseType = toMetadataType(ty),
+              size = (MemoryLayout.sizeOf(ty) * 8).toInt /* bits */
+            )
+          }
+          val size = MemoryLayout.sizeOf(ty).toInt * 8 /* bits */
+          Some(
+            DICompositeType(
+              tag = DWTag.StructureType,
+              size = size,
+              elements = Tuple(elements)
+            )
+          )
         case other =>
           throw new NotImplementedError(s"No idea how to dwarfise $other")
       })
   }
-
 }
 
 object MetadataCodeGen {
@@ -425,6 +442,8 @@ object MetadataCodeGen {
       case v: DIBasicType      => v.writer
       case v: DIDerivedType    => v.writer
       case v: DISubroutineType => v.writer
+      case v: DICompositeType  => v.writer
+
     }
     implicit lazy val ofDIBasicType: Specialized[DIBasicType] = {
       case DIBasicType(name, size, align, encoding) =>
@@ -442,6 +461,12 @@ object MetadataCodeGen {
     implicit lazy val ofDISubroutineType: Specialized[DISubroutineType] = {
       case DISubroutineType(types) =>
         _.field("types", types)
+    }
+    implicit lazy val ofDICompositeType: Specialized[DICompositeType] = {
+      case DICompositeType(tag, size, elements) =>
+        _.field("tag", tag)
+          .field("size", size)
+          .field("elements", elements)
     }
 
     implicit lazy val ofDILocation: Specialized[DILocation] = {
