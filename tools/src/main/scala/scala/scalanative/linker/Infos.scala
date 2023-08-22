@@ -190,7 +190,8 @@ final class Method(
     val owner: Info,
     val name: Global,
     val ty: Type,
-    val insts: Array[Inst]
+    val insts: Array[Inst],
+    val debugInfo: Defn.Define.DebugInfo
 )(implicit val position: Position)
     extends MemberInfo {
   val value: Val =

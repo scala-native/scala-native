@@ -2,32 +2,66 @@ package scala.scalanative
 package interflow
 
 import scala.collection.mutable
-import scalanative.nir._
-import scalanative.linker._
-import scalanative.codegen.MemoryLayout
-import scalanative.util.{unreachable, And}
+import scala.scalanative.nir._
+import scala.scalanative.nir.Defn.Define.DebugInfo
+import scala.scalanative.linker._
+import scala.scalanative.codegen.MemoryLayout
+import scala.scalanative.util.{unreachable, And}
 
 trait Eval { self: Interflow =>
-  def run(insts: Array[Inst], offsets: Map[Local, Int], from: Local)(implicit
-      state: State
-  ): Inst.Cf = {
+  def interflow: Interflow = self
+  final val preserveDebugInfo: Boolean =
+    self.config.compilerConfig.debugMetadata
+
+  def run(
+      insts: Array[Inst],
+      offsets: Map[Local, Int],
+      from: Local,
+      debugInfo: DebugInfo,
+      scopeMapping: ScopeId => ScopeId
+  )(implicit state: State): Inst.Cf = {
     import state.{materialize, delay}
 
-    var pc = offsets(from) + 1
+    var pc = offsets(from)
 
+    if (preserveDebugInfo && pc == 0) {
+      val Inst.Label(_, params) = insts.head: @unchecked
+      for {
+        param <- params
+        name <- debugInfo.localNames.get(param.id)
+      } {
+        state.localNames.getOrElseUpdate(param.id, name)
+      }
+    }
+
+    pc += 1
+
+    // Implicit scopeId required for materialization of insts other then Inst.Let
+    implicit var lastScopeId = scopeMapping(ScopeId.TopLevel)
     while (true) {
       val inst = insts(pc)
-      implicit val pos: Position = inst.pos
+      implicit val srcPosition: Position = inst.pos
       def bailOut =
         throw BailOut("can't eval inst: " + inst.show)
       inst match {
         case _: Inst.Label =>
           unreachable
-        case Inst.Let(local, op, unwind) =>
+        case let @ Inst.Let(local, op, unwind) =>
+          lastScopeId = scopeMapping(let.scopeId)
           if (unwind ne Next.None) {
             throw BailOut("try-catch")
           }
           val value = eval(op)
+          if (preserveDebugInfo) {
+            val localName = debugInfo.localNames.get(local)
+            value match {
+              case Val.Local(id, _) =>
+                localName.foreach(state.localNames.getOrElseUpdate(id, _))
+              case Val.Virtual(addr) =>
+                localName.foreach(state.virtualNames.getOrElseUpdate(addr, _))
+              case _ => ()
+            }
+          }
           if (value.ty == Type.Nothing) {
             return Inst.Unreachable(unwind)(inst.pos)
           } else {
@@ -105,7 +139,12 @@ trait Eval { self: Interflow =>
 
   def eval(
       op: Op
-  )(implicit state: State, linked: linker.Result, origPos: Position): Val = {
+  )(implicit
+      state: State,
+      linked: linker.Result,
+      srcPosition: Position,
+      scopeId: ScopeId
+  ): Val = {
     import state.{emit, materialize, delay}
     def bailOut =
       throw BailOut("can't eval op: " + op.show)
@@ -116,12 +155,9 @@ trait Eval { self: Interflow =>
         def nonIntrinsic = {
           val eargs = args.map(eval)
           val argtys = eargs.map {
-            case VirtualRef(_, cls, _, _) =>
-              cls.ty
-            case DelayedRef(op) =>
-              op.resty
-            case value =>
-              value.ty
+            case VirtualRef(_, cls, _) => cls.ty
+            case DelayedRef(op)        => op.resty
+            case value                 => value.ty
           }
 
           val (dsig, dtarget) = emeth match {
@@ -214,8 +250,7 @@ trait Eval { self: Interflow =>
         Val.Virtual(state.allocClass(cls, zonePtr))
       case Op.Fieldload(ty, rawObj, name @ FieldRef(cls, fld)) =>
         eval(rawObj) match {
-          case VirtualRef(_, _, values, _) =>
-            values(fld.index)
+          case VirtualRef(_, _, values) => values(fld.index)
           case DelayedRef(op: Op.Box) =>
             val name = op.ty.asInstanceOf[Type.RefKind].className
             eval(Op.Unbox(Type.Ref(name), rawObj))
@@ -235,7 +270,7 @@ trait Eval { self: Interflow =>
         }
       case Op.Fieldstore(ty, obj, name @ FieldRef(cls, fld), value) =>
         eval(obj) match {
-          case VirtualRef(_, _, values, _) =>
+          case VirtualRef(_, _, values) =>
             values(fld.index) = eval(value)
             Val.Unit
           case obj =>
@@ -305,18 +340,13 @@ trait Eval { self: Interflow =>
         }
         emit(Op.Dynmethod(materialize(eval(obj)), dynsig))
       case Op.Module(clsName) =>
-        val isPure =
-          isPureModule(clsName)
-        val isWhitelisted =
-          Whitelist.pure.contains(clsName)
-        val canDelay =
-          isPure || isWhitelisted
+        val isPure = isPureModule(clsName)
+        val isWhitelisted = Whitelist.pure.contains(clsName)
+        val canDelay = isPure || isWhitelisted
 
-        if (canDelay) {
-          delay(Op.Module(clsName))
-        } else {
-          emit(Op.Module(clsName))
-        }
+        if (canDelay) delay(Op.Module(clsName))
+        else emit(Op.Module(clsName))
+
       case Op.As(ty, rawObj) =>
         val refty = ty match {
           case ty: Type.RefKind => ty
@@ -391,7 +421,7 @@ trait Eval { self: Interflow =>
         }
       case Op.Unbox(boxty @ Type.Ref(boxname, _, _), value) =>
         eval(value) match {
-          case VirtualRef(_, cls, Array(value), _) if boxname == cls.name =>
+          case VirtualRef(_, cls, Array(value)) if boxname == cls.name =>
             value
           case DelayedRef(Op.Box(Type.Ref(innername, _, _), innervalue))
               if innername == boxname =>
@@ -433,7 +463,7 @@ trait Eval { self: Interflow =>
         }
       case Op.Arrayload(ty, arr, idx) =>
         (eval(arr), eval(idx)) match {
-          case (VirtualRef(_, _, values, _), Val.Int(offset))
+          case (VirtualRef(_, _, values), Val.Int(offset))
               if inBounds(values, offset) =>
             values(offset)
           case (arr, idx) =>
@@ -441,7 +471,7 @@ trait Eval { self: Interflow =>
         }
       case Op.Arraystore(ty, arr, idx, value) =>
         (eval(arr), eval(idx)) match {
-          case (VirtualRef(_, _, values, _), Val.Int(offset))
+          case (VirtualRef(_, _, values), Val.Int(offset))
               if inBounds(values, offset) =>
             values(offset) = eval(value)
             Val.Unit
@@ -457,10 +487,8 @@ trait Eval { self: Interflow =>
         }
       case Op.Arraylength(arr) =>
         eval(arr) match {
-          case VirtualRef(_, _, values, _) =>
-            Val.Int(values.length)
-          case arr =>
-            emit(Op.Arraylength(materialize(arr)))
+          case VirtualRef(_, _, values) => Val.Int(values.length)
+          case arr => emit(Op.Arraylength(materialize(arr)))
         }
       case Op.Var(ty) =>
         Val.Local(state.newVar(ty), Type.Var(ty))
@@ -477,7 +505,8 @@ trait Eval { self: Interflow =>
 
   def eval(bin: Bin, ty: Type, l: Val, r: Val)(implicit
       state: State,
-      origPos: Position
+      srcPosition: Position,
+      scopeId: ScopeId
   ): Val = {
     import state.{emit, materialize}
     def fallback =
@@ -654,6 +683,7 @@ trait Eval { self: Interflow =>
           case (Val.Bool(l), Val.Bool(r))           => Val.Bool(l == r)
           case (Val.Int(l), Val.Int(r))             => Val.Bool(l == r)
           case (Val.Long(l), Val.Long(r))           => Val.Bool(l == r)
+          case (Val.Size(l), Val.Size(r))           => Val.Bool(l == r)
           case (Val.Null, Val.Null)                 => Val.True
           case (Val.Global(l, _), Val.Global(r, _)) => Val.Bool(l == r)
           case (Val.Null | _: Val.Global, Val.Null | _: Val.Global) => Val.False
@@ -664,6 +694,7 @@ trait Eval { self: Interflow =>
           case (Val.Bool(l), Val.Bool(r))           => Val.Bool(l != r)
           case (Val.Int(l), Val.Int(r))             => Val.Bool(l != r)
           case (Val.Long(l), Val.Long(r))           => Val.Bool(l != r)
+          case (Val.Size(l), Val.Size(r))           => Val.Bool(l != r)
           case (Val.Null, Val.Null)                 => Val.False
           case (Val.Global(l, _), Val.Global(r, _)) => Val.Bool(l != r)
           case (Val.Null | _: Val.Global, Val.Null | _: Val.Global) => Val.True
@@ -675,6 +706,8 @@ trait Eval { self: Interflow =>
             Val.Bool(java.lang.Integer.compareUnsigned(l, r) > 0)
           case (Val.Long(l), Val.Long(r)) =>
             Val.Bool(java.lang.Long.compareUnsigned(l, r) > 0)
+          case (Val.Size(l), Val.Size(r)) =>
+            Val.Bool(java.lang.Long.compareUnsigned(l, r) > 0)
           case _ =>
             bailOut
         }
@@ -683,6 +716,8 @@ trait Eval { self: Interflow =>
           case (Val.Int(l), Val.Int(r)) =>
             Val.Bool(java.lang.Integer.compareUnsigned(l, r) >= 0)
           case (Val.Long(l), Val.Long(r)) =>
+            Val.Bool(java.lang.Long.compareUnsigned(l, r) >= 0)
+          case (Val.Size(l), Val.Size(r)) =>
             Val.Bool(java.lang.Long.compareUnsigned(l, r) >= 0)
           case _ =>
             bailOut
@@ -693,6 +728,8 @@ trait Eval { self: Interflow =>
             Val.Bool(java.lang.Integer.compareUnsigned(l, r) < 0)
           case (Val.Long(l), Val.Long(r)) =>
             Val.Bool(java.lang.Long.compareUnsigned(l, r) < 0)
+          case (Val.Size(l), Val.Size(r)) =>
+            Val.Bool(java.lang.Long.compareUnsigned(l, r) < 0)
           case _ =>
             bailOut
         }
@@ -702,6 +739,8 @@ trait Eval { self: Interflow =>
             Val.Bool(java.lang.Integer.compareUnsigned(l, r) <= 0)
           case (Val.Long(l), Val.Long(r)) =>
             Val.Bool(java.lang.Long.compareUnsigned(l, r) <= 0)
+          case (Val.Size(l), Val.Size(r)) =>
+            Val.Bool(java.lang.Long.compareUnsigned(l, r) <= 0)
           case _ =>
             bailOut
         }
@@ -709,24 +748,28 @@ trait Eval { self: Interflow =>
         (l, r) match {
           case (Val.Int(l), Val.Int(r))   => Val.Bool(l > r)
           case (Val.Long(l), Val.Long(r)) => Val.Bool(l > r)
+          case (Val.Size(l), Val.Size(r)) => Val.Bool(l > r)
           case _                          => bailOut
         }
       case Comp.Sge =>
         (l, r) match {
           case (Val.Int(l), Val.Int(r))   => Val.Bool(l >= r)
           case (Val.Long(l), Val.Long(r)) => Val.Bool(l >= r)
+          case (Val.Size(l), Val.Size(r)) => Val.Bool(l >= r)
           case _                          => bailOut
         }
       case Comp.Slt =>
         (l, r) match {
           case (Val.Int(l), Val.Int(r))   => Val.Bool(l < r)
           case (Val.Long(l), Val.Long(r)) => Val.Bool(l < r)
+          case (Val.Size(l), Val.Size(r)) => Val.Bool(l < r)
           case _                          => bailOut
         }
       case Comp.Sle =>
         (l, r) match {
           case (Val.Int(l), Val.Int(r))   => Val.Bool(l <= r)
           case (Val.Long(l), Val.Long(r)) => Val.Bool(l <= r)
+          case (Val.Size(l), Val.Size(r)) => Val.Bool(l <= r)
           case _                          => bailOut
         }
       case Comp.Feq =>
@@ -879,18 +922,22 @@ trait Eval { self: Interflow =>
           case (Val.Int(v), Type.Double)   => Val.Double(v.toDouble)
           case (Val.Long(v), Type.Float)   => Val.Float(v.toFloat)
           case (Val.Long(v), Type.Double)  => Val.Double(v.toDouble)
+          case (Val.Size(v), Type.Float)   => Val.Float(v.toFloat)
+          case (Val.Size(v), Type.Double)  => Val.Double(v.toDouble)
           case _                           => bailOut
         }
       case Conv.Ptrtoint =>
         (value, ty) match {
           case (Val.Null, Type.Long) => Val.Long(0L)
           case (Val.Null, Type.Int)  => Val.Int(0)
+          case (Val.Null, Type.Size) => Val.Size(0)
           case _                     => bailOut
         }
       case Conv.Inttoptr =>
         (value, ty) match {
           case (Val.Long(0L), Type.Ptr) => Val.Null
           case (Val.Int(0L), Type.Ptr)  => Val.Null
+          case (Val.Size(0L), Type.Ptr) => Val.Null
           case _                        => bailOut
         }
       case Conv.Bitcast =>
@@ -925,14 +972,16 @@ trait Eval { self: Interflow =>
     }
   }
 
-  def eval(value: Val)(implicit state: State, origPos: Position): Val = {
+  def eval(value: Val)(implicit
+      state: State,
+      srcPosition: nir.Position,
+      scopeId: nir.ScopeId
+  ): Val = {
     value match {
       case Val.Local(local, _) if local.id >= 0 =>
         state.loadLocal(local) match {
-          case value: Val.Virtual =>
-            eval(value)
-          case value =>
-            value
+          case value: Val.Virtual => eval(value)
+          case value              => value
         }
       case Val.Virtual(addr) if state.hasEscaped(addr) =>
         state.derefEscaped(addr).escapedValue
@@ -970,13 +1019,11 @@ trait Eval { self: Interflow =>
 
         val init = clsName member Sig.Ctor(Seq.empty)
         val isPure =
-          if (!shallVisit(init)) {
-            true
-          } else {
-            visitDuplicate(init, argumentTypes(init)).fold {
-              false
-            } { defn => isPureModuleCtor(defn) }
-          }
+          !shallVisit(init) ||
+            visitDuplicate(init, argumentTypes(init)).fold(false)(
+              isPureModuleCtor
+            )
+
         setModulePurity(clsName, isPure)
         isPure
       }

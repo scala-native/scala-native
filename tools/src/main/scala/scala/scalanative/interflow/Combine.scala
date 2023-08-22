@@ -13,7 +13,8 @@ trait Combine { self: Interflow =>
 
   def combine(bin: Bin, ty: Type, l: Val, r: Val)(implicit
       state: State,
-      origPos: Position
+      srcPosition: Position,
+      scopeId: ScopeId
   ): Val = {
     import state.{materialize, delay, emit}
 
@@ -388,7 +389,9 @@ trait Combine { self: Interflow =>
   }
 
   def combine(comp: Comp, ty: Type, l: Val, r: Val)(implicit
-      state: State
+      state: State,
+      srcPosition: Position,
+      scopeId: ScopeId
   ): Val = {
     import state.{materialize, delay, emit}
 
@@ -409,13 +412,13 @@ trait Combine { self: Interflow =>
       // This is not true however for boxes and strings as
       // they may be interned and the virtual allocation may
       // alias pre-existing materialized allocation.
-      case (Ieq, VirtualRef(ClassKind | ArrayKind, _, _, _), r) =>
+      case (Ieq, VirtualRef(ClassKind | ArrayKind, _, _), r) =>
         Val.False
-      case (Ieq, l, VirtualRef(ClassKind | ArrayKind, _, _, _)) =>
+      case (Ieq, l, VirtualRef(ClassKind | ArrayKind, _, _)) =>
         Val.False
-      case (Ine, VirtualRef(ClassKind | ArrayKind, _, _, _), r) =>
+      case (Ine, VirtualRef(ClassKind | ArrayKind, _, _), r) =>
         Val.True
-      case (Ine, l, VirtualRef(ClassKind | ArrayKind, _, _, _)) =>
+      case (Ine, l, VirtualRef(ClassKind | ArrayKind, _, _)) =>
         Val.True
 
       // Comparing non-nullable value with null will always
@@ -557,7 +560,11 @@ trait Combine { self: Interflow =>
     }
   }
 
-  def combine(conv: Conv, ty: Type, value: Val)(implicit state: State): Val = {
+  def combine(conv: Conv, ty: Type, value: Val)(implicit
+      state: State,
+      srcPosition: Position,
+      scopeId: ScopeId
+  ): Val = {
     import state.{materialize, delay, emit}
 
     (conv, ty, value) match {

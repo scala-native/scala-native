@@ -1,7 +1,6 @@
 package java.lang
 
 import java.io.File
-import scala.scalanative.annotation.stub
 import scala.scalanative.libc.stdlib
 import scala.scalanative.posix.unistd._
 import scala.scalanative.windows.SysInfoApi._
@@ -23,8 +22,7 @@ class Runtime private () {
   def exit(status: Int): Unit = stdlib.exit(status)
   def gc(): Unit = System.gc()
 
-  @stub
-  def addShutdownHook(thread: java.lang.Thread): Unit = ???
+  // def addShutdownHook(thread: java.lang.Thread): Unit = ???
 
   def exec(cmdarray: Array[String]): Process =
     new ProcessBuilder(cmdarray).start()

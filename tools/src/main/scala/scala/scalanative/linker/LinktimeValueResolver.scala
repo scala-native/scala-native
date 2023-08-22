@@ -88,7 +88,7 @@ trait LinktimeValueResolver { self: Reach =>
           case inst: Inst.LinktimeIf => resolveLinktimeIf(inst)
           case inst @ Inst.Let(_, ReferencedPropertyOp(propertyName), _) =>
             val resolvedVal = resolveLinktimeProperty(propertyName).nirValue
-            inst.copy(op = Op.Copy(resolvedVal))
+            inst.copy(op = Op.Copy(resolvedVal))(inst.pos, inst.scopeId)
           case inst => inst
         }
       }
@@ -244,7 +244,7 @@ trait LinktimeValueResolver { self: Reach =>
           }
 
         case Inst.Jump(next) =>
-          val nextBlock = cf.find(next.name)
+          val nextBlock = cf.find(next.id)
           next match {
             case Next.Label(_, values) =>
               locals ++= nextBlock.params.zip(values).toMap

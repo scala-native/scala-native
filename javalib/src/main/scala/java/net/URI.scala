@@ -6,6 +6,7 @@ import java.lang.{StringBuilder => JStringBuilder}
 import java.io.Serializable
 import java.io.UnsupportedEncodingException
 import java.util.StringTokenizer
+import scala.annotation.nowarn
 
 object URI {
   val unreserved: String = "_-!.~\'()*"
@@ -923,6 +924,11 @@ final class URI private () extends Comparable[URI] with Serializable {
   def isAbsolute(): Boolean = absolute
 
   def isOpaque(): Boolean = opaque
+
+  @nowarn def toURL(): URL = {
+    if (!absolute) throw new IllegalArgumentException("URI is not absolute")
+    else new URL(toString)
+  }
 
   private def normalize(path: String): String = {
     // count the number of '/'s, to determine number of segments

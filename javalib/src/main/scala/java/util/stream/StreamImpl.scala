@@ -669,28 +669,56 @@ private[stream] class StreamImpl[T](
      * specifying T <: AnyRef so that the coercion will work at
      * runtime.
      */
-    val buffer = toArray()
 
-    /* Scala 3 and 2.13.11 both allow ""Arrays.sort(" here.
-     * Scala 2.12.18 requires "sort[Object](".
-     */
-    Arrays
-      .sort[Object](buffer, comparator.asInstanceOf[Comparator[_ >: Object]])
+    class SortingSpliterSupplier[T](
+        srcSpliter: Spliterator[T],
+        comparator: Comparator[_ >: T]
+    ) extends Supplier[Spliterator[T]] {
 
-    val startingBits = _spliter.characteristics()
-    val alwaysSetBits =
-      Spliterator.SORTED | Spliterator.ORDERED |
-        Spliterator.SIZED | Spliterator.SUBSIZED
+      def get(): Spliterator[T] = {
+        val knownSize = _spliter.getExactSizeIfKnown()
 
-    // Time & experience may show that additional bits need to be cleared here.
-    val alwaysClearedBits = Spliterator.IMMUTABLE
+        if (knownSize > Integer.MAX_VALUE) {
+          throw new IllegalArgumentException(
+            "Stream size exceeds max array size"
+          )
+        } else {
+          /* Sufficiently large streams, with either known or unknown size may
+           * eventually throw an OutOfMemoryError exception, same as JVM.
+           *
+           * sorting streams of unknown size is likely to be _slow_.
+           */
 
-    val newCharacteristics =
-      (startingBits | alwaysSetBits) & ~alwaysClearedBits
+          val buffer = toArray()
 
-    val spl = Spliterators.spliterator[T](buffer, newCharacteristics)
+          /* Scala 3 and 2.13.11 both allow ""Arrays.sort(" here.
+           * Scala 2.12.18 requires "sort[Object](".
+           */
+          Arrays
+            .sort[Object](
+              buffer,
+              comparator.asInstanceOf[Comparator[_ >: Object]]
+            )
 
-    new StreamImpl[T](spl, _parallel, pipeline)
+          val startingBits = _spliter.characteristics()
+          val alwaysSetBits =
+            Spliterator.SORTED | Spliterator.ORDERED |
+              Spliterator.SIZED | Spliterator.SUBSIZED
+
+          // Time & experience may show that additional bits need to be cleared
+          val alwaysClearedBits = Spliterator.IMMUTABLE
+
+          val newCharacteristics =
+            (startingBits | alwaysSetBits) & ~alwaysClearedBits
+
+          Spliterators.spliterator[T](buffer, newCharacteristics)
+        }
+      }
+    }
+
+    // Do the sort in the eventual terminal operation, not now.
+    val spl = new SortingSpliterSupplier[T](_spliter, comparator)
+    new StreamImpl[T](spl, 0, _parallel)
   }
 
   def toArray(): Array[Object] = {

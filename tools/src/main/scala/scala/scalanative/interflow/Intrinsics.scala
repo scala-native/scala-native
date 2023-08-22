@@ -33,7 +33,8 @@ trait Intrinsics { self: Interflow =>
 
   def intrinsic(ty: Type, name: Global, rawArgs: Seq[Val])(implicit
       state: State,
-      origPos: Position
+      srcPosition: Position,
+      scopeId: ScopeId
   ): Option[Val] = {
     val Global.Member(_, sig) = name: @unchecked
 
@@ -47,7 +48,7 @@ trait Intrinsics { self: Interflow =>
     sig match {
       case Rt.GetClassSig =>
         args match {
-          case Seq(VirtualRef(_, cls, _, _)) =>
+          case Seq(VirtualRef(_, cls, _)) =>
             Some(Val.Global(cls.name, Rt.Class))
           case Seq(value) =>
             val ty = value match {

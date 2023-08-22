@@ -7,33 +7,47 @@ import scalanative.nir._
 import scalanative.linker._
 import scalanative.codegen.Lower
 
-final class State(block: Local) {
+final class State(block: Local)(preserveDebugInfo: Boolean) {
   var fresh = Fresh(block.id)
   /* Performance Note: OpenHashMap/LongMap/AnyRefMap have a faster clone()
    * operation. This really makes a difference on fullClone() */
   var heap = mutable.LongMap.empty[Instance]
   var locals = mutable.OpenHashMap.empty[Local, Val]
   var delayed = mutable.AnyRefMap.empty[Op, Val]
-  var emitted = mutable.AnyRefMap.empty[Op, Val]
+  var emitted = mutable.AnyRefMap.empty[Op, Val.Local]
   var emit = new nir.Buffer()(fresh)
   var inlineDepth = 0
+
+  // Delayed init
+  var localNames: mutable.OpenHashMap[Local, String] = _
+  var virtualNames: mutable.LongMap[String] = _
+
+  if (preserveDebugInfo) {
+    localNames = mutable.OpenHashMap.empty[Local, String]
+    virtualNames = mutable.LongMap.empty[String]
+  }
 
   private def alloc(
       kind: Kind,
       cls: Class,
       values: Array[Val],
       zone: Option[Val]
-  ): Addr = {
+  )(implicit srcPosition: nir.Position, scopeId: nir.ScopeId): Addr = {
     val addr = fresh().id
     heap(addr) = VirtualInstance(kind, cls, values, zone)
     addr
   }
-  def allocClass(cls: Class, zone: Option[Val]): Addr = {
+  def allocClass(cls: Class, zone: Option[Val])(implicit
+      srcPosition: nir.Position,
+      scopeId: nir.ScopeId
+  ): Addr = {
     val fields = cls.fields.map(fld => Val.Zero(fld.ty).canonicalize)
     alloc(ClassKind, cls, fields.toArray[Val], zone)
   }
   def allocArray(elemty: Type, count: Int, zone: Option[Val])(implicit
-      linked: linker.Result
+      linked: linker.Result,
+      srcPosition: nir.Position,
+      scopeId: nir.ScopeId
   ): Addr = {
     val zero = Val.Zero(elemty).canonicalize
     val values = Array.fill[Val](count)(zero)
@@ -41,12 +55,18 @@ final class State(block: Local) {
     alloc(ArrayKind, cls, values, zone)
   }
   def allocBox(boxname: Global, value: Val)(implicit
-      linked: linker.Result
+      linked: linker.Result,
+      srcPosition: nir.Position,
+      scopeId: nir.ScopeId
   ): Addr = {
     val boxcls = linked.infos(boxname).asInstanceOf[Class]
     alloc(BoxKind, boxcls, Array(value), zone = None)
   }
-  def allocString(value: String)(implicit linked: linker.Result): Addr = {
+  def allocString(value: String)(implicit
+      linked: linker.Result,
+      srcPosition: nir.Position,
+      scopeId: nir.ScopeId
+  ): Addr = {
     val charsArray = value.toArray
     val charsAddr = allocArray(Type.Char, charsArray.length, zone = None)
     val chars = derefVirtual(charsAddr)
@@ -62,20 +82,21 @@ final class State(block: Local) {
       Val.Int(Lower.stringHashCode(value))
     alloc(StringKind, linked.StringClass, values, zone = None)
   }
-  def delay(op: Op): Val = {
-    if (delayed.contains(op)) {
-      delayed(op)
-    } else {
-      val addr = fresh().id
-      val value = Val.Virtual(addr)
-      heap(addr) = DelayedInstance(op)
-      delayed(op) = value
-      value
-    }
+  def delay(
+      op: Op
+  )(implicit srcPosition: nir.Position, scopeId: nir.ScopeId): Val = {
+    delayed.getOrElseUpdate(
+      op, {
+        val addr = fresh().id
+        heap(addr) = DelayedInstance(op)
+        Val.Virtual(addr)
+      }
+    )
   }
   def emit(op: Op, idempotent: Boolean = false)(implicit
-      position: Position
-  ): Val = {
+      srcPosition: Position,
+      scopeId: ScopeId
+  ): Val.Local = {
     if (op.isIdempotent || idempotent) {
       if (emitted.contains(op)) {
         emitted(op)
@@ -84,10 +105,27 @@ final class State(block: Local) {
         emitted(op) = value
         value
       }
-    } else {
-      emit.let(op, Next.None)
-    }
+    } else emit.let(op, Next.None)
   }
+
+  def emitVirtual(
+      addr: Addr
+  )(op: Op, idempotent: Boolean = false): Val.Local = {
+    val instance = heap(addr)
+    import instance.{srcPosition, scopeId}
+
+    val value = emit(op, idempotent)
+    // there might cases when virtualName for given addres might be assigned to two different instances
+    // It can happend when we deal with partially-evaluated instances, eg. arrayalloc + arraystore
+    // Don't emit local names for ops returing unit value
+    if (preserveDebugInfo && op.resty != Type.Unit) {
+      virtualNames.get(addr).foreach { name =>
+        this.localNames += value.id -> name
+      }
+    }
+    value
+  }
+
   def deref(addr: Addr): Instance = {
     heap(addr)
   }
@@ -150,15 +188,17 @@ final class State(block: Local) {
     } {
       val clone = obj.clone()
       clone match {
-        case DelayedInstance(op) =>
-          delayed(op) = Val.Virtual(addr)
-        case _ =>
-          ()
+        case DelayedInstance(op) => delayed(op) = Val.Virtual(addr)
+        case _                   => ()
       }
       heap(addr) = clone
     }
 
     emitted ++= other.emitted
+    if (preserveDebugInfo) {
+      localNames.addMissing(other.localNames)
+      virtualNames.addMissing(other.virtualNames)
+    }
   }
   def heapClosure(roots: Seq[Val]): mutable.Set[Addr] = {
     val reachable = mutable.Set.empty[Addr]
@@ -227,12 +267,16 @@ final class State(block: Local) {
     reachable
   }
   def fullClone(block: Local): State = {
-    val newstate = new State(block)
+    val newstate = new State(block)(preserveDebugInfo)
     newstate.heap = heap.mapValuesNow(_.clone())
     newstate.locals = locals.clone()
     newstate.delayed = delayed.clone()
     newstate.emitted = emitted.clone()
     newstate.inlineDepth = inlineDepth
+    if (preserveDebugInfo) {
+      newstate.virtualNames = virtualNames.mapValuesNow(identity)
+      newstate.localNames = localNames.clone()
+    }
     newstate
   }
   override def equals(other: Any): Boolean = other match {
@@ -241,17 +285,15 @@ final class State(block: Local) {
     case _ =>
       false
   }
-  def materialize(
-      rootValue: Val
-  )(implicit linked: linker.Result, origPos: Position): Val = {
+  def materialize(rootValue: Val)(implicit linked: linker.Result): Val = {
     val locals = mutable.Map.empty[Addr, Val]
-
     def reachAddr(addr: Addr): Unit = {
       if (!locals.contains(addr)) {
         val local = reachAlloc(addr)
+        val instance = heap(addr)
         locals(addr) = local
         reachInit(local, addr)
-        heap(addr) = EscapedInstance(local)
+        heap(addr) = new EscapedInstance(local, instance)
       }
     }
 
@@ -268,11 +310,15 @@ final class State(block: Local) {
           } else {
             Val.Int(values.length)
           }
-        emit.arrayalloc(elemty, init, Next.None, zone.map(escapedVal))
+        emitVirtual(addr)(
+          Op.Arrayalloc(elemty, init, zone.map(escapedVal))
+        )
       case VirtualInstance(BoxKind, cls, Array(value), zone) =>
         reachVal(value)
         zone.foreach(reachVal)
-        emit(Op.Box(Type.Ref(cls.name), escapedVal(value)))
+        emitVirtual(addr)(
+          Op.Box(Type.Ref(cls.name), escapedVal(value))
+        )
       case VirtualInstance(StringKind, _, values, zone)
           if !hasEscaped(values(linked.StringValueField.index)) =>
         val Val.Virtual(charsAddr) = values(
@@ -280,18 +326,21 @@ final class State(block: Local) {
         ): @unchecked
         val chars = derefVirtual(charsAddr).values
           .map {
-            case Val.Char(v) =>
-              v
-            case _ =>
-              unreachable
+            case Val.Char(v) => v
+            case _           => unreachable
           }
           .toArray[Char]
         Val.String(new java.lang.String(chars))
       case VirtualInstance(_, cls, values, zone) =>
-        emit.classalloc(cls.name, Next.None, zone.map(escapedVal))
+        emitVirtual(addr)(
+          Op.Classalloc(cls.name, zone.map(escapedVal))
+        )
       case DelayedInstance(op) =>
         reachOp(op)
-        emit(escapedOp(op), idempotent = true)
+        emitVirtual(addr)(
+          escapedOp(op),
+          idempotent = true
+        )
       case EscapedInstance(value) =>
         reachVal(value)
         escapedVal(value)
@@ -310,12 +359,13 @@ final class State(block: Local) {
               if (!value.isZero) {
                 reachVal(value)
                 zone.foreach(reachVal)
-                emit.arraystore(
-                  elemty,
-                  local,
-                  Val.Int(idx),
-                  escapedVal(value),
-                  Next.None
+                emitVirtual(addr)(
+                  Op.Arraystore(
+                    ty = elemty,
+                    arr = local,
+                    idx = Val.Int(idx),
+                    value = escapedVal(value)
+                  )
                 )
               }
           }
@@ -331,19 +381,18 @@ final class State(block: Local) {
             if (!value.isZero) {
               reachVal(value)
               zone.foreach(reachVal)
-              emit.fieldstore(
-                fld.ty,
-                local,
-                fld.name,
-                escapedVal(value),
-                Next.None
+              emitVirtual(addr)(
+                Op.Fieldstore(
+                  ty = fld.ty,
+                  obj = local,
+                  name = fld.name,
+                  value = escapedVal(value)
+                )
               )
             }
         }
-      case DelayedInstance(op) =>
-        ()
-      case EscapedInstance(value) =>
-        ()
+      case DelayedInstance(op)    => ()
+      case EscapedInstance(value) => ()
     }
 
     def reachVal(v: Val): Unit = v match {
@@ -391,10 +440,8 @@ final class State(block: Local) {
     }
 
     def escapedVal(v: Val): Val = v match {
-      case Val.Virtual(addr) =>
-        locals(addr)
-      case _ =>
-        v
+      case Val.Virtual(addr) => locals(addr)
+      case _                 => v
     }
 
     def escapedOp(op: Op): Op = op match {

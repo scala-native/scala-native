@@ -158,13 +158,14 @@ trait GenNativeExports(using Context):
       externRetType
     ) = genExternMethodSig(member)
 
-    val defn = Defn.Define(
+    val defn = new Defn.Define(
       attrs = Attrs(inlineHint = nir.Attr.NoInline, isExtern = true),
       name = externName,
       ty = exportedFunctionType,
       insts = withFreshExprBuffer { buf ?=>
         val fresh = curFresh.get
         scoped(
+          curScopeId := ScopeId.TopLevel,
           curUnwindHandler := None,
           curMethodThis := None
         ) {

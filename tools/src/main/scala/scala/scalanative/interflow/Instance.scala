@@ -5,7 +5,10 @@ import java.util.Arrays
 import scalanative.nir.{Type, Val, Op}
 import scalanative.linker.Class
 
-sealed abstract class Instance extends Cloneable {
+sealed abstract class Instance(implicit
+    val srcPosition: nir.Position,
+    val scopeId: nir.ScopeId
+) extends Cloneable {
   def ty: Type = this match {
     case EscapedInstance(value) =>
       value.ty
@@ -16,12 +19,9 @@ sealed abstract class Instance extends Cloneable {
   }
 
   override def clone(): Instance = this match {
-    case EscapedInstance(value) =>
-      EscapedInstance(value)
-    case DelayedInstance(op) =>
-      DelayedInstance(op)
-    case VirtualInstance(kind, cls, values, zone) =>
-      VirtualInstance(kind, cls, values.clone(), zone)
+    case inst: EscapedInstance => inst.copy()
+    case inst: DelayedInstance => inst.copy()
+    case inst: VirtualInstance => inst.copy(values = inst.values.clone())
   }
 
   override def toString: String = this match {
@@ -35,16 +35,26 @@ sealed abstract class Instance extends Cloneable {
   }
 }
 
-final case class EscapedInstance(val escapedValue: Val) extends Instance
+final case class EscapedInstance(val escapedValue: Val)(implicit
+    srcPosition: nir.Position,
+    scopeId: nir.ScopeId
+) extends Instance {
+  def this(escapedValue: Val, instance: Instance) =
+    this(escapedValue)(instance.srcPosition, instance.scopeId)
+}
 
-final case class DelayedInstance(val delayedOp: Op) extends Instance
+final case class DelayedInstance(val delayedOp: Op)(implicit
+    srcPosition: nir.Position,
+    scopeId: nir.ScopeId
+) extends Instance
 
 final case class VirtualInstance(
-    val kind: Kind,
-    val cls: Class,
-    var values: Array[Val],
-    val zone: Option[Val]
-) extends Instance {
+    kind: Kind,
+    cls: Class,
+    values: Array[Val],
+    zone: Option[Val]
+)(implicit srcPosition: nir.Position, scopeId: nir.ScopeId)
+    extends Instance {
 
   // We can't use case class generated equals, due to the fact
   // that equals on arrays does reference equality by default.

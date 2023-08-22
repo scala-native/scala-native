@@ -13,7 +13,7 @@ trait Traverse {
         onVal(value)
       case Defn.Declare(_, _, ty) =>
         onType(ty)
-      case Defn.Define(_, _, ty, insts) =>
+      case Defn.Define(_, _, ty, insts, _) =>
         onInsts(insts)
       case Defn.Trait(_, _, _)     => ()
       case Defn.Class(_, _, _, _)  => ()
@@ -151,7 +151,7 @@ trait Traverse {
     case Val.ArrayValue(ty, values) =>
       onType(ty)
       values.foreach(onVal)
-    case Val.Local(n, ty)  => onType(ty)
+    case Val.Local(_, ty)  => onType(ty)
     case Val.Global(n, ty) => onType(ty)
     case Val.Const(v)      => onVal(v)
     case _                 => ()

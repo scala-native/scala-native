@@ -7,6 +7,8 @@ final class Fresh private (private var start: Long) {
     val value = start
     Local(value)
   }
+  def last = Local(start)
+  def skip(n: Long): Unit = start += n
 }
 
 object Fresh {
@@ -23,7 +25,7 @@ object Fresh {
         max = Math.max(max, local.id)
       case Inst.Label(local, params) =>
         max = Math.max(max, local.id)
-        params.foreach { param => max = Math.max(max, param.name.id) }
+        params.foreach { param => max = Math.max(max, param.id.id) }
       case Inst.Throw(_, Next.Unwind(Val.Local(exc, _), _)) =>
         max = Math.max(max, exc.id)
       case Inst.Unreachable(Next.Unwind(Val.Local(exc, _), _)) =>

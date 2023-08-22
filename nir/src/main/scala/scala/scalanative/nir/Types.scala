@@ -16,6 +16,8 @@ sealed abstract class Type {
       unsupported(s"${this}.elemty($path)")
   }
 
+  def =?=(other: Type) = Type.normalize(this) == Type.normalize(other)
+
   def hasKnownSize: Boolean = this match {
     case Type.Null | Type.Ptr   => true
     case _: Type.RefKind        => false

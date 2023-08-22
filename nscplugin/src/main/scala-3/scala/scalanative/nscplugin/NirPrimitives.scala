@@ -90,7 +90,9 @@ object NirPrimitives {
   final val SIZE_OF = CLASS_FIELD_RAWPTR + 1
   final val ALIGNMENT_OF = SIZE_OF + 1
 
+  // scala.reflect.Selectable.selectDynamic
   final val REFLECT_SELECTABLE_SELECTDYN = ALIGNMENT_OF + 1
+  // scala.reflect.Selectable.applyDynamic
   final val REFLECT_SELECTABLE_APPLYDYN = REFLECT_SELECTABLE_SELECTDYN + 1
 
   final val SAFEZONE_ALLOC = 1 + REFLECT_SELECTABLE_APPLYDYN

@@ -272,7 +272,7 @@ class Reach(
 
   def reachExported(name: Global): Unit = {
     def isExported(defn: Defn) = defn match {
-      case Defn.Define(attrs, Global.Member(_, sig), _, _) =>
+      case Defn.Define(attrs, Global.Member(_, sig), _, _, _) =>
         attrs.isExtern || sig.isExtern
       case _ => false
     }
@@ -566,7 +566,14 @@ class Reach(
     val Defn.Declare(attrs, name, ty) = defn
     implicit val pos: nir.Position = defn.pos
     newInfo(
-      new Method(attrs, scopeInfoOrUnavailable(name.top), name, ty, Array())
+      new Method(
+        attrs,
+        scopeInfoOrUnavailable(name.top),
+        name,
+        ty,
+        insts = Array(),
+        debugInfo = Defn.Define.DebugInfo.empty
+      )
     )
     reachAttrs(attrs)
     reachType(ty)
@@ -612,6 +619,8 @@ class Reach(
           lookup(newMethod.name, ignoreIfUnavailable = true)
             .map { _ =>
               implicit val pos: nir.Position = defn.pos
+              implicit val scopeId: nir.ScopeId = nir.ScopeId.TopLevel
+
               val newType = {
                 val newArgsTpe = Type.Ref(owner) +: ty.args
                 Type.Function(newArgsTpe, ty.ret)
@@ -620,7 +629,7 @@ class Reach(
               if (inModule) {
                 val moduleV = Val.Local(fresh(), Type.Ref(owner))
                 val newArgs = moduleV +: args
-                Inst.Let(moduleV.name, Op.Module(owner), Next.None) ::
+                Inst.Let(moduleV.id, Op.Module(owner), Next.None) ::
                   Inst.Let(n, Op.Call(newType, newMethod, newArgs), unwind) ::
                   Nil
               } else {
@@ -650,7 +659,7 @@ class Reach(
   }
 
   def reachDefine(defn: Defn.Define): Unit = {
-    val Defn.Define(attrs, name, ty, insts) = defn
+    val Defn.Define(attrs, name, ty, insts, debugInfo) = defn
     implicit val pos: nir.Position = defn.pos
     newInfo(
       new Method(
@@ -658,7 +667,8 @@ class Reach(
         scopeInfoOrUnavailable(name.top),
         name,
         ty,
-        insts.toArray
+        insts.toArray,
+        debugInfo
       )
     )
     reachAttrs(attrs)
@@ -725,23 +735,18 @@ class Reach(
   }
 
   def reachVal(value: Val): Unit = value match {
-    case Val.Zero(ty) =>
-      reachType(ty)
-    case Val.StructValue(values) =>
-      values.foreach(reachVal)
+    case Val.Zero(ty)            => reachType(ty)
+    case Val.StructValue(values) => values.foreach(reachVal)
     case Val.ArrayValue(ty, values) =>
       reachType(ty)
       values.foreach(reachVal)
-    case Val.Local(n, ty) =>
-      reachType(ty)
+    case Val.Local(_, ty) => reachType(ty)
     case Val.Global(n, ty) =>
-      reachGlobal(n); reachType(ty)
-    case Val.Const(v) =>
-      reachVal(v)
-    case Val.ClassOf(cls) =>
-      reachGlobal(cls)
-    case _ =>
-      ()
+      reachGlobal(n)
+      reachType(ty)
+    case Val.Const(v)     => reachVal(v)
+    case Val.ClassOf(cls) => reachGlobal(cls)
+    case _                => ()
   }
 
   def reachInsts(insts: Seq[Inst]): Unit =
@@ -750,7 +755,7 @@ class Reach(
   def reachInst(inst: Inst): Unit = inst match {
     case Inst.Label(n, params) =>
       params.foreach(p => reachType(p.ty))
-    case Inst.Let(n, op, unwind) =>
+    case Inst.Let(_, op, unwind) =>
       reachOp(op)(inst.pos)
       reachNext(unwind)
     case Inst.Ret(v) =>

@@ -37,6 +37,8 @@ trait NirGenName(using Context) {
     }
   }
 
+  def genLocalName(sym: Symbol): String = sym.javaSimpleName
+
   def genModuleName(sym: Symbol): nir.Global.Top = {
     val typeName = genTypeName(sym)
     if (typeName.id.endsWith("$")) typeName
