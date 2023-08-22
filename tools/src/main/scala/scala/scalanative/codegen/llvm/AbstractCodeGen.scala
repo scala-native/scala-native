@@ -937,14 +937,13 @@ private[codegen] abstract class AbstractCodeGen(
           genLocal(pointee)
           str(" to i8*")
         }
-
         dbgLocalVariable(pointee, ty)(inst.pos, inst.scopeId)
 
       case _ =>
         newline()
         genBind()
         genOp(op)
-        if (!isVoid(op.resty)) dbgLocalValue(id, ty)(inst.pos, inst.scopeId)
+        dbgLocalValue(id, ty)(inst.pos, inst.scopeId)
 
     }
 

@@ -58,6 +58,11 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
   )(implicit ctx: Context, sb: ShowBuilder): Unit =
     dbg("", v)
 
+  private def canHaveDebugValue(ty: nir.Type) = ty match {
+    case nir.Type.Unit | nir.Type.Nothing => false
+    case _                                => true
+  }
+
   def dbgLocalValue(id: Local, ty: nir.Type, argIdx: Option[Int] = None)(
       srcPosition: nir.Position,
       scopeId: nir.ScopeId
@@ -67,7 +72,7 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
       metadataCtx: Context,
       sb: ShowBuilder
   ): Unit =
-    if (generateDebugMetadata) {
+    if (generateDebugMetadata && canHaveDebugValue(ty)) {
       debugInfo.localNames.get(id).foreach { localName =>
         `llvm.dbg.value`(
           address = Metadata.Value(Val.Local(id, ty)),
@@ -93,7 +98,7 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
       metadataCtx: Context,
       sb: ShowBuilder
   ): Unit =
-    if (generateDebugMetadata) {
+    if (generateDebugMetadata && canHaveDebugValue(ty)) {
       debugInfo.localNames.get(id).foreach { localName =>
         `llvm.dbg.declare`(
           address = Metadata.Value(Val.Local(id, ty)),
