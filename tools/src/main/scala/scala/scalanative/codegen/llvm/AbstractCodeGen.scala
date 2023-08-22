@@ -17,8 +17,6 @@ import scala.scalanative.codegen.{Metadata => CodeGenMetadata}
 
 import scala.language.implicitConversions
 import scala.scalanative.codegen.llvm.Metadata.conversions._
-import scala.scalanative.nir.Global.Member
-import scala.scalanative.nir.Global.Top
 
 private[codegen] abstract class AbstractCodeGen(
     env: Map[Global, Defn],
