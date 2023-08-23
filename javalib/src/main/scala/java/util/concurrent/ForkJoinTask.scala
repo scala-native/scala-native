@@ -636,7 +636,11 @@ object ForkJoinTask {
   def getSurplusQueuedTaskCount(): Int =
     ForkJoinPool.getSurplusQueuedTaskCount()
 
-  protected def peekNextLocalTask(): ForkJoinTask[_] = {
+  // The next 4 methods should be defined as `protected static`, however this kind of access
+  // does not make lots of sens in Scala. The most similiar would be `protected[concurrent]`
+  // Scala Native frontend does not emit static forwards for protected methods for compliance with the Scala JVM backend
+  // The usecase of `protected static` in ported Scala code shall be replaced with public access instead.
+  def peekNextLocalTask(): ForkJoinTask[_] = {
     val q = Thread.currentThread() match {
       case t: ForkJoinWorkerThread => t.workQueue
       case _                       => ForkJoinPool.commonQueue()
@@ -644,20 +648,20 @@ object ForkJoinTask {
     if (q == null) null else q.peek()
   }
 
-  protected def pollNextLocalTask(): ForkJoinTask[_] = {
+  def pollNextLocalTask(): ForkJoinTask[_] = {
     Thread.currentThread() match {
       case t: ForkJoinWorkerThread => t.workQueue.nextLocalTask()
       case _                       => null
     }
   }
 
-  protected def pollTask(): ForkJoinTask[_] =
+  def pollTask(): ForkJoinTask[_] =
     Thread.currentThread() match {
       case wt: ForkJoinWorkerThread => wt.pool.nextTaskFor(wt.workQueue)
       case _                        => null
     }
 
-  protected def pollSubmission(): ForkJoinTask[_] =
+  def pollSubmission(): ForkJoinTask[_] =
     Thread.currentThread() match {
       case t: ForkJoinWorkerThread => t.pool.pollSubmission()
       case _                       => null
