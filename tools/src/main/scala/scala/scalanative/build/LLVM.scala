@@ -5,6 +5,7 @@ import java.io.{File, PrintWriter}
 import java.nio.file.{Files, Path, Paths, StandardCopyOption}
 import scala.sys.process._
 import scala.scalanative.build.IO.RichPath
+import scala.scalanative.linker.ReachabilityAnalysis
 import scala.scalanative.nir.Attr.Link
 
 import scala.concurrent._
@@ -126,7 +127,7 @@ private[scalanative] object LLVM {
    */
   def link(
       config: Config,
-      linkerResult: linker.Result,
+      analysis: ReachabilityAnalysis.Result,
       objectsPaths: Seq[Path]
   ): Path = {
     implicit val _config: Config = config
@@ -139,7 +140,7 @@ private[scalanative] object LLVM {
 
     val command = config.compilerConfig.buildTarget match {
       case BuildTarget.Application | BuildTarget.LibraryDynamic =>
-        prepareLinkCommand(objectsPaths, linkerResult)
+        prepareLinkCommand(objectsPaths, analysis)
       case BuildTarget.LibraryStatic =>
         prepareArchiveCommand(objectsPaths)
     }
@@ -179,11 +180,11 @@ private[scalanative] object LLVM {
 
   private def prepareLinkCommand(
       objectsPaths: Seq[Path],
-      linkerResult: linker.Result
+      analysis: ReachabilityAnalysis.Result
   )(implicit config: Config) = {
     val workDir = config.workDir
     val links = {
-      val srclinks = linkerResult.links.collect {
+      val srclinks = analysis.links.collect {
         case Link("z") if config.targetsWindows => "zlib"
         case Link(name)                         => name
       }

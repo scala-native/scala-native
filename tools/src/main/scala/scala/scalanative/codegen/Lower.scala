@@ -19,9 +19,9 @@ object Lower {
     import meta.config
     import meta.layouts.{Rtti, ClassRtti, ArrayHeader}
 
-    implicit val linked: Result = meta.linked
+    implicit val analysis: ReachabilityAnalysis.Result = meta.analysis
 
-    val Object = linked.infos(Rt.Object.name).asInstanceOf[Class]
+    val Object = analysis.infos(Rt.Object.name).asInstanceOf[Class]
 
     private val zero = Val.Int(0)
     private val one = Val.Int(1)
@@ -33,7 +33,7 @@ object Lower {
 
     // Type of the bare runtime type information struct.
     private val classRttiType =
-      rtti(linked.infos(Global.Top("java.lang.Object"))).struct
+      rtti(analysis.infos(Global.Top("java.lang.Object"))).struct
 
     // Names of the fields of the java.lang.String in the memory layout order.
     private val stringFieldNames = {
@@ -754,7 +754,7 @@ object Lower {
       )
 
       def shouldSwitchThreadState(name: Global) =
-        platform.isMultithreadingEnabled && linked.infos.get(name).exists {
+        platform.isMultithreadingEnabled && analysis.infos.get(name).exists {
           info =>
             val attrs = info.attrs
             attrs.isExtern && attrs.isBlocking
@@ -901,7 +901,7 @@ object Lower {
 
       def genReflectiveLookup(): Val = {
         val methodIndex =
-          meta.linked.dynsigs.zipWithIndex.find(_._1 == sig).get._2
+          meta.analysis.dynsigs.zipWithIndex.find(_._1 == sig).get._2
 
         // Load the type information pointer
         val typeptr = load(Type.Ptr, obj, unwind)
@@ -1030,7 +1030,7 @@ object Lower {
 
           label(checkIfIsInstanceOfL)
           val isInstanceOf = genIsOp(buf, ty, v)
-          val toTy = rtti(linked.infos(ty.className)).const
+          val toTy = rtti(analysis.infos(ty.className)).const
           branch(isInstanceOf, Next(castL), Next.Label(failL, Seq(v, toTy)))
 
           label(castL)
@@ -1375,7 +1375,7 @@ object Lower {
     ) = {
       val Op.Module(name) = op
 
-      meta.linked.infos(name) match {
+      meta.analysis.infos(name) match {
         case cls: Class if cls.isConstantModule =>
           val instance = name.member(Sig.Generated("instance"))
           buf.let(n, Op.Copy(Val.Global(instance, Type.Ptr)), unwind)

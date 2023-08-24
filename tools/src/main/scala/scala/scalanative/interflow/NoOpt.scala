@@ -92,13 +92,13 @@ trait NoOpt { self: Interflow =>
       obj.ty match {
         case refty: Type.RefKind =>
           val name = refty.className
-          val scope = linked.infos(name).asInstanceOf[ScopeInfo]
+          val scope = analysis.infos(name).asInstanceOf[ScopeInfo]
           scope.targets(sig).foreach(visitEntry)
         case _ =>
           ()
       }
     case Op.Dynmethod(obj, dynsig) =>
-      linked.dynimpls.foreach {
+      analysis.dynimpls.foreach {
         case impl @ Global.Member(_, sig) if sig.toProxy == dynsig =>
           visitEntry(impl)
         case _ =>

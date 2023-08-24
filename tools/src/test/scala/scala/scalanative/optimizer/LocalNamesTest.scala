@@ -9,6 +9,7 @@ import scala.collection.mutable
 import scala.scalanative.buildinfo.ScalaNativeBuildInfo._
 import scala.reflect.ClassTag
 import scala.scalanative.nir.Global.Member
+import scala.scalanative.linker.ReachabilityAnalysis
 
 class LocalNamesTest extends OptimizerSpec {
   import nir._
@@ -17,7 +18,7 @@ class LocalNamesTest extends OptimizerSpec {
       entry: String,
       sources: Map[String, String],
       setupConfig: build.NativeConfig => build.NativeConfig = identity
-  )(fn: (build.Config, linker.Result) => T) =
+  )(fn: (build.Config, ReachabilityAnalysis.Result) => T) =
     super.optimize(
       entry,
       sources,

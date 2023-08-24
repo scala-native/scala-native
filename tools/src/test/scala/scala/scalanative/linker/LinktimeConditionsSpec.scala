@@ -135,7 +135,7 @@ class LinktimeConditionsSpec extends OptimizerSpec {
      * Based on that only 1 unavailable symbol would be reported (from branch that was taken).
      */
     for (n <- pathsRange)
-      linkWithProps(
+      doesNotLinkWithProps(
         "props.scala" -> props,
         "main.scala" -> s"""
                           |import scala.scalanative.linktime
@@ -148,11 +148,12 @@ class LinktimeConditionsSpec extends OptimizerSpec {
                           |    else path3()
                           |  }
                           |}""".stripMargin
-      )("int" -> n) { (_, result) =>
-        assertTrue(
-          n.toString,
-          (result.unavailable.toSet - pathForNumber(n)).isEmpty
-        )
+      )("int" -> n) {
+        case (_, result: ReachabilityAnalysis.UnreachableSymbolsFound) =>
+          assertTrue(
+            n.toString,
+            (result.unavailable.map(_.symbol).toSet - pathForNumber(n)).isEmpty
+          )
       }
   }
 
@@ -161,7 +162,7 @@ class LinktimeConditionsSpec extends OptimizerSpec {
     val pathsRange = 0.until(6)
 
     for (n <- pathsRange.init)
-      linkWithProps(
+      doesNotLinkWithProps(
         "props.scala" -> props,
         "main.scala" ->
           s"""
@@ -178,11 +179,12 @@ class LinktimeConditionsSpec extends OptimizerSpec {
           |    } else path0()
           |  }
           |}""".stripMargin
-      )("float" -> n.toFloat) { (_, result) =>
-        assertTrue(
-          n.toString,
-          (result.unavailable.toSet - pathForNumber(n)).isEmpty
-        )
+      )("float" -> n.toFloat) {
+        case (_, result: ReachabilityAnalysis.UnreachableSymbolsFound) =>
+          assertTrue(
+            n.toString,
+            (result.unavailable.map(_.symbol).toSet - pathForNumber(n)).isEmpty
+          )
       }
   }
 
@@ -229,14 +231,16 @@ class LinktimeConditionsSpec extends OptimizerSpec {
     )
 
     for (((doubleValue, stringValue, longValue), pathNumber) <- cases)
-      linkWithProps(compilationUnit.toSeq: _*)(
+      doesNotLinkWithProps(compilationUnit.toSeq: _*)(
         "secret.performance.multiplier" -> doubleValue,
         "prop.string" -> stringValue,
         "inner.countFrom" -> longValue
-      ) { (_, result) =>
-        assertTrue(
-          (result.unavailable.toSet - pathForNumber(pathNumber)).isEmpty
-        )
+      ) {
+        case (_, result: ReachabilityAnalysis.UnreachableSymbolsFound) =>
+          assertTrue(
+            (result.unavailable.map(_.symbol).toSet -
+              pathForNumber(pathNumber)).isEmpty
+          )
       }
   }
 
@@ -276,13 +280,15 @@ class LinktimeConditionsSpec extends OptimizerSpec {
     )
 
     for (((bool1, bool2), pathNumber) <- cases)
-      linkWithProps(compilationUnit.toSeq: _*)(
+      doesNotLinkWithProps(compilationUnit.toSeq: _*)(
         "prop.bool.1" -> bool1,
         "prop.bool.2" -> bool2
-      ) { (_, result) =>
-        assertTrue(
-          (result.unavailable.toSet - pathForNumber(pathNumber)).isEmpty
-        )
+      ) {
+        case (_, result: ReachabilityAnalysis.UnreachableSymbolsFound) =>
+          assertTrue(
+            (result.unavailable.map(_.symbol).toSet -
+              pathForNumber(pathNumber)).isEmpty
+          )
       }
   }
 
@@ -329,7 +335,7 @@ class LinktimeConditionsSpec extends OptimizerSpec {
                         |}""".stripMargin
     )("prop" -> true) { (_, result) =>
       // Check if compiles and does not fail to optimize
-      result.unavailable.isEmpty
+      assertTrue(result.isSuccessful)
     }
   }
 
@@ -404,9 +410,9 @@ class LinktimeConditionsSpec extends OptimizerSpec {
 
   private def link[T](
       sources: Map[String, String]
-  )(fn: (Method, Result) => T): T = {
+  )(fn: (Method, ReachabilityAnalysis.Result) => T): T = {
     link(entry, sources) { (_, result) =>
-      implicit val linkerResult: Result = result
+      implicit val linkerResult: ReachabilityAnalysis.Result = result
       val MethodRef(_, mainMethod) =
         Global.Top(entry).member(Rt.ScalaMainSig): @unchecked
       fn(mainMethod, result)
@@ -431,9 +437,11 @@ class LinktimeConditionsSpec extends OptimizerSpec {
       .mkString("\n")
   }
 
-  private def linkWithProps(
+  private def mayLinkWithProps(
       sources: (String, String)*
-  )(props: (String, Any)*)(body: (Config, Result) => Unit): Unit = {
+  )(
+      props: (String, Any)*
+  )(body: (Config, ReachabilityAnalysis) => Unit): Unit = {
     def setupConfig(config: NativeConfig): NativeConfig = {
       config
         .withLinktimeProperties(props.toMap)
@@ -442,10 +450,36 @@ class LinktimeConditionsSpec extends OptimizerSpec {
     }
     link(entry, sources.toMap, setupConfig = setupConfig)(body)
   }
+  private def linkWithProps(
+      sources: (String, String)*
+  )(
+      props: (String, Any)*
+  )(body: (Config, ReachabilityAnalysis.Result) => Unit): Unit = {
+    mayLinkWithProps(sources: _*)(props: _*) {
+      case (config, analysis: ReachabilityAnalysis.Result) =>
+        body(config, analysis)
+      case _ => fail("Failed to link"); scala.scalanative.util.unreachable
+    }
+  }
+
+  private def doesNotLinkWithProps(
+      sources: (String, String)*
+  )(props: (String, Any)*)(
+      body: (Config, ReachabilityAnalysis.UnreachableSymbolsFound) => Unit
+  ): Unit = {
+    mayLinkWithProps(sources: _*)(props: _*) {
+      case (config, analysis: ReachabilityAnalysis.UnreachableSymbolsFound) =>
+        body(config, analysis)
+      case _ =>
+        fail("Expected code to not link"); scala.scalanative.util.unreachable
+    }
+  }
 
   private def optimizeWithProps(
       sources: (String, String)*
-  )(props: (String, Any)*)(body: (Config, Result) => Unit): Unit = {
+  )(
+      props: (String, Any)*
+  )(body: (Config, ReachabilityAnalysis.Result) => Unit): Unit = {
     def setupConfig(config: NativeConfig): NativeConfig = {
       config
         .withLinktimeProperties(props.toMap)

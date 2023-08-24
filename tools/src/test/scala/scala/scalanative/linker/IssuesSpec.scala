@@ -16,7 +16,7 @@ class IssuesSpec extends LinkerSpec {
   private val sourceFile = "Test.scala"
 
   private def testLinked(source: String, mainClass: String = mainClass)(
-      fn: Result => Unit
+      fn: ReachabilityAnalysis.Result => Unit
   ): Unit =
     link(mainClass, sources = Map("Test.scala" -> source)) {
       case (_, result) => fn(result)

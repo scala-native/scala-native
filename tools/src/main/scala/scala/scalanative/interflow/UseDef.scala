@@ -4,7 +4,7 @@ package interflow
 import scala.collection.mutable
 import scalanative.nir._
 import scalanative.util.unreachable
-import scalanative.linker.{Result, Ref}
+import scalanative.linker.Ref
 
 object UseDef {
   sealed abstract class Def {

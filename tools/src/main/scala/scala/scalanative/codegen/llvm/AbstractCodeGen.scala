@@ -325,9 +325,9 @@ private[codegen] abstract class AbstractCodeGen(
   private[codegen] def toDereferenceable(
       refty: Type.RefKind
   ): (Boolean, String, Long) = {
-    val size = meta.linked.infos(refty.className) match {
+    val size = meta.analysis.infos(refty.className) match {
       case info: linker.Trait =>
-        meta.layout(meta.linked.ObjectClass).size
+        meta.layout(meta.analysis.ObjectClass).size
       case info: linker.Class =>
         meta.layout(info).size
       case _ =>

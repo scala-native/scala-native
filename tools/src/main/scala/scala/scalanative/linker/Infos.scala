@@ -129,12 +129,14 @@ final class Class(
 
   val ty: Type =
     Type.Ref(name)
-  def isConstantModule(implicit top: Result): Boolean = {
+  def isConstantModule(implicit
+      analysis: ReachabilityAnalysis.Result
+  ): Boolean = {
     val hasNoFields =
       fields.isEmpty
     val hasEmptyOrNoCtor = {
       val ctor = name member Sig.Ctor(Seq.empty)
-      top.infos
+      analysis.infos
         .get(ctor)
         .fold[Boolean] {
           true
@@ -222,22 +224,31 @@ final class Field(
     owner.asInstanceOf[Class].fields.indexOf(this)
 }
 
-final class Result(
-    val infos: mutable.Map[Global, Info],
-    val entries: Seq[Global],
-    val unavailable: Seq[Global],
-    val referencedFrom: mutable.Map[Global, Global],
-    val links: Seq[Attr.Link],
-    val defns: Seq[Defn],
-    val dynsigs: Seq[Sig],
-    val dynimpls: Seq[Global.Member],
-    val resolvedVals: mutable.Map[String, Val]
-) {
-  lazy val ObjectClass = infos(Rt.Object.name).asInstanceOf[Class]
-  lazy val StringClass = infos(Rt.StringName).asInstanceOf[Class]
-  lazy val StringValueField = infos(Rt.StringValueName).asInstanceOf[Field]
-  lazy val StringOffsetField = infos(Rt.StringOffsetName).asInstanceOf[Field]
-  lazy val StringCountField = infos(Rt.StringCountName).asInstanceOf[Field]
-  lazy val StringCachedHashCodeField = infos(Rt.StringCachedHashCodeName)
-    .asInstanceOf[Field]
+sealed trait ReachabilityAnalysis {
+  def defns: Seq[Defn]
+  def isSuccessful: Boolean = this.isInstanceOf[ReachabilityAnalysis.Result]
+}
+
+object ReachabilityAnalysis {
+  final class UnreachableSymbolsFound(
+      val defns: Seq[Defn],
+      val unavailable: Seq[Reach.UnreachableSymbol]
+  ) extends ReachabilityAnalysis
+  final class Result(
+      val infos: mutable.Map[Global, Info],
+      val entries: Seq[Global],
+      val links: Seq[Attr.Link],
+      val defns: Seq[Defn],
+      val dynsigs: Seq[Sig],
+      val dynimpls: Seq[Global.Member],
+      val resolvedVals: mutable.Map[String, Val]
+  ) extends ReachabilityAnalysis {
+    lazy val ObjectClass = infos(Rt.Object.name).asInstanceOf[Class]
+    lazy val StringClass = infos(Rt.StringName).asInstanceOf[Class]
+    lazy val StringValueField = infos(Rt.StringValueName).asInstanceOf[Field]
+    lazy val StringOffsetField = infos(Rt.StringOffsetName).asInstanceOf[Field]
+    lazy val StringCountField = infos(Rt.StringCountName).asInstanceOf[Field]
+    lazy val StringCachedHashCodeField = infos(Rt.StringCachedHashCodeName)
+      .asInstanceOf[Field]
+  }
 }

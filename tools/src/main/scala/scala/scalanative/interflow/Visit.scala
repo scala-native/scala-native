@@ -15,7 +15,7 @@ trait Visit { self: Interflow =>
     } else {
       val defn = getOriginal(orig)
       val hasInsts = defn.insts.size > 0
-      val hasSema = linked.infos.contains(defn.name)
+      val hasSema = analysis.infos.contains(defn.name)
 
       hasInsts && hasSema
     }
@@ -48,16 +48,16 @@ trait Visit { self: Interflow =>
   def visitEntries(): Unit =
     mode match {
       case build.Mode.Debug =>
-        linked.defns.foreach(defn => visitEntry(defn.name))
+        analysis.defns.foreach(defn => visitEntry(defn.name))
       case _: build.Mode.Release =>
-        linked.entries.foreach(visitEntry)
+        analysis.entries.foreach(visitEntry)
     }
 
   def visitEntry(name: Global): Unit = {
     if (!name.isTop) {
       visitEntry(name.top)
     }
-    linked.infos(name) match {
+    analysis.infos(name) match {
       case meth: Method =>
         visitRoot(meth.name)
       case cls: Class if cls.isModule =>
@@ -183,7 +183,7 @@ trait Visit { self: Interflow =>
       argtys
     case _ =>
       val Type.Function(argtys, _) =
-        linked.infos(name).asInstanceOf[Method].ty: @unchecked
+        analysis.infos(name).asInstanceOf[Method].ty: @unchecked
       argtys
   }
 
@@ -192,6 +192,6 @@ trait Visit { self: Interflow =>
       val Sig.Duplicate(base, _) = sig.unmangled: @unchecked
       originalFunctionType(Global.Member(owner, base))
     case _ =>
-      linked.infos(name).asInstanceOf[Method].ty
+      analysis.infos(name).asInstanceOf[Method].ty
   }
 }

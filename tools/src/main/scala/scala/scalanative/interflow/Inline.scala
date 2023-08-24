@@ -19,7 +19,7 @@ trait Inline { self: Interflow =>
 
   def shallInline(name: Global.Member, args: Seq[Val])(implicit
       state: State,
-      linked: linker.Result
+      analysis: ReachabilityAnalysis.Result
   ): Boolean = {
     val maybeDefn = mode match {
       case build.Mode.Debug =>
@@ -159,7 +159,7 @@ trait Inline { self: Interflow =>
 
   def `inline`(name: Global.Member, args: Seq[Val])(implicit
       state: State,
-      linked: linker.Result,
+      analysis: ReachabilityAnalysis.Result,
       parentScopeId: ScopeId
   ): Val =
     in(s"inlining ${name.show}") {

@@ -121,7 +121,7 @@ object MemoryLayout {
     lazy val dynamicAlignmentWidth = {
       val propName =
         "scala.scalanative.meta.linktimeinfo.contendedPaddingWidth"
-      meta.linked.resolvedVals
+      meta.analysis.resolvedVals
         .get(propName)
         .collectFirst { case Val.Int(value) => value }
         .getOrElse(

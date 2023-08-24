@@ -11,7 +11,7 @@ import java.util.function.Supplier
 import scala.concurrent._
 
 class Interflow(val config: build.Config)(implicit
-    val linked: linker.Result
+    val analysis: ReachabilityAnalysis.Result
 ) extends Visit
     with Opt
     with NoOpt
@@ -25,7 +25,7 @@ class Interflow(val config: build.Config)(implicit
 
   private val originals = {
     val out = mutable.Map.empty[Global, Defn]
-    linked.defns.foreach { defn => out(defn.name) = defn }
+    analysis.defns.foreach { defn => out(defn.name) = defn }
     out
   }
 
@@ -160,10 +160,10 @@ class Interflow(val config: build.Config)(implicit
 }
 
 object Interflow {
-  def optimize(config: build.Config, linked: linker.Result)(implicit
-      ec: ExecutionContext
+  def optimize(config: build.Config, analysis: ReachabilityAnalysis.Result)(
+      implicit ec: ExecutionContext
   ): Future[Seq[Defn]] = {
-    val interflow = new Interflow(config)(linked)
+    val interflow = new Interflow(config)(analysis)
     interflow.visitEntries()
     interflow
       .visitLoop()

@@ -49,7 +49,7 @@ trait ReachabilitySuite {
         val left = res.defns.map(_.name).toSet
         val extraDeps = if (includeMainDeps) MainMethodDependencies else Nil
         val right = expected.toSet ++ extraDeps
-        assertTrue("unavailable", res.unavailable.isEmpty)
+        assertTrue("unavailable", res.isSuccessful)
         assertTrue("underapproximation", (left -- right).isEmpty)
         assertTrue("overapproximation", (right -- left).isEmpty)
       }
@@ -77,9 +77,7 @@ trait ReachabilitySuite {
       entries: Seq[Global],
       sources: Seq[String],
       mainClass: String
-  )(
-      f: linker.Result => T
-  ): T =
+  )(f: ReachabilityAnalysis => T): T =
     Scope { implicit in =>
       val outDir = Files.createTempDirectory("native-test-out")
       val compiler = NIRCompiler.getCompiler(outDir)
@@ -89,8 +87,7 @@ trait ReachabilitySuite {
       val sourcesDir = NIRCompiler.writeSources(sourceMap)
       val files = compiler.compile(sourcesDir)
       val config = makeConfig(outDir, mainClass)
-      val link = ScalaNative.link(config, entries)
-      val result = Await.result(link, 1.minute)
+      val result = Link(config, entries)
       f(result)
     }
 

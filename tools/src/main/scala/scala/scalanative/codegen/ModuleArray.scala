@@ -19,7 +19,7 @@ class ModuleArray(meta: Metadata) {
     Val.ArrayValue(
       Type.Ptr,
       modules.toSeq.map { cls =>
-        if (cls.isConstantModule(meta.linked))
+        if (cls.isConstantModule(meta.analysis))
           Val.Global(cls.name.member(Sig.Generated("instance")), Type.Ptr)
         else
           Val.Null

@@ -5,6 +5,7 @@ import java.nio.file.{Files, Path, Paths}
 
 import scalanative.build.IO.RichPath
 import scalanative.build.NativeLib._
+import scala.scalanative.linker.ReachabilityAnalysis
 
 private[scalanative] object Filter {
 
@@ -27,7 +28,7 @@ private[scalanative] object Filter {
    */
   def filterNativelib(
       config: Config,
-      linkerResult: linker.Result,
+      analysis: ReachabilityAnalysis.Result,
       destPath: Path,
       allPaths: Seq[Path]
   ): (Seq[Path], Config) = {
@@ -43,7 +44,7 @@ private[scalanative] object Filter {
       def include(path: String) = {
         if (path.contains(optPath)) {
           val name = Paths.get(path).toFile.getName.split("\\.").head
-          linkerResult.links.exists(_.name == name)
+          analysis.links.exists(_.name == name)
         } else {
           true
         }

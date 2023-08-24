@@ -9,6 +9,10 @@ import scala.concurrent._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.scalanative.buildinfo.ScalaNativeBuildInfo
+import scala.scalanative.linker.ReachabilityAnalysis
+
+import org.junit.Assert.fail
+import scala.scalanative.util.unreachable
 
 /** Base class to test the linker. */
 abstract class LinkerSpec {
@@ -30,7 +34,28 @@ abstract class LinkerSpec {
       entry: String,
       sources: Map[String, String],
       setupConfig: NativeConfig => NativeConfig = identity
-  )(fn: (Config, linker.Result) => T): T =
+  )(fn: (Config, ReachabilityAnalysis.Result) => T): T =
+    mayLink(entry, sources, setupConfig) {
+      case (config, result: ReachabilityAnalysis.Result) => fn(config, result)
+      case _ => fail("Expected code to link"); unreachable
+    }
+
+  def doesNotLink[T](
+      entry: String,
+      sources: Map[String, String],
+      setupConfig: NativeConfig => NativeConfig = identity
+  )(fn: (Config, ReachabilityAnalysis.UnreachableSymbolsFound) => T): T =
+    mayLink(entry, sources, setupConfig) {
+      case (config, result: ReachabilityAnalysis.UnreachableSymbolsFound) =>
+        fn(config, result)
+      case _ => fail("Expected code to not link"); unreachable
+    }
+
+  private def mayLink[T](
+      entry: String,
+      sources: Map[String, String],
+      setupConfig: NativeConfig => NativeConfig = identity
+  )(fn: (Config, ReachabilityAnalysis) => T): T =
     Scope { implicit in =>
       val outDir = Files.createTempDirectory("native-test-out")
       val compiler = NIRCompiler.getCompiler(outDir)
@@ -38,8 +63,7 @@ abstract class LinkerSpec {
       val files = compiler.compile(sourcesDir)
       val config = makeConfig(outDir, entry, setupConfig)
       val entries = ScalaNative.entries(config)
-      val link = ScalaNative.link(config, entries)
-      val result = Await.result(link, 1.minute)
+      val result = linker.Link(config, entries)
       fn(config, result)
     }
 
@@ -63,7 +87,7 @@ abstract class LinkerSpec {
       .withClassPath(classpath.toSeq)
       .withMainClass(Some(entry))
       .withCompilerConfig(setupNativeConfig.andThen(withDefaults))
-      .withLogger(Logger.nullLogger)
+    // .withLogger(Logger.nullLogger)
   }
 
   private def withDefaults(config: NativeConfig): NativeConfig = {
