@@ -4,6 +4,8 @@ import java.util.Locale
 
 /** Utility methods indicating the platform type */
 object Platform {
+  final val isJVM = true
+
   private lazy val osUsed =
     System.getProperty("os.name", "unknown").toLowerCase(Locale.ROOT)
 

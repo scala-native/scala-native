@@ -154,18 +154,23 @@ private[scalanative] object NativeLib {
   private def unpackNativeJar(nativelib: NativeLib): Path = {
     val target = nativelib.dest
     val source = nativelib.src
-    val jarhash = IO.sha1(source)
-    val jarhashPath = target.resolve("jarhash")
-    def unpacked =
-      Files.exists(target) &&
-        Files.exists(jarhashPath) &&
-        Arrays.equals(jarhash, Files.readAllBytes(jarhashPath))
-
-    if (!unpacked) {
+    def unpack(): Unit = {
       IO.deleteRecursive(target)
       IO.unzip(source, target)
-      IO.write(jarhashPath, jarhash)
     }
+
+    if (Platform.isJVM) {
+      val jarhash = IO.sha1(source)
+      val jarhashPath = target.resolve("jarhash")
+      def unpacked =
+        Files.exists(target) &&
+          Files.exists(jarhashPath) &&
+          Arrays.equals(jarhash, Files.readAllBytes(jarhashPath))
+      if (!unpacked) {
+        unpack()
+        IO.write(jarhashPath, jarhash)
+      }
+    } else unpack()
     target
   }
 
@@ -182,18 +187,23 @@ private[scalanative] object NativeLib {
   private def copyNativeDir(nativelib: NativeLib): Path = {
     val target = nativelib.dest
     val source = nativelib.src
-    val files = IO.getAll(source, allFilesPattern(source))
-    val fileshash = IO.sha1files(files)
-    val fileshashPath = target.resolve("fileshash")
-    def copied =
-      Files.exists(target) &&
-        Files.exists(fileshashPath) &&
-        Arrays.equals(fileshash, Files.readAllBytes(fileshashPath))
-    if (!copied) {
+    def copy() = {
       IO.deleteRecursive(target)
       IO.copyDirectory(source, target)
-      IO.write(fileshashPath, fileshash)
     }
+    if (Platform.isJVM) {
+      val files = IO.getAll(source, allFilesPattern(source))
+      val fileshash = IO.sha1files(files)
+      val fileshashPath = target.resolve("fileshash")
+      def copied =
+        Files.exists(target) &&
+          Files.exists(fileshashPath) &&
+          Arrays.equals(fileshash, Files.readAllBytes(fileshashPath))
+      if (!copied) {
+        copy()
+        IO.write(fileshashPath, fileshash)
+      }
+    } else copy()
     target
   }
 

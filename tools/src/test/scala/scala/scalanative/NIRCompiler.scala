@@ -14,8 +14,7 @@ object NIRCompiler {
    *  @return
    *    An NIRCompiler that will compile to a temporary directory.
    */
-  def getCompiler(): api.NIRCompiler =
-    new NIRCompilerImpl()
+  def getCompiler(): NIRCompiler = new NIRCompiler()
 
   /** Returns an instance of the NIRCompiler that will compile to `outDir`.
    *
@@ -24,8 +23,7 @@ object NIRCompiler {
    *  @return
    *    An NIRCompiler that will compile to `outDir`.
    */
-  def getCompiler(outDir: Path): api.NIRCompiler =
-    new NIRCompilerImpl(outDir)
+  def getCompiler(outDir: Path): NIRCompiler = new NIRCompiler(outDir)
 
   /** Applies `fn` to an NIRCompiler that compiles to `outDir`.
    *
@@ -36,7 +34,7 @@ object NIRCompiler {
    *  @return
    *    The result of applying fn to the NIRCompiler
    */
-  def apply[T](outDir: Path)(fn: api.NIRCompiler => T): T =
+  def apply[T](outDir: Path)(fn: NIRCompiler => T): T =
     withSources(outDir)(Map.empty) { case (_, compiler) => fn(compiler) }
 
   /** Applies `fn` to an NIRCompiler that compiles to a temporary directory.
@@ -46,7 +44,7 @@ object NIRCompiler {
    *  @return
    *    The result of applying fn to the NIRCompiler
    */
-  def apply[T](fn: api.NIRCompiler => T): T =
+  def apply[T](fn: NIRCompiler => T): T =
     withSources(Map.empty[String, String]) {
       case (_, compiler) => fn(compiler)
     }
@@ -65,7 +63,7 @@ object NIRCompiler {
    */
   def withSources[T](
       outDir: Path
-  )(sources: Map[String, String])(fn: (Path, api.NIRCompiler) => T): T = {
+  )(sources: Map[String, String])(fn: (Path, NIRCompiler) => T): T = {
     val sourcesDir = writeSources(sources)
     fn(sourcesDir, getCompiler(outDir))
   }
@@ -82,7 +80,7 @@ object NIRCompiler {
    */
   def withSources[T](
       sources: Map[String, String]
-  )(fn: (Path, api.NIRCompiler) => T): T = {
+  )(fn: (Path, NIRCompiler) => T): T = {
     val sourcesDir = writeSources(sources)
     fn(sourcesDir, getCompiler())
   }
@@ -110,16 +108,16 @@ object NIRCompiler {
 
 }
 
-class NIRCompilerImpl(outDir: Path) extends api.NIRCompiler {
+class NIRCompiler(outDir: Path) {
 
   def this() = this(Files.createTempDirectory("scala-native-target"))
 
-  override def compile(base: Path): Array[Path] = {
+  def compile(base: Path): Array[Path] = {
     val files = getFiles(base.toFile(), _.getName endsWith ".scala")
     compile(files)
   }
 
-  override def compile(source: String): Array[Path] = {
+  def compile(source: String): Array[Path] = {
     val tempFile = File.createTempFile("scala-native-input", ".scala").toPath
     val p = Files.write(tempFile, source.getBytes(StandardCharsets.UTF_8))
     compile(Seq(p.toFile()))
@@ -148,13 +146,15 @@ class NIRCompilerImpl(outDir: Path) extends api.NIRCompiler {
     val procBuilder = new ProcessBuilder(args: _*)
     val cmd = args.mkString(" ")
     val proc = procBuilder.start()
-    if (proc.waitFor() != 0) {
+    val res = proc.waitFor()
+    // TODO: UnixProcessGen2 on Mac M1 can return PID instead of exitCode
+    if (res != 0 && proc.exitValue() != 0) {
       val stderr =
         scala.io.Source.fromInputStream(proc.getErrorStream()).mkString
       throw new CompilationFailedException(stderr)
     }
 
-    val acceptedExtension = Seq(".class", ".tasty", ".nir")
+    val acceptedExtension = Seq(".nir")
     getFiles(
       outPath.toFile,
       f => acceptedExtension.exists(f.getName().endsWith)
@@ -163,15 +163,13 @@ class NIRCompilerImpl(outDir: Path) extends api.NIRCompiler {
 
   /** List of the files contained in `base` that sastisfy `filter`
    */
-  private def getFiles(base: File, filter: File => Boolean): Seq[File] =
-    (if (filter(base)) Seq(base) else Seq.empty) ++
-      (Option(base.listFiles()) getOrElse Array.empty[File] flatMap (getFiles(
-        _,
-        filter
-      )))
-
+  private def getFiles(base: File, filter: File => Boolean): Seq[File] = {
+    Seq(base).filter(filter) ++
+      Option(base.listFiles())
+        .getOrElse(Array.empty)
+        .flatMap(getFiles(_, filter))
+  }
 }
 
-// TODO: integrate with api.CompilationFailedException
 class CompilationFailedException(stderr: String)
     extends RuntimeException(stderr)

@@ -4,6 +4,7 @@ import scala.scalanative.meta.LinktimeInfo
 
 /** Utility methods indicating the platform type */
 object Platform {
+  final val isJVM = false
 
   /** Test for the platform type
    *
