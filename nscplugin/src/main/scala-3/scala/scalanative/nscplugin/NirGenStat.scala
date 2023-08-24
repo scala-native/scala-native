@@ -82,7 +82,7 @@ trait NirGenStat(using Context) {
     Attrs.fromSeq(annotationAttrs ++ isAbstract)
   }
 
-  private def genClassParent(sym: ClassSymbol): Option[nir.Global] = {
+  private def genClassParent(sym: ClassSymbol): Option[nir.Global.Top] = {
     if sym.isExternType && sym.superClass != defn.ObjectClass then
       report.error("Extern object can only extend extern traits", sym.sourcePos)
 
@@ -94,7 +94,7 @@ trait NirGenStat(using Context) {
     }
   }
 
-  private def genClassInterfaces(sym: ClassSymbol): Seq[nir.Global] = {
+  private def genClassInterfaces(sym: ClassSymbol): Seq[nir.Global.Top] = {
     val isExtern = sym.isExternType
     def validate(clsSym: ClassSymbol) = {
       val parentIsExtern = clsSym.isExternType
@@ -428,7 +428,7 @@ trait NirGenStat(using Context) {
       )
   }
 
-  protected def genLinktimeResolved(dd: DefDef, name: Global)(using
+  protected def genLinktimeResolved(dd: DefDef, name: Global.Member)(using
       nir.Position
   ): Option[Defn] = {
     if (dd.symbol.isField) {
@@ -509,7 +509,7 @@ trait NirGenStat(using Context) {
   private def genLinktimeResolvedMethod(
       dd: DefDef,
       retty: nir.Type,
-      methodName: nir.Global
+      methodName: nir.Global.Member
   )(genValue: ExprBuffer => nir.Val)(using nir.Position): nir.Defn = {
     implicit val fresh: Fresh = Fresh()
     val freshScopes = initFreshScope(dd.rhs)
@@ -540,7 +540,7 @@ trait NirGenStat(using Context) {
 
   def genExternMethod(
       attrs: nir.Attrs,
-      name: nir.Global,
+      name: nir.Global.Member,
       origSig: nir.Type,
       dd: DefDef
   ): Option[Defn] = {

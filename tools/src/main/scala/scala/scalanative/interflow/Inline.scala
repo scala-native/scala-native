@@ -17,7 +17,7 @@ trait Inline { self: Interflow =>
   private val maxInlineDepth =
     config.compilerConfig.optimizerConfig.maxInlineDepth
 
-  def shallInline(name: Global, args: Seq[Val])(implicit
+  def shallInline(name: Global.Member, args: Seq[Val])(implicit
       state: State,
       linked: linker.Result
   ): Boolean = {
@@ -131,12 +131,12 @@ trait Inline { self: Interflow =>
     }
   }
 
-  def adapt(args: Seq[Val], sig: Type)(implicit
+  def adapt(args: Seq[Val], sig: Type.Function)(implicit
       state: State,
       srcPosition: nir.Position,
       scopeId: nir.ScopeId
   ): Seq[Val] = {
-    val Type.Function(argtys, _) = sig: @unchecked
+    val Type.Function(argtys, _) = sig
 
     // Varargs signature might appear to have less
     // argument types than arguments at the call site.
@@ -157,7 +157,7 @@ trait Inline { self: Interflow =>
     }
   }
 
-  def `inline`(name: Global, args: Seq[Val])(implicit
+  def `inline`(name: Global.Member, args: Seq[Val])(implicit
       state: State,
       linked: linker.Result,
       parentScopeId: ScopeId
@@ -167,7 +167,7 @@ trait Inline { self: Interflow =>
         case build.Mode.Debug      => getOriginal(name)
         case _: build.Mode.Release => getDone(name)
       }
-      val Type.Function(_, origRetTy) = defn.ty: @unchecked
+      val Type.Function(_, origRetTy) = defn.ty
 
       implicit val srcPosition: nir.Position = defn.pos
       val blocks = process(
@@ -263,7 +263,7 @@ trait Inline { self: Interflow =>
       state.emit ++= emit
       state.inherit(endState, res +: args)
 
-      val Type.Function(_, retty) = defn.ty: @unchecked
+      val Type.Function(_, retty) = defn.ty
       adapt(res, retty)
     }
 }

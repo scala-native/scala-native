@@ -54,7 +54,7 @@ object Rt {
 
   val GenericArray = Ref(Global.Top("scala.scalanative.runtime.Array"))
 
-  val arrayAlloc: Map[Sig, Global] = Seq(
+  val arrayAlloc: Map[Sig, Global.Top] = Seq(
     "BooleanArray",
     "CharArray",
     "ByteArray",

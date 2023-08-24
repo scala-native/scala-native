@@ -161,7 +161,7 @@ trait Eval { self: Interflow =>
           }
 
           val (dsig, dtarget) = emeth match {
-            case Val.Global(name, _) =>
+            case Val.Global(name: Global.Member, _) =>
               visitDuplicate(name, argtys)
                 .map { defn => (defn.ty, Val.Global(defn.name, Type.Ptr)) }
                 .getOrElse {
@@ -180,7 +180,8 @@ trait Eval { self: Interflow =>
           }
 
           dtarget match {
-            case Val.Global(name, _) if shallInline(name, eargs) =>
+            case Val.Global(name: Global.Member, _)
+                if shallInline(name, eargs) =>
               `inline`(name, eargs)
             case DelayedRef(op: Op.Method) if shallPolyInline(op, eargs) =>
               polyInline(op, eargs)
@@ -190,7 +191,8 @@ trait Eval { self: Interflow =>
         }
 
         emeth match {
-          case Val.Global(name, _) if intrinsics.contains(name) =>
+          case Val.Global(name: Global.Member, _)
+              if intrinsics.contains(name) =>
             intrinsic(sig, name, args).getOrElse {
               nonIntrinsic
             }
@@ -987,7 +989,7 @@ trait Eval { self: Interflow =>
         state.derefEscaped(addr).escapedValue
       case Val.String(value) =>
         Val.Virtual(state.allocString(value))
-      case Val.Global(name, _) =>
+      case Val.Global(name: Global.Member, _) =>
         maybeOriginal(name).foreach {
           case defn if defn.attrs.isExtern =>
             visitRoot(defn.name)
@@ -1008,10 +1010,10 @@ trait Eval { self: Interflow =>
     offset >= 0 && offset < length
   }
 
-  private def isPureModule(clsName: Global): Boolean = {
-    var visiting = List[Global]()
+  private def isPureModule(clsName: Global.Top): Boolean = {
+    var visiting = List[Global.Top]()
 
-    def isPureModule(clsName: Global): Boolean = {
+    def isPureModule(clsName: Global.Top): Boolean = {
       if (hasModulePurity(clsName)) {
         getModulePurity(clsName)
       } else {

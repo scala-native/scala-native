@@ -18,7 +18,7 @@ class TraitReachabilitySuite extends ReachabilitySuite {
   val ScalaMainNonStaticSig =
     Sig.Method("main", Rt.ScalaMainSig.types, Sig.Scope.Public)
 
-  val Parent: Global = g(ParentClsName)
+  val Parent: Global.Top = g(ParentClsName)
   // Scala 2.12.x
   val ParentInit: Global =
     g(ParentClsName, Sig.Method("$init$", Seq(Type.Unit)))

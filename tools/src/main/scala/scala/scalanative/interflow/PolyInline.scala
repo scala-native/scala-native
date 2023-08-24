@@ -8,7 +8,7 @@ import scalanative.linker._
 trait PolyInline { self: Interflow =>
   private def polyTargets(
       op: Op.Method
-  )(implicit state: State): Seq[(Class, Global)] = {
+  )(implicit state: State): Seq[(Class, Global.Member)] = {
     val Op.Method(obj, sig) = op
 
     val objty = obj match {
@@ -24,7 +24,7 @@ trait PolyInline { self: Interflow =>
       case ClassRef(cls) if !sig.isVirtual =>
         cls.resolve(sig).map(g => (cls, g)).toSeq
       case ScopeRef(scope) =>
-        val targets = mutable.UnrolledBuffer.empty[(Class, Global)]
+        val targets = mutable.UnrolledBuffer.empty[(Class, Global.Member)]
         scope.implementors.foreach { cls =>
           if (cls.allocated) {
             cls.resolve(sig).foreach { g => targets += ((cls, g)) }
@@ -117,7 +117,7 @@ trait PolyInline { self: Interflow =>
       case (callLabel, m) =>
         emit.label(callLabel, Seq.empty)
         val ty = originalFunctionType(m)
-        val Type.Function(argtys, retty) = ty: @unchecked
+        val Type.Function(argtys, retty) = ty
         rettys += retty
 
         val cargs = margs.zip(argtys).map {

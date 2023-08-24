@@ -11,7 +11,7 @@ object GenerateReflectiveProxies {
 
   private def genReflProxy(defn: Defn.Define): Defn.Define = {
     implicit val fresh: Fresh = Fresh()
-    val Global.Member(owner, sig) = defn.name: @unchecked
+    val Global.Member(owner, sig) = defn.name
     val defnType = defn.ty.asInstanceOf[Type.Function]
     implicit val pos: Position = defn.pos
 

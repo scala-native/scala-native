@@ -31,12 +31,13 @@ trait Intrinsics { self: Interflow =>
     Global.Member(Rt.Runtime.name, Rt.ToRawPtrSig)
   ) ++ arrayIntrinsics
 
-  def intrinsic(ty: Type, name: Global, rawArgs: Seq[Val])(implicit
+  def intrinsic(ty: Type.Function, name: Global.Member, rawArgs: Seq[Val])(
+      implicit
       state: State,
       srcPosition: Position,
       scopeId: ScopeId
   ): Option[Val] = {
-    val Global.Member(_, sig) = name: @unchecked
+    val Global.Member(_, sig) = name
 
     val args = rawArgs.map(eval)
 
@@ -66,7 +67,7 @@ trait Intrinsics { self: Interflow =>
         }
       case Rt.IsArraySig =>
         args match {
-          case Seq(Val.Global(clsName, ty)) if ty == Rt.Class =>
+          case Seq(Val.Global(clsName: Global.Top, ty)) if ty == Rt.Class =>
             Some(Val.Bool(Type.isArray(clsName)))
           case _ =>
             None
@@ -146,7 +147,7 @@ trait Intrinsics { self: Interflow =>
         }
       case _ if arrayApplyIntrinsics.contains(name) =>
         val Seq(arr, idx) = rawArgs
-        val Type.Function(_, elemty) = ty: @unchecked
+        val Type.Function(_, elemty) = ty
         Some(eval(Op.Arrayload(elemty, arr, idx)))
       case _ if arrayUpdateIntrinsics.contains(name) =>
         val Seq(arr, idx, value) = rawArgs

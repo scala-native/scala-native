@@ -1,6 +1,8 @@
 package scala.scalanative
 package nir
 
+import scala.scalanative.util.TypeOps.TypeNarrowing
+
 trait Transform {
   def onDefns(assembly: Seq[Defn]): Seq[Defn] =
     assembly.map(onDefn)
@@ -13,9 +15,9 @@ trait Transform {
       case defn @ Defn.Const(_, _, ty, value) =>
         defn.copy(ty = onType(ty), rhs = onVal(value))
       case defn @ Defn.Declare(_, _, ty) =>
-        defn.copy(ty = onType(ty))
+        defn.copy(ty = onType(ty).narrow[Type.Function])
       case defn @ Defn.Define(_, _, ty, insts, _) =>
-        defn.copy(ty = onType(ty), insts = onInsts(insts))
+        defn.copy(ty = onType(ty).narrow[Type.Function], insts = onInsts(insts))
       case defn @ Defn.Trait(_, _, _) =>
         defn
       case defn @ Defn.Class(_, _, _, _) =>
@@ -57,7 +59,7 @@ trait Transform {
 
   def onOp(op: Op): Op = op match {
     case Op.Call(ty, ptrv, argvs) =>
-      Op.Call(onType(ty), onVal(ptrv), argvs.map(onVal))
+      Op.Call(onType(ty).narrow[Type.Function], onVal(ptrv), argvs.map(onVal))
     case Op.Load(ty, ptrv, syncAttrs) =>
       Op.Load(onType(ty), onVal(ptrv), syncAttrs)
     case Op.Store(ty, ptrv, v, syncAttrs) =>
@@ -93,9 +95,9 @@ trait Transform {
     case Op.Module(n) =>
       Op.Module(n)
     case Op.As(ty, v) =>
-      Op.As(onType(ty), onVal(v))
+      Op.As(onType(ty).narrow[Type.RefKind], onVal(v))
     case Op.Is(ty, v) =>
-      Op.Is(onType(ty), onVal(v))
+      Op.Is(onType(ty).narrow[Type.RefKind], onVal(v))
     case Op.Copy(v) =>
       Op.Copy(onVal(v))
     case Op.SizeOf(ty)      => Op.SizeOf(onType(ty))

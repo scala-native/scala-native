@@ -16,10 +16,10 @@ import scala.scalanative.buildinfo.ScalaNativeBuildInfo
 
 trait ReachabilitySuite {
 
-  def g(top: String): Global =
+  def g(top: String): Global.Top =
     Global.Top(top)
 
-  def g(top: String, sig: Sig): Global =
+  def g(top: String, sig: Sig): Global.Member =
     Global.Member(Global.Top(top), sig)
 
   private val MainMethodDependencies = Set(

@@ -14,7 +14,7 @@ class Reach(
   import Reach._
 
   val unavailable = mutable.Set.empty[Global]
-  val loaded = mutable.Map.empty[Global, mutable.Map[Global, Defn]]
+  val loaded = mutable.Map.empty[Global.Top, mutable.Map[Global, Defn]]
   val enqueued = mutable.Set.empty[Global]
   var todo = List.empty[Global]
   val done = mutable.Map.empty[Global, Defn]
@@ -24,9 +24,9 @@ class Reach(
   val from = mutable.Map.empty[Global, Global]
   val missing = mutable.Map.empty[Global, Set[NonReachablePosition]]
 
-  val dyncandidates = mutable.Map.empty[Sig, mutable.Set[Global]]
+  val dyncandidates = mutable.Map.empty[Sig, mutable.Set[Global.Member]]
   val dynsigs = mutable.Set.empty[Sig]
-  val dynimpls = mutable.Set.empty[Global]
+  val dynimpls = mutable.Set.empty[Global.Member]
 
   private case class DelayedMethod(owner: Global.Top, sig: Sig, pos: Position)
   private val delayedMethods = mutable.Set.empty[DelayedMethod]
@@ -260,17 +260,18 @@ class Reach(
     }
   }
 
-  def reachClinit(name: Global): Unit = {
+  def reachClinit(name: Global.Top): Unit = {
     reachGlobalNow(name)
-    infos.get(name).foreach { cls =>
-      val clinit = cls.name.member(Sig.Clinit())
-      if (loaded(cls.name).contains(clinit)) {
-        reachGlobal(clinit)
-      }
+    infos.get(name).collect {
+      case cls: ScopeInfo =>
+        val clinit = cls.name.member(Sig.Clinit)
+        if (loaded(cls.name).contains(clinit)) {
+          reachGlobal(clinit)
+        }
     }
   }
 
-  def reachExported(name: Global): Unit = {
+  def reachExported(name: Global.Top): Unit = {
     def isExported(defn: Defn) = defn match {
       case Defn.Define(attrs, Global.Member(_, sig), _, _, _) =>
         attrs.isExtern || sig.isExtern
@@ -278,7 +279,7 @@ class Reach(
     }
 
     for {
-      cls <- infos.get(name)
+      cls <- infos.get(name).collect { case info: ScopeInfo => info }
       defns <- loaded.get(cls.name)
       (name, defn) <- defns
     } if (isExported(defn)) reachGlobal(name)
@@ -334,7 +335,7 @@ class Reach(
         }
         loaded(info.name).foreach {
           case (_, defn: Defn.Define) =>
-            val Global.Member(_, sig) = defn.name: @unchecked
+            val Global.Member(_, sig) = defn.name
             info.responds(sig) = defn.name
           case _ =>
             ()
@@ -366,7 +367,7 @@ class Reach(
         }
         loaded(info.name).foreach {
           case (_, defn: Defn.Define) =>
-            val Global.Member(_, sig) = defn.name: @unchecked
+            val Global.Member(_, sig) = defn.name
             def update(sig: Sig): Unit = {
               info.responds(sig) = lookup(info, sig)
                 .getOrElse(
@@ -444,7 +445,10 @@ class Reach(
           val dynsig = sig.toProxy
           if (!dynsigs.contains(dynsig)) {
             val buf =
-              dyncandidates.getOrElseUpdate(dynsig, mutable.Set.empty[Global])
+              dyncandidates.getOrElseUpdate(
+                dynsig,
+                mutable.Set.empty[Global.Member]
+              )
             buf += impl
           } else {
             dynimpls += impl
@@ -461,7 +465,7 @@ class Reach(
       }
     }
 
-  def scopeInfo(name: Global): Option[ScopeInfo] = {
+  def scopeInfo(name: Global.Top): Option[ScopeInfo] = {
     reachGlobalNow(name)
     infos(name) match {
       case info: ScopeInfo => Some(info)
@@ -469,7 +473,7 @@ class Reach(
     }
   }
 
-  def scopeInfoOrUnavailable(name: Global): Info = {
+  def scopeInfoOrUnavailable(name: Global.Top): Info = {
     reachGlobalNow(name)
     infos(name) match {
       case info: ScopeInfo   => info
@@ -478,7 +482,7 @@ class Reach(
     }
   }
 
-  def classInfo(name: Global): Option[Class] = {
+  def classInfo(name: Global.Top): Option[Class] = {
     reachGlobalNow(name)
     infos(name) match {
       case info: Class => Some(info)
@@ -486,12 +490,12 @@ class Reach(
     }
   }
 
-  def classInfoOrObject(name: Global): Class =
+  def classInfoOrObject(name: Global.Top): Class =
     classInfo(name)
       .orElse(classInfo(Rt.Object.name))
       .getOrElse(fail(s"Class info not available for $name"))
 
-  def traitInfo(name: Global): Option[Trait] = {
+  def traitInfo(name: Global.Top): Option[Trait] = {
     reachGlobalNow(name)
     infos(name) match {
       case info: Trait => Some(info)
@@ -930,10 +934,10 @@ class Reach(
     }
   }
 
-  def lookup(cls: Class, sig: Sig): Option[Global] = {
+  def lookup(cls: Class, sig: Sig): Option[Global.Member] = {
     assert(loaded.contains(cls.name))
 
-    def lookupSig(cls: Class, sig: Sig): Option[Global] = {
+    def lookupSig(cls: Class, sig: Sig): Option[Global.Member] = {
       val tryMember = cls.name.member(sig)
       if (loaded(cls.name).contains(tryMember)) {
         Some(tryMember)

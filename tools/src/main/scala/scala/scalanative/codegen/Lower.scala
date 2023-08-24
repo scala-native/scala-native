@@ -48,7 +48,7 @@ object Lower {
     private val currentDefn = new util.ScopedVar[Defn.Define]
     private val nullGuardedVals = mutable.Set.empty[Val]
     private def currentDefnRetType = {
-      val Type.Function(_, ret) = currentDefn.get.ty: @unchecked
+      val Type.Function(_, ret) = currentDefn.get.ty
       ret
     }
 
@@ -85,7 +85,7 @@ object Lower {
 
     override def onDefn(defn: Defn): Defn = defn match {
       case defn: Defn.Define =>
-        val Type.Function(_, ty) = defn.ty: @unchecked
+        val Type.Function(_, ty) = defn.ty
         ScopedVar.scoped(
           fresh := Fresh(defn.insts),
           currentDefn := defn
@@ -525,7 +525,7 @@ object Lower {
       label(inBoundsL)
     }
 
-    def genFieldElemOp(buf: Buffer, obj: Val, name: Global)(implicit
+    def genFieldElemOp(buf: Buffer, obj: Val, name: Global.Member)(implicit
         srcPosition: Position,
         scopeId: ScopeId
     ) = {
@@ -698,14 +698,12 @@ object Lower {
         else if (defn eq lastDefn) lastResult
         else {
           lastDefn = defn
-          val defnNeedsSafepoints = defn.name match {
-            case Global.Member(_, sig) =>
-              // Exclude accessors and generated methods
-              def mayContainLoops = defn.insts.exists(_.isInstanceOf[Inst.Jump])
-              !sig.isGenerated && (defn.insts.size > 4 || mayContainLoops)
-            case _ => false // unreachable or generated
+          val Global.Member(_, sig) = defn.name
+          lastResult = {
+            // Exclude accessors and generated methods
+            def mayContainLoops = defn.insts.exists(_.isInstanceOf[Inst.Jump])
+            !sig.isGenerated && (defn.insts.size > 4 || mayContainLoops)
           }
-          lastResult = defnNeedsSafepoints
           lastResult
         }
       }
@@ -1050,7 +1048,7 @@ object Lower {
       val size = op.ty match {
         case ClassRef(cls) if op.ty != Type.Unit =>
           if (!cls.allocated) {
-            val Global.Top(clsName) = cls.name: @unchecked
+            val Global.Top(clsName) = cls.name
             logger.warn(
               s"Referencing size of non allocated type ${clsName} in ${srcPosition.show}"
             )
@@ -1582,7 +1580,7 @@ object Lower {
         wasUsed
       }
 
-      val Global.Member(_, sig) = defn.name: @unchecked
+      val Global.Member(_, sig) = defn.name
       val Inst.Label(_, args) = defn.insts.head: @unchecked
 
       val canHaveThisValue =
@@ -1688,7 +1686,7 @@ object Lower {
     boxty -> meth
   }.toMap
 
-  private def extern(id: String): Global =
+  private def extern(id: String): Global.Member =
     Global.Member(Global.Top("__"), Sig.Extern(id))
 
   val unitName = Global.Top("scala.scalanative.runtime.BoxedUnit$")
@@ -1701,7 +1699,7 @@ object Lower {
 
   val arrayHeapAlloc = Type.typeToArray.map {
     case (ty, arrname) =>
-      val Global.Top(id) = arrname: @unchecked
+      val Global.Top(id) = arrname
       val arrcls = Type.Ref(arrname)
       ty -> Global.Member(
         Global.Top(id + "$"),
@@ -1710,7 +1708,7 @@ object Lower {
   }.toMap
   val arrayHeapAllocSig = Type.typeToArray.map {
     case (ty, arrname) =>
-      val Global.Top(id) = arrname: @unchecked
+      val Global.Top(id) = arrname
       ty -> Type.Function(
         Seq(Type.Ref(Global.Top(id + "$")), Type.Int),
         Type.Ref(arrname)
@@ -1718,7 +1716,7 @@ object Lower {
   }.toMap
   val arrayZoneAlloc = Type.typeToArray.map {
     case (ty, arrname) =>
-      val Global.Top(id) = arrname: @unchecked
+      val Global.Top(id) = arrname
       val arrcls = Type.Ref(arrname)
       ty -> Global.Member(
         Global.Top(id + "$"),
@@ -1727,7 +1725,7 @@ object Lower {
   }.toMap
   val arrayZoneAllocSig = Type.typeToArray.map {
     case (ty, arrname) =>
-      val Global.Top(id) = arrname: @unchecked
+      val Global.Top(id) = arrname
       ty -> Type.Function(
         Seq(Type.Ref(Global.Top(id + "$")), Type.Int, SafeZone),
         Type.Ref(arrname)
@@ -1735,7 +1733,7 @@ object Lower {
   }.toMap
   val arraySnapshot = Type.typeToArray.map {
     case (ty, arrname) =>
-      val Global.Top(id) = arrname: @unchecked
+      val Global.Top(id) = arrname
       val arrcls = Type.Ref(arrname)
       ty -> Global.Member(
         Global.Top(id + "$"),
@@ -1744,7 +1742,7 @@ object Lower {
   }.toMap
   val arraySnapshotSig = Type.typeToArray.map {
     case (ty, arrname) =>
-      val Global.Top(id) = arrname: @unchecked
+      val Global.Top(id) = arrname
       ty -> Type.Function(
         Seq(Type.Ref(Global.Top(id + "$")), Type.Int, Type.Ptr),
         Type.Ref(arrname)
@@ -1866,7 +1864,8 @@ object Lower {
 
   val memsetSig =
     Type.Function(Seq(Type.Ptr, Type.Int, Type.Size), Type.Ptr)
-  val memset = Val.Global(extern("memset"), Type.Ptr)
+  val memsetName = extern("memset")
+  val memset = Val.Global(memsetName, Type.Ptr)
 
   val RuntimeNull = Type.Ref(Global.Top("scala.runtime.Null$"))
   val RuntimeNothing = Type.Ref(Global.Top("scala.runtime.Nothing$"))
@@ -1878,7 +1877,7 @@ object Lower {
     buf += Defn.Declare(Attrs.None, largeAllocName, allocSig)
     buf += Defn.Declare(Attrs.None, dyndispatchName, dyndispatchSig)
     buf += Defn.Declare(Attrs.None, throwName, throwSig)
-    buf += Defn.Declare(Attrs(isExtern = true), memset.name, memsetSig)
+    buf += Defn.Declare(Attrs(isExtern = true), memsetName, memsetSig)
     buf.toSeq
   }
 

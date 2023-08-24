@@ -45,7 +45,7 @@ trait NirGenName(using Context) {
     else Global.Top(typeName.id + "$")
   }
 
-  def genFieldName(sym: Symbol): nir.Global = {
+  def genFieldName(sym: Symbol): nir.Global.Member = {
     val owner =
       if (sym.isScalaStatic) genModuleName(sym.owner)
       else genTypeName(sym.owner)
@@ -65,7 +65,7 @@ trait NirGenName(using Context) {
     }
   }
 
-  def genMethodName(sym: Symbol): nir.Global = {
+  def genMethodName(sym: Symbol): nir.Global.Member = {
     def owner = genTypeName(sym.owner)
     def id = nativeIdOf(sym)
     def scope =
@@ -82,7 +82,7 @@ trait NirGenName(using Context) {
     if (sym == defn.`String_+`) genMethodName(defnNir.String_concat)
     else if (sym.isExtern) owner.member(genExternSigImpl(sym, id))
     else if (sym.isClassConstructor) owner.member(nir.Sig.Ctor(paramTypes))
-    else if (sym.isStaticConstructor) owner.member(nir.Sig.Clinit())
+    else if (sym.isStaticConstructor) owner.member(nir.Sig.Clinit)
     else if (sym.name == nme.TRAIT_CONSTRUCTOR)
       owner.member(nir.Sig.Method(id, Seq(nir.Type.Unit), scope))
     else
@@ -99,7 +99,7 @@ trait NirGenName(using Context) {
       nir.Sig.Extern(id)
     else nir.Sig.Extern(id)
 
-  def genStaticMemberName(sym: Symbol, explicitOwner: Symbol): Global = {
+  def genStaticMemberName(sym: Symbol, explicitOwner: Symbol): Global.Member = {
     val owner = {
       // Use explicit owner in case if forwarder target was defined in the trait/interface
       // or was abstract. `sym.owner` would always point to original owner, even if it also defined

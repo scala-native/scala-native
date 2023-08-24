@@ -71,7 +71,7 @@ class Buffer(implicit fresh: Fresh) {
       scope: ScopeId
   ): Val.Local = let(fresh(), op, unwind)
 
-  def call(ty: Type, ptr: Val, args: Seq[Val], unwind: Next)(implicit
+  def call(ty: Type.Function, ptr: Val, args: Seq[Val], unwind: Next)(implicit
       pos: Position,
       scope: ScopeId
   ): Val.Local = let(Op.Call(ty, ptr, args), unwind)
@@ -129,23 +129,29 @@ class Buffer(implicit fresh: Fresh) {
       scope: ScopeId
   ): Val.Local = let(Op.Conv(conv, ty, value), unwind)
 
-  def classalloc(name: Global, unwind: Next, zone: Option[Val] = None)(implicit
+  def classalloc(name: Global.Top, unwind: Next, zone: Option[Val] = None)(
+      implicit
       pos: Position,
       scope: ScopeId
   ): Val.Local = let(Op.Classalloc(name, zone), unwind)
 
-  def fieldload(ty: Type, obj: Val, name: Global, unwind: Next)(implicit
+  def fieldload(ty: Type, obj: Val, name: Global.Member, unwind: Next)(implicit
       pos: Position,
       scope: ScopeId
   ): Val.Local = let(Op.Fieldload(ty, obj, name), unwind)
 
-  def fieldstore(ty: Type, obj: Val, name: Global, value: Val, unwind: Next)(
-      implicit
+  def fieldstore(
+      ty: Type,
+      obj: Val,
+      name: Global.Member,
+      value: Val,
+      unwind: Next
+  )(implicit
       pos: Position,
       scope: ScopeId
   ): Val.Local = let(Op.Fieldstore(ty, obj, name, value), unwind)
 
-  def field(obj: Val, name: Global, unwind: Next)(implicit
+  def field(obj: Val, name: Global.Member, unwind: Next)(implicit
       pos: Position,
       scope: ScopeId
   ) =
@@ -161,7 +167,7 @@ class Buffer(implicit fresh: Fresh) {
       scope: ScopeId
   ): Val.Local = let(Op.Dynmethod(obj, sig), unwind)
 
-  def module(name: Global, unwind: Next)(implicit
+  def module(name: Global.Top, unwind: Next)(implicit
       pos: Position,
       scope: ScopeId
   ): Val.Local = let(Op.Module(name), unwind)
