@@ -480,6 +480,9 @@ object Lower {
           genArraylengthOp(buf, n, op)
         case op: Op.Stackalloc =>
           genStackallocOp(buf, n, op)
+        case op: Op.Copy =>
+          val v = genVal(buf, op.value)
+          buf.let(n, Op.Copy(v), unwind)
         case _ =>
           buf.let(n, op, unwind)
       }
