@@ -637,7 +637,7 @@ object ForkJoinTask {
     ForkJoinPool.getSurplusQueuedTaskCount()
 
   // The next 4 methods should be defined as `protected static`, however this kind of access
-  // does not make lots of sens in Scala. The most similiar would be `protected[concurrent]`
+  // does not make a lot of sense in Scala. The most similar access would be `protected[concurrent]`
   // Scala Native frontend does not emit static forwards for protected methods for compliance with the Scala JVM backend
   // The usecase of `protected static` in ported Scala code shall be replaced with public access instead.
   def peekNextLocalTask(): ForkJoinTask[_] = {
