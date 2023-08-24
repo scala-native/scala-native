@@ -56,7 +56,7 @@ private[lang] object StackTrace {
       }
     }
 
-    if (LinktimeInfo.isMac) {
+    if (LinktimeInfo.isMac && LinktimeInfo.hasDebugMetadata) {
       // Add filename and line number informatiion
       // When analyzing the stack trace, if the entry "currentStackTrace" appears more than once, it indicates that a Throwable object
       // was generated within the same "currentStackTrace" method, causing recursive calls. This recursive behavior can lead to an
