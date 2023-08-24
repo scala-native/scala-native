@@ -150,6 +150,16 @@ private[scalanative] object LLVM {
     copyOutput(config, buildPath)
   }
 
+  def dsymutil(config: Config, path: Path) = {
+    val dsymutil = Discover.discover("dsymutil", "LLVM_BIN")
+    val command = Seq(dsymutil.abs, path.abs)
+    val proc = Process(command, config.workDir.toFile())
+    val result = proc ! Logger.toProcessLogger(config.logger)
+    if (result != 0) {
+      throw new BuildException(s"Failed to run dsymutil ${path}")
+    }
+  }
+
   private def copyOutput(config: Config, buildPath: Path) = {
     val outPath = config.artifactPath
     config.compilerConfig.buildTarget match {
@@ -252,6 +262,10 @@ private[scalanative] object LLVM {
     config.logger.running(command)
 
     Process(command, config.workDir.toFile()) #< MIRScriptFile
+  }
+
+  private def prepareDSymUtilCommand() = {
+    val dsymutil = Discover.discover("dsymutil", "LLVM_BIN")
   }
 
   /** Checks the input timestamp to see if the file needs compiling. The call to

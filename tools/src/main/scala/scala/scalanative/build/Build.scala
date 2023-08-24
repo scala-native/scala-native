@@ -118,7 +118,13 @@ object Build {
           backend
             .codegen()
             .flatMap(backend.compile)
-            .map(backend.link)
+            .map { p =>
+              val linked = backend.link(p)
+              if (Platform.isMac && config.compilerConfig.debugMetadata) {
+                backend.dsymutil(linked)
+              }
+              linked
+            }
         }
     }
   }
@@ -171,6 +177,12 @@ object Build {
       s"Linking native code (${config.gc.name} gc, ${config.LTO.name} lto)"
     ) {
       LLVM.link(config, linkerResult, compiled)
+    }
+
+    def dsymutil(linked: Path): Unit = time(
+      s"Running dsymutil on ${linked.getFileName}"
+    ) {
+      LLVM.dsymutil(config, linked)
     }
   }
 
