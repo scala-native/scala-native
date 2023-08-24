@@ -12,7 +12,7 @@ import dotty.tools.dotc.core.Contexts._
 
 /** Helper class to compile snippets of code.
  */
-class NIRCompilerImpl(outputDir: Path) extends api.NIRCompiler {
+class NIRCompiler(outputDir: Path) extends api.NIRCompiler {
 
   def this() = this(Files.createTempDirectory("scala-native-target"))
 

@@ -11,8 +11,7 @@ import scala.scalanative.compiler.CompatReporter
 
 /** Helper class to compile snippets of code.
  */
-private[scalanative] class NIRCompilerImpl(outputDir: Path)
-    extends api.NIRCompiler {
+class NIRCompiler(outputDir: Path) extends api.NIRCompiler {
 
   def this() = this(Files.createTempDirectory("scala-native-target"))
 

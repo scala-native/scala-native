@@ -297,7 +297,9 @@ object Build {
     .withJUnitPlugin
     .withNativeCompilerPlugin
     .settings(
-      commonToolsSettings
+      commonToolsSettings,
+      // Multiple check warnings due to usage of self-types
+      nativeConfig ~= { _.withCheckFatalWarnings(false) }
       // Test / test := {
       //   val log = streams.value.log
       //   log.warn(
@@ -306,11 +308,7 @@ object Build {
       // }
     )
     .dependsOn(nir, util)
-    .dependsOn(
-      testInterface % "test",
-      junitRuntime % "test",
-      testingCompiler % "test"
-    )
+    .dependsOn(testInterface % "test", junitRuntime % "test")
     .zippedSettings(Seq("nscplugin", "nativelib", "scalalib")) {
       case Seq(nscPlugin, nativelib, scalalib) =>
         buildInfoKeys ++= Seq[BuildInfoKey](
@@ -366,7 +364,7 @@ object Build {
             }
           )
       }
-      .dependsOn(nir, util, testingCompilerJVM % "test")
+      .dependsOn(nir, util)
 
   lazy val toolsBenchmarks =
     MultiScalaProject("toolsBenchmarks", file("tools-benchmarks"))
@@ -692,20 +690,9 @@ object Build {
       )
 
   lazy val testingCompiler =
-    MultiScalaProject("testingCompiler", file("testing-compiler/native"))
-      .enablePlugins(MyScalaNativePlugin)
-      .withNativeCompilerPlugin
+    MultiScalaProject("testingCompiler", file("testing-compiler"))
       .settings(
         noPublishSettings,
-        withSharedCrossPlatformSources
-      )
-      .dependsOn(scalalib)
-
-  lazy val testingCompilerJVM =
-    MultiScalaProject("testingCompilerJVM", file("testing-compiler/jvm"))
-      .settings(
-        noPublishSettings,
-        withSharedCrossPlatformSources,
         libraryDependencies ++= Deps.compilerPluginDependencies(
           scalaVersion.value
         ),
