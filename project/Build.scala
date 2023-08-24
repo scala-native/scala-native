@@ -45,13 +45,15 @@ object Build {
       scalaPartestTests, scalaPartestJunitTests,
       toolsBenchmarks
     )
+  lazy val testNoCrossProject = List(testingCompilerInterface)
 // format: on
   lazy val allMultiScalaProjects =
     publishedMultiScalaProjects ::: testMultiScalaProjects
 
   lazy val publishedProjects =
     sbtScalaNative :: publishedMultiScalaProjects.flatMap(_.componentProjects)
-  lazy val testProjects = testMultiScalaProjects.flatMap(_.componentProjects)
+  lazy val testProjects =
+    testMultiScalaProjects.flatMap(_.componentProjects) ::: testNoCrossProject
   lazy val allProjects = publishedProjects ::: testProjects
 
   private def setDepenency[T](key: TaskKey[T], projects: Seq[Project]) = {
@@ -134,9 +136,9 @@ object Build {
       case "2.12" => _.settings(disabledDocsSettings)
       case _      => identity
     }
+    .mapBinaryVersions(_ => _.dependsOn(testingCompilerInterface % "test"))
     .dependsOnSource(nirJVM)
     .dependsOnSource(utilJVM)
-    .dependsOn(testingCompilerInterface % "test")
     .zippedSettings(Seq("testingCompiler", "nativelib")) {
       case Seq(testingCompiler, nativelib) =>
         Test / javaOptions ++= {
@@ -295,13 +297,13 @@ object Build {
     .withJUnitPlugin
     .withNativeCompilerPlugin
     .settings(
-      commonToolsSettings,
-      Test / test := {
-        val log = streams.value.log
-        log.warn(
-          "Unable to test tools using Scala Native yet - missing javalib dependencies / compiler integration"
-        )
-      }
+      commonToolsSettings
+      // Test / test := {
+      //   val log = streams.value.log
+      //   log.warn(
+      //     "Unable to test tools using Scala Native yet - missing javalib dependencies / compiler integration"
+      //   )
+      // }
     )
     .dependsOn(nir, util)
     .dependsOn(
@@ -309,6 +311,28 @@ object Build {
       junitRuntime % "test",
       testingCompiler % "test"
     )
+    .zippedSettings(Seq("nscplugin", "nativelib", "scalalib")) {
+      case Seq(nscPlugin, nativelib, scalalib) =>
+        buildInfoKeys ++= Seq[BuildInfoKey](
+          BuildInfoKey.map(nscPlugin / Compile / Keys.`package`) {
+            case (_, v) => "pluginJar" -> v.getAbsolutePath()
+          },
+          BuildInfoKey.map(nativelib / Compile / fullClasspath) {
+            case (_, v) =>
+              "nativelibCp" ->
+                v.files
+                  .map(_.getAbsolutePath)
+                  .mkString(pathSeparator)
+          },
+          BuildInfoKey.map(scalalib / Compile / fullClasspath) {
+            case (_, v) =>
+              "scalalibCp" ->
+                v.files
+                  .map(_.getAbsolutePath)
+                  .mkString(pathSeparator)
+          }
+        )
+    }
 
   lazy val toolsJVM =
     MultiScalaProject(id = "toolsJVM", name = "tools", file("tools/jvm"))
@@ -657,6 +681,16 @@ object Build {
       .dependsOn(scalalib, testInterface % "test")
 
 // Testing infrastructure ------------------------------------------------
+  lazy val testingCompilerInterface =
+    project
+      .in(file("testing-compiler-interface"))
+      .settings(
+        noPublishSettings,
+        crossPaths := false,
+        crossVersion := CrossVersion.disabled,
+        autoScalaLibrary := false
+      )
+
   lazy val testingCompiler =
     MultiScalaProject("testingCompiler", file("testing-compiler/native"))
       .enablePlugins(MyScalaNativePlugin)
@@ -696,6 +730,7 @@ object Build {
         },
         exportJars := true
       )
+      .mapBinaryVersions(_ => _.dependsOn(testingCompilerInterface))
 
   lazy val testInterface =
     MultiScalaProject("testInterface", file("test-interface"))
