@@ -240,7 +240,7 @@ object Generate {
           Inst.Let(
             Op.Call(
               Type.Function(Seq.empty, Type.Unit),
-              Val.Global(name, Type.Ref(name)),
+              Val.Global(name, Type.Ref(name.owner)),
               Seq.empty
             ),
             unwind()
@@ -331,16 +331,15 @@ object Generate {
         Seq(Type.Ptr, Type.Ptr, Type.Size, Type.Ptr),
         Type.Ptr
       )
-      val LoadModule =
-        Val.Global(extern("__scalanative_loadModule"), Type.Ptr)
-
+      val LoadModuleDecl = Defn.Declare(
+        Attrs(isExtern = true),
+        extern("__scalanative_loadModule"),
+        LoadModuleSig
+      )
+      val LoadModule = Val.Global(LoadModuleDecl.name, Type.Ptr)
       val useSynchronizedAccessors = meta.config.multithreadingSupport
       if (useSynchronizedAccessors) {
-        buf += Defn.Declare(
-          Attrs(isExtern = true),
-          LoadModule.name,
-          LoadModuleSig
-        )
+        buf += LoadModuleDecl
       }
 
       meta.classes.foreach { cls =>
@@ -505,7 +504,7 @@ object Generate {
     }
 
     def genWeakRefUtils(): Unit = {
-      def addToBuf(name: Global, value: Int) =
+      def addToBuf(name: Global.Member, value: Int) =
         buf +=
           Defn.Var(
             Attrs.None,
@@ -638,8 +637,8 @@ object Generate {
     )
 
     val InitSig = Type.Function(Seq.empty, Type.Unit)
-    val Init = Val.Global(extern("scalanative_init"), Type.Ptr)
-    val InitDecl = Defn.Declare(Attrs.None, Init.name, InitSig)
+    val InitDecl = Defn.Declare(Attrs.None, extern("scalanative_init"), InitSig)
+    val Init = Val.Global(InitDecl.name, Type.Ptr)
 
     val stackBottomName = extern("__stack_bottom")
     val moduleArrayName = extern("__modules")
@@ -653,7 +652,7 @@ object Generate {
     val arrayIdsMinName = extern("__array_ids_min")
     val arrayIdsMaxName = extern("__array_ids_max")
 
-    private def extern(id: String): Global =
+    private def extern(id: String): Global.Member =
       Global.Member(Global.Top("__"), Sig.Extern(id))
   }
 

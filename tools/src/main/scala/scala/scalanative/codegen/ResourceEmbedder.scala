@@ -155,7 +155,7 @@ private[scalanative] object ResourceEmbedder {
     generated
   }
 
-  private def extern(id: String): Global =
+  private def extern(id: String): Global.Member =
     Global.Member(Global.Top("__"), Sig.Extern(id))
 
   private val sourceExtensions =

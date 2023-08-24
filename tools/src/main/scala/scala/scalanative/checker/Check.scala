@@ -93,7 +93,7 @@ final class Check(implicit linked: linker.Result) extends NIRCheck {
     }
   }
   override def checkMethod(meth: Method): Unit = {
-    val Type.Function(_, methRetty) = meth.ty: @unchecked
+    val Type.Function(_, methRetty) = meth.ty
     retty = methRetty
 
     val insts = meth.insts
@@ -177,12 +177,7 @@ final class Check(implicit linked: linker.Result) extends NIRCheck {
   def checkOp(op: Op): Unit = op match {
     case Op.Call(ty, ptr, args) =>
       expect(Type.Ptr, ptr)
-      ty match {
-        case ty: Type.Function =>
-          checkCallArgs(ty, args)
-        case _ =>
-          error("call type must be a function type")
-      }
+      checkCallArgs(ty, args)
     case Op.Load(ty, ptr, _) =>
       expect(Type.Ptr, ptr)
     case Op.Store(ty, ptr, value, _) =>

@@ -9,7 +9,7 @@ import scala.scalanative.util.ScopedVar.scoped
 
 trait Opt { self: Interflow =>
 
-  def shallOpt(name: Global): Boolean = {
+  def shallOpt(name: Global.Member): Boolean = {
     val defn =
       getOriginal(originalName(name))
     val noUnwind = defn.insts.forall {
@@ -22,7 +22,7 @@ trait Opt { self: Interflow =>
     defn.attrs.opt != Attr.NoOpt && noUnwind
   }
 
-  def opt(name: Global): Defn.Define = in(s"visit ${name.show}") {
+  def opt(name: Global.Member): Defn.Define = in(s"visit ${name.show}") {
     val orig = originalName(name)
     val origtys = argumentTypes(orig)
     val origdefn = getOriginal(orig)
@@ -50,7 +50,7 @@ trait Opt { self: Interflow =>
     // Interflow usually infers better types on our erased type system
     // than scalac, yet we live it as a benefit of the doubt and make sure
     // that if original return type is more specific, we keep it as is.
-    val Type.Function(_, origRetTy) = origdefn.ty: @unchecked
+    val Type.Function(_, origRetTy) = origdefn.ty
 
     // Compute opaque fresh locals for the arguments. Argument types
     // are always a subtype of the original declared type, but in

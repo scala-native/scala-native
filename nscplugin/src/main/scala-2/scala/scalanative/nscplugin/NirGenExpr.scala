@@ -780,7 +780,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
       val suffix = "$$Lambda$" + curClassFresh.get.apply().id
       val anonName = nir.Global.Top(genName(curClassSym).top.id + suffix)
-      val traitName = genName(funSym)
+      val traitName = genTypeName(funSym)
 
       statBuf += nir.Defn.Class(
         Attrs.None,

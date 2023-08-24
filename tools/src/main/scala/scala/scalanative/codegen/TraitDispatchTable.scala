@@ -6,7 +6,8 @@ import scalanative.nir._
 import scalanative.linker.{Method, Trait, Class}
 
 class TraitDispatchTable(meta: Metadata) {
-  val dispatchName = Global.Top("__dispatch")
+  val dispatchName =
+    Global.Top("__scalanative_metadata").member(Sig.Generated("dispatch_table"))
   val dispatchVal = Val.Global(dispatchName, Type.Ptr)
   var dispatchTy: Type = _
   var dispatchDefn: Defn = _

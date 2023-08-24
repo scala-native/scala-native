@@ -68,7 +68,7 @@ trait GenReflectiveInstantisation(using Context) {
     given nir.Position = td.span
     val sym: Symbol = curClassSym
     val owner = genTypeName(sym)
-    val name = owner.member(nir.Sig.Clinit())
+    val name = owner.member(nir.Sig.Clinit)
 
     val staticInitBody =
       if (curClassSym.get.is(flag = Module, butNot = Lifted))
@@ -158,7 +158,7 @@ trait GenReflectiveInstantisation(using Context) {
   // Generate the constructor for the class instantiator class,
   // which is expected to extend one of scala.runtime.AbstractFunctionX.
   private def genConstructor(
-      superClass: Global
+      superClass: Global.Top
   )(using
       nir.Position
   )(using reflInstBuffer: ReflectiveInstantiationBuffer): Unit = {
@@ -189,7 +189,7 @@ trait GenReflectiveInstantisation(using Context) {
 
 // Allocate and construct an object, using the provided ExprBuffer.
   private def allocAndConstruct(
-      name: Global,
+      name: Global.Top,
       argTypes: Seq[nir.Type],
       args: Seq[Val]
   )(using pos: nir.Position, buf: ExprBuffer): Val = {
@@ -204,7 +204,7 @@ trait GenReflectiveInstantisation(using Context) {
   }
 
   private def genModuleLoader(
-      fqSymName: Global
+      fqSymName: Global.Top
   )(using
       pos: nir.Position,
       buf: ExprBuffer,

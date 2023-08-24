@@ -22,15 +22,13 @@ object Global {
   }
 
   final case class Top(val id: String) extends Global {
-    override def top: Global.Top =
-      this
+    override def top: Global.Top = this
     override def member(sig: Sig): Global.Member =
       Global.Member(this, sig)
   }
 
-  final case class Member(val owner: Global, val sig: Sig) extends Global {
-    override def top: Global.Top =
-      owner.top
+  final case class Member(val owner: Top, val sig: Sig) extends Global {
+    override def top: Global.Top = owner
     override def member(sig: Sig): Global.Member =
       throw new Exception("Global.Member can't have any members.")
   }

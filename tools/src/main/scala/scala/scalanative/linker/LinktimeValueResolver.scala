@@ -114,15 +114,12 @@ trait LinktimeValueResolver { self: Reach =>
 
     def canBeEvauluated =
       !defn.insts.exists(isRuntimeOnly) && {
-        defn.ty match {
-          case Type.Function(_, retty) =>
-            retty match {
-              case _: Type.ValueKind    => true
-              case Type.Ref(name, _, _) => name == Rt.String.name
-              case Type.Null            => true
-              case _                    => false
-            }
-          case _ => false
+        val Type.Function(_, retty) = defn.ty
+        retty match {
+          case _: Type.ValueKind    => true
+          case Type.Ref(name, _, _) => name == Rt.String.name
+          case Type.Null            => true
+          case _                    => false
         }
       }
 

@@ -135,7 +135,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       genMirrorClass(cd)
     }
 
-    def genClassParent(sym: Symbol): Option[nir.Global] = {
+    def genClassParent(sym: Symbol): Option[nir.Global.Top] = {
       if (sym.isExternType &&
           sym.superClass != ObjectClass) {
         reporter.error(
@@ -288,7 +288,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
     def genRegisterReflectiveInstantiation(cd: ClassDef): Unit = {
       val owner = genTypeName(curClassSym)
-      val name = owner.member(nir.Sig.Clinit())
+      val name = owner.member(nir.Sig.Clinit)
 
       val staticInitBody =
         if (isStaticModule(curClassSym))
@@ -316,7 +316,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     // which is expected to extend one of scala.runtime.AbstractFunctionX.
     private def genReflectiveInstantiationConstructor(
         reflInstBuffer: ReflectiveInstantiationBuffer,
-        superClass: Global
+        superClass: Global.Top
     )(implicit pos: nir.Position): Unit = {
       withFreshExprBuffer { exprBuf =>
         val body = {
@@ -348,7 +348,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     // Allocate and construct an object, using the provided ExprBuffer.
     private def allocAndConstruct(
         exprBuf: ExprBuffer,
-        name: Global,
+        name: Global.Top,
         argTypes: Seq[nir.Type],
         args: Seq[Val]
     )(implicit pos: nir.Position): Val = {
@@ -718,7 +718,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       }
     }
 
-    protected def genLinktimeResolved(dd: DefDef, name: Global)(implicit
+    protected def genLinktimeResolved(dd: DefDef, name: Global.Member)(implicit
         pos: nir.Position
     ): Option[nir.Defn] = {
       if (dd.symbol.isConstant) {
@@ -790,7 +790,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     private def genLinktimeResolvedMethod(
         dd: DefDef,
         retty: nir.Type,
-        methodName: nir.Global
+        methodName: nir.Global.Member
     )(genValue: ExprBuffer => nir.Val)(implicit pos: nir.Position): nir.Defn = {
       implicit val fresh: Fresh = Fresh()
       val buf = new ExprBuffer()
@@ -819,7 +819,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
     def genExternMethod(
         attrs: nir.Attrs,
-        name: nir.Global,
+        name: nir.Global.Member,
         origSig: nir.Type,
         dd: DefDef
     ): Option[nir.Defn] = {

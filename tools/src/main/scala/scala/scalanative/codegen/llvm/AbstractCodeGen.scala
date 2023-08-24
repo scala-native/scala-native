@@ -34,7 +34,7 @@ private[codegen] abstract class AbstractCodeGen(
   private var currentBlockSplit: Int = _
 
   private val copies = mutable.Map.empty[Local, nir.Val]
-  private val deps = mutable.Set.empty[Global]
+  private val deps = mutable.Set.empty[Global.Member]
   private val generated = mutable.Set.empty[String]
   private val externSigMembers = mutable.Map.empty[Sig, Global.Member]
 
@@ -128,10 +128,10 @@ private[codegen] abstract class AbstractCodeGen(
 
   }
 
-  protected final def touch(n: Global): Unit =
+  protected final def touch(n: Global.Member): Unit =
     deps += n
 
-  protected final def lookup(n: Global): Type = n match {
+  protected final def lookup(n: Global.Member): Type = n match {
     case Global.Member(Global.Top("__const"), _) =>
       constTy(n)
     case _ =>
@@ -207,8 +207,8 @@ private[codegen] abstract class AbstractCodeGen(
 
   private[codegen] def genFunctionDefn(
       attrs: Attrs,
-      name: Global,
-      sig: Type,
+      name: Global.Member,
+      sig: Type.Function,
       insts: Seq[Inst],
       fresh: Fresh,
       pos: Position
@@ -218,7 +218,7 @@ private[codegen] abstract class AbstractCodeGen(
   ): Unit = {
     import sb._
 
-    val Type.Function(argtys, retty) = sig: @unchecked
+    val Type.Function(argtys, retty) = sig
 
     val isDecl = insts.isEmpty
 
@@ -226,7 +226,7 @@ private[codegen] abstract class AbstractCodeGen(
     str(if (isDecl) "declare " else "define ")
     if (targetsWindows && !isDecl && attrs.isExtern) {
       // Generate export modifier only for extern (C-ABI compliant) signatures
-      val Global.Member(_, sig) = name: @unchecked
+      val Global.Member(_, sig) = name
       if (sig.isExtern) str("dllexport ")
     }
     genFunctionReturnType(retty)
@@ -463,19 +463,18 @@ private[codegen] abstract class AbstractCodeGen(
     }
   }
 
-  private val constMap = mutable.Map.empty[Val, Global]
-  private val constTy = mutable.Map.empty[Global, Type]
-  private[codegen] def constFor(v: Val): Global =
-    if (constMap.contains(v)) {
-      constMap(v)
-    } else {
-      val idx = constMap.size
-      val name =
-        Global.Member(Global.Top("__const"), Sig.Generated(idx.toString))
-      constMap(v) = name
-      constTy(name) = v.ty
-      name
-    }
+  private val constMap = mutable.Map.empty[Val, Global.Member]
+  private val constTy = mutable.Map.empty[Global.Member, Type]
+  private[codegen] def constFor(v: Val): Global.Member =
+    constMap.getOrElseUpdate(
+      v, {
+        val idx = constMap.size
+        val name =
+          Global.Member(Global.Top("__const"), Sig.Generated(idx.toString))
+        constTy(name) = v.ty
+        name
+      }
+    )
   private[codegen] def deconstify(v: Val): Val = v match {
     case Val.Local(local, _) if copies.contains(local) =>
       deconstify(copies(local))
@@ -522,7 +521,7 @@ private[codegen] abstract class AbstractCodeGen(
       case Val.Local(n, ty) =>
         str("%")
         genLocal(n)
-      case Val.Global(n, ty) =>
+      case Val.Global(n: Global.Member, ty) =>
         if (useOpaquePointers) {
           lookup(n)
           str("@")
@@ -943,8 +942,9 @@ private[codegen] abstract class AbstractCodeGen(
     def genDbgPosition() = dbgPosition.foreach(dbg(",", _))
 
     call match {
-      case Op.Call(ty, Val.Global(pointee, _), args) if lookup(pointee) == ty =>
-        val Type.Function(argtys, _) = ty: @unchecked
+      case Op.Call(ty, Val.Global(pointee: Global.Member, _), args)
+          if lookup(pointee) == ty =>
+        val Type.Function(argtys, _) = ty
         touch(pointee)
 
         newline()
@@ -971,7 +971,7 @@ private[codegen] abstract class AbstractCodeGen(
         }
 
       case Op.Call(ty, ptr, args) =>
-        val Type.Function(_, resty) = ty: @unchecked
+        val Type.Function(_, resty) = ty
 
         val pointee = fresh()
 
