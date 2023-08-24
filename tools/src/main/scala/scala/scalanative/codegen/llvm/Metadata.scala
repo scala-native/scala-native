@@ -53,7 +53,14 @@ object Metadata {
   case class DIBasicType(name: String, size: Int, align: Int, encoding: DW_ATE)
       extends Type
   case class DIDerivedType(tag: DWTag, baseType: Type, size: Int) extends Type
+
   case class DISubroutineType(types: DITypes) extends Type
+  case class DICompositeType(
+      tag: DWTag,
+      // TODO: name: String
+      size: Int,
+      elements: Tuple
+  ) extends Type
 
   class DITypes(retTpe: Option[Type], arguments: Seq[Type])
       extends Tuple(retTpe.getOrElse(Metadata.Const("null")) +: arguments)
@@ -65,6 +72,8 @@ object Metadata {
   sealed class DWTag(tag: Predef.String) extends Const(tag)
   object DWTag {
     object Pointer extends DWTag("DW_TAG_pointer_type")
+    object StructureType extends DWTag("DW_TAG_structure_type")
+    object Member extends DWTag("DW_TAG_member")
   }
 
   sealed class DW_ATE(tag: Predef.String) extends Const(tag)
