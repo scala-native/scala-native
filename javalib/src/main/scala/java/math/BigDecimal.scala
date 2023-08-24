@@ -288,7 +288,7 @@ object BigDecimal {
       new BigDecimal(0, Int.MinValue)
   }
 
-  protected def bitLength(sValue: Long): Int = {
+  private def bitLength(sValue: Long): Int = {
     val smallValue = if (sValue < 0) ~sValue else sValue
     64 - java.lang.Long.numberOfLeadingZeros(smallValue)
   }
