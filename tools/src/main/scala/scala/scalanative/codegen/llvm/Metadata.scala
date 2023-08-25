@@ -19,6 +19,7 @@ object Metadata {
 
   sealed trait LLVMDebugInformation extends SpecializedNode
   sealed trait Scope extends LLVMDebugInformation
+
   case class DICompileUnit(
       file: DIFile,
       producer: String,
@@ -39,15 +40,24 @@ object Metadata {
     override def distinct: Boolean = true
   }
 
+  case class DILexicalBlock(scope: Scope, file: DIFile, line: Int, column: Int)
+      extends Scope {
+    override def distinct: Boolean = true
+  }
+
   case class DILocation(line: Int, column: Int, scope: Scope)
       extends LLVMDebugInformation
   case class DILocalVariable(
       name: String,
+      arg: Option[Int],
       scope: Scope,
       file: DIFile,
       line: Int,
       tpe: Type
   ) extends LLVMDebugInformation
+
+  // TOOD: actual DW_OP expressions as parameters
+  case class DIExpression() extends LLVMDebugInformation
 
   sealed trait Type extends LLVMDebugInformation
   case class DIBasicType(name: String, size: Int, align: Int, encoding: DW_ATE)
