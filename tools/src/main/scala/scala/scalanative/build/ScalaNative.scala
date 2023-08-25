@@ -90,7 +90,9 @@ private[scalanative] object ScalaNative {
           check(config, forceQuickCheck = forceQuickCheck)(result)
         case result: ReachabilityAnalysis.UnreachableSymbolsFound =>
           Future.failed(
-            new LinkingException(s"Unreachable symbols found after $stage")
+            new LinkingException(
+              s"Unreachable symbols found after $stage run. It can happen when using dependencies not cross-compiled for Scala Native or not yet ported JDK definitions."
+            )
           )
       }
   }
