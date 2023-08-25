@@ -114,7 +114,7 @@ object Build {
       )
 
   // Compiler plugins
-  lazy val nscPlugin = MultiScalaProject("nscplugin", file("nscplugin"))
+  lazy val nscPlugin = MultiScalaProject("nscplugin", file("nscplugin"), "2.13")
     .enablePlugins(BuildInfoPlugin) // for testing
     .settings(
       buildInfoSettings,
@@ -930,7 +930,8 @@ object Build {
 
     /** Depends on the sources of another project. */
     def dependsOnSource(dependency: MultiScalaProject): MultiScalaProject = {
-      if (isGeneratingForIDE) project.dependsOn(dependency)
+      if (isGeneratingForIDE && !project.shouldDependsOnSourceInIDE)
+        project.dependsOn(dependency)
       else
         project.zippedSettings(dependency) { dependency =>
           Compile / unmanagedSourceDirectories ++=
