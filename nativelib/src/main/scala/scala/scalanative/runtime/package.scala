@@ -9,6 +9,10 @@ import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
 
 package object runtime {
 
+  private var _filename: String = null
+
+  def filename = _filename
+
   /** Used as a stub right hand of intrinsified methods. */
   private[scalanative] def intrinsic: Nothing = throwUndefined()
 
@@ -68,6 +72,7 @@ package object runtime {
       c += 1
     }
 
+    _filename = fromCString(argv(0))
     args
   }
 

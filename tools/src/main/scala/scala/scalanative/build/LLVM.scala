@@ -8,6 +8,8 @@ import scala.scalanative.build.IO.RichPath
 import scala.scalanative.nir.Attr.Link
 
 import scala.concurrent._
+import scala.util.Failure
+import scala.util.Success
 
 /** Internal utilities to interact with LLVM command-line tools. */
 private[scalanative] object LLVM {
@@ -149,6 +151,22 @@ private[scalanative] object LLVM {
 
     copyOutput(config, buildPath)
   }
+
+  def dsymutil(config: Config, path: Path): Unit =
+    Discover.tryDiscover("dsymutil", "LLVM_BIN").flatMap { dsymutil =>
+      val proc = Process(Seq(dsymutil.abs, path.abs), config.workDir.toFile())
+      val result = proc ! Logger.toProcessLogger(config.logger)
+      if (result != 0) {
+        Failure(
+          new BuildException(
+            s"Failed to link the debug information."
+          )
+        )
+      } else Success(())
+    } match {
+      case Failure(e) => config.logger.warn(e.getMessage())
+      case Success(_) =>
+    }
 
   private def copyOutput(config: Config, buildPath: Path) = {
     val outPath = config.artifactPath

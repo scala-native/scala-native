@@ -7,6 +7,7 @@ import scalanative.runtime.unwind
 import scala.scalanative.meta.LinktimeInfo
 // TODO: Replace with j.u.c.ConcurrentHashMap when implemented to remove scalalib dependency
 import scala.collection.concurrent.TrieMap
+import scala.scalanative.runtime.Backtrace
 
 private[lang] object StackTrace {
   private val cache = TrieMap.empty[CUnsignedLong, StackTraceElement]
@@ -39,23 +40,63 @@ private[lang] object StackTrace {
     cache.getOrElseUpdate(ip, makeStackTraceElement(cursor))
 
   @noinline private[lang] def currentStackTrace(): Array[StackTraceElement] = {
-    var buffer = mutable.ArrayBuffer.empty[StackTraceElement]
+    var buffer = mutable.ArrayBuffer.empty[(StackTraceElement, CUnsignedLong)]
     if (!LinktimeInfo.asanEnabled) {
       Zone { implicit z =>
         val cursor = alloc[scala.Byte](unwind.sizeOfCursor)
         val context = alloc[scala.Byte](unwind.sizeOfContext)
         val ip = stackalloc[CSize]()
-
         unwind.get_context(context)
         unwind.init_local(cursor, context)
         while (unwind.step(cursor) > 0) {
           unwind.get_reg(cursor, unwind.UNW_REG_IP, ip)
-          buffer += cachedStackTraceElement(cursor, !ip)
+          val elem = (cachedStackTraceElement(cursor, !ip), !ip)
+          buffer += elem
         }
       }
     }
 
-    buffer.toArray
+    if (LinktimeInfo.isMac && LinktimeInfo.hasDebugMetadata) {
+      // Add filename and line number informatiion
+      // When analyzing the stack trace, if the entry "currentStackTrace" appears more than once, it indicates that a Throwable object
+      // was generated within the same "currentStackTrace" method, causing recursive calls. This recursive behavior can lead to an
+      // infinite loop, ultimately resulting in a stack overflow exception.
+      //
+      // To prevent excessive recursion, it's preferable to minimize multiple consecutive calls to the "currentStackTrace" method.
+      //
+      // The "currentStackTrace" process is straightforward and typically doesn't trigger exceptions.
+      // On the other hand, the "BackTrace.decodeFileline" is intricate, and if an exception thrown, it's likely to originate from that method.
+      //
+      // Consequently, to mitigate the risk of cascading recursive exceptions,
+      // skip executing "BackTrace.decodeFileline" if "currentStackTrace" is already being invoked recursively.
+      val recur =
+        buffer.count(e => e._1.getMethodName == "currentStackTrace") > 1
+      buffer.map { e =>
+        val elem = e._1
+        val ip = e._2
+        if (recur || // Skip decoding if we're calling currentStackTrace in recursively
+            elem.getFileName != null // Skip decoding if we already have filename information
+        ) elem
+        else {
+          try {
+            Backtrace.decodeFileline(ip.toLong) match {
+              case None =>
+                elem
+              case Some(v) =>
+                val updated = new StackTraceElement(
+                  elem.getClassName,
+                  elem.getMethodName,
+                  v._1,
+                  v._2
+                )
+                // Update cache with the updated stacktrace element
+                cache.update(ip, updated)
+                updated
+            }
+          } catch { case ex: Throwable => elem }
+        }
+      }.toArray
+    } else buffer.map(_._1).toArray
   }
 }
 

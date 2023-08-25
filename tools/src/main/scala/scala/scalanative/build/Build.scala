@@ -119,6 +119,7 @@ object Build {
             .codegen()
             .flatMap(backend.compile)
             .map(backend.link)
+            .map(backend.postProcess)
         }
     }
   }
@@ -171,6 +172,15 @@ object Build {
       s"Linking native code (${config.gc.name} gc, ${config.LTO.name} lto)"
     ) {
       LLVM.link(config, linkerResult, compiled)
+    }
+
+    def postProcess(artifact: Path): Path = time(
+      "Postprocessing"
+    ) {
+      if (Platform.isMac && config.compilerConfig.debugMetadata) {
+        LLVM.dsymutil(config, artifact)
+      }
+      artifact
     }
   }
 
