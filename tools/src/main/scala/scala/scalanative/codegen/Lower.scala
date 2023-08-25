@@ -431,6 +431,9 @@ object Lower {
           genArraystoreOp(buf, n, op)
         case op: Op.Arraylength =>
           genArraylengthOp(buf, n, op)
+        case op: Op.Copy =>
+          val v = genVal(buf, op.value)
+          buf.let(n, Op.Copy(v), unwind)
         case _ =>
           buf.let(n, op, unwind)
       }
