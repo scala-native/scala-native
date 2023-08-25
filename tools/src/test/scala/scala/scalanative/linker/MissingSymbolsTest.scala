@@ -116,4 +116,30 @@ class MissingSymbolsTest extends LinkerSpec {
     }
   }
 
+  // Methods of allocated classess have a special delayed handling needed to correctly
+  // distinguish unimplemented methods from not yet reached
+  @Test def unreachableDelayedMethod(): Unit = {
+    doesNotLink(
+      entry = mainClass,
+      Map(sourceFile -> s"""
+        |object $mainClass{
+        |  def main(args: Array[String]): Unit = {
+        |    val theFields = this.getClass().getDeclaredFields
+        |    println(theFields)
+        |  }
+        |}
+        """.stripMargin)
+    ) {
+      case (config, result) =>
+        // Testing if is able to get non-empty backtrace.
+        // If reference tacking of delayed methods is invalid we would get empty list here
+        result.unreachable
+          .find(_.symbol == "java.lang.Class.getDeclaredFields")
+          .map { symbol =>
+            assertTrue("no-backtrace", symbol.backtrace.nonEmpty)
+          }
+          .getOrElse(fail("Not found required unreachable symbol"))
+    }
+  }
+
 }
