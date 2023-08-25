@@ -118,13 +118,8 @@ object Build {
           backend
             .codegen()
             .flatMap(backend.compile)
-            .map { p =>
-              val linked = backend.link(p)
-              if (Platform.isMac && config.compilerConfig.debugMetadata) {
-                backend.dsymutil(linked)
-              }
-              linked
-            }
+            .map(backend.link)
+            .map(backend.postProcess)
         }
     }
   }
@@ -179,10 +174,13 @@ object Build {
       LLVM.link(config, linkerResult, compiled)
     }
 
-    def dsymutil(linked: Path): Unit = time(
-      s"Running dsymutil on ${linked.getFileName}"
+    def postProcess(artifact: Path): Path = time(
+      "Postprocessing"
     ) {
-      LLVM.dsymutil(config, linked)
+      if (Platform.isMac && config.compilerConfig.debugMetadata) {
+        LLVM.dsymutil(config, artifact)
+      }
+      artifact
     }
   }
 
