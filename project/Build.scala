@@ -220,7 +220,10 @@ object Build {
       )
 
   lazy val nir =
-    MultiScalaProject("nir", file("nir/native")).withNativeCompilerPlugin
+    MultiScalaProject(
+      "nir",
+      file("nir/native")
+    ).withNativeCompilerPlugin.withJUnitPlugin
       .settings(
         toolSettings,
         mavenPublishSettings,
@@ -233,6 +236,7 @@ object Build {
       }
       .enablePlugins(MyScalaNativePlugin)
       .dependsOn(util)
+      .dependsOn(testInterface % "test", junitRuntime % "test")
 
   lazy val nirJVM =
     MultiScalaProject(id = "nirJVM", name = "nir", file("nir/jvm"))
@@ -274,20 +278,6 @@ object Build {
           case (3, _)  => scala213StdLibDeprecations
         }
     },
-    buildInfoKeys ++= Seq(
-      BuildInfoKey.map(scalaInstance) {
-        case (_, v) =>
-          "scalacJars" -> v.allJars
-            .map(_.getAbsolutePath())
-            .mkString(pathSeparator)
-      },
-      BuildInfoKey.map(Compile / managedClasspath) {
-        case (_, v) =>
-          "compileClasspath" -> v.files
-            .map(_.getAbsolutePath())
-            .mkString(pathSeparator)
-      }
-    ),
     // Running tests in parallel results in `FileSystemAlreadyExistsException`
     Test / parallelExecution := false
   )
@@ -299,37 +289,20 @@ object Build {
     .settings(
       commonToolsSettings,
       // Multiple check warnings due to usage of self-types
-      nativeConfig ~= { _.withCheckFatalWarnings(false) }
-      // Test / test := {
-      //   val log = streams.value.log
-      //   log.warn(
-      //     "Unable to test tools using Scala Native yet - missing javalib dependencies / compiler integration"
-      //   )
-      // }
+      nativeConfig ~= { _.withCheckFatalWarnings(false) },
+      // One of the biggest blockers is lack of ZipFileSystemProvider required to operate on JARs
+      Test / test := {
+        val log = streams.value.log
+        log.warn(
+          "Unable to test tools using Scala Native yet - missing javalib dependencies / compiler integration"
+        )
+      }
     )
     .dependsOn(nir, util)
     .dependsOn(testInterface % "test", junitRuntime % "test")
     .zippedSettings(Seq("nscplugin", "nativelib", "scalalib")) {
       case Seq(nscPlugin, nativelib, scalalib) =>
-        buildInfoKeys ++= Seq[BuildInfoKey](
-          BuildInfoKey.map(nscPlugin / Compile / Keys.`package`) {
-            case (_, v) => "pluginJar" -> v.getAbsolutePath()
-          },
-          BuildInfoKey.map(nativelib / Compile / fullClasspath) {
-            case (_, v) =>
-              "nativelibCp" ->
-                v.files
-                  .map(_.getAbsolutePath)
-                  .mkString(pathSeparator)
-          },
-          BuildInfoKey.map(scalalib / Compile / fullClasspath) {
-            case (_, v) =>
-              "scalalibCp" ->
-                v.files
-                  .map(_.getAbsolutePath)
-                  .mkString(pathSeparator)
-          }
-        )
+        toolsBuildInfoSettings(nscPlugin, nativelib, scalalib)
     }
 
   lazy val toolsJVM =
@@ -344,32 +317,53 @@ object Build {
       )
       .zippedSettings(Seq("nscplugin", "nativelib", "scalalib")) {
         case Seq(nscPlugin, nativelib, scalalib) =>
-          buildInfoKeys ++= Seq[BuildInfoKey](
-            BuildInfoKey.map(nscPlugin / Compile / Keys.`package`) {
-              case (_, v) => "pluginJar" -> v.getAbsolutePath()
-            },
-            BuildInfoKey.map(nativelib / Compile / fullClasspath) {
-              case (_, v) =>
-                "nativelibCp" ->
-                  v.files
-                    .map(_.getAbsolutePath)
-                    .mkString(pathSeparator)
-            },
-            BuildInfoKey.map(scalalib / Compile / fullClasspath) {
-              case (_, v) =>
-                "scalalibCp" ->
-                  v.files
-                    .map(_.getAbsolutePath)
-                    .mkString(pathSeparator)
-            }
-          )
+          toolsBuildInfoSettings(nscPlugin, nativelib, scalalib)
       }
       .dependsOn(nir, util)
+
+  private def toolsBuildInfoSettings(
+      nscPlugin: LocalProject,
+      nativelib: LocalProject,
+      scalalib: LocalProject
+  ) = {
+    buildInfoKeys ++= Seq[BuildInfoKey](
+      BuildInfoKey.map(scalaInstance) {
+        case (_, v) =>
+          "scalacJars" -> v.allJars
+            .map(_.getAbsolutePath())
+            .mkString(pathSeparator)
+      },
+      BuildInfoKey.map(Compile / managedClasspath) {
+        case (_, v) =>
+          "compileClasspath" -> v.files
+            .map(_.getAbsolutePath())
+            .mkString(pathSeparator)
+      },
+      BuildInfoKey.map(nscPlugin / Compile / Keys.`package`) {
+        case (_, v) =>
+          "pluginJar" -> v.getAbsolutePath()
+      },
+      BuildInfoKey.map(nativelib / Compile / fullClasspath) {
+        case (_, v) =>
+          "nativelibCp" ->
+            v.files
+              .map(_.getAbsolutePath)
+              .mkString(pathSeparator)
+      },
+      BuildInfoKey.map(scalalib / Compile / fullClasspath) {
+        case (_, v) =>
+          "scalalibCp" ->
+            v.files
+              .map(_.getAbsolutePath)
+              .mkString(pathSeparator)
+      }
+    )
+  }
 
   lazy val toolsBenchmarks =
     MultiScalaProject("toolsBenchmarks", file("tools-benchmarks"))
       .enablePlugins(JmhPlugin, BuildInfoPlugin)
-      .dependsOn(tools % "compile->test")
+      .dependsOn(toolsJVM % "compile->test")
       .settings(
         toolSettings,
         noPublishSettings,

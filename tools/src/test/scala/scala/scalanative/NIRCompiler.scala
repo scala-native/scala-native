@@ -166,7 +166,7 @@ class NIRCompiler(outDir: Path) {
   private def getFiles(base: File, filter: File => Boolean): Seq[File] = {
     Seq(base).filter(filter) ++
       Option(base.listFiles())
-        .getOrElse(Array.empty)
+        .getOrElse(Array.empty[AnyRef].asInstanceOf[Array[File]])
         .flatMap(getFiles(_, filter))
   }
 }
