@@ -1,61 +1,59 @@
 package scala.scalanative.build
 
-import java.util.Locale
+import scala.scalanative.meta.LinktimeInfo
 
 /** Utility methods indicating the platform type */
 object Platform {
-  private lazy val osUsed =
-    System.getProperty("os.name", "unknown").toLowerCase(Locale.ROOT)
+  final val isJVM = false
 
   /** Test for the platform type
    *
    *  @return
    *    true if `Windows`, false otherwise
    */
-  lazy val isWindows: Boolean = osUsed.startsWith("windows")
+  lazy val isWindows: Boolean = LinktimeInfo.isWindows
 
   /** Test for the platform type
    *
    *  @return
    *    true if `Linux`, false otherwise
    */
-  lazy val isLinux: Boolean = osUsed.contains("linux")
+  lazy val isLinux: Boolean = LinktimeInfo.isLinux
 
   /** Test for the platform type
    *
    *  @return
    *    true if `UNIX`, false otherwise
    */
-  lazy val isUnix: Boolean = isLinux || osUsed.contains("unix")
+  lazy val isUnix: Boolean =
+    LinktimeInfo.isLinux || LinktimeInfo.target.os.contains("unix")
 
   /** Test for the platform type
    *
    *  @return
    *    true if `macOS`, false otherwise
    */
-  lazy val isMac: Boolean = osUsed.contains("mac")
+  lazy val isMac: Boolean = LinktimeInfo.isMac
 
   /** Test for the platform type
    *
    *  @return
    *    true if `FreeBSD`, false otherwise
    */
-  lazy val isFreeBSD: Boolean = osUsed.contains("freebsd")
+  lazy val isFreeBSD: Boolean = LinktimeInfo.isFreeBSD
 
   /** Test for the target type
    *
    *  @return
    *    true if `msys`, false otherwise
    */
-  lazy val isMsys: Boolean = target.endsWith("msys")
+  lazy val isMsys: Boolean = LinktimeInfo.target.os.contains("msys")
 
   /** Test for the target type
    *
    *  @return
    *    true if `cygnus`, false otherwise
    */
-  lazy val isCygwin: Boolean = target.endsWith("cygnus")
+  lazy val isCygwin: Boolean = LinktimeInfo.target.os.contains("cygnus")
 
-  private lazy val target =
-    System.getProperty("target.triple", "unknown").toLowerCase(Locale.ROOT)
 }

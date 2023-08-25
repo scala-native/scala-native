@@ -552,8 +552,11 @@ class File(_path: String) extends Serializable with Comparable[File] {
   def listFiles(): Array[File] =
     listFiles(FilenameFilter.allPassFilter)
 
-  def listFiles(filter: FilenameFilter): Array[File] =
-    list(filter).map(new File(this, _))
+  def listFiles(filter: FilenameFilter): Array[File] = {
+    val files = list(filter)
+    if (files == null) null
+    else files.map(new File(this, _))
+  }
 
   def listFiles(filter: FileFilter): Array[File] = {
     val filenameFilter =
