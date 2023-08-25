@@ -51,7 +51,7 @@ abstract class LinkerSpec {
       case _ => fail("Expected code to not link"); unreachable
     }
 
-  private def mayLink[T](
+  protected def mayLink[T](
       entry: String,
       sources: Map[String, String],
       setupConfig: NativeConfig => NativeConfig = identity
@@ -87,7 +87,7 @@ abstract class LinkerSpec {
       .withClassPath(classpath.toSeq)
       .withMainClass(Some(entry))
       .withCompilerConfig(setupNativeConfig.andThen(withDefaults))
-    // .withLogger(Logger.nullLogger)
+      .withLogger(Logger.nullLogger)
   }
 
   private def withDefaults(config: NativeConfig): NativeConfig = {

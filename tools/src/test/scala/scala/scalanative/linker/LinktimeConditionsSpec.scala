@@ -448,7 +448,7 @@ class LinktimeConditionsSpec extends OptimizerSpec {
         .withTargetTriple("x86_64-unknown-linux-gnu")
         .withLinkStubs(false)
     }
-    link(entry, sources.toMap, setupConfig = setupConfig)(body)
+    mayLink(entry, sources.toMap, setupConfig = setupConfig)(body)
   }
   private def linkWithProps(
       sources: (String, String)*
