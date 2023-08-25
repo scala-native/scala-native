@@ -158,6 +158,11 @@ object Discover {
   private[scalanative] val docSetup =
     "http://www.scala-native.org/en/latest/user/setup.html"
 
+  private[scalanative] def tryDiscover(
+      binaryName: String,
+      envPath: String
+  ): Try[Path] = Try(discover(binaryName, envPath))
+
   /** Discover the binary path using environment variables or the command from
    *  the path.
    */
