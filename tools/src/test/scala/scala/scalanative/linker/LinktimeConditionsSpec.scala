@@ -152,7 +152,7 @@ class LinktimeConditionsSpec extends OptimizerSpec {
         case (_, result: ReachabilityAnalysis.UnreachableSymbolsFound) =>
           assertTrue(
             n.toString,
-            (result.unavailable.map(_.symbol).toSet - pathForNumber(n)).isEmpty
+            (result.unreachable.map(_.name).toSet - pathForNumber(n)).isEmpty
           )
       }
   }
@@ -183,7 +183,7 @@ class LinktimeConditionsSpec extends OptimizerSpec {
         case (_, result: ReachabilityAnalysis.UnreachableSymbolsFound) =>
           assertTrue(
             n.toString,
-            (result.unavailable.map(_.symbol).toSet - pathForNumber(n)).isEmpty
+            (result.unreachable.map(_.name).toSet - pathForNumber(n)).isEmpty
           )
       }
   }
@@ -238,7 +238,7 @@ class LinktimeConditionsSpec extends OptimizerSpec {
       ) {
         case (_, result: ReachabilityAnalysis.UnreachableSymbolsFound) =>
           assertTrue(
-            (result.unavailable.map(_.symbol).toSet -
+            (result.unreachable.map(_.name).toSet -
               pathForNumber(pathNumber)).isEmpty
           )
       }
@@ -286,7 +286,7 @@ class LinktimeConditionsSpec extends OptimizerSpec {
       ) {
         case (_, result: ReachabilityAnalysis.UnreachableSymbolsFound) =>
           assertTrue(
-            (result.unavailable.map(_.symbol).toSet -
+            (result.unreachable.map(_.name).toSet -
               pathForNumber(pathNumber)).isEmpty
           )
       }

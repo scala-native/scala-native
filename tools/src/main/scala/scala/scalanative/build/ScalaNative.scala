@@ -105,8 +105,8 @@ private[scalanative] object ScalaNative {
         analysis: ReachabilityAnalysis.UnreachableSymbolsFound
     ): Unit = {
       val log = config.logger
-      log.error(s"Found ${analysis.unavailable.size} unreachable symbols")
-      analysis.unavailable.foreach {
+      log.error(s"Found ${analysis.unreachable.size} unreachable symbols")
+      analysis.unreachable.foreach {
         case Reach.UnreachableSymbol(_, kind, name, backtrace) =>
           // Build stacktrace in memory to prevent its spliting when logging asynchronously
           val buf = new StringBuilder()

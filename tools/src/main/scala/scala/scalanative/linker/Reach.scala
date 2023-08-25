@@ -14,7 +14,7 @@ class Reach(
   import Reach._
 
   val loaded = mutable.Map.empty[Global.Top, mutable.Map[Global, Defn]]
-  val unavailable = mutable.Map.empty[Global, UnreachableSymbol]
+  val unreachable = mutable.Map.empty[Global, UnreachableSymbol]
   val enqueued = mutable.Set.empty[Global]
   var todo = List.empty[Global]
   val done = mutable.Map.empty[Global, Defn]
@@ -56,7 +56,7 @@ class Reach(
     // in reachUnavailable
     done.valuesIterator.filter(_ != null).foreach(defns += _)
 
-    if (unavailable.isEmpty)
+    if (unreachable.isEmpty)
       new ReachabilityAnalysis.Result(
         infos = infos,
         entries = entries,
@@ -69,7 +69,7 @@ class Reach(
     else
       new ReachabilityAnalysis.UnreachableSymbolsFound(
         defns = defns.toSeq,
-        unavailable = unavailable.values.toSeq
+        unreachable = unreachable.values.toSeq
       )
   }
 
@@ -108,7 +108,7 @@ class Reach(
       ignoreIfUnavailable: Boolean
   ): Option[Defn] = {
     val owner = global.top
-    if (!loaded.contains(owner) && !unavailable.contains(owner)) {
+    if (!loaded.contains(owner) && !unreachable.contains(owner)) {
       loader
         .load(owner)
         .fold[Unit] {
@@ -232,7 +232,7 @@ class Reach(
     if (!name.isTop) {
       reachEntry(name.top)
     }
-    from.getOrElseUpdate(name, ReferencedFrom.root)
+    from.getOrElseUpdate(name, ReferencedFrom.Root)
     reachGlobalNow(name)
     infos.get(name) match {
       case Some(cls: Class) =>
@@ -281,7 +281,7 @@ class Reach(
       enqueued += name
       from.getOrElseUpdate(
         name,
-        if (stack.isEmpty) ReferencedFrom.root
+        if (stack.isEmpty) ReferencedFrom.Root
         else ReferencedFrom(stack.head, srcPosition)
       )
       todo ::= name
@@ -294,7 +294,7 @@ class Reach(
       enqueued += name
       from.getOrElseUpdate(
         name,
-        if (stack.isEmpty) ReferencedFrom.root
+        if (stack.isEmpty) ReferencedFrom.Root
         else ReferencedFrom(stack.head, srcPosition)
       )
       reachDefn(name)
@@ -539,7 +539,7 @@ class Reach(
     // Put a null definition to indicate that name
     // is effectively done and doesn't need to be
     // visited any more. This saves us the need to
-    // check the unavailable set every time we check
+    // check the unreachable set every time we check
     // if something is truly handled.
     done(name) = null
   }
@@ -920,7 +920,7 @@ class Reach(
     }
   }
 
-  protected def addMissing(global: Global): Unit = unavailable.getOrElseUpdate(
+  protected def addMissing(global: Global): Unit = unreachable.getOrElseUpdate(
     global, {
       def parseSig(owner: String, sig: Sig): (String, String) =
         sig.unmangled match {
@@ -952,15 +952,15 @@ class Reach(
       val buf = List.newBuilder[BackTraceElement]
       def getBackTrace(name: Global): List[BackTraceElement] = {
         val current = from(name)
-        if (current == ReferencedFrom.root) buf.result()
+        if (current == ReferencedFrom.Root) buf.result()
         else {
           val file = current.srcPosition.filename.getOrElse("unknown")
           val line = current.srcPosition.line
           val (kind, symbol) = parseSymbol(current.referencedBy)
           buf += BackTraceElement(
-            symbol = current.referencedBy,
+            name = current.referencedBy,
             kind = kind,
-            name = symbol,
+            symbol = symbol,
             filename = file,
             line = line + 1
           )
@@ -970,9 +970,9 @@ class Reach(
 
       val (kind, symbol) = parseSymbol(global)
       UnreachableSymbol(
-        symbol = global,
+        name = global,
         kind = kind,
-        name = symbol,
+        symbol = symbol,
         backtrace = getBackTrace(global)
       )
     }
@@ -1000,19 +1000,19 @@ object Reach {
       srcPosition: nir.Position
   )
   object ReferencedFrom {
-    final val root = ReferencedFrom(nir.Global.None, nir.Position.NoPosition)
+    final val Root = ReferencedFrom(nir.Global.None, nir.Position.NoPosition)
   }
   case class BackTraceElement(
-      symbol: Global,
+      name: Global,
       kind: String,
-      name: String,
+      symbol: String,
       filename: String,
       line: Int
   )
   case class UnreachableSymbol(
-      symbol: Global,
+      name: Global,
       kind: String,
-      name: String,
+      symbol: String,
       backtrace: List[BackTraceElement]
   )
 }

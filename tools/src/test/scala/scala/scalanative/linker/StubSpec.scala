@@ -31,12 +31,12 @@ class StubSpec extends LinkerSpec {
     doesNotLink(entry, stubMethodSource, _.withLinkStubs(false)) {
       (cfg, result: ReachabilityAnalysis.UnreachableSymbolsFound) =>
         assertTrue(!cfg.linkStubs)
-        assertTrue(result.unavailable.length == 1)
+        assertTrue(result.unreachable.length == 1)
         assertEquals(
           Global
             .Top("Main$")
             .member(Sig.Method("stubMethod", Seq(Type.Int))),
-          result.unavailable.head.symbol
+          result.unreachable.head.name
         )
     }
   }
@@ -52,8 +52,8 @@ class StubSpec extends LinkerSpec {
     doesNotLink(entry, stubClassSource, _.withLinkStubs(false)) {
       (cfg, result: ReachabilityAnalysis.UnreachableSymbolsFound) =>
         assertTrue(!cfg.linkStubs)
-        assertTrue(result.unavailable.length == 1)
-        assertTrue(result.unavailable.head.symbol == Global.Top("StubClass"))
+        assertTrue(result.unreachable.length == 1)
+        assertTrue(result.unreachable.head.name == Global.Top("StubClass"))
     }
   }
 
@@ -68,8 +68,8 @@ class StubSpec extends LinkerSpec {
     doesNotLink(entry, stubModuleSource, _.withLinkStubs(false)) {
       case (cfg, result) =>
         assertTrue(!cfg.linkStubs)
-        assertTrue(result.unavailable.length == 1)
-        assertTrue(result.unavailable.head.symbol == Global.Top("StubModule$"))
+        assertTrue(result.unreachable.length == 1)
+        assertTrue(result.unreachable.head.name == Global.Top("StubModule$"))
     }
   }
 
