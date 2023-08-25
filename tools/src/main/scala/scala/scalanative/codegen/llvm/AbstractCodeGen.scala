@@ -18,6 +18,11 @@ import scala.scalanative.codegen.{Metadata => CodeGenMetadata}
 
 import scala.language.implicitConversions
 import scala.scalanative.codegen.llvm.Metadata.conversions._
+import scala.scalanative.nir.Defn.Const
+import scala.scalanative.nir.Defn.Declare
+import scala.scalanative.nir.Defn.Var
+import scala.scalanative.nir.Defn.Define
+import scala.scalanative.nir.Defn.Trait
 
 private[codegen] abstract class AbstractCodeGen(
     env: Map[Global, Defn],
@@ -223,7 +228,11 @@ private[codegen] abstract class AbstractCodeGen(
     import sb._
     import defn.{name, attrs, pos}
 
-    val Type.Function(argtys, retty) = defn.ty
+    val Type.Function(argtys, retty) = defn match {
+      case defn: Declare => defn.ty
+      case defn: Define  => defn.ty
+      case _             => unreachable
+    }
 
     val isDecl = insts.isEmpty
 
