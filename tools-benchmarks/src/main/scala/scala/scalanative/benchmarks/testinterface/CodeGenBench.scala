@@ -13,6 +13,7 @@ import scala.scalanative.build._
 import scala.concurrent._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
+import scala.scalanative.linker.ReachabilityAnalysis
 
 @Fork(1)
 @State(Scope.Benchmark)
@@ -22,7 +23,7 @@ import scala.concurrent.duration._
 @Measurement(iterations = 10, time = 2, timeUnit = TimeUnit.SECONDS)
 abstract class CodeGenBench(nativeConfig: NativeConfig => NativeConfig) {
   var config: Config = _
-  var linked: linker.Result = _
+  var analysis: ReachabilityAnalysis.Result = _
 
   @Setup(Level.Trial)
   def setup(): Unit = {
@@ -35,7 +36,7 @@ abstract class CodeGenBench(nativeConfig: NativeConfig => NativeConfig) {
 
     val entries = build.ScalaNative.entries(config)
     util.Scope { implicit scope =>
-      linked = Await.result(
+      analysis = Await.result(
         ScalaNative.link(config, entries),
         Duration.Inf
       )
@@ -49,13 +50,13 @@ abstract class CodeGenBench(nativeConfig: NativeConfig => NativeConfig) {
       .walk(workdir)
       .sorted(Comparator.reverseOrder())
       .forEach(Files.delete)
-    linked = null
+    analysis = null
     config = null
   }
 
   @Benchmark
   def codeGen(): Unit = {
-    val codegen = ScalaNative.codegen(config, linked)
+    val codegen = ScalaNative.codegen(config, analysis)
     val paths = Await.result(codegen, Duration.Inf)
     assert(paths.nonEmpty)
   }

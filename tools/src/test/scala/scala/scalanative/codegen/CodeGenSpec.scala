@@ -3,8 +3,8 @@ package codegen
 
 import java.nio.file.{Path, Paths}
 import scalanative.io.VirtualDirectory
-import scalanative.build.Config
-import scalanative.build.ScalaNative
+import scalanative.build.{Config, ScalaNative}
+import scala.scalanative.linker.ReachabilityAnalysis
 import scalanative.util.Scope
 import scala.concurrent._
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -27,7 +27,7 @@ abstract class CodeGenSpec extends OptimizerSpec {
    *    The result of applying `fn` to the resulting file.
    */
   def codegen[T](entry: String, sources: Map[String, String])(
-      f: (Config, linker.Result, Path) => T
+      f: (Config, ReachabilityAnalysis.Result, Path) => T
   ): T =
     optimize(entry, sources) {
       case (config, optimized) =>

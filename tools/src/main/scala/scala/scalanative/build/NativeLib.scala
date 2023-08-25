@@ -6,6 +6,7 @@ import java.nio.file.{Files, Path}
 import java.util.Arrays
 import java.util.regex._
 import scala.concurrent._
+import scala.scalanative.linker.ReachabilityAnalysis
 
 /** Original jar or dir path and generated dir path for native code */
 private[scalanative] case class NativeLib(src: Path, dest: Path)
@@ -30,13 +31,13 @@ private[scalanative] object NativeLib {
    */
   def compileNativeLibrary(
       config: Config,
-      linkerResult: linker.Result,
+      analysis: ReachabilityAnalysis.Result,
       nativeLib: NativeLib
   )(implicit ec: ExecutionContext): Future[Seq[Path]] = {
     val destPath = NativeLib.unpackNativeCode(nativeLib)
     val paths = NativeLib.findNativePaths(config.workDir, destPath)
     val (projPaths, projConfig) =
-      Filter.filterNativelib(config, linkerResult, destPath, paths)
+      Filter.filterNativelib(config, analysis, destPath, paths)
     LLVM.compile(projConfig, projPaths)
   }
 

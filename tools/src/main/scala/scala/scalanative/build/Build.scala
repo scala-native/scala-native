@@ -3,6 +3,7 @@ package build
 
 import java.nio.file.{Files, Path, Paths}
 import scala.scalanative.util.Scope
+import scala.scalanative.linker.ReachabilityAnalysis
 import scala.util.Try
 import java.nio.file.FileVisitOption
 import java.util.Optional
@@ -107,11 +108,6 @@ object Build {
       config.logger.debug(config.toString())
 
       link(config, entries(config))
-        .map { linked =>
-          // Can throw, execute in the main flow
-          logLinked(config, linked)
-          linked
-        }
         .flatMap(optimize(config, _))
         .flatMap { linkerResult =>
           val backend = new BackendPipeline(config, linkerResult)
@@ -124,13 +120,16 @@ object Build {
     }
   }
 
-  private class BackendPipeline(config: Config, linkerResult: linker.Result) {
+  private class BackendPipeline(
+      config: Config,
+      analysis: ReachabilityAnalysis.Result
+  ) {
     private val logger = config.logger
     import logger._
 
     def codegen()(implicit ec: ExecutionContext): Future[Seq[Path]] = {
       val tasks = immutable.Seq(
-        ScalaNative.codegen(config, linkerResult),
+        ScalaNative.codegen(config, analysis),
         genBuildInfo(config)
       )
       Future.reduceLeft(tasks)(_ ++ _)
@@ -152,7 +151,7 @@ object Build {
               /* Finds all the libraries on the classpath that contain native
                * code and then compiles them.
                */
-              findAndCompileNativeLibs(config, linkerResult)
+              findAndCompileNativeLibs(config, analysis)
             case Some(libObjectPaths) =>
               Future.successful {
                 libObjectPaths
@@ -171,7 +170,7 @@ object Build {
     def link(compiled: Seq[Path]): Path = time(
       s"Linking native code (${config.gc.name} gc, ${config.LTO.name} lto)"
     ) {
-      LLVM.link(config, linkerResult, compiled)
+      LLVM.link(config, analysis, compiled)
     }
 
     def postProcess(artifact: Path): Path = time(
@@ -209,12 +208,12 @@ object Build {
    */
   def findAndCompileNativeLibs(
       config: Config,
-      linkerResult: linker.Result
+      analysis: ReachabilityAnalysis.Result
   )(implicit ec: ExecutionContext): Future[Seq[Path]] = {
     import NativeLib.{findNativeLibs, compileNativeLibrary}
     Future
       .traverse(findNativeLibs(config))(
-        compileNativeLibrary(config, linkerResult, _)
+        compileNativeLibrary(config, analysis, _)
       )
       .map(_.flatten)
   }

@@ -3,10 +3,10 @@ package codegen
 
 import scala.collection.mutable
 import scalanative.nir._
-import scalanative.linker.{Trait, Class}
+import scalanative.linker.{Trait, Class, ReachabilityAnalysis}
 
 class Metadata(
-    val linked: linker.Result,
+    val analysis: ReachabilityAnalysis.Result,
     val config: build.NativeConfig,
     proxies: Seq[Defn]
 )(implicit val platform: PlatformInfo) {
@@ -35,7 +35,7 @@ class Metadata(
 
   def initTraitIds(): Seq[Trait] = {
     val traits =
-      linked.infos.valuesIterator
+      analysis.infos.valuesIterator
         .collect { case info: Trait => info }
         .toIndexedSeq
         .sortBy(_.name.show)
@@ -62,7 +62,7 @@ class Metadata(
       ranges(node) = start to end
     }
 
-    loop(linked.infos(Rt.Object.name).asInstanceOf[Class])
+    loop(analysis.infos(Rt.Object.name).asInstanceOf[Class])
 
     out.toSeq
   }

@@ -28,52 +28,55 @@ class StubSpec extends LinkerSpec {
                            |}""".stripMargin
 
   @Test def ignoreMethods(): Unit = {
-    link(entry, stubMethodSource, _.withLinkStubs(false)) { (cfg, result) =>
-      assertTrue(!cfg.linkStubs)
-      assertTrue(result.unavailable.length == 1)
-      assertEquals(
-        Global
-          .Top("Main$")
-          .member(Sig.Method("stubMethod", Seq(Type.Int))),
-        result.unavailable.head
-      )
+    doesNotLink(entry, stubMethodSource, _.withLinkStubs(false)) {
+      (cfg, result: ReachabilityAnalysis.UnreachableSymbolsFound) =>
+        assertTrue(!cfg.linkStubs)
+        assertTrue(result.unreachable.length == 1)
+        assertEquals(
+          Global
+            .Top("Main$")
+            .member(Sig.Method("stubMethod", Seq(Type.Int))),
+          result.unreachable.head.name
+        )
     }
   }
 
   @Test def includeMethods(): Unit = {
     link(entry, stubMethodSource, _.withLinkStubs(true)) { (cfg, result) =>
       assertTrue(cfg.linkStubs)
-      assertTrue(result.unavailable.isEmpty)
+      assertTrue(result.isSuccessful)
     }
   }
 
   @Test def ignoreClasses(): Unit = {
-    link(entry, stubClassSource, _.withLinkStubs(false)) { (cfg, result) =>
-      assertTrue(!cfg.linkStubs)
-      assertTrue(result.unavailable.length == 1)
-      assertTrue(result.unavailable.head == Global.Top("StubClass"))
+    doesNotLink(entry, stubClassSource, _.withLinkStubs(false)) {
+      (cfg, result: ReachabilityAnalysis.UnreachableSymbolsFound) =>
+        assertTrue(!cfg.linkStubs)
+        assertTrue(result.unreachable.length == 1)
+        assertTrue(result.unreachable.head.name == Global.Top("StubClass"))
     }
   }
 
   @Test def includeClasses(): Unit = {
     link(entry, stubClassSource, _.withLinkStubs(true)) { (cfg, result) =>
       assertTrue(cfg.linkStubs)
-      assertTrue(result.unavailable.isEmpty)
+      assertTrue(result.isSuccessful)
     }
   }
 
   @Test def ignoreModules(): Unit = {
-    link(entry, stubModuleSource, _.withLinkStubs(false)) { (cfg, result) =>
-      assertTrue(!cfg.linkStubs)
-      assertTrue(result.unavailable.length == 1)
-      assertTrue(result.unavailable.head == Global.Top("StubModule$"))
+    doesNotLink(entry, stubModuleSource, _.withLinkStubs(false)) {
+      case (cfg, result) =>
+        assertTrue(!cfg.linkStubs)
+        assertTrue(result.unreachable.length == 1)
+        assertTrue(result.unreachable.head.name == Global.Top("StubModule$"))
     }
   }
 
   @Test def includeModules(): Unit = {
     link(entry, stubModuleSource, _.withLinkStubs(true)) { (cfg, result) =>
       assertTrue(cfg.linkStubs)
-      assertTrue(result.unavailable.isEmpty)
+      assertTrue(result.isSuccessful)
     }
   }
 

@@ -5,6 +5,7 @@ import scala.concurrent._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.scalanative.nir._
+import scala.scalanative.linker.ReachabilityAnalysis
 
 /** Base class to test the optimizer */
 abstract class OptimizerSpec extends LinkerSpec {
@@ -27,7 +28,7 @@ abstract class OptimizerSpec extends LinkerSpec {
       sources: Map[String, String],
       setupConfig: NativeConfig => NativeConfig = identity
   )(
-      fn: (Config, linker.Result) => T
+      fn: (Config, ReachabilityAnalysis.Result) => T
   ): T =
     link(entry, sources, setupConfig) {
       case (config, linked) =>

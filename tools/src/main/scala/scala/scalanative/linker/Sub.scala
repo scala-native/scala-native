@@ -34,7 +34,9 @@ import scalanative.util.unreachable
  */
 object Sub {
 
-  def is(l: Type, r: Type)(implicit linked: linker.Result): Boolean = {
+  def is(l: Type, r: Type)(implicit
+      analysis: ReachabilityAnalysis.Result
+  ): Boolean = {
     (l, r) match {
       case (l, r) if l == r =>
         true
@@ -52,7 +54,7 @@ object Sub {
   }
 
   def is(info: ScopeInfo, ty: Type.RefKind)(implicit
-      linked: linker.Result
+      analysis: ReachabilityAnalysis.Result
   ): Boolean = {
     ty match {
       case ScopeRef(other) =>
@@ -63,7 +65,7 @@ object Sub {
   }
 
   def lub(tys: Seq[Type], bound: Option[Type])(implicit
-      linked: linker.Result
+      analysis: ReachabilityAnalysis.Result
   ): Type = {
     tys match {
       case Seq() =>
@@ -74,7 +76,7 @@ object Sub {
   }
 
   def lub(lty: Type, rty: Type, bound: Option[Type])(implicit
-      linked: linker.Result
+      analysis: ReachabilityAnalysis.Result
   ): Type = {
     (lty, rty) match {
       case _ if lty == rty =>
@@ -108,7 +110,7 @@ object Sub {
   }
 
   def lub(linfo: ScopeInfo, rinfo: ScopeInfo, boundInfo: Option[ScopeInfo])(
-      implicit linked: linker.Result
+      implicit analysis: ReachabilityAnalysis.Result
   ): ScopeInfo = {
     if (linfo == rinfo) {
       linfo
@@ -131,7 +133,7 @@ object Sub {
 
       candidates match {
         case Seq() =>
-          linked.infos(Rt.Object.name).asInstanceOf[ScopeInfo]
+          analysis.infos(Rt.Object.name).asInstanceOf[ScopeInfo]
         case Seq(cand) =>
           cand
         case _ =>
@@ -146,7 +148,7 @@ object Sub {
           }
 
           minimums.headOption.getOrElse {
-            linked.infos(Rt.Object.name).asInstanceOf[ScopeInfo]
+            analysis.infos(Rt.Object.name).asInstanceOf[ScopeInfo]
           }
       }
     }

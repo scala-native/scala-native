@@ -6,6 +6,7 @@ import org.junit.Assert._
 
 import scala.collection.mutable
 import scala.scalanative.build.NativeConfig
+import scala.scalanative.linker.ReachabilityAnalysis
 import scala.scalanative.nir.Defn.Define.DebugInfo.LexicalScope
 
 class LexicalScopesTest extends OptimizerSpec {
@@ -15,7 +16,7 @@ class LexicalScopesTest extends OptimizerSpec {
       entry: String,
       sources: Map[String, String],
       setupConfig: build.NativeConfig => build.NativeConfig = identity
-  )(fn: (build.Config, linker.Result) => T) =
+  )(fn: (build.Config, ReachabilityAnalysis.Result) => T) =
     super.optimize(
       entry,
       sources,

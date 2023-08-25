@@ -3,7 +3,12 @@ package codegen
 
 import scala.collection.mutable
 import scala.scalanative.nir._
-import scala.scalanative.linker.{Class, ScopeInfo, Unavailable}
+import scala.scalanative.linker.{
+  Class,
+  ScopeInfo,
+  Unavailable,
+  ReachabilityAnalysis
+}
 import scala.scalanative.build.Logger
 
 // scalafmt: { maxColumn = 120}
@@ -21,8 +26,7 @@ object Generate {
   ): Seq[Defn] =
     (new Impl(entry, defns)).generate()
 
-  implicit def linked(implicit meta: Metadata): linker.Result =
-    meta.linked
+  implicit def reachabilityAnalysis(implicit meta: Metadata): ReachabilityAnalysis.Result = meta.analysis
   private implicit val pos: Position = Position.NoPosition
   private implicit val scopeId: nir.ScopeId = nir.ScopeId.TopLevel
 
@@ -487,7 +491,7 @@ object Generate {
 
     private def tpe2arrayId(tpe: String): Int = {
       val clazz =
-        linked
+        reachabilityAnalysis
           .infos(Global.Top(s"scala.scalanative.runtime.${tpe}Array"))
           .asInstanceOf[Class]
 
@@ -513,7 +517,7 @@ object Generate {
             Val.Int(value)
           )
 
-      val (weakRefIdsMin, weakRefIdsMax, modifiedFieldOffset) = linked.infos
+      val (weakRefIdsMin, weakRefIdsMax, modifiedFieldOffset) = reachabilityAnalysis.infos
         .get(Global.Top("java.lang.ref.WeakReference"))
         .collect { case cls: Class if cls.allocated => cls }
         .fold((-1, -1, -1)) { weakRef =>
@@ -579,7 +583,7 @@ object Generate {
       def fail(reason: String): Nothing =
         util.unsupported(s"Entry ${entry.id} $reason")
 
-      val info = linked.infos.getOrElse(entry, fail("not linked"))
+      val info = reachabilityAnalysis.infos.getOrElse(entry, fail("not linked"))
       info match {
         case cls: Class =>
           cls.resolve(Rt.ScalaMainSig).getOrElse {

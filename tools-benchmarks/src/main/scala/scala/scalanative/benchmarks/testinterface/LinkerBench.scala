@@ -42,7 +42,6 @@ class LinkerBench {
 
     val entries = build.ScalaNative.entries(config)
     val link = build.ScalaNative.link(config, entries)
-    val linked = Await.result(link, Duration.Inf)
-    assert(linked.unavailable.size == 0)
+    Await.result(link, Duration.Inf)
   }
 }
