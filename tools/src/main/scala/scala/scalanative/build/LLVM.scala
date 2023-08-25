@@ -264,10 +264,6 @@ private[scalanative] object LLVM {
     Process(command, config.workDir.toFile()) #< MIRScriptFile
   }
 
-  private def prepareDSymUtilCommand() = {
-    val dsymutil = Discover.discover("dsymutil", "LLVM_BIN")
-  }
-
   /** Checks the input timestamp to see if the file needs compiling. The call to
    *  lastModified will return 0 for a non existent output file but that makes
    *  the timestamp always less forcing a recompile.
