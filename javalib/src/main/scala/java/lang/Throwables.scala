@@ -57,13 +57,34 @@ private[lang] object StackTrace {
           val cursor = alloc[scala.Byte](unwind.sizeOfCursor)
           val context = alloc[scala.Byte](unwind.sizeOfContext)
           val ip = stackalloc[CSize]()
+          var foundCurrentStackTrace = false
+          var afterFillInStackTrace = false
           unwind.get_context(context)
           unwind.init_local(cursor, context)
           while (unwind.step(cursor) > 0) {
             unwind.get_reg(cursor, unwind.UNW_REG_IP, ip)
-            buffer += cachedStackTraceElement(cursor, !ip)
-          }
+            val elem = cachedStackTraceElement(cursor, !ip)
+            buffer += elem
 
+            // Look for intrinsic stack frames and remove them to not polute stack traces
+            if (!afterFillInStackTrace) {
+              if (!foundCurrentStackTrace) {
+                if (elem.getClassName == "java.lang.StackTrace$" &&
+                    elem.getMethodName == "currentStackTrace") {
+                  foundCurrentStackTrace = true
+                  buffer.clear()
+                }
+              } else {
+                // Not guaranteed to be found, may be inlined.
+                // This branch would be visited exactly 1 time
+                if (elem.getClassName == "java.lang.Throwable" &&
+                    elem.getMethodName == "fillInStackTrace") {
+                  buffer.clear()
+                }
+                afterFillInStackTrace = true
+              }
+            }
+          }
         }
         buffer.toArray
       } finally suppressStrackTrace.set(false)
