@@ -64,7 +64,7 @@ private[lang] class UnixProcessGen2 private (
       if (waitStatus == 0) {
         throw new IllegalThreadStateException()
       } else {
-        _exitValue.getOrElse(-1) // -1 should never happen
+        _exitValue.getOrElse(1) // 1 should never happen
       }
     }
   }
@@ -172,10 +172,11 @@ private[lang] class UnixProcessGen2 private (
      *  process reports the child as exited.  This delay is not seen on Linux.
      *
      *  The alternative to allowing HANG on a process which kevent/ppoll has
-     *  just reported as having exited to a fussy busy-wait timing loop.
+     *  just reported as having exited is a fussy busy-wait timing loop.
      */
 
     waitpidImpl(pid, options = 0)
+    _exitValue.getOrElse(1) // 1 == EXIT_FAILURE, unknown cause
   }
 
   private def closeProcessStreams(): Unit = {

@@ -147,8 +147,8 @@ class NIRCompiler(outDir: Path) {
     val cmd = args.mkString(" ")
     val proc = procBuilder.start()
     val res = proc.waitFor()
-    // TODO: UnixProcessGen2 on Mac M1 can return PID instead of exitCode
-    if (res != 0 && proc.exitValue() != 0) {
+
+    if (res != 0) {
       val stderr =
         scala.io.Source.fromInputStream(proc.getErrorStream()).mkString
       throw new CompilationFailedException(stderr)
