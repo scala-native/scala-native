@@ -137,7 +137,7 @@ To append a value to the right of any previous setting:
 
     // Enable verbose reporting during compilation
     nativeConfig ~= { c =>
-      c.withCompileOptions(c.compileOptions ++ Seq("-v"))
+      c.withCompileOptions(_ :+ "-v")
     }
 
     // Use an alternate linker

@@ -167,12 +167,8 @@ jobs:
                 .withCheckFatalWarnings(true)
                 .withTargetTriple(sys.env.get("CROSS_TRIPLE"))
                 .withMultithreadingSupport(${{matrix.multithreading}})
-                .withCompileOptions(
-                  prev.compileOptions ++ sysRoot ++ List("-fuse-ld=lld")
-                )
-                .withLinkingOptions(
-                  prev.linkingOptions ++ sysRoot ++ List("-fuse-ld=lld", "-latomic")
-                )
+                .withCompileOptions(_ ++ sysRoot ++ List("-fuse-ld=lld"))
+                .withLinkingOptions(_ ++ sysRoot ++ List("-fuse-ld=lld", "-latomic"))
             }
           EOM
           )

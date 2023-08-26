@@ -6,6 +6,7 @@ import scala.scalanative.nir.Val
 
 /** An object describing how to configure the Scala Native toolchain. */
 sealed trait NativeConfig {
+  import NativeConfig.Mapping
 
   /** The path to the `clang` executable. */
   def clang: Path
@@ -108,10 +109,18 @@ sealed trait NativeConfig {
   def withClangPP(value: Path): NativeConfig
 
   /** Create a new config with given linking options. */
-  def withLinkingOptions(value: Seq[String]): NativeConfig
+  final def withLinkingOptions(value: Seq[String]): NativeConfig =
+    withLinkingOptions(_ => value)
+
+  /** Create a new config with updated linking options. */
+  def withLinkingOptions(update: Mapping[Seq[String]]): NativeConfig
 
   /** Create a new config with given compilation options. */
-  def withCompileOptions(value: Seq[String]): NativeConfig
+  final def withCompileOptions(value: Seq[String]): NativeConfig =
+    withCompileOptions(_ => value)
+
+  /** Create a new config with updated compilation options. */
+  def withCompileOptions(update: Mapping[Seq[String]]): NativeConfig
 
   /** Create a new config given a target triple. */
   def withTargetTriple(value: Option[String]): NativeConfig
@@ -163,8 +172,13 @@ sealed trait NativeConfig {
   def withMultithreadingSupport(enabled: Boolean): NativeConfig
 
   /** Create a new config with given linktime properites */
-  def withLinktimeProperties(
+  final def withLinktimeProperties(
       value: NativeConfig.LinktimeProperites
+  ): NativeConfig = withLinktimeProperties(_ => value)
+
+  /** Create a new config with updated linktime properites */
+  def withLinktimeProperties(
+      update: Mapping[NativeConfig.LinktimeProperites]
   ): NativeConfig
 
   /** Create a new [[NativeConfig]] enabling embedded resources in the
@@ -179,7 +193,11 @@ sealed trait NativeConfig {
   def withBaseName(value: String): NativeConfig
 
   /** Create a optimization configuration */
-  def withOptimizerConfig(value: OptimizerConfig): NativeConfig
+  final def withOptimizerConfig(value: OptimizerConfig): NativeConfig =
+    withOptimizerConfig(_ => value)
+
+  /** Modify a optimization configuration */
+  def withOptimizerConfig(update: Mapping[OptimizerConfig]): NativeConfig
 
   /** Create a new [[NativeConfig]] with given debugMetadata value
    */
@@ -188,6 +206,7 @@ sealed trait NativeConfig {
 }
 
 object NativeConfig {
+  type Mapping[T] = T => T
   type LinktimeProperites = Map[String, Any]
 
   /** Default empty config object where all of the fields are left blank. */
@@ -248,11 +267,11 @@ object NativeConfig {
     def withClangPP(value: Path): NativeConfig =
       copy(clangPP = value)
 
-    def withLinkingOptions(value: Seq[String]): NativeConfig =
-      copy(linkingOptions = value)
+    def withLinkingOptions(update: Mapping[Seq[String]]): NativeConfig =
+      copy(linkingOptions = update(linkingOptions))
 
-    def withCompileOptions(value: Seq[String]): NativeConfig =
-      copy(compileOptions = value)
+    def withCompileOptions(update: Mapping[Seq[String]]): NativeConfig =
+      copy(compileOptions = update(compileOptions))
 
     def withTargetTriple(value: Option[String]): NativeConfig = {
       val propertyName = "target.triple"
@@ -303,7 +322,10 @@ object NativeConfig {
     def withMultithreadingSupport(enabled: Boolean): NativeConfig =
       copy(multithreadingSupport = enabled)
 
-    def withLinktimeProperties(v: LinktimeProperites): NativeConfig = {
+    def withLinktimeProperties(
+        update: Mapping[LinktimeProperites]
+    ): NativeConfig = {
+      val v = update(linktimeProperties)
       checkLinktimeProperties(v)
       copy(linktimeProperties = v)
     }
@@ -316,8 +338,10 @@ object NativeConfig {
       copy(baseName = value)
     }
 
-    override def withOptimizerConfig(value: OptimizerConfig): NativeConfig = {
-      copy(optimizerConfig = value)
+    override def withOptimizerConfig(
+        update: Mapping[OptimizerConfig]
+    ): NativeConfig = {
+      copy(optimizerConfig = update(optimizerConfig))
     }
 
     override def withDebugMetadata(value: Boolean): NativeConfig =
