@@ -8,6 +8,7 @@ import scala.scalanative.meta.LinktimeInfo
 // TODO: Replace with j.u.c.ConcurrentHashMap when implemented to remove scalalib dependency
 import scala.collection.concurrent.TrieMap
 import scala.scalanative.runtime.Backtrace
+import scala.scalanative.runtime.NativeThread
 
 private[lang] object StackTrace {
   private val cache = TrieMap.empty[CUnsignedLong, StackTraceElement]
@@ -42,17 +43,15 @@ private[lang] object StackTrace {
   )(implicit zone: Zone): StackTraceElement =
     cache.getOrElseUpdate(ip, makeStackTraceElement(cursor, ip))
 
-  // Used to prevent filling stacktraces inside `currentStackTrace` which might lead to infinite loop
-  private val suppressStrackTrace: ThreadLocal[Boolean] =
-    ThreadLocal.withInitial(() => false)
-
   @noinline private[lang] def currentStackTrace(): Array[StackTraceElement] = {
-    if (suppressStrackTrace.get()) Array.empty
+    // Used to prevent filling stacktraces inside `currentStackTrace` which might lead to infinite loop
+    val threadCtx = NativeThread.currentNativeThread.thread.platformCtx
+    if (threadCtx.isFillingStackTrace) Array.empty
     else if (LinktimeInfo.asanEnabled) Array.empty
     else
       try {
-        suppressStrackTrace.set(true)
-        var buffer = mutable.ArrayBuffer.empty[StackTraceElement]
+        threadCtx.isFillingStackTrace = true
+        val buffer = mutable.ArrayBuffer.empty[StackTraceElement]
         Zone { implicit z =>
           val cursor = alloc[scala.Byte](unwind.sizeOfCursor)
           val context = alloc[scala.Byte](unwind.sizeOfContext)
@@ -87,7 +86,7 @@ private[lang] object StackTrace {
           }
         }
         buffer.toArray
-      } finally suppressStrackTrace.set(false)
+      } finally threadCtx.isFillingStackTrace = false
   }
 }
 
