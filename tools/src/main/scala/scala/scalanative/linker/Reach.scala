@@ -112,7 +112,7 @@ class Reach(
       loader
         .load(owner)
         .fold[Unit] {
-          if (!ignoreIfUnavailable) addMissing(owner)
+          if (!ignoreIfUnavailable) addMissing(global)
         } { defns =>
           val scope = mutable.Map.empty[Global, Defn]
           defns.foreach { defn => scope(defn.name) = defn }
@@ -279,11 +279,7 @@ class Reach(
   def reachGlobal(name: Global)(implicit srcPosition: nir.Position): Unit =
     if (!enqueued.contains(name) && name.ne(Global.None)) {
       enqueued += name
-      from.getOrElseUpdate(
-        name,
-        if (stack.isEmpty) ReferencedFrom.Root
-        else ReferencedFrom(stack.head, srcPosition)
-      )
+      track(name)
       todo ::= name
     }
 
@@ -292,11 +288,7 @@ class Reach(
       ()
     } else if (!stack.contains(name)) {
       enqueued += name
-      from.getOrElseUpdate(
-        name,
-        if (stack.isEmpty) ReferencedFrom.Root
-        else ReferencedFrom(stack.head, srcPosition)
-      )
+      track(name)
       reachDefn(name)
     } else {
       val lines = (s"cyclic reference to ${name.show}:" +:
@@ -840,7 +832,9 @@ class Reach(
         ()
     }
 
-  def reachMethodTargets(ty: Type, sig: Sig)(implicit pos: Position): Unit =
+  def reachMethodTargets(ty: Type, sig: Sig)(implicit
+      srcPosition: Position
+  ): Unit =
     ty match {
       case Type.Array(ty, _) =>
         reachMethodTargets(Type.Ref(Type.toArrayClass(ty)), sig)
@@ -853,7 +847,8 @@ class Reach(
             else {
               // At this stage we cannot tell if method target is not defined or not yet reached
               // We're delaying resolving targets to the end of Reach phase to check if this method is never defined in NIR
-              delayedMethods += DelayedMethod(name.top, sig, pos)
+              track(name.member(sig))
+              delayedMethods += DelayedMethod(name, sig, srcPosition)
             }
           }
         }
@@ -951,7 +946,9 @@ class Reach(
 
       val buf = List.newBuilder[BackTraceElement]
       def getBackTrace(name: Global): List[BackTraceElement] = {
-        val current = from(name)
+        // orElse just in case if we messed something up and failed to correctly track references
+        // Accept possibly empty backtrace instead of crashing
+        val current = from.getOrElse(name, ReferencedFrom.Root)
         if (current == ReferencedFrom.Root) buf.result()
         else {
           val file = current.srcPosition.filename.getOrElse("unknown")
@@ -981,6 +978,13 @@ class Reach(
   private def fail(msg: => String): Nothing = {
     throw new LinkingException(msg)
   }
+
+  private def track(name: Global)(implicit srcPosition: nir.Position) =
+    from.getOrElseUpdate(
+      name,
+      if (stack.isEmpty) ReferencedFrom.Root
+      else ReferencedFrom(stack.head, srcPosition)
+    )
 }
 
 object Reach {
