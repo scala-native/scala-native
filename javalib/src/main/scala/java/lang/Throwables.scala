@@ -8,12 +8,14 @@ import scala.scalanative.meta.LinktimeInfo
 // TODO: Replace with j.u.c.ConcurrentHashMap when implemented to remove scalalib dependency
 import scala.collection.concurrent.TrieMap
 import scala.scalanative.runtime.Backtrace
+import scala.scalanative.runtime.NativeThread
 
 private[lang] object StackTrace {
   private val cache = TrieMap.empty[CUnsignedLong, StackTraceElement]
 
   private def makeStackTraceElement(
-      cursor: Ptr[scala.Byte]
+      cursor: Ptr[scala.Byte],
+      ip: CUnsignedLong
   )(implicit zone: Zone): StackTraceElement = {
     val nameMax = 1024
     val name = alloc[CChar](nameMax)
@@ -25,8 +27,10 @@ private[lang] object StackTrace {
     // Unmangler is going to use strlen on this name and it's
     // behavior is not defined for non-zero-terminated strings.
     name(nameMax - 1) = 0.toByte
-
-    StackTraceElement.fromSymbol(name)
+    val position =
+      if (LinktimeInfo.isMac) Backtrace.decodePosition(ip.toLong)
+      else Backtrace.Position.empty
+    StackTraceElement(name, position)
   }
 
   /** Creates a stack trace element in given unwind context. Finding a name of
@@ -37,66 +41,52 @@ private[lang] object StackTrace {
       cursor: Ptr[scala.Byte],
       ip: CUnsignedLong
   )(implicit zone: Zone): StackTraceElement =
-    cache.getOrElseUpdate(ip, makeStackTraceElement(cursor))
+    cache.getOrElseUpdate(ip, makeStackTraceElement(cursor, ip))
 
   @noinline private[lang] def currentStackTrace(): Array[StackTraceElement] = {
-    var buffer = mutable.ArrayBuffer.empty[(StackTraceElement, CUnsignedLong)]
-    if (!LinktimeInfo.asanEnabled) {
-      Zone { implicit z =>
-        val cursor = alloc[scala.Byte](unwind.sizeOfCursor)
-        val context = alloc[scala.Byte](unwind.sizeOfContext)
-        val ip = stackalloc[CSize]()
-        unwind.get_context(context)
-        unwind.init_local(cursor, context)
-        while (unwind.step(cursor) > 0) {
-          unwind.get_reg(cursor, unwind.UNW_REG_IP, ip)
-          val elem = (cachedStackTraceElement(cursor, !ip), !ip)
-          buffer += elem
-        }
-      }
-    }
+    // Used to prevent filling stacktraces inside `currentStackTrace` which might lead to infinite loop
+    val threadCtx = NativeThread.currentNativeThread.thread.platformCtx
+    if (threadCtx.isFillingStackTrace) Array.empty
+    else if (LinktimeInfo.asanEnabled) Array.empty
+    else
+      try {
+        threadCtx.isFillingStackTrace = true
+        val buffer = mutable.ArrayBuffer.empty[StackTraceElement]
+        Zone { implicit z =>
+          val cursor = alloc[scala.Byte](unwind.sizeOfCursor)
+          val context = alloc[scala.Byte](unwind.sizeOfContext)
+          val ip = stackalloc[CSize]()
+          var foundCurrentStackTrace = false
+          var afterFillInStackTrace = false
+          unwind.get_context(context)
+          unwind.init_local(cursor, context)
+          while (unwind.step(cursor) > 0) {
+            unwind.get_reg(cursor, unwind.UNW_REG_IP, ip)
+            val elem = cachedStackTraceElement(cursor, !ip)
+            buffer += elem
 
-    if (LinktimeInfo.isMac && LinktimeInfo.hasDebugMetadata) {
-      // Add filename and line number informatiion
-      // When analyzing the stack trace, if the entry "currentStackTrace" appears more than once, it indicates that a Throwable object
-      // was generated within the same "currentStackTrace" method, causing recursive calls. This recursive behavior can lead to an
-      // infinite loop, ultimately resulting in a stack overflow exception.
-      //
-      // To prevent excessive recursion, it's preferable to minimize multiple consecutive calls to the "currentStackTrace" method.
-      //
-      // The "currentStackTrace" process is straightforward and typically doesn't trigger exceptions.
-      // On the other hand, the "BackTrace.decodeFileline" is intricate, and if an exception thrown, it's likely to originate from that method.
-      //
-      // Consequently, to mitigate the risk of cascading recursive exceptions,
-      // skip executing "BackTrace.decodeFileline" if "currentStackTrace" is already being invoked recursively.
-      val recur =
-        buffer.count(e => e._1.getMethodName == "currentStackTrace") > 1
-      buffer.map { e =>
-        val elem = e._1
-        val ip = e._2
-        if (recur || // Skip decoding if we're calling currentStackTrace in recursively
-            elem.getFileName != null // Skip decoding if we already have filename information
-        ) elem
-        else {
-          try {
-            Backtrace.decodeFileline(ip.toLong) match {
-              case None =>
-                elem
-              case Some(v) =>
-                val updated = new StackTraceElement(
-                  elem.getClassName,
-                  elem.getMethodName,
-                  v._1,
-                  v._2
-                )
-                // Update cache with the updated stacktrace element
-                cache.update(ip, updated)
-                updated
+            // Look for intrinsic stack frames and remove them to not polute stack traces
+            if (!afterFillInStackTrace) {
+              if (!foundCurrentStackTrace) {
+                if (elem.getClassName == "java.lang.StackTrace$" &&
+                    elem.getMethodName == "currentStackTrace") {
+                  foundCurrentStackTrace = true
+                  buffer.clear()
+                }
+              } else {
+                // Not guaranteed to be found, may be inlined.
+                // This branch would be visited exactly 1 time
+                if (elem.getClassName == "java.lang.Throwable" &&
+                    elem.getMethodName == "fillInStackTrace") {
+                  buffer.clear()
+                }
+                afterFillInStackTrace = true
+              }
             }
-          } catch { case ex: Throwable => elem }
+          }
         }
-      }.toArray
-    } else buffer.map(_._1).toArray
+        buffer.toArray
+      } finally threadCtx.isFillingStackTrace = false
   }
 }
 

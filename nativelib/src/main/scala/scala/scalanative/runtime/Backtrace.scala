@@ -41,11 +41,15 @@ object Backtrace {
   private val ELF_MAGIC = "7f454c46"
 
   private val cache = TrieMap.empty[String, Option[DwarfInfo]]
+  case class Position(filename: String, line: Int)
+  object Position {
+    final val empty = Position(null, 0)
+  }
 
-  def decodeFileline(pc: Long): Option[(String, Int)] = {
+  def decodePosition(pc: Long): Position = {
     cache.get(filename) match {
       case Some(None) =>
-        None // cached, there's no debug section
+        Position.empty // cached, there's no debug section
       case Some(Some(info)) =>
         impl(pc, info)
       case None =>
@@ -53,7 +57,7 @@ object Backtrace {
           case None =>
             // there's no debug section, cache it so we don't parse the exec file any longer
             cache.put(filename, None)
-            None
+            Position.empty
           case file @ Some(info) =>
             cache.put(filename, file)
             impl(pc, info)
@@ -64,20 +68,21 @@ object Backtrace {
   private def impl(
       pc: Long,
       info: DwarfInfo
-  ): Option[(String, Int)] = {
+  ): Position = {
     // The address (DW_AT_(low|high)_address) in debug information has the file offset (the offset in the executable + __PAGEZERO in macho).
     // While the pc address retrieved from libunwind at runtime has the location of the memory into the virtual memory
     // at runtime. which has a random offset (called ASLR offset or slide) that is different for every run because of
     // Address Space Layout Randomization (ASLR) when the executable is built as PIE.
     // Subtract the offset to match the pc address from libunwind (runtime) and address in debug info (compile/link time).
     val address = pc - info.offset
-    for {
+    val position = for {
       subprogram <- search(info.subprograms, address)
       at <- subprogram.filenameAt
     } yield {
       val filename = info.strings.read(at)
-      (filename, subprogram.line + 1) // line number in DWARF is 0-based
+      Position(filename, subprogram.line + 1) // line number in DWARF is 0-based
     }
+    position.getOrElse(Position.empty)
   }
 
   private def search(
