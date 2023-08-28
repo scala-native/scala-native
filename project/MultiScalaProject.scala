@@ -8,7 +8,7 @@ import MyScalaNativePlugin.{ideScalaVersion, enableExperimentalCompiler}
 
 final case class MultiScalaProject private (
     private val projects: Map[String, Project],
-    val shouldDependsOnSourceInIDE: Boolean
+    val dependsOnSourceInIDE: Boolean
 ) extends CompositeProject {
   import MultiScalaProject._
 
@@ -49,18 +49,19 @@ final case class MultiScalaProject private (
     transform(_.enablePlugins(ns: _*))
 
   def dependsOn(deps: ScopedMultiScalaProject*): MultiScalaProject = {
-    if (MyScalaNativePlugin.isGeneratingForIDE && shouldDependsOnSourceInIDE) {
-      deps.foldLeft(this) { case (project, dependency) =>
-        val Scope = dependency.configuration match {
-          case None => Compile
-          case Some(v) =>
-            val Scope = config(v)
-            Scope
-        }
-        project.zippedSettings(dependency) { dependency =>
-          Scope / unmanagedSourceDirectories ++=
-            (dependency / Scope / unmanagedSourceDirectories).value
-        }
+    if (MyScalaNativePlugin.isGeneratingForIDE && dependsOnSourceInIDE) {
+      deps.foldLeft(this) {
+        case (project, dependency) =>
+          val Scope = dependency.configuration match {
+            case None => Compile
+            case Some(v) =>
+              val Scope = config(v)
+              Scope
+          }
+          project.zippedSettings(dependency) { dependency =>
+            Scope / unmanagedSourceDirectories ++=
+              (dependency / Scope / unmanagedSourceDirectories).value
+          }
       }
     } else {
       def classpathDependency(d: ScopedMultiScalaProject) =
@@ -195,7 +196,7 @@ object MultiScalaProject {
 
     new MultiScalaProject(
       projects,
-      shouldDependsOnSourceInIDE = additionalIDEScalaVersions.nonEmpty
+      dependsOnSourceInIDE = additionalIDEScalaVersions.nonEmpty
     ).settings(
       sourceDirectory := baseDirectory.value.getParentFile / "src"
     )

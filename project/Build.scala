@@ -930,7 +930,7 @@ object Build {
 
     /** Depends on the sources of another project. */
     def dependsOnSource(dependency: MultiScalaProject): MultiScalaProject = {
-      if (isGeneratingForIDE && !project.shouldDependsOnSourceInIDE)
+      if (isGeneratingForIDE && !project.dependsOnSourceInIDE)
         project.dependsOn(dependency)
       else
         project.zippedSettings(dependency) { dependency =>
