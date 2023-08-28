@@ -65,10 +65,9 @@ private[scalanative] object Filter {
       }
 
       val projectConfig = config.withCompilerConfig(
-        _.withCompileOptions(
-          config.compileOptions :+ ("-I" + gcPath) :+ gcFlag
-        )
+        _.withCompileOptions(_ :+ ("-I" + gcPath) :+ gcFlag)
       )
+
       val projectPaths = includePaths.map(Paths.get(_))
       (projectPaths, projectConfig)
     }
