@@ -164,7 +164,9 @@ object MultiScalaProject {
     }
 
   def apply(id: String): MultiScalaProject =
-    apply(id, file(id))
+    apply(id, file(id), Nil)
+
+  def apply(id: String, base: File): MultiScalaProject = apply(id, base, Nil)
 
   /** @param additionalIDEScalaVersions
    *    Allowed values: 3, 3-next, 2.13, 2.12.
@@ -172,7 +174,7 @@ object MultiScalaProject {
   def apply(
       id: String,
       base: File,
-      additionalIDEScalaVersions: String*
+      additionalIDEScalaVersions: List[String]
   ): MultiScalaProject = {
     val projects = for {
       (major, minors) <- scalaCrossVersions

@@ -114,7 +114,11 @@ object Build {
       )
 
   // Compiler plugins
-  lazy val nscPlugin = MultiScalaProject("nscplugin", file("nscplugin"), "2.13")
+  lazy val nscPlugin = MultiScalaProject(
+    "nscplugin",
+    file("nscplugin"),
+    additionalIDEScalaVersions = List("2.13")
+  )
     .enablePlugins(BuildInfoPlugin) // for testing
     .settings(
       buildInfoSettings,
