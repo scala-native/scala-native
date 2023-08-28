@@ -7,7 +7,8 @@ import scala.language.implicitConversions
 import MyScalaNativePlugin.{ideScalaVersion, enableExperimentalCompiler}
 
 final case class MultiScalaProject private (
-    private val projects: Map[String, Project]
+    private val projects: Map[String, Project],
+    val dependsOnSourceInIDE: Boolean
 ) extends CompositeProject {
   import MultiScalaProject._
 
@@ -48,16 +49,32 @@ final case class MultiScalaProject private (
     transform(_.enablePlugins(ns: _*))
 
   def dependsOn(deps: ScopedMultiScalaProject*): MultiScalaProject = {
-    def classpathDependency(d: ScopedMultiScalaProject) =
-      strictMapValues(d.project.projects)(
-        ClasspathDependency(_, d.configuration)
-      )
+    if (MyScalaNativePlugin.isGeneratingForIDE && dependsOnSourceInIDE) {
+      deps.foldLeft(this) {
+        case (project, dependency) =>
+          val Scope = dependency.configuration match {
+            case None => Compile
+            case Some(v) =>
+              val Scope = config(v)
+              Scope
+          }
+          project.zippedSettings(dependency) { dependency =>
+            Scope / unmanagedSourceDirectories ++=
+              (dependency / Scope / unmanagedSourceDirectories).value
+          }
+      }
+    } else {
+      def classpathDependency(d: ScopedMultiScalaProject) =
+        strictMapValues(d.project.projects)(
+          ClasspathDependency(_, d.configuration)
+        )
 
-    val depsByVersion: Map[String, Seq[ClasspathDependency]] =
-      strictMapValues(deps.flatMap(classpathDependency).groupBy(_._1))(
-        _.map(_._2)
-      )
-    zipped(depsByVersion)(_.dependsOn(_: _*))
+      val depsByVersion: Map[String, Seq[ClasspathDependency]] =
+        strictMapValues(deps.flatMap(classpathDependency).groupBy(_._1))(
+          _.map(_._2)
+        )
+      zipped(depsByVersion)(_.dependsOn(_: _*))
+    }
   }
 
   def configs(cs: Configuration*): MultiScalaProject =
@@ -67,6 +84,10 @@ final case class MultiScalaProject private (
       ss: Project => SettingsDefinition
   ): MultiScalaProject =
     zipped(that.projects)((p, sp) => p.settings(ss(sp)))
+  def zippedSettings(that: ScopedMultiScalaProject)(
+      ss: Project => SettingsDefinition
+  ): MultiScalaProject =
+    zipped(that.project.projects)((p, sp) => p.settings(ss(sp)))
 
   def zippedSettings(project: String)(
       ss: LocalProject => SettingsDefinition
@@ -143,19 +164,39 @@ object MultiScalaProject {
     }
 
   def apply(id: String): MultiScalaProject =
-    apply(id, file(id))
+    apply(id, id, file(id), Nil)
+
   def apply(id: String, base: File): MultiScalaProject =
-    apply(id, id, base)
+    apply(id, id, base, Nil)
+
   def apply(
       id: String,
       name: String,
       base: File
+  ): MultiScalaProject = apply(id, name, base, Nil)
+
+  def apply(
+      id: String,
+      base: File,
+      additionalIDEScalaVersions: List[String]
+  ): MultiScalaProject =
+    apply(id, id, base, additionalIDEScalaVersions)
+
+  /** @param additionalIDEScalaVersions
+   *    Allowed values: 3, 3-next, 2.13, 2.12.
+   */
+  def apply(
+      id: String,
+      name: String,
+      base: File,
+      additionalIDEScalaVersions: List[String]
   ): MultiScalaProject = {
     val projects = for {
       (major, minors) <- scalaCrossVersions
     } yield {
+      val ideScalaVersions = additionalIDEScalaVersions :+ ideScalaVersion
       val noIDEExportSettings =
-        if (major == ideScalaVersion) Nil
+        if (ideScalaVersions.contains(major)) Nil
         else NoIDEExport.noIDEExportSettings
 
       major -> Project(
@@ -170,7 +211,10 @@ object MultiScalaProject {
       )
     }
 
-    new MultiScalaProject(projects).settings(
+    new MultiScalaProject(
+      projects,
+      dependsOnSourceInIDE = additionalIDEScalaVersions.nonEmpty
+    ).settings(
       sourceDirectory := baseDirectory.value.getParentFile / "src"
     )
   }
