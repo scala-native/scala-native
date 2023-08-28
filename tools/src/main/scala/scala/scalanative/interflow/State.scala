@@ -45,25 +45,25 @@ final class State(block: Local)(preserveDebugInfo: Boolean) {
     alloc(ClassKind, cls, fields.toArray[Val], zone)
   }
   def allocArray(elemty: Type, count: Int, zone: Option[Val])(implicit
-      linked: linker.Result,
+      analysis: ReachabilityAnalysis.Result,
       srcPosition: nir.Position,
       scopeId: nir.ScopeId
   ): Addr = {
     val zero = Val.Zero(elemty).canonicalize
     val values = Array.fill[Val](count)(zero)
-    val cls = linked.infos(Type.toArrayClass(elemty)).asInstanceOf[Class]
+    val cls = analysis.infos(Type.toArrayClass(elemty)).asInstanceOf[Class]
     alloc(ArrayKind, cls, values, zone)
   }
   def allocBox(boxname: Global, value: Val)(implicit
-      linked: linker.Result,
+      analysis: ReachabilityAnalysis.Result,
       srcPosition: nir.Position,
       scopeId: nir.ScopeId
   ): Addr = {
-    val boxcls = linked.infos(boxname).asInstanceOf[Class]
+    val boxcls = analysis.infos(boxname).asInstanceOf[Class]
     alloc(BoxKind, boxcls, Array(value), zone = None)
   }
   def allocString(value: String)(implicit
-      linked: linker.Result,
+      analysis: ReachabilityAnalysis.Result,
       srcPosition: nir.Position,
       scopeId: nir.ScopeId
   ): Addr = {
@@ -75,12 +75,12 @@ final class State(block: Local)(preserveDebugInfo: Boolean) {
         chars.values(idx) = Val.Char(value)
     }
     val values = new Array[Val](4)
-    values(linked.StringValueField.index) = Val.Virtual(charsAddr)
-    values(linked.StringOffsetField.index) = Val.Int(0)
-    values(linked.StringCountField.index) = Val.Int(charsArray.length)
-    values(linked.StringCachedHashCodeField.index) =
+    values(analysis.StringValueField.index) = Val.Virtual(charsAddr)
+    values(analysis.StringOffsetField.index) = Val.Int(0)
+    values(analysis.StringCountField.index) = Val.Int(charsArray.length)
+    values(analysis.StringCachedHashCodeField.index) =
       Val.Int(Lower.stringHashCode(value))
-    alloc(StringKind, linked.StringClass, values, zone = None)
+    alloc(StringKind, analysis.StringClass, values, zone = None)
   }
   def delay(
       op: Op
@@ -285,7 +285,9 @@ final class State(block: Local)(preserveDebugInfo: Boolean) {
     case _ =>
       false
   }
-  def materialize(rootValue: Val)(implicit linked: linker.Result): Val = {
+  def materialize(
+      rootValue: Val
+  )(implicit analysis: ReachabilityAnalysis.Result): Val = {
     val locals = mutable.Map.empty[Addr, Val]
     def reachAddr(addr: Addr): Unit = {
       if (!locals.contains(addr)) {
@@ -320,9 +322,9 @@ final class State(block: Local)(preserveDebugInfo: Boolean) {
           Op.Box(Type.Ref(cls.name), escapedVal(value))
         )
       case VirtualInstance(StringKind, _, values, zone)
-          if !hasEscaped(values(linked.StringValueField.index)) =>
+          if !hasEscaped(values(analysis.StringValueField.index)) =>
         val Val.Virtual(charsAddr) = values(
-          linked.StringValueField.index
+          analysis.StringValueField.index
         ): @unchecked
         val chars = derefVirtual(charsAddr).values
           .map {
@@ -373,7 +375,7 @@ final class State(block: Local)(preserveDebugInfo: Boolean) {
       case VirtualInstance(BoxKind, cls, Array(value), _) =>
         ()
       case VirtualInstance(StringKind, _, values, _)
-          if !hasEscaped(values(linked.StringValueField.index)) =>
+          if !hasEscaped(values(analysis.StringValueField.index)) =>
         ()
       case VirtualInstance(_, cls, vals, zone) =>
         cls.fields.zip(vals).foreach {

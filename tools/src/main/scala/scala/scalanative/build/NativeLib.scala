@@ -6,6 +6,7 @@ import java.nio.file.{Files, Path}
 import java.util.Arrays
 import java.util.regex._
 import scala.concurrent._
+import scala.scalanative.linker.ReachabilityAnalysis
 
 /** Original jar or dir path and generated dir path for native code */
 private[scalanative] case class NativeLib(src: Path, dest: Path)
@@ -30,13 +31,13 @@ private[scalanative] object NativeLib {
    */
   def compileNativeLibrary(
       config: Config,
-      linkerResult: linker.Result,
+      analysis: ReachabilityAnalysis.Result,
       nativeLib: NativeLib
   )(implicit ec: ExecutionContext): Future[Seq[Path]] = {
     val destPath = NativeLib.unpackNativeCode(nativeLib)
     val paths = NativeLib.findNativePaths(config.workDir, destPath)
     val (projPaths, projConfig) =
-      Filter.filterNativelib(config, linkerResult, destPath, paths)
+      Filter.filterNativelib(config, analysis, destPath, paths)
     LLVM.compile(projConfig, projPaths)
   }
 
@@ -154,18 +155,23 @@ private[scalanative] object NativeLib {
   private def unpackNativeJar(nativelib: NativeLib): Path = {
     val target = nativelib.dest
     val source = nativelib.src
-    val jarhash = IO.sha1(source)
-    val jarhashPath = target.resolve("jarhash")
-    def unpacked =
-      Files.exists(target) &&
-        Files.exists(jarhashPath) &&
-        Arrays.equals(jarhash, Files.readAllBytes(jarhashPath))
-
-    if (!unpacked) {
+    def unpack(): Unit = {
       IO.deleteRecursive(target)
       IO.unzip(source, target)
-      IO.write(jarhashPath, jarhash)
     }
+
+    if (Platform.isJVM) {
+      val jarhash = IO.sha1(source)
+      val jarhashPath = target.resolve("jarhash")
+      def unpacked =
+        Files.exists(target) &&
+          Files.exists(jarhashPath) &&
+          Arrays.equals(jarhash, Files.readAllBytes(jarhashPath))
+      if (!unpacked) {
+        unpack()
+        IO.write(jarhashPath, jarhash)
+      }
+    } else unpack()
     target
   }
 
@@ -182,18 +188,23 @@ private[scalanative] object NativeLib {
   private def copyNativeDir(nativelib: NativeLib): Path = {
     val target = nativelib.dest
     val source = nativelib.src
-    val files = IO.getAll(source, allFilesPattern(source))
-    val fileshash = IO.sha1files(files)
-    val fileshashPath = target.resolve("fileshash")
-    def copied =
-      Files.exists(target) &&
-        Files.exists(fileshashPath) &&
-        Arrays.equals(fileshash, Files.readAllBytes(fileshashPath))
-    if (!copied) {
+    def copy() = {
       IO.deleteRecursive(target)
       IO.copyDirectory(source, target)
-      IO.write(fileshashPath, fileshash)
     }
+    if (Platform.isJVM) {
+      val files = IO.getAll(source, allFilesPattern(source))
+      val fileshash = IO.sha1files(files)
+      val fileshashPath = target.resolve("fileshash")
+      def copied =
+        Files.exists(target) &&
+          Files.exists(fileshashPath) &&
+          Arrays.equals(fileshash, Files.readAllBytes(fileshashPath))
+      if (!copied) {
+        copy()
+        IO.write(fileshashPath, fileshash)
+      }
+    } else copy()
     target
   }
 

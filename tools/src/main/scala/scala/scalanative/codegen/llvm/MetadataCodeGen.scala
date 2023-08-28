@@ -2,7 +2,8 @@ package scala.scalanative.codegen
 package llvm
 
 import scala.scalanative.nir
-import scala.scalanative.nir.{Position, Global, Fresh}
+import scala.scalanative.nir.{Position, Global, Fresh, Val, Local}
+import scala.scalanative.nir.Defn.Define.DebugInfo
 import scala.scalanative.util.ShowBuilder
 import scala.collection.mutable
 import scala.scalanative.util.unsupported
@@ -12,6 +13,7 @@ import scala.scalanative.codegen.llvm.MetadataCodeGen.Writer.Specialized
 import scala.scalanative.nir.Unmangle
 import scala.scalanative.nir.Global.Member
 import scala.scalanative.nir.Sig.Method
+import scala.scalanative.util.unreachable
 
 // scalafmt: { maxColumn = 100}
 trait MetadataCodeGen { self: AbstractCodeGen =>
@@ -21,9 +23,11 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
   import self.meta.platform
 
   final val generateDebugMetadata = self.meta.config.debugMetadata
+  final val LineOffset = 1
+  final val ColumnOffset = 1
 
   /* Create a name debug metadata entry and write it on the metadata section */
-  def dbg(name: String)(values: Metadata.Node*)(implicit ctx: Context): Unit =
+  def dbg(name: => String)(values: Metadata.Node*)(implicit ctx: Context): Unit =
     if (generateDebugMetadata) {
       // Named metadata is always stored in metadata section
       import ctx.sb._
@@ -36,7 +40,7 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
     /* Create a metadata entry by writing metadata reference in the current ShowBuilder,
      * and the metadata node definition in the metadata section
      **/
-  def dbg[T <: Metadata.Node: InternedWriter](prefix: CharSequence, v: T)(implicit
+  def dbg[T <: Metadata.Node: InternedWriter](prefix: => CharSequence, v: => T)(implicit
       ctx: Context,
       sb: ShowBuilder
   ): Unit =
@@ -49,58 +53,113 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
       id.write(sb)
     }
 
-  def dbg[T <: Metadata.Node: InternedWriter](v: T)(implicit ctx: Context, sb: ShowBuilder): Unit =
+  def dbg[T <: Metadata.Node: InternedWriter](
+      v: => T
+  )(implicit ctx: Context, sb: ShowBuilder): Unit =
     dbg("", v)
+
+  private def canHaveDebugValue(ty: nir.Type) = ty match {
+    case nir.Type.Unit | nir.Type.Nothing => false
+    case _                                => true
+  }
+
+  def dbgLocalValue(id: Local, ty: nir.Type, argIdx: Option[Int] = None)(
+      srcPosition: nir.Position,
+      scopeId: nir.ScopeId
+  )(implicit
+      debugInfo: DebugInfo,
+      defnScopes: DefnScopes,
+      metadataCtx: Context,
+      sb: ShowBuilder
+  ): Unit =
+    if (generateDebugMetadata && canHaveDebugValue(ty)) {
+      debugInfo.localNames.get(id).foreach { localName =>
+        `llvm.dbg.value`(
+          address = Metadata.Value(Val.Local(id, ty)),
+          description = Metadata.DILocalVariable(
+            name = localName,
+            arg = argIdx,
+            scope = defnScopes.toDIScope(scopeId),
+            file = toDIFile(srcPosition),
+            line = srcPosition.line + LineOffset,
+            tpe = toMetadataType(ty)
+          ),
+          expr = Metadata.DIExpression()
+        )(srcPosition, scopeId)
+      }
+    }
+
+  def dbgLocalVariable(id: Local, ty: nir.Type)(
+      srcPosition: nir.Position,
+      scopeId: nir.ScopeId
+  )(implicit
+      debugInfo: DebugInfo,
+      defnScopes: DefnScopes,
+      metadataCtx: Context,
+      sb: ShowBuilder
+  ): Unit =
+    if (generateDebugMetadata && canHaveDebugValue(ty)) {
+      debugInfo.localNames.get(id).foreach { localName =>
+        `llvm.dbg.declare`(
+          address = Metadata.Value(Val.Local(id, ty)),
+          description = Metadata.DILocalVariable(
+            name = localName,
+            arg = None,
+            scope = defnScopes.toDIScope(scopeId),
+            file = toDIFile(srcPosition),
+            line = srcPosition.line + LineOffset,
+            tpe = toMetadataType(ty)
+          ),
+          expr = Metadata.DIExpression()
+        )(srcPosition, scopeId)
+      }
+    }
+
+  private def `llvm.dbg.value`(
+      address: Metadata.Value,
+      description: DILocalVariable,
+      expr: Metadata.DIExpression
+  )(pos: nir.Position, scopeId: nir.ScopeId)(implicit
+      ctx: Context,
+      sb: ShowBuilder,
+      defnScopes: DefnScopes
+  ): Unit = {
+    sb.newline()
+    sb.str("call void @llvm.dbg.value(metadata ")
+    genVal(address.value)
+    sb.str(", metadata ")
+    description.intern().write(sb)
+    sb.str(", metadata ")
+    expr.intern().write(sb)
+    sb.str(")")
+    dbg(",", toDILocation(pos, scopeId))
+  }
+
+  private def `llvm.dbg.declare`(
+      address: Metadata.Value,
+      description: DILocalVariable,
+      expr: Metadata.DIExpression
+  )(pos: Position, scopeId: nir.ScopeId)(implicit
+      ctx: Context,
+      sb: ShowBuilder,
+      defnScopes: DefnScopes
+  ): Unit = {
+    sb.newline()
+    sb.str("call void @llvm.dbg.declare(metadata ")
+    genVal(address.value)
+    sb.str(", metadata ")
+    description.intern().write(sb)
+    sb.str(", metadata ")
+    expr.intern().write(sb)
+    sb.str(")")
+    dbg(",", toDILocation(pos, scopeId))
+  }
 
   def compilationUnits(implicit ctx: Context): Seq[DICompileUnit] =
     ctx.writersCache
       .get(classOf[DICompileUnit])
       .map(_.keySet.toSeq.asInstanceOf[Seq[DICompileUnit]])
       .getOrElse(Nil)
-
-  protected def toDISubprogram(
-      attrs: nir.Attrs,
-      name: Global,
-      rettype: nir.Type,
-      argtypes: Seq[nir.Type],
-      pos: Position
-  )(implicit metaCtx: Context): DISubprogram = {
-    val file = toDIFile(pos)
-    val unit = DICompileUnit(
-      file = file,
-      producer = Constants.PRODUCER,
-      isOptimized = attrs.opt == nir.Attr.DidOpt
-    )
-    // unmangle method name
-    // see: https://scala-native.org/en/stable/contrib/mangling.html
-    val linkageName = mangled(name)
-    val defnName = if (linkageName.startsWith("_S")) linkageName.drop(2) else linkageName
-    val unmangledName = if (defnName.startsWith("M")) { // subprogram should be a member
-      Unmangle.unmangleGlobal(defnName) match {
-        case Member(owner, sig) =>
-          Unmangle.unmangleSig(sig.mangle) match {
-            case Method(id, _, _) => Some(id)
-            case _                => None
-          }
-        case _ => None
-      }
-    } else None
-
-    DISubprogram(
-      name = unmangledName.getOrElse(linkageName),
-      linkageName = linkageName,
-      scope = unit,
-      file = file,
-      unit = unit,
-      line = pos.line,
-      tpe = DISubroutineType(
-        DITypes(
-          toMetadataTypeOpt(rettype),
-          argtypes.map(toMetadataType(_))
-        )
-      )
-    )
-  }
 
   def toDIFile(pos: Position): DIFile = {
     pos.filename
@@ -110,20 +169,80 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
       .getOrElse(DIFile("unknown", "unknown"))
   }
 
-  def toDILocation(pos: Position): DILocation = DILocation(
-    line = pos.line,
-    column = pos.column,
-    scope = toDIFile(pos)
+  def toDILocation(
+      pos: nir.Position,
+      scopeId: nir.ScopeId
+  )(implicit defnScopes: DefnScopes): DILocation = DILocation(
+    line = pos.line + LineOffset,
+    column = pos.column + ColumnOffset,
+    scope = defnScopes.toDIScope(scopeId)
   )
 
-  def toDILocation(
-      pos: Position,
-      scope: Scope
-  ): DILocation = DILocation(
-    line = pos.line,
-    column = pos.column,
-    scope = scope
-  )
+  class DefnScopes(val defn: nir.Defn.Define)(implicit
+      metadataCtx: MetadataCodeGen.Context
+  ) {
+    private val scopes = mutable.Map.empty[nir.ScopeId, Metadata.Scope]
+
+    lazy val getDISubprogramScope = {
+      val pos = defn.pos
+      val file = toDIFile(pos)
+      val unit = DICompileUnit(
+        file = file,
+        producer = Constants.PRODUCER,
+        isOptimized = defn.attrs.opt == nir.Attr.DidOpt
+      )
+      // unmangle method name
+      // see: https://scala-native.org/en/stable/contrib/mangling.html
+      val linkageName = mangled(defn.name)
+      val defnName = if (linkageName.startsWith("_S")) linkageName.drop(2) else linkageName
+      val unmangledName = if (defnName.startsWith("M")) { // subprogram should be a member
+        Unmangle.unmangleGlobal(defnName) match {
+          case Member(owner, sig) =>
+            Unmangle.unmangleSig(sig.mangle) match {
+              case Method(id, _, _) => Some(id)
+              case _                => None
+            }
+          case _ => None
+        }
+      } else None
+
+      val nir.Type.Function(argtys, retty) = defn.ty: @unchecked
+
+      DISubprogram(
+        name = unmangledName.getOrElse(linkageName),
+        linkageName = linkageName,
+        scope = unit,
+        file = file,
+        unit = unit,
+        line = pos.line + LineOffset,
+        tpe = DISubroutineType(
+          DITypes(
+            toMetadataTypeOpt(retty),
+            argtys.map(toMetadataType(_))
+          )
+        )
+      )
+    }
+
+    def toDIScope(scopeId: nir.ScopeId): Scope =
+      scopes.getOrElseUpdate(
+        scopeId,
+        if (scopeId.isTopLevel) getDISubprogramScope
+        else toDILexicalBlock(scopeId)
+      )
+
+    def toDILexicalBlock(scopeId: nir.ScopeId): Metadata.DILexicalBlock = {
+      val scope = defn.debugInfo.lexicalScopeOf(scopeId)
+      val srcPosition = scope.srcPosition
+
+      Metadata.DILexicalBlock(
+        file = toDIFile(srcPosition),
+        scope = toDIScope(scope.parent),
+        line = srcPosition.line + LineOffset,
+        column = srcPosition.column + ColumnOffset
+      )
+    }
+  }
 
   private val DIBasicTypes: Map[nir.Type, Metadata.Type] = {
     import nir.Type._
@@ -143,12 +262,12 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
     }.toMap
   }
 
-  private def toMetadataType(
+  protected def toMetadataType(
       ty: nir.Type
   )(implicit metaCtx: Context): Metadata.Type = toMetadataTypeOpt(ty).getOrElse(
     unsupported(s"Type $ty cannot be converted to DebugInfo Type")
   )
-  private def toMetadataTypeOpt(
+  protected def toMetadataTypeOpt(
       ty: nir.Type
   )(implicit metaCtx: Context): Option[Metadata.Type] = {
     import nir.Type._
@@ -342,8 +461,24 @@ object MetadataCodeGen {
             .reset()
           fn(builder)
         }
+
+        trait FieldWriter[T] { def write(ctx: Context, value: T): Unit }
+        object FieldWriter {
+          implicit val IntField: FieldWriter[Int] = (ctx: Context, value: Int) =>
+            ctx.sb.str(value.toString())
+          implicit val BooleanField: FieldWriter[Boolean] = (ctx: Context, value: Boolean) =>
+            ctx.sb.str(value.toString())
+          implicit val StringField: FieldWriter[String] = (ctx: Context, value: String) =>
+            ctx.sb.quoted(value)
+          implicit def MetadataNodeField[T <: Metadata.Node: InternedWriter]: FieldWriter[T] =
+            (ctx: Context, value: T) => writeInterned(value)(implicitly, ctx)
+          implicit def MetadataField[T <: Metadata: Writer]: FieldWriter[T] =
+            (ctx: Context, value: T) => implicitly[Writer[T]].write(value)(ctx)
+        }
+
       }
       class Builder[T](implicit ctx: Context) {
+        import Builder._
         private var isEmpty = true
 
         private def reset(): this.type = {
@@ -353,22 +488,13 @@ object MetadataCodeGen {
 
         // The fields of literal types differ from typical Metadata.Str // no '!' prefix
         // Also Boolean and numeric literals don't contain type prefix
-        def field(name: String, value: Int): this.type =
-          fieldImpl[Int](name)(ctx.sb.str(value.toString()))
-        def field(name: String, value: Boolean): this.type =
-          fieldImpl[Boolean](name)(ctx.sb.str(value.toString()))
-        def field(name: String, value: String): this.type =
-          fieldImpl[String](name)(ctx.sb.quoted(value))
+        def field[T: FieldWriter](name: String, value: T): this.type =
+          fieldImpl[Int](name)(implicitly[FieldWriter[T]].write(ctx, value))
 
-        def field[T <: Metadata.Node](name: String, value: T)(implicit
-            writer: InternedWriter[T]
-        ): this.type =
-          fieldImpl[T](name) { writeInterned(value)(writer, ctx) }
+        def field[T: FieldWriter](name: String, value: Option[T]): this.type =
+          value.fold[this.type](this)(field(name, _))
 
-        def field[T <: Metadata](name: String, value: T)(implicit writer: Writer[T]): this.type =
-          fieldImpl[T](name) { writer.write(value)(ctx) }
-
-        def fieldImpl[T](name: String)(doWrite: => Unit): this.type = {
+        private def fieldImpl[T](name: String)(doWrite: => Unit): this.type = {
           def sb = ctx.sb
           if (!isEmpty) sb.str(", ")
           sb.str(name)
@@ -402,11 +528,13 @@ object MetadataCodeGen {
       case v: Metadata.Type   => v.writer
       case v: DILocation      => v.writer
       case v: DILocalVariable => v.writer
+      case v: DIExpression    => v.writer
     }
     implicit lazy val ofScope: Dispatch[Metadata.Scope] = _ match {
-      case v: DICompileUnit => v.writer
-      case v: DIFile        => v.writer
-      case v: DISubprogram  => v.writer
+      case v: DICompileUnit  => v.writer
+      case v: DIFile         => v.writer
+      case v: DISubprogram   => v.writer
+      case v: DILexicalBlock => v.writer
     }
 
     import Metadata.conversions.StringOps
@@ -436,6 +564,14 @@ object MetadataCodeGen {
           .field("type", tpe)
           .field("unit", unit)
           .field("spFlags", "DISPFlagDefinition".const)
+    }
+
+    implicit lazy val ofDILexicalBlock: Specialized[DILexicalBlock] = {
+      case DILexicalBlock(scope, file, line, column) =>
+        _.field("scope", scope)
+          .field("file", file)
+          .field("line", line)
+          .field("column", column)
     }
 
     implicit lazy val ofType: Dispatch[Metadata.Type] = _ match {
@@ -476,12 +612,16 @@ object MetadataCodeGen {
           .field("scope", scope)
     }
     implicit lazy val ofDILocalVariable: Specialized[DILocalVariable] = {
-      case DILocalVariable(name, scope, file, line, tpe) =>
+      case DILocalVariable(name, arg, scope, file, line, tpe) =>
         _.field("name", name)
+          .field("arg", arg)
           .field("scope", scope)
           .field("file", file)
           .field("line", line)
           .field("type", tpe)
+    }
+    implicit lazy val ofDIExpression: Specialized[DIExpression] = {
+      case DIExpression() => identity
     }
   }
 

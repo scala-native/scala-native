@@ -15,7 +15,7 @@ final class MergeProcessor(
     doInline: Boolean,
     scopeMapping: ScopeId => ScopeId,
     eval: Eval
-)(implicit linked: linker.Result) {
+)(implicit analysis: ReachabilityAnalysis.Result) {
   import MergeProcessor.MergeBlockOffset
   assert(
     insts.length < MergeBlockOffset,
@@ -46,7 +46,7 @@ final class MergeProcessor(
 
   private def merge(
       block: MergeBlock
-  )(implicit linked: linker.Result): (Seq[MergePhi], State) = {
+  )(implicit analysis: ReachabilityAnalysis.Result): (Seq[MergePhi], State) = {
     import block.cfPos
     merge(block.id, block.label.params, block.incoming.toSeq.sortBy(_._1.id))
   }
@@ -55,7 +55,7 @@ final class MergeProcessor(
       merge: Local,
       params: Seq[Val.Local],
       incoming: Seq[(Local, (Seq[Val], State))]
-  )(implicit linked: linker.Result): (Seq[MergePhi], State) = {
+  )(implicit analysis: ReachabilityAnalysis.Result): (Seq[MergePhi], State) = {
     val localIds = incoming.map { case (n, (_, _)) => n }
     val states = incoming.map { case (_, (_, s)) => s }.toList
 
@@ -525,7 +525,7 @@ object MergeProcessor {
       blockFresh: Fresh,
       eval: Eval,
       parentScopeId: ScopeId
-  )(implicit linked: linker.Result): MergeProcessor = {
+  )(implicit analysis: ReachabilityAnalysis.Result): MergeProcessor = {
     val builder =
       new MergeProcessor(
         insts = insts,
@@ -576,7 +576,6 @@ object MergeProcessor {
             id = newMappingOf(id),
             parent = if (id.isTopLevel) parentScopeId else newMappingOf(parent)
           )
-
           scopes += newScope
       }
       else {

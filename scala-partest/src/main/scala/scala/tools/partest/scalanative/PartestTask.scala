@@ -15,7 +15,7 @@ import _root_.sbt.testing._
 import java.net.URLClassLoader
 import java.io.File
 import scala.scalanative.build.Build
-import scala.scalanative.linker.Result
+import scala.scalanative.linker.ReachabilityAnalysis
 import scala.concurrent._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
@@ -150,11 +150,9 @@ case class PartestTask(taskDef: TaskDef, args: Array[String]) extends Task {
       }
 
     import scala.collection.mutable
-    val linkerResult = new Result(
+    val analysis = new ReachabilityAnalysis.Result(
       infos = mutable.Map.empty,
       entries = Nil,
-      unavailable = Nil,
-      referencedFrom = mutable.Map.empty,
       links = Defaults.links,
       defns = Nil,
       dynsigs = Nil,
@@ -162,7 +160,7 @@ case class PartestTask(taskDef: TaskDef, args: Array[String]) extends Task {
       resolvedVals = mutable.Map.empty
     )
 
-    val build = Build.findAndCompileNativeLibs(config, linkerResult)
+    val build = Build.findAndCompileNativeLibs(config, analysis)
     Await.result(build, Duration.Inf)
   }
 }

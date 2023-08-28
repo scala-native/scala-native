@@ -141,7 +141,7 @@ trait Eval { self: Interflow =>
       op: Op
   )(implicit
       state: State,
-      linked: linker.Result,
+      analysis: ReachabilityAnalysis.Result,
       srcPosition: Position,
       scopeId: ScopeId
   ): Val = {
@@ -334,7 +334,7 @@ trait Eval { self: Interflow =>
           delay(Op.Method(materialize(obj), sig))
         }
       case Op.Dynmethod(obj, dynsig) =>
-        linked.dynimpls.foreach {
+        analysis.dynimpls.foreach {
           case impl @ Global.Member(_, sig) if sig.toProxy == dynsig =>
             visitRoot(impl)
           case _ =>

@@ -1040,8 +1040,9 @@ trait NirGenExpr(using Context) {
       }
     }
 
-    private def genApplyBox(st: SimpleType, argp: Tree): Val = {
-      given nir.Position = argp.span
+    private def genApplyBox(st: SimpleType, argp: Tree)(using
+        nir.Position
+    ): Val = {
       val value = genExpr(argp)
       buf.box(genBoxType(st), value, unwind)
     }
@@ -1112,7 +1113,7 @@ trait NirGenExpr(using Context) {
     private def genApplyTypeApply(app: Apply): Val = {
       val Apply(tApply @ TypeApply(fun, targs), argsp) = app: @unchecked
       val Select(receiverp, _) = desugarTree(fun): @unchecked
-      given nir.Position = fun.span
+      given nir.Position = app.span
 
       val funSym = fun.symbol
       genExpr(receiverp)
@@ -1313,8 +1314,9 @@ trait NirGenExpr(using Context) {
     private def negateBool(value: nir.Val)(using nir.Position): Val =
       buf.bin(Bin.Xor, Type.Bool, Val.True, value, unwind)
 
-    private def genUnaryOp(code: Int, rightp: Tree, opty: nir.Type): Val = {
-      given nir.Position = rightp.span
+    private def genUnaryOp(code: Int, rightp: Tree, opty: nir.Type)(using
+        nir.Position
+    ): Val = {
       val right = genExpr(rightp)
       val coerced = genCoercion(right, right.ty, opty)
       val tpe = coerced.ty
@@ -1495,8 +1497,7 @@ trait NirGenExpr(using Context) {
         rightp: Tree,
         ref: Boolean,
         negated: Boolean
-    ): Val = {
-      given nir.Position = leftp.span
+    )(using nir.Position): Val = {
       val left = genExpr(leftp)
 
       if (ref) {

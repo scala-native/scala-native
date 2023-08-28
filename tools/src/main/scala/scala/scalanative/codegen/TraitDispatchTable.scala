@@ -26,7 +26,7 @@ class TraitDispatchTable(meta: Metadata) {
       }
     }
 
-    val Object = meta.linked.infos(Rt.Object.name).asInstanceOf[Class]
+    val Object = meta.analysis.infos(Rt.Object.name).asInstanceOf[Class]
     sigs --= Object.calls
 
     sigs.toArray.sortBy(_.toString).zipWithIndex.toMap
@@ -82,7 +82,7 @@ class TraitDispatchTable(meta: Metadata) {
         sigs.foreach {
           case (sig, sigId) =>
             cls.resolve(sig).foreach { impl =>
-              val info = meta.linked.infos(impl).asInstanceOf[Method]
+              val info = meta.analysis.infos(impl).asInstanceOf[Method]
               put(clsId, sigId, info.value)
             }
         }

@@ -9,6 +9,7 @@ import scala.io.Source
 import org.junit.Test
 import org.junit.Assert._
 import org.junit.Assume._
+
 import org.scalanative.testsuite.utils.Platform, Platform._
 import scala.scalanative.junit.utils.AssumesHelper._
 
@@ -143,6 +144,34 @@ class ProcessTest {
 
     assertEquals("", readInputStream(proc.getErrorStream))
     assertEquals("foobar", readInputStream(proc.getInputStream))
+  }
+
+  // Issue 3452
+  @Test def waitForReturnsExitCode(): Unit = {
+    /* This test neither robust nor CI friendly.
+     * A buggy implementation of waitFor(pid) and/or of processSleep()
+     * could cause it to hang forever.
+     *
+     * waitfor(pid, timeout) can not be used here because it returns a Boolean,
+     * not the exit code of the child.
+     *
+     * Scala Native does not implement junit "@Test(timeout)". That was
+     * designed for situations just like this.
+     *
+     * Let's see how this fairs in CI. Does it hang intermittently?
+     * Should it be a manual development & maintains only test, ignored
+     * in CI?
+     */
+
+    val proc = processSleep(0.1).start()
+
+    val expected = 0 // Successful completion
+
+    assertEquals(
+      s"waitFor return value",
+      expected,
+      proc.waitFor()
+    )
   }
 
   @Test def waitForWithTimeoutCompletes(): Unit = {

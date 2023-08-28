@@ -164,15 +164,30 @@ object MultiScalaProject {
     }
 
   def apply(id: String): MultiScalaProject =
-    apply(id, file(id), Nil)
+    apply(id, id, file(id), Nil)
 
-  def apply(id: String, base: File): MultiScalaProject = apply(id, base, Nil)
+  def apply(id: String, base: File): MultiScalaProject =
+    apply(id, id, base, Nil)
+
+  def apply(
+      id: String,
+      name: String,
+      base: File
+  ): MultiScalaProject = apply(id, name, base, Nil)
+
+  def apply(
+      id: String,
+      base: File,
+      additionalIDEScalaVersions: List[String]
+  ): MultiScalaProject =
+    apply(id, id, base, additionalIDEScalaVersions)
 
   /** @param additionalIDEScalaVersions
    *    Allowed values: 3, 3-next, 2.13, 2.12.
    */
   def apply(
       id: String,
+      name: String,
       base: File,
       additionalIDEScalaVersions: List[String]
   ): MultiScalaProject = {
@@ -189,7 +204,7 @@ object MultiScalaProject {
         base = new File(base, "." + major)
       ).settings(
         Settings.commonSettings,
-        name := Settings.projectName(id),
+        Keys.name := Settings.projectName(name),
         scalaVersion := scalaVersions(major),
         crossScalaVersions := minors,
         noIDEExportSettings

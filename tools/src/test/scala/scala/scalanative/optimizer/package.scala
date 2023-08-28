@@ -1,6 +1,7 @@
 package scala.scalanative
 
 import org.junit.Assert._
+import scala.scalanative.linker.ReachabilityAnalysis
 
 package object optimizer {
   import nir._
@@ -69,7 +70,10 @@ package object optimizer {
       .ensuring(_.isDefined, "Not found linked method")
   }
 
-  def afterLowering(config: build.Config, optimized: => linker.Result)(
+  def afterLowering(
+      config: build.Config,
+      optimized: => ReachabilityAnalysis.Result
+  )(
       fn: Seq[Defn] => Unit
   ): Unit = {
     import scala.scalanative.codegen._

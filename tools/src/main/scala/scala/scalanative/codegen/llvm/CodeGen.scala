@@ -8,7 +8,8 @@ import scala.scalanative.build.Config
 import scala.scalanative.build.ScalaNative.{dumpDefns, encodedMainClass}
 import scala.scalanative.io.VirtualDirectory
 import scala.scalanative.nir._
-import scala.scalanative.{build, linker}
+import scala.scalanative.build
+import scala.scalanative.linker.ReachabilityAnalysis
 import scala.scalanative.util.{Scope, partitionBy, procs}
 import java.nio.file.StandardCopyOption
 
@@ -20,16 +21,16 @@ import scala.util.Success
 object CodeGen {
 
   /** Lower and generate code for given assembly. */
-  def apply(config: build.Config, linked: linker.Result)(implicit
-      ec: ExecutionContext
+  def apply(config: build.Config, analysis: ReachabilityAnalysis.Result)(
+      implicit ec: ExecutionContext
   ): Future[Seq[Path]] = {
-    val defns = linked.defns
-    val proxies = GenerateReflectiveProxies(linked.dynimpls, defns)
+    val defns = analysis.defns
+    val proxies = GenerateReflectiveProxies(analysis.dynimpls, defns)
 
     implicit def logger: build.Logger = config.logger
     implicit val platform: PlatformInfo = PlatformInfo(config)
     implicit val meta: CodeGenMetadata =
-      new CodeGenMetadata(linked, config.compilerConfig, proxies)
+      new CodeGenMetadata(analysis, config.compilerConfig, proxies)
 
     val generated = Generate(encodedMainClass(config), defns ++ proxies)
     val embedded = ResourceEmbedder(config)

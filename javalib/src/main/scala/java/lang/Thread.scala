@@ -632,7 +632,8 @@ private[java] case class PlatformThreadContext(
     task: Runnable,
     stackSize: scala.Long,
     @volatile var priority: Int = Thread.NORM_PRIORITY,
-    @volatile var daemon: scala.Boolean = false
+    @volatile var daemon: scala.Boolean = false,
+    var isFillingStackTrace: scala.Boolean = false
 ) {
   var nativeThread: NativeThread = _
 
