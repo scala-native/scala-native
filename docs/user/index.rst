@@ -10,6 +10,8 @@ User's Guide
   sbt
   lang
   interop
+  native
   testing
   profiling
   runtime
+

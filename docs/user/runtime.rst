@@ -71,4 +71,4 @@ your executable as needed:
     $ export SCALANATIVE_MIN_SIZE=2m; export SCALANATIVE_MAX_SIZE=1m; sandbox/.2.13/target/scala-2.13/sandbox-out
     SCALANATIVE_MAX_HEAP_SIZE should be at least SCALANATIVE_MIN_HEAP_SIZE
 
-
+Continue to :ref:`lib`.
