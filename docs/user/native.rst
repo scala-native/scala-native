@@ -81,4 +81,7 @@ Scala Native runtime and your application code. No additional information
 is needed in the build file other than the normal dependency so it is
 transparent to the library user.
 
+Using a library that contains native code can be used in combination with
+the feature above that allows native code in your application.
+
 Continue to :ref:`testing`.
