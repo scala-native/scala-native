@@ -79,7 +79,9 @@ object BinaryIncompatibilities {
     // to handle embedded resources.
     exclude[Problem]("java.lang.resource.*"),
     // Forward compatible
-    exclude[ReversedMissingMethodProblem]("scala.scalanative.runtime.Array.atRawUnsafe")
+    exclude[ReversedMissingMethodProblem](
+      "scala.scalanative.runtime.Array.atRawUnsafe"
+    )
   )
   final val CLib: Filters = Nil
   final val PosixLib: Filters = Seq(

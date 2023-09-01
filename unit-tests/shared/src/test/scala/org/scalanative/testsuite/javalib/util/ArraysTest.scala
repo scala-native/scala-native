@@ -1528,7 +1528,7 @@ class ArraysTest {
      * not to tax CI.
      */
     val factor = 16
-    // java.util.concurrent.ForkJoinPool.getCommonPoolParallelism() * 
+    // java.util.concurrent.ForkJoinPool.getCommonPoolParallelism() *
     factor
   }
 
