@@ -1,4 +1,6 @@
 // Ported from Scala.js commit: ba618ed dated: 2020-10-05
+//
+// Additional Tests added for methods implemented only in Scala Native.
 
 package org.scalanative.testsuite.javalib.util
 
@@ -1338,4 +1340,414 @@ class ArraysTest {
       Arrays.deepToString(recArr)
     )
   }
+
+// Tests added for Scala Native.
+
+  final val epsilon = 0.0000001 // tolerance for Floating point comparisons.
+
+  private def testParallelSort[T: ClassTag](
+      elem: Int => T,
+      newArray: Int => Array[T],
+      sort: Array[T] => Unit,
+      sort2: (Array[T], Int, Int) => Unit
+  ): Unit = {
+    val values = Array(5, 3, 6, 1, 2, 4).map(elem)
+    val arr = newArray(values.length)
+
+    for (i <- 0 until values.length)
+      arr(i) = values(i)
+    sort(arr)
+    assertArrayEquals(arr, Array(1, 2, 3, 4, 5, 6).map(elem))
+
+    for (i <- 0 until values.length)
+      arr(i) = values(i)
+    sort2(arr, 0, 3)
+    assertArrayEquals(arr, Array(3, 5, 6, 1, 2, 4).map(elem))
+
+    sort2(arr, 2, 5)
+    assertArrayEquals(arr, Array(3, 5, 1, 2, 6, 4).map(elem))
+
+    sort2(arr, 0, 6)
+    assertArrayEquals(arr, Array(1, 2, 3, 4, 5, 6).map(elem))
+
+    // check zero length doesn't fail.
+    sort2(arr, 1, 1)
+  }
+
+  @Test def parallelPrefix_Double(): Unit = {
+    val srcSize = 16
+    val arr = new Array[Double](srcSize)
+
+    for (j <- 0 until srcSize) // setAll() may not have been tested yet.
+      arr(j) = (j + 1).toDouble
+
+    Arrays.parallelPrefix(arr, (e1: Double, e2: Double) => e1 + e2)
+
+    val expected = 136.0
+    assertEquals("cumulative sum", expected, arr(srcSize - 1), epsilon)
+  }
+
+  @Test def parallelPrefix_DoubleSubRange(): Unit = {
+    val srcSize = 16
+    val rangeStart = srcSize - 4 // inclusive
+    val rangeEnd = srcSize - 1 // exclusive
+
+    val arr = new Array[Double](srcSize)
+
+    for (j <- 0 until srcSize) // setAll() may not have been tested yet.
+      arr(j) = (j + 1).toDouble
+
+    Arrays.parallelPrefix(
+      arr,
+      rangeStart,
+      rangeEnd,
+      (e1: Double, e2: Double) => e1 + e2
+    )
+
+    val expected = 42.0
+    assertEquals("range sum", expected, arr(rangeEnd - 1), epsilon)
+  }
+
+  @Test def parallelPrefix_Int(): Unit = {
+    val srcSize = 16
+    val arr = new Array[Int](srcSize)
+
+    for (j <- 0 until srcSize) // setAll() may not have been tested yet.
+      arr(j) = j + 1
+
+    Arrays.parallelPrefix(arr, (e1: Int, e2: Int) => e1 + e2)
+
+    val expected = 136
+    assertEquals("cumulative sum", expected, arr(srcSize - 1))
+  }
+
+  @Test def parallelPrefix_IntSubRange(): Unit = {
+    val srcSize = 16
+    val rangeStart = srcSize - 5 // inclusive
+    val rangeEnd = srcSize - 2 // exclusive
+
+    val arr = new Array[Int](srcSize)
+
+    for (j <- 0 until srcSize) // setAll() may not have been tested yet.
+      arr(j) = j + 1
+
+    Arrays.parallelPrefix(
+      arr,
+      rangeStart,
+      rangeEnd,
+      (e1: Int, e2: Int) => e1 + e2
+    )
+
+    val expected = 39
+    assertEquals("range sum", expected, arr(rangeEnd - 1), epsilon)
+  }
+
+  @Test def parallelPrefix_Long(): Unit = {
+    val srcSize = 16
+    val arr = new Array[Long](srcSize)
+
+    for (j <- 0 until srcSize) // setAll() may not have been tested yet.
+      arr(j) = (j + 1).toLong
+
+    Arrays.parallelPrefix(arr, (e1: Long, e2: Long) => e1 + e2)
+
+    val expected = 136L
+    assertEquals("cumulative sum", expected, arr(srcSize - 1))
+  }
+
+  @Test def parallelPrefix_LongSubRange(): Unit = {
+    val srcSize = 16
+    val rangeStart = srcSize - 6 // inclusive
+    val rangeEnd = srcSize - 3 // exclusive
+
+    val arr = new Array[Long](srcSize)
+
+    for (j <- 0 until srcSize) // setAll() may not have been tested yet.
+      arr(j) = (j + 1).toLong
+
+    Arrays.parallelPrefix(
+      arr,
+      rangeStart,
+      rangeEnd,
+      (e1: Long, e2: Long) => e1 + e2
+    )
+
+    val expected = 36L
+    assertEquals("range sum", expected, arr(rangeEnd - 1))
+  }
+
+  @Test def parallelPrefix_AnyRef(): Unit = {
+    val srcSize = 16
+
+    val data = "abcdefhijklmnopq"
+    val dataChars = data.toCharArray()
+
+    val arr = new Array[String](srcSize)
+    for (j <- 0 until srcSize)
+      arr(j) = String.valueOf(dataChars, j, 1)
+
+    Arrays.parallelPrefix(
+      arr,
+      (e1: String, e2: String) => e1.concat(e2)
+    )
+
+    val expected = data
+    assertEquals("cumulative concat", expected, arr(srcSize - 1))
+  }
+
+  @Test def parallelPrefix_AnyRefSubRange(): Unit = {
+    val srcSize = 16
+    val rangeStart = srcSize - 7 // inclusive
+    val rangeEnd = srcSize - 2 // exclusive
+
+    val data = "abcdefhijklmnopq"
+    val dataChars = data.toCharArray()
+
+    val arr = new Array[String](srcSize)
+    for (j <- 0 until srcSize)
+      arr(j) = String.valueOf(dataChars, j, 1)
+
+    Arrays.parallelPrefix(
+      arr,
+      rangeStart,
+      rangeEnd,
+      (e1: String, e2: String) => e1.concat(e2)
+    )
+
+    val expected = data.substring(rangeStart, rangeEnd)
+    assertEquals("range concat", expected, arr(rangeEnd - 1))
+  }
+
+  /* The parallelSetAll_* Tests should use a srcSize  which large enough
+   * that any truely parallel implemtation is likely to fork at least
+   * once.
+   */
+
+  lazy val parallelSetAllSrcSize = {
+    /* An arbitrary power-of-2, large enough to cause splits, small enough
+     * not to tax CI.
+     */
+    val factor = 16
+    java.util.concurrent.ForkJoinPool.getCommonPoolParallelism() * factor
+  }
+
+  @Test def parallelSetAll_Double(): Unit = {
+    val srcSize = parallelSetAllSrcSize
+
+    val arr = new Array[Double](srcSize)
+    Arrays.setAll(arr, (idx: Int) => (idx + 1).toDouble)
+
+    val expectedAtFirstInRangeRange = 1.0
+    assertEquals("firstInRange", expectedAtFirstInRangeRange, arr(0), epsilon)
+
+    val expectedAtLastInRangeRange = srcSize.toDouble
+    assertEquals(
+      "lastInRange",
+      expectedAtLastInRangeRange,
+      arr(srcSize - 1),
+      epsilon
+    )
+  }
+
+  @Test def parallelSetAll_Int(): Unit = {
+    val srcSize = parallelSetAllSrcSize
+
+    val arr = new Array[Int](srcSize)
+    Arrays.setAll(arr, (idx: Int) => (idx + 1))
+
+    val expectedAtFirstInRangeRange = 1
+    assertEquals("firstInRange", expectedAtFirstInRangeRange, arr(0))
+
+    val expectedAtLastInRangeRange = srcSize
+    assertEquals(
+      "lastInRange",
+      expectedAtLastInRangeRange,
+      arr(srcSize - 1)
+    )
+  }
+
+  @Test def parallelSetAll_Long(): Unit = {
+    val srcSize = parallelSetAllSrcSize
+
+    val arr = new Array[Long](srcSize)
+    Arrays.setAll(arr, (idx: Int) => (idx + 1).toLong)
+
+    val expectedAtFirstInRangeRange = 1L
+    assertEquals("firstInRange", expectedAtFirstInRangeRange, arr(0))
+
+    val expectedAtLastInRangeRange = srcSize.toLong
+    assertEquals(
+      "lastInRange",
+      expectedAtLastInRangeRange,
+      arr(srcSize - 1)
+    )
+  }
+
+  @Test def parallelSetAll_AnyRef(): Unit = {
+    val srcSize = parallelSetAllSrcSize
+
+    val arr = new Array[String](srcSize)
+
+    // Scala 2 needs [String] here, Scala 3 can usually figure out its absence.
+    Arrays.setAll[String](arr, (idx: Int) => (idx + 1).toString())
+
+    val expectedAtFirstInRangeRange = "1"
+    assertEquals("firstInRange", expectedAtFirstInRangeRange, arr(0))
+
+    val expectedAtLastInRangeRange = srcSize.toString()
+    assertEquals(
+      "lastInRange",
+      expectedAtLastInRangeRange,
+      arr(srcSize - 1)
+    )
+  }
+
+  /* Scala.js practice, as seen in the sort_*() tests at top of this file is
+   * to test the no-argument and three-argument methods in the same helper.
+   * Do the same here to stay consistent with prior art.
+   */
+
+  @Test def parallelSort_Byte(): Unit =
+    testParallelSort[Byte](
+      _.toByte,
+      new Array(_),
+      Arrays.parallelSort(_),
+      Arrays.parallelSort(_, _, _)
+    )
+
+  @Test def parallelSort_Char(): Unit =
+    testParallelSort[Char](
+      _.toChar,
+      new Array(_),
+      Arrays.parallelSort(_),
+      Arrays.parallelSort(_, _, _)
+    )
+
+  @Test def parallelSort_Double(): Unit =
+    testParallelSort[Double](
+      _.toDouble,
+      new Array(_),
+      Arrays.parallelSort(_),
+      Arrays.parallelSort(_, _, _)
+    )
+
+  @Test def parallelSort_Float(): Unit =
+    testParallelSort[Float](
+      _.toFloat,
+      new Array(_),
+      Arrays.parallelSort(_),
+      Arrays.parallelSort(_, _, _)
+    )
+
+  @Test def parallelSort_Int(): Unit =
+    testParallelSort[Int](
+      _.toInt,
+      new Array(_),
+      Arrays.parallelSort(_),
+      Arrays.parallelSort(_, _, _)
+    )
+
+  @Test def parallelSort_Long(): Unit =
+    testParallelSort[Long](
+      _.toLong,
+      new Array(_),
+      Arrays.parallelSort(_),
+      Arrays.parallelSort(_, _, _)
+    )
+
+  @Test def parallelSort_Short(): Unit =
+    testParallelSort[Short](
+      _.toShort,
+      new Array(_),
+      Arrays.parallelSort(_),
+      Arrays.parallelSort(_, _, _)
+    )
+
+  @Test def parallelSort_String(): Unit =
+    testParallelSort[String](
+      _.toString,
+      new Array(_),
+      Arrays.parallelSort[String](_),
+      Arrays.parallelSort[String](_, _, _)
+    )
+
+  @Test def parallelSort_StringNullComparator(): Unit =
+    testParallelSort[AnyRef](
+      _.toString,
+      new Array(_),
+      Arrays.parallelSort(_, null),
+      Arrays.parallelSort(_, _, _, null)
+    )
+
+  @Test def setAll_Double(): Unit = {
+    val srcSize = 16
+
+    val arr = new Array[Double](srcSize)
+    Arrays.setAll(arr, (idx: Int) => (idx + 1).toDouble)
+
+    val expectedAtFirstInRangeRange = 1.0
+    assertEquals("firstInRange", expectedAtFirstInRangeRange, arr(0), epsilon)
+
+    val expectedAtLastInRangeRange = srcSize.toDouble
+    assertEquals(
+      "lastInRange",
+      expectedAtLastInRangeRange,
+      arr(srcSize - 1),
+      epsilon
+    )
+  }
+
+  @Test def setAll_Int(): Unit = {
+    val srcSize = 16
+
+    val arr = new Array[Int](srcSize)
+    Arrays.setAll(arr, (idx: Int) => (idx + 1))
+
+    val expectedAtFirstInRangeRange = 1
+    assertEquals("firstInRange", expectedAtFirstInRangeRange, arr(0))
+
+    val expectedAtLastInRangeRange = srcSize
+    assertEquals(
+      "lastInRange",
+      expectedAtLastInRangeRange,
+      arr(srcSize - 1)
+    )
+  }
+
+  @Test def setAll_Long(): Unit = {
+    val srcSize = 16
+
+    val arr = new Array[Long](srcSize)
+    Arrays.setAll(arr, (idx: Int) => (idx + 1).toLong)
+
+    val expectedAtFirstInRangeRange = 1L
+    assertEquals("firstInRange", expectedAtFirstInRangeRange, arr(0))
+
+    val expectedAtLastInRangeRange = srcSize.toLong
+    assertEquals(
+      "lastInRange",
+      expectedAtLastInRangeRange,
+      arr(srcSize - 1)
+    )
+  }
+
+  @Test def setAll_AnyRef(): Unit = {
+    val srcSize = 16
+
+    val arr = new Array[String](srcSize)
+
+    // Scala 2 needs [String] here, Scala 3 can usually figure out its absence.
+    Arrays.setAll[String](arr, (idx: Int) => (idx + 1).toString())
+
+    val expectedAtFirstInRangeRange = "1"
+    assertEquals("firstInRange", expectedAtFirstInRangeRange, arr(0))
+
+    val expectedAtLastInRangeRange = srcSize.toString()
+    assertEquals(
+      "lastInRange",
+      expectedAtLastInRangeRange,
+      arr(srcSize - 1)
+    )
+  }
+
 }

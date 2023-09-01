@@ -125,7 +125,7 @@ object Inet6Address {
       val suffix =
         try {
           val ifIndex = Integer.parseInt(zi)
-          val ifName = stackalloc[Byte](IF_NAMESIZE.toUSize)
+          val ifName = stackalloc[Byte](IF_NAMESIZE)
           if (if_indextoname(ifIndex.toUInt, ifName) == stddef.NULL) zi
           else fromCString(ifName)
         } catch {

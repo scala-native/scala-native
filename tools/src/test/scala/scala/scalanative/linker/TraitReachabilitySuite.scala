@@ -4,6 +4,9 @@ package linker
 import scala.scalanative.NativePlatform
 import scala.scalanative.nir.{Global, Sig, Type, Rt}
 
+import org.junit.Test
+import org.junit.Assert._
+
 class TraitReachabilitySuite extends ReachabilitySuite {
   val TestClsName = "Test"
   val TestModuleName = "Test$"
@@ -15,7 +18,7 @@ class TraitReachabilitySuite extends ReachabilitySuite {
   val ScalaMainNonStaticSig =
     Sig.Method("main", Rt.ScalaMainSig.types, Sig.Scope.Public)
 
-  val Parent: Global = g(ParentClsName)
+  val Parent: Global.Top = g(ParentClsName)
   // Scala 2.12.x
   val ParentInit: Global =
     g(ParentClsName, Sig.Method("$init$", Seq(Type.Unit)))
@@ -41,7 +44,7 @@ class TraitReachabilitySuite extends ReachabilitySuite {
   val commonReachable =
     Seq(Test, TestModule, TestInit, TestMain, TestModuleMain)
 
-  testReachable("unused traits are discarded") {
+  @Test def unusedTrait(): Unit = testReachable() {
     val source = """
       trait Parent
       class Child extends Parent
@@ -58,7 +61,7 @@ class TraitReachabilitySuite extends ReachabilitySuite {
     (source, entry, commonReachable ++ reachable)
   }
 
-  testReachable("inherited trait is included") {
+  @Test def inheritedTrait(): Unit = testReachable() {
     val source = """
       trait Parent
       class Child extends Parent
@@ -78,9 +81,7 @@ class TraitReachabilitySuite extends ReachabilitySuite {
     (source, entry, commonReachable ++ reachable)
   }
 
-  testReachable(
-    "calling a method on trait includes an impl of all implementors (1)"
-  ) {
+  @Test def traitMethodImplementors(): Unit = testReachable() {
     val source = """
       trait Parent {
         def foo: Unit
@@ -109,10 +110,9 @@ class TraitReachabilitySuite extends ReachabilitySuite {
     (source, entry, commonReachable ++ reachable)
   }
 
-  testReachable(
-    "calling a method on trait includes an impl of all implementors (2)"
-  ) {
-    val source = """
+  @Test def traitMethodImplementors2(): Unit =
+    testReachable() {
+      val source = """
       trait Parent {
         def foo: Unit
       }
@@ -132,25 +132,23 @@ class TraitReachabilitySuite extends ReachabilitySuite {
         }
       }
     """
-    val entry = TestMain
-    val reachable = Seq(
-      TestCallFoo,
-      Child,
-      ChildInit,
-      ChildFoo,
-      GrandChild,
-      GrandChildInit,
-      GrandChildFoo,
-      Parent,
-      Object,
-      ObjectInit
-    )
-    (source, entry, commonReachable ++ reachable)
-  }
+      val entry = TestMain
+      val reachable = Seq(
+        TestCallFoo,
+        Child,
+        ChildInit,
+        ChildFoo,
+        GrandChild,
+        GrandChildInit,
+        GrandChildFoo,
+        Parent,
+        Object,
+        ObjectInit
+      )
+      (source, entry, commonReachable ++ reachable)
+    }
 
-  testReachable(
-    "calling a method on a trait with default implementation includes impl class"
-  ) {
+  @Test def traitMethodDefaultImplementation(): Unit = testReachable() {
     val source = """
       trait Parent {
         def foo: Unit = ()
@@ -186,9 +184,7 @@ class TraitReachabilitySuite extends ReachabilitySuite {
     (source, entry, commonReachable ++ reachable)
   }
 
-  testReachable(
-    "calling a method on a trait with default implementation discards impl class"
-  ) {
+  @Test def traitMethodDefaultImplementation2(): Unit = testReachable() {
     val source = """
       trait Parent {
         def foo: Unit = ()
@@ -226,7 +222,7 @@ class TraitReachabilitySuite extends ReachabilitySuite {
   }
 
   // Issue #805
-  testReachable("inherited main methods are reachable") {
+  @Test def inheritedMainMethod(): Unit = testReachable() {
     val source = """
        trait Parent {
          def main(args: Array[String]): Unit = ()

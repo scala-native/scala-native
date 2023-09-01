@@ -1,11 +1,13 @@
+#if defined(SCALANATIVE_GC_IMMIX)
+
 #include <stdio.h>
 #include <setjmp.h>
 #include "Marker.h"
 #include "Object.h"
-#include "Log.h"
+#include "immix_commix/Log.h"
 #include "State.h"
 #include "datastructures/Stack.h"
-#include "headers/ObjectHeader.h"
+#include "immix_commix/headers/ObjectHeader.h"
 #include "Block.h"
 #include "WeakRefStack.h"
 #include <stdatomic.h>
@@ -176,3 +178,5 @@ void Marker_MarkRoots(Heap *heap, Stack *stack) {
     Marker_markCustomRoots(heap, stack, roots);
     Marker_Mark(heap, stack);
 }
+
+#endif

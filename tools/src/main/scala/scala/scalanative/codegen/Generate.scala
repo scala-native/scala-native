@@ -3,18 +3,22 @@ package codegen
 
 import scala.collection.mutable
 import scala.scalanative.nir._
-import scala.scalanative.linker.{Class, ScopeInfo, Unavailable}
+import scala.scalanative.linker.{
+  Class,
+  ScopeInfo,
+  Unavailable,
+  ReachabilityAnalysis
+}
 import scala.scalanative.build.Logger
 
+// scalafmt: { maxColumn = 120}
 object Generate {
   import Impl._
 
-  val ClassHasTraitName =
-    Global.Member(rttiModule, Sig.Extern("__check_class_has_trait"))
+  val ClassHasTraitName = Global.Member(rttiModule, Sig.Extern("__check_class_has_trait"))
   val ClassHasTraitSig = Type.Function(Seq(Type.Int, Type.Int), Type.Bool)
 
-  val TraitHasTraitName =
-    Global.Member(rttiModule, Sig.Extern("__check_trait_has_trait"))
+  val TraitHasTraitName = Global.Member(rttiModule, Sig.Extern("__check_trait_has_trait"))
   val TraitHasTraitSig = Type.Function(Seq(Type.Int, Type.Int), Type.Bool)
 
   def apply(entry: Option[Global.Top], defns: Seq[Defn])(implicit
@@ -22,9 +26,9 @@ object Generate {
   ): Seq[Defn] =
     (new Impl(entry, defns)).generate()
 
-  implicit def linked(implicit meta: Metadata): linker.Result =
-    meta.linked
+  implicit def reachabilityAnalysis(implicit meta: Metadata): ReachabilityAnalysis.Result = meta.analysis
   private implicit val pos: Position = Position.NoPosition
+  private implicit val scopeId: nir.ScopeId = nir.ScopeId.TopLevel
 
   private class Impl(entry: Option[Global.Top], defns: Seq[Defn])(implicit
       meta: Metadata
@@ -116,7 +120,7 @@ object Generate {
       val and = Val.Local(fresh(), Type.Int)
       val result = Val.Local(fresh(), Type.Bool)
 
-      def let(local: Val.Local, op: Op) = Inst.Let(local.name, op, Next.None)
+      def let(local: Val.Local, op: Op) = Inst.Let(local.id, op, Next.None)
 
       buf += Defn.Define(
         Attrs(inlineHint = Attr.AlwaysInline),
@@ -198,19 +202,33 @@ object Generate {
     private def withExceptionHandler(
         body: (() => Next.Unwind) => Seq[Inst]
     )(implicit fresh: Fresh): Seq[Inst] = {
-      val exc = Val.Local(fresh(), nir.Rt.Object)
-      val handler = fresh()
+      val exc = Val.Local(fresh(), Throwable)
+      val handler, thread, ueh, uehHandler = fresh()
 
       def unwind(): Next.Unwind = {
         val exc = Val.Local(fresh(), nir.Rt.Object)
         Next.Unwind(exc, Next.Label(handler, Seq(exc)))
       }
-
       body(unwind) ++ Seq(
         Inst.Ret(Val.Int(0)),
         Inst.Label(handler, Seq(exc)),
         Inst.Let(
-          Op.Call(PrintStackTraceSig, PrintStackTrace, Seq(exc)),
+          thread,
+          Op.Call(JavaThreadCurrentThreadSig, Val.Global(JavaThreadCurrentThread, Type.Ptr), Seq()),
+          Next.None
+        ),
+        Inst.Let(
+          ueh,
+          Op.Call(JavaThreadGetUEHSig, Val.Global(JavaThreadGetUEH, Type.Ptr), Seq(Val.Local(thread, JavaThreadRef))),
+          Next.None
+        ),
+        Inst.Let(
+          fresh(),
+          Op.Call(
+            RuntimeExecuteUEHSig,
+            Val.Global(RuntimeExecuteUEH, Type.Ptr),
+            Seq(Val.Null, Val.Local(ueh, JavaThreadUEHRef), Val.Local(thread, JavaThreadRef), exc)
+          ),
           Next.None
         ),
         Inst.Ret(Val.Int(1))
@@ -222,15 +240,15 @@ object Generate {
         unwind: () => Next
     )(implicit fresh: Fresh): Seq[Inst] = {
       defns.collect {
-        case Defn.Define(_, name: Global.Member, _, _) if name.sig.isClinit =>
+        case defn @ Defn.Define(_, name: Global.Member, _, _, _) if name.sig.isClinit =>
           Inst.Let(
             Op.Call(
               Type.Function(Seq.empty, Type.Unit),
-              Val.Global(name, Type.Ref(name)),
+              Val.Global(name, Type.Ref(name.owner)),
               Seq.empty
             ),
             unwind()
-          )
+          )(implicitly, defn.pos, implicitly)
       }
     }
 
@@ -242,7 +260,7 @@ object Generate {
       Seq(
         // init __stack_bottom variable
         Inst.Let(
-          stackBottom.name,
+          stackBottom.id,
           Op.Stackalloc(Type.Ptr, Val.Long(0)),
           unwind
         ),
@@ -293,9 +311,9 @@ object Generate {
             genGcInit(unwindProvider) ++
             genClassInitializersCalls(unwindProvider) ++
             Seq(
-              Inst.Let(rt.name, Op.Module(Runtime.name), unwind),
+              Inst.Let(rt.id, Op.Module(Runtime.name), unwind),
               Inst.Let(
-                arr.name,
+                arr.id,
                 Op.Call(RuntimeInitSig, RuntimeInit, Seq(rt, argc, argv)),
                 unwind
               ),
@@ -317,16 +335,15 @@ object Generate {
         Seq(Type.Ptr, Type.Ptr, Type.Size, Type.Ptr),
         Type.Ptr
       )
-      val LoadModule =
-        Val.Global(extern("__scalanative_loadModule"), Type.Ptr)
-
+      val LoadModuleDecl = Defn.Declare(
+        Attrs(isExtern = true),
+        extern("__scalanative_loadModule"),
+        LoadModuleSig
+      )
+      val LoadModule = Val.Global(LoadModuleDecl.name, Type.Ptr)
       val useSynchronizedAccessors = meta.config.multithreadingSupport
       if (useSynchronizedAccessors) {
-        buf += Defn.Declare(
-          Attrs(isExtern = true),
-          LoadModule.name,
-          LoadModuleSig
-        )
+        buf += LoadModuleDecl
       }
 
       meta.classes.foreach { cls =>
@@ -387,10 +404,10 @@ object Generate {
             def loadSinglethreadImpl: Seq[Inst] = {
               Seq(
                 Inst.Label(entry, Seq.empty),
-                Inst.Let(slot.name, selectSlot, Next.None),
-                Inst.Let(self.name, Op.Load(clsTy, slot), Next.None),
+                Inst.Let(slot.id, selectSlot, Next.None),
+                Inst.Let(self.id, Op.Load(clsTy, slot), Next.None),
                 Inst.Let(
-                  cond.name,
+                  cond.id,
                   Op.Comp(Comp.Ine, nir.Rt.Object, self, Val.Null),
                   Next.None
                 ),
@@ -399,7 +416,7 @@ object Generate {
                 Inst.Ret(self),
                 Inst.Label(initialize, Seq.empty),
                 Inst.Let(
-                  alloc.name,
+                  alloc.id,
                   Op.Classalloc(name, zone = None),
                   Next.None
                 ),
@@ -423,9 +440,9 @@ object Generate {
 
               Seq(
                 Inst.Label(entry, Seq.empty),
-                Inst.Let(slot.name, selectSlot, Next.None),
+                Inst.Let(slot.id, selectSlot, Next.None),
                 Inst.Let(
-                  self.name,
+                  self.id,
                   Op.Call(
                     LoadModuleSig,
                     LoadModule,
@@ -474,7 +491,7 @@ object Generate {
 
     private def tpe2arrayId(tpe: String): Int = {
       val clazz =
-        linked
+        reachabilityAnalysis
           .infos(Global.Top(s"scala.scalanative.runtime.${tpe}Array"))
           .asInstanceOf[Class]
 
@@ -491,7 +508,7 @@ object Generate {
     }
 
     def genWeakRefUtils(): Unit = {
-      def addToBuf(name: Global, value: Int) =
+      def addToBuf(name: Global.Member, value: Int) =
         buf +=
           Defn.Var(
             Attrs.None,
@@ -500,15 +517,14 @@ object Generate {
             Val.Int(value)
           )
 
-      val (weakRefId, modifiedFieldOffset) = linked.infos
+      val (weakRefIdsMin, weakRefIdsMax, modifiedFieldOffset) = reachabilityAnalysis.infos
         .get(Global.Top("java.lang.ref.WeakReference"))
         .collect { case cls: Class if cls.allocated => cls }
-        .fold((-1, -1)) { weakRef =>
+        .fold((-1, -1, -1)) { weakRef =>
           // if WeakReferences are being compiled and therefore supported
           val gcModifiedFieldIndexes: Seq[Int] =
             meta.layout(weakRef).entries.zipWithIndex.collect {
-              case (field, index)
-                  if field.name.mangle.contains("_gc_modified_") =>
+              case (field, index) if field.name.mangle.contains("_gc_modified_") =>
                 index
             }
 
@@ -517,9 +533,14 @@ object Generate {
               "Exactly one field should have the \"_gc_modified_\" modifier in java.lang.ref.WeakReference"
             )
 
-          (meta.ids(weakRef), gcModifiedFieldIndexes.head)
+          (
+            meta.ranges(weakRef).start,
+            meta.ranges(weakRef).end,
+            gcModifiedFieldIndexes.head
+          )
         }
-      addToBuf(weakRefIdName, weakRefId)
+      addToBuf(weakRefIdsMaxName, weakRefIdsMax)
+      addToBuf(weakRefIdsMinName, weakRefIdsMin)
       addToBuf(weakRefFieldOffsetName, modifiedFieldOffset)
     }
 
@@ -562,7 +583,7 @@ object Generate {
       def fail(reason: String): Nothing =
         util.unsupported(s"Entry ${entry.id} $reason")
 
-      val info = linked.infos.getOrElse(entry, fail("not linked"))
+      val info = reachabilityAnalysis.infos.getOrElse(entry, fail("not linked"))
       info match {
         case cls: Class =>
           cls.resolve(Rt.ScalaMainSig).getOrElse {
@@ -577,25 +598,17 @@ object Generate {
   private object Impl {
     val rttiModule = Global.Top("java.lang.rtti$")
 
-    val ObjectArray =
-      Type.Ref(Global.Top("scala.scalanative.runtime.ObjectArray"))
+    val ObjectArray = Type.Ref(Global.Top("scala.scalanative.runtime.ObjectArray"))
 
-    val Runtime =
-      Rt.Runtime
-    val RuntimeInitSig =
-      Type.Function(Seq(Runtime, Type.Int, Type.Ptr), ObjectArray)
-    val RuntimeInitName =
-      Runtime.name.member(
-        Sig.Method("init", Seq(Type.Int, Type.Ptr, Type.Array(Rt.String)))
-      )
-    val RuntimeInit =
-      Val.Global(RuntimeInitName, Type.Ptr)
-    val RuntimeLoopSig =
-      Type.Function(Seq(Runtime), Type.Unit)
-    val RuntimeLoopName =
-      Runtime.name.member(Sig.Method("loop", Seq(Type.Unit)))
-    val RuntimeLoop =
-      Val.Global(RuntimeLoopName, Type.Ptr)
+    val Runtime = Rt.Runtime
+    val RuntimeInitSig = Type.Function(Seq(Runtime, Type.Int, Type.Ptr), ObjectArray)
+    val RuntimeInitName = Runtime.name.member(
+      Sig.Method("init", Seq(Type.Int, Type.Ptr, Type.Array(Rt.String)))
+    )
+    val RuntimeInit = Val.Global(RuntimeInitName, Type.Ptr)
+    val RuntimeLoopSig = Type.Function(Seq(Runtime), Type.Unit)
+    val RuntimeLoopName = Runtime.name.member(Sig.Method("loop", Seq(Type.Unit)))
+    val RuntimeLoop = Val.Global(RuntimeLoopName, Type.Ptr)
 
     val LibraryInitName = extern("ScalaNativeInit")
     val LibraryInitSig = Type.Function(Seq.empty, Type.Int)
@@ -606,38 +619,56 @@ object Generate {
     val ThrowableName = Global.Top("java.lang.Throwable")
     val Throwable = Type.Ref(ThrowableName)
 
-    val PrintStackTraceSig =
-      Type.Function(Seq(Throwable), Type.Unit)
-    val PrintStackTraceName =
-      ThrowableName.member(Sig.Method("printStackTrace", Seq(Type.Unit)))
-    val PrintStackTrace =
-      Val.Global(PrintStackTraceName, Type.Ptr)
+    val JavaThread = Global.Top("java.lang.Thread")
+    val JavaThreadRef = Type.Ref(JavaThread)
+
+    val JavaThreadUEH = Global.Top("java.lang.Thread$UncaughtExceptionHandler")
+    val JavaThreadUEHRef = Type.Ref(JavaThreadUEH)
+
+    val JavaThreadCurrentThreadSig = Type.Function(Seq(), JavaThreadRef)
+    val JavaThreadCurrentThread = JavaThread.member(
+      Sig.Method("currentThread", Seq(JavaThreadRef), scope = Sig.Scope.PublicStatic)
+    )
+
+    val JavaThreadGetUEHSig = Type.Function(Seq(JavaThreadRef), JavaThreadUEHRef)
+    val JavaThreadGetUEH = JavaThread.member(
+      Sig.Method("getUncaughtExceptionHandler", Seq(JavaThreadUEHRef))
+    )
+
+    val RuntimeExecuteUEHSig = Type.Function(Seq(Runtime, JavaThreadUEHRef, JavaThreadRef, Throwable), Type.Unit)
+    val RuntimeExecuteUEH = Runtime.name.member(
+      Sig.Method("executeUncaughtExceptionHandler", Seq(JavaThreadUEHRef, JavaThreadRef, Throwable, Type.Unit))
+    )
 
     val InitSig = Type.Function(Seq.empty, Type.Unit)
-    val Init = Val.Global(extern("scalanative_init"), Type.Ptr)
-    val InitDecl = Defn.Declare(Attrs.None, Init.name, InitSig)
+    val InitDecl = Defn.Declare(Attrs.None, extern("scalanative_init"), InitSig)
+    val Init = Val.Global(InitDecl.name, Type.Ptr)
 
     val stackBottomName = extern("__stack_bottom")
     val moduleArrayName = extern("__modules")
     val moduleArraySizeName = extern("__modules_size")
     val objectArrayIdName = extern("__object_array_id")
-    val weakRefIdName = extern("__weak_ref_id")
+    val weakRefIdsMaxName = extern("__weak_ref_ids_max")
+    val weakRefIdsMinName = extern("__weak_ref_ids_min")
     val weakRefFieldOffsetName = extern("__weak_ref_field_offset")
     val registryOffsetName = extern("__weak_ref_registry_module_offset")
     val registryFieldOffsetName = extern("__weak_ref_registry_field_offset")
     val arrayIdsMinName = extern("__array_ids_min")
     val arrayIdsMaxName = extern("__array_ids_max")
 
-    private def extern(id: String): Global =
+    private def extern(id: String): Global.Member =
       Global.Member(Global.Top("__"), Sig.Extern(id))
   }
 
-  val depends =
-    Seq(
-      ObjectArray.name,
-      Runtime.name,
-      RuntimeInit.name,
-      RuntimeLoop.name,
-      PrintStackTraceName
-    )
+  val depends: Seq[Global] = Seq(
+    ObjectArray.name,
+    Runtime.name,
+    RuntimeInit.name,
+    RuntimeLoop.name,
+    RuntimeExecuteUEH,
+    JavaThread,
+    JavaThreadCurrentThread,
+    JavaThreadGetUEH,
+    JavaThreadUEH
+  )
 }

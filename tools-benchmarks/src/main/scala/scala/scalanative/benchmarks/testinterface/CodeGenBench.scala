@@ -10,16 +10,20 @@ import org.openjdk.jmh.annotations._
 import org.openjdk.jmh.annotations.Mode._
 
 import scala.scalanative.build._
+import scala.concurrent._
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
+import scala.scalanative.linker.ReachabilityAnalysis
 
 @Fork(1)
 @State(Scope.Benchmark)
 @BenchmarkMode(Array(AverageTime))
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
-@Warmup(iterations = 5)
-@Measurement(iterations = 10)
+@Warmup(iterations = 5, time = 2, timeUnit = TimeUnit.SECONDS)
+@Measurement(iterations = 10, time = 2, timeUnit = TimeUnit.SECONDS)
 abstract class CodeGenBench(nativeConfig: NativeConfig => NativeConfig) {
   var config: Config = _
-  var linked: linker.Result = _
+  var analysis: ReachabilityAnalysis.Result = _
 
   @Setup(Level.Trial)
   def setup(): Unit = {
@@ -32,7 +36,10 @@ abstract class CodeGenBench(nativeConfig: NativeConfig => NativeConfig) {
 
     val entries = build.ScalaNative.entries(config)
     util.Scope { implicit scope =>
-      linked = ScalaNative.link(config, entries)
+      analysis = Await.result(
+        ScalaNative.link(config, entries),
+        Duration.Inf
+      )
     }
   }
 
@@ -43,13 +50,14 @@ abstract class CodeGenBench(nativeConfig: NativeConfig => NativeConfig) {
       .walk(workdir)
       .sorted(Comparator.reverseOrder())
       .forEach(Files.delete)
-    linked = null
+    analysis = null
     config = null
   }
 
   @Benchmark
   def codeGen(): Unit = {
-    val paths = ScalaNative.codegen(config, linked)
+    val codegen = ScalaNative.codegen(config, analysis)
+    val paths = Await.result(codegen, Duration.Inf)
     assert(paths.nonEmpty)
   }
 }
@@ -63,5 +71,11 @@ class CodeGenWithMultithreading
     extends CodeGenBench(
       nativeConfig = _.withMultithreadingSupport(true)
         .withGC(GC.Immix) // to ensure generation of safepoints
+        .withIncrementalCompilation(false)
+    )
+
+class CodeGenWithDebugMetadata
+    extends CodeGenBench(
+      nativeConfig = _.withDebugMetadata(true)
         .withIncrementalCompilation(false)
     )

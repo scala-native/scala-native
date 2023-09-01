@@ -9,6 +9,7 @@ import ScriptedPlugin.autoImport._
 object Commands {
   lazy val values = Seq(
     testAll,
+    testSandboxGC,
     testTools,
     testRuntime,
     testMima,
@@ -23,6 +24,21 @@ object Commands {
       "test-runtime" ::
       "test-scripted" ::
       "publish-local-dev" :: _
+  }
+
+  // Compile and run the sandbox for each GC as a minimal check
+  lazy val testSandboxGC = projectVersionCommand("test-sandbox-gc") {
+    case (version, state) =>
+      val runs =
+        List(sandbox)
+          .map(_.forBinaryVersion(version).id)
+          .flatMap(id =>
+            List("none", "boehm", "immix", "commix").map(gc =>
+              s"set ThisBuild / nativeConfig ~= (_.withGC(scala.scalanative.build.GC.$gc)); $id/run"
+            )
+          )
+      runs :::
+        state
   }
 
   lazy val testRuntime = projectVersionCommand("test-runtime") {
@@ -49,7 +65,18 @@ object Commands {
 
   lazy val testTools = projectVersionCommand("test-tools") {
     case (version, state) =>
-      val tests = List(tools, testRunner, testInterface)
+      val tests = List(
+        nscPlugin, // compiler plugin
+        // Toolchain JVM
+        nirJVM,
+        toolsJVM,
+        // Testing infrastrucutre
+        testRunner,
+        testInterface,
+        // Toolchain Native
+        nir,
+        tools
+      )
         .map(_.forBinaryVersion(version).id)
         .map(id => s"$id/test")
       tests :::
@@ -146,9 +173,7 @@ object Commands {
     import ScalaVersions._
     val publishEachVersion = for {
       version <- List(scala212, scala213, scala3)
-    } yield
-      if (isSnapshot) s"++$version; publish; crossPublish"
-      else s"++$version; publishSigned; crossPublishSigned"
+    } yield s"++$version; publishSigned; crossPublishSigned"
 
     "clean" :: publishEachVersion ::: state
   }

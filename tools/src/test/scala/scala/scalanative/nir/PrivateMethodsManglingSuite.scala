@@ -1,9 +1,13 @@
 package scala.scalanative.nir
-import org.scalatest.matchers.should.Matchers
+
+import org.junit.Test
+import org.junit.Assert._
+
 import scala.scalanative.LinkerSpec
 
-class PrivateMethodsManglingSuite extends LinkerSpec with Matchers {
-  "Nested mangling" should "distinguish private methods from different classes" in {
+class PrivateMethodsManglingSuite extends LinkerSpec {
+
+  @Test def nestedManglingOfPrivateMethods(): Unit = {
     val sources = Map(
       "A.scala" -> """
 		|package xyz
@@ -69,7 +73,7 @@ class PrivateMethodsManglingSuite extends LinkerSpec with Matchers {
       case (_, result) =>
         val testedDefns = result.defns
           .collect {
-            case Defn.Define(_, Global.Member(owner, sig), _, _)
+            case Defn.Define(_, Global.Member(owner, sig), _, _, _)
                 if tops.contains(owner) =>
               sig.unmangled
           }
@@ -107,7 +111,7 @@ class PrivateMethodsManglingSuite extends LinkerSpec with Matchers {
                 true
               case _ => false
             }
-            assert(containsExactlySig || containsSig)
+            assertTrue(containsExactlySig || containsSig)
         }
     }
 

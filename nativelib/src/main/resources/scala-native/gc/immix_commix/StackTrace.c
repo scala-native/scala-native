@@ -1,7 +1,9 @@
+#if defined(SCALANATIVE_GC_IMMIX) || defined(SCALANATIVE_GC_COMMIX)
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
-#include "StackTrace.h"
+#include "immix_commix/StackTrace.h"
 
 void StackTrace_PrintStackTrace() {
     void *cursor = malloc(scalanative_unwind_sizeof_cursor());
@@ -25,3 +27,5 @@ void StackTrace_PrintStackTrace() {
     free(cursor);
     free(context);
 }
+
+#endif

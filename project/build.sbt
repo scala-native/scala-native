@@ -8,7 +8,12 @@ Compile / unmanagedSourceDirectories ++= {
     "sbt-scala-native",
     "test-interface-common",
     "test-runner"
-  ).map(dir => root / s"$dir/src/main/scala")
+  ).flatMap { dir =>
+    Seq(
+      root / s"$dir/src/main/scala",
+      root / s"$dir/jvm/src/main/scala"
+    )
+  }
 }
 
 addSbtPlugin("org.portable-scala" % "sbt-platform-deps" % "1.0.1")

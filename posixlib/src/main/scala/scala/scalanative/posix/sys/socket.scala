@@ -6,7 +6,7 @@ import scalanative.runtime.Platform
 
 import scalanative.unsafe._
 import scalanative.unsigned._
-import scalanative.meta.LinktimeInfo.isWindows
+import scalanative.meta.LinktimeInfo._
 
 /** socket.h for Scala
  *  @see
@@ -394,8 +394,9 @@ object socketOps {
   import posix.inttypes.uint8_t
 
   // Also used by posixlib netinet/in.scala
-  val useSinXLen = !Platform.isLinux() &&
-    (Platform.isMac() || Platform.isFreeBSD())
+  @resolvedAtLinktime
+  def useSinXLen = !isLinux &&
+    (isMac || isFreeBSD)
 
   implicit class sockaddrOps(val ptr: Ptr[sockaddr]) extends AnyVal {
     def sa_len: uint8_t = if (!useSinXLen) {

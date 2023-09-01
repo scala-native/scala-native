@@ -1,11 +1,13 @@
 package scala.scalanative
 package interflow
 
-import scalanative.nir._
-import scalanative.linker._
-import scalanative.util.unreachable
+import scala.scalanative.nir._
+import scala.scalanative.nir.Defn.Define.DebugInfo
+import scala.scalanative.linker._
+import scala.scalanative.util.unreachable
 
 trait Inline { self: Interflow =>
+
   private val maxInlineSize =
     config.compilerConfig.optimizerConfig.maxInlineSize
       .getOrElse(8)
@@ -15,9 +17,9 @@ trait Inline { self: Interflow =>
   private val maxInlineDepth =
     config.compilerConfig.optimizerConfig.maxInlineDepth
 
-  def shallInline(name: Global, args: Seq[Val])(implicit
+  def shallInline(name: Global.Member, args: Seq[Val])(implicit
       state: State,
-      linked: linker.Result
+      analysis: ReachabilityAnalysis.Result
   ): Boolean = {
     val maybeDefn = mode match {
       case build.Mode.Debug =>
@@ -113,7 +115,11 @@ trait Inline { self: Interflow =>
       }
   }
 
-  def adapt(value: Val, ty: Type)(implicit state: State): Val = {
+  def adapt(value: Val, ty: Type)(implicit
+      state: State,
+      srcPosition: nir.Position,
+      scopeId: nir.ScopeId
+  ): Val = {
     val valuety = value match {
       case InstanceRef(ty) => ty
       case _               => value.ty
@@ -125,8 +131,12 @@ trait Inline { self: Interflow =>
     }
   }
 
-  def adapt(args: Seq[Val], sig: Type)(implicit state: State): Seq[Val] = {
-    val Type.Function(argtys, _) = sig: @unchecked
+  def adapt(args: Seq[Val], sig: Type.Function)(implicit
+      state: State,
+      srcPosition: nir.Position,
+      scopeId: nir.ScopeId
+  ): Seq[Val] = {
+    val Type.Function(argtys, _) = sig
 
     // Varargs signature might appear to have less
     // argument types than arguments at the call site.
@@ -147,22 +157,28 @@ trait Inline { self: Interflow =>
     }
   }
 
-  def `inline`(name: Global, args: Seq[Val])(implicit
+  def `inline`(name: Global.Member, args: Seq[Val])(implicit
       state: State,
-      linked: linker.Result,
-      origPos: Position
+      analysis: ReachabilityAnalysis.Result,
+      parentScopeId: ScopeId
   ): Val =
     in(s"inlining ${name.show}") {
       val defn = mode match {
         case build.Mode.Debug      => getOriginal(name)
         case _: build.Mode.Release => getDone(name)
       }
-      val Type.Function(_, origRetTy) = defn.ty: @unchecked
+      val Type.Function(_, origRetTy) = defn.ty
 
-      val inlineArgs = adapt(args, defn.ty)
-      val inlineInsts = defn.insts.toArray
-      val blocks =
-        process(inlineInsts, inlineArgs, state, doInline = true, origRetTy)
+      implicit val srcPosition: nir.Position = defn.pos
+      val blocks = process(
+        insts = defn.insts.toArray,
+        debugInfo = defn.debugInfo,
+        args = adapt(args, defn.ty),
+        state = state,
+        doInline = true,
+        retTy = origRetTy,
+        parentScopeId = parentScopeId
+      )
 
       val emit = new nir.Buffer()(state.fresh)
 
@@ -220,25 +236,34 @@ trait Inline { self: Interflow =>
               (nothing, state)
             }
       }
+      if (self.preserveDebugInfo) {
+        blocks.foreach { block =>
+          endState.localNames.addMissing(block.end.localNames)
+          endState.virtualNames.addMissing(block.end.virtualNames)
+        }
 
-      // Check if inlined function performed stack allocation, if so add
-      // insert stacksave/stackrestore LLVM Intrinsics to prevent affecting.
-      // By definition every stack allocation of inlined function is only needed within it's body
-      val allocatesOnStack = emit.exists {
-        case Inst.Let(_, _: Op.Stackalloc, _) => true
-        case _                                => false
+        // Adapt result of inlined call
+        // Replace the calle scopeId with the scopeId of caller function, to represent that result of this call is available in parent
+        res match {
+          case Val.Local(id, _) =>
+            emit.updateLetInst(id)(i => i.copy()(i.pos, parentScopeId))
+          case Val.Virtual(addr) =>
+            endState.heap(addr) = endState.deref(addr) match {
+              case inst: EscapedInstance =>
+                inst.copy()(inst.srcPosition, parentScopeId)
+              case inst: DelayedInstance =>
+                inst.copy()(inst.srcPosition, parentScopeId)
+              case inst: VirtualInstance =>
+                inst.copy()(inst.srcPosition, parentScopeId)
+            }
+          case _ => ()
+        }
       }
-      if (allocatesOnStack) {
-        import Interflow.LLVMIntrinsics._
-        val stackState = state.emit
-          .call(StackSaveSig, StackSave, Nil, Next.None)
-        state.emit ++= emit
-        state.emit
-          .call(StackRestoreSig, StackRestore, Seq(stackState), Next.None)
-      } else state.emit ++= emit
+
+      state.emit ++= emit
       state.inherit(endState, res +: args)
 
-      val Type.Function(_, retty) = defn.ty: @unchecked
+      val Type.Function(_, retty) = defn.ty
       adapt(res, retty)
     }
 }

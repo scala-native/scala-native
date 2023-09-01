@@ -3,13 +3,19 @@ package scala.scalanative
 import scala.language.implicitConversions
 import java.io.File
 import java.nio.file.{Files, Path, Paths}
-import scalanative.build.{Config, NativeConfig}
-import scalanative.build.ScalaNative
+import scalanative.build.{Config, NativeConfig, Logger, ScalaNative, Discover}
 import scalanative.util.Scope
-import org.scalatest.flatspec.AnyFlatSpec
+import scala.concurrent._
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
+import scala.scalanative.buildinfo.ScalaNativeBuildInfo
+import scala.scalanative.linker.ReachabilityAnalysis
+
+import org.junit.Assert.fail
+import scala.scalanative.util.unreachable
 
 /** Base class to test the linker. */
-abstract class LinkerSpec extends AnyFlatSpec {
+abstract class LinkerSpec {
 
   /** Runs the linker using `driver` with `entry` as entry point on `sources`,
    *  and applies `fn` to the definitions.
@@ -28,7 +34,28 @@ abstract class LinkerSpec extends AnyFlatSpec {
       entry: String,
       sources: Map[String, String],
       setupConfig: NativeConfig => NativeConfig = identity
-  )(fn: (Config, linker.Result) => T): T =
+  )(fn: (Config, ReachabilityAnalysis.Result) => T): T =
+    mayLink(entry, sources, setupConfig) {
+      case (config, result: ReachabilityAnalysis.Result) => fn(config, result)
+      case _ => fail("Expected code to link"); unreachable
+    }
+
+  def doesNotLink[T](
+      entry: String,
+      sources: Map[String, String],
+      setupConfig: NativeConfig => NativeConfig = identity
+  )(fn: (Config, ReachabilityAnalysis.UnreachableSymbolsFound) => T): T =
+    mayLink(entry, sources, setupConfig) {
+      case (config, result: ReachabilityAnalysis.UnreachableSymbolsFound) =>
+        fn(config, result)
+      case _ => fail("Expected code to not link"); unreachable
+    }
+
+  protected def mayLink[T](
+      entry: String,
+      sources: Map[String, String],
+      setupConfig: NativeConfig => NativeConfig = identity
+  )(fn: (Config, ReachabilityAnalysis) => T): T =
     Scope { implicit in =>
       val outDir = Files.createTempDirectory("native-test-out")
       val compiler = NIRCompiler.getCompiler(outDir)
@@ -36,15 +63,13 @@ abstract class LinkerSpec extends AnyFlatSpec {
       val files = compiler.compile(sourcesDir)
       val config = makeConfig(outDir, entry, setupConfig)
       val entries = ScalaNative.entries(config)
-      val result = ScalaNative.link(config, entries)
-
+      val result = linker.Link(config, entries)
       fn(config, result)
     }
 
   private def makeClasspath(outDir: Path)(implicit in: Scope) = {
     val parts: Array[Path] =
-      sys
-        .props("scalanative.nativeruntime.cp")
+      ScalaNativeBuildInfo.scalalibCp
         .split(File.pathSeparator)
         .map(Paths.get(_))
 
@@ -62,11 +87,15 @@ abstract class LinkerSpec extends AnyFlatSpec {
       .withClassPath(classpath.toSeq)
       .withMainClass(Some(entry))
       .withCompilerConfig(setupNativeConfig.andThen(withDefaults))
+      .withLogger(Logger.nullLogger)
   }
 
   private def withDefaults(config: NativeConfig): NativeConfig = {
     config
       .withTargetTriple("x86_64-unknown-unknown")
+      .withClang(Discover.clang())
+      .withClangPP(Discover.clangpp())
+
   }
 
   protected implicit def String2MapStringString(

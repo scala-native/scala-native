@@ -5,6 +5,7 @@ import java.nio.file.{Files, Path, Paths}
 
 import scalanative.build.IO.RichPath
 import scalanative.build.NativeLib._
+import scala.scalanative.linker.ReachabilityAnalysis
 
 private[scalanative] object Filter {
 
@@ -27,7 +28,7 @@ private[scalanative] object Filter {
    */
   def filterNativelib(
       config: Config,
-      linkerResult: linker.Result,
+      analysis: ReachabilityAnalysis.Result,
       destPath: Path,
       allPaths: Seq[Path]
   ): (Seq[Path], Config) = {
@@ -35,23 +36,15 @@ private[scalanative] object Filter {
     // check if filtering is needed, o.w. return all paths
     findFilterProperties(nativeCodePath).fold((allPaths, config)) { file =>
       // predicate to check if given file path shall be compiled
-      // we only include sources of the current gc and exclude
+      // we only include sources to the base of the gc code and exclude
       // all optional dependencies if they are not necessary
       val optPath = nativeCodePath.resolve("optional").abs
-      val (gcPath, gcIncludePaths, gcSelectedPaths) = {
-        val gcPath = nativeCodePath.resolve("gc")
-        val gcIncludePaths = config.gc.include.map(gcPath.resolve(_).abs)
-        val selectedGC = gcPath.resolve(config.gc.name).abs
-        val selectedGCPath = selectedGC +: gcIncludePaths
-        (gcPath.abs, gcIncludePaths, selectedGCPath)
-      }
+      val gcPath = nativeCodePath.resolve("gc").abs
 
       def include(path: String) = {
         if (path.contains(optPath)) {
           val name = Paths.get(path).toFile.getName.split("\\.").head
-          linkerResult.links.exists(_.name == name)
-        } else if (path.contains(gcPath)) {
-          gcSelectedPaths.exists(path.contains)
+          analysis.links.exists(_.name == name)
         } else {
           true
         }
@@ -61,11 +54,20 @@ private[scalanative] object Filter {
       // included files to the link phase
       val includePaths = allPaths.map(_.abs).filter(include)
 
+      /* A conditional compilation define is used to compile the
+       * correct garbage collector code as code is shared.
+       * Note: The zone directory is also part of the garbage collection
+       * system and shares code from the gc directory.
+       */
+      val gcFlag = {
+        val gc = config.compilerConfig.gc.toString
+        s"-DSCALANATIVE_GC_${gc.toUpperCase}"
+      }
+
       val projectConfig = config.withCompilerConfig(
-        _.withCompileOptions(
-          config.compileOptions ++ gcIncludePaths.map("-I" + _)
-        )
+        _.withCompileOptions(_ :+ ("-I" + gcPath) :+ gcFlag)
       )
+
       val projectPaths = includePaths.map(Paths.get(_))
       (projectPaths, projectConfig)
     }

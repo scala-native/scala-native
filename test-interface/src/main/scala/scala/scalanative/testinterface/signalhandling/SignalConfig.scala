@@ -43,7 +43,7 @@ private[testinterface] object SignalConfig {
       }
 
     def signalToCString(str: CString, signal: Int): Unit = {
-      val reversedStr: Ptr[CChar] = stackalloc[CChar](8.toUInt)
+      val reversedStr: Ptr[CChar] = stackalloc[CChar](8)
       var index = 0
       var signalPart = signal
       while (signalPart > 0) {
@@ -64,12 +64,12 @@ private[testinterface] object SignalConfig {
         import scala.scalanative.posix.string.strsignal
         strsignal(sig)
       } else {
-        val str: Ptr[CChar] = stackalloc[CChar](8.toUInt)
+        val str: Ptr[CChar] = stackalloc[CChar](8)
         signalToCString(str, sig)
         str
       }
 
-    val stackTraceHeader: Ptr[CChar] = stackalloc[CChar](100.toUInt)
+    val stackTraceHeader: Ptr[CChar] = stackalloc[CChar](100)
     strcat(stackTraceHeader, errorTag)
     strcat(stackTraceHeader, c" Fatal signal ")
     strcat(stackTraceHeader, signalNumberStr)
@@ -87,7 +87,7 @@ private[testinterface] object SignalConfig {
       unwind.get_reg(cursor, unwind.UNW_REG_IP, pc)
       if (!pc == 0.toUInt) return
       val symMax = 1024
-      val sym: Ptr[CChar] = stackalloc[CChar](symMax.toUInt)
+      val sym: Ptr[CChar] = stackalloc[CChar](symMax)
       if (unwind.get_proc_name(
             cursor,
             sym,
@@ -95,11 +95,11 @@ private[testinterface] object SignalConfig {
             offset
           ) == 0) {
         sym(symMax - 1) = 0.toByte
-        val className: Ptr[CChar] = stackalloc[CChar](512.toUInt)
-        val methodName: Ptr[CChar] = stackalloc[CChar](512.toUInt)
+        val className: Ptr[CChar] = stackalloc[CChar](512)
+        val methodName: Ptr[CChar] = stackalloc[CChar](512)
         SymbolFormatter.asyncSafeFromSymbol(sym, className, methodName)
 
-        val formattedSymbol: Ptr[CChar] = stackalloc[CChar](1100.toUInt)
+        val formattedSymbol: Ptr[CChar] = stackalloc[CChar](1100)
         formattedSymbol(0) = 0.toByte
         strcat(formattedSymbol, errorTag)
         strcat(formattedSymbol, c"   at ")

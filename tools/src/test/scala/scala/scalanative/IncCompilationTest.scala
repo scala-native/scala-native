@@ -1,16 +1,23 @@
 package scala.scalanative
 
-import org.scalatest.matchers.should.Matchers
+import org.junit.Test
+import org.junit.Assert._
 
 import java.io.{File, PrintWriter}
 import java.nio.file.{Files, Path, Paths}
 import scala.scalanative.build.{Config, NativeConfig, _}
 import scala.scalanative.util.Scope
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.{Await, duration}
+import scala.scalanative.buildinfo.ScalaNativeBuildInfo
 
 // The test is used for incremental compilation
 
-class IncCompilationTest extends codegen.CodeGenSpec with Matchers {
-  "The test framework" should "generate the llvm IR of object A" in {
+class IncCompilationTest extends codegen.CodeGenSpec {
+  private def buildAwait(config: Config)(implicit scope: Scope) =
+    Await.result(Build.build(config), duration.Duration.Inf)
+
+  @Test def generateIRForSingleType(): Unit = {
     Scope { implicit in =>
       val source = """
         |object A {
@@ -42,11 +49,11 @@ class IncCompilationTest extends codegen.CodeGenSpec with Matchers {
       val nativeConfig = defaultNativeConfig
         .withOptimizerConfig(optimizerConfig)
       val config = makeConfig(outDir, "out", entry, nativeConfig)
-      Build.build(config)
+      buildAwait(config)
     }
   }
 
-  "The test framework" should "generate the llvm IR of object A and B" in {
+  @Test def generateIRForMultipleTypes(): Unit = {
     Scope { implicit in =>
       val sources = Map(
         "A.scala" -> """
@@ -84,7 +91,7 @@ class IncCompilationTest extends codegen.CodeGenSpec with Matchers {
       makeChanged(outDir, changedTop)
       val config = makeConfig(outDir, "out1", entry, defaultNativeConfig)
 
-      Build.build(config)
+      buildAwait(config)
     }
   }
 
@@ -100,8 +107,7 @@ class IncCompilationTest extends codegen.CodeGenSpec with Matchers {
 
   private def makeClasspath(outDir: Path)(implicit in: Scope) = {
     val parts: Array[Path] =
-      sys
-        .props("scalanative.nativeruntime.cp")
+      ScalaNativeBuildInfo.scalalibCp
         .split(File.pathSeparator)
         .map(Paths.get(_))
 
@@ -121,6 +127,7 @@ class IncCompilationTest extends codegen.CodeGenSpec with Matchers {
       .withClassPath(classpath.toSeq)
       .withMainClass(Some(entry))
       .withCompilerConfig(setupNativeConfig)
+      .withLogger(Logger.nullLogger)
   }
 
   private lazy val defaultNativeConfig = build.NativeConfig.empty

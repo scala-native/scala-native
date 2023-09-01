@@ -1,7 +1,7 @@
 #ifndef COMMIX_THREAD_UTIL_H
 #define COMMIX_THREAD_UTIL_H
 
-#include "GCTypes.h"
+#include "shared/GCTypes.h"
 #include <stdbool.h>
 
 #ifdef _WIN32

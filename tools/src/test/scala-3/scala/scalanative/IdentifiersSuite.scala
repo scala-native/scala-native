@@ -1,10 +1,12 @@
 package scala.scalanative.linker
 
+import org.junit._
+
 import scala.scalanative.nir.{Global, Rt, Sig, Type}
 
 class IdentifiersSuite extends ReachabilitySuite {
 
-  testReachable("replaces double-quoted identifiers") {
+  @Test def replaceDoubleQuotedIdentifiers(): Unit = testReachable() {
     val source = """
         |object `"Foo"Bar"` {
         |  val x: `"Foo"Bar"`.type       = this

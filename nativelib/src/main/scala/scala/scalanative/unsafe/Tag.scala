@@ -26,7 +26,7 @@ sealed abstract class Tag[T] {
 }
 
 object Tag {
-  @alwaysinline def ptrSize = new USize(scala.scalanative.runtime.sizeOfPtr)
+  @alwaysinline def ptrSize = unsigned.USize.valueOf(scala.scalanative.runtime.sizeOfPtr)
 
   final case class Ptr[T](of: Tag[T])
       extends Tag[unsafe.Ptr[T]] {
@@ -42,7 +42,7 @@ object Tag {
     @alwaysinline def size: CSize = ptrSize
     @alwaysinline def alignment: CSize = ptrSize
     @alwaysinline override def load(ptr: unsafe.Ptr[unsafe.Size]): unsafe.Size =
-      new Size(loadRawSize(toRawPtr(ptr)))
+      unsafe.Size.valueOf(loadRawSize(toRawPtr(ptr)))
     @alwaysinline override def store(ptr: unsafe.Ptr[unsafe.Size], value: unsafe.Size): Unit =
       storeRawSize(toRawPtr(ptr), value.rawSize)
   }
@@ -51,7 +51,7 @@ object Tag {
     @alwaysinline def size: CSize = ptrSize
     @alwaysinline def alignment: CSize = ptrSize
     @alwaysinline override def load(ptr: unsafe.Ptr[unsigned.USize]): unsigned.USize =
-      new USize(loadRawSize(toRawPtr(ptr)))
+      unsigned.USize.valueOf(loadRawSize(toRawPtr(ptr)))
     @alwaysinline override def store(ptr: unsafe.Ptr[unsigned.USize], value: unsigned.USize): Unit =
       storeRawSize(toRawPtr(ptr), value.rawSize)
   }

@@ -1,5 +1,7 @@
+#if defined(SCALANATIVE_GC_COMMIX)
+
 #include "WeakRefGreyList.h"
-#include "headers/ObjectHeader.h"
+#include "immix_commix/headers/ObjectHeader.h"
 #include "GCThread.h"
 #include "SyncGreyLists.h"
 #include <stdio.h>
@@ -97,3 +99,5 @@ void WeakRefGreyList_CallHandlers() {
         handlerFn();
     }
 }
+
+#endif

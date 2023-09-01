@@ -16,6 +16,7 @@ import com.jsuereth.sbtpgp.PgpKeys
 import scala.collection.mutable
 import scala.scalanative.build.Platform
 import Build.{crossPublish, crossPublishSigned}
+import MyScalaNativePlugin.isGeneratingForIDE
 
 import java.io.File
 
@@ -484,6 +485,14 @@ object Settings {
         }
         val newSources = experimentalSources.values.toList.diff(updatedSources)
         updatedSources ++ newSources
+      },
+      // Adjustment for bloopInstall which tries to add whole source directory leading to double definitions
+      scope / sourceDirectories --= {
+        val sourcesDir = (scope / sourceDirectory).value
+        lazy val experimentalSources = allScalaFromDir(sourcesDir / baseDir)
+        if (isGeneratingForIDE && experimentalSources.nonEmpty)
+          Seq((scope / scalaSource).value)
+        else Nil
       }
     )
 
@@ -573,18 +582,7 @@ object Settings {
   )
 
   lazy val commonJavalibSettings = Def.settings(
-    // This is required to have incremental compilation to work in javalib.
-    // We put our classes on scalac's `javabootclasspath` so that it uses them
-    // when compiling rather than the definitions from the JDK.
     recompileAllOrNothingSettings,
-    Compile / scalacOptions := {
-      val previous = (Compile / scalacOptions).value
-      val javaBootClasspath =
-        scala.tools.util.PathResolver.Environment.javaBootClassPath
-      val classDir = (Compile / classDirectory).value.getAbsolutePath
-      val separator = sys.props("path.separator")
-      "-javabootclasspath" +: s"$classDir$separator$javaBootClasspath" +: previous
-    },
     Compile / scalacOptions ++= scalaNativeCompilerOptions(
       "genStaticForwardersForNonTopLevelObjects"
     ),
@@ -891,7 +889,8 @@ object Settings {
   }
 
   def scalaNativeCompilerOptions(options: String*): Seq[String] = {
-    options.map(opt => s"-P:scalanative:$opt")
+    if (isGeneratingForIDE) Nil
+    else options.map(opt => s"-P:scalanative:$opt")
   }
 
   def scalaNativeMapSourceURIOption(

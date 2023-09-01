@@ -2,9 +2,6 @@ name: Run tests Linux multiarch
 on:
   workflow_call:
   pull_request:
-  push:
-    branches:
-      - main
   schedule:
     # Every day at 2 AM UTC
     - cron: "0 2 * * *"
@@ -170,12 +167,8 @@ jobs:
                 .withCheckFatalWarnings(true)
                 .withTargetTriple(sys.env.get("CROSS_TRIPLE"))
                 .withMultithreadingSupport(${{matrix.multithreading}})
-                .withCompileOptions(
-                  prev.compileOptions ++ sysRoot ++ List("-fuse-ld=lld")
-                )
-                .withLinkingOptions(
-                  prev.linkingOptions ++ sysRoot ++ List("-fuse-ld=lld", "-latomic")
-                )
+                .withCompileOptions(_ ++ sysRoot ++ List("-fuse-ld=lld"))
+                .withLinkingOptions(_ ++ sysRoot ++ List("-fuse-ld=lld", "-latomic"))
             }
           EOM
           )

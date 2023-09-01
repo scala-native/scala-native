@@ -5,7 +5,7 @@
 #include "Allocator.h"
 #include "LargeAllocator.h"
 #include "BlockAllocator.h"
-#include "GCRoots.h"
+#include "immix_commix/GCRoots.h"
 
 extern Heap heap;
 extern Allocator allocator;

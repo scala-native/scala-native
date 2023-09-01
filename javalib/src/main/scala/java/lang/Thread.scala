@@ -548,10 +548,10 @@ object Thread {
   def getAllStackTraces(): java.util.Map[Thread, Array[StackTraceElement]] =
     throw new UnsupportedOperationException()
 
-  private var defaultExceptionHandler: UncaughtExceptionHandler = _
+  @volatile private var defaultExceptionHandler: UncaughtExceptionHandler = _
   def getDefaultUncaughtExceptionHandler(): UncaughtExceptionHandler =
     defaultExceptionHandler
-  def setDefaultUncaughtHandler(eh: UncaughtExceptionHandler): Unit =
+  def setDefaultUncaughtExceptionHandler(eh: UncaughtExceptionHandler): Unit =
     defaultExceptionHandler = eh
 
   def holdsLock(obj: Object): scala.Boolean = NativeThread.holdsLock(obj)
@@ -632,7 +632,8 @@ private[java] case class PlatformThreadContext(
     task: Runnable,
     stackSize: scala.Long,
     @volatile var priority: Int = Thread.NORM_PRIORITY,
-    @volatile var daemon: scala.Boolean = false
+    @volatile var daemon: scala.Boolean = false,
+    var isFillingStackTrace: scala.Boolean = false
 ) {
   var nativeThread: NativeThread = _
 

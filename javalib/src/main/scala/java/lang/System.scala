@@ -92,7 +92,7 @@ object System {
     new PrintStream(new FileOutputStream(FileDescriptor.err))
 
   def lineSeparator(): String = {
-    if (Platform.isWindows()) "\r\n"
+    if (isWindows) "\r\n"
     else "\n"
   }
 

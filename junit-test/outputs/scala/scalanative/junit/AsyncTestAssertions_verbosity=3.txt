@@ -1,0 +1,13 @@
+li[34mTest run [0mscala.scalanative.junit.[33mAsyncTest[0m[34m started[0m
+liTest scala.scalanative.junit.[33mAsyncTest[0m.[36masyncFailure[0m started
+leTest scala.scalanative.junit.[33mAsyncTest[0m.[31masyncFailure[0m failed: java.lang.[31mIllegalArgumentException[0m: null, took <TIME>
+e2scala.scalanative.junit.AsyncTest.asyncFailure
+liTest scala.scalanative.junit.[33mAsyncTest[0m.[36masyncFailure[0m finished, took <TIME>
+liTest scala.scalanative.junit.[33mAsyncTest[0m.[36mexpectedException[0m started
+liTest scala.scalanative.junit.[33mAsyncTest[0m.[36mexpectedException[0m finished, took <TIME>
+e0scala.scalanative.junit.AsyncTest.expectedException
+liTest scala.scalanative.junit.[33mAsyncTest[0m.[36msuccess[0m started
+liTest scala.scalanative.junit.[33mAsyncTest[0m.[36msuccess[0m finished, took <TIME>
+e0scala.scalanative.junit.AsyncTest.success
+li[34mTest run [0mscala.scalanative.junit.[33mAsyncTest[0m[34m finished: [0m[31m1 failed[0m[34m, [0m[34m0 ignored[0m[34m, 3 total, <TIME>[0m
+d

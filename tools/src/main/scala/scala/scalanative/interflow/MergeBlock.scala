@@ -3,8 +3,9 @@ package interflow
 
 import scala.collection.mutable
 import scalanative.nir._
+import scala.annotation.tailrec
 
-final class MergeBlock(val label: Inst.Label, val name: Local) {
+final class MergeBlock(val label: Inst.Label, val id: Local) {
   var incoming = mutable.Map.empty[Local, (Seq[Val], State)]
   var outgoing = mutable.Map.empty[Local, MergeBlock]
   var phis: Seq[MergePhi] = _
@@ -17,19 +18,32 @@ final class MergeBlock(val label: Inst.Label, val name: Local) {
     else label.pos
   }
 
+  private var stackSavePtr: Val.Local = _
+  private[interflow] var emitStackSaveOp = false
+  private[interflow] var emitStackRestoreFor: List[Local] = Nil
+
   def toInsts(): Seq[Inst] = {
+    import Interflow.LLVMIntrinsics._
     val block = this
     val result = new nir.Buffer()(Fresh(0))
+
     def mergeNext(next: Next.Label): Next.Label = {
-      val nextBlock = outgoing(next.name)
+      val nextBlock = outgoing(next.id)
+
+      if (nextBlock.stackSavePtr != null &&
+          emitStackRestoreFor.contains(next.id)) {
+        emitIfMissing(
+          end.fresh(),
+          Op.Call(StackRestoreSig, StackRestore, Seq(nextBlock.stackSavePtr))
+        )(result, block)
+      }
       val mergeValues = nextBlock.phis.flatMap {
         case MergePhi(_, incoming) =>
           incoming.collect {
-            case (name, value) if name == block.label.name =>
-              value
+            case (id, value) if id == block.label.id => value
           }
       }
-      Next.Label(nextBlock.name, mergeValues)
+      Next.Label(nextBlock.id, mergeValues)
     }
     def mergeUnwind(next: Next): Next = next match {
       case Next.None =>
@@ -39,8 +53,17 @@ final class MergeBlock(val label: Inst.Label, val name: Local) {
       case _ =>
         util.unreachable
     }
+
     val params = block.phis.map(_.param)
-    result.label(block.name, params)
+    result.label(block.id, params)
+    if (emitStackSaveOp) {
+      val id = block.end.fresh()
+      val emmited = emitIfMissing(
+        id = id,
+        op = Op.Call(StackSaveSig, StackSave, Nil)
+      )(result, block)
+      if (emmited) block.stackSavePtr = Val.Local(id, Type.Ptr)
+    }
     result ++= block.end.emit
     block.cf match {
       case ret: Inst.Ret =>
@@ -65,5 +88,23 @@ final class MergeBlock(val label: Inst.Label, val name: Local) {
         throw BailOut(s"MergeUnwind unknown Inst: ${unknown.show}")
     }
     result.toSeq
+  }
+
+  private def emitIfMissing(
+      id: => Local,
+      op: Op.Call
+  )(result: nir.Buffer, block: MergeBlock): Boolean = {
+    // Check if original defn already contains this op
+    val alreadyEmmited = block.end.emit.exists {
+      case Inst.Let(_, `op`, _) => true
+      case _                    => false
+    }
+    if (alreadyEmmited) false
+    else {
+      // TODO: resolving actual scopeId. Currently not really important becouse used only to introduce stack guard intrinsics
+      implicit def scopeId: ScopeId = ScopeId.TopLevel
+      result.let(id, op, Next.None)
+      true
+    }
   }
 }

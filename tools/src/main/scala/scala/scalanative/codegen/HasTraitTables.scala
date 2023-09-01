@@ -6,13 +6,14 @@ import scalanative.linker.{Trait, Class}
 
 class HasTraitTables(meta: Metadata) {
   private implicit val pos: Position = Position.NoPosition
-
-  private val classHasTraitName = Global.Top("__class_has_trait")
+  def generated(id: String): Global.Member =
+    Global.Top("__scalanative_metadata").member(Sig.Generated(id))
+  private val classHasTraitName = generated("__class_has_trait")
   val classHasTraitVal = Val.Global(classHasTraitName, Type.Ptr)
   var classHasTraitTy: Type = _
   var classHasTraitDefn: Defn = _
 
-  private val traitHasTraitName = Global.Top("__trait_has_trait")
+  private val traitHasTraitName = generated("__trait_has_trait")
   val traitHasTraitVal = Val.Global(traitHasTraitName, Type.Ptr)
   var traitHasTraitTy: Type = _
   var traitHasTraitDefn: Defn = _

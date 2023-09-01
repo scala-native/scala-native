@@ -1,5 +1,5 @@
-liTest run started
+liTest run scala.scalanative.junit.IgnoreAllTestWithReason started
 liTest scala.scalanative.junit.IgnoreAllTestWithReason ignored
-e3scala.scalanative.junit.IgnoreAllTestWithReason
-liTest run finished: 0 failed, 1 ignored, 0 total, <TIME>
+e4scala.scalanative.junit.IgnoreAllTestWithReason
+liTest run scala.scalanative.junit.IgnoreAllTestWithReason finished: 0 failed, 1 ignored, 0 total, <TIME>
 d

@@ -1,0 +1,18 @@
+ld[34mTest run [0mscala.scalanative.junit.[33mMulti2Test[0m[34m started[0m
+ldTest scala.scalanative.junit.[33mMulti2Test[0m.[36mmultiTest1[0m started
+ldTest scala.scalanative.junit.[33mMulti2Test[0m.[36mmultiTest1[0m finished, took <TIME>
+e0scala.scalanative.junit.Multi2Test.multiTest1
+ldTest scala.scalanative.junit.[33mMulti2Test[0m.[36mmultiTest2[0m started
+ldTest scala.scalanative.junit.[33mMulti2Test[0m.[36mmultiTest2[0m finished, took <TIME>
+e0scala.scalanative.junit.Multi2Test.multiTest2
+ldTest scala.scalanative.junit.[33mMulti2Test[0m.[36mmultiTest3[0m started
+ldTest scala.scalanative.junit.[33mMulti2Test[0m.[36mmultiTest3[0m finished, took <TIME>
+e0scala.scalanative.junit.Multi2Test.multiTest3
+ldTest scala.scalanative.junit.[33mMulti2Test[0m.[36mmultiTest4[0m started
+ldTest scala.scalanative.junit.[33mMulti2Test[0m.[36mmultiTest4[0m finished, took <TIME>
+e0scala.scalanative.junit.Multi2Test.multiTest4
+ldTest scala.scalanative.junit.[33mMulti2Test[0m.[36mmultiTest5[0m started
+ldTest scala.scalanative.junit.[33mMulti2Test[0m.[36mmultiTest5[0m finished, took <TIME>
+e0scala.scalanative.junit.Multi2Test.multiTest5
+li[34mTest run [0mscala.scalanative.junit.[33mMulti2Test[0m[34m finished: [0m[34m0 failed[0m[34m, [0m[34m0 ignored[0m[34m, 5 total, <TIME>[0m
+d

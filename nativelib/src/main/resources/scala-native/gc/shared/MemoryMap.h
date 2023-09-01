@@ -1,7 +1,7 @@
 #ifndef MEMORYMAP_H
 #define MEMORYMAP_H
 
-#include "GCTypes.h"
+#include "shared/GCTypes.h"
 #include <stddef.h>
 #include <stdbool.h>
 

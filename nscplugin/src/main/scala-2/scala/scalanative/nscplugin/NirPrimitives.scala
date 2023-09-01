@@ -16,7 +16,8 @@ object NirPrimitives {
   final val REM_UINT = 1 + DIV_ULONG
   final val REM_ULONG = 1 + REM_UINT
 
-  final val BYTE_TO_UINT = 1 + REM_ULONG
+  final val UNSIGNED_OF = 1 + REM_ULONG
+  final val BYTE_TO_UINT = 1 + UNSIGNED_OF
   final val BYTE_TO_ULONG = 1 + BYTE_TO_UINT
   final val SHORT_TO_UINT = 1 + BYTE_TO_ULONG
   final val SHORT_TO_ULONG = 1 + SHORT_TO_UINT
@@ -133,10 +134,12 @@ abstract class NirPrimitives {
     addPrimitive(Array_clone, ARRAY_CLONE)
     addPrimitive(CQuoteMethod, CQUOTE)
     addPrimitives(StackallocMethods, STACKALLOC)
+    addPrimitive(StackallocInternalMethod, STACKALLOC)
     addPrimitive(DivUIntMethod, DIV_UINT)
     addPrimitive(DivULongMethod, DIV_ULONG)
     addPrimitive(RemUIntMethod, REM_UINT)
     addPrimitive(RemULongMethod, REM_ULONG)
+    addPrimitives(UnsignedOfMethods, UNSIGNED_OF)
     addPrimitive(ByteToUIntMethod, BYTE_TO_UINT)
     addPrimitive(ByteToULongMethod, BYTE_TO_ULONG)
     addPrimitive(ShortToUIntMethod, SHORT_TO_UINT)
@@ -192,7 +195,7 @@ abstract class NirPrimitives {
     addPrimitives(CFuncPtrApplyMethods, CFUNCPTR_APPLY)
     addPrimitives(CFuncPtrFromFunctionMethods, CFUNCPTR_FROM_FUNCTION)
     addPrimitive(ClassFieldRawPtrMethod, CLASS_FIELD_RAWPTR)
-    addPrimitives(SizeOfMethods, SIZE_OF)
-    addPrimitives(AlignmentOfMethods, ALIGNMENT_OF)
+    addPrimitive(SizeOfInternalMethod, SIZE_OF)
+    addPrimitive(AlignmentOfInternalMethod, ALIGNMENT_OF)
   }
 }

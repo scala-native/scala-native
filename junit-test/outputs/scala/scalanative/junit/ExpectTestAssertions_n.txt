@@ -1,4 +1,4 @@
-ldTest run started
+ldTest run scala.scalanative.junit.ExpectTest started
 ldTest scala.scalanative.junit.ExpectTest.expectAssert started
 ldTest scala.scalanative.junit.ExpectTest.expectAssert finished, took <TIME>
 e0scala.scalanative.junit.ExpectTest.expectAssert
@@ -6,7 +6,7 @@ ldTest scala.scalanative.junit.ExpectTest.expectNormal started
 ldTest scala.scalanative.junit.ExpectTest.expectNormal finished, took <TIME>
 e0scala.scalanative.junit.ExpectTest.expectNormal
 ldTest scala.scalanative.junit.ExpectTest.failExpectAssert started
-leTest scala.scalanative.junit.ExpectTest.failExpectAssert failed: Expected exception: java.lang.AssertionError, took <TIME>
+leTest scala.scalanative.junit.ExpectTest.failExpectAssert failed: java.lang.AssertionError: Expected exception: java.lang.AssertionError, took <TIME>
 e2scala.scalanative.junit.ExpectTest.failExpectAssert
 ldTest scala.scalanative.junit.ExpectTest.failExpectAssert finished, took <TIME>
 ldTest scala.scalanative.junit.ExpectTest.failExpectDifferent started
@@ -15,8 +15,8 @@ leCaused by: java.lang.IllegalArgumentException
 e2scala.scalanative.junit.ExpectTest.failExpectDifferent
 ldTest scala.scalanative.junit.ExpectTest.failExpectDifferent finished, took <TIME>
 ldTest scala.scalanative.junit.ExpectTest.failExpectNoThrow started
-leTest scala.scalanative.junit.ExpectTest.failExpectNoThrow failed: Expected exception: java.io.IOException, took <TIME>
+leTest scala.scalanative.junit.ExpectTest.failExpectNoThrow failed: java.lang.AssertionError: Expected exception: java.io.IOException, took <TIME>
 e2scala.scalanative.junit.ExpectTest.failExpectNoThrow
 ldTest scala.scalanative.junit.ExpectTest.failExpectNoThrow finished, took <TIME>
-ldTest run finished: 3 failed, 0 ignored, 5 total, <TIME>
+ldTest run scala.scalanative.junit.ExpectTest finished: 3 failed, 0 ignored, 5 total, <TIME>
 d

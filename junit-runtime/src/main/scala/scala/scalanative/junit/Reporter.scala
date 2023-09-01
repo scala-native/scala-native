@@ -14,7 +14,12 @@ private[junit] final class Reporter(
 ) {
 
   def reportRunStarted(): Unit =
-    log(infoOrDebug, Ansi.c("Test run started", Ansi.BLUE))
+    log(
+      infoOrDebug(RunSettings.Verbosity.Started),
+      Ansi.c("Test run ", Ansi.BLUE) +
+        formatClass(taskDef.fullyQualifiedName(), Ansi.YELLOW) +
+        Ansi.c(" started", Ansi.BLUE)
+    )
 
   def reportRunFinished(
       failed: Int,
@@ -23,7 +28,9 @@ private[junit] final class Reporter(
       timeInSeconds: Double
   ): Unit = {
     val msg = {
-      Ansi.c("Test run finished: ", Ansi.BLUE) +
+      Ansi.c("Test run ", Ansi.BLUE) +
+        formatClass(taskDef.fullyQualifiedName(), Ansi.YELLOW) +
+        Ansi.c(" finished: ", Ansi.BLUE) +
         Ansi.c(s"$failed failed", if (failed == 0) Ansi.BLUE else Ansi.RED) +
         Ansi.c(s", ", Ansi.BLUE) +
         Ansi.c(
@@ -33,23 +40,31 @@ private[junit] final class Reporter(
         Ansi.c(f", $total total, $timeInSeconds%.3fs", Ansi.BLUE)
     }
 
-    log(infoOrDebug, msg)
+    log(infoOrDebug(RunSettings.Verbosity.RunFinished), msg)
   }
 
   def reportIgnored(method: Option[String]): Unit = {
     logTestInfo(_.info, method, "ignored")
-    emitEvent(method, Status.Skipped)
+    emitEvent(method, Status.Ignored)
   }
 
   def reportTestStarted(method: String): Unit =
-    logTestInfo(infoOrDebug, Some(method), "started")
+    logTestInfo(
+      infoOrDebug(RunSettings.Verbosity.Started),
+      Some(method),
+      "started"
+    )
 
   def reportTestFinished(
       method: String,
       succeeded: Boolean,
       timeInSeconds: Double
   ): Unit = {
-    logTestInfo(_.debug, Some(method), f"finished, took $timeInSeconds%.3f sec")
+    logTestInfo(
+      infoOrDebug(RunSettings.Verbosity.TestFinished),
+      Some(method),
+      f"finished, took $timeInSeconds%.3f sec"
+    )
 
     if (succeeded)
       emitEvent(Some(method), Status.Success)
@@ -102,14 +117,10 @@ private[junit] final class Reporter(
       ex: Throwable,
       timeInSeconds: Double
   ): Unit = {
-    val logException = {
-      !settings.notLogExceptionClass &&
-      (settings.logAssert || !ex.isInstanceOf[AssertionError])
-    }
-
     val fmtName =
-      if (logException) formatClass(ex.getClass.getName, Ansi.RED) + ": "
-      else ""
+      if (!settings.logExceptionClass ||
+          !settings.logAssert && ex.isInstanceOf[AssertionError]) ""
+      else formatClass(ex.getClass.getName, Ansi.RED) + ": "
 
     val m = formatTest(method, Ansi.RED)
     val msg =
@@ -123,8 +134,8 @@ private[junit] final class Reporter(
     }
   }
 
-  private def infoOrDebug: Reporter.Level =
-    if (settings.verbose) _.info
+  private def infoOrDebug(atVerbosity: RunSettings.Verbosity): Reporter.Level =
+    if (atVerbosity.ordinal <= settings.verbosity.ordinal) _.info
     else _.debug
 
   private def formatTest(method: Option[String], color: String): String = {

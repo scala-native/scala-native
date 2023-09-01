@@ -37,7 +37,7 @@ class CommonMemoryLayouts(implicit meta: Metadata) {
 
   // RTTI specific for classess, see class RuntimeTypeInformation
   object ClassRtti extends Layout() {
-    val usesDynMap = meta.linked.dynsigs.nonEmpty
+    val usesDynMap = meta.analysis.dynsigs.nonEmpty
     private val dynMapType = if (usesDynMap) Some(DynamicHashMap.ty) else None
     // Common layout not including variable-sized virtual table
     private val baseLayout =

@@ -4,12 +4,14 @@ package interflow
 import scala.collection.mutable
 import scala.scalanative.codegen.PlatformInfo
 import scala.scalanative.nir._
+import scala.scalanative.nir.Defn.Define.DebugInfo
 import scala.scalanative.linker._
 import scala.scalanative.util.ScopedVar
 import java.util.function.Supplier
+import scala.concurrent._
 
 class Interflow(val config: build.Config)(implicit
-    val linked: linker.Result
+    val analysis: ReachabilityAnalysis.Result
 ) extends Visit
     with Opt
     with NoOpt
@@ -23,33 +25,38 @@ class Interflow(val config: build.Config)(implicit
 
   private val originals = {
     val out = mutable.Map.empty[Global, Defn]
-    linked.defns.foreach { defn => out(defn.name) = defn }
+    analysis.defns.foreach { defn => out(defn.name) = defn }
     out
   }
 
-  private val todo = mutable.Queue.empty[Global]
-  private val done = mutable.Map.empty[Global, Defn.Define]
-  private val started = mutable.Set.empty[Global]
-  private val blacklist = mutable.Set.empty[Global]
-  private val reached = mutable.HashSet.empty[Global]
-  private val modulePurity = mutable.Map.empty[Global, Boolean]
+  private val todo = mutable.Queue.empty[Global.Member]
+  private val done = mutable.Map.empty[Global.Member, Defn.Define]
+  private val started = mutable.Set.empty[Global.Member]
+  private val blacklist = mutable.Set.empty[Global.Member]
+  private val reached = mutable.HashSet.empty[Global.Member]
+  private val modulePurity = mutable.Map.empty[Global.Top, Boolean]
 
-  private var contextTl = ThreadLocal.withInitial(new Supplier[List[String]] {
-    def get() = Nil
-  })
+  def currentFreshScope = freshScopeTl.get()
+  private val freshScopeTl =
+    ThreadLocal.withInitial(() => new ScopedVar[Fresh])
+
+  def currentLexicalScopes = lexicalScopesTl.get()
+  private val lexicalScopesTl = ThreadLocal.withInitial(() =>
+    new ScopedVar[mutable.UnrolledBuffer[DebugInfo.LexicalScope]]
+  )
+
+  private val contextTl =
+    ThreadLocal.withInitial(() => List.empty[String])
   private val mergeProcessorTl =
-    ThreadLocal.withInitial(new Supplier[List[MergeProcessor]] {
-      def get() = Nil
-    })
-  private val blockFreshTl = ThreadLocal.withInitial(new Supplier[List[Fresh]] {
-    def get() = Nil
-  })
+    ThreadLocal.withInitial(() => List.empty[MergeProcessor])
+  private val blockFreshTl =
+    ThreadLocal.withInitial(() => List.empty[Fresh])
 
-  def hasOriginal(name: Global): Boolean =
+  def hasOriginal(name: Global.Member): Boolean =
     originals.contains(name) && originals(name).isInstanceOf[Defn.Define]
-  def getOriginal(name: Global): Defn.Define =
+  def getOriginal(name: Global.Member): Defn.Define =
     originals(name).asInstanceOf[Defn.Define]
-  def maybeOriginal(name: Global): Option[Defn.Define] =
+  def maybeOriginal(name: Global.Member): Option[Defn.Define] =
     originals.get(name).collect { case defn: Defn.Define => defn }
 
   def popTodo(): Global =
@@ -60,63 +67,62 @@ class Interflow(val config: build.Config)(implicit
         todo.dequeue()
       }
     }
-  def pushTodo(name: Global): Unit =
+  def pushTodo(name: Global.Member): Unit =
     todo.synchronized {
-      assert(name ne Global.None)
       if (!reached.contains(name)) {
         todo.enqueue(name)
         reached += name
       }
     }
-  def allTodo(): Seq[Global] =
+  def allTodo(): Seq[Global.Member] =
     todo.synchronized {
       todo.toSeq
     }
 
-  def isDone(name: Global): Boolean =
+  def isDone(name: Global.Member): Boolean =
     done.synchronized {
       done.contains(name)
     }
-  def setDone(name: Global, value: Defn.Define) =
+  def setDone(name: Global.Member, value: Defn.Define) =
     done.synchronized {
       done(name) = value
     }
-  def getDone(name: Global): Defn.Define =
+  def getDone(name: Global.Member): Defn.Define =
     done.synchronized {
       done(name)
     }
-  def maybeDone(name: Global): Option[Defn.Define] =
+  def maybeDone(name: Global.Member): Option[Defn.Define] =
     done.synchronized {
       done.get(name)
     }
 
-  def hasStarted(name: Global): Boolean =
+  def hasStarted(name: Global.Member): Boolean =
     started.synchronized {
       started.contains(name)
     }
-  def markStarted(name: Global): Unit =
+  def markStarted(name: Global.Member): Unit =
     started.synchronized {
       started += name
     }
 
-  def isBlacklisted(name: Global): Boolean =
+  def isBlacklisted(name: Global.Member): Boolean =
     blacklist.synchronized {
       blacklist.contains(name)
     }
-  def markBlacklisted(name: Global): Unit =
+  def markBlacklisted(name: Global.Member): Unit =
     blacklist.synchronized {
       blacklist += name
     }
 
-  def hasModulePurity(name: Global): Boolean =
+  def hasModulePurity(name: Global.Top): Boolean =
     modulePurity.synchronized {
       modulePurity.contains(name)
     }
-  def setModulePurity(name: Global, value: Boolean): Unit =
+  def setModulePurity(name: Global.Top, value: Boolean): Unit =
     modulePurity.synchronized {
       modulePurity(name) = value
     }
-  def getModulePurity(name: Global): Boolean =
+  def getModulePurity(name: Global.Top): Boolean =
     modulePurity.synchronized {
       modulePurity(name)
     }
@@ -147,18 +153,21 @@ class Interflow(val config: build.Config)(implicit
   def result(): Seq[Defn] = {
     val optimized = originals.clone()
     optimized ++= done
-    optimized.values.toSeq.sortBy(_.name)
+    optimized.values.toSeq
   }
 
   protected def mode: build.Mode = config.compilerConfig.mode
 }
 
 object Interflow {
-  def apply(config: build.Config, linked: linker.Result): Seq[Defn] = {
-    val interflow = new Interflow(config)(linked)
+  def optimize(config: build.Config, analysis: ReachabilityAnalysis.Result)(
+      implicit ec: ExecutionContext
+  ): Future[Seq[Defn]] = {
+    val interflow = new Interflow(config)(analysis)
     interflow.visitEntries()
-    interflow.visitLoop()
-    interflow.result()
+    interflow
+      .visitLoop()
+      .map(_ => interflow.result())
   }
 
   object LLVMIntrinsics {

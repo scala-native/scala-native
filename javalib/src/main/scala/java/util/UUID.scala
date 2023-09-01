@@ -1,15 +1,14 @@
+// Ported from Scala.js commit: e20d6d6 dated: 2023-07-19
+
 package java.util
 
-import java.lang.{Long => JLong}
 import java.security.SecureRandom
 
 final class UUID private (
     private val i1: Int,
     private val i2: Int,
     private val i3: Int,
-    private val i4: Int,
-    private[this] var l1: JLong,
-    private[this] var l2: JLong
+    private val i4: Int
 ) extends AnyRef
     with java.io.Serializable
     with Comparable[UUID] {
@@ -35,23 +34,17 @@ final class UUID private (
       (mostSigBits >>> 32).toInt,
       mostSigBits.toInt,
       (leastSigBits >>> 32).toInt,
-      leastSigBits.toInt,
-      mostSigBits,
-      leastSigBits
+      leastSigBits.toInt
     )
   }
 
-  def getLeastSignificantBits(): Long = {
-    if (l2 eq null)
-      l2 = (i3.toLong << 32) | (i4.toLong & 0xffffffffL)
-    l2.longValue()
-  }
+  @inline
+  def getLeastSignificantBits(): Long =
+    (i3.toLong << 32) | (i4.toLong & 0xffffffffL)
 
-  def getMostSignificantBits(): Long = {
-    if (l1 eq null)
-      l1 = (i1.toLong << 32) | (i2.toLong & 0xffffffffL)
-    l1.longValue()
-  }
+  @inline
+  def getMostSignificantBits(): Long =
+    (i1.toLong << 32) | (i2.toLong & 0xffffffffL)
 
   def version(): Int =
     (i2 & 0xf000) >> 12
@@ -115,16 +108,20 @@ final class UUID private (
   }
 
   def compareTo(that: UUID): Int = {
-    if (this.i1 != that.i1) {
-      if (this.i1 > that.i1) 1 else -1
-    } else if (this.i2 != that.i2) {
-      if (this.i2 > that.i2) 1 else -1
-    } else if (this.i3 != that.i3) {
-      if (this.i3 > that.i3) 1 else -1
-    } else if (this.i4 != that.i4) {
-      if (this.i4 > that.i4) 1 else -1
+    val thisHi = this.getMostSignificantBits()
+    val thatHi = that.getMostSignificantBits()
+    if (thisHi != thatHi) {
+      if (thisHi < thatHi) -1
+      else 1
     } else {
-      0
+      val thisLo = this.getLeastSignificantBits()
+      val thatLo = that.getLeastSignificantBits()
+      if (thisLo != thatLo) {
+        if (thisLo < thatLo) -1
+        else 1
+      } else {
+        0
+      }
     }
   }
 }
@@ -187,7 +184,7 @@ object UUID {
       val i2 = parseHex8(name.substring(9, 13), name.substring(14, 18))
       val i3 = parseHex8(name.substring(19, 23), name.substring(24, 28))
       val i4 = parseHex8(name.substring(28, 32), name.substring(32, 36))
-      new UUID(i1, i2, i3, i4, null, null)
+      new UUID(i1, i2, i3, i4)
     } catch {
       case _: NumberFormatException => fail()
     }

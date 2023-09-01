@@ -1,6 +1,11 @@
 // Ported from Scala.js commit: ba618ed dated: 2020-10-05
-// Arrays.spliterator() methods added for Scala Native.
-// Arrays.stream() methods added for Scala Native.
+
+/*
+ Arrays.spliterator() methods added for Scala Native.
+ Arrays.stream() methods added for Scala Native.
+ Arrays.setAll*() methods added for Scala Native.
+ Arrays.parallel*() methods added for Scala Native.
+ */
 
 package java.util
 
@@ -8,6 +13,7 @@ import scala.annotation.tailrec
 
 import scala.reflect.ClassTag
 
+import java.util.function._
 import java.{util => ju}
 import java.util.stream.StreamSupport
 
@@ -1002,6 +1008,260 @@ object Arrays {
   }
 
 // Scala Native additions --------------------------------------------------
+
+  /* Note:
+   *   For now all of parallelPrefix(), parallelSetAll() and parallelSort()
+   *   methods are restricted to a parallelism of 1, i.e. sequential.
+   *
+   *   Later evolutions could/should increase the parallelism when
+   *   multithreading has been enabled.
+   */
+
+  def parallelPrefix(array: Array[Double], op: DoubleBinaryOperator): Unit = {
+    parallelPrefix(array, 0, array.length, op)
+  }
+
+  def parallelPrefix(
+      array: Array[Double],
+      fromIndex: Int,
+      toIndex: Int,
+      op: DoubleBinaryOperator
+  ): Unit = {
+    checkRangeIndices(array, fromIndex, toIndex)
+    val rangeSize = toIndex - fromIndex
+
+    if (rangeSize >= 2) { // rangeSize == 0 or 1 leaves array unmodified.
+      for (j <- (fromIndex + 1) until toIndex) {
+        array(j) = op.applyAsDouble(array(j - 1), array(j))
+      }
+    }
+  }
+
+  def parallelPrefix(array: Array[Int], op: IntBinaryOperator): Unit = {
+    parallelPrefix(array, 0, array.length, op)
+  }
+
+  def parallelPrefix(
+      array: Array[Int],
+      fromIndex: Int,
+      toIndex: Int,
+      op: IntBinaryOperator
+  ): Unit = {
+    checkRangeIndices(array, fromIndex, toIndex)
+    val rangeSize = toIndex - fromIndex
+
+    if (rangeSize >= 2) { // rangeSize == 0 or 1 leaves array unmodified.
+      for (j <- (fromIndex + 1) until toIndex) {
+        array(j) = op.applyAsInt(array(j - 1), array(j))
+      }
+    }
+  }
+
+  def parallelPrefix(array: Array[Long], op: LongBinaryOperator): Unit = {
+    parallelPrefix(array, 0, array.length, op)
+  }
+
+  def parallelPrefix(
+      array: Array[Long],
+      fromIndex: Int,
+      toIndex: Int,
+      op: LongBinaryOperator
+  ): Unit = {
+    checkRangeIndices(array, fromIndex, toIndex)
+    val rangeSize = toIndex - fromIndex
+
+    if (rangeSize >= 2) { // rangeSize == 0 or 1 leaves array unmodified.
+      for (j <- (fromIndex + 1) until toIndex) {
+        array(j) = op.applyAsLong(array(j - 1), array(j))
+      }
+    }
+  }
+
+  def parallelPrefix[T <: AnyRef](
+      array: Array[T],
+      op: BinaryOperator[T]
+  ): Unit = {
+    parallelPrefix[T](array, 0, array.length, op)
+  }
+
+  def parallelPrefix[T <: AnyRef](
+      array: Array[T],
+      fromIndex: Int,
+      toIndex: Int,
+      op: BinaryOperator[T]
+  ): Unit = {
+    checkRangeIndices(array, fromIndex, toIndex)
+    val rangeSize = toIndex - fromIndex
+
+    if (rangeSize >= 2) { // rangeSize == 0 or 1 leaves array unmodified.
+      for (j <- (fromIndex + 1) until toIndex) {
+        array(j) = op.apply(array(j - 1), array(j))
+      }
+    }
+  }
+
+  def parallelSetAll(
+      array: Array[Double],
+      generator: IntToDoubleFunction
+  ): Unit = {
+    setAll(array, generator)
+  }
+
+  def parallelSetAll(array: Array[Int], generator: IntUnaryOperator): Unit = {
+    setAll(array, generator)
+  }
+
+  def parallelSetAll(array: Array[Long], generator: IntToLongFunction): Unit = {
+    setAll(array, generator)
+  }
+
+  def parallelSetAll[T <: AnyRef](
+      array: Array[T],
+      generator: IntFunction[_ <: T]
+  ): Unit = {
+    setAll(array, generator)
+  }
+
+// parallelSort(byte[])
+  def parallelSort(a: Array[Byte]): Unit =
+    sort(a)
+
+// parallelSort(byte[] a, int fromIndex, int toIndex)
+  def parallelSort(
+      a: Array[Byte],
+      fromIndex: Int,
+      toIndex: Int
+  ): Unit =
+    sort(a, fromIndex, toIndex)
+
+// parallelSort(char[])
+  def parallelSort(a: Array[Char]): Unit =
+    sort(a)
+
+// parallelSort(char[] a, int fromIndex, int toIndex)
+  def parallelSort(
+      a: Array[Char],
+      fromIndex: Int,
+      toIndex: Int
+  ): Unit =
+    sort(a, fromIndex, toIndex)
+
+// parallelSort(double[])
+  def parallelSort(array: Array[Double]): Unit =
+    sort(array)
+
+// parallelSort(double[] a, int fromIndex, int toIndex)
+  def parallelSort(
+      array: Array[Double],
+      fromIndex: Int,
+      toIndex: Int
+  ): Unit =
+    sort(array, fromIndex, toIndex)
+
+// parallelSort(float[])
+  def parallelSort(a: Array[Float]): Unit =
+    sort(a)
+
+// parallelSort(float[] a, int fromIndex, int toIndex)
+  def parallelSort(
+      a: Array[Float],
+      fromIndex: Int,
+      toIndex: Int
+  ): Unit =
+    sort(a, fromIndex, toIndex)
+
+// parallelSort(int[])
+  def parallelSort(a: Array[Int]): Unit =
+    sort(a)
+
+// parallelSort(int[] a, int fromIndex, int toIndex)
+  def parallelSort(a: Array[Int], fromIndex: Int, toIndex: Int): Unit =
+    sort(a, fromIndex, toIndex)
+
+// parallelSort(long[])
+  def parallelSort(a: Array[Long]): Unit =
+    sort(a)
+// parallelSort(long[] a, int fromIndex, int toIndex)
+  def parallelSort(
+      a: Array[Long],
+      fromIndex: Int,
+      toIndex: Int
+  ): Unit =
+    sort(a, fromIndex, toIndex)
+
+// parallelSort(short[])
+  def parallelSort(a: Array[Short]): Unit =
+    sort(a)
+
+// parallelSort(short[] a, int fromIndex, int toIndex)
+  def parallelSort(
+      a: Array[Short],
+      fromIndex: Int,
+      toIndex: Int
+  ): Unit =
+    sort(a, fromIndex, toIndex)
+
+// parallelSort(T[])
+//  def parallelSort(a: Array[AnyRef]): Unit =
+//    sort(a)
+
+//  def parallelSort[T <: Comparable[AnyRef]](
+  def parallelSort[T <: Comparable[_ <: AnyRef]](
+      array: Array[T]
+  ): Unit = {
+    sort(array.asInstanceOf[Array[AnyRef]])
+  }
+
+// parallelSort(T[] a, Comparator<? super T> cmp)
+  def parallelSort[T <: AnyRef](
+      array: Array[T],
+      comparator: Comparator[_ >: T]
+  ): Unit = {
+    sort[T](array, comparator)
+  }
+
+// parallelSort(T[] a, int fromIndex, int toIndex)
+  def parallelSort[T <: Comparable[_ <: AnyRef]](
+      array: Array[T],
+      fromIndex: Int,
+      toIndex: Int
+  ): Unit =
+    sort(array.asInstanceOf[Array[AnyRef]], fromIndex, toIndex)
+
+// parallelSort(T[] a, int fromIndex, int toIndex, Comparator<? super T> cmp)
+
+  def parallelSort[T <: AnyRef](
+      array: Array[T],
+      fromIndex: Int,
+      toIndex: Int,
+      comparator: Comparator[_ >: T]
+  ): Unit = {
+    sort[T](array, fromIndex, toIndex, comparator)
+  }
+
+  def setAll(array: Array[Double], generator: IntToDoubleFunction): Unit = {
+    for (j <- 0 until array.size)
+      array(j) = generator.applyAsDouble(j)
+  }
+
+  def setAll(array: Array[Int], generator: IntUnaryOperator): Unit = {
+    for (j <- 0 until array.size)
+      array(j) = generator.applyAsInt(j)
+  }
+
+  def setAll(array: Array[Long], generator: IntToLongFunction): Unit = {
+    for (j <- 0 until array.size)
+      array(j) = generator.applyAsLong(j)
+  }
+
+  def setAll[T <: AnyRef](
+      array: Array[T],
+      generator: IntFunction[_ <: T]
+  ): Unit = {
+    for (j <- 0 until array.size)
+      array(j) = generator.apply(j)
+  }
+
   private final val standardArraySpliteratorCharacteristics =
     Spliterator.SIZED |
       Spliterator.SUBSIZED |
@@ -1180,4 +1440,5 @@ object Arrays {
 
     StreamSupport.stream(spliter, parallel = false)
   }
+
 }

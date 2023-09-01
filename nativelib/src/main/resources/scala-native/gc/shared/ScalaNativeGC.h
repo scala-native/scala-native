@@ -2,7 +2,7 @@
 #define SCALA_NATIVE_GC_H
 #include <stdlib.h>
 #include <stdbool.h>
-#include "GCTypes.h"
+#include "shared/GCTypes.h"
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN

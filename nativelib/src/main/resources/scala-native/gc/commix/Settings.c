@@ -1,3 +1,5 @@
+#if defined(SCALANATIVE_GC_COMMIX)
+
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 // sscanf and getEnv is deprecated in WinCRT, disable warnings
@@ -12,7 +14,7 @@
 #include <string.h>
 #include "Settings.h"
 #include "Constants.h"
-#include "Parsing.h"
+#include "shared/Parsing.h"
 
 size_t Settings_MinHeapSize() {
     return Parse_Env_Or_Default("GC_INITIAL_HEAP_SIZE", DEFAULT_MIN_HEAP_SIZE);
@@ -75,3 +77,5 @@ int Settings_GCThreadCount() {
         return count;
     }
 }
+
+#endif

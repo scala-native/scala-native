@@ -16,6 +16,8 @@ sealed abstract class Type {
       unsupported(s"${this}.elemty($path)")
   }
 
+  def =?=(other: Type) = Type.normalize(this) == Type.normalize(other)
+
   def hasKnownSize: Boolean = this match {
     case Type.Null | Type.Ptr   => true
     case _: Type.RefKind        => false
@@ -69,7 +71,7 @@ object Type {
 
   /** Reference types. */
   sealed abstract class RefKind extends Type {
-    final def className: Global = this match {
+    final def className: Global.Top = this match {
       case Type.Null            => Rt.BoxedNull.name
       case Type.Unit            => Rt.BoxedUnit.name
       case Type.Array(ty, _)    => toArrayClass(ty)
@@ -92,7 +94,7 @@ object Type {
   case object Unit extends RefKind
   final case class Array(ty: Type, nullable: Boolean = true) extends RefKind
   final case class Ref(
-      name: Global,
+      name: Global.Top,
       exact: Boolean = false,
       nullable: Boolean = true
   ) extends RefKind
@@ -171,7 +173,7 @@ object Type {
     case other               => other
   }
 
-  val typeToArray = Map[Type, Global](
+  val typeToArray = Map[Type, Global.Top](
     Type.Bool -> Global.Top("scala.scalanative.runtime.BooleanArray"),
     Type.Char -> Global.Top("scala.scalanative.runtime.CharArray"),
     Type.Byte -> Global.Top("scala.scalanative.runtime.ByteArray"),
@@ -182,19 +184,19 @@ object Type {
     Type.Double -> Global.Top("scala.scalanative.runtime.DoubleArray"),
     Rt.Object -> Global.Top("scala.scalanative.runtime.ObjectArray")
   )
-  val arrayToType =
+  val arrayToType: Map[Global.Top, Type] =
     typeToArray.map { case (k, v) => (v, k) }
-  def toArrayClass(ty: Type): Global = ty match {
+  def toArrayClass(ty: Type): Global.Top = ty match {
     case _ if typeToArray.contains(ty) =>
       typeToArray(ty)
     case _ =>
       typeToArray(Rt.Object)
   }
-  def fromArrayClass(name: Global): Option[Type] =
+  def fromArrayClass(name: Global.Top): Option[Type] =
     arrayToType.get(name)
   def isArray(clsTy: Type.Ref): Boolean =
     isArray(clsTy.name)
-  def isArray(clsName: Global): Boolean =
+  def isArray(clsName: Global.Top): Boolean =
     arrayToType.contains(clsName)
 
   def typeToName(tpe: Type): Global = tpe match {

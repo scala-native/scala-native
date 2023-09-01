@@ -1,7 +1,7 @@
 #ifndef IMMIX_CONSTANTS_H
 #define IMMIX_CONSTANTS_H
 
-#include "CommonConstants.h"
+#include "immix_commix/CommonConstants.h"
 #include "metadata/BlockMeta.h"
 
 #define DEFAULT_MARK_TIME_RATIO 0.05

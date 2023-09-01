@@ -64,7 +64,7 @@ class ExternTest {
     val args = Seq("skipped", "skipped", "skipped", "-b", "-f", "farg")
 
     Zone { implicit z =>
-      val argv: Ptr[CString] = stackalloc[CString](args.length.toUInt)
+      val argv: Ptr[CString] = stackalloc[CString](args.length)
 
       for ((arg, i) <- args.zipWithIndex) {
         argv(i) = toCString(arg)

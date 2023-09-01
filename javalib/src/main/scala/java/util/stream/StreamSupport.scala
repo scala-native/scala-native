@@ -61,7 +61,7 @@ object StreamSupport {
       spliterator: Spliterator[T],
       parallel: Boolean
   ): Stream[T] = {
-    new ObjectStreamImpl[T](spliterator, parallel)
+    new StreamImpl[T](spliterator, parallel)
   }
 
   def stream[T](
@@ -69,6 +69,6 @@ object StreamSupport {
       characteristics: Int,
       parallel: Boolean
   ): Stream[T] = {
-    new ObjectStreamImpl[T](supplier, characteristics, parallel)
+    new StreamImpl[T](supplier, characteristics, parallel)
   }
 }

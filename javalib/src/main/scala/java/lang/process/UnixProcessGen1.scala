@@ -151,10 +151,10 @@ object UnixProcessGen1 {
     ProcessMonitor.waitForPid(pid, ts, res)
 
   def apply(builder: ProcessBuilder): Process = Zone { implicit z =>
-    val infds: Ptr[CInt] = stackalloc[CInt](2.toUInt)
-    val outfds: Ptr[CInt] = stackalloc[CInt](2.toUInt)
+    val infds: Ptr[CInt] = stackalloc[CInt](2)
+    val outfds: Ptr[CInt] = stackalloc[CInt](2)
     val errfds =
-      if (builder.redirectErrorStream()) outfds else stackalloc[CInt](2.toUInt)
+      if (builder.redirectErrorStream()) outfds else stackalloc[CInt](2)
 
     throwOnError(unistd.pipe(infds), s"Couldn't create pipe.")
     throwOnError(unistd.pipe(outfds), s"Couldn't create pipe.")
@@ -260,7 +260,7 @@ object UnixProcessGen1 {
   @inline private def nullTerminate(
       list: java.util.List[String]
   )(implicit z: Zone) = {
-    val res: Ptr[CString] = alloc[CString]((list.size() + 1).toUInt)
+    val res: Ptr[CString] = alloc[CString]((list.size() + 1))
     val li = list.listIterator()
     while (li.hasNext()) {
       !(res + li.nextIndex()) = toCString(li.next())

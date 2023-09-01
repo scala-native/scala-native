@@ -4,6 +4,7 @@ import scalanative.unsafe.{CString, fromCString}
 import scalanative.unsigned._
 import scala.scalanative.unsafe._
 import scala.scalanative.runtime.SymbolFormatter
+import scala.scalanative.runtime.Backtrace
 
 final class StackTraceElement(
     val getClassName: String,
@@ -47,16 +48,20 @@ final class StackTraceElement(
 private[lang] object StackTraceElement {
   object Fail extends scala.util.control.NoStackTrace
 
-  def fromSymbol(sym: CString): StackTraceElement = {
-    val className: Ptr[CChar] = stackalloc[CChar](1024.toUSize)
-    val methodName: Ptr[CChar] = stackalloc[CChar](1024.toUSize)
+  // ScalaNative specific
+  private[lang] def apply(
+      sym: CString,
+      position: Backtrace.Position
+  ): StackTraceElement = {
+    val className: Ptr[CChar] = stackalloc[CChar](1024)
+    val methodName: Ptr[CChar] = stackalloc[CChar](1024)
     SymbolFormatter.asyncSafeFromSymbol(sym, className, methodName)
 
     new StackTraceElement(
       fromCString(className),
       fromCString(methodName),
-      null,
-      0
+      position.filename,
+      position.line
     )
   }
 }

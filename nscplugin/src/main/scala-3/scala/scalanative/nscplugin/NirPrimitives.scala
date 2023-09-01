@@ -28,7 +28,8 @@ object NirPrimitives {
   final val REM_UINT = 1 + DIV_ULONG
   final val REM_ULONG = 1 + REM_UINT
 
-  final val BYTE_TO_UINT = 1 + REM_ULONG
+  final val UNSIGNED_OF = 1 + REM_ULONG
+  final val BYTE_TO_UINT = 1 + UNSIGNED_OF
   final val BYTE_TO_ULONG = 1 + BYTE_TO_UINT
   final val SHORT_TO_UINT = 1 + BYTE_TO_ULONG
   final val SHORT_TO_ULONG = 1 + SHORT_TO_UINT
@@ -89,7 +90,9 @@ object NirPrimitives {
   final val SIZE_OF = CLASS_FIELD_RAWPTR + 1
   final val ALIGNMENT_OF = SIZE_OF + 1
 
+  // scala.reflect.Selectable.selectDynamic
   final val REFLECT_SELECTABLE_SELECTDYN = ALIGNMENT_OF + 1
+  // scala.reflect.Selectable.applyDynamic
   final val REFLECT_SELECTABLE_APPLYDYN = REFLECT_SELECTABLE_SELECTDYN + 1
 
   final val SAFEZONE_ALLOC = 1 + REFLECT_SELECTABLE_APPLYDYN
@@ -154,10 +157,12 @@ class NirPrimitives(using ctx: Context) extends DottyPrimitives(ctx) {
     addPrimitive(defn.Array_clone, ARRAY_CLONE)
     addPrimitive(defnNir.CQuote_c, CQUOTE)
     addPrimitives(defnNir.Intrinsics_stackallocAlts, STACKALLOC)
+    addPrimitive(defnNir.IntrinsicsInternal_stackalloc, STACKALLOC)
     addPrimitive(defnNir.Intrinsics_divUInt, DIV_UINT)
     addPrimitive(defnNir.Intrinsics_divULong, DIV_ULONG)
     addPrimitive(defnNir.Intrinsics_remUInt, REM_UINT)
     addPrimitive(defnNir.Intrinsics_remULong, REM_ULONG)
+    addPrimitives(defnNir.Intrinsics_unsignedOfAlts, UNSIGNED_OF)
     addPrimitive(defnNir.Intrinsics_byteToUInt, BYTE_TO_UINT)
     addPrimitive(defnNir.Intrinsics_byteToULong, BYTE_TO_ULONG)
     addPrimitive(defnNir.Intrinsics_shortToUInt, SHORT_TO_UINT)
@@ -209,8 +214,8 @@ class NirPrimitives(using ctx: Context) extends DottyPrimitives(ctx) {
     addPrimitives(defnNir.CFuncPtr_apply, CFUNCPTR_APPLY)
     addPrimitives(defnNir.CFuncPtr_fromScalaFunction, CFUNCPTR_FROM_FUNCTION)
     addPrimitive(defnNir.Intrinsics_classFieldRawPtr, CLASS_FIELD_RAWPTR)
-    addPrimitives(defnNir.Intrinsics_sizeOfAlts, SIZE_OF)
-    addPrimitives(defnNir.Intrinsics_alignmentOfAlts, ALIGNMENT_OF)
+    addPrimitive(defnNir.IntrinsicsInternal_sizeOf, SIZE_OF)
+    addPrimitive(defnNir.IntrinsicsInternal_alignmentOf, ALIGNMENT_OF)
     addPrimitive(
       defnNir.ReflectSelectable_selectDynamic,
       REFLECT_SELECTABLE_SELECTDYN

@@ -5,8 +5,10 @@ import tpd._
 import dotty.tools.dotc.core
 import core.Contexts._
 import core.Types._
-import scalanative.util.ScopedVar.scoped
-import scalanative.nir.Fresh
+import scala.scalanative.util.ScopedVar
+import scalanative.nir.{Fresh, Local, LocalName}
+import scala.collection.mutable
+import scala.scalanative.nir
 
 trait NirGenUtil(using Context) { self: NirCodeGen =>
 
@@ -30,13 +32,44 @@ trait NirGenUtil(using Context) { self: NirCodeGen =>
   }
 
   protected def withFreshExprBuffer[R](f: ExprBuffer ?=> R): R = {
-    scoped(
-      curFresh := Fresh()
+    ScopedVar.scoped(
+      curFresh := Fresh(),
+      curScopeId := scala.scalanative.nir.ScopeId.TopLevel
     ) {
       val buffer = new ExprBuffer(using curFresh)
       f(using buffer)
     }
   }
+
+  protected def withFreshBlockScope[R](
+      srcPosition: nir.Position
+  )(f: nir.ScopeId => R): R = {
+    val blockScope = nir.ScopeId.of(curFreshScope.get())
+    // Parent of top level points to itself
+    val parentScope =
+      if (blockScope.isTopLevel) blockScope
+      else curScopeId.get
+
+    curScopes.get += nir.Defn.Define.DebugInfo.LexicalScope(
+      id = blockScope,
+      parent = parentScope,
+      srcPosition = srcPosition
+    )
+
+    ScopedVar.scoped(
+      curScopeId := blockScope
+    )(f(parentScope))
+  }
+
+  protected def localNamesBuilder(): mutable.Map[Local, LocalName] =
+    mutable.Map.empty[Local, LocalName]
+
+  extension (fresh: Fresh)
+    def namedId(name: LocalName): Local = {
+      val id = fresh()
+      curMethodLocalNames.get.update(id, name)
+      id
+    }
 }
 
 object NirGenUtil {

@@ -1,5 +1,9 @@
 package java.util
 
+import java.{lang => jl}
+import java.util.function.DoubleConsumer
+import java.util.stream.{StreamSupport, DoubleStream}
+
 import scala.annotation.tailrec
 
 /** Ported from Apache Harmony and described by Donald E. Knuth in The Art of
@@ -110,4 +114,121 @@ class Random(seed_in: Long) extends AnyRef with java.io.Serializable {
     // And return x*c
     x * c
   }
+
+  private val invalidStreamSizeMsg = "size must be non-negative"
+
+  // The elements of the stream are random, not the Characteristics themselves.
+  final val randomStreamCharacteristics =
+    Spliterator.SIZED | Spliterator.SUBSIZED |
+      Spliterator.NONNULL | Spliterator.IMMUTABLE //  0x4540, decimal 17728
+
+  // Algorithm from JDK 17 Random Class documentation.
+  private def nextDouble(origin: Double, bound: Double): Double = {
+    val r = nextDouble() * (bound - origin) + origin
+
+    if (r >= bound) Math.nextDown(bound) // correct for rounding
+    else r
+  }
+
+  /* The same algorithm is used in the three Random*Spliterator methods,
+   * specialized by type.  This algorithm is heavily influenced by the
+   * public domain JSR-166 code in
+   * java.util.concurrent.ThreadLocalRandom.scala and bears a debt of
+   * gratitude to Doug Lea & Co.
+   */
+
+  final private class RandomDoublesSpliterator(
+      var index: Long,
+      fence: Long,
+      origin: Double,
+      bound: Double
+  ) extends Spliterator.OfDouble {
+
+    override def trySplit(): RandomDoublesSpliterator = {
+      val m = (index + fence) >>> 1
+      if (m <= index) null
+      else {
+        val i = index
+        index = m
+        new RandomDoublesSpliterator(i, m, origin, bound)
+      }
+    }
+
+    override def estimateSize(): Long = fence - index
+    override def characteristics(): Int = randomStreamCharacteristics
+
+    override def tryAdvance(consumer: DoubleConsumer): Boolean = {
+      if (consumer == null)
+        throw new NullPointerException
+
+      if (index >= fence) false
+      else {
+        consumer.accept(nextDouble(origin, bound))
+        index += 1
+        true
+      }
+    }
+
+    override def forEachRemaining(consumer: DoubleConsumer): Unit = {
+      if (consumer == null)
+        throw new NullPointerException
+
+      if (index < fence) {
+        var i = index
+        index = fence
+        while ({
+          consumer.accept(nextDouble(origin, bound))
+          i += 1
+          i < fence
+        }) ()
+      }
+    }
+  }
+
+  def doubles(): DoubleStream = {
+    val spliter =
+      new RandomDoublesSpliterator(0L, jl.Long.MAX_VALUE, 0.0, 1.0)
+
+    StreamSupport.doubleStream(spliter, parallel = false)
+  }
+
+  def doubles(
+      randomNumberOrigin: Double,
+      randomNumberBound: Double
+  ): DoubleStream = {
+    doubles(jl.Long.MAX_VALUE, randomNumberOrigin, randomNumberBound)
+  }
+
+  def doubles(streamSize: Long): DoubleStream = {
+    if (streamSize < 0L)
+      throw new IllegalArgumentException(invalidStreamSizeMsg)
+
+    val spliter =
+      new RandomDoublesSpliterator(0L, streamSize, 0.0, 1.0)
+
+    StreamSupport.doubleStream(spliter, parallel = false)
+  }
+
+  def doubles(
+      streamSize: Long,
+      randomNumberOrigin: Double,
+      randomNumberBound: Double
+  ): DoubleStream = {
+    if (streamSize < 0L)
+      throw new IllegalArgumentException(invalidStreamSizeMsg)
+
+    if (!(randomNumberOrigin < randomNumberBound))
+      throw new IllegalArgumentException("bound must be greater than origin")
+
+    val spliter =
+      new RandomDoublesSpliterator(
+        0L,
+        streamSize,
+        randomNumberOrigin,
+        randomNumberBound
+      )
+
+    StreamSupport.doubleStream(spliter, parallel = false)
+  }
+
 }

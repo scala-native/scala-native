@@ -1,7 +1,7 @@
-liTest run started
+liTest run scala.scalanative.junit.ExceptionInAfterTest started
 liTest scala.scalanative.junit.ExceptionInAfterTest.test started
 leTest scala.scalanative.junit.ExceptionInAfterTest.test failed: java.lang.UnsupportedOperationException: Exception in after(), took <TIME>
 e2scala.scalanative.junit.ExceptionInAfterTest.test
 ldTest scala.scalanative.junit.ExceptionInAfterTest.test finished, took <TIME>
-liTest run finished: 1 failed, 0 ignored, 1 total, <TIME>
+liTest run scala.scalanative.junit.ExceptionInAfterTest finished: 1 failed, 0 ignored, 1 total, <TIME>
 d

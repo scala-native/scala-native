@@ -8,7 +8,7 @@ import scalanative.linker._
 trait PolyInline { self: Interflow =>
   private def polyTargets(
       op: Op.Method
-  )(implicit state: State): Seq[(Class, Global)] = {
+  )(implicit state: State): Seq[(Class, Global.Member)] = {
     val Op.Method(obj, sig) = op
 
     val objty = obj match {
@@ -24,7 +24,7 @@ trait PolyInline { self: Interflow =>
       case ClassRef(cls) if !sig.isVirtual =>
         cls.resolve(sig).map(g => (cls, g)).toSeq
       case ScopeRef(scope) =>
-        val targets = mutable.UnrolledBuffer.empty[(Class, Global)]
+        val targets = mutable.UnrolledBuffer.empty[(Class, Global.Member)]
         scope.implementors.foreach { cls =>
           if (cls.allocated) {
             cls.resolve(sig).foreach { g => targets += ((cls, g)) }
@@ -42,7 +42,7 @@ trait PolyInline { self: Interflow =>
 
   def shallPolyInline(op: Op.Method, args: Seq[Val])(implicit
       state: State,
-      linked: linker.Result
+      analysis: ReachabilityAnalysis.Result
   ): Boolean = mode match {
     case build.Mode.Debug =>
       false
@@ -61,8 +61,9 @@ trait PolyInline { self: Interflow =>
 
   def polyInline(op: Op.Method, args: Seq[Val])(implicit
       state: State,
-      linked: linker.Result,
-      origPos: Position
+      analysis: ReachabilityAnalysis.Result,
+      srcPosition: Position,
+      scopeIdId: ScopeId
   ): Val = {
     import state.{emit, fresh, materialize}
 
@@ -78,12 +79,9 @@ trait PolyInline { self: Interflow =>
       (0 until targets.size).map(i => impls.indexOf(targets(i)._2))
     val mergeLabel = fresh()
 
-    val meth =
-      emit.method(obj, Rt.GetClassSig, Next.None)
-    val methty =
-      Type.Function(Seq(Rt.Object), Rt.Class)
-    val objcls =
-      emit.call(methty, meth, Seq(obj), Next.None)
+    val meth = emit.method(obj, Rt.GetClassSig, Next.None)
+    val methty = Type.Function(Seq(Rt.Object), Rt.Class)
+    val objcls = emit.call(methty, meth, Seq(obj), Next.None)
 
     checkLabels.zipWithIndex.foreach {
       case (checkLabel, idx) =>
@@ -119,16 +117,13 @@ trait PolyInline { self: Interflow =>
       case (callLabel, m) =>
         emit.label(callLabel, Seq.empty)
         val ty = originalFunctionType(m)
-        val Type.Function(argtys, retty) = ty: @unchecked
+        val Type.Function(argtys, retty) = ty
         rettys += retty
 
         val cargs = margs.zip(argtys).map {
           case (value, argty) =>
-            if (!Sub.is(value.ty, argty)) {
-              emit.conv(Conv.Bitcast, argty, value, Next.None)
-            } else {
-              value
-            }
+            if (Sub.is(value.ty, argty)) value
+            else emit.conv(Conv.Bitcast, argty, value, Next.None)
         }
         val res = emit.call(ty, Val.Global(m, Type.Ptr), cargs, Next.None)
         emit.jump(Next.Label(mergeLabel, Seq(res)))

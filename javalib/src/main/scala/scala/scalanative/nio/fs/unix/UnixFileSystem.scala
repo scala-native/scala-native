@@ -16,11 +16,10 @@ import java.nio.file.attribute.UserPrincipalLookupService
 import java.nio.file.attribute.PosixUserPrincipalLookupService
 import java.{util => ju}
 
+import scala.scalanative.annotation.stub
 import scala.scalanative.unsafe._
 
 import scala.scalanative.posix.sys.statvfs
-
-import scalanative.annotation.stub
 
 class UnixFileSystem(
     fsProvider: FileSystemProvider,

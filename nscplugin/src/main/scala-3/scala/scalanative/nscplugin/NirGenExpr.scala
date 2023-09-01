@@ -1,7 +1,7 @@
 package scala.scalanative.nscplugin
 
 import scala.language.implicitConversions
-import scala.annotation.tailrec
+import scala.annotation.{tailrec, switch}
 
 import dotty.tools.dotc.ast
 import ast.tpd._
@@ -27,11 +27,14 @@ import dotty.tools.backend.jvm.DottyBackendInterface.symExtensions
 
 import scala.scalanative.nir
 import nir._
+import nir.Defn.Define.DebugInfo
 import scala.scalanative.util.ScopedVar.scoped
 import scala.scalanative.util.unsupported
 import scala.scalanative.util.StringUtils
 import dotty.tools.dotc.ast.desugar
 import dotty.tools.dotc.util.Property
+import scala.scalanative.nscplugin.NirDefinitions.NonErasedType
+import scala.scalanative.util.unreachable
 
 trait NirGenExpr(using Context) {
   self: NirCodeGen =>
@@ -42,6 +45,7 @@ trait NirGenExpr(using Context) {
 
   class ExprBuffer(using fresh: Fresh) extends FixupBuffer {
     buf =>
+
     def genExpr(tree: Tree): Val = {
       tree match {
         case EmptyTree      => Val.Unit
@@ -85,7 +89,9 @@ trait NirGenExpr(using Context) {
 
       val sym = fun.symbol
       def isStatic = sym.owner.isStaticOwner
-      def qualifier = qualifierOf(fun)
+      def qualifier0 = qualifierOf(fun)
+      def qualifier = qualifier0.withSpan(qualifier0.span.orElse(fun.span))
+      def arg = args.head
 
       fun match {
         case _: TypeApply => genApplyTypeApply(app)
@@ -115,11 +121,8 @@ trait NirGenExpr(using Context) {
           else genApplyMethod(sym, statically = isStatic, qualifier, args)
         case _ =>
           if (nirPrimitives.isPrimitive(fun)) genApplyPrimitive(app)
-          else if (Erasure.Boxing.isBox(sym))
-            val arg = args.head
-            genApplyBox(arg.tpe, arg)
-          else if (Erasure.Boxing.isUnbox(sym))
-            genApplyUnbox(app.tpe, args.head)
+          else if (Erasure.Boxing.isBox(sym)) genApplyBox(arg.tpe, arg)
+          else if (Erasure.Boxing.isUnbox(sym)) genApplyUnbox(app.tpe, arg)
           else genApplyMethod(sym, statically = isStatic, qualifier, args)
       }
     }
@@ -171,20 +174,23 @@ trait NirGenExpr(using Context) {
         genMatch(prologue, labels :+ last)
       }
 
-      last match {
-        case label: Labeled if isCaseLabelDef(label) =>
-          translateMatch(label)
+      withFreshBlockScope(block.span) { parentScope =>
+        last match {
+          case label: Labeled if isCaseLabelDef(label) =>
+            translateMatch(label)
 
-        case Apply(
-              TypeApply(Select(label: Labeled, nme.asInstanceOf_), _),
-              _
-            ) if isCaseLabelDef(label) =>
-          translateMatch(label)
+          case Apply(
+                TypeApply(Select(label: Labeled, nme.asInstanceOf_), _),
+                _
+              ) if isCaseLabelDef(label) =>
+            translateMatch(label)
 
-        case _ =>
-          stats.foreach(genExpr)
-          genExpr(last)
+          case _ =>
+            stats.foreach(genExpr)
+            genExpr(last)
+        }
       }
+
     }
 
     // Scala Native does not have any special treatment for closures.
@@ -277,26 +283,30 @@ trait NirGenExpr(using Context) {
 
       def genAnonymousClassCtor: nir.Defn = {
         val body = {
-          val fresh = Fresh()
-          val buf = new nir.Buffer()(fresh)
+          scoped(
+            curScopeId := nir.ScopeId.TopLevel
+          ) {
+            val fresh = Fresh()
+            val buf = new nir.Buffer()(fresh)
 
-          val superTy = nir.Type.Function(Seq(Rt.Object), Type.Unit)
-          val superName = Rt.Object.name.member(Sig.Ctor(Seq.empty))
-          val superCtor = Val.Global(superName, Type.Ptr)
+            val superTy = nir.Type.Function(Seq(Rt.Object), Type.Unit)
+            val superName = Rt.Object.name.member(Sig.Ctor(Seq.empty))
+            val superCtor = Val.Global(superName, Type.Ptr)
 
-          val self = Val.Local(fresh(), Type.Ref(anonClassName))
-          val captureFormals = captureTypes.map(Val.Local(fresh(), _))
-          buf.label(fresh(), self +: captureFormals)
-          buf.call(superTy, superCtor, Seq(self), Next.None)
-          captureNames.zip(captureFormals).foreach { (name, capture) =>
-            buf.fieldstore(capture.ty, self, name, capture, Next.None)
+            val self = Val.Local(fresh(), Type.Ref(anonClassName))
+            val captureFormals = captureTypes.map(Val.Local(fresh(), _))
+            buf.label(fresh(), self +: captureFormals)
+            buf.call(superTy, superCtor, Seq(self), Next.None)
+            captureNames.zip(captureFormals).foreach { (name, capture) =>
+              buf.fieldstore(capture.ty, self, name, capture, Next.None)
+            }
+            buf.ret(Val.Unit)
+
+            buf.toSeq
           }
-          buf.ret(Val.Unit)
-
-          buf.toSeq
         }
 
-        nir.Defn.Define(Attrs.None, ctorName, ctorTy, body)
+        new nir.Defn.Define(Attrs.None, ctorName, ctorTy, body)
       }
 
       def resolveAnonClassMethods: List[Symbol] = {
@@ -320,9 +330,12 @@ trait NirGenExpr(using Context) {
 
         def genBody = {
           given fresh: Fresh = Fresh()
+          val freshScopes = initFreshScope(EmptyTree)
           given buf: ExprBuffer = new ExprBuffer()
           scoped(
             curFresh := fresh,
+            curFreshScope := freshScopes,
+            curScopeId := ScopeId.of(freshScopes.last),
             curExprBuffer := buf,
             curMethodEnv := MethodEnv(fresh),
             curMethodLabels := MethodLabelsEnv(fresh),
@@ -379,7 +392,7 @@ trait NirGenExpr(using Context) {
           }
         }
 
-        nir.Defn.Define(
+        new nir.Defn.Define(
           Attrs.None,
           methodName,
           Type.Function(paramTypes, retType),
@@ -422,8 +435,8 @@ trait NirGenExpr(using Context) {
           else if (sym.is(Module))
             genModule(sym)
           else curMethodEnv.resolve(sym)
-        case desuaged: Select =>
-          genSelect(desuaged)
+        case desuagred: Select =>
+          genSelect(desuagred.withSpan(tree.span))
         case tree =>
           throw FatalError(s"Unsupported desugared ident tree: $tree")
       }
@@ -547,7 +560,7 @@ trait NirGenExpr(using Context) {
       given nir.Position = m.span
       val Match(scrutp, allcaseps) = m
       case class Case(
-          name: Local,
+          id: Local,
           value: Val,
           tree: Tree,
           position: nir.Position
@@ -593,7 +606,7 @@ trait NirGenExpr(using Context) {
         // Generate code for the switch and its cases.
         val scrut = genExpr(scrutp)
         buf.switch(scrut, defaultnext, casenexts)
-        buf.label(defaultnext.name)(using defaultCasePos)
+        buf.label(defaultnext.id)(using defaultCasePos)
         buf.jumpExcludeUnitValue(retty)(merge, genExpr(defaultp))(using
           defaultCasePos
         )
@@ -798,12 +811,16 @@ trait NirGenExpr(using Context) {
 
       // Nested code gen to separate out try/catch-related instructions.
       val nested = ExprBuffer()
-      scoped(curUnwindHandler := Some(handler)) {
-        nested.label(normaln)
-        val res = nested.genExpr(expr)
-        nested.jumpExcludeUnitValue(retty)(mergen, res)
+      scoped(
+        curUnwindHandler := Some(handler)
+      ) {
+        withFreshBlockScope(summon[nir.Position]) { _ =>
+          nested.label(normaln)
+          val res = nested.genExpr(expr)
+          nested.jumpExcludeUnitValue(retty)(mergen, res)
+        }
       }
-      locally {
+      withFreshBlockScope(summon[nir.Position]) { _ =>
         nested.label(handler, Seq(excv))
         val res = nested.genTryCatch(retty, excv, mergen, catches)
         nested.jumpExcludeUnitValue(retty)(mergen, res)
@@ -837,12 +854,15 @@ trait NirGenExpr(using Context) {
               genType(pat.tpe) -> Some(pat.symbol)
           }
           val f = { () =>
-            symopt.foreach { sym =>
-              val cast = buf.as(excty, exc, unwind)(cd.span)
-              curMethodEnv.enter(sym, cast)
+            withFreshBlockScope(body.span) { _ =>
+              symopt.foreach { sym =>
+                val cast = buf.as(excty, exc, unwind)(cd.span, getScopeId)
+                curMethodLocalNames.get.update(cast.id, genLocalName(sym))
+                curMethodEnv.enter(sym, cast)
+              }
+              val res = genExpr(body)
+              buf.jumpExcludeUnitValue(retty)(mergen, res)
             }
-            val res = genExpr(body)
-            buf.jumpExcludeUnitValue(retty)(mergen, res)
             Val.Unit
           }
           (excty, f, exprPos)
@@ -854,7 +874,7 @@ trait NirGenExpr(using Context) {
             buf.raise(exc, unwind)
             Val.Unit
           case (excty, f, pos) +: rest =>
-            val cond = buf.is(excty, exc, unwind)(pos)
+            val cond = buf.is(excty, exc, unwind)(pos, getScopeId)
             genIf(
               retty,
               ValTree(cond),
@@ -876,15 +896,15 @@ trait NirGenExpr(using Context) {
         }.toSet
       def internal(cf: Inst.Cf) = cf match {
         case inst @ Inst.Jump(n) =>
-          labels.contains(n.name)
+          labels.contains(n.id)
         case inst @ Inst.If(_, n1, n2) =>
-          labels.contains(n1.name) && labels.contains(n2.name)
+          labels.contains(n1.id) && labels.contains(n2.id)
         case inst @ Inst.LinktimeIf(_, n, n2) =>
-          labels.contains(n.name) && labels.contains(n2.name)
+          labels.contains(n.id) && labels.contains(n2.id)
         case inst @ Inst.Switch(_, n, ns) =>
-          labels.contains(n.name) && ns.forall(n => labels.contains(n.name))
+          labels.contains(n.id) && ns.forall(n => labels.contains(n.id))
         case inst @ Inst.Throw(_, n) =>
-          (n ne Next.None) && labels.contains(n.name)
+          (n ne Next.None) && labels.contains(n.id)
         case _ =>
           false
       }
@@ -899,8 +919,10 @@ trait NirGenExpr(using Context) {
           // must first go through finally block if it's present. We generate
           // a new copy of the finally handler for every edge.
           val finallyn = fresh()
-          finalies.label(finallyn)(cf.pos)
-          finalies.genExpr(finallyp)
+          withFreshBlockScope(cf.pos) { _ =>
+            finalies.label(finallyn)(cf.pos)
+            finalies.genExpr(finallyp)
+          }
           finalies += cf
           // The original jump outside goes through finally block first.
           Inst.Jump(Next(finallyn))(cf.pos)
@@ -924,15 +946,14 @@ trait NirGenExpr(using Context) {
       val toty = genType(targs.head.tpe)
       def boxty = genBoxType(targs.head.tpe)
       val value = genExpr(receiverp)
-      def boxed = boxValue(receiverp.tpe, value)(using receiverp.span)
+      lazy val boxed = boxValue(receiverp.tpe, value)(using receiverp.span)
 
       if (funSym == defn.Any_isInstanceOf) buf.is(boxty, boxed, unwind)
       else if (funSym == defn.Any_asInstanceOf)
         (fromty, toty) match {
-          case _ if boxed.ty == boxty =>
-            boxed
           case (_: Type.PrimitiveKind, _: Type.PrimitiveKind) =>
             genCoercion(value, fromty, toty)
+          case _ if boxed.ty =?= boxty => boxed
           case (_, Type.Nothing) =>
             val isNullL, notNullL = fresh()
             val isNull = buf.comp(Comp.Ieq, boxed.ty, boxed, Val.Null, unwind)
@@ -956,8 +977,26 @@ trait NirGenExpr(using Context) {
 
     def genValDef(vd: ValDef): Val = {
       given nir.Position = vd.span
-      val rhs = genExpr(vd.rhs)
+      val localNames = curMethodLocalNames.get
       val isMutable = curMethodInfo.mutableVars.contains(vd.symbol)
+      def name = genLocalName(vd.symbol)
+      val rhs = genExpr(vd.rhs) match {
+        case v @ Val.Local(id, _) =>
+          if !(localNames.contains(id) || isMutable)
+          then localNames.update(id, name)
+          vd.rhs match {
+            // When rhs is a block patch the scopeId of it's result to match the current scopeId
+            // This allows us to reflect that ValDef is accessible in this scope
+            case _: Block | Typed(_: Block, _) | Try(_: Block, _, _) |
+                Try(Typed(_: Block, _), _, _) =>
+              buf.updateLetInst(id)(i => i.copy()(i.pos, curScopeId.get))
+            case _ => ()
+          }
+          v
+        case Val.Unit => Val.Unit
+        case v        => buf.let(fresh.namedId(name), Op.Copy(v), unwind)
+      }
+
       if (vd.symbol.isExtern)
         checkExplicitReturnTypeAnnotation(vd, "extern field")
       if (isMutable)
@@ -1001,8 +1040,9 @@ trait NirGenExpr(using Context) {
       }
     }
 
-    private def genApplyBox(st: SimpleType, argp: Tree): Val = {
-      given nir.Position = argp.span
+    private def genApplyBox(st: SimpleType, argp: Tree)(using
+        nir.Position
+    ): Val = {
       val value = genExpr(argp)
       buf.box(genBoxType(st), value, unwind)
     }
@@ -1030,46 +1070,50 @@ trait NirGenExpr(using Context) {
 
       val sym = app.symbol
       val code = nirPrimitives.getPrimitive(app, receiver.tpe)
-      if (isArithmeticOp(code) || isLogicalOp(code) || isComparisonOp(code))
-        genSimpleOp(app, receiver :: args, code)
-      else if (code == THROW) genThrow(app, args)
-      else if (code == CONCAT) genStringConcat(receiver, args.head)
-      else if (code == HASH) genHashCode(args.head)
-      else if (code == BOXED_UNIT) Val.Unit
-      else if (code == SYNCHRONIZED) genSynchronized(receiver, args.head)
-      else if (isArrayOp(code) || code == ARRAY_CLONE) genArrayOp(app, code)
-      else if (isCoercion(code)) genCoercion(app, receiver, code)
-      else if (NirPrimitives.isRawPtrOp(code)) genRawPtrOp(app, code)
-      else if (NirPrimitives.isRawPtrCastOp(code)) genRawPtrCastOp(app)
-      else if (NirPrimitives.isRawSizeCastOp(code)) genRawSizeCastOp(app, code)
-      else if (NirPrimitives.isUnsignedOp(code)) genUnsignedOp(app, code)
-      else if (code == CFUNCPTR_APPLY) genCFuncPtrApply(app)
-      else if (code == CFUNCPTR_FROM_FUNCTION) genCFuncFromScalaFunction(app)
-      else if (code == STACKALLOC) genStackalloc(app)
-      else if (code == SAFEZONE_ALLOC) genSafeZoneAlloc(app)
-      else if (code == CQUOTE) genCQuoteOp(app)
-      else if (code == CLASS_FIELD_RAWPTR) genClassFieldRawPtr(app)
-      else if (code == SIZE_OF) genSizeOf(app)
-      else if (code == ALIGNMENT_OF) genAlignmentOf(app)
-      else if (code == REFLECT_SELECTABLE_SELECTDYN)
-        // scala.reflect.Selectable.selectDynamic
-        genReflectiveCall(app, isSelectDynamic = true)
-      else if (code == REFLECT_SELECTABLE_APPLYDYN)
-        // scala.reflect.Selectable.applyDynamic
-        genReflectiveCall(app, isSelectDynamic = false)
-      else {
-        report.error(
-          s"Unknown primitive operation: ${sym.fullName}(${fun.symbol.showName})",
-          app.sourcePos
-        )
-        Val.Null
+      def arg = args.head
+
+      (code: @switch) match {
+        case THROW                  => genThrow(app, args)
+        case CONCAT                 => genStringConcat(receiver, arg)
+        case HASH                   => genHashCode(arg)
+        case BOXED_UNIT             => Val.Unit
+        case SYNCHRONIZED           => genSynchronized(receiver, arg)
+        case CFUNCPTR_APPLY         => genCFuncPtrApply(app)
+        case CFUNCPTR_FROM_FUNCTION => genCFuncFromScalaFunction(app)
+        case STACKALLOC             => genStackalloc(app)
+        case SAFEZONE_ALLOC         => genSafeZoneAlloc(app)
+        case CQUOTE                 => genCQuoteOp(app)
+        case CLASS_FIELD_RAWPTR     => genClassFieldRawPtr(app)
+        case SIZE_OF                => genSizeOf(app)
+        case ALIGNMENT_OF           => genAlignmentOf(app)
+        case REFLECT_SELECTABLE_SELECTDYN =>
+          genReflectiveCall(app, isSelectDynamic = true)
+        case REFLECT_SELECTABLE_APPLYDYN =>
+          genReflectiveCall(app, isSelectDynamic = false)
+        case _ =>
+          if (isArithmeticOp(code) || isLogicalOp(code) || isComparisonOp(code))
+            genSimpleOp(app, receiver :: args, code)
+          else if (isArrayOp(code) || code == ARRAY_CLONE) genArrayOp(app, code)
+          else if (isCoercion(code)) genCoercion(app, receiver, code)
+          else if (NirPrimitives.isRawPtrOp(code)) genRawPtrOp(app, code)
+          else if (NirPrimitives.isRawPtrCastOp(code)) genRawPtrCastOp(app)
+          else if (NirPrimitives.isRawSizeCastOp(code))
+            genRawSizeCastOp(app, code)
+          else if (NirPrimitives.isUnsignedOp(code)) genUnsignedOp(app, code)
+          else {
+            report.error(
+              s"Unknown primitive operation: ${sym.fullName}(${fun.symbol.showName})",
+              app.sourcePos
+            )
+            Val.Null
+          }
       }
     }
 
     private def genApplyTypeApply(app: Apply): Val = {
       val Apply(tApply @ TypeApply(fun, targs), argsp) = app: @unchecked
       val Select(receiverp, _) = desugarTree(fun): @unchecked
-      given nir.Position = fun.span
+      given nir.Position = app.span
 
       val funSym = fun.symbol
       genExpr(receiverp)
@@ -1270,8 +1314,9 @@ trait NirGenExpr(using Context) {
     private def negateBool(value: nir.Val)(using nir.Position): Val =
       buf.bin(Bin.Xor, Type.Bool, Val.True, value, unwind)
 
-    private def genUnaryOp(code: Int, rightp: Tree, opty: nir.Type): Val = {
-      given nir.Position = rightp.span
+    private def genUnaryOp(code: Int, rightp: Tree, opty: nir.Type)(using
+        nir.Position
+    ): Val = {
       val right = genExpr(rightp)
       val coerced = genCoercion(right, right.ty, opty)
       val tpe = coerced.ty
@@ -1321,7 +1366,10 @@ trait NirGenExpr(using Context) {
         val leftcoerced = genCoercion(genExpr(left), lty, opty)(using left.span)
         val rightcoerced =
           genCoercion(genExpr(right), rty, opty)(using right.span)
-        buf.let(op(opty, leftcoerced, rightcoerced), unwind)(using left.span)
+        buf.let(op(opty, leftcoerced, rightcoerced), unwind)(using
+          left.span,
+          getScopeId
+        )
       }
 
       val binres = opty match {
@@ -1449,8 +1497,7 @@ trait NirGenExpr(using Context) {
         rightp: Tree,
         ref: Boolean,
         negated: Boolean
-    ): Val = {
-      given nir.Position = leftp.span
+    )(using nir.Position): Val = {
       val left = genExpr(leftp)
 
       if (ref) {
@@ -1594,7 +1641,8 @@ trait NirGenExpr(using Context) {
       val arg = boxValue(argp.tpe, genExpr(argp))
       val isnull =
         buf.comp(Comp.Ieq, Rt.Object, arg, Val.Null, unwind)(using
-          argp.span: nir.Position
+          argp.span: nir.Position,
+          getScopeId
         )
       val cond = ValTree(isnull)
       val thenp = ValTree(Val.Int(0))
@@ -2036,9 +2084,16 @@ trait NirGenExpr(using Context) {
     private def genUnsignedOp(app: Tree, code: Int): Val = {
       given nir.Position = app.span
       import NirPrimitives._
+      def castToUnsigned = code == UNSIGNED_OF
       def castUnsignedInteger = code >= BYTE_TO_UINT && code <= INT_TO_ULONG
       def castUnsignedToFloat = code >= UINT_TO_FLOAT && code <= ULONG_TO_DOUBLE
       app match {
+        case Apply(_, Seq(argp)) if castToUnsigned =>
+          val ty = genType(app.tpe.resultType)
+          val arg = genExpr(argp)
+
+          buf.box(ty, arg, unwind)
+
         case Apply(_, Seq(argp)) if castUnsignedInteger =>
           val ty = genType(app.tpe)
           val arg = genExpr(argp)
@@ -2171,19 +2226,76 @@ trait NirGenExpr(using Context) {
       }
     }
 
-    private def genStackalloc(app: Apply): Val = {
-      val Apply(_, Seq(sizep)) = app
+    private lazy val optimizedFunctions = {
+      // Included functions should be pure, and should not not narrow the result type
+      Set[Symbol](
+        defnNir.Intrinsics_castIntToRawSize,
+        defnNir.Intrinsics_castIntToRawSizeUnsigned,
+        defnNir.Intrinsics_castLongToRawSize,
+        defnNir.Intrinsics_castRawSizeToInt,
+        defnNir.Intrinsics_castRawSizeToLong,
+        defnNir.Intrinsics_castRawSizeToLongUnsigned,
+        defnNir.Size_fromByte,
+        defnNir.Size_fromShort,
+        defnNir.Size_fromInt,
+        defnNir.USize_fromUByte,
+        defnNir.USize_fromUShort,
+        defnNir.USize_fromUInt,
+        defnNir.RuntimePackage_fromRawSize,
+        defnNir.RuntimePackage_fromRawUSize
+      ) ++ defnNir.Intrinsics_unsignedOfAlts ++ defnNir.RuntimePackage_toRawSizeAlts
+    }
 
-      val size = genExpr(sizep)
-      val sizeTy = Type.normalize(size.ty)
-      val unboxed =
-        if Type.isSizeBox(sizeTy) then
-          buf.unbox(sizeTy, size, unwind)(using sizep.span)
-        else
-          assert(Type.box.contains(sizeTy), s"Not a primitive type: ${sizeTy}")
-          size
+    private def getUnboxedSize(sizep: Tree)(using Position): Val =
+      sizep match {
+        // Optimize call, strip numeric conversions
+        case Literal(Constant(size: Int)) => Val.Size(size)
+        case Block(Nil, expr)             => getUnboxedSize(expr)
+        case Apply(fun, List(arg))
+            if optimizedFunctions.contains(fun.symbol) ||
+              arg.symbol.exists && optimizedFunctions.contains(arg.symbol) =>
+          getUnboxedSize(arg)
+        case Typed(expr, _) => getUnboxedSize(expr)
+        case _              =>
+          // actual unboxing
+          val size = genExpr(sizep)
+          val sizeTy = Type.normalize(size.ty)
+          val unboxed =
+            if Type.unbox.contains(sizeTy) then buf.unbox(sizeTy, size, unwind)
+            else if Type.box.contains(sizeTy) then size
+            else {
+              report.error(
+                s"Invalid usage of Intrinsic.stackalloc, argument is not an integer type: ${sizeTy}",
+                sizep.srcPos
+              )
+              Val.Size(0)
+            }
 
-      buf.stackalloc(nir.Type.Byte, unboxed, unwind)(using app.span)
+          if (unboxed.ty == nir.Type.Size) unboxed
+          else buf.conv(Conv.SSizeCast, nir.Type.Size, unboxed, unwind)
+      }
+
+    def genStackalloc(app: Apply): Val = {
+      given nir.Position = app.span
+      val Apply(_, args) = app
+      val tpe = app
+        .getAttachment(NonErasedType)
+        .map(genType(_, deconstructValueTypes = true))
+        .getOrElse {
+          report.error(
+            "Not found type attachment for stackalloc operation, report it as a bug.",
+            app.srcPos
+          )
+          Type.Nothing
+        }
+
+      val size = args match {
+        case Seq()         => Val.Size(1)
+        case Seq(sizep)    => getUnboxedSize(sizep)
+        case Seq(_, sizep) => getUnboxedSize(sizep)
+        case _             => scalanative.util.unreachable
+      }
+      buf.stackalloc(tpe, size, unwind)
     }
 
     def genSafeZoneAlloc(app: Apply): Val = {
@@ -2535,7 +2647,8 @@ trait NirGenExpr(using Context) {
 
       val forwarderName = funcName.member(ExternForwarderSig)
       val forwarderBody = scoped(
-        curUnwindHandler := None
+        curUnwindHandler := None,
+        curScopeId := ScopeId.TopLevel
       ) {
         val fresh = Fresh()
         val buf = ExprBuffer(using fresh)
@@ -2570,7 +2683,7 @@ trait NirGenExpr(using Context) {
 
         buf.toSeq
       }
-      Defn.Define(attrs, forwarderName, forwarderSig, forwarderBody)
+      new Defn.Define(attrs, forwarderName, forwarderSig, forwarderBody)
     }
 
     private object WrapArray {
@@ -2740,8 +2853,7 @@ trait NirGenExpr(using Context) {
         case Inst.Let(_, op, _) if op.resty == Type.Nothing =>
           unreachable(unwind)
           label(fresh())
-        case _ =>
-          ()
+        case _ => ()
       }
     }
 

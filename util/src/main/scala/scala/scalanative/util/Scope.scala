@@ -1,7 +1,9 @@
 package scala.scalanative
 package util
+
 import java.util.concurrent.atomic.AtomicReference
 import java.util.function.UnaryOperator
+import scala.annotation.implicitNotFound
 
 /** Scoped implicit lifetime.
  *
@@ -12,7 +14,7 @@ import java.util.function.UnaryOperator
  *
  *  See https://www.youtube.com/watch?v=MV2eJkwarT4 for details.
  */
-@annotation.implicitNotFound(msg = "Resource acquisition requires a scope.")
+@implicitNotFound(msg = "Resource acquisition requires a scope.")
 trait Scope {
 
   /** Push resource onto the resource stack. */

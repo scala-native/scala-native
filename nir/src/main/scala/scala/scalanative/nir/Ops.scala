@@ -10,7 +10,6 @@ sealed abstract class Op {
 
   final def resty: Type = this match {
     case Op.Call(Type.Function(_, ret), _, _) => ret
-    case Op.Call(_, _, _)                     => unreachable
     case Op.Load(ty, _, _)                    => ty
     case Op.Store(_, _, _, _)                 => Type.Unit
     case Op.Elem(_, _, _)                     => Type.Ptr
@@ -36,12 +35,11 @@ sealed abstract class Op {
     case Op.Box(refty: Type.RefKind, _) =>
       val nullable = Type.isPtrBox(refty)
       Type.Ref(refty.className, exact = true, nullable = nullable)
-    case Op.Unbox(ty, _)      => Type.unbox(ty)
-    case Op.Var(ty)           => Type.Var(ty)
-    case Op.Varload(slot)     => val Type.Var(ty) = slot.ty: @unchecked; ty
-    case Op.Varstore(slot, _) => Type.Unit
-    case Op.Arrayalloc(ty, _, _) =>
-      Type.Ref(Type.toArrayClass(ty), exact = true, nullable = false)
+    case Op.Unbox(ty, _)           => Type.unbox(ty)
+    case Op.Var(ty)                => Type.Var(ty)
+    case Op.Varload(slot)          => val Type.Var(ty) = slot.ty: @unchecked; ty
+    case Op.Varstore(slot, _)      => Type.Unit
+    case Op.Arrayalloc(ty, _, _)   => Type.Array(ty, nullable = false)
     case Op.Arrayload(ty, _, _)    => ty
     case Op.Arraystore(_, _, _, _) => Type.Unit
     case Op.Arraylength(_)         => Type.Int
@@ -115,7 +113,7 @@ sealed abstract class Op {
 }
 object Op {
   // low-level
-  final case class Call(ty: Type, ptr: Val, args: Seq[Val]) extends Op
+  final case class Call(ty: Type.Function, ptr: Val, args: Seq[Val]) extends Op
   final case class Load(ty: Type, ptr: Val, syncAttrs: Option[SyncAttrs] = None)
       extends Op
   final case class Store(
@@ -134,14 +132,18 @@ object Op {
   final case class Fence(syncAttrs: SyncAttrs) extends Op
 
   // high-level
-  final case class Classalloc(name: Global, zone: Option[Val]) extends Op
-  final case class Fieldload(ty: Type, obj: Val, name: Global) extends Op
-  final case class Fieldstore(ty: Type, obj: Val, name: Global, value: Val)
-      extends Op
-  final case class Field(obj: Val, name: Global) extends Op
+  final case class Classalloc(name: Global.Top, zone: Option[Val]) extends Op
+  final case class Fieldload(ty: Type, obj: Val, name: Global.Member) extends Op
+  final case class Fieldstore(
+      ty: Type,
+      obj: Val,
+      name: Global.Member,
+      value: Val
+  ) extends Op
+  final case class Field(obj: Val, name: Global.Member) extends Op
   final case class Method(obj: Val, sig: Sig) extends Op
   final case class Dynmethod(obj: Val, sig: Sig) extends Op
-  final case class Module(name: Global) extends Op
+  final case class Module(name: Global.Top) extends Op
   final case class As(ty: Type, obj: Val) extends Op
   final case class Is(ty: Type, obj: Val) extends Op
   final case class Copy(value: Val) extends Op

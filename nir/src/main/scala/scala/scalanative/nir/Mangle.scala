@@ -31,12 +31,8 @@ object Mangle {
         sb.str("T")
         mangleIdent(name.id)
       case name: Global.Member =>
-        val ownerId = name.owner match {
-          case owner: Global.Top => owner.id
-          case _                 => util.unreachable
-        }
         sb.str("M")
-        mangleIdent(ownerId)
+        mangleIdent(name.owner.id)
         mangleSig(name.sig)
       case _ =>
         util.unreachable
@@ -63,7 +59,7 @@ object Mangle {
         str("R")
         types.foreach(mangleType)
         str("E")
-      case Sig.Clinit() =>
+      case Sig.Clinit =>
         str("I")
         str("E")
       case Sig.Method(id, types, scope) =>

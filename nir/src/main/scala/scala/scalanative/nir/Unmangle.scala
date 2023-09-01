@@ -20,12 +20,10 @@ object Unmangle {
     var pos = 0
 
     def readGlobal(): Global = read() match {
-      case 'T' =>
-        Global.Top(readIdent())
+      case 'T' => Global.Top(readIdent())
       case 'M' =>
         Global.Member(Global.Top(readIdent()), readUnmangledSig().mangled)
-      case ch =>
-        error(s"expected global, but got $ch")
+      case ch => error(s"expected global, but got $ch")
     }
 
     def readSigScope(): Sig.Scope = read() match {
@@ -36,24 +34,15 @@ object Unmangle {
     }
 
     def readUnmangledSig(): Sig.Unmangled = read() match {
-      case 'F' =>
-        Sig.Field(readIdent(), readSigScope())
-      case 'R' =>
-        Sig.Ctor(readTypes())
-      case 'I' =>
-        Sig.Clinit()
-      case 'D' =>
-        Sig.Method(readIdent(), readTypes(), readSigScope())
-      case 'P' =>
-        Sig.Proxy(readIdent(), readTypes())
-      case 'C' =>
-        Sig.Extern(readIdent())
-      case 'G' =>
-        Sig.Generated(readIdent())
-      case 'K' =>
-        Sig.Duplicate(readUnmangledSig(), readTypes())
-      case ch =>
-        error(s"expected sig, but got $ch")
+      case 'F' => Sig.Field(readIdent(), readSigScope())
+      case 'R' => Sig.Ctor(readTypes())
+      case 'I' => Sig.Clinit
+      case 'D' => Sig.Method(readIdent(), readTypes(), readSigScope())
+      case 'P' => Sig.Proxy(readIdent(), readTypes())
+      case 'C' => Sig.Extern(readIdent())
+      case 'G' => Sig.Generated(readIdent())
+      case 'K' => Sig.Duplicate(readUnmangledSig(), readTypes())
+      case ch  => error(s"expected sig, but got $ch")
     }
 
     def readType(): Type = peek() match {

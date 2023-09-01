@@ -5,9 +5,9 @@ import scala.collection.mutable
 import scalanative.nir._
 import scalanative.linker._
 import scalanative.util.partitionBy
-import scalanative.compat.CompatParColls.Converters._
+import scala.concurrent._
 
-sealed abstract class NIRCheck(implicit linked: linker.Result) {
+sealed abstract class NIRCheck(implicit analysis: ReachabilityAnalysis.Result) {
   val errors = mutable.UnrolledBuffer.empty[Check.Error]
   var name: Global = Global.None
   var ctx: List[String] = Nil
@@ -25,11 +25,15 @@ sealed abstract class NIRCheck(implicit linked: linker.Result) {
       error(s"expected ${expected.show}, but got ${got.show}")
     }
 
-  def run(infos: Seq[Info]): Unit =
+  def run(
+      infos: Seq[Info]
+  )(implicit ec: ExecutionContext): Future[Seq[Check.Error]] = Future {
     infos.foreach { info =>
       name = info.name
       checkInfo(info)
     }
+    errors.toSeq
+  }
 
   def checkInfo(info: Info): Unit = info match {
     case meth: Method => checkMethod(meth)
@@ -74,7 +78,8 @@ sealed abstract class NIRCheck(implicit linked: linker.Result) {
   }
 }
 
-final class Check(implicit linked: linker.Result) extends NIRCheck {
+final class Check(implicit analysis: ReachabilityAnalysis.Result)
+    extends NIRCheck {
   val labels = mutable.Map.empty[Local, Seq[Type]]
   val env = mutable.Map.empty[Local, Type]
 
@@ -89,7 +94,7 @@ final class Check(implicit linked: linker.Result) extends NIRCheck {
     }
   }
   override def checkMethod(meth: Method): Unit = {
-    val Type.Function(_, methRetty) = meth.ty: @unchecked
+    val Type.Function(_, methRetty) = meth.ty
     retty = methRetty
 
     val insts = meth.insts
@@ -145,7 +150,7 @@ final class Check(implicit linked: linker.Result) extends NIRCheck {
   def checkInst(inst: Inst): Unit = inst match {
     case _: Inst.Label =>
       ok
-    case Inst.Let(name, op, unwind) =>
+    case Inst.Let(_, op, unwind) =>
       checkOp(op)
       in("unwind")(checkUnwind(unwind))
     case Inst.Ret(v) =>
@@ -173,12 +178,7 @@ final class Check(implicit linked: linker.Result) extends NIRCheck {
   def checkOp(op: Op): Unit = op match {
     case Op.Call(ty, ptr, args) =>
       expect(Type.Ptr, ptr)
-      ty match {
-        case ty: Type.Function =>
-          checkCallArgs(ty, args)
-        case _ =>
-          error("call type must be a function type")
-      }
+      checkCallArgs(ty, args)
     case Op.Load(ty, ptr, _) =>
       expect(Type.Ptr, ptr)
     case Op.Store(ty, ptr, value, _) =>
@@ -211,7 +211,7 @@ final class Check(implicit linked: linker.Result) extends NIRCheck {
       checkConvOp(conv, ty, value)
     case Op.Fence(_) => ok
     case Op.Classalloc(name, zone) =>
-      linked.infos
+      analysis.infos
         .get(name)
         .fold {
           error(s"no info for ${name.show}")
@@ -246,7 +246,7 @@ final class Check(implicit linked: linker.Result) extends NIRCheck {
           error(s"dynmethod must take a proxy signature, not ${sig.show}")
       }
     case Op.Module(name) =>
-      linked.infos
+      analysis.infos
         .get(name)
         .fold {
           error(s"no info for $name")
@@ -721,7 +721,8 @@ final class Check(implicit linked: linker.Result) extends NIRCheck {
   }
 }
 
-final class QuickCheck(implicit linked: linker.Result) extends NIRCheck {
+final class QuickCheck(implicit analysis: ReachabilityAnalysis.Result)
+    extends NIRCheck {
   override def checkMethod(meth: Method): Unit = {
     meth.insts.foreach(checkInst)
   }
@@ -743,21 +744,24 @@ object Check {
   final case class Error(name: Global, ctx: List[String], msg: String)
 
   private def run(
-      checkImpl: linker.Result => NIRCheck
-  )(linked: linker.Result): Seq[Error] =
-    partitionBy(linked.infos.values.toSeq)(_.name).par
+      checkImpl: ReachabilityAnalysis.Result => NIRCheck
+  )(
+      analysis: ReachabilityAnalysis.Result
+  )(implicit ec: ExecutionContext): Future[Seq[Error]] = {
+    val partitions = partitionBy(analysis.infos.values.toSeq)(_.name)
       .map {
         case (_, infos) =>
-          val check = checkImpl(linked)
-          check.run(infos)
-          check.errors
+          checkImpl(analysis).run(infos)
       }
-      .seq
-      .flatten
-      .toSeq
+    Future.reduceLeft(partitions)(_ ++ _)
+  }
 
-  def apply(linked: linker.Result): Seq[Error] =
-    run(new Check()(_))(linked)
-  def quick(linked: linker.Result): Seq[Error] =
-    run(new QuickCheck()(_))(linked)
+  def apply(analysis: ReachabilityAnalysis.Result)(implicit
+      ec: ExecutionContext
+  ): Future[Seq[Error]] =
+    run(new Check()(_))(analysis)
+  def quick(analysis: ReachabilityAnalysis.Result)(implicit
+      ec: ExecutionContext
+  ): Future[Seq[Error]] =
+    run(new QuickCheck()(_))(analysis)
 }

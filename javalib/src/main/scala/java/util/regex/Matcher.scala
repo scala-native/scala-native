@@ -93,7 +93,7 @@ final class Matcher private[regex] (
   }
 
   def reset(input: CharSequence): Matcher = {
-    reset()
+    underlying.reset(input)
     _inputSequence = input
     this
   }

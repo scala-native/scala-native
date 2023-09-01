@@ -1,6 +1,8 @@
 package scala.scalanative
 package nir
 
+import scala.scalanative.util.TypeOps.TypeNarrowing
+
 trait Transform {
   def onDefns(assembly: Seq[Defn]): Seq[Defn] =
     assembly.map(onDefn)
@@ -13,9 +15,9 @@ trait Transform {
       case defn @ Defn.Const(_, _, ty, value) =>
         defn.copy(ty = onType(ty), rhs = onVal(value))
       case defn @ Defn.Declare(_, _, ty) =>
-        defn.copy(ty = onType(ty))
-      case defn @ Defn.Define(_, _, ty, insts) =>
-        defn.copy(ty = onType(ty), insts = onInsts(insts))
+        defn.copy(ty = onType(ty).narrow[Type.Function])
+      case defn @ Defn.Define(_, _, ty, insts, _) =>
+        defn.copy(ty = onType(ty).narrow[Type.Function], insts = onInsts(insts))
       case defn @ Defn.Trait(_, _, _) =>
         defn
       case defn @ Defn.Class(_, _, _, _) =>
@@ -33,12 +35,12 @@ trait Transform {
     inst match {
       case Inst.Label(n, params) =>
         val newparams = params.map { param =>
-          Val.Local(param.name, onType(param.ty))
+          param.copy(valty = onType(param.ty))
         }
         Inst.Label(n, newparams)
-      case Inst.Let(n, op, unwind) =>
-        Inst.Let(n, onOp(op), onNext(unwind))
-
+      case inst @ Inst.Let(_, op, unwind) =>
+        implicit val scopeId: ScopeId = inst.scopeId
+        inst.copy(op = onOp(op), unwind = onNext(unwind))
       case Inst.Ret(v) =>
         Inst.Ret(onVal(v))
       case Inst.Jump(next) =>
@@ -57,7 +59,7 @@ trait Transform {
 
   def onOp(op: Op): Op = op match {
     case Op.Call(ty, ptrv, argvs) =>
-      Op.Call(onType(ty), onVal(ptrv), argvs.map(onVal))
+      Op.Call(onType(ty).narrow[Type.Function], onVal(ptrv), argvs.map(onVal))
     case Op.Load(ty, ptrv, syncAttrs) =>
       Op.Load(onType(ty), onVal(ptrv), syncAttrs)
     case Op.Store(ty, ptrv, v, syncAttrs) =>
@@ -93,9 +95,9 @@ trait Transform {
     case Op.Module(n) =>
       Op.Module(n)
     case Op.As(ty, v) =>
-      Op.As(onType(ty), onVal(v))
+      Op.As(onType(ty).narrow[Type.RefKind], onVal(v))
     case Op.Is(ty, v) =>
-      Op.Is(onType(ty), onVal(v))
+      Op.Is(onType(ty).narrow[Type.RefKind], onVal(v))
     case Op.Copy(v) =>
       Op.Copy(onVal(v))
     case Op.SizeOf(ty)      => Op.SizeOf(onType(ty))
@@ -125,10 +127,10 @@ trait Transform {
     case Val.StructValue(values) => Val.StructValue(values.map(onVal))
     case Val.ArrayValue(ty, values) =>
       Val.ArrayValue(onType(ty), values.map(onVal))
-    case Val.Local(n, ty)  => Val.Local(n, onType(ty))
-    case Val.Global(n, ty) => Val.Global(n, onType(ty))
-    case Val.Const(v)      => Val.Const(onVal(v))
-    case _                 => value
+    case v @ Val.Local(_, ty) => v.copy(valty = onType(ty))
+    case Val.Global(n, ty)    => Val.Global(n, onType(ty))
+    case Val.Const(v)         => Val.Const(onVal(v))
+    case _                    => value
   }
 
   def onType(ty: Type): Type = ty match {

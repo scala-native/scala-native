@@ -9,16 +9,20 @@ import org.openjdk.jmh.annotations._
 import org.openjdk.jmh.annotations.Mode._
 
 import scala.scalanative.build._
+import scala.concurrent._
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
+import scala.scalanative.linker.ReachabilityAnalysis
 
 @Fork(1)
 @State(Scope.Benchmark)
 @BenchmarkMode(Array(AverageTime))
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
-@Warmup(iterations = 5)
-@Measurement(iterations = 10)
+@Warmup(iterations = 5, time = 2, timeUnit = TimeUnit.SECONDS)
+@Measurement(iterations = 10, time = 2, timeUnit = TimeUnit.SECONDS)
 abstract class OptimizerBench(mode: build.Mode) {
   var config: Config = _
-  var linked: linker.Result = _
+  var analysis: ReachabilityAnalysis.Result = _
 
   @Setup(Level.Trial)
   def setup(): Unit = {
@@ -30,7 +34,10 @@ abstract class OptimizerBench(mode: build.Mode) {
 
     val entries = build.ScalaNative.entries(config)
     util.Scope { implicit scope =>
-      linked = ScalaNative.link(config, entries)
+      analysis = Await.result(
+        ScalaNative.link(config, entries),
+        Duration.Inf
+      )
     }
   }
 
@@ -41,18 +48,19 @@ abstract class OptimizerBench(mode: build.Mode) {
       .walk(workdir)
       .sorted(Comparator.reverseOrder())
       .forEach(Files.delete)
-    linked = null
+    analysis = null
     config = null
   }
 
   @Benchmark
   def optimize(): Unit = {
-    val optimized = ScalaNative.optimize(config, linked)
-    assert(optimized.unavailable.size == 0)
+    val optimize = ScalaNative.optimize(config, analysis)
+    val optimized = Await.result(optimize, Duration.Inf)
   }
 }
 
 class OptimizeDebug extends OptimizerBench(build.Mode.debug)
 class OptimizeReleaseFast extends OptimizerBench(build.Mode.releaseFast)
+
 // Commented out becouse of long build times ~13 min
 // class OptimizeReleaseFull extends OptimizerBench(build.Mode.releaseFull)

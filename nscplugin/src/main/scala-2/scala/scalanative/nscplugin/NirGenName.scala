@@ -25,6 +25,8 @@ trait NirGenName[G <: Global with Singleton] {
       unreachable
     }
 
+  def genLocalName(sym: Symbol): String = sym.javaSimpleName.toString
+
   def genTypeName(sym: Symbol): nir.Global.Top = {
     val id = {
       val fullName = sym.fullName
@@ -56,7 +58,7 @@ trait NirGenName[G <: Global with Singleton] {
     }
   }
 
-  def genFieldName(sym: Symbol): nir.Global = {
+  def genFieldName(sym: Symbol): nir.Global.Member = {
     val owner =
       if (sym.isStaticMember) genModuleName(sym.owner)
       else genTypeName(sym.owner)
@@ -78,7 +80,7 @@ trait NirGenName[G <: Global with Singleton] {
     }
   }
 
-  def genMethodName(sym: Symbol): nir.Global = {
+  def genMethodName(sym: Symbol): nir.Global.Member = {
     val owner = genTypeName(sym.owner)
     val id = nativeIdOf(sym)
     val tpe = sym.tpe.widen
@@ -118,7 +120,7 @@ trait NirGenName[G <: Global with Singleton] {
   def genStaticMemberName(
       sym: Symbol,
       explicitOwner: Symbol
-  ): nir.Global = {
+  ): nir.Global.Member = {
     // Use explicit owner in case if forwarder target was defined in the trait/interface
     // or was abstract. `sym.owner` would always point to original owner, even if it also defined
     // in the super class. This is important, becouse (on the JVM) static methods are resolved at
@@ -146,7 +148,7 @@ trait NirGenName[G <: Global with Singleton] {
     owner.member(sig)
   }
 
-  def genFuncPtrExternForwarderName(ownerSym: Symbol): nir.Global = {
+  def genFuncPtrExternForwarderName(ownerSym: Symbol): nir.Global.Member = {
     val owner = genTypeName(ownerSym)
     owner.member(nir.Sig.Generated("$extern$forwarder"))
   }

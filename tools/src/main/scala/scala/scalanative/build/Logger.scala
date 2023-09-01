@@ -3,6 +3,7 @@ package scala.scalanative.build
 import java.lang.System.{err, out, lineSeparator => nl}
 
 import scala.sys.process.ProcessLogger
+import scala.concurrent._
 
 /** Interface to report and/or collect messages given by the toolchain. */
 trait Logger {
@@ -35,6 +36,19 @@ trait Logger {
     val res = f
     val end = nanoTime()
     info(s"$msg (${(end - start) / 1000000} ms)")
+    res
+  }
+
+  def timeAsync[T](
+      msg: String
+  )(f: => Future[T])(implicit ec: ExecutionContext): Future[T] = {
+    import java.lang.System.nanoTime
+    val start = nanoTime()
+    val res = f
+    res.onComplete { _ =>
+      val end = nanoTime()
+      info(s"$msg (${(end - start) / 1000000} ms)")
+    }
     res
   }
 }

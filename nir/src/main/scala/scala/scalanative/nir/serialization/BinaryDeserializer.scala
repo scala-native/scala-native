@@ -11,6 +11,7 @@ import scala.util.control.NonFatal
 
 import scala.scalanative.nir.serialization.{Tags => T}
 import scala.scalanative.nir.Global.{Top, Member}
+import scala.scalanative.util.TypeOps.TypeNarrowing
 
 import scala.annotation.{tailrec, switch}
 
@@ -201,6 +202,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, fileName: String) {
     case T.FinalAttr    => Attr.Final
 
     case T.LinktimeResolvedAttr => Attr.LinktimeResolved
+    case T.AlignAttr            => Attr.Alignment(getLebSignedInt(), getOpt(getString()))
   }
 
   private def getBin(): Bin = (getTag(): @switch) match {
@@ -224,12 +226,14 @@ final class BinaryDeserializer(buffer: ByteBuffer, fileName: String) {
     case T.XorBin  => Bin.Xor
   }
 
+  private def getScopeId() = new ScopeId(getLebUnsignedInt())
   private def getInsts(): Seq[Inst] = in(prelude.sections.insts) {
     getSeq(getInst())
   }
   private def getInst(): Inst = {
     val tag = getTag()
     implicit val pos: nir.Position = getPosition()
+    implicit def scope: nir.ScopeId = getScopeId()
     (tag: @switch) match {
       case T.LabelInst       => Inst.Label(getLocal(), getParams())
       case T.LetInst         => Inst.Let(getLocal(), getOp(), Next.None)
@@ -282,19 +286,37 @@ final class BinaryDeserializer(buffer: ByteBuffer, fileName: String) {
     case T.ZSizeCastConv => Conv.ZSizeCast
   }
 
+  import Defn.Define.DebugInfo
+
+  private def getLexicalScope() = DebugInfo.LexicalScope(
+    id = getScopeId(),
+    parent = getScopeId(),
+    srcPosition = getPosition()
+  )
+
+  private def getDebugInfo(): Defn.Define.DebugInfo =
+    Defn.Define.DebugInfo(
+      localNames = getLocalNames(),
+      lexicalScopes = getSeq(getLexicalScope())
+    )
+
   private def getDefn(): Defn = {
     val tag = getTag()
     val name = getGlobal()
     val attrs = getAttrs()
     implicit val position: nir.Position = getPosition()
     (tag: @switch) match {
-      case T.VarDefn     => Defn.Var(attrs, name, getType(), getVal())
-      case T.ConstDefn   => Defn.Const(attrs, name, getType(), getVal())
-      case T.DeclareDefn => Defn.Declare(attrs, name, getType())
-      case T.DefineDefn  => Defn.Define(attrs, name, getType(), getInsts())
-      case T.TraitDefn   => Defn.Trait(attrs, name, getGlobals())
-      case T.ClassDefn   => Defn.Class(attrs, name, getGlobalOpt(), getGlobals())
-      case T.ModuleDefn  => Defn.Module(attrs, name, getGlobalOpt(), getGlobals())
+      case T.VarDefn   => Defn.Var(attrs, name.narrow[Member], getType(), getVal())
+      case T.ConstDefn => Defn.Const(attrs, name.narrow[Member], getType(), getVal())
+      case T.DeclareDefn =>
+        Defn.Declare(attrs, name.narrow[Member], getType().narrow[Type.Function])
+      case T.DefineDefn =>
+        Defn.Define(attrs, name.narrow[Member], getType().narrow[Type.Function], getInsts(), getDebugInfo())
+      case T.TraitDefn => Defn.Trait(attrs, name.narrow[Top], getGlobals().narrow[Seq[Top]])
+      case T.ClassDefn =>
+        Defn.Class(attrs, name.narrow[Top], getGlobalOpt().narrow[Option[Top]], getGlobals().narrow[Seq[Top]])
+      case T.ModuleDefn =>
+        Defn.Module(attrs, name.narrow[Top], getGlobalOpt().narrow[Option[Top]], getGlobals().narrow[Seq[Top]])
     }
   }
 
@@ -304,7 +326,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, fileName: String) {
     (getTag(): @switch) match {
       case T.NoneGlobal   => Global.None
       case T.TopGlobal    => Global.Top(getString())
-      case T.MemberGlobal => Global.Member(getGlobal(), getSig())
+      case T.MemberGlobal => Global.Member(getGlobal().narrow[Top], getSig())
     }
   }
 
@@ -322,7 +344,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, fileName: String) {
 
   private def getOp(): Op = {
     (getTag(): @switch) match {
-      case T.CallOp       => Op.Call(getType(), getVal(), getVals())
+      case T.CallOp       => Op.Call(getType().narrow[Type.Function], getVal(), getVals())
       case T.LoadOp       => Op.Load(getType(), getVal(), None)
       case T.LoadSyncOp   => Op.Load(getType(), getVal(), Some(getSyncAttrs()))
       case T.StoreOp      => Op.Store(getType(), getVal(), getVal(), None)
@@ -336,14 +358,14 @@ final class BinaryDeserializer(buffer: ByteBuffer, fileName: String) {
       case T.ConvOp       => Op.Conv(getConv(), getType(), getVal())
       case T.FenceOp      => Op.Fence(getSyncAttrs())
 
-      case T.ClassallocOp     => Op.Classalloc(getGlobal(), None)
-      case T.ClassallocZoneOp => Op.Classalloc(getGlobal(), Some(getVal()))
-      case T.FieldloadOp      => Op.Fieldload(getType(), getVal(), getGlobal())
-      case T.FieldstoreOp     => Op.Fieldstore(getType(), getVal(), getGlobal(), getVal())
-      case T.FieldOp          => Op.Field(getVal(), getGlobal())
+      case T.ClassallocOp     => Op.Classalloc(getGlobal().narrow[Top], None)
+      case T.ClassallocZoneOp => Op.Classalloc(getGlobal().narrow[Top], Some(getVal()))
+      case T.FieldloadOp      => Op.Fieldload(getType(), getVal(), getGlobal().narrow[Member])
+      case T.FieldstoreOp     => Op.Fieldstore(getType(), getVal(), getGlobal().narrow[Member], getVal())
+      case T.FieldOp          => Op.Field(getVal(), getGlobal().narrow[Member])
       case T.MethodOp         => Op.Method(getVal(), getSig())
       case T.DynmethodOp      => Op.Dynmethod(getVal(), getSig())
-      case T.ModuleOp         => Op.Module(getGlobal())
+      case T.ModuleOp         => Op.Module(getGlobal().narrow[Top])
       case T.AsOp             => Op.As(getType(), getVal())
       case T.IsOp             => Op.Is(getType(), getVal())
       case T.CopyOp           => Op.Copy(getVal())
@@ -388,7 +410,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, fileName: String) {
       case T.VarType     => Type.Var(getType())
       case T.UnitType    => Type.Unit
       case T.ArrayType   => Type.Array(getType(), getBool())
-      case T.RefType     => Type.Ref(getGlobal(), getBool(), getBool())
+      case T.RefType     => Type.Ref(getGlobal().narrow[Top], getBool(), getBool())
       case T.SizeType    => Type.Size
     }
   }
@@ -456,48 +478,24 @@ final class BinaryDeserializer(buffer: ByteBuffer, fileName: String) {
       case n => util.unsupported(s"Unknown linktime condition tag: ${n}")
     }
 
-  // Ported from Scala.js
-  private var lastPosition = Position.NoPosition
   def getPosition(): Position = in(prelude.sections.positions) {
-    import PositionFormat._
-    val first = get()
-    if (first == FormatNoPositionValue) {
-      Position.NoPosition
-    } else {
-      val position = if ((first & FormatFullMask) == FormatFullMaskValue) {
-        val file = new URI(getString())
-        val line = getLebUnsignedInt()
-        val column = getLebUnsignedInt()
-        Position(file, line, column)
-      } else {
-        assert(
-          lastPosition != Position.NoPosition,
-          "Position format error: first position must be full" +
-            s", file=$fileName, first=$first"
-        )
-        if ((first & Format1Mask) == Format1MaskValue) {
-          val columnDiff = first >> Format1Shift
-          Position(
-            lastPosition.source,
-            lastPosition.line,
-            lastPosition.column + columnDiff
-          )
-        } else if ((first & Format2Mask) == Format2MaskValue) {
-          val lineDiff = first >> Format2Shift
-          val column = get() & 0xff // unsigned
-          Position(lastPosition.source, lastPosition.line + lineDiff, column)
-        } else {
-          assert(
-            (first & Format3Mask) == Format3MaskValue,
-            s"Position format error: first byte $first does not match any format"
-          )
-          val lineDiff = getShort()
-          val column = get() & 0xff // unsigned
-          Position(lastPosition.source, lastPosition.line + lineDiff, column)
-        }
+    val file = new URI(getString())
+    val line = getLebUnsignedInt()
+    val column = getLebUnsignedInt()
+    Position(file, line, column)
+  }
+
+  def getLocalNames(): LocalNames = {
+    val size = getLebUnsignedInt()
+    if (size == 0) Map.empty
+    else {
+      val b = Map.newBuilder[Local, String]
+      b.sizeHint(size)
+      for (_ <- 0 until size) {
+        b += getLocal() -> getString()
       }
-      lastPosition = position
-      position
+      b.result()
     }
   }
+
 }

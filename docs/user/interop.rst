@@ -512,4 +512,4 @@ using ``byteValue.toUByte``, ``shortValue.toUShort``, ``intValue.toUInt``, ``lon
 and conversely ``unsignedByteValue.toByte``, ``unsignedShortValue.toShort``, ``unsignedIntValue.toInt``,
 ``unsignedLongValue.toLong``, ``unsignedSizeValue.toSize``.
 
-Continue to :ref:`lib`.
+Continue to :ref:`native`.

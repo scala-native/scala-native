@@ -1,9 +1,6 @@
 name: Build docs
 on:
   pull_request:
-  push:
-    branches:
-      - main
 jobs:
   build-docs:
     runs-on: ubuntu-latest

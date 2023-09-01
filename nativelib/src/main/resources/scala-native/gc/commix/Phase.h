@@ -2,7 +2,7 @@
 #define IMMIX_PHASE_H
 
 #include "Heap.h"
-#include "GCTypes.h"
+#include "shared/GCTypes.h"
 #include "Stats.h"
 
 typedef enum {

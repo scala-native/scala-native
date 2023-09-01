@@ -1,13 +1,15 @@
+#if defined(SCALANATIVE_GC_COMMIX)
+
 #include <stdio.h>
 #include <setjmp.h>
 #include "Marker.h"
 #include "Object.h"
-#include "Log.h"
+#include "immix_commix/Log.h"
 #include "State.h"
-#include "headers/ObjectHeader.h"
+#include "immix_commix/headers/ObjectHeader.h"
 #include "datastructures/GreyPacket.h"
 #include "GCThread.h"
-#include "ThreadUtil.h"
+#include "shared/ThreadUtil.h"
 #include "SyncGreyLists.h"
 
 extern word_t *__modules;
@@ -449,3 +451,5 @@ bool Marker_IsMarkDone(Heap *heap) {
     uint32_t size = emptySize + weakRefSize;
     return size == heap->mark.total;
 }
+
+#endif

@@ -11,14 +11,15 @@ sealed abstract class Info {
 }
 
 sealed abstract class ScopeInfo extends Info {
+  override def name: Global.Top
   val members = mutable.UnrolledBuffer.empty[MemberInfo]
   val calls = mutable.Set.empty[Sig]
-  val responds = mutable.Map.empty[Sig, Global]
+  val responds = mutable.Map.empty[Sig, Global.Member]
 
   def isClass: Boolean = this.isInstanceOf[Class]
   def isTrait: Boolean = this.isInstanceOf[Trait]
   def is(info: ScopeInfo): Boolean
-  def targets(sig: Sig): mutable.Set[Global]
+  def targets(sig: Sig): mutable.Set[Global.Member]
   def implementors: mutable.SortedSet[Class]
 
   lazy val linearized: Seq[ScopeInfo] = {
@@ -63,14 +64,18 @@ final class Unavailable(val name: Global) extends Info {
     util.unsupported(s"unavailable ${name.show} has no position")
 }
 
-final class Trait(val attrs: Attrs, val name: Global, val traits: Seq[Trait])(
-    implicit val position: Position
+final class Trait(
+    val attrs: Attrs,
+    val name: Global.Top,
+    val traits: Seq[Trait]
+)(implicit
+    val position: Position
 ) extends ScopeInfo {
   val implementors = mutable.SortedSet.empty[Class]
   val subtraits = mutable.Set.empty[Trait]
 
-  def targets(sig: Sig): mutable.Set[Global] = {
-    val out = mutable.Set.empty[Global]
+  def targets(sig: Sig): mutable.Set[Global.Member] = {
+    val out = mutable.Set.empty[Global.Member]
 
     def add(cls: Class): Unit =
       if (cls.allocated) {
@@ -96,7 +101,7 @@ final class Trait(val attrs: Attrs, val name: Global, val traits: Seq[Trait])(
 
 final class Class(
     val attrs: Attrs,
-    val name: Global,
+    val name: Global.Top,
     val parent: Option[Class],
     val traits: Seq[Trait],
     val isModule: Boolean
@@ -104,7 +109,7 @@ final class Class(
     extends ScopeInfo {
   val implementors = mutable.SortedSet[Class](this)
   val subclasses = mutable.Set.empty[Class]
-  val defaultResponds = mutable.Map.empty[Sig, Global]
+  val defaultResponds = mutable.Map.empty[Sig, Global.Member]
   var allocated = false
 
   lazy val fields: Seq[Field] = {
@@ -124,12 +129,14 @@ final class Class(
 
   val ty: Type =
     Type.Ref(name)
-  def isConstantModule(implicit top: Result): Boolean = {
+  def isConstantModule(implicit
+      analysis: ReachabilityAnalysis.Result
+  ): Boolean = {
     val hasNoFields =
       fields.isEmpty
     val hasEmptyOrNoCtor = {
       val ctor = name member Sig.Ctor(Seq.empty)
-      top.infos
+      analysis.infos
         .get(ctor)
         .fold[Boolean] {
           true
@@ -150,11 +157,11 @@ final class Class(
 
     isModule && (isWhitelisted || attrs.isExtern || (hasEmptyOrNoCtor && hasNoFields))
   }
-  def resolve(sig: Sig): Option[Global] = {
+  def resolve(sig: Sig): Option[Global.Member] = {
     responds.get(sig).orElse(defaultResponds.get(sig))
   }
-  def targets(sig: Sig): mutable.Set[Global] = {
-    val out = mutable.Set.empty[Global]
+  def targets(sig: Sig): mutable.Set[Global.Member] = {
+    val out = mutable.Set.empty[Global.Member]
 
     def add(cls: Class): Unit =
       if (cls.allocated) {
@@ -188,9 +195,10 @@ object Class {
 final class Method(
     val attrs: Attrs,
     val owner: Info,
-    val name: Global,
-    val ty: Type,
-    val insts: Array[Inst]
+    val name: Global.Member,
+    val ty: Type.Function,
+    val insts: Array[Inst],
+    val debugInfo: Defn.Define.DebugInfo
 )(implicit val position: Position)
     extends MemberInfo {
   val value: Val =
@@ -206,7 +214,7 @@ final class Method(
 final class Field(
     val attrs: Attrs,
     val owner: Info,
-    val name: Global,
+    val name: Global.Member,
     val isConst: Boolean,
     val ty: nir.Type,
     val init: Val
@@ -216,22 +224,31 @@ final class Field(
     owner.asInstanceOf[Class].fields.indexOf(this)
 }
 
-final class Result(
-    val infos: mutable.Map[Global, Info],
-    val entries: Seq[Global],
-    val unavailable: Seq[Global],
-    val referencedFrom: mutable.Map[Global, Global],
-    val links: Seq[Attr.Link],
-    val defns: Seq[Defn],
-    val dynsigs: Seq[Sig],
-    val dynimpls: Seq[Global],
-    val resolvedVals: mutable.Map[String, Val]
-) {
-  lazy val ObjectClass = infos(Rt.Object.name).asInstanceOf[Class]
-  lazy val StringClass = infos(Rt.StringName).asInstanceOf[Class]
-  lazy val StringValueField = infos(Rt.StringValueName).asInstanceOf[Field]
-  lazy val StringOffsetField = infos(Rt.StringOffsetName).asInstanceOf[Field]
-  lazy val StringCountField = infos(Rt.StringCountName).asInstanceOf[Field]
-  lazy val StringCachedHashCodeField = infos(Rt.StringCachedHashCodeName)
-    .asInstanceOf[Field]
+sealed trait ReachabilityAnalysis {
+  def defns: Seq[Defn]
+  def isSuccessful: Boolean = this.isInstanceOf[ReachabilityAnalysis.Result]
+}
+
+object ReachabilityAnalysis {
+  final class UnreachableSymbolsFound(
+      val defns: Seq[Defn],
+      val unreachable: Seq[Reach.UnreachableSymbol]
+  ) extends ReachabilityAnalysis
+  final class Result(
+      val infos: mutable.Map[Global, Info],
+      val entries: Seq[Global],
+      val links: Seq[Attr.Link],
+      val defns: Seq[Defn],
+      val dynsigs: Seq[Sig],
+      val dynimpls: Seq[Global.Member],
+      val resolvedVals: mutable.Map[String, Val]
+  ) extends ReachabilityAnalysis {
+    lazy val ObjectClass = infos(Rt.Object.name).asInstanceOf[Class]
+    lazy val StringClass = infos(Rt.StringName).asInstanceOf[Class]
+    lazy val StringValueField = infos(Rt.StringValueName).asInstanceOf[Field]
+    lazy val StringOffsetField = infos(Rt.StringOffsetName).asInstanceOf[Field]
+    lazy val StringCountField = infos(Rt.StringCountName).asInstanceOf[Field]
+    lazy val StringCachedHashCodeField = infos(Rt.StringCachedHashCodeName)
+      .asInstanceOf[Field]
+  }
 }

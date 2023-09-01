@@ -29,7 +29,7 @@ final class Size(private[scalanative] val rawSize: RawSize) {
   @inline def toUShort: UShort = toUSize.toUShort
   @inline def toUInt: UInt     = toUSize.toUInt
   @inline def toULong: ULong   = toUSize.toULong
-  @inline def toUSize: USize   = new USize(rawSize)
+  @inline def toUSize: USize   = USize.valueOf(rawSize)
 
   @inline def toPtr[T]: Ptr[T] =
     if (is32BitPlatform) fromRawPtr[T](castIntToRawPtr(toInt))
@@ -250,8 +250,8 @@ final class Size(private[scalanative] val rawSize: RawSize) {
 
   /** Returns the bitwise AND of this value and `x`. */
   @inline def &(other: Size): Size =
-    if (is32BitPlatform) new Size(castIntToRawSize(castRawSizeToInt(rawSize) & castRawSizeToInt(other.rawSize)))
-    else new Size(castLongToRawSize(castRawSizeToLong(rawSize) & castRawSizeToLong(other.rawSize)))
+    if (is32BitPlatform) Size.valueOf(castIntToRawSize(castRawSizeToInt(rawSize) & castRawSizeToInt(other.rawSize)))
+    else Size.valueOf(castLongToRawSize(castRawSizeToLong(rawSize) & castRawSizeToLong(other.rawSize)))
 
   /** Returns the bitwise OR of this value and `x`. */
   @inline def |(x: Byte): Size = this | x.toSize
@@ -267,8 +267,8 @@ final class Size(private[scalanative] val rawSize: RawSize) {
 
   /** Returns the bitwise OR of this value and `x`. */
   @inline def |(other: Size): Size =
-    if (is32BitPlatform) new Size(castIntToRawSize(castRawSizeToInt(rawSize) | castRawSizeToInt(other.rawSize)))
-    else new Size(castLongToRawSize(castRawSizeToLong(rawSize) | castRawSizeToLong(other.rawSize)))
+    if (is32BitPlatform) Size.valueOf(castIntToRawSize(castRawSizeToInt(rawSize) | castRawSizeToInt(other.rawSize)))
+    else Size.valueOf(castLongToRawSize(castRawSizeToLong(rawSize) | castRawSizeToLong(other.rawSize)))
 
   /** Returns the bitwise XOR of this value and `x`. */
   @inline def ^(x: Byte): Size = this ^ x.toSize
@@ -284,8 +284,8 @@ final class Size(private[scalanative] val rawSize: RawSize) {
 
   /** Returns the bitwise XOR of this value and `x`. */
   @inline def ^(other: Size): Size =
-    if (is32BitPlatform) new Size(castIntToRawSize(castRawSizeToInt(rawSize) ^ castRawSizeToInt(other.rawSize)))
-    else new Size(castLongToRawSize(castRawSizeToLong(rawSize) ^ castRawSizeToLong(other.rawSize)))
+    if (is32BitPlatform) Size.valueOf(castIntToRawSize(castRawSizeToInt(rawSize) ^ castRawSizeToInt(other.rawSize)))
+    else Size.valueOf(castLongToRawSize(castRawSizeToLong(rawSize) ^ castRawSizeToLong(other.rawSize)))
 
   /** Returns the sum of this value and `x`. */
   @inline def +(x: Byte): Size = this + x.toSize
@@ -301,8 +301,8 @@ final class Size(private[scalanative] val rawSize: RawSize) {
 
   /** Returns the sum of this value and `x`. */
   @inline def +(other: Size): Size =
-    if (is32BitPlatform) new Size(castIntToRawSize(castRawSizeToInt(rawSize) + castRawSizeToInt(other.rawSize)))
-    else new Size(castLongToRawSize(castRawSizeToLong(rawSize) + castRawSizeToLong(other.rawSize)))
+    if (is32BitPlatform) Size.valueOf(castIntToRawSize(castRawSizeToInt(rawSize) + castRawSizeToInt(other.rawSize)))
+    else Size.valueOf(castLongToRawSize(castRawSizeToLong(rawSize) + castRawSizeToLong(other.rawSize)))
 
   /** Returns the difference of this value and `x`. */
   @inline def -(x: Byte): Size = this - x.toSize
@@ -318,8 +318,8 @@ final class Size(private[scalanative] val rawSize: RawSize) {
 
   /** Returns the difference of this value and `x`. */
   @inline def -(other: Size): Size =
-    if (is32BitPlatform) new Size(castIntToRawSize(castRawSizeToInt(rawSize) - castRawSizeToInt(other.rawSize)))
-    else new Size(castLongToRawSize(castRawSizeToLong(rawSize) - castRawSizeToLong(other.rawSize)))
+    if (is32BitPlatform) Size.valueOf(castIntToRawSize(castRawSizeToInt(rawSize) - castRawSizeToInt(other.rawSize)))
+    else Size.valueOf(castLongToRawSize(castRawSizeToLong(rawSize) - castRawSizeToLong(other.rawSize)))
 
   /** Returns the product of this value and `x`. */
   @inline def *(x: Byte): Size = this * x.toSize
@@ -335,8 +335,8 @@ final class Size(private[scalanative] val rawSize: RawSize) {
 
   /** Returns the product of this value and `x`. */
   @inline def *(other: Size): Size =
-    if (is32BitPlatform) new Size(castIntToRawSize(castRawSizeToInt(rawSize) * castRawSizeToInt(other.rawSize)))
-    else new Size(castLongToRawSize(castRawSizeToLong(rawSize) * castRawSizeToLong(other.rawSize)))
+    if (is32BitPlatform) Size.valueOf(castIntToRawSize(castRawSizeToInt(rawSize) * castRawSizeToInt(other.rawSize)))
+    else Size.valueOf(castLongToRawSize(castRawSizeToLong(rawSize) * castRawSizeToLong(other.rawSize)))
 
   /** Returns the quotient of this value and `x`. */
   @inline def /(x: Byte): Size = this / x.toSize
@@ -352,8 +352,8 @@ final class Size(private[scalanative] val rawSize: RawSize) {
 
   /** Returns the quotient of this value and `x`. */
   @inline def /(other: Size): Size =
-    if (is32BitPlatform) new Size(castIntToRawSize(castRawSizeToInt(rawSize) / castRawSizeToInt(other.rawSize)))
-    else new Size(castLongToRawSize(castRawSizeToLong(rawSize) / castRawSizeToLong(other.rawSize)))
+    if (is32BitPlatform) Size.valueOf(castIntToRawSize(castRawSizeToInt(rawSize) / castRawSizeToInt(other.rawSize)))
+    else Size.valueOf(castLongToRawSize(castRawSizeToLong(rawSize) / castRawSizeToLong(other.rawSize)))
 
   /** Returns the remainder of the division of this value by `x`. */
   @inline def %(x: Byte): Size = this % x.toSize
@@ -369,8 +369,8 @@ final class Size(private[scalanative] val rawSize: RawSize) {
 
   /** Returns the remainder of the division of this value by `x`. */
   @inline def %(other: Size): Size =
-    if (is32BitPlatform) new Size(castIntToRawSize(castRawSizeToInt(rawSize) % castRawSizeToInt(other.rawSize)))
-    else new Size(castLongToRawSize(castRawSizeToLong(rawSize) % castRawSizeToLong(other.rawSize)))
+    if (is32BitPlatform) Size.valueOf(castIntToRawSize(castRawSizeToInt(rawSize) % castRawSizeToInt(other.rawSize)))
+    else Size.valueOf(castLongToRawSize(castRawSizeToLong(rawSize) % castRawSizeToLong(other.rawSize)))
 
 
   // "Rich" API
@@ -382,10 +382,31 @@ final class Size(private[scalanative] val rawSize: RawSize) {
 }
 
 object Size {
-  @inline implicit def byteToSize(x: Byte): Size =
-    new Size(castIntToRawSize(x))
-  @inline implicit def shortToSize(x: Short): Size =
-    new Size(castIntToRawSize(x))
-  @inline implicit def intToSize(x: Int): Size =
-    new Size(castIntToRawSize(x))
+  @inline implicit def fromByte(x: Byte): Size = 
+    Size.valueOf(castIntToRawSize(x))
+  @inline implicit def fromShort(x: Short): Size = 
+    Size.valueOf(castIntToRawSize(x))
+  @inline implicit def fromInt(x: Int): Size = 
+    Size.valueOf(castIntToRawSize(x))
+
+  @inline def valueOf(rawSize: RawSize): Size = {
+    import SizeCache.cache
+    val intValue = castRawSizeToInt(rawSize)
+    val byteValue = intValue.toByte
+    if(castIntToRawSize(byteValue) != rawSize) new Size(rawSize)
+    else {
+      val idx = byteValue + 128
+      val cached = cache(idx)
+      if (cached ne null) cached
+      else {
+        val newBox = new Size(rawSize)
+        cache(idx) = newBox
+        newBox
+      }
+    }
+  }
+}
+
+private[unsafe] object SizeCache{
+  private[unsafe] val cache: scala.Array[Size] = new scala.Array[Size](256)
 }

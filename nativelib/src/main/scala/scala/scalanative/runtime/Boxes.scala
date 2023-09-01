@@ -31,8 +31,8 @@ import scalanative.unsigned._
 import scalanative.unsafe._
 
 object Boxes {
-  @inline def boxToSize(v: RawSize): Size   = new Size(v)
-  @inline def boxToUSize(v: RawSize): USize = new USize(v)
+  @inline def boxToSize(v: RawSize): Size   = Size.valueOf(v)
+  @inline def boxToUSize(v: RawSize): USize = USize.valueOf(v)
 
   @inline def unboxToSize(o: java.lang.Object): RawSize =
     if (o == null) Intrinsics.castIntToRawSize(0)
@@ -41,19 +41,19 @@ object Boxes {
     if (o == null) Intrinsics.castIntToRawSize(0)
     else o.asInstanceOf[USize].rawSize
 
-  @inline def boxToUByte(v: Byte): UByte = new UByte(v)
+  @inline def boxToUByte(v: Byte): UByte = UByte.valueOf(v)
   @inline def unboxToUByte(o: java.lang.Object): Byte =
     if (o == null) 0.toByte else o.asInstanceOf[UByte].underlying
 
-  @inline def boxToUShort(v: Short): UShort = new UShort(v)
+  @inline def boxToUShort(v: Short): UShort = UShort.valueOf(v)
   @inline def unboxToUShort(o: java.lang.Object): Short =
     if (o == null) 0.toShort else o.asInstanceOf[UShort].underlying
 
-  @inline def boxToUInt(v: Int): UInt = new UInt(v)
+  @inline def boxToUInt(v: Int): UInt = UInt.valueOf(v)
   @inline def unboxToUInt(o: java.lang.Object): Int =
     if (o == null) 0.toInt else o.asInstanceOf[UInt].underlying
 
-  @inline def boxToULong(v: Long): ULong = new ULong(v)
+  @inline def boxToULong(v: Long): ULong = ULong.valueOf(v)
   @inline def unboxToULong(o: java.lang.Object): Long =
     if (o == null) 0.toLong else o.asInstanceOf[ULong].underlying
 

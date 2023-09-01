@@ -1,6 +1,6 @@
 package scala.scalanative.runtime
 
-import scalanative.runtime.Platform.isWindows
+import scala.scalanative.meta.LinktimeInfo.isWindows
 import scalanative.unsigned._
 import scala.scalanative.unsafe._
 import scala.scalanative.runtime.libc._
@@ -20,8 +20,8 @@ object SymbolFormatter {
     var pos = 0
     val ident =
       fromRawPtr[CChar](
-        Intrinsics.stackalloc(
-          fromRawUSize(Intrinsics.sizeOf[CChar]) * 1024.toUSize
+        Intrinsics.stackalloc[CChar](
+          Intrinsics.castIntToRawSizeUnsigned(1024)
         )
       )
     classNameOut(0) = 0.toByte
@@ -31,12 +31,20 @@ object SymbolFormatter {
       // On Windows symbol names are different then on Unix platforms.
       // Due to differences in implementation between WinDbg and libUnwind used
       // on each platform, symbols on Windows do not contain '_' prefix.
-      if (!isWindows() && read() != '_') {
-        false
-      } else if (read() != 'S') {
-        false
+      if (!isWindows) {
+        if (read() != '_') {
+          false
+        } else if (read() != 'S') {
+          false
+        } else {
+          readGlobal()
+        }
       } else {
-        readGlobal()
+        if (read() != 'S') {
+          false
+        } else {
+          readGlobal()
+        }
       }
     }
 

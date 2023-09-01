@@ -134,7 +134,7 @@ private[junit] final class JUnitTask(
         es.size
     }
 
-    reporter.reportTestFinished(test.name, errors.isEmpty, timeInSeconds)
+    reporter.reportTestFinished(test.name, failed == 0, timeInSeconds)
 
     failed
   }

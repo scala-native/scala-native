@@ -1,9 +1,11 @@
+#if defined(SCALANATIVE_GC_IMMIX)
+
 #include <stdio.h>
 #include <memory.h>
 #include "Block.h"
 #include "Object.h"
 #include "metadata/ObjectMeta.h"
-#include "Log.h"
+#include "immix_commix/Log.h"
 #include "Allocator.h"
 #include "Marker.h"
 
@@ -99,3 +101,5 @@ void Block_Recycle(Allocator *allocator, BlockMeta *blockMeta,
         }
     }
 }
+
+#endif

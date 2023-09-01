@@ -7,7 +7,7 @@ import scalanative.linker.{ScopeInfo, Class, Trait}
 
 class RuntimeTypeInformation(info: ScopeInfo)(implicit meta: Metadata) {
   import RuntimeTypeInformation._
-  val name: Global = info.name.member(Sig.Generated("type"))
+  val name: Global.Member = info.name.member(Sig.Generated("type"))
   val const: Val.Global = Val.Global(name, Type.Ptr)
   val struct: Type.StructValue = info match {
     case cls: Class =>

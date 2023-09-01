@@ -24,6 +24,17 @@ trait NirDefinitions {
     lazy val RawSizeClass = getRequiredClass(
       "scala.scalanative.runtime.RawSize"
     )
+
+    lazy val USizeModule = getRequiredModule("scala.scalanative.unsigned.USize")
+    lazy val USize_fromUByte = getDecl(USizeModule, TermName("fromUByte"))
+    lazy val USize_fromUShort = getDecl(USizeModule, TermName("fromUShort"))
+    lazy val USize_fromUInt = getDecl(USizeModule, TermName("fromUInt"))
+
+    lazy val SizeModule = getRequiredModule("scala.scalanative.unsafe.Size")
+    lazy val Size_fromByte = getDecl(SizeModule, TermName("fromByte"))
+    lazy val Size_fromShort = getDecl(SizeModule, TermName("fromShort"))
+    lazy val Size_fromInt = getDecl(SizeModule, TermName("fromInt"))
+
     lazy val PtrClass = getRequiredClass("scala.scalanative.unsafe.Ptr")
     lazy val RawPtrClass = getRequiredClass("scala.scalanative.runtime.RawPtr")
 
@@ -52,6 +63,7 @@ trait NirDefinitions {
     lazy val NoSpecializeClass = getRequiredClass(
       "scala.scalanative.annotation.nospecialize"
     )
+    lazy val AlignClass = getRequiredClass("scala.scalanative.annotation.align")
 
     lazy val NativeModule = getRequiredModule(
       "scala.scalanative.unsafe.package"
@@ -102,6 +114,13 @@ trait NirDefinitions {
       getDecl(RuntimePackage, TermName("enterMonitor"))
     lazy val RuntimeExitMonitorMethod =
       getDecl(RuntimePackage, TermName("exitMonitor"))
+    lazy val RuntimePackage_fromRawSize =
+      getDecl(RuntimePackage, TermName("fromRawSize"))
+    lazy val RuntimePackage_fromRawUSize =
+      getDecl(RuntimePackage, TermName("fromRawUSize"))
+    lazy val RuntimePackage_toRawSizeAlts =
+      getDecl(RuntimePackage, TermName("toRawSize")).alternatives
+        .ensuring(_.size == 2)
 
     lazy val RuntimeTypeClass = getRequiredClass(
       "scala.scalanative.runtime.Type"
@@ -113,10 +132,15 @@ trait NirDefinitions {
     lazy val IntrinsicsModule = getRequiredModule(
       "scala.scalanative.runtime.Intrinsics"
     )
+    lazy val IntrinsicsInternalModule =
+      getMember(IntrinsicsModule, TermName("internal"))
     lazy val DivUIntMethod = getMember(IntrinsicsModule, TermName("divUInt"))
     lazy val DivULongMethod = getMember(IntrinsicsModule, TermName("divULong"))
     lazy val RemUIntMethod = getMember(IntrinsicsModule, TermName("remUInt"))
     lazy val RemULongMethod = getMember(IntrinsicsModule, TermName("remULong"))
+    lazy val UnsignedOfMethods =
+      getMember(IntrinsicsModule, TermName("unsignedOf")).alternatives
+        .ensuring(_.size == 5)
     lazy val ByteToUIntMethod =
       getMember(IntrinsicsModule, TermName("byteToUInt"))
     lazy val ByteToULongMethod =
@@ -198,20 +222,18 @@ trait NirDefinitions {
       getMember(IntrinsicsModule, TermName("castLongToRawPtr"))
     lazy val StackallocMethods =
       getMember(IntrinsicsModule, TermName("stackalloc")).alternatives
+    lazy val StackallocInternalMethod =
+      getMember(IntrinsicsInternalModule, TermName("stackalloc"))
     lazy val ClassFieldRawPtrMethod =
       getMember(IntrinsicsModule, TermName("classFieldRawPtr"))
-    lazy val SizeOfMethods =
-      getMember(IntrinsicsModule, TermName("sizeOf")).alternatives
     lazy val SizeOfMethod =
-      SizeOfMethods.find(_.paramss.flatten.nonEmpty).get
-    lazy val SizeOfTypeMethod =
-      SizeOfMethods.find(_.paramss.flatten.isEmpty).get
-    lazy val AlignmentOfMethods =
-      getMember(IntrinsicsModule, TermName("alignmentOf")).alternatives
+      getMember(IntrinsicsModule, TermName("sizeOf"))
+    lazy val SizeOfInternalMethod =
+      getMember(IntrinsicsInternalModule, TermName("sizeOf"))
     lazy val AlignmentOfMethod =
-      AlignmentOfMethods.find(_.paramss.flatten.nonEmpty).get
-    lazy val AlignmentOfTypeMethod =
-      AlignmentOfMethods.find(_.paramss.flatten.isEmpty).get
+      getMember(IntrinsicsModule, TermName("alignmentOf"))
+    lazy val AlignmentOfInternalMethod =
+      getMember(IntrinsicsInternalModule, TermName("alignmentOf"))
 
     lazy val CFuncPtrApplyMethods = CFuncPtrNClass.map(
       getMember(_, TermName("apply"))

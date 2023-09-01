@@ -55,6 +55,7 @@ trait GenReflectiveInstantisation(using Context) {
       scoped(
         curClassSym := sym,
         curFresh := Fresh(),
+        curScopeId := ScopeId.TopLevel,
         curUnwindHandler := None,
         curMethodThis := None
       ) {
@@ -67,7 +68,7 @@ trait GenReflectiveInstantisation(using Context) {
     given nir.Position = td.span
     val sym: Symbol = curClassSym
     val owner = genTypeName(sym)
-    val name = owner.member(nir.Sig.Clinit())
+    val name = owner.member(nir.Sig.Clinit)
 
     val staticInitBody =
       if (curClassSym.get.is(flag = Module, butNot = Lifted))
@@ -81,13 +82,12 @@ trait GenReflectiveInstantisation(using Context) {
     staticInitBody
       .filter(_.nonEmpty)
       .foreach { body =>
-        generatedDefns +=
-          Defn.Define(
-            Attrs(),
-            name,
-            nir.Type.Function(Seq.empty[nir.Type], Type.Unit),
-            body
-          )
+        generatedDefns += new Defn.Define(
+          Attrs(),
+          name,
+          nir.Type.Function(Seq.empty[nir.Type], Type.Unit),
+          body
+        )
       }
   }
 
@@ -158,7 +158,7 @@ trait GenReflectiveInstantisation(using Context) {
   // Generate the constructor for the class instantiator class,
   // which is expected to extend one of scala.runtime.AbstractFunctionX.
   private def genConstructor(
-      superClass: Global
+      superClass: Global.Top
   )(using
       nir.Position
   )(using reflInstBuffer: ReflectiveInstantiationBuffer): Unit = {
@@ -178,7 +178,7 @@ trait GenReflectiveInstantisation(using Context) {
         buf.toSeq
       }
 
-      reflInstBuffer += Defn.Define(
+      reflInstBuffer += new Defn.Define(
         Attrs(),
         reflInstBuffer.name.member(Sig.Ctor(Seq.empty)),
         nir.Type.Function(Seq(Type.Ref(reflInstBuffer.name)), Type.Unit),
@@ -189,7 +189,7 @@ trait GenReflectiveInstantisation(using Context) {
 
 // Allocate and construct an object, using the provided ExprBuffer.
   private def allocAndConstruct(
-      name: Global,
+      name: Global.Top,
       argTypes: Seq[nir.Type],
       args: Seq[Val]
   )(using pos: nir.Position, buf: ExprBuffer): Val = {
@@ -204,7 +204,7 @@ trait GenReflectiveInstantisation(using Context) {
   }
 
   private def genModuleLoader(
-      fqSymName: Global
+      fqSymName: Global.Top
   )(using
       pos: nir.Position,
       buf: ExprBuffer,
@@ -229,7 +229,7 @@ trait GenReflectiveInstantisation(using Context) {
         buf.toSeq
       }
 
-      reflInstBuffer += Defn.Define(
+      reflInstBuffer += new Defn.Define(
         Attrs(),
         reflInstBuffer.name.member(applyMethodSig),
         nir.Type.Function(Seq(Type.Ref(reflInstBuffer.name)), Rt.Object),
@@ -330,7 +330,7 @@ trait GenReflectiveInstantisation(using Context) {
           buf.toSeq
         }
 
-        reflInstBuffer += Defn.Define(
+        reflInstBuffer += new Defn.Define(
           Attrs.None,
           reflInstBuffer.name.member(applyMethodSig),
           nir.Type.Function(

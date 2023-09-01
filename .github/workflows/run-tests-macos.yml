@@ -2,9 +2,6 @@ name: Run tests MacOs
 on:
   workflow_call:
   pull_request:
-  push:
-    branches:
-      - main
   schedule:
     # Every day at 2 AM UTC
     - cron: "0 2 * * *"
@@ -93,10 +90,7 @@ jobs:
         # Linking on MacOS in GithubActions fails when using default linker (ld), use lld instead
         run: |
           SetConfigTemplate=$(cat << EOM
-            nativeConfig ~= { prev =>
-              prev
-                .withLinkingOptions(prev.linkingOptions ++ Seq("-fuse-ld=lld") )
-            }
+            nativeConfig ~= { _.withLinkingOptions(_ :+ "-fuse-ld=lld") }
           EOM
           )
           echo set-native-config=${SetConfigTemplate} >> $GITHUB_ENV
@@ -194,7 +188,7 @@ jobs:
                 .withCheck(true)
                 .withCheckFatalWarnings(true)
                 .withMultithreadingSupport(true)
-                .withLinkingOptions(prev.linkingOptions ++ Seq("-fuse-ld=lld") )
+                .withLinkingOptions(_ :+ "-fuse-ld=lld")
             }
           EOM
           )

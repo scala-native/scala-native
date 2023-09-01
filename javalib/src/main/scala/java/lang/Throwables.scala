@@ -7,15 +7,18 @@ import scalanative.runtime.unwind
 import scala.scalanative.meta.LinktimeInfo
 // TODO: Replace with j.u.c.ConcurrentHashMap when implemented to remove scalalib dependency
 import scala.collection.concurrent.TrieMap
+import scala.scalanative.runtime.Backtrace
+import scala.scalanative.runtime.NativeThread
 
 private[lang] object StackTrace {
   private val cache = TrieMap.empty[CUnsignedLong, StackTraceElement]
 
   private def makeStackTraceElement(
-      cursor: Ptr[scala.Byte]
+      cursor: Ptr[scala.Byte],
+      ip: CUnsignedLong
   )(implicit zone: Zone): StackTraceElement = {
     val nameMax = 1024
-    val name = alloc[CChar](nameMax.toUSize)
+    val name = alloc[CChar](nameMax)
     val offset = stackalloc[scala.Long]()
 
     unwind.get_proc_name(cursor, name, nameMax.toUSize, offset)
@@ -24,8 +27,10 @@ private[lang] object StackTrace {
     // Unmangler is going to use strlen on this name and it's
     // behavior is not defined for non-zero-terminated strings.
     name(nameMax - 1) = 0.toByte
-
-    StackTraceElement.fromSymbol(name)
+    val position =
+      if (LinktimeInfo.isMac) Backtrace.decodePosition(ip.toLong)
+      else Backtrace.Position.empty
+    StackTraceElement(name, position)
   }
 
   /** Creates a stack trace element in given unwind context. Finding a name of
@@ -36,26 +41,52 @@ private[lang] object StackTrace {
       cursor: Ptr[scala.Byte],
       ip: CUnsignedLong
   )(implicit zone: Zone): StackTraceElement =
-    cache.getOrElseUpdate(ip, makeStackTraceElement(cursor))
+    cache.getOrElseUpdate(ip, makeStackTraceElement(cursor, ip))
 
   @noinline private[lang] def currentStackTrace(): Array[StackTraceElement] = {
-    var buffer = mutable.ArrayBuffer.empty[StackTraceElement]
-    if (!LinktimeInfo.asanEnabled) {
-      Zone { implicit z =>
-        val cursor = alloc[scala.Byte](unwind.sizeOfCursor)
-        val context = alloc[scala.Byte](unwind.sizeOfContext)
-        val ip = stackalloc[CSize]()
+    // Used to prevent filling stacktraces inside `currentStackTrace` which might lead to infinite loop
+    val threadCtx = NativeThread.currentNativeThread.thread.platformCtx
+    if (threadCtx.isFillingStackTrace) Array.empty
+    else if (LinktimeInfo.asanEnabled) Array.empty
+    else
+      try {
+        threadCtx.isFillingStackTrace = true
+        val buffer = mutable.ArrayBuffer.empty[StackTraceElement]
+        Zone { implicit z =>
+          val cursor = alloc[scala.Byte](unwind.sizeOfCursor)
+          val context = alloc[scala.Byte](unwind.sizeOfContext)
+          val ip = stackalloc[CSize]()
+          var foundCurrentStackTrace = false
+          var afterFillInStackTrace = false
+          unwind.get_context(context)
+          unwind.init_local(cursor, context)
+          while (unwind.step(cursor) > 0) {
+            unwind.get_reg(cursor, unwind.UNW_REG_IP, ip)
+            val elem = cachedStackTraceElement(cursor, !ip)
+            buffer += elem
 
-        unwind.get_context(context)
-        unwind.init_local(cursor, context)
-        while (unwind.step(cursor) > 0) {
-          unwind.get_reg(cursor, unwind.UNW_REG_IP, ip)
-          buffer += cachedStackTraceElement(cursor, !ip)
+            // Look for intrinsic stack frames and remove them to not polute stack traces
+            if (!afterFillInStackTrace) {
+              if (!foundCurrentStackTrace) {
+                if (elem.getClassName == "java.lang.StackTrace$" &&
+                    elem.getMethodName == "currentStackTrace") {
+                  foundCurrentStackTrace = true
+                  buffer.clear()
+                }
+              } else {
+                // Not guaranteed to be found, may be inlined.
+                // This branch would be visited exactly 1 time
+                if (elem.getClassName == "java.lang.Throwable" &&
+                    elem.getMethodName == "fillInStackTrace") {
+                  buffer.clear()
+                }
+                afterFillInStackTrace = true
+              }
+            }
+          }
         }
-      }
-    }
-
-    buffer.toArray
+        buffer.toArray
+      } finally threadCtx.isFillingStackTrace = false
   }
 }
 

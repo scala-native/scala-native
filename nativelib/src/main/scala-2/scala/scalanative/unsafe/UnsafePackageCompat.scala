@@ -27,13 +27,23 @@ private[scalanative] trait UnsafePackageCompat { self =>
   /** Heap allocate and zero-initialize n values using current implicit
    *  allocator.
    */
-  def alloc[T](n: CSize)(implicit z: Zone): Ptr[T] = macro MacroImpl.allocN[T]
+  def alloc[T](n: Int)(implicit z: Zone): Ptr[T] = macro MacroImpl.allocN[T]
+
+  /** Heap allocate and zero-initialize n values using current implicit
+   *  allocator.
+   */
+  def alloc[T](n: CSize)(implicit z: Zone): Ptr[T] =
+    macro MacroImpl.allocNUnsigned[T]
 
   /** Stack allocate and zero-initialize 1 value of given type */
   def stackalloc[T](): Ptr[T] = macro MacroImpl.stackallocSingle[T]
 
   /** Stack allocate and zero-initialize n values of given type */
-  def stackalloc[T](n: CSize): Ptr[T] = macro MacroImpl.stackallocN[T]
+  def stackalloc[T](n: Int): Ptr[T] = macro MacroImpl.stackallocN[T]
+
+  /** Stack allocate and zero-initialize n values of given type */
+  def stackalloc[T](n: CSize): Ptr[T] = macro MacroImpl.stackallocNUnsigned[T]
+
 }
 
 private object MacroImpl {
@@ -96,6 +106,28 @@ private object MacroImpl {
 
     val T = weakTypeOf[T]
 
+    val elemSize, size, ptr = TermName(c.freshName())
+
+    val runtime = q"_root_.scala.scalanative.runtime"
+    val unsignedOf = q"$runtime.Intrinsics.unsignedOf"
+
+    q"""{
+          val $elemSize = $runtime.Intrinsics.sizeOf[$T]
+          val $size = 
+            $unsignedOf($elemSize) * $unsignedOf(${validateSize(c)(n)})
+          val $ptr     = $z.alloc($size)
+          $runtime.libc.memset($ptr, 0, $size)
+          $ptr.asInstanceOf[Ptr[$T]]
+        }"""
+  }
+
+  def allocNUnsigned[T: c.WeakTypeTag](
+      c: Context
+  )(n: c.Tree)(z: c.Tree): c.Tree = {
+    import c.universe._
+
+    val T = weakTypeOf[T]
+
     val size, ptr, rawSize = TermName(c.freshName())
 
     val runtime = q"_root_.scala.scalanative.runtime"
@@ -114,16 +146,37 @@ private object MacroImpl {
 
     val T = weakTypeOf[T]
 
-    val size, rawptr, rawSize = TermName(c.freshName())
+    val rawptr = TermName(c.freshName())
 
     val runtime = q"_root_.scala.scalanative.runtime"
 
     q"""{
-          val $rawSize = $runtime.Intrinsics.sizeOf[$T]
-          val $rawptr  = $runtime.Intrinsics.stackalloc($rawSize)
-          $runtime.libc.memset($rawptr, 0, $rawSize)
+          val $rawptr  = $runtime.Intrinsics.stackalloc[$T]()
           $runtime.fromRawPtr[$T]($rawptr)
         }"""
+  }
+
+  private def validateSize(c: Context)(size: c.Tree): c.Tree = {
+    import c.universe._
+    size match {
+      case lit @ Literal(Constant(size: Int)) =>
+        if (size == 0)
+          c.error(c.enclosingPosition, "Allocation of size 0 is fruitless")
+        else if (size < 0)
+          c.error(
+            c.enclosingPosition,
+            "Cannot allocate memory of negative size"
+          )
+        lit
+      case expr =>
+        val size = TermName(c.freshName())
+        q"""{
+          val $size = $expr
+          if($size < 0) throw new java.lang.IllegalArgumentException("Cannot allocate memory of negative size")
+          $size
+        }
+        """
+    }
   }
 
   def stackallocN[T: c.WeakTypeTag](c: Context)(n: c.Tree): c.Tree = {
@@ -131,15 +184,33 @@ private object MacroImpl {
 
     val T = weakTypeOf[T]
 
-    val size, rawptr, rawSize = TermName(c.freshName())
+    val elements, rawptr = TermName(c.freshName())
 
     val runtime = q"_root_.scala.scalanative.runtime"
+    val toRawSize = q"$runtime.Intrinsics.castIntToRawSizeUnsigned"
 
     q"""{
-          val $rawSize = $runtime.Intrinsics.sizeOf[$T]
-          val $size    = $runtime.fromRawUSize($rawSize) * $n
-          val $rawptr  = $runtime.Intrinsics.stackalloc($size)
-          $runtime.libc.memset($rawptr, 0, $runtime.toRawSize($size))
+          val $rawptr  = $runtime.Intrinsics.stackalloc[$T](
+              $toRawSize(${validateSize(c)(n)})
+            )
+          $runtime.fromRawPtr[$T]($rawptr)
+        }"""
+  }
+
+  def stackallocNUnsigned[T: c.WeakTypeTag](c: Context)(n: c.Tree): c.Tree = {
+    import c.universe._
+
+    val T = weakTypeOf[T]
+
+    val elements, rawptr = TermName(c.freshName())
+
+    val runtime = q"_root_.scala.scalanative.runtime"
+    val toRawSize = q"$runtime.Intrinsics.castIntToRawSizeUnsigned"
+    val toInt = q"$runtime.Intrinsics.castRawSizeToInt"
+
+    q"""{
+          val $elements = $runtime.toRawSize($n)
+          val $rawptr  = $runtime.Intrinsics.stackalloc[$T]($elements)
           $runtime.fromRawPtr[$T]($rawptr)
         }"""
   }

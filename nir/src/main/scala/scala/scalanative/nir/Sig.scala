@@ -75,7 +75,7 @@ object Sig {
   ) extends Unmangled
 
   final case class Ctor(types: Seq[Type]) extends Unmangled
-  final case class Clinit() extends Unmangled
+  case object Clinit extends Unmangled
   final case class Proxy(id: String, types: Seq[Type]) extends Unmangled
   final case class Extern(id: String) extends Unmangled
   final case class Generated(id: String) extends Unmangled

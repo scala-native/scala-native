@@ -12,7 +12,9 @@ private[concurrent] abstract class CNodeBase[K <: AnyRef, V <: AnyRef]
 
   final val updater: AtomicIntegerFieldUpdater[CNodeBase[_, _]] =
     new IntrinsicAtomicIntegerFieldUpdater(obj =>
-      fromRawPtr(classFieldRawPtr(obj, "csize"))
+      fromRawPtr(
+        classFieldRawPtr(obj.asInstanceOf[CNodeBase[AnyRef, AnyRef]], "csize")
+      )
     )
 
   @alwaysinline

@@ -61,11 +61,37 @@ class DateTest {
       executingInScalaNative && isWindows
     )
 
-    val result = new Date().toString // actual time this test is run.
-    // regex should match, but not be: "Fri Mar 31 14:47:44 EDT 2020"
-    // Two decade year range in regex is coarse sanity check.
+    /*
+     * The JDK Date.toString() description defines the format for most of
+     * the fields returned by toString(). One can expect "Mon" instead of, say
+     * "Lundi".
+     *
+     * The timezone name, "zzz" in the description, can be any name in the
+     * IANA (Internet Assigned Numbers Authority) Time Zone Database
+     * URL: https://www.iana.org/time-zones.
+     *
+     * The timezone name is controlled/known in the GitHub Continuous
+     * Integration (CI) environment as is the matching regex
+     * (regular expression)
+     *
+     * Use a wildcard regex outside the CI environment to avoid having to
+     * parse the whole Time Zone Database.
+     */
+
+    val haveCI =
+      java.lang.Boolean.parseBoolean(System.getenv("GITHUB_ACTIONS"))
+
+    val tzRegex =
+      if (haveCI) "[A-Z]{2,5} "
+      else ".*"
+
+    /* regex should match, but not be: "Fri Mar 31 14:47:44 EDT 2020"
+     * Two decade year range in regex is coarse sanity check.
+     */
     val expected = "[A-Z][a-z]{2} [A-Z][a-z]{2} " +
-      "\\d\\d \\d{2}:\\d{2}:\\d{2} [A-Z]{2,5} 20[2-3]\\d"
+      s"\\d\\d \\d{2}:\\d{2}:\\d{2} ${tzRegex}20[2-3]\\d"
+
+    val result = new Date().toString // actual time this test is run.
 
     assertTrue(
       s"""Result "${result}" does not match regex "${expected}"""",

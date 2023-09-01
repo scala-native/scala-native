@@ -19,5 +19,5 @@ class DynamicHashMap(cls: Class, proxies: Seq[Defn])(implicit meta: Metadata) {
       .fold(Seq.empty[Global.Member])(meta.dynmap(_).methods)
       .filterNot(m => sigs.contains(m.sig)) ++ own
   }
-  val value: Val = DynmethodPerfectHashMap(methods, meta.linked.dynsigs)
+  val value: Val = DynmethodPerfectHashMap(methods, meta.analysis.dynsigs)
 }

@@ -1,5 +1,5 @@
-liTest run started
+liTest run scala.scalanative.junit.ExceptionBeforeClass started
 leTest scala.scalanative.junit.ExceptionBeforeClass failed: foo, took <TIME>
 e2scala.scalanative.junit.ExceptionBeforeClass
-liTest run finished: 1 failed, 0 ignored, 0 total, <TIME>
+liTest run scala.scalanative.junit.ExceptionBeforeClass finished: 1 failed, 0 ignored, 0 total, <TIME>
 d

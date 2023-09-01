@@ -1,3 +1,5 @@
+#if defined(SCALANATIVE_GC_COMMIX)
+
 #include "SyncGreyLists.h"
 
 void SyncGreyLists_giveNotEmptyPacket(Heap *heap, Stats *stats,
@@ -56,3 +58,5 @@ GreyPacket *SyncGreyLists_takeEmptyPacket(Heap *heap, Stats *stats) {
     assert(packet != NULL);
     return packet;
 }
+
+#endif

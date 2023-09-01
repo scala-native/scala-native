@@ -3,6 +3,9 @@ package linker
 
 import nir.{Sig, Type, Global}
 
+import org.junit.Test
+import org.junit.Assert._
+
 class StubSpec extends LinkerSpec {
 
   val entry = "Main"
@@ -24,52 +27,56 @@ class StubSpec extends LinkerSpec {
                            |  }
                            |}""".stripMargin
 
-  "Stub methods" should "be ignored by the linker when `linkStubs = false`" in {
-    link(entry, stubMethodSource, _.withLinkStubs(false)) { (cfg, result) =>
-      assert(!cfg.linkStubs)
-      assert(result.unavailable.length == 1)
-      assert(
-        result.unavailable.head == Global
-          .Top("Main$")
-          .member(Sig.Method("stubMethod", Seq(Type.Int)))
-      )
+  @Test def ignoreMethods(): Unit = {
+    doesNotLink(entry, stubMethodSource, _.withLinkStubs(false)) {
+      (cfg, result: ReachabilityAnalysis.UnreachableSymbolsFound) =>
+        assertTrue(!cfg.linkStubs)
+        assertTrue(result.unreachable.length == 1)
+        assertEquals(
+          Global
+            .Top("Main$")
+            .member(Sig.Method("stubMethod", Seq(Type.Int))),
+          result.unreachable.head.name
+        )
     }
   }
 
-  it should "be included when `linkStubs = true`" in {
+  @Test def includeMethods(): Unit = {
     link(entry, stubMethodSource, _.withLinkStubs(true)) { (cfg, result) =>
-      assert(cfg.linkStubs)
-      assert(result.unavailable.isEmpty)
+      assertTrue(cfg.linkStubs)
+      assertTrue(result.isSuccessful)
     }
   }
 
-  "Stub classes" should "be ignored by the linker when `linkStubs = false`" in {
-    link(entry, stubClassSource, _.withLinkStubs(false)) { (cfg, result) =>
-      assert(!cfg.linkStubs)
-      assert(result.unavailable.length == 1)
-      assert(result.unavailable.head == Global.Top("StubClass"))
+  @Test def ignoreClasses(): Unit = {
+    doesNotLink(entry, stubClassSource, _.withLinkStubs(false)) {
+      (cfg, result: ReachabilityAnalysis.UnreachableSymbolsFound) =>
+        assertTrue(!cfg.linkStubs)
+        assertTrue(result.unreachable.length == 1)
+        assertTrue(result.unreachable.head.name == Global.Top("StubClass"))
     }
   }
 
-  it should "be included when `linkStubs = true`" in {
+  @Test def includeClasses(): Unit = {
     link(entry, stubClassSource, _.withLinkStubs(true)) { (cfg, result) =>
-      assert(cfg.linkStubs)
-      assert(result.unavailable.isEmpty)
+      assertTrue(cfg.linkStubs)
+      assertTrue(result.isSuccessful)
     }
   }
 
-  "Stub modules" should "be ignored by the linker when `linkStubs = false`" in {
-    link(entry, stubModuleSource, _.withLinkStubs(false)) { (cfg, result) =>
-      assert(!cfg.linkStubs)
-      assert(result.unavailable.length == 1)
-      assert(result.unavailable.head == Global.Top("StubModule$"))
+  @Test def ignoreModules(): Unit = {
+    doesNotLink(entry, stubModuleSource, _.withLinkStubs(false)) {
+      case (cfg, result) =>
+        assertTrue(!cfg.linkStubs)
+        assertTrue(result.unreachable.length == 1)
+        assertTrue(result.unreachable.head.name == Global.Top("StubModule$"))
     }
   }
 
-  it should "be included when `linkStubs = true`" in {
+  @Test def includeModules(): Unit = {
     link(entry, stubModuleSource, _.withLinkStubs(true)) { (cfg, result) =>
-      assert(cfg.linkStubs)
-      assert(result.unavailable.isEmpty)
+      assertTrue(cfg.linkStubs)
+      assertTrue(result.isSuccessful)
     }
   }
 

@@ -207,6 +207,37 @@ class MatcherTest {
     )
   }
 
+  // Issue 3431
+  @Test def findAfterResetInput(): Unit = {
+    val needle = "Twinkle"
+    val prefix = "Sing the song: "
+    // "Sing the song: Twinkle, Twinkle, Little Star"
+    val haystack = s"${prefix}${needle}, ${needle}, Little Star"
+    val notHaystack = s"Repent"
+
+    val m = Pattern.compile(needle).matcher(haystack)
+
+    assertTrue(
+      s"first find should have found '${needle}' in '${haystack}'",
+      m.find()
+    )
+
+    val expectedStart = prefix.length
+    val foundStart = m.start()
+    assertTrue(
+      s"first start index: ${foundStart} != expected: ${expectedStart}",
+      foundStart == expectedStart
+    )
+
+    m.reset(notHaystack)
+
+    assertFalse(
+      s"find after reset(input) should not have found " +
+        s"'${needle}' in '${haystack}'",
+      m.find()
+    )
+  }
+
   @Test def findStartInvalidStartValues(): Unit = {
     val pattern = "Isaac"
     val sample = "Asimov"

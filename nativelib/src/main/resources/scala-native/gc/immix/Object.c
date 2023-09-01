@@ -1,9 +1,11 @@
+#if defined(SCALANATIVE_GC_IMMIX)
+
 #include <stddef.h>
 #include <stdio.h>
 #include "Object.h"
 #include "Block.h"
-#include "Log.h"
-#include "utils/MathUtils.h"
+#include "immix_commix/Log.h"
+#include "immix_commix/utils/MathUtils.h"
 
 word_t *Object_LastWord(Object *object) {
     size_t size = Object_Size(object);
@@ -88,3 +90,5 @@ void Object_Mark(Heap *heap, Object *object, ObjectMeta *objectMeta) {
         }
     }
 }
+
+#endif

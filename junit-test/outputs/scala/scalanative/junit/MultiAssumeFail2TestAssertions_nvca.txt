@@ -1,8 +1,9 @@
-liTest run started
+liTest run scala.scalanative.junit.MultiAssumeFail2Test started
 liTest scala.scalanative.junit.MultiAssumeFail2Test.multiTest1 started
 lwTest assumption in test scala.scalanative.junit.MultiAssumeFail2Test.multiTest1 failed: This assume should not pass, took <TIME>
 e3scala.scalanative.junit.MultiAssumeFail2Test.multiTest1
 ldTest scala.scalanative.junit.MultiAssumeFail2Test.multiTest1 finished, took <TIME>
+e0scala.scalanative.junit.MultiAssumeFail2Test.multiTest1
 liTest scala.scalanative.junit.MultiAssumeFail2Test.multiTest2 started
 ldTest scala.scalanative.junit.MultiAssumeFail2Test.multiTest2 finished, took <TIME>
 e0scala.scalanative.junit.MultiAssumeFail2Test.multiTest2
@@ -13,8 +14,9 @@ liTest scala.scalanative.junit.MultiAssumeFail2Test.multiTest4 started
 lwTest assumption in test scala.scalanative.junit.MultiAssumeFail2Test.multiTest4 failed: This assume should not pass, took <TIME>
 e3scala.scalanative.junit.MultiAssumeFail2Test.multiTest4
 ldTest scala.scalanative.junit.MultiAssumeFail2Test.multiTest4 finished, took <TIME>
+e0scala.scalanative.junit.MultiAssumeFail2Test.multiTest4
 liTest scala.scalanative.junit.MultiAssumeFail2Test.multiTest5 started
 ldTest scala.scalanative.junit.MultiAssumeFail2Test.multiTest5 finished, took <TIME>
 e0scala.scalanative.junit.MultiAssumeFail2Test.multiTest5
-liTest run finished: 0 failed, 0 ignored, 5 total, <TIME>
+liTest run scala.scalanative.junit.MultiAssumeFail2Test finished: 0 failed, 0 ignored, 5 total, <TIME>
 d

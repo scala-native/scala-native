@@ -2,29 +2,11 @@ package scala.scalanative
 
 import java.nio.file.{Files, Path}
 import java.io.{File, PrintWriter}
-import java.net.URLClassLoader
+import scala.scalanative.buildinfo.ScalaNativeBuildInfo
+import java.lang.ProcessBuilder
+import java.nio.charset.StandardCharsets
 
 object NIRCompiler {
-
-  private val allow: String => Boolean =
-    n => n.startsWith("scala.scalanative.api.") || !n.startsWith("scala.")
-
-  private val classLoader = {
-    val parts = sys
-      .props("scalanative.testingcompiler.cp")
-      .split(File.pathSeparator)
-      .map(new java.io.File(_))
-      .filter(f => f.exists && f.getName.endsWith(".jar"))
-      .map(_.toURI.toURL)
-
-    // We must share some parts of our classpath with the classloader used for the NIR compiler,
-    // because we want to be able to cast the NIRCompiler that we get back to its interface and
-    // be able to use it seamlessly.
-    // We filter out the scala library from out classloader (so that it gets delegated to the
-    // scala library that is in `scalanative.testingcompiler.cp`, and we keep `api.NIRCompiler`.
-    val parent = new FilteredClassLoader(allow, this.getClass.getClassLoader)
-    new URLClassLoader(parts.toArray, parent)
-  }
 
   /** Returns an instance of the NIRCompiler that will compile to a temporary
    *  directory.
@@ -32,18 +14,7 @@ object NIRCompiler {
    *  @return
    *    An NIRCompiler that will compile to a temporary directory.
    */
-  def getCompiler(): api.NIRCompiler = {
-    val clazz =
-      classLoader.loadClass("scala.scalanative.NIRCompiler")
-    clazz.getDeclaredConstructor().newInstance() match {
-      case compiler: api.NIRCompiler => compiler
-      case other =>
-        throw new ReflectiveOperationException(
-          "Expected an object of type `scala.scalanative.NIRCompiler`, " +
-            s"but found `${other.getClass.getName}`."
-        )
-    }
-  }
+  def getCompiler(): NIRCompiler = new NIRCompiler()
 
   /** Returns an instance of the NIRCompiler that will compile to `outDir`.
    *
@@ -52,19 +23,7 @@ object NIRCompiler {
    *  @return
    *    An NIRCompiler that will compile to `outDir`.
    */
-  def getCompiler(outDir: Path): api.NIRCompiler = {
-    val clazz =
-      classLoader.loadClass("scala.scalanative.NIRCompiler")
-    val constructor = clazz.getConstructor(classOf[Path])
-    constructor.newInstance(outDir) match {
-      case compiler: api.NIRCompiler => compiler
-      case other =>
-        throw new ReflectiveOperationException(
-          "Expected an object of type `scala.scalanative.NIRCompiler`, but " +
-            s"found `${other.getClass.getName}`."
-        )
-    }
-  }
+  def getCompiler(outDir: Path): NIRCompiler = new NIRCompiler(outDir)
 
   /** Applies `fn` to an NIRCompiler that compiles to `outDir`.
    *
@@ -75,7 +34,7 @@ object NIRCompiler {
    *  @return
    *    The result of applying fn to the NIRCompiler
    */
-  def apply[T](outDir: Path)(fn: api.NIRCompiler => T): T =
+  def apply[T](outDir: Path)(fn: NIRCompiler => T): T =
     withSources(outDir)(Map.empty) { case (_, compiler) => fn(compiler) }
 
   /** Applies `fn` to an NIRCompiler that compiles to a temporary directory.
@@ -85,7 +44,7 @@ object NIRCompiler {
    *  @return
    *    The result of applying fn to the NIRCompiler
    */
-  def apply[T](fn: api.NIRCompiler => T): T =
+  def apply[T](fn: NIRCompiler => T): T =
     withSources(Map.empty[String, String]) {
       case (_, compiler) => fn(compiler)
     }
@@ -104,7 +63,7 @@ object NIRCompiler {
    */
   def withSources[T](
       outDir: Path
-  )(sources: Map[String, String])(fn: (Path, api.NIRCompiler) => T): T = {
+  )(sources: Map[String, String])(fn: (Path, NIRCompiler) => T): T = {
     val sourcesDir = writeSources(sources)
     fn(sourcesDir, getCompiler(outDir))
   }
@@ -121,7 +80,7 @@ object NIRCompiler {
    */
   def withSources[T](
       sources: Map[String, String]
-  )(fn: (Path, api.NIRCompiler) => T): T = {
+  )(fn: (Path, NIRCompiler) => T): T = {
     val sourcesDir = writeSources(sources)
     fn(sourcesDir, getCompiler())
   }
@@ -148,3 +107,70 @@ object NIRCompiler {
   }
 
 }
+
+class NIRCompiler(outDir: Path) {
+
+  def this() = this(Files.createTempDirectory("scala-native-target"))
+
+  def compile(base: Path): Array[Path] = {
+    val files = getFiles(base.toFile(), _.getName endsWith ".scala")
+    compile(files)
+  }
+
+  def compile(source: String): Array[Path] = {
+    val tempFile = File.createTempFile("scala-native-input", ".scala").toPath
+    val p = Files.write(tempFile, source.getBytes(StandardCharsets.UTF_8))
+    compile(Seq(p.toFile()))
+  }
+
+  private def compile(files: Seq[File]): Array[Path] = {
+    val mainClass =
+      if (ScalaNativeBuildInfo.scalaVersion.startsWith("3"))
+        "dotty.tools.dotc.Main"
+      else "scala.tools.nsc.Main"
+    val outPath = outDir.toAbsolutePath()
+    val fileArgs = files.map(_.getAbsolutePath())
+    // Invoke Scala compiler as an external process to compile Scala program into NIR
+    // We don't use testingCompiler that classload (which isn't supported by SN) the Scala compiler to native compile `tools`.
+    val args = Seq(
+      "java",
+      "-cp",
+      ScalaNativeBuildInfo.scalacJars,
+      mainClass,
+      "-d",
+      outPath.toString(),
+      "-cp",
+      ScalaNativeBuildInfo.compileClasspath + File.pathSeparator + ScalaNativeBuildInfo.nativelibCp,
+      s"-Xplugin:${ScalaNativeBuildInfo.pluginJar}"
+    ) ++ fileArgs
+    val procBuilder = new ProcessBuilder(args: _*)
+    val cmd = args.mkString(" ")
+    val proc = procBuilder.start()
+    val res = proc.waitFor()
+
+    if (res != 0) {
+      val stderr =
+        scala.io.Source.fromInputStream(proc.getErrorStream()).mkString
+      throw new CompilationFailedException(stderr)
+    }
+
+    val acceptedExtension = Seq(".nir")
+    getFiles(
+      outPath.toFile,
+      f => acceptedExtension.exists(f.getName().endsWith)
+    ).map(_.toPath()).toArray
+  }
+
+  /** List of the files contained in `base` that sastisfy `filter`
+   */
+  private def getFiles(base: File, filter: File => Boolean): Seq[File] = {
+    Seq(base).filter(filter) ++
+      Option(base.listFiles())
+        .map(_.toList)
+        .getOrElse(Nil)
+        .flatMap(getFiles(_, filter))
+  }
+}
+
+class CompilationFailedException(stderr: String)
+    extends RuntimeException(stderr)

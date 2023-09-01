@@ -140,7 +140,7 @@ private[java] class PosixThread(val thread: Thread, stackSize: Long)
         val status = pthread_cond_wait(condition(conditionIdx), lock)
         assert(
           status == 0 ||
-            (scalanative.runtime.Platform.isMac() && status == ETIMEDOUT),
+            (isMac && status == ETIMEDOUT),
           "park, wait"
         )
       } else {
@@ -187,8 +187,7 @@ private[java] class PosixThread(val thread: Thread, stackSize: Long)
     import scala.scalanative.posix.pollEvents._
 
     type PipeFDs = CArray[CInt, Nat._2]
-    val pipefd = stackalloc[PipeFDs]()
-    val rawOne: RawSize = Intrinsics.castIntToRawSize(1)
+    val pipefd = stackalloc[PipeFDs](1)
     checkStatus("create sleep interrupt event") {
       pipe(pipefd.at(0))
     }

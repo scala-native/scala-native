@@ -1,7 +1,8 @@
-liTest run started
+liTest run scala.scalanative.junit.AssertThrows2Test started
 liTest scala.scalanative.junit.AssertThrows2Test.test started
 leTest scala.scalanative.junit.AssertThrows2Test.test failed: This is the message: unexpected exception type thrown; expected:<java.lang.UnsupportedOperationException> but was:<java.lang.IllegalAccessException>, took <TIME>
+leCaused by: java.lang.IllegalAccessException: Exception message
 e2scala.scalanative.junit.AssertThrows2Test.test
 ldTest scala.scalanative.junit.AssertThrows2Test.test finished, took <TIME>
-liTest run finished: 1 failed, 0 ignored, 1 total, <TIME>
+liTest run scala.scalanative.junit.AssertThrows2Test finished: 1 failed, 0 ignored, 1 total, <TIME>
 d
