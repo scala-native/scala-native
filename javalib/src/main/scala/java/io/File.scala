@@ -838,8 +838,10 @@ object File {
 
         // found an absolute path. continue from there.
         case link if link(0) == separatorChar =>
-          if (Platform.isWindows() && strncmp(link, c"\\\\?\\", 4.toUInt) == 0)
-            path
+          if (isWindows)
+            if (strncmp(link, c"\\\\?\\", 4.toUInt) == 0)
+              path
+            else resolveLink(link, resolveAbsolute, restart = resolveAbsolute)
           else
             resolveLink(link, resolveAbsolute, restart = resolveAbsolute)
 
@@ -940,13 +942,13 @@ object File {
     }
   }
 
-  val pathSeparatorChar: Char = if (Platform.isWindows()) ';' else ':'
+  val pathSeparatorChar: Char = if (isWindows) ';' else ':'
   val pathSeparator: String = pathSeparatorChar.toString
-  val separatorChar: Char = if (Platform.isWindows()) '\\' else '/'
+  val separatorChar: Char = if (isWindows) '\\' else '/'
   val separator: String = separatorChar.toString
   private var counter: Int = 0
   private var counterBase: Int = 0
-  private val caseSensitive: Boolean = !Platform.isWindows()
+  private val caseSensitive: Boolean = !isWindows
 
   def listRoots(): Array[File] = {
     val list = new java.util.ArrayList[File]()

@@ -25,7 +25,6 @@ import scala.scalanative.posix.string._
 import scala.scalanative.posix.unistd
 
 import scala.scalanative.meta.LinktimeInfo
-import scala.scalanative.runtime.Platform
 
 import macOsIf._
 import macOsIfDl._
@@ -61,21 +60,21 @@ class NetworkInterface private (ifName: String) {
   def getDisplayName(): String = getName()
 
   def getHardwareAddress(): Array[Byte] = {
-    if (Platform.isWindows()) new Array[Byte](0) // No Windows support
+    if (LinktimeInfo.isWindows) new Array[Byte](0) // No Windows support
     else {
       NetworkInterface.unixImplGetHardwareAddress(ifName)
     }
   }
 
   def getIndex(): Int = {
-    if (Platform.isWindows()) 0 // No Windows support
+    if (LinktimeInfo.isWindows) 0 // No Windows support
     else {
       NetworkInterface.unixImplGetIndex(ifName)
     }
   }
 
   def getInetAddresses(): ju.Enumeration[InetAddress] = {
-    if (Platform.isWindows()) { // No Windows support
+    if (LinktimeInfo.isWindows) { // No Windows support
       ju.Collections.enumeration[InetAddress](new ju.ArrayList[InetAddress])
     } else {
       NetworkInterface.unixImplGetInetAddresses(ifName)
@@ -83,7 +82,7 @@ class NetworkInterface private (ifName: String) {
   }
 
   def getInterfaceAddresses(): ju.List[InterfaceAddress] = {
-    if (Platform.isWindows()) { // No Windows support
+    if (LinktimeInfo.isWindows) { // No Windows support
       ju.Collections.emptyList[InterfaceAddress]()
     } else {
       NetworkInterface.unixImplGetInterfaceAddresses(ifName)
@@ -91,7 +90,7 @@ class NetworkInterface private (ifName: String) {
   }
 
   def getMTU(): Int = {
-    if (Platform.isWindows()) 0 // No Windows support
+    if (LinktimeInfo.isWindows) 0 // No Windows support
     else {
       NetworkInterface.unixImplGetIfMTU(ifName)
     }
@@ -100,7 +99,7 @@ class NetworkInterface private (ifName: String) {
   def getName(): String = ifName
 
   def getParent(): NetworkInterface = {
-    if (Platform.isWindows()) null // No Windows support
+    if (LinktimeInfo.isWindows) null // No Windows support
     else if (!this.isVirtual()) null
     else {
       val parentName = ifName.split(":")(0)
@@ -112,7 +111,7 @@ class NetworkInterface private (ifName: String) {
     val ifList = new ju.ArrayList[NetworkInterface]()
 
     // No Windows support, so empty Enumeration will be returned.
-    if (!Platform.isWindows()) {
+    if (!LinktimeInfo.isWindows) {
       val allIfs = NetworkInterface.getNetworkInterfaces()
       val matchMe = s"${ifName}:"
       while (allIfs.hasMoreElements()) {
@@ -126,14 +125,15 @@ class NetworkInterface private (ifName: String) {
   }
 
   def inetAddresses(): Stream[InetAddress] = {
-    if (Platform.isWindows()) Stream.empty[InetAddress]() // No Windows support
+    if (LinktimeInfo.isWindows)
+      Stream.empty[InetAddress]() // No Windows support
     else {
       NetworkInterface.unixImplInetAddresses(ifName)
     }
   }
 
   def isLoopback(): Boolean = {
-    if (Platform.isWindows()) false // No Windows support
+    if (LinktimeInfo.isWindows) false // No Windows support
     else {
       val ifFlags = NetworkInterface.unixImplGetIfFlags(ifName)
       (ifFlags & unixIf.IFF_LOOPBACK) == unixIf.IFF_LOOPBACK
@@ -141,7 +141,7 @@ class NetworkInterface private (ifName: String) {
   }
 
   def isPointToPoint(): Boolean = {
-    if (Platform.isWindows()) false // No Windows support
+    if (LinktimeInfo.isWindows) false // No Windows support
     else {
       val ifFlags = NetworkInterface.unixImplGetIfFlags(ifName)
       (ifFlags & unixIf.IFF_POINTOPOINT) == unixIf.IFF_POINTOPOINT
@@ -149,7 +149,7 @@ class NetworkInterface private (ifName: String) {
   }
 
   def isUp(): Boolean = {
-    if (Platform.isWindows()) false // No Windows support
+    if (LinktimeInfo.isWindows) false // No Windows support
     else {
       val ifFlags = NetworkInterface.unixImplGetIfFlags(ifName)
       (ifFlags & unixIf.IFF_UP) == unixIf.IFF_UP
@@ -168,7 +168,7 @@ class NetworkInterface private (ifName: String) {
   }
 
   def supportsMulticast(): Boolean = {
-    if (Platform.isWindows()) false // No Windows support
+    if (LinktimeInfo.isWindows) false // No Windows support
     else {
       val ifFlags = NetworkInterface.unixImplGetIfFlags(ifName)
       (ifFlags & unixIf.IFF_MULTICAST) == unixIf.IFF_MULTICAST
@@ -187,7 +187,7 @@ object NetworkInterface {
     if (index < 0)
       throw new IllegalArgumentException("Interface index can't be negative")
 
-    if (Platform.isWindows()) {
+    if (LinktimeInfo.isWindows) {
       null
     } else {
       unixGetByIndex(index)
@@ -196,7 +196,7 @@ object NetworkInterface {
 
   def getByInetAddress(addr: InetAddress): NetworkInterface = {
     Objects.requireNonNull(addr)
-    if (Platform.isWindows()) {
+    if (LinktimeInfo.isWindows) {
       null
     } else {
       unixGetByInetAddress(addr)
@@ -205,7 +205,7 @@ object NetworkInterface {
 
   def getByName(name: String): NetworkInterface = {
     Objects.requireNonNull(name)
-    if (Platform.isWindows()) {
+    if (LinktimeInfo.isWindows) {
       null
     } else {
       unixGetByName(name)
@@ -213,7 +213,7 @@ object NetworkInterface {
   }
 
   def getNetworkInterfaces(): ju.Enumeration[NetworkInterface] = {
-    if (Platform.isWindows()) {
+    if (LinktimeInfo.isWindows) {
       null
     } else {
       unixGetNetworkInterfaces()
@@ -224,7 +224,7 @@ object NetworkInterface {
    *  less clumsy than Enumerations.
    */
   def networkInterfaces(): Stream[NetworkInterface] = {
-    if (Platform.isWindows()) {
+    if (LinktimeInfo.isWindows) {
       null
     } else {
       unixNetworkInterfaces()
