@@ -15,6 +15,7 @@ import java.{util => ju}
 import java.util.{Arrays, ArrayList}
 import java.util.{OptionalDouble, DoubleSummaryStatistics}
 import java.util.Spliterator
+import java.util.Spliterators
 
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 import java.util.concurrent.CountDownLatch._

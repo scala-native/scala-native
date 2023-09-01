@@ -246,8 +246,8 @@ object ThreadLocalRandom {
   }
 
   private[concurrent] def eraseThreadLocals(thread: Thread): Unit = {
-    thread.threadLocals = null
-    thread.inheritableThreadLocals = null
+    // thread.threadLocals = null
+    // thread.inheritableThreadLocals = null
   }
 
   private val GAMMA = 0x9e3779b97f4a7c15L
