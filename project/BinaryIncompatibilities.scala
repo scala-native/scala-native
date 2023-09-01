@@ -77,7 +77,9 @@ object BinaryIncompatibilities {
     exclude[Problem]("java.lang._Class.getConstructor"),
     // This package is not actually part of Java's stdlib, it only contains private classes
     // to handle embedded resources.
-    exclude[Problem]("java.lang.resource.*")
+    exclude[Problem]("java.lang.resource.*"),
+    // Forward compatible
+    exclude[ReversedMissingMethodProblem]("scala.scalanative.runtime.Array.atRawUnsafe")
   )
   final val CLib: Filters = Nil
   final val PosixLib: Filters = Seq(

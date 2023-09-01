@@ -100,7 +100,7 @@ object netdbOps {
     LinktimeInfo.isFreeBSD ||
     LinktimeInfo.isWindows)
 
-  implicit class addrinfoOps(private val ptr: Ptr[addrinfo]) extends AnyVal {
+  implicit class addrinfoOps(val ptr: Ptr[addrinfo]) extends AnyVal {
     def ai_flags: CInt = ptr._1
     def ai_family: CInt = ptr._2
     def ai_socktype: CInt = ptr._3
