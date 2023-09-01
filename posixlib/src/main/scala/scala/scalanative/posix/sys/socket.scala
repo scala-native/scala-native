@@ -4,7 +4,7 @@ package sys
 
 import scalanative.unsafe._
 import scalanative.unsigned._
-import scalanative.meta.LinktimeInfo.isWindows
+import scalanative.meta.LinktimeInfo._
 
 @extern
 object socket {
@@ -254,6 +254,12 @@ object socket {
 
 object socketOps {
   import socket._
+  import posix.inttypes.uint8_t
+
+  // Also used by posixlib netinet/in.scala
+  @resolvedAtLinktime
+  def useSinXLen = !isLinux &&
+    (isMac || isFreeBSD)
 
   implicit class sockaddrOps(val ptr: Ptr[sockaddr]) extends AnyVal {
     def sa_family: sa_family_t = ptr._1

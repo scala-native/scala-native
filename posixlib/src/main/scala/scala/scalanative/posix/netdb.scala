@@ -4,6 +4,12 @@ import scalanative.unsafe._
 import scalanative.posix.sys.socket
 import scalanative.posix.netinet.in
 
+import scala.scalanative.meta.LinktimeInfo
+
+/** netdb.h for Scala
+ *  @see
+ *    [[https://scala-native.readthedocs.io/en/latest/lib/posixlib.html]]
+ */
 @extern
 object netdb {
   type addrinfo = CStruct8[CInt, CInt, CInt, CInt, socket.socklen_t, Ptr[
@@ -89,7 +95,12 @@ object netdb {
 object netdbOps {
   import netdb._
 
-  implicit class addrinfoOps(val ptr: Ptr[addrinfo]) extends AnyVal {
+  @resolvedAtLinktime
+  def useBsdAddrinfo = (LinktimeInfo.isMac ||
+    LinktimeInfo.isFreeBSD ||
+    LinktimeInfo.isWindows)
+
+  implicit class addrinfoOps(private val ptr: Ptr[addrinfo]) extends AnyVal {
     def ai_flags: CInt = ptr._1
     def ai_family: CInt = ptr._2
     def ai_socktype: CInt = ptr._3

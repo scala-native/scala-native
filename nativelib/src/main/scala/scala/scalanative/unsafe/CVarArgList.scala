@@ -54,13 +54,17 @@ object CVarArgList {
     def vrOffset_=(value: Int): Unit = ptr._5 = value
   }
 
-  val isWindowsOrMac = Platform.isWindows() || Platform.isMac()
+  @resolvedAtLinktime
+  def isWindowsOrMac = isWindows || isMac
+  @resolvedAtLinktime
+  def isArm64 = target.arch == "aarch64"
+
   private final val countGPRegisters =
-    if (PlatformExt.isArm64 && !isWindowsOrMac) 8
+    if (isArm64 && !isWindowsOrMac) 8
     else 6
   private final val countFPRegisters = 8
   private final val fpRegisterWords =
-    if (PlatformExt.isArm64 && !isWindowsOrMac) 16 / sizeof[Word].toInt
+    if (isArm64 && !isWindowsOrMac) 16 / sizeof[Word].toInt
     else 2
   private final val registerSaveWords =
     countGPRegisters + countFPRegisters * fpRegisterWords
@@ -71,7 +75,7 @@ object CVarArgList {
   )(implicit z: Zone): CVarArgList = {
     if (isWindows)
       toCVarArgList_X86_64_Windows(varargs)
-    else if (PlatformExt.isArm64 && Platform.isMac())
+    else if (isArm64 && isMac)
       toCVarArgList_Arm64_MacOS(varargs)
     else
       toCVarArgList_Unix(varargs)
@@ -157,8 +161,8 @@ object CVarArgList {
       toRawPtr(storageStart),
       wordsUsed.toULong * sizeof[Long]
     )
-    val rawPtr = if (PlatformExt.isArm64) {
-      if (Platform.isMac()) toRawPtr(storageStart)
+    val rawPtr = if (isArm64) {
+      if (isMac) toRawPtr(storageStart)
       else {
         val vrTop = resultStorage + fpRegisterWords * countFPRegisters
         val grTop = vrTop + countGPRegisters
