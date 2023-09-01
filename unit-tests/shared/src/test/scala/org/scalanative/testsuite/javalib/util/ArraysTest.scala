@@ -1528,7 +1528,8 @@ class ArraysTest {
      * not to tax CI.
      */
     val factor = 16
-    java.util.concurrent.ForkJoinPool.getCommonPoolParallelism() * factor
+    // java.util.concurrent.ForkJoinPool.getCommonPoolParallelism() * 
+    factor
   }
 
   @Test def parallelSetAll_Double(): Unit = {

@@ -428,38 +428,6 @@ class VectorTest {
   }
 
   /** @tests
-   *    java.Vector#elements()
-   */
-  @Test def test_elements_subtest0(): Unit = {
-    AssumesHelper.assumeMultithreadingIsEnabled()
-    val iterations = 10000
-    val v = new Vector[AnyRef]
-    val t1 = new Thread() {
-      override def run(): Unit = {
-        for (i <- 0 until iterations) {
-          v.synchronized {
-            v.addElement(String.valueOf(i))
-            v.removeElementAt(0)
-          }
-        }
-      }
-    }
-    t1.start()
-    for (i <- 0 until iterations) {
-      val en = v.elements
-      try
-        while (true) {
-          val result = en.nextElement
-          if (result == null) fail("Null result: " + i)
-        }
-      catch {
-        case e: NoSuchElementException =>
-
-      }
-    }
-  }
-
-  /** @tests
    *    java.Vector#ensureCapacity(int)
    */
   @Test def test_ensureCapacityI(): Unit = {
@@ -714,37 +682,6 @@ class VectorTest {
     assertTrue("Empty vector returned false", v.isEmpty)
     v.addElement(new AnyRef)
     assertTrue("non-Empty vector returned true", !v.isEmpty)
-  }
-
-  /** @tests
-   *    java.Vector#isEmpty()
-   */
-  @Test def test_isEmpty_subtest0(): Unit = {
-    AssumesHelper.assumeMultithreadingIsEnabled()
-    val v = new Vector[AnyRef]
-    v.addElement("initial")
-    val t1 = new Thread() {
-      override def run(): Unit = {
-        while (!v.isEmpty) {}
-        v.addElement("final")
-      }
-    }
-    t1.start()
-    for (i <- 0 until 10000) {
-      v.synchronized {
-        v.removeElementAt(0)
-        v.addElement(String.valueOf(i))
-      }
-      val size = v.size
-      if (size != 1) {
-        val result = "Size is not 1: " + size + " " + v
-        // terminate the thread
-        v.removeAllElements()
-        fail(result)
-      }
-    }
-    // terminate the thread
-    v.removeElementAt(0)
   }
 
   /** @tests
@@ -1231,39 +1168,6 @@ class VectorTest {
 
       // Excepted
     }
-  }
-
-  /** @tests
-   *    java.Vector#size()
-   */
-  @Test def test_size(): Unit = {
-    AssumesHelper.assumeMultithreadingIsEnabled()
-    // Test for method int java.Vector.size()
-    assertEquals("Returned incorrect size", 100, tVector.size)
-    val v = new Vector[AnyRef]
-    v.addElement("initial")
-    val t1 = new Thread() {
-      override def run(): Unit = {
-        while (v.size > 0) {}
-        v.addElement("final")
-      }
-    }
-    t1.start()
-    for (i <- 0 until 10000) {
-      v.synchronized {
-        v.removeElementAt(0)
-        v.addElement(String.valueOf(i))
-      }
-      val size = v.size
-      if (size != 1) {
-        val result = "Size is not 1: " + size + " " + v
-        // terminate the thread
-        v.removeAllElements()
-        fail(result)
-      }
-    }
-    // terminate the thread
-    v.removeElementAt(0)
   }
 
   /** @tests

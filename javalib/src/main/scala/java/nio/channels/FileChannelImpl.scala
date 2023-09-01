@@ -351,8 +351,9 @@ private[java] final class FileChannelImpl(
       if (GetFileSizeEx(fd.handle, size)) (!size).toLong
       else 0L
     } else {
+      val curPosition = unistd.lseek(fd.fd, 0L, stdio.SEEK_CUR)
       val size = unistd.lseek(fd.fd, 0L, stdio.SEEK_END);
-      unistd.lseek(fd.fd, 0L, stdio.SEEK_CUR)
+      unistd.lseek(fd.fd, curPosition, stdio.SEEK_SET)
       size
     }
   }
@@ -435,29 +436,39 @@ private[java] final class FileChannelImpl(
     force(true)
   }
 
-  override def truncate(size: Long): FileChannel =
-    if (!openForWriting) {
-      throw new IOException("Invalid argument")
-    } else {
-      ensureOpen()
-      val currentPosition = position()
-      val hasSucceded =
-        if (isWindows) {
+  override def truncate(newSize: Long): FileChannel = {
+    if (newSize < 0)
+      throw new IllegalArgumentException("Negative size")
+
+    ensureOpen()
+
+    if (!openForWriting)
+      throw new NonWritableChannelException()
+
+    val currentPosition = position()
+
+    if (newSize < size()) {
+      if (isWindows) {
+        val hasSucceded =
           FileApi.SetFilePointerEx(
             fd.handle,
-            size,
+            newSize,
             null,
             FILE_BEGIN
           ) &&
-          FileApi.SetEndOfFile(fd.handle)
-        } else {
-          unistd.ftruncate(fd.fd, size) == 0
-        }
-      if (!hasSucceded) {
-        throw new IOException("Failed to truncate file")
+            FileApi.SetEndOfFile(fd.handle)
+        if (!hasSucceded)
+          throw new IOException("Failed to truncate file")
+      } else {
+        val err = unistd.ftruncate(fd.fd, newSize)
+        if (err != 0)
+          throwPosixException("ftruncate")
       }
-    if (currentPosition > size)
-      compelPosition(size)
+
+    }
+
+    if (currentPosition > newSize)
+      compelPosition(newSize)
 
     this
   }
