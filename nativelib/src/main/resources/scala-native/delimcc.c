@@ -298,11 +298,11 @@ void __cont_resume_impl(void *tail, Continuation *cont, void *out,
 #if !defined(__i386__) // 32 bit platforms don't have an alignment restriction?
     assert((diff & 15) == 0);
 #endif
-    fprintf(stderr,
-            "diff is %ld, stack (size = %ld) goes %p~%p -> %p~%p | original "
-            "cont = %p [%p]\n",
-            diff, cont->size, cont->stack_top, cont->stack_top + cont->size,
-            target, tail, cont, cont->stack);
+    // fprintf(stderr,
+    //         "diff is %td, stack (size = %td) goes %p~%p -> %p~%p | original "
+    //         "cont = %p [%p]\n",
+    //         diff, cont->size, cont->stack_top, cont->stack_top + cont->size,
+    //         target, tail, cont, cont->stack);
     // clone the handler chain, with fixes.
     to_install = nw = handler_clone_fix(cont->handlers, diff);
     jmpbuf_fix(return_buf);
