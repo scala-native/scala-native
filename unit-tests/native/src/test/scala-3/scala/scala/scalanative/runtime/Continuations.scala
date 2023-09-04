@@ -8,7 +8,7 @@ import scala.scalanative.meta.LinktimeInfo.{isWindows, is32BitPlatform}
 
 class Scala3ContinuationsTests:
   @Test def canBoundaryNoSuspend() =
-    if !isWindows && !is32BitPlatform then
+    if !isWindows then
       val res = boundary[Int] {
         val x = 1
         val y = 2
@@ -16,7 +16,7 @@ class Scala3ContinuationsTests:
       }
       assert(res == 3)
   @Test def canBoundarySuspend() =
-    if !isWindows && !is32BitPlatform then
+    if !isWindows then
       val res = boundary[Int] {
         val x = 1
         suspend[Int](_ => x + 1)
@@ -24,13 +24,13 @@ class Scala3ContinuationsTests:
       }
       assert(res == 2)
   @Test def canBoundarySuspendImmediateResume() =
-    if !isWindows && !is32BitPlatform then
+    if !isWindows then
       val r = boundary[Int] {
         1 + suspend[Int, Int](r => r(2)) + suspend[Int, Int](r => r(3)) + 4
       }
       assert(r == 10)
   @Test def canBoundarySuspendCommunicate() =
-    if !isWindows && !is32BitPlatform then
+    if !isWindows then
       case class Iter(n: Int, nx: Int => Iter)
       val r0 = boundary[Iter] {
         var r = 0
@@ -46,7 +46,7 @@ class Scala3ContinuationsTests:
       assert(r2.n == 5)
 
   @Test def fibonacci(): Unit =
-    if !isWindows && !is32BitPlatform then
+    if !isWindows then
       import scala.collection.mutable.ArrayBuffer
 
       case class Seqnt[T, R](v: T, nx: R => Seqnt[T, R])
@@ -76,7 +76,7 @@ class Scala3ContinuationsTests:
       assert(fibList == List(1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89))
 
   @Test def basic(): Unit =
-    if !isWindows && !is32BitPlatform then
+    if !isWindows then
       enum Response[T] {
         case Next(nx: () => Response[T], v: T)
         case End(v: T)
