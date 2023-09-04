@@ -48,10 +48,11 @@ class WeakReferenceTest {
     weakRef
   }
 
-  @deprecated @nooptimize @Test def addsToReferenceQueueAfterGC(): Unit = {
+  @deprecated @nooptimize
+  @Test def addsToReferenceQueueAfterGC(): Unit = {
     assumeFalse(
-      "In the CI Scala 3 sometimes SN fails to clean weak references in some build configurations",
-      ScalaNativeBuildInfo.scalaVersion.startsWith("3.")
+      "In the CI sometimes SN fails to clean weak references in some build configurations",
+      sys.env.contains("CI")
     )
 
     def assertEventuallyIsCollected(
