@@ -114,7 +114,8 @@ object CodeGen {
           .traverse(assembly.groupBy(x => sourceFileOf(x.pos)).toSeq) {
             case (source, defns) =>
               Future {
-                val path = source.getPath().stripPrefix(File.separator)
+                val abs = Paths.get(source.getPath()).toAbsolutePath()
+                val path = abs.getRoot().relativize(abs).toString()
                 val outFile = config.workDir.resolve(s"$path.ll")
                 val ownerDirectory = outFile.getParent()
 
