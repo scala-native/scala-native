@@ -33,6 +33,9 @@ class IncrementalCodeGenContext(workDir: Path) {
   def addEntry(packageName: String, defns: Seq[Defn]): Unit = {
     val hash = defns.foldLeft(0L)(_ + _.hashCode())
     val prevHash = pack2hashPrev.get(packageName)
+    if (package2hash.get(packageName).isDefined) {
+      println(s"Duplicated name: $packageName")
+    }
     package2hash.put(packageName, hash)
     if (prevHash.forall(_ != hash)) {
       changed.put(packageName, hash)
