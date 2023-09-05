@@ -14,10 +14,13 @@ package scala.scalanative.runtime;
  * }
  * }
  * </pre>
+ * 
+ * Checking of unsupported features can be disabled in nativeConfig using
+ * checkFeatures flag
  */
 public abstract class UnsupportedFeature {
 	// Always sync with tools/src/main/scala/scala/scalanative/linker/Reach.scala
-	// UnsupportedFeature and UnsupportedFeatureExtractor
+	// UnsupportedFeature and UnsupportedFeatureExtractor and the stubs
 	public static void threads() {
 	}
 

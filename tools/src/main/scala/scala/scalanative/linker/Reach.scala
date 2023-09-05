@@ -31,6 +31,16 @@ class Reach(
   private case class DelayedMethod(owner: Global.Top, sig: Sig, pos: Position)
   private val delayedMethods = mutable.Set.empty[DelayedMethod]
 
+  if (injects.nonEmpty) {
+    injects.groupBy(_.name.top).foreach {
+      case (owner, defns) =>
+        val buf = mutable.Map.empty[Global, Defn]
+        loaded.update(owner, buf)
+        defns.foreach(defn => buf.update(defn.name, defn))
+    }
+    injects.foreach(reachDefn)
+  }
+
   entries.foreach(reachEntry(_)(nir.Position.NoPosition))
 
   // Internal hack used inside linker tests, for more information
@@ -989,10 +999,51 @@ class Reach(
     loop(referencedFrom)
   }
 
-  private object UnsupportedFeatureExtractor {
+  protected object UnsupportedFeatureExtractor {
     import UnsupportedFeature._
-    private val UnsupportedSymbol =
+    val UnsupportedSymbol =
       Global.Top("scala.scalanative.runtime.UnsupportedFeature")
+
+    // Add stubs for NIR when checkFeatures is disabled
+    val injects: Seq[nir.Defn] =
+      if (config.compilerConfig.checkFeatures) Nil
+      else {
+        import scala.scalanative.nir._
+        implicit val srcPosition: nir.Position = nir.Position.NoPosition
+        val stubMethods = for {
+          methodName <- Seq("threads", "virtualThreads")
+        } yield {
+          import scala.scalanative.codegen.Lower.{
+            throwUndefined,
+            throwUndefinedTy,
+            throwUndefinedVal
+          }
+          implicit val scopeId: nir.ScopeId = nir.ScopeId.TopLevel
+          Defn.Define(
+            attrs = Attrs.None,
+            name = UnsupportedSymbol.member(
+              Sig.Method(methodName, Seq(Type.Unit), Sig.Scope.PublicStatic)
+            ),
+            ty = Type.Function(Nil, Type.Unit),
+            insts = {
+              implicit val fresh: Fresh = Fresh()
+              val buf = new Buffer()
+              buf.label(fresh(), Nil)
+              buf.call(
+                throwUndefinedTy,
+                throwUndefinedVal,
+                Seq(Val.Null),
+                Next.None
+              )
+              buf.unreachable(Next.None)
+              buf.toSeq
+            }
+          )
+        }
+        val stubType =
+          Defn.Class(Attrs.None, UnsupportedSymbol, Some(Rt.Object.name), Nil)
+        stubType +: stubMethods
+      }
 
     private def details(sig: Sig): UnsupportedFeature.Kind =
       sig.unmangled match {
@@ -1027,6 +1078,8 @@ class Reach(
       if (stack.isEmpty) ReferencedFrom.Root
       else ReferencedFrom(stack.head, srcPosition)
     )
+
+  lazy val injects: Seq[nir.Defn] = UnsupportedFeatureExtractor.injects
 }
 
 object Reach {

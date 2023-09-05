@@ -42,6 +42,11 @@ sealed trait NativeConfig {
   /** Shall linker NIR check treat warnings as errors? */
   def checkFatalWarnings: Boolean
 
+  /** Should build fail if it detects usage of unsupported feature on given
+   *  platform
+   */
+  def checkFeatures: Boolean
+
   /** Shall linker dump intermediate NIR after every phase? */
   def dump: Boolean
 
@@ -153,6 +158,9 @@ sealed trait NativeConfig {
   /** Create a new config with given checkFatalWarnings value. */
   def withCheckFatalWarnings(value: Boolean): NativeConfig
 
+  /** Create a new config with given checkFeatures value. */
+  def withCheckFeatures(value: Boolean): NativeConfig
+
   /** Create a new config with given dump value. */
   def withDump(value: Boolean): NativeConfig
 
@@ -223,6 +231,7 @@ object NativeConfig {
       buildTarget = BuildTarget.default,
       check = false,
       checkFatalWarnings = false,
+      checkFeatures = true,
       dump = false,
       asan = false,
       linkStubs = false,
@@ -248,6 +257,7 @@ object NativeConfig {
       buildTarget: BuildTarget,
       check: Boolean,
       checkFatalWarnings: Boolean,
+      checkFeatures: Boolean,
       dump: Boolean,
       asan: Boolean,
       linkStubs: Boolean,
@@ -306,6 +316,9 @@ object NativeConfig {
 
     def withCheckFatalWarnings(value: Boolean): NativeConfig =
       copy(checkFatalWarnings = value)
+
+    def withCheckFeatures(value: Boolean): NativeConfig =
+      copy(checkFeatures = value)
 
     def withDump(value: Boolean): NativeConfig =
       copy(dump = value)
@@ -374,6 +387,7 @@ object NativeConfig {
         | - buildTarget             $buildTarget
         | - check:                  $check
         | - checkFatalWarnings:     $checkFatalWarnings
+        | - checkFeatures           $checkFeatures
         | - dump:                   $dump
         | - asan:                   $asan
         | - linkStubs:              $linkStubs

@@ -604,6 +604,8 @@ object Build {
       nativeConfig ~= { c =>
         c.withLinkStubs(true)
           .withEmbedResources(true)
+          // Tests using threads are ignored in runtime, skip checks and allow to link
+          .withCheckFeatures(false)
       },
       Test / unmanagedSourceDirectories ++= {
         val base = (Test / sourceDirectory).value
