@@ -230,9 +230,10 @@ sealed trait ReachabilityAnalysis {
 }
 
 object ReachabilityAnalysis {
-  final class UnreachableSymbolsFound(
+  final class Failure(
       val defns: Seq[Defn],
-      val unreachable: Seq[Reach.UnreachableSymbol]
+      val unreachable: Seq[Reach.UnreachableSymbol],
+      val unsupportedFeatures: Seq[Reach.UnsupportedFeature]
   ) extends ReachabilityAnalysis
   final class Result(
       val infos: mutable.Map[Global, Info],

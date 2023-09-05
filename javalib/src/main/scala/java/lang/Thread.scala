@@ -15,6 +15,7 @@ import scala.scalanative.runtime.NativeThread.{State => _, _}
 import scala.scalanative.runtime.NativeThread.State._
 import scala.scalanative.libc.atomic.{CAtomicLongLong, atomic_thread_fence}
 import scala.scalanative.libc.atomic.memory_order._
+import scala.scalanative.runtime.UnsupportedFeature
 
 import scala.scalanative.runtime.JoinNonDaemonThreads
 
@@ -247,10 +248,7 @@ class Thread private[lang] (
   }
 
   def start(): Unit = synchronized {
-    if (!isMultithreadingEnabled)
-      throw new IllegalStateException(
-        "ScalaNative application linked with disabled multithreading support"
-      )
+    if (!isMultithreadingEnabled) UnsupportedFeature.threads()
     if (isVirtual())
       throw new UnsupportedOperationException(
         "VirtualThreads are not yet supported"

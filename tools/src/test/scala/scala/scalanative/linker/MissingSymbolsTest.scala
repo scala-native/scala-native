@@ -142,4 +142,39 @@ class MissingSymbolsTest extends LinkerSpec {
     }
   }
 
+  @Test def unsupportedFeature(): Unit = {
+    doesNotLink(
+      entry = mainClass,
+      Map(sourceFile -> s"""
+        |object $mainClass{
+        |  import scala.scalanative.meta.LinktimeInfo._
+        |  def doUnsupported() = {
+        |    if(isWindows && isLinux && isMac) // mutal exclusion, would always yield false
+        |      scala.scalanative.runtime.UnsupportedFeature.threads
+        |    println("unreachable")
+        |  }
+        |  def main(args: Array[String]): Unit = {
+        |    doUnsupported()
+        |  }
+        |}
+        """.stripMargin)
+    ) {
+      case (config, result) =>
+        assertTrue(result.unreachable.isEmpty)
+        assertFalse(result.unsupportedFeatures.isEmpty)
+        result.unsupportedFeatures
+          .collectFirst {
+            case Reach.UnsupportedFeature(kind, backtrace) =>
+              assertEquals(
+                "wrong kind",
+                Reach.UnsupportedFeature.SystemThreads,
+                kind
+              )
+              println(backtrace)
+              assertTrue("no-backtrace", backtrace.nonEmpty)
+          }
+          .getOrElse(fail("Not found required unreachable symbol"))
+    }
+  }
+
 }

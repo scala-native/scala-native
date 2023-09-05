@@ -29,7 +29,7 @@ class StubSpec extends LinkerSpec {
 
   @Test def ignoreMethods(): Unit = {
     doesNotLink(entry, stubMethodSource, _.withLinkStubs(false)) {
-      (cfg, result: ReachabilityAnalysis.UnreachableSymbolsFound) =>
+      (cfg, result: ReachabilityAnalysis.Failure) =>
         assertTrue(!cfg.linkStubs)
         assertTrue(result.unreachable.length == 1)
         assertEquals(
@@ -50,7 +50,7 @@ class StubSpec extends LinkerSpec {
 
   @Test def ignoreClasses(): Unit = {
     doesNotLink(entry, stubClassSource, _.withLinkStubs(false)) {
-      (cfg, result: ReachabilityAnalysis.UnreachableSymbolsFound) =>
+      (cfg, result: ReachabilityAnalysis.Failure) =>
         assertTrue(!cfg.linkStubs)
         assertTrue(result.unreachable.length == 1)
         assertTrue(result.unreachable.head.name == Global.Top("StubClass"))
