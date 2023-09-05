@@ -24,7 +24,7 @@ object ScalaVersions {
     // windowslib fails to compile with 3.1.{0-1}
     (2 to 3).map(v => s"3.1.$v"),
     (0 to 2).map(v => s"3.2.$v"),
-    (0 to 0).map(v => s"3.3.$v")
+    (0 to 1).map(v => s"3.3.$v")
   ).flatten
 
   // Scala versions used for publishing libraries
