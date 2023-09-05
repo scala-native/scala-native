@@ -66,45 +66,45 @@ class ThreadBuilderTestOnJDK19 {
     assertTrue(done3.get())
   }
 
-  @Ignore("VirtualThreads unimplemented")
-  @Test def testVirtualThread(): Unit = {
-    val parent = Thread.currentThread()
-    val builder = Thread.ofVirtual()
-    // unstarted
-    val done1 = new AtomicBoolean()
-    val thread1 = builder.unstarted(() => done1.set(true))
-    assertTrue(thread1.isVirtual)
-    assertEquals(Thread.State.NEW, thread1.getState())
-    assertTrue(thread1.getName().isEmpty)
-    assertTrue(thread1.isDaemon())
-    assertEquals(Thread.NORM_PRIORITY, thread1.getPriority())
-    thread1.start()
-    thread1.join()
-    assertTrue(done1.get())
+  // @Ignore("VirtualThreads unimplemented")
+  // @Test def testVirtualThread(): Unit = {
+  //   val parent = Thread.currentThread()
+  //   val builder = Thread.ofVirtual()
+  //   // unstarted
+  //   val done1 = new AtomicBoolean()
+  //   val thread1 = builder.unstarted(() => done1.set(true))
+  //   assertTrue(thread1.isVirtual)
+  //   assertEquals(Thread.State.NEW, thread1.getState())
+  //   assertTrue(thread1.getName().isEmpty)
+  //   assertTrue(thread1.isDaemon())
+  //   assertEquals(Thread.NORM_PRIORITY, thread1.getPriority())
+  //   thread1.start()
+  //   thread1.join()
+  //   assertTrue(done1.get())
 
-    // start
-    val done2 = new AtomicBoolean()
-    val thread2 = builder.start(() => done2.set(true))
-    assertTrue(thread2.isVirtual)
-    assertNotEquals(Thread.State.NEW, thread2.getState())
-    assertTrue(thread2.getName().isEmpty)
-    assertTrue(thread2.isDaemon())
-    assertEquals(Thread.NORM_PRIORITY, thread2.getPriority())
-    thread2.join()
-    assertTrue(done2.get())
+  //   // start
+  //   val done2 = new AtomicBoolean()
+  //   val thread2 = builder.start(() => done2.set(true))
+  //   assertTrue(thread2.isVirtual)
+  //   assertNotEquals(Thread.State.NEW, thread2.getState())
+  //   assertTrue(thread2.getName().isEmpty)
+  //   assertTrue(thread2.isDaemon())
+  //   assertEquals(Thread.NORM_PRIORITY, thread2.getPriority())
+  //   thread2.join()
+  //   assertTrue(done2.get())
 
-    // factory
-    val done3 = new AtomicBoolean()
-    val thread3 = builder.factory.newThread(() => done3.set(true))
-    assertTrue(thread3.isVirtual)
-    assertEquals(Thread.State.NEW, thread3.getState())
-    assertTrue(thread3.getName().isEmpty)
-    assertTrue(thread3.isDaemon())
-    assertEquals(Thread.NORM_PRIORITY, thread3.getPriority())
-    thread3.start()
-    thread3.join()
-    assertTrue(done3.get())
-  }
+  //   // factory
+  //   val done3 = new AtomicBoolean()
+  //   val thread3 = builder.factory.newThread(() => done3.set(true))
+  //   assertTrue(thread3.isVirtual)
+  //   assertEquals(Thread.State.NEW, thread3.getState())
+  //   assertTrue(thread3.getName().isEmpty)
+  //   assertTrue(thread3.isDaemon())
+  //   assertEquals(Thread.NORM_PRIORITY, thread3.getPriority())
+  //   thread3.start()
+  //   thread3.join()
+  //   assertTrue(done3.get())
+  // }
 
   @Test def testName1(): Unit = {
     val builder = Thread.ofPlatform().name("foo")
@@ -116,16 +116,16 @@ class ThreadBuilderTestOnJDK19 {
     assertTrue(thread3.getName() == "foo")
   }
 
-  @Ignore("VirtualThreads unimplemented")
-  @Test def testName2(): Unit = {
-    val builder = Thread.ofVirtual().name("foo")
-    val thread1 = builder.unstarted(() => {})
-    val thread2 = builder.start(() => {})
-    val thread3 = builder.factory.newThread(() => {})
-    assertTrue(thread1.getName() == "foo")
-    assertTrue(thread2.getName() == "foo")
-    assertTrue(thread3.getName() == "foo")
-  }
+  // @Ignore("VirtualThreads unimplemented")
+  // @Test def testName2(): Unit = {
+  //   val builder = Thread.ofVirtual().name("foo")
+  //   val thread1 = builder.unstarted(() => {})
+  //   val thread2 = builder.start(() => {})
+  //   val thread3 = builder.factory.newThread(() => {})
+  //   assertTrue(thread1.getName() == "foo")
+  //   assertTrue(thread2.getName() == "foo")
+  //   assertTrue(thread3.getName() == "foo")
+  // }
 
   @Test def testName3(): Unit = {
     val builder = Thread.ofPlatform().name("foo-", 100)
@@ -181,20 +181,20 @@ class ThreadBuilderTestOnJDK19 {
     }
   }
 
-  @Ignore("VirtualThreads unimplemented")
-  @Test def testThreadGroup2(): Unit = {
-    val vgroup =
-      Thread.ofVirtual().unstarted(() => {}).getThreadGroup
-    assertEquals(vgroup.getName(), "VirtualThreads")
-    val thread1 = Thread.ofVirtual().unstarted(() => {})
-    val thread2 = Thread.ofVirtual().start { () => LockSupport.park() }
-    val thread3 = Thread.ofVirtual().factory.newThread(() => {})
-    try {
-      assertTrue(thread1.getThreadGroup eq vgroup)
-      assertTrue(thread2.getThreadGroup eq vgroup)
-      assertTrue(thread3.getThreadGroup eq vgroup)
-    } finally LockSupport.unpark(thread2)
-  }
+  // @Ignore("VirtualThreads unimplemented")
+  // @Test def testThreadGroup2(): Unit = {
+  //   val vgroup =
+  //     Thread.ofVirtual().unstarted(() => {}).getThreadGroup
+  //   assertEquals(vgroup.getName(), "VirtualThreads")
+  //   val thread1 = Thread.ofVirtual().unstarted(() => {})
+  //   val thread2 = Thread.ofVirtual().start { () => LockSupport.park() }
+  //   val thread3 = Thread.ofVirtual().factory.newThread(() => {})
+  //   try {
+  //     assertTrue(thread1.getThreadGroup eq vgroup)
+  //     assertTrue(thread2.getThreadGroup eq vgroup)
+  //     assertTrue(thread3.getThreadGroup eq vgroup)
+  //   } finally LockSupport.unpark(thread2)
+  // }
 
   @Test def testPriority1(): Unit = {
     val priority = Thread.currentThread().getPriority()
@@ -284,17 +284,17 @@ class ThreadBuilderTestOnJDK19 {
     assertTrue(thread3.isDaemon() == d)
   }
 
-  @Ignore("VirtualThreads unimplemented")
-  @Test def testDaemon5(): Unit = {
-    val builder = Thread.ofVirtual()
-    val thread1 = builder.unstarted(() => {})
-    val thread2 = builder.start(() => {})
-    val thread3 = builder.factory.newThread(() => {})
-    // daemon status should always be true
-    assertTrue(thread1.isDaemon())
-    assertTrue(thread2.isDaemon())
-    assertTrue(thread3.isDaemon())
-  }
+  // @Ignore("VirtualThreads unimplemented")
+  // @Test def testDaemon5(): Unit = {
+  //   val builder = Thread.ofVirtual()
+  //   val thread1 = builder.unstarted(() => {})
+  //   val thread2 = builder.start(() => {})
+  //   val thread3 = builder.factory.newThread(() => {})
+  //   // daemon status should always be true
+  //   assertTrue(thread1.isDaemon())
+  //   assertTrue(thread2.isDaemon())
+  //   assertTrue(thread3.isDaemon())
+  // }
 
   @Test def testStackSize1(): Unit = {
     val builder = Thread.ofPlatform().stackSize(1024 * 1024)
@@ -337,27 +337,27 @@ class ThreadBuilderTestOnJDK19 {
     assertTrue(exceptionRef.get.isInstanceOf[FooException])
   }
 
-  @Ignore("VirtualThreads unimplemented")
-  @Test def testUncaughtExceptionHandler2(): Unit = {
-    val threadRef = new AtomicReference[Thread]
-    val exceptionRef =
-      new AtomicReference[Throwable]
-    val thread = Thread
-      .ofVirtual()
-      .uncaughtExceptionHandler((t, e) => {
-        assertTrue(t eq Thread.currentThread())
-        threadRef.set(t)
-        exceptionRef.set(e)
+  // @Ignore("VirtualThreads unimplemented")
+  // @Test def testUncaughtExceptionHandler2(): Unit = {
+  //   val threadRef = new AtomicReference[Thread]
+  //   val exceptionRef =
+  //     new AtomicReference[Throwable]
+  //   val thread = Thread
+  //     .ofVirtual()
+  //     .uncaughtExceptionHandler((t, e) => {
+  //       assertTrue(t eq Thread.currentThread())
+  //       threadRef.set(t)
+  //       exceptionRef.set(e)
 
-      })
-      .start(() => {
-        throw new FooException
+  //     })
+  //     .start(() => {
+  //       throw new FooException
 
-      })
-    thread.join()
-    assertTrue(threadRef.get eq thread)
-    assertTrue(exceptionRef.get.isInstanceOf[FooException])
-  }
+  //     })
+  //   thread.join()
+  //   assertTrue(threadRef.get eq thread)
+  //   assertTrue(exceptionRef.get.isInstanceOf[FooException])
+  // }
 
   @Test def testUncaughtExceptionHandler3(): Unit = {
     val threadRef = new AtomicReference[Thread]
@@ -460,11 +460,11 @@ class ThreadBuilderTestOnJDK19 {
     testThreadLocals(builder)
   }
 
-  @Ignore("VirtualThreads unimplemented")
-  @Test def testThreadLocals2(): Unit = {
-    val builder = Thread.ofVirtual()
-    testThreadLocals(builder)
-  }
+  // @Ignore("VirtualThreads unimplemented")
+  // @Test def testThreadLocals2(): Unit = {
+  //   val builder = Thread.ofVirtual()
+  //   testThreadLocals(builder)
+  // }
 
   @Test def testThreadLocals3(): Unit = {
     val builder = Thread.ofPlatform()
@@ -476,16 +476,16 @@ class ThreadBuilderTestOnJDK19 {
     testThreadLocals(builder)
   }
 
-  @Ignore("VirtualThreads unimplemented")
-  @Test def testThreadLocals4(): Unit = {
-    val builder = Thread.ofVirtual()
-    // disallow
-    builder.allowSetThreadLocals(false)
-    testNoThreadLocals(builder)
-    // allow
-    builder.allowSetThreadLocals(true)
-    testThreadLocals(builder)
-  }
+  // @Ignore("VirtualThreads unimplemented")
+  // @Test def testThreadLocals4(): Unit = {
+  //   val builder = Thread.ofVirtual()
+  //   // disallow
+  //   builder.allowSetThreadLocals(false)
+  //   testNoThreadLocals(builder)
+  //   // allow
+  //   builder.allowSetThreadLocals(true)
+  //   testThreadLocals(builder)
+  // }
 
   private def testInheritedThreadLocals(builder: Thread.Builder): Unit = {
     val value = new AnyRef
@@ -549,18 +549,19 @@ class ThreadBuilderTestOnJDK19 {
     testInheritedThreadLocals(builder)
   }
 
-  @Ignore("VirtualThreads unimplemented")
-  @Test def testInheritedThreadLocals2(): Unit = {
-    val builder = Thread.ofVirtual()
-    testInheritedThreadLocals(builder) // default
+  // @Ignore("VirtualThreads unimplemented")
+  // @Test def testInheritedThreadLocals2(): Unit = {
+  //   val builder = Thread.ofVirtual()
+  //   testInheritedThreadLocals(builder) // default
 
-    // do no inherit
-    builder.inheritInheritableThreadLocals(false)
-    testNoInheritedThreadLocals(builder)
-    // inherit
-    builder.inheritInheritableThreadLocals(true)
-    testInheritedThreadLocals(builder)
-  }
+  //   // do no inherit
+  //   builder.inheritInheritableThreadLocals(false)
+  //   testNoInheritedThreadLocals(builder)
+  //   // inherit
+  //   builder.inheritInheritableThreadLocals(true)
+  //   testInheritedThreadLocals(builder)
+  // }
+
   @Test def testInheritedThreadLocals3(): Unit = {
     val builder = Thread.ofPlatform()
     // thread locals not allowed
@@ -578,23 +579,23 @@ class ThreadBuilderTestOnJDK19 {
     testInheritedThreadLocals(builder)
   }
 
-  @Ignore("VirtualThreads unimplemented")
-  @Test def testInheritedThreadLocals4(): Unit = {
-    val builder = Thread.ofVirtual()
-    // thread locals not allowed
-    builder.allowSetThreadLocals(false)
-    testNoInheritedThreadLocals(builder)
-    builder.inheritInheritableThreadLocals(false)
-    testNoInheritedThreadLocals(builder)
-    builder.inheritInheritableThreadLocals(true)
-    testNoInheritedThreadLocals(builder)
-    // thread locals allowed
-    builder.allowSetThreadLocals(true)
-    builder.inheritInheritableThreadLocals(false)
-    testNoInheritedThreadLocals(builder)
-    builder.inheritInheritableThreadLocals(true)
-    testInheritedThreadLocals(builder)
-  }
+  // @Ignore("VirtualThreads unimplemented")
+  // @Test def testInheritedThreadLocals4(): Unit = {
+  //   val builder = Thread.ofVirtual()
+  //   // thread locals not allowed
+  //   builder.allowSetThreadLocals(false)
+  //   testNoInheritedThreadLocals(builder)
+  //   builder.inheritInheritableThreadLocals(false)
+  //   testNoInheritedThreadLocals(builder)
+  //   builder.inheritInheritableThreadLocals(true)
+  //   testNoInheritedThreadLocals(builder)
+  //   // thread locals allowed
+  //   builder.allowSetThreadLocals(true)
+  //   builder.inheritInheritableThreadLocals(false)
+  //   testNoInheritedThreadLocals(builder)
+  //   builder.inheritInheritableThreadLocals(true)
+  //   testInheritedThreadLocals(builder)
+  // }
 
   @Test def testNulls1(): Unit = {
     val builder = Thread.ofPlatform()
