@@ -43,7 +43,6 @@ private[java] class WindowsThread(val thread: Thread, stackSize: Long)
   private val handle: Handle = {
     if (isMainThread) 0.toPtr // main thread
     else if (!isMultithreadingEnabled) {
-      scala.scalanative.runtime.UnsupportedFeature.threads()
       throw new LinkageError(
         "Multithreading support disabled - cannot create new threads"
       )

@@ -36,7 +36,6 @@ private[java] class PosixThread(val thread: Thread, stackSize: Long)
   private val handle: pthread_t =
     if (isMainThread) 0.toUSize // main thread
     else if (!isMultithreadingEnabled) {
-      scala.scalanative.runtime.UnsupportedFeature.threads()
       throw new LinkageError(
         "Multithreading support disabled - cannot create new threads"
       )
