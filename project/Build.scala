@@ -537,7 +537,7 @@ object Build {
     .dependsOn(nativelib, clib)
     .withNativeCompilerPlugin
 
-  lazy val scalalib: MultiScalaProject =
+    lazy val scalalib: MultiScalaProject =
     MultiScalaProject("scalalib")
       .enablePlugins(MyScalaNativePlugin)
       .settings(
@@ -568,8 +568,8 @@ object Build {
                       .toInt >= 13 =>
                   List("-Xfatal-warnings")
               }
-            }
-          )
+}
+            )
         case version @ ("3" | "3-next") =>
           _.settings(
             name := "scala3lib",
@@ -583,9 +583,9 @@ object Build {
             ))
               .excludeAll(ExclusionRule("org.scala-native"))
               .cross(CrossVersion.for3Use2_13),
-            update := {
+                        update := {
               update.dependsOn {
-                Def.taskDyn(scalalib.v2_13 / Compile / publishLocal)
+                  Def.taskDyn(scalalib.v2_13 / Compile / publishLocal)
               }.value
             }
           )
@@ -1044,7 +1044,7 @@ object Build {
       testInterface % "test"
     )
 
-  implicit class MultiProjectOps(val project: MultiScalaProject)
+    implicit class MultiProjectOps(val project: MultiScalaProject)
       extends AnyVal {
 
     /** Uses the Scala Native compiler plugin. */
