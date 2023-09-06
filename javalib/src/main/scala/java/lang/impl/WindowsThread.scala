@@ -42,11 +42,11 @@ private[java] class WindowsThread(val thread: Thread, stackSize: Long)
 
   private val handle: Handle = {
     if (isMainThread) 0.toPtr // main thread
-    else if (!isMultithreadingEnabled)
+    else if (!isMultithreadingEnabled) {
       throw new LinkageError(
         "Multithreading support disabled - cannot create new threads"
       )
-    else
+    } else
       checkedHandle("create thread") {
         val effectiveStackSize =
           if (stackSize > 0) stackSize
