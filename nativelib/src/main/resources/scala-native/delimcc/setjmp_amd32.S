@@ -135,4 +135,6 @@ __lh_get_sp:
   leal   4 (%esp), %eax
   ret
 
+.section .note.GNU-stack,"",@progbits
+
 #endif
