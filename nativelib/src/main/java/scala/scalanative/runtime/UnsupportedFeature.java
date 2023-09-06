@@ -26,4 +26,7 @@ public abstract class UnsupportedFeature {
 
 	public static void virtualThreads() {
 	}
+
+	public static void continuations() {
+	}
 }

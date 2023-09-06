@@ -6,6 +6,7 @@ import scala.scalanative.runtime.Intrinsics.*
 import scala.collection.mutable
 
 import scala.util.Try
+import scala.scalanative.meta.LinktimeInfo.isWindows
 
 object Continuations:
   import ContImpl.*
@@ -23,6 +24,7 @@ object Continuations:
    *  `boundary` call higher on the same call stack is undefined behaviour.
    */
   inline def boundary[T](inline body: BoundaryLabel[T] ?=> T): T =
+    if isWindows then UnsupportedFeature.continuations()
     val call: ContFnT = (x: ContImpl.BoundaryLabel) =>
       objToPtr(Try(body(using x)))
     val resP = ContImpl.boundary(contFn, objToPtr(call))
