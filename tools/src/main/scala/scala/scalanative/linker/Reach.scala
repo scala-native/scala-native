@@ -15,6 +15,7 @@ class Reach(
 
   val loaded = mutable.Map.empty[Global.Top, mutable.Map[Global, Defn]]
   val unreachable = mutable.Map.empty[Global, UnreachableSymbol]
+  val unsupported = mutable.Map.empty[Global, UnsupportedFeature]
   val enqueued = mutable.Set.empty[Global]
   var todo = List.empty[Global]
   val done = mutable.Map.empty[Global, Defn]
@@ -29,6 +30,16 @@ class Reach(
 
   private case class DelayedMethod(owner: Global.Top, sig: Sig, pos: Position)
   private val delayedMethods = mutable.Set.empty[DelayedMethod]
+
+  if (injects.nonEmpty) {
+    injects.groupBy(_.name.top).foreach {
+      case (owner, defns) =>
+        val buf = mutable.Map.empty[Global, Defn]
+        loaded.update(owner, buf)
+        defns.foreach(defn => buf.update(defn.name, defn))
+    }
+    injects.foreach(reachDefn)
+  }
 
   entries.foreach(reachEntry(_)(nir.Position.NoPosition))
 
@@ -56,7 +67,7 @@ class Reach(
     // in reachUnavailable
     done.valuesIterator.filter(_ != null).foreach(defns += _)
 
-    if (unreachable.isEmpty)
+    if (unreachable.isEmpty && unsupported.isEmpty)
       new ReachabilityAnalysis.Result(
         infos = infos,
         entries = entries,
@@ -67,9 +78,10 @@ class Reach(
         resolvedVals = resolvedNirValues
       )
     else
-      new ReachabilityAnalysis.UnreachableSymbolsFound(
+      new ReachabilityAnalysis.Failure(
         defns = defns.toSeq,
-        unreachable = unreachable.values.toSeq
+        unreachable = unreachable.values.toSeq,
+        unsupportedFeatures = unsupported.values.toSeq
       )
   }
 
@@ -915,76 +927,159 @@ class Reach(
     }
   }
 
-  protected def addMissing(global: Global): Unit = unreachable.getOrElseUpdate(
-    global, {
-      def parseSig(owner: String, sig: Sig): (String, String) =
-        sig.unmangled match {
-          case Sig.Method(name, _, _) => "method" -> s"$owner.${name}"
-          case Sig.Ctor(tys) =>
-            val ctorTys = tys
-              .map {
-                case ty: Type.RefKind => ty.className.id
-                case ty               => ty.show
-              }
-              .mkString(",")
-            "constructor" -> s"$owner($ctorTys)"
-          case Sig.Clinit          => "static constructor" -> owner
-          case Sig.Field(name, _)  => "field" -> s"$owner.$name"
-          case Sig.Generated(name) => "generated method" -> s"$owner.${name}"
-          case Sig.Proxy(name, _)  => "proxy method" -> s"$owner.$name"
-          case Sig.Duplicate(sig, _) =>
-            val (kind, name) = parseSig(owner, sig)
-            s"duplicate $kind" -> s"$owner.name"
-          case Sig.Extern(name) => s"extern method" -> s"$owner.$name"
-        }
-
-      def parseSymbol(name: Global): (String, String) = name match {
-        case Global.Member(owner, sig) => parseSig(owner.id, sig)
-        case Global.Top(id)            => "type" -> id
-        case _                         => util.unreachable
-      }
-
-      val buf = List.newBuilder[BackTraceElement]
-      def getBackTrace(name: Global): List[BackTraceElement] = {
-        // orElse just in case if we messed something up and failed to correctly track references
-        // Accept possibly empty backtrace instead of crashing
-        val current = from.getOrElse(name, ReferencedFrom.Root)
-        if (current == ReferencedFrom.Root) buf.result()
-        else {
-          val file = current.srcPosition.filename.getOrElse("unknown")
-          val line = current.srcPosition.line
-          val (kind, symbol) = parseSymbol(current.referencedBy)
-          buf += BackTraceElement(
-            name = current.referencedBy,
-            kind = kind,
-            symbol = symbol,
-            filename = file,
-            line = line + 1
-          )
-          getBackTrace(current.referencedBy)
-        }
-      }
-
-      val (kind, symbol) = parseSymbol(global)
-      UnreachableSymbol(
-        name = global,
-        kind = kind,
-        symbol = symbol,
-        backtrace = getBackTrace(global)
-      )
+  protected def addMissing(global: Global): Unit =
+    global match {
+      case UnsupportedFeatureExtractor(details) =>
+        unsupported.getOrElseUpdate(global, details)
+      case _ =>
+        unreachable.getOrElseUpdate(
+          global, {
+            val (kind, symbol) = parseSymbol(global)
+            UnreachableSymbol(
+              name = global,
+              kind = kind,
+              symbol = symbol,
+              backtrace = getBackTrace(global)
+            )
+          }
+        )
     }
-  )
+
+  private def parseSymbol(name: Global): (String, String) = {
+    def parseSig(owner: String, sig: Sig): (String, String) =
+      sig.unmangled match {
+        case Sig.Method(name, _, _) => "method" -> s"$owner.${name}"
+        case Sig.Ctor(tys) =>
+          val ctorTys = tys
+            .map {
+              case ty: Type.RefKind => ty.className.id
+              case ty               => ty.show
+            }
+            .mkString(",")
+          "constructor" -> s"$owner($ctorTys)"
+        case Sig.Clinit         => "static constructor" -> owner
+        case Sig.Field(name, _) => "field" -> s"$owner.$name"
+        case Sig.Generated(name) =>
+          "generated method" -> s"$owner.${name}"
+        case Sig.Proxy(name, _) => "proxy method" -> s"$owner.$name"
+        case Sig.Duplicate(sig, _) =>
+          val (kind, name) = parseSig(owner, sig)
+          s"duplicate $kind" -> s"$owner.name"
+        case Sig.Extern(name) => s"extern method" -> s"$owner.$name"
+      }
+
+    name match {
+      case Global.Member(owner, sig) => parseSig(owner.id, sig)
+      case Global.Top(id)            => "type" -> id
+      case _                         => util.unreachable
+    }
+  }
+
+  private def getBackTrace(referencedFrom: Global): List[BackTraceElement] = {
+    val buf = List.newBuilder[BackTraceElement]
+    def loop(name: Global): List[BackTraceElement] = {
+      // orElse just in case if we messed something up and failed to correctly track references
+      // Accept possibly empty backtrace instead of crashing
+      val current = from.getOrElse(name, ReferencedFrom.Root)
+      if (current == ReferencedFrom.Root) buf.result()
+      else {
+        val file = current.srcPosition.filename.getOrElse("unknown")
+        val line = current.srcPosition.line
+        val (kind, symbol) = parseSymbol(current.referencedBy)
+        buf += BackTraceElement(
+          name = current.referencedBy,
+          kind = kind,
+          symbol = symbol,
+          filename = file,
+          line = line + 1
+        )
+        loop(current.referencedBy)
+      }
+    }
+    loop(referencedFrom)
+  }
+
+  protected object UnsupportedFeatureExtractor {
+    import UnsupportedFeature._
+    val UnsupportedSymbol =
+      Global.Top("scala.scalanative.runtime.UnsupportedFeature")
+
+    // Add stubs for NIR when checkFeatures is disabled
+    val injects: Seq[nir.Defn] =
+      if (config.compilerConfig.checkFeatures) Nil
+      else {
+        import scala.scalanative.nir._
+        implicit val srcPosition: nir.Position = nir.Position.NoPosition
+        val stubMethods = for {
+          methodName <- Seq("threads", "virtualThreads")
+        } yield {
+          import scala.scalanative.codegen.Lower.{
+            throwUndefined,
+            throwUndefinedTy,
+            throwUndefinedVal
+          }
+          implicit val scopeId: nir.ScopeId = nir.ScopeId.TopLevel
+          Defn.Define(
+            attrs = Attrs.None,
+            name = UnsupportedSymbol.member(
+              Sig.Method(methodName, Seq(Type.Unit), Sig.Scope.PublicStatic)
+            ),
+            ty = Type.Function(Nil, Type.Unit),
+            insts = {
+              implicit val fresh: Fresh = Fresh()
+              val buf = new Buffer()
+              buf.label(fresh(), Nil)
+              buf.call(
+                throwUndefinedTy,
+                throwUndefinedVal,
+                Seq(Val.Null),
+                Next.None
+              )
+              buf.unreachable(Next.None)
+              buf.toSeq
+            }
+          )
+        }
+        val stubType =
+          Defn.Class(Attrs.None, UnsupportedSymbol, Some(Rt.Object.name), Nil)
+        stubType +: stubMethods
+      }
+
+    private def details(sig: Sig): UnsupportedFeature.Kind =
+      sig.unmangled match {
+        case Sig.Method("threads", _, _)        => SystemThreads
+        case Sig.Method("virtualThreads", _, _) => VirtualThreads
+        case _                                  => Other
+      }
+
+    def unapply(name: Global): Option[UnsupportedFeature] = name match {
+      case Global.Member(UnsupportedSymbol, sig) =>
+        unsupported
+          .get(name)
+          .orElse(
+            Some(
+              UnsupportedFeature(
+                kind = details(sig),
+                backtrace = getBackTrace(name)
+              )
+            )
+          )
+      case _ => None
+    }
+  }
 
   private def fail(msg: => String): Nothing = {
     throw new LinkingException(msg)
   }
 
-  private def track(name: Global)(implicit srcPosition: nir.Position) =
+  protected def track(name: Global)(implicit srcPosition: nir.Position) =
     from.getOrElseUpdate(
       name,
       if (stack.isEmpty) ReferencedFrom.Root
       else ReferencedFrom(stack.head, srcPosition)
     )
+
+  lazy val injects: Seq[nir.Defn] = UnsupportedFeatureExtractor.injects
 }
 
 object Reach {
@@ -1019,4 +1114,19 @@ object Reach {
       symbol: String,
       backtrace: List[BackTraceElement]
   )
+
+  case class UnsupportedFeature(
+      kind: UnsupportedFeature.Kind,
+      backtrace: List[BackTraceElement]
+  )
+  object UnsupportedFeature {
+    sealed abstract class Kind(val details: String)
+    case object SystemThreads
+        extends Kind(
+          "Application linked with disabled multithreading support. Adjust nativeConfig and try again"
+        )
+    case object VirtualThreads
+        extends Kind("VirtualThreads are not supported yet on this platform")
+    case object Other extends Kind("Other unsupported feature")
+  }
 }

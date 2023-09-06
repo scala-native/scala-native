@@ -88,7 +88,7 @@ private[scalanative] object ScalaNative {
       .flatMap {
         case result: ReachabilityAnalysis.Result =>
           check(config, forceQuickCheck = forceQuickCheck)(result)
-        case result: ReachabilityAnalysis.UnreachableSymbolsFound =>
+        case result: ReachabilityAnalysis.Failure =>
           Future.failed(
             new LinkingException(
               s"Unreachable symbols found after $stage run. It can happen when using dependencies not cross-compiled for Scala Native or not yet ported JDK definitions."
@@ -103,24 +103,48 @@ private[scalanative] object ScalaNative {
       analysis: ReachabilityAnalysis,
       stage: String
   ): Unit = {
-    def showUnreachable(
-        analysis: ReachabilityAnalysis.UnreachableSymbolsFound
+    def showFailureDetails(
+        analysis: ReachabilityAnalysis.Failure
     ): Unit = {
       val log = config.logger
-      log.error(s"Found ${analysis.unreachable.size} unreachable symbols")
-      analysis.unreachable.foreach {
-        case Reach.UnreachableSymbol(_, kind, name, backtrace) =>
-          // Build stacktrace in memory to prevent its spliting when logging asynchronously
-          val buf = new StringBuilder()
-          buf.append(s"Found unknown $kind $name, referenced from:\n")
-          val padding = backtrace.foldLeft(0)(_ max _.kind.length())
-          backtrace.foreach {
-            case Reach.BackTraceElement(_, kind, name, filename, line) =>
-              val pad = " " * (padding - kind.length())
-              buf.append(s"    $pad$kind at $name($filename:$line)\n")
-          }
-          buf.append("\n")
-          log.error(buf.toString())
+      def appendBackTrace(
+          buf: StringBuilder,
+          backtrace: List[Reach.BackTraceElement]
+      ): Unit = {
+        // Build stacktrace in memory to prevent its spliting when logging asynchronously
+        val padding = backtrace.foldLeft(0)(_ max _.kind.length())
+        backtrace.foreach {
+          case Reach.BackTraceElement(_, kind, name, filename, line) =>
+            val pad = " " * (padding - kind.length())
+            buf.append(s"    $pad$kind at $name($filename:$line)\n")
+        }
+        buf.append("\n")
+      }
+
+      if (analysis.unreachable.nonEmpty) {
+        log.error(s"Found ${analysis.unreachable.size} unreachable symbols!")
+        analysis.unreachable.foreach {
+          case Reach.UnreachableSymbol(_, kind, name, backtrace) =>
+            val buf = new StringBuilder()
+            buf.append(s"Found unknown $kind $name, referenced from:\n")
+            appendBackTrace(buf, backtrace)
+            log.error(buf.toString())
+        }
+      }
+
+      if (analysis.unsupportedFeatures.nonEmpty) {
+        log.error(
+          s"Found usage of ${analysis.unsupportedFeatures.size} unsupported features!"
+        )
+        analysis.unsupportedFeatures.foreach {
+          case Reach.UnsupportedFeature(kind, backtrace) =>
+            val buf = new StringBuilder()
+            buf.append(
+              s"Detected usage of unsupported feature ${kind} - ${kind.details}\nFeature referenced from:\n"
+            )
+            appendBackTrace(buf, backtrace)
+            log.error(buf.toString())
+        }
       }
     }
 
@@ -136,9 +160,9 @@ private[scalanative] object ScalaNative {
     }
 
     analysis match {
-      case result: ReachabilityAnalysis.UnreachableSymbolsFound =>
+      case result: ReachabilityAnalysis.Failure =>
         showStats()
-        showUnreachable(result)
+        showFailureDetails(result)
       case _ =>
         showStats()
     }

@@ -149,7 +149,7 @@ class LinktimeConditionsSpec extends OptimizerSpec {
                           |  }
                           |}""".stripMargin
       )("int" -> n) {
-        case (_, result: ReachabilityAnalysis.UnreachableSymbolsFound) =>
+        case (_, result: ReachabilityAnalysis.Failure) =>
           assertTrue(
             n.toString,
             (result.unreachable.map(_.name).toSet - pathForNumber(n)).isEmpty
@@ -180,7 +180,7 @@ class LinktimeConditionsSpec extends OptimizerSpec {
           |  }
           |}""".stripMargin
       )("float" -> n.toFloat) {
-        case (_, result: ReachabilityAnalysis.UnreachableSymbolsFound) =>
+        case (_, result: ReachabilityAnalysis.Failure) =>
           assertTrue(
             n.toString,
             (result.unreachable.map(_.name).toSet - pathForNumber(n)).isEmpty
@@ -236,7 +236,7 @@ class LinktimeConditionsSpec extends OptimizerSpec {
         "prop.string" -> stringValue,
         "inner.countFrom" -> longValue
       ) {
-        case (_, result: ReachabilityAnalysis.UnreachableSymbolsFound) =>
+        case (_, result: ReachabilityAnalysis.Failure) =>
           assertTrue(
             (result.unreachable.map(_.name).toSet -
               pathForNumber(pathNumber)).isEmpty
@@ -284,7 +284,7 @@ class LinktimeConditionsSpec extends OptimizerSpec {
         "prop.bool.1" -> bool1,
         "prop.bool.2" -> bool2
       ) {
-        case (_, result: ReachabilityAnalysis.UnreachableSymbolsFound) =>
+        case (_, result: ReachabilityAnalysis.Failure) =>
           assertTrue(
             (result.unreachable.map(_.name).toSet -
               pathForNumber(pathNumber)).isEmpty
@@ -465,10 +465,10 @@ class LinktimeConditionsSpec extends OptimizerSpec {
   private def doesNotLinkWithProps(
       sources: (String, String)*
   )(props: (String, Any)*)(
-      body: (Config, ReachabilityAnalysis.UnreachableSymbolsFound) => Unit
+      body: (Config, ReachabilityAnalysis.Failure) => Unit
   ): Unit = {
     mayLinkWithProps(sources: _*)(props: _*) {
-      case (config, analysis: ReachabilityAnalysis.UnreachableSymbolsFound) =>
+      case (config, analysis: ReachabilityAnalysis.Failure) =>
         body(config, analysis)
       case _ =>
         fail("Expected code to not link"); scala.scalanative.util.unreachable
