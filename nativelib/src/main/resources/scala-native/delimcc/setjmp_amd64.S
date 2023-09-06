@@ -113,6 +113,4 @@ __lh_get_sp:
   addq $8, %rax
   ret
 
-.section .note.GNU-stack,"",@progbits
-
 #endif
