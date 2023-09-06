@@ -378,7 +378,7 @@ object Character {
         }
         if (isHighSurrogate(seq(i))) {
           val next = i + 1
-          if (next <= end && isLowSurrogate(seq(next))) {
+          if (next < end && isLowSurrogate(seq(next))) {
             i += 1
           }
         }
@@ -396,7 +396,7 @@ object Character {
         }
         if (isLowSurrogate(seq(i))) {
           val prev = i - 1
-          if (prev >= start && isHighSurrogate(seq(prev))) {
+          if (prev > start && isHighSurrogate(seq(prev))) {
             i -= 1
           }
         }
