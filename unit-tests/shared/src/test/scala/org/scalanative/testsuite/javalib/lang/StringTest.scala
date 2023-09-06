@@ -127,6 +127,32 @@ class StringTest {
     )
   }
 
+  @Test def offsetByCodePoints(): Unit = {
+    assertTrue("abc".offsetByCodePoints(0, 3) == 3)
+    assertTrue("abc".offsetByCodePoints(1, 2) == 3)
+
+    assertTrue("abc".offsetByCodePoints(3, -3) == 0)
+    assertTrue("abc".offsetByCodePoints(3, -2) == 1)
+
+    assertTrue("\uD800\uDC00".offsetByCodePoints(0, 1) == 2)
+    assertTrue("\uD800\uDC00".offsetByCodePoints(1, -1) == 0)
+  }
+
+  @Test def offsetByCodePointsUnpairedSurrogates(): Unit = {
+    assertTrue("\uD800".offsetByCodePoints(0, 1) == 1)
+    assertTrue("\uDBFF".offsetByCodePoints(0, 1) == 1)
+    assertTrue("\uDC00".offsetByCodePoints(0, 1) == 1)
+    assertTrue("\uDFFF".offsetByCodePoints(0, 1) == 1)
+
+    assertTrue("\uD800".offsetByCodePoints(1, -1) == 0)
+    assertTrue("\uDBFF".offsetByCodePoints(1, -1) == 0)
+    assertTrue("\uDC00".offsetByCodePoints(1, -1) == 0)
+    assertTrue("\uDFFF".offsetByCodePoints(1, -1) == 0)
+
+    assertTrue("\uD800x".offsetByCodePoints(0, 2) == 2)
+    assertTrue("x\uD800".offsetByCodePoints(0, 2) == 2)
+  }
+
   @Test def compareTo(): Unit = {
     assertTrue("test".compareTo("utest") < 0)
     assertTrue("test".compareTo("test") == 0)
