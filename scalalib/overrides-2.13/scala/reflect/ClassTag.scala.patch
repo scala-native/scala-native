@@ -1,6 +1,6 @@
---- 2.13.7/scala/reflect/ClassTag.scala
+--- 2.13.12/scala/reflect/ClassTag.scala
 +++ overrides-2.13/scala/reflect/ClassTag.scala
-@@ -93,56 +93,24 @@
+@@ -93,10 +93,6 @@
   * Class tags corresponding to primitive types and constructor/extractor for ClassTags.
   */
  object ClassTag {
@@ -10,36 +10,10 @@
 -
    import ManifestFactory._
  
--  val Byte    : ByteManifest               = Manifest.Byte
--  val Short   : ShortManifest              = Manifest.Short
--  val Char    : CharManifest               = Manifest.Char
--  val Int     : IntManifest                = Manifest.Int
--  val Long    : LongManifest               = Manifest.Long
--  val Float   : FloatManifest              = Manifest.Float
--  val Double  : DoubleManifest             = Manifest.Double
--  val Boolean : BooleanManifest            = Manifest.Boolean
--  val Unit    : UnitManifest               = Manifest.Unit
--  val Any     : ClassTag[scala.Any]        = Manifest.Any
--  val Object  : ClassTag[java.lang.Object] = Manifest.Object
--  val AnyVal  : ClassTag[scala.AnyVal]     = Manifest.AnyVal
--  val AnyRef  : ClassTag[scala.AnyRef]     = Manifest.AnyRef
--  val Nothing : ClassTag[scala.Nothing]    = Manifest.Nothing
--  val Null    : ClassTag[scala.Null]       = Manifest.Null
-+  @inline def Byte    : ByteManifest               = Manifest.Byte
-+  @inline def Short   : ShortManifest              = Manifest.Short
-+  @inline def Char    : CharManifest               = Manifest.Char
-+  @inline def Int     : IntManifest                = Manifest.Int
-+  @inline def Long    : LongManifest               = Manifest.Long
-+  @inline def Float   : FloatManifest              = Manifest.Float
-+  @inline def Double  : DoubleManifest             = Manifest.Double
-+  @inline def Boolean : BooleanManifest            = Manifest.Boolean
-+  @inline def Unit    : UnitManifest               = Manifest.Unit
-+  @inline def Any     : ClassTag[scala.Any]        = Manifest.Any
-+  @inline def Object  : ClassTag[java.lang.Object] = Manifest.Object
-+  @inline def AnyVal  : ClassTag[scala.AnyVal]     = Manifest.AnyVal
-+  @inline def AnyRef  : ClassTag[scala.AnyRef]     = Manifest.AnyRef
-+  @inline def Nothing : ClassTag[scala.Nothing]    = Manifest.Nothing
-+  @inline def Null    : ClassTag[scala.Null]       = Manifest.Null
+   val Byte    : ByteManifest               = Manifest.Byte
+@@ -115,34 +111,6 @@
+   val Nothing : ClassTag[scala.Nothing]    = Manifest.Nothing
+   val Null    : ClassTag[scala.Null]       = Manifest.Null
  
 -  private val cacheDisabled = java.lang.Boolean.getBoolean("scala.reflect.classtag.cache.disable")
 -  private[this] object cache extends ClassValueCompat[jWeakReference[ClassTag[_]]] {
