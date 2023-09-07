@@ -68,20 +68,22 @@ object CodeGen {
       val env = assembly.map(defn => defn.name -> defn).toMap
       val workDir = VirtualDirectory.real(config.workDir)
 
-      /** C:a\b\c.txt -> a\b\c.txt p:\a\b\c.txt -> a\b\c.txt /a/b/c.txt ->
-       *  a/b/c.txt
+      /**
+       *    - \C:a\b\c.txt -> a\b\c.txt
+       *    - C:a\b\c.txt -> a\b\c.txt
+       *    - p:\a\b\c.txt -> a\b\c.txt
+       *    - /a/b/c.txt -> a/b/c.txt
        */
       def dropPrefix(fileName: String): String = {
-        val driveLetter = "^[A-Za-z]:".r
+        val driveLetter = s"^(${File.separator})?[A-Za-z]:".r
         val supportDriveLetter =
           build.Platform.isWindows || build.Platform.isCygwin || build.Platform.isMsys
-        val hasDriveLetter =
-          supportDriveLetter && driveLetter.findFirstIn(fileName).isDefined
-
-        val noDriveLetter = if (hasDriveLetter) fileName.drop(2) else fileName
-        if (noDriveLetter.startsWith(File.separator))
-          noDriveLetter.drop(File.separator.length())
-        else noDriveLetter
+        val noDriveLetter = driveLetter.findFirstIn(fileName) match {
+          case Some(prefix) if supportDriveLetter =>
+            fileName.stripPrefix(prefix)
+          case _ => fileName
+        }
+        noDriveLetter.stripPrefix(File.separator)
       }
 
       def dropSuffix(fileName: String): String =
@@ -92,7 +94,7 @@ object CodeGen {
       def sourceDirOf(pos: Position): Position.SourceFile = {
         if (pos == null || pos.isEmpty) new Position.SourceFile("__empty")
         else
-          Paths.get(pos.source.getPath()).getParent().toUri()
+          Paths.get(pos.source.getPath()).normalize().getParent().toUri()
       }
 
       // Partition into multiple LLVM IR files proportional to number
