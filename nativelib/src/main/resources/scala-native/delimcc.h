@@ -1,5 +1,5 @@
-#ifndef delimcc_h_INCLUDED
-#define delimcc_h_INCLUDED
+#ifndef DELIMCC_H
+#define DELIMCC_H
 
 typedef unsigned long ContLabel;
 
@@ -44,4 +44,4 @@ void *cont_resume(Continuation *cont, void *out);
 // alloc function.
 void cont_free(Continuation *cont);
 
-#endif // delimcc_h_INCLUDED
+#endif // DELIMCC_H
