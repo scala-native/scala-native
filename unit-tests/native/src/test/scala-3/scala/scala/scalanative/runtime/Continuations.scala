@@ -15,6 +15,7 @@ class Scala3ContinuationsTests:
         x + y
       }
       assert(res == 3)
+
   @Test def canBoundarySuspend() =
     if !isWindows then
       val res = boundary[Int] {
@@ -23,12 +24,14 @@ class Scala3ContinuationsTests:
         ???
       }
       assert(res == 2)
+
   @Test def canBoundarySuspendImmediateResume() =
     if !isWindows then
       val r = boundary[Int] {
         1 + suspend[Int, Int](r => r(2)) + suspend[Int, Int](r => r(3)) + 4
       }
       assert(r == 10)
+
   @Test def canBoundarySuspendCommunicate() =
     if !isWindows then
       case class Iter(n: Int, nx: Int => Iter)
@@ -45,7 +48,7 @@ class Scala3ContinuationsTests:
       val r2 = r1.nx(3)
       assert(r2.n == 5)
 
-  @Test def fibonacci(): Unit =
+  @Test def fibonacci(): Unit = {
     if !isWindows then
       import scala.collection.mutable.ArrayBuffer
 
@@ -74,8 +77,9 @@ class Scala3ContinuationsTests:
 
       val fibList = fibs.map(_.v).toList
       assert(fibList == List(1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89))
+  }
 
-  @Test def basic(): Unit =
+  @Test def basic(): Unit = {
     if !isWindows then
       enum Response[T] {
         case Next(nx: () => Response[T], v: T)
@@ -94,3 +98,5 @@ class Scala3ContinuationsTests:
           assert(v2 == End(2))
         case End(v) =>
           assert(false)
+  }
+end Scala3ContinuationsTests
