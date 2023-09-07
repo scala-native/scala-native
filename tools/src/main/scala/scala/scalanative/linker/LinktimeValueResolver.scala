@@ -105,6 +105,7 @@ trait LinktimeValueResolver { self: Reach =>
       case Inst.Let(_, op, Next.None) =>
         op match {
           case Op.Call(_, Val.Global(name, _), _) =>
+            track(name)(inst.pos)
             name != Linktime.PropertyResolveFunctionName &&
               !lookup(name).exists(_.attrs.isLinktimeResolved)
           case _: Op.Comp => false
@@ -247,7 +248,7 @@ trait LinktimeValueResolver { self: Reach =>
             case Next.Label(_, values) =>
               locals ++= nextBlock.params.zip(values).toMap
             case _ =>
-              unsupported(
+              scalanative.util.unsupported(
                 "Only normal labels are expected in linktime resolved methods"
               )
           }
@@ -263,7 +264,7 @@ trait LinktimeValueResolver { self: Reach =>
 
         case _: Inst.If | _: Inst.Let | _: Inst.Switch | _: Inst.Throw |
             _: Inst.Unreachable =>
-          unsupported(
+          scalanative.util.unsupported(
             "Unexpected instruction found in linktime resolved method: " + inst
           )
       }

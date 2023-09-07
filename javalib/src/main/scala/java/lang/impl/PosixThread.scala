@@ -35,11 +35,11 @@ private[java] class PosixThread(val thread: Thread, stackSize: Long)
 
   private val handle: pthread_t =
     if (isMainThread) 0.toUSize // main thread
-    else if (!isMultithreadingEnabled)
+    else if (!isMultithreadingEnabled) {
       throw new LinkageError(
         "Multithreading support disabled - cannot create new threads"
       )
-    else {
+    } else {
       val id = stackalloc[pthread_t]()
       val attrs = stackalloc[Byte](pthread_attr_t_size)
         .asInstanceOf[Ptr[pthread_attr_t]]

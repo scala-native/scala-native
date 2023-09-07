@@ -44,9 +44,9 @@ abstract class LinkerSpec {
       entry: String,
       sources: Map[String, String],
       setupConfig: NativeConfig => NativeConfig = identity
-  )(fn: (Config, ReachabilityAnalysis.UnreachableSymbolsFound) => T): T =
+  )(fn: (Config, ReachabilityAnalysis.Failure) => T): T =
     mayLink(entry, sources, setupConfig) {
-      case (config, result: ReachabilityAnalysis.UnreachableSymbolsFound) =>
+      case (config, result: ReachabilityAnalysis.Failure) =>
         fn(config, result)
       case _ => fail("Expected code to not link"); unreachable
     }
