@@ -85,7 +85,7 @@ ok:
   jmpl    *20 (%ecx)          /* and jump to the eip */
 
 /* f : esp+4, arg : esp+8 */
-/* __cont_boundary_impl: btm, f, arg */
+/* __continuation_boundary_impl: btm, f, arg */
 /*
  stack should look like this pre-call:
    arg
@@ -105,7 +105,7 @@ __lh_boundary_entry:
   pushl   %eax
   pushl   %edx
   pushl   %ecx
-  call    __cont_boundary_impl
+  call    __continuation_boundary_impl
   addl    $12, %esp
   /* return */
   ret
@@ -123,7 +123,7 @@ __lh_resume_entry:
   pushl %edx
   pushl %ecx
   pushl %eax
-  calll __cont_resume_impl
+  calll __continuation_resume_impl
 /* note that from now we return from _lh_boundary_entry */
 __lh_resume_entry_ret:
   addl  $8, %esp

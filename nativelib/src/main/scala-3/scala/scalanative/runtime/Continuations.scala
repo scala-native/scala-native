@@ -9,11 +9,11 @@ import scala.util.Try
 import scala.scalanative.meta.LinktimeInfo.isWindows
 
 object Continuations:
-  import ContImpl.*
+  import ContinuationsImpl.*
 
-  opaque type BoundaryLabel[-T] = ContImpl.BoundaryLabel
+  opaque type BoundaryLabel[-T] = ContinuationsImpl.BoundaryLabel
 
-  ContImpl.init(CFuncPtr2.fromScalaFunction(allocateBlob))
+  ContinuationsImpl.init(CFuncPtr2.fromScalaFunction(allocateBlob))
 
   /** Marks the given body as suspendable with a `BoundaryLabel` that `suspend`
    *  can refer to. Forwards the return value of `body`, or the return value of
@@ -25,9 +25,9 @@ object Continuations:
    */
   inline def boundary[T](inline body: BoundaryLabel[T] ?=> T): T =
     if isWindows then UnsupportedFeature.continuations()
-    val call: ContFnT = (x: ContImpl.BoundaryLabel) =>
+    val call: ContFnT = (x: ContinuationsImpl.BoundaryLabel) =>
       objToPtr(Try(body(using x)))
-    val resP = ContImpl.boundary(contFn, objToPtr(call))
+    val resP = ContinuationsImpl.boundary(contFn, objToPtr(call))
     objFromPtr(resP).asInstanceOf[Try[T]].get
 
   /** Suspends the current running stack up to the corresponding `boundary` into
@@ -62,11 +62,11 @@ object Continuations:
     val cont = Continuation()
     // We want to reify the post-suspension body here,
     // while creating the full continuation object.
-    val call = (c: ContImpl.Continuation) =>
+    val call = (c: ContinuationsImpl.Continuation) =>
       cont.cont = c
       objToPtr(Try(f(cont)))
     val resP =
-      ContImpl.suspend(label, suspendFn, objToPtr(call), objToPtr(cont))
+      ContinuationsImpl.suspend(label, suspendFn, objToPtr(call), objToPtr(cont))
     objFromPtr(resP).asInstanceOf[R]
 
   /** A `Continuation` holds the C implementation continuation pointer,
@@ -78,7 +78,7 @@ object Continuations:
    *  `ObjectArray` to simulate just that.
    */
   class Continuation[-R, +T] extends (R => T):
-    private[Continuations] var cont: ContImpl.Continuation = nullPtr
+    private[Continuations] var cont: ContinuationsImpl.Continuation = nullPtr
     private val allocs = mutable.ArrayBuffer[ObjectArray]()
 
     def apply(x: R): T =
@@ -101,7 +101,7 @@ object Continuations:
    *  Returns Ptr[Byte] / void*.
    */
   private val suspendFn: SuspendFn = CFuncPtr2.fromScalaFunction((cont, arg) =>
-    val fn = objFromPtr(arg).asInstanceOf[ContImpl.Continuation => Ptr[Byte]]
+    val fn = objFromPtr(arg).asInstanceOf[ContinuationsImpl.Continuation => Ptr[Byte]]
     fn(cont)
   )
 
@@ -113,7 +113,7 @@ object Continuations:
    *
    *  Returns Ptr[Byte] / void*.
    */
-  private val contFn: ContFn = CFuncPtr2.fromScalaFunction((label, arg) =>
+  private val contFn: ContinuationBody = CFuncPtr2.fromScalaFunction((label, arg) =>
     val fp = objFromPtr(arg).asInstanceOf[ContFnT]
     fp(label)
   )
@@ -123,7 +123,7 @@ object Continuations:
 
   // FOR WORKING WITH POINTERS
 
-  type ContFnT = ContImpl.BoundaryLabel => Ptr[Byte]
+  type ContFnT = ContinuationsImpl.BoundaryLabel => Ptr[Byte]
 
   private inline def nullPtr[T]: Ptr[T] = fromRawPtr[T](castIntToRawPtr(0))
 
@@ -135,22 +135,21 @@ object Continuations:
 
 end Continuations
 
-@extern private object ContImpl:
-  private type ContLabel = CUnsignedLong
-  // in reality this is a struct containing the id,
-  // but it's not important
-  type BoundaryLabel = ContLabel
+/** Continuations implementation imported from C (see `delimcc.h`) */
+@extern private object ContinuationsImpl:
+  private type ContinuationLabel = CUnsignedLong
+  type BoundaryLabel = ContinuationLabel
 
   type Continuation = Ptr[Byte]
 
-  type ContFn = CFuncPtr2[BoundaryLabel, /* arg */ Ptr[Byte], Ptr[Byte]]
+  type ContinuationBody = CFuncPtr2[BoundaryLabel, /* arg */ Ptr[Byte], Ptr[Byte]]
 
   type SuspendFn = CFuncPtr2[Continuation, /* arg */ Ptr[Byte], Ptr[Byte]]
 
-  @name("cont_boundary")
-  def boundary(f: ContFn, arg: Ptr[Byte]): Ptr[Byte] = extern
+  @name("scalanative_continuation_boundary")
+  def boundary(body: ContinuationBody, arg: Ptr[Byte]): Ptr[Byte] = extern
 
-  @name("cont_suspend")
+  @name("scalanative_continuation_suspend")
   def suspend(
       l: BoundaryLabel,
       f: SuspendFn,
@@ -159,10 +158,10 @@ end Continuations
   ): Ptr[Byte] =
     extern
 
-  @name("cont_resume")
-  def resume(cont: Continuation, arg: Ptr[Byte]): Ptr[Byte] = extern
+  @name("scalanative_continuation_resume")
+  def resume(continuation: Continuation, arg: Ptr[Byte]): Ptr[Byte] = extern
 
-  @name("cont_init") def init(
-      fn: CFuncPtr2[CUnsignedLong, Ptr[Byte], Ptr[Byte]]
+  @name("scalanative_continuation_init") def init(
+      continuation_alloc_fn: CFuncPtr2[CUnsignedLong, Ptr[Byte], Ptr[Byte]]
   ): Unit =
     extern

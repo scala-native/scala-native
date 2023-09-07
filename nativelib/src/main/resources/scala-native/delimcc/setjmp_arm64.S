@@ -112,7 +112,7 @@ _lh_boundary_entry:
     mov   x0, sp
     sub   sp, sp, #16
     str	  x30, [sp, #8]                  // 8-byte Folded Spill
-    bl    __cont_boundary_impl
+    bl    __continuation_boundary_impl
     ldr	  x30, [sp, #8]                  // 8-byte Folded Spill
     add   sp, sp, #16
     ret
@@ -122,7 +122,7 @@ _lh_resume_entry: /* x0 = cont_size, x1 = cont, x2 = arg */
     sub   sp, sp, x0
     add   x0, sp, x0
     mov   x3, x30 /* copy lr */
-    bl    __cont_resume_impl /* it will just return from here */
+    bl    __continuation_resume_impl /* it will just return from here */
 
 .balign 4
 _lh_get_sp:

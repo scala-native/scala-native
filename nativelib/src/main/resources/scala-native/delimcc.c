@@ -44,8 +44,8 @@
 #define _lh_resume_entry lh_resume_entry
 #define _lh_get_sp lh_get_sp
 
-#define __cont_boundary_impl _cont_boundary_impl
-#define __cont_resume_impl _cont_resume_impl
+#define __continuation_boundary_impl _continuation_boundary_impl
+#define __continuation_resume_impl _continuation_resume_impl
 #endif
 
 #define __externc extern
@@ -61,7 +61,8 @@ __externc __returnstwice int _lh_setjmp(lh_jmp_buf buf);
 __externc void *_lh_longjmp(lh_jmp_buf buf, int arg);
 // Stores the return address in sp+BOUNDARY_LR_OFFSET, then calls
 // __cont_boundary_impl.
-__externc __returnstwice void *_lh_boundary_entry(ContFn *f, void *arg);
+__externc __returnstwice void *_lh_boundary_entry(ContinuationBody *f,
+                                                  void *arg);
 // Allocate enough stack for the resumption, and then call __cont_resume_impl.
 __externc void *_lh_resume_entry(ptrdiff_t cont_size, Continuation *c,
                                  void *arg);
@@ -70,10 +71,11 @@ __externc void *_lh_get_sp();
 
 // Label counter
 volatile static atomic_ulong label_count;
-static ContLabel next_label_count() { return ++label_count; }
+static ContinuationBoundaryLabel next_label_count() { return ++label_count; }
 
+// The handler structure that is stored and directly accessed on the stack.
 typedef struct Handler {
-    ContLabel id;
+    ContinuationBoundaryLabel id;
     void *stack_btm;        // where the bottom is, should be changed
     volatile void **result; // where the result is stored, should be changed
     lh_jmp_buf buf;         // jmp buf
@@ -113,7 +115,7 @@ __noinline static void handler_push(Handler *h) {
     __handlers = hs;
 }
 
-__noinline static void handler_pop(ContLabel label) {
+__noinline static void handler_pop(ContinuationBoundaryLabel label) {
     // fprintf(stderr, "Popping: ");
     // print_handlers((Handlers *)__handlers);
     assert(__handlers != NULL && label == __handlers->h->id);
@@ -136,7 +138,7 @@ __noinline static void handler_install(Handlers *hs) {
     __handlers = hs;
 }
 
-__noinline static Handlers *handler_split_at(ContLabel l) {
+__noinline static Handlers *handler_split_at(ContinuationBoundaryLabel l) {
     // fprintf(stderr, "Splitting [id = %lu]: ", l);
     // print_handlers((Handlers *)__handlers);
     Handlers *ret = (Handlers *)__handlers, *cur = ret;
@@ -164,38 +166,40 @@ static unsigned int handler_len(Handlers *h) {
 
 // =============================
 
-static void *cont_malloc(unsigned long size, void *arg);
-static void *(*alloc_function)(unsigned long, void *);
+// Continuation allocation function by `malloc`.
+static void *continuation_alloc_by_malloc(unsigned long size, void *arg);
+// Assigned allocation function. Should not be modified after `init`.
+static void *(*continuation_alloc_fn)(unsigned long, void *);
 
-void cont_init(void *(*alloc_f)(unsigned long, void *)) {
+void scalanative_continuation_init(void *(*alloc_f)(unsigned long, void *)) {
     if (alloc_f != NULL)
-        alloc_function = alloc_f;
+        continuation_alloc_fn = alloc_f;
     else
-        alloc_function = cont_malloc;
+        continuation_alloc_fn = continuation_alloc_by_malloc;
 
     atomic_init(&label_count, 0);
 }
 
-__returnstwice void *__cont_boundary_impl(void **btm, ContFn *f, void *arg) {
+__returnstwice void *
+__continuation_boundary_impl(void **btm, ContinuationBody *body, void *arg) {
     // fprintf(stderr, "Boundary btm is %p\n", btm);
 
     // allocate handlers and such
     volatile void *result = NULL; // we need to force the compiler to re-read
                                   // this from stack every time.
-    // ContResult local_r = {.cont = NULL, .in = NULL};
-    volatile ContLabel label = next_label_count();
+    volatile ContinuationBoundaryLabel label = next_label_count();
     Handler h = {
         .id = label,
         .stack_btm = btm,
         .result = &result,
     };
     // fprintf(stderr, "Setting up result slot at %p\n", &result);
-    ContBoundaryLabel l = {.id = h.id};
+    ContinuationBoundaryLabel l = h.id;
     handler_push(&h);
 
     // setjmp and call
     if (_lh_setjmp(h.buf) == 0) {
-        result = f(l, arg);
+        result = body(l, arg);
         handler_pop(label);
     }
     return (void *)result;
@@ -203,8 +207,9 @@ __returnstwice void *__cont_boundary_impl(void **btm, ContFn *f, void *arg) {
 
 // boundary : BoundaryFn -> Result
 // Result MUST BE HEAP ALLOCATED
-void *cont_boundary(ContFn *f, void *arg) __attribute__((disable_tail_calls)) {
-    return _lh_boundary_entry(f, arg);
+void *scalanative_continuation_boundary(ContinuationBody *body, void *arg)
+    __attribute__((disable_tail_calls)) {
+    return _lh_boundary_entry(body, arg);
 }
 
 // ========== SUSPENDING ===========
@@ -221,40 +226,42 @@ struct Continuation {
     lh_jmp_buf buf;
 };
 
-static void *cont_malloc(unsigned long size, void *arg) {
+static void *continuation_alloc_by_malloc(unsigned long size, void *arg) {
     (void)arg;
     return malloc(size);
 }
 
 // suspend[T, R] : BoundaryLabel[T] -> T -> R
-void *cont_suspend(ContBoundaryLabel b, SuspendFn *f, void *arg,
-                   void *alloc_arg) __attribute__((disable_tail_calls)) {
+void *scalanative_continuation_suspend(ContinuationBoundaryLabel b,
+                                       SuspendFn *f, void *arg, void *alloc_arg)
+    __attribute__((disable_tail_calls)) {
     // set up the continuation
-    Continuation *cont = alloc_function(sizeof(Continuation), alloc_arg);
-    cont->stack_top = _lh_get_sp();
-    cont->handlers = handler_split_at(b.id);
-    cont->handlers_len = handler_len(cont->handlers);
-    Handlers *last_handler = cont->handlers;
+    Continuation *continuation =
+        continuation_alloc_fn(sizeof(Continuation), alloc_arg);
+    continuation->stack_top = _lh_get_sp();
+    continuation->handlers = handler_split_at(b);
+    continuation->handlers_len = handler_len(continuation->handlers);
+    Handlers *last_handler = continuation->handlers;
     while (last_handler->next != NULL)
         last_handler = last_handler->next;
     assert(last_handler->h->stack_btm != NULL); // not a resume handler
-    cont->size = last_handler->h->stack_btm - cont->stack_top;
+    continuation->size = last_handler->h->stack_btm - continuation->stack_top;
     // make the continuation size a multiple of 16
-    cont->stack = alloc_function(cont->size, alloc_arg);
-    memcpy(cont->stack, cont->stack_top, cont->size);
+    continuation->stack = continuation_alloc_fn(continuation->size, alloc_arg);
+    memcpy(continuation->stack, continuation->stack_top, continuation->size);
 
     // set up return value slot
     volatile void *ret_val = NULL;
-    cont->return_slot = &ret_val;
+    continuation->return_slot = &ret_val;
 
     // fprintf(stderr, "Putting result %p to slot %p\n",
     // *last_handler->h->result,
     //         last_handler->h->result);
 
     // we will be back...
-    if (_lh_setjmp(cont->buf) == 0) {
+    if (_lh_setjmp(continuation->buf) == 0) {
         // assign it to the handler's return value
-        *last_handler->h->result = f(cont, arg);
+        *last_handler->h->result = f(continuation, arg);
         return _lh_longjmp(last_handler->h->buf, 1);
     } else {
         // We're back, ret_val should be populated.
@@ -280,8 +287,8 @@ static Handlers *handler_clone_fix(Handlers *other, ptrdiff_t diff) {
 }
 
 // Resumes the continuation to [tail - size, tail).
-void __cont_resume_impl(void *tail, Continuation *cont, void *out,
-                        void *ret_addr) {
+void __continuation_resume_impl(void *tail, Continuation *continuation,
+                                void *out, void *ret_addr) {
     // Allocate all values up front so we know how many to deal with.
     Handlers *nw, *to_install; // new handler chain
     ptrdiff_t i;
@@ -290,10 +297,10 @@ void __cont_resume_impl(void *tail, Continuation *cont, void *out,
     void **new_return_slot; // new return slot
     lh_jmp_buf return_buf;
 
-    target = tail - cont->size;
-    diff = target - cont->stack_top;
+    target = tail - continuation->size;
+    diff = target - continuation->stack_top;
     // set up stuff
-    memcpy(return_buf, cont->buf, ASM_JMPBUF_SIZE);
+    memcpy(return_buf, continuation->buf, ASM_JMPBUF_SIZE);
 
 #if !defined(__i386__) // 32 bit platforms don't have an alignment restriction?
     assert((diff & 15) == 0);
@@ -304,14 +311,14 @@ void __cont_resume_impl(void *tail, Continuation *cont, void *out,
     //         diff, cont->size, cont->stack_top, cont->stack_top + cont->size,
     //         target, tail, cont, cont->stack);
     // clone the handler chain, with fixes.
-    to_install = nw = handler_clone_fix(cont->handlers, diff);
+    to_install = nw = handler_clone_fix(continuation->handlers, diff);
     jmpbuf_fix(return_buf);
     // copy and fix the remaining information in the continuation
-    new_return_slot = fixed_addr(cont->return_slot);
+    new_return_slot = fixed_addr(continuation->return_slot);
     // install the memory
-    memcpy(target, cont->stack, cont->size);
+    memcpy(target, continuation->stack, continuation->size);
     // fix the handlers in cont->stack
-    for (i = 0; i < cont->handlers_len; ++i, nw = nw->next) {
+    for (i = 0; i < continuation->handlers_len; ++i, nw = nw->next) {
         fix_addr(nw->h->result);
         if (nw->h->stack_btm != NULL)
             fix_addr(nw->h->stack_btm);
@@ -324,11 +331,11 @@ void __cont_resume_impl(void *tail, Continuation *cont, void *out,
     // fprintf(stderr, "return slot is %p\n", new_return_slot);
     *new_return_slot = out;
     // fix the return address of the bottom of our new stack fragment.
-    *(void **)(target + cont->size - BOUNDARY_LR_OFFSET) = ret_addr;
+    *(void **)(target + continuation->size - BOUNDARY_LR_OFFSET) = ret_addr;
     _lh_longjmp(return_buf, 1);
 }
 
-void *cont_resume(Continuation *cont, void *out) {
+void *scalanative_continuation_resume(Continuation *continuation, void *out) {
     /*
      * Why we need a setjmp/longjmp.
      *
@@ -343,11 +350,11 @@ void *cont_resume(Continuation *cont, void *out) {
      * */
     volatile void *result = NULL; // we need to force the compiler to re-read
     // this from stack every time.
-    volatile ContLabel label = next_label_count();
+    volatile ContinuationBoundaryLabel label = next_label_count();
     Handler h = {.id = label, .result = &result, .stack_btm = NULL};
     handler_push(&h);
     if (_lh_setjmp(h.buf) == 0) {
-        result = _lh_resume_entry(cont->size, cont, out);
+        result = _lh_resume_entry(continuation->size, continuation, out);
         handler_head_longjmp(1); // top handler is always ours, avoid
                                  // refering to non-volatile `h`
     }
@@ -363,8 +370,8 @@ static void handler_free(Handlers *hs) {
     }
 }
 
-void cont_free(Continuation *cont) {
-    handler_free(cont->handlers);
-    free(cont->stack);
-    free(cont);
+void scalanative_continuation_free(Continuation *continuation) {
+    handler_free(continuation->handlers);
+    free(continuation->stack);
+    free(continuation);
 }

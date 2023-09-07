@@ -125,7 +125,7 @@ __lh_boundary_entry: /* rcx: arg 1, rdx : arg 2, (r8: arg 3) */
   movq  %rsp, %rcx
   addq  $8, %rcx
   subq  $40, %rsp /* for rsp alignment 8 bytes + home 8*4 bytes */
-  call  __cont_boundary_impl
+  call  __continuation_boundary_impl
   addq  $40, %rsp
   ret
 
@@ -136,7 +136,7 @@ __lh_resume_entry:
   subq  %rcx, %rsp /* move sp */
   movq  %rax, %rcx /* pass old sp as arg 1 */
   addq  $8, %rcx   /* forget about lr in stack tail */
-  jmp   __cont_resume_impl /* it will just return from here */
+  jmp   __continuation_resume_impl /* it will just return from here */
 
 
 _lh_get_sp:

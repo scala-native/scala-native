@@ -1,47 +1,49 @@
 #ifndef DELIMCC_H
 #define DELIMCC_H
 
-typedef unsigned long ContLabel;
-
-typedef struct ContBoundaryLabel {
-    ContLabel id;
-} ContBoundaryLabel;
+typedef unsigned long ContinuationBoundaryLabel;
 
 typedef struct Continuation Continuation;
 
-typedef struct ContResult {
-    void *in;
-    Continuation *cont;
-} ContResult;
+// ContinationBody = ContBoundaryLabel -> any -> any
+typedef void *ContinuationBody(ContinuationBoundaryLabel, void *);
 
-// ContFn = ContBoundaryLabel -> any -> any
-typedef void *ContFn(ContBoundaryLabel, void *);
-
+// SuspendFn = Continuation -> any -> any
 typedef void *SuspendFn(Continuation *, void *);
 
 // Initializes the continuation helpers,
 // set the allocation function for Continuations and stack fragments.
 // without calling this, malloc is the default allocation function.
 // The allocation function may take another parameter, as given in
-// `cont_suspend`.
-void cont_init(void *(*alloc_f)(unsigned long, void *));
+// `scalanative_continuation_suspend`.
+void scalanative_continuation_init(void *(*alloc_f)(unsigned long, void *));
 
-// cont_boundary : ContFn -> any -> Result
-// void cont_boundary(ContFn *, void *, ContResult *);
-
-void *cont_boundary(ContFn *, void *);
+// cont_boundary : ContinuationBody -> any -> any
+// Installs a boundary handler and passes the boundary label associated with
+// the handler to the ContinuationBody. Returns the return value of
+// ContinuationBody (or the `scalanative_continuation_suspend` result
+// corresponding to this handler).
+void *scalanative_continuation_boundary(ContinuationBody *, void *);
 
 // cont_suspend[T, R] : BoundaryLabel[T] -> (Continuation[T, R] -> T) -> R
-void *cont_suspend(ContBoundaryLabel b, SuspendFn *f, void *arg,
-                   void *alloc_arg);
+// Suspends to the boundary handler corresponding to the given boundary label,
+// reifying the suspended computation up to (and including) the handler as a
+// Continuation struct, and passing it to the SuspendFn (alongside with `arg`),
+// returning its result to the caller of scalanative_continuation_boundary.
+//
+// The reified computation is stored into memory allocated with `alloc_f(size,
+// alloc_arg)`, the function set up by `scalanative_continuation_init`.
+void *scalanative_continuation_suspend(ContinuationBoundaryLabel b,
+                                       SuspendFn *f, void *arg,
+                                       void *alloc_arg);
 
 // resume[T, R] : Continuation[T, R] -> R -> Result
-// void cont_resume(Continuation *cont, void *out, ContResult *r);
+// Resumes the given Continuation under the resume call, passing back the
+// argument into the suspended computation and returns its result.
+void *scalanative_continuation_resume(Continuation *continuation, void *arg);
 
-void *cont_resume(Continuation *cont, void *out);
-
-// free a continuation. Used only if malloc is used as the implementation of
+// Frees a continuation. Used only if malloc is used as the implementation of
 // alloc function.
-void cont_free(Continuation *cont);
+void scalanative_continuation_free(Continuation *continuation);
 
 #endif // DELIMCC_H

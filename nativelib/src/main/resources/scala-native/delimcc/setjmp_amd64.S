@@ -93,7 +93,7 @@ __lh_boundary_entry: /* rdi: arg 1, rsi : arg 2, (rdx: arg 3) */
   movq  %rsp, %rdi
   addq  $8, %rdi
   pushq %rbx /* for rsp alignment */
-  call  __cont_boundary_impl
+  call  __continuation_boundary_impl
   popq  %rbx
   ret
 
@@ -104,7 +104,7 @@ __lh_resume_entry:
   subq  %rdi, %rsp /* move sp */
   movq  %rax, %rdi /* pass old sp as arg 1 */
   addq  $8, %rdi   /* forget about lr in stack tail */
-  jmp   __cont_resume_impl /* it will just return from here */
+  jmp   __continuation_resume_impl /* it will just return from here */
 
 
 _lh_get_sp:
