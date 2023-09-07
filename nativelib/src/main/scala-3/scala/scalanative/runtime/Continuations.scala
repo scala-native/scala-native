@@ -13,6 +13,14 @@ object Continuations:
 
   opaque type BoundaryLabel[-T] = ContinuationsImpl.BoundaryLabel
 
+  /**
+    * The C implementation lets us set up how the Continuation structs
+    * (holding the reified stack fragment) is allocated, through a custom
+    * function that would allocate a blob of memory of the given size.
+    *
+    * We want our implementation to use the allocations done by `Continuation.alloc`,
+    * so that the GC is aware of the stack fragment.
+    */
   ContinuationsImpl.init(CFuncPtr2.fromScalaFunction(allocateBlob))
 
   /** Marks the given body as suspendable with a `BoundaryLabel` that `suspend`
@@ -24,11 +32,12 @@ object Continuations:
    *  `boundary` call higher on the same call stack is undefined behaviour.
    */
   inline def boundary[T](inline body: BoundaryLabel[T] ?=> T): T =
+    // Disable on Windows
     if isWindows then UnsupportedFeature.continuations()
-    val call: ContFnT = (x: ContinuationsImpl.BoundaryLabel) =>
-      objToPtr(Try(body(using x)))
-    val resP = ContinuationsImpl.boundary(contFn, objToPtr(call))
-    objFromPtr(resP).asInstanceOf[Try[T]].get
+
+    val call: ContinuationBody[T] = (x: ContinuationsImpl.BoundaryLabel) =>
+      Try(body(using x))
+    ContinuationsImpl.boundary(boundaryBodyFn, call).get
 
   /** Suspends the current running stack up to the corresponding `boundary` into
    *  a continuation `cont: R => T` and passes it into `f`. The return value of
@@ -38,15 +47,15 @@ object Continuations:
    *  continuation.
    */
   inline def suspend[R, T](
-      inline f: (R => T) => T
+      inline onSuspend: (R => T) => T
   )(using label: BoundaryLabel[T]): R =
-    suspendCont[R, T](f)
+    suspendContinuation[R, T](onSuspend)
 
   /** Same as `suspend` where the continuation expects no parameters. */
-  def suspend[T](
-      f: (() => T) => T
+  inline def suspend[T](
+      inline onSuspend: (() => T) => T
   )(using label: BoundaryLabel[T]): Unit =
-    suspendCont[Unit, T](cont => f(() => cont(())))
+    suspendContinuation[Unit, T](k => onSuspend(() => k(())))
 
   /** Immediately return to the `boundary`. */
   inline def break(using BoundaryLabel[Unit]): Nothing =
@@ -56,18 +65,20 @@ object Continuations:
   inline def break[T](value: T)(using BoundaryLabel[T]): Nothing =
     suspend[Nothing, T](_ => value)
 
-  inline def suspendCont[R, T](
-      inline f: Continuation[R, T] => T
+  /** Suspends the computation up to the corresponding `BoundaryLabel`, passing the stored Continuation to `onSuspend`
+      and passed its result to `boundary`'s caller.
+      Returns when the continuation gets resumed.
+      */
+  private inline def suspendContinuation[R, T](
+      inline onSuspend: Continuation[R, T] => T
   )(using label: BoundaryLabel[T]): R =
-    val cont = Continuation()
+    val continuation = Continuation[R, T]()
     // We want to reify the post-suspension body here,
     // while creating the full continuation object.
-    val call = (c: ContinuationsImpl.Continuation) =>
-      cont.cont = c
-      objToPtr(Try(f(cont)))
-    val resP =
-      ContinuationsImpl.suspend(label, suspendFn, objToPtr(call), objToPtr(cont))
-    objFromPtr(resP).asInstanceOf[R]
+    val call: SuspendFn[R, T] = innerContinuation =>
+      continuation.inner = innerContinuation
+      Try(onSuspend(continuation))
+    ContinuationsImpl.suspend(label, suspendFn, call, continuation)
 
   /** A `Continuation` holds the C implementation continuation pointer,
    *  alongside a list of `ObjectArray`s, used for storing suspended fragments
@@ -77,16 +88,16 @@ object Continuations:
    *  the GC heap, and so needs to be scanned by the GC. We store them in an
    *  `ObjectArray` to simulate just that.
    */
-  class Continuation[-R, +T] extends (R => T):
-    private[Continuations] var cont: ContinuationsImpl.Continuation = nullPtr
-    private val allocs = mutable.ArrayBuffer[ObjectArray]()
+  private[Continuations] class Continuation[-R, +T] extends (R => T):
+    private[Continuations] var inner: ContinuationsImpl.Continuation = fromRawPtr(castIntToRawPtr(0)) // null
+    private val allocas = mutable.ArrayBuffer[ObjectArray]()
 
     def apply(x: R): T =
-      objFromPtr(resume(cont, objToPtr(x))).asInstanceOf[Try[T]].get
+      resume(inner, x).get
 
     private[Continuations] def alloc(size: CUnsignedLong): Ptr[Byte] =
       val obj = ObjectArray.alloc(size.toInt) // round up the blob size
-      allocs += obj
+      allocas += obj
       obj.at(0).asInstanceOf[Ptr[Byte]]
   end Continuation
 
@@ -94,16 +105,14 @@ object Continuations:
 
   /** Transformed version of the suspend lambda, to be passed to cont_suspend.
    *  Takes:
-   *    - `cont`: the reified continuation
-   *    - `arg`: The suspend lambda as Continuation => Ptr[Byte] (the returned
+   *    - `continuation`: the reified continuation
+   *    - `onSuspend`: The suspend lambda as Continuation => Ptr[Byte] (the returned
    *      object, cast to a pointer)
    *
    *  Returns Ptr[Byte] / void*.
    */
-  private val suspendFn: SuspendFn = CFuncPtr2.fromScalaFunction((cont, arg) =>
-    val fn = objFromPtr(arg).asInstanceOf[ContinuationsImpl.Continuation => Ptr[Byte]]
-    fn(cont)
-  )
+  inline def suspendFn[R, T] = suspendFnAny.asInstanceOf[SuspendFnPtr[R, T]]
+  private val suspendFnAny: SuspendFnPtr[Any, Any] = CFuncPtr2.fromScalaFunction((continuation, onSuspend) => onSuspend(continuation))
 
   /** Transformed version of the boundary body, to be passed to cont_boundary.
    *  Takes:
@@ -113,26 +122,17 @@ object Continuations:
    *
    *  Returns Ptr[Byte] / void*.
    */
-  private val contFn: ContinuationBody = CFuncPtr2.fromScalaFunction((label, arg) =>
-    val fp = objFromPtr(arg).asInstanceOf[ContFnT]
-    fp(label)
-  )
+  inline def boundaryBodyFn[T] = boundaryBodyFnAny.asInstanceOf[ContinuationBodyPtr[T]]
+  private val boundaryBodyFnAny: ContinuationBodyPtr[Any] = CFuncPtr2.fromScalaFunction((label, arg) => arg(label))
 
-  private def allocateBlob(size: CUnsignedLong, cont: Ptr[Byte]): Ptr[Byte] =
-    objFromPtr(cont).asInstanceOf[Continuation[_, _]].alloc(size)
-
-  // FOR WORKING WITH POINTERS
-
-  type ContFnT = ContinuationsImpl.BoundaryLabel => Ptr[Byte]
-
-  private inline def nullPtr[T]: Ptr[T] = fromRawPtr[T](castIntToRawPtr(0))
-
-  // Cast object to/from pointer.
-  private inline def objToPtr(o: Any) =
-    fromRawPtr[Byte](castObjectToRawPtr(o.asInstanceOf[AnyRef]))
-  private inline def objFromPtr(p: Ptr[Byte]): AnyRef =
-    castRawPtrToObject(p.rawptr)
-
+  /**
+   * Allocate a blob of memory of `size` bytes, from `continuation`'s implementation
+   * of `Continuation.alloc`.
+   */
+  private def allocateBlob(size: CUnsignedLong, continuation: Ptr[Byte]): Ptr[Byte] =
+    inline def objFromPtr(p: Ptr[Byte]): AnyRef =
+      castRawPtrToObject(p.rawptr) // Cast object from pointer.
+    objFromPtr(continuation).asInstanceOf[Continuation[_, _]].alloc(size)
 end Continuations
 
 /** Continuations implementation imported from C (see `delimcc.h`) */
@@ -142,24 +142,28 @@ end Continuations
 
   type Continuation = Ptr[Byte]
 
-  type ContinuationBody = CFuncPtr2[BoundaryLabel, /* arg */ Ptr[Byte], Ptr[Byte]]
-
-  type SuspendFn = CFuncPtr2[Continuation, /* arg */ Ptr[Byte], Ptr[Byte]]
+  // We narrow the arguments of `boundary` to functions returning Try[T]
+  type ContinuationBody[T] = BoundaryLabel => Try[T]
+  type ContinuationBodyPtr[T] = CFuncPtr2[BoundaryLabel, /* arg */ ContinuationBody[T], Try[T]]
 
   @name("scalanative_continuation_boundary")
-  def boundary(body: ContinuationBody, arg: Ptr[Byte]): Ptr[Byte] = extern
+  def boundary[T](body: ContinuationBodyPtr[T], arg: ContinuationBody[T]): Try[T] = extern
+
+  // Similar to `boundary`, we narrow the functions passed to `suspend` to ones returning Try[T]
+  type SuspendFn[R, T] = Continuation => Try[T]
+  type SuspendFnPtr[R, T] = CFuncPtr2[Continuation, /* arg */ SuspendFn[R, T], Try[T]]
 
   @name("scalanative_continuation_suspend")
-  def suspend(
+  def suspend[R, T](
       l: BoundaryLabel,
-      f: SuspendFn,
-      arg: Ptr[Byte],
-      allocArg: Ptr[Byte]
-  ): Ptr[Byte] =
+      f: SuspendFnPtr[R, T],
+      arg: SuspendFn[R, T],
+      allocArg: Any
+  ): R =
     extern
 
   @name("scalanative_continuation_resume")
-  def resume(continuation: Continuation, arg: Ptr[Byte]): Ptr[Byte] = extern
+  def resume[R, T](continuation: Continuation, arg: R): Try[T] = extern
 
   @name("scalanative_continuation_init") def init(
       continuation_alloc_fn: CFuncPtr2[CUnsignedLong, Ptr[Byte], Ptr[Byte]]
