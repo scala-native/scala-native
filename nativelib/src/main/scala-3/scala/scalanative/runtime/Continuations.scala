@@ -136,11 +136,8 @@ object Continuations:
    */
   private def allocateBlob(
       size: CUnsignedLong,
-      continuation: Ptr[Byte]
-  ): Ptr[Byte] =
-    inline def objFromPtr(p: Ptr[Byte]): AnyRef =
-      castRawPtrToObject(p.rawptr) // Cast object from pointer.
-    objFromPtr(continuation).asInstanceOf[Continuation[_, _]].alloc(size)
+      continuation: Continuation[Any, Any]
+  ): Ptr[Byte] = continuation.alloc(size)
 
   /** Continuations implementation imported from C (see `delimcc.h`) */
   @extern private object Impl:
@@ -170,7 +167,7 @@ object Continuations:
         l: BoundaryLabel,
         f: SuspendFnPtr[R, T],
         arg: SuspendFn[R, T],
-        allocArg: Any
+        allocArg: Continuations.Continuation[R, T]
     ): R =
       extern
 
@@ -178,7 +175,11 @@ object Continuations:
     def resume[R, T](continuation: Continuation, arg: R): Try[T] = extern
 
     @name("scalanative_continuation_init") def init(
-        continuation_alloc_fn: CFuncPtr2[CUnsignedLong, Ptr[Byte], Ptr[Byte]]
+        continuation_alloc_fn: CFuncPtr2[
+          CUnsignedLong,
+          Continuations.Continuation[Any, Any],
+          Ptr[Byte]
+        ]
     ): Unit =
       extern
   end Impl
