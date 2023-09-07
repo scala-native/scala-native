@@ -68,12 +68,31 @@ object CodeGen {
       val env = assembly.map(defn => defn.name -> defn).toMap
       val workDir = VirtualDirectory.real(config.workDir)
 
-      def sourceFileOf(pos: Position): Position.SourceFile = {
+      /** C:a\b\c.txt -> a\b\c.txt p:\a\b\c.txt -> a\b\c.txt /a/b/c.txt ->
+       *  a/b/c.txt
+       */
+      def dropPrefix(fileName: String): String = {
+        val driveLetter = "^[A-Za-z]:".r
+        val supportDriveLetter =
+          build.Platform.isWindows || build.Platform.isCygwin || build.Platform.isMsys
+        val hasDriveLetter =
+          supportDriveLetter && driveLetter.findFirstIn(fileName).isDefined
+
+        val noDriveLetter = if (hasDriveLetter) fileName.drop(2) else fileName
+        if (noDriveLetter.startsWith(File.separator))
+          noDriveLetter.drop(File.separator.length())
+        else noDriveLetter
+      }
+
+      def dropSuffix(fileName: String): String =
+        if (fileName.endsWith(File.separator))
+          fileName.dropRight(File.separator.length())
+        else fileName
+
+      def sourceDirOf(pos: Position): Position.SourceFile = {
         if (pos == null || pos.isEmpty) new Position.SourceFile("__empty")
-        else {
-          val abs = Paths.get(pos.source.getPath()).toAbsolutePath()
-          abs.getRoot().relativize(abs).getParent().toUri
-        }
+        else
+          Paths.get(pos.source.getPath()).getParent().toUri()
       }
 
       // Partition into multiple LLVM IR files proportional to number
@@ -82,7 +101,7 @@ object CodeGen {
       def separate(): Future[Seq[Path]] = {
         Future
           .traverse(
-            partitionBy(assembly, procs)(x => sourceFileOf(x.pos)).toSeq
+            partitionBy(assembly, procs)(x => sourceDirOf(x.pos)).toSeq
           ) {
             case (id, defns) =>
               Future {
@@ -114,10 +133,10 @@ object CodeGen {
         // This will ensure that each LLVM IR file only references a single Scala source file,
         // which will prevent the Darwin linker failing to generate N_OSO symbols.
         Future
-          .traverse(assembly.groupBy(x => sourceFileOf(x.pos)).toSeq) {
-            case (source, defns) =>
+          .traverse(assembly.groupBy(x => sourceDirOf(x.pos)).toSeq) {
+            case (dir, defns) =>
               Future {
-                val path = source.toString()
+                val path = dropSuffix(dropPrefix(dir.getPath()))
                 val outFile = config.workDir.resolve(s"$path.ll")
                 val ownerDirectory = outFile.getParent()
 
