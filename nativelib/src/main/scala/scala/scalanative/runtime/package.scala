@@ -117,6 +117,11 @@ package object runtime {
   @noinline
   private[scalanative] def loop(): Unit = ExecutionContext.loop()
 
+  /** Run one iteration of the runtime's event loop and return
+   *  remaining runnables count. */
+  def loopRunOnce(): Int =
+    ExecutionContext.loopRunOnce()
+
   /** Called by the generated code in case of division by zero. */
   @noinline
   private[scalanative] def throwDivisionByZero(): Nothing =
