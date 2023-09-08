@@ -75,27 +75,24 @@ object CodeGen {
        *    - /a/b/c.txt -> a/b/c.txt
        */
       def dropPrefix(fileName: String): String = {
-        val driveLetter = s"^(${File.separator})?[A-Za-z]:".r
+        val driveLetter = s"^[A-Za-z]:".r
         val supportDriveLetter =
           build.Platform.isWindows || build.Platform.isCygwin || build.Platform.isMsys
-        val noDriveLetter = driveLetter.findFirstIn(fileName) match {
-          case Some(prefix) if supportDriveLetter =>
-            fileName.stripPrefix(prefix)
-          case _ => fileName
-        }
-        noDriveLetter.stripPrefix(File.separator)
+        // using "/" instead of `File.separator`
+        // we get "/C:a/b/c.txt" even in windows for some reasons.
+        val noDriveLetter =
+          driveLetter.findFirstIn(fileName.stripPrefix("/")) match {
+            case Some(prefix) if supportDriveLetter =>
+              fileName.stripPrefix(prefix)
+            case _ => fileName
+          }
+        noDriveLetter.stripPrefix("/")
       }
 
-      def dropSuffix(fileName: String): String =
-        if (fileName.endsWith(File.separator))
-          fileName.dropRight(File.separator.length())
-        else fileName
-
-      def sourceDirOf(pos: Position): Position.SourceFile = {
+      def sourceDirOf(pos: Position): Position.SourceFile =
         if (pos == null || pos.isEmpty) new Position.SourceFile("__empty")
-        else
-          Paths.get(pos.source.getPath()).normalize().getParent().toUri()
-      }
+        else if (pos.source.getPath().endsWith("/")) pos.source.resolve("..")
+        else pos.source.resolve(".")
 
       // Partition into multiple LLVM IR files proportional to number
       // of available processesors. This prevents LLVM from optimizing
@@ -138,7 +135,7 @@ object CodeGen {
           .traverse(assembly.groupBy(x => sourceDirOf(x.pos)).toSeq) {
             case (dir, defns) =>
               Future {
-                val path = dropSuffix(dropPrefix(dir.getPath()))
+                val path = dropPrefix(dir.getPath().stripSuffix("/"))
                 val outFile = config.workDir.resolve(s"$path.ll")
                 val ownerDirectory = outFile.getParent()
 
