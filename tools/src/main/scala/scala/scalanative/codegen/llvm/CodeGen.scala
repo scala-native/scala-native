@@ -97,7 +97,7 @@ object CodeGen {
       // Partition into multiple LLVM IR files proportional to number
       // of available processesors. This prevents LLVM from optimizing
       // across IR module boundary unless LTO is turned on.
-      def separate(): Future[Seq[Path]] = {
+      def separate(): Future[Seq[Path]] =
         Future
           .traverse(
             partitionBy(assembly, procs)(x => sourceDirOf(x.pos)).toSeq
@@ -108,7 +108,6 @@ object CodeGen {
                 Impl(env, sorted).gen(id.toString, workDir)
               }
           }
-      }
 
       // Incremental compilation code generation
       def seperateIncrementally(): Future[Seq[Path]] = {
