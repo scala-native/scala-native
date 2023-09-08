@@ -45,6 +45,7 @@ object BinaryIncompatibilities {
 
   final val NativeLib = Seq.empty
   final val CLib: Filters = Nil
+  final val GcLib: Filters = Nil
   final val PosixLib: Filters = Seq.empty
   final val WindowsLib: Filters = Nil
 
@@ -60,6 +61,7 @@ object BinaryIncompatibilities {
     "nscplugin" -> NscPlugin,
     "tools" -> Tools,
     "clib" -> CLib,
+    "gclib" -> GcLib,
     "posixlib" -> PosixLib,
     "windowslib" -> WindowsLib,
     "nativelib" -> NativeLib,
