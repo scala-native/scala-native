@@ -80,7 +80,7 @@ private[scalanative] object NativeLib {
 
       val projectConfig = desc match {
         case Descriptor(Some(groupId), Some(artifactId), _)
-            if (groupId == "org.scala-native" && artifactId == "nativelib") =>
+            if (groupId == "org.scala-native" && artifactId == "gclib") =>
           createGcConfig(nativeCodePath, config)
         case Descriptor(_, _, _) =>
           createLinkConfig(desc, analysis, config)
