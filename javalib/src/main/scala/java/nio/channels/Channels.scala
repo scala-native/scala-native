@@ -74,10 +74,12 @@ object Channels {
         if ((written == 0) && eof) -1
         else written
       }
+
       override def close(): Unit = synchronized {
         in.close()
         closed = true
       }
+
       override def isOpen(): Boolean = synchronized { !closed }
     }
   }
