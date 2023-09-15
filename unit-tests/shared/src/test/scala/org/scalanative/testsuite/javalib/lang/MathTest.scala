@@ -275,4 +275,57 @@ class MathTest {
     }
   }
 
+  @Test def multiplyHighTests(): Unit = {
+    case class MulHighTestCase(a: Long, b: Long, expected: Long)
+    val maxval = Long.MAX_VALUE
+    val minval = Long.MIN_VALUE
+    val halfmax = maxval >> 32
+    val halfmin = minval >> 32
+
+    val testcases: List[MulHighTestCase] =
+      MulHighTestCase(maxval, maxval, 4611686018427387903L) ::
+        MulHighTestCase(maxval, minval, -4611686018427387904L) ::
+        MulHighTestCase(minval, minval, 4611686018427387904L) ::
+        MulHighTestCase(maxval, 0L, 0L) ::
+        MulHighTestCase(minval, 0L, 0L) ::
+        MulHighTestCase(0L, 0L, 0L) ::
+        MulHighTestCase(maxval, halfmax, 1073741823L) ::
+        MulHighTestCase(maxval, halfmin, -1073741824L) ::
+        MulHighTestCase(halfmax, halfmin, -1L) ::
+        MulHighTestCase(halfmin, halfmin, 0L) ::
+        MulHighTestCase(halfmax, 127L, 0L) ::
+        MulHighTestCase(halfmax * 42L, halfmax * 1337L, 14038L) ::
+        MulHighTestCase(halfmin * 42L, halfmax * 1337L, -14039L) ::
+        MulHighTestCase(13L, 37L, 0L) ::
+        MulHighTestCase(123456789123456789L, 987654321L, 6609981L) ::
+        MulHighTestCase(
+          123123456456789789L,
+          998877665544332211L,
+          6667044887047954L
+        ) ::
+        MulHighTestCase(
+          -123123456456789789L,
+          998877665544332211L,
+          -6667044887047955L
+        ) ::
+        MulHighTestCase(
+          123123456456789789L,
+          -998877665544332211L,
+          -6667044887047955L
+        ) ::
+        MulHighTestCase(
+          -123123456456789789L,
+          -998877665544332211L,
+          6667044887047954L
+        ) ::
+        Nil
+
+    for (tc <- testcases) {
+      val result = Math.multiplyHigh(tc.a, tc.b)
+      assertTrue(
+        s"Math.multiplyHigh(${tc.a}, ${tc.b}) result: ${result} != expected: ${tc.expected}",
+        Math.multiplyHigh(tc.a, tc.b) == tc.expected
+      )
+    }
+  }
 }
