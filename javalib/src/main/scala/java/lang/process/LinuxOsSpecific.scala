@@ -13,7 +13,9 @@ object LinuxOsSpecific {
   lazy val _hasPidfdOpen: Boolean = {
     // True when Platform.isLinux & "os.version" >= 5.3.
     if (!isLinux) false
-    else {
+    else if (System.getProperty("os.arch", "unknown") == "arm64") {
+      false
+    } else {
       // Opportunities abound for simplifying and/or improving this parsing.
       val osVersion = System.getProperty("os.version", "0.0")
 
