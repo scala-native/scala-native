@@ -7,7 +7,7 @@ import scala.scalanative.posix.signal.sigset_t
 import scala.scalanative.posix.time.timespec
 import scala.scalanative.posix.sys.types.pid_t
 
-import scalanative.meta.LinktimeInfo.{isLinux, target)
+import scalanative.meta.LinktimeInfo.{isLinux, target}
 
 object LinuxOsSpecific {
   lazy val _hasPidfdOpen: Boolean = {
