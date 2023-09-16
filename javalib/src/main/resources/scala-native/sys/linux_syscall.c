@@ -2,7 +2,7 @@
 
 #if __has_include(<sys/syscall.h>)
 #include <sys/syscall.h>
-#endif // syscall.h
+#endif
 
 // 2023-09-16 07:16 -0400 Lee -- If you decide at somepoint to go the
 // path of defining SYS_pidfd_open, it should probably be to -1, NOT 434.
@@ -19,7 +19,6 @@
 // by the UnixProcess() code.  The presence or absence of a working
 // pidfd_open() is not going to change over the lifetime of the execution.
 //
-// Looks like the underlying issue is that 
 
 #ifndef SYS_pidfd_open
 // Provide a fallback for developers who many not have a full linux
