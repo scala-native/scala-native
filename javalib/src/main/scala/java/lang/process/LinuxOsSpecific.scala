@@ -7,13 +7,14 @@ import scala.scalanative.posix.signal.sigset_t
 import scala.scalanative.posix.time.timespec
 import scala.scalanative.posix.sys.types.pid_t
 
-import scalanative.meta.LinktimeInfo.isLinux
+import scalanative.meta.LinktimeInfo.{isLinux, target)
 
 object LinuxOsSpecific {
   lazy val _hasPidfdOpen: Boolean = {
     // True when Platform.isLinux & "os.version" >= 5.3.
+
     if (!isLinux) false
-    else if (System.getProperty("os.arch", "unknown") == "arm64") {
+    else if (target.arch == "aarch64") {
       false
     } else {
       // Opportunities abound for simplifying and/or improving this parsing.
