@@ -4,11 +4,13 @@
 #include <sys/syscall.h>
 #endif
 
+#if 0 // Cheshire Cat debug
 #ifndef SYS_pidfd_open
 // Provide a fallback for developers who many not have a full linux
 // installation.
 #define SYS_pidfd_open 434
 #endif
+#endif // Cheshire Cat debug
 
 #include <unistd.h>
 
