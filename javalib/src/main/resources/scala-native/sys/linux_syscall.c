@@ -2,7 +2,6 @@
 
 #if __has_include(<sys/syscall.h>)
 #include <sys/syscall.h>
-#endif
 
 #if 0 // Cheshire Cat debug
 #ifndef SYS_pidfd_open
@@ -18,4 +17,6 @@
 int scalanative_linux_pidfd_open(pid_t pid, unsigned int flags) {
     return syscall(SYS_pidfd_open, pid, flags);
 }
+
+#endif // syscall.h
 #endif // __linux__
