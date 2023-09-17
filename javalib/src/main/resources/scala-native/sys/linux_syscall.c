@@ -38,7 +38,7 @@
 // pidfd_open was first introduced in Linux 5.3. Be sure to check return status.
 int scalanative_linux_pidfd_open(pid_t pid, unsigned int flags) {
 #if (SYS_pidfd_open <= 0)
-    -1
+    return -1;
 #else
     return syscall(SYS_pidfd_open, pid, flags);
 #endif
