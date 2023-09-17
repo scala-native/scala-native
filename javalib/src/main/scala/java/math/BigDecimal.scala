@@ -1671,7 +1671,7 @@ class BigDecimal() extends Number with Comparable[BigDecimal] {
           // To test if after discard bits, a new carry is generated
           if (((bits & 3) == 3) ||
               (((bits & 1) == 1) && (tempBits != 0) &&
-                (lowestSetBit < discardedSize))) {
+              (lowestSetBit < discardedSize))) {
             bits += 1
           }
           exponent = 0
