@@ -95,10 +95,10 @@ class Parser(wholeRegexp: String, _flags: Int) {
           Unicode.simpleFold(re.runes(0)) == re.runes(2) &&
           Unicode.simpleFold(re.runes(2)) == re.runes(0)) ||
         (re.op == ROP.CHAR_CLASS &&
-          re.runes.length == 2 &&
-          re.runes(0) + 1 == re.runes(1) &&
-          Unicode.simpleFold(re.runes(0)) == re.runes(1) &&
-          Unicode.simpleFold(re.runes(1)) == re.runes(0))) {
+        re.runes.length == 2 &&
+        re.runes(0) + 1 == re.runes(1) &&
+        Unicode.simpleFold(re.runes(0)) == re.runes(1) &&
+        Unicode.simpleFold(re.runes(1)) == re.runes(0))) {
       // Case-insensitive rune like [Aa] or [Δδ].
       if (maybeConcat(re.runes(0), flags | RE2.FOLD_CASE)) {
         returnNull = true
@@ -510,8 +510,8 @@ class Parser(wholeRegexp: String, _flags: Int) {
 
           if (first != null && first.equals(ifirst) &&
               (isCharClass(first) ||
-                (first.op == ROP.REPEAT &&
-                  first.min == first.max && isCharClass(first.subs(0))))) {
+              (first.op == ROP.REPEAT &&
+              first.min == first.max && isCharClass(first.subs(0))))) {
             continue = true
           }
         }
@@ -590,7 +590,7 @@ class Parser(wholeRegexp: String, _flags: Int) {
               val subJ = array(s + j)
               if ((subMax.op < subJ.op) ||
                   ((subMax.op == subJ.op) &&
-                    (subMax.runes.length < subJ.runes.length))) {
+                  (subMax.runes.length < subJ.runes.length))) {
                 max = j
               }
               j += 1

@@ -35,7 +35,7 @@ object URIEncoderDecoder {
       } else if (!((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') ||
             (ch >= '0' && ch <= '9') || legal.indexOf(ch) > -1 ||
             (ch > 127 && !java.lang.Character.isSpaceChar(ch) &&
-              !java.lang.Character.isISOControl(ch)))) {
+            !java.lang.Character.isISOControl(ch)))) {
         throw new URISyntaxException(s, "Illegal character", i)
       }
       if (!continue) i += 1
@@ -62,7 +62,7 @@ object URIEncoderDecoder {
           (ch >= '0' && ch <= '9') ||
           legal.indexOf(ch) > -1 ||
           (ch > 127 && !java.lang.Character.isSpaceChar(ch) &&
-            !java.lang.Character.isISOControl(ch))) {
+          !java.lang.Character.isISOControl(ch))) {
         buf.append(ch)
       } else {
         val bytes: Array[Byte] = new String(Array(ch)).getBytes(encoding)

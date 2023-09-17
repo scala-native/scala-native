@@ -916,9 +916,9 @@ class StreamTest {
         s"unexpected map element: ${e}",
         e.startsWith(prefix) &&
           (e.endsWith("_A") ||
-            e.endsWith("_B") ||
-            e.endsWith("_C") ||
-            e.endsWith("_D"))
+          e.endsWith("_B") ||
+          e.endsWith("_C") ||
+          e.endsWith("_D"))
       )
     )
 
