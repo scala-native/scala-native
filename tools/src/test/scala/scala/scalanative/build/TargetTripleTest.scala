@@ -22,6 +22,8 @@ class TargetTripleTest {
       TargetTriple("x86_64", "pc", "linux", "gnu"),
     "x86_64-pc-windows-msvc" ->
       TargetTriple("x86_64", "pc", "windows", "msvc"),
+    "i686-pc-windows-msvc" ->
+      TargetTriple("i386", "pc", "windows", "msvc"),
     "x86_64-portbld-freebsd13.1" ->
       TargetTriple("x86_64", "unknown", "freebsd", "unknown")
   )
