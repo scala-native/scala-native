@@ -102,9 +102,8 @@ final class TestAdapter(config: TestAdapter.Config) {
     runs -= runID
   }
 
-  @nowarn("msg=getId in class Thread is deprecated")
   private[adapter] def getRunnerForThread(): ManagedRunner = {
-    val threadId = Thread.currentThread().getId
+    val threadId = Thread.currentThread().getId: @nowarn("cat=deprecation")
 
     // Note that this is thread safe, since each thread can only operate on
     // the value associated to its thread id.
