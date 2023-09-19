@@ -269,11 +269,6 @@ void *scalanative_continuation_suspend(ContinuationBoundaryLabel b,
     }
 }
 
-#define fixed_addr(X) (void *)(X) + diff
-#define fix_addr(X) X = fixed_addr(X)
-
-#define jmpbuf_fix(buf) fix_addr(buf[JMPBUF_STACK_POINTER_OFFSET])
-
 static Handlers *handler_clone_fix(Handlers *other, ptrdiff_t diff) {
     Handlers *nw = NULL, **cur = &nw;
     while (other != NULL) {
@@ -312,6 +307,14 @@ void __continuation_resume_impl(void *tail, Continuation *continuation,
     //         target, tail, cont, cont->stack);
     // clone the handler chain, with fixes.
     to_install = nw = handler_clone_fix(continuation->handlers, diff);
+#define fixed_addr(X) (void *)(X) + diff
+#define fix_addr(X) X = fixed_addr(X)
+/**
+ * Fixes the stack pointer offset within a `jmpbuf` by the difference given by
+ * `diff`. We need to do this for every jmpbuf that is stored in the handler
+ * chain, as well as the suspend jmpbuf.
+ */
+#define jmpbuf_fix(buf) fix_addr(buf[JMPBUF_STACK_POINTER_OFFSET])
     jmpbuf_fix(return_buf);
     // copy and fix the remaining information in the continuation
     new_return_slot = fixed_addr(continuation->return_slot);
@@ -333,6 +336,9 @@ void __continuation_resume_impl(void *tail, Continuation *continuation,
     // fix the return address of the bottom of our new stack fragment.
     *(void **)(target + continuation->size - BOUNDARY_LR_OFFSET) = ret_addr;
     _lh_longjmp(return_buf, 1);
+#undef fixed_addr
+#undef fix_addr
+#undef jmpbuf_fix
 }
 
 void *scalanative_continuation_resume(Continuation *continuation, void *out) {
