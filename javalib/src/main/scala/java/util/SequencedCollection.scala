@@ -1,7 +1,7 @@
 package java.util
 
 trait SequencedCollection[E /* <: AnyRef */ ] extends Collection[E] {
-/* Commented out until we're able to provide reversed views for collections
+  /* Commented out until we're able to provide reversed views for collections
   def reversed(): SequencedCollection[E]
 
   def addFirst(elem: E): Unit = throw new UnsupportedOperationException()
@@ -23,5 +23,5 @@ trait SequencedCollection[E /* <: AnyRef */ ] extends Collection[E] {
     it.remove()
     elem
   }
-  */
+   */
 }
