@@ -50,4 +50,3 @@ void scalanative_continuation_free(Continuation *continuation);
 
 #endif // DELIMCC_DEBUG
 #endif // DELIMCC_H
-
