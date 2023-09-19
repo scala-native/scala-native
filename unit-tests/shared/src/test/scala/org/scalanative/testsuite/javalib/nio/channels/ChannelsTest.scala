@@ -25,6 +25,23 @@ class ChannelsTest {
     assertArrayEquals(expected, byteBuffer.array())
   }
 
+  // Issue 3477
+  @Test def newChannelInputStreamReportsEOF(): Unit = {
+    val expected = Array[Byte](1, 2, 3)
+    val in = new ByteArrayInputStream(expected, 0, 3)
+    val channel = Channels.newChannel(in)
+
+    val byteBuffer = ByteBuffer.allocate(3)
+
+    // Read, check, and then discard expected in order to get to EOF
+    channel.read(byteBuffer)
+    assertArrayEquals(expected, byteBuffer.array())
+    byteBuffer.rewind()
+
+    val nRead = channel.read(byteBuffer)
+    assertEquals("Read of channel at EOF)", -1, nRead)
+  }
+
   @Test def newChannelInputStreamThrows(): Unit = {
     assumeFalse(
       "Bug in the JVM, works for later versions than java 8",
