@@ -27,6 +27,12 @@
 #define JMPBUF_STACK_POINTER_OFFSET (16 / 8)
 #endif
 
+#ifdef DELIMCC_DEBUG
+#define debug_printf(...) debug_printf(__VA_ARGS__)
+#else
+#define debug_printf(...) (void)0
+#endif
+
 // The return address is always stored in stack_btm - BOUNDARY_LR_OFFSET.
 // See `_lh_boundary_entry`.
 #if defined(__i386__)
@@ -99,15 +105,15 @@ static _Thread_local Handlers *__handlers = NULL;
 
 static void print_handlers(Handlers *hs) {
     while (hs != NULL) {
-        fprintf(stderr, "[id = %lu, addr = %p | %p] -> ", hs->h->id, hs->h, hs);
+        debug_printf("[id = %lu, addr = %p | %p] -> ", hs->h->id, hs->h, hs);
         hs = hs->next;
     }
-    fprintf(stderr, "nil\n");
+    debug_printf("nil\n");
 }
 
 __noinline static void handler_push(Handler *h) {
     assert(__handlers == NULL || __handlers->h->id != h->id);
-    // fprintf(stderr, "Pushing [id = %lu, addr = %p]: ", h->id, h);
+    // debug_printf("Pushing [id = %lu, addr = %p]: ", h->id, h);
     // print_handlers((Handlers *)__handlers);
     Handlers *hs = malloc(sizeof(Handlers));
     hs->h = h;
@@ -116,7 +122,7 @@ __noinline static void handler_push(Handler *h) {
 }
 
 __noinline static void handler_pop(ContinuationBoundaryLabel label) {
-    // fprintf(stderr, "Popping: ");
+    // debug_printf("Popping: ");
     // print_handlers((Handlers *)__handlers);
     assert(__handlers != NULL && label == __handlers->h->id);
     Handlers *old = (Handlers *)__handlers;
@@ -127,9 +133,9 @@ __noinline static void handler_pop(ContinuationBoundaryLabel label) {
 __noinline static void handler_install(Handlers *hs) {
     assert(hs != NULL);
     Handlers *tail = hs;
-    // fprintf(stderr, "Installing: ");
+    // debug_printf("Installing: ");
     // print_handlers(hs);
-    // fprintf(stderr, "  to : ");
+    // debug_printf("  to : ");
     // print_handlers((Handlers *)__handlers);
     while (tail->next != NULL) {
         tail = tail->next;
@@ -139,7 +145,7 @@ __noinline static void handler_install(Handlers *hs) {
 }
 
 __noinline static Handlers *handler_split_at(ContinuationBoundaryLabel l) {
-    // fprintf(stderr, "Splitting [id = %lu]: ", l);
+    // debug_printf("Splitting [id = %lu]: ", l);
     // print_handlers((Handlers *)__handlers);
     Handlers *ret = (Handlers *)__handlers, *cur = ret;
     while (cur->h->id != l)
@@ -182,7 +188,7 @@ void scalanative_continuation_init(void *(*alloc_f)(unsigned long, void *)) {
 
 __returnstwice void *
 __continuation_boundary_impl(void **btm, ContinuationBody *body, void *arg) {
-    // fprintf(stderr, "Boundary btm is %p\n", btm);
+    // debug_printf("Boundary btm is %p\n", btm);
 
     // allocate handlers and such
     volatile void *result = NULL; // we need to force the compiler to re-read
@@ -193,7 +199,7 @@ __continuation_boundary_impl(void **btm, ContinuationBody *body, void *arg) {
         .stack_btm = btm,
         .result = &result,
     };
-    // fprintf(stderr, "Setting up result slot at %p\n", &result);
+    // debug_printf("Setting up result slot at %p\n", &result);
     ContinuationBoundaryLabel l = h.id;
     handler_push(&h);
 
@@ -254,9 +260,8 @@ void *scalanative_continuation_suspend(ContinuationBoundaryLabel b,
     volatile void *ret_val = NULL;
     continuation->return_slot = &ret_val;
 
-    // fprintf(stderr, "Putting result %p to slot %p\n",
-    // *last_handler->h->result,
-    //         last_handler->h->result);
+    debug_printf("Putting result %p to slot %p\n", *last_handler->h->result,
+                 last_handler->h->result);
 
     // we will be back...
     if (_lh_setjmp(continuation->buf) == 0) {
@@ -300,11 +305,11 @@ void __continuation_resume_impl(void *tail, Continuation *continuation,
 #if !defined(__i386__) // 32 bit platforms don't have an alignment restriction?
     assert((diff & 15) == 0);
 #endif
-    // fprintf(stderr,
-    //         "diff is %td, stack (size = %td) goes %p~%p -> %p~%p | original "
-    //         "cont = %p [%p]\n",
-    //         diff, cont->size, cont->stack_top, cont->stack_top + cont->size,
-    //         target, tail, cont, cont->stack);
+    debug_printf(
+        "diff is %td, stack (size = %td) goes %p~%p -> %p~%p | original "
+        "cont = %p [%p]\n",
+        diff, cont->size, cont->stack_top, cont->stack_top + cont->size, target,
+        tail, cont, cont->stack);
     // clone the handler chain, with fixes.
     to_install = nw = handler_clone_fix(continuation->handlers, diff);
 #define fixed_addr(X) (void *)(X) + diff
@@ -331,7 +336,7 @@ void __continuation_resume_impl(void *tail, Continuation *continuation,
     handler_install(to_install);
 
     // set return value for the return slot
-    // fprintf(stderr, "return slot is %p\n", new_return_slot);
+    // debug_printf("return slot is %p\n", new_return_slot);
     *new_return_slot = out;
     // fix the return address of the bottom of our new stack fragment.
     *(void **)(target + continuation->size - BOUNDARY_LR_OFFSET) = ret_addr;
@@ -368,6 +373,7 @@ void *scalanative_continuation_resume(Continuation *continuation, void *out) {
     return (void *)result;
 }
 
+#ifdef DELIMCC_DEBUG
 static void handler_free(Handlers *hs) {
     while (hs != NULL) {
         Handlers *old = hs;
@@ -381,3 +387,4 @@ void scalanative_continuation_free(Continuation *continuation) {
     free(continuation->stack);
     free(continuation);
 }
+#endif // DELIMCC_DEBUG

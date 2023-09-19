@@ -42,8 +42,12 @@ void *scalanative_continuation_suspend(ContinuationBoundaryLabel b,
 // argument into the suspended computation and returns its result.
 void *scalanative_continuation_resume(Continuation *continuation, void *arg);
 
+#ifdef DELIMCC_DEBUG // Debug flag for delimcc
+
 // Frees a continuation. Used only if malloc is used as the implementation of
 // alloc function.
 void scalanative_continuation_free(Continuation *continuation);
 
+#endif // DELIMCC_DEBUG
 #endif // DELIMCC_H
+
