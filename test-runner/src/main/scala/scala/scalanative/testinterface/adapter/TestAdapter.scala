@@ -10,6 +10,7 @@ import scala.concurrent._
 import scala.scalanative.build.Logger
 import scala.scalanative.testinterface.NativeRunnerRPC
 import scala.scalanative.testinterface.common._
+import scala.annotation.nowarn
 
 final class TestAdapter(config: TestAdapter.Config) {
 
@@ -102,7 +103,7 @@ final class TestAdapter(config: TestAdapter.Config) {
   }
 
   private[adapter] def getRunnerForThread(): ManagedRunner = {
-    val threadId = Thread.currentThread().getId
+    val threadId = Thread.currentThread().getId: @nowarn
 
     // Note that this is thread safe, since each thread can only operate on
     // the value associated to its thread id.
