@@ -35,11 +35,11 @@ void exitWithOutOfMemory() {
 }
 
 size_t scalanative_get_init_heapsize() {
-    return Parse_Env_Or_Default("GC_INITIAL_HEAP_SIZE", 0L);
+    return Parse_Env_Or_Default("SCALANATIVE_MIN_SIZE", 0L);
 }
 
 size_t scalanative_get_max_heapsize() {
-    return Parse_Env_Or_Default("GC_MAXIMUM_HEAP_SIZE", getMemorySize());
+    return Parse_Env_Or_Default("SCALANATIVE_MAX_SIZE", getMemorySize());
 }
 
 void Prealloc_Or_Default() {
@@ -49,12 +49,12 @@ void Prealloc_Or_Default() {
         size_t memorySize = getMemorySize();
 
         DEFAULT_CHUNK = // Default Maximum allocation Map 4GB
-            Choose_IF(Parse_Env_Or_Default_String("GC_MAXIMUM_HEAP_SIZE",
+            Choose_IF(Parse_Env_Or_Default_String("SCALANATIVE_MAX_SIZE",
                                                   DEFAULT_CHUNK_SIZE),
                       Less_OR_Equal, memorySize);
 
         PREALLOC_CHUNK = // Preallocation
-            Choose_IF(Parse_Env_Or_Default("GC_INITIAL_HEAP_SIZE", 0L),
+            Choose_IF(Parse_Env_Or_Default("SCALANATIVE_MIN_SIZE", 0L),
                       Less_OR_Equal, DEFAULT_CHUNK);
 
         if (PREALLOC_CHUNK == 0L) { // no prealloc settings.

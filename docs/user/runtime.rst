@@ -21,8 +21,8 @@ The following environment variables will be used for all GCs. They can go from 1
 the system memory maximum or up to about 512 GB. The size is in bytes,
 kilobytes(k or K), megabytes(m or M), or gigabytes(g or G). Examples: 1024k, 1M, or 1G etc.
 
-* GC_INITIAL_HEAP_SIZE changes the minimum heap size.
-* GC_MAXIMUM_MAX_HEAP_SIZE changes the maximum heap size.
+* SCALANATIVE_MIN_SIZE changes the minimum heap size.
+* SCALANATIVE_MAX_SIZE changes the maximum heap size.
 
 The plan is to add more GC settings in the future using the Boehm setting names where applicable.
 
@@ -42,8 +42,8 @@ Immix GC
 
 The following variables have not been changed to match the standard variables in Immix yet.
 
-* SCALANATIVE_MIN_HEAP_SIZE changes the minimum heap size.
-* SCALANATIVE_MAX_HEAP_SIZE changes the maximum heap size.
+* SCALANATIVE_MIN_SIZE changes the minimum heap size.
+* SCALANATIVE_MAX_SIZE changes the maximum heap size.
 
 Commix GC
 ---------
@@ -64,11 +64,11 @@ your executable as needed:
 
 .. code-block:: shell
 
-    $ export SCALANATIVE_MIN_SIZE=64k; export SCALANATIVE_MAX_SIZE=512k; sandbox/.2.13/target/scala-2.13/sandbox-out
-    SCALANATIVE_MAX_HEAP_SIZE too small to initialize heap.
+    $ SCALANATIVE_MIN_SIZE=64k SCALANATIVE_MAX_SIZE=512k sandbox/.2.13/target/scala-2.13/sandbox-out
+    SCALANATIVE_MAX_SIZE too small to initialize heap.
     Minimum required: 1m
 
-    $ export SCALANATIVE_MIN_SIZE=2m; export SCALANATIVE_MAX_SIZE=1m; sandbox/.2.13/target/scala-2.13/sandbox-out
-    SCALANATIVE_MAX_HEAP_SIZE should be at least SCALANATIVE_MIN_HEAP_SIZE
+    $ SCALANATIVE_MIN_SIZE=2m SCALANATIVE_MAX_SIZE=1m sandbox/.2.13/target/scala-2.13/sandbox-out
+    SCALANATIVE_MAX_SIZE should be at least SCALANATIVE_MIN_SIZE
 
 Continue to :ref:`lib`.
