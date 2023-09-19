@@ -113,6 +113,9 @@ jobs:
           - scala: 2.13.11
             build-mode: debug
             gc: immix
+          # Slow, leads to timeouts
+          - build-mode: release-fast
+            lto: none
         include:
           - scala: 3.3.0
             build-mode: release-size
@@ -147,9 +150,6 @@ jobs:
       matrix:
         scala: [3.3.0, 2.13.11]
         build-mode: [debug]
-        include:
-          - scala: 2.13.11
-            build-mode: release-fast
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/linux-setup-env
