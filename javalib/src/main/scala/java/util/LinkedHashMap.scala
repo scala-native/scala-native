@@ -9,7 +9,8 @@ class LinkedHashMap[K, V](
     initialCapacity: Int,
     loadFactor: Float,
     accessOrder: Boolean
-) extends HashMap[K, V](initialCapacity, loadFactor) {
+) extends HashMap[K, V](initialCapacity, loadFactor)
+    with SequencedMap[K, V] {
   self =>
 
   import LinkedHashMap._
