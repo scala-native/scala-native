@@ -379,11 +379,6 @@ object Thread {
   // Since JDK 19
   trait Builder {
 
-    /** Sets whether the thread is allowed to set values for its copy of
-     *  thread-local variables.
-     */
-    def allowSetThreadLocals(allow: scala.Boolean): Builder
-
     /** Returns a ThreadFactory to create threads from the current state of the
      *  builder.
      */
@@ -441,11 +436,6 @@ object Thread {
       @throws[IllegalArgumentException]("if the stack size is negative")
       def stackSize(stackSize: scala.Long): OfPlatform
 
-      /** Sets whether the thread is allowed to set values for its copy of
-       *  thread-local variables.
-       */
-      override def allowSetThreadLocals(allow: scala.Boolean): OfPlatform
-
       /** Sets whether the thread inherits the initial values of
        *  inheritable-thread-local variables from the constructing thread.
        */
@@ -469,11 +459,6 @@ object Thread {
     }
 
     trait OfVirtual extends Builder {
-
-      /** Sets whether the thread is allowed to set values for its copy of
-       *  thread-local variables.
-       */
-      override def allowSetThreadLocals(allow: scala.Boolean): OfVirtual
 
       /** Sets whether the thread inherits the initial values of
        *  inheritable-thread-local variables from the constructing thread.
