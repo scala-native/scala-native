@@ -17,10 +17,8 @@ jobs:
       matrix:
         os: [ubuntu-20.04, macos-11]
         scala: [3]
-        java: [11, 17, 20]
+        java: [11, 17, 21]
         include:
-          - java: 20
-            java-options: "--enable-preview"
           - java: 17
             scala: 2.13
             os: ubuntu-20.04
@@ -55,10 +53,7 @@ jobs:
       fail-fast: false
       matrix:
         scala: [3]
-        java: [11, 17, 20]
-        include:
-          - java: 20
-            java-options: "--enable-preview"
+        java: [11, 17, 21]
     steps:
       # Disable autocrlf setting, otherwise scalalib patches might not be possible to apply
       - name: Setup git config
