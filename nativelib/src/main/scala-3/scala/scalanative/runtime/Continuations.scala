@@ -61,7 +61,7 @@ object Continuations:
     suspend[Nothing, Unit](_ => ())
 
   /** Immediately return to the `boundary`, returning the given value. */
-  inline def break[T](value: T)(using BoundaryLabel[T]): Nothing =
+  inline def break[T](inline value: T)(using BoundaryLabel[T]): Nothing =
     suspend[Nothing, T](_ => value)
 
   /** Suspends the computation up to the corresponding `BoundaryLabel`, passing
