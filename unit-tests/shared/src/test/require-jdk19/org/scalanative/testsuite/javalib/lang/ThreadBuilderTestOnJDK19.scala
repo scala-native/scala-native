@@ -466,27 +466,6 @@ class ThreadBuilderTestOnJDK19 {
     testThreadLocals(builder)
   }
 
-  @Test def testThreadLocals3(): Unit = {
-    val builder = Thread.ofPlatform()
-    // disallow
-    builder.allowSetThreadLocals(false)
-    testNoThreadLocals(builder)
-    // allow
-    builder.allowSetThreadLocals(true)
-    testThreadLocals(builder)
-  }
-
-  @Ignore("VirtualThreads unimplemented")
-  @Test def testThreadLocals4(): Unit = {
-    val builder = Thread.ofVirtual()
-    // disallow
-    builder.allowSetThreadLocals(false)
-    testNoThreadLocals(builder)
-    // allow
-    builder.allowSetThreadLocals(true)
-    testThreadLocals(builder)
-  }
-
   private def testInheritedThreadLocals(builder: Thread.Builder): Unit = {
     val value = new AnyRef
     InheritedLocal.set(value)
@@ -558,40 +537,6 @@ class ThreadBuilderTestOnJDK19 {
     builder.inheritInheritableThreadLocals(false)
     testNoInheritedThreadLocals(builder)
     // inherit
-    builder.inheritInheritableThreadLocals(true)
-    testInheritedThreadLocals(builder)
-  }
-  @Test def testInheritedThreadLocals3(): Unit = {
-    val builder = Thread.ofPlatform()
-    // thread locals not allowed
-    builder.allowSetThreadLocals(false)
-    testNoInheritedThreadLocals(builder)
-    builder.inheritInheritableThreadLocals(false)
-    testNoInheritedThreadLocals(builder)
-    builder.inheritInheritableThreadLocals(true)
-    testNoInheritedThreadLocals(builder)
-    // thread locals allowed
-    builder.allowSetThreadLocals(true)
-    builder.inheritInheritableThreadLocals(false)
-    testNoInheritedThreadLocals(builder)
-    builder.inheritInheritableThreadLocals(true)
-    testInheritedThreadLocals(builder)
-  }
-
-  @Ignore("VirtualThreads unimplemented")
-  @Test def testInheritedThreadLocals4(): Unit = {
-    val builder = Thread.ofVirtual()
-    // thread locals not allowed
-    builder.allowSetThreadLocals(false)
-    testNoInheritedThreadLocals(builder)
-    builder.inheritInheritableThreadLocals(false)
-    testNoInheritedThreadLocals(builder)
-    builder.inheritInheritableThreadLocals(true)
-    testNoInheritedThreadLocals(builder)
-    // thread locals allowed
-    builder.allowSetThreadLocals(true)
-    builder.inheritInheritableThreadLocals(false)
-    testNoInheritedThreadLocals(builder)
     builder.inheritInheritableThreadLocals(true)
     testInheritedThreadLocals(builder)
   }

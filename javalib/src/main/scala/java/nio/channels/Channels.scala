@@ -52,25 +52,34 @@ object Channels {
     new ReadableByteChannel {
       var closed = false
       override def read(dst: ByteBuffer): Int = synchronized {
-        if (closed) throw new ClosedChannelException()
+        if (closed)
+          throw new ClosedChannelException()
 
+        var eof = false
         var written = 0
         val capacity = dst.capacity()
+
         while ({
           val readByte = in.read()
-          if (readByte != -1) {
+          if (readByte == -1) {
+            eof = true
+            false
+          } else {
             dst.put(readByte.toByte)
             written += 1
             capacity > written
-          } else false
+          }
         }) ()
 
-        written
+        if ((written == 0) && eof) -1
+        else written
       }
+
       override def close(): Unit = synchronized {
         in.close()
         closed = true
       }
+
       override def isOpen(): Boolean = synchronized { !closed }
     }
   }
