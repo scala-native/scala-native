@@ -5,6 +5,7 @@ package scala.scalanative.testinterface.adapter
 import java.io.File
 import java.nio.file.Paths
 import sbt.testing.Framework
+import scala.annotation.nowarn
 import scala.collection.concurrent.TrieMap
 import scala.concurrent._
 import scala.scalanative.build.Logger
@@ -102,7 +103,7 @@ final class TestAdapter(config: TestAdapter.Config) {
   }
 
   private[adapter] def getRunnerForThread(): ManagedRunner = {
-    val threadId = Thread.currentThread().getId
+    val threadId = Thread.currentThread().getId: @nowarn("cat=deprecation")
 
     // Note that this is thread safe, since each thread can only operate on
     // the value associated to its thread id.
