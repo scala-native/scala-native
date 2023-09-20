@@ -3,7 +3,7 @@ on:
   workflow_call:
   pull_request:
 concurrency:
-  group: jdk-compliance-${{ github.head_ref }}-${{ github.event_name	}}
+  group: jdk-compliance-${{ github.head_ref }}-${{ github.event_name }}
   cancel-in-progress: true
 
 jobs:
@@ -58,6 +58,7 @@ jobs:
         scala: [3]
         java: [11, 17]
         # Does not compile with Scala 3 yet
+        include:
           - java: 21
             scala: 2.13
     steps:
