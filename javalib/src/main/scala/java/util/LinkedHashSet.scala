@@ -4,7 +4,7 @@ import scala.collection.mutable
 
 class LinkedHashSet[E]
     extends HashSet[E]
-    with Set[E]
+    with SequencedSet[E]
     with Cloneable
     with Serializable {
   def this(initialCapacity: Int, loadFactor: Float) =
