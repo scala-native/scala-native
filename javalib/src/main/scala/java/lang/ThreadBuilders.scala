@@ -36,13 +36,6 @@ object ThreadBuilders {
       self
     }
 
-    override def allowSetThreadLocals(allow: scala.Boolean): Self = {
-      val flag = Characteristics.NoThreadLocal
-      if (allow) characteristics &= ~flag
-      else characteristics |= flag
-      self
-    }
-
     override def inheritInheritableThreadLocals(
         inherit: scala.Boolean
     ): Self = {
