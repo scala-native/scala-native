@@ -11,6 +11,7 @@ import scala.concurrent._
 import scala.scalanative.build.Logger
 import scala.scalanative.testinterface.NativeRunnerRPC
 import scala.scalanative.testinterface.common._
+import scala.annotation.nowarn
 
 final class TestAdapter(config: TestAdapter.Config) {
 
