@@ -1,0 +1,123 @@
+.. _quickstart:
+
+Quick Start Guide
+=================
+
+Requirements
+------------
+
+- Java 8 or newer
+- sbt 1.5.8 or newer
+- LLVM/Clang 6.0 or newer
+
+Project Structure Overview
+--------------------------
+
+See :ref:`build`
+
+Project suffix
+--------------
+
+Most projects in ScalaNative cross-build against Scala ``2.12``, ``2.13`` and ``3``, and these projects have a suffix like ``2_12``, ``2_13`` or ``3`` to differentiate the Scala version.
+For example, ``sandbox`` has ``sandbox2_12``, ``sandbox2_13`` and ``sandbox3``.
+
+In the following we will use suffix ``3``, but remember that you can build and test for different versions using different suffixes.
+
+Commonn sbt commands
+--------------------
+
+**Common Test Commands**
+
+- ``tests3/test`` - run the unit tests for libraries on native build
+- ``tests3/testOnly org.scalanative.testsuite.javalib.util.RandomTest`` - run only the test of interest
+- ``tests3/testOnly *.RandomTest`` - run only the test of interest using wildcard
+- ``testsExt3/test`` - run the unit tests on native build, this module contains tests that requires dummy javalib implementation defined in ``javalibExtDummies``.
+- ``nir3/test`` - run the unit tests for NIR
+- ``tools3/test`` - run the unit tests of the tools: ScalaNative backend
+- ``sbtScalaNative/scripted`` - run all integration tests of the sbt plugin (this takes a while).
+- ``sbtScalaNative/scripted <test directory to run>`` - run specific integration tests of the sbt plugin. e.g. ``sbtScalaNative/scripted run/backtrace``
+    - Scripted tests are used when you need to interact with the file system, networking, or the build system that cannot be done with a unit test.
+
+**Other Test Commands**
+
+- ``testsJVM3/test`` - run ``tests3/test`` on JVM
+- ``testsExtJVM3/test`` - run ``testsExt3/test`` on JVM
+- ``test-all`` - run all tests, ideally after ``reload`` and ``clean``
+
+**Some additional tips**
+
+- If you modify the ``nscplugin``, you will need to ``clean`` the project that
+  you want to rebuild with its new version (typically ``sandbox/clean`` or
+  ``tests/clean``). For a full rebuild, use the global ``clean`` command.
+
+- If you modify the sbt plugin or any of its transitive dependencies
+  (``sbt-scala-native``, ``nir``, ``util``, ``tools``, ``test-runner``), you
+  will need to ``reload`` for your changes to take effect with most test
+  commands (except with the ``scripted`` tests).
+
+- For a completely clean build, from scratch, run ``reload`` *and* ``clean``.
+
+Formatting
+----------
+
+- ``./scripts/scalafmt`` - format all Scala codes
+- ``./scripts/clangfmt`` - format all C/C++ codes
+
+Manual testing on Sandbox
+-------------------------
+
+``sandbox3/run`` to compile, link and run the main method of the sandbox project defined in ``sandbox/src/main/scala/Test.scala``.
+
+It's convenient to run the ``sandbox`` project to verify the build works as expected.
+
+Publish Locally
+---------------
+
+``publish-local-dev x.y.z`` publishes the ScalaNative artifact and sbt plugin for specified scala version locally.
+For example, ``publish-local-dev 3.3.1``, 
+
+You will see, the log message like the following, which means you have successfully published locally for the version ``0.5.0-SNAPSHOT``.
+
+.. code-block:: text
+
+    [info]  published tools_native0.5.0-SNAPSHOT_3 to ... 
+    [info]  published ivy to ...tools_native0.5.0-SNAPSHOT_3/0.5.0-SNAPSHOT/ivys/ivy.xml
+
+Then you'll be able to use locally published version in other projects.
+
+.. code-block:: text
+ 
+    # project/plugins.sbt
+    addSbtPlugin("org.scala-native" % "sbt-scala-native" % "0.5.0-SNAPSHOT")
+
+    # build.sbt
+    scalaVersion := "3.3.1" # set to locally published version
+    enablePlugins(ScalaNativePlugin)
+
+Locally publish docs
+--------------------
+
+1. First time building the docs. This command will setup & build the docs.
+
+.. code-block:: text
+
+    $ bash scripts/makedocs setup
+
+2. If setup is already done. This command will only build the docs assuming setup is already done.
+
+.. code-block:: text
+
+    $ bash scripts/makedocs 
+
+3. Navigate to ``docs/_build/html`` directory and open ``index.html`` file in your browser.
+
+Further Information
+-------------------
+
+- How to make a commit and PR :ref:`contributing`
+- More detailed build setting explanation :ref:`build`
+- Scala Native Internal
+    - :ref:`compiler`
+    - :ref:`nir`
+    - :ref:`name_mangling`
+- How to setup IDEs :ref:`ides`
