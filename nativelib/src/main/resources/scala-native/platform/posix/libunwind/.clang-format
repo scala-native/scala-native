@@ -1,0 +1,11 @@
+---
+# Documentation: https://clang.llvm.org/docs/ClangFormatStyleOptions.html
+BasedOnStyle: LLVM
+IndentWidth: 4
+---
+Language: Cpp
+# This directory contains 3rd party sources, disable formating and clangfmt checks in the CI
+DisableFormat: true
+# Sorting includes breaks the build.
+SortIncludes: false
+...
