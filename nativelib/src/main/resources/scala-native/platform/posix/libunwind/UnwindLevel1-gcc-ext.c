@@ -25,6 +25,10 @@
 #include "Unwind-EHABI.h"
 #include "unwind.h"
 
+#if defined(_AIX)
+#include <sys/debug.h>
+#endif
+
 #if defined(_LIBUNWIND_BUILD_ZERO_COST_APIS)
 
 #if defined(_LIBUNWIND_SUPPORT_SEH_UNWIND)
@@ -51,7 +55,7 @@ _Unwind_Resume_or_Rethrow(_Unwind_Exception *exception_object) {
     // std::terminate().
   }
 
-  // Call through to _Unwind_Resume() which distiguishes between forced and
+  // Call through to _Unwind_Resume() which distinguishes between forced and
   // regular exceptions.
   _Unwind_Resume(exception_object);
   _LIBUNWIND_ABORT("_Unwind_Resume_or_Rethrow() called _Unwind_RaiseException()"
@@ -85,6 +89,32 @@ _Unwind_GetTextRelBase(struct _Unwind_Context *context) {
 /// specified code address "pc".
 _LIBUNWIND_EXPORT void *_Unwind_FindEnclosingFunction(void *pc) {
   _LIBUNWIND_TRACE_API("_Unwind_FindEnclosingFunction(pc=%p)", pc);
+#if defined(_AIX)
+  if (pc == NULL)
+    return NULL;
+
+  // Get the start address of the enclosing function from the function's
+  // traceback table.
+  uint32_t *p = (uint32_t *)pc;
+
+  // Keep looking forward until a word of 0 is found. The traceback
+  // table starts at the following word.
+  while (*p)
+    ++p;
+  struct tbtable *TBTable = (struct tbtable *)(p + 1);
+
+  // Get the address of the traceback table extension.
+  p = (uint32_t *)&TBTable->tb_ext;
+
+  // Skip field parminfo if it exists.
+  if (TBTable->tb.fixedparms || TBTable->tb.floatparms)
+    ++p;
+
+  if (TBTable->tb.has_tboff)
+    // *p contains the offset from the function start to traceback table.
+    return (void *)((uintptr_t)TBTable - *p - sizeof(uint32_t));
+  return NULL;
+#else
   // This is slow, but works.
   // We create an unwind cursor then alter the IP to be pc
   unw_cursor_t cursor;
@@ -97,6 +127,7 @@ _LIBUNWIND_EXPORT void *_Unwind_FindEnclosingFunction(void *pc) {
     return (void *)(intptr_t) info.start_ip;
   else
     return NULL;
+#endif
 }
 
 /// Walk every frame and call trace function at each one.  If trace function
@@ -139,7 +170,7 @@ _Unwind_Backtrace(_Unwind_Trace_Fn callback, void *ref) {
     }
 
     // Update the pr_cache in the mock exception object.
-    const uint32_t* unwindInfo = (uint32_t *) frameInfo.unwind_info;
+    uint32_t *unwindInfo = (uint32_t *)frameInfo.unwind_info;
     ex.pr_cache.fnstart = frameInfo.start_ip;
     ex.pr_cache.ehtp = (_Unwind_EHT_Header *) unwindInfo;
     ex.pr_cache.additional= frameInfo.flags;

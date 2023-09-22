@@ -238,7 +238,7 @@ decode_eht_entry(const uint32_t* data, size_t* off, size_t* len) {
   } else {
     // 6.3: ARM Compact Model
     //
-    // EHT entries here correspond to the __aeabi_unwind_cpp_pr[012] PRs indeded
+    // EHT entries here correspond to the __aeabi_unwind_cpp_pr[012] PRs indeed
     // by format:
     Descriptor::Format format =
         static_cast<Descriptor::Format>((*data & 0x0f000000) >> 24);
@@ -712,7 +712,7 @@ unwind_phase2_forced(unw_context_t *uc, unw_cursor_t *cursor,
     // Update info about this frame.
     unw_proc_info_t frameInfo;
     if (__unw_get_proc_info(cursor, &frameInfo) != UNW_ESUCCESS) {
-      _LIBUNWIND_TRACE_UNWINDING("unwind_phase2_forced(ex_ojb=%p): __unw_step "
+      _LIBUNWIND_TRACE_UNWINDING("unwind_phase2_forced(ex_ojb=%p): __unw_get_proc_info "
                                  "failed => _URC_END_OF_STACK",
                                  (void *)exception_object);
       return _URC_FATAL_PHASE2_ERROR;
@@ -848,7 +848,7 @@ _LIBUNWIND_EXPORT void _Unwind_Complete(_Unwind_Exception* exception_object) {
 /// may force a jump to a landing pad in that function, the landing
 /// pad code may then call _Unwind_Resume() to continue with the
 /// unwinding.  Note: the call to _Unwind_Resume() is from compiler
-/// geneated user code.  All other _Unwind_* routines are called
+/// generated user code.  All other _Unwind_* routines are called
 /// by the C++ runtime __cxa_* routines.
 ///
 /// Note: re-throwing an exception (as opposed to continuing the unwind)
@@ -888,8 +888,11 @@ _Unwind_GetLanguageSpecificData(struct _Unwind_Context *context) {
   return result;
 }
 
-static uint64_t ValueAsBitPattern(_Unwind_VRS_DataRepresentation representation,
-                                  void* valuep) {
+// Only used in _LIBUNWIND_TRACE_API, which is a no-op when assertions are
+// disabled.
+[[gnu::unused]] static uint64_t
+ValueAsBitPattern(_Unwind_VRS_DataRepresentation representation,
+                  const void *valuep) {
   uint64_t value = 0;
   switch (representation) {
     case _UVRSD_UINT32:
