@@ -145,6 +145,8 @@ object Commands {
     Command.args(name, "<args>") {
       case (state, args) =>
         val version = args.headOption
+          .flatMap(MultiScalaProject.scalaVersions.get)
+          .orElse(state.getSetting(scalaVersion))
           .getOrElse(
             "Used command needs explicit full Scala version as an argument"
           )
