@@ -40,6 +40,11 @@ private[scalanative] object Filter {
       // all optional dependencies if they are not necessary
       val optPath = nativeCodePath.resolve("optional").abs
       val gcPath = nativeCodePath.resolve("gc").abs
+      val libunwindPath = nativeCodePath
+        .resolve("platform")
+        .resolve("posix")
+        .resolve("libunwind")
+        .abs
 
       def include(path: String) = {
         if (path.contains(optPath)) {
@@ -65,7 +70,9 @@ private[scalanative] object Filter {
       }
 
       val projectConfig = config.withCompilerConfig(
-        _.withCompileOptions(_ :+ ("-I" + gcPath) :+ gcFlag)
+        _.withCompileOptions(
+          _ ++ Seq(s"-I$gcPath", gcFlag, s"-I$libunwindPath")
+        )
       )
 
       val projectPaths = includePaths.map(Paths.get(_))
