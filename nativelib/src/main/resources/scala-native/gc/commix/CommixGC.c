@@ -98,4 +98,6 @@ size_t scalanative_get_init_heapsize() { return Settings_MinHeapSize(); }
 /* environment variable,*/
 /* then this size will be returned.*/
 /* Otherwise, the total size of the physical memory (guarded) will be returned*/
-size_t scalanative_get_max_heapsize() { return Settings_MaxHeapSize(); }
+size_t scalanative_get_max_heapsize() {
+    return Parse_Env_Or_Default("SCALANATIVE_MAX_SIZE", Heap_getMemoryLimit());
+}
