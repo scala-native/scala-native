@@ -99,4 +99,3 @@ size_t scalanative_get_init_heapsize() { return Settings_MinHeapSize(); }
 /* then this size will be returned.*/
 /* Otherwise, the total size of the physical memory (guarded) will be returned*/
 size_t scalanative_get_max_heapsize() { return Settings_MaxHeapSize(); }
-}
