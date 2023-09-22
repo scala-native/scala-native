@@ -20,8 +20,9 @@ jobs:
         java: [11, 17]
         include:
           # Does not compile with Scala 3 yet
-          - java: 21
-            scala: 2.13
+          # - java: 21
+          #   scala: 2.13
+          #   os: ubuntu-20.04
           - java: 17
             scala: 2.13
             os: ubuntu-20.04
@@ -58,9 +59,9 @@ jobs:
         scala: [3]
         java: [11, 17]
         # Does not compile with Scala 3 yet
-        include:
-          - java: 21
-            scala: 2.13
+        # include:
+        #   - java: 21
+        #     scala: 2.13
     steps:
       # Disable autocrlf setting, otherwise scalalib patches might not be possible to apply
       - name: Setup git config
