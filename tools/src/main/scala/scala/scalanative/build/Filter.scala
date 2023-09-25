@@ -71,7 +71,7 @@ private[scalanative] object Filter {
 
       val projectConfig = config.withCompilerConfig(
         _.withCompileOptions(
-          _ ++ Seq(s"-I$gcPath", gcFlag, s"-I$libunwindPath")
+          _ ++ Seq(s"-I$gcPath", gcFlag, s"-I$libunwindPath", "-DNDEBUG")
         )
       )
 
