@@ -97,6 +97,7 @@ private[scalanative] object LLVM {
       buildTargetCompileOpts ++ flto ++ asan ++ target ++
         stdflag ++ platformFlags ++ debugFlags ++ exceptionsHandling ++
         configFlags ++ Seq("-fvisibility=hidden", opt) ++
+        Seq("-fomit-frame-pointer") ++
         config.compileOptions
     val compilec: Seq[String] =
       Seq(compiler, "-c", inpath, "-o", outpath) ++ flags
