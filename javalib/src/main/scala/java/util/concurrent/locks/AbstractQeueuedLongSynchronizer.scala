@@ -485,8 +485,8 @@ abstract class AbstractQueuedLongSynchronizer protected ()
     val s = if (h != null) h.next else null
     var first = if (s != null) s.waiter else null
     if (h != null && (s == null ||
-          first == null ||
-          s.prev == null)) {
+        first == null ||
+        s.prev == null)) {
       first = getFirstQueuedThread()
     }
     first != null && (first ne Thread.currentThread())

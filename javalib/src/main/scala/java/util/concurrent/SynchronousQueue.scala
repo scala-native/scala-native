@@ -545,9 +545,9 @@ object SynchronousQueue {
                   (d eq dp) || // d is off list or
                   !d.isCancelled() || // d not cancelled or
                   ((d ne t) && // d not tail and
-                    dn != null && //   has successor
-                    (dn ne d) && //   that is on list
-                    dp.casNext(d, dn))) { // d unspliced
+                  dn != null && //   has successor
+                  (dn ne d) && //   that is on list
+                  dp.casNext(d, dn))) { // d unspliced
                 casCleanMe(dp, null)
               }
               if (dp eq pred) return // s is already saved node
