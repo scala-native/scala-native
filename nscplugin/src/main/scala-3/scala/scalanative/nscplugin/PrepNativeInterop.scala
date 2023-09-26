@@ -57,6 +57,13 @@ class PrepNativeInterop extends PluginPhase {
     def isExported(using Context) =
       sym.hasAnnotation(defnNir.ExportedClass) ||
         sym.hasAnnotation(defnNir.ExportAccessorsClass)
+
+    /** `true` iff `sym` uses variadic arguments. */
+    def usesVariadicArgs(using Context) = sym.paramInfo.stripPoly match {
+      case MethodTpe(_, paramTypes, _) =>
+        paramTypes.exists(param => param.isRepeatedParam)
+      case t => t.isVarArgsMethod
+    }
   end extension
 
   override def transformDefDef(dd: DefDef)(using Context): Tree = {
@@ -73,13 +80,7 @@ class PrepNativeInterop extends PluginPhase {
       else if sym.isExported then
         report.error("Exported method cannot be inlined", dd.srcPos)
 
-    def usesVariadicArgs = sym.paramInfo.stripPoly match {
-      case MethodTpe(paramNames, paramTypes, _) =>
-        paramTypes.exists(param => param.isRepeatedParam)
-      case t => t.isVarArgsMethod
-    }
-
-    if sym.is(Exported) && rhsSym.isExtern && usesVariadicArgs
+    if sym.is(Exported) && rhsSym.isExtern && sym.usesVariadicArgs
     then
       // Externs with varargs need to be called directly, replace proxy
       // with redifintion of extern method
