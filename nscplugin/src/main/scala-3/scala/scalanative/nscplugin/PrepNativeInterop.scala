@@ -59,18 +59,6 @@ class PrepNativeInterop extends PluginPhase {
         sym.hasAnnotation(defnNir.ExportAccessorsClass)
   end extension
 
-  private class DealiasTypeMapper(using Context) extends TypeMap {
-    override def apply(tp: Type): Type =
-      val sym = tp.typeSymbol
-      val dealiased =
-        if sym.isOpaqueAlias then sym.opaqueAlias
-        else tp
-      dealiased.widenDealias match
-        case AppliedType(tycon, args) =>
-          AppliedType(this(tycon), args.map(this))
-        case ty => ty
-  }
-
   override def transformDefDef(dd: DefDef)(using Context): Tree = {
     val sym = dd.symbol
     lazy val rhsSym = dd.rhs.symbol
