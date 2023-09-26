@@ -22,14 +22,11 @@ object PostInlineNativeInterop {
   val name = "scalanative-prepareInterop-postinline"
 }
 
-class PostInlineNativeInterop extends PluginPhase {
+class PostInlineNativeInterop extends PluginPhase with NativeInteropUtil {
   override val runsAfter = Set(transform.Inlining.name, PrepNativeInterop.name)
   override val runsBefore = Set(transform.FirstTransform.name)
   val phaseName = PostInlineNativeInterop.name
   override def description: String = "prepare ASTs for Native interop"
-
-  def defn(using Context): Definitions = ctx.definitions
-  def defnNir(using Context): NirDefinitions = NirDefinitions.get
 
   private def isTopLevelExtern(dd: ValOrDefDef)(using Context) = {
     dd.rhs.symbol == defnNir.UnsafePackage_extern &&
