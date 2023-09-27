@@ -54,15 +54,21 @@ class Metadata(
       out += node
       val start = id
       id += 1
-      val directSubclasses =
-        node.subclasses.filter(_.parent == Some(node)).toArray
-      directSubclasses.sortBy(_.name.show).foreach { subcls => loop(subcls) }
+      node.subclasses
+        .filter(_.parent.contains(node))
+        .foreach(loop(_))
       val end = id - 1
       ids(node) = start
       ranges(node) = start to end
     }
 
-    loop(analysis.infos(Rt.Object.name).asInstanceOf[Class])
+    def fromRootClass(symbol: nir.Global.Top) =
+      loop(
+        node = analysis.infos(symbol).asInstanceOf[Class]
+      )
+
+    Rt.PrimitiveTypes.foreach(fromRootClass(_))
+    fromRootClass(Rt.Object.name)
 
     out.toSeq
   }
