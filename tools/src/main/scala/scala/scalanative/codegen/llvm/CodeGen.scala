@@ -17,6 +17,7 @@ import scala.scalanative.build.ScalaNative
 import scala.scalanative.codegen.{Metadata => CodeGenMetadata}
 import scala.concurrent._
 import scala.util.Success
+import scala.scalanative.io.packageNameFromPath
 
 object CodeGen {
 
@@ -68,31 +69,9 @@ object CodeGen {
       val env = assembly.map(defn => defn.name -> defn).toMap
       val workDir = VirtualDirectory.real(config.workDir)
 
-      /**
-       *    - \C:a\b\c.txt -> a\b\c.txt
-       *    - C:a\b\c.txt -> a\b\c.txt
-       *    - p:\a\b\c.txt -> a\b\c.txt
-       *    - /a/b/c.txt -> a/b/c.txt
-       */
-      def dropPrefix(fileName: String): String = {
-        val driveLetter = s"^[A-Za-z]:".r
-        val supportDriveLetter =
-          build.Platform.isWindows || build.Platform.isCygwin || build.Platform.isMsys
-        // using "/" instead of `File.separator`
-        // we get "/C:a/b/c.txt" even in windows for some reasons.
-        val noDriveLetter =
-          driveLetter.findFirstIn(fileName.stripPrefix("/")) match {
-            case Some(prefix) if supportDriveLetter =>
-              fileName.stripPrefix(prefix)
-            case _ => fileName
-          }
-        noDriveLetter.stripPrefix("/")
-      }
-
       def sourceDirOf(pos: Position): Position.SourceFile =
         if (pos == null || pos.isEmpty) new Position.SourceFile("__empty")
-        else if (pos.source.getPath().endsWith("/")) pos.source.resolve("..")
-        else pos.source.resolve(".")
+        else Paths.get(pos.source.getPath()).normalize().getParent().toUri()
 
       // Partition into multiple LLVM IR files proportional to number
       // of available processesors. This prevents LLVM from optimizing
@@ -111,6 +90,15 @@ object CodeGen {
 
       // Incremental compilation code generation
       def seperateIncrementally(): Future[Seq[Path]] = {
+        def packageName(defn: Defn): String = {
+          val name = defn.name.top.id
+            .split('.')
+            .init // last segment is class name
+            .takeWhile(!_.contains("$")) // ignore nested classes
+            .mkString(".")
+          if (name.isEmpty) "__empty_package" else name
+        }
+
         val ctx = new IncrementalCodeGenContext(config.workDir)
         ctx.collectFromPreviousState()
 
@@ -132,24 +120,30 @@ object CodeGen {
         // which will prevent the Darwin linker failing to generate N_OSO symbols.
         Future
           .traverse(assembly.groupBy(x => sourceDirOf(x.pos)).toSeq) {
-            case (dir, defns) =>
+            case (_, defns) =>
               Future {
-                val path = dropPrefix(dir.getPath().stripSuffix("/"))
-                val outFile = config.workDir.resolve(s"$path.ll")
+                // if (defns.map(packageName).toSet.size > 1) println(defns.map(packageName))
+                val packagePath = defns
+                  .map(defn => packageName(defn))
+                  .toSet
+                  .toSeq
+                  .sorted
+                  .mkString("_")
+                val outFile = config.workDir.resolve(s"$packagePath.ll")
                 val ownerDirectory = outFile.getParent()
 
-                ctx.addEntry(path, defns)
-                if (ctx.shouldCompile(path)) {
+                ctx.addEntry(packagePath, defns)
+                if (ctx.shouldCompile(packagePath)) {
                   val sorted = defns.sortBy(_.name)
                   if (!Files.exists(ownerDirectory))
                     Files.createDirectories(ownerDirectory)
-                  Impl(env, sorted).gen(path, workDir)
+                  Impl(env, sorted).gen(packagePath, workDir)
                 } else {
                   assert(ownerDirectory.toFile.exists())
                   config.logger.debug(
-                    s"Content of package has not changed, skiping generation of $path.ll"
+                    s"Content of package has not changed, skiping generation of $packagePath.ll"
                   )
-                  config.workDir.resolve(s"$path.ll")
+                  config.workDir.resolve(s"$packagePath.ll")
                 }
               }
           }
