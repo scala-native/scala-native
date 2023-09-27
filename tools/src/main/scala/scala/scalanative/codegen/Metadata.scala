@@ -50,25 +50,41 @@ class Metadata(
     val out = mutable.UnrolledBuffer.empty[Class]
     var id = 0
 
-    def loop(node: Class): Unit = {
+    def loop(
+        node: Class,
+        topLevelSubclassOrdering: Array[Class] => Array[Class]
+    ): Unit = {
       out += node
       val start = id
       id += 1
-      node.subclasses
-        .filter(_.parent.contains(node))
-        .foreach(loop(_))
+      topLevelSubclassOrdering(
+        node.subclasses
+          .filter(_.parent.contains(node))
+          .toArray
+      ).foreach(loop(_, identity))
       val end = id - 1
       ids(node) = start
       ranges(node) = start to end
     }
 
-    def fromRootClass(symbol: nir.Global.Top) =
+    def fromRootClass(
+        symbol: nir.Global.Top,
+        ordering: Array[Class] => Array[Class] = identity
+    ) =
       loop(
-        node = analysis.infos(symbol).asInstanceOf[Class]
+        node = analysis.infos(symbol).asInstanceOf[Class],
+        topLevelSubclassOrdering = ordering
       )
 
     Rt.PrimitiveTypes.foreach(fromRootClass(_))
-    fromRootClass(Rt.Object.name)
+    fromRootClass(
+      Rt.Object.name,
+      ordering = subclasses => {
+        val (arrays, other) =
+          subclasses.partition(_.name == Rt.GenericArray.name)
+        arrays ++ other
+      }
+    )
 
     out.toSeq
   }
