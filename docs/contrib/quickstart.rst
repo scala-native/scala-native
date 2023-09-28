@@ -41,9 +41,10 @@ Test
 - ``testsExt3/test`` - run the unit tests on native build, this module contains tests that requires dummy javalib implementation defined in ``javalibExtDummies``.
 - ``nirJVM3/test`` - run the unit tests for NIR
 - ``toolsJVM3/test`` - run the unit tests of the tools: ScalaNative backend
-- ``sbtScalaNative/scripted`` - run all integration tests of the sbt plugin (this takes a while).
-- ``sbtScalaNative/scripted <test directory to run>`` - run specific integration tests of the sbt plugin. e.g. ``sbtScalaNative/scripted run/backtrace``
+- ``sbtScalaNative/scripted`` - run all `scripted tests <https://www.scala-sbt.org/1.x/docs/Testing-sbt-plugins.html>`_ of the sbt plugin (this takes a while).
+- ``sbtScalaNative/scripted <test directory to run>`` - run specific scripted tests of the sbt plugin. e.g. ``sbtScalaNative/scripted run/backtrace``
     - Scripted tests are used when you need to interact with the file system, networking, or the build system that cannot be done with a unit test.
+    - ``set ThisBuild / scriptedBufferLog := false`` disables buffer log in scripted test and get more verbose output
 
 **Other Test Commands**
 
@@ -110,6 +111,14 @@ Locally build docs
     $ bash scripts/makedocs 
 
 3. Navigate to ``docs/_build/html`` directory and open ``index.html`` file in your browser.
+
+Configure Native Build
+----------------------
+
+To configure the native build in this project, you can edit ``project/MyScalaNativePlugin.scala`` instead of ``project/Build.scala``.
+
+``MyScalaNativePlugin`` is a custom sbt plugin that extends ``ScalaNativePlugin`` and overrides some of its settings for this project.
+
 
 Further Information
 -------------------
