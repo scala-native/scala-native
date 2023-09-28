@@ -89,10 +89,11 @@ object CodeGen {
         noDriveLetter.stripPrefix("/")
       }
 
-      def sourceDirOf(pos: Position): Position.SourceFile =
-        if (pos == null || pos.isEmpty) new Position.SourceFile("__empty")
-        else if (pos.source.getPath().endsWith("/")) pos.source.resolve("..")
-        else pos.source.resolve(".")
+      def sourceDirOf(pos: Position): String = {
+        lazy val empty = "__empty"
+        if (pos == null) empty
+        else pos.dir.getOrElse(empty)
+      }
 
       // Partition into multiple LLVM IR files proportional to number
       // of available processesors. This prevents LLVM from optimizing
@@ -134,7 +135,7 @@ object CodeGen {
           .traverse(assembly.groupBy(x => sourceDirOf(x.pos)).toSeq) {
             case (dir, defns) =>
               Future {
-                val path = dropPrefix(dir.getPath().stripSuffix("/"))
+                val path = dropPrefix(dir.stripSuffix("/"))
                 val outFile = config.workDir.resolve(s"$path.ll")
                 val ownerDirectory = outFile.getParent()
 
