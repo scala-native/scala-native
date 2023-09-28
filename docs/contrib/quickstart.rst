@@ -70,8 +70,8 @@ Manual testing on Sandbox
 
 It's convenient to run the ``sandbox`` project to verify the build works as expected.
 
-Publish Locally
----------------
+`Publish Locally <https://www.scala-sbt.org/1.x/docs/Publishing.html>`_
+-----------------------------------------------------------------------
 
 ``publish-local-dev x.y.z`` publishes the ScalaNative artifact and sbt plugin for specified scala version locally.
 For example, ``publish-local-dev 3.3.1``, 
