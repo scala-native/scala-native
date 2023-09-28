@@ -88,6 +88,15 @@ object TestMain {
 
     SignalConfig.setDefaultHandlers()
 
+    // Loading debug metadata can take up to few seconds which might mess up timeout specific tests
+    // Prefetch the debug metadata before the actual tests do start
+    if (LinktimeInfo.hasDebugMetadata) {
+      val shouldPrefetch =
+        sys.env.get("PREFETCH_DEBUG_INFO").exists(v => v.isEmpty() || v == "1")
+      if (shouldPrefetch)
+        new RuntimeException().fillInStackTrace().ensuring(_ != null)
+    }
+
     val serverAddr =
       if (!LinktimeInfo.isFreeBSD) iPv4Loopback
       else getFreeBSDLoopbackAddr()

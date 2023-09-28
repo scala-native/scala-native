@@ -44,7 +44,8 @@ jobs:
 
       - name: Test runtime
         run: >
-          _JAVA_OPTIONS='${{ matrix.java-options }}' 
+          _JAVA_OPTIONS='${{ matrix.java-options }}'
+          PREFETCH_DEBUG_INFO=1
           sbt 
           -Dscala.scalanative.multithreading.enable=true 
           "-J-Xmx3G" 
@@ -80,6 +81,7 @@ jobs:
           set SCALANATIVE_LIB_DIRS=${{steps.setup.outputs.vcpkg-dir}}\lib&
           set SCALANATIVE &
           set _JAVA_OPTIONS=${{ matrix.java-options }} &
+          set PREFETCH_DEBUG_INFO=1 &
           sbt 
           -Dscala.scalanative.multithreading.enable=true 
           "test-runtime ${{matrix.scala}}"
