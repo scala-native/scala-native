@@ -7,8 +7,8 @@ Requirements
 ------------
 
 - Java 8 or newer
-- sbt 1.5.8 or newer
-- LLVM/Clang 6.0 or newer
+- LLVM/Clang 15 or newer
+- sbt
 
 Project Structure Overview
 --------------------------
@@ -23,8 +23,15 @@ For example, ``sandbox`` has ``sandbox2_12``, ``sandbox2_13`` and ``sandbox3``.
 
 In the following we will use suffix ``3``, but remember that you can build and test for different versions using different suffixes.
 
-Commonn sbt commands
---------------------
+Build / Manual Testing on Sandbox
+---------------------------------
+
+``sandbox3/run`` to compile, link and run the main method of the sandbox project defined in ``sandbox/src/main/scala/Test.scala``.
+
+It's convenient to run the ``sandbox`` project to verify the build works as expected.
+
+Test
+----
 
 **Common Test Commands**
 
@@ -32,8 +39,8 @@ Commonn sbt commands
 - ``tests3/testOnly org.scalanative.testsuite.javalib.util.RandomTest`` - run only the test of interest
 - ``tests3/testOnly *.RandomTest`` - run only the test of interest using wildcard
 - ``testsExt3/test`` - run the unit tests on native build, this module contains tests that requires dummy javalib implementation defined in ``javalibExtDummies``.
-- ``nir3/test`` - run the unit tests for NIR
-- ``tools3/test`` - run the unit tests of the tools: ScalaNative backend
+- ``nirJVM3/test`` - run the unit tests for NIR
+- ``toolsJVM3/test`` - run the unit tests of the tools: ScalaNative backend
 - ``sbtScalaNative/scripted`` - run all integration tests of the sbt plugin (this takes a while).
 - ``sbtScalaNative/scripted <test directory to run>`` - run specific integration tests of the sbt plugin. e.g. ``sbtScalaNative/scripted run/backtrace``
     - Scripted tests are used when you need to interact with the file system, networking, or the build system that cannot be done with a unit test.
@@ -63,13 +70,6 @@ Formatting
 - ``./scripts/scalafmt`` - format all Scala codes
 - ``./scripts/clangfmt`` - format all C/C++ codes
 
-Manual testing on Sandbox
--------------------------
-
-``sandbox3/run`` to compile, link and run the main method of the sandbox project defined in ``sandbox/src/main/scala/Test.scala``.
-
-It's convenient to run the ``sandbox`` project to verify the build works as expected.
-
 `Publish Locally <https://www.scala-sbt.org/1.x/docs/Publishing.html>`_
 -----------------------------------------------------------------------
 
@@ -94,7 +94,7 @@ Then you'll be able to use locally published version in other projects.
     scalaVersion := "3.3.1" # set to locally published version
     enablePlugins(ScalaNativePlugin)
 
-Locally publish docs
+Locally build docs
 --------------------
 
 1. First time building the docs. This command will setup & build the docs.
