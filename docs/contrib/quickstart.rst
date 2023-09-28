@@ -51,6 +51,7 @@ Test
 - ``testsJVM3/test`` - run ``tests3/test`` on JVM
 - ``testsExtJVM3/test`` - run ``testsExt3/test`` on JVM
 - ``test-all`` - run all tests, ideally after ``reload`` and ``clean``
+  - Note: it is possible that some tests ran by `test-all` might not pass or compile on your system. We are currently working on stabilizing this test suite for our supported platforms
 
 **Some additional tips**
 
