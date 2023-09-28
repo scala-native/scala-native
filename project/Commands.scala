@@ -22,8 +22,7 @@ object Commands {
     "test-tools" ::
       "test-mima" ::
       "test-runtime" ::
-      "test-scripted" ::
-      "publish-local-dev" :: _
+      "test-scripted" :: _ // test-scripted will publish artifacts locally
   }
 
   // Compile and run the sandbox for each GC as a minimal check
