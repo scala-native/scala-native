@@ -3,6 +3,8 @@
 Quick Start Guide
 =================
 
+Document built: |today|
+
 Requirements
 ------------
 
