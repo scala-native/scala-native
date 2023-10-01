@@ -52,6 +52,18 @@ object Rt {
   val StringCountName = StringName member Sig.Field("count")
   val StringCachedHashCodeName = StringName member Sig.Field("cachedHashCode")
 
+  val PrimitiveTypes: Seq[Global.Top] = Seq(
+    "Byte",
+    "Short",
+    "Int",
+    "Long",
+    "Char",
+    "Float",
+    "Double",
+    "Boolean",
+    "Unit"
+  ).map(name => Global.Top(s"scala.scalanative.runtime.Primitive$name"))
+
   val GenericArray = Ref(Global.Top("scala.scalanative.runtime.Array"))
 
   val arrayAlloc: Map[Sig, Global] = Seq(

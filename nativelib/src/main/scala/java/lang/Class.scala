@@ -45,22 +45,16 @@ final class _Class[A] {
     else classOf[java.lang.Object]
   }
 
-  def getName(): String =
-    name
+  def getName(): String = name
 
   def getSimpleName(): String =
     getName().split('.').last.split('$').last
 
-  def isArray(): scala.Boolean =
-    is(classOf[BooleanArray]) ||
-      is(classOf[CharArray]) ||
-      is(classOf[ByteArray]) ||
-      is(classOf[ShortArray]) ||
-      is(classOf[IntArray]) ||
-      is(classOf[LongArray]) ||
-      is(classOf[FloatArray]) ||
-      is(classOf[DoubleArray]) ||
-      is(classOf[ObjectArray])
+  // Based on fixed ordering in scala.scalanative.codegen.Metadata.initClassIdsAndRanges
+  def isInterface(): scala.Boolean = id < 0
+  def isPrimitive(): scala.Boolean = id >= 0 && id <= 8
+  // id == 9 => java.lang.Object
+  def isArray(): scala.Boolean = id >= 10 && id <= 19
 
   def isAssignableFrom(that: Class[_]): scala.Boolean =
     is(that.asInstanceOf[_Class[_]], this)
@@ -92,26 +86,10 @@ final class _Class[A] {
       }
     }
 
-  def isInterface(): scala.Boolean =
-    id < 0
-
-  def isPrimitive(): scala.Boolean =
-    is(classOf[PrimitiveBoolean]) ||
-      is(classOf[PrimitiveChar]) ||
-      is(classOf[PrimitiveByte]) ||
-      is(classOf[PrimitiveShort]) ||
-      is(classOf[PrimitiveInt]) ||
-      is(classOf[PrimitiveLong]) ||
-      is(classOf[PrimitiveFloat]) ||
-      is(classOf[PrimitiveDouble]) ||
-      is(classOf[PrimitiveUnit])
-
   @inline override def equals(other: Any): scala.Boolean =
     other match {
-      case other: _Class[_] =>
-        this eq other
-      case _ =>
-        false
+      case other: _Class[_] => this eq other
+      case _                => false
     }
 
   @inline override def hashCode: Int =

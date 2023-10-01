@@ -134,6 +134,25 @@ class ClassTest {
     assertTrue(classOf[Z].isAssignableFrom(classOf[Z]))
   }
 
+  @Test def isAssignableFrom2(): Unit = {
+    assertFalse(classOf[Any].isAssignableFrom(classOf[scala.Byte]))
+    assertFalse(classOf[Any].isAssignableFrom(classOf[scala.Short]))
+    assertFalse(classOf[Any].isAssignableFrom(classOf[scala.Int]))
+    assertFalse(classOf[Any].isAssignableFrom(classOf[scala.Long]))
+    assertFalse(classOf[Any].isAssignableFrom(classOf[scala.Float]))
+    assertFalse(classOf[Any].isAssignableFrom(classOf[scala.Double]))
+    assertFalse(classOf[Any].isAssignableFrom(classOf[scala.Unit]))
+    assertFalse(classOf[Any].isAssignableFrom(classOf[scala.Boolean]))
+    assertTrue(classOf[Any].isAssignableFrom(classOf[String]))
+    assertTrue(classOf[Any].isAssignableFrom(classOf[java.lang.Byte]))
+    assertTrue(classOf[Any].isAssignableFrom(classOf[java.lang.Short]))
+    assertTrue(classOf[Any].isAssignableFrom(classOf[java.lang.Integer]))
+    assertTrue(classOf[Any].isAssignableFrom(classOf[java.lang.Long]))
+    assertTrue(classOf[Any].isAssignableFrom(classOf[java.lang.Float]))
+    assertTrue(classOf[Any].isAssignableFrom(classOf[java.lang.Double]))
+    assertTrue(classOf[Any].isAssignableFrom(classOf[java.lang.Boolean]))
+  }
+
   @Test def testToString(): Unit = {
     assertTrue(classOf[java.lang.Class[_]].toString == "class java.lang.Class")
     assertTrue(

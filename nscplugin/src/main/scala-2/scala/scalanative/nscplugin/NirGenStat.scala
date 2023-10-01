@@ -143,6 +143,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       }
 
       if (sym == NObjectClass) None
+      else if (RuntimePrimitiveTypes.contains(sym)) None
       else if (sym.superClass == NoSymbol || sym.superClass == ObjectClass)
         Some(genTypeName(NObjectClass))
       else
