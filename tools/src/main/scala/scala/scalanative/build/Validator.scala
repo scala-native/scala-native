@@ -16,7 +16,6 @@ object Validator {
     (validateMainClass _)
       .andThen(validateBasename)
       .andThen(validateClasspath)
-      .andThen(checkCompilerConfig)
       .apply(config)
 
   // throws if Application with no mainClass
@@ -46,19 +45,6 @@ object Validator {
   private def validateClasspath(config: Config): Config = {
     val fclasspath = NativeLib.filterClasspath(config.classPath)
     config.withClassPath(fclasspath)
-  }
-
-  private def checkCompilerConfig(config: Config): Config = {
-    val log = config.logger
-    (config.compilerConfig.mode, config.compilerConfig.lto) match {
-      case (mode: Mode.Release, LTO.None) =>
-        log.warn(
-          s"Build mode ${mode.name} combined with disabled LTO produces single, slow to compile output file." +
-            s" It's recommended to enable LTO.${LTO.thin.name} for best optimizations and faster builds."
-        )
-      case _ => ()
-    }
-    config
   }
 
 }
