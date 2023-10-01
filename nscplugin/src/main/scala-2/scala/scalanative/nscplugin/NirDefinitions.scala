@@ -262,6 +262,7 @@ trait NirDefinitions {
       'D' -> getRequiredClass("scala.scalanative.runtime.PrimitiveDouble"),
       'U' -> getRequiredClass("scala.scalanative.runtime.PrimitiveUnit")
     )
+    lazy val RuntimePrimitiveTypes: Set[Symbol] = RuntimePrimitive.values.toSet
 
     lazy val RuntimeArrayClass: Map[Char, Symbol] = Map(
       'B' -> getRequiredClass("scala.scalanative.runtime.BooleanArray"),
