@@ -21,8 +21,7 @@ object Commands {
     "test-tools" ::
       "test-mima" ::
       "test-runtime" ::
-      "test-scripted" ::
-      "publish-local-dev" :: _
+      "test-scripted" :: _ // test-scripted will publish artifacts locally
   }
 
   lazy val testRuntime = projectVersionCommand("test-runtime") {
