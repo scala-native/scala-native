@@ -1,0 +1,27 @@
+{% extends "furo/page.html" %}
+
+{#
+Insert the last updated time below the page title
+We need to do this using JavaScript since the page body is built before the theme applies
+https://www.sphinx-doc.org/en/master/development/templating.html#working-with-the-builtin-templates
+#}
+{%- block extrahead %}
+    <meta id="last-updated" name="last-updated" content="{{ last_updated }}">
+    <script>
+        window.addEventListener("DOMContentLoaded", function() {
+            const h1s = document.getElementsByTagName("h1");
+            const meta = document.getElementById("last-updated");
+            if (
+                h1s.length > 0 &&
+                meta !== null &&
+                meta.getAttribute("content") !== null &&
+                meta.getAttribute("content") !== ""
+            ) {
+                const el = document.createElement("p");
+                el.textContent = "Last updated: " + meta.getAttribute("content") + ".";
+                h1s[0].insertAdjacentElement("afterend", el);
+            }
+        });
+    </script>
+    {{ super() }}
+{%- endblock %}

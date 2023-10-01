@@ -36,7 +36,7 @@ def generateScalaNativeCurrentYear():
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 # recommonmark provides support for '.md' files
-extensions = ['recommonmark']
+extensions = ['recommonmark', 'sphinx_last_updated_by_git']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -131,7 +131,8 @@ todo_include_todos = False
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'alabaster'
+html_theme = 'sn_furo'
+html_theme_path = ["."]
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -177,7 +178,7 @@ html_static_path = ['_static']
 # bottom, using the given strftime format.
 # The empty string is equivalent to '%b %d, %Y'.
 #
-# html_last_updated_fmt = None
+html_last_updated_fmt = '%Y-%m-%d %H:%M:%S'
 
 # If true, SmartyPants will be used to convert quotes and dashes to
 # typographically correct entities.
@@ -186,13 +187,13 @@ html_static_path = ['_static']
 
 # Custom sidebar templates, maps document names to template names.
 #
-html_sidebars = {
-    '**': [
-        'globaltoc.html',
-        'relations.html',
-        'searchbox.html',
-    ],
-}
+# html_sidebars = {
+#     '**': [
+#         'globaltoc.html',
+#         'relations.html',
+#         'searchbox.html',
+#     ],
+# }
 
 # Additional templates that should be rendered to pages, maps page names to
 # template names.
