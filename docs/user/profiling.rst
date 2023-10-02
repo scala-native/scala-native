@@ -77,5 +77,3 @@ A `flamegraph <http://www.brendangregg.com/flamegraphs.html>`_ is a visualizatio
 * Open the file ``kernel.svg`` in your browser and you can zoom in the interactive SVG-file by clicking on the colored boxes as explained `here <https://github.com/brendangregg/FlameGraph/blob/master/README.md>`_. A box represents a stack frame. The broader a box is the more CPU cycles have been spent. The higher the box is, the deeper in the call-chain it is.
 
 * The perf option ``-F 1000`` means that the sampling frequency is set to 1000 Hz. You can experiment with changing this option to get the right accuracy; start with e.g. ``-F 99`` and see what you get. You can then increase the sampling frequency to see if more details adds interesting information. 
-
-Continue to :ref:`runtime`.

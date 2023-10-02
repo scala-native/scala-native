@@ -160,9 +160,6 @@ Using the install path above, you would add the following:
 
     C:\Users\<login>\AppData\Local\LLVM\bin
 
-
-Continue to :ref:`sbt`.
-
 .. Comment - Sphinx linkcheck fails both http: and https://www.hboehm.info/gc 
 .. Comment - so use the roughly equivalent GitHub URL.
 .. _Boehm: https://github.com/ivmai/bdwgc

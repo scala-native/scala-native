@@ -49,5 +49,3 @@ You may also use `testOnly` to run a particular test, for example:
 
     testOnly MyTest
     testOnly MyTest.superComplicatedTest
-
-Continue to :ref:`profiling`.

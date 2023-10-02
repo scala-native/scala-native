@@ -88,6 +88,3 @@ wctype.h_      N/A
 .. _scala.scalanative.libc.string: https://github.com/scala-native/scala-native/blob/main/clib/src/main/scala/scala/scalanative/libc/string.scala
 .. _scala.scalanative.libc.signal: https://github.com/scala-native/scala-native/blob/main/clib/src/main/scala/scala/scalanative/libc/signal.scala
 .. _scala.scalanative.libc.time: https://github.com/scala-native/scala-native/blob/main/clib/src/main/scala/scala/scalanative/libc/time.scala
-
-Continue to :ref:`posixlib`.
-

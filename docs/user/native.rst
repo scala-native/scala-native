@@ -83,5 +83,3 @@ transparent to the library user.
 
 Using a library that contains native code can be used in combination with
 the feature above that allows native code in your application.
-
-Continue to :ref:`testing`.

@@ -42,5 +42,3 @@ There are a few exceptions:
 
 1. Stack overflows are undefined behavior and would typically segfault on supported architectures instead of throwing ``StackOverflowError``.
 2. Exhausting a heap space results in crash with a stack trace instead of throwing ``OutOfMemoryError``.
-
-Continue to :ref:`interop`.
