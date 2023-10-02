@@ -1,0 +1,4 @@
+furo==2023.9.10
+recommonmark==0.7.1
+Sphinx==7.2.6
+sphinx-last-updated-by-git==0.3.6
