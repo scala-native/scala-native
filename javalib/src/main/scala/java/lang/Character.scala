@@ -2,6 +2,7 @@ package java.lang
 
 import java.util.Arrays
 import java.lang.constant.Constable
+import scala.scalanative.runtime.LLVMIntrinsics
 
 class Character(val _value: scala.Char)
     extends _Object
@@ -2633,11 +2634,13 @@ object Character {
       null
     }
   }
+
+  def reverseBytes(ch: scala.Char): scala.Char = LLVMIntrinsics.`llvm.bswap.i16`(ch)
+  
   // TODO:
   // def getDirectionality(c: scala.Char): scala.Byte
   // def toTitleCase(c: scala.Char): scala.Char
   // def getNumericValue(c: scala.Char): Int
-  // def reverseBytes(ch: scala.Char): scala.Char
   // ...
 }
 

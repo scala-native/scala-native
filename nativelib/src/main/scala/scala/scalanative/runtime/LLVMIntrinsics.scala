@@ -69,6 +69,7 @@ object LLVMIntrinsics {
   def `llvm.bitreverse.i32`(value: Int): Int = extern
   def `llvm.bitreverse.i64`(value: Long): Long = extern
   def `llvm.bswap.i16`(value: Short): Short = extern
+  def `llvm.bswap.i16`(value: Char): Char = extern
   def `llvm.bswap.i32`(value: Int): Int = extern
   def `llvm.bswap.i64`(value: Long): Long = extern
   def `llvm.ctpop.i16`(value: Short): Short = extern
