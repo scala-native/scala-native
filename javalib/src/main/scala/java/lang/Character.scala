@@ -2636,7 +2636,7 @@ object Character {
   }
 
   def reverseBytes(ch: scala.Char): scala.Char =
-    LLVMIntrinsics.`llvm.bswap.i16`(ch)
+    LLVMIntrinsics.`llvm.bswap.i16`(ch.toShort).toChar
 
   // TODO:
   // def getDirectionality(c: scala.Char): scala.Byte
