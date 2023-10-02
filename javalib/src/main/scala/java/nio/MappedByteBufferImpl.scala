@@ -106,13 +106,15 @@ private class MappedByteBufferImpl(
   @noinline def getChar(): Char =
     byteArrayBits.loadChar(getPosAndAdvanceRead(2))
   @noinline def putChar(value: Char): ByteBuffer = {
-    ensureNotReadOnly(); byteArrayBits.storeChar(getPosAndAdvanceWrite(2), value);
+    ensureNotReadOnly();
+    byteArrayBits.storeChar(getPosAndAdvanceWrite(2), value);
     this
   }
   @noinline def getChar(index: Int): Char =
     byteArrayBits.loadChar(validateIndex(index, 2))
   @noinline def putChar(index: Int, value: Char): ByteBuffer = {
-    ensureNotReadOnly(); byteArrayBits.storeChar(validateIndex(index, 2), value);
+    ensureNotReadOnly();
+    byteArrayBits.storeChar(validateIndex(index, 2), value);
     this
   }
 
@@ -122,13 +124,15 @@ private class MappedByteBufferImpl(
   @noinline def getShort(): Short =
     byteArrayBits.loadShort(getPosAndAdvanceRead(2))
   @noinline def putShort(value: Short): ByteBuffer = {
-    ensureNotReadOnly(); byteArrayBits.storeShort(getPosAndAdvanceWrite(2), value);
+    ensureNotReadOnly();
+    byteArrayBits.storeShort(getPosAndAdvanceWrite(2), value);
     this
   }
   @noinline def getShort(index: Int): Short =
     byteArrayBits.loadShort(validateIndex(index, 2))
   @noinline def putShort(index: Int, value: Short): ByteBuffer = {
-    ensureNotReadOnly(); byteArrayBits.storeShort(validateIndex(index, 2), value);
+    ensureNotReadOnly();
+    byteArrayBits.storeShort(validateIndex(index, 2), value);
     this
   }
 
@@ -138,7 +142,8 @@ private class MappedByteBufferImpl(
   @noinline def getInt(): Int =
     byteArrayBits.loadInt(getPosAndAdvanceRead(4))
   @noinline def putInt(value: Int): ByteBuffer = {
-    ensureNotReadOnly(); byteArrayBits.storeInt(getPosAndAdvanceWrite(4), value);
+    ensureNotReadOnly();
+    byteArrayBits.storeInt(getPosAndAdvanceWrite(4), value);
     this
   }
   @noinline def getInt(index: Int): Int =
@@ -154,13 +159,15 @@ private class MappedByteBufferImpl(
   @noinline def getLong(): Long =
     byteArrayBits.loadLong(getPosAndAdvanceRead(8))
   @noinline def putLong(value: Long): ByteBuffer = {
-    ensureNotReadOnly(); byteArrayBits.storeLong(getPosAndAdvanceWrite(8), value);
+    ensureNotReadOnly();
+    byteArrayBits.storeLong(getPosAndAdvanceWrite(8), value);
     this
   }
   @noinline def getLong(index: Int): Long =
     byteArrayBits.loadLong(validateIndex(index, 8))
   @noinline def putLong(index: Int, value: Long): ByteBuffer = {
-    ensureNotReadOnly(); byteArrayBits.storeLong(validateIndex(index, 8), value);
+    ensureNotReadOnly();
+    byteArrayBits.storeLong(validateIndex(index, 8), value);
     this
   }
 
@@ -170,13 +177,15 @@ private class MappedByteBufferImpl(
   @noinline def getFloat(): Float =
     byteArrayBits.loadFloat(getPosAndAdvanceRead(4))
   @noinline def putFloat(value: Float): ByteBuffer = {
-    ensureNotReadOnly(); byteArrayBits.storeFloat(getPosAndAdvanceWrite(4), value);
+    ensureNotReadOnly();
+    byteArrayBits.storeFloat(getPosAndAdvanceWrite(4), value);
     this
   }
   @noinline def getFloat(index: Int): Float =
     byteArrayBits.loadFloat(validateIndex(index, 4))
   @noinline def putFloat(index: Int, value: Float): ByteBuffer = {
-    ensureNotReadOnly(); byteArrayBits.storeFloat(validateIndex(index, 4), value);
+    ensureNotReadOnly();
+    byteArrayBits.storeFloat(validateIndex(index, 4), value);
     this
   }
 
@@ -186,13 +195,15 @@ private class MappedByteBufferImpl(
   @noinline def getDouble(): Double =
     byteArrayBits.loadDouble(getPosAndAdvanceRead(8))
   @noinline def putDouble(value: Double): ByteBuffer = {
-    ensureNotReadOnly(); byteArrayBits.storeDouble(getPosAndAdvanceWrite(8), value);
+    ensureNotReadOnly();
+    byteArrayBits.storeDouble(getPosAndAdvanceWrite(8), value);
     this
   }
   @noinline def getDouble(index: Int): Double =
     byteArrayBits.loadDouble(validateIndex(index, 8))
   @noinline def putDouble(index: Int, value: Double): ByteBuffer = {
-    ensureNotReadOnly(); byteArrayBits.storeDouble(validateIndex(index, 8), value);
+    ensureNotReadOnly();
+    byteArrayBits.storeDouble(validateIndex(index, 8), value);
     this
   }
 
