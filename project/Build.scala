@@ -585,6 +585,17 @@ object Build {
             }
           )
       }
+      .mapBinaryVersions { version =>
+        // Compiling both nscplugins and scalalib might lead to dataraces and missing classfiles
+        _.settings(
+          crossPublish := crossPublish
+            .dependsOn(nscPlugin.forBinaryVersion(version) / crossPublish)
+            .value,
+          crossPublishSigned := crossPublish
+            .dependsOn(nscPlugin.forBinaryVersion(version) / crossPublishSigned)
+            .value
+        )
+      }
       .dependsOn(auxlib, javalib)
 
   // Tests ------------------------------------------------
