@@ -195,7 +195,7 @@ object Build {
     // One thing we miss is, we cannot detect changes in c libraries somewhere in `/usr/lib`.
     (
       config,
-      config.classPath.map(getLatestMtime(_)),
+      config.classPath.map(getLastModifiedChild(_)),
       getLastModified(config.artifactPath)
     ).hashCode()
   }
@@ -243,7 +243,7 @@ object Build {
    *  is the most recent value returned by `getLastModified` a node of this
    *  tree or `empty` if there is no file at `path`.
    */
-  private def getLatestMtime(path: Path): Optional[FileTime] =
+  private def getLastModifiedChild(path: Path): Optional[FileTime] =
     if (Files.exists(path))
       Files
         .walk(path, FileVisitOption.FOLLOW_LINKS)
