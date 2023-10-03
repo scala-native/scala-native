@@ -120,6 +120,7 @@ object Build {
     }
   }
 
+  /** A collection of compilation stages. */
   private class BackendPipeline(
       config: Config,
       analysis: ReachabilityAnalysis.Result
@@ -167,12 +168,14 @@ object Build {
         )(_ ++ _)
       }
 
+    /** Links the given object files using the system's linker. */
     def link(compiled: Seq[Path]): Path = time(
       s"Linking native code (${config.gc.name} gc, ${config.LTO.name} lto)"
     ) {
       LLVM.link(config, analysis, compiled)
     }
 
+    /** Links the DWARF debug information found in the object files. */
     def postProcess(artifact: Path): Path = time(
       "Postprocessing"
     ) {
@@ -218,7 +221,7 @@ object Build {
       .map(_.flatten)
   }
 
-  // create workDir if it doesn't exist
+  /** Creates a directory at `config.workDir` if one doesn't exist. */
   private def checkWorkdirExists(config: Config): Unit = {
     val workDir = config.workDir
     if (Files.notExists(workDir)) {
@@ -226,12 +229,19 @@ object Build {
     }
   }
 
+  /** Returns the last time the file at `path` was modified, or the epoch
+   *  (1970-01-01T00:00:00Z) if such a file doesn't exist.
+   */
   private def getLastModified(path: Path): FileTime =
     if (Files.exists(path))
       Try(Files.getLastModifiedTime(path)).getOrElse(FileTime.fromMillis(0L))
     else FileTime.fromMillis(0L)
 
-  /** Get the latest last modified time under the given path.
+  /** Returns the last time a file rooted at `path` was modified.
+   *
+   *  `path` is the root of a file tree, expanding symbolic links. The result
+   *  is the most recent value returned by `getLastModified` a node of this
+   *  tree or `empty` if there is no file at `path`.
    */
   private def getLatestMtime(path: Path): Optional[FileTime] =
     if (Files.exists(path))
