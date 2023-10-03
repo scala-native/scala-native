@@ -107,84 +107,84 @@ object Build {
       val config = Validator.validate(initialConfig)
       config.logger.debug(config.toString())
 
-      link(config, entries(config))
+      ScalaNative.link(config, entries(config))
         .flatMap(optimize(config, _))
-        .flatMap { linkerResult =>
-          val backend = new BackendPipeline(config, linkerResult)
-          backend
-            .codegen()
-            .flatMap(backend.compile)
-            .map(backend.link)
-            .map(backend.postProcess)
+        .flatMap { linkerResult => {
+            codegen(config, linkerResult)
+            .flatMap(ir => compile(config, linkerResult, ir))
+            .map(objects => link(config, linkerResult, objects))
+            .map(artifact => postProcess(config, artifact))
+          }
         }
     }
   }
 
-  /** A collection of compilation stages. */
-  private class BackendPipeline(
+  /** Emits LLVM IR for the definitions in `analysis` to `config.buildDirectory`. */
+  private def codegen(
       config: Config,
       analysis: ReachabilityAnalysis.Result
-  ) {
-    private val logger = config.logger
-    import logger._
+  )(implicit ec: ExecutionContext): Future[Seq[Path]] = {
+    val tasks = immutable.Seq(
+      ScalaNative.codegen(config, analysis),
+      genBuildInfo(config)
+    )
+    Future.reduceLeft(tasks)(_ ++ _)
+  }
 
-    def codegen()(implicit ec: ExecutionContext): Future[Seq[Path]] = {
-      val tasks = immutable.Seq(
-        ScalaNative.codegen(config, analysis),
-        genBuildInfo(config)
-      )
-      Future.reduceLeft(tasks)(_ ++ _)
-    }
+  /** Compiles `generatedIR`, which is a sequence of LLVM IR files. */
+  private def compile(
+      config: Config,
+      analysis: ReachabilityAnalysis.Result,
+      generatedIR: Seq[Path]
+  )(implicit ec: ExecutionContext): Future[Seq[Path]] =
+    config.logger.timeAsync("Compiling to native code") {
+      // compile generated LLVM IR
+      val compileGeneratedIR = LLVM.compile(config, generatedIR)
 
-    def compile(
-        generatedIR: Seq[Path]
-    )(implicit ec: ExecutionContext): Future[Seq[Path]] =
-      timeAsync("Compiling to native code") {
-        // compile generated LLVM IR
-        val compileGeneratedIR = LLVM.compile(config, generatedIR)
-
-        /* Used to pass alternative paths of compiled native (lib) sources,
-         * eg: reused native sources used in partests.
-         */
-        val compileNativeLibs = {
-          Properties.propOrNone("scalanative.build.paths.libobj") match {
-            case None =>
-              /* Finds all the libraries on the classpath that contain native
-               * code and then compiles them.
-               */
-              findAndCompileNativeLibs(config, analysis)
-            case Some(libObjectPaths) =>
-              Future.successful {
-                libObjectPaths
-                  .split(java.io.File.pathSeparatorChar)
-                  .toSeq
-                  .map(Paths.get(_))
-              }
-          }
+      /* Used to pass alternative paths of compiled native (lib) sources,
+        * eg: reused native sources used in partests.
+        */
+      val compileNativeLibs = {
+        Properties.propOrNone("scalanative.build.paths.libobj") match {
+          case None =>
+            /* Finds all the libraries on the classpath that contain native
+              * code and then compiles them.
+              */
+            findAndCompileNativeLibs(config, analysis)
+          case Some(libObjectPaths) =>
+            Future.successful {
+              libObjectPaths
+                .split(java.io.File.pathSeparatorChar)
+                .toSeq
+                .map(Paths.get(_))
+            }
         }
-
-        Future.reduceLeft(
-          immutable.Seq(compileGeneratedIR, compileNativeLibs)
-        )(_ ++ _)
       }
 
-    /** Links the given object files using the system's linker. */
-    def link(compiled: Seq[Path]): Path = time(
-      s"Linking native code (${config.gc.name} gc, ${config.LTO.name} lto)"
-    ) {
-      LLVM.link(config, analysis, compiled)
+      Future.reduceLeft(
+        immutable.Seq(compileGeneratedIR, compileNativeLibs)
+      )(_ ++ _)
     }
 
-    /** Links the DWARF debug information found in the object files. */
-    def postProcess(artifact: Path): Path = time(
-      "Postprocessing"
-    ) {
+  /** Links the given object files using the system's linker. */
+  private def link(
+    config: Config,
+    analysis: ReachabilityAnalysis.Result,
+    compiled: Seq[Path]
+  ): Path = config.logger.time(
+    s"Linking native code (${config.gc.name} gc, ${config.LTO.name} lto)"
+  ) {
+    LLVM.link(config, analysis, compiled)
+  }
+
+  /** Links the DWARF debug information found in the object files. */
+  private def postProcess(config: Config, artifact: Path): Path =
+    config.logger.time("Postprocessing") {
       if (Platform.isMac && config.compilerConfig.debugMetadata) {
         LLVM.dsymutil(config, artifact)
       }
       artifact
     }
-  }
 
   private def checkSum(config: Config): Int = {
     // skip the whole nativeLink process if the followings are unchanged since the previous build
