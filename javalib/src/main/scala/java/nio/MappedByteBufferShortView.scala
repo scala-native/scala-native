@@ -18,6 +18,7 @@ private[nio] final class MappedByteBufferShortView private (
   private def genBuffer = GenBuffer[ShortBuffer](this)
   protected def genMappedBufferView =
     GenMappedBufferView[ShortBuffer](this)
+  @inline private def byteArrayBits = genMappedBufferView.byteArrayBits
   private[this] implicit def newMappedShortBufferView
       : GenMappedBufferView.NewMappedBufferView[ShortBuffer] =
     MappedByteBufferShortView.NewMappedByteBufferShortView
@@ -74,11 +75,11 @@ private[nio] final class MappedByteBufferShortView private (
 
   @inline
   private[nio] def load(index: Int): Short =
-    genMappedBufferView.byteArrayBits.loadShort(index)
+    byteArrayBits.loadShort(index)
 
   @inline
   private[nio] def store(index: Int, elem: Short): Unit =
-    genMappedBufferView.byteArrayBits.storeShort(index, elem)
+    byteArrayBits.storeShort(index, elem)
 }
 
 private[nio] object MappedByteBufferShortView {

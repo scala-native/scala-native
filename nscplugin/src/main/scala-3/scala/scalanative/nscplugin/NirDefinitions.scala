@@ -47,14 +47,10 @@ final class NirDefinitions()(using ctx: Context) {
   def ExportAccessorsClass(using Context) = ExportAccessorsType.symbol.asClass
 
   // Unsigned types
-  @tu lazy val UByteClassVal = requiredClassRef("scala.scalanative.unsigned.UByte")
-  @tu lazy val UShortType = requiredClassRef("scala.scalanative.unsigned.UShort")
-  @tu lazy val UIntType = requiredClassRef("scala.scalanative.unsigned.UInt")
-  @tu lazy val ULongType = requiredClassRef("scala.scalanative.unsigned.ULong")
-  def UByteClass(using Context) = UByteClassVal.symbol.asClass
-  def UShortClass(using Context) = UShortType.symbol.asClass
-  def UIntClass(using Context) = UIntType.symbol.asClass
-  def ULongClass(using Context) = ULongType.symbol.asClass
+  @tu lazy val UByteClass = requiredClass("scala.scalanative.unsigned.UByte")
+  @tu lazy val UShortClass = requiredClass("scala.scalanative.unsigned.UShort")
+  @tu lazy val UIntClass = requiredClass("scala.scalanative.unsigned.UInt")
+  @tu lazy val ULongClass = requiredClass("scala.scalanative.unsigned.ULong")
 
   // Pointers
   @tu lazy val PtrType = requiredClassRef("scala.scalanative.unsafe.Ptr")
