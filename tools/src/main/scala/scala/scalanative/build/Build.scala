@@ -188,6 +188,7 @@ object Build {
       artifact
     }
 
+  /** Returns a checksum of a compilation pipeline with the given `config`. */
   private def checkSum(config: Config): Int = {
     // skip the whole nativeLink process if the followings are unchanged since the previous build
     // - build configuration
