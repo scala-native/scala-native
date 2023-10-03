@@ -202,7 +202,7 @@ object Build {
     ).hashCode()
   }
 
-  /** Convenience method to combine finding and compiling native libaries.
+  /** Finds and compiles native libaries.
    *
    *  @param config
    *    the compiler configuration
