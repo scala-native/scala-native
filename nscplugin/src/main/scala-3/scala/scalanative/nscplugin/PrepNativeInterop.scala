@@ -29,28 +29,34 @@ class PrepNativeInterop extends PluginPhase with NativeInteropUtil {
   val phaseName = PrepNativeInterop.name
   override def description: String = "prepare ASTs for Native interop"
 
+  /** `true` iff `dd` is a toplevel declaration that is defined externally. */
   private def isTopLevelExtern(dd: ValOrDefDef)(using Context) = {
     dd.rhs.symbol == defnNir.UnsafePackage_extern &&
     dd.symbol.isWrappedToplevelDef
   }
 
   extension (sym: Symbol)
+    /** `true` iff `sym` a trait or Java interface declaration. */
     def isTraitOrInterface(using Context): Boolean =
       sym.is(Trait) || sym.isAllOf(JavaInterface)
 
+    /** `true` iff `sym` is a scala module. */
     def isScalaModule(using Context): Boolean =
       sym.is(ModuleClass, butNot = Lifted)
 
+    /** `true` iff `sym` is a C-bridged type or a declaration defined externally. */
     def isExtern(using Context): Boolean = sym.exists && {
       sym.owner.isExternType ||
       sym.hasAnnotation(defnNir.ExternClass) ||
       (sym.is(Accessor) && sym.field.isExtern)
     }
 
+    /** `true` iff `sym` is a C-bridged type (e.g., `unsafe.CSize`). */
     def isExternType(using Context): Boolean =
       (isScalaModule || sym.isTraitOrInterface) &&
         sym.hasAnnotation(defnNir.ExternClass)
 
+    /** `true` iff `sym` is an exported definition. */
     def isExported(using Context) =
       sym.hasAnnotation(defnNir.ExportedClass) ||
         sym.hasAnnotation(defnNir.ExportAccessorsClass)
