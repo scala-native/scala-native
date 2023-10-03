@@ -1,14 +1,17 @@
 .. _ides:
 
+IDE setup
+=========
+
 Metals
-======
+------
 Metals import should work out of the box for most of the modules, it's the recommended IDE.  
 To speed up indexing and prevent Bloop-related issues by default we export only 1 version of ``MultiScalaProject``, otherwise it would need to cross-compile sources for all binary Scala versions on each source-change.
 By default IDE would target Scala 3 projects, to change this behavior modify ``project/MyScalaNativePlugin.scala`` and modify ``ideScalaVersion``. This change would be only required when developing Scala 2 compiler plugins, sbt plugins or Scala 2 specific sources.
 
 
 IntelliJ IDEA
-=============
+-------------
 
 * Select "Create project from existing sources" and choose the ``build.sbt`` file. When prompted, select "Open as project". Make sure you select the "Use sbt shell" for both import and build.
 
@@ -21,7 +24,7 @@ IntelliJ IDEA
 The above is not an exhaustive list, but it is the bare minimum to have the build working. Please keep in mind that you will have to repeat the above steps, in case you reload (re-import) the SBT build. This will need to happen if you change some SBT-related file (e.g. ``build.sbt``).
 
 Setup for clangd
-================
+----------------
 
 `clangd` is a Language Server Protocol (LSP) for C and C++. Your IDE of choice can connect to `clangd` to help development using C and C++.
 

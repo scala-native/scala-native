@@ -1886,6 +1886,7 @@ object Lower {
 
   def depends(implicit platform: PlatformInfo): Seq[Global] = {
     val buf = mutable.UnrolledBuffer.empty[Global]
+    buf ++= Rt.PrimitiveTypes
     buf += Rt.ClassName
     buf += Rt.ClassIdName
     buf += Rt.ClassTraitIdName

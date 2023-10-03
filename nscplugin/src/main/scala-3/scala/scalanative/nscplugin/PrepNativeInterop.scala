@@ -23,14 +23,11 @@ object PrepNativeInterop {
   val name = "scalanative-prepareInterop"
 }
 
-class PrepNativeInterop extends PluginPhase {
+class PrepNativeInterop extends PluginPhase with NativeInteropUtil {
   override val runsAfter = Set(transform.PostTyper.name)
   override val runsBefore = Set(transform.Pickler.name)
   val phaseName = PrepNativeInterop.name
   override def description: String = "prepare ASTs for Native interop"
-
-  def defn(using Context): Definitions = ctx.definitions
-  def defnNir(using Context): NirDefinitions = NirDefinitions.get
 
   private def isTopLevelExtern(dd: ValOrDefDef)(using Context) = {
     dd.rhs.symbol == defnNir.UnsafePackage_extern &&

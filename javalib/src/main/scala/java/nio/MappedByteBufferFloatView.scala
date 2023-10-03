@@ -17,6 +17,7 @@ private[nio] final class MappedByteBufferFloatView private (
 
   private def genBuffer = GenBuffer[FloatBuffer](this)
   protected def genMappedBufferView = GenMappedBufferView[FloatBuffer](this)
+  private lazy val byteArrayBits = genMappedBufferView.byteArrayBits
   private[this] implicit def newMappedFloatBufferView
       : GenMappedBufferView.NewMappedBufferView[FloatBuffer] =
     MappedByteBufferFloatView.NewMappedByteBufferFloatView
@@ -73,11 +74,11 @@ private[nio] final class MappedByteBufferFloatView private (
 
   @inline
   private[nio] def load(index: Int): Float =
-    genMappedBufferView.byteArrayBits.loadFloat(index)
+    byteArrayBits.loadFloat(index)
 
   @inline
   private[nio] def store(index: Int, elem: Float): Unit =
-    genMappedBufferView.byteArrayBits.storeFloat(index, elem)
+    byteArrayBits.storeFloat(index, elem)
 }
 
 private[nio] object MappedByteBufferFloatView {

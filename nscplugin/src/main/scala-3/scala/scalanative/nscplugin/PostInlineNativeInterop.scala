@@ -22,14 +22,11 @@ object PostInlineNativeInterop {
   val name = "scalanative-prepareInterop-postinline"
 }
 
-class PostInlineNativeInterop extends PluginPhase {
+class PostInlineNativeInterop extends PluginPhase with NativeInteropUtil {
   override val runsAfter = Set(transform.Inlining.name, PrepNativeInterop.name)
   override val runsBefore = Set(transform.FirstTransform.name)
   val phaseName = PostInlineNativeInterop.name
   override def description: String = "prepare ASTs for Native interop"
-
-  def defn(using Context): Definitions = ctx.definitions
-  def defnNir(using Context): NirDefinitions = NirDefinitions.get
 
   private def isTopLevelExtern(dd: ValOrDefDef)(using Context) = {
     dd.rhs.symbol == defnNir.UnsafePackage_extern &&
@@ -64,6 +61,13 @@ class PostInlineNativeInterop extends PluginPhase {
         val paramTypes =
           args.map(a => dealiasTypeMapper(a.tpe)) :+
             dealiasTypeMapper(tree.tpe.finalResultType)
+        fun match {
+          case Select(Inlined(_, _, ext), _) =>
+            // Apply(Select(Inlined(_,_,_),_),_) would not preserve the attachment, use the receiver as a carrier
+            fun.putAttachment(NirDefinitions.NonErasedTypes, paramTypes)
+            tree
+          case _ => ()
+        }
         tree.withAttachment(NirDefinitions.NonErasedTypes, paramTypes)
 
       case Apply(fun, args)

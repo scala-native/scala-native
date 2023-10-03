@@ -125,23 +125,9 @@ object CodeGen {
           }
       }
 
-      // Generate a single LLVM IR file for the whole application.
-      // This is an adhoc form of LTO. We use it in release mode if
-      // Clang's LTO is not available.
-      def single(): Future[Seq[Path]] = Future {
-        val sorted = assembly.sortBy(_.name)
-        Impl(env, sorted).gen(id = "out", workDir) :: Nil
-      }
-
-      import build.Mode._
-      (config.mode, config.LTO) match {
-        case (ReleaseFast | ReleaseSize | ReleaseFull, build.LTO.None) =>
-          single()
-        case _ =>
-          if (config.compilerConfig.useIncrementalCompilation)
-            seperateIncrementally()
-          else separate()
-      }
+      if (config.compilerConfig.useIncrementalCompilation)
+        seperateIncrementally()
+      else separate()
     }
 
   object Impl {

@@ -12,16 +12,14 @@ object Validator {
    *  @return
    *    potentially a modified [[Config]] that is valid
    */
-  def validate(config: Config): Config = {
-    // side effecting
-    validateMainClass(config)
-    validateBasename(config)
-    // returns new Config
-    validateClasspath(config)
-  }
+  def validate(config: Config): Config =
+    (validateMainClass _)
+      .andThen(validateBasename)
+      .andThen(validateClasspath)
+      .apply(config)
 
   // throws if Application with no mainClass
-  private def validateMainClass(config: Config): Unit = {
+  private def validateMainClass(config: Config): Config = {
     val nativeConfig = config.compilerConfig
     nativeConfig.buildTarget match {
       case BuildTarget.Application =>
@@ -32,19 +30,21 @@ object Validator {
         }
       case _: BuildTarget.Library => ()
     }
+    config
   }
 
   // throws if moduleName or baseName is not set
-  private def validateBasename(config: Config): Unit =
+  private def validateBasename(config: Config): Config =
     if (config.baseName.trim.isEmpty) { // trim for non default error
       throw new BuildException(
         "Config defaultBasename or NativeConfig baseName must be set."
       )
-    }
+    } else config
 
   // filter so classpath only has jars or directories
   private def validateClasspath(config: Config): Config = {
     val fclasspath = NativeLib.filterClasspath(config.classPath)
     config.withClassPath(fclasspath)
   }
+
 }

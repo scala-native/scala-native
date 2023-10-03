@@ -1011,7 +1011,7 @@ class Reach(
         import scala.scalanative.nir._
         implicit val srcPosition: nir.Position = nir.Position.NoPosition
         val stubMethods = for {
-          methodName <- Seq("threads", "virtualThreads")
+          methodName <- Seq("threads", "virtualThreads", "continuations")
         } yield {
           import scala.scalanative.codegen.Lower.{
             throwUndefined,
@@ -1045,12 +1045,14 @@ class Reach(
         stubType +: stubMethods
       }
 
-    private def details(sig: Sig): UnsupportedFeature.Kind =
+    private def details(sig: Sig): UnsupportedFeature.Kind = {
       sig.unmangled match {
         case Sig.Method("threads", _, _)        => SystemThreads
         case Sig.Method("virtualThreads", _, _) => VirtualThreads
+        case Sig.Method("continuations", _, _)  => Continuations
         case _                                  => Other
       }
+    }
 
     def unapply(name: Global): Option[UnsupportedFeature] = name match {
       case Global.Member(UnsupportedSymbol, sig) =>
@@ -1127,6 +1129,8 @@ object Reach {
         )
     case object VirtualThreads
         extends Kind("VirtualThreads are not supported yet on this platform")
+    case object Continuations
+        extends Kind("Continuations are not supported yet on this platform")
     case object Other extends Kind("Other unsupported feature")
   }
 }

@@ -38,8 +38,14 @@ object ScalaVersions {
   // List of nightly version can be found here: https://repo1.maven.org/maven2/org/scala-lang/scala3-compiler_3/
   lazy val scala3Nightly = "3.3.2-RC1-bin-20230601-8814760-NIGHTLY"
 
-  // minimum version - 1.5 is required for Scala 3 and 1.5.8 has log4j vulnerability fixed
-  val sbt10Version: String = "1.5.8"
+  // minimum version rationale:
+  //   1.5 is required for Scala 3 and
+  //   1.5.8 has log4j vulnerability fixed
+  //   1.9.0 is required in order to use Java >= 21
+  //   1.9.4 fixes (Common Vulnerabilities and Exposures) CVE-2022-46751
+  //   1.9.6 is current
+
+  val sbt10Version: String = "1.9.6"
   val sbt10ScalaVersion: String = scala212
 
   val libCrossScalaVersions: Seq[String] =

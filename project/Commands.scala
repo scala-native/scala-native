@@ -22,8 +22,7 @@ object Commands {
     "test-tools" ::
       "test-mima" ::
       "test-runtime" ::
-      "test-scripted" ::
-      "publish-local-dev" :: _
+      "test-scripted" :: _ // test-scripted will publish artifacts locally
   }
 
   // Compile and run the sandbox for each GC as a minimal check
@@ -145,6 +144,8 @@ object Commands {
     Command.args(name, "<args>") {
       case (state, args) =>
         val version = args.headOption
+          .flatMap(MultiScalaProject.scalaVersions.get)
+          .orElse(state.getSetting(scalaVersion))
           .getOrElse(
             "Used command needs explicit full Scala version as an argument"
           )
