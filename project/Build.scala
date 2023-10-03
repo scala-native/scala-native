@@ -116,7 +116,7 @@ object Build {
       )
 
   // Compiler plugins
-  lazy val nscPlugin = MultiScalaProject(
+  lazy val nscPlugin: MultiScalaProject = MultiScalaProject(
     "nscplugin",
     file("nscplugin"),
     additionalIDEScalaVersions = List("2.13")
@@ -566,10 +566,6 @@ object Build {
             }
           )
         case version @ ("3" | "3-next") =>
-          val stdlibVersion = version match {
-            case "3"      => scala3libSourcesVersion
-            case "3-next" => ScalaVersions.scala3Nightly
-          }
           _.settings(
             name := "scala3lib",
             commonScalalibSettings("scala3-library_3"),
