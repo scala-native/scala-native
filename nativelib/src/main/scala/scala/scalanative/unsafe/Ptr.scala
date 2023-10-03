@@ -5,6 +5,7 @@ import scala.language.implicitConversions
 import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.runtime.Intrinsics._
 import scala.scalanative.runtime._
+import scala.scalanative.unsigned._
 
 final class Ptr[T] private[scalanative] (
     private[scalanative] val rawptr: RawPtr
@@ -14,10 +15,8 @@ final class Ptr[T] private[scalanative] (
 
   @alwaysinline override def equals(other: Any): Boolean =
     (this eq other.asInstanceOf[AnyRef]) || (other match {
-      case other: Ptr[_] =>
-        other.rawptr == rawptr
-      case _ =>
-        false
+      case other: Ptr[_] => other.rawptr == rawptr
+      case _             => false
     })
 
   @alwaysinline override def toString: String =
@@ -53,19 +52,33 @@ final class Ptr[T] private[scalanative] (
     (left - right) / sizeof[T].toLong
   }
 
+  @alwaysinline def apply(offset: Int)(implicit tag: Tag[T]): T =
+    tag.load(
+      elemRawPtr(rawptr, offset * tag.size.toInt)
+    )
+
   @alwaysinline def apply(offset: UWord)(implicit tag: Tag[T]): T =
-    apply(offset.toLong)
+    tag.load(
+      elemRawPtr(rawptr, offset.toLong * tag.size.toLong)
+    )
 
   @alwaysinline def apply(offset: Word)(implicit tag: Tag[T]): T =
-    (this + offset).unary_!
+    tag.load(
+      elemRawPtr(rawptr, offset * tag.size.toLong)
+    )
   @alwaysinline def update(offset: Word, value: T)(implicit tag: Tag[T]): Unit =
-    (this + offset).`unary_!_=`(value)
+    tag.store(
+      elemRawPtr(rawptr, offset * tag.size.toLong),
+      value
+    )
 
   @alwaysinline def update(offset: UWord, value: T)(implicit
       tag: Tag[T]
   ): Unit =
-    (this + offset).`unary_!_=`(value)
-
+    tag.store(
+      elemRawPtr(rawptr, offset.toLong * tag.size.toLong),
+      value
+    )
 }
 
 object Ptr {
