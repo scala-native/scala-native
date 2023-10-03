@@ -152,7 +152,7 @@ object Build {
             /* Finds all the libraries on the classpath that contain native
              * code and then compiles them.
              */
-            findAndCompileNativeLibs(config, analysis)
+            findAndCompileNativeLibraries(config, analysis)
           case Some(libObjectPaths) =>
             Future.successful {
               libObjectPaths
@@ -212,7 +212,7 @@ object Build {
    *  @return
    *    the paths to the compiled objects
    */
-  def findAndCompileNativeLibs(
+  def findAndCompileNativeLibraries(
       config: Config,
       analysis: ReachabilityAnalysis.Result
   )(implicit ec: ExecutionContext): Future[Seq[Path]] = {
