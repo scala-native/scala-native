@@ -92,7 +92,9 @@ object TestMain {
     // Prefetch the debug metadata before the actual tests do start
     if (LinktimeInfo.hasDebugMetadata) {
       val shouldPrefetch =
-        sys.env.get("SCALANATIVE_TEST_PREFETCH_DEBUG_INFO").exists(v => v.isEmpty() || v == "1")
+        sys.env
+          .get("SCALANATIVE_TEST_PREFETCH_DEBUG_INFO")
+          .exists(v => v.isEmpty() || v == "1")
       if (shouldPrefetch)
         new RuntimeException().fillInStackTrace().ensuring(_ != null)
     }
