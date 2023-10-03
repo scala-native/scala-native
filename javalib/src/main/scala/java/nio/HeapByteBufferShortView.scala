@@ -16,6 +16,7 @@ private[nio] final class HeapByteBufferShortView private (
 
   private def genBuffer = GenBuffer[ShortBuffer](this)
   private def genHeapBufferView = GenHeapBufferView[ShortBuffer](this)
+  @inline private def byteArrayBits = genHeapBufferView.byteArrayBits
   private implicit def newHeapBuffer
       : GenHeapBufferView.NewHeapBufferView[ShortBuffer] =
     HeapByteBufferShortView.NewHeapByteBufferShortView
@@ -72,11 +73,11 @@ private[nio] final class HeapByteBufferShortView private (
 
   @inline
   private[nio] def load(index: Int): Short =
-    genHeapBufferView.byteArrayBits.loadShort(index)
+    byteArrayBits.loadShort(index)
 
   @inline
   private[nio] def store(index: Int, elem: Short): Unit =
-    genHeapBufferView.byteArrayBits.storeShort(index, elem)
+    byteArrayBits.storeShort(index, elem)
 }
 
 private[nio] object HeapByteBufferShortView {

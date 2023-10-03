@@ -17,6 +17,7 @@ trait NirDefinitions {
     lazy val UShortClass = getRequiredClass("scala.scalanative.unsigned.UShort")
     lazy val UIntClass = getRequiredClass("scala.scalanative.unsigned.UInt")
     lazy val ULongClass = getRequiredClass("scala.scalanative.unsigned.ULong")
+
     lazy val PtrClass = getRequiredClass("scala.scalanative.unsafe.Ptr")
     lazy val RawPtrClass = getRequiredClass("scala.scalanative.runtime.RawPtr")
 
