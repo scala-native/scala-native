@@ -13,6 +13,8 @@ import scala.scalanative.libc.atomic.CAtomicRef
 import scala.scalanative.libc.atomic.memory_order._
 import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
 import scala.annotation.tailrec
+import java.{util => ju}
+import collection.JavaConverters._
 
 @SerialVersionUID(-3223113410248163686L) class LinkedTransferQueue[E <: AnyRef]
     extends AbstractQueue[E]
@@ -62,12 +64,13 @@ import scala.annotation.tailrec
   }
 
   private def skipDeadNodesNearHead(h: Node, p: Node) = {
-    @tailrec def go(p: Node): Node =
+    @tailrec def go(p: Node): Node = {
       val q = p.next
       if (q == null) p
       else if (!q.isMatched()) q
       else if (p == q) null /* do not casHead */
       else go(q)
+    }
     // while (true) {
     //   val q: Node = null;
     //   if ((q = p.next) == null) break;
@@ -88,7 +91,7 @@ import scala.annotation.tailrec
       var _t: Node = t
       var _h: Node = h
       @tailrec def inner(p: Node): E = {
-        var item: Object = _
+        var item: Object = null
         if (p.isData != haveData && haveData == ({
               item = p.item; item
             } == null)) {
@@ -133,7 +136,7 @@ import scala.annotation.tailrec
     val w = Thread.currentThread()
 
     var stat = -1 // -1: may yield, +1: park, else 0
-    var item: Object = _
+    var item: Object = null
     var _nanos = nanos
 
     @tailrec def loop: Option[E] = {
@@ -173,12 +176,13 @@ import scala.annotation.tailrec
       loop
     }
 
-    loop.match
+    loop match {
       case None =>
         if (stat == 1) s.waiterAtomic.store(null)
         if (!isData) s.itemAtomic.store(s)
         item.asInstanceOf[E]
       case Some(value) => value
+    }
   }
 
   /* -------------- Traversal methods -------------- */
@@ -225,49 +229,588 @@ import scala.annotation.tailrec
   override def toString(): String = {
     var a: Array[String] = null
 
-    while (true) {
+    var restartFromHead = true;
+    while (restartFromHead) {
+      restartFromHead = false
+
       var charLength = 0
       var size = 0
-      var p: Node = head
 
-      while (p != null) {
+      var p = head
+      var innerBreak = false
+      while (p != null && !innerBreak) {
         val item = p.item
-
         if (p.isData) {
           if (item != null) {
             if (a == null)
-              a = new Array[String](4)
+              a = Array.fill(4)("")
             else if (size == a.length)
-              a = java.util.Arrays.copyOf(a, 2 * size)
-
-            val s = item.toString
+              a = Array.copyOf(a, 2 * size)
+            val s = item.toString()
             a(size) = s
             size += 1
-            charLength += s.length
+            charLength += s.length()
           }
         } else if (item == null) {
-          return "[]"
-        }
-
-        if (p == p.next) {
-          // Continue loop from the head
-          p = head
+          innerBreak = true
         } else {
-          p = p.next
+          val q = p.next
+          if (p == q) {
+            restartFromHead = true
+            innerBreak = true
+          }
+          else p = q
         }
       }
 
-      if (size == 0)
-        return "[]"
+      if (!restartFromHead) {
+        if (size == 0)
+          return "[]"
 
-      return Helpers.toString(a.asInstanceOf[Array[AnyRef]], size, charLength)
+        return Helpers.toString(a.asInstanceOf[Array[AnyRef]], size, charLength)
+      }
     }
     ???
   }
 
-  def unsplice(pred: Node, s: Node): Unit = ???
+  private def toArrayInternal(a: Array[Object]): Array[Object] = {
+    var x = a
 
-  private def sweep(): Unit = ???
+    var restartFromHead = true
+    while (restartFromHead) {
+      restartFromHead = false
+
+      var size = 0
+
+      var p = head
+      var innerBreak = false
+      while (p != null && !innerBreak) {
+        val item = p.item
+        if (p.isData) {
+          if (item != null) 
+            x = Array.fill[Object](4)(null)
+          else if (size == x.length)
+            x = Array.copyOf(x, 2 * (size + 4))
+          x(size) = item
+          size += 1
+        } else if (item == null) {
+          innerBreak = true
+        } else {
+          val q = p.next
+          if (p == q) {
+            restartFromHead = true
+            innerBreak = true
+          }
+          p = q
+        }
+      }
+      if (!restartFromHead) {
+        if (x == null)
+          return Array()
+        else if (a != null && size <= a.length) {
+          if (a != x)
+            System.arraycopy(x, 0, a, 0, size)
+          if (size < a.length)
+            a(size) = null
+          return a
+        }
+        return (if (size == x.length) x else Array.copyOf(x, size))
+      }
+    }
+    ???
+  }
+
+  override def toArray(): Array[Object] = toArrayInternal(null)
+
+  override def toArray[T <: Object](a : Array[T with Object]): Array[T with Object] = {
+    java.util.Objects.requireNonNull(a)
+    toArrayInternal(a.asInstanceOf[Array[Object]]).asInstanceOf[Array[T with Object]]
+  }
+
+  final class Itr extends ju.Iterator[E] {
+    private var nextNode: Node = null
+    private var nextItem: E = null.asInstanceOf[E]
+    private var lastRet: Node = null
+    private var ancestor: Node = null
+
+    private def advance(pred: Node): Unit = {
+      var _pred = pred
+      var p = if (_pred == null) head else _pred.next
+      var c = p
+      var innerBreak = false
+      while (p != null && !innerBreak) {
+        val item = p.item
+        if (item != null && p.isData) {
+          nextNode = p
+          nextItem = item.asInstanceOf[E]
+          if (c != p)
+            tryCasSuccessor(_pred, c, p)
+          return
+        } else if (!p.isData && item == null) {
+          innerBreak = true
+        }
+        if (!innerBreak) {
+          if (c != p && {
+            val old_c = c
+            c = p
+            !tryCasSuccessor(_pred, old_c, c)
+          }) {
+            _pred = p
+            p = p.next
+            c = p
+          } else {
+            val q = p.next
+            if (p == q) {
+              _pred = null
+              p = head
+              c = p
+            } else {
+              p = q
+            }
+          }
+        }
+      }
+      nextItem = null.asInstanceOf[E]
+      nextNode = null
+    }
+
+    advance(null)
+
+    final override def hasNext(): Boolean = nextNode != null
+
+    final override def next() = {
+      var p = nextNode
+      if (p == null)
+        throw ju.NoSuchElementException()
+      val e = nextItem
+      lastRet = p
+      advance(lastRet)
+      e
+    }
+
+    override def forEachRemaining(action : ju.function.Consumer[_ >: E <: Object]): Unit = {
+      ju.Objects.requireNonNull(action)
+      var q: Node = null
+      var p = nextNode
+      while (p != null) {
+        action.accept(nextItem)
+        q = p
+        advance(q)
+        p = nextNode
+      }
+      if (q != null)
+        lastRet = q
+    }
+
+    override def remove(): Unit = {
+      val lastRet = this.lastRet
+      if (lastRet == null)
+        throw IllegalStateException()
+      this.lastRet = null
+      if (lastRet.item == null)
+        return
+
+      var pred = ancestor
+      var p = if (pred == null) head else pred.next
+      var c = p
+      var q: Node = null
+      var innerBreak = false
+      while (p != null && !innerBreak) {
+        if (p == lastRet) {
+          val item = p.item
+          if (item != null)
+            p.tryMatch(item, null)
+          q = p.next
+          if (q == null) q = p
+          if (c != q)
+            tryCasSuccessor(pred, c, q)
+          ancestor = pred
+          return
+        }
+        val item = p.item
+        val pAlive = item != null && p.isData
+        if (pAlive) {
+          // exceptionally, nothing to do
+        } else if (!p.isData && item == null) {
+          innerBreak = true
+        }
+        if (!innerBreak) {
+          if ((c != p && {
+              val old_c = c
+              c = p
+              !tryCasSuccessor(pred, old_c, c)
+            }) || pAlive) {
+            pred = p
+            p = p.next
+            c = p
+          }
+          else {
+            val q = p.next
+            if (p == q) {
+              pred = null
+              p = head
+              c = p
+            } else {
+              p = q
+            }
+          }
+        }
+      }
+    }
+  }
+
+  final class LTQSpliterator extends ju.Spliterator[E] {
+    var _current: Node = null
+    var batch = 0
+    var exhausted = false
+
+    def trySplit(): ju.Spliterator[E] = {
+      var p = current()
+      if (p == null) return null
+      var q = p.next
+      if (q == null) return null
+
+      var i = 0
+      batch = Math.min(batch + 1, LTQSpliterator.MAX_BATCH)
+      var n = batch
+      var a: Array[Object] = null
+      var continueLoop = true
+      while (continueLoop) {
+        val item = p.item
+        if (p.isData) {
+          if (item != null) {
+            if (a == null)
+              a = Array.fill[Object](n)(null)
+            a(i) = item
+            i += 1
+          }
+        } else if (item == null) {
+          p = null
+          continueLoop = false
+        }
+        if (continueLoop) {
+          if (p == q)
+            p = firstDataNode()
+          else
+            p = q
+        }
+        if (p == null) continueLoop = false
+        if (continueLoop) {
+          q = p.next
+          if (q == null) continueLoop = false
+        }
+        if (i >= n) continueLoop = false
+      }
+      setCurrent(p)
+      if (i == 0)
+        null
+      else
+        ju.Spliterators.spliterator(a, 0, i, (ju.Spliterator.ORDERED | ju.Spliterator.NONNULL | ju.Spliterator.CONCURRENT))
+    }
+
+    override def forEachRemaining(action: ju.function.Consumer[_ >: E <: Object]): Unit = {
+      ju.Objects.requireNonNull(action)
+      val p = current()
+      if (p != null) {
+        _current = null
+        exhausted = true
+        forEachFrom(action, p)
+      }
+    }
+
+    override def tryAdvance(action: ju.function.Consumer[_ >: E]): Boolean = {
+      ju.Objects.requireNonNull(action)
+      var p = current()
+      while (p != null) {
+        var e: E = null.asInstanceOf[E]
+        var continueLoop = true
+        while (continueLoop) {
+          val item = p.item
+          val isData = p.isData
+          val q = p.next
+          p = if (p == q) head else q
+          if (isData) {
+            if (item != null) {
+              e = item.asInstanceOf[E]
+              continueLoop = false
+            }
+          } else if (item == null) {
+            p = null
+          }
+          if (p == null) continueLoop = false
+        }
+        setCurrent(p)
+        if (e != null) {
+          action.accept(e)
+          return true
+        }
+      }
+      false
+    }
+
+    private def setCurrent(p: Node): Unit = {
+      _current = p
+      if (_current == null)
+        exhausted = true
+    }
+
+    private def current(): Node = {
+      var p = _current
+      if (p == null && !exhausted) {
+        p = firstDataNode()
+        setCurrent(p)
+      }
+      p
+    }
+
+    override def estimateSize() = Long.MaxValue
+
+    override def characteristics(): Int = ju.Spliterator.ORDERED | ju.Spliterator.NONNULL | ju.Spliterator.CONCURRENT
+  }
+
+  object LTQSpliterator {
+    val MAX_BATCH = 1 << 25
+  }
+
+  override def spliterator(): ju.Spliterator[E] = LTQSpliterator()
+
+  /* -------------- Removal methods -------------- */
+
+  def unsplice(pred: Node, s: Node): Unit = {
+    s.waiter = null // disable signals
+    if (pred != null && pred.next == s) {
+      val n = s.next
+      if (n == null || (n != s && pred.casNext(s, n) && pred.isMatched())) {
+        var continueLoop = true
+        while (continueLoop) {
+          val h = head
+          if (h == pred || h == s)
+            return
+          if (!h.isMatched())
+            continueLoop = false
+          if (continueLoop) {
+            val hn = h.next
+            if (hn == null)
+              return
+            if (hn != h && casHead(h, hn))
+              h.selfLink()
+          }
+        }
+        if (pred.next != pred && s.next != s)
+          needSweep = true
+      }
+    }
+  }
+
+  private def sweep(): Unit = {
+    needSweep = false
+    @tailrec def go(_p: Node): Unit = {
+      var p = _p
+
+      if (p == null) return
+      val s = p.next
+      if (s == null) return
+      val n = s.next
+
+      if (!s.isMatched())
+        p = s
+      else if (n == null)
+        return
+      else if (s == n)
+        p = head
+      else
+        p.casNext(s, n)
+      go(p)
+    }
+
+    go(head)
+  }
+
+  /* -------------- Constructors -------------- */
+
+  def this(c: ju.Collection[_ <: E]) = {
+    this()
+    var h: Node = null
+    var t: Node = null
+    for (e <- c.asScala) {
+      val newNode = Node(ju.Objects.requireNonNull(e))
+      if (h == null) {
+        t = newNode
+        h = t
+      } else {
+        t.appendRelaxed(newNode)
+        t = newNode
+      }
+    }
+    if (h == null) {
+      t = Node()
+      h = t
+    }
+    head = h
+    tail = t
+  }
+
+  head = Node()
+  tail = head
+
+  /* -------------------- Other ------------------- */
+
+  override def put(e : E): Unit = xfer(e, true, ASYNC, 0)
+
+  override def offer(e: E, timeout : Long, unit : TimeUnit): Boolean = {
+    xfer(e, true, ASYNC, 0)
+    true
+  }
+
+  override def offer(e: E) = {
+    xfer(e, true, ASYNC, 0)
+    true
+  }
+
+  override def add(e: E): Boolean = {
+    xfer(e, true, ASYNC, 0)
+    true
+  }
+
+  override def tryTransfer(e: E): Boolean = {
+    return xfer(e, true, NOW, 0L) == null
+  }
+
+  override def transfer(e: E): Unit = {
+    if (xfer(e, true, SYNC, 0L) != null) {
+      Thread.interrupted() // failure possible only due to interrupt
+      throw InterruptedException()
+    }
+  }
+
+  override def tryTransfer(e: E, timeout : Long, unit : TimeUnit): Boolean = {
+    if (xfer(e, true, TIMED, unit.toNanos(timeout)) == null)
+      true
+    else if (!Thread.interrupted())
+      false
+    else throw new InterruptedException()
+  }
+
+  override def take(): E = {
+    val e = xfer(null.asInstanceOf[E], false, SYNC, 0L)
+    if (e != null)
+      e
+    else {
+      Thread.interrupted()
+      throw InterruptedException()
+    }
+  }
+
+  override def poll(timeout: Long, unit: TimeUnit): E = {
+    val e = xfer(null.asInstanceOf[E], false, TIMED, unit.toNanos(timeout))
+    if (e != null || !Thread.interrupted())
+      e
+    else throw InterruptedException()
+  }
+
+  override def poll(): E = xfer(null.asInstanceOf[E], false, NOW, 0L)
+
+  override def drainTo(c: ju.Collection[_ >: E]): Int = {
+    ju.Objects.requireNonNull(c)
+    if (c == this)
+      throw IllegalArgumentException()
+    var n = 0
+    var e = poll()
+    while (e != null) {
+      c.add(e)
+      n += 1
+      e = poll()
+    }
+    n
+  }
+
+  override def drainTo(c: ju.Collection[_ >: E], maxElements : Int): Int = {
+    ju.Objects.requireNonNull(c)
+    if (c == this)
+      throw IllegalArgumentException()
+    var n = 0
+    var innerBreak = false
+    while (n < maxElements && !innerBreak) {
+      val e = poll()
+      if (e == null)
+        innerBreak = true
+      else {
+        c.add(e)
+        n += 1
+      }
+    }
+    n
+  }
+
+  override def iterator(): ju.Iterator[E] = Itr()
+
+  override def peek(): E = {
+    var restartFromHead = true
+    while (restartFromHead) {
+      restartFromHead = false
+      var p = head
+      var innerBreak = false
+      while (p != null && !innerBreak) {
+        val item = p.item
+        if (p.isData) {
+          if (item != null) {
+            return item.asInstanceOf[E]
+          }
+        } else if (item == null) {
+          innerBreak = true
+        }
+        if (!innerBreak) {
+          val q = p.next
+          if (p == q) {
+            restartFromHead = true
+            innerBreak = true
+          }
+          else p = q
+        }
+      }
+      if (!restartFromHead) return null.asInstanceOf[E]
+    }
+    ???
+  }
+
+  override def isEmpty(): Boolean = firstDataNode() == null
+
+  override def hasWaitingConsumer(): Boolean = {
+    var restartFromHead = true
+    while (restartFromHead) {
+      restartFromHead = false
+      var p = head
+      var innerBreak = false
+      while (p != null && !innerBreak) {
+        val item = p.item
+        if (p.isData) {
+          if (item != null) {
+            innerBreak = true
+          }
+        } else if (item == null) {
+          return true
+        }
+        if (!innerBreak) {
+          val q = p.next
+          if (p == q) {
+            restartFromHead = true
+            innerBreak = true
+          }
+          else p = q
+        }
+      }
+      if (!restartFromHead) return false
+    }
+    ???
+  }
+
+  override def size(): Int = countOfMode(true)
+
+  override def getWaitingConsumerCount(): Int = countOfMode(false)
+
+  override def remainingCapacity(): Int = Integer.MAX_VALUE
+
+  def forEachFrom(action: ju.function.Consumer[_ >: E <: Object], p: Node): Unit = ???
 
   // private def xfer(e: E, haveData: Boolean, how: Int, nanos: Long) {
   //       if (haveData && (e == null))
