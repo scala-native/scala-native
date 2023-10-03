@@ -199,7 +199,7 @@ final class ${T}Array private () extends Array[${T}] {
 
   @inline override def clone(): ${T}Array = {
     val arrcls  = classOf[${T}Array]
-    val arrsize = unsignedOf(intToUSize(MemoryLayout.Array.ValuesOffset + ${sizeT} * length))
+    val arrsize = USize.valueOf(intToUSize(MemoryLayout.Array.ValuesOffset + ${sizeT} * length))
     val arr     = ${allocGC}(arrcls, arrsize)
     val src     = castObjectToRawPtr(this)
     libc.memcpy(arr, src, arrsize)
@@ -215,7 +215,7 @@ object ${T}Array {
     }
     val arrcls  = classOf[${T}Array]
     val arrsize = intToUSize(MemoryLayout.Array.ValuesOffset + ${sizeT} * length)
-    val arr = ${allocGC}(arrcls, unsignedOf(arrsize)) 
+    val arr = ${allocGC}(arrcls, USize.valueOf(arrsize)) 
     storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.LengthOffset)), length)
     storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.StrideOffset)), ${sizeT})
     castRawPtrToObject(arr).asInstanceOf[${T}Array]
@@ -237,7 +237,7 @@ object ${T}Array {
     val arr  = alloc(length)
     val dst  = arr.atRaw(0)
     val src  = data
-    val size = unsignedOf(intToUSize(${sizeT} * length))
+    val size = USize.valueOf(intToUSize(${sizeT} * length))
     libc.memcpy(dst, src, size)
     arr
   }

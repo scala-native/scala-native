@@ -26,14 +26,14 @@ trait NirDefinitions {
     )
 
     lazy val USizeModule = getRequiredModule("scala.scalanative.unsigned.USize")
-    lazy val USize_fromUByte = getDecl(USizeModule, TermName("fromUByte"))
-    lazy val USize_fromUShort = getDecl(USizeModule, TermName("fromUShort"))
-    lazy val USize_fromUInt = getDecl(USizeModule, TermName("fromUInt"))
+    lazy val USize_fromUByte = getDecl(USizeModule, TermName("ubyteToUSize"))
+    lazy val USize_fromUShort = getDecl(USizeModule, TermName("ushortToUSize"))
+    lazy val USize_fromUInt = getDecl(USizeModule, TermName("uintToUSize"))
 
     lazy val SizeModule = getRequiredModule("scala.scalanative.unsafe.Size")
-    lazy val Size_fromByte = getDecl(SizeModule, TermName("fromByte"))
-    lazy val Size_fromShort = getDecl(SizeModule, TermName("fromShort"))
-    lazy val Size_fromInt = getDecl(SizeModule, TermName("fromInt"))
+    lazy val Size_fromByte = getDecl(SizeModule, TermName("byteToSize"))
+    lazy val Size_fromShort = getDecl(SizeModule, TermName("shortToSize"))
+    lazy val Size_fromInt = getDecl(SizeModule, TermName("intToSize"))
 
     lazy val PtrClass = getRequiredClass("scala.scalanative.unsafe.Ptr")
     lazy val RawPtrClass = getRequiredClass("scala.scalanative.runtime.RawPtr")

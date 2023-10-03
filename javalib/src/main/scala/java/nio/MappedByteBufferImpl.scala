@@ -100,19 +100,21 @@ private class MappedByteBufferImpl(
 
   // Here begins the stuff specific to ByteArrays
 
-  @inline private def arrayBits: ByteArrayBits =
+  @inline @inline private def byteArrayBits: ByteArrayBits =
     ByteArrayBits(_mappedData.ptr, _arrayOffset, isBigEndian)
 
   @noinline def getChar(): Char =
-    arrayBits.loadChar(getPosAndAdvanceRead(2))
+    byteArrayBits.loadChar(getPosAndAdvanceRead(2))
   @noinline def putChar(value: Char): ByteBuffer = {
-    ensureNotReadOnly(); arrayBits.storeChar(getPosAndAdvanceWrite(2), value);
+    ensureNotReadOnly();
+    byteArrayBits.storeChar(getPosAndAdvanceWrite(2), value);
     this
   }
   @noinline def getChar(index: Int): Char =
-    arrayBits.loadChar(validateIndex(index, 2))
+    byteArrayBits.loadChar(validateIndex(index, 2))
   @noinline def putChar(index: Int, value: Char): ByteBuffer = {
-    ensureNotReadOnly(); arrayBits.storeChar(validateIndex(index, 2), value);
+    ensureNotReadOnly();
+    byteArrayBits.storeChar(validateIndex(index, 2), value);
     this
   }
 
@@ -120,15 +122,17 @@ private class MappedByteBufferImpl(
     MappedByteBufferCharView.fromMappedByteBuffer(this)
 
   @noinline def getShort(): Short =
-    arrayBits.loadShort(getPosAndAdvanceRead(2))
+    byteArrayBits.loadShort(getPosAndAdvanceRead(2))
   @noinline def putShort(value: Short): ByteBuffer = {
-    ensureNotReadOnly(); arrayBits.storeShort(getPosAndAdvanceWrite(2), value);
+    ensureNotReadOnly();
+    byteArrayBits.storeShort(getPosAndAdvanceWrite(2), value);
     this
   }
   @noinline def getShort(index: Int): Short =
-    arrayBits.loadShort(validateIndex(index, 2))
+    byteArrayBits.loadShort(validateIndex(index, 2))
   @noinline def putShort(index: Int, value: Short): ByteBuffer = {
-    ensureNotReadOnly(); arrayBits.storeShort(validateIndex(index, 2), value);
+    ensureNotReadOnly();
+    byteArrayBits.storeShort(validateIndex(index, 2), value);
     this
   }
 
@@ -136,15 +140,16 @@ private class MappedByteBufferImpl(
     MappedByteBufferShortView.fromMappedByteBuffer(this)
 
   @noinline def getInt(): Int =
-    arrayBits.loadInt(getPosAndAdvanceRead(4))
+    byteArrayBits.loadInt(getPosAndAdvanceRead(4))
   @noinline def putInt(value: Int): ByteBuffer = {
-    ensureNotReadOnly(); arrayBits.storeInt(getPosAndAdvanceWrite(4), value);
+    ensureNotReadOnly();
+    byteArrayBits.storeInt(getPosAndAdvanceWrite(4), value);
     this
   }
   @noinline def getInt(index: Int): Int =
-    arrayBits.loadInt(validateIndex(index, 4))
+    byteArrayBits.loadInt(validateIndex(index, 4))
   @noinline def putInt(index: Int, value: Int): ByteBuffer = {
-    ensureNotReadOnly(); arrayBits.storeInt(validateIndex(index, 4), value);
+    ensureNotReadOnly(); byteArrayBits.storeInt(validateIndex(index, 4), value);
     this
   }
 
@@ -152,15 +157,17 @@ private class MappedByteBufferImpl(
     MappedByteBufferIntView.fromMappedByteBuffer(this)
 
   @noinline def getLong(): Long =
-    arrayBits.loadLong(getPosAndAdvanceRead(8))
+    byteArrayBits.loadLong(getPosAndAdvanceRead(8))
   @noinline def putLong(value: Long): ByteBuffer = {
-    ensureNotReadOnly(); arrayBits.storeLong(getPosAndAdvanceWrite(8), value);
+    ensureNotReadOnly();
+    byteArrayBits.storeLong(getPosAndAdvanceWrite(8), value);
     this
   }
   @noinline def getLong(index: Int): Long =
-    arrayBits.loadLong(validateIndex(index, 8))
+    byteArrayBits.loadLong(validateIndex(index, 8))
   @noinline def putLong(index: Int, value: Long): ByteBuffer = {
-    ensureNotReadOnly(); arrayBits.storeLong(validateIndex(index, 8), value);
+    ensureNotReadOnly();
+    byteArrayBits.storeLong(validateIndex(index, 8), value);
     this
   }
 
@@ -168,15 +175,17 @@ private class MappedByteBufferImpl(
     MappedByteBufferLongView.fromMappedByteBuffer(this)
 
   @noinline def getFloat(): Float =
-    arrayBits.loadFloat(getPosAndAdvanceRead(4))
+    byteArrayBits.loadFloat(getPosAndAdvanceRead(4))
   @noinline def putFloat(value: Float): ByteBuffer = {
-    ensureNotReadOnly(); arrayBits.storeFloat(getPosAndAdvanceWrite(4), value);
+    ensureNotReadOnly();
+    byteArrayBits.storeFloat(getPosAndAdvanceWrite(4), value);
     this
   }
   @noinline def getFloat(index: Int): Float =
-    arrayBits.loadFloat(validateIndex(index, 4))
+    byteArrayBits.loadFloat(validateIndex(index, 4))
   @noinline def putFloat(index: Int, value: Float): ByteBuffer = {
-    ensureNotReadOnly(); arrayBits.storeFloat(validateIndex(index, 4), value);
+    ensureNotReadOnly();
+    byteArrayBits.storeFloat(validateIndex(index, 4), value);
     this
   }
 
@@ -184,15 +193,17 @@ private class MappedByteBufferImpl(
     MappedByteBufferFloatView.fromMappedByteBuffer(this)
 
   @noinline def getDouble(): Double =
-    arrayBits.loadDouble(getPosAndAdvanceRead(8))
+    byteArrayBits.loadDouble(getPosAndAdvanceRead(8))
   @noinline def putDouble(value: Double): ByteBuffer = {
-    ensureNotReadOnly(); arrayBits.storeDouble(getPosAndAdvanceWrite(8), value);
+    ensureNotReadOnly();
+    byteArrayBits.storeDouble(getPosAndAdvanceWrite(8), value);
     this
   }
   @noinline def getDouble(index: Int): Double =
-    arrayBits.loadDouble(validateIndex(index, 8))
+    byteArrayBits.loadDouble(validateIndex(index, 8))
   @noinline def putDouble(index: Int, value: Double): ByteBuffer = {
-    ensureNotReadOnly(); arrayBits.storeDouble(validateIndex(index, 8), value);
+    ensureNotReadOnly();
+    byteArrayBits.storeDouble(validateIndex(index, 8), value);
     this
   }
 
