@@ -107,82 +107,88 @@ object Build {
       val config = Validator.validate(initialConfig)
       config.logger.debug(config.toString())
 
-      link(config, entries(config))
+      ScalaNative
+        .link(config, entries(config))
         .flatMap(optimize(config, _))
-        .flatMap { linkerResult =>
-          val backend = new BackendPipeline(config, linkerResult)
-          backend
-            .codegen()
-            .flatMap(backend.compile)
-            .map(backend.link)
-            .map(backend.postProcess)
-        }
+        .flatMap(linkerResult =>
+          codegen(config, linkerResult)
+            .flatMap(ir => compile(config, linkerResult, ir))
+            .map(objects => link(config, linkerResult, objects))
+            .map(artifact => postProcess(config, artifact))
+        )
     }
   }
 
-  private class BackendPipeline(
+  /** Emits LLVM IR for the definitions in `analysis` to
+   *  `config.buildDirectory`.
+   */
+  private def codegen(
       config: Config,
       analysis: ReachabilityAnalysis.Result
-  ) {
-    private val logger = config.logger
-    import logger._
+  )(implicit ec: ExecutionContext): Future[Seq[Path]] = {
+    val tasks = immutable.Seq(
+      ScalaNative.codegen(config, analysis),
+      genBuildInfo(config)
+    )
+    Future.reduceLeft(tasks)(_ ++ _)
+  }
 
-    def codegen()(implicit ec: ExecutionContext): Future[Seq[Path]] = {
-      val tasks = immutable.Seq(
-        ScalaNative.codegen(config, analysis),
-        genBuildInfo(config)
-      )
-      Future.reduceLeft(tasks)(_ ++ _)
-    }
+  /** Compiles `generatedIR`, which is a sequence of LLVM IR files. */
+  private def compile(
+      config: Config,
+      analysis: ReachabilityAnalysis.Result,
+      generatedIR: Seq[Path]
+  )(implicit ec: ExecutionContext): Future[Seq[Path]] =
+    config.logger.timeAsync("Compiling to native code") {
+      // compile generated LLVM IR
+      val compileGeneratedIR = LLVM.compile(config, generatedIR)
 
-    def compile(
-        generatedIR: Seq[Path]
-    )(implicit ec: ExecutionContext): Future[Seq[Path]] =
-      timeAsync("Compiling to native code") {
-        // compile generated LLVM IR
-        val compileGeneratedIR = LLVM.compile(config, generatedIR)
-
-        /* Used to pass alternative paths of compiled native (lib) sources,
-         * eg: reused native sources used in partests.
-         */
-        val compileNativeLibs = {
-          Properties.propOrNone("scalanative.build.paths.libobj") match {
-            case None =>
-              /* Finds all the libraries on the classpath that contain native
-               * code and then compiles them.
-               */
-              findAndCompileNativeLibs(config, analysis)
-            case Some(libObjectPaths) =>
-              Future.successful {
-                libObjectPaths
-                  .split(java.io.File.pathSeparatorChar)
-                  .toSeq
-                  .map(Paths.get(_))
-              }
-          }
+      /* Used to pass alternative paths of compiled native (lib) sources,
+       * eg: reused native sources used in partests.
+       */
+      val compileNativeLibs = {
+        Properties.propOrNone("scalanative.build.paths.libobj") match {
+          case None =>
+            /* Finds all the libraries on the classpath that contain native
+             * code and then compiles them.
+             */
+            findAndCompileNativeLibraries(config, analysis)
+          case Some(libObjectPaths) =>
+            Future.successful {
+              libObjectPaths
+                .split(java.io.File.pathSeparatorChar)
+                .toSeq
+                .map(Paths.get(_))
+            }
         }
-
-        Future.reduceLeft(
-          immutable.Seq(compileGeneratedIR, compileNativeLibs)
-        )(_ ++ _)
       }
 
-    def link(compiled: Seq[Path]): Path = time(
-      s"Linking native code (${config.gc.name} gc, ${config.LTO.name} lto)"
-    ) {
-      LLVM.link(config, analysis, compiled)
+      Future.reduceLeft(
+        immutable.Seq(compileGeneratedIR, compileNativeLibs)
+      )(_ ++ _)
     }
 
-    def postProcess(artifact: Path): Path = time(
-      "Postprocessing"
-    ) {
+  /** Links the given object files using the system's linker. */
+  private def link(
+      config: Config,
+      analysis: ReachabilityAnalysis.Result,
+      compiled: Seq[Path]
+  ): Path = config.logger.time(
+    s"Linking native code (${config.gc.name} gc, ${config.LTO.name} lto)"
+  ) {
+    LLVM.link(config, analysis, compiled)
+  }
+
+  /** Links the DWARF debug information found in the object files. */
+  private def postProcess(config: Config, artifact: Path): Path =
+    config.logger.time("Postprocessing") {
       if (Platform.isMac && config.compilerConfig.debugMetadata) {
         LLVM.dsymutil(config, artifact)
       }
       artifact
     }
-  }
 
+  /** Returns a checksum of a compilation pipeline with the given `config`. */
   private def checkSum(config: Config): Int = {
     // skip the whole nativeLink process if the followings are unchanged since the previous build
     // - build configuration
@@ -192,21 +198,21 @@ object Build {
     // One thing we miss is, we cannot detect changes in c libraries somewhere in `/usr/lib`.
     (
       config,
-      config.classPath.map(getLatestMtime(_)),
+      config.classPath.map(getLastModifiedChild(_)),
       getLastModified(config.artifactPath)
     ).hashCode()
   }
 
-  /** Convenience method to combine finding and compiling native libaries.
+  /** Finds and compiles native libaries.
    *
    *  @param config
    *    the compiler configuration
-   *  @param linkerResult
+   *  @param analysis
    *    the result from the linker
    *  @return
-   *    a sequence of the object file paths
+   *    the paths to the compiled objects
    */
-  def findAndCompileNativeLibs(
+  def findAndCompileNativeLibraries(
       config: Config,
       analysis: ReachabilityAnalysis.Result
   )(implicit ec: ExecutionContext): Future[Seq[Path]] = {
@@ -218,7 +224,7 @@ object Build {
       .map(_.flatten)
   }
 
-  // create workDir if it doesn't exist
+  /** Creates a directory at `config.workDir` if one doesn't exist. */
   private def checkWorkdirExists(config: Config): Unit = {
     val workDir = config.workDir
     if (Files.notExists(workDir)) {
@@ -226,14 +232,21 @@ object Build {
     }
   }
 
+  /** Returns the last time the file at `path` was modified, or the epoch
+   *  (1970-01-01T00:00:00Z) if such a file doesn't exist.
+   */
   private def getLastModified(path: Path): FileTime =
     if (Files.exists(path))
       Try(Files.getLastModifiedTime(path)).getOrElse(FileTime.fromMillis(0L))
     else FileTime.fromMillis(0L)
 
-  /** Get the latest last modified time under the given path.
+  /** Returns the last time a file rooted at `path` was modified.
+   *
+   *  `path` is the root of a file tree, expanding symbolic links. The result is
+   *  the most recent value returned by `getLastModified` a node of this tree or
+   *  `empty` if there is no file at `path`.
    */
-  private def getLatestMtime(path: Path): Optional[FileTime] =
+  private def getLastModifiedChild(path: Path): Optional[FileTime] =
     if (Files.exists(path))
       Files
         .walk(path, FileVisitOption.FOLLOW_LINKS)
