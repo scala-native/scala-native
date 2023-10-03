@@ -239,7 +239,7 @@ jobs:
     needs: tests-tools
     env:
       ENABLE_EXPERIMENTAL_COMPILER: true
-      PREFETCH_DEBUG_INFO: 1
+      SCALANATIVE_TEST_PREFETCH_DEBUG_INFO: 1
     strategy:
       fail-fast: false
       matrix:

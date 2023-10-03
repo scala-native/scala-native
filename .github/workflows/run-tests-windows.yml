@@ -208,7 +208,7 @@ jobs:
           set SCALANATIVE_LIB_DIRS=${{steps.setup.outputs.vcpkg-dir}}\lib&
           set SCALANATIVE_CI_NO_DEBUG_SYMBOLS=true&
           set SCALANATIVE &
-          set PREFETCH_DEBUG_INFO=1&
+          set SCALANATIVE_TEST_PREFETCH_DEBUG_INFO=1&
           sbt -Dscala.scalanative.multithreading.enable=true
           sandbox${{env.project-version}}/run;
           testsJVM${{env.project-version}}/test;
