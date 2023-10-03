@@ -204,7 +204,7 @@ object Build {
    *
    *  @param config
    *    the compiler configuration
-   *  @param linkerResult
+   *  @param analysis
    *    the result from the linker
    *  @return
    *    a sequence of the object file paths
