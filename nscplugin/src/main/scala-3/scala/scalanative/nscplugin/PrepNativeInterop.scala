@@ -44,7 +44,9 @@ class PrepNativeInterop extends PluginPhase with NativeInteropUtil {
     def isScalaModule(using Context): Boolean =
       sym.is(ModuleClass, butNot = Lifted)
 
-    /** `true` iff `sym` is a C-bridged type or a declaration defined externally. */
+    /** `true` iff `sym` is a C-bridged type or a declaration defined
+     *  externally.
+     */
     def isExtern(using Context): Boolean = sym.exists && {
       sym.owner.isExternType ||
       sym.hasAnnotation(defnNir.ExternClass) ||
