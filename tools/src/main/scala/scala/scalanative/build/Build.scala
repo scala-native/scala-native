@@ -107,19 +107,21 @@ object Build {
       val config = Validator.validate(initialConfig)
       config.logger.debug(config.toString())
 
-      ScalaNative.link(config, entries(config))
+      ScalaNative
+        .link(config, entries(config))
         .flatMap(optimize(config, _))
-        .flatMap { linkerResult => {
-            codegen(config, linkerResult)
+        .flatMap(linkerResult =>
+          codegen(config, linkerResult)
             .flatMap(ir => compile(config, linkerResult, ir))
             .map(objects => link(config, linkerResult, objects))
             .map(artifact => postProcess(config, artifact))
-          }
-        }
+        )
     }
   }
 
-  /** Emits LLVM IR for the definitions in `analysis` to `config.buildDirectory`. */
+  /** Emits LLVM IR for the definitions in `analysis` to
+   *  `config.buildDirectory`.
+   */
   private def codegen(
       config: Config,
       analysis: ReachabilityAnalysis.Result
@@ -142,14 +144,14 @@ object Build {
       val compileGeneratedIR = LLVM.compile(config, generatedIR)
 
       /* Used to pass alternative paths of compiled native (lib) sources,
-        * eg: reused native sources used in partests.
-        */
+       * eg: reused native sources used in partests.
+       */
       val compileNativeLibs = {
         Properties.propOrNone("scalanative.build.paths.libobj") match {
           case None =>
             /* Finds all the libraries on the classpath that contain native
-              * code and then compiles them.
-              */
+             * code and then compiles them.
+             */
             findAndCompileNativeLibs(config, analysis)
           case Some(libObjectPaths) =>
             Future.successful {
@@ -168,9 +170,9 @@ object Build {
 
   /** Links the given object files using the system's linker. */
   private def link(
-    config: Config,
-    analysis: ReachabilityAnalysis.Result,
-    compiled: Seq[Path]
+      config: Config,
+      analysis: ReachabilityAnalysis.Result,
+      compiled: Seq[Path]
   ): Path = config.logger.time(
     s"Linking native code (${config.gc.name} gc, ${config.LTO.name} lto)"
   ) {
@@ -239,9 +241,9 @@ object Build {
 
   /** Returns the last time a file rooted at `path` was modified.
    *
-   *  `path` is the root of a file tree, expanding symbolic links. The result
-   *  is the most recent value returned by `getLastModified` a node of this
-   *  tree or `empty` if there is no file at `path`.
+   *  `path` is the root of a file tree, expanding symbolic links. The result is
+   *  the most recent value returned by `getLastModified` a node of this tree or
+   *  `empty` if there is no file at `path`.
    */
   private def getLastModifiedChild(path: Path): Optional[FileTime] =
     if (Files.exists(path))

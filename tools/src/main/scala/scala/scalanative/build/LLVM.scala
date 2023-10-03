@@ -155,7 +155,8 @@ private[scalanative] object LLVM {
   }
 
   /** Links the DWARF debug information found in the object file at `path`,
-   *  reading toolchain configuations from `config`. */
+   *  reading toolchain configuations from `config`.
+   */
   def dsymutil(config: Config, path: Path): Unit =
     Discover.tryDiscover("dsymutil", "LLVM_BIN").flatMap { dsymutil =>
       val proc = Process(Seq(dsymutil.abs, path.abs), config.workDir.toFile())
