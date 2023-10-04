@@ -246,6 +246,3 @@ scala/util/TryTest.scala
 scala/math/BigIntTest.scala
 ### deadlocks maybe needs j.u.c.ConcurrentLinkedQueue
 scala/concurrent/impl/DefaultPromiseTest.scala
-
-# Bug, cannot find statically ConcurrentMap#computeIfPresent
-scala/collection/convert/EqualsTest.scala
