@@ -64,7 +64,7 @@ private[scalanative] object NativeLib {
       destPath: Path
   ): Config = {
     val nativeCodePath = destPath.resolve(nativeCodeDir)
-    // check if filtering is needed, o.w. return all paths
+    // apply descriptor settings if found
     findDescriptor(nativeCodePath).fold(config) { filepath =>
 
       val desc =
@@ -78,37 +78,28 @@ private[scalanative] object NativeLib {
 
       config.logger.debug(desc.toString())
 
-      val projectConfig = desc match {
-        case Descriptor(Some(groupId), Some(artifactId), _)
-            if (groupId == "org.scala-native" && artifactId == "nativelib") =>
-          createGcConfig(nativeCodePath, config)
-        case Descriptor(_, _, _) =>
-          createLinkConfig(desc, analysis, config)
-      }
-
-      projectConfig
+      // create config based on descriptor setting
+      createConfig(desc, config, analysis, nativeCodePath)
     }
   }
 
-  private def createLinkConfig(
+  private def createConfig(
       desc: Descriptor,
+      config: Config,
       analysis: ReachabilityAnalysis.Result,
-      config: Config
+      nativeCodePath: Path
   ): Config = {
     val linkDefines =
-      desc.link
+      desc.links
         .filter(name => analysis.links.exists(_.name == name))
         .map(name => s"-DSCALANATIVE_LINK_${name.toUpperCase}")
 
-    config.withCompilerConfig(
-      _.withCompileOptions(_ ++ linkDefines)
-    )
-  }
+    val includePaths = desc.includes
+      .map(createPathString(_, nativeCodePath))
+      .map(path => s"-I$path")
 
-  private def createGcConfig(
-      nativeCodePath: Path,
-      config: Config
-  ): Config = {
+    val defines = desc.defines.map(define => s"-D$define")
+
     /* A conditional compilation define is used to compile the
      * correct garbage collector code because code is shared.
      * This avoids handling all the paths needed and compiling
@@ -117,17 +108,30 @@ private[scalanative] object NativeLib {
      * Note: The zone directory is also part of the garbage collection
      * system and shares code from the gc directory.
      */
-    val gcFlag = {
-      val gc = config.compilerConfig.gc.toString
-      s"-DSCALANATIVE_GC_${gc.toUpperCase}"
+    val gcDefine = desc.gcProject match {
+      case false => None
+      case true => {
+        val gc = config.compilerConfig.gc.toString
+        Some(s"-DSCALANATIVE_GC_${gc.toUpperCase}")
+      }
     }
 
-    val gcPath = nativeCodePath.resolve("gc").abs
-
     config.withCompilerConfig(
-      _.withCompileOptions(_ :+ ("-I" + gcPath) :+ gcFlag)
+      _.withCompileOptions(
+        _ ++ linkDefines ++ defines ++ gcDefine ++ includePaths
+      )
     )
   }
+
+  private def createPathString(
+      dirs: List[String],
+      nativeCodePath: Path
+  ): String =
+    dirs
+      .foldLeft(nativeCodePath) { (path, dir) =>
+        path.resolve(dir)
+      }
+      .abs
 
   /** Check for compile Descriptor in destination native code directory.
    *

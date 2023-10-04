@@ -84,13 +84,31 @@ transparent to the library user.
 Using a library that contains native code can be used in combination with
 the feature above that allows native code in your application.
 
-EXPERIMENTAL: Deployment Descriptor for Conditional Compilation
----------------------------------------------------------------
+EXPERIMENTAL: Deployment Descriptor for passing settings to the compiler
+========================================================================
 
-This is an **experimental** feature. Scala Native may deprecate or
-remove this feature with little or no warning.
+These are **experimental** features. These features allow a library
+developer that has native code included with their project to have
+better control over compilation settings used for their project. By
+adding a ``scala-native.properties`` file in the root of your project's
+``resources/scala-native`` directory, settings can be added to the
+properties file that are added to the compile command.
 
-Libraries developed with "glue" code as described in the above section
+Currently, compiler options can only be added to every native library that
+gets compiled which could work for your files but not for other
+dependencies that are being compiled. These features allow the settings
+to apply only to your library during compilation.
+
+Use the following procedure to use any of the features described below.
+
+* Add a Scala Native deployment descriptor to your library.The properties file
+  must be named ``scala-native.properties`` and must be put in the base of the
+  ``src/main/resources/scala-native`` directory.
+
+Optional compilation of code if ``@link`` is found
+--------------------------------------------------
+
+Libraries developed with "glue" code as described in the previous section
 can cause compilation errors when all the following conditions occur:
 
 1. The library and/or header files are not installed
@@ -105,7 +123,7 @@ be installed to compile your application otherwise errors are expected.
 
 Scala Native code can include the annotation ``@link("z")`` for example
 that says link with the ``z`` library. The compiler will add a link
-option for this library to the linking phase of the build if the code
+option ``-lz`` for this library to the linking phase of the build if the code
 with the annotation is used. See :ref:`interop`,
 `Linking with native libraries` section for more information.
 
@@ -113,12 +131,8 @@ This **experimental** feature has been added so the users of your published
 library can avoid the error described above. Use the following procedure to
 implement this feature.
 
-1. Add a Scala Native deployment descriptor to your library. For the
-purposes of this example assume the library is ``z``. The properties file
-must be named ``scala-native.properties`` and must be put in the base of the
-``src/main/resources/scala-native`` directory.
-
-2. Add the following content to your new ``scala-native.properties`` file.
+1. Add the following content to your new ``scala-native.properties`` file
+desdribed above. For the purposes of this example assume the library is ``z``.
 Note that if your library has more that one library you can add a comma
 delimited list of libraries. If desired, the comments are not needed.
 
@@ -129,7 +143,7 @@ delimited list of libraries. If desired, the comments are not needed.
     # libraries used, comma delimited
     nir.link.names = z
 
-3. Now in your native "glue" code add the following. The macro is named
+2. Now in your native "glue" code add the following. The macro is named
 ``SCALANATIVE_LINK_`` plus the uppercased name of the library.
 
 .. code-block:: c
@@ -149,14 +163,58 @@ and your "glue" code is then compiled. Otherwise, the macro keeps the code
 inside from compiling. The project dependencies with native code are compiled
 individually so this feature only applies to the current library being compiled.
 
-Conceivably, another dependency could fail if this feature is not used which
-could fail the whole build. The users of the native libraries should install the
-required libraries they are using. This feature can make the dependency optional
-if not used.
+Adding defines to your library when code is being compiled
+----------------------------------------------------------
 
-There are other valid use cases where this feature is needed. For example,
-when Scala Native libraries use more that one native library but all the native
-libraries do not have to be used. This allows the users to only install the
-libraries they actually need for their particular application.
+If your library requires a C preprocessor define then use this feature to add
+the define ``-DMY_DEFINE`` for example to the options passed to the compiler.
+
+.. code-block:: properties
+
+    # add defines, do not add -D
+    preprocessor.defines = MY_DEFINE, MY_VALUE=2
+
+Add extra include paths for your library
+----------------------------------------
+
+Currently, the native code compilation gathers your files and provides an
+include to you project ``resources/scala-native`` directory. This means
+that code needs to use relative includes. e.g. ``#include "mylib.h"``
+
+This feature allows you to vendor code, include code as is, that has
+system includes. e.g. ``#include <libunwind.h>`` add each segment
+starting from the ``scala-native`` path shown above.
+Additional paths are added starting at ``1`` and must be contiguous.
+
+.. code-block:: properties
+
+    # path to vendored libunwind
+    compile.include.path = platform, posix, libunwind
+    # path to gc base dir
+    compile.include.path1 = gc
+
+Additional paths are added starting at ``1`` and must be contiguous.
+
+Add unique identity to your library for debugging
+-------------------------------------------------
+
+Since these features can apply to libraries that are published to Maven
+Central those coordinates can be used to identify your library. The
+example here is for a Scala Native ``javalib`` library.
+
+.. code-block:: properties
+
+    # output via debugging
+    project.groupId = org.scala-native
+    project.artifactId = javalib
+
+The descriptor and its settings are printed when compiling
+in debug mode. Use the following command:
+
+.. code-block:: sh
+
+    sbt --debug
+
+Other **experimental** features may be added for new requirements.
 
 Continue to :ref:`testing`.
