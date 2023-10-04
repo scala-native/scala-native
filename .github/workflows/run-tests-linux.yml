@@ -220,7 +220,7 @@ jobs:
       fail-fast: false
       matrix:
         scala: [3]
-        llvm: [13, 14, 15, 16, 17] # Last 3 stable versions + available future versions
+        llvm: [14, 15, 16, 17, 18] # Last 3 stable versions + available future versions
     if: "(github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native'"
     steps:
       - uses: actions/checkout@v3

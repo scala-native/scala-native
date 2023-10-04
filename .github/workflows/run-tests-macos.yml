@@ -218,3 +218,26 @@ jobs:
           export LLVM_BIN="$(brew --prefix llvm@15)/bin"
           $LLVM_BIN/clang --version
           sbt -J-Xmx5G "${TEST_COMMAND}"
+
+  test-llvm-versions:
+    runs-on: macos-12
+    strategy:
+      fail-fast: false
+      matrix:
+        scala: [3]
+        llvm: [15, 16, 17] # Last 3 stable versions
+    if: "(github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native'"
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/macos-setup-env
+        with:
+          scala-version: ${{matrix.scala}}
+          llvm-version: ${{ matrix.llvm }}
+          java-version: 8
+
+      - name: Run tests
+        env:
+          # SCALANATIVE_MODE: release-fast
+          # SCALANATIVE_LTO: thin
+          LLVM_BIN: "opt/homebrew/opt/llvm@${{ matrix.llvm-version }}/bin"
+        run: sbt "test-runtime ${{ matrix.scala }}"
