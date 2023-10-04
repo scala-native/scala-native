@@ -12,7 +12,7 @@ concurrency:
 jobs:
   test-runtime:
     name: Test runtime
-    runs-on: macos-11
+    runs-on: macos-12
     env:
       ENABLE_EXPERIMENTAL_COMPILER: true
     strategy:
@@ -49,7 +49,7 @@ jobs:
 
   test-runtime-ext:
     name: Test runtime extension
-    runs-on: macos-11
+    runs-on: macos-12
     needs: [test-runtime]
     env:
       ENABLE_EXPERIMENTAL_COMPILER: true
@@ -122,7 +122,7 @@ jobs:
 
   run-scripted-tests:
     name: Scripted tests
-    runs-on: macos-11
+    runs-on: macos-12
     strategy:
       fail-fast: false
       matrix:
@@ -140,7 +140,7 @@ jobs:
 
   test-multihreading:
     name: Test experimental multithreading support
-    runs-on: macos-11
+    runs-on: macos-12
     env:
       ENABLE_EXPERIMENTAL_COMPILER: true
       SCALANATIVE_TEST_PREFETCH_DEBUG_INFO: 1
