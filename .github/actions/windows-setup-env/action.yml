@@ -19,7 +19,7 @@ runs:
   steps:
     - uses: actions/setup-java@v3
       with:
-        distribution: "temurin"
+        distribution: "zulu"
         java-version: ${{inputs.java-version}}
     # We need to set proper Pagefile limits in advance.
     # Github actions default page file size is quite small,
