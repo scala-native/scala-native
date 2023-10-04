@@ -70,7 +70,6 @@ object Settings {
       "utf8"
     ),
     javaReleaseSettings,
-    publishSettings,
     mimaSettings,
     docsSettings
   )
@@ -190,7 +189,7 @@ object Settings {
   )
 
   // Publishing
-  lazy val publishSettings: Seq[Setting[_]] = Seq(
+  lazy val basePublishSettings: Seq[Setting[_]] = Seq(
     homepage := Some(url("http://www.scala-native.org")),
     startYear := Some(2015),
     licenses := Seq(
@@ -224,8 +223,38 @@ object Settings {
     Test / publishArtifact := false
   ) ++ mimaSettings
 
+  def publishSettings(verScheme: Option[String]): Seq[Setting[_]] =
+    Def.settings(
+      basePublishSettings,
+      mavenPublishSettings,
+      versionScheme := verScheme
+    )
+
+  /** Based on Scala.js versioning policy Constants for the `verScheme`
+   *  parameter of `publishSettings`.
+   *
+   *  sbt does not define constants in its API for `versionScheme`. It specifies
+   *  some strings instead. We use the following version schemes, depending on
+   *  the artifacts and the versioning policy in `VERSIONING.md`:
+   *
+   *    - `"strict"` for artifacts whose public API can break in patch releases
+   *    - `"pvp"` for artifacts whose public API can break in minor releases
+   *    - `"semver-spec"` for artifacts whose public API can only break in major
+   *      releases (e.g., `nativelib`)
+   *
+   *  At the moment, we only set the version scheme for artifacts in the
+   *  "library ecosystem", i.e., javalib nativelib etc. Artifacts of the "tools
+   *  ecosystem" do not have a version scheme set.
+   *
+   *  See also https://www.scala-sbt.org/1.x/docs/Publishing.html#Version+scheme
+   */
+  object VersionScheme {
+    final val BreakOnPatch = "strict"
+    final val BreakOnMinor = "pvp"
+    final val BreakOnMajor = "early-semver"
+  }
+
   lazy val mavenPublishSettings = Def.settings(
-    publishSettings,
     publishMavenStyle := true,
     pomIncludeRepository := (_ => false),
     publishTo := {
@@ -506,6 +535,7 @@ object Settings {
   lazy val compilerPluginSettings = Def.settings(
     crossVersion := CrossVersion.full,
     libraryDependencies ++= Deps.compilerPluginDependencies(scalaVersion.value),
+    publishSettings(None),
     mavenPublishSettings,
     exportJars := true,
     crossPublish := crossPublishCompilerPlugin(publish).value,
@@ -552,7 +582,7 @@ object Settings {
   lazy val sbtPluginSettings = Def.settings(
     commonSettings,
     toolSettings,
-    mavenPublishSettings,
+    publishSettings(None),
     sbtPlugin := true,
     sbtVersion := ScalaVersions.sbt10Version,
     scalaVersion := ScalaVersions.sbt10ScalaVersion,
@@ -571,6 +601,7 @@ object Settings {
 
   lazy val toolSettings: Seq[Setting[_]] =
     Def.settings(
+      publishSettings(None),
       javacOptions ++= Seq("-encoding", "utf8")
     )
 
