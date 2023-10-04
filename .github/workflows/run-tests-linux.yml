@@ -15,7 +15,7 @@ jobs:
   # Test tools, if any of them fails, further tests will not start.
   tests-tools:
     name: Compile & test tools
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     env:
       ENABLE_EXPERIMENTAL_COMPILER: true
     strategy:
@@ -74,7 +74,7 @@ jobs:
 
     
   test-scala-cross-build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     env:
       ENABLE_EXPERIMENTAL_COMPILER: true
     strategy:
@@ -126,7 +126,7 @@ jobs:
 
   test-runtime-ext:
     name: Test runtime extension
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs: [tests-tools, test-runtime]
     env:
       ENABLE_EXPERIMENTAL_COMPILER: true
@@ -180,7 +180,7 @@ jobs:
   # Main difference is disabled optimization and fixed Immix GC
   test-runtime-no-opt:
     name: Test runtime no-opt
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs: tests-tools
     env:
       ENABLE_EXPERIMENTAL_COMPILER: true
@@ -207,7 +207,7 @@ jobs:
   # Scripted tests take a long time to run, ~30 minutes, and should be limited and absolute minimum.
   test-scripted:
     name: Test scripted
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs: tests-tools
     strategy:
       fail-fast: false
@@ -229,12 +229,12 @@ jobs:
           sbt "test-scripted ${{matrix.scala}}"
 
   test-llvm-versions:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
         scala: [3]
-        llvm: [13, 14, 15, 16, 17] # Last 3 stable versions + available future versions
+        llvm: [14, 15, 16, 17, 18] # Last 3 stable versions + available future versions
     if: "(github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native'"
     steps:
       - uses: actions/checkout@v3
@@ -253,7 +253,7 @@ jobs:
 
   test-multihreading:
     name: Test experimental multithreading support
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs: tests-tools
     env:
       ENABLE_EXPERIMENTAL_COMPILER: true

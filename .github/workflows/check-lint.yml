@@ -3,13 +3,9 @@ on:
   pull_request:
 jobs:
   check-lint:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
-      - name: Install clang-format
-        run: |
-          sudo apt update
-          sudo apt install clang-format-10
       - uses: actions/checkout@v3
       - run: ./scripts/check-lint.sh
         env:
-          CLANG_FORMAT_PATH: "/usr/bin/clang-format-10"
+          CLANG_FORMAT_PATH: "/usr/bin/clang-format-14"
