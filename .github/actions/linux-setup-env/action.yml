@@ -14,7 +14,7 @@ runs:
   steps:
     - uses: actions/setup-java@v3
       with:
-        distribution: "temurin"
+        distribution: "zulu"
         java-version: ${{inputs.java-version}}
     - name: Calculate binary version
       shell: bash
