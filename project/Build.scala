@@ -26,7 +26,7 @@ object Build {
   import MyScalaNativePlugin.{isGeneratingForIDE, ideScalaVersion}
 
 // format: off
-  lazy val compilerPlugins =  List(nscPlugin, junitPlugin)
+  lazy val compilerPlugins: List[MultiScalaProject] =  List(nscPlugin, junitPlugin)
   lazy val publishedMultiScalaProjects = compilerPlugins ++ List(
     nir, util, tools,
     nirJVM, utilJVM, toolsJVM,
@@ -49,7 +49,8 @@ object Build {
 // format: on
   lazy val allMultiScalaProjects =
     publishedMultiScalaProjects ::: testMultiScalaProjects
-
+  lazy val crossPublishedMultiScalaProjects =
+    scalalib :: compilerPlugins
   lazy val publishedProjects =
     sbtScalaNative :: publishedMultiScalaProjects.flatMap(_.componentProjects)
   lazy val testProjects =
@@ -79,14 +80,12 @@ object Build {
     }.value
   }
 
-  val crossPublish =
-    taskKey[Unit](
-      "Cross publish compiler plugin project without signing and excluding currently used version"
-    )
-  val crossPublishSigned =
-    taskKey[Unit](
-      "Cross publish signed compiler plugin project excluding currently used version"
-    )
+  val crossPublish = taskKey[Unit](
+    "Cross publish project without signing and excluding currently used version"
+  )
+  val crossPublishSigned = taskKey[Unit](
+    "Cross publish signed project excluding currently used version"
+  )
 
   lazy val root: Project =
     Project(id = "scala-native", base = file("."))
@@ -110,14 +109,14 @@ object Build {
         Seq(crossPublish, crossPublishSigned).map(
           setDepenencyForCurrentBinVersion(
             _,
-            compilerPlugins,
+            crossPublishedMultiScalaProjects,
             includeSbtPlugin = false
           )
         )
       )
 
   // Compiler plugins
-  lazy val nscPlugin = MultiScalaProject(
+  lazy val nscPlugin: MultiScalaProject = MultiScalaProject(
     "nscplugin",
     file("nscplugin"),
     additionalIDEScalaVersions = List("2.13")
@@ -210,7 +209,6 @@ object Build {
     .withNativeCompilerPlugin
     .settings(
       toolSettings,
-      mavenPublishSettings,
       withSharedCrossPlatformSources
     )
     .dependsOn(scalalib)
@@ -219,7 +217,6 @@ object Build {
     MultiScalaProject(id = "utilJVM", name = "util", file("util/jvm"))
       .settings(
         toolSettings,
-        mavenPublishSettings,
         withSharedCrossPlatformSources
       )
 
@@ -230,7 +227,6 @@ object Build {
     ).withNativeCompilerPlugin.withJUnitPlugin
       .settings(
         toolSettings,
-        mavenPublishSettings,
         withSharedCrossPlatformSources
       )
       .mapBinaryVersions {
@@ -246,7 +242,6 @@ object Build {
     MultiScalaProject(id = "nirJVM", name = "nir", file("nir/jvm"))
       .settings(
         toolSettings,
-        mavenPublishSettings,
         withSharedCrossPlatformSources
       )
       .settings(
@@ -261,7 +256,6 @@ object Build {
 
   private val commonToolsSettings = Def.settings(
     toolSettings,
-    mavenPublishSettings,
     withSharedCrossPlatformSources,
     buildInfoSettings,
     scalacOptions ++= {
@@ -485,7 +479,7 @@ object Build {
     MultiScalaProject("nativelib")
       .enablePlugins(MyScalaNativePlugin)
       .settings(
-        mavenPublishSettings,
+        publishSettings(Some(VersionScheme.BreakOnMajor)),
         docsSettings,
         libraryDependencies ++= Deps.NativeLib(scalaVersion.value)
       )
@@ -493,27 +487,30 @@ object Build {
 
   lazy val clib = MultiScalaProject("clib")
     .enablePlugins(MyScalaNativePlugin)
-    .settings(mavenPublishSettings)
+    .settings(publishSettings(Some(VersionScheme.BreakOnMajor)))
     .dependsOn(nativelib)
     .withNativeCompilerPlugin
 
   lazy val posixlib = MultiScalaProject("posixlib")
     .enablePlugins(MyScalaNativePlugin)
-    .settings(mavenPublishSettings)
+    .settings(publishSettings(Some(VersionScheme.BreakOnMajor)))
     .dependsOn(nativelib, clib)
     .withNativeCompilerPlugin
 
   lazy val windowslib =
     MultiScalaProject("windowslib")
       .enablePlugins(MyScalaNativePlugin)
-      .settings(mavenPublishSettings)
+      .settings(publishSettings(Some(VersionScheme.BreakOnMajor)))
       .dependsOn(nativelib, clib)
       .withNativeCompilerPlugin
 
 // Language standard libraries ------------------------------------------------
   lazy val javalib = MultiScalaProject("javalib")
     .enablePlugins(MyScalaNativePlugin)
-    .settings(mavenPublishSettings, commonJavalibSettings)
+    .settings(
+      publishSettings(Some(VersionScheme.BreakOnMajor)),
+      commonJavalibSettings
+    )
     .mapBinaryVersions {
       // Scaladoc in Scala 3 fails to generate documentation in javalib
       // https://github.com/lampepfl/dotty/issues/16709
@@ -532,19 +529,26 @@ object Build {
 
   lazy val auxlib = MultiScalaProject("auxlib")
     .enablePlugins(MyScalaNativePlugin)
-    .settings(mavenPublishSettings, commonJavalibSettings, disabledDocsSettings)
+    .settings(
+      publishSettings(Some(VersionScheme.BreakOnMajor)),
+      commonJavalibSettings,
+      disabledDocsSettings
+    )
     .dependsOn(nativelib, clib)
     .withNativeCompilerPlugin
 
   lazy val scalalib: MultiScalaProject =
     MultiScalaProject("scalalib")
       .enablePlugins(MyScalaNativePlugin)
-      .settings(mavenPublishSettings, disabledDocsSettings)
+      .settings(
+        publishSettings(Some(VersionScheme.BreakOnMajor)),
+        disabledDocsSettings
+      )
       .withNativeCompilerPlugin
       .mapBinaryVersions {
         case version @ ("2.12" | "2.13") =>
           _.settings(
-            commonScalalibSettings("scala-library", None),
+            commonScalalibSettings("scala-library"),
             scalacOptions ++= Seq(
               "-deprecation:false",
               "-language:postfixOps",
@@ -567,20 +571,16 @@ object Build {
             }
           )
         case version @ ("3" | "3-next") =>
-          val stdlibVersion = version match {
-            case "3"      => scala3libSourcesVersion
-            case "3-next" => ScalaVersions.scala3Nightly
-          }
           _.settings(
             name := "scala3lib",
-            commonScalalibSettings(
-              "scala3-library_3",
-              Some(stdlibVersion)
-            ),
+            commonScalalibSettings("scala3-library_3"),
             scalacOptions ++= Seq(
               "-language:implicitConversions"
             ),
-            libraryDependencies += ("org.scala-native" %%% "scalalib" % nativeVersion)
+            libraryDependencies += ("org.scala-native" %%% "scalalib" % scalalibVersion(
+              ScalaVersions.scala213,
+              nativeVersion
+            ))
               .excludeAll(ExclusionRule("org.scala-native"))
               .cross(CrossVersion.for3Use2_13),
             update := {
@@ -589,6 +589,17 @@ object Build {
               }.value
             }
           )
+      }
+      .mapBinaryVersions { version =>
+        // Compiling both nscplugins and scalalib might lead to dataraces and missing classfiles
+        _.settings(
+          crossPublish := crossPublish
+            .dependsOn(nscPlugin.forBinaryVersion(version) / crossPublish)
+            .value,
+          crossPublishSigned := crossPublish
+            .dependsOn(nscPlugin.forBinaryVersion(version) / crossPublishSigned)
+            .value
+        )
       }
       .dependsOn(auxlib, javalib)
 
@@ -722,7 +733,10 @@ object Build {
   lazy val testInterface =
     MultiScalaProject("testInterface", file("test-interface"))
       .enablePlugins(MyScalaNativePlugin)
-      .settings(mavenPublishSettings, testInterfaceCommonSourcesSettings)
+      .settings(
+        publishSettings(Some(VersionScheme.BreakOnPatch)),
+        testInterfaceCommonSourcesSettings
+      )
       .withNativeCompilerPlugin
       .withJUnitPlugin
       .dependsOn(
@@ -735,7 +749,7 @@ object Build {
   lazy val testInterfaceSbtDefs =
     MultiScalaProject("testInterfaceSbtDefs", file("test-interface-sbt-defs"))
       .enablePlugins(MyScalaNativePlugin)
-      .settings(mavenPublishSettings)
+      .settings(publishSettings(Some(VersionScheme.BreakOnMajor)))
       .settings(docsSettings)
       .withNativeCompilerPlugin
       .dependsOn(scalalib)
@@ -743,7 +757,7 @@ object Build {
   lazy val testRunner =
     MultiScalaProject("testRunner", file("test-runner"))
       .settings(
-        mavenPublishSettings,
+        publishSettings(None),
         testInterfaceCommonSourcesSettings,
         libraryDependencies ++= Deps.TestRunner
       )
@@ -753,7 +767,7 @@ object Build {
   lazy val junitRuntime =
     MultiScalaProject("junitRuntime", file("junit-runtime"))
       .enablePlugins(MyScalaNativePlugin)
-      .settings(mavenPublishSettings)
+      .settings(publishSettings(Some(VersionScheme.BreakOnMajor)))
       .withNativeCompilerPlugin
       .dependsOn(testInterfaceSbtDefs)
 

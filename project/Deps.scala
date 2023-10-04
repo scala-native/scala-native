@@ -9,7 +9,7 @@ object Deps {
 // scalafmt: { align.preset = more, maxColumn = 120 }
   def ScalaLibrary(version: String) = scalaVersionsDependendent(version) {
     case (2, _) => Seq("org.scala-lang" % "scala-library" % version)
-    case (3, _) => Seq("org.scala-lang" % "scala3-library" % version)
+    case (3, _) => Seq("org.scala-lang" %% "scala3-library" % version)
   }.headOption.getOrElse(throw new RuntimeException("Unknown Scala versions"))
   def ScalaCompiler(version: String) = scalaVersionsDependendent(version) {
     case (2, _) => Seq("org.scala-lang" % "scala-compiler" % version)

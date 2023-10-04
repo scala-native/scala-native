@@ -1,11 +1,11 @@
 # Flow dedicated to publishing compiler plugins for Scala 3 RC versions
-name: Publish Scala 3 compiler plugin
+name: Publish for Scala release
 on:
   workflow_dispatch:
     inputs:
       scala-version:
         type: string
-        description: "Version of Scala 3 compiler for which plugin should be published"
+        description: "Version of Scala for which plugins and scalalib should be published"
         default: ""
       scala-native-version:
         type: string
@@ -38,9 +38,11 @@ jobs:
         run: >
           sbt '
             set crossScalaVersions += "${{ inputs.scala-version }}";
-            set nscPlugin.forBinaryVersion("3")/crossScalaVersions += "${{ inputs.scala-version }}";
-            set junitPlugin.forBinaryVersion("3")/crossScalaVersions += "${{ inputs.scala-version }}";
+            set nscPlugin.forBinaryVersion("${{ env.binary-version }}")/crossScalaVersions += "${{ inputs.scala-version }}";
+            set junitPlugin.forBinaryVersion("${{ env.binary-version }}")/crossScalaVersions += "${{ inputs.scala-version }}";
+            set scalalib.forBinaryVersion("${{ env.binary-version }}")/crossScalaVersions += "${{ inputs.scala-version }}";
             ++${{ inputs.scala-version }} -v; 
-            nscplugin3/publishSigned;
-            junitPlugin3/publishSigned
+            nscplugin${{ env.project-version }}/publishSigned;
+            junitPlugin${{ env.project-version }}/publishSigned
+            scalalib${{ env.project-version }}/publishSigned
           '

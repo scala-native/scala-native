@@ -166,7 +166,7 @@ object Commands {
     }
   }
 
-  lazy val publishRelease = Command.command("publishRelease") { state =>
+  lazy val publishRelease = Command.command("publish-release") { state =>
     val isSnapshot = state
       .getSetting(Keys.isSnapshot)
       .getOrElse(sys.error("Cannot resolve isSnapshot setting"))

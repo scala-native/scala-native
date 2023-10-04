@@ -76,6 +76,7 @@ jobs:
     needs: build-image
     env:
       ENABLE_EXPERIMENTAL_COMPILER: true
+      SCALANATIVE_TEST_PREFETCH_DEBUG_INFO: 1
     strategy:
       fail-fast: false
       matrix:

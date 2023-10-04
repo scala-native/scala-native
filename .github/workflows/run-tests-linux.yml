@@ -59,7 +59,7 @@ jobs:
           "-J-Xmx3G" \
           "scalaPartestTests${{env.project-version}}/testOnly -- --showDiff neg/abstract.scala pos/abstract.scala run/Course-2002-01.scala"
 
-  test-compiler-plugins:
+  test-scala-cross-build:
     runs-on: ubuntu-20.04
     env:
       ENABLE_EXPERIMENTAL_COMPILER: true
@@ -76,7 +76,11 @@ jobs:
           java-version: 8
 
       - name: Test cross compilation of compiler plugins
-        run: sbt "+nscplugin${{env.project-version}}/compile; +junitPlugin${{env.project-version}}/compile" "-J-Xmx3G"
+        run: |
+          sbt "-J-Xmx3G"
+            +nscplugin${{ env.project-version }}/test
+            +junitPlugin${{ env.project-version }}/compile
+            +scalalib${{ env.project-version }}/compile
 
   test-runtime:
     name: Test runtime
@@ -239,6 +243,7 @@ jobs:
     needs: tests-tools
     env:
       ENABLE_EXPERIMENTAL_COMPILER: true
+      SCALANATIVE_TEST_PREFETCH_DEBUG_INFO: 1
     strategy:
       fail-fast: false
       matrix:
