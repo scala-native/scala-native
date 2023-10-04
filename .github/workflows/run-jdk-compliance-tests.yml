@@ -17,13 +17,9 @@ jobs:
       matrix:
         os: [ubuntu-20.04, macos-11]
         scala: [3]
-        java: [11, 17]
+        java: [11, 17, 21]
         include:
-          # Does not compile with Scala 3 yet
-          # - java: 21
-          #   scala: 2.13
-          #   os: ubuntu-20.04
-          - java: 17
+          - java: 21
             scala: 2.13
             os: ubuntu-20.04
           - java: 17
@@ -58,11 +54,7 @@ jobs:
       fail-fast: false
       matrix:
         scala: [3]
-        java: [11, 17]
-        # Does not compile with Scala 3 yet
-        # include:
-        #   - java: 21
-        #     scala: 2.13
+        java: [11, 17, 21]
     steps:
       # Disable autocrlf setting, otherwise scalalib patches might not be possible to apply
       - name: Setup git config
