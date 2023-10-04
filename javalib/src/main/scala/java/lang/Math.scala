@@ -188,6 +188,24 @@ object Math {
     else overflow.value
   }
 
+  @alwaysinline def multiplyHigh(a: scala.Long, b: scala.Long): scala.Long = {
+    /* Algorithm from Hacker's Delight, "8–2. Multiply high signed."
+     * Here, `a` is replaced with `u`, and `b` with `v`, and reassignment of
+     * variables with suffix `p`. Unsigned ints correspond to shifting with
+     * `>>>` and performing the `& 0xffffffffL` operations.
+     */
+    val u0 = a & 0xffffffffL
+    val u1 = a >> 32
+    val v0 = b & 0xffffffffL
+    val v1 = b >> 32
+    val w0 = u0 * v0
+    val t = u1 * v0 + (w0 >>> 32)
+    val w1 = t & 0xffffffffL
+    val w2 = t >> 32
+    val w1p = u0 * v1 + w1
+    u1 * v1 + w2 + (w1p >> 32)
+  }
+
   @alwaysinline def multiplyExact(a: scala.Long, b: scala.Int): scala.Long =
     multiplyExact(a, b.toLong)
 
