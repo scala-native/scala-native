@@ -173,7 +173,7 @@ object Commands {
 
     import ScalaVersions._
     val publishEachVersion = for {
-      version <- List(scala212, scala213, scala3)
+      version <- List(scala212, scala213, scala3PublishVersion)
     } yield s"++$version; publishSigned; crossPublishSigned"
 
     "clean" :: publishEachVersion ::: state
