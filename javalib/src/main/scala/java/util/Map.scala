@@ -3,7 +3,7 @@
 package java.util
 
 import java.util.function.{BiConsumer, BiFunction, Function}
-
+import scala.scalanative.annotation.alwaysinline
 import ScalaOps._
 
 trait Map[K, V] {
@@ -27,13 +27,22 @@ trait Map[K, V] {
     else defaultValue
 
   def forEach(action: BiConsumer[_ >: K, _ >: V]): Unit = {
-    for (entry <- entrySet().scalaOps)
-      action.accept(entry.getKey(), entry.getValue())
+    Objects.requireNonNull(action)
+    entrySet().forEach(usingEntry(_)(action.accept))
   }
 
   def replaceAll(function: BiFunction[_ >: K, _ >: V, _ <: V]): Unit = {
-    for (entry <- entrySet().scalaOps)
-      entry.setValue(function.apply(entry.getKey(), entry.getValue()))
+    Objects.requireNonNull(function)
+    entrySet().forEach(entry =>
+      usingEntry(entry) { (k, v) =>
+        val newValue = function.apply(k, v)
+        try entry.setValue(newValue)
+        catch {
+          case ex: IllegalStateException =>
+            throw new ConcurrentModificationException(ex)
+        }
+      }
+    )
   }
 
   def putIfAbsent(key: K, value: V): V = {
@@ -135,6 +144,27 @@ trait Map[K, V] {
       put(key, value)
     else
       remove(key)
+  }
+
+  /** Helper method used to detect concurrent modification exception when
+   *  accessing map entires. IllegalStateException means the entry is no longer
+   *  available (remove)
+   */
+  @alwaysinline
+  protected[util] def usingEntry[T](
+      entry: Map.Entry[K, V]
+  )(apply: (K, V) => T) = {
+    var key: K = null.asInstanceOf[K]
+    var value: V = null.asInstanceOf[V]
+
+    try {
+      key = entry.getKey()
+      value = entry.getValue()
+    } catch {
+      case ex: IllegalStateException =>
+        throw new ConcurrentModificationException(ex)
+    }
+    apply(key, value)
   }
 }
 
