@@ -120,26 +120,10 @@ class Reach(
           loaded(owner) = scope
         }
     }
-    def fallback = global match {
-      case Global.Member(owner, sig) =>
-        infos
-          .get(owner)
-          .collect {
-            case scope: ScopeInfo =>
-              scope.linearized
-                .find(_.responds.contains(sig))
-                .map(_.responds(sig))
-                .flatMap(lookup)
-          }
-          .flatten
-
-      case _ => None
-    }
 
     loaded
       .get(owner)
       .flatMap(_.get(global))
-      .orElse(fallback)
       .orElse {
         if (!ignoreIfUnavailable) {
           val resolvedPosition = for {
