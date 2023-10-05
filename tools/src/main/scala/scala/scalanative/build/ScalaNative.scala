@@ -107,6 +107,8 @@ private[scalanative] object ScalaNative {
         analysis: ReachabilityAnalysis.Failure
     ): Unit = {
       val log = config.logger
+      // see https://no-color.org/
+      val noColor = sys.env.contains("NO_COLOR")
       def appendBackTrace(
           buf: StringBuilder,
           backtrace: List[Reach.BackTraceElement]
@@ -118,11 +120,17 @@ private[scalanative] object ScalaNative {
             import symbol.argTypes
             val rendered = symbol.toString
             val descriptorStart = rendered.indexOf(symbol.name)
-            val (modifiers, descriptor) = rendered.splitAt(descriptorStart)
-            val (name, typeInfo) =
-              if (argTypes.nonEmpty) descriptor.splitAt(descriptor.indexOf("("))
-              else (descriptor, "")
-            modifiers -> s"$BOLD$YELLOW$name$RESET$typeInfo at $BOLD$filename:$line"
+            val uncolored @ (modifiers, descriptor) =
+              rendered.splitAt(descriptorStart)
+
+            if (noColor) uncolored
+            else {
+              val (name, typeInfo) =
+                if (argTypes.nonEmpty)
+                  descriptor.splitAt(descriptor.indexOf("("))
+                else (descriptor, "")
+              modifiers -> s"$BOLD$YELLOW$name$RESET$typeInfo at $BOLD$filename:$line"
+            }
         }
         val padding = elems
           .map(_._1.length)
