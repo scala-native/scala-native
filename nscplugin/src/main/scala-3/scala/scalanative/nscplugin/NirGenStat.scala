@@ -86,7 +86,10 @@ trait NirGenStat(using Context) {
     if sym.isExternType && sym.superClass != defn.ObjectClass then
       report.error("Extern object can only extend extern traits", sym.sourcePos)
 
-    Option.unless(sym == defnNir.NObjectClass) {
+    Option.unless(
+      sym == defnNir.NObjectClass ||
+      defnNir.RuntimePrimitiveTypes.contains(sym)
+    ) {
       val superClass = sym.superClass
       if superClass == NoSymbol || superClass == defn.ObjectClass
       then genTypeName(defnNir.NObjectClass)

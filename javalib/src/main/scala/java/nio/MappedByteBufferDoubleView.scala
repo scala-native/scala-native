@@ -16,8 +16,9 @@ private[nio] final class MappedByteBufferDoubleView private (
   limit(_initialLimit)
 
   private def genBuffer = GenBuffer[DoubleBuffer](this)
-  protected def genMappedBufferView =
+  protected lazy val genMappedBufferView =
     GenMappedBufferView[DoubleBuffer](this)
+  @inline private def byteArrayBits = genMappedBufferView.byteArrayBits
   private[this] implicit def newMappedDoubleBufferView
       : GenMappedBufferView.NewMappedBufferView[DoubleBuffer] =
     MappedByteBufferDoubleView.NewMappedByteBufferDoubleView
@@ -74,11 +75,11 @@ private[nio] final class MappedByteBufferDoubleView private (
 
   @inline
   private[nio] def load(index: Int): Double =
-    genMappedBufferView.byteArrayBits.loadDouble(index)
+    byteArrayBits.loadDouble(index)
 
   @inline
   private[nio] def store(index: Int, elem: Double): Unit =
-    genMappedBufferView.byteArrayBits.storeDouble(index, elem)
+    byteArrayBits.storeDouble(index, elem)
 }
 
 private[nio] object MappedByteBufferDoubleView {

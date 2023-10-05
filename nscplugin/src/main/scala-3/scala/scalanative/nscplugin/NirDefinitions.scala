@@ -46,14 +46,14 @@ final class NirDefinitions()(using ctx: Context) {
   @tu lazy val RawSizeClass = requiredClass("scala.scalanative.runtime.RawSize")
 
   @tu lazy val USizeModule = requiredModule("scala.scalanative.unsigned.USize")
-  @tu lazy val USize_fromUByte = USizeModule.requiredMethod("fromUByte")
-  @tu lazy val USize_fromUShort = USizeModule.requiredMethod("fromUShort")
-  @tu lazy val USize_fromUInt = USizeModule.requiredMethod("fromUInt")
+  @tu lazy val USize_fromUByte = USizeModule.requiredMethod("ubyteToUSize")
+  @tu lazy val USize_fromUShort = USizeModule.requiredMethod("ushortToUSize")
+  @tu lazy val USize_fromUInt = USizeModule.requiredMethod("uintToUSize")
 
   @tu lazy val SizeModule = requiredModule("scala.scalanative.unsafe.Size")
-  @tu lazy val Size_fromByte = SizeModule.requiredMethod("fromByte")
-  @tu lazy val Size_fromShort = SizeModule.requiredMethod("fromShort")
-  @tu lazy val Size_fromInt = SizeModule.requiredMethod("fromInt")
+  @tu lazy val Size_fromByte = SizeModule.requiredMethod("byteToSize")
+  @tu lazy val Size_fromShort = SizeModule.requiredMethod("shortToSize")
+  @tu lazy val Size_fromInt = SizeModule.requiredMethod("intToSize")
 
   // Pointers
   @tu lazy val PtrClass = requiredClass("scala.scalanative.unsafe.Ptr")
@@ -186,6 +186,7 @@ final class NirDefinitions()(using ctx: Context) {
     'D' -> requiredClass("scala.scalanative.runtime.PrimitiveDouble"),
     'U' -> requiredClass("scala.scalanative.runtime.PrimitiveUnit")
   )
+  @tu lazy val RuntimePrimitiveTypes: Set[Symbol] = RuntimePrimitive.values.toSet
 
   @tu lazy val RuntimeArrayClass: Map[Char, Symbol] = Map(
     'B' -> requiredClass("scala.scalanative.runtime.BooleanArray"),

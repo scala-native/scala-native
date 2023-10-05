@@ -22,8 +22,7 @@ object Commands {
     "test-tools" ::
       "test-mima" ::
       "test-runtime" ::
-      "test-scripted" ::
-      "publish-local-dev" :: _
+      "test-scripted" :: _ // test-scripted will publish artifacts locally
   }
 
   // Compile and run the sandbox for each GC as a minimal check
@@ -167,14 +166,14 @@ object Commands {
     }
   }
 
-  lazy val publishRelease = Command.command("publishRelease") { state =>
+  lazy val publishRelease = Command.command("publish-release") { state =>
     val isSnapshot = state
       .getSetting(Keys.isSnapshot)
       .getOrElse(sys.error("Cannot resolve isSnapshot setting"))
 
     import ScalaVersions._
     val publishEachVersion = for {
-      version <- List(scala212, scala213, scala3)
+      version <- List(scala212, scala213, scala3PublishVersion)
     } yield s"++$version; publishSigned; crossPublishSigned"
 
     "clean" :: publishEachVersion ::: state

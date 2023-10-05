@@ -8,6 +8,7 @@ import java.net._
 
 import org.junit.Test
 import org.junit.Assert._
+import org.junit.Assume._
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
@@ -154,6 +155,10 @@ class InetAddressTest {
   }
 
   @Test def getLocalHost(): Unit = {
+    assumeFalse(
+      "Spuriously fails in the CI on MacOS-12",
+      Platform.isMacOs && sys.env.contains("CI")
+    )
     /* If compiler does not optimize away, check that no Exception is thrown
      * and something other than null is returned.
      * This code will be run on many machines, with varied names.

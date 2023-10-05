@@ -11,7 +11,11 @@ import scala.scalanative.meta.LinktimeInfo.isWindows
 object Continuations:
   import Impl.*
 
-  opaque type BoundaryLabel[-T] = Impl.BoundaryLabel
+  /** A marker for a given `boundary`. Use `break` or `suspend` to suspend the
+   *  continuation up to the specified `boundary`. This value MUST NOT escape
+   *  the `boundary` that created it.
+   */
+  opaque type BoundaryLabel[T] = Impl.BoundaryLabel
 
   /** The C implementation lets us set up how the Continuation structs (holding
    *  the reified stack fragment) is allocated, through a custom function that

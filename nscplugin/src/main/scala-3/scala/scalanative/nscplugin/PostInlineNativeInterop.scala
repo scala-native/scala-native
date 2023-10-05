@@ -61,6 +61,13 @@ class PostInlineNativeInterop extends PluginPhase with NativeInteropUtil {
         val paramTypes =
           args.map(a => dealiasTypeMapper(a.tpe)) :+
             dealiasTypeMapper(tree.tpe.finalResultType)
+        fun match {
+          case Select(Inlined(_, _, ext), _) =>
+            // Apply(Select(Inlined(_,_,_),_),_) would not preserve the attachment, use the receiver as a carrier
+            fun.putAttachment(NirDefinitions.NonErasedTypes, paramTypes)
+            tree
+          case _ => ()
+        }
         tree.withAttachment(NirDefinitions.NonErasedTypes, paramTypes)
 
       case Apply(fun, args)

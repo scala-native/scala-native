@@ -627,6 +627,11 @@ class IssuesTest {
     println(!ptr2) // segfault
   }
 
+  @Test def issue3504(): Unit = {
+    val xs: Array[Int] = (0 to 300).toArray
+    assertNotNull(xs.sortBy(i => -i))
+  }
+
 }
 
 package issue1090 {

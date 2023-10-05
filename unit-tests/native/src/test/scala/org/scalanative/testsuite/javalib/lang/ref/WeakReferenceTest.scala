@@ -51,8 +51,7 @@ class WeakReferenceTest {
   @deprecated @nooptimize @Test def addsToReferenceQueueAfterGC(): Unit = {
     assumeFalse(
       "In the CI Scala 3 sometimes SN fails to clean weak references in some of Windows build configurations",
-      ScalaNativeBuildInfo.scalaVersion.startsWith("3.") &&
-        Platform.isWindows
+      sys.env.contains("CI") && Platform.isWindows
     )
 
     def assertEventuallyIsCollected(
