@@ -13,7 +13,7 @@ function install_req {
 }
 
 function generate_docs {
-  SPHINX_OPTS="-W" make html
+  make SPHINX_OPTS="-W" html
 }
 
 function usage {
