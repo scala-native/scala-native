@@ -26,7 +26,8 @@ sealed abstract class BufferFactory {
   def boxedElemsFromInt(elems: Int*): Array[AnyRef] =
     boxed(elems.map(elemFromInt).toArray)
 
-  val createsReadOnly: Boolean = false
+  def createsReadOnly: Boolean = false
+  def createsPointerBuffer: Boolean = false
 
   def allocBuffer(capacity: Int): BufferType
 
@@ -202,6 +203,7 @@ object BufferFactory {
   }
 
   trait WrappedPointerBufferFactory extends WrappedBufferFactory {
+    override val createsPointerBuffer: Boolean = true
     override protected def baseWrap(
         array: Array[ElementType],
         offset: Int,

@@ -18,6 +18,8 @@ abstract class CharBufferTest extends BaseBufferTest {
   class ByteBufferCharViewFactory(byteBufferFactory: BufferFactory.ByteBufferFactory, order: ByteOrder) extends Factory with BufferFactory.ByteBufferViewFactory {
     require(!byteBufferFactory.createsReadOnly)
 
+    override val createsPointerBuffer: Boolean = byteBufferFactory.createsPointerBuffer
+
     def baseAllocBuffer(capacity: Int): CharBuffer =
       byteBufferFactory
         .allocBuffer(capacity * 2)
@@ -46,6 +48,8 @@ abstract class ShortBufferTest extends BaseBufferTest {
 
   class ByteBufferShortViewFactory(byteBufferFactory: BufferFactory.ByteBufferFactory, order: ByteOrder) extends Factory with BufferFactory.ByteBufferViewFactory {
     require(!byteBufferFactory.createsReadOnly)
+
+    override val createsPointerBuffer: Boolean = byteBufferFactory.createsPointerBuffer
 
     def baseAllocBuffer(capacity: Int): ShortBuffer =
       byteBufferFactory
@@ -76,6 +80,8 @@ abstract class IntBufferTest extends BaseBufferTest {
   class ByteBufferIntViewFactory(byteBufferFactory: BufferFactory.ByteBufferFactory, order: ByteOrder) extends Factory with BufferFactory.ByteBufferViewFactory {
     require(!byteBufferFactory.createsReadOnly)
 
+    override val createsPointerBuffer: Boolean = byteBufferFactory.createsPointerBuffer
+
     def baseAllocBuffer(capacity: Int): IntBuffer =
       byteBufferFactory
         .allocBuffer(capacity * 4)
@@ -104,6 +110,8 @@ abstract class LongBufferTest extends BaseBufferTest {
 
   class ByteBufferLongViewFactory(byteBufferFactory: BufferFactory.ByteBufferFactory, order: ByteOrder) extends Factory with BufferFactory.ByteBufferViewFactory {
     require(!byteBufferFactory.createsReadOnly)
+
+    override val createsPointerBuffer: Boolean = byteBufferFactory.createsPointerBuffer
 
     def baseAllocBuffer(capacity: Int): LongBuffer =
       byteBufferFactory
@@ -134,6 +142,8 @@ abstract class FloatBufferTest extends BaseBufferTest {
   class ByteBufferFloatViewFactory(byteBufferFactory: BufferFactory.ByteBufferFactory, order: ByteOrder) extends Factory with BufferFactory.ByteBufferViewFactory {
     require(!byteBufferFactory.createsReadOnly)
 
+    override val createsPointerBuffer: Boolean = byteBufferFactory.createsPointerBuffer
+
     def baseAllocBuffer(capacity: Int): FloatBuffer =
       byteBufferFactory
         .allocBuffer(capacity * 4)
@@ -162,6 +172,8 @@ abstract class DoubleBufferTest extends BaseBufferTest {
 
   class ByteBufferDoubleViewFactory(byteBufferFactory: BufferFactory.ByteBufferFactory, order: ByteOrder) extends Factory with BufferFactory.ByteBufferViewFactory {
     require(!byteBufferFactory.createsReadOnly)
+
+    override val createsPointerBuffer: Boolean = byteBufferFactory.createsPointerBuffer
 
     def baseAllocBuffer(capacity: Int): DoubleBuffer =
       byteBufferFactory

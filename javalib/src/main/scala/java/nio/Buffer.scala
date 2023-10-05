@@ -101,6 +101,7 @@ abstract class Buffer private[nio] (val _capacity: Int) {
 
   // Extended API
   final def hasPointer(): Boolean = _rawDataPointer != null && !isReadOnly()
+
   final def pointer(): unsafe.Ptr[Byte] = {
     val ptr = _rawDataPointer
     if (ptr == null || isReadOnly())

@@ -12,7 +12,7 @@ object PointerBuffer {
   def hasPointer(buffer: Buffer): Boolean =
     buffer.hasPointer()
 
-  def pointer(buffer: Buffer): Ptr[_] =
+  def pointer(buffer: Buffer): Any =
     buffer.pointer()
 
 }

@@ -217,7 +217,7 @@ private[nio] object PointerByteBuffer {
     def bytesPerElem: Int = 1
 
     def apply(
-        arrayPtr: unsafe.Ptr[Byte],
+        rawDataPointer: unsafe.Ptr[Byte],
         capacity: Int,
         arrayOffset: Int,
         initialPosition: Int,
@@ -225,7 +225,7 @@ private[nio] object PointerByteBuffer {
         readOnly: Boolean
     ): PointerByteBuffer = new PointerByteBuffer(
       _capacity = capacity,
-      _rawDataPointer = arrayPtr,
+      _rawDataPointer = rawDataPointer,
       _offset = arrayOffset,
       _initialPosition = initialPosition,
       _initialLimit = initialLimit,
