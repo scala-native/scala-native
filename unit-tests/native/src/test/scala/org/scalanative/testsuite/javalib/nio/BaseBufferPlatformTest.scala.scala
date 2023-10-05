@@ -10,13 +10,14 @@ import org.junit.Assert._
 import scala.scalanative.memory.PointerBuffer
 import scala.scalanative.memory.PointerBufferOps._
 
-trait BaseBufferPlatformTest { self: BaseBufferTest => 
+trait BaseBufferPlatformTest { self: BaseBufferTest =>
   import factory._
 
   // Extended Scala Native API
   @Test def hasPointer(): Unit = {
     val buf = factory.allocBuffer(8)
-    if (createsReadOnly) assertFalse("read-only, access to pointer", buf.hasPointer())
+    if (createsReadOnly)
+      assertFalse("read-only, access to pointer", buf.hasPointer())
     else assertEquals("hasPointer", createsPointerBuffer, buf.hasPointer())
   }
 
