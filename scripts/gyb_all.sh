@@ -8,6 +8,7 @@ scalaNext=scala-next
 unsafe=scala/scalanative/unsafe
 unsigned=scala/scalanative/unsigned
 runtime=scala/scalanative/runtime
+javaNIO=javalib/src/main/scala/java/nio/
 
 function gyb() {
   file=$1
@@ -37,3 +38,8 @@ gyb_files $nativelib $scala $runtime Arrays Boxes Primitives
 
 gyb clib/src/main/scala/scala/scalanative/libc/atomic.scala.gyb
 gyb clib/src/main/resources/scala-native/atomic.c.gyb
+
+gyb $javaNIO/HeapBuffers.scala.gyb
+gyb $javaNIO/HeapByteBufferViews.scala.gyb
+gyb $javaNIO/MappedByteBufferViews.scala.gyb
+
