@@ -10,9 +10,11 @@ import java.util.AbstractQueue
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.locks.LockSupport
 import scala.scalanative.libc.atomic.CAtomicRef
-import scala.scalanative.libc.atomic.memory_order._
+import scala.scalanative.libc.atomic.memory_order.{
+  memory_order_relaxed,
+  memory_order_release
+}
 import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
-import scala.annotation.tailrec
 import java.{util => ju}
 import collection.JavaConverters._
 
@@ -22,14 +24,14 @@ import collection.JavaConverters._
     with Serializable {
   import LinkedTransferQueue._
 
-  @transient @volatile private var head: Node = _
-  @transient @volatile private var tail: Node = _
-  @transient @volatile private var needSweep: Boolean = _
+  @volatile private[concurrent] var head: Node = _
+  @volatile private[concurrent] var tail: Node = _
+  @volatile private[concurrent] var needSweep: Boolean = _
 
-  val tailAtomic = CAtomicRef[Node](
+  private val tailAtomic = CAtomicRef[Node](
     fromRawPtr(Intrinsics.classFieldRawPtr(this, "tail"))
   )
-  val headAtomic = CAtomicRef[Node](
+  private val headAtomic = CAtomicRef[Node](
     fromRawPtr(Intrinsics.classFieldRawPtr(this, "head"))
   )
 
@@ -63,65 +65,66 @@ import collection.JavaConverters._
     }
   }
 
-  private def skipDeadNodesNearHead(h: Node, p: Node) = {
-    @tailrec def go(p: Node): Node = {
-      val q = p.next
-      if (q == null) p
-      else if (!q.isMatched()) q
-      else if (p == q) null /* do not casHead */
-      else go(q)
+  private def skipDeadNodesNearHead(h: Node, p: Node): Unit = {
+    var _p = p
+    var continueLoop = true
+    while (continueLoop) {
+      val q = _p.next
+      if (q == null) continueLoop = false
+      else if (!q.isMatched()) { _p = q; continueLoop = false }
+      else {
+        if (_p == q) return
+        _p = q
+      }
     }
-    // while (true) {
-    //   val q: Node = null;
-    //   if ((q = p.next) == null) break;
-    //   else if (!q.isMatched()) { p = q; break; }
-    //   else if (p == (p = q)) return;
-    // }
-    val _p = go(p)
-    if (_p != null && casHead(h, _p))
+    if (casHead(h, _p))
       h.selfLink()
   }
 
-  private def xfer(e: E, haveData: Boolean, how: Int, nanos: Long) = {
+  private def xfer(e: E, haveData: Boolean, how: Int, nanos: Long): E = {
     if (haveData && (e == null))
       throw NullPointerException()
 
-    @tailrec def restart(s: Node, t: Node, h: Node): E = {
-      var _s: Node = s
-      var _t: Node = t
-      var _h: Node = h
-      @tailrec def inner(p: Node): E = {
+    var restart = true
+    var s: Node = null
+    var t: Node = null
+    var h: Node = null
+    while (true) {
+      val old_t = t
+      t = tail
+      var innerBreak = false
+      var p = if (old_t != t && t.isData == haveData) t else { h = head; h }
+      while (!innerBreak) {
+        var skipRest = false
         var item: Object = null
-        if (p.isData != haveData && haveData == ({
-              item = p.item; item
-            } == null)) {
-          if (_h == null) { _h = head; }
+        if (p.isData != haveData && haveData == {
+              item = p.item; item == null
+            }) {
+          if (h == null) h = head
           if (p.tryMatch(item, e)) {
-            if (_h != p) skipDeadNodesNearHead(_h, p)
+            if (h != p) skipDeadNodesNearHead(h, p)
             return item.asInstanceOf[E]
           }
         }
         val q = p.next
         if (q == null) {
           if (how == NOW) return e
-          if (_s == null) _s = new Node(e)
-          if (!p.casNext(null, s)) return inner(p)
-          if (p != _t) casTail(_t, _s)
-          if (how == ASYNC) return e
-          return awaitMatch(_s, p, e, (how == TIMED), nanos)
+          if (s == null) s = Node(e)
+          if (!p.casNext(null, s)) skipRest = true
+          if (!skipRest) {
+            if (p != t) casTail(t, s)
+            if (how == ASYNC) return e
+            return awaitMatch(s, p, e, (how == TIMED), nanos)
+          }
         }
-
-        if (p == q) restart(_s, _t, _h)
-        else inner(q)
+        if (!skipRest) {
+          val old_p = p
+          p = q
+          if (old_p == p) innerBreak = true
+        }
       }
-
-      inner(
-        if (t != { _t = tail; _t } && _t.isData == haveData) _t
-        else { _h = head; _h }
-      )
     }
-
-    restart(null, null, null)
+    ???
   }
 
   private def awaitMatch(
@@ -131,99 +134,112 @@ import collection.JavaConverters._
       timed: Boolean,
       nanos: Long
   ): E = {
-    val isData = s.isData
-    val deadline = if (timed) System.nanoTime() + nanos else 0L
-    val w = Thread.currentThread()
-
-    var stat = -1 // -1: may yield, +1: park, else 0
-    var item: Object = null
     var _nanos = nanos
-
-    @tailrec def loop: Option[E] = {
-      item = s.item
-      if (item != e) return None
+    val isData = s.isData
+    val deadline = if (timed) System.nanoTime() + _nanos else 0
+    val w = Thread.currentThread()
+    var stat = -1
+    var item: Object = s.item
+    var continueLoop = true
+    while (item == e && continueLoop) {
       if (needSweep) sweep()
       else if ((timed && _nanos <= 0) || w.isInterrupted()) {
         if (s.casItem(e, if (e == null) s else null)) {
-          unsplice(pred, s)
-          return Some(e)
+          unsplice(pred, s) // cancelled
+          return e
         }
       } else if (stat <= 0) {
         if (pred != null && pred.next == s) {
           if (stat < 0 &&
               (pred.isData != isData || pred.isMatched())) {
-            stat = 0
+            stat = 0 // yield once if first
             Thread.`yield`()
           } else {
             stat = 1
-            s.waiter = w
+            s.waiter = w // enable unpark
           }
-        }
-      } else if ({ item = s.item; item } != e) return None
-      else if (!timed) {
+        } // else signal in progress
+      } else if ({ item = s.item; item != e }) {
+        continueLoop = false
+      } else if (!timed) {
         LockSupport.setCurrentBlocker(this)
         try {
           ForkJoinPool.managedBlock(s)
         } catch {
           case cannotHappen: InterruptedException => {}
         }
+        LockSupport.setCurrentBlocker(null)
       } else {
         _nanos = deadline - System.nanoTime()
         if (_nanos > SPIN_FOR_TIMEOUT_THRESHOLD)
           LockSupport.parkNanos(this, _nanos)
       }
 
-      loop
+      item = s.item
     }
-
-    loop match {
-      case None =>
-        if (stat == 1) s.waiterAtomic.store(null)
-        if (!isData) s.itemAtomic.store(s)
-        item.asInstanceOf[E]
-      case Some(value) => value
-    }
+    item.asInstanceOf[E]
   }
 
   /* -------------- Traversal methods -------------- */
 
   final def firstDataNode(): Node = {
     var first: Node = null
-    @tailrec def restartFromHead: (Node, Node) = {
-      val h = head
-      @tailrec def inner(p: Node): (Node, Node) = {
-        if (p == null) return (h, p)
+    var restartFromHead = true
+    while (restartFromHead) {
+      restartFromHead = false
+
+      var h = head
+      var p = h
+      var innerBreak = false
+      while (p != null && !innerBreak) {
         if (p.item != null) {
           if (p.isData) {
             first = p
-            return (h, p)
+            innerBreak = true
           }
-        } else if (!p.isData) return (h, p)
-        val q = p.next
-        if (q == null) (h, p)
-        else if (p == q) restartFromHead
-        else inner(q)
+        } else if (!p.isData) {
+          innerBreak = true
+        }
+        if (!innerBreak) {
+          val q = p.next
+          if (q == null) innerBreak = true
+          if (!innerBreak && p == q) {
+            restartFromHead = true; innerBreak = true
+          }
+          if (!innerBreak) p = q
+        }
       }
-      inner(h)
     }
-    val (h, p) = restartFromHead
-    if (p != h && casHead(h, p)) h.selfLink()
     first
   }
 
   private def countOfMode(data: Boolean): Int = {
-    @tailrec def inner(p: Node, count: Int): Int = {
-      if (p == null) return count
-      val newCount = if (!p.isMatched()) {
-        if (p.isData != data) return 0
-        if (count + 1 == Integer.MAX_VALUE) return count
-        count + 1
-      } else count
-      val q = p.next
-      if (p == q) inner(head, 0)
-      else inner(q, newCount)
+    var restartFromHead = true
+    while (restartFromHead) {
+      restartFromHead = false
+      var count = 0
+      var p = head
+      var innerBreak = false
+      while (p != null && !innerBreak) {
+        if (!p.isMatched()) {
+          if (p.isData != data)
+            return 0
+          count += 1
+          if (count == Integer.MAX_VALUE)
+            innerBreak = true // @see Collection.size()
+        }
+        if (!innerBreak) {
+          val q = p.next
+          if (p == q) {
+            innerBreak = true
+            restartFromHead = true
+          } else
+            p = q
+        }
+      }
+      if (!restartFromHead) return count
     }
-    inner(head, 0)
+    ???
   }
 
   override def toString(): String = {
@@ -258,8 +274,7 @@ import collection.JavaConverters._
           if (p == q) {
             restartFromHead = true
             innerBreak = true
-          }
-          else p = q
+          } else p = q
         }
       }
 
@@ -287,7 +302,7 @@ import collection.JavaConverters._
       while (p != null && !innerBreak) {
         val item = p.item
         if (p.isData) {
-          if (item != null) 
+          if (item != null)
             x = Array.fill[Object](4)(null)
           else if (size == x.length)
             x = Array.copyOf(x, 2 * (size + 4))
@@ -322,9 +337,12 @@ import collection.JavaConverters._
 
   override def toArray(): Array[Object] = toArrayInternal(null)
 
-  override def toArray[T <: Object](a : Array[T with Object]): Array[T with Object] = {
+  override def toArray[T <: Object](
+      a: Array[T with Object]
+  ): Array[T with Object] = {
     java.util.Objects.requireNonNull(a)
-    toArrayInternal(a.asInstanceOf[Array[Object]]).asInstanceOf[Array[T with Object]]
+    toArrayInternal(a.asInstanceOf[Array[Object]])
+      .asInstanceOf[Array[T with Object]]
   }
 
   final class Itr extends ju.Iterator[E] {
@@ -351,10 +369,10 @@ import collection.JavaConverters._
         }
         if (!innerBreak) {
           if (c != p && {
-            val old_c = c
-            c = p
-            !tryCasSuccessor(_pred, old_c, c)
-          }) {
+                val old_c = c
+                c = p
+                !tryCasSuccessor(_pred, old_c, c)
+              }) {
             _pred = p
             p = p.next
             c = p
@@ -388,7 +406,9 @@ import collection.JavaConverters._
       e
     }
 
-    override def forEachRemaining(action : ju.function.Consumer[_ >: E <: Object]): Unit = {
+    override def forEachRemaining(
+        action: ju.function.Consumer[_ >: E]
+    ): Unit = {
       ju.Objects.requireNonNull(action)
       var q: Node = null
       var p = nextNode
@@ -436,15 +456,14 @@ import collection.JavaConverters._
         }
         if (!innerBreak) {
           if ((c != p && {
-              val old_c = c
-              c = p
-              !tryCasSuccessor(pred, old_c, c)
-            }) || pAlive) {
+                val old_c = c
+                c = p
+                !tryCasSuccessor(pred, old_c, c)
+              }) || pAlive) {
             pred = p
             p = p.next
             c = p
-          }
-          else {
+          } else {
             val q = p.next
             if (p == q) {
               pred = null
@@ -505,10 +524,17 @@ import collection.JavaConverters._
       if (i == 0)
         null
       else
-        ju.Spliterators.spliterator(a, 0, i, (ju.Spliterator.ORDERED | ju.Spliterator.NONNULL | ju.Spliterator.CONCURRENT))
+        ju.Spliterators.spliterator(
+          a,
+          0,
+          i,
+          (ju.Spliterator.ORDERED | ju.Spliterator.NONNULL | ju.Spliterator.CONCURRENT)
+        )
     }
 
-    override def forEachRemaining(action: ju.function.Consumer[_ >: E <: Object]): Unit = {
+    override def forEachRemaining(
+        action: ju.function.Consumer[_ >: E]
+    ): Unit = {
       ju.Objects.requireNonNull(action)
       val p = current()
       if (p != null) {
@@ -565,7 +591,8 @@ import collection.JavaConverters._
 
     override def estimateSize() = Long.MaxValue
 
-    override def characteristics(): Int = ju.Spliterator.ORDERED | ju.Spliterator.NONNULL | ju.Spliterator.CONCURRENT
+    override def characteristics(): Int =
+      ju.Spliterator.ORDERED | ju.Spliterator.NONNULL | ju.Spliterator.CONCURRENT
   }
 
   object LTQSpliterator {
@@ -604,26 +631,26 @@ import collection.JavaConverters._
 
   private def sweep(): Unit = {
     needSweep = false
-    @tailrec def go(_p: Node): Unit = {
-      var p = _p
-
-      if (p == null) return
+    var p = head
+    var continueLoop = true
+    while (p != null && continueLoop) {
       val s = p.next
-      if (s == null) return
-      val n = s.next
-
-      if (!s.isMatched())
-        p = s
-      else if (n == null)
-        return
-      else if (s == n)
-        p = head
-      else
-        p.casNext(s, n)
-      go(p)
+      if (s == null) continueLoop = false
+      if (continueLoop) {
+        if (!s.isMatched())
+          // Unmatched nodes are never self-linked
+          p = s
+        else {
+          val n = s.next
+          if (n == null) // trailing node is pinned
+            continueLoop = false
+          else if (s == n) // stale
+            // No need to also check for p == s, since that implies s == n
+            p = head
+          else p.casNext(s, n)
+        }
+      }
     }
-
-    go(head)
   }
 
   /* -------------- Constructors -------------- */
@@ -655,9 +682,9 @@ import collection.JavaConverters._
 
   /* -------------------- Other ------------------- */
 
-  override def put(e : E): Unit = xfer(e, true, ASYNC, 0)
+  override def put(e: E): Unit = xfer(e, true, ASYNC, 0)
 
-  override def offer(e: E, timeout : Long, unit : TimeUnit): Boolean = {
+  override def offer(e: E, timeout: Long, unit: TimeUnit): Boolean = {
     xfer(e, true, ASYNC, 0)
     true
   }
@@ -683,7 +710,7 @@ import collection.JavaConverters._
     }
   }
 
-  override def tryTransfer(e: E, timeout : Long, unit : TimeUnit): Boolean = {
+  override def tryTransfer(e: E, timeout: Long, unit: TimeUnit): Boolean = {
     if (xfer(e, true, TIMED, unit.toNanos(timeout)) == null)
       true
     else if (!Thread.interrupted())
@@ -724,7 +751,7 @@ import collection.JavaConverters._
     n
   }
 
-  override def drainTo(c: ju.Collection[_ >: E], maxElements : Int): Int = {
+  override def drainTo(c: ju.Collection[_ >: E], maxElements: Int): Int = {
     ju.Objects.requireNonNull(c)
     if (c == this)
       throw IllegalArgumentException()
@@ -764,8 +791,7 @@ import collection.JavaConverters._
           if (p == q) {
             restartFromHead = true
             innerBreak = true
-          }
-          else p = q
+          } else p = q
         }
       }
       if (!restartFromHead) return null.asInstanceOf[E]
@@ -795,8 +821,7 @@ import collection.JavaConverters._
           if (p == q) {
             restartFromHead = true
             innerBreak = true
-          }
-          else p = q
+          } else p = q
         }
       }
       if (!restartFromHead) return false
@@ -808,54 +833,259 @@ import collection.JavaConverters._
 
   override def getWaitingConsumerCount(): Int = countOfMode(false)
 
+  override def remove(o: Any): Boolean = {
+    if (o == null) return false
+    var restartFromHead = true
+    while (restartFromHead) {
+      restartFromHead = false
+
+      var p = head
+      var pred: Node = null
+      var innerBreak = false
+      while (p != null && !innerBreak) {
+        var q = p.next
+        val item = p.item
+        var skipRest = false
+        if (item != null) {
+          if (p.isData) {
+            if (item.equals(o) && p.tryMatch(item, null)) {
+              skipDeadNodes(pred, p, p, q)
+              return true
+            }
+            pred = p
+            p = q
+            skipRest = true
+          }
+        } else if (!p.isData) innerBreak = true
+        if (skipRest && !innerBreak) {
+          var c = p
+          var cBreak = false
+          while (!cBreak) {
+            if (q == null || !q.isMatched()) {
+              pred = skipDeadNodes(pred, c, p, q)
+              p = q
+              cBreak = true
+            } else {
+              val old_p = p
+              p = q
+              if (old_p == p) {
+                innerBreak = true
+                cBreak = true
+                restartFromHead = true
+              }
+            }
+            q = p.next
+          }
+        }
+      }
+    }
+    false
+  }
+
+  override def contains(o: Any): Boolean = {
+    if (o == null) return false
+
+    var restartFromHead = true
+    while (restartFromHead) {
+      restartFromHead = false
+
+      var p = head
+      var pred: Node = null
+      var innerBreak = false
+      while (p != null && !innerBreak) {
+        var q = p.next
+        val item = p.item
+        var skipRest = false
+        if (item != null) {
+          if (p.isData) {
+            if (o.equals(item))
+              return true
+            pred = p
+            p = q
+            skipRest = true
+          }
+        } else if (!p.isData) innerBreak = true
+        if (skipRest && !innerBreak) {
+          var c = p
+          var cBreak = false
+          while (!cBreak) {
+            if (q == null || !q.isMatched()) {
+              pred = skipDeadNodes(pred, c, p, q)
+              p = q
+              cBreak = true
+            } else {
+              val old_p = p
+              p = q
+              if (old_p == p) {
+                innerBreak = true
+                cBreak = true
+                restartFromHead = true
+              }
+            }
+            q = p.next
+          }
+        }
+      }
+    }
+    false
+  }
+
   override def remainingCapacity(): Int = Integer.MAX_VALUE
 
-  def forEachFrom(action: ju.function.Consumer[_ >: E <: Object], p: Node): Unit = ???
+  private def writeObject(s: java.io.ObjectOutputStream): Unit = {
+    s.defaultWriteObject()
+    for (e <- this.iterator().asScala) {
+      s.writeObject(e)
+    }
+    // Use trailing null as sentinel
+    s.writeObject(null)
+  }
+  private def readObject(s: java.io.ObjectInputStream): Unit = {
+    // Read in elements until trailing null sentinel found
+    var h: Node = null
+    var t: Node = null
+    @scala.annotation.tailrec
+    def go: Unit = {
+      val item = s.readObject()
+      if (item == null) return
+      val newNode = Node(item)
+      if (h == null) {
+        t = newNode
+        h = t
+      } else {
+        t.appendRelaxed(newNode)
+        t = newNode
+      }
+      go
+    }
+    go
+    if (h == null) {
+      t = Node()
+      h = t
+    }
+    head = h
+    tail = t
+  }
 
-  // private def xfer(e: E, haveData: Boolean, how: Int, nanos: Long) {
-  //       if (haveData && (e == null))
-  //           throw NullPointerException()
+  override def removeIf(filter: ju.function.Predicate[_ >: E]): Boolean = {
+    ju.Objects.requireNonNull(filter)
+    bulkRemove(filter)
+  }
 
-  //       var s: Node = null
-  //       var t: Node = null
-  //       var h: Node = null
-  //       @tailrec def restart = {
-  //         @tailrec def go = {
-  //           val p = if (t == tail) { h = head; h } else {
+  override def removeAll(c: ju.Collection[_]): Boolean = {
+    ju.Objects.requireNonNull(c)
+    bulkRemove(e => c.contains(e))
+  }
 
-  //           }
-  //         }
-  //       }
+  override def retainAll(c: ju.Collection[_]): Boolean = {
+    ju.Objects.requireNonNull(c)
+    bulkRemove(e => !c.contains(e))
+  }
 
-  //     restart: for (Node s = null, t = null, h = null;;) {
-  //         for (Node p = (t != (t = tail) && t.isData == haveData) ? t
-  //                  : (h = head);; ) {
-  //             final Node q; final Object item;
-  //             if (p.isData != haveData
-  //                 && haveData == ((item = p.item) == null)) {
-  //                 if (h == null) h = head;
-  //                 if (p.tryMatch(item, e)) {
-  //                     if (h != p) skipDeadNodesNearHead(h, p);
-  //                     return (E) item;
-  //                 }
-  //             }
-  //             if ((q = p.next) == null) {
-  //                 if (how == NOW) return e;
-  //                 if (s == null) s = new Node(e);
-  //                 if (!p.casNext(null, s)) continue;
-  //                 if (p != t) casTail(t, s);
-  //                 if (how == ASYNC) return e;
-  //                 return awaitMatch(s, p, e, (how == TIMED), nanos);
-  //             }
-  //             if (p == (p = q)) continue restart;
-  //         }
-  //     }
-  // }
+  override def clear(): Unit = bulkRemove(_ => true)
+
+  private def bulkRemove(filter: ju.function.Predicate[_ >: E]): Boolean = {
+    var removed = false
+
+    var restartFromHead = true
+    while (true) {
+      restartFromHead = false
+
+      var hops = MAX_HOPS
+      // c will be CASed to collapse intervening dead nodes between
+      // pred (or head if null) and p.
+      var p = head
+      var c = p
+      var pred: Node = null
+      var innerBreak = false
+      while (p != null && !innerBreak) {
+        val q = p.next
+        val item = p.item
+        var pAlive = item != null && p.isData
+        if (pAlive) {
+          if (filter.test(item.asInstanceOf[E])) {
+            if (p.tryMatch(item, null))
+              removed = true
+            pAlive = false
+          }
+        } else if (!p.isData && item == null)
+          innerBreak = true
+        else {
+          if (pAlive || q == null || { hops -= 1; hops } == 0) {
+            // p might already be self-linked here, but if so:
+            // - CASing head will surely fail
+            // - CASing pred's next will be useless but harmless.
+            val old_c = c
+            if ((c != p && {
+                  c = p; !tryCasSuccessor(pred, old_c, c)
+                }) || pAlive) {
+              // if CAS failed or alive, abandon old pred
+              hops = MAX_HOPS
+              pred = p
+              c = q
+            }
+          } else if (p == q) {
+            innerBreak = true
+            restartFromHead = true
+          }
+        }
+        p = q
+      }
+    }
+    removed
+  }
+
+  def forEachFrom(action: ju.function.Consumer[_ >: E], p: Node): Unit = {
+    var _p = p
+    var pred: Node = null
+    var continueLoop = true
+    while (_p != null && continueLoop) {
+      var q = _p.next
+      val item = _p.item
+      var continueRest = true
+      if (item != null) {
+        if (_p.isData) {
+          action.accept(item.asInstanceOf[E])
+          pred = _p
+          _p = q
+          continueRest = false
+        }
+      } else if (!_p.isData)
+        continueLoop = false
+      if (continueLoop && continueRest) {
+        var c = _p
+        var continueInner = true
+        while (continueInner) {
+          if (q == null || !q.isMatched()) {
+            pred = skipDeadNodes(pred, c, _p, q)
+            _p = q
+            continueInner = false
+          }
+          if (continueInner) {
+            val old_p = _p
+            _p = q
+            if (_p == old_p) { pred = null; _p = head; continueInner = false }
+            q = _p.next
+          }
+        }
+      }
+    }
+  }
+
+  override def forEach(action: ju.function.Consumer[_ >: E]): Unit = {
+    ju.Objects.requireNonNull(action)
+    forEachFrom(action, head)
+  }
 }
 
 @SerialVersionUID(-3223113410248163686L) object LinkedTransferQueue {
   final val SPIN_FOR_TIMEOUT_THRESHOLD = 1023L
   final val SWEEP_THRESHOLD = 32
+
+  /** Tolerate this many consecutive dead nodes before CAS-collapsing. Amortized
+   *  cost of clear() is (1 + 1/MAX_HOPS) CASes per element.
+   */
+  private final val MAX_HOPS = 8
 
   @SerialVersionUID(-3223113410248163686L) final class Node private (
       val isData: Boolean,
@@ -921,4 +1151,8 @@ import collection.JavaConverters._
   private final val ASYNC: Int = 1; // for offer, put, add
   private final val SYNC: Int = 2; // for transfer, take
   private final val TIMED: Int = 3; // for timed poll, tryTransfer
+
+  // Reduce the risk of rare disastrous classloading in first call to
+  // LockSupport.park: https://bugs.openjdk.java.net/browse/JDK-8074773
+  val _ = LockSupport.getClass
 }
