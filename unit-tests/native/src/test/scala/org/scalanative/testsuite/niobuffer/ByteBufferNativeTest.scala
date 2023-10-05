@@ -6,5 +6,6 @@ import org.scalanative.testsuite.javalib.nio.BufferFactory.ByteBufferFactory
 import org.scalanative.testsuite.javalib.nio.ByteBufferTest
 
 class PointerByteBufferTest extends ByteBufferTest {
-  val factory: ByteBufferFactory = new ByteBufferNativeFactories.WrappedPointerByteBufferFactory
+  val factory: ByteBufferFactory =
+    new ByteBufferNativeFactories.WrappedPointerByteBufferFactory
 }

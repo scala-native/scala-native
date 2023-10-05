@@ -23,7 +23,6 @@ object PointerBuffer {
 
 /** Additional operations on a [[java.nio.Buffer Buffer]] with interoperability
  *  with ScalaNative PointerBuffers.
- *
  */
 final class PointerBufferOps[ElementType] private (private val buffer: Buffer)
     extends AnyVal {

@@ -119,10 +119,10 @@ abstract class Buffer private[nio] (val _capacity: Int) {
 
   // MappedByteBuffer specific
   private[nio] def _mappedData: MappedByteBufferData = null
-  
+
   // PointerByteBuffer specific
   private[nio] def _rawDataPointer: unsafe.Ptr[Byte] = null
-  
+
   // HeapByteBuffer specific
   private[nio] def _byteArray: Array[Byte] =
     throw new UnsupportedOperationException

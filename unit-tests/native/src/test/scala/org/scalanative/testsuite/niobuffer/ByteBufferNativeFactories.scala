@@ -4,7 +4,10 @@ import scala.scalanative.unsafe._
 import scala.scalanative.memory.PointerBuffer
 import java.nio._
 
-import org.scalanative.testsuite.javalib.nio.BufferFactory.{ByteBufferFactory, WrappedPointerBufferFactory}
+import org.scalanative.testsuite.javalib.nio.BufferFactory.{
+  ByteBufferFactory,
+  WrappedPointerBufferFactory
+}
 
 object ByteBufferNativeFactories {
   class WrappedPointerByteBufferFactory

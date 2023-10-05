@@ -18,7 +18,7 @@ object ByteBuffer {
 
     // Extended API
 
-  def wrapPtr(array: unsafe.Ptr[Byte], length: Int): ByteBuffer =
+  def wrapPointerByte(array: unsafe.Ptr[Byte], length: Int): ByteBuffer =
     PointerByteBuffer.wrap(array, length)
 }
 
