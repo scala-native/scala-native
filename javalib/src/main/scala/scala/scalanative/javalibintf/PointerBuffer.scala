@@ -7,7 +7,7 @@ import scala.scalanative.annotation.alwaysinline
 object PointerBuffer {
 
   def wrapPointerByte(ptr: Any, length: Int): ByteBuffer =
-    ByteBuffer.wrapPointerByte(ptr.asInstanceOf, length)
+    ByteBuffer.wrapPointerByte(ptr.asInstanceOf[Ptr[Byte]], length)
 
   def hasPointer(buffer: Buffer): Boolean =
     buffer.hasPointer()

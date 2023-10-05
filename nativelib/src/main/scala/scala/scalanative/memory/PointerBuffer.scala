@@ -14,8 +14,9 @@ import scala.scalanative.javalibintf.{PointerBuffer => Intf}
  */
 object PointerBuffer {
 
-  /** Wraps a [[Ptr[Byte]]] pointing to memory of given size expressed in number
-   *  of bytes, in a direct [[java.nio.ByteBuffer ByteBuffer]]
+  /** Wraps a [[scala.scalanative.unsafe.Ptr]] pointing to memory of given size
+   *  expressed in number of bytes, in a direct
+   *  [[java.nio.ByteBuffer ByteBuffer]]
    */
   def wrap(ptr: Ptr[Byte], size: Int): ByteBuffer =
     Intf.wrapPointerByte(ptr, size)
@@ -27,17 +28,20 @@ object PointerBuffer {
 final class PointerBufferOps[ElementType] private (private val buffer: Buffer)
     extends AnyVal {
 
-  /** Tests whether this direct buffer has a valid associated [[Ptr[_]]].
+  /** Tests whether this direct buffer has a valid associated
+   *  [[scala.scalanative.unsafe.Ptr]].
    *
    *  If this buffer is read-only, returns false.
    */
   def hasPointer(): Boolean =
     Intf.hasPointer(buffer)
 
-  /** [[Ptr[ElementType]]] backing this direct buffer _(optional operation)_.
+  /** [[scala.scalanative.unsafe.Ptr]] backing this direct buffer _(optional
+   *  operation)_.
    *
    *  @throws UnsupportedOperationException
-   *    If this buffer does not have a backing [[Ptr[_]]], i.e., !hasPointer().
+   *    If this buffer does not have a backing [[scala.scalanative.unsafe.Ptr]],
+   *    i.e., !hasPointer().
    */
   def pointer(): Ptr[ElementType] =
     Intf.pointer(buffer).asInstanceOf[Ptr[ElementType]]
