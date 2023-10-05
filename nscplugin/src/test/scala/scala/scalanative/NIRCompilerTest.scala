@@ -257,6 +257,41 @@ class NIRCompilerTest {
     )
   }
 
+  @Test def allowImplicitAnyValClassInExtern(): Unit = NIRCompiler(
+    _.compile(
+      """import scala.scalanative.unsafe.extern
+          |@extern object Dummy { 
+          |  implicit class Ext(val v: Int) { 
+          |    def convert(): Long = Dummy.implicitConvert(v) + Dummy.doConvert(v) 
+          |  }
+          |  implicit def implicitConvert(v: Int): Long = extern
+          |  def doConvert(v: Int): Long = extern
+          |}
+          |""".stripMargin
+    )
+  )
+
+  @Test def disallowNonExternImplicitInExtern(): Unit = {
+    val err = assertThrows(
+      classOf[CompilationFailedException],
+      () =>
+        NIRCompiler(
+          _.compile(
+            """import scala.scalanative.unsafe.extern
+              |@extern object Dummy {
+              |  implicit def implicitFunction: Long = 42
+              |}
+              |""".stripMargin
+          )
+        )
+    )
+    assertTrue(
+      err
+        .getMessage()
+        .contains("methods in extern objects must have extern body")
+    )
+  }
+
   @Test def nonExistingClassFieldPointer(): Unit = {
     val err = assertThrows(
       classOf[CompilationFailedException],
