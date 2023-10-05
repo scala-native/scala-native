@@ -56,7 +56,7 @@ private[nio] final class GenBuffer[B <: Buffer](val self: B) extends AnyVal {
 
     val srcArray = src._array // even if read-only
     if (srcArray != null) {
-      store(selfPos, srcArray, src._arrayOffset + srcPos, length)
+      store(selfPos, srcArray, src._offset + srcPos, length)
     } else {
       while (srcPos != srcLimit) {
         store(selfPos, src.load(srcPos))
@@ -95,8 +95,8 @@ private[nio] final class GenBuffer[B <: Buffer](val self: B) extends AnyVal {
   }
 
   @inline
-  def generic_arrayOffset(): Int = {
-    val o = _arrayOffset
+  def generic_offset(): Int = {
+    val o = _offset
     if (o == -1)
       throw new UnsupportedOperationException
     if (isReadOnly())

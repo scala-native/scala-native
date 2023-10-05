@@ -5,7 +5,7 @@ package java.nio
 private[nio] final class HeapByteBufferCharView private (
     _capacity: Int,
     override private[nio] val _byteArray: Array[Byte],
-    override private[nio] val _byteArrayOffset: Int,
+    override private[nio] val _offset: Int,
     _initialPosition: Int,
     _initialLimit: Int,
     _readOnly: Boolean,
@@ -41,7 +41,7 @@ private[nio] final class HeapByteBufferCharView private (
     new HeapByteBufferCharView(
       capacity(),
       _byteArray,
-      _byteArrayOffset,
+      _offset,
       position() + start,
       position() + end,
       isReadOnly(),
@@ -125,7 +125,7 @@ private[nio] object HeapByteBufferCharView {
 private[nio] final class HeapByteBufferShortView private (
     _capacity: Int,
     override private[nio] val _byteArray: Array[Byte],
-    override private[nio] val _byteArrayOffset: Int,
+    override private[nio] val _offset: Int,
     _initialPosition: Int,
     _initialLimit: Int,
     _readOnly: Boolean,
@@ -232,7 +232,7 @@ private[nio] object HeapByteBufferShortView {
 private[nio] final class HeapByteBufferIntView private (
     _capacity: Int,
     override private[nio] val _byteArray: Array[Byte],
-    override private[nio] val _byteArrayOffset: Int,
+    override private[nio] val _offset: Int,
     _initialPosition: Int,
     _initialLimit: Int,
     _readOnly: Boolean,
@@ -309,7 +309,7 @@ private[nio] final class HeapByteBufferIntView private (
 private[nio] object HeapByteBufferIntView {
   private[nio] implicit object NewHeapByteBufferIntView
       extends GenHeapBufferView.NewHeapBufferView[IntBuffer] {
-    def bytesPerElem: Int = 2
+    def bytesPerElem: Int = 4
 
     def apply(
         capacity: Int,
@@ -339,7 +339,7 @@ private[nio] object HeapByteBufferIntView {
 private[nio] final class HeapByteBufferLongView private (
     _capacity: Int,
     override private[nio] val _byteArray: Array[Byte],
-    override private[nio] val _byteArrayOffset: Int,
+    override private[nio] val _offset: Int,
     _initialPosition: Int,
     _initialLimit: Int,
     _readOnly: Boolean,
@@ -416,7 +416,7 @@ private[nio] final class HeapByteBufferLongView private (
 private[nio] object HeapByteBufferLongView {
   private[nio] implicit object NewHeapByteBufferLongView
       extends GenHeapBufferView.NewHeapBufferView[LongBuffer] {
-    def bytesPerElem: Int = 2
+    def bytesPerElem: Int = 8
 
     def apply(
         capacity: Int,
@@ -446,7 +446,7 @@ private[nio] object HeapByteBufferLongView {
 private[nio] final class HeapByteBufferFloatView private (
     _capacity: Int,
     override private[nio] val _byteArray: Array[Byte],
-    override private[nio] val _byteArrayOffset: Int,
+    override private[nio] val _offset: Int,
     _initialPosition: Int,
     _initialLimit: Int,
     _readOnly: Boolean,
@@ -523,7 +523,7 @@ private[nio] final class HeapByteBufferFloatView private (
 private[nio] object HeapByteBufferFloatView {
   private[nio] implicit object NewHeapByteBufferFloatView
       extends GenHeapBufferView.NewHeapBufferView[FloatBuffer] {
-    def bytesPerElem: Int = 2
+    def bytesPerElem: Int = 4
 
     def apply(
         capacity: Int,
@@ -553,7 +553,7 @@ private[nio] object HeapByteBufferFloatView {
 private[nio] final class HeapByteBufferDoubleView private (
     _capacity: Int,
     override private[nio] val _byteArray: Array[Byte],
-    override private[nio] val _byteArrayOffset: Int,
+    override private[nio] val _offset: Int,
     _initialPosition: Int,
     _initialLimit: Int,
     _readOnly: Boolean,
@@ -630,7 +630,7 @@ private[nio] final class HeapByteBufferDoubleView private (
 private[nio] object HeapByteBufferDoubleView {
   private[nio] implicit object NewHeapByteBufferDoubleView
       extends GenHeapBufferView.NewHeapBufferView[DoubleBuffer] {
-    def bytesPerElem: Int = 2
+    def bytesPerElem: Int = 8
 
     def apply(
         capacity: Int,

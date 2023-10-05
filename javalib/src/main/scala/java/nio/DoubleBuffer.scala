@@ -17,7 +17,7 @@ object DoubleBuffer {
 abstract class DoubleBuffer private[nio] (
     _capacity: Int,
     override private[nio] val _array: Array[Double],
-    private[nio] val _arrayOffset: Int
+    private[nio] val _offset: Int
 ) extends Buffer(_capacity)
     with Comparable[DoubleBuffer] {
 
@@ -67,7 +67,7 @@ abstract class DoubleBuffer private[nio] (
     genBuffer.generic_array()
 
   @inline final def arrayOffset(): Int =
-    genBuffer.generic_arrayOffset()
+    genBuffer.generic_offset()
 
   @inline override def position(newPosition: Int): DoubleBuffer = {
     super.position(newPosition)

@@ -31,7 +31,7 @@ private[nio] object GenHeapBufferView {
     newHeapBufferView(
       viewCapacity,
       byteBuffer._array,
-      byteBuffer._arrayOffset + byteBufferPos,
+      byteBuffer._offset + byteBufferPos,
       0,
       viewCapacity,
       byteBuffer.isReadOnly(),
@@ -55,7 +55,7 @@ private[nio] final class GenHeapBufferView[B <: Buffer](val self: B)
     newHeapBufferView(
       newCapacity,
       _byteArray,
-      _byteArrayOffset + bytesPerElem * position(),
+      _offset + bytesPerElem * position(),
       0,
       newCapacity,
       isReadOnly(),
@@ -70,7 +70,7 @@ private[nio] final class GenHeapBufferView[B <: Buffer](val self: B)
     val result = newHeapBufferView(
       capacity(),
       _byteArray,
-      _byteArrayOffset,
+      _offset,
       position(),
       limit(),
       isReadOnly(),
@@ -87,7 +87,7 @@ private[nio] final class GenHeapBufferView[B <: Buffer](val self: B)
     val result = newHeapBufferView(
       capacity(),
       _byteArray,
-      _byteArrayOffset,
+      _offset,
       position(),
       limit(),
       true,
@@ -108,9 +108,9 @@ private[nio] final class GenHeapBufferView[B <: Buffer](val self: B)
     val bytesPerElem = newHeapBufferView.bytesPerElem
     System.arraycopy(
       _byteArray,
-      _byteArrayOffset + bytesPerElem * position(),
+      _offset + bytesPerElem * position(),
       _byteArray,
-      _byteArrayOffset,
+      _offset,
       bytesPerElem * len
     )
     _mark = -1
@@ -130,7 +130,7 @@ private[nio] final class GenHeapBufferView[B <: Buffer](val self: B)
   ): ByteArrayBits = {
     ByteArrayBits(
       _byteArray.at(0),
-      _byteArrayOffset,
+      _offset,
       isBigEndian,
       newHeapBufferView.bytesPerElem
     )

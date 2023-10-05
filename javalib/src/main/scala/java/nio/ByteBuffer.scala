@@ -25,7 +25,7 @@ object ByteBuffer {
 abstract class ByteBuffer private[nio] (
     _capacity: Int,
     override private[nio] val _array: Array[Byte],
-    private[nio] val _arrayOffset: Int
+    private[nio] val _offset: Int
 ) extends Buffer(_capacity)
     with Comparable[ByteBuffer] {
 
@@ -77,7 +77,7 @@ abstract class ByteBuffer private[nio] (
     genBuffer.generic_array()
 
   @inline final def arrayOffset(): Int =
-    genBuffer.generic_arrayOffset()
+    genBuffer.generic_offset()
 
   @inline override def position(newPosition: Int): ByteBuffer = {
     super.position(newPosition)

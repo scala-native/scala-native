@@ -37,7 +37,7 @@ private[nio] final class GenPointerBuffer[B <: Buffer](val self: B)
     newPointerBuffer(
       ptr = _rawDataPointer,
       capacity = newCapacity,
-      arrayOffset = _arrayOffset + position(),
+      arrayOffset = _offset + position(),
       initialPosition = 0,
       initialLimit = newCapacity,
       isReadOnly = isReadOnly()
@@ -52,7 +52,7 @@ private[nio] final class GenPointerBuffer[B <: Buffer](val self: B)
       newPointerBuffer(
         ptr = _rawDataPointer,
         capacity = capacity(),
-        arrayOffset = _arrayOffset,
+        arrayOffset = _offset,
         initialPosition = position(),
         initialLimit = limit(),
         isReadOnly = isReadOnly()
@@ -69,7 +69,7 @@ private[nio] final class GenPointerBuffer[B <: Buffer](val self: B)
       newPointerBuffer(
         ptr = _rawDataPointer,
         capacity = capacity(),
-        arrayOffset = _arrayOffset,
+        arrayOffset = _offset,
         initialPosition = position(),
         initialLimit = limit(),
         isReadOnly = true
@@ -83,7 +83,7 @@ private[nio] final class GenPointerBuffer[B <: Buffer](val self: B)
     ensureNotReadOnly()
 
     val length = remaining()
-    val dstPtr = _rawDataPointer + _arrayOffset
+    val dstPtr = _rawDataPointer + _offset
     val srcPtr = dstPtr + position()
 
     string.memcpy(dstPtr, srcPtr, length.toUInt)
@@ -96,11 +96,11 @@ private[nio] final class GenPointerBuffer[B <: Buffer](val self: B)
 
   @inline
   def generic_load(index: Int): Byte =
-    _rawDataPointer(_arrayOffset + index)
+    _rawDataPointer(_offset + index)
 
   @inline
   def generic_store(index: Int, elem: Byte): Unit =
-    _rawDataPointer(_arrayOffset + index) = elem
+    _rawDataPointer(_offset + index) = elem
 
   @inline
   def generic_load(

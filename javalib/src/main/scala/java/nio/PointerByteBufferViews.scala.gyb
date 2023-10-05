@@ -14,7 +14,7 @@ import scala.scalanative.unsafe._
 private[nio] final class PointerByteBuffer${T}View private (
     _capacity: Int,
     override private[nio] val _rawDataPointer: Ptr[Byte],
-    override private[nio] val _arrayOffset: Int,
+    override private[nio] val _offset: Int,
     _initialPosition: Int,
     _initialLimit: Int,
     _readOnly: Boolean,
@@ -51,7 +51,7 @@ private[nio] final class PointerByteBuffer${T}View private (
     new PointerByteBuffer${T}View(
       capacity(),
       _rawDataPointer,
-      _byteArrayOffset,
+      _offset,
       position() + start,
       position() + end,
       isReadOnly(),

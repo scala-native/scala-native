@@ -12,7 +12,7 @@ package java.nio
 private[nio] final class HeapByteBuffer${T}View private (
     _capacity: Int,
     override private[nio] val _byteArray: Array[Byte],
-    override private[nio] val _byteArrayOffset: Int,
+    override private[nio] val _offset: Int,
     _initialPosition: Int,
     _initialLimit: Int,
     _readOnly: Boolean,
@@ -49,7 +49,7 @@ private[nio] final class HeapByteBuffer${T}View private (
     new HeapByteBuffer${T}View(
       capacity(),
       _byteArray,
-      _byteArrayOffset,
+      _offset,
       position() + start,
       position() + end,
       isReadOnly(),
@@ -104,7 +104,7 @@ private[nio] final class HeapByteBuffer${T}View private (
 private[nio] object HeapByteBuffer${T}View {
   private[nio] implicit object NewHeapByteBuffer${T}View
       extends GenHeapBufferView.NewHeapBufferView[${T}Buffer] {
-    def bytesPerElem: Int = 2
+    def bytesPerElem: Int = ${size}
 
     def apply(
         capacity: Int,

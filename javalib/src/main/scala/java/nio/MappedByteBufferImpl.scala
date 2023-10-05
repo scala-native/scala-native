@@ -23,14 +23,14 @@ import java.nio.channels.FileChannel
 private class MappedByteBufferImpl(
     _capacity: Int,
     override private[nio] val _mappedData: MappedByteBufferData,
-    override private[nio] val _byteArrayOffset: Int,
+    override private[nio] val _offset: Int,
     _initialPosition: Int,
     _initialLimit: Int,
     _readOnly: Boolean
 ) extends MappedByteBuffer(
       _capacity,
       _mappedData,
-      _byteArrayOffset,
+      _offset,
       _initialPosition,
       _initialLimit,
       _readOnly
@@ -101,7 +101,7 @@ private class MappedByteBufferImpl(
   // Here begins the stuff specific to ByteArrays
 
   @inline @inline private def byteArrayBits: ByteArrayBits =
-    ByteArrayBits(_mappedData.ptr, _arrayOffset, isBigEndian)
+    ByteArrayBits(_mappedData.ptr, _offset, isBigEndian)
 
   @noinline def getChar(): Char =
     byteArrayBits.loadChar(getPosAndAdvanceRead(2))

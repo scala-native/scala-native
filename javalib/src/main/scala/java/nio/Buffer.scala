@@ -115,11 +115,19 @@ abstract class Buffer private[nio] (val _capacity: Int) {
    */
 
   private[nio] def _array: Array[ElementType] = null
-  private[nio] def _arrayOffset: Int
+  private[nio] def _offset: Int
+
   // MappedByteBuffer specific
   private[nio] def _mappedData: MappedByteBufferData = null
+  
   // PointerByteBuffer specific
   private[nio] def _rawDataPointer: unsafe.Ptr[Byte] = null
+  
+  // HeapByteBuffer specific
+  private[nio] def _byteArray: Array[Byte] =
+    throw new UnsupportedOperationException
+  private[nio] def isBigEndian: Boolean =
+    throw new UnsupportedOperationException
 
   /** Loads an element at the given absolute, unchecked index. */
   private[nio] def load(index: Int): ElementType
@@ -142,16 +150,6 @@ abstract class Buffer private[nio] (val _capacity: Int) {
       offset: Int,
       length: Int
   ): Unit
-
-  /* Only for HeapByteBufferViews -- but that's the only place we can put it.
-   * For all other types, it will be dce'ed.
-   */
-  private[nio] def _byteArray: Array[Byte] =
-    throw new UnsupportedOperationException
-  private[nio] def _byteArrayOffset: Int =
-    throw new UnsupportedOperationException
-  private[nio] def isBigEndian: Boolean =
-    throw new UnsupportedOperationException
 
   // Helpers
 

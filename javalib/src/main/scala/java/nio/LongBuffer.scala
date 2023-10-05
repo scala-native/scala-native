@@ -17,7 +17,7 @@ object LongBuffer {
 abstract class LongBuffer private[nio] (
     _capacity: Int,
     override private[nio] val _array: Array[Long],
-    private[nio] val _arrayOffset: Int
+    private[nio] val _offset: Int
 ) extends Buffer(_capacity)
     with Comparable[LongBuffer] {
 
@@ -67,7 +67,7 @@ abstract class LongBuffer private[nio] (
     genBuffer.generic_array()
 
   @inline final def arrayOffset(): Int =
-    genBuffer.generic_arrayOffset()
+    genBuffer.generic_offset()
 
   @inline override def position(newPosition: Int): LongBuffer = {
     super.position(newPosition)

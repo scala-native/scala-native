@@ -37,7 +37,7 @@ private[nio] object GenPointerBufferView {
     newPointerBufferView(
       viewCapacity,
       byteBuffer._rawDataPointer,
-      byteBuffer._arrayOffset + byteBufferPos,
+      byteBuffer._offset + byteBufferPos,
       0,
       viewCapacity,
       byteBuffer.isReadOnly(),
@@ -62,7 +62,7 @@ private[nio] final class GenPointerBufferView[B <: Buffer](val self: B)
     newPointerBufferView(
       newCapacity,
       _rawDataPointer,
-      _arrayOffset + bytesPerElem * position(),
+      _offset + bytesPerElem * position(),
       0,
       newCapacity,
       isReadOnly(),
@@ -77,7 +77,7 @@ private[nio] final class GenPointerBufferView[B <: Buffer](val self: B)
     val result = newPointerBufferView(
       capacity(),
       _rawDataPointer,
-      _arrayOffset,
+      _offset,
       position(),
       limit(),
       isReadOnly(),
@@ -94,7 +94,7 @@ private[nio] final class GenPointerBufferView[B <: Buffer](val self: B)
     val result = newPointerBufferView(
       capacity(),
       _rawDataPointer,
-      _arrayOffset,
+      _offset,
       position(),
       limit(),
       true,
@@ -112,7 +112,7 @@ private[nio] final class GenPointerBufferView[B <: Buffer](val self: B)
 
     val length = remaining()
     val bytesPerElem = newPointerBufferView.bytesPerElem
-    val dstPtr = _rawDataPointer + _arrayOffset * bytesPerElem
+    val dstPtr = _rawDataPointer + _offset * bytesPerElem
     val srcPtr = dstPtr + position() * bytesPerElem
 
     string.memcpy(dstPtr, srcPtr, (length * bytesPerElem).toUInt)
@@ -134,7 +134,7 @@ private[nio] final class GenPointerBufferView[B <: Buffer](val self: B)
   ): ByteArrayBits = {
     ByteArrayBits(
       _rawDataPointer,
-      _arrayOffset,
+      _offset,
       isBigEndian,
       newPointerBufferView.bytesPerElem
     )

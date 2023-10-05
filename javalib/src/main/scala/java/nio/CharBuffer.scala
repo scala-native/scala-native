@@ -22,7 +22,7 @@ object CharBuffer {
 abstract class CharBuffer private[nio] (
     _capacity: Int,
     override private[nio] val _array: Array[Char],
-    private[nio] val _arrayOffset: Int
+    private[nio] val _offset: Int
 ) extends Buffer(_capacity)
     with Comparable[CharBuffer]
     with CharSequence
@@ -42,7 +42,7 @@ abstract class CharBuffer private[nio] (
     if (n == 0) -1
     else if (_array != null) {
       // even if read-only
-      genBuffer.generic_put(_array, _arrayOffset, n)
+      genBuffer.generic_put(_array, _offset, n)
       n
     } else {
       val savedPos = position()
@@ -97,7 +97,7 @@ abstract class CharBuffer private[nio] (
     genBuffer.generic_array()
 
   @inline final def arrayOffset(): Int =
-    genBuffer.generic_arrayOffset()
+    genBuffer.generic_offset()
 
   @inline override def position(newPosition: Int): CharBuffer = {
     super.position(newPosition)
@@ -154,7 +154,7 @@ abstract class CharBuffer private[nio] (
   override def toString(): String = {
     if (_array != null) {
       // even if read-only
-      new String(_array, position() + _arrayOffset, remaining())
+      new String(_array, position() + _offset, remaining())
     } else {
       val chars = new Array[Char](remaining())
       val savedPos = position()

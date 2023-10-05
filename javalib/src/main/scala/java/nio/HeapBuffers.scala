@@ -5,11 +5,11 @@ package java.nio
 private[nio] final class HeapCharBuffer private (
     _capacity: Int,
     _array0: Array[Char],
-    _arrayOffset0: Int,
+    _offset0: Int,
     _initialPosition: Int,
     _initialLimit: Int,
     _readOnly: Boolean
-) extends CharBuffer(_capacity, _array0, _arrayOffset0) {
+) extends CharBuffer(_capacity, _array0, _offset0) {
   
   position(_initialPosition)
   limit(_initialLimit)
@@ -40,7 +40,7 @@ private[nio] final class HeapCharBuffer private (
     new HeapCharBuffer(
       capacity(),
       _array,
-      _arrayOffset,
+      _offset,
       position() + start,
       position() + end,
       isReadOnly()
@@ -151,11 +151,11 @@ private[nio] object HeapCharBuffer {
 private[nio] final class HeapShortBuffer private (
     _capacity: Int,
     _array0: Array[Short],
-    _arrayOffset0: Int,
+    _offset0: Int,
     _initialPosition: Int,
     _initialLimit: Int,
     _readOnly: Boolean
-) extends ShortBuffer(_capacity, _array0, _arrayOffset0) {
+) extends ShortBuffer(_capacity, _array0, _offset0) {
   
   position(_initialPosition)
   limit(_initialLimit)
@@ -285,11 +285,11 @@ private[nio] object HeapShortBuffer {
 private[nio] final class HeapIntBuffer private (
     _capacity: Int,
     _array0: Array[Int],
-    _arrayOffset0: Int,
+    _offset0: Int,
     _initialPosition: Int,
     _initialLimit: Int,
     _readOnly: Boolean
-) extends IntBuffer(_capacity, _array0, _arrayOffset0) {
+) extends IntBuffer(_capacity, _array0, _offset0) {
   
   position(_initialPosition)
   limit(_initialLimit)
@@ -419,11 +419,11 @@ private[nio] object HeapIntBuffer {
 private[nio] final class HeapLongBuffer private (
     _capacity: Int,
     _array0: Array[Long],
-    _arrayOffset0: Int,
+    _offset0: Int,
     _initialPosition: Int,
     _initialLimit: Int,
     _readOnly: Boolean
-) extends LongBuffer(_capacity, _array0, _arrayOffset0) {
+) extends LongBuffer(_capacity, _array0, _offset0) {
   
   position(_initialPosition)
   limit(_initialLimit)
@@ -553,11 +553,11 @@ private[nio] object HeapLongBuffer {
 private[nio] final class HeapFloatBuffer private (
     _capacity: Int,
     _array0: Array[Float],
-    _arrayOffset0: Int,
+    _offset0: Int,
     _initialPosition: Int,
     _initialLimit: Int,
     _readOnly: Boolean
-) extends FloatBuffer(_capacity, _array0, _arrayOffset0) {
+) extends FloatBuffer(_capacity, _array0, _offset0) {
   
   position(_initialPosition)
   limit(_initialLimit)
@@ -687,11 +687,11 @@ private[nio] object HeapFloatBuffer {
 private[nio] final class HeapDoubleBuffer private (
     _capacity: Int,
     _array0: Array[Double],
-    _arrayOffset0: Int,
+    _offset0: Int,
     _initialPosition: Int,
     _initialLimit: Int,
     _readOnly: Boolean
-) extends DoubleBuffer(_capacity, _array0, _arrayOffset0) {
+) extends DoubleBuffer(_capacity, _array0, _offset0) {
   
   position(_initialPosition)
   limit(_initialLimit)

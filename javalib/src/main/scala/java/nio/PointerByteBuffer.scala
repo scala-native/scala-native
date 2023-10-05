@@ -5,7 +5,7 @@ import scala.scalanative.unsafe
 private[nio] final class PointerByteBuffer private (
     _capacity: Int,
     override private[nio] val _rawDataPointer: unsafe.Ptr[Byte],
-    override private[nio] val _arrayOffset: Int,
+    override private[nio] val _offset: Int,
     _initialPosition: Int,
     _initialLimit: Int,
     _readOnly: Boolean
@@ -63,7 +63,7 @@ private[nio] final class PointerByteBuffer private (
 
   // Here begins the stuff specific to ByteArrays
   @inline private def byteArrayBits: ByteArrayBits =
-    ByteArrayBits(_rawDataPointer, _arrayOffset, isBigEndian)
+    ByteArrayBits(_rawDataPointer, _offset, isBigEndian)
 
   @noinline def getChar(): Char =
     byteArrayBits.loadChar(getPosAndAdvanceRead(2))
@@ -226,7 +226,7 @@ private[nio] object PointerByteBuffer {
     ): PointerByteBuffer = new PointerByteBuffer(
       _capacity = capacity,
       _rawDataPointer = arrayPtr,
-      _arrayOffset = arrayOffset,
+      _offset = arrayOffset,
       _initialPosition = initialPosition,
       _initialLimit = initialLimit,
       _readOnly = readOnly
@@ -239,7 +239,7 @@ private[nio] object PointerByteBuffer {
     new PointerByteBuffer(
       _capacity = capacity,
       _rawDataPointer = ptr,
-      _arrayOffset = 0,
+      _offset = 0,
       _initialPosition = 0,
       _initialLimit = capacity,
       _readOnly = false

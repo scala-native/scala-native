@@ -7,7 +7,7 @@ import scala.scalanative.unsafe._
 private[nio] final class PointerByteBufferCharView private (
     _capacity: Int,
     override private[nio] val _rawDataPointer: Ptr[Byte],
-    override private[nio] val _arrayOffset: Int,
+    override private[nio] val _offset: Int,
     _initialPosition: Int,
     _initialLimit: Int,
     _readOnly: Boolean,
@@ -43,7 +43,7 @@ private[nio] final class PointerByteBufferCharView private (
     new PointerByteBufferCharView(
       capacity(),
       _rawDataPointer,
-      _byteArrayOffset,
+      _offset,
       position() + start,
       position() + end,
       isReadOnly(),
@@ -129,7 +129,7 @@ private[nio] object PointerByteBufferCharView {
 private[nio] final class PointerByteBufferShortView private (
     _capacity: Int,
     override private[nio] val _rawDataPointer: Ptr[Byte],
-    override private[nio] val _arrayOffset: Int,
+    override private[nio] val _offset: Int,
     _initialPosition: Int,
     _initialLimit: Int,
     _readOnly: Boolean,
@@ -238,7 +238,7 @@ private[nio] object PointerByteBufferShortView {
 private[nio] final class PointerByteBufferIntView private (
     _capacity: Int,
     override private[nio] val _rawDataPointer: Ptr[Byte],
-    override private[nio] val _arrayOffset: Int,
+    override private[nio] val _offset: Int,
     _initialPosition: Int,
     _initialLimit: Int,
     _readOnly: Boolean,
@@ -347,7 +347,7 @@ private[nio] object PointerByteBufferIntView {
 private[nio] final class PointerByteBufferLongView private (
     _capacity: Int,
     override private[nio] val _rawDataPointer: Ptr[Byte],
-    override private[nio] val _arrayOffset: Int,
+    override private[nio] val _offset: Int,
     _initialPosition: Int,
     _initialLimit: Int,
     _readOnly: Boolean,
@@ -456,7 +456,7 @@ private[nio] object PointerByteBufferLongView {
 private[nio] final class PointerByteBufferFloatView private (
     _capacity: Int,
     override private[nio] val _rawDataPointer: Ptr[Byte],
-    override private[nio] val _arrayOffset: Int,
+    override private[nio] val _offset: Int,
     _initialPosition: Int,
     _initialLimit: Int,
     _readOnly: Boolean,
@@ -565,7 +565,7 @@ private[nio] object PointerByteBufferFloatView {
 private[nio] final class PointerByteBufferDoubleView private (
     _capacity: Int,
     override private[nio] val _rawDataPointer: Ptr[Byte],
-    override private[nio] val _arrayOffset: Int,
+    override private[nio] val _offset: Int,
     _initialPosition: Int,
     _initialLimit: Int,
     _readOnly: Boolean,

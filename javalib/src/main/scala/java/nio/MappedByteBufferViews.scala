@@ -5,7 +5,7 @@ package java.nio
 private[nio] final class MappedByteBufferCharView private (
     _capacity: Int,
     override private[nio] val _mappedData: MappedByteBufferData,
-    override private[nio] val _byteArrayOffset: Int,
+    override private[nio] val _offset: Int,
     _initialPosition: Int,
     _initialLimit: Int,
     _readOnly: Boolean,
@@ -41,7 +41,7 @@ private[nio] final class MappedByteBufferCharView private (
     new MappedByteBufferCharView(
       capacity(),
       _mappedData,
-      _byteArrayOffset,
+      _offset,
       position() + start,
       position() + end,
       isReadOnly(),
@@ -127,7 +127,7 @@ private[nio] object MappedByteBufferCharView {
 private[nio] final class MappedByteBufferShortView private (
     _capacity: Int,
     override private[nio] val _mappedData: MappedByteBufferData,
-    override private[nio] val _byteArrayOffset: Int,
+    override private[nio] val _offset: Int,
     _initialPosition: Int,
     _initialLimit: Int,
     _readOnly: Boolean,
@@ -236,7 +236,7 @@ private[nio] object MappedByteBufferShortView {
 private[nio] final class MappedByteBufferIntView private (
     _capacity: Int,
     override private[nio] val _mappedData: MappedByteBufferData,
-    override private[nio] val _byteArrayOffset: Int,
+    override private[nio] val _offset: Int,
     _initialPosition: Int,
     _initialLimit: Int,
     _readOnly: Boolean,
@@ -345,7 +345,7 @@ private[nio] object MappedByteBufferIntView {
 private[nio] final class MappedByteBufferLongView private (
     _capacity: Int,
     override private[nio] val _mappedData: MappedByteBufferData,
-    override private[nio] val _byteArrayOffset: Int,
+    override private[nio] val _offset: Int,
     _initialPosition: Int,
     _initialLimit: Int,
     _readOnly: Boolean,
@@ -454,7 +454,7 @@ private[nio] object MappedByteBufferLongView {
 private[nio] final class MappedByteBufferFloatView private (
     _capacity: Int,
     override private[nio] val _mappedData: MappedByteBufferData,
-    override private[nio] val _byteArrayOffset: Int,
+    override private[nio] val _offset: Int,
     _initialPosition: Int,
     _initialLimit: Int,
     _readOnly: Boolean,
@@ -563,7 +563,7 @@ private[nio] object MappedByteBufferFloatView {
 private[nio] final class MappedByteBufferDoubleView private (
     _capacity: Int,
     override private[nio] val _mappedData: MappedByteBufferData,
-    override private[nio] val _byteArrayOffset: Int,
+    override private[nio] val _offset: Int,
     _initialPosition: Int,
     _initialLimit: Int,
     _readOnly: Boolean,
