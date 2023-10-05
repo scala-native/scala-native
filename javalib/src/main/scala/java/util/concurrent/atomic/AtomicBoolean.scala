@@ -9,8 +9,8 @@ package java.util.concurrent.atomic
 import scala.language.implicitConversions
 import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.unsafe._
-import scala.scalanative.libc.atomic.memory_order._
-import scala.scalanative.libc.atomic.CAtomicByte
+import scala.scalanative.libc.stdatomic.memory_order._
+import scala.scalanative.libc.stdatomic.AtomicByte
 import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
 
 @SerialVersionUID(4654671469794556979L)
@@ -18,7 +18,7 @@ class AtomicBoolean private (private var value: Byte) extends Serializable {
 
   // Pointer to field containing underlying Byte.
   @alwaysinline
-  private[concurrent] def valueRef: CAtomicByte = new CAtomicByte(
+  private[concurrent] def valueRef: AtomicByte = new AtomicByte(
     fromRawPtr(Intrinsics.classFieldRawPtr(this, "value"))
   )
 

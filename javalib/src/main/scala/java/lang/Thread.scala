@@ -13,8 +13,8 @@ import scala.scalanative.runtime.Intrinsics._
 import scala.scalanative.runtime.{fromRawPtr, NativeThread}
 import scala.scalanative.runtime.NativeThread.{State => _, _}
 import scala.scalanative.runtime.NativeThread.State._
-import scala.scalanative.libc.atomic.{CAtomicLongLong, atomic_thread_fence}
-import scala.scalanative.libc.atomic.memory_order._
+import scala.scalanative.libc.stdatomic.{AtomicLongLong, atomic_thread_fence}
+import scala.scalanative.libc.stdatomic.memory_order._
 import scala.scalanative.runtime.UnsupportedFeature
 
 import scala.scalanative.runtime.JoinNonDaemonThreads
@@ -600,7 +600,7 @@ object Thread {
   // Counter used to generate thread's ID, 0 resevered for main
   sealed abstract class Numbering {
     final protected var cursor = 1L
-    final protected val cursorRef = new CAtomicLongLong(
+    final protected val cursorRef = new AtomicLongLong(
       fromRawPtr(classFieldRawPtr(this, "cursor"))
     )
     def next(): scala.Long = cursorRef.fetchAdd(1L)

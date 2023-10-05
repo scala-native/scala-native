@@ -14,7 +14,11 @@ import java.util.function.DoubleBinaryOperator;
 import java.util.function.LongBinaryOperator;
 import scala.scalanative.annotation._
 import scala.scalanative.unsafe._
-import scala.scalanative.libc.atomic.{CAtomicInt, CAtomicLongLong, memory_order}
+import scala.scalanative.libc.stdatomic.{
+  AtomicInt,
+  AtomicLongLong,
+  memory_order
+}
 import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
 
 @SuppressWarnings(Array("serial"))
@@ -24,7 +28,7 @@ private[atomic] object Striped64 {
       @volatile private[atomic] var value: Long
   ) {
 
-    @alwaysinline def valueAtomic() = new CAtomicLongLong(
+    @alwaysinline def valueAtomic() = new AtomicLongLong(
       fromRawPtr(Intrinsics.classFieldRawPtr(this, "value"))
     )
 
@@ -47,7 +51,7 @@ private[atomic] object Striped64 {
 
   private[atomic] val NCPU: Int = Runtime.getRuntime().availableProcessors()
 
-  @alwaysinline private[atomic] def threadProbeAtomic() = new CAtomicInt(
+  @alwaysinline private[atomic] def threadProbeAtomic() = new AtomicInt(
     fromRawPtr(
       Intrinsics.classFieldRawPtr(
         Thread.currentThread(),
@@ -87,11 +91,11 @@ private[atomic] abstract class Striped64 private[atomic] () extends Number {
 
   @transient @volatile private[atomic] var cellsBusy: Int = 0
 
-  @alwaysinline private def baseAtomic() = new CAtomicLongLong(
+  @alwaysinline private def baseAtomic() = new AtomicLongLong(
     fromRawPtr(Intrinsics.classFieldRawPtr(this, "base"))
   )
 
-  @alwaysinline private def cellsBusyAtomic() = new CAtomicInt(
+  @alwaysinline private def cellsBusyAtomic() = new AtomicInt(
     fromRawPtr(Intrinsics.classFieldRawPtr(this, "cellsBusy"))
   )
 

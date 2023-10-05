@@ -7,7 +7,7 @@
 package java.util.concurrent
 
 import scala.scalanative.runtime.{Intrinsics, fromRawPtr}
-import scala.scalanative.libc.atomic.CAtomicInt
+import scala.scalanative.libc.stdatomic.AtomicInt
 import scala.annotation.tailrec
 
 abstract class CountedCompleter[T] protected (
@@ -16,7 +16,7 @@ abstract class CountedCompleter[T] protected (
 ) extends ForkJoinTask[T] {
 
   @volatile private var pending = initialPendingCount
-  private val atomicPending = new CAtomicInt(
+  private val atomicPending = new AtomicInt(
     fromRawPtr(Intrinsics.classFieldRawPtr(this, "pending"))
   )
 

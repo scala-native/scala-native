@@ -11,7 +11,7 @@ import java.util.concurrent.locks._
 import java.util.function._
 import scala.annotation.tailrec
 import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
-import scala.scalanative.libc.atomic.CAtomicInt
+import scala.scalanative.libc.stdatomic.AtomicInt
 
 @SerialVersionUID(5595510919245408276L)
 object PriorityBlockingQueue {
@@ -162,7 +162,7 @@ class PriorityBlockingQueue[E <: AnyRef] private (
 
   @volatile private var allocationSpinLock = 0
 
-  private val atomicAllocationSpinLock = new CAtomicInt(
+  private val atomicAllocationSpinLock = new AtomicInt(
     fromRawPtr(Intrinsics.classFieldRawPtr(this, "allocationSpinLock"))
   )
 

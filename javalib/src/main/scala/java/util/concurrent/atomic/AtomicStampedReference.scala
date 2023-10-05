@@ -7,8 +7,8 @@
 package java.util.concurrent.atomic
 
 import scala.scalanative.annotation.alwaysinline
-import scala.scalanative.libc.atomic.CAtomicRef
-import scala.scalanative.libc.atomic.memory_order._
+import scala.scalanative.libc.stdatomic.AtomicRef
+import scala.scalanative.libc.stdatomic.memory_order._
 import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
 
 object AtomicStampedReference {
@@ -30,8 +30,8 @@ class AtomicStampedReference[V <: AnyRef] private (
 
   // Pointer to field containing underlying StampedReference.
   @alwaysinline
-  private[concurrent] def valueRef: CAtomicRef[StampedReference[V]] =
-    new CAtomicRef(
+  private[concurrent] def valueRef: AtomicRef[StampedReference[V]] =
+    new AtomicRef(
       fromRawPtr(Intrinsics.classFieldRawPtr(this, "value"))
     )
 
