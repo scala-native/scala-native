@@ -1,6 +1,6 @@
-package java.nio
+// format: off
 
-// Ported from Scala.js
+package java.nio
 
 % types = [('Char', '2'),
 %          ('Short', '2'),
@@ -9,7 +9,6 @@ package java.nio
 %          ('Float', '4'),
 %          ('Double', '8')]
 % for (T, size) in types:
-
 private[nio] final class Heap${T}Buffer private (
     _capacity: Int,
     _array0: Array[${T}],

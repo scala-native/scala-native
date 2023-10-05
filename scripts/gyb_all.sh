@@ -42,4 +42,6 @@ gyb clib/src/main/resources/scala-native/atomic.c.gyb
 gyb $javaNIO/HeapBuffers.scala.gyb
 gyb $javaNIO/HeapByteBufferViews.scala.gyb
 gyb $javaNIO/MappedByteBufferViews.scala.gyb
+gyb $javaNIO/PointerByteBufferViews.scala.gyb
+
 

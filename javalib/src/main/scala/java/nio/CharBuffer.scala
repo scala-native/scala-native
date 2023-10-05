@@ -21,8 +21,7 @@ object CharBuffer {
 
 abstract class CharBuffer private[nio] (
     _capacity: Int,
-    private[nio] val _array: Array[Char],
-    private[nio] val _mappedData: MappedByteBufferData,
+    override private[nio] val _array: Array[Char],
     private[nio] val _arrayOffset: Int
 ) extends Buffer(_capacity)
     with Comparable[CharBuffer]
@@ -35,7 +34,7 @@ abstract class CharBuffer private[nio] (
 
   private def genBuffer = GenBuffer[CharBuffer](this)
 
-  def this(_capacity: Int) = this(_capacity, null, null, -1)
+  def this(_capacity: Int) = this(_capacity, null: Array[Char], -1)
 
   def read(target: CharBuffer): Int = {
     // Attention: this method must not change this buffer's position

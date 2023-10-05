@@ -16,8 +16,7 @@ object FloatBuffer {
 
 abstract class FloatBuffer private[nio] (
     _capacity: Int,
-    private[nio] val _array: Array[Float],
-    private[nio] val _mappedData: MappedByteBufferData,
+    override private[nio] val _array: Array[Float],
     private[nio] val _arrayOffset: Int
 ) extends Buffer(_capacity)
     with Comparable[FloatBuffer] {
@@ -27,7 +26,7 @@ abstract class FloatBuffer private[nio] (
 
   private def genBuffer = GenBuffer[FloatBuffer](this)
 
-  def this(_capacity: Int) = this(_capacity, null, null, -1)
+  def this(_capacity: Int) = this(_capacity, null, -1)
 
   def slice(): FloatBuffer
 

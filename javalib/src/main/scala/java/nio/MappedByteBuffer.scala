@@ -7,7 +7,7 @@ abstract class MappedByteBuffer private[nio] (
     initialPosition: Int,
     initialLimit: Int,
     isReadOnly: Boolean
-) extends ByteBuffer(_capacity, null, _mappedData, _arrayOffset) {
+) extends ByteBuffer(_capacity, null, _arrayOffset) {
 
   def force(): MappedByteBuffer
 

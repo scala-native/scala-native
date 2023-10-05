@@ -16,8 +16,7 @@ object IntBuffer {
 
 abstract class IntBuffer private[nio] (
     _capacity: Int,
-    private[nio] val _array: Array[Int],
-    private[nio] val _mappedData: MappedByteBufferData,
+    override private[nio] val _array: Array[Int],
     private[nio] val _arrayOffset: Int
 ) extends Buffer(_capacity)
     with Comparable[IntBuffer] {
@@ -26,7 +25,7 @@ abstract class IntBuffer private[nio] (
   private[nio] type ElementType = Int
   private[nio] type BufferType = IntBuffer
 
-  def this(_capacity: Int) = this(_capacity, null, null, -1)
+  def this(_capacity: Int) = this(_capacity, null, -1)
 
   def slice(): IntBuffer
 

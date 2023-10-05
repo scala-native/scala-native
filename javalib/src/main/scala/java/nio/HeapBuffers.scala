@@ -1,7 +1,6 @@
+// format: off
+
 package java.nio
-
-// Ported from Scala.js
-
 
 private[nio] final class HeapCharBuffer private (
     _capacity: Int,
@@ -149,7 +148,6 @@ private[nio] object HeapCharBuffer {
   }
 }
 
-
 private[nio] final class HeapShortBuffer private (
     _capacity: Int,
     _array0: Array[Short],
@@ -283,7 +281,6 @@ private[nio] object HeapShortBuffer {
     )
   }
 }
-
 
 private[nio] final class HeapIntBuffer private (
     _capacity: Int,
@@ -419,7 +416,6 @@ private[nio] object HeapIntBuffer {
   }
 }
 
-
 private[nio] final class HeapLongBuffer private (
     _capacity: Int,
     _array0: Array[Long],
@@ -554,7 +550,6 @@ private[nio] object HeapLongBuffer {
   }
 }
 
-
 private[nio] final class HeapFloatBuffer private (
     _capacity: Int,
     _array0: Array[Float],
@@ -688,7 +683,6 @@ private[nio] object HeapFloatBuffer {
     )
   }
 }
-
 
 private[nio] final class HeapDoubleBuffer private (
     _capacity: Int,

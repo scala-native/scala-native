@@ -2,10 +2,12 @@
 
 package java.nio
 
-private[nio] final class HeapByteBufferCharView private (
+import scala.scalanative.unsafe._
+
+private[nio] final class PointerByteBufferCharView private (
     _capacity: Int,
-    override private[nio] val _byteArray: Array[Byte],
-    override private[nio] val _byteArrayOffset: Int,
+    override private[nio] val _rawDataPointer: Ptr[Byte],
+    override private[nio] val _arrayOffset: Int,
     _initialPosition: Int,
     _initialLimit: Int,
     _readOnly: Boolean,
@@ -15,9 +17,9 @@ private[nio] final class HeapByteBufferCharView private (
   position(_initialPosition)
   limit(_initialLimit)
 
-  private implicit def newHeapBufferView
-      : GenHeapBufferView.NewHeapBufferView[CharBuffer] =
-    HeapByteBufferCharView.NewHeapByteBufferCharView
+  private implicit def newPointerCharBufferView
+      : GenPointerBufferView.NewPointerBufferView[CharBuffer] =
+    PointerByteBufferCharView.NewPointerByteBufferCharView
 
   def isReadOnly(): Boolean = _readOnly
 
@@ -25,22 +27,22 @@ private[nio] final class HeapByteBufferCharView private (
 
   @noinline
   def slice(): CharBuffer =
-    GenHeapBufferView[CharBuffer](this).generic_slice()
+    GenPointerBufferView[CharBuffer](this).generic_slice()
 
   @noinline
   def duplicate(): CharBuffer =
-    GenHeapBufferView[CharBuffer](this).generic_duplicate()
+    GenPointerBufferView[CharBuffer](this).generic_duplicate()
 
   @noinline
   def asReadOnlyBuffer(): CharBuffer =
-    GenHeapBufferView[CharBuffer](this).generic_asReadOnlyBuffer()
+    GenPointerBufferView[CharBuffer](this).generic_asReadOnlyBuffer()
 
   def subSequence(start: Int, end: Int): CharBuffer = {
     if (start < 0 || end < start || end > remaining())
       throw new IndexOutOfBoundsException
-    new HeapByteBufferCharView(
+    new PointerByteBufferCharView(
       capacity(),
-      _byteArray,
+      _rawDataPointer,
       _byteArrayOffset,
       position() + start,
       position() + end,
@@ -75,40 +77,40 @@ private[nio] final class HeapByteBufferCharView private (
 
   @noinline
   def compact(): CharBuffer =
-    GenHeapBufferView[CharBuffer](this).generic_compact()
+    GenPointerBufferView[CharBuffer](this).generic_compact()
 
   @noinline
   def order(): ByteOrder =
-    GenHeapBufferView[CharBuffer](this).generic_order()
+    GenPointerBufferView[CharBuffer](this).generic_order()
 
   // Private API
 
   @inline
   private[nio] def load(index: Int): Char =
-    GenHeapBufferView[CharBuffer](this).byteArrayBits.loadChar(index)
+    GenPointerBufferView[CharBuffer](this).byteArrayBits.loadChar(index)
 
   @inline
   private[nio] def store(index: Int, elem: Char): Unit =
-    GenHeapBufferView[CharBuffer](this).byteArrayBits.storeChar(index, elem)
+    GenPointerBufferView[CharBuffer](this).byteArrayBits.storeChar(index, elem)
 }
 
-private[nio] object HeapByteBufferCharView {
-  private[nio] implicit object NewHeapByteBufferCharView
-      extends GenHeapBufferView.NewHeapBufferView[CharBuffer] {
+private[nio] object PointerByteBufferCharView {
+  private[nio] implicit object NewPointerByteBufferCharView
+      extends GenPointerBufferView.NewPointerBufferView[CharBuffer] {
     def bytesPerElem: Int = 2
 
     def apply(
         capacity: Int,
-        byteArray: Array[Byte],
+        arrayPtr: Ptr[Byte],
         byteArrayOffset: Int,
         initialPosition: Int,
         initialLimit: Int,
         readOnly: Boolean,
         isBigEndian: Boolean
     ): CharBuffer = {
-      new HeapByteBufferCharView(
+      new PointerByteBufferCharView(
         capacity,
-        byteArray,
+        arrayPtr,
         byteArrayOffset,
         initialPosition,
         initialLimit,
@@ -119,13 +121,15 @@ private[nio] object HeapByteBufferCharView {
   }
 
   @inline
-  private[nio] def fromHeapByteBuffer(byteBuffer: HeapByteBuffer): CharBuffer =
-    GenHeapBufferView.generic_fromHeapByteBuffer(byteBuffer)
+  private[nio] def fromPointerByteBuffer(
+      byteBuffer: PointerByteBuffer
+  ): CharBuffer =
+    GenPointerBufferView.generic_fromPointerByteBuffer(byteBuffer)
 }
-private[nio] final class HeapByteBufferShortView private (
+private[nio] final class PointerByteBufferShortView private (
     _capacity: Int,
-    override private[nio] val _byteArray: Array[Byte],
-    override private[nio] val _byteArrayOffset: Int,
+    override private[nio] val _rawDataPointer: Ptr[Byte],
+    override private[nio] val _arrayOffset: Int,
     _initialPosition: Int,
     _initialLimit: Int,
     _readOnly: Boolean,
@@ -135,9 +139,9 @@ private[nio] final class HeapByteBufferShortView private (
   position(_initialPosition)
   limit(_initialLimit)
 
-  private implicit def newHeapBufferView
-      : GenHeapBufferView.NewHeapBufferView[ShortBuffer] =
-    HeapByteBufferShortView.NewHeapByteBufferShortView
+  private implicit def newPointerShortBufferView
+      : GenPointerBufferView.NewPointerBufferView[ShortBuffer] =
+    PointerByteBufferShortView.NewPointerByteBufferShortView
 
   def isReadOnly(): Boolean = _readOnly
 
@@ -145,15 +149,15 @@ private[nio] final class HeapByteBufferShortView private (
 
   @noinline
   def slice(): ShortBuffer =
-    GenHeapBufferView[ShortBuffer](this).generic_slice()
+    GenPointerBufferView[ShortBuffer](this).generic_slice()
 
   @noinline
   def duplicate(): ShortBuffer =
-    GenHeapBufferView[ShortBuffer](this).generic_duplicate()
+    GenPointerBufferView[ShortBuffer](this).generic_duplicate()
 
   @noinline
   def asReadOnlyBuffer(): ShortBuffer =
-    GenHeapBufferView[ShortBuffer](this).generic_asReadOnlyBuffer()
+    GenPointerBufferView[ShortBuffer](this).generic_asReadOnlyBuffer()
 
 
   @noinline
@@ -182,40 +186,40 @@ private[nio] final class HeapByteBufferShortView private (
 
   @noinline
   def compact(): ShortBuffer =
-    GenHeapBufferView[ShortBuffer](this).generic_compact()
+    GenPointerBufferView[ShortBuffer](this).generic_compact()
 
   @noinline
   def order(): ByteOrder =
-    GenHeapBufferView[ShortBuffer](this).generic_order()
+    GenPointerBufferView[ShortBuffer](this).generic_order()
 
   // Private API
 
   @inline
   private[nio] def load(index: Int): Short =
-    GenHeapBufferView[ShortBuffer](this).byteArrayBits.loadShort(index)
+    GenPointerBufferView[ShortBuffer](this).byteArrayBits.loadShort(index)
 
   @inline
   private[nio] def store(index: Int, elem: Short): Unit =
-    GenHeapBufferView[ShortBuffer](this).byteArrayBits.storeShort(index, elem)
+    GenPointerBufferView[ShortBuffer](this).byteArrayBits.storeShort(index, elem)
 }
 
-private[nio] object HeapByteBufferShortView {
-  private[nio] implicit object NewHeapByteBufferShortView
-      extends GenHeapBufferView.NewHeapBufferView[ShortBuffer] {
+private[nio] object PointerByteBufferShortView {
+  private[nio] implicit object NewPointerByteBufferShortView
+      extends GenPointerBufferView.NewPointerBufferView[ShortBuffer] {
     def bytesPerElem: Int = 2
 
     def apply(
         capacity: Int,
-        byteArray: Array[Byte],
+        arrayPtr: Ptr[Byte],
         byteArrayOffset: Int,
         initialPosition: Int,
         initialLimit: Int,
         readOnly: Boolean,
         isBigEndian: Boolean
     ): ShortBuffer = {
-      new HeapByteBufferShortView(
+      new PointerByteBufferShortView(
         capacity,
-        byteArray,
+        arrayPtr,
         byteArrayOffset,
         initialPosition,
         initialLimit,
@@ -226,13 +230,15 @@ private[nio] object HeapByteBufferShortView {
   }
 
   @inline
-  private[nio] def fromHeapByteBuffer(byteBuffer: HeapByteBuffer): ShortBuffer =
-    GenHeapBufferView.generic_fromHeapByteBuffer(byteBuffer)
+  private[nio] def fromPointerByteBuffer(
+      byteBuffer: PointerByteBuffer
+  ): ShortBuffer =
+    GenPointerBufferView.generic_fromPointerByteBuffer(byteBuffer)
 }
-private[nio] final class HeapByteBufferIntView private (
+private[nio] final class PointerByteBufferIntView private (
     _capacity: Int,
-    override private[nio] val _byteArray: Array[Byte],
-    override private[nio] val _byteArrayOffset: Int,
+    override private[nio] val _rawDataPointer: Ptr[Byte],
+    override private[nio] val _arrayOffset: Int,
     _initialPosition: Int,
     _initialLimit: Int,
     _readOnly: Boolean,
@@ -242,9 +248,9 @@ private[nio] final class HeapByteBufferIntView private (
   position(_initialPosition)
   limit(_initialLimit)
 
-  private implicit def newHeapBufferView
-      : GenHeapBufferView.NewHeapBufferView[IntBuffer] =
-    HeapByteBufferIntView.NewHeapByteBufferIntView
+  private implicit def newPointerIntBufferView
+      : GenPointerBufferView.NewPointerBufferView[IntBuffer] =
+    PointerByteBufferIntView.NewPointerByteBufferIntView
 
   def isReadOnly(): Boolean = _readOnly
 
@@ -252,15 +258,15 @@ private[nio] final class HeapByteBufferIntView private (
 
   @noinline
   def slice(): IntBuffer =
-    GenHeapBufferView[IntBuffer](this).generic_slice()
+    GenPointerBufferView[IntBuffer](this).generic_slice()
 
   @noinline
   def duplicate(): IntBuffer =
-    GenHeapBufferView[IntBuffer](this).generic_duplicate()
+    GenPointerBufferView[IntBuffer](this).generic_duplicate()
 
   @noinline
   def asReadOnlyBuffer(): IntBuffer =
-    GenHeapBufferView[IntBuffer](this).generic_asReadOnlyBuffer()
+    GenPointerBufferView[IntBuffer](this).generic_asReadOnlyBuffer()
 
 
   @noinline
@@ -289,40 +295,40 @@ private[nio] final class HeapByteBufferIntView private (
 
   @noinline
   def compact(): IntBuffer =
-    GenHeapBufferView[IntBuffer](this).generic_compact()
+    GenPointerBufferView[IntBuffer](this).generic_compact()
 
   @noinline
   def order(): ByteOrder =
-    GenHeapBufferView[IntBuffer](this).generic_order()
+    GenPointerBufferView[IntBuffer](this).generic_order()
 
   // Private API
 
   @inline
   private[nio] def load(index: Int): Int =
-    GenHeapBufferView[IntBuffer](this).byteArrayBits.loadInt(index)
+    GenPointerBufferView[IntBuffer](this).byteArrayBits.loadInt(index)
 
   @inline
   private[nio] def store(index: Int, elem: Int): Unit =
-    GenHeapBufferView[IntBuffer](this).byteArrayBits.storeInt(index, elem)
+    GenPointerBufferView[IntBuffer](this).byteArrayBits.storeInt(index, elem)
 }
 
-private[nio] object HeapByteBufferIntView {
-  private[nio] implicit object NewHeapByteBufferIntView
-      extends GenHeapBufferView.NewHeapBufferView[IntBuffer] {
-    def bytesPerElem: Int = 2
+private[nio] object PointerByteBufferIntView {
+  private[nio] implicit object NewPointerByteBufferIntView
+      extends GenPointerBufferView.NewPointerBufferView[IntBuffer] {
+    def bytesPerElem: Int = 4
 
     def apply(
         capacity: Int,
-        byteArray: Array[Byte],
+        arrayPtr: Ptr[Byte],
         byteArrayOffset: Int,
         initialPosition: Int,
         initialLimit: Int,
         readOnly: Boolean,
         isBigEndian: Boolean
     ): IntBuffer = {
-      new HeapByteBufferIntView(
+      new PointerByteBufferIntView(
         capacity,
-        byteArray,
+        arrayPtr,
         byteArrayOffset,
         initialPosition,
         initialLimit,
@@ -333,13 +339,15 @@ private[nio] object HeapByteBufferIntView {
   }
 
   @inline
-  private[nio] def fromHeapByteBuffer(byteBuffer: HeapByteBuffer): IntBuffer =
-    GenHeapBufferView.generic_fromHeapByteBuffer(byteBuffer)
+  private[nio] def fromPointerByteBuffer(
+      byteBuffer: PointerByteBuffer
+  ): IntBuffer =
+    GenPointerBufferView.generic_fromPointerByteBuffer(byteBuffer)
 }
-private[nio] final class HeapByteBufferLongView private (
+private[nio] final class PointerByteBufferLongView private (
     _capacity: Int,
-    override private[nio] val _byteArray: Array[Byte],
-    override private[nio] val _byteArrayOffset: Int,
+    override private[nio] val _rawDataPointer: Ptr[Byte],
+    override private[nio] val _arrayOffset: Int,
     _initialPosition: Int,
     _initialLimit: Int,
     _readOnly: Boolean,
@@ -349,9 +357,9 @@ private[nio] final class HeapByteBufferLongView private (
   position(_initialPosition)
   limit(_initialLimit)
 
-  private implicit def newHeapBufferView
-      : GenHeapBufferView.NewHeapBufferView[LongBuffer] =
-    HeapByteBufferLongView.NewHeapByteBufferLongView
+  private implicit def newPointerLongBufferView
+      : GenPointerBufferView.NewPointerBufferView[LongBuffer] =
+    PointerByteBufferLongView.NewPointerByteBufferLongView
 
   def isReadOnly(): Boolean = _readOnly
 
@@ -359,15 +367,15 @@ private[nio] final class HeapByteBufferLongView private (
 
   @noinline
   def slice(): LongBuffer =
-    GenHeapBufferView[LongBuffer](this).generic_slice()
+    GenPointerBufferView[LongBuffer](this).generic_slice()
 
   @noinline
   def duplicate(): LongBuffer =
-    GenHeapBufferView[LongBuffer](this).generic_duplicate()
+    GenPointerBufferView[LongBuffer](this).generic_duplicate()
 
   @noinline
   def asReadOnlyBuffer(): LongBuffer =
-    GenHeapBufferView[LongBuffer](this).generic_asReadOnlyBuffer()
+    GenPointerBufferView[LongBuffer](this).generic_asReadOnlyBuffer()
 
 
   @noinline
@@ -396,40 +404,40 @@ private[nio] final class HeapByteBufferLongView private (
 
   @noinline
   def compact(): LongBuffer =
-    GenHeapBufferView[LongBuffer](this).generic_compact()
+    GenPointerBufferView[LongBuffer](this).generic_compact()
 
   @noinline
   def order(): ByteOrder =
-    GenHeapBufferView[LongBuffer](this).generic_order()
+    GenPointerBufferView[LongBuffer](this).generic_order()
 
   // Private API
 
   @inline
   private[nio] def load(index: Int): Long =
-    GenHeapBufferView[LongBuffer](this).byteArrayBits.loadLong(index)
+    GenPointerBufferView[LongBuffer](this).byteArrayBits.loadLong(index)
 
   @inline
   private[nio] def store(index: Int, elem: Long): Unit =
-    GenHeapBufferView[LongBuffer](this).byteArrayBits.storeLong(index, elem)
+    GenPointerBufferView[LongBuffer](this).byteArrayBits.storeLong(index, elem)
 }
 
-private[nio] object HeapByteBufferLongView {
-  private[nio] implicit object NewHeapByteBufferLongView
-      extends GenHeapBufferView.NewHeapBufferView[LongBuffer] {
-    def bytesPerElem: Int = 2
+private[nio] object PointerByteBufferLongView {
+  private[nio] implicit object NewPointerByteBufferLongView
+      extends GenPointerBufferView.NewPointerBufferView[LongBuffer] {
+    def bytesPerElem: Int = 8
 
     def apply(
         capacity: Int,
-        byteArray: Array[Byte],
+        arrayPtr: Ptr[Byte],
         byteArrayOffset: Int,
         initialPosition: Int,
         initialLimit: Int,
         readOnly: Boolean,
         isBigEndian: Boolean
     ): LongBuffer = {
-      new HeapByteBufferLongView(
+      new PointerByteBufferLongView(
         capacity,
-        byteArray,
+        arrayPtr,
         byteArrayOffset,
         initialPosition,
         initialLimit,
@@ -440,13 +448,15 @@ private[nio] object HeapByteBufferLongView {
   }
 
   @inline
-  private[nio] def fromHeapByteBuffer(byteBuffer: HeapByteBuffer): LongBuffer =
-    GenHeapBufferView.generic_fromHeapByteBuffer(byteBuffer)
+  private[nio] def fromPointerByteBuffer(
+      byteBuffer: PointerByteBuffer
+  ): LongBuffer =
+    GenPointerBufferView.generic_fromPointerByteBuffer(byteBuffer)
 }
-private[nio] final class HeapByteBufferFloatView private (
+private[nio] final class PointerByteBufferFloatView private (
     _capacity: Int,
-    override private[nio] val _byteArray: Array[Byte],
-    override private[nio] val _byteArrayOffset: Int,
+    override private[nio] val _rawDataPointer: Ptr[Byte],
+    override private[nio] val _arrayOffset: Int,
     _initialPosition: Int,
     _initialLimit: Int,
     _readOnly: Boolean,
@@ -456,9 +466,9 @@ private[nio] final class HeapByteBufferFloatView private (
   position(_initialPosition)
   limit(_initialLimit)
 
-  private implicit def newHeapBufferView
-      : GenHeapBufferView.NewHeapBufferView[FloatBuffer] =
-    HeapByteBufferFloatView.NewHeapByteBufferFloatView
+  private implicit def newPointerFloatBufferView
+      : GenPointerBufferView.NewPointerBufferView[FloatBuffer] =
+    PointerByteBufferFloatView.NewPointerByteBufferFloatView
 
   def isReadOnly(): Boolean = _readOnly
 
@@ -466,15 +476,15 @@ private[nio] final class HeapByteBufferFloatView private (
 
   @noinline
   def slice(): FloatBuffer =
-    GenHeapBufferView[FloatBuffer](this).generic_slice()
+    GenPointerBufferView[FloatBuffer](this).generic_slice()
 
   @noinline
   def duplicate(): FloatBuffer =
-    GenHeapBufferView[FloatBuffer](this).generic_duplicate()
+    GenPointerBufferView[FloatBuffer](this).generic_duplicate()
 
   @noinline
   def asReadOnlyBuffer(): FloatBuffer =
-    GenHeapBufferView[FloatBuffer](this).generic_asReadOnlyBuffer()
+    GenPointerBufferView[FloatBuffer](this).generic_asReadOnlyBuffer()
 
 
   @noinline
@@ -503,40 +513,40 @@ private[nio] final class HeapByteBufferFloatView private (
 
   @noinline
   def compact(): FloatBuffer =
-    GenHeapBufferView[FloatBuffer](this).generic_compact()
+    GenPointerBufferView[FloatBuffer](this).generic_compact()
 
   @noinline
   def order(): ByteOrder =
-    GenHeapBufferView[FloatBuffer](this).generic_order()
+    GenPointerBufferView[FloatBuffer](this).generic_order()
 
   // Private API
 
   @inline
   private[nio] def load(index: Int): Float =
-    GenHeapBufferView[FloatBuffer](this).byteArrayBits.loadFloat(index)
+    GenPointerBufferView[FloatBuffer](this).byteArrayBits.loadFloat(index)
 
   @inline
   private[nio] def store(index: Int, elem: Float): Unit =
-    GenHeapBufferView[FloatBuffer](this).byteArrayBits.storeFloat(index, elem)
+    GenPointerBufferView[FloatBuffer](this).byteArrayBits.storeFloat(index, elem)
 }
 
-private[nio] object HeapByteBufferFloatView {
-  private[nio] implicit object NewHeapByteBufferFloatView
-      extends GenHeapBufferView.NewHeapBufferView[FloatBuffer] {
-    def bytesPerElem: Int = 2
+private[nio] object PointerByteBufferFloatView {
+  private[nio] implicit object NewPointerByteBufferFloatView
+      extends GenPointerBufferView.NewPointerBufferView[FloatBuffer] {
+    def bytesPerElem: Int = 4
 
     def apply(
         capacity: Int,
-        byteArray: Array[Byte],
+        arrayPtr: Ptr[Byte],
         byteArrayOffset: Int,
         initialPosition: Int,
         initialLimit: Int,
         readOnly: Boolean,
         isBigEndian: Boolean
     ): FloatBuffer = {
-      new HeapByteBufferFloatView(
+      new PointerByteBufferFloatView(
         capacity,
-        byteArray,
+        arrayPtr,
         byteArrayOffset,
         initialPosition,
         initialLimit,
@@ -547,13 +557,15 @@ private[nio] object HeapByteBufferFloatView {
   }
 
   @inline
-  private[nio] def fromHeapByteBuffer(byteBuffer: HeapByteBuffer): FloatBuffer =
-    GenHeapBufferView.generic_fromHeapByteBuffer(byteBuffer)
+  private[nio] def fromPointerByteBuffer(
+      byteBuffer: PointerByteBuffer
+  ): FloatBuffer =
+    GenPointerBufferView.generic_fromPointerByteBuffer(byteBuffer)
 }
-private[nio] final class HeapByteBufferDoubleView private (
+private[nio] final class PointerByteBufferDoubleView private (
     _capacity: Int,
-    override private[nio] val _byteArray: Array[Byte],
-    override private[nio] val _byteArrayOffset: Int,
+    override private[nio] val _rawDataPointer: Ptr[Byte],
+    override private[nio] val _arrayOffset: Int,
     _initialPosition: Int,
     _initialLimit: Int,
     _readOnly: Boolean,
@@ -563,9 +575,9 @@ private[nio] final class HeapByteBufferDoubleView private (
   position(_initialPosition)
   limit(_initialLimit)
 
-  private implicit def newHeapBufferView
-      : GenHeapBufferView.NewHeapBufferView[DoubleBuffer] =
-    HeapByteBufferDoubleView.NewHeapByteBufferDoubleView
+  private implicit def newPointerDoubleBufferView
+      : GenPointerBufferView.NewPointerBufferView[DoubleBuffer] =
+    PointerByteBufferDoubleView.NewPointerByteBufferDoubleView
 
   def isReadOnly(): Boolean = _readOnly
 
@@ -573,15 +585,15 @@ private[nio] final class HeapByteBufferDoubleView private (
 
   @noinline
   def slice(): DoubleBuffer =
-    GenHeapBufferView[DoubleBuffer](this).generic_slice()
+    GenPointerBufferView[DoubleBuffer](this).generic_slice()
 
   @noinline
   def duplicate(): DoubleBuffer =
-    GenHeapBufferView[DoubleBuffer](this).generic_duplicate()
+    GenPointerBufferView[DoubleBuffer](this).generic_duplicate()
 
   @noinline
   def asReadOnlyBuffer(): DoubleBuffer =
-    GenHeapBufferView[DoubleBuffer](this).generic_asReadOnlyBuffer()
+    GenPointerBufferView[DoubleBuffer](this).generic_asReadOnlyBuffer()
 
 
   @noinline
@@ -610,40 +622,40 @@ private[nio] final class HeapByteBufferDoubleView private (
 
   @noinline
   def compact(): DoubleBuffer =
-    GenHeapBufferView[DoubleBuffer](this).generic_compact()
+    GenPointerBufferView[DoubleBuffer](this).generic_compact()
 
   @noinline
   def order(): ByteOrder =
-    GenHeapBufferView[DoubleBuffer](this).generic_order()
+    GenPointerBufferView[DoubleBuffer](this).generic_order()
 
   // Private API
 
   @inline
   private[nio] def load(index: Int): Double =
-    GenHeapBufferView[DoubleBuffer](this).byteArrayBits.loadDouble(index)
+    GenPointerBufferView[DoubleBuffer](this).byteArrayBits.loadDouble(index)
 
   @inline
   private[nio] def store(index: Int, elem: Double): Unit =
-    GenHeapBufferView[DoubleBuffer](this).byteArrayBits.storeDouble(index, elem)
+    GenPointerBufferView[DoubleBuffer](this).byteArrayBits.storeDouble(index, elem)
 }
 
-private[nio] object HeapByteBufferDoubleView {
-  private[nio] implicit object NewHeapByteBufferDoubleView
-      extends GenHeapBufferView.NewHeapBufferView[DoubleBuffer] {
-    def bytesPerElem: Int = 2
+private[nio] object PointerByteBufferDoubleView {
+  private[nio] implicit object NewPointerByteBufferDoubleView
+      extends GenPointerBufferView.NewPointerBufferView[DoubleBuffer] {
+    def bytesPerElem: Int = 8
 
     def apply(
         capacity: Int,
-        byteArray: Array[Byte],
+        arrayPtr: Ptr[Byte],
         byteArrayOffset: Int,
         initialPosition: Int,
         initialLimit: Int,
         readOnly: Boolean,
         isBigEndian: Boolean
     ): DoubleBuffer = {
-      new HeapByteBufferDoubleView(
+      new PointerByteBufferDoubleView(
         capacity,
-        byteArray,
+        arrayPtr,
         byteArrayOffset,
         initialPosition,
         initialLimit,
@@ -654,6 +666,8 @@ private[nio] object HeapByteBufferDoubleView {
   }
 
   @inline
-  private[nio] def fromHeapByteBuffer(byteBuffer: HeapByteBuffer): DoubleBuffer =
-    GenHeapBufferView.generic_fromHeapByteBuffer(byteBuffer)
+  private[nio] def fromPointerByteBuffer(
+      byteBuffer: PointerByteBuffer
+  ): DoubleBuffer =
+    GenPointerBufferView.generic_fromPointerByteBuffer(byteBuffer)
 }

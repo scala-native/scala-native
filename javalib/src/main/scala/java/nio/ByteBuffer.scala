@@ -1,7 +1,7 @@
 package java.nio
 
 // Ported from Scala.js
-
+import scala.scalanative.unsafe
 object ByteBuffer {
   private final val HashSeed = -547316498 // "java.nio.ByteBuffer".##
 
@@ -15,12 +15,16 @@ object ByteBuffer {
 
   def wrap(array: Array[Byte]): ByteBuffer =
     wrap(array, 0, array.length)
+
+    // Extended API
+
+  def wrapPtr(array: unsafe.Ptr[Byte], length: Int): ByteBuffer =
+    PointerByteBuffer.wrap(array, length)
 }
 
 abstract class ByteBuffer private[nio] (
     _capacity: Int,
-    private[nio] val _array: Array[Byte],
-    private[nio] val _mappedData: MappedByteBufferData,
+    override private[nio] val _array: Array[Byte],
     private[nio] val _arrayOffset: Int
 ) extends Buffer(_capacity)
     with Comparable[ByteBuffer] {
@@ -30,7 +34,7 @@ abstract class ByteBuffer private[nio] (
 
   private def genBuffer = GenBuffer[ByteBuffer](this)
 
-  def this(_capacity: Int) = this(_capacity, null, null, -1)
+  def this(_capacity: Int) = this(_capacity, null: Array[Byte], -1)
 
   private[nio] var _isBigEndian: Boolean = true
 

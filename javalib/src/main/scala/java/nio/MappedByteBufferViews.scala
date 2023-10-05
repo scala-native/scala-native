@@ -1,5 +1,6 @@
-package java.nio
+// format: off
 
+package java.nio
 
 private[nio] final class MappedByteBufferCharView private (
     _capacity: Int,
@@ -123,7 +124,6 @@ private[nio] object MappedByteBufferCharView {
   ): CharBuffer =
     GenMappedBufferView.generic_fromMappedByteBuffer(byteBuffer)
 }
-
 private[nio] final class MappedByteBufferShortView private (
     _capacity: Int,
     override private[nio] val _mappedData: MappedByteBufferData,
@@ -233,7 +233,6 @@ private[nio] object MappedByteBufferShortView {
   ): ShortBuffer =
     GenMappedBufferView.generic_fromMappedByteBuffer(byteBuffer)
 }
-
 private[nio] final class MappedByteBufferIntView private (
     _capacity: Int,
     override private[nio] val _mappedData: MappedByteBufferData,
@@ -343,7 +342,6 @@ private[nio] object MappedByteBufferIntView {
   ): IntBuffer =
     GenMappedBufferView.generic_fromMappedByteBuffer(byteBuffer)
 }
-
 private[nio] final class MappedByteBufferLongView private (
     _capacity: Int,
     override private[nio] val _mappedData: MappedByteBufferData,
@@ -453,7 +451,6 @@ private[nio] object MappedByteBufferLongView {
   ): LongBuffer =
     GenMappedBufferView.generic_fromMappedByteBuffer(byteBuffer)
 }
-
 private[nio] final class MappedByteBufferFloatView private (
     _capacity: Int,
     override private[nio] val _mappedData: MappedByteBufferData,
@@ -563,7 +560,6 @@ private[nio] object MappedByteBufferFloatView {
   ): FloatBuffer =
     GenMappedBufferView.generic_fromMappedByteBuffer(byteBuffer)
 }
-
 private[nio] final class MappedByteBufferDoubleView private (
     _capacity: Int,
     override private[nio] val _mappedData: MappedByteBufferData,

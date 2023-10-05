@@ -1,3 +1,5 @@
+// format: off
+
 package java.nio
 
 % types = [('Char', '2'),
@@ -7,7 +9,6 @@ package java.nio
 %          ('Float', '4'),
 %          ('Double', '8')]
 % for (T, size) in types:
-
 private[nio] final class MappedByteBuffer${T}View private (
     _capacity: Int,
     override private[nio] val _mappedData: MappedByteBufferData,
