@@ -9,12 +9,12 @@ import java.io.Reader
 import scala.annotation.tailrec
 
 final case class Descriptor(
-    groupId: Option[String],
-    artifactId: Option[String],
+    organization: Option[String],
+    name: Option[String],
     gcProject: Boolean,
     links: List[String],
     defines: List[String],
-    includes: List[List[String]]
+    includes: List[String]
 )
 
 object Descriptor {
@@ -26,12 +26,12 @@ object Descriptor {
       val props = new Properties()
       props.load(reader)
       Descriptor(
-        Option(props.getProperty("project.groupId")),
-        Option(props.getProperty("project.artifactId")),
+        Option(props.getProperty("project.organization")),
+        Option(props.getProperty("project.name")),
         props.getProperty("project.gcProject", "false").toBoolean,
         parseStrings("nir.link.names", props),
         parseStrings("preprocessor.defines", props),
-        parseIncludePaths(props)
+        parseStrings("compile.include.paths", props)
       )
     } finally {
       if (reader != null) {
@@ -49,23 +49,5 @@ object Descriptor {
       case Some(value) => value.split(',').map(_.trim()).toList
       case None        => List.empty
     }
-
-  private def parseIncludePaths(props: Properties): List[List[String]] = {
-    @tailrec
-    def createLists(acc: List[List[String]], index: Int): List[List[String]] = {
-      val res =
-        if (index == 0)
-          parseStrings("compile.include.path", props)
-        else
-          parseStrings(s"compile.include.path$index", props)
-
-      res match {
-        case Nil             => acc
-        case _: List[String] => createLists(res :: acc, index + 1)
-      }
-    }
-
-    createLists(List[List[String]](), 0)
-  }
 
 }

@@ -87,17 +87,17 @@ the feature above that allows native code in your application.
 EXPERIMENTAL: Deployment Descriptor for passing settings to the compiler
 ========================================================================
 
-These are **experimental** features. These features allow a library
+These are **experimental** features that were added because they are used
+internally by Scala Native to simplify the build and organize the native
+code with their respective projects. These features allow a library
 developer that has native code included with their project to have
 better control over compilation settings used for their project. By
 adding a ``scala-native.properties`` file in the root of your project's
 ``resources/scala-native`` directory, settings can be added to the
 properties file that are added to the compile command.
 
-Currently, compiler options can only be added to every native library that
-gets compiled which could work for your files but not for other
-dependencies that are being compiled. These features allow the settings
-to apply only to your library during compilation.
+These features allow the settings described below to apply only to your
+library during compilation.
 
 Use the following procedure to use any of the features described below.
 
@@ -160,8 +160,7 @@ delimited list of libraries. If desired, the comments are not needed.
 The feature works by querying the NIR code to see if the user code is using the
 ``z`` library. If used, ``-DSCALANATIVE_LINK_Z`` is passed to the compiler
 and your "glue" code is then compiled. Otherwise, the macro keeps the code
-inside from compiling. The project dependencies with native code are compiled
-individually so this feature only applies to the current library being compiled.
+inside from compiling.
 
 Adding defines to your library when code is being compiled
 ----------------------------------------------------------
@@ -177,39 +176,40 @@ the define ``-DMY_DEFINE`` for example to the options passed to the compiler.
 Add extra include paths for your library
 ----------------------------------------
 
-Currently, the native code compilation gathers your files and provides an
-include to you project ``resources/scala-native`` directory. This means
+Currently, the native code compilation provides an include to your
+project's ``resources/scala-native`` directory. This means
 that code needs to use relative includes. e.g. ``#include "mylib.h"``
+The build scans for all files to compile so only relative paths are
+needed from your base ``scala-native`` directory
 
 This feature allows you to vendor code, include code as is, that has
-system includes. e.g. ``#include <libunwind.h>`` add each segment
-starting from the ``scala-native`` path shown above.
-Additional paths are added starting at ``1`` and must be contiguous.
+system includes. e.g. ``#include <libunwind.h>`` Add the path
+starting from the ``scala-native`` path shown above. If you have a more
+complex setup, you could also put your code in subdirectories and add
+paths to them. Add the paths in Linux/UNIX style and they will be
+converted as needed on the Windows platform.
 
 .. code-block:: properties
 
-    # path to vendored libunwind
-    compile.include.path = platform, posix, libunwind
-    # path to gc base dir
-    compile.include.path1 = gc
+    # path to vendored libunwind a base gc path
+    compile.include.paths = platform/posix/libunwind, gc
 
-Additional paths are added starting at ``1`` and must be contiguous.
 
 Add unique identity to your library for debugging
 -------------------------------------------------
 
-Since these features can apply to libraries that are published to Maven
-Central those coordinates can be used to identify your library. The
+Since these features can apply to libraries that are published,
+those coordinates can be used to identify your library. The
 example here is for a Scala Native ``javalib`` library.
 
 .. code-block:: properties
 
     # output via debugging
-    project.groupId = org.scala-native
-    project.artifactId = javalib
+    project.organization = org.scala-native
+    project.name = javalib
 
 The descriptor and its settings are printed when compiling
-in debug mode. Use the following command:
+in debug mode. Use the following command if using `sbt`:
 
 .. code-block:: sh
 

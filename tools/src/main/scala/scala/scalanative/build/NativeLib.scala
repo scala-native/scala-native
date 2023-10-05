@@ -47,7 +47,7 @@ private[scalanative] object NativeLib {
     LLVM.compile(projConfig, paths)
   }
 
-  /** Update the project configuration the if a project `Descriptor` is present.
+  /** Update the project configuration if a project `Descriptor` is present.
    *
    *  @param config
    *    The configuration of the toolchain.
@@ -76,14 +76,14 @@ private[scalanative] object NativeLib {
             )
         }
 
-      config.logger.debug(desc.toString())
+      config.logger.debug(s"Compilation settings: ${desc.toString()}")
 
-      // create config based on descriptor setting
-      createConfig(desc, config, analysis, nativeCodePath)
+      // update config based on descriptor setting
+      updateConfig(desc, config, analysis, nativeCodePath)
     }
   }
 
-  private def createConfig(
+  private def updateConfig(
       desc: Descriptor,
       config: Config,
       analysis: ReachabilityAnalysis.Result,
@@ -123,15 +123,24 @@ private[scalanative] object NativeLib {
     )
   }
 
+  /** Create a platform path string from a base path and unix path string
+   *
+   *  @param unixPath
+   *    string like foo/bar or baz
+   *  @param nativeCodePath
+   *    base project native path
+   *  @return
+   *    the path as a string
+   */
   private def createPathString(
-      dirs: List[String],
+      unixPath: String,
       nativeCodePath: Path
-  ): String =
+  ): String = {
+    val dirs = unixPath.split("/")
     dirs
-      .foldLeft(nativeCodePath) { (path, dir) =>
-        path.resolve(dir)
-      }
+      .foldLeft(nativeCodePath)((path, dir) => path.resolve(dir))
       .abs
+  }
 
   /** Check for compile Descriptor in destination native code directory.
    *
