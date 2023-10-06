@@ -19,11 +19,11 @@ import org.junit.Assert._
 import scala.scalanative.runtime.Intrinsics.classFieldRawPtr
 import scala.scalanative.runtime.{RawPtr, fromRawPtr}
 import scala.scalanative.annotation.alwaysinline
-import scala.scalanative.libc.atomic.{CAtomicRef, memory_order}
+import scala.scalanative.libc.stdatomic.{AtomicRef, memory_order}
 
 object AtomicReferenceFieldUpdaterTest {
   class IntrinsicBasedImpl[T <: AnyRef, V <: AnyRef](
-      atomicRef: T => CAtomicRef[V]
+      atomicRef: T => AtomicRef[V]
   ) extends AtomicReferenceFieldUpdater[T, V]() {
     def compareAndSet(obj: T, expect: V, update: V): Boolean =
       atomicRef(obj).compareExchangeStrong(expect, update)
@@ -48,7 +48,7 @@ class AtomicReferenceFieldUpdaterTest extends JSR166Test {
 
   def updaterForX =
     new IntrinsicBasedImpl[AtomicReferenceFieldUpdaterTest, Integer](obj =>
-      new CAtomicRef(
+      new AtomicRef(
         fromRawPtr(
           classFieldRawPtr(obj, "x")
         )
@@ -56,7 +56,7 @@ class AtomicReferenceFieldUpdaterTest extends JSR166Test {
     )
   def updaterForProtectedField =
     new IntrinsicBasedImpl[AtomicReferenceFieldUpdaterTest, Integer](obj =>
-      new CAtomicRef(
+      new AtomicRef(
         fromRawPtr(
           classFieldRawPtr(obj, "protectedField")
         )

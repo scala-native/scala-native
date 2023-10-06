@@ -15,6 +15,7 @@ void scalanative_atomic_thread_fence(memory_order order) { atomic_thread_fence(o
 void scalanative_atomic_signal_fence(memory_order order) { atomic_signal_fence(order);}
 %{
   atomics = [
+    ('bool', 'bool'),
     ('char','byte'),
     ('unsigned char','ubyte'),
     ('short','short'),
@@ -27,7 +28,6 @@ void scalanative_atomic_signal_fence(memory_order order) { atomic_signal_fence(o
     ('unsigned long long','ullong'),
     ('intptr_t', 'intptr'),
   ]
-
 }%
 % for (T, N) in atomics:
 

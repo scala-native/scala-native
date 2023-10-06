@@ -16,9 +16,8 @@ object DoubleBuffer {
 
 abstract class DoubleBuffer private[nio] (
     _capacity: Int,
-    private[nio] val _array: Array[Double],
-    private[nio] val _mappedData: MappedByteBufferData,
-    private[nio] val _arrayOffset: Int
+    override private[nio] val _array: Array[Double],
+    private[nio] val _offset: Int
 ) extends Buffer(_capacity)
     with Comparable[DoubleBuffer] {
 
@@ -27,7 +26,7 @@ abstract class DoubleBuffer private[nio] (
 
   private def genBuffer = GenBuffer[DoubleBuffer](this)
 
-  def this(_capacity: Int) = this(_capacity, null, null, -1)
+  def this(_capacity: Int) = this(_capacity, null, -1)
 
   def slice(): DoubleBuffer
 
@@ -68,7 +67,7 @@ abstract class DoubleBuffer private[nio] (
     genBuffer.generic_array()
 
   @inline final def arrayOffset(): Int =
-    genBuffer.generic_arrayOffset()
+    genBuffer.generic_offset()
 
   @inline override def position(newPosition: Int): DoubleBuffer = {
     super.position(newPosition)

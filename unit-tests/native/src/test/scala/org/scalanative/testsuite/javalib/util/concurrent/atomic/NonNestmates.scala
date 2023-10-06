@@ -17,7 +17,7 @@ import JSR166Test._
 import java.util.concurrent.atomic._
 import scala.scalanative.runtime.Intrinsics.classFieldRawPtr
 import scala.scalanative.runtime.fromRawPtr
-import scala.scalanative.libc.atomic.{CAtomicInt, CAtomicLongLong, CAtomicRef}
+import scala.scalanative.libc.stdatomic.{AtomicInt, AtomicLongLong, AtomicRef}
 
 /** This source file contains test code deliberately not contained in the same
  *  source file as the tests that use them, to avoid making them nestmates,
@@ -39,7 +39,7 @@ object NonNestmates {
       val a = new AtomicIntegerFieldUpdaterTest.IntrinsicBasedImpl[
         AtomicIntegerFieldUpdaterTest
       ](obj =>
-        new CAtomicInt(
+        new AtomicInt(
           fromRawPtr(
             classFieldRawPtr(obj, "protectedField")
           )
@@ -63,7 +63,7 @@ object NonNestmates {
       val a = new AtomicIntegerFieldUpdaterTest.IntrinsicBasedImpl[
         AtomicLongFieldUpdaterTest
       ](obj =>
-        new CAtomicInt(
+        new AtomicInt(
           fromRawPtr(
             classFieldRawPtr(obj, "protectedField")
           )
@@ -93,7 +93,7 @@ object NonNestmates {
         AtomicReferenceFieldUpdaterTest,
         Integer
       ](obj =>
-        new CAtomicRef(fromRawPtr(classFieldRawPtr(obj, "protectedField")))
+        new AtomicRef(fromRawPtr(classFieldRawPtr(obj, "protectedField")))
       )
       this.protectedField = one
       assertTrue(a.compareAndSet(this, one, two))
@@ -113,7 +113,7 @@ class NonNestmates {
     val a = new AtomicIntegerFieldUpdaterTest.IntrinsicBasedImpl[
       AtomicIntegerFieldUpdaterTest
     ](obj =>
-      new CAtomicInt(
+      new AtomicInt(
         fromRawPtr(
           classFieldRawPtr(obj, "x")
         )
@@ -128,7 +128,7 @@ class NonNestmates {
     val a = new AtomicLongFieldUpdaterTest.IntrinsicBasedImpl[
       AtomicLongFieldUpdaterTest
     ](obj =>
-      new CAtomicLongLong(
+      new AtomicLongLong(
         fromRawPtr(classFieldRawPtr(obj, "x"))
       )
     )
@@ -144,7 +144,7 @@ class NonNestmates {
       AtomicReferenceFieldUpdaterTest,
       Integer
     ](obj =>
-      new CAtomicRef(
+      new AtomicRef(
         fromRawPtr(
           classFieldRawPtr(obj, "x")
         )

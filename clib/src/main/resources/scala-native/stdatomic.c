@@ -14,6 +14,28 @@ memory_order scalanative_atomic_memory_order_seq_cst() { return memory_order_seq
 void scalanative_atomic_thread_fence(memory_order order) { atomic_thread_fence(order);}
 void scalanative_atomic_signal_fence(memory_order order) { atomic_signal_fence(order);}
 
+void scalanative_atomic_init_bool(_Atomic(bool)* atm, bool init_value) { atomic_init(atm, init_value);}
+bool scalanative_atomic_load_bool(_Atomic(bool)* atm) { return atomic_load(atm);}
+bool scalanative_atomic_load_explicit_bool(_Atomic(bool)* atm, memory_order memoryOrder) { return atomic_load_explicit(atm, memoryOrder);}
+void scalanative_atomic_store_bool(_Atomic(bool)* atm, bool val) {atomic_store(atm, val);}
+void scalanative_atomic_store_explicit_bool(_Atomic(bool)* atm, bool val, memory_order memoryOrder) { atomic_store_explicit(atm, val, memoryOrder);}
+bool scalanative_atomic_exchange_bool(_Atomic(bool)* atm, bool val) { return atomic_exchange(atm, val);}
+bool scalanative_atomic_exchange_explicit_bool(_Atomic(bool)* atm, bool val, memory_order memoryOrder) { return atomic_exchange_explicit(atm, val, memoryOrder);}
+bool scalanative_atomic_compare_exchange_strong_bool(_Atomic(bool)* atm, bool* expected, bool desired) { return atomic_compare_exchange_strong(atm, expected, desired);}
+bool scalanative_atomic_compare_exchange_strong_explicit_bool(_Atomic(bool)* atm, bool* expected, bool desired, memory_order onSucc, memory_order onFail) { return atomic_compare_exchange_strong_explicit(atm, expected, desired, onSucc, onFail);}
+bool scalanative_atomic_compare_exchange_weak_bool(_Atomic(bool)* atm, bool* expected, bool desired) { return atomic_compare_exchange_weak(atm, expected, desired);}
+bool scalanative_atomic_compare_exchange_weak_explicit_bool(_Atomic(bool)* atm, bool* expected, bool desired, memory_order onSucc, memory_order onFail) { return atomic_compare_exchange_weak_explicit(atm, expected, desired, onSucc, onFail);}
+bool scalanative_atomic_fetch_add_bool(_Atomic(bool)* atm, bool val) { return atomic_fetch_add(atm, val);}
+bool scalanative_atomic_fetch_add_explicit_bool(_Atomic(bool)* atm, bool val, memory_order memoryOrder) { return atomic_fetch_add_explicit(atm, val, memoryOrder);}
+bool scalanative_atomic_fetch_sub_bool(_Atomic(bool)* atm, bool val) { return atomic_fetch_sub(atm, val);}
+bool scalanative_atomic_fetch_sub_explicit_bool(_Atomic(bool)* atm, bool val, memory_order memoryOrder) { return atomic_fetch_sub_explicit(atm, val, memoryOrder);}
+bool scalanative_atomic_fetch_and_bool(_Atomic(bool)* atm, bool val) { return atomic_fetch_and(atm, val);}
+bool scalanative_atomic_fetch_and_explicit_bool(_Atomic(bool)* atm, bool val, memory_order memoryOrder) { return atomic_fetch_and_explicit(atm, val, memoryOrder);}
+bool scalanative_atomic_fetch_or_bool(_Atomic(bool)* atm, bool val) { return atomic_fetch_or(atm, val);}
+bool scalanative_atomic_fetch_or_explicit_bool(_Atomic(bool)* atm, bool val, memory_order memoryOrder) { return atomic_fetch_or_explicit(atm, val, memoryOrder);}
+bool scalanative_atomic_fetch_xor_bool(_Atomic(bool)* atm, bool val) { return atomic_fetch_xor(atm, val);}
+bool scalanative_atomic_fetch_xor_explicit_bool(_Atomic(bool)* atm, bool val, memory_order memoryOrder) { return atomic_fetch_xor_explicit(atm, val, memoryOrder);}
+
 void scalanative_atomic_init_byte(_Atomic(char)* atm, char init_value) { atomic_init(atm, init_value);}
 char scalanative_atomic_load_byte(_Atomic(char)* atm) { return atomic_load(atm);}
 char scalanative_atomic_load_explicit_byte(_Atomic(char)* atm, memory_order memoryOrder) { return atomic_load_explicit(atm, memoryOrder);}

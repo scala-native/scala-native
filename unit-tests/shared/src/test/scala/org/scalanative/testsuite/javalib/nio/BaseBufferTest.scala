@@ -11,7 +11,7 @@ import org.junit.Assume._
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform._
 
-abstract class BaseBufferTest {
+abstract class BaseBufferTest extends BaseBufferPlatformTest {
 
   type Factory <: BufferFactory
 
@@ -399,4 +399,5 @@ abstract class BaseBufferTest {
       assertEquals(elemFromInt(23), buf2.get(6))
     }
   }
+
 }

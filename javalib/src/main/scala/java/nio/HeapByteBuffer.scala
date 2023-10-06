@@ -7,11 +7,11 @@ import scala.scalanative.unsafe._
 private[nio] class HeapByteBuffer(
     _capacity: Int,
     _array0: Array[Byte],
-    _arrayOffset0: Int,
+    _offset0: Int,
     _initialPosition: Int,
     _initialLimit: Int,
     _readOnly: Boolean
-) extends ByteBuffer(_capacity, _array0, null, _arrayOffset0) {
+) extends ByteBuffer(_capacity, _array0, _offset0) {
 
   position(_initialPosition)
   limit(_initialLimit)
@@ -71,7 +71,7 @@ private[nio] class HeapByteBuffer(
   @inline private def byteArrayBits: ByteArrayBits =
     ByteArrayBits(
       _array.at(0),
-      _arrayOffset,
+      _offset,
       isBigEndian
     )
 

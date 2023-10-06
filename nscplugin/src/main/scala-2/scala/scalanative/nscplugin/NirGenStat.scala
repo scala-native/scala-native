@@ -664,7 +664,10 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       ) {
         val sym = dd.symbol
         val owner = curClassSym.get
-        val attrs = genMethodAttrs(sym)
+        // implicit class is erased to method at this point
+        def isImplicitClass = sym.isImplicit && sym.isSynthetic
+        val isExtern = owner.isExternType && !isImplicitClass
+        val attrs = genMethodAttrs(sym, isExtern)
         val name = genMethodName(sym)
         val sig = genMethodSig(sym)
 
@@ -685,7 +688,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           case _ if dd.name == nme.CONSTRUCTOR && owner.isStruct =>
             None
 
-          case rhs if owner.isExternType =>
+          case rhs if owner.isExternType && !isImplicitClass =>
             checkExplicitReturnTypeAnnotation(dd, "extern method")
             genExternMethod(attrs, name, sig, dd)
 
@@ -697,7 +700,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
               curMethodSig := sig
             ) {
               curMethodUsesLinktimeResolvedValues = false
-              val body = genMethodBody(dd, rhs)
+              val body = genMethodBody(dd, rhs, isExtern)
               val methodAttrs =
                 if (curMethodUsesLinktimeResolvedValues)
                   attrs.copy(isLinktimeResolved = true)
@@ -927,7 +930,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       }
     }
 
-    def genMethodAttrs(sym: Symbol): Attrs = {
+    def genMethodAttrs(sym: Symbol, isExtern: Boolean): Attrs = {
       val inlineAttrs =
         if (sym.isBridge || sym.hasFlag(ACCESSOR)) Seq(Attr.AlwaysInline)
         else Nil
@@ -942,7 +945,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           case NoSpecializeClass => Attr.NoSpecialize
         }
       val externAttrs =
-        if (sym.owner.isExternType)
+        if (isExtern)
           Seq(Attr.Extern(sym.isBlocking || sym.owner.isBlocking))
         else Nil
 
@@ -951,14 +954,14 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
     def genMethodBody(
         dd: DefDef,
-        bodyp: Tree
+        bodyp: Tree,
+        isExtern: Boolean
     ): Seq[nir.Inst] = {
       val fresh = curFresh.get
       val buf = new ExprBuffer()(fresh)
       val isSynchronized = dd.symbol.hasFlag(SYNCHRONIZED)
       val sym = dd.symbol
       val isStatic = sym.isStaticInNIR
-      val isExtern = sym.owner.isExternType
 
       implicit val pos: nir.Position = bodyp.pos
 

@@ -3,7 +3,7 @@ package java.lang
 import java.util.Objects
 import java.util.concurrent.ThreadFactory
 import java.lang.Thread.{Builder, Characteristics}
-import scala.scalanative.libc.atomic.CAtomicLongLong
+import scala.scalanative.libc.stdatomic.AtomicLongLong
 import scala.scalanative.runtime.{Intrinsics, fromRawPtr}
 
 // ScalaNative specific
@@ -147,7 +147,7 @@ object ThreadBuilders {
   ) extends ThreadFactory {
     @volatile var counter: scala.Long = start
 
-    private val counterRef = new CAtomicLongLong(
+    private val counterRef = new AtomicLongLong(
       fromRawPtr(Intrinsics.classFieldRawPtr(this, "counter"))
     )
     private val hasCounter = name != null && start >= 0

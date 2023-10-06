@@ -14,8 +14,8 @@ import java.util.concurrent.ForkJoinPool
 import java.util.concurrent.RejectedExecutionException
 import scala.annotation.tailrec
 import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
-import scala.scalanative.libc.atomic.{CAtomicInt, CAtomicRef}
-import scala.scalanative.libc.atomic.memory_order._
+import scala.scalanative.libc.stdatomic.{AtomicInt, AtomicRef}
+import scala.scalanative.libc.stdatomic.memory_order._
 
 @SerialVersionUID(7373984972572414691L)
 object AbstractQueuedSynchronizer { // Node status bits, also used as argument and return values
@@ -29,13 +29,13 @@ object AbstractQueuedSynchronizer { // Node status bits, also used as argument a
     @volatile var next: Node = _ // visibly nonnull when signallable
     @volatile var status: Int = 0 // written by owner, atomic bit ops by others
 
-    private val prevAtomic = new CAtomicRef[Node](
+    private val prevAtomic = new AtomicRef[Node](
       fromRawPtr(Intrinsics.classFieldRawPtr(this, "prev"))
     )
-    private val nextAtomic = new CAtomicRef[Node](
+    private val nextAtomic = new AtomicRef[Node](
       fromRawPtr(Intrinsics.classFieldRawPtr(this, "next"))
     )
-    private val statusAtomic = new CAtomicInt(
+    private val statusAtomic = new AtomicInt(
       fromRawPtr(Intrinsics.classFieldRawPtr(this, "status"))
     )
 
@@ -109,13 +109,13 @@ abstract class AbstractQueuedSynchronizer protected ()
   @volatile private var state: Int = 0
 
   // Support for atomic ops
-  private val headAtomic = new CAtomicRef[Node](
+  private val headAtomic = new AtomicRef[Node](
     fromRawPtr(Intrinsics.classFieldRawPtr(this, "head"))
   )
-  private val tailAtomic = new CAtomicRef[Node](
+  private val tailAtomic = new AtomicRef[Node](
     fromRawPtr(Intrinsics.classFieldRawPtr(this, "tail"))
   )
-  private val stateAtomic = new CAtomicInt(
+  private val stateAtomic = new AtomicInt(
     fromRawPtr(Intrinsics.classFieldRawPtr(this, "state"))
   )
 

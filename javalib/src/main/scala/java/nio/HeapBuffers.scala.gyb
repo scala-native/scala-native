@@ -1,0 +1,160 @@
+// format: off
+
+package java.nio
+
+% types = [('Char', '2'),
+%          ('Short', '2'),
+%          ('Int', '4'),
+%          ('Long', '8'),
+%          ('Float', '4'),
+%          ('Double', '8')]
+% for (T, size) in types:
+private[nio] final class Heap${T}Buffer private (
+    _capacity: Int,
+    _array0: Array[${T}],
+    _offset0: Int,
+    _initialPosition: Int,
+    _initialLimit: Int,
+    _readOnly: Boolean
+) extends ${T}Buffer(_capacity, _array0, _offset0) {
+  
+  position(_initialPosition)
+  limit(_initialLimit)
+   
+  private implicit def newHeap${T}Buffer
+      : GenHeapBuffer.NewHeapBuffer[${T}Buffer, ${T}] =
+    Heap${T}Buffer.NewHeap${T}Buffer
+    
+  def isReadOnly(): Boolean = _readOnly
+
+  def isDirect(): Boolean = false
+
+  @noinline
+  def slice(): ${T}Buffer =
+    GenHeapBuffer[${T}Buffer](this).generic_slice()
+
+  @noinline
+  def duplicate(): ${T}Buffer =
+    GenHeapBuffer[${T}Buffer](this).generic_duplicate()
+
+  @noinline
+  def asReadOnlyBuffer(): ${T}Buffer =
+    GenHeapBuffer[${T}Buffer](this).generic_asReadOnlyBuffer()
+
+  % if T == 'Char':
+  def subSequence(start: Int, end: Int): ${T}Buffer = {
+    if (start < 0 || end < start || end > remaining())
+      throw new IndexOutOfBoundsException
+    new Heap${T}Buffer(
+      capacity(),
+      _array,
+      _offset,
+      position() + start,
+      position() + end,
+      isReadOnly()
+    )
+  }
+  % end
+
+  @noinline
+  def get(): ${T} =
+    GenBuffer[${T}Buffer](this).generic_get()
+
+  @noinline
+  def put(v: ${T}): ${T}Buffer =
+    GenBuffer[${T}Buffer](this).generic_put(v)
+
+  @noinline
+  def get(index: Int): ${T} =
+    GenBuffer[${T}Buffer](this).generic_get(index)
+
+  @noinline
+  def put(index: Int, v: ${T}): ${T}Buffer =
+    GenBuffer[${T}Buffer](this).generic_put(index, v)
+
+  @noinline
+  override def get(dst: Array[${T}], offset: Int, length: Int): ${T}Buffer =
+    GenBuffer[${T}Buffer](this).generic_get(dst, offset, length)
+
+  @noinline
+  override def put(src: Array[${T}], offset: Int, length: Int): ${T}Buffer =
+    GenBuffer[${T}Buffer](this).generic_put(src, offset, length)
+
+  @noinline
+  def compact(): ${T}Buffer =
+    GenHeapBuffer[${T}Buffer](this).generic_compact()
+
+  def order(): ByteOrder = ByteOrder.nativeOrder()
+
+  // Internal API
+
+  @inline
+  private[nio] def load(index: Int): ${T} =
+    GenHeapBuffer[${T}Buffer](this).generic_load(index)
+
+  @inline
+  private[nio] def store(index: Int, elem: ${T}): Unit =
+    GenHeapBuffer[${T}Buffer](this).generic_store(index, elem)
+
+  @inline
+  override private[nio] def load(
+      startIndex: Int,
+      dst: Array[${T}],
+      offset: Int,
+      length: Int
+  ): Unit =
+    GenHeapBuffer[${T}Buffer](this).generic_load(startIndex, dst, offset, length)
+
+  @inline
+  override private[nio] def store(
+      startIndex: Int,
+      src: Array[${T}],
+      offset: Int,
+      length: Int
+  ): Unit =
+    GenHeapBuffer[${T}Buffer](this).generic_store(startIndex, src, offset, length)
+}
+
+private[nio] object Heap${T}Buffer {
+  private[nio] implicit object NewHeap${T}Buffer
+      extends GenHeapBuffer.NewHeapBuffer[${T}Buffer, ${T}] {
+    def apply(
+        capacity: Int,
+        array: Array[${T}],
+        arrayOffset: Int,
+        initialPosition: Int,
+        initialLimit: Int,
+        readOnly: Boolean
+    ): ${T}Buffer = {
+      new Heap${T}Buffer(
+        capacity,
+        array,
+        arrayOffset,
+        initialPosition,
+        initialLimit,
+        readOnly
+      )
+    }
+  }
+
+  @noinline
+  private[nio] def wrap(
+      array: Array[${T}],
+      arrayOffset: Int,
+      capacity: Int,
+      initialPosition: Int,
+      initialLength: Int,
+      isReadOnly: Boolean
+  ): ${T}Buffer = {
+    GenHeapBuffer.generic_wrap(
+      array,
+      arrayOffset,
+      capacity,
+      initialPosition,
+      initialLength,
+      isReadOnly
+    )
+  }
+}
+
+%end

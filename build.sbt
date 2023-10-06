@@ -17,6 +17,7 @@ lazy val clib                     = Build.clib
 lazy val posixlib                 = Build.posixlib
 lazy val windowslib               = Build.windowslib
 lazy val javalib                  = Build.javalib
+lazy val javalibintf              = Build.javalibintf
 lazy val javalibExtDummies        = Build.javalibExtDummies
 lazy val auxlib                   = Build.auxlib
 lazy val scalalib                 = Build.scalalib

@@ -18,10 +18,10 @@ import java.util.concurrent.locks.ReentrantLock
 import java.util.concurrent.locks.Condition
 import scala.scalanative.annotation._
 import scala.scalanative.unsafe._
-import scala.scalanative.libc.atomic.{CAtomicInt, CAtomicLongLong, CAtomicRef}
+import scala.scalanative.libc.stdatomic.{AtomicInt, AtomicLongLong, AtomicRef}
 import scala.scalanative.runtime.{fromRawPtr, Intrinsics, ObjectArray}
 
-import scala.scalanative.libc.atomic.memory_order._
+import scala.scalanative.libc.stdatomic.memory_order._
 import ForkJoinPool._
 
 class ForkJoinPool private (
@@ -51,16 +51,16 @@ class ForkJoinPool private (
 
   // Support for atomic operations
 
-  @alwaysinline private def ctlAtomic = new CAtomicLongLong(
+  @alwaysinline private def ctlAtomic = new AtomicLongLong(
     fromRawPtr(Intrinsics.classFieldRawPtr(this, "ctl"))
   )
-  @alwaysinline private def runStateAtomic = new CAtomicInt(
+  @alwaysinline private def runStateAtomic = new AtomicInt(
     fromRawPtr(Intrinsics.classFieldRawPtr(this, "runState"))
   )
-  @alwaysinline private def threadIdsAtomic = new CAtomicLongLong(
+  @alwaysinline private def threadIdsAtomic = new AtomicLongLong(
     fromRawPtr(Intrinsics.classFieldRawPtr(this, "threadIds"))
   )
-  @alwaysinline private def parallelismAtomic = new CAtomicInt(
+  @alwaysinline private def parallelismAtomic = new AtomicInt(
     fromRawPtr(Intrinsics.classFieldRawPtr(this, "parallelism"))
   )
 
@@ -1526,18 +1526,18 @@ object ForkJoinPool {
 
   private[concurrent] object WorkQueue {
     // Support for atomic operations
-    import scala.scalanative.libc.atomic.memory_order._
+    import scala.scalanative.libc.stdatomic.memory_order._
     @alwaysinline
     private def arraySlotAtomicAccess[T <: AnyRef](
         a: Array[T],
         i: Int
-    ): CAtomicRef[T] = {
+    ): AtomicRef[T] = {
       val nativeArray = a.asInstanceOf[ObjectArray]
       val elemRef =
         nativeArray
           .at(i)
           .asInstanceOf[Ptr[T]]
-      new CAtomicRef[T](elemRef)
+      new AtomicRef[T](elemRef)
     }
 
     @alwaysinline
@@ -1581,13 +1581,13 @@ object ForkJoinPool {
       this.top = 1
     }
 
-    @alwaysinline def baseAtomic = new CAtomicInt(
+    @alwaysinline def baseAtomic = new AtomicInt(
       fromRawPtr[Int](Intrinsics.classFieldRawPtr(this, "base"))
     )
-    @alwaysinline def phaseAtomic = new CAtomicInt(
+    @alwaysinline def phaseAtomic = new AtomicInt(
       fromRawPtr[Int](Intrinsics.classFieldRawPtr(this, "phase"))
     )
-    @alwaysinline def accessAtomic = new CAtomicInt(
+    @alwaysinline def accessAtomic = new AtomicInt(
       fromRawPtr[Int](Intrinsics.classFieldRawPtr(this, "access"))
     )
 

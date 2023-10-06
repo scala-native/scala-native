@@ -27,6 +27,7 @@ object Build {
 
 // format: off
   lazy val compilerPlugins: List[MultiScalaProject] =  List(nscPlugin, junitPlugin)
+  lazy val noCrossProjects: List[Project] = List(sbtScalaNative, javalibintf)
   lazy val publishedMultiScalaProjects = compilerPlugins ++ List(
     nir, util, tools,
     nirJVM, utilJVM, toolsJVM,
@@ -52,7 +53,7 @@ object Build {
   lazy val crossPublishedMultiScalaProjects =
     scalalib :: compilerPlugins
   lazy val publishedProjects =
-    sbtScalaNative :: publishedMultiScalaProjects.flatMap(_.componentProjects)
+    noCrossProjects ::: publishedMultiScalaProjects.flatMap(_.componentProjects)
   lazy val testProjects =
     testMultiScalaProjects.flatMap(_.componentProjects) ::: testNoCrossProject
   lazy val allProjects = publishedProjects ::: testProjects
@@ -484,6 +485,7 @@ object Build {
         libraryDependencies ++= Deps.NativeLib(scalaVersion.value)
       )
       .withNativeCompilerPlugin
+      .mapBinaryVersions(_ => _.dependsOn(javalibintf % Provided))
 
   lazy val clib = MultiScalaProject("clib")
     .enablePlugins(MyScalaNativePlugin)
@@ -519,6 +521,17 @@ object Build {
     }
     .dependsOn(posixlib, windowslib, clib)
     .withNativeCompilerPlugin
+
+  lazy val javalibintf: Project = Project(
+    id = "javalibintf",
+    base = file("javalib-intf")
+  ).settings(
+    commonSettings,
+    publishSettings(Some(VersionScheme.BreakOnMajor)),
+    name := "javalib-intf",
+    crossPaths := false,
+    autoScalaLibrary := false
+  )
 
   lazy val javalibExtDummies =
     MultiScalaProject("javalibExtDummies", file("javalib-ext-dummies"))
