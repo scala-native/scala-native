@@ -10,7 +10,6 @@ import scala.collection.concurrent.TrieMap
 import scala.scalanative.runtime.Backtrace
 import scala.scalanative.runtime.NativeThread
 import scala.scalanative.libc.stdlib.{malloc, calloc, free}
-import java.util.concurrent.ConcurrentHashMap
 
 private[lang] object StackTrace {
   private val cache = TrieMap.empty[CUnsignedLong, StackTraceElement]
