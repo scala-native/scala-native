@@ -19,8 +19,8 @@ import scala.scalanative.posix.pthread._
 import scala.scalanative.posix.errno._
 import scala.scalanative.posix.poll._
 import scala.scalanative.posix.unistd._
-import scala.scalanative.libc.atomic._
-import scala.scalanative.libc.atomic.memory_order.memory_order_seq_cst
+import scala.scalanative.libc.stdatomic._
+import scala.scalanative.libc.stdatomic.memory_order.memory_order_seq_cst
 
 private[java] class PosixThread(val thread: Thread, stackSize: Long)
     extends NativeThread {
@@ -260,7 +260,7 @@ private[java] class PosixThread(val thread: Thread, stackSize: Long)
         fromRawPtr(elemRawPtr(base, offset))
     }
 
-  @alwaysinline private def counterAtomic = new CAtomicInt(
+  @alwaysinline private def counterAtomic = new AtomicInt(
     fromRawPtr(classFieldRawPtr(this, "counter"))
   )
 

@@ -8,7 +8,7 @@ import java.util.concurrent.atomic.{
 import scala.scalanative.runtime.Intrinsics.classFieldRawPtr
 import scala.scalanative.runtime.{RawPtr, fromRawPtr}
 import scala.scalanative.annotation.alwaysinline
-import scala.scalanative.libc.atomic.{CAtomicRef, CAtomicInt, memory_order}
+import scala.scalanative.libc.stdatomic.{AtomicRef, AtomicInt, memory_order}
 import scala.scalanative.unsafe.Ptr
 
 private[concurrent] class IntrinsicAtomicReferenceFieldUpdater[
@@ -17,7 +17,7 @@ private[concurrent] class IntrinsicAtomicReferenceFieldUpdater[
 ](@alwaysinline selector: T => Ptr[V])
     extends AtomicReferenceFieldUpdater[T, V]() {
   @alwaysinline private def atomicRef(insideObj: T) =
-    new CAtomicRef[V](selector(insideObj))
+    new AtomicRef[V](selector(insideObj))
 
   @alwaysinline def compareAndSet(obj: T, expect: V, update: V): Boolean =
     atomicRef(obj).compareExchangeStrong(expect, update)
@@ -37,7 +37,7 @@ private[concurrent] class IntrinsicAtomicReferenceFieldUpdater[
 class IntrinsicAtomicIntegerFieldUpdater[T <: AnyRef](
     @alwaysinline selector: T => Ptr[Int]
 ) extends AtomicIntegerFieldUpdater[T]() {
-  @alwaysinline private def atomicRef(insideObj: T) = new CAtomicInt(
+  @alwaysinline private def atomicRef(insideObj: T) = new AtomicInt(
     selector(insideObj)
   )
 

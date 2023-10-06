@@ -10,8 +10,8 @@ import scala.annotation.tailrec
 import scala.language.implicitConversions
 import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.unsafe._
-import scala.scalanative.libc.atomic.CAtomicRef
-import scala.scalanative.libc.atomic.memory_order._
+import scala.scalanative.libc.stdatomic.AtomicRef
+import scala.scalanative.libc.stdatomic.memory_order._
 import scala.scalanative.runtime.ObjectArray
 import java.util.Arrays
 import java.util.function.{BinaryOperator, UnaryOperator}
@@ -25,8 +25,8 @@ class AtomicReferenceArray[E <: AnyRef] extends Serializable {
     array.asInstanceOf[ObjectArray]
 
   @alwaysinline
-  private implicit def ptrRefToAtomicRef(ptr: Ptr[Object]): CAtomicRef[E] =
-    new CAtomicRef[E](ptr.asInstanceOf[Ptr[E]])
+  private implicit def ptrRefToAtomicRef(ptr: Ptr[Object]): AtomicRef[E] =
+    new AtomicRef[E](ptr.asInstanceOf[Ptr[E]])
 
   /** Creates a new AtomicReferenceArray of the given length, with all elements
    *  initially null.

@@ -7,9 +7,49 @@ import scala.scalanative.unsigned._
 import scala.language.implicitConversions
 
 
-@extern object atomic {
+@extern object stdatomic extends stdatomicExt {
+
+  type atomic_bool = Boolean
+  type atomic_char = Byte
+  type atomic_schar = Byte
+  type atomic_uchar = UByte
+  type atomic_short = CShort
+  type atomic_ushort = CUnsignedShort
+  type atomic_int = CInt
+  type atomic_uint = CUnsignedInt
+  type atomic_long = CLong
+  type atomic_ulong = CUnsignedLong
+  type atomic_llong = CLongLong
+  type atomic_ullong = CUnsignedLongLong
+  type atomic_char8_t = Byte
+  type atomic_char16_t = CShort
+  type atomic_char32_t = CInt
+  // type atomic_wchar_t = 	_Atomic wchar_t
+  type atomic_int_least8_t = Byte
+  type atomic_uint_least8_t = UByte
+  type atomic_int_least16_t = CShort
+  type atomic_uint_least16_t = CUnsignedShort
+  type atomic_int_least32_t = CInt
+  type atomic_uint_least32_t = CUnsignedInt
+  type atomic_int_least64_t = CLongLong
+  type atomic_uint_least64_t = CUnsignedLongLong
+  type atomic_int_fast8_t = Byte
+  type atomic_uint_fast8_t = UByte
+  type atomic_int_fast16_t = CShort
+  type atomic_uint_fast16_t = CUnsignedShort
+  type atomic_int_fast32_t = CInt
+  type atomic_uint_fast32_t = CUnsignedInt
+  type atomic_int_fast64_t = CLongLong
+  type atomic_uint_fast64_t = CUnsignedLongLong
+  type atomic_intptr_t = CSSize
+  type atomic_uintptr_t = CSize
+  type atomic_size_t = CSize
+  type atomic_ptrdiff_t = CPtrDiff
+  type atomic_intmax_t = CLongLong
+  type atomic_uintmax_t = CUnsignedLongLong
+  
   type memory_order = Int // enum
-  @extern object memory_order{
+  @extern object memory_order {
   % for order in ['relaxed', 'consume', 'acquire', 'release', 'acq_rel', 'seq_cst']: 
     @name("scalanative_atomic_memory_order_${order}")
     final def memory_order_${order}: memory_order = extern    
@@ -24,6 +64,7 @@ import scala.language.implicitConversions
  
   %{
   defs = [
+    ('atomic_bool', 'Boolean', 'bool'),
     ('atomic_char', 'Byte', 'byte'),
     ('atomic_uchar', 'UByte', 'ubyte'),
     ('atomic_short', 'CShort', 'short'),
@@ -37,7 +78,6 @@ import scala.language.implicitConversions
   ]
   }%
   % for (C, T, N) in defs:
-  type ${C} = ${T}
   @name("scalanative_atomic_init_${N}") 
   def atomic_init(atm: Ptr[${C}], initValue: ${T}): Unit = extern
   
@@ -74,6 +114,10 @@ import scala.language.implicitConversions
   % end
 
   % end
+
+  // =======================
+  // Non standard Atomic API
+  // ========================
 
   type atomic_ptr[T] = Ptr[T]
   @name("scalanative_atomic_init_intptr") 
@@ -115,28 +159,32 @@ import scala.language.implicitConversions
   // Helper wrappers
   %{
   defs = [
-    ('CAtomicByte', 'atomic_char', 'Byte'),
-    ('CAtomicUnsignedByte', 'atomic_uchar', 'UByte'),
-    ('CAtomicShort', 'atomic_short', 'CShort'),
-    ('CAtomicUnsignedShort', 'atomic_ushort', 'CUnsignedShort'),
-    ('CAtomicInt', 'atomic_int', 'CInt'),
-    ('CAtomicUnsignedInt', 'atomic_uint', 'CUnsignedInt'),
-    ('CAtomicLong', 'atomic_long', 'CLong'),
-    ('CAtomicUnsignedLong', 'atomic_ulong', 'CUnsignedLong'),
-    ('CAtomicLongLong', 'atomic_llong', 'CLongLong'),
-    ('CAtomicUnsignedLongLong', 'atomic_ullong', 'CUnsignedLongLong')
+    ('AtomicBool', 'atomic_bool', 'Boolean'),
+    ('AtomicByte', 'atomic_char', 'Byte'),
+    ('AtomicUnsignedByte', 'atomic_uchar', 'UByte'),
+    ('AtomicShort', 'atomic_short', 'CShort'),
+    ('AtomicUnsignedShort', 'atomic_ushort', 'CUnsignedShort'),
+    ('AtomicInt', 'atomic_int', 'CInt'),
+    ('AtomicUnsignedInt', 'atomic_uint', 'CUnsignedInt'),
+    ('AtomicLong', 'atomic_long', 'CLong'),
+    ('AtomicUnsignedLong', 'atomic_ulong', 'CUnsignedLong'),
+    ('AtomicLongLong', 'atomic_llong', 'CLongLong'),
+    ('AtomicUnsignedLongLong', 'atomic_ullong', 'CUnsignedLongLong')
     ]
   }%
 
   % for (N, C, T) in defs:
   object ${N}{
     def apply(initialValue: ${T})(implicit zone: Zone): ${N} = {
-      val ref = new ${N}(zone.alloc(sizeof[${T}]).asInstanceOf[Ptr[atomic.${C}]])
+      val ref = new ${N}(zone.alloc(sizeof[${T}]).asInstanceOf[Ptr[stdatomic.${C}]])
       ref.init(initialValue)
       ref
     }
   }
-  final class ${N}(private val underlying: Ptr[atomic.${C}]) extends AnyVal {
+  implicit class PtrTo${N}(private val ptr: Ptr[stdatomic.${C}]) extends AnyVal {
+    def atomic: ${N} = new ${N}(ptr)
+  }
+  final class ${N}(private val underlying: Ptr[stdatomic.${C}]) extends AnyVal {
     def init(value: ${T}): Unit = atomic_init(underlying, value)
 
     def load(): ${T} = atomic_load(underlying)
@@ -204,15 +252,18 @@ import scala.language.implicitConversions
     }
   }
   % end
-
-  object CAtomicPtr{
-    def apply[T](initialValue: Ptr[T])(implicit zone: Zone): CAtomicPtr[T] = {
-      val ref = new CAtomicPtr(zone.alloc(sizeof[Ptr[T]]).asInstanceOf[Ptr[atomic.atomic_ptr[T]]])
+  
+  object AtomicPtr{
+    def apply[T](initialValue: Ptr[T])(implicit zone: Zone): AtomicPtr[T] = {
+      val ref = new AtomicPtr(zone.alloc(sizeof[Ptr[T]]).asInstanceOf[Ptr[stdatomic.atomic_ptr[T]]])
       ref.init(initialValue)
       ref
     }
   }
-  final class CAtomicPtr[T](private val underlying: Ptr[atomic.atomic_ptr[T]]) extends AnyVal {
+  implicit class PtrToAtomicPtr[T](private val ptr: Ptr[stdatomic.atomic_ptr[T]]) extends AnyVal {
+    def atomic: AtomicPtr[T] = new AtomicPtr[T](ptr)
+  }
+  final class AtomicPtr[T](private val underlying: Ptr[stdatomic.atomic_ptr[T]]) extends AnyVal {
     def init(value: Ptr[T]): Unit = atomic_init(underlying, value)
 
     def load(): Ptr[T] = atomic_load(underlying)
@@ -276,7 +327,10 @@ import scala.language.implicitConversions
     }
   }
 
-  final class CAtomicRef[T <: AnyRef](private val underlying: Ptr[T]) extends AnyVal {
+  implicit class PtrToAtomicRef[T <: AnyRef](private val ptr: Ptr[T]) extends AnyVal {
+    def atomic: AtomicRef[T] = new AtomicRef[T](ptr)
+  }
+  final class AtomicRef[T <: AnyRef](private val underlying: Ptr[T]) extends AnyVal {
     def init(value: T): Unit = atomic_init(underlying, value)
 
     def load(): T = atomic_load(underlying)
@@ -343,6 +397,5 @@ import scala.language.implicitConversions
       atomic_compare_exchange_weak_explicit(underlying, expectedPtr.asInstanceOf[Ptr[T]], desired, memoryOrder, memoryOrder)
     }
   }
-
 }
 

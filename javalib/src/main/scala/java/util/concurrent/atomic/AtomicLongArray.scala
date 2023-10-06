@@ -10,8 +10,8 @@ import scala.annotation.tailrec
 import scala.language.implicitConversions
 import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.unsafe._
-import scala.scalanative.libc.atomic.CAtomicLongLong
-import scala.scalanative.libc.atomic.memory_order._
+import scala.scalanative.libc.stdatomic.AtomicLongLong
+import scala.scalanative.libc.stdatomic.memory_order._
 
 import java.util.function.{LongBinaryOperator, LongUnaryOperator}
 import java.util.Arrays
@@ -25,8 +25,8 @@ class AtomicLongArray extends Serializable {
   private[concurrent] def nativeArray: LongArray = array.asInstanceOf[LongArray]
 
   @alwaysinline
-  private implicit def ptrLongToAtomicLong(ptr: Ptr[Long]): CAtomicLongLong =
-    new CAtomicLongLong(ptr)
+  private implicit def ptrLongToAtomicLong(ptr: Ptr[Long]): AtomicLongLong =
+    new AtomicLongLong(ptr)
 
   /** Creates a new AtomicIntegerArray of the given length, with all elements
    *  initially zero.

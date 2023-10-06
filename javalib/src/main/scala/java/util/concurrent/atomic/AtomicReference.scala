@@ -9,8 +9,8 @@ package java.util.concurrent.atomic
 import scala.annotation.tailrec
 import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.unsafe._
-import scala.scalanative.libc.atomic.CAtomicRef
-import scala.scalanative.libc.atomic.memory_order._
+import scala.scalanative.libc.stdatomic.AtomicRef
+import scala.scalanative.libc.stdatomic.memory_order._
 import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
 import java.util.function.{BinaryOperator, UnaryOperator}
 
@@ -25,8 +25,8 @@ class AtomicReference[V <: AnyRef](@volatile private var value: V)
 
   // Pointer to field containing underlying V.
   @alwaysinline
-  private[concurrent] def valueRef: CAtomicRef[V] =
-    new CAtomicRef[V](
+  private[concurrent] def valueRef: AtomicRef[V] =
+    new AtomicRef[V](
       fromRawPtr(Intrinsics.classFieldRawPtr(this, "value"))
     )
 
