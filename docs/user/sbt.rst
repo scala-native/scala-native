@@ -344,3 +344,5 @@ same syntax for existing JVM/JavaScript cross-projects. Please refer to the
 project's
 `README <https://github.com/portable-scala/sbt-crossproject/blob/master/README.md>`_
 for details.
+
+Continue to :ref:`lang`.

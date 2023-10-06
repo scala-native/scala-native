@@ -58,3 +58,5 @@ This operation is performed when generating stack traces for the first time and 
 This behavior can influence tests expecting to finish within some fixed amount of time. 
 To mitigate this issue set the environment variable `SCALANATIVE_TEST_PREFETCH_DEBUG_INFO=1` to ensure that debug info would be loaded
 before starting test execution.
+
+Continue to :ref:`profiling`.
