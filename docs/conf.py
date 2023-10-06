@@ -132,7 +132,7 @@ todo_include_todos = False
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'sn_furo'
+html_theme = 'sn_alabaster'
 html_theme_path = ["."]
 
 # Theme options are theme-specific and customize the look and feel of a theme
@@ -188,13 +188,13 @@ html_last_updated_fmt = '%Y-%m-%d %H:%M:%S'
 
 # Custom sidebar templates, maps document names to template names.
 #
-# html_sidebars = {
-#     '**': [
-#         'globaltoc.html',
-#         'relations.html',
-#         'searchbox.html',
-#     ],
-# }
+html_sidebars = {
+    '**': [
+        'globaltoc.html',
+        'relations.html',
+        'searchbox.html',
+    ],
+}
 
 # Additional templates that should be rendered to pages, maps page names to
 # template names.
