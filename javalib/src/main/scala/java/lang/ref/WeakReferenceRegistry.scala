@@ -13,7 +13,7 @@ import java.util.concurrent.atomic.AtomicReference
  */
 private[java] object WeakReferenceRegistry {
   private var weakRefList: AtomicReference[List[WeakReference[_]]] =
-    AtomicReference(Nil)
+    new AtomicReference(Nil)
 
   private val postGCHandlerMap: TrieMap[WeakReference[_], Function0[Unit]] =
     TrieMap.empty
