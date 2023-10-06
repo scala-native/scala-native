@@ -107,16 +107,39 @@ private[scalanative] object ScalaNative {
         analysis: ReachabilityAnalysis.Failure
     ): Unit = {
       val log = config.logger
+      // see https://no-color.org/
+      val noColor = sys.env.contains("NO_COLOR")
       def appendBackTrace(
           buf: StringBuilder,
           backtrace: List[Reach.BackTraceElement]
       ): Unit = {
+        import scala.io.AnsiColor._
         // Build stacktrace in memory to prevent its spliting when logging asynchronously
-        val padding = backtrace.foldLeft(0)(_ max _.kind.length())
-        backtrace.foreach {
-          case Reach.BackTraceElement(_, kind, name, filename, line) =>
-            val pad = " " * (padding - kind.length())
-            buf.append(s"    $pad$kind at $name($filename:$line)\n")
+        val elems = backtrace.map {
+          case elem @ Reach.BackTraceElement(_, symbol, filename, line) =>
+            import symbol.argTypes
+            val rendered = symbol.toString
+            val descriptorStart = rendered.indexOf(symbol.name)
+            val uncolored @ (modifiers, descriptor) =
+              rendered.splitAt(descriptorStart)
+
+            if (noColor) uncolored
+            else {
+              val (name, typeInfo) =
+                if (argTypes.nonEmpty)
+                  descriptor.splitAt(descriptor.indexOf("("))
+                else (descriptor, "")
+              modifiers -> s"$BOLD$YELLOW$name$RESET$typeInfo at $BOLD$filename:$line"
+            }
+        }
+        val padding = elems
+          .map(_._1.length)
+          .max
+          .min(14) + 2
+        elems.foreach {
+          case (modifiers, tracedDescriptor) =>
+            val pad = " " * (padding - modifiers.length)
+            buf.append(s"$pad$modifiers$tracedDescriptor\n")
         }
         buf.append("\n")
       }
@@ -124,9 +147,9 @@ private[scalanative] object ScalaNative {
       if (analysis.unreachable.nonEmpty) {
         log.error(s"Found ${analysis.unreachable.size} unreachable symbols!")
         analysis.unreachable.foreach {
-          case Reach.UnreachableSymbol(_, kind, name, backtrace) =>
+          case Reach.UnreachableSymbol(_, symbol, backtrace) =>
             val buf = new StringBuilder()
-            buf.append(s"Found unknown $kind $name, referenced from:\n")
+            buf.append(s"Unknown $symbol, referenced from:\n")
             appendBackTrace(buf, backtrace)
             log.error(buf.toString())
         }

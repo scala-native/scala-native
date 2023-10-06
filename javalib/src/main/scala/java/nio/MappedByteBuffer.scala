@@ -3,11 +3,11 @@ package java.nio
 abstract class MappedByteBuffer private[nio] (
     _capacity: Int,
     private[nio] override val _mappedData: MappedByteBufferData,
-    _arrayOffset: Int,
+    _offset: Int,
     initialPosition: Int,
     initialLimit: Int,
     isReadOnly: Boolean
-) extends ByteBuffer(_capacity, null, _mappedData, _arrayOffset) {
+) extends ByteBuffer(_capacity, null, _offset) {
 
   def force(): MappedByteBuffer
 

@@ -5,7 +5,7 @@ import scala.language.implicitConversions
 import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.runtime.Intrinsics._
 import scala.scalanative.runtime._
-import scala.scalanative.unsigned.USize
+import scala.scalanative.unsigned._
 
 final class Ptr[T] private[scalanative] (
     private[scalanative] val rawptr: RawPtr
@@ -15,10 +15,8 @@ final class Ptr[T] private[scalanative] (
 
   @alwaysinline override def equals(other: Any): Boolean =
     (this eq other.asInstanceOf[AnyRef]) || (other match {
-      case other: Ptr[_] =>
-        other.rawptr == rawptr
-      case _ =>
-        false
+      case other: Ptr[_] => other.rawptr == rawptr
+      case _             => false
     })
 
   @alwaysinline override def toString: String =
@@ -36,37 +34,67 @@ final class Ptr[T] private[scalanative] (
   @alwaysinline def `unary_!_=`(value: T)(implicit tag: Tag[T]): Unit =
     tag.store(this, value)
 
+  @alwaysinline def +(offset: Int)(implicit tag: Tag[T]): Ptr[T] =
+    new Ptr[T](elemRawPtr(rawptr, castIntToRawSize(offset * tag.size.toInt)))
+
   @alwaysinline def +(offset: Size)(implicit tag: Tag[T]): Ptr[T] =
-    new Ptr(elemRawPtr(rawptr, (offset * tag.size.toSize).rawSize))
+    new Ptr[T](elemRawPtr(rawptr, toRawSize(offset * tag.size.toSize)))
 
   @alwaysinline def +(offset: USize)(implicit tag: Tag[T]): Ptr[T] =
-    new Ptr(elemRawPtr(rawptr, (offset * tag.size).rawSize))
+    new Ptr[T](elemRawPtr(rawptr, toRawSize(offset * tag.size)))
+
+  @alwaysinline def -(offset: Int)(implicit tag: Tag[T]): Ptr[T] =
+    new Ptr[T](
+      elemRawPtr(rawptr, castIntToRawSize(-offset * tag.size.toInt))
+    )
 
   @alwaysinline def -(offset: Size)(implicit tag: Tag[T]): Ptr[T] =
-    new Ptr(elemRawPtr(rawptr, (-offset * tag.size.toSize).rawSize))
+    new Ptr[T](elemRawPtr(rawptr, toRawSize(-offset * tag.size.toSize)))
 
   @alwaysinline def -(offset: USize)(implicit tag: Tag[T]): Ptr[T] =
-    new Ptr(elemRawPtr(rawptr, (-((offset * tag.size).toSize)).rawSize))
+    new Ptr[T](
+      elemRawPtr(rawptr, toRawSize(-offset.toSize * tag.size.toSize))
+    )
 
   @alwaysinline def -(other: Ptr[T])(implicit tag: Tag[T]): CPtrDiff = {
-    val left = if (is32BitPlatform) this.toInt.toSize else this.toLong.toSize
-    val right = if (is32BitPlatform) other.toInt.toSize else other.toLong.toSize
-    (left - right) / tag.size.toSize
+    if (is32BitPlatform) (this.toInt - other.toInt).toSize / tag.size.toSize
+    else (this.toLong - other.toLong).toSize / tag.size.toSize
   }
 
+  @alwaysinline def apply(offset: Int)(implicit tag: Tag[T]): T =
+    tag.load(
+      elemRawPtr(rawptr, castIntToRawSize(offset * tag.size.toInt))
+    )
+
   @alwaysinline def apply(offset: USize)(implicit tag: Tag[T]): T =
-    (this + offset).`unary_!`
+    tag.load(elemRawPtr(rawptr, toRawSize(offset * tag.size)))
 
   @alwaysinline def apply(offset: Size)(implicit tag: Tag[T]): T =
-    (this + offset).`unary_!`
+    tag.load(elemRawPtr(rawptr, toRawSize(offset * tag.size.toSize)))
+
+  @alwaysinline def update(offset: Int, value: T)(implicit
+      tag: Tag[T]
+  ): Unit =
+    tag.store(
+      elemRawPtr(rawptr, castIntToRawSize(offset * tag.size.toInt)),
+      value
+    )
 
   @alwaysinline def update(offset: USize, value: T)(implicit
       tag: Tag[T]
   ): Unit =
-    (this + offset).`unary_!_=`(value)
+    tag.store(
+      elemRawPtr(rawptr, toRawSize(offset * tag.size)),
+      value
+    )
 
-  @alwaysinline def update(offset: Size, value: T)(implicit tag: Tag[T]): Unit =
-    (this + offset).`unary_!_=`(value)
+  @alwaysinline def update(offset: Size, value: T)(implicit
+      tag: Tag[T]
+  ): Unit =
+    tag.store(
+      elemRawPtr(rawptr, toRawSize(offset * tag.size.toSize)),
+      value
+    )
 }
 
 object Ptr {

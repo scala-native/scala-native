@@ -6,8 +6,8 @@
 
 package java.util.concurrent
 import java.util.concurrent.locks.LockSupport
-import scalanative.libc.atomic.{CAtomicInt, CAtomicRef}
-import scalanative.libc.atomic.memory_order._
+import scalanative.libc.stdatomic.{AtomicInt, AtomicRef}
+import scalanative.libc.stdatomic.memory_order._
 
 import scalanative.runtime.{fromRawPtr, Intrinsics}
 
@@ -39,13 +39,13 @@ class FutureTask[V <: AnyRef](private var callable: Callable[V])
 
   private var outcome: AnyRef = _
 
-  private val atomicState = new CAtomicInt(
+  private val atomicState = new AtomicInt(
     fromRawPtr(Intrinsics.classFieldRawPtr(this, "_state"))
   )
-  private val atomicRunner = new CAtomicRef[Thread](
+  private val atomicRunner = new AtomicRef[Thread](
     fromRawPtr(Intrinsics.classFieldRawPtr(this, "runner"))
   )
-  private val atomicWaiters = new CAtomicRef[WaitNode](
+  private val atomicWaiters = new AtomicRef[WaitNode](
     fromRawPtr(Intrinsics.classFieldRawPtr(this, "waiters"))
   )
 

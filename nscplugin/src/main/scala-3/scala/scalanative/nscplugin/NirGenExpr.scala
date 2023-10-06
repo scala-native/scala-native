@@ -2498,14 +2498,19 @@ trait NirGenExpr(using Context) {
       given nir.Position = app.span
       val Apply(appRec @ Select(receiverp, _), aargs) = app: @unchecked
 
-      val paramTypes = app.getAttachment(NirDefinitions.NonErasedTypes) match
+      val attachment = app
+        .getAttachment(NirDefinitions.NonErasedTypes)
+        .orElse(appRec.getAttachment(NirDefinitions.NonErasedTypes))
+
+      val paramTypes = attachment match {
         case None =>
           report.error(
             s"Failed to generated exact NIR types for $app, something is wrong with scala-native internls.",
             app.srcPos
           )
-          Nil
+          return Val.Null
         case Some(paramTys) => paramTys
+      }
 
       val self = genExpr(receiverp)
       val retType = genType(paramTypes.last)
@@ -2546,7 +2551,7 @@ trait NirGenExpr(using Context) {
       val paramTypes = app.getAttachment(NirDefinitions.NonErasedTypes) match
         case None =>
           report.error(
-            s"Failed to generated exact NIR types for $app, something is wrong with scala-native internls.",
+            s"Failed to generate exact NIR types for $app, something is wrong with scala-native internals.",
             app.srcPos
           )
           Nil

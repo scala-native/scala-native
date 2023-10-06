@@ -8,66 +8,8 @@ This section gives some basic information and tips about the build system. The
 components of Scala Native. The ``build.sbt`` file is at the root of the project
 along with the sub-projects that make up the system.
 
-Common sbt commands
--------------------
-Once you have cloned Scala Native from git, ``cd`` into the base directory and
-run ``sbt`` to launch the sbt build. Inside the sbt shell, the most common
-commands are the following:
-
-- ``sandbox/run`` -- run the main method of the `sandbox` project
-- ``tests/test`` -- run the unit tests
-- ``tools/test`` -- run the unit tests of the tools, aka the linker
-- ``sbtScalaNative/scripted`` -- run the integration tests of the sbt plugin
-  (this takes a while)
-- ``clean`` -- delete all generated sources, compiled artifacts, intermediate
-  products, and generally all build-produced files
-- ``reload`` -- reload the build, to take into account changes to the sbt plugin
-  and its transitive dependencies
-
-If you want to run all the tests and benchmarks, which takes a while, you can
-run the ``test-all`` command, ideally after ``reload`` and ``clean``.
-
-Normal development workflow
----------------------------
-Let us suppose that you wish to work on the ``javalib`` project to add some code
-or fix a bug. Once you make a change to the code, run the following command
-at the sbt prompt to compile the code and run the tests:
-
-.. code-block:: text
-
-    > tests/test
-
-You can run only the test of interest by using one of the following commands:
-
-.. code-block:: text
-
-    > tests/testOnly java.lang.StringSuite
-    > tests/testOnly *StringSuite
-
-Scripted tests are used when you need to interact with the file system,
-networking, or the build system that cannot be done with a unit test. They
-are located in the `scripted-tests` directory.
-
-Run all the scripted tests or just one test using the following examples respectively.
-To run an individual test substitute the test to run for `native-code-include`:
-
-.. code-block:: text
-
-    > sbtScalaNative/scripted
-    > sbtScalaNative/scripted run/native-code-include
-
-Some additional tips are as follows.
-
-- If you modify the ``nscplugin``, you will need to ``clean`` the project that
-  you want to rebuild with its new version (typically ``sandbox/clean`` or
-  ``tests/clean``). For a full rebuild, use the global ``clean`` command.
-
-- If you modify the sbt plugin or any of its transitive dependencies
-  (``sbt-scala-native``, ``nir``, ``util``, ``tools``, ``test-runner``), you
-  will need to ``reload`` for your changes to take effect with most test
-  commands (except with the ``scripted`` tests).
-
-- For a completely clean build, from scratch, run ``reload`` *and* ``clean``.
+- ``project/Build.scala`` defines the sub-projects
+- ``project/Commands.scala`` defines the custom commands such as ``test-all``
 
 Build settings via environment variables
 --------------------------------------------------
@@ -133,22 +75,6 @@ The following shows how to set ``nativeGC`` on all the projects.
     > show nativeGC
 
 The same process above will work for setting `nativeMode`.
-
-Locally publish to test in other builds
----------------------------------------
-If you need to test your copy of Scala Native in the larger context of a
-separate build, you will need to locally publish all the artifacts of Scala
-Native.
-
-Use the custom sbt command to publish all projects for a specific Scala version (`x,y,z`):
-
-.. code-block:: text
-
-    > publish-local-dev x.y.z
-
-Afterwards, set the version of `sbt-scala-native` in the target project's
-`project/plugins.sbt` to the current SNAPSHOT version of Scala Native, and use
-normally.
 
 Organization of the build
 -------------------------
@@ -259,25 +185,6 @@ By default override directory is selected based on the used scala version,
 if it's not the present script will try to use directory with corresponding Scala binary version, 
 or it would try to use Scala epoch version or `overrides` directory. If none of these directories exists it will fail. 
 It is also possible to define explicitly overrides directory to use by passing it as the third argument to the script.
-
-
-Locally publish docs
----------------------------------------
-Follow the steps after cloning the `scalanative <https://github.com/scala-native/scala-native>`_ repo and changing to `scala-native` directory.
-
-1. First time building the docs. This command will setup & build the docs.
-
-.. code-block:: text
-
-    $ bash scripts/makedocs setup
-
-2. If setup is already done. This command will only build the docs assuming setup is already done.
-
-.. code-block:: text
-
-    $ bash scripts/makedocs 
-
-3. Navigate to ``docs/_build/html`` directory and open ``index.html`` file in your browser.
 
 The next section has more build and development information for those wanting
 to work on :ref:`compiler`.

@@ -86,7 +86,10 @@ trait NirGenStat(using Context) {
     if sym.isExternType && sym.superClass != defn.ObjectClass then
       report.error("Extern object can only extend extern traits", sym.sourcePos)
 
-    Option.unless(sym == defnNir.NObjectClass) {
+    Option.unless(
+      sym == defnNir.NObjectClass ||
+      defnNir.RuntimePrimitiveTypes.contains(sym)
+    ) {
       val superClass = sym.superClass
       if superClass == NoSymbol || superClass == defn.ObjectClass
       then genTypeName(defnNir.NObjectClass)
@@ -256,20 +259,32 @@ trait NirGenStat(using Context) {
       val sym = dd.symbol
       val owner = curClassSym.get
 
-      val attrs = genMethodAttrs(sym)
+      // warning: In Scala3 we cannot reliably distinguish implicit class from implicit def!
+      // This means that non-extern implicit def methods can be defined in extern object
+      // To distinguish betwen extern def and allowed implicit class check rhs = unsafe.extern()
+      // Extensions can be easilly identified via flag
+      def isExtension =
+        sym.flags.is(Extension) || {
+          sym.flags.isAllOf(Implicit | Final) &&
+          dd.paramss.headOption.exists(_.size == 1) &&
+          !ApplyExtern.unapply(dd.rhs)
+        }
+      val isExtern = sym.isExtern && !isExtension
+
+      val attrs = genMethodAttrs(sym, isExtern)
       val name = genMethodName(sym)
       val sig = genMethodSig(sym)
 
       dd.rhs match {
         case EmptyTree => Some(Defn.Declare(attrs, name, sig))
-        case _ if sym.isConstructor && sym.isExtern =>
+        case _ if sym.isConstructor && isExtern =>
           validateExternCtor(dd.rhs)
           None
 
         case _ if sym.isClassConstructor && owner.isStruct =>
           None
 
-        case rhs if sym.isExtern =>
+        case rhs if isExtern =>
           checkExplicitReturnTypeAnnotation(dd, "extern method")
           genExternMethod(attrs, name, sig, dd)
 
@@ -281,7 +296,7 @@ trait NirGenStat(using Context) {
             curMethodSig := sig
           ) {
             curMethodUsesLinktimeResolvedValues = false
-            val body = genMethodBody(dd, rhs)
+            val body = genMethodBody(dd, rhs, isExtern)
             val methodAttrs =
               if (curMethodUsesLinktimeResolvedValues)
                 attrs.copy(isLinktimeResolved = true)
@@ -302,7 +317,10 @@ trait NirGenStat(using Context) {
     }
   }
 
-  private def genMethodAttrs(sym: Symbol): nir.Attrs = {
+  private def genMethodAttrs(
+      sym: Symbol,
+      isExtern: => Boolean
+  ): nir.Attrs = {
     val inlineAttrs =
       if (sym.is(Bridge) || sym.is(Accessor)) Seq(Attr.AlwaysInline)
       else Nil
@@ -316,7 +334,7 @@ trait NirGenStat(using Context) {
         case defnNir.NoSpecializeClass => Attr.NoSpecialize
         case defnNir.StubClass         => Attr.Stub
       }
-    val externAttrs = Option.when(sym.isExtern) {
+    val externAttrs = Option.when(isExtern) {
       Attr.Extern(sym.isBlocking || sym.owner.isBlocking)
     }
 
@@ -326,12 +344,12 @@ trait NirGenStat(using Context) {
   protected val curExprBuffer = ScopedVar[ExprBuffer]()
   private def genMethodBody(
       dd: DefDef,
-      bodyp: Tree
+      bodyp: Tree,
+      isExtern: Boolean
   ): Seq[nir.Inst] = {
     given nir.Position = bodyp.span
     given fresh: nir.Fresh = curFresh.get
     val buf = ExprBuffer()
-    val isExtern = dd.symbol.isExtern
     val isStatic = dd.symbol.isStaticInNIR
     val isSynchronized = dd.symbol.is(Synchronized)
 
@@ -538,6 +556,13 @@ trait NirGenStat(using Context) {
     )
   }
 
+  private object ApplyExtern {
+    def unapply(tree: Tree): Boolean = tree match {
+      case Apply(ref: RefTree, Seq()) =>
+        ref.symbol == defnNir.UnsafePackage_extern
+      case _ => false
+    }
+  }
   def genExternMethod(
       attrs: nir.Attrs,
       name: nir.Global.Member,
@@ -563,9 +588,8 @@ trait NirGenStat(using Context) {
           if defaultArgs.nonEmpty || dd.name.is(NameKinds.DefaultGetterName) =>
         report.error("extern method cannot have default argument")
         None
-      case Apply(ref: RefTree, Seq())
-          if ref.symbol == defnNir.UnsafePackage_extern =>
-        externMethodDecl()
+
+      case ApplyExtern() => externMethodDecl()
 
       case _ if curMethodSym.get.isOneOf(Accessor | Synthetic) => None
 

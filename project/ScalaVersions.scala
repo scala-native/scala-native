@@ -18,30 +18,36 @@ package build
 
 object ScalaVersions {
   // Versions of Scala used for publishing compiler plugins
-  val crossScala212 = (13 to 18).map(v => s"2.12.$v")
-  val crossScala213 = (4 to 12).map(v => s"2.13.$v")
+  val crossScala212 = (14 to 18).map(v => s"2.12.$v")
+  val crossScala213 = (8 to 12).map(v => s"2.13.$v")
   val crossScala3 = List(
-    Seq(scala3Nightly),
-    (0 to 3).map(v => s"3.1.$v"),
+    // windowslib fails to compile with 3.1.{0-1}
+    (2 to 3).map(v => s"3.1.$v"),
     (0 to 2).map(v => s"3.2.$v"),
-    (0 to 0).map(v => s"3.3.$v")
+    (0 to 1).map(v => s"3.3.$v")
   ).flatten
-
-  // Version of Scala 3 standard library sources used for publishing
-  // Workaround allowing to produce NIR for Scala 3.2.x+ and allowing to consume existing libraries using 3.1.x
-  val scala3libSourcesVersion = crossScala3.last
 
   // Scala versions used for publishing libraries
   val scala212: String = crossScala212.last
   val scala213: String = crossScala213.last
-  val scala3: String = "3.1.3"
+  val scala3: String = crossScala3.last
+
+  // The latest version of minimal Scala 3 minor version used to publish artifacts
+  val scala3PublishVersion = "3.1.3"
+
   // List of nightly version can be found here: https://repo1.maven.org/maven2/org/scala-lang/scala3-compiler_3/
   lazy val scala3Nightly = "3.3.2-RC1-bin-20230601-8814760-NIGHTLY"
 
-  // minimum version - 1.5 is required for Scala 3 and 1.5.8 has log4j vulnerability fixed
-  val sbt10Version: String = "1.5.8"
+  // minimum version rationale:
+  //   1.5 is required for Scala 3 and
+  //   1.5.8 has log4j vulnerability fixed
+  //   1.9.0 is required in order to use Java >= 21
+  //   1.9.4 fixes (Common Vulnerabilities and Exposures) CVE-2022-46751
+  //   1.9.6 is current
+
+  val sbt10Version: String = "1.9.6"
   val sbt10ScalaVersion: String = scala212
 
   val libCrossScalaVersions: Seq[String] =
-    crossScala212 ++ crossScala213 ++ crossScala3
+    crossScala212 ++ crossScala213 ++ crossScala3 ++ Seq(scala3Nightly)
 }

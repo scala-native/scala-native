@@ -70,7 +70,6 @@ object Settings {
       "utf8"
     ),
     javaReleaseSettings,
-    publishSettings,
     mimaSettings,
     docsSettings
   )
@@ -190,23 +189,25 @@ object Settings {
   )
 
   // Publishing
-  lazy val publishSettings: Seq[Setting[_]] = Seq(
+  lazy val basePublishSettings: Seq[Setting[_]] = Seq(
     homepage := Some(url("http://www.scala-native.org")),
     startYear := Some(2015),
     licenses := Seq(
       "BSD-like" -> url("http://www.scala-lang.org/downloads/license.html")
     ),
-    developers += Developer(
-      email = "denys.shabalin@epfl.ch",
-      id = "densh",
-      name = "Denys Shabalin",
-      url = url("http://den.sh")
-    ),
-    developers += Developer(
-      id = "wojciechmazur",
-      name = "Wojciech Mazur",
-      email = "wmazur@virtuslab.com",
-      url = url("https://github.com/WojciechMazur")
+    developers := List(
+      Developer(
+        email = "denys.shabalin@epfl.ch",
+        id = "densh",
+        name = "Denys Shabalin",
+        url = url("http://den.sh")
+      ),
+      Developer(
+        id = "wojciechmazur",
+        name = "Wojciech Mazur",
+        email = "wmazur@virtuslab.com",
+        url = url("https://github.com/WojciechMazur")
+      )
     ),
     scmInfo := Some(
       ScmInfo(
@@ -224,8 +225,38 @@ object Settings {
     Test / publishArtifact := false
   ) ++ mimaSettings
 
+  def publishSettings(verScheme: Option[String]): Seq[Setting[_]] =
+    Def.settings(
+      basePublishSettings,
+      mavenPublishSettings,
+      versionScheme := verScheme
+    )
+
+  /** Based on Scala.js versioning policy Constants for the `verScheme`
+   *  parameter of `publishSettings`.
+   *
+   *  sbt does not define constants in its API for `versionScheme`. It specifies
+   *  some strings instead. We use the following version schemes, depending on
+   *  the artifacts and the versioning policy in `VERSIONING.md`:
+   *
+   *    - `"strict"` for artifacts whose public API can break in patch releases
+   *    - `"pvp"` for artifacts whose public API can break in minor releases
+   *    - `"semver-spec"` for artifacts whose public API can only break in major
+   *      releases (e.g., `nativelib`)
+   *
+   *  At the moment, we only set the version scheme for artifacts in the
+   *  "library ecosystem", i.e., javalib nativelib etc. Artifacts of the "tools
+   *  ecosystem" do not have a version scheme set.
+   *
+   *  See also https://www.scala-sbt.org/1.x/docs/Publishing.html#Version+scheme
+   */
+  object VersionScheme {
+    final val BreakOnPatch = "strict"
+    final val BreakOnMinor = "pvp"
+    final val BreakOnMajor = "early-semver"
+  }
+
   lazy val mavenPublishSettings = Def.settings(
-    publishSettings,
     publishMavenStyle := true,
     pomIncludeRepository := (_ => false),
     publishTo := {
@@ -506,18 +537,24 @@ object Settings {
   lazy val compilerPluginSettings = Def.settings(
     crossVersion := CrossVersion.full,
     libraryDependencies ++= Deps.compilerPluginDependencies(scalaVersion.value),
+    publishSettings(None),
     mavenPublishSettings,
     exportJars := true,
-    crossPublish := crossPublishCompilerPlugin(publish).value,
-    crossPublishSigned := crossPublishCompilerPlugin(publishSigned).value
+    crossPublishSettings
+  )
+
+  lazy val crossPublishSettings = Def.settings(
+    crossPublish := crossPublishProject(publish).value,
+    crossPublishSigned := crossPublishProject(publishSigned).value
   )
 
   /** Builds a given project across all crossScalaVersion values. It does not
    *  modify the value of scalaVersion outside of it's scope. This allows to
-   *  build multiple (compiler plugin) projects in parallel.
+   *  build multiple projects in parallel.
    */
-  private def crossPublishCompilerPlugin(publishKey: TaskKey[Unit]) = Def.task {
+  def crossPublishProject(publishKey: TaskKey[Unit]) = Def.task {
     val currentVersion = scalaVersion.value
+    val binVersion = CrossVersion.binaryScalaVersion(currentVersion)
     val s = state.value
     val log = s.log
     val extracted = sbt.Project.extract(s)
@@ -534,10 +571,11 @@ object Settings {
         val (newState, result) = sbt.Project
           .runTask(
             selfRef / publishKey,
-            state = extracted.appendWithSession(
-              Seq(
-                selfRef / scalaVersion := crossVersion
-              ),
+            state = extracted.appendWithoutSession(
+              Build.allMultiScalaProjects
+                .map(
+                  _.forBinaryVersion(binVersion) / scalaVersion := crossVersion
+                ),
               state
             )
           )
@@ -552,7 +590,7 @@ object Settings {
   lazy val sbtPluginSettings = Def.settings(
     commonSettings,
     toolSettings,
-    mavenPublishSettings,
+    publishSettings(None),
     sbtPlugin := true,
     sbtVersion := ScalaVersions.sbt10Version,
     scalaVersion := ScalaVersions.sbt10ScalaVersion,
@@ -571,6 +609,7 @@ object Settings {
 
   lazy val toolSettings: Seq[Setting[_]] =
     Def.settings(
+      publishSettings(None),
       javacOptions ++= Seq("-encoding", "utf8")
     )
 
@@ -622,14 +661,10 @@ object Settings {
     dirs.toSeq // most specific shadow less specific
   }
 
-  def commonScalalibSettings(
-      libraryName: String,
-      optSourcesScalaVersion: Option[String]
-  ): Seq[Setting[_]] = {
-    def sourcesVersion(scalaVersion: String) =
-      optSourcesScalaVersion.getOrElse(scalaVersion)
-
+  def commonScalalibSettings(libraryName: String): Seq[Setting[_]] = {
     Def.settings(
+      version := scalalibVersion(scalaVersion.value, nativeVersion),
+      crossPublishSettings,
       mavenPublishSettings,
       disabledDocsSettings,
       recompileAllOrNothingSettings,
@@ -644,9 +679,7 @@ object Settings {
       // than Scala.js. See commented starting with "SN Port:" below.
       libraryDependencies += "org.scala-lang" % libraryName % scalaVersion.value,
       fetchScalaSource / artifactPath :=
-        baseDirectory.value.getParentFile / "target" / "scalaSources" / sourcesVersion(
-          scalaVersion.value
-        ),
+        baseDirectory.value.getParentFile / "target" / "scalaSources" / scalaVersion.value,
       /* Link source maps to the GitHub sources of the original scalalib
        * This must come *before* the option added by MyScalaJSPlugin
        * because mapSourceURI works on a first-match basis.
@@ -673,8 +706,8 @@ object Settings {
        * that case.
        */
       fetchScalaSource / update := Def.taskDyn {
-        val version = sourcesVersion(scalaVersion.value)
-        val usedScalaVersion = scalaVersion.value
+        val version = scalaVersion.value
+        val usedScalaVersion = scala.util.Properties.versionNumberString
         if (version == usedScalaVersion) updateClassifiers
         else update
       }.value,
@@ -686,7 +719,7 @@ object Settings {
       // In theory we can enforce usage of latest version of Scala for compiling only scalalib module,
       // as we don't store .tasty or .class files. This solution however might be more complicated and usnafe
       fetchScalaSource := {
-        val version = sourcesVersion(scalaVersion.value)
+        val version = scalaVersion.value
         val trgDir = (fetchScalaSource / artifactPath).value
         val s = streams.value
         val cacheDir = s.cacheDirectory
@@ -698,9 +731,7 @@ object Settings {
         }
         lazy val scalaLibSourcesJar = lm
           .retrieve(
-            "org.scala-lang" % libraryName % sourcesVersion(
-              scalaVersion.value
-            ) classifier "sources",
+            "org.scala-lang" % libraryName % scalaVersion.value classifier "sources",
             scalaModuleInfo = None,
             retrieveDirectory = IO.temporaryDirectory,
             log = s.log
@@ -731,7 +762,7 @@ object Settings {
       Compile / unmanagedSourceDirectories := scalaVersionDirectories(
         baseDirectory.value.getParentFile(),
         "overrides",
-        sourcesVersion(scalaVersion.value)
+        scalaVersion.value
       ),
       // Compute sources
       // Files in earlier src dirs shadow files in later dirs

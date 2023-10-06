@@ -160,7 +160,7 @@ case class PartestTask(taskDef: TaskDef, args: Array[String]) extends Task {
       resolvedVals = mutable.Map.empty
     )
 
-    val build = Build.findAndCompileNativeLibs(config, analysis)
+    val build = Build.findAndCompileNativeLibraries(config, analysis)
     Await.result(build, Duration.Inf)
   }
 }

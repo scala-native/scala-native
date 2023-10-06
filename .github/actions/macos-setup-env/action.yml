@@ -7,6 +7,8 @@ inputs:
   java-version:
     description: "Java version to use in tests"
     default: "8"
+  llvm-version:
+    description: "Custom version of LLVM to use"
   gc: 
     description: "Garbage collector used, might require installing dependencies"
 runs:
@@ -14,7 +16,7 @@ runs:
   steps:
     - uses: actions/setup-java@v3
       with:
-        distribution: "temurin"
+        distribution: "zulu"
         java-version: ${{inputs.java-version}}
     - name: Calculate binary version
       shell: bash
@@ -36,6 +38,11 @@ runs:
       shell: bash
       if: ${{ startsWith(inputs.gc, 'boehm') }}
       run: brew install bdw-gc
+
+    - name: Install explicit LLVM toolchain
+      shell: bash
+      if: ${{ inputs.llvm-version != '' }}
+      run: brew install llvm@${{ inputs.llvm-version }}
 
     # Loads cache with dependencies created in test-tools job
     - name: Cache dependencies

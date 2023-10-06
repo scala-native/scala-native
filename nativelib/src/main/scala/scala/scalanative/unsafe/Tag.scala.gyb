@@ -20,9 +20,12 @@ import scalanative.runtime.Intrinsics._
 sealed abstract class Tag[T] {
   def size: CSize
   def alignment: CSize
+  @alwaysinline def load(ptr: unsafe.Ptr[T]): T = load(toRawPtr(ptr))
+  @alwaysinline def store(ptr: unsafe.Ptr[T], value: T): Unit = store(toRawPtr(ptr), value)
+
   @noinline def offset(idx: CSize): CSize = throwUndefined()
-  @noinline def load(ptr: unsafe.Ptr[T]): T = throwUndefined()
-  @noinline def store(ptr: unsafe.Ptr[T], value: T): Unit = throwUndefined()
+  @noinline private[unsafe] def load(rawptr: RawPtr): T = throwUndefined()
+  @noinline private[unsafe] def store(rawptr: RawPtr, value: T): Unit = throwUndefined()
 }
 
 object Tag {
@@ -32,38 +35,38 @@ object Tag {
       extends Tag[unsafe.Ptr[T]] {
     @alwaysinline def size: CSize = ptrSize
     @alwaysinline def alignment: CSize = ptrSize
-    @alwaysinline override def load(ptr: unsafe.Ptr[unsafe.Ptr[T]]): unsafe.Ptr[T] =
-      fromRawPtr[T](loadRawPtr(toRawPtr(ptr)))
-    @alwaysinline override def store(ptr: unsafe.Ptr[unsafe.Ptr[T]], value: unsafe.Ptr[T]): Unit =
-      storeRawPtr(toRawPtr(ptr), toRawPtr(value))
+    @alwaysinline private[unsafe] override def load(rawptr: RawPtr): unsafe.Ptr[T] =
+      fromRawPtr[T](loadRawPtr(rawptr))
+    @alwaysinline private[unsafe] override def store(rawptr: RawPtr, value: unsafe.Ptr[T]): Unit =
+      storeRawPtr(rawptr, toRawPtr(value))
   }
 
   case object Size extends Tag[unsafe.Size] {
     @alwaysinline def size: CSize = ptrSize
     @alwaysinline def alignment: CSize = ptrSize
-    @alwaysinline override def load(ptr: unsafe.Ptr[unsafe.Size]): unsafe.Size =
-      unsafe.Size.valueOf(loadRawSize(toRawPtr(ptr)))
-    @alwaysinline override def store(ptr: unsafe.Ptr[unsafe.Size], value: unsafe.Size): Unit =
-      storeRawSize(toRawPtr(ptr), value.rawSize)
+    @alwaysinline private[unsafe] override def load(rawptr: RawPtr): unsafe.Size =
+      unsafe.Size.valueOf(loadRawSize(rawptr))
+    @alwaysinline private[unsafe] override def store(rawptr: RawPtr, value: unsafe.Size): Unit =
+      storeRawSize(rawptr, value.rawSize)
   }
 
   case object USize extends Tag[unsigned.USize] {
     @alwaysinline def size: CSize = ptrSize
     @alwaysinline def alignment: CSize = ptrSize
-    @alwaysinline override def load(ptr: unsafe.Ptr[unsigned.USize]): unsigned.USize =
-      unsigned.USize.valueOf(loadRawSize(toRawPtr(ptr)))
-    @alwaysinline override def store(ptr: unsafe.Ptr[unsigned.USize], value: unsigned.USize): Unit =
-      storeRawSize(toRawPtr(ptr), value.rawSize)
+    @alwaysinline private[unsafe] override def load(rawptr: RawPtr): unsigned.USize =
+      unsigned.USize.valueOf(loadRawSize(rawptr))
+    @alwaysinline private[unsafe] override def store(rawptr: RawPtr, value: unsigned.USize): Unit =
+      storeRawSize(rawptr, value.rawSize)
   }
 
   final case class Class[T <: AnyRef](of: java.lang.Class[T])
       extends Tag[T] {
     @alwaysinline def size: CSize = ptrSize
     @alwaysinline def alignment: CSize = ptrSize
-    @alwaysinline override def load(ptr: unsafe.Ptr[T]): T =
-      loadObject(toRawPtr(ptr)).asInstanceOf[T]
-    @alwaysinline override def store(ptr: unsafe.Ptr[T], value: T): Unit =
-      storeObject(toRawPtr(ptr), value.asInstanceOf[Object])
+    @alwaysinline private[unsafe] override def load(rawptr: RawPtr): T =
+      loadObject(rawptr).asInstanceOf[T]
+    @alwaysinline private[unsafe] override def store(rawptr: RawPtr, value: T): Unit =
+      storeObject(rawptr, value.asInstanceOf[Object])
   }
 
   % prims = [('Unit', 'scala.Unit', 'ptrSize', 'ptrSize'),
@@ -84,23 +87,23 @@ object Tag {
   object ${name} extends Tag[${T}] {
     @alwaysinline def size: CSize = ${size}
     @alwaysinline def alignment: CSize = ${align}
-    @alwaysinline override def load(ptr: unsafe.Ptr[${T}]): ${T} =
+    @alwaysinline private[unsafe] override def load(rawptr: RawPtr): ${T} =
       % if name == 'Unit':
-      loadObject(toRawPtr(ptr)).asInstanceOf[Unit]
+      loadObject(rawptr).asInstanceOf[Unit]
       % elif name.startswith('U'):
       %   signed = name[1:]
-      load${signed}(toRawPtr(ptr)).to${name}
+      load${signed}(rawptr).to${name}
       % else:
-      load${name}(toRawPtr(ptr))
+      load${name}(rawptr)
       % end
-    @alwaysinline override def store(ptr: unsafe.Ptr[${T}], value: ${T}): Unit =
+    @alwaysinline private[unsafe] override def store(rawptr: RawPtr, value: ${T}): Unit =
       % if name == 'Unit':
-      storeObject(toRawPtr(ptr), value.asInstanceOf[Object])
+      storeObject(rawptr, value.asInstanceOf[Object])
       % elif name.startswith('U'):
       %   signed = name[1:]
-      store${signed}(toRawPtr(ptr), value.to${signed})
+      store${signed}(rawptr, value.to${signed})
       % else:
-      store${name}(toRawPtr(ptr), value)
+      store${name}(rawptr, value)
       % end
   }
 
@@ -147,11 +150,11 @@ object Tag {
     @alwaysinline def size: CSize = of.size * n.asInstanceOf[NatTag].toUInt
     @alwaysinline def alignment: CSize = of.alignment
     @alwaysinline override def offset(idx: CSize): CSize = of.size * idx.toUInt
-    @alwaysinline override def load(ptr: unsafe.Ptr[unsafe.CArray[T, N]]): unsafe.CArray[T, N] = {
-      new unsafe.CArray[T, N](ptr.rawptr)
+    @alwaysinline private[unsafe] override def load(rawptr: RawPtr): unsafe.CArray[T, N] = {
+      new unsafe.CArray[T, N](rawptr)
     }
-    @alwaysinline override def store(ptr: unsafe.Ptr[unsafe.CArray[T, N]], value: unsafe.CArray[T, N]): Unit = {
-      val dst = ptr.rawptr
+    @alwaysinline private[unsafe] override def store(rawptr: RawPtr, value: unsafe.CArray[T, N]): Unit = {
+      val dst = rawptr
       if (value != null) {
         val src = value.rawptr
         libc.memcpy(dst, src, size)
@@ -205,11 +208,11 @@ object Tag {
       case _ =>
         throwUndefined()
     }
-    @alwaysinline override def load(ptr: unsafe.Ptr[unsafe.CStruct${N}${JustTs}]): unsafe.CStruct${N}${JustTs} = {
-      new unsafe.CStruct${N}${JustTs}(ptr.rawptr)
+    @alwaysinline private[unsafe] override def load(rawptr: RawPtr): unsafe.CStruct${N}${JustTs} = {
+      new unsafe.CStruct${N}${JustTs}(rawptr)
     }
-    @alwaysinline override def store(ptr: unsafe.Ptr[unsafe.CStruct${N}${JustTs}], value: unsafe.CStruct${N}${JustTs}): Unit = {
-      val dst = ptr.rawptr
+    @alwaysinline private[unsafe] override def store(rawptr: RawPtr, value: unsafe.CStruct${N}${JustTs}): Unit = {
+      val dst = rawptr
       if (value != null) {
         val src = value.rawptr
         libc.memcpy(dst, src, size)
@@ -228,11 +231,11 @@ object Tag {
 
     @alwaysinline def size: CSize = ptrSize
     @alwaysinline def alignment: CSize = ptrSize
-    @alwaysinline override def load(ptr: unsafe.Ptr[F]): F =
-      fromRawPtr(loadRawPtr(ptr.rawptr))
-    @alwaysinline override def store(ptr: unsafe.Ptr[F], value: F): Unit = {
+    @alwaysinline private[unsafe] override def load(rawptr: RawPtr): F =
+      fromRawPtr(loadRawPtr(rawptr))
+    @alwaysinline private[unsafe] override def store(rawptr: RawPtr, value: F): Unit = {
       val valuePtr = if(value != null) value.rawptr else null
-      storeRawPtr(toRawPtr(ptr), valuePtr)
+      storeRawPtr(rawptr, valuePtr)
     }
   }
 

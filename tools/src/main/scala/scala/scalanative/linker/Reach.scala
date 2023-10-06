@@ -131,26 +131,10 @@ class Reach(
           loaded(owner) = scope
         }
     }
-    def fallback = global match {
-      case Global.Member(owner, sig) =>
-        infos
-          .get(owner)
-          .collect {
-            case scope: ScopeInfo =>
-              scope.linearized
-                .find(_.responds.contains(sig))
-                .map(_.responds(sig))
-                .flatMap(lookup)
-          }
-          .flatten
-
-      case _ => None
-    }
 
     loaded
       .get(owner)
       .flatMap(_.get(global))
-      .orElse(fallback)
       .orElse {
         if (!ignoreIfUnavailable) addMissing(global)
         None
@@ -933,44 +917,113 @@ class Reach(
         unsupported.getOrElseUpdate(global, details)
       case _ =>
         unreachable.getOrElseUpdate(
-          global, {
-            val (kind, symbol) = parseSymbol(global)
-            UnreachableSymbol(
-              name = global,
-              kind = kind,
-              symbol = symbol,
-              backtrace = getBackTrace(global)
-            )
-          }
+          global,
+          UnreachableSymbol(
+            name = global,
+            symbol = parseSymbol(global),
+            backtrace = getBackTrace(global)
+          )
         )
     }
 
-  private def parseSymbol(name: Global): (String, String) = {
-    def parseSig(owner: String, sig: Sig): (String, String) =
+  private def parseSymbol(name: Global): SymbolDescriptor = {
+    def renderType(tpe: nir.Type): String = tpe match {
+      case arr: Type.Array   => s"${renderType(arr.ty)}[]"
+      case ref: Type.RefKind => ref.className.id
+      case ty                => ty.show
+    }
+    def parseArgTypes(
+        types: Seq[nir.Type],
+        isCtor: Boolean = false
+    ): Some[Seq[String]] = Some {
+      val args = types match {
+        case _ if isCtor   => types
+        case args :+ retty => args
+        case _             => Nil
+      }
+      args.map(renderType)
+    }
+
+    val Private = "private"
+    val Static = "static"
+
+    def parseResultType(types: Seq[nir.Type]): Option[String] =
+      types.lastOption.map(renderType)
+
+    def parseModifiers(scope: nir.Sig.Scope): List[String] = scope match {
+      case Sig.Scope.Public           => Nil
+      case Sig.Scope.Private(_)       => List(Private)
+      case Sig.Scope.PublicStatic     => List(Static)
+      case Sig.Scope.PrivateStatic(_) => List(Static, Private)
+    }
+
+    def parseSig(owner: String, sig: Sig): SymbolDescriptor =
       sig.unmangled match {
-        case Sig.Method(name, _, _) => "method" -> s"$owner.${name}"
-        case Sig.Ctor(tys) =>
-          val ctorTys = tys
-            .map {
-              case ty: Type.RefKind => ty.className.id
-              case ty               => ty.show
-            }
-            .mkString(",")
-          "constructor" -> s"$owner($ctorTys)"
-        case Sig.Clinit         => "static constructor" -> owner
-        case Sig.Field(name, _) => "field" -> s"$owner.$name"
+        case Sig.Method(name, types, scope) =>
+          SymbolDescriptor(
+            "method",
+            s"$owner.$name",
+            parseArgTypes(types),
+            parseResultType(types),
+            parseModifiers(scope)
+          )
+        case Sig.Ctor(types) =>
+          SymbolDescriptor(
+            "constructor",
+            owner,
+            parseArgTypes(types, isCtor = true)
+          )
+        case Sig.Clinit =>
+          SymbolDescriptor(
+            "constructor",
+            owner,
+            modifiers = List(Static)
+          )
+        case Sig.Field(name, scope) =>
+          SymbolDescriptor(
+            "field",
+            owner,
+            modifiers = parseModifiers(scope)
+          )
         case Sig.Generated(name) =>
-          "generated method" -> s"$owner.${name}"
-        case Sig.Proxy(name, _) => "proxy method" -> s"$owner.$name"
-        case Sig.Duplicate(sig, _) =>
-          val (kind, name) = parseSig(owner, sig)
-          s"duplicate $kind" -> s"$owner.name"
-        case Sig.Extern(name) => s"extern method" -> s"$owner.$name"
+          SymbolDescriptor(
+            "symbol",
+            s"$owner.$name",
+            modifiers = List("generated")
+          )
+        case Sig.Proxy(name, types) =>
+          SymbolDescriptor(
+            "method",
+            s"$owner.$name",
+            parseArgTypes(types),
+            parseResultType(types),
+            modifiers = List("proxy")
+          )
+        case Sig.Duplicate(sig, types) =>
+          val original = parseSig(owner, sig)
+          original.copy(
+            argTypes = parseArgTypes(types),
+            resultType = parseResultType(types),
+            modifiers = List("duplicate") ++ original.modifiers
+          )
+          SymbolDescriptor(
+            "method",
+            s"$owner.$name",
+            parseArgTypes(types),
+            parseResultType(types),
+            modifiers = List("duplicate")
+          )
+        case Sig.Extern(name) =>
+          SymbolDescriptor(
+            "symbol",
+            s"$owner.$name",
+            modifiers = List("extern")
+          )
       }
 
     name match {
       case Global.Member(owner, sig) => parseSig(owner.id, sig)
-      case Global.Top(id)            => "type" -> id
+      case Global.Top(id)            => SymbolDescriptor("type", id)
       case _                         => util.unreachable
     }
   }
@@ -985,11 +1038,9 @@ class Reach(
       else {
         val file = current.srcPosition.filename.getOrElse("unknown")
         val line = current.srcPosition.line
-        val (kind, symbol) = parseSymbol(current.referencedBy)
         buf += BackTraceElement(
           name = current.referencedBy,
-          kind = kind,
-          symbol = symbol,
+          symbol = parseSymbol(current.referencedBy),
           filename = file,
           line = line + 1
         )
@@ -1011,7 +1062,7 @@ class Reach(
         import scala.scalanative.nir._
         implicit val srcPosition: nir.Position = nir.Position.NoPosition
         val stubMethods = for {
-          methodName <- Seq("threads", "virtualThreads")
+          methodName <- Seq("threads", "virtualThreads", "continuations")
         } yield {
           import scala.scalanative.codegen.Lower.{
             throwUndefined,
@@ -1045,12 +1096,14 @@ class Reach(
         stubType +: stubMethods
       }
 
-    private def details(sig: Sig): UnsupportedFeature.Kind =
+    private def details(sig: Sig): UnsupportedFeature.Kind = {
       sig.unmangled match {
         case Sig.Method("threads", _, _)        => SystemThreads
         case Sig.Method("virtualThreads", _, _) => VirtualThreads
+        case Sig.Method("continuations", _, _)  => Continuations
         case _                                  => Other
       }
+    }
 
     def unapply(name: Global): Option[UnsupportedFeature] = name match {
       case Global.Member(UnsupportedSymbol, sig) =>
@@ -1101,17 +1154,30 @@ object Reach {
   object ReferencedFrom {
     final val Root = ReferencedFrom(nir.Global.None, nir.Position.NoPosition)
   }
+  case class SymbolDescriptor(
+      kind: String,
+      name: String,
+      argTypes: Option[Seq[String]] = None,
+      resultType: Option[String] = None,
+      modifiers: Seq[String] = Nil
+  ) {
+    override def toString(): String = {
+      val mods =
+        if (modifiers.isEmpty) "" else modifiers.distinct.mkString("", " ", " ")
+      val argsList = argTypes.fold("")(_.mkString("(", ", ", ")"))
+      val resType = resultType.fold("")(tpe => s": $tpe")
+      s"$mods$kind $name$argsList$resType"
+    }
+  }
   case class BackTraceElement(
       name: Global,
-      kind: String,
-      symbol: String,
+      symbol: SymbolDescriptor,
       filename: String,
       line: Int
   )
   case class UnreachableSymbol(
       name: Global,
-      kind: String,
-      symbol: String,
+      symbol: SymbolDescriptor,
       backtrace: List[BackTraceElement]
   )
 
@@ -1127,6 +1193,8 @@ object Reach {
         )
     case object VirtualThreads
         extends Kind("VirtualThreads are not supported yet on this platform")
+    case object Continuations
+        extends Kind("Continuations are not supported yet on this platform")
     case object Other extends Kind("Other unsupported feature")
   }
 }

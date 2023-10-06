@@ -10,8 +10,8 @@ import java.io.Serializable
 import scala.annotation.tailrec
 import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.unsafe._
-import scala.scalanative.libc.atomic.CAtomicInt
-import scala.scalanative.libc.atomic.memory_order._
+import scala.scalanative.libc.stdatomic.AtomicInt
+import scala.scalanative.libc.stdatomic.memory_order._
 import scala.scalanative.runtime.{fromRawPtr}
 import java.util.function.IntBinaryOperator
 import java.util.function.IntUnaryOperator
@@ -28,7 +28,7 @@ class AtomicInteger(private[this] var value: Int)
 
   // Pointer to field containing underlying Integer.
   @alwaysinline
-  private[concurrent] def valueRef: CAtomicInt = new CAtomicInt(
+  private[concurrent] def valueRef: AtomicInt = new AtomicInt(
     fromRawPtr(Intrinsics.classFieldRawPtr(this, "value"))
   )
 

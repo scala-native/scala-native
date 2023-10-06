@@ -6,12 +6,13 @@ import org.junit.Assert._
 import scala.scalanative.api._
 import scala.scalanative.util.Scope
 import scala.scalanative.io.VirtualDirectory
+import scalanative.NIRCompiler
 import java.nio.file.Files
 
 class NativeCompilerTest:
 
   def nativeCompilation(source: String): Unit = {
-    try scalanative.NIRCompiler(_.compile(source))
+    try NIRCompiler(_.compile(source))
     catch {
       case ex: CompilationFailedException =>
         fail(s"Failed to compile source: ${ex}")
@@ -99,3 +100,15 @@ class NativeCompilerTest:
         |}""".stripMargin
     )
   }
+
+  @Test def allowExtensionInExtern(): Unit = nativeCompilation(
+    """import scala.scalanative.unsafe.extern
+      |@extern object Dummy { 
+      |  extension(v: Int) { 
+      |    def convert(): Long = Dummy.implicitConvert(v) + Dummy.doConvert(v) 
+      |  }
+      |  implicit def implicitConvert(v: Int): Long = extern
+      |  def doConvert(v: Int): Long = extern
+      |}
+      |""".stripMargin
+  )

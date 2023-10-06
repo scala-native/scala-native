@@ -60,7 +60,7 @@ private[nio] final class GenHeapBuffer[B <: Buffer](val self: B)
     newHeapBuffer(
       newCapacity,
       _array,
-      _arrayOffset + position(),
+      _offset + position(),
       0,
       newCapacity,
       isReadOnly()
@@ -75,7 +75,7 @@ private[nio] final class GenHeapBuffer[B <: Buffer](val self: B)
       newHeapBuffer(
         capacity(),
         _array,
-        _arrayOffset,
+        _offset,
         position(),
         limit(),
         isReadOnly()
@@ -89,7 +89,7 @@ private[nio] final class GenHeapBuffer[B <: Buffer](val self: B)
       newHeapBuffer: NewThisHeapBuffer
   ): BufferType = {
     val result =
-      newHeapBuffer(capacity(), _array, _arrayOffset, position(), limit(), true)
+      newHeapBuffer(capacity(), _array, _offset, position(), limit(), true)
     result._mark = _mark
     result
   }
@@ -100,7 +100,7 @@ private[nio] final class GenHeapBuffer[B <: Buffer](val self: B)
 
     val len = remaining()
     System
-      .arraycopy(_array, _arrayOffset + position(), _array, _arrayOffset, len)
+      .arraycopy(_array, _offset + position(), _array, _offset, len)
     _mark = -1
     limit(capacity())
     position(len)
@@ -109,11 +109,11 @@ private[nio] final class GenHeapBuffer[B <: Buffer](val self: B)
 
   @inline
   def generic_load(index: Int): ElementType =
-    _array(_arrayOffset + index)
+    _array(_offset + index)
 
   @inline
   def generic_store(index: Int, elem: ElementType): Unit =
-    _array(_arrayOffset + index) = elem
+    _array(_offset + index) = elem
 
   @inline
   def generic_load(
@@ -122,7 +122,7 @@ private[nio] final class GenHeapBuffer[B <: Buffer](val self: B)
       offset: Int,
       length: Int
   ): Unit =
-    System.arraycopy(_array, _arrayOffset + startIndex, dst, offset, length)
+    System.arraycopy(_array, _offset + startIndex, dst, offset, length)
 
   @inline
   def generic_store(
@@ -131,5 +131,5 @@ private[nio] final class GenHeapBuffer[B <: Buffer](val self: B)
       offset: Int,
       length: Int
   ): Unit =
-    System.arraycopy(src, offset, _array, _arrayOffset + startIndex, length)
+    System.arraycopy(src, offset, _array, _offset + startIndex, length)
 }

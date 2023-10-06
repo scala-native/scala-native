@@ -34,4 +34,4 @@ jobs:
           MAVEN_USER: "${{ secrets.SONATYPE_USER }}"
           MAVEN_PASSWORD: "${{ secrets.SONATYPE_PASSWORD }}"
           PGP_PASSPHRASE: "${{ secrets.PGP_PASSWORD }}"
-        run: sbt "-v" "-J-Xmx5G" "publishRelease"
+        run: sbt "-v" "-J-Xmx5G" "clean;publish-release"

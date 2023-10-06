@@ -32,7 +32,7 @@ private[nio] object GenMappedBufferView {
     newMappedBufferView(
       viewCapacity,
       byteBuffer._mappedData,
-      byteBuffer._arrayOffset + byteBufferPos,
+      byteBuffer._offset + byteBufferPos,
       0,
       viewCapacity,
       byteBuffer.isReadOnly(),
@@ -57,7 +57,7 @@ private[nio] final class GenMappedBufferView[B <: Buffer](val self: B)
     newMappedBufferView(
       newCapacity,
       _mappedData,
-      _byteArrayOffset + bytesPerElem * position(),
+      _offset + bytesPerElem * position(),
       0,
       newCapacity,
       isReadOnly(),
@@ -72,7 +72,7 @@ private[nio] final class GenMappedBufferView[B <: Buffer](val self: B)
     val result = newMappedBufferView(
       capacity(),
       _mappedData,
-      _byteArrayOffset,
+      _offset,
       position(),
       limit(),
       isReadOnly(),
@@ -89,7 +89,7 @@ private[nio] final class GenMappedBufferView[B <: Buffer](val self: B)
     val result = newMappedBufferView(
       capacity(),
       _mappedData,
-      _byteArrayOffset,
+      _offset,
       position(),
       limit(),
       true,
@@ -119,7 +119,7 @@ private[nio] final class GenMappedBufferView[B <: Buffer](val self: B)
   ): ByteArrayBits = {
     ByteArrayBits(
       _mappedData.ptr,
-      _byteArrayOffset,
+      _offset,
       isBigEndian,
       newMappedBufferView.bytesPerElem
     )

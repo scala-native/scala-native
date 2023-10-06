@@ -12,7 +12,7 @@ import java.util.RandomAccess
 import java.util.concurrent.locks.LockSupport
 import java.lang.invoke.VarHandle
 
-import scala.scalanative.libc.atomic._
+import scala.scalanative.libc.stdatomic._
 import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
 import scala.scalanative.annotation.alwaysinline
 
@@ -27,10 +27,10 @@ abstract class ForkJoinTask[V]() extends Future[V] with Serializable {
   @volatile private var aux: Aux = _ // either waiters or thrown Exception
 
   // Support for atomic operations
-  private val statusAtomic = new CAtomicInt(
+  private val statusAtomic = new AtomicInt(
     fromRawPtr(Intrinsics.classFieldRawPtr(this, "status"))
   )
-  private val auxAtomic = new CAtomicRef[Aux](
+  private val auxAtomic = new AtomicRef[Aux](
     fromRawPtr(Intrinsics.classFieldRawPtr(this, "aux"))
   )
   @alwaysinline private def getAndBitwiseOrStatus(v: Int): Int =
@@ -459,7 +459,7 @@ object ForkJoinTask {
   ) {
     var next: Aux = _ // accessed only via memory-acquire chains
     final private val nextAtomic =
-      new CAtomicRef[Aux](fromRawPtr(Intrinsics.classFieldRawPtr(this, "next")))
+      new AtomicRef[Aux](fromRawPtr(Intrinsics.classFieldRawPtr(this, "next")))
     final def casNext(c: Aux, v: Aux) = nextAtomic.compareExchangeStrong(c, v)
   }
 

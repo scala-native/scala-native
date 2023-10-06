@@ -12,7 +12,7 @@ concurrency:
 jobs:
   test-runtime:
     name: Test runtime
-    runs-on: windows-2019
+    runs-on: windows-2022
     env:
       ENABLE_EXPERIMENTAL_COMPILER: true
     strategy:
@@ -69,7 +69,7 @@ jobs:
 
   run-scripted-tests:
     name: Scripted tests
-    runs-on: windows-2019
+    runs-on: windows-2022
     strategy:
       fail-fast: false
       matrix:
@@ -89,7 +89,7 @@ jobs:
 
   test-runtime-ext:
     name: Test runtime extension
-    runs-on: windows-2019
+    runs-on: windows-2022
     env:
       ENABLE_EXPERIMENTAL_COMPILER: true
     needs: [test-runtime]
@@ -143,12 +143,12 @@ jobs:
         shell: cmd
 
   test-llvm-versions:
-    runs-on: windows-2019
+    runs-on: windows-2022
     strategy:
       fail-fast: false
       matrix:
         scala: [3]
-        llvm: ["13.0.1", "14.0.6", "15.0.7"] # Last 3 stable versions
+        llvm: ["15.0.7", "16.0.6", "17.0.2"] # Last 3 stable versions
     if: "(github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native'"
     steps:
       - name: Setup git config
@@ -172,7 +172,7 @@ jobs:
 
   test-multihreading:
     name: Test experimental multithreading support
-    runs-on: windows-2019
+    runs-on: windows-2022
     strategy:
       fail-fast: false
       matrix:
@@ -208,6 +208,7 @@ jobs:
           set SCALANATIVE_LIB_DIRS=${{steps.setup.outputs.vcpkg-dir}}\lib&
           set SCALANATIVE_CI_NO_DEBUG_SYMBOLS=true&
           set SCALANATIVE &
+          set SCALANATIVE_TEST_PREFETCH_DEBUG_INFO=1&
           sbt -Dscala.scalanative.multithreading.enable=true
           sandbox${{env.project-version}}/run;
           testsJVM${{env.project-version}}/test;

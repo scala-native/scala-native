@@ -38,7 +38,7 @@ private[nio] final class GenMappedBuffer[B <: Buffer](val self: B)
     newMappedBuffer(
       newCapacity,
       _mappedData,
-      _arrayOffset + position(),
+      _offset + position(),
       0,
       newCapacity,
       isReadOnly()
@@ -53,7 +53,7 @@ private[nio] final class GenMappedBuffer[B <: Buffer](val self: B)
       newMappedBuffer(
         capacity(),
         _mappedData,
-        _arrayOffset,
+        _offset,
         position(),
         limit(),
         isReadOnly()
@@ -70,7 +70,7 @@ private[nio] final class GenMappedBuffer[B <: Buffer](val self: B)
       newMappedBuffer(
         capacity(),
         _mappedData,
-        _arrayOffset,
+        _offset,
         position(),
         limit(),
         true
@@ -90,11 +90,11 @@ private[nio] final class GenMappedBuffer[B <: Buffer](val self: B)
 
   @inline
   def generic_load(index: Int): Byte =
-    _mappedData(_arrayOffset + index)
+    _mappedData(_offset + index)
 
   @inline
   def generic_store(index: Int, elem: Byte): Unit =
-    _mappedData(_arrayOffset + index) = elem
+    _mappedData(_offset + index) = elem
 
   @inline
   def generic_load(

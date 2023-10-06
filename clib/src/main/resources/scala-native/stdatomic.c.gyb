@@ -1,0 +1,49 @@
+// clang-format off
+
+#include <stdatomic.h>
+#include <stdbool.h>
+#include <stdint.h>
+
+memory_order scalanative_atomic_memory_order_relaxed() { return memory_order_relaxed;}
+memory_order scalanative_atomic_memory_order_consume() { return memory_order_consume;}
+memory_order scalanative_atomic_memory_order_acquire() { return memory_order_acquire;}
+memory_order scalanative_atomic_memory_order_release() { return memory_order_release;}
+memory_order scalanative_atomic_memory_order_acq_rel() { return memory_order_acq_rel;}
+memory_order scalanative_atomic_memory_order_seq_cst() { return memory_order_seq_cst;}
+
+void scalanative_atomic_thread_fence(memory_order order) { atomic_thread_fence(order);}
+void scalanative_atomic_signal_fence(memory_order order) { atomic_signal_fence(order);}
+%{
+  atomics = [
+    ('bool', 'bool'),
+    ('char','byte'),
+    ('unsigned char','ubyte'),
+    ('short','short'),
+    ('unsigned short','ushort'),
+    ('int','int'),
+    ('unsigned int','uint'),
+    ('long','long'),
+    ('unsigned long','ulong'),
+    ('long long','llong'),
+    ('unsigned long long','ullong'),
+    ('intptr_t', 'intptr'),
+  ]
+}%
+% for (T, N) in atomics:
+
+void scalanative_atomic_init_${N}(_Atomic(${T})* atm, ${T} init_value) { atomic_init(atm, init_value);}
+${T} scalanative_atomic_load_${N}(_Atomic(${T})* atm) { return atomic_load(atm);}
+${T} scalanative_atomic_load_explicit_${N}(_Atomic(${T})* atm, memory_order memoryOrder) { return atomic_load_explicit(atm, memoryOrder);}
+void scalanative_atomic_store_${N}(_Atomic(${T})* atm, ${T} val) {atomic_store(atm, val);}
+void scalanative_atomic_store_explicit_${N}(_Atomic(${T})* atm, ${T} val, memory_order memoryOrder) { atomic_store_explicit(atm, val, memoryOrder);}
+${T} scalanative_atomic_exchange_${N}(_Atomic(${T})* atm, ${T} val) { return atomic_exchange(atm, val);}
+${T} scalanative_atomic_exchange_explicit_${N}(_Atomic(${T})* atm, ${T} val, memory_order memoryOrder) { return atomic_exchange_explicit(atm, val, memoryOrder);}
+% for cmp in ['strong', 'weak']:
+bool scalanative_atomic_compare_exchange_${cmp}_${N}(_Atomic(${T})* atm, ${T}* expected, ${T} desired) { return atomic_compare_exchange_${cmp}(atm, expected, desired);}
+bool scalanative_atomic_compare_exchange_${cmp}_explicit_${N}(_Atomic(${T})* atm, ${T}* expected, ${T} desired, memory_order onSucc, memory_order onFail) { return atomic_compare_exchange_${cmp}_explicit(atm, expected, desired, onSucc, onFail);}
+% end
+% for op in ['add', 'sub', 'and', 'or', 'xor']:
+${T} scalanative_atomic_fetch_${op}_${N}(_Atomic(${T})* atm, ${T} val) { return atomic_fetch_${op}(atm, val);}
+${T} scalanative_atomic_fetch_${op}_explicit_${N}(_Atomic(${T})* atm, ${T} val, memory_order memoryOrder) { return atomic_fetch_${op}_explicit(atm, val, memoryOrder);}
+% end
+% end
