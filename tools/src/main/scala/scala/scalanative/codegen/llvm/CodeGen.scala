@@ -135,22 +135,22 @@ object CodeGen {
           .traverse(assembly.groupBy(x => sourceDirOf(x.pos)).toSeq) {
             case (dir, defns) =>
               Future {
-                val path = dropPrefix(dir.stripSuffix("/"))
-                val outFile = config.workDir.resolve(s"$path.ll")
+                val hash = dir.hashCode().toHexString
+                val outFile = config.workDir.resolve(s"$hash.ll")
                 val ownerDirectory = outFile.getParent()
 
-                ctx.addEntry(path, defns)
-                if (ctx.shouldCompile(path)) {
+                ctx.addEntry(hash, defns)
+                if (ctx.shouldCompile(hash)) {
                   val sorted = defns.sortBy(_.name)
                   if (!Files.exists(ownerDirectory))
                     Files.createDirectories(ownerDirectory)
-                  Impl(env, sorted).gen(path, workDir)
+                  Impl(env, sorted).gen(hash, workDir)
                 } else {
                   assert(ownerDirectory.toFile.exists())
                   config.logger.debug(
-                    s"Content of package has not changed, skiping generation of $path.ll"
+                    s"Content of directory in $dir has not changed, skiping generation of $hash.ll"
                   )
-                  config.workDir.resolve(s"$path.ll")
+                  config.workDir.resolve(s"$hash.ll")
                 }
               }
           }
