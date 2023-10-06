@@ -1,0 +1,138 @@
+// format: off
+
+package java.nio
+
+import scala.scalanative.unsafe._
+
+% types = [('Char', '2'),
+%          ('Short', '2'),
+%          ('Int', '4'),
+%          ('Long', '8'),
+%          ('Float', '4'),
+%          ('Double', '8')]
+% for (T, size) in types:
+private[nio] final class PointerByteBuffer${T}View private (
+    _capacity: Int,
+    override private[nio] val _rawDataPointer: Ptr[Byte],
+    override private[nio] val _offset: Int,
+    _initialPosition: Int,
+    _initialLimit: Int,
+    _readOnly: Boolean,
+    override private[nio] val isBigEndian: Boolean
+) extends ${T}Buffer(_capacity) {
+
+  position(_initialPosition)
+  limit(_initialLimit)
+
+  private implicit def newPointer${T}BufferView
+      : GenPointerBufferView.NewPointerBufferView[${T}Buffer] =
+    PointerByteBuffer${T}View.NewPointerByteBuffer${T}View
+
+  def isReadOnly(): Boolean = _readOnly
+
+  def isDirect(): Boolean = true
+
+  @noinline
+  def slice(): ${T}Buffer =
+    GenPointerBufferView[${T}Buffer](this).generic_slice()
+
+  @noinline
+  def duplicate(): ${T}Buffer =
+    GenPointerBufferView[${T}Buffer](this).generic_duplicate()
+
+  @noinline
+  def asReadOnlyBuffer(): ${T}Buffer =
+    GenPointerBufferView[${T}Buffer](this).generic_asReadOnlyBuffer()
+
+  % if T == 'Char':
+  def subSequence(start: Int, end: Int): ${T}Buffer = {
+    if (start < 0 || end < start || end > remaining())
+      throw new IndexOutOfBoundsException
+    new PointerByteBuffer${T}View(
+      capacity(),
+      _rawDataPointer,
+      _offset,
+      position() + start,
+      position() + end,
+      isReadOnly(),
+      isBigEndian
+    )
+  }
+  % end
+
+  @noinline
+  def get(): ${T} =
+    GenBuffer[${T}Buffer](this).generic_get()
+
+  @noinline
+  def put(c: ${T}): ${T}Buffer =
+    GenBuffer[${T}Buffer](this).generic_put(c)
+
+  @noinline
+  def get(index: Int): ${T} =
+    GenBuffer[${T}Buffer](this).generic_get(index)
+
+  @noinline
+  def put(index: Int, c: ${T}): ${T}Buffer =
+    GenBuffer[${T}Buffer](this).generic_put(index, c)
+
+  @noinline
+  override def get(dst: Array[${T}], offset: Int, length: Int): ${T}Buffer =
+    GenBuffer[${T}Buffer](this).generic_get(dst, offset, length)
+
+  @noinline
+  override def put(src: Array[${T}], offset: Int, length: Int): ${T}Buffer =
+    GenBuffer[${T}Buffer](this).generic_put(src, offset, length)
+
+  @noinline
+  def compact(): ${T}Buffer =
+    GenPointerBufferView[${T}Buffer](this).generic_compact()
+
+  @noinline
+  def order(): ByteOrder =
+    GenPointerBufferView[${T}Buffer](this).generic_order()
+
+  // Private API
+
+  @inline
+  private[nio] def load(index: Int): ${T} =
+    GenPointerBufferView[${T}Buffer](this).byteArrayBits.load${T}(index)
+
+  @inline
+  private[nio] def store(index: Int, elem: ${T}): Unit =
+    GenPointerBufferView[${T}Buffer](this).byteArrayBits.store${T}(index, elem)
+}
+
+private[nio] object PointerByteBuffer${T}View {
+  private[nio] implicit object NewPointerByteBuffer${T}View
+      extends GenPointerBufferView.NewPointerBufferView[${T}Buffer] {
+    def bytesPerElem: Int = ${size}
+
+    def apply(
+        capacity: Int,
+        arrayPtr: Ptr[Byte],
+        byteArrayOffset: Int,
+        initialPosition: Int,
+        initialLimit: Int,
+        readOnly: Boolean,
+        isBigEndian: Boolean
+    ): ${T}Buffer = {
+      new PointerByteBuffer${T}View(
+        capacity,
+        arrayPtr,
+        byteArrayOffset,
+        initialPosition,
+        initialLimit,
+        readOnly,
+        isBigEndian
+      )
+    }
+  }
+
+  @inline
+  private[nio] def fromPointerByteBuffer(
+      byteBuffer: PointerByteBuffer
+  ): ${T}Buffer =
+    GenPointerBufferView.generic_fromPointerByteBuffer(byteBuffer)
+}
+% end

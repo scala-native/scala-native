@@ -1,6 +1,7 @@
 package java.nio
 
 // Ported from Scala.js
+import scala.scalanative.unsafe
 
 abstract class Buffer private[nio] (val _capacity: Int) {
   private[nio] type ElementType
@@ -98,15 +99,36 @@ abstract class Buffer private[nio] (val _capacity: Int) {
   override def toString(): String =
     s"${getClass.getName}[pos=${position()} lim=${limit()} cap=${capacity()}]"
 
+  // Extended API
+  final def hasPointer(): Boolean = _rawDataPointer != null && !isReadOnly()
+
+  final def pointer(): unsafe.Ptr[Byte] = {
+    val ptr = _rawDataPointer
+    if (ptr == null || isReadOnly())
+      throw new UnsupportedOperationException
+    ptr
+  }
+
   /* Generic access to methods declared in subclasses.
    * These methods allow to write generic algorithms on any kind of Buffer.
    * The optimizer will get rid of all the overhead.
    * We only declare the methods we need somewhere.
    */
 
-  private[nio] def _array: Array[ElementType]
-  private[nio] def _arrayOffset: Int
-  private[nio] def _mappedData: MappedByteBufferData // Added to ScalaNative
+  private[nio] def _array: Array[ElementType] = null
+  private[nio] def _offset: Int
+
+  // MappedByteBuffer specific
+  private[nio] def _mappedData: MappedByteBufferData = null
+
+  // PointerByteBuffer specific
+  private[nio] def _rawDataPointer: unsafe.Ptr[Byte] = null
+
+  // HeapByteBuffer specific
+  private[nio] def _byteArray: Array[Byte] =
+    throw new UnsupportedOperationException
+  private[nio] def isBigEndian: Boolean =
+    throw new UnsupportedOperationException
 
   /** Loads an element at the given absolute, unchecked index. */
   private[nio] def load(index: Int): ElementType
@@ -129,16 +151,6 @@ abstract class Buffer private[nio] (val _capacity: Int) {
       offset: Int,
       length: Int
   ): Unit
-
-  /* Only for HeapByteBufferViews -- but that's the only place we can put it.
-   * For all other types, it will be dce'ed.
-   */
-  private[nio] def _byteArray: Array[Byte] =
-    throw new UnsupportedOperationException
-  private[nio] def _byteArrayOffset: Int =
-    throw new UnsupportedOperationException
-  private[nio] def isBigEndian: Boolean =
-    throw new UnsupportedOperationException
 
   // Helpers
 
