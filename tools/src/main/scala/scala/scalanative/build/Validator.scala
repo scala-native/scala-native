@@ -52,7 +52,8 @@ object Validator {
       issues += s"Provided clang path '${c.clang.toAbsolutePath()}' does not exist, specify a valid path to LLVM Toolchain distribution using config or LLVM_BIN environment variable"
     if (!Files.exists(c.clangPP))
       issues += s"Provided clang++ path '${c.clangPP.toAbsolutePath()}' does not exist, specify a valid path to LLVM Toolchain distribution using config or LLVM_BIN environment variable"
-    if (c.baseName.trim().isEmpty())
+    // config.baseName provides default value when config.compileConfig.baseName is empty
+    if (config.baseName.trim().isEmpty())
       issues += s"Provided baseName is blank, provide a name of target artifact without extensions to allow for determinstic builds"
 
     issues.result() match {
