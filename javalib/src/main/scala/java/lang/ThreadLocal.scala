@@ -92,7 +92,8 @@ object ThreadLocal {
     private def inheritValues(fromParent: ThreadLocal.Values): Unit = {
       // Transfer values from parent to child thread.
       val table = this.table
-      for (i <- table.length - 2 to 0 by -2) {
+      var i = table.length - 2
+      while (i >= 0) {
         val k = table(i)
         // The table can only contain null, tombstones and references.
         k match {
@@ -119,6 +120,7 @@ object ThreadLocal {
             }
           case _ => ()
         }
+        i -= 2
       }
     }
 
@@ -191,14 +193,18 @@ object ThreadLocal {
       if (size == 0) return true
 
       // Move over entries.
-      for (i <- oldTable.length - 2 to 0 by -2) oldTable(i) match {
-        case reference: Reference[ThreadLocal[_]] @unchecked =>
-          val key = reference.get()
-          if (key != null) {
-            // Entry is still live. Move it over.
-            add(key, oldTable(i + 1))
-          } else size -= 1
-        case _ => ()
+      var i = oldTable.length - 2
+      while (i >= 0) {
+        oldTable(i) match {
+          case reference: Reference[ThreadLocal[_]] @unchecked =>
+            val key = reference.get()
+            if (key != null) {
+              // Entry is still live. Move it over.
+              add(key, oldTable(i + 1))
+            } else size -= 1
+          case _ => ()
+        }
+        i -= 2
       }
       true
     }

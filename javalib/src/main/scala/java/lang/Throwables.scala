@@ -5,10 +5,12 @@ import scalanative.unsafe._
 import scalanative.unsigned._
 import scalanative.runtime.unwind
 import scala.scalanative.meta.LinktimeInfo
-// TODO: Replace with j.u.c.ConcurrentHashMap when implemented to remove scalalib dependency
+// TODO: Replace with j.u.c.ConcurrentHashMap when implemented to remove scalalib dependency and save loading ~600 symbols
 import scala.collection.concurrent.TrieMap
 import scala.scalanative.runtime.Backtrace
 import scala.scalanative.runtime.NativeThread
+import scala.scalanative.libc.stdlib.{malloc, calloc, free}
+import java.util.concurrent.ConcurrentHashMap
 
 private[lang] object StackTrace {
   private val cache = TrieMap.empty[CUnsignedLong, StackTraceElement]
@@ -16,9 +18,9 @@ private[lang] object StackTrace {
   private def makeStackTraceElement(
       cursor: Ptr[scala.Byte],
       ip: CUnsignedLong
-  )(implicit zone: Zone): StackTraceElement = {
+  ): StackTraceElement = {
     val nameMax = 1024
-    val name = alloc[CChar](nameMax)
+    val name = calloc(nameMax.toUSize, sizeof[CChar])
     val offset = stackalloc[scala.Long]()
 
     unwind.get_proc_name(cursor, name, nameMax.toUSize, offset)
@@ -28,9 +30,11 @@ private[lang] object StackTrace {
     // behavior is not defined for non-zero-terminated strings.
     name(nameMax - 1) = 0.toByte
     val position =
-      if (LinktimeInfo.isMac) Backtrace.decodePosition(ip.toLong)
+      if (LinktimeInfo.isMac && LinktimeInfo.hasDebugMetadata)
+        Backtrace.decodePosition(ip.toLong)
       else Backtrace.Position.empty
-    StackTraceElement(name, position)
+    try StackTraceElement(name, position)
+    finally free(name)
   }
 
   /** Creates a stack trace element in given unwind context. Finding a name of
@@ -40,7 +44,7 @@ private[lang] object StackTrace {
   private def cachedStackTraceElement(
       cursor: Ptr[scala.Byte],
       ip: CUnsignedLong
-  )(implicit zone: Zone): StackTraceElement =
+  ): StackTraceElement =
     cache.getOrElseUpdate(ip, makeStackTraceElement(cursor, ip))
 
   @noinline private[lang] def currentStackTrace(): Array[StackTraceElement] = {
@@ -48,45 +52,49 @@ private[lang] object StackTrace {
     val threadCtx = NativeThread.currentNativeThread.thread.platformCtx
     if (threadCtx.isFillingStackTrace) Array.empty
     else if (LinktimeInfo.asanEnabled) Array.empty
-    else
+    else {
+      val cursor = malloc(unwind.sizeOfCursor)
+      val context = malloc(unwind.sizeOfContext)
       try {
         threadCtx.isFillingStackTrace = true
-        val buffer = mutable.ArrayBuffer.empty[StackTraceElement]
-        Zone { implicit z =>
-          val cursor = alloc[scala.Byte](unwind.sizeOfCursor)
-          val context = alloc[scala.Byte](unwind.sizeOfContext)
-          val ip = stackalloc[CSize]()
-          var foundCurrentStackTrace = false
-          var afterFillInStackTrace = false
-          unwind.get_context(context)
-          unwind.init_local(cursor, context)
-          while (unwind.step(cursor) > 0) {
-            unwind.get_reg(cursor, unwind.UNW_REG_IP, ip)
-            val elem = cachedStackTraceElement(cursor, !ip)
-            buffer += elem
+        val buffer = Array.newBuilder[StackTraceElement]
+        val ip = stackalloc[CSize]()
+        var foundCurrentStackTrace = false
+        var afterFillInStackTrace = false
+        unwind.get_context(context)
+        unwind.init_local(cursor, context)
+        while (unwind.step(cursor) > 0) {
+          unwind.get_reg(cursor, unwind.UNW_REG_IP, ip)
+          val elem = cachedStackTraceElement(cursor, !ip)
+          buffer += elem
 
-            // Look for intrinsic stack frames and remove them to not polute stack traces
-            if (!afterFillInStackTrace) {
-              if (!foundCurrentStackTrace) {
-                if (elem.getClassName == "java.lang.StackTrace$" &&
-                    elem.getMethodName == "currentStackTrace") {
-                  foundCurrentStackTrace = true
-                  buffer.clear()
-                }
-              } else {
-                // Not guaranteed to be found, may be inlined.
-                // This branch would be visited exactly 1 time
-                if (elem.getClassName == "java.lang.Throwable" &&
-                    elem.getMethodName == "fillInStackTrace") {
-                  buffer.clear()
-                }
-                afterFillInStackTrace = true
+          // Look for intrinsic stack frames and remove them to not polute stack traces
+          if (!afterFillInStackTrace) {
+            if (!foundCurrentStackTrace) {
+              if (elem.getClassName == "java.lang.StackTrace$" &&
+                  elem.getMethodName == "currentStackTrace") {
+                foundCurrentStackTrace = true
+                buffer.clear()
               }
+            } else {
+              // Not guaranteed to be found, may be inlined.
+              // This branch would be visited exactly 1 time
+              if (elem.getClassName == "java.lang.Throwable" &&
+                  elem.getMethodName == "fillInStackTrace") {
+                buffer.clear()
+              }
+              afterFillInStackTrace = true
             }
           }
         }
-        buffer.toArray
-      } finally threadCtx.isFillingStackTrace = false
+
+        buffer.result()
+      } finally {
+        threadCtx.isFillingStackTrace = false
+        free(cursor)
+        free(context)
+      }
+    }
   }
 }
 

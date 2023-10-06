@@ -916,10 +916,12 @@ object RyuDouble {
 
     // Values in the interval [1E-3, 1E7) are special.
     if (scientificNotation) {
-      for (i <- 0 until olength - 1) {
+      var i = 0
+      while (i < olength - 1) {
         val c = (output % 10).toInt
         output /= 10
         result(index + olength - i) = ('0' + c).toChar
+        i += 1
       }
       result(index) = ('0' + output % 10).toChar
       result(index + 1) = '.'
@@ -958,26 +960,34 @@ object RyuDouble {
         result(index) = '.'
         index += 1
 
-        for (i <- exp until -1) {
+        var i = exp
+        while (i < -1) {
           result(index) = '0'
           index += 1
+          i += 1
         }
 
         val current = index
-        for (i <- 0 until olength) {
+        i = 0
+        while (i < olength) {
           result(current + olength - i - 1) = ('0' + output % 10).toChar
           output /= 10
           index += 1
+          i += 1
         }
       } else if (exp + 1 >= olength) {
-        for (i <- 0 until olength) {
+        var i = 0
+        while (i < olength) {
           result(index + olength - i - 1) = ('0' + output % 10).toChar
           output /= 10
+          i += 1
         }
         index += olength
-        for (i <- olength until exp + 1) {
+        i = olength
+        while (i <= exp) {
           result(index) = '0'
           index += 1
+          i += 1
         }
         result(index) = '.'
         index += 1
@@ -986,13 +996,15 @@ object RyuDouble {
       } else {
         // Decimal dot is somewhere between the digits.
         var current = index + 1
-        for (i <- 0 until olength) {
+        var i = 0
+        while (i < olength) {
           if (olength - i - 1 == exp) {
             result(current + olength - i - 1) = '.'
             current -= 1
           }
           result(current + olength - i - 1) = ('0' + output % 10).toChar
           output /= 10
+          i += 1
         }
         index += olength + 1
       }
