@@ -90,7 +90,7 @@ jobs:
           java-version: 8
 
       - name: Test cross compilation of compiler plugins
-        run: |
+        run: >
           sbt "-J-Xmx3G"
             +nscplugin${{ env.project-version }}/test
             +junitPlugin${{ env.project-version }}/compile

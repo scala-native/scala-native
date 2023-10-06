@@ -42,7 +42,12 @@ runs:
     - name: Install explicit LLVM toolchain
       shell: bash
       if: ${{ inputs.llvm-version != '' }}
-      run: brew install llvm@${{ inputs.llvm-version }}
+      run: |
+        if [[ "${{ inputs.llvm-version }}" == "latest" ]]; then 
+          brew install llvm
+        else 
+          brew install llvm@${{ inputs.llvm-version }}
+        fi
 
     # Loads cache with dependencies created in test-tools job
     - name: Cache dependencies

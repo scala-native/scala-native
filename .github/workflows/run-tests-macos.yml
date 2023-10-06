@@ -225,7 +225,7 @@ jobs:
       fail-fast: false
       matrix:
         scala: [3]
-        llvm: [15, 16, 17] # Last 3 stable versions
+        llvm: [14, 16, latest] # Last 3 stable versions. 15 is tested by default,  latest version == 17
     if: "(github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native'"
     steps:
       - uses: actions/checkout@v3
@@ -239,5 +239,12 @@ jobs:
         env:
           # SCALANATIVE_MODE: release-fast
           # SCALANATIVE_LTO: thin
-          LLVM_BIN: "opt/homebrew/opt/llvm@${{ matrix.llvm-version }}/bin"
-        run: sbt "test-runtime ${{ matrix.scala }}"
+        run: |
+          if [[ "${{ matrix.llvm-version }}" == "latest" ]]; then 
+            export LLVM_BIN=$(brew --prefix llvm)/bin
+          else 
+            export LLVM_BIN=$(brew --prefix llvm@${{ matrix.llvm-version }})/bin
+          fi
+          echo "LLVM_BIN=${LLVM_BIN}"
+          $LLVM_BIN/clang --version
+          sbt "test-runtime ${{ matrix.scala }}"
