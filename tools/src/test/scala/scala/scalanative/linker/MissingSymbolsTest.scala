@@ -45,11 +45,13 @@ class MissingSymbolsTest extends LinkerSpec {
         assertContainsAll(
           "kind-symbols",
           Seq(
-            "type" -> "java.sql.Time",
-            "constructor" -> "java.sql.Time(long)",
-            "method" -> "java.sql.Time.valueOf"
+            ("type", "java.sql.Time", None),
+            ("constructor", "java.sql.Time", Some(Seq("long"))),
+            ("method", "java.sql.Time.valueOf", Some(Seq("java.lang.String")))
           ),
-          result.unreachable.map(v => (v.kind, v.symbol))
+          result.unreachable
+            .map(_.symbol)
+            .map(v => (v.kind, v.name, v.argTypes))
         )
         val TimeType = Global.Top("java.sql.Time")
         val TimeCtor = TimeType.member(Sig.Ctor(Seq(Type.Long)))
@@ -68,7 +70,9 @@ class MissingSymbolsTest extends LinkerSpec {
 
         result.unreachable.foreach { symbol =>
           val backtrace =
-            symbol.backtrace.map(v => (v.kind, v.symbol, v.filename, v.line))
+            symbol.backtrace.map(v =>
+              (v.symbol.kind, v.symbol.name, v.filename, v.line)
+            )
           // format: off
           assertEquals("backtrace", List(
             ("method", "Bar$.getTimeString", sourceFile, if(symbol.name == TimeCtor) 9 else 8),
@@ -94,23 +98,22 @@ class MissingSymbolsTest extends LinkerSpec {
         """.stripMargin)
     ) {
       case (config, result) =>
-        scala.scalanative.build.ScalaNative.logLinked(config, result, "test")
         assertEquals("unreachable", 2, result.unreachable.size)
         assertContainsAll(
           "kind-symbols",
           Seq(
             "type" -> "java.sql.Time",
-            "constructor" -> "java.sql.Time(long)"
+            "constructor" -> "java.sql.Time"
           ),
-          result.unreachable.map(v => (v.kind, v.symbol))
+          result.unreachable.map(_.symbol).map(v => (v.kind, v.name))
         )
 
         result.unreachable
-          .find(_.symbol == "java.sql.Time")
+          .find(_.symbol.name == "java.sql.Time")
           .map { symbol =>
             val from = symbol.backtrace.head
-            assertEquals("type", from.kind)
-            assertEquals("Test$Foo$1", from.symbol)
+            assertEquals("type", from.symbol.kind)
+            assertEquals("Test$Foo$1", from.symbol.name)
           }
           .getOrElse(fail("Not found required unreachable symbol"))
     }
@@ -134,7 +137,7 @@ class MissingSymbolsTest extends LinkerSpec {
         // Testing if is able to get non-empty backtrace.
         // If reference tacking of delayed methods is invalid we would get empty list here
         result.unreachable
-          .find(_.symbol == "java.lang.Class.getDeclaredFields")
+          .find(_.symbol.name == "java.lang.Class.getDeclaredFields")
           .map { symbol =>
             assertTrue("no-backtrace", symbol.backtrace.nonEmpty)
           }
@@ -170,7 +173,6 @@ class MissingSymbolsTest extends LinkerSpec {
                 Reach.UnsupportedFeature.SystemThreads,
                 kind
               )
-              println(backtrace)
               assertTrue("no-backtrace", backtrace.nonEmpty)
           }
           .getOrElse(fail("Not found required unreachable symbol"))
