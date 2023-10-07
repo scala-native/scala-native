@@ -66,11 +66,10 @@ object MyScalaNativePlugin extends AutoPlugin {
       nc.withCheck(true)
         .withCheckFatalWarnings(true)
         .withDump(true)
-        // .withDebugMetadata(true)
+        .withDebugMetadata(true)
         .withMultithreadingSupport(
-          true
-          // multithreadingEnabledBySbtSysProps()
-          //   .getOrElse(nc.multithreadingSupport)
+          multithreadingEnabledBySbtSysProps()
+            .getOrElse(nc.multithreadingSupport)
         )
     },
     scalacOptions ++= {
