@@ -93,7 +93,14 @@ trait NirGenExpr(using Context) {
       def qualifier = qualifier0.withSpan(qualifier0.span.orElse(fun.span))
       def arg = args.head
 
+      inline def fail(msg: String)(using Context) = {
+        report.error(msg, app.srcPos)
+        Val.Null
+      }
       fun match {
+        case _ if sym == defnNir.UnsafePackage_extern =>
+          fail(s"extern can be used only from non-inlined extern methods")
+
         case _: TypeApply => genApplyTypeApply(app)
         case Select(Super(_, _), _) =>
           genApplyMethod(

@@ -292,6 +292,23 @@ class NIRCompilerTest {
     )
   }
 
+  @Test def applyExtern(): Unit = {
+    val err = assertThrows(
+      classOf[CompilationFailedException],
+      () => NIRCompiler(_.compile("""
+           |import scala.scalanative.unsafe._
+           |object Foo{
+           |  def foo(): Int = locally{ val x = extern; x }
+           |}
+           |""".stripMargin))
+    )
+    assertTrue(
+      err
+        .getMessage()
+        .contains("extern can be used only from non-inlined extern methods")
+    )
+  }
+
   @Test def nonExistingClassFieldPointer(): Unit = {
     val err = assertThrows(
       classOf[CompilationFailedException],

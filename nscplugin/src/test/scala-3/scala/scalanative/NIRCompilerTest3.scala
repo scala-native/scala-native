@@ -69,7 +69,28 @@ class NIRCompilerTest3 {
         |var foo = extern
         |""".stripMargin))
     )
-    assertTrue(err.getMessage().contains("extern field foo needs result type"))
+    assertTrue(
+      err
+        .getMessage()
+        .contains("extern can be used only from non-inlined extern methods")
+    )
+  }
+
+  @Test def inlinedMethodUsingExtern(): Unit = {
+    val err = assertThrows(
+      classOf[CompilationFailedException],
+      () => NIRCompiler(_.compile("""
+           |import scala.scalanative.unsafe.*
+           |
+           |inline def foo(): Int = locally{ val x = extern; x }
+           |def x = foo()
+           |""".stripMargin))
+    )
+    assertTrue(
+      err
+        .getMessage()
+        .contains("extern can be used only from non-inlined extern methods")
+    )
   }
 
   val ErrorBothExternAndExported =
@@ -216,4 +237,5 @@ class NIRCompilerTest3 {
     )
     assertTrue(err.getMessage().contains("Exported field cannot be inlined"))
   }
+
 }

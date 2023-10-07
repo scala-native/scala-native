@@ -1126,8 +1126,13 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       val Apply(fun, args) = app
 
       implicit val pos: nir.Position = app.pos
-
+      def fail(msg: String) = {
+        reporter.error(app.pos, msg)
+        Val.Null
+      }
       fun match {
+        case _ if fun.symbol == ExternMethod =>
+          fail(s"extern can be used only from non-inlined extern methods")
         case _: TypeApply =>
           genApplyTypeApply(app)
         case Select(Super(_, _), _) =>
@@ -2617,11 +2622,8 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       val origSig = genMethodSig(sym)
       val isExtern = sym.isExtern
       val sig =
-        if (isExtern) {
-          genExternMethodSig(sym)
-        } else {
-          origSig
-        }
+        if (isExtern) genExternMethodSig(sym)
+        else origSig
       val args = genMethodArgs(sym, argsp)
       val method =
         if (statically || owner.isStruct || isExtern) {

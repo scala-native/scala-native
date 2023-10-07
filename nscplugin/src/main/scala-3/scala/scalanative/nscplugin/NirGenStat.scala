@@ -716,8 +716,7 @@ trait NirGenStat(using Context) {
     }
   }
 
-  /** Gen the static forwarders for the methods of a module class.
-   *l
+  /** Gen the static forwarders for the methods of a module class. l
    *  Precondition: `isCandidateForForwarders(moduleClass)` is true
    */
   private def genStaticForwardersFromModuleClass(
