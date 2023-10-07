@@ -5,7 +5,7 @@ import org.junit.Test
 import org.junit.Assert._
 
 import scala.scalanative.api.CompilationFailedException
-import scala.scalanative.linker.StaticForwardersSuite.compileAndLoad
+import scala.scalanative.linker.compileAndLoad
 import scala.scalanative.buildinfo.ScalaNativeBuildInfo._
 
 class PositionsTest {

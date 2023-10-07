@@ -6,7 +6,7 @@ import org.junit.Test
 import org.junit.Assert._
 
 import scala.scalanative.api.CompilationFailedException
-import scala.scalanative.linker.StaticForwardersSuite.compileAndLoad
+import scala.scalanative.linker.compileAndLoad
 import scala.scalanative.buildinfo.ScalaNativeBuildInfo._
 
 class NIRCompilerTest {
@@ -257,7 +257,7 @@ class NIRCompilerTest {
     )
   }
 
-  @Test def allowImplicitAnyValClassInExtern(): Unit = NIRCompiler(
+  @Test def allowImplicitClassInExtern(): Unit = NIRCompiler(
     _.compile(
       """import scala.scalanative.unsafe.extern
           |@extern object Dummy { 

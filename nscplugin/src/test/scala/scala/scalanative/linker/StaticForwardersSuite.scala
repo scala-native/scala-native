@@ -5,12 +5,8 @@ import org.junit.Assert._
 
 import scala.scalanative.nir._
 import scala.scalanative.util.Scope
-import scala.scalanative.io._
-import scala.scalanative.NIRCompiler
-import java.nio.file.{Files, Path, Paths}
 
 class StaticForwardersSuite {
-  import StaticForwardersSuite._
 
   @Test def generateStaticForwarders(): Unit = {
     compileAndLoad(
@@ -73,30 +69,6 @@ class StaticForwardersSuite {
         Module.member(Sig.Method("bar", Seq(Rt.String)))
       )
       assertTrue(expected.diff(defns.map(_.name)).isEmpty)
-    }
-  }
-}
-
-object StaticForwardersSuite {
-  def compileAndLoad(
-      sources: (String, String)*
-  )(fn: Seq[Defn] => Unit): Unit = {
-    Scope { implicit in =>
-      val outDir = Files.createTempDirectory("native-test-out")
-      val compiler = NIRCompiler.getCompiler(outDir)
-      val sourcesDir = NIRCompiler.writeSources(sources.toMap)
-      val dir = VirtualDirectory.real(outDir)
-
-      val defns = compiler
-        .compile(sourcesDir)
-        .toSeq
-        .filter(_.toString.endsWith(".nir"))
-        .map(outDir.relativize(_))
-        .flatMap { path =>
-          val buffer = dir.read(path)
-          serialization.deserializeBinary(buffer, path.toString)
-        }
-      fn(defns)
     }
   }
 }
