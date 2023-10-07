@@ -236,9 +236,9 @@ jobs:
           java-version: 8
 
       - name: Run tests
-        env:
-          # SCALANATIVE_MODE: release-fast
-          # SCALANATIVE_LTO: thin
+        # env:
+        #   SCALANATIVE_MODE: release-fast
+        #   SCALANATIVE_LTO: thin
         run: |
           if [[ "${{ matrix.llvm-version }}" == "latest" ]]; then 
             export LLVM_BIN=$(brew --prefix llvm)/bin
