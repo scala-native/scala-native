@@ -309,7 +309,7 @@ private[scalanative] object LLVM {
     MRICompatibleAR match {
       case None =>
         val ar = Discover.discover("ar")
-        val command = Seq(ar.abs, "-cs") ++ stageFiles()
+        val command = Seq(ar.abs, "rc", config.buildPath.abs) ++ stageFiles()
         config.logger.running(command)
         Process(command, config.workDir.toFile())
       case Some(path) => useMRIScript(path)
