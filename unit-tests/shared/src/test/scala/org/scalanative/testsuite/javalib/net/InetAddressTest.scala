@@ -160,7 +160,7 @@ class InetAddressTest {
       "Spuriously fails in the CI on MacOS-12",
       Platform.isMacOs && sys.env.contains("CI")
     )
-*/  // FIXME
+*/  // FIXME // trying to get CI macOs to run
 
     /* If compiler does not optimize away, check that no Exception is thrown
      * and something other than null is returned.
