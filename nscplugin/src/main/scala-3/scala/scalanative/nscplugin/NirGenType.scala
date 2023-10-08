@@ -52,7 +52,14 @@ trait NirGenType(using Context) {
       sym.owner.isExternType ||
       sym.hasAnnotation(defnNir.ExternClass) ||
       (sym.is(Accessor) && sym.field.isExtern)
-    }
+    } && !sym.hasAnnotation(
+      defnNir.NonExternClass
+    ) // Added in PrepNativeInterop
+
+    def isExtensionMethod: Boolean =
+      sym.flags.isAllOf(Extension | Method) || {
+        sym.flags.isAllOf(Final | Implicit | Method)
+      }
 
     def isExternType: Boolean =
       (isScalaModule || sym.isTraitOrInterface) &&

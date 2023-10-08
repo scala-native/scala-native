@@ -25,13 +25,7 @@ class IssuesTestScala3 {
   }
 
   @Test def i3231(): Unit = {
-    @extern object extern_functions:
-      @name("sprintf")
-      def test(buffer: CString, format: CString, args: Any*): CInt = extern
-
-    object functions:
-      export extern_functions.test // should compile
-
+    import issue3231.*
     val buff: Ptr[CChar] = stackalloc[CChar](128)
     functions.test(buff, c"%d %d %d", -1, 1, 42)
     assertEquals("-1 1 42", fromCString(buff))
@@ -57,3 +51,11 @@ object issue3063:
       extension (struct: mu_Context)
         def text_width: CFuncPtr2[mu_Font, CString, CInt] = ???
         def text_width_=(value: CFuncPtr2[mu_Font, CString, CInt]): Unit = ()
+
+object issue3231:
+  @extern object extern_functions:
+    @name("sprintf")
+    def test(buffer: CString, format: CString, args: Any*): CInt = extern
+
+  object functions:
+    export extern_functions.test // should compile

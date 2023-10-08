@@ -7,7 +7,7 @@ import org.junit.Assert._
 import scala.collection.mutable
 
 import scala.scalanative.api.CompilationFailedException
-import scala.scalanative.linker.StaticForwardersSuite.compileAndLoad
+import scala.scalanative.linker.compileAndLoad
 import scala.scalanative.buildinfo.ScalaNativeBuildInfo._
 import scala.reflect.ClassTag
 import scala.scalanative.nir.Defn.Define.DebugInfo.LexicalScope

@@ -4,7 +4,6 @@ import org.junit.Test
 import org.junit.Assert._
 
 import scala.scalanative.nir._
-import scala.scalanative.linker.StaticForwardersSuite._
 
 class StaticForwardersSuiteScala3 {
 

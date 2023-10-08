@@ -20,11 +20,14 @@ trait NirGenType[G <: Global with Singleton] { self: NirGenPhase[G] =>
       sym.isModuleClass && !sym.isLifted
 
     def isStaticInNIR: Boolean =
-      sym.owner.isExternType || sym.isStaticMember
+      sym.isExtern || sym.isStaticMember
 
     def isExternType: Boolean =
       (isScalaModule || sym.isTraitOrInterface) &&
         sym.annotations.exists(_.symbol == ExternClass)
+
+    def isExtern: Boolean = (sym.isExternType || sym.owner.isExternType) &&
+      !sym.annotations.exists(_.symbol == NonExternClass)
 
     def isBlocking: Boolean =
       sym.annotations.exists(_.symbol == BlockingClass)
@@ -239,7 +242,7 @@ trait NirGenType[G <: Global with Singleton] { self: NirGenPhase[G] =>
       isExtern: Boolean
   ): Seq[nir.Type] = {
     val params = sym.tpe.params
-    if (!isExtern && !sym.owner.isExternType)
+    if (!isExtern && !sym.isExtern)
       params.map { p => genType(p.tpe) }
     else {
       val wereRepeated = exitingPhase(currentRun.typerPhase) {

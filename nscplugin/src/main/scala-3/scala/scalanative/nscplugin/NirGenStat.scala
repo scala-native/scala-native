@@ -259,17 +259,7 @@ trait NirGenStat(using Context) {
       val sym = dd.symbol
       val owner = curClassSym.get
 
-      // warning: In Scala3 we cannot reliably distinguish implicit class from implicit def!
-      // This means that non-extern implicit def methods can be defined in extern object
-      // To distinguish betwen extern def and allowed implicit class check rhs = unsafe.extern()
-      // Extensions can be easilly identified via flag
-      def isExtension =
-        sym.flags.is(Extension) || {
-          sym.flags.isAllOf(Implicit | Final) &&
-          dd.paramss.headOption.exists(_.size == 1) &&
-          !ApplyExtern.unapply(dd.rhs)
-        }
-      val isExtern = sym.isExtern && !isExtension
+      val isExtern = sym.isExtern
 
       val attrs = genMethodAttrs(sym, isExtern)
       val name = genMethodName(sym)
@@ -726,8 +716,7 @@ trait NirGenStat(using Context) {
     }
   }
 
-  /** Gen the static forwarders for the methods of a module class.
-   *
+  /** Gen the static forwarders for the methods of a module class. l
    *  Precondition: `isCandidateForForwarders(moduleClass)` is true
    */
   private def genStaticForwardersFromModuleClass(

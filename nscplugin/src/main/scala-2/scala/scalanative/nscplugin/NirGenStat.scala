@@ -239,7 +239,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
       for (f <- sym.info.decls
           if !f.isMethod && f.isTerm && !f.isModule) {
-        if (f.owner.isExternType && !f.isMutable) {
+        if (f.isExtern && !f.isMutable) {
           reporter.error(f.pos, "`extern` cannot be used in val definition")
         }
         val ty = genType(f.tpe)
@@ -665,8 +665,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         val sym = dd.symbol
         val owner = curClassSym.get
         // implicit class is erased to method at this point
-        def isImplicitClass = sym.isImplicit && sym.isSynthetic
-        val isExtern = owner.isExternType && !isImplicitClass
+        val isExtern = sym.isExtern
         val attrs = genMethodAttrs(sym, isExtern)
         val name = genMethodName(sym)
         val sig = genMethodSig(sym)
@@ -681,14 +680,14 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
               )
             )
 
-          case _ if dd.symbol.isConstructor && owner.isExternType =>
+          case _ if dd.symbol.isConstructor && isExtern =>
             validateExternCtor(dd.rhs)
             None
 
           case _ if dd.name == nme.CONSTRUCTOR && owner.isStruct =>
             None
 
-          case rhs if owner.isExternType && !isImplicitClass =>
+          case rhs if isExtern =>
             checkExplicitReturnTypeAnnotation(dd, "extern method")
             genExternMethod(attrs, name, sig, dd)
 
@@ -836,7 +835,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       }
 
       def isCallingExternMethod(sym: Symbol) =
-        sym.owner.isExternType
+        sym.isExtern
 
       def isExternMethodAlias(target: Symbol) =
         (name, genName(target)) match {
@@ -1158,7 +1157,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       }
 
       m.isDeferred || m.isConstructor || m.hasAccessBoundary ||
-        m.owner.isExternType ||
+        m.isExtern ||
         isOfJLObject
     }
 

@@ -79,6 +79,26 @@ class PrepNativeInterop extends PluginPhase with NativeInteropUtil {
       sym.addAnnotation(defnNir.ExternClass)
     }
 
+    if (sym.owner.isExternType) {
+      def isImplicitClassCtor = sym.paramInfo.stripPoly.stripped match {
+        case core.Types.MethodTpe(_, _, resultTpe) =>
+          resultTpe.typeSymbol.isClass && resultTpe.typeSymbol.is(Implicit) &&
+            resultTpe.typeSymbol.fullName.toSimpleName == sym.fullName.toSimpleName
+        case _ => false
+      }
+      val isExtension = sym.is(Extension)
+      if isExtension || isImplicitClassCtor
+      then
+        sym.addAnnotation(defnNir.NonExternClass)
+        if isExtension &&
+            dd.rhs.existsSubTree(_.symbol == defnNir.UnsafePackage_extern)
+        then
+          report.error(
+            "Extensions cannot be defined as extern methods",
+            dd.rhs.srcPos
+          )
+    }
+
     if sym.is(Inline) then
       if sym.isExtern then
         report.error("Extern method cannot be inlined", dd.srcPos)

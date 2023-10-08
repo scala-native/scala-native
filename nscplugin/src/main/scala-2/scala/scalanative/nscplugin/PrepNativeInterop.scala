@@ -104,7 +104,6 @@ abstract class PrepNativeInterop[G <: Global with Singleton](
           // Replace call by literal constant containing type
           if (typer.checkClassTypeOrModule(tpeArg)) {
             val widenedTpe = tpeArg.tpe.dealias.widen
-            println("rewriting class of for" + widenedTpe)
             typer.typed { Literal(Constant(widenedTpe)) }
           } else {
             reporter.error(tpeArg.pos, s"Type ${tpeArg} is not a class type")
@@ -160,6 +159,16 @@ abstract class PrepNativeInterop[G <: Global with Singleton](
         // Catch (Scala) ModuleDefs
         case modDef: ModuleDef =>
           enterOwner(OwnerKind.NonEnumScalaMod) { super.transform(modDef) }
+
+        case dd: DefDef if isExternType(dd.symbol.owner) =>
+          val sym = dd.symbol
+          val resultType = sym.tpe.finalResultType.typeSymbol
+          val isImplicitClassCtor = (sym.isImplicit && sym.isSynthetic) &&
+            resultType.isClass && resultType.isImplicit &&
+            resultType.name.toTermName == sym.name
+
+          if (isImplicitClassCtor) sym.addAnnotation(NonExternClass)
+          super.transform(tree)
 
         // ValOrDefDef's that are local to a block must not be transformed
         case vddef: ValOrDefDef if vddef.symbol.isLocalToBlock =>
@@ -235,6 +244,18 @@ abstract class PrepNativeInterop[G <: Global with Singleton](
       }
     }
   }
+
+  private def isExternType(sym: Symbol): Boolean = {
+    sym != null &&
+    (sym.isModuleClass || sym.isTraitOrInterface) &&
+    sym.annotations.exists(_.symbol == ExternAnnotationClass)
+  }
+
+  // Differs from ExternClass defined in NirDefinitions, but points to the same type
+  // At the phases of prepNativeInterop the symbol has different name
+  private lazy val ExternAnnotationClass = rootMirror.getRequiredClass(
+    "scala.scalanative.unsafe.extern"
+  )
 
   private def isScalaEnum(implDef: ImplDef) =
     implDef.symbol.tpe.typeSymbol isSubClass EnumerationClass

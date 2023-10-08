@@ -112,3 +112,21 @@ class NativeCompilerTest:
       |}
       |""".stripMargin
   )
+
+  @Test def disallowExtensionInExternWithExtern(): Unit = {
+    val err = assertThrows(
+      classOf[CompilationFailedException],
+      () => NIRCompiler(_.compile("""import scala.scalanative.unsafe.extern
+        |@extern object Dummy { 
+        |  extension(v: Int) { 
+        |    def convert(): Long = extern
+        |  }
+        |}
+        |""".stripMargin))
+    )
+    assertTrue(
+      err
+        .getMessage()
+        .contains("Extensions cannot be defined as extern methods")
+    )
+  }
