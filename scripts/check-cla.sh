@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
+set -eux
 
-set -e
-
-AUTHOR=$GITHUB_ACTOR
+AUTHOR="$1"
 echo "Pull request submitted by $AUTHOR";
 signed=$(curl -s https://www.lightbend.com/contribute/cla/scala/check/$AUTHOR | jq -r ".signed");
 if [ "$signed" = "true" ] ; then
@@ -12,5 +11,7 @@ else
   echo "Please sign the Scala CLA to contribute to Scala Native";
   echo "Go to https://www.lightbend.com/contribute/cla/scala and then";
   echo "comment on the pull request to ask for a new check.";
+  echo "";
+  echo "Check if CLA is signed: https://www.lightbend.com/contribute/cla/scala/check/$AUTHOR";
   exit 1;
 fi;
