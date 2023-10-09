@@ -5,7 +5,12 @@ import java.io.File
 import java.nio.file.{Files, Path}
 import java.util.Arrays
 import java.util.regex._
+
 import scala.concurrent._
+import scala.util.Failure
+import scala.util.Success
+
+import scalanative.build.IO.RichPath
 import scala.scalanative.linker.ReachabilityAnalysis
 
 /** Original jar or dir path and generated dir path for native code */
@@ -14,16 +19,18 @@ private[scalanative] case class NativeLib(src: Path, dest: Path)
 /** Utilities for dealing with native library code */
 private[scalanative] object NativeLib {
 
-  /** Name of directory that contains native code: "scala-native"
-   */
+  /** Name of directory that contains native code: "scala-native" */
   val nativeCodeDir = "scala-native"
+
+  /** Project Descriptor properties file: "scala-native.properties" */
+  private val nativeProjectProps = s"${nativeCodeDir}.properties"
 
   /** Compiles the native code from the library
    *
    *  @param config
    *    the configuration options
    *  @param linkerResult
-   *    needed for filtering
+   *    needed for configuration based on NIR
    *  @param nativeLib
    *    the native lib to unpack
    *  @return
@@ -34,11 +41,118 @@ private[scalanative] object NativeLib {
       analysis: ReachabilityAnalysis.Result,
       nativeLib: NativeLib
   )(implicit ec: ExecutionContext): Future[Seq[Path]] = {
-    val destPath = NativeLib.unpackNativeCode(nativeLib)
-    val paths = NativeLib.findNativePaths(config.workDir, destPath)
-    val (projPaths, projConfig) =
-      Filter.filterNativelib(config, analysis, destPath, paths)
-    LLVM.compile(projConfig, projPaths)
+    val destPath = unpackNativeCode(nativeLib)
+    val paths = findNativePaths(config.workDir, destPath)
+    val projConfig = configureNativelib(config, analysis, destPath)
+    LLVM.compile(projConfig, paths)
+  }
+
+  /** Update the project configuration if a project `Descriptor` is present.
+   *
+   *  @param config
+   *    The configuration of the toolchain.
+   *  @param linkerResult
+   *    The results from the linker.
+   *  @param destPath
+   *    The unpacked location of the Scala Native nativelib.
+   *  @return
+   *    The config for this native library.
+   */
+  private def configureNativelib(
+      config: Config,
+      analysis: ReachabilityAnalysis.Result,
+      destPath: Path
+  ): Config = {
+    val nativeCodePath = destPath.resolve(nativeCodeDir)
+    // apply descriptor settings if found
+    findDescriptor(nativeCodePath).fold(config) { filepath =>
+
+      val desc =
+        Descriptor.load(filepath) match {
+          case Success(v) => v
+          case Failure(e) =>
+            throw new BuildException(
+              s"Problem reading $nativeProjectProps: ${e.getMessage}"
+            )
+        }
+
+      config.logger.debug(s"Compilation settings: ${desc.toString()}")
+
+      // update config based on descriptor setting
+      updateConfig(desc, config, analysis, nativeCodePath)
+    }
+  }
+
+  private def updateConfig(
+      desc: Descriptor,
+      config: Config,
+      analysis: ReachabilityAnalysis.Result,
+      nativeCodePath: Path
+  ): Config = {
+    val linkDefines =
+      desc.links
+        .filter(name => analysis.links.exists(_.name == name))
+        .map(name => s"-DSCALANATIVE_LINK_${name.toUpperCase}")
+
+    val includePaths = desc.includes
+      .map(createPathString(_, nativeCodePath))
+      .map(path => s"-I$path")
+
+    val defines = desc.defines.map(define => s"-D$define")
+
+    /* A conditional compilation define is used to compile the
+     * correct garbage collector code because code is shared.
+     * This avoids handling all the paths needed and compiling
+     * all the GC code for a given platform.
+     *
+     * Note: The zone directory is also part of the garbage collection
+     * system and shares code from the gc directory.
+     */
+    val gcDefine = desc.gcProject match {
+      case false => None
+      case true => {
+        val gc = config.compilerConfig.gc.toString
+        Some(s"-DSCALANATIVE_GC_${gc.toUpperCase}")
+      }
+    }
+
+    config.withCompilerConfig(
+      _.withCompileOptions(
+        _ ++ linkDefines ++ defines ++ gcDefine ++ includePaths
+      )
+    )
+  }
+
+  /** Create a platform path string from a base path and unix path string
+   *
+   *  @param unixPath
+   *    string like foo/bar or baz
+   *  @param nativeCodePath
+   *    base project native path
+   *  @return
+   *    the path as a string
+   */
+  private def createPathString(
+      unixPath: String,
+      nativeCodePath: Path
+  ): String = {
+    val dirs = unixPath.split("/")
+    dirs
+      .foldLeft(nativeCodePath)((path, dir) => path.resolve(dir))
+      .abs
+  }
+
+  /** Check for compile Descriptor in destination native code directory.
+   *
+   *  @param nativeCodePath
+   *    The native code directory
+   *  @return
+   *    The optional path to the file or none
+   */
+  private def findDescriptor(nativeCodePath: Path): Option[Path] = {
+    val file = nativeCodePath.resolve(nativeProjectProps)
+    if (Files.exists(file)) Some(file)
+    else None
   }
 
   /** Finds all the native libs on the classpath.
@@ -103,7 +217,7 @@ private[scalanative] object NativeLib {
    *  @return
    *    All file paths to compile
    */
-  def findNativePaths(workDir: Path, destPath: Path): Seq[Path] = {
+  private def findNativePaths(workDir: Path, destPath: Path): Seq[Path] = {
     val srcPatterns = destSrcPattern(workDir, destPath)
     IO.getAll(workDir, srcPatterns)
   }
@@ -136,7 +250,7 @@ private[scalanative] object NativeLib {
    *  @return
    *    The destination path of the directory
    */
-  def unpackNativeCode(nativelib: NativeLib): Path =
+  private def unpackNativeCode(nativelib: NativeLib): Path =
     if (isJar(nativelib)) unpackNativeJar(nativelib)
     else copyNativeDir(nativelib)
 
