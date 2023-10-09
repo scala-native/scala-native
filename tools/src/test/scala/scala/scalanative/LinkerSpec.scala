@@ -86,7 +86,7 @@ abstract class LinkerSpec {
       .withBaseDir(outDir)
       .withClassPath(classpath.toSeq)
       .withMainClass(Some(entry))
-      .withCompilerConfig(setupNativeConfig.andThen(withDefaults))
+      .withCompilerConfig(setupNativeConfig.compose(withDefaults))
       .withLogger(Logger.nullLogger)
   }
 
