@@ -158,14 +158,23 @@ object Discover {
   private[scalanative] val docSetup =
     "http://www.scala-native.org/en/latest/user/setup.html"
 
+  private[scalanative] def tryDiscover(
+      binaryName: String,
+      envPath: String
+  ): Try[Path] = Try(discover(binaryName, envPath))
+
+  private[scalanative] def tryDiscover(
+      binaryName: String
+  ): Try[Path] = Try(discover(binaryName))
+
   /** Discover the binary path using environment variables or the command from
    *  the path.
    */
   private[scalanative] def discover(
       binaryName: String,
-      envPath: String
+      envPath: Option[String]
   ): Path = {
-    val binPath = sys.env.get(envPath)
+    val binPath = envPath.flatMap(sys.env.get(_))
 
     val command: Seq[String] = {
       if (Platform.isWindows) {
@@ -185,13 +194,22 @@ object Discover {
       .map { p => Paths.get(p) }
       .headOption
       .getOrElse {
+        val envMessage = envPath
+          .map(envPath => s"or via '$envPath' environment variable")
+          .getOrElse("")
         throw new BuildException(
-          s"""'$binaryName' not found in PATH or via '$envPath' environment variable.
+          s"""'$binaryName' not found in PATH$envMessage.
             |Please refer to ($docSetup)""".stripMargin
         )
       }
     path
   }
+
+  private[scalanative] def discover(binaryName: String, envPath: String): Path =
+    discover(binaryName, Some(envPath))
+
+  private[scalanative] def discover(binaryName: String): Path =
+    discover(binaryName, None)
 
   /** Detect the target architecture.
    *

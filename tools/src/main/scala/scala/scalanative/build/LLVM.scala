@@ -180,9 +180,9 @@ private[scalanative] object LLVM {
         val artifactName = outpath.getFileName().toString
         if (config.compilerConfig.buildTarget == BuildTarget.LibraryDynamic)
           if (config.targetsLinux)
-            List("-Wl,-soname", artifactName)
+            List(s"-Wl,-soname,$artifactName")
           else if (config.targetsMac)
-            List("-Wl,-install_name", artifactName)
+            List(s"-Wl,-install_name,$artifactName")
           else Nil
         else Nil
       }
@@ -220,12 +220,14 @@ private[scalanative] object LLVM {
       outpath: Path
   )(implicit config: Config) = {
     val workdir = config.workdir
-    val llvmAR = Discover.discover("llvm-ar", "LLVM_BIN")
-    val MIRScriptFile = workdir.resolve("MIRScript").toFile
-    val pw = new PrintWriter(MIRScriptFile)
-    try {
-      pw.println(s"CREATE ${escapeWhitespaces(outpath.abs)}")
-      objectPaths.foreach { path =>
+
+    val MRICompatibleAR =
+      Discover.tryDiscover("llvm-ar", "LLVM_BIN").toOption orElse
+        // MacOS ar command does not support -M flag...
+        Discover.tryDiscover("ar").toOption.filter(_ => config.targetsLinux)
+
+    def stageFiles(): Seq[String] = {
+      objectPaths.map { path =>
         val uniqueName =
           workdir
             .relativize(path)
@@ -233,16 +235,36 @@ private[scalanative] object LLVM {
             .replace(File.separator, "_")
         val newPath = workdir.resolve(uniqueName)
         Files.move(path, newPath, StandardCopyOption.REPLACE_EXISTING)
-        pw.println(s"ADDMOD ${escapeWhitespaces(newPath.abs)}")
+        newPath.abs
       }
-      pw.println("SAVE")
-      pw.println("END")
-    } finally pw.close()
+    }
 
-    val command = Seq(llvmAR.abs, "-M")
-    config.logger.running(command)
+    def useMRIScript(ar: Path) = {
+      val MIRScriptFile = workdir.resolve("MIRScript").toFile
+      val pw = new PrintWriter(MIRScriptFile)
+      try {
+        pw.println(s"CREATE ${escapeWhitespaces(config.buildPath.abs)}")
+        stageFiles().foreach { path =>
+          pw.println(s"ADDMOD ${escapeWhitespaces(path)}")
+        }
+        pw.println("SAVE")
+        pw.println("END")
+      } finally pw.close()
 
-    Process(command, config.workdir.toFile()) #< MIRScriptFile
+      val command = Seq(ar.abs, "-M")
+      config.logger.running(command)
+
+      Process(command, config.workdir.toFile()) #< MIRScriptFile
+    }
+
+    MRICompatibleAR match {
+      case None =>
+        val ar = Discover.discover("ar")
+        val command = Seq(ar.abs, "rc", config.buildPath.abs) ++ stageFiles()
+        config.logger.running(command)
+        Process(command, config.workdir.toFile())
+      case Some(path) => useMRIScript(path)
+    }
   }
 
   /** Checks the input timestamp to see if the file needs compiling. The call to
