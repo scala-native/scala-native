@@ -1,45 +1,89 @@
 package java.lang.ref
 
-import scala.collection.{immutable, mutable}
 import scala.scalanative.unsafe._
 import scala.scalanative.meta.LinktimeInfo.isWeakReferenceSupported
 import scala.scalanative.runtime.GC
+import scala.scalanative.libc.stdatomic._
+import scala.scalanative.runtime.fromRawPtr
+import scala.scalanative.runtime.Intrinsics.classFieldRawPtr
+import scala.scalanative.annotation.alwaysinline
+import scala.util.control.NonFatal
 
 /* Should always be treated as a module by the compiler.
  * _gc_modified_postGCControlField is explicitly acccessed
  * by the internals of the immix and commix GC.
  */
 private[java] object WeakReferenceRegistry {
-  private var weakRefList: immutable.List[WeakReference[_]] =
-    Nil
+  @volatile private var weakRefsHead: WeakReference[_] = _
 
-  private val postGCHandlerMap
-      : mutable.HashMap[WeakReference[_], Function0[Unit]] =
-    new mutable.HashMap()
+  @alwaysinline private def weakRefsHeadPtr = fromRawPtr[WeakReference[_]](
+    classFieldRawPtr(this, "weakRefsHead")
+  )
 
   if (isWeakReferenceSupported) {
-    GC.registerWeakReferenceHandler(
-      CFuncPtr.toPtr(CFuncPtr0.fromScalaFunction(postGCControl))
-    )
-  }
+    GC.registerWeakReferenceHandler(() => {
+      // This method is designed for calls from C and therefore should not include
+      // non statically reachable fields or methods.
 
-  // This method is designed for calls from C and therefore should not include
-  // non statically reachable fields or methods.
-  private def postGCControl(): Unit = {
-    weakRefList = weakRefList.filter { weakRef =>
-      val wasCollected = weakRef.get() == null
-      if (wasCollected) {
-        weakRef.enqueue()
-        postGCHandlerMap
-          .remove(weakRef)
-          .foreach(_())
+      // Detach current weak refs linked-list to allow for unsynchronized updated
+      val expected = stackalloc[WeakReference[_]]()
+      var detached = null.asInstanceOf[WeakReference[_]]
+      while ({
+        detached = weakRefsHead
+        !expected = detached
+        !atomic_compare_exchange_strong(weakRefsHeadPtr, expected, null)
+      }) ()
+
+      var current = detached
+      var prev = null.asInstanceOf[WeakReference[_]]
+      while (current != null) {
+        // Actual post GC logic
+        val wasCollected = current.get() == null
+        if (wasCollected) {
+          current.enqueue()
+          val handler = current.postGCHandler
+          if (handler != null) {
+            try handler()
+            catch {
+              case NonFatal(err) =>
+                val thread = Thread.currentThread()
+                thread
+                  .getUncaughtExceptionHandler()
+                  .uncaughtException(thread, err)
+            }
+          }
+          // Update the detached linked list
+          if (prev == null) detached = current.nextReference
+          else prev.nextReference = current.nextReference
+        } else prev = current
+        current = current.nextReference
       }
-      !wasCollected
-    }
+
+      // Reattach the weak refs list to the possibly updated head
+      if (detached != null) while ({
+        val currentHead = weakRefsHead
+        !expected = currentHead
+        prev.nextReference = currentHead
+        !atomic_compare_exchange_strong(weakRefsHeadPtr, expected, detached)
+      }) ()
+    })
   }
 
   private[ref] def add(weakRef: WeakReference[_]): Unit =
-    if (isWeakReferenceSupported) weakRefList = weakRefList ++ List(weakRef)
+    if (isWeakReferenceSupported) {
+      assert(weakRef.nextReference == null)
+      var head = weakRefsHead
+      val expected = stackalloc[WeakReference[_]]()
+      !expected = null
+      if (atomic_compare_exchange_weak(weakRefsHeadPtr, expected, weakRef)) ()
+      else
+        while ({
+          var currentHead = !expected
+          weakRef.nextReference = currentHead
+          !expected = currentHead
+          !atomic_compare_exchange_weak(weakRefsHeadPtr, expected, weakRef)
+        }) ()
+    }
 
   // Scala Native javalib exclusive functionality.
   // Can be used to emulate finalize for javalib classes where necessary.
@@ -47,5 +91,5 @@ private[java] object WeakReferenceRegistry {
       weakRef: WeakReference[_],
       handler: Function0[Unit]
   ): Unit =
-    if (isWeakReferenceSupported) postGCHandlerMap += (weakRef -> handler)
+    if (isWeakReferenceSupported) { weakRef.postGCHandler = handler }
 }
