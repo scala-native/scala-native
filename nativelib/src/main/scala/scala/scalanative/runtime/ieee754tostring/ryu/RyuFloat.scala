@@ -451,14 +451,14 @@ object RyuFloat {
         // Decimal dot is somewhere between the digits.
         var current = index + 1
         var i = 0
-        while (0 < olength) {
+        while (i < olength) {
           if (olength - i - 1 == exp) {
             result(current + olength - i - 1) = '.'
             current -= 1
-            i += 1
           }
           result(current + olength - i - 1) = ('0' + output % 10).toChar
           output /= 10
+          i += 1
         }
         index += olength + 1
       }
