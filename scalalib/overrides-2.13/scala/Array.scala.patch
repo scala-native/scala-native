@@ -1,6 +1,35 @@
---- 2.13.6/scala/Array.scala
+--- 2.13.12/scala/Array.scala
 +++ overrides-2.13/scala/Array.scala
-@@ -122,7 +122,8 @@
+@@ -32,7 +32,7 @@
+  *  where the array objects `a`, `b` and `c` have respectively the values
+  *  `Array(1, 2)`, `Array(0, 0)` and `Array(1, 2, 0, 0)`.
+  */
+-object Array {
++private object EmptyArrays {
+   val emptyBooleanArray = new Array[Boolean](0)
+   val emptyByteArray    = new Array[Byte](0)
+   val emptyCharArray    = new Array[Char](0)
+@@ -42,7 +42,19 @@
+   val emptyLongArray    = new Array[Long](0)
+   val emptyShortArray   = new Array[Short](0)
+   val emptyObjectArray  = new Array[Object](0)
++}
+ 
++object Array {
++  @inline def emptyBooleanArray = EmptyArrays.emptyBooleanArray
++  @inline def emptyByteArray    = EmptyArrays.emptyByteArray
++  @inline def emptyCharArray    = EmptyArrays.emptyCharArray
++  @inline def emptyDoubleArray  = EmptyArrays.emptyDoubleArray
++  @inline def emptyFloatArray   = EmptyArrays.emptyFloatArray
++  @inline def emptyIntArray     = EmptyArrays.emptyIntArray
++  @inline def emptyLongArray    = EmptyArrays.emptyLongArray
++  @inline def emptyShortArray   = EmptyArrays.emptyShortArray
++  @inline def emptyObjectArray  = EmptyArrays.emptyObjectArray
++
+   /** Provides an implicit conversion from the Array object to a collection Factory */
+   implicit def toFactory[A : ClassTag](dummy: Array.type): Factory[A, Array[A]] = new ArrayFactory(dummy)
+   @SerialVersionUID(3L)
+@@ -122,7 +134,8 @@
      * @see `java.util.Arrays#copyOf`
      */
    def copyOf[A](original: Array[A], newLength: Int): Array[A] = ((original: @unchecked) match {
@@ -10,7 +39,7 @@
      case x: Array[AnyRef]     => java.util.Arrays.copyOf(x, newLength)
      case x: Array[Int]        => java.util.Arrays.copyOf(x, newLength)
      case x: Array[Double]     => java.util.Arrays.copyOf(x, newLength)
-@@ -183,16 +184,7 @@
+@@ -183,16 +196,7 @@
    // Subject to a compiler optimization in Cleanup.
    // Array(e0, ..., en) is translated to { val a = new Array(3); a(i) = ei; a }
    def apply[T: ClassTag](xs: T*): Array[T] = {
@@ -28,7 +57,7 @@
          val iterator = xs.iterator
          var i = 0
          while (iterator.hasNext) {
-@@ -200,7 +192,6 @@
+@@ -200,7 +204,6 @@
          }
          array
      }
@@ -36,7 +65,7 @@
  
    /** Creates an array of `Boolean` objects */
    // Subject to a compiler optimization in Cleanup, see above.
-@@ -577,7 +568,7 @@
+@@ -577,7 +580,7 @@
    def unapplySeq[T](x: Array[T]): UnapplySeqWrapper[T] = new UnapplySeqWrapper(x)
  
    final class UnapplySeqWrapper[T](private val a: Array[T]) extends AnyVal {

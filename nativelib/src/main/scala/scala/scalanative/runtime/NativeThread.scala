@@ -96,6 +96,7 @@ object NativeThread {
     fromRawPtr[scala.Byte](castObjectToRawPtr(thread))
 
   object Registry {
+    // Replace with ConcurrentHashMap when thread-safe
     private val _aliveThreads = TrieMap.empty[Long, NativeThread]
 
     private[NativeThread] def add(thread: NativeThread): Unit =
@@ -112,7 +113,7 @@ object NativeThread {
     }
   }
 
-  val threadRoutine: ThreadStartRoutine = CFuncPtr1.fromScalaFunction {
+  def threadRoutine: ThreadStartRoutine = CFuncPtr1.fromScalaFunction {
     (arg: ThreadRoutineArg) =>
       val thread = castRawPtrToObject(toRawPtr(arg))
         .asInstanceOf[NativeThread]

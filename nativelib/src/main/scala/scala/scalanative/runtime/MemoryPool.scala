@@ -174,15 +174,15 @@ final class MemoryPoolZone(private[this] val pool: MemoryPool) extends Zone {
     if (largeAllocations == null) {
       largeAllocations = new scala.Array[Ptr[_]](16)
     }
-    if (largeOffset == largeAllocations.size) {
+    if (largeOffset == largeAllocations.length) {
       val newLargeAllocations =
-        new scala.Array[Ptr[_]](largeAllocations.size * 2)
+        new scala.Array[Ptr[_]](largeAllocations.length * 2)
       Array.copy(
         largeAllocations,
         0,
         newLargeAllocations,
         0,
-        largeAllocations.size
+        largeAllocations.length
       )
       largeAllocations = newLargeAllocations
     }

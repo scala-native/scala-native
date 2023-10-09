@@ -7,9 +7,13 @@ import scalanative.runtime.Intrinsics._
 import scalanative.runtime.monitor._
 import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
 
-package object runtime {
+// Extract any fields from runtime package to ensure it does not require initialization
+private object runtimeState {
+  var _filename: String = null
+}
 
-  private var _filename: String = null
+package object runtime {
+  import runtimeState._
 
   def filename = _filename
 

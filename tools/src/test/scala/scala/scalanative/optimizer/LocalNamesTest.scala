@@ -206,7 +206,10 @@ class LocalNamesTest extends OptimizerSpec {
             checkHasLetEither[Op.Field, Op.Copy]("field")
             // checkHasLet[Op.Method]("method")
             // checkHasLet[Op.Dynmethod]("dynMethod")
-            checkHasLetEither[Op.Module, Op.Call]("module")
+            if (scalaVersion.startsWith("2.12"))
+              checkHasLetEither[Op.Module, Op.Call]("module")
+            else
+              checkHasLetEither[Op.Module, Op.Copy]("module")
             if (usesOpaquePointers)
               checkHasLetEither[Op.As, Op.Copy]("as")
             else
@@ -228,7 +231,9 @@ class LocalNamesTest extends OptimizerSpec {
             checkHasLetEither[Op.Arrayload, Op.Load]("arrayLoad")
             checkHasLetEither[Op.Arraylength, Op.Load]("arrayLength")
             // Filter out inlined names
-            assertDistinct(lets.values.toSeq.diff(Seq("buffer", "addr")))
+            val filteredOut =
+              Seq("buffer", "addr", "rawptr", "toPtr", "fromPtr")
+            assertDistinct(lets.values.toSeq.filterNot(filteredOut.contains))
           }
       checkLocalNames(result.defns, beforeLowering = true)
       afterLowering(config, result) {

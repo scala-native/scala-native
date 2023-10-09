@@ -505,7 +505,7 @@ object Thread {
     override protected val tid: scala.Long = 0L
     inheritableThreadLocals = new ThreadLocal.Values()
     platformCtx.nativeThread = nativeCompanion.create(this, 0L)
-    JoinNonDaemonThreads.registerExitHook()
+    if (isMultithreadingEnabled) JoinNonDaemonThreads.registerExitHook()
   }
 
   @alwaysinline private[lang] def nativeCompanion: NativeThread.Companion =

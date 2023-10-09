@@ -20,6 +20,9 @@ import scala.scalanative.windows.WinNlsApi._
 final class System private ()
 
 object System {
+  import SystemProperties.systemProperties
+  import EnvVars.envVars
+
   def arraycopy(
       src: Object,
       srcPos: scala.Int,
@@ -36,74 +39,21 @@ object System {
     java.lang.Long
       .hashCode(Intrinsics.castRawPtrToLong(Intrinsics.castObjectToRawPtr(x)))
 
-  private def loadProperties() = {
-    val sysProps = new Properties()
-    sysProps.setProperty("java.version", "1.8")
-    sysProps.setProperty("java.vm.specification.version", "1.8")
-    sysProps.setProperty("java.vm.specification.vendor", "Oracle Corporation")
-    sysProps.setProperty(
-      "java.vm.specification.name",
-      "Java Virtual Machine Specification"
-    )
-    sysProps.setProperty("java.vm.name", "Scala Native")
-    sysProps.setProperty("java.specification.version", "1.8")
-    sysProps.setProperty("java.specification.vendor", "Oracle Corporation")
-    sysProps.setProperty(
-      "java.specification.name",
-      "Java Platform API Specification"
-    )
-    sysProps.setProperty("line.separator", lineSeparator())
-    getCurrentDirectory().foreach(sysProps.setProperty("user.dir", _))
-    getUserHomeDirectory().foreach(sysProps.setProperty("user.home", _))
-    getUserCountry().foreach(sysProps.setProperty("user.country", _))
-    getUserLanguage().foreach(sysProps.setProperty("user.language", _))
-
-    if (isWindows) {
-      sysProps.setProperty("file.separator", "\\")
-      sysProps.setProperty("path.separator", ";")
-      sysProps.setProperty(
-        "java.io.tmpdir", {
-          val buffer: Ptr[scala.Byte] = stackalloc[scala.Byte](MAX_PATH)
-          GetTempPathA(MAX_PATH, buffer)
-          fromCString(buffer)
-        }
-      )
-    } else {
-      sysProps.setProperty("file.separator", "/")
-      sysProps.setProperty("path.separator", ":")
-      // MacOS uses TMPDIR to specify tmp directory, other formats are also used in the Unix system
-      def env(name: String): Option[String] = Option(envVars.get(name))
-      val tmpDirectory = env("TMPDIR")
-        .orElse(env("TEMPDIR"))
-        .orElse(env("TMP"))
-        .orElse(env("TEMP"))
-        .getOrElse("/tmp")
-      sysProps.setProperty("java.io.tmpdir", tmpDirectory)
-    }
-
-    sysProps
-  }
-
-  var in: InputStream =
-    new FileInputStream(FileDescriptor.in)
-  var out: PrintStream =
-    new PrintStream(new FileOutputStream(FileDescriptor.out))
-  var err: PrintStream =
-    new PrintStream(new FileOutputStream(FileDescriptor.err))
-
   def lineSeparator(): String = {
     if (isWindows) "\r\n"
     else "\n"
   }
 
-  private lazy val systemProperties0 = loadProperties()
-  private lazy val systemProperties = {
-    Platform.setOSProps { (key: CString, value: CString) =>
-      systemProperties0.setProperty(fromCString(key), fromCString(value))
-      ()
-    }
-    systemProperties0
-  }
+  // Custom accessor instead of vars
+  def in: InputStream = Streams.in
+  def in_=(v: InputStream): Unit = Streams.in = v
+
+  def out: PrintStream = Streams.out
+  def out_=(v: PrintStream) = Streams.out = v
+
+  def err: PrintStream = Streams.err
+  def err_=(v: PrintStream) = Streams.err = v
+
   def getProperties(): Properties = systemProperties
 
   def clearProperty(key: String): String =
@@ -134,7 +84,75 @@ object System {
     this.err = err
 
   def gc(): Unit = GC.collect()
+}
 
+// Extract mutable fields to custom object allowing to skip allocations of unused features
+private object Streams {
+  import FileDescriptor.{in => stdin, out => stdout, err => stderr}
+  var in: InputStream = new FileInputStream(stdin)
+  var out: PrintStream = new PrintStream(new FileOutputStream(stdout))
+  var err: PrintStream = new PrintStream(new FileOutputStream(stderr))
+}
+
+private object SystemProperties {
+  import System.{lineSeparator, getenv}
+
+  private val systemProperties0 = loadProperties()
+  val systemProperties = {
+    Platform.setOSProps { (key: CString, value: CString) =>
+      systemProperties0.setProperty(fromCString(key), fromCString(value))
+      ()
+    }
+    systemProperties0
+  }
+
+  private def loadProperties() = {
+    val sysProps = new Properties()
+    sysProps.setProperty("java.version", "1.8")
+    sysProps.setProperty("java.vm.specification.version", "1.8")
+    sysProps.setProperty("java.vm.specification.vendor", "Oracle Corporation")
+    sysProps.setProperty(
+      "java.vm.specification.name",
+      "Java Virtual Machine Specification"
+    )
+    sysProps.setProperty("java.vm.name", "Scala Native")
+    sysProps.setProperty("java.specification.version", "1.8")
+    sysProps.setProperty("java.specification.vendor", "Oracle Corporation")
+    sysProps.setProperty(
+      "java.specification.name",
+      "Java Platform API Specification"
+    )
+    sysProps.setProperty("line.separator", System.lineSeparator())
+    getCurrentDirectory().foreach(sysProps.setProperty("user.dir", _))
+    getUserHomeDirectory().foreach(sysProps.setProperty("user.home", _))
+    getUserCountry().foreach(sysProps.setProperty("user.country", _))
+    getUserLanguage().foreach(sysProps.setProperty("user.language", _))
+
+    if (isWindows) {
+      sysProps.setProperty("file.separator", "\\")
+      sysProps.setProperty("path.separator", ";")
+      sysProps.setProperty(
+        "java.io.tmpdir", {
+          val buffer: Ptr[scala.Byte] = stackalloc[scala.Byte](MAX_PATH)
+          GetTempPathA(MAX_PATH, buffer)
+          fromCString(buffer)
+        }
+      )
+    } else {
+      sysProps.setProperty("file.separator", "/")
+      sysProps.setProperty("path.separator", ":")
+      // MacOS uses TMPDIR to specify tmp directory, other formats are also used in the Unix system
+      def env(name: String): Option[String] = Option(getenv(name))
+      val tmpDirectory = env("TMPDIR")
+        .orElse(env("TEMPDIR"))
+        .orElse(env("TMP"))
+        .orElse(env("TEMP"))
+        .getOrElse("/tmp")
+      sysProps.setProperty("java.io.tmpdir", tmpDirectory)
+    }
+
+    sysProps
+  }
   private def getCurrentDirectory(): Option[String] = {
     val bufSize = 1024.toUInt
     if (isWindows) {
@@ -204,8 +222,10 @@ object System {
       )
     }
   }
+}
 
-  private lazy val envVars: Map[String, String] = {
+private object EnvVars {
+  val envVars: Map[String, String] = {
     def getEnvsUnix() = {
       val map = new HashMap[String, String]()
       val ptr: Ptr[CString] = unistd.environ
