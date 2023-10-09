@@ -156,6 +156,7 @@ private[scalanative] object LLVM {
       platformsLinks ++ srclinks ++ gclinks
     }
     val linkopts = config.linkingOptions ++ links.map("-l" + _)
+
     val flags = {
       val platformFlags =
         if (!config.targetsWindows) Nil
@@ -170,8 +171,25 @@ private[scalanative] object LLVM {
           }
           Seq("-g") ++ ltoSupport
         }
+
+      // This is to ensure that the load path of the resulting dynamic library
+      // only contains the library filename, instead of the full path
+      // (i.e. in the target folder of SBT build) - this would make the library
+      // non-portable
+      val linkNameFlags = {
+        val artifactName = outpath.getFileName().toString
+        if (config.compilerConfig.buildTarget == BuildTarget.LibraryDynamic)
+          if (config.targetsLinux)
+            List("-Wl,-soname", artifactName)
+          else if (config.targetsMac)
+            List("-Wl,-install_name", artifactName)
+          else Nil
+        else Nil
+      }
+
       val output = Seq("-o", outpath.abs)
-      buildTargetLinkOpts ++ flto ++ platformFlags ++ output ++ target
+
+      buildTargetLinkOpts ++ flto ++ platformFlags ++ linkNameFlags ++ output ++ target
     }
     val paths = objectsPaths.map(_.abs)
     // it's a fix for passing too many file paths to the clang compiler,
