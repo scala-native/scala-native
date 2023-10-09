@@ -155,12 +155,12 @@ class InetAddressTest {
   }
 
   @Test def getLocalHost(): Unit = {
-/* 2023-10-08 12:26 -0400 // LeeT Debugging reported macOS-12 failure. // FIXME
+    /* 2023-10-08 12:26 -0400 // LeeT Debugging reported macOS-12 failure. // FIXME
     assumeFalse(
       "Spuriously fails in the CI on MacOS-12",
       Platform.isMacOs && sys.env.contains("CI")
     )
-*/  // FIXME // trying to get CI macOs to run
+     */ // FIXME // trying to get CI macOs to run
 
     /* If compiler does not optimize away, check that no Exception is thrown
      * and something other than null is returned.
