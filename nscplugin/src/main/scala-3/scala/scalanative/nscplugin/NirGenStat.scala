@@ -77,6 +77,10 @@ trait NirGenStat(using Context) {
         val Apply(_, Seq(Literal(Constant(name: String)))) =
           ann.tree: @unchecked
         Attr.Link(name)
+      case ann if ann.symbol == defnNir.DefineClass =>
+        val Apply(_, Seq(Literal(Constant(name: String)))) =
+          ann.tree: @unchecked
+        Attr.Define(name)
     }
     val isAbstract = Option.when(sym.is(Abstract))(Attr.Abstract)
     Attrs.fromSeq(annotationAttrs ++ isAbstract)

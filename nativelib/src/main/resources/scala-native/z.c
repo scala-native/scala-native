@@ -1,4 +1,4 @@
-#ifdef SCALANATIVE_LINK_Z
+#ifdef SCALANATIVE_Z
 
 #include <zlib.h>
 

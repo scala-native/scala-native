@@ -5,6 +5,7 @@ import scala.scalanative.unsafe._
 import scala.scalanative.meta.LinktimeInfo.isWindows
 
 @link("z")
+@define("SCALANATIVE_Z")
 @extern
 object zlib {
   import zlibExt._

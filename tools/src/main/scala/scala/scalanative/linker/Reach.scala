@@ -21,6 +21,7 @@ class Reach(
   val done = mutable.Map.empty[Global, Defn]
   var stack = List.empty[Global]
   val links = mutable.Set.empty[Attr.Link]
+  val preprocessorDefinitions = mutable.Set.empty[Attr.Define]
   val infos = mutable.Map.empty[Global, Info]
   val from = mutable.Map.empty[Global, ReferencedFrom]
 
@@ -72,6 +73,7 @@ class Reach(
         infos = infos,
         entries = entries,
         links = links.toSeq,
+        preprocessorDefinitions = preprocessorDefinitions.toSeq,
         defns = defns.toSeq,
         dynsigs = dynsigs.toSeq,
         dynimpls = dynimpls.toSeq,
@@ -640,8 +642,10 @@ class Reach(
     reachAttrs(attrs)
   }
 
-  def reachAttrs(attrs: Attrs): Unit =
+  def reachAttrs(attrs: Attrs): Unit = {
     links ++= attrs.links
+    preprocessorDefinitions ++= attrs.preprocessorDefinitions
+  }
 
   def reachType(ty: Type)(implicit srcPosition: nir.Position): Unit = ty match {
     case Type.ArrayValue(ty, n) =>

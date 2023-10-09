@@ -160,6 +160,9 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         case ann if ann.symbol == LinkClass =>
           val Apply(_, Seq(Literal(Constant(name: String)))) = ann.tree
           Attr.Link(name)
+        case ann if ann.symbol == DefineClass =>
+          val Apply(_, Seq(Literal(Constant(name: String)))) = ann.tree
+          Attr.Define(name)
         case ann if ann.symbol == StubClass =>
           Attr.Stub
       }

@@ -12,6 +12,7 @@ import scala.util.Success
 
 import scalanative.build.IO.RichPath
 import scala.scalanative.linker.ReachabilityAnalysis
+import scala.scalanative.nir.Attr
 
 /** Original jar or dir path and generated dir path for native code */
 private[scalanative] case class NativeLib(src: Path, dest: Path)
@@ -43,7 +44,7 @@ private[scalanative] object NativeLib {
   )(implicit ec: ExecutionContext): Future[Seq[Path]] = {
     val destPath = unpackNativeCode(nativeLib)
     val paths = findNativePaths(config.workDir, destPath)
-    val projConfig = configureNativelib(config, analysis, destPath)
+    val projConfig = configureNativeLibrary(config, analysis, destPath)
     LLVM.compile(projConfig, paths)
   }
 
@@ -58,17 +59,25 @@ private[scalanative] object NativeLib {
    *  @return
    *    The config for this native library.
    */
-  private def configureNativelib(
-      config: Config,
+  private def configureNativeLibrary(
+      initialConfig: Config,
       analysis: ReachabilityAnalysis.Result,
       destPath: Path
   ): Config = {
     val nativeCodePath = destPath.resolve(nativeCodeDir)
-    // apply descriptor settings if found
-    findDescriptor(nativeCodePath).fold(config) { filepath =>
 
-      val desc =
-        Descriptor.load(filepath) match {
+    // Apply global configuraiton changes based on reachability analysis results
+    def withAnalysisInfo(config: Config): Config = {
+      val preprocessorFlags = analysis.preprocessorDefinitions.map {
+        case Attr.Define(name) => s"-D$name"
+      }
+      config.withCompilerConfig(_.withCompileOptions(_ ++ preprocessorFlags))
+    }
+
+    // Apply dependency specific configuratin based on descriptor if found
+    def withProjectDescriptor(config: Config): Config = {
+      findDescriptor(nativeCodePath).fold(config) { filepath =>
+        val descriptor = Descriptor.load(filepath) match {
           case Success(v) => v
           case Failure(e) =>
             throw new BuildException(
@@ -76,19 +85,29 @@ private[scalanative] object NativeLib {
             )
         }
 
-      config.logger.debug(s"Compilation settings: ${desc.toString()}")
+        config.logger.debug(s"Compilation settings: ${descriptor.toString()}")
 
-      // update config based on descriptor setting
-      updateConfig(desc, config, analysis, nativeCodePath)
+        val projectSettings = resolveDescriptorFlags(
+          desc = descriptor,
+          gc = config.compilerConfig.gc,
+          analysis = analysis,
+          nativeCodePath = nativeCodePath
+        )
+        config.withCompilerConfig(_.withCompileOptions(_ ++ projectSettings))
+      }
     }
+
+    (withAnalysisInfo _)
+      .andThen(withProjectDescriptor)
+      .apply(initialConfig)
   }
 
-  private def updateConfig(
+  private def resolveDescriptorFlags(
       desc: Descriptor,
-      config: Config,
+      gc: GC,
       analysis: ReachabilityAnalysis.Result,
       nativeCodePath: Path
-  ): Config = {
+  ): Seq[String] = {
     val linkDefines =
       desc.links
         .filter(name => analysis.links.exists(_.name == name))
@@ -110,17 +129,10 @@ private[scalanative] object NativeLib {
      */
     val gcDefine = desc.gcProject match {
       case false => None
-      case true => {
-        val gc = config.compilerConfig.gc.toString
-        Some(s"-DSCALANATIVE_GC_${gc.toUpperCase}")
-      }
+      case true  => Some(s"-DSCALANATIVE_GC_${gc.toString.toUpperCase}")
     }
 
-    config.withCompilerConfig(
-      _.withCompileOptions(
-        _ ++ linkDefines ++ defines ++ gcDefine ++ includePaths
-      )
-    )
+    linkDefines ++ defines ++ gcDefine ++ includePaths
   }
 
   /** Create a platform path string from a base path and unix path string

@@ -28,6 +28,7 @@ object Tags {
   final val FinalAttr = 1 + VolatileAttr
   final val LinktimeResolvedAttr = 1 + FinalAttr
   final val AlignAttr = 1 + LinktimeResolvedAttr
+  final val DefineAttr = 1 + AlignAttr
 
   // Binary ops
   final val IaddBin = 1

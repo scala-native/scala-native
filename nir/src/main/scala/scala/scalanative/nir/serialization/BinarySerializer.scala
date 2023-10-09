@@ -188,6 +188,7 @@ final class BinarySerializer(channel: WritableByteChannel) {
       case Attr.Stub               => putTag(T.StubAttr)
       case Attr.Extern(isBlocking) => putTag(T.ExternAttr); putBool(isBlocking)
       case Attr.Link(s)            => putTag(T.LinkAttr); putString(s)
+      case Attr.Define(n)          => putTag(T.DefineAttr); putString(n)
       case Attr.Abstract           => putTag(T.AbstractAttr)
       case Attr.Volatile           => putTag(T.VolatileAttr)
       case Attr.Final              => putTag(T.FinalAttr)

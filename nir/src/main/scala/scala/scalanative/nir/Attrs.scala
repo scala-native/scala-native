@@ -28,6 +28,7 @@ object Attr {
   case object Stub extends Attr
   case class Extern(blocking: Boolean) extends Attr
   final case class Link(name: String) extends Attr
+  final case class Define(name: String) extends Attr
   case object Abstract extends Attr
   case object Volatile extends Attr
   case object Final extends Attr
@@ -52,7 +53,8 @@ final case class Attrs(
     isVolatile: Boolean = false,
     isFinal: Boolean = false,
     isLinktimeResolved: Boolean = false,
-    links: Seq[Attr.Link] = Seq.empty
+    links: Seq[Attr.Link] = Seq.empty,
+    preprocessorDefinitions: Seq[Attr.Define] = Seq.empty
 ) {
   def toSeq: Seq[Attr] = {
     val out = Seq.newBuilder[Attr]
@@ -69,6 +71,7 @@ final case class Attrs(
     if (isFinal) out += Final
     if (isLinktimeResolved) out += LinktimeResolved
     out ++= links
+    out ++= preprocessorDefinitions
 
     out.result()
   }
@@ -90,6 +93,7 @@ object Attrs {
     var isFinal = false
     var isLinktimeResolved = false
     val links = Seq.newBuilder[Attr.Link]
+    val preprocessorDefinitions = Seq.newBuilder[Attr.Define]
 
     attrs.foreach {
       case attr: Inline     => inline = attr
@@ -100,12 +104,13 @@ object Attrs {
       case Extern(blocking) =>
         isExtern = true
         isBlocking = blocking
-      case Dyn             => isDyn = true
-      case Stub            => isStub = true
-      case link: Attr.Link => links += link
-      case Abstract        => isAbstract = true
-      case Volatile        => isVolatile = true
-      case Final           => isFinal = true
+      case Dyn                 => isDyn = true
+      case Stub                => isStub = true
+      case link: Attr.Link     => links += link
+      case define: Attr.Define => preprocessorDefinitions += define
+      case Abstract            => isAbstract = true
+      case Volatile            => isVolatile = true
+      case Final               => isFinal = true
 
       case LinktimeResolved => isLinktimeResolved = true
     }
@@ -123,7 +128,8 @@ object Attrs {
       isVolatile = isVolatile,
       isFinal = isFinal,
       isLinktimeResolved = isLinktimeResolved,
-      links = links.result()
+      links = links.result(),
+      preprocessorDefinitions = preprocessorDefinitions.result()
     )
   }
 }
