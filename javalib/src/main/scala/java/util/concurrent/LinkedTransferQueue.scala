@@ -16,7 +16,7 @@ import scala.scalanative.libc.atomic.memory_order.{
 }
 import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
 import java.{util => ju}
-import collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 @SerialVersionUID(-3223113410248163686L) class LinkedTransferQueue[E <: AnyRef]
     extends AbstractQueue[E]
@@ -28,10 +28,10 @@ import collection.JavaConverters._
   @volatile private[concurrent] var tail: Node = _
   @volatile private[concurrent] var needSweep: Boolean = _
 
-  private val tailAtomic = CAtomicRef[Node](
+  private val tailAtomic = new CAtomicRef[Node](
     fromRawPtr(Intrinsics.classFieldRawPtr(this, "tail"))
   )
-  private val headAtomic = CAtomicRef[Node](
+  private val headAtomic = new CAtomicRef[Node](
     fromRawPtr(Intrinsics.classFieldRawPtr(this, "head"))
   )
 
@@ -83,7 +83,7 @@ import collection.JavaConverters._
 
   private def xfer(e: E, haveData: Boolean, how: Int, nanos: Long): E = {
     if (haveData && (e == null))
-      throw NullPointerException()
+      throw new NullPointerException()
 
     var restart = true
     var s: Node = null
@@ -109,7 +109,7 @@ import collection.JavaConverters._
         val q = p.next
         if (q == null) {
           if (how == NOW) return e
-          if (s == null) s = Node(e)
+          if (s == null) s = new Node(e)
           if (!p.casNext(null, s)) skipRest = true
           if (!skipRest) {
             if (p != t) casTail(t, s)
@@ -337,9 +337,9 @@ import collection.JavaConverters._
 
   override def toArray(): Array[Object] = toArrayInternal(null)
 
-  override def toArray[T <: Object](
-      a: Array[T with Object]
-  ): Array[T with Object] = {
+  override def toArray[T <: AnyRef](
+      a: Array[T]
+  ): Array[T] = {
     java.util.Objects.requireNonNull(a)
     toArrayInternal(a.asInstanceOf[Array[Object]])
       .asInstanceOf[Array[T with Object]]
@@ -399,7 +399,7 @@ import collection.JavaConverters._
     final override def next() = {
       var p = nextNode
       if (p == null)
-        throw ju.NoSuchElementException()
+        throw new ju.NoSuchElementException()
       val e = nextItem
       lastRet = p
       advance(lastRet)
@@ -425,7 +425,7 @@ import collection.JavaConverters._
     override def remove(): Unit = {
       val lastRet = this.lastRet
       if (lastRet == null)
-        throw IllegalStateException()
+        throw new IllegalStateException()
       this.lastRet = null
       if (lastRet.item == null)
         return
@@ -599,7 +599,7 @@ import collection.JavaConverters._
     val MAX_BATCH = 1 << 25
   }
 
-  override def spliterator(): ju.Spliterator[E] = LTQSpliterator()
+  override def spliterator(): ju.Spliterator[E] = new LTQSpliterator()
 
   /* -------------- Removal methods -------------- */
 
@@ -660,7 +660,7 @@ import collection.JavaConverters._
     var h: Node = null
     var t: Node = null
     for (e <- c.asScala) {
-      val newNode = Node(ju.Objects.requireNonNull(e))
+      val newNode = new Node(ju.Objects.requireNonNull(e))
       if (h == null) {
         t = newNode
         h = t
@@ -670,14 +670,14 @@ import collection.JavaConverters._
       }
     }
     if (h == null) {
-      t = Node()
+      t = new Node()
       h = t
     }
     head = h
     tail = t
   }
 
-  head = Node()
+  head = new Node()
   tail = head
 
   /* -------------------- Other ------------------- */
@@ -706,7 +706,7 @@ import collection.JavaConverters._
   override def transfer(e: E): Unit = {
     if (xfer(e, true, SYNC, 0L) != null) {
       Thread.interrupted() // failure possible only due to interrupt
-      throw InterruptedException()
+      throw new InterruptedException()
     }
   }
 
@@ -724,7 +724,7 @@ import collection.JavaConverters._
       e
     else {
       Thread.interrupted()
-      throw InterruptedException()
+      throw new InterruptedException()
     }
   }
 
@@ -732,7 +732,7 @@ import collection.JavaConverters._
     val e = xfer(null.asInstanceOf[E], false, TIMED, unit.toNanos(timeout))
     if (e != null || !Thread.interrupted())
       e
-    else throw InterruptedException()
+    else throw new InterruptedException()
   }
 
   override def poll(): E = xfer(null.asInstanceOf[E], false, NOW, 0L)
@@ -740,7 +740,7 @@ import collection.JavaConverters._
   override def drainTo(c: ju.Collection[_ >: E]): Int = {
     ju.Objects.requireNonNull(c)
     if (c == this)
-      throw IllegalArgumentException()
+      throw new IllegalArgumentException()
     var n = 0
     var e = poll()
     while (e != null) {
@@ -754,7 +754,7 @@ import collection.JavaConverters._
   override def drainTo(c: ju.Collection[_ >: E], maxElements: Int): Int = {
     ju.Objects.requireNonNull(c)
     if (c == this)
-      throw IllegalArgumentException()
+      throw new IllegalArgumentException()
     var n = 0
     var innerBreak = false
     while (n < maxElements && !innerBreak) {
@@ -769,7 +769,7 @@ import collection.JavaConverters._
     n
   }
 
-  override def iterator(): ju.Iterator[E] = Itr()
+  override def iterator(): ju.Iterator[E] = new Itr()
 
   override def peek(): E = {
     var restartFromHead = true
@@ -948,7 +948,7 @@ import collection.JavaConverters._
     def go: Unit = {
       val item = s.readObject()
       if (item == null) return
-      val newNode = Node(item)
+      val newNode = new Node(item)
       if (h == null) {
         t = newNode
         h = t
@@ -960,7 +960,7 @@ import collection.JavaConverters._
     }
     go
     if (h == null) {
-      t = Node()
+      t = new Node()
       h = t
     }
     head = h
@@ -1094,13 +1094,13 @@ import collection.JavaConverters._
     @volatile var next: Node = null
     @volatile var waiter: Thread = _
 
-    val nextAtomic = CAtomicRef[Node](
+    val nextAtomic = new CAtomicRef[Node](
       fromRawPtr(Intrinsics.classFieldRawPtr(this, "next"))
     )
-    val itemAtomic = CAtomicRef[Object](
+    val itemAtomic = new CAtomicRef[Object](
       fromRawPtr(Intrinsics.classFieldRawPtr(this, "item"))
     )
-    val waiterAtomic = CAtomicRef[Object](
+    val waiterAtomic = new CAtomicRef[Object](
       fromRawPtr(Intrinsics.classFieldRawPtr(this, "waiter"))
     )
 
@@ -1154,5 +1154,5 @@ import collection.JavaConverters._
 
   // Reduce the risk of rare disastrous classloading in first call to
   // LockSupport.park: https://bugs.openjdk.java.net/browse/JDK-8074773
-  val _ = LockSupport.getClass
+  locally { val _ = LockSupport.getClass }
 }
