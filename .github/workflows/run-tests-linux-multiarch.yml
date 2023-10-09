@@ -85,7 +85,6 @@ jobs:
         build-mode: [debug, release-fast]
         lto: [none, thin]
         gc: [boehm, immix, commix]
-        multithreading: [true, false]
         exclude:
           # LTO is broken on linux-x86/llvm-10
           - arch: linux-x86
@@ -97,9 +96,6 @@ jobs:
             lto: none
           - build-mode: debug
             lto: thin
-          # Commix does not support multithreading
-          - gc: commix
-            multithreading: true
           # Reduce ammount of builds combinations
           - gc: immix
             lto: none
@@ -167,7 +163,7 @@ jobs:
                 .withCheck(true)
                 .withCheckFatalWarnings(true)
                 .withTargetTriple(sys.env.get("CROSS_TRIPLE"))
-                .withMultithreadingSupport(${{matrix.multithreading}})
+                .withMultithreadingSupport(${{ matrix.gc != 'commix' }})
                 .withCompileOptions(_ ++ sysRoot ++ List("-fuse-ld=lld"))
                 .withLinkingOptions(_ ++ sysRoot ++ List("-fuse-ld=lld", "-latomic"))
             }

@@ -122,7 +122,11 @@ jobs:
       - name: Run tests
         env:
           SCALANATIVE_GC: ${{ matrix.gc }}
-        run: sbt "test-runtime ${{ matrix.scala }}"
+          SCALANATIVE_TEST_PREFETCH_DEBUG_INFO: 1
+        run: >
+          sbt 
+            -Dscala.scalanative.multithreading.enable=${{ matrix.gc != 'commix' }}
+            test-runtime ${{ matrix.scala }}"
 
   test-runtime-ext:
     name: Test runtime extension
@@ -174,7 +178,11 @@ jobs:
           SCALANATIVE_GC: ${{ matrix.gc }}
           SCALANATIVE_LTO: ${{ matrix.lto }}
           SCALANATIVE_OPTIMIZE: true
-        run: sbt -J-Xmx5G "test-runtime ${{ matrix.scala }}"
+          SCALANATIVE_TEST_PREFETCH_DEBUG_INFO: 1
+        run: >
+          sbt 
+            -Dscala.scalanative.multithreading.enable=${{ matrix.gc != 'commix' }}
+            test-runtime ${{ matrix.scala }}"
 
   # This job is basically copy-paste of test-runtime.
   # Main difference is disabled optimization and fixed Immix GC
@@ -201,6 +209,7 @@ jobs:
           SCALANATIVE_MODE: ${{ matrix.build-mode }}
           SCALANATIVE_GC: immix
           SCALANATIVE_OPTIMIZE: false
+          SCALANATIVE_TEST_PREFETCH_DEBUG_INFO: 1
         run: sbt "test-runtime ${{ matrix.scala }}"
 
   # This job is basically copy-paste of test-runtime.
@@ -249,77 +258,6 @@ jobs:
           SCALANATIVE_MODE: release-fast
           SCALANATIVE_LTO: thin
           LLVM_BIN: "/usr/lib/llvm-${{ matrix.llvm }}/bin"
+          SCALANATIVE_TEST_PREFETCH_DEBUG_INFO: 1
         run: sbt "test-runtime ${{ matrix.scala }}"
 
-  test-multihreading:
-    name: Test experimental multithreading support
-    runs-on: ubuntu-22.04
-    needs: tests-tools
-    env:
-      ENABLE_EXPERIMENTAL_COMPILER: true
-      SCALANATIVE_TEST_PREFETCH_DEBUG_INFO: 1
-    strategy:
-      fail-fast: false
-      matrix:
-        scala: [3]
-        build-mode: [debug, release-fast]
-        gc: [boehm, immix]
-        lto: [none, thin]
-        include:
-          - scala: 3-next
-            build-mode: release-fast
-            lto: thin
-            gc: immix
-        exclude:
-          # Takes too much time to build
-          - build-mode: release-fast
-            lto: none
-    steps:
-      - uses: actions/checkout@v3
-      - uses: ./.github/actions/linux-setup-env
-        with:
-          scala-version: ${{matrix.scala}}
-
-      - name: Prepare native config command
-        shell: bash
-        run: |
-          buildMode=${{matrix.build-mode}}
-          if [[ "$buildMode" == "release-fast" ]]; then 
-            buildMode=releaseFast
-          fi
-
-          SetConfigTemplate=$(cat << EOM
-            nativeConfig ~= { prev =>
-              prev
-                .withMode(scalanative.build.Mode.${buildMode})
-                .withGC(scalanative.build.GC.${{matrix.gc}})
-                .withLTO(scalanative.build.LTO.${{matrix.lto}})
-                .withEmbedResources(true)
-                .withCheck(true)
-                .withCheckFatalWarnings(true)
-                .withMultithreadingSupport(true)
-            }
-          EOM
-          )
-
-          echo set-native-config=${SetConfigTemplate} >> $GITHUB_ENV
-
-      - name: Run tests
-        # 2x more then it should take to build and run tests
-        timeout-minutes: 60
-        env:
-          TEST_COMMAND: >
-            set sandbox.forBinaryVersion("${{env.binary-version}}")/${{env.set-native-config}};
-            set tests.forBinaryVersion("${{env.binary-version}}")/${{env.set-native-config}};
-            set junitTestOutputsNative.forBinaryVersion("${{env.binary-version}}")/${{env.set-native-config}};
-            set scalaPartestJunitTests.forBinaryVersion("${{env.binary-version}}")/${{env.set-native-config}};
-
-            show sandbox${{env.project-version}}/nativeConfig;
-
-            sandbox${{env.project-version}}/run;
-            testsJVM${{env.project-version}}/test;
-            tests${{env.project-version}}/test;
-            junitTestOutputsJVM${{env.project-version}}/test;
-            junitTestOutputsNative${{env.project-version}}/test;
-            scalaPartestJunitTests${{env.project-version}}/test
-        run: sbt -J-Xmx5G "${TEST_COMMAND}"
