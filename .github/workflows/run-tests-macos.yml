@@ -41,13 +41,13 @@ jobs:
           SCALANATIVE_GC: ${{ matrix.gc }}
           SCALANATIVE_TEST_PREFETCH_DEBUG_INFO: 1
         run:
-          sbt "test-runtime ${{matrix.scala}}"
+          sbt -Dscala.scalanative.multithreading.enable=${{ matrix.gc != 'commix' }} "test-runtime ${{matrix.scala}}"
 
       - name: Test partests infrastructure
         # No partests support for Scala 3
         if: ${{ !startsWith(matrix.scala, '3') }}
         run: >
-          sbt "scalaPartestTests${{env.project-version}}/testOnly -- --showDiff neg/abstract.scala pos/abstract.scala run/Course-2002-01.scala"
+          sbt -Dscala.scalanative.multithreading.enable=${{ matrix.gc != 'commix' }} "scalaPartestTests${{env.project-version}}/testOnly -- --showDiff neg/abstract.scala pos/abstract.scala run/Course-2002-01.scala"
 
   test-runtime-ext:
     name: Test runtime extension
