@@ -37,7 +37,15 @@ jobs:
           gc: ${{ matrix.gc }}
 
       - name: Test runtime
-        run: >
+        run: |
+          scutil --dns
+          scutil --get ComputerName
+          scutil --get HostName
+          scutil --get LocalHostName
+          hostname -f
+          hostname -s
+          hostname -d
+          ifconfig -a
           export SCALANATIVE_GC=${{matrix.gc}} &&
           sbt "test-runtime ${{matrix.scala}}"
 
