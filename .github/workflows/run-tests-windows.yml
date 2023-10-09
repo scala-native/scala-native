@@ -45,6 +45,7 @@ jobs:
           set SCALANATIVE_GC=${{matrix.gc}}&
           set SCALANATIVE_INCLUDE_DIRS=${{steps.setup.outputs.vcpkg-dir}}\include&
           set SCALANATIVE_LIB_DIRS=${{steps.setup.outputs.vcpkg-dir}}\lib&
+          set SCALANATIVE_TEST_PREFETCH_DEBUG_INFO=1&
           set SCALANATIVE &
           sbt 
           sandbox${{env.project-version}}/run
@@ -61,8 +62,10 @@ jobs:
           set SCALANATIVE_GC=${{matrix.gc}}&
           set SCALANATIVE_INCLUDE_DIRS=${{steps.setup.outputs.vcpkg-dir}}\include&
           set SCALANATIVE_LIB_DIRS=${{steps.setup.outputs.vcpkg-dir}}\lib&
+          set SCALANATIVE_TEST_PREFETCH_DEBUG_INFO=1&
           set SCALANATIVE &
           sbt
+          "-Dscala.scalanative.multithreading.enable=${{ matrix.gc != 'commix' }}"
           "test-runtime ${{matrix.scala}}"
           "scalaPartestTests${{env.project-version}}/testOnly -- --showDiff neg/abstract.scala pos/abstract.scala run/Course-2002-01.scala"
         shell: cmd
@@ -138,8 +141,9 @@ jobs:
           set SCALANATIVE_INCLUDE_DIRS=${{steps.setup.outputs.vcpkg-dir}}\include&
           set SCALANATIVE_LIB_DIRS=${{steps.setup.outputs.vcpkg-dir}}\lib&
           set SCALANATIVE_CI_NO_DEBUG_SYMBOLS=true&
+          set SCALANATIVE_TEST_PREFETCH_DEBUG_INFO=1&
           set SCALANATIVE &
-          sbt "test-runtime ${{matrix.scala}}"
+          sbt -Dscala.scalanative.multithreading.enable=${{ matrix.gc != 'commix' }} "test-runtime ${{matrix.scala}}"
         shell: cmd
 
   test-llvm-versions:
@@ -170,48 +174,3 @@ jobs:
           set SCALANATIVE &
           sbt "show tests3/nativeConfig" "test-runtime ${{matrix.scala}}"
 
-  test-multihreading:
-    name: Test experimental multithreading support
-    runs-on: windows-2022
-    strategy:
-      fail-fast: false
-      matrix:
-        scala: [3]
-        build-mode: [debug, release-fast]
-        gc: [boehm, immix]
-        lto: [none, thin]
-        exclude:
-          # Takes too much time to build
-          - build-mode: release-fast
-            lto: none
-          # Temporaly disabled, probably due the stack overflow in spawned threads
-          - build-mode: release-fast
-            lto: thin
-    steps:
-      - name: Setup git config
-        run: git config --global core.autocrlf false
-      - uses: actions/checkout@v3
-      - uses: ./.github/actions/windows-setup-env
-        id: setup
-        with:
-          scala-version: ${{matrix.scala}}
-
-      - name: Run tests
-        # 2x more then it should take to build and run tests
-        # Don't test junitTestOutputs, fails to link in lto:thin, release-fast
-        timeout-minutes: 60
-        run: >
-          set SCALANATIVE_GC=${{ matrix.gc }}&
-          set SCALANATIVE_LTO=${{ matrix.lto }}&
-          set SCALANATIVE_MODE=${{ matrix.build-mode }}&
-          set SCALANATIVE_INCLUDE_DIRS=${{steps.setup.outputs.vcpkg-dir}}\include&
-          set SCALANATIVE_LIB_DIRS=${{steps.setup.outputs.vcpkg-dir}}\lib&
-          set SCALANATIVE_CI_NO_DEBUG_SYMBOLS=true&
-          set SCALANATIVE &
-          set SCALANATIVE_TEST_PREFETCH_DEBUG_INFO=1&
-          sbt -Dscala.scalanative.multithreading.enable=true
-          sandbox${{env.project-version}}/run;
-          testsJVM${{env.project-version}}/test;
-          tests${{env.project-version}}/test;
-          scalaPartestJunitTests${{env.project-version}}/test
-        shell: cmd
