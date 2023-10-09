@@ -7,7 +7,14 @@ build:
   os: ubuntu-22.04
   tools:
     python: "3.11"
+  jobs:
+    post_checkout:
+      - git fetch --unshallow || true # for https://github.com/mgeier/sphinx-last-updated-by-git
 
 # Build documentation in the "docs/" directory with Sphinx
 sphinx:
   configuration: docs/conf.py
+
+python:
+  install:
+    - requirements: docs/requirements.txt

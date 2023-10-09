@@ -6,8 +6,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: ammaraskar/sphinx-action@0.4
         with:
-          pre-build-command: "pip install Sphinx==7.0.1 recommonmark==0.7.1"
-          docs-folder: "docs/"
-          build-command: 'sphinx-build -b html . _build/html -W --keep-going -n'
+          fetch-depth: 0 # clone full repo to get last-updated dates
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11' 
+      - name: Install deps
+        run: |
+          pip install -r docs/requirements.txt
+      - name: Build docs
+        run: |
+          cd docs && SPHINXOPTS="-W" make html

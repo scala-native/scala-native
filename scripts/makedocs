@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 cd docs
 function create_venv {
-  virtualenv .venv
+  python -m venv .venv
 }
 
 function activate_venv {
@@ -9,12 +9,11 @@ function activate_venv {
 }
 
 function install_req {
-  pip install Sphinx==4.2.0
-  pip install recommonmark==0.7.1
+  pip install -r ../docs/requirements.txt
 }
 
 function generate_docs {
-  make html
+  make SPHINX_OPTS="-W" html
 }
 
 function usage {
