@@ -39,6 +39,7 @@ jobs:
 
       # None GC takes too much memory on Windows to execute partest JUnit tests
       # leading to spurious failures in the CI. Perform subset of tests instead
+      # Execution with enabled multithreading increases memory usage, run only minimal tests
       - name: Test runtime None GC
         if: matrix.gc == 'none'
         run: >
@@ -49,10 +50,7 @@ jobs:
           set SCALANATIVE &
           sbt 
           sandbox${{env.project-version}}/run
-          testsJVM${{env.project-version}}/test
-          tests${{env.project-version}}/test
           testsExt${{env.project-version}}/test
-          testsExtJVM${{env.project-version}}/test
           "scalaPartestTests${{env.project-version}}/testOnly -- --showDiff neg/abstract.scala pos/abstract.scala run/Course-2002-01.scala"
         shell: cmd
 
