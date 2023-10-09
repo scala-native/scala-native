@@ -155,6 +155,7 @@ class InetAddressTest {
   }
 
   @Test def getLocalHost(): Unit = {
+// One success, can I get two?  i.e. is problem intermittent?
     /* 2023-10-08 12:26 -0400 // LeeT Debugging reported macOS-12 failure. // FIXME
     assumeFalse(
       "Spuriously fails in the CI on MacOS-12",
