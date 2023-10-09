@@ -2,7 +2,7 @@ name: Check CLA
 on: [pull_request]
 jobs:
   check-cla:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - run: ./scripts/check-cla.sh
+      - run: ./scripts/check-cla.sh "${{ github.event.pull_request.user.login }}"
