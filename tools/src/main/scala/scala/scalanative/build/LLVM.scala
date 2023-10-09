@@ -231,9 +231,9 @@ private[scalanative] object LLVM {
       val linkNameFlags =
         if (config.compilerConfig.buildTarget == BuildTarget.LibraryDynamic)
           if (config.targetsLinux)
-            List("-Wl,-soname", config.artifactName)
+            List(s"-Wl,-soname,${config.artifactName}")
           else if (config.targetsMac)
-            List("-Wl,-install_name", config.artifactName)
+            List(s"-Wl,-install_name,${config.artifactName}")
           else Nil
         else Nil
 
