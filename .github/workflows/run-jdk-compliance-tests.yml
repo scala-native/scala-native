@@ -1,0 +1,79 @@
+name: Run tests JDK compliance tests
+on:
+  workflow_call:
+  pull_request:
+concurrency:
+  group: jdk-compliance-${{ github.head_ref }}-${{ github.event_name }}
+  cancel-in-progress: true
+
+jobs:
+  # Compile and run tests against given version of the JDK to check compliance
+  # We test against Java 8 as default in other CI jobs
+  tests-unix-jdk-compliance:
+    name: Test Unix JDK compliance
+    runs-on: ${{matrix.os}}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, macos-12]
+        scala: [3]
+        java: [11, 17, 21]
+        include:
+          - java: 21
+            scala: 2.13
+            os: ubuntu-22.04
+          - java: 17
+            scala: 2.12
+            os: macos-12
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/macos-setup-env
+        if: ${{ startsWith(matrix.os, 'macos') }}
+        with:
+          scala-version: ${{matrix.scala}}
+          java-version: ${{matrix.java}}
+      - uses: ./.github/actions/linux-setup-env
+        if: ${{ startsWith(matrix.os, 'ubuntu') }}
+        with:
+          scala-version: ${{matrix.scala}}
+          java-version: ${{matrix.java}}
+
+      - name: Test runtime
+        run: >
+          _JAVA_OPTIONS='${{ matrix.java-options }}'
+          SCALANATIVE_TEST_PREFETCH_DEBUG_INFO=1
+          sbt 
+          -Dscala.scalanative.multithreading.enable=true 
+          "-J-Xmx3G" 
+          "test-runtime ${{matrix.scala}}"
+
+  tests-windows-jdk-compliance:
+    name: Test Windows JDK compliance
+    runs-on: windows-2022
+    strategy:
+      fail-fast: false
+      matrix:
+        scala: [3]
+        java: [11, 17, 21]
+    steps:
+      # Disable autocrlf setting, otherwise scalalib patches might not be possible to apply
+      - name: Setup git config
+        run: git config --global core.autocrlf false
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/windows-setup-env
+        id: setup
+        with:
+          scala-version: ${{matrix.scala}}
+          java-version: ${{matrix.java}}
+
+      - name: Test runtime
+        shell: cmd
+        run: >
+          set SCALANATIVE_INCLUDE_DIRS=${{steps.setup.outputs.vcpkg-dir}}\include&
+          set SCALANATIVE_LIB_DIRS=${{steps.setup.outputs.vcpkg-dir}}\lib&
+          set SCALANATIVE &
+          set _JAVA_OPTIONS=${{ matrix.java-options }} &
+          set SCALANATIVE_TEST_PREFETCH_DEBUG_INFO=1 &
+          sbt 
+          -Dscala.scalanative.multithreading.enable=true 
+          "test-runtime ${{matrix.scala}}"
