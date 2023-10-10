@@ -421,6 +421,43 @@ class LinkedTransferQueueTest extends JSR166Test {
     }
   }
 
+  /** toArray() contains all elements in FIFO order
+   */
+  @Test def testToArray() = {
+    val q = populatedQueue(SIZE)
+    val a = q.toArray()
+    assertSame(classOf[Array[Object]], a.getClass)
+    for (o <- a)
+      assertSame(o, q.poll())
+    assertTrue(q.isEmpty())
+  }
+
+  /** toArray(a) contains all elements in FIFO order //
+   */
+  @Test def testToArray2() = {
+    val q = populatedQueue(SIZE)
+    val items = new Array[Item](SIZE)
+    val array = q.toArray(items)
+    assertSame(items, array)
+    for (o <- items)
+      assertSame(o, q.poll())
+    assertTrue(q.isEmpty())
+  }
+
+  /** toArray(incompatible array type) throws ArrayStoreException
+   *
+   *  We don't have this, because SN doesn't yet do runtime variance check.
+   */
+  // @Test def testToArray_incompatibleArrayType() = {
+  //   val q = populatedQueue(SIZE)
+  //   try {
+  //     val ss: Array[String] = q.toArray(new Array[String](10))
+  //     shouldThrow()
+  //   } catch {
+  //     case _: ArrayStoreException => {}
+  //   }
+  // }
+
   private def populatedQueue(n: Int) = {
     val q = new LinkedTransferQueue[Item]()
     // checkEmpty(q)

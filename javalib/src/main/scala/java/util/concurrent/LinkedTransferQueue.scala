@@ -344,7 +344,7 @@ import java.{util => ju}
   ): Array[T] = {
     java.util.Objects.requireNonNull(a)
     toArrayInternal(a.asInstanceOf[Array[Object]])
-      .asInstanceOf[Array[T with Object]]
+      .asInstanceOf[Array[T]]
   }
 
   final class Itr extends ju.Iterator[E] {
