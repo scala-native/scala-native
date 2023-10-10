@@ -556,9 +556,9 @@ import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
       item = s.item
     }
     if (stat == 1)
-      s.waiterAtomic.store(null)
+      s.waiterAtomic.store(null, memory_order_relaxed)
     if (!isData)
-      s.itemAtomic.store(s) // self-link to avoid garbage
+      s.itemAtomic.store(s, memory_order_relaxed) // self-link to avoid garbage
     item.asInstanceOf[E]
   }
 
@@ -1740,7 +1740,7 @@ import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
      */
     def this(item: Object) = {
       this(item != null)
-      itemAtomic.store(item)
+      itemAtomic.store(item, memory_order_relaxed)
     }
 
     /** Constructs a (matched data) dummy node. */
