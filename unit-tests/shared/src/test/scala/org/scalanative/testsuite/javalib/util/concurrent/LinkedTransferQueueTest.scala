@@ -70,15 +70,15 @@ class LinkedTransferQueueTest extends JSR166Test {
         q.toArray(new Array[Object](0)),
         intList.toArray(new Array[Object](0))
       )
-    );
+    )
     assertTrue(
       Arrays.equals(
         q.toArray(new Array[Object](SIZE)),
         intList.toArray(new Array[Object](SIZE))
       )
-    );
+    )
     for (i <- 0 until SIZE) {
-      mustEqual(items(i), q.poll());
+      mustEqual(items(i), q.poll())
     }
   }
 
@@ -113,10 +113,11 @@ class LinkedTransferQueueTest extends JSR166Test {
    */
   @Test def testAddAll3() = {
     val q = new LinkedTransferQueue[Item]()
-    val items = new Array[Item](2); items(0) = new Item(zero)
+    val items = new Array[Item](2)
+    items(0) = new Item(zero)
     try {
       q.addAll(Arrays.asList(items: _*))
-      shouldThrow();
+      shouldThrow()
     } catch {
       case _: NullPointerException => {}
     }
@@ -150,7 +151,7 @@ class LinkedTransferQueueTest extends JSR166Test {
   /** take retrieves elements in FIFO order
    */
   @Test def testTake() = {
-    val q = populatedQueue(SIZE);
+    val q = populatedQueue(SIZE)
     for (i <- 0 until SIZE) {
       mustEqual(i, q.take())
     }
@@ -183,7 +184,7 @@ class LinkedTransferQueueTest extends JSR166Test {
         }
         assertFalse(Thread.interrupted())
       }
-    });
+    })
 
     await(pleaseInterrupt)
     if (randomBoolean()) assertThreadBlocks(t, Thread.State.WAITING)
@@ -713,9 +714,9 @@ class LinkedTransferQueueTest extends JSR166Test {
    */
   @Test def testTransfer1() = {
     try {
-      val q = new LinkedTransferQueue[Item]();
-      q.transfer(null);
-      shouldThrow();
+      val q = new LinkedTransferQueue[Item]()
+      q.transfer(null)
+      shouldThrow()
     } catch {
       case _: NullPointerException => {}
     }
@@ -725,113 +726,113 @@ class LinkedTransferQueueTest extends JSR166Test {
    *  the associated poll.
    */
   @Test def testTransfer2() = {
-    val q = new LinkedTransferQueue[Item]();
-    val threadStarted = new CountDownLatch(1);
+    val q = new LinkedTransferQueue[Item]()
+    val threadStarted = new CountDownLatch(1)
 
     val t = newStartedThread(new CheckedRunnable() {
       override def realRun() = {
-        threadStarted.countDown();
-        q.transfer(itemFor(five));
-        checkEmpty(q);
+        threadStarted.countDown()
+        q.transfer(itemFor(five))
+        checkEmpty(q)
       }
-    });
+    })
 
-    threadStarted.await();
+    threadStarted.await()
     val oneElement = new Callable[Boolean]() {
       override def call() =
         !q.isEmpty() && q.size() == 1
-    };
-    waitForThreadToEnterWaitState(t, oneElement);
+    }
+    waitForThreadToEnterWaitState(t, oneElement)
 
-    assertSame(itemFor(five), q.poll());
-    checkEmpty(q);
-    awaitTermination(t);
+    assertSame(itemFor(five), q.poll())
+    checkEmpty(q)
+    awaitTermination(t)
   }
 
   /** transfer waits until a poll occurs, and then transfers in fifo order
    */
   @Test def testTransfer3() = {
-    val q = new LinkedTransferQueue[Item]();
+    val q = new LinkedTransferQueue[Item]()
 
     val first = newStartedThread(new CheckedRunnable() {
       override def realRun() = {
-        q.transfer(itemFor(four));
-        mustNotContain(q, four);
-        mustEqual(1, q.size());
+        q.transfer(itemFor(four))
+        mustNotContain(q, four)
+        mustEqual(1, q.size())
       }
-    });
+    })
 
     val interruptedThread = newStartedThread(new CheckedInterruptedRunnable() {
       override def realRun() = {
         while (q.isEmpty())
-          Thread.`yield`();
-        q.transfer(itemFor(five));
+          Thread.`yield`()
+        q.transfer(itemFor(five))
       }
-    });
+    })
 
     while (q.size() < 2)
-      Thread.`yield`();
-    mustEqual(2, q.size());
-    assertSame(itemFor(four), q.poll());
-    first.join();
-    mustEqual(1, q.size());
-    interruptedThread.interrupt();
-    interruptedThread.join();
-    checkEmpty(q);
+      Thread.`yield`()
+    mustEqual(2, q.size())
+    assertSame(itemFor(four), q.poll())
+    first.join()
+    mustEqual(1, q.size())
+    interruptedThread.interrupt()
+    interruptedThread.join()
+    checkEmpty(q)
   }
 
   /** transfer waits until a poll occurs, at which point the polling thread
    *  returns the element
    */
   @Test def testTransfer4() = {
-    val q = new LinkedTransferQueue[Item]();
+    val q = new LinkedTransferQueue[Item]()
 
     val t = newStartedThread(new CheckedRunnable() {
       override def realRun() = {
-        q.transfer(itemFor(four));
-        mustNotContain(q, itemFor(four));
-        assertSame(itemFor(three), q.poll());
+        q.transfer(itemFor(four))
+        mustNotContain(q, itemFor(four))
+        assertSame(itemFor(three), q.poll())
       }
-    });
+    })
 
     while (q.isEmpty())
-      Thread.`yield`();
-    assertFalse(q.isEmpty());
-    mustEqual(1, q.size());
-    assertTrue(q.offer(itemFor(three)));
-    assertSame(itemFor(four), q.poll());
-    awaitTermination(t);
+      Thread.`yield`()
+    assertFalse(q.isEmpty())
+    mustEqual(1, q.size())
+    assertTrue(q.offer(itemFor(three)))
+    assertSame(itemFor(four), q.poll())
+    awaitTermination(t)
   }
 
   /** transfer waits until a take occurs. The transferred element is returned by
    *  the associated take.
    */
   @Test def testTransfer5() = {
-    val q = new LinkedTransferQueue[Item]();
+    val q = new LinkedTransferQueue[Item]()
 
     val t = newStartedThread(new CheckedRunnable() {
       override def realRun() = {
-        q.transfer(itemFor(four));
-        checkEmpty(q);
+        q.transfer(itemFor(four))
+        checkEmpty(q)
       }
-    });
+    })
 
     while (q.isEmpty())
-      Thread.`yield`();
-    assertFalse(q.isEmpty());
-    mustEqual(1, q.size());
-    assertSame(itemFor(four), q.take());
-    checkEmpty(q);
-    awaitTermination(t);
+      Thread.`yield`()
+    assertFalse(q.isEmpty())
+    mustEqual(1, q.size())
+    assertSame(itemFor(four), q.take())
+    checkEmpty(q)
+    awaitTermination(t)
   }
 
   /** tryTransfer(null) throws NullPointerException
    */
   @Test def testTryTransfer1() = {
-    val q = new LinkedTransferQueue[Item]();
+    val q = new LinkedTransferQueue[Item]()
     try {
-      q.tryTransfer(null);
-      shouldThrow();
+      q.tryTransfer(null)
+      shouldThrow()
     } catch {
       case _: NullPointerException => {}
     }
@@ -841,151 +842,151 @@ class LinkedTransferQueueTest extends JSR166Test {
    *  waiting to poll or take.
    */
   @Test def testTryTransfer2() = {
-    val q = new LinkedTransferQueue[Object]();
-    assertFalse(q.tryTransfer(new Object()));
-    assertFalse(q.hasWaitingConsumer());
-    checkEmpty(q);
+    val q = new LinkedTransferQueue[Object]()
+    assertFalse(q.tryTransfer(new Object()))
+    assertFalse(q.hasWaitingConsumer())
+    checkEmpty(q)
   }
 
   /** If there is a consumer waiting in timed poll, tryTransfer returns true
    *  while successfully transfering object.
    */
   @Test def testTryTransfer3() = {
-    val hotPotato = new Object();
-    val q = new LinkedTransferQueue[Object]();
+    val hotPotato = new Object()
+    val q = new LinkedTransferQueue[Object]()
 
     val t = newStartedThread(new CheckedRunnable() {
       override def realRun() = {
         while (!q.hasWaitingConsumer())
-          Thread.`yield`();
-        assertTrue(q.hasWaitingConsumer());
-        checkEmpty(q);
-        assertTrue(q.tryTransfer(hotPotato));
+          Thread.`yield`()
+        assertTrue(q.hasWaitingConsumer())
+        checkEmpty(q)
+        assertTrue(q.tryTransfer(hotPotato))
       }
-    });
+    })
 
-    val startTime = System.nanoTime();
-    assertSame(hotPotato, q.poll(LONG_DELAY_MS, MILLISECONDS));
-    assertTrue(millisElapsedSince(startTime) < LONG_DELAY_MS);
-    checkEmpty(q);
-    awaitTermination(t);
+    val startTime = System.nanoTime()
+    assertSame(hotPotato, q.poll(LONG_DELAY_MS, MILLISECONDS))
+    assertTrue(millisElapsedSince(startTime) < LONG_DELAY_MS)
+    checkEmpty(q)
+    awaitTermination(t)
   }
 
   /** If there is a consumer waiting in take, tryTransfer returns true while
    *  successfully transfering object.
    */
   @Test def testTryTransfer4() = {
-    val hotPotato = new Object();
-    val q = new LinkedTransferQueue[Object]();
+    val hotPotato = new Object()
+    val q = new LinkedTransferQueue[Object]()
 
     val t = newStartedThread(new CheckedRunnable() {
       override def realRun() = {
         while (!q.hasWaitingConsumer())
-          Thread.`yield`();
-        assertTrue(q.hasWaitingConsumer());
-        checkEmpty(q);
-        assertTrue(q.tryTransfer(hotPotato));
+          Thread.`yield`()
+        assertTrue(q.hasWaitingConsumer())
+        checkEmpty(q)
+        assertTrue(q.tryTransfer(hotPotato))
       }
-    });
+    })
 
-    assertSame(q.take(), hotPotato);
-    checkEmpty(q);
-    awaitTermination(t);
+    assertSame(q.take(), hotPotato)
+    checkEmpty(q)
+    awaitTermination(t)
   }
 
   /** tryTransfer blocks interruptibly if no takers
    */
   @Test def testTryTransfer5() = {
-    val q = new LinkedTransferQueue[Object]();
-    val pleaseInterrupt = new CountDownLatch(1);
-    assertTrue(q.isEmpty());
+    val q = new LinkedTransferQueue[Object]()
+    val pleaseInterrupt = new CountDownLatch(1)
+    assertTrue(q.isEmpty())
 
     val t = newStartedThread(new CheckedRunnable() {
       override def realRun() = {
-        Thread.currentThread().interrupt();
+        Thread.currentThread().interrupt()
         try {
-          q.tryTransfer(new Object(), randomTimeout(), randomTimeUnit());
-          shouldThrow();
+          q.tryTransfer(new Object(), randomTimeout(), randomTimeUnit())
+          shouldThrow()
         } catch {
           case _: InterruptedException => {}
         }
-        assertFalse(Thread.interrupted());
+        assertFalse(Thread.interrupted())
 
-        pleaseInterrupt.countDown();
+        pleaseInterrupt.countDown()
         try {
-          q.tryTransfer(new Object(), LONGER_DELAY_MS, MILLISECONDS);
-          shouldThrow();
+          q.tryTransfer(new Object(), LONGER_DELAY_MS, MILLISECONDS)
+          shouldThrow()
         } catch {
           case _: InterruptedException => {}
         }
-        assertFalse(Thread.interrupted());
+        assertFalse(Thread.interrupted())
       }
-    });
+    })
 
-    await(pleaseInterrupt);
-    if (randomBoolean()) assertThreadBlocks(t, Thread.State.TIMED_WAITING);
-    t.interrupt();
-    awaitTermination(t);
-    checkEmpty(q);
+    await(pleaseInterrupt)
+    if (randomBoolean()) assertThreadBlocks(t, Thread.State.TIMED_WAITING)
+    t.interrupt()
+    awaitTermination(t)
+    checkEmpty(q)
   }
 
   /** tryTransfer gives up after the timeout and returns false
    */
   @Test def testTryTransfer6() = {
-    val q = new LinkedTransferQueue[Object]();
+    val q = new LinkedTransferQueue[Object]()
 
     val t = newStartedThread(new CheckedRunnable() {
       override def realRun() = {
-        val startTime = System.nanoTime();
-        assertFalse(q.tryTransfer(new Object(), timeoutMillis(), MILLISECONDS));
-        assertTrue(millisElapsedSince(startTime) >= timeoutMillis());
-        checkEmpty(q);
+        val startTime = System.nanoTime()
+        assertFalse(q.tryTransfer(new Object(), timeoutMillis(), MILLISECONDS))
+        assertTrue(millisElapsedSince(startTime) >= timeoutMillis())
+        checkEmpty(q)
       }
-    });
+    })
 
-    awaitTermination(t);
-    checkEmpty(q);
+    awaitTermination(t)
+    checkEmpty(q)
   }
 
   /** tryTransfer waits for any elements previously in to be removed before
    *  transfering to a poll or take
    */
   @Test def testTryTransfer7() = {
-    val q = new LinkedTransferQueue[Item]();
-    assertTrue(q.offer(itemFor(four)));
+    val q = new LinkedTransferQueue[Item]()
+    assertTrue(q.offer(itemFor(four)))
 
     val t = newStartedThread(new CheckedRunnable() {
       override def realRun() = {
-        val startTime = System.nanoTime();
-        assertTrue(q.tryTransfer(itemFor(five), LONG_DELAY_MS, MILLISECONDS));
-        assertTrue(millisElapsedSince(startTime) < LONG_DELAY_MS);
-        checkEmpty(q);
+        val startTime = System.nanoTime()
+        assertTrue(q.tryTransfer(itemFor(five), LONG_DELAY_MS, MILLISECONDS))
+        assertTrue(millisElapsedSince(startTime) < LONG_DELAY_MS)
+        checkEmpty(q)
       }
-    });
+    })
 
     while (q.size() != 2)
-      Thread.`yield`();
-    mustEqual(2, q.size());
-    assertSame(itemFor(four), q.poll());
-    assertSame(itemFor(five), q.poll());
-    checkEmpty(q);
-    awaitTermination(t);
+      Thread.`yield`()
+    mustEqual(2, q.size())
+    assertSame(itemFor(four), q.poll())
+    assertSame(itemFor(five), q.poll())
+    checkEmpty(q)
+    awaitTermination(t)
   }
 
   /** tryTransfer attempts to enqueue into the queue and fails returning false
    *  not enqueueing and the successive poll is null
    */
   @Test def testTryTransfer8() = {
-    val q = new LinkedTransferQueue[Item]();
-    assertTrue(q.offer(itemFor(four)));
-    mustEqual(1, q.size());
-    val startTime = System.nanoTime();
-    assertFalse(q.tryTransfer(itemFor(five), timeoutMillis(), MILLISECONDS));
-    assertTrue(millisElapsedSince(startTime) >= timeoutMillis());
-    mustEqual(1, q.size());
-    assertSame(itemFor(four), q.poll());
-    assertNull(q.poll());
-    checkEmpty(q);
+    val q = new LinkedTransferQueue[Item]()
+    assertTrue(q.offer(itemFor(four)))
+    mustEqual(1, q.size())
+    val startTime = System.nanoTime()
+    assertFalse(q.tryTransfer(itemFor(five), timeoutMillis(), MILLISECONDS))
+    assertTrue(millisElapsedSince(startTime) >= timeoutMillis())
+    mustEqual(1, q.size())
+    assertSame(itemFor(four), q.poll())
+    assertNull(q.poll())
+    checkEmpty(q)
   }
 
   private def populatedQueue(n: Int) = {
@@ -1006,11 +1007,11 @@ class LinkedTransferQueueTest extends JSR166Test {
     val qs = Seq(
       new LinkedTransferQueue[Item](),
       populatedQueue(2)
-    );
+    )
 
     for (q <- qs) {
-      assertFalse(q.contains(null));
-      assertFalse(q.remove(null));
+      assertFalse(q.contains(null))
+      assertFalse(q.remove(null))
     }
   }
 
