@@ -42,9 +42,14 @@ jobs:
           scutil --get ComputerName
           scutil --get HostName
           scutil --get LocalHostName
+          echo "End scutil"
           hostname -f
           hostname -s
           hostname -d
+          echo "End hostname"
+          dig A $(hostname -f)
+          dig AAAA $(hostname -f)
+          echo "End dig"
           ifconfig -a
           export SCALANATIVE_GC=${{matrix.gc}} &&
           sbt "test-runtime ${{matrix.scala}}"
