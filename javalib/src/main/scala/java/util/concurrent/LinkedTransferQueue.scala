@@ -51,18 +51,16 @@ import java.{util => ju}
     }
   }
 
-  private def skipDeadNodes(pred: Node, c: Node, p: Node, q: Node) = {
+  private def skipDeadNodes(pred: Node, c: Node, p: Node, q: Node): Node = {
     var _q = q
-    if (q == null && c == p) pred
-    else {
-      if (q == null) {
-        // Never unlink trailing node.
-        _q = p;
-      }
-      if (tryCasSuccessor(pred, c, _q) && (pred == null || !pred.isMatched()))
-        pred
-      else p;
+    if (_q == null) {
+      // Never unlink trailing node.
+      if (c == p) return pred
+      _q = p;
     }
+    if (tryCasSuccessor(pred, c, _q) && (pred == null || !pred.isMatched()))
+      pred
+    else p
   }
 
   private def skipDeadNodesNearHead(h: Node, p: Node): Unit = {
@@ -901,25 +899,26 @@ import java.{util => ju}
       while (p != null && !pLoopBreak) {
         var q = p.next
         val item = p.item
-        var skipRest = false
+        var pLoopSkip = false
         if (item != null) {
           if (p.isData) {
             if (o.equals(item))
               return true
             pred = p
             p = q
-            skipRest = true
+            pLoopSkip = true
           }
         } else if (!p.isData) pLoopBreak = true
-        if (!skipRest && !pLoopBreak) {
-          var c = p
+        if (!pLoopSkip && !pLoopBreak) {
+          val c = p
           var qLoopBreak = false
           while (!qLoopBreak) {
             if (q == null || !q.isMatched()) {
               pred = skipDeadNodes(pred, c, p, q)
               p = q
               qLoopBreak = true
-            } else {
+            }
+            if (!qLoopBreak) {
               val old_p = p
               p = q
               if (old_p == p) {
@@ -927,13 +926,14 @@ import java.{util => ju}
                 qLoopBreak = true
                 restartFromHead = true
               }
+              q = p.next
             }
-            q = p.next
           }
         }
       }
+      if (!restartFromHead) return false
     }
-    false
+    ???
   }
 
   override def remainingCapacity(): Int = Integer.MAX_VALUE
@@ -963,7 +963,7 @@ import java.{util => ju}
     var removed = false
 
     var restartFromHead = true
-    while (true) {
+    while (restartFromHead) {
       restartFromHead = false
 
       var hops = MAX_HOPS
@@ -985,7 +985,7 @@ import java.{util => ju}
           }
         } else if (!p.isData && item == null)
           innerBreak = true
-        else {
+        if (!innerBreak) {
           if (pAlive || q == null || { hops -= 1; hops } == 0) {
             // p might already be self-linked here, but if so:
             // - CASing head will surely fail
@@ -1003,8 +1003,8 @@ import java.{util => ju}
             innerBreak = true
             restartFromHead = true
           }
+          p = q
         }
-        p = q
       }
     }
     removed

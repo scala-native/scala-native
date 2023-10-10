@@ -350,6 +350,77 @@ class LinkedTransferQueueTest extends JSR166Test {
     mustEqual(q.take(), itemFor(three))
   }
 
+  /** contains(x) reports true when elements added but not yet removed
+   */
+  @Test def testContains() = {
+    val q = populatedQueue(SIZE)
+    for (i <- 0 until SIZE) {
+      mustContain(q, i)
+      mustEqual(i, q.poll())
+      mustNotContain(q, i)
+    }
+  }
+
+  /** clear removes all elements
+   */
+  @Test def testClear() = {
+    val q = populatedQueue(SIZE)
+    q.clear()
+    checkEmpty(q)
+    mustEqual(Integer.MAX_VALUE, q.remainingCapacity())
+    q.add(itemFor(one))
+    assertFalse(q.isEmpty())
+    mustEqual(1, q.size())
+    mustContain(q, one)
+    q.clear()
+    checkEmpty(q)
+  }
+
+  /** containsAll(c) is true when c contains a subset of elements
+   */
+  @Test def testContainsAll() = {
+    val q = populatedQueue(SIZE)
+    val p = new LinkedTransferQueue[Item]()
+    for (i <- 0 until SIZE) {
+      assertTrue(q.containsAll(p))
+      assertFalse(p.containsAll(q))
+      mustAdd(p, i)
+    }
+    assertTrue(p.containsAll(q))
+  }
+
+  /** retainAll(c) retains only those elements of c and reports true if changed
+   */
+  @Test def testRetainAll() = {
+    val q = populatedQueue(SIZE)
+    val p = populatedQueue(SIZE)
+    for (i <- 0 until SIZE) {
+      val changed = q.retainAll(p)
+      if (i == 0) {
+        assertFalse(changed)
+      } else {
+        assertTrue(changed)
+      }
+      assertTrue(q.containsAll(p))
+      mustEqual(SIZE - i, q.size())
+      p.remove()
+    }
+  }
+
+  /** removeAll(c) removes only those elements of c and reports true if changed
+   */
+  @Test def testRemoveAll() = {
+    for (i <- 1 until SIZE) {
+      val q = populatedQueue(SIZE)
+      val p = populatedQueue(i)
+      assertTrue(q.removeAll(p))
+      mustEqual(SIZE - i, q.size())
+      for (j <- 0 until i) {
+        mustNotContain(q, p.remove())
+      }
+    }
+  }
+
   private def populatedQueue(n: Int) = {
     val q = new LinkedTransferQueue[Item]()
     // checkEmpty(q)
