@@ -17,6 +17,7 @@ import java.util._
 import java.util.concurrent._
 import java.util.concurrent.LinkedTransferQueue
 import scala.collection.mutable.ArrayBuffer
+import scala.util.Using
 
 class LinkedTransferQueueTest extends JSR166Test {
   @Test def testConstructor1() = {
@@ -536,6 +537,60 @@ class LinkedTransferQueueTest extends JSR166Test {
       it.next()
     }
     mustEqual(0, q.size())
+  }
+
+  /** offer transfers elements across Executor tasks
+   */
+  @Test def testOfferInExecutor(): Unit = {
+    val q = new LinkedTransferQueue[Item]()
+    val threadsStarted = new CheckedBarrier(2)
+    val executor = Executors.newFixedThreadPool(2)
+    Using(cleaner(executor)) { cleaner =>
+
+      executor.execute(new CheckedRunnable() {
+        override def realRun() = {
+          threadsStarted.await()
+          val startTime = System.nanoTime()
+          assertTrue(q.offer(itemFor(one), LONG_DELAY_MS, MILLISECONDS))
+          assertTrue(millisElapsedSince(startTime) < LONG_DELAY_MS)
+        }
+      })
+
+      executor.execute(new CheckedRunnable() {
+        override def realRun() = {
+          threadsStarted.await()
+          assertSame(itemFor(one), q.take())
+          checkEmpty(q)
+        }
+      })
+    }
+  }
+
+  /** timed poll retrieves elements across Executor threads
+   */
+  @Test def testPollInExecutor(): Unit = {
+    val q = new LinkedTransferQueue[Item]()
+    val threadsStarted = new CheckedBarrier(2)
+    val executor = Executors.newFixedThreadPool(2)
+    Using(cleaner(executor)) { cleaner =>
+      executor.execute(new CheckedRunnable() {
+        override def realRun() = {
+          assertNull(q.poll())
+          threadsStarted.await()
+          val startTime = System.nanoTime()
+          assertSame(itemFor(one), q.poll(LONG_DELAY_MS, MILLISECONDS))
+          assertTrue(millisElapsedSince(startTime) < LONG_DELAY_MS)
+          checkEmpty(q)
+        }
+      })
+
+      executor.execute(new CheckedRunnable() {
+        override def realRun() = {
+          threadsStarted.await()
+          q.put(itemFor(one))
+        }
+      })
+    }
   }
 
   private def populatedQueue(n: Int) = {
