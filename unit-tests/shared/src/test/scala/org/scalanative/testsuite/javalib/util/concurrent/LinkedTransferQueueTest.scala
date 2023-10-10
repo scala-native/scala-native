@@ -458,6 +458,86 @@ class LinkedTransferQueueTest extends JSR166Test {
   //   }
   // }
 
+  /** iterator iterates through all elements
+   */
+  @Test def testIterator() = {
+    val q = populatedQueue(SIZE)
+    var it = q.iterator()
+    var i = 0
+    while (it.hasNext()) {
+      mustContain(q, it.next())
+      i += 1
+    }
+    mustEqual(i, SIZE)
+    assertIteratorExhausted(it)
+
+    it = q.iterator()
+    i = 0
+    while (it.hasNext()) {
+      mustEqual(it.next(), q.take())
+      i += 1
+    }
+    mustEqual(i, SIZE)
+    assertIteratorExhausted(it)
+  }
+
+  /** iterator of empty collection has no elements
+   */
+  @Test def testEmptyIterator() = {
+    assertIteratorExhausted(new LinkedTransferQueue[Item]().iterator())
+  }
+
+  /** iterator.remove() removes current element
+   */
+  @Test def testIteratorRemove() = {
+    val q = new LinkedTransferQueue[Item]()
+    q.add(itemFor(two))
+    q.add(itemFor(one))
+    q.add(itemFor(three))
+
+    var it = q.iterator()
+    it.next()
+    it.remove()
+
+    it = q.iterator()
+    assertSame(it.next(), itemFor(one))
+    assertSame(it.next(), itemFor(three))
+    assertFalse(it.hasNext())
+  }
+
+  /** iterator ordering is FIFO
+   */
+  @Test def testIteratorOrdering() = {
+    val q = new LinkedTransferQueue[Item]()
+    mustEqual(Integer.MAX_VALUE, q.remainingCapacity())
+    q.add(itemFor(one))
+    q.add(itemFor(two))
+    q.add(itemFor(three))
+    mustEqual(Integer.MAX_VALUE, q.remainingCapacity())
+    var k = 0
+    val it = q.iterator()
+    while (it.hasNext()) {
+      k += 1
+      mustEqual(k, it.next())
+    }
+    mustEqual(3, k)
+  }
+
+  /** Modifications do not cause iterators to fail
+   */
+  @Test def testWeaklyConsistentIteration() = {
+    val q = new LinkedTransferQueue[Item]()
+    q.add(itemFor(one))
+    q.add(itemFor(two))
+    q.add(itemFor(three))
+    val it = q.iterator()
+    while (it.hasNext()) {
+      q.remove()
+      it.next()
+    }
+    mustEqual(0, q.size())
+  }
+
   private def populatedQueue(n: Int) = {
     val q = new LinkedTransferQueue[Item]()
     // checkEmpty(q)
