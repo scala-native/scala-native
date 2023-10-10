@@ -18,6 +18,7 @@ import java.util.concurrent._
 import java.util.concurrent.LinkedTransferQueue
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Using
+import scala.compiletime.ops.boolean
 
 class LinkedTransferQueueTest extends JSR166Test {
   @Test def testConstructor1() = {
@@ -591,6 +592,123 @@ class LinkedTransferQueueTest extends JSR166Test {
         }
       })
     }
+  }
+
+  /** A deserialized/reserialized queue has same elements in same order
+   *
+   *  We don't have `serialClone`, since ObjectInputStream is not in Scala
+   *  Native.
+   */
+  // @Test def testSerialization() = {
+  //   val x: Queue[Item] = populatedQueue(SIZE)
+  //   val y: Queue[Item] = serialClone(x)
+  //   assertNotSame(y, x)
+  //   mustEqual(x.size(), y.size())
+  //   mustEqual(x.toString(), y.toString())
+  //   assertTrue(Arrays.equals(x.toArray(), y.toArray()))
+  //   while (!x.isEmpty()) {
+  //     assertFalse(y.isEmpty())
+  //     mustEqual(x.remove(), y.remove())
+  //   }
+  //   assertTrue(y.isEmpty())
+  // }
+
+  /** drainTo(c) empties queue into another collection c
+   */
+  @Test def testDrainTo() = {
+    val q = populatedQueue(SIZE)
+    val l = new ArrayList[Item]()
+    q.drainTo(l)
+    mustEqual(0, q.size())
+    mustEqual(SIZE, l.size())
+    for (i <- 0 until SIZE) {
+      mustEqual(i, l.get(i))
+    }
+    q.add(itemFor(zero))
+    q.add(itemFor(one))
+    assertFalse(q.isEmpty())
+    mustContain(q, itemFor(zero))
+    mustContain(q, itemFor(one))
+    l.clear()
+    q.drainTo(l)
+    mustEqual(0, q.size())
+    mustEqual(2, l.size())
+    for (i <- 0 until 2) {
+      mustEqual(i, l.get(i))
+    }
+  }
+
+  /** drainTo(c) empties full queue, unblocking a waiting put.
+   */
+  @Test def testDrainToWithActivePut() = {
+    val q = populatedQueue(SIZE)
+    val t = newStartedThread(new CheckedRunnable() {
+      override def realRun() = {
+        q.put(new Item(SIZE + 1))
+      }
+    })
+    val l = new ArrayList[Item]()
+    q.drainTo(l)
+    assertTrue(l.size() >= SIZE)
+    for (i <- 0 until SIZE)
+      mustEqual(i, l.get(i))
+    awaitTermination(t)
+    assertTrue(q.size() + l.size() >= SIZE)
+  }
+
+  /** drainTo(c, n) empties first min(n, size) elements of queue into c
+   */
+  @Test def testDrainToN() = {
+    val q = new LinkedTransferQueue[Item]()
+    for (i <- 0 until SIZE + 2) {
+      for (j <- 0 until SIZE) {
+        mustOffer(q, j)
+      }
+      val l = new ArrayList[Item]()
+      q.drainTo(l, i)
+      val k = if (i < SIZE) i else SIZE
+      mustEqual(k, l.size())
+      mustEqual(SIZE - k, q.size())
+      for (j <- 0 until k)
+        mustEqual(j, l.get(j))
+      while (q.poll() != null) {}
+    }
+  }
+
+  /** timed poll() or take() increments the waiting consumer count offer(e)
+   *  decrements the waiting consumer count
+   */
+  @Test def testWaitingConsumer() = {
+    val q = new LinkedTransferQueue[Item]()
+    mustEqual(0, q.getWaitingConsumerCount())
+    assertFalse(q.hasWaitingConsumer())
+    val threadStarted = new CountDownLatch(1)
+
+    val t = newStartedThread(new CheckedRunnable() {
+      def realRun() = {
+        threadStarted.countDown()
+        val startTime = System.nanoTime()
+        assertSame(itemFor(one), q.poll(LONG_DELAY_MS, MILLISECONDS))
+        mustEqual(0, q.getWaitingConsumerCount())
+        assertFalse(q.hasWaitingConsumer())
+        assertTrue(millisElapsedSince(startTime) < LONG_DELAY_MS)
+      }
+    })
+
+    threadStarted.await()
+    val oneConsumer = new Callable[Boolean]() {
+      override def call() =
+        q.hasWaitingConsumer()
+          && q.getWaitingConsumerCount() == 1
+
+    }
+    waitForThreadToEnterWaitState(t, oneConsumer)
+
+    assertTrue(q.offer(itemFor(one)))
+    mustEqual(0, q.getWaitingConsumerCount())
+    assertFalse(q.hasWaitingConsumer())
+
+    awaitTermination(t)
   }
 
   private def populatedQueue(n: Int) = {
