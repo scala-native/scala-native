@@ -9,8 +9,8 @@ on:
   - cron: '0 0 * * 1,3,5'
 
 jobs:
-  publish:
-    name: Publish
+  check-compiles:
+    name: Test compilation of all modules
     runs-on: ubuntu-22.04
     if: github.repository == 'scala-native/scala-native'
     steps:
@@ -20,18 +20,34 @@ jobs:
           scala-version: "2.13" #Unused, any version can be placed here
           java-version: 8
 
+      - name: Compile everything
+        run: sbt "-v" "-J-Xmx7G" "++3.3.0; Test/compile; ++2.13.11; Test/compile; ++2.12.18; Test/compile"
+
+  publish:
+    name: Publish for each Scala binary version
+    runs-on: ubuntu-22.04
+    needs: [check-compiles]
+    if: github.repository == 'scala-native/scala-native'
+    strategy:
+      fail-fast: false
+      matrix:
+        scala: ["2.12", "2.13", "3"]
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/linux-setup-env
+        with:
+          scala-version: ${{ matrix.scala }} #Unused, any version can be placed here
+          java-version: 8
+
       - name: Setup PGP Key
         run: |
           echo -n "$PGP_SECRET" | base64 --decode | gpg --batch --import
         env:
           PGP_SECRET: ${{ secrets.PGP_SECRET }}
 
-      - name: Compile everything
-        run: sbt "-v" "-J-Xmx5G" "++3.3.0; Test/compile; ++2.13.11; Test/compile; ++2.12.18; Test/compile"
-
       - name: Publish release
         env:
           MAVEN_USER: "${{ secrets.SONATYPE_USER }}"
           MAVEN_PASSWORD: "${{ secrets.SONATYPE_PASSWORD }}"
           PGP_PASSPHRASE: "${{ secrets.PGP_PASSWORD }}"
-        run: sbt "-v" "-J-Xmx5G" "clean;publish-release"
+        run: sbt "-v" "-J-Xmx7G" "publish-release-for-version ${{ matrix.scala }}"
