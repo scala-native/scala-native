@@ -13,6 +13,7 @@ import scala.scalanative.windows.HandleApi._
 import scala.scalanative.windows.HandleApiExt._
 import scala.scalanative.windows.winnt.AccessRights._
 import scala.scalanative.windows.{ConsoleApiExt, DWord}
+import scala.scalanative.windows.ErrorHandlingApi.GetLastError
 
 final class FileDescriptor private[java] (
     fileHandle: FileHandle,
@@ -78,8 +79,13 @@ final class FileDescriptor private[java] (
   def valid(): Boolean =
     if (isWindows) {
       val flags = stackalloc[DWord]()
-      handle != INVALID_HANDLE_VALUE &&
-        GetHandleInformation(handle, flags)
+      handle != INVALID_HANDLE_VALUE && {
+        GetHandleInformation(handle, flags) || {
+          import scala.scalanative.windows.ErrorHandlingApiOps.errorMessage
+          println(s"$this: ${errorMessage(GetLastError())}")
+          false
+        }
+      }
     } else {
       // inspired by Apache Harmony including filedesc.c
       fcntl.fcntl(fd, fcntl.F_GETFD, 0) != -1
