@@ -47,9 +47,9 @@ jobs:
           hostname -s
           hostname -d
           echo "End hostname"
-          dig A $(hostname -s)
-          dig AAAA $(hostname -s)
-          echo "End dig"
+          echo "dns-sd"
+          dns-sd -1 $(hostname -f)
+          echo "End ds-sd"
           test -e /etc/hosts && cat /etc/hosts
           test -e /etc/resolv.conf && cat /etc/resolv.conf
           echo "End /etc/hosts and /resolv.conf"
