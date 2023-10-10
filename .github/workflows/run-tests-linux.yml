@@ -119,10 +119,7 @@ jobs:
         env:
           SCALANATIVE_GC: ${{ matrix.gc }}
           SCALANATIVE_TEST_PREFETCH_DEBUG_INFO: 1
-        run: >
-          sbt 
-            -Dscala.scalanative.multithreading.enable=${{ matrix.gc != 'commix' }}
-            "test-runtime ${{ matrix.scala }}"
+        run: sbt -Dscala.scalanative.multithreading.enable=${{ matrix.gc != 'commix' }} "test-runtime ${{ matrix.scala }}"
 
   test-runtime-ext:
     name: Test runtime extension
@@ -175,10 +172,8 @@ jobs:
           SCALANATIVE_LTO: ${{ matrix.lto }}
           SCALANATIVE_OPTIMIZE: true
           SCALANATIVE_TEST_PREFETCH_DEBUG_INFO: 1
-        run: >
-          sbt 
-            -Dscala.scalanative.multithreading.enable=${{ matrix.gc != 'commix' }}
-            "test-runtime ${{ matrix.scala }}"
+        run: sbt -Dscala.scalanative.multithreading.enable=${{ matrix.gc != 'commix' }} "test-runtime ${{ matrix.scala }}"
+
 
   # This job is basically copy-paste of test-runtime.
   # Main difference is disabled optimization and fixed Immix GC

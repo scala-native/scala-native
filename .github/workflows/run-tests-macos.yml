@@ -40,8 +40,7 @@ jobs:
         env: 
           SCALANATIVE_GC: ${{ matrix.gc }}
           SCALANATIVE_TEST_PREFETCH_DEBUG_INFO: 1
-        run:
-          sbt -Dscala.scalanative.multithreading.enable=${{ matrix.gc != 'commix' }} "test-runtime ${{matrix.scala}}"
+        run: sbt -Dscala.scalanative.multithreading.enable=${{ matrix.gc != 'commix' }} "test-runtime ${{matrix.scala}}"
 
       - name: Test partests infrastructure
         # No partests support for Scala 3
