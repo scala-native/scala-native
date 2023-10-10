@@ -18,7 +18,6 @@ import java.util.concurrent._
 import java.util.concurrent.LinkedTransferQueue
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Using
-import scala.compiletime.ops.boolean
 
 class LinkedTransferQueueTest extends JSR166Test {
   @Test def testConstructor1() = {
@@ -343,7 +342,7 @@ class LinkedTransferQueueTest extends JSR166Test {
   /** An add following remove(x) succeeds
    */
   @Test def testRemoveElementAndAdd() = {
-    val q = LinkedTransferQueue[Item]()
+    val q = new LinkedTransferQueue[Item]()
     mustAdd(q, one)
     mustAdd(q, two)
     mustRemove(q, one)
@@ -698,8 +697,7 @@ class LinkedTransferQueueTest extends JSR166Test {
     threadStarted.await()
     val oneConsumer = new Callable[Boolean]() {
       override def call() =
-        q.hasWaitingConsumer()
-          && q.getWaitingConsumerCount() == 1
+        q.hasWaitingConsumer() && q.getWaitingConsumerCount() == 1
 
     }
     waitForThreadToEnterWaitState(t, oneConsumer)
@@ -1013,6 +1011,17 @@ class LinkedTransferQueueTest extends JSR166Test {
     for (q <- qs) {
       assertFalse(q.contains(null));
       assertFalse(q.remove(null));
+    }
+  }
+
+  /* ==== Not from JSR166 ==== */
+  @Test def testForEach() = {
+    val q = new LinkedTransferQueue[Item]()
+    q.add(itemFor(one))
+    q.add(itemFor(two))
+
+    q.forEach { x =>
+      assertTrue(x == itemFor(one) || x == itemFor(two))
     }
   }
 }
