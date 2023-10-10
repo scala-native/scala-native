@@ -321,7 +321,7 @@ object Build {
         case Seq(nscPlugin, nativelib, scalalib) =>
           toolsBuildInfoSettings(nscPlugin, nativelib, scalalib)
       }
-      .dependsOn(nir, util)
+      .dependsOn(nirJVM, utilJVM)
 
   private def toolsBuildInfoSettings(
       nscPlugin: LocalProject,
