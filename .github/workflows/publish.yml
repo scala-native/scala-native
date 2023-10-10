@@ -50,7 +50,7 @@ jobs:
           MAVEN_USER: "${{ secrets.SONATYPE_USER }}"
           MAVEN_PASSWORD: "${{ secrets.SONATYPE_PASSWORD }}"
           PGP_PASSPHRASE: "${{ secrets.PGP_PASSWORD }}"
-        run: sbt "-v" "-J-Xmx7G" "publish-release-for-version ${{ matrix.scala }}"
+        run: sbt "-v" "-J-Xmx7G" "-J-XX:+UseG1GC" "publish-release-for-version ${{ matrix.scala }}"
 
   dispatch:
     name: Dispatch trigger builds for dependant projects
