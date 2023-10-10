@@ -17,7 +17,6 @@ import java.util._
 import java.util.concurrent._
 import java.util.concurrent.LinkedTransferQueue
 import scala.collection.mutable.ArrayBuffer
-import scala.util.Using
 
 class LinkedTransferQueueTest extends JSR166Test {
   @Test def testConstructor1() = {
@@ -545,9 +544,7 @@ class LinkedTransferQueueTest extends JSR166Test {
   @Test def testOfferInExecutor(): Unit = {
     val q = new LinkedTransferQueue[Item]()
     val threadsStarted = new CheckedBarrier(2)
-    val executor = Executors.newFixedThreadPool(2)
-    Using(cleaner(executor)) { cleaner =>
-
+    usingPoolCleaner(new ForkJoinPool()) { executor =>
       executor.execute(new CheckedRunnable() {
         override def realRun() = {
           threadsStarted.await()
@@ -572,8 +569,7 @@ class LinkedTransferQueueTest extends JSR166Test {
   @Test def testPollInExecutor(): Unit = {
     val q = new LinkedTransferQueue[Item]()
     val threadsStarted = new CheckedBarrier(2)
-    val executor = Executors.newFixedThreadPool(2)
-    Using(cleaner(executor)) { cleaner =>
+    usingPoolCleaner(new ForkJoinPool()) { executor =>
       executor.execute(new CheckedRunnable() {
         override def realRun() = {
           assertNull(q.poll())
