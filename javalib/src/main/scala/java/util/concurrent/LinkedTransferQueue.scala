@@ -7,6 +7,7 @@
 package java.util.concurrent
 
 import java.util.AbstractQueue
+import java.util.Arrays
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.locks.LockSupport
 import scala.scalanative.libc.atomic.CAtomicRef
@@ -16,7 +17,6 @@ import scala.scalanative.libc.atomic.memory_order.{
 }
 import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
 import java.{util => ju}
-import scala.jdk.CollectionConverters._
 
 @SerialVersionUID(-3223113410248163686L) class LinkedTransferQueue[E <: AnyRef]
     extends AbstractQueue[E]
@@ -261,7 +261,7 @@ import scala.jdk.CollectionConverters._
             if (a == null)
               a = Array.fill(4)("")
             else if (size == a.length)
-              a = Array.copyOf(a, 2 * size)
+              a = Arrays.copyOf(a, 2 * size)
             val s = item.toString()
             a(size) = s
             size += 1
@@ -269,7 +269,8 @@ import scala.jdk.CollectionConverters._
           }
         } else if (item == null) {
           innerBreak = true
-        } else {
+        }
+        if (!innerBreak) {
           val q = p.next
           if (p == q) {
             restartFromHead = true
@@ -302,15 +303,18 @@ import scala.jdk.CollectionConverters._
       while (p != null && !innerBreak) {
         val item = p.item
         if (p.isData) {
-          if (item != null)
-            x = Array.fill[Object](4)(null)
-          else if (size == x.length)
-            x = Array.copyOf(x, 2 * (size + 4))
-          x(size) = item
-          size += 1
+          if (item != null) {
+            if (x == null)
+              x = Array.fill[Object](4)(null)
+            else if (size == x.length)
+              x = Arrays.copyOf(x, 2 * (size + 4))
+            x(size) = item
+            size += 1
+          }
         } else if (item == null) {
           innerBreak = true
-        } else {
+        }
+        if (!innerBreak) {
           val q = p.next
           if (p == q) {
             restartFromHead = true
@@ -329,7 +333,7 @@ import scala.jdk.CollectionConverters._
             a(size) = null
           return a
         }
-        return (if (size == x.length) x else Array.copyOf(x, size))
+        return (if (size == x.length) x else Arrays.copyOf(x, size))
       }
     }
     ???
@@ -659,7 +663,9 @@ import scala.jdk.CollectionConverters._
     this()
     var h: Node = null
     var t: Node = null
-    for (e <- c.asScala) {
+    val it = c.iterator()
+    while (it.hasNext()) {
+      val e = it.next()
       val newNode = new Node(ju.Objects.requireNonNull(e))
       if (h == null) {
         t = newNode
@@ -857,7 +863,7 @@ import scala.jdk.CollectionConverters._
             skipRest = true
           }
         } else if (!p.isData) innerBreak = true
-        if (skipRest && !innerBreak) {
+        if (!skipRest && !innerBreak) {
           var c = p
           var cBreak = false
           while (!cBreak) {
@@ -891,8 +897,8 @@ import scala.jdk.CollectionConverters._
 
       var p = head
       var pred: Node = null
-      var innerBreak = false
-      while (p != null && !innerBreak) {
+      var pLoopBreak = false
+      while (p != null && !pLoopBreak) {
         var q = p.next
         val item = p.item
         var skipRest = false
@@ -904,21 +910,21 @@ import scala.jdk.CollectionConverters._
             p = q
             skipRest = true
           }
-        } else if (!p.isData) innerBreak = true
-        if (skipRest && !innerBreak) {
+        } else if (!p.isData) pLoopBreak = true
+        if (!skipRest && !pLoopBreak) {
           var c = p
-          var cBreak = false
-          while (!cBreak) {
+          var qLoopBreak = false
+          while (!qLoopBreak) {
             if (q == null || !q.isMatched()) {
               pred = skipDeadNodes(pred, c, p, q)
               p = q
-              cBreak = true
+              qLoopBreak = true
             } else {
               val old_p = p
               p = q
               if (old_p == p) {
-                innerBreak = true
-                cBreak = true
+                pLoopBreak = true
+                qLoopBreak = true
                 restartFromHead = true
               }
             }
@@ -932,40 +938,9 @@ import scala.jdk.CollectionConverters._
 
   override def remainingCapacity(): Int = Integer.MAX_VALUE
 
-  private def writeObject(s: java.io.ObjectOutputStream): Unit = {
-    s.defaultWriteObject()
-    for (e <- this.iterator().asScala) {
-      s.writeObject(e)
-    }
-    // Use trailing null as sentinel
-    s.writeObject(null)
-  }
-  private def readObject(s: java.io.ObjectInputStream): Unit = {
-    // Read in elements until trailing null sentinel found
-    var h: Node = null
-    var t: Node = null
-    @scala.annotation.tailrec
-    def go: Unit = {
-      val item = s.readObject()
-      if (item == null) return
-      val newNode = new Node(item)
-      if (h == null) {
-        t = newNode
-        h = t
-      } else {
-        t.appendRelaxed(newNode)
-        t = newNode
-      }
-      go
-    }
-    go
-    if (h == null) {
-      t = new Node()
-      h = t
-    }
-    head = h
-    tail = t
-  }
+  // No ObjectInputStream in ScalaNative
+  // private def writeObject(s: java.io.ObjectOutputStream): Unit
+  // private def readObject(s: java.io.ObjectInputStream): Unit
 
   override def removeIf(filter: ju.function.Predicate[_ >: E]): Boolean = {
     ju.Objects.requireNonNull(filter)
