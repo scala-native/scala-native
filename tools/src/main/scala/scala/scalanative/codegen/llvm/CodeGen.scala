@@ -59,6 +59,8 @@ object CodeGen {
       .map(_.toSeq)
   }
 
+  private final val EmptyPath = "__empty"
+
   /** Generate code for given assembly. */
   private def emit(config: build.Config, assembly: Seq[Defn])(implicit
       meta: CodeGenMetadata,
@@ -68,12 +70,17 @@ object CodeGen {
       val env = assembly.map(defn => defn.name -> defn).toMap
       val workDir = VirtualDirectory.real(config.workDir)
 
+      def sourceDirOf(defn: Defn): String = {
+        if (defn.pos == null) EmptyPath
+        else defn.pos.dir.getOrElse(EmptyPath)
+      }
+
       // Partition into multiple LLVM IR files proportional to number
       // of available processesors. This prevents LLVM from optimizing
       // across IR module boundary unless LTO is turned on.
       def separate(): Future[Seq[Path]] =
         Future
-          .traverse(partitionBy(assembly, procs)(_.name.top).toSeq) {
+          .traverse(partitionBy(assembly, procs)(sourceDirOf).toSeq) {
             case (id, defns) =>
               Future {
                 val sorted = defns.sortBy(_.name)
@@ -83,37 +90,45 @@ object CodeGen {
 
       // Incremental compilation code generation
       def seperateIncrementally(): Future[Seq[Path]] = {
-        def packageName(defn: Defn): String = {
-          val name = defn.name.top.id
-            .split('.')
-            .init // last segment is class name
-            .takeWhile(!_.contains("$")) // ignore nested classes
-            .mkString(".")
-          if (name.isEmpty) "__empty_package" else name
-        }
-
         val ctx = new IncrementalCodeGenContext(config.workDir)
         ctx.collectFromPreviousState()
+
+        // Partition into multiple LLVM IR files per Scala source file originated from.
+        // We previously partitioned LLVM IR files by package.
+        // However, this caused issues with the Darwin linker when generating N_OSO symbols,
+        // if a single Scala source file generates multiple LLVM IR files with the compilation unit DIEs
+        // referencing the same Scala source file.
+        // Because, the Darwin linker distinguishes compilation unit DIEs (debugging information entries)
+        // by their DW_AT_name, DW_comp_dir attribute, and the object files' timestamps.
+        // If the CU DIEs and timestamps are duplicated, the Darwin linker cannot distinguish the DIEs,
+        // and one of the duplicates will be ignored.
+        // As a result, the N_OSO symbol (which points to the object file path) is missing in the final binary,
+        // and dsymutil fails to link some debug symbols from object files.
+        // see: https://github.com/scala-native/scala-native/issues/3458#issuecomment-1701036738
+        //
+        // To address this issue, we partition into multiple LLVM IR files per Scala source file originated from.
+        // This will ensure that each LLVM IR file only references a single Scala source file,
+        // which will prevent the Darwin linker failing to generate N_OSO symbols.
         Future
-          .traverse(assembly.groupBy(packageName).toSeq) {
-            case (packageName, defns) =>
+          .traverse(assembly.groupBy(sourceDirOf).toSeq) {
+            case (dir, defns) =>
               Future {
-                val packagePath = packageName.replace(".", File.separator)
-                val outFile = config.workDir.resolve(s"$packagePath.ll")
+                val hash = dir.hashCode().toHexString
+                val outFile = config.workDir.resolve(s"$hash.ll")
                 val ownerDirectory = outFile.getParent()
 
-                ctx.addEntry(packageName, defns)
-                if (ctx.shouldCompile(packageName)) {
+                ctx.addEntry(hash, defns)
+                if (ctx.shouldCompile(hash)) {
                   val sorted = defns.sortBy(_.name)
                   if (!Files.exists(ownerDirectory))
                     Files.createDirectories(ownerDirectory)
-                  Impl(env, sorted).gen(packagePath, workDir)
+                  Impl(env, sorted).gen(hash, workDir)
                 } else {
                   assert(ownerDirectory.toFile.exists())
                   config.logger.debug(
-                    s"Content of package has not changed, skiping generation of $packagePath.ll"
+                    s"Content of directory in $dir has not changed, skiping generation of $hash.ll"
                   )
-                  config.workDir.resolve(s"$packagePath.ll")
+                  outFile
                 }
               }
           }
