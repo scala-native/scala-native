@@ -122,7 +122,7 @@ jobs:
         run: >
           sbt 
             -Dscala.scalanative.multithreading.enable=${{ matrix.gc != 'commix' }}
-            test-runtime ${{ matrix.scala }}"
+            "test-runtime ${{ matrix.scala }}"
 
   test-runtime-ext:
     name: Test runtime extension
@@ -178,7 +178,7 @@ jobs:
         run: >
           sbt 
             -Dscala.scalanative.multithreading.enable=${{ matrix.gc != 'commix' }}
-            test-runtime ${{ matrix.scala }}"
+            "test-runtime ${{ matrix.scala }}"
 
   # This job is basically copy-paste of test-runtime.
   # Main difference is disabled optimization and fixed Immix GC
