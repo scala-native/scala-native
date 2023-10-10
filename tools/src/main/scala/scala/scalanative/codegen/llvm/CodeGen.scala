@@ -59,6 +59,8 @@ object CodeGen {
       .map(_.toSeq)
   }
 
+  private final val EmptyPath = "__empty"
+
   /** Generate code for given assembly. */
   private def emit(config: build.Config, assembly: Seq[Defn])(implicit
       meta: CodeGenMetadata,
@@ -68,31 +70,9 @@ object CodeGen {
       val env = assembly.map(defn => defn.name -> defn).toMap
       val workDir = VirtualDirectory.real(config.workDir)
 
-      /**
-       *    - \C:a\b\c.txt -> a\b\c.txt
-       *    - C:a\b\c.txt -> a\b\c.txt
-       *    - p:\a\b\c.txt -> a\b\c.txt
-       *    - /a/b/c.txt -> a/b/c.txt
-       */
-      def dropPrefix(fileName: String): String = {
-        val driveLetter = s"^[A-Za-z]:".r
-        val supportDriveLetter =
-          build.Platform.isWindows || build.Platform.isCygwin || build.Platform.isMsys
-        // using "/" instead of `File.separator`
-        // we get "/C:a/b/c.txt" even in windows for some reasons.
-        val noDriveLetter =
-          driveLetter.findFirstIn(fileName.stripPrefix("/")) match {
-            case Some(prefix) if supportDriveLetter =>
-              fileName.stripPrefix(prefix)
-            case _ => fileName
-          }
-        noDriveLetter.stripPrefix("/")
-      }
-
-      def sourceDirOf(pos: Position): String = {
-        lazy val empty = "__empty"
-        if (pos == null) empty
-        else pos.dir.getOrElse(empty)
+      def sourceDirOf(defn: Defn): String = {
+        if (defn.pos == null) EmptyPath
+        else defn.pos.dir.getOrElse(EmptyPath)
       }
 
       // Partition into multiple LLVM IR files proportional to number
@@ -100,9 +80,7 @@ object CodeGen {
       // across IR module boundary unless LTO is turned on.
       def separate(): Future[Seq[Path]] =
         Future
-          .traverse(
-            partitionBy(assembly, procs)(x => sourceDirOf(x.pos)).toSeq
-          ) {
+          .traverse(partitionBy(assembly, procs)(sourceDirOf).toSeq) {
             case (id, defns) =>
               Future {
                 val sorted = defns.sortBy(_.name)
@@ -132,7 +110,7 @@ object CodeGen {
         // This will ensure that each LLVM IR file only references a single Scala source file,
         // which will prevent the Darwin linker failing to generate N_OSO symbols.
         Future
-          .traverse(assembly.groupBy(x => sourceDirOf(x.pos)).toSeq) {
+          .traverse(assembly.groupBy(sourceDirOf).toSeq) {
             case (dir, defns) =>
               Future {
                 val hash = dir.hashCode().toHexString
@@ -150,7 +128,7 @@ object CodeGen {
                   config.logger.debug(
                     s"Content of directory in $dir has not changed, skiping generation of $hash.ll"
                   )
-                  config.workDir.resolve(s"$hash.ll")
+                  outFile
                 }
               }
           }
