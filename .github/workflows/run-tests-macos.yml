@@ -162,10 +162,10 @@ jobs:
         #   SCALANATIVE_MODE: release-fast
         #   SCALANATIVE_LTO: thin
         run: |
-          if [[ "${{ matrix.llvm-version }}" == "latest" ]]; then 
+          if [[ "${{ matrix.llvm }}" == "latest" ]]; then 
             export LLVM_BIN=$(brew --prefix llvm)/bin
           else 
-            export LLVM_BIN=$(brew --prefix llvm@${{ matrix.llvm-version }})/bin
+            export LLVM_BIN=$(brew --prefix llvm@${{ matrix.llvm }})/bin
           fi
           echo "LLVM_BIN=${LLVM_BIN}"
           $LLVM_BIN/clang --version
