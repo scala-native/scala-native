@@ -6,17 +6,17 @@
 
 package java.util.concurrent
 
-import java.util.AbstractQueue
-import java.util.Arrays
+import java.util.{AbstractQueue, Collection, Iterator, Spliterator, function}
+import java.util.{Arrays, Objects, Spliterators}
+import java.util.{NoSuchElementException}
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.locks.LockSupport
-import scala.scalanative.libc.atomic.CAtomicRef
-import scala.scalanative.libc.atomic.memory_order.{
+import scala.scalanative.libc.stdatomic.AtomicRef
+import scala.scalanative.libc.stdatomic.memory_order.{
   memory_order_relaxed,
   memory_order_release
 }
 import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
-import java.{util => ju}
 
 /** An unbounded {@link TransferQueue} based on linked nodes. This queue orders
  *  elements FIFO (first-in-first-out) with respect to any given producer. The
@@ -359,10 +359,10 @@ import java.{util => ju}
   /** The number of apparent failures to unsplice cancelled nodes */
   @volatile private[concurrent] var needSweep: Boolean = _
 
-  private val tailAtomic = new CAtomicRef[Node](
+  private val tailAtomic = new AtomicRef[Node](
     fromRawPtr(Intrinsics.classFieldRawPtr(this, "tail"))
   )
-  private val headAtomic = new CAtomicRef[Node](
+  private val headAtomic = new AtomicRef[Node](
     fromRawPtr(Intrinsics.classFieldRawPtr(this, "head"))
   )
 
@@ -791,7 +791,7 @@ import java.{util => ju}
    *  Lazily updated ancestor is expected to be amortized O(1) remove(), but
    *  O(n) in the worst case, when lastRet is concurrently deleted.
    */
-  final class Itr extends ju.Iterator[E] {
+  final class Itr extends Iterator[E] {
     private var nextNode: Node = null // next node to return item for)
     private var nextItem: E = null.asInstanceOf[E] // the corresponding item)
     private var lastRet: Node = null // last returned node, to support remove)
@@ -847,7 +847,7 @@ import java.{util => ju}
     final override def next() = {
       var p = nextNode
       if (p == null)
-        throw new ju.NoSuchElementException()
+        throw new NoSuchElementException()
       val e = nextItem
       lastRet = p
       advance(lastRet)
@@ -855,9 +855,9 @@ import java.{util => ju}
     }
 
     override def forEachRemaining(
-        action: ju.function.Consumer[_ >: E]
+        action: function.Consumer[_ >: E]
     ): Unit = {
-      ju.Objects.requireNonNull(action)
+      Objects.requireNonNull(action)
       var q: Node = null
       var p = nextNode
       while (p != null) {
@@ -927,12 +927,12 @@ import java.{util => ju}
   }
 
   /** A customized variant of Spliterators.IteratorSpliterator */
-  final class LTQSpliterator extends ju.Spliterator[E] {
+  final class LTQSpliterator extends Spliterator[E] {
     var _current: Node = null
     var batch = 0
     var exhausted = false
 
-    def trySplit(): ju.Spliterator[E] = {
+    def trySplit(): Spliterator[E] = {
       var p = current()
       if (p == null) return null
       var q = p.next
@@ -973,18 +973,18 @@ import java.{util => ju}
       if (i == 0)
         null
       else
-        ju.Spliterators.spliterator(
+        Spliterators.spliterator(
           a,
           0,
           i,
-          (ju.Spliterator.ORDERED | ju.Spliterator.NONNULL | ju.Spliterator.CONCURRENT)
+          (Spliterator.ORDERED | Spliterator.NONNULL | Spliterator.CONCURRENT)
         )
     }
 
     override def forEachRemaining(
-        action: ju.function.Consumer[_ >: E]
+        action: function.Consumer[_ >: E]
     ): Unit = {
-      ju.Objects.requireNonNull(action)
+      Objects.requireNonNull(action)
       val p = current()
       if (p != null) {
         _current = null
@@ -993,8 +993,8 @@ import java.{util => ju}
       }
     }
 
-    override def tryAdvance(action: ju.function.Consumer[_ >: E]): Boolean = {
-      ju.Objects.requireNonNull(action)
+    override def tryAdvance(action: function.Consumer[_ >: E]): Boolean = {
+      Objects.requireNonNull(action)
       var p = current()
       while (p != null) {
         var e: E = null.asInstanceOf[E]
@@ -1041,7 +1041,7 @@ import java.{util => ju}
     override def estimateSize() = Long.MaxValue
 
     override def characteristics(): Int =
-      ju.Spliterator.ORDERED | ju.Spliterator.NONNULL | ju.Spliterator.CONCURRENT
+      Spliterator.ORDERED | Spliterator.NONNULL | Spliterator.CONCURRENT
   }
 
   object LTQSpliterator {
@@ -1064,7 +1064,7 @@ import java.{util => ju}
    *    a {@code Spliterator} over the elements in this queue
    *  @since 1.8
    */
-  override def spliterator(): ju.Spliterator[E] = new LTQSpliterator()
+  override def spliterator(): Spliterator[E] = new LTQSpliterator()
 
   /* -------------- Removal methods -------------- */
 
@@ -1151,14 +1151,14 @@ import java.{util => ju}
    *  @throws NullPointerException
    *    if the specified collection or any of its elements are null
    */
-  def this(c: ju.Collection[_ <: E]) = {
+  def this(c: Collection[_ <: E]) = {
     this()
     var h: Node = null
     var t: Node = null
     val it = c.iterator()
     while (it.hasNext()) {
       val e = it.next()
-      val newNode = new Node(ju.Objects.requireNonNull(e))
+      val newNode = new Node(Objects.requireNonNull(e))
       if (h == null) {
         t = newNode
         h = t
@@ -1306,8 +1306,8 @@ import java.{util => ju}
    *  @throws IllegalArgumentException
    *    {@inheritDoc}
    */
-  override def drainTo(c: ju.Collection[_ >: E]): Int = {
-    ju.Objects.requireNonNull(c)
+  override def drainTo(c: Collection[_ >: E]): Int = {
+    Objects.requireNonNull(c)
     if (c == this)
       throw new IllegalArgumentException()
     var n = 0
@@ -1325,8 +1325,8 @@ import java.{util => ju}
    *  @throws IllegalArgumentException
    *    {@inheritDoc}
    */
-  override def drainTo(c: ju.Collection[_ >: E], maxElements: Int): Int = {
-    ju.Objects.requireNonNull(c)
+  override def drainTo(c: Collection[_ >: E], maxElements: Int): Int = {
+    Objects.requireNonNull(c)
     if (c == this)
       throw new IllegalArgumentException()
     var n = 0
@@ -1352,7 +1352,7 @@ import java.{util => ju}
    *  @return
    *    an iterator over the elements in this queue in proper sequence
    */
-  override def iterator(): ju.Iterator[E] = new Itr()
+  override def iterator(): Iterator[E] = new Itr()
 
   override def peek(): E = {
     var restartFromHead = true
@@ -1568,31 +1568,31 @@ import java.{util => ju}
   /** @throws NullPointerException
    *    {@inheritDoc}
    */
-  override def removeIf(filter: ju.function.Predicate[_ >: E]): Boolean = {
-    ju.Objects.requireNonNull(filter)
+  override def removeIf(filter: function.Predicate[_ >: E]): Boolean = {
+    Objects.requireNonNull(filter)
     bulkRemove(filter)
   }
 
   /** @throws NullPointerException
    *    {@inheritDoc}
    */
-  override def removeAll(c: ju.Collection[_]): Boolean = {
-    ju.Objects.requireNonNull(c)
+  override def removeAll(c: Collection[_]): Boolean = {
+    Objects.requireNonNull(c)
     bulkRemove(e => c.contains(e))
   }
 
   /** @throws NullPointerException
    *    {@inheritDoc}
    */
-  override def retainAll(c: ju.Collection[_]): Boolean = {
-    ju.Objects.requireNonNull(c)
+  override def retainAll(c: Collection[_]): Boolean = {
+    Objects.requireNonNull(c)
     bulkRemove(e => !c.contains(e))
   }
 
   override def clear(): Unit = bulkRemove(_ => true)
 
   /** Implementation of bulk remove methods. */
-  private def bulkRemove(filter: ju.function.Predicate[_ >: E]): Boolean = {
+  private def bulkRemove(filter: function.Predicate[_ >: E]): Boolean = {
     var removed = false
 
     var restartFromHead = true
@@ -1646,7 +1646,7 @@ import java.{util => ju}
   /** Runs action on each element found during a traversal starting at p. If p
    *  is null, the action is not run.
    */
-  def forEachFrom(action: ju.function.Consumer[_ >: E], p: Node): Unit = {
+  def forEachFrom(action: function.Consumer[_ >: E], p: Node): Unit = {
     var _p = p
     var pred: Node = null
     var continueLoop = true
@@ -1686,8 +1686,8 @@ import java.{util => ju}
   /** @throws NullPointerException
    *    {@inheritDoc}
    */
-  override def forEach(action: ju.function.Consumer[_ >: E]): Unit = {
-    ju.Objects.requireNonNull(action)
+  override def forEach(action: function.Consumer[_ >: E]): Unit = {
+    Objects.requireNonNull(action)
     forEachFrom(action, head)
   }
 }
@@ -1724,13 +1724,13 @@ import java.{util => ju}
     @volatile var next: Node = null
     @volatile var waiter: Thread = _ // null when not waiting for a match
 
-    val nextAtomic = new CAtomicRef[Node](
+    val nextAtomic = new AtomicRef[Node](
       fromRawPtr(Intrinsics.classFieldRawPtr(this, "next"))
     )
-    val itemAtomic = new CAtomicRef[Object](
+    val itemAtomic = new AtomicRef[Object](
       fromRawPtr(Intrinsics.classFieldRawPtr(this, "item"))
     )
-    val waiterAtomic = new CAtomicRef[Object](
+    val waiterAtomic = new AtomicRef[Object](
       fromRawPtr(Intrinsics.classFieldRawPtr(this, "waiter"))
     )
 
