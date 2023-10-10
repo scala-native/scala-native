@@ -15,7 +15,8 @@ object Commands {
     testMima,
     testScripted,
     publishLocalDev,
-    publishRelease
+    publishRelease,
+    publishReleaseForVersion
   )
 
   lazy val testAll = Command.command("test-all") {
@@ -166,11 +167,19 @@ object Commands {
     }
   }
 
-  lazy val publishRelease = Command.command("publish-release") { state =>
-    val isSnapshot = state
-      .getSetting(Keys.isSnapshot)
-      .getOrElse(sys.error("Cannot resolve isSnapshot setting"))
+  lazy val publishReleaseForVersion =
+    projectVersionCommand("publish-release-for-version") {
+      case (version, state) =>
+        val scalaVersion = version match {
+          case "2.12" => ScalaVersions.scala212
+          case "2.13" => ScalaVersions.scala213
+          case "3"    => ScalaVersions.scala3PublishVersion
+          case _      => sys.error(s"Invalid Scala binary version: '$version'")
+        }
+        "clean" :: s"++$scalaVersion; publishSigned; crossPublishSigned" :: state
+    }
 
+  lazy val publishRelease = Command.command("publish-release") { state =>
     import ScalaVersions._
     val publishEachVersion = for {
       version <- List(scala212, scala213, scala3PublishVersion)
