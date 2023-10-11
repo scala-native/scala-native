@@ -619,11 +619,7 @@ object Settings {
     incOptions ~= { _.withRecompileAllFraction(0.0001) }
   )
 
-  lazy val commonJavalibSettings = Def.settings(
-    recompileAllOrNothingSettings,
-    Compile / scalacOptions ++= scalaNativeCompilerOptions(
-      "genStaticForwardersForNonTopLevelObjects"
-    ),
+  lazy val NIROnlySettings = Def.settings(
     // Don't include classfiles for javalib in the packaged jar.
     Compile / packageBin / mappings := {
       val previous = (Compile / packageBin / mappings).value
@@ -633,6 +629,13 @@ object Settings {
       }
     },
     exportJars := true
+  )
+  lazy val commonJavalibSettings = Def.settings(
+    recompileAllOrNothingSettings,
+    Compile / scalacOptions ++= scalaNativeCompilerOptions(
+      "genStaticForwardersForNonTopLevelObjects"
+    ),
+    NIROnlySettings
   )
 
   // Calculates all prefixes of the current Scala version

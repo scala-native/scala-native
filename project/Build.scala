@@ -547,7 +547,8 @@ object Build {
     .enablePlugins(MyScalaNativePlugin)
     .settings(
       publishSettings(Some(VersionScheme.BreakOnMajor)),
-      commonJavalibSettings,
+      NIROnlySettings,
+      recompileAllOrNothingSettings,
       disabledDocsSettings
     )
     .dependsOn(nativelib, clib)
@@ -617,7 +618,7 @@ object Build {
             .value
         )
       }
-      .dependsOn(auxlib, javalib)
+      .dependsOn(auxlib)
 
   // Tests ------------------------------------------------
   lazy val tests = MultiScalaProject("tests", file("unit-tests") / "native")
@@ -703,7 +704,7 @@ object Build {
       .enablePlugins(MyScalaNativePlugin)
       .withNativeCompilerPlugin
       .withJUnitPlugin
-      .dependsOn(scalalib, testInterface % "test")
+      .dependsOn(scalalib, javalib, testInterface % "test")
 
 // Testing infrastructure ------------------------------------------------
   lazy val testingCompilerInterface =
@@ -757,6 +758,7 @@ object Build {
       .withJUnitPlugin
       .dependsOn(
         scalalib,
+        javalib,
         testInterfaceSbtDefs,
         junitRuntime,
         junitAsyncNative % "test"
