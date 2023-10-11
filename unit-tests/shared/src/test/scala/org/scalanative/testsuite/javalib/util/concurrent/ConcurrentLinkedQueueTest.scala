@@ -1,184 +1,609 @@
-// Ported from Scala.js commit: 222e14c dated: 2019-09-12
-
+/*
+ * Written by Doug Lea with assistance from members of JCP JSR-166
+ * Expert Group and released to the public domain, as explained at
+ * http://creativecommons.org/publicdomain/zero/1.0/
+ * Other contributors include Andrew Wright, Jeffrey Hayes,
+ * Pat Fisher, Mike Judd.
+ */
 package org.scalanative.testsuite.javalib.util.concurrent
 
+import java.util
+import java.util.{Arrays, Collection, NoSuchElementException, Queue}
 import java.util.concurrent.ConcurrentLinkedQueue
-import java.{util => ju}
 
 import org.junit.Assert._
-import org.junit.Test
 
-import org.scalanative.testsuite.javalib.util.{
-  AbstractCollectionFactory,
-  AbstractCollectionTest,
-  TrivialImmutableCollection
-}
+object ConcurrentLinkedQueueTest {
+  import JSR166Test._
 
-import scala.reflect.ClassTag
-
-class ConcurrentLinkedQueueTest extends AbstractCollectionTest {
-
-  override def factory: ConcurrentLinkedQueueFactory =
-    new ConcurrentLinkedQueueFactory
-
-  @Test def should_store_and_remove_ordered_integers(): Unit = {
-    val pq = factory.empty[Int]
-
-    assertEquals(0, pq.size())
-    assertTrue(pq.add(111))
-    assertEquals(1, pq.size())
-    assertTrue(pq.add(222))
-    assertEquals(2, pq.size())
-    assertEquals(111, pq.poll())
-    assertEquals(1, pq.size())
-    assertEquals(222, pq.poll())
-    assertTrue(pq.add(222))
-    assertTrue(pq.add(222))
-    assertTrue(pq.remove(222))
-    assertTrue(pq.remove(222))
-    assertFalse(pq.remove(222))
-  }
-
-  @Test def should_store_and_remove_strings(): Unit = {
-    val pq = factory.empty[String]
-
-    assertEquals(0, pq.size())
-    assertTrue(pq.add("aaa"))
-    assertEquals(1, pq.size())
-    assertTrue(pq.add("bbb"))
-    assertEquals(2, pq.size())
-    assertEquals("aaa", pq.poll())
-    assertEquals(1, pq.size())
-    assertEquals("bbb", pq.poll())
-    assertTrue(pq.add("bbb"))
-    assertTrue(pq.add("bbb"))
-    assertTrue(pq.remove("bbb"))
-    assertTrue(pq.remove("bbb"))
-    assertFalse(pq.remove("bbb"))
-    assertNull(pq.poll())
-  }
-
-  @Test def should_store_Double_even_in_corner_cases(): Unit = {
-    val pq = factory.empty[Double]
-
-    assertTrue(pq.add(1.0))
-    assertTrue(pq.add(+0.0))
-    assertTrue(pq.add(-0.0))
-    assertTrue(pq.add(Double.NaN))
-
-    assertTrue(pq.poll.equals(1.0))
-
-    assertTrue(pq.poll.equals(+0.0))
-
-    assertTrue(pq.poll.equals(-0.0))
-
-    assertTrue(pq.peek.isNaN)
-
-    assertTrue(pq.remove(Double.NaN))
-
-    assertTrue(pq.isEmpty)
-  }
-
-  @Test def could_be_instantiated_with_a_prepopulated_Collection(): Unit = {
-    val l = TrivialImmutableCollection(1, 5, 2, 3, 4)
-    val pq = factory.newFrom(l)
-
-    assertEquals(5, pq.size())
-    for (i <- List(1, 5, 2, 3, 4)) {
-      assertEquals(i, pq.poll())
+  /** Returns a new queue of given size containing consecutive Items 0 ... n -
+   *  \1.
+   */
+  private def populatedQueue(n: Int): ConcurrentLinkedQueue[Item] = {
+    val q: ConcurrentLinkedQueue[Item] = new ConcurrentLinkedQueue[Item]
+    assertTrue(q.isEmpty)
+    for (i <- 0 until n) {
+      mustOffer(q, i)
     }
-    assertTrue(pq.isEmpty)
-  }
-
-  @Test def should_be_cleared_in_a_single_operation(): Unit = {
-    val l = TrivialImmutableCollection(1, 5, 2, 3, 4)
-    val pq = factory.newFrom(l)
-
-    assertEquals(5, pq.size())
-    pq.clear()
-    assertEquals(0, pq.size())
-  }
-
-  @Test def should_add_multiple_elemnt_in_one_operation(): Unit = {
-    val l = TrivialImmutableCollection(1, 5, 2, 3, 4)
-    val pq = factory.empty[Int]
-
-    assertEquals(0, pq.size())
-    pq.addAll(l)
-    assertEquals(5, pq.size())
-    pq.add(6)
-    assertEquals(6, pq.size())
-  }
-
-  @Test def should_check_contained_values_even_in_double_corner_cases()
-      : Unit = {
-    val pq = factory.empty[Double]
-
-    assertTrue(pq.add(11111.0))
-    assertEquals(1, pq.size())
-    assertTrue(pq.contains(11111.0))
-    assertEquals(11111.0, pq.iterator.next(), 0.0)
-
-    assertTrue(pq.add(Double.NaN))
-    assertEquals(2, pq.size())
-    assertTrue(pq.contains(Double.NaN))
-    assertFalse(pq.contains(+0.0))
-    assertFalse(pq.contains(-0.0))
-
-    assertTrue(pq.remove(Double.NaN))
-    assertTrue(pq.add(+0.0))
-    assertEquals(2, pq.size())
-    assertFalse(pq.contains(Double.NaN))
-    assertTrue(pq.contains(+0.0))
-    assertFalse(pq.contains(-0.0))
-
-    assertTrue(pq.remove(+0.0))
-    assertTrue(pq.add(-0.0))
-    assertEquals(2, pq.size())
-    assertFalse(pq.contains(Double.NaN))
-    assertFalse(pq.contains(+0.0))
-    assertTrue(pq.contains(-0.0))
-
-    assertTrue(pq.add(+0.0))
-    assertTrue(pq.add(Double.NaN))
-    assertTrue(pq.contains(Double.NaN))
-    assertTrue(pq.contains(+0.0))
-    assertTrue(pq.contains(-0.0))
-  }
-
-  @Test def should_provide_a_weakly_consistent_iterator(): Unit = {
-    val queue = factory.empty[Int]
-    queue.add(1)
-    queue.add(2)
-    val iter1 = queue.iterator()
-    assertEquals(1, iter1.next())
-    assertTrue(iter1.hasNext)
-    queue.remove(2)
-    assertTrue(iter1.hasNext)
-    assertEquals(2, iter1.next())
-    assertFalse(iter1.hasNext)
-
-    val queue2 = factory.empty[Int]
-    queue2.add(1)
-    queue2.add(2)
-    queue2.add(3)
-    val iter2 = queue2.iterator()
-    assertEquals(1, iter2.next())
-    iter2.remove()
-    assertEquals(2, iter2.next())
-    assertEquals(3, iter2.next())
+    assertFalse(q.isEmpty)
+    mustEqual(n, q.size)
+    mustEqual(0, q.peek)
+    return q
   }
 }
 
-class ConcurrentLinkedQueueFactory extends AbstractCollectionFactory {
-  override def implementationName: String =
-    "java.util.concurrent.ConcurrentLinkedQueue"
+class ConcurrentLinkedQueueTest extends JSR166Test {
+  import JSR166Test._
 
-  override def empty[E: ClassTag]: ConcurrentLinkedQueue[E] =
-    new ConcurrentLinkedQueue[E]()
+  /** new queue is empty
+   */
+  def testConstructor1(): Unit = {
+    mustEqual(0, new ConcurrentLinkedQueue[Item]().size)
+  }
 
-  def newFrom[E](coll: ju.Collection[E]): ConcurrentLinkedQueue[E] =
-    new ConcurrentLinkedQueue[E](coll)
+  /** Initializing from null Collection throws NPE
+   */
+  def testConstructor3(): Unit = {
+    try {
+      new ConcurrentLinkedQueue[Item](null.asInstanceOf[Collection[Item]])
+      shouldThrow()
+    } catch {
+      case success: NullPointerException =>
+    }
+  }
 
-  override def allowsNullElement: Boolean = false
+  /** Initializing from Collection of null elements throws NPE
+   */
+  def testConstructor4(): Unit = {
+    try {
+      new ConcurrentLinkedQueue[Item](Arrays.asList(new Array[Item](SIZE): _*))
+      shouldThrow()
+    } catch {
+      case success: NullPointerException =>
+
+    }
+  }
+
+  /** Initializing from Collection with some null elements throws NPE
+   */
+  def testConstructor5(): Unit = {
+    val items: Array[Item] = new Array[Item](2)
+    items(0) = zero
+    try {
+      new ConcurrentLinkedQueue[Item](Arrays.asList(items: _*))
+      shouldThrow()
+    } catch {
+      case success: NullPointerException =>
+
+    }
+  }
+
+  /** Queue contains all elements of collection used to initialize
+   */
+  def testConstructor6(): Unit = {
+    val items: Array[Item] = defaultItems
+    val q: ConcurrentLinkedQueue[Item] = new ConcurrentLinkedQueue(
+      Arrays.asList(items: _*)
+    )
+    var i: Int = 0
+    while (i < SIZE) {
+      mustEqual(items(i), q.poll)
+      i += 1
+    }
+  }
+
+  /** isEmpty is true before add, false after
+   */
+  def testEmpty(): Unit = {
+    val q: ConcurrentLinkedQueue[Item] = new ConcurrentLinkedQueue[Item]
+    assertTrue(q.isEmpty)
+    q.add(one)
+    assertFalse(q.isEmpty)
+    q.add(two)
+    q.remove
+    q.remove
+    assertTrue(q.isEmpty)
+  }
+
+  /** size changes when elements added and removed
+   */
+  def testSize(): Unit = {
+    val q: ConcurrentLinkedQueue[Item] =
+      ConcurrentLinkedQueueTest.populatedQueue(SIZE)
+    var i: Int = 0
+    while (i < SIZE) {
+      mustEqual(SIZE - i, q.size)
+      q.remove
+
+      i += 1
+    }
+    i = 0
+    while (i < SIZE) {
+      mustEqual(i, q.size)
+      mustAdd(q, i)
+
+      i += 1
+    }
+  }
+
+  /** offer(null) throws NPE
+   */
+  def testOfferNull(): Unit = {
+    val q: ConcurrentLinkedQueue[Item] = new ConcurrentLinkedQueue[Item]
+    try {
+      q.offer(null)
+      shouldThrow()
+    } catch {
+      case success: NullPointerException =>
+
+    }
+  }
+
+  /** add(null) throws NPE
+   */
+  def testAddNull(): Unit = {
+    val q: ConcurrentLinkedQueue[Item] = new ConcurrentLinkedQueue[Item]
+    try {
+      q.add(null)
+      shouldThrow()
+    } catch {
+      case success: NullPointerException =>
+
+    }
+  }
+
+  /** Offer returns true
+   */
+  def testOffer(): Unit = {
+    val q: ConcurrentLinkedQueue[Item] = new ConcurrentLinkedQueue[Item]
+    assertTrue(q.offer(zero))
+    assertTrue(q.offer(one))
+  }
+
+  /** add returns true
+   */
+  def testAdd(): Unit = {
+    val q: ConcurrentLinkedQueue[Item] = new ConcurrentLinkedQueue[Item]
+    var i: Int = 0
+    while (i < SIZE) {
+      mustEqual(i, q.size)
+      mustAdd(q, i)
+
+      i += 1
+    }
+  }
+
+  /** addAll(null) throws NullPointerException
+   */
+  def testAddAll1(): Unit = {
+    val q: ConcurrentLinkedQueue[Item] = new ConcurrentLinkedQueue[Item]
+    try {
+      q.addAll(null)
+      shouldThrow()
+    } catch {
+      case success: NullPointerException =>
+
+    }
+  }
+
+  /** addAll(this) throws IllegalArgumentException
+   */
+  def testAddAllSelf(): Unit = {
+    val q: ConcurrentLinkedQueue[Item] =
+      ConcurrentLinkedQueueTest.populatedQueue(SIZE)
+    try {
+      q.addAll(q)
+      shouldThrow()
+    } catch {
+      case success: IllegalArgumentException =>
+
+    }
+  }
+
+  /** addAll of a collection with null elements throws NullPointerException
+   */
+  def testAddAll2(): Unit = {
+    val q: ConcurrentLinkedQueue[Item] = new ConcurrentLinkedQueue[Item]
+    try {
+      q.addAll(Arrays.asList(new Array[Item](SIZE): _*))
+      shouldThrow()
+    } catch {
+      case success: NullPointerException =>
+
+    }
+  }
+
+  /** addAll of a collection with any null elements throws NPE after possibly
+   *  adding some elements
+   */
+  def testAddAll3(): Unit = {
+    val q: ConcurrentLinkedQueue[Item] = new ConcurrentLinkedQueue[Item]
+    val items: Array[Item] = new Array[Item](2)
+    items(0) = zero
+    try {
+      q.addAll(Arrays.asList(items: _*))
+      shouldThrow()
+    } catch {
+      case success: NullPointerException =>
+
+    }
+  }
+
+  /** Queue contains all elements, in traversal order, of successful addAll
+   */
+  def testAddAll5(): Unit = {
+    val empty: Array[Item] = new Array[Item](0)
+    val items: Array[Item] = defaultItems
+    val q: ConcurrentLinkedQueue[Item] = new ConcurrentLinkedQueue[Item]
+    assertFalse(q.addAll(Arrays.asList(empty: _*)))
+    assertTrue(q.addAll(Arrays.asList(items: _*)))
+    var i: Int = 0
+    while (i < SIZE) {
+      mustEqual(items(i), q.poll)
+      i += 1
+    }
+  }
+
+  /** poll succeeds unless empty
+   */
+  def testPoll(): Unit = {
+    val q: ConcurrentLinkedQueue[Item] =
+      ConcurrentLinkedQueueTest.populatedQueue(SIZE)
+    var i: Int = 0
+    while (i < SIZE) {
+      mustEqual(i, q.poll)
+
+      i += 1
+    }
+    assertNull(q.poll)
+  }
+
+  /** peek returns next element, or null if empty
+   */
+  def testPeek(): Unit = {
+    val q: ConcurrentLinkedQueue[Item] =
+      ConcurrentLinkedQueueTest.populatedQueue(SIZE)
+    var i: Int = 0
+    while (i < SIZE) {
+      mustEqual(i, q.peek)
+      mustEqual(i, q.poll)
+      assertTrue(q.peek == null || !(q.peek.equals(i)))
+
+      i += 1
+    }
+    assertNull(q.peek)
+  }
+
+  /** element returns next element, or throws NSEE if empty
+   */
+  def testElement(): Unit = {
+    val q: ConcurrentLinkedQueue[Item] =
+      ConcurrentLinkedQueueTest.populatedQueue(SIZE)
+    var i: Int = 0
+    while (i < SIZE) {
+      mustEqual(i, q.element)
+      mustEqual(i, q.poll)
+
+      i += 1
+    }
+    try {
+      q.element
+      shouldThrow()
+    } catch {
+      case success: NoSuchElementException =>
+
+    }
+  }
+
+  /** remove removes next element, or throws NSEE if empty
+   */
+  def testRemove(): Unit = {
+    val q: ConcurrentLinkedQueue[Item] =
+      ConcurrentLinkedQueueTest.populatedQueue(SIZE)
+    var i: Int = 0
+    while (i < SIZE) {
+      mustEqual(i, q.remove)
+
+      i += 1
+    }
+    try {
+      q.remove
+      shouldThrow()
+    } catch {
+      case success: NoSuchElementException =>
+
+    }
+  }
+
+  /** remove(x) removes x and returns true if present
+   */
+  def testRemoveElement(): Unit = {
+    val q: ConcurrentLinkedQueue[Item] =
+      ConcurrentLinkedQueueTest.populatedQueue(SIZE)
+    var i: Int = 1
+    while (i < SIZE) {
+      mustContain(q, i)
+      mustRemove(q, i)
+      mustNotContain(q, i)
+      mustContain(q, i - 1)
+
+      i += 2
+    }
+    i = 0
+    while (i < SIZE) {
+      mustContain(q, i)
+      mustRemove(q, i)
+      mustNotContain(q, i)
+      mustNotRemove(q, i + 1)
+      mustNotContain(q, i + 1)
+
+      i += 2
+    }
+    assertTrue(q.isEmpty)
+  }
+
+  /** contains(x) reports true when elements added but not yet removed
+   */
+  def testContains(): Unit = {
+    val q: ConcurrentLinkedQueue[Item] =
+      ConcurrentLinkedQueueTest.populatedQueue(SIZE)
+    var i: Int = 0
+    while (i < SIZE) {
+      mustContain(q, i)
+      q.poll
+      mustNotContain(q, i)
+
+      i += 1
+    }
+  }
+
+  /** clear removes all elements
+   */
+  def testClear(): Unit = {
+    val q: ConcurrentLinkedQueue[Item] =
+      ConcurrentLinkedQueueTest.populatedQueue(SIZE)
+    q.clear()
+    assertTrue(q.isEmpty)
+    mustEqual(0, q.size)
+    q.add(one)
+    assertFalse(q.isEmpty)
+    q.clear()
+    assertTrue(q.isEmpty)
+  }
+
+  /** containsAll(c) is true when c contains a subset of elements
+   */
+  def testContainsAll(): Unit = {
+    val q: ConcurrentLinkedQueue[Item] =
+      ConcurrentLinkedQueueTest.populatedQueue(SIZE)
+    val p: ConcurrentLinkedQueue[Item] = new ConcurrentLinkedQueue[Item]
+    var i: Int = 0
+    while (i < SIZE) {
+      assertTrue(q.containsAll(p))
+      assertFalse(p.containsAll(q))
+      mustAdd(p, i)
+
+      i += 1
+    }
+    assertTrue(p.containsAll(q))
+  }
+
+  /** retainAll(c) retains only those elements of c and reports true if change
+   */
+  def testRetainAll(): Unit = {
+    val q: ConcurrentLinkedQueue[Item] =
+      ConcurrentLinkedQueueTest.populatedQueue(SIZE)
+    val p: ConcurrentLinkedQueue[Item] =
+      ConcurrentLinkedQueueTest.populatedQueue(SIZE)
+    var i: Int = 0
+    while (i < SIZE) {
+      val changed: Boolean = q.retainAll(p)
+      if (i == 0) {
+        assertFalse(changed)
+      } else {
+        assertTrue(changed)
+      }
+      assertTrue(q.containsAll(p))
+      mustEqual(SIZE - i, q.size)
+      p.remove
+
+      i += 1
+    }
+  }
+
+  /** removeAll(c) removes only those elements of c and reports true if changed
+   */
+  def testRemoveAll(): Unit = {
+    var i: Int = 1
+    while (i < SIZE) {
+      val q: ConcurrentLinkedQueue[Item] =
+        ConcurrentLinkedQueueTest.populatedQueue(SIZE)
+      val p: ConcurrentLinkedQueue[Item] =
+        ConcurrentLinkedQueueTest.populatedQueue(i)
+      assertTrue(q.removeAll(p))
+      mustEqual(SIZE - i, q.size)
+      for (j <- 0 until i) {
+        val x: Item = p.remove()
+        assertFalse(q.contains(x))
+      }
+
+      i += 1
+    }
+  }
+
+  /** toArray contains all elements in FIFO order
+   */
+  def testToArray(): Unit = {
+    val q: ConcurrentLinkedQueue[Item] =
+      ConcurrentLinkedQueueTest.populatedQueue(SIZE)
+    val a: Array[AnyRef] = q.toArray
+    assertSame(classOf[Array[AnyRef]], a.getClass)
+    for (o <- a) {
+      assertSame(o, q.poll)
+    }
+    assertTrue(q.isEmpty)
+  }
+
+  /** toArray(a) contains all elements in FIFO order
+   */
+  def testToArray2(): Unit = {
+    val q: ConcurrentLinkedQueue[Item] =
+      ConcurrentLinkedQueueTest.populatedQueue(SIZE)
+    val items: Array[Item] = new Array[Item](SIZE)
+    val array: Array[Item] = q.toArray(items)
+    assertSame(items, array)
+    for (o <- items) {
+      assertSame(o, q.poll)
+    }
+    assertTrue(q.isEmpty)
+  }
+
+  /** toArray(null) throws NullPointerException
+   */
+  def testToArray_NullArg(): Unit = {
+    val q: ConcurrentLinkedQueue[Item] =
+      ConcurrentLinkedQueueTest.populatedQueue(SIZE)
+    try {
+      q.toArray(null.asInstanceOf[Array[AnyRef]])
+      shouldThrow()
+    } catch {
+      case success: NullPointerException =>
+
+    }
+  }
+
+  /** toArray(incompatible array type) throws ArrayStoreException
+   */
+  @SuppressWarnings(
+    Array("CollectionToArraySafeParameter")
+  ) def testToArray_incompatibleArrayType(): Unit = {
+    val q: ConcurrentLinkedQueue[Item] =
+      ConcurrentLinkedQueueTest.populatedQueue(SIZE)
+    try {
+      q.toArray(new Array[String](10))
+      shouldThrow()
+    } catch {
+      case success: ArrayStoreException =>
+
+    }
+  }
+
+  /** iterator iterates through all elements
+   */
+  def testIterator(): Unit = {
+    val q: ConcurrentLinkedQueue[Item] =
+      ConcurrentLinkedQueueTest.populatedQueue(SIZE)
+    val it: java.util.Iterator[_ <: Item] = q.iterator()
+    var i: Int = 0
+    i = 0
+    while (it.hasNext) {
+      mustContain(q, it.next)
+      i += 1
+    }
+    mustEqual(i, SIZE)
+    assertIteratorExhausted(it)
+  }
+
+  /** iterator of empty collection has no elements
+   */
+  def testEmptyIterator(): Unit = {
+    assertIteratorExhausted(new ConcurrentLinkedQueue[AnyRef]().iterator)
+  }
+
+  /** iterator ordering is FIFO
+   */
+  def testIteratorOrdering(): Unit = {
+    val q: ConcurrentLinkedQueue[Item] = new ConcurrentLinkedQueue[Item]
+    q.add(one)
+    q.add(two)
+    q.add(three)
+    var k: Int = 0
+    val it: java.util.Iterator[_ <: Item] = q.iterator
+    while (it.hasNext) {
+      mustEqual(
+        {
+          k += 1; k
+        },
+        it.next
+      )
+    }
+    mustEqual(3, k)
+  }
+
+  /** Modifications do not cause iterators to fail
+   */
+  def testWeaklyConsistentIteration(): Unit = {
+    val q: ConcurrentLinkedQueue[Item] = new ConcurrentLinkedQueue[Item]
+    q.add(one)
+    q.add(two)
+    q.add(three)
+    val it: java.util.Iterator[_ <: Item] = q.iterator
+    while (it.hasNext) {
+      q.remove
+      it.next
+    }
+    mustEqual(0, q.size)
+  }
+
+  /** iterator.remove removes current element
+   */
+  def testIteratorRemove(): Unit = {
+    val q: ConcurrentLinkedQueue[Item] = new ConcurrentLinkedQueue[Item]
+    q.add(one)
+    q.add(two)
+    q.add(three)
+    var it: java.util.Iterator[_ <: Item] = q.iterator
+    it.next
+    it.remove()
+    it = q.iterator
+    assertSame(it.next, two)
+    assertSame(it.next, three)
+    assertFalse(it.hasNext)
+  }
+
+  /** toString contains toStrings of elements
+   */
+  def testToString(): Unit = {
+    val q: ConcurrentLinkedQueue[Item] =
+      ConcurrentLinkedQueueTest.populatedQueue(SIZE)
+    val s: String = q.toString
+    var i: Int = 0
+    while (i < SIZE) {
+      assertTrue(s.contains(String.valueOf(i)))
+
+      i += 1
+    }
+  }
+
+  // /**
+  //  * A deserialized/reserialized queue has same elements in same order
+  //  * UNSUPOPORTED
+  //  */
+  // @throws[Exception]
+  // def testSerialization(): Unit = {
+  //   val x: Queue[Item] = ConcurrentLinkedQueueTest.populatedQueue(SIZE)
+  //   val y: Queue[Item] = serialClone(x)
+  //   assertNotSame(x, y)
+  //   mustEqual(x.size, y.size)
+  //   mustEqual(x.toString, y.toString)
+  //   assertTrue(Arrays.equals(x.toArray, y.toArray))
+  //   while (!(x.isEmpty)) {
+  //     assertFalse(y.isEmpty)
+  //     mustEqual(x.remove, y.remove)
+  //   }
+  //   assertTrue(y.isEmpty)
+  // }
+
+  /** remove(null), contains(null) always return false
+   */
+  def testNeverContainsNull(): Unit = {
+    val qs: Array[Collection[_]] = Array(
+      new ConcurrentLinkedQueue[AnyRef],
+      ConcurrentLinkedQueueTest.populatedQueue(2)
+    )
+    for (q <- qs) {
+      assertFalse(q.contains(null))
+      assertFalse(q.remove(null))
+    }
+  }
 }
