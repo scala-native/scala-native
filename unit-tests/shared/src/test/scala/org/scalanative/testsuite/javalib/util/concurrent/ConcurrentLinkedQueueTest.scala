@@ -100,8 +100,8 @@ class ConcurrentLinkedQueueTest extends JSR166Test {
     q.add(one)
     assertFalse(q.isEmpty)
     q.add(two)
-    q.remove
-    q.remove
+    q.remove()
+    q.remove()
     assertTrue(q.isEmpty)
   }
 
@@ -113,7 +113,7 @@ class ConcurrentLinkedQueueTest extends JSR166Test {
     var i: Int = 0
     while (i < SIZE) {
       mustEqual(SIZE - i, q.size)
-      q.remove
+      q.remove()
 
       i += 1
     }
@@ -267,7 +267,7 @@ class ConcurrentLinkedQueueTest extends JSR166Test {
     while (i < SIZE) {
       mustEqual(i, q.peek)
       mustEqual(i, q.poll)
-      assertTrue(q.peek == null || !(q.peek.equals(i)))
+      assertTrue(q.peek == null || !(q.peek.intValue.equals(i)))
 
       i += 1
     }
@@ -302,12 +302,12 @@ class ConcurrentLinkedQueueTest extends JSR166Test {
       ConcurrentLinkedQueueTest.populatedQueue(SIZE)
     var i: Int = 0
     while (i < SIZE) {
-      mustEqual(i, q.remove)
+      mustEqual(i, q.remove())
 
       i += 1
     }
     try {
-      q.remove
+      q.remove()
       shouldThrow()
     } catch {
       case success: NoSuchElementException =>
@@ -405,7 +405,7 @@ class ConcurrentLinkedQueueTest extends JSR166Test {
       }
       assertTrue(q.containsAll(p))
       mustEqual(SIZE - i, q.size)
-      p.remove
+      p.remove()
 
       i += 1
     }
@@ -539,7 +539,7 @@ class ConcurrentLinkedQueueTest extends JSR166Test {
     q.add(three)
     val it: java.util.Iterator[_ <: Item] = q.iterator
     while (it.hasNext) {
-      q.remove
+      q.remove()
       it.next
     }
     mustEqual(0, q.size)
