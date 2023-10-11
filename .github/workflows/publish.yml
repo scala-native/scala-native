@@ -50,4 +50,22 @@ jobs:
           MAVEN_USER: "${{ secrets.SONATYPE_USER }}"
           MAVEN_PASSWORD: "${{ secrets.SONATYPE_PASSWORD }}"
           PGP_PASSPHRASE: "${{ secrets.PGP_PASSWORD }}"
-        run: sbt "-v" "-J-Xmx7G" "publish-release-for-version ${{ matrix.scala }}"
+        run: sbt "-v" "-J-Xmx7G" "-J-XX:+UseG1GC" "publish-release-for-version ${{ matrix.scala }}"
+
+  dispatch:
+    name: Dispatch trigger builds for dependant projects
+    runs-on: ubuntu-latest
+    needs: [publish]
+    if: github.event_name == 'schedule' && github.repository == 'scala-native/scala-native'
+    strategy:
+      matrix:
+        repo: ['scala-native/scala-native-cli']
+    timeout-minutes: 5
+    steps:
+      - name: Dispatch to workflows of dependant projects
+        run: |
+            curl -H "Accept: application/vnd.github.everest-preview+json" \
+            -H "Authorization: token ${{ secrets.DISPATCH_TOKEN }}" \
+            --request POST \
+            --data '{"event_type": "nightly-published", "client_payload": {} }' \
+            https://api.github.com/repos/${{ matrix.repo }}/dispatches

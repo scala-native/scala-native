@@ -65,15 +65,18 @@ object Build {
   private def setDepenencyForCurrentBinVersion[T](
       key: TaskKey[T],
       projects: Seq[MultiScalaProject],
-      includeSbtPlugin: Boolean = true
+      includeNoCrossProjects: Boolean = true
   ) = {
     key := Def.taskDyn {
       val binVersion = scalaBinaryVersion.value
-      val optSbtPlugin = Seq(sbtScalaNative).filter(_ =>
-        includeSbtPlugin && binVersion == "2.12"
+      // There are 2 not cross build projects:
+      // sbt-plugin which needs to build with 2.12
+      // javalib-intf which contains only Java code and can be compiled with any version
+      val optNoCrossProjects = noCrossProjects.filter(_ =>
+        includeNoCrossProjects && binVersion == "2.12"
       )
       val dependenices =
-        optSbtPlugin ++ projects.map(_.forBinaryVersion(binVersion))
+        optNoCrossProjects ++ projects.map(_.forBinaryVersion(binVersion))
       val prev = key.value
       Def
         .task { prev }
@@ -111,7 +114,7 @@ object Build {
           setDepenencyForCurrentBinVersion(
             _,
             crossPublishedMultiScalaProjects,
-            includeSbtPlugin = false
+            includeNoCrossProjects = false
           )
         )
       )
@@ -318,7 +321,7 @@ object Build {
         case Seq(nscPlugin, nativelib, scalalib) =>
           toolsBuildInfoSettings(nscPlugin, nativelib, scalalib)
       }
-      .dependsOn(nir, util)
+      .dependsOn(nirJVM, utilJVM)
 
   private def toolsBuildInfoSettings(
       nscPlugin: LocalProject,

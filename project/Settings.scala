@@ -560,15 +560,14 @@ object Settings {
     val extracted = sbt.Project.extract(s)
     val id = thisProjectRef.value.project
     val selfRef = thisProjectRef.value
-    val _ = crossScalaVersions.value.foldLeft(s) {
-      case (state, `currentVersion`) =>
+    val _ = crossScalaVersions.value.foreach {
+      case `currentVersion` =>
         log.info(
           s"Skip publish $id ${currentVersion} - it should be already published"
         )
-        state
-      case (state, crossVersion) =>
+      case crossVersion =>
         log.info(s"Try publish $id ${crossVersion}")
-        val (newState, result) = sbt.Project
+        val (_, result) = sbt.Project
           .runTask(
             selfRef / publishKey,
             state = extracted.appendWithoutSession(
@@ -576,13 +575,13 @@ object Settings {
                 .map(
                   _.forBinaryVersion(binVersion) / scalaVersion := crossVersion
                 ),
-              state
+              s
             )
           )
           .get
         result.toEither match {
           case Left(failure) => throw new RuntimeException(failure)
-          case Right(_)      => newState
+          case Right(_)      => System.gc()
         }
     }
   }

@@ -132,14 +132,16 @@ private[scalanative] object ScalaNative {
               modifiers -> s"$BOLD$YELLOW$name$RESET$typeInfo at $BOLD$filename:$line"
             }
         }
-        val padding = elems
-          .map(_._1.length)
-          .max
-          .min(14) + 2
-        elems.foreach {
-          case (modifiers, tracedDescriptor) =>
-            val pad = " " * (padding - modifiers.length)
-            buf.append(s"$pad$modifiers$tracedDescriptor\n")
+        if (elems.nonEmpty) {
+          val padding = elems
+            .map(_._1.length)
+            .max
+            .min(14) + 2
+          elems.foreach {
+            case (modifiers, tracedDescriptor) =>
+              val pad = " " * (padding - modifiers.length)
+              buf.append(s"$pad$modifiers$tracedDescriptor\n")
+          }
         }
         buf.append("\n")
       }
