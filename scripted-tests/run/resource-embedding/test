@@ -1,29 +1,8 @@
-# -- compiles but does not have embedded resources
-> projectA/compile
-> projectA/nativeLink
-# includes simple tests
 > projectA/run
-
-# -- does not link because of conflicting files
-> projectB/compile
-> projectB/nativeLink
-# includes simple tests
 > projectB/run
-
-# -- links and runs tests without conflicts
-> projectC/compile
-> projectC/nativeLink
-# includes simple tests
 > projectC/run
-
-# -- links and runs tests without conflicts
-> projectD/compile
-> projectD/nativeLink
-# includes simple tests
 > projectD/run
-
-# -- links and runs tests without conflicts
-> projectE/compile
-> projectE/nativeLink
-# includes simple tests
 > projectE/run
+> projectF/run
+> projectG/run
+> projectH/run

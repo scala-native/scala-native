@@ -721,7 +721,27 @@ For that to work, you have to specify an additional NativeConfig option:
   }
 
 This will include the resource files found on the classpath in the resulting
-binary file. Please note that files with following extensions cannot be embedded
+binary file.
+
+Also, you to specify include and exclude patterns for resources that are embedded in an executable using glob pattern.
+By default, scala-native will include all the files in the classpath, and exclude none (there're some exceptions for files such as ``.class``, see below).
+By specifying the include patterns, only the files matching the include patterns will be included.
+This can be useful for reducing the size of your executables.
+
+The example below will include all the text and png files in the classpath, while excluding the rootdoc.txt file.
+
+.. code-block:: scala
+
+  nativeConfig ~= {
+    _.withEmbedResources(true)
+      .withResourceIncludePatterns(Seq("**.txt", "**.png"))
+      .withResourceExcludePatterns(Seq("rootdoc.txt"))
+  }
+
+Also, note that this featuer is using Java's PathMatcher, which behave a bit different from the posix glob. https://docs.oracle.com/javase/tutorial/essential/io/find.html
+
+
+Please note that files with following extensions cannot be embedded
 and used as a resource:
 
 ``".class", ".tasty", ".nir", ".scala", ".java", ".jar"``

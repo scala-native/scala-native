@@ -11,6 +11,7 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.SimpleFileVisitor
 import java.nio.file.attribute.BasicFileAttributes
+import java.nio.file.FileSystems
 import java.util.EnumSet
 import scala.annotation.tailrec
 import scala.collection.mutable
@@ -28,10 +29,24 @@ private[scalanative] object ResourceEmbedder {
       classpathDirectory: VirtualDirectory
   )
 
+  private final val ScalaNativeExcludePattern: String = "/scala-native/**"
+
   def apply(config: Config): Seq[Defn.Var] = Scope { implicit scope =>
     val classpath = config.classPath
+    val includePatterns =
+      config.compilerConfig.resourceIncludePatterns.map(p =>
+        FileSystems.getDefault().getPathMatcher(s"glob:$p")
+      )
+    val excludePatterns =
+      (config.compilerConfig.resourceExcludePatterns :+ ScalaNativeExcludePattern)
+        .map(p => FileSystems.getDefault().getPathMatcher(s"glob:$p"))
 
     implicit val position: Position = Position.NoPosition
+
+    def shouldIgnore(path: Path): Boolean = {
+      !includePatterns.exists(_.matches(path)) ||
+      excludePatterns.exists(_.matches(path))
+    }
 
     val foundFiles =
       if (config.compilerConfig.embedResources) {
@@ -49,9 +64,13 @@ private[scalanative] object ResourceEmbedder {
                   (pathString, path)
                 }
 
-              if (isInIgnoredDirectory(path)) {
+              if (shouldIgnore(path)) {
                 config.logger.debug(
-                  s"Did not embed: $pathName - file in the ignored \'scala-native\' folder."
+                  s"Did not embed: $pathName - " +
+                    s"Include patterns: ${config.compilerConfig.resourceIncludePatterns
+                        .mkString(", ")}; " +
+                    s"Exclude patterns: ${(config.compilerConfig.resourceExcludePatterns :+ ScalaNativeExcludePattern)
+                        .mkString(", ")}"
                 )
                 None
               } else if (isSourceFile((path))) None
@@ -172,9 +191,4 @@ private[scalanative] object ResourceEmbedder {
     if (path.getFileName == null) false
     else sourceExtensions.exists(path.getFileName.toString.endsWith(_))
   }
-
-  private def isInIgnoredDirectory(path: Path): Boolean = {
-    path.startsWith("/scala-native/")
-  }
-
 }
