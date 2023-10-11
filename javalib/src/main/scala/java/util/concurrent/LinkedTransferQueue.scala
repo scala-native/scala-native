@@ -18,43 +18,6 @@ import scala.scalanative.libc.stdatomic.memory_order.{
 }
 import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
 
-/** An unbounded {@link TransferQueue} based on linked nodes. This queue orders
- *  elements FIFO (first-in-first-out) with respect to any given producer. The
- *  <em>head</em> of the queue is that element that has been on the queue the
- *  longest time for some producer. The <em>tail</em> of the queue is that
- *  element that has been on the queue the shortest time for some producer.
- *
- *  <p>Beware that, unlike in most collections, the {@code size} method is
- *  <em>NOT</em> a constant-time operation. Because of the asynchronous nature
- *  of these queues, determining the current number of elements requires a
- *  traversal of the elements, and so may report inaccurate results if this
- *  collection is modified during traversal.
- *
- *  <p>Bulk operations that add, remove, or examine multiple elements, such as
- *  {@link #addAll}, {@link #removeIf} or {@link #forEach}, are <em>not</em>
- *  guaranteed to be performed atomically. For example, a {@code forEach}
- *  traversal concurrent with an {@code addAll} operation might observe only
- *  some of the added elements.
- *
- *  <p>This class and its iterator implement all of the <em>optional</em>
- *  methods of the {@link Collection} and {@link Iterator} interfaces.
- *
- *  <p>Memory consistency effects: As with other concurrent collections, actions
- *  in a thread prior to placing an object into a {@code LinkedTransferQueue} <a
- *  href="package-summary.html#MemoryVisibility"><i>happen-before</i></a>
- *  actions subsequent to the access or removal of that element from the {@code
- *  LinkedTransferQueue} in another thread.
- *
- *  <p>This class is a member of the <a
- *  href="{@docRoot}/java.base/java/util/package-summary.html#CollectionsFramework">
- *  Java Collections Framework</a>.
- *
- *  @since 1.7
- *  @author
- *    Doug Lea
- *  @param [E]
- *    the type of elements held in this queue
- */
 @SerialVersionUID(-3223113410248163686L) class LinkedTransferQueue[E <: AnyRef]
     extends AbstractQueue[E]
     with TransferQueue[E]
@@ -385,18 +348,6 @@ import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
     }
   }
 
-  /** Collapses dead (matched) nodes between pred and q.
-   *  @param pred
-   *    the last known live node, or null if none
-   *  @param c
-   *    the first dead node
-   *  @param p
-   *    the last dead node
-   *  @param q
-   *    p.next: the next live node, or null if at end
-   *  @return
-   *    pred if pred still alive and CAS succeeded; else p
-   */
   private def skipDeadNodes(pred: Node, c: Node, p: Node, q: Node): Node = {
     var _q = q
     if (_q == null) {
@@ -428,21 +379,6 @@ import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
       h.selfLink()
   }
 
-  /** Implements all queuing methods. See above for explanation.
-   *
-   *  @param e
-   *    the item or null for take
-   *  @param haveData
-   *    true if this is a put, else a take
-   *  @param how
-   *    NOW, ASYNC, SYNC, or TIMED
-   *  @param nanos
-   *    timeout in nanosecs, used only if mode is TIMED
-   *  @return
-   *    an item if matched, else e
-   *  @throws NullPointerException
-   *    if haveData mode but e is null
-   */
   private def xfer(e: E, haveData: Boolean, how: Int, nanos: Long): E = {
     if (haveData && (e == null))
       throw new NullPointerException()
@@ -489,22 +425,6 @@ import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
     ???
   }
 
-  /** Possibly blocks until node s is matched or caller gives up.
-   *
-   *  @param s
-   *    the waiting node
-   *  @param pred
-   *    the predecessor of s, or null if unknown (the null case does not occur
-   *    in any current calls but may in possible future extensions)
-   *  @param e
-   *    the comparison value for checking match
-   *  @param timed
-   *    if true, wait only until timeout elapses
-   *  @param nanos
-   *    timeout in nanosecs, used only if timed is true
-   *  @return
-   *    matched item, or e if unmatched on interrupt or timeout
-   */
   private def awaitMatch(
       s: Node,
       pred: Node,
@@ -727,57 +647,8 @@ import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
     ???
   }
 
-  /** Returns an array containing all of the elements in this queue, in proper
-   *  sequence.
-   *
-   *  <p>The returned array will be "safe" in that no references to it are
-   *  maintained by this queue. (In other words, this method must allocate a new
-   *  array). The caller is thus free to modify the returned array.
-   *
-   *  <p>This method acts as bridge between array-based and collection-based
-   *  APIs.
-   *
-   *  @return
-   *    an array containing all of the elements in this queue
-   */
   override def toArray(): Array[Object] = toArrayInternal(null)
 
-  /** Returns an array containing all of the elements in this queue, in proper
-   *  sequence; the runtime type of the returned array is that of the specified
-   *  array. If the queue fits in the specified array, it is returned therein.
-   *  Otherwise, a new array is allocated with the runtime type of the specified
-   *  array and the size of this queue.
-   *
-   *  <p>If this queue fits in the specified array with room to spare (i.e., the
-   *  array has more elements than this queue), the element in the array
-   *  immediately following the end of the queue is set to {@code null}.
-   *
-   *  <p>Like the {@link #toArray()} method, this method acts as bridge between
-   *  array-based and collection-based APIs. Further, this method allows precise
-   *  control over the runtime type of the output array, and may, under certain
-   *  circumstances, be used to save allocation costs.
-   *
-   *  <p>Suppose {@code x} is a queue known to contain only strings. The
-   *  following code can be used to dump the queue into a newly allocated array
-   *  of {@code String}:
-   *
-   *  <pre> {@code String[] y = x.toArray(new String[0]);}</pre>
-   *
-   *  Note that {@code toArray(new Object[0])} is identical in function to
-   *  {@code toArray()}.
-   *
-   *  @param a
-   *    the array into which the elements of the queue are to be stored, if it
-   *    is big enough; otherwise, a new array of the same runtime type is
-   *    allocated for this purpose
-   *  @return
-   *    an array containing all of the elements in this queue
-   *  @throws ArrayStoreException
-   *    if the runtime type of the specified array is not a supertype of the
-   *    runtime type of every element in this queue
-   *  @throws NullPointerException
-   *    if the specified array is null
-   */
   override def toArray[T <: AnyRef](
       a: Array[T]
   ): Array[T] = {
@@ -1048,34 +919,10 @@ import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
     val MAX_BATCH = 1 << 25
   }
 
-  /** Returns a {@link Spliterator} over the elements in this queue.
-   *
-   *  <p>The returned spliterator is <a
-   *  href="package-summary.html#Weakly"><i>weakly consistent</i></a>.
-   *
-   *  <p>The {@code Spliterator} reports {@link Spliterator#CONCURRENT}, {@link
-   *  Spliterator#ORDERED}, and {@link Spliterator#NONNULL}.
-   *
-   *  @implNote
-   *    The {@code Spliterator} implements {@code trySplit} to permit limited
-   *    parallelism.
-   *
-   *  @return
-   *    a {@code Spliterator} over the elements in this queue
-   *  @since 1.8
-   */
   override def spliterator(): Spliterator[E] = new LTQSpliterator()
 
   /* -------------- Removal methods -------------- */
 
-  /** Unsplices (now or later) the given deleted/cancelled node with the given
-   *  predecessor.
-   *
-   *  @param pred
-   *    a node that was at one time known to be the predecessor of s
-   *  @param s
-   *    the node to be unspliced
-   */
   def unsplice(pred: Node, s: Node): Unit = {
     // assert pred != null;
     // assert pred != s;
@@ -1142,15 +989,6 @@ import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
 
   /* -------------- Constructors -------------- */
 
-  /** Creates a {@code LinkedTransferQueue} initially containing the elements of
-   *  the given collection, added in traversal order of the collection's
-   *  iterator.
-   *
-   *  @param c
-   *    the collection of elements to initially contain
-   *  @throws NullPointerException
-   *    if the specified collection or any of its elements are null
-   */
   def this(c: Collection[_ <: E]) = {
     this()
     var h: Node = null
@@ -1180,80 +1018,27 @@ import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
 
   /* -------------------- Other ------------------- */
 
-  /** Inserts the specified element at the tail of this queue. As the queue is
-   *  unbounded, this method will never block.
-   *
-   *  @throws NullPointerException
-   *    if the specified element is null
-   */
   override def put(e: E): Unit = xfer(e, true, ASYNC, 0)
 
-  /** Inserts the specified element at the tail of this queue. As the queue is
-   *  unbounded, this method will never block or return {@code false}.
-   *
-   *  @return
-   *    {@code true} (as specified by {@link
-   *    BlockingQueue#offer(Object,long,TimeUnit) BlockingQueue.offer})
-   *  @throws NullPointerException
-   *    if the specified element is null
-   */
   override def offer(e: E, timeout: Long, unit: TimeUnit): Boolean = {
     xfer(e, true, ASYNC, 0)
     true
   }
 
-  /** Inserts the specified element at the tail of this queue. As the queue is
-   *  unbounded, this method will never return {@code false}.
-   *
-   *  @return
-   *    {@code true} (as specified by {@link Queue#offer})
-   *  @throws NullPointerException
-   *    if the specified element is null
-   */
   override def offer(e: E) = {
     xfer(e, true, ASYNC, 0)
     true
   }
 
-  /** Inserts the specified element at the tail of this queue. As the queue is
-   *  unbounded, this method will never throw {@link IllegalStateException} or
-   *  return {@code false}.
-   *
-   *  @return
-   *    {@code true} (as specified by {@link Collection#add})
-   *  @throws NullPointerException
-   *    if the specified element is null
-   */
   override def add(e: E): Boolean = {
     xfer(e, true, ASYNC, 0)
     true
   }
 
-  /** Transfers the element to a waiting consumer immediately, if possible.
-   *
-   *  <p>More precisely, transfers the specified element immediately if there
-   *  exists a consumer already waiting to receive it (in {@link #take} or timed
-   *  {@link #poll(long,TimeUnit) poll}), otherwise returning {@code false}
-   *  without enqueuing the element.
-   *
-   *  @throws NullPointerException
-   *    if the specified element is null
-   */
   override def tryTransfer(e: E): Boolean = {
     return xfer(e, true, NOW, 0L) == null
   }
 
-  /** Transfers the element to a consumer, waiting if necessary to do so.
-   *
-   *  <p>More precisely, transfers the specified element immediately if there
-   *  exists a consumer already waiting to receive it (in {@link #take} or timed
-   *  {@link #poll(long,TimeUnit) poll}), else inserts the specified element at
-   *  the tail of this queue and waits until the element is received by a
-   *  consumer.
-   *
-   *  @throws NullPointerException
-   *    if the specified element is null
-   */
   override def transfer(e: E): Unit = {
     if (xfer(e, true, SYNC, 0L) != null) {
       Thread.interrupted() // failure possible only due to interrupt
@@ -1261,19 +1046,6 @@ import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
     }
   }
 
-  /** Transfers the element to a consumer if it is possible to do so before the
-   *  timeout elapses.
-   *
-   *  <p>More precisely, transfers the specified element immediately if there
-   *  exists a consumer already waiting to receive it (in {@link #take} or timed
-   *  {@link #poll(long,TimeUnit) poll}), else inserts the specified element at
-   *  the tail of this queue and waits until the element is received by a
-   *  consumer, returning {@code false} if the specified wait time elapses
-   *  before the element can be transferred.
-   *
-   *  @throws NullPointerException
-   *    if the specified element is null
-   */
   override def tryTransfer(e: E, timeout: Long, unit: TimeUnit): Boolean = {
     if (xfer(e, true, TIMED, unit.toNanos(timeout)) == null)
       true
@@ -1301,11 +1073,6 @@ import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
 
   override def poll(): E = xfer(null.asInstanceOf[E], false, NOW, 0L)
 
-  /** @throws NullPointerException
-   *    {@inheritDoc}
-   *  @throws IllegalArgumentException
-   *    {@inheritDoc}
-   */
   override def drainTo(c: Collection[_ >: E]): Int = {
     Objects.requireNonNull(c)
     if (c == this)
@@ -1320,11 +1087,6 @@ import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
     n
   }
 
-  /** @throws NullPointerException
-   *    {@inheritDoc}
-   *  @throws IllegalArgumentException
-   *    {@inheritDoc}
-   */
   override def drainTo(c: Collection[_ >: E], maxElements: Int): Int = {
     Objects.requireNonNull(c)
     if (c == this)
@@ -1343,15 +1105,6 @@ import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
     n
   }
 
-  /** Returns an iterator over the elements in this queue in proper sequence.
-   *  The elements will be returned in order from first (head) to last (tail).
-   *
-   *  <p>The returned iterator is <a
-   *  href="package-summary.html#Weakly"><i>weakly consistent</i></a>.
-   *
-   *  @return
-   *    an iterator over the elements in this queue in proper sequence
-   */
   override def iterator(): Iterator[E] = new Itr()
 
   override def peek(): E = {
@@ -1382,11 +1135,6 @@ import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
     ???
   }
 
-  /** Returns {@code true} if this queue contains no elements.
-   *
-   *  @return
-   *    {@code true} if this queue contains no elements
-   */
   override def isEmpty(): Boolean = firstDataNode() == null
 
   override def hasWaitingConsumer(): Boolean = {
@@ -1417,33 +1165,10 @@ import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
     ???
   }
 
-  /** Returns the number of elements in this queue. If this queue contains more
-   *  than {@code Integer.MAX_VALUE} elements, returns {@code
-   *  Integer.MAX_VALUE}.
-   *
-   *  <p>Beware that, unlike in most collections, this method is <em>NOT</em> a
-   *  constant-time operation. Because of the asynchronous nature of these
-   *  queues, determining the current number of elements requires an O(n)
-   *  traversal.
-   *
-   *  @return
-   *    the number of elements in this queue
-   */
   override def size(): Int = countOfMode(true)
 
   override def getWaitingConsumerCount(): Int = countOfMode(false)
 
-  /** Removes a single instance of the specified element from this queue, if it
-   *  is present. More formally, removes an element {@code e} such that {@code
-   *  o.equals(e)}, if this queue contains one or more such elements. Returns
-   *  {@code true} if this queue contained the specified element (or
-   *  equivalently, if this queue changed as a result of the call).
-   *
-   *  @param o
-   *    element to be removed from this queue, if present
-   *  @return
-   *    {@code true} if this queue changed as a result of the call
-   */
   override def remove(o: Any): Boolean = {
     if (o == null) return false
     var restartFromHead = true
@@ -1493,15 +1218,6 @@ import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
     false
   }
 
-  /** Returns {@code true} if this queue contains the specified element. More
-   *  formally, returns {@code true} if and only if this queue contains at least
-   *  one element {@code e} such that {@code o.equals(e)}.
-   *
-   *  @param o
-   *    object to be checked for containment in this queue
-   *  @return
-   *    {@code true} if this queue contains the specified element
-   */
   override def contains(o: Any): Boolean = {
     if (o == null) return false
 
@@ -1552,38 +1268,22 @@ import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
     ???
   }
 
-  /** Always returns {@code Integer.MAX_VALUE} because a {@code
-   *  LinkedTransferQueue} is not capacity constrained.
-   *
-   *  @return
-   *    {@code Integer.MAX_VALUE} (as specified by {@link
-   *    BlockingQueue#remainingCapacity()})
-   */
   override def remainingCapacity(): Int = Integer.MAX_VALUE
 
   // No ObjectInputStream in ScalaNative
   // private def writeObject(s: java.io.ObjectOutputStream): Unit
   // private def readObject(s: java.io.ObjectInputStream): Unit
 
-  /** @throws NullPointerException
-   *    {@inheritDoc}
-   */
   override def removeIf(filter: function.Predicate[_ >: E]): Boolean = {
     Objects.requireNonNull(filter)
     bulkRemove(filter)
   }
 
-  /** @throws NullPointerException
-   *    {@inheritDoc}
-   */
   override def removeAll(c: Collection[_]): Boolean = {
     Objects.requireNonNull(c)
     bulkRemove(e => c.contains(e))
   }
 
-  /** @throws NullPointerException
-   *    {@inheritDoc}
-   */
   override def retainAll(c: Collection[_]): Boolean = {
     Objects.requireNonNull(c)
     bulkRemove(e => !c.contains(e))
@@ -1683,9 +1383,6 @@ import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
     }
   }
 
-  /** @throws NullPointerException
-   *    {@inheritDoc}
-   */
   override def forEach(action: function.Consumer[_ >: E]): Unit = {
     Objects.requireNonNull(action)
     forEachFrom(action, head)
