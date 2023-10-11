@@ -222,9 +222,6 @@ java.net
 * ``URI``
 * ``URIEncoderDecoder``
 * ``URISyntaxException``
-* ``URL``
-* ``URLClassLoader``
-* ``URLConnection``
 * ``URLDecoder``
 * ``URLEncoder``
 * ``UnknownHostException``
