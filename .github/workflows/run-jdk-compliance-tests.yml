@@ -39,7 +39,9 @@ jobs:
           java-version: ${{matrix.java}}
 
       - name: Test runtime
-        run: >
+        run: |
+          hostname -f
+          ifconfig -a
           _JAVA_OPTIONS='${{ matrix.java-options }}'
           SCALANATIVE_TEST_PREFETCH_DEBUG_INFO=1
           sbt 
