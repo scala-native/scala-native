@@ -107,7 +107,7 @@ class IncCompilationTest extends codegen.CodeGenSpec {
 
   private def makeClasspath(outDir: Path)(implicit in: Scope) = {
     val parts: Array[Path] =
-      ScalaNativeBuildInfo.scalalibCp
+      ScalaNativeBuildInfo.nativeRuntimeClasspath
         .split(File.pathSeparator)
         .map(Paths.get(_))
 
@@ -127,7 +127,7 @@ class IncCompilationTest extends codegen.CodeGenSpec {
       .withClassPath(classpath.toSeq)
       .withMainClass(Some(entry))
       .withCompilerConfig(setupNativeConfig)
-      .withLogger(Logger.nullLogger)
+      // .withLogger(Logger.nullLogger)
   }
 
   private lazy val defaultNativeConfig = build.NativeConfig.empty

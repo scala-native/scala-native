@@ -140,7 +140,7 @@ class NIRCompiler(outDir: Path) {
       "-d",
       outPath.toString(),
       "-cp",
-      ScalaNativeBuildInfo.compileClasspath + File.pathSeparator + ScalaNativeBuildInfo.nativelibCp,
+      ScalaNativeBuildInfo.compileClasspath + File.pathSeparator + ScalaNativeBuildInfo.nativeRuntimeClasspath,
       s"-Xplugin:${ScalaNativeBuildInfo.pluginJar}"
     ) ++ fileArgs
     val procBuilder = new ProcessBuilder(args: _*)
