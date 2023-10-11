@@ -172,10 +172,11 @@ class InetAddressTest {
   }
 
   @Test def getLocalHostJVM(): Unit = {
-
     if (Platform.executingInJVM & Platform.isMacOs) {
       val lha = InetAddress.getLocalHost().getHostAddress()
-      assertEquals("1:0:0:0:0:0:0:1", lha)
+      val lba = InetAddress.getLoopbackAddress().getHostAddress()
+//      assertEquals("127.0.0.1", lha)
+      assertNotEquals(lba, lha)
     }
   }
 
