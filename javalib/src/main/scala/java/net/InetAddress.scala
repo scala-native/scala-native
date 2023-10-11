@@ -346,44 +346,68 @@ object InetAddress {
 
   private def getByNonNumericName(host: String): InetAddress = Zone {
     implicit z =>
-      /* To prevent circular dependencies, javalib is not supposed to use
-       * the quite powerful Scala Collections library.
+      /* Design Note:
+       *   Host-to-ip-address translation is known to be fraught with
+       *   complexity. The java.net API reflects the simplicity of 1995 or so.
        *
-       * Use tail recursion to avoid an even nastier while loop. Let
-       * the Scala compiler do the work.
+       *   This method makes the following simplifying assumptions.
+       *   Viewed from a different light, one can also say that it has the
+       *   following defects/bugs.
+       *
+       *   1) The hardware may have more than one interface, each having
+       *      the same name but a different ip address. This method
+       *      assumes that getaddrinfo() will sort out any address preference.
+       *      That is probably a bad assumption. Successive calls to this
+       *      method may return different addresses. InetAddress.getLocalHost()
+       *      calls this method. In complex configurations, it may return
+       *      astonishing results.
+       *
+       *   2) This method assumes that tcp and udp protocols resolve to
+       *      the same address. This is the normal/usual case, but not
+       *      required. By the Gell-Mann principle, it is bound to occur in
+       *      the wild.
        */
 
       @tailrec
-      def findPreferrredAddrinfo(
+      def findFirstAcceptableAddrinfo(
           preference: Option[Boolean],
-          ai: Ptr[addrinfo]
+          ai: Ptr[addrinfo],
+          fallback: Option[Ptr[addrinfo]]
       ): Option[Ptr[addrinfo]] = {
+        /* To prevent circular dependencies, javalib is not supposed to use
+         * the quite powerful Scala Collections library.
+         *
+         * Use tail recursion to avoid an even nastier while loop. Let
+         * the Scala compiler do the work.
+         */
 
         if (ai == null) {
-          None
+          fallback
         } else {
-          val result =
-            if (ai.ai_family == AF_INET) {
-              if ((preference == None) || (preference.get == false)) {
-                Some(ai)
-              } else {
-                None
-              }
-            } else if (ai.ai_family == AF_INET6) {
-              if ((preference == None) || (preference.get == true)) {
-                Some(ai)
-              } else {
-                None
-              }
-            } else { // skip AF_UNSPEC & other unknown families
-              None
-            }
+          val aiNext = ai.ai_next.asInstanceOf[Ptr[addrinfo]]
 
-          if (result != None) {
-            result
-          } else {
-            val aiNext = ai.ai_next.asInstanceOf[Ptr[addrinfo]]
-            findPreferrredAddrinfo(preference, aiNext)
+          if (ai.ai_family == AF_INET) {
+            if ((preference == None) || (preference.get == false)) {
+              Some(ai)
+            } else {
+              findFirstAcceptableAddrinfo(
+                preference,
+                aiNext,
+                if (fallback.isEmpty) Some(ai) else fallback
+              )
+            }
+          } else if (ai.ai_family == AF_INET6) {
+            if ((preference == None) || (preference.get == true)) {
+              Some(ai)
+            } else {
+              findFirstAcceptableAddrinfo(
+                preference,
+                aiNext,
+                if (fallback.isEmpty) Some(ai) else fallback
+              )
+            }
+          } else { // skip AF_UNSPEC & other unknown families
+            findFirstAcceptableAddrinfo(preference, aiNext, fallback)
           }
         }
       }
@@ -391,10 +415,11 @@ object InetAddress {
       val hints = stackalloc[addrinfo]() // stackalloc clears its memory
       val addrinfo = stackalloc[Ptr[addrinfo]]()
 
-      hints.ai_family = SocketHelpers.getGaiHintsAddressFamily()
-      hints.ai_socktype = SOCK_STREAM
-      hints.ai_protocol = IPPROTO_TCP
-      if (hints.ai_family == AF_INET6) {
+      val preferIPv6Ai = SocketHelpers.getPreferIPv6Addresses()
+
+      // Let hints.ai_socktype & hints.ai_protocol remain 0, indicating any.
+      hints.ai_family = AF_UNSPEC
+      if (preferIPv6Ai.getOrElse(false)) {
         hints.ai_flags |= (AI_V4MAPPED | AI_ADDRCONFIG)
       }
 
@@ -405,8 +430,7 @@ object InetAddress {
         throw new UnknownHostException(host + ": " + gaiMsg)
       } else
         try {
-          val preferIPv6 = SocketHelpers.getPreferIPv6Addresses()
-          findPreferrredAddrinfo(preferIPv6, !addrinfo) match {
+          findFirstAcceptableAddrinfo(preferIPv6Ai, !addrinfo, None) match {
             case None =>
               throw new UnknownHostException(s"${host}: Name does not resolve")
             case Some(ai) => InetAddress(ai, host, isNumeric = false)
