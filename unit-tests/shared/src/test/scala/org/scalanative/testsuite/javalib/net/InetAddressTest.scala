@@ -171,15 +171,6 @@ class InetAddressTest {
     assertNotNull(InetAddress.getLocalHost())
   }
 
-  @Test def getLocalHostJVM(): Unit = {
-    if (Platform.executingInJVM & Platform.isMacOs) {
-      val lha = InetAddress.getLocalHost().getHostAddress()
-      val lba = InetAddress.getLoopbackAddress().getHostAddress()
-//      assertEquals("127.0.0.1", lha)
-      assertNotEquals(lba, lha)
-    }
-  }
-
   @Test def getLoopbackAddress(): Unit = {
     // Skip testing the "system" case. Save that for some future evolution.
     val useIPv6Addrs =

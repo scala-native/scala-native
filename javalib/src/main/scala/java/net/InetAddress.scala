@@ -12,7 +12,8 @@ import scala.scalanative.unsigned._
 import scala.annotation.tailrec
 
 import java.io.IOException
-import java.net.SocketHelpers.sockaddrToByteArray
+import java.net.SocketHelpers.{sockaddrToByteArray, loopbackIPv4}
+
 import java.{util => ju}
 
 import scala.scalanative.posix.arpa.inet._
@@ -750,10 +751,14 @@ object InetAddress {
     if (ghnStatus != 0) {
       throw new UnknownHostException(fromCString(strerror(errno)))
     } else {
-      /* OS library routine should have NUL terminated 'hostName'.
-       * If not, hostName(MAXHOSTNAMELEN) should be NUL from stackalloc.
-       */
-      InetAddress.getByName(fromCString(hostName))
+      try {
+        /* OS library routine should have NUL terminated 'hostName'.
+         * If not, hostName(MAXHOSTNAMELEN) should be NUL from stackalloc.
+         */
+        InetAddress.getByName(fromCString(hostName))
+      } catch {
+        case e: UnknownHostException => SocketHelpers.loopbackIPv4()
+      }
     }
   }
 

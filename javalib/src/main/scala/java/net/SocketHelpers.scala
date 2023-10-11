@@ -159,10 +159,10 @@ object SocketHelpers {
   // Create copies of loopback & wildcard, so that originals never get changed
 
   // ScalaJVM shows loopbacks with null host, wildcards with numeric host.
-  private def loopbackIPv4(): InetAddress =
+  private[net] def loopbackIPv4(): InetAddress =
     InetAddress.getByAddress(Array[Byte](127, 0, 0, 1))
 
-  private def loopbackIPv6(): InetAddress = InetAddress.getByAddress(
+  private[net] def loopbackIPv6(): InetAddress = InetAddress.getByAddress(
     Array[Byte](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1)
   )
 
