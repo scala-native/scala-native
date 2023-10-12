@@ -93,7 +93,7 @@ trait ReachabilitySuite {
 
   private def makeClasspath(outDir: Path)(implicit in: Scope) = {
     val parts: Array[Path] =
-      ScalaNativeBuildInfo.scalalibCp
+      ScalaNativeBuildInfo.nativeRuntimeClasspath
         .split(File.pathSeparator)
         .map(Paths.get(_))
 

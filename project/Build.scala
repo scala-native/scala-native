@@ -302,9 +302,9 @@ object Build {
     )
     .dependsOn(nir, util)
     .dependsOn(testInterface % "test", junitRuntime % "test")
-    .zippedSettings(Seq("nscplugin", "nativelib", "scalalib")) {
-      case Seq(nscPlugin, nativelib, scalalib) =>
-        toolsBuildInfoSettings(nscPlugin, nativelib, scalalib)
+    .zippedSettings(Seq("nscplugin", "javalib", "scalalib")) {
+      case Seq(nscPlugin, javalib, scalalib) =>
+        toolsBuildInfoSettings(nscPlugin, javalib, scalalib)
     }
 
   lazy val toolsJVM =
@@ -317,15 +317,15 @@ object Build {
         // Running tests in parallel results in `FileSystemAlreadyExistsException`
         Test / parallelExecution := false
       )
-      .zippedSettings(Seq("nscplugin", "nativelib", "scalalib")) {
-        case Seq(nscPlugin, nativelib, scalalib) =>
-          toolsBuildInfoSettings(nscPlugin, nativelib, scalalib)
+      .zippedSettings(Seq("nscplugin", "javalib", "scalalib")) {
+        case Seq(nscPlugin, javalib, scalalib) =>
+          toolsBuildInfoSettings(nscPlugin, javalib, scalalib)
       }
       .dependsOn(nirJVM, utilJVM)
 
   private def toolsBuildInfoSettings(
       nscPlugin: LocalProject,
-      nativelib: LocalProject,
+      javalib: LocalProject,
       scalalib: LocalProject
   ) = {
     buildInfoKeys ++= Seq[BuildInfoKey](
@@ -345,18 +345,17 @@ object Build {
         case (_, v) =>
           "pluginJar" -> v.getAbsolutePath()
       },
-      BuildInfoKey.map(nativelib / Compile / fullClasspath) {
+      BuildInfoKey.map(
+        for {
+          scalalibCp <- (scalalib / Compile / fullClasspath).taskValue
+          javalibCp <- (javalib / Compile / fullClasspath).taskValue
+        } yield scalalibCp ++ javalibCp
+      ) {
         case (_, v) =>
-          "nativelibCp" ->
+          "nativeRuntimeClasspath" ->
             v.files
               .map(_.getAbsolutePath)
-              .mkString(pathSeparator)
-      },
-      BuildInfoKey.map(scalalib / Compile / fullClasspath) {
-        case (_, v) =>
-          "scalalibCp" ->
-            v.files
-              .map(_.getAbsolutePath)
+              .distinct
               .mkString(pathSeparator)
       }
     )
@@ -547,7 +546,8 @@ object Build {
     .enablePlugins(MyScalaNativePlugin)
     .settings(
       publishSettings(Some(VersionScheme.BreakOnMajor)),
-      commonJavalibSettings,
+      NIROnlySettings,
+      recompileAllOrNothingSettings,
       disabledDocsSettings
     )
     .dependsOn(nativelib, clib)
@@ -617,7 +617,7 @@ object Build {
             .value
         )
       }
-      .dependsOn(auxlib, javalib)
+      .dependsOn(auxlib)
 
   // Tests ------------------------------------------------
   lazy val tests = MultiScalaProject("tests", file("unit-tests") / "native")
@@ -703,7 +703,7 @@ object Build {
       .enablePlugins(MyScalaNativePlugin)
       .withNativeCompilerPlugin
       .withJUnitPlugin
-      .dependsOn(scalalib, testInterface % "test")
+      .dependsOn(scalalib, javalib, testInterface % "test")
 
 // Testing infrastructure ------------------------------------------------
   lazy val testingCompilerInterface =
@@ -757,6 +757,7 @@ object Build {
       .withJUnitPlugin
       .dependsOn(
         scalalib,
+        javalib,
         testInterfaceSbtDefs,
         junitRuntime,
         junitAsyncNative % "test"
