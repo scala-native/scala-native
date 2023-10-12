@@ -194,10 +194,7 @@ scala/jdk/FunctionConvertersTest.scala
 #j.io.Piped{Input,Output}Stream / j.u.c.LinkedBlockingQueue
 scala/sys/process/PipedProcessTest.scala
 
-#j.u.c.ConcurrentHashMap
-scala/collection/convert/NullSafetyToScalaTest.scala
-scala/collection/convert/NullSafetyToJavaTest.scala
-scala/collection/convert/CollectionConvertersTest.scala
+#j.u.c.ConcurrentSkipListMap
 scala/collection/convert/JConcurrentMapWrapperTest.scala
 
 #j.t.LocalDate
