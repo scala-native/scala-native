@@ -106,7 +106,7 @@ trait MapTest {
 
   @Test def testSizeGetPutWithStringsLargeMap(): Unit = {
     val largeMap = factory.empty[String, Int]
-    for (i <- 0 until 1000) 
+    for (i <- 0 until 1000)
       largeMap.put(i.toString(), i)
     val expectedSize = factory.withSizeLimit.fold(1000)(Math.min(_, 1000))
     assertEquals(expectedSize, largeMap.size())

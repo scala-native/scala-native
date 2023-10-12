@@ -425,7 +425,10 @@ object Collectors {
       .asInstanceOf[Collector[T, AnyRef, ConcurrentMap[K, List[T]]]]
   }
 
-  def groupingByConcurrent[T <: AnyRef, K <: AnyRef, D, A, M <: ConcurrentMap[K, D]](
+  def groupingByConcurrent[T <: AnyRef, K <: AnyRef, D, A, M <: ConcurrentMap[
+    K,
+    D
+  ]](
       classifier: Function[_ >: T, _ <: K],
       mapFactory: Supplier[M],
       downstream: Collector[_ >: T, A, D]
