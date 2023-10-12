@@ -33,20 +33,33 @@ private[scalanative] object ResourceEmbedder {
 
   def apply(config: Config): Seq[Defn.Var] = Scope { implicit scope =>
     val classpath = config.classPath
+    val fs = FileSystems.getDefault()
     val includePatterns =
       config.compilerConfig.resourceIncludePatterns.map(p =>
-        FileSystems.getDefault().getPathMatcher(s"glob:$p")
+        fs.getPathMatcher(s"glob:$p")
       )
     val excludePatterns =
       (config.compilerConfig.resourceExcludePatterns :+ ScalaNativeExcludePattern)
-        .map(p => FileSystems.getDefault().getPathMatcher(s"glob:$p"))
+        .map(p => fs.getPathMatcher(s"glob:$p"))
 
     implicit val position: Position = Position.NoPosition
 
-    def shouldIgnore(path: Path): Boolean = {
-      !includePatterns.exists(_.matches(path)) ||
-      excludePatterns.exists(_.matches(path))
-    }
+    val notInIncludePatterns =
+      s"Not matched by any include path ${includePatterns.mkString}"
+    type IgnoreReason = String
+
+    /** If the return value is defined, the given path should be ignored. If
+     *  it's None, the path should be included.
+     */
+    def shouldIgnore(path: Path): Option[IgnoreReason] =
+      includePatterns.find(_.matches(path)).fold(Option(notInIncludePatterns)) {
+        includePattern =>
+          excludePatterns
+            .find(_.matches(path))
+            .map(excludePattern =>
+              s"Matched by $includePattern by excluded by $excludePattern"
+            )
+      }
 
     val foundFiles =
       if (config.compilerConfig.embedResources) {
@@ -64,18 +77,15 @@ private[scalanative] object ResourceEmbedder {
                   (pathString, path)
                 }
 
-              if (shouldIgnore(path)) {
-                config.logger.debug(
-                  s"Did not embed: $pathName - " +
-                    s"Include patterns: ${config.compilerConfig.resourceIncludePatterns
-                        .mkString(", ")}; " +
-                    s"Exclude patterns: ${(config.compilerConfig.resourceExcludePatterns :+ ScalaNativeExcludePattern)
-                        .mkString(", ")}"
-                )
-                None
-              } else if (isSourceFile((path))) None
-              else if (Files.isDirectory(correctedPath)) None
-              else Some(ClasspathFile(path, pathName, virtualDir))
+              shouldIgnore(path) match {
+                case Some(reason) =>
+                  config.logger.debug(s"Did not embed: $pathName - $reason")
+                  None
+                case None =>
+                  if (isSourceFile((path))) None
+                  else if (Files.isDirectory(correctedPath)) None
+                  else Some(ClasspathFile(path, pathName, virtualDir))
+              }
             }
         }
       } else Seq.empty
