@@ -5,7 +5,6 @@ import scalanative.unsafe._
 import scalanative.unsigned._
 import scalanative.runtime.unwind
 import scala.scalanative.meta.LinktimeInfo
-// TODO: Replace with j.u.c.ConcurrentHashMap when implemented to remove scalalib dependency and save loading ~600 symbols
 import scala.scalanative.runtime.Backtrace
 import scala.scalanative.runtime.NativeThread
 import scala.scalanative.libc.stdlib.{malloc, calloc, free}
