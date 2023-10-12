@@ -1,0 +1,217 @@
+name: Run tests Windows
+on:
+  workflow_call:
+  pull_request:
+  schedule:
+    # Every day at 2 AM UTC
+    - cron: "0 2 * * *"
+concurrency:
+  group: windows-${{ github.head_ref }}-${{ github.event_name }}
+  cancel-in-progress: true
+
+jobs:
+  test-runtime:
+    name: Test runtime
+    runs-on: windows-2022
+    env:
+      ENABLE_EXPERIMENTAL_COMPILER: true
+    strategy:
+      fail-fast: false
+      matrix:
+        scala: [3]
+        gc: [none, boehm, immix, commix]
+        include:
+          - scala: 3-next
+            gc: immix
+          - scala: 2.13
+            gc: immix
+          - scala: 2.12
+            gc: immix
+    steps:
+      # Disable autocrlf setting, otherwise scalalib patches might not be possible to apply
+      - name: Setup git config
+        run: git config --global core.autocrlf false
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/windows-setup-env
+        id: setup
+        with:
+          scala-version: ${{matrix.scala}}
+
+      # None GC takes too much memory on Windows to execute partest JUnit tests
+      # leading to spurious failures in the CI. Perform subset of tests instead
+      - name: Test runtime None GC
+        if: matrix.gc == 'none'
+        run: >
+          set SCALANATIVE_GC=${{matrix.gc}}&
+          set SCALANATIVE_INCLUDE_DIRS=${{steps.setup.outputs.vcpkg-dir}}\include&
+          set SCALANATIVE_LIB_DIRS=${{steps.setup.outputs.vcpkg-dir}}\lib&
+          set SCALANATIVE &
+          sbt 
+          sandbox${{env.project-version}}/run
+          testsJVM${{env.project-version}}/test
+          tests${{env.project-version}}/test
+          testsExt${{env.project-version}}/test
+          testsExtJVM${{env.project-version}}/test
+          "scalaPartestTests${{env.project-version}}/testOnly -- --showDiff neg/abstract.scala pos/abstract.scala run/Course-2002-01.scala"
+        shell: cmd
+
+      - name: Test runtime
+        if: matrix.gc != 'none'
+        run: >
+          set SCALANATIVE_GC=${{matrix.gc}}&
+          set SCALANATIVE_INCLUDE_DIRS=${{steps.setup.outputs.vcpkg-dir}}\include&
+          set SCALANATIVE_LIB_DIRS=${{steps.setup.outputs.vcpkg-dir}}\lib&
+          set SCALANATIVE &
+          sbt
+          "test-runtime ${{matrix.scala}}"
+          "scalaPartestTests${{env.project-version}}/testOnly -- --showDiff neg/abstract.scala pos/abstract.scala run/Course-2002-01.scala"
+        shell: cmd
+
+  run-scripted-tests:
+    name: Scripted tests
+    runs-on: windows-2022
+    strategy:
+      fail-fast: false
+      matrix:
+        scala: [2.12, 3]
+    steps:
+      # Disable autocrlf setting, otherwise scalalib patches might not be possible to apply
+      - name: Setup git config
+        run: git config --global core.autocrlf false
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/windows-setup-env
+        with:
+          scala-version: ${{matrix.scala}}
+
+      - name: Test scripted
+        run: sbt "test-scripted ${{matrix.scala}}"
+        shell: cmd
+
+  test-runtime-ext:
+    name: Test runtime extension
+    runs-on: windows-2022
+    env:
+      ENABLE_EXPERIMENTAL_COMPILER: true
+    needs: [test-runtime]
+    if: "(github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native'"
+    strategy:
+      fail-fast: false
+      matrix:
+        scala: [3, 3-next, 2.13]
+        build-mode: [debug, release-fast]
+        lto: [none, thin]
+        gc: [boehm, immix, commix]
+        exclude:
+          # Covered in basic test-runtime
+          - scala: 3
+            build-mode: debug
+          - scala: 2.13
+            build-mode: debug
+            gc: immix
+          - build-mode: release-fast
+            lto: none
+        include:
+          - scala: 3
+            build-mode: release-size
+            lto: thin
+            gc: immix
+          # ReleaseFull is flaky
+          # - scala: 3
+          #   build-mode: release-full
+          #   lto: thin
+          #   gc: commix
+    steps:
+      # Disable autocrlf setting, otherwise scalalib patches might not be possible to apply
+      - name: Setup git config
+        run: git config --global core.autocrlf false
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/windows-setup-env
+        id: setup
+        with:
+          scala-version: ${{matrix.scala}}
+
+      - name: Run tests
+        run: >
+          set SCALANATIVE_GC=${{matrix.gc}}&
+          set SCALANATIVE_MODE=${{matrix.build-mode}}&
+          set SCALANATIVE_LTO=${{matrix.lto}}&
+          set SCALANATIVE_INCLUDE_DIRS=${{steps.setup.outputs.vcpkg-dir}}\include&
+          set SCALANATIVE_LIB_DIRS=${{steps.setup.outputs.vcpkg-dir}}\lib&
+          set SCALANATIVE_CI_NO_DEBUG_SYMBOLS=true&
+          set SCALANATIVE &
+          sbt "test-runtime ${{matrix.scala}}"
+        shell: cmd
+
+  test-llvm-versions:
+    runs-on: windows-2022
+    strategy:
+      fail-fast: false
+      matrix:
+        scala: [3]
+        llvm: ["16.0.6", "17.0.2"] # Last 2 stable versions, LLVM 16 is minimal version able to compile current Windows SDK
+    if: "(github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native'"
+    steps:
+      - name: Setup git config
+        run: git config --global core.autocrlf false
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/windows-setup-env
+        id: setup
+        with:
+          scala-version: ${{matrix.scala}}
+          llvm-version: ${{ matrix.llvm }}
+          java-version: 8
+
+      - name: Run tests
+        shell: cmd
+        run: >
+          set SCALANATIVE_INCLUDE_DIRS=${{steps.setup.outputs.vcpkg-dir}}\include&
+          set SCALANATIVE_LIB_DIRS=${{steps.setup.outputs.vcpkg-dir}}\lib&
+          set SCALANATIVE_CI_NO_DEBUG_SYMBOLS=true&
+          set SCALANATIVE &
+          sbt "show tests3/nativeConfig" "test-runtime ${{matrix.scala}}"
+
+  test-multihreading:
+    name: Test experimental multithreading support
+    runs-on: windows-2022
+    strategy:
+      fail-fast: false
+      matrix:
+        scala: [3]
+        build-mode: [debug, release-fast]
+        gc: [boehm, immix]
+        lto: [none, thin]
+        exclude:
+          # Takes too much time to build
+          - build-mode: release-fast
+            lto: none
+          # Temporaly disabled, probably due the stack overflow in spawned threads
+          - build-mode: release-fast
+            lto: thin
+    steps:
+      - name: Setup git config
+        run: git config --global core.autocrlf false
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/windows-setup-env
+        id: setup
+        with:
+          scala-version: ${{matrix.scala}}
+
+      - name: Run tests
+        # 2x more then it should take to build and run tests
+        # Don't test junitTestOutputs, fails to link in lto:thin, release-fast
+        timeout-minutes: 60
+        run: >
+          set SCALANATIVE_GC=${{ matrix.gc }}&
+          set SCALANATIVE_LTO=${{ matrix.lto }}&
+          set SCALANATIVE_MODE=${{ matrix.build-mode }}&
+          set SCALANATIVE_INCLUDE_DIRS=${{steps.setup.outputs.vcpkg-dir}}\include&
+          set SCALANATIVE_LIB_DIRS=${{steps.setup.outputs.vcpkg-dir}}\lib&
+          set SCALANATIVE_CI_NO_DEBUG_SYMBOLS=true&
+          set SCALANATIVE &
+          set SCALANATIVE_TEST_PREFETCH_DEBUG_INFO=1&
+          sbt -Dscala.scalanative.multithreading.enable=true
+          sandbox${{env.project-version}}/run;
+          testsJVM${{env.project-version}}/test;
+          tests${{env.project-version}}/test;
+          scalaPartestJunitTests${{env.project-version}}/test
+        shell: cmd
