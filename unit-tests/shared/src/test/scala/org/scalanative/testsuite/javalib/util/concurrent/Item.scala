@@ -51,6 +51,10 @@ final class Item extends Number with Comparable[Item] with Serializable {
 }
 
 object Item {
+  import scala.language.implicitConversions
+  implicit def fromInt(v: Int): Item = valueOf(v)
+  implicit def fromInteger(v: Integer): Item = valueOf(v.intValue())
+
   def valueOf(i: Int) = new Item(i)
 
   def compare(x: Item, y: Item): Int = Integer.compare(x.value, y.value)
