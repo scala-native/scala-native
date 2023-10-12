@@ -723,7 +723,7 @@ For that to work, you have to specify an additional NativeConfig option:
 This will include the resource files found on the classpath in the resulting
 binary file.
 
-Also, you to specify include and exclude patterns for resources that are embedded in an executable using glob pattern.
+Also, you can specify which resources would be embedded in an executable using include or exclude glob pattern.
 By default, scala-native will include all the files in the classpath, and exclude none (there're some exceptions for files such as ``.class``, see below).
 By specifying the include patterns, only the files matching the include patterns will be included.
 This can be useful for reducing the size of your executables.
