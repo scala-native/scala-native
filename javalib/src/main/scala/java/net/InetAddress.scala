@@ -757,6 +757,7 @@ object InetAddress {
          */
         InetAddress.getByName(fromCString(hostName))
       } catch {
+        // FIXME: Document assumptions & limitations
         case e: UnknownHostException => SocketHelpers.loopbackIPv4()
       }
     }
