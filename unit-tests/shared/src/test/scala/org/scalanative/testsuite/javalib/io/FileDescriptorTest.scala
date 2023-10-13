@@ -16,9 +16,9 @@ class FileDescriptorTest {
   val fd = new FileDescriptor()
 
   @Test def validDescriptors(): Unit = {
-    assertTrue(in.valid())
-    assertTrue(out.valid())
-    assertTrue(err.valid())
+    assertTrue("in", in.valid())
+    assertTrue("out", out.valid())
+    assertTrue("err", err.valid())
   }
 
   @Test def invalidDescriptors(): Unit = {
@@ -46,10 +46,10 @@ class FileDescriptorTest {
 
   @Test def validShouldVerifyThatFileDescriptorIsStillValid(): Unit = {
     val tmpFile = File.createTempFile("tmp", ".tmp")
-    assertTrue(tmpFile.exists())
+    assertTrue("exists", tmpFile.exists())
     val fis = new FileInputStream(tmpFile)
-    assertTrue(fis.getFD().valid())
+    assertTrue("expected valid", fis.getFD().valid())
     fis.close()
-    assertFalse(fis.getFD().valid())
+    assertFalse("expected invalid", fis.getFD().valid())
   }
 }
