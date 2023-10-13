@@ -23,12 +23,13 @@ object ScalaVersions {
   val crossScala3 = List(
     (0 to 3).map(v => s"3.1.$v"),
     (0 to 2).map(v => s"3.2.$v"),
-    (0 to 0).map(v => s"3.3.$v")
+    (0 to 1).map(v => s"3.3.$v")
   ).flatten
 
   // Version of Scala 3 standard library sources used for publishing
   // Workaround allowing to produce NIR for Scala 3.2.x+ and allowing to consume existing libraries using 3.1.x
-  val scala3libSourcesVersion = crossScala3.last
+  // 3.3.0 is the last version which can be compiled using 3.1.3 compiler
+  val scala3libSourcesVersion = "3.3.0"
 
   // Scala versions used for publishing libraries
   val scala212: String = crossScala212.last
