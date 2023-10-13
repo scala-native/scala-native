@@ -12,7 +12,6 @@ import scala.scalanative.unsafe.Zone
 import scala.scalanative.unsigned.UInt
 import scalanative.unsigned._
 
-import scala.collection.mutable
 import scala.annotation.tailrec
 
 import java.io.File
