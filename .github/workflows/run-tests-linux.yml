@@ -167,12 +167,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [3.3.1, 2.13.10]
+        scala: [3.3.1, 2.13.12]
         lto: [thin]
         optimize: [true]
         include:
           # LTO full fails with 3.1 in the CI - we were not able to reproduce it locally
-          - scala: 2.13.10
+          - scala: 2.13.12
             lto: full
             optimize: true
           - scala: 3.3.1
