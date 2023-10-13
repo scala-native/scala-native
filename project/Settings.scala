@@ -320,7 +320,6 @@ object Settings {
               .takeWhile(_.isDigit)
               .toInt >= 2 =>
           useLightweightLazyVals
-        case (3, minor) if minor >= 3 => useLightweightLazyVals
       }
     },
     Test / testOptions ++= Seq(
