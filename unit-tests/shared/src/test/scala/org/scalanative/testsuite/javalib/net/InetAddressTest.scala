@@ -155,14 +155,10 @@ class InetAddressTest {
   }
 
   @Test def getLocalHost(): Unit = {
-    assumeFalse(
-      "Spuriously fails in the CI on MacOS-12",
-      Platform.isMacOs && sys.env.contains("CI")
-    )
-    /* If compiler does not optimize away, check that no Exception is thrown
-     * and something other than null is returned.
-     * This code will be run on many machines, with varied names.
-     * It is hard to check the actual InetAddress returned.
+    /* Check that no Exception is thrown and something other than null is
+     * returned.
+     * This code will be run on many machines, with varied names and
+     * configurations. It is hard to check the actual InetAddress returned.
      */
     assertNotNull(InetAddress.getLocalHost())
   }
