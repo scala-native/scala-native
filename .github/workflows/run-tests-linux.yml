@@ -113,9 +113,6 @@ jobs:
           - scala: 2.13.12
             build-mode: debug
             gc: immix
-          # Slow, leads to timeouts
-          - build-mode: release-fast
-            lto: none
         include:
           - scala: 3.3.1
             build-mode: release-size
