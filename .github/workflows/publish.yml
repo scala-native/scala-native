@@ -3,23 +3,28 @@ on:
   push:
     tags:
     - 'v0.4.*'
+  workflow_dispatch:
 
 jobs:
-  test-linux:
-    uses: ./.github/workflows/run-tests-linux.yml
-  test-windows:
-    uses: ./.github/workflows/run-tests-windows.yml
-  test-macos:
-    uses: ./.github/workflows/run-tests-macos.yml
-  test-jdk-compliance:
-    uses: ./.github/workflows/run-jdk-compliance-tests.yml
-  test-multiarch:
-    uses: ./.github/workflows/run-tests-linux-multiarch.yml
+  check-compiles:
+    name: Test compilation of all modules
+    runs-on: ubuntu-22.04
+    if: github.repository == 'scala-native/scala-native'
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/linux-setup-env
+        with:
+          scala-version: "2.13" #Unused, any version can be placed here
+          java-version: 8
+
+      - name: Compile everything
+        run: sbt "-v" "-J-Xmx7G" "++3.1.3; Test/compile; ++2.13.12; Test/compile; ++2.12.18; Test/compile"
 
   publish:
     name: Publish
     runs-on: ubuntu-22.04
-    needs: [test-linux, test-windows, test-macos, test-jdk-compliance, test-multiarch]
+    needs: [check-compiles]
+    if: github.repository == 'scala-native/scala-native'
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/linux-setup-env
