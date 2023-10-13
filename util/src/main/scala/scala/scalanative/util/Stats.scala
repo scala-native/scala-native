@@ -2,6 +2,7 @@ package scala.scalanative
 package util
 
 import scala.collection.mutable
+import scala.annotation.nowarn
 
 object Stats {
   private val times = mutable.Map.empty[String, Long]
@@ -73,7 +74,7 @@ object Stats {
     counts.clear()
   }
   private def threadKey(key: String): String =
-    "" + java.lang.Thread.currentThread.getId + ":" + key
+    "" + java.lang.Thread.currentThread.getId + ":" + key: @nowarn
   def in[T](f: => T): T = {
     clear()
     val res = f

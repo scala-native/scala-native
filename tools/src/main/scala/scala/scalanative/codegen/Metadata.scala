@@ -72,7 +72,7 @@ class Metadata(val linked: linker.Result, proxies: Seq[Defn])(implicit
 
     Rt.PrimitiveTypes.foreach(fromRootClass(_))
     fromRootClass(
-      Rt.Object.name,
+      Rt.Object.name.asInstanceOf[Global.Top],
       ordering = subclasses => {
         val (arrays, other) =
           subclasses.partition(_.name == Rt.GenericArray.name)

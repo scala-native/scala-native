@@ -243,7 +243,7 @@ private[scalanative] object LLVM {
       val MIRScriptFile = workdir.resolve("MIRScript").toFile
       val pw = new PrintWriter(MIRScriptFile)
       try {
-        pw.println(s"CREATE ${escapeWhitespaces(config.buildPath.abs)}")
+        pw.println(s"CREATE ${escapeWhitespaces(outpath.abs)}")
         stageFiles().foreach { path =>
           pw.println(s"ADDMOD ${escapeWhitespaces(path)}")
         }
@@ -260,7 +260,7 @@ private[scalanative] object LLVM {
     MRICompatibleAR match {
       case None =>
         val ar = Discover.discover("ar")
-        val command = Seq(ar.abs, "rc", config.buildPath.abs) ++ stageFiles()
+        val command = Seq(ar.abs, "rc", outpath.abs) ++ stageFiles()
         config.logger.running(command)
         Process(command, config.workdir.toFile())
       case Some(path) => useMRIScript(path)
