@@ -23,13 +23,13 @@ trait ConcurrentMap[K, V] extends Map[K, V] {
     case v    => v
   }
 
-  override def forEach(action: BiConsumer[? >: K, ? >: V]): Unit = {
+  override def forEach(action: BiConsumer[_ >: K, _ >: V]): Unit = {
     Objects.requireNonNull(action)
     entrySet().forEach(usingEntry(_)(action.accept))
   }
 
   override def replaceAll(
-      function: BiFunction[? >: K, ? >: V, ? <: V]
+      function: BiFunction[_ >: K, _ >: V, _ <: V]
   ): Unit = {
     Objects.requireNonNull(function)
     forEach { (k, _v) =>
@@ -44,7 +44,7 @@ trait ConcurrentMap[K, V] extends Map[K, V] {
 
   override def computeIfAbsent(
       key: K,
-      mappingFunction: Function[? >: K, ? <: V]
+      mappingFunction: Function[_ >: K, _ <: V]
   ): V = {
     Objects.requireNonNull(mappingFunction)
 
@@ -64,7 +64,7 @@ trait ConcurrentMap[K, V] extends Map[K, V] {
 
   override def computeIfPresent(
       key: K,
-      remappingFunction: BiFunction[? >: K, ? >: V, ? <: V]
+      remappingFunction: BiFunction[_ >: K, _ >: V, _ <: V]
   ): V = {
     Objects.requireNonNull(remappingFunction)
     while ({
@@ -85,7 +85,7 @@ trait ConcurrentMap[K, V] extends Map[K, V] {
 
   override def compute(
       key: K,
-      remappingFunction: BiFunction[? >: K, ? >: V, ? <: V]
+      remappingFunction: BiFunction[_ >: K, _ >: V, _ <: V]
   ): V = {
     var oldValue = get(key)
     while (true) { // haveOldValue
@@ -110,7 +110,7 @@ trait ConcurrentMap[K, V] extends Map[K, V] {
   override def merge(
       key: K,
       value: V,
-      remappingFunction: BiFunction[? >: V, ? >: V, ? <: V]
+      remappingFunction: BiFunction[_ >: V, _ >: V, _ <: V]
   ): V = {
     Objects.requireNonNull(remappingFunction)
     Objects.requireNonNull(value)
