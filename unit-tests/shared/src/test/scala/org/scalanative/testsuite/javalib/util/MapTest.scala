@@ -9,7 +9,6 @@ import org.junit.Test
 import org.junit.Assert._
 import org.junit.Assume._
 
-import org.scalanative.testsuite.javalib.util.concurrent.ConcurrentMapFactory
 import org.scalanative.testsuite.utils.AssertThrows.{assertThrows, _}
 import org.scalanative.testsuite.utils.Platform._
 

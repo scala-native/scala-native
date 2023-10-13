@@ -5,14 +5,14 @@ import scalanative.unsafe._
 import scalanative.unsigned._
 import scalanative.runtime.unwind
 import scala.scalanative.meta.LinktimeInfo
-// TODO: Replace with j.u.c.ConcurrentHashMap when implemented to remove scalalib dependency and save loading ~600 symbols
-import scala.collection.concurrent.TrieMap
 import scala.scalanative.runtime.Backtrace
 import scala.scalanative.runtime.NativeThread
 import scala.scalanative.libc.stdlib.{malloc, calloc, free}
 
+import java.util.concurrent.ConcurrentHashMap
+
 private[lang] object StackTrace {
-  private val cache = TrieMap.empty[CUnsignedLong, StackTraceElement]
+  private val cache = new ConcurrentHashMap[CUnsignedLong, StackTraceElement]
 
   private def makeStackTraceElement(
       cursor: Ptr[scala.Byte],
@@ -44,7 +44,7 @@ private[lang] object StackTrace {
       cursor: Ptr[scala.Byte],
       ip: CUnsignedLong
   ): StackTraceElement =
-    cache.getOrElseUpdate(ip, makeStackTraceElement(cursor, ip))
+    cache.computeIfAbsent(ip, makeStackTraceElement(cursor, _))
 
   @noinline private[lang] def currentStackTrace(): Array[StackTraceElement] = {
     // Used to prevent filling stacktraces inside `currentStackTrace` which might lead to infinite loop

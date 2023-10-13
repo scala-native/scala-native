@@ -7,8 +7,9 @@ import scala.scalanative.unsafe._
 import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
 import scala.scalanative.runtime.libc.atomic_thread_fence
 import scala.scalanative.runtime.libc.memory_order._
-import scala.collection.concurrent.TrieMap
 import scala.annotation.nowarn
+
+import java.util.concurrent.ConcurrentHashMap
 
 trait NativeThread {
   import NativeThread._
@@ -97,7 +98,7 @@ object NativeThread {
 
   object Registry {
     // Replace with ConcurrentHashMap when thread-safe
-    private val _aliveThreads = TrieMap.empty[Long, NativeThread]
+    private val _aliveThreads = new ConcurrentHashMap[Long, NativeThread]
 
     private[NativeThread] def add(thread: NativeThread): Unit =
       _aliveThreads.put(thread.thread.getId(): @nowarn, thread)
@@ -106,7 +107,7 @@ object NativeThread {
       _aliveThreads.remove(thread.thread.getId(): @nowarn)
 
     def aliveThreads: scala.Array[NativeThread] =
-      _aliveThreads.values.toArray
+      _aliveThreads.values.toArray().asInstanceOf[scala.Array[NativeThread]]
 
     def onMainThreadTermination() = {
       _aliveThreads.remove(MainThreadId)

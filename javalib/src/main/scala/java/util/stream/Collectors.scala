@@ -373,7 +373,7 @@ object Collectors {
       .asInstanceOf[Collector[T, AnyRef, Map[K, D]]]
   }
 
-  def groupingByConcurrent[T, K](
+  def groupingByConcurrent[T <: AnyRef, K <: AnyRef](
       classifier: Function[_ >: T, _ <: K]
   ): Collector[T, AnyRef, ConcurrentMap[K, List[T]]] = {
     type A = ConcurrentHashMap[K, ArrayList[T]]
@@ -425,7 +425,10 @@ object Collectors {
       .asInstanceOf[Collector[T, AnyRef, ConcurrentMap[K, List[T]]]]
   }
 
-  def groupingByConcurrent[T, K, D, A, M <: ConcurrentMap[K, D]](
+  def groupingByConcurrent[T <: AnyRef, K <: AnyRef, D, A, M <: ConcurrentMap[
+    K,
+    D
+  ]](
       classifier: Function[_ >: T, _ <: K],
       mapFactory: Supplier[M],
       downstream: Collector[_ >: T, A, D]
@@ -493,7 +496,7 @@ object Collectors {
       .asInstanceOf[Collector[T, AnyRef, M]]
   }
 
-  def groupingByConcurrent[T, K, A, D](
+  def groupingByConcurrent[T <: AnyRef, K <: AnyRef, A, D <: AnyRef](
       classifier: Function[_ >: T, _ <: K],
       downstream: Collector[_ >: T, A, D]
   ): Collector[T, AnyRef, ConcurrentMap[K, D]] = {
@@ -1161,7 +1164,7 @@ object Collectors {
       .asInstanceOf[Collector[T, AnyRef, C]]
   }
 
-  def toConcurrentMap[T, K, U](
+  def toConcurrentMap[T <: AnyRef, K <: AnyRef, U <: AnyRef](
       keyMapper: Function[_ >: T, _ <: K],
       valueMapper: Function[_ >: T, _ <: U]
   ): Collector[T, AnyRef, ConcurrentMap[K, U]] = {
@@ -1182,7 +1185,7 @@ object Collectors {
       .asInstanceOf[Collector[T, AnyRef, ConcurrentMap[K, U]]]
   }
 
-  def toConcurrentMap[T, K, U](
+  def toConcurrentMap[T <: AnyRef, K <: AnyRef, U <: AnyRef](
       keyMapper: Function[_ >: T, _ <: K],
       valueMapper: Function[_ >: T, _ <: U],
       mergeFunction: BinaryOperator[U]

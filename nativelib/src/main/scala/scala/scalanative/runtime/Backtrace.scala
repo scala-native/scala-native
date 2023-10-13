@@ -12,11 +12,10 @@ import scala.scalanative.unsafe.Zone
 import scala.scalanative.unsigned.UInt
 import scalanative.unsigned._
 
-import scala.collection.mutable
-import scala.collection.concurrent.TrieMap
 import scala.annotation.tailrec
 
 import java.io.File
+import java.util.concurrent.ConcurrentHashMap
 
 object Backtrace {
   private sealed trait Format
@@ -40,7 +39,7 @@ object Backtrace {
   private val MACHO_MAGIC = "cffaedfe"
   private val ELF_MAGIC = "7f454c46"
 
-  private val cache = TrieMap.empty[String, Option[DwarfInfo]]
+  private val cache = new ConcurrentHashMap[String, Option[DwarfInfo]]
   case class Position(filename: String, line: Int)
   object Position {
     final val empty = Position(null, 0)
@@ -48,11 +47,11 @@ object Backtrace {
 
   def decodePosition(pc: Long): Position = {
     cache.get(filename) match {
-      case Some(None) =>
-        Position.empty // cached, there's no debug section
-      case Some(Some(info)) =>
-        impl(pc, info)
       case None =>
+        Position.empty // cached, there's no debug section
+      case Some(info) =>
+        impl(pc, info)
+      case null =>
         processFile(filename, None) match {
           case None =>
             // there's no debug section, cache it so we don't parse the exec file any longer

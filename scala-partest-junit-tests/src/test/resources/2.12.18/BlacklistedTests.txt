@@ -170,9 +170,6 @@ scala/collection/mutable/PriorityQueueTest.scala
 #j.u.c.LinkedBlockingQueue
 scala/sys/process/PipedProcessTest.scala
 
-#j.u.c.ConcurrentHashMap
-scala/collection/convert/NullSafetyToScalaTest.scala
-scala/collection/convert/NullSafetyToJavaTest.scala
 
 # Concurrency primitives
 scala/io/SourceTest.scala
