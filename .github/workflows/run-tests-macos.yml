@@ -20,9 +20,9 @@ jobs:
         scala: [3.3.1]
         gc: [none, boehm, immix, commix]
         include:
-          - scala: 2.13.10
+          - scala: 2.13.12
             gc: commix
-          - scala: 2.13.10
+          - scala: 2.13.12
             gc: none
           - scala: 2.12.18
             gc: boehm

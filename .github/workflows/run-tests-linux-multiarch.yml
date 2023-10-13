@@ -79,7 +79,7 @@ jobs:
       fail-fast: false
       matrix:
         arch: [linux-arm64]
-        scala: [2.13.10, 3.3.1]
+        scala: [2.13.12, 3.3.1]
         build-mode: [debug, release-fast]
         lto: [none, thin]
         gc: [boehm, immix, commix]
@@ -97,7 +97,7 @@ jobs:
           - gc: immix
             build-mode: debug
           - gc: immix
-            scala: 2.13.10
+            scala: 2.13.12
           - gc: commix
             lto: none
           - gc: commix

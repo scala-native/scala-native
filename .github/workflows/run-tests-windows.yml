@@ -17,12 +17,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [3.3.1, 2.13.10]
+        scala: [3.3.1, 2.13.12]
         gc: [none, boehm, immix, commix]
         include:
           - scala: 2.12.18
             gc: immix
-          - scala: 2.13.10
+          - scala: 2.13.12
             gc: boehm
     steps:
       # Disable autocrlf setting, otherwise scalalib patches might not be possible to apply
@@ -116,7 +116,7 @@ jobs:
             build-mode: release-full
             lto: full
             optimize: true
-          - scala: 2.12.17
+          - scala: 2.12.18
             lto: full
             optimize: false
     steps:
