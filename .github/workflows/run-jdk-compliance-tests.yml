@@ -43,7 +43,6 @@ jobs:
           _JAVA_OPTIONS='${{ matrix.java-options }}'
           SCALANATIVE_TEST_PREFETCH_DEBUG_INFO=1
           sbt 
-          -Dscala.scalanative.multithreading.enable=true 
           "-J-Xmx3G" 
           "test-runtime ${{matrix.scala}}"
 
@@ -75,5 +74,4 @@ jobs:
           set _JAVA_OPTIONS=${{ matrix.java-options }} &
           set SCALANATIVE_TEST_PREFETCH_DEBUG_INFO=1 &
           sbt 
-          -Dscala.scalanative.multithreading.enable=true 
           "test-runtime ${{matrix.scala}}"

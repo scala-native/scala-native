@@ -37,15 +37,16 @@ jobs:
           gc: ${{ matrix.gc }}
 
       - name: Test runtime
-        run: >
-          export SCALANATIVE_GC=${{matrix.gc}} &&
-          sbt "test-runtime ${{matrix.scala}}"
+        env: 
+          SCALANATIVE_GC: ${{ matrix.gc }}
+          SCALANATIVE_TEST_PREFETCH_DEBUG_INFO: 1
+        run: sbt -Dscala.scalanative.multithreading.enable=${{ matrix.gc != 'commix' }} "test-runtime ${{matrix.scala}}"
 
       - name: Test partests infrastructure
         # No partests support for Scala 3
         if: ${{ !startsWith(matrix.scala, '3') }}
         run: >
-          sbt "scalaPartestTests${{env.project-version}}/testOnly -- --showDiff neg/abstract.scala pos/abstract.scala run/Course-2002-01.scala"
+          sbt -Dscala.scalanative.multithreading.enable=${{ matrix.gc != 'commix' }} "scalaPartestTests${{env.project-version}}/testOnly -- --showDiff neg/abstract.scala pos/abstract.scala run/Course-2002-01.scala"
 
   test-runtime-ext:
     name: Test runtime extension
@@ -101,6 +102,7 @@ jobs:
           SCALANATIVE_GC: ${{ matrix.gc }}
           SCALANATIVE_LTO: ${{ matrix.lto }}
           SCALANATIVE_OPTIMIZE: true
+          SCALANATIVE_TEST_PREFETCH_DEBUG_INFO: 1
           TEST_COMMAND: >
             set sandbox.forBinaryVersion("${{env.binary-version}}")/${{env.set-native-config}};
             set tests.forBinaryVersion("${{env.binary-version}}")/${{env.set-native-config}};
@@ -118,7 +120,7 @@ jobs:
         run: |
           export LLVM_BIN="$(brew --prefix llvm@15)/bin"
           $LLVM_BIN/clang --version
-          sbt -J-Xmx5G "${TEST_COMMAND}"
+          sbt -Dscala.scalanative.multithreading.enable=${{ matrix.gc != 'commix' }} -J-Xmx5G "${TEST_COMMAND}"
 
   run-scripted-tests:
     name: Scripted tests
@@ -137,87 +139,6 @@ jobs:
         run: |
           export LLVM_BIN=$(brew --prefix llvm@15)/bin
           sbt "test-scripted ${{matrix.scala}}"
-
-  test-multihreading:
-    name: Test experimental multithreading support
-    runs-on: macos-12
-    env:
-      ENABLE_EXPERIMENTAL_COMPILER: true
-      SCALANATIVE_TEST_PREFETCH_DEBUG_INFO: 1
-    strategy:
-      fail-fast: false
-      matrix:
-        scala: [3]
-        build-mode: [debug, release-fast]
-        gc: [boehm, immix]
-        lto: [none, thin]
-        include:
-          - scala: 3-next
-            build-mode: release-fast
-            lto: thin
-            gc: immix
-        exclude:
-          # Takes too much time to build
-          - build-mode: release-fast
-            lto: none
-          # Temporaly disabled, probably due the stack overflow in spawned threads
-          - build-mode: release-fast
-            lto: thin
-    steps:
-      - uses: actions/checkout@v3
-      - uses: ./.github/actions/macos-setup-env
-        with:
-          scala-version: ${{matrix.scala}}
-          gc: ${{ matrix.gc }}
-
-      - name: Prepare native config command
-        shell: bash
-        # Linking on MacOS in GithubActions fails when using default linker (ld), use lld instead
-        run: |
-          buildMode=${{matrix.build-mode}}
-          if [[ "$buildMode" == "release-fast" ]]; then 
-            buildMode=releaseFast
-          fi
-
-          SetConfigTemplate=$(cat << EOM
-            nativeConfig ~= { prev =>
-              prev
-                .withMode(scalanative.build.Mode.${buildMode})
-                .withGC(scalanative.build.GC.${{matrix.gc}})
-                .withLTO(scalanative.build.LTO.${{matrix.lto}})
-                .withEmbedResources(true)
-                .withCheck(true)
-                .withCheckFatalWarnings(true)
-                .withMultithreadingSupport(true)
-                .withLinkingOptions(_ :+ "-fuse-ld=lld")
-            }
-          EOM
-          )
-
-          echo set-native-config=${SetConfigTemplate} >> $GITHUB_ENV
-
-      - name: Run tests
-        # 2x more then it should take to build and run tests
-        timeout-minutes: 60
-        env:
-          TEST_COMMAND: >
-            set sandbox.forBinaryVersion("${{env.binary-version}}")/${{env.set-native-config}};
-            set tests.forBinaryVersion("${{env.binary-version}}")/${{env.set-native-config}};
-            set junitTestOutputsNative.forBinaryVersion("${{env.binary-version}}")/${{env.set-native-config}};
-            set scalaPartestJunitTests.forBinaryVersion("${{env.binary-version}}")/${{env.set-native-config}};
-
-            show tests${{env.project-version}}/nativeConfig;
-
-            sandbox${{env.project-version}}/run;
-            testsJVM${{env.project-version}}/test;
-            tests${{env.project-version}}/test;
-            junitTestOutputsJVM${{env.project-version}}/test;
-            junitTestOutputsNative${{env.project-version}}/test;
-            scalaPartestJunitTests${{env.project-version}}/test
-        run: |
-          export LLVM_BIN="$(brew --prefix llvm@15)/bin"
-          $LLVM_BIN/clang --version
-          sbt -J-Xmx5G "${TEST_COMMAND}"
 
   test-llvm-versions:
     runs-on: macos-12

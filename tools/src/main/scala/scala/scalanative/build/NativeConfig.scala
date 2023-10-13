@@ -237,7 +237,7 @@ object NativeConfig {
       linkStubs = false,
       optimize = true,
       useIncrementalCompilation = true,
-      multithreadingSupport = false,
+      multithreadingSupport = true,
       linktimeProperties = Map.empty,
       embedResources = false,
       baseName = "",
