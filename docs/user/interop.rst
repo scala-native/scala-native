@@ -189,26 +189,26 @@ You can also disable generation of library constructors by defining `-DSCALANATI
 
 .. code-block:: c
 
-    # libmylib.h
+    // libmylib.h
     int ScalaNativeInit(void);
     long addLongs(long, long);
     int addInts(int, int);
     int mylib_current_count();
     void mylib_set_counter(int);
 
-    # test.c
+    // test.c
     #include "libmylib.h"
     #include <assert.h>
 
     int main(int argc, char** argv){
-      # This function needs to be called before invoking any methods defined in Scala Native.
-      # Might be called automatically unless SCALANATIVE_NO_DYLIB_CTOR env variable is set.
+      // This function needs to be called before invoking any methods defined in Scala Native.
+      // Might be called automatically unless SCALANATIVE_NO_DYLIB_CTOR env variable is set.
       assert(ScalaNativeInit() == 0);
       addLongs(0L, 4L);
       mylib_addInts(4, 0);
       printf("Current count %d\n", mylib_current_count());
       mylib_set_counter(42);
-      ...
+      // ...
     }
 
 Pointer types
