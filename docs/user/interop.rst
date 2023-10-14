@@ -199,6 +199,7 @@ You can also disable generation of library constructors by defining `-DSCALANATI
     // test.c
     #include "libmylib.h"
     #include <assert.h>
+    #include <stdio.h>
 
     int main(int argc, char** argv){
       // This function needs to be called before invoking any methods defined in Scala Native.
