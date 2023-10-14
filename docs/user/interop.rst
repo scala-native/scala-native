@@ -192,7 +192,7 @@ You can also disable generation of library constructors by defining `-DSCALANATI
     // libmylib.h
     int ScalaNativeInit(void);
     long addLongs(long, long);
-    int addInts(int, int);
+    int mylib_addInts(int, int);
     int mylib_current_count();
     void mylib_set_counter(int);
 
