@@ -70,6 +70,7 @@ lazy val projectF = (project in file("F"))
     scalaVersion := commonScalaVersion
   )
 
+// Test scala-native doesn't embed resources that matchs with the exclude patterns, even if they are matched with include patterns.
 lazy val projectG = (project in file("G"))
   .enablePlugins(ScalaNativePlugin)
   .settings(

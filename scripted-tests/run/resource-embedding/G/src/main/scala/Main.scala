@@ -10,7 +10,7 @@ object Main {
     )
     assert(
       getClass().getResourceAsStream("exclude/b.txt") == null,
-      "test.h shouldn't be embedded because exclude directory matches with exclude pattern"
+      "exclude/b.txt shouldn't be embedded even though it matches with the include pattern '**' because it also matches with exclude pattern"
     )
   }
 }
