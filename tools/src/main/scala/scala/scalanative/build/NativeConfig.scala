@@ -75,6 +75,14 @@ sealed trait NativeConfig {
    */
   def embedResources: Boolean
 
+  /** A glob pattern that matches list of files to embed into the executable. */
+  def resourceIncludePatterns: Seq[String]
+
+  /** A glob pattern that matches list of files to exclude from embedding into
+   *  the executable.
+   */
+  def resourceExcludePatterns: Seq[String]
+
   /** Base name for executable or library, typically the project name. */
   def baseName: String
 
@@ -194,6 +202,12 @@ sealed trait NativeConfig {
    */
   def withEmbedResources(value: Boolean): NativeConfig
 
+  /** Create a new [[NativeConfig]] with updated resource include patterns. */
+  def withResourceIncludePatterns(value: Seq[String]): NativeConfig
+
+  /** Create a new [[NativeConfig]] with updated resource exclude patterns. */
+  def withResourceExcludePatterns(value: Seq[String]): NativeConfig
+
   /** Create a new config with given base artifact name.
    *
    *  Warning: must be unique across project modules.
@@ -240,6 +254,8 @@ object NativeConfig {
       multithreadingSupport = true,
       linktimeProperties = Map.empty,
       embedResources = false,
+      resourceIncludePatterns = Seq("**"),
+      resourceExcludePatterns = Seq.empty,
       baseName = "",
       optimizerConfig = OptimizerConfig.empty,
       debugMetadata = false
@@ -266,6 +282,8 @@ object NativeConfig {
       multithreadingSupport: Boolean,
       linktimeProperties: LinktimeProperites,
       embedResources: Boolean,
+      resourceIncludePatterns: Seq[String],
+      resourceExcludePatterns: Seq[String],
       baseName: String,
       optimizerConfig: OptimizerConfig,
       debugMetadata: Boolean
@@ -347,6 +365,14 @@ object NativeConfig {
       copy(embedResources = value)
     }
 
+    def withResourceIncludePatterns(value: Seq[String]): NativeConfig = {
+      copy(resourceIncludePatterns = value)
+    }
+
+    def withResourceExcludePatterns(value: Seq[String]): NativeConfig = {
+      copy(resourceExcludePatterns = value)
+    }
+
     def withBaseName(value: String): NativeConfig = {
       copy(baseName = value)
     }
@@ -376,28 +402,30 @@ object NativeConfig {
         }
       }
       s"""NativeConfig(
-        | - clang:                  $clang
-        | - clangPP:                $clangPP
-        | - linkingOptions:         $linkingOptions
-        | - compileOptions:         $compileOptions
-        | - targetTriple:           $targetTriple
-        | - GC:                     $gc
-        | - LTO:                    $lto
-        | - mode:                   $mode
-        | - buildTarget             $buildTarget
-        | - check:                  $check
-        | - checkFatalWarnings:     $checkFatalWarnings
-        | - checkFeatures           $checkFeatures
-        | - dump:                   $dump
-        | - asan:                   $asan
-        | - linkStubs:              $linkStubs
-        | - optimize                $optimize
-        | - incrementalCompilation: $useIncrementalCompilation
-        | - multithreading          $multithreadingSupport
-        | - linktimeProperties:     $listLinktimeProperties
-        | - embedResources:         $embedResources
-        | - baseName:               $baseName
-        | - optimizerConfig:        ${optimizerConfig.show(" " * 3)}
+        | - clang:                   $clang
+        | - clangPP:                 $clangPP
+        | - linkingOptions:          $linkingOptions
+        | - compileOptions:          $compileOptions
+        | - targetTriple:            $targetTriple
+        | - GC:                      $gc
+        | - LTO:                     $lto
+        | - mode:                    $mode
+        | - buildTarget              $buildTarget
+        | - check:                   $check
+        | - checkFatalWarnings:      $checkFatalWarnings
+        | - checkFeatures            $checkFeatures
+        | - dump:                    $dump
+        | - asan:                    $asan
+        | - linkStubs:               $linkStubs
+        | - optimize                 $optimize
+        | - incrementalCompilation:  $useIncrementalCompilation
+        | - multithreading           $multithreadingSupport
+        | - linktimeProperties:      $listLinktimeProperties
+        | - embedResources:          $embedResources
+        | - resourceIncludePatterns: ${resourceIncludePatterns.mkString(", ")}
+        | - resourceExcludePatterns: ${resourceExcludePatterns.mkString(", ")}
+        | - baseName:                $baseName
+        | - optimizerConfig:         ${optimizerConfig.show(" " * 3)}
         |)""".stripMargin
     }
   }

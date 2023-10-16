@@ -59,3 +59,37 @@ lazy val projectE = (project in file("E"))
     },
     scalaVersion := commonScalaVersion
   )
+
+lazy val projectF = (project in file("F"))
+  .enablePlugins(ScalaNativePlugin)
+  .settings(
+    nativeConfig ~= {
+      _.withEmbedResources(true)
+        .withResourceIncludePatterns(Seq("**.txt", "dir/**"))
+    },
+    scalaVersion := commonScalaVersion
+  )
+
+// Test scala-native doesn't embed resources that matchs with the exclude patterns, even if they are matched with include patterns.
+lazy val projectG = (project in file("G"))
+  .enablePlugins(ScalaNativePlugin)
+  .settings(
+    nativeConfig ~= {
+      _.withEmbedResources(true)
+        .withResourceIncludePatterns(Seq("**"))
+        .withResourceExcludePatterns(Seq("exclude/**"))
+    },
+    scalaVersion := commonScalaVersion
+  )
+
+// Test scala-native doesn't embed resources like "/LICENSE" and "/NOTICE" if they are not explicitly included.
+lazy val projectH = (project in file("H"))
+  .enablePlugins(ScalaNativePlugin)
+  .settings(
+    nativeConfig ~= {
+      _.withEmbedResources(true)
+        .withResourceIncludePatterns(Seq("*.conf"))
+        .withResourceExcludePatterns(Seq("exclude/**"))
+    },
+    scalaVersion := commonScalaVersion
+  )
