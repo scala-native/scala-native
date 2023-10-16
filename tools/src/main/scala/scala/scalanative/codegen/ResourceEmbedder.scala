@@ -57,7 +57,7 @@ private[scalanative] object ResourceEmbedder {
           excludePatterns
             .find(_.matches(path))
             .map(excludePattern =>
-              s"Matched by $includePattern by excluded by $excludePattern"
+              s"Matched by '$includePattern', but excluded by '$excludePattern'"
             )
       }
 
