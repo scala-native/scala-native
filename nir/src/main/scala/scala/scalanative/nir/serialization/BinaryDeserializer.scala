@@ -449,7 +449,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, fileName: String) {
       case T.ConstVal   => Val.Const(getVal())
       case T.StringVal  => Val.String(getString())
       case T.VirtualVal => Val.Virtual(getLebUnsignedLong())
-      case T.ClassOfVal => Val.ClassOf(getGlobal())
+      case T.ClassOfVal => Val.ClassOf(getGlobal().narrow[Global.Top])
       case T.SizeVal    => Val.Size(getLebUnsignedLong())
     }
   }

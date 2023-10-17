@@ -71,6 +71,7 @@ object MyScalaNativePlugin extends AutoPlugin {
           multithreadingEnabledBySbtSysProps()
             .getOrElse(nc.multithreadingSupport)
         )
+        .withDisabledServiceProviders(Seq("DisabledCharsetProvider"))
     },
     scalacOptions ++= {
       // Link source maps to GitHub sources

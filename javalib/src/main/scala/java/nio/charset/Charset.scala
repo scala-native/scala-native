@@ -3,6 +3,7 @@ package java.nio.charset
 import scala.collection.mutable
 import java.util.{Collections, HashSet, Arrays}
 import java.nio.{ByteBuffer, CharBuffer}
+import java.nio.charset.spi.CharsetProvider
 
 abstract class Charset protected (
     canonicalName: String,
@@ -149,6 +150,13 @@ object Charset {
 
     for (s <- Seq("utf-16", "utf_16", "unicode", "unicodebig")) m(s) = UTF_16
 
+    java.util.ServiceLoader.load(classOf[CharsetProvider]).forEach { provider =>
+      provider.charsets().forEachRemaining { charset =>
+        charset.aliases().forEach { alias =>
+          m(alias) = charset
+        }
+      }
+    }
     m
   }
 

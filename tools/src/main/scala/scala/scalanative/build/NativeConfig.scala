@@ -91,6 +91,9 @@ sealed trait NativeConfig {
   /** Should we add LLVM metadata to the binary artifacts? */
   def debugMetadata: Boolean
 
+  /** List of service providers which shall be excluded from the final binary */
+  def disabledServiceProviders: Seq[String]
+
   private[scalanative] lazy val configuredOrDetectedTriple =
     TargetTriple.parse(targetTriple.getOrElse(Discover.targetTriple(this)))
 
@@ -207,6 +210,9 @@ sealed trait NativeConfig {
   /** Create a new [[NativeConfig]] with updated resource exclude patterns. */
   def withResourceExcludePatterns(value: Seq[String]): NativeConfig
 
+  /** Create a new [[NativeConfig]] with a updated list of service providers excluded from the final binary */
+  def withDisabledServiceProviders(value: Seq[String]): NativeConfig
+
   /** Create a new config with given base artifact name.
    *
    *  Warning: must be unique across project modules.
@@ -255,6 +261,7 @@ object NativeConfig {
       embedResources = false,
       resourceIncludePatterns = Seq("**"),
       resourceExcludePatterns = Seq.empty,
+      disabledServiceProviders = Seq.empty,
       baseName = "",
       optimizerConfig = OptimizerConfig.empty,
       debugMetadata = false
@@ -283,6 +290,7 @@ object NativeConfig {
       embedResources: Boolean,
       resourceIncludePatterns: Seq[String],
       resourceExcludePatterns: Seq[String],
+      disabledServiceProviders: Seq[String],
       baseName: String,
       optimizerConfig: OptimizerConfig,
       debugMetadata: Boolean
@@ -370,6 +378,10 @@ object NativeConfig {
 
     def withResourceExcludePatterns(value: Seq[String]): NativeConfig = {
       copy(resourceExcludePatterns = value)
+    }
+    
+    def withDisabledServiceProviders(value: Seq[String]): NativeConfig = {
+      copy(disabledServiceProviders = value)
     }
 
     def withBaseName(value: String): NativeConfig = {
