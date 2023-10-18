@@ -368,8 +368,8 @@ object Settings {
     )
   }
 
-  // Get all blacklisted tests from a file
-  def blacklistedFromFile(
+  // Get all denylisted tests from a file
+  def denylistedFromFile(
       file: File,
       ignoreMissing: Boolean = false
   ): Set[String] =
@@ -392,26 +392,26 @@ object Settings {
       }
     }
 
-  // Check the coherence of the blacklist against the files found.
-  def checkBlacklistCoherency(
-      blacklist: Set[String],
+  // Check the coherence of the denylist against the files found.
+  def checkDenylistCoherency(
+      denylist: Set[String],
       sources: Seq[(String, File)]
   ) = {
     val allClasses = sources.map(_._1).toSet
-    val nonexistentBlacklisted = blacklist.diff(allClasses)
-    if (nonexistentBlacklisted.nonEmpty) {
+    val nonexistentDenylisted = denylist.diff(allClasses)
+    if (nonexistentDenylisted.nonEmpty) {
       throw new AssertionError(
-        s"Sources not found for blacklisted tests:\n$nonexistentBlacklisted"
+        s"Sources not found for denylisted tests:\n$nonexistentDenylisted"
       )
     }
   }
 
-  def sharedTestSource(withBlacklist: Boolean) = Def.settings(
+  def sharedTestSource(withDenylist: Boolean) = Def.settings(
     Test / unmanagedSources ++= {
-      val blacklist: Set[String] =
-        if (withBlacklist)
-          blacklistedFromFile(
-            (Test / resourceDirectory).value / "BlacklistedTests.txt"
+      val denylist: Set[String] =
+        if (withDenylist)
+          denylistedFromFile(
+            (Test / resourceDirectory).value / "DenylistedTests.txt"
           )
         else Set.empty
 
@@ -433,17 +433,17 @@ object Settings {
         scalaVersionDirectories(sharedTestsDir, "scala", scalaVersion.value)
           .++(extraSharedDirectories)
           .flatMap(allScalaFromDir(_))
-      // Blacklist contains relative paths from inside of scala version directory (scala, scala-2, etc)
-      // List content of all scala directories when checking blacklist coherency
+      // Denylist contains relative paths from inside of scala version directory (scala, scala-2, etc)
+      // List content of all scala directories when checking denylist coherency
       val allScalaSources = sharedTestsDir
         .listFiles()
         .toList
         .filter(_.getName().startsWith("scala"))
         .flatMap(allScalaFromDir(_))
-      checkBlacklistCoherency(blacklist, allScalaSources)
+      checkDenylistCoherency(denylist, allScalaSources)
 
       sharedScalaSources.collect {
-        case (path, file) if !blacklist.contains(path) => file
+        case (path, file) if !denylist.contains(path) => file
       }
     },
     Test / unmanagedResourceDirectories += {

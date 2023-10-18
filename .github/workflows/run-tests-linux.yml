@@ -32,7 +32,7 @@ jobs:
       - name: Test tools
         run: sbt "test-tools ${{ matrix.scala }}; toolsBenchmarks${{env.project-version}}/Jmh/compile"
 
-        # Make sure that Scala partest blacklisted tests contain only valid test names
+        # Make sure that Scala partest denylisted tests contain only valid test names
       - name: Setup Scala-cli
         uses: VirtusLab/scala-cli-setup@v0.1
 

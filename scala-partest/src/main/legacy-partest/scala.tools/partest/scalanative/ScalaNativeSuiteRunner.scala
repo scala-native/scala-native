@@ -12,7 +12,7 @@ trait ScalaNativeSuiteRunner extends SuiteRunner {
 
   val options: ScalaNativePartestOptions
 
-  /** Full scala version name. Used to discover blacklist (etc.) files */
+  /** Full scala version name. Used to discover denylist (etc.) files */
   val scalaVersion: String
 
   // Stuff we provide
@@ -59,9 +59,9 @@ trait ScalaNativeSuiteRunner extends SuiteRunner {
   private lazy val listDir =
     s"/scala/tools/partest/scalanative/$scalaVersion"
 
-  private lazy val blacklistedTests = {
+  private lazy val denylistedTests = {
     val source = scala.io.Source
-      .fromURL(getClass.getResource(s"$listDir/BlacklistedTests.txt"))
+      .fromURL(getClass.getResource(s"$listDir/DenylistedTests.txt"))
 
     val files = for {
       line <- source.getLines
@@ -83,8 +83,8 @@ trait ScalaNativeSuiteRunner extends SuiteRunner {
   private lazy val testFilter: File => Boolean = {
     import ScalaNativePartestOptions._
     options.testFilter match {
-      case BlacklistedTests => blacklistedTests
-      case WhitelistedTests => n => !blacklistedTests.contains(n)
+      case DenylistedTests  => denylistedTests
+      case AllowlistedTests => n => !denylistedTests.contains(n)
       case SomeTests(names) => names.map(extendShortTestName _).toSet
     }
   }

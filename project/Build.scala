@@ -626,7 +626,7 @@ object Build {
       buildInfoSettings,
       noPublishSettings,
       testsCommonSettings,
-      sharedTestSource(withBlacklist = false),
+      sharedTestSource(withDenylist = false),
       javaVersionSharedTestSources,
       nativeConfig ~= { c =>
         c.withLinkStubs(true)
@@ -660,7 +660,7 @@ object Build {
         buildInfoJVMSettings,
         noPublishSettings,
         testsCommonSettings,
-        sharedTestSource(withBlacklist = true),
+        sharedTestSource(withDenylist = true),
         javaVersionSharedTestSources,
         Test / fork := true,
         Test / parallelExecution := false,
@@ -677,7 +677,7 @@ object Build {
           _.withLinkStubs(true)
         },
         testsExtCommonSettings,
-        sharedTestSource(withBlacklist = false)
+        sharedTestSource(withDenylist = false)
       )
       .withNativeCompilerPlugin
       .withJUnitPlugin
@@ -693,7 +693,7 @@ object Build {
       .settings(
         noPublishSettings,
         testsExtCommonSettings,
-        sharedTestSource(withBlacklist = true),
+        sharedTestSource(withDenylist = true),
         libraryDependencies ++= Deps.JUnitJvm
       )
       .dependsOn(junitAsyncJVM % "test")
@@ -1028,16 +1028,16 @@ object Build {
         Test / unmanagedSources ++= {
           if (!shouldPartest.value) Nil
           else {
-            val blacklist: Set[String] = {
+            val denylist: Set[String] = {
               val versionTestsDir =
                 (Test / resourceDirectory).value / scalaVersion.value
               val base =
-                blacklistedFromFile(versionTestsDir / "BlacklistedTests.txt")
+                denylistedFromFile(versionTestsDir / "DenylistedTests.txt")
               val requiringMultithreading =
                 if (nativeConfig.value.multithreadingSupport) Set.empty[String]
                 else
-                  blacklistedFromFile(
-                    versionTestsDir / "BlacklistedTests-require-threads.txt",
+                  denylistedFromFile(
+                    versionTestsDir / "DenylistedTests-require-threads.txt",
                     ignoreMissing = true
                   )
               base ++ requiringMultithreading
@@ -1046,9 +1046,9 @@ object Build {
             val jUnitTestsPath =
               (scalaPartest / fetchScalaSource).value / "test" / "junit"
             val scalaScalaJUnitSources = allScalaFromDir(jUnitTestsPath)
-            checkBlacklistCoherency(blacklist, scalaScalaJUnitSources)
+            checkDenylistCoherency(denylist, scalaScalaJUnitSources)
             scalaScalaJUnitSources.collect {
-              case (rel, file) if !blacklist.contains(rel) => file
+              case (rel, file) if !denylist.contains(rel) => file
             }
           }
         }

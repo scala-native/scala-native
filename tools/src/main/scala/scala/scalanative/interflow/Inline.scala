@@ -54,8 +54,8 @@ trait Inline { self: Interflow =>
           defn.attrs.inlineHint == Attr.InlineHint
         def isRecursive =
           hasContext(s"inlining ${name.show}")
-        def isBlacklisted =
-          this.isBlacklisted(name)
+        def isDenylisted =
+          this.isDenylisted(name)
         def calleeTooBig =
           defn.insts.size > maxCallerSize
         def callerTooBig =
@@ -81,7 +81,7 @@ trait Inline { self: Interflow =>
             alwaysInline || hintInline || isSmall || isCtor || hasVirtualArgs
         }
         lazy val shallNot =
-          noOpt || noInline || isRecursive || isBlacklisted || calleeTooBig || callerTooBig || isExtern || hasUnwind || inlineDepthLimitExceeded
+          noOpt || noInline || isRecursive || isDenylisted || calleeTooBig || callerTooBig || isExtern || hasUnwind || inlineDepthLimitExceeded
         withLogger { logger =>
           if (shall) {
             if (shallNot) {
@@ -92,8 +92,8 @@ trait Inline { self: Interflow =>
               if (isRecursive) {
                 logger("* is recursive")
               }
-              if (isBlacklisted) {
-                logger("* is blacklisted")
+              if (isDenylisted) {
+                logger("* is denylisted")
               }
               if (callerTooBig) {
                 logger("* caller is too big")

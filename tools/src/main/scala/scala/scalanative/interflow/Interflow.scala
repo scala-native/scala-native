@@ -32,7 +32,7 @@ class Interflow(val config: build.Config)(implicit
   private val todo = mutable.Queue.empty[Global.Member]
   private val done = mutable.Map.empty[Global.Member, Defn.Define]
   private val started = mutable.Set.empty[Global.Member]
-  private val blacklist = mutable.Set.empty[Global.Member]
+  private val denylist = mutable.Set.empty[Global.Member]
   private val reached = mutable.HashSet.empty[Global.Member]
   private val modulePurity = mutable.Map.empty[Global.Top, Boolean]
 
@@ -105,13 +105,13 @@ class Interflow(val config: build.Config)(implicit
       started += name
     }
 
-  def isBlacklisted(name: Global.Member): Boolean =
-    blacklist.synchronized {
-      blacklist.contains(name)
+  def isDenylisted(name: Global.Member): Boolean =
+    denylist.synchronized {
+      denylist.contains(name)
     }
-  def markBlacklisted(name: Global.Member): Unit =
-    blacklist.synchronized {
-      blacklist += name
+  def markDenylisted(name: Global.Member): Unit =
+    denylist.synchronized {
+      denylist += name
     }
 
   def hasModulePurity(name: Global.Top): Boolean =

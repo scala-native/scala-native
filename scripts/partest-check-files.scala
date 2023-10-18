@@ -8,8 +8,8 @@ val partestSourcesDirs = pwd / "scala-partest" / "fetchedSources"
 
 /** Tool used to check integrity of files defined in partest tests and thoose
  *  actually defined in Scala (partest) repository. It allows to check which
- *  blacklisted files are not existing and can suggest correct blacklisted item
- *  name. Also checks for duplicates in blacklisted items
+ *  denylisted files are not existing and can suggest correct denylisted item
+ *  name. Also checks for duplicates in denylisted items
  */
 @main def checkAllFiles() =
   os
@@ -45,32 +45,32 @@ def checkFiles(scalaVersion: String): Unit = {
   val testNames = collection.mutable.Set.empty[String]
 
   for {
-    (blacklisted, line) <- read
-      .lines(partestTestsDir / "BlacklistedTests.txt")
+    (denylisted, line) <- read
+      .lines(partestTestsDir / "DenylistedTests.txt")
       .zipWithIndex
-    if blacklisted.nonEmpty && !blacklisted.startsWith("#")
+    if denylisted.nonEmpty && !denylisted.startsWith("#")
     testName = {
-      val lastDot = blacklisted.lastIndexOf(".")
-      if (lastDot > 0) blacklisted.substring(0, lastDot)
-      else blacklisted
+      val lastDot = denylisted.lastIndexOf(".")
+      if (lastDot > 0) denylisted.substring(0, lastDot)
+      else denylisted
     }
     _ =
       if (testNames.contains(testName)) {
-        println(s"Duplicated blacklisted test $testName at line $line")
+        println(s"Duplicated denylisted test $testName at line $line")
       } else {
         testNames += testName
       }
-    source = testFiles / RelPath(blacklisted) if !exists(source)
+    source = testFiles / RelPath(denylisted) if !exists(source)
     asDir = testFiles / RelPath(testName)
     asFile = testFiles / RelPath(testName + ".scala")
   } {
     println {
       if (asDir != source && exists(asDir)) {
-        s"Blacklisted $blacklisted should refer to directory ${asDir.relativeTo(testFiles)}"
+        s"Denylisted $denylisted should refer to directory ${asDir.relativeTo(testFiles)}"
       } else if (asFile != source && exists(asFile)) {
-        s"Blacklisted $blacklisted should refer to file ${asFile.relativeTo(testFiles)}"
+        s"Denylisted $denylisted should refer to file ${asFile.relativeTo(testFiles)}"
       } else {
-        s"Blacklisted $blacklisted does not exist"
+        s"Denylisted $denylisted does not exist"
       }
     }
   }

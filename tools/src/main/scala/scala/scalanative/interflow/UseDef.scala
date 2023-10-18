@@ -60,9 +60,9 @@ object UseDef {
 
   private def isPure(inst: Inst) = inst match {
     case Inst.Let(_, Op.Call(_, Val.Global(name, _), _), _) =>
-      Whitelist.pure.contains(name)
+      Allowlist.pure.contains(name)
     case Inst.Let(_, Op.Module(name), _) =>
-      Whitelist.pure.contains(name)
+      Allowlist.pure.contains(name)
     case Inst.Let(_, op, _) if op.isPure => true
     case _                               => false
   }

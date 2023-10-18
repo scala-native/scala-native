@@ -57,7 +57,7 @@ def main(
        |Scala version: $scalaVersion
        |Overrides dir: $overridesDirPath
        |Sources dir:   $sourcesDir
-       |Blacklisted: 
+       |Denylisted: 
        | - ${ignoredFiles.mkString("\n - ")}
        |""".stripMargin)
 

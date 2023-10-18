@@ -44,11 +44,11 @@ object ScalaNativePartestOptions {
   sealed abstract class TestFilter {
     def descr: String
   }
-  case object BlacklistedTests extends TestFilter {
-    override def descr: String = "Blacklisted"
+  case object DenylistedTests extends TestFilter {
+    override def descr: String = "Denylisted"
   }
-  case object WhitelistedTests extends TestFilter {
-    override def descr: String = "Whitelisted"
+  case object AllowlistedTests extends TestFilter {
+    override def descr: String = "Allowlisted"
   }
   case class SomeTests(names: List[String]) extends TestFilter {
     override def descr: String = "Custom " + this.toString
@@ -112,8 +112,8 @@ object ScalaNativePartestOptions {
     }
 
     for (arg <- args) arg match {
-      case Switch("blacklisted")      => setFilter(BlacklistedTests)
-      case Switch("whitelisted")      => setFilter(WhitelistedTests)
+      case Switch("denylisted")       => setFilter(DenylistedTests)
+      case Switch("allowlisted")      => setFilter(AllowlistedTests)
       case Switch("showDiff")         => showDiff = true
       case Switch("noOptimize")       => optimize = false
       case Switch("noPrecompileLibs") => precompileLibs = false
@@ -134,7 +134,7 @@ object ScalaNativePartestOptions {
     else
       Some {
         new ScalaNativePartestOptions(
-          filter.getOrElse(WhitelistedTests),
+          filter.getOrElse(AllowlistedTests),
           nativeClassPath.result(),
           showDiff = showDiff,
           parallelism = parallelism,
