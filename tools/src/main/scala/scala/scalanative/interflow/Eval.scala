@@ -343,8 +343,8 @@ trait Eval { self: Interflow =>
         emit(Op.Dynmethod(materialize(eval(obj)), dynsig))
       case Op.Module(clsName) =>
         val isPure = isPureModule(clsName)
-        val isWhitelisted = Whitelist.pure.contains(clsName)
-        val canDelay = isPure || isWhitelisted
+        val isAllowlisted = Allowlist.pure.contains(clsName)
+        val canDelay = isPure || isAllowlisted
 
         if (canDelay) delay(Op.Module(clsName))
         else emit(Op.Module(clsName))

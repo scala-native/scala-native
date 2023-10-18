@@ -5,7 +5,7 @@ import scala.collection.mutable
 import scalanative.nir._
 import scalanative.codegen.Lower
 
-object Whitelist {
+object Allowlist {
   val constantModules = {
     val out = collection.mutable.Set.empty[Global]
     out += Global.Top("scala.scalanative.runtime.BoxedUnit$")

@@ -135,7 +135,7 @@ class ScalaNativeSBTRunner(
     import ScalaNativePartestOptions._
     options.testFilter match {
       case DenylistedTests  => denylistedTests
-      case WhitelistedTests => n => !denylistedTests.contains(n)
+      case AllowlistedTests => n => !denylistedTests.contains(n)
       case SomeTests(names) => names.map(extendShortTestName).toSet
     }
   }
