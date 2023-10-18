@@ -189,6 +189,11 @@ private[scalanative] object NativeLib {
       else readDir(path)
     }
 
+    // The native-lib paths depend on the compiler configuration,
+    // so Scala Native removes all stale native-code-* directories when the compiler configuration changes.
+    // This may be too aggressive, since only the "multithreadingSupport" option affects the native library.
+    // see: https://github.com/scala-native/scala-native/issues/3567
+    val confHash = config.compilerConfig.hashCode()
     val extractPaths =
       for ((path, index) <- nativeLibPaths.zipWithIndex) yield {
         val name =
@@ -198,7 +203,7 @@ private[scalanative] object NativeLib {
             .stripSuffix(jarExt)
         NativeLib(
           src = path,
-          dest = nativeCodeDir.resolve(s"$name-$index")
+          dest = nativeCodeDir.resolve(s"$name-$confHash-$index")
         )
       }
 
@@ -209,7 +214,7 @@ private[scalanative] object NativeLib {
 
     if (Files.exists(nativeCodeDir)) {
       // Fix https://github.com/scala-native/scala-native/pull/2998#discussion_r1023715815
-      // Remove all stale native-code-* directories. These can be created if classpath would change
+      // Remove all stale native-code-* directories. These can be created if classpath or compilerConfig would change
       val expectedPaths = extractPaths.map(_.dest.toAbsolutePath()).toSet
       Files
         .list(nativeCodeDir)
