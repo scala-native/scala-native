@@ -144,8 +144,8 @@ trait Visit { self: Interflow =>
           noOpt(origdefn)
           setDone(name, baildefn)
           setDone(origname, baildefn)
-          markBlacklisted(name)
-          markBlacklisted(origname)
+          markDenylisted(name)
+          markDenylisted(origname)
       }
     }
 

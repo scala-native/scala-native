@@ -78,7 +78,7 @@ class LinktimeConditionsSpec extends OptimizerSpec {
     case _                              => false
   }
 
-  // Ignore blacklisted linktime properties which are enfored by list of default properties and
+  // Ignore denylisted linktime properties which are enfored by list of default properties and
   // ignore all evaluated functions using linktime condtions
   def isIgnoredLinktimeProperty(name: String) =
     ignoredPropertiesNames.contains(name) || isMangledMethod(name)

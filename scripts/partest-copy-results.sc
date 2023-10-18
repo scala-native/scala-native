@@ -36,10 +36,10 @@ def main(
              |Create diffs:        ${createDiff}
              |""".stripMargin)
 
-  val failedNotBlacklisted = collection.mutable.Set.empty[String]
+  val failedNotDenylisted = collection.mutable.Set.empty[String]
   val failed = collection.mutable.Set.empty[String]
-  val blacklisted = read
-    .lines(partestTestsDir / "BlacklistedTests.txt")
+  val denylisted = read
+    .lines(partestTestsDir / "DenylistedTests.txt")
     .filterNot(_.startsWith("#"))
     .filterNot(_.isEmpty())
     .map(_.stripSuffix(".scala"))
@@ -58,8 +58,8 @@ def main(
 
     _ = cp.over(logFile, resultsDir / relPath)
     _ = {
-      if (!blacklisted.contains(name)) {
-        failedNotBlacklisted += name
+      if (!denylisted.contains(name)) {
+        failedNotDenylisted += name
       }
       println(s"${name} failed")
       failed += name
@@ -94,7 +94,7 @@ def main(
 
   println()
   println(s"Failed tests: ${failed.size}")
-  println(s"Failed not blacklisted [${failedNotBlacklisted.size}]: ")
-  failedNotBlacklisted.toList.sorted.foreach(println)
+  println(s"Failed not denylisted [${failedNotDenylisted.size}]: ")
+  failedNotDenylisted.toList.sorted.foreach(println)
 
 }

@@ -44,8 +44,8 @@ object ScalaNativePartestOptions {
   sealed abstract class TestFilter {
     def descr: String
   }
-  case object BlacklistedTests extends TestFilter {
-    override def descr: String = "Blacklisted"
+  case object DenylistedTests extends TestFilter {
+    override def descr: String = "Denylisted"
   }
   case object WhitelistedTests extends TestFilter {
     override def descr: String = "Whitelisted"
@@ -112,7 +112,7 @@ object ScalaNativePartestOptions {
     }
 
     for (arg <- args) arg match {
-      case Switch("blacklisted")      => setFilter(BlacklistedTests)
+      case Switch("denylisted")       => setFilter(DenylistedTests)
       case Switch("whitelisted")      => setFilter(WhitelistedTests)
       case Switch("showDiff")         => showDiff = true
       case Switch("noOptimize")       => optimize = false

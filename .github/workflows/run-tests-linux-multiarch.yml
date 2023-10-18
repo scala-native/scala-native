@@ -177,7 +177,7 @@ jobs:
         shell: bash
         if: ${{ !startsWith(matrix.scala, '3') }}
         run: |
-          ignoredTestsFile=scala-partest-junit-tests/src/test/resources/${{matrix.scala}}/BlacklistedTests.txt
+          ignoredTestsFile=scala-partest-junit-tests/src/test/resources/${{matrix.scala}}/DenylistedTests.txt
           echo "" >> ${ignoredTestsFile}
           echo -e "scala/util/SortingTest.scala\n" >> ${ignoredTestsFile}
 
