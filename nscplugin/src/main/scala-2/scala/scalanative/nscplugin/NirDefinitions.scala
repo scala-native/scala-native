@@ -325,8 +325,19 @@ trait NirDefinitions {
     lazy val NStringClass = getRequiredClass("java.lang._String")
     lazy val NStringModule = getRequiredModule("java.lang._String")
 
-    // Scala library & runtime
+    lazy val JavaUtilServiceLoader = getRequiredModule(
+      "java.util.ServiceLoader"
+    )
+    lazy val JavaUtilServiceLoaderLoad: Seq[Symbol] =
+      getDecl(JavaUtilServiceLoader, TermName("load")).alternatives
 
+    lazy val JavaUtilServiceLoaderLoadInstalled =
+      getDecl(JavaUtilServiceLoader, TermName("loadInstalled"))
+
+    lazy val LinktimeIntrinsics: Seq[Symbol] = JavaUtilServiceLoaderLoad ++
+      Seq(JavaUtilServiceLoaderLoadInstalled)
+
+    // Scala library & runtime
     lazy val InlineClass = getRequiredClass("scala.inline")
     lazy val NoInlineClass = getRequiredClass("scala.noinline")
     lazy val EnumerationClass = getRequiredClass("scala.Enumeration")

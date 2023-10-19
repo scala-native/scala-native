@@ -97,7 +97,9 @@ object NirPrimitives {
 
   final val SAFEZONE_ALLOC = 1 + REFLECT_SELECTABLE_APPLYDYN
 
-  final val LastNirPrimitiveCode = SAFEZONE_ALLOC
+  final val USES_LINKTIME_INTRINSIC = 1 + SAFEZONE_ALLOC
+
+  final val LastNirPrimitiveCode = USES_LINKTIME_INTRINSIC
 
   def isNirPrimitive(code: Int): Boolean =
     code >= FirstNirPrimitiveCode && code <= LastNirPrimitiveCode
@@ -225,6 +227,7 @@ class NirPrimitives(using ctx: Context) extends DottyPrimitives(ctx) {
       REFLECT_SELECTABLE_APPLYDYN
     )
     defnNir.RuntimeSafeZoneAllocator_allocate.foreach(addPrimitive(_, SAFEZONE_ALLOC))
+    defnNir.LinktimeIntrinsics.foreach(addPrimitive(_, USES_LINKTIME_INTRINSIC))
     primitives
   }
 }

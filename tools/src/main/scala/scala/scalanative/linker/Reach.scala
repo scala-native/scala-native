@@ -276,11 +276,6 @@ class Reach(
       }
     }
     import IntrinsicCall._
-    // TODO: replace check with defn attribute check set in compiler plugin
-    val usesIntrinsics = defn.insts.exists {
-      case IntrinsicCall(ServiceLoaderLoad | ServiceLoaderLoadClassLoader | ServiceLoaderLoadInstalled, _) => true
-      case _                                                                                               => false
-    }
     def resolveInsts(insts: Seq[Inst]): Seq[Inst] = {
       implicit val fresh = nir.Fresh(insts)
       insts.flatMap {
@@ -354,7 +349,7 @@ class Reach(
       }
     }
 
-    if (usesIntrinsics) defn.copy(insts = resolveInsts(defn.insts))(defn.pos)
+    if (defn.attrs.isUsingIntrinsics) defn.copy(insts = resolveInsts(defn.insts))(defn.pos)
     else defn
   }
 

@@ -236,7 +236,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         val cond = genExpr(condp)
         buf.branch(cond, nir.Next(thenn), nir.Next(elsen))(condp.pos)
       } { cond =>
-        curMethodUsesLinktimeResolvedValues = true
+        curMethodEnv.get.isUsingLinktimeResolvedValue = true
         buf.branchLinktime(cond, nir.Next(thenn), nir.Next(elsen))(condp.pos)
       }
 
@@ -1214,12 +1214,13 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         case SYNCHRONIZED =>
           val Apply(Select(receiverp, _), List(argp)) = app
           genSynchronized(receiverp, argp)(app.pos)
-        case STACKALLOC         => genStackalloc(app)
-        case CLASS_FIELD_RAWPTR => genClassFieldRawPtr(app)
-        case SIZE_OF            => genSizeOf(app)
-        case ALIGNMENT_OF       => genAlignmentOf(app)
-        case CQUOTE             => genCQuoteOp(app)
-        case BOXED_UNIT         => nir.Val.Unit
+        case STACKALLOC              => genStackalloc(app)
+        case CLASS_FIELD_RAWPTR      => genClassFieldRawPtr(app)
+        case SIZE_OF                 => genSizeOf(app)
+        case ALIGNMENT_OF            => genAlignmentOf(app)
+        case CQUOTE                  => genCQuoteOp(app)
+        case BOXED_UNIT              => nir.Val.Unit
+        case USES_LINKTIME_INTRINSIC => genLinktimeIntrinsicApply(app)
         case code =>
           if (isArithmeticOp(code) || isLogicalOp(code) || isComparisonOp(code))
             genSimpleOp(app, receiver :: args, code)
@@ -1239,6 +1240,38 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             )
           }
       }
+    }
+
+    private def genLinktimeIntrinsicApply(app: Apply): Val = {
+      import nirDefinitions._
+      implicit def pos: nir.Position = app.pos
+      val Apply(fun, args) = app
+
+      val sym = fun.symbol
+      val Select(receiverp, _) = fun
+      val isStatic = sym.owner.isStaticOwner
+
+      sym match {
+        case _
+            if JavaUtilServiceLoaderLoad.contains(sym) ||
+              JavaUtilServiceLoaderLoadInstalled == sym =>
+          args.head match {
+            case Literal(c: Constant) => () // ok
+            case _ =>
+              reporter.error(
+                app.pos,
+                s"Limitation of ScalaNative runtime: first argument of ${sym} needs to be literal constant of class type, use `classOf[T]` instead."
+              )
+          }
+        case _ =>
+          reporter.error(
+            app.pos,
+            s"Unhandled intrinsic function call for $sym"
+          )
+      }
+
+      curMethodEnv.get.isUsingIntrinsics = true
+      genApplyMethod(sym, statically = isStatic, receiverp, args)
     }
 
     private final val ExternForwarderSig =

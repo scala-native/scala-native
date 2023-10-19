@@ -202,6 +202,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, fileName: String) {
     case T.FinalAttr    => Attr.Final
 
     case T.LinktimeResolvedAttr => Attr.LinktimeResolved
+    case T.UsesIntrinsicAttr    => Attr.UsesIntrinsic
     case T.AlignAttr            => Attr.Alignment(getLebSignedInt(), getOpt(getString()))
   }
 

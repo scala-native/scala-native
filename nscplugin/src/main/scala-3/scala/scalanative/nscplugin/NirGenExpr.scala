@@ -471,7 +471,7 @@ trait NirGenExpr(using Context) {
         given nir.Position = condp.span
         getLinktimeCondition(condp) match {
           case Some(cond) =>
-            curMethodUsesLinktimeResolvedValues = true
+            curMethodEnv.get.isUsingLinktimeResolvedValue = true
             buf.branchLinktime(cond, nir.Next(thenn), nir.Next(elsen))
           case None =>
             if ensureLinktime then
@@ -1103,6 +1103,7 @@ trait NirGenExpr(using Context) {
           genReflectiveCall(app, isSelectDynamic = true)
         case REFLECT_SELECTABLE_APPLYDYN =>
           genReflectiveCall(app, isSelectDynamic = false)
+        case USES_LINKTIME_INTRINSIC => genLinktimeIntrinsicApply(app)
         case _ =>
           if (isArithmeticOp(code) || isLogicalOp(code) || isComparisonOp(code))
             genSimpleOp(app, receiver :: args, code)
@@ -1121,6 +1122,39 @@ trait NirGenExpr(using Context) {
             nir.Val.Null
           }
       }
+    }
+
+    private def genLinktimeIntrinsicApply(app: Apply): Val = {
+      import defnNir.*
+      given nir.Position = app.span
+      val Apply(fun, args) = app
+
+      val sym = fun.symbol
+      def isStatic = sym.owner.isStaticOwner
+      def qualifier0 = qualifierOf(fun)
+      def qualifier = qualifier0.withSpan(qualifier0.span.orElse(fun.span))
+
+      sym match {
+        case _
+            if JavaUtilServiceLoaderLoad.contains(sym) ||
+              JavaUtilServiceLoaderLoadInstalled == sym =>
+          args.head match {
+            case Literal(c: Constant) => () // ok
+            case _ =>
+              report.error(
+                s"Limitation of ScalaNative runtime: first argument of ${sym.show} needs to be literal constant of class type, use `classOf[T]` instead.",
+                app.srcPos
+              )
+          }
+        case _ =>
+          report.error(
+            s"Unhandled intrinsic function call for ${sym.show}",
+            app.srcPos
+          )
+      }
+
+      curMethodEnv.get.isUsingIntrinsics = true
+      genApplyMethod(sym, statically = isStatic, qualifier, args)
     }
 
     private def genApplyTypeApply(app: Apply): nir.Val = {

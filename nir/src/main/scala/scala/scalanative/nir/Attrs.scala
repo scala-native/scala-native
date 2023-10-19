@@ -33,6 +33,7 @@ object Attr {
   case object Volatile extends Attr
   case object Final extends Attr
   case object LinktimeResolved extends Attr
+  case object UsesIntrinsic extends Attr
   case class Alignment(size: Int, group: Option[String]) extends Attr
   object Alignment {
     // Alignment by defintion must be positive integer, magic value treated specially by compiler
@@ -53,6 +54,7 @@ final case class Attrs(
     isVolatile: Boolean = false,
     isFinal: Boolean = false,
     isLinktimeResolved: Boolean = false,
+    isUsingIntrinsics: Boolean = false,
     links: Seq[Attr.Link] = Seq.empty,
     preprocessorDefinitions: Seq[Attr.Define] = Seq.empty
 ) {
@@ -70,6 +72,7 @@ final case class Attrs(
     if (isVolatile) out += Volatile
     if (isFinal) out += Final
     if (isLinktimeResolved) out += LinktimeResolved
+    if (isUsingIntrinsics) out += UsesIntrinsic
     out ++= links
     out ++= preprocessorDefinitions
 
@@ -92,6 +95,7 @@ object Attrs {
     var isVolatile = false
     var isFinal = false
     var isLinktimeResolved = false
+    var isUsingIntrinsics = false
     val links = Seq.newBuilder[Attr.Link]
     val preprocessorDefinitions = Seq.newBuilder[Attr.Define]
 
@@ -113,6 +117,7 @@ object Attrs {
       case Final               => isFinal = true
 
       case LinktimeResolved => isLinktimeResolved = true
+      case UsesIntrinsic    => isUsingIntrinsics = true
     }
 
     new Attrs(
@@ -128,6 +133,7 @@ object Attrs {
       isVolatile = isVolatile,
       isFinal = isFinal,
       isLinktimeResolved = isLinktimeResolved,
+      isUsingIntrinsics = isUsingIntrinsics,
       links = links.result(),
       preprocessorDefinitions = preprocessorDefinitions.result()
     )

@@ -52,15 +52,16 @@ object ServiceLoader {
     def `type`(): Class[_ <: S]
   }
 
-  // Intrinsics
+  private def intrinsic = throw new UndefinedBehaviorError(
+    "Intrinsic call was not handled by the toolchain"
+  )
+
   def loadInstalled[S <: AnyRef](service: Class[S]): ServiceLoader[S] =
-    throw new UndefinedBehaviorError()
-  def load[S <: AnyRef](service: Class[S]): ServiceLoader[S] =
-    throw new UndefinedBehaviorError()
+    intrinsic
+  def load[S <: AnyRef](service: Class[S]): ServiceLoader[S] = intrinsic
   def load[S <: AnyRef](
       service: Class[S],
       loader: ClassLoader
-  ): ServiceLoader[S] =
-    throw new UndefinedBehaviorError()
+  ): ServiceLoader[S] = intrinsic
   // def load[S](layer: ModuleLayer, service: Class[S]): ServiceLoader[S] = ???
 }
