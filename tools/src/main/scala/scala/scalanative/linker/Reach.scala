@@ -8,8 +8,9 @@ import scala.collection.mutable
 class Reach(
     protected val config: build.Config,
     entries: Seq[nir.Global],
-    loader: ClassLoader
-) extends LinktimeValueResolver {
+    protected val loader: ClassLoader
+) extends LinktimeValueResolver
+    with LinktimeIntrinsicCallsResolver {
   import Reach._
 
   val loaded =
@@ -62,17 +63,6 @@ class Reach(
       case _                             => reachExported(clsName)
     }
   }
-
-  // loader.definedServicesProviders.foreach {
-  //   case (service, serviceProviders) =>
-  //     println()
-  //     println(service)
-  //     serviceProviders.foreach(println)
-  //     done.get(service).filter(_ != null).foreach { serviceDefn =>
-  //       implicit val reachedFrom: nir.Position = serviceDefn.pos
-  //       serviceProviders.foreach(reachEntry)
-  //     }
-  // }
 
   def result(): ReachabilityAnalysis = {
     cleanup()
@@ -132,7 +122,7 @@ class Reach(
   def lookup(global: nir.Global): Option[nir.Defn] =
     lookup(global, ignoreIfUnavailable = false)
 
-  private def lookup(
+  protected def lookup(
       global: nir.Global,
       ignoreIfUnavailable: Boolean
   ): Option[nir.Defn] = {
@@ -206,18 +196,14 @@ class Reach(
       if (defn.attrs.isStub && !config.linkStubs) {
         reachUnavailable(name)
       } else {
-        val maybeFixedDefn = defn match {
-          case defn: nir.Defn.Define =>
-            preprocess(defn) // resolveLinktimeDefine(defn)
-          case _ => defn
-        }
-        reachDefn(maybeFixedDefn)
+        reachDefn(defn)
       }
     }
     stack = stack.tail
   }
 
-  def reachDefn(defn: nir.Defn): Unit = {
+  def reachDefn(defninition: nir.Defn): Unit = {
+    val defn = preprocessDefn(defninition)
     implicit val srcPosition = defn.pos
     defn match {
       case defn: nir.Defn.Var =>
@@ -231,7 +217,7 @@ class Reach(
         if (nir.Rt.arrayAlloc.contains(sig)) {
           classInfo(nir.Rt.arrayAlloc(sig)).foreach(reachAllocation)
         }
-        reachDefine(preprocess(defn))
+        reachDefine(defn)
       case defn: nir.Defn.Trait =>
         reachTrait(defn)
       case defn: nir.Defn.Class =>
@@ -242,114 +228,20 @@ class Reach(
     done(defn.name) = defn
   }
 
-  private def preprocess(defn: Defn.Define): Defn.Define = {
-    (resolveLinktimeDefine _)
-      .andThen(resolveDefineIntrinsics)
-      .apply(defn)
+  private def preprocessDefn(defn: Defn): Defn = {
+    defn match {
+      case defn: Defn.Define =>
+        (resolveLinktimeDefine _)
+          .andThen(resolveDefineIntrinsics)
+          .apply(defn)
+
+      case _ => defn
+    }
   }
 
   private def resolveDefineIntrinsics(defn: Defn.Define): Defn.Define = {
-    // scalafmt: { maxColumn = 120}
-
-    object IntrinsicCall {
-      final val ServiceLoader = Global.Top("java.util.ServiceLoader")
-      final val ServiceLoaderCtor = ServiceLoader.member(Sig.Ctor(Seq(Rt.Class, Type.Array(Rt.Object))))
-      final val ServiceLoaderRef = Type.Ref(ServiceLoader)
-      final val ClassLoaderRef = Type.Ref(Global.Top("java.lang.ClassLoader"))
-      final val ServiceLoaderLoad = ServiceLoader
-        .member(Sig.Method("load", Seq(Rt.Class, ServiceLoaderRef), Sig.Scope.PublicStatic))
-      final val ServiceLoaderLoadClassLoader = ServiceLoader
-        .member(Sig.Method("load", Seq(Rt.Class, ClassLoaderRef, ServiceLoaderRef), Sig.Scope.PublicStatic))
-      final val ServiceLoaderLoadInstalled = ServiceLoader
-        .member(Sig.Method("loadInstalled", Seq(Rt.Class, ServiceLoaderRef), Sig.Scope.PublicStatic))
-
-      val intrinsicMethods = Set(
-        ServiceLoaderLoad,
-        ServiceLoaderLoadClassLoader,
-        ServiceLoaderLoadInstalled
-      )
-
-      def unapply(inst: Inst): Option[(Global.Member, List[Val])] = inst match {
-        case Inst.Let(_, Op.Call(_, Val.Global(name: Global.Member, _), args), _) if intrinsicMethods.contains(name) =>
-          Some((name, args.toList))
-        case _ => None
-      }
-    }
-    import IntrinsicCall._
-    def resolveInsts(insts: Seq[Inst]): Seq[Inst] = {
-      implicit val fresh = nir.Fresh(insts)
-      insts.flatMap {
-        case inst @ IntrinsicCall(
-              ServiceLoaderLoad | ServiceLoaderLoadClassLoader | ServiceLoaderLoadInstalled,
-              (cls: Val.ClassOf) :: _
-            ) =>
-          val let @ Inst.Let(_, op: Op.Call, _) = inst
-          implicit val pos: nir.Position = let.pos
-          implicit val scopeId: nir.ScopeId = let.scopeId
-
-          val providersSSA = List.newBuilder[Val.Local]
-          val providersInit = loader.definedServicesProviders
-            .get(cls.name)
-            .toList
-            .flatten
-            .filter { provider =>
-              val exists = lookup(provider, ignoreIfUnavailable = true).isDefined
-              val allowed =
-                config.compilerConfig.serviceProviders
-                  .get(cls.name.id)
-                  .flatMap(_.find(_ == provider.id))
-                  .isDefined
-
-              val context = s"service providor '${provider.id}' defined for '${cls.name.id}'"
-              if (!exists)
-                config.logger.warn(s"Not found declared $context")
-              else if (!allowed)
-                config.logger.debug(s"Ignoring disabled $context")
-              else
-                config.logger.info(s"Including found $context")
-              exists && allowed
-            }
-            .flatMap { cls =>
-              val clsRef = Type.Ref(cls)
-              val alloc = Inst.Let(fresh(), Op.Classalloc(cls, None), let.unwind)
-              val callCtor = Inst.Let(
-                fresh(),
-                Op.Call(
-                  Type.Function(Seq(clsRef), Type.Unit),
-                  Val.Global(cls.member(Sig.Ctor(Nil)), Type.Ptr),
-                  Seq( /*this=*/ Val.Local(alloc.id, clsRef))
-                ),
-                let.unwind
-              )
-              providersSSA += Val.Local(alloc.id, clsRef)
-              List(alloc, callCtor)
-            }
-          val providers = providersSSA.result()
-
-          val alloc = let.copy(op = Op.Classalloc(ServiceLoader, None))
-          val providersArray =
-            Inst.Let(fresh(), Op.Arrayalloc(Rt.Object, Val.ArrayValue(Rt.Object, providers), None), let.unwind)
-
-          val callCtor = Inst.Let(
-            fresh(),
-            Op.Call(
-              Type.Function(Seq(ServiceLoaderRef, Rt.Class, Type.Array(Type.Ref(cls.name))), Type.Unit),
-              Val.Global(ServiceLoaderCtor, Type.Ptr),
-              Seq(
-                /*this=*/ Val.Local(alloc.id, ServiceLoaderRef),
-                /*runtimeClass=*/ cls,
-                /*serviceProviderNames=*/ Val.Local(providersArray.id, providersArray.op.resty)
-              )
-            ),
-            let.unwind
-          )
-          providersInit ++ List(providersArray, alloc, callCtor)
-
-        case inst => inst :: Nil
-      }
-    }
-
-    if (defn.attrs.isUsingIntrinsics) defn.copy(insts = resolveInsts(defn.insts))(defn.pos)
+    if (defn.attrs.isUsingIntrinsics)
+      defn.copy(insts = resolveIntrinsicsCalls(defn.insts))(defn.pos)
     else defn
   }
 
@@ -493,7 +385,8 @@ class Reach(
                   fail(s"Required method ${sig} not found in ${info.name}")
                 )
             }
-             if (sig.isMethod || sig.isCtor || sig.isClinit || sig.isGenerated) {
+
+                  if (sig.isMethod || sig.isCtor || sig.isClinit || sig.isGenerated) {
               update(sig)
             }
           case _ => ()
@@ -1164,7 +1057,11 @@ class Reach(
         val stubMethods = for {
           methodName <- Seq("threads", "virtualThreads", "continuations")
         } yield {
-          import scala.scalanative.codegen.Lower.{throwUndefined, throwUndefinedTy, throwUndefinedVal}
+          import scala.scalanative.codegen.Lower.{
+            throwUndefined,
+            throwUndefinedTy,
+            throwUndefinedVal
+          }
           implicit val scopeId: nir.ScopeId = nir.ScopeId.TopLevel
           nir.Defn.Define(
             attrs = nir.Attrs.None,
@@ -1299,8 +1196,10 @@ object Reach {
         extends Kind(
           "Application linked with disabled multithreading support. Adjust nativeConfig and try again"
         )
-    case object VirtualThreads extends Kind("VirtualThreads are not supported yet on this platform")
-    case object Continuations extends Kind("Continuations are not supported yet on this platform")
+    case object VirtualThreads
+        extends Kind("VirtualThreads are not supported yet on this platform")
+    case object Continuations
+        extends Kind("Continuations are not supported yet on this platform")
     case object Other extends Kind("Other unsupported feature")
   }
 }
