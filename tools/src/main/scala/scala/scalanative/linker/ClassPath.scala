@@ -18,7 +18,8 @@ sealed trait ClassPath {
 
   private[scalanative] def classesWithEntryPoints: Iterable[nir.Global.Top]
 
-  private[scalanative] def definedServicesProviders: Map[Global.Top, Seq[Global.Top]]
+  private[scalanative] def definedServicesProviders
+      : Map[Global.Top, Seq[Global.Top]]
 }
 
 object ClassPath {

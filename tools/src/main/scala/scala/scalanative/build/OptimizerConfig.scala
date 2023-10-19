@@ -62,6 +62,7 @@ object OptimizerConfig {
       s"""
           |$indent- maxInlineDepth: $maxInlineDepth
           |$indent- maxInlineSize:  ${maxInlineSize.getOrElse("default")}
-          |$indent- maxCallerSize:  ${maxCallerSize.getOrElse("default")}""".stripMargin
+          |$indent- maxCallerSize:  ${maxCallerSize.getOrElse("default")}
+          |""".stripMargin
   }
 }

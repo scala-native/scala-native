@@ -165,6 +165,9 @@ sealed trait Config {
     compilerConfig.targetTriple.exists { customTriple =>
       Seq("linux").exists(customTriple.contains(_))
     }
+
+  // see https://no-color.org/
+  private[scalanative] def noColor: Boolean = sys.env.contains("NO_COLOR")
 }
 
 /** Factory to create [[#empty]] [[Config]] objects */

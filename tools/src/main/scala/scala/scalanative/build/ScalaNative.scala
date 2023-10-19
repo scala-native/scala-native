@@ -105,9 +105,7 @@ private[scalanative] object ScalaNative {
     def showFailureDetails(
         analysis: ReachabilityAnalysis.Failure
     ): Unit = {
-      val log = config.logger
-      // see https://no-color.org/
-      val noColor = sys.env.contains("NO_COLOR")
+      import config.{logger => log, noColor}
       def appendBackTrace(
           buf: StringBuilder,
           backtrace: List[Reach.BackTraceElement]
@@ -172,6 +170,16 @@ private[scalanative] object ScalaNative {
       }
     }
 
+    def showFoundServices() = if (analysis.foundServiceProviders.nonEmpty) {
+      import config.{logger => log}
+      val servicesFound = analysis.foundServiceProviders.serviceProviders.size
+      val serviceProvidersLoaded = analysis.foundServiceProviders.loaded
+      log.info(
+        s"Loaded ${serviceProvidersLoaded} service provider(s) for ${servicesFound} referenced service(s):"
+      )
+      log.info(analysis.foundServiceProviders.asTable(config.noColor))
+    }
+
     def showStats(): Unit = {
       val classCount = analysis.defns.count {
         case _: nir.Defn.Class | _: nir.Defn.Module => true
@@ -183,12 +191,12 @@ private[scalanative] object ScalaNative {
       )
     }
 
+    showStats()
+    showFoundServices()
     analysis match {
       case result: ReachabilityAnalysis.Failure =>
-        showStats()
         showFailureDetails(result)
-      case _ =>
-        showStats()
+      case _ => ()
     }
   }
 

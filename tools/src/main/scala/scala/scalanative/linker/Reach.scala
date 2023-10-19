@@ -82,13 +82,15 @@ class Reach(
         defns = defns.toSeq,
         dynsigs = dynsigs.toSeq,
         dynimpls = dynimpls.toSeq,
-        resolvedVals = resolvedNirValues
+        resolvedVals = resolvedNirValues,
+        foundServiceProviders = foundServiceProviders
       )
     else
       new ReachabilityAnalysis.Failure(
         defns = defns.toSeq,
         unreachable = unreachable.values.toSeq,
-        unsupportedFeatures = unsupported.values.toSeq
+        unsupportedFeatures = unsupported.values.toSeq,
+        foundServiceProviders = foundServiceProviders
       )
   }
 
@@ -241,7 +243,7 @@ class Reach(
 
   private def resolveDefineIntrinsics(defn: Defn.Define): Defn.Define = {
     if (defn.attrs.isUsingIntrinsics)
-      defn.copy(insts = resolveIntrinsicsCalls(defn.insts))(defn.pos)
+      defn.copy(insts = resolveIntrinsicsCalls(defn))(defn.pos)
     else defn
   }
 
