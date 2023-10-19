@@ -126,7 +126,7 @@ object LinktimeIntrinsicCallsResolver {
           case Missing      => RED
         }
       } {
-        def isNextService = serviceIdx > 0 &&  providerIdx == 0
+        def isNextService = serviceIdx > 0 && providerIdx == 0
         if (isNextService) addBlankEntry()
         addEntry(
           (serviceName, provider.name, provider.status.toString()),
@@ -196,6 +196,11 @@ trait LinktimeIntrinsicCallsResolver { self: Reach =>
         args = Seq( /*this=*/ Val.Local(alloc.id, clsRef)),
         unwind = let.unwind
       )
+      // Load provider module as it might contain a registration logic
+      val moduleName = Global.Top(cls.id + "$")
+      lookup(moduleName, ignoreIfUnavailable = true).foreach { _ =>
+        buf.module(moduleName, let.unwind)
+      }
       Val.Local(alloc.id, clsRef)
     }
 

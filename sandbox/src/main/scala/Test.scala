@@ -5,6 +5,9 @@ import java.{util => ju}
 import scala.scalanative.runtime.Intrinsics
 import scala.scalanative.reflect.annotation.EnableReflectiveInstantiation
 
+object MockCharsetProvider{
+  println(s"initialize $this")
+}
 class MockCharsetProvider extends CharsetProvider {
   override def charsets(): ju.Iterator[Charset] = new ju.Iterator[Charset] {
     override def hasNext(): Boolean = false
