@@ -15,17 +15,13 @@ import scala.scalanative.windows.winnt.AccessRights._
 import scala.scalanative.windows.{ConsoleApiExt, DWord}
 
 final class FileDescriptor private[java] (
-    fileHandle: FileHandle,
+    private var fileHandle: FileHandle,
     readOnly: Boolean
 ) {
-  def this() = {
-    this(
-      fileHandle =
-        if (isWindows) FileHandle(INVALID_HANDLE_VALUE)
-        else FileHandle(-1),
-      readOnly = true
-    )
-  }
+  def this() = this(
+    fileHandle = FileHandle.Invalid,
+    readOnly = true
+  )
 
   // ScalaNative private construcors
   private[java] def this(fd: Int) =
@@ -57,7 +53,6 @@ final class FileDescriptor private[java] (
         this == FileDescriptor.in ||
         this == FileDescriptor.out ||
         this == FileDescriptor.err
-
       } else fd <= 2
     }
 
@@ -75,20 +70,13 @@ final class FileDescriptor private[java] (
     }
   }
 
-  def valid(): Boolean =
-    if (isWindows) {
-      val flags = stackalloc[DWord]()
-      handle != INVALID_HANDLE_VALUE &&
-        GetHandleInformation(handle, flags)
-    } else {
-      // inspired by Apache Harmony including filedesc.c
-      fcntl.fcntl(fd, fcntl.F_GETFD, 0) != -1
-    }
+  def valid(): Boolean = fileHandle != FileHandle.Invalid
 
   // Not in the Java API. Called by java.nio.channels.FileChannelImpl.scala
   private[java] def close(): Unit = {
     if (isWindows) CloseHandle(handle)
     else unistd.close(fd)
+    fileHandle = FileHandle.Invalid
   }
 
 }
@@ -100,6 +88,10 @@ object FileDescriptor {
   private[java] object FileHandle {
     def apply(handle: Handle): FileHandle = handle.toLong
     def apply(unixFd: Int): FileHandle = unixFd.toLong
+    @alwaysinline
+    def Invalid =
+      if (isWindows) FileHandle(INVALID_HANDLE_VALUE)
+      else FileHandle(-1)
   }
 
   val in: FileDescriptor = {
