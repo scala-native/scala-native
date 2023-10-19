@@ -5,7 +5,7 @@ import java.nio.file.{Path, Paths}
 
 /** An object describing how to configure the Scala Native toolchain. */
 sealed trait NativeConfig {
-  import NativeConfig.Mapping
+  import NativeConfig._
 
   /** The path to the `clang` executable. */
   def clang: Path
@@ -91,8 +91,8 @@ sealed trait NativeConfig {
   /** Should we add LLVM metadata to the binary artifacts? */
   def debugMetadata: Boolean
 
-  /** List of service providers which shall be excluded from the final binary */
-  def disabledServiceProviders: Seq[String]
+  /** List of service providers which shall be allowed in the final binary */
+  def serviceProviders: Map[ServiceName, Iterable[ServiceProviderName]]
 
   private[scalanative] lazy val configuredOrDetectedTriple =
     TargetTriple.parse(targetTriple.getOrElse(Discover.targetTriple(this)))
@@ -210,8 +210,12 @@ sealed trait NativeConfig {
   /** Create a new [[NativeConfig]] with updated resource exclude patterns. */
   def withResourceExcludePatterns(value: Seq[String]): NativeConfig
 
-  /** Create a new [[NativeConfig]] with a updated list of service providers excluded from the final binary */
-  def withDisabledServiceProviders(value: Seq[String]): NativeConfig
+  /** Create a new [[NativeConfig]] with a updated list of service providers
+   *  allowed in the final binary
+   */
+  def withServiceProviders(
+      value: Map[ServiceName, Iterable[ServiceProviderName]]
+  ): NativeConfig
 
   /** Create a new config with given base artifact name.
    *
@@ -235,6 +239,8 @@ sealed trait NativeConfig {
 object NativeConfig {
   type Mapping[T] = T => T
   type LinktimeProperites = Map[String, Any]
+  type ServiceName = String
+  type ServiceProviderName = String
 
   /** Default empty config object where all of the fields are left blank. */
   def empty: NativeConfig =
@@ -261,7 +267,7 @@ object NativeConfig {
       embedResources = false,
       resourceIncludePatterns = Seq("**"),
       resourceExcludePatterns = Seq.empty,
-      disabledServiceProviders = Seq.empty,
+      serviceProviders = Map.empty,
       baseName = "",
       optimizerConfig = OptimizerConfig.empty,
       debugMetadata = false
@@ -290,7 +296,7 @@ object NativeConfig {
       embedResources: Boolean,
       resourceIncludePatterns: Seq[String],
       resourceExcludePatterns: Seq[String],
-      disabledServiceProviders: Seq[String],
+      serviceProviders: Map[ServiceName, Iterable[ServiceProviderName]],
       baseName: String,
       optimizerConfig: OptimizerConfig,
       debugMetadata: Boolean
@@ -379,9 +385,11 @@ object NativeConfig {
     def withResourceExcludePatterns(value: Seq[String]): NativeConfig = {
       copy(resourceExcludePatterns = value)
     }
-    
-    def withDisabledServiceProviders(value: Seq[String]): NativeConfig = {
-      copy(disabledServiceProviders = value)
+
+    def withServiceProviders(
+        value: Map[ServiceName, Iterable[ServiceProviderName]]
+    ): NativeConfig = {
+      copy(serviceProviders = value)
     }
 
     def withBaseName(value: String): NativeConfig = {

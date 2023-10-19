@@ -299,16 +299,20 @@ class Reach(
             .flatten
             .filter { provider =>
               val exists = lookup(provider, ignoreIfUnavailable = true).isDefined
-              val ignored = config.compilerConfig.disabledServiceProviders.contains(provider.id)
+              val allowed =
+                config.compilerConfig.serviceProviders
+                  .get(cls.name.id)
+                  .flatMap(_.find(_ == provider.id))
+                  .isDefined
 
               val context = s"service providor '${provider.id}' defined for '${cls.name.id}'"
               if (!exists)
                 config.logger.warn(s"Not found declared $context")
-              else if(ignored)
+              else if (!allowed)
                 config.logger.debug(s"Ignoring disabled $context")
               else
                 config.logger.info(s"Including found $context")
-              exists && !ignored
+              exists && allowed
             }
             .flatMap { cls =>
               val clsRef = Type.Ref(cls)
