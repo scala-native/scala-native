@@ -406,25 +406,32 @@ object NativeConfig {
       copy(debugMetadata = value)
 
     override def toString: String = {
-      val listLinktimeProperties = {
-        if (linktimeProperties.isEmpty) ""
+      def showSeq(it: Iterable[Any]) = it.mkString("[", ", ", "]")
+      def showMap(map: Map[String, Any], indent: Int = 4): String =
+        if (map.isEmpty) "[]"
         else {
-          val maxKeyLength = linktimeProperties.keys.map(_.length).max
+          val maxKeyLength = map.keys.map(_.length).max
           val keyPadSize = maxKeyLength.min(20)
-          "\n" + linktimeProperties.toSeq
+          val indentPad = " " * indent
+          "\n" + map.toSeq
             .sortBy(_._1)
             .map {
               case (key, value) =>
-                s"   * ${key.padTo(keyPadSize, ' ')} : $value"
+                val valueString = value match {
+                  case seq: Iterable[_] => showSeq(seq)
+                  case v                => v.toString()
+                }
+                s"$indentPad- ${key.padTo(keyPadSize, ' ')}: $valueString"
             }
             .mkString("\n")
         }
-      }
+
       s"""NativeConfig(
+        | - baseName:                $baseName
         | - clang:                   $clang
         | - clangPP:                 $clangPP
-        | - linkingOptions:          $linkingOptions
-        | - compileOptions:          $compileOptions
+        | - linkingOptions:          ${showSeq(linkingOptions)}
+        | - compileOptions:          ${showSeq(compileOptions)}
         | - targetTriple:            $targetTriple
         | - GC:                      $gc
         | - LTO:                     $lto
@@ -439,12 +446,12 @@ object NativeConfig {
         | - optimize                 $optimize
         | - incrementalCompilation:  $useIncrementalCompilation
         | - multithreading           $multithreadingSupport
-        | - linktimeProperties:      $listLinktimeProperties
+        | - linktimeProperties:      ${showMap(linktimeProperties)}
         | - embedResources:          $embedResources
-        | - resourceIncludePatterns: ${resourceIncludePatterns.mkString(", ")}
-        | - resourceExcludePatterns: ${resourceExcludePatterns.mkString(", ")}
-        | - baseName:                $baseName
-        | - optimizerConfig:         ${optimizerConfig.show(" " * 3)}
+        | - resourceIncludePatterns: ${showSeq(resourceIncludePatterns)}
+        | - resourceExcludePatterns: ${showSeq(resourceExcludePatterns)}
+        | - serviceProviders:        ${showMap(serviceProviders)}
+        | - optimizerConfig:         ${optimizerConfig.show(" " * 4)}
         |)""".stripMargin
     }
   }

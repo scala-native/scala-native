@@ -59,10 +59,9 @@ object OptimizerConfig {
 
     override def toString: String = show(indent = " ")
     override private[scalanative] def show(indent: String): String =
-      s"""OptimizerConfig(
+      s"""
           |$indent- maxInlineDepth: $maxInlineDepth
           |$indent- maxInlineSize:  ${maxInlineSize.getOrElse("default")}
-          |$indent- maxCallerSize:  ${maxCallerSize.getOrElse("default")}
-          |$indent)""".stripMargin
+          |$indent- maxCallerSize:  ${maxCallerSize.getOrElse("default")}""".stripMargin
   }
 }
