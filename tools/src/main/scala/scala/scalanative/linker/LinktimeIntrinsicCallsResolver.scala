@@ -108,12 +108,15 @@ object LinktimeIntrinsicCallsResolver {
           .append(" |\n")
       }
 
+      def addBlankEntry() = addEntry(("", "", ""), "", skipServiceName = false)
+
       addLine()
       addEntry(header, statusColor = "", skipServiceName = false)
       addLine()
       for {
-        (serviceName, providers) <- serviceProviders.toSeq.sortBy(_._1)
-        (provider, idx) <-
+        ((serviceName, providers), serviceIdx) <- serviceProviders.toSeq.sortBy(_._1).zipWithIndex
+
+        (provider, providerIdx) <-
           if (providers.nonEmpty) providers.sortBy(_.name).zipWithIndex
           else Seq(FoundServiceProvider("---", Missing) -> 0)
         statusColor = provider.status match {
@@ -122,11 +125,15 @@ object LinktimeIntrinsicCallsResolver {
           case Available    => YELLOW
           case Missing      => RED
         }
-      } addEntry(
-        (serviceName, provider.name, provider.status.toString()),
-        statusColor = statusColor,
-        skipServiceName = idx > 0
-      )
+      } {
+        def isNextService = serviceIdx > 0 &&  providerIdx == 0
+        if (isNextService) addBlankEntry()
+        addEntry(
+          (serviceName, provider.name, provider.status.toString()),
+          statusColor = statusColor,
+          skipServiceName = providerIdx > 0
+        )
+      }
       addLine()
       builder.toString()
     }
