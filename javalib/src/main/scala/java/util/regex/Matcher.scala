@@ -14,7 +14,8 @@ object Matcher {
 final class Matcher private[regex] (
     var _pattern: Pattern,
     var _inputSequence: CharSequence
-) extends MatchResult {
+) extends MatchResult
+    with Cloneable {
 
   private val underlying = new rMatcher(_pattern.compiled, _inputSequence)
 
