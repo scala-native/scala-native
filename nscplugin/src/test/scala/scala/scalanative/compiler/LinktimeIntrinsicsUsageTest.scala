@@ -25,7 +25,14 @@ class LinktimeIntrinsicsUsageTest {
           )
         )
     )
-    assertTrue(err.getMessage(), err.getMessage().contains("first argument of method load needs to be literal constant of class type"))
+    assertTrue(
+      err.getMessage(),
+      err
+        .getMessage()
+        .contains(
+          "first argument of method load needs to be literal constant of class type"
+        )
+    )
   }
 
   @Test def setsCorrectDefnAttrs(): Unit = {
