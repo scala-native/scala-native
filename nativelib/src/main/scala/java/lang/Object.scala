@@ -53,13 +53,18 @@ class _Object {
     addr.toInt ^ (addr >> 32).toInt
   }
 
-  protected def __clone(): _Object = {
-    val cls = __getClass()
-    val size = cls.size.toULong
-    val clone = GC.alloc(cls.asInstanceOf[Class[_]], size)
-    val src = castObjectToRawPtr(this)
-    libc.memcpy(clone, src, size)
-    castRawPtrToObject(clone).asInstanceOf[_Object]
+  protected def __clone(): _Object = this match {
+    case _: Cloneable =>
+      val cls = __getClass()
+      val size = cls.size.toULong
+      val clone = GC.alloc(cls.asInstanceOf[Class[_]], size)
+      val src = castObjectToRawPtr(this)
+      libc.memcpy(clone, src, size)
+      castRawPtrToObject(clone).asInstanceOf[_Object]
+    case _ =>
+      throw new CloneNotSupportedException(
+        "Doesn't implement Cloneable interface!"
+      )
   }
 
   protected def __finalize(): Unit = ()
