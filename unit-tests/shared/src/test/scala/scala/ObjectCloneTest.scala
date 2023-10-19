@@ -5,7 +5,7 @@ import org.junit.Assert._
 
 class ObjectCloneTest {
 
-  case class I(var i: Int) {
+  case class I(var i: Int) extends Cloneable {
     def copy(): I = this.clone().asInstanceOf[I]
   }
 
@@ -19,7 +19,7 @@ class ObjectCloneTest {
     assertTrue(clone.i == 123)
   }
 
-  case class Arr(val arr: Array[Int]) {
+  case class Arr(val arr: Array[Int]) extends Cloneable {
     def copy(): Arr = this.clone().asInstanceOf[Arr]
   }
 
