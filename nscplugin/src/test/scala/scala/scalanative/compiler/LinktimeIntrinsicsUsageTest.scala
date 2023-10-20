@@ -38,11 +38,13 @@ class LinktimeIntrinsicsUsageTest {
   @Test def setsCorrectDefnAttrs(): Unit = {
     compileAndLoad(
       "Test.scala" ->
-        """object Test{
+        """
+        |trait Service
+        |object Test{  
         |  def bias = println() 
-        |  def usesServiceLoader1 = {java.util.ServiceLoader.loadInstalled(classOf[Test.type]); ()}
-        |  def usesServiceLoader2 = {java.util.ServiceLoader.load(classOf[Test.type]); ()}
-        |  def usesServiceLoader3 = {java.util.ServiceLoader.load(classOf[Test.type], null.asInstanceOf[java.lang.ClassLoader]); ()}
+        |  def usesServiceLoader1 = {java.util.ServiceLoader.loadInstalled(classOf[Service]); ()}
+        |  def usesServiceLoader2 = {java.util.ServiceLoader.load(classOf[Service]); ()}
+        |  def usesServiceLoader3 = {java.util.ServiceLoader.load(classOf[Service], null.asInstanceOf[java.lang.ClassLoader]); ()}
         |}""".stripMargin
     ) { defns =>
       val TestModule = Global.Top("Test$")

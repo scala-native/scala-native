@@ -126,15 +126,15 @@ class NIRCompiler(outDir: Path) {
     val (sources, resources) = files.partition(_.getName() endsWith ".scala")
     val resourceFiles = resources
       .filter(_.isFile())
-      .map(file =>
+      .map { file =>
         val targetFile = outDir.resolve(base.relativize(file.toPath))
         Files.createDirectories(targetFile.getParent())
         Files.copy(
           file.toPath(),
           outDir.resolve(base.relativize(file.toPath))
         )
-      )
-    compile(sources) ++ resourceFiles.toArray
+      }
+    (compile(sources) ++ resourceFiles).toArray
   }
 
   def compile(source: String): Array[Path] = {
