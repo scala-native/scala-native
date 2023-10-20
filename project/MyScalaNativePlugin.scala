@@ -71,14 +71,6 @@ object MyScalaNativePlugin extends AutoPlugin {
           multithreadingEnabledBySbtSysProps()
             .getOrElse(nc.multithreadingSupport)
         )
-        .withServiceProviders(
-          Map(
-            "java.nio.charset.spi.CharsetProvider" -> Seq(
-              "MockCharsetProvider",
-              "MissingCharsetProvider"
-            )
-          )
-        )
     },
     scalacOptions ++= {
       // Link source maps to GitHub sources
