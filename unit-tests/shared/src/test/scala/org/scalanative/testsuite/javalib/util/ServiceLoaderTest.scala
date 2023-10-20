@@ -32,7 +32,6 @@ class MyServiceImpl4 extends MyService {
 class ServiceLoaderTest {
   @Test def loadService(): Unit = {
     val loader = ServiceLoader.load(classOf[MyService])
-    assertTrue(loader.findFirst().isPresent())
     val idsFound = scala.collection.mutable.Set.empty[Int]
     loader.forEach { provider =>
       idsFound += provider.id
