@@ -633,6 +633,14 @@ object Build {
           .withEmbedResources(true)
           // Tests using threads are ignored in runtime, skip checks and allow to link
           .withCheckFeatures(false)
+          .withServiceProviders(
+            Map(
+              "org.scalanative.testsuite.javalib.util.MyService" -> Seq(
+                "org.scalanative.testsuite.javalib.util.MyServiceImpl1",
+                "org.scalanative.testsuite.javalib.util.MyServiceImpl2"
+              )
+            )
+          )
       },
       Test / unmanagedSourceDirectories ++= {
         val base = (Test / sourceDirectory).value
