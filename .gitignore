@@ -28,7 +28,10 @@ bin/
 /project/**/metals.sbt
 
 # Build Server Protocol, used by sbt
-/.bsp/
+**/.bsp/
+
+# scala-cli
+**/.scala-build
 
 # vscode
 /.vscode/
