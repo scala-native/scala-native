@@ -25,6 +25,7 @@ import java.util.Arrays
 import java.util.List
 import java.util.Map
 import java.util.Queue
+import java.nio.charset.StandardCharsets
 
 // An RE2 class instance is a compiled representation of an RE2 regular
 // expression, independent of the public Java-like Pattern/Matcher API.
@@ -777,7 +778,7 @@ object RE2 {
     val prefixBuilder = new java.lang.StringBuilder()
     re2.prefixComplete = prog.prefix(prefixBuilder)
     re2.prefix = prefixBuilder.toString
-    re2.prefixUTF8 = re2.prefix.getBytes("UTF-8")
+    re2.prefixUTF8 = re2.prefix.getBytes(StandardCharsets.UTF_8)
 
     if (!re2.prefix.isEmpty) {
       re2.prefixRune = re2.prefix.codePointAt(0)

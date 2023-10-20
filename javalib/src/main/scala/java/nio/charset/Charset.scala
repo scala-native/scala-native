@@ -171,5 +171,4 @@ object Charset {
 
   private def allNativeCharsets =
     Array(US_ASCII, ISO_8859_1, UTF_8, UTF_16BE, UTF_16LE, UTF_16)
-
 }

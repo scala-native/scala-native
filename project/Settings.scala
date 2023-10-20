@@ -639,6 +639,7 @@ object Settings {
   )
   lazy val commonJavalibSettings = Def.settings(
     recompileAllOrNothingSettings,
+    noJavaReleaseSettings, // we don't emit classfiles
     Compile / scalacOptions ++= scalaNativeCompilerOptions(
       "genStaticForwardersForNonTopLevelObjects"
     ),
