@@ -45,18 +45,14 @@ object ClassPath {
           val name = nir.Global.Top(io.packageNameFromPath(path))
           nirFiles.update(name, path)
 
-        // format: off
-        case path if
-            (path.startsWith("/META-INF/services/") ||  path.startsWith("META-INF/services/")) =>
-              // !Files.isDirectory(path, LinkOption.NOFOLLOW_LINKS) =>
-          // println(path -> Files.exists(dir path))
-          // println(path.getClass.getName -> Files.isReadable(path))
-          // println(path -> path.toFile().isFile())
-        // format: on
+        // First variant for jars, seconds for local directories
+        case path
+            if (path.startsWith("/META-INF/services/") ||
+              path.startsWith("META-INF/services/")) =>
           val serviceName = nir.Global.Top(path.getFileName().toString())
           serviceProviders.update(serviceName, path)
 
-        case p => () // println(p)
+        case _ => ()
       }
 
     private val cache =

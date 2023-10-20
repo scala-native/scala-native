@@ -102,8 +102,9 @@ object NIRCompiler {
   }
 
   private def makeFile(base: Path, name: String, content: String): Unit = {
-    val relativePath =
-      name.replace("/", File.separator).replace("\\", File.separator)
+    val relativePath = name
+      .replace("/", File.separator)
+      .replace("\\", File.separator)
     val path = base.resolve(relativePath)
     val dir = path.getParent()
     if (dir != base) {
