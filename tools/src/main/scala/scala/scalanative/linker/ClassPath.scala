@@ -85,14 +85,14 @@ object ClassPath {
     }
 
     lazy val definedServicesProviders: Map[Global.Top, Seq[Global.Top]] = {
-      serviceProviders.mapValues {
-        case path =>
+      serviceProviders.map {
+        case (name,path) =>
           val b = Seq.newBuilder[Global.Top]
           Files.lines(path).forEach { line =>
             val providerName = line.trim()
             if (!providerName.isEmpty()) b += Global.Top(providerName)
           }
-          b.result()
+          name -> b.result()
       }.toMap
     }
   }

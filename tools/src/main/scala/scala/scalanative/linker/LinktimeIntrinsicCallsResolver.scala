@@ -8,15 +8,26 @@ import scala.scalanative.build.NativeConfig.{ServiceName, ServiceProviderName}
 object LinktimeIntrinsicCallsResolver {
   // scalafmt: { maxColumn = 120}
   final val ServiceLoader = Global.Top("java.util.ServiceLoader")
-  final val ServiceLoaderCtor = ServiceLoader.member(Sig.Ctor(Seq(Rt.Class, Type.Array(Rt.Object))))
+  final val ServiceLoaderModule = Global.Top("java.util.ServiceLoader$")
+  final val ServiceLoaderProvider = Global.Top("java.util.ServiceLoader$Provider")
+
   final val ServiceLoaderRef = Type.Ref(ServiceLoader)
+  final val ServiceLoaderModuleRef = Type.Ref(ServiceLoaderModule)
+  final val ServiceLoaderProviderRef = Type.Ref(ServiceLoaderProvider)
   final val ClassLoaderRef = Type.Ref(Global.Top("java.lang.ClassLoader"))
+
+  final val ServiceLoaderCtor = ServiceLoader
+    .member(Sig.Ctor(Seq(Rt.Class, Type.Array(ServiceLoaderProviderRef))))
+
   final val ServiceLoaderLoad = ServiceLoader
     .member(Sig.Method("load", Seq(Rt.Class, ServiceLoaderRef), Sig.Scope.PublicStatic))
   final val ServiceLoaderLoadClassLoader = ServiceLoader
     .member(Sig.Method("load", Seq(Rt.Class, ClassLoaderRef, ServiceLoaderRef), Sig.Scope.PublicStatic))
   final val ServiceLoaderLoadInstalled = ServiceLoader
     .member(Sig.Method("loadInstalled", Seq(Rt.Class, ServiceLoaderRef), Sig.Scope.PublicStatic))
+
+  final val ServiceLoaderCreateProvider = ServiceLoaderModule
+    .member(Sig.Method("createIntrinsicProvider", Seq(Rt.Class, Type.Ptr, ServiceLoaderProviderRef)))
 
   object IntrinsicCall {
     val intrinsicMethods = Set(
@@ -146,13 +157,17 @@ trait LinktimeIntrinsicCallsResolver { self: Reach =>
 
   private val foundServices = mutable.Map.empty[ServiceName, mutable.Map[ServiceProviderName, FoundServiceProvider]]
   def foundServiceProviders: FoundServiceProviders = new FoundServiceProviders(
-    foundServices.toMap.mapValues(_.values.toSeq)
+    foundServices.map {
+      case (service, providers) =>
+        service -> providers.map(_._2).toSeq
+    }.toMap
   )
+  private val serviceProviderLoaders = mutable.Map.empty[Global.Top, Val.Global]
 
   def resolveIntrinsicsCalls(defn: Defn.Define): Seq[Inst] = {
     val insts = defn.insts
-    implicit val fresh = Fresh(insts)
-    implicit val buffer = new Buffer()
+    implicit val fresh: Fresh = Fresh(insts)
+    implicit val buffer: Buffer = new Buffer()
     insts.foreach {
       case inst @ ServiceLoaderLoadCall(cls) => onServiceLoaderLoad(inst, cls)
       case inst                              => buffer += inst
@@ -161,7 +176,7 @@ trait LinktimeIntrinsicCallsResolver { self: Reach =>
   }
 
   private def onServiceLoaderLoad(inst: Inst, cls: Val.ClassOf)(implicit fresh: Fresh, buf: Buffer): Unit = {
-    val let @ Inst.Let(_, op: Op.Call, _) = inst
+    val let @ Inst.Let(_, op: Op.Call, _) = inst: @unchecked
     implicit val pos: Position = let.pos
     implicit val scopeId: ScopeId = let.scopeId
 
@@ -187,30 +202,61 @@ trait LinktimeIntrinsicCallsResolver { self: Reach =>
       )
     }
 
-    def loadProvider(cls: Global.Top): Val.Local = {
-      val clsRef = Type.Ref(cls)
-      val alloc = buf.classalloc(cls, let.unwind)
-      val callCtor = buf.call(
-        ty = Type.Function(Seq(clsRef), Type.Unit),
-        ptr = Val.Global(cls.member(Sig.Ctor(Nil)), Type.Ptr),
-        args = Seq( /*this=*/ Val.Local(alloc.id, clsRef)),
-        unwind = let.unwind
+    def serviceProviderLoader(providerCls: Global.Top): Val.Global = serviceProviderLoaders
+      .getOrElseUpdate(
+        providerCls, {
+          val providerClsRef = Type.Ref(providerCls)
+          val loadProviderLambda = {
+            new Defn.Define(
+              attrs = Attrs.None,
+              name = cls.name.member(Sig.Generated(s"loadProvider_${providerCls.id}")),
+              ty = Type.Function(Nil, providerClsRef),
+              insts = {
+                val fresh = Fresh()
+                val buf = new Buffer()(fresh)
+                buf.label(fresh(), Nil)
+                val alloc = buf.classalloc(providerCls, let.unwind)
+                val callCtor = buf.call(
+                  ty = Type.Function(Seq(providerClsRef), Type.Unit),
+                  ptr = Val.Global(providerCls.member(Sig.Ctor(Nil)), Type.Ptr),
+                  args = Seq( /*this=*/ Val.Local(alloc.id, providerClsRef)),
+                  unwind = let.unwind
+                )
+                // Load provider module as it might contain a registration logic
+                val moduleName = Global.Top(providerCls.id + "$")
+                lookup(moduleName, ignoreIfUnavailable = true).foreach { _ =>
+                  buf.module(moduleName, let.unwind)
+                }
+                buf.ret(alloc)
+                buf.toSeq
+              }
+            )
+          }
+          reachDefn(loadProviderLambda)
+          Val.Global(loadProviderLambda.name, Type.Ptr)
+        }
       )
-      // Load provider module as it might contain a registration logic
-      val moduleName = Global.Top(cls.id + "$")
-      lookup(moduleName, ignoreIfUnavailable = true).foreach { _ =>
-        buf.module(moduleName, let.unwind)
-      }
-      Val.Local(alloc.id, clsRef)
-    }
 
-    val loadedProviders = loader.definedServicesProviders
+    val serviceLoaderModule = buf.let(Op.Module(ServiceLoaderModule), let.unwind)
+    val serviceProviders = loader.definedServicesProviders
       .get(cls.name)
       .toList
       .flatten
       .filter(providerInfo(_).status == ServiceProviderStatus.Loaded)
-      .map(loadProvider)
-    val providersArray = buf.arrayalloc(Rt.Object, Val.ArrayValue(Rt.Object, loadedProviders), let.unwind)
+      .map { providerCls =>
+        val loader = serviceProviderLoader(providerCls)
+        buf.call(
+          ty = Type.Function(Seq(ServiceLoaderModuleRef, Rt.Class, Type.Ptr), ServiceLoaderProviderRef),
+          ptr = Val.Global(ServiceLoaderCreateProvider, Type.Ptr),
+          args = Seq(serviceLoaderModule, Val.ClassOf(providerCls), loader),
+          unwind = let.unwind
+        )
+      }
+    val providersArray = buf.arrayalloc(
+      ty = Type.Array(ServiceLoaderProviderRef),
+      init = Val.ArrayValue(Type.Array(ServiceLoaderProviderRef), serviceProviders),
+      unwind = let.unwind
+    )
 
     // Create instance of ServiceLoader and call it's constructor
     val alloc = let.copy(op = Op.Classalloc(ServiceLoader, None))
