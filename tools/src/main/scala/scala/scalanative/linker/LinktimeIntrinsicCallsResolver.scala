@@ -4,6 +4,7 @@ import scala.collection.mutable
 import scala.scalanative.nir._
 import scala.scalanative.util.unsupported
 import scala.scalanative.build.NativeConfig.{ServiceName, ServiceProviderName}
+import scala.scalanative.build.Logger
 
 object LinktimeIntrinsicCallsResolver {
   // scalafmt: { maxColumn = 120}
@@ -28,13 +29,27 @@ object LinktimeIntrinsicCallsResolver {
 
   final val ServiceLoaderCreateProvider = ServiceLoaderModule
     .member(Sig.Method("createIntrinsicProvider", Seq(Rt.Class, Type.Ptr, ServiceLoaderProviderRef)))
+  // Registers available ServiceLoader.load* methods
+  final val ServiceLoaderLoadMethods = Set(
+    ServiceLoaderLoad,
+    ServiceLoaderLoadClassLoader,
+    ServiceLoaderLoadInstalled
+  ).flatMap { member =>
+    Set(
+      member,
+      // Adds their special variants using module for usages within javalib
+      member.copy(
+        owner = ServiceLoaderModule,
+        sig = member.sig.unmangled match {
+          case sig @ Sig.Method(_, _, scope) => sig.copy(scope = Sig.Scope.Public)
+          case sig                           => sig
+        }
+      )
+    )
+  }
 
   object IntrinsicCall {
-    val intrinsicMethods = Set(
-      ServiceLoaderLoad,
-      ServiceLoaderLoadClassLoader,
-      ServiceLoaderLoadInstalled
-    )
+    private val intrinsicMethods = ServiceLoaderLoadMethods
 
     def unapply(inst: Inst): Option[(Global.Member, List[Val])] = inst match {
       case Inst.Let(_, Op.Call(_, Val.Global(name: Global.Member, _), args), _) if intrinsicMethods.contains(name) =>
@@ -44,12 +59,16 @@ object LinktimeIntrinsicCallsResolver {
   }
 
   object ServiceLoaderLoadCall {
-    def unapply(inst: Inst): Option[Val.ClassOf] = inst match {
-      case IntrinsicCall(
-            ServiceLoaderLoad | ServiceLoaderLoadClassLoader | ServiceLoaderLoadInstalled,
-            (cls: Val.ClassOf) :: _
-          ) =>
-        Some(cls)
+    def unapply(inst: Inst)(implicit logger: Logger): Option[Val.ClassOf] = inst match {
+      case IntrinsicCall(name, args) if ServiceLoaderLoadMethods.contains(name) =>
+        args match {
+          case (cls: Val.ClassOf) :: _ => Some(cls)
+          // Special case for usage within javalib
+          case _ :: (cls: Val.ClassOf) :: _ => Some(cls)
+          case _ =>
+            logger.error(s"Found unsupported variant of ${name.show} function, arguments: ${args.map(_.show)}")
+            None
+        }
       case _ => None
     }
   }
@@ -166,6 +185,7 @@ trait LinktimeIntrinsicCallsResolver { self: Reach =>
 
   def resolveIntrinsicsCalls(defn: Defn.Define): Seq[Inst] = {
     val insts = defn.insts
+    implicit def logger: Logger = self.config.logger
     implicit val fresh: Fresh = Fresh(insts)
     implicit val buffer: Buffer = new Buffer()
     insts.foreach {
