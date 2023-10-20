@@ -74,6 +74,7 @@ object Settings {
     docsSettings
   )
 
+  val javacSourceFlags = Seq("-source", "1.8")
   def javaReleaseSettings = {
     def patchVersion(prefix: String, scalaVersion: String): Int =
       scalaVersion.stripPrefix(prefix).takeWhile(_.isDigit).toInt
@@ -85,7 +86,6 @@ object Settings {
         case (3, 1)  => patchVersion("3.1.", scalaVersion) > 1
         case (3, _)  => true
       }
-    val javacSourceFlags = Seq("-source", "1.8")
     val scalacReleaseFlag = "-release:8"
 
     Def.settings(
@@ -103,6 +103,13 @@ object Settings {
       Test / scalacOptions -= scalacReleaseFlag
     )
   }
+  def noJavaReleaseSettings = Def.settings(
+    scalacOptions ~= { prev =>
+      val disabledScalacOptions = Seq("-target:", "-Xtarget", "-release:")
+      prev.filterNot(opt => disabledScalacOptions.exists(opt.startsWith))
+    },
+    javacOptions --= javacSourceFlags
+  )
 
   // Docs and API settings
   lazy val docsSettings: Seq[Setting[_]] = {

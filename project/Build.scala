@@ -703,6 +703,7 @@ object Build {
       .enablePlugins(MyScalaNativePlugin)
       .withNativeCompilerPlugin
       .withJUnitPlugin
+      .settings(noJavaReleaseSettings)
       .dependsOn(scalalib, javalib, testInterface % "test")
 
 // Testing infrastructure ------------------------------------------------
