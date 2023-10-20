@@ -1,7 +1,10 @@
 package scala.scalanative
 package linker
 
-import java.nio.file.{Path, Files}
+import java.nio.file.Path
+import java.io.ByteArrayInputStream
+import java.io.BufferedReader
+import java.io.InputStreamReader
 
 import scala.collection.mutable
 import scala.scalanative.io.VirtualDirectory
@@ -19,7 +22,7 @@ sealed trait ClassPath {
   private[scalanative] def classesWithEntryPoints: Iterable[nir.Global.Top]
 
   private[scalanative] def definedServicesProviders
-      : Map[Global.Top, Seq[Global.Top]]
+      : Map[nir.Global.Top, Seq[nir.Global.Top]]
 }
 
 object ClassPath {
@@ -42,13 +45,18 @@ object ClassPath {
           val name = nir.Global.Top(io.packageNameFromPath(path))
           nirFiles.update(name, path)
 
-        case path if path.startsWith("/META-INF/services/") =>
-          if (!Files.isDirectory(path)) {
-            val serviceName = nir.Global.Top(path.getFileName().toString())
-            serviceProviders.update(serviceName, path)
-          }
+        // format: off
+        case path if
+            (path.startsWith("/META-INF/services/") ||  path.startsWith("META-INF/services/")) =>
+              // !Files.isDirectory(path, LinkOption.NOFOLLOW_LINKS) =>
+          // println(path -> Files.exists(dir path))
+          // println(path.getClass.getName -> Files.isReadable(path))
+          // println(path -> path.toFile().isFile())
+        // format: on
+          val serviceName = nir.Global.Top(path.getFileName().toString())
+          serviceProviders.update(serviceName, path)
 
-        case _ => ()
+        case p => () // println(p)
       }
 
     private val cache =
@@ -87,11 +95,19 @@ object ClassPath {
     lazy val definedServicesProviders: Map[Global.Top, Seq[Global.Top]] = {
       serviceProviders.map {
         case (name, path) =>
-          val b = Seq.newBuilder[Global.Top]
-          Files.lines(path).forEach { line =>
-            val providerName = line.trim()
-            if (!providerName.isEmpty()) b += Global.Top(providerName)
-          }
+          val b = Seq.newBuilder[nir.Global.Top]
+          val reader = new BufferedReader(
+            new InputStreamReader(
+              new ByteArrayInputStream(directory.read(path).array())
+            )
+          )
+          try
+            reader
+              .lines()
+              .map[String](_.trim())
+              .filter(_.nonEmpty)
+              .forEach(b += nir.Global.Top(_))
+          finally reader.close()
           name -> b.result()
       }.toMap
     }

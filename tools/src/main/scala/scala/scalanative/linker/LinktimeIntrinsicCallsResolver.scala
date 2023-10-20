@@ -82,8 +82,14 @@ object LinktimeIntrinsicCallsResolver {
     /** ServiceProvider found on classpath but not enabled */
     case object Available extends ServiceProviderStatus
 
+    /** There is no implementations available for given service */
+    case object NoProviders extends ServiceProviderStatus
+
     /** ServiceProvider found in META-INF but not found on classpath */
-    case object Missing extends ServiceProviderStatus
+    case object NotFoundOnClasspath extends ServiceProviderStatus
+
+    /** ServiceProvider not found in META-INF but defined in config */
+    case object UnknownConfigEntry extends ServiceProviderStatus
   }
   case class FoundServiceProvider(name: ServiceProviderName, status: ServiceProviderStatus)
   class FoundServiceProviders(val serviceProviders: Map[ServiceName, Seq[FoundServiceProvider]]) extends AnyVal {
@@ -96,7 +102,7 @@ object LinktimeIntrinsicCallsResolver {
      *  |-------------------------------------------|
      *  | x.y.z       | x.y.myImpl      | Loaded    |
      *  |             | x.y.z.otherImpl | Available |
-     *  | foo.bar.baz | my.foo.bar      | Missing   |
+     *  | foo.bar.baz | my.foo.bar      | NotFound  |
      *  |-------------------------------------------|
      */
     def asTable(noColor: Boolean): String = {
@@ -124,7 +130,7 @@ object LinktimeIntrinsicCallsResolver {
       }
       def addEntry(entry: Entry, statusColor: String, skipServiceName: Boolean) = {
         val (serviceName, providerName, status) = entry
-        import ServiceProviderStatus.{Loaded, Available, Missing}
+        import ServiceProviderStatus._
         val serviceNameOrBlank = if (skipServiceName) "" else serviceName
         builder
           .append("| ")
@@ -148,12 +154,12 @@ object LinktimeIntrinsicCallsResolver {
 
         (provider, providerIdx) <-
           if (providers.nonEmpty) providers.sortBy(_.name).zipWithIndex
-          else Seq(FoundServiceProvider("---", Missing) -> 0)
+          else Seq(FoundServiceProvider("---", NoProviders) -> 0)
         statusColor = provider.status match {
-          case _ if noColor => ""
-          case Loaded       => GREEN
-          case Available    => YELLOW
-          case Missing      => RED
+          case _ if noColor                             => ""
+          case Loaded                                   => GREEN
+          case Available | NoProviders                  => YELLOW
+          case NotFoundOnClasspath | UnknownConfigEntry => RED
         }
       } {
         def isNextService = serviceIdx > 0 && providerIdx == 0
@@ -201,11 +207,11 @@ trait LinktimeIntrinsicCallsResolver { self: Reach =>
     implicit val scopeId: ScopeId = let.scopeId
 
     val serviceName = cls.name.id
-    val serviceStats = foundServices.getOrElseUpdate(serviceName, mutable.Map.empty)
+    val serviceProvidersStatus = foundServices.getOrElseUpdate(serviceName, mutable.Map.empty)
 
     def providerInfo(symbol: Global.Top) = {
       val serviceProviderName = symbol.id
-      serviceStats.getOrElseUpdate(
+      serviceProvidersStatus.getOrElseUpdate(
         serviceProviderName, {
           def exists = lookup(symbol, ignoreIfUnavailable = true).isDefined
           def shouldLoad =
@@ -214,7 +220,7 @@ trait LinktimeIntrinsicCallsResolver { self: Reach =>
               .flatMap(_.find(_ == serviceProviderName))
               .isDefined
           val status =
-            if (!exists) ServiceProviderStatus.Missing
+            if (!exists) ServiceProviderStatus.NotFoundOnClasspath
             else if (shouldLoad) ServiceProviderStatus.Loaded
             else ServiceProviderStatus.Available
           FoundServiceProvider(serviceProviderName, status)
@@ -271,6 +277,17 @@ trait LinktimeIntrinsicCallsResolver { self: Reach =>
           args = Seq(serviceLoaderModule, Val.ClassOf(providerCls), loader),
           unwind = let.unwind
         )
+      }
+    // Mark every service provider found in config, but not found in any META-INF as NotFound
+    config.compilerConfig.serviceProviders
+      .get(cls.name.id)
+      .foreach { providers =>
+        providers.foreach { providerName =>
+          serviceProvidersStatus.getOrElseUpdate(
+            providerName,
+            FoundServiceProvider(providerName, ServiceProviderStatus.UnknownConfigEntry)
+          )
+        }
       }
     val providersArray = buf.arrayalloc(
       ty = Type.Array(ServiceLoaderProviderRef),
