@@ -16,6 +16,7 @@ import java.net.URLClassLoader
 import java.io.File
 import scala.scalanative.build.Build
 import scala.scalanative.linker.ReachabilityAnalysis
+import scala.scalanative.linker.LinktimeIntrinsicCallsResolver.FoundServiceProviders
 import scala.concurrent._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
@@ -158,7 +159,8 @@ case class PartestTask(taskDef: TaskDef, args: Array[String]) extends Task {
       defns = Nil,
       dynsigs = Nil,
       dynimpls = Nil,
-      resolvedVals = mutable.Map.empty
+      resolvedVals = mutable.Map.empty,
+      foundServiceProviders = new FoundServiceProviders(Map.empty)
     )
 
     val build = Build.findAndCompileNativeLibraries(config, analysis)
