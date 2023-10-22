@@ -8,10 +8,12 @@ import java.nio.charset.StandardCharsets
 import scala.annotation.switch
 import scala.annotation.tailrec
 
-import ScalaOps._
+import java.util.function.{Function, BiConsumer, BiFunction}
 
 class Properties(protected val defaults: Properties)
     extends ju.Hashtable[AnyRef, AnyRef] {
+
+  private var map = new ju.concurrent.ConcurrentHashMap[AnyRef, AnyRef]()
 
   def this() = this(null)
 
@@ -42,7 +44,7 @@ class Properties(protected val defaults: Properties)
   def propertyNames(): ju.Enumeration[_] = {
     val propNames = new ju.HashSet[String]
     foreachAncestor { ancestor =>
-      ancestor.keySet().scalaOps.foreach { key =>
+      ancestor.keySet().forEach { key =>
         // Explicitly use asInstanceOf, to trigger the ClassCastException mandated by the spec
         propNames.add(key.asInstanceOf[String])
       }
@@ -53,7 +55,7 @@ class Properties(protected val defaults: Properties)
   def stringPropertyNames(): ju.Set[String] = {
     val set = new ju.HashSet[String]
     foreachAncestor { ancestor =>
-      ancestor.entrySet().scalaOps.foreach { entry =>
+      ancestor.entrySet().forEach { entry =>
         (entry.getKey(), entry.getValue()) match {
           case (key: String, _: String) => set.add(key)
           case _                        => // Ignore key
@@ -84,12 +86,12 @@ class Properties(protected val defaults: Properties)
 
   def list(out: PrintStream): Unit = {
     out.println(listStr)
-    entrySet().scalaOps.foreach { entry => out.println(format(entry)) }
+    entrySet().forEach { entry => out.println(format(entry)) }
   }
 
   def list(out: PrintWriter): Unit = {
     out.println(listStr)
-    entrySet().scalaOps.foreach { entry => out.println(format(entry)) }
+    entrySet().forEach { entry => out.println(format(entry)) }
   }
 
   def store(out: OutputStream, comments: String): Unit = {
@@ -113,7 +115,7 @@ class Properties(protected val defaults: Properties)
     writer.write(new Date().toString)
     writer.write(System.lineSeparator())
 
-    entrySet().scalaOps.foreach { entry =>
+    entrySet().forEach { entry =>
       writer.write(
         encodeString(entry.getKey().asInstanceOf[String], isKey = true, toHex)
       )
@@ -134,7 +136,7 @@ class Properties(protected val defaults: Properties)
   def save(out: OutputStream, comments: String): Unit =
     store(out, comments)
 
-  private def loadImpl(reader: Reader): Unit = {
+  private def loadImpl(reader: Reader): Unit = synchronized {
     val br = new BufferedReader(reader)
     val valBuf = new jl.StringBuilder()
     var prevValueContinue = false
@@ -387,4 +389,80 @@ class Properties(protected val defaults: Properties)
   // def loadFromXML(in: InputStream): Unit
   // def storeToXML(os: OutputStream, comment: String): Unit
   // def storeToXML(os: OutputStream, comment: String, encoding: String): Unit
+
+  // Hashtable overrides required for JDK9+ compatibility, delegates to inner ConcurrentHashMap
+  override def size(): Int = map.size()
+  override def isEmpty(): Boolean = map.isEmpty()
+  override def keys(): Enumeration[AnyRef] =
+    Collections.enumeration(map.keySet())
+  override def elements(): Enumeration[AnyRef] =
+    Collections.enumeration(map.values())
+  override def contains(value: Any): Boolean = map.contains(value)
+  override def containsValue(value: Any): Boolean = map.containsValue(value)
+  override def containsKey(key: Any): Boolean = map.containsKey(key)
+  override def get(key: Any): AnyRef = map.get(key)
+  override def put(key: AnyRef, value: AnyRef): AnyRef =
+    map.put(key.asInstanceOf[AnyRef], value.asInstanceOf[AnyRef])
+  override def remove(key: Any): AnyRef = map.remove(key)
+  override def putAll(t: ju.Map[_ <: AnyRef, _ <: AnyRef]): Unit = map.putAll(t)
+  override def clear(): Unit = map.clear()
+  override def toString(): String = map.toString()
+  override def keySet(): Set[AnyRef] =
+    Collections.synchronizedSet(map.keySet())
+  override def values(): Collection[AnyRef] =
+    Collections.synchronizedCollection(map.values())
+  override def entrySet(): Set[Map.Entry[AnyRef, AnyRef]] =
+    Collections.synchronizedSet(map.entrySet())
+  override def equals(o: Any): Boolean = map.equals(o)
+  override def hashCode(): Int = map.hashCode()
+  override def getOrDefault(key: Any, defaultValue: AnyRef): AnyRef =
+    map.getOrDefault(key, defaultValue)
+  override def forEach(action: BiConsumer[_ >: AnyRef, _ >: AnyRef]): Unit =
+    map.forEach(action)
+  override def replaceAll(
+      function: BiFunction[_ >: AnyRef, _ >: AnyRef, _ <: AnyRef]
+  ): Unit = map.replaceAll(function)
+  override def putIfAbsent(key: AnyRef, value: AnyRef): AnyRef =
+    map.putIfAbsent(key, value)
+  override def remove(key: Any, value: Any): Boolean =
+    map.remove(key, value)
+  override def replace(
+      key: AnyRef,
+      oldValue: AnyRef,
+      newValue: AnyRef
+  ): Boolean =
+    map.replace(key, oldValue, newValue)
+  override def replace(key: AnyRef, value: AnyRef): AnyRef =
+    map.replace(key, value)
+  override def computeIfAbsent(
+      key: AnyRef,
+      mappingFunction: Function[_ >: AnyRef, _ <: AnyRef]
+  ): AnyRef =
+    map.computeIfAbsent(key, mappingFunction)
+  override def computeIfPresent(
+      key: AnyRef,
+      remappingFunction: BiFunction[_ >: AnyRef, _ >: AnyRef, _ <: AnyRef]
+  ): AnyRef =
+    map.computeIfPresent(key, remappingFunction)
+  override def compute(
+      key: AnyRef,
+      remappingFunction: BiFunction[_ >: AnyRef, _ >: AnyRef, _ <: AnyRef]
+  ): AnyRef =
+    map.compute(key, remappingFunction)
+  override def merge(
+      key: AnyRef,
+      value: AnyRef,
+      remappingFunction: BiFunction[_ >: AnyRef, _ >: AnyRef, _ <: AnyRef]
+  ): AnyRef =
+    map.merge(key, value, remappingFunction)
+
+  /*override*/
+  def rehash(): Unit = ()
+
+  override def clone(): Properties = {
+    val clone = super.clone().asInstanceOf[Properties]
+    clone.map = new ju.concurrent.ConcurrentHashMap(map)
+    clone
+  }
+
 }
