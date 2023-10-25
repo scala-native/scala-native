@@ -9,7 +9,7 @@ import scalanative.runtime.{MemoryPool, MemoryPoolZone}
 trait Zone {
 
   /** Allocates memory of given size. */
-  def alloc(size: CSize): Ptr[Byte]
+  def alloc(size: Int): Ptr[Byte]
 
   /** Frees allocations. This zone allocator is not reusable once closed. */
   def close(): Unit

@@ -12,5 +12,5 @@ private[scalanative] trait SafeZone {
    *  SafeZone -> Unit method in Arrays. Similarly, it's needed because the
    *  alloc method is used in the lowering phase.
    */
-  def allocImpl(cls: RawPtr, size: RawSize): RawPtr = intrinsic
+  def allocImpl(cls: RawPtr, size: Int): RawPtr = intrinsic
 }

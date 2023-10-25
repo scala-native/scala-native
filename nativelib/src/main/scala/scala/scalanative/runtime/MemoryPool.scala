@@ -15,7 +15,7 @@ import scala.scalanative.meta.LinktimeInfo.asanEnabled
  *  Memory is reclaimed back to underlying allocator once the pool is finalized.
  */
 final class MemoryPool private {
-  private[this] var chunkPageCount: USize = MemoryPool.MIN_PAGE_COUNT
+  private[this] var chunkPageCount = MemoryPool.MIN_PAGE_COUNT
   private[this] var chunk: MemoryPool.Chunk = null
   private[this] var page: MemoryPool.Page = null
   allocateChunk()
@@ -23,9 +23,9 @@ final class MemoryPool private {
   /** Allocate a chunk of memory from system allocator. */
   private def allocateChunk(): Unit = {
     if (chunkPageCount < MemoryPool.MAX_PAGE_COUNT) {
-      chunkPageCount *= 2.toUSize
+      chunkPageCount *= 2
     }
-    val chunkSize = MemoryPool.PAGE_SIZE * chunkPageCount
+    val chunkSize = MemoryPool.UPAGE_SIZE * chunkPageCount.toUSize
     val start = libc.malloc(chunkSize)
     chunk = new MemoryPool.Chunk(start, 0.toUSize, chunkSize, chunk)
   }
@@ -43,7 +43,7 @@ final class MemoryPool private {
     if (chunk.offset >= chunk.size) allocateChunk()
     val start = Intrinsics.elemRawPtr(chunk.start, chunk.offset.rawSize)
     page = new MemoryPool.Page(start, 0.toUSize, page)
-    chunk.offset += MemoryPool.PAGE_SIZE
+    chunk.offset += MemoryPool.UPAGE_SIZE
   }
 
   /** Borrow a single unused page, to be reclaimed later. */
@@ -64,9 +64,10 @@ final class MemoryPool private {
     }
 }
 object MemoryPool {
-  final val PAGE_SIZE = 4096.toUSize
-  final val MIN_PAGE_COUNT = 4.toUSize
-  final val MAX_PAGE_COUNT = 256.toUSize
+  final val PAGE_SIZE = 4096
+  final val UPAGE_SIZE = PAGE_SIZE.toUSize
+  final val MIN_PAGE_COUNT = 4
+  final val MAX_PAGE_COUNT = 256
 
   lazy val defaultMemoryPool: MemoryPool = {
     // Release allocated chunks satisfy AdressSanitizer
@@ -131,32 +132,32 @@ final class MemoryPoolZone(private[this] val pool: MemoryPool) extends Zone {
     }
   }
 
-  def alloc(size: CSize): Ptr[Byte] = {
+  def alloc(size: Int): Ptr[Byte] = {
     val alignment =
-      if (size >= 16.toUSize) 16.toUSize
-      else if (size >= 8.toUSize) 8.toUSize
-      else if (size >= 4.toUSize) 4.toUSize
-      else if (size >= 2.toUSize) 2.toUSize
-      else 1.toUSize
+      if (size >= 16) 16
+      else if (size >= 8) 8
+      else if (size >= 4) 4
+      else if (size >= 2) 2
+      else 1
 
     alloc(size, alignment)
   }
 
-  def alloc(size: CSize, alignment: CSize): Ptr[Byte] = {
+  def alloc(size: Int, alignment: Int): Ptr[Byte] = {
     checkOpen()
 
-    if (size <= MemoryPool.PAGE_SIZE / 2.toULong) {
-      allocSmall(size, alignment)
+    if (size <= MemoryPool.PAGE_SIZE / 2) {
+      allocSmall(size.toUSize, alignment)
     } else {
       allocLarge(size)
     }
   }
 
-  private def allocSmall(size: CSize, alignment: CSize): Ptr[Byte] = {
+  private def allocSmall(size: CSize, alignment: Int): Ptr[Byte] = {
     val currentOffset = headPage.offset
-    val paddedOffset = pad(currentOffset, alignment)
+    val paddedOffset = pad(currentOffset, alignment.toUSize)
     val resOffset: CSize =
-      if (paddedOffset + size <= MemoryPool.PAGE_SIZE) {
+      if (paddedOffset + size <= MemoryPool.UPAGE_SIZE) {
         headPage.offset = paddedOffset + size
         paddedOffset
       } else {
@@ -170,7 +171,7 @@ final class MemoryPoolZone(private[this] val pool: MemoryPool) extends Zone {
     fromRawPtr[Byte](Intrinsics.elemRawPtr(headPage.start, resOffset.rawSize))
   }
 
-  private def allocLarge(size: CSize): Ptr[Byte] = {
+  private def allocLarge(size: Int): Ptr[Byte] = {
     if (largeAllocations == null) {
       largeAllocations = new scala.Array[Ptr[_]](16)
     }

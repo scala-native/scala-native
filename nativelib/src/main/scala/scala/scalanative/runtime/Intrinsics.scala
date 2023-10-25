@@ -124,6 +124,10 @@ object Intrinsics {
   /** Intrinsified computation of derived raw pointer. */
   def elemRawPtr(rawptr: RawPtr, offset: RawSize): RawPtr =
     intrinsic
+    
+    /** Intrinsified computation of derived raw pointer. */
+  def elemRawPtr(rawptr: RawPtr, offset: Int): RawPtr =
+    intrinsic
 
   /** Intrinsified cast that reinterprets raw pointer as an object. */
   def castRawPtrToObject(rawptr: RawPtr): Object = intrinsic

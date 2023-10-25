@@ -202,8 +202,8 @@ trait NirDefinitions {
       getMember(IntrinsicsModule, TermName("storeRawPtr"))
     lazy val StoreObjectMethod =
       getMember(IntrinsicsModule, TermName("storeObject"))
-    lazy val ElemRawPtrMethod =
-      getMember(IntrinsicsModule, TermName("elemRawPtr"))
+    lazy val ElemRawPtrMethods =
+      getMember(IntrinsicsModule, TermName("elemRawPtr")).alternatives
     lazy val CastRawPtrToObjectMethod =
       getMember(IntrinsicsModule, TermName("castRawPtrToObject"))
     lazy val CastObjectToRawPtrMethod =

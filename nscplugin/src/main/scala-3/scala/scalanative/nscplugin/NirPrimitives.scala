@@ -194,7 +194,7 @@ class NirPrimitives(using ctx: Context) extends DottyPrimitives(ctx) {
     addPrimitive(defnNir.Intrinsics_storeRawPtr, STORE_RAW_PTR)
     addPrimitive(defnNir.Intrinsics_storeRawSize, STORE_RAW_SIZE)
     addPrimitive(defnNir.Intrinsics_storeObject, STORE_OBJECT)
-    addPrimitive(defnNir.Intrinsics_elemRawPtr, ELEM_RAW_PTR)
+    addPrimitives(defnNir.Intrinsics_elemRawPtr, ELEM_RAW_PTR)
     addPrimitive(defnNir.Intrinsics_castRawPtrToObject, CAST_RAW_PTR_TO_OBJECT)
     addPrimitive(defnNir.Intrinsics_castObjectToRawPtr, CAST_OBJECT_TO_RAW_PTR)
     addPrimitive(defnNir.Intrinsics_castIntToFloat, CAST_INT_TO_FLOAT)

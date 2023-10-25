@@ -12,13 +12,13 @@ import scala.scalanative.annotation.alwaysinline
 @extern
 object GC {
   @name("scalanative_alloc")
-  def alloc(cls: Class[_], size: CSize): RawPtr = extern
+  def alloc(cls: Class[_], size: Int): RawPtr = extern
   @name("scalanative_alloc_atomic")
-  def alloc_atomic(cls: Class[_], size: CSize): RawPtr = extern
+  def alloc_atomic(cls: Class[_], size: Int): RawPtr = extern
   @name("scalanative_alloc_small")
-  def alloc_small(cls: Class[_], size: CSize): RawPtr = extern
+  def alloc_small(cls: Class[_], size: Int): RawPtr = extern
   @name("scalanative_alloc_large")
-  def alloc_large(cls: Class[_], size: CSize): RawPtr = extern
+  def alloc_large(cls: Class[_], size: Int): RawPtr = extern
   @name("scalanative_collect")
   def collect(): Unit = extern
   @name("scalanative_init")

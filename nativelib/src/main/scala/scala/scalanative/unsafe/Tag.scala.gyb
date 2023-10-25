@@ -18,23 +18,23 @@ import scalanative.runtime._
 import scalanative.runtime.Intrinsics._
 
 sealed abstract class Tag[T] {
-  def size: CSize
-  def alignment: CSize
+  def size: Int
+  def alignment: Int
   @alwaysinline def load(ptr: unsafe.Ptr[T]): T = load(toRawPtr(ptr))
   @alwaysinline def store(ptr: unsafe.Ptr[T], value: T): Unit = store(toRawPtr(ptr), value)
 
-  @noinline def offset(idx: CSize): CSize = throwUndefined()
+  @noinline def offset(idx: Int): Int = throwUndefined()
   @noinline private[unsafe] def load(rawptr: RawPtr): T = throwUndefined()
   @noinline private[unsafe] def store(rawptr: RawPtr, value: T): Unit = throwUndefined()
 }
 
 object Tag {
-  @alwaysinline def SizeOfPtr = unsignedOf(Intrinsics.sizeOf[unsafe.Ptr[_]])
+  @alwaysinline def SizeOfPtr = castRawSizeToInt(Intrinsics.sizeOf[unsafe.Ptr[_]])
 
   final case class Ptr[T](of: Tag[T])
       extends Tag[unsafe.Ptr[T]] {
-    @alwaysinline def size: CSize = SizeOfPtr
-    @alwaysinline def alignment: CSize = SizeOfPtr
+    @alwaysinline def size: Int = SizeOfPtr
+    @alwaysinline def alignment: Int = SizeOfPtr
     @alwaysinline private[unsafe] override def load(rawptr: RawPtr): unsafe.Ptr[T] =
       fromRawPtr[T](loadRawPtr(rawptr))
     @alwaysinline private[unsafe] override def store(rawptr: RawPtr, value: unsafe.Ptr[T]): Unit =
@@ -42,8 +42,8 @@ object Tag {
   }
 
   case object Size extends Tag[unsafe.Size] {
-    @alwaysinline def size: CSize = SizeOfPtr
-    @alwaysinline def alignment: CSize = SizeOfPtr
+    @alwaysinline def size: Int = SizeOfPtr
+    @alwaysinline def alignment: Int = SizeOfPtr
     @alwaysinline private[unsafe] override def load(rawptr: RawPtr): unsafe.Size =
       unsafe.Size.valueOf(loadRawSize(rawptr))
     @alwaysinline private[unsafe] override def store(rawptr: RawPtr, value: unsafe.Size): Unit =
@@ -51,8 +51,8 @@ object Tag {
   }
 
   case object USize extends Tag[unsigned.USize] {
-    @alwaysinline def size: CSize = SizeOfPtr
-    @alwaysinline def alignment: CSize = SizeOfPtr
+    @alwaysinline def size: Int = SizeOfPtr
+    @alwaysinline def alignment: Int = SizeOfPtr
     @alwaysinline private[unsafe] override def load(rawptr: RawPtr): unsigned.USize =
       unsigned.USize.valueOf(loadRawSize(rawptr))
     @alwaysinline private[unsafe] override def store(rawptr: RawPtr, value: unsigned.USize): Unit =
@@ -61,8 +61,8 @@ object Tag {
 
   final case class Class[T <: AnyRef](of: java.lang.Class[T])
       extends Tag[T] {
-    @alwaysinline def size: CSize = SizeOfPtr
-    @alwaysinline def alignment: CSize = SizeOfPtr
+    @alwaysinline def size: Int = SizeOfPtr
+    @alwaysinline def alignment: Int = SizeOfPtr
     @alwaysinline private[unsafe] override def load(rawptr: RawPtr): T =
       loadObject(rawptr).asInstanceOf[T]
     @alwaysinline private[unsafe] override def store(rawptr: RawPtr, value: T): Unit =
@@ -85,8 +85,8 @@ object Tag {
   % for (name, T, size, align) in prims:
 
   object ${name} extends Tag[${T}] {
-    @alwaysinline def size: CSize = ${size}
-    @alwaysinline def alignment: CSize = ${align}
+    @alwaysinline def size: Int = ${size}
+    @alwaysinline def alignment: Int = ${align}
     @alwaysinline private[unsafe] override def load(rawptr: RawPtr): ${T} =
       % if name == 'Unit':
       loadObject(rawptr).asInstanceOf[Unit]
@@ -116,8 +116,8 @@ object Tag {
 
   % for N in range(0, 10):
   object Nat${N} extends Tag[unsafe.Nat._${N}] with NatTag {
-    @noinline def size: CSize = throwUndefined()
-    @noinline def alignment: CSize = throwUndefined()
+    @noinline def size: Int = throwUndefined()
+    @noinline def alignment: Int = throwUndefined()
     @alwaysinline def toInt: Int = ${N}
   }
 
@@ -131,8 +131,8 @@ object Tag {
   final case class Digit${N}${BoundNs}(${args})
       extends Tag[unsafe.Nat.Digit${N}${JustNs}]
       with NatTag {
-    @alwaysinline def size: CSize = throwUndefined()
-    @alwaysinline def alignment: CSize = throwUndefined()
+    @alwaysinline def size: Int = throwUndefined()
+    @alwaysinline def alignment: Int = throwUndefined()
     @alwaysinline def toInt: Int = {
       var res = 0
       % for i in range(1, N + 1):
@@ -147,9 +147,9 @@ object Tag {
   final case class CArray[T, N <: unsafe.Nat](of: Tag[T], n: Tag[N])
       extends Tag[unsafe.CArray[T, N]]
   {
-    @alwaysinline def size: CSize = of.size * n.asInstanceOf[NatTag].toUInt
-    @alwaysinline def alignment: CSize = of.alignment
-    @alwaysinline override def offset(idx: CSize): CSize = of.size * idx.toUInt
+    @alwaysinline def size: Int = of.size * n.asInstanceOf[NatTag].toInt
+    @alwaysinline def alignment: Int = of.alignment
+    @alwaysinline override def offset(idx: Int): Int = of.size * idx
     @alwaysinline private[unsafe] override def load(rawptr: RawPtr): unsafe.CArray[T, N] = {
       new unsafe.CArray[T, N](rawptr)
     }
@@ -164,11 +164,10 @@ object Tag {
   
   private[scalanative] sealed trait StructTag
 
-  @alwaysinline private[scalanative] def align(offset: CSize, alignment: CSize) = {
-    val alignmentMask = alignment - 1.toUSize
-    val zeroUL = 0.toUSize
+  @alwaysinline private[scalanative] def align(offset: Int, alignment: Int) = {
+    val alignmentMask = alignment - 1
     val padding =
-      if ((offset & alignmentMask) == zeroUL) zeroUL
+      if ((offset & alignmentMask) == 0) 0
       else alignment - (offset & alignmentMask)
     offset + padding
   }
@@ -182,24 +181,24 @@ object Tag {
   final case class CStruct${N}${JustTs}(${args})
     extends Tag[unsafe.CStruct${N}${JustTs}]
     with StructTag {
-    @alwaysinline def size: CSize = {
-      var res = 0.toUSize
+    @alwaysinline def size: Int = {
+      var res = 0
       % for i in range(1, N + 1):
       res = align(res, _${i}.alignment) + _${i}.size
       % end
       align(res, alignment)
     }
-    @alwaysinline def alignment: CSize = {
-      var res = 1.toUSize
+    @alwaysinline def alignment: Int = {
+      var res = 1
       % for i in range(1, N + 1):
       res = res.max(_${i}.alignment)
       % end
       res
     }
-    @alwaysinline override def offset(idx: CSize): CSize = idx.toInt match {
+    @alwaysinline override def offset(idx: Int): Int = idx.toInt match {
       % for fld in range(1, N + 1):
       case ${fld - 1} =>
-        var res = 0.toUSize
+        var res = 0
         % for i in range(1, fld):
         res = align(res, _${i}.alignment) + _${i}.size
         % end
@@ -229,8 +228,8 @@ object Tag {
      */
     private[unsafe] def fromRawPtr(rawptr: RawPtr): F
 
-    @alwaysinline def size: CSize = SizeOfPtr
-    @alwaysinline def alignment: CSize = SizeOfPtr
+    @alwaysinline def size: Int = SizeOfPtr
+    @alwaysinline def alignment: Int = SizeOfPtr
     @alwaysinline private[unsafe] override def load(rawptr: RawPtr): F =
       fromRawPtr(loadRawPtr(rawptr))
     @alwaysinline private[unsafe] override def store(rawptr: RawPtr, value: F): Unit = {

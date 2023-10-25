@@ -94,7 +94,7 @@ private object MacroImpl {
 
     q"""{
           val $rawSize = $runtime.Intrinsics.sizeOf[$T]
-          val $size    = $runtime.fromRawUSize($rawSize)
+          val $size    = $runtime.Intrinsics.castRawSizeToInt($rawSize)
           val $ptr     = $z.alloc($size)
           $runtime.libc.memset($ptr, 0, $size)
           $ptr.asInstanceOf[Ptr[$T]]
@@ -109,12 +109,11 @@ private object MacroImpl {
     val elemSize, size, ptr = TermName(c.freshName())
 
     val runtime = q"_root_.scala.scalanative.runtime"
-    val unsignedOf = q"$runtime.Intrinsics.unsignedOf"
+    val asInt = q"$runtime.Intrinsics.castRawSizeToInt"
 
     q"""{
           val $elemSize = $runtime.Intrinsics.sizeOf[$T]
-          val $size = 
-            $unsignedOf($elemSize) * $unsignedOf(${validateSize(c)(n)})
+          val $size =  $asInt($elemSize) * ${validateSize(c)(n)}
           val $ptr     = $z.alloc($size)
           $runtime.libc.memset($ptr, 0, $size)
           $ptr.asInstanceOf[Ptr[$T]]
@@ -134,7 +133,7 @@ private object MacroImpl {
 
     q"""{
           val $rawSize = $runtime.Intrinsics.sizeOf[$T]
-          val $size    = $runtime.fromRawUSize($rawSize) * $n
+          val $size    = $runtime.Intrinsics.castRawSizeToInt($rawSize) * $n.toInt
           val $ptr     = $z.alloc($size)
           $runtime.libc.memset($ptr, 0, $size)
           $ptr.asInstanceOf[Ptr[$T]]
@@ -205,8 +204,6 @@ private object MacroImpl {
     val elements, rawptr = TermName(c.freshName())
 
     val runtime = q"_root_.scala.scalanative.runtime"
-    val toRawSize = q"$runtime.Intrinsics.castIntToRawSizeUnsigned"
-    val toInt = q"$runtime.Intrinsics.castRawSizeToInt"
 
     q"""{
           val $elements = $runtime.toRawSize($n)

@@ -1,7 +1,7 @@
 package scala.scalanative.runtime
 
 import scala.scalanative.annotation.alwaysinline
-import scala.scalanative.runtime.Intrinsics.castRawSizeToInt
+import scala.scalanative.runtime.Intrinsics.{castRawSizeToInt, sizeOf}
 import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
 
 object MemoryLayout {
@@ -12,10 +12,7 @@ object MemoryLayout {
    *  evaluated and inlined in the optimizer - it would result with replacing
    *  method call with a constant value.
    */
-
-  @alwaysinline private def PtrSize = castRawSizeToInt(
-    Intrinsics.sizeOf[RawPtr]
-  )
+  @alwaysinline private def PtrSize = castRawSizeToInt(sizeOf[RawPtr])
   @alwaysinline private def IntSize = 4
 
   private def requiresEnabledMulithreading = throw new IllegalStateException(

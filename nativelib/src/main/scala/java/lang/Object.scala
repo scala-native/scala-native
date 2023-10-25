@@ -55,7 +55,7 @@ class _Object {
   protected def __clone(): _Object = this match {
     case _: Cloneable =>
       val cls = __getClass()
-      val size = cls.size.toUSize
+      val size = cls.size
       val clone = GC.alloc(cls.asInstanceOf[Class[_]], size)
       val src = castObjectToRawPtr(this)
       libc.memcpy(clone, src, size)

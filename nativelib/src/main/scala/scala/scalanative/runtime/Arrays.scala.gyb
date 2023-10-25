@@ -30,7 +30,7 @@ package runtime
 import scalanative.unsafe._
 import scalanative.unsigned._
 import scala.scalanative.memory.SafeZone
-import scalanative.runtime.Intrinsics.{castIntToRawSizeUnsigned => intToUSize, _}
+import scalanative.runtime.Intrinsics._
 
 sealed abstract class Array[T]
     extends java.io.Serializable
@@ -39,12 +39,12 @@ sealed abstract class Array[T]
   /** Number of elements of the array. */
   @inline def length: Int = {
     val rawptr = castObjectToRawPtr(this)
-    val lenptr = elemRawPtr(rawptr, intToUSize(MemoryLayout.Array.LengthOffset))
+    val lenptr = elemRawPtr(rawptr, MemoryLayout.Array.LengthOffset)
     loadInt(lenptr)
   }
 
   /** Size between elements in the array. */
-  def stride: CSize
+  def stride: Int
 
   /** Pointer to the element. */
   @inline def at(i: Int): Ptr[T] = fromRawPtr[T](atRaw(i))
@@ -109,7 +109,7 @@ object Array {
     } else {
       val fromPtr = from.atRaw(fromPos)
       val toPtr   = to.atRaw(toPos)
-      val size    = to.stride * len.toUSize
+      val size    = to.stride * len
       libc.memmove(toPtr, fromPtr, size)
     }
   }
@@ -154,7 +154,7 @@ object Array {
     } else {
       val leftPtr  = left.atRaw(leftPos)
       val rightPtr = right.atRaw(rightPos)
-      libc.memcmp(leftPtr, rightPtr, len.toUSize * left.stride)
+      libc.memcmp(leftPtr, rightPtr, len * left.stride)
     }
   }
 }
@@ -178,8 +178,7 @@ object Array {
 
 final class ${T}Array private () extends Array[${T}] {
 
-  @inline def stride: CSize =
-    ${sizeT}.toUSize
+  @inline def stride: Int = ${sizeT}
 
   @inline def atRaw(i: Int): RawPtr =
     if (i < 0 || i >= length) {
@@ -190,7 +189,7 @@ final class ${T}Array private () extends Array[${T}] {
 
   @inline def atRawUnsafe(i: Int): RawPtr = {
     val rawptr = castObjectToRawPtr(this)
-    elemRawPtr(rawptr, intToUSize(MemoryLayout.Array.ValuesOffset + ${sizeT} * i))
+    elemRawPtr(rawptr, MemoryLayout.Array.ValuesOffset + ${sizeT} * i)
   }
 
   @inline def apply(i: Int): ${T} = load${T}(atRaw(i))
@@ -199,7 +198,7 @@ final class ${T}Array private () extends Array[${T}] {
 
   @inline override def clone(): ${T}Array = {
     val arrcls  = classOf[${T}Array]
-    val arrsize = USize.valueOf(intToUSize(MemoryLayout.Array.ValuesOffset + ${sizeT} * length))
+    val arrsize = MemoryLayout.Array.ValuesOffset + ${sizeT} * length
     val arr     = ${allocGC}(arrcls, arrsize)
     val src     = castObjectToRawPtr(this)
     libc.memcpy(arr, src, arrsize)
@@ -214,10 +213,10 @@ object ${T}Array {
       throw new NegativeArraySizeException
     }
     val arrcls  = classOf[${T}Array]
-    val arrsize = intToUSize(MemoryLayout.Array.ValuesOffset + ${sizeT} * length)
-    val arr = ${allocGC}(arrcls, USize.valueOf(arrsize)) 
-    storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.LengthOffset)), length)
-    storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.StrideOffset)), ${sizeT})
+    val arrsize = MemoryLayout.Array.ValuesOffset + ${sizeT} * length
+    val arr = ${allocGC}(arrcls, arrsize) 
+    storeInt(elemRawPtr(arr, MemoryLayout.Array.LengthOffset), length)
+    storeInt(elemRawPtr(arr, MemoryLayout.Array.StrideOffset), ${sizeT})
     castRawPtrToObject(arr).asInstanceOf[${T}Array]
   }
 
@@ -226,10 +225,10 @@ object ${T}Array {
       throw new NegativeArraySizeException
     }
     val arrcls  = classOf[${T}Array]
-    val arrsize = intToUSize(MemoryLayout.Array.ValuesOffset + ${sizeT} * length)
+    val arrsize = MemoryLayout.Array.ValuesOffset + ${sizeT} * length
     val arr = zone.allocImpl(Intrinsics.castObjectToRawPtr(arrcls), arrsize)
-    storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.LengthOffset)), length)
-    storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.StrideOffset)), ${sizeT})
+    storeInt(elemRawPtr(arr, MemoryLayout.Array.LengthOffset), length)
+    storeInt(elemRawPtr(arr, MemoryLayout.Array.StrideOffset), ${sizeT})
     castRawPtrToObject(arr).asInstanceOf[${T}Array]
   }
 
@@ -237,7 +236,7 @@ object ${T}Array {
     val arr  = alloc(length)
     val dst  = arr.atRaw(0)
     val src  = data
-    val size = USize.valueOf(intToUSize(${sizeT} * length))
+    val size = ${sizeT} * length
     libc.memcpy(dst, src, size)
     arr
   }

@@ -18,7 +18,7 @@ private[lang] object EmbeddedResourceHelper {
       libc.memcpy(
         path.asInstanceOf[ByteArray].atRaw(0),
         EmbeddedResourceReader.getPathPtr(idx),
-        pathSize.toUInt
+        pathSize
       )
       new String(path)
     }

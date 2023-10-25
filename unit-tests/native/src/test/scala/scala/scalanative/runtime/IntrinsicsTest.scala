@@ -6,8 +6,7 @@ import org.junit.Assert._
 import scala.scalanative.meta.LinktimeInfo._
 import scala.language.implicitConversions
 import scala.scalanative.unsigned._
-import scala.scalanative.unsafe.{Ptr, CArray, Size}
-import scala.scalanative.unsafe.{CStruct1, CStruct2, CStruct3, CStruct4}
+import scala.scalanative.unsafe._
 
 private object IntrinsicsTest {
   object sizeOfClassTypes {
