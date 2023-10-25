@@ -4,7 +4,7 @@ import org.junit.Test
 import org.junit.Assert._
 import org.junit.Assume._
 
-import scala.scalanative.meta.LinktimeInfo.{isLinux, isMac}
+import scala.scalanative.meta.LinktimeInfo.{isLinux, isMac, is32BitPlatform}
 import scala.scalanative.runtime.PlatformExt
 
 import java.io.File

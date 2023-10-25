@@ -4,6 +4,7 @@ import org.junit.Test
 import org.junit.Assert._
 
 import scala.scalanative.unsafe._
+import scala.scalanative.meta.LinktimeInfo.is32BitPlatform
 
 class USizeTest {
   @Test def bitwiseInverse: Unit = {

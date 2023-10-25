@@ -13,9 +13,12 @@ package unsigned
 
 import scala.language.implicitConversions
 
-import scalanative.runtime._
-import scalanative.runtime.Intrinsics._
+import scala.scalanative.runtime._
+import scala.scalanative.runtime.Intrinsics._
+import scala.scalanative.meta.LinktimeInfo.is32BitPlatform
+
 import unsafe._
+
 
 import java.lang.{Long => JLong}
 

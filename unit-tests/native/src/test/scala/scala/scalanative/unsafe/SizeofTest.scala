@@ -5,6 +5,7 @@ import org.junit.Test
 import org.junit.Assert._
 
 import scalanative.unsigned._
+import scala.scalanative.meta.LinktimeInfo.is32BitPlatform
 
 class SizeofTest {
 

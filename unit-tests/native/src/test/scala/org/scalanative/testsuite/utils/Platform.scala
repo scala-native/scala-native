@@ -34,7 +34,8 @@ object Platform {
   final val isWindows = runtime.Platform.isWindows()
 
   final val isArm64 = runtime.PlatformExt.isArm64
-  final val is32BitPlatform = scala.scalanative.unsafe.is32BitPlatform
+  final val is32BitPlatform =
+    scala.scalanative.meta.LinktimeInfo.is32BitPlatform
   final val asanEnabled = scala.scalanative.meta.LinktimeInfo.asanEnabled
 
   /* Scala Native has problem sending C signals on Apple arm64 hardware.

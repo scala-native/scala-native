@@ -6,6 +6,7 @@ import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.runtime.Intrinsics._
 import scala.scalanative.runtime._
 import scala.scalanative.unsigned._
+import scala.scalanative.meta.LinktimeInfo.is32BitPlatform
 
 final class Ptr[T] private[scalanative] (
     private[scalanative] val rawptr: RawPtr
