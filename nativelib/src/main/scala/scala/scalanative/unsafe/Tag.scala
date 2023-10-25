@@ -29,7 +29,7 @@ sealed abstract class Tag[T] {
 }
 
 object Tag {
-  @alwaysinline def ptrSize = unsigned.USize.valueOf(scala.scalanative.runtime.sizeOfPtr)
+  @alwaysinline def ptrSize = unsigned.USize.valueOf(Intrinsics.sizeOf[Ptr[_]])
 
   final case class Ptr[T](of: Tag[T])
       extends Tag[unsafe.Ptr[T]] {
