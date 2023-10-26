@@ -110,7 +110,7 @@ object Array {
       val fromPtr = from.atRaw(fromPos)
       val toPtr   = to.atRaw(toPos)
       val size    = to.stride * len
-      libc.memmove(toPtr, fromPtr, size)
+      libc.memmove(toPtr, fromPtr, castIntToRawSizeUnsigned(size))
     }
   }
 
@@ -154,7 +154,7 @@ object Array {
     } else {
       val leftPtr  = left.atRaw(leftPos)
       val rightPtr = right.atRaw(rightPos)
-      libc.memcmp(leftPtr, rightPtr, len * left.stride)
+      libc.memcmp(leftPtr, rightPtr, castIntToRawSizeUnsigned(len * left.stride))
     }
   }
 }
@@ -185,7 +185,7 @@ final class BooleanArray private () extends Array[Boolean] {
     val arrsize = MemoryLayout.Array.ValuesOffset + 1 * length
     val arr     = GC.alloc_atomic(arrcls, arrsize)
     val src     = castObjectToRawPtr(this)
-    libc.memcpy(arr, src, arrsize)
+    libc.memcpy(arr, src, castIntToRawSizeUnsigned(arrsize))
     castRawPtrToObject(arr).asInstanceOf[BooleanArray]
   }
 }
@@ -220,7 +220,7 @@ object BooleanArray {
     val arr  = alloc(length)
     val dst  = arr.atRaw(0)
     val src  = data
-    val size = 1 * length
+    val size = castIntToRawSizeUnsigned(1 * length)
     libc.memcpy(dst, src, size)
     arr
   }
@@ -251,7 +251,7 @@ final class CharArray private () extends Array[Char] {
     val arrsize = MemoryLayout.Array.ValuesOffset + 2 * length
     val arr     = GC.alloc_atomic(arrcls, arrsize)
     val src     = castObjectToRawPtr(this)
-    libc.memcpy(arr, src, arrsize)
+    libc.memcpy(arr, src, castIntToRawSizeUnsigned(arrsize))
     castRawPtrToObject(arr).asInstanceOf[CharArray]
   }
 }
@@ -286,7 +286,7 @@ object CharArray {
     val arr  = alloc(length)
     val dst  = arr.atRaw(0)
     val src  = data
-    val size = 2 * length
+    val size = castIntToRawSizeUnsigned(2 * length)
     libc.memcpy(dst, src, size)
     arr
   }
@@ -317,7 +317,7 @@ final class ByteArray private () extends Array[Byte] {
     val arrsize = MemoryLayout.Array.ValuesOffset + 1 * length
     val arr     = GC.alloc_atomic(arrcls, arrsize)
     val src     = castObjectToRawPtr(this)
-    libc.memcpy(arr, src, arrsize)
+    libc.memcpy(arr, src, castIntToRawSizeUnsigned(arrsize))
     castRawPtrToObject(arr).asInstanceOf[ByteArray]
   }
 }
@@ -352,7 +352,7 @@ object ByteArray {
     val arr  = alloc(length)
     val dst  = arr.atRaw(0)
     val src  = data
-    val size = 1 * length
+    val size = castIntToRawSizeUnsigned(1 * length)
     libc.memcpy(dst, src, size)
     arr
   }
@@ -383,7 +383,7 @@ final class ShortArray private () extends Array[Short] {
     val arrsize = MemoryLayout.Array.ValuesOffset + 2 * length
     val arr     = GC.alloc_atomic(arrcls, arrsize)
     val src     = castObjectToRawPtr(this)
-    libc.memcpy(arr, src, arrsize)
+    libc.memcpy(arr, src, castIntToRawSizeUnsigned(arrsize))
     castRawPtrToObject(arr).asInstanceOf[ShortArray]
   }
 }
@@ -418,7 +418,7 @@ object ShortArray {
     val arr  = alloc(length)
     val dst  = arr.atRaw(0)
     val src  = data
-    val size = 2 * length
+    val size = castIntToRawSizeUnsigned(2 * length)
     libc.memcpy(dst, src, size)
     arr
   }
@@ -449,7 +449,7 @@ final class IntArray private () extends Array[Int] {
     val arrsize = MemoryLayout.Array.ValuesOffset + 4 * length
     val arr     = GC.alloc_atomic(arrcls, arrsize)
     val src     = castObjectToRawPtr(this)
-    libc.memcpy(arr, src, arrsize)
+    libc.memcpy(arr, src, castIntToRawSizeUnsigned(arrsize))
     castRawPtrToObject(arr).asInstanceOf[IntArray]
   }
 }
@@ -484,7 +484,7 @@ object IntArray {
     val arr  = alloc(length)
     val dst  = arr.atRaw(0)
     val src  = data
-    val size = 4 * length
+    val size = castIntToRawSizeUnsigned(4 * length)
     libc.memcpy(dst, src, size)
     arr
   }
@@ -515,7 +515,7 @@ final class LongArray private () extends Array[Long] {
     val arrsize = MemoryLayout.Array.ValuesOffset + 8 * length
     val arr     = GC.alloc_atomic(arrcls, arrsize)
     val src     = castObjectToRawPtr(this)
-    libc.memcpy(arr, src, arrsize)
+    libc.memcpy(arr, src, castIntToRawSizeUnsigned(arrsize))
     castRawPtrToObject(arr).asInstanceOf[LongArray]
   }
 }
@@ -550,7 +550,7 @@ object LongArray {
     val arr  = alloc(length)
     val dst  = arr.atRaw(0)
     val src  = data
-    val size = 8 * length
+    val size = castIntToRawSizeUnsigned(8 * length)
     libc.memcpy(dst, src, size)
     arr
   }
@@ -581,7 +581,7 @@ final class FloatArray private () extends Array[Float] {
     val arrsize = MemoryLayout.Array.ValuesOffset + 4 * length
     val arr     = GC.alloc_atomic(arrcls, arrsize)
     val src     = castObjectToRawPtr(this)
-    libc.memcpy(arr, src, arrsize)
+    libc.memcpy(arr, src, castIntToRawSizeUnsigned(arrsize))
     castRawPtrToObject(arr).asInstanceOf[FloatArray]
   }
 }
@@ -616,7 +616,7 @@ object FloatArray {
     val arr  = alloc(length)
     val dst  = arr.atRaw(0)
     val src  = data
-    val size = 4 * length
+    val size = castIntToRawSizeUnsigned(4 * length)
     libc.memcpy(dst, src, size)
     arr
   }
@@ -647,7 +647,7 @@ final class DoubleArray private () extends Array[Double] {
     val arrsize = MemoryLayout.Array.ValuesOffset + 8 * length
     val arr     = GC.alloc_atomic(arrcls, arrsize)
     val src     = castObjectToRawPtr(this)
-    libc.memcpy(arr, src, arrsize)
+    libc.memcpy(arr, src, castIntToRawSizeUnsigned(arrsize))
     castRawPtrToObject(arr).asInstanceOf[DoubleArray]
   }
 }
@@ -682,7 +682,7 @@ object DoubleArray {
     val arr  = alloc(length)
     val dst  = arr.atRaw(0)
     val src  = data
-    val size = 8 * length
+    val size = castIntToRawSizeUnsigned(8 * length)
     libc.memcpy(dst, src, size)
     arr
   }
@@ -713,7 +713,7 @@ final class ObjectArray private () extends Array[Object] {
     val arrsize = MemoryLayout.Array.ValuesOffset + castRawSizeToInt(Intrinsics.sizeOf[RawPtr]) * length
     val arr     = GC.alloc(arrcls, arrsize)
     val src     = castObjectToRawPtr(this)
-    libc.memcpy(arr, src, arrsize)
+    libc.memcpy(arr, src, castIntToRawSizeUnsigned(arrsize))
     castRawPtrToObject(arr).asInstanceOf[ObjectArray]
   }
 }
@@ -748,7 +748,7 @@ object ObjectArray {
     val arr  = alloc(length)
     val dst  = arr.atRaw(0)
     val src  = data
-    val size = castRawSizeToInt(Intrinsics.sizeOf[RawPtr]) * length
+    val size = castIntToRawSizeUnsigned(castRawSizeToInt(Intrinsics.sizeOf[RawPtr]) * length)
     libc.memcpy(dst, src, size)
     arr
   }

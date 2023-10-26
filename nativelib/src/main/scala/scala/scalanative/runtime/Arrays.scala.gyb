@@ -110,7 +110,7 @@ object Array {
       val fromPtr = from.atRaw(fromPos)
       val toPtr   = to.atRaw(toPos)
       val size    = to.stride * len
-      libc.memmove(toPtr, fromPtr, size)
+      libc.memmove(toPtr, fromPtr, castIntToRawSizeUnsigned(size))
     }
   }
 
@@ -154,7 +154,7 @@ object Array {
     } else {
       val leftPtr  = left.atRaw(leftPos)
       val rightPtr = right.atRaw(rightPos)
-      libc.memcmp(leftPtr, rightPtr, len * left.stride)
+      libc.memcmp(leftPtr, rightPtr, castIntToRawSizeUnsigned(len * left.stride))
     }
   }
 }
@@ -201,7 +201,7 @@ final class ${T}Array private () extends Array[${T}] {
     val arrsize = MemoryLayout.Array.ValuesOffset + ${sizeT} * length
     val arr     = ${allocGC}(arrcls, arrsize)
     val src     = castObjectToRawPtr(this)
-    libc.memcpy(arr, src, arrsize)
+    libc.memcpy(arr, src, castIntToRawSizeUnsigned(arrsize))
     castRawPtrToObject(arr).asInstanceOf[${T}Array]
   }
 }
@@ -236,7 +236,7 @@ object ${T}Array {
     val arr  = alloc(length)
     val dst  = arr.atRaw(0)
     val src  = data
-    val size = ${sizeT} * length
+    val size = castIntToRawSizeUnsigned(${sizeT} * length)
     libc.memcpy(dst, src, size)
     arr
   }

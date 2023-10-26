@@ -5,6 +5,7 @@ import scala.language.implicitConversions
 import scala.scalanative.unsigned._
 import scala.scalanative.runtime.{Array => _, _}
 import scala.scalanative.meta.LinktimeInfo._
+import scala.scalanative.runtime.Intrinsics._
 
 /** Type of a C-style vararg list (va_list in C). */
 final class CVarArgList private[scalanative] (
@@ -17,15 +18,15 @@ object CVarArgList {
   // if and when we add any more officially supported architectures.
 
   private type Header =
-    CStruct4[CInt, CInt, Ptr[Long], Ptr[Long]]
+    CStruct4[CUnsignedInt, CUnsignedInt, Ptr[Long], Ptr[Long]]
   private implicit class HeaderOps(val ptr: Ptr[Header]) extends AnyVal {
-    def gpOffset: CInt = ptr._1
-    def fpOffset: CInt = ptr._2
+    def gpOffset: CUnsignedInt = ptr._1
+    def fpOffset: CUnsignedInt = ptr._2
     def overflowArgArea: Ptr[Long] = ptr._3
     def regSaveArea: Ptr[Long] = ptr._4
 
-    def gpOffset_=(value: CInt): Unit = ptr._1 = value
-    def fpOffset_=(value: CInt): Unit = ptr._2 = value
+    def gpOffset_=(value: CUnsignedInt): Unit = ptr._1 = value
+    def fpOffset_=(value: CUnsignedInt): Unit = ptr._2 = value
     def overflowArgArea_=(value: Ptr[Long]): Unit = ptr._3 = value
     def regSaveArea_=(value: Ptr[Long]): Unit = ptr._4 = value
   }
@@ -57,7 +58,7 @@ object CVarArgList {
   private final val countFPRegisters = 8
   private final val fpRegisterWords =
     if (isArm64 && !isWindowsOrMac)
-      16 / Intrinsics.castRawSizeToInt(Intrinsics.sizeOf[Size]).toInt
+      16 / castRawSizeToInt(Intrinsics.sizeOf[Size])
     else 2
   private final val registerSaveWords =
     countGPRegisters + countFPRegisters * fpRegisterWords
@@ -96,8 +97,8 @@ object CVarArgList {
       case _ =>
         val count =
           ((tag.size +
-            Intrinsics.castRawSizeToInt(Intrinsics.sizeOf[Long]) -
-            1) / Intrinsics.castRawSizeToInt(Intrinsics.sizeOf[Long]))
+            castRawSizeToInt(Intrinsics.sizeOf[Long]) -
+            1) / castRawSizeToInt(Intrinsics.sizeOf[Long]))
         val words = new Array[Long](count)
         val start = words.at(0).asInstanceOf[Ptr[T]]
         tag.store(start, value)
@@ -108,7 +109,7 @@ object CVarArgList {
       varargs: Seq[CVarArg]
   )(implicit z: Zone): CVarArgList = {
     var storage = new Array[Long](registerSaveWords)
-    var wordsUsed = storage.size
+    var wordsUsed = storage.length
     var gpRegistersUsed = 0
     var fpRegistersUsed = 0
 
@@ -148,13 +149,13 @@ object CVarArgList {
       }
     }
     val resultStorage = z
-      .alloc(Intrinsics.castRawSizeToInt(Intrinsics.sizeOf[Long]) * storage.size)
+      .alloc(unsignedOf(castRawSizeToInt(Intrinsics.sizeOf[Long]) * storage.size))
       .asInstanceOf[Ptr[Long]]
     val storageStart = storage.at(0)
     libc.memcpy(
       toRawPtr(resultStorage),
       toRawPtr(storageStart),
-      wordsUsed * Intrinsics.castRawSizeToInt(Intrinsics.sizeOf[Long])
+      castIntToRawSizeUnsigned(wordsUsed * castRawSizeToInt(Intrinsics.sizeOf[Long]))
     )
     val rawPtr = if (isArm64) {
       if (isMac) toRawPtr(storageStart)
@@ -162,7 +163,7 @@ object CVarArgList {
         val vrTop = resultStorage + fpRegisterWords * countFPRegisters
         val grTop = vrTop + countGPRegisters
         val va = z
-          .alloc(Intrinsics.castRawSizeToInt(Intrinsics.sizeOf[CVaList]))
+          .alloc(unsignedOf(Intrinsics.sizeOf[CVaList]))
           .asInstanceOf[Ptr[CVaList]]
         va.stack = grTop.asInstanceOf[Ptr[Size]]
         va.grTop = grTop.asInstanceOf[Ptr[Size]]
@@ -173,11 +174,11 @@ object CVarArgList {
       }
     } else {
       val resultHeader = z
-        .alloc(Intrinsics.castRawSizeToInt(Intrinsics.sizeOf[Header]))
+        .alloc(fromRawUSize(Intrinsics.sizeOf[Header]))
         .asInstanceOf[Ptr[Header]]
-      resultHeader.gpOffset = 0
-      resultHeader.fpOffset = {
-        countGPRegisters * Intrinsics.castRawSizeToInt(Intrinsics.sizeOf[Long])
+      resultHeader.gpOffset = unsignedOf(0)
+      resultHeader.fpOffset = unsignedOf{
+        countGPRegisters * castRawSizeToInt(Intrinsics.sizeOf[Long])
       }
       resultHeader.regSaveArea = resultStorage
       resultHeader.overflowArgArea = resultStorage + registerSaveWords
@@ -214,7 +215,7 @@ object CVarArgList {
       totalSize = Tag.align(totalSize, vararg.tag.alignment) + vararg.tag.size
     }
 
-    val argListStorage = z.alloc(totalSize).asInstanceOf[Ptr[Byte]]
+    val argListStorage = z.alloc(totalSize.toUSize).asInstanceOf[Ptr[Byte]]
     var currentIndex = 0
     resizedArgs.foreach { vararg =>
       currentIndex = Tag.align(currentIndex, vararg.tag.alignment)
@@ -239,13 +240,13 @@ object CVarArgList {
 
     varargs.foreach { vararg =>
       val encoded = encode(vararg.value)(vararg.tag)
-      val requiredSize = count + encoded.size
+      val requiredSize = count + encoded.length
       if (requiredSize > allocated) {
         allocated = requiredSize.max(allocated * 2)
         storage = fromRawPtr(
           realloc(
             toRawPtr(storage),
-            allocated * Intrinsics.castRawSizeToInt(Intrinsics.sizeOf[Size])
+            castIntToRawSizeUnsigned(allocated * castRawSizeToInt(Intrinsics.sizeOf[Size]))
           )
         )
       }
@@ -256,12 +257,12 @@ object CVarArgList {
     }
 
     val resultStorage = toRawPtr(
-      z.alloc(count * Intrinsics.castRawSizeToInt(Intrinsics.sizeOf[Size]))
+      z.alloc(count.toUSize * fromRawUSize(Intrinsics.sizeOf[Size]))
     )
     libc.memcpy(
       resultStorage,
       toRawPtr(storage),
-      count * Intrinsics.castRawSizeToInt(Intrinsics.sizeOf[Size])
+      castIntToRawSizeUnsigned(count * castRawSizeToInt(Intrinsics.sizeOf[Size]))
     )
     libc.free(toRawPtr(storage))
     new CVarArgList(resultStorage)
@@ -296,7 +297,7 @@ object CVarArgList {
       totalSize = Tag.align(totalSize, tag.alignment) + tag.size
     }
 
-    val argListStorage = z.alloc(totalSize).asInstanceOf[Ptr[Byte]]
+    val argListStorage = z.alloc(unsignedOf(castIntToRawSizeUnsigned(totalSize))).asInstanceOf[Ptr[Byte]]
     var currentIndex = 0
     alignedArgs.foreach { vararg =>
       val tag = vararg.tag

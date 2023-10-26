@@ -8,21 +8,21 @@ import scalanative.unsafe._
 // and nativelib. The actual bindings should go to clib namespace.
 @extern
 object libc {
-  def malloc(size: Int): RawPtr = extern
   def malloc(size: CSize): RawPtr = extern
-  def realloc(ptr: RawPtr, size: Int): RawPtr = extern
+  def malloc(size: RawSize): RawPtr = extern
+  def realloc(ptr: RawPtr, size: RawSize): RawPtr = extern
   def free(ptr: RawPtr): Unit = extern
   def free(ptr: Ptr[_]): Unit = extern
-  def strlen(str: CString): Int = extern
-  def wcslen(str: CWideString): Int = extern
+  def strlen(str: CString): CSize = extern
+  def wcslen(str: CWideString): CSize = extern
   def strcpy(dest: CString, src: CString): CString = extern
   def strcat(dest: CString, src: CString): CString = extern
-  def memcpy(dst: Ptr[_], src: Ptr[_], count: Int): RawPtr = extern
-  def memcpy(dst: RawPtr, src: RawPtr, count: Int): RawPtr = extern
-  def memcmp(lhs: RawPtr, rhs: RawPtr, count: Int): CInt = extern
-  def memset(dest: RawPtr, ch: CInt, count: Int): RawPtr = extern
-  def memset(dest: Ptr[_], ch: CInt, count: Int): RawPtr = extern
-  def memmove(dest: RawPtr, src: RawPtr, count: Int): RawPtr = extern
+  def memcpy(dst: Ptr[_], src: Ptr[_], count: CSize): RawPtr = extern
+  def memcpy(dst: RawPtr, src: RawPtr, count: RawSize): RawPtr = extern
+  def memcmp(lhs: RawPtr, rhs: RawPtr, count: RawSize): CInt = extern
+  def memset(dest: RawPtr, ch: CInt, count: RawSize): RawPtr = extern
+  def memset(dest: Ptr[_], ch: CInt, count: CSize): RawPtr = extern
+  def memmove(dest: RawPtr, src: RawPtr, count: RawSize): RawPtr = extern
   def remove(fname: CString): CInt = extern
   def atexit(func: CFuncPtr0[Unit]): CInt = extern
 

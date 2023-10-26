@@ -27,7 +27,7 @@ private[scalanative] trait UnsafePackageCompat {
   /** Heap allocate and zero-initialize value using current implicit allocator.
    */
   inline def alloc[T]()(using zone: Zone): Ptr[T] = {
-    val size = sizeOf[T]
+    val size = sizeof[T]
     val ptr = zone.alloc(size)
     libc.memset(ptr, 0, size)
     ptr.asInstanceOf[Ptr[T]]
@@ -49,9 +49,10 @@ private[scalanative] trait UnsafePackageCompat {
       inline elements: RawSize
   )(using zone: Zone): Ptr[T] = {
     val elemSize = Intrinsics.sizeOf[T]
-    val size = toInt(elemSize) * toInt(elements)
+    val rawSize = castIntToRawSizeUnsigned(toInt(elemSize) * toInt(elements))
+    val size = unsignedOf(rawSize)
     val ptr = zone.alloc(size)
-    libc.memset(ptr.rawptr, 0, size)
+    libc.memset(ptr.rawptr, 0, rawSize)
     ptr.asInstanceOf[Ptr[T]]
   }
 
