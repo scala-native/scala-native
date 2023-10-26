@@ -13,10 +13,10 @@ package unsafe
 
 import scala.language.implicitConversions
 
-import scalanative.runtime._
-import scalanative.runtime.Intrinsics._
-
-import scalanative.unsigned._
+import scala.scalanative.runtime._
+import scala.scalanative.runtime.Intrinsics._
+import scala.scalanative.meta.LinktimeInfo.is32BitPlatform
+import scala.scalanative.unsigned._
 
 final class Size(private[scalanative] val rawSize: RawSize) {
   @inline def toByte: Byte   = castRawSizeToInt(rawSize).toByte

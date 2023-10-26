@@ -8,7 +8,7 @@ import org.junit.Before
 import java.io.IOException
 
 import org.scalanative.testsuite.utils.Platform
-import scala.scalanative.meta.LinktimeInfo.isWindows
+import scala.scalanative.meta.LinktimeInfo.{isWindows, is32BitPlatform}
 import scala.scalanative.runtime.PlatformExt
 
 // libc.string is hidden by posix.string
