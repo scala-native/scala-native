@@ -209,7 +209,7 @@ object BooleanArray {
       throw new NegativeArraySizeException
     }
     val arrcls  = classOf[BooleanArray]
-    val arrsize = MemoryLayout.Array.ValuesOffset + 1 * length
+    val arrsize = Intrinsics.castIntToRawSizeUnsigned(MemoryLayout.Array.ValuesOffset + 1 * length)
     val arr = zone.allocImpl(Intrinsics.castObjectToRawPtr(arrcls), arrsize)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.LengthOffset), length)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.StrideOffset), 1)
@@ -275,7 +275,7 @@ object CharArray {
       throw new NegativeArraySizeException
     }
     val arrcls  = classOf[CharArray]
-    val arrsize = MemoryLayout.Array.ValuesOffset + 2 * length
+    val arrsize = Intrinsics.castIntToRawSizeUnsigned(MemoryLayout.Array.ValuesOffset + 2 * length)
     val arr = zone.allocImpl(Intrinsics.castObjectToRawPtr(arrcls), arrsize)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.LengthOffset), length)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.StrideOffset), 2)
@@ -341,7 +341,7 @@ object ByteArray {
       throw new NegativeArraySizeException
     }
     val arrcls  = classOf[ByteArray]
-    val arrsize = MemoryLayout.Array.ValuesOffset + 1 * length
+    val arrsize = Intrinsics.castIntToRawSizeUnsigned(MemoryLayout.Array.ValuesOffset + 1 * length)
     val arr = zone.allocImpl(Intrinsics.castObjectToRawPtr(arrcls), arrsize)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.LengthOffset), length)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.StrideOffset), 1)
@@ -407,7 +407,7 @@ object ShortArray {
       throw new NegativeArraySizeException
     }
     val arrcls  = classOf[ShortArray]
-    val arrsize = MemoryLayout.Array.ValuesOffset + 2 * length
+    val arrsize = Intrinsics.castIntToRawSizeUnsigned(MemoryLayout.Array.ValuesOffset + 2 * length)
     val arr = zone.allocImpl(Intrinsics.castObjectToRawPtr(arrcls), arrsize)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.LengthOffset), length)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.StrideOffset), 2)
@@ -473,7 +473,7 @@ object IntArray {
       throw new NegativeArraySizeException
     }
     val arrcls  = classOf[IntArray]
-    val arrsize = MemoryLayout.Array.ValuesOffset + 4 * length
+    val arrsize = Intrinsics.castIntToRawSizeUnsigned(MemoryLayout.Array.ValuesOffset + 4 * length)
     val arr = zone.allocImpl(Intrinsics.castObjectToRawPtr(arrcls), arrsize)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.LengthOffset), length)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.StrideOffset), 4)
@@ -539,7 +539,7 @@ object LongArray {
       throw new NegativeArraySizeException
     }
     val arrcls  = classOf[LongArray]
-    val arrsize = MemoryLayout.Array.ValuesOffset + 8 * length
+    val arrsize = Intrinsics.castIntToRawSizeUnsigned(MemoryLayout.Array.ValuesOffset + 8 * length)
     val arr = zone.allocImpl(Intrinsics.castObjectToRawPtr(arrcls), arrsize)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.LengthOffset), length)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.StrideOffset), 8)
@@ -605,7 +605,7 @@ object FloatArray {
       throw new NegativeArraySizeException
     }
     val arrcls  = classOf[FloatArray]
-    val arrsize = MemoryLayout.Array.ValuesOffset + 4 * length
+    val arrsize = Intrinsics.castIntToRawSizeUnsigned(MemoryLayout.Array.ValuesOffset + 4 * length)
     val arr = zone.allocImpl(Intrinsics.castObjectToRawPtr(arrcls), arrsize)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.LengthOffset), length)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.StrideOffset), 4)
@@ -671,7 +671,7 @@ object DoubleArray {
       throw new NegativeArraySizeException
     }
     val arrcls  = classOf[DoubleArray]
-    val arrsize = MemoryLayout.Array.ValuesOffset + 8 * length
+    val arrsize = Intrinsics.castIntToRawSizeUnsigned(MemoryLayout.Array.ValuesOffset + 8 * length)
     val arr = zone.allocImpl(Intrinsics.castObjectToRawPtr(arrcls), arrsize)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.LengthOffset), length)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.StrideOffset), 8)
@@ -737,7 +737,7 @@ object ObjectArray {
       throw new NegativeArraySizeException
     }
     val arrcls  = classOf[ObjectArray]
-    val arrsize = MemoryLayout.Array.ValuesOffset + castRawSizeToInt(Intrinsics.sizeOf[RawPtr]) * length
+    val arrsize = Intrinsics.castIntToRawSizeUnsigned(MemoryLayout.Array.ValuesOffset + castRawSizeToInt(Intrinsics.sizeOf[RawPtr]) * length)
     val arr = zone.allocImpl(Intrinsics.castObjectToRawPtr(arrcls), arrsize)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.LengthOffset), length)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.StrideOffset), castRawSizeToInt(Intrinsics.sizeOf[RawPtr]))

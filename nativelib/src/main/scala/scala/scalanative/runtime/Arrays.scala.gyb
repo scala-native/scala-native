@@ -225,7 +225,7 @@ object ${T}Array {
       throw new NegativeArraySizeException
     }
     val arrcls  = classOf[${T}Array]
-    val arrsize = MemoryLayout.Array.ValuesOffset + ${sizeT} * length
+    val arrsize = Intrinsics.castIntToRawSizeUnsigned(MemoryLayout.Array.ValuesOffset + ${sizeT} * length)
     val arr = zone.allocImpl(Intrinsics.castObjectToRawPtr(arrcls), arrsize)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.LengthOffset), length)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.StrideOffset), ${sizeT})
