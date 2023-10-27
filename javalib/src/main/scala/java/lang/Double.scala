@@ -56,18 +56,6 @@ final class Double(val _value: scala.Double)
   @inline override def toString(): String =
     Double.toString(_value)
 
-  @inline override def __scala_==(other: _Object): scala.Boolean =
-    other match {
-      case other: java.lang.Double    => _value == other._value
-      case other: java.lang.Byte      => _value == other._value
-      case other: java.lang.Short     => _value == other._value
-      case other: java.lang.Integer   => _value == other._value
-      case other: java.lang.Long      => _value == other._value
-      case other: java.lang.Float     => _value == other._value
-      case other: java.lang.Character => _value == other._value
-      case _                          => super.__scala_==(other)
-    }
-
   @inline override def __scala_## : scala.Int = {
     val dv = _value
     val iv = _value.toInt

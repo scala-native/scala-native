@@ -46,18 +46,6 @@ final class Short(val _value: scala.Short)
   @inline override def toString(): String =
     Short.toString(_value)
 
-  @inline override def __scala_==(other: _Object): scala.Boolean =
-    other match {
-      case other: java.lang.Short     => _value == other._value
-      case other: java.lang.Byte      => _value == other._value
-      case other: java.lang.Integer   => _value == other._value
-      case other: java.lang.Long      => _value == other._value
-      case other: java.lang.Float     => _value == other._value
-      case other: java.lang.Double    => _value == other._value
-      case other: java.lang.Character => _value == other._value
-      case _                          => super.__scala_==(other)
-    }
-
   /*
    * Methods on scala.Short
    * The following methods are only here to properly support reflective calls

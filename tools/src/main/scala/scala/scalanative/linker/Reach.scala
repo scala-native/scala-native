@@ -366,7 +366,6 @@ class Reach(
             }
             sig match {
               case Rt.JavaEqualsSig =>
-                update(Rt.ScalaEqualsSig)
                 update(Rt.JavaEqualsSig)
               case Rt.JavaHashCodeSig =>
                 update(Rt.ScalaHashCodeSig)
@@ -887,20 +886,11 @@ class Reach(
       .getOrElse(fail(s"Not found required definition ${cls.name} ${sig}"))
 
     sig match {
-      // We short-circuit scala_== and scala_## to immeditately point to the
+      // We short-circuit scala_## to immeditately point to the
       // equals and hashCode implementation for the reference types to avoid
       // double virtual dispatch overhead. This optimization is *not* optional
       // as implementation of scala_== on java.lang.Object assumes it's only
       // called on classes which don't overrider java_==.
-      case Rt.ScalaEqualsSig =>
-        val scalaImpl = lookupRequired(Rt.ScalaEqualsSig)
-        val javaImpl = lookupRequired(Rt.JavaEqualsSig)
-        if (javaImpl.top != Rt.Object.name &&
-            scalaImpl.top == Rt.Object.name) {
-          Some(javaImpl)
-        } else {
-          Some(scalaImpl)
-        }
       case Rt.ScalaHashCodeSig =>
         val scalaImpl = lookupRequired(Rt.ScalaHashCodeSig)
         val javaImpl = lookupRequired(Rt.JavaHashCodeSig)

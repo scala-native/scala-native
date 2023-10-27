@@ -10,11 +10,4 @@ abstract class Number extends java.lang._Object with java.io.Serializable {
   def floatValue(): scala.Float
   def doubleValue(): scala.Double
 
-  @inline override def __scala_==(other: _Object): scala.Boolean = {
-    if (other.isInstanceOf[ScalaNumber] && !this.isInstanceOf[ScalaNumber]) {
-      other.equals(this)
-    } else {
-      this.equals(other)
-    }
-  }
 }
