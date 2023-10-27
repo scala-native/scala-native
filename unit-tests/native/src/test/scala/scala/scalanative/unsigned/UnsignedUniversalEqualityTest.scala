@@ -139,7 +139,7 @@ class UnsignedUniversalEqualityTest {
     if (is32BitPlatform) {
       assertTrue(-1.toUSize == -1.toUInt)
       assertTrue(-1.toUSize == -1.toULong)
-      // TODO: this one might be bugged, -1: uint32 should not equal -1: uint64 
+      // TODO: this one might be bugged, -1: uint32 should not equal -1: uint64
       // uses USize.== not the universal equality resolved using BoxesRunTime
       // assertFalse(-1L.toUSize == -1L.toULong)
     } else {
