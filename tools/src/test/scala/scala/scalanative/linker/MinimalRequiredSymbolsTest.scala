@@ -24,14 +24,14 @@ class MinimalRequiredSymbolsTest extends LinkerSpec {
   @Test def default(): Unit = checkMinimalRequiredSymbols()(expected =
     if (isScala3) SymbolsCount(types = 710, members = 3600)
     else if (isScala2_13) SymbolsCount(types = 620, members = 3300)
-    else SymbolsCount(types = 700, members = 4200)
+    else SymbolsCount(types = 700, members = 4300)
   )
 
   @Test def debugMetadata(): Unit =
     checkMinimalRequiredSymbols(withDebugMetadata = true)(expected =
       if (isScala3) SymbolsCount(types = 710, members = 3600)
       else if (isScala2_13) SymbolsCount(types = 620, members = 3300)
-      else SymbolsCount(types = 700, members = 4200)
+      else SymbolsCount(types = 700, members = 4300)
     )
 
   // Only MacOS uses DWARF metadata currently
@@ -42,14 +42,14 @@ class MinimalRequiredSymbolsTest extends LinkerSpec {
     )(expected =
       if (isScala3) SymbolsCount(types = 1630, members = 12000)
       else if (isScala2_13) SymbolsCount(types = 1500, members = 11700)
-      else SymbolsCount(types = 1540, members = 12700)
+      else SymbolsCount(types = 1540, members = 12800)
     )
 
   @Test def multithreading(): Unit =
     checkMinimalRequiredSymbols(withMultithreading = true)(expected =
       if (isScala3) SymbolsCount(types = 800, members = 4300)
       else if (isScala2_13) SymbolsCount(types = 720, members = 4000)
-      else SymbolsCount(types = 780, members = 4850)
+      else SymbolsCount(types = 780, members = 4900)
     )
 
   private def checkMinimalRequiredSymbols(

@@ -62,7 +62,7 @@ object BoxesRunTime {
       case _         => OTHER
     }
 
-  // Char is unsigned, we don't need to extended int/long
+  // Char is unsigned, we don't need to extend int/long
   private def typeCodeScalaNumberForChar(
       num: scala.math.ScalaNumber
   ): scala.Int =
