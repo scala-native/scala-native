@@ -6,7 +6,6 @@ import scala.annotation.{nowarn, switch}
 import scala.scalanative.meta.LinktimeInfo
 import scala.scalanative.unsigned._
 import scala.scalanative.unsafe.Size
-import scala.scalanative.unsafe.is32BitPlatform
 
 class BoxesRunTime
 
@@ -151,7 +150,7 @@ object BoxesRunTime {
           val longVal = if (xnIsUnsigned) xn else yn
           val otherVal = if (xnIsUnsigned) yn else xn
           otherVal match {
-            case other: Size if !is32BitPlatform =>
+            case other: Size if !LinktimeInfo.is32BitPlatform =>
               other.longValue() >= 0 && longVal.longValue == other.longValue
             case other: java.lang.Long =>
               other.longValue() >= 0 && longVal.longValue == other.longValue
