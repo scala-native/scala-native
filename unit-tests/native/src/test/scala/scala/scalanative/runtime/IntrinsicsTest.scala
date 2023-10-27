@@ -118,7 +118,7 @@ class IntrinsicsTest {
         expected,
         Intrinsics.castRawSizeToInt(actual)
       )
-    val sizeOfPtr = Intrinsics.castRawSizeToInt(scalanative.runtime.sizeOfPtr)
+    val sizeOfPtr = if (is32BitPlatform) 4 else 8
 
     assertEquals("byte", 1, sizeOf[Byte])
     assertEquals("short", 2, sizeOf[Short])
@@ -178,7 +178,7 @@ class IntrinsicsTest {
     implicit def rawSizeToInt(size: RawSize): Int = castRawSizeToInt(size)
 
     case class Entry(actualSize: Int, fieldsSize64: Int, fieldsSize32: Int)
-    val SizeOfPtr = scalanative.runtime.sizeOfPtr: Int
+    val SizeOfPtr = if (is32BitPlatform) 4 else 8
     val ClassHeaderSize =
       if (isMultithreadingEnabled) 2 * SizeOfPtr
       else SizeOfPtr
@@ -216,7 +216,7 @@ class IntrinsicsTest {
         expected,
         Intrinsics.castRawSizeToInt(actual)
       )
-    val sizeOfPtr = Intrinsics.castRawSizeToInt(scalanative.runtime.sizeOfPtr)
+    val sizeOfPtr = Intrinsics.castRawSizeToInt(Intrinsics.sizeOf[Ptr[_]])
 
     assertEquals("byte", 1, alignmentOf[Byte])
     assertEquals("short", 2, alignmentOf[Short])

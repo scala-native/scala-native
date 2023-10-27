@@ -699,7 +699,7 @@ object DoubleArray {
 final class ObjectArray private () extends Array[Object] {
 
   @inline def stride: CSize =
-    castRawSizeToInt(sizeOfPtr).toUSize
+    castRawSizeToInt(Intrinsics.sizeOf[RawPtr]).toUSize
 
   @inline def atRaw(i: Int): RawPtr =
     if (i < 0 || i >= length) {
@@ -710,7 +710,7 @@ final class ObjectArray private () extends Array[Object] {
 
   @inline def atRawUnsafe(i: Int): RawPtr = {
     val rawptr = castObjectToRawPtr(this)
-    elemRawPtr(rawptr, intToUSize(MemoryLayout.Array.ValuesOffset + castRawSizeToInt(sizeOfPtr) * i))
+    elemRawPtr(rawptr, intToUSize(MemoryLayout.Array.ValuesOffset + castRawSizeToInt(Intrinsics.sizeOf[RawPtr]) * i))
   }
 
   @inline def apply(i: Int): Object = loadObject(atRaw(i))
@@ -719,7 +719,7 @@ final class ObjectArray private () extends Array[Object] {
 
   @inline override def clone(): ObjectArray = {
     val arrcls  = classOf[ObjectArray]
-    val arrsize = USize.valueOf(intToUSize(MemoryLayout.Array.ValuesOffset + castRawSizeToInt(sizeOfPtr) * length))
+    val arrsize = USize.valueOf(intToUSize(MemoryLayout.Array.ValuesOffset + castRawSizeToInt(Intrinsics.sizeOf[RawPtr]) * length))
     val arr     = GC.alloc(arrcls, arrsize)
     val src     = castObjectToRawPtr(this)
     libc.memcpy(arr, src, arrsize)
@@ -734,10 +734,10 @@ object ObjectArray {
       throw new NegativeArraySizeException
     }
     val arrcls  = classOf[ObjectArray]
-    val arrsize = intToUSize(MemoryLayout.Array.ValuesOffset + castRawSizeToInt(sizeOfPtr) * length)
+    val arrsize = intToUSize(MemoryLayout.Array.ValuesOffset + castRawSizeToInt(Intrinsics.sizeOf[RawPtr]) * length)
     val arr = GC.alloc(arrcls, USize.valueOf(arrsize)) 
     storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.LengthOffset)), length)
-    storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.StrideOffset)), castRawSizeToInt(sizeOfPtr))
+    storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.StrideOffset)), castRawSizeToInt(Intrinsics.sizeOf[RawPtr]))
     castRawPtrToObject(arr).asInstanceOf[ObjectArray]
   }
 
@@ -746,10 +746,10 @@ object ObjectArray {
       throw new NegativeArraySizeException
     }
     val arrcls  = classOf[ObjectArray]
-    val arrsize = intToUSize(MemoryLayout.Array.ValuesOffset + castRawSizeToInt(sizeOfPtr) * length)
+    val arrsize = intToUSize(MemoryLayout.Array.ValuesOffset + castRawSizeToInt(Intrinsics.sizeOf[RawPtr]) * length)
     val arr = zone.allocImpl(Intrinsics.castObjectToRawPtr(arrcls), arrsize)
     storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.LengthOffset)), length)
-    storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.StrideOffset)), castRawSizeToInt(sizeOfPtr))
+    storeInt(elemRawPtr(arr, intToUSize(MemoryLayout.Array.StrideOffset)), castRawSizeToInt(Intrinsics.sizeOf[RawPtr]))
     castRawPtrToObject(arr).asInstanceOf[ObjectArray]
   }
 
@@ -757,7 +757,7 @@ object ObjectArray {
     val arr  = alloc(length)
     val dst  = arr.atRaw(0)
     val src  = data
-    val size = USize.valueOf(intToUSize(castRawSizeToInt(sizeOfPtr) * length))
+    val size = USize.valueOf(intToUSize(castRawSizeToInt(Intrinsics.sizeOf[RawPtr]) * length))
     libc.memcpy(dst, src, size)
     arr
   }

@@ -13,7 +13,9 @@ object MemoryLayout {
    *  method call with a constant value.
    */
 
-  @alwaysinline private def PtrSize = castRawSizeToInt(sizeOfPtr)
+  @alwaysinline private def PtrSize = castRawSizeToInt(
+    Intrinsics.sizeOf[RawPtr]
+  )
   @alwaysinline private def IntSize = 4
 
   private def requiresEnabledMulithreading = throw new IllegalStateException(

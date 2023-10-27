@@ -29,12 +29,12 @@ sealed abstract class Tag[T] {
 }
 
 object Tag {
-  @alwaysinline def ptrSize = unsigned.USize.valueOf(scala.scalanative.runtime.sizeOfPtr)
+  @alwaysinline def SizeOfPtr = unsignedOf(Intrinsics.sizeOf[unsafe.Ptr[_]])
 
   final case class Ptr[T](of: Tag[T])
       extends Tag[unsafe.Ptr[T]] {
-    @alwaysinline def size: CSize = ptrSize
-    @alwaysinline def alignment: CSize = ptrSize
+    @alwaysinline def size: CSize = SizeOfPtr
+    @alwaysinline def alignment: CSize = SizeOfPtr
     @alwaysinline private[unsafe] override def load(rawptr: RawPtr): unsafe.Ptr[T] =
       fromRawPtr[T](loadRawPtr(rawptr))
     @alwaysinline private[unsafe] override def store(rawptr: RawPtr, value: unsafe.Ptr[T]): Unit =
@@ -42,8 +42,8 @@ object Tag {
   }
 
   case object Size extends Tag[unsafe.Size] {
-    @alwaysinline def size: CSize = ptrSize
-    @alwaysinline def alignment: CSize = ptrSize
+    @alwaysinline def size: CSize = SizeOfPtr
+    @alwaysinline def alignment: CSize = SizeOfPtr
     @alwaysinline private[unsafe] override def load(rawptr: RawPtr): unsafe.Size =
       unsafe.Size.valueOf(loadRawSize(rawptr))
     @alwaysinline private[unsafe] override def store(rawptr: RawPtr, value: unsafe.Size): Unit =
@@ -51,8 +51,8 @@ object Tag {
   }
 
   case object USize extends Tag[unsigned.USize] {
-    @alwaysinline def size: CSize = ptrSize
-    @alwaysinline def alignment: CSize = ptrSize
+    @alwaysinline def size: CSize = SizeOfPtr
+    @alwaysinline def alignment: CSize = SizeOfPtr
     @alwaysinline private[unsafe] override def load(rawptr: RawPtr): unsigned.USize =
       unsigned.USize.valueOf(loadRawSize(rawptr))
     @alwaysinline private[unsafe] override def store(rawptr: RawPtr, value: unsigned.USize): Unit =
@@ -61,15 +61,15 @@ object Tag {
 
   final case class Class[T <: AnyRef](of: java.lang.Class[T])
       extends Tag[T] {
-    @alwaysinline def size: CSize = ptrSize
-    @alwaysinline def alignment: CSize = ptrSize
+    @alwaysinline def size: CSize = SizeOfPtr
+    @alwaysinline def alignment: CSize = SizeOfPtr
     @alwaysinline private[unsafe] override def load(rawptr: RawPtr): T =
       loadObject(rawptr).asInstanceOf[T]
     @alwaysinline private[unsafe] override def store(rawptr: RawPtr, value: T): Unit =
       storeObject(rawptr, value.asInstanceOf[Object])
   }
 
-  % prims = [('Unit', 'scala.Unit', 'ptrSize', 'ptrSize'),
+  % prims = [('Unit', 'scala.Unit', 'SizeOfPtr', 'SizeOfPtr'),
   %          ('Boolean', 'scala.Boolean', '1.toUSize', '1.toUSize'),
   %          ('Char', 'scala.Char', '2.toUSize', '2.toUSize'),
   %          ('Byte', 'scala.Byte', '1.toUSize', '1.toUSize'),
@@ -78,10 +78,10 @@ object Tag {
   %          ('UShort', 'unsigned.UShort', '2.toUSize', '2.toUSize'),
   %          ('Int', 'scala.Int', '4.toUSize', '4.toUSize'),
   %          ('UInt', 'unsigned.UInt', '4.toUSize', '4.toUSize'),
-  %          ('Long', 'scala.Long', '8.toUSize', 'ptrSize'),
-  %          ('ULong', 'unsigned.ULong', '8.toUSize', 'ptrSize'),
+  %          ('Long', 'scala.Long', '8.toUSize', 'SizeOfPtr'),
+  %          ('ULong', 'unsigned.ULong', '8.toUSize', 'SizeOfPtr'),
   %          ('Float', 'scala.Float', '4.toUSize', '4.toUSize'),
-  %          ('Double', 'scala.Double', '8.toUSize', 'ptrSize')]
+  %          ('Double', 'scala.Double', '8.toUSize', 'SizeOfPtr')]
   % for (name, T, size, align) in prims:
 
   object ${name} extends Tag[${T}] {
@@ -229,8 +229,8 @@ object Tag {
      */
     private[unsafe] def fromRawPtr(rawptr: RawPtr): F
 
-    @alwaysinline def size: CSize = ptrSize
-    @alwaysinline def alignment: CSize = ptrSize
+    @alwaysinline def size: CSize = SizeOfPtr
+    @alwaysinline def alignment: CSize = SizeOfPtr
     @alwaysinline private[unsafe] override def load(rawptr: RawPtr): F =
       fromRawPtr(loadRawPtr(rawptr))
     @alwaysinline private[unsafe] override def store(rawptr: RawPtr, value: F): Unit = {

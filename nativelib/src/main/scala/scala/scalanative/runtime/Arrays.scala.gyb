@@ -161,7 +161,7 @@ object Array {
 
 %{
    types = {'Boolean': 1, 'Char': 2, 'Byte': 1, 'Short': 2,
-            'Int': 4, 'Long': 8, 'Float': 4, 'Double': 8, 'Object': 'castRawSizeToInt(sizeOfPtr)'}
+            'Int': 4, 'Long': 8, 'Float': 4, 'Double': 8, 'Object': 'castRawSizeToInt(Intrinsics.sizeOf[RawPtr])'}
 }%
 % # BEWARE: Order of iteration of the dictionary depends on version of Python
 % #         used to run this script.

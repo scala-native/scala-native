@@ -113,8 +113,6 @@ package object runtime {
   @alwaysinline def toRawSize(size: USize): RawSize =
     Boxes.unboxToUSize(size)
 
-  @alwaysinline def sizeOfPtr = Intrinsics.sizeOf[Ptr[_]]
-
   /** Run the runtime's event loop. The method is called from the generated
    *  C-style after the application's main method terminates.
    */
