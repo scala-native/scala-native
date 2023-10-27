@@ -157,7 +157,7 @@ private object SystemProperties {
     val bufSize = 1024.toUInt
     if (isWindows) {
       val buf: Ptr[CChar16] = stackalloc[CChar16](bufSize)
-      if (GetCurrentDirectoryW(bufSize, buf) != 0.toUInt)
+      if (GetCurrentDirectoryW(bufSize, buf) != 0)
         Some(fromCWideString(buf, StandardCharsets.UTF_16LE))
       else None
     } else {

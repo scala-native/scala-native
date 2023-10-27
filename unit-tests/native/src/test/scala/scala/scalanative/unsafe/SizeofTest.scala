@@ -10,35 +10,35 @@ import scala.scalanative.meta.LinktimeInfo.is32BitPlatform
 class SizeofTest {
 
   @Test def testByte(): Unit = {
-    assertTrue(sizeof[Byte] == 1.toUSize)
+    assertTrue(sizeof[Byte] == 1)
   }
 
   @Test def testUByte(): Unit = {
-    assertTrue(sizeof[UByte] == 1.toUSize)
+    assertTrue(sizeof[UByte] == 1)
   }
 
   @Test def testShort(): Unit = {
-    assertTrue(sizeof[Short] == 2.toUSize)
+    assertTrue(sizeof[Short] == 2)
   }
 
   @Test def testUShort(): Unit = {
-    assertTrue(sizeof[UShort] == 2.toUSize)
+    assertTrue(sizeof[UShort] == 2)
   }
 
   @Test def testInt(): Unit = {
-    assertTrue(sizeof[Int] == 4.toUSize)
+    assertTrue(sizeof[Int] == 4)
   }
 
   @Test def testUInt(): Unit = {
-    assertTrue(sizeof[UInt] == 4.toUSize)
+    assertTrue(sizeof[UInt] == 4)
   }
 
   @Test def testLong(): Unit = {
-    assertTrue(sizeof[Long] == 8.toUSize)
+    assertTrue(sizeof[Long] == 8)
   }
 
   @Test def testULong(): Unit = {
-    assertTrue(sizeof[ULong] == 8.toUSize)
+    assertTrue(sizeof[ULong] == 8)
   }
 
   @Test def testPtr(): Unit = {
@@ -46,23 +46,23 @@ class SizeofTest {
   }
 
   @Test def testCStruct1Byte(): Unit = {
-    assertTrue(sizeof[CStruct1[Byte]] == 1.toUSize)
+    assertTrue(sizeof[CStruct1[Byte]] == 1)
   }
 
   @Test def testCStruct2ByteByte(): Unit = {
-    assertTrue(sizeof[CStruct2[Byte, Byte]] == 2.toUSize)
+    assertTrue(sizeof[CStruct2[Byte, Byte]] == 2)
   }
 
   @Test def testCStruct2ByteInt(): Unit = {
-    assertTrue(sizeof[CStruct2[Byte, Int]] == 8.toUSize)
+    assertTrue(sizeof[CStruct2[Byte, Int]] == 8)
   }
 
   @Test def testCStruct3ByteShortByte(): Unit = {
-    assertTrue(sizeof[CStruct3[Byte, Short, Byte]] == 6.toUSize)
+    assertTrue(sizeof[CStruct3[Byte, Short, Byte]] == 6)
   }
 
   @Test def testCStruct4ByteShortByteInt(): Unit = {
-    assertTrue(sizeof[CStruct4[Byte, Short, Byte, Int]] == 12.toUSize)
+    assertTrue(sizeof[CStruct4[Byte, Short, Byte, Int]] == 12)
   }
 
   @Test def testInnerStructCStruct2ByteCStruct2LongByte(): Unit = {
@@ -73,7 +73,7 @@ class SizeofTest {
     }
 
     assertTrue(
-      sizeof[CStruct2[Byte, CStruct2[Long, Byte]]] == expectedSize.toUSize
+      sizeof[CStruct2[Byte, CStruct2[Long, Byte]]] == expectedSize
     )
   }
 
@@ -87,7 +87,7 @@ class SizeofTest {
     assertTrue(
       sizeof[
         CStruct3[Byte, Long, CStruct3[Int, Int, Byte]]
-      ] == expectedSize.toUSize
+      ] == expectedSize
     )
   }
 
@@ -104,7 +104,7 @@ class SizeofTest {
         Byte,
         Long,
         CStruct3[Int, Int, CStruct4[Byte, Int, Short, Byte]]
-      ]] == expectedSize.toUSize
+      ]] == expectedSize
     )
   }
 
@@ -113,20 +113,20 @@ class SizeofTest {
   type _1024 = Nat.Digit4[Nat._1, Nat._0, Nat._2, Nat._4]
 
   @Test def testCArrayByteNat32(): Unit = {
-    assertTrue(sizeof[CArray[Byte, _32]] == 32.toUSize)
+    assertTrue(sizeof[CArray[Byte, _32]] == 32)
   }
 
   @Test def testCArrayByteNat128(): Unit = {
-    assertTrue(sizeof[CArray[Byte, _128]] == 128.toUSize)
+    assertTrue(sizeof[CArray[Byte, _128]] == 128)
   }
 
   @Test def testCArrayByteNat1024(): Unit = {
-    assertTrue(sizeof[CArray[Byte, _1024]] == 1024.toUSize)
+    assertTrue(sizeof[CArray[Byte, _1024]] == 1024)
   }
 
   @Test def testCArrayCStruct3ByteIntByteNat32(): Unit = {
     assertTrue(
-      sizeof[CArray[CStruct3[Byte, Int, Byte], _32]] == (12 * 32).toUSize
+      sizeof[CArray[CStruct3[Byte, Int, Byte], _32]] == (12 * 32)
     )
   }
 }

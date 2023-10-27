@@ -85,7 +85,7 @@ private[testinterface] object SignalConfig {
       val offset = stackalloc[Long]()
       val pc = stackalloc[CSize]()
       unwind.get_reg(cursor, unwind.UNW_REG_IP, pc)
-      if (!pc == 0.toUInt) return
+      if (!pc == 0) return
       val symMax = 1024
       val sym: Ptr[CChar] = stackalloc[CChar](symMax)
       if (unwind.get_proc_name(

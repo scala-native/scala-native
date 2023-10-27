@@ -151,7 +151,7 @@ final class WindowsDosFileAttributeView(path: Path, options: Array[LinkOption])
       def isSystem(): Boolean = hasAttrSet(FILE_ATTRIBUTE_SYSTEM)
 
       private def hasAttrSet(attr: DWord): Boolean =
-        (attrs & attr) != 0.toUInt
+        (attrs & attr) != 0
     }
   }
 
