@@ -13,12 +13,10 @@ package unsigned
 
 import scala.language.implicitConversions
 
-import scala.scalanative.runtime._
-import scala.scalanative.runtime.Intrinsics._
-import scala.scalanative.meta.LinktimeInfo.is32BitPlatform
-
+import scalanative.runtime._
+import scalanative.runtime.Intrinsics._
 import unsafe._
-
+import scala.scalanative.meta.LinktimeInfo.is32BitPlatform
 
 import java.lang.{Long => JLong}
 
@@ -45,7 +43,6 @@ final class USize(private[scalanative] val rawSize: RawSize) extends scala.math.
   @inline final override def compareTo(x: USize): Int = 
     if(is32BitPlatform) java.lang.Integer.compareUnsigned(toInt, x.toInt)
     else java.lang.Long.compareUnsigned(toLong, x.toLong)
-
 
   @inline def toPtr[T]: Ptr[T] =
     if (is32BitPlatform) fromRawPtr[T](castIntToRawPtr(toInt))

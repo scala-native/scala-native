@@ -4,6 +4,7 @@ import org.junit.Test
 import org.junit.Assert._
 import scala.scalanative.unsafe._
 import scala.reflect.ClassTag
+import scala.scalanative.meta.LinktimeInfo.is32BitPlatform
 
 class UnsignedUniversalEqualityTest {
   private def testUniversalEquality[Signed: ClassTag, Unsigned: ClassTag](
@@ -135,9 +136,9 @@ class UnsignedUniversalEqualityTest {
     // different base when converting to unsigned
     assertFalse(-1.toUSize == -1L.toULong)
     assertFalse(-1L.toUSize == -1.toULong)
-    if(is32BitPlatform){
+    if (is32BitPlatform) {
       assertFalse(-1L.toUSize == -1L.toULong)
-    }else {
+    } else {
       assertTrue(-1L.toUSize == -1L.toULong)
       assertEquals(-1L.toUSize.toString(), java.lang.Long.toUnsignedString(-1L))
       assertEquals(-1L.toUSize.toString(), "18446744073709551615")
@@ -155,7 +156,7 @@ class UnsignedUniversalEqualityTest {
 
     assertTrue(-1.toUShort == -1.toChar)
     assertTrue(-1.toUShort == 65535.toChar)
-    
+
     assertFalse(-1.toUInt == -1.toChar)
     assertFalse(-1.toULong == -1.toChar)
     // variant observed in testUniversalEquality

@@ -13,10 +13,11 @@ package unsafe
 
 import scala.language.implicitConversions
 
-import scala.scalanative.runtime._
-import scala.scalanative.runtime.Intrinsics._
+import scalanative.runtime._
+import scalanative.runtime.Intrinsics._
 import scala.scalanative.meta.LinktimeInfo.is32BitPlatform
-import scala.scalanative.unsigned._
+
+import scalanative.unsigned._
 
 final class Size(private[scalanative] val rawSize: RawSize) 
   extends scala.math.ScalaNumber 
@@ -32,6 +33,7 @@ final class Size(private[scalanative] val rawSize: RawSize)
   @inline def toUInt: UInt     = toUSize.toUInt
   @inline def toULong: ULong   = toUSize.toULong
   @inline def toUSize: USize   = USize.valueOf(rawSize)
+
 
   @inline override def doubleValue(): Double = toLong.toDouble
   @inline override def floatValue(): Float = toInt.toFloat

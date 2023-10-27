@@ -43,19 +43,19 @@ object Boxes {
 
   @inline def boxToUByte(v: Byte): UByte = UByte.valueOf(v)
   @inline def unboxToUByte(o: java.lang.Object): Byte =
-    if (o == null) 0.toByte else o.asInstanceOf[UByte].underlying
+    if (o == null) 0.toByte else o.asInstanceOf[UByte].underlyingValue
 
   @inline def boxToUShort(v: Short): UShort = UShort.valueOf(v)
   @inline def unboxToUShort(o: java.lang.Object): Short =
-    if (o == null) 0.toShort else o.asInstanceOf[UShort].underlying
+    if (o == null) 0.toShort else o.asInstanceOf[UShort].underlyingValue
 
   @inline def boxToUInt(v: Int): UInt = UInt.valueOf(v)
   @inline def unboxToUInt(o: java.lang.Object): Int =
-    if (o == null) 0.toInt else o.asInstanceOf[UInt].underlying
+    if (o == null) 0.toInt else o.asInstanceOf[UInt].underlyingValue
 
   @inline def boxToULong(v: Long): ULong = ULong.valueOf(v)
   @inline def unboxToULong(o: java.lang.Object): Long =
-    if (o == null) 0.toLong else o.asInstanceOf[ULong].underlying
+    if (o == null) 0.toLong else o.asInstanceOf[ULong].underlyingValue
 
   @inline def boxToPtr[T](v: RawPtr): Ptr[T] =
     if (v == null) null else new Ptr[T](v)

@@ -5,15 +5,15 @@ import scalanative.runtime.Intrinsics.{castIntToRawSizeUnsigned, unsignedOf}
 
 /** `UByte`, a 8-bit unsigned integer. */
 final class UByte private[scalanative] (
-    override val underlying: Byte
+    private[scalanative] val underlyingValue: Byte
 ) extends scala.math.ScalaNumber
     with java.io.Serializable
     with Comparable[UByte] {
 
-  @inline final def toByte: Byte = underlying
+  @inline final def toByte: Byte = underlyingValue
   @inline final def toShort: Short = toInt.toShort
   @inline final def toChar: Char = toInt.toChar
-  @inline final def toInt: Int = underlying & 0xff
+  @inline final def toInt: Int = underlyingValue & 0xff
   @inline final def toLong: Long = toInt.toLong
   @inline final def toFloat: Float = toInt.toFloat
   @inline final def toDouble: Double = toInt.toDouble
@@ -29,6 +29,7 @@ final class UByte private[scalanative] (
   @inline override def intValue(): Int = toInt
   @inline override def longValue(): Long = toLong
   @inline override protected def isWhole(): Boolean = true
+  @inline override def underlying(): Object = this
 
   /** Returns the bitwise negation of this value.
    *  @example
@@ -89,10 +90,10 @@ final class UByte private[scalanative] (
   @inline final def >>(x: Long): UInt = toUInt >> x
 
   @inline final override def compareTo(x: UByte): Int =
-    (underlying & 0xff) - (x.underlying & 0xff)
+    (underlyingValue & 0xff) - (x.underlyingValue & 0xff)
 
   /** Returns `true` if this value is equal to x, `false` otherwise. */
-  @inline final def ==(x: UByte): Boolean = underlying == x.underlying
+  @inline final def ==(x: UByte): Boolean = underlyingValue == x.underlyingValue
 
   /** Returns `true` if this value is equal to x, `false` otherwise. */
   @inline final def ==(x: UShort): Boolean = toUInt == x.toUInt
@@ -104,7 +105,7 @@ final class UByte private[scalanative] (
   @inline final def ==(x: ULong): Boolean = toULong == x
 
   /** Returns `true` if this value is not equal to x, `false` otherwise. */
-  @inline final def !=(x: UByte): Boolean = underlying != x.underlying
+  @inline final def !=(x: UByte): Boolean = underlyingValue != x.underlyingValue
 
   /** Returns `true` if this value is not equal to x, `false` otherwise. */
   @inline final def !=(x: UShort): Boolean = toUInt != x.toUInt
@@ -277,10 +278,10 @@ final class UByte private[scalanative] (
 
   @inline final override def toString(): String = toInt.toString()
 
-  @inline override def hashCode(): Int = underlying.##
+  @inline override def hashCode(): Int = underlyingValue.##
 
   @inline override def equals(obj: Any): Boolean = obj match {
-    case that: UByte => this.underlying == that.underlying
+    case that: UByte => this.underlyingValue == that.underlyingValue
     case _           => false
   }
 
