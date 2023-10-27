@@ -5,8 +5,9 @@ import scalanative.runtime.Intrinsics.{castIntToRawSizeUnsigned, unsignedOf}
 
 /** `UByte`, a 8-bit unsigned integer. */
 final class UByte private[scalanative] (
-    private[scalanative] val underlying: Byte
-) extends java.io.Serializable
+    override val underlying: Byte
+) extends scala.math.ScalaNumber
+    with java.io.Serializable
     with Comparable[UByte] {
 
   @inline final def toByte: Byte = underlying
@@ -22,6 +23,12 @@ final class UByte private[scalanative] (
   @inline final def toUInt: UInt = unsignedOf(toInt)
   @inline final def toULong: ULong = unsignedOf(toLong)
   @inline final def toUSize: USize = unsignedOf(castIntToRawSizeUnsigned(toInt))
+
+  @inline override def doubleValue(): Double = toDouble
+  @inline override def floatValue(): Float = toFloat
+  @inline override def intValue(): Int = toInt
+  @inline override def longValue(): Long = toLong
+  @inline override protected def isWhole(): Boolean = true
 
   /** Returns the bitwise negation of this value.
    *  @example

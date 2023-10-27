@@ -13,8 +13,9 @@ import java.lang.{Long => JLong}
 
 /** `ULong`, a 64-bit unsigned integer. */
 final class ULong private[scalanative] (
-    private[scalanative] val underlying: Long
-) extends java.io.Serializable
+    override val underlying: Long
+) extends scala.math.ScalaNumber
+    with java.io.Serializable
     with Comparable[ULong] {
 
   @inline final def toByte: Byte = underlying.toByte
@@ -31,6 +32,12 @@ final class ULong private[scalanative] (
   @inline final def toULong: ULong = this
   @inline final def toUSize: USize =
     unsignedOf(castLongToRawSize(underlying))
+
+  @inline override def doubleValue(): Double = toDouble
+  @inline override def floatValue(): Float = toFloat
+  @inline override def intValue(): Int = toInt
+  @inline override def longValue(): Long = toLong
+  @inline override protected def isWhole(): Boolean = true
 
   /** Returns the bitwise negation of this value.
    */

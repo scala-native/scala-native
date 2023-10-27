@@ -12,8 +12,9 @@ import scalanative.runtime.Intrinsics.{
 import java.lang.{Integer => JInteger}
 
 /** `UInt`, a 32-bit unsigned integer. */
-final class UInt private[scalanative] (private[scalanative] val underlying: Int)
-    extends java.io.Serializable
+final class UInt private[scalanative] (override val underlying: Int)
+    extends scala.math.ScalaNumber
+    with java.io.Serializable
     with Comparable[UInt] {
 
   @inline final def toByte: Byte = underlying.toByte
@@ -31,6 +32,12 @@ final class UInt private[scalanative] (private[scalanative] val underlying: Int)
   @inline final def toUSize: USize = unsignedOf(
     castIntToRawSizeUnsigned(underlying)
   )
+
+  @inline override def doubleValue(): Double = toDouble
+  @inline override def floatValue(): Float = toFloat
+  @inline override def intValue(): Int = toInt
+  @inline override def longValue(): Long = toLong
+  @inline override protected def isWhole(): Boolean = true
 
   /** Returns the bitwise negation of this value.
    *  @example

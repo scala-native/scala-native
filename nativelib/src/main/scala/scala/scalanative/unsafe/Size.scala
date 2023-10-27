@@ -18,7 +18,9 @@ import scala.scalanative.runtime.Intrinsics._
 import scala.scalanative.meta.LinktimeInfo.is32BitPlatform
 import scala.scalanative.unsigned._
 
-final class Size(private[scalanative] val rawSize: RawSize) {
+final class Size(private[scalanative] val rawSize: RawSize) 
+  extends scala.math.ScalaNumber 
+  with Comparable[Size] {
   @inline def toByte: Byte   = castRawSizeToInt(rawSize).toByte
   @inline def toChar: Char   = castRawSizeToInt(rawSize).toChar
   @inline def toShort: Short = castRawSizeToInt(rawSize).toShort
@@ -31,6 +33,17 @@ final class Size(private[scalanative] val rawSize: RawSize) {
   @inline def toULong: ULong   = toUSize.toULong
   @inline def toUSize: USize   = USize.valueOf(rawSize)
 
+  @inline override def doubleValue(): Double = toLong.toDouble
+  @inline override def floatValue(): Float = toInt.toFloat
+  @inline override def intValue(): Int = toInt
+  @inline override def longValue(): Long = toLong
+  @inline override protected def isWhole(): Boolean = true
+  @inline override def underlying: Size = this // don't expose rawSize
+
+  @inline final override def compareTo(x: Size): Int = 
+    if(is32BitPlatform) java.lang.Integer.compare(toInt, x.toInt)
+    else java.lang.Long.compare(toLong, x.toLong)
+
   @inline def toPtr[T]: Ptr[T] =
     if (is32BitPlatform) fromRawPtr[T](castIntToRawPtr(toInt))
     else fromRawPtr[T](castLongToRawPtr(toLong))
@@ -38,12 +51,12 @@ final class Size(private[scalanative] val rawSize: RawSize) {
   @inline override def hashCode: Int = toLong.hashCode
 
   @inline override def equals(other: Any): Boolean =
-    (this eq other.asInstanceOf[AnyRef]) || (other match {
+    other match {
       case other: Size =>
         other.rawSize == rawSize
       case _ =>
         false
-    })
+    }
 
   @inline override def toString(): String = toLong.toString
 
