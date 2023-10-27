@@ -56,21 +56,6 @@ final class Double(val _value: scala.Double)
   @inline override def toString(): String =
     Double.toString(_value)
 
-  @inline override def __scala_## : scala.Int = {
-    val dv = _value
-    val iv = _value.toInt
-    if (iv == dv) iv
-    else {
-      val lv = _value.toLong
-      if (lv == dv) Long.hashCode(lv)
-      else {
-        val fv = _value.toFloat
-        if (fv == dv) Float.hashCode(fv)
-        else Double.hashCode(dv)
-      }
-    }
-  }
-
   @inline def isNaN(): scala.Boolean =
     Double.isNaN(_value)
 

@@ -321,8 +321,6 @@ trait NirDefinitions {
 
     lazy val NObjectClass = getRequiredClass("java.lang._Object")
     lazy val NObjectInitMethod = getDecl(NObjectClass, TermName("<init>"))
-    lazy val NObjectHashCodeMethod =
-      getDecl(NObjectClass, TermName("__scala_$hash$hash"))
 
     lazy val NStringClass = getRequiredClass("java.lang._String")
     lazy val NStringModule = getRequiredModule("java.lang._String")

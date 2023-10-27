@@ -364,20 +364,9 @@ class Reach(
                   fail(s"Required method ${sig} not found in ${info.name}")
                 )
             }
-            sig match {
-              case Rt.JavaEqualsSig =>
-                update(Rt.JavaEqualsSig)
-              case Rt.JavaHashCodeSig =>
-                update(Rt.ScalaHashCodeSig)
-                update(Rt.JavaHashCodeSig)
-              case sig
-                  if sig.isMethod || sig.isCtor || sig.isClinit || sig.isGenerated =>
+            if (sig.isMethod || sig.isCtor || sig.isClinit || sig.isGenerated){
                 update(sig)
-              case _ =>
-                ()
             }
-          case _ =>
-            ()
         }
 
         // Initialize the scope of the default methods that can
@@ -873,35 +862,11 @@ class Reach(
   def lookup(cls: Class, sig: Sig): Option[Global.Member] = {
     assert(loaded.contains(cls.name))
 
-    def lookupSig(cls: Class, sig: Sig): Option[Global.Member] = {
-      val tryMember = cls.name.member(sig)
-      if (loaded(cls.name).contains(tryMember)) {
-        Some(tryMember)
-      } else {
-        cls.parent.flatMap(lookupSig(_, sig))
-      }
-    }
-
-    def lookupRequired(sig: Sig) = lookupSig(cls, sig)
-      .getOrElse(fail(s"Not found required definition ${cls.name} ${sig}"))
-
-    sig match {
-      // We short-circuit scala_## to immeditately point to the
-      // equals and hashCode implementation for the reference types to avoid
-      // double virtual dispatch overhead. This optimization is *not* optional
-      // as implementation of scala_== on java.lang.Object assumes it's only
-      // called on classes which don't overrider java_==.
-      case Rt.ScalaHashCodeSig =>
-        val scalaImpl = lookupRequired(Rt.ScalaHashCodeSig)
-        val javaImpl = lookupRequired(Rt.JavaHashCodeSig)
-        if (javaImpl.top != Rt.Object.name &&
-            scalaImpl.top == Rt.Object.name) {
-          Some(javaImpl)
-        } else {
-          Some(scalaImpl)
-        }
-      case _ =>
-        lookupSig(cls, sig)
+    val tryMember = cls.name.member(sig)
+    if (loaded(cls.name).contains(tryMember)) {
+      Some(tryMember)
+    } else {
+      cls.parent.flatMap(lookup(_, sig))
     }
   }
 

@@ -47,13 +47,6 @@ final class Long(val _value: scala.Long)
   @inline override def toString(): String =
     Long.toString(_value)
 
-  @inline override def __scala_## : scala.Int = {
-    val lv = _value
-    val iv = _value.toInt
-    if (iv == lv) iv
-    else Long.hashCode(lv)
-  }
-
   /*
    * Ported from ScalaJS
    *
