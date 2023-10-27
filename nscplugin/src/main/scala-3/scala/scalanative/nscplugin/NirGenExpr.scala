@@ -1505,38 +1505,114 @@ trait NirGenExpr(using Context) {
         ref: Boolean,
         negated: Boolean
     )(using nir.Position): Val = {
-      val left = genExpr(leftp)
 
       if (ref) {
+        // referencial equality
+        val left = genExpr(leftp)
         val right = genExpr(rightp)
         val comp = if (negated) Comp.Ine else Comp.Ieq
         buf.comp(comp, Rt.Object, left, right, unwind)
-      } else {
-        val thenn, elsen, mergen = fresh()
-        val mergev = Val.Local(fresh(), nir.Type.Bool)
+      } else genClassUniversalEquality(leftp, rightp, negated)
+    }
 
-        val isnull = buf.comp(Comp.Ieq, Rt.Object, left, Val.Null, unwind)
-        buf.branch(isnull, Next(thenn), Next(elsen))
-        locally {
-          buf.label(thenn)
-          val right = genExpr(rightp)
-          val thenv = buf.comp(Comp.Ieq, Rt.Object, right, Val.Null, unwind)
-          buf.jump(mergen, Seq(thenv))
+    private def genClassUniversalEquality(l: Tree, r: Tree, negated: Boolean)(
+        using nir.Position
+    ): Val = {
+
+      /* True if the equality comparison is between values that require the use of the rich equality
+       * comparator (scala.runtime.BoxesRunTime.equals). This is the case when either side of the
+       * comparison might have a run-time type subtype of java.lang.Number or java.lang.Character.
+       * When it is statically known that both sides are equal and subtypes of Number of Character,
+       * not using the rich equality is possible (their own equals method will do ok.)
+       */
+      val mustUseAnyComparator: Boolean = {
+        // Exclude custom trees introduced by Scala Natvie from checks
+        def isScalaTree(tree: Tree) = tree match {
+          case _: ValTree  => false
+          case _: ContTree => false
+          case _           => true
         }
-        locally {
-          buf.label(elsen)
-          val elsev = genApplyMethod(
-            defnNir.NObject_equals,
-            statically = false,
-            left,
-            Seq(rightp)
-          )
-          buf.jump(mergen, Seq(elsev))
+        val usesOnlyScalaTrees = isScalaTree(l) && isScalaTree(r)
+        def areSameFinals = l.tpe.typeSymbol.is(Final) &&
+          r.tpe.typeSymbol.is(Final) &&
+          (l.tpe =:= r.tpe)
+        def isMaybeBoxed(sym: Symbol): Boolean = {
+          (sym == defn.ObjectClass) ||
+          (sym == defn.JavaSerializableClass) ||
+          (sym == defn.ComparableClass) ||
+          (sym derivesFrom defn.BoxedNumberClass) ||
+          (sym derivesFrom defn.BoxedCharClass) ||
+          (sym derivesFrom defn.BoxedBooleanClass)
         }
-        buf.label(mergen, Seq(mergev))
-        if (negated) negateBool(mergev)
-        else mergev
+        usesOnlyScalaTrees && !areSameFinals &&
+          isMaybeBoxed(l.tpe.typeSymbol) &&
+          isMaybeBoxed(r.tpe.typeSymbol)
       }
+      def isNull(t: Tree): Boolean = t match {
+        case Literal(Constant(null)) => true
+        case _                       => false
+      }
+      def isNonNullExpr(t: Tree): Boolean =
+        t.isInstanceOf[Literal] || ((t.symbol ne null) && t.symbol.is(Module))
+
+      def comparator = if (negated) Comp.Ine else Comp.Ieq
+      def maybeNegate(v: Val): Val = if negated then negateBool(v) else v
+
+      if (mustUseAnyComparator) maybeNegate {
+        val equalsMethod: Symbol = {
+          if (l.tpe <:< defn.BoxedNumberClass.info) {
+            if (r.tpe <:< defn.BoxedNumberClass.info)
+              defn.BoxesRunTimeModule.requiredMethod(nme.equalsNumNum)
+            else if (r.tpe <:< defn.BoxedCharClass.info)
+              defn.BoxesRunTimeModule.requiredMethod(nme.equalsNumChar)
+            else defn.BoxesRunTimeModule.requiredMethod(nme.equalsNumObject)
+          } else defn.BoxesRunTimeModule_externalEquals
+        }
+        genApplyStaticMethod(equalsMethod, defn.BoxesRunTimeModule, Seq(l, r))
+      }
+      else if (isNull(l)) {
+        // null == expr -> expr eq null
+        buf.comp(comparator, Rt.Object, genExpr(r), Val.Null, unwind)
+      } else if (isNull(r)) {
+        // expr == null -> expr eq null
+        buf.comp(comparator, Rt.Object, genExpr(l), Val.Null, unwind)
+      } else if (isNonNullExpr(l)) maybeNegate {
+        // SI-7852 Avoid null check if L is statically non-null.
+        genApplyMethod(
+          sym = defn.Any_equals,
+          statically = false,
+          selfp = l,
+          argsp = Seq(r)
+        )
+
+      }
+      else
+        maybeNegate {
+          // l == r -> if (l eq null) r eq null else l.equals(r)
+          val thenn, elsen, mergen = fresh()
+          val mergev = Val.Local(fresh(), nir.Type.Bool)
+          val left = genExpr(l)
+          val isnull = buf.comp(Comp.Ieq, Rt.Object, left, Val.Null, unwind)
+          buf.branch(isnull, Next(thenn), Next(elsen))
+          locally {
+            buf.label(thenn)
+            val right = genExpr(r)
+            val thenv = buf.comp(Comp.Ieq, Rt.Object, right, Val.Null, unwind)
+            buf.jump(mergen, Seq(thenv))
+          }
+          locally {
+            buf.label(elsen)
+            val elsev = genApplyMethod(
+              defn.Any_equals,
+              statically = false,
+              left,
+              Seq(r)
+            )
+            buf.jump(mergen, Seq(elsev))
+          }
+          buf.label(mergen, Seq(mergev))
+          mergev
+        }
     }
 
     def genMethodArgs(sym: Symbol, argsp: Seq[Tree]): Seq[Val] =

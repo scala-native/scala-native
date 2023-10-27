@@ -11,8 +11,8 @@ import scalanative.util.ScopedVar.scoped
 import scalanative.nscplugin.NirPrimitives._
 
 trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
-  import global._
-  import definitions._
+  import global.{definitions => defn, _}
+  import defn._
   import treeInfo.hasSynthCaseSymbol
   import nirAddons._
   import nirDefinitions._
@@ -699,7 +699,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         pos: nir.Position
     ): Val = {
       if (sym == BoxedUnit_UNIT) Val.Unit
-      else genApplyStaticMethod(sym, receiver, Seq.empty)
+      else genApplyStaticMethod(sym, receiver.symbol, Seq.empty)
     }
 
     def genAssign(tree: Assign): Val = {
@@ -1625,43 +1625,112 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       buf.let(op(opty, leftcoerced, rightcoerced), unwind)
     }
 
-    def genClassEquality(
+    private def genClassEquality(
         leftp: Tree,
         rightp: Tree,
         ref: Boolean,
         negated: Boolean
     )(implicit pos: nir.Position): Val = {
-      val left = genExpr(leftp)
 
       if (ref) {
+        // referencial equality
+        val left = genExpr(leftp)
         val right = genExpr(rightp)
         val comp = if (negated) Comp.Ine else Comp.Ieq
         buf.comp(comp, Rt.Object, left, right, unwind)
-      } else {
-        val thenn, elsen, mergen = fresh()
-        val mergev = Val.Local(fresh(), nir.Type.Bool)
+      } else genClassUniversalEquality(leftp, rightp, negated)
+    }
 
-        val isnull = buf.comp(Comp.Ieq, Rt.Object, left, Val.Null, unwind)
-        buf.branch(isnull, Next(thenn), Next(elsen))
-        locally {
-          buf.label(thenn)
-          val right = genExpr(rightp)
-          val thenv = buf.comp(Comp.Ieq, Rt.Object, right, Val.Null, unwind)
-          buf.jump(mergen, Seq(thenv))
+    private def genClassUniversalEquality(l: Tree, r: Tree, negated: Boolean)(
+        implicit pos: nir.Position
+    ): Val = {
+
+      /* True if the equality comparison is between values that require the use of the rich equality
+       * comparator (scala.runtime.BoxesRunTime.equals). This is the case when either side of the
+       * comparison might have a run-time type subtype of java.lang.Number or java.lang.Character.
+       * When it is statically known that both sides are equal and subtypes of Number of Character,
+       * not using the rich equality is possible (their own equals method will do ok.)
+       */
+      val mustUseAnyComparator: Boolean = {
+        // Exclude custom trees introduced by Scala Natvie from checks
+        def isScalaTree(tree: Tree) = tree match {
+          case _: ValTree  => false
+          case _: ContTree => false
+          case _           => true
         }
-        locally {
-          buf.label(elsen)
-          val elsev = genApplyMethod(
-            NObjectEqualsMethod,
-            statically = false,
-            left,
-            Seq(rightp)
-          )
-          buf.jump(mergen, Seq(elsev))
-        }
-        buf.label(mergen, Seq(mergev))
-        if (negated) negateBool(mergev) else mergev
+        val usesOnlyScalaTrees = isScalaTree(l) && isScalaTree(r)
+        def areSameFinals =
+          l.tpe.isFinalType && r.tpe.isFinalType && (l.tpe =:= r.tpe) && {
+            val sym = l.tpe.typeSymbol
+            sym != BoxedFloatClass && sym != BoxedDoubleClass
+          }
+        usesOnlyScalaTrees && !areSameFinals &&
+          platform.isMaybeBoxed(l.tpe.typeSymbol) &&
+          platform.isMaybeBoxed(r.tpe.typeSymbol)
       }
+      def isNull(t: Tree) = PartialFunction.cond(t) {
+        case Literal(Constant(null)) => true
+      }
+      def isLiteral(t: Tree) = PartialFunction.cond(t) {
+        case Literal(_) => true
+      }
+      def isNonNullExpr(t: Tree) =
+        isLiteral(t) || ((t.symbol ne null) && t.symbol.isModule)
+      def maybeNegate(v: Val): Val = if (negated) negateBool(v) else v
+      def comparator = if (negated) Comp.Ine else Comp.Ieq
+      if (mustUseAnyComparator) maybeNegate {
+        val equalsMethod: Symbol = {
+          if (l.tpe <:< BoxedNumberClass.tpe) {
+            if (r.tpe <:< BoxedNumberClass.tpe) platform.externalEqualsNumNum
+            else if (r.tpe <:< BoxedCharacterClass.tpe)
+              platform.externalEqualsNumChar
+            else platform.externalEqualsNumObject
+          } else platform.externalEquals
+        }
+        genApplyStaticMethod(equalsMethod, defn.BoxesRunTimeModule, Seq(l, r))
+      }
+      else if (isNull(l)) {
+        // null == expr -> expr eq null
+        buf.comp(comparator, Rt.Object, genExpr(r), Val.Null, unwind)
+      } else if (isNull(r)) {
+        // expr == null -> expr eq null
+        buf.comp(comparator, Rt.Object, genExpr(l), Val.Null, unwind)
+      } else if (isNonNullExpr(l)) maybeNegate {
+        // SI-7852 Avoid null check if L is statically non-null.
+        genApplyMethod(
+          sym = defn.Any_equals,
+          statically = false,
+          selfp = l,
+          argsp = Seq(r)
+        )
+      }
+      else
+        maybeNegate {
+          // l == r -> if (l eq null) r eq null else l.equals(r)
+          val thenn, elsen, mergen = fresh()
+          val mergev = Val.Local(fresh(), nir.Type.Bool)
+          val left = genExpr(l)
+          val isnull = buf.comp(Comp.Ieq, Rt.Object, left, Val.Null, unwind)
+          buf.branch(isnull, Next(thenn), Next(elsen))
+          locally {
+            buf.label(thenn)
+            val right = genExpr(r)
+            val thenv = buf.comp(Comp.Ieq, Rt.Object, right, Val.Null, unwind)
+            buf.jump(mergen, Seq(thenv))
+          }
+          locally {
+            buf.label(elsen)
+            val elsev = genApplyMethod(
+              defn.Any_equals,
+              statically = false,
+              left,
+              Seq(r)
+            )
+            buf.jump(mergen, Seq(elsev))
+          }
+          buf.label(mergen, Seq(mergev))
+          mergev
+        }
     }
 
     def binaryOperationType(lty: nir.Type, rty: nir.Type) = (lty, rty) match {
@@ -2524,7 +2593,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       if (sym.isExtern && sym.isAccessor) {
         genApplyExternAccessor(sym, argsp)
       } else if (sym.isStaticMember) {
-        genApplyStaticMethod(sym, selfp, argsp)
+        genApplyStaticMethod(sym, selfp.symbol, argsp)
       } else {
         val self = genExpr(selfp)
         genApplyMethod(sym, statically, self, argsp)
@@ -2533,11 +2602,11 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
     private def genApplyStaticMethod(
         sym: Symbol,
-        receiver: Tree,
+        receiver: Symbol,
         argsp: Seq[Tree]
     )(implicit pos: nir.Position): Val = {
       require(!sym.isExtern, sym.owner)
-      val name = genStaticMemberName(sym, receiver.symbol)
+      val name = genStaticMemberName(sym, receiver)
       val method = Val.Global(name, nir.Type.Ptr)
       val sig = genMethodSig(sym)
       val args = genMethodArgs(sym, argsp)
@@ -2719,7 +2788,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
                   res += promotedArg
                 }
               // Scala 2.13 only
-              case Select(_, name) if name == definitions.NilModule.name => ()
+              case Select(_, name) if name == defn.NilModule.name => ()
               case _ =>
                 reporter.error(
                   argp.pos,

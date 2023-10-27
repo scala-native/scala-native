@@ -21,13 +21,15 @@ trait NirGenName(using Context) {
     else if (sym.is(Method)) genMethodName(sym)
     else genFieldName(sym)
 
+  private lazy val ObjectTypeSyms =
+    Seq(defn.ObjectClass, defn.AnyClass, defn.AnyRefAlias)
   def genTypeName(sym: Symbol): nir.Global.Top = {
     val sym1 =
       if (sym.isAllOf(ModuleClass | JavaDefined) && sym.linkedClass.exists)
         sym.linkedClass
       else sym
 
-    if (sym1 == defn.ObjectClass) nir.Rt.Object.name.top
+    if (ObjectTypeSyms.contains(sym1)) nir.Rt.Object.name.top
     else {
       val id = {
         val fullName = sym1.javaClassName

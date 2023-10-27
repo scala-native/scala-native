@@ -33,7 +33,7 @@ trait NirGenName[G <: Global with Singleton] {
       MappedNames.getOrElse(fullName, fullName)
     }
     val name = sym match {
-      case ObjectClass =>
+      case ObjectClass | AnyClass | AnyRefClass =>
         nir.Rt.Object.name.asInstanceOf[nir.Global.Top]
       case _ if sym.isModule =>
         genTypeName(sym.moduleClass)
