@@ -43,7 +43,7 @@ private[scalanative] object NativeLib {
       nativeLib: NativeLib
   )(implicit ec: ExecutionContext): Future[Seq[Path]] = {
     val destPath = unpackNativeCode(nativeLib)
-    val paths = findNativePaths(config.workDir, destPath)
+    val paths = findNativePaths(destPath)
     val projConfig = configureNativeLibrary(config, analysis, destPath)
     LLVM.compile(projConfig, paths)
   }
@@ -182,7 +182,7 @@ private[scalanative] object NativeLib {
   def findNativeLibs(config: Config): Seq[NativeLib] = {
     val workDir = config.workDir
     val classpath = config.classPath
-    val nativeCodePrefix = "native-code"
+    val nativeCodeDir = workDir.resolve("dependencies")
 
     val nativeLibPaths = classpath.flatMap { path =>
       if (isJar(path)) readJar(path)
@@ -198,7 +198,7 @@ private[scalanative] object NativeLib {
             .stripSuffix(jarExt)
         NativeLib(
           src = path,
-          dest = workDir.resolve(s"$nativeCodePrefix-$name-$index")
+          dest = nativeCodeDir.resolve(s"$name-$index")
         )
       }
 
@@ -207,14 +207,12 @@ private[scalanative] object NativeLib {
         s"No Scala Native libraries were found: $classpath"
       )
 
-    if (Files.exists(workDir)) {
+    if (Files.exists(nativeCodeDir)) {
       // Fix https://github.com/scala-native/scala-native/pull/2998#discussion_r1023715815
       // Remove all stale native-code-* directories. These can be created if classpath would change
       val expectedPaths = extractPaths.map(_.dest.toAbsolutePath()).toSet
-      val nativeCodePattern = raw"$nativeCodePrefix-.*-\d+"
       Files
-        .list(workDir)
-        .filter(_.getFileName().toString() matches nativeCodePattern)
+        .list(nativeCodeDir)
         .filter(p => !expectedPaths.contains(p.toAbsolutePath()))
         .forEach(IO.deleteRecursive(_))
     }
@@ -229,9 +227,9 @@ private[scalanative] object NativeLib {
    *  @return
    *    All file paths to compile
    */
-  private def findNativePaths(workDir: Path, destPath: Path): Seq[Path] = {
-    val srcPatterns = destSrcPattern(workDir, destPath)
-    IO.getAll(workDir, srcPatterns)
+  private def findNativePaths(destPath: Path): Seq[Path] = {
+    val srcPatterns = destSrcPattern(destPath)
+    IO.getAll(destPath, srcPatterns)
   }
 
   /** The linker uses the VirtualDirectory which is sensitive to empty
@@ -396,8 +394,9 @@ private[scalanative] object NativeLib {
    *  @return
    *    The source pattern
    */
-  private def destSrcPattern(workDir: Path, destPath: Path): String = {
+  private def destSrcPattern(destPath: Path): String = {
     val dirPattern = s"{${destPath.getFileName()}}"
+    val workDir = destPath.getParent()
     val pathPat = makeDirPath(workDir, dirPattern, nativeCodeDir)
     LLVM.srcExtensions.mkString(s"glob:$pathPat**{", ",", "}")
   }
