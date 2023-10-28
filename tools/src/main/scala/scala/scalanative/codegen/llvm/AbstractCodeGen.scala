@@ -45,9 +45,10 @@ private[codegen] abstract class AbstractCodeGen(
   private val externSigMembers = mutable.Map.empty[Sig, Global.Member]
 
   def gen(id: String, dir: VirtualDirectory): Path = {
-    val body = Paths.get(s"$id-body.ll")
-    val headers = Paths.get(s"$id.ll")
-    val metadata = Paths.get(s"$id-metadata.ll")
+    val outputDir = Paths.get("generated")
+    val body = outputDir.resolve(s"$id-body.ll")
+    val headers = outputDir.resolve(s"$id.ll")
+    val metadata = outputDir.resolve(s"$id-metadata.ll")
 
     dir.write(metadata) { metadataWriter =>
       implicit val metadata: MetadataCodeGen.Context =
