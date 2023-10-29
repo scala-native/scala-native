@@ -130,22 +130,22 @@ class UnsignedUniversalEqualityTest {
     testUniversalEquality(_.toSize)(_.toUInt)
     testUniversalEquality(_.toSize)(_.toULong)
     testUniversalEquality(_.toSize)(_.toUSize)
-    assertTrue(-1.toSize == -1)
-    assertTrue(-1.toUSize == 4294967295L)
-    assertTrue(-1.toUSize == -1.toUInt)
+    assertTrue("a", -1.toSize == -1)
+    assertTrue("b", -1.toUSize == 4294967295L)
+    assertTrue("c", -1.toUSize == -1.toUInt)
     // different base when converting to unsigned
-    assertFalse(-1.toUSize == -1L.toULong)
-    assertFalse(-1L.toUSize == -1.toULong)
+    assertFalse("d", -1.toUSize == -1L.toULong)
+    assertEquals(-1.toUSize.toString(), "4294967295")
     if (is32BitPlatform) {
+      assertEquals(-1L.toUSize.toString, "4294967295")
+      assertTrue(-1L.toUSize == -1.toUInt)
       assertTrue(-1.toUSize == -1.toUInt)
       assertTrue(-1.toUSize == -1.toULong)
-      // TODO: this one might be bugged, -1: uint32 should not equal -1: uint64
-      // uses USize.== not the universal equality resolved using BoxesRunTime
-      // assertFalse(-1L.toUSize == -1L.toULong)
     } else {
-      assertTrue(-1L.toUSize == -1L.toULong)
-      assertEquals(-1L.toUSize.toString(), java.lang.Long.toUnsignedString(-1L))
       assertEquals(-1L.toUSize.toString(), "18446744073709551615")
+      assertTrue(-1L.toUSize == -1L.toULong)
+      assertFalse(-1L.toUSize == -1.toULong)
+      assertEquals(-1L.toUSize.toString(), java.lang.Long.toUnsignedString(-1L))
     }
   }
 

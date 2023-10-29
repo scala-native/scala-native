@@ -46,7 +46,8 @@ int scalanative_linux_pidfd_open(pid_t pid, unsigned int flags) {
 
 bool scalanative_linux_has_pidfd_open() {
 #if (SYS_pidfd_open <= 0)
-    false; // SYS_pidfd_open not in syscall.h, so probably not in this kernel
+    return false; // SYS_pidfd_open not in syscall.h, so probably not in this
+                  // kernel
 #else
     /* For those following along:
      * By this point, the OS is known to be Linux. The distribution and
