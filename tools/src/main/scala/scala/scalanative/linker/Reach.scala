@@ -364,9 +364,10 @@ class Reach(
                   fail(s"Required method ${sig} not found in ${info.name}")
                 )
             }
-            if (sig.isMethod || sig.isCtor || sig.isClinit || sig.isGenerated){
-                update(sig)
+            if (sig.isMethod || sig.isCtor || sig.isClinit || sig.isGenerated) {
+              update(sig)
             }
+          case _ => ()
         }
 
         // Initialize the scope of the default methods that can
