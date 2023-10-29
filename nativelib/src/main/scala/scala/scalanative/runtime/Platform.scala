@@ -3,6 +3,7 @@ package runtime
 
 import scala.scalanative.unsafe.{CString, CFuncPtr2, extern, name}
 import scala.scalanative.unsafe.CInt
+import scala.scalanative.unsafe.CSize
 
 @extern
 object Platform {
@@ -29,7 +30,7 @@ object Platform {
     extern
 
   @name("scalanative_wide_char_size")
-  final def SizeOfWChar: Int = extern
+  final def SizeOfWChar: CSize = extern
 
   @name("scalanative_platform_is_msys")
   def isMsys(): Boolean = extern

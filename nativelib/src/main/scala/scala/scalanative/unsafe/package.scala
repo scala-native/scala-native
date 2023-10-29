@@ -179,9 +179,10 @@ package object unsafe extends unsafe.UnsafePackageCompat {
       if (bytes.length > 0) {
         val len = bytes.length
         val rawSize = castIntToRawSizeUnsigned(len + 1)
+        val size = unsignedOf(rawSize)
 
-        val cstr = z.alloc(unsignedOf(rawSize))
-        libc.memcpy(cstr, bytes.at(0), unsignedOf(rawSize))
+        val cstr = z.alloc(size)
+        libc.memcpy(cstr, bytes.at(0), size)
         cstr(len) = 0.toByte
 
         cstr

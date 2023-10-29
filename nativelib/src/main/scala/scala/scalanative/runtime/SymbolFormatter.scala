@@ -4,12 +4,8 @@ import scala.scalanative.meta.LinktimeInfo.isWindows
 import scalanative.unsigned._
 import scala.scalanative.unsafe._
 import scala.scalanative.runtime.libc._
-import scala.scalanative.annotation.alwaysinline
 
 object SymbolFormatter {
-  @alwaysinline
-  private def ZeroU =
-    Intrinsics.unsignedOf(Intrinsics.castIntToRawSizeUnsigned(0))
 
   /* Async-signal-safe stack trace symbol formatter function.
    * Uses only async-signal-safe methods to allow use in a signal handler.
@@ -55,7 +51,7 @@ object SymbolFormatter {
     def readGlobal(): Boolean = read() match {
       case 'M' =>
         readIdent()
-        if (strlen(ident) == ZeroU) {
+        if (strlen(ident) == 0) {
           false
         } else {
           strcpy(classNameOut, ident)
@@ -71,7 +67,7 @@ object SymbolFormatter {
         true
       case 'D' | 'P' | 'C' | 'G' =>
         readIdent()
-        if (strlen(ident) == ZeroU) {
+        if (strlen(ident) == 0) {
           false
         } else {
           strcpy(methodNameOut, ident)
