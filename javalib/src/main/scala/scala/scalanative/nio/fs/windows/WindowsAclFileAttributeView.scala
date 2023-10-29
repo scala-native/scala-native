@@ -32,7 +32,7 @@ class WindowsAclFileAttributeView(path: Path, options: Array[LinkOption])
             dacl = null,
             sacl = null,
             securityDescriptor = null
-          ) != 0.toUInt) {
+          ) != 0) {
         throw WindowsException("Failed to get ownership info")
       }
       WindowsUserPrincipal(!ownerSid)
@@ -63,7 +63,7 @@ class WindowsAclFileAttributeView(path: Path, options: Array[LinkOption])
           sidGroup = null,
           dacl = null,
           sacl = null
-        ) != 0.toUInt) {
+        ) != 0) {
       throw WindowsException("Failed to set new owner")
     }
   }

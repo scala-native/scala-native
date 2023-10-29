@@ -3,6 +3,10 @@ package scala.runtime
 import scala.math.ScalaNumber
 import scala.annotation.{nowarn, switch}
 
+import scala.scalanative.meta.LinktimeInfo
+import scala.scalanative.unsigned._
+import scala.scalanative.unsafe.Size
+
 class BoxesRunTime
 
 /** An object (static class) that defines methods used for creating, reverting,
@@ -24,21 +28,53 @@ object BoxesRunTime {
   private final val LONG = 4
   private final val FLOAT = 5
   private final val DOUBLE = 6
-  private final val OTHER = 7
+  private final val ULONG = 7 // special case for comparing unsigned types
+  private final val OTHER = 8
 
   /** We don't need to return BYTE and SHORT, as everything which might care
    *  widens to INT.
    */
   private def typeCode(a: java.lang.Object): scala.Int = a match {
-    case _: java.lang.Integer   => INT
-    case _: java.lang.Double    => DOUBLE
-    case _: java.lang.Long      => LONG
-    case _: java.lang.Character => CHAR
-    case _: java.lang.Float     => FLOAT
-    case _: java.lang.Byte      => INT
-    case _: java.lang.Short     => INT
-    case _                      => OTHER
+    case num: scala.math.ScalaNumber => typeCodeScalaNumber(num)
+    case num: java.lang.Number       => typeCodeNumber(num)
+    case _: java.lang.Character      => CHAR
+    case _                           => OTHER
   }
+
+  private def typeCodeNumber(a: java.lang.Number): scala.Int = a match {
+    case _: java.lang.Integer => INT
+    case _: java.lang.Double  => DOUBLE
+    case _: java.lang.Long    => LONG
+    case _: java.lang.Float   => FLOAT
+    case _: java.lang.Byte    => INT
+    case _: java.lang.Short   => INT
+    case _                    => OTHER
+  }
+
+  private def typeCodeScalaNumber(num: scala.math.ScalaNumber): scala.Int =
+    num match {
+      case _: UByte  => INT
+      case _: UShort => INT
+      case _: UInt   => LONG
+      case _: ULong  => ULONG
+      case _: Size   => if (LinktimeInfo.is32BitPlatform) INT else LONG
+      case _: USize  => if (LinktimeInfo.is32BitPlatform) LONG else ULONG
+      case _         => OTHER
+    }
+
+  // Char is unsigned, we don't need to extend int/long
+  private def typeCodeScalaNumberForChar(
+      num: scala.math.ScalaNumber
+  ): scala.Int =
+    num match {
+      case _: UByte  => INT
+      case _: UShort => INT
+      case _: UInt   => INT
+      case _: ULong  => LONG
+      case _: Size   => if (LinktimeInfo.is32BitPlatform) INT else LONG
+      case _: USize  => if (LinktimeInfo.is32BitPlatform) INT else LONG
+      case _         => OTHER
+    }
 
   // Boxing
   @inline def boxToBoolean(v: scala.Boolean): java.lang.Boolean =
@@ -108,6 +144,18 @@ object BoxesRunTime {
         case LONG   => xn.longValue() == yn.longValue()
         case FLOAT  => xn.floatValue() == yn.floatValue()
         case DOUBLE => xn.doubleValue() == yn.doubleValue()
+        case ULONG  =>
+          // todo: use extension to int128 when available
+          val xnIsUnsigned = xn.isInstanceOf[ULong] || xn.isInstanceOf[USize]
+          val longVal = if (xnIsUnsigned) xn else yn
+          val otherVal = if (xnIsUnsigned) yn else xn
+          otherVal match {
+            case other: Size if !LinktimeInfo.is32BitPlatform =>
+              other.longValue() >= 0 && longVal.longValue == other.longValue
+            case other: java.lang.Long =>
+              other.longValue() >= 0 && longVal.longValue == other.longValue
+            case other => longVal.longValue() == other.longValue()
+          }
         case _ =>
           if (yn.isInstanceOf[ScalaNumber] && !xn.isInstanceOf[ScalaNumber])
             yn.equals(xn)
@@ -128,7 +176,11 @@ object BoxesRunTime {
     if (yc == null) xn == null
     else {
       val ch = yc.charValue()
-      (typeCode(xn): @switch) match {
+      val typeCode = xn match {
+        case that: ScalaNumber => typeCodeScalaNumberForChar(that)
+        case that              => typeCodeNumber(that)
+      }
+      (typeCode: @switch) match {
         case INT    => xn.intValue() == ch
         case LONG   => xn.longValue() == ch
         case FLOAT  => xn.floatValue() == ch

@@ -19,7 +19,6 @@ object Rt {
   val GetClassSig = Sig.Method("getClass", Seq(Rt.Class)).mangled
   val JavaEqualsSig = Sig.Method("equals", Seq(Object, Bool)).mangled
   val JavaHashCodeSig = Sig.Method("hashCode", Seq(Int)).mangled
-  val ScalaEqualsSig = Sig.Method("scala_$eq$eq", Seq(Object, Bool)).mangled
   val ScalaHashCodeSig = Sig.Method("scala_$hash$hash", Seq(Int)).mangled
   val ScalaMainSig =
     Sig.Method("main", Seq(Array(Rt.String), Unit), Sig.Scope.PublicStatic)

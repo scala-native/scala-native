@@ -285,7 +285,7 @@ object NetworkInterface {
 
       val broadcastAddress: Option[Array[Byte]] =
         if (sa.sa_family.toInt == AF_INET6) None
-        else if ((ifa.ifa_flags & unixIf.IFF_LOOPBACK.toUInt) != 0.toUInt) None
+        else if ((ifa.ifa_flags & unixIf.IFF_LOOPBACK.toUInt) != 0) None
         else Some(sockaddrToByteArray(ifa.ifa_broadaddr))
 
       val prefixLen = decodePrefixLength(ifa.ifa_netmask)

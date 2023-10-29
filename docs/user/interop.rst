@@ -513,4 +513,8 @@ using ``byteValue.toUByte``, ``shortValue.toUShort``, ``intValue.toUInt``, ``lon
 and conversely ``unsignedByteValue.toByte``, ``unsignedShortValue.toShort``, ``unsignedIntValue.toInt``,
 ``unsignedLongValue.toLong``, ``unsignedSizeValue.toSize``.
 
+Universal equality is supported between signed and unsigned integers, for example ``-1.toUByte == 255`` or ``65535 == -1.toUShort`` would yield ``true``, 
+However, similar to signed integers on JVM, class equality between different (boxed) integer types is not supported.
+Usage of `-1.toUByte.equals(255)` would return ``false``, as we're comparing different boxed types (``scala.scalanative.unsigned.UByte`` with ``java.lang.Integer``)
+
 Continue to :ref:`native`.

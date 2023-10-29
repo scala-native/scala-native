@@ -52,7 +52,7 @@ object Boxes {
 % for (U, P) in unsigned:
   @inline def boxTo${U}(v: ${P}): ${U} = ${U}.valueOf(v)
   @inline def unboxTo${U}(o: java.lang.Object): ${P} =
-    if (o == null) 0.to${P} else o.asInstanceOf[${U}].underlying
+    if (o == null) 0.to${P} else o.asInstanceOf[${U}].underlyingValue
 
 % end
   @inline def boxToPtr[T](v: RawPtr): Ptr[T] =

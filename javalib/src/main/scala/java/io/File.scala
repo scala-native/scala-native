@@ -165,7 +165,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
           dacl = previousDacl,
           sacl = null,
           securityDescriptor = securityDescriptorPtr
-        ) == 0.toUInt
+        ) == 0
 
       def setupNewAclEntry() = {
         import accctrl.ops._
@@ -188,7 +188,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
           ea.trustee.trusteeType = TrusteeType.TRUSTEE_IS_WELL_KNOWN_GROUP
           ea.trustee.sid = !usersGroupSid
         }
-        SetEntriesInAclW(1.toUInt, ea, !previousDacl, newDacl) == 0.toUInt
+        SetEntriesInAclW(1.toUInt, ea, !previousDacl, newDacl) == 0
       }
 
       def assignNewSecurityInfo() =
@@ -200,7 +200,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
           sidGroup = null,
           dacl = !newDacl,
           sacl = null
-        ) == 0.toUInt
+        ) == 0
 
       try {
         getSecurityDescriptor() &&
@@ -217,7 +217,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
         val filename = toCWideStringUTF16LE(properPath)
         val attrs = GetFileAttributesW(filename)
         val pathExists = attrs != INVALID_FILE_ATTRIBUTES
-        val notSymLink = (attrs & FILE_ATTRIBUTE_REPARSE_POINT) == 0.toUInt
+        val notSymLink = (attrs & FILE_ATTRIBUTE_REPARSE_POINT) == 0
         if (notSymLink) // fast path
           pathExists
         else {
@@ -718,13 +718,13 @@ object File {
       if (isWindows) {
         val buffSize = GetCurrentDirectoryW(0.toUInt, null)
         val buff: Ptr[windows.WChar] = alloc[windows.WChar](buffSize + 1.toUInt)
-        if (GetCurrentDirectoryW(buffSize, buff) == 0.toUInt) {
+        if (GetCurrentDirectoryW(buffSize, buff) == 0) {
           throw WindowsException("error in trying to get user directory")
         }
         fromCWideString(buff, StandardCharsets.UTF_16LE)
       } else {
         val buff: CString = alloc[CChar](4096)
-        if (getcwd(buff, 4095.toUInt) == 0.toUInt) {
+        if (getcwd(buff, 4095.toUInt) == null) {
           val errMsg = fromCString(string.strerror(errno.errno))
           throw new IOException(
             s"error in trying to get user directory - $errMsg"
@@ -879,7 +879,7 @@ object File {
     var i = start
     while (i < strlen(path) && path(i) != separatorChar) i += `1U`
 
-    if (i == strlen(path).toUInt) resolveLink(path, resolveAbsolute = true)
+    if (i == strlen(path)) resolveLink(path, resolveAbsolute = true)
     else {
       // copy path from start to next separator.
       // and resolve that subpart.
@@ -924,7 +924,7 @@ object File {
           flags = finalPathFlags
         )
 
-        if (fileHandle == HandleApiExt.INVALID_HANDLE_VALUE || pathLength == 0.toUInt)
+        if (fileHandle == HandleApiExt.INVALID_HANDLE_VALUE || pathLength == 0)
           null
         else buffer
       }

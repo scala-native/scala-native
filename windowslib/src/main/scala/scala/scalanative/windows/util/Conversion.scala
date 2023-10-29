@@ -16,7 +16,7 @@ private[windows] object Conversion {
   }
 
   def dwordPairToULargeInteger(high: DWord, low: DWord): ULargeInteger = {
-    if (high == 0.toUInt) low
+    if (high == 0) low
     else (high.toULong << 32) | low
   }
 

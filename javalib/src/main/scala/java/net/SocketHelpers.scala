@@ -70,7 +70,7 @@ object SocketHelpers {
             if ((ai == null) || (ai.ai_addr == null)) {
               false
             } else {
-              ai.ai_addr.sa_family == AF_INET6.toUShort
+              ai.ai_addr.sa_family == AF_INET6
             }
           } finally {
             freeaddrinfo(!ret)

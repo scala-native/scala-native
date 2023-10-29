@@ -33,7 +33,7 @@ object DWARF {
       val header_offset = bf.position()
       val unit_length_s = uint32()
 
-      val (dwarf64, unit_length) = if (unit_length_s == 0xffffffff.toUInt) {
+      val (dwarf64, unit_length) = if (unit_length_s == -1) {
         (true, uint64())
       } else (false, unit_length_s.toLong)
 
@@ -105,7 +105,7 @@ object DWARF {
         if (code == 0) None
         else {
           val tag = read_unsigned_leb128()
-          val children = uint8() == 1.toUByte
+          val children = uint8() == 1
 
           val attrs = Vector.newBuilder[Attr]
 
@@ -300,7 +300,7 @@ object DWARF {
               s"Uknown header size: ${header.address_size}"
             )
         case DW_FORM_flag =>
-          uint8() == 1.toUByte
+          uint8() == 1
         case DW_FORM_ref_addr =>
           if (header.is64) uint64()
           else uint32()
@@ -684,7 +684,7 @@ object DWARF {
         val header_length = uint32()
         val minimum_instruction_length = uint8()
         val maximum_operations_per_instruction = uint8()
-        val default_is_stmt = uint8() == 1.toUByte
+        val default_is_stmt = uint8() == 1
         val line_base = uint8()
         val line_range = uint8()
         val opcode_base = uint8()

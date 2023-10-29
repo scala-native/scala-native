@@ -44,13 +44,6 @@ class _Object {
       getMonitor(this)._wait(timeout, nanos)
     }
 
-  @inline def __scala_==(that: _Object): scala.Boolean = {
-    // This implementation is only called for classes that don't override
-    // equals. Otherwise, whenever equals is overriden, we also update the
-    // vtable entry for scala_== to point to the override directly.
-    this eq that
-  }
-
   @inline def __scala_## : scala.Int = {
     // This implementation is only called for classes that don't override
     // hashCode. Otherwise, whenever hashCode is overriden, we also update the

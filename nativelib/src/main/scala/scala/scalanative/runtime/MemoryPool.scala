@@ -103,7 +103,7 @@ final class MemoryPoolZone(private[this] val pool: MemoryPool) extends Zone {
   private def pad(addr: CSize, alignment: CSize): CSize = {
     val alignmentMask: CSize = alignment - 1.toUSize
     val padding: CSize =
-      if ((addr & alignmentMask) == 0.toUSize) 0.toUSize
+      if ((addr & alignmentMask) == 0) 0.toUSize
       else alignment - (addr & alignmentMask)
     addr + padding
   }

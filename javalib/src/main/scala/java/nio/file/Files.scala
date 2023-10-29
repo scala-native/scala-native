@@ -488,7 +488,7 @@ object Files {
       val filename = toCWideStringUTF16LE(path.toFile().getPath())
       val attrs = FileApi.GetFileAttributesW(filename)
       val exists = attrs != INVALID_FILE_ATTRIBUTES
-      def isReparsePoint = (attrs & FILE_ATTRIBUTE_REPARSE_POINT) != 0.toUInt
+      def isReparsePoint = (attrs & FILE_ATTRIBUTE_REPARSE_POINT) != 0
       exists & isReparsePoint
     } else {
       val filename = toCString(path.toFile().getPath())

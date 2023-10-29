@@ -323,9 +323,9 @@ object WindowsProcess {
     list.add("")
     val totalSize = list.scalaOps.foldLeft(0)(_ + _.size + 1) - 1
     val blockEnd = block + totalSize
-    assert(!blockEnd == 0.toUShort, s"not null terminated got ${!blockEnd}")
+    assert(!blockEnd == 0, s"not null terminated got ${!blockEnd}")
     assert(
-      !(blockEnd - 1) == 0.toUShort,
+      !(blockEnd - 1) == 0,
       s"not null terminated -1, got ${!(blockEnd - 1)}"
     )
 
