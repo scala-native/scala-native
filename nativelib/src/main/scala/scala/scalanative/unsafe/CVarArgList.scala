@@ -149,13 +149,17 @@ object CVarArgList {
       }
     }
     val resultStorage = z
-      .alloc(unsignedOf(castRawSizeToInt(Intrinsics.sizeOf[Long]) * storage.size))
+      .alloc(
+        unsignedOf(castRawSizeToInt(Intrinsics.sizeOf[Long]) * storage.size)
+      )
       .asInstanceOf[Ptr[Long]]
     val storageStart = storage.at(0)
     libc.memcpy(
       toRawPtr(resultStorage),
       toRawPtr(storageStart),
-      castIntToRawSizeUnsigned(wordsUsed * castRawSizeToInt(Intrinsics.sizeOf[Long]))
+      castIntToRawSizeUnsigned(
+        wordsUsed * castRawSizeToInt(Intrinsics.sizeOf[Long])
+      )
     )
     val rawPtr = if (isArm64) {
       if (isMac) toRawPtr(storageStart)
@@ -177,7 +181,7 @@ object CVarArgList {
         .alloc(fromRawUSize(Intrinsics.sizeOf[Header]))
         .asInstanceOf[Ptr[Header]]
       resultHeader.gpOffset = unsignedOf(0)
-      resultHeader.fpOffset = unsignedOf{
+      resultHeader.fpOffset = unsignedOf {
         countGPRegisters * castRawSizeToInt(Intrinsics.sizeOf[Long])
       }
       resultHeader.regSaveArea = resultStorage
@@ -246,7 +250,9 @@ object CVarArgList {
         storage = fromRawPtr(
           realloc(
             toRawPtr(storage),
-            castIntToRawSizeUnsigned(allocated * castRawSizeToInt(Intrinsics.sizeOf[Size]))
+            castIntToRawSizeUnsigned(
+              allocated * castRawSizeToInt(Intrinsics.sizeOf[Size])
+            )
           )
         )
       }
@@ -262,7 +268,9 @@ object CVarArgList {
     libc.memcpy(
       resultStorage,
       toRawPtr(storage),
-      castIntToRawSizeUnsigned(count * castRawSizeToInt(Intrinsics.sizeOf[Size]))
+      castIntToRawSizeUnsigned(
+        count * castRawSizeToInt(Intrinsics.sizeOf[Size])
+      )
     )
     libc.free(toRawPtr(storage))
     new CVarArgList(resultStorage)
@@ -297,7 +305,9 @@ object CVarArgList {
       totalSize = Tag.align(totalSize, tag.alignment) + tag.size
     }
 
-    val argListStorage = z.alloc(unsignedOf(castIntToRawSizeUnsigned(totalSize))).asInstanceOf[Ptr[Byte]]
+    val argListStorage = z
+      .alloc(unsignedOf(castIntToRawSizeUnsigned(totalSize)))
+      .asInstanceOf[Ptr[Byte]]
     var currentIndex = 0
     alignedArgs.foreach { vararg =>
       val tag = vararg.tag

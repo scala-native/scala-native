@@ -8,7 +8,8 @@ import scala.scalanative.annotation.alwaysinline
 
 object SymbolFormatter {
   @alwaysinline
-  private def ZeroU = Intrinsics.unsignedOf(Intrinsics.castIntToRawSizeUnsigned(0))
+  private def ZeroU =
+    Intrinsics.unsignedOf(Intrinsics.castIntToRawSizeUnsigned(0))
 
   /* Async-signal-safe stack trace symbol formatter function.
    * Uses only async-signal-safe methods to allow use in a signal handler.

@@ -2,7 +2,10 @@ package scala.scalanative
 package unsafe
 
 import scala.annotation.implicitNotFound
-import scala.scalanative.runtime.Intrinsics.{unsignedOf, castIntToRawSizeUnsigned}
+import scala.scalanative.runtime.Intrinsics.{
+  unsignedOf,
+  castIntToRawSizeUnsigned
+}
 import scala.scalanative.runtime.{MemoryPool, MemoryPoolZone}
 import scala.scalanative.unsigned._
 
@@ -14,17 +17,16 @@ trait Zone {
   def alloc(size: CSize): Ptr[Byte]
 
   /** Allocates memory of given size. */
-  def alloc(size: Int): Ptr[Byte] = 
+  def alloc(size: Int): Ptr[Byte] =
     alloc(unsignedOf(castIntToRawSizeUnsigned(size)))
-  
+
     /** Allocates memory of given size. */
-  def alloc(size: UInt): Ptr[Byte] = 
+  def alloc(size: UInt): Ptr[Byte] =
     alloc(size.toUSize)
 
   /** Allocates memory of given size. */
-  def alloc(size: ULong): Ptr[Byte] = 
+  def alloc(size: ULong): Ptr[Byte] =
     alloc(size.toUSize)
-  
 
   /** Frees allocations. This zone allocator is not reusable once closed. */
   def close(): Unit

@@ -81,8 +81,8 @@ object Tag {
 
 
   object Boolean extends Tag[scala.Boolean] {
-    @alwaysinline def size: Int = 1.toUSize
-    @alwaysinline def alignment: Int = 1.toUSize
+    @alwaysinline def size: Int = 1
+    @alwaysinline def alignment: Int = 1
     @alwaysinline private[unsafe] override def load(rawptr: RawPtr): scala.Boolean =
       loadBoolean(rawptr)
     @alwaysinline private[unsafe] override def store(rawptr: RawPtr, value: scala.Boolean): Unit =
@@ -91,8 +91,8 @@ object Tag {
 
 
   object Char extends Tag[scala.Char] {
-    @alwaysinline def size: Int = 2.toUSize
-    @alwaysinline def alignment: Int = 2.toUSize
+    @alwaysinline def size: Int = 2
+    @alwaysinline def alignment: Int = 2
     @alwaysinline private[unsafe] override def load(rawptr: RawPtr): scala.Char =
       loadChar(rawptr)
     @alwaysinline private[unsafe] override def store(rawptr: RawPtr, value: scala.Char): Unit =
@@ -101,8 +101,8 @@ object Tag {
 
 
   object Byte extends Tag[scala.Byte] {
-    @alwaysinline def size: Int = 1.toUSize
-    @alwaysinline def alignment: Int = 1.toUSize
+    @alwaysinline def size: Int = 1
+    @alwaysinline def alignment: Int = 1
     @alwaysinline private[unsafe] override def load(rawptr: RawPtr): scala.Byte =
       loadByte(rawptr)
     @alwaysinline private[unsafe] override def store(rawptr: RawPtr, value: scala.Byte): Unit =
@@ -111,8 +111,8 @@ object Tag {
 
 
   object UByte extends Tag[unsigned.UByte] {
-    @alwaysinline def size: Int = 1.toUSize
-    @alwaysinline def alignment: Int = 1.toUSize
+    @alwaysinline def size: Int = 1
+    @alwaysinline def alignment: Int = 1
     @alwaysinline private[unsafe] override def load(rawptr: RawPtr): unsigned.UByte =
       loadByte(rawptr).toUByte
     @alwaysinline private[unsafe] override def store(rawptr: RawPtr, value: unsigned.UByte): Unit =
@@ -121,8 +121,8 @@ object Tag {
 
 
   object Short extends Tag[scala.Short] {
-    @alwaysinline def size: Int = 2.toUSize
-    @alwaysinline def alignment: Int = 2.toUSize
+    @alwaysinline def size: Int = 2
+    @alwaysinline def alignment: Int = 2
     @alwaysinline private[unsafe] override def load(rawptr: RawPtr): scala.Short =
       loadShort(rawptr)
     @alwaysinline private[unsafe] override def store(rawptr: RawPtr, value: scala.Short): Unit =
@@ -131,8 +131,8 @@ object Tag {
 
 
   object UShort extends Tag[unsigned.UShort] {
-    @alwaysinline def size: Int = 2.toUSize
-    @alwaysinline def alignment: Int = 2.toUSize
+    @alwaysinline def size: Int = 2
+    @alwaysinline def alignment: Int = 2
     @alwaysinline private[unsafe] override def load(rawptr: RawPtr): unsigned.UShort =
       loadShort(rawptr).toUShort
     @alwaysinline private[unsafe] override def store(rawptr: RawPtr, value: unsigned.UShort): Unit =
@@ -141,8 +141,8 @@ object Tag {
 
 
   object Int extends Tag[scala.Int] {
-    @alwaysinline def size: Int = 4.toUSize
-    @alwaysinline def alignment: Int = 4.toUSize
+    @alwaysinline def size: Int = 4
+    @alwaysinline def alignment: Int = 4
     @alwaysinline private[unsafe] override def load(rawptr: RawPtr): scala.Int =
       loadInt(rawptr)
     @alwaysinline private[unsafe] override def store(rawptr: RawPtr, value: scala.Int): Unit =
@@ -151,8 +151,8 @@ object Tag {
 
 
   object UInt extends Tag[unsigned.UInt] {
-    @alwaysinline def size: Int = 4.toUSize
-    @alwaysinline def alignment: Int = 4.toUSize
+    @alwaysinline def size: Int = 4
+    @alwaysinline def alignment: Int = 4
     @alwaysinline private[unsafe] override def load(rawptr: RawPtr): unsigned.UInt =
       loadInt(rawptr).toUInt
     @alwaysinline private[unsafe] override def store(rawptr: RawPtr, value: unsigned.UInt): Unit =
@@ -161,7 +161,7 @@ object Tag {
 
 
   object Long extends Tag[scala.Long] {
-    @alwaysinline def size: Int = 8.toUSize
+    @alwaysinline def size: Int = 8
     @alwaysinline def alignment: Int = SizeOfPtr
     @alwaysinline private[unsafe] override def load(rawptr: RawPtr): scala.Long =
       loadLong(rawptr)
@@ -171,7 +171,7 @@ object Tag {
 
 
   object ULong extends Tag[unsigned.ULong] {
-    @alwaysinline def size: Int = 8.toUSize
+    @alwaysinline def size: Int = 8
     @alwaysinline def alignment: Int = SizeOfPtr
     @alwaysinline private[unsafe] override def load(rawptr: RawPtr): unsigned.ULong =
       loadLong(rawptr).toULong
@@ -181,8 +181,8 @@ object Tag {
 
 
   object Float extends Tag[scala.Float] {
-    @alwaysinline def size: Int = 4.toUSize
-    @alwaysinline def alignment: Int = 4.toUSize
+    @alwaysinline def size: Int = 4
+    @alwaysinline def alignment: Int = 4
     @alwaysinline private[unsafe] override def load(rawptr: RawPtr): scala.Float =
       loadFloat(rawptr)
     @alwaysinline private[unsafe] override def store(rawptr: RawPtr, value: scala.Float): Unit =
@@ -191,7 +191,7 @@ object Tag {
 
 
   object Double extends Tag[scala.Double] {
-    @alwaysinline def size: Int = 8.toUSize
+    @alwaysinline def size: Int = 8
     @alwaysinline def alignment: Int = SizeOfPtr
     @alwaysinline private[unsafe] override def load(rawptr: RawPtr): scala.Double =
       loadDouble(rawptr)

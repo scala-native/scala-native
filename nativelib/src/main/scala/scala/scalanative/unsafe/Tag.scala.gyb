@@ -70,18 +70,18 @@ object Tag {
   }
 
   % prims = [('Unit', 'scala.Unit', 'SizeOfPtr', 'SizeOfPtr'),
-  %          ('Boolean', 'scala.Boolean', '1.toUSize', '1.toUSize'),
-  %          ('Char', 'scala.Char', '2.toUSize', '2.toUSize'),
-  %          ('Byte', 'scala.Byte', '1.toUSize', '1.toUSize'),
-  %          ('UByte', 'unsigned.UByte', '1.toUSize', '1.toUSize'),
-  %          ('Short', 'scala.Short', '2.toUSize', '2.toUSize'),
-  %          ('UShort', 'unsigned.UShort', '2.toUSize', '2.toUSize'),
-  %          ('Int', 'scala.Int', '4.toUSize', '4.toUSize'),
-  %          ('UInt', 'unsigned.UInt', '4.toUSize', '4.toUSize'),
-  %          ('Long', 'scala.Long', '8.toUSize', 'SizeOfPtr'),
-  %          ('ULong', 'unsigned.ULong', '8.toUSize', 'SizeOfPtr'),
-  %          ('Float', 'scala.Float', '4.toUSize', '4.toUSize'),
-  %          ('Double', 'scala.Double', '8.toUSize', 'SizeOfPtr')]
+  %          ('Boolean', 'scala.Boolean', '1', '1'),
+  %          ('Char', 'scala.Char', '2', '2'),
+  %          ('Byte', 'scala.Byte', '1', '1'),
+  %          ('UByte', 'unsigned.UByte', '1', '1'),
+  %          ('Short', 'scala.Short', '2', '2'),
+  %          ('UShort', 'unsigned.UShort', '2', '2'),
+  %          ('Int', 'scala.Int', '4', '4'),
+  %          ('UInt', 'unsigned.UInt', '4', '4'),
+  %          ('Long', 'scala.Long', '8', 'SizeOfPtr'),
+  %          ('ULong', 'unsigned.ULong', '8', 'SizeOfPtr'),
+  %          ('Float', 'scala.Float', '4', '4'),
+  %          ('Double', 'scala.Double', '8', 'SizeOfPtr')]
   % for (name, T, size, align) in prims:
 
   object ${name} extends Tag[${T}] {

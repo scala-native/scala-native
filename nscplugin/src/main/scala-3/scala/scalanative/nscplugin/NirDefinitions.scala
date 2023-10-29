@@ -142,10 +142,10 @@ final class NirDefinitions()(using ctx: Context) {
   @tu lazy val Intrinsics_storeRawSize = IntrinsicsModule.requiredMethod("storeRawSize")
   @tu lazy val Intrinsics_storeObject = IntrinsicsModule.requiredMethod("storeObject")
   @tu lazy val Intrinsics_elemRawPtr = IntrinsicsModule.info
-        .member(termName("elemRawPtr"))
-      .alternatives
-      .map(_.symbol)
-      .ensuring(_.size == 2)
+    .member(termName("elemRawPtr"))
+    .alternatives
+    .map(_.symbol)
+    .ensuring(_.size == 2)
   @tu lazy val Intrinsics_castRawPtrToObject = IntrinsicsModule.requiredMethod("castRawPtrToObject")
   @tu lazy val Intrinsics_castObjectToRawPtr = IntrinsicsModule.requiredMethod("castObjectToRawPtr")
   @tu lazy val Intrinsics_castIntToFloat = IntrinsicsModule.requiredMethod("castIntToFloat")
