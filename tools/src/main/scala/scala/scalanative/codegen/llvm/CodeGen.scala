@@ -68,7 +68,9 @@ object CodeGen {
   ): Future[Seq[Path]] =
     Scope { implicit in =>
       val env = assembly.map(defn => defn.name -> defn).toMap
-      val workDir = VirtualDirectory.real(config.workDir)
+      val outputDirPath = config.workDir.resolve("generated")
+      Files.createDirectories(outputDirPath)
+      val outputDir = VirtualDirectory.real(outputDirPath)
 
       def sourceDirOf(defn: Defn): String = {
         if (defn.pos == null) EmptyPath
@@ -84,7 +86,7 @@ object CodeGen {
             case (id, defns) =>
               Future {
                 val sorted = defns.sortBy(_.name)
-                Impl(env, sorted).gen(id.toString, workDir)
+                Impl(env, sorted).gen(id.toString, outputDir)
               }
           }
 
@@ -114,7 +116,7 @@ object CodeGen {
             case (dir, defns) =>
               Future {
                 val hash = dir.hashCode().toHexString
-                val outFile = config.workDir.resolve(s"$hash.ll")
+                val outFile = outputDirPath.resolve(s"$hash.ll")
                 val ownerDirectory = outFile.getParent()
 
                 ctx.addEntry(hash, defns)
@@ -122,7 +124,7 @@ object CodeGen {
                   val sorted = defns.sortBy(_.name)
                   if (!Files.exists(ownerDirectory))
                     Files.createDirectories(ownerDirectory)
-                  Impl(env, sorted).gen(hash, workDir)
+                  Impl(env, sorted).gen(hash, outputDir)
                 } else {
                   assert(ownerDirectory.toFile.exists())
                   config.logger.debug(

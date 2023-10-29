@@ -100,6 +100,7 @@ object VirtualDirectory {
 
     override def write(path: Path)(fn: Writer => Unit): Path = {
       val fullPath = resolve(path)
+      Files.createDirectories(fullPath.getParent())
       val writer = Files.newBufferedWriter(fullPath)
       try fn(writer)
       finally writer.close()
@@ -107,13 +108,16 @@ object VirtualDirectory {
     }
 
     override def write(path: Path, buffer: ByteBuffer): Unit = {
-      val channel = open(resolve(path))
+      val fullPath = resolve(path)
+      Files.createDirectories(fullPath.getParent())
+      val channel = open(fullPath)
       try channel.write(buffer)
       finally channel.close
     }
 
     override def merge(sources: Seq[Path], target: Path): Path = {
       val outputPath = resolve(target)
+      Files.createDirectories(outputPath.getParent())
       val output = FileChannel.open(
         outputPath,
         StandardOpenOption.CREATE,
