@@ -7,14 +7,17 @@ import scala.scalanative.nir.Defn.Define
  *  Programs in NIR are represented as a sequence of definitions denoting types,
  *  methods and fields. Definitions fall into two categories:
  *
- *    - Top-level definitions: these represent classes, modules, or traits.
- *      Classes and modules inherit from a single parent with the exception of
- *      `java.lang.Object`, which sits at the top of the hierarchy. They may
- *      additionally implement traits.
+ *    - Top-level definitions: these represent classes, modules, traits, or
+ *      global variables and constants.
  *    - Member definitions: these represent fields or methods.
  *
- *  Definitions may carry attributes providing further information about their
- *  semantics.
+ *  Classes and modules inherit from a single parent with the exception of
+ *  `java.lang.Object`, which sits at the top of the hierarchy. They may
+ *  additionally implement traits.
+ *
+ *  Definitions may also carry attributes providing further information about
+ *  their semantics (e.g., whether a method may be inlined). Attributes are also
+ *  used to mark special-purpose definitions, such as stubs, proxies and FFIs.
  */
 sealed abstract class Defn {
 
@@ -45,9 +48,9 @@ sealed abstract class Defn {
 
 object Defn {
 
-  // === Member definitions ==== //
-
-  /** A variable definition corresponding to a field in class or module. */
+  /** A variable definition corresponding to either a field in class or module,
+   *  or to a top-level global variable.
+   */
   final case class Var(
       attrs: Attrs,
       name: Global.Member,
@@ -56,7 +59,11 @@ object Defn {
   )(implicit val pos: Position)
       extends Defn
 
-  /** A constant value. */
+  /** A unique, read-only instance of some type.
+   *
+   *  A constant definition is distinct from a constant literal, which would be
+   *  represented by a `Val`.
+   */
   final case class Const(
       attrs: Attrs,
       name: Global.Member,
@@ -65,7 +72,11 @@ object Defn {
   )(implicit val pos: Position)
       extends Defn
 
-  /** A method declaration. */
+  /** A method declaration.
+   *
+   *  Methods of abstract classes and traits can be declared without a
+   *  definition and are resolved at runtime through dynamic dispatch.
+   */
   final case class Declare(
       attrs: Attrs,
       name: Global.Member,
@@ -141,8 +152,6 @@ object Defn {
     }
 
   }
-
-  // === Top-level definitions ==== //
 
   /** The NIR representation of a Scala trait. */
   final case class Trait(
