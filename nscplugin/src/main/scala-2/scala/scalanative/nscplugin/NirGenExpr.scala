@@ -1805,19 +1805,11 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     }
 
     def genHashCode(argp: Tree)(implicit pos: nir.Position): Val = {
-      val arg = boxValue(argp.tpe, genExpr(argp))
-      val isnull =
-        buf.comp(Comp.Ieq, Rt.Object, arg, Val.Null, unwind)(
-          argp.pos,
-          getScopeId
-        )
-      val cond = ValTree(isnull)
-      val thenp = ValTree(Val.Int(0))
-      val elsep = ContTree { () =>
-        val meth = NObjectHashCodeMethod
-        genApplyMethod(meth, statically = false, arg, Seq.empty)
-      }
-      genIf(Type.Int, cond, thenp, elsep)
+      genApplyStaticMethod(
+        getMemberMethod(RuntimeStaticsModule, nme.anyHash),
+        defn.RuntimeStaticsModule,
+        Seq(argp)
+      )
     }
 
     def genArrayOp(app: Apply, code: Int): Val = {

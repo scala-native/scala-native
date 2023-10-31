@@ -1720,21 +1720,12 @@ trait NirGenExpr(using Context) {
       else buf.arraylength(array, unwind)
     }
 
-    private def genHashCode(argp: Tree)(using nir.Position): Val = {
-      val arg = boxValue(argp.tpe, genExpr(argp))
-      val isnull =
-        buf.comp(Comp.Ieq, Rt.Object, arg, Val.Null, unwind)(using
-          argp.span: nir.Position,
-          getScopeId
-        )
-      val cond = ValTree(isnull)
-      val thenp = ValTree(Val.Int(0))
-      val elsep = ContTree { () =>
-        val meth = defnNir.NObject_hashCode
-        genApplyMethod(meth, statically = false, arg, Seq.empty)
-      }
-      genIf(Type.Int, cond, thenp, elsep)
-    }
+    private def genHashCode(argp: Tree)(using nir.Position): Val =
+      genApplyStaticMethod(
+        defn.staticsMethod(nme.anyHash),
+        defn.ScalaStaticsModule,
+        Seq(argp)
+      )
 
     private def genStringConcat(leftp: Tree, rightp: Tree): Val = {
       def stringify(sym: Symbol, value: Val)(using nir.Position): Val = {

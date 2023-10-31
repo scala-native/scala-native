@@ -56,17 +56,6 @@ final class Float(val _value: scala.Float)
   @inline override def toString(): String =
     Float.toString(_value)
 
-  @inline override def __scala_## : scala.Int = {
-    val fv = _value
-    val iv = _value.toInt
-    if (iv == fv) iv
-    else {
-      val lv = _value.toLong
-      if (lv == fv) Long.hashCode(lv)
-      else Float.hashCode(fv)
-    }
-  }
-
   @inline def isNaN(): scala.Boolean =
     Float.isNaN(_value)
 

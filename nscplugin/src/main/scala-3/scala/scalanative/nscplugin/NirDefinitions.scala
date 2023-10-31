@@ -273,7 +273,6 @@ final class NirDefinitions()(using ctx: Context) {
   // Java library
   @tu lazy val NObjectClass = requiredClass("java.lang._Object")
   @tu lazy val NObject_init = NObjectClass.requiredMethod("<init>")
-  @tu lazy val NObject_hashCode = NObjectClass.requiredMethod("__scala_##")
 
   @tu lazy val NStringClass = requiredClass("java.lang._String")
   @tu lazy val NStringModuleType = requiredModule("java.lang._String")

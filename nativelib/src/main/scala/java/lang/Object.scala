@@ -44,14 +44,6 @@ class _Object {
       getMonitor(this)._wait(timeout, nanos)
     }
 
-  @inline def __scala_## : scala.Int = {
-    // This implementation is only called for classes that don't override
-    // hashCode. Otherwise, whenever hashCode is overriden, we also update the
-    // vtable entry for scala_## to point to the override directly.
-    val addr = castRawPtrToLong(castObjectToRawPtr(this))
-    addr.toInt ^ (addr >> 32).toInt
-  }
-
   protected def __clone(): _Object = this match {
     case _: Cloneable =>
       val cls = __getClass()
