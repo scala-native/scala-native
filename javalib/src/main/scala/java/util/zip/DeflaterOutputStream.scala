@@ -98,5 +98,5 @@ class DeflaterOutputStream(
 }
 
 object DeflaterOutputStream {
-  private[zip] final val BUF_SIZE: Int = 512
+  private[zip] final val BUF_SIZE = 512
 }

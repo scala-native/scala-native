@@ -12,10 +12,10 @@ import java.util.concurrent.TimeUnit
 object ReentrantReadWriteLock {
 
   private[locks] object Sync {
-    final val SHARED_SHIFT: Int = 16
-    final val SHARED_UNIT: Int = (1 << SHARED_SHIFT)
-    final val MAX_COUNT: Int = (1 << SHARED_SHIFT) - 1
-    final val EXCLUSIVE_MASK: Int = (1 << SHARED_SHIFT) - 1
+    final val SHARED_SHIFT = 16
+    final val SHARED_UNIT = (1 << SHARED_SHIFT)
+    final val MAX_COUNT = (1 << SHARED_SHIFT) - 1
+    final val EXCLUSIVE_MASK = (1 << SHARED_SHIFT) - 1
 
     final def sharedCount(c: Int): Int = c >>> SHARED_SHIFT
 

@@ -490,9 +490,9 @@ object Thread {
     final val NoInheritThreadLocal = 1 << 2
   }
 
-  final val MAX_PRIORITY: Int = 10
-  final val MIN_PRIORITY: Int = 1
-  final val NORM_PRIORITY: Int = 5
+  final val MAX_PRIORITY = 10
+  final val MIN_PRIORITY = 1
+  final val NORM_PRIORITY = 5
 
   final val MainThread = new Thread(
     name = "main",

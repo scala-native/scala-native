@@ -28,7 +28,7 @@ object Utils {
     return -1
   }
 
-  private final val METACHARACTERS: String = "\\.+*?()|[]{}^$"
+  private final val METACHARACTERS = "\\.+*?()|[]{}^$"
 
   // Appends a RE2 literal to |out| for rune |rune|,
   // with regexp metacharacters escaped.

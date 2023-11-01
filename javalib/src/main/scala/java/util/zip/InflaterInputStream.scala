@@ -165,5 +165,5 @@ class InflaterInputStream private (
 }
 
 private[zip] object InflaterInputStream {
-  final val BUF_SIZE: Int = 512
+  final val BUF_SIZE = 512
 }

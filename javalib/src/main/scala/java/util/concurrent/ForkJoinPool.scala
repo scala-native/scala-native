@@ -1490,7 +1490,7 @@ object ForkJoinPool {
   final val DEFAULT_KEEPALIVE = 60000L
   final val TIMEOUT_SLOP = 20L
   final val DEFAULT_COMMON_MAX_SPARES = 256
-  final val INITIAL_QUEUE_CAPACITY: Int = 1 << 6
+  final val INITIAL_QUEUE_CAPACITY = 1 << 6
   // Bounds
   final val SWIDTH = 16 // width of short
   final val SMASK = 0xffff // short bits == max index
