@@ -2,6 +2,10 @@
 #define NATIVE_THREAD_TLS_H
 #include <stddef.h>
 
+#ifndef SCALANATIVE_MULTITHREADING_ENABLED
+#undef thread_local
+#define thread_local
+#else
 #ifndef thread_local
 #if __STDC_VERSION__ >= 201112 && !defined __STDC_NO_THREADS__
 #define thread_local _Thread_local
@@ -13,6 +17,7 @@
 #define thread_local __thread
 #else
 #error "Cannot define thread_local"
+#endif
 #endif
 #endif
 
