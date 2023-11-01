@@ -291,11 +291,11 @@ class ZipOutputStream(_out: OutputStream, charset: Charset)
 
 object ZipOutputStream {
 
-  private[zip] final val ZIPLocalHeaderVersionNeeded: Int = 20
-  private[zip] final val ZIPDataDescriptorFlag: Int = 8
+  private[zip] final val ZIPLocalHeaderVersionNeeded = 20
+  private[zip] final val ZIPDataDescriptorFlag = 8
 
-  final val DEFLATED: Int = 8
-  final val STORED: Int = 0
+  final val DEFLATED = 8
+  final val STORED = 0
 
   private def utf8Count(value: String): Int = {
     var total = 0

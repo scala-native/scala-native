@@ -183,8 +183,8 @@ class Character(val _value: scala.Char)
 
 object Character {
   final val TYPE = scala.Predef.classOf[scala.scalanative.runtime.PrimitiveChar]
-  final val MIN_VALUE: Char = '\u0000'
-  final val MAX_VALUE: Char = '\uffff'
+  final val MIN_VALUE = '\u0000'
+  final val MAX_VALUE = '\uffff'
   final val SIZE = 16
   final val BYTES = 2
 
@@ -225,12 +225,12 @@ object Character {
   final val MIN_RADIX = 2
   final val MAX_RADIX = 36
 
-  final val MIN_HIGH_SURROGATE: Char = '\uD800'
-  final val MAX_HIGH_SURROGATE: Char = '\uDBFF'
-  final val MIN_LOW_SURROGATE: Char = '\uDC00'
-  final val MAX_LOW_SURROGATE: Char = '\uDFFF'
-  final val MIN_SURROGATE: Char = MIN_HIGH_SURROGATE
-  final val MAX_SURROGATE: Char = MAX_LOW_SURROGATE
+  @inline def MIN_HIGH_SURROGATE: Char = '\uD800'
+  @inline def MAX_HIGH_SURROGATE: Char = '\uDBFF'
+  @inline def MIN_LOW_SURROGATE: Char = '\uDC00'
+  @inline def MAX_LOW_SURROGATE: Char = '\uDFFF'
+  @inline def MIN_SURROGATE = MIN_HIGH_SURROGATE
+  @inline def MAX_SURROGATE = MAX_LOW_SURROGATE
 
   final val MIN_CODE_POINT = 0
   final val MAX_CODE_POINT = 0x10ffff

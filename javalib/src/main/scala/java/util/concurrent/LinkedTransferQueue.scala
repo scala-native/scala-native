@@ -1490,10 +1490,10 @@ import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
   }
 
   /* Possible values for "how" argument in xfer method. */
-  private final val NOW: Int = 0; // for untimed poll, tryTransfer
-  private final val ASYNC: Int = 1; // for offer, put, add
-  private final val SYNC: Int = 2; // for transfer, take
-  private final val TIMED: Int = 3; // for timed poll, tryTransfer
+  private final val NOW = 0; // for untimed poll, tryTransfer
+  private final val ASYNC = 1; // for offer, put, add
+  private final val SYNC = 2; // for transfer, take
+  private final val TIMED = 3; // for timed poll, tryTransfer
 
   // Reduce the risk of rare disastrous classloading in first call to
   // LockSupport.park: https://bugs.openjdk.java.net/browse/JDK-8074773

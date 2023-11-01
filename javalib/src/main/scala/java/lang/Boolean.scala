@@ -46,11 +46,15 @@ final class Boolean(val _value: scala.Boolean)
   protected def ^(x: scala.Boolean): scala.Boolean = _value ^ x
 }
 
+private object BooleanConstants {
+  final val TRUE: Boolean = new Boolean(true)
+  final val FALSE: Boolean = new Boolean(false)
+}
 object Boolean {
   final val TYPE =
     scala.Predef.classOf[scala.scalanative.runtime.PrimitiveBoolean]
-  final val TRUE: Boolean = new Boolean(true)
-  final val FALSE: Boolean = new Boolean(false)
+  final def TRUE: Boolean = BooleanConstants.TRUE
+  final def FALSE: Boolean = BooleanConstants.FALSE
 
   @inline def compare(x: scala.Boolean, y: scala.Boolean): scala.Int =
     if (x == y) 0 else if (x) 1 else -1

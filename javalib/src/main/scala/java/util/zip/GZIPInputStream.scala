@@ -147,10 +147,10 @@ class GZIPInputStream(in: InputStream, size: Int)
 }
 
 object GZIPInputStream {
-  final val GZIP_MAGIC: Int = 0x8b1f
+  final val GZIP_MAGIC = 0x8b1f
 
-  private final val FCOMMENT: Int = 16
-  private final val FEXTRA: Int = 4
-  private final val FHCRC: Int = 2
-  private final val FNAME: Int = 8
+  private final val FCOMMENT = 16
+  private final val FEXTRA = 4
+  private final val FHCRC = 2
+  private final val FNAME = 8
 }

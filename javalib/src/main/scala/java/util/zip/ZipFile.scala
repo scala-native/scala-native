@@ -222,8 +222,8 @@ class ZipFile(file: File, mode: Int, charset: Charset) extends Closeable {
 }
 
 object ZipFile extends ZipConstants {
-  final val OPEN_READ: Int = 1
-  final val OPEN_DELETE: Int = 4
+  final val OPEN_READ = 1
+  final val OPEN_DELETE = 4
 
   private class RAFStream(
       private var mSharedRaf: RandomAccessFile,

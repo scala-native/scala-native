@@ -159,8 +159,8 @@ class ZipEntry private (
 }
 
 object ZipEntry extends ZipConstants {
-  final val DEFLATED: Int = 8
-  final val STORED: Int = 0
+  final val DEFLATED = 8
+  final val STORED = 0
 
   private def myReadFully(in: InputStream, b: Array[Byte]): Unit = {
     var len = b.length

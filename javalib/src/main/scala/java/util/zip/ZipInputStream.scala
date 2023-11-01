@@ -396,8 +396,8 @@ class ZipInputStream(_in: InputStream, charset: Charset)
 }
 
 object ZipInputStream {
-  final val DEFLATED: Int = 8
-  final val STORED: Int = 0
-  final val ZIPDataDescriptorFlag: Int = 8
-  final val ZIPLocalHeaderVersionNeeded: Int = 20
+  final val DEFLATED = 8
+  final val STORED = 0
+  final val ZIPDataDescriptorFlag = 8
+  final val ZIPLocalHeaderVersionNeeded = 20
 }
