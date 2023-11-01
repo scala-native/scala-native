@@ -36,7 +36,7 @@ trait SafeZone {
   @noinline
   private[scalanative] def allocImpl(cls: RawPtr, size: RawSize): RawPtr = {
     checkOpen()
-    SafeZoneAllocator.Impl.alloc(handle, cls, USize(size).asInstanceOf[CSize])
+    SafeZoneAllocator.Impl.alloc(handle, cls, size)
   }
 }
 

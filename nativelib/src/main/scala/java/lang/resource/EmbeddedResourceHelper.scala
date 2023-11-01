@@ -2,7 +2,7 @@ package java.lang.resource
 
 import scala.scalanative.runtime.libc
 import scala.scalanative.unsigned._
-import scala.scalanative.runtime.ByteArray
+import scala.scalanative.runtime.{ByteArray, Intrinsics}
 import scala.scalanative.unsafe.Ptr
 
 private[lang] object EmbeddedResourceHelper {
@@ -18,7 +18,7 @@ private[lang] object EmbeddedResourceHelper {
       libc.memcpy(
         path.asInstanceOf[ByteArray].atRaw(0),
         EmbeddedResourceReader.getPathPtr(idx),
-        pathSize.toUInt
+        Intrinsics.castIntToRawSize(pathSize)
       )
       new String(path)
     }

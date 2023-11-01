@@ -232,7 +232,7 @@ class LocalNamesTest extends OptimizerSpec {
             checkHasLetEither[Op.Arraylength, Op.Load]("arrayLength")
             // Filter out inlined names
             val filteredOut =
-              Seq("buffer", "addr", "rawptr", "toPtr", "fromPtr")
+              Seq("buffer", "addr", "rawptr", "toPtr", "fromPtr", "size")
             assertDistinct(lets.values.toSeq.filterNot(filteredOut.contains))
           }
       checkLocalNames(result.defns, beforeLowering = true)

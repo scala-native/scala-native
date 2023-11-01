@@ -5,8 +5,7 @@ import scalanative.unsafe._
 import scalanative.unsigned._
 import scalanative.runtime.unwind
 import scala.scalanative.meta.LinktimeInfo
-import scala.scalanative.runtime.Backtrace
-import scala.scalanative.runtime.NativeThread
+import scala.scalanative.runtime.{Backtrace, NativeThread, Intrinsics}
 import scala.scalanative.libc.stdlib.{malloc, calloc, free}
 
 import java.util.concurrent.ConcurrentHashMap

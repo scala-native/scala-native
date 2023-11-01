@@ -129,25 +129,25 @@ class TagTest {
   }
 
   @Test def tagOffset(): Unit = {
-    assertTrue(tagof[CArray[Byte, Nat._0]].offset(0.toUSize) == 0)
-    assertTrue(tagof[CArray[Byte, Nat._0]].offset(1.toUSize) == 1)
-    assertTrue(tagof[CArray[Byte, Nat._0]].offset(42.toUSize) == 42)
-    assertTrue(tagof[CArray[Int, Nat._0]].offset(0.toUSize) == 0)
-    assertTrue(tagof[CArray[Int, Nat._0]].offset(1.toUSize) == 4)
+    assertTrue(tagof[CArray[Byte, Nat._0]].offset(0) == 0)
+    assertTrue(tagof[CArray[Byte, Nat._0]].offset(1) == 1)
+    assertTrue(tagof[CArray[Byte, Nat._0]].offset(42) == 42)
+    assertTrue(tagof[CArray[Int, Nat._0]].offset(0) == 0)
+    assertTrue(tagof[CArray[Int, Nat._0]].offset(1) == 4)
     assertTrue(
-      tagof[CArray[Int, Nat._0]].offset(42.toUSize) == (4 * 42)
+      tagof[CArray[Int, Nat._0]].offset(42) == (4 * 42)
     )
-    assertTrue(tagof[CStruct1[Int]].offset(0.toUSize) == 0)
-    assertTrue(tagof[CStruct2[Byte, Int]].offset(0.toUSize) == 0)
-    assertTrue(tagof[CStruct2[Byte, Int]].offset(1.toUSize) == 4)
-    assertTrue(tagof[CStruct3[Byte, Byte, Int]].offset(0.toUSize) == 0)
-    assertTrue(tagof[CStruct3[Byte, Byte, Int]].offset(1.toUSize) == 1)
-    assertTrue(tagof[CStruct3[Byte, Byte, Int]].offset(2.toUSize) == 4)
+    assertTrue(tagof[CStruct1[Int]].offset(0) == 0)
+    assertTrue(tagof[CStruct2[Byte, Int]].offset(0) == 0)
+    assertTrue(tagof[CStruct2[Byte, Int]].offset(1) == 4)
+    assertTrue(tagof[CStruct3[Byte, Byte, Int]].offset(0) == 0)
+    assertTrue(tagof[CStruct3[Byte, Byte, Int]].offset(1) == 1)
+    assertTrue(tagof[CStruct3[Byte, Byte, Int]].offset(2) == 4)
     assertTrue(
-      tagof[CStruct2[Byte, CStruct2[Byte, Int]]].offset(0.toUSize) == 0
+      tagof[CStruct2[Byte, CStruct2[Byte, Int]]].offset(0) == 0
     )
     assertTrue(
-      tagof[CStruct2[Byte, CStruct2[Byte, Int]]].offset(1.toUSize) == 4
+      tagof[CStruct2[Byte, CStruct2[Byte, Int]]].offset(1) == 4
     )
   }
 

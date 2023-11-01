@@ -18,7 +18,7 @@ object SafeZoneAllocator {
     def open(): RawPtr = extern
 
     @name("scalanative_zone_alloc")
-    def alloc(rawzone: RawPtr, rawty: RawPtr, size: CSize): RawPtr = extern
+    def alloc(rawzone: RawPtr, rawty: RawPtr, size: RawSize): RawPtr = extern
 
     @name("scalanative_zone_close")
     def close(rawzone: RawPtr): Unit = extern

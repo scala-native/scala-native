@@ -669,7 +669,7 @@ import scala.language.implicitConversions
 
   object AtomicBool{
     def apply(initialValue: Boolean)(implicit zone: Zone): AtomicBool = {
-      val ref = new AtomicBool(zone.alloc(sizeof[Boolean]).asInstanceOf[Ptr[stdatomic.atomic_bool]])
+      val ref = new AtomicBool(zone.alloc(sizeOf[Boolean]).asInstanceOf[Ptr[stdatomic.atomic_bool]])
       ref.init(initialValue)
       ref
     }
@@ -746,7 +746,7 @@ import scala.language.implicitConversions
   }
   object AtomicByte{
     def apply(initialValue: Byte)(implicit zone: Zone): AtomicByte = {
-      val ref = new AtomicByte(zone.alloc(sizeof[Byte]).asInstanceOf[Ptr[stdatomic.atomic_char]])
+      val ref = new AtomicByte(zone.alloc(sizeOf[Byte]).asInstanceOf[Ptr[stdatomic.atomic_char]])
       ref.init(initialValue)
       ref
     }
@@ -823,7 +823,7 @@ import scala.language.implicitConversions
   }
   object AtomicUnsignedByte{
     def apply(initialValue: UByte)(implicit zone: Zone): AtomicUnsignedByte = {
-      val ref = new AtomicUnsignedByte(zone.alloc(sizeof[UByte]).asInstanceOf[Ptr[stdatomic.atomic_uchar]])
+      val ref = new AtomicUnsignedByte(zone.alloc(sizeOf[UByte]).asInstanceOf[Ptr[stdatomic.atomic_uchar]])
       ref.init(initialValue)
       ref
     }
@@ -900,7 +900,7 @@ import scala.language.implicitConversions
   }
   object AtomicShort{
     def apply(initialValue: CShort)(implicit zone: Zone): AtomicShort = {
-      val ref = new AtomicShort(zone.alloc(sizeof[CShort]).asInstanceOf[Ptr[stdatomic.atomic_short]])
+      val ref = new AtomicShort(zone.alloc(sizeOf[CShort]).asInstanceOf[Ptr[stdatomic.atomic_short]])
       ref.init(initialValue)
       ref
     }
@@ -977,7 +977,7 @@ import scala.language.implicitConversions
   }
   object AtomicUnsignedShort{
     def apply(initialValue: CUnsignedShort)(implicit zone: Zone): AtomicUnsignedShort = {
-      val ref = new AtomicUnsignedShort(zone.alloc(sizeof[CUnsignedShort]).asInstanceOf[Ptr[stdatomic.atomic_ushort]])
+      val ref = new AtomicUnsignedShort(zone.alloc(sizeOf[CUnsignedShort]).asInstanceOf[Ptr[stdatomic.atomic_ushort]])
       ref.init(initialValue)
       ref
     }
@@ -1054,7 +1054,7 @@ import scala.language.implicitConversions
   }
   object AtomicInt{
     def apply(initialValue: CInt)(implicit zone: Zone): AtomicInt = {
-      val ref = new AtomicInt(zone.alloc(sizeof[CInt]).asInstanceOf[Ptr[stdatomic.atomic_int]])
+      val ref = new AtomicInt(zone.alloc(sizeOf[CInt]).asInstanceOf[Ptr[stdatomic.atomic_int]])
       ref.init(initialValue)
       ref
     }
@@ -1131,7 +1131,7 @@ import scala.language.implicitConversions
   }
   object AtomicUnsignedInt{
     def apply(initialValue: CUnsignedInt)(implicit zone: Zone): AtomicUnsignedInt = {
-      val ref = new AtomicUnsignedInt(zone.alloc(sizeof[CUnsignedInt]).asInstanceOf[Ptr[stdatomic.atomic_uint]])
+      val ref = new AtomicUnsignedInt(zone.alloc(sizeOf[CUnsignedInt]).asInstanceOf[Ptr[stdatomic.atomic_uint]])
       ref.init(initialValue)
       ref
     }
@@ -1208,7 +1208,7 @@ import scala.language.implicitConversions
   }
   object AtomicLong{
     def apply(initialValue: CLong)(implicit zone: Zone): AtomicLong = {
-      val ref = new AtomicLong(zone.alloc(sizeof[CLong]).asInstanceOf[Ptr[stdatomic.atomic_long]])
+      val ref = new AtomicLong(zone.alloc(sizeOf[CLong]).asInstanceOf[Ptr[stdatomic.atomic_long]])
       ref.init(initialValue)
       ref
     }
@@ -1285,7 +1285,7 @@ import scala.language.implicitConversions
   }
   object AtomicUnsignedLong{
     def apply(initialValue: CUnsignedLong)(implicit zone: Zone): AtomicUnsignedLong = {
-      val ref = new AtomicUnsignedLong(zone.alloc(sizeof[CUnsignedLong]).asInstanceOf[Ptr[stdatomic.atomic_ulong]])
+      val ref = new AtomicUnsignedLong(zone.alloc(sizeOf[CUnsignedLong]).asInstanceOf[Ptr[stdatomic.atomic_ulong]])
       ref.init(initialValue)
       ref
     }
@@ -1362,7 +1362,7 @@ import scala.language.implicitConversions
   }
   object AtomicLongLong{
     def apply(initialValue: CLongLong)(implicit zone: Zone): AtomicLongLong = {
-      val ref = new AtomicLongLong(zone.alloc(sizeof[CLongLong]).asInstanceOf[Ptr[stdatomic.atomic_llong]])
+      val ref = new AtomicLongLong(zone.alloc(sizeOf[CLongLong]).asInstanceOf[Ptr[stdatomic.atomic_llong]])
       ref.init(initialValue)
       ref
     }
@@ -1439,7 +1439,7 @@ import scala.language.implicitConversions
   }
   object AtomicUnsignedLongLong{
     def apply(initialValue: CUnsignedLongLong)(implicit zone: Zone): AtomicUnsignedLongLong = {
-      val ref = new AtomicUnsignedLongLong(zone.alloc(sizeof[CUnsignedLongLong]).asInstanceOf[Ptr[stdatomic.atomic_ullong]])
+      val ref = new AtomicUnsignedLongLong(zone.alloc(sizeOf[CUnsignedLongLong]).asInstanceOf[Ptr[stdatomic.atomic_ullong]])
       ref.init(initialValue)
       ref
     }
@@ -1517,7 +1517,7 @@ import scala.language.implicitConversions
   
   object AtomicPtr{
     def apply[T](initialValue: Ptr[T])(implicit zone: Zone): AtomicPtr[T] = {
-      val ref = new AtomicPtr(zone.alloc(sizeof[Ptr[T]]).asInstanceOf[Ptr[stdatomic.atomic_ptr[T]]])
+      val ref = new AtomicPtr(zone.alloc(sizeOf[Ptr[T]]).asInstanceOf[Ptr[stdatomic.atomic_ptr[T]]])
       ref.init(initialValue)
       ref
     }

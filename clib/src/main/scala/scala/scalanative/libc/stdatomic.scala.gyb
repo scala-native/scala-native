@@ -176,7 +176,7 @@ import scala.language.implicitConversions
   % for (N, C, T) in defs:
   object ${N}{
     def apply(initialValue: ${T})(implicit zone: Zone): ${N} = {
-      val ref = new ${N}(zone.alloc(sizeof[${T}]).asInstanceOf[Ptr[stdatomic.${C}]])
+      val ref = new ${N}(zone.alloc(sizeOf[${T}]).asInstanceOf[Ptr[stdatomic.${C}]])
       ref.init(initialValue)
       ref
     }
@@ -255,7 +255,7 @@ import scala.language.implicitConversions
   
   object AtomicPtr{
     def apply[T](initialValue: Ptr[T])(implicit zone: Zone): AtomicPtr[T] = {
-      val ref = new AtomicPtr(zone.alloc(sizeof[Ptr[T]]).asInstanceOf[Ptr[stdatomic.atomic_ptr[T]]])
+      val ref = new AtomicPtr(zone.alloc(sizeOf[Ptr[T]]).asInstanceOf[Ptr[stdatomic.atomic_ptr[T]]])
       ref.init(initialValue)
       ref
     }

@@ -131,15 +131,16 @@ final class MemoryPoolZone(private[this] val pool: MemoryPool) extends Zone {
     }
   }
 
-  def alloc(size: CSize): Ptr[Byte] = {
+  override def alloc(usize: CSize): Ptr[Byte] = {
+    val size = usize.toInt
     val alignment =
-      if (size >= 16.toUSize) 16.toUSize
-      else if (size >= 8.toUSize) 8.toUSize
-      else if (size >= 4.toUSize) 4.toUSize
-      else if (size >= 2.toUSize) 2.toUSize
-      else 1.toUSize
+      if (size >= 16) 16
+      else if (size >= 8) 8
+      else if (size >= 4) 4
+      else if (size >= 2) 2
+      else 1
 
-    alloc(size, alignment)
+    alloc(usize, alignment.toUSize)
   }
 
   def alloc(size: CSize, alignment: CSize): Ptr[Byte] = {

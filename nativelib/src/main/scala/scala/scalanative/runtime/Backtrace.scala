@@ -6,7 +6,6 @@ import scala.scalanative.runtime.dwarf.DWARF
 import scala.scalanative.runtime.dwarf.DWARF.DIE
 import scala.scalanative.runtime.dwarf.DWARF.CompileUnit
 
-import scala.scalanative.unsafe.CSize
 import scala.scalanative.unsafe.Tag
 import scala.scalanative.unsafe.Zone
 import scala.scalanative.unsigned.UInt

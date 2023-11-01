@@ -173,7 +173,7 @@ abstract class NirPrimitives {
     addPrimitive(StoreRawSizeMethod, STORE_RAW_SIZE)
     addPrimitive(StoreObjectMethod, STORE_OBJECT)
 
-    addPrimitive(ElemRawPtrMethod, ELEM_RAW_PTR)
+    addPrimitives(ElemRawPtrMethods, ELEM_RAW_PTR)
 
     addPrimitive(CastRawPtrToObjectMethod, CAST_RAW_PTR_TO_OBJECT)
     addPrimitive(CastObjectToRawPtrMethod, CAST_OBJECT_TO_RAW_PTR)
