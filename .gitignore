@@ -41,3 +41,6 @@ bin/
 
 # Configuration for clangd
 **/compile_flags.txt
+
+# macOS
+.DS_Store

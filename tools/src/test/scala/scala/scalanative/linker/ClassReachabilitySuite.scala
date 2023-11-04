@@ -1,6 +1,6 @@
 package scala.scalanative.linker
 
-import scalanative.nir.{Sig, Type, Global, Rt}
+import scalanative.nir.{Sig, Type, Rt}
 
 import org.junit.Test
 import org.junit.Assert._

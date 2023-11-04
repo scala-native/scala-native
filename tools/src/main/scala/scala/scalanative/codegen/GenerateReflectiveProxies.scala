@@ -1,7 +1,6 @@
 package scala.scalanative
 package codegen
 
-import nir._
 import scala.collection.mutable
 
 /** Created by lukaskellenberger on 17.12.16.
@@ -9,24 +8,24 @@ import scala.collection.mutable
 object GenerateReflectiveProxies {
   implicit val scopeId: nir.ScopeId = nir.ScopeId.TopLevel
 
-  private def genReflProxy(defn: Defn.Define): Defn.Define = {
-    implicit val fresh: Fresh = Fresh()
-    val Global.Member(owner, sig) = defn.name
-    val defnType = defn.ty.asInstanceOf[Type.Function]
-    implicit val pos: Position = defn.pos
+  private def genReflProxy(defn: nir.Defn.Define): nir.Defn.Define = {
+    implicit val fresh: nir.Fresh = nir.Fresh()
+    val nir.Global.Member(owner, sig) = defn.name
+    val defnType = defn.ty.asInstanceOf[nir.Type.Function]
+    implicit val pos: nir.Position = defn.pos
 
     val proxyArgs = genProxyArgs(defnType)
     val proxyTy = genProxyTy(defnType, proxyArgs)
 
     val label = genProxyLabel(proxyArgs)
     val unboxInsts = genArgUnboxes(label, defnType.args)
-    val method = Inst.Let(Op.Method(label.params.head, sig), Next.None)
+    val method = nir.Inst.Let(nir.Op.Method(label.params.head, sig), nir.Next.None)
     val call = genCall(defnType, method, label.params, unboxInsts)
     val retInsts = genRet(call.id, defnType.ret, proxyTy.ret)
 
-    Defn.Define(
-      Attrs.fromSeq(Seq(Attr.Dyn)),
-      Global.Member(owner, sig.toProxy),
+    nir.Defn.Define(
+      nir.Attrs.fromSeq(Seq(nir.Attr.Dyn)),
+      nir.Global.Member(owner, sig.toProxy),
       proxyTy,
       Seq(
         Seq(label),
@@ -37,49 +36,51 @@ object GenerateReflectiveProxies {
     )
   }
 
-  private def genProxyArgs(defnTy: Type.Function) =
-    defnTy.args.map(argty => Type.box.getOrElse(argty, argty))
+  private def genProxyArgs(defnTy: nir.Type.Function) =
+    defnTy.args.map(argty => nir.Type.box.getOrElse(argty, argty))
 
-  private def genProxyTy(defnTy: Type.Function, args: Seq[Type]) =
-    Type.Function(
+  private def genProxyTy(defnTy: nir.Type.Function, args: Seq[nir.Type]) =
+    nir.Type.Function(
       args,
       defnTy.ret match {
-        case Type.Unit => Rt.BoxedUnit
-        case _         => Rt.Object
+        case nir.Type.Unit =>
+          nir.Rt.BoxedUnit
+        case _ =>
+          nir.Rt.Object
       }
     )
 
   private def genProxyLabel(
-      args: Seq[Type]
-  )(implicit pos: nir.Position, fresh: Fresh) = {
-    val argLabels = Val.Local(fresh(), args.head) ::
-      args.tail.map(argty => Val.Local(fresh(), argty)).toList
+      args: Seq[nir.Type]
+  )(implicit pos: nir.Position, fresh: nir.Fresh) = {
+    val argLabels = nir.Val.Local(fresh(), args.head) ::
+      args.tail.map(argty => nir.Val.Local(fresh(), argty)).toList
 
-    Inst.Label(fresh(), argLabels)
+    nir.Inst.Label(fresh(), argLabels)
   }
 
-  private def genArgUnboxes(label: Inst.Label, origArgTypes: Seq[nir.Type])(
-      implicit fresh: Fresh
+  private def genArgUnboxes(label: nir.Inst.Label, origArgTypes: Seq[nir.Type])(
+      implicit fresh: nir.Fresh
   ) = {
     import label.pos
     label.params
       .zip(origArgTypes)
       .tail
       .map {
-        case (local: Val.Local, _: Type.PrimitiveKind)
-            if Type.unbox.contains(local.ty) =>
-          Inst.Let(Op.Unbox(local.ty, local), Next.None)
-        case (local: Val.Local, _) =>
-          Inst.Let(Op.Copy(local), Next.None)
+        case (local: nir.Val.Local, _: nir.Type.PrimitiveKind)
+            if nir.Type.unbox.contains(local.ty) =>
+          nir.Inst.Let(nir.Op.Unbox(local.ty, local), nir.Next.None)
+        case (local: nir.Val.Local, _) =>
+          nir.Inst.Let(nir.Op.Copy(local), nir.Next.None)
       }
   }
 
   private def genCall(
-      defnTy: Type.Function,
-      method: Inst.Let,
-      params: Seq[Val.Local],
-      unboxes: Seq[Inst.Let]
-  )(implicit fresh: Fresh) = {
+      defnTy: nir.Type.Function,
+      method: nir.Inst.Let,
+      params: Seq[nir.Val.Local],
+      unboxes: Seq[nir.Inst.Let]
+  )(implicit fresh: nir.Fresh) = {
     import method.pos
     val callParams =
       params.head ::
@@ -88,54 +89,54 @@ object GenerateReflectiveProxies {
           .map {
             case (let, local) =>
               val resTy = let.op.resty match {
-                case ty: Type.PrimitiveKind =>
-                  Type.unbox.getOrElse(local.ty, local.ty)
+                case ty: nir.Type.PrimitiveKind =>
+                  nir.Type.unbox.getOrElse(local.ty, local.ty)
                 case ty => ty
               }
-              Val.Local(let.id, resTy)
+              nir.Val.Local(let.id, resTy)
           }
           .toList
 
-    Inst.Let(
-      Op.Call(defnTy, Val.Local(method.id, Type.Ptr), callParams),
-      Next.None
+    nir.Inst.Let(
+      nir.Op.Call(defnTy, nir.Val.Local(method.id, nir.Type.Ptr), callParams),
+      nir.Next.None
     )
   }
 
-  private def genRetValBox(callName: Local, defnRetTy: Type, proxyRetTy: Type)(
+  private def genRetValBox(callName: nir.Local, defnRetTy: nir.Type, proxyRetTy: nir.Type)(
       implicit
       pos: nir.Position,
-      fresh: Fresh
-  ): Inst.Let =
-    Type.box.get(defnRetTy) match {
+      fresh: nir.Fresh
+  ): nir.Inst.Let =
+    nir.Type.box.get(defnRetTy) match {
       case Some(boxTy) =>
-        Inst.Let(Op.Box(boxTy, Val.Local(callName, defnRetTy)), Next.None)
+        nir.Inst.Let(nir.Op.Box(boxTy, nir.Val.Local(callName, defnRetTy)), nir.Next.None)
       case None =>
-        Inst.Let(Op.Copy(Val.Local(callName, defnRetTy)), Next.None)
+        nir.Inst.Let(nir.Op.Copy(nir.Val.Local(callName, defnRetTy)), nir.Next.None)
     }
 
-  private def genRet(callName: Local, defnRetTy: Type, proxyRetTy: Type)(
+  private def genRet(callName: nir.Local, defnRetTy: nir.Type, proxyRetTy: nir.Type)(
       implicit
       pos: nir.Position,
-      fresh: Fresh
-  ): Seq[Inst] = {
+      fresh: nir.Fresh
+  ): Seq[nir.Inst] = {
     defnRetTy match {
-      case Type.Unit =>
-        Inst.Ret(Val.Unit) :: Nil
+      case nir.Type.Unit =>
+        nir.Inst.Ret(nir.Val.Unit) :: Nil
       case _ =>
         val box = genRetValBox(callName, defnRetTy, proxyRetTy)
-        val ret = Inst.Ret(Val.Local(box.id, proxyRetTy))
+        val ret = nir.Inst.Ret(nir.Val.Local(box.id, proxyRetTy))
         Seq(box, ret)
     }
   }
 
-  def apply(dynimpls: Seq[Global], defns: Seq[Defn]): Seq[Defn.Define] = {
+  def apply(dynimpls: Seq[nir.Global], defns: Seq[nir.Defn]): Seq[nir.Defn.Define] = {
 
     // filters methods with same name and args but different return type for each given type
     val toProxy =
       dynimpls
-        .foldLeft(Map[(Global, Sig), Global]()) {
-          case (acc, g @ Global.Member(owner, sig)) if !sig.isStatic =>
+        .foldLeft(Map[(nir.Global, nir.Sig), nir.Global]()) {
+          case (acc, g @ nir.Global.Member(owner, sig)) if !sig.isStatic =>
             val proxySig = sig.toProxy
             if (!acc.contains((owner, proxySig))) {
               acc + ((owner, proxySig) -> g)
@@ -149,9 +150,9 @@ object GenerateReflectiveProxies {
         .toSet
 
     // generates a reflective proxy from the defn
-    val result = mutable.UnrolledBuffer.empty[Defn.Define]
+    val result = mutable.UnrolledBuffer.empty[nir.Defn.Define]
     defns.foreach {
-      case defn: Defn.Define =>
+      case defn: nir.Defn.Define =>
         if (toProxy.contains(defn.name)) {
           result += genReflProxy(defn)
         }

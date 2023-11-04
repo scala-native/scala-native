@@ -8,7 +8,6 @@ import scala.collection.mutable
 
 import scala.scalanative.buildinfo.ScalaNativeBuildInfo._
 import scala.reflect.ClassTag
-import scala.scalanative.nir.Global.Member
 import scala.scalanative.linker.ReachabilityAnalysis
 
 class LocalNamesTest extends OptimizerSpec {

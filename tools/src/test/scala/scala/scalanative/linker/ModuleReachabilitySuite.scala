@@ -3,7 +3,7 @@ package scala.scalanative.linker
 import org.junit.Test
 import org.junit.Assert._
 
-import scalanative.nir.{Sig, Type, Global, Rt}
+import scalanative.nir.{Sig, Type, Rt}
 
 class ModuleReachabilitySuite extends ReachabilitySuite {
   val sources = Seq("""

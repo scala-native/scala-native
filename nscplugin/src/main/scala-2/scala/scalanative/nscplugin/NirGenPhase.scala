@@ -6,7 +6,6 @@ import java.util.stream.{Stream => JStream}
 import java.util.function.{Consumer => JConsumer}
 import scala.collection.mutable
 import scala.language.implicitConversions
-import scala.scalanative.nir._
 import nir.Defn.Define.DebugInfo
 import scala.scalanative.util.ScopedVar.scoped
 import scala.tools.nsc.plugins._
@@ -35,9 +34,9 @@ abstract class NirGenPhase[G <: Global with Singleton](override val global: G)
   protected val curMethodSig = new util.ScopedVar[nir.Type]
   protected val curMethodInfo = new util.ScopedVar[CollectMethodInfo]
   protected val curMethodEnv = new util.ScopedVar[MethodEnv]
-  protected val curMethodThis = new util.ScopedVar[Option[Val]]
+  protected val curMethodThis = new util.ScopedVar[Option[nir.Val]]
   protected val curMethodLocalNames =
-    new util.ScopedVar[mutable.Map[Local, LocalName]]
+    new util.ScopedVar[mutable.Map[nir.Local, nir.LocalName]]
   protected val curMethodIsExtern = new util.ScopedVar[Boolean]
   protected val curFresh = new util.ScopedVar[nir.Fresh]
   protected val curUnwindHandler = new util.ScopedVar[Option[nir.Local]]
@@ -49,17 +48,17 @@ abstract class NirGenPhase[G <: Global with Singleton](override val global: G)
   protected var curScopes =
     new util.ScopedVar[mutable.Set[DebugInfo.LexicalScope]]
   protected val curFreshScope = new util.ScopedVar[nir.Fresh]
-  protected val curScopeId = new util.ScopedVar[ScopeId]
+  protected val curScopeId = new util.ScopedVar[nir.ScopeId]
   implicit protected def getScopeId: nir.ScopeId = curScopeId.get
-  protected def initFreshScope(rhs: Tree) = Fresh(rhs match {
+  protected def initFreshScope(rhs: Tree) = nir.Fresh(rhs match {
     case _: Block => -1L // Conpensate the top-level block
     case _        => 0L
   })
 
-  protected def unwind(implicit fresh: Fresh): Next =
-    curUnwindHandler.get.fold[Next](Next.None) { handler =>
-      val exc = Val.Local(fresh(), nir.Rt.Object)
-      Next.Unwind(exc, Next.Label(handler, Seq(exc)))
+  protected def unwind(implicit fresh: nir.Fresh): nir.Next =
+    curUnwindHandler.get.fold[nir.Next](nir.Next.None) { handler =>
+      val exc = nir.Val.Local(fresh(), nir.Rt.Object)
+      nir.Next.Unwind(exc, nir.Next.Label(handler, Seq(exc)))
     }
 
   override def newPhase(prev: Phase): StdPhase =

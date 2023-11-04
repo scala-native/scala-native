@@ -1,4 +1,5 @@
-package scala.scalanative.nscplugin
+package scala.scalanative
+package nscplugin
 
 import scala.language.implicitConversions
 
@@ -11,8 +12,6 @@ import core.Annotations.*
 import dotty.tools.dotc.report
 import dotty.tools.dotc.transform.SymUtils.*
 
-import scala.scalanative.nir
-import nir._
 import scala.scalanative.util.ScopedVar.scoped
 
 trait GenNativeExports(using Context):
@@ -20,7 +19,7 @@ trait GenNativeExports(using Context):
   import self.positionsConversions.given
 
   opaque type OwnerSymbol = Symbol
-  case class ExportedSymbol(symbol: Symbol, defn: Defn.Define)
+  case class ExportedSymbol(symbol: Symbol, defn: nir.Defn.Define)
 
   def isExported(s: Symbol) =
     s.hasAnnotation(defnNir.ExportedClass) ||
@@ -104,7 +103,7 @@ trait GenNativeExports(using Context):
       val name = member
         .getAnnotation(defnNir.ExportedClass)
         .flatMap(_.argumentConstantString(0))
-        .map(Sig.Extern(_))
+        .map(nir.Sig.Extern(_))
         .getOrElse(genExternSig(member))
       Seq(genModuleMethod(member, name))
     else
@@ -113,16 +112,16 @@ trait GenNativeExports(using Context):
         case None => Nil
         case Some(annotation) =>
           def accessorExternSig(prefix: String) =
-            val Sig.Extern(id) = genExternSig(member)
-            Sig.Extern(prefix + id)
+            val nir.Sig.Extern(id) = genExternSig(member)
+            nir.Sig.Extern(prefix + id)
 
           def getterName = annotation
             .argumentConstantString(0)
-            .map(Sig.Extern(_))
+            .map(nir.Sig.Extern(_))
             .getOrElse(accessorExternSig("get_"))
           def setterName = annotation
             .argumentConstantString(1)
-            .map(Sig.Extern(_))
+            .map(nir.Sig.Extern(_))
             .getOrElse(accessorExternSig("set_"))
 
           def externGetter = genModuleMethod(member.getter, getterName)
@@ -143,7 +142,7 @@ trait GenNativeExports(using Context):
       }
   end genModuleMember
 
-  private def genModuleMethod(member: Symbol, externSig: Sig.Extern)(using
+  private def genModuleMethod(member: Symbol, externSig: nir.Sig.Extern)(using
       owner: OwnerSymbol
   ): ExportedSymbol =
     checkIsPublic(member)
@@ -151,25 +150,25 @@ trait GenNativeExports(using Context):
     val originalName = genMethodName(member)
     val externName = originalName.top.member(externSig)
 
-    val Type.Function(_ +: paramTypes, retType) =
+    val nir.Type.Function(_ +: paramTypes, retType) =
       genMethodSig(member): @unchecked
-    val exportedFunctionType @ Type.Function(
+    val exportedFunctionType @ nir.Type.Function(
       externParamTypes,
       externRetType
     ) = genExternMethodSig(member)
 
-    val defn = new Defn.Define(
-      attrs = Attrs(inlineHint = nir.Attr.NoInline, isExtern = true),
+    val defn = new nir.Defn.Define(
+      attrs = nir.Attrs(inlineHint = nir.Attr.NoInline, isExtern = true),
       name = externName,
       ty = exportedFunctionType,
       insts = withFreshExprBuffer { buf ?=>
         val fresh = curFresh.get
         scoped(
-          curScopeId := ScopeId.TopLevel,
+          curScopeId := nir.ScopeId.TopLevel,
           curUnwindHandler := None,
           curMethodThis := None
         ) {
-          val entryParams = externParamTypes.map(Val.Local(fresh(), _))
+          val entryParams = externParamTypes.map(nir.Val.Local(fresh(), _))
           buf.label(fresh(), entryParams)
           val boxedParams = paramTypes
             .zip(entryParams)

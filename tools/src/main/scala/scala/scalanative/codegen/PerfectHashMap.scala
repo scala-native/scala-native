@@ -1,13 +1,13 @@
 package scala.scalanative
 package codegen
 
-import scalanative.nir._
 import scalanative.linker.Method
 
 /** Implementation based on the article: 'Throw away the keys: Easy, Minimal
  *  Perfect Hashing' by Steve Hanov (http://stevehanov.ca/blog/index.php?id=119)
  */
 object PerfectHashMap {
+
   val MAX_D_VALUE = 10000
 
   def apply[K, V](
@@ -141,6 +141,7 @@ object PerfectHashMap {
     val m = a % b
     if (m < 0) m + b else m
   }
+
 }
 
 class PerfectHashMap[K, V](
@@ -162,48 +163,54 @@ class PerfectHashMap[K, V](
       values(h2).get
     }
   }
+
 }
 
 object DynmethodPerfectHashMap {
-  def apply(dynmethods: Seq[Global.Member], allSignatures: Seq[Sig]): Val = {
+
+  def apply(dynmethods: Seq[nir.Global.Member], allSignatures: Seq[nir.Sig]): nir.Val = {
 
     val signaturesWithIndex =
-      allSignatures.zipWithIndex.foldLeft(Map[Sig, Int]()) {
+      allSignatures.zipWithIndex.foldLeft(Map[nir.Sig, Int]()) {
         case (acc, (signature, index)) => acc + (signature -> index)
       }
 
-    val entries = dynmethods.foldLeft(Map[Int, (Int, Val)]()) {
+    val entries = dynmethods.foldLeft(Map[Int, (Int, nir.Val)]()) {
       case (acc, m) =>
         val index = signaturesWithIndex(m.sig)
-        acc + (index -> (index, Val.Global(m, Type.Ptr)))
+        acc + (index -> (index, nir.Val.Global(m, nir.Type.Ptr)))
     }
 
-    val perfectHashMap = PerfectHashMap[Int, (Int, Val)](hash, entries)
+    val perfectHashMap = PerfectHashMap[Int, (Int, nir.Val)](hash, entries)
 
     val (keys, values) = perfectHashMap.values.map {
-      case Some((k, v)) => (Val.Int(k), v)
-      case None         => (Val.Int(-1), Val.Null)
+      case Some((k, v)) =>
+        (nir.Val.Int(k), v)
+      case None =>
+        (nir.Val.Int(-1), nir.Val.Null)
     }.unzip
 
     if (perfectHashMap.size == 0) {
-      Val.Null
+      nir.Val.Null
     } else {
-      Val.Const(
-        Val.StructValue(
+      nir.Val.Const(
+        nir.Val.StructValue(
           List(
-            Val.Int(perfectHashMap.size),
-            Val.Const(
-              Val.ArrayValue(Type.Int, perfectHashMap.keys.map(Val.Int(_)))
+            nir.Val.Int(perfectHashMap.size),
+            nir.Val.Const(
+              nir.Val.ArrayValue(nir.Type.Int, perfectHashMap.keys.map(nir.Val.Int(_)))
             ),
-            Val.Const(Val.ArrayValue(Type.Int, keys)),
-            Val.Const(Val.ArrayValue(Type.Ptr, values))
+            nir.Val.Const(nir.Val.ArrayValue(nir.Type.Int, keys)),
+            nir.Val.Const(nir.Val.ArrayValue(nir.Type.Ptr, values))
           )
         )
       )
     }
+
   }
 
   def hash(key: Int, salt: Int): Int = {
     (key + (salt * 31)) ^ salt
   }
+
 }

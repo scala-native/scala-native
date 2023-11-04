@@ -1,4 +1,5 @@
-package scala.scalanative.nscplugin
+package scala.scalanative
+package nscplugin
 
 import dotty.tools.dotc.ast.tpd
 import tpd._
@@ -6,9 +7,7 @@ import dotty.tools.dotc.core
 import core.Contexts._
 import core.Types._
 import scala.scalanative.util.ScopedVar
-import scalanative.nir.{Fresh, Local, LocalName}
 import scala.collection.mutable
-import scala.scalanative.nir
 
 trait NirGenUtil(using Context) { self: NirCodeGen =>
 
@@ -33,8 +32,8 @@ trait NirGenUtil(using Context) { self: NirCodeGen =>
 
   protected def withFreshExprBuffer[R](f: ExprBuffer ?=> R): R = {
     ScopedVar.scoped(
-      curFresh := Fresh(),
-      curScopeId := scala.scalanative.nir.ScopeId.TopLevel
+      curFresh := nir.Fresh(),
+      curScopeId := nir.ScopeId.TopLevel
     ) {
       val buffer = new ExprBuffer(using curFresh)
       f(using buffer)
@@ -61,11 +60,11 @@ trait NirGenUtil(using Context) { self: NirCodeGen =>
     )(f(parentScope))
   }
 
-  protected def localNamesBuilder(): mutable.Map[Local, LocalName] =
-    mutable.Map.empty[Local, LocalName]
+  protected def localNamesBuilder(): mutable.Map[nir.Local, nir.LocalName] =
+    mutable.Map.empty[nir.Local, nir.LocalName]
 
-  extension (fresh: Fresh)
-    def namedId(name: LocalName): Local = {
+  extension (fresh: nir.Fresh)
+    def namedId(name: nir.LocalName): nir.Local = {
       val id = fresh()
       curMethodLocalNames.get.update(id, name)
       id

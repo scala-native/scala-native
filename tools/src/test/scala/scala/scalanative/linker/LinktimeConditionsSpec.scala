@@ -5,7 +5,8 @@ import org.junit.Assert._
 
 import scala.scalanative.OptimizerSpec
 import scala.scalanative.build.{Config, NativeConfig}
-import scala.scalanative.nir.{Global, Sig, Type, Val, Rt, Unmangle}
+import scala.scalanative.nir
+import scala.scalanative.nir.{Sig, Type, Val, Rt, Unmangle}
 import scala.util._
 
 class LinktimeConditionsSpec extends OptimizerSpec {
@@ -18,13 +19,13 @@ class LinktimeConditionsSpec extends OptimizerSpec {
        |object linktime {
        |  @resolvedAtLinktime("int")
        |  final def int: Int = resolved
-       |  
+       |
        |  @resolvedAtLinktime("bool")
        |  final def bool: Boolean = resolved
        |
        |  @resolvedAtLinktime("welcomeMessage")
        |  final def welcomeMessage: String = resolved
-       |  
+       |
        |  @resolvedAtLinktime("decimalSeparator")
        |  def decimalSeparator: Char = resolved
        |  @resolvedAtLinktime("float")
@@ -33,7 +34,7 @@ class LinktimeConditionsSpec extends OptimizerSpec {
        |  object inner{
        |    @resolvedAtLinktime("inner.countFrom")
        |    def countFrom: Long = resolved
-       |   
+       |
        |    @resolvedAtLinktime("secret.performance.multiplier")
        |    def performanceMultiplier: Double = resolved
        |  }
@@ -74,7 +75,7 @@ class LinktimeConditionsSpec extends OptimizerSpec {
   private def isMangledMethod(name: String) = Try(
     Unmangle.unmangleGlobal(name)
   ) match {
-    case Success(Global.Member(_, sig)) => sig.isMethod
+    case Success(nir.Global.Member(_, sig)) => sig.isMethod
     case _                              => false
   }
 
@@ -141,7 +142,7 @@ class LinktimeConditionsSpec extends OptimizerSpec {
                           |import scala.scalanative.linktime
                           |object Main {
                           |  ${pathStrings(pathsRange)}
-                          |  
+                          |
                           |  def main(args: Array[String]): Unit = {
                           |    if(linktime.int == 1) path1()
                           |    else if (linktime.int == 2) path2()
@@ -347,20 +348,20 @@ class LinktimeConditionsSpec extends OptimizerSpec {
           |object props{
           |   @scalanative.unsafe.resolvedAtLinktime("os")
           |   def os: String = scala.scalanative.unsafe.resolved
-          | 
+          |
           |   @scalanative.unsafe.resolvedAtLinktime
           |   def isWindows: Boolean = os == "windows"
-          |    
+          |
           |   @scalanative.unsafe.resolvedAtLinktime
           |   def isMac: Boolean = {
           |     @scalanative.unsafe.resolvedAtLinktime
           |     def vendor = "apple"
-          |     
+          |
           |     os == "darwin" && vendor == "apple"
           |   }
           |
           |   @scalanative.unsafe.resolvedAtLinktime
-          |   def dynLibExt: String = 
+          |   def dynLibExt: String =
           |     if(isWindows) ".dll"
           |     else if(isMac) ".dylib"
           |     else ".so"
@@ -374,7 +375,7 @@ class LinktimeConditionsSpec extends OptimizerSpec {
           |  }
           |}""".stripMargin
     )("os" -> "darwin") { (_, result) =>
-      val Props = Global.Top("scala.scalanative.props$")
+      val Props = nir.Global.Top("scala.scalanative.props$")
       def calculatedVal(
           name: String,
           ty: Type,
@@ -414,14 +415,14 @@ class LinktimeConditionsSpec extends OptimizerSpec {
     link(entry, sources) { (_, result) =>
       implicit val linkerResult: ReachabilityAnalysis.Result = result
       val MethodRef(_, mainMethod) =
-        Global.Top(entry).member(Rt.ScalaMainSig): @unchecked
+        nir.Global.Top(entry).member(Rt.ScalaMainSig): @unchecked
       fn(mainMethod, result)
     }
   }
 
   private def pathForNumber(n: Int) = {
-    Global.Member(
-      owner = Global.Top(module),
+    nir.Global.Member(
+      owner = nir.Global.Top(module),
       sig = Sig.Method(s"path$n", Seq(Type.Unit))
     )
   }

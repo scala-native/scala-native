@@ -1,5 +1,6 @@
 package scala.scalanative
 package nir
+
 import scala.scalanative.nir.Sig.Scope._
 import scala.scalanative.util.ShowBuilder.InMemoryShowBuilder
 

@@ -1,4 +1,5 @@
-package scala.scalanative.nscplugin
+package scala.scalanative
+package nscplugin
 
 import dotty.tools.dotc.ast.tpd._
 import dotty.tools.dotc.core
@@ -9,8 +10,6 @@ import core.StdNames._
 import dotty.tools.dotc.transform.SymUtils._
 import dotty.tools.backend.jvm.DottyBackendInterface.symExtensions
 import scalanative.util.unreachable
-import scala.scalanative.nir
-import scala.scalanative.nir._
 import scala.language.implicitConversions
 
 trait NirGenName(using Context) {
@@ -44,7 +43,7 @@ trait NirGenName(using Context) {
   def genModuleName(sym: Symbol): nir.Global.Top = {
     val typeName = genTypeName(sym)
     if (typeName.id.endsWith("$")) typeName
-    else Global.Top(typeName.id + "$")
+    else nir.Global.Top(typeName.id + "$")
   }
 
   def genFieldName(sym: Symbol): nir.Global.Member = {
@@ -92,7 +91,7 @@ trait NirGenName(using Context) {
       owner.member(nir.Sig.Method(id, paramTypes :+ retType, scope))
   }
 
-  def genExternSig(sym: Symbol): Sig.Extern =
+  def genExternSig(sym: Symbol): nir.Sig.Extern =
     genExternSigImpl(sym, nativeIdOf(sym))
 
   private def genExternSigImpl(sym: Symbol, id: String) =
@@ -101,7 +100,7 @@ trait NirGenName(using Context) {
       nir.Sig.Extern(id)
     else nir.Sig.Extern(id)
 
-  def genStaticMemberName(sym: Symbol, explicitOwner: Symbol): Global.Member = {
+  def genStaticMemberName(sym: Symbol, explicitOwner: Symbol): nir.Global.Member = {
     val owner = {
       // Use explicit owner in case if forwarder target was defined in the trait/interface
       // or was abstract. `sym.owner` would always point to original owner, even if it also defined
@@ -118,7 +117,7 @@ trait NirGenName(using Context) {
       val ownerIsScalaModule = ownerSym.is(Module, butNot = JavaDefined)
       def haveNoForwarders = sym.isOneOf(ExcludedForwarder, butNot = Enum)
       if (ownerIsScalaModule && haveNoForwarders) typeName
-      else Global.Top(typeName.id.stripSuffix("$"))
+      else nir.Global.Top(typeName.id.stripSuffix("$"))
     }
     val id = nativeIdOf(sym)
     val scope =

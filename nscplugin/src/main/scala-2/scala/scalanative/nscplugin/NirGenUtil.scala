@@ -3,8 +3,6 @@ package nscplugin
 
 import scala.tools.nsc.Global
 import scala.collection.mutable
-import scala.scalanative.nir.{Fresh, LocalName, Local}
-import scala.scalanative.util.ScopedVar
 
 trait NirGenUtil[G <: Global with Singleton] { self: NirGenPhase[G] =>
   import global._
@@ -15,10 +13,10 @@ trait NirGenUtil[G <: Global with Singleton] { self: NirGenPhase[G] =>
     if (isStatic) params else None +: params
   }
 
-  protected def localNamesBuilder(): mutable.Map[Local, LocalName] =
-    mutable.Map.empty[Local, LocalName]
+  protected def localNamesBuilder(): mutable.Map[nir.Local, nir.LocalName] =
+    mutable.Map.empty[nir.Local, nir.LocalName]
 
-  def namedId(fresh: Fresh)(name: LocalName): Local = {
+  def namedId(fresh: nir.Fresh)(name: nir.LocalName): nir.Local = {
     val id = fresh()
     curMethodLocalNames.get.update(id, name)
     id
@@ -39,7 +37,7 @@ trait NirGenUtil[G <: Global with Singleton] { self: NirGenPhase[G] =>
       srcPosition = srcPosition
     )
 
-    ScopedVar.scoped(
+    util.ScopedVar.scoped(
       curScopeId := blockScope
     )(f(parentScope))
   }

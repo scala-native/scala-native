@@ -1,22 +1,24 @@
 package scala.scalanative
 package codegen
 
-import scalanative.nir._
 import scalanative.linker.{Trait, Class}
 
 class HasTraitTables(meta: Metadata) {
-  private implicit val pos: Position = Position.NoPosition
-  def generated(id: String): Global.Member =
-    Global.Top("__scalanative_metadata").member(Sig.Generated(id))
+
+  private implicit val pos: nir.Position = nir.Position.NoPosition
+
+  def generated(id: String): nir.Global.Member =
+    nir.Global.Top("__scalanative_metadata").member(nir.Sig.Generated(id))
+
   private val classHasTraitName = generated("__class_has_trait")
-  val classHasTraitVal = Val.Global(classHasTraitName, Type.Ptr)
-  var classHasTraitTy: Type = _
-  var classHasTraitDefn: Defn = _
+  val classHasTraitVal = nir.Val.Global(classHasTraitName, nir.Type.Ptr)
+  var classHasTraitTy: nir.Type = _
+  var classHasTraitDefn: nir.Defn = _
 
   private val traitHasTraitName = generated("__trait_has_trait")
-  val traitHasTraitVal = Val.Global(traitHasTraitName, Type.Ptr)
-  var traitHasTraitTy: Type = _
-  var traitHasTraitDefn: Defn = _
+  val traitHasTraitVal = nir.Val.Global(traitHasTraitName, nir.Type.Ptr)
+  var traitHasTraitTy: nir.Type = _
+  var traitHasTraitDefn: nir.Defn = _
 
   initClassHasTrait()
   initTraitHasTrait()
@@ -39,10 +41,10 @@ class HasTraitTables(meta: Metadata) {
 
       row += 1
     }
-    val tableVal = Val.ArrayValue(Type.Int, matrix.toSeq.map(i => Val.Int(i)))
+    val tableVal = nir.Val.ArrayValue(nir.Type.Int, matrix.toSeq.map(i => nir.Val.Int(i)))
 
     classHasTraitDefn =
-      Defn.Const(Attrs.None, classHasTraitName, tableVal.ty, tableVal)
+      nir.Defn.Const(nir.Attrs.None, classHasTraitName, tableVal.ty, tableVal)
     classHasTraitTy = tableVal.ty
   }
 
@@ -55,10 +57,11 @@ class HasTraitTables(meta: Metadata) {
 
       row += 1
     }
-    val tableVal = Val.ArrayValue(Type.Int, matrix.toSeq.map(l => Val.Int(l)))
+    val tableVal = nir.Val.ArrayValue(nir.Type.Int, matrix.toSeq.map(l => nir.Val.Int(l)))
 
     traitHasTraitDefn =
-      Defn.Const(Attrs.None, traitHasTraitName, tableVal.ty, tableVal)
+      nir.Defn.Const(nir.Attrs.None, traitHasTraitName, tableVal.ty, tableVal)
     traitHasTraitTy = tableVal.ty
   }
+
 }

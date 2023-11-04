@@ -2,7 +2,7 @@ package scala.scalanative.codegen
 package llvm
 
 import scala.scalanative.nir
-import scala.scalanative.nir.{Position, Global, Fresh, Val, Local}
+import scala.scalanative.nir.{Position, Fresh, Val, Local}
 import scala.scalanative.nir.Defn.Define.DebugInfo
 import scala.scalanative.util.ShowBuilder
 import scala.collection.mutable
@@ -11,7 +11,6 @@ import scala.scalanative.util.unsupported
 import scala.language.implicitConversions
 import scala.scalanative.codegen.llvm.MetadataCodeGen.Writer.Specialized
 import scala.scalanative.nir.Unmangle
-import scala.scalanative.nir.Global.Member
 import scala.scalanative.nir.Sig.Method
 import scala.scalanative.util.unreachable
 
@@ -197,7 +196,7 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
       val defnName = if (linkageName.startsWith("_S")) linkageName.drop(2) else linkageName
       val unmangledName = if (defnName.startsWith("M")) { // subprogram should be a member
         Unmangle.unmangleGlobal(defnName) match {
-          case Member(owner, sig) =>
+          case nir.Global.Member(owner, sig) =>
             Unmangle.unmangleSig(sig.mangle) match {
               case Method(id, _, _) => Some(id)
               case _                => None

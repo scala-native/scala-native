@@ -6,18 +6,19 @@ import java.nio.file.Path
 import scala.collection.mutable
 import scala.scalanative.io.VirtualDirectory
 import scala.scalanative.nir.serialization.deserializeBinary
-import scala.scalanative.nir.{Defn, Global}
+import scala.scalanative.nir.{Defn}
 import scala.scalanative.nir.serialization.{Prelude => NirPrelude}
 
 sealed trait ClassPath {
 
   /** Check if given global is present in this classpath. */
-  private[scalanative] def contains(name: Global): Boolean
+  private[scalanative] def contains(name: nir.Global): Boolean
 
   /** Load given global and info about its dependencies. */
-  private[scalanative] def load(name: Global): Option[Seq[Defn]]
+  private[scalanative] def load(name: nir.Global): Option[Seq[Defn]]
 
-  private[scalanative] def classesWithEntryPoints: Iterable[Global.Top]
+  private[scalanative] def classesWithEntryPoints: Iterable[nir.Global.Top]
+
 }
 
 object ClassPath {
@@ -35,16 +36,16 @@ object ClassPath {
       directory.files
         .filter(_.toString.endsWith(".nir"))
         .map { file =>
-          val name = Global.Top(io.packageNameFromPath(file))
+          val name = nir.Global.Top(io.packageNameFromPath(file))
 
           name -> file
         }
         .toMap
 
     private val cache =
-      mutable.Map.empty[Global, Option[Seq[Defn]]]
+      mutable.Map.empty[nir.Global, Option[Seq[Defn]]]
 
-    def contains(name: Global) =
+    def contains(name: nir.Global) =
       files.contains(name.top)
 
     private def makeBufferName(directory: VirtualDirectory, file: Path) =
@@ -52,7 +53,7 @@ object ClassPath {
         .resolve(new java.net.URI(file.getFileName().toString))
         .toString
 
-    def load(name: Global): Option[Seq[Defn]] =
+    def load(name: nir.Global): Option[Seq[Defn]] =
       cache.getOrElseUpdate(
         name, {
           files.get(name.top).map { file =>
@@ -64,7 +65,7 @@ object ClassPath {
         }
       )
 
-    lazy val classesWithEntryPoints: Iterable[Global.Top] = {
+    lazy val classesWithEntryPoints: Iterable[nir.Global.Top] = {
       files.filter {
         case (_, file) =>
           val buffer = directory.read(file, len = NirPrelude.length)

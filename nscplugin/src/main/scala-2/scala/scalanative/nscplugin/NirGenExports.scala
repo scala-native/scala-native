@@ -1,11 +1,8 @@
-package scala.scalanative.nscplugin
+package scala.scalanative
+package nscplugin
 
 import scala.language.implicitConversions
 import scala.tools.nsc
-
-import scala.scalanative.nir
-import nir._
-import scala.scalanative.util.ScopedVar.scoped
 
 trait NirGenExports[G <: nsc.Global with Singleton] {
   self: NirGenPhase[G] with NirGenType[G] =>
@@ -15,7 +12,7 @@ trait NirGenExports[G <: nsc.Global with Singleton] {
   import nirDefinitions._
   import SimpleType._
 
-  case class ExportedSymbol(symbol: Symbol, defn: Defn.Define)
+  case class ExportedSymbol(symbol: Symbol, defn: nir.Defn.Define)
 
   def isExported(s: Symbol) = {
     s.hasAnnotation(ExportedClass) ||
@@ -97,17 +94,17 @@ trait NirGenExports[G <: nsc.Global with Singleton] {
         case None => Nil
         case Some(annotation) =>
           def accessorExternSig(prefix: String) = {
-            val Sig.Extern(id) = genExternSig(member)
-            Sig.Extern(prefix + id)
+            val nir.Sig.Extern(id) = genExternSig(member)
+            nir.Sig.Extern(prefix + id)
           }
 
           def getterName = annotation
             .stringArg(0)
-            .map(Sig.Extern(_))
+            .map(nir.Sig.Extern(_))
             .getOrElse(accessorExternSig("get_"))
           def setterName = annotation
             .stringArg(1)
-            .map(Sig.Extern(_))
+            .map(nir.Sig.Extern(_))
             .getOrElse(accessorExternSig("set_"))
 
           def externGetter = genModuleMethod(owner, member.getter, getterName)
@@ -133,7 +130,7 @@ trait NirGenExports[G <: nsc.Global with Singleton] {
       val name = member
         .getAnnotation(ExportedClass)
         .flatMap(_.stringArg(0))
-        .map(Sig.Extern(_))
+        .map(nir.Sig.Extern(_))
         .getOrElse(genExternSig(member))
       Seq(genModuleMethod(owner, member, name))
     }
@@ -142,31 +139,31 @@ trait NirGenExports[G <: nsc.Global with Singleton] {
   private def genModuleMethod(
       owner: Symbol,
       member: Symbol,
-      externSig: Sig.Extern
+      externSig: nir.Sig.Extern
   ): ExportedSymbol = {
     checkIsPublic(member)
     implicit val pos: nir.Position = member.pos
     val originalName = genMethodName(member)
     val externName = originalName.top.member(externSig)
 
-    val Type.Function(_ +: paramTypes, retType) = genMethodSig(member)
-    val exportedFunctionType @ Type.Function(
+    val nir.Type.Function(_ +: paramTypes, retType) = genMethodSig(member)
+    val exportedFunctionType @ nir.Type.Function(
       externParamTypes,
       externRetType
     ) = genExternMethodSig(member)
 
-    val defn = Defn.Define(
-      attrs = Attrs(inlineHint = nir.Attr.NoInline, isExtern = true),
+    val defn = nir.Defn.Define(
+      attrs = nir.Attrs(inlineHint = nir.Attr.NoInline, isExtern = true),
       name = externName,
       ty = exportedFunctionType,
       insts = curStatBuffer.withFreshExprBuffer { implicit buf: ExprBuffer =>
         val fresh = curFresh.get
-        scoped(
+        util.ScopedVar.scoped(
           curUnwindHandler := None,
           curMethodThis := None,
-          curScopeId := ScopeId.TopLevel
+          curScopeId := nir.ScopeId.TopLevel
         ) {
-          val entryParams = externParamTypes.map(Val.Local(fresh(), _))
+          val entryParams = externParamTypes.map(nir.Val.Local(fresh(), _))
           buf.label(fresh(), entryParams)
           val boxedParams = paramTypes
             .zip(entryParams)

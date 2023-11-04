@@ -2,19 +2,18 @@ package scala.scalanative
 package codegen
 
 import scala.collection.mutable
-import scalanative.nir._
 import scalanative.linker.{Trait, Class, ReachabilityAnalysis}
 
 class Metadata(
     val analysis: ReachabilityAnalysis.Result,
     val config: build.NativeConfig,
-    proxies: Seq[Defn]
+    proxies: Seq[nir.Defn]
 )(implicit val platform: PlatformInfo) {
   implicit private def self: Metadata = this
 
   final val usesLockWords = platform.isMultithreadingEnabled
-  val lockWordType = if (usesLockWords) Some(Type.Ptr) else None
-  private[codegen] val lockWordVals = lockWordType.map(_ => Val.Null).toList
+  val lockWordType = if (usesLockWords) Some(nir.Type.Ptr) else None
+  private[codegen] val lockWordVals = lockWordType.map(_ => nir.Val.Null).toList
 
   val layouts = new CommonMemoryLayouts()
   val rtti = mutable.Map.empty[linker.Info, RuntimeTypeInformation]
@@ -76,12 +75,12 @@ class Metadata(
         topLevelSubclassOrdering = ordering
       )
 
-    Rt.PrimitiveTypes.foreach(fromRootClass(_))
+    nir.Rt.PrimitiveTypes.foreach(fromRootClass(_))
     fromRootClass(
-      Rt.Object.name,
+      nir.Rt.Object.name,
       ordering = subclasses => {
         val (arrays, other) =
-          subclasses.partition(_.name == Rt.GenericArray.name)
+          subclasses.partition(_.name == nir.Rt.GenericArray.name)
         arrays ++ other
       }
     )

@@ -1,6 +1,7 @@
 package scala.scalanative.linker
 
-import scala.scalanative.nir.{Global, Rt, Sig, Type}
+import scala.scalanative.nir
+import scala.scalanative.nir.{Rt, Sig, Type}
 
 class IdentifiersSuite extends ReachabilitySuite {
 
@@ -10,7 +11,7 @@ class IdentifiersSuite extends ReachabilitySuite {
         |  val x: `"Foo"Bar"`.type       = this
         |  val `"x"`: `"Foo"Bar"`.type   = this
         |  val `"x"x"`: `"Foo"Bar"`.type = this
-        |  
+        |
         |  def y(): `"Foo"Bar"`.type     = this
         |  def `"y"`(): `"Foo"Bar"`.type   = this
         |  def `"y"y"`(): `"Foo"Bar"`.type = this
@@ -37,9 +38,9 @@ class IdentifiersSuite extends ReachabilitySuite {
         |}
         |""".stripMargin
 
-    val FooBar = Global.Top("$u0022Foo$u0022Bar$u0022$")
-    val Main = Global.Top("Main")
-    val MainModule = Global.Top("Main$")
+    val FooBar = nir.Global.Top("$u0022Foo$u0022Bar$u0022$")
+    val Main = nir.Global.Top("Main")
+    val MainModule = nir.Global.Top("Main$")
 
     val entry = Main.member(Rt.ScalaMainSig)
     val privateFooBar = Sig.Scope.Private(FooBar)

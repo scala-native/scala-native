@@ -1,4 +1,5 @@
-package scala.scalanative.codegen
+package scala.scalanative
+package codegen
 package llvm
 
 import java.io.File
@@ -7,7 +8,6 @@ import scala.collection.mutable
 import scala.scalanative.build.Config
 import scala.scalanative.build.ScalaNative.{dumpDefns, encodedMainClass}
 import scala.scalanative.io.VirtualDirectory
-import scala.scalanative.nir._
 import scala.scalanative.build
 import scala.scalanative.linker.ReachabilityAnalysis
 import scala.scalanative.util.{Scope, partitionBy, procs}
@@ -41,19 +41,19 @@ object CodeGen {
   }
 
   private[scalanative] def lower(
-      defns: Seq[Defn]
+      defns: Seq[nir.Defn]
   )(implicit
       meta: CodeGenMetadata,
       logger: build.Logger,
       ec: ExecutionContext
-  ): Future[Seq[Defn]] = {
+  ): Future[Seq[nir.Defn]] = {
 
     val loweringJobs = partitionBy(defns)(_.name).map {
       case (_, defns) => Future(Lower(defns))
     }
 
     Future
-      .foldLeft(loweringJobs)(mutable.UnrolledBuffer.empty[Defn]) {
+      .foldLeft(loweringJobs)(mutable.UnrolledBuffer.empty[nir.Defn]) {
         case (buffer, defns) => buffer ++= defns
       }
       .map(_.toSeq)
@@ -62,7 +62,7 @@ object CodeGen {
   private final val EmptyPath = "__empty"
 
   /** Generate code for given assembly. */
-  private def emit(config: build.Config, assembly: Seq[Defn])(implicit
+  private def emit(config: build.Config, assembly: Seq[nir.Defn])(implicit
       meta: CodeGenMetadata,
       ec: ExecutionContext
   ): Future[Seq[Path]] =
@@ -72,7 +72,7 @@ object CodeGen {
       Files.createDirectories(outputDirPath)
       val outputDir = VirtualDirectory.real(outputDirPath)
 
-      def sourceDirOf(defn: Defn): String = {
+      def sourceDirOf(defn: nir.Defn): String = {
         if (defn.pos == null) EmptyPath
         else defn.pos.dir.getOrElse(EmptyPath)
       }
@@ -151,7 +151,7 @@ object CodeGen {
     import scala.scalanative.codegen.llvm.AbstractCodeGen
     import scala.scalanative.codegen.llvm.compat.os._
 
-    def apply(env: Map[Global, Defn], defns: Seq[Defn])(implicit
+    def apply(env: Map[nir.Global, nir.Defn], defns: Seq[nir.Defn])(implicit
         meta: CodeGenMetadata
     ): AbstractCodeGen = {
       new AbstractCodeGen(env, defns) {
@@ -163,8 +163,8 @@ object CodeGen {
     }
   }
 
-  def depends(implicit platform: PlatformInfo): Seq[Global] = {
-    val buf = mutable.UnrolledBuffer.empty[Global]
+  def depends(implicit platform: PlatformInfo): Seq[nir.Global] = {
+    val buf = mutable.UnrolledBuffer.empty[nir.Global]
     buf ++= Lower.depends
     buf ++= Generate.depends
     buf.toSeq

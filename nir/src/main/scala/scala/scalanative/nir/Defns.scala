@@ -1,5 +1,6 @@
 package scala.scalanative
 package nir
+
 import scala.scalanative.nir.Defn.Define
 
 /** A definition in NIR.

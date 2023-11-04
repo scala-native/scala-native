@@ -3,9 +3,9 @@ package scala.scalanative
 package nscplugin
 
 import scala.collection.mutable
-import scala.scalanative.nir._
 
 class ReflectiveInstantiationBuffer(val fqcn: String) {
+
   private val buf = mutable.UnrolledBuffer.empty[nir.Defn]
 
   def +=(defn: nir.Defn): Unit = {
@@ -15,9 +15,13 @@ class ReflectiveInstantiationBuffer(val fqcn: String) {
   val name = nir.Global.Top(fqcn + "$SN$ReflectivelyInstantiate$")
 
   def nonEmpty = buf.nonEmpty
+
   def toSeq = buf.toSeq
+
 }
 
 object ReflectiveInstantiationBuffer {
+
   def apply(fqcn: String) = new ReflectiveInstantiationBuffer(fqcn)
+
 }
