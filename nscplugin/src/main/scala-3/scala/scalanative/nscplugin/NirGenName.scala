@@ -100,7 +100,10 @@ trait NirGenName(using Context) {
       nir.Sig.Extern(id)
     else nir.Sig.Extern(id)
 
-  def genStaticMemberName(sym: Symbol, explicitOwner: Symbol): nir.Global.Member = {
+  def genStaticMemberName(
+      sym: Symbol,
+      explicitOwner: Symbol
+  ): nir.Global.Member = {
     val owner = {
       // Use explicit owner in case if forwarder target was defined in the trait/interface
       // or was abstract. `sym.owner` would always point to original owner, even if it also defined

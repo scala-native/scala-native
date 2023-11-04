@@ -3,7 +3,6 @@ package codegen.llvm
 package compat.os
 
 import scala.scalanative.codegen.llvm.AbstractCodeGen
-import scala.scalanative.nir.ControlFlow.Block
 import scala.scalanative.nir.Defn.Define.DebugInfo
 import scala.scalanative.util.ShowBuilder
 
@@ -26,7 +25,9 @@ private[codegen] class UnixCompat(codegen: AbstractCodeGen)
 
   protected val osPersonalityType: String = "@__gxx_personality_v0"
 
-  override def genBlockAlloca(block: Block)(implicit sb: ShowBuilder): Unit =
+  override def genBlockAlloca(block: nir.ControlFlow.Block)(implicit
+      sb: ShowBuilder
+  ): Unit =
     ()
 
   def genLandingPad(

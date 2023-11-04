@@ -2,20 +2,19 @@ package scala.scalanative
 package interflow
 
 import java.util.Arrays
-import scalanative.nir.{Type, Val, Op}
 import scalanative.linker.Class
 
 sealed abstract class Instance(implicit
     val srcPosition: nir.Position,
     val scopeId: nir.ScopeId
 ) extends Cloneable {
-  def ty: Type = this match {
+  def ty: nir.Type = this match {
     case EscapedInstance(value) =>
       value.ty
     case DelayedInstance(op) =>
       op.resty
     case VirtualInstance(_, cls, _, _) =>
-      Type.Ref(cls.name, exact = true, nullable = false)
+      nir.Type.Ref(cls.name, exact = true, nullable = false)
   }
 
   override def clone(): Instance = this match {
@@ -35,15 +34,15 @@ sealed abstract class Instance(implicit
   }
 }
 
-final case class EscapedInstance(val escapedValue: Val)(implicit
+final case class EscapedInstance(val escapedValue: nir.Val)(implicit
     srcPosition: nir.Position,
     scopeId: nir.ScopeId
 ) extends Instance {
-  def this(escapedValue: Val, instance: Instance) =
+  def this(escapedValue: nir.Val, instance: Instance) =
     this(escapedValue)(instance.srcPosition, instance.scopeId)
 }
 
-final case class DelayedInstance(val delayedOp: Op)(implicit
+final case class DelayedInstance(val delayedOp: nir.Op)(implicit
     srcPosition: nir.Position,
     scopeId: nir.ScopeId
 ) extends Instance
@@ -51,8 +50,8 @@ final case class DelayedInstance(val delayedOp: Op)(implicit
 final case class VirtualInstance(
     kind: Kind,
     cls: Class,
-    values: Array[Val],
-    zone: Option[Val]
+    values: Array[nir.Val],
+    zone: Option[nir.Val]
 )(implicit srcPosition: nir.Position, scopeId: nir.ScopeId)
     extends Instance {
 

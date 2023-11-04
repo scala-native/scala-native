@@ -19,7 +19,10 @@ class VirtualTable(cls: linker.Class)(implicit meta: Metadata) {
     }
     def addImpl(sig: nir.Sig): Unit = {
       val impl =
-        cls.resolve(sig).map(nir.Val.Global(_, nir.Type.Ptr)).getOrElse(nir.Val.Null)
+        cls
+          .resolve(sig)
+          .map(nir.Val.Global(_, nir.Type.Ptr))
+          .getOrElse(nir.Val.Null)
       impls(sig) = impl
     }
     slots.foreach { sig => addImpl(sig) }

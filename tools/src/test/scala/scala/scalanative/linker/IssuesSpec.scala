@@ -1,4 +1,5 @@
-package scala.scalanative.linker
+package scala.scalanative
+package linker
 
 import scala.scalanative.checker.Check
 import scala.scalanative.LinkerSpec
@@ -6,12 +7,12 @@ import scala.scalanative.LinkerSpec
 import org.junit.Test
 import org.junit.Assert._
 
-import scala.scalanative.nir._
 import scala.concurrent._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 
 class IssuesSpec extends LinkerSpec {
+
   private val mainClass = "Test"
   private val sourceFile = "Test.scala"
 
@@ -40,8 +41,8 @@ class IssuesSpec extends LinkerSpec {
     checkNoLinkageErrors(
       mainClass = fqcn,
       source = s"""package $packageName
-      |object `$mainClass`{ 
-      |  def main(args: Array[String]) = () 
+      |object `$mainClass`{
+      |  def main(args: Array[String]) = ()
       |}
       |""".stripMargin
     )
@@ -78,25 +79,25 @@ class IssuesSpec extends LinkerSpec {
       |  def main(args: Array[String]): Unit = {
       |     val privilegeSetLength = stackalloc[USize]()
       |     val privilegeSet: Ptr[Byte] = stackalloc[Byte](!privilegeSetLength)
-      |     
+      |
       |     // real case
       |     string.memset(privilegeSet, 0, !privilegeSetLength)
-      |     
+      |
       |     // possible case
-      |     def str: string = ??? 
+      |     def str: string = ???
       |     str.memset(privilegeSet, 0, !privilegeSetLength)
       |  }
       |}""".stripMargin) { result =>
-      val Memset = Sig.Extern("memset")
-      val StringMemset = Global.Top("string").member(Memset)
+      val Memset = nir.Sig.Extern("memset")
+      val StringMemset = nir.Global.Top("string").member(Memset)
       val decls = result.defns
         .collectFirst {
-          case Defn.Declare(attrs, StringMemset, tpe) =>
+          case nir.Defn.Declare(attrs, StringMemset, tpe) =>
             assertTrue(attrs.isExtern)
             assertEquals(
-              Type.Function(
-                Seq(Type.Ptr, Type.Int, Type.Size),
-                Type.Ptr
+              nir.Type.Function(
+                Seq(nir.Type.Ptr, nir.Type.Int, nir.Type.Size),
+                nir.Type.Ptr
               ),
               tpe
             )
@@ -123,11 +124,11 @@ class IssuesSpec extends LinkerSpec {
          |     lib.field = 42
          |  }
          |}""".stripMargin) { result =>
-      val Field = Sig.Extern("field")
-      val LibField = Global.Top("lib").member(Field)
+      val Field = nir.Sig.Extern("field")
+      val LibField = nir.Global.Top("lib").member(Field)
       val decls = result.defns
         .collect {
-          case defn @ Defn.Declare(attrs, LibField, tpe) =>
+          case defn @ nir.Defn.Declare(attrs, LibField, tpe) =>
             assertTrue(attrs.isExtern)
         }
       if (decls.isEmpty) fail("Not found extern declaration")
@@ -154,19 +155,19 @@ class IssuesSpec extends LinkerSpec {
       |     val c = syncLib.foo()
       |  }
       |}""".stripMargin) { result =>
-      val Lib = Global.Top("lib$")
-      val SyncLib = Global.Top("syncLib$")
-      val LibSync = Lib.member(Sig.Extern("sync"))
-      val LibAsync = Lib.member(Sig.Extern("async"))
-      val SyncLibFoo = SyncLib.member(Sig.Extern("foo"))
+      val Lib = nir.Global.Top("lib$")
+      val SyncLib = nir.Global.Top("syncLib$")
+      val LibSync = Lib.member(nir.Sig.Extern("sync"))
+      val LibAsync = Lib.member(nir.Sig.Extern("async"))
+      val SyncLibFoo = SyncLib.member(nir.Sig.Extern("foo"))
 
       val found = result.defns
         .collect {
-          case Defn.Declare(attrs, LibSync, _) =>
+          case nir.Defn.Declare(attrs, LibSync, _) =>
             assertTrue(attrs.isExtern && attrs.isBlocking)
-          case Defn.Declare(attrs, LibAsync, _) =>
+          case nir.Defn.Declare(attrs, LibAsync, _) =>
             assertTrue(attrs.isExtern && !attrs.isBlocking)
-          case Defn.Declare(attrs, SyncLibFoo, _) =>
+          case nir.Defn.Declare(attrs, SyncLibFoo, _) =>
             assertTrue(attrs.isExtern && attrs.isBlocking)
         }
       assertEquals(3, found.size)

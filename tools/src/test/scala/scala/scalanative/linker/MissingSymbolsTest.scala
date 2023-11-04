@@ -1,4 +1,5 @@
-package scala.scalanative.linker
+package scala.scalanative
+package linker
 
 import scala.scalanative.checker.Check
 import scala.scalanative.LinkerSpec
@@ -6,7 +7,6 @@ import scala.scalanative.LinkerSpec
 import org.junit.Test
 import org.junit.Assert._
 
-import scala.scalanative.nir._
 import scala.concurrent._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
@@ -14,6 +14,7 @@ import scala.scalanative.optimizer.assertContainsAll
 import java.sql.Time
 
 class MissingSymbolsTest extends LinkerSpec {
+
   private val mainClass = "Test"
   private val sourceFile = "Test.scala"
 
@@ -53,13 +54,13 @@ class MissingSymbolsTest extends LinkerSpec {
             .map(_.symbol)
             .map(v => (v.kind, v.name, v.argTypes))
         )
-        val TimeType = Global.Top("java.sql.Time")
-        val TimeCtor = TimeType.member(Sig.Ctor(Seq(Type.Long)))
+        val TimeType = nir.Global.Top("java.sql.Time")
+        val TimeCtor = TimeType.member(nir.Sig.Ctor(Seq(nir.Type.Long)))
         val TimeValueOf = TimeType.member(
-          Sig.Method(
+          nir.Sig.Method(
             "valueOf",
-            Seq(Rt.String, Type.Ref(TimeType)),
-            Sig.Scope.PublicStatic
+            Seq(nir.Rt.String, nir.Type.Ref(TimeType)),
+            nir.Sig.Scope.PublicStatic
           )
         )
         assertContainsAll(

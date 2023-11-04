@@ -47,11 +47,13 @@ class CommonMemoryLayouts(implicit meta: Metadata) {
         FieldLayout.referenceOffsetsTy :: // reference offsets
         dynMapType.toList
 
-    override val layout = genLayout(vtable = nir.Type.ArrayValue(nir.Type.Ptr, 0))
+    override val layout =
+      genLayout(vtable = nir.Type.ArrayValue(nir.Type.Ptr, 0))
 
-    def genLayout(vtable: nir.Type): nir.Type.StructValue = nir.Type.StructValue(
-      baseLayout ::: vtable :: Nil
-    )
+    def genLayout(vtable: nir.Type): nir.Type.StructValue =
+      nir.Type.StructValue(
+        baseLayout ::: vtable :: Nil
+      )
 
     final val RttiIdx = Common.RttiIdx
     final val SizeIdx = RttiIdx + 1

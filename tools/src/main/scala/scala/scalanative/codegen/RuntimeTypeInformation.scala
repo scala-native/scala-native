@@ -54,6 +54,9 @@ class RuntimeTypeInformation(info: ScopeInfo)(implicit meta: Metadata) {
 object RuntimeTypeInformation {
 
   private val classConst =
-    nir.Val.Global(nir.Rt.Class.name.member(nir.Sig.Generated("type")), nir.Type.Ptr)
+    nir.Val.Global(
+      nir.Rt.Class.name.member(nir.Sig.Generated("type")),
+      nir.Type.Ptr
+    )
 
-  }
+}

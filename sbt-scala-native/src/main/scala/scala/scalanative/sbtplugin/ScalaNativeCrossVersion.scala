@@ -4,10 +4,9 @@ package sbtplugin
 // based Scala.js sbt plugin: ScalaJSCrossVersion
 
 import sbt._
-import scala.scalanative.nir.Versions
 
 object ScalaNativeCrossVersion {
-  val currentBinaryVersion = Versions.currentBinaryVersion
+  val currentBinaryVersion = nir.Versions.currentBinaryVersion
 
   private[this] def crossVersionAddPlatformPart(
       cross: CrossVersion,
@@ -27,7 +26,10 @@ object ScalaNativeCrossVersion {
   }
 
   def scalaNativeMapped(cross: CrossVersion): CrossVersion =
-    crossVersionAddPlatformPart(cross, "native" + Versions.currentBinaryVersion)
+    crossVersionAddPlatformPart(
+      cross,
+      "native" + nir.Versions.currentBinaryVersion
+    )
 
   val binary: CrossVersion = scalaNativeMapped(CrossVersion.binary)
 

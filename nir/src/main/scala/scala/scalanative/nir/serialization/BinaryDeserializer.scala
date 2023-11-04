@@ -314,9 +314,19 @@ final class BinaryDeserializer(buffer: ByteBuffer, fileName: String) {
         Defn.Define(attrs, name.narrow[nir.Global.Member], getType().narrow[Type.Function], getInsts(), getDebugInfo())
       case T.TraitDefn => Defn.Trait(attrs, name.narrow[nir.Global.Top], getGlobals().narrow[Seq[nir.Global.Top]])
       case T.ClassDefn =>
-        Defn.Class(attrs, name.narrow[nir.Global.Top], getGlobalOpt().narrow[Option[nir.Global.Top]], getGlobals().narrow[Seq[nir.Global.Top]])
+        Defn.Class(
+          attrs,
+          name.narrow[nir.Global.Top],
+          getGlobalOpt().narrow[Option[nir.Global.Top]],
+          getGlobals().narrow[Seq[nir.Global.Top]]
+        )
       case T.ModuleDefn =>
-        Defn.Module(attrs, name.narrow[nir.Global.Top], getGlobalOpt().narrow[Option[nir.Global.Top]], getGlobals().narrow[Seq[nir.Global.Top]])
+        Defn.Module(
+          attrs,
+          name.narrow[nir.Global.Top],
+          getGlobalOpt().narrow[Option[nir.Global.Top]],
+          getGlobals().narrow[Seq[nir.Global.Top]]
+        )
     }
   }
 

@@ -136,7 +136,8 @@ final class Check(implicit analysis: ReachabilityAnalysis.Result)
       case nir.Inst.Label(name, params) =>
         labels(name) = params.map(_.ty)
         params.foreach(enterParam)
-      case _: nir.Inst.Ret | _: nir.Inst.Jump | _: nir.Inst.If | _: nir.Inst.Switch =>
+      case _: nir.Inst.Ret | _: nir.Inst.Jump | _: nir.Inst.If |
+          _: nir.Inst.Switch =>
         ok
       case nir.Inst.Throw(_, unwind) =>
         enterUnwind(unwind)
@@ -508,133 +509,138 @@ final class Check(implicit analysis: ReachabilityAnalysis.Result)
     }
   }
 
-  def checkCompOp(comp: nir.Comp, ty: nir.Type, l: nir.Val, r: nir.Val): Unit = comp match {
-    case nir.Comp.Ieq => checkIntegerOrBoolOrRefOp(comp.show, ty, l, r)
-    case nir.Comp.Ine => checkIntegerOrBoolOrRefOp(comp.show, ty, l, r)
-    case nir.Comp.Ugt => checkIntegerOp(comp.show, ty, l, r)
-    case nir.Comp.Uge => checkIntegerOp(comp.show, ty, l, r)
-    case nir.Comp.Ult => checkIntegerOp(comp.show, ty, l, r)
-    case nir.Comp.Ule => checkIntegerOp(comp.show, ty, l, r)
-    case nir.Comp.Sgt => checkIntegerOp(comp.show, ty, l, r)
-    case nir.Comp.Sge => checkIntegerOp(comp.show, ty, l, r)
-    case nir.Comp.Slt => checkIntegerOp(comp.show, ty, l, r)
-    case nir.Comp.Sle => checkIntegerOp(comp.show, ty, l, r)
-    case nir.Comp.Feq => checkFloatOp(comp.show, ty, l, r)
-    case nir.Comp.Fne => checkFloatOp(comp.show, ty, l, r)
-    case nir.Comp.Fgt => checkFloatOp(comp.show, ty, l, r)
-    case nir.Comp.Fge => checkFloatOp(comp.show, ty, l, r)
-    case nir.Comp.Flt => checkFloatOp(comp.show, ty, l, r)
-    case nir.Comp.Fle => checkFloatOp(comp.show, ty, l, r)
-  }
+  def checkCompOp(comp: nir.Comp, ty: nir.Type, l: nir.Val, r: nir.Val): Unit =
+    comp match {
+      case nir.Comp.Ieq => checkIntegerOrBoolOrRefOp(comp.show, ty, l, r)
+      case nir.Comp.Ine => checkIntegerOrBoolOrRefOp(comp.show, ty, l, r)
+      case nir.Comp.Ugt => checkIntegerOp(comp.show, ty, l, r)
+      case nir.Comp.Uge => checkIntegerOp(comp.show, ty, l, r)
+      case nir.Comp.Ult => checkIntegerOp(comp.show, ty, l, r)
+      case nir.Comp.Ule => checkIntegerOp(comp.show, ty, l, r)
+      case nir.Comp.Sgt => checkIntegerOp(comp.show, ty, l, r)
+      case nir.Comp.Sge => checkIntegerOp(comp.show, ty, l, r)
+      case nir.Comp.Slt => checkIntegerOp(comp.show, ty, l, r)
+      case nir.Comp.Sle => checkIntegerOp(comp.show, ty, l, r)
+      case nir.Comp.Feq => checkFloatOp(comp.show, ty, l, r)
+      case nir.Comp.Fne => checkFloatOp(comp.show, ty, l, r)
+      case nir.Comp.Fgt => checkFloatOp(comp.show, ty, l, r)
+      case nir.Comp.Fge => checkFloatOp(comp.show, ty, l, r)
+      case nir.Comp.Flt => checkFloatOp(comp.show, ty, l, r)
+      case nir.Comp.Fle => checkFloatOp(comp.show, ty, l, r)
+    }
 
-  def checkConvOp(conv: nir.Conv, ty: nir.Type, value: nir.Val): Unit = conv match {
-    case nir.Conv.ZSizeCast | nir.Conv.SSizeCast =>
-      (value.ty, ty) match {
-        case (lty: nir.Type.FixedSizeI, nir.Type.Size) => ok
-        case (nir.Type.Size, rty: nir.Type.FixedSizeI) => ok
-        case _ =>
-          error(
-            s"can't cast size from ${value.ty.show} to ${ty.show}"
-          )
-      }
-    case nir.Conv.Trunc =>
-      (value.ty, ty) match {
-        case (lty: nir.Type.FixedSizeI, rty: nir.Type.FixedSizeI)
-            if lty.width > rty.width =>
-          ok
-        case _ =>
-          error(s"can't trunc from ${value.ty.show} to ${ty.show}")
-      }
-    case nir.Conv.Zext =>
-      (value.ty, ty) match {
-        case (lty: nir.Type.FixedSizeI, rty: nir.Type.FixedSizeI)
-            if lty.width < rty.width =>
-          ok
-        case _ =>
-          error(s"can't zext from ${value.ty.show} to ${ty.show}")
-      }
-    case nir.Conv.Sext =>
-      (value.ty, ty) match {
-        case (lty: nir.Type.FixedSizeI, rty: nir.Type.FixedSizeI)
-            if lty.width < rty.width =>
-          ok
-        case _ =>
-          error(s"can't sext from ${value.ty.show} to ${ty.show}")
-      }
-    case nir.Conv.Fptrunc =>
-      (value.ty, ty) match {
-        case (nir.Type.Double, nir.Type.Float) =>
-          ok
-        case _ =>
-          error(s"can't fptrunc from ${value.ty.show} to ${ty.show}")
-      }
-    case nir.Conv.Fpext =>
-      (value.ty, ty) match {
-        case (nir.Type.Float, nir.Type.Double) =>
-          ok
-        case _ =>
-          error(s"can't fpext from ${value.ty.show} to ${ty.show}")
-      }
-    case nir.Conv.Fptoui =>
-      (value.ty, ty) match {
-        case (nir.Type.Float | nir.Type.Double, ity: nir.Type.I) =>
-          ok
-        case _ =>
-          error(s"can't fptoui from ${value.ty.show} to ${ty.show}")
-      }
-    case nir.Conv.Fptosi =>
-      (value.ty, ty) match {
-        case (nir.Type.Float | nir.Type.Double, ity: nir.Type.I) if ity.signed =>
-          ok
-        case _ =>
-          error(s"can't fptosi from ${value.ty.show} to ${ty.show}")
-      }
-    case nir.Conv.Uitofp =>
-      (value.ty, ty) match {
-        case (ity: nir.Type.I, nir.Type.Float | nir.Type.Double) =>
-          ok
-        case _ =>
-          error(s"can't uitofp from ${value.ty.show} to ${ty.show}")
-      }
-    case nir.Conv.Sitofp =>
-      (value.ty, ty) match {
-        case (ity: nir.Type.I, nir.Type.Float | nir.Type.Double) if ity.signed =>
-          ok
-        case _ =>
-          error(s"can't sitofp from ${value.ty.show} to ${ty.show}")
-      }
-    case nir.Conv.Ptrtoint =>
-      (value.ty, ty) match {
-        case (nir.Type.Ptr | _: nir.Type.RefKind, _: nir.Type.I) =>
-          ok
-        case _ =>
-          error(s"can't ptrtoint from ${value.ty.show} to ${ty.show}")
-      }
-    case nir.Conv.Inttoptr =>
-      (value.ty, ty) match {
-        case (_: nir.Type.I, nir.Type.Ptr | _: nir.Type.RefKind) =>
-          ok
-        case _ =>
-          error(s"can't inttoptr from ${value.ty.show} to ${ty.show}")
-      }
-    case nir.Conv.Bitcast =>
-      def fail =
-        error(s"can't bitcast from ${value.ty.show} to ${ty.show}")
-      (value.ty, ty) match {
-        case (lty, rty) if lty == rty =>
-          ok
-        case (_: nir.Type.I, nir.Type.Ptr) | (nir.Type.Ptr, _: nir.Type.I) =>
-          fail
-        case (lty: nir.Type.PrimitiveKind, rty: nir.Type.PrimitiveKind)
-            if lty.width == rty.width =>
-          ok
-        case (_: nir.Type.RefKind, nir.Type.Ptr) | (nir.Type.Ptr, _: nir.Type.RefKind) |
-            (_: nir.Type.RefKind, _: nir.Type.RefKind) =>
-          ok
-        case _ =>
-          fail
-      }
-  }
+  def checkConvOp(conv: nir.Conv, ty: nir.Type, value: nir.Val): Unit =
+    conv match {
+      case nir.Conv.ZSizeCast | nir.Conv.SSizeCast =>
+        (value.ty, ty) match {
+          case (lty: nir.Type.FixedSizeI, nir.Type.Size) => ok
+          case (nir.Type.Size, rty: nir.Type.FixedSizeI) => ok
+          case _ =>
+            error(
+              s"can't cast size from ${value.ty.show} to ${ty.show}"
+            )
+        }
+      case nir.Conv.Trunc =>
+        (value.ty, ty) match {
+          case (lty: nir.Type.FixedSizeI, rty: nir.Type.FixedSizeI)
+              if lty.width > rty.width =>
+            ok
+          case _ =>
+            error(s"can't trunc from ${value.ty.show} to ${ty.show}")
+        }
+      case nir.Conv.Zext =>
+        (value.ty, ty) match {
+          case (lty: nir.Type.FixedSizeI, rty: nir.Type.FixedSizeI)
+              if lty.width < rty.width =>
+            ok
+          case _ =>
+            error(s"can't zext from ${value.ty.show} to ${ty.show}")
+        }
+      case nir.Conv.Sext =>
+        (value.ty, ty) match {
+          case (lty: nir.Type.FixedSizeI, rty: nir.Type.FixedSizeI)
+              if lty.width < rty.width =>
+            ok
+          case _ =>
+            error(s"can't sext from ${value.ty.show} to ${ty.show}")
+        }
+      case nir.Conv.Fptrunc =>
+        (value.ty, ty) match {
+          case (nir.Type.Double, nir.Type.Float) =>
+            ok
+          case _ =>
+            error(s"can't fptrunc from ${value.ty.show} to ${ty.show}")
+        }
+      case nir.Conv.Fpext =>
+        (value.ty, ty) match {
+          case (nir.Type.Float, nir.Type.Double) =>
+            ok
+          case _ =>
+            error(s"can't fpext from ${value.ty.show} to ${ty.show}")
+        }
+      case nir.Conv.Fptoui =>
+        (value.ty, ty) match {
+          case (nir.Type.Float | nir.Type.Double, ity: nir.Type.I) =>
+            ok
+          case _ =>
+            error(s"can't fptoui from ${value.ty.show} to ${ty.show}")
+        }
+      case nir.Conv.Fptosi =>
+        (value.ty, ty) match {
+          case (nir.Type.Float | nir.Type.Double, ity: nir.Type.I)
+              if ity.signed =>
+            ok
+          case _ =>
+            error(s"can't fptosi from ${value.ty.show} to ${ty.show}")
+        }
+      case nir.Conv.Uitofp =>
+        (value.ty, ty) match {
+          case (ity: nir.Type.I, nir.Type.Float | nir.Type.Double) =>
+            ok
+          case _ =>
+            error(s"can't uitofp from ${value.ty.show} to ${ty.show}")
+        }
+      case nir.Conv.Sitofp =>
+        (value.ty, ty) match {
+          case (ity: nir.Type.I, nir.Type.Float | nir.Type.Double)
+              if ity.signed =>
+            ok
+          case _ =>
+            error(s"can't sitofp from ${value.ty.show} to ${ty.show}")
+        }
+      case nir.Conv.Ptrtoint =>
+        (value.ty, ty) match {
+          case (nir.Type.Ptr | _: nir.Type.RefKind, _: nir.Type.I) =>
+            ok
+          case _ =>
+            error(s"can't ptrtoint from ${value.ty.show} to ${ty.show}")
+        }
+      case nir.Conv.Inttoptr =>
+        (value.ty, ty) match {
+          case (_: nir.Type.I, nir.Type.Ptr | _: nir.Type.RefKind) =>
+            ok
+          case _ =>
+            error(s"can't inttoptr from ${value.ty.show} to ${ty.show}")
+        }
+      case nir.Conv.Bitcast =>
+        def fail =
+          error(s"can't bitcast from ${value.ty.show} to ${ty.show}")
+        (value.ty, ty) match {
+          case (lty, rty) if lty == rty =>
+            ok
+          case (_: nir.Type.I, nir.Type.Ptr) | (nir.Type.Ptr, _: nir.Type.I) =>
+            fail
+          case (lty: nir.Type.PrimitiveKind, rty: nir.Type.PrimitiveKind)
+              if lty.width == rty.width =>
+            ok
+          case (_: nir.Type.RefKind, nir.Type.Ptr) |
+              (nir.Type.Ptr, _: nir.Type.RefKind) |
+              (_: nir.Type.RefKind, _: nir.Type.RefKind) =>
+            ok
+          case _ =>
+            fail
+        }
+    }
 
   def checkIntegerOp(op: String, ty: nir.Type, l: nir.Val, r: nir.Val): Unit = {
     ty match {
@@ -646,7 +652,12 @@ final class Check(implicit analysis: ReachabilityAnalysis.Result)
     }
   }
 
-  def checkIntegerOrBoolOp(op: String, ty: nir.Type, l: nir.Val, r: nir.Val): Unit = {
+  def checkIntegerOrBoolOp(
+      op: String,
+      ty: nir.Type,
+      l: nir.Val,
+      r: nir.Val
+  ): Unit = {
     ty match {
       case ty @ (_: nir.Type.I | nir.Type.Bool) =>
         expect(ty, l)
@@ -656,9 +667,15 @@ final class Check(implicit analysis: ReachabilityAnalysis.Result)
     }
   }
 
-  def checkIntegerOrBoolOrRefOp(op: String, ty: nir.Type, l: nir.Val, r: nir.Val): Unit = {
+  def checkIntegerOrBoolOrRefOp(
+      op: String,
+      ty: nir.Type,
+      l: nir.Val,
+      r: nir.Val
+  ): Unit = {
     ty match {
-      case ty @ (_: nir.Type.I | nir.Type.Bool | nir.Type.Null | nir.Type.Ptr) =>
+      case ty @ (_: nir.Type.I | nir.Type.Bool | nir.Type.Null |
+          nir.Type.Ptr) =>
         expect(ty, l)
         expect(ty, r)
       case ty: nir.Type.RefKind =>

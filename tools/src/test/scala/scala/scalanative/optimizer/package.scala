@@ -4,7 +4,6 @@ import org.junit.Assert._
 import scala.scalanative.linker.ReachabilityAnalysis
 
 package object optimizer {
-  import nir._
 
   def assertContainsAll[T](
       msg: String,
@@ -24,46 +23,52 @@ package object optimizer {
     )
   }
 
-  def assertDistinct(localNames: Iterable[LocalName]) = {
+  def assertDistinct(localNames: Iterable[nir.LocalName]) = {
     val duplicated =
       localNames.groupBy(identity).filter(_._2.size > 1).map(_._1)
     assertTrue(s"Found duplicated names of ${duplicated}", duplicated.isEmpty)
   }
 
-  def namedLets(defn: nir.Defn.Define): Map[Inst.Let, LocalName] =
+  def namedLets(defn: nir.Defn.Define): Map[nir.Inst.Let, nir.LocalName] =
     defn.insts.collect {
-      case inst: Inst.Let if defn.debugInfo.localNames.contains(inst.id) =>
+      case inst: nir.Inst.Let if defn.debugInfo.localNames.contains(inst.id) =>
         inst -> defn.debugInfo.localNames(inst.id)
     }.toMap
 
   protected[optimizer] def findEntry(
-      linked: Seq[Defn],
+      linked: Seq[nir.Defn],
       entryName: String = "Test"
-  ): Option[Defn.Define] = {
+  ): Option[nir.Defn.Define] = {
     object TestMain {
-      val TestModule = Global.Top(s"$entryName$$")
+      val TestModule = nir.Global.Top(s"$entryName$$")
       val CompanionMain =
-        TestModule.member(Rt.ScalaMainSig.copy(scope = Sig.Scope.Public))
+        TestModule.member(
+          nir.Rt.ScalaMainSig.copy(scope = nir.Sig.Scope.Public)
+        )
 
-      def unapply(name: Global): Boolean = name match {
+      def unapply(name: nir.Global): Boolean = name match {
         case CompanionMain => true
-        case Global.Member(TestModule, sig) =>
+        case nir.Global.Member(TestModule, sig) =>
           sig.unmangled match {
-            case Sig.Duplicate(of, _) => of == CompanionMain.sig
-            case _                    => false
+            case nir.Sig.Duplicate(of, _) =>
+              of == CompanionMain.sig
+            case _ =>
+              false
           }
         case _ => false
       }
     }
     object TestMainForwarder {
-      val staticForwarder = Global.Top("Test").member(Rt.ScalaMainSig)
-      def unapply(name: Global): Boolean = name == staticForwarder
+      val staticForwarder = nir.Global.Top("Test").member(nir.Rt.ScalaMainSig)
+      def unapply(name: nir.Global): Boolean = name == staticForwarder
     }
     val companionMethod = linked
-      .collectFirst { case defn @ Defn.Define(_, TestMain(), _, _, _) => defn }
+      .collectFirst {
+        case defn @ nir.Defn.Define(_, TestMain(), _, _, _) => defn
+      }
     def staticForwarder = linked
       .collectFirst {
-        case defn @ Defn.Define(_, TestMainForwarder(), _, _, _) => defn
+        case defn @ nir.Defn.Define(_, TestMainForwarder(), _, _, _) => defn
       }
     companionMethod
       .orElse(staticForwarder)
@@ -74,7 +79,7 @@ package object optimizer {
       config: build.Config,
       optimized: => ReachabilityAnalysis.Result
   )(
-      fn: Seq[Defn] => Unit
+      fn: Seq[nir.Defn] => Unit
   ): Unit = {
     import scala.scalanative.codegen._
     import scala.concurrent.ExecutionContext.Implicits.global

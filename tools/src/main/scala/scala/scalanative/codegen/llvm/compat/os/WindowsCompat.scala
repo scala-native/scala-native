@@ -1,15 +1,16 @@
-package scala.scalanative.codegen.llvm
+package scala.scalanative
+package codegen.llvm
 package compat.os
 
 import scala.scalanative.codegen.llvm.AbstractCodeGen
-import scala.scalanative.nir.ControlFlow.Block
-import scala.scalanative.nir.{Fresh, Next, Position, Val}
 import scala.scalanative.nir.Defn.Define.DebugInfo
 import scala.scalanative.util.ShowBuilder
 
 private[codegen] class WindowsCompat(codegen: AbstractCodeGen)
     extends OsCompat(codegen) {
+
   import codegen.{pointerType => ptrT}
+
   val ehWrapperTy = "\"??_R0?AVExceptionWrapper@scalanative@@@8\""
   val ehWrapperName = "c\".?AVExceptionWrapper@scalanative@@\\00\""
   val ehClass = "%\"class.scalanative::ExceptionWrapper\""
@@ -21,7 +22,9 @@ private[codegen] class WindowsCompat(codegen: AbstractCodeGen)
 
   override protected val osPersonalityType: String = "@__CxxFrameHandler3"
 
-  override def genBlockAlloca(block: Block)(implicit sb: ShowBuilder): Unit = {
+  override def genBlockAlloca(
+      block: nir.ControlFlow.Block
+  )(implicit sb: ShowBuilder): Unit = {
     import sb._
     if (block.pred.isEmpty) {
       newline()
@@ -49,15 +52,15 @@ private[codegen] class WindowsCompat(codegen: AbstractCodeGen)
   }
 
   override def genLandingPad(
-      unwind: Next.Unwind
+      unwind: nir.Next.Unwind
   )(implicit
-      fresh: Fresh,
-      pos: Position,
+      fresh: nir.Fresh,
+      pos: nir.Position,
       sb: ShowBuilder
   ): Unit = {
     import codegen._
     import sb._
-    val Next.Unwind(Val.Local(excname, _), next) = unwind
+    val nir.Next.Unwind(nir.Val.Local(excname, _), next) = unwind
 
     val excpad = s"_${excname.id}.landingpad"
     val excsucc = excpad + ".succ"
@@ -96,4 +99,5 @@ private[codegen] class WindowsCompat(codegen: AbstractCodeGen)
     genNext(next)
     unindent()
   }
+
 }

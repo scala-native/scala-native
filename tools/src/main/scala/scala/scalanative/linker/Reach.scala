@@ -4,38 +4,42 @@ package linker
 import java.nio.file.{Path, Paths}
 import scala.annotation.tailrec
 import scala.collection.mutable
-import scalanative.nir._
 
 class Reach(
     protected val config: build.Config,
-    entries: Seq[Global],
+    entries: Seq[nir.Global],
     loader: ClassLoader
 ) extends LinktimeValueResolver {
   import Reach._
 
-  val loaded = mutable.Map.empty[Global.Top, mutable.Map[Global, Defn]]
-  val unreachable = mutable.Map.empty[Global, UnreachableSymbol]
-  val unsupported = mutable.Map.empty[Global, UnsupportedFeature]
-  val enqueued = mutable.Set.empty[Global]
-  var todo = List.empty[Global]
-  val done = mutable.Map.empty[Global, Defn]
-  var stack = List.empty[Global]
-  val links = mutable.Set.empty[Attr.Link]
-  val preprocessorDefinitions = mutable.Set.empty[Attr.Define]
-  val infos = mutable.Map.empty[Global, Info]
-  val from = mutable.Map.empty[Global, ReferencedFrom]
+  val loaded =
+    mutable.Map.empty[nir.Global.Top, mutable.Map[nir.Global, nir.Defn]]
+  val unreachable = mutable.Map.empty[nir.Global, UnreachableSymbol]
+  val unsupported = mutable.Map.empty[nir.Global, UnsupportedFeature]
+  val enqueued = mutable.Set.empty[nir.Global]
+  var todo = List.empty[nir.Global]
+  val done = mutable.Map.empty[nir.Global, nir.Defn]
+  var stack = List.empty[nir.Global]
+  val links = mutable.Set.empty[nir.Attr.Link]
+  val preprocessorDefinitions = mutable.Set.empty[nir.Attr.Define]
+  val infos = mutable.Map.empty[nir.Global, Info]
+  val from = mutable.Map.empty[nir.Global, ReferencedFrom]
 
-  val dyncandidates = mutable.Map.empty[Sig, mutable.Set[Global.Member]]
-  val dynsigs = mutable.Set.empty[Sig]
-  val dynimpls = mutable.Set.empty[Global.Member]
+  val dyncandidates = mutable.Map.empty[nir.Sig, mutable.Set[nir.Global.Member]]
+  val dynsigs = mutable.Set.empty[nir.Sig]
+  val dynimpls = mutable.Set.empty[nir.Global.Member]
 
-  private case class DelayedMethod(owner: Global.Top, sig: Sig, pos: Position)
+  private case class DelayedMethod(
+      owner: nir.Global.Top,
+      sig: nir.Sig,
+      pos: nir.Position
+  )
   private val delayedMethods = mutable.Set.empty[DelayedMethod]
 
   if (injects.nonEmpty) {
     injects.groupBy(_.name.top).foreach {
       case (owner, defns) =>
-        val buf = mutable.Map.empty[Global, Defn]
+        val buf = mutable.Map.empty[nir.Global, nir.Defn]
         loaded.update(owner, buf)
         defns.foreach(defn => buf.update(defn.name, defn))
     }
@@ -62,7 +66,7 @@ class Reach(
   def result(): ReachabilityAnalysis = {
     cleanup()
 
-    val defns = mutable.UnrolledBuffer.empty[Defn]
+    val defns = mutable.UnrolledBuffer.empty[nir.Defn]
     defns.sizeHint(done.size)
     // drop the null values that have been introduced
     // in reachUnavailable
@@ -114,13 +118,13 @@ class Reach(
     }
   }
 
-  def lookup(global: Global): Option[Defn] =
+  def lookup(global: nir.Global): Option[nir.Defn] =
     lookup(global, ignoreIfUnavailable = false)
 
   private def lookup(
-      global: Global,
+      global: nir.Global,
       ignoreIfUnavailable: Boolean
-  ): Option[Defn] = {
+  ): Option[nir.Defn] = {
     val owner = global.top
     if (!loaded.contains(owner) && !unreachable.contains(owner)) {
       loader
@@ -128,7 +132,7 @@ class Reach(
         .fold[Unit] {
           if (!ignoreIfUnavailable) addMissing(global)
         } { defns =>
-          val scope = mutable.Map.empty[Global, Defn]
+          val scope = mutable.Map.empty[nir.Global, nir.Defn]
           defns.foreach { defn => scope(defn.name) = defn }
           loaded(owner) = scope
         }
@@ -183,7 +187,7 @@ class Reach(
     }
   }
 
-  def reachDefn(name: Global): Unit = {
+  def reachDefn(name: nir.Global): Unit = {
     stack ::= name
     lookup(name).fold[Unit] {
       reachUnavailable(name)
@@ -192,8 +196,10 @@ class Reach(
         reachUnavailable(name)
       } else {
         val maybeFixedDefn = defn match {
-          case defn: Defn.Define => resolveLinktimeDefine(defn)
-          case _                 => defn
+          case defn: nir.Defn.Define =>
+            resolveLinktimeDefine(defn)
+          case _ =>
+            defn
         }
         reachDefn(maybeFixedDefn)
       }
@@ -201,32 +207,32 @@ class Reach(
     stack = stack.tail
   }
 
-  def reachDefn(defn: Defn): Unit = {
+  def reachDefn(defn: nir.Defn): Unit = {
     implicit val srcPosition = defn.pos
     defn match {
-      case defn: Defn.Var =>
+      case defn: nir.Defn.Var =>
         reachVar(defn)
-      case defn: Defn.Const =>
+      case defn: nir.Defn.Const =>
         reachConst(defn)
-      case defn: Defn.Declare =>
+      case defn: nir.Defn.Declare =>
         reachDeclare(defn)
-      case defn: Defn.Define =>
-        val Global.Member(_, sig) = defn.name
-        if (Rt.arrayAlloc.contains(sig)) {
-          classInfo(Rt.arrayAlloc(sig)).foreach(reachAllocation)
+      case defn: nir.Defn.Define =>
+        val nir.Global.Member(_, sig) = defn.name
+        if (nir.Rt.arrayAlloc.contains(sig)) {
+          classInfo(nir.Rt.arrayAlloc(sig)).foreach(reachAllocation)
         }
         reachDefine(resolveLinktimeDefine(defn))
-      case defn: Defn.Trait =>
+      case defn: nir.Defn.Trait =>
         reachTrait(defn)
-      case defn: Defn.Class =>
+      case defn: nir.Defn.Class =>
         reachClass(defn)
-      case defn: Defn.Module =>
+      case defn: nir.Defn.Module =>
         reachModule(defn)
     }
     done(defn.name) = defn
   }
 
-  def reachEntry(name: Global)(implicit srcPosition: nir.Position): Unit = {
+  def reachEntry(name: nir.Global)(implicit srcPosition: nir.Position): Unit = {
     if (!name.isTop) {
       reachEntry(name.top)
     }
@@ -237,7 +243,7 @@ class Reach(
         if (!cls.attrs.isAbstract) {
           reachAllocation(cls)(cls.position)
           if (cls.isModule) {
-            val init = cls.name.member(Sig.Ctor(Seq.empty))
+            val init = cls.name.member(nir.Sig.Ctor(Seq.empty))
             if (loaded(cls.name).contains(init)) {
               reachGlobal(init)(cls.position)
             }
@@ -249,20 +255,20 @@ class Reach(
   }
 
   def reachClinit(
-      clsName: Global.Top
+      clsName: nir.Global.Top
   )(implicit srcPosition: nir.Position): Unit = {
     reachGlobalNow(clsName)
     infos.get(clsName).foreach { cls =>
-      val clinit = clsName.member(Sig.Clinit)
+      val clinit = clsName.member(nir.Sig.Clinit)
       if (loaded(clsName).contains(clinit)) {
         reachGlobal(clinit)(cls.position)
       }
     }
   }
 
-  def reachExported(name: Global.Top): Unit = {
-    def isExported(defn: Defn) = defn match {
-      case Defn.Define(attrs, Global.Member(_, sig), _, _, _) =>
+  def reachExported(name: nir.Global.Top): Unit = {
+    def isExported(defn: nir.Defn) = defn match {
+      case nir.Defn.Define(attrs, nir.Global.Member(_, sig), _, _, _) =>
         attrs.isExtern || sig.isExtern
       case _ => false
     }
@@ -274,14 +280,16 @@ class Reach(
     } if (isExported(defn)) reachGlobal(name)(defn.pos)
   }
 
-  def reachGlobal(name: Global)(implicit srcPosition: nir.Position): Unit =
-    if (!enqueued.contains(name) && name.ne(Global.None)) {
+  def reachGlobal(name: nir.Global)(implicit srcPosition: nir.Position): Unit =
+    if (!enqueued.contains(name) && name.ne(nir.Global.None)) {
       enqueued += name
       track(name)
       todo ::= name
     }
 
-  def reachGlobalNow(name: Global)(implicit srcPosition: nir.Position): Unit =
+  def reachGlobalNow(
+      name: nir.Global
+  )(implicit srcPosition: nir.Position): Unit =
     if (done.contains(name)) {
       ()
     } else if (!stack.contains(name)) {
@@ -324,8 +332,8 @@ class Reach(
             util.unreachable
         }
         loaded(info.name).foreach {
-          case (_, defn: Defn.Define) =>
-            val Global.Member(_, sig) = defn.name
+          case (_, defn: nir.Defn.Define) =>
+            val nir.Global.Member(_, sig) = defn.name
             info.responds(sig) = defn.name
           case _ =>
             ()
@@ -356,9 +364,9 @@ class Reach(
           info.responds ++= parentInfo.responds
         }
         loaded(info.name).foreach {
-          case (_, defn: Defn.Define) =>
-            val Global.Member(_, sig) = defn.name
-            def update(sig: Sig): Unit = {
+          case (_, defn: nir.Defn.Define) =>
+            val nir.Global.Member(_, sig) = defn.name
+            def update(sig: nir.Sig): Unit = {
               info.responds(sig) = lookup(info, sig)
                 .getOrElse(
                   fail(s"Required method ${sig} not found in ${info.name}")
@@ -392,7 +400,7 @@ class Reach(
       // on this class. This includes virtual calls
       // on the traits that this class implements and
       // calls on all transitive parents.
-      val calls = mutable.Set.empty[Sig]
+      val calls = mutable.Set.empty[nir.Sig]
       calls ++= info.calls
       def loopParent(parentInfo: Class): Unit = {
         calls ++= parentInfo.calls
@@ -426,7 +434,7 @@ class Reach(
             val buf =
               dyncandidates.getOrElseUpdate(
                 dynsig,
-                mutable.Set.empty[Global.Member]
+                mutable.Set.empty[nir.Global.Member]
               )
             buf += impl
           } else {
@@ -436,7 +444,7 @@ class Reach(
         case (sig, impl)
             if sig.isGenerated
               && sig.unmangled
-                .asInstanceOf[Sig.Generated]
+                .asInstanceOf[nir.Sig.Generated]
                 .id == "$extern$forwarder" =>
           reachGlobal(impl)
         case _ =>
@@ -445,7 +453,7 @@ class Reach(
     }
 
   def scopeInfo(
-      name: Global.Top
+      name: nir.Global.Top
   )(implicit srcPosition: nir.Position): Option[ScopeInfo] = {
     reachGlobalNow(name)
     infos(name) match {
@@ -455,7 +463,7 @@ class Reach(
   }
 
   def scopeInfoOrUnavailable(
-      name: Global.Top
+      name: nir.Global.Top
   )(implicit srcPosition: nir.Position): Info = {
     reachGlobalNow(name)
     infos(name) match {
@@ -466,7 +474,7 @@ class Reach(
   }
 
   def classInfo(
-      name: Global.Top
+      name: nir.Global.Top
   )(implicit srcPosition: nir.Position): Option[Class] = {
     reachGlobalNow(name)
     infos(name) match {
@@ -476,14 +484,14 @@ class Reach(
   }
 
   def classInfoOrObject(
-      name: Global.Top
+      name: nir.Global.Top
   )(implicit srcPosition: nir.Position): Class =
     classInfo(name)
-      .orElse(classInfo(Rt.Object.name))
+      .orElse(classInfo(nir.Rt.Object.name))
       .getOrElse(fail(s"Class info not available for $name"))
 
   def traitInfo(
-      name: Global.Top
+      name: nir.Global.Top
   )(implicit srcPosition: nir.Position): Option[Trait] = {
     reachGlobalNow(name)
     infos(name) match {
@@ -493,7 +501,7 @@ class Reach(
   }
 
   def methodInfo(
-      name: Global
+      name: nir.Global
   )(implicit srcPosition: nir.Position): Option[Method] = {
     reachGlobalNow(name)
     infos(name) match {
@@ -503,7 +511,7 @@ class Reach(
   }
 
   def fieldInfo(
-      name: Global
+      name: nir.Global
   )(implicit srcPosition: nir.Position): Option[Field] = {
     reachGlobalNow(name)
     infos(name) match {
@@ -512,7 +520,7 @@ class Reach(
     }
   }
 
-  def reachUnavailable(name: Global): Unit = {
+  def reachUnavailable(name: nir.Global): Unit = {
     newInfo(new Unavailable(name))
     addMissing(name)
     // Put a null definition to indicate that name
@@ -523,8 +531,8 @@ class Reach(
     done(name) = null
   }
 
-  def reachVar(defn: Defn.Var): Unit = {
-    val Defn.Var(attrs, name, ty, rhs) = defn
+  def reachVar(defn: nir.Defn.Var): Unit = {
+    val nir.Defn.Var(attrs, name, ty, rhs) = defn
     implicit val pos: nir.Position = defn.pos
     newInfo(
       new Field(
@@ -541,8 +549,8 @@ class Reach(
     reachVal(rhs)
   }
 
-  def reachConst(defn: Defn.Const): Unit = {
-    val Defn.Const(attrs, name, ty, rhs) = defn
+  def reachConst(defn: nir.Defn.Const): Unit = {
+    val nir.Defn.Const(attrs, name, ty, rhs) = defn
     implicit val pos: nir.Position = defn.pos
     newInfo(
       new Field(
@@ -559,8 +567,8 @@ class Reach(
     reachVal(rhs)
   }
 
-  def reachDeclare(defn: Defn.Declare): Unit = {
-    val Defn.Declare(attrs, name, ty) = defn
+  def reachDeclare(defn: nir.Defn.Declare): Unit = {
+    val nir.Defn.Declare(attrs, name, ty) = defn
     implicit val pos: nir.Position = defn.pos
     newInfo(
       new Method(
@@ -569,15 +577,15 @@ class Reach(
         name,
         ty,
         insts = Array(),
-        debugInfo = Defn.Define.DebugInfo.empty
+        debugInfo = nir.Defn.Define.DebugInfo.empty
       )
     )
     reachAttrs(attrs)
     reachType(ty)
   }
 
-  def reachDefine(defn: Defn.Define): Unit = {
-    val Defn.Define(attrs, name, ty, insts, debugInfo) = defn
+  def reachDefine(defn: nir.Defn.Define): Unit = {
+    val nir.Defn.Define(attrs, name, ty, insts, debugInfo) = defn
     implicit val pos: nir.Position = defn.pos
     newInfo(
       new Method(
@@ -594,15 +602,15 @@ class Reach(
     reachInsts(insts)
   }
 
-  def reachTrait(defn: Defn.Trait): Unit = {
-    val Defn.Trait(attrs, name, traits) = defn
+  def reachTrait(defn: nir.Defn.Trait): Unit = {
+    val nir.Defn.Trait(attrs, name, traits) = defn
     implicit val pos: nir.Position = defn.pos
     newInfo(new Trait(attrs, name, traits.flatMap(traitInfo)))
     reachAttrs(attrs)
   }
 
-  def reachClass(defn: Defn.Class): Unit = {
-    val Defn.Class(attrs, name, parent, traits) = defn
+  def reachClass(defn: nir.Defn.Class): Unit = {
+    val nir.Defn.Class(attrs, name, parent, traits) = defn
     implicit val pos: nir.Position = defn.pos
     newInfo(
       new Class(
@@ -616,8 +624,8 @@ class Reach(
     reachAttrs(attrs)
   }
 
-  def reachModule(defn: Defn.Module): Unit = {
-    val Defn.Module(attrs, name, parent, traits) = defn
+  def reachModule(defn: nir.Defn.Module): Unit = {
+    val nir.Defn.Module(attrs, name, parent, traits) = defn
     implicit val pos: nir.Position = defn.pos
     newInfo(
       new Class(
@@ -631,203 +639,210 @@ class Reach(
     reachAttrs(attrs)
   }
 
-  def reachAttrs(attrs: Attrs): Unit = {
+  def reachAttrs(attrs: nir.Attrs): Unit = {
     links ++= attrs.links
     preprocessorDefinitions ++= attrs.preprocessorDefinitions
   }
 
-  def reachType(ty: Type)(implicit srcPosition: nir.Position): Unit = ty match {
-    case Type.ArrayValue(ty, n) =>
-      reachType(ty)
-    case Type.StructValue(tys) =>
-      tys.foreach(reachType)
-    case Type.Function(args, ty) =>
-      args.foreach(reachType)
-      reachType(ty)
-    case Type.Ref(name, _, _) =>
-      reachGlobal(name)
-    case Type.Var(ty) =>
-      reachType(ty)
-    case Type.Array(ty, _) =>
-      reachType(ty)
-    case _ =>
-      ()
-  }
-
-  def reachVal(value: Val)(implicit srcPosition: nir.Position): Unit =
-    value match {
-      case Val.Zero(ty)            => reachType(ty)
-      case Val.StructValue(values) => values.foreach(reachVal)
-      case Val.ArrayValue(ty, values) =>
+  def reachType(ty: nir.Type)(implicit srcPosition: nir.Position): Unit =
+    ty match {
+      case nir.Type.ArrayValue(ty, n) =>
         reachType(ty)
-        values.foreach(reachVal)
-      case Val.Local(_, ty) => reachType(ty)
-      case Val.Global(n, ty) =>
-        reachGlobal(n)
+      case nir.Type.StructValue(tys) =>
+        tys.foreach(reachType)
+      case nir.Type.Function(args, ty) =>
+        args.foreach(reachType)
         reachType(ty)
-      case Val.Const(v)     => reachVal(v)
-      case Val.ClassOf(cls) => reachGlobal(cls)
-      case _                => ()
+      case nir.Type.Ref(name, _, _) =>
+        reachGlobal(name)
+      case nir.Type.Var(ty) =>
+        reachType(ty)
+      case nir.Type.Array(ty, _) =>
+        reachType(ty)
+      case _ =>
+        ()
     }
 
-  def reachInsts(insts: Seq[Inst]): Unit =
+  def reachVal(value: nir.Val)(implicit srcPosition: nir.Position): Unit =
+    value match {
+      case nir.Val.Zero(ty) =>
+        reachType(ty)
+      case nir.Val.StructValue(values) =>
+        values.foreach(reachVal)
+      case nir.Val.ArrayValue(ty, values) =>
+        reachType(ty)
+        values.foreach(reachVal)
+      case nir.Val.Local(_, ty) =>
+        reachType(ty)
+      case nir.Val.Global(n, ty) =>
+        reachGlobal(n)
+        reachType(ty)
+      case nir.Val.Const(v) =>
+        reachVal(v)
+      case nir.Val.ClassOf(cls) =>
+        reachGlobal(cls)
+      case _ =>
+        ()
+    }
+
+  def reachInsts(insts: Seq[nir.Inst]): Unit =
     insts.foreach(reachInst)
 
-  def reachInst(inst: Inst): Unit = {
+  def reachInst(inst: nir.Inst): Unit = {
     implicit val srcPosition: nir.Position = inst.pos
     inst match {
-      case Inst.Label(n, params) =>
+      case nir.Inst.Label(n, params) =>
         params.foreach(p => reachType(p.ty))
-      case Inst.Let(_, op, unwind) =>
+      case nir.Inst.Let(_, op, unwind) =>
         reachOp(op)(inst.pos)
         reachNext(unwind)
-      case Inst.Ret(v) =>
+      case nir.Inst.Ret(v) =>
         reachVal(v)
-      case Inst.Jump(next) =>
+      case nir.Inst.Jump(next) =>
         reachNext(next)
-      case Inst.If(v, thenp, elsep) =>
+      case nir.Inst.If(v, thenp, elsep) =>
         reachVal(v)
         reachNext(thenp)
         reachNext(elsep)
-      case Inst.Switch(v, default, cases) =>
+      case nir.Inst.Switch(v, default, cases) =>
         reachVal(v)
         reachNext(default)
         cases.foreach(reachNext)
-      case Inst.Throw(v, unwind) =>
+      case nir.Inst.Throw(v, unwind) =>
         reachVal(v)
         reachNext(unwind)
-      case Inst.Unreachable(unwind) =>
+      case nir.Inst.Unreachable(unwind) =>
         reachNext(unwind)
-      case _: Inst.LinktimeIf =>
+      case _: nir.Inst.LinktimeIf =>
         util.unreachable
     }
   }
 
-  def reachOp(op: Op)(implicit pos: Position): Unit = op match {
-    case Op.Call(ty, ptrv, argvs) =>
+  def reachOp(op: nir.Op)(implicit pos: nir.Position): Unit = op match {
+    case nir.Op.Call(ty, ptrv, argvs) =>
       reachType(ty)
       reachVal(ptrv)
       argvs.foreach(reachVal)
-    case Op.Load(ty, ptrv, syncAttrs) =>
+    case nir.Op.Load(ty, ptrv, syncAttrs) =>
       reachType(ty)
       reachVal(ptrv)
-    case Op.Store(ty, ptrv, v, syncAttrs) =>
+    case nir.Op.Store(ty, ptrv, v, syncAttrs) =>
       reachType(ty)
       reachVal(ptrv)
       reachVal(v)
-    case Op.Elem(ty, ptrv, indexvs) =>
+    case nir.Op.Elem(ty, ptrv, indexvs) =>
       reachType(ty)
       reachVal(ptrv)
       indexvs.foreach(reachVal)
-    case Op.Extract(aggrv, indexvs) =>
+    case nir.Op.Extract(aggrv, indexvs) =>
       reachVal(aggrv)
-    case Op.Insert(aggrv, v, indexvs) =>
+    case nir.Op.Insert(aggrv, v, indexvs) =>
       reachVal(aggrv)
       reachVal(v)
-    case Op.Stackalloc(ty, v) =>
+    case nir.Op.Stackalloc(ty, v) =>
       reachType(ty)
       reachVal(v)
       ty match {
-        case ref: Type.RefKind =>
+        case ref: nir.Type.RefKind =>
           classInfo(ref.className).foreach(reachAllocation)
         case _ => ()
       }
-    case Op.Bin(bin, ty, lv, rv) =>
+    case nir.Op.Bin(bin, ty, lv, rv) =>
       reachType(ty)
       reachVal(lv)
       reachVal(rv)
-    case Op.Comp(comp, ty, lv, rv) =>
+    case nir.Op.Comp(comp, ty, lv, rv) =>
       reachType(ty)
       reachVal(lv)
       reachVal(rv)
-    case Op.Conv(conv, ty, v) =>
+    case nir.Op.Conv(conv, ty, v) =>
       reachType(ty)
       reachVal(v)
-    case Op.Fence(attrs) => ()
+    case nir.Op.Fence(attrs) => ()
 
-    case Op.Classalloc(n, zoneHandle) =>
+    case nir.Op.Classalloc(n, zoneHandle) =>
       classInfo(n).foreach(reachAllocation)
       zoneHandle.foreach(reachVal)
-    case Op.Fieldload(ty, v, n) =>
+    case nir.Op.Fieldload(ty, v, n) =>
       reachType(ty)
       reachVal(v)
       reachGlobal(n)
-    case Op.Fieldstore(ty, v1, n, v2) =>
+    case nir.Op.Fieldstore(ty, v1, n, v2) =>
       reachType(ty)
       reachVal(v1)
       reachGlobal(n)
       reachVal(v2)
-    case Op.Field(obj, name) =>
+    case nir.Op.Field(obj, name) =>
       reachVal(obj)
       reachGlobal(name)
-    case Op.Method(obj, sig) =>
+    case nir.Op.Method(obj, sig) =>
       reachVal(obj)
       reachMethodTargets(obj.ty, sig)
-    case Op.Dynmethod(obj, dynsig) =>
+    case nir.Op.Dynmethod(obj, dynsig) =>
       reachVal(obj)
       reachDynamicMethodTargets(dynsig)
-    case Op.Module(n) =>
+    case nir.Op.Module(n) =>
       classInfo(n).foreach(reachAllocation)
-      val init = n.member(Sig.Ctor(Seq.empty))
+      val init = n.member(nir.Sig.Ctor(Seq.empty))
       loaded.get(n).fold(addMissing(n)) { defn =>
         if (defn.contains(init)) {
           reachGlobal(init)
         }
       }
-    case Op.As(ty, v) =>
+    case nir.Op.As(ty, v) =>
       reachType(ty)
       reachVal(v)
-    case Op.Is(ty, v) =>
+    case nir.Op.Is(ty, v) =>
       reachType(ty)
       reachVal(v)
-    case Op.Copy(v) =>
+    case nir.Op.Copy(v) =>
       reachVal(v)
-    case Op.SizeOf(ty)      => reachType(ty)
-    case Op.AlignmentOf(ty) => reachType(ty)
-    case Op.Box(code, obj) =>
+    case nir.Op.SizeOf(ty)      => reachType(ty)
+    case nir.Op.AlignmentOf(ty) => reachType(ty)
+    case nir.Op.Box(code, obj) =>
       reachVal(obj)
-    case Op.Unbox(code, obj) =>
+    case nir.Op.Unbox(code, obj) =>
       reachVal(obj)
-    case Op.Var(ty) =>
+    case nir.Op.Var(ty) =>
       reachType(ty)
-    case Op.Varload(slot) =>
+    case nir.Op.Varload(slot) =>
       reachVal(slot)
-    case Op.Varstore(slot, value) =>
+    case nir.Op.Varstore(slot, value) =>
       reachVal(slot)
       reachVal(value)
-    case Op.Arrayalloc(ty, init, zoneHandle) =>
-      classInfo(Type.toArrayClass(ty)).foreach(reachAllocation)
+    case nir.Op.Arrayalloc(ty, init, zoneHandle) =>
+      classInfo(nir.Type.toArrayClass(ty)).foreach(reachAllocation)
       reachType(ty)
       reachVal(init)
       zoneHandle.foreach(reachVal)
-    case Op.Arrayload(ty, arr, idx) =>
+    case nir.Op.Arrayload(ty, arr, idx) =>
       reachType(ty)
       reachVal(arr)
       reachVal(idx)
-    case Op.Arraystore(ty, arr, idx, value) =>
+    case nir.Op.Arraystore(ty, arr, idx, value) =>
       reachType(ty)
       reachVal(arr)
       reachVal(idx)
       reachVal(value)
-    case Op.Arraylength(arr) =>
+    case nir.Op.Arraylength(arr) =>
       reachVal(arr)
   }
 
-  def reachNext(next: Next)(implicit srcPosition: nir.Position): Unit =
+  def reachNext(next: nir.Next)(implicit srcPosition: nir.Position): Unit =
     next match {
-      case Next.Label(_, args) =>
+      case nir.Next.Label(_, args) =>
         args.foreach(reachVal)
       case _ =>
         ()
     }
 
-  def reachMethodTargets(ty: Type, sig: Sig)(implicit
-      srcPosition: Position
+  def reachMethodTargets(ty: nir.Type, sig: nir.Sig)(implicit
+      srcPosition: nir.Position
   ): Unit =
     ty match {
-      case Type.Array(ty, _) =>
-        reachMethodTargets(Type.Ref(Type.toArrayClass(ty)), sig)
-      case Type.Ref(name, _, _) =>
+      case nir.Type.Array(ty, _) =>
+        reachMethodTargets(nir.Type.Ref(nir.Type.toArrayClass(ty)), sig)
+      case nir.Type.Ref(name, _, _) =>
         scopeInfo(name).foreach { scope =>
           if (!scope.calls.contains(sig)) {
             scope.calls += sig
@@ -846,7 +861,7 @@ class Reach(
     }
 
   def reachDynamicMethodTargets(
-      dynsig: Sig
+      dynsig: nir.Sig
   )(implicit srcPosition: nir.Position) = {
     if (!dynsigs.contains(dynsig)) {
       dynsigs += dynsig
@@ -860,7 +875,7 @@ class Reach(
     }
   }
 
-  def lookup(cls: Class, sig: Sig): Option[Global.Member] = {
+  def lookup(cls: Class, sig: nir.Sig): Option[nir.Global.Member] = {
     assert(loaded.contains(cls.name))
 
     val tryMember = cls.name.member(sig)
@@ -871,7 +886,7 @@ class Reach(
     }
   }
 
-  protected def addMissing(global: Global): Unit =
+  protected def addMissing(global: nir.Global): Unit =
     global match {
       case UnsupportedFeatureExtractor(details) =>
         unsupported.getOrElseUpdate(global, details)
@@ -886,11 +901,11 @@ class Reach(
         )
     }
 
-  private def parseSymbol(name: Global): SymbolDescriptor = {
+  private def parseSymbol(name: nir.Global): SymbolDescriptor = {
     def renderType(tpe: nir.Type): String = tpe match {
-      case arr: Type.Array   => s"${renderType(arr.ty)}[]"
-      case ref: Type.RefKind => ref.className.id
-      case ty                => ty.show
+      case arr: nir.Type.Array   => s"${renderType(arr.ty)}[]"
+      case ref: nir.Type.RefKind => ref.className.id
+      case ty                    => ty.show
     }
     def parseArgTypes(
         types: Seq[nir.Type],
@@ -911,15 +926,15 @@ class Reach(
       types.lastOption.map(renderType)
 
     def parseModifiers(scope: nir.Sig.Scope): List[String] = scope match {
-      case Sig.Scope.Public           => Nil
-      case Sig.Scope.Private(_)       => List(Private)
-      case Sig.Scope.PublicStatic     => List(Static)
-      case Sig.Scope.PrivateStatic(_) => List(Static, Private)
+      case nir.Sig.Scope.Public           => Nil
+      case nir.Sig.Scope.Private(_)       => List(Private)
+      case nir.Sig.Scope.PublicStatic     => List(Static)
+      case nir.Sig.Scope.PrivateStatic(_) => List(Static, Private)
     }
 
-    def parseSig(owner: String, sig: Sig): SymbolDescriptor =
+    def parseSig(owner: String, sig: nir.Sig): SymbolDescriptor =
       sig.unmangled match {
-        case Sig.Method(name, types, scope) =>
+        case nir.Sig.Method(name, types, scope) =>
           SymbolDescriptor(
             "method",
             s"$owner.$name",
@@ -927,31 +942,31 @@ class Reach(
             parseResultType(types),
             parseModifiers(scope)
           )
-        case Sig.Ctor(types) =>
+        case nir.Sig.Ctor(types) =>
           SymbolDescriptor(
             "constructor",
             owner,
             parseArgTypes(types, isCtor = true)
           )
-        case Sig.Clinit =>
+        case nir.Sig.Clinit =>
           SymbolDescriptor(
             "constructor",
             owner,
             modifiers = List(Static)
           )
-        case Sig.Field(name, scope) =>
+        case nir.Sig.Field(name, scope) =>
           SymbolDescriptor(
             "field",
             owner,
             modifiers = parseModifiers(scope)
           )
-        case Sig.Generated(name) =>
+        case nir.Sig.Generated(name) =>
           SymbolDescriptor(
             "symbol",
             s"$owner.$name",
             modifiers = List("generated")
           )
-        case Sig.Proxy(name, types) =>
+        case nir.Sig.Proxy(name, types) =>
           SymbolDescriptor(
             "method",
             s"$owner.$name",
@@ -959,7 +974,7 @@ class Reach(
             parseResultType(types),
             modifiers = List("proxy")
           )
-        case Sig.Duplicate(sig, types) =>
+        case nir.Sig.Duplicate(sig, types) =>
           val original = parseSig(owner, sig)
           original.copy(
             argTypes = parseArgTypes(types),
@@ -973,7 +988,7 @@ class Reach(
             parseResultType(types),
             modifiers = List("duplicate")
           )
-        case Sig.Extern(name) =>
+        case nir.Sig.Extern(name) =>
           SymbolDescriptor(
             "symbol",
             s"$owner.$name",
@@ -982,15 +997,20 @@ class Reach(
       }
 
     name match {
-      case Global.Member(owner, sig) => parseSig(owner.id, sig)
-      case Global.Top(id)            => SymbolDescriptor("type", id)
-      case _                         => util.unreachable
+      case nir.Global.Member(owner, sig) =>
+        parseSig(owner.id, sig)
+      case nir.Global.Top(id) =>
+        SymbolDescriptor("type", id)
+      case _ =>
+        util.unreachable
     }
   }
 
-  private def getBackTrace(referencedFrom: Global): List[BackTraceElement] = {
+  private def getBackTrace(
+      referencedFrom: nir.Global
+  ): List[BackTraceElement] = {
     val buf = List.newBuilder[BackTraceElement]
-    def loop(name: Global): List[BackTraceElement] = {
+    def loop(name: nir.Global): List[BackTraceElement] = {
       // orElse just in case if we messed something up and failed to correctly track references
       // Accept possibly empty backtrace instead of crashing
       val current = from.getOrElse(name, ReferencedFrom.Root)
@@ -1013,13 +1033,12 @@ class Reach(
   protected object UnsupportedFeatureExtractor {
     import UnsupportedFeature._
     val UnsupportedSymbol =
-      Global.Top("scala.scalanative.runtime.UnsupportedFeature")
+      nir.Global.Top("scala.scalanative.runtime.UnsupportedFeature")
 
     // Add stubs for NIR when checkFeatures is disabled
     val injects: Seq[nir.Defn] =
       if (config.compilerConfig.checkFeatures) Nil
       else {
-        import scala.scalanative.nir._
         implicit val srcPosition: nir.Position = nir.Position.NoPosition
         val stubMethods = for {
           methodName <- Seq("threads", "virtualThreads", "continuations")
@@ -1030,43 +1049,55 @@ class Reach(
             throwUndefinedVal
           }
           implicit val scopeId: nir.ScopeId = nir.ScopeId.TopLevel
-          Defn.Define(
-            attrs = Attrs.None,
+          nir.Defn.Define(
+            attrs = nir.Attrs.None,
             name = UnsupportedSymbol.member(
-              Sig.Method(methodName, Seq(Type.Unit), Sig.Scope.PublicStatic)
+              nir.Sig.Method(
+                methodName,
+                Seq(nir.Type.Unit),
+                nir.Sig.Scope.PublicStatic
+              )
             ),
-            ty = Type.Function(Nil, Type.Unit),
+            ty = nir.Type.Function(Nil, nir.Type.Unit),
             insts = {
-              implicit val fresh: Fresh = Fresh()
-              val buf = new Buffer()
+              implicit val fresh: nir.Fresh = nir.Fresh()
+              val buf = new nir.Buffer()
               buf.label(fresh(), Nil)
               buf.call(
                 throwUndefinedTy,
                 throwUndefinedVal,
-                Seq(Val.Null),
-                Next.None
+                Seq(nir.Val.Null),
+                nir.Next.None
               )
-              buf.unreachable(Next.None)
+              buf.unreachable(nir.Next.None)
               buf.toSeq
             }
           )
         }
         val stubType =
-          Defn.Class(Attrs.None, UnsupportedSymbol, Some(Rt.Object.name), Nil)
+          nir.Defn.Class(
+            nir.Attrs.None,
+            UnsupportedSymbol,
+            Some(nir.Rt.Object.name),
+            Nil
+          )
         stubType +: stubMethods
       }
 
-    private def details(sig: Sig): UnsupportedFeature.Kind = {
+    private def details(sig: nir.Sig): UnsupportedFeature.Kind = {
       sig.unmangled match {
-        case Sig.Method("threads", _, _)        => SystemThreads
-        case Sig.Method("virtualThreads", _, _) => VirtualThreads
-        case Sig.Method("continuations", _, _)  => Continuations
-        case _                                  => Other
+        case nir.Sig.Method("threads", _, _) =>
+          SystemThreads
+        case nir.Sig.Method("virtualThreads", _, _) =>
+          VirtualThreads
+        case nir.Sig.Method("continuations", _, _) =>
+          Continuations
+        case _ => Other
       }
     }
 
-    def unapply(name: Global): Option[UnsupportedFeature] = name match {
-      case Global.Member(UnsupportedSymbol, sig) =>
+    def unapply(name: nir.Global): Option[UnsupportedFeature] = name match {
+      case nir.Global.Member(UnsupportedSymbol, sig) =>
         unsupported
           .get(name)
           .orElse(
@@ -1085,7 +1116,7 @@ class Reach(
     throw new LinkingException(msg)
   }
 
-  protected def track(name: Global)(implicit srcPosition: nir.Position) =
+  protected def track(name: nir.Global)(implicit srcPosition: nir.Position) =
     from.getOrElseUpdate(
       name,
       if (stack.isEmpty) ReferencedFrom.Root
@@ -1098,7 +1129,7 @@ class Reach(
 object Reach {
   def apply(
       config: build.Config,
-      entries: Seq[Global],
+      entries: Seq[nir.Global],
       loader: ClassLoader
   ): ReachabilityAnalysis = {
     val reachability = new Reach(config, entries, loader)
@@ -1130,13 +1161,13 @@ object Reach {
     }
   }
   case class BackTraceElement(
-      name: Global,
+      name: nir.Global,
       symbol: SymbolDescriptor,
       filename: String,
       line: Int
   )
   case class UnreachableSymbol(
-      name: Global,
+      name: nir.Global,
       symbol: SymbolDescriptor,
       backtrace: List[BackTraceElement]
   )

@@ -14,7 +14,6 @@ import core.Phases._
 import dotty.tools.dotc.transform.SymUtils._
 
 import scala.collection.mutable
-import scala.scalanative.nir
 import scala.scalanative.nir.Defn.Define.DebugInfo
 import scala.scalanative.nir.Defn.Define.DebugInfo._
 import scala.scalanative.util.ScopedVar
@@ -197,7 +196,9 @@ trait NirGenStat(using Context) {
         align = getAlignmentAttr(f).orElse(classAlignment)
       )
       val ty = genType(f.info.resultType)
-      val fieldName @ nir.Global.Member(owner, sig) = genFieldName(f): @unchecked
+      val fieldName @ nir.Global.Member(owner, sig) = genFieldName(
+        f
+      ): @unchecked
       generatedDefns += nir.Defn.Var(attrs, fieldName, ty, nir.Val.Zero(ty))
 
       if (isStatic) {
@@ -573,8 +574,9 @@ trait NirGenStat(using Context) {
     }
 
     def isExternMethodAlias(target: Symbol) = (name, genName(target)) match {
-      case (nir.Global.Member(_, lsig), nir.Global.Member(_, rsig)) => lsig == rsig
-      case _                                                => false
+      case (nir.Global.Member(_, lsig), nir.Global.Member(_, rsig)) =>
+        lsig == rsig
+      case _ => false
     }
     val defaultArgs = dd.paramss.flatten.filter(_.symbol.is(HasDefault))
 

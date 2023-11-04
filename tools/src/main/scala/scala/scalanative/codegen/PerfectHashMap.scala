@@ -168,7 +168,10 @@ class PerfectHashMap[K, V](
 
 object DynmethodPerfectHashMap {
 
-  def apply(dynmethods: Seq[nir.Global.Member], allSignatures: Seq[nir.Sig]): nir.Val = {
+  def apply(
+      dynmethods: Seq[nir.Global.Member],
+      allSignatures: Seq[nir.Sig]
+  ): nir.Val = {
 
     val signaturesWithIndex =
       allSignatures.zipWithIndex.foldLeft(Map[nir.Sig, Int]()) {
@@ -198,7 +201,10 @@ object DynmethodPerfectHashMap {
           List(
             nir.Val.Int(perfectHashMap.size),
             nir.Val.Const(
-              nir.Val.ArrayValue(nir.Type.Int, perfectHashMap.keys.map(nir.Val.Int(_)))
+              nir.Val.ArrayValue(
+                nir.Type.Int,
+                perfectHashMap.keys.map(nir.Val.Int(_))
+              )
             ),
             nir.Val.Const(nir.Val.ArrayValue(nir.Type.Int, keys)),
             nir.Val.Const(nir.Val.ArrayValue(nir.Type.Ptr, values))

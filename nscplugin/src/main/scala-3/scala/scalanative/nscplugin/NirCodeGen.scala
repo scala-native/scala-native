@@ -2,7 +2,7 @@ package scala.scalanative
 package nscplugin
 
 import scala.scalanative.util
-import nir.Defn.Define.DebugInfo
+import scalanative.nir.Defn.Define.DebugInfo
 import scalanative.nir.serialization.serializeBinary
 
 import dotty.tools.dotc.{CompilationUnit, report}

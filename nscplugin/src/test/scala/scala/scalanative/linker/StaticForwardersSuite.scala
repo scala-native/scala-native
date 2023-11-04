@@ -31,16 +31,20 @@ class StaticForwardersSuite {
       val expected = Seq(
         Class.member(nir.Sig.Ctor(Nil)),
         Class.member(nir.Sig.Method("foo", Seq(nir.Rt.String))),
-        Class.member(nir.Sig.Method("bar", Seq(nir.Rt.String), nir.Sig.Scope.PublicStatic)),
         Class.member(
-          nir.Sig.Method("fooBar", Seq(nir.Rt.String), nir.Sig.Scope.PublicStatic)
+          nir.Sig.Method("bar", Seq(nir.Rt.String), nir.Sig.Scope.PublicStatic)
+        ),
+        Class.member(
+          nir.Sig
+            .Method("fooBar", Seq(nir.Rt.String), nir.Sig.Scope.PublicStatic)
         ),
         Class.member(nir.Rt.ScalaMainSig),
         Module.member(nir.Sig.Ctor(Nil)),
         Module.member(nir.Sig.Method("bar", Seq(nir.Rt.String))),
         Module.member(nir.Sig.Method("fooBar", Seq(nir.Rt.String))),
         Module.member(
-          nir.Sig.Method("main", nir.Rt.ScalaMainSig.types, nir.Sig.Scope.Public)
+          nir.Sig
+            .Method("main", nir.Rt.ScalaMainSig.types, nir.Sig.Scope.Public)
         )
       )
       assertTrue(expected.diff(defns.map(_.name)).isEmpty)
@@ -64,7 +68,9 @@ class StaticForwardersSuite {
       val expected = Seq(
         Class.member(nir.Sig.Field("foo", nir.Sig.Scope.Private(Class))),
         Class.member(nir.Sig.Method("foo", Seq(nir.Rt.String))),
-        Class.member(nir.Sig.Method("bar", Seq(nir.Rt.String), nir.Sig.Scope.PublicStatic)),
+        Class.member(
+          nir.Sig.Method("bar", Seq(nir.Rt.String), nir.Sig.Scope.PublicStatic)
+        ),
         Module.member(nir.Sig.Field("bar", nir.Sig.Scope.Private(Module))),
         Module.member(nir.Sig.Method("bar", Seq(nir.Rt.String)))
       )

@@ -7,7 +7,9 @@ object DynamicHashMap {
   final val ty: nir.Type = nir.Type.Ptr
 }
 
-class DynamicHashMap(cls: Class, proxies: Seq[nir.Defn])(implicit meta: Metadata) {
+class DynamicHashMap(cls: Class, proxies: Seq[nir.Defn])(implicit
+    meta: Metadata
+) {
 
   val methods: Seq[nir.Global.Member] = {
     val own = proxies.collect {

@@ -7,7 +7,6 @@ import org.junit.Assert._
 import java.io.File
 import java.nio.file.{Files, Path, Paths}
 import scalanative.util.Scope
-import scalanative.nir.{Sig}
 import scalanative.build.{ScalaNative, Logger, Discover}
 import scala.concurrent._
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -19,7 +18,7 @@ trait ReachabilitySuite {
   def g(top: String): nir.Global.Top =
     nir.Global.Top(top)
 
-  def g(top: String, sig: Sig): nir.Global.Member =
+  def g(top: String, sig: nir.Sig): nir.Global.Member =
     nir.Global.Member(nir.Global.Top(top), sig)
 
   private val MainMethodDependencies = Set(

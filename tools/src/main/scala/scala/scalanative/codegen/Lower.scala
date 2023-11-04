@@ -52,12 +52,18 @@ object Lower {
       ret
     }
 
-    private val unreachableSlowPath = mutable.Map.empty[Option[nir.Local], nir.Local]
-    private val nullPointerSlowPath = mutable.Map.empty[Option[nir.Local], nir.Local]
-    private val divisionByZeroSlowPath = mutable.Map.empty[Option[nir.Local], nir.Local]
-    private val classCastSlowPath = mutable.Map.empty[Option[nir.Local], nir.Local]
-    private val outOfBoundsSlowPath = mutable.Map.empty[Option[nir.Local], nir.Local]
-    private val noSuchMethodSlowPath = mutable.Map.empty[Option[nir.Local], nir.Local]
+    private val unreachableSlowPath =
+      mutable.Map.empty[Option[nir.Local], nir.Local]
+    private val nullPointerSlowPath =
+      mutable.Map.empty[Option[nir.Local], nir.Local]
+    private val divisionByZeroSlowPath =
+      mutable.Map.empty[Option[nir.Local], nir.Local]
+    private val classCastSlowPath =
+      mutable.Map.empty[Option[nir.Local], nir.Local]
+    private val outOfBoundsSlowPath =
+      mutable.Map.empty[Option[nir.Local], nir.Local]
+    private val noSuchMethodSlowPath =
+      mutable.Map.empty[Option[nir.Local], nir.Local]
 
     private def unwind: nir.Next =
       unwindHandler.get.fold[nir.Next](nir.Next.None) { handler =>
@@ -74,7 +80,8 @@ object Lower {
         case nir.Defn.Declare(attrs, MethodRef(_: Class | _: Trait, _), _)
             if !attrs.isExtern =>
           ()
-        case nir.Defn.Var(attrs, FieldRef(_: Class, _), _, _) if !attrs.isExtern =>
+        case nir.Defn.Var(attrs, FieldRef(_: Class, _), _, _)
+            if !attrs.isExtern =>
           ()
         case defn =>
           buf += onDefn(defn)
@@ -99,9 +106,12 @@ object Lower {
 
     override def onType(ty: nir.Type): nir.Type = ty
 
-    def genNext(buf: nir.Buffer, next: nir.Next)(implicit pos: nir.Position): nir.Next = {
+    def genNext(buf: nir.Buffer, next: nir.Next)(implicit
+        pos: nir.Position
+    ): nir.Next = {
       next match {
-        case nir.Next.Unwind(exc, next) => nir.Next.Unwind(exc, genNext(buf, next))
+        case nir.Next.Unwind(exc, next) =>
+          nir.Next.Unwind(exc, genNext(buf, next))
         case nir.Next.Case(value, next) =>
           nir.Next.Case(genVal(buf, value), genNext(buf, next))
         case nir.Next.Label(name, args) =>
@@ -127,7 +137,9 @@ object Lower {
 
       buf += insts.head
 
-      def newUnwindHandler(next: nir.Next)(implicit pos: nir.Position): Option[nir.Local] =
+      def newUnwindHandler(
+          next: nir.Next
+      )(implicit pos: nir.Position): Option[nir.Local] =
         next match {
           case nir.Next.None =>
             None
@@ -260,7 +272,9 @@ object Lower {
         super.onVal(value)
     }
 
-    def genVal(buf: nir.Buffer, value: nir.Val)(implicit pos: nir.Position): nir.Val =
+    def genVal(buf: nir.Buffer, value: nir.Val)(implicit
+        pos: nir.Position
+    ): nir.Val =
       value match {
         case nir.Val.ClassOf(ScopeRef(node)) =>
           rtti(node).const
@@ -346,7 +360,12 @@ object Lower {
             unwindHandler := slowPathUnwindHandler
           ) {
             buf.label(slowPath)
-            buf.call(throwUndefinedTy, throwUndefinedVal, Seq(nir.Val.Null), unwind)
+            buf.call(
+              throwUndefinedTy,
+              throwUndefinedVal,
+              Seq(nir.Val.Null),
+              unwind
+            )
             buf.unreachable(nir.Next.None)
           }
       }
@@ -477,7 +496,8 @@ object Lower {
         case nir.Op.Varstore(nir.Val.Local(slot, nir.Type.Var(ty)), value) =>
           buf.let(
             n,
-            nir.Op.Store(ty, nir.Val.Local(slot, nir.Type.Ptr), genVal(buf, value)),
+            nir.Op
+              .Store(ty, nir.Val.Local(slot, nir.Type.Ptr), genVal(buf, value)),
             unwind
           )
         case op: nir.Op.Arrayalloc =>
@@ -534,11 +554,16 @@ object Lower {
       val gt0 = comp(nir.Comp.Sge, nir.Type.Int, idx, zero, unwind)
       val ltLen = comp(nir.Comp.Slt, nir.Type.Int, idx, len, unwind)
       val inBounds = bin(nir.Bin.And, nir.Type.Bool, gt0, ltLen, unwind)
-      branch(inBounds, nir.Next(inBoundsL), nir.Next.Label(outOfBoundsL, Seq(idx)))
+      branch(
+        inBounds,
+        nir.Next(inBoundsL),
+        nir.Next.Label(outOfBoundsL, Seq(idx))
+      )
       label(inBoundsL)
     }
 
-    def genFieldElemOp(buf: nir.Buffer, obj: nir.Val, name: nir.Global.Member)(implicit
+    def genFieldElemOp(buf: nir.Buffer, obj: nir.Val, name: nir.Global.Member)(
+        implicit
         srcPosition: nir.Position,
         scopeId: nir.ScopeId
     ) = {
@@ -554,7 +579,8 @@ object Lower {
       elem(ty, v, Seq(zero, nir.Val.Int(index)), unwind)
     }
 
-    def genFieldloadOp(buf: nir.Buffer, n: nir.Local, op: nir.Op.Fieldload)(implicit
+    def genFieldloadOp(buf: nir.Buffer, n: nir.Local, op: nir.Op.Fieldload)(
+        implicit
         srcPosition: nir.Position,
         scopeId: nir.ScopeId
     ) = {
@@ -578,7 +604,8 @@ object Lower {
       genLoadOp(buf, n, nir.Op.Load(ty, elem, Some(syncAttrs)))
     }
 
-    def genFieldstoreOp(buf: nir.Buffer, n: nir.Local, op: nir.Op.Fieldstore)(implicit
+    def genFieldstoreOp(buf: nir.Buffer, n: nir.Local, op: nir.Op.Fieldstore)(
+        implicit
         srcPosition: nir.Position,
         scopeId: nir.ScopeId
     ) = {
@@ -623,7 +650,11 @@ object Lower {
             if (platform.useOpaquePointers) ptr
             else {
               val asPtr = fresh()
-              genConvOp(buf, asPtr, nir.Op.Conv(nir.Conv.Bitcast, nir.Type.Ptr, ptr))
+              genConvOp(
+                buf,
+                asPtr,
+                nir.Op.Conv(nir.Conv.Bitcast, nir.Type.Ptr, ptr)
+              )
               nir.Val.Local(asPtr, nir.Type.Ptr)
             }
           genLoadOp(
@@ -634,7 +665,11 @@ object Lower {
           genConvOp(
             buf,
             n,
-            nir.Op.Conv(nir.Conv.Trunc, nir.Type.Bool, nir.Val.Local(valueAsByte, nir.Type.Byte))
+            nir.Op.Conv(
+              nir.Conv.Trunc,
+              nir.Type.Bool,
+              nir.Val.Local(valueAsByte, nir.Type.Byte)
+            )
           )
 
         case nir.Op.Load(ty, ptr, syncAttrs) =>
@@ -659,10 +694,18 @@ object Lower {
             if (platform.useOpaquePointers) ptr
             else {
               val asPtr = fresh()
-              genConvOp(buf, asPtr, nir.Op.Conv(nir.Conv.Bitcast, nir.Type.Ptr, ptr))
+              genConvOp(
+                buf,
+                asPtr,
+                nir.Op.Conv(nir.Conv.Bitcast, nir.Type.Ptr, ptr)
+              )
               nir.Val.Local(asPtr, nir.Type.Ptr)
             }
-          genConvOp(buf, valueAsByte, nir.Op.Conv(nir.Conv.Zext, nir.Type.Byte, value))
+          genConvOp(
+            buf,
+            valueAsByte,
+            nir.Op.Conv(nir.Conv.Zext, nir.Type.Byte, value)
+          )
           genStoreOp(
             buf,
             n,
@@ -714,14 +757,16 @@ object Lower {
           val nir.Global.Member(_, sig) = defn.name
           lastResult = {
             // Exclude accessors and generated methods
-            def mayContainLoops = defn.insts.exists(_.isInstanceOf[nir.Inst.Jump])
+            def mayContainLoops =
+              defn.insts.exists(_.isInstanceOf[nir.Inst.Jump])
             !sig.isGenerated && (defn.insts.size > 4 || mayContainLoops)
           }
           lastResult
         }
       }
     }
-    private def genGCSafepoint(buf: nir.Buffer, genUnwind: Boolean = true)(implicit
+    private def genGCSafepoint(buf: nir.Buffer, genUnwind: Boolean = true)(
+        implicit
         srcPosition: nir.Position,
         scopeId: nir.ScopeId
     ): Unit = {
@@ -870,7 +915,8 @@ object Lower {
         case nir.Type.Null =>
           let(
             n,
-            nir.Op.Call(throwNullPointerTy, throwNullPointerVal, Seq(nir.Val.Null)),
+            nir.Op
+              .Call(throwNullPointerTy, throwNullPointerVal, Seq(nir.Val.Null)),
             unwind
           )
           buf.unreachable(nir.Next.None)
@@ -886,7 +932,8 @@ object Lower {
       }
     }
 
-    def genDynmethodOp(buf: nir.Buffer, n: nir.Local, op: nir.Op.Dynmethod)(implicit
+    def genDynmethodOp(buf: nir.Buffer, n: nir.Local, op: nir.Op.Dynmethod)(
+        implicit
         srcPosition: nir.Position,
         scopeId: nir.ScopeId
     ): Unit = {
@@ -900,7 +947,8 @@ object Lower {
         val noSuchMethodL =
           noSuchMethodSlowPath.getOrElseUpdate(unwindHandler, fresh())
 
-        val condNull = comp(nir.Comp.Ine, nir.Type.Ptr, value, nir.Val.Null, unwind)
+        val condNull =
+          comp(nir.Comp.Ine, nir.Type.Ptr, value, nir.Val.Null, unwind)
         branch(
           condNull,
           nir.Next(notNullL),
@@ -951,7 +999,10 @@ object Lower {
           val isNullL, checkL, resultL = fresh()
 
           // check if obj is null
-          val isNull = let(nir.Op.Comp(nir.Comp.Ieq, nir.Type.Ptr, obj, nir.Val.Null), unwind)
+          val isNull = let(
+            nir.Op.Comp(nir.Comp.Ieq, nir.Type.Ptr, obj, nir.Val.Null),
+            unwind
+          )
           branch(isNull, nir.Next(isNullL), nir.Next(checkL))
 
           // in case it's null, result is always false
@@ -978,7 +1029,10 @@ object Lower {
       ty match {
         case ClassRef(cls) if meta.ranges(cls).length == 1 =>
           val typeptr = let(nir.Op.Load(nir.Type.Ptr, obj), unwind)
-          let(nir.Op.Comp(nir.Comp.Ieq, nir.Type.Ptr, typeptr, rtti(cls).const), unwind)
+          let(
+            nir.Op.Comp(nir.Comp.Ieq, nir.Type.Ptr, typeptr, rtti(cls).const),
+            unwind
+          )
 
         case ClassRef(cls) =>
           val range = meta.ranges(cls)
@@ -990,9 +1044,17 @@ object Lower {
             )
           val id = let(nir.Op.Load(nir.Type.Int, idptr), unwind)
           val ge =
-            let(nir.Op.Comp(nir.Comp.Sle, nir.Type.Int, nir.Val.Int(range.start), id), unwind)
+            let(
+              nir.Op
+                .Comp(nir.Comp.Sle, nir.Type.Int, nir.Val.Int(range.start), id),
+              unwind
+            )
           val le =
-            let(nir.Op.Comp(nir.Comp.Sle, nir.Type.Int, id, nir.Val.Int(range.end)), unwind)
+            let(
+              nir.Op
+                .Comp(nir.Comp.Sle, nir.Type.Int, id, nir.Val.Int(range.end)),
+              unwind
+            )
           let(nir.Op.Bin(nir.Bin.And, nir.Type.Bool, ge, le), unwind)
 
         case TraitRef(trt) =>
@@ -1041,7 +1103,11 @@ object Lower {
           label(checkIfIsInstanceOfL)
           val isInstanceOf = genIsOp(buf, ty, v)
           val toTy = rtti(analysis.infos(ty.className)).const
-          branch(isInstanceOf, nir.Next(castL), nir.Next.Label(failL, Seq(v, toTy)))
+          branch(
+            isInstanceOf,
+            nir.Next(castL),
+            nir.Next.Label(failL, Seq(v, toTy))
+          )
 
           label(castL)
           if (platform.useOpaquePointers)
@@ -1072,7 +1138,8 @@ object Lower {
       buf.let(n, nir.Op.Copy(nir.Val.Size(size)), unwind)
     }
 
-    def genAlignmentOfOp(buf: nir.Buffer, n: nir.Local, op: nir.Op.AlignmentOf)(implicit
+    def genAlignmentOfOp(buf: nir.Buffer, n: nir.Local, op: nir.Op.AlignmentOf)(
+        implicit
         srcPosition: nir.Position,
         scopeId: nir.ScopeId
     ): Unit = {
@@ -1080,7 +1147,8 @@ object Lower {
       buf.let(n, nir.Op.Copy(nir.Val.Size(alignment)), unwind)
     }
 
-    def genClassallocOp(buf: nir.Buffer, n: nir.Local, op: nir.Op.Classalloc)(implicit
+    def genClassallocOp(buf: nir.Buffer, n: nir.Local, op: nir.Op.Classalloc)(
+        implicit
         srcPosition: nir.Position,
         scopeId: nir.ScopeId
     ): Unit = {
@@ -1195,7 +1263,11 @@ object Lower {
 
           label(checkLessThanMinL)
           val isLessThanMin = comp(nir.Comp.Fle, v.ty, v, fmin, unwind)
-          branch(isLessThanMin, nir.Next(lessThanMinL), nir.Next(checkLargerThanMaxL))
+          branch(
+            isLessThanMin,
+            nir.Next(lessThanMinL),
+            nir.Next(checkLargerThanMaxL)
+          )
 
           label(lessThanMinL)
           jump(resultL, Seq(imin))
@@ -1295,7 +1367,11 @@ object Lower {
         label(mayOverflowL)
         val dividendIsMinValue =
           let(nir.Op.Comp(nir.Comp.Ieq, ty, dividend, minValue), unwind)
-        branch(dividendIsMinValue, nir.Next(didOverflowL), nir.Next(noOverflowL))
+        branch(
+          dividendIsMinValue,
+          nir.Next(didOverflowL),
+          nir.Next(noOverflowL)
+        )
 
         label(didOverflowL)
         val overflowResult = bin match {
@@ -1368,7 +1444,11 @@ object Lower {
 
       buf.let(
         n,
-        nir.Op.Call(boxTy, nir.Val.Global(methodName, nir.Type.Ptr), Seq(nir.Val.Null, from)),
+        nir.Op.Call(
+          boxTy,
+          nir.Val.Global(methodName, nir.Type.Ptr),
+          Seq(nir.Val.Null, from)
+        ),
         unwind
       )
     }
@@ -1388,7 +1468,11 @@ object Lower {
 
       buf.let(
         n,
-        nir.Op.Call(unboxTy, nir.Val.Global(methodName, nir.Type.Ptr), Seq(nir.Val.Null, from)),
+        nir.Op.Call(
+          unboxTy,
+          nir.Val.Global(methodName, nir.Type.Ptr),
+          Seq(nir.Val.Null, from)
+        ),
         unwind
       )
     }
@@ -1402,17 +1486,23 @@ object Lower {
       meta.analysis.infos(name) match {
         case cls: Class if cls.isConstantModule =>
           val instance = name.member(nir.Sig.Generated("instance"))
-          buf.let(n, nir.Op.Copy(nir.Val.Global(instance, nir.Type.Ptr)), unwind)
+          buf.let(
+            n,
+            nir.Op.Copy(nir.Val.Global(instance, nir.Type.Ptr)),
+            unwind
+          )
 
         case _ =>
           val loadSig = nir.Type.Function(Seq.empty, nir.Type.Ref(name))
-          val load = nir.Val.Global(name.member(nir.Sig.Generated("load")), nir.Type.Ptr)
+          val load =
+            nir.Val.Global(name.member(nir.Sig.Generated("load")), nir.Type.Ptr)
 
           buf.let(n, nir.Op.Call(loadSig, load, Seq.empty), unwind)
       }
     }
 
-    def genArrayallocOp(buf: nir.Buffer, n: nir.Local, op: nir.Op.Arrayalloc)(implicit
+    def genArrayallocOp(buf: nir.Buffer, n: nir.Local, op: nir.Op.Arrayalloc)(
+        implicit
         srcPosition: nir.Position,
         scopeId: nir.ScopeId
     ): Unit = {
@@ -1441,14 +1531,19 @@ object Lower {
             unwind
           )
         case arrval: nir.Val.ArrayValue =>
-          val sig = arraySnapshotSig.getOrElse(ty, arraySnapshotSig(nir.Rt.Object))
+          val sig =
+            arraySnapshotSig.getOrElse(ty, arraySnapshotSig(nir.Rt.Object))
           val func = arraySnapshot.getOrElse(ty, arraySnapshot(nir.Rt.Object))
           val module = genModuleOp(buf, fresh(), nir.Op.Module(func.owner))
           val len = nir.Val.Int(arrval.values.length)
           val init = nir.Val.Const(arrval)
           buf.let(
             n,
-            nir.Op.Call(sig, nir.Val.Global(func, nir.Type.Ptr), Seq(module, len, init)),
+            nir.Op.Call(
+              sig,
+              nir.Val.Global(func, nir.Type.Ptr),
+              Seq(module, len, init)
+            ),
             unwind
           )
         case _ => util.unreachable
@@ -1463,7 +1558,8 @@ object Lower {
     )
     private def arrayValuePath(idx: nir.Val) = Seq(zero, one, idx)
 
-    def genArrayloadOp(buf: nir.Buffer, n: nir.Local, op: nir.Op.Arrayload)(implicit
+    def genArrayloadOp(buf: nir.Buffer, n: nir.Local, op: nir.Op.Arrayload)(
+        implicit
         srcPosition: nir.Position,
         scopeId: nir.ScopeId
     ): Unit = {
@@ -1480,7 +1576,8 @@ object Lower {
       buf.let(n, nir.Op.Load(ty, elemPtr), unwind)
     }
 
-    def genArraystoreOp(buf: nir.Buffer, n: nir.Local, op: nir.Op.Arraystore)(implicit
+    def genArraystoreOp(buf: nir.Buffer, n: nir.Local, op: nir.Op.Arraystore)(
+        implicit
         srcPosition: nir.Position,
         scopeId: nir.ScopeId
     ): Unit = {
@@ -1496,7 +1593,8 @@ object Lower {
       genStoreOp(buf, n, nir.Op.Store(ty, elemPtr, value))
     }
 
-    def genArraylengthOp(buf: nir.Buffer, n: nir.Local, op: nir.Op.Arraylength)(implicit
+    def genArraylengthOp(buf: nir.Buffer, n: nir.Local, op: nir.Op.Arraylength)(
+        implicit
         srcPosition: nir.Position,
         scopeId: nir.ScopeId
     ): Unit = {
@@ -1512,7 +1610,8 @@ object Lower {
       buf.let(n, nir.Op.Load(nir.Type.Int, lenPtr), unwind)
     }
 
-    def genStackallocOp(buf: nir.Buffer, n: nir.Local, op: nir.Op.Stackalloc)(implicit
+    def genStackallocOp(buf: nir.Buffer, n: nir.Local, op: nir.Op.Stackalloc)(
+        implicit
         srcPosition: nir.Position,
         scopeId: nir.ScopeId
     ): Unit = {
@@ -1543,11 +1642,21 @@ object Lower {
               if (elemSize == 1) asSize
               else
                 buf.let(
-                  nir.Op.Bin(nir.Bin.Imul, nir.Type.Size, asSize, nir.Val.Size(elemSize)),
+                  nir.Op.Bin(
+                    nir.Bin.Imul,
+                    nir.Type.Size,
+                    asSize,
+                    nir.Val.Size(elemSize)
+                  ),
                   unwind
                 )
           }
-          buf.call(memsetSig, memset, Seq(pointee, nir.Val.Int(0), size), unwind)
+          buf.call(
+            memsetSig,
+            memset,
+            Seq(pointee, nir.Val.Int(0), size),
+            unwind
+          )
       }
     }
 
@@ -1563,7 +1672,10 @@ object Lower {
             meta.lockWordVals :::
             charsLength ::
             nir.Val.Int(2) :: // stride is used only by GC
-            nir.Val.ArrayValue(nir.Type.Char, chars.toSeq.map(nir.Val.Char(_))) :: Nil
+            nir.Val.ArrayValue(
+              nir.Type.Char,
+              chars.toSeq.map(nir.Val.Char(_))
+            ) :: Nil
         )
       )
 
@@ -1653,7 +1765,8 @@ object Lower {
 
   val LARGE_OBJECT_MIN_SIZE = 8192
 
-  val allocSig = nir.Type.Function(Seq(nir.Type.Ptr, nir.Type.Size), nir.Type.Ptr)
+  val allocSig =
+    nir.Type.Function(Seq(nir.Type.Ptr, nir.Type.Size), nir.Type.Ptr)
 
   val allocSmallName = extern("scalanative_alloc_small")
   val alloc = nir.Val.Global(allocSmallName, allocSig)
@@ -1661,7 +1774,8 @@ object Lower {
   val largeAllocName = extern("scalanative_alloc_large")
   val largeAlloc = nir.Val.Global(largeAllocName, allocSig)
 
-  val SafeZone = nir.Type.Ref(nir.Global.Top("scala.scalanative.memory.SafeZone"))
+  val SafeZone =
+    nir.Type.Ref(nir.Global.Top("scala.scalanative.memory.SafeZone"))
   val safeZoneAllocImplSig =
     nir.Type.Function(Seq(SafeZone, nir.Type.Ptr, nir.Type.Size), nir.Type.Ptr)
   val safeZoneAllocImpl = SafeZone.name.member(
@@ -1678,7 +1792,10 @@ object Lower {
     nir.Global.Member(excptnGlobal, nir.Sig.Ctor(Seq(nir.Rt.String)))
 
   val excInitSig = nir.Type.Function(
-    Seq(nir.Type.Ref(excptnGlobal), nir.Type.Ref(nir.Global.Top("java.lang.String"))),
+    Seq(
+      nir.Type.Ref(excptnGlobal),
+      nir.Type.Ref(nir.Global.Top("java.lang.String"))
+    ),
     nir.Type.Unit
   )
   val excInit = nir.Val.Global(excptnInitGlobal, nir.Type.Ptr)
@@ -1789,7 +1906,10 @@ object Lower {
   }
   val arrayApply = nir.Type.typeToArray.map {
     case (ty, arrname) =>
-      ty -> nir.Global.Member(arrname, nir.Sig.Method("apply", Seq(nir.Type.Int, ty)))
+      ty -> nir.Global.Member(
+        arrname,
+        nir.Sig.Method("apply", Seq(nir.Type.Int, ty))
+      )
   }.toMap
   val arrayApplySig = nir.Type.typeToArray.map {
     case (ty, arrname) =>
@@ -1799,7 +1919,8 @@ object Lower {
     case (ty, arrname) =>
       ty -> nir.Global.Member(
         arrname,
-        nir.Sig.Method("update", Seq(nir.Type.Int, nir.Rt.Object, nir.Type.Unit))
+        nir.Sig
+          .Method("update", Seq(nir.Type.Int, nir.Rt.Object, nir.Type.Unit))
       )
   }
   val arrayUpdate = nir.Type.typeToArray.map {
@@ -1811,7 +1932,10 @@ object Lower {
   }.toMap
   val arrayUpdateSig = nir.Type.typeToArray.map {
     case (ty, arrname) =>
-      ty -> nir.Type.Function(Seq(nir.Type.Ref(arrname), nir.Type.Int, ty), nir.Type.Unit)
+      ty -> nir.Type.Function(
+        Seq(nir.Type.Ref(arrname), nir.Type.Int, ty),
+        nir.Type.Unit
+      )
   }.toMap
   val arrayLength =
     nir.Global.Member(
@@ -1835,11 +1959,17 @@ object Lower {
     nir.Val.Global(throwDivisionByZero, nir.Type.Ptr)
 
   val throwClassCastTy =
-    nir.Type.Function(Seq(nir.Rt.Runtime, nir.Type.Ptr, nir.Type.Ptr), nir.Type.Nothing)
+    nir.Type.Function(
+      Seq(nir.Rt.Runtime, nir.Type.Ptr, nir.Type.Ptr),
+      nir.Type.Nothing
+    )
   val throwClassCast =
     nir.Global.Member(
       nir.Rt.Runtime.name,
-      nir.Sig.Method("throwClassCast", Seq(nir.Type.Ptr, nir.Type.Ptr, nir.Type.Nothing))
+      nir.Sig.Method(
+        "throwClassCast",
+        Seq(nir.Type.Ptr, nir.Type.Ptr, nir.Type.Nothing)
+      )
     )
   val throwClassCastVal =
     nir.Val.Global(throwClassCast, nir.Type.Ptr)
@@ -1888,14 +2018,18 @@ object Lower {
   val GCSafepointName = GC.member(nir.Sig.Extern("scalanative_gc_safepoint"))
   val GCSafepoint = nir.Val.Global(GCSafepointName, nir.Type.Ptr)
 
-  val GCSetMutatorThreadStateSig = nir.Type.Function(Seq(nir.Type.Int), nir.Type.Unit)
+  val GCSetMutatorThreadStateSig =
+    nir.Type.Function(Seq(nir.Type.Int), nir.Type.Unit)
   val GCSetMutatorThreadState = nir.Val.Global(
     GC.member(nir.Sig.Extern("scalanative_gc_set_mutator_thread_state")),
     nir.Type.Ptr
   )
 
   val memsetSig =
-    nir.Type.Function(Seq(nir.Type.Ptr, nir.Type.Int, nir.Type.Size), nir.Type.Ptr)
+    nir.Type.Function(
+      Seq(nir.Type.Ptr, nir.Type.Int, nir.Type.Size),
+      nir.Type.Ptr
+    )
   val memsetName = extern("memset")
   val memset = nir.Val.Global(memsetName, nir.Type.Ptr)
 

@@ -20,7 +20,10 @@ class ModuleArray(meta: Metadata) {
       nir.Type.Ptr,
       modules.toSeq.map { cls =>
         if (cls.isConstantModule(meta.analysis))
-          nir.Val.Global(cls.name.member(nir.Sig.Generated("instance")), nir.Type.Ptr)
+          nir.Val.Global(
+            cls.name.member(nir.Sig.Generated("instance")),
+            nir.Type.Ptr
+          )
         else
           nir.Val.Null
       }

@@ -1,8 +1,6 @@
 package scala.scalanative
 package linker
 
-import scalanative.nir._
-
 import org.junit.Test
 import org.junit.Assert._
 
@@ -23,7 +21,8 @@ class SubSuite extends ReachabilitySuite {
   """
 
   val MainClass = "Main"
-  val entry: Global.Member = Global.Top(MainClass).member(Rt.ScalaMainSig)
+  val entry: nir.Global.Member =
+    nir.Global.Top(MainClass).member(nir.Rt.ScalaMainSig)
 
   implicit val analysis: ReachabilityAnalysis.Result =
     link(Seq(entry), Seq(source), MainClass) {
@@ -32,36 +31,36 @@ class SubSuite extends ReachabilitySuite {
     }
 
   val primitiveTypes = Seq(
-    Type.Bool,
-    Type.Ptr,
-    Type.Char,
-    Type.Byte,
-    Type.Short,
-    Type.Int,
-    Type.Long,
-    Type.Float,
-    Type.Double
+    nir.Type.Bool,
+    nir.Type.Ptr,
+    nir.Type.Char,
+    nir.Type.Byte,
+    nir.Type.Short,
+    nir.Type.Int,
+    nir.Type.Long,
+    nir.Type.Float,
+    nir.Type.Double
   )
 
   val aggregateTypes = Seq(
-    Type.StructValue(Seq(Type.Bool, Type.Int)),
-    Type.ArrayValue(Type.Byte, 32)
+    nir.Type.StructValue(Seq(nir.Type.Bool, nir.Type.Int)),
+    nir.Type.ArrayValue(nir.Type.Byte, 32)
   )
 
   val valueTypes =
     primitiveTypes ++ aggregateTypes
 
-  val A = Type.Ref(Global.Top("A"))
-  val B = Type.Ref(Global.Top("B"))
-  val C = Type.Ref(Global.Top("C"))
-  val T1 = Type.Ref(Global.Top("T1"))
-  val T2 = Type.Ref(Global.Top("T2"))
-  val T3 = Type.Ref(Global.Top("T3"))
+  val A = nir.Type.Ref(nir.Global.Top("A"))
+  val B = nir.Type.Ref(nir.Global.Top("B"))
+  val C = nir.Type.Ref(nir.Global.Top("C"))
+  val T1 = nir.Type.Ref(nir.Global.Top("T1"))
+  val T2 = nir.Type.Ref(nir.Global.Top("T2"))
+  val T3 = nir.Type.Ref(nir.Global.Top("T3"))
 
   val referenceTypes = Seq(
-    Type.Null,
-    Type.Unit,
-    Type.Array(Type.Int),
+    nir.Type.Null,
+    nir.Type.Unit,
+    nir.Type.Array(nir.Type.Int),
     A,
     B,
     C,
@@ -73,10 +72,10 @@ class SubSuite extends ReachabilitySuite {
   val types =
     valueTypes ++ referenceTypes
 
-  def testIs(l: Type, r: Type) =
+  def testIs(l: nir.Type, r: nir.Type) =
     assertTrue(s"${l.show} is ${r.show}", Sub.is(l, r))
 
-  def testIsNot(l: Type, r: Type) =
+  def testIsNot(l: nir.Type, r: nir.Type) =
     assertTrue(s"${l.show} is not ${r.show}", !Sub.is(l, r))
 
   @Test def valueTypeWithvalueTypes(): Unit = {
@@ -93,7 +92,7 @@ class SubSuite extends ReachabilitySuite {
 
   @Test def valueTypeWitRefTypes(): Unit = {
     valueTypes.foreach { vty =>
-      referenceTypes.filter(_ != Type.Null).foreach { rty =>
+      referenceTypes.filter(_ != nir.Type.Null).foreach { rty =>
         testIsNot(vty, rty)
         testIsNot(rty, vty)
       }
@@ -101,14 +100,14 @@ class SubSuite extends ReachabilitySuite {
   }
 
   @Test def nullTypes(): Unit =
-    referenceTypes.foreach { rty => testIs(Type.Null, rty) }
+    referenceTypes.foreach { rty => testIs(nir.Type.Null, rty) }
 
   @Test def nothingType(): Unit =
-    types.foreach { ty => testIs(Type.Nothing, ty) }
+    types.foreach { ty => testIs(nir.Type.Nothing, ty) }
 
   @Test def referenceObjectTypes(): Unit =
     referenceTypes.foreach { rty =>
-      testIs(rty, Type.Ref(Global.Top("java.lang.Object")))
+      testIs(rty, nir.Type.Ref(nir.Global.Top("java.lang.Object")))
     }
 
   @Test def inheritence(): Unit = {
@@ -154,4 +153,5 @@ class SubSuite extends ReachabilitySuite {
     testIsNot(T3, T2)
     testIs(T3, T3)
   }
+
 }

@@ -1,6 +1,7 @@
 package scala.scalanative
 package interflow
 
-import scalanative.nir._
-
-final case class MergePhi(param: Val.Local, incoming: Seq[(Local, Val)])
+final case class MergePhi(
+    param: nir.Val.Local,
+    incoming: Seq[(nir.Local, nir.Val)]
+)

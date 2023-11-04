@@ -19,7 +19,8 @@ object GenerateReflectiveProxies {
 
     val label = genProxyLabel(proxyArgs)
     val unboxInsts = genArgUnboxes(label, defnType.args)
-    val method = nir.Inst.Let(nir.Op.Method(label.params.head, sig), nir.Next.None)
+    val method =
+      nir.Inst.Let(nir.Op.Method(label.params.head, sig), nir.Next.None)
     val call = genCall(defnType, method, label.params, unboxInsts)
     val retInsts = genRet(call.id, defnType.ret, proxyTy.ret)
 
@@ -103,20 +104,32 @@ object GenerateReflectiveProxies {
     )
   }
 
-  private def genRetValBox(callName: nir.Local, defnRetTy: nir.Type, proxyRetTy: nir.Type)(
-      implicit
+  private def genRetValBox(
+      callName: nir.Local,
+      defnRetTy: nir.Type,
+      proxyRetTy: nir.Type
+  )(implicit
       pos: nir.Position,
       fresh: nir.Fresh
   ): nir.Inst.Let =
     nir.Type.box.get(defnRetTy) match {
       case Some(boxTy) =>
-        nir.Inst.Let(nir.Op.Box(boxTy, nir.Val.Local(callName, defnRetTy)), nir.Next.None)
+        nir.Inst.Let(
+          nir.Op.Box(boxTy, nir.Val.Local(callName, defnRetTy)),
+          nir.Next.None
+        )
       case None =>
-        nir.Inst.Let(nir.Op.Copy(nir.Val.Local(callName, defnRetTy)), nir.Next.None)
+        nir.Inst.Let(
+          nir.Op.Copy(nir.Val.Local(callName, defnRetTy)),
+          nir.Next.None
+        )
     }
 
-  private def genRet(callName: nir.Local, defnRetTy: nir.Type, proxyRetTy: nir.Type)(
-      implicit
+  private def genRet(
+      callName: nir.Local,
+      defnRetTy: nir.Type,
+      proxyRetTy: nir.Type
+  )(implicit
       pos: nir.Position,
       fresh: nir.Fresh
   ): Seq[nir.Inst] = {
@@ -130,7 +143,10 @@ object GenerateReflectiveProxies {
     }
   }
 
-  def apply(dynimpls: Seq[nir.Global], defns: Seq[nir.Defn]): Seq[nir.Defn.Define] = {
+  def apply(
+      dynimpls: Seq[nir.Global],
+      defns: Seq[nir.Defn]
+  ): Seq[nir.Defn.Define] = {
 
     // filters methods with same name and args but different return type for each given type
     val toProxy =

@@ -218,7 +218,11 @@ object Generate {
         ),
         nir.Inst.Let(
           ueh,
-          nir.Op.Call(JavaThreadGetUEHSig, nir.Val.Global(JavaThreadGetUEH, nir.Type.Ptr), Seq(nir.Val.Local(thread, JavaThreadRef))),
+          nir.Op.Call(
+            JavaThreadGetUEHSig,
+            nir.Val.Global(JavaThreadGetUEH, nir.Type.Ptr),
+            Seq(nir.Val.Local(thread, JavaThreadRef))
+          ),
           nir.Next.None
         ),
         nir.Inst.Let(
@@ -634,7 +638,8 @@ object Generate {
       nir.Sig.Method("getUncaughtExceptionHandler", Seq(JavaThreadUEHRef))
     )
 
-    val RuntimeExecuteUEHSig = nir.Type.Function(Seq(Runtime, JavaThreadUEHRef, JavaThreadRef, Throwable), nir.Type.Unit)
+    val RuntimeExecuteUEHSig =
+      nir.Type.Function(Seq(Runtime, JavaThreadUEHRef, JavaThreadRef, Throwable), nir.Type.Unit)
     val RuntimeExecuteUEH = Runtime.name.member(
       nir.Sig.Method("executeUncaughtExceptionHandler", Seq(JavaThreadUEHRef, JavaThreadRef, Throwable, nir.Type.Unit))
     )

@@ -1,161 +1,162 @@
 package scala.scalanative
 package interflow
 
-import scalanative.nir._
 import scalanative.linker._
 
 trait NoOpt { self: Interflow =>
-  def noOpt(defn: Defn.Define): Unit =
+
+  def noOpt(defn: nir.Defn.Define): Unit =
     noOptInsts(defn.insts)
 
-  def noOptInsts(insts: Seq[Inst]): Unit =
+  def noOptInsts(insts: Seq[nir.Inst]): Unit =
     insts.foreach(noOptInst)
 
-  def noOptInst(inst: Inst): Unit = inst match {
-    case _: Inst.Label =>
+  def noOptInst(inst: nir.Inst): Unit = inst match {
+    case _: nir.Inst.Label =>
       ()
-    case Inst.Let(n, op, unwind) =>
+    case nir.Inst.Let(n, op, unwind) =>
       noOptOp(op)
       noOptNext(unwind)
-    case Inst.Ret(v) =>
+    case nir.Inst.Ret(v) =>
       noOptVal(v)
-    case Inst.Jump(next) =>
+    case nir.Inst.Jump(next) =>
       noOptNext(next)
-    case Inst.If(v, thenp, elsep) =>
+    case nir.Inst.If(v, thenp, elsep) =>
       noOptVal(v)
       noOptNext(thenp)
       noOptNext(elsep)
-    case Inst.Switch(v, default, cases) =>
+    case nir.Inst.Switch(v, default, cases) =>
       noOptVal(v)
       noOptNext(default)
       cases.foreach(noOptNext)
-    case Inst.Throw(v, unwind) =>
+    case nir.Inst.Throw(v, unwind) =>
       noOptVal(v)
       noOptNext(unwind)
-    case Inst.Unreachable(unwind) =>
+    case nir.Inst.Unreachable(unwind) =>
       noOptNext(unwind)
-    case _: Inst.LinktimeCf =>
+    case _: nir.Inst.LinktimeCf =>
       util.unreachable
   }
 
-  def noOptNext(next: Next): Unit = next match {
-    case Next.Label(_, args) =>
+  def noOptNext(next: nir.Next): Unit = next match {
+    case nir.Next.Label(_, args) =>
       args.foreach(noOptVal)
     case _ =>
       ()
   }
 
-  def noOptOp(op: Op): Unit = op match {
-    case Op.Call(_, ptrv, argvs) =>
+  def noOptOp(op: nir.Op): Unit = op match {
+    case nir.Op.Call(_, ptrv, argvs) =>
       noOptVal(ptrv)
       argvs.foreach(noOptVal)
-    case Op.Load(_, ptrv, _) =>
+    case nir.Op.Load(_, ptrv, _) =>
       noOptVal(ptrv)
-    case Op.Store(_, ptrv, v, _) =>
+    case nir.Op.Store(_, ptrv, v, _) =>
       noOptVal(ptrv)
       noOptVal(v)
-    case Op.Elem(_, ptrv, indexvs) =>
+    case nir.Op.Elem(_, ptrv, indexvs) =>
       noOptVal(ptrv)
       indexvs.foreach(noOptVal)
-    case Op.Extract(aggrv, indexvs) =>
+    case nir.Op.Extract(aggrv, indexvs) =>
       noOptVal(aggrv)
-    case Op.Insert(aggrv, v, indexvs) =>
+    case nir.Op.Insert(aggrv, v, indexvs) =>
       noOptVal(aggrv)
       noOptVal(v)
-    case Op.Stackalloc(_, v) =>
+    case nir.Op.Stackalloc(_, v) =>
       noOptVal(v)
-    case Op.Bin(bin, _, lv, rv) =>
+    case nir.Op.Bin(bin, _, lv, rv) =>
       noOptVal(lv)
       noOptVal(rv)
-    case Op.Comp(comp, _, lv, rv) =>
+    case nir.Op.Comp(comp, _, lv, rv) =>
       noOptVal(lv)
       noOptVal(rv)
-    case Op.Conv(conv, _, v) =>
+    case nir.Op.Conv(conv, _, v) =>
       noOptVal(v)
-    case Op.Fence(_) => ()
+    case nir.Op.Fence(_) => ()
 
-    case Op.Classalloc(n, zone) =>
+    case nir.Op.Classalloc(n, zone) =>
       noOptGlobal(n)
       zone.foreach(noOptVal)
-    case Op.Fieldload(_, v, n) =>
+    case nir.Op.Fieldload(_, v, n) =>
       noOptVal(v)
       noOptGlobal(n)
-    case Op.Fieldstore(_, v1, n, v2) =>
+    case nir.Op.Fieldstore(_, v1, n, v2) =>
       noOptVal(v1)
       noOptGlobal(n)
       noOptVal(v2)
-    case Op.Field(obj, n) =>
+    case nir.Op.Field(obj, n) =>
       noOptVal(obj)
       noOptGlobal(n)
-    case Op.Method(obj, sig) =>
+    case nir.Op.Method(obj, sig) =>
       noOptVal(obj)
       obj.ty match {
-        case refty: Type.RefKind =>
+        case refty: nir.Type.RefKind =>
           val name = refty.className
           val scope = analysis.infos(name).asInstanceOf[ScopeInfo]
           scope.targets(sig).foreach(visitEntry)
         case _ =>
           ()
       }
-    case Op.Dynmethod(obj, dynsig) =>
+    case nir.Op.Dynmethod(obj, dynsig) =>
       analysis.dynimpls.foreach {
-        case impl @ Global.Member(_, sig) if sig.toProxy == dynsig =>
+        case impl @ nir.Global.Member(_, sig) if sig.toProxy == dynsig =>
           visitEntry(impl)
         case _ =>
           ()
       }
-    case Op.Module(n) =>
+    case nir.Op.Module(n) =>
       visitEntry(n)
-    case Op.As(_, v) =>
+    case nir.Op.As(_, v) =>
       noOptVal(v)
-    case Op.Is(_, v) =>
+    case nir.Op.Is(_, v) =>
       noOptVal(v)
-    case Op.Copy(v) =>
+    case nir.Op.Copy(v) =>
       noOptVal(v)
-    case _: Op.SizeOf      => ()
-    case _: Op.AlignmentOf => ()
-    case Op.Box(code, obj) =>
+    case _: nir.Op.SizeOf      => ()
+    case _: nir.Op.AlignmentOf => ()
+    case nir.Op.Box(code, obj) =>
       noOptVal(obj)
-    case Op.Unbox(code, obj) =>
+    case nir.Op.Unbox(code, obj) =>
       noOptVal(obj)
-    case _: Op.Var =>
+    case _: nir.Op.Var =>
       ()
-    case Op.Varload(slot) =>
+    case nir.Op.Varload(slot) =>
       noOptVal(slot)
-    case Op.Varstore(slot, value) =>
+    case nir.Op.Varstore(slot, value) =>
       noOptVal(slot)
       noOptVal(value)
-    case Op.Arrayalloc(_, init, zone) =>
+    case nir.Op.Arrayalloc(_, init, zone) =>
       noOptVal(init)
       zone.foreach(noOptVal)
-    case Op.Arrayload(_, arr, idx) =>
+    case nir.Op.Arrayload(_, arr, idx) =>
       noOptVal(arr)
       noOptVal(idx)
-    case Op.Arraystore(_, arr, idx, value) =>
+    case nir.Op.Arraystore(_, arr, idx, value) =>
       noOptVal(arr)
       noOptVal(idx)
       noOptVal(value)
-    case Op.Arraylength(arr) =>
+    case nir.Op.Arraylength(arr) =>
       noOptVal(arr)
   }
 
-  def noOptVal(value: Val): Unit = value match {
-    case _: Val.Zero =>
+  def noOptVal(value: nir.Val): Unit = value match {
+    case _: nir.Val.Zero =>
       ()
-    case Val.StructValue(values) =>
+    case nir.Val.StructValue(values) =>
       values.foreach(noOptVal)
-    case Val.ArrayValue(ty, values) =>
+    case nir.Val.ArrayValue(ty, values) =>
       values.foreach(noOptVal)
-    case _: Val.Local =>
+    case _: nir.Val.Local =>
       ()
-    case Val.Global(n, _) =>
+    case nir.Val.Global(n, _) =>
       noOptGlobal(n)
-    case Val.Const(v) =>
+    case nir.Val.Const(v) =>
       noOptVal(v)
     case _ =>
       ()
   }
 
-  def noOptGlobal(name: Global): Unit =
+  def noOptGlobal(name: nir.Global): Unit =
     visitEntry(name)
+
 }

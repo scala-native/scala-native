@@ -114,9 +114,19 @@ trait Combine { self: Interflow =>
 
           // x * 2^n ==> x << n
           case (lhs, nir.Val.Int(v)) if isPowerOfTwoOrMinValue(v) =>
-            combine(Shl, ty, lhs, nir.Val.Int(jl.Integer.numberOfTrailingZeros(v)))
+            combine(
+              Shl,
+              ty,
+              lhs,
+              nir.Val.Int(jl.Integer.numberOfTrailingZeros(v))
+            )
           case (lhs, nir.Val.Long(v)) if isPowerOfTwoOrMinValue(v) =>
-            combine(Shl, ty, lhs, nir.Val.Long(jl.Long.numberOfTrailingZeros(v)))
+            combine(
+              Shl,
+              ty,
+              lhs,
+              nir.Val.Long(jl.Long.numberOfTrailingZeros(v))
+            )
 
           // (x * b) * a ==> x * (a * b)
           case (BinRef(Imul, x, nir.Val.Int(b)), nir.Val.Int(a)) =>
@@ -150,9 +160,19 @@ trait Combine { self: Interflow =>
 
           // x unsigned_/ 2^n ==> x >> n
           case (lhs, nir.Val.Int(v)) if isPowerOfTwoOrMinValue(v) =>
-            combine(Lshr, ty, lhs, nir.Val.Int(jl.Integer.numberOfTrailingZeros(v)))
+            combine(
+              Lshr,
+              ty,
+              lhs,
+              nir.Val.Int(jl.Integer.numberOfTrailingZeros(v))
+            )
           case (lhs, nir.Val.Long(v)) if isPowerOfTwoOrMinValue(v) =>
-            combine(Lshr, ty, lhs, nir.Val.Long(jl.Long.numberOfTrailingZeros(v)))
+            combine(
+              Lshr,
+              ty,
+              lhs,
+              nir.Val.Long(jl.Long.numberOfTrailingZeros(v))
+            )
 
           case _ =>
             fallback
@@ -422,23 +442,31 @@ trait Combine { self: Interflow =>
 
       // Comparing non-nullable value with null will always
       // yield the same result.
-      case (Ieq, v @ nir.Of(ty: nir.Type.RefKind), nir.Val.Null) if !ty.isNullable =>
+      case (Ieq, v @ nir.Of(ty: nir.Type.RefKind), nir.Val.Null)
+          if !ty.isNullable =>
         nir.Val.False
-      case (Ieq, nir.Val.Null, v @ nir.Of(ty: nir.Type.RefKind)) if !ty.isNullable =>
+      case (Ieq, nir.Val.Null, v @ nir.Of(ty: nir.Type.RefKind))
+          if !ty.isNullable =>
         nir.Val.False
-      case (Ine, v @ nir.Of(ty: nir.Type.RefKind), nir.Val.Null) if !ty.isNullable =>
+      case (Ine, v @ nir.Of(ty: nir.Type.RefKind), nir.Val.Null)
+          if !ty.isNullable =>
         nir.Val.True
-      case (Ine, nir.Val.Null, v @ nir.Of(ty: nir.Type.RefKind)) if !ty.isNullable =>
+      case (Ine, nir.Val.Null, v @ nir.Of(ty: nir.Type.RefKind))
+          if !ty.isNullable =>
         nir.Val.True
 
       // Ptr boxes are null if underlying pointer is null.
-      case (Ieq, DelayedRef(nir.Op.Box(ty, x)), nir.Val.Null) if nir.Type.isPtrBox(ty) =>
+      case (Ieq, DelayedRef(nir.Op.Box(ty, x)), nir.Val.Null)
+          if nir.Type.isPtrBox(ty) =>
         combine(Ieq, nir.Type.Ptr, x, nir.Val.Null)
-      case (Ieq, nir.Val.Null, DelayedRef(nir.Op.Box(ty, x))) if nir.Type.isPtrBox(ty) =>
+      case (Ieq, nir.Val.Null, DelayedRef(nir.Op.Box(ty, x)))
+          if nir.Type.isPtrBox(ty) =>
         combine(Ieq, nir.Type.Ptr, x, nir.Val.Null)
-      case (Ine, DelayedRef(nir.Op.Box(ty, x)), nir.Val.Null) if nir.Type.isPtrBox(ty) =>
+      case (Ine, DelayedRef(nir.Op.Box(ty, x)), nir.Val.Null)
+          if nir.Type.isPtrBox(ty) =>
         combine(Ine, nir.Type.Ptr, x, nir.Val.Null)
-      case (Ine, nir.Val.Null, DelayedRef(nir.Op.Box(ty, x))) if nir.Type.isPtrBox(ty) =>
+      case (Ine, nir.Val.Null, DelayedRef(nir.Op.Box(ty, x)))
+          if nir.Type.isPtrBox(ty) =>
         combine(Ine, nir.Type.Ptr, x, nir.Val.Null)
 
       // Comparing two non-null module references will

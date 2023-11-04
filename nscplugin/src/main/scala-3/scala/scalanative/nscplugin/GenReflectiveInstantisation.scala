@@ -15,8 +15,10 @@ import scala.scalanative.util.ScopedVar
 
 object GenReflectiveInstantisation {
   object nirSymbols {
-    val AbstractFunction0Name = nir.Global.Top("scala.runtime.AbstractFunction0")
-    val AbstractFunction1Name = nir.Global.Top("scala.runtime.AbstractFunction1")
+    val AbstractFunction0Name =
+      nir.Global.Top("scala.runtime.AbstractFunction0")
+    val AbstractFunction1Name =
+      nir.Global.Top("scala.runtime.AbstractFunction1")
     val SerializableName = nir.Global.Top("java.io.Serializable")
     val Tuple2Name = nir.Global.Top("scala.Tuple2")
     val Tuple2Ref = nir.Type.Ref(Tuple2Name)
@@ -163,12 +165,14 @@ trait GenReflectiveInstantisation(using Context) {
     withFreshExprBuffer { buf ?=>
       val body = {
         // first argument is this
-        val thisArg = nir.Val.Local(curFresh(), nir.Type.Ref(reflInstBuffer.name))
+        val thisArg =
+          nir.Val.Local(curFresh(), nir.Type.Ref(reflInstBuffer.name))
         buf.label(curFresh(), Seq(thisArg))
         // call to super constructor
         buf.call(
           nir.Type.Function(Seq(nir.Type.Ref(superClass)), nir.Type.Unit),
-          nir.Val.Global(superClass.member(nir.Sig.Ctor(Seq.empty)), nir.Type.Ptr),
+          nir.Val
+            .Global(superClass.member(nir.Sig.Ctor(Seq.empty)), nir.Type.Ptr),
           Seq(thisArg),
           unwind(curFresh)
         )
@@ -179,7 +183,8 @@ trait GenReflectiveInstantisation(using Context) {
       reflInstBuffer += new nir.Defn.Define(
         nir.Attrs(),
         reflInstBuffer.name.member(nir.Sig.Ctor(Seq.empty)),
-        nir.Type.Function(Seq(nir.Type.Ref(reflInstBuffer.name)), nir.Type.Unit),
+        nir.Type
+          .Function(Seq(nir.Type.Ref(reflInstBuffer.name)), nir.Type.Unit),
         body
       )
     }
@@ -217,11 +222,13 @@ trait GenReflectiveInstantisation(using Context) {
     withFreshExprBuffer { buf ?=>
       val body = {
         // first argument is this
-        val thisArg = nir.Val.Local(curFresh(), nir.Type.Ref(reflInstBuffer.name))
+        val thisArg =
+          nir.Val.Local(curFresh(), nir.Type.Ref(reflInstBuffer.name))
         buf.label(curFresh(), Seq(thisArg))
 
         val module =
-          if (enclosingClass.exists && !enclosingClass.is(ModuleClass)) nir.Val.Null
+          if (enclosingClass.exists && !enclosingClass.is(ModuleClass))
+            nir.Val.Null
           else buf.module(fqSymName, unwind(curFresh))
         buf.ret(module)
         buf.toSeq
@@ -230,7 +237,8 @@ trait GenReflectiveInstantisation(using Context) {
       reflInstBuffer += new nir.Defn.Define(
         nir.Attrs(),
         reflInstBuffer.name.member(applyMethodSig),
-        nir.Type.Function(Seq(nir.Type.Ref(reflInstBuffer.name)), nir.Rt.Object),
+        nir.Type
+          .Function(Seq(nir.Type.Ref(reflInstBuffer.name)), nir.Rt.Object),
         body
       )
     }
@@ -265,7 +273,8 @@ trait GenReflectiveInstantisation(using Context) {
       fqSymName: nir.Global.Top,
       ctors: Seq[Symbol]
   )(using pos: nir.Position, buf: ExprBuffer): nir.Val = {
-    val applyMethodSig = nir.Sig.Method("apply", Seq(nir.Rt.Object, nir.Rt.Object))
+    val applyMethodSig =
+      nir.Sig.Method("apply", Seq(nir.Rt.Object, nir.Rt.Object))
 
     // Constructors info is an array of Tuple2 (tpes, inst), where:
     // - tpes is an array with the runtime classes of the constructor arguments.
@@ -293,7 +302,8 @@ trait GenReflectiveInstantisation(using Context) {
       withFreshExprBuffer { buf ?=>
         val body = {
           // first argument is this
-          val thisArg = nir.Val.Local(curFresh(), nir.Type.Ref(reflInstBuffer.name))
+          val thisArg =
+            nir.Val.Local(curFresh(), nir.Type.Ref(reflInstBuffer.name))
           // second argument is parameters sequence
           val argsArg = nir.Val.Local(curFresh(), nir.Type.Array(nir.Rt.Object))
           buf.label(curFresh(), Seq(thisArg, argsArg))
@@ -332,7 +342,10 @@ trait GenReflectiveInstantisation(using Context) {
           nir.Attrs.None,
           reflInstBuffer.name.member(applyMethodSig),
           nir.Type.Function(
-            Seq(nir.Type.Ref(reflInstBuffer.name), nir.Type.Array(nir.Rt.Object)),
+            Seq(
+              nir.Type.Ref(reflInstBuffer.name),
+              nir.Type.Array(nir.Rt.Object)
+            ),
             nir.Rt.Object
           ),
           body

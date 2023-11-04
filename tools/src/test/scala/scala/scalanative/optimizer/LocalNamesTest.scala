@@ -11,7 +11,6 @@ import scala.reflect.ClassTag
 import scala.scalanative.linker.ReachabilityAnalysis
 
 class LocalNamesTest extends OptimizerSpec {
-  import nir._
 
   override def optimize[T](
       entry: String,
@@ -47,18 +46,21 @@ class LocalNamesTest extends OptimizerSpec {
     setupConfig = _.withDebugMetadata(true)
   ) {
     case (config, result) =>
-      def checkLocalNames(defns: Seq[Defn]) =
+      def checkLocalNames(defns: Seq[nir.Defn]) =
         findEntry(defns).foreach { defn =>
           val localNames = defn.debugInfo.localNames
           val lets = namedLets(defn).values
           val expectedLetNames =
             Seq("localVal", "localVar", "innerVal", "innerVar", "scoped")
           defn.insts.head match {
-            case Inst.Label(
+            case nir.Inst.Label(
                   _,
                   Seq(
-                    Val.Local(thisId, Type.Ref(Global.Top("Test$"), _, _)),
-                    Val.Local(argsId, Type.Array(Rt.String, _))
+                    nir.Val.Local(
+                      thisId,
+                      nir.Type.Ref(nir.Global.Top("Test$"), _, _)
+                    ),
+                    nir.Val.Local(argsId, nir.Type.Array(nir.Rt.String, _))
                   )
                 ) =>
               assertTrue("thisArg", localNames.get(thisId).contains("this"))
@@ -150,7 +152,7 @@ class LocalNamesTest extends OptimizerSpec {
     case (config, result) =>
       val platformInfo = codegen.PlatformInfo(config)
       val usesOpaquePointers = platformInfo.useOpaquePointers
-      def checkLocalNames(defns: Seq[Defn], beforeLowering: Boolean) =
+      def checkLocalNames(defns: Seq[nir.Defn], beforeLowering: Boolean) =
         findEntry(defns)
           .foreach { defn =>
             val lets = namedLets(defn)
@@ -165,7 +167,7 @@ class LocalNamesTest extends OptimizerSpec {
               assertContains(s"hasLet in $stage", localName, lets.values)
               lets
                 .collectFirst {
-                  case (Inst.Let(_, op, _), `localName`) =>
+                  case (nir.Inst.Let(_, op, _), `localName`) =>
                     val expectedTpe = implicitly[ClassTag[T]].runtimeClass
                     assertTrue(
                       s"$localName: ${op.getClass()} is not ${expectedTpe
@@ -188,47 +190,47 @@ class LocalNamesTest extends OptimizerSpec {
                 defn.debugInfo.localNames.values
               )
             }
-            checkHasLet[Op.Call]("call")
-            checkHasLet[Op.Stackalloc]("stackalloc")
-            checkHasLet[Op.Elem]("elem")
-            // checkHasLet[Op.Extract]("extract")
-            // checkHasLet[Op.Insert]("insert")
-            checkNotHasLet[Op.Store]("store")
-            checkHasLet[Op.Load]("load")
-            // checkHasLet[Op.Fence]("fence")
-            checkHasLet[Op.Bin]("bin")
-            checkHasLet[Op.Comp]("comp")
-            checkHasLet[Op.Conv]("conv")
-            checkHasLetEither[Op.Classalloc, Op.Call]("classalloc")
-            checkNotHasLet[Op.Fieldstore]("fieldStore")
-            checkHasLetEither[Op.Fieldload, Op.Load]("fieldLoad")
-            checkHasLetEither[Op.Field, Op.Copy]("field")
-            // checkHasLet[Op.Method]("method")
-            // checkHasLet[Op.Dynmethod]("dynMethod")
+            checkHasLet[nir.Op.Call]("call")
+            checkHasLet[nir.Op.Stackalloc]("stackalloc")
+            checkHasLet[nir.Op.Elem]("elem")
+            // checkHasLet[nir.Op.Extract]("extract")
+            // checkHasLet[nir.Op.Insert]("insert")
+            checkNotHasLet[nir.Op.Store]("store")
+            checkHasLet[nir.Op.Load]("load")
+            // checkHasLet[nir.Op.Fence]("fence")
+            checkHasLet[nir.Op.Bin]("bin")
+            checkHasLet[nir.Op.Comp]("comp")
+            checkHasLet[nir.Op.Conv]("conv")
+            checkHasLetEither[nir.Op.Classalloc, nir.Op.Call]("classalloc")
+            checkNotHasLet[nir.Op.Fieldstore]("fieldStore")
+            checkHasLetEither[nir.Op.Fieldload, nir.Op.Load]("fieldLoad")
+            checkHasLetEither[nir.Op.Field, nir.Op.Copy]("field")
+            // checkHasLet[nir.Op.Method]("method")
+            // checkHasLet[nir.Op.Dynmethod]("dynMethod")
             if (scalaVersion.startsWith("2.12"))
-              checkHasLetEither[Op.Module, Op.Call]("module")
+              checkHasLetEither[nir.Op.Module, nir.Op.Call]("module")
             else
-              checkHasLetEither[Op.Module, Op.Copy]("module")
+              checkHasLetEither[nir.Op.Module, nir.Op.Copy]("module")
             if (usesOpaquePointers)
-              checkHasLetEither[Op.As, Op.Copy]("as")
+              checkHasLetEither[nir.Op.As, nir.Op.Copy]("as")
             else
-              checkHasLetEither[Op.As, Op.Conv]("as")
+              checkHasLetEither[nir.Op.As, nir.Op.Conv]("as")
             // lowered to if-else branch, `is` should be param
-            if (beforeLowering) checkHasLet[Op.Is]("is")
+            if (beforeLowering) checkHasLet[nir.Op.Is]("is")
             else checkHasVal("is")
-            checkNotHasLet[Op.Copy]("copy") // optimized out
-            checkHasLetEither[Op.SizeOf, Op.Copy]("sizeOf")
-            checkNotHasLet[Op.AlignmentOf]("alignmentOf") // optimized out
-            checkHasLetEither[Op.Box, Op.Call]("box") // optimized out
-            checkHasLetEither[Op.Unbox, Op.Call]("unbox")
-            checkNotHasLet[Op.Var]("var") // optimized out
+            checkNotHasLet[nir.Op.Copy]("copy") // optimized out
+            checkHasLetEither[nir.Op.SizeOf, nir.Op.Copy]("sizeOf")
+            checkNotHasLet[nir.Op.AlignmentOf]("alignmentOf") // optimized out
+            checkHasLetEither[nir.Op.Box, nir.Op.Call]("box") // optimized out
+            checkHasLetEither[nir.Op.Unbox, nir.Op.Call]("unbox")
+            checkNotHasLet[nir.Op.Var]("var") // optimized out
             checkHasVal("var")
-            checkNotHasLet[Op.Varstore]("varStore")
-            checkNotHasLet[Op.Varload]("varLoad")
-            checkHasLetEither[Op.Arrayalloc, Op.Call]("arrayAlloc")
-            checkNotHasLet[Op.Arraystore]("arrayStore")
-            checkHasLetEither[Op.Arrayload, Op.Load]("arrayLoad")
-            checkHasLetEither[Op.Arraylength, Op.Load]("arrayLength")
+            checkNotHasLet[nir.Op.Varstore]("varStore")
+            checkNotHasLet[nir.Op.Varload]("varLoad")
+            checkHasLetEither[nir.Op.Arrayalloc, nir.Op.Call]("arrayAlloc")
+            checkNotHasLet[nir.Op.Arraystore]("arrayStore")
+            checkHasLetEither[nir.Op.Arrayload, nir.Op.Load]("arrayLoad")
+            checkHasLetEither[nir.Op.Arraylength, nir.Op.Load]("arrayLength")
             // Filter out inlined names
             val filteredOut =
               Seq("buffer", "addr", "rawptr", "toPtr", "fromPtr", "size")
@@ -265,7 +267,7 @@ class LocalNamesTest extends OptimizerSpec {
     |}""".stripMargin)
   ) {
     case (config, result) =>
-      def checkLocalNames(defns: Seq[Defn]) =
+      def checkLocalNames(defns: Seq[nir.Defn]) =
         findEntry(defns)
           .foreach { defn =>
             val lets = namedLets(defn)
@@ -285,7 +287,7 @@ class LocalNamesTest extends OptimizerSpec {
             assertDistinct(letsNames.diff(Seq("b")))
             defn.insts
               .find {
-                case Inst.Label(_, params) =>
+                case nir.Inst.Label(_, params) =>
                   asParams
                     .diff(
                       params.map(_.id).flatMap(defn.debugInfo.localNames.get)
@@ -327,7 +329,7 @@ class LocalNamesTest extends OptimizerSpec {
     // %3000008 <result2> = imul[int] %24000001 <temp2> : int, %7000001 <argInt> : int
 
     case (config, result) =>
-      def checkLocalNames(defns: Seq[Defn]) =
+      def checkLocalNames(defns: Seq[nir.Defn]) =
         findEntry(defns)
           .foreach { defn =>
             val lets = namedLets(defn).values
@@ -375,7 +377,7 @@ class LocalNamesTest extends OptimizerSpec {
     |}""".stripMargin)
   ) {
     case (config, result) =>
-      def checkLocalNames(defns: Seq[Defn]) =
+      def checkLocalNames(defns: Seq[nir.Defn]) =
         findEntry(defns)
           .foreach { defn =>
             val lets = namedLets(defn).values
@@ -419,7 +421,7 @@ class LocalNamesTest extends OptimizerSpec {
     |}""".stripMargin)
   ) {
     case (config, result) =>
-      def checkLocalNames(defns: Seq[Defn]) =
+      def checkLocalNames(defns: Seq[nir.Defn]) =
         findEntry(defns)
           .foreach { defn =>
             val lets = namedLets(defn).values

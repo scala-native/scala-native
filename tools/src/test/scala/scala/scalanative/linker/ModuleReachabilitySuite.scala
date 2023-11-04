@@ -1,11 +1,11 @@
-package scala.scalanative.linker
+package scala.scalanative
+package linker
 
 import org.junit.Test
 import org.junit.Assert._
 
-import scalanative.nir.{Sig, Type, Rt}
-
 class ModuleReachabilitySuite extends ReachabilitySuite {
+
   val sources = Seq("""
     object Module {
       def meth: Unit = ()
@@ -18,26 +18,29 @@ class ModuleReachabilitySuite extends ReachabilitySuite {
   val ParentClsName = "Parent"
   val ObjectClsName = "java.lang.Object"
   val ScalaMainNonStaticSig =
-    Sig.Method("main", Rt.ScalaMainSig.types, Sig.Scope.Public)
+    nir.Sig.Method("main", nir.Rt.ScalaMainSig.types, nir.Sig.Scope.Public)
 
   val Test = g(TestClsName)
   val TestModule = g(TestModuleName)
-  val TestInit = g(TestModuleName, Sig.Ctor(Seq.empty))
-  val TestMain = g(TestClsName, Rt.ScalaMainSig)
+  val TestInit = g(TestModuleName, nir.Sig.Ctor(Seq.empty))
+  val TestMain = g(TestClsName, nir.Rt.ScalaMainSig)
   val TestModuleMain = g(TestModuleName, ScalaMainNonStaticSig)
   val Module = g(ModuleClsName)
-  val ModuleInit = g(ModuleClsName, Sig.Ctor(Seq.empty))
-  val ModuleFoo = g(ModuleClsName, Sig.Method("foo", Seq(Type.Unit)))
-  val ModuleBar = g(ModuleClsName, Sig.Field("bar"))
+  val ModuleInit = g(ModuleClsName, nir.Sig.Ctor(Seq.empty))
+  val ModuleFoo = g(ModuleClsName, nir.Sig.Method("foo", Seq(nir.Type.Unit)))
+  val ModuleBar = g(ModuleClsName, nir.Sig.Field("bar"))
   val ModuleBarSet =
-    g(ModuleClsName, Sig.Method("bar_$eq", Seq(Type.Int, Type.Unit)))
-  val ModuleBarGet = g(ModuleClsName, Sig.Method("bar", Seq(Type.Int)))
+    g(
+      ModuleClsName,
+      nir.Sig.Method("bar_$eq", Seq(nir.Type.Int, nir.Type.Unit))
+    )
+  val ModuleBarGet = g(ModuleClsName, nir.Sig.Method("bar", Seq(nir.Type.Int)))
   val Parent = g(ParentClsName)
-  val ParentInit = g(ParentClsName, Sig.Ctor(Seq.empty))
-  val ParentFoo = g(ParentClsName, Sig.Method("foo", Seq(Type.Unit)))
+  val ParentInit = g(ParentClsName, nir.Sig.Ctor(Seq.empty))
+  val ParentFoo = g(ParentClsName, nir.Sig.Method("foo", Seq(nir.Type.Unit)))
   val Trait = g("Trait")
   val Object = g(ObjectClsName)
-  val ObjectInit = g(ObjectClsName, Sig.Ctor(Seq.empty))
+  val ObjectInit = g(ObjectClsName, nir.Sig.Ctor(Seq.empty))
 
   val commonReachable =
     Seq(Test, TestModule, TestInit, TestMain, TestModuleMain)
@@ -235,4 +238,5 @@ class ModuleReachabilitySuite extends ReachabilitySuite {
     )
     (source, entry, commonReachable ++ reachable)
   }
+
 }

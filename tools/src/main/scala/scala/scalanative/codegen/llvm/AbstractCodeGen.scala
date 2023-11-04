@@ -126,10 +126,16 @@ private[codegen] abstract class AbstractCodeGen(
       }
     }
 
-    defns.foreach { defn => if (defn.isInstanceOf[nir.Defn.Const]) onDefn(defn) }
+    defns.foreach { defn =>
+      if (defn.isInstanceOf[nir.Defn.Const]) onDefn(defn)
+    }
     defns.foreach { defn => if (defn.isInstanceOf[nir.Defn.Var]) onDefn(defn) }
-    defns.foreach { defn => if (defn.isInstanceOf[nir.Defn.Declare]) onDefn(defn) }
-    defns.foreach { defn => if (defn.isInstanceOf[nir.Defn.Define]) onDefn(defn) }
+    defns.foreach { defn =>
+      if (defn.isInstanceOf[nir.Defn.Declare]) onDefn(defn)
+    }
+    defns.foreach { defn =>
+      if (defn.isInstanceOf[nir.Defn.Define]) onDefn(defn)
+    }
 
   }
 
@@ -142,11 +148,11 @@ private[codegen] abstract class AbstractCodeGen(
     case _ =>
       touch(n)
       env(n) match {
-        case nir.Defn.Var(_, _, ty, _) => ty
-        case nir.Defn.Const(_, _, ty, _) => ty
-        case nir.Defn.Declare(_, _, sig) => sig
+        case nir.Defn.Var(_, _, ty, _)        => ty
+        case nir.Defn.Const(_, _, ty, _)      => ty
+        case nir.Defn.Declare(_, _, sig)      => sig
         case nir.Defn.Define(_, _, sig, _, _) => sig
-        case _ => unreachable
+        case _                                => unreachable
       }
   }
 
@@ -277,7 +283,7 @@ private[codegen] abstract class AbstractCodeGen(
         str(" {")
         insts.foreach {
           case nir.Inst.Let(n, nir.Op.Copy(v), _) => copies(n) = v
-          case _ => ()
+          case _                                  => ()
         }
 
         locally {
@@ -407,7 +413,8 @@ private[codegen] abstract class AbstractCodeGen(
               str(edge.from.splitCount)
             }
             def genUnwindEdge(unwind: nir.Next.Unwind): Unit = {
-              val nir.Next.Unwind(nir.Val.Local(exc, _), nir.Next.Label(_, vals)) =
+              val nir.Next
+                .Unwind(nir.Val.Local(exc, _), nir.Next.Label(_, vals)) =
                 unwind: @unchecked
               genJustVal(vals(n))
               str(", %")
@@ -470,7 +477,8 @@ private[codegen] abstract class AbstractCodeGen(
     ty match {
       case nir.Type.Vararg => str("...")
       case nir.Type.Unit   => str("void")
-      case _: nir.Type.RefKind | nir.Type.Ptr | nir.Type.Null | nir.Type.Nothing =>
+      case _: nir.Type.RefKind | nir.Type.Ptr | nir.Type.Null |
+          nir.Type.Nothing =>
         str(pointerType)
       case nir.Type.Bool          => str("i1")
       case i: nir.Type.FixedSizeI => str("i"); str(i.width)
@@ -506,7 +514,8 @@ private[codegen] abstract class AbstractCodeGen(
       v, {
         val idx = constMap.size
         val name =
-          nir.Global.Member(nir.Global.Top("__const"), nir.Sig.Generated(idx.toString))
+          nir.Global
+            .Member(nir.Global.Top("__const"), nir.Sig.Generated(idx.toString))
         constTy(name) = v.ty
         name
       }
@@ -524,7 +533,9 @@ private[codegen] abstract class AbstractCodeGen(
       v
   }
 
-  private[codegen] def genJustVal(v: nir.Val)(implicit sb: ShowBuilder): Unit = {
+  private[codegen] def genJustVal(
+      v: nir.Val
+  )(implicit sb: ShowBuilder): Unit = {
     import sb._
 
     deconstify(v) match {
@@ -609,7 +620,9 @@ private[codegen] abstract class AbstractCodeGen(
     str(jl.Long.toHexString(jl.Double.doubleToRawLongBits(value)))
   }
 
-  private[codegen] def genVal(value: nir.Val)(implicit sb: ShowBuilder): Unit = {
+  private[codegen] def genVal(
+      value: nir.Val
+  )(implicit sb: ShowBuilder): Unit = {
     import sb._
     if (value != nir.Val.Unit) {
       genType(value.ty)
@@ -628,7 +641,9 @@ private[codegen] abstract class AbstractCodeGen(
       "_S" + g.mangle
   }
 
-  private[codegen] def genGlobal(g: nir.Global)(implicit sb: ShowBuilder): Unit = {
+  private[codegen] def genGlobal(
+      g: nir.Global
+  )(implicit sb: ShowBuilder): Unit = {
     import sb._
     str("\"")
     str(mangled(g))
@@ -769,7 +784,8 @@ private[codegen] abstract class AbstractCodeGen(
          * In this case LLVM linking would otherwise result in call arguments type mismatch.
          */
         val callDef = call.ptr match {
-          case nir.Val.Global(m @ nir.Global.Member(_, sig), valty) if sig.isExtern =>
+          case nir.Val.Global(m @ nir.Global.Member(_, sig), valty)
+              if sig.isExtern =>
             val glob = externSigMembers.getOrElseUpdate(sig, m)
             if (glob == m) call
             else call.copy(ptr = nir.Val.Global(glob, valty))
@@ -1113,7 +1129,7 @@ private[codegen] abstract class AbstractCodeGen(
           case nir.Bin.Iadd => "add"
           case nir.Bin.Isub => "sub"
           case nir.Bin.Imul => "mul"
-          case _        => opcode.toString.toLowerCase
+          case _            => opcode.toString.toLowerCase
         }
         str(bin)
         str(" ")
@@ -1174,7 +1190,9 @@ private[codegen] abstract class AbstractCodeGen(
     })
   }
 
-  private[codegen] def genNext(next: nir.Next)(implicit sb: ShowBuilder): Unit = {
+  private[codegen] def genNext(
+      next: nir.Next
+  )(implicit sb: ShowBuilder): Unit = {
     import sb._
     next match {
       case nir.Next.Case(v, next) =>
@@ -1193,20 +1211,24 @@ private[codegen] abstract class AbstractCodeGen(
     }
   }
 
-  private[codegen] def genConv(conv: nir.Conv, fromType: nir.Type, toType: nir.Type)(
-      implicit sb: ShowBuilder
+  private[codegen] def genConv(
+      conv: nir.Conv,
+      fromType: nir.Type,
+      toType: nir.Type
+  )(implicit
+      sb: ShowBuilder
   ): Unit = conv match {
     case nir.Conv.ZSizeCast | nir.Conv.SSizeCast =>
       val fromSize = fromType match {
-        case nir.Type.Size => platform.sizeOfPtrBits
+        case nir.Type.Size             => platform.sizeOfPtrBits
         case nir.Type.FixedSizeI(s, _) => s
-        case o => unsupported(o)
+        case o                         => unsupported(o)
       }
 
       val toSize = toType match {
-        case nir.Type.Size => platform.sizeOfPtrBits
+        case nir.Type.Size             => platform.sizeOfPtrBits
         case nir.Type.FixedSizeI(s, _) => s
-        case o => unsupported(o)
+        case o                         => unsupported(o)
       }
 
       val castOp =

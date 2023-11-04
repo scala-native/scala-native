@@ -1,7 +1,5 @@
-package scala.scalanative.linker
-
-import scala.scalanative.nir
-import scala.scalanative.nir.{Rt, Sig, Type}
+package scala.scalanative
+package linker
 
 class IdentifiersSuite extends ReachabilitySuite {
 
@@ -42,33 +40,37 @@ class IdentifiersSuite extends ReachabilitySuite {
     val Main = nir.Global.Top("Main")
     val MainModule = nir.Global.Top("Main$")
 
-    val entry = Main.member(Rt.ScalaMainSig)
-    val privateFooBar = Sig.Scope.Private(FooBar)
+    val entry = Main.member(nir.Rt.ScalaMainSig)
+    val privateFooBar = nir.Sig.Scope.Private(FooBar)
 
     val reachable = Seq(
-      Rt.Object.name,
-      Rt.Object.name.member(Sig.Ctor(Seq.empty)),
+      nir.Rt.Object.name,
+      nir.Rt.Object.name.member(nir.Sig.Ctor(Seq.empty)),
       Main,
-      Main.member(Rt.ScalaMainSig),
+      Main.member(nir.Rt.ScalaMainSig),
       MainModule,
-      MainModule.member(Sig.Ctor(Seq.empty)),
+      MainModule.member(nir.Sig.Ctor(Seq.empty)),
       MainModule.member(
-        Sig.Method("main", Rt.ScalaMainSig.types, Sig.Scope.Public)
+        nir.Sig.Method("main", nir.Rt.ScalaMainSig.types, nir.Sig.Scope.Public)
       ),
       FooBar,
-      FooBar.member(Sig.Ctor(Seq.empty)),
+      FooBar.member(nir.Sig.Ctor(Seq.empty)),
       // fields
-      FooBar.member(Sig.Field("x", privateFooBar)),
-      FooBar.member(Sig.Field("$u0022x$u0022", privateFooBar)),
-      FooBar.member(Sig.Field("$u0022x$u0022x$u0022", privateFooBar)),
+      FooBar.member(nir.Sig.Field("x", privateFooBar)),
+      FooBar.member(nir.Sig.Field("$u0022x$u0022", privateFooBar)),
+      FooBar.member(nir.Sig.Field("$u0022x$u0022x$u0022", privateFooBar)),
       // accessors
-      FooBar.member(Sig.Method("x", Seq(Type.Ref(FooBar)))),
-      FooBar.member(Sig.Method("$u0022x$u0022", Seq(Type.Ref(FooBar)))),
-      FooBar.member(Sig.Method("$u0022x$u0022x$u0022", Seq(Type.Ref(FooBar)))),
+      FooBar.member(nir.Sig.Method("x", Seq(nir.Type.Ref(FooBar)))),
+      FooBar.member(nir.Sig.Method("$u0022x$u0022", Seq(nir.Type.Ref(FooBar)))),
+      FooBar.member(
+        nir.Sig.Method("$u0022x$u0022x$u0022", Seq(nir.Type.Ref(FooBar)))
+      ),
       // methods
-      FooBar.member(Sig.Method("y", Seq(Type.Ref(FooBar)))),
-      FooBar.member(Sig.Method("$u0022y$u0022", Seq(Type.Ref(FooBar)))),
-      FooBar.member(Sig.Method("$u0022y$u0022y$u0022", Seq(Type.Ref(FooBar))))
+      FooBar.member(nir.Sig.Method("y", Seq(Type.Ref(FooBar)))),
+      FooBar.member(nir.Sig.Method("$u0022y$u0022", Seq(nir.Type.Ref(FooBar)))),
+      FooBar.member(
+        nir.Sig.Method("$u0022y$u0022y$u0022", Seq(nir.Type.Ref(FooBar)))
+      )
     )
     (source, entry, reachable)
   }

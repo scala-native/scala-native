@@ -8,7 +8,6 @@ import scala.tools.nsc.Properties
 import scala.scalanative.util.unsupported
 import scala.scalanative.util.ScopedVar.scoped
 import scala.tools.nsc
-import scalanative.nir.ControlFlow.removeDeadBlocks
 
 trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
@@ -323,13 +322,15 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       withFreshExprBuffer { exprBuf =>
         val body = {
           // first argument is this
-          val thisArg = nir.Val.Local(curFresh(), nir.Type.Ref(reflInstBuffer.name))
+          val thisArg =
+            nir.Val.Local(curFresh(), nir.Type.Ref(reflInstBuffer.name))
           exprBuf.label(curFresh(), Seq(thisArg))
 
           // call to super constructor
           exprBuf.call(
             nir.Type.Function(Seq(nir.Type.Ref(superClass)), nir.Type.Unit),
-            nir.Val.Global(superClass.member(nir.Sig.Ctor(Seq.empty)), nir.Type.Ptr),
+            nir.Val
+              .Global(superClass.member(nir.Sig.Ctor(Seq.empty)), nir.Type.Ptr),
             Seq(thisArg),
             unwind(curFresh)
           )
@@ -341,7 +342,8 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         reflInstBuffer += new nir.Defn.Define(
           nir.Attrs(),
           reflInstBuffer.name.member(nir.Sig.Ctor(Seq.empty)),
-          nir.Type.Function(Seq(nir.Type.Ref(reflInstBuffer.name)), nir.Type.Unit),
+          nir.Type
+            .Function(Seq(nir.Type.Ref(reflInstBuffer.name)), nir.Type.Unit),
           body
         )
       }
@@ -388,7 +390,8 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         withFreshExprBuffer { exprBuf =>
           val body = {
             // first argument is this
-            val thisArg = nir.Val.Local(curFresh(), nir.Type.Ref(reflInstBuffer.name))
+            val thisArg =
+              nir.Val.Local(curFresh(), nir.Type.Ref(reflInstBuffer.name))
             exprBuf.label(curFresh(), Seq(thisArg))
 
             val m = exprBuf.module(fqSymName, unwind(curFresh))
@@ -399,7 +402,8 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           reflInstBuffer += new nir.Defn.Define(
             nir.Attrs(),
             reflInstBuffer.name.member(applyMethodSig),
-            nir.Type.Function(Seq(nir.Type.Ref(reflInstBuffer.name)), jlObjectRef),
+            nir.Type
+              .Function(Seq(nir.Type.Ref(reflInstBuffer.name)), jlObjectRef),
             body
           )
         }
@@ -495,9 +499,11 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           withFreshExprBuffer { exprBuf =>
             val body = {
               // first argument is this
-              val thisArg = nir.Val.Local(curFresh(), nir.Type.Ref(reflInstBuffer.name))
+              val thisArg =
+                nir.Val.Local(curFresh(), nir.Type.Ref(reflInstBuffer.name))
               // second argument is parameters sequence
-              val argsArg = nir.Val.Local(curFresh(), nir.Type.Array(jlObjectRef))
+              val argsArg =
+                nir.Val.Local(curFresh(), nir.Type.Array(jlObjectRef))
               exprBuf.label(curFresh(), Seq(thisArg, argsArg))
 
               // Extract and cast arguments to proper types.
@@ -536,7 +542,10 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
               nir.Attrs(),
               reflInstBuffer.name.member(applyMethodSig),
               nir.Type.Function(
-                Seq(nir.Type.Ref(reflInstBuffer.name), nir.Type.Array(jlObjectRef)),
+                Seq(
+                  nir.Type.Ref(reflInstBuffer.name),
+                  nir.Type.Array(jlObjectRef)
+                ),
                 jlObjectRef
               ),
               body
@@ -722,8 +731,8 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       }
     }
 
-    protected def genLinktimeResolved(dd: DefDef, name: nir.Global.Member)(implicit
-        pos: nir.Position
+    protected def genLinktimeResolved(dd: DefDef, name: nir.Global.Member)(
+        implicit pos: nir.Position
     ): Option[nir.Defn] = {
       if (dd.symbol.isConstant) {
         globalError(
@@ -814,7 +823,8 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       }
 
       new nir.Defn.Define(
-        nir.Attrs(inlineHint = nir.Attr.AlwaysInline, isLinktimeResolved = true),
+        nir
+          .Attrs(inlineHint = nir.Attr.AlwaysInline, isLinktimeResolved = true),
         methodName,
         nir.Type.Function(Seq.empty, retty),
         buf.toSeq
@@ -840,8 +850,9 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
       def isExternMethodAlias(target: Symbol) =
         (name, genName(target)) match {
-          case (nir.Global.Member(_, lsig), nir.Global.Member(_, rsig)) => lsig == rsig
-          case _                                                => false
+          case (nir.Global.Member(_, lsig), nir.Global.Member(_, rsig)) =>
+            lsig == rsig
+          case _ => false
         }
       val defaultArgs = dd.symbol.paramss.flatten.filter(_.hasDefault)
       rhs match {
@@ -987,7 +998,8 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         vars.foreach { sym =>
           val ty = genType(sym.info)
           val name = genLocalName(sym)
-          val slot = buf.let(namedId(fresh)(name), nir.Op.Var(ty), unwind(fresh))
+          val slot =
+            buf.let(namedId(fresh)(name), nir.Op.Var(ty), unwind(fresh))
           curMethodEnv.enter(sym, slot)
         }
       }
@@ -1051,7 +1063,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       genEntry()
       genVars()
       genBody()
-      removeDeadBlocks(buf.toSeq)
+      nir.ControlFlow.removeDeadBlocks(buf.toSeq)
     }
   }
 
@@ -1197,7 +1209,8 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
               curMethodThis := None,
               curScopeId := nir.ScopeId.TopLevel
             ) {
-              val entryParams = forwarderParamTypes.map(nir.Val.Local(fresh(), _))
+              val entryParams =
+                forwarderParamTypes.map(nir.Val.Local(fresh(), _))
               buf.label(fresh(), entryParams)
               val res =
                 buf.genApplyModuleMethod(

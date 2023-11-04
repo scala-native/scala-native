@@ -8,12 +8,13 @@ object InstanceRef {
   def unapply(addr: Addr)(implicit state: State): Option[nir.Type] =
     unapply(nir.Val.Virtual(addr))
 
-  def unapply(value: nir.Val)(implicit state: State): Option[nir.Type] = value match {
-    case nir.Val.Virtual(addr) =>
-      Some(state.deref(addr).ty)
-    case _ =>
-      None
-  }
+  def unapply(value: nir.Val)(implicit state: State): Option[nir.Type] =
+    value match {
+      case nir.Val.Virtual(addr) =>
+        Some(state.deref(addr).ty)
+      case _ =>
+        None
+    }
 
 }
 
@@ -47,17 +48,18 @@ object DelayedRef {
   def unapply(addr: Addr)(implicit state: State): Option[nir.Op] =
     unapply(nir.Val.Virtual(addr))
 
-  def unapply(value: nir.Val)(implicit state: State): Option[nir.Op] = value match {
-    case nir.Val.Virtual(addr) =>
-      state.deref(addr) match {
-        case DelayedInstance(op) =>
-          Some(op)
-        case _ =>
-          None
-      }
-    case _ =>
-      None
-  }
+  def unapply(value: nir.Val)(implicit state: State): Option[nir.Op] =
+    value match {
+      case nir.Val.Virtual(addr) =>
+        state.deref(addr) match {
+          case DelayedInstance(op) =>
+            Some(op)
+          case _ =>
+            None
+        }
+      case _ =>
+        None
+    }
 
 }
 
@@ -103,7 +105,7 @@ object ConvRef {
         None
     }
 
-  }
+}
 
 object CompRef {
 
@@ -129,23 +131,24 @@ object CompRef {
         None
     }
 
-  }
+}
 
 object EscapedRef {
 
   def unapply(addr: Addr)(implicit state: State): Option[nir.Val] =
     unapply(nir.Val.Virtual(addr))
 
-  def unapply(value: nir.Val)(implicit state: State): Option[nir.Val] = value match {
-    case nir.Val.Virtual(addr) =>
-      state.deref(addr) match {
-        case EscapedInstance(value) =>
-          Some(value)
-        case _ =>
-          None
-      }
-    case _ =>
-      None
-  }
+  def unapply(value: nir.Val)(implicit state: State): Option[nir.Val] =
+    value match {
+      case nir.Val.Virtual(addr) =>
+        state.deref(addr) match {
+          case EscapedInstance(value) =>
+            Some(value)
+          case _ =>
+            None
+        }
+      case _ =>
+        None
+    }
 
 }

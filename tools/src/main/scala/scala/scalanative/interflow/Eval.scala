@@ -107,8 +107,10 @@ trait Eval { self: Interflow =>
             case value if value.isCanonical =>
               val next = cases
                 .collectFirst {
-                  case nir.Next.Case(caseValue, nir.Next.Label(caseTarget, caseArgs))
-                      if caseValue == value =>
+                  case nir.Next.Case(
+                        caseValue,
+                        nir.Next.Label(caseTarget, caseArgs)
+                      ) if caseValue == value =>
                     val evalArgs = caseArgs.map(eval)
                     val next = nir.Next.Label(caseTarget, evalArgs)
                     next
@@ -162,7 +164,9 @@ trait Eval { self: Interflow =>
           val (dsig, dtarget) = emeth match {
             case nir.Val.Global(name: nir.Global.Member, _) =>
               visitDuplicate(name, argtys)
-                .map { defn => (defn.ty, nir.Val.Global(defn.name, nir.Type.Ptr)) }
+                .map { defn =>
+                  (defn.ty, nir.Val.Global(defn.name, nir.Type.Ptr))
+                }
                 .getOrElse {
                   visitRoot(name)
                   (sig, emeth)
@@ -351,7 +355,7 @@ trait Eval { self: Interflow =>
       case nir.Op.As(ty, rawObj) =>
         val refty = ty match {
           case ty: nir.Type.RefKind => ty
-          case _                => bailOut
+          case _                    => bailOut
         }
         val obj = eval(rawObj)
         def fallback =
@@ -373,7 +377,7 @@ trait Eval { self: Interflow =>
       case nir.Op.Is(ty, rawObj) =>
         val refty = ty match {
           case ty: nir.Type.RefKind => ty
-          case _                => bailOut
+          case _                    => bailOut
         }
         val obj = eval(rawObj)
         def fallback =
@@ -517,39 +521,39 @@ trait Eval { self: Interflow =>
     bin match {
       case nir.Bin.Iadd =>
         (l, r) match {
-          case (nir.Val.Int(l), nir.Val.Int(r)) => nir.Val.Int(l + r)
+          case (nir.Val.Int(l), nir.Val.Int(r))   => nir.Val.Int(l + r)
           case (nir.Val.Long(l), nir.Val.Long(r)) => nir.Val.Long(l + r)
-          case _ => bailOut
+          case _                                  => bailOut
         }
       case nir.Bin.Fadd =>
         (l, r) match {
-          case (nir.Val.Float(l), nir.Val.Float(r)) => nir.Val.Float(l + r)
+          case (nir.Val.Float(l), nir.Val.Float(r))   => nir.Val.Float(l + r)
           case (nir.Val.Double(l), nir.Val.Double(r)) => nir.Val.Double(l + r)
-          case _ => bailOut
+          case _                                      => bailOut
         }
       case nir.Bin.Isub =>
         (l, r) match {
           case (nir.Val.Int(l), nir.Val.Int(r))   => nir.Val.Int(l - r)
           case (nir.Val.Long(l), nir.Val.Long(r)) => nir.Val.Long(l - r)
-          case _                          => bailOut
+          case _                                  => bailOut
         }
       case nir.Bin.Fsub =>
         (l, r) match {
           case (nir.Val.Float(l), nir.Val.Float(r))   => nir.Val.Float(l - r)
           case (nir.Val.Double(l), nir.Val.Double(r)) => nir.Val.Double(l - r)
-          case _                              => bailOut
+          case _                                      => bailOut
         }
       case nir.Bin.Imul =>
         (l, r) match {
           case (nir.Val.Int(l), nir.Val.Int(r))   => nir.Val.Int(l * r)
           case (nir.Val.Long(l), nir.Val.Long(r)) => nir.Val.Long(l * r)
-          case _                          => bailOut
+          case _                                  => bailOut
         }
       case nir.Bin.Fmul =>
         (l, r) match {
           case (nir.Val.Float(l), nir.Val.Float(r))   => nir.Val.Float(l * r)
           case (nir.Val.Double(l), nir.Val.Double(r)) => nir.Val.Double(l * r)
-          case _                              => bailOut
+          case _                                      => bailOut
         }
       case nir.Bin.Sdiv =>
         (l, r) match {
@@ -589,7 +593,7 @@ trait Eval { self: Interflow =>
         (l, r) match {
           case (nir.Val.Float(l), nir.Val.Float(r))   => nir.Val.Float(l / r)
           case (nir.Val.Double(l), nir.Val.Double(r)) => nir.Val.Double(l / r)
-          case _                              => bailOut
+          case _                                      => bailOut
         }
       case nir.Bin.Srem =>
         (l, r) match {
@@ -629,51 +633,53 @@ trait Eval { self: Interflow =>
         (l, r) match {
           case (nir.Val.Float(l), nir.Val.Float(r))   => nir.Val.Float(l % r)
           case (nir.Val.Double(l), nir.Val.Double(r)) => nir.Val.Double(l % r)
-          case _                              => bailOut
+          case _                                      => bailOut
         }
       case nir.Bin.Shl =>
         (l, r) match {
           case (nir.Val.Int(l), nir.Val.Int(r))   => nir.Val.Int(l << r)
           case (nir.Val.Long(l), nir.Val.Long(r)) => nir.Val.Long(l << r)
-          case _                          => bailOut
+          case _                                  => bailOut
         }
       case nir.Bin.Lshr =>
         (l, r) match {
           case (nir.Val.Int(l), nir.Val.Int(r))   => nir.Val.Int(l >>> r)
           case (nir.Val.Long(l), nir.Val.Long(r)) => nir.Val.Long(l >>> r)
-          case _                          => bailOut
+          case _                                  => bailOut
         }
       case nir.Bin.Ashr =>
         (l, r) match {
           case (nir.Val.Int(l), nir.Val.Int(r))   => nir.Val.Int(l >> r)
           case (nir.Val.Long(l), nir.Val.Long(r)) => nir.Val.Long(l >> r)
-          case _                          => bailOut
+          case _                                  => bailOut
         }
       case nir.Bin.And =>
         (l, r) match {
           case (nir.Val.Bool(l), nir.Val.Bool(r)) => nir.Val.Bool(l & r)
           case (nir.Val.Int(l), nir.Val.Int(r))   => nir.Val.Int(l & r)
           case (nir.Val.Long(l), nir.Val.Long(r)) => nir.Val.Long(l & r)
-          case _                          => bailOut
+          case _                                  => bailOut
         }
       case nir.Bin.Or =>
         (l, r) match {
           case (nir.Val.Bool(l), nir.Val.Bool(r)) => nir.Val.Bool(l | r)
           case (nir.Val.Int(l), nir.Val.Int(r))   => nir.Val.Int(l | r)
           case (nir.Val.Long(l), nir.Val.Long(r)) => nir.Val.Long(l | r)
-          case _                          => bailOut
+          case _                                  => bailOut
         }
       case nir.Bin.Xor =>
         (l, r) match {
           case (nir.Val.Bool(l), nir.Val.Bool(r)) => nir.Val.Bool(l ^ r)
           case (nir.Val.Int(l), nir.Val.Int(r))   => nir.Val.Int(l ^ r)
           case (nir.Val.Long(l), nir.Val.Long(r)) => nir.Val.Long(l ^ r)
-          case _                          => bailOut
+          case _                                  => bailOut
         }
     }
   }
 
-  def eval(comp: nir.Comp, ty: nir.Type, l: nir.Val, r: nir.Val)(implicit state: State): nir.Val = {
+  def eval(comp: nir.Comp, ty: nir.Type, l: nir.Val, r: nir.Val)(implicit
+      state: State
+  ): nir.Val = {
     def bailOut =
       throw BailOut(
         s"can't eval comp op: $comp[${ty.show}] ${l.show}, ${r.show}"
@@ -681,25 +687,35 @@ trait Eval { self: Interflow =>
     comp match {
       case nir.Comp.Ieq =>
         (l, r) match {
-          case (nir.Val.Bool(l), nir.Val.Bool(r))           => nir.Val.Bool(l == r)
-          case (nir.Val.Int(l), nir.Val.Int(r))             => nir.Val.Bool(l == r)
-          case (nir.Val.Long(l), nir.Val.Long(r))           => nir.Val.Bool(l == r)
-          case (nir.Val.Size(l), nir.Val.Size(r))           => nir.Val.Bool(l == r)
-          case (nir.Val.Null, nir.Val.Null)                 => nir.Val.True
-          case (nir.Val.Global(l, _), nir.Val.Global(r, _)) => nir.Val.Bool(l == r)
-          case (nir.Val.Null | _: nir.Val.Global, nir.Val.Null | _: nir.Val.Global) => nir.Val.False
-          case _                                                    => bailOut
+          case (nir.Val.Bool(l), nir.Val.Bool(r)) => nir.Val.Bool(l == r)
+          case (nir.Val.Int(l), nir.Val.Int(r))   => nir.Val.Bool(l == r)
+          case (nir.Val.Long(l), nir.Val.Long(r)) => nir.Val.Bool(l == r)
+          case (nir.Val.Size(l), nir.Val.Size(r)) => nir.Val.Bool(l == r)
+          case (nir.Val.Null, nir.Val.Null)       => nir.Val.True
+          case (nir.Val.Global(l, _), nir.Val.Global(r, _)) =>
+            nir.Val.Bool(l == r)
+          case (
+                nir.Val.Null | _: nir.Val.Global,
+                nir.Val.Null | _: nir.Val.Global
+              ) =>
+            nir.Val.False
+          case _ => bailOut
         }
       case nir.Comp.Ine =>
         (l, r) match {
-          case (nir.Val.Bool(l), nir.Val.Bool(r))           => nir.Val.Bool(l != r)
-          case (nir.Val.Int(l), nir.Val.Int(r))             => nir.Val.Bool(l != r)
-          case (nir.Val.Long(l), nir.Val.Long(r))           => nir.Val.Bool(l != r)
-          case (nir.Val.Size(l), nir.Val.Size(r))           => nir.Val.Bool(l != r)
-          case (nir.Val.Null, nir.Val.Null)                 => nir.Val.False
-          case (nir.Val.Global(l, _), nir.Val.Global(r, _)) => nir.Val.Bool(l != r)
-          case (nir.Val.Null | _: nir.Val.Global, nir.Val.Null | _: nir.Val.Global) => nir.Val.True
-          case _                                                    => bailOut
+          case (nir.Val.Bool(l), nir.Val.Bool(r)) => nir.Val.Bool(l != r)
+          case (nir.Val.Int(l), nir.Val.Int(r))   => nir.Val.Bool(l != r)
+          case (nir.Val.Long(l), nir.Val.Long(r)) => nir.Val.Bool(l != r)
+          case (nir.Val.Size(l), nir.Val.Size(r)) => nir.Val.Bool(l != r)
+          case (nir.Val.Null, nir.Val.Null)       => nir.Val.False
+          case (nir.Val.Global(l, _), nir.Val.Global(r, _)) =>
+            nir.Val.Bool(l != r)
+          case (
+                nir.Val.Null | _: nir.Val.Global,
+                nir.Val.Null | _: nir.Val.Global
+              ) =>
+            nir.Val.True
+          case _ => bailOut
         }
       case nir.Comp.Ugt =>
         (l, r) match {
@@ -750,69 +766,71 @@ trait Eval { self: Interflow =>
           case (nir.Val.Int(l), nir.Val.Int(r))   => nir.Val.Bool(l > r)
           case (nir.Val.Long(l), nir.Val.Long(r)) => nir.Val.Bool(l > r)
           case (nir.Val.Size(l), nir.Val.Size(r)) => nir.Val.Bool(l > r)
-          case _                          => bailOut
+          case _                                  => bailOut
         }
       case nir.Comp.Sge =>
         (l, r) match {
           case (nir.Val.Int(l), nir.Val.Int(r))   => nir.Val.Bool(l >= r)
           case (nir.Val.Long(l), nir.Val.Long(r)) => nir.Val.Bool(l >= r)
           case (nir.Val.Size(l), nir.Val.Size(r)) => nir.Val.Bool(l >= r)
-          case _                          => bailOut
+          case _                                  => bailOut
         }
       case nir.Comp.Slt =>
         (l, r) match {
           case (nir.Val.Int(l), nir.Val.Int(r))   => nir.Val.Bool(l < r)
           case (nir.Val.Long(l), nir.Val.Long(r)) => nir.Val.Bool(l < r)
           case (nir.Val.Size(l), nir.Val.Size(r)) => nir.Val.Bool(l < r)
-          case _                          => bailOut
+          case _                                  => bailOut
         }
       case nir.Comp.Sle =>
         (l, r) match {
           case (nir.Val.Int(l), nir.Val.Int(r))   => nir.Val.Bool(l <= r)
           case (nir.Val.Long(l), nir.Val.Long(r)) => nir.Val.Bool(l <= r)
           case (nir.Val.Size(l), nir.Val.Size(r)) => nir.Val.Bool(l <= r)
-          case _                          => bailOut
+          case _                                  => bailOut
         }
       case nir.Comp.Feq =>
         (l, r) match {
           case (nir.Val.Float(l), nir.Val.Float(r))   => nir.Val.Bool(l == r)
           case (nir.Val.Double(l), nir.Val.Double(r)) => nir.Val.Bool(l == r)
-          case _                              => bailOut
+          case _                                      => bailOut
         }
       case nir.Comp.Fne =>
         (l, r) match {
           case (nir.Val.Float(l), nir.Val.Float(r))   => nir.Val.Bool(l != r)
           case (nir.Val.Double(l), nir.Val.Double(r)) => nir.Val.Bool(l != r)
-          case _                              => bailOut
+          case _                                      => bailOut
         }
       case nir.Comp.Fgt =>
         (l, r) match {
           case (nir.Val.Float(l), nir.Val.Float(r))   => nir.Val.Bool(l > r)
           case (nir.Val.Double(l), nir.Val.Double(r)) => nir.Val.Bool(l > r)
-          case _                              => bailOut
+          case _                                      => bailOut
         }
       case nir.Comp.Fge =>
         (l, r) match {
           case (nir.Val.Float(l), nir.Val.Float(r))   => nir.Val.Bool(l >= r)
           case (nir.Val.Double(l), nir.Val.Double(r)) => nir.Val.Bool(l >= r)
-          case _                              => bailOut
+          case _                                      => bailOut
         }
       case nir.Comp.Flt =>
         (l, r) match {
           case (nir.Val.Float(l), nir.Val.Float(r))   => nir.Val.Bool(l < r)
           case (nir.Val.Double(l), nir.Val.Double(r)) => nir.Val.Bool(l < r)
-          case _                              => bailOut
+          case _                                      => bailOut
         }
       case nir.Comp.Fle =>
         (l, r) match {
           case (nir.Val.Float(l), nir.Val.Float(r))   => nir.Val.Bool(l <= r)
           case (nir.Val.Double(l), nir.Val.Double(r)) => nir.Val.Bool(l <= r)
-          case _                              => bailOut
+          case _                                      => bailOut
         }
     }
   }
 
-  def eval(conv: nir.Conv, ty: nir.Type, value: nir.Val)(implicit state: State): nir.Val = {
+  def eval(conv: nir.Conv, ty: nir.Type, value: nir.Val)(implicit
+      state: State
+  ): nir.Val = {
     def bailOut =
       throw BailOut(s"can't eval conv op: $conv[${ty.show}] ${value.show}")
     conv match {
@@ -847,9 +865,10 @@ trait Eval { self: Interflow =>
           case (nir.Val.Long(v), nir.Type.Char)  => nir.Val.Char(v.toChar)
           case (nir.Val.Size(v), nir.Type.Byte)  => nir.Val.Byte(v.toByte)
           case (nir.Val.Size(v), nir.Type.Short) => nir.Val.Short(v.toShort)
-          case (nir.Val.Size(v), nir.Type.Int) if !platform.is32Bit => nir.Val.Int(v.toInt)
+          case (nir.Val.Size(v), nir.Type.Int) if !platform.is32Bit =>
+            nir.Val.Int(v.toInt)
           case (nir.Val.Size(v), nir.Type.Char) => nir.Val.Char(v.toChar)
-          case _                        => bailOut
+          case _                                => bailOut
         }
       case nir.Conv.Zext =>
         (value, ty) match {
@@ -888,18 +907,18 @@ trait Eval { self: Interflow =>
       case nir.Conv.Fptrunc =>
         (value, ty) match {
           case (nir.Val.Double(v), nir.Type.Float) => nir.Val.Float(v.toFloat)
-          case _                           => bailOut
+          case _                                   => bailOut
         }
       case nir.Conv.Fpext =>
         (value, ty) match {
           case (nir.Val.Float(v), nir.Type.Double) => nir.Val.Double(v.toDouble)
-          case _                           => bailOut
+          case _                                   => bailOut
         }
       case nir.Conv.Fptoui =>
         (value, ty) match {
           case (nir.Val.Float(v), nir.Type.Char)  => nir.Val.Char(v.toChar)
           case (nir.Val.Double(v), nir.Type.Char) => nir.Val.Char(v.toChar)
-          case _                          => bailOut
+          case _                                  => bailOut
         }
       case nir.Conv.Fptosi =>
         (value, ty) match {
@@ -907,13 +926,15 @@ trait Eval { self: Interflow =>
           case (nir.Val.Double(v), nir.Type.Int)  => nir.Val.Int(v.toInt)
           case (nir.Val.Float(v), nir.Type.Long)  => nir.Val.Long(v.toLong)
           case (nir.Val.Double(v), nir.Type.Long) => nir.Val.Long(v.toLong)
-          case _                          => bailOut
+          case _                                  => bailOut
         }
       case nir.Conv.Uitofp =>
         (value, ty) match {
-          case (nir.Val.Char(v), nir.Type.Float)  => nir.Val.Float(v.toInt.toFloat)
-          case (nir.Val.Char(v), nir.Type.Double) => nir.Val.Double(v.toInt.toFloat)
-          case _                          => bailOut
+          case (nir.Val.Char(v), nir.Type.Float) =>
+            nir.Val.Float(v.toInt.toFloat)
+          case (nir.Val.Char(v), nir.Type.Double) =>
+            nir.Val.Double(v.toInt.toFloat)
+          case _ => bailOut
         }
       case nir.Conv.Sitofp =>
         (value, ty) match {
@@ -927,21 +948,21 @@ trait Eval { self: Interflow =>
           case (nir.Val.Long(v), nir.Type.Double)  => nir.Val.Double(v.toDouble)
           case (nir.Val.Size(v), nir.Type.Float)   => nir.Val.Float(v.toFloat)
           case (nir.Val.Size(v), nir.Type.Double)  => nir.Val.Double(v.toDouble)
-          case _                           => bailOut
+          case _                                   => bailOut
         }
       case nir.Conv.Ptrtoint =>
         (value, ty) match {
           case (nir.Val.Null, nir.Type.Long) => nir.Val.Long(0L)
           case (nir.Val.Null, nir.Type.Int)  => nir.Val.Int(0)
           case (nir.Val.Null, nir.Type.Size) => nir.Val.Size(0)
-          case _                     => bailOut
+          case _                             => bailOut
         }
       case nir.Conv.Inttoptr =>
         (value, ty) match {
           case (nir.Val.Long(0L), nir.Type.Ptr) => nir.Val.Null
           case (nir.Val.Int(0L), nir.Type.Ptr)  => nir.Val.Null
           case (nir.Val.Size(0L), nir.Type.Ptr) => nir.Val.Null
-          case _                        => bailOut
+          case _                                => bailOut
         }
       case nir.Conv.Bitcast =>
         (value, ty) match {
@@ -984,7 +1005,7 @@ trait Eval { self: Interflow =>
       case nir.Val.Local(local, _) if local.id >= 0 =>
         state.loadLocal(local) match {
           case value: nir.Val.Virtual => eval(value)
-          case value              => value
+          case value                  => value
         }
       case nir.Val.Virtual(addr) if state.hasEscaped(addr) =>
         state.derefEscaped(addr).escapedValue
@@ -1033,7 +1054,8 @@ trait Eval { self: Interflow =>
     }
 
     def isPureModuleCtor(defn: nir.Defn.Define): Boolean = {
-      val nir.Inst.Label(_, nir.Val.Local(self, _) +: _) = defn.insts.head: @unchecked
+      val nir.Inst.Label(_, nir.Val.Local(self, _) +: _) =
+        defn.insts.head: @unchecked
 
       val canStoreTo = mutable.Set(self)
       val arrayLength = mutable.Map.empty[nir.Local, Int]
@@ -1049,17 +1071,21 @@ trait Eval { self: Interflow =>
             case _ =>
               ()
           }
-        case nir.Inst.Let(n, _: nir.Op.Classalloc | _: nir.Op.Box | _: nir.Op.Module, _) =>
+        case nir.Inst.Let(
+              n,
+              _: nir.Op.Classalloc | _: nir.Op.Box | _: nir.Op.Module,
+              _
+            ) =>
           canStoreTo += n
         case _ =>
           ()
       }
 
       def canStoreValue(v: nir.Val): Boolean = v match {
-        case _ if v.isCanonical => true
+        case _ if v.isCanonical  => true
         case nir.Val.Local(n, _) => canStoreTo.contains(n)
-        case _: nir.Val.String => true
-        case _ => false
+        case _: nir.Val.String   => true
+        case _                   => false
       }
 
       defn.insts.forall {
@@ -1071,7 +1097,11 @@ trait Eval { self: Interflow =>
           true
         case nir.Inst.Let(_, op, _) if op.isPure =>
           true
-        case nir.Inst.Let(_, _: nir.Op.Classalloc | _: nir.Op.Arrayalloc | _: nir.Op.Box, _) =>
+        case nir.Inst.Let(
+              _,
+              _: nir.Op.Classalloc | _: nir.Op.Arrayalloc | _: nir.Op.Box,
+              _
+            ) =>
           true
         case inst @ nir.Inst.Let(_, nir.Op.Module(name), _) =>
           if (!visiting.contains(name)) {
@@ -1082,16 +1112,28 @@ trait Eval { self: Interflow =>
         case nir.Inst.Let(_, nir.Op.Fieldload(_, nir.Val.Local(to, _), _), _)
             if canStoreTo.contains(to) =>
           true
-        case inst @ nir.Inst.Let(_, nir.Op.Fieldstore(_, nir.Val.Local(to, _), _, value), _)
-            if canStoreTo.contains(to) =>
+        case inst @ nir.Inst.Let(
+              _,
+              nir.Op.Fieldstore(_, nir.Val.Local(to, _), _, value),
+              _
+            ) if canStoreTo.contains(to) =>
           canStoreValue(value)
-        case nir.Inst.Let(_, nir.Op.Arrayload(_, nir.Val.Local(to, _), nir.Val.Int(idx)), _)
+        case nir.Inst.Let(
+              _,
+              nir.Op.Arrayload(_, nir.Val.Local(to, _), nir.Val.Int(idx)),
+              _
+            )
             if canStoreTo.contains(to)
               && inBounds(arrayLength.getOrElse(to, -1), idx) =>
           true
         case nir.Inst.Let(
               _,
-              nir.Op.Arraystore(_, nir.Val.Local(to, _), nir.Val.Int(idx), value),
+              nir.Op.Arraystore(
+                _,
+                nir.Val.Local(to, _),
+                nir.Val.Int(idx),
+                value
+              ),
               _
             )
             if canStoreTo.contains(to)

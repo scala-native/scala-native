@@ -7,7 +7,9 @@ import scalanative.linker.{Method, Trait, Class}
 class TraitDispatchTable(meta: Metadata) {
 
   val dispatchName =
-    nir.Global.Top("__scalanative_metadata").member(nir.Sig.Generated("dispatch_table"))
+    nir.Global
+      .Top("__scalanative_metadata")
+      .member(nir.Sig.Generated("dispatch_table"))
   val dispatchVal = nir.Val.Global(dispatchName, nir.Type.Ptr)
   var dispatchTy: nir.Type = _
   var dispatchDefn: nir.Defn = _
@@ -95,7 +97,9 @@ class TraitDispatchTable(meta: Metadata) {
     dispatchOffset = offsets
     dispatchTy = nir.Type.Ptr
     dispatchDefn =
-      nir.Defn.Const(nir.Attrs.None, dispatchName, value.ty, value)(nir.Position.NoPosition)
+      nir.Defn.Const(nir.Attrs.None, dispatchName, value.ty, value)(
+        nir.Position.NoPosition
+      )
   }
 
   // Generate a compressed representation of the dispatch table

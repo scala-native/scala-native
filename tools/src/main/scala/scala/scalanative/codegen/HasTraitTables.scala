@@ -41,7 +41,8 @@ class HasTraitTables(meta: Metadata) {
 
       row += 1
     }
-    val tableVal = nir.Val.ArrayValue(nir.Type.Int, matrix.toSeq.map(i => nir.Val.Int(i)))
+    val tableVal =
+      nir.Val.ArrayValue(nir.Type.Int, matrix.toSeq.map(i => nir.Val.Int(i)))
 
     classHasTraitDefn =
       nir.Defn.Const(nir.Attrs.None, classHasTraitName, tableVal.ty, tableVal)
@@ -57,7 +58,8 @@ class HasTraitTables(meta: Metadata) {
 
       row += 1
     }
-    val tableVal = nir.Val.ArrayValue(nir.Type.Int, matrix.toSeq.map(l => nir.Val.Int(l)))
+    val tableVal =
+      nir.Val.ArrayValue(nir.Type.Int, matrix.toSeq.map(l => nir.Val.Int(l)))
 
     traitHasTraitDefn =
       nir.Defn.Const(nir.Attrs.None, traitHasTraitName, tableVal.ty, tableVal)

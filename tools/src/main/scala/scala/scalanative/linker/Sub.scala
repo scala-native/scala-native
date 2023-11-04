@@ -2,7 +2,6 @@ package scala.scalanative
 package linker
 
 import scala.collection.mutable
-import scalanative.nir._
 import scalanative.util.unreachable
 
 /** Our subtyping can be described by a following diagram:
@@ -34,17 +33,17 @@ import scalanative.util.unreachable
  */
 object Sub {
 
-  def is(l: Type, r: Type)(implicit
+  def is(l: nir.Type, r: nir.Type)(implicit
       analysis: ReachabilityAnalysis.Result
   ): Boolean = {
     (l, r) match {
       case (l, r) if l == r =>
         true
-      case (Type.Null, (Type.Ptr | _: Type.RefKind)) =>
+      case (nir.Type.Null, (nir.Type.Ptr | _: nir.Type.RefKind)) =>
         true
-      case (Type.Nothing, (_: Type.ValueKind | _: Type.RefKind)) =>
+      case (nir.Type.Nothing, (_: nir.Type.ValueKind | _: nir.Type.RefKind)) =>
         true
-      case (_: Type.RefKind, Rt.Object) =>
+      case (_: nir.Type.RefKind, nir.Rt.Object) =>
         true
       case (ScopeRef(linfo), ScopeRef(rinfo)) =>
         linfo.is(rinfo)
@@ -53,7 +52,7 @@ object Sub {
     }
   }
 
-  def is(info: ScopeInfo, ty: Type.RefKind)(implicit
+  def is(info: ScopeInfo, ty: nir.Type.RefKind)(implicit
       analysis: ReachabilityAnalysis.Result
   ): Boolean = {
     ty match {
@@ -64,36 +63,36 @@ object Sub {
     }
   }
 
-  def lub(tys: Seq[Type], bound: Option[Type])(implicit
+  def lub(tys: Seq[nir.Type], bound: Option[nir.Type])(implicit
       analysis: ReachabilityAnalysis.Result
-  ): Type = {
+  ): nir.Type = {
     tys match {
       case Seq() =>
         unreachable
       case head +: tail =>
-        tail.foldLeft[Type](head)(lub(_, _, bound))
+        tail.foldLeft[nir.Type](head)(lub(_, _, bound))
     }
   }
 
-  def lub(lty: Type, rty: Type, bound: Option[Type])(implicit
+  def lub(lty: nir.Type, rty: nir.Type, bound: Option[nir.Type])(implicit
       analysis: ReachabilityAnalysis.Result
-  ): Type = {
+  ): nir.Type = {
     (lty, rty) match {
       case _ if lty == rty =>
         lty
-      case (ty, Type.Nothing) =>
+      case (ty, nir.Type.Nothing) =>
         ty
-      case (Type.Nothing, ty) =>
+      case (nir.Type.Nothing, ty) =>
         ty
-      case (Type.Ptr, Type.Null) =>
-        Type.Ptr
-      case (Type.Null, Type.Ptr) =>
-        Type.Ptr
-      case (refty: Type.RefKind, Type.Null) =>
-        Type.Ref(refty.className, refty.isExact, nullable = true)
-      case (Type.Null, refty: Type.RefKind) =>
-        Type.Ref(refty.className, refty.isExact, nullable = true)
-      case (lty: Type.RefKind, rty: Type.RefKind) =>
+      case (nir.Type.Ptr, nir.Type.Null) =>
+        nir.Type.Ptr
+      case (nir.Type.Null, nir.Type.Ptr) =>
+        nir.Type.Ptr
+      case (refty: nir.Type.RefKind, nir.Type.Null) =>
+        nir.Type.Ref(refty.className, refty.isExact, nullable = true)
+      case (nir.Type.Null, refty: nir.Type.RefKind) =>
+        nir.Type.Ref(refty.className, refty.isExact, nullable = true)
+      case (lty: nir.Type.RefKind, rty: nir.Type.RefKind) =>
         val ScopeRef(linfo) = lty: @unchecked
         val ScopeRef(rinfo) = rty: @unchecked
         val binfo = bound.flatMap(ScopeRef.unapply)
@@ -103,7 +102,7 @@ object Sub {
             lubinfo.name == linfo.name && lty.isExact
         val nullable =
           lty.isNullable || rty.isNullable
-        Type.Ref(lubinfo.name, exact, nullable)
+        nir.Type.Ref(lubinfo.name, exact, nullable)
       case _ =>
         util.unsupported(s"lub(${lty.show}, ${rty.show})")
     }
@@ -133,7 +132,7 @@ object Sub {
 
       candidates match {
         case Seq() =>
-          analysis.infos(Rt.Object.name).asInstanceOf[ScopeInfo]
+          analysis.infos(nir.Rt.Object.name).asInstanceOf[ScopeInfo]
         case Seq(cand) =>
           cand
         case _ =>
@@ -148,7 +147,7 @@ object Sub {
           }
 
           minimums.headOption.getOrElse {
-            analysis.infos(Rt.Object.name).asInstanceOf[ScopeInfo]
+            analysis.infos(nir.Rt.Object.name).asInstanceOf[ScopeInfo]
           }
       }
     }

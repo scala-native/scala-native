@@ -1,13 +1,13 @@
 package scala.scalanative
 package interflow
 
-import scalanative.nir._
 import scalanative.linker._
 import scala.concurrent._
 import scala.annotation.tailrec
 
 trait Visit { self: Interflow =>
-  def shallVisit(name: Global.Member): Boolean = {
+
+  def shallVisit(name: nir.Global.Member): Boolean = {
     val orig = originalName(name)
 
     if (!hasOriginal(orig)) {
@@ -21,7 +21,7 @@ trait Visit { self: Interflow =>
     }
   }
 
-  def shallDuplicate(name: Global.Member, argtys: Seq[Type]): Boolean =
+  def shallDuplicate(name: nir.Global.Member, argtys: Seq[nir.Type]): Boolean =
     mode match {
       case build.Mode.Debug | build.Mode.ReleaseFast | build.Mode.ReleaseSize =>
         false
@@ -35,9 +35,9 @@ trait Visit { self: Interflow =>
           val nonExtern =
             !defn.attrs.isExtern
           val canOptimize =
-            defn.attrs.opt != Attr.NoOpt
+            defn.attrs.opt != nir.Attr.NoOpt
           val canSpecialize =
-            defn.attrs.specialize != Attr.NoSpecialize
+            defn.attrs.specialize != nir.Attr.NoSpecialize
           val differentArgumentTypes =
             argumentTypes(name) != argtys
 
@@ -53,7 +53,7 @@ trait Visit { self: Interflow =>
         analysis.entries.foreach(visitEntry)
     }
 
-  def visitEntry(name: Global): Unit = {
+  def visitEntry(name: nir.Global): Unit = {
     if (!name.isTop) {
       visitEntry(name.top)
     }
@@ -61,7 +61,7 @@ trait Visit { self: Interflow =>
       case meth: Method =>
         visitRoot(meth.name)
       case cls: Class if cls.isModule =>
-        val init = cls.name member Sig.Ctor(Seq.empty)
+        val init = cls.name member nir.Sig.Ctor(Seq.empty)
         if (hasOriginal(init)) {
           visitRoot(init)
         }
@@ -70,15 +70,15 @@ trait Visit { self: Interflow =>
     }
   }
 
-  def visitRoot(name: Global.Member): Unit =
+  def visitRoot(name: nir.Global.Member): Unit =
     if (shallVisit(name)) {
       pushTodo(name)
     }
 
   def visitDuplicate(
-      name: Global.Member,
-      argtys: Seq[Type]
-  ): Option[Defn.Define] = {
+      name: nir.Global.Member,
+      argtys: Seq[nir.Type]
+  ): Option[nir.Defn.Define] = {
     mode match {
       case build.Mode.Debug =>
         None
@@ -96,16 +96,18 @@ trait Visit { self: Interflow =>
   }
 
   def visitLoop()(implicit ec: ExecutionContext): Future[Unit] = {
-    def visit(name: Global.Member): Unit = {
+    def visit(name: nir.Global.Member): Unit = {
       if (!isDone(name)) {
         visitMethod(name)
       }
     }
 
     @tailrec def loop(): Unit = popTodo() match {
-      case name: Global.Member => visit(name); loop()
-      case Global.None         => ()
-      case name: Global.Top =>
+      case name: nir.Global.Member =>
+        visit(name); loop()
+      case nir.Global.None =>
+        ()
+      case name: nir.Global.Top =>
         throw new IllegalStateException(
           s"Unexpected Global.Top in visit loop: ${name}"
         )
@@ -121,7 +123,7 @@ trait Visit { self: Interflow =>
     }
   }
 
-  def visitMethod(name: Global.Member): Unit =
+  def visitMethod(name: nir.Global.Member): Unit =
     if (!hasStarted(name)) {
       markStarted(name)
       val origname = originalName(name)
@@ -138,7 +140,9 @@ trait Visit { self: Interflow =>
         case BailOut(msg) =>
           log(s"failed to expand ${name.show}: $msg")
           val baildefn =
-            origdefn.copy(attrs = origdefn.attrs.copy(opt = Attr.BailOpt(msg)))(
+            origdefn.copy(attrs =
+              origdefn.attrs.copy(opt = nir.Attr.BailOpt(msg))
+            )(
               origdefn.pos
             )
           noOpt(origdefn)
@@ -149,15 +153,18 @@ trait Visit { self: Interflow =>
       }
     }
 
-  def originalName(name: Global.Member): Global.Member = name match {
-    case Global.Member(owner, sig) if sig.isDuplicate =>
-      val Sig.Duplicate(origSig, argtys) = sig.unmangled: @unchecked
-      originalName(Global.Member(owner, origSig))
+  def originalName(name: nir.Global.Member): nir.Global.Member = name match {
+    case nir.Global.Member(owner, sig) if sig.isDuplicate =>
+      val nir.Sig.Duplicate(origSig, argtys) = sig.unmangled: @unchecked
+      originalName(nir.Global.Member(owner, origSig))
     case _ =>
       name
   }
 
-  def duplicateName(name: Global.Member, argtys: Seq[Type]): Global.Member = {
+  def duplicateName(
+      name: nir.Global.Member,
+      argtys: Seq[nir.Type]
+  ): nir.Global.Member = {
     val orig = originalName(name)
     if (!shallDuplicate(orig, argtys)) orig
     else {
@@ -169,29 +176,31 @@ trait Visit { self: Interflow =>
           val tpe = if (!Sub.is(argty, origty)) origty else argty
           // Lift Unit to BoxedUnit, only in that form it can be passed as a function argument
           // It would be better to eliminate void arguments, but currently generates lots of problmes
-          if (tpe == nir.Type.Unit) Rt.BoxedUnit
+          if (tpe == nir.Type.Unit) nir.Rt.BoxedUnit
           else tpe
       }
-      val Global.Member(top, sig) = orig
-      Global.Member(top, Sig.Duplicate(sig, dupargtys))
+      val nir.Global.Member(top, sig) = orig
+      nir.Global.Member(top, nir.Sig.Duplicate(sig, dupargtys))
     }
   }
 
-  def argumentTypes(name: Global.Member): Seq[Type] = name match {
-    case Global.Member(_, sig) if sig.isDuplicate =>
-      val Sig.Duplicate(_, argtys) = sig.unmangled: @unchecked
+  def argumentTypes(name: nir.Global.Member): Seq[nir.Type] = name match {
+    case nir.Global.Member(_, sig) if sig.isDuplicate =>
+      val nir.Sig.Duplicate(_, argtys) = sig.unmangled: @unchecked
       argtys
     case _ =>
-      val Type.Function(argtys, _) =
+      val nir.Type.Function(argtys, _) =
         analysis.infos(name).asInstanceOf[Method].ty: @unchecked
       argtys
   }
 
-  def originalFunctionType(name: Global.Member): Type.Function = name match {
-    case Global.Member(owner, sig) if sig.isDuplicate =>
-      val Sig.Duplicate(base, _) = sig.unmangled: @unchecked
-      originalFunctionType(Global.Member(owner, base))
-    case _ =>
-      analysis.infos(name).asInstanceOf[Method].ty
-  }
+  def originalFunctionType(name: nir.Global.Member): nir.Type.Function =
+    name match {
+      case nir.Global.Member(owner, sig) if sig.isDuplicate =>
+        val nir.Sig.Duplicate(base, _) = sig.unmangled: @unchecked
+        originalFunctionType(nir.Global.Member(owner, base))
+      case _ =>
+        analysis.infos(name).asInstanceOf[Method].ty
+    }
+
 }
