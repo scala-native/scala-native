@@ -1,4 +1,9 @@
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
+
+#include "eh.h"
+
+extern "C" {
+#include "module.h"
 #include "stdatomic.h"
 #include "gc/shared/ScalaNativeGC.h"
 
@@ -19,6 +24,7 @@
 #endif
 
 #include <assert.h>
+} // extern "C"
 
 // Thread identity helpers
 #ifdef _WIN32
@@ -50,7 +56,7 @@ static void sleep_ms(int milliseconds) {
     struct timespec ts;
     ts.tv_sec = milliseconds / 1000;
     ts.tv_nsec = (milliseconds % 1000) * 1000000;
-    nanosleep(&ts, NULL);
+    nanosleep(&ts, nullptr);
 #else
     if (milliseconds >= 1000)
         sleep(milliseconds / 1000);
@@ -58,24 +64,24 @@ static void sleep_ms(int milliseconds) {
 #endif
 }
 
-typedef _Atomic(void **) ModuleRef;
-typedef ModuleRef *ModuleSlot;
-typedef void (*ModuleCtor)(ModuleRef);
 typedef struct InitializationContext {
     thread_id initThreadId;
     ModuleRef instance;
+    scalanative::ExceptionWrapper *exception;
 } InitializationContext;
 
 inline static ModuleRef waitForInitialization(ModuleSlot slot,
                                               void *classInfo) {
     int spin = 0;
     ModuleRef module = atomic_load_explicit(slot, memory_order_acquire);
-    assert(module != NULL);
+    assert(module != nullptr);
     while (*module != classInfo) {
         InitializationContext *ctx = (InitializationContext *)module;
-        // Usage of module in it's constructor, return unitializied instance
         if (isThreadEqual(ctx->initThreadId, getThreadId())) {
             return ctx->instance;
+        }
+        if (ctx->exception != nullptr) {
+            throw ctx->exception;
         }
         if (spin++ < 32)
             YieldThread();
@@ -87,24 +93,36 @@ inline static ModuleRef waitForInitialization(ModuleSlot slot,
     return module;
 }
 
+extern "C" {
+ModuleRef __scalanative_loadModule(ModuleSlot slot, void *classInfo,
+                                   size_t size, ModuleCtor ctor);
+}
+
 ModuleRef __scalanative_loadModule(ModuleSlot slot, void *classInfo,
                                    size_t size, ModuleCtor ctor) {
     ModuleRef module = atomic_load_explicit(slot, memory_order_acquire);
 
-    if (module == NULL) {
+    if (module == nullptr) {
         InitializationContext ctx = {};
-        void **expected = NULL;
+        void **expected = nullptr;
         if (atomic_compare_exchange_strong(slot, &expected, (void **)&ctx)) {
-            ModuleRef instance = scalanative_alloc(classInfo, size);
+            ModuleRef instance = static_cast<void**>(scalanative_alloc(classInfo, size));
             ctx.initThreadId = getThreadId();
             ctx.instance = instance;
-            ctor(instance);
-            atomic_store_explicit(slot, instance, memory_order_release);
+            try {
+                ctor(instance);
+                atomic_store_explicit(slot, instance, memory_order_release);
+            }
+            catch (scalanative::ExceptionWrapper &e) {
+                ctx.exception = &e;
+                throw e.obj;
+            }
             return instance;
         } else {
             return waitForInitialization(slot, classInfo);
         }
     }
+
     if (*module == classInfo)
         return module;
     else
