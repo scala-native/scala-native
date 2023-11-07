@@ -1,6 +1,7 @@
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
 
 #include "eh.h"
+#include <cstdio>
 
 extern "C" {
 #include "module.h"
@@ -24,6 +25,8 @@ extern "C" {
 #endif
 
 #include <assert.h>
+
+void __scala_native_throw_exception_in_initializer_error(void);
 } // extern "C"
 
 // Thread identity helpers
@@ -81,7 +84,8 @@ inline static ModuleRef waitForInitialization(ModuleSlot slot,
             return ctx->instance;
         }
         if (ctx->exception != nullptr) {
-            throw ctx->exception;
+            std::printf("Exception in module initializer wait\n");
+            // __scala_native_throw_exception_in_initializer_error();
         }
         if (spin++ < 32)
             YieldThread();
@@ -115,7 +119,8 @@ ModuleRef __scalanative_loadModule(ModuleSlot slot, void *classInfo,
             }
             catch (scalanative::ExceptionWrapper &e) {
                 ctx.exception = &e;
-                throw e.obj;
+                std::printf("Exception in module initializer: %s\n", e.what());
+                __scala_native_throw_exception_in_initializer_error();
             }
             return instance;
         } else {

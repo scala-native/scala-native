@@ -51,6 +51,7 @@ object Generate {
       genWeakRefUtils()
       genArrayIds()
       genStackBottom()
+      genThrowExceptionInInitizerError()
 
       buf.toSeq
     }
@@ -329,6 +330,31 @@ object Generate {
 
     def genStackBottom(): Unit =
       buf += Defn.Var(Attrs.None, stackBottomName, Type.Ptr, Val.Null)
+    
+    def genThrowExceptionInInitizerError(): Unit = {
+      implicit val fresh = Fresh()
+      val rt = Val.Local(fresh(), Runtime)
+      buf += Defn.Define(
+        Attrs.None,
+        SNThrowExceptionInInitializerErrorName,
+        SNThrowExceptionInInitializerErrorSig,
+        // withExceptionHandler { unwindProvider =>
+        //   def unwind = unwindProvider()
+        Seq(
+          Inst.Label(fresh(), Seq.empty),
+          Inst.Let(rt.id, Op.Module(Runtime.name), Next.None),
+          Inst.Let(
+            Op.Call(
+              RuntimeThrowExceptionInInitializerErrorSig,
+              RuntimeThrowExceptionInInitializerError,
+              Seq(rt),
+            ),
+            Next.None
+          ),
+        )
+        
+      )
+    }
 
     def genModuleAccessors(): Unit = {
       val LoadModuleSig = Type.Function(
@@ -610,6 +636,19 @@ object Generate {
     val RuntimeLoopName = Runtime.name.member(Sig.Method("loop", Seq(Type.Unit)))
     val RuntimeLoop = Val.Global(RuntimeLoopName, Type.Ptr)
 
+    val SNThrowExceptionInInitializerErrorName =
+      extern("__scala_native_throw_exception_in_initializer_error")
+    val SNThrowExceptionInInitializerErrorSig =
+      Type.Function(Seq.empty, Type.Unit)
+    val RuntimeThrowExceptionInInitializerErrorSig =
+      Type.Function(Seq(Runtime), Type.Nothing)
+    val RuntimeThrowExceptionInInitializerErrorName =
+      Runtime.name.member(
+        Sig.Method("throwExceptionInInitializerError", Seq(Type.Nothing))
+      )
+    val RuntimeThrowExceptionInInitializerError =
+      Val.Global(RuntimeInitName, Type.Ptr)
+
     val LibraryInitName = extern("ScalaNativeInit")
     val LibraryInitSig = Type.Function(Seq.empty, Type.Int)
 
@@ -666,6 +705,7 @@ object Generate {
     RuntimeInit.name,
     RuntimeLoop.name,
     RuntimeExecuteUEH,
+    RuntimeThrowExceptionInInitializerErrorName,
     JavaThread,
     JavaThreadCurrentThread,
     JavaThreadGetUEH,
