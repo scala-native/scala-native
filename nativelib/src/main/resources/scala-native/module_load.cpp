@@ -77,22 +77,28 @@ inline static ModuleRef waitForInitialization(ModuleSlot slot,
                                               void *classInfo) {
     int spin = 0;
     ModuleRef module = atomic_load_explicit(slot, memory_order_acquire);
-    assert(module != nullptr);
-    while (*module != classInfo) {
-        InitializationContext *ctx = (InitializationContext *)module;
-        if (isThreadEqual(ctx->initThreadId, getThreadId())) {
-            return ctx->instance;
-        }
-        if (ctx->exception != nullptr) {
+    // assert(module != nullptr);
+    while (module == nullptr || *module != classInfo) {
+        if (module != nullptr) {
+            InitializationContext *ctx = (InitializationContext *)module;
+            if (isThreadEqual(ctx->initThreadId, getThreadId())) {
+                return ctx->instance;
+            }
+            if (ctx->exception != nullptr) {
+                std::printf("Exception in module initializer wait\n");
+                return nullptr;
+                // __scala_native_throw_exception_in_initializer_error();
+            }
+            if (spin++ < 32)
+                YieldThread();
+            else
+                sleep_ms(1);
+            scalanative_gc_safepoint_poll();
+            module = atomic_load_explicit(slot, memory_order_acquire);
+        } else { // module == nullptr
             std::printf("Exception in module initializer wait\n");
-            // __scala_native_throw_exception_in_initializer_error();
+            return nullptr;
         }
-        if (spin++ < 32)
-            YieldThread();
-        else
-            sleep_ms(1);
-        scalanative_gc_safepoint_poll();
-        module = atomic_load_explicit(slot, memory_order_acquire);
     }
     return module;
 }
@@ -119,8 +125,10 @@ ModuleRef __scalanative_loadModule(ModuleSlot slot, void *classInfo,
             }
             catch (scalanative::ExceptionWrapper &e) {
                 ctx.exception = &e;
+                atomic_store_explicit(slot, nullptr, memory_order_release);
                 std::printf("Exception in module initializer: %s\n", e.what());
-                __scala_native_throw_exception_in_initializer_error();
+                // __scala_native_throw_exception_in_initializer_error();
+                return nullptr;
             }
             return instance;
         } else {

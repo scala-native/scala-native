@@ -338,21 +338,21 @@ object Generate {
         Attrs.None,
         SNThrowExceptionInInitializerErrorName,
         SNThrowExceptionInInitializerErrorSig,
-        // withExceptionHandler { unwindProvider =>
-        //   def unwind = unwindProvider()
-        Seq(
-          Inst.Label(fresh(), Seq.empty),
-          Inst.Let(rt.id, Op.Module(Runtime.name), Next.None),
-          Inst.Let(
-            Op.Call(
-              RuntimeThrowExceptionInInitializerErrorSig,
-              RuntimeThrowExceptionInInitializerError,
-              Seq(rt),
+        withExceptionHandler { unwindProvider =>
+          def unwind = unwindProvider()
+          Seq(
+            Inst.Label(fresh(), Seq.empty),
+            Inst.Let(rt.id, Op.Module(Runtime.name), unwind),
+            Inst.Let(
+              Op.Call(
+                RuntimeThrowExceptionInInitializerErrorSig,
+                RuntimeThrowExceptionInInitializerError,
+                Seq(rt),
+              ),
+              unwind
             ),
-            Next.None
-          ),
-        )
-        
+          )
+        }
       )
     }
 
@@ -639,7 +639,8 @@ object Generate {
     val SNThrowExceptionInInitializerErrorName =
       extern("__scala_native_throw_exception_in_initializer_error")
     val SNThrowExceptionInInitializerErrorSig =
-      Type.Function(Seq.empty, Type.Unit)
+      Type.Function(Seq.empty, Type.Int)
+
     val RuntimeThrowExceptionInInitializerErrorSig =
       Type.Function(Seq(Runtime), Type.Nothing)
     val RuntimeThrowExceptionInInitializerErrorName =
@@ -647,7 +648,7 @@ object Generate {
         Sig.Method("throwExceptionInInitializerError", Seq(Type.Nothing))
       )
     val RuntimeThrowExceptionInInitializerError =
-      Val.Global(RuntimeInitName, Type.Ptr)
+      Val.Global(RuntimeThrowExceptionInInitializerErrorName, Type.Ptr)
 
     val LibraryInitName = extern("ScalaNativeInit")
     val LibraryInitSig = Type.Function(Seq.empty, Type.Int)
