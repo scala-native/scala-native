@@ -1373,6 +1373,19 @@ object Lower {
         srcPosition: Position,
         scopeId: ScopeId
     ) = {
+      def throwIfNull(value: Val) = {
+        val notNullL = fresh()
+        val noSuchMethodL =
+          noSuchMethodSlowPath.getOrElseUpdate(unwindHandler, fresh())
+
+        val condNull = buf.comp(Comp.Ine, Type.Ptr, value, Val.Null, unwind)
+        buf.branch(
+          condNull,
+          Next(notNullL),
+          Next.Label(noSuchMethodL, Seq(Val.String("test")))
+        )
+        buf.label(notNullL)
+      }
       val Op.Module(name) = op
 
       meta.analysis.infos(name) match {
@@ -1384,7 +1397,9 @@ object Lower {
           val loadSig = Type.Function(Seq.empty, Type.Ref(name))
           val load = Val.Global(name.member(Sig.Generated("load")), Type.Ptr)
 
-          buf.let(n, Op.Call(loadSig, load, Seq.empty), unwind)
+          val ret = buf.let(n, Op.Call(loadSig, load, Seq.empty), unwind)
+          throwIfNull(ret)
+          ret
       }
     }
 

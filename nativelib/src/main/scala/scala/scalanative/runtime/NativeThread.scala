@@ -133,6 +133,7 @@ object NativeThread {
     try thread.run()
     catch {
       case ex: Throwable =>
+        println(s"exception! ${ex}")
         val handler = thread.getUncaughtExceptionHandler() match {
           case null    => Thread.getDefaultUncaughtExceptionHandler()
           case handler => handler

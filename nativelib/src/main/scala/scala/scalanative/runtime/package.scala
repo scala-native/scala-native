@@ -157,4 +157,11 @@ package object runtime {
   @noinline
   private[scalanative] def throwNoSuchMethod(sig: String): Nothing =
     throw new NoSuchMethodException(sig)
+
+  @noinline
+  private[scalanative] def throwExceptionInInitializerError(): Nothing = {
+    println("throw exception in initializer error")
+    // TODO: receive underlying exception and add it to the cause
+    throw new java.lang.ExceptionInInitializerError("error") 
+  }
 }
