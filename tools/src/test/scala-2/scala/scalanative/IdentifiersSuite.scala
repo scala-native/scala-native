@@ -66,7 +66,7 @@ class IdentifiersSuite extends ReachabilitySuite {
         nir.Sig.Method("$u0022x$u0022x$u0022", Seq(nir.Type.Ref(FooBar)))
       ),
       // methods
-      FooBar.member(nir.Sig.Method("y", Seq(Type.Ref(FooBar)))),
+      FooBar.member(nir.Sig.Method("y", Seq(nir.Type.Ref(FooBar)))),
       FooBar.member(nir.Sig.Method("$u0022y$u0022", Seq(nir.Type.Ref(FooBar)))),
       FooBar.member(
         nir.Sig.Method("$u0022y$u0022y$u0022", Seq(nir.Type.Ref(FooBar)))
