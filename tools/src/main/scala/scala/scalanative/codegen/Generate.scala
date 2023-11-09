@@ -457,6 +457,8 @@ object Generate {
               )
             }
 
+            // Generate definition of module load function such as "module$G4load"
+            // The callers will be generated while lowering "Op.Module", see "codegen/Lower.scala".
             val loadDefn = nir.Defn.Define(
               nir.Attrs(inlineHint =
                 if (useSynchronizedAccessors) nir.Attr.MayInline
