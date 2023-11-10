@@ -24,6 +24,8 @@ import scala.scalanative.build.Platform
 import sjsonnew.BasicJsonProtocol._
 import java.nio.file.{Files, Path}
 
+import one.profiler.AsyncProfilerLoader
+
 /** ScalaNativePlugin delegates to this object
  *
  *  Note: All logic should be in the Config, NativeConfig, or the build itself.
@@ -167,11 +169,25 @@ object ScalaNativePluginInternal {
         .withCompilerConfig(nativeConfig)
 
     interceptBuildException {
-      await(sbtLogger) { implicit ec: ExecutionContext =>
-        implicit def scope: Scope = sharedScope
-        Build
-          .buildCached(config)
-          .map(_.toFile())
+      val profiler =
+        if (AsyncProfilerLoader.isSupported())
+          Some(AsyncProfilerLoader.load())
+        else None
+      try {
+        config.logger.info(s"[async-profiler] starting profiler: $profiler")
+        profiler.foreach(_.execute("start,event=cpu,interval=100000"))
+        await(sbtLogger) { implicit ec: ExecutionContext =>
+          implicit def scope: Scope = sharedScope
+          Build
+            .buildCached(config)
+            .map(_.toFile())
+        }
+      } finally {
+        profiler.foreach { p =>
+          config.logger.info("[async-profiler] stop profiler")
+          p.execute("stop")
+          p.execute("flamegraph,file=profile.html")
+        }
       }
     }
   }

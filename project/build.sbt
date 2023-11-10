@@ -23,6 +23,7 @@ addSbtPlugin("com.github.sbt" % "sbt-pgp" % "2.2.0")
 addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.4.4")
 
 libraryDependencies += "org.eclipse.jgit" % "org.eclipse.jgit.pgm" % "5.10.0.202012080955-r"
+libraryDependencies += "me.bechberger" % "ap-loader-all" % "2.9-7"
 
 // scalacOptions used to bootstrap to sbt prompt.
 // In particular, no "-Xfatal-warnings"
