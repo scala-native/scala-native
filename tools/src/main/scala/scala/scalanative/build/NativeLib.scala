@@ -217,7 +217,11 @@ private[scalanative] object NativeLib {
       // Remove all stale native-code-* directories. These can be created if classpath or compilerConfig would change
       val expectedPaths = extractPaths.map(_.dest.toAbsolutePath()).toSet
       Files
+        // List all the files and dirs
         .list(nativeCodeDir)
+        // List stale native-lib dirs that has different name than than current `expectedPath`.
+        // If `confHash` has a different value from previous build
+        // the stale dirs will be removed by `IO.deleteRecursive`
         .filter(p => !expectedPaths.contains(p.toAbsolutePath()))
         .forEach(IO.deleteRecursive(_))
     }
