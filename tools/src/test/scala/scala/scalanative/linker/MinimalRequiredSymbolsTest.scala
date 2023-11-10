@@ -1,4 +1,5 @@
-package scala.scalanative.linker
+package scala.scalanative
+package linker
 
 import scala.scalanative.LinkerSpec
 
@@ -6,8 +7,6 @@ import org.junit.Test
 import org.junit.Assert._
 import scala.scalanative.build.{NativeConfig, Config}
 import scala.scalanative.buildinfo.ScalaNativeBuildInfo
-
-import scala.scalanative.nir._
 
 /** Tests minimal number of NIR symbols required when linking minimal
  *  application based on the predefined hard limits. In the future we shall try
@@ -119,11 +118,11 @@ class MinimalRequiredSymbolsTest extends LinkerSpec {
       s"{types=$types, members=$members, total=${total}}"
   }
   object SymbolsCount {
-    def apply(defns: Seq[Defn]): SymbolsCount = {
+    def apply(defns: Seq[nir.Defn]): SymbolsCount = {
       val names = defns.map(_.name)
       SymbolsCount(
-        types = names.count(_.isInstanceOf[Global.Top]),
-        members = names.count(_.isInstanceOf[Global.Member])
+        types = names.count(_.isInstanceOf[nir.Global.Top]),
+        members = names.count(_.isInstanceOf[nir.Global.Member])
       )
     }
   }

@@ -1,11 +1,12 @@
-package scala.scalanative.linker
+package scala.scalanative
+package linker
 
 import scala.collection.mutable
-import scala.scalanative.nir._
 import scala.scalanative.build._
 import scala.scalanative.util.unsupported
 
 trait LinktimeValueResolver { self: Reach =>
+
   import LinktimeValueResolver._
 
   private final val linktimeInfo =
@@ -42,31 +43,33 @@ trait LinktimeValueResolver { self: Reach =>
   private val resolvedValues = mutable.Map.empty[String, LinktimeValue]
 
   // required for @scala.scalanative.annotation.align(), always resolve
-  resolveLinktimeProperty(contendedPaddingWidth)(Position.NoPosition)
+  resolveLinktimeProperty(contendedPaddingWidth)(nir.Position.NoPosition)
 
   // For compat with 2.13 where mapValues is deprecated
-  def resolvedNirValues: mutable.Map[String, Val] = resolvedValues.map {
+  def resolvedNirValues: mutable.Map[String, nir.Val] = resolvedValues.map {
     case (k, v) => k -> v.nirValue
   }
 
-  protected def resolveLinktimeDefine(defn: Defn.Define): Defn.Define = {
-    implicit def position: Position = defn.pos
+  protected def resolveLinktimeDefine(
+      defn: nir.Defn.Define
+  ): nir.Defn.Define = {
+    implicit def position: nir.Position = defn.pos
 
     def evaluated() = {
-      implicit val fresh = Fresh()
+      implicit val fresh = nir.Fresh()
       lazy val buf = {
-        val buf = new Buffer()
+        val buf = new nir.Buffer()
         buf += defn.insts.head
         buf
       }
 
       defn.insts match {
-        case Seq(_, Inst.Ret(_)) => defn
+        case Seq(_, nir.Inst.Ret(_)) => defn
 
         case Seq(
               _,
-              Inst.Let(_, ReferencedPropertyOp(propertyName), _),
-              Inst.Ret(_)
+              nir.Inst.Let(_, ReferencedPropertyOp(propertyName), _),
+              nir.Inst.Ret(_)
             ) =>
           val value = resolveLinktimeProperty(propertyName)
           resolvedValues.getOrElseUpdate(propertyName, value)
@@ -74,7 +77,7 @@ trait LinktimeValueResolver { self: Reach =>
           defn.copy(insts = buf.toSeq)
 
         case _ =>
-          val mangledName = Mangle(defn.name)
+          val mangledName = nir.Mangle(defn.name)
           val value = resolveLinktimeProperty(mangledName)
           buf.ret(value.nirValue)
           resolvedValues.getOrElseUpdate(mangledName, value)
@@ -84,12 +87,12 @@ trait LinktimeValueResolver { self: Reach =>
     }
 
     def partiallyEvaluated() = {
-      val resolvedInsts = ControlFlow.removeDeadBlocks {
+      val resolvedInsts = nir.ControlFlow.removeDeadBlocks {
         defn.insts.map {
-          case inst: Inst.LinktimeIf => resolveLinktimeIf(inst)
-          case inst @ Inst.Let(_, ReferencedPropertyOp(propertyName), _) =>
+          case inst: nir.Inst.LinktimeIf => resolveLinktimeIf(inst)
+          case inst @ nir.Inst.Let(_, ReferencedPropertyOp(propertyName), _) =>
             val resolvedVal = resolveLinktimeProperty(propertyName).nirValue
-            inst.copy(op = Op.Copy(resolvedVal))(inst.pos, inst.scopeId)
+            inst.copy(op = nir.Op.Copy(resolvedVal))(inst.pos, inst.scopeId)
           case inst => inst
         }
       }
@@ -97,31 +100,31 @@ trait LinktimeValueResolver { self: Reach =>
       defn.copy(insts = resolvedInsts)
     }
 
-    def isRuntimeOnly(inst: Inst): Boolean = inst match {
-      case Inst.Label(_, _)         => false
-      case Inst.LinktimeIf(_, _, _) => false
-      case Inst.Jump(_: Next.Label) => false
-      case Inst.Ret(_)              => false
-      case Inst.Let(_, op, Next.None) =>
+    def isRuntimeOnly(inst: nir.Inst): Boolean = inst match {
+      case nir.Inst.Label(_, _)             => false
+      case nir.Inst.LinktimeIf(_, _, _)     => false
+      case nir.Inst.Jump(_: nir.Next.Label) => false
+      case nir.Inst.Ret(_)                  => false
+      case nir.Inst.Let(_, op, nir.Next.None) =>
         op match {
-          case Op.Call(_, Val.Global(name, _), _) =>
+          case nir.Op.Call(_, nir.Val.Global(name, _), _) =>
             track(name)(inst.pos)
-            name != Linktime.PropertyResolveFunctionName &&
+            name != nir.Linktime.PropertyResolveFunctionName &&
               !lookup(name).exists(_.attrs.isLinktimeResolved)
-          case _: Op.Comp => false
-          case _          => true
+          case _: nir.Op.Comp => false
+          case _              => true
         }
       case _ => true
     }
 
     def canBeEvauluated =
       !defn.insts.exists(isRuntimeOnly) && {
-        val Type.Function(_, retty) = defn.ty
+        val nir.Type.Function(_, retty) = defn.ty
         retty match {
-          case _: Type.ValueKind    => true
-          case Type.Ref(name, _, _) => name == Rt.String.name
-          case Type.Null            => true
-          case _                    => false
+          case _: nir.Type.ValueKind    => true
+          case nir.Type.Ref(name, _, _) => name == nir.Rt.String.name
+          case nir.Type.Null            => true
+          case _                        => false
         }
       }
 
@@ -132,25 +135,25 @@ trait LinktimeValueResolver { self: Reach =>
   }
 
   private def resolveLinktimeProperty(name: String)(implicit
-      pos: Position
+      pos: nir.Position
   ): LinktimeValue =
     resolvedValues.getOrElseUpdate(name, lookupLinktimeProperty(name))
 
   private def lookupLinktimeProperty(
       propertyName: String
-  )(implicit pos: Position): LinktimeValue = {
+  )(implicit pos: nir.Position): LinktimeValue = {
     def fromProvidedValue =
       linktimeProperties
         .get(propertyName)
         .map(ComparableVal.fromAny(_).asAny)
 
     def fromCalculatedValue =
-      util
-        .Try(Unmangle.unmangleGlobal(propertyName))
+      scala.util
+        .Try(nir.Unmangle.unmangleGlobal(propertyName))
         .toOption
         .flatMap(lookup(_))
         .collect {
-          case defn: Defn.Define if defn.attrs.isLinktimeResolved =>
+          case defn: nir.Defn.Define if defn.attrs.isLinktimeResolved =>
             try interpretLinktimeDefn(defn)
             catch {
               case ex: Exception =>
@@ -171,15 +174,15 @@ trait LinktimeValueResolver { self: Reach =>
   }
 
   private def resolveCondition(
-      cond: LinktimeCondition
-  )(implicit pos: Position): Boolean = {
-    import LinktimeCondition._
+      cond: nir.LinktimeCondition
+  )(implicit pos: nir.Position): Boolean = {
+    import nir.LinktimeCondition._
 
     cond match {
-      case ComplexCondition(Bin.And, left, right) =>
+      case ComplexCondition(nir.Bin.And, left, right) =>
         resolveCondition(left) && resolveCondition(right)
 
-      case ComplexCondition(Bin.Or, left, right) =>
+      case ComplexCondition(nir.Bin.Or, left, right) =>
         resolveCondition(left) || resolveCondition(right)
 
       case SimpleCondition(name, comparison, condVal) =>
@@ -188,12 +191,13 @@ trait LinktimeValueResolver { self: Reach =>
         (ComparableVal.fromNir(condVal), resolvedValue) match {
           case ComparableTuple(ordering, condition, resolved) =>
             val comparsionFn = comparison match {
-              case Comp.Ieq | Comp.Feq => ordering.equiv _
-              case Comp.Ine | Comp.Fne => !ordering.equiv(_: Any, _: Any)
-              case Comp.Sgt | Comp.Ugt | Comp.Fgt => ordering.gt _
-              case Comp.Sge | Comp.Uge | Comp.Fge => ordering.gteq _
-              case Comp.Slt | Comp.Ult | Comp.Flt => ordering.lt _
-              case Comp.Sle | Comp.Ule | Comp.Fle => ordering.lteq _
+              case nir.Comp.Ieq | nir.Comp.Feq => ordering.equiv _
+              case nir.Comp.Ine | nir.Comp.Fne =>
+                !ordering.equiv(_: Any, _: Any)
+              case nir.Comp.Sgt | nir.Comp.Ugt | nir.Comp.Fgt => ordering.gt _
+              case nir.Comp.Sge | nir.Comp.Uge | nir.Comp.Fge => ordering.gteq _
+              case nir.Comp.Slt | nir.Comp.Ult | nir.Comp.Flt => ordering.lt _
+              case nir.Comp.Sle | nir.Comp.Ule | nir.Comp.Fle => ordering.lteq _
             }
 
             comparsionFn(resolved.value, condition.value)
@@ -201,8 +205,8 @@ trait LinktimeValueResolver { self: Reach =>
           // In case if we cannot get common Ordering that can be used, eg.: comparison with Null
           case (ComparableVal(condition, _), ComparableVal(resolved, _)) =>
             comparison match {
-              case Comp.Ieq | Comp.Feq => resolved == condition
-              case Comp.Ine | Comp.Fne => resolved != condition
+              case nir.Comp.Ieq | nir.Comp.Feq => resolved == condition
+              case nir.Comp.Ine | nir.Comp.Fne => resolved != condition
               case _ =>
                 throw new LinkingException(
                   s"Unsupported link-time comparison $comparison between types ${condVal.ty} and ${resolvedValue.nirValue.ty}"
@@ -215,37 +219,37 @@ trait LinktimeValueResolver { self: Reach =>
   }
 
   private def resolveLinktimeIf(
-      inst: Inst.LinktimeIf
-  )(implicit pos: Position): Inst.Jump = {
-    val Inst.LinktimeIf(cond, thenp, elsep) = inst
+      inst: nir.Inst.LinktimeIf
+  )(implicit pos: nir.Position): nir.Inst.Jump = {
+    val nir.Inst.LinktimeIf(cond, thenp, elsep) = inst
 
     val matchesCondition = resolveCondition(cond)
-    if (matchesCondition) Inst.Jump(thenp)
-    else Inst.Jump(elsep)
+    if (matchesCondition) nir.Inst.Jump(thenp)
+    else nir.Inst.Jump(elsep)
   }
 
-  private def interpretLinktimeDefn(defn: Defn.Define): Val = {
+  private def interpretLinktimeDefn(defn: nir.Defn.Define): nir.Val = {
     require(defn.attrs.isLinktimeResolved)
-    val cf = ControlFlow.Graph(defn.insts)
-    val locals = scala.collection.mutable.Map.empty[Val.Local, Val]
+    val cf = nir.ControlFlow.Graph(defn.insts)
+    val locals = scala.collection.mutable.Map.empty[nir.Val.Local, nir.Val]
 
-    def resolveLocalVal(local: Val.Local): Val = locals(local) match {
-      case v: Val.Local => resolveLocalVal(v)
-      case value        => value
+    def resolveLocalVal(local: nir.Val.Local): nir.Val = locals(local) match {
+      case v: nir.Val.Local => resolveLocalVal(v)
+      case value            => value
     }
 
-    def interpretBlock(block: ControlFlow.Block): Val = {
-      def interpret(inst: Inst): Val = inst match {
-        case Inst.Ret(value) =>
+    def interpretBlock(block: nir.ControlFlow.Block): nir.Val = {
+      def interpret(inst: nir.Inst): nir.Val = inst match {
+        case nir.Inst.Ret(value) =>
           value match {
-            case v: Val.Local => resolveLocalVal(v)
-            case _            => value
+            case v: nir.Val.Local => resolveLocalVal(v)
+            case _                => value
           }
 
-        case Inst.Jump(next) =>
+        case nir.Inst.Jump(next) =>
           val nextBlock = cf.find(next.id)
           next match {
-            case Next.Label(_, values) =>
+            case nir.Next.Label(_, values) =>
               locals ++= nextBlock.params.zip(values).toMap
             case _ =>
               scalanative.util.unsupported(
@@ -254,16 +258,16 @@ trait LinktimeValueResolver { self: Reach =>
           }
           interpretBlock(nextBlock)
 
-        case Inst.Label(next, params) =>
+        case nir.Inst.Label(next, params) =>
           val insts = cf.find(next).insts
           assert(insts.size == 1)
           interpret(insts.head)
 
-        case branch: Inst.LinktimeIf =>
+        case branch: nir.Inst.LinktimeIf =>
           interpret(resolveLinktimeIf(branch)(branch.pos))
 
-        case _: Inst.If | _: Inst.Let | _: Inst.Switch | _: Inst.Throw |
-            _: Inst.Unreachable =>
+        case _: nir.Inst.If | _: nir.Inst.Let | _: nir.Inst.Switch |
+            _: nir.Inst.Throw | _: nir.Inst.Unreachable =>
           scalanative.util.unsupported(
             "Unexpected instruction found in linktime resolved method: " + inst
           )
@@ -282,18 +286,18 @@ private[linker] object LinktimeValueResolver {
   type LinktimeValue = ComparableVal[Any]
 
   object ReferencedPropertyOp {
-    def unapply(op: Op): Option[String] = op match {
-      case Op.Call(
+    def unapply(op: nir.Op): Option[String] = op match {
+      case nir.Op.Call(
             _,
-            Val.Global(Linktime.PropertyResolveFunctionName, _),
-            Seq(Val.String(propertyName))
+            nir.Val.Global(nir.Linktime.PropertyResolveFunctionName, _),
+            Seq(nir.Val.String(propertyName))
           ) =>
         Some(propertyName)
       case _ => None
     }
   }
 
-  case class ComparableVal[T: Ordering](value: T, nirValue: Val)(implicit
+  case class ComparableVal[T: Ordering](value: T, nirValue: nir.Val)(implicit
       val ordering: Ordering[T]
   ) {
     def asAny: ComparableVal[Any] = this.asInstanceOf[ComparableVal[Any]]
@@ -302,15 +306,16 @@ private[linker] object LinktimeValueResolver {
   object ComparableVal {
     def fromAny(value: Any): ComparableVal[_] = {
       value match {
-        case v: Boolean => ComparableVal(v, if (v) Val.True else Val.False)
-        case v: Byte    => ComparableVal(v, Val.Byte(v))
-        case v: Char    => ComparableVal(v, Val.Char(v))
-        case v: Short   => ComparableVal(v, Val.Short(v))
-        case v: Int     => ComparableVal(v, Val.Int(v))
-        case v: Long    => ComparableVal(v, Val.Long(v))
-        case v: Float   => ComparableVal(v, Val.Float(v))
-        case v: Double  => ComparableVal(v, Val.Double(v))
-        case v: String  => ComparableVal(v, Val.String(v))
+        case v: Boolean =>
+          ComparableVal(v, if (v) nir.Val.True else nir.Val.False)
+        case v: Byte   => ComparableVal(v, nir.Val.Byte(v))
+        case v: Char   => ComparableVal(v, nir.Val.Char(v))
+        case v: Short  => ComparableVal(v, nir.Val.Short(v))
+        case v: Int    => ComparableVal(v, nir.Val.Int(v))
+        case v: Long   => ComparableVal(v, nir.Val.Long(v))
+        case v: Float  => ComparableVal(v, nir.Val.Float(v))
+        case v: Double => ComparableVal(v, nir.Val.Double(v))
+        case v: String => ComparableVal(v, nir.Val.String(v))
         case other =>
           throw new LinkingException(
             s"Unsupported value for link-time resolving: $other"
@@ -318,19 +323,19 @@ private[linker] object LinktimeValueResolver {
       }
     }
 
-    def fromNir(v: Val): LinktimeValue = {
+    def fromNir(v: nir.Val): LinktimeValue = {
       v match {
-        case Val.String(value) => ComparableVal(value, v)
-        case Val.True          => ComparableVal(true, v)
-        case Val.False         => ComparableVal(false, v)
-        case Val.Byte(value)   => ComparableVal(value, v)
-        case Val.Char(value)   => ComparableVal(value, v)
-        case Val.Short(value)  => ComparableVal(value, v)
-        case Val.Int(value)    => ComparableVal(value, v)
-        case Val.Long(value)   => ComparableVal(value, v)
-        case Val.Float(value)  => ComparableVal(value, v)
-        case Val.Double(value) => ComparableVal(value, v)
-        case Val.Null          => ComparableVal(null, v)
+        case nir.Val.String(value) => ComparableVal(value, v)
+        case nir.Val.True          => ComparableVal(true, v)
+        case nir.Val.False         => ComparableVal(false, v)
+        case nir.Val.Byte(value)   => ComparableVal(value, v)
+        case nir.Val.Char(value)   => ComparableVal(value, v)
+        case nir.Val.Short(value)  => ComparableVal(value, v)
+        case nir.Val.Int(value)    => ComparableVal(value, v)
+        case nir.Val.Long(value)   => ComparableVal(value, v)
+        case nir.Val.Float(value)  => ComparableVal(value, v)
+        case nir.Val.Double(value) => ComparableVal(value, v)
+        case nir.Val.Null          => ComparableVal(null, v)
         case other =>
           throw new LinkingException(
             s"Unsupported NIR value for link-time resolving: $other"

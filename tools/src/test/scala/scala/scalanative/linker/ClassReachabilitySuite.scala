@@ -1,6 +1,5 @@
-package scala.scalanative.linker
-
-import scalanative.nir.{Sig, Type, Global, Rt}
+package scala.scalanative
+package linker
 
 import org.junit.Test
 import org.junit.Assert._
@@ -12,28 +11,34 @@ class ClassReachabilitySuite extends ReachabilitySuite {
   val ParentClsName = "Parent"
   val ObjectClsName = "java.lang.Object"
   val ScalaMainNonStaticSig =
-    Sig.Method("main", Rt.ScalaMainSig.types, Sig.Scope.Public)
+    nir.Sig.Method("main", nir.Rt.ScalaMainSig.types, nir.Sig.Scope.Public)
 
   val Parent = g(ParentClsName)
-  val ParentInit = g(ParentClsName, Sig.Ctor(Seq.empty))
-  val ParentFoo = g(ParentClsName, Sig.Method("foo", Seq(Type.Unit)))
-  val ParentBar = g(ParentClsName, Sig.Field("bar"))
+  val ParentInit = g(ParentClsName, nir.Sig.Ctor(Seq.empty))
+  val ParentFoo = g(ParentClsName, nir.Sig.Method("foo", Seq(nir.Type.Unit)))
+  val ParentBar = g(ParentClsName, nir.Sig.Field("bar"))
   val ParentBarSet =
-    g(ParentClsName, Sig.Method("bar_$eq", Seq(Type.Int, Type.Unit)))
-  val ParentBarGet = g(ParentClsName, Sig.Method("bar", Seq(Type.Int)))
+    g(
+      ParentClsName,
+      nir.Sig.Method("bar_$eq", Seq(nir.Type.Int, nir.Type.Unit))
+    )
+  val ParentBarGet = g(ParentClsName, nir.Sig.Method("bar", Seq(nir.Type.Int)))
   val ParentMain = g(ParentClsName, ScalaMainNonStaticSig)
   val Child = g(ChildClsName)
-  val ChildInit = g(ChildClsName, Sig.Ctor(Seq.empty))
-  val ChildFoo = g(ChildClsName, Sig.Method("foo", Seq(Type.Unit)))
+  val ChildInit = g(ChildClsName, nir.Sig.Ctor(Seq.empty))
+  val ChildFoo = g(ChildClsName, nir.Sig.Method("foo", Seq(nir.Type.Unit)))
   val Object = g(ObjectClsName)
-  val ObjectInit = g(ObjectClsName, Sig.Ctor(Seq.empty))
+  val ObjectInit = g(ObjectClsName, nir.Sig.Ctor(Seq.empty))
   val Test = g(TestClsName)
   val TestModule = g(TestModuleName)
-  val TestInit = g(TestModuleName, Sig.Ctor(Seq.empty))
-  val TestMain = g(TestClsName, Rt.ScalaMainSig)
+  val TestInit = g(TestModuleName, nir.Sig.Ctor(Seq.empty))
+  val TestMain = g(TestClsName, nir.Rt.ScalaMainSig)
   val TestModuleMain = g(TestModuleName, ScalaMainNonStaticSig)
   val TestCallFoo =
-    g(TestModuleName, Sig.Method("callFoo", Seq(Type.Ref(Parent), Type.Unit)))
+    g(
+      TestModuleName,
+      nir.Sig.Method("callFoo", Seq(nir.Type.Ref(Parent), nir.Type.Unit))
+    )
 
   val commonReachable =
     Seq(Test, TestModule, TestInit, TestMain, TestModuleMain)

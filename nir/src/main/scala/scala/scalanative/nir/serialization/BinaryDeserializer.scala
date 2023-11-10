@@ -10,7 +10,6 @@ import scala.collection.mutable
 import scala.util.control.NonFatal
 
 import scala.scalanative.nir.serialization.{Tags => T}
-import scala.scalanative.nir.Global.{Top, Member}
 import scala.scalanative.util.TypeOps.TypeNarrowing
 
 import scala.annotation.{tailrec, switch}
@@ -307,17 +306,27 @@ final class BinaryDeserializer(buffer: ByteBuffer, fileName: String) {
     val attrs = getAttrs()
     implicit val position: nir.Position = getPosition()
     (tag: @switch) match {
-      case T.VarDefn   => Defn.Var(attrs, name.narrow[Member], getType(), getVal())
-      case T.ConstDefn => Defn.Const(attrs, name.narrow[Member], getType(), getVal())
+      case T.VarDefn   => Defn.Var(attrs, name.narrow[nir.Global.Member], getType(), getVal())
+      case T.ConstDefn => Defn.Const(attrs, name.narrow[nir.Global.Member], getType(), getVal())
       case T.DeclareDefn =>
-        Defn.Declare(attrs, name.narrow[Member], getType().narrow[Type.Function])
+        Defn.Declare(attrs, name.narrow[nir.Global.Member], getType().narrow[Type.Function])
       case T.DefineDefn =>
-        Defn.Define(attrs, name.narrow[Member], getType().narrow[Type.Function], getInsts(), getDebugInfo())
-      case T.TraitDefn => Defn.Trait(attrs, name.narrow[Top], getGlobals().narrow[Seq[Top]])
+        Defn.Define(attrs, name.narrow[nir.Global.Member], getType().narrow[Type.Function], getInsts(), getDebugInfo())
+      case T.TraitDefn => Defn.Trait(attrs, name.narrow[nir.Global.Top], getGlobals().narrow[Seq[nir.Global.Top]])
       case T.ClassDefn =>
-        Defn.Class(attrs, name.narrow[Top], getGlobalOpt().narrow[Option[Top]], getGlobals().narrow[Seq[Top]])
+        Defn.Class(
+          attrs,
+          name.narrow[nir.Global.Top],
+          getGlobalOpt().narrow[Option[nir.Global.Top]],
+          getGlobals().narrow[Seq[nir.Global.Top]]
+        )
       case T.ModuleDefn =>
-        Defn.Module(attrs, name.narrow[Top], getGlobalOpt().narrow[Option[Top]], getGlobals().narrow[Seq[Top]])
+        Defn.Module(
+          attrs,
+          name.narrow[nir.Global.Top],
+          getGlobalOpt().narrow[Option[nir.Global.Top]],
+          getGlobals().narrow[Seq[nir.Global.Top]]
+        )
     }
   }
 
@@ -325,9 +334,9 @@ final class BinaryDeserializer(buffer: ByteBuffer, fileName: String) {
   private def getGlobalOpt(): Option[Global] = getOpt(getGlobal())
   private def getGlobal(): Global = in(prelude.sections.globals) {
     (getTag(): @switch) match {
-      case T.NoneGlobal   => Global.None
-      case T.TopGlobal    => Global.Top(getString())
-      case T.MemberGlobal => Global.Member(getGlobal().narrow[Top], getSig())
+      case T.NoneGlobal   => nir.Global.None
+      case T.TopGlobal    => nir.Global.Top(getString())
+      case T.MemberGlobal => nir.Global.Member(getGlobal().narrow[nir.Global.Top], getSig())
     }
   }
 
@@ -359,14 +368,14 @@ final class BinaryDeserializer(buffer: ByteBuffer, fileName: String) {
       case T.ConvOp       => Op.Conv(getConv(), getType(), getVal())
       case T.FenceOp      => Op.Fence(getSyncAttrs())
 
-      case T.ClassallocOp     => Op.Classalloc(getGlobal().narrow[Top], None)
-      case T.ClassallocZoneOp => Op.Classalloc(getGlobal().narrow[Top], Some(getVal()))
-      case T.FieldloadOp      => Op.Fieldload(getType(), getVal(), getGlobal().narrow[Member])
-      case T.FieldstoreOp     => Op.Fieldstore(getType(), getVal(), getGlobal().narrow[Member], getVal())
-      case T.FieldOp          => Op.Field(getVal(), getGlobal().narrow[Member])
+      case T.ClassallocOp     => Op.Classalloc(getGlobal().narrow[nir.Global.Top], None)
+      case T.ClassallocZoneOp => Op.Classalloc(getGlobal().narrow[nir.Global.Top], Some(getVal()))
+      case T.FieldloadOp      => Op.Fieldload(getType(), getVal(), getGlobal().narrow[nir.Global.Member])
+      case T.FieldstoreOp     => Op.Fieldstore(getType(), getVal(), getGlobal().narrow[nir.Global.Member], getVal())
+      case T.FieldOp          => Op.Field(getVal(), getGlobal().narrow[nir.Global.Member])
       case T.MethodOp         => Op.Method(getVal(), getSig())
       case T.DynmethodOp      => Op.Dynmethod(getVal(), getSig())
-      case T.ModuleOp         => Op.Module(getGlobal().narrow[Top])
+      case T.ModuleOp         => Op.Module(getGlobal().narrow[nir.Global.Top])
       case T.AsOp             => Op.As(getType(), getVal())
       case T.IsOp             => Op.Is(getType(), getVal())
       case T.CopyOp           => Op.Copy(getVal())
@@ -411,7 +420,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, fileName: String) {
       case T.VarType     => Type.Var(getType())
       case T.UnitType    => Type.Unit
       case T.ArrayType   => Type.Array(getType(), getBool())
-      case T.RefType     => Type.Ref(getGlobal().narrow[Top], getBool(), getBool())
+      case T.RefType     => Type.Ref(getGlobal().narrow[nir.Global.Top], getBool(), getBool())
       case T.SizeType    => Type.Size
     }
   }

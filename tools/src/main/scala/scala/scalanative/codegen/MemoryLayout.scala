@@ -2,8 +2,6 @@ package scala.scalanative
 package codegen
 
 import scala.collection.mutable
-import scalanative.nir.Type.RefKind
-import scalanative.nir.{Type, Val}
 import scalanative.util.unsupported
 import scalanative.codegen.MemoryLayout.PositionedType
 import scala.scalanative.build.Config
@@ -17,17 +15,17 @@ final case class MemoryLayout(
     size: Long,
     tys: Seq[MemoryLayout.PositionedType]
 ) {
-  def offsetArray(implicit meta: Metadata): Seq[Val] = {
+  def offsetArray(implicit meta: Metadata): Seq[nir.Val] = {
     val ptrOffsets =
       tys.collect {
         // offset in words without object header
-        case MemoryLayout.PositionedType(_: RefKind, offset) =>
-          Val.Long(
+        case MemoryLayout.PositionedType(_: nir.Type.RefKind, offset) =>
+          nir.Val.Long(
             offset / MemoryLayout.BYTES_IN_LONG - meta.layouts.ObjectHeader.fields
           )
       }
 
-    ptrOffsets :+ Val.Long(-1)
+    ptrOffsets :+ nir.Val.Long(-1)
   }
 }
 
@@ -35,27 +33,41 @@ object MemoryLayout {
   final val BITS_IN_BYTE = 8
   final val BYTES_IN_LONG = 8
 
-  final case class PositionedType(ty: Type, offset: Long)
+  final case class PositionedType(ty: nir.Type, offset: Long)
 
-  def sizeOf(ty: Type)(implicit platform: PlatformInfo): Long =
+  def sizeOf(ty: nir.Type)(implicit platform: PlatformInfo): Long =
     ty match {
-      case _: Type.RefKind | Type.Nothing | Type.Ptr => platform.sizeOfPtr
-      case Type.Size                                 => platform.sizeOfPtr
-      case t: Type.PrimitiveKind  => math.max(t.width / BITS_IN_BYTE, 1)
-      case Type.ArrayValue(ty, n) => sizeOf(ty) * n
-      case Type.StructValue(tys)  => MemoryLayout(tys).size
-      case _                      => unsupported(s"sizeof $ty")
+      case _: nir.Type.RefKind | nir.Type.Nothing | nir.Type.Ptr =>
+        platform.sizeOfPtr
+      case nir.Type.Size =>
+        platform.sizeOfPtr
+      case t: nir.Type.PrimitiveKind =>
+        math.max(t.width / BITS_IN_BYTE, 1)
+      case nir.Type.ArrayValue(ty, n) =>
+        sizeOf(ty) * n
+      case nir.Type.StructValue(tys) =>
+        MemoryLayout(tys).size
+      case _ =>
+        unsupported(s"sizeof $ty")
     }
 
-  def alignmentOf(ty: Type)(implicit platform: PlatformInfo): Long = ty match {
-    case Type.Long | Type.Double | Type.Size       => platform.sizeOfPtr
-    case Type.Nothing | Type.Ptr | _: Type.RefKind => platform.sizeOfPtr
-    case t: Type.PrimitiveKind   => math.max(t.width / BITS_IN_BYTE, 1)
-    case Type.ArrayValue(ty, n)  => alignmentOf(ty)
-    case Type.StructValue(Seq()) => 1
-    case Type.StructValue(tys)   => tys.map(alignmentOf).max
-    case _                       => unsupported(s"alignment $ty")
-  }
+  def alignmentOf(ty: nir.Type)(implicit platform: PlatformInfo): Long =
+    ty match {
+      case nir.Type.Long | nir.Type.Double | nir.Type.Size =>
+        platform.sizeOfPtr
+      case nir.Type.Nothing | nir.Type.Ptr | _: nir.Type.RefKind =>
+        platform.sizeOfPtr
+      case t: nir.Type.PrimitiveKind =>
+        math.max(t.width / BITS_IN_BYTE, 1)
+      case nir.Type.ArrayValue(ty, n) =>
+        alignmentOf(ty)
+      case nir.Type.StructValue(Seq()) =>
+        1
+      case nir.Type.StructValue(tys) =>
+        tys.map(alignmentOf).max
+      case _ =>
+        unsupported(s"alignment $ty")
+    }
 
   def align(offset: Long, alignment: Long): Long = {
     val alignmentMask = alignment - 1L
@@ -65,7 +77,9 @@ object MemoryLayout {
     offset + padding
   }
 
-  def apply(tys: Seq[Type])(implicit platform: PlatformInfo): MemoryLayout = {
+  def apply(
+      tys: Seq[nir.Type]
+  )(implicit platform: PlatformInfo): MemoryLayout = {
     val pos = mutable.UnrolledBuffer.empty[PositionedType]
     var offset = 0L
 
@@ -100,8 +114,11 @@ object MemoryLayout {
         pos.update(
           pos.indexOf(last),
           last.copy(ty =
-            Type.StructValue(
-              Seq(last.ty, Type.ArrayValue(Type.Byte, remainingPadding.toInt))
+            nir.Type.StructValue(
+              Seq(
+                last.ty,
+                nir.Type.ArrayValue(nir.Type.Byte, remainingPadding.toInt)
+              )
             )
           )
         )
@@ -109,7 +126,7 @@ object MemoryLayout {
       }
     }
 
-    def addField(ty: Type, fieldAlignment: Option[Int] = None): Unit = {
+    def addField(ty: nir.Type, fieldAlignment: Option[Int] = None): Unit = {
       val alignment = fieldAlignment.map(_.toLong).getOrElse(alignmentOf(ty))
       maxAlign = maxAlign.max(alignment)
 
@@ -123,7 +140,7 @@ object MemoryLayout {
         "scala.scalanative.meta.linktimeinfo.contendedPaddingWidth"
       meta.analysis.resolvedVals
         .get(propName)
-        .collectFirst { case Val.Int(value) => value }
+        .collectFirst { case nir.Val.Int(value) => value }
         .getOrElse(
           throw new BuildException(
             s"Unable to resolve size of dynamic field alignment, linktime property not found: $propName"

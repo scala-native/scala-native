@@ -7,7 +7,6 @@ import org.junit.Assert._
 import java.io.File
 import java.nio.file.{Files, Path, Paths}
 import scalanative.util.Scope
-import scalanative.nir.{Sig, Global}
 import scalanative.build.{ScalaNative, Logger, Discover}
 import scala.concurrent._
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -16,23 +15,23 @@ import scala.scalanative.buildinfo.ScalaNativeBuildInfo
 
 trait ReachabilitySuite {
 
-  def g(top: String): Global.Top =
-    Global.Top(top)
+  def g(top: String): nir.Global.Top =
+    nir.Global.Top(top)
 
-  def g(top: String, sig: Sig): Global.Member =
-    Global.Member(Global.Top(top), sig)
+  def g(top: String, sig: nir.Sig): nir.Global.Member =
+    nir.Global.Member(nir.Global.Top(top), sig)
 
   private val MainMethodDependencies = Set(
-    Global.Top("java.lang.String"),
-    Global.Top("java.lang.CharSequence"),
-    Global.Top("java.lang.Comparable"),
-    Global.Top("java.io.Serializable"),
-    Global.Top("java.lang.constant.Constable"),
-    Global.Top("java.lang.constant.ConstantDesc")
+    nir.Global.Top("java.lang.String"),
+    nir.Global.Top("java.lang.CharSequence"),
+    nir.Global.Top("java.lang.Comparable"),
+    nir.Global.Top("java.io.Serializable"),
+    nir.Global.Top("java.lang.constant.Constable"),
+    nir.Global.Top("java.lang.constant.ConstantDesc")
   )
 
   def testReachable(includeMainDeps: Boolean = true)(
-      f: => (String, Global, Seq[Global])
+      f: => (String, nir.Global, Seq[nir.Global])
   ) = {
     val (source, entry, expected) = f
     // When running reachability tests disable loading static constructors
@@ -74,7 +73,7 @@ trait ReachabilitySuite {
    *    The result of applying `fn` to the resulting definitions.
    */
   def link[T](
-      entries: Seq[Global],
+      entries: Seq[nir.Global],
       sources: Seq[String],
       mainClass: String
   )(f: ReachabilityAnalysis => T): T =

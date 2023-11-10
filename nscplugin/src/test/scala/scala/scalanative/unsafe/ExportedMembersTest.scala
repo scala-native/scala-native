@@ -6,10 +6,10 @@ import org.junit.Test
 import org.junit.Assert._
 
 import scala.scalanative.api.CompilationFailedException
-import scala.scalanative.nir._
 import scala.scalanative.NIRCompiler
 
 class ExportedMembersTest {
+
   val NonModuleStaticError =
     "Exported members must be statically reachable, definition within class or trait is currently unsupported"
   val NonPublicMethod = "Exported members needs to be defined in public scope"
@@ -79,9 +79,9 @@ class ExportedMembersTest {
           _.compile(
             """import scala.scalanative.unsafe._
          |object lib {
-         | @exportAccessors 
+         | @exportAccessors
          | private val foo: Int = 42
-         | 
+         |
          | // Without this in Scala 3 foo would be defined as val in <init> method
          | def bar = this.foo
          |}""".stripMargin

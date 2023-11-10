@@ -12,7 +12,6 @@ import scala.scalanative.buildinfo.ScalaNativeBuildInfo._
 import scala.reflect.ClassTag
 
 class LocalNamesTest {
-  import nir._
 
   def assertContainsAll[T](
       msg: String,
@@ -32,28 +31,28 @@ class LocalNamesTest {
     )
   }
 
-  def assertDistinct(localNames: Iterable[LocalName]) = {
+  def assertDistinct(localNames: Iterable[nir.LocalName]) = {
     val duplicated =
       localNames.groupBy(identity).filter(_._2.size > 1).map(_._1)
     assertTrue(s"Found duplicated names of ${duplicated}", duplicated.isEmpty)
   }
 
-  def namedLets(defn: nir.Defn.Define): Map[Inst.Let, LocalName] =
+  def namedLets(defn: nir.Defn.Define): Map[nir.Inst.Let, nir.LocalName] =
     defn.insts.collect {
-      case inst: Inst.Let if defn.debugInfo.localNames.contains(inst.id) =>
+      case inst: nir.Inst.Let if defn.debugInfo.localNames.contains(inst.id) =>
         inst -> defn.debugInfo.localNames(inst.id)
     }.toMap
 
   private object TestMain {
-    val companionMain = Global
+    val companionMain = nir.Global
       .Top("Test$")
-      .member(Rt.ScalaMainSig.copy(scope = Sig.Scope.Public))
+      .member(nir.Rt.ScalaMainSig.copy(scope = nir.Sig.Scope.Public))
 
-    def unapply(name: Global): Boolean = name == companionMain
+    def unapply(name: nir.Global): Boolean = name == companionMain
   }
-  private def findDefinition(linked: Seq[Defn]) = linked
+  private def findDefinition(linked: Seq[nir.Defn]) = linked
     .collectFirst {
-      case defn @ Defn.Define(_, TestMain(), _, _, _) => defn
+      case defn @ nir.Defn.Define(_, TestMain(), _, _, _) => defn
     }
     .ensuring(_.isDefined, "Not found linked method")
 
@@ -74,7 +73,7 @@ class LocalNamesTest {
     |}
     """.stripMargin
   ) { loaded =>
-    def checkLocalNames(defns: Seq[Defn]) =
+    def checkLocalNames(defns: Seq[nir.Defn]) =
       findDefinition(defns).foreach { defn =>
         val lets = namedLets(defn).values
         val expectedLetNames =
@@ -88,11 +87,12 @@ class LocalNamesTest {
         )
         assertDistinct(lets)
         defn.insts.head match {
-          case Inst.Label(
+          case nir.Inst.Label(
                 _,
                 Seq(
-                  Val.Local(thisId, Type.Ref(Global.Top("Test$"), _, _)),
-                  Val.Local(argsId, Type.Array(Rt.String, _))
+                  nir.Val
+                    .Local(thisId, nir.Type.Ref(nir.Global.Top("Test$"), _, _)),
+                  nir.Val.Local(argsId, nir.Type.Array(nir.Rt.String, _))
                 )
               ) =>
             assertTrue(
@@ -159,7 +159,7 @@ class LocalNamesTest {
     |  }
     |}""".stripMargin
   ) { loaded =>
-    def checkLocalNames(defns: Seq[Defn]) =
+    def checkLocalNames(defns: Seq[nir.Defn]) =
       findDefinition(defns)
         .foreach { defn =>
           def checkHasLet[T: ClassTag](localName: String): Unit = {
@@ -171,7 +171,7 @@ class LocalNamesTest {
             namedLets(defn)
               .collectFirst { case (inst, `localName`) => inst }
               .map {
-                case Inst.Let(_, op, _) =>
+                case nir.Inst.Let(_, op, _) =>
                   val expectedTpe = implicitly[ClassTag[T]].runtimeClass
                   assertTrue(
                     s"$localName: ${op.getClass()} is not ${expectedTpe.getName()}",
@@ -186,41 +186,41 @@ class LocalNamesTest {
               defn.debugInfo.localNames.values.find(_ == localName).isDefined
             )
           }
-          checkHasLet[Op.Call]("call")
-          checkHasLet[Op.Stackalloc]("stackalloc")
-          checkHasLet[Op.Elem]("elem")
-          // checkHasLet[Op.Extract]("extract")
-          // checkHasLet[Op.Insert]("insert")
-          checkNotHasLet[Op.Store]("store")
-          checkHasLet[Op.Load]("load")
-          // checkHasLet[Op.Fence]("fence")
-          checkHasLet[Op.Bin]("bin")
-          checkHasLet[Op.Comp]("comp")
-          checkHasLet[Op.Conv]("conv")
-          checkHasLet[Op.Classalloc]("classalloc")
-          checkNotHasLet[Op.Fieldstore]("fieldStore")
+          checkHasLet[nir.Op.Call]("call")
+          checkHasLet[nir.Op.Stackalloc]("stackalloc")
+          checkHasLet[nir.Op.Elem]("elem")
+          // checkHasLet[nir.Op.Extract]("extract")
+          // checkHasLet[nir.Op.Insert]("insert")
+          checkNotHasLet[nir.Op.Store]("store")
+          checkHasLet[nir.Op.Load]("load")
+          // checkHasLet[nir.Op.Fence]("fence")
+          checkHasLet[nir.Op.Bin]("bin")
+          checkHasLet[nir.Op.Comp]("comp")
+          checkHasLet[nir.Op.Conv]("conv")
+          checkHasLet[nir.Op.Classalloc]("classalloc")
+          checkNotHasLet[nir.Op.Fieldstore]("fieldStore")
           if (scalaVersion.startsWith("3."))
-            checkHasLet[Op.Fieldload]("fieldLoad")
+            checkHasLet[nir.Op.Fieldload]("fieldLoad")
           else // unable to express in Scala 2
-            checkHasLet[Op.Call]("fieldLoad")
-          checkHasLet[Op.Field]("field")
-          // checkHasLet[Op.Method]("method")
-          // checkHasLet[Op.Dynmethod]("dynMethod")
-          checkHasLet[Op.Module]("module")
-          checkHasLet[Op.As]("as")
-          checkHasLet[Op.Is]("is")
-          checkHasLet[Op.Copy]("copy")
-          checkHasLet[Op.SizeOf]("sizeOf")
-          checkHasLet[Op.AlignmentOf]("alignmentOf")
-          checkHasLet[Op.Box]("box")
-          checkHasLet[Op.Unbox]("unbox")
-          checkHasLet[Op.Var]("var")
-          checkNotHasLet[Op.Varstore]("varStore")
-          checkHasLet[Op.Varload]("varLoad")
-          checkHasLet[Op.Arrayalloc]("arrayAlloc")
-          checkNotHasLet[Op.Arraystore]("arrayStore")
-          checkHasLet[Op.Arrayload]("arrayLoad")
-          checkHasLet[Op.Arraylength]("arrayLength")
+            checkHasLet[nir.Op.Call]("fieldLoad")
+          checkHasLet[nir.Op.Field]("field")
+          // checkHasLet[nir.Op.Method]("method")
+          // checkHasLet[nir.Op.Dynmethod]("dynMethod")
+          checkHasLet[nir.Op.Module]("module")
+          checkHasLet[nir.Op.As]("as")
+          checkHasLet[nir.Op.Is]("is")
+          checkHasLet[nir.Op.Copy]("copy")
+          checkHasLet[nir.Op.SizeOf]("sizeOf")
+          checkHasLet[nir.Op.AlignmentOf]("alignmentOf")
+          checkHasLet[nir.Op.Box]("box")
+          checkHasLet[nir.Op.Unbox]("unbox")
+          checkHasLet[nir.Op.Var]("var")
+          checkNotHasLet[nir.Op.Varstore]("varStore")
+          checkHasLet[nir.Op.Varload]("varLoad")
+          checkHasLet[nir.Op.Arrayalloc]("arrayAlloc")
+          checkNotHasLet[nir.Op.Arraystore]("arrayStore")
+          checkHasLet[nir.Op.Arrayload]("arrayLoad")
+          checkHasLet[nir.Op.Arraylength]("arrayLength")
 
           assertDistinct(namedLets(defn).values)
         }
@@ -243,7 +243,7 @@ class LocalNamesTest {
     |}
     """.stripMargin
   ) { loaded =>
-    def checkLocalNames(defns: Seq[Defn]) =
+    def checkLocalNames(defns: Seq[nir.Defn]) =
       findDefinition(defns)
         .foreach { defn =>
           val lets = namedLets(defn).values
@@ -259,7 +259,7 @@ class LocalNamesTest {
 
           defn.insts
             .collect {
-              case label @ Inst.Label(_, Seq(param))
+              case label @ nir.Inst.Label(_, Seq(param))
                   if defn.debugInfo.localNames
                     .get(param.id)
                     .contains("switchResult") =>
@@ -285,7 +285,7 @@ class LocalNamesTest {
     |}
     """.stripMargin
   ) { loaded =>
-    def checkLocalNames(defns: Seq[Defn]) =
+    def checkLocalNames(defns: Seq[nir.Defn]) =
       findDefinition(defns)
         .foreach { defn =>
           val lets = namedLets(defn).values
@@ -303,9 +303,10 @@ class LocalNamesTest {
 
           defn.insts
             .filter {
-              case Inst.Label(_, Seq(param)) =>
+              case nir.Inst.Label(_, Seq(param)) =>
                 defn.debugInfo.localNames.get(param.id).contains("matchResult")
-              case _ => false
+              case _ =>
+                false
             }
             .ensuring(_.size == 1, "matchResult is not a merge label argument")
 
@@ -318,20 +319,20 @@ class LocalNamesTest {
     |object Test {
     |  def main(args: Array[String]): Unit = {
     |    val a = args.size
-    |    val b = 
+    |    val b =
     |      try {
     |        val inTry = args(0).toInt
     |        inTry + 1
     |      }catch{
-    |        case ex1: Exception => 
+    |        case ex1: Exception =>
     |          val n = args(0)
     |          n.size
-    |        case ex2: Throwable => 
+    |        case ex2: Throwable =>
     |          val m = args.size
     |          throw ex2
     |      } finally {
     |        val finalVal = "fooBar"
-    |        println(finalVal) 
+    |        println(finalVal)
     |      }
     |  }
     |}

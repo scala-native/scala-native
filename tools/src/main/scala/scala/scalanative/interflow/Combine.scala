@@ -2,7 +2,6 @@ package scala.scalanative
 package interflow
 
 import java.{lang => jl}
-import scalanative.nir._
 import scalanative.linker._
 import scalanative.util.{unreachable, And}
 import nir.Bin.{And => Iand, _}
@@ -11,18 +10,18 @@ import nir.Conv._
 
 trait Combine { self: Interflow =>
 
-  def combine(bin: Bin, ty: Type, l: Val, r: Val)(implicit
+  def combine(bin: nir.Bin, ty: nir.Type, l: nir.Val, r: nir.Val)(implicit
       state: State,
-      srcPosition: Position,
-      scopeId: ScopeId
-  ): Val = {
+      srcPosition: nir.Position,
+      scopeId: nir.ScopeId
+  ): nir.Val = {
     import state.{materialize, delay, emit}
 
     def fallback = {
-      if (Op.Bin(bin, ty, l, r).isPure) {
-        delay(Op.Bin(bin, ty, l, r))
+      if (nir.Op.Bin(bin, ty, l, r).isPure) {
+        delay(nir.Op.Bin(bin, ty, l, r))
       } else {
-        emit(Op.Bin(bin, ty, materialize(l), materialize(r)))
+        emit(nir.Op.Bin(bin, ty, materialize(l), materialize(r)))
       }
     }
 
@@ -34,16 +33,16 @@ trait Combine { self: Interflow =>
             x
 
           // (x + b) + a ==> x + (a + b)
-          case (BinRef(Iadd, x, Val.Int(b)), Val.Int(a)) =>
-            combine(Iadd, ty, x, Val.Int(a + b))
-          case (BinRef(Iadd, x, Val.Long(b)), Val.Long(a)) =>
-            combine(Iadd, ty, x, Val.Long(a + b))
+          case (BinRef(Iadd, x, nir.Val.Int(b)), nir.Val.Int(a)) =>
+            combine(Iadd, ty, x, nir.Val.Int(a + b))
+          case (BinRef(Iadd, x, nir.Val.Long(b)), nir.Val.Long(a)) =>
+            combine(Iadd, ty, x, nir.Val.Long(a + b))
 
           // (x - b) + a ==> x + (a - b)
-          case (BinRef(Isub, x, Val.Int(b)), Val.Int(a)) =>
-            combine(Iadd, ty, x, Val.Int(a - b))
-          case (BinRef(Isub, x, Val.Long(b)), Val.Long(a)) =>
-            combine(Iadd, ty, x, Val.Long(a - b))
+          case (BinRef(Isub, x, nir.Val.Int(b)), nir.Val.Int(a)) =>
+            combine(Iadd, ty, x, nir.Val.Int(a - b))
+          case (BinRef(Isub, x, nir.Val.Long(b)), nir.Val.Long(a)) =>
+            combine(Iadd, ty, x, nir.Val.Long(a - b))
 
           // x + (0 - y) ==> x - y
           case (x, BinRef(Isub, v, y)) if v.isZero =>
@@ -72,16 +71,16 @@ trait Combine { self: Interflow =>
             zero(ty)
 
           // (x - b) - a ==> x - (a + b)
-          case (BinRef(Isub, x, Val.Int(b)), Val.Int(a)) =>
-            combine(Isub, ty, x, Val.Int(a + b))
-          case (BinRef(Isub, x, Val.Long(b)), Val.Long(a)) =>
-            combine(Isub, ty, x, Val.Long(a + b))
+          case (BinRef(Isub, x, nir.Val.Int(b)), nir.Val.Int(a)) =>
+            combine(Isub, ty, x, nir.Val.Int(a + b))
+          case (BinRef(Isub, x, nir.Val.Long(b)), nir.Val.Long(a)) =>
+            combine(Isub, ty, x, nir.Val.Long(a + b))
 
           // (x + b) - a ==> x - (a - b)
-          case (BinRef(Iadd, x, Val.Int(b)), Val.Int(a)) =>
-            combine(Isub, ty, x, Val.Int(a - b))
-          case (BinRef(Iadd, x, Val.Long(b)), Val.Long(a)) =>
-            combine(Isub, ty, x, Val.Long(a - b))
+          case (BinRef(Iadd, x, nir.Val.Int(b)), nir.Val.Int(a)) =>
+            combine(Isub, ty, x, nir.Val.Int(a - b))
+          case (BinRef(Iadd, x, nir.Val.Long(b)), nir.Val.Long(a)) =>
+            combine(Isub, ty, x, nir.Val.Long(a - b))
 
           // x - (0 - y) ==> x + y
           case (x, BinRef(Isub, v, y)) if v.isZero =>
@@ -114,16 +113,26 @@ trait Combine { self: Interflow =>
             combine(Isub, ty, zero(ty), lhs)
 
           // x * 2^n ==> x << n
-          case (lhs, Val.Int(v)) if isPowerOfTwoOrMinValue(v) =>
-            combine(Shl, ty, lhs, Val.Int(jl.Integer.numberOfTrailingZeros(v)))
-          case (lhs, Val.Long(v)) if isPowerOfTwoOrMinValue(v) =>
-            combine(Shl, ty, lhs, Val.Long(jl.Long.numberOfTrailingZeros(v)))
+          case (lhs, nir.Val.Int(v)) if isPowerOfTwoOrMinValue(v) =>
+            combine(
+              Shl,
+              ty,
+              lhs,
+              nir.Val.Int(jl.Integer.numberOfTrailingZeros(v))
+            )
+          case (lhs, nir.Val.Long(v)) if isPowerOfTwoOrMinValue(v) =>
+            combine(
+              Shl,
+              ty,
+              lhs,
+              nir.Val.Long(jl.Long.numberOfTrailingZeros(v))
+            )
 
           // (x * b) * a ==> x * (a * b)
-          case (BinRef(Imul, x, Val.Int(b)), Val.Int(a)) =>
-            combine(Imul, ty, x, Val.Int(b * a))
-          case (BinRef(Imul, x, Val.Long(b)), Val.Long(a)) =>
-            combine(Imul, ty, x, Val.Long(b * a))
+          case (BinRef(Imul, x, nir.Val.Int(b)), nir.Val.Int(a)) =>
+            combine(Imul, ty, x, nir.Val.Int(b * a))
+          case (BinRef(Imul, x, nir.Val.Long(b)), nir.Val.Long(a)) =>
+            combine(Imul, ty, x, nir.Val.Long(b * a))
 
           case _ =>
             fallback
@@ -150,10 +159,20 @@ trait Combine { self: Interflow =>
             lhs
 
           // x unsigned_/ 2^n ==> x >> n
-          case (lhs, Val.Int(v)) if isPowerOfTwoOrMinValue(v) =>
-            combine(Lshr, ty, lhs, Val.Int(jl.Integer.numberOfTrailingZeros(v)))
-          case (lhs, Val.Long(v)) if isPowerOfTwoOrMinValue(v) =>
-            combine(Lshr, ty, lhs, Val.Long(jl.Long.numberOfTrailingZeros(v)))
+          case (lhs, nir.Val.Int(v)) if isPowerOfTwoOrMinValue(v) =>
+            combine(
+              Lshr,
+              ty,
+              lhs,
+              nir.Val.Int(jl.Integer.numberOfTrailingZeros(v))
+            )
+          case (lhs, nir.Val.Long(v)) if isPowerOfTwoOrMinValue(v) =>
+            combine(
+              Lshr,
+              ty,
+              lhs,
+              nir.Val.Long(jl.Long.numberOfTrailingZeros(v))
+            )
 
           case _ =>
             fallback
@@ -186,9 +205,9 @@ trait Combine { self: Interflow =>
       case Shl =>
         (l, r) match {
           // x << v ==> x if v & bitsize(x) - 1 == 0
-          case (lhs, Val.Int(v)) if (v & 31) == 0 =>
+          case (lhs, nir.Val.Int(v)) if (v & 31) == 0 =>
             lhs
-          case (lhs, Val.Long(v)) if (v & 63) == 0 =>
+          case (lhs, nir.Val.Long(v)) if (v & 63) == 0 =>
             lhs
 
           // 0 << x ==> 0
@@ -196,19 +215,19 @@ trait Combine { self: Interflow =>
             zero(ty)
 
           // (x << a) << b ==> x << (a + b)
-          case (BinRef(Shl, x, Val.Int(a)), Val.Int(b)) =>
+          case (BinRef(Shl, x, nir.Val.Int(a)), nir.Val.Int(b)) =>
             val dist = (a & 31) + (b & 31)
             if (dist >= 32) {
-              Val.Int(0)
+              nir.Val.Int(0)
             } else {
-              combine(Shl, ty, x, Val.Int(dist))
+              combine(Shl, ty, x, nir.Val.Int(dist))
             }
-          case (BinRef(Shl, x, Val.Long(a)), Val.Long(b)) =>
+          case (BinRef(Shl, x, nir.Val.Long(a)), nir.Val.Long(b)) =>
             val dist = (a & 63) + (b & 63)
             if (dist >= 64) {
-              Val.Long(0)
+              nir.Val.Long(0)
             } else {
-              combine(Shl, ty, x, Val.Long(dist))
+              combine(Shl, ty, x, nir.Val.Long(dist))
             }
 
           case _ =>
@@ -218,9 +237,9 @@ trait Combine { self: Interflow =>
       case Lshr =>
         (l, r) match {
           // x >>> v ==> x if v & bitsize(x) - 1 == 0
-          case (lhs, Val.Int(v)) if (v & 31) == 0 =>
+          case (lhs, nir.Val.Int(v)) if (v & 31) == 0 =>
             lhs
-          case (lhs, Val.Long(v)) if (v & 63) == 0 =>
+          case (lhs, nir.Val.Long(v)) if (v & 63) == 0 =>
             lhs
 
           // 0 >>> x ==> 0
@@ -228,19 +247,19 @@ trait Combine { self: Interflow =>
             zero(ty)
 
           // (x >>> a) >>> b ==> x >>> (a + b)
-          case (BinRef(Lshr, x, Val.Int(a)), Val.Int(b)) =>
+          case (BinRef(Lshr, x, nir.Val.Int(a)), nir.Val.Int(b)) =>
             val dist = (a & 31) + (b & 31)
             if (dist >= 32) {
-              Val.Int(0)
+              nir.Val.Int(0)
             } else {
-              combine(Lshr, ty, x, Val.Int(dist))
+              combine(Lshr, ty, x, nir.Val.Int(dist))
             }
-          case (BinRef(Lshr, x, Val.Long(a)), Val.Long(b)) =>
+          case (BinRef(Lshr, x, nir.Val.Long(a)), nir.Val.Long(b)) =>
             val dist = (a & 63) + (b & 63)
             if (dist >= 64) {
-              Val.Int(0)
+              nir.Val.Int(0)
             } else {
-              combine(Lshr, ty, x, Val.Long(dist))
+              combine(Lshr, ty, x, nir.Val.Long(dist))
             }
 
           case _ =>
@@ -250,9 +269,9 @@ trait Combine { self: Interflow =>
       case Ashr =>
         (l, r) match {
           // x >> v ==> x if v & bitsize(x) - 1 == 0
-          case (lhs, Val.Int(a)) if (a & 31) == 0 =>
+          case (lhs, nir.Val.Int(a)) if (a & 31) == 0 =>
             lhs
-          case (lhs, Val.Long(v)) if (v & 63) == 0 =>
+          case (lhs, nir.Val.Long(v)) if (v & 63) == 0 =>
             lhs
 
           // 0 >> x ==> 0
@@ -264,12 +283,12 @@ trait Combine { self: Interflow =>
             minusOne(ty)
 
           // (x >> a) >> b ==> x >> (a + b)
-          case (BinRef(Ashr, x, Val.Int(a)), Val.Int(b)) =>
+          case (BinRef(Ashr, x, nir.Val.Int(a)), nir.Val.Int(b)) =>
             val dist = Math.min((a & 31) + (b & 31), 31)
-            combine(Ashr, ty, x, Val.Int(dist))
-          case (BinRef(Ashr, x, Val.Long(a)), Val.Long(b)) =>
+            combine(Ashr, ty, x, nir.Val.Int(dist))
+          case (BinRef(Ashr, x, nir.Val.Long(a)), nir.Val.Long(b)) =>
             val dist = Math.min((a & 63) + (b & 63), 63)
-            combine(Ashr, ty, x, Val.Long(dist))
+            combine(Ashr, ty, x, nir.Val.Long(dist))
 
           case _ =>
             fallback
@@ -290,10 +309,10 @@ trait Combine { self: Interflow =>
             lhs
 
           // (x & a) & b ==> x & (a & b)
-          case (BinRef(Iand, x, Val.Int(a)), Val.Int(b)) =>
-            combine(Iand, ty, x, Val.Int(a & b))
-          case (BinRef(Iand, x, Val.Long(a)), Val.Long(b)) =>
-            combine(Iand, ty, x, Val.Long(a & b))
+          case (BinRef(Iand, x, nir.Val.Int(a)), nir.Val.Int(b)) =>
+            combine(Iand, ty, x, nir.Val.Int(a & b))
+          case (BinRef(Iand, x, nir.Val.Long(a)), nir.Val.Long(b)) =>
+            combine(Iand, ty, x, nir.Val.Long(a & b))
 
           // (x >= y) & (x <= y) ==> (x == y)
           case (CompRef(Sge, ty1, x1, y1), CompRef(Sle, _, x2, y2))
@@ -322,10 +341,10 @@ trait Combine { self: Interflow =>
             minusOne(ty)
 
           // (x or a) or b ==> x or (a or b)
-          case (BinRef(Or, x, Val.Int(a)), Val.Int(b)) =>
-            combine(Or, ty, x, Val.Int(a | b))
-          case (BinRef(Or, x, Val.Long(a)), Val.Long(b)) =>
-            combine(Or, ty, x, Val.Long(a | b))
+          case (BinRef(Or, x, nir.Val.Int(a)), nir.Val.Int(b)) =>
+            combine(Or, ty, x, nir.Val.Int(a | b))
+          case (BinRef(Or, x, nir.Val.Long(a)), nir.Val.Long(b)) =>
+            combine(Or, ty, x, nir.Val.Long(a | b))
 
           // (x > y) | (x == y) ==> (x >= y)
           case (CompRef(Sgt, ty1, x1, y1), CompRef(Ieq, _, x2, y2))
@@ -374,10 +393,10 @@ trait Combine { self: Interflow =>
             lhs
 
           // (x ^ a) ^ b ==> x ^ (a ^ b)
-          case (BinRef(Xor, x, Val.Int(a)), Val.Int(b)) =>
-            combine(Xor, ty, x, Val.Int(a ^ b))
-          case (BinRef(Xor, x, Val.Long(a)), Val.Long(b)) =>
-            combine(Xor, ty, x, Val.Long(a ^ b))
+          case (BinRef(Xor, x, nir.Val.Int(a)), nir.Val.Int(b)) =>
+            combine(Xor, ty, x, nir.Val.Int(a ^ b))
+          case (BinRef(Xor, x, nir.Val.Long(a)), nir.Val.Long(b)) =>
+            combine(Xor, ty, x, nir.Val.Long(a ^ b))
 
           case _ =>
             fallback
@@ -388,22 +407,22 @@ trait Combine { self: Interflow =>
     }
   }
 
-  def combine(comp: Comp, ty: Type, l: Val, r: Val)(implicit
+  def combine(comp: nir.Comp, ty: nir.Type, l: nir.Val, r: nir.Val)(implicit
       state: State,
-      srcPosition: Position,
-      scopeId: ScopeId
-  ): Val = {
+      srcPosition: nir.Position,
+      scopeId: nir.ScopeId
+  ): nir.Val = {
     import state.{materialize, delay, emit}
 
     (comp, l, r) match {
       // Two virtual allocations will compare equal if
       // and only if they have the same virtual address.
-      case (Ieq, Val.Virtual(l), Val.Virtual(r))
+      case (Ieq, nir.Val.Virtual(l), nir.Val.Virtual(r))
           if state.isVirtual(l) && state.isVirtual(r) =>
-        Val.Bool(l == r)
-      case (Ine, Val.Virtual(l), Val.Virtual(r))
+        nir.Val.Bool(l == r)
+      case (Ine, nir.Val.Virtual(l), nir.Val.Virtual(r))
           if state.isVirtual(l) && state.isVirtual(r) =>
-        Val.Bool(l != r)
+        nir.Val.Bool(l != r)
 
       // Not-yet-materialized virtual allocation will never be
       // the same as already existing allocation (be it null
@@ -413,83 +432,91 @@ trait Combine { self: Interflow =>
       // they may be interned and the virtual allocation may
       // alias pre-existing materialized allocation.
       case (Ieq, VirtualRef(ClassKind | ArrayKind, _, _), r) =>
-        Val.False
+        nir.Val.False
       case (Ieq, l, VirtualRef(ClassKind | ArrayKind, _, _)) =>
-        Val.False
+        nir.Val.False
       case (Ine, VirtualRef(ClassKind | ArrayKind, _, _), r) =>
-        Val.True
+        nir.Val.True
       case (Ine, l, VirtualRef(ClassKind | ArrayKind, _, _)) =>
-        Val.True
+        nir.Val.True
 
       // Comparing non-nullable value with null will always
       // yield the same result.
-      case (Ieq, v @ Of(ty: Type.RefKind), Val.Null) if !ty.isNullable =>
-        Val.False
-      case (Ieq, Val.Null, v @ Of(ty: Type.RefKind)) if !ty.isNullable =>
-        Val.False
-      case (Ine, v @ Of(ty: Type.RefKind), Val.Null) if !ty.isNullable =>
-        Val.True
-      case (Ine, Val.Null, v @ Of(ty: Type.RefKind)) if !ty.isNullable =>
-        Val.True
+      case (Ieq, v @ nir.Of(ty: nir.Type.RefKind), nir.Val.Null)
+          if !ty.isNullable =>
+        nir.Val.False
+      case (Ieq, nir.Val.Null, v @ nir.Of(ty: nir.Type.RefKind))
+          if !ty.isNullable =>
+        nir.Val.False
+      case (Ine, v @ nir.Of(ty: nir.Type.RefKind), nir.Val.Null)
+          if !ty.isNullable =>
+        nir.Val.True
+      case (Ine, nir.Val.Null, v @ nir.Of(ty: nir.Type.RefKind))
+          if !ty.isNullable =>
+        nir.Val.True
 
       // Ptr boxes are null if underlying pointer is null.
-      case (Ieq, DelayedRef(Op.Box(ty, x)), Val.Null) if Type.isPtrBox(ty) =>
-        combine(Ieq, Type.Ptr, x, Val.Null)
-      case (Ieq, Val.Null, DelayedRef(Op.Box(ty, x))) if Type.isPtrBox(ty) =>
-        combine(Ieq, Type.Ptr, x, Val.Null)
-      case (Ine, DelayedRef(Op.Box(ty, x)), Val.Null) if Type.isPtrBox(ty) =>
-        combine(Ine, Type.Ptr, x, Val.Null)
-      case (Ine, Val.Null, DelayedRef(Op.Box(ty, x))) if Type.isPtrBox(ty) =>
-        combine(Ine, Type.Ptr, x, Val.Null)
+      case (Ieq, DelayedRef(nir.Op.Box(ty, x)), nir.Val.Null)
+          if nir.Type.isPtrBox(ty) =>
+        combine(Ieq, nir.Type.Ptr, x, nir.Val.Null)
+      case (Ieq, nir.Val.Null, DelayedRef(nir.Op.Box(ty, x)))
+          if nir.Type.isPtrBox(ty) =>
+        combine(Ieq, nir.Type.Ptr, x, nir.Val.Null)
+      case (Ine, DelayedRef(nir.Op.Box(ty, x)), nir.Val.Null)
+          if nir.Type.isPtrBox(ty) =>
+        combine(Ine, nir.Type.Ptr, x, nir.Val.Null)
+      case (Ine, nir.Val.Null, DelayedRef(nir.Op.Box(ty, x)))
+          if nir.Type.isPtrBox(ty) =>
+        combine(Ine, nir.Type.Ptr, x, nir.Val.Null)
 
       // Comparing two non-null module references will
       // yield true only if it's the same module.
       case (
             Ieq,
-            l @ Of(And(lty: Type.RefKind, ClassRef(lcls))),
-            r @ Of(And(rty: Type.RefKind, ClassRef(rcls)))
+            l @ nir.Of(And(lty: nir.Type.RefKind, ClassRef(lcls))),
+            r @ nir.Of(And(rty: nir.Type.RefKind, ClassRef(rcls)))
           )
           if !lty.isNullable && lty.isExact && lcls.isModule
             && !rty.isNullable && rty.isExact && rcls.isModule =>
-        Val.Bool(lcls.name == rcls.name)
+        nir.Val.Bool(lcls.name == rcls.name)
       case (
             Ine,
-            l @ Of(And(lty: Type.RefKind, ClassRef(lcls))),
-            r @ Of(And(rty: Type.RefKind, ClassRef(rcls)))
+            l @ nir.Of(And(lty: nir.Type.RefKind, ClassRef(lcls))),
+            r @ nir.Of(And(rty: nir.Type.RefKind, ClassRef(rcls)))
           )
           if !lty.isNullable && lty.isExact && lcls.isModule
             && !rty.isNullable && rty.isExact && rcls.isModule =>
-        Val.Bool(lcls.name != rcls.name)
+        nir.Val.Bool(lcls.name != rcls.name)
 
       // Comparisons against the same SSA value or
       // against true/false are statically known.
       case (Ieq, lhs, rhs) if (lhs == rhs) =>
-        Val.True
-      case (Ieq, lhs, Val.True) =>
+        nir.Val.True
+      case (Ieq, lhs, nir.Val.True) =>
         lhs
       case (Ine, lhs, rhs) if (lhs == rhs) =>
-        Val.False
-      case (Ine, lhs, Val.False) =>
+        nir.Val.False
+      case (Ine, lhs, nir.Val.False) =>
         lhs
 
       // Integer comparisons against corresponding
       // min/max value are often statically known.
       case (Ugt, lhs, v) if v.isUnsignedMaxValue =>
-        Val.False
+        nir.Val.False
       case (Uge, lhs, v) if v.isUnsignedMinValue =>
-        Val.True
+        nir.Val.True
       case (Ult, lhs, v) if v.isUnsignedMinValue =>
-        Val.False
+        nir.Val.False
       case (Ule, lhs, v) if v.isUnsignedMaxValue =>
-        Val.True
+        nir.Val.True
       case (Sgt, lhs, v) if v.isSignedMaxValue(platform.is32Bit) =>
-        Val.False
+        nir.Val.False
       case (Sge, lhs, v) if v.isSignedMinValue(platform.is32Bit) =>
-        Val.True
+        nir.Val.True
       case (Slt, lhs, v) if v.isSignedMinValue(platform.is32Bit) =>
-        Val.False
+        nir.Val.False
       case (Sle, lhs, v) if v.isSignedMaxValue(platform.is32Bit) =>
-        Val.True
+        nir.Val.True
 
       // ((x xor y) == 0) ==> (x == y)
       case (Ieq, BinRef(Xor, x, y), v) if v.isZero =>
@@ -500,104 +527,104 @@ trait Combine { self: Interflow =>
         combine(Ine, ty, x, y)
 
       // ((x + a) == b) ==> (x == (b - a))
-      case (Ieq, BinRef(Iadd, x, Val.Char(a)), Val.Char(b)) =>
-        combine(Ieq, ty, x, Val.Char((b - a).toChar))
-      case (Ieq, BinRef(Iadd, x, Val.Byte(a)), Val.Byte(b)) =>
-        combine(Ieq, ty, x, Val.Byte((b - a).toByte))
-      case (Ieq, BinRef(Iadd, x, Val.Short(a)), Val.Short(b)) =>
-        combine(Ieq, ty, x, Val.Short((b - a).toShort))
-      case (Ieq, BinRef(Iadd, x, Val.Int(a)), Val.Int(b)) =>
-        combine(Ieq, ty, x, Val.Int(b - a))
-      case (Ieq, BinRef(Iadd, x, Val.Long(a)), Val.Long(b)) =>
-        combine(Ieq, ty, x, Val.Long(b - a))
+      case (Ieq, BinRef(Iadd, x, nir.Val.Char(a)), nir.Val.Char(b)) =>
+        combine(Ieq, ty, x, nir.Val.Char((b - a).toChar))
+      case (Ieq, BinRef(Iadd, x, nir.Val.Byte(a)), nir.Val.Byte(b)) =>
+        combine(Ieq, ty, x, nir.Val.Byte((b - a).toByte))
+      case (Ieq, BinRef(Iadd, x, nir.Val.Short(a)), nir.Val.Short(b)) =>
+        combine(Ieq, ty, x, nir.Val.Short((b - a).toShort))
+      case (Ieq, BinRef(Iadd, x, nir.Val.Int(a)), nir.Val.Int(b)) =>
+        combine(Ieq, ty, x, nir.Val.Int(b - a))
+      case (Ieq, BinRef(Iadd, x, nir.Val.Long(a)), nir.Val.Long(b)) =>
+        combine(Ieq, ty, x, nir.Val.Long(b - a))
 
       // ((x - a) == b) ==> (x == (a + b))
-      case (Ieq, BinRef(Isub, x, Val.Char(a)), Val.Char(b)) =>
-        combine(Ieq, ty, x, Val.Char((a + b).toChar))
-      case (Ieq, BinRef(Isub, x, Val.Byte(a)), Val.Byte(b)) =>
-        combine(Ieq, ty, x, Val.Byte((a + b).toByte))
-      case (Ieq, BinRef(Isub, x, Val.Short(a)), Val.Short(b)) =>
-        combine(Ieq, ty, x, Val.Short((a + b).toShort))
-      case (Ieq, BinRef(Isub, x, Val.Int(a)), Val.Int(b)) =>
-        combine(Ieq, ty, x, Val.Int(a + b))
-      case (Ieq, BinRef(Isub, x, Val.Long(a)), Val.Long(b)) =>
-        combine(Ieq, ty, x, Val.Long(a + b))
+      case (Ieq, BinRef(Isub, x, nir.Val.Char(a)), nir.Val.Char(b)) =>
+        combine(Ieq, ty, x, nir.Val.Char((a + b).toChar))
+      case (Ieq, BinRef(Isub, x, nir.Val.Byte(a)), nir.Val.Byte(b)) =>
+        combine(Ieq, ty, x, nir.Val.Byte((a + b).toByte))
+      case (Ieq, BinRef(Isub, x, nir.Val.Short(a)), nir.Val.Short(b)) =>
+        combine(Ieq, ty, x, nir.Val.Short((a + b).toShort))
+      case (Ieq, BinRef(Isub, x, nir.Val.Int(a)), nir.Val.Int(b)) =>
+        combine(Ieq, ty, x, nir.Val.Int(a + b))
+      case (Ieq, BinRef(Isub, x, nir.Val.Long(a)), nir.Val.Long(b)) =>
+        combine(Ieq, ty, x, nir.Val.Long(a + b))
 
       // ((a - x) == b) ==> (x == (a - b))
-      case (Ieq, BinRef(Isub, Val.Char(a), x), Val.Char(b)) =>
-        combine(Ieq, ty, x, Val.Char((a - b).toChar))
-      case (Ieq, BinRef(Isub, Val.Byte(a), x), Val.Byte(b)) =>
-        combine(Ieq, ty, x, Val.Byte((a - b).toByte))
-      case (Ieq, BinRef(Isub, Val.Short(a), x), Val.Short(b)) =>
-        combine(Ieq, ty, x, Val.Short((a - b).toShort))
-      case (Ieq, BinRef(Isub, Val.Int(a), x), Val.Int(b)) =>
-        combine(Ieq, ty, x, Val.Int(a - b))
-      case (Ieq, BinRef(Isub, Val.Long(a), x), Val.Long(b)) =>
-        combine(Ieq, ty, x, Val.Long(a - b))
+      case (Ieq, BinRef(Isub, nir.Val.Char(a), x), nir.Val.Char(b)) =>
+        combine(Ieq, ty, x, nir.Val.Char((a - b).toChar))
+      case (Ieq, BinRef(Isub, nir.Val.Byte(a), x), nir.Val.Byte(b)) =>
+        combine(Ieq, ty, x, nir.Val.Byte((a - b).toByte))
+      case (Ieq, BinRef(Isub, nir.Val.Short(a), x), nir.Val.Short(b)) =>
+        combine(Ieq, ty, x, nir.Val.Short((a - b).toShort))
+      case (Ieq, BinRef(Isub, nir.Val.Int(a), x), nir.Val.Int(b)) =>
+        combine(Ieq, ty, x, nir.Val.Int(a - b))
+      case (Ieq, BinRef(Isub, nir.Val.Long(a), x), nir.Val.Long(b)) =>
+        combine(Ieq, ty, x, nir.Val.Long(a - b))
 
       // ((x xor a) == b) ==> (x == (a xor b))
-      case (Ieq, BinRef(Xor, x, Val.Char(a)), Val.Char(b)) =>
-        combine(Ieq, ty, x, Val.Char((a ^ b).toChar))
-      case (Ieq, BinRef(Xor, x, Val.Byte(a)), Val.Byte(b)) =>
-        combine(Ieq, ty, x, Val.Byte((a ^ b).toByte))
-      case (Ieq, BinRef(Xor, x, Val.Short(a)), Val.Short(b)) =>
-        combine(Ieq, ty, x, Val.Short((a ^ b).toShort))
-      case (Ieq, BinRef(Xor, x, Val.Int(a)), Val.Int(b)) =>
-        combine(Ieq, ty, x, Val.Int(a ^ b))
-      case (Ieq, BinRef(Xor, x, Val.Long(a)), Val.Long(b)) =>
-        combine(Ieq, ty, x, Val.Long(a ^ b))
+      case (Ieq, BinRef(Xor, x, nir.Val.Char(a)), nir.Val.Char(b)) =>
+        combine(Ieq, ty, x, nir.Val.Char((a ^ b).toChar))
+      case (Ieq, BinRef(Xor, x, nir.Val.Byte(a)), nir.Val.Byte(b)) =>
+        combine(Ieq, ty, x, nir.Val.Byte((a ^ b).toByte))
+      case (Ieq, BinRef(Xor, x, nir.Val.Short(a)), nir.Val.Short(b)) =>
+        combine(Ieq, ty, x, nir.Val.Short((a ^ b).toShort))
+      case (Ieq, BinRef(Xor, x, nir.Val.Int(a)), nir.Val.Int(b)) =>
+        combine(Ieq, ty, x, nir.Val.Int(a ^ b))
+      case (Ieq, BinRef(Xor, x, nir.Val.Long(a)), nir.Val.Long(b)) =>
+        combine(Ieq, ty, x, nir.Val.Long(a ^ b))
 
       // ((x xor true) == y) ==> (x != y)
-      case (Ieq, BinRef(Xor, x, Val.True), y) =>
+      case (Ieq, BinRef(Xor, x, nir.Val.True), y) =>
         combine(Ine, ty, x, y)
 
       // (x == (y xor true)) ==> (x != y)
-      case (Ieq, x, BinRef(Xor, y, Val.True)) =>
+      case (Ieq, x, BinRef(Xor, y, nir.Val.True)) =>
         combine(Ine, ty, x, y)
 
       case (_, l, r) =>
-        delay(Op.Comp(comp, ty, r, l))
+        delay(nir.Op.Comp(comp, ty, r, l))
     }
   }
 
-  def combine(conv: Conv, ty: Type, value: Val)(implicit
+  def combine(conv: nir.Conv, ty: nir.Type, value: nir.Val)(implicit
       state: State,
-      srcPosition: Position,
-      scopeId: ScopeId
-  ): Val = {
+      srcPosition: nir.Position,
+      scopeId: nir.ScopeId
+  ): nir.Val = {
     import state.{materialize, delay, emit}
 
     (conv, ty, value) match {
       // trunc[iN] (trunc[iM] x) ==> trunc[iN] x if N < M
       case (
             Trunc,
-            Type.FixedSizeI(n, _),
-            ConvRef(Trunc, Type.FixedSizeI(m, _), x)
+            nir.Type.FixedSizeI(n, _),
+            ConvRef(Trunc, nir.Type.FixedSizeI(m, _), x)
           ) if n < m =>
         combine(Trunc, ty, x)
 
       // sext[iN] (sext[iM] x) ==> sext[iN] x if N > M
       case (
             Sext,
-            Type.FixedSizeI(n, _),
-            ConvRef(Sext, Type.FixedSizeI(m, _), x)
+            nir.Type.FixedSizeI(n, _),
+            ConvRef(Sext, nir.Type.FixedSizeI(m, _), x)
           ) if n > m =>
         combine(Sext, ty, x)
 
       // zext[iN] (zext[iM] x) ==> zext[iN] x if N > M
       case (
             Zext,
-            Type.FixedSizeI(n, _),
-            ConvRef(Zext, Type.FixedSizeI(m, _), x)
+            nir.Type.FixedSizeI(n, _),
+            ConvRef(Zext, nir.Type.FixedSizeI(m, _), x)
           ) if n > m =>
         combine(Zext, ty, x)
 
       // ptrtoint[long] (inttoptr[long] x) ==> x
-      case (Ptrtoint, Type.Long, ConvRef(Inttoptr, Type.Long, x)) =>
+      case (Ptrtoint, nir.Type.Long, ConvRef(Inttoptr, nir.Type.Long, x)) =>
         x
 
       // inttoptr[long] (ptrtoint[long] x) ==> x
-      case (Inttoptr, Type.Long, ConvRef(Ptrtoint, Type.Long, x)) =>
+      case (Inttoptr, nir.Type.Long, ConvRef(Ptrtoint, nir.Type.Long, x)) =>
         x
 
       // bitcast[ty1] (bitcast[ty2] x) ==> bitcast[ty1] x
@@ -609,21 +636,28 @@ trait Combine { self: Interflow =>
         x
 
       case _ =>
-        delay(Op.Conv(conv, ty, value))
+        delay(nir.Op.Conv(conv, ty, value))
     }
   }
 
-  private def zero(ty: Type): Val =
-    Val.Zero(ty).canonicalize
+  private def zero(ty: nir.Type): nir.Val =
+    nir.Val.Zero(ty).canonicalize
 
-  private def minusOne(ty: Type): Val = ty match {
-    case Type.Byte   => Val.Byte(-1)
-    case Type.Short  => Val.Short(-1)
-    case Type.Int    => Val.Int(-1)
-    case Type.Long   => Val.Long(-1)
-    case Type.Float  => Val.Float(-1)
-    case Type.Double => Val.Double(-1)
-    case _           => unreachable
+  private def minusOne(ty: nir.Type): nir.Val = ty match {
+    case nir.Type.Byte =>
+      nir.Val.Byte(-1)
+    case nir.Type.Short =>
+      nir.Val.Short(-1)
+    case nir.Type.Int =>
+      nir.Val.Int(-1)
+    case nir.Type.Long =>
+      nir.Val.Long(-1)
+    case nir.Type.Float =>
+      nir.Val.Float(-1)
+    case nir.Type.Double =>
+      nir.Val.Double(-1)
+    case _ =>
+      unreachable
   }
 
   private def isPowerOfTwoOrMinValue(x: Int): Boolean =
@@ -631,4 +665,5 @@ trait Combine { self: Interflow =>
 
   private def isPowerOfTwoOrMinValue(x: Long): Boolean =
     (x & (x - 1)) == 0
+
 }

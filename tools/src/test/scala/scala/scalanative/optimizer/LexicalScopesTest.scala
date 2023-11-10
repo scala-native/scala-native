@@ -10,7 +10,6 @@ import scala.scalanative.linker.ReachabilityAnalysis
 import scala.scalanative.nir.Defn.Define.DebugInfo.LexicalScope
 
 class LexicalScopesTest extends OptimizerSpec {
-  import nir._
 
   override def optimize[T](
       entry: String,
@@ -27,10 +26,10 @@ class LexicalScopesTest extends OptimizerSpec {
       }.andThen(setupConfig)
     )(fn)
 
-  def scopeOf(localName: LocalName)(implicit defn: Defn.Define) =
+  def scopeOf(localName: nir.LocalName)(implicit defn: nir.Defn.Define) =
     namedLets(defn)
       .collectFirst {
-        case (let @ Inst.Let(id, _, _), `localName`) => let.scopeId
+        case (let @ nir.Inst.Let(id, _, _), `localName`) => let.scopeId
       }
       .orElse { fail(s"Not found a local named: ${localName}"); None }
       .flatMap(id => defn.debugInfo.lexicalScopeOf.get(id))
@@ -39,10 +38,10 @@ class LexicalScopesTest extends OptimizerSpec {
 
   def scopeParents(
       scope: LexicalScope
-  )(implicit defn: Defn.Define): List[ScopeId] = {
+  )(implicit defn: nir.Defn.Define): List[nir.ScopeId] = {
     if (scope.isTopLevel) Nil
     else {
-      val stack = List.newBuilder[ScopeId]
+      val stack = List.newBuilder[nir.ScopeId]
       var current = scope
       while ({
         val parent = defn.debugInfo.lexicalScopeOf(current.parent)
@@ -80,7 +79,7 @@ class LexicalScopesTest extends OptimizerSpec {
     setupConfig = _.withMode(build.Mode.debug)
   ) {
     case (config, result) =>
-      def test(defns: Seq[Defn]): Unit = findEntry(defns).foreach {
+      def test(defns: Seq[nir.Defn]): Unit = findEntry(defns).foreach {
         implicit defn =>
           assertContainsAll(
             "named vals",
@@ -140,7 +139,7 @@ class LexicalScopesTest extends OptimizerSpec {
   ) {
     case (config, result) =>
       assertEquals(config.compilerConfig.mode, build.Mode.releaseFull)
-      def test(defns: Seq[Defn]): Unit = findEntry(defns).foreach {
+      def test(defns: Seq[nir.Defn]): Unit = findEntry(defns).foreach {
         implicit defn =>
           assertContainsAll(
             "named vals",
@@ -212,7 +211,7 @@ class LexicalScopesTest extends OptimizerSpec {
         )
         // a and b can move moved to seperate scopes in transofrmation, but shall still have common parent
         val a = scopeOf("a")
-        assertEquals("a-parent", a.id, ScopeId.TopLevel)
+        assertEquals("a-parent", a.id, nir.ScopeId.TopLevel)
 
         val myMin = scopeOf("myMin")
         assertNotEquals("myMin-scope", a.id, myMin.id)

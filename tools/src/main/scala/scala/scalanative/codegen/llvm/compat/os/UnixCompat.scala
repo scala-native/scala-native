@@ -1,15 +1,16 @@
-package scala.scalanative.codegen.llvm
+package scala.scalanative
+package codegen.llvm
 package compat.os
 
 import scala.scalanative.codegen.llvm.AbstractCodeGen
-import scala.scalanative.nir.ControlFlow.Block
-import scala.scalanative.nir._
 import scala.scalanative.nir.Defn.Define.DebugInfo
 import scala.scalanative.util.ShowBuilder
 
 private[codegen] class UnixCompat(codegen: AbstractCodeGen)
     extends OsCompat(codegen) {
+
   import codegen.{pointerType => ptrT}
+
   val ehWrapperTy = "@_ZTIN11scalanative16ExceptionWrapperE"
   val excRecTy = s"{ $ptrT, i32 }"
   val beginCatch = "@__cxa_begin_catch"
@@ -24,18 +25,20 @@ private[codegen] class UnixCompat(codegen: AbstractCodeGen)
 
   protected val osPersonalityType: String = "@__gxx_personality_v0"
 
-  override def genBlockAlloca(block: Block)(implicit sb: ShowBuilder): Unit =
+  override def genBlockAlloca(block: nir.ControlFlow.Block)(implicit
+      sb: ShowBuilder
+  ): Unit =
     ()
 
   def genLandingPad(
-      unwind: Next.Unwind
+      unwind: nir.Next.Unwind
   )(implicit
-      fresh: Fresh,
-      pos: Position,
+      fresh: nir.Fresh,
+      pos: nir.Position,
       sb: ShowBuilder
   ): Unit = {
     import sb._
-    val Next.Unwind(Val.Local(excname, _), next) = unwind
+    val nir.Next.Unwind(nir.Val.Local(excname, _), next) = unwind
 
     val excpad = "_" + excname.id + ".landingpad"
     val excsucc = excpad + ".succ"
@@ -87,4 +90,5 @@ private[codegen] class UnixCompat(codegen: AbstractCodeGen)
     line(s"declare void $endCatch()")
     line(s"$ehWrapperTy = external constant { $ptrT, $ptrT, $ptrT }")
   }
+
 }

@@ -2,14 +2,13 @@ package scala.scalanative
 package checker
 
 import scala.collection.mutable
-import scalanative.nir._
 import scalanative.linker._
 import scalanative.util.partitionBy
 import scala.concurrent._
 
 sealed abstract class NIRCheck(implicit analysis: ReachabilityAnalysis.Result) {
   val errors = mutable.UnrolledBuffer.empty[Check.Error]
-  var name: Global = Global.None
+  var name: nir.Global = nir.Global.None
   var ctx: List[String] = Nil
 
   def ok: Unit = ()
@@ -17,10 +16,10 @@ sealed abstract class NIRCheck(implicit analysis: ReachabilityAnalysis.Result) {
   def error(msg: String): Unit =
     errors += Check.Error(name, ctx, msg)
 
-  def expect(expected: Type, got: Val): Unit =
+  def expect(expected: nir.Type, got: nir.Val): Unit =
     expect(expected, got.ty)
 
-  def expect(expected: Type, got: Type): Unit =
+  def expect(expected: nir.Type, got: nir.Type): Unit =
     if (!Sub.is(got, expected)) {
       error(s"expected ${expected.show}, but got ${got.show}")
     }
@@ -42,8 +41,8 @@ sealed abstract class NIRCheck(implicit analysis: ReachabilityAnalysis.Result) {
 
   def checkMethod(meth: Method): Unit
 
-  final protected def checkFieldOp(op: Op.Field): Unit = {
-    val Op.Field(obj, name) = op
+  final protected def checkFieldOp(op: nir.Op.Field): Unit = {
+    val nir.Op.Field(obj, name) = op
     obj.ty match {
       case ScopeRef(scope) =>
         scope.implementors.foreach { cls =>
@@ -54,9 +53,9 @@ sealed abstract class NIRCheck(implicit analysis: ReachabilityAnalysis.Result) {
     }
   }
 
-  final protected def checkMethodOp(op: Op.Method): Unit = {
-    val Op.Method(obj, sig) = op
-    expect(Rt.Object, obj)
+  final protected def checkMethodOp(op: nir.Op.Method): Unit = {
+    val nir.Op.Method(obj, sig) = op
+    expect(nir.Rt.Object, obj)
     sig match {
       case sig if sig.isMethod || sig.isCtor || sig.isGenerated => ok
       case _ => error(s"method must take a method signature, not ${sig.show}")
@@ -68,7 +67,7 @@ sealed abstract class NIRCheck(implicit analysis: ReachabilityAnalysis.Result) {
       }
 
     obj.ty match {
-      case Type.Null => ok
+      case nir.Type.Null => ok
       case ScopeRef(info) if sig.isVirtual =>
         info.implementors.foreach(checkCallable)
       case ClassRef(info) =>
@@ -80,10 +79,10 @@ sealed abstract class NIRCheck(implicit analysis: ReachabilityAnalysis.Result) {
 
 final class Check(implicit analysis: ReachabilityAnalysis.Result)
     extends NIRCheck {
-  val labels = mutable.Map.empty[Local, Seq[Type]]
-  val env = mutable.Map.empty[Local, Type]
+  val labels = mutable.Map.empty[nir.Local, Seq[nir.Type]]
+  val env = mutable.Map.empty[nir.Local, nir.Type]
 
-  var retty: Type = Type.Unit
+  var retty: nir.Type = nir.Type.Unit
 
   def in[T](entry: String)(f: => T): T = {
     try {
@@ -94,7 +93,7 @@ final class Check(implicit analysis: ReachabilityAnalysis.Result)
     }
   }
   override def checkMethod(meth: Method): Unit = {
-    val Type.Function(_, methRetty) = meth.ty
+    val nir.Type.Function(_, methRetty) = meth.ty
     retty = methRetty
 
     val insts = meth.insts
@@ -117,100 +116,101 @@ final class Check(implicit analysis: ReachabilityAnalysis.Result)
     labels.clear()
   }
 
-  def enterInst(inst: Inst): Unit = {
-    def enterParam(value: Val.Local) = {
-      val Val.Local(local, ty) = value
+  def enterInst(inst: nir.Inst): Unit = {
+    def enterParam(value: nir.Val.Local) = {
+      val nir.Val.Local(local, ty) = value
       env(local) = ty
     }
 
-    def enterUnwind(unwind: Next) = unwind match {
-      case Next.Unwind(param, _) =>
+    def enterUnwind(unwind: nir.Next) = unwind match {
+      case nir.Next.Unwind(param, _) =>
         enterParam(param)
       case _ =>
         ok
     }
 
     inst match {
-      case Inst.Let(n, op, unwind) =>
+      case nir.Inst.Let(n, op, unwind) =>
         env(n) = op.resty
         enterUnwind(unwind)
-      case Inst.Label(name, params) =>
+      case nir.Inst.Label(name, params) =>
         labels(name) = params.map(_.ty)
         params.foreach(enterParam)
-      case _: Inst.Ret | _: Inst.Jump | _: Inst.If | _: Inst.Switch =>
+      case _: nir.Inst.Ret | _: nir.Inst.Jump | _: nir.Inst.If |
+          _: nir.Inst.Switch =>
         ok
-      case Inst.Throw(_, unwind) =>
+      case nir.Inst.Throw(_, unwind) =>
         enterUnwind(unwind)
-      case Inst.Unreachable(unwind) =>
+      case nir.Inst.Unreachable(unwind) =>
         enterUnwind(unwind)
-      case _: Inst.LinktimeCf => util.unreachable
+      case _: nir.Inst.LinktimeCf => util.unreachable
     }
   }
 
-  def checkInst(inst: Inst): Unit = inst match {
-    case _: Inst.Label =>
+  def checkInst(inst: nir.Inst): Unit = inst match {
+    case _: nir.Inst.Label =>
       ok
-    case Inst.Let(_, op, unwind) =>
+    case nir.Inst.Let(_, op, unwind) =>
       checkOp(op)
       in("unwind")(checkUnwind(unwind))
-    case Inst.Ret(v) =>
+    case nir.Inst.Ret(v) =>
       in("return value")(expect(retty, v))
-    case Inst.Jump(next) =>
+    case nir.Inst.Jump(next) =>
       in("jump")(checkNext(next))
-    case Inst.If(value, thenp, elsep) =>
-      in("condition")(expect(Type.Bool, value))
+    case nir.Inst.If(value, thenp, elsep) =>
+      in("condition")(expect(nir.Type.Bool, value))
       in("then")(checkNext(thenp))
       in("else")(checkNext(elsep))
-    case Inst.Switch(value, default, cases) =>
+    case nir.Inst.Switch(value, default, cases) =>
       in("default")(checkNext(default))
       cases.zipWithIndex.foreach {
         case (caseNext, idx) =>
           in("case #" + (idx + 1))(checkNext(caseNext))
       }
-    case Inst.Throw(value, unwind) =>
-      in("thrown value")(expect(Rt.Object, value))
+    case nir.Inst.Throw(value, unwind) =>
+      in("thrown value")(expect(nir.Rt.Object, value))
       in("unwind")(checkUnwind(unwind))
-    case Inst.Unreachable(unwind) =>
+    case nir.Inst.Unreachable(unwind) =>
       in("unwind")(checkUnwind(unwind))
-    case _: Inst.LinktimeCf => util.unreachable
+    case _: nir.Inst.LinktimeCf => util.unreachable
   }
 
-  def checkOp(op: Op): Unit = op match {
-    case Op.Call(ty, ptr, args) =>
-      expect(Type.Ptr, ptr)
+  def checkOp(op: nir.Op): Unit = op match {
+    case nir.Op.Call(ty, ptr, args) =>
+      expect(nir.Type.Ptr, ptr)
       checkCallArgs(ty, args)
-    case Op.Load(ty, ptr, _) =>
-      expect(Type.Ptr, ptr)
-    case Op.Store(ty, ptr, value, _) =>
-      expect(Type.Ptr, ptr)
+    case nir.Op.Load(ty, ptr, _) =>
+      expect(nir.Type.Ptr, ptr)
+    case nir.Op.Store(ty, ptr, value, _) =>
+      expect(nir.Type.Ptr, ptr)
       expect(ty, value)
-    case Op.Elem(ty, ptr, indexes) =>
-      expect(Type.Ptr, ptr)
-      checkAggregateOp(Type.ArrayValue(ty, 0), indexes, None)
-    case Op.Extract(aggr, indexes) =>
+    case nir.Op.Elem(ty, ptr, indexes) =>
+      expect(nir.Type.Ptr, ptr)
+      checkAggregateOp(nir.Type.ArrayValue(ty, 0), indexes, None)
+    case nir.Op.Extract(aggr, indexes) =>
       aggr.ty match {
-        case ty: Type.AggregateKind =>
-          checkAggregateOp(ty, indexes.map(Val.Int(_)), None)
+        case ty: nir.Type.AggregateKind =>
+          checkAggregateOp(ty, indexes.map(nir.Val.Int(_)), None)
         case _ =>
           error(s"extract is only defined on aggregate types, not ${aggr.ty}")
       }
-    case Op.Insert(aggr, value, indexes) =>
+    case nir.Op.Insert(aggr, value, indexes) =>
       aggr.ty match {
-        case ty: Type.AggregateKind =>
-          checkAggregateOp(ty, indexes.map(Val.Int(_)), Some(value.ty))
+        case ty: nir.Type.AggregateKind =>
+          checkAggregateOp(ty, indexes.map(nir.Val.Int(_)), Some(value.ty))
         case _ =>
           error(s"insert is only defined on aggregate types, not ${aggr.ty}")
       }
-    case Op.Stackalloc(ty, n) =>
+    case nir.Op.Stackalloc(ty, n) =>
       ok
-    case Op.Bin(bin, ty, l, r) =>
+    case nir.Op.Bin(bin, ty, l, r) =>
       checkBinOp(bin, ty, l, r)
-    case Op.Comp(comp, ty, l, r) =>
+    case nir.Op.Comp(comp, ty, l, r) =>
       checkCompOp(comp, ty, l, r)
-    case Op.Conv(conv, ty, value) =>
+    case nir.Op.Conv(conv, ty, value) =>
       checkConvOp(conv, ty, value)
-    case Op.Fence(_) => ok
-    case Op.Classalloc(name, zone) =>
+    case nir.Op.Fence(_) => ok
+    case nir.Op.Classalloc(name, zone) =>
       analysis.infos
         .get(name)
         .fold {
@@ -231,21 +231,21 @@ final class Check(implicit analysis: ReachabilityAnalysis.Result)
         }
       zone.foreach(checkZone)
 
-    case Op.Fieldload(ty, obj, name) =>
+    case nir.Op.Fieldload(ty, obj, name) =>
       checkFieldOp(ty, obj, name, None)
-    case Op.Fieldstore(ty, obj, name, value) =>
+    case nir.Op.Fieldstore(ty, obj, name, value) =>
       checkFieldOp(ty, obj, name, Some(value))
-    case op: Op.Field  => checkFieldOp(op)
-    case op: Op.Method => checkMethodOp(op)
-    case Op.Dynmethod(obj, sig) =>
-      expect(Rt.Object, obj)
+    case op: nir.Op.Field  => checkFieldOp(op)
+    case op: nir.Op.Method => checkMethodOp(op)
+    case nir.Op.Dynmethod(obj, sig) =>
+      expect(nir.Rt.Object, obj)
       sig match {
         case sig if sig.isProxy =>
           ok
         case _ =>
           error(s"dynmethod must take a proxy signature, not ${sig.show}")
       }
-    case Op.Module(name) =>
+    case nir.Op.Module(name) =>
       analysis.infos
         .get(name)
         .fold {
@@ -264,28 +264,30 @@ final class Check(implicit analysis: ReachabilityAnalysis.Result)
           case _ =>
             error(s"can't instantiate ${name.show} as a module class")
         }
-    case Op.As(ty, obj) =>
+    case nir.Op.As(ty, obj) =>
       ty match {
-        case ty: Type.RefKind =>
+        case ty: nir.Type.RefKind =>
           ok
         case ty =>
           error(s"can't cast to non-ref type ${ty.show}")
       }
-      expect(Rt.Object, obj)
-    case Op.Is(ty, obj) =>
+      expect(nir.Rt.Object, obj)
+    case nir.Op.Is(ty, obj) =>
       ty match {
-        case ty: Type.RefKind =>
+        case ty: nir.Type.RefKind =>
           ok
         case ty =>
           error(s"can't check instance of non-ref type ${ty.show}")
       }
-      expect(Rt.Object, obj)
-    case Op.Copy(value) =>
+      expect(nir.Rt.Object, obj)
+    case nir.Op.Copy(value) =>
       ok
-    case Op.SizeOf(ty) =>
+    case nir.Op.SizeOf(ty) =>
       ty match {
-        case _: Type.ValueKind                               => ok
-        case Type.Ptr | Type.Nothing | Type.Null | Type.Unit => ok
+        case _: nir.Type.ValueKind =>
+          ok
+        case nir.Type.Ptr | nir.Type.Nothing | nir.Type.Null | nir.Type.Unit =>
+          ok
         case ScopeRef(kind) =>
           kind match {
             case _: Class => ok
@@ -294,10 +296,12 @@ final class Check(implicit analysis: ReachabilityAnalysis.Result)
         case _ => error(s"can't calucate size of ${ty.show}")
       }
       ok
-    case Op.AlignmentOf(ty) =>
+    case nir.Op.AlignmentOf(ty) =>
       ty match {
-        case _: Type.ValueKind                               => ok
-        case Type.Ptr | Type.Nothing | Type.Null | Type.Unit => ok
+        case _: nir.Type.ValueKind =>
+          ok
+        case nir.Type.Ptr | nir.Type.Nothing | nir.Type.Null | nir.Type.Unit =>
+          ok
         case ScopeRef(kind) =>
           kind match {
             case _: Class => ok
@@ -306,67 +310,67 @@ final class Check(implicit analysis: ReachabilityAnalysis.Result)
         case _ => error(s"can't calucate alignment of ${ty.show}")
       }
       ok
-    case Op.Box(ty, value) =>
-      Type.unbox
+    case nir.Op.Box(ty, value) =>
+      nir.Type.unbox
         .get(ty)
         .fold {
           error(s"uknown box type ${ty.show}")
         } { unboxedty => expect(unboxedty, value) }
-    case Op.Unbox(ty, obj) =>
-      expect(Rt.Object, obj)
-    case Op.Var(ty) =>
+    case nir.Op.Unbox(ty, obj) =>
+      expect(nir.Rt.Object, obj)
+    case nir.Op.Var(ty) =>
       ok
-    case Op.Varload(slot) =>
+    case nir.Op.Varload(slot) =>
       slot.ty match {
-        case Type.Var(ty) =>
+        case nir.Type.Var(ty) =>
           ok
         case _ =>
           error(s"can't varload from a non-var ${slot.show}")
       }
-    case Op.Varstore(slot, value) =>
+    case nir.Op.Varstore(slot, value) =>
       slot.ty match {
-        case Type.Var(ty) =>
+        case nir.Type.Var(ty) =>
           expect(ty, value)
         case _ =>
           error(s"can't varstore into non-var ${slot.show}")
       }
-    case Op.Arrayalloc(ty, init, zone) =>
+    case nir.Op.Arrayalloc(ty, init, zone) =>
       init match {
-        case v if v.ty == Type.Int =>
+        case v if v.ty == nir.Type.Int =>
           ok
-        case Val.ArrayValue(elemty, elems) =>
+        case nir.Val.ArrayValue(elemty, elems) =>
           expect(ty, elemty)
         case _ =>
           error(s"can't initialize array with ${init.show}")
       }
       zone.foreach(checkZone)
-    case Op.Arrayload(ty, arr, idx) =>
-      val arrty = Type.Ref(Type.toArrayClass(ty))
+    case nir.Op.Arrayload(ty, arr, idx) =>
+      val arrty = nir.Type.Ref(nir.Type.toArrayClass(ty))
       expect(arrty, arr)
-      expect(Type.Int, idx)
-    case Op.Arraystore(ty, arr, idx, value) =>
-      val arrty = Type.Ref(Type.toArrayClass(ty))
+      expect(nir.Type.Int, idx)
+    case nir.Op.Arraystore(ty, arr, idx, value) =>
+      val arrty = nir.Type.Ref(nir.Type.toArrayClass(ty))
       expect(arrty, arr)
-      expect(Type.Int, idx)
+      expect(nir.Type.Int, idx)
       expect(ty, value)
-    case Op.Arraylength(arr) =>
-      expect(Rt.GenericArray, arr)
+    case nir.Op.Arraylength(arr) =>
+      expect(nir.Rt.GenericArray, arr)
   }
 
-  def checkZone(zone: Val): Unit = zone match {
-    case Val.Null | Val.Unit =>
+  def checkZone(zone: nir.Val): Unit = zone match {
+    case nir.Val.Null | nir.Val.Unit =>
       error(s"zone defined with null or unit")
     case v =>
       v.ty match {
-        case Type.Ptr | _: Type.RefKind => ()
+        case nir.Type.Ptr | _: nir.Type.RefKind => ()
         case _ => error(s"zone defind with non reference type")
       }
   }
 
   def checkAggregateOp(
-      ty: Type.AggregateKind,
-      indexes: Seq[Val],
-      stores: Option[Type]
+      ty: nir.Type.AggregateKind,
+      indexes: Seq[nir.Val],
+      stores: Option[nir.Type]
   ): Unit = {
     if (indexes.isEmpty) {
       error("index path must contain at least one index")
@@ -375,7 +379,7 @@ final class Check(implicit analysis: ReachabilityAnalysis.Result)
     indexes.zipWithIndex.foreach {
       case (v, idx) =>
         v.ty match {
-          case _: Type.I =>
+          case _: nir.Type.I =>
             ok
           case _ =>
             in("index #" + (idx + 1)) {
@@ -384,17 +388,17 @@ final class Check(implicit analysis: ReachabilityAnalysis.Result)
         }
     }
 
-    def loop(ty: Type, indexes: Seq[Val]): Unit =
+    def loop(ty: nir.Type, indexes: Seq[nir.Val]): Unit =
       indexes match {
         case Seq() =>
           stores.foreach { v => expect(ty, v) }
         case value +: rest =>
           ty match {
-            case Type.StructValue(tys) =>
+            case nir.Type.StructValue(tys) =>
               val idx = value match {
-                case Val.Int(n) =>
+                case nir.Val.Int(n) =>
                   n
-                case Val.Long(n) =>
+                case nir.Val.Long(n) =>
                   n.toInt
                 case value =>
                   error(s"can't index into struct with ${value.show}")
@@ -405,7 +409,7 @@ final class Check(implicit analysis: ReachabilityAnalysis.Result)
               } else {
                 error(s"can't index $idx into ${ty.show}")
               }
-            case Type.ArrayValue(elemty, _) =>
+            case nir.Type.ArrayValue(elemty, _) =>
               loop(elemty, rest)
             case _ =>
               error(s"can't index non-aggregate type ${ty.show}")
@@ -415,10 +419,10 @@ final class Check(implicit analysis: ReachabilityAnalysis.Result)
     loop(ty, indexes)
   }
 
-  def checkCallArgs(ty: Type.Function, args: Seq[Val]): Unit = {
-    def checkNoVarargs(argtys: Seq[Type]): Unit = {
+  def checkCallArgs(ty: nir.Type.Function, args: Seq[nir.Val]): Unit = {
+    def checkNoVarargs(argtys: Seq[nir.Type]): Unit = {
       argtys.zipWithIndex.foreach {
-        case (Type.Vararg, idx) =>
+        case (nir.Type.Vararg, idx) =>
           in("arg #" + (idx + 1)) {
             error("vararg type can only appear as last argumen")
           }
@@ -427,7 +431,7 @@ final class Check(implicit analysis: ReachabilityAnalysis.Result)
       }
     }
 
-    def checkArgTypes(argtys: Seq[Type], args: Seq[Val]): Unit = {
+    def checkArgTypes(argtys: Seq[nir.Type], args: Seq[nir.Val]): Unit = {
       argtys.zip(args).zipWithIndex.foreach {
         case ((ty, value), idx) =>
           in("arg #" + (idx + 1))(expect(ty, value))
@@ -435,13 +439,13 @@ final class Check(implicit analysis: ReachabilityAnalysis.Result)
     }
 
     ty match {
-      case Type.Function(argtys :+ Type.Vararg, _) =>
+      case nir.Type.Function(argtys :+ nir.Type.Vararg, _) =>
         checkNoVarargs(argtys)
         if (args.size < argtys.size) {
           error(s"expected at least ${argtys.size} but got ${args.size}")
         }
         checkArgTypes(argtys, args.take(argtys.size))
-      case Type.Function(argtys, _) =>
+      case nir.Type.Function(argtys, _) =>
         checkNoVarargs(argtys)
         if (argtys.size != args.size) {
           error(s"expected ${argtys.size} arguments but got ${args.size}")
@@ -451,10 +455,10 @@ final class Check(implicit analysis: ReachabilityAnalysis.Result)
   }
 
   def checkFieldOp(
-      ty: Type,
-      obj: Val,
-      name: Global,
-      value: Option[Val]
+      ty: nir.Type,
+      obj: nir.Val,
+      name: nir.Global,
+      value: Option[nir.Val]
   ): Unit = {
 
     obj.ty match {
@@ -482,160 +486,165 @@ final class Check(implicit analysis: ReachabilityAnalysis.Result)
     }
   }
 
-  def checkBinOp(bin: Bin, ty: Type, l: Val, r: Val): Unit = {
+  def checkBinOp(bin: nir.Bin, ty: nir.Type, l: nir.Val, r: nir.Val): Unit = {
     bin match {
-      case Bin.Iadd => checkIntegerOp(bin.show, ty, l, r)
-      case Bin.Fadd => checkFloatOp(bin.show, ty, l, r)
-      case Bin.Isub => checkIntegerOp(bin.show, ty, l, r)
-      case Bin.Fsub => checkFloatOp(bin.show, ty, l, r)
-      case Bin.Imul => checkIntegerOp(bin.show, ty, l, r)
-      case Bin.Fmul => checkFloatOp(bin.show, ty, l, r)
-      case Bin.Sdiv => checkIntegerOp(bin.show, ty, l, r)
-      case Bin.Udiv => checkIntegerOp(bin.show, ty, l, r)
-      case Bin.Fdiv => checkFloatOp(bin.show, ty, l, r)
-      case Bin.Srem => checkIntegerOp(bin.show, ty, l, r)
-      case Bin.Urem => checkIntegerOp(bin.show, ty, l, r)
-      case Bin.Frem => checkFloatOp(bin.show, ty, l, r)
-      case Bin.Shl  => checkIntegerOp(bin.show, ty, l, r)
-      case Bin.Lshr => checkIntegerOp(bin.show, ty, l, r)
-      case Bin.Ashr => checkIntegerOp(bin.show, ty, l, r)
-      case Bin.And  => checkIntegerOrBoolOp(bin.show, ty, l, r)
-      case Bin.Or   => checkIntegerOrBoolOp(bin.show, ty, l, r)
-      case Bin.Xor  => checkIntegerOrBoolOp(bin.show, ty, l, r)
+      case nir.Bin.Iadd => checkIntegerOp(bin.show, ty, l, r)
+      case nir.Bin.Fadd => checkFloatOp(bin.show, ty, l, r)
+      case nir.Bin.Isub => checkIntegerOp(bin.show, ty, l, r)
+      case nir.Bin.Fsub => checkFloatOp(bin.show, ty, l, r)
+      case nir.Bin.Imul => checkIntegerOp(bin.show, ty, l, r)
+      case nir.Bin.Fmul => checkFloatOp(bin.show, ty, l, r)
+      case nir.Bin.Sdiv => checkIntegerOp(bin.show, ty, l, r)
+      case nir.Bin.Udiv => checkIntegerOp(bin.show, ty, l, r)
+      case nir.Bin.Fdiv => checkFloatOp(bin.show, ty, l, r)
+      case nir.Bin.Srem => checkIntegerOp(bin.show, ty, l, r)
+      case nir.Bin.Urem => checkIntegerOp(bin.show, ty, l, r)
+      case nir.Bin.Frem => checkFloatOp(bin.show, ty, l, r)
+      case nir.Bin.Shl  => checkIntegerOp(bin.show, ty, l, r)
+      case nir.Bin.Lshr => checkIntegerOp(bin.show, ty, l, r)
+      case nir.Bin.Ashr => checkIntegerOp(bin.show, ty, l, r)
+      case nir.Bin.And  => checkIntegerOrBoolOp(bin.show, ty, l, r)
+      case nir.Bin.Or   => checkIntegerOrBoolOp(bin.show, ty, l, r)
+      case nir.Bin.Xor  => checkIntegerOrBoolOp(bin.show, ty, l, r)
     }
   }
 
-  def checkCompOp(comp: Comp, ty: Type, l: Val, r: Val): Unit = comp match {
-    case Comp.Ieq => checkIntegerOrBoolOrRefOp(comp.show, ty, l, r)
-    case Comp.Ine => checkIntegerOrBoolOrRefOp(comp.show, ty, l, r)
-    case Comp.Ugt => checkIntegerOp(comp.show, ty, l, r)
-    case Comp.Uge => checkIntegerOp(comp.show, ty, l, r)
-    case Comp.Ult => checkIntegerOp(comp.show, ty, l, r)
-    case Comp.Ule => checkIntegerOp(comp.show, ty, l, r)
-    case Comp.Sgt => checkIntegerOp(comp.show, ty, l, r)
-    case Comp.Sge => checkIntegerOp(comp.show, ty, l, r)
-    case Comp.Slt => checkIntegerOp(comp.show, ty, l, r)
-    case Comp.Sle => checkIntegerOp(comp.show, ty, l, r)
-    case Comp.Feq => checkFloatOp(comp.show, ty, l, r)
-    case Comp.Fne => checkFloatOp(comp.show, ty, l, r)
-    case Comp.Fgt => checkFloatOp(comp.show, ty, l, r)
-    case Comp.Fge => checkFloatOp(comp.show, ty, l, r)
-    case Comp.Flt => checkFloatOp(comp.show, ty, l, r)
-    case Comp.Fle => checkFloatOp(comp.show, ty, l, r)
-  }
+  def checkCompOp(comp: nir.Comp, ty: nir.Type, l: nir.Val, r: nir.Val): Unit =
+    comp match {
+      case nir.Comp.Ieq => checkIntegerOrBoolOrRefOp(comp.show, ty, l, r)
+      case nir.Comp.Ine => checkIntegerOrBoolOrRefOp(comp.show, ty, l, r)
+      case nir.Comp.Ugt => checkIntegerOp(comp.show, ty, l, r)
+      case nir.Comp.Uge => checkIntegerOp(comp.show, ty, l, r)
+      case nir.Comp.Ult => checkIntegerOp(comp.show, ty, l, r)
+      case nir.Comp.Ule => checkIntegerOp(comp.show, ty, l, r)
+      case nir.Comp.Sgt => checkIntegerOp(comp.show, ty, l, r)
+      case nir.Comp.Sge => checkIntegerOp(comp.show, ty, l, r)
+      case nir.Comp.Slt => checkIntegerOp(comp.show, ty, l, r)
+      case nir.Comp.Sle => checkIntegerOp(comp.show, ty, l, r)
+      case nir.Comp.Feq => checkFloatOp(comp.show, ty, l, r)
+      case nir.Comp.Fne => checkFloatOp(comp.show, ty, l, r)
+      case nir.Comp.Fgt => checkFloatOp(comp.show, ty, l, r)
+      case nir.Comp.Fge => checkFloatOp(comp.show, ty, l, r)
+      case nir.Comp.Flt => checkFloatOp(comp.show, ty, l, r)
+      case nir.Comp.Fle => checkFloatOp(comp.show, ty, l, r)
+    }
 
-  def checkConvOp(conv: Conv, ty: Type, value: Val): Unit = conv match {
-    case Conv.ZSizeCast | Conv.SSizeCast =>
-      (value.ty, ty) match {
-        case (lty: Type.FixedSizeI, Type.Size) => ok
-        case (Type.Size, rty: Type.FixedSizeI) => ok
-        case _ =>
-          error(
-            s"can't cast size from ${value.ty.show} to ${ty.show}"
-          )
-      }
-    case Conv.Trunc =>
-      (value.ty, ty) match {
-        case (lty: Type.FixedSizeI, rty: Type.FixedSizeI)
-            if lty.width > rty.width =>
-          ok
-        case _ =>
-          error(s"can't trunc from ${value.ty.show} to ${ty.show}")
-      }
-    case Conv.Zext =>
-      (value.ty, ty) match {
-        case (lty: Type.FixedSizeI, rty: Type.FixedSizeI)
-            if lty.width < rty.width =>
-          ok
-        case _ =>
-          error(s"can't zext from ${value.ty.show} to ${ty.show}")
-      }
-    case Conv.Sext =>
-      (value.ty, ty) match {
-        case (lty: Type.FixedSizeI, rty: Type.FixedSizeI)
-            if lty.width < rty.width =>
-          ok
-        case _ =>
-          error(s"can't sext from ${value.ty.show} to ${ty.show}")
-      }
-    case Conv.Fptrunc =>
-      (value.ty, ty) match {
-        case (Type.Double, Type.Float) =>
-          ok
-        case _ =>
-          error(s"can't fptrunc from ${value.ty.show} to ${ty.show}")
-      }
-    case Conv.Fpext =>
-      (value.ty, ty) match {
-        case (Type.Float, Type.Double) =>
-          ok
-        case _ =>
-          error(s"can't fpext from ${value.ty.show} to ${ty.show}")
-      }
-    case Conv.Fptoui =>
-      (value.ty, ty) match {
-        case (Type.Float | Type.Double, ity: Type.I) =>
-          ok
-        case _ =>
-          error(s"can't fptoui from ${value.ty.show} to ${ty.show}")
-      }
-    case Conv.Fptosi =>
-      (value.ty, ty) match {
-        case (Type.Float | Type.Double, ity: Type.I) if ity.signed =>
-          ok
-        case _ =>
-          error(s"can't fptosi from ${value.ty.show} to ${ty.show}")
-      }
-    case Conv.Uitofp =>
-      (value.ty, ty) match {
-        case (ity: Type.I, Type.Float | Type.Double) =>
-          ok
-        case _ =>
-          error(s"can't uitofp from ${value.ty.show} to ${ty.show}")
-      }
-    case Conv.Sitofp =>
-      (value.ty, ty) match {
-        case (ity: Type.I, Type.Float | Type.Double) if ity.signed =>
-          ok
-        case _ =>
-          error(s"can't sitofp from ${value.ty.show} to ${ty.show}")
-      }
-    case Conv.Ptrtoint =>
-      (value.ty, ty) match {
-        case (Type.Ptr | _: Type.RefKind, _: Type.I) =>
-          ok
-        case _ =>
-          error(s"can't ptrtoint from ${value.ty.show} to ${ty.show}")
-      }
-    case Conv.Inttoptr =>
-      (value.ty, ty) match {
-        case (_: Type.I, Type.Ptr | _: Type.RefKind) =>
-          ok
-        case _ =>
-          error(s"can't inttoptr from ${value.ty.show} to ${ty.show}")
-      }
-    case Conv.Bitcast =>
-      def fail =
-        error(s"can't bitcast from ${value.ty.show} to ${ty.show}")
-      (value.ty, ty) match {
-        case (lty, rty) if lty == rty =>
-          ok
-        case (_: Type.I, Type.Ptr) | (Type.Ptr, _: Type.I) =>
-          fail
-        case (lty: Type.PrimitiveKind, rty: Type.PrimitiveKind)
-            if lty.width == rty.width =>
-          ok
-        case (_: Type.RefKind, Type.Ptr) | (Type.Ptr, _: Type.RefKind) |
-            (_: Type.RefKind, _: Type.RefKind) =>
-          ok
-        case _ =>
-          fail
-      }
-  }
+  def checkConvOp(conv: nir.Conv, ty: nir.Type, value: nir.Val): Unit =
+    conv match {
+      case nir.Conv.ZSizeCast | nir.Conv.SSizeCast =>
+        (value.ty, ty) match {
+          case (lty: nir.Type.FixedSizeI, nir.Type.Size) => ok
+          case (nir.Type.Size, rty: nir.Type.FixedSizeI) => ok
+          case _ =>
+            error(
+              s"can't cast size from ${value.ty.show} to ${ty.show}"
+            )
+        }
+      case nir.Conv.Trunc =>
+        (value.ty, ty) match {
+          case (lty: nir.Type.FixedSizeI, rty: nir.Type.FixedSizeI)
+              if lty.width > rty.width =>
+            ok
+          case _ =>
+            error(s"can't trunc from ${value.ty.show} to ${ty.show}")
+        }
+      case nir.Conv.Zext =>
+        (value.ty, ty) match {
+          case (lty: nir.Type.FixedSizeI, rty: nir.Type.FixedSizeI)
+              if lty.width < rty.width =>
+            ok
+          case _ =>
+            error(s"can't zext from ${value.ty.show} to ${ty.show}")
+        }
+      case nir.Conv.Sext =>
+        (value.ty, ty) match {
+          case (lty: nir.Type.FixedSizeI, rty: nir.Type.FixedSizeI)
+              if lty.width < rty.width =>
+            ok
+          case _ =>
+            error(s"can't sext from ${value.ty.show} to ${ty.show}")
+        }
+      case nir.Conv.Fptrunc =>
+        (value.ty, ty) match {
+          case (nir.Type.Double, nir.Type.Float) =>
+            ok
+          case _ =>
+            error(s"can't fptrunc from ${value.ty.show} to ${ty.show}")
+        }
+      case nir.Conv.Fpext =>
+        (value.ty, ty) match {
+          case (nir.Type.Float, nir.Type.Double) =>
+            ok
+          case _ =>
+            error(s"can't fpext from ${value.ty.show} to ${ty.show}")
+        }
+      case nir.Conv.Fptoui =>
+        (value.ty, ty) match {
+          case (nir.Type.Float | nir.Type.Double, ity: nir.Type.I) =>
+            ok
+          case _ =>
+            error(s"can't fptoui from ${value.ty.show} to ${ty.show}")
+        }
+      case nir.Conv.Fptosi =>
+        (value.ty, ty) match {
+          case (nir.Type.Float | nir.Type.Double, ity: nir.Type.I)
+              if ity.signed =>
+            ok
+          case _ =>
+            error(s"can't fptosi from ${value.ty.show} to ${ty.show}")
+        }
+      case nir.Conv.Uitofp =>
+        (value.ty, ty) match {
+          case (ity: nir.Type.I, nir.Type.Float | nir.Type.Double) =>
+            ok
+          case _ =>
+            error(s"can't uitofp from ${value.ty.show} to ${ty.show}")
+        }
+      case nir.Conv.Sitofp =>
+        (value.ty, ty) match {
+          case (ity: nir.Type.I, nir.Type.Float | nir.Type.Double)
+              if ity.signed =>
+            ok
+          case _ =>
+            error(s"can't sitofp from ${value.ty.show} to ${ty.show}")
+        }
+      case nir.Conv.Ptrtoint =>
+        (value.ty, ty) match {
+          case (nir.Type.Ptr | _: nir.Type.RefKind, _: nir.Type.I) =>
+            ok
+          case _ =>
+            error(s"can't ptrtoint from ${value.ty.show} to ${ty.show}")
+        }
+      case nir.Conv.Inttoptr =>
+        (value.ty, ty) match {
+          case (_: nir.Type.I, nir.Type.Ptr | _: nir.Type.RefKind) =>
+            ok
+          case _ =>
+            error(s"can't inttoptr from ${value.ty.show} to ${ty.show}")
+        }
+      case nir.Conv.Bitcast =>
+        def fail =
+          error(s"can't bitcast from ${value.ty.show} to ${ty.show}")
+        (value.ty, ty) match {
+          case (lty, rty) if lty == rty =>
+            ok
+          case (_: nir.Type.I, nir.Type.Ptr) | (nir.Type.Ptr, _: nir.Type.I) =>
+            fail
+          case (lty: nir.Type.PrimitiveKind, rty: nir.Type.PrimitiveKind)
+              if lty.width == rty.width =>
+            ok
+          case (_: nir.Type.RefKind, nir.Type.Ptr) |
+              (nir.Type.Ptr, _: nir.Type.RefKind) |
+              (_: nir.Type.RefKind, _: nir.Type.RefKind) =>
+            ok
+          case _ =>
+            fail
+        }
+    }
 
-  def checkIntegerOp(op: String, ty: Type, l: Val, r: Val): Unit = {
+  def checkIntegerOp(op: String, ty: nir.Type, l: nir.Val, r: nir.Val): Unit = {
     ty match {
-      case ty: Type.I =>
+      case ty: nir.Type.I =>
         expect(ty, l)
         expect(ty, r)
       case _ =>
@@ -643,9 +652,14 @@ final class Check(implicit analysis: ReachabilityAnalysis.Result)
     }
   }
 
-  def checkIntegerOrBoolOp(op: String, ty: Type, l: Val, r: Val): Unit = {
+  def checkIntegerOrBoolOp(
+      op: String,
+      ty: nir.Type,
+      l: nir.Val,
+      r: nir.Val
+  ): Unit = {
     ty match {
-      case ty @ (_: Type.I | Type.Bool) =>
+      case ty @ (_: nir.Type.I | nir.Type.Bool) =>
         expect(ty, l)
         expect(ty, r)
       case _ =>
@@ -653,14 +667,20 @@ final class Check(implicit analysis: ReachabilityAnalysis.Result)
     }
   }
 
-  def checkIntegerOrBoolOrRefOp(op: String, ty: Type, l: Val, r: Val): Unit = {
+  def checkIntegerOrBoolOrRefOp(
+      op: String,
+      ty: nir.Type,
+      l: nir.Val,
+      r: nir.Val
+  ): Unit = {
     ty match {
-      case ty @ (_: Type.I | Type.Bool | Type.Null | Type.Ptr) =>
+      case ty @ (_: nir.Type.I | nir.Type.Bool | nir.Type.Null |
+          nir.Type.Ptr) =>
         expect(ty, l)
         expect(ty, r)
-      case ty: Type.RefKind =>
-        expect(Rt.Object, l)
-        expect(Rt.Object, r)
+      case ty: nir.Type.RefKind =>
+        expect(nir.Rt.Object, l)
+        expect(nir.Rt.Object, r)
       case _ =>
         error(
           s"$op is only defined on integer types, bool and reference types, not ${ty.show}"
@@ -668,9 +688,9 @@ final class Check(implicit analysis: ReachabilityAnalysis.Result)
     }
   }
 
-  def checkFloatOp(op: String, ty: Type, l: Val, r: Val): Unit = {
+  def checkFloatOp(op: String, ty: nir.Type, l: nir.Val, r: nir.Val): Unit = {
     ty match {
-      case ty: Type.F =>
+      case ty: nir.Type.F =>
         expect(ty, l)
         expect(ty, r)
       case _ =>
@@ -678,12 +698,12 @@ final class Check(implicit analysis: ReachabilityAnalysis.Result)
     }
   }
 
-  def checkUnwind(next: Next): Unit = next match {
-    case Next.None =>
+  def checkUnwind(next: nir.Next): Unit = next match {
+    case nir.Next.None =>
       ok
-    case Next.Unwind(_, next) =>
+    case nir.Next.Unwind(_, next) =>
       next match {
-        case next: Next.Label =>
+        case next: nir.Next.Label =>
           checkNext(next)
         case _ =>
           error(s"unwind's destination has to be a label, not ${next.show}")
@@ -692,14 +712,14 @@ final class Check(implicit analysis: ReachabilityAnalysis.Result)
       error(s"unwind next can not be ${next.show}")
   }
 
-  def checkNext(next: Next): Unit = next match {
-    case Next.None =>
+  def checkNext(next: nir.Next): Unit = next match {
+    case nir.Next.None =>
       error("can't use none next in non-unwind context")
-    case _: Next.Unwind =>
+    case _: nir.Next.Unwind =>
       error("can't use unwind next in non-unwind context")
-    case Next.Case(_, next) =>
+    case nir.Next.Case(_, next) =>
       checkNext(next)
-    case Next.Label(name, args) =>
+    case nir.Next.Label(name, args) =>
       labels
         .get(name)
         .fold {
@@ -727,21 +747,26 @@ final class QuickCheck(implicit analysis: ReachabilityAnalysis.Result)
     meth.insts.foreach(checkInst)
   }
 
-  def checkInst(inst: Inst): Unit = inst match {
-    case Inst.Let(_, op, _) => checkOp(op)
-    case _                  => ok
+  def checkInst(inst: nir.Inst): Unit = inst match {
+    case nir.Inst.Let(_, op, _) =>
+      checkOp(op)
+    case _ =>
+      ok
   }
 
-  def checkOp(op: Op): Unit = op match {
-    case op: Op.Field  => checkFieldOp(op)
-    case op: Op.Method => checkMethodOp(op)
-    case _             => ok
+  def checkOp(op: nir.Op): Unit = op match {
+    case op: nir.Op.Field =>
+      checkFieldOp(op)
+    case op: nir.Op.Method =>
+      checkMethodOp(op)
+    case _ =>
+      ok
   }
 
 }
 
 object Check {
-  final case class Error(name: Global, ctx: List[String], msg: String)
+  final case class Error(name: nir.Global, ctx: List[String], msg: String)
 
   private def run(
       checkImpl: ReachabilityAnalysis.Result => NIRCheck

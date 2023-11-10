@@ -17,7 +17,7 @@ class PositionsTest {
     |  def defn: Unit = println("Hello World")
     |  def defn2: Unit = {
     |    val x: Any = 10
-    |    def innerDefn(x: Any) = { 
+    |    def innerDefn(x: Any) = {
     |      println("foo")
     |    }
     |    innerDefn(x)
@@ -25,27 +25,32 @@ class PositionsTest {
     |}
     """.stripMargin
   ) { loaded =>
-    import nir._
-
-    val TopLevel = Global.Top("TopLevel")
-    val Foo = Global.Top("Foo")
-    val FooModule = Global.Top("Foo$")
+    val TopLevel = nir.Global.Top("TopLevel")
+    val Foo = nir.Global.Top("Foo")
+    val FooModule = nir.Global.Top("Foo$")
     val sourceFile = "Test.scala"
 
     object Definition {
       def unapply(
-          defn: Defn
-      ): Option[(Global.Top, Sig.Unmangled, nir.Position, Seq[nir.Inst])] =
+          defn: nir.Defn
+      ): Option[
+        (nir.Global.Top, nir.Sig.Unmangled, nir.Position, Seq[nir.Inst])
+      ] =
         defn match {
-          case Defn.Define(
+          case nir.Defn.Define(
                 _,
-                Global.Member(top: Global.Top, sig),
+                nir.Global.Member(top: nir.Global.Top, sig),
                 _,
                 insts,
                 _
               ) =>
             Some((top, sig.unmangled, defn.pos, insts))
-          case Defn.Var(_, Global.Member(top: Global.Top, sig), _, _) =>
+          case nir.Defn.Var(
+                _,
+                nir.Global.Member(top: nir.Global.Top, sig),
+                _,
+                _
+              ) =>
             Some((top, sig.unmangled, defn.pos, Nil))
           case _ => None
         }
@@ -74,9 +79,9 @@ class PositionsTest {
       val pos = defn.pos
       assertTrue(pos.source.getPath().endsWith(sourceFile))
       defn match {
-        case Defn.Class(_, TopLevel, _, _) =>
+        case nir.Defn.Class(_, TopLevel, _, _) =>
           checkPos(0, 6)(pos)
-        case Definition(TopLevel, Sig.Ctor(Nil), pos, insts) =>
+        case Definition(TopLevel, nir.Sig.Ctor(Nil), pos, insts) =>
           if (`isScala2.12`) {
             checkPos(1, 0)(pos) // wrong
             checkLinesRange(1 to 1)(insts.map(_.pos))
@@ -84,11 +89,11 @@ class PositionsTest {
             checkPos(0, 14)(pos)
             checkLinesRange(0 to 0)(insts.map(_.pos))
           }
-        case Defn.Class(_, Foo, _, _) =>
+        case nir.Defn.Class(_, Foo, _, _) =>
           checkPos(1, 7)(pos)
-        case Defn.Module(_, FooModule, _, _) =>
+        case nir.Defn.Module(_, FooModule, _, _) =>
           checkPos(1, 7)(pos)
-        case Definition(FooModule, Sig.Ctor(Nil), pos, insts) =>
+        case Definition(FooModule, nir.Sig.Ctor(Nil), pos, insts) =>
           if (`isScala2.13`) checkPos(1, 11)(pos)
           else if (isScala3) checkPos(2, 2)(pos)
           if (`isScala2.12`) () // scalac sets wrong position, line 12
@@ -96,34 +101,34 @@ class PositionsTest {
         // proxies to module implemention
         case Definition(
               Foo,
-              Sig.Method("field" | "field_$eq", _, _),
+              nir.Sig.Method("field" | "field_$eq", _, _),
               pos,
               insts
             ) =>
           (pos +: insts.map(_.pos)).foreach(checkPos(2, 6))
-        case Definition(Foo, Sig.Method("defn", _, _), pos, insts) =>
+        case Definition(Foo, nir.Sig.Method("defn", _, _), pos, insts) =>
           (pos +: insts.map(_.pos)).foreach(checkPos(3, 6))
-        case Definition(Foo, Sig.Method("defn2", _, _), pos, insts) =>
+        case Definition(Foo, nir.Sig.Method("defn2", _, _), pos, insts) =>
           (pos +: insts.map(_.pos)).foreach(checkPos(4, 6))
         // Actual methods
         case Definition(
               FooModule,
-              Sig.Method("field", _, _) | Sig.Method("field_$eq", _, _) |
-              Sig.Field("field", _),
+              nir.Sig.Method("field", _, _) |
+              nir.Sig.Method("field_$eq", _, _) | nir.Sig.Field("field", _),
               pos,
               insts
             ) =>
           checkPos(2, 6)(pos)
           checkLinesRange(2 to 2)(insts.map(_.pos))
-        case Definition(FooModule, Sig.Method("defn", _, _), pos, insts) =>
+        case Definition(FooModule, nir.Sig.Method("defn", _, _), pos, insts) =>
           checkPos(3, 6)(pos)
           checkLinesRange(3 to 3)(insts.map(_.pos))
-        case Definition(FooModule, Sig.Method("defn2", _, _), pos, insts) =>
+        case Definition(FooModule, nir.Sig.Method("defn2", _, _), pos, insts) =>
           checkPos(4, 6)(pos)
           checkLinesRange(4 to 9)(insts.map(_.pos))
         case Definition(
               FooModule,
-              Sig.Method("innerDefn$1", _, _),
+              nir.Sig.Method("innerDefn$1", _, _),
               pos,
               insts
             ) =>
@@ -132,7 +137,7 @@ class PositionsTest {
 
         case Definition(
               FooModule,
-              Sig.Method("writeReplace", _, _),
+              nir.Sig.Method("writeReplace", _, _),
               pos,
               insts
             ) =>

@@ -2,7 +2,6 @@ package scala.scalanative
 package build
 
 import java.nio.file.{Path, Paths}
-import scala.scalanative.nir.Val
 
 /** An object describing how to configure the Scala Native toolchain. */
 sealed trait NativeConfig {
@@ -434,7 +433,7 @@ object NativeConfig {
     def isNumberOrString(value: Any) = {
       value match {
         case _: Boolean | _: Byte | _: Char | _: Short | _: Int | _: Long |
-            _: Float | _: Double | _: String | _: Val =>
+            _: Float | _: Double | _: String | _: nir.Val =>
           true
         case _ => false
       }

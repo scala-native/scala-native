@@ -1,8 +1,8 @@
-package scala.scalanative.nscplugin
+package scala.scalanative
+package nscplugin
 
 import scala.scalanative.util
-import scala.scalanative.nir
-import nir.Defn.Define.DebugInfo
+import scalanative.nir.Defn.Define.DebugInfo
 import scalanative.nir.serialization.serializeBinary
 
 import dotty.tools.dotc.{CompilationUnit, report}
@@ -26,7 +26,6 @@ class NirCodeGen(val settings: GenNIR.Settings)(using ctx: Context)
     with GenReflectiveInstantisation
     with GenNativeExports:
   import tpd._
-  import nir._
 
   protected val defnNir = NirDefinitions.get
   protected val nirPrimitives = new NirPrimitives()
@@ -43,7 +42,7 @@ class NirCodeGen(val settings: GenNIR.Settings)(using ctx: Context)
   protected val curMethodEnv = new util.ScopedVar[MethodEnv]
   protected val curMethodLabels = new util.ScopedVar[MethodLabelsEnv]
   protected val curMethodLocalNames =
-    new util.ScopedVar[mutable.Map[Local, LocalName]]
+    new util.ScopedVar[mutable.Map[nir.Local, nir.LocalName]]
   protected val curMethodThis = new util.ScopedVar[Option[nir.Val]]
   protected val curMethodIsExtern = new util.ScopedVar[Boolean]
   protected var curMethodUsesLinktimeResolvedValues = false
@@ -52,13 +51,13 @@ class NirCodeGen(val settings: GenNIR.Settings)(using ctx: Context)
   protected var curScopes =
     new util.ScopedVar[mutable.Set[DebugInfo.LexicalScope]]
   protected val curFreshScope = new util.ScopedVar[nir.Fresh]
-  protected val curScopeId = new util.ScopedVar[ScopeId]
+  protected val curScopeId = new util.ScopedVar[nir.ScopeId]
   implicit protected def getScopeId: nir.ScopeId = {
     val res = curScopeId.get
-    assert(res.id >= ScopeId.TopLevel.id)
+    assert(res.id >= nir.ScopeId.TopLevel.id)
     res
   }
-  protected def initFreshScope(rhs: Tree) = Fresh(rhs match {
+  protected def initFreshScope(rhs: Tree) = nir.Fresh(rhs match {
     // Conpensate the top-level block
     case Block(stats, _) => -1L
     case _               => 0L
@@ -68,11 +67,11 @@ class NirCodeGen(val settings: GenNIR.Settings)(using ctx: Context)
 
   protected val lazyValsAdapter = AdaptLazyVals(defnNir)
 
-  protected def unwind(implicit fresh: Fresh): Next =
+  protected def unwind(implicit fresh: nir.Fresh): nir.Next =
     curUnwindHandler.get
-      .fold[Next](Next.None) { handler =>
-        val exc = Val.Local(fresh(), nir.Rt.Object)
-        Next.Unwind(exc, Next.Label(handler, Seq(exc)))
+      .fold[nir.Next](nir.Next.None) { handler =>
+        val exc = nir.Val.Local(fresh(), nir.Rt.Object)
+        nir.Next.Unwind(exc, nir.Next.Label(handler, Seq(exc)))
       }
 
   def run(): Unit = {
@@ -129,7 +128,7 @@ class NirCodeGen(val settings: GenNIR.Settings)(using ctx: Context)
 
       val generatedCaseInsensitiveNames =
         generatedDefns.collect {
-          case cls: Defn.Class => caseInsensitiveNameOf(cls)
+          case cls: nir.Defn.Class => caseInsensitiveNameOf(cls)
         }.toSet
 
       for ((site, staticCls) <- generatedMirrorClasses) {
@@ -169,8 +168,8 @@ class NirCodeGen(val settings: GenNIR.Settings)(using ctx: Context)
   }
 
   class MethodLabelsEnv(val fresh: nir.Fresh) {
-    private val entries, exits = mutable.Map.empty[Symbol, Local]
-    private val exitTypes = mutable.Map.empty[Local, nir.Type]
+    private val entries, exits = mutable.Map.empty[Symbol, nir.Local]
+    private val exitTypes = mutable.Map.empty[nir.Local, nir.Type]
 
     def enterLabel(ld: Labeled): (nir.Local, nir.Local) = {
       val sym = ld.bind.symbol
@@ -201,9 +200,9 @@ class NirCodeGen(val settings: GenNIR.Settings)(using ctx: Context)
       local
     }
 
-    def resolve(sym: Symbol): Val = env(sym)
-    def resolveLabel(ld: Labeled): Local = {
-      val Val.Local(n, Type.Ptr) = resolve(ld.bind.symbol): @unchecked
+    def resolve(sym: Symbol): nir.Val = env(sym)
+    def resolveLabel(ld: Labeled): nir.Local = {
+      val nir.Val.Local(n, nir.Type.Ptr) = resolve(ld.bind.symbol): @unchecked
       n
     }
   }

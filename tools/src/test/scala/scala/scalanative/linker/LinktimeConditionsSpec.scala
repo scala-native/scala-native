@@ -1,14 +1,15 @@
-package scala.scalanative.linker
+package scala.scalanative
+package linker
 
 import org.junit.Test
 import org.junit.Assert._
 
 import scala.scalanative.OptimizerSpec
 import scala.scalanative.build.{Config, NativeConfig}
-import scala.scalanative.nir.{Global, Sig, Type, Val, Rt, Unmangle}
 import scala.util._
 
 class LinktimeConditionsSpec extends OptimizerSpec {
+
   val entry = "Main"
   val module = "Main$"
   private val props =
@@ -18,13 +19,13 @@ class LinktimeConditionsSpec extends OptimizerSpec {
        |object linktime {
        |  @resolvedAtLinktime("int")
        |  final def int: Int = resolved
-       |  
+       |
        |  @resolvedAtLinktime("bool")
        |  final def bool: Boolean = resolved
        |
        |  @resolvedAtLinktime("welcomeMessage")
        |  final def welcomeMessage: String = resolved
-       |  
+       |
        |  @resolvedAtLinktime("decimalSeparator")
        |  def decimalSeparator: Char = resolved
        |  @resolvedAtLinktime("float")
@@ -33,7 +34,7 @@ class LinktimeConditionsSpec extends OptimizerSpec {
        |  object inner{
        |    @resolvedAtLinktime("inner.countFrom")
        |    def countFrom: Long = resolved
-       |   
+       |
        |    @resolvedAtLinktime("secret.performance.multiplier")
        |    def performanceMultiplier: Double = resolved
        |  }
@@ -54,7 +55,7 @@ class LinktimeConditionsSpec extends OptimizerSpec {
                        |  }
                        |}""".stripMargin
 
-  case class Entry[T](propertyName: String, value: T, linktimeValue: Val)
+  case class Entry[T](propertyName: String, value: T, linktimeValue: nir.Val)
 
   val ignoredPropertiesNames = {
     val linktimeInfo = "scala.scalanative.meta.linktimeinfo"
@@ -72,10 +73,10 @@ class LinktimeConditionsSpec extends OptimizerSpec {
   }
 
   private def isMangledMethod(name: String) = Try(
-    Unmangle.unmangleGlobal(name)
+    nir.Unmangle.unmangleGlobal(name)
   ) match {
-    case Success(Global.Member(_, sig)) => sig.isMethod
-    case _                              => false
+    case Success(nir.Global.Member(_, sig)) => sig.isMethod
+    case _                                  => false
   }
 
   // Ignore denylisted linktime properties which are enfored by list of default properties and
@@ -85,13 +86,13 @@ class LinktimeConditionsSpec extends OptimizerSpec {
 
   val defaultEntries = {
     Seq(
-      Entry("int", 42, Val.Int(42)),
-      Entry("bool", false, Val.False),
-      Entry("welcomeMessage", "Hello native", Val.String("Hello native")),
-      Entry("float", 3.14f, Val.Float(3.14f)),
-      Entry("decimalSeparator", '-', Val.Char('-')),
-      Entry("inner.countFrom", 123456L, Val.Long(123456L)),
-      Entry("secret.performance.multiplier", 9.99, Val.Double(9.99))
+      Entry("int", 42, nir.Val.Int(42)),
+      Entry("bool", false, nir.Val.False),
+      Entry("welcomeMessage", "Hello native", nir.Val.String("Hello native")),
+      Entry("float", 3.14f, nir.Val.Float(3.14f)),
+      Entry("decimalSeparator", '-', nir.Val.Char('-')),
+      Entry("inner.countFrom", 123456L, nir.Val.Long(123456L)),
+      Entry("secret.performance.multiplier", 9.99, nir.Val.Double(9.99))
     )
   }
   val defaultProperties = defaultEntries.map(e => e.propertyName -> e.value)
@@ -115,7 +116,7 @@ class LinktimeConditionsSpec extends OptimizerSpec {
       "props.scala" -> props,
       "main.scala" -> allPropsUsage
     )(defaultProperties: _*) { (_, result) =>
-      def normalized(elems: Map[String, Val]): Map[String, Val] =
+      def normalized(elems: Map[String, nir.Val]): Map[String, nir.Val] =
         elems.filter { case (key, _) => !isIgnoredLinktimeProperty(key) }
       val expected =
         defaultEntries.map { e => e.propertyName -> e.linktimeValue }
@@ -141,7 +142,7 @@ class LinktimeConditionsSpec extends OptimizerSpec {
                           |import scala.scalanative.linktime
                           |object Main {
                           |  ${pathStrings(pathsRange)}
-                          |  
+                          |
                           |  def main(args: Array[String]): Unit = {
                           |    if(linktime.int == 1) path1()
                           |    else if (linktime.int == 2) path2()
@@ -310,7 +311,7 @@ class LinktimeConditionsSpec extends OptimizerSpec {
                           |  }
                           |}""".stripMargin
     )("prop" -> true) { (_, result) =>
-      assertEquals(Val.True, result.resolvedVals("prop"))
+      assertEquals(nir.Val.True, result.resolvedVals("prop"))
     }
   }
 
@@ -347,20 +348,20 @@ class LinktimeConditionsSpec extends OptimizerSpec {
           |object props{
           |   @scalanative.unsafe.resolvedAtLinktime("os")
           |   def os: String = scala.scalanative.unsafe.resolved
-          | 
+          |
           |   @scalanative.unsafe.resolvedAtLinktime
           |   def isWindows: Boolean = os == "windows"
-          |    
+          |
           |   @scalanative.unsafe.resolvedAtLinktime
           |   def isMac: Boolean = {
           |     @scalanative.unsafe.resolvedAtLinktime
           |     def vendor = "apple"
-          |     
+          |
           |     os == "darwin" && vendor == "apple"
           |   }
           |
           |   @scalanative.unsafe.resolvedAtLinktime
-          |   def dynLibExt: String = 
+          |   def dynLibExt: String =
           |     if(isWindows) ".dll"
           |     else if(isMac) ".dylib"
           |     else ".so"
@@ -374,26 +375,29 @@ class LinktimeConditionsSpec extends OptimizerSpec {
           |  }
           |}""".stripMargin
     )("os" -> "darwin") { (_, result) =>
-      val Props = Global.Top("scala.scalanative.props$")
+      val Props = nir.Global.Top("scala.scalanative.props$")
       def calculatedVal(
           name: String,
-          ty: Type,
-          scope: Sig.Scope = Sig.Scope.Public
+          ty: nir.Type,
+          scope: nir.Sig.Scope = nir.Sig.Scope.Public
       ) = {
-        val global = Props.member(Sig.Method(name, Seq(ty), scope))
-        val mangled = scalanative.nir.Mangle(global)
+        val global = Props.member(nir.Sig.Method(name, Seq(ty), scope))
+        val mangled = nir.Mangle(global)
         result.resolvedVals.get(mangled)
       }
-      assertEquals(Val.String("darwin"), result.resolvedVals("os"))
+      assertEquals(nir.Val.String("darwin"), result.resolvedVals("os"))
       // nested method is defined as private
       assertTrue(
-        calculatedVal("vendor$1", Rt.String, Sig.Scope.Private(Props))
-          .contains(Val.String("apple"))
+        calculatedVal("vendor$1", nir.Rt.String, nir.Sig.Scope.Private(Props))
+          .contains(nir.Val.String("apple"))
       )
-      assertTrue(calculatedVal("isWindows", Type.Bool).contains(Val.False))
-      assertTrue(calculatedVal("isMac", Type.Bool).contains(Val.True))
       assertTrue(
-        calculatedVal("dynLibExt", Rt.String).contains(Val.String(".dylib"))
+        calculatedVal("isWindows", nir.Type.Bool).contains(nir.Val.False)
+      )
+      assertTrue(calculatedVal("isMac", nir.Type.Bool).contains(nir.Val.True))
+      assertTrue(
+        calculatedVal("dynLibExt", nir.Rt.String)
+          .contains(nir.Val.String(".dylib"))
       )
     }
   }
@@ -414,15 +418,15 @@ class LinktimeConditionsSpec extends OptimizerSpec {
     link(entry, sources) { (_, result) =>
       implicit val linkerResult: ReachabilityAnalysis.Result = result
       val MethodRef(_, mainMethod) =
-        Global.Top(entry).member(Rt.ScalaMainSig): @unchecked
+        nir.Global.Top(entry).member(nir.Rt.ScalaMainSig): @unchecked
       fn(mainMethod, result)
     }
   }
 
   private def pathForNumber(n: Int) = {
-    Global.Member(
-      owner = Global.Top(module),
-      sig = Sig.Method(s"path$n", Seq(Type.Unit))
+    nir.Global.Member(
+      owner = nir.Global.Top(module),
+      sig = nir.Sig.Method(s"path$n", Seq(nir.Type.Unit))
     )
   }
 
@@ -490,4 +494,5 @@ class LinktimeConditionsSpec extends OptimizerSpec {
     }
     optimize(entry, sources.toMap, setupConfig = setupConfig)(body)
   }
+
 }

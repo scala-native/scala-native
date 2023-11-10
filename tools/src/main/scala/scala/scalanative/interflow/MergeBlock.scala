@@ -2,39 +2,40 @@ package scala.scalanative
 package interflow
 
 import scala.collection.mutable
-import scalanative.nir._
 import scala.annotation.tailrec
 
-final class MergeBlock(val label: Inst.Label, val id: Local) {
-  var incoming = mutable.Map.empty[Local, (Seq[Val], State)]
-  var outgoing = mutable.Map.empty[Local, MergeBlock]
+final class MergeBlock(val label: nir.Inst.Label, val id: nir.Local) {
+
+  var incoming = mutable.Map.empty[nir.Local, (Seq[nir.Val], State)]
+  var outgoing = mutable.Map.empty[nir.Local, MergeBlock]
   var phis: Seq[MergePhi] = _
   var start: State = _
   var end: State = _
-  var cf: Inst.Cf = _
+  var cf: nir.Inst.Cf = _
   var invalidations: Int = 0
-  implicit def cfPos: Position = {
+  implicit def cfPos: nir.Position = {
     if (cf != null) cf.pos
     else label.pos
   }
 
-  private var stackSavePtr: Val.Local = _
+  private var stackSavePtr: nir.Val.Local = _
   private[interflow] var emitStackSaveOp = false
-  private[interflow] var emitStackRestoreFor: List[Local] = Nil
+  private[interflow] var emitStackRestoreFor: List[nir.Local] = Nil
 
-  def toInsts(): Seq[Inst] = {
+  def toInsts(): Seq[nir.Inst] = {
     import Interflow.LLVMIntrinsics._
     val block = this
-    val result = new nir.Buffer()(Fresh(0))
+    val result = new nir.Buffer()(nir.Fresh(0))
 
-    def mergeNext(next: Next.Label): Next.Label = {
+    def mergeNext(next: nir.Next.Label): nir.Next.Label = {
       val nextBlock = outgoing(next.id)
 
       if (nextBlock.stackSavePtr != null &&
           emitStackRestoreFor.contains(next.id)) {
         emitIfMissing(
           end.fresh(),
-          Op.Call(StackRestoreSig, StackRestore, Seq(nextBlock.stackSavePtr))
+          nir.Op
+            .Call(StackRestoreSig, StackRestore, Seq(nextBlock.stackSavePtr))
         )(result, block)
       }
       val mergeValues = nextBlock.phis.flatMap {
@@ -43,13 +44,13 @@ final class MergeBlock(val label: Inst.Label, val id: Local) {
             case (id, value) if id == block.label.id => value
           }
       }
-      Next.Label(nextBlock.id, mergeValues)
+      nir.Next.Label(nextBlock.id, mergeValues)
     }
-    def mergeUnwind(next: Next): Next = next match {
-      case Next.None =>
+    def mergeUnwind(next: nir.Next): nir.Next = next match {
+      case nir.Next.None =>
         next
-      case Next.Unwind(exc, next: Next.Label) =>
-        Next.Unwind(exc, mergeNext(next))
+      case nir.Next.Unwind(exc, next: nir.Next.Label) =>
+        nir.Next.Unwind(exc, mergeNext(next))
       case _ =>
         util.unreachable
     }
@@ -60,29 +61,33 @@ final class MergeBlock(val label: Inst.Label, val id: Local) {
       val id = block.end.fresh()
       val emmited = emitIfMissing(
         id = id,
-        op = Op.Call(StackSaveSig, StackSave, Nil)
+        op = nir.Op.Call(StackSaveSig, StackSave, Nil)
       )(result, block)
-      if (emmited) block.stackSavePtr = Val.Local(id, Type.Ptr)
+      if (emmited) block.stackSavePtr = nir.Val.Local(id, nir.Type.Ptr)
     }
     result ++= block.end.emit
     block.cf match {
-      case ret: Inst.Ret =>
+      case ret: nir.Inst.Ret =>
         result += ret
-      case Inst.Jump(next: Next.Label) =>
+      case nir.Inst.Jump(next: nir.Next.Label) =>
         result.jump(mergeNext(next))
-      case Inst.If(cond, thenNext: Next.Label, elseNext: Next.Label) =>
+      case nir.Inst.If(
+            cond,
+            thenNext: nir.Next.Label,
+            elseNext: nir.Next.Label
+          ) =>
         result.branch(cond, mergeNext(thenNext), mergeNext(elseNext))
-      case Inst.Switch(scrut, defaultNext: Next.Label, cases) =>
+      case nir.Inst.Switch(scrut, defaultNext: nir.Next.Label, cases) =>
         val mergeCases = cases.map {
-          case Next.Case(v, next: Next.Label) =>
-            Next.Case(v, mergeNext(next))
+          case nir.Next.Case(v, next: nir.Next.Label) =>
+            nir.Next.Case(v, mergeNext(next))
           case _ =>
             util.unreachable
         }
         result.switch(scrut, mergeNext(defaultNext), mergeCases)
-      case Inst.Throw(v, unwind) =>
+      case nir.Inst.Throw(v, unwind) =>
         result.raise(v, mergeUnwind(unwind))
-      case Inst.Unreachable(unwind) =>
+      case nir.Inst.Unreachable(unwind) =>
         result.unreachable(mergeUnwind(unwind))
       case unknown =>
         throw BailOut(s"MergeUnwind unknown Inst: ${unknown.show}")
@@ -91,20 +96,23 @@ final class MergeBlock(val label: Inst.Label, val id: Local) {
   }
 
   private def emitIfMissing(
-      id: => Local,
-      op: Op.Call
+      id: => nir.Local,
+      op: nir.Op.Call
   )(result: nir.Buffer, block: MergeBlock): Boolean = {
     // Check if original defn already contains this op
     val alreadyEmmited = block.end.emit.exists {
-      case Inst.Let(_, `op`, _) => true
-      case _                    => false
+      case nir.Inst.Let(_, `op`, _) =>
+        true
+      case _ =>
+        false
     }
     if (alreadyEmmited) false
     else {
       // TODO: resolving actual scopeId. Currently not really important becouse used only to introduce stack guard intrinsics
-      implicit def scopeId: ScopeId = ScopeId.TopLevel
-      result.let(id, op, Next.None)
+      implicit def scopeId: nir.ScopeId = nir.ScopeId.TopLevel
+      result.let(id, op, nir.Next.None)
       true
     }
   }
+
 }

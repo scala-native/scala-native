@@ -1,8 +1,7 @@
-package scala.scalanative.codegen
+package scala.scalanative
+package codegen
 package llvm
 
-import scala.scalanative.nir
-import scala.scalanative.nir.{Position, Global, Fresh, Val, Local}
 import scala.scalanative.nir.Defn.Define.DebugInfo
 import scala.scalanative.util.ShowBuilder
 import scala.collection.mutable
@@ -10,9 +9,6 @@ import scala.scalanative.util.unsupported
 
 import scala.language.implicitConversions
 import scala.scalanative.codegen.llvm.MetadataCodeGen.Writer.Specialized
-import scala.scalanative.nir.Unmangle
-import scala.scalanative.nir.Global.Member
-import scala.scalanative.nir.Sig.Method
 import scala.scalanative.util.unreachable
 
 // scalafmt: { maxColumn = 100}
@@ -63,7 +59,7 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
     case _                                => true
   }
 
-  def dbgLocalValue(id: Local, ty: nir.Type, argIdx: Option[Int] = None)(
+  def dbgLocalValue(id: nir.Local, ty: nir.Type, argIdx: Option[Int] = None)(
       srcPosition: nir.Position,
       scopeId: nir.ScopeId
   )(implicit
@@ -75,7 +71,7 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
     if (generateDebugMetadata && canHaveDebugValue(ty)) {
       debugInfo.localNames.get(id).foreach { localName =>
         `llvm.dbg.value`(
-          address = Metadata.Value(Val.Local(id, ty)),
+          address = Metadata.Value(nir.Val.Local(id, ty)),
           description = Metadata.DILocalVariable(
             name = localName,
             arg = argIdx,
@@ -89,7 +85,7 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
       }
     }
 
-  def dbgLocalVariable(id: Local, ty: nir.Type)(
+  def dbgLocalVariable(id: nir.Local, ty: nir.Type)(
       srcPosition: nir.Position,
       scopeId: nir.ScopeId
   )(implicit
@@ -101,7 +97,7 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
     if (generateDebugMetadata && canHaveDebugValue(ty)) {
       debugInfo.localNames.get(id).foreach { localName =>
         `llvm.dbg.declare`(
-          address = Metadata.Value(Val.Local(id, ty)),
+          address = Metadata.Value(nir.Val.Local(id, ty)),
           description = Metadata.DILocalVariable(
             name = localName,
             arg = None,
@@ -139,7 +135,7 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
       address: Metadata.Value,
       description: DILocalVariable,
       expr: Metadata.DIExpression
-  )(pos: Position, scopeId: nir.ScopeId)(implicit
+  )(pos: nir.Position, scopeId: nir.ScopeId)(implicit
       ctx: Context,
       sb: ShowBuilder,
       defnScopes: DefnScopes
@@ -161,7 +157,7 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
       .map(_.keySet.toSeq.asInstanceOf[Seq[DICompileUnit]])
       .getOrElse(Nil)
 
-  def toDIFile(pos: Position): DIFile = {
+  def toDIFile(pos: nir.Position): DIFile = {
     pos.filename
       .zip(pos.dir)
       .headOption
@@ -196,11 +192,11 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
       val linkageName = mangled(defn.name)
       val defnName = if (linkageName.startsWith("_S")) linkageName.drop(2) else linkageName
       val unmangledName = if (defnName.startsWith("M")) { // subprogram should be a member
-        Unmangle.unmangleGlobal(defnName) match {
-          case Member(owner, sig) =>
-            Unmangle.unmangleSig(sig.mangle) match {
-              case Method(id, _, _) => Some(id)
-              case _                => None
+        nir.Unmangle.unmangleGlobal(defnName) match {
+          case nir.Global.Member(owner, sig) =>
+            nir.Unmangle.unmangleSig(sig.mangle) match {
+              case nir.Sig.Method(id, _, _) => Some(id)
+              case _                        => None
             }
           case _ => None
         }
@@ -310,7 +306,7 @@ object MetadataCodeGen {
 
     private[MetadataCodeGen] val specializedBuilder: Specialized.Builder[_] =
       new Specialized.Builder[Any]()(this)
-    private[MetadataCodeGen] val fresh: Fresh = Fresh()
+    private[MetadataCodeGen] val fresh: nir.Fresh = nir.Fresh()
   }
 
   class MetadataId(val value: Int) extends AnyVal {

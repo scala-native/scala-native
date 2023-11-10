@@ -4,7 +4,6 @@ import scala.scalanative.build.{Config, NativeConfig, Mode, ScalaNative}
 import scala.concurrent._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
-import scala.scalanative.nir._
 import scala.scalanative.linker.ReachabilityAnalysis
 
 /** Base class to test the optimizer */
@@ -37,13 +36,15 @@ abstract class OptimizerSpec extends LinkerSpec {
         fn(config, result)
     }
 
-  protected def findEntry(linked: Seq[Defn]): Option[Defn.Define] = {
+  protected def findEntry(linked: Seq[nir.Defn]): Option[nir.Defn.Define] = {
     import OptimizerSpec._
     val companionMethod = linked
-      .collectFirst { case defn @ Defn.Define(_, TestMain(), _, _, _) => defn }
+      .collectFirst {
+        case defn @ nir.Defn.Define(_, TestMain(), _, _, _) => defn
+      }
     def staticForwarder = linked
       .collectFirst {
-        case defn @ Defn.Define(_, TestMainForwarder(), _, _, _) => defn
+        case defn @ nir.Defn.Define(_, TestMainForwarder(), _, _, _) => defn
       }
     companionMethod
       .orElse(staticForwarder)
@@ -53,22 +54,24 @@ abstract class OptimizerSpec extends LinkerSpec {
 
 object OptimizerSpec {
   private object TestMain {
-    val TestModule = Global.Top("Test$")
+    val TestModule = nir.Global.Top("Test$")
     val CompanionMain =
-      TestModule.member(Rt.ScalaMainSig.copy(scope = Sig.Scope.Public))
+      TestModule.member(nir.Rt.ScalaMainSig.copy(scope = nir.Sig.Scope.Public))
 
-    def unapply(name: Global): Boolean = name match {
+    def unapply(name: nir.Global): Boolean = name match {
       case CompanionMain => true
-      case Global.Member(TestModule, sig) =>
+      case nir.Global.Member(TestModule, sig) =>
         sig.unmangled match {
-          case Sig.Duplicate(of, _) => of == CompanionMain.sig
-          case _                    => false
+          case nir.Sig.Duplicate(of, _) =>
+            of == CompanionMain.sig
+          case _ =>
+            false
         }
       case _ => false
     }
   }
   private object TestMainForwarder {
-    val staticForwarder = Global.Top("Test").member(Rt.ScalaMainSig)
-    def unapply(name: Global): Boolean = name == staticForwarder
+    val staticForwarder = nir.Global.Top("Test").member(nir.Rt.ScalaMainSig)
+    def unapply(name: nir.Global): Boolean = name == staticForwarder
   }
 }

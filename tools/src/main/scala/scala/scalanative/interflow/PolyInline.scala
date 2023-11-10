@@ -2,14 +2,14 @@ package scala.scalanative
 package interflow
 
 import scala.collection.mutable
-import scalanative.nir._
 import scalanative.linker._
 
 trait PolyInline { self: Interflow =>
+
   private def polyTargets(
-      op: Op.Method
-  )(implicit state: State): Seq[(Class, Global.Member)] = {
-    val Op.Method(obj, sig) = op
+      op: nir.Op.Method
+  )(implicit state: State): Seq[(Class, nir.Global.Member)] = {
+    val nir.Op.Method(obj, sig) = op
 
     val objty = obj match {
       case InstanceRef(ty) =>
@@ -24,7 +24,7 @@ trait PolyInline { self: Interflow =>
       case ClassRef(cls) if !sig.isVirtual =>
         cls.resolve(sig).map(g => (cls, g)).toSeq
       case ScopeRef(scope) =>
-        val targets = mutable.UnrolledBuffer.empty[(Class, Global.Member)]
+        val targets = mutable.UnrolledBuffer.empty[(Class, nir.Global.Member)]
         scope.implementors.foreach { cls =>
           if (cls.allocated) {
             cls.resolve(sig).foreach { g => targets += ((cls, g)) }
@@ -40,7 +40,7 @@ trait PolyInline { self: Interflow =>
     res
   }
 
-  def shallPolyInline(op: Op.Method, args: Seq[Val])(implicit
+  def shallPolyInline(op: nir.Op.Method, args: Seq[nir.Val])(implicit
       state: State,
       analysis: ReachabilityAnalysis.Result
   ): Boolean = mode match {
@@ -59,12 +59,12 @@ trait PolyInline { self: Interflow =>
       }
   }
 
-  def polyInline(op: Op.Method, args: Seq[Val])(implicit
+  def polyInline(op: nir.Op.Method, args: Seq[nir.Val])(implicit
       state: State,
       analysis: ReachabilityAnalysis.Result,
-      srcPosition: Position,
-      scopeIdId: ScopeId
-  ): Val = {
+      srcPosition: nir.Position,
+      scopeIdId: nir.ScopeId
+  ): nir.Val = {
     import state.{emit, fresh, materialize}
 
     val obj = materialize(op.obj)
@@ -79,9 +79,9 @@ trait PolyInline { self: Interflow =>
       (0 until targets.size).map(i => impls.indexOf(targets(i)._2))
     val mergeLabel = fresh()
 
-    val meth = emit.method(obj, Rt.GetClassSig, Next.None)
-    val methty = Type.Function(Seq(Rt.Object), Rt.Class)
-    val objcls = emit.call(methty, meth, Seq(obj), Next.None)
+    val meth = emit.method(obj, nir.Rt.GetClassSig, nir.Next.None)
+    val methty = nir.Type.Function(Seq(nir.Rt.Object), nir.Rt.Class)
+    val objcls = emit.call(methty, meth, Seq(obj), nir.Next.None)
 
     checkLabels.zipWithIndex.foreach {
       case (checkLabel, idx) =>
@@ -90,48 +90,50 @@ trait PolyInline { self: Interflow =>
         }
         val cls = classes(idx)
         val isCls = emit.comp(
-          Comp.Ieq,
-          Rt.Class,
+          nir.Comp.Ieq,
+          nir.Rt.Class,
           objcls,
-          Val.Global(cls.name, Rt.Class),
-          Next.None
+          nir.Val.Global(cls.name, nir.Rt.Class),
+          nir.Next.None
         )
         if (idx < targets.size - 2) {
           emit.branch(
             isCls,
-            Next(callLabels(callLabelIndex(idx))),
-            Next(checkLabels(idx + 1))
+            nir.Next(callLabels(callLabelIndex(idx))),
+            nir.Next(checkLabels(idx + 1))
           )
         } else {
           emit.branch(
             isCls,
-            Next(callLabels(callLabelIndex(idx))),
-            Next(callLabels(callLabelIndex(idx + 1)))
+            nir.Next(callLabels(callLabelIndex(idx))),
+            nir.Next(callLabels(callLabelIndex(idx + 1)))
           )
         }
     }
 
-    val rettys = mutable.UnrolledBuffer.empty[Type]
+    val rettys = mutable.UnrolledBuffer.empty[nir.Type]
 
     callLabels.zip(impls).foreach {
       case (callLabel, m) =>
         emit.label(callLabel, Seq.empty)
         val ty = originalFunctionType(m)
-        val Type.Function(argtys, retty) = ty
+        val nir.Type.Function(argtys, retty) = ty
         rettys += retty
 
         val cargs = margs.zip(argtys).map {
           case (value, argty) =>
             if (Sub.is(value.ty, argty)) value
-            else emit.conv(Conv.Bitcast, argty, value, Next.None)
+            else emit.conv(nir.Conv.Bitcast, argty, value, nir.Next.None)
         }
-        val res = emit.call(ty, Val.Global(m, Type.Ptr), cargs, Next.None)
-        emit.jump(Next.Label(mergeLabel, Seq(res)))
+        val res =
+          emit.call(ty, nir.Val.Global(m, nir.Type.Ptr), cargs, nir.Next.None)
+        emit.jump(nir.Next.Label(mergeLabel, Seq(res)))
     }
 
-    val result = Val.Local(fresh(), Sub.lub(rettys.toSeq, Some(op.resty)))
+    val result = nir.Val.Local(fresh(), Sub.lub(rettys.toSeq, Some(op.resty)))
     emit.label(mergeLabel, Seq(result))
 
     result
   }
+
 }

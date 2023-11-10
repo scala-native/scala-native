@@ -1,8 +1,8 @@
-package scala.scalanative.optimizer
+package scala.scalanative
+package optimizer
 
 import scala.scalanative.OptimizerSpec
 import scala.scalanative.interflow.Interflow.LLVMIntrinsics._
-import scala.scalanative.nir._
 
 import org.junit._
 import org.junit.Assert._
@@ -48,16 +48,16 @@ class StackallocStateRestoreTest extends OptimizerSpec {
       case (_, result) =>
         findEntry(result.defns).foreach { defn =>
           val stackallocId = defn.insts.collectFirst {
-            case Inst.Let(id, Op.Stackalloc(_, _), _) => id
+            case nir.Inst.Let(id, nir.Op.Stackalloc(_, _), _) => id
           }
           assertTrue("No stackalloc op", stackallocId.isDefined)
 
           val saveIds = defn.insts.collect {
-            case Inst.Let(id, Op.Call(_, StackSave, _), _) => id
+            case nir.Inst.Let(id, nir.Op.Call(_, StackSave, _), _) => id
           }
           assertTrue("No StackSave ops", saveIds.isEmpty)
           val restoreIds = defn.insts.collect {
-            case Inst.Let(id, Op.Call(_, StackRestore, _), _) => id
+            case nir.Inst.Let(id, nir.Op.Call(_, StackRestore, _), _) => id
           }
           assertTrue("No StackRestore ops", restoreIds.isEmpty)
         }
@@ -101,17 +101,17 @@ class StackallocStateRestoreTest extends OptimizerSpec {
       case (_, result) =>
         findEntry(result.defns).foreach { defn =>
           val stackallocId = defn.insts.collectFirst {
-            case Inst.Let(id, Op.Stackalloc(_, _), _) => id
+            case nir.Inst.Let(id, nir.Op.Stackalloc(_, _), _) => id
           }
           assertTrue("No stackalloc op", stackallocId.isDefined)
 
           val saveIds = defn.insts.collect {
-            case Inst.Let(id, Op.Call(_, StackSave, _), _) => id
+            case nir.Inst.Let(id, nir.Op.Call(_, StackSave, _), _) => id
           }
           assertTrue("No StackSave ops", saveIds.nonEmpty)
           assertEquals("StackSave ammount", 1, saveIds.size)
           val restoreIds = defn.insts.collect {
-            case Inst.Let(id, Op.Call(_, StackRestore, _), _) => id
+            case nir.Inst.Let(id, nir.Op.Call(_, StackRestore, _), _) => id
           }
           assertTrue("No StackRestore ops", restoreIds.nonEmpty)
           assertEquals("StackRestore ammount", 1, restoreIds.size)
@@ -151,18 +151,18 @@ class StackallocStateRestoreTest extends OptimizerSpec {
       case (_, result) =>
         findEntry(result.defns).foreach { defn =>
           val stackallocId = defn.insts.collectFirst {
-            case Inst.Let(id, Op.Stackalloc(_, _), _) => id
+            case nir.Inst.Let(id, nir.Op.Stackalloc(_, _), _) => id
           }
           assertTrue("No stackalloc op", stackallocId.isDefined)
 
           val saveIds = defn.insts.collect {
-            case Inst.Let(id, Op.Call(_, StackSave, _), _) => id
+            case nir.Inst.Let(id, nir.Op.Call(_, StackSave, _), _) => id
           }
           assertTrue("No StackSave ops", saveIds.nonEmpty)
           assertEquals("StackSave ammount", 1, saveIds.size)
 
           val restoreIds = defn.insts.collect {
-            case Inst.Let(id, Op.Call(_, StackRestore, _), _) => id
+            case nir.Inst.Let(id, nir.Op.Call(_, StackRestore, _), _) => id
           }
           assertTrue("No StackRestore ops", restoreIds.nonEmpty)
           assertEquals("StackRestore ammount", 1, restoreIds.size)
@@ -203,18 +203,18 @@ class StackallocStateRestoreTest extends OptimizerSpec {
       case (_, result) =>
         findEntry(result.defns).foreach { defn =>
           val stackallocId = defn.insts.collectFirst {
-            case Inst.Let(id, Op.Stackalloc(_, _), _) => id
+            case nir.Inst.Let(id, nir.Op.Stackalloc(_, _), _) => id
           }
           assertTrue("No stackalloc op", stackallocId.isDefined)
 
           val saveIds = defn.insts.collect {
-            case Inst.Let(id, Op.Call(_, StackSave, _), _) => id
+            case nir.Inst.Let(id, nir.Op.Call(_, StackSave, _), _) => id
           }
           assertTrue("No StackSave ops", saveIds.nonEmpty)
           assertEquals("StackSave ammount", 3, saveIds.size)
 
           val restoreIds = defn.insts.collect {
-            case Inst.Let(id, Op.Call(_, StackRestore, _), _) => id
+            case nir.Inst.Let(id, nir.Op.Call(_, StackRestore, _), _) => id
           }
           assertTrue("No StackRestore ops", restoreIds.nonEmpty)
           assertEquals("StackRestore ammount", 3, restoreIds.size)
@@ -257,18 +257,18 @@ class StackallocStateRestoreTest extends OptimizerSpec {
       case (_, result) =>
         findEntry(result.defns).foreach { defn =>
           val stackallocId = defn.insts.collectFirst {
-            case Inst.Let(id, Op.Stackalloc(_, _), _) => id
+            case nir.Inst.Let(id, nir.Op.Stackalloc(_, _), _) => id
           }
           assertTrue("No stackalloc op", stackallocId.isDefined)
 
           val saveIds = defn.insts.collect {
-            case Inst.Let(id, Op.Call(_, StackSave, _), _) => id
+            case nir.Inst.Let(id, nir.Op.Call(_, StackSave, _), _) => id
           }
           assertTrue("No StackSave ops", saveIds.nonEmpty)
           assertEquals("StackSave ammount", 3, saveIds.size)
 
           val restoreIds = defn.insts.collect {
-            case Inst.Let(id, Op.Call(_, StackRestore, _), _) => id
+            case nir.Inst.Let(id, nir.Op.Call(_, StackRestore, _), _) => id
           }
           assertTrue("No StackRestore ops", restoreIds.nonEmpty)
           assertEquals("StackRestore ammount", 3, restoreIds.size)
@@ -317,12 +317,12 @@ class StackallocStateRestoreTest extends OptimizerSpec {
         findEntry(result.defns).foreach { defn =>
 
           val stackallocId = defn.insts.collectFirst {
-            case Inst.Let(id, Op.Stackalloc(_, _), _) => id
+            case nir.Inst.Let(id, nir.Op.Stackalloc(_, _), _) => id
           }
           assertTrue("No stackalloc op", stackallocId.nonEmpty)
 
           val saveIds = defn.insts.collect {
-            case Inst.Let(id, Op.Call(_, StackSave, _), _) => id
+            case nir.Inst.Let(id, nir.Op.Call(_, StackSave, _), _) => id
           }
           assertTrue("No StackSave ops", saveIds.isEmpty)
         }
@@ -373,18 +373,18 @@ class StackallocStateRestoreTest extends OptimizerSpec {
       case (_, result) =>
         findEntry(result.defns).foreach { defn =>
           val stackallocId = defn.insts.collectFirst {
-            case Inst.Let(id, Op.Stackalloc(_, _), _) => id
+            case nir.Inst.Let(id, nir.Op.Stackalloc(_, _), _) => id
           }
           assertTrue("No stackalloc op", stackallocId.isDefined)
 
           val saveIds = defn.insts.collect {
-            case Inst.Let(id, Op.Call(_, StackSave, _), _) => id
+            case nir.Inst.Let(id, nir.Op.Call(_, StackSave, _), _) => id
           }
           assertTrue("No StackSave ops", saveIds.nonEmpty)
           assertEquals("StackSave ammount", 1, saveIds.size)
 
           val restoreIds = defn.insts.collect {
-            case Inst.Let(id, Op.Call(_, StackRestore, _), _) => id
+            case nir.Inst.Let(id, nir.Op.Call(_, StackRestore, _), _) => id
           }
           assertTrue("No StackRestore ops", restoreIds.nonEmpty)
           assertEquals("StackRestore ammount", 1, restoreIds.size)
@@ -436,18 +436,18 @@ class StackallocStateRestoreTest extends OptimizerSpec {
       case (_, result) =>
         findEntry(result.defns).foreach { defn =>
           val stackallocId = defn.insts.collectFirst {
-            case Inst.Let(id, Op.Stackalloc(_, _), _) => id
+            case nir.Inst.Let(id, nir.Op.Stackalloc(_, _), _) => id
           }
           assertTrue("No stackalloc op", stackallocId.isDefined)
 
           val saveIds = defn.insts.collect {
-            case Inst.Let(id, Op.Call(_, StackSave, _), _) => id
+            case nir.Inst.Let(id, nir.Op.Call(_, StackSave, _), _) => id
           }
           assertTrue("No StackSave ops", saveIds.nonEmpty)
           assertEquals("StackSave ammount", 1, saveIds.size)
 
           val restoreIds = defn.insts.collect {
-            case Inst.Let(id, Op.Call(_, StackRestore, _), _) => id
+            case nir.Inst.Let(id, nir.Op.Call(_, StackRestore, _), _) => id
           }
           assertTrue("No StackRestore ops", restoreIds.nonEmpty)
           assertEquals("StackRestore ammount", 1, restoreIds.size)

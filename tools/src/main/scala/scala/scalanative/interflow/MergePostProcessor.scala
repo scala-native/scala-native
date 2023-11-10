@@ -3,7 +3,6 @@ package interflow
 
 import scala.collection.mutable
 import scalanative.util.unreachable
-import scalanative.nir._
 import scalanative.linker._
 
 private[interflow] object MergePostProcessor {
@@ -36,8 +35,10 @@ private[interflow] object MergePostProcessor {
       allocatesOnStackCache.getOrElseUpdate(
         block,
         block.end.emit.exists {
-          case Inst.Let(_, _: Op.Stackalloc, _) => true
-          case _                                => false
+          case nir.Inst.Let(_, _: nir.Op.Stackalloc, _) =>
+            true
+          case _ =>
+            false
         }
       )
 
@@ -98,8 +99,8 @@ private[interflow] object MergePostProcessor {
   // NIR traversal used to check if stackallocated memory might escape the cycle
   // meaning it might be referenced in next loop runs
   private class TrackStackallocEscape() extends nir.Traverse {
-    private var tracked = mutable.Set.empty[Local]
-    private var curInst: Inst = _
+    private var tracked = mutable.Set.empty[nir.Local]
+    private var curInst: nir.Inst = _
 
     // thread-unsafe
     def apply(
@@ -107,12 +108,12 @@ private[interflow] object MergePostProcessor {
         entryBlock: MergeBlock,
         cycle: Seq[MergeBlock]
     ): Boolean = {
-      val loopStateVals = mutable.Set.empty[Local]
+      val loopStateVals = mutable.Set.empty[nir.Local]
       entryBlock.phis.foreach {
         case MergePhi(_, values) =>
           values.foreach {
-            case (_, v: Val.Local) =>
-              if (Type.isPtrType(v.ty)) loopStateVals += v.id
+            case (_, v: nir.Val.Local) =>
+              if (nir.Type.isPtrType(v.ty)) loopStateVals += v.id
             case _ => ()
           }
       }
@@ -129,21 +130,24 @@ private[interflow] object MergePostProcessor {
       }
     }
 
-    override def onInst(inst: Inst): Unit = {
+    override def onInst(inst: nir.Inst): Unit = {
       curInst = inst
       inst match {
-        case Inst.Let(name, _: Op.Stackalloc, _) => tracked += name
-        case _                                   => ()
+        case nir.Inst.Let(name, _: nir.Op.Stackalloc, _) =>
+          tracked += name
+        case _ =>
+          ()
       }
       super.onInst(inst)
     }
 
-    override def onVal(value: Val): Unit = value match {
-      case Val.Local(valName, _) =>
+    override def onVal(value: nir.Val): Unit = value match {
+      case nir.Val.Local(valName, _) =>
         curInst match {
-          case Inst.Let(instName, op, _) if Type.isPtrType(op.resty) =>
+          case nir.Inst.Let(instName, op, _) if nir.Type.isPtrType(op.resty) =>
             if (tracked.contains(valName)) tracked += instName
-          case _ => ()
+          case _ =>
+            ()
         }
       case _ => ()
     }

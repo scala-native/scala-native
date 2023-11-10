@@ -2,7 +2,6 @@ package scala.scalanative
 package linker
 
 import scala.scalanative.NativePlatform
-import scala.scalanative.nir.{Global, Sig, Type, Rt}
 
 import org.junit.Test
 import org.junit.Assert._
@@ -16,31 +15,36 @@ class TraitReachabilitySuite extends ReachabilitySuite {
   val ParentClassClsName = "Parent$class"
   val ObjectClsName = "java.lang.Object"
   val ScalaMainNonStaticSig =
-    Sig.Method("main", Rt.ScalaMainSig.types, Sig.Scope.Public)
+    nir.Sig.Method("main", nir.Rt.ScalaMainSig.types, nir.Sig.Scope.Public)
 
-  val Parent: Global.Top = g(ParentClsName)
+  val Parent: nir.Global.Top = g(ParentClsName)
   // Scala 2.12.x
-  val ParentInit: Global =
-    g(ParentClsName, Sig.Method("$init$", Seq(Type.Unit)))
-  val ParentMain: Global = g(ParentClsName, ScalaMainNonStaticSig)
-  val ParentFoo: Global = g(ParentClsName, Sig.Method("foo", Seq(Type.Unit)))
+  val ParentInit: nir.Global =
+    g(ParentClsName, nir.Sig.Method("$init$", Seq(nir.Type.Unit)))
+  val ParentMain: nir.Global = g(ParentClsName, ScalaMainNonStaticSig)
+  val ParentFoo: nir.Global =
+    g(ParentClsName, nir.Sig.Method("foo", Seq(nir.Type.Unit)))
 
-  val Child: Global = g(ChildClsName)
-  val ChildInit: Global = g(ChildClsName, Sig.Ctor(Seq.empty))
-  val ChildFoo: Global = g(ChildClsName, Sig.Method("foo", Seq(Type.Unit)))
-  val GrandChild: Global = g(GrandChildClsName)
-  val GrandChildInit: Global = g(GrandChildClsName, Sig.Ctor(Seq.empty))
-  val GrandChildFoo: Global =
-    g(GrandChildClsName, Sig.Method("foo", Seq(Type.Unit)))
-  val Object: Global = g(ObjectClsName)
-  val ObjectInit: Global = g(ObjectClsName, Sig.Ctor(Seq.empty))
-  val Test: Global = g(TestClsName)
-  val TestModule: Global = g(TestModuleName)
-  val TestInit: Global = g(TestModuleName, Sig.Ctor(Seq.empty))
-  val TestMain: Global = g(TestClsName, Rt.ScalaMainSig)
-  val TestModuleMain: Global = g(TestModuleName, ScalaMainNonStaticSig)
-  val TestCallFoo: Global =
-    g(TestModuleName, Sig.Method("callFoo", Seq(Type.Ref(Parent), Type.Unit)))
+  val Child: nir.Global = g(ChildClsName)
+  val ChildInit: nir.Global = g(ChildClsName, nir.Sig.Ctor(Seq.empty))
+  val ChildFoo: nir.Global =
+    g(ChildClsName, nir.Sig.Method("foo", Seq(nir.Type.Unit)))
+  val GrandChild: nir.Global = g(GrandChildClsName)
+  val GrandChildInit: nir.Global = g(GrandChildClsName, nir.Sig.Ctor(Seq.empty))
+  val GrandChildFoo: nir.Global =
+    g(GrandChildClsName, nir.Sig.Method("foo", Seq(nir.Type.Unit)))
+  val Object: nir.Global = g(ObjectClsName)
+  val ObjectInit: nir.Global = g(ObjectClsName, nir.Sig.Ctor(Seq.empty))
+  val Test: nir.Global = g(TestClsName)
+  val TestModule: nir.Global = g(TestModuleName)
+  val TestInit: nir.Global = g(TestModuleName, nir.Sig.Ctor(Seq.empty))
+  val TestMain: nir.Global = g(TestClsName, nir.Rt.ScalaMainSig)
+  val TestModuleMain: nir.Global = g(TestModuleName, ScalaMainNonStaticSig)
+  val TestCallFoo: nir.Global =
+    g(
+      TestModuleName,
+      nir.Sig.Method("callFoo", Seq(nir.Type.Ref(Parent), nir.Type.Unit))
+    )
   val commonReachable =
     Seq(Test, TestModule, TestInit, TestMain, TestModuleMain)
 
@@ -248,4 +252,5 @@ class TraitReachabilitySuite extends ReachabilitySuite {
       }
     (source, entry, commonReachable.diff(Seq(TestModuleMain)) ++ reachable)
   }
+
 }

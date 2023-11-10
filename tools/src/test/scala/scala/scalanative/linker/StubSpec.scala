@@ -1,8 +1,6 @@
 package scala.scalanative
 package linker
 
-import nir.{Sig, Type, Global}
-
 import org.junit.Test
 import org.junit.Assert._
 
@@ -33,9 +31,9 @@ class StubSpec extends LinkerSpec {
         assertTrue(!cfg.linkStubs)
         assertTrue(result.unreachable.length == 1)
         assertEquals(
-          Global
+          nir.Global
             .Top("Main$")
-            .member(Sig.Method("stubMethod", Seq(Type.Int))),
+            .member(nir.Sig.Method("stubMethod", Seq(nir.Type.Int))),
           result.unreachable.head.name
         )
     }
@@ -53,7 +51,7 @@ class StubSpec extends LinkerSpec {
       (cfg, result: ReachabilityAnalysis.Failure) =>
         assertTrue(!cfg.linkStubs)
         assertTrue(result.unreachable.length == 1)
-        assertTrue(result.unreachable.head.name == Global.Top("StubClass"))
+        assertTrue(result.unreachable.head.name == nir.Global.Top("StubClass"))
     }
   }
 
@@ -69,7 +67,9 @@ class StubSpec extends LinkerSpec {
       case (cfg, result) =>
         assertTrue(!cfg.linkStubs)
         assertTrue(result.unreachable.length == 1)
-        assertTrue(result.unreachable.head.name == Global.Top("StubModule$"))
+        assertTrue(
+          result.unreachable.head.name == nir.Global.Top("StubModule$")
+        )
     }
   }
 

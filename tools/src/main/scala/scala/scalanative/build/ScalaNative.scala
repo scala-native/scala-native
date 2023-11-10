@@ -8,7 +8,6 @@ import scala.scalanative.codegen.PlatformInfo
 import scala.scalanative.codegen.llvm.CodeGen
 import scala.scalanative.interflow.Interflow
 import scala.scalanative.linker.{ReachabilityAnalysis, Reach, Link}
-import scala.scalanative.nir._
 import scala.scalanative.util.Scope
 import scala.concurrent._
 import scala.util.Success
@@ -20,9 +19,9 @@ private[scalanative] object ScalaNative {
 
   /** Compute all globals that must be reachable based on given configuration.
    */
-  def entries(config: Config): Seq[Global] = {
+  def entries(config: Config): Seq[nir.Global] = {
     implicit val platform: PlatformInfo = PlatformInfo(config)
-    val entry = encodedMainClass(config).map(_.member(Rt.ScalaMainSig))
+    val entry = encodedMainClass(config).map(_.member(nir.Rt.ScalaMainSig))
     val dependencies = CodeGen.depends ++ Interflow.depends
     entry ++: dependencies
   }
@@ -30,7 +29,7 @@ private[scalanative] object ScalaNative {
   /** Given the classpath and main entry point, link under closed-world
    *  assumption.
    */
-  def link(config: Config, entries: Seq[Global])(implicit
+  def link(config: Config, entries: Seq[nir.Global])(implicit
       scope: Scope,
       ec: ExecutionContext
   ): Future[ReachabilityAnalysis.Result] = withReachabilityPostprocessing(
@@ -282,7 +281,7 @@ private[scalanative] object ScalaNative {
     log(s"\n${errors.size} errors found")
   }
 
-  def dumpDefns(config: Config, phase: String, defns: Seq[Defn]): Unit = {
+  def dumpDefns(config: Config, phase: String, defns: Seq[nir.Defn]): Unit = {
     if (config.dump) {
       config.logger.time(s"Dumping intermediate code ($phase)") {
         val path = config.workDir.resolve(phase + ".hnir")
@@ -293,11 +292,11 @@ private[scalanative] object ScalaNative {
 
   private[scalanative] def encodedMainClass(
       config: Config
-  ): Option[Global.Top] =
+  ): Option[nir.Global.Top] =
     config.mainClass.map { mainClass =>
       import scala.reflect.NameTransformer.encode
       val encoded = mainClass.split('.').map(encode).mkString(".")
-      Global.Top(encoded)
+      nir.Global.Top(encoded)
     }
 
   def genBuildInfo(

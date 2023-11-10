@@ -1,4 +1,6 @@
-package scala.scalanative.nscplugin
+package scala.scalanative
+package nscplugin
+
 import scala.language.implicitConversions
 
 import dotty.tools.dotc.ast.tpd
@@ -16,7 +18,6 @@ import dotty.tools.dotc.report
 import dotty.tools.dotc.typer.TyperPhase
 import dotty.tools.dotc.transform.SymUtils._
 
-import scala.scalanative.nir
 import scala.scalanative.util.unsupported
 
 trait NirGenType(using Context) {

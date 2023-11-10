@@ -2,25 +2,27 @@ package scala.scalanative
 package codegen
 
 import scala.collection.mutable
-import scalanative.nir._
-import scalanative.nir.Rt._
 
 class VirtualTable(cls: linker.Class)(implicit meta: Metadata) {
-  private val slots: mutable.UnrolledBuffer[Sig] =
+
+  private val slots: mutable.UnrolledBuffer[nir.Sig] =
     cls.parent.fold {
-      mutable.UnrolledBuffer.empty[Sig]
+      mutable.UnrolledBuffer.empty[nir.Sig]
     } { parent => meta.vtable(parent).slots.clone }
-  private val impls: mutable.Map[Sig, Val] =
-    mutable.Map.empty[Sig, Val]
+  private val impls: mutable.Map[nir.Sig, nir.Val] =
+    mutable.Map.empty[nir.Sig, nir.Val]
   locally {
-    def addSlot(sig: Sig): Unit = {
+    def addSlot(sig: nir.Sig): Unit = {
       assert(!slots.contains(sig))
       val index = slots.size
       slots += sig
     }
-    def addImpl(sig: Sig): Unit = {
+    def addImpl(sig: nir.Sig): Unit = {
       val impl =
-        cls.resolve(sig).map(Val.Global(_, Type.Ptr)).getOrElse(Val.Null)
+        cls
+          .resolve(sig)
+          .map(nir.Val.Global(_, nir.Type.Ptr))
+          .getOrElse(nir.Val.Null)
       impls(sig) = impl
     }
     slots.foreach { sig => addImpl(sig) }
@@ -33,12 +35,13 @@ class VirtualTable(cls: linker.Class)(implicit meta: Metadata) {
       }
     }
   }
-  val value: Val =
-    Val.ArrayValue(Type.Ptr, slots.map(impls).toSeq)
+  val value: nir.Val =
+    nir.Val.ArrayValue(nir.Type.Ptr, slots.map(impls).toSeq)
   val ty =
     value.ty
-  def index(sig: Sig): Int =
+  def index(sig: nir.Sig): Int =
     slots.indexOf(sig)
-  def at(index: Int): Val =
+  def at(index: Int): nir.Val =
     impls(slots(index))
+
 }

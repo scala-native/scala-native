@@ -1,30 +1,36 @@
 package scala.scalanative
 package interflow
 
-import scalanative.nir._
 import scalanative.linker._
 
 object InstanceRef {
-  def unapply(addr: Addr)(implicit state: State): Option[Type] =
-    unapply(Val.Virtual(addr))
-  def unapply(value: Val)(implicit state: State): Option[Type] = value match {
-    case Val.Virtual(addr) =>
-      Some(state.deref(addr).ty)
-    case _ =>
-      None
-  }
+
+  def unapply(addr: Addr)(implicit state: State): Option[nir.Type] =
+    unapply(nir.Val.Virtual(addr))
+
+  def unapply(value: nir.Val)(implicit state: State): Option[nir.Type] =
+    value match {
+      case nir.Val.Virtual(addr) =>
+        Some(state.deref(addr).ty)
+      case _ =>
+        None
+    }
+
 }
 
 object VirtualRef {
-  type VirtulRefExtract = (Kind, Class, Array[Val])
+
+  type Extract = (Kind, Class, Array[nir.Val])
+
   def unapply(addr: Addr)(implicit
       state: State
-  ): Option[VirtulRefExtract] =
-    unapply(Val.Virtual(addr))
+  ): Option[Extract] =
+    unapply(nir.Val.Virtual(addr))
+
   def unapply(
-      value: Val
-  )(implicit state: State): Option[VirtulRefExtract] = value match {
-    case Val.Virtual(addr) =>
+      value: nir.Val
+  )(implicit state: State): Option[Extract] = value match {
+    case nir.Val.Virtual(addr) =>
       state.deref(addr) match {
         case VirtualInstance(kind, cls, values, _) =>
           Some((kind, cls, values))
@@ -34,32 +40,41 @@ object VirtualRef {
     case _ =>
       None
   }
+
 }
 
 object DelayedRef {
-  def unapply(addr: Addr)(implicit state: State): Option[Op] =
-    unapply(Val.Virtual(addr))
-  def unapply(value: Val)(implicit state: State): Option[Op] = value match {
-    case Val.Virtual(addr) =>
-      state.deref(addr) match {
-        case DelayedInstance(op) =>
-          Some(op)
-        case _ =>
-          None
-      }
-    case _ =>
-      None
-  }
+
+  def unapply(addr: Addr)(implicit state: State): Option[nir.Op] =
+    unapply(nir.Val.Virtual(addr))
+
+  def unapply(value: nir.Val)(implicit state: State): Option[nir.Op] =
+    value match {
+      case nir.Val.Virtual(addr) =>
+        state.deref(addr) match {
+          case DelayedInstance(op) =>
+            Some(op)
+          case _ =>
+            None
+        }
+      case _ =>
+        None
+    }
+
 }
 
 object BinRef {
-  def unapply(addr: Addr)(implicit state: State): Option[(Bin, Val, Val)] =
-    unapply(Val.Virtual(addr))
-  def unapply(value: Val)(implicit state: State): Option[(Bin, Val, Val)] =
+
+  type Extract = (nir.Bin, nir.Val, nir.Val)
+
+  def unapply(addr: Addr)(implicit state: State): Option[Extract] =
+    unapply(nir.Val.Virtual(addr))
+
+  def unapply(value: nir.Val)(implicit state: State): Option[Extract] =
     value match {
-      case Val.Virtual(addr) =>
+      case nir.Val.Virtual(addr) =>
         state.deref(addr) match {
-          case DelayedInstance(Op.Bin(bin, _, l, r)) =>
+          case DelayedInstance(nir.Op.Bin(bin, _, l, r)) =>
             Some((bin, l, r))
           case _ =>
             None
@@ -67,16 +82,21 @@ object BinRef {
       case _ =>
         None
     }
+
 }
 
 object ConvRef {
-  def unapply(addr: Addr)(implicit state: State): Option[(Conv, Type, Val)] =
-    unapply(Val.Virtual(addr))
-  def unapply(value: Val)(implicit state: State): Option[(Conv, Type, Val)] =
+
+  type Extract = (nir.Conv, nir.Type, nir.Val)
+
+  def unapply(addr: Addr)(implicit state: State): Option[Extract] =
+    unapply(nir.Val.Virtual(addr))
+
+  def unapply(value: nir.Val)(implicit state: State): Option[Extract] =
     value match {
-      case Val.Virtual(addr) =>
+      case nir.Val.Virtual(addr) =>
         state.deref(addr) match {
-          case DelayedInstance(Op.Conv(conv, ty, v)) =>
+          case DelayedInstance(nir.Op.Conv(conv, ty, v)) =>
             Some((conv, ty, v))
           case _ =>
             None
@@ -84,20 +104,25 @@ object ConvRef {
       case _ =>
         None
     }
+
 }
 
 object CompRef {
+
+  type Extract = (nir.Comp, nir.Type, nir.Val, nir.Val)
+
   def unapply(addr: Addr)(implicit
       state: State
-  ): Option[(Comp, Type, Val, Val)] =
-    unapply(Val.Virtual(addr))
+  ): Option[Extract] =
+    unapply(nir.Val.Virtual(addr))
+
   def unapply(
-      value: Val
-  )(implicit state: State): Option[(Comp, Type, Val, Val)] =
+      value: nir.Val
+  )(implicit state: State): Option[Extract] =
     value match {
-      case Val.Virtual(addr) =>
+      case nir.Val.Virtual(addr) =>
         state.deref(addr) match {
-          case DelayedInstance(Op.Comp(comp, ty, v1, v2)) =>
+          case DelayedInstance(nir.Op.Comp(comp, ty, v1, v2)) =>
             Some((comp, ty, v1, v2))
           case _ =>
             None
@@ -105,20 +130,25 @@ object CompRef {
       case _ =>
         None
     }
+
 }
 
 object EscapedRef {
-  def unapply(addr: Addr)(implicit state: State): Option[Val] =
-    unapply(Val.Virtual(addr))
-  def unapply(value: Val)(implicit state: State): Option[Val] = value match {
-    case Val.Virtual(addr) =>
-      state.deref(addr) match {
-        case EscapedInstance(value) =>
-          Some(value)
-        case _ =>
-          None
-      }
-    case _ =>
-      None
-  }
+
+  def unapply(addr: Addr)(implicit state: State): Option[nir.Val] =
+    unapply(nir.Val.Virtual(addr))
+
+  def unapply(value: nir.Val)(implicit state: State): Option[nir.Val] =
+    value match {
+      case nir.Val.Virtual(addr) =>
+        state.deref(addr) match {
+          case EscapedInstance(value) =>
+            Some(value)
+          case _ =>
+            None
+        }
+      case _ =>
+        None
+    }
+
 }

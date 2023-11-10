@@ -2,45 +2,47 @@ package scala.scalanative
 package interflow
 
 import scala.collection.mutable
-import scalanative.nir._
 import scalanative.util.unreachable
 import scalanative.linker.Ref
 
 object UseDef {
+
   sealed abstract class Def {
-    def id: Local
+    def id: nir.Local
     def deps: mutable.UnrolledBuffer[Def]
     def uses: mutable.UnrolledBuffer[Def]
     var alive: Boolean = false
   }
 
   final case class InstDef(
-      id: Local,
+      id: nir.Local,
       deps: mutable.UnrolledBuffer[Def],
       uses: mutable.UnrolledBuffer[Def]
   ) extends Def
 
   final case class BlockDef(
-      id: Local,
+      id: nir.Local,
       deps: mutable.UnrolledBuffer[Def],
       uses: mutable.UnrolledBuffer[Def],
       params: Seq[Def]
   ) extends Def
 
-  private class CollectLocalValDeps extends Transform {
-    val deps = mutable.UnrolledBuffer.empty[Local]
+  private class CollectLocalValDeps extends nir.Transform {
+    val deps = mutable.UnrolledBuffer.empty[nir.Local]
 
-    override def onVal(value: Val) = {
+    override def onVal(value: nir.Val) = {
       value match {
-        case v @ Val.Local(n, _) => deps += n
-        case _                   => ()
+        case v @ nir.Val.Local(n, _) =>
+          deps += n
+        case _ =>
+          ()
       }
       super.onVal(value)
     }
 
-    override def onNext(next: Next) = {
+    override def onNext(next: nir.Next) = {
       next match {
-        case next if next ne Next.None =>
+        case next if next ne nir.Next.None =>
           deps += next.id
         case _ =>
           ()
@@ -48,30 +50,32 @@ object UseDef {
       super.onNext(next)
     }
 
-    override def onType(ty: Type): Type = ty
+    override def onType(ty: nir.Type): nir.Type = ty
 
   }
 
-  private def collect(inst: Inst): Seq[Local] = {
+  private def collect(inst: nir.Inst): Seq[nir.Local] = {
     val collector = new CollectLocalValDeps
     collector.onInst(inst)
     collector.deps.distinct.toSeq
   }
 
-  private def isPure(inst: Inst) = inst match {
-    case Inst.Let(_, Op.Call(_, Val.Global(name, _), _), _) =>
+  private def isPure(inst: nir.Inst) = inst match {
+    case nir.Inst.Let(_, nir.Op.Call(_, nir.Val.Global(name, _), _), _) =>
       Allowlist.pure.contains(name)
-    case Inst.Let(_, Op.Module(name), _) =>
+    case nir.Inst.Let(_, nir.Op.Module(name), _) =>
       Allowlist.pure.contains(name)
-    case Inst.Let(_, op, _) if op.isPure => true
-    case _                               => false
+    case nir.Inst.Let(_, op, _) if op.isPure =>
+      true
+    case _ =>
+      false
   }
 
-  def apply(cfg: ControlFlow.Graph): Map[Local, Def] = {
-    val defs = mutable.Map.empty[Local, Def]
+  def apply(cfg: nir.ControlFlow.Graph): Map[nir.Local, Def] = {
+    val defs = mutable.Map.empty[nir.Local, Def]
     val blocks = cfg.all
 
-    def enterBlock(n: Local, params: Seq[Local]) = {
+    def enterBlock(n: nir.Local, params: Seq[nir.Local]) = {
       params.foreach(enterInst)
       val deps = mutable.UnrolledBuffer.empty[Def]
       val uses = mutable.UnrolledBuffer.empty[Def]
@@ -79,13 +83,13 @@ object UseDef {
       assert(!defs.contains(n))
       defs += ((n, BlockDef(n, deps, uses, paramDefs)))
     }
-    def enterInst(n: Local) = {
+    def enterInst(n: nir.Local) = {
       val deps = mutable.UnrolledBuffer.empty[Def]
       val uses = mutable.UnrolledBuffer.empty[Def]
       assert(!defs.contains(n), s"duplicate local ids: $n")
       defs += ((n, InstDef(n, deps, uses)))
     }
-    def deps(n: Local, deps: Seq[Local]) = {
+    def deps(n: nir.Local, deps: Seq[nir.Local]) = {
       val ndef = defs(n)
       deps.foreach { dep =>
         val ddef = defs(dep)
@@ -108,16 +112,19 @@ object UseDef {
     blocks.foreach { block =>
       enterBlock(block.id, block.params.map(_.id))
       block.insts.foreach {
-        case Inst.Let(n, _, unwind) =>
+        case nir.Inst.Let(n, _, unwind) =>
           enterInst(n)
           unwind match {
-            case Next.None                         => ()
-            case Next.Unwind(Val.Local(exc, _), _) => enterInst(exc)
-            case _                                 => util.unreachable
+            case nir.Next.None =>
+              ()
+            case nir.Next.Unwind(nir.Val.Local(exc, _), _) =>
+              enterInst(exc)
+            case _ =>
+              util.unreachable
           }
-        case Inst.Throw(_, Next.Unwind(Val.Local(exc, _), _)) =>
+        case nir.Inst.Throw(_, nir.Next.Unwind(nir.Val.Local(exc, _), _)) =>
           enterInst(exc)
-        case Inst.Unreachable(Next.Unwind(Val.Local(exc, _), _)) =>
+        case nir.Inst.Unreachable(nir.Next.Unwind(nir.Val.Local(exc, _), _)) =>
           enterInst(exc)
         case _ => ()
       }
@@ -126,10 +133,10 @@ object UseDef {
     // enter deps & uses
     blocks.foreach { block =>
       block.insts.foreach {
-        case inst: Inst.Let =>
+        case inst: nir.Inst.Let =>
           deps(inst.id, collect(inst))
           if (!isPure(inst)) deps(block.id, Seq(inst.id))
-        case inst: Inst.Cf =>
+        case inst: nir.Inst.Cf =>
           deps(block.id, collect(inst))
         case inst =>
           unreachable
@@ -141,9 +148,9 @@ object UseDef {
     defs.toMap
   }
 
-  def eliminateDeadCode(insts: Seq[Inst]): Seq[Inst] = {
-    val fresh = Fresh(insts)
-    val cfg = ControlFlow.Graph(insts)
+  def eliminateDeadCode(insts: Seq[nir.Inst]): Seq[nir.Inst] = {
+    val fresh = nir.Fresh(insts)
+    val cfg = nir.ControlFlow.Graph(insts)
     val usedef = UseDef(cfg)
     val buf = new nir.Buffer()(fresh)
 
@@ -151,9 +158,9 @@ object UseDef {
       if (usedef(block.id).alive) {
         buf += block.label
         block.insts.foreach {
-          case inst @ Inst.Let(n, _, _) =>
+          case inst @ nir.Inst.Let(n, _, _) =>
             if (usedef(n).alive) buf += inst
-          case inst: Inst.Cf =>
+          case inst: nir.Inst.Cf =>
             buf += inst
           case _ =>
             ()
@@ -163,4 +170,5 @@ object UseDef {
 
     buf.toSeq
   }
+
 }

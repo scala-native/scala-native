@@ -1,4 +1,5 @@
-package scala.scalanative.nscplugin
+package scala.scalanative
+package nscplugin
 
 import scala.language.implicitConversions
 
@@ -13,16 +14,15 @@ import core.Phases._
 import dotty.tools.dotc.transform.SymUtils._
 
 import scala.collection.mutable
-import scala.scalanative.nir
 import scala.scalanative.nir.Defn.Define.DebugInfo
 import scala.scalanative.nir.Defn.Define.DebugInfo._
-import nir._
 import scala.scalanative.util.ScopedVar
 import scala.scalanative.util.ScopedVar.{scoped, toValue}
 import scala.scalanative.util.unsupported
 import dotty.tools.FatalError
 import dotty.tools.dotc.report
 import dotty.tools.dotc.core.NameKinds
+
 trait NirGenStat(using Context) {
   self: NirCodeGen =>
   import positionsConversions.fromSpan
@@ -57,9 +57,9 @@ trait NirGenStat(using Context) {
     def parent = genClassParent(sym)
     def traits = genClassInterfaces(sym)
     generatedDefns += {
-      if (sym.isStaticModule) Defn.Module(attrs, name, parent, traits)
-      else if (sym.isTraitOrInterface) Defn.Trait(attrs, name, traits)
-      else Defn.Class(attrs, name, parent, traits)
+      if (sym.isStaticModule) nir.Defn.Module(attrs, name, parent, traits)
+      else if (sym.isTraitOrInterface) nir.Defn.Trait(attrs, name, traits)
+      else nir.Defn.Class(attrs, name, parent, traits)
     }
     genClassFields(td)
     genMethods(td)
@@ -71,19 +71,19 @@ trait NirGenStat(using Context) {
     val sym = td.symbol.asClass
     val annotationAttrs = sym.annotations.collect {
       case ann if ann.symbol == defnNir.ExternClass =>
-        Attr.Extern(sym.isBlocking)
-      case ann if ann.symbol == defnNir.StubClass => Attr.Stub
+        nir.Attr.Extern(sym.isBlocking)
+      case ann if ann.symbol == defnNir.StubClass => nir.Attr.Stub
       case ann if ann.symbol == defnNir.LinkClass =>
         val Apply(_, Seq(Literal(Constant(name: String)))) =
           ann.tree: @unchecked
-        Attr.Link(name)
+        nir.Attr.Link(name)
       case ann if ann.symbol == defnNir.DefineClass =>
         val Apply(_, Seq(Literal(Constant(name: String)))) =
           ann.tree: @unchecked
-        Attr.Define(name)
+        nir.Attr.Define(name)
     }
-    val isAbstract = Option.when(sym.is(Abstract))(Attr.Abstract)
-    Attrs.fromSeq(annotationAttrs ++ isAbstract)
+    val isAbstract = Option.when(sym.is(Abstract))(nir.Attr.Abstract)
+    nir.Attrs.fromSeq(annotationAttrs ++ isAbstract)
   }
 
   private def genClassParent(sym: ClassSymbol): Option[nir.Global.Top] = {
@@ -196,23 +196,25 @@ trait NirGenStat(using Context) {
         align = getAlignmentAttr(f).orElse(classAlignment)
       )
       val ty = genType(f.info.resultType)
-      val fieldName @ Global.Member(owner, sig) = genFieldName(f): @unchecked
-      generatedDefns += Defn.Var(attrs, fieldName, ty, Val.Zero(ty))
+      val fieldName @ nir.Global.Member(owner, sig) = genFieldName(
+        f
+      ): @unchecked
+      generatedDefns += nir.Defn.Var(attrs, fieldName, ty, nir.Val.Zero(ty))
 
       if (isStatic) {
         // Here we are generating a public static getter for the static field,
         // this is its API for other units. This is necessary for singleton
         // enum values, which are backed by static fields.
-        generatedDefns += new Defn.Define(
-          attrs = Attrs(inlineHint = nir.Attr.InlineHint),
+        generatedDefns += new nir.Defn.Define(
+          attrs = nir.Attrs(inlineHint = nir.Attr.InlineHint),
           name = genStaticMemberName(f, classSym),
-          ty = Type.Function(Nil, ty),
+          ty = nir.Type.Function(Nil, ty),
           insts = withFreshExprBuffer { buf ?=>
-            given ScopeId = ScopeId.TopLevel
+            given nir.ScopeId = nir.ScopeId.TopLevel
             val fresh = curFresh.get
             buf.label(fresh())
-            val module = buf.module(genModuleName(classSym), Next.None)
-            val value = buf.fieldload(ty, module, fieldName, Next.None)
+            val module = buf.module(genModuleName(classSym), nir.Next.None)
+            val value = buf.fieldload(ty, module, fieldName, nir.Next.None)
             buf.ret(value)
 
             buf.toSeq
@@ -241,9 +243,9 @@ trait NirGenStat(using Context) {
     generatedDefns ++= genTopLevelExports(td)
   }
 
-  private def genMethod(dd: DefDef): Option[Defn] = {
+  private def genMethod(dd: DefDef): Option[nir.Defn] = {
     implicit val pos: nir.Position = dd.span
-    val fresh = Fresh()
+    val fresh = nir.Fresh()
     val freshScope = initFreshScope(dd.rhs)
     val scopes = mutable.Set.empty[DebugInfo.LexicalScope]
     scopes += DebugInfo.LexicalScope.TopLevel(dd.rhs.span)
@@ -255,7 +257,7 @@ trait NirGenStat(using Context) {
       curMethodInfo := CollectMethodInfo().collect(dd.rhs),
       curFresh := fresh,
       curFreshScope := freshScope,
-      curScopeId := ScopeId.TopLevel,
+      curScopeId := nir.ScopeId.TopLevel,
       curScopes := scopes,
       curUnwindHandler := None,
       curMethodLocalNames := localNamesBuilder()
@@ -270,7 +272,7 @@ trait NirGenStat(using Context) {
       val sig = genMethodSig(sym)
 
       dd.rhs match {
-        case EmptyTree => Some(Defn.Declare(attrs, name, sig))
+        case EmptyTree => Some(nir.Defn.Declare(attrs, name, sig))
         case _ if sym.isConstructor && isExtern =>
           validateExternCtor(dd.rhs)
           None
@@ -295,12 +297,12 @@ trait NirGenStat(using Context) {
               if (curMethodUsesLinktimeResolvedValues)
                 attrs.copy(isLinktimeResolved = true)
               else attrs
-            val defn = Defn.Define(
+            val defn = nir.Defn.Define(
               methodAttrs,
               name,
               sig,
               insts = body,
-              debugInfo = Defn.Define.DebugInfo(
+              debugInfo = nir.Defn.Define.DebugInfo(
                 localNames = curMethodLocalNames.get.toMap,
                 lexicalScopes = scopes.toList
               )
@@ -316,23 +318,23 @@ trait NirGenStat(using Context) {
       isExtern: => Boolean
   ): nir.Attrs = {
     val inlineAttrs =
-      if (sym.is(Bridge) || sym.is(Accessor)) Seq(Attr.AlwaysInline)
+      if (sym.is(Bridge) || sym.is(Accessor)) Seq(nir.Attr.AlwaysInline)
       else Nil
 
     val annotatedAttrs =
       sym.annotations.map(_.symbol).collect {
-        case defnNir.NoInlineClass     => Attr.NoInline
-        case defnNir.AlwaysInlineClass => Attr.AlwaysInline
-        case defnNir.InlineClass       => Attr.InlineHint
-        case defnNir.NoOptimizeClass   => Attr.NoOpt
-        case defnNir.NoSpecializeClass => Attr.NoSpecialize
-        case defnNir.StubClass         => Attr.Stub
+        case defnNir.NoInlineClass     => nir.Attr.NoInline
+        case defnNir.AlwaysInlineClass => nir.Attr.AlwaysInline
+        case defnNir.InlineClass       => nir.Attr.InlineHint
+        case defnNir.NoOptimizeClass   => nir.Attr.NoOpt
+        case defnNir.NoSpecializeClass => nir.Attr.NoSpecialize
+        case defnNir.StubClass         => nir.Attr.Stub
       }
     val externAttrs = Option.when(isExtern) {
-      Attr.Extern(sym.isBlocking || sym.owner.isBlocking)
+      nir.Attr.Extern(sym.isBlocking || sym.owner.isBlocking)
     }
 
-    Attrs.fromSeq(inlineAttrs ++ annotatedAttrs ++ externAttrs)
+    nir.Attrs.fromSeq(inlineAttrs ++ annotatedAttrs ++ externAttrs)
   }
 
   protected val curExprBuffer = ScopedVar[ExprBuffer]()
@@ -356,12 +358,12 @@ trait NirGenStat(using Context) {
       val tpe = sym.info.resultType
       val ty = genType(tpe)
       val name = genLocalName(sym)
-      val param = Val.Local(fresh.namedId(genLocalName(sym)), ty)
+      val param = nir.Val.Local(fresh.namedId(genLocalName(sym)), ty)
       curMethodEnv.enter(sym, param)
       param
     }
     val thisParam = Option.unless(isStatic) {
-      Val.Local(
+      nir.Val.Local(
         fresh.namedId("this"),
         genType(curClassSym.get)
       )
@@ -377,12 +379,12 @@ trait NirGenStat(using Context) {
         .foreach { sym =>
           val ty = genType(sym.info)
           val name = genLocalName(sym)
-          val slot = buf.let(fresh.namedId(name), Op.Var(ty), unwind(fresh))
+          val slot = buf.let(fresh.namedId(name), nir.Op.Var(ty), unwind(fresh))
           curMethodEnv.enter(sym, slot)
         }
     }
 
-    def withOptSynchronized(bodyGen: ExprBuffer => Val): Val = {
+    def withOptSynchronized(bodyGen: ExprBuffer => nir.Val): nir.Val = {
       if (!isSynchronized) bodyGen(buf)
       else {
         val syncedIn = curMethodThis.getOrElse {
@@ -398,13 +400,13 @@ trait NirGenStat(using Context) {
         scoped(
           curMethodIsExtern := isExtern
         ) {
-          buf.genReturn(Val.Unit)
+          buf.genReturn(nir.Val.Unit)
         }
       else
         scoped(curMethodThis := thisParam, curMethodIsExtern := isExtern) {
           buf.genReturn(withOptSynchronized(_.genExpr(bodyp)) match {
-            case Val.Zero(_) =>
-              Val.Zero(genType(curMethodSym.get.info.resultType))
+            case nir.Val.Zero(_) =>
+              nir.Val.Zero(genType(curMethodSym.get.info.resultType))
             case v => v
           })
         }
@@ -414,7 +416,7 @@ trait NirGenStat(using Context) {
       genEntry()
       genVars()
       genBody()
-      ControlFlow.removeDeadBlocks(buf.toSeq)
+      nir.ControlFlow.removeDeadBlocks(buf.toSeq)
     }
   }
 
@@ -422,10 +424,10 @@ trait NirGenStat(using Context) {
     given nir.Position = td.span
 
     val sym = td.symbol
-    val attrs = Attrs.None
+    val attrs = nir.Attrs.None
     val name = genTypeName(sym)
 
-    generatedDefns += Defn.Class(attrs, name, None, Seq.empty)
+    generatedDefns += nir.Defn.Class(attrs, name, None, Seq.empty)
     genMethods(td)
   }
 
@@ -440,9 +442,9 @@ trait NirGenStat(using Context) {
       )
   }
 
-  protected def genLinktimeResolved(dd: DefDef, name: Global.Member)(using
+  protected def genLinktimeResolved(dd: DefDef, name: nir.Global.Member)(using
       nir.Position
-  ): Option[Defn] = {
+  ): Option[nir.Defn] = {
     if (dd.symbol.isField) {
       report.error(
         "Link-time property cannot be constant value, it would be inlined by scalac compiler",
@@ -458,10 +460,10 @@ trait NirGenStat(using Context) {
           checkExplicitReturnTypeAnnotation(dd, "value resolved at link-time")
           genLinktimeResolvedMethod(dd, retty, name) {
             _.call(
-              Linktime.PropertyResolveFunctionTy(retty),
-              Linktime.PropertyResolveFunction(retty),
-              Val.String(propertyName) :: Nil,
-              Next.None
+              nir.Linktime.PropertyResolveFunctionTy(retty),
+              nir.Linktime.PropertyResolveFunction(retty),
+              nir.Val.String(propertyName) :: Nil,
+              nir.Next.None
             )
           }
         }
@@ -500,7 +502,7 @@ trait NirGenStat(using Context) {
                       "Non-inlined terms are not allowed in linktime resolved methods",
                       expr.srcPos
                     )
-                    Val.Zero(retty)
+                    nir.Val.Zero(retty)
                   case Typed(tree, _) => resolve(tree)
                   case tree           => resolve(tree)
                 }
@@ -523,14 +525,14 @@ trait NirGenStat(using Context) {
       retty: nir.Type,
       methodName: nir.Global.Member
   )(genValue: ExprBuffer => nir.Val)(using nir.Position): nir.Defn = {
-    implicit val fresh: Fresh = Fresh()
+    implicit val fresh: nir.Fresh = nir.Fresh()
     val freshScopes = initFreshScope(dd.rhs)
     val buf = new ExprBuffer()
 
     scoped(
       curFresh := fresh,
       curFreshScope := freshScopes,
-      curScopeId := ScopeId.TopLevel,
+      curScopeId := nir.ScopeId.TopLevel,
       curMethodSym := dd.symbol,
       curMethodThis := None,
       curMethodEnv := new MethodEnv(fresh),
@@ -542,10 +544,10 @@ trait NirGenStat(using Context) {
       buf.ret(value)
     }
 
-    new Defn.Define(
-      Attrs(inlineHint = Attr.AlwaysInline, isLinktimeResolved = true),
+    new nir.Defn.Define(
+      nir.Attrs(inlineHint = nir.Attr.AlwaysInline, isLinktimeResolved = true),
       methodName,
-      Type.Function(Seq.empty, retty),
+      nir.Type.Function(Seq.empty, retty),
       buf.toSeq
     )
   }
@@ -562,18 +564,19 @@ trait NirGenStat(using Context) {
       name: nir.Global.Member,
       origSig: nir.Type,
       dd: DefDef
-  ): Option[Defn] = {
+  ): Option[nir.Defn] = {
     val rhs: Tree = dd.rhs
     given nir.Position = rhs.span
     def externMethodDecl() = {
       val externSig = genExternMethodSig(curMethodSym)
-      val externDefn = Defn.Declare(attrs, name, externSig)
+      val externDefn = nir.Defn.Declare(attrs, name, externSig)
       Some(externDefn)
     }
 
     def isExternMethodAlias(target: Symbol) = (name, genName(target)) match {
-      case (Global.Member(_, lsig), Global.Member(_, rsig)) => lsig == rsig
-      case _                                                => false
+      case (nir.Global.Member(_, lsig), nir.Global.Member(_, rsig)) =>
+        lsig == rsig
+      case _ => false
     }
     val defaultArgs = dd.paramss.flatten.filter(_.symbol.is(HasDefault))
 
@@ -589,7 +592,7 @@ trait NirGenStat(using Context) {
 
       case Apply(target, args) if target.symbol.isExtern =>
         val sym = target.symbol
-        val Global.Member(_, selfSig) = name: @unchecked
+        val nir.Global.Member(_, selfSig) = name: @unchecked
         def isExternMethodForwarder =
           genExternSig(sym) == selfSig &&
             genExternMethodSig(sym) == origSig
@@ -708,9 +711,9 @@ trait NirGenStat(using Context) {
    *  Precondition: `isCandidateForForwarders(sym)` is true
    */
   private def genStaticForwardersForClassOrInterface(
-      existingMembers: Seq[Defn],
+      existingMembers: Seq[nir.Defn],
       sym: Symbol
-  ): Seq[Defn.Define] = {
+  ): Seq[nir.Defn.Define] = {
     val module = sym.companionModule
     if (!module.exists) Nil
     else {
@@ -724,13 +727,13 @@ trait NirGenStat(using Context) {
    *  Precondition: `isCandidateForForwarders(moduleClass)` is true
    */
   private def genStaticForwardersFromModuleClass(
-      existingMembers: Seq[Defn],
+      existingMembers: Seq[nir.Defn],
       moduleClass: Symbol
-  ): Seq[Defn.Define] = {
+  ): Seq[nir.Defn.Define] = {
     assert(moduleClass.is(ModuleClass), moduleClass)
 
-    val existingStaticMethodNames: Set[Global] = existingMembers.collect {
-      case Defn.Define(_, name @ Global.Member(_, sig), _, _, _)
+    val existingStaticMethodNames: Set[nir.Global] = existingMembers.collect {
+      case nir.Defn.Define(_, name @ nir.Global.Member(_, sig), _, _, _)
           if sig.isStatic =>
         name
     }.toSet
@@ -757,10 +760,10 @@ trait NirGenStat(using Context) {
 
       val methodName = genMethodName(sym)
       val forwarderName = genStaticMemberName(sym, moduleClass)
-      val Type.Function(_ +: paramTypes, retType) =
+      val nir.Type.Function(_ +: paramTypes, retType) =
         genMethodSig(sym): @unchecked
       val forwarderParamTypes = paramTypes
-      val forwarderType = Type.Function(forwarderParamTypes, retType)
+      val forwarderType = nir.Type.Function(forwarderParamTypes, retType)
 
       if (existingStaticMethodNames.contains(forwarderName)) {
         report.error(
@@ -773,8 +776,8 @@ trait NirGenStat(using Context) {
         )
       }
 
-      new Defn.Define(
-        attrs = Attrs(inlineHint = nir.Attr.InlineHint),
+      new nir.Defn.Define(
+        attrs = nir.Attrs(inlineHint = nir.Attr.InlineHint),
         name = forwarderName,
         ty = forwarderType,
         insts = withFreshExprBuffer { buf ?=>
@@ -782,9 +785,9 @@ trait NirGenStat(using Context) {
           scoped(
             curUnwindHandler := None,
             curMethodThis := None,
-            curScopeId := ScopeId.TopLevel
+            curScopeId := nir.ScopeId.TopLevel
           ) {
-            val entryParams = forwarderParamTypes.map(Val.Local(fresh(), _))
+            val entryParams = forwarderParamTypes.map(nir.Val.Local(fresh(), _))
             val args = entryParams.map(ValTree(_))
             buf.label(fresh(), entryParams)
             val res = buf.genApplyModuleMethod(moduleClass, sym, args)
@@ -798,8 +801,8 @@ trait NirGenStat(using Context) {
 
   private def genStaticMethodForwarders(
       td: TypeDef,
-      existingMethods: Seq[Defn]
-  ): Seq[Defn] = {
+      existingMethods: Seq[nir.Defn]
+  ): Seq[nir.Defn] = {
     val sym = td.symbol
     if !isCandidateForForwarders(sym) then Nil
     else if sym.isStaticModule then Nil
@@ -821,10 +824,10 @@ trait NirGenStat(using Context) {
         toDenot(sym).owner.is(PackageClass)
       }
     if isTopLevelModuleClass && sym.companionClass == NoSymbol then {
-      val classDefn = Defn.Class(
-        attrs = Attrs.None,
-        name = Global.Top(genTypeName(sym).id.stripSuffix("$")),
-        parent = Some(Rt.Object.name),
+      val classDefn = nir.Defn.Class(
+        attrs = nir.Attrs.None,
+        name = nir.Global.Top(genTypeName(sym).id.stripSuffix("$")),
+        parent = Some(nir.Rt.Object.name),
         traits = Nil
       )
       generatedMirrorClasses += sym -> MirrorClass(

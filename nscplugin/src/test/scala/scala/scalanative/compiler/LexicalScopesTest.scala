@@ -13,7 +13,6 @@ import scala.reflect.ClassTag
 import scala.scalanative.nir.Defn.Define.DebugInfo.LexicalScope
 
 class LexicalScopesTest {
-  import nir._
 
   def assertContainsAll[T](
       msg: String,
@@ -33,35 +32,35 @@ class LexicalScopesTest {
     )
   }
 
-  def assertDistinct(localNames: Iterable[LocalName]) = {
+  def assertDistinct(localNames: Iterable[nir.LocalName]) = {
     val duplicated =
       localNames.groupBy(identity).filter(_._2.size > 1).map(_._1)
     assertTrue(s"Found duplicated names of ${duplicated}", duplicated.isEmpty)
   }
   private object TestMain {
-    val companionMain = Global
+    val companionMain = nir.Global
       .Top("Test$")
-      .member(Rt.ScalaMainSig.copy(scope = Sig.Scope.Public))
+      .member(nir.Rt.ScalaMainSig.copy(scope = nir.Sig.Scope.Public))
 
-    def unapply(name: Global): Boolean = name == companionMain
+    def unapply(name: nir.Global): Boolean = name == companionMain
   }
-  private def findDefinition(linked: Seq[Defn]) = linked
+  private def findDefinition(linked: Seq[nir.Defn]) = linked
     .collectFirst {
-      case defn @ Defn.Define(_, TestMain(), _, _, _) =>
+      case defn @ nir.Defn.Define(_, TestMain(), _, _, _) =>
         defn
     }
     .ensuring(_.isDefined, "Not found linked method")
 
-  def namedLets(defn: nir.Defn.Define): Map[Inst.Let, LocalName] =
+  def namedLets(defn: nir.Defn.Define): Map[nir.Inst.Let, nir.LocalName] =
     defn.insts.collect {
-      case inst: Inst.Let if defn.debugInfo.localNames.contains(inst.id) =>
+      case inst: nir.Inst.Let if defn.debugInfo.localNames.contains(inst.id) =>
         inst -> defn.debugInfo.localNames(inst.id)
     }.toMap
 
-  def scopeOf(localName: LocalName)(implicit defn: Defn.Define) =
+  def scopeOf(localName: nir.LocalName)(implicit defn: nir.Defn.Define) =
     namedLets(defn)
       .collectFirst {
-        case (let @ Inst.Let(id, _, _), `localName`) => let.scopeId
+        case (let @ nir.Inst.Let(id, _, _), `localName`) => let.scopeId
       }
       .orElse { fail(s"Not found a local named: ${localName}"); None }
       .flatMap(defn.debugInfo.lexicalScopeOf.get)
@@ -70,10 +69,10 @@ class LexicalScopesTest {
 
   def scopeParents(
       scope: LexicalScope
-  )(implicit defn: Defn.Define): List[ScopeId] = {
+  )(implicit defn: nir.Defn.Define): List[nir.ScopeId] = {
     if (scope.isTopLevel) Nil
     else {
-      val stack = List.newBuilder[ScopeId]
+      val stack = List.newBuilder[nir.ScopeId]
       var current = scope
       while ({
         val parent = defn.debugInfo.lexicalScopeOf(current.parent)
@@ -138,20 +137,20 @@ class LexicalScopesTest {
     |object Test {
     |  def main(args: Array[String]): Unit = {
     |    val a = args.size
-    |    val b = 
+    |    val b =
     |      try {
     |        val inTry = args(0).toInt
     |        inTry + 1
     |      }catch{
-    |        case ex1: Exception => 
+    |        case ex1: Exception =>
     |          val n = args(0)
     |          n.size
-    |        case ex2: Throwable => 
+    |        case ex2: Throwable =>
     |          val m = args.size
     |          throw ex2
     |      } finally {
     |        val finalVal = "fooBar"
-    |        println(finalVal) 
+    |        println(finalVal)
     |      }
     |  }
     |}
@@ -181,4 +180,5 @@ class LexicalScopesTest {
       assertEquals(ex2.id, m.parent)
     }
   }
+
 }

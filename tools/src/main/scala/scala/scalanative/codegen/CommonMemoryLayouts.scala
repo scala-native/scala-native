@@ -1,12 +1,12 @@
-package scala.scalanative.codegen
-
-import scala.scalanative.nir._
+package scala.scalanative
+package codegen
 
 class CommonMemoryLayouts(implicit meta: Metadata) {
-  sealed abstract class Layout(types: List[Type]) {
-    def this(types: Type*) = this(types.toList)
 
-    val layout: Type.StructValue = Type.StructValue(types.toList)
+  sealed abstract class Layout(types: List[nir.Type]) {
+    def this(types: nir.Type*) = this(types.toList)
+
+    val layout: nir.Type.StructValue = nir.Type.StructValue(types.toList)
     def fields: Int = layout.tys.size
   }
 
@@ -19,11 +19,11 @@ class CommonMemoryLayouts(implicit meta: Metadata) {
 
   object Rtti
       extends Layout(
-        Type.Ptr :: // ClassRtti
+        nir.Type.Ptr :: // ClassRtti
           meta.lockWordType.toList ::: // optional, multithreading only
-          Type.Int :: // ClassId
-          Type.Int :: // Traitid
-          Type.Ptr :: // ClassName
+          nir.Type.Int :: // ClassId
+          nir.Type.Int :: // Traitid
+          nir.Type.Ptr :: // ClassName
           Nil
       ) {
     final val RttiIdx = Common.RttiIdx
@@ -42,16 +42,18 @@ class CommonMemoryLayouts(implicit meta: Metadata) {
     // Common layout not including variable-sized virtual table
     private val baseLayout =
       Rtti.layout ::
-        Type.Int :: // class size
-        Type.Int :: // id range
+        nir.Type.Int :: // class size
+        nir.Type.Int :: // id range
         FieldLayout.referenceOffsetsTy :: // reference offsets
         dynMapType.toList
 
-    override val layout = genLayout(vtable = Type.ArrayValue(Type.Ptr, 0))
+    override val layout =
+      genLayout(vtable = nir.Type.ArrayValue(nir.Type.Ptr, 0))
 
-    def genLayout(vtable: Type): Type.StructValue = Type.StructValue(
-      baseLayout ::: vtable :: Nil
-    )
+    def genLayout(vtable: nir.Type): nir.Type.StructValue =
+      nir.Type.StructValue(
+        baseLayout ::: vtable :: Nil
+      )
 
     final val RttiIdx = Common.RttiIdx
     final val SizeIdx = RttiIdx + 1
@@ -65,7 +67,7 @@ class CommonMemoryLayouts(implicit meta: Metadata) {
 
   object ObjectHeader
       extends Layout(
-        Type.Ptr :: // RTTI
+        nir.Type.Ptr :: // RTTI
           meta.lockWordType.toList // optional, multithreading only
       ) {
     final val RttiIdx = Common.RttiIdx
@@ -75,7 +77,7 @@ class CommonMemoryLayouts(implicit meta: Metadata) {
   object Object
       extends Layout(
         ObjectHeader.layout,
-        Type.ArrayValue(Type.Ptr, 0)
+        nir.Type.ArrayValue(nir.Type.Ptr, 0)
       ) {
     final val ObjectHeaderIdx = 0
     final val ValuesOffset = ObjectHeaderIdx + 1
@@ -83,10 +85,10 @@ class CommonMemoryLayouts(implicit meta: Metadata) {
 
   object ArrayHeader
       extends Layout(
-        Type.Ptr :: // RTTI
+        nir.Type.Ptr :: // RTTI
           meta.lockWordType.toList ::: // optional, multithreading only
-          Type.Int :: // length
-          Type.Int :: // stride (used only by GC)
+          nir.Type.Int :: // length
+          nir.Type.Int :: // stride (used only by GC)
           Nil
       ) {
     final val RttiIdx = Common.RttiIdx
@@ -100,9 +102,10 @@ class CommonMemoryLayouts(implicit meta: Metadata) {
   object Array
       extends Layout(
         ArrayHeader.layout,
-        Type.ArrayValue(Type.Nothing, 0)
+        nir.Type.ArrayValue(nir.Type.Nothing, 0)
       ) {
     final val ArrayHeaderIdx = 0
     final val ValuesIdx = ArrayHeaderIdx + 1
   }
+
 }

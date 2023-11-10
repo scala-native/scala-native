@@ -1,14 +1,14 @@
-package scala.scalanative.codegen
+package scala.scalanative
+package codegen
 package llvm
 
-import scala.scalanative.nir.Val
 import scala.language.implicitConversions
 
 sealed trait Metadata
 object Metadata {
   case class Str(value: String) extends Metadata
   case class Const(value: String) extends Metadata
-  case class Value(value: Val) extends Metadata
+  case class Value(value: nir.Val) extends Metadata
   sealed trait Node extends Metadata {
     def distinct: Boolean = false
   }
@@ -97,7 +97,7 @@ object Metadata {
     object UnsignedChar extends DW_ATE("DW_ATE_unsigned_char")
   }
 
-  sealed class ModFlagBehavior(tag: Int) extends Value(Val.Int(tag))
+  sealed class ModFlagBehavior(tag: Int) extends Value(nir.Val.Int(tag))
   object ModFlagBehavior {
     object Error extends ModFlagBehavior(1)
     object Warning extends ModFlagBehavior(2)
@@ -120,7 +120,8 @@ object Metadata {
 
   object conversions {
     def tuple(values: Metadata*) = Metadata.Tuple(values)
-    implicit def intToValue(v: Int): Metadata.Value = Metadata.Value(Val.Int(v))
+    implicit def intToValue(v: Int): Metadata.Value =
+      Metadata.Value(nir.Val.Int(v))
     implicit def stringToStr(v: String): Metadata.Str = Metadata.Str(v)
     implicit class StringOps(val v: String) extends AnyVal {
       def string: Metadata.Str = Metadata.Str(v)
