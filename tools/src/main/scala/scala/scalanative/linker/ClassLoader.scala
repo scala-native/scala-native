@@ -31,7 +31,8 @@ object ClassLoader {
     lazy val classesWithEntryPoints: Iterable[nir.Global.Top] = {
       classpath.flatMap(_.classesWithEntryPoints)
     }
-    lazy val definedServicesProviders: Map[nir.Global.Top, Iterable[nir.Global.Top]] =
+    lazy val definedServicesProviders
+        : Map[nir.Global.Top, Iterable[nir.Global.Top]] =
       classpath.flatMap(_.definedServicesProviders).toMap
 
     def load(global: nir.Global.Top): Option[Seq[nir.Defn]] =
@@ -61,7 +62,8 @@ object ClassLoader {
       }.keySet
     }
 
-    def definedServicesProviders: Map[nir.Global.Top, Iterable[nir.Global.Top]] =
+    def definedServicesProviders
+        : Map[nir.Global.Top, Iterable[nir.Global.Top]] =
       Map.empty
 
     def load(global: nir.Global.Top): Option[Seq[nir.Defn]] =

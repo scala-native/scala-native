@@ -1019,9 +1019,11 @@ trait Eval { self: Interflow =>
             ()
         }
         value
-      case v @ Val.ArrayValue(_, values) => v.copy(values = values.map(eval(_)))
-      case v @ Val.StructValue(values)   => v.copy(values = values.map(eval(_)))
-      case _                             => value.canonicalize
+      case v @ nir.Val.ArrayValue(_, values) =>
+        v.copy(values = values.map(eval(_)))
+      case v @ nir.Val.StructValue(values) =>
+        v.copy(values = values.map(eval(_)))
+      case _ => value.canonicalize
     }
   }
 

@@ -230,9 +230,9 @@ class Reach(
     done(defn.name) = defn
   }
 
-  private def preprocessDefn(defn: Defn): Defn = {
+  private def preprocessDefn(defn: nir.Defn): nir.Defn = {
     defn match {
-      case defn: Defn.Define =>
+      case defn: nir.Defn.Define =>
         (resolveLinktimeDefine _)
           .andThen(resolveDefineIntrinsics)
           .apply(defn)
@@ -241,7 +241,9 @@ class Reach(
     }
   }
 
-  private def resolveDefineIntrinsics(defn: Defn.Define): Defn.Define = {
+  private def resolveDefineIntrinsics(
+      defn: nir.Defn.Define
+  ): nir.Defn.Define = {
     if (defn.attrs.isUsingIntrinsics)
       defn.copy(insts = resolveIntrinsicsCalls(defn))(defn.pos)
     else defn
@@ -388,7 +390,7 @@ class Reach(
                 )
             }
 
-                  if (sig.isMethod || sig.isCtor || sig.isClinit || sig.isGenerated) {
+            if (sig.isMethod || sig.isCtor || sig.isClinit || sig.isGenerated) {
               update(sig)
             }
           case _ => ()

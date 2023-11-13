@@ -1242,7 +1242,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       }
     }
 
-    private def genLinktimeIntrinsicApply(app: Apply): Val = {
+    private def genLinktimeIntrinsicApply(app: Apply): nir.Val = {
       import nirDefinitions._
       implicit def pos: nir.Position = app.pos
       val Apply(fun, args) = app

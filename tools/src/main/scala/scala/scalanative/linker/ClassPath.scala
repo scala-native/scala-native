@@ -88,7 +88,8 @@ object ClassPath {
       }.keySet
     }
 
-    lazy val definedServicesProviders: Map[Global.Top, Seq[Global.Top]] = {
+    lazy val definedServicesProviders
+        : Map[nir.Global.Top, Seq[nir.Global.Top]] = {
       serviceProviders.map {
         case (name, path) =>
           val b = Seq.newBuilder[nir.Global.Top]

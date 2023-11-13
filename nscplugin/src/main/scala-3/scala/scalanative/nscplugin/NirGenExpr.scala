@@ -1124,7 +1124,7 @@ trait NirGenExpr(using Context) {
       }
     }
 
-    private def genLinktimeIntrinsicApply(app: Apply): Val = {
+    private def genLinktimeIntrinsicApply(app: Apply): nir.Val = {
       import defnNir.*
       given nir.Position = app.span
       val Apply(fun, args) = app
