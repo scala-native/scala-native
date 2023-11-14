@@ -82,7 +82,9 @@ object MyScalaNativePlugin extends AutoPlugin {
       typ <- OutputType.fromString(input)
     } yield typ) match {
       case Left(ex) =>
-        logger.warn(s"${ex.getMessage()}, using default output type: `flamegraph`")
+        logger.warn(
+          s"${ex.getMessage()}, using default output type: `flamegraph`"
+        )
         OutputType.Flamegraph
       case Right(value) => value
     }
@@ -100,7 +102,8 @@ object MyScalaNativePlugin extends AutoPlugin {
       }
 
       val module = moduleName.value
-      val out = (crossTarget.value / s"$module-profile.${outputType.extension}").toString
+      val out =
+        (crossTarget.value / s"$module-profile.${outputType.extension}").toString
       profilerOpt match {
         case Some(profiler) =>
           logger.info(s"[async-profiler] starting profiler: $profiler")
@@ -155,10 +158,10 @@ object MyScalaNativePlugin extends AutoPlugin {
 
 sealed abstract class OutputType(val name: String) {
   def extension: String = this match {
-    case Text => "txt"
-    case Collapsed => "csv"
+    case Text       => "txt"
+    case Collapsed  => "csv"
     case Flamegraph => "html"
-    case Tree => "html"
+    case Tree       => "html"
   }
 }
 object OutputType {
