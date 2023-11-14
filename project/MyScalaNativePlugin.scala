@@ -3,16 +3,26 @@ package build
 import sbt._
 import sbt.Keys._
 
+import scala.scalanative.sbtplugin.Utilities._
 import scala.scalanative.sbtplugin.ScalaNativePlugin
 import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport._
 import scala.sys.env
 
+import one.profiler.AsyncProfilerLoader
+import one.profiler.AsyncProfiler
+
 object MyScalaNativePlugin extends AutoPlugin {
   override def requires: Plugins = ScalaNativePlugin
+
+  lazy val nativeLinkProfiling =
+    taskKey[File]("Running nativeLink with AsyncProfiler.")
 
   // see: https://github.com/scalameta/metals/blob/0176a491cd209a09852ab33f99fd7de639e8e2dd/metals/src/main/scala/scala/meta/internal/builds/BloopInstall.scala#L81
   final val isGeneratingForIDE =
     env.getOrElse("METALS_ENABLED", "false").toBoolean
+
+  final val enableProfiler =
+    env.getOrElse("ENABLE_PROFILER", "false").toBoolean
 
   final val enableExperimentalCompiler = {
     val ExperimentalCompilerEnv = "ENABLE_EXPERIMENTAL_COMPILER"
@@ -55,6 +65,47 @@ object MyScalaNativePlugin extends AutoPlugin {
     }
   }
 
+  import scala.concurrent._
+  import scala.concurrent.duration.Duration
+  private def await[T](
+      log: sbt.Logger
+  )(body: ExecutionContext => Future[T]): T = {
+    val ec =
+      ExecutionContext.fromExecutor(ExecutionContext.global, t => log.trace(t))
+
+    Await.result(body(ec), Duration.Inf)
+  }
+  private def nativeLinkProfilingImpl = Def.taskDyn {
+    val sbtLogger = streams.value.log
+    val logger = sbtLogger.toLogger
+    val profilerOpt: Option[AsyncProfiler] =
+      if (AsyncProfilerLoader.isSupported())
+        Some(AsyncProfilerLoader.load())
+      else {
+        logger.warn(
+          "Couldn't load async-prfiler for the current OS, architecture or glibc is unavailable. " +
+            "Profiling will not be available." +
+            "See the supported platforms https://github.com/jvm-profiling-tools/ap-loader#supported-platforms"
+        )
+        None
+      }
+
+      profilerOpt match {
+        case Some(profiler) =>
+          logger.info(s"[async-profiler] starting profiler: $profiler")
+          profiler.execute("start,event=cpu,interval=100000")
+          Def.task {
+            nativeLink.value
+          } andFinally {
+            logger.info("[async-profiler] stop profiler")
+            profiler.execute("stop")
+            profiler.execute("flamegraph,file=profile.html")
+          }
+        case None =>
+          nativeLink
+      }
+  }
+
   override def projectSettings: Seq[Setting[_]] = Def.settings(
     /* Remove libraryDependencies on ourselves; we use .dependsOn() instead
      * inside this build.
@@ -72,6 +123,7 @@ object MyScalaNativePlugin extends AutoPlugin {
             .getOrElse(nc.multithreadingSupport)
         )
     },
+    // nativeLinkProfiling := nativeLinkProfilingImpl.tag(NativeTags.Link).value,
     scalacOptions ++= {
       // Link source maps to GitHub sources
       val isSnapshot = nativeVersion.endsWith("-SNAPSHOT")
@@ -81,6 +133,9 @@ object MyScalaNativePlugin extends AutoPlugin {
           (LocalProject("scala-native") / baseDirectory).value,
           s"https://raw.githubusercontent.com/scala-native/scala-native/v$nativeVersion/"
         )
+    },
+    inConfig(Compile) {
+      nativeLinkProfiling := nativeLinkProfilingImpl.tag(NativeTags.Link).value,
     }
   )
 }
