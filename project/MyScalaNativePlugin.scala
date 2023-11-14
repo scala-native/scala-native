@@ -7,15 +7,20 @@ import scala.scalanative.sbtplugin.Utilities._
 import scala.scalanative.sbtplugin.ScalaNativePlugin
 import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport._
 import scala.sys.env
+import complete.DefaultParsers._
 
 import one.profiler.AsyncProfilerLoader
 import one.profiler.AsyncProfiler
+import build.OutputType.Text
+import build.OutputType.Collapsed
+import build.OutputType.Flamegraph
+import build.OutputType.Tree
 
 object MyScalaNativePlugin extends AutoPlugin {
   override def requires: Plugins = ScalaNativePlugin
 
   lazy val nativeLinkProfiling =
-    taskKey[File]("Running nativeLink with AsyncProfiler.")
+    inputKey[File]("Running nativeLink with AsyncProfiler.")
 
   // see: https://github.com/scalameta/metals/blob/0176a491cd209a09852ab33f99fd7de639e8e2dd/metals/src/main/scala/scala/meta/internal/builds/BloopInstall.scala#L81
   final val isGeneratingForIDE =
@@ -65,19 +70,23 @@ object MyScalaNativePlugin extends AutoPlugin {
     }
   }
 
-  import scala.concurrent._
-  import scala.concurrent.duration.Duration
-  private def await[T](
-      log: sbt.Logger
-  )(body: ExecutionContext => Future[T]): T = {
-    val ec =
-      ExecutionContext.fromExecutor(ExecutionContext.global, t => log.trace(t))
-
-    Await.result(body(ec), Duration.Inf)
-  }
-  private def nativeLinkProfilingImpl = Def.taskDyn {
+  private def nativeLinkProfilingImpl = Def.inputTaskDyn {
     val sbtLogger = streams.value.log
     val logger = sbtLogger.toLogger
+
+    val args = spaceDelimited("<arg>").parsed
+    val outputType = (for {
+      input <- args.headOption.toRight(
+        new IllegalArgumentException("Missing output type")
+      )
+      typ <- OutputType.fromString(input)
+    } yield typ) match {
+      case Left(ex) =>
+        logger.warn(s"${ex.getMessage()}, using default output type: `flamegraph`")
+        OutputType.Flamegraph
+      case Right(value) => value
+    }
+
     val profilerOpt: Option[AsyncProfiler] =
       if (AsyncProfilerLoader.isSupported())
         Some(AsyncProfilerLoader.load())
@@ -90,6 +99,8 @@ object MyScalaNativePlugin extends AutoPlugin {
         None
       }
 
+      val module = moduleName.value
+      val out = (crossTarget.value / s"$module-profile.${outputType.extension}").toString
       profilerOpt match {
         case Some(profiler) =>
           logger.info(s"[async-profiler] starting profiler: $profiler")
@@ -97,9 +108,9 @@ object MyScalaNativePlugin extends AutoPlugin {
           Def.task {
             nativeLink.value
           } andFinally {
-            logger.info("[async-profiler] stop profiler")
+            logger.info(s"[async-profiler] stop profiler, output to ${out}")
             profiler.execute("stop")
-            profiler.execute("flamegraph,file=profile.html")
+            profiler.execute(s"${outputType.name},file=${out}")
           }
         case None =>
           nativeLink
@@ -135,7 +146,32 @@ object MyScalaNativePlugin extends AutoPlugin {
         )
     },
     inConfig(Compile) {
-      nativeLinkProfiling := nativeLinkProfilingImpl.tag(NativeTags.Link).value,
+      nativeLinkProfiling := nativeLinkProfilingImpl
+        .tag(NativeTags.Link)
+        .evaluated,
     }
   )
+}
+
+sealed abstract class OutputType(val name: String) {
+  def extension: String = this match {
+    case Text => "txt"
+    case Collapsed => "csv"
+    case Flamegraph => "html"
+    case Tree => "html"
+  }
+}
+object OutputType {
+  case object Text extends OutputType("text")
+  case object Collapsed extends OutputType("collapsed")
+  case object Flamegraph extends OutputType("flamegraph")
+  case object Tree extends OutputType("tree")
+  def fromString(s: String): Either[IllegalArgumentException, OutputType] =
+    s match {
+      case Text.name       => Right(Text)
+      case Collapsed.name  => Right(Collapsed)
+      case Flamegraph.name => Right(Flamegraph)
+      case Tree.name       => Right(Tree)
+      case _ => Left(new IllegalArgumentException(s"Unknown output type: $s"))
+    }
 }
