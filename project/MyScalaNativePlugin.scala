@@ -11,10 +11,7 @@ import complete.DefaultParsers._
 
 import one.profiler.AsyncProfilerLoader
 import one.profiler.AsyncProfiler
-import build.OutputType.Text
-import build.OutputType.Collapsed
-import build.OutputType.Flamegraph
-import build.OutputType.Tree
+import build.OutputType._
 
 object MyScalaNativePlugin extends AutoPlugin {
   override def requires: Plugins = ScalaNativePlugin
@@ -104,7 +101,19 @@ object MyScalaNativePlugin extends AutoPlugin {
 
     val profilerOpt: Option[AsyncProfiler] =
       if (AsyncProfilerLoader.isSupported())
-        Some(AsyncProfilerLoader.load())
+        try {
+          Some(AsyncProfilerLoader.load())
+        } catch {
+          case ex: IllegalStateException => {
+            logger.warn(
+              s"Couldn't load async-prfiler, restart sbt to workaround the problem. " +
+                "This is usually caused because old sbt's classloader loaded the async-profiler DLL. \n" +
+                ex.getMessage()
+            )
+            throw ex
+          }
+          case e: Throwable => throw e
+        }
       else {
         logger.warn(
           "Couldn't load async-prfiler for the current OS, architecture or glibc is unavailable. " +
@@ -179,6 +188,7 @@ sealed abstract class OutputType(val name: String) {
     case Tree       => "html"
   }
 }
+
 object OutputType {
   case object Text extends OutputType("text")
   case object Collapsed extends OutputType("collapsed")
