@@ -75,8 +75,21 @@ object MyScalaNativePlugin extends AutoPlugin {
     val logger = sbtLogger.toLogger
 
     val args = spaceDelimited("<arg>").parsed
+
+    val commands = args.headOption match {
+      case None =>
+        throw new IllegalArgumentException(
+          "usage: nativeLinkProfiling <commands> <output-type>\n" +
+            "<commands>: `,` delimited arguments for async-profiler. refer https://github.com/async-profiler/async-profiler/blob/49d08fd068f81f1c952320c4bd082d991e09db97/src/arguments.cpp#L65-L113 \n" +
+            "<output-type>: text|collapsed|flamegraph|tree (default: flamegraph) \n" +
+            "e.g. `nativeLinkProfiling events=cpu,interval=10000000,threads"
+        )
+      case Some(value) =>
+        value
+    }
+
     val outputType = (for {
-      input <- args.headOption.toRight(
+      input <- args.tail.headOption.toRight(
         new IllegalArgumentException("Missing output type")
       )
       typ <- OutputType.fromString(input)
@@ -106,8 +119,10 @@ object MyScalaNativePlugin extends AutoPlugin {
         (crossTarget.value / s"$module-profile.${outputType.extension}").toString
       profilerOpt match {
         case Some(profiler) =>
-          logger.info(s"[async-profiler] starting profiler: $profiler")
-          profiler.execute("start,event=cpu,interval=100000")
+          logger.info(
+            s"[async-profiler] starting profiler with commands: start,$commands"
+          )
+          profiler.execute(s"start,$commands")
           Def.task {
             nativeLink.value
           } andFinally {
