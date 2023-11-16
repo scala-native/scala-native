@@ -134,7 +134,7 @@ jobs:
         scala: [2.13, 3, 3-next]
         build-mode: [debug, release-fast]
         lto: [none, thin]
-        gc: [none, boehm, immix, commix]
+        gc: [boehm, immix, commix]
         exclude:
           # Covered in basic test-runtime
           - scala: 3
