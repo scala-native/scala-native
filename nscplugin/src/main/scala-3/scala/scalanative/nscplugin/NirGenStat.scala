@@ -316,7 +316,7 @@ trait NirGenStat(using Context) {
 
   private def genMethodAttrs(
       sym: Symbol,
-      isExtern: => Boolean
+      isExtern: Boolean
   ): nir.Attrs = {
     val attrs = Seq.newBuilder[nir.Attr]
 
