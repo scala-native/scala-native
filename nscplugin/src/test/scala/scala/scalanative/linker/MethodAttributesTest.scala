@@ -30,7 +30,8 @@ class MethodAttributesTest {
       val CommonDefine = nir.Attr.Define("common-define")
       val CustomDefine = nir.Attr.Define("custom-define")
 
-      val expected = Seq(Module, WithLinkMethod, WithDefineMethod, DefaultMethod)
+      val expected =
+        Seq(Module, WithLinkMethod, WithDefineMethod, DefaultMethod)
       val found = defns.filter { defn =>
         def checkLink(value: nir.Attr.Link, expected: Boolean) = assertEquals(
           s"${defn.name} - ${value}",
@@ -69,7 +70,10 @@ class MethodAttributesTest {
         }
         expected.contains(defn.name)
       }
-      assertTrue(s"not found some defns, ${found.map(_.name)}", found.size == expected.size)
+      assertTrue(
+        s"not found some defns, ${found.map(_.name)}",
+        found.size == expected.size
+      )
     }
   }
 
