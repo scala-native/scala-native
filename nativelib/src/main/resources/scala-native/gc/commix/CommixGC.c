@@ -1,5 +1,5 @@
 #if defined(SCALANATIVE_GC_COMMIX)
-#include <ScalaNativeGC.h>
+#include <shared/ScalaNativeGC.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <memory.h>

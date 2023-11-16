@@ -4,8 +4,8 @@
 #include "Heap.h"
 #include "BlockAllocator.h"
 #include "shared/ThreadUtil.h"
-#include "shared/MutatorThread.h"
-#include "Safepoint.h"
+#include "MutatorThread.h"
+#include "shared/Safepoint.h"
 #include "immix_commix/GCRoots.h"
 
 extern Heap heap;
