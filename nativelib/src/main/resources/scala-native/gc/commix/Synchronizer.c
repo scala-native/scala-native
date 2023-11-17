@@ -1,3 +1,5 @@
+#if defined(SCALANATIVE_GC_COMMIX)
+
 #include "Synchronizer.h"
 #include "shared/ScalaNativeGC.h"
 #include <stdio.h>
@@ -202,3 +204,5 @@ void Synchronizer_release() {
     MutatorThreads_unlock();
     mutex_unlock(&synchronizerLock);
 }
+
+#endif
