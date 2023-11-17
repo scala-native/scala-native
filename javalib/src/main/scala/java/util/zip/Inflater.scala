@@ -3,10 +3,8 @@ package java.util.zip
 import scala.scalanative.unsigned._
 import scala.scalanative.unsafe._
 import scala.scalanative.libc._
-import scala.scalanative.runtime.zlib
-import scala.scalanative.runtime.zlibExt.z_stream
-import scala.scalanative.runtime.zlibOps._
-import zlib._
+import scala.scalanative.ffi.zlib
+import scala.scalanative.ffi.zlibOps._
 
 // Ported from Apache Harmony
 
@@ -17,7 +15,7 @@ class Inflater(noHeader: Boolean) {
   private[zip] var inLength: Int = 0
   private[zip] var inRead: Int = 0
   private var doesNeedDictionary: Boolean = false
-  private var stream: z_streamp = Inflater.createStream(noHeader)
+  private var stream: zlib#z_streamp = Inflater.createStream(noHeader)
 
   def this() = this(noHeader = false)
 
@@ -197,10 +195,10 @@ private object Inflater {
   // Used when we try to read to a zero-sized array.
   val empty = new Array[Byte](1)
 
-  def createStream(noHeader: Boolean): z_streamp = {
+  def createStream(noHeader: Boolean): zlib#z_streamp = {
     val stream = stdlib
       .calloc(1.toUSize, z_stream.size)
-      .asInstanceOf[z_streamp]
+      .asInstanceOf[zlib#z_streamp]
     val wbits: Int =
       if (noHeader) 15 / -1
       else 15
