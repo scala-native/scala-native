@@ -21,6 +21,7 @@ import scala.scalanative.util.unsupported
 import dotty.tools.FatalError
 import dotty.tools.dotc.report
 import dotty.tools.dotc.core.NameKinds
+import dotty.tools.dotc.core.Annotations.Annotation
 
 trait NirGenStat(using Context) {
   self: NirCodeGen =>
@@ -238,22 +239,39 @@ trait NirGenStat(using Context) {
   }
 
   private def genMethodAttrs(sym: Symbol): nir.Attrs = {
-    val inlineAttrs =
-      if (sym.is(Bridge) || sym.is(Accessor)) Seq(Attr.AlwaysInline)
-      else Nil
+    val isExtern = sym.owner.isExternType || sym.isExternType
+    val attrs = Seq.newBuilder[nir.Attr]
 
-    val annotatedAttrs =
-      sym.annotations.map(_.symbol.typeRef).collect {
-        case defnNir.NoInlineType     => Attr.NoInline
-        case defnNir.AlwaysInlineType => Attr.AlwaysInline
-        case defnNir.InlineType       => Attr.InlineHint
-        case defnNir.NoOptimizeType   => Attr.NoOpt
-        case defnNir.NoSpecializeType => Attr.NoSpecialize
-        case defnNir.StubType         => Attr.Stub
+    if (sym.is(Bridge) || sym.is(Accessor))
+      attrs += nir.Attr.AlwaysInline
+    if (isExtern)
+      attrs += nir.Attr.Extern
+
+    def requireLiteralStringAnnotation(annotation: Annotation): Option[String] =
+      annotation.tree match {
+        case Apply(_, Seq(Literal(Constant(name: String)))) => Some(name)
+        case tree =>
+          report.error(
+            s"Invalid usage of ${annotation.symbol.show}, expected literal constant string argument, got ${tree}",
+            tree.srcPos
+          )
+          None
       }
-    val externAttrs = if (sym.owner.isExternType) Seq(Attr.Extern) else Nil
-
-    Attrs.fromSeq(inlineAttrs ++ annotatedAttrs ++ externAttrs)
+    sym.annotations.foreach { ann =>
+      ann.symbol match {
+        case defnNir.NoInlineClass     => attrs += nir.Attr.NoInline
+        case defnNir.AlwaysInlineClass => attrs += nir.Attr.AlwaysInline
+        case defnNir.InlineClass       => attrs += nir.Attr.InlineHint
+        case defnNir.NoOptimizeClass   => attrs += nir.Attr.NoOpt
+        case defnNir.NoSpecializeClass => attrs += nir.Attr.NoSpecialize
+        case defnNir.StubClass         => attrs += nir.Attr.Stub
+        case defnNir.LinkClass =>
+          requireLiteralStringAnnotation(ann)
+            .foreach(attrs += nir.Attr.Link(_))
+        case _ => ()
+      }
+    }
+    nir.Attrs.fromSeq(attrs.result())
   }
 
   protected val curExprBuffer = ScopedVar[ExprBuffer]()
