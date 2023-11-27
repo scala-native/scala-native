@@ -839,8 +839,8 @@ trait Eval { self: Interflow =>
         def size(ty: nir.Type) = ty match {
           case nir.Type.Size =>
             if (platform.is32Bit) 32 else 64
-          case nir.Type.FixedSizeI(s, _) =>
-            s
+          case i: nir.Type.FixedSizeI =>
+            i.width
           case o =>
             bailOut
         }
