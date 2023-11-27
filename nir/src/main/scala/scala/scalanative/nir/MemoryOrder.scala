@@ -1,11 +1,6 @@
 package scala.scalanative
 package nir
 
-case class SyncAttrs(
-    memoryOrder: MemoryOrder,
-    isVolatile: Boolean = true
-)
-
 sealed abstract class MemoryOrder(private[nir] val tag: Int) {
   final def show: String = nir.Show(this)
 }
