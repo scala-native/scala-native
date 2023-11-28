@@ -133,15 +133,15 @@ object Build {
     Future.reduceLeft(tasks)(_ ++ _)
   }
 
-  /** Compiles `generatedIR`, which is a sequence of LLVM IR files. */
+  /** Compiles `llvmAssembly`, which is a sequence of LLVM IR files. */
   private def compile(
       config: Config,
       analysis: ReachabilityAnalysis.Result,
-      generatedIR: Seq[Path]
+      llvmAssembly: Seq[Path]
   )(implicit ec: ExecutionContext): Future[Seq[Path]] =
     config.logger.timeAsync("Compiling to native code") {
       // compile generated LLVM IR
-      val compileGeneratedIR = LLVM.compile(config, generatedIR)
+      val compileGeneratedIR = LLVM.compile(config, llvmAssembly)
 
       /* Used to pass alternative paths of compiled native (lib) sources,
        * eg: reused native sources used in partests.
