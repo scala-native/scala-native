@@ -49,9 +49,8 @@ private[scalanative] object ScalaNative {
   def optimize(config: Config, analysis: ReachabilityAnalysis.Result)(implicit
       ec: ExecutionContext
   ): Future[ReachabilityAnalysis.Result] = {
-    import config.logger
     if (config.compilerConfig.optimize)
-      logger.timeAsync(s"Optimizing (${config.mode} mode)") {
+      config.logger.timeAsync(s"Optimizing (${config.mode} mode)") {
         withReachabilityPostprocessing(
           config,
           stage = "optimization",
@@ -64,7 +63,7 @@ private[scalanative] object ScalaNative {
         }
       }
     else {
-      logger.info("Optimizing skipped")
+      config.logger.info("Optimizing skipped")
       Future.successful(analysis)
     }
   }
