@@ -23,9 +23,6 @@ object MyScalaNativePlugin extends AutoPlugin {
   final val isGeneratingForIDE =
     env.getOrElse("METALS_ENABLED", "false").toBoolean
 
-  final val enableProfiler =
-    env.getOrElse("ENABLE_PROFILER", "false").toBoolean
-
   final val enableExperimentalCompiler = {
     val ExperimentalCompilerEnv = "ENABLE_EXPERIMENTAL_COMPILER"
     val enabled = env.contains(ExperimentalCompilerEnv)
@@ -73,17 +70,14 @@ object MyScalaNativePlugin extends AutoPlugin {
 
     val args = spaceDelimited("<arg>").parsed
 
-    val commands = args.headOption match {
-      case None =>
-        throw new IllegalArgumentException(
-          "usage: nativeLinkProfiling <commands> <output-type>\n" +
-            "<commands>: `,` delimited arguments for async-profiler. refer https://github.com/async-profiler/async-profiler/blob/49d08fd068f81f1c952320c4bd082d991e09db97/src/arguments.cpp#L65-L113 \n" +
-            "<output-type>: text|collapsed|flamegraph|tree (default: flamegraph) \n" +
-            "e.g. `nativeLinkProfiling events=cpu,interval=10000000,threads"
-        )
-      case Some(value) =>
-        value
-    }
+    val commands = args.headOption.getOrElse(
+      throw new IllegalArgumentException(
+        "usage: nativeLinkProfiling <commands> <output-type>\n" +
+          "<commands>: `,` delimited arguments for async-profiler. refer https://github.com/async-profiler/async-profiler/blob/49d08fd068f81f1c952320c4bd082d991e09db97/src/arguments.cpp#L65-L113 \n" +
+          "<output-type>: text|collapsed|flamegraph|tree (default: flamegraph) \n" +
+          "e.g. `nativeLinkProfiling events=cpu,interval=10000000,threads"
+      )
+    )
 
     val outputType = (for {
       input <- args.tail.headOption.toRight(
@@ -106,8 +100,8 @@ object MyScalaNativePlugin extends AutoPlugin {
         } catch {
           case ex: IllegalStateException => {
             logger.warn(
-              s"Couldn't load async-prfiler, restart sbt to workaround the problem. " +
-                "This is usually caused because old sbt's classloader loaded the async-profiler DLL. \n" +
+              s"Couldn't load async-profiler, restart sbt to workaround the problem. " +
+                "This is usually caused because the previous sbt's classloader loaded the async-profiler DLL. \n" +
                 ex.getMessage()
             )
             throw ex
@@ -116,7 +110,7 @@ object MyScalaNativePlugin extends AutoPlugin {
         }
       else {
         logger.warn(
-          "Couldn't load async-prfiler for the current OS, architecture or glibc is unavailable. " +
+          "Couldn't load async-profiler for the current OS, architecture or glibc is unavailable. " +
             "Profiling will not be available." +
             "See the supported platforms https://github.com/jvm-profiling-tools/ap-loader#supported-platforms"
         )
@@ -128,11 +122,11 @@ object MyScalaNativePlugin extends AutoPlugin {
         (crossTarget.value / s"$module-profile.${outputType.extension}").toString
       profilerOpt match {
         case Some(profiler) =>
-          logger.info(
-            s"[async-profiler] starting profiler with commands: start,$commands"
-          )
-          profiler.execute(s"start,$commands")
           Def.task {
+            logger.info(
+              s"[async-profiler] starting profiler with commands: start,$commands"
+            )
+            profiler.execute(s"start,$commands")
             nativeLink.value
           } andFinally {
             logger.info(s"[async-profiler] stop profiler, output to ${out}")
@@ -161,7 +155,6 @@ object MyScalaNativePlugin extends AutoPlugin {
             .getOrElse(nc.multithreadingSupport)
         )
     },
-    // nativeLinkProfiling := nativeLinkProfilingImpl.tag(NativeTags.Link).value,
     scalacOptions ++= {
       // Link source maps to GitHub sources
       val isSnapshot = nativeVersion.endsWith("-SNAPSHOT")
