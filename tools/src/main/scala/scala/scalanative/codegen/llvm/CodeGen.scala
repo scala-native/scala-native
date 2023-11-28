@@ -163,10 +163,12 @@ object CodeGen {
     }
   }
 
-  def depends(implicit platform: PlatformInfo): Seq[nir.Global] = {
+  /** The symbols required by generation on `platform`. */
+  def dependencies(implicit platform: PlatformInfo): Seq[nir.Global] = {
     val buf = mutable.UnrolledBuffer.empty[nir.Global]
     buf ++= Lower.depends
     buf ++= Generate.depends
     buf.toSeq
   }
+
 }

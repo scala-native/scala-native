@@ -185,7 +185,8 @@ object Interflow {
     val StackRestoreSig = nir.Type.Function(Seq(nir.Type.Ptr), nir.Type.Unit)
   }
 
-  val depends: Seq[nir.Global] = Seq(
+  /** The symbols required by Interflow. */
+  val dependencies: Seq[nir.Global] = Seq(
     LLVMIntrinsics.StackSave.name,
     LLVMIntrinsics.StackRestore.name
   )

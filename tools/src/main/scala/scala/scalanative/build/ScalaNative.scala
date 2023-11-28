@@ -22,8 +22,7 @@ private[scalanative] object ScalaNative {
   def entries(config: Config): Seq[nir.Global] = {
     implicit val platform: PlatformInfo = PlatformInfo(config)
     val entry = encodedMainClass(config).map(_.member(nir.Rt.ScalaMainSig))
-    val dependencies = CodeGen.depends ++ Interflow.depends
-    entry ++: dependencies
+    entry ++: (CodeGen.dependencies ++ Interflow.dependencies)
   }
 
   /** Given the classpath and main entry point, link under closed-world
