@@ -9,7 +9,7 @@ import scala.scalanative.posix.net.`if`._
 import scala.scalanative.posix.stddef
 
 final class Inet6Address private (
-    val ipAddress: Array[Byte],
+    ipAddress: Array[Byte],
     host: String,
     scopeId: Int,
     val zoneIdent: String

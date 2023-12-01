@@ -38,8 +38,10 @@ import scala.scalanative.meta.LinktimeInfo.{isLinux, isMac}
  *    That information is handled separately.
  */
 
-class InetAddress protected (ipAddress: Array[Byte], originalHost: String)
-    extends Serializable {
+class InetAddress protected (
+    private[net] var ipAddress: Array[Byte],
+    originalHost: String
+) extends Serializable {
   import InetAddress._
 
   private def this(ipAddress: Array[Byte]) = this(ipAddress, null)
@@ -88,8 +90,8 @@ class InetAddress protected (ipAddress: Array[Byte], originalHost: String)
     if (ipAddress.length == 4) {
       formatIn4Addr(bytes)
     } else if (ipAddress.length == 16) {
-      if (isIPv4MappedAddress(bytes)) {
-        formatIn4Addr(extractIP4Bytes(bytes).at(0))
+      if (SocketHelpers.isIPv4MappedAddress(bytes)) {
+        formatIn4Addr(ipAddress.at(12))
       } else {
         Inet6Address.formatInet6Address(this.asInstanceOf[Inet6Address])
       }
@@ -216,58 +218,30 @@ object InetAddress {
      * to leave the host field blank/empty.
      */
     val effectiveHost = if (isNumeric) null else host
-
-    if (addrinfoP.ai_family == AF_INET) {
-      new Inet4Address(addrinfoToByteArray(addrinfoP), effectiveHost)
-    } else if (addrinfoP.ai_family == AF_INET6) {
-      val addr = addrinfoP.ai_addr.asInstanceOf[Ptr[sockaddr_in6]]
-      val addrBytes = addr.sin6_addr.at1.at(0).asInstanceOf[Ptr[Byte]]
-
-      // Scala JVM down-converts even when preferIPv6Addresses is "true"
-      if (isIPv4MappedAddress(addrBytes)) {
-        new Inet4Address(extractIP4Bytes(addrBytes), effectiveHost)
-      } else {
-        /* Yes, Java specifies Int for scope_id in a way which disallows
-         * some values POSIX/IEEE/IETF allows.
-         */
-
-        val scope_id = addr.sin6_scope_id.toInt
-
-        val zoneIdent = {
-          val ifIndex = host.indexOf('%')
-          val ifNameStart = ifIndex + 1
-          if ((ifIndex < 0) || (ifNameStart >= host.length)) ""
-          else host.substring(ifNameStart)
-        }
-
-        Inet6Address(
-          addrinfoToByteArray(addrinfoP),
-          effectiveHost,
-          scope_id,
-          zoneIdent
-        )
-      }
+    val ipAddress = SocketHelpers.sockaddrToByteArray(addrinfoP.ai_addr)
+    if (ipAddress.length == 4) {
+      new Inet4Address(ipAddress, effectiveHost)
     } else {
-      val af = addrinfoP.ai_family
-      throw new IOException(
-        s"The requested address family is not supported: ${af}."
+      val addr = addrinfoP.ai_addr.asInstanceOf[Ptr[sockaddr_in6]]
+      /* Yes, Java specifies Int for scope_id in a way which disallows
+       * some values POSIX/IEEE/IETF allows.
+       */
+      val scope_id = addr.sin6_scope_id.toInt
+
+      val zoneIdent = {
+        val ifIndex = host.indexOf('%')
+        val ifNameStart = ifIndex + 1
+        if ((ifIndex < 0) || (ifNameStart >= host.length)) ""
+        else host.substring(ifNameStart)
+      }
+
+      Inet6Address(
+        ipAddress,
+        effectiveHost,
+        scope_id,
+        zoneIdent
       )
     }
-  }
-
-  private def addrinfoToByteArray(
-      addrinfoP: Ptr[addrinfo]
-  ): Array[Byte] = {
-    SocketHelpers.sockaddrToByteArray(addrinfoP.ai_addr)
-  }
-
-  private def extractIP4Bytes(pb: Ptr[Byte]): Array[Byte] = {
-    val buf = new Array[Byte](4)
-    buf(0) = pb(12)
-    buf(1) = pb(13)
-    buf(2) = pb(14)
-    buf(3) = pb(15)
-    buf
   }
 
   private def formatIn4Addr(pb: Ptr[Byte]): String = {
@@ -623,12 +597,6 @@ object InetAddress {
 
       retArray.toArray
     }
-
-  private def isIPv4MappedAddress(pb: Ptr[Byte]): Boolean = {
-    val ptrInt = pb.asInstanceOf[Ptr[Int]]
-    val ptrLong = pb.asInstanceOf[Ptr[Long]]
-    (ptrInt(2) == 0xffff0000) && (ptrLong(0) == 0x0L)
-  }
 
   private def mapGaiStatus(gaiStatus: Int): Int = {
     /* This is where some arcane Operating System specific behavior

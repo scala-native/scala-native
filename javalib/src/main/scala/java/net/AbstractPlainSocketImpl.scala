@@ -1,10 +1,9 @@
 package java.net
 
+import java.net.SocketHelpers.sockaddrToByteArray
 import scala.scalanative.unsigned._
 import scala.scalanative.unsafe._
-
 import scalanative.libc.string.memcpy
-
 import scala.scalanative.posix.arpa.inet
 // Import posix name errno as variable, not class or type.
 import scala.scalanative.posix.{errno => posixErrno}, posixErrno._
@@ -215,43 +214,17 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
     if (timeout > 0)
       tryPollOnAccept()
 
-    val storage = stackalloc[Byte](sizeof[in.sockaddr_in6])
-    val len = stackalloc[socket.socklen_t]()
-    !len = sizeof[in.sockaddr_in6].toUInt
+    val ss = stackalloc[socket.sockaddr_storage]()
+    val sa = ss.asInstanceOf[Ptr[socket.sockaddr]]
+    val saLen = stackalloc[socket.socklen_t]()
+    !saLen = sizeof[in.sockaddr_in6].toUInt
 
-    val newFd =
-      socket.accept(fd.fd, storage.asInstanceOf[Ptr[socket.sockaddr]], len)
+    val newFd = socket.accept(fd.fd, sa, saLen)
     if (newFd == -1) {
       throw new SocketException("Accept failed")
     }
-    val family =
-      storage.asInstanceOf[Ptr[socket.sockaddr_storage]].ss_family.toInt
-    val ipstr: Ptr[CChar] = stackalloc[CChar](in.INET6_ADDRSTRLEN)
 
-    val (srcPtr, port) = if (family == socket.AF_INET) {
-      val sa = storage.asInstanceOf[Ptr[in.sockaddr_in]]
-      val port = inet.ntohs(sa.sin_port).toInt
-      (sa.sin_addr.at1.asInstanceOf[Ptr[Byte]], port)
-    } else {
-      val sa = storage.asInstanceOf[Ptr[in.sockaddr_in6]]
-      val port = inet.ntohs(sa.sin6_port).toInt
-      (sa.sin6_addr.at1.at(0).asInstanceOf[Ptr[Byte]], port)
-    }
-
-    val ret = inet.inet_ntop(
-      family,
-      srcPtr,
-      ipstr,
-      in.INET6_ADDRSTRLEN.toUInt
-    )
-
-    if (ret == null) {
-      throw new IOException(
-        s"inet_ntop failed: ${fromCString(strerror(errno))}"
-      )
-    }
-
-    s.address = InetAddress.getByName(fromCString(ipstr))
+    s.address = InetAddress.getByAddress(sockaddrToByteArray(sa))
     s.port = port
     s.localport = this.localport
     s.fd = new FileDescriptor(newFd)

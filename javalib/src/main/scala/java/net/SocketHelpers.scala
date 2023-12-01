@@ -2,16 +2,16 @@ package java.net
 
 import scala.scalanative.unsigned._
 import scala.scalanative.unsafe._
-
-import scala.scalanative.posix.{netdb, netdbOps}, netdb._, netdbOps._
+import scala.scalanative.posix.{netdb, netdbOps}
+import netdb._
+import netdbOps._
+import scala.scalanative.posix.arpa.inet
 import scala.scalanative.posix.netinet.in
 import scala.scalanative.posix.netinet.inOps._
 import scala.scalanative.posix.sys.socket._
 import scala.scalanative.posix.sys.socketOps._
 import scala.scalanative.posix.string.memcpy
-
 import scala.scalanative.meta.LinktimeInfo.isWindows
-
 import scala.scalanative.windows.WinSocketApiOps
 
 object SocketHelpers {
@@ -131,29 +131,55 @@ object SocketHelpers {
     }
   }
 
-  private[net] def sockaddrToByteArray(sockAddr: Ptr[sockaddr]): Array[Byte] = {
+  private[net] def isIPv4MappedAddress(pb: Ptr[Byte]): Boolean = {
+    val ptrInt = pb.asInstanceOf[Ptr[Int]]
+    val ptrLong = pb.asInstanceOf[Ptr[Long]]
+    (ptrInt(2) == 0xffff0000) && (ptrLong(0) == 0x0L)
+  }
 
-    val (src, byteArraySize) = {
-      val af = sockAddr.sa_family.toInt
-      if (af == AF_INET6) {
-        val v6addr = sockAddr.asInstanceOf[Ptr[in.sockaddr_in6]]
-        val sin6Addr = v6addr.sin6_addr.at1.asInstanceOf[Ptr[Byte]]
-        val arraySize = 16
-        (sin6Addr, arraySize)
-      } else if (af == AF_INET) {
-        val v4addr = sockAddr.asInstanceOf[Ptr[in.sockaddr_in]]
-        val sin4Addr = v4addr.sin_addr.at1.asInstanceOf[Ptr[Byte]]
-        val arraySize = 4
-        (sin4Addr, arraySize)
+  private[net] def sockaddrToByteArray(sockAddr: Ptr[sockaddr]): Array[Byte] = {
+    val af = sockAddr.sa_family.toInt
+    val (src, size) = if (af == AF_INET6) {
+      val v6addr = sockAddr.asInstanceOf[Ptr[in.sockaddr_in6]]
+      val sin6Addr = v6addr.sin6_addr.at1.asInstanceOf[Ptr[Byte]]
+      // Scala JVM down-converts even when preferIPv6Addresses is "true"
+      if (isIPv4MappedAddress(sin6Addr)) {
+        (sin6Addr + 12, 4)
       } else {
-        throw new SocketException(s"Unsupported address family: ${af}")
+        (sin6Addr, 16)
       }
+    } else if (af == AF_INET) {
+      val v4addr = sockAddr.asInstanceOf[Ptr[in.sockaddr_in]]
+      val sin4Addr = v4addr.sin_addr.at1.asInstanceOf[Ptr[Byte]]
+      (sin4Addr, 4)
+    } else {
+      throw new SocketException(s"Unsupported address family: ${af}")
     }
 
-    val byteArray = new Array[Byte](byteArraySize)
-    memcpy(byteArray.at(0), src, byteArraySize.toUInt)
+    val byteArray = new Array[Byte](size)
+    memcpy(byteArray.at(0), src, size.toUInt)
 
     byteArray
+  }
+
+  private def sockddrToPort(sockAddr: Ptr[sockaddr]): Int = {
+    val af = sockAddr.sa_family.toInt
+    val inPort = if (af == AF_INET6) {
+      sockAddr.asInstanceOf[Ptr[in.sockaddr_in6]].sin6_port
+    } else if (af == AF_INET) {
+      sockAddr.asInstanceOf[Ptr[in.sockaddr_in]].sin_port
+    } else {
+      throw new SocketException(s"Unsupported address family: ${af}")
+    }
+    inet.ntohs(inPort).toInt
+  }
+
+  private[net] def sockaddrStorageToInetSocketAddress(
+      sockAddr: Ptr[sockaddr]
+  ): InetSocketAddress = {
+    val addr = InetAddress.getByAddress(sockaddrToByteArray(sockAddr))
+    val port = sockddrToPort(sockAddr)
+    new InetSocketAddress(addr, port)
   }
 
   // Create copies of loopback & wildcard, so that originals never get changed

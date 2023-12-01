@@ -274,7 +274,7 @@ class SocketTest {
     val s6 = new Socket()
     try {
       assertThrows(
-        "a5",
+        "a6",
         classOf[IllegalArgumentException],
         s6.bind(new UnsupportedSocketAddress)
       )
