@@ -150,7 +150,7 @@ jobs:
       fail-fast: false
       matrix:
         scala: [3]
-        llvm: ["16.0.6", "17.0.2"] # Last 2 stable versions, LLVM 16 is minimal version able to compile current Windows SDK
+        llvm: ["16.0.6", "17.0.6"] # Last 2 stable versions, LLVM 16 is minimal version able to compile current Windows SDK
     if: "(github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native'"
     steps:
       - name: Setup git config

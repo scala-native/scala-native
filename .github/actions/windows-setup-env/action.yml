@@ -9,7 +9,7 @@ inputs:
     default: "8"
   llvm-version:
     description: "LLVM version to use"
-    default: "17.0.2"
+    default: "17.0.6"
 outputs:
   vcpkg-dir:
     description: "Directory containing installed libraries"
@@ -65,10 +65,34 @@ runs:
         key: ${{ runner.os }}-${{ inputs.scala-version }}-deps
 
     # Install LLVM in case if cache is missing
-    # Choco-Install is GH Actions wrappers around choco, which does retries
     - name: Install LLVM
       shell: pwsh
-      run: Choco-Install -PackageName llvm -ArgumentList "--version=${{ inputs.llvm-version }}", "--allow-downgrade", "--force"
+      run: |
+        $retryCount = 3
+        $retryDelay = 5  # seconds
+
+        function InstallLLVM {
+            Write-Host "Attempting to install LLVM (try $($retryCount + 1 - $global:retryAttempt) of $($retryCount + 1))..."
+            choco install llvm --version=${{ inputs.llvm-version }} --allow-downgrade --force
+        }
+
+        # Attempt to install LLVM with retries
+        for ($global:retryAttempt = 1; $global:retryAttempt -le $retryCount; $global:retryAttempt++) {
+            try {
+                InstallLLVM
+                Write-Host "LLVM installation successful!"
+                break  # Exit the loop if installation is successful
+            } catch {
+                Write-Host "Error installing LLVM: $_"
+                if ($global:retryAttempt -lt $retryCount) {
+                    Write-Host "Retrying in $retryDelay seconds..."
+                    Start-Sleep -Seconds $retryDelay
+                } else {
+                    Write-Host "Maximum retry attempts reached. Exiting."
+                    exit 1
+                }
+            }
+        }
 
     - name: Add LLVM on Path
       shell: pwsh
