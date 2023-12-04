@@ -116,7 +116,7 @@ class DatagramSocketTest {
     val ds = new DatagramSocket(null)
     try {
       val prevValue = ds.getBroadcast()
-      assertFalse(prevValue)
+      assertTrue(prevValue)
       ds.setBroadcast(!prevValue)
     } finally {
       ds.close()
@@ -163,7 +163,7 @@ class DatagramSocketTest {
       try {
         assertThrows(
           "ds4",
-          classOf[BindException],
+          classOf[SocketException],
           ds5.bind(ds4.getLocalSocketAddress)
         )
       } finally {
@@ -187,8 +187,9 @@ class DatagramSocketTest {
   }
 
   @Test def sendReceive(): Unit = {
-    val ds1 = new DatagramSocket()
-    val ds2 = new DatagramSocket()
+    val loopback = InetAddress.getLoopbackAddress()
+    val ds1 = new DatagramSocket(new InetSocketAddress(loopback, 0))
+    val ds2 = new DatagramSocket(new InetSocketAddress(loopback, 0))
     try {
       val data = "Test Data"
       val bytes = data.getBytes()
@@ -205,10 +206,9 @@ class DatagramSocketTest {
       val remoteAddress =
         result.getSocketAddress().asInstanceOf[InetSocketAddress]
       assertEquals("Received incorrect data", data, receivedData)
-      // ds1.getLocalSocketAddress() is a wildcard address, so we can't compare it
       assertEquals(
         "Received incorrect address",
-        InetAddress.getLoopbackAddress(),
+        ds1.getLocalAddress(),
         remoteAddress.getAddress()
       )
       assertEquals(
@@ -223,9 +223,10 @@ class DatagramSocketTest {
   }
 
   @Test def connect(): Unit = {
-    val ds1 = new DatagramSocket()
-    val ds2 = new DatagramSocket()
-    val ds3 = new DatagramSocket()
+    val loopback = InetAddress.getLoopbackAddress()
+    val ds1 = new DatagramSocket(new InetSocketAddress(loopback, 0))
+    val ds2 = new DatagramSocket(new InetSocketAddress(loopback, 0))
+    val ds3 = new DatagramSocket(new InetSocketAddress(loopback, 0))
     try {
       val data = "Test Data"
       val bytes = data.getBytes()
@@ -238,11 +239,11 @@ class DatagramSocketTest {
       ds2.send(packet)
 
       // connect ds3 to ds1
-      ds3.connect(InetAddress.getLoopbackAddress(), ds1.getLocalPort())
+      ds3.connect(loopback, ds1.getLocalPort())
       assertTrue("Socket is not connected", ds3.isConnected())
       assertEquals(
         "Socket has incorrect remote address",
-        InetAddress.getLoopbackAddress(),
+        ds1.getLocalAddress(),
         ds3.getInetAddress()
       )
       assertEquals(
@@ -273,8 +274,9 @@ class DatagramSocketTest {
   }
 
   @Test def sendReceiveBroadcast(): Unit = {
+    val loopback = InetAddress.getLoopbackAddress()
     val broadcastAddress = InetAddress.getByName("127.255.255.255")
-    val ds1 = new DatagramSocket()
+    val ds1 = new DatagramSocket(new InetSocketAddress(loopback, 0))
     val ds2 = new DatagramSocket(null)
     try {
       ds2.setReuseAddress(true)

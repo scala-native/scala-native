@@ -8,9 +8,9 @@ import scala.scalanative.posix.poll._
 import scala.scalanative.posix.pollEvents._
 import scala.scalanative.posix.pollOps._
 import scala.scalanative.posix
-
 import java.io.{FileDescriptor, IOException}
 import scala.annotation.tailrec
+import scala.scalanative.posix.unistd
 
 private[net] class UnixPlainDatagramSocketImpl
     extends AbstractPlainDatagramSocketImpl {
@@ -24,6 +24,20 @@ private[net] class UnixPlainDatagramSocketImpl
       throw new IOException(
         s"Could not create a socket in address family: ${af}"
       )
+
+    // enable broadcast by default
+    val broadcastPrt = stackalloc[CInt]()
+    !broadcastPrt = 1
+    if (posix.sys.socket.setsockopt(
+          sock,
+          posix.sys.socket.SOL_SOCKET,
+          posix.sys.socket.SO_BROADCAST,
+          broadcastPrt.asInstanceOf[Ptr[Byte]],
+          sizeof[CInt].toUInt
+        ) < 0) {
+      unistd.close(sock)
+      throw new IOException(s"Could not set SO_BROADCAST on socket: $errno")
+    }
 
     fd = new FileDescriptor(sock)
   }

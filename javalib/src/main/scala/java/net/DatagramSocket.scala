@@ -70,6 +70,10 @@ class DatagramSocket protected (
   }
 
   def bind(addr: SocketAddress): Unit = {
+    if (isBound()) {
+      throw new SocketException("already bound")
+    }
+
     if (addr != null && !addr.isInstanceOf[InetSocketAddress]) {
       throw new IllegalArgumentException(
         "Endpoint is of unsupported SocketAddress subclass"
