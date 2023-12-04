@@ -37,7 +37,7 @@ static LONG WINAPI SafepointTrapHandler(EXCEPTION_POINTERS *ex) {
             Synchronizer_wait();
             return EXCEPTION_CONTINUE_EXECUTION;
         }
-        fprintf(stderr, "Cought exception code %p in GC exception handler\n",
+        fprintf(stderr, "Caught exception code %p in GC exception handler\n",
                 (void *)(uintptr_t)ex->ExceptionRecord->ExceptionCode);
         fflush(stdout);
         StackTrace_PrintStackTrace(ex);
@@ -52,7 +52,7 @@ static LONG WINAPI SafepointTrapHandler(EXCEPTION_POINTERS *ex) {
 #else
 #define SAFEPOINT_TRAP_SIGNAL SIGSEGV
 #endif
-#define THREAD_WAKUP_SIGNAL SIGCONT
+#define THREAD_WAKEUP_SIGNAL SIGCONT
 static struct sigaction defaultAction;
 static sigset_t threadWakupSignals;
 static void SafepointTrapHandler(int signal, siginfo_t *siginfo, void *uap) {
@@ -74,9 +74,9 @@ static void SetupPageFaultHandler() {
     AddVectoredExceptionHandler(1, &SafepointTrapHandler);
 #else
     sigemptyset(&threadWakupSignals);
-    sigaddset(&threadWakupSignals, THREAD_WAKUP_SIGNAL);
+    sigaddset(&threadWakupSignals, THREAD_WAKEUP_SIGNAL);
     sigprocmask(SIG_BLOCK, &threadWakupSignals, NULL);
-    assert(sigismember(&threadWakupSignals, THREAD_WAKUP_SIGNAL));
+    assert(sigismember(&threadWakupSignals, THREAD_WAKEUP_SIGNAL));
 
     struct sigaction sa;
     memset(&sa, 0, sizeof(struct sigaction));
@@ -106,18 +106,18 @@ static void Synchronizer_SuspendThread(MutatorThread *thread) {
         perror("Error: sig wait");
         exit(errno);
     }
-    assert(signum == THREAD_WAKUP_SIGNAL);
+    assert(signum == THREAD_WAKEUP_SIGNAL);
 #endif
 }
 
-static void Synchronizer_WakupThread(MutatorThread *thread) {
+static void Synchronizer_WakeupThread(MutatorThread *thread) {
 #ifdef _WIN32
     assert(thread != currentMutatorThread);
     if (!SetEvent(thread->wakeupEvent)) {
         fprintf(stderr, "Failed to set event %lu\n", GetLastError());
     }
 #else
-    int status = pthread_kill(thread->thread, THREAD_WAKUP_SIGNAL);
+    int status = pthread_kill(thread->thread, THREAD_WAKEUP_SIGNAL);
     if (status != 0) {
         fprintf(stderr, "Failed to resume thread after GC, retval: %d\n",
                 status);
@@ -194,7 +194,7 @@ void Synchronizer_release() {
             if (atomic_load_explicit(&thread->isWaiting,
                                      memory_order_acquire)) {
                 stoppedThreads++;
-                Synchronizer_WakupThread(thread);
+                Synchronizer_WakeupThread(thread);
             }
         }
         if (stoppedThreads > 0)

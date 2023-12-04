@@ -8,7 +8,7 @@
 #include <shared/ThreadUtil.h>
 #include <assert.h>
 
-static mutex_t threadListsModifiactionLock;
+static mutex_t threadListsModificationLock;
 
 void MutatorThread_init(Field_t *stackbottom) {
     MutatorThread *self = (MutatorThread *)malloc(sizeof(MutatorThread));
@@ -72,7 +72,7 @@ void MutatorThread_switchState(MutatorThread *self,
     self->state = newState;
 }
 
-void MutatorThreads_init() { mutex_init(&threadListsModifiactionLock); }
+void MutatorThreads_init() { mutex_init(&threadListsModificationLock); }
 
 void MutatorThreads_add(MutatorThread *node) {
     if (!node)
@@ -108,8 +108,8 @@ void MutatorThreads_remove(MutatorThread *node) {
     MutatorThreads_unlock();
 }
 
-void MutatorThreads_lock() { mutex_lock(&threadListsModifiactionLock); }
+void MutatorThreads_lock() { mutex_lock(&threadListsModificationLock); }
 
-void MutatorThreads_unlock() { mutex_unlock(&threadListsModifiactionLock); }
+void MutatorThreads_unlock() { mutex_unlock(&threadListsModificationLock); }
 
 #endif
