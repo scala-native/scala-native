@@ -74,7 +74,7 @@ final class TestAdapter(config: TestAdapter.Config) {
    *  on an async operation to complete.
    */
   private def reportFailure(cause: Throwable): Unit = {
-    val msg = "Failure in async execution. Aborting all test runs."
+    val msg = "Fatal failure in tests execution. Aborting all test runs."
     val error = new AssertionError(msg, cause)
     config.logger.error(msg)
     config.logger.trace(error)
