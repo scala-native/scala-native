@@ -4,6 +4,7 @@
 #include "datastructures/BlockList.h"
 #include "datastructures/BlockRange.h"
 #include "Constants.h"
+#include "shared/ThreadUtil.h"
 #include <stddef.h>
 #include <stdatomic.h>
 #include <stdbool.h>
@@ -23,6 +24,7 @@ typedef struct {
     atomic_bool concurrent;
     BlockList freeSuperblocks[SUPERBLOCK_LIST_SIZE];
     atomic_uintptr_t reservedSuperblock;
+    mutex_t allocationLock;
 } BlockAllocator;
 
 void BlockAllocator_Init(BlockAllocator *blockAllocator, word_t *blockMetaStart,
@@ -42,5 +44,7 @@ void BlockAllocator_FinishCoalescing(BlockAllocator *blockAllocator);
 void BlockAllocator_ReserveBlocks(BlockAllocator *blockAllocator);
 void BlockAllocator_UseReserve(BlockAllocator *blockAllocator);
 void BlockAllocator_Clear(BlockAllocator *blockAllocator);
+void BlockAllocator_Acquire(BlockAllocator *blockAllocator);
+void BlockAllocator_Release(BlockAllocator *blockAllocator);
 
 #endif // IMMIX_BLOCKALLOCATOR_H

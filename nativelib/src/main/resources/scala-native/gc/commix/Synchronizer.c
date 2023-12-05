@@ -1,4 +1,4 @@
-#if defined(SCALANATIVE_GC_IMMIX)
+#if defined(SCALANATIVE_GC_COMMIX)
 
 #include "Synchronizer.h"
 #include "shared/ScalaNativeGC.h"
@@ -40,7 +40,7 @@ static LONG WINAPI SafepointTrapHandler(EXCEPTION_POINTERS *ex) {
         fprintf(stderr, "Caught exception code %p in GC exception handler\n",
                 (void *)(uintptr_t)ex->ExceptionRecord->ExceptionCode);
         fflush(stdout);
-        StackTrace_PrintStackTrace();
+        StackTrace_PrintStackTrace(ex);
     // pass-through
     default:
         return EXCEPTION_CONTINUE_SEARCH;
@@ -70,7 +70,7 @@ static void SafepointTrapHandler(int signal, siginfo_t *siginfo, void *uap) {
 
 static void SetupPageFaultHandler() {
 #ifdef _WIN32
-    // Call it as first exception handler
+    // Call it as last exception handler
     AddVectoredExceptionHandler(1, &SafepointTrapHandler);
 #else
     sigemptyset(&threadWakupSignals);
