@@ -224,10 +224,10 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
   }
 
   private def send4(p: DatagramPacket): Unit = {
-    val inetAddr = p.getAddress().asInstanceOf[InetSocketAddress]
+    val insAddr = p.getSocketAddress().asInstanceOf[InetSocketAddress]
     val hints = stackalloc[addrinfo]()
     val sa4Ptr = stackalloc[Ptr[addrinfo]]()
-    prepareSockaddrIn4(inetAddr.getAddress, inetAddr.getPort, hints, sa4Ptr)
+    prepareSockaddrIn4(insAddr.getAddress, insAddr.getPort, hints, sa4Ptr)
     val sa4 = (!sa4Ptr).ai_addr
     val sa4Len = (!sa4Ptr).ai_addrlen
 
