@@ -794,11 +794,9 @@ private[codegen] abstract class AbstractCodeGen(
         genCall(genBind, callDef, unwind, inst.pos, inst.scopeId)
         dbgLocalValue(id, ty)(inst.pos, inst.scopeId)
 
-      case nir.Op.Load(ty, ptr, syncAttrs) =>
+      case nir.Op.Load(ty, ptr, memoryOrder) =>
         val pointee = fresh()
-        val isAtomic = isMultithreadingEnabled && syncAttrs.isDefined
-        val isVolatile =
-          isMultithreadingEnabled && syncAttrs.exists(_.isVolatile)
+        val isAtomic = isMultithreadingEnabled && memoryOrder.isDefined
 
         if (!useOpaquePointers) {
           newline()
@@ -815,7 +813,6 @@ private[codegen] abstract class AbstractCodeGen(
         genBind()
         str("load ")
         if (isAtomic) str("atomic ")
-        if (isVolatile) str("volatile ")
         genType(ty)
         str(", ")
         if (useOpaquePointers) genVal(ptr)
@@ -826,7 +823,7 @@ private[codegen] abstract class AbstractCodeGen(
         }
         if (isAtomic) {
           str(" ")
-          syncAttrs.foreach(genSyncAttrs)
+          memoryOrder.foreach(genMemoryOrder)
           str(", align ")
           str(MemoryLayout.alignmentOf(ty))
         } else {
@@ -847,11 +844,9 @@ private[codegen] abstract class AbstractCodeGen(
           dbgLocalValue(id, ty)(inst.pos, inst.scopeId)
         }
 
-      case nir.Op.Store(ty, ptr, value, syncAttrs) =>
+      case nir.Op.Store(ty, ptr, value, memoryOrder) =>
         val pointee = fresh()
-        val isAtomic = isMultithreadingEnabled && syncAttrs.isDefined
-        val isVolatile =
-          isMultithreadingEnabled && syncAttrs.exists(_.isVolatile)
+        val isAtomic = isMultithreadingEnabled && memoryOrder.isDefined
 
         if (!useOpaquePointers) {
           newline()
@@ -868,7 +863,6 @@ private[codegen] abstract class AbstractCodeGen(
         genBind()
         str("store ")
         if (isAtomic) str("atomic ")
-        if (isVolatile) str("volatile ")
         genVal(value)
         if (useOpaquePointers) {
           str(", ptr")
@@ -879,9 +873,9 @@ private[codegen] abstract class AbstractCodeGen(
           str("* %")
           genLocal(pointee)
         }
-        if (isAtomic) syncAttrs.foreach {
+        if (isAtomic) memoryOrder.foreach {
           str(" ")
-          genSyncAttrs(_)
+          genMemoryOrder(_)
         }
         str(", align ")
         str(MemoryLayout.alignmentOf(ty))
@@ -1166,21 +1160,20 @@ private[codegen] abstract class AbstractCodeGen(
         genVal(v)
         str(" to ")
         genType(ty)
-      case nir.Op.Fence(syncAttrs) =>
+      case nir.Op.Fence(memoryOrder) =>
         str("fence ")
-        genSyncAttrs(syncAttrs)
+        genMemoryOrder(memoryOrder)
 
       case op =>
         unsupported(op)
     }
   }
 
-  private def genSyncAttrs(
-      attrs: nir.SyncAttrs
+  private def genMemoryOrder(
+      value: nir.MemoryOrder
   )(implicit sb: ShowBuilder): Unit = {
     import sb._
-    val nir.SyncAttrs(memoryOrder, _) = attrs
-    str(memoryOrder match {
+    str(value match {
       case nir.MemoryOrder.Unordered => "unordered"
       case nir.MemoryOrder.Monotonic => "monotonic"
       case nir.MemoryOrder.Acquire   => "acquire"

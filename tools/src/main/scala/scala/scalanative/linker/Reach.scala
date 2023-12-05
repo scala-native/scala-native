@@ -723,10 +723,10 @@ class Reach(
       reachType(ty)
       reachVal(ptrv)
       argvs.foreach(reachVal)
-    case nir.Op.Load(ty, ptrv, syncAttrs) =>
+    case nir.Op.Load(ty, ptrv, _) =>
       reachType(ty)
       reachVal(ptrv)
-    case nir.Op.Store(ty, ptrv, v, syncAttrs) =>
+    case nir.Op.Store(ty, ptrv, v, _) =>
       reachType(ty)
       reachVal(ptrv)
       reachVal(v)

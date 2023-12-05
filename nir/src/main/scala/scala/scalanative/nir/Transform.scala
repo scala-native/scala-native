@@ -60,10 +60,10 @@ trait Transform {
   def onOp(op: Op): Op = op match {
     case Op.Call(ty, ptrv, argvs) =>
       Op.Call(onType(ty).narrow[Type.Function], onVal(ptrv), argvs.map(onVal))
-    case Op.Load(ty, ptrv, syncAttrs) =>
-      Op.Load(onType(ty), onVal(ptrv), syncAttrs)
-    case Op.Store(ty, ptrv, v, syncAttrs) =>
-      Op.Store(onType(ty), onVal(ptrv), onVal(v), syncAttrs)
+    case Op.Load(ty, ptrv, memoryOrder) =>
+      Op.Load(onType(ty), onVal(ptrv), memoryOrder)
+    case Op.Store(ty, ptrv, v, memoryOrder) =>
+      Op.Store(onType(ty), onVal(ptrv), onVal(v), memoryOrder)
     case Op.Elem(ty, ptrv, indexvs) =>
       Op.Elem(onType(ty), onVal(ptrv), indexvs.map(onVal))
     case Op.Extract(aggrv, indexvs) =>

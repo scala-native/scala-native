@@ -114,13 +114,16 @@ sealed abstract class Op {
 object Op {
   // low-level
   final case class Call(ty: Type.Function, ptr: Val, args: Seq[Val]) extends Op
-  final case class Load(ty: Type, ptr: Val, syncAttrs: Option[SyncAttrs] = None)
-      extends Op
+  final case class Load(
+      ty: Type,
+      ptr: Val,
+      memoryOrder: Option[MemoryOrder] = None
+  ) extends Op
   final case class Store(
       ty: Type,
       ptr: Val,
       value: Val,
-      syncAttrs: Option[SyncAttrs] = None
+      memoryOrder: Option[MemoryOrder] = None
   ) extends Op
   final case class Elem(ty: Type, ptr: Val, indexes: Seq[Val]) extends Op
   final case class Extract(aggr: Val, indexes: Seq[Int]) extends Op
@@ -129,7 +132,7 @@ object Op {
   final case class Bin(bin: nir.Bin, ty: Type, l: Val, r: Val) extends Op
   final case class Comp(comp: nir.Comp, ty: Type, l: Val, r: Val) extends Op
   final case class Conv(conv: nir.Conv, ty: Type, value: Val) extends Op
-  final case class Fence(syncAttrs: SyncAttrs) extends Op
+  final case class Fence(memoryOrder: MemoryOrder) extends Op
 
   // high-level
   final case class Classalloc(name: Global.Top, zone: Option[Val]) extends Op
