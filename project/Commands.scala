@@ -144,9 +144,22 @@ object Commands {
   )(fn: (String, State) => State): Command = {
     Command.args(name, "<args>") {
       case (state, args) =>
-        val version = args.headOption
+        val arg = args.headOption
+        val version = arg
+          // Try translating 2.12, 2.13, 3, 3-next to full version string such as 3.3.1
           .flatMap(MultiScalaProject.scalaVersions.get)
-          .orElse(state.getSetting(scalaVersion))
+          // Verify the argument full version string is supported by libCrossScalaVersions
+          .orElse(
+            arg.flatMap(a => ScalaVersions.libCrossScalaVersions.find(_ == a))
+          )
+          // Fallback to the current scalaVersion
+          .orElse {
+            val v = state.getSetting(scalaVersion)
+            state.log.warn(
+              s"${args.headOption.getOrElse("")} is not supported, fallback to ${v}"
+            )
+            v
+          }
           .getOrElse(
             "Used command needs explicit full Scala version as an argument"
           )
