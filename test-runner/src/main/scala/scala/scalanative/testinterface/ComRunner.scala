@@ -19,7 +19,8 @@ private[testinterface] class ComRunner(
     serverSocket: ServerSocket,
     logger: Logger,
     handleMessage: String => Unit
-)(implicit ec: ExecutionContext) extends AutoCloseable {
+)(implicit ec: ExecutionContext)
+    extends AutoCloseable {
   import ComRunner._
 
   processRunner.future.onComplete {
