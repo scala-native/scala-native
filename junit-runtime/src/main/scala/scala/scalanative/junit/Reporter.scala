@@ -171,18 +171,20 @@ private[junit] final class Reporter(
     else Ansi.filterAnsi(s)
 
   private def logTrace(t: Throwable): Unit = {
-    val trace = t.getStackTrace.dropWhile { p =>
-      p.getFileName != null && {
-        p.getFileName.contains("StackTrace.scala") ||
-        p.getFileName.contains("Throwables.scala")
+    val trace = t.getStackTrace
+      .dropWhile { p =>
+        p.getClassName() != null && {
+          p.getClassName().startsWith("java.lang.StackTrace") ||
+          p.getClassName().startsWith("java.lang.Throwable")
+        }
       }
-    }
     val testFileName = {
       if (settings.color) findTestFileName(trace)
       else null
     }
     val i = trace.indexWhere { p =>
-      p.getFileName != null && p.getFileName.contains("JUnitExecuteTest.scala")
+      p.getClassName() != null &&
+      p.getClassName().startsWith("scala.scalanative.junit.")
     } - 1
     val m = if (i > 0) i else trace.length - 1
     logStackTracePart(trace, m, trace.length - m - 1, t, testFileName)
