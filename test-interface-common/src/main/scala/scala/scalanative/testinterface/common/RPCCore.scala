@@ -115,6 +115,9 @@ private[testinterface] abstract class RPCCore()(implicit ec: ExecutionContext) {
     }
   }
 
+  /** Has connection channel been closed */
+  private[testinterface] def isClosed: Boolean = closeReason != null
+
   /** Subclass needs to implement message sending. */
   protected def send(msg: String): Unit
 

@@ -19,9 +19,9 @@ private[testinterface] class ComRunner(
     serverSocket: ServerSocket,
     logger: Logger,
     handleMessage: String => Unit
-) extends AutoCloseable {
+)(implicit ec: ExecutionContext)
+    extends AutoCloseable {
   import ComRunner._
-  implicit val executionContext: ExecutionContext = ExecutionContext.global
 
   processRunner.future.onComplete {
     case Failure(exception) => forceClose(exception)

@@ -3,13 +3,16 @@ package scala.scalanative.testinterface
 import java.io.{DataInputStream, DataOutputStream, EOFException}
 import java.net.Socket
 import scala.annotation.tailrec
-import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.ExecutionContext
 import scala.scalanative.testinterface.common.RPCCore
 import scala.util.{Failure, Success, Try}
 import java.nio.charset.StandardCharsets
+import scala.scalanative.meta.LinktimeInfo
 
 /** Native RPC Core. */
-private[testinterface] class NativeRPC(clientSocket: Socket) extends RPCCore {
+private[testinterface] class NativeRPC(clientSocket: Socket)(implicit
+    ec: ExecutionContext
+) extends RPCCore {
   private lazy val inStream = new DataInputStream(clientSocket.getInputStream)
   private lazy val outStream = new DataOutputStream(
     clientSocket.getOutputStream
@@ -34,7 +37,7 @@ private[testinterface] class NativeRPC(clientSocket: Socket) extends RPCCore {
     } else {
       val msg = Array.fill(msgLength)(inStream.readChar).mkString
       handleMessage(msg)
-      scalanative.runtime.loop()
+      if (!LinktimeInfo.isMultithreadingEnabled) scalanative.runtime.loop()
       loop()
     }
   }
