@@ -4,6 +4,7 @@ package scala.scalanative.testinterface.adapter
 
 import sbt.testing._
 import scala.collection.concurrent.TrieMap
+import scala.concurrent.ExecutionContext
 import scala.scalanative.testinterface.adapter.TestAdapter.ManagedRunner
 import scala.scalanative.testinterface.common.{
   FrameworkMessage,
@@ -42,13 +43,16 @@ private final class RunnerAdapter private (
   }
 
   def done(): String = synchronized {
-    val workers = this.workers.values.toList // .toList to make it strict.
+    // .toList to make it strict.
+    val workers = this.workers.values.filter(!_.com.isClosed).toList
 
     try {
       workers
         .map(_.mux.call(NativeEndpoints.done, runID)(()))
         .foreach(_.await())
-      controller.mux.call(NativeEndpoints.done, runID)(()).await()
+      // RPC connection was closed, probaly due to native runner crash, skip sending fruitless command
+      if (controller.com.isClosed) ""
+      else controller.mux.call(NativeEndpoints.done, runID)(()).await()
     } finally {
       workers.foreach(_.mux.detach(JVMEndpoints.msgWorker, runID))
       controller.mux.detach(JVMEndpoints.msgController, runID)
