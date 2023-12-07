@@ -15,18 +15,32 @@ final case class MemoryLayout(
     size: Long,
     tys: Seq[MemoryLayout.PositionedType]
 ) {
-  def offsetArray(implicit meta: Metadata): Seq[nir.Val] = {
+
+  /** A list of offsets pointing to inner fields of reference types excluding
+   *  object header from the address of memory directly after the object header
+   *  end expresed as number of words. Used by the GC for scanning objects. Terminated with offset=-1
+   */
+  def referenceFieldsOffsets(implicit meta: Metadata): Seq[nir.Val.Long] = {
+    val sizeOfHeader =  meta.layouts.ObjectHeader.size
     val ptrOffsets =
       tys.collect {
         // offset in words without object header
         case MemoryLayout.PositionedType(_: nir.Type.RefKind, offset) =>
           nir.Val.Long(
-            offset / MemoryLayout.BYTES_IN_LONG - meta.layouts.ObjectHeader.fields
+            (offset - sizeOfHeader) / MemoryLayout.BYTES_IN_LONG
           )
       }
 
     ptrOffsets :+ nir.Val.Long(-1)
   }
+
+  /** A list of offsets pointing to all inner reference types excluding object
+   *  header from the start of the object address.
+   */
+  def fieldOffsets(implicit meta: Metadata): Seq[Long] =
+    tys
+      .dropWhile(_.ty == meta.layouts.ObjectHeader.layout)
+      .map(_.offset)
 }
 
 object MemoryLayout {

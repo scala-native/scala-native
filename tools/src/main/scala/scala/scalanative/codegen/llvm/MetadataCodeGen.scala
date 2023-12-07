@@ -10,6 +10,9 @@ import scala.scalanative.util.unsupported
 import scala.language.implicitConversions
 import scala.scalanative.codegen.llvm.MetadataCodeGen.Writer.Specialized
 import scala.scalanative.util.unreachable
+import scala.scalanative.linker.ClassRef
+import scala.scalanative.linker.ReachabilityAnalysis
+import scala.scalanative.linker.ArrayRef
 
 // scalafmt: { maxColumn = 100}
 trait MetadataCodeGen { self: AbstractCodeGen =>
@@ -80,7 +83,7 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
             line = srcPosition.line + LineOffset,
             tpe = toMetadataType(ty)
           ),
-          expr = Metadata.DIExpression()
+          expr = Metadata.DIExpressions()
         )(srcPosition, scopeId)
       }
     }
@@ -97,7 +100,7 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
     if (generateDebugMetadata && canHaveDebugValue(ty)) {
       debugInfo.localNames.get(id).foreach { localName =>
         `llvm.dbg.declare`(
-          address = Metadata.Value(nir.Val.Local(id, ty)),
+          address = Metadata.Value(nir.Val.Local(id, nir.Type.Ptr)),
           description = Metadata.DILocalVariable(
             name = localName,
             arg = None,
@@ -106,7 +109,7 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
             line = srcPosition.line + LineOffset,
             tpe = toMetadataType(ty)
           ),
-          expr = Metadata.DIExpression()
+          expr = Metadata.DIExpressions(DIExpression.DW_OP_deref)
         )(srcPosition, scopeId)
       }
     }
@@ -114,7 +117,7 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
   private def `llvm.dbg.value`(
       address: Metadata.Value,
       description: DILocalVariable,
-      expr: Metadata.DIExpression
+      expr: Metadata.DIExpressions
   )(pos: nir.Position, scopeId: nir.ScopeId)(implicit
       ctx: Context,
       sb: ShowBuilder,
@@ -134,7 +137,7 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
   private def `llvm.dbg.declare`(
       address: Metadata.Value,
       description: DILocalVariable,
-      expr: Metadata.DIExpression
+      expr: Metadata.DIExpressions
   )(pos: nir.Position, scopeId: nir.ScopeId)(implicit
       ctx: Context,
       sb: ShowBuilder,
@@ -245,8 +248,8 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
     Seq(Byte, Char, Short, Int, Long, Size, Float, Double, Bool, Ptr).map { tpe =>
       tpe -> DIBasicType(
         name = tpe.show,
-        size = MemoryLayout.sizeOf(tpe).toInt * 8 /*bits*/,
-        align = MemoryLayout.alignmentOf(tpe).toInt * 8 /*bits*/,
+        size = MemoryLayout.sizeOf(tpe).toBitSize,
+        align = MemoryLayout.alignmentOf(tpe).toBitSize,
         encoding = tpe match {
           case Bool           => DW_ATE.Boolean
           case Float | Double => DW_ATE.Float
@@ -258,42 +261,160 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
     }.toMap
   }
 
-  protected def toMetadataType(
-      ty: nir.Type
-  )(implicit metaCtx: Context): Metadata.Type = toMetadataTypeOpt(ty).getOrElse(
-    unsupported(s"Type $ty cannot be converted to DebugInfo Type")
-  )
   protected def toMetadataTypeOpt(
       ty: nir.Type
-  )(implicit metaCtx: Context): Option[Metadata.Type] = {
+  )(implicit metaCtx: Context): Option[Metadata.Type] = ty match {
+    case nir.Type.Unit => None
+    case _             => Some(toMetadataType(ty))
+  }
+  protected def toMetadataType(
+      ty: nir.Type
+  )(implicit metaCtx: Context): Metadata.Type = {
+    val tpe = nir.Type.normalize(ty)
+    val metadataType = if (metaCtx.pendingTypes.contains(tpe)) {
+      println(
+        s"\nrecursive type: $tpe, pending: ${metaCtx.pendingTypes.mkString("\n\t", "\n\t", "")}"
+      )
+      DIBasicTypes(nir.Type.Ptr)
+    } else
+      metaCtx.diTypesCache.getOrElseUpdate(
+        tpe, {
+          metaCtx.pendingTypes += tpe
+          try generateMetadataType(tpe)
+          finally metaCtx.pendingTypes -= tpe
+        }
+      )
+    tpe match {
+      case _: nir.Type.Array   => metadataType
+      case _: nir.Type.RefKind => referenceTypeOf(metadataType)
+      case _                   => metadataType
+    }
+  }
+
+  private def referenceTypeOf(ty: Metadata.Type): DIDerivedType =
+    DIDerivedType(DWTag.Reference, baseType = ty, size = new Metadata.BitSize(platform.sizeOfPtr))
+  private def pointerTypeOf(ty: Metadata.Type): DIDerivedType =
+    DIDerivedType(DWTag.Pointer, baseType = ty, size = new Metadata.BitSize(platform.sizeOfPtr))
+
+  private def generateMetadataType(ty: nir.Type)(implicit metaCtx: Context): Metadata.Type = {
     import nir.Type._
-    DIBasicTypes
-      .get(ty)
-      .orElse(ty match {
-        case nir.Type.Unit => None
-        // TODO: describe RefKinds using DICompositeType
-        case _: RefKind | Null | Nothing => DIBasicTypes.get(Ptr)
-        case StructValue(tys)            =>
-          // TODO: DICompositeType and DIDerivedType should have `name` attribute, but we need to modify
-          // the way of traversing NIR during codegen or add type name info into NIR.
-          val elements = tys.map { ty =>
+    implicit def analysis: ReachabilityAnalysis.Result = metaCtx.codeGen.meta.analysis
+    ty match {
+      case nir.Type.Unit    => toMetadataType(nir.Rt.BoxedUnit)
+      case StructValue(tys) =>
+        // TODO: DICompositeType and DIDerivedType should have `name` attribute, but we need to modify
+        // the way of traversing NIR during codegen or add type name info into NIR.
+        val elements = MemoryLayout(tys).tys.zipWithIndex.map {
+          case (MemoryLayout.PositionedType(ty, offset), idx) =>
             DIDerivedType(
               tag = DWTag.Member,
+              name = Some(s"_$idx"),
               baseType = toMetadataType(ty),
-              size = (MemoryLayout.sizeOf(ty) * 8).toInt /* bits */
+              size = MemoryLayout.sizeOf(ty).toBitSize,
+              offset = Some(offset.toBitSize)
             )
-          }
-          val size = MemoryLayout.sizeOf(ty).toInt * 8 /* bits */
-          Some(
-            DICompositeType(
-              tag = DWTag.StructureType,
-              size = size,
-              elements = Tuple(elements)
+        }
+        new DICompositeType(
+          tag = DWTag.Structure,
+          size = Some(MemoryLayout.sizeOf(ty).toBitSize)
+        )(elements = Tuple(elements))
+
+      case ArrayValue(elemTy, n) =>
+        new DICompositeType(
+          tag = DWTag.Array,
+          name = None,
+          baseType = Some(toMetadataType(elemTy)),
+          size = Some(MemoryLayout.sizeOf(ty).toBitSize)
+        )(elements = Tuple(Seq(DISubrange(count = Value(nir.Val.Int(n))))))
+
+      case ty: nir.Type.ValueKind => DIBasicTypes(ty)
+
+      case ArrayRef(componentCls, _) =>
+        import DIExpression._
+        DICompositeType(
+          DWTag.Array,
+          baseType = Some(generateMetadataType(componentCls)),
+          dataLocation = Some(
+            // TODO: Does not work, skipped by the debugger
+            DIExpressions(
+              DW_OP_push_object_address,
+              DW_OP_plus_uconst,
+              Const(meta.layouts.ArrayHeader.size.toString())
             )
           )
-        case other =>
-          throw new NotImplementedError(s"No idea how to dwarfise $other")
-      })
+        )(elements =
+          // TODO: Does not work, DI expression skipped by debgger
+          Tuple(
+            DISubrange(
+              count = DIExpressions(
+                  DW_OP_push_object_address,
+                  DW_OP_plus_uconst,
+                  Const(
+                    MemoryLayout(meta.layouts.ArrayHeader.layout.tys)
+                      .tys(meta.layouts.ArrayHeader.LengthIdx)
+                      .offset
+                      .toString
+                  ),
+                  DW_OP_deref
+                )
+            ) :: Nil
+          )
+        )
+
+      case ClassRef(cls) =>
+        val layout = metaCtx.codeGen.meta.layout(cls)
+        DICompositeType(
+          tag = DWTag.Class,
+          name = Some(cls.name.id.split('.').last),
+          identifier = Some(cls.name.mangle),
+          scope = None,
+          file = Some(toDIFile(cls.position)),
+          line = Some(cls.position.line + LineOffset),
+          size = Some(layout.size.toBitSize),
+          flags = DIFlags(
+            DIFlag.DIFlagObjectPointer,
+            DIFlag.DIFlagNonTrivial,
+            DIFlag.DIFlagTypePassByReference
+          )
+        )(elements = Tuple.empty).withDependentElements { compositeType =>
+          val offsets = layout.layout.fieldOffsets.map(_.toBitSize)
+          layout.entries
+            .zip(offsets)
+            .map {
+              case (field, offset) =>
+                val ty = field.ty
+                val name = field.name.sig.unmangled match {
+                  case nir.Sig.Field(id, scope) => id // todo flags from scope
+                  case nir.Sig.Generated(id)    => id
+                  case _                        => ???
+                }
+
+                DIDerivedType(
+                  DWTag.Member,
+                  name = Some(name),
+                  scope = Some(compositeType),
+                  file = Some(toDIFile(field.position)),
+                  line = Some(field.position.line + LineOffset),
+                  offset = Some(offset),
+                  baseType = toMetadataType(field.ty),
+                  size = MemoryLayout.sizeOf(ty).toBitSize,
+                  flags = DIFlags(
+                    if (field.name.sig.isPrivate) DIFlag.DIFlagPrivate
+                    else DIFlag.DIFlagPublic
+                  )
+                )
+            }
+        }
+
+      case ty: nir.Type.RefKind =>
+        println("no classref: " + ty.className)
+        DIBasicTypes(Ptr)
+
+      case Null | Nothing => DIBasicTypes(Ptr)
+
+      case other =>
+        throw new NotImplementedError(s"No idea how to dwarfise ${other.getClass().getName} $other")
+    }
   }
 }
 
@@ -307,6 +428,9 @@ object MetadataCodeGen {
     private[MetadataCodeGen] val specializedBuilder: Specialized.Builder[_] =
       new Specialized.Builder[Any]()(this)
     private[MetadataCodeGen] val fresh: nir.Fresh = nir.Fresh()
+    private[MetadataCodeGen] val anonymousStructsFreshIds: nir.Fresh = nir.Fresh()
+    private[MetadataCodeGen] val diTypesCache = mutable.Map.empty[nir.Type, Metadata.Type]
+    private[MetadataCodeGen] val pendingTypes = mutable.Set.empty[nir.Type]
   }
 
   class MetadataId(val value: Int) extends AnyVal {
@@ -332,30 +456,38 @@ object MetadataCodeGen {
 
     protected def internDeps(v: T)(implicit ctx: Context): Unit = {
       def tryIntern(v: Any): Unit = v match {
-        case v: Metadata.Node => v.intern()
-        case _                => ()
+        case v: Metadata.Node       => v.intern()
+        case Some(v: Metadata.Node) => v.intern()
+        case _                      => ()
       }
       v match {
-        case v: Metadata.Tuple           => v.values.foreach(tryIntern)
-        case v: Metadata.SpecializedNode => v.productIterator.foreach(tryIntern)
+        case v: Metadata.Tuple => v.values.foreach(tryIntern)
+        case v: Metadata.SpecializedNode =>
+          v.productIterator.foreach(tryIntern)
+        case _: Metadata.DIExpressions => ()
+      }
+      v match {
+        case v: Metadata.CanBeRecursive => v.recursiveNodes.foreach(tryIntern)
+        case _                          => ()
       }
     }
 
     final def intern(v: T)(implicit ctx: Context): MetadataId = {
-      val id = cache(v).getOrElseUpdate(
-        v, {
-          internDeps(v)
-          val id = ctx.fresh().id.toInt
+      val writerCache = cache(v)
+      val id = writerCache.get(v).getOrElse {
+        // Prepere id for cyclic dependencies in node dependencies
+        val id = ctx.fresh().id.toInt
+        writerCache.update(v, id)
+        internDeps(v)
 
-          sb.newline()
-          sb.str("!")
-          sb.str(id)
-          sb.str(" = ")
-          write(v)
+        sb.newline()
+        sb.str("!")
+        sb.str(id)
+        sb.str(" = ")
+        write(v)
 
-          id
-        }
-      )
+        id
+      }
       new MetadataId(id)
     }
   }
@@ -426,6 +558,7 @@ object MetadataCodeGen {
     implicit def ofNode: Dispatch[Metadata.Node] = _ match {
       case v: Metadata.Tuple           => v.writer
       case v: Metadata.SpecializedNode => v.writer
+      case v: Metadata.DIExpressions   => v.writer
     }
 
     // statefull metadata writers backed with cached
@@ -448,6 +581,15 @@ object MetadataCodeGen {
     implicit def ofSubTuple[T <: Metadata.Tuple]: InternedWriter[T] =
       ofTuple.asInstanceOf[InternedWriter[T]]
 
+    implicit def ofDIExpressions: InternedWriter[DIExpressions] = (v, ctx) => {
+      import ctx.sb
+      implicit def _ctx: Context = ctx
+
+      sb.str("!DIExpression(")
+      sb.rep(v.expressions, sep = ", ")(_.write())
+      sb.str(")")
+    }
+
     object Specialized {
       object Builder {
         def use[T](ctx: Context)(fn: Builder[T] => Unit) = {
@@ -466,10 +608,14 @@ object MetadataCodeGen {
             ctx.sb.str(value.toString())
           implicit val StringField: FieldWriter[String] = (ctx: Context, value: String) =>
             ctx.sb.quoted(value)
+          implicit val BitSizeField: FieldWriter[BitSize] = (ctx: Context, value: BitSize) =>
+            ctx.sb.str(value.sizeOfBits)
           implicit def MetadataNodeField[T <: Metadata.Node: InternedWriter]: FieldWriter[T] =
             (ctx: Context, value: T) => writeInterned(value)(implicitly, ctx)
           implicit def MetadataField[T <: Metadata: Writer]: FieldWriter[T] =
             (ctx: Context, value: T) => implicitly[Writer[T]].write(value)(ctx)
+          implicit val ofDIFlags: FieldWriter[DIFlags] = (ctx: Context, value: DIFlags) =>
+            ctx.sb.str(value.union.mkString(" | "))
         }
 
       }
@@ -517,20 +663,26 @@ object MetadataCodeGen {
     }
 
     implicit lazy val ofSpecializedNode: Dispatch[Metadata.SpecializedNode] = _ match {
-      case v: Metadata.LLVMDebugInformation => ofLLVMDebugInformation
+      case v: Metadata.LLVMDebugInformation => v.writer
+      case v: Metadata.DISubrange           => v.writer
+    }
+    implicit lazy val ofDISubrange: Specialized[DISubrange] = {
+      case v @ DISubrange(count, lowerBound) =>
+        _.field("count", count)
+          .field("lowerBound", if (v == DISubrange.empty) None else lowerBound)
     }
     implicit lazy val ofLLVMDebugInformation: Dispatch[Metadata.LLVMDebugInformation] = _ match {
-      case v: Metadata.Scope  => v.writer
       case v: Metadata.Type   => v.writer
+      case v: Metadata.Scope  => v.writer
       case v: DILocation      => v.writer
       case v: DILocalVariable => v.writer
-      case v: DIExpression    => v.writer
     }
     implicit lazy val ofScope: Dispatch[Metadata.Scope] = _ match {
       case v: DICompileUnit  => v.writer
       case v: DIFile         => v.writer
       case v: DISubprogram   => v.writer
       case v: DILexicalBlock => v.writer
+      case v: Metadata.Type  => v.writer
     }
 
     import Metadata.conversions.StringOps
@@ -584,21 +736,33 @@ object MetadataCodeGen {
           .field("align", align)
           .field("encoding", encoding)
     }
-    implicit lazy val ofDIDerivedType: Specialized[DIDerivedType] = {
-      case DIDerivedType(tag, baseType, size) =>
-        _.field("tag", tag)
-          .field("baseType", baseType)
-          .field("size", size)
+    implicit lazy val ofDIDerivedType: Specialized[DIDerivedType] = { v =>
+      _.field("tag", v.tag)
+        .field("name", v.name)
+        .field("scope", v.scope)
+        .field("file", v.file)
+        .field("line", v.line)
+        .field("baseType", v.baseType)
+        .field("size", v.size)
+        .field("offset", v.offset)
+        .field("flags", Option(v.flags).filter(_.nonEmpty))
     }
     implicit lazy val ofDISubroutineType: Specialized[DISubroutineType] = {
       case DISubroutineType(types) =>
         _.field("types", types)
     }
-    implicit lazy val ofDICompositeType: Specialized[DICompositeType] = {
-      case DICompositeType(tag, size, elements) =>
-        _.field("tag", tag)
-          .field("size", size)
-          .field("elements", elements)
+    implicit lazy val ofDICompositeType: Specialized[DICompositeType] = { v =>
+      _.field("tag", v.tag)
+        .field("name", v.name)
+        .field("identifier", v.identifier)
+        .field("scope", v.scope)
+        .field("file", v.file)
+        .field("line", v.line)
+        .field("size", v.size)
+        .field("elements", v.getElements)
+        .field("flags", Option(v.flags).filter(_.nonEmpty))
+        .field("baseType", v.baseType)
+        .field("dataLocation", v.dataLocation)
     }
 
     implicit lazy val ofDILocation: Specialized[DILocation] = {
@@ -615,9 +779,6 @@ object MetadataCodeGen {
           .field("file", file)
           .field("line", line)
           .field("type", tpe)
-    }
-    implicit lazy val ofDIExpression: Specialized[DIExpression] = {
-      case DIExpression() => identity
     }
   }
 

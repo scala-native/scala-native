@@ -126,8 +126,7 @@ final class Class(
 
   lazy val hasFinalFields: Boolean = fields.exists(_.attrs.isFinal)
 
-  val ty: nir.Type =
-    nir.Type.Ref(name)
+  val ty: nir.Type.Ref = nir.Type.Ref(name)
   def isConstantModule(implicit
       analysis: ReachabilityAnalysis.Result
   ): Boolean = {
