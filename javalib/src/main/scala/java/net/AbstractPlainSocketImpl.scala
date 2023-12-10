@@ -214,17 +214,17 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
     if (timeout > 0)
       tryPollOnAccept()
 
-    val ss = stackalloc[socket.sockaddr_storage]()
-    val sa = ss.asInstanceOf[Ptr[socket.sockaddr]]
-    val saLen = stackalloc[socket.socklen_t]()
-    !saLen = sizeof[in.sockaddr_in6].toUInt
+    val storage = stackalloc[socket.sockaddr_storage]()
+    val address = storage.asInstanceOf[Ptr[socket.sockaddr]]
+    val addressLen = stackalloc[socket.socklen_t]()
+    !addressLen = sizeof[in.sockaddr_in6].toUInt
 
-    val newFd = socket.accept(fd.fd, sa, saLen)
+    val newFd = socket.accept(fd.fd, address, addressLen)
     if (newFd == -1) {
       throw new SocketException("Accept failed")
     }
 
-    s.address = InetAddress.getByAddress(sockaddrToByteArray(sa))
+    s.address = InetAddress.getByAddress(sockaddrToByteArray(address))
     s.port = port
     s.localport = this.localport
     s.fd = new FileDescriptor(newFd)

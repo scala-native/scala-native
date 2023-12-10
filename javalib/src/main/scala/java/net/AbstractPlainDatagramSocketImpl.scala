@@ -305,10 +305,10 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
     if (timeout > 0)
       tryPoll(op)
 
-    val ss = stackalloc[posix.sys.socket.sockaddr_storage]()
-    val sa = ss.asInstanceOf[Ptr[posix.sys.socket.sockaddr]]
-    val saLen = stackalloc[posix.sys.socket.socklen_t]()
-    !saLen = sizeof[posix.sys.socket.sockaddr_storage].toUInt
+    val storage = stackalloc[posix.sys.socket.sockaddr_storage]()
+    val destAddr = storage.asInstanceOf[Ptr[posix.sys.socket.sockaddr]]
+    val addressLen = stackalloc[posix.sys.socket.socklen_t]()
+    !addressLen = sizeof[posix.sys.socket.sockaddr_storage].toUInt
 
     val buffer = p.getData()
     val offset = p.getOffset()
@@ -320,8 +320,8 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
         buffer.at(offset),
         length.toUInt,
         flag,
-        sa,
-        saLen
+        destAddr,
+        addressLen
       )
       .toInt
 
@@ -332,7 +332,7 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
 
     bytesNum match {
       case _ if bytesNum >= 0 =>
-        p.setSocketAddress(sockaddrStorageToInetSocketAddress(sa))
+        p.setSocketAddress(sockaddrStorageToInetSocketAddress(destAddr))
         p.setLength(bytesNum)
       case _ if timeoutDetected =>
         throw new SocketTimeoutException("Socket timeout while reading data")
