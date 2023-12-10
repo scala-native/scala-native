@@ -130,7 +130,8 @@ class Socket protected (
   def bind(bindpoint: SocketAddress): Unit = {
     if (bindpoint != null && !bindpoint.isInstanceOf[InetSocketAddress]) {
       throw new IllegalArgumentException(
-        "Endpoint is of unsupported SocketAddress subclass"
+        "Endpoint is of unsupported " +
+          "SocketAddress subclass"
       )
     }
 
@@ -144,8 +145,8 @@ class Socket protected (
 
     checkClosedAndCreate()
 
-    impl.bind(addr.getAddress, addr.getPort)
     this.localAddr = addr.getAddress
+    impl.bind(this.localAddr, addr.getPort)
     this.localPort = impl.localport
     bound = true
   }
