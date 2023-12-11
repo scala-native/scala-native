@@ -40,7 +40,11 @@ class FieldLayout(cls: Class)(implicit meta: Metadata) {
   val struct = nir.Type.StructValue(layout.tys.map(_.ty))
   val size = layout.size
   val referenceOffsetsValue = nir.Val.StructValue(
-    Seq(nir.Val.Const(nir.Val.ArrayValue(nir.Type.Long, layout.referenceFieldsOffsets)))
+    Seq(
+      nir.Val.Const(
+        nir.Val.ArrayValue(nir.Type.Long, layout.referenceFieldsOffsets)
+      )
+    )
   )
 
 }

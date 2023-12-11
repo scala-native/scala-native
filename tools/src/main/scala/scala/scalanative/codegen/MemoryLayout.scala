@@ -18,10 +18,11 @@ final case class MemoryLayout(
 
   /** A list of offsets pointing to inner fields of reference types excluding
    *  object header from the address of memory directly after the object header
-   *  end expresed as number of words. Used by the GC for scanning objects. Terminated with offset=-1
+   *  end expresed as number of words. Used by the GC for scanning objects.
+   *  Terminated with offset=-1
    */
   def referenceFieldsOffsets(implicit meta: Metadata): Seq[nir.Val.Long] = {
-    val sizeOfHeader =  meta.layouts.ObjectHeader.size
+    val sizeOfHeader = meta.layouts.ObjectHeader.size
     val ptrOffsets =
       tys.collect {
         // offset in words without object header

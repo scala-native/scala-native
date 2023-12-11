@@ -844,8 +844,8 @@ private[codegen] abstract class AbstractCodeGen(
             case _ =>
               ()
           }
-          dbgLocalValue(id, ty)(inst.pos, inst.scopeId)
         }
+        dbgLocalValue(id, ty)(inst.pos, inst.scopeId)
 
       case nir.Op.Store(ty, ptr, value, syncAttrs) =>
         val pointee = fresh()

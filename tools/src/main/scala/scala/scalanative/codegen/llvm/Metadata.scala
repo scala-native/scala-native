@@ -6,6 +6,9 @@ import scala.language.implicitConversions
 
 sealed trait Metadata
 object Metadata {
+  case class Id(value: Int) extends AnyVal {
+    def show = "!" + value.toString()
+  }
   case class Str(value: String) extends Metadata
   case class Const(value: String) extends Metadata
   case class Value(value: nir.Val) extends Metadata
@@ -22,10 +25,10 @@ object Metadata {
 
   case class DISubrange(
       count: Metadata,
-      lowerBound: Option[Metadata] = Some(Value(nir.Val.Int(0))),
+      lowerBound: Option[Metadata] = Some(Const("0"))
   ) extends SpecializedNode
   object DISubrange {
-    final val empty = DISubrange(count = Value(nir.Val.Int(-1)))
+    final val empty = DISubrange(count = Const("-1"))
   }
   sealed trait LLVMDebugInformation extends SpecializedNode
   sealed trait Scope extends LLVMDebugInformation
@@ -63,15 +66,22 @@ object Metadata {
       scope: Scope,
       file: DIFile,
       line: Int,
-      tpe: Type
+      tpe: Type,
+      flags: DIFlags = DIFlags()
   ) extends LLVMDebugInformation
 
-  case class DIExpressions(expressions: Const*) extends Node
+  case class DIExpressions(expressions: Seq[Const]) extends Node
+  object DIExpressions {
+    def apply(exprs: Const*)(implicit dummy: DummyImplicit) = new DIExpressions(
+      exprs.toSeq
+    )
+  }
   sealed class DIExpression(symbol: String) extends Const(symbol)
   object DIExpression {
     object DW_OP_deref extends DIExpression("DW_OP_deref")
     object DW_OP_plus extends DIExpression("DW_OP_plus")
     object DW_OP_minus extends DIExpression("DW_OP_minus")
+    object DW_OP_constu extends DIExpression("DW_OP_constu")
     object DW_OP_plus_uconst extends DIExpression("DW_OP_plus_uconst")
     object DW_OP_LLVM_fragment extends DIExpression("DW_OP_LLVM_fragment")
     object DW_OP_LLVM_convert extends DIExpression("DW_OP_LLVM_convert")
@@ -90,6 +100,13 @@ object Metadata {
   }
 
   sealed trait Type extends LLVMDebugInformation with Scope
+
+  /** Custom kind of Metadata node created to handle recursive nodes. It's
+   *  resolution would be delayed until writing
+   */
+  sealed trait DelayedReference { self: Node => }
+  case class TypeRef(ty: nir.Type) extends Type with DelayedReference
+
   case class DIBasicType(
       name: String,
       size: BitSize,
@@ -100,13 +117,14 @@ object Metadata {
   case class DIDerivedType(
       tag: DWTag,
       baseType: Type,
-      size: BitSize,
+      size: Option[BitSize] = None,
       offset: Option[BitSize] = None,
       name: Option[String] = None,
       scope: Option[Scope] = None,
       file: Option[DIFile] = None,
       line: Option[Int] = None,
-      flags: DIFlags = DIFlags()
+      flags: DIFlags = DIFlags(),
+      extraData: Option[Value] = None
   ) extends Type
 
   case class DISubroutineType(types: DITypes) extends Type
@@ -121,23 +139,32 @@ object Metadata {
       flags: DIFlags = DIFlags(),
       // for arrays
       baseType: Option[Type] = None,
-      dataLocation: Option[Metadata] = None
-  )(private var elements: Tuple)
+      dataLocation: Option[Metadata] = None // not supported in some debuggers
+  )(private var elements: Tuple = Tuple.empty)
       extends Type
       with CanBeRecursive {
-    override def distinct: Boolean = true
+    override def distinct: Boolean = scope.orElse(identifier).isDefined
 
     def recursiveNodes: Seq[Node] = Seq(elements)
 
     def getElements: Tuple = this.elements
     def withDependentElements(
-        producer: DICompositeType => Seq[Node]
+        producer: DICompositeType => Seq[DIDerivedType]
     ): this.type = {
       elements = Tuple(producer(this))
       this
     }
 
   }
+
+  // case class DIStringType(
+  //     name: String,
+  //     length: DIExpressions,
+  //     location: DIExpressions,
+  //     size: Const
+  // ) extends Type {
+  //   override def distinct: Boolean = true
+  // }
 
   class DITypes(retTpe: Option[Type], arguments: Seq[Type])
       extends Tuple(retTpe.getOrElse(Metadata.Const("null")) +: arguments)
@@ -154,6 +181,8 @@ object Metadata {
     object Structure extends DWTag("DW_TAG_structure_type")
     object Class extends DWTag("DW_TAG_class_type")
     object Member extends DWTag("DW_TAG_member")
+    object Inheritance extends DWTag("DW_TAG_inheritance")
+    object Union extends DWTag("DW_TAG_union_type")
   }
 
   sealed class DW_ATE(tag: Predef.String) extends Const(tag)
@@ -165,6 +194,7 @@ object Metadata {
     object SignedChar extends DW_ATE("DW_ATE_signed_char")
     object Unsigned extends DW_ATE("DW_ATE_unsigned")
     object UnsignedChar extends DW_ATE("DW_ATE_unsigned_char")
+    object UTF extends DW_ATE("DW_ATE_UTF")
   }
 
   sealed class ModFlagBehavior(tag: Int) extends Value(nir.Val.Int(tag))
@@ -240,11 +270,12 @@ object Metadata {
   }
   class BitSize(val sizeOfBytes: Long) extends AnyVal {
     def sizeOfBits: Long = sizeOfBytes * 8
+    def const = Const(sizeOfBytes.toString())
   }
 
   object Constants {
     val PRODUCER = "Scala Native"
-    val DWARF_VERSION = 3
+    val DWARF_VERSION = 4
     val DEBUG_INFO_VERSION = 3
   }
 

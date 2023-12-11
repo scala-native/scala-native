@@ -77,4 +77,5 @@ object Rt {
     val sig = Sig.Method("alloc", Seq(Int, Ref(cls))).mangled
     sig -> cls
   }.toMap
+  val RuntimeObjectMonitor = Ref(Global.Top("scala.scalanative.runtime.monitor.ObjectMonitor"))
 }
