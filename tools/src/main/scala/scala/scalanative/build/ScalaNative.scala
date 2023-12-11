@@ -17,8 +17,7 @@ import scala.scalanative.linker.LinkingException
  */
 private[scalanative] object ScalaNative {
 
-  /** Compute all globals that must be reachable based on given configuration.
-   */
+  /** Gathers the symbols that must be reachable based on given `config`. */
   def entries(config: Config): Seq[nir.Global] = {
     implicit val platform: PlatformInfo = PlatformInfo(config)
     val entry = encodedMainClass(config).map(_.member(nir.Rt.ScalaMainSig))

@@ -224,16 +224,25 @@ final class Field(
 }
 
 sealed trait ReachabilityAnalysis {
+
+  /** The definitions that are reachable. */
   def defns: Seq[nir.Defn]
+
+  /** `true` if the analysis was successful. */
   def isSuccessful: Boolean = this.isInstanceOf[ReachabilityAnalysis.Result]
+
 }
 
 object ReachabilityAnalysis {
+
+  /** A failed reachability analysis. */
   final class Failure(
       val defns: Seq[nir.Defn],
       val unreachable: Seq[Reach.UnreachableSymbol],
       val unsupportedFeatures: Seq[Reach.UnsupportedFeature]
   ) extends ReachabilityAnalysis
+
+  /** A successful reachability analysis. */
   final class Result(
       val infos: mutable.Map[nir.Global, Info],
       val entries: Seq[nir.Global],
@@ -255,4 +264,5 @@ object ReachabilityAnalysis {
     lazy val StringCachedHashCodeField = infos(nir.Rt.StringCachedHashCodeName)
       .asInstanceOf[Field]
   }
+
 }

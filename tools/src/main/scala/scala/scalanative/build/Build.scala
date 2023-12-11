@@ -113,12 +113,12 @@ object Build {
 
   /** Compiles the deinitions in `linkerResult` into a native binary.
    *
-   * @param config
-   *   The configuration of the toolchain, which has been validated.
-   * @param linkerResult
-   *   The result of reachability analysis.
-   * @return
-   *   [[Config#artifactPath]], the path to the resulting native binary.
+   *  @param config
+   *    The configuration of the toolchain, which has been validated.
+   *  @param linkerResult
+   *    The result of reachability analysis.
+   *  @return
+   *    [[Config#artifactPath]], the path to the resulting native binary.
    */
   private def compileBinary(
       config: Config,
