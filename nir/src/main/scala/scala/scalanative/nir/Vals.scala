@@ -269,7 +269,12 @@ object Val {
   /** A homogeneous collection of data members. */
   final case class ArrayValue(elemty: nir.Type, values: Seq[Val]) extends Val
 
-  /** A collection of bytes. */
+  /** A collection of bytes.
+   *
+   *  Unlike arrays, byte strings are implicitly null-terminated. Hence, they
+   *  correspond to C-string literals. For example, `ByteString(Array(97))` will
+   *  be compiled to `c"a\0"`.
+   */
   final case class ByteString(bytes: Array[scala.Byte]) extends Val {
     def byteCount: scala.Int = bytes.length + 1
   }
@@ -277,22 +282,47 @@ object Val {
   /** A local SSA variable. */
   final case class Local(id: nir.Local, valty: nir.Type) extends Val
 
-  /** A symbol. */
+  /** A reference to a global variable, constant, or method. */
   final case class Global(name: nir.Global, valty: nir.Type) extends Val
 
   /** The unit value. */
   case object Unit extends Val
 
-  /** A constant. */
+  /** A constant.
+   *
+   *  Note that this class does not behave like a literal constant, which are
+   *  represented by `ByteString`, `Zero`, `Int`, etc. Instead, it represents a
+   *  pointer to some constant value.
+   */
   final case class Const(value: Val) extends Val
 
-  /** A character string. */
+  /** A character string.
+   *
+   *  Values of this type correspond to instances of `java.lang.String` and are
+   *  compiled as global arrays of UTF-16 characters. Use `ByteString` to
+   *  represent C-string literals.
+   */
   final case class String(value: java.lang.String) extends Val
 
-  /** A virtual value. */
+  /** A virtual value.
+   *
+   *  Virtual values only serve as placeholders during optimization. They are
+   *  not serializable and are never emitted by the compiler plugin.
+   */
   final case class Virtual(key: scala.Long) extends Val
 
-  /** A class symbol. */
+  /** A reference to `java.lang.Class[_]` of given symbol `name`.
+   *
+   *  Instances are emitted as global variables during code feneration. They are
+   *  used to deduplicate `Class` instances. There should be only 1 instance per
+   *  type.
+   *
+   *  Note that, althrough they are currently emitted as global variables,
+   *  instances of this type could be constants. However, when we added
+   *  multithreading and object monitors, we needed to edit one of its fields
+   *  (specifically, `lockWord`), which contains an `ObjectMonitor` or a bit set
+   *  of lock word.
+   */
   final case class ClassOf(name: nir.Global) extends Val
 
 }
