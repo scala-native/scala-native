@@ -940,27 +940,47 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           }
       }
     }
+    private def genMethodAttrs(
+        sym: Symbol,
+        isExtern: Boolean
+    ): nir.Attrs = {
+      val attrs = Seq.newBuilder[nir.Attr]
 
-    def genMethodAttrs(sym: Symbol, isExtern: Boolean): nir.Attrs = {
-      val inlineAttrs =
-        if (sym.isBridge || sym.hasFlag(ACCESSOR)) Seq(nir.Attr.AlwaysInline)
-        else Nil
+      if (sym.isBridge || sym.hasFlag(ACCESSOR))
+        attrs += nir.Attr.AlwaysInline
+      if (isExtern)
+        attrs += nir.Attr.Extern(sym.isBlocking || sym.owner.isBlocking)
 
-      val annotatedAttrs =
-        sym.annotations.map(_.symbol).collect {
-          case NoInlineClass     => nir.Attr.NoInline
-          case AlwaysInlineClass => nir.Attr.AlwaysInline
-          case InlineClass       => nir.Attr.InlineHint
-          case StubClass         => nir.Attr.Stub
-          case NoOptimizeClass   => nir.Attr.NoOpt
-          case NoSpecializeClass => nir.Attr.NoSpecialize
+      def requireLiteralStringAnnotation(
+          annotation: Annotation
+      ): Option[String] =
+        annotation.tree match {
+          case Apply(_, Seq(Literal(Constant(name: String)))) => Some(name)
+          case tree =>
+            reporter.error(
+              tree.pos,
+              s"Invalid usage of ${annotation.symbol}, expected literal constant string argument, got ${tree}"
+            )
+            None
         }
-      val externAttrs =
-        if (isExtern)
-          Seq(nir.Attr.Extern(sym.isBlocking || sym.owner.isBlocking))
-        else Nil
-
-      nir.Attrs.fromSeq(inlineAttrs ++ annotatedAttrs ++ externAttrs)
+      sym.annotations.foreach { ann =>
+        ann.symbol match {
+          case NoInlineClass     => attrs += nir.Attr.NoInline
+          case AlwaysInlineClass => attrs += nir.Attr.AlwaysInline
+          case InlineClass       => attrs += nir.Attr.InlineHint
+          case NoOptimizeClass   => attrs += nir.Attr.NoOpt
+          case NoSpecializeClass => attrs += nir.Attr.NoSpecialize
+          case StubClass         => attrs += nir.Attr.Stub
+          case LinkClass =>
+            requireLiteralStringAnnotation(ann)
+              .foreach(attrs += nir.Attr.Link(_))
+          case DefineClass =>
+            requireLiteralStringAnnotation(ann)
+              .foreach(attrs += nir.Attr.Define(_))
+          case _ => ()
+        }
+      }
+      nir.Attrs.fromSeq(attrs.result())
     }
 
     def genMethodBody(

@@ -734,8 +734,8 @@ object Lower {
       private var lastResult: Boolean = false
 
       private val supportedGC = meta.config.gc match {
-        case Immix => true
-        case _     => false
+        case Immix | Commix => true
+        case _              => false
       }
       private val multithreadingEnabled = meta.platform.isMultithreadingEnabled
       private val usesSafepoints = multithreadingEnabled && supportedGC

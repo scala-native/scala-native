@@ -1,11 +1,11 @@
-#if defined(SCALANATIVE_GC_IMMIX)
+#if defined(SCALANATIVE_GC_COMMIX)
 
 #include "MutatorThread.h"
 #include "State.h"
 #include <stdlib.h>
 #include <stdatomic.h>
 #include <setjmp.h>
-#include "shared/ThreadUtil.h"
+#include <shared/ThreadUtil.h>
 #include <assert.h>
 
 static mutex_t threadListsModificationLock;
@@ -32,12 +32,8 @@ void MutatorThread_init(Field_t *stackbottom) {
 
     LargeAllocator_Init(&self->largeAllocator, &blockAllocator, heap.bytemap,
                         heap.blockMetaStart, heap.heapStart);
-    Allocator_Init(&self->allocator, &blockAllocator, heap.bytemap,
-                   heap.blockMetaStart, heap.heapStart);
-
-    LargeAllocator_Init(&self->largeAllocator, &blockAllocator, heap.bytemap,
-                        heap.blockMetaStart, heap.heapStart);
     MutatorThreads_add(self);
+    mutatorThreadsCount += 1;
     // Following init operations might trigger GC, needs to be executed after
     // acknownleding the new thread in MutatorThreads_add
     Allocator_InitCursors(&self->allocator);
@@ -46,6 +42,7 @@ void MutatorThread_init(Field_t *stackbottom) {
 void MutatorThread_delete(MutatorThread *self) {
     MutatorThread_switchState(self, MutatorThreadState_Unmanaged);
     MutatorThreads_remove(self);
+    mutatorThreadsCount -= 1;
 #ifdef _WIN32
     CloseHandle(self->wakeupEvent);
 #endif

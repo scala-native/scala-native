@@ -9,6 +9,7 @@ import signalhandling.SignalConfig
 import scalanative.posix.sys.socket._
 import scalanative.posix.netinet.in
 import scalanative.posix.unistd
+import scala.concurrent.ExecutionContext
 
 object TestMain {
 
@@ -104,7 +105,7 @@ object TestMain {
       else getFreeBSDLoopbackAddr()
     val serverPort = args(0).toInt
     val clientSocket = new Socket(serverAddr, serverPort)
-    val nativeRPC = new NativeRPC(clientSocket)
+    val nativeRPC = new NativeRPC(clientSocket)(ExecutionContext.global)
     val bridge = new TestAdapterBridge(nativeRPC)
 
     bridge.start()

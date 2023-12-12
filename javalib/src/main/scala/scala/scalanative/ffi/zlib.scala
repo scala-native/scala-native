@@ -1,14 +1,27 @@
-package scala.scalanative.runtime
+package scala.scalanative.ffi
 
 import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.unsafe._
 import scala.scalanative.meta.LinktimeInfo.isWindows
+import scala.scalanative.runtime.{fromRawUSize, Intrinsics}
 
-@link("z")
+private[ffi] object zlibPlatformCompat {
+  @extern @link("zlib")
+  private object zlibWin64 extends zlib
+
+  @extern @link("z")
+  private object zlibDefault extends zlib
+
+  // create instance just to enforce that object containing one of @link annotations would be reachable
+  val instance: zlib =
+    if (isWindows) zlibWin64
+    else zlibDefault
+}
+
 @define("SCALANATIVE_Z")
 @extern
-object zlib {
-  import zlibExt._
+trait zlib {
+  import zlibOps.{z_stream, gz_header}
   type voidpf = Ptr[Byte]
   type voidp = Ptr[Byte]
   type voidpc = Ptr[Byte]
@@ -343,23 +356,18 @@ object zlib {
 
   @name("scalanative_crc32_combine")
   def crc32_combine(crc1: uLong, crc2: uLong, len2: z_off_t): uLong = extern
+
 }
 
-object zlibExt {
-  import zlib._
+object zlibOps {
+  private type uInt = zlib#uInt
+  private type uLong = zlib#uLong
+  private type Bytef = zlib#Bytef
+  private type voidpf = zlib#voidpf
+  private type alloc_func = zlib#alloc_func
+  private type free_func = zlib#free_func
 
-  object z_stream {
-    // Depending on the OS zlib can use different types inside z_stream
-    // We can distinguish to layouts using different size of integers:
-    // 64-bit: using uint32 and uint64, it can be found on Unix
-    // 32-bit  using uint15 and uint32, which is present on Windows
-    def size: CSize = fromRawUSize(
-      if (isWindows) Intrinsics.sizeOf[z_stream_32]
-      else Intrinsics.sizeOf[z_stream_64]
-    )
-  }
-
-  private[scalanative] type z_stream[UINT, ULONG] =
+  private[ffi] type z_stream[UINT, ULONG] =
     CStruct14[
       Ptr[Bytef], // next_in
       UINT, // avail_in
@@ -377,22 +385,21 @@ object zlibExt {
       ULONG // future
     ]
 
-  private[scalanative] type z_stream_32 =
-    z_stream[CUnsignedShort, CUnsignedInt]
-  private[scalanative] type z_stream_64 =
-    z_stream[CUnsignedInt, CUnsignedLong]
+  private type z_stream_32 = z_stream[CUnsignedShort, CUnsignedInt]
+  private type z_stream_64 = z_stream[CUnsignedInt, CUnsignedLong]
 
-  object gz_header {
-    // Depending on the OS zlib can use different types inside gz_header
-    // For details see comment in z_stream
-
+  object z_stream {
+    // Depending on the OS zlib can use different types inside z_stream
+    // We can distinguish to layouts using different size of integers:
+    // 64-bit: using uint32 and uint64, it can be found on Unix
+    // 32-bit  using uint15 and uint32, which is present on Windows
     def size: CSize = fromRawUSize(
-      if (isWindows) Intrinsics.sizeOf[gz_header_32]
-      else Intrinsics.sizeOf[gz_header_64]
+      if (isWindows) Intrinsics.sizeOf[z_stream_32]
+      else Intrinsics.sizeOf[z_stream_64]
     )
   }
 
-  private[scalanative] type gz_header[UINT, ULONG] =
+  private[ffi] type gz_header[UINT, ULONG] =
     CStruct13[
       CInt, // text
       ULONG, // time
@@ -408,17 +415,21 @@ object zlibExt {
       CInt, // gcrc
       CInt // done
     ]
-  private[scalanative] type gz_header_32 =
-    gz_header[CUnsignedShort, CUnsignedInt]
-  private[scalanative] type gz_header_64 =
-    gz_header[CUnsignedInt, CUnsignedLong]
-}
+  private type gz_header_32 = gz_header[CUnsignedShort, CUnsignedInt]
+  private type gz_header_64 = gz_header[CUnsignedInt, CUnsignedLong]
 
-object zlibOps {
-  import zlib._
-  import zlibExt._
-  implicit class ZStreamOps(val ref: z_streamp) extends AnyVal {
-    import z_stream._
+  object gz_header {
+    // Depending on the OS zlib can use different types inside gz_header
+    // For details see comment in z_stream
+
+    def size: CSize = fromRawUSize(
+      if (isWindows) Intrinsics.sizeOf[gz_header_32]
+      else Intrinsics.sizeOf[gz_header_64]
+    )
+  }
+
+  implicit class ZStreamOps(val ref: zlib#z_streamp) extends AnyVal {
+
     @alwaysinline private def asZStream32 = ref.asInstanceOf[Ptr[z_stream_32]]
     @alwaysinline private def asZStream64 = ref.asInstanceOf[Ptr[z_stream_64]]
 
@@ -470,9 +481,7 @@ object zlibOps {
       if (isWindows) asZStream32._14 = v.toUInt else asZStream64._14 = v
   }
 
-  implicit class GZHeaderOps(val ref: gz_headerp) extends AnyVal {
-    import gz_header._
-
+  implicit class GZHeaderOps(val ref: zlib#gz_headerp) extends AnyVal {
     @alwaysinline private def asZStream32 = ref.asInstanceOf[Ptr[gz_header_32]]
     @alwaysinline private def asZStream64 = ref.asInstanceOf[Ptr[gz_header_64]]
 

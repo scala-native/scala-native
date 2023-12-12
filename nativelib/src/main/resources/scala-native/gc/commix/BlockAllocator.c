@@ -3,8 +3,19 @@
 #include "BlockAllocator.h"
 #include "immix_commix/Log.h"
 #include "immix_commix/utils/MathUtils.h"
-#include <stdio.h>
 #include "Heap.h"
+#include "shared/ThreadUtil.h"
+#include <stdio.h>
+#include <stdatomic.h>
+
+INLINE void BlockAllocator_Acquire(BlockAllocator *blockAllocator) {
+    mutex_lock(&blockAllocator->allocationLock);
+    atomic_thread_fence(memory_order_acquire);
+}
+INLINE void BlockAllocator_Release(BlockAllocator *blockAllocator) {
+    atomic_thread_fence(memory_order_release);
+    mutex_unlock(&blockAllocator->allocationLock);
+}
 
 void BlockAllocator_splitAndAdd(BlockAllocator *blockAllocator,
                                 BlockMeta *superblock, uint32_t count);
@@ -31,6 +42,8 @@ void BlockAllocator_Init(BlockAllocator *blockAllocator, word_t *blockMetaStart,
     blockAllocator->reservedSuperblock = (word_t)sLimit;
 
     blockAllocator->concurrent = false;
+
+    mutex_init(&blockAllocator->allocationLock);
 
 #ifdef DEBUG_ASSERT
     BlockMeta *limit = sCursor + blockCount;
@@ -137,11 +150,15 @@ BlockAllocator_getFreeBlockSlow(BlockAllocator *blockAllocator) {
 }
 
 INLINE BlockMeta *BlockAllocator_GetFreeBlock(BlockAllocator *blockAllocator) {
+    BlockMeta *block;
+    BlockAllocator_Acquire(blockAllocator);
     if (blockAllocator->smallestSuperblock.cursor >=
         blockAllocator->smallestSuperblock.limit) {
-        return BlockAllocator_getFreeBlockSlow(blockAllocator);
+        block = BlockAllocator_getFreeBlockSlow(blockAllocator);
+        BlockAllocator_Release(blockAllocator);
+        return block;
     }
-    BlockMeta *block = blockAllocator->smallestSuperblock.cursor;
+    block = blockAllocator->smallestSuperblock.cursor;
     assert(BlockMeta_IsFree(block));
     assert(block->debugFlag == dbg_free_in_collection);
 #ifdef DEBUG_ASSERT
@@ -149,6 +166,8 @@ INLINE BlockMeta *BlockAllocator_GetFreeBlock(BlockAllocator *blockAllocator) {
 #endif
     BlockMeta_SetFlag(block, block_simple);
     blockAllocator->smallestSuperblock.cursor++;
+
+    BlockAllocator_Release(blockAllocator);
 
 // not decrementing freeBlockCount, because it is only used after sweep
 #ifdef DEBUG_PRINT
@@ -161,6 +180,7 @@ INLINE BlockMeta *BlockAllocator_GetFreeBlock(BlockAllocator *blockAllocator) {
 
 BlockMeta *BlockAllocator_GetFreeSuperblock(BlockAllocator *blockAllocator,
                                             uint32_t size) {
+    BlockAllocator_Acquire(blockAllocator);
     BlockMeta *superblock;
     BlockMeta *sCursor = blockAllocator->smallestSuperblock.cursor;
     BlockMeta *sLimit = blockAllocator->smallestSuperblock.limit;
@@ -198,6 +218,7 @@ BlockMeta *BlockAllocator_GetFreeSuperblock(BlockAllocator *blockAllocator,
         }
 
         if (superblock == NULL) {
+            BlockAllocator_Release(blockAllocator);
             return NULL;
         }
     }
@@ -220,6 +241,7 @@ BlockMeta *BlockAllocator_GetFreeSuperblock(BlockAllocator *blockAllocator,
 #endif
         BlockMeta_SetFlag(current, block_superblock_tail);
     }
+    BlockAllocator_Release(blockAllocator);
 // not decrementing freeBlockCount, because it is only used after sweep
 #ifdef DEBUG_PRINT
     printf("BlockAllocator_GetFreeSuperblock(%" PRIu32 ") = %p %" PRIu32 "\n",
@@ -379,6 +401,7 @@ void BlockAllocator_Clear(BlockAllocator *blockAllocator) {
 }
 
 void BlockAllocator_ReserveBlocks(BlockAllocator *blockAllocator) {
+    BlockAllocator_Acquire(blockAllocator);
     int index = MathUtils_Log2Ceil((size_t)SWEEP_RESERVE_BLOCKS);
     assert(blockAllocator->concurrent);
     BlockMeta *superblock =
@@ -415,14 +438,17 @@ void BlockAllocator_ReserveBlocks(BlockAllocator *blockAllocator) {
     } else {
         blockAllocator->reservedSuperblock = (word_t)NULL;
     }
+    BlockAllocator_Release(blockAllocator);
 }
 
 void BlockAllocator_UseReserve(BlockAllocator *blockAllocator) {
+    BlockAllocator_Acquire(blockAllocator);
     BlockMeta *reserved = (BlockMeta *)blockAllocator->reservedSuperblock;
     if (reserved != NULL) {
         BlockAllocator_splitAndAdd(blockAllocator, reserved,
                                    SWEEP_RESERVE_BLOCKS);
     }
+    BlockAllocator_Release(blockAllocator);
 }
 
 #endif

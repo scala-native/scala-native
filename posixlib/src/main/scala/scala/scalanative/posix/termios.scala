@@ -58,7 +58,7 @@ object termios {
 
   @name("scalanative_termios_veof")
   def VEOF: CInt = extern
-  @name("scalanative_termios_veof")
+  @name("scalanative_termios_veol")
   def VEOL: CInt = extern
   @name("scalanative_termios_verase")
   def VERASE: CInt = extern

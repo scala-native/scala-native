@@ -20,9 +20,10 @@
 #include <time.h>
 #include <inttypes.h>
 #include "WeakRefGreyList.h"
+#include "Synchronizer.h"
 
-void Heap_exitWithOutOfMemory() {
-    fprintf(stderr, "Out of heap space\n");
+void Heap_exitWithOutOfMemory(const char *details) {
+    fprintf(stderr, "Out of heap space %s\n", details);
     StackTrace_PrintStackTrace();
     exit(1);
 }
@@ -180,7 +181,7 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
         // demend when growing the heap.
         memoryCommit(heapStart, minHeapSize);
     if (!commitStatus) {
-        Heap_exitWithOutOfMemory();
+        Heap_exitWithOutOfMemory("Failed to commit memory");
     }
 #endif // _WIN32
 
@@ -195,11 +196,6 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
     Phase_Init(heap, initialBlockCount);
 
     Bytemap_Init(bytemap, heapStart, maxHeapSize);
-    Allocator_Init(&allocator, &blockAllocator, bytemap, blockMetaStart,
-                   heapStart);
-
-    LargeAllocator_Init(&largeAllocator, &blockAllocator, bytemap,
-                        blockMetaStart, heapStart);
 
     // Init all GCThreads
     // Init stats if enabled.
@@ -219,12 +215,22 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
     heap->mark.lastEnd_ns = scalanative_nano_time();
 
     mutex_init(&heap->sweep.growMutex);
+    mutex_init(&heap->lock);
 }
 
 void Heap_Collect(Heap *heap) {
+#ifdef SCALANATIVE_MULTITHREADING_ENABLED
+    if (!Synchronizer_acquire())
+        return;
+    while (!Sweeper_IsSweepDone(heap))
+        thread_yield();
+#else
+    MutatorThread_switchState(currentMutatorThread,
+                              MutatorThreadState_Unmanaged);
+    assert(Sweeper_IsSweepDone(heap));
+#endif
     Stats *stats = Stats_OrNull(heap->stats);
     Stats_CollectionStarted(stats);
-    assert(Sweeper_IsSweepDone(heap));
 #ifdef DEBUG_ASSERT
     Sweeper_ClearIsSwept(heap);
     Sweeper_AssertIsConsistent(heap);
@@ -237,13 +243,24 @@ void Heap_Collect(Heap *heap) {
                       heap->mark.currentEnd_ns);
     Phase_Nullify(heap, stats);
     Phase_StartSweep(heap);
+#ifdef SCALANATIVE_MULTITHREADING_ENABLED
+    Synchronizer_release();
+#else
+    MutatorThread_switchState(currentMutatorThread, MutatorThreadState_Managed);
+#endif
+    // Skip calling WeakRef handlers on thread which is being initialized
+    // If the current block is set to null it means it failed to allocate
+    // memory for allocator and forced GC
     WeakRefGreyList_CallHandlers();
 }
 
 bool Heap_shouldGrow(Heap *heap) {
     uint32_t freeBlockCount = (uint32_t)blockAllocator.freeBlockCount;
     uint32_t blockCount = heap->blockCount;
-    uint32_t recycledBlockCount = (uint32_t)allocator.recycledBlockCount;
+    uint32_t recycledBlockCount = 0;
+    MutatorThreads_foreach(mutatorThreads, node) {
+        recycledBlockCount += node->value->allocator.recycledBlockCount;
+    }
     uint32_t unavailableBlockCount =
         blockCount - (freeBlockCount + recycledBlockCount);
 
@@ -285,15 +302,19 @@ void Heap_GrowIfNeeded(Heap *heap) {
             }
         }
     }
-    if (!Allocator_CanInitCursors(&allocator)) {
-        Heap_exitWithOutOfMemory();
+    MutatorThreads_foreach(mutatorThreads, node) {
+        MutatorThread *thread = node->value;
+        if (!Allocator_CanInitCursors(&thread->allocator)) {
+            Heap_exitWithOutOfMemory("growIfNeeded:re-init cursors");
+        }
     }
 }
 
 void Heap_Grow(Heap *heap, uint32_t incrementInBlocks) {
+    BlockAllocator_Acquire(&blockAllocator);
     mutex_lock(&heap->sweep.growMutex);
     if (!Heap_isGrowingPossible(heap, incrementInBlocks)) {
-        Heap_exitWithOutOfMemory();
+        Heap_exitWithOutOfMemory("grow heap");
     }
     size_t incrementInBytes = incrementInBlocks * SPACE_USED_PER_BLOCK;
 
@@ -319,7 +340,7 @@ void Heap_Grow(Heap *heap, uint32_t incrementInBlocks) {
     // other processes. Also when using UNLIMITED heap size it might try to
     // commit more memory than is available.
     if (!memoryCommit(heapEnd, incrementInBytes)) {
-        Heap_exitWithOutOfMemory();
+        Heap_exitWithOutOfMemory("grow heap, commit memmory");
     };
 #endif // WIN32
 
@@ -334,6 +355,7 @@ void Heap_Grow(Heap *heap, uint32_t incrementInBlocks) {
                                  incrementInBlocks);
 
     heap->blockCount += incrementInBlocks;
+    BlockAllocator_Release(&blockAllocator);
     mutex_unlock(&heap->sweep.growMutex);
 }
 

@@ -3,13 +3,12 @@ package java.util.zip
 import scala.scalanative.unsigned._
 import scala.scalanative.unsafe._
 import scala.scalanative.libc._
-import scala.scalanative.runtime.zlib
-import scala.scalanative.runtime.zlibExt.z_stream
-import scala.scalanative.runtime.zlibOps._
-import zlib._
+import scala.scalanative.ffi.zlib
+import scala.scalanative.ffi.zlibOps._
 
 // Ported from Apache Harmony
 class Deflater(private var compressLevel: Int, noHeader: Boolean) {
+
   def this(compressLevel: Int) = this(compressLevel, noHeader = false)
   def this() = this(Deflater.DEFAULT_COMPRESSION)
 
@@ -21,7 +20,7 @@ class Deflater(private var compressLevel: Int, noHeader: Boolean) {
   private var isFinished = false
   private var strategy = Deflater.DEFAULT_STRATEGY
   private var inputBuffer: Array[Byte] = null
-  private var stream: z_streamp =
+  private var stream: zlib#z_streamp =
     Deflater.createStream(compressLevel, strategy, noHeader)
   private var inRead: Int = 0
   private var inLength: Int = 0
@@ -226,10 +225,10 @@ object Deflater {
       level: Int,
       strategy: Int,
       noHeader: Boolean
-  ): z_streamp = {
+  ): zlib#z_streamp = {
     val stream = stdlib
       .calloc(1.toUSize, z_stream.size)
-      .asInstanceOf[z_streamp]
+      .asInstanceOf[zlib#z_streamp]
     val wbits =
       if (noHeader) 15 / -1
       else 15
