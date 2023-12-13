@@ -1015,6 +1015,7 @@ object MetadataCodeGen {
         val cache = ctx.writersCache(resolved.getClass)
 
         v.assignedId
+          .orElse(resolved.assignedId)
           .orElse(cache.get(resolved))
           .getOrElse {
             // Not found actual type, treat it as ObjectHeader. It can happen only in very low level/hacked types, e.g. java.lang.{Object,Array, Cass}
