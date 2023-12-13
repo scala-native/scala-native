@@ -203,19 +203,21 @@ private[scalanative] object ScalaNative {
   /** Given low-level assembly, emit LLVM IR for it to the buildDirectory. */
   def codegen(config: Config, analysis: ReachabilityAnalysis.Result)(implicit
       ec: ExecutionContext
-  ): Future[Seq[Path]] = {
+  ): Future[CodeGen.IRGenerators] = {
     val withMetadata =
       if (config.compilerConfig.sourceLevelDebuggingConfig.enabled)
         " (with debug metadata)"
       else ""
-
+    val codeGen = CodeGen(config, analysis)
     config.logger.timeAsync(s"Generating intermediate code$withMetadata") {
-      CodeGen(config, analysis)
+      codeGen
+        .flatMap(Future.sequence(_))
         .andThen {
           case Success(paths) =>
-            config.logger.info(s"Produced ${paths.length} files")
+            config.logger.info(s"Produced ${paths.length} LLVM IR files")
         }
     }
+    codeGen
   }
 
   /** Run NIR checker on the linker result. */
@@ -307,11 +309,4 @@ private[scalanative] object ScalaNative {
       val encoded = mainClass.split('.').map(encode).mkString(".")
       nir.Global.Top(encoded)
     }
-
-  def genBuildInfo(
-      config: Config
-  )(implicit ec: ExecutionContext): Future[Seq[Path]] = Future {
-    LLVM.generateLLVMIdent(config)
-  }
-
 }
