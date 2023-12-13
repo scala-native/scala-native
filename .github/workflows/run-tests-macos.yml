@@ -45,6 +45,7 @@ jobs:
       - name: Test partests infrastructure
         # No partests support for Scala 3
         if: ${{ !startsWith(matrix.scala, '3') }}
+        timeout-minutes: 45
         run: >
           sbt "scalaPartestTests${{env.project-version}}/testOnly -- --showDiff neg/abstract.scala pos/abstract.scala run/Course-2002-01.scala"
 
@@ -97,6 +98,7 @@ jobs:
           echo set-native-config=${SetConfigTemplate} >> $GITHUB_ENV
 
       - name: Run tests
+        timeout-minutes: 45
         env:
           SCALANATIVE_MODE: ${{ matrix.build-mode }}
           SCALANATIVE_GC: ${{ matrix.gc }}
@@ -157,6 +159,7 @@ jobs:
           java-version: 8
 
       - name: Run tests
+        timeout-minutes: 45
         # env:
         #   SCALANATIVE_MODE: release-fast
         #   SCALANATIVE_LTO: thin

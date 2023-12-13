@@ -42,6 +42,7 @@ jobs:
       # Execution with enabled multithreading increases memory usage, run only minimal tests
       - name: Test runtime None GC
         if: matrix.gc == 'none'
+        timeout-minutes: 45
         run: >
           set SCALANATIVE_GC=${{matrix.gc}}&
           set SCALANATIVE_INCLUDE_DIRS=${{steps.setup.outputs.vcpkg-dir}}\include&
@@ -56,6 +57,7 @@ jobs:
 
       - name: Test runtime
         if: matrix.gc != 'none'
+        timeout-minutes: 45
         run: >
           set SCALANATIVE_GC=${{matrix.gc}}&
           set SCALANATIVE_INCLUDE_DIRS=${{steps.setup.outputs.vcpkg-dir}}\include&
@@ -131,6 +133,7 @@ jobs:
           scala-version: ${{matrix.scala}}
 
       - name: Run tests
+        timeout-minutes: 45
         run: >
           set SCALANATIVE_GC=${{matrix.gc}}&
           set SCALANATIVE_MODE=${{matrix.build-mode}}&
@@ -164,6 +167,7 @@ jobs:
 
       - name: Run tests
         shell: cmd
+        timeout-minutes: 45
         run: >
           set SCALANATIVE_INCLUDE_DIRS=${{steps.setup.outputs.vcpkg-dir}}\include&
           set SCALANATIVE_LIB_DIRS=${{steps.setup.outputs.vcpkg-dir}}\lib&

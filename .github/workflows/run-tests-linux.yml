@@ -116,6 +116,7 @@ jobs:
         with:
           scala-version: ${{matrix.scala}}
       - name: Run tests
+        timeout-minutes: 45
         env:
           SCALANATIVE_GC: ${{ matrix.gc }}
           SCALANATIVE_TEST_PREFETCH_DEBUG_INFO: 1
@@ -166,6 +167,7 @@ jobs:
           scala-version: ${{matrix.scala}}
 
       - name: Run tests
+        timeout-minutes: 45
         env:
           SCALANATIVE_MODE: ${{ matrix.build-mode }}
           SCALANATIVE_GC: ${{ matrix.gc }}
@@ -196,6 +198,7 @@ jobs:
           scala-version: ${{matrix.scala}}
 
       - name: Run tests
+        timeout-minutes: 45
         env:
           SCALANATIVE_MODE: ${{ matrix.build-mode }}
           SCALANATIVE_GC: immix
@@ -245,6 +248,7 @@ jobs:
           java-version: 8
 
       - name: Run tests
+        timeout-minutes: 45
         env:
           SCALANATIVE_MODE: release-fast
           SCALANATIVE_LTO: thin
