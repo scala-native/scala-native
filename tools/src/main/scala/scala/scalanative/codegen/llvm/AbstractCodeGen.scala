@@ -232,7 +232,7 @@ private[codegen] abstract class AbstractCodeGen(
     val nir.Type.Function(argtys, retty) = defn match {
       case defn: nir.Defn.Declare => defn.ty
       case defn: nir.Defn.Define  => defn.ty
-      case _             => unreachable
+      case _                      => unreachable
     }
 
     val isDecl = insts.isEmpty
@@ -992,6 +992,17 @@ private[codegen] abstract class AbstractCodeGen(
     def genDbgPosition() = dbg(",", dbgPosition)
 
     call match {
+      // Lower emits a alloc function with exact result type of the class instead of a raw pointer
+      // It's probablatic to emit when not using opaque pointers. Retry with simplified signature
+      case nir.Op.Call(ty, Lower.alloc | Lower.largeAlloc, _)
+          if !useOpaquePointers && ty != Lower.allocSig =>
+        genCall(
+          genBind,
+          call.copy(ty = Lower.allocSig),
+          unwind,
+          srcPos,
+          scopeId
+        )
       case nir.Op.Call(ty, nir.Val.Global(pointee: nir.Global.Member, _), args)
           if lookup(pointee) == ty =>
         val nir.Type.Function(argtys, _) = ty
