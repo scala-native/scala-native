@@ -65,8 +65,12 @@ object Metadata {
     override def recursiveNodes: Seq[Node] = Tuple(retainedNodes.toSeq) :: Nil
   }
 
-  case class DILexicalBlock(scope: Scope, file: DIFile, line: DILine, column: DIColumn)
-      extends Scope {
+  case class DILexicalBlock(
+      scope: Scope,
+      file: DIFile,
+      line: DILine,
+      column: DIColumn
+  ) extends Scope {
     override def distinct: Boolean = true
   }
 
