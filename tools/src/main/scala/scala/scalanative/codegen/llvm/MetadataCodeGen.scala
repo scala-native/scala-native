@@ -15,9 +15,12 @@ import scala.scalanative.linker.{
   ArrayRef,
   FieldRef,
   ScopeRef,
-  TraitRef
+  TraitRef,
+  Method
 }
 import scala.scalanative.linker.ReachabilityAnalysis
+import scala.scalanative.util.ScopedVar
+import scala.scalanative.codegen.llvm.Metadata.conversions.optionWrapper
 
 // scalafmt: { maxColumn = 100}
 trait MetadataCodeGen { self: AbstractCodeGen =>
@@ -27,8 +30,6 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
   import self.meta.platform
 
   final val generateDebugMetadata = self.meta.config.debugMetadata
-  final val LineOffset = 1
-  final val ColumnOffset = 1
 
   /* Create a name debug metadata entry and write it on the metadata section */
   def dbg(name: => String)(values: Metadata.Node*)(implicit ctx: Context): Unit =
@@ -41,21 +42,37 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
       Metadata.Tuple(values).write()
     }
 
-    /* Create a metadata entry by writing metadata reference in the current ShowBuilder,
-     * and the metadata node definition in the metadata section
+  def dbgUsing[T <: Metadata.Node: InternedWriter](
+      v: => T
+  )(usingBlock: T => Unit)(implicit ctx: Context, sb: ShowBuilder) = if (generateDebugMetadata) {
+
+    val writer = implicitly[InternedWriter[T]]
+    val id = writer.getOrAssignId(v)
+
+    // In reference section
+    sb.str(" !dbg ")
+    id.write(sb)
+
+    usingBlock(v)
+
+    // In metadata section
+    writer.intern(v)
+  } else usingBlock(v)
+
+  /* Create a metadata entry by writing metadata reference in the current ShowBuilder,
+   * and the metadata node definition in the metadata section
      **/
   def dbg[T <: Metadata.Node: InternedWriter](prefix: => CharSequence, v: => T)(implicit
       ctx: Context,
       sb: ShowBuilder
-  ): Unit =
-    if (generateDebugMetadata) {
-      // In metadata section
-      val id = implicitly[InternedWriter[T]].intern(v)
-      // In reference section
-      sb.str(prefix)
-      sb.str(" !dbg !")
-      sb.str(id.value.toString())
-    }
+  ): Unit = if (generateDebugMetadata) {
+    // In metadata section
+    val id = implicitly[InternedWriter[T]].intern(v)
+    // In reference section
+    sb.str(prefix)
+    sb.str(" !dbg ")
+    id.write(sb)
+  }
 
   def dbg[T <: Metadata.Node: InternedWriter](
       v: => T
@@ -106,38 +123,31 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
       val variableAddress = Metadata.Value(nir.Val.Local(id, variableTy))
       val scope = defnScopes.toDIScope(scopeId)
       val file = toDIFile(srcPosition)
-      val line = srcPosition.line + LineOffset
+      val line = srcPosition.line.toDILine
       val baseType = toMetadataType(ty)
-
-      def localVariable(
-          name: String,
-          tpe: Metadata.Type,
-          flags: DIFlags = DIFlags(),
-          arg: Option[Int] = None
-      ) = Metadata.DILocalVariable(
-        name = name,
-        arg = arg,
-        scope = scope,
-        file = file,
-        line = line,
-        tpe = tpe,
-        flags = flags
-      )
 
       def genDbgInfo(
           address: Metadata.Value,
-          description: DILocalVariable,
-          expression: DIExpressions
-      ) =
-        if (isVar) `llvm.dbg.declare`(address, description, expression)
-        else `llvm.dbg.value`(address, description, expression)
+          description: DILocalVariable
+      ) = {
+        metadataCtx.currentSubprogram.get.retainedNodes += description
+        if (isVar) `llvm.dbg.declare`(address, description, DIExpressions())
+        else `llvm.dbg.value`(address, description, DIExpressions())
+      }
 
       genDbgInfo(
         address = variableAddress,
-        description = localVariable(localName, toMetadataType(ty), arg = argIdx),
-        expression =
-          if (isVar) DIExpressions()
-          else DIExpressions()
+        description = Metadata.DILocalVariable(
+          name = localName,
+          arg = argIdx,
+          scope = scope,
+          file = file,
+          line = line,
+          tpe = toMetadataType(ty),
+          flags =
+            if (localName == "this") DIFlags(DIFlag.DIFlagArtificial)
+            else DIFlags()
+        )
       )
     }
   }
@@ -204,8 +214,8 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
       pos: nir.Position,
       scopeId: nir.ScopeId
   )(implicit defnScopes: DefnScopes): DILocation = DILocation(
-    line = pos.line + LineOffset,
-    column = pos.column + ColumnOffset,
+    line = pos.line.toDILine,
+    column = pos.column.toDIColumn,
     scope = defnScopes.toDIScope(scopeId)
   )
 
@@ -222,33 +232,30 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
         producer = Constants.PRODUCER,
         isOptimized = defn.attrs.opt == nir.Attr.DidOpt
       )
-      // unmangle method name
-      // see: https://scala-native.org/en/stable/contrib/mangling.html
       val linkageName = mangled(defn.name)
-      val defnName = if (linkageName.startsWith("_S")) linkageName.drop(2) else linkageName
-      val unmangledName = if (defnName.startsWith("M")) { // subprogram should be a member
-        nir.Unmangle.unmangleGlobal(defnName) match {
-          case nir.Global.Member(owner, sig) =>
-            nir.Unmangle.unmangleSig(sig.mangle) match {
-              case nir.Sig.Method(id, _, _) => Some(id)
-              case _                        => None
-            }
-          case _ => None
-        }
-      } else None
-
+      def methodNameInfo(sig: nir.Sig.Unmangled): (String, DIFlags) = sig match {
+        case nir.Sig.Extern(id)           => id -> DIFlags()
+        case nir.Sig.Method(id, _, scope) => id -> DIFlags(sigAccessibilityFlags(scope): _*)
+        case nir.Sig.Duplicate(of, _)     => methodNameInfo(of.unmangled)
+        case nir.Sig.Clinit               => "class constructor" -> DIFlags(DIFlag.DIFlagPrivate)
+        case nir.Sig.Generated(id)        => id -> DIFlags(DIFlag.DIFlagArtificial)
+        case nir.Sig.Ctor(_)              => defn.name.owner.id -> DIFlags()
+        case nir.Sig.Proxy(id, _)         => id -> DIFlags()
+        case _: nir.Sig.Field             => util.unreachable
+      }
       val nir.Type.Function(argtys, retty) = defn.ty: @unchecked
-
+      val (name, flags) = methodNameInfo(defn.name.sig.unmangled)
       DISubprogram(
-        name = unmangledName.getOrElse(linkageName),
-        linkageName = linkageName,
+        name = name,
+        linkageName = defn.name.mangle,
         scope = unit,
         file = file,
         unit = unit,
-        line = pos.line + LineOffset,
+        line = pos.line.toDILine,
+        flags = flags,
         tpe = DISubroutineType(
           DITypes(
-            toMetadataTypeOpt(retty),
+            toFunctionMetadataType(retty),
             argtys.map(toMetadataType(_))
           )
         )
@@ -269,8 +276,8 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
       Metadata.DILexicalBlock(
         file = toDIFile(srcPosition),
         scope = toDIScope(scope.parent),
-        line = srcPosition.line + LineOffset,
-        column = srcPosition.column + ColumnOffset
+        line = srcPosition.line.toDILine,
+        column = srcPosition.column.toDIColumn
       )
     }
   }
@@ -278,10 +285,12 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
   private val DIBasicTypes: Map[nir.Type, Metadata.Type] = {
     import nir.Type._
     Seq(Byte, Char, Short, Int, Long, Size, Float, Double, Bool, Ptr).map { tpe =>
+      val name = tpe.show
+      val nameCapitalize = name.head.toUpper + name.tail
       tpe -> DIBasicType(
-        name = tpe.show,
-        size = MemoryLayout.sizeOf(tpe).toBitSize,
-        align = MemoryLayout.alignmentOf(tpe).toBitSize,
+        name = nameCapitalize,
+        size = MemoryLayout.sizeOf(tpe).toDISize,
+        align = MemoryLayout.alignmentOf(tpe).toDISize,
         encoding = tpe match {
           case Bool           => DW_ATE.Boolean
           case Float | Double => DW_ATE.Float
@@ -293,69 +302,65 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
     }.toMap
   }
 
-  protected def toMetadataTypeOpt(
+  protected def toFunctionMetadataType(
       ty: nir.Type
   )(implicit metaCtx: Context): Option[Metadata.Type] = ty match {
     case nir.Type.Unit => None
-    case _             => Some(toMetadataType(ty))
+    case _             => toMetadataType(ty)
   }
 
   protected def toMetadataType(
       ty: nir.Type,
       underlyingType: Boolean = false
   )(implicit metaCtx: Context): Metadata.Type = {
+    import metaCtx.{typeGeneratatorBacktrace => backtrace, diTypesCache => cache}
     val tpe = nir.Type.normalize(ty)
-    val metadataType = if (metaCtx.pendingTypes.contains(tpe)) {
-      Metadata.TypeRef(tpe)
-    } else
-      metaCtx.diTypesCache.getOrElseUpdate(
-        tpe, {
-          metaCtx.pendingTypes += tpe
-          try generateMetadataType(tpe)
-          finally metaCtx.pendingTypes -= tpe
+    val metadataType = cache
+      .get(tpe)
+      .getOrElse {
+        if (backtrace.contains(tpe)) Metadata.TypeRef(tpe)
+        else {
+          backtrace = tpe :: backtrace
+          val generated =
+            try generateMetadataType(tpe)
+            finally backtrace = backtrace.tail
+          cache.update(tpe, generated)
+          generated
         }
-      )
+      }
     tpe match {
-      // TODO: Custom formatters with synthetics provider as plugin: https://github.com/vadimcn/codelldb/wiki/Custom-Data-Formatters
-      case ArrayRef(_, _)                         => metadataType
-      case _: nir.Type.RefKind if !underlyingType => referenceTypeOf(metadataType)
+      case _: nir.Type.RefKind if !underlyingType => pointerTypeOf(metadataType)
       case _                                      => metadataType
     }
   }
 
-  private def referenceTypeOf(ty: Metadata.Type): DIDerivedType =
-    DIDerivedType(
-      DWTag.Reference,
-      baseType = ty,
-      size = Some(new Metadata.BitSize(platform.sizeOfPtr))
-    )
   private def pointerTypeOf(ty: Metadata.Type): DIDerivedType =
     DIDerivedType(
       DWTag.Pointer,
       baseType = ty,
-      size = Some(new Metadata.BitSize(platform.sizeOfPtr))
+      size = platform.sizeOfPtr.toDISize
     )
 
   private def ObjectMonitorUnionType(implicit metaCtx: MetadataCodeGen.Context) =
     metaCtx.cachedByName[DICompositeType]("scala.scalanative.runtime.ObjectMonitorUnion") { name =>
       DICompositeType(
         DWTag.Union,
-        name = Some(name),
-        size = Some(platform.sizeOfPtr.toBitSize),
+        name = name,
+        size = platform.sizeOfPtr.toDISize,
         flags = DIFlags(DIFlag.DIFlagArtificial)
-      )().withDependentElements { headerRef =>
+      ).withDependentElements { headerRef =>
         Seq(
           DIDerivedType(
             DWTag.Member,
-            name = Some("thinLock"),
+            name = "thinLock",
             baseType = DIBasicTypes(nir.Type.Size),
-            size = Some(platform.sizeOfPtr.toBitSize)
+            size = platform.sizeOfPtr.toDISize
           ),
           DIDerivedType(
             DWTag.Member,
-            name = Some("fatLock"),
+            name = "fatLock",
             baseType = toMetadataType(nir.Rt.RuntimeObjectMonitor),
-            size = Some(platform.sizeOfPtr.toBitSize)
+            size = platform.sizeOfPtr.toDISize
           )
         )
       }
@@ -366,10 +371,10 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
       import meta.layouts.ObjectHeader.{layout, size, _}
       DICompositeType(
         DWTag.Structure,
-        name = Some(name),
-        size = Some(size.toBitSize),
+        name = name,
+        size = size.toDISize,
         flags = DIFlags(DIFlag.DIFlagArtificial)
-      )().withDependentElements { headerRef =>
+      ).withDependentElements { headerRef =>
         MemoryLayout(layout.tys).tys.zipWithIndex.map {
           case (MemoryLayout.PositionedType(ty, offset), idx) =>
             val name = idx match {
@@ -382,11 +387,11 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
             }
             DIDerivedType(
               DWTag.Member,
-              name = Some(name),
+              name = name,
               baseType = baseType,
-              size = Some(MemoryLayout.sizeOf(ty).toBitSize),
-              offset = Some(offset.toBitSize),
-              scope = Some(headerRef)
+              size = MemoryLayout.sizeOf(ty).toDISize,
+              offset = offset.toDISize,
+              scope = headerRef
             )
         }
       }
@@ -397,10 +402,9 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
       import meta.layouts.ArrayHeader.{layout, size, _}
       DICompositeType(
         DWTag.Structure,
-        name = Some(name),
-        size = Some(size.toBitSize),
-        flags = DIFlags(DIFlag.DIFlagArtificial) // TODO
-      )().withDependentElements { headerRef =>
+        name = name,
+        size = size.toDISize
+      ).withDependentElements { headerRef =>
         val objectHeader = DIDerivedType(
           DWTag.Inheritance,
           baseType = ObjectHeaderType,
@@ -418,11 +422,11 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
                 }
                 DIDerivedType(
                   DWTag.Member,
-                  name = Some(name),
+                  name = name,
                   baseType = toMetadataType(ty),
-                  size = Some(MemoryLayout.sizeOf(ty).toBitSize),
-                  offset = Some(offset.toBitSize),
-                  scope = Some(headerRef)
+                  size = MemoryLayout.sizeOf(ty).toDISize,
+                  offset = offset.toDISize,
+                  scope = headerRef
                 )
             }
       }
@@ -436,12 +440,12 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
 
       DICompositeType(
         DWTag.Class,
-        name = Some(name),
-        size = Some(size.toBitSize),
-        file = Some(toDIFile(jlClass.position)),
-        line = Some(jlClass.position.line + LineOffset),
+        name = name,
+        size = size.toDISize,
+        file = toDIFile(jlClass.position),
+        line = jlClass.position.line.toDILine,
         flags = DIFlags(DIFlag.DIFlagArtificial)
-      )().withDependentElements { classRef =>
+      ).withDependentElements { classRef =>
         MemoryLayout(layout.tys).tys.zipWithIndex.map {
           case (MemoryLayout.PositionedType(ty, offset), idx) =>
             val name = idx match {
@@ -452,18 +456,17 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
               case ClassNameIdx => "className"
             }
             val baseType = idx match {
-              // case RttiIdx => classRef
               case ClassNameIdx => toMetadataType(nir.Rt.String)
               case _            => toMetadataType(ty)
             }
             DIDerivedType(
               DWTag.Member,
-              name = Some(name),
+              name = name,
               baseType = baseType,
-              file = Some(toDIFile(jlClass.position)),
-              size = Some(MemoryLayout.sizeOf(ty).toBitSize),
-              offset = Some(offset.toBitSize),
-              scope = Some(classRef)
+              file = toDIFile(jlClass.position),
+              size = MemoryLayout.sizeOf(ty).toDISize,
+              offset = offset.toDISize,
+              scope = classRef
             )
         }
       }
@@ -473,130 +476,112 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
     import nir.Type._
     implicit def analysis: ReachabilityAnalysis.Result = metaCtx.codeGen.meta.analysis
     ty match {
-      case nir.Type.Unit    => toMetadataType(nir.Rt.BoxedUnit)
+      case nir.Type.Unit => toMetadataType(nir.Rt.BoxedUnit)
       case StructValue(tys) =>
-        // TODO: DICompositeType and DIDerivedType should have `name` attribute, but we need to modify
-        // the way of traversing NIR during codegen or add type name info into NIR.
-        val elements = MemoryLayout(tys).tys.zipWithIndex.map {
-          case (MemoryLayout.PositionedType(ty, offset), idx) =>
-            DIDerivedType(
-              tag = DWTag.Member,
-              name = Some(s"_$idx"),
-              baseType = toMetadataType(ty),
-              size = Some(MemoryLayout.sizeOf(ty).toBitSize),
-              offset = Some(offset.toBitSize)
-            )
-        }
         new DICompositeType(
           tag = DWTag.Structure,
-          size = Some(MemoryLayout.sizeOf(ty).toBitSize)
-        )(elements = Tuple(elements))
+          size = MemoryLayout.sizeOf(ty).toDISize
+        ).withDependentElements { structRef =>
+          MemoryLayout(tys).tys.zipWithIndex.map {
+            case (MemoryLayout.PositionedType(ty, offset), idx) =>
+              DIDerivedType(
+                tag = DWTag.Member,
+                name = s"_$idx",
+                baseType = toMetadataType(ty),
+                scope = structRef,
+                size = MemoryLayout.sizeOf(ty).toDISize,
+                offset = offset.toDISize
+              )
+          }
+        }
 
       case ArrayValue(elemTy, n) =>
         new DICompositeType(
           tag = DWTag.Array,
-          baseType = Some(toMetadataType(elemTy)),
-          size = Some(MemoryLayout.sizeOf(ty).toBitSize)
-        )(elements = Tuple(Seq(DISubrange(count = Value(nir.Val.Int(n))))))
+          baseType = toMetadataType(elemTy),
+          size = MemoryLayout.sizeOf(ty).toDISize
+        ).withElements(DISubrange(count = n.const) :: Nil)
 
       case ty: nir.Type.ValueKind => DIBasicTypes(ty)
 
       case ArrayRef(componentCls, _) =>
-        val componentType = toMetadataType(componentCls)
         val componentName = componentCls match {
           case ref: nir.Type.RefKind => ref.className.id
           case ty                    => ty.show
         }
 
-        val arrayStruct = DICompositeType(
-          DWTag.Structure,
-          name = Some(s"scala.Array[$componentName]"),
+        DICompositeType(
+          DWTag.Class,
+          name = s"scala.Array[$componentName]",
+          identifier = ty.mangle,
           size = ArrayHeaderType.size,
-          identifier = Some(ty.mangle),
-          flags = DIFlags(DIFlag.DIFlagNonTrivial)
-        )().withDependentElements { structRef =>
+          flags = DIFlags(
+            DIFlag.DIFlagNonTrivial,
+            DIFlag.DIFlagArtificial,
+            DIFlag.DIFlagTypePassByReference
+          )
+        ).withDependentElements { structRef =>
           Seq(
             DIDerivedType(
               DWTag.Inheritance,
               baseType = ArrayHeaderType,
-              scope = Some(structRef),
-              size = ArrayHeaderType.size,
-              flags = DIFlags(DIFlag.DIFlagArtificial) // TODO
+              scope = structRef,
+              name = "header",
+              size = ArrayHeaderType.size
             ),
-            // DIDerivedType(
-            //   DWTag.Member,
-            //   name = Some("_firstValue"),
-            //   offset = ArrayHeaderType.size,
-            //   scope = Some(structRef),
-            //   flags = DIFlags(DIFlag.DIFlagArtificial) // TODO
-            //   baseType = componentType
-            // ),
             DIDerivedType(
               DWTag.Member,
-              name = Some("values"),
+              name = "values",
               offset = ArrayHeaderType.size,
-              scope = Some(structRef),
-              flags = DIFlags(DIFlag.DIFlagArtificial), // TODO
+              scope = structRef,
               baseType = DICompositeType(
                 DWTag.Array,
-                baseType = Some(componentType),
-                scope = Some(structRef)
-              )(elements = Tuple(DISubrange.empty :: Nil))
+                baseType = toMetadataType(componentCls),
+                scope = structRef
+              )
             )
           )
         }
-        pointerTypeOf(arrayStruct)
 
       case ScopeRef(cls) =>
         val (fieldsLayout, clsParent, traits) = cls.name match {
           case ClassRef(clazz) => (meta.layout.get(clazz), clazz.parent, clazz.traits)
           case TraitRef(clazz) => (None, None, clazz.traits)
+          case _               => util.unreachable
         }
         DICompositeType(
           tag = DWTag.Class,
-          name = Some(cls.name.id),
-          identifier = Some(cls.name.mangle),
+          name = cls.name.id,
+          identifier = cls.name.mangle,
           scope = None,
-          file = Some(toDIFile(cls.position)),
-          line = Some(cls.position.line + LineOffset),
-          size = fieldsLayout.map(_.size.toBitSize),
+          file = toDIFile(cls.position),
+          line = cls.position.line.toDILine,
+          size = fieldsLayout.map(_.size.toDISize),
           flags = DIFlags(
             DIFlag.DIFlagObjectPointer,
-            DIFlag.DIFlagNonTrivial,
-            // DIFlag.DIFlagTypePassByReference
+            DIFlag.DIFlagNonTrivial
           )
-        )().withDependentElements { clsRef =>
+        ).withDependentElements { clsRef =>
           val inheritence = {
-            val parentType =
-              clsParent.map(cls => toMetadataType(cls.ty, underlyingType = true)).orElse {
-                if (cls.name == nir.Rt.Object.name) Some(ObjectHeaderType)
+            val parentType = clsParent
+              .map(cls => toMetadataType(cls.ty, underlyingType = true))
+              .orElse {
+                if (cls.name == nir.Rt.Object.name) ObjectHeaderType
                 else None
               }
-            val parent = parentType.map(baseType =>
-              DIDerivedType(
+            val traitTypes = traits.map(cls => toMetadataType(cls.ty, underlyingType = true))
+            for (baseType <- (parentType ++ traitTypes).toList)
+              yield DIDerivedType(
                 DWTag.Inheritance,
                 baseType = baseType,
-                scope = Some(clsRef),
+                scope = clsRef,
                 flags = DIFlags(DIFlag.DIFlagPublic),
-                extraData = Some(Value(nir.Val.Int(0)))
+                extraData = Value(nir.Val.Int(0))
               )
-            )
-
-            val traitz = traits.map { cls =>
-              DIDerivedType(
-                DWTag.Inheritance,
-                baseType = toMetadataType(cls.ty, underlyingType = true),
-                scope = Some(clsRef),
-                flags = DIFlags(DIFlag.DIFlagPublic, DIFlag.DIFlagVirtual),
-                extraData = Some(Value(nir.Val.Int(0)))
-              )
-            }
-
-            parent ++ traitz
-          }.toList
+          }
 
           val fields = fieldsLayout.fold(List.empty[DIDerivedType]) { layout =>
-            val offsets = layout.layout.fieldOffsets.map(_.toBitSize)
+            val offsets = layout.layout.fieldOffsets.map(_.toDISize)
             val parentFieldsCount = clsParent.map(meta.layout(_).entries.size)
             layout.entries
               .zip(offsets)
@@ -604,26 +589,23 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
               .map {
                 case (field, offset) =>
                   val ty = field.ty
-                  val name = field.name.sig.unmangled match {
-                    case nir.Sig.Field(id, scope) => id // todo flags from scope
-                    case nir.Sig.Generated(id)    => id
-                    case nir.Sig.Extern(id)       => id
+                  val (name, flags) = field.name.sig.unmangled match {
+                    case nir.Sig.Field(id, scope) => id -> DIFlags(sigAccessibilityFlags(scope): _*)
+                    case nir.Sig.Generated(id)    => id -> DIFlags(DIFlag.DIFlagArtificial)
+                    case nir.Sig.Extern(id)       => id -> DIFlags()
                     case other                    => scala.scalanative.util.unsupported(other)
                   }
 
                   DIDerivedType(
                     DWTag.Member,
-                    name = Some(name),
-                    scope = Some(clsRef),
-                    file = Some(toDIFile(field.position)),
-                    line = Some(field.position.line + LineOffset),
-                    offset = Some(offset),
+                    name = name,
+                    scope = clsRef,
+                    file = toDIFile(field.position),
+                    line = field.position.line.toDILine,
+                    offset = offset,
                     baseType = toMetadataType(field.ty),
-                    size = Some(MemoryLayout.sizeOf(ty).toBitSize),
-                    flags = DIFlags(
-                      if (field.name.sig.isPrivate) DIFlag.DIFlagPrivate
-                      else DIFlag.DIFlagPublic
-                    )
+                    size = MemoryLayout.sizeOf(ty).toDISize,
+                    flags = flags
                   )
               }
               .toList
@@ -637,11 +619,18 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
         throw new NotImplementedError(s"No idea how to dwarfise ${other.getClass().getName} $other")
     }
   }
+
+  private def sigAccessibilityFlags(scope: nir.Sig.Scope): List[DIFlag] = scope match {
+    case nir.Sig.Scope.Public           => DIFlag.DIFlagPublic :: Nil
+    case nir.Sig.Scope.PublicStatic     => DIFlag.DIFlagPublic :: DIFlag.DIFlagStaticMember :: Nil
+    case _: nir.Sig.Scope.Private       => DIFlag.DIFlagPrivate :: Nil
+    case _: nir.Sig.Scope.PrivateStatic => DIFlag.DIFlagPrivate :: DIFlag.DIFlagStaticMember :: Nil
+  }
 }
 
 object MetadataCodeGen {
   case class Context(codeGen: AbstractCodeGen, sb: ShowBuilder) {
-    type WriterCache[T <: Metadata.Node] = mutable.Map[T, Int]
+    type WriterCache[T <: Metadata.Node] = mutable.Map[T, Metadata.Id]
     private[MetadataCodeGen] val writersCache
         : mutable.Map[Class[_ <: Metadata.Node], WriterCache[Metadata.Node]] =
       mutable.Map.empty
@@ -649,12 +638,14 @@ object MetadataCodeGen {
     private[MetadataCodeGen] val specializedBuilder: Specialized.Builder[_] =
       new Specialized.Builder[Any]()(this)
     private[MetadataCodeGen] val fresh: nir.Fresh = nir.Fresh()
-    private[MetadataCodeGen] val anonymousStructsFreshIds: nir.Fresh = nir.Fresh()
     private[MetadataCodeGen] val diTypesCache = mutable.Map.empty[nir.Type, Metadata.Type]
-    private[MetadataCodeGen] val pendingTypes = mutable.Set.empty[nir.Type]
+    private[MetadataCodeGen] var typeGeneratatorBacktrace = List.empty[nir.Type]
+    private[MetadataCodeGen] val publishedIds = mutable.Set.empty[Metadata.Id]
     val cachedByNameTypes = mutable.Map.empty[String, Metadata.Type]
     def cachedByName[T <: Metadata.Type](name: String)(create: String => T): T =
       cachedByNameTypes.getOrElseUpdate(name, create(name)).asInstanceOf[T]
+
+    val currentSubprogram = new ScopedVar[Metadata.DISubprogram]()
   }
 
   implicit class MetadataIdWriter(val id: Metadata.Id) {
@@ -672,6 +663,20 @@ object MetadataCodeGen {
 
   trait InternedWriter[T <: Metadata.Node] extends Writer[T] {
     import Writer._
+    private def asssignedId(v: T)(implicit ctx: Context): Option[Metadata.Id] =
+      v.assignedId.orElse(cache(v).get(v))
+
+    private def assignId(v: T)(implicit ctx: Context): Metadata.Id = cache(v).getOrElseUpdate(
+      v, {
+        val id = Metadata.Id(ctx.fresh().id.toInt)
+        v.assignId(id)
+        id
+      }
+    )
+
+    def getOrAssignId(v: T)(implicit ctx: Context): Metadata.Id =
+      asssignedId(v).getOrElse(assignId(v))
+
     final private[MetadataCodeGen] def cache(v: T)(implicit ctx: Context): ctx.WriterCache[T] =
       ctx.writersCache
         .getOrElseUpdate(v.getClass(), mutable.Map.empty)
@@ -679,7 +684,6 @@ object MetadataCodeGen {
 
     protected def internDeps(v: T)(implicit ctx: Context): Unit = {
       def tryIntern(v: Any): Unit = v match {
-        // case _: Metadata.DelayedReference => ()
         case v: Metadata.Node       => v.intern()
         case Some(v: Metadata.Node) => v.intern()
         case _                      => ()
@@ -702,22 +706,16 @@ object MetadataCodeGen {
           case v: Metadata.TypeRef => ofTypeRef.resolveDelayedId(v)
         }
       case _ =>
-        val writerCache = cache(v)
-        val id = writerCache.get(v).getOrElse {
-          // Prepere id for cyclic dependencies in node dependencies
-          val id = ctx.fresh().id.toInt
-          writerCache.update(v, id)
+        val id = getOrAssignId(v)
+        if (ctx.publishedIds.add(id)) {
           internDeps(v)
-
           sb.newline()
-          sb.str("!")
-          sb.str(id)
+          id.write(sb)
           sb.str(" = ")
           write(v)
-
-          id
         }
-        new Metadata.Id(id)
+        id
+
     }
   }
 
@@ -837,7 +835,7 @@ object MetadataCodeGen {
             ctx.sb.str(value.toString())
           implicit val StringField: FieldWriter[String] = (ctx: Context, value: String) =>
             ctx.sb.quoted(value)
-          implicit val BitSizeField: FieldWriter[BitSize] = (ctx: Context, value: BitSize) =>
+          implicit val DISizeField: FieldWriter[DISize] = (ctx: Context, value: DISize) =>
             ctx.sb.str(value.sizeOfBits)
           implicit def MetadataNodeField[T <: Metadata.Node: InternedWriter]: FieldWriter[T] =
             (ctx: Context, value: T) => writeInterned(value)(implicitly, ctx)
@@ -845,6 +843,10 @@ object MetadataCodeGen {
             (ctx: Context, value: T) => implicitly[Writer[T]].write(value)(ctx)
           implicit val ofDIFlags: FieldWriter[DIFlags] = (ctx: Context, value: DIFlags) =>
             ctx.sb.str(value.union.mkString(" | "))
+          implicit val ofDILine: FieldWriter[DILine] = (ctx: Context, value: DILine) =>
+            ctx.sb.str(value.line)
+          implicit val ofDIColumn: FieldWriter[DIColumn] = (ctx: Context, value: DIColumn) =>
+            ctx.sb.str(value.column)
         }
 
       }
@@ -922,7 +924,7 @@ object MetadataCodeGen {
           .field("isOptimized", isOptimized)
           .field("emissionKind", "FullDebug".const)
           // TODO: update once SN has its own DWARF language code
-          .field("language", "DW_LANG_C_plus_plus".const)
+          .field("language", "DW_LANG_C".const)
     }
 
     implicit lazy val ofDIFile: Specialized[DIFile] = {
@@ -932,15 +934,21 @@ object MetadataCodeGen {
     }
 
     implicit lazy val ofDISubprogram: Specialized[DISubprogram] = {
-      case DISubprogram(name, linkageName, scope, file, line, tpe, unit) =>
-        _.field("name", name)
-          .field("linkageName", linkageName)
-          .field("scope", scope)
-          .field("file", file)
-          .field("line", line)
-          .field("type", tpe)
-          .field("unit", unit)
+      case v: DISubprogram =>
+        _.field("name", v.name)
+          .field("linkageName", v.linkageName)
+          .field("scope", v.scope)
+          .field("file", v.file)
+          .field("line", v.line)
+          .field("type", v.tpe)
+          .field("unit", v.unit)
+          .field("flags", if (v.flags.nonEmpty) Some(v.flags) else None)
           .field("spFlags", "DISPFlagDefinition".const)
+          .field(
+            "retainedNodes",
+            if (v.retainedNodes.isEmpty) None
+            else Some(Tuple(v.retainedNodes.toSeq))
+          )
     }
 
     implicit lazy val ofDILexicalBlock: Specialized[DILexicalBlock] = {
@@ -1005,15 +1013,17 @@ object MetadataCodeGen {
       def resolveDelayedId(v: TypeRef)(implicit ctx: Context): Metadata.Id = {
         val resolved = ctx.diTypesCache(v.ty)
         val cache = ctx.writersCache(resolved.getClass)
-        val id = cache.get(resolved).getOrElse {
-          // Not found actual type, treat it as ObjectHeader. It can happen only in very low level/hacked types, e.g. java.lang.{Object,Array, Cass}
-          val composites = ctx.writersCache(classOf[Metadata.DICompositeType])
-          val objectHeader = ctx
-            .cachedByNameTypes("scala.scalanative.runtime.ObjectHeader")
-            .asInstanceOf[DICompositeType]
-          composites(objectHeader)
-        }
-        Metadata.Id(id)
+
+        v.assignedId
+          .orElse(cache.get(resolved))
+          .getOrElse {
+            // Not found actual type, treat it as ObjectHeader. It can happen only in very low level/hacked types, e.g. java.lang.{Object,Array, Cass}
+            val composites = ctx.writersCache(classOf[Metadata.DICompositeType])
+            val objectHeader = ctx
+              .cachedByNameTypes("scala.scalanative.runtime.ObjectHeader")
+              .asInstanceOf[DICompositeType]
+            composites(objectHeader)
+          }
       }
     }
 

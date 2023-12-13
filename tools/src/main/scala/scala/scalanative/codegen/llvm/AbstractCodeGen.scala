@@ -17,11 +17,7 @@ import scala.scalanative.codegen.{Metadata => CodeGenMetadata}
 
 import scala.language.implicitConversions
 import scala.scalanative.codegen.llvm.Metadata.conversions._
-import scala.scalanative.nir.Defn.Const
-import scala.scalanative.nir.Defn.Declare
-import scala.scalanative.nir.Defn.Var
-import scala.scalanative.nir.Defn.Define
-import scala.scalanative.nir.Defn.Trait
+import scala.scalanative.util.ScopedVar
 
 private[codegen] abstract class AbstractCodeGen(
     env: Map[nir.Global, nir.Defn],
@@ -234,8 +230,8 @@ private[codegen] abstract class AbstractCodeGen(
     import defn.{name, attrs, pos}
 
     val nir.Type.Function(argtys, retty) = defn match {
-      case defn: Declare => defn.ty
-      case defn: Define  => defn.ty
+      case defn: nir.Defn.Declare => defn.ty
+      case defn: nir.Defn.Define  => defn.ty
       case _             => unreachable
     }
 
@@ -279,23 +275,24 @@ private[codegen] abstract class AbstractCodeGen(
         str(" ")
         str(os.gxxPersonality)
 
-        dbg(defnScopes.getDISubprogramScope)
-        str(" {")
-        insts.foreach {
-          case nir.Inst.Let(n, nir.Op.Copy(v), _) => copies(n) = v
-          case _                                  => ()
+        dbgUsing(defnScopes.getDISubprogramScope) { subprogramNode =>
+          str(" {")
+          insts.foreach {
+            case nir.Inst.Let(n, nir.Op.Copy(v), _) => copies(n) = v
+            case _                                  => ()
+          }
+          ScopedVar.scoped {
+            metaCtx.currentSubprogram := subprogramNode
+          } {
+            implicit val cfg: CFG = CFG(insts)
+            implicit val _fresh: nir.Fresh = fresh
+            implicit val _debugInfo: DebugInfo = debugInfo
+            cfg.all.foreach(genBlock)
+            cfg.all.foreach(genBlockLandingPads)
+            newline()
+          }
+          str("}")
         }
-
-        locally {
-          implicit val cfg: CFG = CFG(insts)
-          implicit val _fresh: nir.Fresh = fresh
-          implicit val _debugInfo: DebugInfo = debugInfo
-          cfg.all.foreach(genBlock)
-          cfg.all.foreach(genBlockLandingPads)
-          newline()
-        }
-
-        str("}")
 
         copies.clear()
       case _ => unreachable
@@ -586,7 +583,7 @@ private[codegen] abstract class AbstractCodeGen(
   }
 
   private[codegen] def genByteString(
-      bytes: Array[Byte]
+      bytes: Seq[scala.Byte]
   )(implicit sb: ShowBuilder): Unit = {
     import sb._
 

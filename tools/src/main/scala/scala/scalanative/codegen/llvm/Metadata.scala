@@ -3,7 +3,7 @@ package codegen
 package llvm
 
 import scala.language.implicitConversions
-
+import scala.collection.mutable
 sealed trait Metadata
 object Metadata {
   case class Id(value: Int) extends AnyVal {
@@ -14,6 +14,13 @@ object Metadata {
   case class Value(value: nir.Val) extends Metadata
   sealed trait Node extends Metadata {
     def distinct: Boolean = false
+
+    private var id: Option[Id] = None
+    def assignId(v: Id) = {
+      assert(id.isEmpty, "Node id modification is not allowed")
+      id = Some(v)
+    }
+    def assignedId: Option[Id] = id
   }
   case class Tuple(values: Seq[Metadata]) extends Node
   object Tuple {
@@ -46,26 +53,31 @@ object Metadata {
       linkageName: String,
       scope: Scope,
       file: DIFile,
-      line: Int,
+      line: DILine,
       tpe: DISubroutineType,
-      unit: DICompileUnit
-  ) extends Scope {
+      unit: DICompileUnit,
+      flags: DIFlags = DIFlags()
+  ) extends Scope
+      with CanBeRecursive {
+    val retainedNodes: mutable.Buffer[Node] = mutable.UnrolledBuffer.empty
     override def distinct: Boolean = true
+
+    override def recursiveNodes: Seq[Node] = Tuple(retainedNodes.toSeq) :: Nil
   }
 
-  case class DILexicalBlock(scope: Scope, file: DIFile, line: Int, column: Int)
+  case class DILexicalBlock(scope: Scope, file: DIFile, line: DILine, column: DIColumn)
       extends Scope {
     override def distinct: Boolean = true
   }
 
-  case class DILocation(line: Int, column: Int, scope: Scope)
+  case class DILocation(line: DILine, column: DIColumn, scope: Scope)
       extends LLVMDebugInformation
   case class DILocalVariable(
       name: String,
       arg: Option[Int],
       scope: Scope,
       file: DIFile,
-      line: Int,
+      line: DILine,
       tpe: Type,
       flags: DIFlags = DIFlags()
   ) extends LLVMDebugInformation
@@ -109,20 +121,20 @@ object Metadata {
 
   case class DIBasicType(
       name: String,
-      size: BitSize,
-      align: BitSize,
+      size: DISize,
+      align: DISize,
       encoding: DW_ATE
   ) extends Type
 
   case class DIDerivedType(
       tag: DWTag,
       baseType: Type,
-      size: Option[BitSize] = None,
-      offset: Option[BitSize] = None,
+      size: Option[DISize] = None,
+      offset: Option[DISize] = None,
       name: Option[String] = None,
       scope: Option[Scope] = None,
       file: Option[DIFile] = None,
-      line: Option[Int] = None,
+      line: Option[DILine] = None,
       flags: DIFlags = DIFlags(),
       extraData: Option[Value] = None
   ) extends Type
@@ -130,41 +142,35 @@ object Metadata {
   case class DISubroutineType(types: DITypes) extends Type
   case class DICompositeType(
       tag: DWTag,
-      size: Option[BitSize] = None,
+      size: Option[DISize] = None,
       name: Option[String] = None,
       identifier: Option[String] = None,
       scope: Option[Scope] = None,
       file: Option[DIFile] = None,
-      line: Option[Int] = None,
+      line: Option[DILine] = None,
       flags: DIFlags = DIFlags(),
       // for arrays
       baseType: Option[Type] = None,
       dataLocation: Option[Metadata] = None // not supported in some debuggers
-  )(private var elements: Tuple = Tuple.empty)
-      extends Type
+  ) extends Type
       with CanBeRecursive {
+    private var elements: Tuple = Tuple.empty
     override def distinct: Boolean = scope.orElse(identifier).isDefined
 
-    def recursiveNodes: Seq[Node] = Seq(elements)
+    override def recursiveNodes: Seq[Node] = Seq(elements)
 
     def getElements: Tuple = this.elements
+    def withElements(elements: Seq[Metadata]): this.type = {
+      this.elements = Tuple(elements)
+      this
+    }
     def withDependentElements(
         producer: DICompositeType => Seq[DIDerivedType]
     ): this.type = {
       elements = Tuple(producer(this))
       this
     }
-
   }
-
-  // case class DIStringType(
-  //     name: String,
-  //     length: DIExpressions,
-  //     location: DIExpressions,
-  //     size: Const
-  // ) extends Type {
-  //   override def distinct: Boolean = true
-  // }
 
   class DITypes(retTpe: Option[Type], arguments: Seq[Type])
       extends Tuple(retTpe.getOrElse(Metadata.Const("null")) +: arguments)
@@ -262,21 +268,33 @@ object Metadata {
     def recursiveNodes: Seq[Node]
   }
 
-  implicit class LongBitSizeOps(v: Long) {
-    def toBitSize: BitSize = new BitSize(v)
+  implicit class LongDIOps(v: Long) {
+    def toDISize: DISize = new DISize(v.toInt)
+    def const: Const = Const(v.toString())
   }
-  implicit class IntBitSizeOps(v: Int) {
-    def toBitSize: BitSize = new BitSize(v.toLong)
+  implicit class IntDIOps(v: Int) {
+    def toDISize: DISize = new DISize(v)
+    def toDILine: DILine = new DILine(v + Constants.SourceToDILineOffset)
+    def toDIColumn: DIColumn = new DIColumn(
+      v + Constants.SourceToDIColumnOffset
+    )
+    def const: Const = Const(v.toString())
+
   }
-  class BitSize(val sizeOfBytes: Long) extends AnyVal {
-    def sizeOfBits: Long = sizeOfBytes * 8
-    def const = Const(sizeOfBytes.toString())
+
+  class DILine(val line: Int) extends AnyVal
+  class DIColumn(val column: Int) extends AnyVal
+
+  class DISize(val sizeOfBytes: Int) extends AnyVal {
+    def sizeOfBits: Int = sizeOfBytes * 8
   }
 
   object Constants {
     val PRODUCER = "Scala Native"
     val DWARF_VERSION = 4
     val DEBUG_INFO_VERSION = 3
+    final val SourceToDILineOffset = 1
+    final val SourceToDIColumnOffset = 1
   }
 
   object conversions {
@@ -284,6 +302,7 @@ object Metadata {
     implicit def intToValue(v: Int): Metadata.Value =
       Metadata.Value(nir.Val.Int(v))
     implicit def stringToStr(v: String): Metadata.Str = Metadata.Str(v)
+    implicit def optionWrapper[T](v: T): Option[T] = Some(v)
     implicit class StringOps(val v: String) extends AnyVal {
       def string: Metadata.Str = Metadata.Str(v)
       def const: Metadata.Const = Metadata.Const(v)
