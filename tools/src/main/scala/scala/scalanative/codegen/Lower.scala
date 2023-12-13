@@ -591,17 +591,12 @@ object Lower {
           throw new LinkingException(s"Metadata for field '$name' not found")
       }
 
-      val isVolatile = field.attrs.isVolatile
-      val syncAttrs = nir.SyncAttrs(
-        memoryOrder =
-          if (isVolatile) nir.MemoryOrder.SeqCst
-          else if (field.attrs.isFinal) nir.MemoryOrder.Monotonic
-          else nir.MemoryOrder.Unordered,
-        isVolatile = isVolatile
-      )
-
+      val memoryOrder =
+        if (field.attrs.isVolatile) nir.MemoryOrder.SeqCst
+        else if (field.attrs.isFinal) nir.MemoryOrder.Monotonic
+        else nir.MemoryOrder.Unordered
       val elem = genFieldElemOp(buf, genVal(buf, obj), name)
-      genLoadOp(buf, n, nir.Op.Load(ty, elem, Some(syncAttrs)))
+      genLoadOp(buf, n, nir.Op.Load(ty, elem, Some(memoryOrder)))
     }
 
     def genFieldstoreOp(buf: nir.Buffer, n: nir.Local, op: nir.Op.Fieldstore)(
@@ -616,16 +611,12 @@ object Lower {
           throw new LinkingException(s"Metadata for field '$name' not found")
       }
 
-      val isVolatile = field.attrs.isVolatile
-      val syncAttrs = nir.SyncAttrs(
-        memoryOrder =
-          if (isVolatile) nir.MemoryOrder.SeqCst
-          else if (field.attrs.isFinal) nir.MemoryOrder.Monotonic
-          else nir.MemoryOrder.Unordered,
-        isVolatile = isVolatile
-      )
+      val memoryOrder =
+        if (field.attrs.isVolatile) nir.MemoryOrder.SeqCst
+        else if (field.attrs.isFinal) nir.MemoryOrder.Monotonic
+        else nir.MemoryOrder.Unordered
       val elem = genFieldElemOp(buf, genVal(buf, obj), name)
-      genStoreOp(buf, n, nir.Op.Store(ty, elem, value, Some(syncAttrs)))
+      genStoreOp(buf, n, nir.Op.Store(ty, elem, value, Some(memoryOrder)))
     }
 
     def genFieldOp(buf: nir.Buffer, n: nir.Local, op: nir.Op)(implicit
@@ -644,7 +635,7 @@ object Lower {
       op match {
         // Convert synchronized load(bool) into load(byte)
         // LLVM is not providing synchronization on booleans
-        case nir.Op.Load(nir.Type.Bool, ptr, syncAttrs @ Some(_)) =>
+        case nir.Op.Load(nir.Type.Bool, ptr, memoryOrder @ Some(_)) =>
           val valueAsByte = fresh()
           val asPtr =
             if (platform.useOpaquePointers) ptr
@@ -660,7 +651,7 @@ object Lower {
           genLoadOp(
             buf,
             valueAsByte,
-            nir.Op.Load(nir.Type.Byte, asPtr, syncAttrs)
+            nir.Op.Load(nir.Type.Byte, asPtr, memoryOrder)
           )
           genConvOp(
             buf,
@@ -672,10 +663,10 @@ object Lower {
             )
           )
 
-        case nir.Op.Load(ty, ptr, syncAttrs) =>
+        case nir.Op.Load(ty, ptr, memoryOrder) =>
           buf.let(
             n,
-            nir.Op.Load(ty, genVal(buf, ptr), syncAttrs),
+            nir.Op.Load(ty, genVal(buf, ptr), memoryOrder),
             unwind
           )
       }
@@ -688,7 +679,7 @@ object Lower {
       op match {
         // Convert synchronized store(bool) into store(byte)
         // LLVM is not providing synchronization on booleans
-        case nir.Op.Store(nir.Type.Bool, ptr, value, syncAttrs @ Some(_)) =>
+        case nir.Op.Store(nir.Type.Bool, ptr, value, memoryOrder @ Some(_)) =>
           val valueAsByte = fresh()
           val asPtr =
             if (platform.useOpaquePointers) ptr
@@ -713,14 +704,14 @@ object Lower {
               nir.Type.Byte,
               asPtr,
               nir.Val.Local(valueAsByte, nir.Type.Byte),
-              syncAttrs
+              memoryOrder
             )
           )
 
-        case nir.Op.Store(ty, ptr, value, syncAttrs) =>
+        case nir.Op.Store(ty, ptr, value, memoryOrder) =>
           buf.let(
             n,
-            nir.Op.Store(ty, genVal(buf, ptr), genVal(buf, value), syncAttrs),
+            nir.Op.Store(ty, genVal(buf, ptr), genVal(buf, value), memoryOrder),
             unwind
           )
       }
@@ -775,12 +766,13 @@ object Lower {
           if (genUnwind && unwindHandler.isInitialized) unwind
           else nir.Next.None
         }
-        val syncAttrs = nir.SyncAttrs(
-          memoryOrder = nir.MemoryOrder.Unordered,
-          isVolatile = true
-        )
         val safepointAddr = buf.load(nir.Type.Ptr, GCSafepoint, handler)
-        buf.load(nir.Type.Ptr, safepointAddr, handler, Some(syncAttrs))
+        buf.load(
+          nir.Type.Ptr,
+          safepointAddr,
+          handler,
+          Some(nir.MemoryOrder.Unordered)
+        )
       }
     }
 

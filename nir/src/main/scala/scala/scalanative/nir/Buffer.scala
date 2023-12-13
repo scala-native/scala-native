@@ -80,18 +80,18 @@ class Buffer(implicit fresh: Fresh) {
       ty: Type,
       ptr: Val,
       unwind: Next,
-      syncAttrs: Option[SyncAttrs] = None
+      memoryOrder: Option[MemoryOrder] = None
   )(implicit pos: Position, scope: ScopeId): Val.Local =
-    let(Op.Load(ty, ptr, syncAttrs), unwind)
+    let(Op.Load(ty, ptr, memoryOrder), unwind)
 
   def store(
       ty: Type,
       ptr: Val,
       value: Val,
       unwind: Next,
-      syncAttrs: Option[SyncAttrs] = None
+      memoryOrder: Option[MemoryOrder] = None
   )(implicit pos: Position, scope: ScopeId): Val.Local =
-    let(Op.Store(ty, ptr, value, syncAttrs), unwind)
+    let(Op.Store(ty, ptr, value, memoryOrder), unwind)
 
   def elem(ty: Type, ptr: Val, indexes: Seq[Val], unwind: Next)(implicit
       pos: Position,
@@ -250,7 +250,7 @@ class Buffer(implicit fresh: Fresh) {
       memoryOrder: MemoryOrder
   )(implicit pos: Position, scope: ScopeId): Val.Local =
     let(
-      Op.Fence(SyncAttrs(memoryOrder = memoryOrder, isVolatile = false)),
+      Op.Fence(memoryOrder = memoryOrder),
       Next.None
     )
 }

@@ -225,19 +225,19 @@ object Show {
         str("(")
         rep(args, sep = ", ")(onVal)
         str(")")
-      case Op.Load(ty, ptr, syncAttrs) =>
-        val isAtomic = syncAttrs.isDefined
+      case Op.Load(ty, ptr, memoryOrder) =>
+        val isAtomic = memoryOrder.isDefined
         if (isAtomic) str("atomic ")
         str("load[")
         onType(ty)
         str("] ")
         onVal(ptr)
-        syncAttrs.foreach {
+        memoryOrder.foreach {
           str(" ")
-          onSyncAttrs(_)
+          onMemoryOrder(_)
         }
-      case Op.Store(ty, ptr, value, syncAttrs) =>
-        val isAtomic = syncAttrs.isDefined
+      case Op.Store(ty, ptr, value, memoryOrder) =>
+        val isAtomic = memoryOrder.isDefined
         if (isAtomic) str("atomic ")
         str("store[")
         onType(ty)
@@ -245,9 +245,9 @@ object Show {
         onVal(ptr)
         str(", ")
         onVal(value)
-        syncAttrs.foreach {
+        memoryOrder.foreach {
           str(" ")
-          onSyncAttrs(_)
+          onMemoryOrder(_)
         }
       case Op.Elem(ty, ptr, indexes) =>
         str("elem[")
@@ -296,9 +296,9 @@ object Show {
         onType(ty)
         str("] ")
         onVal(v)
-      case Op.Fence(syncAttrs) =>
+      case Op.Fence(memoryOrder) =>
         str("fence ")
-        onSyncAttrs(syncAttrs)
+        onMemoryOrder(memoryOrder)
 
       case Op.Classalloc(name, zone) =>
         str("classalloc ")
@@ -706,11 +706,6 @@ object Show {
       debugInfo.localNames.get(local).foreach { name =>
         str(" <"); str(name); str(">")
       }
-    }
-
-    def onSyncAttrs(attrs: SyncAttrs): Unit = {
-      if (attrs.isVolatile) str("volatile ")
-      onMemoryOrder(attrs.memoryOrder)
     }
 
     def linktimeCondition(cond: LinktimeCondition): Unit = {
