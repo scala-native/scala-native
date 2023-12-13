@@ -611,7 +611,7 @@ object Lower {
           throw new LinkingException(s"Metadata for field '$name' not found")
       }
 
-      // No explicit memory order for store of final field, 
+      // No explicit memory order for store of final field,
       // all final fields are published with release fence when existing the constructor
       val memoryOrder =
         if (field.attrs.isVolatile) nir.MemoryOrder.SeqCst
