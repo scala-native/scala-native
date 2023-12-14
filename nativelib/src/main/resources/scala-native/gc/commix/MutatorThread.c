@@ -8,7 +8,7 @@
 #include <shared/ThreadUtil.h>
 #include <assert.h>
 
-static mutex_t threadListsModificationLock;
+static rwlock_t threadListsModificationLock;
 
 void MutatorThread_init(Field_t *stackbottom) {
     MutatorThread *self = (MutatorThread *)malloc(sizeof(MutatorThread));
@@ -72,25 +72,39 @@ void MutatorThread_switchState(MutatorThread *self,
     self->state = newState;
 }
 
-void MutatorThreads_init() { mutex_init(&threadListsModificationLock); }
+void MutatorThreads_readLock() {
+    rwlock_lockRead(&threadListsModificationLock);
+}
+static void MutatorThreads_lockWrite() {
+    rwlock_lockWrite(&threadListsModificationLock);
+}
+
+void MutatorThreads_readUnlock() {
+    rwlock_unlockRead(&threadListsModificationLock);
+}
+static void MutatorThreads_unlockWrite() {
+    rwlock_unlockWrite(&threadListsModificationLock);
+}
+
+void MutatorThreads_init() { rwlock_init(&threadListsModificationLock); }
 
 void MutatorThreads_add(MutatorThread *node) {
     if (!node)
         return;
-    MutatorThreads_lock();
+    MutatorThreads_lockWrite();
     MutatorThreadNode *newNode =
         (MutatorThreadNode *)malloc(sizeof(MutatorThreadNode));
     newNode->value = node;
     newNode->next = mutatorThreads;
     mutatorThreads = newNode;
-    MutatorThreads_unlock();
+    MutatorThreads_unlockWrite();
 }
 
 void MutatorThreads_remove(MutatorThread *node) {
     if (!node)
         return;
 
-    MutatorThreads_lock();
+    MutatorThreads_lockWrite();
     MutatorThreads current = mutatorThreads;
     if (current->value == node) { // expected is at head
         mutatorThreads = current->next;
@@ -105,11 +119,7 @@ void MutatorThreads_remove(MutatorThread *node) {
             free(next);
         }
     }
-    MutatorThreads_unlock();
+    MutatorThreads_unlockWrite();
 }
-
-void MutatorThreads_lock() { mutex_lock(&threadListsModificationLock); }
-
-void MutatorThreads_unlock() { mutex_unlock(&threadListsModificationLock); }
 
 #endif

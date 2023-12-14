@@ -64,7 +64,7 @@ static inline void GCThread_sweep(GCThread *thread, Heap *heap, Stats *stats) {
     Stats_RecordTime(stats, start_ns);
 
     while (heap->sweep.cursor < heap->sweep.limit) {
-        Sweeper_Sweep(heap, stats, &thread->sweep.cursorDone, SWEEP_BATCH_SIZE);
+        Sweeper_Sweep(stats, &thread->sweep.cursorDone, SWEEP_BATCH_SIZE, NULL);
     }
     thread->sweep.cursorDone = heap->sweep.limit;
 
@@ -78,7 +78,7 @@ static inline void GCThread_sweepMaster(GCThread *thread, Heap *heap,
     Stats_RecordTime(stats, start_ns);
 
     while (heap->sweep.cursor < heap->sweep.limit) {
-        Sweeper_Sweep(heap, stats, &thread->sweep.cursorDone, SWEEP_BATCH_SIZE);
+        Sweeper_Sweep(stats, &thread->sweep.cursorDone, SWEEP_BATCH_SIZE, NULL);
         Sweeper_LazyCoalesce(heap, stats);
     }
     thread->sweep.cursorDone = heap->sweep.limit;

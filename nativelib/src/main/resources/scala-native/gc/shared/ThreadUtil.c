@@ -119,4 +119,48 @@ bool semaphore_unlock(semaphore_t ref) {
 #endif
 }
 
+bool rwlock_init(rwlock_t *ref) {
+#ifdef _WIN32
+    InitializeSRWLock(ref);
+    return true;
+#else
+    return pthread_rwlock_init(ref, NULL) == 0;
+#endif
+}
+
+bool rwlock_lockRead(rwlock_t *ref) {
+#ifdef _WIN32
+    AcquireSRWLockShared(ref);
+    return true;
+#else
+    return pthread_rwlock_rdlock(ref) == 0;
+#endif
+}
+bool rwlock_lockWrite(rwlock_t *ref) {
+#ifdef _WIN32
+    AcquireSRWLockExclusive(ref);
+    return true;
+#else
+    return pthread_rwlock_wrlock(ref) == 0;
+#endif
+}
+
+bool rwlock_unlockWrite(rwlock_t *ref) {
+#ifdef _WIN32
+    ReleaseSRWLockExclusive(ref);
+    return true;
+#else
+    return pthread_rwlock_unlock(ref) == 0;
+#endif
+}
+
+bool rwlock_unlockRead(rwlock_t *ref) {
+#ifdef _WIN32
+    ReleaseSRWLockShared(ref);
+    return true;
+#else
+    return pthread_rwlock_unlock(ref) == 0;
+#endif
+}
+
 #endif

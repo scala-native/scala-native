@@ -43,8 +43,8 @@ void MutatorThread_switchState(MutatorThread *self,
 void MutatorThreads_init();
 void MutatorThreads_add(MutatorThread *node);
 void MutatorThreads_remove(MutatorThread *node);
-void MutatorThreads_lock();
-void MutatorThreads_unlock();
+void MutatorThreads_readLock();
+void MutatorThreads_readUnlock();
 
 #define MutatorThreads_foreach(list, node)                                     \
     for (MutatorThreads node = list; node != NULL; node = node->next)

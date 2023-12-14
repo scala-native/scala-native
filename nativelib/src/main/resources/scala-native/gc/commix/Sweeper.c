@@ -346,17 +346,17 @@ void Sweep_applyResult(SweepResult *result, BlockAllocator *blockAllocator) {
     SweepResult_clear(result);
 }
 
-void Sweeper_Sweep(Heap *heap, Stats *stats, atomic_uint_fast32_t *cursorDone,
-                   uint32_t maxCount) {
+void Sweeper_Sweep(Stats *stats, atomic_uint_fast32_t *cursorDone,
+                   uint32_t maxCount, MutatorThread *optionalMutatorThread) {
     Stats_RecordTimeBatch(stats, start_ns);
     SweepResult sweepResult;
     SweepResult_Init(&sweepResult);
-    uint32_t cursor = heap->sweep.cursor;
-    uint32_t sweepLimit = heap->sweep.limit;
+    uint32_t cursor = heap.sweep.cursor;
+    uint32_t sweepLimit = heap.sweep.limit;
     // protect against sweep.cursor overflow
     uint32_t startIdx = sweepLimit;
     if (cursor < sweepLimit) {
-        startIdx = (uint32_t)atomic_fetch_add(&heap->sweep.cursor, maxCount);
+        startIdx = (uint32_t)atomic_fetch_add(&heap.sweep.cursor, maxCount);
     }
 
     Stats_RecordTimeSync(stats, presync_end_ns);
@@ -370,8 +370,8 @@ void Sweeper_Sweep(Heap *heap, Stats *stats, atomic_uint_fast32_t *cursorDone,
 
     BlockMeta *lastFreeBlockStart = NULL;
 
-    BlockMeta *first = BlockMeta_GetFromIndex(heap->blockMetaStart, startIdx);
-    BlockMeta *limit = BlockMeta_GetFromIndex(heap->blockMetaStart, limitIdx);
+    BlockMeta *first = BlockMeta_GetFromIndex(heap.blockMetaStart, startIdx);
+    BlockMeta *limit = BlockMeta_GetFromIndex(heap.blockMetaStart, limitIdx);
 
     BlockMeta *reserveFirst = (BlockMeta *)blockAllocator.reservedSuperblock;
     BlockMeta *reserveLimit = reserveFirst + SWEEP_RESERVE_BLOCKS;
@@ -391,32 +391,38 @@ void Sweeper_Sweep(Heap *heap, Stats *stats, atomic_uint_fast32_t *cursorDone,
     while (((first->block.simple.flags & 0x3) == 0x3) && first < limit) {
 #ifdef DEBUG_PRINT
         printf("Sweeper_Sweep SuperblockTail %p %" PRIu32 "\n", first,
-               BlockMeta_GetBlockIndex(heap->blockMetaStart, first));
+               BlockMeta_GetBlockIndex(heap.blockMetaStart, first));
         fflush(stdout);
 #endif
         startIdx += 1;
         first += 1;
     }
 
+    MutatorThread *recycleBlocksTo = optionalMutatorThread;
+    bool useThreadsIterator = optionalMutatorThread == NULL;
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
-    MutatorThreads threadsCursor = mutatorThreads;
-    // NextMutatorThread is always going to be assigned with it's first
-    // expression
-#define NextMutatorThread()                                                    \
-    threadsCursor->value;                                                      \
-    threadsCursor = threadsCursor->next;                                       \
-    if (threadsCursor == NULL) {                                               \
-        threadsCursor = mutatorThreads;                                        \
+    MutatorThreads threadsCursor;
+    if (optionalMutatorThread == NULL) {
+        MutatorThreads_readLock();
+        threadsCursor = mutatorThreads;
     }
-#else
+#define NextMutatorThread(pointee)                                             \
+    {                                                                          \
+        *pointee = threadsCursor->value;                                       \
+        threadsCursor = threadsCursor->next;                                   \
+        if (threadsCursor == NULL) {                                           \
+            threadsCursor = mutatorThreads;                                    \
+        }                                                                      \
+    }
+#else // when singlethreaded
     MutatorThread *mainThread = mutatorThreads->value;
-#define NextMutatorThread() mainThread
+#define NextMutatorThread(pointee) *pointee = mainThread
 #endif
 
     BlockMeta *current = first;
     word_t *currentBlockStart =
-        Block_GetStartFromIndex(heap->heapStart, startIdx);
-    LineMeta *lineMetas = Line_getFromBlockIndex(heap->lineMetaStart, startIdx);
+        Block_GetStartFromIndex(heap.heapStart, startIdx);
+    LineMeta *lineMetas = Line_getFromBlockIndex(heap.lineMetaStart, startIdx);
     while (current < limit) {
         int size = 1;
         uint32_t freeCount = 0;
@@ -429,26 +435,28 @@ void Sweeper_Sweep(Heap *heap, Stats *stats, atomic_uint_fast32_t *cursorDone,
             assert(reserveFirst != NULL);
             // size = 1, freeCount = 0
         } else if (BlockMeta_IsSimpleBlock(current)) {
-            MutatorThread *recycleBlocksTo = NextMutatorThread();
+            if (useThreadsIterator)
+                NextMutatorThread(&recycleBlocksTo);
             freeCount = Sweeper_sweepSimpleBlock(recycleBlocksTo, current,
                                                  currentBlockStart, lineMetas,
                                                  &sweepResult);
 #ifdef DEBUG_PRINT
             printf("Sweeper_Sweep SimpleBlock %p %" PRIu32 "\n", current,
-                   BlockMeta_GetBlockIndex(heap->blockMetaStart, current));
+                   BlockMeta_GetBlockIndex(heap.blockMetaStart, current));
             fflush(stdout);
 #endif
         } else if (BlockMeta_IsSuperblockStart(current)) {
             size = BlockMeta_SuperblockSize(current);
             assert(size > 0);
-            MutatorThread *recycleBlocksTo = NextMutatorThread();
+            if (useThreadsIterator)
+                NextMutatorThread(&recycleBlocksTo);
             freeCount =
                 Sweeper_sweepSuperblock(&recycleBlocksTo->largeAllocator,
                                         current, currentBlockStart, limit);
 #ifdef DEBUG_PRINT
             printf("Sweeper_Sweep Superblock(%" PRIu32 ") %p %" PRIu32 "\n",
                    size, current,
-                   BlockMeta_GetBlockIndex(heap->blockMetaStart, current));
+                   BlockMeta_GetBlockIndex(heap.blockMetaStart, current));
             fflush(stdout);
 #endif
         } else {
@@ -460,7 +468,7 @@ void Sweeper_Sweep(Heap *heap, Stats *stats, atomic_uint_fast32_t *cursorDone,
 #endif
 #ifdef DEBUG_PRINT
             printf("Sweeper_Sweep FreeBlock %p %" PRIu32 "\n", current,
-                   BlockMeta_GetBlockIndex(heap->blockMetaStart, current));
+                   BlockMeta_GetBlockIndex(heap.blockMetaStart, current));
             fflush(stdout);
 #endif
         }
@@ -501,6 +509,10 @@ void Sweeper_Sweep(Heap *heap, Stats *stats, atomic_uint_fast32_t *cursorDone,
         currentBlockStart += WORDS_IN_BLOCK * size;
         lineMetas += LINE_COUNT * size;
     }
+#ifdef SCALANATIVE_MULTITHREADING_ENABLED
+    if (optionalMutatorThread == NULL)
+        MutatorThreads_readUnlock();
+#endif
     BlockMeta *doneUntil = current;
     if (lastFreeBlockStart != NULL) {
         // Free blocks in the end or the entire batch is free

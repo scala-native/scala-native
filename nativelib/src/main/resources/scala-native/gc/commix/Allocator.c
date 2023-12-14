@@ -224,8 +224,8 @@ word_t *Allocator_lazySweep(Allocator *allocator, Heap *heap, uint32_t size) {
     // mark as active
     heap->lazySweep.lastActivity = BlockRange_Pack(1, heap->sweep.cursor);
     while (object == NULL && heap->sweep.cursor < heap->sweep.limit) {
-        Sweeper_Sweep(heap, heap->stats, &heap->lazySweep.cursorDone,
-                      LAZY_SWEEP_MIN_BATCH);
+        Sweeper_Sweep(heap->stats, &heap->lazySweep.cursorDone,
+                      LAZY_SWEEP_MIN_BATCH, currentMutatorThread);
         object = Allocator_tryAlloc(allocator, size);
     }
     // mark as inactive
