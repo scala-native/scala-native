@@ -316,6 +316,7 @@ static MutatorThread *Sweep_SelectMutatorThread() {
     static atomic_uint_fast32_t sweepCounter;
     int sweepId = atomic_fetch_add(&sweepCounter, 1);
     int threadId = sweepId % mutatorThreadsCount;
+    atomic_thread_fence(memory_order_acquire);
     MutatorThreads thread = mutatorThreads;
     for (int i = 0; i < threadId && thread->next != NULL; i++) {
         thread = thread->next;
@@ -404,6 +405,7 @@ void Sweeper_Sweep(Stats *stats, atomic_uint_fast32_t *cursorDone,
     MutatorThreads threadsCursor;
     if (optionalMutatorThread == NULL) {
         MutatorThreads_readLock();
+        atomic_thread_fence(memory_order_acquire);
         threadsCursor = mutatorThreads;
     }
 #define NextMutatorThread(pointee)                                             \
