@@ -134,17 +134,7 @@ bool rwlock_lockRead(rwlock_t *ref) {
     AcquireSRWLockShared(ref);
     return true;
 #else
-    switch (pthread_rwlock_tryrdlock(ref)) {
-    case 0:
-    case EDEADLK:
-        // deadlock or already acquired
-        return true;
-    case EBUSY:
-        return pthread_rwlock_rdlock(ref) == 0;
-    default:
-        perror("rwlock_lockread failed");
-        return false;
-    }
+    return pthread_rwlock_rdlock(ref) == 0;
 #endif
 }
 bool rwlock_lockWrite(rwlock_t *ref) {
@@ -152,17 +142,7 @@ bool rwlock_lockWrite(rwlock_t *ref) {
     AcquireSRWLockExclusive(ref);
     return true;
 #else
-    switch (pthread_rwlock_trywrlock(ref)) {
-    case EDEADLK:
-    case 0:
-        // deadlock or already acquired
-        return true;
-    case EBUSY:
-        return pthread_rwlock_wrlock(ref) == 0;
-    default:
-        perror("rwlock_lockwrite failed");
-        return false;
-    }
+    return pthread_rwlock_wrlock(ref) == 0;
 #endif
 }
 

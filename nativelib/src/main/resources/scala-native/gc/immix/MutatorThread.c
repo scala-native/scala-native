@@ -88,8 +88,7 @@ void MutatorThreads_add(MutatorThread *node) {
     newNode->value = node;
     MutatorThreads_lock();
     newNode->next = atomic_load_explicit(&mutatorThreads, memory_order_acquire);
-    mutatorThreads =
-        atomic_store_explicit(&mutatorThreads, newNode, memory_order_release);
+    atomic_store_explicit(&mutatorThreads, newNode, memory_order_release);
     MutatorThreads_unlock();
 }
 

@@ -72,10 +72,10 @@ void MutatorThread_switchState(MutatorThread *self,
     self->state = newState;
 }
 
-void MutatorThreads_readLock() {
+void MutatorThreads_lockRead() {
     rwlock_lockRead(&threadListsModificationLock);
 }
-void MutatorThreads_readUnlock() {
+void MutatorThreads_unlockRead() {
     rwlock_unlockRead(&threadListsModificationLock);
 }
 

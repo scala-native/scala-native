@@ -407,7 +407,7 @@ void Sweeper_Sweep(Stats *stats, atomic_uint_fast32_t *cursorDone,
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
     MutatorThreads threadsCursor;
     if (useThreadsIterator) {
-        MutatorThreads_readLock();
+        MutatorThreads_lockRead();
         atomic_thread_fence(memory_order_acquire);
         threadsCursor = mutatorThreads;
     }
@@ -516,7 +516,7 @@ void Sweeper_Sweep(Stats *stats, atomic_uint_fast32_t *cursorDone,
     }
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
     if (useThreadsIterator)
-        MutatorThreads_readUnlock();
+        MutatorThreads_unlockRead();
 #endif
     BlockMeta *doneUntil = current;
     if (lastFreeBlockStart != NULL) {

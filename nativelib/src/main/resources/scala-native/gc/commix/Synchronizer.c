@@ -159,7 +159,7 @@ bool Synchronizer_acquire() {
     MutatorThread_switchState(self, MutatorThreadState_Unmanaged);
 
     // Don't allow for registration of any new threads;
-    MutatorThreads_readLock();
+    MutatorThreads_lockRead();
     Safepoint_arm(SafepointInstance);
     atomic_thread_fence(memory_order_seq_cst);
 
@@ -201,7 +201,7 @@ void Synchronizer_release() {
             thread_yield();
     } while (stoppedThreads > 0);
     MutatorThread_switchState(currentMutatorThread, MutatorThreadState_Managed);
-    MutatorThreads_readUnlock();
+    MutatorThreads_unlockRead();
     mutex_unlock(&synchronizerLock);
 }
 
