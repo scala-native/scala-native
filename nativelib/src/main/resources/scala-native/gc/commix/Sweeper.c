@@ -324,8 +324,11 @@ static MutatorThread *Sweep_SelectMutatorThread() {
     return thread->value;
 }
 
-void Sweep_applyResult(SweepResult *result, BlockAllocator *blockAllocator) {
-    MutatorThread *selectedThread = Sweep_SelectMutatorThread();
+void Sweep_applyResult(SweepResult *result, BlockAllocator *blockAllocator,
+                       MutatorThread *optionalMutatorThread) {
+    MutatorThread *selectedThread = optionalMutatorThread;
+    if (selectedThread == NULL)
+        selectedThread = Sweep_SelectMutatorThread();
     Allocator *allocator = &selectedThread->allocator;
     {
         BlockMeta *first = result->recycledBlocks.first;
@@ -403,7 +406,7 @@ void Sweeper_Sweep(Stats *stats, atomic_uint_fast32_t *cursorDone,
     bool useThreadsIterator = optionalMutatorThread == NULL;
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
     MutatorThreads threadsCursor;
-    if (optionalMutatorThread == NULL) {
+    if (useThreadsIterator) {
         MutatorThreads_readLock();
         atomic_thread_fence(memory_order_acquire);
         threadsCursor = mutatorThreads;
@@ -512,7 +515,7 @@ void Sweeper_Sweep(Stats *stats, atomic_uint_fast32_t *cursorDone,
         lineMetas += LINE_COUNT * size;
     }
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
-    if (optionalMutatorThread == NULL)
+    if (useThreadsIterator)
         MutatorThreads_readUnlock();
 #endif
     BlockMeta *doneUntil = current;
@@ -528,7 +531,7 @@ void Sweeper_Sweep(Stats *stats, atomic_uint_fast32_t *cursorDone,
 
     Stats_RecordTimeSync(stats, postsync_start_ns);
 
-    Sweep_applyResult(&sweepResult, &blockAllocator);
+    Sweep_applyResult(&sweepResult, &blockAllocator, recycleBlocksTo);
     // coalescing might be done by another thread
     // block_coalesce_me marks should be visible
     atomic_thread_fence(memory_order_release);
