@@ -1174,7 +1174,7 @@ object Lower {
           buf.let(
             n,
             nir.Op.Call(
-              allocSig,
+              allocSig(cls.ty),
               allocMethod,
               Seq(rtti(cls).const, nir.Val.Size(size.toInt))
             ),
@@ -1758,8 +1758,10 @@ object Lower {
 
   val LARGE_OBJECT_MIN_SIZE = 8192
 
-  val allocSig =
+  val allocSig: nir.Type.Function =
     nir.Type.Function(Seq(nir.Type.Ptr, nir.Type.Size), nir.Type.Ptr)
+  def allocSig(clsType: nir.Type.RefKind): nir.Type.Function =
+    allocSig.copy(ret = clsType)
 
   val allocSmallName = extern("scalanative_alloc_small")
   val alloc = nir.Val.Global(allocSmallName, allocSig)

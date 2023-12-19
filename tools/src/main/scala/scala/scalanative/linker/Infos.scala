@@ -11,6 +11,7 @@ sealed abstract class Info {
 
 sealed abstract class ScopeInfo extends Info {
   override def name: nir.Global.Top
+  def ty: nir.Type.Ref = nir.Type.Ref(name)
   val members = mutable.UnrolledBuffer.empty[MemberInfo]
   val calls = mutable.Set.empty[nir.Sig]
   val responds = mutable.Map.empty[nir.Sig, nir.Global.Member]
@@ -126,8 +127,6 @@ final class Class(
 
   lazy val hasFinalFields: Boolean = fields.exists(_.attrs.isFinal)
 
-  val ty: nir.Type =
-    nir.Type.Ref(name)
   def isConstantModule(implicit
       analysis: ReachabilityAnalysis.Result
   ): Boolean = {

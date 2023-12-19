@@ -17,11 +17,7 @@ import scala.scalanative.codegen.{Metadata => CodeGenMetadata}
 
 import scala.language.implicitConversions
 import scala.scalanative.codegen.llvm.Metadata.conversions._
-import scala.scalanative.nir.Defn.Const
-import scala.scalanative.nir.Defn.Declare
-import scala.scalanative.nir.Defn.Var
-import scala.scalanative.nir.Defn.Define
-import scala.scalanative.nir.Defn.Trait
+import scala.scalanative.util.ScopedVar
 
 private[codegen] abstract class AbstractCodeGen(
     env: Map[nir.Global, nir.Defn],
@@ -234,9 +230,9 @@ private[codegen] abstract class AbstractCodeGen(
     import defn.{name, attrs, pos}
 
     val nir.Type.Function(argtys, retty) = defn match {
-      case defn: Declare => defn.ty
-      case defn: Define  => defn.ty
-      case _             => unreachable
+      case defn: nir.Defn.Declare => defn.ty
+      case defn: nir.Defn.Define  => defn.ty
+      case _                      => unreachable
     }
 
     val isDecl = insts.isEmpty
@@ -279,23 +275,24 @@ private[codegen] abstract class AbstractCodeGen(
         str(" ")
         str(os.gxxPersonality)
 
-        dbg(defnScopes.getDISubprogramScope)
-        str(" {")
-        insts.foreach {
-          case nir.Inst.Let(n, nir.Op.Copy(v), _) => copies(n) = v
-          case _                                  => ()
+        dbgUsing(defnScopes.getDISubprogramScope) { subprogramNode =>
+          str(" {")
+          insts.foreach {
+            case nir.Inst.Let(n, nir.Op.Copy(v), _) => copies(n) = v
+            case _                                  => ()
+          }
+          ScopedVar.scoped {
+            metaCtx.currentSubprogram := subprogramNode
+          } {
+            implicit val cfg: CFG = CFG(insts)
+            implicit val _fresh: nir.Fresh = fresh
+            implicit val _debugInfo: DebugInfo = debugInfo
+            cfg.all.foreach(genBlock)
+            cfg.all.foreach(genBlockLandingPads)
+            newline()
+          }
+          str("}")
         }
-
-        locally {
-          implicit val cfg: CFG = CFG(insts)
-          implicit val _fresh: nir.Fresh = fresh
-          implicit val _debugInfo: DebugInfo = debugInfo
-          cfg.all.foreach(genBlock)
-          cfg.all.foreach(genBlockLandingPads)
-          newline()
-        }
-
-        str("}")
 
         copies.clear()
       case _ => unreachable
@@ -586,7 +583,7 @@ private[codegen] abstract class AbstractCodeGen(
   }
 
   private[codegen] def genByteString(
-      bytes: Array[Byte]
+      bytes: Seq[scala.Byte]
   )(implicit sb: ShowBuilder): Unit = {
     import sb._
 
@@ -841,8 +838,8 @@ private[codegen] abstract class AbstractCodeGen(
             case _ =>
               ()
           }
-          dbgLocalValue(id, ty)(inst.pos, inst.scopeId)
         }
+        dbgLocalValue(id, ty)(inst.pos, inst.scopeId)
 
       case nir.Op.Store(ty, ptr, value, memoryOrder) =>
         val pointee = fresh()
@@ -955,7 +952,7 @@ private[codegen] abstract class AbstractCodeGen(
           genLocal(pointee)
           str(" to i8*")
         }
-        dbgLocalVariable(inst.id, nir.Type.Ptr)(inst.pos, inst.scopeId)
+        dbgLocalVariable(inst.id, ty)(inst.pos, inst.scopeId)
 
       case _ =>
         newline()
@@ -989,6 +986,17 @@ private[codegen] abstract class AbstractCodeGen(
     def genDbgPosition() = dbg(",", dbgPosition)
 
     call match {
+      // Lower emits a alloc function with exact result type of the class instead of a raw pointer
+      // It's probablatic to emit when not using opaque pointers. Retry with simplified signature
+      case nir.Op.Call(ty, Lower.alloc | Lower.largeAlloc, _)
+          if !useOpaquePointers && ty != Lower.allocSig =>
+        genCall(
+          genBind,
+          call.copy(ty = Lower.allocSig),
+          unwind,
+          srcPos,
+          scopeId
+        )
       case nir.Op.Call(ty, nir.Val.Global(pointee: nir.Global.Member, _), args)
           if lookup(pointee) == ty =>
         val nir.Type.Function(argtys, _) = ty
