@@ -40,11 +40,13 @@ typedef HANDLE thread_t;
 typedef DWORD thread_id;
 typedef HANDLE mutex_t;
 typedef HANDLE semaphore_t;
+typedef SRWLOCK rwlock_t;
 typedef int pid_t;
 #else
 typedef pthread_t thread_t;
 typedef pthread_t thread_id;
 typedef pthread_mutex_t mutex_t;
+typedef pthread_rwlock_t rwlock_t;
 typedef sem_t *semaphore_t;
 #endif
 
@@ -63,5 +65,11 @@ bool mutex_unlock(mutex_t *ref);
 bool semaphore_open(semaphore_t *ref, char *name, unsigned int initValue);
 bool semaphore_wait(semaphore_t ref);
 bool semaphore_unlock(semaphore_t ref);
+
+bool rwlock_init(rwlock_t *ref);
+bool rwlock_lockRead(rwlock_t *ref);
+bool rwlock_lockWrite(rwlock_t *ref);
+bool rwlock_unlockRead(rwlock_t *ref);
+bool rwlock_unlockWrite(rwlock_t *ref);
 
 #endif // COMMIX_THREAD_UTIL_H
