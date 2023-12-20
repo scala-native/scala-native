@@ -4,7 +4,7 @@ import java.io.Closeable
 import java.nio.channels.DatagramChannel
 
 class DatagramSocket protected (
-    private[net] val impl: DatagramSocketImpl,
+    private[net] var impl: DatagramSocketImpl,
     private[net] var localPort: Int,
     private[net] var localAddr: InetAddress,
     shouldStartup: Boolean
@@ -27,19 +27,34 @@ class DatagramSocket protected (
   }
 
   def this() =
-    this(AbstractPlainDatagramSocketImpl(), 0, null, true)
+    this(
+      AbstractPlainDatagramSocketImpl(),
+      0,
+      SocketHelpers.getWildcardAddress(),
+      true
+    )
   protected[net] def this(impl: DatagramSocketImpl) =
     this(impl, 0, null, false)
 
   def this(bindaddr: SocketAddress) = {
-    this(AbstractPlainDatagramSocketImpl(), 0, null, false)
+    this(
+      AbstractPlainDatagramSocketImpl(),
+      0,
+      SocketHelpers.getWildcardAddress(),
+      false
+    )
     if (bindaddr != null) {
       this.bind(bindaddr)
     }
   }
 
   def this(port: Int) =
-    this(AbstractPlainDatagramSocketImpl(), port, null, true)
+    this(
+      AbstractPlainDatagramSocketImpl(),
+      port,
+      SocketHelpers.getWildcardAddress(),
+      true
+    )
 
   def this(port: Int, laddr: InetAddress) =
     this(AbstractPlainDatagramSocketImpl(), port, laddr, true)
@@ -306,6 +321,8 @@ class DatagramSocket protected (
 //  ): Unit = impl.leaveGroup(mcastaddr, netIf)
 
   override def close(): Unit = {
+    localAddr = null
+    localPort = -1
     closed = true
     impl.close()
   }

@@ -1,6 +1,13 @@
 package org.scalanative.testsuite.javalib.net
 
-import java.net._
+import java.net.BindException
+import java.net.DatagramPacket
+import java.net.DatagramSocket
+import java.net.InetAddress
+import java.net.InetSocketAddress
+import java.net.SocketAddress
+import java.net.SocketException
+import java.net.SocketTimeoutException
 
 import org.junit.Test
 import org.junit.Assert._
@@ -11,13 +18,16 @@ import java.io.IOException
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 class DatagramSocketTest {
+
+  private val loopback = InetAddress.getLoopbackAddress()
+
   @Test def constructor(): Unit = {
-    val ds = new DatagramSocket(0, InetAddress.getLocalHost())
+    val ds = new DatagramSocket(0, loopback)
     try {
-      assertTrue("Created socket with incorrect port", ds.getLocalPort() != 0)
+      assertTrue("Created socket with incorrect port", ds.getLocalPort() > 0)
       assertEquals(
         "Created socket with incorrect address",
-        InetAddress.getLocalHost(),
+        loopback,
         ds.getLocalAddress()
       )
     } finally {
@@ -31,18 +41,80 @@ class DatagramSocketTest {
     val dp = new DatagramPacket(
       "Test String".getBytes,
       11,
-      InetAddress.getLocalHost,
+      loopback,
       0
     )
     assertThrows(classOf[IOException], ds.send(dp))
   }
 
+  @Test def getLocalAddress(): Unit = {
+    val ds = new DatagramSocket(null)
+    try {
+      assertTrue(
+        "Returned incorrect local address when not bound",
+        ds.getLocalAddress.isAnyLocalAddress
+      )
+      ds.bind(new InetSocketAddress(loopback, 0))
+      assertEquals(
+        "Returned incorrect local port when bound",
+        loopback,
+        ds.getLocalAddress
+      )
+      ds.close()
+      assertTrue(
+        "Returned incorrect local port when closed",
+        ds.getLocalAddress == null
+      )
+    } finally {
+      if (!ds.isClosed) ds.close()
+    }
+  }
+
   @Test def getLocalPort(): Unit = {
+    val ds = new DatagramSocket(null)
+    try {
+      assertEquals(
+        "Returned incorrect local port when not bound",
+        0,
+        ds.getLocalPort
+      )
+      ds.bind(null)
+      assertTrue(
+        "Returned incorrect local port when bound",
+        ds.getLocalPort > 0
+      )
+      ds.close()
+      assertEquals(
+        "Returned incorrect local port when closed",
+        -1,
+        ds.getLocalPort
+      )
+    } finally {
+      if (!ds.isClosed) ds.close()
+    }
+  }
+
+  @Test def getInetAddress(): Unit = {
     val ds = new DatagramSocket()
     try {
-      assertTrue("Returned incorrect port", ds.getLocalPort != 0)
-    } finally {
+      assertTrue(
+        "Returned incorrect remote address when not connected",
+        ds.getInetAddress() == null
+      );
+      ds.connect(loopback, 49152) // any valid port number
+      assertEquals(
+        "Returned incorrect remote address when connected",
+        loopback,
+        ds.getInetAddress()
+      )
       ds.close()
+      assertEquals(
+        "Returned incorrect remote address when closed",
+        loopback,
+        ds.getInetAddress()
+      )
+    } finally {
+      if (!ds.isClosed) ds.close()
     }
   }
 
@@ -50,15 +122,25 @@ class DatagramSocketTest {
     val ds = new DatagramSocket()
     try {
       assertEquals(
-        "Expected -1 for remote port as not connected",
+        "Returned incorrect remote port when not connected",
         -1,
         ds.getPort()
       );
-      val port = 49152 // any valid port, even if it is unreachable
-      ds.connect(InetAddress.getLocalHost(), port)
-      assertEquals("getPort returned wrong value", port, ds.getPort())
-    } finally {
+      val port = 49152 // any valid port number
+      ds.connect(loopback, port)
+      assertEquals(
+        "Returned incorrect remote port when connected",
+        port,
+        ds.getPort()
+      )
       ds.close()
+      assertEquals(
+        "Returned incorrect remote port when closed",
+        port,
+        ds.getPort()
+      )
+    } finally {
+      if (!ds.isClosed) ds.close()
     }
   }
 
@@ -135,12 +217,12 @@ class DatagramSocketTest {
 
     val ds2 = new DatagramSocket(null)
     try {
-      ds2.bind(new InetSocketAddress(InetAddress.getLoopbackAddress, 0))
+      ds2.bind(new InetSocketAddress(loopback, 0))
       val port = ds2.getLocalPort
       assertTrue("ds2", ds2.isBound())
       assertEquals(
         "ds2",
-        new InetSocketAddress(InetAddress.getLoopbackAddress, port),
+        new InetSocketAddress(loopback, port),
         ds2.getLocalSocketAddress
       )
     } finally {
@@ -158,7 +240,7 @@ class DatagramSocketTest {
 
     val ds4 = new DatagramSocket(null)
     try {
-      ds4.bind(new InetSocketAddress(InetAddress.getLoopbackAddress, 0))
+      ds4.bind(new InetSocketAddress(loopback, 0))
       val ds5 = new DatagramSocket()
       try {
         assertThrows(
@@ -187,7 +269,6 @@ class DatagramSocketTest {
   }
 
   @Test def sendReceive(): Unit = {
-    val loopback = InetAddress.getLoopbackAddress()
     val ds1 = new DatagramSocket(new InetSocketAddress(loopback, 0))
     val ds2 = new DatagramSocket(new InetSocketAddress(loopback, 0))
     try {
@@ -223,7 +304,6 @@ class DatagramSocketTest {
   }
 
   @Test def connect(): Unit = {
-    val loopback = InetAddress.getLoopbackAddress()
     val ds1 = new DatagramSocket(new InetSocketAddress(loopback, 0))
     val ds2 = new DatagramSocket(new InetSocketAddress(loopback, 0))
     val ds3 = new DatagramSocket(new InetSocketAddress(loopback, 0))
@@ -274,15 +354,17 @@ class DatagramSocketTest {
   }
 
   @Test def sendReceiveBroadcast(): Unit = {
-    val loopback = InetAddress.getLoopbackAddress()
-    val broadcastAddress = InetAddress.getByName("127.255.255.255")
-    val ds1 = new DatagramSocket(new InetSocketAddress(loopback, 0))
+    // force ipv4 for broadcast test
+    val address = InetAddress.getByName("127.0.0.1")
+    val broadcastAddress = InetAddress.getByName("127.0.0.254")
+    val ds1 = new DatagramSocket(new InetSocketAddress(address, 0))
     val ds2 = new DatagramSocket(null)
     try {
       ds2.setReuseAddress(true)
       ds2.bind(new InetSocketAddress("0.0.0.0", 0))
+
       // joinGroup is Java 17+. Wildcard address in bind should be enough
-      // val loopbackItf = NetworkInterface.getByInetAddress(InetAddress.getLoopbackAddress())
+      // val loopbackItf = NetworkInterface.getByInetAddress(address)
       // ds2.joinGroup(broadcastAddress, loopbackItf)
 
       val data = "Test Data"

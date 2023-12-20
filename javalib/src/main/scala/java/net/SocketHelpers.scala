@@ -243,7 +243,6 @@ object SocketHelpers {
  * easily done here.
  */
 
-
 /* As of this writing, there is no good home for this object in Scala Native.
  * Those definitions are not POSIX
  */
@@ -289,7 +288,6 @@ private[net] object ipOps {
     def imr_ifindex_=(v: CInt): Unit = ptr._3 = v
   }
 }
-
 
 /* As of this writing, there is no good home for this object in Scala Native.
  * This is and its matching C code are the Scala Native rendition of

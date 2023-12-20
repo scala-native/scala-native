@@ -354,8 +354,10 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
     if (i.ipAddress.length == ipAddress.length) {
       ipAddress.copyToArray(i.ipAddress)
     } else {
-        throw new SocketException("Address family mismatch," +
-          s"expected ${i.ipAddress.length} bytes, got ${ipAddress.length} bytes")
+      throw new SocketException(
+        "Address family mismatch," +
+          s"expected ${i.ipAddress.length} bytes, got ${ipAddress.length} bytes"
+      )
     }
     p.getPort()
   }
