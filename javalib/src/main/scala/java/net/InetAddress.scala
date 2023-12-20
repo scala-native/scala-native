@@ -39,7 +39,7 @@ import scala.scalanative.meta.LinktimeInfo.{isLinux, isMac}
  */
 
 class InetAddress protected (
-    private[net] var ipAddress: Array[Byte],
+    val ipAddress: Array[Byte],
     originalHost: String
 ) extends Serializable {
   import InetAddress._
