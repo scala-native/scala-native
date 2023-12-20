@@ -90,11 +90,7 @@ class InetAddress protected (
     if (ipAddress.length == 4) {
       formatIn4Addr(bytes)
     } else if (ipAddress.length == 16) {
-      if (SocketHelpers.isIPv4MappedAddress(bytes)) {
-        formatIn4Addr(ipAddress.at(12))
-      } else {
-        Inet6Address.formatInet6Address(this.asInstanceOf[Inet6Address])
-      }
+      Inet6Address.formatInet6Address(this.asInstanceOf[Inet6Address])
     } else {
       "<unknown>"
     }
