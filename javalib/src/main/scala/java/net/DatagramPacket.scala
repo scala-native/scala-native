@@ -1,25 +1,27 @@
 package java.net
 
 final class DatagramPacket(
-    var buf: Array[Byte],
-    var offset: Int,
-    var length: Int,
-    // bufLength: Int,
-    var address: InetAddress,
-    var port: Int
+    private var buf: Array[Byte],
+    private var offset: Int,
+    private var length: Int,
+    private var address: InetAddress,
+    private var port: Int
 ) {
-  if (length < 0 || offset < 0 || (length + offset) < 0 || ((length + offset) > buf.length)) {
+  if (length < 0 || offset < 0 || ((offset + length) > buf.length)) {
     throw new IllegalArgumentException("illegal length or offset");
+  }
+  if (port < 0 || port > 0xffff) {
+    throw new IllegalArgumentException("Port out of range:" + port)
   }
 
   def this(buff: Array[Byte], offset: Int, length: Int) =
-    this(buff, offset, length, null, -1)
+    this(buff, offset, length, null, 0)
 
   def this(buff: Array[Byte], length: Int) =
-    this(buff, 0, length, null, -1)
+    this(buff, 0, length, null, 0)
 
   def this(buff: Array[Byte], length: Int, address: InetAddress) =
-    this(buff, 0, length, address, -1)
+    this(buff, 0, length, address, 0)
 
   def this(buff: Array[Byte], length: Int, address: InetAddress, port: Int) =
     this(buff, 0, length, address, port)
@@ -35,7 +37,7 @@ final class DatagramPacket(
   def getLength(): Int = length
 
   def setData(buff: Array[Byte], offset: Int, length: Int): Unit = {
-    if (length < 0 || offset < 0 || (length + offset) < 0 || ((length + offset) > buf.length)) {
+    if (length < 0 || offset < 0 || ((offset + length) > buf.length)) {
       throw new IllegalArgumentException("illegal length or offset");
     }
     this.buf = buff
@@ -80,7 +82,7 @@ final class DatagramPacket(
   }
 
   def setLength(length: Int): Unit = {
-    if ((length + offset) > buf.length || length < 0 || (length + offset) < 0) {
+    if (length < 0 || (offset + length) > buf.length) {
       throw new IllegalArgumentException("illegal length")
     }
     this.length = length
