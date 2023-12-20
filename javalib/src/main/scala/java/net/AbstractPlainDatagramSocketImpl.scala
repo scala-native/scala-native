@@ -1,5 +1,7 @@
 package java.net
 
+import java.net.ip
+import java.net.ipOps._
 import java.io.{FileDescriptor, IOException}
 import java.net.SocketHelpers.sockaddrStorageToInetSocketAddress
 import scala.scalanative.libc.string.memcpy
@@ -377,24 +379,22 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
     if (isClosed) {
       throw new SocketException("Socket is closed")
     }
-    if (isLinux) {
-      val level = posix.netinet.in.IPPROTO_IP
-      val optValue = posix.netinet.in.IP_MULTICAST_TTL
-      val opt = stackalloc[CInt]()
-      val len = sizeof[CInt].toUInt
-      !opt = ttl
+    val level = in.IPPROTO_IP
+    val optValue = ip.IP_MULTICAST_TTL
+    val opt = stackalloc[CInt]()
+    val len = sizeof[CInt].toUInt
+    !opt = ttl
 
-      if (posix.sys.socket.setsockopt(
-            fd.fd,
-            level,
-            optValue,
-            opt.asInstanceOf[Ptr[Byte]],
-            len
-          ) != 0) {
-        throw new SocketException(
-          "Exception while setting socket option with id: IP_MULTICAST_TTL, errno: " + lastError()
-        )
-      }
+    if (posix.sys.socket.setsockopt(
+          fd.fd,
+          level,
+          optValue,
+          opt.asInstanceOf[Ptr[Byte]],
+          len
+        ) != 0) {
+      throw new SocketException(
+        "Exception while setting socket option with id: IP_MULTICAST_TTL, errno: " + lastError()
+      )
     }
   }
 
@@ -402,29 +402,25 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
     if (isClosed) {
       throw new SocketException("Socket is closed")
     }
-    if (isLinux) {
-      val level = posix.netinet.in.IPPROTO_IP
-      val optValue = posix.netinet.in.IP_MULTICAST_TTL
-      val opt = stackalloc[CInt]()
-      val len = stackalloc[posix.sys.socket.socklen_t]()
-      !len = sizeof[CInt].toUInt
+    val level = in.IPPROTO_IP
+    val optValue = ip.IP_MULTICAST_TTL
+    val opt = stackalloc[CInt]()
+    val len = stackalloc[posix.sys.socket.socklen_t]()
+    !len = sizeof[CInt].toUInt
 
-      if (posix.sys.socket.getsockopt(
-            fd.fd,
-            level,
-            optValue,
-            opt.asInstanceOf[Ptr[Byte]],
-            len
-          ) != 0) {
-        throw new SocketException(
-          "Exception while getting socket option with id: IP_MULTICAST_TTL, errno: " + lastError()
-        )
-      }
-
-      Integer.valueOf(!opt)
-    } else {
-      -1
+    if (posix.sys.socket.getsockopt(
+          fd.fd,
+          level,
+          optValue,
+          opt.asInstanceOf[Ptr[Byte]],
+          len
+        ) != 0) {
+      throw new SocketException(
+        "Exception while getting socket option with id: IP_MULTICAST_TTL, errno: " + lastError()
+      )
     }
+
+    Integer.valueOf(!opt)
   }
 
   def mcastJoinLeave4(
@@ -432,7 +428,7 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
       netIf: NetworkInterface,
       join: Boolean
   ): Unit = {
-    val mName = stackalloc[in.ip_mreq]()
+    val mName = stackalloc[ip.ip_mreq]()
     if (netIf != null) {
       val ifAddrs = netIf.getInetAddresses()
       if (!ifAddrs.hasMoreElements()) {
@@ -452,8 +448,8 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
 
       if (posix.sys.socket.getsockopt(
             fd.fd,
-            posix.netinet.in.IPPROTO_IP,
-            posix.netinet.in.IP_MULTICAST_IF,
+            in.IPPROTO_IP,
+            in.IP_MULTICAST_IF,
             opt.asInstanceOf[Ptr[Byte]],
             len
           ) != 0) {
@@ -469,15 +465,13 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
     }
 
     // join / leave the multicast group.
-    val optID =
-      if (join) posix.netinet.in.IP_ADD_MEMBERSHIP
-      else posix.netinet.in.IP_DROP_MEMBERSHIP
+    val optID = if (join) ip.IP_ADD_MEMBERSHIP else ip.IP_DROP_MEMBERSHIP
     if (posix.sys.socket.setsockopt(
           fd.fd,
-          posix.netinet.in.IPPROTO_IP,
+          in.IPPROTO_IP,
           optID,
           mName.asInstanceOf[Ptr[Byte]],
-          sizeof[in.ip_mreq].toUInt
+          sizeof[ip.ip_mreq].toUInt
         ) != 0) {
       throw new SocketException(
         "Exception while setting socket option with id: "
@@ -491,7 +485,7 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
       netIf: NetworkInterface,
       join: Boolean
   ): Unit = {
-    val mName = stackalloc[in.ip_mreqn]()
+    val mName = stackalloc[ip.ip_mreqn]()
     val addrPtr = !inetaddr.getAddress().at(0).asInstanceOf[Ptr[in.in_addr_t]]
     if (netIf != null) {
       val addrPtr = inetaddr.getAddress().at(0).asInstanceOf[Ptr[in.in_addr_t]]
@@ -506,8 +500,8 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
 
       if (posix.sys.socket.getsockopt(
             fd.fd,
-            posix.netinet.in.IPPROTO_IP,
-            posix.netinet.in.IP_MULTICAST_IF,
+            in.IPPROTO_IP,
+            in.IP_MULTICAST_IF,
             opt.asInstanceOf[Ptr[Byte]],
             len
           ) != 0) {
@@ -523,15 +517,13 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
     }
 
     // join / leave the multicast group.
-    val optID =
-      if (join) posix.netinet.in.IP_ADD_MEMBERSHIP
-      else posix.netinet.in.IP_DROP_MEMBERSHIP
+    val optID = if (join) ip.IP_ADD_MEMBERSHIP else ip.IP_DROP_MEMBERSHIP
     if (posix.sys.socket.setsockopt(
           fd.fd,
-          posix.netinet.in.IPPROTO_IP,
+          in.IPPROTO_IP,
           optID,
           mName.asInstanceOf[Ptr[Byte]],
-          sizeof[in.ip_mreqn].toUInt
+          sizeof[ip.ip_mreqn].toUInt
         ) != 0) {
       throw new SocketException(
         "Exception while setting socket option with id: "

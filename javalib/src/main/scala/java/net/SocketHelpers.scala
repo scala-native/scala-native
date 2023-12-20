@@ -2,16 +2,16 @@ package java.net
 
 import scala.scalanative.unsigned._
 import scala.scalanative.unsafe._
-import scala.scalanative.posix.{netdb, netdbOps}
-import netdb._
-import netdbOps._
+
 import scala.scalanative.posix.arpa.inet
-import scala.scalanative.posix.netinet.in
-import scala.scalanative.posix.netinet.inOps._
+import scala.scalanative.posix.{netdb, netdbOps}, netdb._, netdbOps._
+import scala.scalanative.posix.netinet.{in, inOps}, in._, inOps._
 import scala.scalanative.posix.sys.socket._
 import scala.scalanative.posix.sys.socketOps._
 import scala.scalanative.posix.string.memcpy
+
 import scala.scalanative.meta.LinktimeInfo.isWindows
+
 import scala.scalanative.windows.WinSocketApiOps
 
 object SocketHelpers {
@@ -117,7 +117,7 @@ object SocketHelpers {
   private[net] def getIPPROTO(): Int = stackIpproto
 
   private lazy val trafficClassSocketOption: Int =
-    if (getUseIPv4Stack()) in.IP_TOS else in6.IPV6_TCLASS
+    if (getUseIPv4Stack()) in.IP_TOS else ip6.IPV6_TCLASS
 
   private[net] def getTrafficClassSocketOption(): Int =
     trafficClassSocketOption
@@ -238,10 +238,58 @@ object SocketHelpers {
 
 }
 
-/* Normally 'object in6' would be in a separate file.
+/* Normally objects 'ip' and 'ip6' would be in a separate file.
  * The way that Scala Native javalib gets built means that can not be
  * easily done here.
  */
+
+
+/* As of this writing, there is no good home for this object in Scala Native.
+ * Those definitions are not POSIX
+ */
+@extern
+private[net] object ip {
+  type ip_mreq = CStruct2[
+    in_addr, // imr_multiaddr
+    in_addr // imr_address
+  ]
+
+  // Linux only
+  type ip_mreqn = CStruct3[
+    in_addr, // imr_multiaddr
+    in_addr, // imr_address
+    CInt // imr_ifindex
+  ]
+
+  @name("scalanative_ip_multicast_ttl")
+  def IP_MULTICAST_TTL: CInt = extern
+
+  @name("scalanative_ip_add_membership")
+  def IP_ADD_MEMBERSHIP: CInt = extern
+
+  @name("scalanative_ip_drop_membership")
+  def IP_DROP_MEMBERSHIP: CInt = extern
+}
+
+private[net] object ipOps {
+  import ip._
+  implicit class ip_mreqOps(val ptr: Ptr[ip_mreq]) extends AnyVal {
+    def imr_multiaddr: in_addr = ptr._1
+    def imr_address: in_addr = ptr._2
+    def imr_multiaddr_=(v: in_addr): Unit = ptr._1 = v
+    def imr_address_=(v: in_addr): Unit = ptr._2 = v
+  }
+
+  implicit class mip_mreqnOps(val ptr: Ptr[ip_mreqn]) extends AnyVal {
+    def imr_multiaddr: in_addr = ptr._1
+    def imr_address: in_addr = ptr._2
+    def imr_ifindex: CInt = ptr._3
+    def imr_multiaddr_=(v: in_addr): Unit = ptr._1 = v
+    def imr_address_=(v: in_addr): Unit = ptr._2 = v
+    def imr_ifindex_=(v: CInt): Unit = ptr._3 = v
+  }
+}
+
 
 /* As of this writing, there is no good home for this object in Scala Native.
  * This is and its matching C code are the Scala Native rendition of
@@ -259,7 +307,10 @@ object SocketHelpers {
  * can and should be moved there.
  */
 @extern
-private[net] object in6 {
+private[net] object ip6 {
   @name("scalanative_ipv6_tclass")
   def IPV6_TCLASS: CInt = extern
+
+  @name("scalanative_ipv6_multicast_hops")
+  def IPV6_MULTICAST_HOPS: CInt = extern
 }
