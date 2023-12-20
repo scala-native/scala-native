@@ -318,19 +318,22 @@ object NetworkInterface {
   private def unixGetByInetAddress(addr: InetAddress): NetworkInterface = {
 
     def found(addr: Array[Byte], addrLen: Int, sa: Ptr[sockaddr]): Boolean = {
-      val sa_family = sa.sa_family.toInt
-      if (sa_family == AF_INET6) {
-        if (addrLen != 16) false
-        else {
-          val sa6 = sa.asInstanceOf[Ptr[sockaddr_in6]]
-          val sin6Addr = sa6.sin6_addr.at1.at(0).asInstanceOf[Ptr[Byte]]
-          memcmp(addr.at(0), sin6Addr, addrLen.toUInt) == 0
-        }
-      } else if (sa_family == AF_INET) {
-        val sa4 = sa.asInstanceOf[Ptr[sockaddr_in]]
-        val sin4Addr = sa4.sin_addr.at1.asInstanceOf[Ptr[Byte]]
-        memcmp(addr.at(0), sin4Addr, addrLen.toUInt) == 0
-      } else false
+      if (sa == null) false
+      else {
+        val sa_family = sa.sa_family.toInt
+        if (sa_family == AF_INET6) {
+          if (addrLen != 16) false
+          else {
+            val sa6 = sa.asInstanceOf[Ptr[sockaddr_in6]]
+            val sin6Addr = sa6.sin6_addr.at1.at(0).asInstanceOf[Ptr[Byte]]
+            memcmp(addr.at(0), sin6Addr, addrLen.toUInt) == 0
+          }
+        } else if (sa_family == AF_INET) {
+          val sa4 = sa.asInstanceOf[Ptr[sockaddr_in]]
+          val sin4Addr = sa4.sin_addr.at1.asInstanceOf[Ptr[Byte]]
+          memcmp(addr.at(0), sin4Addr, addrLen.toUInt) == 0
+        } else false
+      }
     }
 
     @tailrec
@@ -346,7 +349,7 @@ object NetworkInterface {
         findIfInetAddress(
           ipAddress,
           addrLen,
-          ifa.ifa_next.asInstanceOf[Ptr[ifaddrs]]
+          ifa.ifa_next
         )
     }
 
