@@ -1,6 +1,5 @@
 package java.net
 
-import java.net.ip
 import java.net.ipOps._
 import java.io.{FileDescriptor, IOException}
 import java.net.SocketHelpers.sockaddrStorageToInetSocketAddress
