@@ -616,8 +616,34 @@ object Settings {
   lazy val toolSettings: Seq[Setting[_]] =
     Def.settings(
       publishSettings(None),
-      javacOptions ++= Seq("-encoding", "utf8")
+      javacOptions ++= Seq("-encoding", "utf8"),
+      scalacOptions ++= ignoredScalaDeprecations(scalaVersion.value)
     )
+
+  def ignoredScalaDeprecations(scalaVersion: String): Seq[String] = {
+    def scala213StdLibDeprecations = Seq(
+      // In 2.13 lineStream_! was replaced with lazyList_!.
+      "method lineStream_!",
+      // OpenHashMap is used with value class parameter type, we cannot replace it with AnyRefMap or LongMap
+      // Should not be replaced with HashMap due to performance reasons.
+      "class|object OpenHashMap",
+      "class Stream",
+      "method retain in trait SetOps"
+    ).map(msg => s"-Wconf:cat=deprecation&msg=$msg:s")
+
+    def scala3Deprecations = Seq(
+      "`= _` has been deprecated",
+      "`_` is deprecated for wildcard arguments of types"
+    ).map(msg => s"-Wconf:msg=$msg:s")
+
+    CrossVersion
+      .partialVersion(scalaVersion)
+      .fold(Seq.empty[String]) {
+        case (2, 12) => Nil
+        case (2, 13) => scala213StdLibDeprecations
+        case (3, _)  => scala213StdLibDeprecations ++ scala3Deprecations
+      }
+  }
 
   lazy val recompileAllOrNothingSettings = Def.settings(
     /* Recompile all sources when at least 1/10,000 of the source files have

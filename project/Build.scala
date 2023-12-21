@@ -262,24 +262,6 @@ object Build {
     toolSettings,
     withSharedCrossPlatformSources,
     buildInfoSettings,
-    scalacOptions ++= {
-      val scala213StdLibDeprecations = Seq(
-        // In 2.13 lineStream_! was replaced with lazyList_!.
-        "method lineStream_!",
-        // OpenHashMap is used with value class parameter type, we cannot replace it with AnyRefMap or LongMap
-        // Should not be replaced with HashMap due to performance reasons.
-        "class|object OpenHashMap",
-        "class Stream",
-        "method retain in trait SetOps"
-      ).map(msg => s"-Wconf:cat=deprecation&msg=$msg:s")
-      CrossVersion
-        .partialVersion(scalaVersion.value)
-        .fold(Seq.empty[String]) {
-          case (2, 12) => Nil
-          case (2, 13) => scala213StdLibDeprecations
-          case (3, _)  => scala213StdLibDeprecations
-        }
-    },
     // Running tests in parallel results in `FileSystemAlreadyExistsException`
     Test / parallelExecution := false
   )
