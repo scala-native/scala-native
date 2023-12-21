@@ -34,7 +34,7 @@ class NirPositions()(using Context) {
   private object conversionCache {
     import dotty.tools.dotc.util._
     private var lastDotcSource: SourceFile = uninitialized
-    private var lastNIRSource: nir.Position.SourceFile = uninitialized
+    private var lastNIRSource: nir.SourceFile = uninitialized
 
     def toNIRSourceFile(dotcSource: SourceFile): nir.SourceFile = {
       if (dotcSource != lastDotcSource) {

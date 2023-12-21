@@ -1293,6 +1293,8 @@ class AbstractQueuedSynchronizerTest extends JSR166Test {
       )
   }
 
+  class PleaseThrow extends RuntimeException {}
+
   /** Tests scenario for JDK-8191937: Lost interrupt in
    *  AbstractQueuedSynchronizer when tryAcquire methods throw ant
    *  -Djsr166.tckTestClass=AbstractQueuedSynchronizerTest
@@ -1304,7 +1306,6 @@ class AbstractQueuedSynchronizerTest extends JSR166Test {
       "Fails due to bug in the JVM",
       Platform.executingInJVMOnJDK8OrLower
     )
-    class PleaseThrow extends RuntimeException {}
     val ex = new PleaseThrow()
     val thrown = new AtomicBoolean()
 

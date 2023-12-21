@@ -16,9 +16,7 @@ import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
 import java.util.function.{LongBinaryOperator, LongUnaryOperator}
 
 @SerialVersionUID(1927816293512124184L)
-class AtomicLong(private var value: Long)
-    extends Number
-    with Serializable {
+class AtomicLong(private var value: Long) extends Number with Serializable {
 
   // Pointer to field containing underlying Long.
   @alwaysinline

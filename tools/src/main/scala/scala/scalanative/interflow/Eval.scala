@@ -1044,7 +1044,7 @@ trait Eval { self: Interflow =>
       } else {
         visiting = clsName :: visiting
 
-        val init = clsName member nir.Sig.Ctor(Seq.empty)
+        val init = clsName.member(nir.Sig.Ctor(Seq.empty))
         val isPure =
           !shallVisit(init) ||
             visitDuplicate(init, argumentTypes(init)).fold(false)(

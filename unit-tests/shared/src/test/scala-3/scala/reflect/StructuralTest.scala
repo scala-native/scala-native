@@ -24,7 +24,7 @@ class StructuralTest() {
 
   @Test def testStructuralVal(): Unit = {
     // Consider one module upcasting all these instances to T. These casts are clearly well-typed.
-    type T = { val a: Int }
+    type T = { def a: Int }
     def upcast1(v: Foo1): T = v
     def upcast2(v: Foo2): T = v
     def upcast3(v: Foo3): T = v
@@ -88,7 +88,7 @@ class StructuralTest() {
   }
 
   @Test def testStructuralVar(): Unit = {
-    type T = { val a: Int; def a_=(x: Int): Unit }
+    type T = { def a: Int; def a_=(x: Int): Unit }
     def upcast3(v: Foo3): T = v
     def consume(v: T) = v.a
     inline def consumeInl(v: T) = v.a
