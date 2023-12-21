@@ -22,6 +22,9 @@ bin/
 .externalToolBuilders/
 .cache*
 
+# scala-cli
+**/.scala-build
+
 # metals
 **/.bloop/
 /.metals/
