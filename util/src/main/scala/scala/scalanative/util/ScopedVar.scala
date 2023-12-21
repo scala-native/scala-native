@@ -2,11 +2,13 @@ package scala.scalanative
 package util
 
 import language.implicitConversions
+import scala.annotation.nowarn
 
 class ScopedVar[A] {
   import ScopedVar.Assignment
 
   private var init = false
+  @nowarn
   private var value: A = _
 
   def get: A = if (!init) throw ScopedVar.Unitialized() else value
@@ -38,6 +40,7 @@ object ScopedVar {
 
   implicit def toValue[T](scVar: ScopedVar[T]): T = scVar.get
 
+  @nowarn
   def scoped[T](ass: Assignment[_]*)(body: => T): T = {
     val stack = ass.map(_.push())
     try body
