@@ -15,16 +15,18 @@
 #define ASM_JMPBUF_SIZE 192
 #define JMPBUF_STACK_POINTER_OFFSET (104 / 8)
 #elif defined(__x86_64__) &&                                                   \
-    (defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__)) // x86-64 linux, macOS and FreeBSD
+    (defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__))
 #define ASM_JMPBUF_SIZE 72
 #define JMPBUF_STACK_POINTER_OFFSET (16 / 8)
 #elif defined(__i386__) &&                                                     \
-    (defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__)) // x86 linux, macOS and FreeBSD
+    (defined(__linux__) || defined(__APPLE__)) // x86 linux and macOS
 #define ASM_JMPBUF_SIZE 32
 #define JMPBUF_STACK_POINTER_OFFSET (16 / 4)
 #elif defined(__x86_64__) && defined(_WIN64) // x86-64 Windows
 #define ASM_JMPBUF_SIZE 256
 #define JMPBUF_STACK_POINTER_OFFSET (16 / 8)
+#else
+#error "Unsupported platform"
 #endif
 
 #ifdef DELIMCC_DEBUG
