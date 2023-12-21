@@ -31,73 +31,73 @@ class DoubleTest {
   @Test def testEquals(): Unit = {
     val pzero = +0.0
     val nzero = -0.0
-    assertTrue(pzero equals pzero)
-    assertTrue(nzero equals nzero)
-    assertFalse(pzero equals nzero)
+    assertTrue(pzero.equals(pzero))
+    assertTrue(nzero.equals(nzero))
+    assertFalse(pzero.equals(nzero))
     val szero = 1.0 - 1.0
-    assertTrue(pzero equals szero)
+    assertTrue(pzero.equals(szero))
 
     val bpzero: java.lang.Double = pzero
     val bnzero: java.lang.Double = nzero
-    assertFalse(bpzero equals bnzero)
+    assertFalse(bpzero.equals(bnzero))
     val bszero: java.lang.Double = szero
-    assertTrue(bpzero equals bszero)
+    assertTrue(bpzero.equals(bszero))
 
     val num1 = 123.45
     val num2 = 123.45
-    assertTrue(num1 equals num2)
+    assertTrue(num1.equals(num2))
 
     val bnum1: java.lang.Double = num1
     val bnum2: java.lang.Double = num2
     assertTrue(bnum1 == bnum2)
     val pmax1 = scala.Double.MaxValue
     val pmax2 = scala.Double.MaxValue
-    assertTrue(pmax1 equals pmax2)
+    assertTrue(pmax1.equals(pmax2))
     val pmax3 = scala.Double.MaxValue + 1
-    assertTrue(pmax1 equals pmax3)
+    assertTrue(pmax1.equals(pmax3))
 
     val bpmax1: java.lang.Double = scala.Double.MaxValue
     val bpmax2: java.lang.Double = scala.Double.MaxValue
-    assertTrue(bpmax1 equals bpmax2)
+    assertTrue(bpmax1.equals(bpmax2))
     val bpmax3: java.lang.Double = scala.Double.MaxValue + 1
-    assertTrue(bpmax1 equals bpmax3)
+    assertTrue(bpmax1.equals(bpmax3))
 
     val pmin1 = scala.Double.MinValue
     val pmin2 = scala.Double.MinValue
-    assertTrue(pmin1 equals pmin2)
+    assertTrue(pmin1.equals(pmin2))
     val pmin3 = scala.Double.MinValue + 1
-    assertTrue(pmin1 equals pmin3)
+    assertTrue(pmin1.equals(pmin3))
 
     val bpmin1: java.lang.Double = scala.Double.MinValue
     val bpmin2: java.lang.Double = scala.Double.MinValue
-    assertTrue(bpmin1 equals bpmin2)
+    assertTrue(bpmin1.equals(bpmin2))
     val bpmin3: java.lang.Double = scala.Double.MinValue + 1
-    assertTrue(bpmin1 equals bpmin3)
+    assertTrue(bpmin1.equals(bpmin3))
 
     val pinf1 = scala.Double.PositiveInfinity
     val pinf2 = scala.Double.MaxValue + scala.Double.MaxValue
-    assertTrue(pinf1 equals pinf2)
+    assertTrue(pinf1.equals(pinf2))
 
     val bpinf1: java.lang.Double = pinf1
     val bpinf2: java.lang.Double = pinf2
-    assertTrue(bpinf1 equals bpinf2)
+    assertTrue(bpinf1.equals(bpinf2))
 
     val ninf1 = scala.Double.NegativeInfinity
     val ninf2 = scala.Double.MinValue + scala.Double.MinValue
-    assertTrue(ninf1 equals ninf2)
+    assertTrue(ninf1.equals(ninf2))
 
     val bninf1: java.lang.Double = ninf1
     val bninf2: java.lang.Double = ninf2
-    assertTrue(bninf1 equals bninf2)
+    assertTrue(bninf1.equals(bninf2))
 
-    assertTrue(Double.NaN equals Double.NaN)
+    assertTrue(Double.NaN.equals(Double.NaN))
 
     val x = Double.NaN
     val y = longBitsToDouble(doubleToRawLongBits(x) | 1)
-    assertTrue(x equals y)
+    assertTrue(x.equals(y))
 
     val z = longBitsToDouble(doubleToLongBits(x) | 1)
-    assertTrue(x equals z)
+    assertTrue(x.equals(z))
   }
 
   @Test def testEqualEqual(): Unit = {

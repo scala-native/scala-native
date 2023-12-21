@@ -27,7 +27,7 @@ class DateTest {
 
   @Test def testClone(): Unit = {
     val clone = now.clone().asInstanceOf[Date]
-    assertTrue(clone.getTime equals now.getTime)
+    assertEquals(clone.getTime, now.getTime)
   }
 
   @Test def testCompareTo(): Unit = {
@@ -51,7 +51,7 @@ class DateTest {
   @Test def testSetTime(): Unit = {
     val nowBefore = new Date(nowUt)
     nowBefore.setTime(afterUt)
-    assertTrue(nowBefore equals after)
+    assertEquals(nowBefore, after)
   }
 
   @Test def testToString(): Unit = {

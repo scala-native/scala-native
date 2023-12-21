@@ -180,10 +180,10 @@ class StringTest {
   }
 
   @Test def replaceChar(): Unit = {
-    assertTrue("test".replace('t', 'p') equals "pesp")
-    assertTrue("Test".replace('t', 'p') equals "Tesp")
-    assertTrue("Test".replace('T', 'p') equals "pest")
-    assertTrue("Test".replace('0', '1') equals "Test")
+    assertTrue("test".replace('t', 'p').equals("pesp"))
+    assertTrue("Test".replace('t', 'p').equals("Tesp"))
+    assertTrue("Test".replace('T', 'p').equals("pest"))
+    assertTrue("Test".replace('0', '1').equals("Test"))
   }
 
   @Test def replaceCharSequence(): Unit = {
@@ -192,29 +192,29 @@ class StringTest {
       assertTrue(replace(input))
 
       val inputWithPrefix = ("[" + input).substring(1)
-      assertTrue(inputWithPrefix equals input)
+      assertEquals(inputWithPrefix, input)
       assertTrue(replace(inputWithPrefix))
 
       val inputWithSuffix = (input + "]").substring(0, input.length)
-      assertTrue(inputWithSuffix equals input)
+      assertEquals(inputWithSuffix, input)
       assertTrue(replace(inputWithSuffix))
 
       val inputWithBoth = ("[" + input + "]").substring(1, input.length + 1)
-      assertTrue(inputWithBoth equals input)
+      assertEquals(inputWithBoth, input)
       assertTrue(replace(inputWithBoth))
     }
 
-    check("test", _.replace("t", "p") equals "pesp")
-    check("Test", _.replace("t", "p") equals "Tesp")
-    check("test", _.replace("e", "oa") equals "toast")
-    check("Test", _.replace("T", "p") equals "pest")
-    check("spantanplans", _.replace("an", ".") equals "sp.t.pl.s")
-    check("spantanplans", _.replace("an", "") equals "sptpls")
-    check("Test", _.replace("0", "1") equals "Test")
-    check("Test", _.replace("e", "") equals "Tst")
-    check("Test", _.replace("t", "") equals "Tes")
-    check("Test", _.replace("", "") equals "Test")
-    check("Test", _.replace("", "--") equals "--T--e--s--t--")
+    check("test", _.replace("t", "p").equals("pesp"))
+    check("Test", _.replace("t", "p").equals("Tesp"))
+    check("test", _.replace("e", "oa").equals("toast"))
+    check("Test", _.replace("T", "p").equals("pest"))
+    check("spantanplans", _.replace("an", ".").equals("sp.t.pl.s"))
+    check("spantanplans", _.replace("an", "").equals("sptpls"))
+    check("Test", _.replace("0", "1").equals("Test"))
+    check("Test", _.replace("e", "").equals("Tst"))
+    check("Test", _.replace("t", "").equals("Tes"))
+    check("Test", _.replace("", "").equals("Test"))
+    check("Test", _.replace("", "--").equals("--T--e--s--t--"))
   }
 
   @Test def replaceAllNonAscii(): Unit = {
@@ -430,39 +430,40 @@ class StringTest {
   }
 
   @Test def toUpperCase(): Unit = {
-    assertTrue("".toUpperCase() equals "")
+    assertEquals("".toUpperCase(), "")
     // ascii
-    assertTrue("Hello".toUpperCase() equals "HELLO")
+    assertEquals("Hello".toUpperCase(), "HELLO")
     // latin
-    assertTrue("Perché".toUpperCase() equals "PERCHÉ")
+    assertEquals("Perché".toUpperCase(), "PERCHÉ")
     // high (2 Char String) - 0x10400 or \ud801\udc00
     val iStr = new String(Character.toChars(0x10400))
-    assertTrue(iStr.length equals 2)
-    assertTrue(iStr.toUpperCase equals iStr)
+    assertEquals(iStr.length, 2)
+    assertEquals(iStr.toUpperCase, iStr)
     val bStr = "\ud801\udc00"
-    assertTrue(bStr.length equals 2)
-    assertTrue(bStr.toUpperCase equals "\ud801\udc00")
-    assertTrue("𐐨aaaa".toUpperCase equals "𐐀AAAA")
-    assertTrue("aaaa𐐨".toUpperCase equals "AAAA𐐀")
-    assertTrue("aa𐐨aa".toUpperCase equals "AA𐐀AA")
+    assertEquals(bStr.length, 2)
+    assertEquals(bStr.toUpperCase, "\ud801\udc00")
+    assertEquals("𐐨aaaa".toUpperCase, "𐐀AAAA")
+    assertEquals("aaaa𐐨".toUpperCase, "AAAA𐐀")
+    assertEquals("aa𐐨aa".toUpperCase, "AA𐐀AA")
     // partial in surrogate range
     // case of poor slicing or construction of string
-    assertTrue("\ud801aaaa".toUpperCase equals "\ud801AAAA")
-    assertTrue("aaaa\ud801".toUpperCase equals "AAAA\ud801")
-    assertTrue("\udc00aaaa".toUpperCase equals "\udc00AAAA")
-    assertTrue("aaaa\udc00".toUpperCase equals "AAAA\udc00")
+    assertEquals("\ud801aaaa".toUpperCase, "\ud801AAAA")
+    assertEquals("aaaa\ud801".toUpperCase, "AAAA\ud801")
+    assertEquals("\udc00aaaa".toUpperCase, "\udc00AAAA")
+    assertEquals("aaaa\udc00".toUpperCase, "AAAA\udc00")
     // case of one high surrogate
     val hChar = '\ud801'
     val hStr = hChar.toString
     assertTrue(Character.isHighSurrogate(hChar))
-    assertTrue(hStr.length equals 1)
-    assertTrue(hStr.toUpperCase equals hStr)
+    assertEquals(hStr.length, 1)
+    assertEquals(hStr.toUpperCase, hStr)
     // toUpperCase should consider String's offset
-    assertTrue(
+    assertEquals(
+      "SCALA NATIVE",
       "Hi, Scala Native!"
         .subSequence(4, 16)
         .toString
-        .toUpperCase equals "SCALA NATIVE"
+        .toUpperCase
     )
   }
 
@@ -573,18 +574,19 @@ class StringTest {
   }
 
   @Test def toLowerCase(): Unit = {
-    assertTrue("".toLowerCase() equals "")
-    assertTrue("Hello".toLowerCase() equals "hello")
-    assertTrue("PERCHÉ".toLowerCase() equals "perché")
-    assertTrue("𐐀AAAA".toLowerCase equals "𐐨aaaa")
-    assertTrue("AAAA𐐀".toLowerCase equals "aaaa𐐨")
-    assertTrue("AA𐐀AA".toLowerCase equals "aa𐐨aa")
+    assertEquals("".toLowerCase(), "")
+    assertEquals("Hello".toLowerCase(), "hello")
+    assertEquals("PERCHÉ".toLowerCase(), "perché")
+    assertEquals("𐐀AAAA".toLowerCase, "𐐨aaaa")
+    assertEquals("AAAA𐐀".toLowerCase, "aaaa𐐨")
+    assertEquals("AA𐐀AA".toLowerCase, "aa𐐨aa")
     // toLowerCase should consider String's offset
-    assertTrue(
+    assertEquals(
+      "scala native",
       "Hi, Scala Native!"
         .subSequence(4, 16)
         .toString
-        .toLowerCase equals "scala native"
+        .toLowerCase
     )
   }
 

@@ -116,7 +116,7 @@ class IssuesTest {
     val world = "world"
     m(hello) = world
     val h = m.getOrElse(hello, "Failed !")
-    assertTrue(h equals world)
+    assertTrue(h.equals(world))
   }
 
   @deprecated val fptrBoxed: CFuncPtr0[Integer] = () => new Integer(1)

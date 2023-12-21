@@ -119,12 +119,16 @@ object Build {
       ) {
         case (2, _) => Seq("-Xno-patmat-analysis")
       }
+      scalacOptions --= ignoredScalaDeprecations(scalaVersion.value)
     )
     .dependsOnSource(nir)
     .dependsOnSource(util)
 
   lazy val junitPlugin = MultiScalaProject("junitPlugin", file("junit-plugin"))
-    .settings(compilerPluginSettings)
+    .settings(
+      compilerPluginSettings,
+      scalacOptions --= ignoredScalaDeprecations(scalaVersion.value)
+    )
 
   // NIR compiler
   lazy val util = MultiScalaProject("util")
@@ -280,8 +284,7 @@ object Build {
       .settings(
         mavenPublishSettings,
         docsSettings,
-        libraryDependencies ++= Deps.NativeLib(scalaVersion.value),
-        scalacOptions ++= Settings.ignoredScalaDeprecations(scalaVersion.value)
+        libraryDependencies ++= Deps.NativeLib(scalaVersion.value)
       )
       .withNativeCompilerPlugin
 
@@ -333,7 +336,9 @@ object Build {
   lazy val scalalib: MultiScalaProject =
     MultiScalaProject("scalalib")
       .enablePlugins(MyScalaNativePlugin)
-      .settings(mavenPublishSettings, disabledDocsSettings)
+      .settings(mavenPublishSettings, disabledDocsSettings,
+        scalacOptions --= ignoredScalaDeprecations(scalaVersion.value)
+      )
       .withNativeCompilerPlugin
       .mapBinaryVersions {
         case version @ ("2.12" | "2.13") =>
