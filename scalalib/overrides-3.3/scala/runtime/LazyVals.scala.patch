@@ -1,4 +1,4 @@
---- 3.4.0-RC1/scala/runtime/LazyVals.scala
+--- 3.3.0-RC4/scala/runtime/LazyVals.scala
 +++ overrides-3/scala/runtime/LazyVals.scala
 @@ -4,44 +4,13 @@
  
@@ -12,7 +12,7 @@
  object LazyVals {
 -  @nowarn
 -  private[this] val unsafe: sun.misc.Unsafe = {
--    def throwInitializationException() =
+-    def throwInitializationException() = 
 -      throw new ExceptionInInitializerError(
 -        new IllegalStateException("Can't find instance of sun.misc.Unsafe")
 -      )
@@ -27,12 +27,12 @@
 -      throwInitializationException()
 -  }
 -
--  private val base: Int = {
+-  private[this] val base: Int = {
 -    val processors = java.lang.Runtime.getRuntime.nn.availableProcessors()
 -    8 * processors * processors
 -  }
 -
--  private val monitors: Array[Object] =
+-  private[this] val monitors: Array[Object] =
 -    Array.tabulate(base)(_ => new Object)
 -
 -  private def getMonitor(obj: Object, fieldId: Int = 0) = {
@@ -121,7 +121,7 @@
    }
  
    // kept for backward compatibility
-   def getOffset(clz: Class[?], name: String): Long = {
+   def getOffset(clz: Class[_], name: String): Long = {
 -    @nowarn
 -    val r = unsafe.objectFieldOffset(clz.getDeclaredField(name))
 -    if (debug)
