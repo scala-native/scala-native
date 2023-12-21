@@ -22,24 +22,24 @@ class BufferedInputStream(_in: InputStream, initialSize: Int)
   // per spec close will release system resources. This implies buf should be set to null
   // post close to ensure GC can release this resource
   /** The internal buffer array where the data is stored. */
-  protected[this] var buf = new Array[Byte](initialSize)
+  protected var buf = new Array[Byte](initialSize)
 
   /** The index one greater than the index of the last valid byte in the buffer.
    */
-  protected[this] var count: Int = 0
+  protected var count: Int = 0
 
   private var closed: Boolean = false
 
   /** The maximum read ahead allowed after a call to the mark method before*
    *  subsequent calls to the reset method fail.
    */
-  protected[this] var marklimit: Int = 0
+  protected var marklimit: Int = 0
 
   /** The value of the pos field at the time the last mark method was called. */
-  protected[this] var markpos: Int = -1
+  protected var markpos: Int = -1
 
   /** The current position in the buffer. */
-  protected[this] var pos: Int = 0
+  protected var pos: Int = 0
 
   override def available(): Int = {
     val (_, in) = ensureOpen()
