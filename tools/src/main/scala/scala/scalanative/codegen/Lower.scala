@@ -767,13 +767,24 @@ object Lower {
           if (genUnwind && unwindHandler.isInitialized) unwind
           else nir.Next.None
         }
-        val safepointAddr = buf.load(nir.Type.Ptr, GCSafepoint, handler)
-        buf.load(
-          nir.Type.Ptr,
-          safepointAddr,
-          handler,
-          Some(nir.MemoryOrder.Unordered)
-        )
+        def invokeGCYield =
+          buf.call(GCYieldSig, GCYield, Nil, handler)
+        def accessGCSafepoint = {
+          val safepointAddr = buf.load(nir.Type.Ptr, GCSafepoint, handler)
+          buf.load(
+            nir.Type.Ptr,
+            safepointAddr,
+            handler,
+            Some(nir.MemoryOrder.Unordered)
+          )
+        }
+        config.gc match {
+          case build.GC.Commix       => invokeGCYield
+          case build.GC.Immix        => accessGCSafepoint
+          case build.GC.Experimental => accessGCSafepoint
+          case build.GC.None | build.GC.Boehm =>
+            util.unreachable
+        }
       }
     }
 
@@ -2013,6 +2024,11 @@ object Lower {
   val GCSafepointName = GC.member(nir.Sig.Extern("scalanative_gc_safepoint"))
   val GCSafepoint = nir.Val.Global(GCSafepointName, nir.Type.Ptr)
 
+  val GCYieldName =
+    GC.member(nir.Sig.Extern("scalanative_gc_yield"))
+  val GCYieldSig = nir.Type.Function(Nil, nir.Type.Unit)
+  val GCYield = nir.Val.Global(GCYieldName, nir.Type.Ptr)
+
   val GCSetMutatorThreadStateSig =
     nir.Type.Function(Seq(nir.Type.Int), nir.Type.Unit)
   val GCSetMutatorThreadState = nir.Val.Global(
@@ -2080,6 +2096,7 @@ object Lower {
     buf += RuntimeNothing.name
     if (platform.isMultithreadingEnabled) {
       buf += GCSafepoint.name
+      buf += GCYield.name
       buf += GCSetMutatorThreadState.name
     }
     buf.toSeq

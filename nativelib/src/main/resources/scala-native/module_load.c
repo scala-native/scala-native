@@ -81,7 +81,7 @@ inline static ModuleRef waitForInitialization(ModuleSlot slot,
             YieldThread();
         else
             sleep_ms(1);
-        scalanative_gc_safepoint_poll();
+        scalanative_gc_yield();
         module = atomic_load_explicit(slot, memory_order_acquire);
     }
     return module;

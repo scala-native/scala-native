@@ -152,7 +152,7 @@ void scalanative_gc_set_mutator_thread_state(MutatorThreadState state) {
 // in lldb, we can ignore SIGBUS and continue by
 // (lldb) pro hand -p true -s false SIGBUS
 // (lldb) continue
-void scalanative_gc_safepoint_poll() {
+void scalanative_gc_yield() {
     void *pollGC = *scalanative_gc_safepoint;
 }
 

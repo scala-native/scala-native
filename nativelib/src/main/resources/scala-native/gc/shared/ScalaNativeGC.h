@@ -72,6 +72,6 @@ extern safepoint_t scalanative_gc_safepoint;
 // Check for StopTheWorld event and wait for its end if needed
 // Used internally only in GC. Scala Native safepoints polling would be inlined
 // in the code.
-void scalanative_gc_safepoint_poll();
+void scalanative_gc_yield();
 
 #endif // SCALA_NATIVE_GC_H
