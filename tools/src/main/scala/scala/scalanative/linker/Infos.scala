@@ -126,7 +126,7 @@ final class Class(
     val hasNoFields =
       fields.isEmpty
     val hasEmptyOrNoCtor = {
-      val ctor = name member Sig.Ctor(Seq.empty)
+      val ctor = name.member(nir.Sig.Ctor(Seq.empty))
       top.infos
         .get(ctor)
         .fold[Boolean] {

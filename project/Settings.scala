@@ -69,7 +69,8 @@ object Settings {
     javaReleaseSettings,
     publishSettings,
     mimaSettings,
-    docsSettings
+    docsSettings,
+    scalacOptions ++= ignoredScalaDeprecations(scalaVersion.value)
   )
 
   def javaReleaseSettings = {
@@ -555,8 +556,7 @@ object Settings {
 
   lazy val toolSettings: Seq[Setting[_]] =
     Def.settings(
-      javacOptions ++= Seq("-encoding", "utf8"),
-      scalacOptions ++= ignoredScalaDeprecations(scalaVersion.value)
+      javacOptions ++= Seq("-encoding", "utf8")
     )
 
   def ignoredScalaDeprecations(scalaVersion: String): Seq[String] = {
@@ -572,7 +572,11 @@ object Settings {
 
     def scala3Deprecations = Seq(
       "`= _` has been deprecated",
-      "`_` is deprecated for wildcard arguments of types"
+      "`_` is deprecated for wildcard arguments of types",
+      // -Wconf msg string cannot contain ':' character, it cannot be escaped
+      /*The syntax `x: _* is */ "no longer supported for vararg splice",
+      "The syntax `<function> _` is no longer supported",
+      "with as a type operator has been deprecated"
     ).map(msg => s"-Wconf:msg=$msg:s")
 
     CrossVersion
@@ -626,8 +630,7 @@ object Settings {
     Compile / scalacOptions ++= scalaNativeCompilerOptions(
       "genStaticForwardersForNonTopLevelObjects"
     ),
-    NIROnlySettings,
-    scalacOptions ++= Settings.ignoredScalaDeprecations(scalaVersion.value),
+    NIROnlySettings
   )
 
   // Calculates all prefixes of the current Scala version
