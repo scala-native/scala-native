@@ -297,7 +297,8 @@ object Build {
       .settings(
         mavenPublishSettings,
         docsSettings,
-        libraryDependencies ++= Deps.NativeLib(scalaVersion.value)
+        libraryDependencies ++= Deps.NativeLib(scalaVersion.value),
+        scalacOptions ++= Settings.ignoredScalaDeprecations(scalaVersion.value)
       )
       .withNativeCompilerPlugin
 

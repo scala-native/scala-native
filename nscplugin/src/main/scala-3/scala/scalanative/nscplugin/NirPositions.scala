@@ -7,6 +7,7 @@ import dotty.tools.dotc.util.{SourceFile, SourcePosition}
 import dotty.tools.dotc.util.Spans.Span
 import GenNIR.URIMap
 import scalanative.nir
+import scala.compiletime.uninitialized
 
 class NirPositions(sourceURIMaps: List[GenNIR.URIMap])(using Context) {
   given fromSourcePosition: Conversion[SourcePosition, nir.Position] = {
@@ -33,8 +34,8 @@ class NirPositions(sourceURIMaps: List[GenNIR.URIMap])(using Context) {
 
   private object conversionCache {
     import dotty.tools.dotc.util._
-    private var lastDotcSource: SourceFile = _
-    private var lastNIRSource: nir.Position.SourceFile = _
+    private var lastDotcSource: SourceFile = uninitialized
+    private var lastNIRSource: nir.Position.SourceFile = uninitialized
 
     def toNIRSource(dotcSource: SourceFile): nir.Position.SourceFile = {
       if (dotcSource != lastDotcSource) {

@@ -22,9 +22,9 @@ import core._
 import dotty.tools.FatalError
 import dotty.tools.dotc.report
 import dotty.tools.dotc.transform
-import transform.SymUtils._
 import transform.{ValueClasses, Erasure}
 import dotty.tools.backend.jvm.DottyBackendInterface.symExtensions
+import scala.scalanative.nscplugin.CompilerCompat.SymUtilsCompat.*
 
 import scala.collection.mutable
 import scala.scalanative.nir

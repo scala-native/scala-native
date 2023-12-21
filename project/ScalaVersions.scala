@@ -23,7 +23,8 @@ object ScalaVersions {
   val crossScala3 = List(
     (0 to 3).map(v => s"3.1.$v"),
     (0 to 2).map(v => s"3.2.$v"),
-    (0 to 1).map(v => s"3.3.$v")
+    (0 to 1).map(v => s"3.3.$v"),
+    Seq("3.4.0-RC1")
   ).flatten
 
   // Version of Scala 3 standard library sources used for publishing

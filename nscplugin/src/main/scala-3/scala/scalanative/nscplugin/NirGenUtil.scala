@@ -6,11 +6,18 @@ import dotty.tools.dotc.core
 import core.Symbols._
 import core.Contexts._
 import core.Types._
+import scala.scalanative.util.ScopedVar
+import scalanative.util.ScopedVar.scoped
+import scala.collection.mutable
+import dotty.tools.dotc.core.Names.Name
+import dotty.tools.dotc.report
+import scala.scalanative.nir
+import scala.compiletime.uninitialized
 import core.Flags._
 import scalanative.util.unsupported
-import scalanative.util.ScopedVar.scoped
 import scalanative.nir.Fresh
 import dotty.tools.dotc.core.Phases
+
 trait NirGenUtil(using Context) { self: NirCodeGen =>
 
   private lazy val materializeClassTagTypes: Map[Symbol, Symbol] = Map(
@@ -166,8 +173,8 @@ trait NirGenUtil(using Context) { self: NirCodeGen =>
 
 object NirGenUtil {
   class ContextCached[T](init: Context ?=> T) {
-    private var lastContext: Context = _
-    private var cached: T = _
+    private var lastContext: Context = uninitialized
+    private var cached: T = uninitialized
 
     def get(using Context): T = {
       if (lastContext != ctx) {
