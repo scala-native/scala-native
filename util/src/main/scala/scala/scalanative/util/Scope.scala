@@ -49,7 +49,7 @@ object Scope {
   private sealed class Impl extends Scope {
     type Resources = List[Resource]
 
-    private[this] val resources = new AtomicReference[Resources](Nil)
+    private val resources = new AtomicReference[Resources](Nil)
 
     def acquire(res: Resource): Unit = {
       resources.getAndUpdate {
