@@ -10,6 +10,8 @@ import scala.scalanative.util.ScopedVar
 import scala.collection.mutable
 import dotty.tools.dotc.core.Names.Name
 import dotty.tools.dotc.report
+import scala.scalanative.nir
+import scala.compiletime.uninitialized
 
 trait NirGenUtil(using Context) { self: NirCodeGen =>
 
@@ -127,8 +129,8 @@ trait NirGenUtil(using Context) { self: NirCodeGen =>
 
 object NirGenUtil {
   class ContextCached[T](init: Context ?=> T) {
-    private var lastContext: Context = _
-    private var cached: T = _
+    private var lastContext: Context = uninitialized
+    private var cached: T = uninitialized
 
     def get(using Context): T = {
       if (lastContext != ctx) {

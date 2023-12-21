@@ -643,7 +643,8 @@ object Settings {
     Compile / scalacOptions ++= scalaNativeCompilerOptions(
       "genStaticForwardersForNonTopLevelObjects"
     ),
-    NIROnlySettings
+    NIROnlySettings,
+    scalacOptions ++= Settings.ignoredScalaDeprecations(scalaVersion.value),
   )
 
   // Calculates all prefixes of the current Scala version

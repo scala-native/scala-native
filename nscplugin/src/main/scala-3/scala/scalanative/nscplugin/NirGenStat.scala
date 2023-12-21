@@ -11,7 +11,7 @@ import core.Constants._
 import core.StdNames._
 import core.Flags._
 import core.Phases._
-import dotty.tools.dotc.transform.SymUtils._
+import scala.scalanative.nscplugin.CompilerCompat.SymUtilsCompat._
 
 import scala.collection.mutable
 import scala.scalanative.nir.Defn.Define.DebugInfo
@@ -669,7 +669,7 @@ trait NirGenStat(using Context) {
 
     def isInheritedField(f: Symbol) =
       classSym.directlyInheritedTraits.exists {
-        _.info.decls.exists(_ matches f.getter)
+        _.info.decls.exists(_.matches(f.getter))
       }
 
     for f <- classSym.info.decls
