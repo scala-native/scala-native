@@ -10,7 +10,7 @@ object AccessMode {
   final val READ = new AccessMode("READ", 1)
   final val WRITE = new AccessMode("WRITE", 1)
 
-  private[this] val cachedValues =
+  private val cachedValues =
     Array(EXECUTE, READ, WRITE)
   def values(): Array[AccessMode] = cachedValues.clone()
   def valueOf(name: String): AccessMode = {

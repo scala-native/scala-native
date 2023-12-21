@@ -90,7 +90,7 @@ class Scala3IssuesTest:
 end Scala3IssuesTest
 
 private object issue2484 {
-  final class CallByNeed[A] private (private[this] var eval: () => A) {
+  final class CallByNeed[A] private (private var eval: () => A) {
     lazy val value: A = {
       val value0 = eval()
       eval = null

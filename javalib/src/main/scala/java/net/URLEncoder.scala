@@ -5,7 +5,7 @@ package java.net
 import scala.annotation.tailrec
 
 object URLEncoder {
-  private[this] val digits = "0123456789ABCDEF".toCharArray
+  private val digits = "0123456789ABCDEF".toCharArray
 
   def encode(s: String, enc: String): String = {
     if (s == null || enc == null) {
@@ -44,7 +44,7 @@ object URLEncoder {
     buf.toString
   }
 
-  private[this] def convert(
+  private def convert(
       s: String,
       buf: java.lang.StringBuilder,
       enc: String

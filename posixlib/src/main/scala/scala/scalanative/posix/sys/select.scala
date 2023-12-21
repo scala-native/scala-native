@@ -39,7 +39,7 @@ object select {
 
   // Linux specifies an array of 64 bit longs.
   // 16 * 64 == 1024 == FD_SETSIZE.
-  private[this] type _16 = Digit2[_1, _6]
+  private type _16 = Digit2[_1, _6]
 
   type fd_set = CStruct1[CArray[CLongInt, _16]]
 

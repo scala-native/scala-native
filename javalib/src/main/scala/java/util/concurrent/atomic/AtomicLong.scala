@@ -2,7 +2,7 @@ package java.util.concurrent.atomic
 
 import java.util.function.LongUnaryOperator
 
-class AtomicLong(private[this] var value: Long)
+class AtomicLong(private var value: Long)
     extends Number
     with Serializable {
   def this() = this(0L)

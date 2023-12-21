@@ -214,7 +214,7 @@ object FileHelpers {
     dir
   }
 
-  private[this] lazy val random = new scala.util.Random()
+  private lazy val random = new scala.util.Random()
 
   private def genTempFile(
       prefix: String,

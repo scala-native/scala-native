@@ -624,7 +624,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
     }
   }
 
-  private[this] def checkWindowsAccess(
+  private def checkWindowsAccess(
       access: windows.DWord
   )(implicit zone: Zone): Boolean = {
     // based on this article https://blog.aaronballman.com/2011/08/how-to-check-access-rights/

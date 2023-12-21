@@ -39,7 +39,7 @@ object FunctionTest {
   private val doubleFunc: Function[Int, Int] = makeFunction(x => x * 2)
   private val incFunc: Function[Int, Int] = makeFunction(x => x + 1)
 
-  private[this] def makeFunction[T, R](f: T => R): Function[T, R] = {
+  private def makeFunction[T, R](f: T => R): Function[T, R] = {
     new Function[T, R] {
       def apply(t: T): R = f(t)
     }

@@ -1246,7 +1246,7 @@ for (cp <- 0 to Character.MAX_CODE_POINT) {
     result
   }
 
-  private[this] final val REGEX_METACHARACTERS = ".$()[{^?*+\\"
+  private final val REGEX_METACHARACTERS = ".$()[{^?*+\\"
   @inline private def isRegexMeta(c: Char) =
     REGEX_METACHARACTERS.indexOf(c) >= 0
 

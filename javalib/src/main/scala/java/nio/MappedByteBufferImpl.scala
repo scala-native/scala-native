@@ -42,7 +42,7 @@ private class MappedByteBufferImpl(
 
   private def genBuffer = GenBuffer[ByteBuffer](this)
   private def genMappedBuffer = GenMappedBuffer[ByteBuffer](this)
-  private[this] implicit def newMappedByteBuffer
+  private implicit def newMappedByteBuffer
       : GenMappedBuffer.NewMappedBuffer[ByteBuffer, Byte] =
     MappedByteBufferImpl.NewMappedByteBuffer
 

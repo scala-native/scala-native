@@ -93,7 +93,7 @@ private[junit] final class JUnitTask(
     reporter.reportRunFinished(failed, ignored, total, timeInSeconds)
   }
 
-  private[this] def executeTestMethod(
+  private def executeTestMethod(
       bootstrapper: Bootstrapper,
       test: TestMetadata,
       reporter: Reporter

@@ -53,7 +53,7 @@ object Status {
   /** Indicates a test was declared as pending. */
   final val Pending = new Status("Pending", 6)
 
-  private[this] val _values: Array[Status] =
+  private val _values: Array[Status] =
     Array(Success, Error, Failure, Skipped, Ignored, Canceled, Pending)
 
   /* No () allows to compile without warning on both Scala 2 & 3.

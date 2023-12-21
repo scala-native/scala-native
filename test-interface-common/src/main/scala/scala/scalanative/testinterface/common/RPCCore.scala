@@ -26,17 +26,17 @@ private[testinterface] abstract class RPCCore()(implicit ec: ExecutionContext) {
   import RPCCore._
 
   /** Pending calls. */
-  private[this] val pending = new java.util.HashMap[Long, PendingCall]
+  private val pending = new java.util.HashMap[Long, PendingCall]
 
   /** Reason why we are closing this RPCCore. If non-null, we are closing. */
   @volatile
-  private[this] var closeReason: Throwable = _
+  private var closeReason: Throwable = _
 
   /** Next call ID we'll assign. */
-  private[this] val nextID = new AtomicLong(0L)
+  private val nextID = new AtomicLong(0L)
 
   /** Currently registered endpoints. */
-  private[this] val endpoints = new java.util.HashMap[OpCode, BoundEndpoint]
+  private val endpoints = new java.util.HashMap[OpCode, BoundEndpoint]
 
   /** Subclass should call this whenever a new message arrives */
   final protected def handleMessage(msg: String): Unit = {

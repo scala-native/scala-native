@@ -88,12 +88,12 @@ private[lang] class WindowsProcess private (
       (hasValidTimeout && hasFinished)
   }
 
-  private[this] val _inputStream =
+  private val _inputStream =
     PipeIO[PipeIO.Stream](this, outHandle, builder.redirectOutput())
-  private[this] val _errorStream =
+  private val _errorStream =
     if (builder.redirectErrorStream()) PipeIO.InputPipeIO.nullStream
     else PipeIO[PipeIO.Stream](this, errHandle, builder.redirectError())
-  private[this] val _outputStream =
+  private val _outputStream =
     PipeIO[OutputStream](this, inHandle, builder.redirectInput())
 
   private def checkExitValue: Option[scala.Int] = {

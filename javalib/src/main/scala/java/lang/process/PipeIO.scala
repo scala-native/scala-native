@@ -83,7 +83,7 @@ private[lang] object PipeIO {
       this.in = new ByteArrayInputStream(readBuf)
     }
 
-    private[this] var drained = false
+    private var drained = false
     private def availableFD() = {
       if (isWindows) {
         val availableTotal = stackalloc[DWord]()

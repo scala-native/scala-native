@@ -2,7 +2,7 @@ package java.util.concurrent.atomic
 
 import java.util.function.IntUnaryOperator
 
-class AtomicInteger(private[this] var value: Int)
+class AtomicInteger(private var value: Int)
     extends Number
     with Serializable {
 
