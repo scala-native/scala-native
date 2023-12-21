@@ -159,12 +159,12 @@ abstract class AbstractList[E] protected ()
     }
   }
 
-  protected[this] def checkIndexInBounds(index: Int): Unit = {
+  protected def checkIndexInBounds(index: Int): Unit = {
     if (index < 0 || index >= size())
       throw new IndexOutOfBoundsException(index.toString)
   }
 
-  protected[this] def checkIndexOnBounds(index: Int): Unit = {
+  protected def checkIndexOnBounds(index: Int): Unit = {
     if (index < 0 || index > size())
       throw new IndexOutOfBoundsException(index.toString)
   }

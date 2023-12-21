@@ -553,15 +553,15 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Float)
     nodeIterator().asInstanceOf[ju.Iterator[Map.Entry[K, V]]]
 
   private final class NodeIterator extends AbstractHashMapIterator[Node[K, V]] {
-    protected[this] def extract(node: Node[K, V]): Node[K, V] = node
+    protected def extract(node: Node[K, V]): Node[K, V] = node
   }
 
   private final class KeyIterator extends AbstractHashMapIterator[K] {
-    protected[this] def extract(node: Node[K, V]): K = node.key
+    protected def extract(node: Node[K, V]): K = node.key
   }
 
   private final class ValueIterator extends AbstractHashMapIterator[V] {
-    protected[this] def extract(node: Node[K, V]): V = node.value
+    protected def extract(node: Node[K, V]): V = node.value
   }
 
   private abstract class AbstractHashMapIterator[A] extends ju.Iterator[A] {
@@ -570,7 +570,7 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Float)
     private var nextNode: Node[K, V] = _ // null
     private var lastNode: Node[K, V] = _ // null
 
-    protected[this] def extract(node: Node[K, V]): A
+    protected def extract(node: Node[K, V]): A
 
     /* Movements of `nextNode` and `nextIdx` are spread over `hasNext()` to
      * simplify initial conditions, and preserving as much performance as
