@@ -95,15 +95,14 @@ installation of Arch Linux.
 
 **FreeBSD 12.4 and later**
 
-.. code-block:: shell
+*Note 1:* Only AMD64 and ARM64 architectures are supported.
 
-    $ pkg install llvm # optional
-    $ pkg install boehm-gc # optional
-
-*Note 1:* Sufficiently recent versions of llvm and zlib come with the
+*Note 2:* Sufficiently recent versions of llvm and zlib come with the
 installation of FreeBSD.
 
-*Note 2:* Only AMD64 and ARM64 architectures are supported.
+.. code-block:: shell
+
+    $ pkg install boehm-gc # optional
 
 *Note 3:* Using the boehm GC with multi-threaded binaries doesn't work
 out-of-the-box yet.
