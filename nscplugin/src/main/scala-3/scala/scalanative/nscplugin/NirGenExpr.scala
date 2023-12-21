@@ -1611,9 +1611,9 @@ trait NirGenExpr(using Context) {
           (sym == defn.ObjectClass) ||
           (sym == defn.JavaSerializableClass) ||
           (sym == defn.ComparableClass) ||
-          (sym derivesFrom defn.BoxedNumberClass) ||
-          (sym derivesFrom defn.BoxedCharClass) ||
-          (sym derivesFrom defn.BoxedBooleanClass)
+          (sym.derivesFrom(defn.BoxedNumberClass)) ||
+          (sym.derivesFrom(defn.BoxedCharClass)) ||
+          (sym.derivesFrom(defn.BoxedBooleanClass))
         }
         usesOnlyScalaTrees && !areSameFinals &&
           isMaybeBoxed(l.tpe.typeSymbol) &&

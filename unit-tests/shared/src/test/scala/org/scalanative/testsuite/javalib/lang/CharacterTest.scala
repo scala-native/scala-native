@@ -496,83 +496,83 @@ class CharacterTest {
 
   @Test def toLowerCaseLow(): Unit = {
     // low chars
-    assertTrue(toLowerCase('\n') equals '\n')
+    assertEquals(toLowerCase('\n'), '\n')
   }
 
   @Test def toLowerCaseAscii(): Unit = {
     // ascii chars
-    assertTrue(toLowerCase('A') equals 'a')
-    assertTrue(toLowerCase('a') equals 'a')
-    assertFalse(toLowerCase('a') equals 'A')
-    assertTrue(toLowerCase('F') equals 'f')
-    assertTrue(toLowerCase('Z') equals 'z')
+    assertEquals(toLowerCase('A'), 'a')
+    assertEquals(toLowerCase('a'), 'a')
+    assertNotEquals(toLowerCase('a'), 'A')
+    assertEquals(toLowerCase('F'), 'f')
+    assertEquals(toLowerCase('Z'), 'z')
   }
 
   @Test def toLowerCaseCompat(): Unit = {
     // compat characters are directly from the DB
     // (03F4,GREEK CAPITAL THETA SYMBOL,Lu,0,L,<compat> 0398,N,,03B8,)
-    assertTrue(toLowerCase(0x03f4) equals 0x03b8)
-    assertTrue(toLowerCase('Θ') equals 'θ')
+    assertEquals(toLowerCase(0x03f4), 0x03b8)
+    assertEquals(toLowerCase('Θ'), 'θ')
     // (2161,ROMAN NUMERAL TWO,Nl,0,L,<compat> 0049 0049,N,,2171,)
-    assertTrue(toLowerCase(0x2161) equals 0x2171)
+    assertEquals(toLowerCase(0x2161), 0x2171)
     // check lower to lower
-    assertTrue(toLowerCase('µ') equals 'µ')
+    assertEquals(toLowerCase('µ'), 'µ')
   }
 
   @Test def toLowerCaseAlt(): Unit = {
     // alternating upper and lower case
     // (256,257,-1,0)(302,303,-1,2)
-    assertTrue(toLowerCase(256) equals 257)
-    assertTrue(toLowerCase(257) equals 257)
-    assertTrue(toLowerCase(258) equals 259)
-    assertTrue(toLowerCase(302) equals 303)
+    assertEquals(toLowerCase(256), 257)
+    assertEquals(toLowerCase(257), 257)
+    assertEquals(toLowerCase(258), 259)
+    assertEquals(toLowerCase(302), 303)
   }
 
   @Test def toLowerCaseHigh(): Unit = {
     // high points
-    assertTrue(toLowerCase(65313) equals 65345)
-    assertTrue(toLowerCase(65338) equals 65370)
-    assertTrue(toLowerCase(65339) equals 65339)
+    assertEquals(toLowerCase(65313), 65345)
+    assertEquals(toLowerCase(65338), 65370)
+    assertEquals(toLowerCase(65339), 65339)
   }
 
   @Test def toLowerCaseAbove(): Unit = {
     // top and above range
-    assertTrue(toLowerCase(0x10ffff) equals 0x10ffff)
-    assertTrue(toLowerCase(0x110000) equals 0x110000)
+    assertEquals(toLowerCase(0x10ffff), 0x10ffff)
+    assertEquals(toLowerCase(0x110000), 0x110000)
   }
 
   @Test def toUpperCaseLow(): Unit = {
     // low chars
-    assertTrue(toUpperCase('\n') equals '\n')
+    assertEquals(toUpperCase('\n'), '\n')
   }
 
   @Test def toUpperCaseAscii(): Unit = {
     // ascii chars
-    assertTrue(toUpperCase('a') equals 'A')
-    assertTrue(toUpperCase('A') equals 'A')
-    assertFalse(toUpperCase('A') equals 'a')
-    assertTrue(toUpperCase('f') equals 'F')
-    assertTrue(toUpperCase('z') equals 'Z')
+    assertEquals(toUpperCase('a'), 'A')
+    assertEquals(toUpperCase('A'), 'A')
+    assertNotEquals(toUpperCase('A'), 'a')
+    assertEquals(toUpperCase('f'), 'F')
+    assertEquals(toUpperCase('z'), 'Z')
 
   }
 
   @Test def toUpperCaseCompat(): Unit = {
     // compat characters are directly from the DB
     // (03D0,GREEK BETA SYMBOL,Ll,0,L,<compat> 03B2,N,0392,,0392)
-    assertTrue(toUpperCase(0x03d0) equals 0x0392)
-    assertTrue(toUpperCase('β') equals 'Β')
+    assertEquals(toUpperCase(0x03d0), 0x0392)
+    assertEquals(toUpperCase('β'), 'Β')
     // (00B5,MICRO SIGN,Ll,0,L,<compat> 03BC,N,039C,,039C)
-    assertTrue(toUpperCase(0x00b5) equals 0x039c)
-    assertTrue(toUpperCase('μ') equals 'Μ')
+    assertEquals(toUpperCase(0x00b5), 0x039c)
+    assertEquals(toUpperCase('μ'), 'Μ')
   }
 
   @Test def toUpperCaseAlt(): Unit = {
     // alternating upper and lower case
     // (257,256,1,0)(303,302,1,2)
-    assertTrue(toUpperCase(257) equals 256)
-    assertTrue(toUpperCase(258) equals 258)
-    assertTrue(toUpperCase(259) equals 258)
-    assertTrue(toUpperCase(303) equals 302)
+    assertEquals(toUpperCase(257), 256)
+    assertEquals(toUpperCase(258), 258)
+    assertEquals(toUpperCase(259), 258)
+    assertEquals(toUpperCase(303), 302)
   }
 
   @Test def toUpperCaseHigh(): Unit = {
@@ -580,20 +580,20 @@ class CharacterTest {
     // (65345,65313,32,0)(65370,65338,32,1)
     // (66600,66560,40,0)(66639,66599,40,1)
     // (71872,71840,32,0)(71903,71871,32,1)
-    assertTrue(toUpperCase(65345) equals 65313)
-    assertTrue(toUpperCase(65370) equals 65338)
-    assertTrue(toUpperCase(66600) equals 66560)
+    assertEquals(toUpperCase(65345), 65313)
+    assertEquals(toUpperCase(65370), 65338)
+    assertEquals(toUpperCase(66600), 66560)
   }
 
   @Test def toUpperCaseAbove(): Unit = {
     // top and above range
-    assertTrue(toUpperCase(0x10ffff) equals 0x10ffff)
-    assertTrue(toUpperCase(0x110000) equals 0x110000)
+    assertEquals(toUpperCase(0x10ffff), 0x10ffff)
+    assertEquals(toUpperCase(0x110000), 0x110000)
   }
 
   @Test def unicodeBlockOf(): Unit = {
-    assertTrue(UnicodeBlock.of('a') equals UnicodeBlock.BASIC_LATIN)
-    assertTrue(UnicodeBlock.of('א') equals UnicodeBlock.HEBREW)
+    assertEquals(UnicodeBlock.of('a'), UnicodeBlock.BASIC_LATIN)
+    assertEquals(UnicodeBlock.of('א'), UnicodeBlock.HEBREW)
   }
 
   // from scala-js tests

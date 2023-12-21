@@ -775,10 +775,10 @@ object UnixProcessGen2 {
       environment: java.util.Map[String, String],
       bin: String
   ): Seq[String] = {
-    if ((bin startsWith "/") || (bin startsWith ".")) {
+    if ((bin.startsWith("/")) || (bin.startsWith("."))) {
       Seq(bin)
     } else {
-      val path = environment get "PATH" match {
+      val path = environment.get("PATH") match {
         case null => "/bin:/usr/bin:/usr/local/bin"
         case p    => p
       }

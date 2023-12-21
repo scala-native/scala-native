@@ -28,73 +28,73 @@ class FloatTest {
   @Test def testEquals(): Unit = {
     val pzero = +0.0f
     val nzero = -0.0f
-    assertTrue(pzero equals pzero)
-    assertTrue(nzero equals nzero)
-    assertFalse(pzero equals nzero)
+    assertTrue(pzero.equals(pzero))
+    assertTrue(nzero.equals(nzero))
+    assertFalse(pzero.equals(nzero))
     val szero = 1.0f - 1.0f
-    assertTrue(pzero equals szero)
+    assertTrue(pzero.equals(szero))
 
     val bpzero: java.lang.Float = pzero
     val bnzero: java.lang.Float = nzero
-    assertFalse(bpzero equals bnzero)
+    assertFalse(bpzero.equals(bnzero))
     val bszero: java.lang.Float = szero
-    assertTrue(bpzero equals bszero)
+    assertTrue(bpzero.equals(bszero))
 
     val num1 = 123.45f
     val num2 = 123.45f
-    assertTrue(num1 equals num2)
+    assertTrue(num1.equals(num2))
 
     val bnum1: java.lang.Float = num1
     val bnum2: java.lang.Float = num2
     assertTrue(bnum1 == bnum2)
     val pmax1 = scala.Float.MaxValue
     val pmax2 = scala.Float.MaxValue
-    assertTrue(pmax1 equals pmax2)
+    assertTrue(pmax1.equals(pmax2))
     val pmax3 = scala.Float.MaxValue + 1
-    assertTrue(pmax1 equals pmax3)
+    assertTrue(pmax1.equals(pmax3))
 
     val bpmax1: java.lang.Float = scala.Float.MaxValue
     val bpmax2: java.lang.Float = scala.Float.MaxValue
-    assertTrue(bpmax1 equals bpmax2)
+    assertTrue(bpmax1.equals(bpmax2))
     val bpmax3: java.lang.Float = scala.Float.MaxValue + 1
-    assertTrue(bpmax1 equals bpmax3)
+    assertTrue(bpmax1.equals(bpmax3))
 
     val pmin1 = scala.Float.MinValue
     val pmin2 = scala.Float.MinValue
-    assertTrue(pmin1 equals pmin2)
+    assertTrue(pmin1.equals(pmin2))
     val pmin3 = scala.Float.MinValue + 1
-    assertTrue(pmin1 equals pmin3)
+    assertTrue(pmin1.equals(pmin3))
 
     val bpmin1: java.lang.Float = scala.Float.MinValue
     val bpmin2: java.lang.Float = scala.Float.MinValue
-    assertTrue(bpmin1 equals bpmin2)
+    assertTrue(bpmin1.equals(bpmin2))
     val bpmin3: java.lang.Float = scala.Float.MinValue + 1
-    assertTrue(bpmin1 equals bpmin3)
+    assertTrue(bpmin1.equals(bpmin3))
 
     val pinf1 = scala.Float.PositiveInfinity
     val pinf2 = scala.Float.MaxValue + scala.Float.MaxValue
-    assertTrue(pinf1 equals pinf2)
+    assertTrue(pinf1.equals(pinf2))
 
     val bpinf1: java.lang.Float = pinf1
     val bpinf2: java.lang.Float = pinf2
-    assertTrue(bpinf1 equals bpinf2)
+    assertTrue(bpinf1.equals(bpinf2))
 
     val ninf1 = scala.Float.NegativeInfinity
     val ninf2 = scala.Float.MinValue + scala.Float.MinValue
-    assertTrue(ninf1 equals ninf2)
+    assertTrue(ninf1.equals(ninf2))
 
     val bninf1: java.lang.Float = ninf1
     val bninf2: java.lang.Float = ninf2
-    assertTrue(bninf1 equals bninf2)
+    assertTrue(bninf1.equals(bninf2))
 
-    assertTrue(Float.NaN equals Float.NaN)
+    assertTrue(Float.NaN.equals(Float.NaN))
 
     val x = Float.NaN
     val y = intBitsToFloat(floatToRawIntBits(x) | 1)
-    assertTrue(x equals y)
+    assertTrue(x.equals(y))
 
     val z = intBitsToFloat(floatToIntBits(x) | 1)
-    assertTrue(x equals z)
+    assertTrue(x.equals(z))
   }
 
   @Test def testEqualEqual(): Unit = {

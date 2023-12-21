@@ -61,7 +61,7 @@ trait Visit { self: Interflow =>
       case meth: Method =>
         visitRoot(meth.name)
       case cls: Class if cls.isModule =>
-        val init = cls.name member nir.Sig.Ctor(Seq.empty)
+        val init = cls.name.member(nir.Sig.Ctor(Seq.empty))
         if (hasOriginal(init)) {
           visitRoot(init)
         }

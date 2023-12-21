@@ -4,7 +4,7 @@ object CompilerCompat {
 
   private object SymUtilsCompatDef:
     val SymUtils = dotty.tools.dotc.core.Symbols
-  
+
   private object SymUtilsCompatSelect:
     import SymUtilsCompatDef._
     object Inner {

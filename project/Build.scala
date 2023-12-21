@@ -134,6 +134,7 @@ object Build {
       ) {
         case (2, _) => Seq("-Xno-patmat-analysis")
       },
+      scalacOptions --= ignoredScalaDeprecations(scalaVersion.value),
       libraryDependencies ++= Deps.JUnitJvm,
       Test / fork := true
     )
@@ -167,7 +168,10 @@ object Build {
     }
 
   lazy val junitPlugin = MultiScalaProject("junitPlugin", file("junit-plugin"))
-    .settings(compilerPluginSettings)
+    .settings(
+      compilerPluginSettings,
+      scalacOptions --= ignoredScalaDeprecations(scalaVersion.value)
+    )
 
   private val withSharedCrossPlatformSources = {
     def sharedSourceDirs(
@@ -466,8 +470,7 @@ object Build {
       .settings(
         publishSettings(Some(VersionScheme.BreakOnMajor)),
         docsSettings,
-        libraryDependencies ++= Deps.NativeLib(scalaVersion.value),
-        scalacOptions ++= Settings.ignoredScalaDeprecations(scalaVersion.value)
+        libraryDependencies ++= Deps.NativeLib(scalaVersion.value)
       )
       .withNativeCompilerPlugin
       .mapBinaryVersions(_ => _.dependsOn(javalibintf % Provided))
@@ -541,7 +544,8 @@ object Build {
       .enablePlugins(MyScalaNativePlugin)
       .settings(
         publishSettings(Some(VersionScheme.BreakOnMajor)),
-        disabledDocsSettings
+        disabledDocsSettings,
+        scalacOptions --= ignoredScalaDeprecations(scalaVersion.value)
       )
       .withNativeCompilerPlugin
       .mapBinaryVersions {
