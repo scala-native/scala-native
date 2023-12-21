@@ -3,7 +3,7 @@
 set -e
 
 HERE="`dirname $0`"
-VERSION=$(sed -nre "s#version[^0-9]+([0-9.]+)#\1#p" $HERE/../.scalafmt.conf)
+VERSION=$(sed -nre "s#[[:space:]]*version[^0-9]+([0-9.]+)#\1#p" $HERE/../.scalafmt.conf)
 COURSIER="$HERE/.coursier"
 SCALAFMT="$HERE/.scalafmt-$VERSION"
 
