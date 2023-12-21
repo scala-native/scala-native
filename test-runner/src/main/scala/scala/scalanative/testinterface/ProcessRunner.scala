@@ -12,7 +12,7 @@ private[testinterface] class ProcessRunner(
     port: Int
 ) extends AutoCloseable {
 
-  private[this] val process = {
+  private val process = {
     // Optional emualator config used internally for testing non amd64 architectures
     val emulatorOpts: List[String] = {
       val optEmulator =
@@ -47,8 +47,8 @@ private[testinterface] class ProcessRunner(
     builder.start()
   }
 
-  private[this] val runnerPromise: Promise[Unit] = Promise[Unit]()
-  private[this] val runner = new Thread {
+  private val runnerPromise: Promise[Unit] = Promise[Unit]()
+  private val runner = new Thread {
     setName("TestRunner")
     override def run(): Unit = {
       val exitCode = process.waitFor()

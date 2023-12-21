@@ -17,7 +17,7 @@ object PosixFilePermission {
 
   def values: Array[PosixFilePermission] = _values.clone()
 
-  private[this] val _values = Array(
+  private val _values = Array(
     OWNER_READ,
     OWNER_WRITE,
     OWNER_EXECUTE,

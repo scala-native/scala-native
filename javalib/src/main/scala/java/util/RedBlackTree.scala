@@ -174,7 +174,7 @@ private[util] object RedBlackTree {
   // ---- comparator helper ----
 
   @inline
-  private[this] def compare[A](key1: Any, key2: A)(implicit
+  private def compare[A](key1: Any, key2: A)(implicit
       comp: Comparator[_ >: A]
   ): Int = {
     /* The implementation of `compare` and/or its generic bridge may perform
@@ -252,7 +252,7 @@ private[util] object RedBlackTree {
   }
 
   @tailrec
-  private[this] def getNode[A, B](node: Node[A, B], key: Any)(implicit
+  private def getNode[A, B](node: Node[A, B], key: Any)(implicit
       comp: Comparator[_ >: A]
   ): Node[A, B] = {
     if (node eq null) {
@@ -454,7 +454,7 @@ private[util] object RedBlackTree {
   }
 
   @tailrec
-  private[this] def fixAfterInsert[A, B](
+  private def fixAfterInsert[A, B](
       tree: Tree[A, B],
       node: Node[A, B]
   ): Unit = {
@@ -576,7 +576,7 @@ private[util] object RedBlackTree {
    * `parent` explicitly from above.
    */
   @tailrec
-  private[this] def fixAfterDelete[A, B](
+  private def fixAfterDelete[A, B](
       tree: Tree[A, B],
       node: Node[A, B],
       parent: Node[A, B]
@@ -675,7 +675,7 @@ private[util] object RedBlackTree {
    *  If `node` has the maximum key (and is, therefore, the last node), this
    *  method returns `null`.
    */
-  private[this] def successor[A, B](node: Node[A, B]): Node[A, B] = {
+  private def successor[A, B](node: Node[A, B]): Node[A, B] = {
     if (node.right ne null) {
       minNodeNonNull(node.right)
     } else {
@@ -694,7 +694,7 @@ private[util] object RedBlackTree {
    *  If `node` has the minimum key (and is, therefore, the first node), this
    *  method returns `null`.
    */
-  private[this] def predecessor[A, B](node: Node[A, B]): Node[A, B] = {
+  private def predecessor[A, B](node: Node[A, B]): Node[A, B] = {
     if (node.left ne null) {
       maxNodeNonNull(node.left)
     } else {
@@ -708,7 +708,7 @@ private[util] object RedBlackTree {
     }
   }
 
-  private[this] def rotateLeft[A, B](tree: Tree[A, B], x: Node[A, B]): Unit = {
+  private def rotateLeft[A, B](tree: Tree[A, B], x: Node[A, B]): Unit = {
     if (x ne null) {
       // assert(x.right ne null)
       val y = x.right
@@ -730,7 +730,7 @@ private[util] object RedBlackTree {
     }
   }
 
-  private[this] def rotateRight[A, B](tree: Tree[A, B], x: Node[A, B]): Unit = {
+  private def rotateRight[A, B](tree: Tree[A, B], x: Node[A, B]): Unit = {
     if (x ne null) {
       // assert(x.left ne null)
       val y = x.left
@@ -758,7 +758,7 @@ private[util] object RedBlackTree {
    *  setting `from`'s parent to the `to`'s previous parent. The children of
    *  `from` are left unchanged.
    */
-  private[this] def transplant[A, B](
+  private def transplant[A, B](
       tree: Tree[A, B],
       to: Node[A, B],
       from: Node[A, B]
@@ -785,12 +785,12 @@ private[util] object RedBlackTree {
   def valuesIterator[A, B](tree: Tree[A, B]): Iterator[B] =
     new ValuesIterator(tree)
 
-  private[this] abstract class AbstractTreeIterator[A, B, R](
+  private abstract class AbstractTreeIterator[A, B, R](
       tree: Tree[A, B],
-      private[this] var nextNode: Node[A, B]
+      private var nextNode: Node[A, B]
   ) extends Iterator[R] {
 
-    private[this] var lastNode: Node[A, B] = _ // null
+    private var lastNode: Node[A, B] = _ // null
 
     protected def advance(node: Node[A, B]): Node[A, B]
     protected def nextResult(node: Node[A, B]): R
@@ -815,26 +815,26 @@ private[util] object RedBlackTree {
     }
   }
 
-  private[this] abstract class TreeIterator[A, B, R](tree: Tree[A, B])
+  private abstract class TreeIterator[A, B, R](tree: Tree[A, B])
       extends AbstractTreeIterator[A, B, R](tree, minNode(tree)) {
 
     protected final def advance(node: Node[A, B]): Node[A, B] =
       successor(node)
   }
 
-  private[this] final class EntriesIterator[A, B](tree: Tree[A, B])
+  private final class EntriesIterator[A, B](tree: Tree[A, B])
       extends TreeIterator[A, B, Map.Entry[A, B]](tree) {
 
     protected def nextResult(node: Node[A, B]): Map.Entry[A, B] = node
   }
 
-  private[this] final class KeysIterator[A, B](tree: Tree[A, B])
+  private final class KeysIterator[A, B](tree: Tree[A, B])
       extends TreeIterator[A, B, A](tree) {
 
     protected def nextResult(node: Node[A, B]): A = node.key
   }
 
-  private[this] final class ValuesIterator[A, B](tree: Tree[A, B])
+  private final class ValuesIterator[A, B](tree: Tree[A, B])
       extends TreeIterator[A, B, B](tree) {
 
     protected def nextResult(node: Node[A, B]): B = node.value
@@ -872,7 +872,7 @@ private[util] object RedBlackTree {
     new ProjectionValuesIterator(tree, start, startKind, end, endKind)
   }
 
-  private[this] abstract class ProjectionIterator[A, B, R](
+  private abstract class ProjectionIterator[A, B, R](
       tree: Tree[A, B],
       start: A,
       startKind: BoundKind,
@@ -892,7 +892,7 @@ private[util] object RedBlackTree {
       ProjectionIterator.nullIfAfterEnd(successor(node), end, endKind)
   }
 
-  private[this] object ProjectionIterator {
+  private object ProjectionIterator {
     @inline
     private def nullIfAfterEnd[A, B](
         node: Node[A, B],
@@ -908,7 +908,7 @@ private[util] object RedBlackTree {
     }
   }
 
-  private[this] final class ProjectionEntriesIterator[A, B](
+  private final class ProjectionEntriesIterator[A, B](
       tree: Tree[A, B],
       start: A,
       startKind: BoundKind,
@@ -926,7 +926,7 @@ private[util] object RedBlackTree {
     def nextResult(node: Node[A, B]): Map.Entry[A, B] = node
   }
 
-  private[this] final class ProjectionKeysIterator[A, B](
+  private final class ProjectionKeysIterator[A, B](
       tree: Tree[A, B],
       start: A,
       startKind: BoundKind,
@@ -944,7 +944,7 @@ private[util] object RedBlackTree {
     def nextResult(node: Node[A, B]): A = node.key
   }
 
-  private[this] final class ProjectionValuesIterator[A, B](
+  private final class ProjectionValuesIterator[A, B](
       tree: Tree[A, B],
       start: A,
       startKind: BoundKind,
@@ -1035,7 +1035,7 @@ private[util] object RedBlackTree {
     new DescendingValuesIterator(tree, start, startKind, end, endKind)
   }
 
-  private[this] abstract class DescendingTreeIterator[A, B, R](
+  private abstract class DescendingTreeIterator[A, B, R](
       tree: Tree[A, B],
       start: A,
       startKind: BoundKind,
@@ -1055,7 +1055,7 @@ private[util] object RedBlackTree {
       DescendingTreeIterator.nullIfBeforeEnd(predecessor(node), end, endKind)
   }
 
-  private[this] object DescendingTreeIterator {
+  private object DescendingTreeIterator {
     @inline
     private def nullIfBeforeEnd[A, B](
         node: Node[A, B],
@@ -1071,7 +1071,7 @@ private[util] object RedBlackTree {
     }
   }
 
-  private[this] final class DescendingEntriesIterator[A, B](
+  private final class DescendingEntriesIterator[A, B](
       tree: Tree[A, B],
       start: A,
       startKind: BoundKind,
@@ -1089,7 +1089,7 @@ private[util] object RedBlackTree {
     def nextResult(node: Node[A, B]): Map.Entry[A, B] = node
   }
 
-  private[this] final class DescendingKeysIterator[A, B](
+  private final class DescendingKeysIterator[A, B](
       tree: Tree[A, B],
       start: A,
       startKind: BoundKind,
@@ -1107,7 +1107,7 @@ private[util] object RedBlackTree {
     def nextResult(node: Node[A, B]): A = node.key
   }
 
-  private[this] final class DescendingValuesIterator[A, B](
+  private final class DescendingValuesIterator[A, B](
       tree: Tree[A, B],
       start: A,
       startKind: BoundKind,

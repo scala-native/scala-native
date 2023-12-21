@@ -4,8 +4,8 @@ package java.security.cert
 
 @SerialVersionUID(6219492851589449162L)
 class CertificateEncodingException(
-    private[this] val message: String,
-    private[this] val cause: Throwable
+    private val message: String,
+    private val cause: Throwable
 ) extends CertificateException(message, cause) {
   def this(msg: String) = this(msg, null)
 

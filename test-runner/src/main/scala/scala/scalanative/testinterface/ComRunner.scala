@@ -29,9 +29,9 @@ private[testinterface] class ComRunner(
   }
 
   @volatile
-  private[this] var state: State = AwaitingConnection(Nil)
+  private var state: State = AwaitingConnection(Nil)
 
-  private[this] val promise: Promise[Unit] = Promise[Unit]()
+  private val promise: Promise[Unit] = Promise[Unit]()
 
   // TODO replace this with scheduled tasks on the execution context.
   new Thread {

@@ -25,7 +25,7 @@ private[testinterface] final class RunMuxRPC(rpc: RPCCore) {
    *  Access to the outer map needs to synchronized. Access to the inner map
    *  only needs to be synchronize for writing.
    */
-  private[this] val mux =
+  private val mux =
     mutable.Map.empty[RPCCore.OpCode, java.util.HashMap[RunID, _]]
 
   def call[Req](ep: MuxRPCEndpoint[Req], runId: RunID)(

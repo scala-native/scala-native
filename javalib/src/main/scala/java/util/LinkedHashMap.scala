@@ -136,8 +136,8 @@ class LinkedHashMap[K, V](
 
   private abstract class AbstractLinkedHashMapIterator[A]
       extends ju.Iterator[A] {
-    private[this] var nextNode: Node[K, V] = eldest
-    private[this] var lastNode: Node[K, V] = _
+    private var nextNode: Node[K, V] = eldest
+    private var lastNode: Node[K, V] = _
 
     protected[this] def extract(node: Node[K, V]): A
 

@@ -19,7 +19,7 @@ object StandardOpenOption {
 
   def values(): Array[StandardOpenOption] = _values.clone()
 
-  private[this] val _values = Array(
+  private val _values = Array(
     READ,
     WRITE,
     APPEND,

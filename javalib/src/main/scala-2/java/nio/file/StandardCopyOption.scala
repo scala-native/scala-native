@@ -12,7 +12,7 @@ object StandardCopyOption {
 
   def values(): Array[StandardCopyOption] = _values.clone()
 
-  private[this] val _values =
+  private val _values =
     Array(REPLACE_EXISTING, COPY_ATTRIBUTES, ATOMIC_MOVE)
 
 }

@@ -2,9 +2,9 @@ package java.io
 
 class StringReader(s: String) extends Reader {
 
-  private[this] var closed = false
-  private[this] var pos = 0
-  private[this] var mark = 0
+  private var closed = false
+  private var pos = 0
+  private var mark = 0
 
   override def close(): Unit = {
     closed = true

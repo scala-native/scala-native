@@ -16,7 +16,7 @@ trait NativeThread {
 
   val thread: Thread
 
-  @volatile private[this] var _state: State = State.New
+  @volatile private var _state: State = State.New
   def state: State = _state
   protected[runtime] def state_=(newState: State): Unit = _state match {
     case State.Terminated => ()

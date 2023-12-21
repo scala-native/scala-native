@@ -366,7 +366,7 @@ object Thread {
     final val TIMED_WAITING = new State("TIMED_WAITING", 4)
     final val TERMINATED = new State("TERMINATED", 5)
 
-    private[this] val cachedValues =
+    private val cachedValues =
       Array(NEW, RUNNABLE, BLOCKED, WAITING, TIMED_WAITING, TERMINATED)
     def values(): Array[State] = cachedValues.clone()
     def valueOf(name: String): State = {

@@ -98,7 +98,7 @@ private[lang] object StackTrace {
 
 class Throwable protected (
     s: String,
-    private[this] var e: Throwable,
+    private var e: Throwable,
     enableSuppression: scala.Boolean,
     writableStackTrace: scala.Boolean
 ) extends Object
@@ -113,14 +113,14 @@ class Throwable protected (
 
   def this(e: Throwable) = this(if (e == null) null else e.toString, e)
 
-  private[this] var stackTrace: Array[StackTraceElement] = _
+  private var stackTrace: Array[StackTraceElement] = _
 
   if (writableStackTrace)
     fillInStackTrace()
 
   // We use an Array rather than, say, a List, so that Throwable does not
   // depend on the Scala collections.
-  private[this] var suppressed: Array[Throwable] = _
+  private var suppressed: Array[Throwable] = _
 
   final def addSuppressed(exception: Throwable): Unit = {
     if (exception eq null) {

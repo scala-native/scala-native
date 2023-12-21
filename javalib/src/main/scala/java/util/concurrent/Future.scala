@@ -109,7 +109,7 @@ object Future {
     final val FAILED = new State("FAILED", 2)
     final val CANCELLED = new State("CANCELLED", 3)
 
-    private[this] val cachedValues =
+    private val cachedValues =
       Array(RUNNING, SUCCESS, FAILED, CANCELLED)
     def values(): Array[State] = cachedValues.clone()
     def valueOf(name: String): State = {

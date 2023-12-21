@@ -10,17 +10,17 @@ class BufferedReader(in: Reader, sz: Int) extends Reader {
 
   def this(in: Reader) = this(in, 4096)
 
-  private[this] var buf = new Array[Char](sz)
+  private var buf = new Array[Char](sz)
 
   /** Last valid value in the buffer (exclusive) */
-  private[this] var end = 0
+  private var end = 0
 
   /** Next position to read from buffer */
-  private[this] var pos = 0
+  private var pos = 0
 
-  private[this] var closed = false
+  private var closed = false
 
-  private[this] var validMark = false
+  private var validMark = false
 
   override def close(): Unit = if (!closed) {
     in.close()

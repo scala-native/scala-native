@@ -55,7 +55,7 @@ object SafeZone {
   transparent inline def zone(using sz: SafeZone^): SafeZone^{sz} = sz
 
   private class MemorySafeZone (private[scalanative] val handle: RawPtr) extends SafeZone {
-    private[this] var flagIsOpen = true
+    private var flagIsOpen = true
     override def isOpen: Boolean = flagIsOpen
     override def close(): Unit = {
       checkOpen()
