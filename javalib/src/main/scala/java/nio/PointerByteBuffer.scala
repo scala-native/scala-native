@@ -14,7 +14,7 @@ private[nio] final class PointerByteBuffer private (
   position(_initialPosition)
   limit(_initialLimit)
 
-  private[this] implicit def newPointerByteBuffer
+  private implicit def newPointerByteBuffer
       : GenPointerBuffer.NewPointerBuffer[ByteBuffer] =
     PointerByteBuffer.NewPointerByteBuffer
 

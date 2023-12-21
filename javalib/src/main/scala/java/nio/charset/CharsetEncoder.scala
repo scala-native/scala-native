@@ -8,7 +8,7 @@ abstract class CharsetEncoder protected (
     cs: Charset,
     _averageBytesPerChar: Float,
     _maxBytesPerChar: Float,
-    private[this] var _replacement: Array[Byte]
+    private var _replacement: Array[Byte]
 ) {
 
   import CharsetEncoder._
@@ -23,14 +23,14 @@ abstract class CharsetEncoder protected (
 
   // Config
 
-  private[this] var _malformedInputAction: CodingErrorAction =
+  private var _malformedInputAction: CodingErrorAction =
     CodingErrorAction.REPORT
-  private[this] var _unmappableCharacterAction: CodingErrorAction =
+  private var _unmappableCharacterAction: CodingErrorAction =
     CodingErrorAction.REPORT
 
   // Status
 
-  private[this] var status: Int = INIT
+  private var status: Int = INIT
 
   // Methods
 

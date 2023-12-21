@@ -16,7 +16,7 @@ import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
 import java.util.function.{LongBinaryOperator, LongUnaryOperator}
 
 @SerialVersionUID(1927816293512124184L)
-class AtomicLong(private[this] var value: Long)
+class AtomicLong(private var value: Long)
     extends Number
     with Serializable {
 

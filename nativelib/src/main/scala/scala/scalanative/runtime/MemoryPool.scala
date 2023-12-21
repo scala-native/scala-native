@@ -15,9 +15,9 @@ import scala.scalanative.meta.LinktimeInfo.asanEnabled
  *  Memory is reclaimed back to underlying allocator once the pool is finalized.
  */
 final class MemoryPool private {
-  private[this] var chunkPageCount: USize = MemoryPool.MIN_PAGE_COUNT
-  private[this] var chunk: MemoryPool.Chunk = null
-  private[this] var page: MemoryPool.Page = null
+  private var chunkPageCount: USize = MemoryPool.MIN_PAGE_COUNT
+  private var chunk: MemoryPool.Chunk = null
+  private var page: MemoryPool.Page = null
   allocateChunk()
 
   /** Allocate a chunk of memory from system allocator. */
@@ -90,11 +90,11 @@ object MemoryPool {
  *  sequentially in pages that are claimed from memory pool. Larger allocations
  *  are allocated using the system allocator and persisted in an array buffer.
  */
-final class MemoryPoolZone(private[this] val pool: MemoryPool) extends Zone {
-  private[this] var tailPage = pool.claim()
-  private[this] var headPage = tailPage
-  private[this] var largeAllocations: scala.Array[Ptr[_]] = null
-  private[this] var largeOffset = 0
+final class MemoryPoolZone(private val pool: MemoryPool) extends Zone {
+  private var tailPage = pool.claim()
+  private var headPage = tailPage
+  private var largeAllocations: scala.Array[Ptr[_]] = null
+  private var largeOffset = 0
 
   private def checkOpen(): Unit =
     if (!isOpen)

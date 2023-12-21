@@ -14,15 +14,15 @@ abstract class CharsetDecoder protected (
 
   // Config
 
-  private[this] var _replacement: String = "\uFFFD"
-  private[this] var _malformedInputAction: CodingErrorAction =
+  private var _replacement: String = "\uFFFD"
+  private var _malformedInputAction: CodingErrorAction =
     CodingErrorAction.REPORT
-  private[this] var _unmappableCharacterAction: CodingErrorAction =
+  private var _unmappableCharacterAction: CodingErrorAction =
     CodingErrorAction.REPORT
 
   // Status
 
-  private[this] var status: Int = INIT
+  private var status: Int = INIT
 
   // Methods
 

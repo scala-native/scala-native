@@ -32,8 +32,8 @@ private[util] abstract class FormatterImpl protected (
     dest = new JStringBuilder()
   }
 
-  private[this] var closed: Boolean = false
-  private[this] var lastIOException: IOException = null
+  private var closed: Boolean = false
+  private var lastIOException: IOException = null
 
   @inline
   private def trapIOExceptions(body: => Unit): Unit = {

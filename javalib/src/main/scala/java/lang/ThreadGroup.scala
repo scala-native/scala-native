@@ -15,10 +15,10 @@ class ThreadGroup(
 ) extends UncaughtExceptionHandler {
 
   // Array of weak references to subgroups of this ThreadGroup
-  private[this] var weekSubgroups: Array[WeakReference[ThreadGroup]] =
+  private var weekSubgroups: Array[WeakReference[ThreadGroup]] =
     new Array(4)
   // Current number of populated subgroups
-  private[this] var subgroups = 0
+  private var subgroups = 0
 
   def this(parent: ThreadGroup, name: String) = {
     this(

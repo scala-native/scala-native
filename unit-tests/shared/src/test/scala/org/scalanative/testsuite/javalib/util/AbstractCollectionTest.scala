@@ -48,8 +48,8 @@ object AbstractCollectionFactory {
         private var iterInner: Array[AnyRef]
     ) extends ju.Iterator[E] {
 
-      private[this] var nextIndex: Int = 0
-      private[this] var canRemove: Boolean = false
+      private var nextIndex: Int = 0
+      private var canRemove: Boolean = false
 
       def hasNext(): Boolean = {
         checkConcurrentModification()

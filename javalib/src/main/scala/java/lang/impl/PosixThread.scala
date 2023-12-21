@@ -27,7 +27,7 @@ private[java] class PosixThread(val thread: Thread, stackSize: Long)
   import NativeThread._
   import PosixThread._
 
-  private[this] val _state = new scala.Array[scala.Byte](StateSize)
+  private val _state = new scala.Array[scala.Byte](StateSize)
   @volatile private[impl] var sleepInterruptEvent: CInt = UnsetEvent
   @volatile private var counter: Int = 0
   // index of currently used condition
@@ -352,7 +352,7 @@ private[java] class PosixThread(val thread: Thread, stackSize: Long)
 private[lang] object PosixThread extends NativeThread.Companion {
   override type Impl = PosixThread
 
-  private[this] val _state = new scala.Array[scala.Byte](CompanionStateSize)
+  private val _state = new scala.Array[scala.Byte](CompanionStateSize)
 
   if (isMultithreadingEnabled) {
     checkStatus("relative-time conditions attrs init") {

@@ -75,9 +75,9 @@ class PriorityQueue[E] private (
 
   // The index 0 is not used; the root is at index 1.
   // This is standard practice in binary heaps, to simplify arithmetics.
-  private[this] var inner = new Array[Any](16).asInstanceOf[Array[E]]
+  private var inner = new Array[Any](16).asInstanceOf[Array[E]]
   // Size of the objects stored in the inner array
-  private[this] var innerNextIdx = 1
+  private var innerNextIdx = 1
 
   override def add(e: E): Boolean = {
     if (e == null)
@@ -156,10 +156,10 @@ class PriorityQueue[E] private (
 
   def iterator(): Iterator[E] = {
     new Iterator[E] {
-      private[this] var inner: Array[E] = PriorityQueue.this.inner
-      private[this] var innerSize = innerNextIdx
-      private[this] var nextIdx: Int = 1
-      private[this] var last: E = _ // null
+      private var inner: Array[E] = PriorityQueue.this.inner
+      private var innerSize = innerNextIdx
+      private var nextIdx: Int = 1
+      private var last: E = _ // null
 
       def hasNext(): Boolean = nextIdx < innerSize
 
@@ -239,7 +239,7 @@ class PriorityQueue[E] private (
    *  or down the tree, depending on which side is found to violate the heap
    *  property.
    */
-  private[this] def fixUpOrDown(m: Int): Unit = {
+  private def fixUpOrDown(m: Int): Unit = {
     val inner = this.inner // local copy
     if (m > 1 && comp.compare(inner(m >> 1), inner(m)) > 0)
       fixUp(m)
@@ -250,7 +250,7 @@ class PriorityQueue[E] private (
   /** Fixes the heap property from the child at index `m` up the tree, towards
    *  the root.
    */
-  private[this] def fixUp(m: Int): Unit = {
+  private def fixUp(m: Int): Unit = {
     val inner = this.inner // local copy
 
     /* At each step, even though `m` changes, the element moves with it, and
@@ -277,7 +277,7 @@ class PriorityQueue[E] private (
   /** Fixes the heap property from the child at index `m` down the tree, towards
    *  the leaves.
    */
-  private[this] def fixDown(m: Int): Unit = {
+  private def fixDown(m: Int): Unit = {
     val inner = this.inner // local copy
     val size = innerNextIdx - 1
 

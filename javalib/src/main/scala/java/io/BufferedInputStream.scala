@@ -28,7 +28,7 @@ class BufferedInputStream(_in: InputStream, initialSize: Int)
    */
   protected[this] var count: Int = 0
 
-  private[this] var closed: Boolean = false
+  private var closed: Boolean = false
 
   /** The maximum read ahead allowed after a call to the mark method before*
    *  subsequent calls to the reset method fail.

@@ -6,27 +6,27 @@ import java.nio.charset._
 import java.util.Objects
 
 class InputStreamReader(
-    private[this] var in: InputStream,
-    private[this] var decoder: CharsetDecoder
+    private var in: InputStream,
+    private var decoder: CharsetDecoder
 ) extends Reader {
 
   Objects.requireNonNull(in)
   Objects.requireNonNull(decoder)
 
-  private[this] var closed: Boolean = false
+  private var closed: Boolean = false
 
   /** Buffer in which to read bytes from the underlying input stream.
    *
    *  Class invariant: contains bytes already read from `in` but not yet
    *  decoded.
    */
-  private[this] var inBuf: ByteBuffer = ByteBuffer.allocate(4096)
+  private var inBuf: ByteBuffer = ByteBuffer.allocate(4096)
   inBuf.limit(0)
 
   /** Tells whether the end of the underlying input stream has been reached.
    *  Class invariant: if true, then `in.read()` has returned -1.
    */
-  private[this] var endOfInput: Boolean = false
+  private var endOfInput: Boolean = false
 
   /** Buffer in which to decode bytes into chars. Usually, it is not used,
    *  because we try to decode directly to the destination array. So as long as
@@ -35,7 +35,7 @@ class InputStreamReader(
    *  Class invariant: contains chars already decoded but not yet *read* by the
    *  user of this instance.
    */
-  private[this] var outBuf: CharBuffer =
+  private var outBuf: CharBuffer =
     InputStreamReader.CommonEmptyCharBuffer
 
   def this(in: InputStream, charset: Charset) =

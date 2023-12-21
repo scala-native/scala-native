@@ -23,12 +23,12 @@ final class TestAdapter(config: TestAdapter.Config) {
   )
 
   /** Map of ThreadId -> ManagedRunner */
-  private[this] val runners = TrieMap.empty[Long, ManagedRunner]
+  private val runners = TrieMap.empty[Long, ManagedRunner]
 
   /** State management. May only be accessed under synchronization. */
-  private[this] var closed = false
-  private[this] var nextRunID = 0
-  private[this] var runs = Set.empty[RunMux.RunID]
+  private var closed = false
+  private var nextRunID = 0
+  private var runs = Set.empty[RunMux.RunID]
 
   /** A custom execution context that delegates to the global one for execution,
    *  but handles failures internally.

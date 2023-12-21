@@ -98,7 +98,7 @@ object BiPredicateTest {
       throw new AssertionError(s"dontCallPredicate.test($t, $u)")
   }
 
-  private[this] def makeBiPredicate[T, U](
+  private def makeBiPredicate[T, U](
       f: (T, U) => Boolean
   ): BiPredicate[T, U] = {
     new BiPredicate[T, U] {

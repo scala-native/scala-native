@@ -10,7 +10,7 @@ import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 class InputStreamReaderTest {
   class MockInputStream extends InputStream {
-    private[this] var _closed: Boolean = false
+    private var _closed: Boolean = false
 
     def isClosed: Boolean = _closed
 
