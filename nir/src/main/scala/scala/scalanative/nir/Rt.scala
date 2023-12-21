@@ -40,17 +40,17 @@ object Rt {
   val ToRawPtrSig = Sig.Method("toRawPtr", Seq(BoxedPtr, Ptr)).mangled
 
   val ClassName = Class.name
-  val ClassIdName = ClassName member Sig.Field("id")
-  val ClassTraitIdName = ClassName member Sig.Field("traitId")
-  val ClassNameName = ClassName member Sig.Field("name")
-  val ClassSizeName = ClassName member Sig.Field("size")
-  val ClassIdRangeUntilName = ClassName member Sig.Field("idRangeUntil")
+  val ClassIdName = ClassName.member(Sig.Field("id"))
+  val ClassTraitIdName = ClassName.member(Sig.Field("traitId"))
+  val ClassNameName = ClassName.member(Sig.Field("name"))
+  val ClassSizeName = ClassName.member(Sig.Field("size"))
+  val ClassIdRangeUntilName = ClassName.member(Sig.Field("idRangeUntil"))
 
   val StringName = String.name
-  val StringValueName = StringName member Sig.Field("value")
-  val StringOffsetName = StringName member Sig.Field("offset")
-  val StringCountName = StringName member Sig.Field("count")
-  val StringCachedHashCodeName = StringName member Sig.Field("cachedHashCode")
+  val StringValueName = StringName.member(Sig.Field("value"))
+  val StringOffsetName = StringName.member(Sig.Field("offset"))
+  val StringCountName = StringName.member(Sig.Field("count"))
+  val StringCachedHashCodeName = StringName.member(Sig.Field("cachedHashCode"))
 
   val PrimitiveTypes: Seq[Global.Top] = Seq(
     "Byte",
