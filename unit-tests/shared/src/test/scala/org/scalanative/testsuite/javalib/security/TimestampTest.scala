@@ -15,7 +15,7 @@ import org.scalanative.testsuite.utils.AssertThrows.assertThrows
  */
 class TimestampTest {
 
-  private[this] val now: Date = new Date()
+  private val now: Date = new Date()
 
   case object MockCertificate extends java.security.cert.Certificate("") {
     override def getEncoded: Array[Byte] = Array.empty[Byte]

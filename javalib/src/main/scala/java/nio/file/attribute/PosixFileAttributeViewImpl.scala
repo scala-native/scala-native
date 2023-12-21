@@ -84,13 +84,13 @@ final class PosixFileAttributeViewImpl(path: Path, options: Array[LinkOption])
 
   private def attributes =
     new PosixFileAttributes {
-      private[this] var st_ino: stat.ino_t = _
-      private[this] var st_uid: stat.uid_t = _
-      private[this] var st_gid: stat.gid_t = _
-      private[this] var st_size: unistd.off_t = _
-      private[this] var st_atime: time.time_t = _
-      private[this] var st_mtime: time.time_t = _
-      private[this] var st_mode: stat.mode_t = _
+      private var st_ino: stat.ino_t = _
+      private var st_uid: stat.uid_t = _
+      private var st_gid: stat.gid_t = _
+      private var st_size: unistd.off_t = _
+      private var st_atime: time.time_t = _
+      private var st_mtime: time.time_t = _
+      private var st_mode: stat.mode_t = _
 
       Zone { implicit z =>
         val buf = getStat()

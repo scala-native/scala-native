@@ -9,8 +9,8 @@ import java.util.function.Consumer
 // inner: The underlying array
 // _size: Keeps the track of the effective size of the underlying array. a.k.a. end index exclusive
 class ArrayList[E] private (
-    private[this] var inner: Array[Any],
-    private[this] var _size: Int
+    private var inner: Array[Any],
+    private var _size: Int
 ) extends AbstractList[E]
     with List[E]
     with RandomAccess
@@ -54,15 +54,15 @@ class ArrayList[E] private (
   def this() = this(10)
 
   // by default, doubles the capacity. this mimicks C++ <vector> compiled by clang++-4.0.0
-  private[this] def expand(): Unit = expand(inner.length * 2 max 1)
+  private def expand(): Unit = expand(inner.length * 2 max 1)
 
-  private[this] def expand(newCapacity: Int): Unit = {
+  private def expand(newCapacity: Int): Unit = {
     val newArr = Array.ofDim[Any](newCapacity)
     inner.copyToArray(newArr, 0, size())
     inner = newArr
   }
 
-  private[this] def capacity(): Int = inner.length
+  private def capacity(): Int = inner.length
 
   def trimToSize(): Unit = expand(size())
 

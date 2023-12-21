@@ -435,11 +435,11 @@ object Character {
   }
 
   @inline
-  private[this] def getTypeLT256(codePoint: Int): scala.Byte =
+  private def getTypeLT256(codePoint: Int): scala.Byte =
     charTypesFirst256(codePoint)
 
   // Ported from Scala.js, commit: ac38a148, dated: 2020-09-25
-  private[this] def getTypeGE256(codePoint: Int): scala.Byte = {
+  private def getTypeGE256(codePoint: Int): scala.Byte = {
     charTypes(
       findIndexOfRange(charTypeIndices, codePoint, hasEmptyRanges = false)
     )
@@ -468,7 +468,7 @@ object Character {
    *  digits 1 to 9, in order. Conversely, there are no other non-ASCII code
    *  point mapping to digits from 0 to 9.
    */
-  private[this] lazy val nonASCIIZeroDigitCodePoints: Array[Int] = {
+  private lazy val nonASCIIZeroDigitCodePoints: Array[Int] = {
     Array[Int](0x660, 0x6f0, 0x7c0, 0x966, 0x9e6, 0xa66, 0xae6, 0xb66, 0xbe6,
       0xc66, 0xce6, 0xd66, 0xe50, 0xed0, 0xf20, 0x1040, 0x1090, 0x17e0, 0x1810,
       0x1946, 0x19d0, 0x1a80, 0x1a90, 0x1b50, 0x1bb0, 0x1c40, 0x1c50, 0xa620,
@@ -563,7 +563,7 @@ object Character {
   def isSpaceChar(codePoint: Int): scala.Boolean =
     isSpaceCharImpl(getType(codePoint))
 
-  @inline private[this] def isSpaceCharImpl(tpe: Int): scala.Boolean =
+  @inline private def isSpaceCharImpl(tpe: Int): scala.Boolean =
     tpe == SPACE_SEPARATOR || tpe == LINE_SEPARATOR || tpe == PARAGRAPH_SEPARATOR
 
   // --- UTF-16 surrogate pairs handling ---
@@ -601,7 +601,7 @@ object Character {
       isLowerCaseGE256(c)
   }
 
-  private[this] def isLowerCaseGE256(c: Int): scala.Boolean = {
+  private def isLowerCaseGE256(c: Int): scala.Boolean = {
     ('\u02B0' <= c && c <= '\u02B8') || ('\u02C0' <= c && c <= '\u02C1') ||
     ('\u02E0' <= c && c <= '\u02E4') || c == '\u0345' || c == '\u037A' ||
     ('\u1D2C' <= c && c <= '\u1D6A') || c == '\u1D78' ||
@@ -636,7 +636,7 @@ object Character {
     if (cp < 256) false
     else isTitleCaseImpl(getTypeGE256(cp))
 
-  @inline private[this] def isTitleCaseImpl(tpe: Int): scala.Boolean =
+  @inline private def isTitleCaseImpl(tpe: Int): scala.Boolean =
     tpe == TITLECASE_LETTER
 
   def isDigit(c: scala.Char): scala.Boolean =
@@ -646,7 +646,7 @@ object Character {
     if (cp < 256) '0' <= cp && cp <= '9'
     else isDigitImpl(getTypeGE256(cp))
 
-  @inline private[this] def isDigitImpl(tpe: Int): scala.Boolean =
+  @inline private def isDigitImpl(tpe: Int): scala.Boolean =
     tpe == DECIMAL_DIGIT_NUMBER
 
   def isDefined(c: scala.Char): scala.Boolean =
@@ -662,7 +662,7 @@ object Character {
 
   def isLetter(cp: Int): scala.Boolean = isLetterImpl(getType(cp))
 
-  @inline private[this] def isLetterImpl(tpe: Int): scala.Boolean = {
+  @inline private def isLetterImpl(tpe: Int): scala.Boolean = {
     tpe == UPPERCASE_LETTER || tpe == LOWERCASE_LETTER ||
     tpe == TITLECASE_LETTER || tpe == MODIFIER_LETTER || tpe == OTHER_LETTER
   }
@@ -673,13 +673,13 @@ object Character {
   def isLetterOrDigit(cp: Int): scala.Boolean =
     isLetterOrDigitImpl(getType(cp))
 
-  @inline private[this] def isLetterOrDigitImpl(tpe: Int): scala.Boolean =
+  @inline private def isLetterOrDigitImpl(tpe: Int): scala.Boolean =
     isDigitImpl(tpe) || isLetterImpl(tpe)
 
   def isJavaLetter(ch: scala.Char): scala.Boolean =
     isJavaLetterImpl(getType(ch))
 
-  @inline private[this] def isJavaLetterImpl(tpe: Int): scala.Boolean = {
+  @inline private def isJavaLetterImpl(tpe: Int): scala.Boolean = {
     isLetterImpl(tpe) || tpe == LETTER_NUMBER || tpe == CURRENCY_SYMBOL ||
     tpe == CONNECTOR_PUNCTUATION
   }
@@ -687,7 +687,7 @@ object Character {
   def isJavaLetterOrDigit(ch: scala.Char): scala.Boolean =
     isJavaLetterOrDigitImpl(ch, getType(ch))
 
-  @inline private[this] def isJavaLetterOrDigitImpl(
+  @inline private def isJavaLetterOrDigitImpl(
       codePoint: Int,
       tpe: Int
   ): scala.Boolean = {
@@ -718,7 +718,7 @@ object Character {
     isJavaIdentifierStartImpl(getType(codePoint))
 
   @inline
-  private[this] def isJavaIdentifierStartImpl(tpe: Int): scala.Boolean = {
+  private def isJavaIdentifierStartImpl(tpe: Int): scala.Boolean = {
     isLetterImpl(tpe) || tpe == LETTER_NUMBER || tpe == CURRENCY_SYMBOL ||
     tpe == CONNECTOR_PUNCTUATION
   }
@@ -729,7 +729,7 @@ object Character {
   def isJavaIdentifierPart(codePoint: Int): scala.Boolean =
     isJavaIdentifierPartImpl(codePoint, getType(codePoint))
 
-  @inline private[this] def isJavaIdentifierPartImpl(
+  @inline private def isJavaIdentifierPartImpl(
       codePoint: Int,
       tpe: Int
   ): scala.Boolean = {
@@ -746,7 +746,7 @@ object Character {
     isUnicodeIdentifierStartImpl(getType(codePoint))
 
   @inline
-  private[this] def isUnicodeIdentifierStartImpl(tpe: Int): scala.Boolean =
+  private def isUnicodeIdentifierStartImpl(tpe: Int): scala.Boolean =
     isLetterImpl(tpe) || tpe == LETTER_NUMBER
 
   def isUnicodeIdentifierPart(ch: scala.Char): scala.Boolean =
@@ -768,7 +768,7 @@ object Character {
   def isIdentifierIgnorable(codePoint: Int): scala.Boolean =
     isIdentifierIgnorableImpl(codePoint, getType(codePoint))
 
-  @inline private[this] def isIdentifierIgnorableImpl(
+  @inline private def isIdentifierIgnorableImpl(
       codePoint: Int,
       tpe: Int
   ): scala.Boolean = {
@@ -832,7 +832,7 @@ object Character {
     }
   }
 
-  @inline private[this] def toSurrogate(
+  @inline private def toSurrogate(
       codePoint: Int,
       dst: Array[Char],
       dstIndex: Int
@@ -843,10 +843,10 @@ object Character {
   }
 
   // These both allow for the logic in toSurrogate to not change, the codepoint must be normalised first with -0x10000
-  @inline private[this] def highSurrogateFromNormalised(cp: Int): Char =
+  @inline private def highSurrogateFromNormalised(cp: Int): Char =
     (0xd800 | ((cp >> 10) & 0x3ff)).toChar
 
-  @inline private[this] def lowSurrogateFromNormalised(cp: Int): Char =
+  @inline private def lowSurrogateFromNormalised(cp: Int): Char =
     (0xdc00 | (cp & 0x3ff)).toChar
 
   @inline def highSurrogate(codePoint: Int): Char =
@@ -881,7 +881,7 @@ object Character {
   // format: off
 
   // Types of characters from 0 to 255
-  private[this] lazy val charTypesFirst256 = Array[scala.Byte](15, 15, 15, 15,
+  private lazy val charTypesFirst256 = Array[scala.Byte](15, 15, 15, 15,
     15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
     15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 12, 24, 24, 24, 26, 24, 24, 24,
     21, 22, 24, 25, 24, 20, 24, 24, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 24, 24, 25,
@@ -1066,10 +1066,10 @@ object Character {
       182, 1, 4, 3, 62, 2, 4, 12, 24, 147, 70, 4, 11, 48, 70, 58, 116, 2188,
       42711, 41, 4149, 11, 222, 16354, 542, 722403, 1, 30, 96, 128, 240,
       65040, 65534, 2, 65534)
-  private[this] lazy val charTypeIndices =
+  private lazy val charTypeIndices =
     uncompressDeltas(charTypeIndicesDeltas)
 
-  private[this] lazy val charTypes = Array[scala.Byte](1, 2, 1, 2, 1, 2,
+  private lazy val charTypes = Array[scala.Byte](1, 2, 1, 2, 1, 2,
     1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1,
     2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2,
     1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1,
@@ -1245,7 +1245,7 @@ object Character {
       1, 1, 3, 5, 5, 3, 4, 1, 3, 5, 1, 1, 772, 4, 3, 2, 1, 2, 14, 2, 2, 10,
       478, 10, 2, 8, 52797, 6, 5, 2, 162, 2, 18, 1, 1, 1, 28, 1, 1, 1, 29,
       1, 1, 1, 1, 2, 1, 2, 55159, 1, 57, 1, 57, 1, 57, 1, 57, 1)
-  private[this] lazy val isMirroredIndices =
+  private lazy val isMirroredIndices =
     uncompressDeltas(isMirroredIndicesDeltas)
 
   private[lang] final val CombiningClassIsNone = 0
@@ -1308,7 +1308,7 @@ object Character {
   println(formatLargeArray(indicesDeltas.toArray, "        "))
   println("    )")
    */
-  private[this] lazy val combiningClassNoneOrAboveOrOtherIndices: Array[Int] = {
+  private lazy val combiningClassNoneOrAboveOrOtherIndices: Array[Int] = {
     val deltas = Array(
       768, 21, 40, 0, 8, 1, 0, 1, 3, 0, 3, 2, 1, 3, 4, 0, 1, 3, 0, 1, 7, 0,
       13, 0, 275, 5, 0, 265, 0, 1, 0, 4, 1, 0, 3, 2, 0, 6, 6, 0, 2, 1, 0, 2,
@@ -1361,7 +1361,7 @@ object Character {
   }
   // format: on
 
-  @noinline private[this] def uncompressDeltas(
+  @noinline private def uncompressDeltas(
       deltas: Array[Int]
   ): Array[Int] = {
     for (i <- 1 until deltas.length)
@@ -1369,7 +1369,7 @@ object Character {
     deltas
   }
 
-  private[this] def findIndexOfRange(
+  private def findIndexOfRange(
       startOfRangesArray: Array[Int],
       value: Int,
       hasEmptyRanges: scala.Boolean
@@ -1405,7 +1405,7 @@ object Character {
   // Refer to the following project for the transformation code.
   // https://github.com/ekrich/scala-unicode
 
-  private[this] lazy val lowerRanges = Array[scala.Int](97, 122, 181, 224, 246,
+  private lazy val lowerRanges = Array[scala.Int](97, 122, 181, 224, 246,
     248, 254, 255, 257, 303, 305, 307, 311, 314, 328, 331, 375, 378, 382, 383,
     384, 387, 389, 392, 396, 402, 405, 409, 410, 414, 417, 421, 424, 429, 432,
     436, 438, 441, 445, 447, 453, 454, 456, 457, 459, 460, 462, 476, 477, 479,
@@ -1429,7 +1429,7 @@ object Character {
     65370, 66600, 66639, 66776, 66811, 68800, 68850, 71872, 71903, 93792, 93823,
     125218, 125251)
 
-  private[this] lazy val lowerDeltas = Array[scala.Int](32, 32, -743, 32, 32,
+  private lazy val lowerDeltas = Array[scala.Int](32, 32, -743, 32, 32,
     32, 32, -121, 1, 1, 232, 1, 1, 1, 1, 1, 1, 1, 1, 300, -195, 1, 1, 1, 1, 1,
     -97, 1, -163, -130, 1, 1, 1, 1, 1, 1, 1, 1, 1, -56, 1, 2, 1, 2, 1, 2, 1, 1,
     79, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, -10815, -10815, 1, 1, 1, -10783, -10780,
@@ -1447,7 +1447,7 @@ object Character {
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, -48, 1, 1, 1, 1, 1, 1, 1, 1, 928, 38864,
     38864, 32, 32, 40, 40, 40, 40, 64, 64, 32, 32, 32, 32, 34, 34)
 
-  private[this] lazy val lowerSteps = Array[scala.Byte](0, 1, 0, 0, 1, 0, 1, 0,
+  private lazy val lowerSteps = Array[scala.Byte](0, 1, 0, 0, 1, 0, 1, 0,
     0, 2, 0, 0, 2, 0, 2, 0, 2, 0, 2, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0,
     0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 2, 0, 0, 0, 0, 2, 0, 2,
     0, 0, 1, 0, 0, 2, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -1460,7 +1460,7 @@ object Character {
     0, 1, 0, 0, 0, 2, 0, 2, 0, 2, 0, 2, 0, 2, 0, 2, 0, 0, 2, 0, 0, 2, 0, 2, 0,
     0, 2, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1)
 
-  private[this] lazy val upperRanges = Array[scala.Int](65, 90, 192, 214, 216,
+  private lazy val upperRanges = Array[scala.Int](65, 90, 192, 214, 216,
     222, 256, 302, 304, 306, 310, 313, 327, 330, 374, 376, 377, 381, 385, 386,
     388, 390, 391, 393, 394, 395, 398, 399, 400, 401, 403, 404, 406, 407, 408,
     412, 413, 415, 416, 420, 422, 423, 425, 428, 430, 431, 433, 434, 435, 437,
@@ -1483,7 +1483,7 @@ object Character {
     65338, 66560, 66599, 66736, 66771, 68736, 68786, 71840, 71871, 93760, 93791,
     125184, 125217)
 
-  private[this] lazy val upperDeltas = Array[scala.Int](-32, -32, -32, -32, -32,
+  private lazy val upperDeltas = Array[scala.Int](-32, -32, -32, -32, -32,
     -32, -1, -1, 199, -1, -1, -1, -1, -1, -1, 121, -1, -1, -210, -1, -1, -206,
     -1, -205, -205, -1, -79, -202, -203, -1, -205, -207, -211, -209, -1, -211,
     -213, -214, -1, -1, -218, -1, -218, -1, -218, -1, -217, -217, -1, -1, -219,
@@ -1502,7 +1502,7 @@ object Character {
     -1, -1, -32, -32, -40, -40, -40, -40, -64, -64, -32, -32, -32, -32, -34,
     -34)
 
-  private[this] lazy val upperSteps = Array[scala.Byte](0, 1, 0, 1, 0, 1, 0, 2,
+  private lazy val upperSteps = Array[scala.Byte](0, 1, 0, 1, 0, 1, 0, 2,
     0, 0, 2, 0, 2, 0, 2, 0, 0, 2, 0, 0, 2, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 1, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 2, 0, 2, 0, 0, 2, 0, 0, 0, 2, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0,
@@ -1515,7 +1515,7 @@ object Character {
     0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 2, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1,
     0, 1)
 
-  private[this] object CaseUtil {
+  private object CaseUtil {
     lazy val a = lowerRanges(0)
     lazy val z = lowerRanges(1)
     lazy val A = upperRanges(0)
@@ -1527,7 +1527,7 @@ object Character {
     def convert(codePoint: Int, delta: Int) = codePoint - delta
   }
 
-  private[this] def toCase(
+  private def toCase(
       codePoint: Int,
       asciiLow: Int,
       asciiHigh: Int,
@@ -1616,7 +1616,7 @@ object Character {
    * }
    * ```
    */
-  private[this] lazy val caseIgnorableIndices: Array[Int] = {
+  private lazy val caseIgnorableIndices: Array[Int] = {
     val deltas: Array[Int] = Array(39, 1, 6, 1, 11, 1, 35, 1, 1, 1, 71, 1, 4, 1,
       1, 1, 4, 1, 2, 2, 503, 192, 4, 2, 4, 1, 9, 2, 1, 1, 251, 7, 207, 1, 5, 1,
       49, 45, 1, 1, 1, 2, 1, 2, 1, 1, 44, 1, 11, 6, 10, 11, 1, 1, 35, 1, 10, 21,
@@ -1678,7 +1678,7 @@ object Character {
    *
    * For code used to generate deltas see `caseIgnorableIndices` comment.
    */
-  private[this] lazy val casedIndices: Array[Int] = {
+  private lazy val casedIndices: Array[Int] = {
     val deltas: Array[Int] = Array(65, 26, 6, 26, 47, 1, 10, 1, 4, 1, 5, 23, 1,
       31, 1, 195, 1, 4, 4, 208, 1, 36, 7, 2, 30, 5, 96, 1, 42, 4, 2, 2, 2, 4, 1,
       1, 6, 1, 1, 3, 1, 1, 1, 20, 1, 83, 1, 139, 8, 166, 1, 38, 9, 41, 2839, 38,

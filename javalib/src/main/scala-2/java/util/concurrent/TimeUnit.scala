@@ -96,7 +96,7 @@ object TimeUnit {
     def toDays(a: Long): Long = a
   }
 
-  private[this] val _values: Array[TimeUnit] =
+  private val _values: Array[TimeUnit] =
     Array(
       NANOSECONDS,
       MICROSECONDS,

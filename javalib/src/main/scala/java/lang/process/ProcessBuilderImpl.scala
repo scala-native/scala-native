@@ -114,7 +114,7 @@ private[lang] class ProcessBuilderImpl(private var _command: List[String]) {
     else process.UnixProcess(this)
   }
 
-  @inline private[this] def set(f: => Unit): ProcessBuilder = {
+  @inline private def set(f: => Unit): ProcessBuilder = {
     f
     this
   }
