@@ -4,7 +4,7 @@ import dotty.tools.dotc.plugins.PluginPhase
 import dotty.tools._
 import dotc._
 import dotc.ast.tpd._
-import dotc.transform.SymUtils._
+import scala.scalanative.nscplugin.CompilerCompat.SymUtilsCompat.*
 import core.Contexts._
 import core.Definitions
 import core.Names._
@@ -132,11 +132,11 @@ class PrepNativeInterop extends PluginPhase {
     vd match {
       case ValDef(_, tpt, ScalaEnumValue.NoName(optIntParam)) =>
         val nrhs = scalaEnumValName(sym.owner.asClass, sym, optIntParam)
-        cpy.ValDef(vd)(tpt = transformAllDeep(tpt), nrhs)
+        cpy.ValDef(vd)(tpt = transformAllDeep(tpt), rhs = nrhs)
 
       case ValDef(_, tpt, ScalaEnumValue.NullName(optIntParam)) =>
         val nrhs = scalaEnumValName(sym.owner.asClass, sym, optIntParam)
-        cpy.ValDef(vd)(tpt = transformAllDeep(tpt), nrhs)
+        cpy.ValDef(vd)(tpt = transformAllDeep(tpt), rhs = nrhs)
 
       case _ =>
         // Set `@extern` annotation for top-level extern variables

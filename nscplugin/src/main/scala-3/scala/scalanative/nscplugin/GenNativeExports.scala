@@ -9,7 +9,7 @@ import core.Symbols._
 import core.Flags._
 import core.Annotations.*
 import dotty.tools.dotc.report
-import dotty.tools.dotc.transform.SymUtils.*
+import scala.scalanative.nscplugin.CompilerCompat.SymUtilsCompat.*
 
 import scala.scalanative.nir
 import nir._
