@@ -484,7 +484,8 @@ object Build {
       .settings(
         publishSettings(Some(VersionScheme.BreakOnMajor)),
         docsSettings,
-        libraryDependencies ++= Deps.NativeLib(scalaVersion.value)
+        libraryDependencies ++= Deps.NativeLib(scalaVersion.value),
+        scalacOptions ++= Settings.ignoredScalaDeprecations(scalaVersion.value)
       )
       .withNativeCompilerPlugin
       .mapBinaryVersions(_ => _.dependsOn(javalibintf % Provided))

@@ -145,7 +145,7 @@ class NirPrimitives(using ctx: Context) extends DottyPrimitives(ctx) {
     val primitives = MutableSymbolMap[Int]()
 
     def addPrimitive(s: Symbol, code: Int) = {
-      assert(!(primitives contains s), "Duplicate primitive " + s)
+      assert(!(primitives.contains(s)), "Duplicate primitive " + s)
       assert(s.exists, s"Empty symbol with code $code")
       primitives(s) = code
     }

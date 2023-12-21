@@ -16,7 +16,7 @@ import core.TypeErasure._
 import core.TypeError
 import dotty.tools.dotc.report
 import dotty.tools.dotc.typer.TyperPhase
-import dotty.tools.dotc.transform.SymUtils._
+import scala.scalanative.nscplugin.CompilerCompat.SymUtilsCompat.*
 
 import scala.scalanative.util.unsupported
 

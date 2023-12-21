@@ -7,10 +7,11 @@ import core.Contexts._
 import core.Types._
 import core.StdNames._
 import scala.annotation.threadUnsafe
+import scala.compiletime.uninitialized
 
 object JUnitDefinitions {
-  private var cached: JUnitDefinitions = _
-  private var lastContext: Context = _
+  private var cached: JUnitDefinitions = uninitialized
+  private var lastContext: Context = uninitialized
   def defnJUnit(using ctx: Context): JUnitDefinitions = {
     if (lastContext != ctx) {
       cached = JUnitDefinitions()

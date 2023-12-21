@@ -90,8 +90,7 @@ class ScalaNativeJUnitBootstrappers extends PluginPhase {
       Synthetic,
       List(defn.ObjectType, junitdefn.BootstrapperType),
       newScope,
-      coord = testClass.span,
-      assocFile = testClass.assocFile
+      coord = testClass.span
     ).entered
     val classSym = moduleSym.moduleClass.asClass
 
