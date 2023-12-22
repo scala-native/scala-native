@@ -140,21 +140,16 @@ int scalanative_pthread_create(pthread_t *thread, pthread_attr_t *attr,
                           (RoutineArgs)proxyArgs);
 }
 #endif
-#endif // SCALANATIVE_MULTITHREADING_ENABLED
 
 void scalanative_gc_set_mutator_thread_state(MutatorThreadState state) {
     MutatorThread_switchState(currentMutatorThread, state);
 }
 
-// Trigger SIGBUS (or SIGSEGV) signals to create GC safepoints by attempting to
-// access invalid memory address (`scalanative_gc_safepoint`)
-// If you hit here from debugger, ignore the signal and continue.
-// in lldb, we can ignore SIGBUS and continue by
-// (lldb) pro hand -p true -s false SIGBUS
-// (lldb) continue
 void scalanative_gc_yield() {
-    void *pollGC = *scalanative_gc_safepoint;
+    if (atomic_load_explicit(&Synchronizer_stopThreads, memory_order_relaxed))
+        Synchronizer_wait();
 }
+#endif // SCALANATIVE_MULTITHREADING_ENABLED
 
 void scalanative_add_roots(void *addr_low, void *addr_high) {
     AddressRange range = {addr_low, addr_high};

@@ -21,7 +21,6 @@ typedef struct {
     word_t **stackBottom;
     Allocator allocator;
     LargeAllocator largeAllocator;
-#endif
 } MutatorThread;
 
 typedef struct MutatorThreadNode {

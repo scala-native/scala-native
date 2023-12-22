@@ -427,7 +427,7 @@ void Marker_markProgramStack(MutatorThread *thread, Heap *heap, Stats *stats,
                              GreyPacket **outHolder,
                              GreyPacket **outWeakRefHolder) {
     word_t **stackBottom = thread->stackBottom;
-    word_t **stackTop = (word_t**)atomic_load(&thread->stackTop);
+    word_t **stackTop = (word_t **)atomic_load(&thread->stackTop);
 
     size_t stackSize = stackBottom - stackTop;
     Marker_markRange(heap, stats, outHolder, outWeakRefHolder, stackTop,

@@ -767,24 +767,7 @@ object Lower {
           if (genUnwind && unwindHandler.isInitialized) unwind
           else nir.Next.None
         }
-        def invokeGCYield =
-          buf.call(GCYieldSig, GCYield, Nil, handler)
-        def accessGCSafepoint = {
-          val safepointAddr = buf.load(nir.Type.Ptr, GCSafepoint, handler)
-          buf.load(
-            nir.Type.Ptr,
-            safepointAddr,
-            handler,
-            Some(nir.MemoryOrder.Unordered)
-          )
-        }
-        config.gc match {
-          case build.GC.Commix       => invokeGCYield
-          case build.GC.Immix        => accessGCSafepoint
-          case build.GC.Experimental => accessGCSafepoint
-          case build.GC.None | build.GC.Boehm =>
-            util.unreachable
-        }
+        buf.call(GCYieldSig, GCYield, Nil, handler)
       }
     }
 

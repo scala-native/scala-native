@@ -40,18 +40,17 @@ static void Synchronizer_SuspendThread(MutatorThread *thread) {
 #ifdef _WIN32
     while (atomic_load(&Synchronizer_stopThreads)) {
         if (WAIT_OBJECT_0 !=
-            WaitForSingleObject(thread->wakeupEvent, INFINITE)) {
+            WaitForSingleObject(threadSuspensionEvent, INFINITE)) {
             fprintf(stderr, "Error: suspend thread");
             exit(GetLastError());
         }
     }
 #else
-    pthread_mutex_lock(&thread->threadSuspension.lock);
+    pthread_mutex_lock(&threadSuspension.lock);
     while (atomic_load(&Synchronizer_stopThreads)) {
-        pthread_cond_wait(&thread->threadSuspension.resume,
-                          &thread->threadSuspension.lock);
+        pthread_cond_wait(&threadSuspension.resume, &threadSuspension.lock);
     }
-    pthread_mutex_unlock(&thread->threadSuspension.lock);
+    pthread_mutex_unlock(&threadSuspension.lock);
 #endif
     atomic_store_explicit(&thread->isWaiting, false, memory_order_release);
 }
@@ -96,7 +95,7 @@ void Synchronizer_init() {
 #else
     if (pthread_mutex_init(&threadSuspension.lock, NULL) != 0 ||
         pthread_cond_init(&threadSuspension.resume, NULL) != 0) {
-        fprintf(stderr, "Failed to setup synchronizer lock: errno=%lu\n",
+        fprintf(stderr, "Failed to setup synchronizer lock: errno=%d\n",
                 errno);
         exit(1);
     }
