@@ -93,15 +93,24 @@ installation of Arch Linux.
     $ sudo dnf groupinstall "Development Tools"
     $ sudo dnf install gc-devel zlib-devel # both optional
 
-**FreeBSD 12.2 and later**
+**FreeBSD 12.4 and later**
+
+*Note 1:* Only AMD64 and ARM64 architectures are supported.
+
+*Note 2:* Sufficiently recent versions of llvm and zlib come with the
+installation of FreeBSD.
 
 .. code-block:: shell
 
-    $ pkg install llvm10
     $ pkg install boehm-gc # optional
 
-*Note:* A version of zlib that is sufficiently recent comes with the
-installation of FreeBSD.
+*Note 3:* Using the boehm GC with multi-threaded binaries doesn't work
+out-of-the-box yet.
+
+*Note 4:* A number of tests, primarily unit-tests, are known to fail
+or not terminate on FreeBSD. It is believed that the code-under-test
+is correct and that the defect is in the test itself.
+Work is underway to fix these tests.
 
 **Nix/NixOS**
 
