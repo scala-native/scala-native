@@ -9,19 +9,7 @@
 
 #include "State.h"
 #include "shared/ThreadUtil.h"
-#include "shared/Safepoint.h"
 #include "MutatorThread.h"
-#include "immix_commix/StackTrace.h"
-
-#ifdef _WIN32
-#include <errhandlingapi.h>
-#else
-#include <signal.h>
-#include <pthread.h>
-#include <sys/mman.h>
-#include <sys/time.h>
-#include <unistd.h>
-#endif
 
 atomic_bool Synchronizer_stopThreads = false;
 static mutex_t synchronizerLock;
@@ -38,13 +26,7 @@ static void Synchronizer_SuspendThread(MutatorThread *thread) {
     assert(thread == currentMutatorThread);
     atomic_store_explicit(&thread->isWaiting, true, memory_order_release);
 #ifdef _WIN32
-    while (atomic_load(&Synchronizer_stopThreads)) {
-        if (WAIT_OBJECT_0 !=
-            WaitForSingleObject(threadSuspensionEvent, INFINITE)) {
-            fprintf(stderr, "Error: suspend thread");
-            exit(GetLastError());
-        }
-    }
+    WaitForSingleObject(threadSuspensionEvent, INFINITE);
 #else
     pthread_mutex_lock(&threadSuspension.lock);
     while (atomic_load(&Synchronizer_stopThreads)) {
@@ -57,10 +39,9 @@ static void Synchronizer_SuspendThread(MutatorThread *thread) {
 
 static void Synchronizer_SuspendThreads() {
 #ifdef _WIN32
-    if (!ResetEvent(threadSuspensionEvent)) {
-        fprintf(stderr, "Failed to reset suspension event %d\n",
-                GetLastError());
-    }
+    ResetEvent(threadSuspensionEvent);
+    atomic_store_explicit(&Synchronizer_stopThreads, true,
+                          memory_order_release);
 #else
     pthread_mutex_lock(&threadSuspension.lock);
     atomic_store_explicit(&Synchronizer_stopThreads, true,
@@ -70,14 +51,11 @@ static void Synchronizer_SuspendThreads() {
 }
 
 static void Synchronizer_WakeupThreads() {
+    assert(Synchronizer_stopThreads == FALSE);
 #ifdef _WIN32
-    assert(thread != currentMutatorThread);
-    if (!SetEvent(threadSuspensionEvent)) {
-        fprintf(stderr, "Failed to set event %lu\n", GetLastError());
-    }
+    SetEvent(threadSuspensionEvent);
 #else
     pthread_mutex_lock(&threadSuspension.lock);
-    assert(Synchronizer_stopThreads == FALSE);
     pthread_cond_broadcast(&threadSuspension.resume);
     pthread_mutex_unlock(&threadSuspension.lock);
 #endif

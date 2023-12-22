@@ -204,7 +204,7 @@ object Lower {
               buf.fence(nir.MemoryOrder.Release)
             case _ => ()
           }
-          genGCSafepoint(buf)
+          genGCYieldpoint(buf)
           val retVal =
             if (v.ty == nir.Type.Unit) optionallyBoxedUnit(v)
             else genVal(buf, v)
@@ -212,11 +212,11 @@ object Lower {
 
         case inst @ nir.Inst.Jump(next) =>
           implicit val pos: nir.Position = inst.pos
-          // Generate safepoint before backward jumps, eg. in loops
+          // Generate GC yield points before backward jumps, eg. in loops
           next match {
             case nir.Next.Label(target, _)
                 if labelPositions(target) < currentBlockPosition =>
-              genGCSafepoint(buf)
+              genGCYieldpoint(buf)
             case _ => ()
           }
           buf += nir.Inst.Jump(genNext(buf, next))
@@ -729,7 +729,7 @@ object Lower {
     }
 
     // Cached function
-    private object shouldGenerateSafepoints {
+    private object shouldGenerateGCYieldPoints {
       import scalanative.build.GC._
       private var lastDefn: nir.Defn.Define = _
       private var lastResult: Boolean = false
@@ -739,10 +739,10 @@ object Lower {
         case _              => false
       }
       private val multithreadingEnabled = meta.platform.isMultithreadingEnabled
-      private val usesSafepoints = multithreadingEnabled && supportedGC
+      private val usesGCYieldPoints = multithreadingEnabled && supportedGC
 
       def apply(defn: nir.Defn.Define): Boolean = {
-        if (!usesSafepoints) false
+        if (!usesGCYieldPoints) false
         else if (defn eq lastDefn) lastResult
         else {
           lastDefn = defn
@@ -757,12 +757,12 @@ object Lower {
         }
       }
     }
-    private def genGCSafepoint(buf: nir.Buffer, genUnwind: Boolean = true)(
+    private def genGCYieldpoint(buf: nir.Buffer, genUnwind: Boolean = true)(
         implicit
         srcPosition: nir.Position,
         scopeId: nir.ScopeId
     ): Unit = {
-      if (shouldGenerateSafepoints(currentDefn.get)) {
+      if (shouldGenerateGCYieldPoints(currentDefn.get)) {
         val handler = {
           if (genUnwind && unwindHandler.isInitialized) unwind
           else nir.Next.None
@@ -806,7 +806,7 @@ object Lower {
         case nir.Val.Global(global, _) if shouldSwitchThreadState(global) =>
           switchThreadState(managed = false)
           genCall()
-          genGCSafepoint(buf, genUnwind = false)
+          genGCYieldpoint(buf, genUnwind = false)
           switchThreadState(managed = true)
 
         case _ => genCall()
@@ -2004,9 +2004,6 @@ object Lower {
     nir.Val.Global(throwNoSuchMethod, nir.Type.Ptr)
 
   val GC = nir.Global.Top("scala.scalanative.runtime.GC$")
-  val GCSafepointName = GC.member(nir.Sig.Extern("scalanative_gc_safepoint"))
-  val GCSafepoint = nir.Val.Global(GCSafepointName, nir.Type.Ptr)
-
   val GCYieldName =
     GC.member(nir.Sig.Extern("scalanative_gc_yield"))
   val GCYieldSig = nir.Type.Function(Nil, nir.Type.Unit)
@@ -2078,7 +2075,6 @@ object Lower {
     buf += RuntimeNull.name
     buf += RuntimeNothing.name
     if (platform.isMultithreadingEnabled) {
-      buf += GCSafepoint.name
       buf += GCYield.name
       buf += GCSetMutatorThreadState.name
     }

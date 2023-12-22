@@ -70,7 +70,7 @@ class CodeGen
 class CodeGenWithMultithreading
     extends CodeGenBench(
       nativeConfig = _.withMultithreadingSupport(true)
-        .withGC(GC.Immix) // to ensure generation of safepoints
+        .withGC(GC.Immix) // to ensure generation of GC yieldpoints
         .withIncrementalCompilation(false)
     )
 

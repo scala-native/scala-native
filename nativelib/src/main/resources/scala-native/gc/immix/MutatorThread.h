@@ -3,7 +3,6 @@
 #include "Allocator.h"
 #include "LargeAllocator.h"
 #include "State.h"
-#include "shared/Safepoint.h"
 #include <stdatomic.h>
 #include "shared/ThreadUtil.h"
 #include <setjmp.h>
