@@ -1,1 +1,1 @@
-void foo(){return;}
+void foo() { return; }
