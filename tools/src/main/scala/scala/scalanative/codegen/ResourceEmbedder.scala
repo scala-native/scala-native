@@ -55,7 +55,7 @@ private[scalanative] object ResourceEmbedder {
     implicit val position: nir.Position = nir.Position.NoPosition
 
     val notInIncludePatterns =
-      s"Not matched by any include path ${includePatterns.mkString}"
+      s"Not matched by any include pattern: [${includePatterns.map(pat => s"'$pat'").mkString(", ")}]"
     case class IgnoreReason(reason: String, shouldLog: Boolean = true)
     case class Matcher(matcher: PathMatcher, pattern: String)
 
