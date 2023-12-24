@@ -73,7 +73,7 @@ void Synchronizer_init() {
 #else
     if (pthread_mutex_init(&threadSuspension.lock, NULL) != 0 ||
         pthread_cond_init(&threadSuspension.resume, NULL) != 0) {
-        fprintf(stderr, "Failed to setup synchronizer lock: errno=%d\n", errno);
+        perror("Failed to setup synchronizer lock");
         exit(1);
     }
 #endif
