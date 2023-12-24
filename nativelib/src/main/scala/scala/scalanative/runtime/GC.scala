@@ -90,15 +90,14 @@ object GC {
       newState: MutatorThreadState
   ): Unit = extern
 
-  /** Address of safepoint - conditionally protected memory address used for
-   *  polling StopTheWorld event. Lowering phase would introduce write/read
-   *  instruction to this address to check if it should stop execution of the
-   *  thread. Upon write/read to protected memory special signal handler (UNIX)
-   *  or exceptions filter (Windows) would be triggered leading to stopping
-   *  execution of the thread.
+  /** A call to GC yield mechanism used for polling the GC StopTheWorld event.
+   *  If the GarbageCollector wants to perform collection it would stop the
+   *  calling thread until GC is done and it's safe to continue execution.
+   *  Lowering phase would introduce calls of this function to check if it
+   *  should stop execution of the thread.
    */
-  @name("scalanative_gc_safepoint")
-  private[scalanative] var safepoint: RawPtr = extern
+  @name("scalanative_gc_yield")
+  private[scalanative] def `yield`(): Unit = extern
 
   /** Notify the Garbage Collector about the range of memory which should be
    *  scanned when marking the objects. The range should contain only memory NOT

@@ -3,7 +3,6 @@
 #include "Allocator.h"
 #include "LargeAllocator.h"
 #include "State.h"
-#include "shared/Safepoint.h"
 #include "SweepResult.h"
 #include <stdatomic.h>
 #include <shared/ThreadUtil.h>
@@ -13,19 +12,14 @@
 #define MUTATOR_THREAD_H
 
 typedef struct {
-    volatile MutatorThreadState state;
-    word_t **volatile stackTop;
-    volatile atomic_bool isWaiting;
+    _Atomic(MutatorThreadState) state;
+    atomic_intptr_t stackTop;
+    atomic_bool isWaiting;
     jmp_buf executionContext;
     // immutable fields
     word_t **stackBottom;
     Allocator allocator;
     LargeAllocator largeAllocator;
-#ifdef _WIN32
-    HANDLE wakeupEvent;
-#else
-    thread_t thread;
-#endif
 } MutatorThread;
 
 typedef struct MutatorThreadNode {

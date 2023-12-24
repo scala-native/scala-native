@@ -18,6 +18,7 @@
 #include "GCThread.h"
 #include "WeakRefGreyList.h"
 #include "Sweeper.h"
+#include "Synchronizer.h"
 
 #include "shared/Parsing.h"
 
@@ -178,12 +179,13 @@ int scalanative_pthread_create(pthread_t *thread, pthread_attr_t *attr,
                           (RoutineArgs)proxyArgs);
 }
 #endif
-#endif // SCALANATIVE_MULTITHREADING_ENABLED
 
 void scalanative_gc_set_mutator_thread_state(MutatorThreadState state) {
     MutatorThread_switchState(currentMutatorThread, state);
 }
-void scalanative_gc_safepoint_poll() {
-    void *pollGC = *scalanative_gc_safepoint;
+void scalanative_gc_yield() {
+    if (atomic_load_explicit(&Synchronizer_stopThreads, memory_order_relaxed))
+        Synchronizer_wait();
 }
+#endif // SCALANATIVE_MULTITHREADING_ENABLED
 #endif

@@ -16,16 +16,7 @@ void MutatorThread_init(Field_t *stackbottom) {
     currentMutatorThread = self;
 
     self->stackBottom = stackbottom;
-#ifdef _WIN32
-    self->wakeupEvent = CreateEvent(NULL, true, false, NULL);
-    if (self->wakeupEvent == NULL) {
-        fprintf(stderr, "Failed to setup mutator thread: errno=%lu\n",
-                GetLastError());
-        exit(1);
-    }
-#else
-    self->thread = pthread_self();
-#endif
+
     MutatorThread_switchState(self, MutatorThreadState_Managed);
     Allocator_Init(&self->allocator, &blockAllocator, heap.bytemap,
                    heap.blockMetaStart, heap.heapStart);
@@ -46,9 +37,6 @@ void MutatorThread_init(Field_t *stackbottom) {
 void MutatorThread_delete(MutatorThread *self) {
     MutatorThread_switchState(self, MutatorThreadState_Unmanaged);
     MutatorThreads_remove(self);
-#ifdef _WIN32
-    CloseHandle(self->wakeupEvent);
-#endif
     free(self);
 }
 
@@ -65,13 +53,13 @@ NOINLINE static stackptr_t MutatorThread_approximateStackTop() {
 void MutatorThread_switchState(MutatorThread *self,
                                MutatorThreadState newState) {
     assert(self != NULL);
+    intptr_t newStackTop = 0;
     if (newState == MutatorThreadState_Unmanaged) {
         // Dump registers to allow for their marking later
         setjmp(self->executionContext);
-        self->stackTop = MutatorThread_approximateStackTop();
-    } else {
-        self->stackTop = NULL;
+        newStackTop = (intptr_t)MutatorThread_approximateStackTop();
     }
+    atomic_store_explicit(&self->stackTop, newStackTop, memory_order_release);
     self->state = newState;
 }
 
