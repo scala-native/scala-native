@@ -35,6 +35,11 @@ sealed trait VirtualDirectory {
 
   /** Merges content of source paths into single file in target */
   def merge(sources: Seq[Path], target: Path): Path
+
+  /** Returns a Java NIO path matcher for given pattern based on underlying file
+   *  system
+   */
+  def pathMatcher(pattern: String): PathMatcher
 }
 
 object VirtualDirectory {
@@ -153,6 +158,9 @@ object VirtualDirectory {
           .walk(path, Integer.MAX_VALUE, FileVisitOption.FOLLOW_LINKS)
           .iterator()
       }.map(fp => path.relativize(fp))
+
+    override def pathMatcher(pattern: String): PathMatcher =
+      path.getFileSystem().getPathMatcher(pattern)
   }
 
   private final class JarDirectory(path: Path)(implicit in: Scope)
@@ -169,6 +177,9 @@ object VirtualDirectory {
             FileSystems.getFileSystem(uri)
         }
       }
+
+    override def pathMatcher(pattern: String): PathMatcher =
+      fileSystem.getPathMatcher(pattern)
 
     override def files: Seq[Path] = {
       val roots = jIteratorToSeq(fileSystem.getRootDirectories.iterator())
@@ -206,5 +217,7 @@ object VirtualDirectory {
     override def merge(sources: Seq[Path], target: Path): Path =
       throw new UnsupportedOperationException("Can't merge in empty directory.")
 
+    override def pathMatcher(pattern: String): PathMatcher =
+      throw new UnsupportedOperationException("Can't match in empty directory.")
   }
 }
