@@ -1,4 +1,3 @@
-#include "shared/GCTypes.h"
 #if defined(SCALANATIVE_GC_IMMIX)
 
 #include <stdio.h>
@@ -11,6 +10,7 @@
 #include "immix_commix/headers/ObjectHeader.h"
 #include "Block.h"
 #include "WeakRefStack.h"
+#include "shared/GCTypes.h"
 #include <stdatomic.h>
 
 extern word_t *__modules;
