@@ -308,18 +308,10 @@ class DatagramSocketTest {
     val ds2 = new DatagramSocket(new InetSocketAddress(loopback, 0))
     val ds3 = new DatagramSocket(new InetSocketAddress(loopback, 0))
     try {
-      val data = "Test Data"
-      val bytes = data.getBytes()
-      val packet = new DatagramPacket(bytes, bytes.length)
-      packet.setSocketAddress(ds3.getLocalSocketAddress())
-      ds1.send(packet)
-      val filteredData = "Bad Data"
-      val filteredBytes = filteredData.getBytes()
-      packet.setData(filteredBytes)
-      ds2.send(packet)
-
-      // connect ds3 to ds1
-      ds3.connect(loopback, ds1.getLocalPort())
+      // connect ds3 to ds1.
+      // Since Java 17: Datagrams in the socket's socket receive buffer,
+      // which have not been received before invoking this method, may be discarded.
+      ds3.connect(ds1.getLocalSocketAddress())
       assertTrue("Socket is not connected", ds3.isConnected())
       assertEquals(
         "Socket has incorrect remote address",
@@ -331,6 +323,17 @@ class DatagramSocketTest {
         ds1.getLocalPort(),
         ds3.getPort()
       )
+
+      val data = "Test Data"
+      val bytes = data.getBytes()
+      val packet = new DatagramPacket(bytes, bytes.length)
+      packet.setSocketAddress(ds3.getLocalSocketAddress())
+      ds1.send(packet)
+
+      val filteredData = "Bad Data"
+      val filteredBytes = filteredData.getBytes()
+      packet.setData(filteredBytes)
+      ds2.send(packet)
 
       val result =
         new DatagramPacket(Array.ofDim[Byte](bytes.length), bytes.length)
@@ -350,6 +353,7 @@ class DatagramSocketTest {
     } finally {
       ds1.close()
       ds2.close()
+      ds3.close()
     }
   }
 
