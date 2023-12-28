@@ -493,7 +493,6 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
       join: Boolean
   ): Unit = {
     val mName = stackalloc[ip.ip_mreqn]()
-    val addrPtr = !inetaddr.getAddress().at(0).asInstanceOf[Ptr[in.in_addr_t]]
     if (netIf != null) {
       val addrPtr = inetaddr.getAddress().at(0).asInstanceOf[Ptr[in.in_addr_t]]
       val ifIdx = netIf.getIndex()
@@ -692,7 +691,7 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
     if (posix.sys.socket.setsockopt(fd.fd, level, optValue, opt, len) != 0) {
       throw new SocketException(
         "Exception while setting socket option with id: "
-          + optID + ", errno: " + lastError()
+          + optValue + ", errno: " + lastError()
       )
     }
   }

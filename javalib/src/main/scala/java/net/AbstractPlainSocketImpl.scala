@@ -607,7 +607,7 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
     if (socket.setsockopt(fd.fd, level, optValue, opt, len) != 0) {
       throw new SocketException(
         "Exception while setting socket option with id: "
-          + optID + ", errno: " + lastError()
+          + optValue + ", errno: " + lastError()
       )
     }
   }
