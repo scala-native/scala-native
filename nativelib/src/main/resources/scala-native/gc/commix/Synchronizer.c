@@ -51,7 +51,7 @@ static void Synchronizer_SuspendThreads() {
 }
 
 static void Synchronizer_WakeupThreads() {
-    assert(Synchronizer_stopThreads == FALSE);
+    assert(Synchronizer_stopThreads == false);
 #ifdef _WIN32
     SetEvent(threadSuspensionEvent);
 #else

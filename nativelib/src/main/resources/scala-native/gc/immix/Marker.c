@@ -10,6 +10,7 @@
 #include "immix_commix/headers/ObjectHeader.h"
 #include "Block.h"
 #include "WeakRefStack.h"
+#include "shared/GCTypes.h"
 #include <stdatomic.h>
 
 extern word_t *__modules;
@@ -117,10 +118,14 @@ NO_SANITIZE void Marker_markRange(Heap *heap, Stack *stack, word_t **from,
     }
 }
 
-void Marker_markProgramStack(MutatorThread *thread, Heap *heap, Stack *stack) {
+NO_SANITIZE void Marker_markProgramStack(MutatorThread *thread, Heap *heap,
+                                         Stack *stack) {
     word_t **stackBottom = thread->stackBottom;
     word_t **stackTop = (word_t **)atomic_load(&thread->stackTop);
-
+    // Extend scanning slightly over the approximated stack top
+    // In the past we were frequently missing objects allocated just before GC
+    // (mostly under LTO enabled)
+    stackTop -= 8;
     Marker_markRange(heap, stack, stackTop, stackBottom);
 
     // Mark last context of execution
@@ -143,15 +148,8 @@ void Marker_markModules(Heap *heap, Stack *stack) {
 void Marker_markCustomRoots(Heap *heap, Stack *stack, GC_Roots *roots) {
     GC_Roots *it = roots;
     while (it != NULL) {
-        word_t **current = (word_t **)it->range.address_low;
-        word_t **limit = (word_t **)it->range.address_high;
-        while (current < limit) {
-            word_t *object = *current;
-            if (Heap_IsWordInHeap(heap, object)) {
-                Marker_markConservative(heap, stack, object);
-            }
-            current += 1;
-        }
+        Marker_markRange(heap, stack, (word_t **)it->range.address_low,
+                         (word_t **)it->range.address_high);
         it = it->next;
     }
 }
