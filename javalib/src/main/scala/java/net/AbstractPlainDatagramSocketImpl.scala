@@ -387,7 +387,8 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
       throw new SocketException("Socket is closed")
     }
     val level = in.IPPROTO_IP
-    val optValue = ip.IP_MULTICAST_TTL
+    val optValue =
+      if (useIPv4Only) ip.IP_MULTICAST_TTL else ip6.IPV6_MULTICAST_HOPS
     val opt = stackalloc[CInt]()
     val len = sizeof[CInt].toUInt
     !opt = ttl
@@ -410,7 +411,8 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
       throw new SocketException("Socket is closed")
     }
     val level = in.IPPROTO_IP
-    val optValue = ip.IP_MULTICAST_TTL
+    val optValue =
+      if (useIPv4Only) ip.IP_MULTICAST_TTL else ip6.IPV6_MULTICAST_HOPS
     val opt = stackalloc[CInt]()
     val len = stackalloc[posix.sys.socket.socklen_t]()
     !len = sizeof[CInt].toUInt
