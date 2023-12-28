@@ -16,7 +16,7 @@ private[net] class WindowsPlainDatagramSocketImpl
     WinSocketApiOps.init()
     val socket = WSASocketW(
       addressFamily = unixSocket.AF_INET,
-      socketType = unixSocket.SOCK_STREAM,
+      socketType = unixSocket.SOCK_DGRAM,
       protocol = 0, // choosed by provider
       protocolInfo = null,
       group = 0.toUInt,
