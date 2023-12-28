@@ -308,6 +308,7 @@ class DatagramSocketTest {
     val ds2 = new DatagramSocket(new InetSocketAddress(loopback, 0))
     val ds3 = new DatagramSocket(new InetSocketAddress(loopback, 0))
     try {
+      ds3.setSoTimeout(500)
       // connect ds3 to ds1.
       // Since Java 17: Datagrams in the socket's socket receive buffer,
       // which have not been received before invoking this method, may be discarded.
@@ -337,7 +338,6 @@ class DatagramSocketTest {
 
       val result =
         new DatagramPacket(Array.ofDim[Byte](bytes.length), bytes.length)
-      ds3.setSoTimeout(500)
       ds3.receive(result)
       val receivedData = new String(result.getData())
       val remoteAddress =
@@ -360,10 +360,11 @@ class DatagramSocketTest {
   @Test def sendReceiveBroadcast(): Unit = {
     // force ipv4 for broadcast test
     val address = InetAddress.getByName("127.0.0.1")
-    val broadcastAddress = InetAddress.getByName("127.0.0.254")
+    val broadcastAddress = InetAddress.getByName("127.255.255.255")
     val ds1 = new DatagramSocket(new InetSocketAddress(address, 0))
     val ds2 = new DatagramSocket(null)
     try {
+      ds2.setSoTimeout(500)
       ds2.setReuseAddress(true)
       ds2.bind(new InetSocketAddress("0.0.0.0", 0))
 
@@ -381,7 +382,6 @@ class DatagramSocketTest {
 
       val result =
         new DatagramPacket(Array.ofDim[Byte](bytes.length), bytes.length)
-      ds2.setSoTimeout(500)
       ds2.receive(result)
 
       val receivedData = new String(result.getData())

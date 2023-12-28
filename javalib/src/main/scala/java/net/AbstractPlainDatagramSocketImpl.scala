@@ -108,7 +108,7 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
   ): Unit = {
     hints.ai_family = posix.sys.socket.AF_UNSPEC
     hints.ai_flags = AI_NUMERICHOST
-    hints.ai_socktype = posix.sys.socket.SOCK_STREAM
+    hints.ai_socktype = posix.sys.socket.SOCK_DGRAM
 
     Zone { implicit z =>
       val cIP = toCString(inetAddress.getHostAddress())
@@ -281,13 +281,61 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
     else send6(p)
   }
 
+  private def connect4(address: InetAddress, port: Int): Unit = {
+    val hints = stackalloc[addrinfo]()
+    val sa4Ptr = stackalloc[Ptr[addrinfo]]()
+    prepareSockaddrIn4(address, port, hints, sa4Ptr)
+    val sa4 = (!sa4Ptr).ai_addr
+    val sa4Len = (!sa4Ptr).ai_addrlen
+
+    val connectRet = posix.sys.socket.connect(fd.fd, sa4, sa4Len)
+
+    if (connectRet < 0) {
+      throw new ConnectException(
+        s"Could not connect to address: $address"
+          + s" on port: $port"
+          + s", errno: ${lastError()}"
+      )
+    }
+  }
+
+  private def connect6(address: InetAddress, port: Int): Unit = {
+    val sa6 = stackalloc[in.sockaddr_in6]()
+    val sa6Len = sizeof[in.sockaddr_in6].toUInt
+
+    // By contract, all the bytes in sa6 are zero going in.
+    prepareSockaddrIn6(address, port, sa6)
+
+    val connectRet = posix.sys.socket.connect(
+      fd.fd,
+      sa6.asInstanceOf[Ptr[posix.sys.socket.sockaddr]],
+      sa6Len
+    )
+
+    if (connectRet < 0) {
+      throw new ConnectException(
+        s"Could not connect to address: $address"
+          + s" on port: $port"
+          + s", errno: ${lastError()}"
+      )
+    }
+  }
+
+  private lazy val connectFunc =
+    if (useIPv4Only) connect4(_: InetAddress, _: Int)
+    else connect6(_: InetAddress, _: Int)
+
   override def connect(address: InetAddress, port: Int): Unit = {
+    throwIfClosed("connect")
+    connectFunc(address, port)
     connectedAddress = address
     connectedPort = port
     connected = true
   }
 
   override def disconnect(): Unit = {
+    throwIfClosed("disconnect")
+    connectFunc(SocketHelpers.getWildcardAddress(), 0)
     connectedAddress = null
     connectedPort = -1
     connected = false

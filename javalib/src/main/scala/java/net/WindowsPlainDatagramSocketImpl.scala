@@ -2,6 +2,7 @@ package java.net
 
 import java.io.{FileDescriptor, IOException}
 import scala.scalanative.posix.sys.{socket => unixSocket}
+import scala.scalanative.posix.errno._
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
 import scala.scalanative.windows._
@@ -25,10 +26,24 @@ private[net] class WindowsPlainDatagramSocketImpl
     if (socket == InvalidSocket) {
       throw new IOException(s"Couldn't create a socket: ${WSAGetLastError()}")
     }
-    fd = new FileDescriptor(
-      FileDescriptor.FileHandle(socket),
-      readOnly = false
-    )
+
+    val fileHandle = FileDescriptor.FileHandle(socket)
+
+    // enable broadcast by default
+    val broadcastPrt = stackalloc[CInt]()
+    !broadcastPrt = 1
+    if (unixSocket.setsockopt(
+          fileHandle.toInt,
+          unixSocket.SOL_SOCKET,
+          unixSocket.SO_BROADCAST,
+          broadcastPrt.asInstanceOf[Ptr[Byte]],
+          sizeof[CInt].toUInt
+        ) < 0) {
+      closeSocket(socket)
+      throw new IOException(s"Could not set SO_BROADCAST on socket: $errno")
+    }
+
+    fd = new FileDescriptor(fileHandle, readOnly = false)
   }
 
   protected def tryPoll(op: String): Unit = {

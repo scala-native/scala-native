@@ -208,7 +208,7 @@ class DatagramSocket protected (
     if (!isBound())
       bind(new InetSocketAddress(0))
 
-    var tmp: DatagramPacket = null;
+    var tmp: DatagramPacket = null
     if (explicitFilter) {
       // "explicitFilter" may be set when
       // a socket is bound but not connected for a period of time,
@@ -220,7 +220,7 @@ class DatagramSocket protected (
         val peekPort = impl.peekData(peekPacket)
         val peekAddress = peekPacket.getAddress()
 
-        if ((!(connectedAddress == peekAddress)) || (connectedPort != peekPort)) {
+        if (connectedAddress != peekAddress || connectedPort != peekPort) {
           // throw the packet away and silently continue
           tmp = new DatagramPacket(new Array[Byte](1024), 1024)
           impl.receive(tmp)
