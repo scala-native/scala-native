@@ -5,6 +5,7 @@ import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetAddress
 import java.net.InetSocketAddress
+import java.net.NetworkInterface
 import java.net.SocketAddress
 import java.net.SocketException
 import java.net.SocketTimeoutException
@@ -16,6 +17,7 @@ import org.junit.Assume._
 import java.io.IOException
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
+import scala.collection.JavaConverters._
 
 class DatagramSocketTest {
 
@@ -358,37 +360,45 @@ class DatagramSocketTest {
   }
 
   @Test def sendReceiveBroadcast(): Unit = {
-    // force ipv4 for broadcast test
-    val address = InetAddress.getByName("127.0.0.1")
-    val broadcastAddress = InetAddress.getByName("127.255.255.255")
-    val ds1 = new DatagramSocket(new InetSocketAddress(address, 0))
-    val ds2 = new DatagramSocket(null)
-    try {
-      ds2.setSoTimeout(500)
-      ds2.setReuseAddress(true)
-      ds2.bind(new InetSocketAddress("0.0.0.0", 0))
+    // we need to find a network interface with broadcast support for this test
+    NetworkInterface
+      .getNetworkInterfaces()
+      .asScala
+      .filter(_.isUp())
+      .flatMap(_.getInterfaceAddresses().asScala)
+      .find(_.getBroadcast() != null)
+      .foreach { ifBroadcastAddr =>
+        val address = ifBroadcastAddr.getAddress()
+        val broadcastAddress = ifBroadcastAddr.getBroadcast()
+        val ds1 = new DatagramSocket(new InetSocketAddress(address, 0))
+        val ds2 = new DatagramSocket(null)
+        try {
+          ds2.setSoTimeout(500)
+          ds2.setReuseAddress(true)
+          ds2.bind(new InetSocketAddress("0.0.0.0", 0))
 
-      // joinGroup is Java 17+. Wildcard address in bind should be enough
-      // val loopbackItf = NetworkInterface.getByInetAddress(address)
-      // ds2.joinGroup(broadcastAddress, loopbackItf)
+          // joinGroup is Java 17+. Wildcard address in bind should be enough
+          // val loopbackItf = NetworkInterface.getByInetAddress(address)
+          // ds2.joinGroup(broadcastAddress, loopbackItf)
 
-      val data = "Test Data"
-      val bytes = data.getBytes()
-      val packet = new DatagramPacket(bytes, bytes.length)
-      packet.setAddress(broadcastAddress)
-      packet.setPort(ds2.getLocalPort())
-      ds1.setBroadcast(true)
-      ds1.send(packet)
+          val data = "Test Data"
+          val bytes = data.getBytes()
+          val packet = new DatagramPacket(bytes, bytes.length)
+          packet.setAddress(broadcastAddress)
+          packet.setPort(ds2.getLocalPort())
+          ds1.setBroadcast(true)
+          ds1.send(packet)
 
-      val result =
-        new DatagramPacket(Array.ofDim[Byte](bytes.length), bytes.length)
-      ds2.receive(result)
+          val result =
+            new DatagramPacket(Array.ofDim[Byte](bytes.length), bytes.length)
+          ds2.receive(result)
 
-      val receivedData = new String(result.getData())
-      assertEquals("Received incorrect data", data, receivedData)
-    } finally {
-      ds1.close()
-      ds2.close()
-    }
+          val receivedData = new String(result.getData())
+          assertEquals("Received incorrect data", data, receivedData)
+        } finally {
+          ds1.close()
+          ds2.close()
+        }
+      }
   }
 }
