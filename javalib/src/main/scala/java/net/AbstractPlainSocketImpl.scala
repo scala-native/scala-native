@@ -1,6 +1,5 @@
 package java.net
 
-import java.net.SocketHelpers.sockaddrToByteArray
 import scala.scalanative.unsigned._
 import scala.scalanative.unsafe._
 import scalanative.libc.string.memcpy
@@ -224,7 +223,8 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
       throw new SocketException("Accept failed")
     }
 
-    s.address = InetAddress.getByAddress(sockaddrToByteArray(address))
+    s.address =
+      InetAddress.getByAddress(SocketHelpers.sockaddrToByteArray(address))
     s.port = port
     s.localport = this.localport
     s.fd = new FileDescriptor(newFd)

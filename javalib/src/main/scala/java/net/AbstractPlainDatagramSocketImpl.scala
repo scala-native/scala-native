@@ -2,7 +2,6 @@ package java.net
 
 import java.net.ipOps._
 import java.io.{FileDescriptor, IOException}
-import java.net.SocketHelpers.sockaddrStorageToInetSocketAddress
 import scala.scalanative.libc.string.memcpy
 import scala.scalanative.meta.LinktimeInfo.{isLinux, isWindows}
 import scala.scalanative.posix
@@ -381,7 +380,9 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
 
     bytesNum match {
       case _ if bytesNum >= 0 =>
-        p.setSocketAddress(sockaddrStorageToInetSocketAddress(destAddr))
+        p.setSocketAddress(
+          SocketHelpers.sockaddrStorageToInetSocketAddress(destAddr)
+        )
         p.setLength(bytesNum)
       case _ if timeoutDetected =>
         throw new SocketTimeoutException("Socket timeout while reading data")
