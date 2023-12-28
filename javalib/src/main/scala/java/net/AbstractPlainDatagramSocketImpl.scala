@@ -372,9 +372,15 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
     recvfrom(p, 0, "receive")
   }
 
-  override def setTTL(ttl: Byte): Unit = setTimeToLive(ttl.toInt)
+  override def setTTL(ttl: Byte): Unit =
+    throw new UnsupportedOperationException(
+      "Deprecated method setTTL. Use setTimeToLive instead"
+    )
 
-  override def getTTL(): Byte = getTimeToLive().toByte
+  override def getTTL(): Byte =
+    throw new UnsupportedOperationException(
+      "Deprecated method getTTL. Use getTimeToLive instead"
+    )
 
   override def setTimeToLive(ttl: Int): Unit = {
     if (isClosed) {

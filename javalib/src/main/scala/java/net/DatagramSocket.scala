@@ -309,16 +309,17 @@ class DatagramSocket protected (
     impl.getOption(SocketOptions.IP_TOS).asInstanceOf[Int]
   }
 
-// Java 17
-//  def joinGroup(
-//      mcastaddr: SocketAddress,
-//      netIf: NetworkInterface
-//  ): Unit = impl.joinGroup(mcastaddr, netIf)
-//
-//  def leaveGroup(
-//      mcastaddr: SocketAddress,
-//      netIf: NetworkInterface
-//  ): Unit = impl.leaveGroup(mcastaddr, netIf)
+  // Since: Java 17
+  def joinGroup(
+      mcastaddr: SocketAddress,
+      netIf: NetworkInterface
+  ): Unit = impl.joinGroup(mcastaddr, netIf)
+
+  // Since: Java 17
+  def leaveGroup(
+      mcastaddr: SocketAddress,
+      netIf: NetworkInterface
+  ): Unit = impl.leaveGroup(mcastaddr, netIf)
 
   override def close(): Unit = {
     localAddr = null
