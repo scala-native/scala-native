@@ -182,9 +182,10 @@ void Marker_markConservative(Heap *heap, Stats *stats, GreyPacket **outHolder,
     }
 }
 
-int Marker_markRange(Heap *heap, Stats *stats, GreyPacket **outHolder,
-                     GreyPacket **outWeakRefHolder, word_t **fields,
-                     size_t length) {
+NO_SANITIZE int Marker_markRange(Heap *heap, Stats *stats,
+                                 GreyPacket **outHolder,
+                                 GreyPacket **outWeakRefHolder, word_t **fields,
+                                 size_t length) {
     int objectsTraced = 0;
     word_t **limit = fields + length;
     for (word_t **current = fields; current < limit; current++) {
@@ -423,12 +424,15 @@ void Marker_MarkUntilDone(Heap *heap, Stats *stats) {
     }
 }
 
-void Marker_markProgramStack(MutatorThread *thread, Heap *heap, Stats *stats,
-                             GreyPacket **outHolder,
-                             GreyPacket **outWeakRefHolder) {
+NO_SANITIZE void Marker_markProgramStack(MutatorThread *thread, Heap *heap,
+                                         Stats *stats, GreyPacket **outHolder,
+                                         GreyPacket **outWeakRefHolder) {
     word_t **stackBottom = thread->stackBottom;
     word_t **stackTop = (word_t **)atomic_load(&thread->stackTop);
-
+    // Extend scanning slightly over the approximated stack top
+    // In the past we were frequently missing objects allocated just before GC
+    // (mostly under LTO enabled)
+    stackTop -= 8;
     size_t stackSize = stackBottom - stackTop;
     Marker_markRange(heap, stats, outHolder, outWeakRefHolder, stackTop,
                      stackSize);

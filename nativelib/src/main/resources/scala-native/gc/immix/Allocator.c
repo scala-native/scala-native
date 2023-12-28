@@ -136,8 +136,11 @@ bool Allocator_getNextLine(Allocator *allocator) {
 
     allocator->cursor = line;
     FreeLineMeta *lineMeta = (FreeLineMeta *)line;
-    BlockMeta_SetFirstFreeLine(block, lineMeta->next);
     uint16_t size = lineMeta->size;
+    if (size == 0) {
+        return Allocator_newBlock(allocator);
+    }
+    BlockMeta_SetFirstFreeLine(block, lineMeta->next);
     allocator->limit = line + (size * WORDS_IN_LINE);
     assert(allocator->limit <= Block_GetBlockEnd(blockStart));
 

@@ -18,7 +18,7 @@ extern int __array_ids_min;
 extern int __array_ids_max;
 
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
-#define USES_LOCKWORD = 1
+#define USES_LOCKWORD 1
 
 // Inflation mark and object monitor are complementary
 #define MONITOR_INFLATION_MARK_MASK ((word_t)1)
@@ -68,12 +68,12 @@ struct Chunk {
     Chunk *next;
 };
 
-static inline bool Object_IsArray(Object *object) {
+static inline bool Object_IsArray(const Object *object) {
     int32_t id = object->rtti->rt.id;
     return __array_ids_min <= id && id <= __array_ids_max;
 }
 
-static inline size_t Object_Size(Object *object) {
+static inline size_t Object_Size(const Object *object) {
     if (Object_IsArray(object)) {
         ArrayHeader *arrayHeader = (ArrayHeader *)object;
         return MathUtils_RoundToNextMultiple(
@@ -86,23 +86,23 @@ static inline size_t Object_Size(Object *object) {
     }
 }
 
-static inline bool Object_IsWeakReference(Object *object) {
+static inline bool Object_IsWeakReference(const Object *object) {
     int32_t id = object->rtti->rt.id;
     return __weak_ref_ids_min <= id && id <= __weak_ref_ids_max;
 }
 
-static inline bool Object_IsReferantOfWeakReference(Object *object,
+static inline bool Object_IsReferantOfWeakReference(const Object *object,
                                                     int fieldOffset) {
     return Object_IsWeakReference(object) &&
            fieldOffset == __weak_ref_field_offset;
 }
 
 #ifdef USES_LOCKWORD
-static inline bool Field_isInflatedLock(Field_t field) {
+static inline bool Field_isInflatedLock(const Field_t field) {
     return (word_t)field & MONITOR_INFLATION_MARK_MASK;
 }
 
-static inline Field_t Field_allignedLockRef(Field_t field) {
+static inline Field_t Field_allignedLockRef(const Field_t field) {
     return (Field_t)((word_t)field & MONITOR_OBJECT_MASK);
 }
 #endif
