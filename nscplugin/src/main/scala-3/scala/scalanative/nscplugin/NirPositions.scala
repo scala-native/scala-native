@@ -5,10 +5,9 @@ import Contexts._
 
 import dotty.tools.dotc.util.{SourceFile, SourcePosition}
 import dotty.tools.dotc.util.Spans.Span
-import GenNIR.URIMap
 import scalanative.nir
 
-class NirPositions(sourceURIMaps: List[GenNIR.URIMap])(using Context) {
+class NirPositions()(using Context) {
   given fromSourcePosition: Conversion[SourcePosition, nir.Position] = {
     sourcePos =>
       sourceAndSpanToNirPos(sourcePos.source, sourcePos.span)

@@ -29,11 +29,5 @@ object GenNIR {
        *  implementations of JDK classes.
        */
       genStaticForwardersForNonTopLevelObjects: Boolean = false,
-      /** Which source locations in source maps should be relativized (or where
-       *  should they be mapped to)?
-       */
-      sourceURIMaps: List[URIMap] = Nil
   )
-  case class URIMap(from: URI, to: Option[URI])
-
 }

@@ -155,16 +155,6 @@ object MyScalaNativePlugin extends AutoPlugin {
             .getOrElse(nc.multithreadingSupport)
         )
     },
-    scalacOptions ++= {
-      // Link source maps to GitHub sources
-      val isSnapshot = nativeVersion.endsWith("-SNAPSHOT")
-      if (isSnapshot) Nil
-      else
-        Settings.scalaNativeMapSourceURIOption(
-          (LocalProject("scala-native") / baseDirectory).value,
-          s"https://raw.githubusercontent.com/scala-native/scala-native/v$nativeVersion/"
-        )
-    },
     inConfig(Compile) {
       nativeLinkProfiling := nativeLinkProfilingImpl
         .tag(NativeTags.Link)
