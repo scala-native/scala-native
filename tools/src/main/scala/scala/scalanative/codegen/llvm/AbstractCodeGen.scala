@@ -279,9 +279,9 @@ private[codegen] abstract class AbstractCodeGen(
         implicit val cfg: CFG = CFG(insts)
         implicit val _fresh: nir.Fresh = fresh
         implicit val _debugInfo: DebugInfo = debugInfo
+        str(" ")
+        str(os.gxxPersonality)
         def genBody() = {
-          str(" ")
-          str(os.gxxPersonality)
           str(" {")
           cfg.all.foreach(genBlock)
           cfg.all.foreach(genBlockLandingPads)
