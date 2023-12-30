@@ -88,8 +88,20 @@ sealed trait NativeConfig {
   /** Configuration when doing optimization */
   def optimizerConfig: OptimizerConfig
 
-  /** Should we add LLVM metadata to the binary artifacts? */
-  def debugMetadata: Boolean
+  /** Configuration for LLVM metadata generation controlling source level
+   *  debugging support
+   */
+  def sourceLevelDebuggingConfig: SourceLevelDebuggingConfig
+
+  /** Create a new [[NativeConfig]] with given [[SourceLevelDebuggingConfig]] */
+  def withSourceLevelDebuggingConfig(
+      config: SourceLevelDebuggingConfig
+  ): NativeConfig = withSourceLevelDebuggingConfig(_ => config)
+
+  /** Update [[NativeConfig]] with given [[SourceLevelDebuggingConfig]] */
+  def withSourceLevelDebuggingConfig(
+      mapping: Mapping[SourceLevelDebuggingConfig]
+  ): NativeConfig
 
   private[scalanative] lazy val configuredOrDetectedTriple =
     TargetTriple.parse(targetTriple.getOrElse(Discover.targetTriple(this)))
@@ -219,11 +231,6 @@ sealed trait NativeConfig {
 
   /** Modify a optimization configuration */
   def withOptimizerConfig(update: Mapping[OptimizerConfig]): NativeConfig
-
-  /** Create a new [[NativeConfig]] with given debugMetadata value
-   */
-  def withDebugMetadata(value: Boolean): NativeConfig
-
 }
 
 object NativeConfig {
@@ -257,7 +264,7 @@ object NativeConfig {
       resourceExcludePatterns = Seq.empty,
       baseName = "",
       optimizerConfig = OptimizerConfig.empty,
-      debugMetadata = false
+      sourceLevelDebuggingConfig = SourceLevelDebuggingConfig.disabled
     )
 
   private final case class Impl(
@@ -285,7 +292,7 @@ object NativeConfig {
       resourceExcludePatterns: Seq[String],
       baseName: String,
       optimizerConfig: OptimizerConfig,
-      debugMetadata: Boolean
+      sourceLevelDebuggingConfig: SourceLevelDebuggingConfig
   ) extends NativeConfig {
 
     def withClang(value: Path): NativeConfig =
@@ -382,8 +389,10 @@ object NativeConfig {
       copy(optimizerConfig = update(optimizerConfig))
     }
 
-    override def withDebugMetadata(value: Boolean): NativeConfig =
-      copy(debugMetadata = value)
+    override def withSourceLevelDebuggingConfig(
+        update: Mapping[SourceLevelDebuggingConfig]
+    ): NativeConfig =
+      copy(sourceLevelDebuggingConfig = update(sourceLevelDebuggingConfig))
 
     override def toString: String = {
       val listLinktimeProperties = {
@@ -425,6 +434,9 @@ object NativeConfig {
         | - resourceExcludePatterns: ${resourceExcludePatterns.mkString(", ")}
         | - baseName:                $baseName
         | - optimizerConfig:         ${optimizerConfig.show(" " * 3)}
+        | - sourceLevelDebuggingConfig: ${sourceLevelDebuggingConfig.show(
+          " " * 3
+        )}
         |)""".stripMargin
     }
   }

@@ -30,7 +30,7 @@ object CodeGen {
     implicit def logger: build.Logger = config.logger
     implicit val platform: PlatformInfo = PlatformInfo(config)
     implicit val meta: CodeGenMetadata =
-      new CodeGenMetadata(analysis, config.compilerConfig, proxies)
+      new CodeGenMetadata(analysis, config, proxies)
 
     val generated = Generate(encodedMainClass(config), defns ++ proxies)
     val embedded = ResourceEmbedder(config)
@@ -71,10 +71,14 @@ object CodeGen {
       val outputDirPath = config.workDir.resolve("generated")
       Files.createDirectories(outputDirPath)
       val outputDir = VirtualDirectory.real(outputDirPath)
+      val sourceCodeCache = new SourceCodeCache(config)
 
       def sourceDirOf(defn: nir.Defn): String = {
-        if (defn.pos == null) EmptyPath
-        else defn.pos.dir.getOrElse(EmptyPath)
+        val nirSource = defn.pos.nirSource
+        if (nirSource.exists)
+          s"${nirSource.directory}:${nirSource.path.getParent()}"
+        else
+          EmptyPath
       }
 
       // Partition into multiple LLVM IR files proportional to number
@@ -86,7 +90,7 @@ object CodeGen {
             case (id, defns) =>
               Future {
                 val sorted = defns.sortBy(_.name)
-                Impl(env, sorted).gen(id.toString, outputDir)
+                Impl(env, sorted, sourceCodeCache).gen(id.toString, outputDir)
               }
           }
 
@@ -124,7 +128,7 @@ object CodeGen {
                   val sorted = defns.sortBy(_.name)
                   if (!Files.exists(ownerDirectory))
                     Files.createDirectories(ownerDirectory)
-                  Impl(env, sorted).gen(hash, outputDir)
+                  Impl(env, sorted, sourceCodeCache).gen(hash, outputDir)
                 } else {
                   assert(ownerDirectory.toFile.exists())
                   config.logger.debug(
@@ -151,14 +155,20 @@ object CodeGen {
     import scala.scalanative.codegen.llvm.AbstractCodeGen
     import scala.scalanative.codegen.llvm.compat.os._
 
-    def apply(env: Map[nir.Global, nir.Defn], defns: Seq[nir.Defn])(implicit
+    def apply(
+        env: Map[nir.Global, nir.Defn],
+        defns: Seq[nir.Defn],
+        sourcesCache: SourceCodeCache
+    )(implicit
         meta: CodeGenMetadata
     ): AbstractCodeGen = {
+
       new AbstractCodeGen(env, defns) {
         override val os: OsCompat = {
           if (this.meta.platform.targetsWindows) new WindowsCompat(this)
           else new UnixCompat(this)
         }
+        override def sourceCodeCache: SourceCodeCache = sourcesCache
       }
     }
   }

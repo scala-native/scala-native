@@ -14,6 +14,9 @@ sealed trait VirtualDirectory {
   /** A unique identifier for this directory */
   def uri: URI
 
+  /** Java NIO Path pointing to underlying directory */
+  def path: Path
+
   /** Check if file with given path is in the directory. */
   def contains(path: Path): Boolean =
     files.contains(path)
@@ -145,7 +148,8 @@ object VirtualDirectory {
     }
   }
 
-  private final class LocalDirectory(path: Path) extends NioDirectory {
+  private final class LocalDirectory(override val path: Path)
+      extends NioDirectory {
 
     def uri: URI = path.toUri
 
@@ -163,7 +167,7 @@ object VirtualDirectory {
       path.getFileSystem().getPathMatcher(pattern)
   }
 
-  private final class JarDirectory(path: Path)(implicit in: Scope)
+  private final class JarDirectory(override val path: Path)(implicit in: Scope)
       extends NioDirectory {
     def uri: URI = URI.create(s"jar:${path.toUri}")
     private val fileSystem: FileSystem =
@@ -196,7 +200,7 @@ object VirtualDirectory {
   }
 
   private object EmptyDirectory extends VirtualDirectory {
-
+    override def path: Path = Paths.get("")
     val uri: URI = URI.create("")
 
     override def files = Seq.empty

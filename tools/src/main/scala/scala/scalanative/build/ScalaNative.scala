@@ -197,7 +197,8 @@ private[scalanative] object ScalaNative {
       ec: ExecutionContext
   ): Future[Seq[Path]] = {
     val withMetadata =
-      if (config.compilerConfig.debugMetadata) " (with debug metadata)"
+      if (config.compilerConfig.sourceLevelDebuggingConfig.enabled)
+        " (with debug metadata)"
       else ""
 
     config.logger.timeAsync(s"Generating intermediate code$withMetadata") {

@@ -1,0 +1,179 @@
+package scala.scalanative
+package codegen
+
+import scala.scalanative.io.VirtualDirectory
+import java.nio.file.Path
+import java.nio.file.Paths
+import java.nio.file.Files
+import scala.collection.mutable
+import scala.collection.concurrent.TrieMap
+import scala.annotation.nowarn
+
+class SourceCodeCache(config: build.Config) {
+  lazy val sourceCodeDir = {
+    val dir = config.workDir.resolve("sources")
+    if (!Files.exists(dir)) Files.createDirectories(dir)
+    dir
+  }
+
+  private val customSourceRoots = Seq.empty[Path] // TODO
+  private val (customSourceRootJarFiles, customSourceRootDirs) =
+    customSourceRoots.partition(_.getFileName().toString().endsWith(".jar"))
+  private lazy val customSourceRootJars =
+    customSourceRootJarFiles.flatMap(unpackSourcesJar)
+
+  private lazy val classpathJarsSources: Map[Path, Path] = config.classPath
+    .zip(
+      config.classPath.map { cp =>
+        correspondingSourcesJar(cp).flatMap(unpackSourcesJar)
+      }
+    )
+    .collect {
+      case (nirSources, Some(scalaSources)) => nirSources -> scalaSources
+    }
+    .toMap
+
+  private val cache: mutable.Map[nir.SourceFile, Option[Path]] =
+    TrieMap.empty
+
+  private val cwd = Paths.get(".").toRealPath()
+
+  def findSources(
+      source: nir.SourceFile.SourceRootRelative,
+      pos: nir.Position
+  ): Option[Path] = {
+    assert(pos.source eq source)
+    cache.getOrElseUpdate(
+      pos.source, {
+        // NIR sources are always put in the package name similarry to sources in jar
+        // Reconstruct path as it might have been created in incompatibe file system
+        val packageBasedSourcePath = {
+          val filename = source.path.getFileName()
+          Option(
+            Paths
+              .get(pos.nirSource.path.toString().stripPrefix("/"))
+              .getParent()
+          ).map(_.resolve(filename))
+            .getOrElse(filename)
+        }
+        @nowarn
+        def isLocalProject = {
+          import scala.collection.JavaConverters._
+          pos.nirSource.directory
+            .iterator()
+            .asScala
+            .exists(_.toString() == "target")
+        }
+
+        // most-likely for external dependency
+        def fromCorrespondingSourcesJar = classpathJarsSources
+          .get(pos.nirSource.directory)
+          .map(_.resolve(packageBasedSourcePath))
+          .find(Files.exists(_))
+
+        // fallback, check other source dirs
+        def fromAnySourcesJar =
+          classpathJarsSources.values.iterator
+            .map(_.resolve(packageBasedSourcePath))
+            .find(Files.exists(_))
+
+        // likekly for local sub-projects
+        def fromRelativePath =
+          if (!isLocalProject) None
+          else {
+            val projectSource = cwd.resolve(source.path)
+            if (Files.exists(projectSource)) Some(projectSource)
+            else None
+          }
+
+        def fromCustomSourceRoots = {
+          def asJar = customSourceRootJars.iterator
+            .map(_.resolve(packageBasedSourcePath))
+            .find(Files.exists(_))
+          def asDir = customSourceRootDirs.iterator
+            .flatMap { dir =>
+              val subPathsCount = source.path.getNameCount()
+              Seq
+                .tabulate(subPathsCount - 1)(from =>
+                  source.path.subpath(from, subPathsCount)
+                )
+                .iterator
+                .map(dir.resolve(_))
+            }
+            .find(Files.exists(_))
+
+          asJar.orElse(asDir)
+        }
+
+        fromCorrespondingSourcesJar
+          .orElse(fromRelativePath)
+          .orElse(fromCustomSourceRoots)
+          .orElse(fromAnySourcesJar)
+          .orElse {
+            config.logger.warn(
+              s"Not found source file for source path ${pos.source} defined in NIR source ${pos.nirSource.debugName}"
+            )
+            None
+          }
+      }
+    )
+  }
+
+  private def correspondingSourcesJar(jarPath: Path): Option[Path] = {
+    val jarFileName = jarPath.getFileName()
+    val sourcesSiblingJar = jarPath.resolveSibling(
+      jarFileName.toString().stripSuffix(".jar") + "-sources.jar"
+    )
+    Option(sourcesSiblingJar).filter(Files.exists(_))
+  }
+
+  private def unpackSourcesJar(jarPath: Path): Option[Path] = {
+    val jarFileName = jarPath.getFileName()
+    def outputPath = {
+      val outputFileName = Paths.get(
+        jarFileName
+          .toString()
+          .stripSuffix(".jar")
+          .stripSuffix("-sources")
+      )
+      @nowarn
+      val pathElements = {
+        import scala.collection.JavaConverters._
+        jarPath.iterator().asScala.toSeq.map(_.toString)
+      }
+      if (pathElements.contains("target")) outputFileName
+      else {
+        def subpathFrom(pivotSubpath: String): Option[Path] =
+          pathElements.lastIndexOf(pivotSubpath) match {
+            case -1 => None
+            case idx =>
+              Some(
+                jarPath
+                  .subpath(idx, jarPath.getNameCount())
+                  .resolveSibling(outputFileName)
+              )
+          }
+        subpathFrom("maven2")
+          .orElse(subpathFrom("cache"))
+          .orElse(subpathFrom("ivy2"))
+          .getOrElse(outputFileName)
+      }
+    }
+    if (!jarPath.getFileName().toString.endsWith(".jar")) None
+    else if (!Files.exists(jarPath)) None
+    else {
+      val sourcesDir = sourceCodeDir.resolve(outputPath)
+      def shouldUnzip = {
+        !Files.exists(sourcesDir) ||
+        Files
+          .getLastModifiedTime(jarPath)
+          .compareTo(Files.getLastModifiedTime(sourcesDir)) > 0
+      }
+      if (shouldUnzip) {
+        build.IO.deleteRecursive(sourcesDir)
+        build.IO.unzip(jarPath, sourcesDir)
+      }
+      Some(sourcesDir)
+    }
+  }
+}

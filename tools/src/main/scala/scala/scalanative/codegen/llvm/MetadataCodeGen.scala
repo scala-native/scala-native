@@ -21,6 +21,7 @@ import scala.scalanative.linker.{
 import scala.scalanative.linker.ReachabilityAnalysis
 import scala.scalanative.util.ScopedVar
 import scala.scalanative.codegen.llvm.Metadata.conversions.optionWrapper
+import scala.scalanative.nir.SourceFile.SourceRootRelative
 
 // scalafmt: { maxColumn = 100}
 trait MetadataCodeGen { self: AbstractCodeGen =>
@@ -29,7 +30,11 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
   import Writer._
   import self.meta.platform
 
-  final val generateDebugMetadata = self.meta.config.debugMetadata
+  final val generateDebugMetadata = self.meta.config.sourceLevelDebuggingConfig.enabled
+  final val generateLocalVariables =
+    self.meta.config.sourceLevelDebuggingConfig.generateLocalVariables
+
+  def sourceCodeCache: SourceCodeCache
 
   /* Create a name debug metadata entry and write it on the metadata section */
   def dbg(name: => String)(values: Metadata.Node*)(implicit ctx: Context): Unit =
@@ -112,7 +117,7 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
       defnScopes: DefnScopes,
       metadataCtx: Context,
       sb: ShowBuilder
-  ): Unit = if (generateDebugMetadata && canHaveDebugValue(ty)) {
+  ): Unit = if (generateLocalVariables && canHaveDebugValue(ty)) {
     implicit def _srcPosition: nir.Position = srcPosition
     implicit def _scopeId: nir.ScopeId = scopeId
     implicit def analysis: linker.ReachabilityAnalysis.Result = meta.analysis
@@ -203,10 +208,17 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
       .getOrElse(Nil)
 
   def toDIFile(pos: nir.Position): DIFile = {
-    pos.filename
-      .zip(pos.dir)
-      .headOption
-      .map((DIFile.apply _).tupled)
+    pos.source
+      .flatMap {
+        case source: SourceRootRelative => sourceCodeCache.findSources(source, pos)
+        case _                          => None
+      }
+      .map { sourcePath =>
+        DIFile(
+          filename = sourcePath.getFileName().toString(),
+          directory = sourcePath.getParent().toString()
+        )
+      }
       .getOrElse(DIFile("unknown", "unknown"))
   }
 
@@ -924,7 +936,7 @@ object MetadataCodeGen {
           .field("isOptimized", isOptimized)
           .field("emissionKind", "FullDebug".const)
           // TODO: update once SN has its own DWARF language code
-          .field("language", "DW_LANG_C".const)
+          .field("language", "DW_LANG_C_plus_plus".const)
     }
 
     implicit lazy val ofDIFile: Specialized[DIFile] = {

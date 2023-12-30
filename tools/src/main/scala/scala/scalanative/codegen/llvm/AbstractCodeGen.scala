@@ -161,7 +161,7 @@ private[codegen] abstract class AbstractCodeGen(
       newline()
     }
     os.genPrelude()
-    if (config.debugMetadata) {
+    if (config.sourceLevelDebuggingConfig.generateLocalVariables) {
       newline()
       line("declare void @llvm.dbg.declare(metadata, metadata, metadata)")
       line("declare void @llvm.dbg.value(metadata, metadata, metadata)")
@@ -434,7 +434,7 @@ private[codegen] abstract class AbstractCodeGen(
           }
       }
     }
-    if (generateDebugMetadata) {
+    if (generateLocalVariables) {
       lazy val scopeId =
         if (block.isEntry) nir.ScopeId.TopLevel
         else

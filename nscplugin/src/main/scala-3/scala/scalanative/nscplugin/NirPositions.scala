@@ -21,7 +21,7 @@ class NirPositions(sourceURIMaps: List[GenNIR.URIMap])(using Context) {
       source: SourceFile,
       span: Span
   ): nir.Position = {
-    def nirSource = conversionCache.toNIRSource(source)
+    def nirSource = conversionCache.toNIRSourceFile(source)
     if (span.exists && source.exists)
       val point = span.point
       val line = source.offsetToLine(point)
@@ -34,9 +34,9 @@ class NirPositions(sourceURIMaps: List[GenNIR.URIMap])(using Context) {
   private object conversionCache {
     import dotty.tools.dotc.util._
     private var lastDotcSource: SourceFile = _
-    private var lastNIRSource: nir.Position.SourceFile = _
+    private var lastNIRSource: nir.SourceFile = _
 
-    def toNIRSource(dotcSource: SourceFile): nir.Position.SourceFile = {
+    def toNIRSourceFile(dotcSource: SourceFile): nir.SourceFile = {
       if (dotcSource != lastDotcSource) {
         lastNIRSource = convert(dotcSource)
         lastDotcSource = dotcSource
@@ -44,28 +44,16 @@ class NirPositions(sourceURIMaps: List[GenNIR.URIMap])(using Context) {
       lastNIRSource
     }
 
-    private def convert(
-        dotcSource: SourceFile
-    ): nir.Position.SourceFile = {
-      dotcSource.file.file match {
-        case null =>
-          new java.net.URI(
-            "virtualfile", // Pseudo-Scheme
-            dotcSource.file.path, // Scheme specific part
-            null // Fragment
-          )
-        case file =>
-          val srcURI = file.toURI
-          def matches(pat: java.net.URI) = pat.relativize(srcURI) != srcURI
-
-          sourceURIMaps
-            .collectFirst {
-              case URIMap(from, to) if matches(from) =>
-                val relURI = from.relativize(srcURI)
-                to.fold(relURI)(_.resolve(relURI))
-            }
-            .getOrElse(srcURI)
-      }
+    private val sourceRoot =
+      if !ctx.settings.sourcepath.isDefault
+      then ctx.settings.sourcepath.value
+      else ctx.settings.sourceroot.value
+    private def convert(dotcSource: SourceFile): nir.SourceFile = {
+      if dotcSource.file.isVirtual
+      then nir.SourceFile.Virtual
+      else
+        val sourceRelativePath = SourceFile.relativePath(dotcSource, sourceRoot)
+        nir.SourceFile.SourceRootRelative(sourceRelativePath)
     }
   }
 }
