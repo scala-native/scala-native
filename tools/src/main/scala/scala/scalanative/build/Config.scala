@@ -62,6 +62,11 @@ sealed trait Config {
   /** Sequence of all NIR locations. */
   def classPath: Seq[Path]
 
+  /** Sequence of all Scala sources locations used when mapping binary symbols
+   *  with original sources.
+   */
+  def sourcesClassPath: Seq[Path]
+
   /** The logger used by the toolchain. */
   def logger: Logger
 
@@ -90,6 +95,9 @@ sealed trait Config {
 
   /** Create a new config with given nir paths. */
   def withClassPath(value: Seq[Path]): Config
+
+  /** Create a new config with given Scala sources paths. */
+  def withSourcesClassPath(value: Seq[Path]): Config
 
   /** Create a new config with the given logger. */
   def withLogger(value: Logger): Config
@@ -180,6 +188,7 @@ object Config {
       moduleName = "",
       mainClass = None,
       classPath = Seq.empty,
+      sourcesClassPath = Seq.empty,
       compilerConfig = NativeConfig.empty
     )(Logger.default)
 
@@ -189,6 +198,7 @@ object Config {
       moduleName: String,
       mainClass: Option[String],
       classPath: Seq[Path],
+      sourcesClassPath: Seq[Path],
       compilerConfig: NativeConfig
   )(implicit
       val logger: Logger // Exclude logger from hashCode calculation https://stackoverflow.com/questions/10373715/scala-ignore-case-class-field-for-equals-hascode
@@ -208,6 +218,9 @@ object Config {
 
     def withClassPath(value: Seq[Path]): Config =
       copy(classPath = value)
+
+    def withSourcesClassPath(value: Seq[Path]): Config =
+      copy(sourcesClassPath = value)
 
     override def withCompilerConfig(value: NativeConfig): Config =
       copy(compilerConfig = value)
@@ -261,20 +274,22 @@ object Config {
     }
 
     override def toString: String = {
-      val classPathFormat =
-        classPath.mkString("List(", "\n".padTo(22, ' '), ")")
+      def formatClassPath(cp: Seq[Path]) =
+        cp.mkString("List(", "\n".padTo(22, ' '), ")")
+
       s"""Config(
-        | - baseDir:        $baseDir
-        | - testConfig:     $testConfig
-        | - workDir:        $workDir
-        | - moduleName:     $moduleName
-        | - baseName:       $baseName
-        | - artifactName:   $artifactName
-        | - artifactPath:   $artifactPath
-        | - buildPath:      $buildPath
-        | - mainClass:      $mainClass
-        | - classPath:      $classPathFormat
-        | - compilerConfig: $compilerConfig
+        | - baseDir:          $baseDir
+        | - testConfig:       $testConfig
+        | - workDir:          $workDir
+        | - moduleName:       $moduleName
+        | - baseName:         $baseName
+        | - artifactName:     $artifactName
+        | - artifactPath:     $artifactPath
+        | - buildPath:        $buildPath
+        | - mainClass:        $mainClass
+        | - classPath:        ${formatClassPath(classPath)}
+        | - sourcesClasspath: ${formatClassPath(sourcesClassPath)} 
+        | - compilerConfig:   $compilerConfig
         |)""".stripMargin
     }
 

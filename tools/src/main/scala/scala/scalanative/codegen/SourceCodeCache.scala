@@ -21,16 +21,20 @@ class SourceCodeCache(config: build.Config) {
   private lazy val customSourceRootJars =
     customSourceRootJarFiles.flatMap(unpackSourcesJar)
 
-  private lazy val classpathJarsSources: Map[Path, Path] = config.classPath
-    .zip(
-      config.classPath.map { cp =>
-        correspondingSourcesJar(cp).flatMap(unpackSourcesJar)
-      }
-    )
-    .collect {
+  private lazy val classpathJarsSources: Map[Path, Path] = {
+    def fromClassPath = config.classPath
+      .zip(
+        config.classPath.map { cp =>
+          correspondingSourcesJar(cp).flatMap(unpackSourcesJar)
+        }
+      )
+    def fromSourcesClassPath = config.sourcesClassPath
+      .map(scp => sourcesJarToJar(scp) -> unpackSourcesJar(scp))
+
+    (fromSourcesClassPath ++ fromClassPath).collect {
       case (nirSources, Some(scalaSources)) => nirSources -> scalaSources
-    }
-    .toMap
+    }.toMap
+  }
 
   private val cache: mutable.Map[nir.SourceFile, Option[Path]] =
     TrieMap.empty
@@ -122,9 +126,7 @@ class SourceCodeCache(config: build.Config) {
 
   private def correspondingSourcesJar(jarPath: Path): Option[Path] = {
     val jarFileName = jarPath.getFileName()
-    val sourcesSiblingJar = jarPath.resolveSibling(
-      jarFileName.toString().stripSuffix(".jar") + "-sources.jar"
-    )
+    val sourcesSiblingJar = jarToSourcesJar(jarPath)
     Option(sourcesSiblingJar).filter(Files.exists(_))
   }
 
@@ -176,5 +178,16 @@ class SourceCodeCache(config: build.Config) {
       }
       Some(sourcesDir)
     }
+  }
+
+  private def sourcesJarToJar(sourcesJar: Path): Path = {
+    sourcesJar.resolveSibling(
+      sourcesJar.getFileName().toString().stripPrefix("-sources.jar") + "jar"
+    )
+  }
+  private def jarToSourcesJar(sourcesJar: Path): Path = {
+    sourcesJar.resolveSibling(
+      sourcesJar.getFileName().toString().stripPrefix(".jar") + "-sources.jar"
+    )
   }
 }
