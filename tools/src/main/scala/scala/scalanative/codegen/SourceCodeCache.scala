@@ -15,10 +15,9 @@ class SourceCodeCache(config: build.Config) {
     if (!Files.exists(dir)) Files.createDirectories(dir)
     dir
   }
-
-  private val customSourceRoots = Seq.empty[Path] // TODO
   private val (customSourceRootJarFiles, customSourceRootDirs) =
-    customSourceRoots.partition(_.getFileName().toString().endsWith(".jar"))
+    config.compilerConfig.sourceLevelDebuggingConfig.customSourceRoots
+      .partition(_.getFileName().toString().endsWith(".jar"))
   private lazy val customSourceRootJars =
     customSourceRootJarFiles.flatMap(unpackSourcesJar)
 
@@ -35,6 +34,7 @@ class SourceCodeCache(config: build.Config) {
 
   private val cache: mutable.Map[nir.SourceFile, Option[Path]] =
     TrieMap.empty
+  private val loggedMissingSourcesForCp = mutable.Set.empty[Path]
 
   private val cwd = Paths.get(".").toRealPath()
 
@@ -110,9 +110,10 @@ class SourceCodeCache(config: build.Config) {
           .orElse(fromCustomSourceRoots)
           .orElse(fromAnySourcesJar)
           .orElse {
-            config.logger.warn(
-              s"Not found source file for source path ${pos.source} defined in NIR source ${pos.nirSource.debugName}"
-            )
+            if (loggedMissingSourcesForCp.add(pos.nirSource.directory))
+              config.logger.warn(
+                s"Failed to resolve sources of ${pos.source} defined in NIR file ${pos.nirSource.directory}. All sources defined in this dependency would not be available in debugger. You can try to add custom custom source directory or jars to config and try again."
+              )
             None
           }
       }
