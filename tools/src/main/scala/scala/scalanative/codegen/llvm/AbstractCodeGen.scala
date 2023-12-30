@@ -760,7 +760,7 @@ private[codegen] abstract class AbstractCodeGen(
     val id = inst.id
     val unwind = inst.unwind
     val ty = inst.op.resty
-    val scope = defnScopes.toDIScope(inst.scopeId)
+    lazy val scope = defnScopes.toDIScope(inst.scopeId)
 
     def genBind() =
       if (!isVoid(ty)) {
@@ -984,7 +984,7 @@ private[codegen] abstract class AbstractCodeGen(
      *  situations where a null check is generated (and the function call is
      *  throwNullPointer) in this case we can only use NoPosition
      */
-    val dbgPosition = toDILocation(srcPos, scopeId)
+    lazy val dbgPosition = toDILocation(srcPos, scopeId)
     def genDbgPosition() = dbg(",", dbgPosition)
 
     call match {

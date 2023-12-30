@@ -46,7 +46,14 @@ class SourceCodeCache(config: build.Config) {
       source: nir.SourceFile.SourceRootRelative,
       pos: nir.Position
   ): Option[Path] = {
-    assert(pos.source eq source)
+    assert(
+      config.compilerConfig.sourceLevelDebuggingConfig.enabled,
+      "Sources shall not be reoslved in source level debuging is disabled"
+    )
+    assert(
+      pos.source eq source,
+      "invalid usage, `pos.source` shall eq `source`"
+    )
     cache.getOrElseUpdate(
       pos.source, {
         // NIR sources are always put in the package name similarry to sources in jar
