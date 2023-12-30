@@ -208,8 +208,7 @@ private[scalanative] object LLVM {
         else Nil
 
       val platformFlags =
-        if (!config.targetsWindows) Nil
-        else {
+        if (config.targetsWindows) {
           // https://github.com/scala-native/scala-native/issues/2372
           // When using LTO make sure to use lld linker instead of default one
           // LLD might find some duplicated symbols defined in both C and C++,
@@ -219,7 +218,10 @@ private[scalanative] object LLVM {
             case _        => Seq("-fuse-ld=lld", "-Wl,/force:multiple")
           }
           ltoSupport
-        }
+        } else if (config.targetsMac) {
+          // Some versions of XCode might introduce additional -lpthread flag, ignore them
+          Seq("-Wl,-no_warn_duplicate_libraries")
+        } else Nil
 
       // This is to ensure that the load path of the resulting dynamic library
       // only contains the library filename, instead of the full path
