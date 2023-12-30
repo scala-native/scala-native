@@ -685,7 +685,7 @@ object Settings {
       scalacOptions ++= Seq(
         // Create nir.SourceFile relative to Scala sources dir instead of root dir
         // It should use -sourcepath for both, but it fails to compile under Scala 2
-        if(scalaVersion.value.startsWith("2.")) "-rootdir" else "-sourcepath",
+        if (scalaVersion.value.startsWith("2.")) "-rootdir" else "-sourcepath",
         (fetchScalaSource / artifactPath).value.toString
       ),
       // Scala.js original comment modified to clarify issue is Scala.js.

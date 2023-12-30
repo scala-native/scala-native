@@ -8,6 +8,7 @@ import java.net.URI
  *  options.
  */
 trait ScalaNativeOptions {
+
   /** Should static forwarders be emitted for non-top-level objects.
    *
    *  Scala/JVM does not do that and, we do not do it by default either, but

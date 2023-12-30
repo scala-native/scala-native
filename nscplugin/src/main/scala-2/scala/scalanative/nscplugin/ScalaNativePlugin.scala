@@ -49,7 +49,10 @@ class ScalaNativePlugin(val global: Global) extends Plugin {
       case "genStaticForwardersForNonTopLevelObjects" =>
         genStaticForwardersForNonTopLevelObjects = true
       case opt if opt.startsWith("mapSourceURI:") =>
-        global.reporter.warning(global.NoPosition,"'mapSourceURI' is deprecated, it is ignored")
+        global.reporter.warning(
+          global.NoPosition,
+          "'mapSourceURI' is deprecated, it is ignored"
+        )
       case option =>
         error("Option not understood: " + option)
     }
