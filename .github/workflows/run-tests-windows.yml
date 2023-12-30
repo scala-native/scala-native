@@ -12,6 +12,7 @@ concurrency:
 jobs:
   test-runtime:
     name: Test runtime
+    if: "github.event_name == 'pull_request' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')"
     runs-on: windows-2022
     env:
       ENABLE_EXPERIMENTAL_COMPILER: true
@@ -71,6 +72,7 @@ jobs:
 
   run-scripted-tests:
     name: Scripted tests
+    if: "github.event_name == 'pull_request' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')"
     runs-on: windows-2022
     strategy:
       fail-fast: false
@@ -91,11 +93,11 @@ jobs:
 
   test-runtime-ext:
     name: Test runtime extension
+    if: "(github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native'"
     runs-on: windows-2022
     env:
       ENABLE_EXPERIMENTAL_COMPILER: true
     needs: [test-runtime]
-    if: "(github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native'"
     strategy:
       fail-fast: false
       matrix:
@@ -148,12 +150,12 @@ jobs:
 
   test-llvm-versions:
     runs-on: windows-2022
+    if: "(github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native'"
     strategy:
       fail-fast: false
       matrix:
         scala: [3]
         llvm: ["16.0.6", "17.0.6"] # Last 2 stable versions, LLVM 16 is minimal version able to compile current Windows SDK
-    if: "(github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native'"
     steps:
       - name: Setup git config
         run: git config --global core.autocrlf false

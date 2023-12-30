@@ -15,6 +15,7 @@ jobs:
   # Test tools, if any of them fails, further tests will not start.
   tests-tools:
     name: Compile & test tools
+    if: "github.event_name == 'pull_request' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')"
     runs-on: ubuntu-22.04
     env:
       ENABLE_EXPERIMENTAL_COMPILER: true
@@ -61,6 +62,7 @@ jobs:
   
   tests-compile-scala3PublishVersion:
     name: Compile sources with the Scala 3 version used for publishing artifacts
+    if: "github.event_name == 'pull_request' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')"
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v3
@@ -75,13 +77,13 @@ jobs:
     
   test-scala-cross-build:
     runs-on: ubuntu-22.04
+    if: "(github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native'"
     env:
       ENABLE_EXPERIMENTAL_COMPILER: true
     strategy:
       fail-fast: false
       matrix:
         scala: [2.12, 2.13, 3, 3-next]
-    if: "(github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native'"
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/linux-setup-env
@@ -94,6 +96,7 @@ jobs:
 
   test-runtime:
     name: Test runtime
+    if: "github.event_name == 'pull_request' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')"
     runs-on: ubuntu-22.04
     needs: tests-tools
     env:
@@ -124,11 +127,11 @@ jobs:
 
   test-runtime-ext:
     name: Test runtime extension
+    if: "(github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native'"
     runs-on: ubuntu-22.04
     needs: [tests-tools, test-runtime]
     env:
       ENABLE_EXPERIMENTAL_COMPILER: true
-    if: "(github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native'"
     strategy:
       fail-fast: false
       matrix:
@@ -181,11 +184,11 @@ jobs:
   # Main difference is disabled optimization and fixed Immix GC
   test-runtime-no-opt:
     name: Test runtime no-opt
+    if: "(github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native'"
     runs-on: ubuntu-22.04
     needs: tests-tools
     env:
       ENABLE_EXPERIMENTAL_COMPILER: true
-    if: "(github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native'"
     strategy:
       fail-fast: false
       matrix:
@@ -210,6 +213,7 @@ jobs:
   # Scripted tests take a long time to run, ~30 minutes, and should be limited and absolute minimum.
   test-scripted:
     name: Test scripted
+    if: "github.event_name == 'pull_request' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')"
     runs-on: ubuntu-22.04
     needs: tests-tools
     strategy:
@@ -232,13 +236,13 @@ jobs:
           sbt "test-scripted ${{matrix.scala}}"
 
   test-llvm-versions:
+    if: "(github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native'"
     runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
         scala: [3]
         llvm: [14, 15, 16, 17, 18] # Last 3 stable versions + available future versions
-    if: "(github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native'"
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/linux-setup-env
