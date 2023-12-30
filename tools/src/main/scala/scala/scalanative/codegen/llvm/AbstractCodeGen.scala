@@ -272,27 +272,29 @@ private[codegen] abstract class AbstractCodeGen(
       case _: nir.Defn.Declare => ()
       case defn: nir.Defn.Define =>
         implicit lazy val defnScopes: DefnScopes = new DefnScopes(defn)
-        str(" ")
-        str(os.gxxPersonality)
-
-        dbgUsing(defnScopes.getDISubprogramScope) { subprogramNode =>
+        insts.foreach {
+          case nir.Inst.Let(n, nir.Op.Copy(v), _) => copies(n) = v
+          case _                                  => ()
+        }
+        implicit val cfg: CFG = CFG(insts)
+        implicit val _fresh: nir.Fresh = fresh
+        implicit val _debugInfo: DebugInfo = debugInfo
+        def genBody() = {
+          str(" ")
+          str(os.gxxPersonality)
           str(" {")
-          insts.foreach {
-            case nir.Inst.Let(n, nir.Op.Copy(v), _) => copies(n) = v
-            case _                                  => ()
-          }
-          ScopedVar.scoped {
-            metaCtx.currentSubprogram := subprogramNode
-          } {
-            implicit val cfg: CFG = CFG(insts)
-            implicit val _fresh: nir.Fresh = fresh
-            implicit val _debugInfo: DebugInfo = debugInfo
-            cfg.all.foreach(genBlock)
-            cfg.all.foreach(genBlockLandingPads)
-            newline()
-          }
+          cfg.all.foreach(genBlock)
+          cfg.all.foreach(genBlockLandingPads)
+          newline()
           str("}")
         }
+        if (generateLocalVariables) dbgUsing(defnScopes.getDISubprogramScope) {
+          subprogramNode =>
+            ScopedVar.scoped {
+              metaCtx.currentSubprogram := subprogramNode
+            } { genBody() }
+        }
+        else genBody()
 
         copies.clear()
       case _ => unreachable
