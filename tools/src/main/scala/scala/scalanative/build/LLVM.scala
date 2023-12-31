@@ -89,7 +89,7 @@ private[scalanative] object LLVM {
     }
     // Always generate debug metadata on Windows, it's required for stack traces to work
     val debugFlags =
-      if (config.compilerConfig.debugMetadata || config.targetsWindows)
+      if (config.compilerConfig.sourceLevelDebuggingConfig.enabled || config.targetsWindows)
         Seq("-g")
       else Nil
 
@@ -203,7 +203,7 @@ private[scalanative] object LLVM {
 
     val flags = {
       val debugFlags =
-        if (config.compilerConfig.debugMetadata || config.targetsWindows)
+        if (config.compilerConfig.sourceLevelDebuggingConfig.enabled || config.targetsWindows)
           Seq("-g")
         else Nil
 

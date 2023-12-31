@@ -6,9 +6,10 @@ import scalanative.linker.{Trait, Class, ReachabilityAnalysis}
 
 class Metadata(
     val analysis: ReachabilityAnalysis.Result,
-    val config: build.NativeConfig,
+    val buildConfig: build.Config,
     proxies: Seq[nir.Defn]
 )(implicit val platform: PlatformInfo) {
+  def config: build.NativeConfig = buildConfig.compilerConfig
   implicit private def self: Metadata = this
 
   final val usesLockWords = platform.isMultithreadingEnabled

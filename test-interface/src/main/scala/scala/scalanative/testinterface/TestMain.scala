@@ -61,7 +61,7 @@ object TestMain {
 
     // Loading debug metadata can take up to few seconds which might mess up timeout specific tests
     // Prefetch the debug metadata before the actual tests do start
-    if (LinktimeInfo.hasDebugMetadata) {
+    if (LinktimeInfo.sourceLevelDebuging.generateFunctionSourcePositions) {
       val shouldPrefetch =
         sys.env
           .get("SCALANATIVE_TEST_PREFETCH_DEBUG_INFO")

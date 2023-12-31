@@ -76,6 +76,6 @@ class CodeGenWithMultithreading
 
 class CodeGenWithDebugMetadata
     extends CodeGenBench(
-      nativeConfig = _.withDebugMetadata(true)
+      nativeConfig = _.withSourceLevelDebuggingConfig(_.enableAll)
         .withIncrementalCompilation(false)
     )

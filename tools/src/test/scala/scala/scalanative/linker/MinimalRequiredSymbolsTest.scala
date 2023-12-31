@@ -56,14 +56,16 @@ class MinimalRequiredSymbolsTest extends LinkerSpec {
       withMultithreading: Boolean = false,
       withTargetTriple: String = "x86_64-unknown-unknown"
   )(expected: SymbolsCount) = usingMinimalApp(
-    _.withDebugMetadata(withDebugMetadata)
+    _.withSourceLevelDebuggingConfig(conf =>
+      if (withDebugMetadata) conf.enableAll else conf.disableAll
+    )
       .withMultithreadingSupport(withMultithreading)
       .withTargetTriple(withTargetTriple)
   ) { (config: Config, result: ReachabilityAnalysis.Result) =>
     assertEquals(
       "debugMetadata",
       withDebugMetadata,
-      config.compilerConfig.debugMetadata
+      config.compilerConfig.sourceLevelDebuggingConfig.enabled
     )
     assertEquals(
       "multithreading",

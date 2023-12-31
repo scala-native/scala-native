@@ -229,13 +229,15 @@ object Lower {
           buf += inst
       }
 
-      implicit val pos: nir.Position = nir.Position.NoPosition
-      genNullPointerSlowPath(buf)
-      genDivisionByZeroSlowPath(buf)
-      genClassCastSlowPath(buf)
-      genUnreachableSlowPath(buf)
-      genOutOfBoundsSlowPath(buf)
-      genNoSuchMethodSlowPath(buf)
+      locally {
+        implicit val pos: nir.Position = nir.Position.NoPosition
+        genNullPointerSlowPath(buf)
+        genDivisionByZeroSlowPath(buf)
+        genClassCastSlowPath(buf)
+        genUnreachableSlowPath(buf)
+        genOutOfBoundsSlowPath(buf)
+        genNoSuchMethodSlowPath(buf)
+      }
 
       nullPointerSlowPath.clear()
       divisionByZeroSlowPath.clear()

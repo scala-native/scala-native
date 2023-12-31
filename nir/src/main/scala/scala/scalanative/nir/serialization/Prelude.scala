@@ -26,7 +26,7 @@ object Prelude {
       insts: Int
   )
 
-  def readFrom(buffer: ByteBuffer, fileName: String): Prelude = {
+  def readFrom(buffer: ByteBuffer, fileName: => String): Prelude = {
     buffer.position(0)
     val magic = buffer.getInt()
     val compat = buffer.getInt()

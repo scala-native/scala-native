@@ -14,17 +14,13 @@ sealed trait ClassPath {
   private[scalanative] def contains(name: nir.Global): Boolean
 
   /** Load given global and info about its dependencies. */
-  private[scalanative] def load(name: nir.Global): Option[Seq[nir.Defn]]
+  private[scalanative] def load(name: nir.Global.Top): Option[Seq[nir.Defn]]
 
   private[scalanative] def classesWithEntryPoints: Iterable[nir.Global.Top]
 
 }
 
 object ClassPath {
-
-  /** Create classpath based on the directory. */
-  def apply(directory: Path): ClassPath =
-    new Impl(VirtualDirectory.local(directory))
 
   /** Create classpath based on the virtual directory. */
   private[scalanative] def apply(directory: VirtualDirectory): ClassPath =
@@ -42,7 +38,7 @@ object ClassPath {
         .toMap
 
     private val cache =
-      mutable.Map.empty[nir.Global, Option[Seq[nir.Defn]]]
+      mutable.Map.empty[nir.Global.Top, Option[Seq[nir.Defn]]]
 
     def contains(name: nir.Global) =
       files.contains(name.top)
@@ -52,14 +48,11 @@ object ClassPath {
         .resolve(new java.net.URI(file.getFileName().toString))
         .toString
 
-    def load(name: nir.Global): Option[Seq[nir.Defn]] =
+    def load(name: nir.Global.Top): Option[Seq[nir.Defn]] =
       cache.getOrElseUpdate(
         name, {
           files.get(name.top).map { file =>
-            deserializeBinary(
-              directory.read(file),
-              makeBufferName(directory, file)
-            )
+            deserializeBinary(directory, file)
           }
         }
       )

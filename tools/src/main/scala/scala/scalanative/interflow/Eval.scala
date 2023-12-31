@@ -10,7 +10,7 @@ import scala.scalanative.util.{unreachable, And}
 trait Eval { self: Interflow =>
   def interflow: Interflow = self
   final val preserveDebugInfo: Boolean =
-    self.config.compilerConfig.debugMetadata
+    self.config.compilerConfig.sourceLevelDebuggingConfig.generateLocalVariables
 
   def run(
       insts: Array[nir.Inst],

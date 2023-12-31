@@ -12,6 +12,8 @@ import scala.scalanative.build.Logger
 
 // scalafmt: { maxColumn = 120}
 object Generate {
+  private implicit val pos: nir.Position = nir.Position.NoPosition
+  private implicit val scopeId: nir.ScopeId = nir.ScopeId.TopLevel
   import Impl._
 
   val ClassHasTraitName = nir.Global.Member(rttiModule, nir.Sig.Extern("__check_class_has_trait"))
@@ -26,8 +28,6 @@ object Generate {
     (new Impl(entry, defns)).generate()
 
   implicit def reachabilityAnalysis(implicit meta: Metadata): ReachabilityAnalysis.Result = meta.analysis
-  private implicit val pos: nir.Position = nir.Position.NoPosition
-  private implicit val scopeId: nir.ScopeId = nir.ScopeId.TopLevel
 
   private class Impl(entry: Option[nir.Global.Top], defns: Seq[nir.Defn])(implicit
       meta: Metadata

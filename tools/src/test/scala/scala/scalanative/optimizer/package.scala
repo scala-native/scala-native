@@ -88,7 +88,7 @@ package object optimizer {
     implicit def logger: build.Logger = config.logger
     implicit val platform: PlatformInfo = PlatformInfo(config)
     implicit val meta: Metadata =
-      new Metadata(optimized, config.compilerConfig, Nil)
+      new Metadata(optimized, config, Nil)
     val lowered = llvm.CodeGen.lower(defns)
     Await.result(lowered.map(fn), duration.Duration.Inf)
   }
