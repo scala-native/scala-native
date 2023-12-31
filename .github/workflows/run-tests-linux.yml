@@ -33,33 +33,6 @@ jobs:
       - name: Test tools
         run: sbt "test-tools ${{ matrix.scala }}; toolsBenchmarks${{env.project-version}}/Jmh/compile"
 
-        # Make sure that Scala partest denylisted tests contain only valid test names
-      - name: Setup Scala-cli
-        uses: VirtusLab/scala-cli-setup@v0.1
-
-      - name: Check partest disabled tests list
-        # No partests support for Scala 3
-        if: ${{ !startsWith(matrix.scala, '3') }}
-        run: |
-          sbt "scalaPartest${{env.project-version}}/fetchScalaSource"
-          scala-cli scripts/partest-check-files.scala
-
-        # scala-cli-setup can override default java version
-      - uses: ./.github/actions/linux-setup-env
-        with:
-          scala-version: ${{matrix.scala}}
-          java-version: 8
-
-        # Running all partests would take ~2h for each Scala version, run only single test of each kind
-        # to make sure that infrastructure works correctly.
-      - name: Run subset of partest tests
-        # No partests support for Scala 3
-        if: ${{ !startsWith(matrix.scala, '3') }}
-        run: |
-          sbt \
-          "-J-Xmx3G" \
-          "scalaPartestTests${{env.project-version}}/testOnly -- --showDiff neg/abstract.scala pos/abstract.scala run/Course-2002-01.scala"
-  
   tests-compile-scala3PublishVersion:
     name: Compile sources with the Scala 3 version used for publishing artifacts
     if: "github.event_name == 'pull_request' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')"
@@ -260,3 +233,51 @@ jobs:
           SCALANATIVE_TEST_PREFETCH_DEBUG_INFO: 1
         run: sbt "test-runtime ${{ matrix.scala }}"
 
+ test-scala-partests:
+    if: "github.event_name == 'pull_request' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')"
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        scala: [2.13]
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/linux-setup-env
+        with:
+          scala-version: ${{matrix.scala}}
+          java-version: 11
+
+        # Make sure that Scala partest denylisted tests contain only valid test names
+      - name: Setup Scala-cli
+        uses: VirtusLab/scala-cli-setup@v0.1
+
+      - name: Check partest disabled tests list
+        # No partests support for Scala 3
+        if: ${{ !startsWith(matrix.scala, '3') }}
+        run: |
+          sbt "scalaPartest${{env.project-version}}/fetchScalaSource"
+          scala-cli scripts/partest-check-files.scala
+
+        # scala-cli-setup can override default java version
+      - uses: ./.github/actions/linux-setup-env
+        with:
+          scala-version: ${{matrix.scala}}
+          java-version: 11
+
+        # Running all partests would take ~2h for each Scala version, run only single test of each kind
+        # to make sure that infrastructure works correctly.
+      - name: Test partests infrastracture
+        if: "github.event_name == 'pull_request'"
+        run: |
+          sbt \
+          "-J-Xmx3G" \
+          "scalaPartestTests${{env.project-version}}/testOnly -- --showDiff neg/abstract.scala pos/abstract.scala run/Course-2002-01.scala"
+      
+      - name: Run all of partests
+        if: "github.event_name == 'schedule'"
+        timeout-minutes: 300
+        run: |
+          sbt \
+          "-J-Xmx3G" \
+          "scalaPartestTests${{env.project-version}}/testOnly -- --showDiff 
+  
