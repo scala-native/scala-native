@@ -2,7 +2,7 @@
 [running phase namer on t11952b.scala]
 [running phase packageobjects on t11952b.scala]
 [running phase typer on t11952b.scala]
-[running phase nativeinterop on t11952b.scala]
+[running phase scalanative-prepareInterop on t11952b.scala]
 [running phase superaccessors on t11952b.scala]
 [running phase extmethods on t11952b.scala]
 [running phase pickler on t11952b.scala]
