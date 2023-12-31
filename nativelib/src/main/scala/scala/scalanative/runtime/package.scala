@@ -148,9 +148,10 @@ package object runtime {
     throw new UndefinedBehaviorError
 
   /** Called by the generated code in case of out of bounds on array access. */
-  @noinline
-  private[scalanative] def throwOutOfBounds(i: Int): Nothing =
-    throw new ArrayIndexOutOfBoundsException(i.toString)
+  private[scalanative] def throwOutOfBounds(i: Int, length: Int): Nothing =
+    throw new ArrayIndexOutOfBoundsException(
+      s"Index $i out of bounds for length $length"
+    )
 
   /** Called by the generated code in case of missing method on reflective call.
    */
