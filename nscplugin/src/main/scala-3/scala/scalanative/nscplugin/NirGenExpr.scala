@@ -1087,7 +1087,7 @@ trait NirGenExpr(using Context) {
 
       (code: @switch) match {
         case THROW                  => genThrow(app, args)
-        case CONCAT                 => genStringConcat(receiver, arg)
+        case CONCAT                 => genStringConcat(app)
         case HASH                   => genHashCode(arg)
         case BOXED_UNIT             => nir.Val.Unit
         case SYNCHRONIZED           => genSynchronized(receiver, arg)
@@ -1780,45 +1780,130 @@ trait NirGenExpr(using Context) {
         Seq(argp)
       )
 
-    private def genStringConcat(leftp: Tree, rightp: Tree): nir.Val = {
-      def stringify(sym: Symbol, value: nir.Val)(using
-          nir.Position
-      ): nir.Val = {
-        val cond = ContTree { () =>
-          buf.comp(nir.Comp.Ieq, nir.Rt.Object, value, nir.Val.Null, unwind)
-        }
-        val thenp = ContTree { () => nir.Val.String("null") }
-        val elsep = ContTree { () =>
-          if (sym == defn.StringClass) value
-          else {
-            val meth = defn.Any_toString
-            genApplyMethod(meth, statically = false, value, Seq.empty)
-          }
-        }
-        genIf(nir.Rt.String, cond, thenp, elsep)
-      }
+    /*
+     * Returns a list of trees that each should be concatenated, from left to right.
+     * It turns a chained call like "a".+("b").+("c") into a list of arguments.
+     */
+    def liftStringConcat(tree: Tree): List[Tree] = tree match {
+      case tree @ Apply(fun @ DesugaredSelect(larg, method), rarg) =>
+        if (nirPrimitives.isPrimitive(fun) &&
+            nirPrimitives.getPrimitive(tree, larg.tpe) == CONCAT)
+          liftStringConcat(larg) ::: rarg
+        else
+          tree :: Nil
+      case _ =>
+        tree :: Nil
+    }
 
-      val left = {
-        given nir.Position = leftp.span
-        val typesym = leftp.tpe.typeSymbol
-        val unboxed = genExpr(leftp)
-        val boxed = boxValue(typesym, unboxed)
-        stringify(typesym, boxed)
-      }
+    /* Issue a call to `StringBuilder#append` for the right element type     */
+    private final def genStringBuilderAppend(
+        stringBuilder: nir.Val.Local,
+        tree: Tree
+    ): Unit = {
+      given nir.Position = tree.span
+      val tpe = tree.tpe
+      val argType =
+        if (tpe <:< defn.StringType) nir.Rt.String
+        else if (tpe <:< defnNir.jlStringBufferType)
+          genType(defnNir.jlStringBufferRef)
+        else if (tpe <:< defnNir.jlCharSequenceType)
+          genType(defnNir.jlCharSequenceRef)
+        // Don't match for `Array(Char)`, even though StringBuilder has such an overload:
+        // `"a" + Array('b')` should NOT be "ab", but "a[C@...".
+        else if (tpe <:< defn.ObjectType) nir.Rt.Object
+        else genType(tpe)
 
-      val right = {
-        given nir.Position = rightp.span
-        val typesym = rightp.tpe.typeSymbol
-        val boxed = genExpr(rightp)
-        stringify(typesym, boxed)
+      val value = genExpr(tree)
+      val (adaptedValue, targetType) = argType match {
+        // jlStringBuilder does not have overloads for byte and short, but we can just use the int version
+        case nir.Type.Byte | nir.Type.Short =>
+          genCoercion(value, value.ty, nir.Type.Int) -> nir.Type.Int
+        case nirType => value -> nirType
       }
+      val (appendFunction, appendSig) = jlStringBuilderAppendForSymbol(
+        targetType
+      )
+      buf.call(
+        appendSig,
+        appendFunction,
+        Seq(stringBuilder, adaptedValue),
+        unwind
+      )
+    }
 
-      genApplyMethod(
-        defn.String_+,
-        statically = true,
-        left,
-        Seq(ValTree(right))
-      )(using leftp.span: nir.Position)
+    private lazy val jlStringBuilderRef =
+      nir.Type.Ref(genTypeName(defnNir.jlStringBuilderRef))
+    private lazy val jlStringBuilderCtor =
+      jlStringBuilderRef.name.member(nir.Sig.Ctor(Seq(nir.Type.Int)))
+    private lazy val jlStringBuilderCtorSig = nir.Type.Function(
+      Seq(jlStringBuilderRef, nir.Type.Int),
+      nir.Type.Unit
+    )
+    private lazy val jlStringBuilderToString =
+      jlStringBuilderRef.name.member(
+        nir.Sig.Method("toString", Seq(nir.Rt.String))
+      )
+    private lazy val jlStringBuilderToStringSig = nir.Type.Function(
+      Seq(jlStringBuilderRef),
+      nir.Rt.String
+    )
+
+    private def genStringConcat(tree: Apply): nir.Val = {
+      given nir.Position = tree.span
+      liftStringConcat(tree) match {
+        // Optimization for expressions of the form "" + x
+        case List(Literal(Constant("")), arg) =>
+          genApplyStaticMethod(
+            defn.String_valueOf_Object,
+            defn.StringClass,
+            Seq(arg)
+          )
+
+        case concatenations =>
+          val concatArguments = concatenations.view
+            .filter {
+              // empty strings are no-ops in concatenation
+              case Literal(Constant("")) => false
+              case _                     => true
+            }
+            .map {
+              // Eliminate boxing of primitive values. Boxing is introduced by erasure because
+              // there's only a single synthetic `+` method "added" to the string class.
+              case Apply(boxOp, value :: Nil)
+                  // TODO: SN specific boxing
+                  if Erasure.Boxing.isBox(boxOp.symbol) &&
+                    boxOp.symbol.denot.owner != defn.UnitModuleClass =>
+                value
+              case other => other
+            }
+            .toList
+          // Estimate capacity needed for the string builder
+          val approxBuilderSize = concatArguments.view.map {
+            case Literal(Constant(s: String)) => s.length
+            case Literal(c: Constant) if c.isNonUnitAnyVal =>
+              String.valueOf(c).length
+            case _ => 0
+          }.sum
+
+          // new StringBuidler(approxBuilderSize)
+          val stringBuilder =
+            buf.classalloc(jlStringBuilderRef.name, unwind, None)
+          buf.call(
+            jlStringBuilderCtorSig,
+            nir.Val.Global(jlStringBuilderCtor, nir.Type.Ptr),
+            Seq(stringBuilder, nir.Val.Int(approxBuilderSize)),
+            unwind
+          )
+          // concat substrings
+          concatArguments.foreach(genStringBuilderAppend(stringBuilder, _))
+          // stringBuilder.toString
+          buf.call(
+            jlStringBuilderToStringSig,
+            nir.Val.Global(jlStringBuilderToString, nir.Type.Ptr),
+            Seq(stringBuilder),
+            unwind
+          )
+      }
     }
 
     private def genStaticMember(sym: Symbol, receiver: Symbol)(using

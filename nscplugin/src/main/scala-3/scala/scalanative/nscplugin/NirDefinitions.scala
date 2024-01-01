@@ -279,6 +279,18 @@ final class NirDefinitions()(using ctx: Context) {
   @tu lazy val JavaUtilServiceLoaderLoad = JavaUtilServiceLoader.alternatives("load")
   @tu lazy val JavaUtilServiceLoaderLoadInstalled = JavaUtilServiceLoader.requiredMethod("loadInstalled")
   @tu lazy val LinktimeIntrinsics = JavaUtilServiceLoaderLoad ++ Seq(JavaUtilServiceLoaderLoadInstalled)
+
+  @tu lazy val jlStringBuilderRef = requiredClass("java.lang.StringBuilder")
+  @tu lazy val jlStringBuilderType = jlStringBuilderRef.typeRef
+  @tu lazy val jlStringBuilderAppendAlts = jlStringBuilderRef.info
+    .decl(termName("append"))
+    .alternatives
+    .map(_.symbol)
+  @tu lazy val jlStringBufferRef = requiredClass("java.lang.StringBuffer")
+  @tu lazy val jlStringBufferType = jlStringBufferRef.typeRef
+  @tu lazy val jlCharSequenceRef = requiredClass("java.lang.CharSequence")
+  @tu lazy val jlCharSequenceType = jlCharSequenceRef.typeRef
+
   // Scala library & runtime
   @tu lazy val InlineClass = requiredClass("scala.inline")
   @tu lazy val NoInlineClass = requiredClass("scala.noinline")

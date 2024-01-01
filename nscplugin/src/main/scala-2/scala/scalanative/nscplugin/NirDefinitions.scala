@@ -345,6 +345,21 @@ trait NirDefinitions {
     lazy val JavaProperties = getRequiredClass("java.util.Properties")
 
     lazy val StringConcatMethod = getMember(StringClass, TermName("concat"))
+    lazy val String_valueOf_Object =
+      getMember(StringModule, nme.valueOf).filter(sym =>
+        sym.info.paramTypes match {
+          case List(pt) => pt.typeSymbol == ObjectClass
+          case _        => false
+        }
+      )
+    lazy val jlStringBuilderRef = getRequiredClass("java.lang.StringBuilder")
+    lazy val jlStringBuilderType = jlStringBuilderRef.toType
+    lazy val jlStringBuilderAppendAlts =
+      getMemberMethod(jlStringBuilderRef, TermName("append")).alternatives
+    lazy val jlStringBufferRef = getRequiredClass("java.lang.StringBuffer")
+    lazy val jlStringBufferType = jlStringBufferRef.toType
+    lazy val jlCharSequenceRef = getRequiredClass("java.lang.CharSequence")
+    lazy val jlCharSequenceType = jlCharSequenceRef.toType
 
     lazy val BoxMethod = Map[Char, Symbol](
       'B' -> getDecl(BoxesRunTimeModule, TermName("boxToBoolean")),
