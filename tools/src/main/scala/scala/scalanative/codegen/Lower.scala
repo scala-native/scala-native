@@ -382,12 +382,13 @@ object Lower {
             unwindHandler := slowPathUnwindHandler
           ) {
             val idx = nir.Val.Local(fresh(), nir.Type.Int)
+            val len = nir.Val.Local(fresh(), nir.Type.Int)
 
-            buf.label(slowPath, Seq(idx))
+            buf.label(slowPath, Seq(idx, len))
             buf.call(
               throwOutOfBoundsTy,
               throwOutOfBoundsVal,
-              Seq(nir.Val.Null, idx),
+              Seq(nir.Val.Null, idx, len),
               unwind
             )
             buf.unreachable(nir.Next.None)
@@ -559,7 +560,7 @@ object Lower {
       branch(
         inBounds,
         nir.Next(inBoundsL),
-        nir.Next.Label(outOfBoundsL, Seq(idx))
+        nir.Next.Label(outOfBoundsL, Seq(idx, len))
       )
       label(inBoundsL)
     }
@@ -1986,11 +1987,17 @@ object Lower {
     nir.Val.Global(throwUndefined, nir.Type.Ptr)
 
   val throwOutOfBoundsTy =
-    nir.Type.Function(Seq(nir.Type.Ptr, nir.Type.Int), nir.Type.Nothing)
+    nir.Type.Function(
+      Seq(nir.Type.Ptr, nir.Type.Int, nir.Type.Int),
+      nir.Type.Nothing
+    )
   val throwOutOfBounds =
     nir.Global.Member(
       nir.Rt.Runtime.name,
-      nir.Sig.Method("throwOutOfBounds", Seq(nir.Type.Int, nir.Type.Nothing))
+      nir.Sig.Method(
+        "throwOutOfBounds",
+        Seq(nir.Type.Int, nir.Type.Int, nir.Type.Nothing)
+      )
     )
   val throwOutOfBoundsVal =
     nir.Val.Global(throwOutOfBounds, nir.Type.Ptr)
