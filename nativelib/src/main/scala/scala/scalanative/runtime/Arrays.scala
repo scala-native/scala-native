@@ -100,9 +100,9 @@ object Array {
     } else if (len < 0) {
       throw new ArrayIndexOutOfBoundsException("length is negative")
     } else if (fromPos < 0 || fromPos + len > from.length) {
-      throwOutOfBounds(fromPos)
+      throwOutOfBounds(fromPos, from.length)
     } else if (toPos < 0 || toPos + len > to.length) {
-      throwOutOfBounds(toPos)
+      throwOutOfBounds(toPos, to.length)
     } else if (len == 0) {
       ()
     } else {
@@ -145,9 +145,9 @@ object Array {
     } else if (len < 0) {
       throw new ArrayIndexOutOfBoundsException("length is negative")
     } else if (leftPos < 0 || leftPos + len > left.length) {
-      throwOutOfBounds(leftPos)
+      throwOutOfBounds(leftPos, left.length)
     } else if (rightPos < 0 || rightPos + len > right.length) {
-      throwOutOfBounds(rightPos)
+      throwOutOfBounds(rightPos, right.length)
     } else if (len == 0) {
       0
     } else {
@@ -166,7 +166,7 @@ final class BooleanArray private () extends Array[Boolean] {
 
   @inline def atRaw(i: Int): RawPtr =
     if (i < 0 || i >= length) {
-      throwOutOfBounds(i)
+      throwOutOfBounds(i, length)
     } else {
       atRawUnsafe(i)
     }
@@ -222,7 +222,7 @@ final class CharArray private () extends Array[Char] {
 
   @inline def atRaw(i: Int): RawPtr =
     if (i < 0 || i >= length) {
-      throwOutOfBounds(i)
+      throwOutOfBounds(i, length)
     } else {
       atRawUnsafe(i)
     }
@@ -278,7 +278,7 @@ final class ByteArray private () extends Array[Byte] {
 
   @inline def atRaw(i: Int): RawPtr =
     if (i < 0 || i >= length) {
-      throwOutOfBounds(i)
+      throwOutOfBounds(i, length)
     } else {
       atRawUnsafe(i)
     }
@@ -334,7 +334,7 @@ final class ShortArray private () extends Array[Short] {
 
   @inline def atRaw(i: Int): RawPtr =
     if (i < 0 || i >= length) {
-      throwOutOfBounds(i)
+      throwOutOfBounds(i, length)
     } else {
       atRawUnsafe(i)
     }
@@ -390,7 +390,7 @@ final class IntArray private () extends Array[Int] {
 
   @inline def atRaw(i: Int): RawPtr =
     if (i < 0 || i >= length) {
-      throwOutOfBounds(i)
+      throwOutOfBounds(i, length)
     } else {
       atRawUnsafe(i)
     }
@@ -446,7 +446,7 @@ final class LongArray private () extends Array[Long] {
 
   @inline def atRaw(i: Int): RawPtr =
     if (i < 0 || i >= length) {
-      throwOutOfBounds(i)
+      throwOutOfBounds(i, length)
     } else {
       atRawUnsafe(i)
     }
@@ -502,7 +502,7 @@ final class FloatArray private () extends Array[Float] {
 
   @inline def atRaw(i: Int): RawPtr =
     if (i < 0 || i >= length) {
-      throwOutOfBounds(i)
+      throwOutOfBounds(i, length)
     } else {
       atRawUnsafe(i)
     }
@@ -558,7 +558,7 @@ final class DoubleArray private () extends Array[Double] {
 
   @inline def atRaw(i: Int): RawPtr =
     if (i < 0 || i >= length) {
-      throwOutOfBounds(i)
+      throwOutOfBounds(i, length)
     } else {
       atRawUnsafe(i)
     }
@@ -614,7 +614,7 @@ final class ObjectArray private () extends Array[Object] {
 
   @inline def atRaw(i: Int): RawPtr =
     if (i < 0 || i >= length) {
-      throwOutOfBounds(i)
+      throwOutOfBounds(i, length)
     } else {
       atRawUnsafe(i)
     }
