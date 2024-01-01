@@ -43,11 +43,6 @@ object Validator {
     val c = config.compilerConfig
     val issues = List.newBuilder[String]
 
-    if (c.multithreadingSupport) c.gc match {
-      case GC.Commix =>
-        issues += "CommixGC does not support multithreading yet, use other GC implementation (Immix, Boehm)"
-      case _ => ()
-    }
     if (!Files.exists(c.clang))
       issues += s"Provided clang path '${c.clang.toAbsolutePath()}' does not exist, specify a valid path to LLVM Toolchain distribution using config or LLVM_BIN environment variable"
     if (!Files.exists(c.clangPP))

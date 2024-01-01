@@ -1958,10 +1958,10 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         case LOAD_RAW_SIZE => nir.Type.Size
         case LOAD_OBJECT   => nir.Rt.Object
       }
-      val syncAttrs =
+      val memoryOrder =
         if (!ptrp.symbol.isVolatile) None
-        else Some(nir.SyncAttrs(nir.MemoryOrder.Acquire))
-      buf.load(ty, ptr, unwind, syncAttrs)
+        else Some(nir.MemoryOrder.Acquire)
+      buf.load(ty, ptr, unwind, memoryOrder)
     }
 
     def genRawPtrStoreOp(app: Apply, code: Int): nir.Val = {
@@ -1984,10 +1984,10 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         case STORE_RAW_SIZE => nir.Type.Size
         case STORE_OBJECT   => nir.Rt.Object
       }
-      val syncAttrs =
+      val memoryOrder =
         if (!ptrp.symbol.isVolatile) None
-        else Some(nir.SyncAttrs(nir.MemoryOrder.Release))
-      buf.store(ty, ptr, value, unwind, syncAttrs)
+        else Some(nir.MemoryOrder.Release)
+      buf.store(ty, ptr, value, unwind, memoryOrder)
     }
 
     def genRawPtrElemOp(app: Apply, code: Int): nir.Val = {
@@ -2676,13 +2676,13 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       assert(sym.isExtern, "loadExtern was not extern")
 
       val name = nir.Val.Global(genName(sym), nir.Type.Ptr)
-      val syncAttrs =
+      val memoryOrder =
         if (!sym.isVolatile) None
-        else Some(nir.SyncAttrs(nir.MemoryOrder.Acquire))
+        else Some(nir.MemoryOrder.Acquire)
 
       fromExtern(
         ty,
-        buf.load(externTy, name, unwind, syncAttrs)
+        buf.load(externTy, name, unwind, memoryOrder)
       )
     }
 
@@ -2692,11 +2692,11 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       assert(sym.isExtern, "storeExtern was not extern")
       val name = nir.Val.Global(genName(sym), nir.Type.Ptr)
       val externValue = toExtern(externTy, value)
-      val syncAttrs =
+      val memoryOrder =
         if (!sym.isVolatile) None
-        else Some(nir.SyncAttrs(nir.MemoryOrder.Release))
+        else Some(nir.MemoryOrder.Release)
 
-      buf.store(externTy, name, externValue, unwind, syncAttrs)
+      buf.store(externTy, name, externValue, unwind, memoryOrder)
     }
 
     def toExtern(expectedTy: nir.Type, value: nir.Val)(implicit

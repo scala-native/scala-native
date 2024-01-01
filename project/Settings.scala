@@ -690,23 +690,12 @@ object Settings {
       libraryDependencies += "org.scala-lang" % libraryName % scalaVersion.value,
       fetchScalaSource / artifactPath :=
         baseDirectory.value.getParentFile / "target" / "scalaSources" / scalaVersion.value,
-      /* Link source maps to the GitHub sources of the original scalalib
-       * This must come *before* the option added by MyScalaJSPlugin
-       * because mapSourceURI works on a first-match basis.
-       */
-      scalacOptions := {
-        val prev = scalacOptions.value
-        val scalaVersion = Keys.scalaVersion.value
-        val option = scalaNativeMapSourceURIOption(
-          baseDir = (fetchScalaSource / artifactPath).value,
-          targetURI =
-            if (scalaVersion.startsWith("3."))
-              s"https://raw.githubusercontent.com/lampepfl/dotty/${scalaVersion}/library/src/"
-            else
-              s"https://raw.githubusercontent.com/scala/scala/v${scalaVersion}/src/library/"
-        )
-        option ++ prev
-      },
+      scalacOptions ++= Seq(
+        // Create nir.SourceFile relative to Scala sources dir instead of root dir
+        // It should use -sourcepath for both, but it fails to compile under Scala 2
+        if (scalaVersion.value.startsWith("2.")) "-rootdir" else "-sourcepath",
+        (fetchScalaSource / artifactPath).value.toString
+      ),
       // Scala.js original comment modified to clarify issue is Scala.js.
       /* Work around for https://github.com/scala-js/scala-js/issues/2649
        * We would like to always use `update`, but
@@ -932,23 +921,6 @@ object Settings {
   def scalaNativeCompilerOptions(options: String*): Seq[String] = {
     if (isGeneratingForIDE) Nil
     else options.map(opt => s"-P:scalanative:$opt")
-  }
-
-  def scalaNativeMapSourceURIOption(
-      baseDir: File,
-      targetURI: String
-  ): Seq[String] = {
-    /* Ensure that there is a trailing '/', otherwise we can get no '/'
-     * before the first compilation (because the directory does not exist yet)
-     * but a '/' after the first compilation, causing a full recompilation on
-     * the *second* run after 'clean' (but not third and following).
-     */
-    val baseDirURI0 = baseDir.toURI.toString
-    val baseDirURI =
-      if (baseDirURI0.endsWith("/")) baseDirURI0
-      else baseDirURI0 + "/"
-
-    scalaNativeCompilerOptions(s"mapSourceURI:$baseDirURI->$targetURI")
   }
 
   def scalaVersionsDependendent[T](scalaVersion: String)(default: T)(

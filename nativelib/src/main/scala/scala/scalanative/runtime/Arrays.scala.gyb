@@ -101,9 +101,9 @@ object Array {
     } else if (len < 0) {
       throw new ArrayIndexOutOfBoundsException("length is negative")
     } else if (fromPos < 0 || fromPos + len > from.length) {
-      throwOutOfBounds(fromPos)
+      throwOutOfBounds(fromPos, from.length)
     } else if (toPos < 0 || toPos + len > to.length) {
-      throwOutOfBounds(toPos)
+      throwOutOfBounds(toPos, to.length)
     } else if (len == 0) {
       ()
     } else {
@@ -146,9 +146,9 @@ object Array {
     } else if (len < 0) {
       throw new ArrayIndexOutOfBoundsException("length is negative")
     } else if (leftPos < 0 || leftPos + len > left.length) {
-      throwOutOfBounds(leftPos)
+      throwOutOfBounds(leftPos, left.length)
     } else if (rightPos < 0 || rightPos + len > right.length) {
-      throwOutOfBounds(rightPos)
+      throwOutOfBounds(rightPos, right.length)
     } else if (len == 0) {
       0
     } else {
@@ -182,7 +182,7 @@ final class ${T}Array private () extends Array[${T}] {
 
   @inline def atRaw(i: Int): RawPtr =
     if (i < 0 || i >= length) {
-      throwOutOfBounds(i)
+      throwOutOfBounds(i, length)
     } else {
       atRawUnsafe(i)
     }

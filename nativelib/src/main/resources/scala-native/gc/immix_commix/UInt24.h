@@ -11,11 +11,24 @@ typedef union {
     uint32_t bits : 24;
 } UInt24Bits;
 
+static inline UInt24Bits UInt24Bits_fromUInt32(uint32_t value) {
+    UInt24Bits result;
+    result.bits =
+        value & 0xFFFFFF; // mask to ensure only lower 24 bits are taken
+    return result;
+}
+
+static inline UInt24Bits UInt24Bits_fromUInt24(UInt24 v) {
+    UInt24Bits result;
+    result.value = v;
+    return result;
+}
+
 static inline UInt24 UInt24_fromUInt32(uint32_t value) {
-    return ((UInt24Bits)(value)).value;
+    return UInt24Bits_fromUInt32(value).value;
 }
 static inline uint32_t UInt24_toUInt32(UInt24 v) {
-    return ((UInt24Bits)(v)).bits;
+    return UInt24Bits_fromUInt24(v).bits;
 }
 
 static inline UInt24 UInt24_plus(UInt24 value, int32_t arg) {

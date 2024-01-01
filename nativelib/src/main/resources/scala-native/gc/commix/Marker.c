@@ -14,7 +14,6 @@
 
 extern word_t *__modules;
 extern int __modules_size;
-extern word_t **__stack_bottom;
 
 #define LAST_FIELD_OFFSET -1
 
@@ -97,15 +96,21 @@ static inline void Marker_giveWeakRefPacket(Heap *heap, Stats *stats,
     }
 }
 
+static inline void Marker_markLockWords(Heap *heap, Stats *stats,
+                                        GreyPacket **outHolder,
+                                        GreyPacket **outWeakRefHolder,
+                                        Object *object);
+
 void Marker_markObject(Heap *heap, Stats *stats, GreyPacket **outHolder,
                        GreyPacket **outWeakRefHolder, Bytemap *bytemap,
                        Object *object, ObjectMeta *objectMeta) {
     assert(ObjectMeta_IsAllocated(objectMeta) ||
            ObjectMeta_IsMarked(objectMeta));
 
+    Marker_markLockWords(heap, stats, outHolder, outWeakRefHolder, object);
+
     assert(Object_Size(object) != 0);
     Object_Mark(heap, object, objectMeta);
-
     GreyPacket *out;
     if (Object_IsWeakReference(object)) {
         out = *outWeakRefHolder;
@@ -123,6 +128,45 @@ void Marker_markObject(Heap *heap, Stats *stats, GreyPacket **outHolder,
     }
 }
 
+static inline bool Marker_markField(Heap *heap, Stats *stats,
+                                    GreyPacket **outHolder,
+                                    GreyPacket **outWeakRefHolder,
+                                    Field_t field) {
+    if (Heap_IsWordInHeap(heap, field)) {
+        ObjectMeta *fieldMeta = Bytemap_Get(heap->bytemap, field);
+        if (ObjectMeta_IsAllocated(fieldMeta)) {
+            Marker_markObject(heap, stats, outHolder, outWeakRefHolder,
+                              heap->bytemap, (Object *)field, fieldMeta);
+            return true;
+        }
+    }
+    return false;
+}
+
+/* If compiling with enabled lock words check if object monitor is inflated and
+ * can be marked. Otherwise, in singlethreaded mode this funciton is no-op
+ */
+static inline void Marker_markLockWords(Heap *heap, Stats *stats,
+                                        GreyPacket **outHolder,
+                                        GreyPacket **outWeakRefHolder,
+                                        Object *object) {
+#ifdef USES_LOCKWORD
+    if (object != NULL) {
+        Field_t rttiLock = object->rtti->rt.lockWord;
+        if (Field_isInflatedLock(rttiLock)) {
+            Field_t field = Field_allignedLockRef(rttiLock);
+            Marker_markField(heap, stats, outHolder, outWeakRefHolder, field);
+        }
+
+        Field_t objectLock = object->lockWord;
+        if (Field_isInflatedLock(objectLock)) {
+            Field_t field = Field_allignedLockRef(objectLock);
+            Marker_markField(heap, stats, outHolder, outWeakRefHolder, field);
+        }
+    }
+#endif
+}
+
 void Marker_markConservative(Heap *heap, Stats *stats, GreyPacket **outHolder,
                              GreyPacket **outWeakRefHolder, word_t *address) {
     assert(Heap_IsWordInHeap(heap, address));
@@ -138,9 +182,10 @@ void Marker_markConservative(Heap *heap, Stats *stats, GreyPacket **outHolder,
     }
 }
 
-int Marker_markRange(Heap *heap, Stats *stats, GreyPacket **outHolder,
-                     GreyPacket **outWeakRefHolder, Bytemap *bytemap,
-                     word_t **fields, size_t length) {
+NO_SANITIZE int Marker_markRange(Heap *heap, Stats *stats,
+                                 GreyPacket **outHolder,
+                                 GreyPacket **outWeakRefHolder, word_t **fields,
+                                 size_t length) {
     int objectsTraced = 0;
     word_t **limit = fields + length;
     for (word_t **current = fields; current < limit; current++) {
@@ -149,10 +194,10 @@ int Marker_markRange(Heap *heap, Stats *stats, GreyPacket **outHolder,
         // interim pointers, otherwise we risk undefined behaviour when assuming
         // memory layout of underlying object.
         if (Heap_IsWordInHeap(heap, field) && Bytemap_isPtrAligned(field)) {
-            ObjectMeta *fieldMeta = Bytemap_Get(bytemap, field);
+            ObjectMeta *fieldMeta = Bytemap_Get(heap->bytemap, field);
             if (ObjectMeta_IsAllocated(fieldMeta)) {
                 Marker_markObject(heap, stats, outHolder, outWeakRefHolder,
-                                  bytemap, (Object *)field, fieldMeta);
+                                  heap->bytemap, (Object *)field, fieldMeta);
             }
             objectsTraced += 1;
         }
@@ -185,8 +230,8 @@ int Marker_markRegularObject(Heap *heap, Stats *stats, Object *object,
 }
 
 int Marker_splitObjectArray(Heap *heap, Stats *stats, GreyPacket **outHolder,
-                            GreyPacket **outWeakRefHolder, Bytemap *bytemap,
-                            word_t **fields, size_t length) {
+                            GreyPacket **outWeakRefHolder, word_t **fields,
+                            size_t length) {
     word_t **limit = fields + length;
     word_t **lastBatch =
         fields + (length / ARRAY_SPLIT_BATCH) * ARRAY_SPLIT_BATCH;
@@ -205,9 +250,8 @@ int Marker_splitObjectArray(Heap *heap, Stats *stats, GreyPacket **outHolder,
     size_t lastBatchSize = limit - lastBatch;
     int objectsTraced = 0;
     if (lastBatchSize > 0) {
-        objectsTraced =
-            Marker_markRange(heap, stats, outHolder, outWeakRefHolder, bytemap,
-                             lastBatch, lastBatchSize);
+        objectsTraced = Marker_markRange(
+            heap, stats, outHolder, outWeakRefHolder, lastBatch, lastBatchSize);
     }
     return objectsTraced;
 }
@@ -220,13 +264,13 @@ int Marker_markObjectArray(Heap *heap, Stats *stats, Object *object,
     word_t **fields = (word_t **)(arrayHeader + 1);
     int objectsTraced;
     if (length <= ARRAY_SPLIT_THRESHOLD) {
-        objectsTraced = Marker_markRange(
-            heap, stats, outHolder, outWeakRefHolder, bytemap, fields, length);
+        objectsTraced = Marker_markRange(heap, stats, outHolder,
+                                         outWeakRefHolder, fields, length);
     } else {
         // object array is two large, split it into pieces for multiple threads
         // to handle
         objectsTraced = Marker_splitObjectArray(
-            heap, stats, outHolder, outWeakRefHolder, bytemap, fields, length);
+            heap, stats, outHolder, outWeakRefHolder, fields, length);
     }
     return objectsTraced;
 }
@@ -284,7 +328,7 @@ void Marker_markRangePacket(Heap *heap, Stats *stats, GreyPacket *in,
     Marker_RetakeIfNull(heap, stats, outHolder);
     Marker_RetakeIfNull(heap, stats, outWeakRefHolder);
     word_t **fields = (word_t **)in->items[0];
-    Marker_markRange(heap, stats, outHolder, outWeakRefHolder, bytemap, fields,
+    Marker_markRange(heap, stats, outHolder, outWeakRefHolder, fields,
                      ARRAY_SPLIT_BATCH);
     in->type = grey_packet_reflist;
     in->size = 0;
@@ -380,24 +424,24 @@ void Marker_MarkUntilDone(Heap *heap, Stats *stats) {
     }
 }
 
-void Marker_markProgramStack(Heap *heap, Stats *stats, GreyPacket **outHolder,
-                             GreyPacket **outWeakRefHolder) {
-    // Dumps registers into 'regs' which is on stack
-    jmp_buf regs;
-    setjmp(regs);
-    word_t *dummy;
+NO_SANITIZE void Marker_markProgramStack(MutatorThread *thread, Heap *heap,
+                                         Stats *stats, GreyPacket **outHolder,
+                                         GreyPacket **outWeakRefHolder) {
+    word_t **stackBottom = thread->stackBottom;
+    word_t **stackTop = (word_t **)atomic_load(&thread->stackTop);
+    // Extend scanning slightly over the approximated stack top
+    // In the past we were frequently missing objects allocated just before GC
+    // (mostly under LTO enabled)
+    stackTop -= 8;
+    size_t stackSize = stackBottom - stackTop;
+    Marker_markRange(heap, stats, outHolder, outWeakRefHolder, stackTop,
+                     stackSize);
 
-    word_t **current = &dummy;
-    word_t **stackBottom = __stack_bottom;
-
-    while (current <= stackBottom) {
-        word_t *obj = *current;
-        if (Heap_IsWordInHeap(heap, obj) && Bytemap_isPtrAligned(obj)) {
-            Marker_markConservative(heap, stats, outHolder, outWeakRefHolder,
-                                    obj);
-        }
-        current += 1;
-    }
+    // Mark last context of execution
+    assert(thread->executionContext != NULL);
+    word_t **regs = (word_t **)thread->executionContext;
+    size_t regsSize = sizeof(jmp_buf) / sizeof(word_t *);
+    Marker_markRange(heap, stats, outHolder, outWeakRefHolder, regs, regsSize);
 }
 
 void Marker_markModules(Heap *heap, Stats *stats, GreyPacket **outHolder,
@@ -407,15 +451,7 @@ void Marker_markModules(Heap *heap, Stats *stats, GreyPacket **outHolder,
     Bytemap *bytemap = heap->bytemap;
     word_t **limit = modules + nb_modules;
     for (word_t **current = modules; current < limit; current++) {
-        Object *object = (Object *)*current;
-        if (Heap_IsWordInHeap(heap, (word_t *)object)) {
-            // is within heap
-            ObjectMeta *objectMeta = Bytemap_Get(bytemap, (word_t *)object);
-            if (ObjectMeta_IsAllocated(objectMeta)) {
-                Marker_markObject(heap, stats, outHolder, outWeakRefHolder,
-                                  bytemap, object, objectMeta);
-            }
-        }
+        Marker_markField(heap, stats, outHolder, outWeakRefHolder, *current);
     }
 }
 
@@ -436,9 +472,14 @@ void Marker_markCustomRoots(Heap *heap, Stats *stats, GreyPacket **outHolder,
 }
 
 void Marker_MarkRoots(Heap *heap, Stats *stats) {
+    atomic_thread_fence(memory_order_seq_cst);
+
     GreyPacket *out = Marker_takeEmptyPacket(heap, stats);
     GreyPacket *weakRefOut = Marker_takeEmptyPacket(heap, stats);
-    Marker_markProgramStack(heap, stats, &out, &weakRefOut);
+    MutatorThreads_foreach(mutatorThreads, node) {
+        MutatorThread *thread = node->value;
+        Marker_markProgramStack(thread, heap, stats, &out, &weakRefOut);
+    }
     Marker_markModules(heap, stats, &out, &weakRefOut);
     Marker_markCustomRoots(heap, stats, &out, &weakRefOut, roots);
     Marker_giveFullPacket(heap, stats, out);

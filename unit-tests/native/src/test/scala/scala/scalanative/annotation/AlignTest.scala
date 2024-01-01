@@ -1,7 +1,7 @@
 package scala.scalanative
 package annotation
 
-import org.junit.{Test, Assume}
+import org.junit.{Test, Assume, BeforeClass}
 import org.junit.Assert._
 import org.junit.Assume._
 
@@ -61,6 +61,15 @@ package AlignTestCases {
   }
 }
 
+object AlignTest {
+  @BeforeClass def checkRuntime(): Unit = assumeFalse(
+    "Excluded from CI tests when not-optimized - non deterministic order of fields",
+    sys.env.contains("CI") && sys.env
+      .get("SCALANATIVE_OPTIMIZE")
+      .map(_.trim())
+      .contains("false")
+  )
+}
 class AlignTest {
   import AlignTestCases._
   private def checkClassSize(expected: Int, classSize: Int) = assertEquals(

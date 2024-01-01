@@ -64,7 +64,7 @@ class PositionsTest {
       def checkPos(line: Int, column: Int)(pos: nir.Position) = {
         val clue =
           s"${defn.name} - expected=$line:$column, actual=${pos.line}:${pos.column}"
-        assertTrue(clue, pos.source.getPath().endsWith(sourceFile))
+        assertTrue(clue, pos.source.filename.contains(sourceFile))
         assertEquals(clue, line, pos.line)
         assertEquals(clue, column, pos.column)
       }
@@ -72,12 +72,12 @@ class PositionsTest {
           positions: Iterable[nir.Position]
       ): Unit = {
         positions.foreach { pos =>
-          assertTrue(s"${defn.name}", pos.source.getPath().endsWith(sourceFile))
+          assertTrue(s"${defn.name}", pos.source.filename.contains(sourceFile))
           assertTrue(s"${defn.name}", range.contains(pos.line))
         }
       }
       val pos = defn.pos
-      assertTrue(pos.source.getPath().endsWith(sourceFile))
+      assertTrue(pos.source.filename.contains(sourceFile))
       defn match {
         case nir.Defn.Class(_, TopLevel, _, _) =>
           checkPos(0, 6)(pos)

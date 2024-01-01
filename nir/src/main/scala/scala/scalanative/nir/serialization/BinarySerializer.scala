@@ -73,11 +73,16 @@ final class BinarySerializer(channel: WritableByteChannel) {
     }
   }
 
-  private object Positions extends InternedBinarySectionWriter[Position] with Common {
-    override def internDeps(pos: Position): Unit = ()
+  private object Positions extends InternedBinarySectionWriter[nir.Position] with Common {
+    override def internDeps(pos: nir.Position): Unit = ()
 
-    override def put(pos: Position): Unit = {
-      putString(pos.source.toString) // interned
+    override def put(pos: nir.Position): Unit = {
+      putString {
+        pos.source match { // interned
+          case nir.SourceFile.Virtual                        => ""
+          case nir.SourceFile.SourceRootRelative(pathString) => pathString
+        }
+      }
       putLebUnsignedInt(pos.line)
       putLebUnsignedInt(pos.column)
     }
@@ -344,12 +349,7 @@ final class BinarySerializer(channel: WritableByteChannel) {
       case Next.None         => putTag(T.NoneNext)
     }
 
-    private def putOptSyncAttrs(attrs: Option[SyncAttrs]): Unit = putOpt(attrs)(putSyncAttrs(_))
-    private def putSyncAttrs(value: SyncAttrs) = {
-      putMemoryOrder(value.memoryOrder)
-      putBool(value.isVolatile)
-    }
-
+    private def putMemoryOrder(value: Option[MemoryOrder]): Unit = putOpt(value)(putMemoryOrder(_))
     private def putMemoryOrder(value: MemoryOrder): Unit = value match {
       case MemoryOrder.Unordered => putTag(T.Unordered)
       case MemoryOrder.Monotonic => putTag(T.MonotonicOrder)
@@ -430,11 +430,11 @@ final class BinarySerializer(channel: WritableByteChannel) {
         putType(ty)
         putVal(ptr)
 
-      case Op.Load(ty, ptr, Some(syncAttrs)) =>
-        putTag(T.LoadSyncOp)
+      case Op.Load(ty, ptr, Some(memoryOrder)) =>
+        putTag(T.LoadAtomicOp)
         putType(ty)
         putVal(ptr)
-        putSyncAttrs(syncAttrs)
+        putMemoryOrder(memoryOrder)
 
       case Op.Store(ty, value, ptr, None) =>
         putTag(T.StoreOp)
@@ -442,12 +442,12 @@ final class BinarySerializer(channel: WritableByteChannel) {
         putVal(value)
         putVal(ptr)
 
-      case Op.Store(ty, value, ptr, Some(syncAttrs)) =>
-        putTag(T.StoreOp)
+      case Op.Store(ty, value, ptr, Some(memoryOrder)) =>
+        putTag(T.StoreAtomicOp)
         putType(ty)
         putVal(value)
         putVal(ptr)
-        putSyncAttrs(syncAttrs)
+        putMemoryOrder(memoryOrder)
 
       case Op.Box(ty, obj) =>
         putTag(T.BoxOp)
@@ -562,9 +562,9 @@ final class BinarySerializer(channel: WritableByteChannel) {
         putTag(T.AlignmentOfOp)
         putType(ty)
 
-      case Op.Fence(syncAttrs) =>
+      case Op.Fence(memoryOrder) =>
         putTag(T.FenceOp)
-        putSyncAttrs(syncAttrs)
+        putMemoryOrder(memoryOrder)
     }
 
     private def putParams(params: Seq[Val.Local]) = putSeq(params)(putParam)

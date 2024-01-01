@@ -18,7 +18,8 @@ trait LinktimeValueResolver { self: Reach =>
     val conf = config.compilerConfig
     val triple = conf.configuredOrDetectedTriple
     val predefined: NativeConfig.LinktimeProperites = Map(
-      s"$linktimeInfo.hasDebugMetadata" -> conf.debugMetadata,
+      s"$linktimeInfo.debugMetadata.enabled" -> conf.sourceLevelDebuggingConfig.enabled,
+      s"$linktimeInfo.debugMetadata.generateFunctionSourcePositions" -> conf.sourceLevelDebuggingConfig.generateFunctionSourcePositions,
       s"$linktimeInfo.debugMode" -> (conf.mode == Mode.debug),
       s"$linktimeInfo.releaseMode" -> (conf.mode == Mode.releaseFast || conf.mode == Mode.releaseFull || conf.mode == Mode.releaseSize),
       s"$linktimeInfo.isMultithreadingEnabled" -> conf.multithreadingSupport,

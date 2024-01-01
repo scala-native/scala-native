@@ -12,6 +12,7 @@ concurrency:
 jobs:
   test-runtime:
     name: Test runtime
+    if: "github.event_name == 'pull_request' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')"
     runs-on: macos-12
     env:
       ENABLE_EXPERIMENTAL_COMPILER: true
@@ -40,21 +41,22 @@ jobs:
         env: 
           SCALANATIVE_GC: ${{ matrix.gc }}
           SCALANATIVE_TEST_PREFETCH_DEBUG_INFO: 1
-        run: sbt -Dscala.scalanative.multithreading.enable=${{ matrix.gc != 'commix' }} "test-runtime ${{matrix.scala}}"
+        run: sbt "test-runtime ${{matrix.scala}}"
 
       - name: Test partests infrastructure
         # No partests support for Scala 3
         if: ${{ !startsWith(matrix.scala, '3') }}
+        timeout-minutes: 45
         run: >
-          sbt -Dscala.scalanative.multithreading.enable=${{ matrix.gc != 'commix' }} "scalaPartestTests${{env.project-version}}/testOnly -- --showDiff neg/abstract.scala pos/abstract.scala run/Course-2002-01.scala"
+          sbt "scalaPartestTests${{env.project-version}}/testOnly -- --showDiff neg/abstract.scala pos/abstract.scala run/Course-2002-01.scala"
 
   test-runtime-ext:
     name: Test runtime extension
+    if: "(github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native'"
     runs-on: macos-12
     needs: [test-runtime]
     env:
       ENABLE_EXPERIMENTAL_COMPILER: true
-    if: "(github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native'"
     strategy:
       fail-fast: false
       matrix:
@@ -97,6 +99,7 @@ jobs:
           echo set-native-config=${SetConfigTemplate} >> $GITHUB_ENV
 
       - name: Run tests
+        timeout-minutes: 45
         env:
           SCALANATIVE_MODE: ${{ matrix.build-mode }}
           SCALANATIVE_GC: ${{ matrix.gc }}
@@ -120,10 +123,11 @@ jobs:
         run: |
           export LLVM_BIN="$(brew --prefix llvm@15)/bin"
           $LLVM_BIN/clang --version
-          sbt -Dscala.scalanative.multithreading.enable=${{ matrix.gc != 'commix' }} -J-Xmx5G "${TEST_COMMAND}"
+          sbt -J-Xmx5G "${TEST_COMMAND}"
 
   run-scripted-tests:
     name: Scripted tests
+    if: "github.event_name == 'pull_request' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')"
     runs-on: macos-12
     strategy:
       fail-fast: false
@@ -141,13 +145,13 @@ jobs:
           sbt "test-scripted ${{matrix.scala}}"
 
   test-llvm-versions:
+    if: "(github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native'"
     runs-on: macos-12
     strategy:
       fail-fast: false
       matrix:
         scala: [3]
         llvm: [14, 16, latest] # Last 3 stable versions. 15 is tested by default,  latest version == 17
-    if: "(github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native'"
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/macos-setup-env
@@ -157,6 +161,7 @@ jobs:
           java-version: 8
 
       - name: Run tests
+        timeout-minutes: 45
         # env:
         #   SCALANATIVE_MODE: release-fast
         #   SCALANATIVE_LTO: thin

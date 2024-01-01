@@ -9,6 +9,7 @@ import signalhandling.SignalConfig
 import scalanative.posix.sys.socket._
 import scalanative.posix.netinet.in
 import scalanative.posix.unistd
+import scala.concurrent.ExecutionContext
 
 object TestMain {
 
@@ -27,56 +28,26 @@ object TestMain {
       |""".stripMargin
   }
 
-  final val iPv4Loopback = "127.0.0.1"
-  final val iPv6Loopback = "::1"
-
-  private def getFreeBSDLoopbackAddr(): String = {
+  private def setFreeBSDWorkaround(): Unit = {
     /* Standard out-of-the-box FreeBSD differs from Linux & macOS in
-     * not allowing IPv4 mapped IPv6 addresses, such as :FFFF:127.0.0.1
-     * or ::ffff:7f00:1.  These can be enabled by setting the line
-     * ipv6_ipv4mapping="YES" in /etc/rc.conf (and rebooting).
+     * not allowing IPv4-mapped IPv6 addresses, such as :FFFF:127.0.0.1
+     * or ::ffff:7f00:1.
      *
-     * FreeBSD TestMain initial connections should succeed on both IPv4
-     * and IPv6 systems without requiring arcane and non-standard system
-     * configuration.  This method checks the protocol that Java connect()
-     * is likely used and returns the corresponding loopback address.
-     * Tests which use IPv4 addresses, either through hard-coding or
-     * bind resolution, on IPv6 systems will still fail. This allows to
-     * run the vast majority of tests which do not have this characteristic.
+     * Another difference is that Java versions >= 11 on FreeBSD set
+     * java.net.preferIPv4Stack=true by default, so the sbt server
+     * listens only on a tcp4 socket.
      *
-     * Networking is complex, especially on j-random systems: full of
-     * joy & lamentation.
+     * Even if IPv4-mapped IPv6 addresses can be enabled (via the
+     * net.inet6.ip6.v6only=0 sysctl and/or via the ipv6_ipv4mapping="YES"
+     * rc.conf variable) and sbt can be instructed to listen on an IPv6
+     * socket (via the java.net.preferIPv4Stack=false system property),
+     * the easiest way to make TestMain to work on most FreeBSD machines,
+     * with different Java versions, is to set
+     * java.net.preferIPv4Stack=true in Scala Native, before the first
+     * Java network call, in order to always use an AF_INET IPv4 socket.
      */
 
-    if (!LinktimeInfo.isFreeBSD) iPv4Loopback // should never happen
-    else {
-      // These are the effective imports
-      import scalanative.posix.sys.socket._
-      import scalanative.posix.netinet.in
-      import scalanative.posix.unistd
-
-      /* These are to get this code to compile on Windows.
-       * Including all of them is cargo cult programming. Someone
-       * more patient or more knowledgeable about Windows may
-       * be able to reduce the set.
-       */
-      import scala.scalanative.windows._
-      import scala.scalanative.windows.WinSocketApi._
-      import scala.scalanative.windows.WinSocketApiExt._
-      import scala.scalanative.windows.WinSocketApiOps._
-      import scala.scalanative.windows.ErrorHandlingApi._
-
-      /* The keen observer will note that this scheme could be used
-       * for Linux and macOS. That change is not introduced at this time
-       * in order to preserve historical behavior.
-       */
-      val sd = socket(AF_INET6, SOCK_STREAM, in.IPPROTO_TCP)
-      if (sd == -1) iPv4Loopback
-      else {
-        unistd.close(sd)
-        iPv6Loopback
-      }
-    }
+    System.setProperty("java.net.preferIPv4Stack", "true")
   }
 
   /** Main method of the test runner. */
@@ -90,7 +61,7 @@ object TestMain {
 
     // Loading debug metadata can take up to few seconds which might mess up timeout specific tests
     // Prefetch the debug metadata before the actual tests do start
-    if (LinktimeInfo.hasDebugMetadata) {
+    if (LinktimeInfo.sourceLevelDebuging.generateFunctionSourcePositions) {
       val shouldPrefetch =
         sys.env
           .get("SCALANATIVE_TEST_PREFETCH_DEBUG_INFO")
@@ -99,12 +70,10 @@ object TestMain {
         new RuntimeException().fillInStackTrace().ensuring(_ != null)
     }
 
-    val serverAddr =
-      if (!LinktimeInfo.isFreeBSD) iPv4Loopback
-      else getFreeBSDLoopbackAddr()
+    if (LinktimeInfo.isFreeBSD) setFreeBSDWorkaround()
     val serverPort = args(0).toInt
-    val clientSocket = new Socket(serverAddr, serverPort)
-    val nativeRPC = new NativeRPC(clientSocket)
+    val clientSocket = new Socket("127.0.0.1", serverPort)
+    val nativeRPC = new NativeRPC(clientSocket)(ExecutionContext.global)
     val bridge = new TestAdapterBridge(nativeRPC)
 
     bridge.start()

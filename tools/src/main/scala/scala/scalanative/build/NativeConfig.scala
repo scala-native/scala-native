@@ -88,8 +88,20 @@ sealed trait NativeConfig {
   /** Configuration when doing optimization */
   def optimizerConfig: OptimizerConfig
 
-  /** Should we add LLVM metadata to the binary artifacts? */
-  def debugMetadata: Boolean
+  /** Configuration for LLVM metadata generation controlling source level
+   *  debugging support
+   */
+  def sourceLevelDebuggingConfig: SourceLevelDebuggingConfig
+
+  /** Create a new [[NativeConfig]] with given [[SourceLevelDebuggingConfig]] */
+  def withSourceLevelDebuggingConfig(
+      config: SourceLevelDebuggingConfig
+  ): NativeConfig = withSourceLevelDebuggingConfig(_ => config)
+
+  /** Update [[NativeConfig]] with given [[SourceLevelDebuggingConfig]] */
+  def withSourceLevelDebuggingConfig(
+      mapping: Mapping[SourceLevelDebuggingConfig]
+  ): NativeConfig
 
   /** List of service providers which shall be allowed in the final binary */
   def serviceProviders: Map[ServiceName, Iterable[ServiceProviderName]]
@@ -229,11 +241,6 @@ sealed trait NativeConfig {
 
   /** Modify a optimization configuration */
   def withOptimizerConfig(update: Mapping[OptimizerConfig]): NativeConfig
-
-  /** Create a new [[NativeConfig]] with given debugMetadata value
-   */
-  def withDebugMetadata(value: Boolean): NativeConfig
-
 }
 
 object NativeConfig {
@@ -270,7 +277,7 @@ object NativeConfig {
       serviceProviders = Map.empty,
       baseName = "",
       optimizerConfig = OptimizerConfig.empty,
-      debugMetadata = false
+      sourceLevelDebuggingConfig = SourceLevelDebuggingConfig.disabled
     )
 
   private final case class Impl(
@@ -299,7 +306,7 @@ object NativeConfig {
       serviceProviders: Map[ServiceName, Iterable[ServiceProviderName]],
       baseName: String,
       optimizerConfig: OptimizerConfig,
-      debugMetadata: Boolean
+      sourceLevelDebuggingConfig: SourceLevelDebuggingConfig
   ) extends NativeConfig {
 
     def withClang(value: Path): NativeConfig =
@@ -402,8 +409,10 @@ object NativeConfig {
       copy(optimizerConfig = update(optimizerConfig))
     }
 
-    override def withDebugMetadata(value: Boolean): NativeConfig =
-      copy(debugMetadata = value)
+    override def withSourceLevelDebuggingConfig(
+        update: Mapping[SourceLevelDebuggingConfig]
+    ): NativeConfig =
+      copy(sourceLevelDebuggingConfig = update(sourceLevelDebuggingConfig))
 
     override def toString: String = {
       def showSeq(it: Iterable[Any]) = it.mkString("[", ", ", "]")
@@ -452,6 +461,9 @@ object NativeConfig {
         | - resourceExcludePatterns: ${showSeq(resourceExcludePatterns)}
         | - serviceProviders:        ${showMap(serviceProviders)}
         | - optimizerConfig:         ${optimizerConfig.show(" " * 4)}
+        | - sourceLevelDebuggingConfig: ${sourceLevelDebuggingConfig.show(
+          " " * 4
+        )}
         |)""".stripMargin
     }
   }

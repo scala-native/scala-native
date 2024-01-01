@@ -12,6 +12,7 @@ concurrency:
 jobs:
   test-runtime:
     name: Test runtime
+    if: "github.event_name == 'pull_request' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')"
     runs-on: windows-2022
     env:
       ENABLE_EXPERIMENTAL_COMPILER: true
@@ -42,6 +43,7 @@ jobs:
       # Execution with enabled multithreading increases memory usage, run only minimal tests
       - name: Test runtime None GC
         if: matrix.gc == 'none'
+        timeout-minutes: 45
         run: >
           set SCALANATIVE_GC=${{matrix.gc}}&
           set SCALANATIVE_INCLUDE_DIRS=${{steps.setup.outputs.vcpkg-dir}}\include&
@@ -56,6 +58,7 @@ jobs:
 
       - name: Test runtime
         if: matrix.gc != 'none'
+        timeout-minutes: 45
         run: >
           set SCALANATIVE_GC=${{matrix.gc}}&
           set SCALANATIVE_INCLUDE_DIRS=${{steps.setup.outputs.vcpkg-dir}}\include&
@@ -63,13 +66,13 @@ jobs:
           set SCALANATIVE_TEST_PREFETCH_DEBUG_INFO=1&
           set SCALANATIVE &
           sbt
-          "-Dscala.scalanative.multithreading.enable=${{ matrix.gc != 'commix' }}"
           "test-runtime ${{matrix.scala}}"
           "scalaPartestTests${{env.project-version}}/testOnly -- --showDiff neg/abstract.scala pos/abstract.scala run/Course-2002-01.scala"
         shell: cmd
 
   run-scripted-tests:
     name: Scripted tests
+    if: "github.event_name == 'pull_request' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')"
     runs-on: windows-2022
     strategy:
       fail-fast: false
@@ -90,11 +93,11 @@ jobs:
 
   test-runtime-ext:
     name: Test runtime extension
+    if: "(github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native'"
     runs-on: windows-2022
     env:
       ENABLE_EXPERIMENTAL_COMPILER: true
     needs: [test-runtime]
-    if: "(github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native'"
     strategy:
       fail-fast: false
       matrix:
@@ -132,6 +135,7 @@ jobs:
           scala-version: ${{matrix.scala}}
 
       - name: Run tests
+        timeout-minutes: 45
         run: >
           set SCALANATIVE_GC=${{matrix.gc}}&
           set SCALANATIVE_MODE=${{matrix.build-mode}}&
@@ -141,17 +145,17 @@ jobs:
           set SCALANATIVE_CI_NO_DEBUG_SYMBOLS=true&
           set SCALANATIVE_TEST_PREFETCH_DEBUG_INFO=1&
           set SCALANATIVE &
-          sbt -Dscala.scalanative.multithreading.enable=${{ matrix.gc != 'commix' }} "test-runtime ${{matrix.scala}}"
+          sbt "test-runtime ${{matrix.scala}}"
         shell: cmd
 
   test-llvm-versions:
     runs-on: windows-2022
+    if: "(github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native'"
     strategy:
       fail-fast: false
       matrix:
         scala: [3]
-        llvm: ["16.0.6", "17.0.2"] # Last 2 stable versions, LLVM 16 is minimal version able to compile current Windows SDK
-    if: "(github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native'"
+        llvm: ["16.0.6", "17.0.6"] # Last 2 stable versions, LLVM 16 is minimal version able to compile current Windows SDK
     steps:
       - name: Setup git config
         run: git config --global core.autocrlf false
@@ -165,10 +169,10 @@ jobs:
 
       - name: Run tests
         shell: cmd
+        timeout-minutes: 45
         run: >
           set SCALANATIVE_INCLUDE_DIRS=${{steps.setup.outputs.vcpkg-dir}}\include&
           set SCALANATIVE_LIB_DIRS=${{steps.setup.outputs.vcpkg-dir}}\lib&
           set SCALANATIVE_CI_NO_DEBUG_SYMBOLS=true&
           set SCALANATIVE &
           sbt "show tests3/nativeConfig" "test-runtime ${{matrix.scala}}"
-

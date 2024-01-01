@@ -741,10 +741,10 @@ class Reach(
       reachType(ty)
       reachVal(ptrv)
       argvs.foreach(reachVal)
-    case nir.Op.Load(ty, ptrv, syncAttrs) =>
+    case nir.Op.Load(ty, ptrv, _) =>
       reachType(ty)
       reachVal(ptrv)
-    case nir.Op.Store(ty, ptrv, v, syncAttrs) =>
+    case nir.Op.Store(ty, ptrv, v, _) =>
       reachType(ty)
       reachVal(ptrv)
       reachVal(v)
@@ -1034,7 +1034,7 @@ class Reach(
       val current = from.getOrElse(name, ReferencedFrom.Root)
       if (current == ReferencedFrom.Root) buf.result()
       else {
-        val file = current.srcPosition.filename.getOrElse("unknown")
+        val file = current.srcPosition.source.filename.getOrElse("unknown")
         val line = current.srcPosition.line
         buf += BackTraceElement(
           name = current.referencedBy,

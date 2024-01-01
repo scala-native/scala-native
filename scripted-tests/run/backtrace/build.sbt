@@ -15,6 +15,6 @@ scalaVersion := {
 }
 
 nativeConfig ~= { c =>
-  c.withDebugMetadata(true)
+  c.withSourceLevelDebuggingConfig(_.enableAll)
     .withMode(Mode.debug) // otherwise, clang O2 inlines the call stack in Linux
 }

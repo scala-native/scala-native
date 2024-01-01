@@ -8,7 +8,7 @@
 #include "shared/ThreadUtil.h"
 #include <assert.h>
 
-static mutex_t threadListsModifiactionLock;
+static mutex_t threadListsModificationLock;
 
 void MutatorThread_init(Field_t *stackbottom) {
     MutatorThread *self = (MutatorThread *)malloc(sizeof(MutatorThread));
@@ -16,16 +16,7 @@ void MutatorThread_init(Field_t *stackbottom) {
     currentMutatorThread = self;
 
     self->stackBottom = stackbottom;
-#ifdef _WIN32
-    self->wakeupEvent = CreateEvent(NULL, true, false, NULL);
-    if (self->wakeupEvent == NULL) {
-        fprintf(stderr, "Failed to setup mutator thread: errno=%lu\n",
-                GetLastError());
-        exit(1);
-    }
-#else
-    self->thread = pthread_self();
-#endif
+
     MutatorThread_switchState(self, MutatorThreadState_Managed);
     Allocator_Init(&self->allocator, &blockAllocator, heap.bytemap,
                    heap.blockMetaStart, heap.heapStart);
@@ -46,17 +37,18 @@ void MutatorThread_init(Field_t *stackbottom) {
 void MutatorThread_delete(MutatorThread *self) {
     MutatorThread_switchState(self, MutatorThreadState_Unmanaged);
     MutatorThreads_remove(self);
-#ifdef _WIN32
-    CloseHandle(self->wakeupEvent);
-#endif
     free(self);
 }
 
-typedef word_t **volatile stackptr_t;
+typedef word_t **stackptr_t;
 
 NOINLINE static stackptr_t MutatorThread_approximateStackTop() {
     volatile word_t sp;
+#if GNUC_PREREQ(4, 0)
+    sp = (word_t)__builtin_frame_address(0);
+#else
     sp = (word_t)&sp;
+#endif
     /* Also force stack to grow if necessary. Otherwise the later accesses might
      * cause the kernel to think we're doing something wrong. */
     return (stackptr_t)sp;
@@ -64,28 +56,31 @@ NOINLINE static stackptr_t MutatorThread_approximateStackTop() {
 
 void MutatorThread_switchState(MutatorThread *self,
                                MutatorThreadState newState) {
-    assert(self != null);
+    assert(self != NULL);
+    intptr_t newStackTop = 0;
     if (newState == MutatorThreadState_Unmanaged) {
         // Dump registers to allow for their marking later
         setjmp(self->executionContext);
-        self->stackTop = MutatorThread_approximateStackTop();
-    } else {
-        self->stackTop = NULL;
+        newStackTop = (intptr_t)MutatorThread_approximateStackTop();
     }
+    atomic_store_explicit(&self->stackTop, newStackTop, memory_order_release);
     self->state = newState;
 }
 
-void MutatorThreads_init() { mutex_init(&threadListsModifiactionLock); }
+void MutatorThreads_init() {
+    mutex_init(&threadListsModificationLock);
+    atomic_init(&mutatorThreads, NULL);
+}
 
 void MutatorThreads_add(MutatorThread *node) {
     if (!node)
         return;
-    MutatorThreads_lock();
     MutatorThreadNode *newNode =
         (MutatorThreadNode *)malloc(sizeof(MutatorThreadNode));
     newNode->value = node;
-    newNode->next = mutatorThreads;
-    mutatorThreads = newNode;
+    MutatorThreads_lock();
+    newNode->next = atomic_load_explicit(&mutatorThreads, memory_order_acquire);
+    atomic_store_explicit(&mutatorThreads, newNode, memory_order_release);
     MutatorThreads_unlock();
 }
 
@@ -94,9 +89,11 @@ void MutatorThreads_remove(MutatorThread *node) {
         return;
 
     MutatorThreads_lock();
-    MutatorThreads current = mutatorThreads;
+    MutatorThreads current =
+        atomic_load_explicit(&mutatorThreads, memory_order_acquire);
     if (current->value == node) { // expected is at head
-        mutatorThreads = current->next;
+        atomic_store_explicit(&mutatorThreads, current->next,
+                              memory_order_release);
         free(current);
     } else {
         while (current->next && current->next->value != node) {
@@ -106,13 +103,14 @@ void MutatorThreads_remove(MutatorThread *node) {
         if (next) {
             current->next = next->next;
             free(next);
+            atomic_thread_fence(memory_order_release);
         }
     }
     MutatorThreads_unlock();
 }
 
-void MutatorThreads_lock() { mutex_lock(&threadListsModifiactionLock); }
+void MutatorThreads_lock() { mutex_lock(&threadListsModificationLock); }
 
-void MutatorThreads_unlock() { mutex_unlock(&threadListsModifiactionLock); }
+void MutatorThreads_unlock() { mutex_unlock(&threadListsModificationLock); }
 
 #endif

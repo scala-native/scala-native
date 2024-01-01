@@ -89,7 +89,7 @@ private[scalanative] object LLVM {
     }
     // Always generate debug metadata on Windows, it's required for stack traces to work
     val debugFlags =
-      if (config.compilerConfig.debugMetadata || config.targetsWindows)
+      if (config.compilerConfig.sourceLevelDebuggingConfig.enabled || config.targetsWindows)
         Seq("-g")
       else Nil
 
@@ -188,10 +188,7 @@ private[scalanative] object LLVM {
   )(implicit config: Config) = {
     val workDir = config.workDir
     val links = {
-      val srclinks = analysis.links.collect {
-        case Link("z") if config.targetsWindows => "zlib"
-        case Link(name)                         => name
-      }
+      val srclinks = analysis.links.map(_.name)
       val gclinks = config.gc.links
       // We need extra linking dependencies for:
       // * libdl for our vendored libunwind implementation.
@@ -206,7 +203,7 @@ private[scalanative] object LLVM {
 
     val flags = {
       val debugFlags =
-        if (config.compilerConfig.debugMetadata || config.targetsWindows)
+        if (config.compilerConfig.sourceLevelDebuggingConfig.enabled || config.targetsWindows)
           Seq("-g")
         else Nil
 

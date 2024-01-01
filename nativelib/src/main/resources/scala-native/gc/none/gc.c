@@ -156,8 +156,7 @@ int scalanative_pthread_create(pthread_t *thread, pthread_attr_t *attr,
 
 // ScalaNativeGC interface stubs. None GC does not need STW
 void scalanative_gc_set_mutator_thread_state(MutatorThreadState unused){};
-void scalanative_gc_safepoint_poll(){};
-safepoint_t scalanative_gc_safepoint = NULL;
+void scalanative_gc_yield(){};
 
 void scalanative_add_roots(void *addr_low, void *addr_high) {}
 

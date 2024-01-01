@@ -138,7 +138,7 @@ word_t *LargeAllocator_tryAlloc(LargeAllocator *allocator,
     Chunk *chunk = NULL;
     if (actualBlockSize < BLOCK_TOTAL_SIZE) {
         // only need to look in free lists for chunks smaller than a block
-        if (allocator->blockAllocator->concurrent) {
+        if (blockAllocator.concurrent) {
             chunk = LargeAllocator_getChunkForSize(allocator, actualBlockSize);
         } else {
             chunk = LargeAllocator_getChunkForSizeOnlyThread(allocator,
@@ -185,7 +185,8 @@ word_t *LargeAllocator_tryAlloc(LargeAllocator *allocator,
 }
 
 INLINE
-word_t *LargeAllocator_lazySweep(Heap *heap, uint32_t size) {
+word_t *LargeAllocator_lazySweep(LargeAllocator *largeAllocator, Heap *heap,
+                                 uint32_t size) {
     word_t *object = NULL;
 #ifdef DEBUG_PRINT
     uint32_t increment =
@@ -200,14 +201,14 @@ word_t *LargeAllocator_lazySweep(Heap *heap, uint32_t size) {
     // mark as active
     heap->lazySweep.lastActivity = BlockRange_Pack(1, heap->sweep.cursor);
     while (object == NULL && heap->sweep.cursor < heap->sweep.limit) {
-        Sweeper_Sweep(heap, heap->stats, &heap->lazySweep.cursorDone,
-                      LAZY_SWEEP_MIN_BATCH);
-        object = LargeAllocator_tryAlloc(&largeAllocator, size);
+        Sweeper_Sweep(heap->stats, &heap->lazySweep.cursorDone,
+                      LAZY_SWEEP_MIN_BATCH, currentMutatorThread);
+        object = LargeAllocator_tryAlloc(largeAllocator, size);
     }
     // mark as inactive
     heap->lazySweep.lastActivity = BlockRange_Pack(0, heap->sweep.cursor);
     while (object == NULL && !Sweeper_IsSweepDone(heap)) {
-        object = LargeAllocator_tryAlloc(&largeAllocator, size);
+        object = LargeAllocator_tryAlloc(largeAllocator, size);
         if (object == NULL) {
             thread_yield();
         }
@@ -221,8 +222,8 @@ word_t *LargeAllocator_Alloc(Heap *heap, uint32_t size) {
 
     assert(size % ALLOCATION_ALIGNMENT == 0);
     assert(size >= MIN_BLOCK_SIZE);
-
-    word_t *object = LargeAllocator_tryAlloc(&largeAllocator, size);
+    LargeAllocator *largeAllocator = &currentMutatorThread->largeAllocator;
+    word_t *object = LargeAllocator_tryAlloc(largeAllocator, size);
     if (object != NULL) {
     done:
         assert(object != NULL);
@@ -231,19 +232,19 @@ word_t *LargeAllocator_Alloc(Heap *heap, uint32_t size) {
     }
 
     if (!Sweeper_IsSweepDone(heap)) {
-        object = LargeAllocator_lazySweep(heap, size);
+        object = LargeAllocator_lazySweep(largeAllocator, heap, size);
         if (object != NULL)
             goto done;
     }
 
     Heap_Collect(heap);
 
-    object = LargeAllocator_tryAlloc(&largeAllocator, size);
+    object = LargeAllocator_tryAlloc(largeAllocator, size);
     if (object != NULL)
         goto done;
 
     if (!Sweeper_IsSweepDone(heap)) {
-        object = LargeAllocator_lazySweep(heap, size);
+        object = LargeAllocator_lazySweep(largeAllocator, heap, size);
         if (object != NULL)
             goto done;
     }
@@ -252,7 +253,7 @@ word_t *LargeAllocator_Alloc(Heap *heap, uint32_t size) {
     uint32_t pow2increment = 1U << MathUtils_Log2Ceil(increment);
     Heap_Grow(heap, pow2increment);
 
-    object = LargeAllocator_tryAlloc(&largeAllocator, size);
+    object = LargeAllocator_tryAlloc(largeAllocator, size);
 
     goto done;
 }

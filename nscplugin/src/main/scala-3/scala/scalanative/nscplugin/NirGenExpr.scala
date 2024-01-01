@@ -2143,11 +2143,11 @@ trait NirGenExpr(using Context) {
         case LOAD_RAW_SIZE => nir.Type.Size
         case LOAD_OBJECT   => nir.Rt.Object
       }
-      val syncAttrs =
+      val memoryOrder =
         Option.when(ptrp.symbol.isVolatile)(
-          nir.SyncAttrs(nir.MemoryOrder.Acquire)
+          nir.MemoryOrder.Acquire
         )
-      buf.load(ty, ptr, unwind, syncAttrs)
+      buf.load(ty, ptr, unwind, memoryOrder)
     }
 
     private def genRawPtrStoreOp(app: Apply, code: Int): nir.Val = {
@@ -2170,10 +2170,10 @@ trait NirGenExpr(using Context) {
         case STORE_RAW_SIZE => nir.Type.Size
         case STORE_OBJECT   => nir.Rt.Object
       }
-      val syncAttrs = Option.when(ptrp.symbol.isVolatile)(
-        nir.SyncAttrs(nir.MemoryOrder.Release)
+      val memoryOrder = Option.when(ptrp.symbol.isVolatile)(
+        nir.MemoryOrder.Release
       )
-      buf.store(ty, ptr, value, unwind, syncAttrs)
+      buf.store(ty, ptr, value, unwind, memoryOrder)
     }
 
     private def genRawPtrElemOp(app: Apply): nir.Val = {
@@ -2584,12 +2584,12 @@ trait NirGenExpr(using Context) {
       assert(sym.isExtern, "loadExtern was not extern")
 
       val name = nir.Val.Global(genName(sym), nir.Type.Ptr)
-      val syncAttrs = Option.when(sym.isVolatile)(
-        nir.SyncAttrs(nir.MemoryOrder.Acquire)
+      val memoryOrder = Option.when(sym.isVolatile)(
+        nir.MemoryOrder.Acquire
       )
       fromExtern(
         ty,
-        buf.load(externTy, name, unwind, syncAttrs)
+        buf.load(externTy, name, unwind, memoryOrder)
       )
     }
 
@@ -2599,11 +2599,11 @@ trait NirGenExpr(using Context) {
       assert(sym.isExtern, "storeExtern was not extern")
       val name = nir.Val.Global(genName(sym), nir.Type.Ptr)
       val externValue = toExtern(externTy, value)
-      val syncAttrs = Option.when(sym.isVolatile)(
-        nir.SyncAttrs(nir.MemoryOrder.Release)
+      val memoryOrder = Option.when(sym.isVolatile)(
+        nir.MemoryOrder.Release
       )
 
-      buf.store(externTy, name, externValue, unwind, syncAttrs)
+      buf.store(externTy, name, externValue, unwind, memoryOrder)
     }
 
     def toExtern(expectedTy: nir.Type, value: nir.Val)(using

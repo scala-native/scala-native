@@ -17,11 +17,7 @@ import scala.scalanative.codegen.{Metadata => CodeGenMetadata}
 
 import scala.language.implicitConversions
 import scala.scalanative.codegen.llvm.Metadata.conversions._
-import scala.scalanative.nir.Defn.Const
-import scala.scalanative.nir.Defn.Declare
-import scala.scalanative.nir.Defn.Var
-import scala.scalanative.nir.Defn.Define
-import scala.scalanative.nir.Defn.Trait
+import scala.scalanative.util.ScopedVar
 
 private[codegen] abstract class AbstractCodeGen(
     env: Map[nir.Global, nir.Defn],
@@ -165,7 +161,7 @@ private[codegen] abstract class AbstractCodeGen(
       newline()
     }
     os.genPrelude()
-    if (config.debugMetadata) {
+    if (config.sourceLevelDebuggingConfig.generateLocalVariables) {
       newline()
       line("declare void @llvm.dbg.declare(metadata, metadata, metadata)")
       line("declare void @llvm.dbg.value(metadata, metadata, metadata)")
@@ -234,9 +230,9 @@ private[codegen] abstract class AbstractCodeGen(
     import defn.{name, attrs, pos}
 
     val nir.Type.Function(argtys, retty) = defn match {
-      case defn: Declare => defn.ty
-      case defn: Define  => defn.ty
-      case _             => unreachable
+      case defn: nir.Defn.Declare => defn.ty
+      case defn: nir.Defn.Define  => defn.ty
+      case _                      => unreachable
     }
 
     val isDecl = insts.isEmpty
@@ -276,26 +272,29 @@ private[codegen] abstract class AbstractCodeGen(
       case _: nir.Defn.Declare => ()
       case defn: nir.Defn.Define =>
         implicit lazy val defnScopes: DefnScopes = new DefnScopes(defn)
-        str(" ")
-        str(os.gxxPersonality)
-
-        dbg(defnScopes.getDISubprogramScope)
-        str(" {")
         insts.foreach {
           case nir.Inst.Let(n, nir.Op.Copy(v), _) => copies(n) = v
           case _                                  => ()
         }
-
-        locally {
-          implicit val cfg: CFG = CFG(insts)
-          implicit val _fresh: nir.Fresh = fresh
-          implicit val _debugInfo: DebugInfo = debugInfo
+        implicit val cfg: CFG = CFG(insts)
+        implicit val _fresh: nir.Fresh = fresh
+        implicit val _debugInfo: DebugInfo = debugInfo
+        str(" ")
+        str(os.gxxPersonality)
+        def genBody() = {
+          str(" {")
           cfg.all.foreach(genBlock)
           cfg.all.foreach(genBlockLandingPads)
           newline()
+          str("}")
         }
-
-        str("}")
+        if (generateLocalVariables) dbgUsing(defnScopes.getDISubprogramScope) {
+          subprogramNode =>
+            ScopedVar.scoped {
+              metaCtx.currentSubprogram := subprogramNode
+            } { genBody() }
+        }
+        else genBody()
 
         copies.clear()
       case _ => unreachable
@@ -437,7 +436,7 @@ private[codegen] abstract class AbstractCodeGen(
           }
       }
     }
-    if (generateDebugMetadata) {
+    if (generateLocalVariables) {
       lazy val scopeId =
         if (block.isEntry) nir.ScopeId.TopLevel
         else
@@ -586,7 +585,7 @@ private[codegen] abstract class AbstractCodeGen(
   }
 
   private[codegen] def genByteString(
-      bytes: Array[Byte]
+      bytes: Seq[scala.Byte]
   )(implicit sb: ShowBuilder): Unit = {
     import sb._
 
@@ -761,7 +760,7 @@ private[codegen] abstract class AbstractCodeGen(
     val id = inst.id
     val unwind = inst.unwind
     val ty = inst.op.resty
-    val scope = defnScopes.toDIScope(inst.scopeId)
+    lazy val scope = defnScopes.toDIScope(inst.scopeId)
 
     def genBind() =
       if (!isVoid(ty)) {
@@ -794,11 +793,9 @@ private[codegen] abstract class AbstractCodeGen(
         genCall(genBind, callDef, unwind, inst.pos, inst.scopeId)
         dbgLocalValue(id, ty)(inst.pos, inst.scopeId)
 
-      case nir.Op.Load(ty, ptr, syncAttrs) =>
+      case nir.Op.Load(ty, ptr, memoryOrder) =>
         val pointee = fresh()
-        val isAtomic = isMultithreadingEnabled && syncAttrs.isDefined
-        val isVolatile =
-          isMultithreadingEnabled && syncAttrs.exists(_.isVolatile)
+        val isAtomic = isMultithreadingEnabled && memoryOrder.isDefined
 
         if (!useOpaquePointers) {
           newline()
@@ -815,7 +812,6 @@ private[codegen] abstract class AbstractCodeGen(
         genBind()
         str("load ")
         if (isAtomic) str("atomic ")
-        if (isVolatile) str("volatile ")
         genType(ty)
         str(", ")
         if (useOpaquePointers) genVal(ptr)
@@ -826,7 +822,7 @@ private[codegen] abstract class AbstractCodeGen(
         }
         if (isAtomic) {
           str(" ")
-          syncAttrs.foreach(genSyncAttrs)
+          memoryOrder.foreach(genMemoryOrder)
           str(", align ")
           str(MemoryLayout.alignmentOf(ty))
         } else {
@@ -844,14 +840,12 @@ private[codegen] abstract class AbstractCodeGen(
             case _ =>
               ()
           }
-          dbgLocalValue(id, ty)(inst.pos, inst.scopeId)
         }
+        dbgLocalValue(id, ty)(inst.pos, inst.scopeId)
 
-      case nir.Op.Store(ty, ptr, value, syncAttrs) =>
+      case nir.Op.Store(ty, ptr, value, memoryOrder) =>
         val pointee = fresh()
-        val isAtomic = isMultithreadingEnabled && syncAttrs.isDefined
-        val isVolatile =
-          isMultithreadingEnabled && syncAttrs.exists(_.isVolatile)
+        val isAtomic = isMultithreadingEnabled && memoryOrder.isDefined
 
         if (!useOpaquePointers) {
           newline()
@@ -868,7 +862,6 @@ private[codegen] abstract class AbstractCodeGen(
         genBind()
         str("store ")
         if (isAtomic) str("atomic ")
-        if (isVolatile) str("volatile ")
         genVal(value)
         if (useOpaquePointers) {
           str(", ptr")
@@ -879,9 +872,9 @@ private[codegen] abstract class AbstractCodeGen(
           str("* %")
           genLocal(pointee)
         }
-        if (isAtomic) syncAttrs.foreach {
+        if (isAtomic) memoryOrder.foreach {
           str(" ")
-          genSyncAttrs(_)
+          genMemoryOrder(_)
         }
         str(", align ")
         str(MemoryLayout.alignmentOf(ty))
@@ -961,7 +954,7 @@ private[codegen] abstract class AbstractCodeGen(
           genLocal(pointee)
           str(" to i8*")
         }
-        dbgLocalVariable(inst.id, nir.Type.Ptr)(inst.pos, inst.scopeId)
+        dbgLocalVariable(inst.id, ty)(inst.pos, inst.scopeId)
 
       case _ =>
         newline()
@@ -991,10 +984,21 @@ private[codegen] abstract class AbstractCodeGen(
      *  situations where a null check is generated (and the function call is
      *  throwNullPointer) in this case we can only use NoPosition
      */
-    val dbgPosition = toDILocation(srcPos, scopeId)
+    lazy val dbgPosition = toDILocation(srcPos, scopeId)
     def genDbgPosition() = dbg(",", dbgPosition)
 
     call match {
+      // Lower emits a alloc function with exact result type of the class instead of a raw pointer
+      // It's probablatic to emit when not using opaque pointers. Retry with simplified signature
+      case nir.Op.Call(ty, Lower.alloc | Lower.largeAlloc, _)
+          if !useOpaquePointers && ty != Lower.allocSig =>
+        genCall(
+          genBind,
+          call.copy(ty = Lower.allocSig),
+          unwind,
+          srcPos,
+          scopeId
+        )
       case nir.Op.Call(ty, nir.Val.Global(pointee: nir.Global.Member, _), args)
           if lookup(pointee) == ty =>
         val nir.Type.Function(argtys, _) = ty
@@ -1166,21 +1170,20 @@ private[codegen] abstract class AbstractCodeGen(
         genVal(v)
         str(" to ")
         genType(ty)
-      case nir.Op.Fence(syncAttrs) =>
+      case nir.Op.Fence(memoryOrder) =>
         str("fence ")
-        genSyncAttrs(syncAttrs)
+        genMemoryOrder(memoryOrder)
 
       case op =>
         unsupported(op)
     }
   }
 
-  private def genSyncAttrs(
-      attrs: nir.SyncAttrs
+  private def genMemoryOrder(
+      value: nir.MemoryOrder
   )(implicit sb: ShowBuilder): Unit = {
     import sb._
-    val nir.SyncAttrs(memoryOrder, _) = attrs
-    str(memoryOrder match {
+    str(value match {
       case nir.MemoryOrder.Unordered => "unordered"
       case nir.MemoryOrder.Monotonic => "monotonic"
       case nir.MemoryOrder.Acquire   => "acquire"
