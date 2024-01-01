@@ -199,6 +199,7 @@ final class BinarySerializer(channel: WritableByteChannel) {
       case Attr.Final              => putTag(T.FinalAttr)
 
       case Attr.LinktimeResolved => putTag(T.LinktimeResolvedAttr)
+      case Attr.UsesIntrinsic    => putTag(T.UsesIntrinsicAttr)
       case Attr.Alignment(size, group) =>
         putTag(T.AlignAttr)
         putLebSignedInt(size)

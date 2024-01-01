@@ -323,6 +323,6 @@ object Val {
    *  (specifically, `lockWord`), which contains an `ObjectMonitor` or a bit set
    *  of lock word.
    */
-  final case class ClassOf(name: nir.Global) extends Val
+  final case class ClassOf(name: nir.Global.Top) extends Val
 
 }

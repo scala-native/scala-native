@@ -5,7 +5,7 @@ import java.nio.file.{Path, Paths}
 
 /** An object describing how to configure the Scala Native toolchain. */
 sealed trait NativeConfig {
-  import NativeConfig.Mapping
+  import NativeConfig._
 
   /** The path to the `clang` executable. */
   def clang: Path
@@ -102,6 +102,9 @@ sealed trait NativeConfig {
   def withSourceLevelDebuggingConfig(
       mapping: Mapping[SourceLevelDebuggingConfig]
   ): NativeConfig
+
+  /** List of service providers which shall be allowed in the final binary */
+  def serviceProviders: Map[ServiceName, Iterable[ServiceProviderName]]
 
   private[scalanative] lazy val configuredOrDetectedTriple =
     TargetTriple.parse(targetTriple.getOrElse(Discover.targetTriple(this)))
@@ -219,6 +222,13 @@ sealed trait NativeConfig {
   /** Create a new [[NativeConfig]] with updated resource exclude patterns. */
   def withResourceExcludePatterns(value: Seq[String]): NativeConfig
 
+  /** Create a new [[NativeConfig]] with a updated list of service providers
+   *  allowed in the final binary
+   */
+  def withServiceProviders(
+      value: Map[ServiceName, Iterable[ServiceProviderName]]
+  ): NativeConfig
+
   /** Create a new config with given base artifact name.
    *
    *  Warning: must be unique across project modules.
@@ -236,6 +246,8 @@ sealed trait NativeConfig {
 object NativeConfig {
   type Mapping[T] = T => T
   type LinktimeProperites = Map[String, Any]
+  type ServiceName = String
+  type ServiceProviderName = String
 
   /** Default empty config object where all of the fields are left blank. */
   def empty: NativeConfig =
@@ -262,6 +274,7 @@ object NativeConfig {
       embedResources = false,
       resourceIncludePatterns = Seq("**"),
       resourceExcludePatterns = Seq.empty,
+      serviceProviders = Map.empty,
       baseName = "",
       optimizerConfig = OptimizerConfig.empty,
       sourceLevelDebuggingConfig = SourceLevelDebuggingConfig.disabled
@@ -290,6 +303,7 @@ object NativeConfig {
       embedResources: Boolean,
       resourceIncludePatterns: Seq[String],
       resourceExcludePatterns: Seq[String],
+      serviceProviders: Map[ServiceName, Iterable[ServiceProviderName]],
       baseName: String,
       optimizerConfig: OptimizerConfig,
       sourceLevelDebuggingConfig: SourceLevelDebuggingConfig
@@ -379,6 +393,12 @@ object NativeConfig {
       copy(resourceExcludePatterns = value)
     }
 
+    def withServiceProviders(
+        value: Map[ServiceName, Iterable[ServiceProviderName]]
+    ): NativeConfig = {
+      copy(serviceProviders = value)
+    }
+
     def withBaseName(value: String): NativeConfig = {
       copy(baseName = value)
     }
@@ -395,25 +415,32 @@ object NativeConfig {
       copy(sourceLevelDebuggingConfig = update(sourceLevelDebuggingConfig))
 
     override def toString: String = {
-      val listLinktimeProperties = {
-        if (linktimeProperties.isEmpty) ""
+      def showSeq(it: Iterable[Any]) = it.mkString("[", ", ", "]")
+      def showMap(map: Map[String, Any], indent: Int = 4): String =
+        if (map.isEmpty) "[]"
         else {
-          val maxKeyLength = linktimeProperties.keys.map(_.length).max
+          val maxKeyLength = map.keys.map(_.length).max
           val keyPadSize = maxKeyLength.min(20)
-          "\n" + linktimeProperties.toSeq
+          val indentPad = " " * indent
+          "\n" + map.toSeq
             .sortBy(_._1)
             .map {
               case (key, value) =>
-                s"   * ${key.padTo(keyPadSize, ' ')} : $value"
+                val valueString = value match {
+                  case seq: Iterable[_] => showSeq(seq)
+                  case v                => v.toString()
+                }
+                s"$indentPad- ${key.padTo(keyPadSize, ' ')}: $valueString"
             }
             .mkString("\n")
         }
-      }
+
       s"""NativeConfig(
+        | - baseName:                $baseName
         | - clang:                   $clang
         | - clangPP:                 $clangPP
-        | - linkingOptions:          $linkingOptions
-        | - compileOptions:          $compileOptions
+        | - linkingOptions:          ${showSeq(linkingOptions)}
+        | - compileOptions:          ${showSeq(compileOptions)}
         | - targetTriple:            $targetTriple
         | - GC:                      $gc
         | - LTO:                     $lto
@@ -428,14 +455,14 @@ object NativeConfig {
         | - optimize                 $optimize
         | - incrementalCompilation:  $useIncrementalCompilation
         | - multithreading           $multithreadingSupport
-        | - linktimeProperties:      $listLinktimeProperties
+        | - linktimeProperties:      ${showMap(linktimeProperties)}
         | - embedResources:          $embedResources
-        | - resourceIncludePatterns: ${resourceIncludePatterns.mkString(", ")}
-        | - resourceExcludePatterns: ${resourceExcludePatterns.mkString(", ")}
-        | - baseName:                $baseName
-        | - optimizerConfig:         ${optimizerConfig.show(" " * 3)}
+        | - resourceIncludePatterns: ${showSeq(resourceIncludePatterns)}
+        | - resourceExcludePatterns: ${showSeq(resourceExcludePatterns)}
+        | - serviceProviders:        ${showMap(serviceProviders)}
+        | - optimizerConfig:         ${optimizerConfig.show(" " * 4)}
         | - sourceLevelDebuggingConfig: ${sourceLevelDebuggingConfig.show(
-          " " * 3
+          " " * 4
         )}
         |)""".stripMargin
     }

@@ -161,7 +161,9 @@ object VirtualDirectory {
         Files
           .walk(path, Integer.MAX_VALUE, FileVisitOption.FOLLOW_LINKS)
           .iterator()
-      }.map(fp => path.relativize(fp))
+      }
+        .filter(Files.isRegularFile(_))
+        .map(fp => path.relativize(fp))
 
     override def pathMatcher(pattern: String): PathMatcher =
       path.getFileSystem().getPathMatcher(pattern)
@@ -194,7 +196,7 @@ object VirtualDirectory {
             Files
               .walk(path, Integer.MAX_VALUE, FileVisitOption.FOLLOW_LINKS)
               .iterator()
-          }
+          }.filter(Files.isRegularFile(_))
         }
     }
   }

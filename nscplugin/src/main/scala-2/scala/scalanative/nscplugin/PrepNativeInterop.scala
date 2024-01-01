@@ -78,8 +78,11 @@ abstract class PrepNativeInterop[G <: Global with Singleton](
 
     override def transform(tree: Tree): Tree = {
       // Recursivly widen and dealias all nested types (compler dealiases only top-level)
-      def widenDealiasType(tpe: Type): Type = {
-        val widened = tpe.dealias.map(_.dealias)
+      def widenDealiasType(tpe0: Type): Type = {
+        val tpe =
+          if (tpe0.typeSymbol.isAbstract) tpe0.upperBound
+          else tpe0
+        val widened = tpe.dealiasWiden.map(_.dealiasWiden)
         if (widened != tpe) widened.map(widenDealiasType(_))
         else widened
       }

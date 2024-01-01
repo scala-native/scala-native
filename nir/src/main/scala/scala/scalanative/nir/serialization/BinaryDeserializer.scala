@@ -202,6 +202,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, nirSource: NIRSource) {
     case T.FinalAttr    => Attr.Final
 
     case T.LinktimeResolvedAttr => Attr.LinktimeResolved
+    case T.UsesIntrinsicAttr    => Attr.UsesIntrinsic
     case T.AlignAttr            => Attr.Alignment(getLebSignedInt(), getOpt(getString()))
   }
 
@@ -449,7 +450,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, nirSource: NIRSource) {
       case T.ConstVal   => Val.Const(getVal())
       case T.StringVal  => Val.String(getString())
       case T.VirtualVal => Val.Virtual(getLebUnsignedLong())
-      case T.ClassOfVal => Val.ClassOf(getGlobal())
+      case T.ClassOfVal => Val.ClassOf(getGlobal().narrow[Global.Top])
       case T.SizeVal    => Val.Size(getLebUnsignedLong())
     }
   }

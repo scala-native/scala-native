@@ -3,6 +3,8 @@ package java.nio.charset
 import scala.collection.mutable
 import java.util.{Collections, HashSet, Arrays}
 import java.nio.{ByteBuffer, CharBuffer}
+import java.nio.charset.spi.CharsetProvider
+import java.util.ServiceLoader
 
 abstract class Charset protected (
     canonicalName: String,
@@ -86,6 +88,11 @@ object Charset {
     allNativeCharsets.foreach { c =>
       m.put(c.name(), c)
     }
+    customCharsetProviders.forEach { provider =>
+      provider.charsets().forEachRemaining { c =>
+        m.put(c.name(), c)
+      }
+    }
     Collections.unmodifiableSortedMap(m)
   }
 
@@ -149,10 +156,19 @@ object Charset {
 
     for (s <- Seq("utf-16", "utf_16", "unicode", "unicodebig")) m(s) = UTF_16
 
+    customCharsetProviders.forEach { provider =>
+      provider.charsets().forEachRemaining { charset =>
+        charset.aliases().forEach { alias =>
+          m(alias) = charset
+        }
+      }
+    }
     m
   }
 
+  private def customCharsetProviders =
+    ServiceLoader.load(classOf[CharsetProvider])
+
   private def allNativeCharsets =
     Array(US_ASCII, ISO_8859_1, UTF_8, UTF_16BE, UTF_16LE, UTF_16)
-
 }

@@ -2,6 +2,9 @@ package scala.scalanative
 package linker
 
 import java.nio.file.Path
+import java.io.ByteArrayInputStream
+import java.io.BufferedReader
+import java.io.InputStreamReader
 
 import scala.collection.mutable
 import scala.scalanative.io.VirtualDirectory
@@ -18,6 +21,8 @@ sealed trait ClassPath {
 
   private[scalanative] def classesWithEntryPoints: Iterable[nir.Global.Top]
 
+  private[scalanative] def definedServicesProviders
+      : Map[nir.Global.Top, Seq[nir.Global.Top]]
 }
 
 object ClassPath {
@@ -27,21 +32,30 @@ object ClassPath {
     new Impl(directory)
 
   private final class Impl(directory: VirtualDirectory) extends ClassPath {
-    private val files =
-      directory.files
-        .filter(_.toString.endsWith(".nir"))
-        .map { file =>
-          val name = nir.Global.Top(io.packageNameFromPath(file))
+    val nirFiles = mutable.Map.empty[nir.Global.Top, Path]
+    val serviceProviders = mutable.Map.empty[nir.Global.Top, Path]
 
-          name -> file
-        }
-        .toMap
+    directory.files
+      .foreach {
+        case path if path.toString.endsWith(".nir") =>
+          val name = nir.Global.Top(io.packageNameFromPath(path))
+          nirFiles.update(name, path)
+
+        // First variant for jars, seconds for local directories
+        case path
+            if (path.startsWith("/META-INF/services/") ||
+              path.startsWith("META-INF/services/")) =>
+          val serviceName = nir.Global.Top(path.getFileName().toString())
+          serviceProviders.update(serviceName, path)
+
+        case _ => ()
+      }
 
     private val cache =
       mutable.Map.empty[nir.Global.Top, Option[Seq[nir.Defn]]]
 
     def contains(name: nir.Global) =
-      files.contains(name.top)
+      nirFiles.contains(name.top)
 
     private def makeBufferName(directory: VirtualDirectory, file: Path) =
       directory.uri
@@ -51,20 +65,41 @@ object ClassPath {
     def load(name: nir.Global.Top): Option[Seq[nir.Defn]] =
       cache.getOrElseUpdate(
         name, {
-          files.get(name.top).map { file =>
+          nirFiles.get(name.top).map { file =>
             deserializeBinary(directory, file)
           }
         }
       )
 
     lazy val classesWithEntryPoints: Iterable[nir.Global.Top] = {
-      files.filter {
+      nirFiles.filter {
         case (_, file) =>
           val buffer = directory.read(file, len = NirPrelude.length)
           NirPrelude
             .readFrom(buffer, makeBufferName(directory, file))
             .hasEntryPoints
       }.keySet
+    }
+
+    lazy val definedServicesProviders
+        : Map[nir.Global.Top, Seq[nir.Global.Top]] = {
+      serviceProviders.map {
+        case (name, path) =>
+          val b = Seq.newBuilder[nir.Global.Top]
+          val reader = new BufferedReader(
+            new InputStreamReader(
+              new ByteArrayInputStream(directory.read(path).array())
+            )
+          )
+          try
+            reader
+              .lines()
+              .map[String](_.trim())
+              .filter(_.nonEmpty)
+              .forEach(b += nir.Global.Top(_))
+          finally reader.close()
+          name -> b.result()
+      }.toMap
     }
   }
 }
