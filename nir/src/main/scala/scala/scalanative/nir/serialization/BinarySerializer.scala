@@ -3,7 +3,8 @@ package nir
 package serialization
 
 import java.nio.ByteBuffer
-import java.nio.channels.WritableByteChannel
+import java.nio.channels.{WritableByteChannel, Channels}
+import java.io.{DataOutputStream, ByteArrayOutputStream, OutputStream}
 import scala.collection.mutable
 import java.nio.charset.StandardCharsets
 import serialization.{Tags => T}
@@ -22,7 +23,8 @@ final class BinarySerializer(channel: WritableByteChannel) {
     // Fill header info with buffer positions
     Header.put()
     // Write prepared data to final output channel
-    sections.foreach(_.commit(channel))
+    val output = Channels.newOutputStream(channel)
+    sections.foreach(_.commit(output))
   }
 
   private val sections = Seq(Header, Offsets, Strings, Positions, Globals, Types, Defns, Vals, Insts)
@@ -634,80 +636,81 @@ final class BinarySerializer(channel: WritableByteChannel) {
 
 }
 
-sealed abstract class NIRSectionWriter(init: Int = 1024 * 1024) {
-  protected val buffer = ByteBuffer.allocate(init)
+sealed abstract class NIRSectionWriter(initialBufferSize: Int = 1024 * 1024) {
+  private val baos = new ByteArrayOutputStream(initialBufferSize)
+  private val output = new DataOutputStream(baos)
 
-  def position(): Int = buffer.position()
-  def put(values: Array[Byte]): Unit = buffer.put(values)
-  def put(value: Byte): Unit = buffer.put(value)
-  def putShort(value: Short): Unit = buffer.putShort(value)
-  def putInt(value: Int): Unit = buffer.putInt(value)
-  def putFloat(value: Float): Unit = buffer.putFloat(value)
-  def putDouble(value: Double): Unit = buffer.putDouble(value)
-  def putBool(v: Boolean) = put((if (v) 1 else 0).toByte)
+  final def position(): Int = output.size()
+  final def put(values: Array[Byte]): Unit = output.write(values)
+  final def put(value: Byte): Unit = output.write(value)
+  final def putShort(value: Short): Unit = output.writeShort(value)
+  final def putInt(value: Int): Unit = output.writeInt(value)
+  final def putFloat(value: Float): Unit = output.writeFloat(value)
+  final def putDouble(value: Double): Unit = output.writeDouble(value)
+  final def putBool(v: Boolean) = put((if (v) 1 else 0).toByte)
   // Leb128 encoders
-  def putLebShort(value: Short): Unit = putLebSignedInt(value)
-  def putLebChar(value: Char): Unit = putLebUnsignedInt(value)
-  def putLebUnsignedInt(v: Int): Unit = {
+  final def putLebShort(value: Short): Unit = putLebSignedInt(value)
+  final def putLebChar(value: Char): Unit = putLebUnsignedInt(value)
+  final def putLebUnsignedInt(v: Int): Unit = {
     require(v >= 0, s"Unsigned integer expected, got $v")
     var remaining = v
     while ({
       val byte = (remaining & 0x7f).toByte
       remaining >>= 7
       val hasMore = remaining != 0
-      buffer.put(if (hasMore) (byte | 0x80).toByte else byte)
+      put(if (hasMore) (byte | 0x80).toByte else byte)
       hasMore
     }) ()
   }
-  def putLebUnsignedLong(v: Long): Unit = {
+  final def putLebUnsignedLong(v: Long): Unit = {
     require(v >= 0L, s"Unsigned integer expected, got $v")
     var remaining = v
     while ({
       val byte = (remaining & 0x7f).toByte
       remaining >>= 7
       val hasMore = remaining != 0
-      buffer.put(if (hasMore) (byte | 0x80).toByte else byte)
+      put(if (hasMore) (byte | 0x80).toByte else byte)
       hasMore
     }) ()
   }
-  def putLebSignedInt(v: Int): Unit = {
+  final def putLebSignedInt(v: Int): Unit = {
     var value = v
     var remaining = value >> 7
     var hasMore = true
     val end = if ((value & java.lang.Integer.MIN_VALUE) == 0) 0 else -1
     while (hasMore) {
       hasMore = (remaining != end) || ((remaining & 1) != ((value >> 6) & 1))
-      buffer.put(((value & 0x7f) | (if (hasMore) 0x80 else 0)).toByte)
+      put(((value & 0x7f) | (if (hasMore) 0x80 else 0)).toByte)
       value = remaining
       remaining >>= 7
     }
   }
-  def putLebSignedLong(v: Long): Unit = {
+  final def putLebSignedLong(v: Long): Unit = {
     var value = v
     var remaining = value >> 7
     var hasMore = true
     val end = if ((value & java.lang.Long.MIN_VALUE) == 0) 0L else -1L
     while (hasMore) {
       hasMore = (remaining != end) || ((remaining & 1) != ((value >> 6) & 1))
-      buffer.put(((value & 0x7f) | (if (hasMore) 0x80 else 0)).toByte)
+      put(((value & 0x7f) | (if (hasMore) 0x80 else 0)).toByte)
       value = remaining
       remaining >>= 7
     }
   }
 
-  def putSeq[T](seq: Seq[T])(putT: T => Unit): Unit = {
+  final def putSeq[T](seq: Seq[T])(putT: T => Unit): Unit = {
     putLebUnsignedInt(seq.length)
     seq.foreach(putT)
   }
-  def putOpt[T](opt: Option[T])(putT: T => Unit): Unit = opt match {
+  final def putOpt[T](opt: Option[T])(putT: T => Unit): Unit = opt match {
     case None    => put(0.toByte)
     case Some(t) => put(1.toByte); putT(t)
   }
-  def putTag(value: Byte): Unit = put(value)
+  final def putTag(value: Byte): Unit = put(value)
 
-  def commit(channel: WritableByteChannel): Unit = {
-    buffer.flip()
-    channel.write(buffer)
+  final def commit(output: OutputStream): Unit = {
+    baos.writeTo(output)
+    output.flush()
   }
 }
 
