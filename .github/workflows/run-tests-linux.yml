@@ -233,7 +233,7 @@ jobs:
           SCALANATIVE_TEST_PREFETCH_DEBUG_INFO: 1
         run: sbt "test-runtime ${{ matrix.scala }}"
 
- test-scala-partests:
+  test-scala-partests:
     if: "github.event_name == 'pull_request' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')"
     runs-on: ubuntu-22.04
     strategy:
@@ -279,5 +279,5 @@ jobs:
         run: |
           sbt \
           "-J-Xmx3G" \
-          "scalaPartestTests${{env.project-version}}/testOnly -- --showDiff 
-  
+          "scalaPartestTests${{env.project-version}}/testOnly -- --showDiff
+
