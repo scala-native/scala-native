@@ -61,6 +61,12 @@ class WeakReferenceTest {
     ): Unit = {
       ref.get() match {
         case null =>
+          val waitForEnqueue = 0
+            .until(10)
+            .iterator
+            .map(_ => Thread.sleep(100))
+            .takeWhile(_ => !ref.isEnqueued())
+            .foreach(_ => ())
           assertTrue("collected but not enqueued", ref.isEnqueued())
         case v =>
           if (System.currentTimeMillis() < deadline) {

@@ -245,13 +245,12 @@ void Heap_Collect(Heap *heap) {
     Phase_StartSweep(heap);
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
     Synchronizer_release();
+    GCThread_WeakThreadsHandler_Resume(weakRefsHandlerThread);
+
 #else
     MutatorThread_switchState(currentMutatorThread, MutatorThreadState_Managed);
-#endif
-    // Skip calling WeakRef handlers on thread which is being initialized
-    // If the current block is set to null it means it failed to allocate
-    // memory for allocator and forced GC
     WeakRefGreyList_CallHandlers();
+#endif
 }
 
 bool Heap_shouldGrow(Heap *heap) {

@@ -18,6 +18,7 @@
 #include "shared/Parsing.h"
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
 #include "Synchronizer.h"
+#include "GCThreads.h"
 #endif
 #include "MutatorThread.h"
 #include <stdatomic.h>
@@ -35,6 +36,7 @@ NOINLINE void scalanative_init() {
     Stack_Init(&weakRefStack, INITIAL_STACK_SIZE);
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
     Synchronizer_init();
+    weakRefsHandlerThread = GCThread_WeakThreadsHandler_Start();
 #endif
     MutatorThreads_init();
     MutatorThread_init(__stack_bottom);
