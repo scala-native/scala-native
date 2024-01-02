@@ -1526,7 +1526,23 @@ object Lower {
           val func = arraySnapshot.getOrElse(ty, arraySnapshot(nir.Rt.Object))
           val module = genModuleOp(buf, fresh(), nir.Op.Module(func.owner))
           val len = nir.Val.Int(arrval.values.length)
-          val init = nir.Val.Const(arrval)
+          val init =
+            if (arrval.values.exists(!_.isCanonical)) {
+              // At least one of init values in non canonical (e.g. Val.Local), create a copy on stack
+              val alloc = buf.stackalloc(arrval.ty, one, unwind)
+              arrval.values.zipWithIndex.foreach {
+                case (value, idx) =>
+                  val innerPtr =
+                    buf.elem(
+                      arrval.ty,
+                      alloc,
+                      Seq(zero, nir.Val.Int(idx)),
+                      unwind
+                    )
+                  buf.store(arrval.elemty, innerPtr, genVal(buf, value), unwind)
+              }
+              alloc
+            } else nir.Val.Const(arrval)
           buf.let(
             n,
             nir.Op.Call(
