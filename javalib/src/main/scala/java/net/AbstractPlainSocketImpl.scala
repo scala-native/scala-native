@@ -223,9 +223,9 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
       throw new SocketException("Accept failed")
     }
 
-    s.address =
-      InetAddress.getByAddress(SocketHelpers.sockaddrToByteArray(address))
-    s.port = port
+    val insAddr = SocketHelpers.sockaddrStorageToInetSocketAddress(address)
+    s.address = insAddr.getAddress
+    s.port = insAddr.getPort
     s.localport = this.localport
     s.fd = new FileDescriptor(newFd)
   }
