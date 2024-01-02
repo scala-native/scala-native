@@ -218,10 +218,12 @@ object BooleanArray {
 
   @inline def snapshot(length: Int, data: RawPtr): BooleanArray = {
     val arr  = alloc(length)
-    val dst  = arr.atRaw(0)
-    val src  = data
-    val size = castIntToRawSizeUnsigned(1 * length)
-    libc.memcpy(dst, src, size)
+    if(length > 0) {
+      val dst  = arr.atRawUnsafe(0)
+      val src  = data
+      val size = castIntToRawSizeUnsigned(1 * length)
+      libc.memcpy(dst, src, size)
+    }
     arr
   }
 }
@@ -284,10 +286,12 @@ object CharArray {
 
   @inline def snapshot(length: Int, data: RawPtr): CharArray = {
     val arr  = alloc(length)
-    val dst  = arr.atRaw(0)
-    val src  = data
-    val size = castIntToRawSizeUnsigned(2 * length)
-    libc.memcpy(dst, src, size)
+    if(length > 0) {
+      val dst  = arr.atRawUnsafe(0)
+      val src  = data
+      val size = castIntToRawSizeUnsigned(2 * length)
+      libc.memcpy(dst, src, size)
+    }
     arr
   }
 }
@@ -350,10 +354,12 @@ object ByteArray {
 
   @inline def snapshot(length: Int, data: RawPtr): ByteArray = {
     val arr  = alloc(length)
-    val dst  = arr.atRaw(0)
-    val src  = data
-    val size = castIntToRawSizeUnsigned(1 * length)
-    libc.memcpy(dst, src, size)
+    if(length > 0) {
+      val dst  = arr.atRawUnsafe(0)
+      val src  = data
+      val size = castIntToRawSizeUnsigned(1 * length)
+      libc.memcpy(dst, src, size)
+    }
     arr
   }
 }
@@ -416,10 +422,12 @@ object ShortArray {
 
   @inline def snapshot(length: Int, data: RawPtr): ShortArray = {
     val arr  = alloc(length)
-    val dst  = arr.atRaw(0)
-    val src  = data
-    val size = castIntToRawSizeUnsigned(2 * length)
-    libc.memcpy(dst, src, size)
+    if(length > 0) {
+      val dst  = arr.atRawUnsafe(0)
+      val src  = data
+      val size = castIntToRawSizeUnsigned(2 * length)
+      libc.memcpy(dst, src, size)
+    }
     arr
   }
 }
@@ -482,10 +490,12 @@ object IntArray {
 
   @inline def snapshot(length: Int, data: RawPtr): IntArray = {
     val arr  = alloc(length)
-    val dst  = arr.atRaw(0)
-    val src  = data
-    val size = castIntToRawSizeUnsigned(4 * length)
-    libc.memcpy(dst, src, size)
+    if(length > 0) {
+      val dst  = arr.atRawUnsafe(0)
+      val src  = data
+      val size = castIntToRawSizeUnsigned(4 * length)
+      libc.memcpy(dst, src, size)
+    }
     arr
   }
 }
@@ -548,10 +558,12 @@ object LongArray {
 
   @inline def snapshot(length: Int, data: RawPtr): LongArray = {
     val arr  = alloc(length)
-    val dst  = arr.atRaw(0)
-    val src  = data
-    val size = castIntToRawSizeUnsigned(8 * length)
-    libc.memcpy(dst, src, size)
+    if(length > 0) {
+      val dst  = arr.atRawUnsafe(0)
+      val src  = data
+      val size = castIntToRawSizeUnsigned(8 * length)
+      libc.memcpy(dst, src, size)
+    }
     arr
   }
 }
@@ -614,10 +626,12 @@ object FloatArray {
 
   @inline def snapshot(length: Int, data: RawPtr): FloatArray = {
     val arr  = alloc(length)
-    val dst  = arr.atRaw(0)
-    val src  = data
-    val size = castIntToRawSizeUnsigned(4 * length)
-    libc.memcpy(dst, src, size)
+    if(length > 0) {
+      val dst  = arr.atRawUnsafe(0)
+      val src  = data
+      val size = castIntToRawSizeUnsigned(4 * length)
+      libc.memcpy(dst, src, size)
+    }
     arr
   }
 }
@@ -680,10 +694,12 @@ object DoubleArray {
 
   @inline def snapshot(length: Int, data: RawPtr): DoubleArray = {
     val arr  = alloc(length)
-    val dst  = arr.atRaw(0)
-    val src  = data
-    val size = castIntToRawSizeUnsigned(8 * length)
-    libc.memcpy(dst, src, size)
+    if(length > 0) {
+      val dst  = arr.atRawUnsafe(0)
+      val src  = data
+      val size = castIntToRawSizeUnsigned(8 * length)
+      libc.memcpy(dst, src, size)
+    }
     arr
   }
 }
@@ -746,10 +762,12 @@ object ObjectArray {
 
   @inline def snapshot(length: Int, data: RawPtr): ObjectArray = {
     val arr  = alloc(length)
-    val dst  = arr.atRaw(0)
-    val src  = data
-    val size = castIntToRawSizeUnsigned(castRawSizeToInt(Intrinsics.sizeOf[RawPtr]) * length)
-    libc.memcpy(dst, src, size)
+    if(length > 0) {
+      val dst  = arr.atRawUnsafe(0)
+      val src  = data
+      val size = castIntToRawSizeUnsigned(castRawSizeToInt(Intrinsics.sizeOf[RawPtr]) * length)
+      libc.memcpy(dst, src, size)
+    }
     arr
   }
 }
