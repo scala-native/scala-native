@@ -8,7 +8,7 @@ trait Transform {
     assembly.map(onDefn)
 
   def onDefn(defn: Defn): Defn = {
-    implicit val rootPos: Position = defn.pos
+    implicit val rootPos: SourcePosition = defn.pos
     defn match {
       case defn @ Defn.Var(_, _, ty, value) =>
         defn.copy(ty = onType(ty), rhs = onVal(value))

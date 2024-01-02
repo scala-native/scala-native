@@ -58,7 +58,7 @@ final class BinarySerializer(channel: WritableByteChannel) {
     def putType(ty: Type): Unit = putLebUnsignedInt(Types.intern(ty))
     def putTypes(tys: Seq[Type]): Unit = putSeq(tys)(putType)
     def putString(s: String): Unit = putLebUnsignedInt(Strings.intern(s))
-    def putPosition(pos: Position): Unit = putLebUnsignedInt(Positions.intern(pos))
+    def putPosition(pos: SourcePosition): Unit = putLebUnsignedInt(Positions.intern(pos))
   }
 
   private object Offsets extends NIRSectionWriter with Common {
@@ -75,10 +75,10 @@ final class BinarySerializer(channel: WritableByteChannel) {
     }
   }
 
-  private object Positions extends InternedBinarySectionWriter[nir.Position] with Common {
-    override def internDeps(pos: nir.Position): Unit = ()
+  private object Positions extends InternedBinarySectionWriter[nir.SourcePosition] with Common {
+    override def internDeps(pos: nir.SourcePosition): Unit = ()
 
-    override def put(pos: nir.Position): Unit = {
+    override def put(pos: nir.SourcePosition): Unit = {
       putString {
         pos.source match { // interned
           case nir.SourceFile.Virtual              => ""

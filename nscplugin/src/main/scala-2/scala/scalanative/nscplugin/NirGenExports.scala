@@ -142,7 +142,7 @@ trait NirGenExports[G <: nsc.Global with Singleton] {
       externSig: nir.Sig.Extern
   ): ExportedSymbol = {
     checkIsPublic(member)
-    implicit val pos: nir.Position = member.pos
+    implicit val pos: nir.SourcePosition = member.pos
     val originalName = genMethodName(member)
     val externName = originalName.top.member(externSig)
 

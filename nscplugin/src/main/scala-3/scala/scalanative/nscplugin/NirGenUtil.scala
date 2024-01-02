@@ -45,7 +45,7 @@ trait NirGenUtil(using Context) { self: NirCodeGen =>
   }
 
   protected def withFreshBlockScope[R](
-      srcPosition: nir.Position
+      srcPosition: nir.SourcePosition
   )(f: nir.ScopeId => R): R = {
     val blockScope = nir.ScopeId.of(curFreshScope.get())
     // Parent of top level points to itself

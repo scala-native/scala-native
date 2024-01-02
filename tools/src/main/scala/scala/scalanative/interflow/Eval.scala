@@ -39,7 +39,7 @@ trait Eval { self: Interflow =>
     implicit var lastScopeId = scopeMapping(nir.ScopeId.TopLevel)
     while (true) {
       val inst = insts(pc)
-      implicit val srcPosition: nir.Position = inst.pos
+      implicit val srcPosition: nir.SourcePosition = inst.pos
       def bailOut =
         throw BailOut("can't eval inst: " + inst.show)
       inst match {
@@ -143,7 +143,7 @@ trait Eval { self: Interflow =>
   )(implicit
       state: State,
       analysis: ReachabilityAnalysis.Result,
-      srcPosition: nir.Position,
+      srcPosition: nir.SourcePosition,
       scopeId: nir.ScopeId
   ): nir.Val = {
     import state.{emit, materialize, delay}
@@ -510,7 +510,7 @@ trait Eval { self: Interflow =>
 
   def eval(bin: nir.Bin, ty: nir.Type, l: nir.Val, r: nir.Val)(implicit
       state: State,
-      srcPosition: nir.Position,
+      srcPosition: nir.SourcePosition,
       scopeId: nir.ScopeId
   ): nir.Val = {
     import state.{emit, materialize}
@@ -998,7 +998,7 @@ trait Eval { self: Interflow =>
 
   def eval(value: nir.Val)(implicit
       state: State,
-      srcPosition: nir.Position,
+      srcPosition: nir.SourcePosition,
       scopeId: nir.ScopeId
   ): nir.Val = {
     value match {

@@ -42,7 +42,7 @@ trait Intrinsics { self: Interflow =>
       rawArgs: Seq[nir.Val]
   )(implicit
       state: State,
-      srcPosition: nir.Position,
+      srcPosition: nir.SourcePosition,
       scopeId: nir.ScopeId
   ): Option[nir.Val] = {
     val nir.Global.Member(_, sig) = name

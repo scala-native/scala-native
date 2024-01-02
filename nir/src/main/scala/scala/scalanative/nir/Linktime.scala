@@ -1,7 +1,7 @@
 package scala.scalanative.nir
 
 sealed trait LinktimeCondition {
-  def position: Position
+  def position: SourcePosition
 }
 
 object LinktimeCondition {
@@ -10,14 +10,14 @@ object LinktimeCondition {
       propertyName: String,
       comparison: Comp,
       value: Val
-  )(implicit val position: Position)
+  )(implicit val position: SourcePosition)
       extends LinktimeCondition
 
   case class ComplexCondition(
       op: Bin,
       left: LinktimeCondition,
       right: LinktimeCondition
-  )(implicit val position: Position)
+  )(implicit val position: SourcePosition)
       extends LinktimeCondition
 
   object Tag {

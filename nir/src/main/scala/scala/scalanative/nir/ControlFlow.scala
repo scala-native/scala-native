@@ -18,7 +18,7 @@ object ControlFlow {
       params: Seq[Val.Local],
       insts: Seq[Inst],
       isEntry: Boolean
-  )(implicit val pos: Position) {
+  )(implicit val pos: SourcePosition) {
     val inEdges = mutable.UnrolledBuffer.empty[Edge]
     val outEdges = mutable.UnrolledBuffer.empty[Edge]
 
@@ -75,7 +75,7 @@ object ControlFlow {
         to.inEdges += e
       }
 
-      def block(local: Local)(implicit pos: Position): Block =
+      def block(local: Local)(implicit pos: SourcePosition): Block =
         blocks.getOrElse(
           local, {
             val k = locations(local)
@@ -106,7 +106,7 @@ object ControlFlow {
           case _ =>
             ()
         }
-        implicit val pos: Position = cf.pos
+        implicit val pos: SourcePosition = cf.pos
 
         cf match {
           case _: Inst.Ret =>

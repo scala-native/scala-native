@@ -44,7 +44,7 @@ trait LinktimeValueResolver { self: Reach =>
   private val resolvedValues = mutable.Map.empty[String, LinktimeValue]
 
   // required for @scala.scalanative.annotation.align(), always resolve
-  resolveLinktimeProperty(contendedPaddingWidth)(nir.Position.NoPosition)
+  resolveLinktimeProperty(contendedPaddingWidth)(nir.SourcePosition.NoPosition)
 
   // For compat with 2.13 where mapValues is deprecated
   def resolvedNirValues: mutable.Map[String, nir.Val] = resolvedValues.map {
@@ -54,7 +54,7 @@ trait LinktimeValueResolver { self: Reach =>
   protected def resolveLinktimeDefine(
       defn: nir.Defn.Define
   ): nir.Defn.Define = {
-    implicit def position: nir.Position = defn.pos
+    implicit def position: nir.SourcePosition = defn.pos
 
     def evaluated() = {
       implicit val fresh = nir.Fresh()
@@ -136,13 +136,13 @@ trait LinktimeValueResolver { self: Reach =>
   }
 
   private def resolveLinktimeProperty(name: String)(implicit
-      pos: nir.Position
+      pos: nir.SourcePosition
   ): LinktimeValue =
     resolvedValues.getOrElseUpdate(name, lookupLinktimeProperty(name))
 
   private def lookupLinktimeProperty(
       propertyName: String
-  )(implicit pos: nir.Position): LinktimeValue = {
+  )(implicit pos: nir.SourcePosition): LinktimeValue = {
     def fromProvidedValue =
       linktimeProperties
         .get(propertyName)
@@ -176,7 +176,7 @@ trait LinktimeValueResolver { self: Reach =>
 
   private def resolveCondition(
       cond: nir.LinktimeCondition
-  )(implicit pos: nir.Position): Boolean = {
+  )(implicit pos: nir.SourcePosition): Boolean = {
     import nir.LinktimeCondition._
 
     cond match {
@@ -221,7 +221,7 @@ trait LinktimeValueResolver { self: Reach =>
 
   private def resolveLinktimeIf(
       inst: nir.Inst.LinktimeIf
-  )(implicit pos: nir.Position): nir.Inst.Jump = {
+  )(implicit pos: nir.SourcePosition): nir.Inst.Jump = {
     val nir.Inst.LinktimeIf(cond, thenp, elsep) = inst
 
     val matchesCondition = resolveCondition(cond)

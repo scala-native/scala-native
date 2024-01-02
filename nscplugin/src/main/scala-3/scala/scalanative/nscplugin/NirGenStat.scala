@@ -50,7 +50,7 @@ trait NirGenStat(using Context) {
 
   private def genNormalClass(td: TypeDef): Unit = {
     lazyValsAdapter.prepareForTypeDef(td)
-    implicit val pos: nir.Position = td.span
+    implicit val pos: nir.SourcePosition = td.span
     val sym = td.symbol.asClass
     val attrs = genClassAttrs(td)
     val name = genTypeName(sym)
@@ -181,7 +181,7 @@ trait NirGenStat(using Context) {
       f <- classSym.info.decls.toList
       if !f.isOneOf(Method | Module) && f.isTerm
     do
-      given nir.Position = f.span
+      given nir.SourcePosition = f.span
       val isStatic = f.is(JavaStatic) || f.isScalaStatic
       val isExtern = f.isExtern
       val mutable = isStatic || f.is(Mutable)
@@ -251,7 +251,7 @@ trait NirGenStat(using Context) {
   }
 
   private def genMethod(dd: DefDef): Option[nir.Defn] = {
-    implicit val pos: nir.Position = dd.span
+    implicit val pos: nir.SourcePosition = dd.span
     val fresh = nir.Fresh()
     val freshScope = initFreshScope(dd.rhs)
     val scopes = mutable.Set.empty[DebugInfo.LexicalScope]
@@ -370,7 +370,7 @@ trait NirGenStat(using Context) {
       bodyp: Tree,
       isExtern: Boolean
   ): Seq[nir.Inst] = {
-    given nir.Position = bodyp.span
+    given nir.SourcePosition = bodyp.span
     given fresh: nir.Fresh = curFresh.get
     val buf = ExprBuffer()
     val isStatic = dd.symbol.isStaticInNIR
@@ -448,7 +448,7 @@ trait NirGenStat(using Context) {
   }
 
   private def genStruct(td: TypeDef): Unit = {
-    given nir.Position = td.span
+    given nir.SourcePosition = td.span
 
     val sym = td.symbol
     val attrs = nir.Attrs.None
@@ -470,7 +470,7 @@ trait NirGenStat(using Context) {
   }
 
   protected def genLinktimeResolved(dd: DefDef, name: nir.Global.Member)(using
-      nir.Position
+      nir.SourcePosition
   ): Option[nir.Defn] = {
     if (dd.symbol.isField) {
       report.error(
@@ -551,7 +551,7 @@ trait NirGenStat(using Context) {
       dd: DefDef,
       retty: nir.Type,
       methodName: nir.Global.Member
-  )(genValue: ExprBuffer => nir.Val)(using nir.Position): nir.Defn = {
+  )(genValue: ExprBuffer => nir.Val)(using nir.SourcePosition): nir.Defn = {
     implicit val fresh: nir.Fresh = nir.Fresh()
     val freshScopes = initFreshScope(dd.rhs)
     val buf = new ExprBuffer()
@@ -593,7 +593,7 @@ trait NirGenStat(using Context) {
       dd: DefDef
   ): Option[nir.Defn] = {
     val rhs: Tree = dd.rhs
-    given nir.Position = rhs.span
+    given nir.SourcePosition = rhs.span
     def externMethodDecl() = {
       val externSig = genExternMethodSig(curMethodSym)
       val externDefn = nir.Defn.Declare(attrs, name, externSig)
@@ -783,7 +783,7 @@ trait NirGenStat(using Context) {
     for {
       sym <- members if !isExcluded(sym)
     } yield {
-      given nir.Position = sym.span
+      given nir.SourcePosition = sym.span
 
       val methodName = genMethodName(sym)
       val forwarderName = genStaticMemberName(sym, moduleClass)
@@ -844,7 +844,7 @@ trait NirGenStat(using Context) {
    *  the companion class.
    */
   private def genMirrorClass(td: TypeDef): Unit = {
-    given pos: nir.Position = td.span
+    given pos: nir.SourcePosition = td.span
     val sym = td.symbol
     val isTopLevelModuleClass = sym.is(ModuleClass) &&
       atPhase(flattenPhase) {
@@ -868,7 +868,7 @@ trait NirGenStat(using Context) {
     enum Type:
       case Provided, Calculated
 
-    def unapply(tree: Tree): Option[(String, Type, nir.Position)] = {
+    def unapply(tree: Tree): Option[(String, Type, nir.SourcePosition)] = {
       if (tree.symbol == null) None
       else {
         tree.symbol

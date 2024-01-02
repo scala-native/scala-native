@@ -483,7 +483,7 @@ final class MergeProcessor(
       // are going tojump to. Synthetics names must be fresh relative
       // to the source instructions, not relative to generated ones.
       val syntheticFresh = nir.Fresh(insts.toSeq)
-      implicit val synthticPos: nir.Position = orderedBlocks.last.cfPos
+      implicit val synthticPos: nir.SourcePosition = orderedBlocks.last.cfPos
       val syntheticParam =
         nir.Val.Local(syntheticFresh(), Sub.lub(tys, Some(retTy)))
       val syntheticLabel =

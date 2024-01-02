@@ -120,7 +120,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       def parent = genClassParent(sym)
       def traits = genClassInterfaces(sym)
 
-      implicit val pos: nir.Position = cd.pos
+      implicit val pos: nir.SourcePosition = cd.pos
 
       buf += {
         if (sym.isScalaModule) nir.Defn.Module(attrs, name, parent, traits)
@@ -246,7 +246,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         }
         val ty = genType(f.tpe)
         val name = genFieldName(f)
-        val pos: nir.Position = f.pos
+        val pos: nir.SourcePosition = f.pos
         // Thats what JVM backend does
         // https://github.com/scala/scala/blob/fe724bcbbfdc4846e5520b9708628d994ae76798/src/compiler/scala/tools/nsc/backend/jvm/BTypesFromSymbols.scala#L760-L764
         val isFinal = !f.isMutable
@@ -326,7 +326,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     private def genReflectiveInstantiationConstructor(
         reflInstBuffer: ReflectiveInstantiationBuffer,
         superClass: nir.Global.Top
-    )(implicit pos: nir.Position): Unit = {
+    )(implicit pos: nir.SourcePosition): Unit = {
       withFreshExprBuffer { exprBuf =>
         val body = {
           // first argument is this
@@ -363,7 +363,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         name: nir.Global.Top,
         argTypes: Seq[nir.Type],
         args: Seq[nir.Val]
-    )(implicit pos: nir.Position): nir.Val = {
+    )(implicit pos: nir.SourcePosition): nir.Val = {
 
       val alloc = exprBuf.classalloc(name, unwind(curFresh))
       exprBuf.call(
@@ -383,7 +383,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       val fqSymId = curClassSym.fullName + "$"
       val fqSymName = nir.Global.Top(fqSymId)
 
-      implicit val pos: nir.Position = cd.pos
+      implicit val pos: nir.SourcePosition = cd.pos
 
       reflectiveInstantiationInfo += ReflectiveInstantiationBuffer(fqSymId)
       val reflInstBuffer = reflectiveInstantiationInfo.last
@@ -461,7 +461,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
       // Create a new Tuple2 and initialise it with the provided values.
       def createTuple2(exprBuf: ExprBuffer, _1: nir.Val, _2: nir.Val)(implicit
-          pos: nir.Position
+          pos: nir.SourcePosition
       ): nir.Val = {
         allocAndConstruct(
           exprBuf,
@@ -474,7 +474,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       def genClassConstructorsInfo(
           exprBuf: ExprBuffer,
           ctors: Seq[global.Symbol]
-      )(implicit pos: nir.Position): nir.Val = {
+      )(implicit pos: nir.SourcePosition): nir.Val = {
         val applyMethodSig =
           nir.Sig.Method("apply", Seq(jlObjectRef, jlObjectRef))
 
@@ -493,8 +493,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         for ((ctor, ctorIdx) <- ctors.zipWithIndex) {
           val ctorSig = genMethodSig(ctor)
           val ctorSuffix = if (ctorIdx == 0) "" else s"$$$ctorIdx"
-          implicit val pos: nir.Position = ctor.pos
-
+          implicit val pos: nir.SourcePosition = ctor.pos
           reflectiveInstantiationInfo += ReflectiveInstantiationBuffer(
             fqSymId + ctorSuffix
           )
@@ -625,7 +624,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             .alternatives
             .filter(_.isPublic)
 
-      implicit val pos: nir.Position = cd.pos
+      implicit val pos: nir.SourcePosition = cd.pos
       if (ctors.isEmpty)
         Seq.empty
       else
@@ -665,7 +664,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       val fresh = nir.Fresh()
       val env = new MethodEnv(fresh)
 
-      implicit val pos: nir.Position = dd.pos
+      implicit val pos: nir.SourcePosition = dd.pos
       val scopes = mutable.Set.empty[DebugInfo.LexicalScope]
       scopes += DebugInfo.LexicalScope.TopLevel(dd.rhs.pos)
 
@@ -742,7 +741,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     }
 
     protected def genLinktimeResolved(dd: DefDef, name: nir.Global.Member)(
-        implicit pos: nir.Position
+        implicit pos: nir.SourcePosition
     ): Option[nir.Defn] = {
       if (dd.symbol.isConstant) {
         globalError(
@@ -814,7 +813,9 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         dd: DefDef,
         retty: nir.Type,
         methodName: nir.Global.Member
-    )(genValue: ExprBuffer => nir.Val)(implicit pos: nir.Position): nir.Defn = {
+    )(
+        genValue: ExprBuffer => nir.Val
+    )(implicit pos: nir.SourcePosition): nir.Defn = {
       implicit val fresh = nir.Fresh()
       val buf = new ExprBuffer()
 
@@ -1004,7 +1005,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       val sym = dd.symbol
       val isStatic = sym.isStaticInNIR
 
-      implicit val pos: nir.Position = bodyp.pos
+      implicit val pos: nir.SourcePosition = bodyp.pos
 
       val paramSyms = genParamSyms(dd, isStatic)
       val params = paramSyms.map {
@@ -1208,7 +1209,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       sym <- members
       if !isExcluded(sym)
     } yield {
-      implicit val pos: nir.Position = sym.pos
+      implicit val pos: nir.SourcePosition = sym.pos
 
       val methodName = genMethodName(sym)
       val forwarderName = genStaticMemberName(sym, moduleClass)
@@ -1315,7 +1316,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       case object Provided extends Type
       case object Calculated extends Type
     }
-    def unapply(tree: Tree): Option[(String, Type, nir.Position)] = {
+    def unapply(tree: Tree): Option[(String, Type, nir.SourcePosition)] = {
       if (tree.symbol == null) None
       else
         tree.symbol

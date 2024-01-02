@@ -33,7 +33,7 @@ class Reach(
   private case class DelayedMethod(
       owner: nir.Global.Top,
       sig: nir.Sig,
-      pos: nir.Position
+      pos: nir.SourcePosition
   )
   private val delayedMethods = mutable.Set.empty[DelayedMethod]
 
@@ -47,7 +47,7 @@ class Reach(
     injects.foreach(reachDefn)
   }
 
-  entries.foreach(reachEntry(_)(nir.Position.NoPosition))
+  entries.foreach(reachEntry(_)(nir.SourcePosition.NoPosition))
 
   // Internal hack used inside linker tests, for more information
   // check out comment in scala.scalanative.linker.ReachabilitySuite
@@ -57,7 +57,8 @@ class Reach(
     .forall(_ == true)
 
   loader.classesWithEntryPoints.foreach { clsName =>
-    if (reachStaticConstructors) reachClinit(clsName)(nir.Position.NoPosition)
+    if (reachStaticConstructors)
+      reachClinit(clsName)(nir.SourcePosition.NoPosition)
     config.compilerConfig.buildTarget match {
       case build.BuildTarget.Application => ()
       case _                             => reachExported(clsName)
@@ -249,7 +250,9 @@ class Reach(
     else defn
   }
 
-  def reachEntry(name: nir.Global)(implicit srcPosition: nir.Position): Unit = {
+  def reachEntry(
+      name: nir.Global
+  )(implicit srcPosition: nir.SourcePosition): Unit = {
     if (!name.isTop) {
       reachEntry(name.top)
     }
@@ -273,7 +276,7 @@ class Reach(
 
   def reachClinit(
       clsName: nir.Global.Top
-  )(implicit srcPosition: nir.Position): Unit = {
+  )(implicit srcPosition: nir.SourcePosition): Unit = {
     reachGlobalNow(clsName)
     infos.get(clsName).foreach { cls =>
       val clinit = clsName.member(nir.Sig.Clinit)
@@ -297,7 +300,9 @@ class Reach(
     } if (isExported(defn)) reachGlobal(name)(defn.pos)
   }
 
-  def reachGlobal(name: nir.Global)(implicit srcPosition: nir.Position): Unit =
+  def reachGlobal(
+      name: nir.Global
+  )(implicit srcPosition: nir.SourcePosition): Unit =
     if (!enqueued.contains(name) && name.ne(nir.Global.None)) {
       enqueued += name
       track(name)
@@ -306,7 +311,7 @@ class Reach(
 
   def reachGlobalNow(
       name: nir.Global
-  )(implicit srcPosition: nir.Position): Unit =
+  )(implicit srcPosition: nir.SourcePosition): Unit =
     if (done.contains(name)) {
       ()
     } else if (!stack.contains(name)) {
@@ -410,7 +415,9 @@ class Reach(
     }
   }
 
-  def reachAllocation(info: Class)(implicit srcPosition: nir.Position): Unit =
+  def reachAllocation(
+      info: Class
+  )(implicit srcPosition: nir.SourcePosition): Unit =
     if (!info.allocated) {
       info.allocated = true
 
@@ -472,7 +479,7 @@ class Reach(
 
   def scopeInfo(
       name: nir.Global.Top
-  )(implicit srcPosition: nir.Position): Option[ScopeInfo] = {
+  )(implicit srcPosition: nir.SourcePosition): Option[ScopeInfo] = {
     reachGlobalNow(name)
     infos(name) match {
       case info: ScopeInfo => Some(info)
@@ -482,7 +489,7 @@ class Reach(
 
   def scopeInfoOrUnavailable(
       name: nir.Global.Top
-  )(implicit srcPosition: nir.Position): Info = {
+  )(implicit srcPosition: nir.SourcePosition): Info = {
     reachGlobalNow(name)
     infos(name) match {
       case info: ScopeInfo   => info
@@ -493,7 +500,7 @@ class Reach(
 
   def classInfo(
       name: nir.Global.Top
-  )(implicit srcPosition: nir.Position): Option[Class] = {
+  )(implicit srcPosition: nir.SourcePosition): Option[Class] = {
     reachGlobalNow(name)
     infos(name) match {
       case info: Class => Some(info)
@@ -503,14 +510,14 @@ class Reach(
 
   def classInfoOrObject(
       name: nir.Global.Top
-  )(implicit srcPosition: nir.Position): Class =
+  )(implicit srcPosition: nir.SourcePosition): Class =
     classInfo(name)
       .orElse(classInfo(nir.Rt.Object.name))
       .getOrElse(fail(s"Class info not available for $name"))
 
   def traitInfo(
       name: nir.Global.Top
-  )(implicit srcPosition: nir.Position): Option[Trait] = {
+  )(implicit srcPosition: nir.SourcePosition): Option[Trait] = {
     reachGlobalNow(name)
     infos(name) match {
       case info: Trait => Some(info)
@@ -520,7 +527,7 @@ class Reach(
 
   def methodInfo(
       name: nir.Global
-  )(implicit srcPosition: nir.Position): Option[Method] = {
+  )(implicit srcPosition: nir.SourcePosition): Option[Method] = {
     reachGlobalNow(name)
     infos(name) match {
       case info: Method => Some(info)
@@ -530,7 +537,7 @@ class Reach(
 
   def fieldInfo(
       name: nir.Global
-  )(implicit srcPosition: nir.Position): Option[Field] = {
+  )(implicit srcPosition: nir.SourcePosition): Option[Field] = {
     reachGlobalNow(name)
     infos(name) match {
       case info: Field => Some(info)
@@ -551,7 +558,7 @@ class Reach(
 
   def reachVar(defn: nir.Defn.Var): Unit = {
     val nir.Defn.Var(attrs, name, ty, rhs) = defn
-    implicit val pos: nir.Position = defn.pos
+    implicit val pos: nir.SourcePosition = defn.pos
     newInfo(
       new Field(
         attrs,
@@ -569,7 +576,7 @@ class Reach(
 
   def reachConst(defn: nir.Defn.Const): Unit = {
     val nir.Defn.Const(attrs, name, ty, rhs) = defn
-    implicit val pos: nir.Position = defn.pos
+    implicit val pos: nir.SourcePosition = defn.pos
     newInfo(
       new Field(
         attrs,
@@ -587,7 +594,7 @@ class Reach(
 
   def reachDeclare(defn: nir.Defn.Declare): Unit = {
     val nir.Defn.Declare(attrs, name, ty) = defn
-    implicit val pos: nir.Position = defn.pos
+    implicit val pos: nir.SourcePosition = defn.pos
     newInfo(
       new Method(
         attrs,
@@ -604,7 +611,7 @@ class Reach(
 
   def reachDefine(defn: nir.Defn.Define): Unit = {
     val nir.Defn.Define(attrs, name, ty, insts, debugInfo) = defn
-    implicit val pos: nir.Position = defn.pos
+    implicit val pos: nir.SourcePosition = defn.pos
     newInfo(
       new Method(
         attrs,
@@ -622,14 +629,14 @@ class Reach(
 
   def reachTrait(defn: nir.Defn.Trait): Unit = {
     val nir.Defn.Trait(attrs, name, traits) = defn
-    implicit val pos: nir.Position = defn.pos
+    implicit val pos: nir.SourcePosition = defn.pos
     newInfo(new Trait(attrs, name, traits.flatMap(traitInfo)))
     reachAttrs(attrs)
   }
 
   def reachClass(defn: nir.Defn.Class): Unit = {
     val nir.Defn.Class(attrs, name, parent, traits) = defn
-    implicit val pos: nir.Position = defn.pos
+    implicit val pos: nir.SourcePosition = defn.pos
     newInfo(
       new Class(
         attrs,
@@ -644,7 +651,7 @@ class Reach(
 
   def reachModule(defn: nir.Defn.Module): Unit = {
     val nir.Defn.Module(attrs, name, parent, traits) = defn
-    implicit val pos: nir.Position = defn.pos
+    implicit val pos: nir.SourcePosition = defn.pos
     newInfo(
       new Class(
         attrs,
@@ -662,7 +669,7 @@ class Reach(
     preprocessorDefinitions ++= attrs.preprocessorDefinitions
   }
 
-  def reachType(ty: nir.Type)(implicit srcPosition: nir.Position): Unit =
+  def reachType(ty: nir.Type)(implicit srcPosition: nir.SourcePosition): Unit =
     ty match {
       case nir.Type.ArrayValue(ty, n) =>
         reachType(ty)
@@ -681,7 +688,7 @@ class Reach(
         ()
     }
 
-  def reachVal(value: nir.Val)(implicit srcPosition: nir.Position): Unit =
+  def reachVal(value: nir.Val)(implicit srcPosition: nir.SourcePosition): Unit =
     value match {
       case nir.Val.Zero(ty) =>
         reachType(ty)
@@ -707,7 +714,7 @@ class Reach(
     insts.foreach(reachInst)
 
   def reachInst(inst: nir.Inst): Unit = {
-    implicit val srcPosition: nir.Position = inst.pos
+    implicit val srcPosition: nir.SourcePosition = inst.pos
     inst match {
       case nir.Inst.Label(n, params) =>
         params.foreach(p => reachType(p.ty))
@@ -736,7 +743,7 @@ class Reach(
     }
   }
 
-  def reachOp(op: nir.Op)(implicit pos: nir.Position): Unit = op match {
+  def reachOp(op: nir.Op)(implicit pos: nir.SourcePosition): Unit = op match {
     case nir.Op.Call(ty, ptrv, argvs) =>
       reachType(ty)
       reachVal(ptrv)
@@ -846,7 +853,9 @@ class Reach(
       reachVal(arr)
   }
 
-  def reachNext(next: nir.Next)(implicit srcPosition: nir.Position): Unit =
+  def reachNext(
+      next: nir.Next
+  )(implicit srcPosition: nir.SourcePosition): Unit =
     next match {
       case nir.Next.Label(_, args) =>
         args.foreach(reachVal)
@@ -855,7 +864,7 @@ class Reach(
     }
 
   def reachMethodTargets(ty: nir.Type, sig: nir.Sig)(implicit
-      srcPosition: nir.Position
+      srcPosition: nir.SourcePosition
   ): Unit =
     ty match {
       case nir.Type.Array(ty, _) =>
@@ -880,7 +889,7 @@ class Reach(
 
   def reachDynamicMethodTargets(
       dynsig: nir.Sig
-  )(implicit srcPosition: nir.Position) = {
+  )(implicit srcPosition: nir.SourcePosition) = {
     if (!dynsigs.contains(dynsig)) {
       dynsigs += dynsig
       if (dyncandidates.contains(dynsig)) {
@@ -1057,7 +1066,8 @@ class Reach(
     val injects: Seq[nir.Defn] =
       if (config.compilerConfig.checkFeatures) Nil
       else {
-        implicit val srcPosition: nir.Position = nir.Position.NoPosition
+        implicit val srcPosition: nir.SourcePosition =
+          nir.SourcePosition.NoPosition
         val stubMethods = for {
           methodName <- Seq("threads", "virtualThreads", "continuations")
         } yield {
@@ -1134,7 +1144,9 @@ class Reach(
     throw new LinkingException(msg)
   }
 
-  protected def track(name: nir.Global)(implicit srcPosition: nir.Position) =
+  protected def track(
+      name: nir.Global
+  )(implicit srcPosition: nir.SourcePosition) =
     from.getOrElseUpdate(
       name,
       if (stack.isEmpty) ReferencedFrom.Root
@@ -1158,10 +1170,11 @@ object Reach {
 
   private[scalanative] case class ReferencedFrom(
       referencedBy: nir.Global,
-      srcPosition: nir.Position
+      srcPosition: nir.SourcePosition
   )
   object ReferencedFrom {
-    final val Root = ReferencedFrom(nir.Global.None, nir.Position.NoPosition)
+    final val Root =
+      ReferencedFrom(nir.Global.None, nir.SourcePosition.NoPosition)
   }
   case class SymbolDescriptor(
       kind: String,

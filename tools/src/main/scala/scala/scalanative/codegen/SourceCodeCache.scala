@@ -70,7 +70,7 @@ class SourceCodeCache(config: build.Config) {
 
   def findSources(
       source: nir.SourceFile.Relative,
-      pos: nir.Position
+      pos: nir.SourcePosition
   ): Option[Path] = {
     assert(
       config.compilerConfig.sourceLevelDebuggingConfig.enabled,
