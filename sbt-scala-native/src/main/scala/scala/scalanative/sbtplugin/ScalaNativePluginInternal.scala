@@ -23,7 +23,11 @@ import scala.concurrent.duration.Duration
 import scala.scalanative.build.Platform
 import sjsonnew.BasicJsonProtocol._
 import java.nio.file.{Files, Path}
-import sbt.internal.util.ManagedLogger
+import sbt.librarymanagement.{
+  DependencyResolution,
+  UpdateConfiguration,
+  UnresolvedWarningConfiguration
+}
 
 /** ScalaNativePlugin delegates to this object
  *
@@ -192,6 +196,7 @@ object ScalaNativePluginInternal {
         val userConfig = nativeConfig.value
         val sourcesClassPath = resolveSourcesClassPath(
           userConfig,
+          dependencyResolution.value,
           externalDependencyClasspath.value,
           sbtLogger
         )
@@ -218,6 +223,7 @@ object ScalaNativePluginInternal {
         val userConfig = nativeConfig.value
         val sourcesClassPath = resolveSourcesClassPath(
           userConfig,
+          dependencyResolution.value,
           externalDependencyClasspath.value,
           sbtLogger
         )
@@ -244,6 +250,7 @@ object ScalaNativePluginInternal {
         val userConfig = nativeConfig.value
         val sourcesClassPath = resolveSourcesClassPath(
           userConfig,
+          dependencyResolution.value,
           externalDependencyClasspath.value,
           sbtLogger
         )
@@ -393,39 +400,40 @@ object ScalaNativePluginInternal {
 
   private def resolveSourcesClassPath(
       userConfig: NativeConfig,
+      dependencyResolution: DependencyResolution,
       externalClassPath: Classpath,
-      log: ManagedLogger
+      log: util.Logger
   ): Seq[Path] = {
     if (!userConfig.sourceLevelDebuggingConfig.enabled) Nil
     else
-      try {
-        import sbt.librarymanagement._
-        import sbt.librarymanagement.ivy._
-        val ivyConfig = InlineIvyConfiguration().withLog(log)
-        val lm = IvyDependencyResolution(ivyConfig)
-        externalClassPath
-          .flatMap(_.metadata.get(moduleID.key))
-          .map(_.classifier("sources").withConfigurations(None))
-          .map(lm.wrapDependencyInModule)
-          .map(
-            lm.update(
-              _,
-              UpdateConfiguration(),
-              UnresolvedWarningConfiguration(),
-              log
+      externalClassPath.par.flatMap { classpath =>
+        try {
+          classpath.metadata
+            .get(moduleID.key)
+            .toSeq
+            .map(_.classifier("sources").withConfigurations(None))
+            .map(dependencyResolution.wrapDependencyInModule)
+            .map(
+              dependencyResolution.update(
+                _,
+                UpdateConfiguration(),
+                UnresolvedWarningConfiguration(),
+                util.Logger.Null
+              )
             )
-          )
-          .flatMap(_.right.toOption)
-          .flatMap(_.allFiles)
-          .filter(_.name.endsWith("-sources.jar"))
-          .map(_.toPath())
-      } catch {
-        case ex: Throwable =>
-          log.warn(
-            s"Failed to resolved sources classpath for debug metadata: ${ex.getMessage}"
-          )
-          Nil
-      }
+            .flatMap(_.right.toOption)
+            .flatMap(_.allFiles)
+            .filter(_.name.endsWith("-sources.jar"))
+            .map(_.toPath())
+        } catch {
+          case ex: Throwable =>
+            log.warn(
+              s"Failed to resolved sources of classpath entry '$classpath', source level debuging might work incorrectly"
+            )
+            log.trace(ex)
+            Nil
+        }
+      }.seq
   }
 
 }

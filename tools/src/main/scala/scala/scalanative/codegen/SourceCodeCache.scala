@@ -123,7 +123,7 @@ class SourceCodeCache(config: build.Config) {
           .orElse {
             if (loggedMissingSourcesForCp.add(pos.nirSource.directory))
               config.logger.warn(
-                s"Failed to resolve sources of ${pos.source} defined in NIR file ${pos.nirSource.directory}. All sources defined in this dependency would not be available in debugger. You can try to add custom custom source directory or jars to config and try again."
+                s"Failed to resolve Scala sources for NIR symbols defined in ${pos.nirSource.directory} - they would be unavailable in debugger. You can try to add custom custom source directory or jars to config and try again."
               )
             None
           }
