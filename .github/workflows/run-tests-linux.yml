@@ -279,5 +279,5 @@ jobs:
         run: |
           sbt \
           "-J-Xmx3G" \
-          "scalaPartestTests${{env.project-version}}/testOnly -- --showDiff
+          "scalaPartestTests${{env.project-version}}/testOnly -- --showDiff"
 
