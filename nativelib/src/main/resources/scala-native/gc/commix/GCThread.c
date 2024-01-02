@@ -284,7 +284,7 @@ static void *GCThread_WeakThreadsHandlerLoop(void *arg) {
     while (true) {
         // Wait for dispatch
 #ifdef _WIN32
-        while (!atomic_load(self->isActive)) {
+        while (!atomic_load(&self->isActive)) {
             WaitForSingleObject(self->resumeEvent, INFINITE);
             ResetEvent(self->resumeEvent);
         }
