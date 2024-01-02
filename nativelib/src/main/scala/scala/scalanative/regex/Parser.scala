@@ -705,6 +705,13 @@ class Parser(wholeRegexp: String, _flags: Int) {
           val old = re
           re = re.subs(0)
           this.reuse(old)
+
+        /* Scala Native Issue #3631
+         * This Scala Native port must follow the Java switch
+         * statement semantics used in the RE2J original code.
+         * That is, return the now shortened re if there is no explicit case.
+         */
+        case _ =>
       }
       re
     } else {
