@@ -290,8 +290,8 @@ trait LinktimeIntrinsicCallsResolver { self: Reach =>
         }
       }
     val providersArray = buf.arrayalloc(
-      ty = Type.Array(ServiceLoaderProviderRef),
-      init = Val.ArrayValue(Type.Array(ServiceLoaderProviderRef), serviceProviders),
+      ty = ServiceLoaderProviderRef,
+      init = Val.ArrayValue(ServiceLoaderProviderRef, serviceProviders),
       unwind = let.unwind
     )
 

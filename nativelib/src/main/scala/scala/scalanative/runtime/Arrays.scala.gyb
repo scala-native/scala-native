@@ -234,10 +234,12 @@ object ${T}Array {
 
   @inline def snapshot(length: Int, data: RawPtr): ${T}Array = {
     val arr  = alloc(length)
-    val dst  = arr.atRaw(0)
-    val src  = data
-    val size = castIntToRawSizeUnsigned(${sizeT} * length)
-    libc.memcpy(dst, src, size)
+    if(length > 0) {
+      val dst  = arr.atRawUnsafe(0)
+      val src  = data
+      val size = castIntToRawSizeUnsigned(${sizeT} * length)
+      libc.memcpy(dst, src, size)
+    }
     arr
   }
 }
