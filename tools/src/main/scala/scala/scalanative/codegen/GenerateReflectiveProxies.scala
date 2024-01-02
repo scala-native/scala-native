@@ -12,7 +12,7 @@ object GenerateReflectiveProxies {
     implicit val fresh: nir.Fresh = nir.Fresh()
     val nir.Global.Member(owner, sig) = defn.name
     val defnType = defn.ty.asInstanceOf[nir.Type.Function]
-    implicit val pos: nir.Position = defn.pos
+    implicit val pos: nir.SourcePosition = defn.pos
 
     val proxyArgs = genProxyArgs(defnType)
     val proxyTy = genProxyTy(defnType, proxyArgs)
@@ -53,7 +53,7 @@ object GenerateReflectiveProxies {
 
   private def genProxyLabel(
       args: Seq[nir.Type]
-  )(implicit pos: nir.Position, fresh: nir.Fresh) = {
+  )(implicit pos: nir.SourcePosition, fresh: nir.Fresh) = {
     val argLabels = nir.Val.Local(fresh(), args.head) ::
       args.tail.map(argty => nir.Val.Local(fresh(), argty)).toList
 
@@ -109,7 +109,7 @@ object GenerateReflectiveProxies {
       defnRetTy: nir.Type,
       proxyRetTy: nir.Type
   )(implicit
-      pos: nir.Position,
+      pos: nir.SourcePosition,
       fresh: nir.Fresh
   ): nir.Inst.Let =
     nir.Type.box.get(defnRetTy) match {
@@ -130,7 +130,7 @@ object GenerateReflectiveProxies {
       defnRetTy: nir.Type,
       proxyRetTy: nir.Type
   )(implicit
-      pos: nir.Position,
+      pos: nir.SourcePosition,
       fresh: nir.Fresh
   ): Seq[nir.Inst] = {
     defnRetTy match {

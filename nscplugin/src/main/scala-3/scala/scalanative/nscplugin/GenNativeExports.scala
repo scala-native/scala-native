@@ -146,7 +146,7 @@ trait GenNativeExports(using Context):
       owner: OwnerSymbol
   ): ExportedSymbol =
     checkIsPublic(member)
-    given nir.Position = member.span
+    given nir.SourcePosition = member.span
     val originalName = genMethodName(member)
     val externName = originalName.top.member(externSig)
 

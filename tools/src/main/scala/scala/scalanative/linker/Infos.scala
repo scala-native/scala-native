@@ -7,7 +7,7 @@ import scala.scalanative.linker.LinktimeIntrinsicCallsResolver.FoundServiceProvi
 sealed abstract class Info {
   def attrs: nir.Attrs
   def name: nir.Global
-  def position: nir.Position
+  def position: nir.SourcePosition
 }
 
 sealed abstract class ScopeInfo extends Info {
@@ -61,7 +61,7 @@ final class Unavailable(val name: nir.Global) extends Info {
   def attrs: nir.Attrs =
     util.unsupported(s"unavailable ${name.show} has no attrs")
 
-  def position: nir.Position =
+  def position: nir.SourcePosition =
     util.unsupported(s"unavailable ${name.show} has no position")
 }
 
@@ -70,7 +70,7 @@ final class Trait(
     val name: nir.Global.Top,
     val traits: Seq[Trait]
 )(implicit
-    val position: nir.Position
+    val position: nir.SourcePosition
 ) extends ScopeInfo {
   val implementors = mutable.SortedSet.empty[Class]
   val subtraits = mutable.Set.empty[Trait]
@@ -106,7 +106,7 @@ final class Class(
     val parent: Option[Class],
     val traits: Seq[Trait],
     val isModule: Boolean
-)(implicit val position: nir.Position)
+)(implicit val position: nir.SourcePosition)
     extends ScopeInfo {
   val implementors = mutable.SortedSet[Class](this)
   val subclasses = mutable.Set.empty[Class]
@@ -200,7 +200,7 @@ final class Method(
     val ty: nir.Type.Function,
     val insts: Array[nir.Inst],
     val debugInfo: nir.Defn.Define.DebugInfo
-)(implicit val position: nir.Position)
+)(implicit val position: nir.SourcePosition)
     extends MemberInfo {
   val value: nir.Val =
     if (isConcrete) {
@@ -219,7 +219,7 @@ final class Field(
     val isConst: Boolean,
     val ty: nir.Type,
     val init: nir.Val
-)(implicit val position: nir.Position)
+)(implicit val position: nir.SourcePosition)
     extends MemberInfo {
   lazy val index: Int =
     owner.asInstanceOf[Class].fields.indexOf(this)

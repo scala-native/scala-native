@@ -52,7 +52,7 @@ private[scalanative] object ResourceEmbedder {
         internalExclusionPatterns
     }.diff(includePatterns)
 
-    implicit val position: nir.Position = nir.Position.NoPosition
+    implicit val position: nir.SourcePosition = nir.SourcePosition.NoPosition
 
     val notInIncludePatterns =
       s"Not matched by any include pattern: [${includePatterns.map(pat => s"'$pat'").mkString(", ")}]"

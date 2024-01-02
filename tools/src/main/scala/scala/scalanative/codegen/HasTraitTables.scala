@@ -5,7 +5,7 @@ import scalanative.linker.{Trait, Class}
 
 class HasTraitTables(meta: Metadata) {
 
-  private implicit val pos: nir.Position = nir.Position.NoPosition
+  private implicit val pos: nir.SourcePosition = nir.SourcePosition.NoPosition
 
   def generated(id: String): nir.Global.Member =
     nir.Global.Top("__scalanative_metadata").member(nir.Sig.Generated(id))

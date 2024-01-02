@@ -62,7 +62,7 @@ trait PolyInline { self: Interflow =>
   def polyInline(op: nir.Op.Method, args: Seq[nir.Val])(implicit
       state: State,
       analysis: ReachabilityAnalysis.Result,
-      srcPosition: nir.Position,
+      srcPosition: nir.SourcePosition,
       scopeIdId: nir.ScopeId
   ): nir.Val = {
     import state.{emit, fresh, materialize}

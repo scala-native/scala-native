@@ -79,7 +79,7 @@ trait Inline { self: Interflow =>
 
   def adapt(value: nir.Val, ty: nir.Type)(implicit
       state: State,
-      srcPosition: nir.Position,
+      srcPosition: nir.SourcePosition,
       scopeId: nir.ScopeId
   ): nir.Val = {
     val valuety = value match {
@@ -95,7 +95,7 @@ trait Inline { self: Interflow =>
 
   def adapt(args: Seq[nir.Val], sig: nir.Type.Function)(implicit
       state: State,
-      srcPosition: nir.Position,
+      srcPosition: nir.SourcePosition,
       scopeId: nir.ScopeId
   ): Seq[nir.Val] = {
     val nir.Type.Function(argtys, _) = sig
@@ -132,8 +132,7 @@ trait Inline { self: Interflow =>
       }
       val nir.Type.Function(_, origRetTy) = defn.ty
 
-      implicit val srcPosition: nir.Position = defn.pos
-
+      implicit val srcPosition: nir.SourcePosition = defn.pos
       val blocks = inliningBacktrace.tracked(name) {
         process(
           insts = defn.insts.toArray,

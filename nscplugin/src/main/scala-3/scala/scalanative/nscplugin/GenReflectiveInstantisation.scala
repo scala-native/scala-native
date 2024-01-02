@@ -65,7 +65,7 @@ trait GenReflectiveInstantisation(using Context) {
   }
 
   private def registerReflectiveInstantiation(td: TypeDef): Unit = {
-    given nir.Position = td.span
+    given nir.SourcePosition = td.span
     val sym: Symbol = curClassSym
     val owner = genTypeName(sym)
     val name = owner.member(nir.Sig.Clinit)
@@ -99,7 +99,7 @@ trait GenReflectiveInstantisation(using Context) {
     val fqcnArg = nir.Val.String(fqSymId)
     val runtimeClassArg = nir.Val.ClassOf(fqSymName)
 
-    given nir.Position = td.span
+    given nir.SourcePosition = td.span
     given reflInstBuffer: ReflectiveInstantiationBuffer =
       ReflectiveInstantiationBuffer(fqSymId)
 
@@ -120,7 +120,7 @@ trait GenReflectiveInstantisation(using Context) {
   private def registerNormalClass(
       td: TypeDef
   ): Seq[nir.Inst] = {
-    given nir.Position = td.span
+    given nir.SourcePosition = td.span
 
     val fqSymId = curClassSym.get.fullName.mangledString
     val fqSymName = nir.Global.Top(fqSymId)
@@ -160,7 +160,7 @@ trait GenReflectiveInstantisation(using Context) {
   private def genConstructor(
       superClass: nir.Global.Top
   )(using
-      nir.Position
+      nir.SourcePosition
   )(using reflInstBuffer: ReflectiveInstantiationBuffer): Unit = {
     withFreshExprBuffer { buf ?=>
       val body = {
@@ -195,7 +195,7 @@ trait GenReflectiveInstantisation(using Context) {
       name: nir.Global.Top,
       argTypes: Seq[nir.Type],
       args: Seq[nir.Val]
-  )(using pos: nir.Position, buf: ExprBuffer): nir.Val = {
+  )(using pos: nir.SourcePosition, buf: ExprBuffer): nir.Val = {
     val alloc = buf.classalloc(name, unwind(curFresh))
     buf.call(
       nir.Type.Function(nir.Type.Ref(name) +: argTypes, nir.Type.Unit),
@@ -209,7 +209,7 @@ trait GenReflectiveInstantisation(using Context) {
   private def genModuleLoader(
       fqSymName: nir.Global.Top
   )(using
-      pos: nir.Position,
+      pos: nir.SourcePosition,
       buf: ExprBuffer,
       reflInstBuffer: ReflectiveInstantiationBuffer
   ): nir.Val = {
@@ -259,7 +259,7 @@ trait GenReflectiveInstantisation(using Context) {
 
   // Create a new Tuple2 and initialise it with the provided values.
   private def createTuple(arg1: nir.Val, arg2: nir.Val)(using
-      nir.Position,
+      nir.SourcePosition,
       ExprBuffer
   ): nir.Val = {
     allocAndConstruct(
@@ -272,7 +272,7 @@ trait GenReflectiveInstantisation(using Context) {
   private def genClassConstructorsInfo(
       fqSymName: nir.Global.Top,
       ctors: Seq[Symbol]
-  )(using pos: nir.Position, buf: ExprBuffer): nir.Val = {
+  )(using pos: nir.SourcePosition, buf: ExprBuffer): nir.Val = {
     val applyMethodSig =
       nir.Sig.Method("apply", Seq(nir.Rt.Object, nir.Rt.Object))
 
@@ -290,7 +290,7 @@ trait GenReflectiveInstantisation(using Context) {
     // initialising and returning an instance of the class, using C.
     for ((ctor, ctorIdx) <- ctors.zipWithIndex) {
       val ctorSig = genMethodSig(ctor)
-      given nir.Position = ctor.span
+      given nir.SourcePosition = ctor.span
       val ctorSuffix = if (ctorIdx == 0) "" else s"$$$ctorIdx"
       given reflInstBuffer: ReflectiveInstantiationBuffer =
         ReflectiveInstantiationBuffer(fqSymName.id + ctorSuffix)

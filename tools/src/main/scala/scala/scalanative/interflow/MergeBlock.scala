@@ -13,7 +13,7 @@ final class MergeBlock(val label: nir.Inst.Label, val id: nir.Local) {
   var end: State = _
   var cf: nir.Inst.Cf = _
   var invalidations: Int = 0
-  implicit def cfPos: nir.Position = {
+  implicit def cfPos: nir.SourcePosition = {
     if (cf != null) cf.pos
     else label.pos
   }

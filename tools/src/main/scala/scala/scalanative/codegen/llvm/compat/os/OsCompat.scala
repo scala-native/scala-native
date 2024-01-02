@@ -19,7 +19,7 @@ private[codegen] abstract class OsCompat(
       unwind: nir.Next.Unwind
   )(implicit
       fresh: nir.Fresh,
-      pos: nir.Position,
+      pos: nir.SourcePosition,
       sb: ShowBuilder
   ): Unit
   def genBlockAlloca(block: nir.ControlFlow.Block)(implicit

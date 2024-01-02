@@ -178,10 +178,12 @@ abstract class NirGenPhase[G <: Global with Singleton](override val global: G)
     }
   }
 
-  protected implicit def toNirPosition(pos: global.Position): nir.Position = {
-    if (!pos.isDefined) nir.Position.NoPosition
+  protected implicit def toNirPosition(
+      pos: global.Position
+  ): nir.SourcePosition = {
+    if (!pos.isDefined) nir.SourcePosition.NoPosition
     else
-      nir.Position(
+      nir.SourcePosition(
         source = nirPositionCachedConverter.toNIRSource(pos.source),
         line = pos.line - 1,
         column = pos.column - 1

@@ -10,26 +10,26 @@ import scala.compiletime.uninitialized
 import java.nio.file.{Path, Paths}
 
 class NirPositions(positionRelativizationPaths: Seq[Path])(using Context) {
-  given fromSourcePosition: Conversion[SourcePosition, nir.Position] = {
+  given fromSourcePosition: Conversion[SourcePosition, nir.SourcePosition] = {
     sourcePos =>
       sourceAndSpanToNirPos(sourcePos.source, sourcePos.span)
   }
 
-  given fromSpan: Conversion[Span, nir.Position] =
+  given fromSpan: Conversion[Span, nir.SourcePosition] =
     sourceAndSpanToNirPos(ctx.compilationUnit.source, _)
 
   private def sourceAndSpanToNirPos(
       source: SourceFile,
       span: Span
-  ): nir.Position = {
+  ): nir.SourcePosition = {
     def nirSource = conversionCache.toNIRSourceFile(source)
     if (span.exists && source.exists)
       val point = span.point
       val line = source.offsetToLine(point)
       val column = source.column(point)
-      nir.Position(nirSource, line, column)
-    else if (source.exists) nir.Position(nirSource, 0, 0)
-    else nir.Position.NoPosition
+      nir.SourcePosition(nirSource, line, column)
+    else if (source.exists) nir.SourcePosition(nirSource, 0, 0)
+    else nir.SourcePosition.NoPosition
   }
 
   private object conversionCache {

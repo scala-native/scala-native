@@ -34,7 +34,7 @@ private[codegen] class UnixCompat(codegen: AbstractCodeGen)
       unwind: nir.Next.Unwind
   )(implicit
       fresh: nir.Fresh,
-      pos: nir.Position,
+      pos: nir.SourcePosition,
       sb: ShowBuilder
   ): Unit = {
     import sb._

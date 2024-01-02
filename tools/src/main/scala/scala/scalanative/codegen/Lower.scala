@@ -109,7 +109,7 @@ object Lower {
     def genNext(
         buf: nir.InstructionBuilder,
         next: nir.Next
-    )(implicit pos: nir.Position): nir.Next = {
+    )(implicit pos: nir.SourcePosition): nir.Next = {
       next match {
         case nir.Next.Unwind(exc, next) =>
           nir.Next.Unwind(exc, genNext(buf, next))
@@ -123,7 +123,7 @@ object Lower {
 
     private def optionallyBoxedUnit(
         v: nir.Val
-    )(implicit pos: nir.Position): nir.Val = {
+    )(implicit pos: nir.SourcePosition): nir.Val = {
       require(
         v.ty == nir.Type.Unit,
         s"Definition is expected to return Unit type, found ${v.ty}"
@@ -140,7 +140,7 @@ object Lower {
 
       def newUnwindHandler(
           next: nir.Next
-      )(implicit pos: nir.Position): Option[nir.Local] =
+      )(implicit pos: nir.SourcePosition): Option[nir.Local] =
         next match {
           case nir.Next.None =>
             None
@@ -197,7 +197,7 @@ object Lower {
           }
 
         case inst @ nir.Inst.Ret(v) =>
-          implicit val pos: nir.Position = inst.pos
+          implicit val pos: nir.SourcePosition = inst.pos
           if (config.semanticsConfig.finalFields.isNone) () // no-op
           else
             currentDefn.get.name match {
@@ -216,7 +216,7 @@ object Lower {
           buf += nir.Inst.Ret(retVal)
 
         case inst @ nir.Inst.Jump(next) =>
-          implicit val pos: nir.Position = inst.pos
+          implicit val pos: nir.SourcePosition = inst.pos
           // Generate GC yield points before backward jumps, eg. in loops
           next match {
             case nir.Next.Label(target, _)
@@ -235,7 +235,7 @@ object Lower {
       }
 
       locally {
-        implicit val pos: nir.Position = nir.Position.NoPosition
+        implicit val pos: nir.SourcePosition = nir.SourcePosition.NoPosition
         genNullPointerSlowPath(buf)
         genDivisionByZeroSlowPath(buf)
         genClassCastSlowPath(buf)
@@ -257,7 +257,7 @@ object Lower {
     }
 
     override def onInst(inst: nir.Inst): nir.Inst = {
-      implicit def pos: nir.Position = inst.pos
+      implicit def pos: nir.SourcePosition = inst.pos
       inst match {
         case nir.Inst.Ret(v) if v.ty == nir.Type.Unit =>
           nir.Inst.Ret(optionallyBoxedUnit(v))
@@ -280,7 +280,7 @@ object Lower {
     }
 
     def genVal(buf: nir.InstructionBuilder, value: nir.Val)(implicit
-        pos: nir.Position
+        pos: nir.SourcePosition
     ): nir.Val =
       value match {
         case nir.Val.ClassOf(ScopeRef(node)) =>
@@ -296,7 +296,7 @@ object Lower {
 
     def genNullPointerSlowPath(
         buf: nir.InstructionBuilder
-    )(implicit srcPosition: nir.Position, scopeId: nir.ScopeId): Unit = {
+    )(implicit srcPosition: nir.SourcePosition, scopeId: nir.ScopeId): Unit = {
       nullPointerSlowPath.toSeq.sortBy(_._2.id).foreach {
         case (slowPathUnwindHandler, slowPath) =>
           ScopedVar.scoped(
@@ -316,7 +316,7 @@ object Lower {
 
     def genDivisionByZeroSlowPath(
         buf: nir.InstructionBuilder
-    )(implicit srcPosition: nir.Position, scopeId: nir.ScopeId): Unit = {
+    )(implicit srcPosition: nir.SourcePosition, scopeId: nir.ScopeId): Unit = {
       divisionByZeroSlowPath.toSeq.sortBy(_._2.id).foreach {
         case (slowPathUnwindHandler, slowPath) =>
           ScopedVar.scoped(
@@ -336,7 +336,7 @@ object Lower {
 
     def genClassCastSlowPath(
         buf: nir.InstructionBuilder
-    )(implicit srcPosition: nir.Position, scopeId: nir.ScopeId): Unit = {
+    )(implicit srcPosition: nir.SourcePosition, scopeId: nir.ScopeId): Unit = {
       classCastSlowPath.toSeq.sortBy(_._2.id).foreach {
         case (slowPathUnwindHandler, slowPath) =>
           ScopedVar.scoped(
@@ -360,7 +360,7 @@ object Lower {
 
     def genUnreachableSlowPath(
         buf: nir.InstructionBuilder
-    )(implicit srcPosition: nir.Position, scopeId: nir.ScopeId): Unit = {
+    )(implicit srcPosition: nir.SourcePosition, scopeId: nir.ScopeId): Unit = {
       unreachableSlowPath.toSeq.sortBy(_._2.id).foreach {
         case (slowPathUnwindHandler, slowPath) =>
           ScopedVar.scoped(
@@ -380,7 +380,7 @@ object Lower {
 
     def genOutOfBoundsSlowPath(
         buf: nir.InstructionBuilder
-    )(implicit srcPosition: nir.Position, scopeId: nir.ScopeId): Unit = {
+    )(implicit srcPosition: nir.SourcePosition, scopeId: nir.ScopeId): Unit = {
       outOfBoundsSlowPath.toSeq.sortBy(_._2.id).foreach {
         case (slowPathUnwindHandler, slowPath) =>
           ScopedVar.scoped(
@@ -403,7 +403,7 @@ object Lower {
 
     def genNoSuchMethodSlowPath(
         buf: nir.InstructionBuilder
-    )(implicit srcPosition: nir.Position, scopeId: nir.ScopeId): Unit = {
+    )(implicit srcPosition: nir.SourcePosition, scopeId: nir.ScopeId): Unit = {
       noSuchMethodSlowPath.toSeq.sortBy(_._2.id).foreach {
         case (slowPathUnwindHandler, slowPath) =>
           ScopedVar.scoped(
@@ -427,7 +427,7 @@ object Lower {
         buf: nir.InstructionBuilder,
         n: nir.Local,
         op: nir.Op
-    )(implicit srcPosition: nir.Position, scopeId: nir.ScopeId): Unit =
+    )(implicit srcPosition: nir.SourcePosition, scopeId: nir.ScopeId): Unit =
       op.resty match {
         case nir.Type.Unit =>
           genOp(buf, fresh(), op)
@@ -443,7 +443,7 @@ object Lower {
     def genThrow(
         buf: nir.InstructionBuilder,
         exc: nir.Val
-    )(implicit srcPosition: nir.Position, scopeId: nir.ScopeId) = {
+    )(implicit srcPosition: nir.SourcePosition, scopeId: nir.ScopeId) = {
       genGuardNotNull(buf, exc)
       genOp(buf, fresh(), nir.Op.Call(throwSig, throw_, Seq(exc)))
       buf.unreachable(nir.Next.None)
@@ -451,7 +451,7 @@ object Lower {
 
     def genUnreachable(
         buf: nir.InstructionBuilder
-    )(implicit pos: nir.Position) = {
+    )(implicit pos: nir.SourcePosition) = {
       val failL = unreachableSlowPath.getOrElseUpdate(unwindHandler, fresh())
 
       buf.jump(nir.Next(failL))
@@ -461,7 +461,7 @@ object Lower {
         buf: nir.InstructionBuilder,
         n: nir.Local,
         op: nir.Op
-    )(implicit srcPosition: nir.Position, scopeId: nir.ScopeId): Unit = {
+    )(implicit srcPosition: nir.SourcePosition, scopeId: nir.ScopeId): Unit = {
       op match {
         case op: nir.Op.Field =>
           genFieldOp(buf, n, op)
@@ -533,7 +533,7 @@ object Lower {
     def genGuardNotNull(
         buf: nir.InstructionBuilder,
         obj: nir.Val
-    )(implicit srcPosition: nir.Position, scopeId: nir.ScopeId): Unit =
+    )(implicit srcPosition: nir.SourcePosition, scopeId: nir.ScopeId): Unit =
       obj.ty match {
         case ty: nir.Type.RefKind if !ty.isNullable =>
           ()
@@ -557,7 +557,7 @@ object Lower {
         buf: nir.InstructionBuilder,
         idx: nir.Val,
         len: nir.Val
-    )(implicit srcPosition: nir.Position, scopeId: nir.ScopeId): Unit = {
+    )(implicit srcPosition: nir.SourcePosition, scopeId: nir.ScopeId): Unit = {
       import buf._
 
       val inBoundsL = fresh()
@@ -579,7 +579,7 @@ object Lower {
         buf: nir.InstructionBuilder,
         obj: nir.Val,
         name: nir.Global.Member
-    )(implicit srcPosition: nir.Position, scopeId: nir.ScopeId) = {
+    )(implicit srcPosition: nir.SourcePosition, scopeId: nir.ScopeId) = {
       import buf._
       val v = genVal(buf, obj)
       val FieldRef(cls: Class, fld) = name: @unchecked
@@ -596,7 +596,7 @@ object Lower {
         buf: nir.InstructionBuilder,
         n: nir.Local,
         op: nir.Op.Fieldload
-    )(implicit srcPosition: nir.Position, scopeId: nir.ScopeId) = {
+    )(implicit srcPosition: nir.SourcePosition, scopeId: nir.ScopeId) = {
       val nir.Op.Fieldload(ty, obj, name) = op
       val field = name match {
         case FieldRef(_, field) => field
@@ -624,7 +624,7 @@ object Lower {
         buf: nir.InstructionBuilder,
         n: nir.Local,
         op: nir.Op.Fieldstore
-    )(implicit srcPosition: nir.Position, scopeId: nir.ScopeId) = {
+    )(implicit srcPosition: nir.SourcePosition, scopeId: nir.ScopeId) = {
       val nir.Op.Fieldstore(ty, obj, name, value) = op
       val field = name match {
         case FieldRef(_, field) => field
@@ -645,7 +645,7 @@ object Lower {
         buf: nir.InstructionBuilder,
         n: nir.Local,
         op: nir.Op
-    )(implicit srcPosition: nir.Position, scopeId: nir.ScopeId) = {
+    )(implicit srcPosition: nir.SourcePosition, scopeId: nir.ScopeId) = {
       val nir.Op.Field(obj, name) = op: @unchecked
       val elem = genFieldElemOp(buf, obj, name)
       buf.let(n, nir.Op.Copy(elem), unwind)
@@ -655,7 +655,7 @@ object Lower {
         buf: nir.InstructionBuilder,
         n: nir.Local,
         op: nir.Op.Load
-    )(implicit srcPosition: nir.Position, scopeId: nir.ScopeId): Unit = {
+    )(implicit srcPosition: nir.SourcePosition, scopeId: nir.ScopeId): Unit = {
       op match {
         // Convert synchronized load(bool) into load(byte)
         // LLVM is not providing synchronization on booleans
@@ -700,7 +700,7 @@ object Lower {
         buf: nir.InstructionBuilder,
         n: nir.Local,
         op: nir.Op.Store
-    )(implicit srcPosition: nir.Position, scopeId: nir.ScopeId): Unit = {
+    )(implicit srcPosition: nir.SourcePosition, scopeId: nir.ScopeId): Unit = {
       op match {
         // Convert synchronized store(bool) into store(byte)
         // LLVM is not providing synchronization on booleans
@@ -746,7 +746,7 @@ object Lower {
         buf: nir.InstructionBuilder,
         n: nir.Local,
         op: nir.Op.Comp
-    )(implicit srcPosition: nir.Position, scopeId: nir.ScopeId): Unit = {
+    )(implicit srcPosition: nir.SourcePosition, scopeId: nir.ScopeId): Unit = {
       val nir.Op.Comp(comp, ty, l, r) = op
       val left = genVal(buf, l)
       val right = genVal(buf, r)
@@ -789,7 +789,7 @@ object Lower {
     private def genGCYieldpoint(
         buf: nir.InstructionBuilder,
         genUnwind: Boolean = true
-    )(implicit srcPosition: nir.Position, scopeId: nir.ScopeId): Unit = {
+    )(implicit srcPosition: nir.SourcePosition, scopeId: nir.ScopeId): Unit = {
       if (shouldGenerateGCYieldPoints(currentDefn.get)) {
         // Intrinsic method for LLVM codegen
         buf.call(GCYieldSig, GCYield, Nil, nir.Next.None)
@@ -800,7 +800,7 @@ object Lower {
         buf: nir.InstructionBuilder,
         n: nir.Local,
         op: nir.Op.Call
-    )(implicit srcPosition: nir.Position, scopeId: nir.ScopeId): Unit = {
+    )(implicit srcPosition: nir.SourcePosition, scopeId: nir.ScopeId): Unit = {
       val nir.Op.Call(ty, ptr, args) = op
       def genCall() = {
         buf.let(
@@ -843,7 +843,7 @@ object Lower {
         buf: nir.InstructionBuilder,
         n: nir.Local,
         op: nir.Op.Method
-    )(implicit srcPosition: nir.Position, scopeId: nir.ScopeId) = {
+    )(implicit srcPosition: nir.SourcePosition, scopeId: nir.ScopeId) = {
       import buf._
 
       val nir.Op.Method(v, sig) = op
@@ -950,7 +950,7 @@ object Lower {
         buf: nir.InstructionBuilder,
         n: nir.Local,
         op: nir.Op.Dynmethod
-    )(implicit srcPosition: nir.Position, scopeId: nir.ScopeId): Unit = {
+    )(implicit srcPosition: nir.SourcePosition, scopeId: nir.ScopeId): Unit = {
       import buf._
 
       val nir.Op.Dynmethod(v, sig) = op
@@ -1002,7 +1002,7 @@ object Lower {
         buf: nir.InstructionBuilder,
         n: nir.Local,
         op: nir.Op.Is
-    )(implicit srcPosition: nir.Position, scopeId: nir.ScopeId): Unit = {
+    )(implicit srcPosition: nir.SourcePosition, scopeId: nir.ScopeId): Unit = {
       import buf._
 
       op match {
@@ -1038,7 +1038,10 @@ object Lower {
         buf: nir.InstructionBuilder,
         ty: nir.Type,
         v: nir.Val
-    )(implicit srcPosition: nir.Position, scopeId: nir.ScopeId): nir.Val = {
+    )(implicit
+        srcPosition: nir.SourcePosition,
+        scopeId: nir.ScopeId
+    ): nir.Val = {
       import buf._
       val obj = genVal(buf, v)
 
@@ -1101,7 +1104,7 @@ object Lower {
         buf: nir.InstructionBuilder,
         n: nir.Local,
         op: nir.Op.As
-    )(implicit srcPosition: nir.Position, scopeId: nir.ScopeId): Unit = {
+    )(implicit srcPosition: nir.SourcePosition, scopeId: nir.ScopeId): Unit = {
       import buf._
 
       op match {
@@ -1141,7 +1144,7 @@ object Lower {
         buf: nir.InstructionBuilder,
         n: nir.Local,
         op: nir.Op.SizeOf
-    )(implicit srcPosition: nir.Position, scopeId: nir.ScopeId): Unit = {
+    )(implicit srcPosition: nir.SourcePosition, scopeId: nir.ScopeId): Unit = {
       val size = op.ty match {
         case ClassRef(cls) if op.ty != nir.Type.Unit =>
           if (!cls.allocated) {
@@ -1160,7 +1163,7 @@ object Lower {
         buf: nir.InstructionBuilder,
         n: nir.Local,
         op: nir.Op.AlignmentOf
-    )(implicit srcPosition: nir.Position, scopeId: nir.ScopeId): Unit = {
+    )(implicit srcPosition: nir.SourcePosition, scopeId: nir.ScopeId): Unit = {
       val alignment = MemoryLayout.alignmentOf(op.ty)
       buf.let(n, nir.Op.Copy(nir.Val.Size(alignment)), unwind)
     }
@@ -1169,7 +1172,7 @@ object Lower {
         buf: nir.InstructionBuilder,
         n: nir.Local,
         op: nir.Op.Classalloc
-    )(implicit srcPosition: nir.Position, scopeId: nir.ScopeId): Unit = {
+    )(implicit srcPosition: nir.SourcePosition, scopeId: nir.ScopeId): Unit = {
       val nir.Op.Classalloc(ClassRef(cls), v) = op: @unchecked
       val zone = v.map(genVal(buf, _))
 
@@ -1212,7 +1215,7 @@ object Lower {
         buf: nir.InstructionBuilder,
         n: nir.Local,
         op: nir.Op.Conv
-    )(implicit srcPosition: nir.Position, scopeId: nir.ScopeId): Unit = {
+    )(implicit srcPosition: nir.SourcePosition, scopeId: nir.ScopeId): Unit = {
       import buf._
 
       op match {
@@ -1313,7 +1316,7 @@ object Lower {
         buf: nir.InstructionBuilder,
         n: nir.Local,
         op: nir.Op.Bin
-    )(implicit srcPosition: nir.Position, scopeId: nir.ScopeId): Unit = {
+    )(implicit srcPosition: nir.SourcePosition, scopeId: nir.ScopeId): Unit = {
       import buf._
 
       // LLVM's division by zero is undefined behaviour. We guard
@@ -1453,7 +1456,7 @@ object Lower {
         buf: nir.InstructionBuilder,
         n: nir.Local,
         op: nir.Op.Box
-    )(implicit srcPosition: nir.Position, scopeId: nir.ScopeId): Unit = {
+    )(implicit srcPosition: nir.SourcePosition, scopeId: nir.ScopeId): Unit = {
       val nir.Op.Box(ty, v) = op
       val from = genVal(buf, v)
 
@@ -1478,7 +1481,7 @@ object Lower {
         buf: nir.InstructionBuilder,
         n: nir.Local,
         op: nir.Op.Unbox
-    )(implicit srcPosition: nir.Position, scopeId: nir.ScopeId): Unit = {
+    )(implicit srcPosition: nir.SourcePosition, scopeId: nir.ScopeId): Unit = {
       val nir.Op.Unbox(ty, v) = op
       val from = genVal(buf, v)
 
@@ -1503,7 +1506,7 @@ object Lower {
         buf: nir.InstructionBuilder,
         n: nir.Local,
         op: nir.Op.Module
-    )(implicit srcPosition: nir.Position, scopeId: nir.ScopeId) = {
+    )(implicit srcPosition: nir.SourcePosition, scopeId: nir.ScopeId) = {
       val nir.Op.Module(name) = op
 
       meta.analysis.infos(name) match {
@@ -1528,7 +1531,7 @@ object Lower {
         buf: nir.InstructionBuilder,
         n: nir.Local,
         op: nir.Op.Arrayalloc
-    )(implicit srcPosition: nir.Position, scopeId: nir.ScopeId): Unit = {
+    )(implicit srcPosition: nir.SourcePosition, scopeId: nir.ScopeId): Unit = {
       val nir.Op.Arrayalloc(ty, v1, v2) = op
       val init = genVal(buf, v1)
       val zone = v2.map(genVal(buf, _))
@@ -1601,7 +1604,7 @@ object Lower {
         buf: nir.InstructionBuilder,
         n: nir.Local,
         op: nir.Op.Arrayload
-    )(implicit srcPosition: nir.Position, scopeId: nir.ScopeId): Unit = {
+    )(implicit srcPosition: nir.SourcePosition, scopeId: nir.ScopeId): Unit = {
       val nir.Op.Arrayload(ty, v, idx) = op
       val arr = genVal(buf, v)
 
@@ -1619,7 +1622,7 @@ object Lower {
         buf: nir.InstructionBuilder,
         n: nir.Local,
         op: nir.Op.Arraystore
-    )(implicit srcPosition: nir.Position, scopeId: nir.ScopeId): Unit = {
+    )(implicit srcPosition: nir.SourcePosition, scopeId: nir.ScopeId): Unit = {
       val nir.Op.Arraystore(ty, arr, idx, v) = op
       val len = fresh()
       val value = genVal(buf, v)
@@ -1636,7 +1639,7 @@ object Lower {
         buf: nir.InstructionBuilder,
         n: nir.Local,
         op: nir.Op.Arraylength
-    )(implicit srcPosition: nir.Position, scopeId: nir.ScopeId): Unit = {
+    )(implicit srcPosition: nir.SourcePosition, scopeId: nir.ScopeId): Unit = {
       val nir.Op.Arraylength(v) = op
       val arr = genVal(buf, v)
 
@@ -1653,7 +1656,7 @@ object Lower {
         buf: nir.InstructionBuilder,
         n: nir.Local,
         op: nir.Op.Stackalloc
-    )(implicit srcPosition: nir.Position, scopeId: nir.ScopeId): Unit = {
+    )(implicit srcPosition: nir.SourcePosition, scopeId: nir.ScopeId): Unit = {
       val nir.Op.Stackalloc(ty, size) = op
       val initValue = nir.Val.Zero(ty).canonicalize
       val pointee = buf.let(n, op, unwind)
@@ -1773,7 +1776,7 @@ object Lower {
         args.headOption.foreach { thisValue =>
           thisValue.ty match {
             case ref: nir.Type.Ref if ref.isNullable && usesValue(thisValue) =>
-              implicit def pos: nir.Position = defn.pos
+              implicit def pos: nir.SourcePosition = defn.pos
               implicit def scopeId: nir.ScopeId = nir.ScopeId.TopLevel
               ScopedVar.scoped(
                 unwindHandler := createUnwindHandler()
@@ -2090,7 +2093,7 @@ object Lower {
   val RuntimeNothing = nir.Type.Ref(nir.Global.Top("scala.runtime.Nothing$"))
 
   val injects: Seq[nir.Defn] = {
-    implicit val pos = nir.Position.NoPosition
+    implicit val pos = nir.SourcePosition.NoPosition
     val buf = mutable.UnrolledBuffer.empty[nir.Defn]
     buf += nir.Defn.Declare(nir.Attrs.None, allocSmallName, allocSig)
     buf += nir.Defn.Declare(nir.Attrs.None, largeAllocName, allocSig)

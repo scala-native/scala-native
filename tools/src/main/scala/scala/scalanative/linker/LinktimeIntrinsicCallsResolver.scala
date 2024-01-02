@@ -208,7 +208,7 @@ trait LinktimeIntrinsicCallsResolver { self: Reach =>
       buf: InstructionBuilder
   ): Unit = {
     val let @ Inst.Let(_, op: Op.Call, _) = inst: @unchecked
-    implicit val pos: Position = let.pos
+    implicit val pos: SourcePosition = let.pos
     implicit val scopeId: ScopeId = let.scopeId
 
     val serviceName = cls.name.id

@@ -90,7 +90,7 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
   }
 
   def dbgLocalValue(id: nir.Local, ty: nir.Type, argIdx: Option[Int] = None)(
-      srcPosition: nir.Position,
+      srcPosition: nir.SourcePosition,
       scopeId: nir.ScopeId
   )(implicit
       debugInfo: DebugInfo,
@@ -100,7 +100,7 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
   ): Unit = createVarDebugInfo(isVar = false, argIdx = argIdx)(id, ty, srcPosition, scopeId)
 
   def dbgLocalVariable(id: nir.Local, ty: nir.Type)(
-      srcPosition: nir.Position,
+      srcPosition: nir.SourcePosition,
       scopeId: nir.ScopeId
   )(implicit
       debugInfo: DebugInfo,
@@ -112,13 +112,13 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
   private def createVarDebugInfo(
       isVar: Boolean,
       argIdx: Option[Int]
-  )(id: nir.Local, ty: nir.Type, srcPosition: nir.Position, scopeId: nir.ScopeId)(implicit
+  )(id: nir.Local, ty: nir.Type, srcPosition: nir.SourcePosition, scopeId: nir.ScopeId)(implicit
       debugInfo: DebugInfo,
       defnScopes: DefnScopes,
       metadataCtx: Context,
       sb: ShowBuilder
   ): Unit = if (generateLocalVariables && canHaveDebugValue(ty)) {
-    implicit def _srcPosition: nir.Position = srcPosition
+    implicit def _srcPosition: nir.SourcePosition = srcPosition
     implicit def _scopeId: nir.ScopeId = scopeId
     implicit def analysis: linker.ReachabilityAnalysis.Result = meta.analysis
     import Metadata.DIExpression._
@@ -165,7 +165,7 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
       ctx: Context,
       sb: ShowBuilder,
       defnScopes: DefnScopes,
-      pos: nir.Position,
+      pos: nir.SourcePosition,
       scopeId: nir.ScopeId
   ): Unit = {
     sb.newline()
@@ -187,7 +187,7 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
       ctx: Context,
       sb: ShowBuilder,
       defnScopes: DefnScopes,
-      pos: nir.Position,
+      pos: nir.SourcePosition,
       scopeId: nir.ScopeId
   ): Unit = {
     sb.newline()
@@ -207,7 +207,7 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
       .map(_.keySet.toSeq.asInstanceOf[Seq[DICompileUnit]])
       .getOrElse(Nil)
 
-  def toDIFile(pos: nir.Position): DIFile = {
+  def toDIFile(pos: nir.SourcePosition): DIFile = {
     pos.source
       .flatMap {
         case source: Relative => sourceCodeCache.findSources(source, pos)
@@ -223,7 +223,7 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
   }
 
   def toDILocation(
-      pos: nir.Position,
+      pos: nir.SourcePosition,
       scopeId: nir.ScopeId
   )(implicit defnScopes: DefnScopes): DILocation = DILocation(
     line = pos.line.toDILine,

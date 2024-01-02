@@ -5,7 +5,7 @@ import java.util.Arrays
 import scalanative.linker.Class
 
 sealed abstract class Instance(implicit
-    val srcPosition: nir.Position,
+    val srcPosition: nir.SourcePosition,
     val scopeId: nir.ScopeId
 ) extends Cloneable {
   def ty: nir.Type = this match {
@@ -35,7 +35,7 @@ sealed abstract class Instance(implicit
 }
 
 final case class EscapedInstance(val escapedValue: nir.Val)(implicit
-    srcPosition: nir.Position,
+    srcPosition: nir.SourcePosition,
     scopeId: nir.ScopeId
 ) extends Instance {
   def this(escapedValue: nir.Val, instance: Instance) =
@@ -43,7 +43,7 @@ final case class EscapedInstance(val escapedValue: nir.Val)(implicit
 }
 
 final case class DelayedInstance(val delayedOp: nir.Op)(implicit
-    srcPosition: nir.Position,
+    srcPosition: nir.SourcePosition,
     scopeId: nir.ScopeId
 ) extends Instance
 
@@ -52,7 +52,7 @@ final case class VirtualInstance(
     cls: Class,
     values: Array[nir.Val],
     zone: Option[nir.Val]
-)(implicit srcPosition: nir.Position, scopeId: nir.ScopeId)
+)(implicit srcPosition: nir.SourcePosition, scopeId: nir.ScopeId)
     extends Instance {
 
   // We can't use case class generated equals, due to the fact

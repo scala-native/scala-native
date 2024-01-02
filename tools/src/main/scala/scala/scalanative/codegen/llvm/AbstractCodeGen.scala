@@ -975,7 +975,7 @@ private[codegen] abstract class AbstractCodeGen(
       genBind: () => Unit,
       call: nir.Op.Call,
       unwind: nir.Next,
-      srcPos: nir.Position,
+      srcPos: nir.SourcePosition,
       scopeId: nir.ScopeId
   )(implicit
       fresh: nir.Fresh,

@@ -14,7 +14,7 @@ object NIRSource {
   }
 }
 
-final case class Position(
+final case class SourcePosition(
     /** Scala source file containing definition of element */
     source: SourceFile,
     /** Zero-based line number in the source. */
@@ -34,12 +34,12 @@ final case class Position(
   def sourceColumn: Int = column + 1
   def show: String = s"$source:$sourceLine:$sourceColumn"
 
-  def isEmpty: Boolean = this eq Position.NoPosition
+  def isEmpty: Boolean = this eq SourcePosition.NoPosition
   def isDefined: Boolean = !isEmpty
 }
 
-object Position {
-  val NoPosition = Position(SourceFile.Virtual, 0, 0)
+object SourcePosition {
+  val NoPosition = SourcePosition(SourceFile.Virtual, 0, 0)
 }
 
 sealed trait SourceFile {

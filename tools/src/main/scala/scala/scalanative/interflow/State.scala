@@ -31,13 +31,13 @@ final class State(block: nir.Local)(preserveDebugInfo: Boolean) {
       cls: Class,
       values: Array[nir.Val],
       zone: Option[nir.Val]
-  )(implicit srcPosition: nir.Position, scopeId: nir.ScopeId): Addr = {
+  )(implicit srcPosition: nir.SourcePosition, scopeId: nir.ScopeId): Addr = {
     val addr = fresh().id
     heap(addr) = VirtualInstance(kind, cls, values, zone)
     addr
   }
   def allocClass(cls: Class, zone: Option[nir.Val])(implicit
-      srcPosition: nir.Position,
+      srcPosition: nir.SourcePosition,
       scopeId: nir.ScopeId
   ): Addr = {
     val fields = cls.fields.map(fld => nir.Val.Zero(fld.ty).canonicalize)
@@ -45,7 +45,7 @@ final class State(block: nir.Local)(preserveDebugInfo: Boolean) {
   }
   def allocArray(elemty: nir.Type, count: Int, zone: Option[nir.Val])(implicit
       analysis: ReachabilityAnalysis.Result,
-      srcPosition: nir.Position,
+      srcPosition: nir.SourcePosition,
       scopeId: nir.ScopeId
   ): Addr = {
     val zero = nir.Val.Zero(elemty).canonicalize
@@ -55,7 +55,7 @@ final class State(block: nir.Local)(preserveDebugInfo: Boolean) {
   }
   def allocBox(boxname: nir.Global, value: nir.Val)(implicit
       analysis: ReachabilityAnalysis.Result,
-      srcPosition: nir.Position,
+      srcPosition: nir.SourcePosition,
       scopeId: nir.ScopeId
   ): Addr = {
     val boxcls = analysis.infos(boxname).asInstanceOf[Class]
@@ -63,7 +63,7 @@ final class State(block: nir.Local)(preserveDebugInfo: Boolean) {
   }
   def allocString(value: String)(implicit
       analysis: ReachabilityAnalysis.Result,
-      srcPosition: nir.Position,
+      srcPosition: nir.SourcePosition,
       scopeId: nir.ScopeId
   ): Addr = {
     val charsArray = value.toArray
@@ -83,7 +83,7 @@ final class State(block: nir.Local)(preserveDebugInfo: Boolean) {
   }
   def delay(
       op: nir.Op
-  )(implicit srcPosition: nir.Position, scopeId: nir.ScopeId): nir.Val = {
+  )(implicit srcPosition: nir.SourcePosition, scopeId: nir.ScopeId): nir.Val = {
     delayed.getOrElseUpdate(
       op, {
         val addr = fresh().id
@@ -93,7 +93,7 @@ final class State(block: nir.Local)(preserveDebugInfo: Boolean) {
     )
   }
   def emit(op: nir.Op, idempotent: Boolean = false)(implicit
-      srcPosition: nir.Position,
+      srcPosition: nir.SourcePosition,
       scopeId: nir.ScopeId
   ): nir.Val.Local = {
     if (op.isIdempotent || idempotent) {

@@ -98,7 +98,7 @@ class TraitDispatchTable(meta: Metadata) {
     dispatchTy = nir.Type.Ptr
     dispatchDefn =
       nir.Defn.Const(nir.Attrs.None, dispatchName, value.ty, value)(
-        nir.Position.NoPosition
+        nir.SourcePosition.NoPosition
       )
   }
 

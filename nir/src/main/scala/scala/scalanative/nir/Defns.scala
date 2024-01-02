@@ -30,7 +30,7 @@ sealed abstract class Defn {
 
   /** Returns the site in the program sources corresponding to the definition.
    */
-  def pos: Position
+  def pos: SourcePosition
 
   /** Returns a textual representation of `this`. */
   final def show: String =
@@ -57,7 +57,7 @@ object Defn {
       name: Global.Member,
       ty: Type,
       rhs: Val
-  )(implicit val pos: Position)
+  )(implicit val pos: SourcePosition)
       extends Defn
 
   /** A unique, read-only instance of some type.
@@ -70,7 +70,7 @@ object Defn {
       name: Global.Member,
       ty: Type,
       rhs: Val
-  )(implicit val pos: Position)
+  )(implicit val pos: SourcePosition)
       extends Defn
 
   /** A method declaration.
@@ -82,7 +82,7 @@ object Defn {
       attrs: Attrs,
       name: Global.Member,
       ty: Type.Function
-  )(implicit val pos: Position)
+  )(implicit val pos: SourcePosition)
       extends Defn
 
   /** A method definition. */
@@ -92,7 +92,7 @@ object Defn {
       ty: Type.Function,
       insts: Seq[Inst],
       debugInfo: Define.DebugInfo = Define.DebugInfo.empty
-  )(implicit val pos: Position)
+  )(implicit val pos: SourcePosition)
       extends Defn {
     private[scalanative] lazy val hasUnwind = insts.exists {
       case nir.Inst.Let(_, _, unwind)   => unwind ne nir.Next.None
@@ -130,7 +130,7 @@ object Defn {
       case class LexicalScope(
           id: ScopeId,
           parent: ScopeId,
-          srcPosition: Position
+          srcPosition: SourcePosition
       ) {
 
         /** Returns `true` iff `this` is the top-level scope. */
@@ -144,12 +144,12 @@ object Defn {
         /** Returns a top-level scope covering the given site in the source
          *  program.
          */
-        def TopLevel(defnPosition: Position) =
+        def TopLevel(defnPosition: SourcePosition) =
           LexicalScope(ScopeId.TopLevel, ScopeId.TopLevel, defnPosition)
 
         /** An abstract top-level scope. */
         final val AnyTopLevel =
-          TopLevel(Position.NoPosition)
+          TopLevel(SourcePosition.NoPosition)
 
         /** The order between lexical scopes. */
         implicit val ordering: Ordering[LexicalScope] =
@@ -166,7 +166,7 @@ object Defn {
       attrs: Attrs,
       name: Global.Top,
       traits: Seq[Global.Top]
-  )(implicit val pos: Position)
+  )(implicit val pos: SourcePosition)
       extends Defn
 
   /** The NIR representation of a Scala class. */
@@ -175,7 +175,7 @@ object Defn {
       name: Global.Top,
       parent: Option[Global.Top],
       traits: Seq[Global.Top]
-  )(implicit val pos: Position)
+  )(implicit val pos: SourcePosition)
       extends Defn
 
   /** The NIR representation of a Scala module. */
@@ -184,7 +184,7 @@ object Defn {
       name: Global.Top,
       parent: Option[Global.Top],
       traits: Seq[Global.Top]
-  )(implicit val pos: Position)
+  )(implicit val pos: SourcePosition)
       extends Defn
 
 }

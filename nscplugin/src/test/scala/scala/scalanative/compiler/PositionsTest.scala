@@ -34,7 +34,7 @@ class PositionsTest {
       def unapply(
           defn: nir.Defn
       ): Option[
-        (nir.Global.Top, nir.Sig.Unmangled, nir.Position, Seq[nir.Inst])
+        (nir.Global.Top, nir.Sig.Unmangled, nir.SourcePosition, Seq[nir.Inst])
       ] =
         defn match {
           case nir.Defn.Define(
@@ -61,7 +61,7 @@ class PositionsTest {
     def isScala3 = scalaVersion.startsWith("3.")
 
     for (defn <- loaded) {
-      def checkPos(line: Int, column: Int)(pos: nir.Position) = {
+      def checkPos(line: Int, column: Int)(pos: nir.SourcePosition) = {
         val clue =
           s"${defn.name} - expected=$line:$column, actual=${pos.line}:${pos.column}"
         assertTrue(clue, pos.source.filename.contains(sourceFile))
@@ -69,7 +69,7 @@ class PositionsTest {
         assertEquals(clue, column, pos.column)
       }
       def checkLinesRange(range: Range)(
-          positions: Iterable[nir.Position]
+          positions: Iterable[nir.SourcePosition]
       ): Unit = {
         positions.foreach { pos =>
           assertTrue(s"${defn.name}", pos.source.filename.contains(sourceFile))
