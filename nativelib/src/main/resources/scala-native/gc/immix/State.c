@@ -10,4 +10,8 @@ _Atomic(MutatorThreads) mutatorThreads = NULL;
 thread_local MutatorThread *currentMutatorThread = NULL;
 GC_Roots *roots = NULL;
 
+#ifdef SCALANATIVE_MULTITHREADING_ENABLED
+struct GCWeakRefsHandlerThread *weakRefsHandlerThread = NULL;
+#endif
+
 #endif

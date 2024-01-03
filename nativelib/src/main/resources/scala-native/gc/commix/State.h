@@ -14,4 +14,9 @@ extern atomic_int_fast32_t mutatorThreadsCount;
 extern thread_local MutatorThread *currentMutatorThread;
 extern GC_Roots *roots;
 
+#ifdef SCALANATIVE_MULTITHREADING_ENABLED
+#include "GCThread.h"
+extern struct GCWeakRefsHandlerThread *weakRefsHandlerThread;
+#endif
+
 #endif // IMMIX_STATE_H
