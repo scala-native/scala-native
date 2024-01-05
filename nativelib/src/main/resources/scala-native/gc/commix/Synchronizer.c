@@ -140,7 +140,8 @@ void Synchronizer_release() {
             thread_yield();
         }
     } while (stoppedThreads > 0);
-    MutatorThread_switchState(currentMutatorThread, GC_MutatorThreadState_Managed);
+    MutatorThread_switchState(currentMutatorThread,
+                              GC_MutatorThreadState_Managed);
     MutatorThreads_unlockRead();
     mutex_unlock(&synchronizerLock);
 }

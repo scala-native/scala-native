@@ -156,9 +156,9 @@ static ThreadRoutineReturnType ProxyThreadStartRoutine(void *args) {
 
 #ifdef _WIN32
 HANDLE scalanative_GC_CreateThread(LPSECURITY_ATTRIBUTES threadAttributes,
-                                SIZE_T stackSize, ThreadStartRoutine routine,
-                                RoutineArgs args, DWORD creationFlags,
-                                DWORD *threadId) {
+                                   SIZE_T stackSize, ThreadStartRoutine routine,
+                                   RoutineArgs args, DWORD creationFlags,
+                                   DWORD *threadId) {
     WrappedFunctionCallArgs *proxyArgs =
         (WrappedFunctionCallArgs *)malloc(sizeof(WrappedFunctionCallArgs));
     proxyArgs->fn = routine;
@@ -169,7 +169,8 @@ HANDLE scalanative_GC_CreateThread(LPSECURITY_ATTRIBUTES threadAttributes,
 }
 #else
 int scalanative_GC_pthread_create(pthread_t *thread, pthread_attr_t *attr,
-                               ThreadStartRoutine routine, RoutineArgs args) {
+                                  ThreadStartRoutine routine,
+                                  RoutineArgs args) {
     WrappedFunctionCallArgs *proxyArgs =
         (WrappedFunctionCallArgs *)malloc(sizeof(WrappedFunctionCallArgs));
     proxyArgs->fn = routine;

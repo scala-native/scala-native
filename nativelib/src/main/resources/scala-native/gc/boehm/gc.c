@@ -61,15 +61,16 @@ void scalanative_GC_register_weak_reference_handler(void *handler) {}
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
 #ifdef _WIN32
 HANDLE scalanative_GC_CreateThread(LPSECURITY_ATTRIBUTES threadAttributes,
-                                SIZE_T stackSize, ThreadStartRoutine routine,
-                                RoutineArgs args, DWORD creationFlags,
-                                DWORD *threadId) {
+                                   SIZE_T stackSize, ThreadStartRoutine routine,
+                                   RoutineArgs args, DWORD creationFlags,
+                                   DWORD *threadId) {
     return GC_CreateThread(threadAttributes, stackSize, routine, args,
                            creationFlags, threadId);
 }
 #else
 int scalanative_GC_pthread_create(pthread_t *thread, pthread_attr_t *attr,
-                               ThreadStartRoutine routine, RoutineArgs args) {
+                                  ThreadStartRoutine routine,
+                                  RoutineArgs args) {
     return GC_pthread_create(thread, attr, routine, args);
 }
 #endif

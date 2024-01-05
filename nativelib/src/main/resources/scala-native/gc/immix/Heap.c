@@ -301,7 +301,8 @@ void Heap_Collect(Heap *heap, Stack *stack) {
     Synchronizer_release();
     GCThread_WeakThreadsHandler_Resume(weakRefsHandlerThread);
 #else
-    MutatorThread_switchState(currentMutatorThread, GC_MutatorThreadState_Managed);
+    MutatorThread_switchState(currentMutatorThread,
+                              GC_MutatorThreadState_Managed);
     WeakRefStack_CallHandlers();
 #endif
 #ifdef DEBUG_PRINT
