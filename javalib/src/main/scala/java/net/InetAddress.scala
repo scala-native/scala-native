@@ -90,13 +90,7 @@ class InetAddress protected (ipAddress: Array[Byte], originalHost: String)
     if (ipAddress.length == 4) {
       formatIn4Addr(arrayByteToPtrByte(ipAddress))
     } else if (ipAddress.length == 16) {
-      if (isIPv4MappedAddress(arrayByteToPtrByte(ipAddress))) {
-        formatIn4Addr(
-          arrayByteToPtrByte(extractIP4Bytes(arrayByteToPtrByte(ipAddress)))
-        )
-      } else {
-        Inet6Address.formatInet6Address(this.asInstanceOf[Inet6Address])
-      }
+      Inet6Address.formatInet6Address(this.asInstanceOf[Inet6Address])
     } else {
       "<unknown>"
     }
