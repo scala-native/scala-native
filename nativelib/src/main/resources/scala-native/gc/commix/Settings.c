@@ -25,7 +25,7 @@ size_t Settings_MaxHeapSize() {
 }
 
 double Settings_MaxMarkTimeRatio() {
-    char *str = getenv("SCALANATIVE_TIME_RATIO");
+    char *str = getenv("GC_TIME_RATIO");
     if (str == NULL) {
         return DEFAULT_MARK_TIME_RATIO;
     } else {
@@ -36,7 +36,7 @@ double Settings_MaxMarkTimeRatio() {
 }
 
 double Settings_MinFreeRatio() {
-    char *str = getenv("scalanative_GC_free_RATIO");
+    char *str = getenv("GC_FREE_RATIO");
     if (str == NULL) {
         return DEFAULT_FREE_RATIO;
     } else {
@@ -47,7 +47,7 @@ double Settings_MinFreeRatio() {
 }
 
 #ifdef ENABLE_GC_STATS
-char *Settings_StatsFileName() { return getenv(STATS_FILE_SETTING); }
+char *Settings_StatsFileName() { return getenv(GC_STATS_FILE_SETTING); }
 #endif
 
 int Settings_GCThreadCount() {

@@ -18,6 +18,6 @@ size_t Settings_MaxHeapSize() {
     return Parse_Env_Or_Default("GC_MAXIMUM_HEAP_SIZE", UNLIMITED_HEAP_SIZE);
 }
 
-char *Settings_StatsFileName() { return getenv(STATS_FILE_SETTING); }
+char *Settings_StatsFileName() { return getenv(GC_STATS_FILE_SETTING); }
 
 #endif

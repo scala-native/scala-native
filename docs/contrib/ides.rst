@@ -54,8 +54,8 @@ certain simple setups which is probably fine for most other projects. The follow
     -DSCALANATIVE_GC_EXPERIMENTAL
     # Other defines to allow analysis of code
     -DSCALANATIVE_MULTITHREADING_ENABLED
-    -DENABLE_GC_STATS
-    -DENABLE_GC_STATS_SYNC
+    -DGC_ENABLE_STATS
+    -DGC_ENABLE_STATS_SYNC
     -DDEBUG_PRINT
     -DDEBUG_ASSERT
     # end GC
