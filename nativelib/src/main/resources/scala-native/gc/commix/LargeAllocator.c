@@ -175,7 +175,7 @@ word_t *LargeAllocator_tryAlloc(LargeAllocator *allocator,
     }
 
     ObjectMeta *objectMeta = Bytemap_Get(allocator->bytemap, (word_t *)chunk);
-#ifdef DEBUG_ASSERT
+#ifdef GC_ASSERTIONS
     ObjectMeta_AssertIsValidAllocation(objectMeta, actualBlockSize);
 #endif
     ObjectMeta_SetAllocated(objectMeta);

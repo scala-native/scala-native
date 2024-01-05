@@ -1,13 +1,13 @@
 #ifndef IMMIX_LOG_H
 #define IMMIX_LOG_H
 
-#ifdef DEBUG_ASSERT
+#ifdef GC_ASSERTIONS
 #undef NDEBUG
 #else
 #ifndef NDEBUG
 #define NDEBUG
 #endif // NDEBUG
-#endif // DEBUG_ASSERT
+#endif // GC_ASSERTIONS
 
 #include <assert.h>
 #include <inttypes.h>

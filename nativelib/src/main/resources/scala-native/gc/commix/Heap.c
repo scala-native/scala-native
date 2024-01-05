@@ -231,7 +231,7 @@ void Heap_Collect(Heap *heap) {
 #endif
     Stats *stats = Stats_OrNull(heap->stats);
     Stats_CollectionStarted(stats);
-#ifdef DEBUG_ASSERT
+#ifdef GC_ASSERTIONS
     Sweeper_ClearIsSwept(heap);
     Sweeper_AssertIsConsistent(heap);
 #endif
@@ -343,7 +343,7 @@ void Heap_Grow(Heap *heap, uint32_t incrementInBlocks) {
     };
 #endif // WIN32
 
-#ifdef DEBUG_ASSERT
+#ifdef GC_ASSERTIONS
     BlockMeta *end = (BlockMeta *)blockMetaEnd;
     for (BlockMeta *block = end; block < end + incrementInBlocks; block++) {
         block->debugFlag = dbg_free;
