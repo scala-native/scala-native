@@ -255,7 +255,7 @@ static void
 GCThread_WeakThreadsHandler_init(struct GCWeakRefsHandlerThread *self) {
     MutatorThread_init((word_t **)&self);
     MutatorThread_switchState(currentMutatorThread,
-                              MutatorThreadState_Unmanaged);
+                              GC_MutatorThreadState_Unmanaged);
 #ifdef _WIN32
     self->resumeEvent = CreateEvent(NULL, true, false, NULL);
     if (self->resumeEvent == NULL) {
@@ -296,10 +296,10 @@ static void *GCThread_WeakThreadsHandlerLoop(void *arg) {
         pthread_mutex_unlock(&self->resumeEvent.lock);
 #endif
         MutatorThread_switchState(currentMutatorThread,
-                                  MutatorThreadState_Managed);
+                                  GC_MutatorThreadState_Managed);
         WeakRefGreyList_CallHandlers();
         MutatorThread_switchState(currentMutatorThread,
-                                  MutatorThreadState_Unmanaged);
+                                  GC_MutatorThreadState_Unmanaged);
         atomic_store(&self->isActive, false);
     }
     free(self);

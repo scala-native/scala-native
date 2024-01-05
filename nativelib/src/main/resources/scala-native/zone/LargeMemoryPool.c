@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "LargeMemoryPool.h"
-#include "shared/GCScalaNative.h"
+#include "shared/ScalaNativeGC.h"
 #include "shared/MemoryMap.h"
 #include "Util.h"
 
@@ -53,7 +53,7 @@ MemoryPage *LargeMemoryPool_claim(LargeMemoryPool *largePool, size_t size) {
     result->next = NULL;
     result->offset = 0;
     // Notify the GC that the page is in use.
-    scalanative_add_roots(result->start, result->start + result->size);
+    scalanative_GC_add_roots(result->start, result->start + result->size);
     return result;
 }
 
@@ -61,7 +61,7 @@ void LargeMemoryPool_reclaim(LargeMemoryPool *largePool, MemoryPage *head) {
     // Notify the GC that the pages are no longer in use.
     MemoryPage *page = head, *tail = NULL;
     while (page != NULL) {
-        scalanative_remove_roots(page->start, page->start + page->size);
+        scalanative_GC_remove_roots(page->start, page->start + page->size);
         tail = page;
         page = page->next;
     }

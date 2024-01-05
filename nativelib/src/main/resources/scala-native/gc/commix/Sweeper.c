@@ -91,7 +91,7 @@ uint32_t Sweeper_sweepSimpleBlock(MutatorThread *thread, BlockMeta *blockMeta,
         // does not unmark in LineMetas because those are ignored by the
         // allocator
         ObjectMeta_ClearBlockAt(Bytemap_Get(allocator->bytemap, blockStart));
-#ifdef DEBUG_ASSERT
+#ifdef GC_ASSERTIONS
         blockMeta->debugFlag = dbg_free;
 #endif
         return 1;
@@ -167,7 +167,7 @@ uint32_t Sweeper_sweepSimpleBlock(MutatorThread *thread, BlockMeta *blockMeta,
             atomic_fetch_add_explicit(&allocator->recycledBlockCount, 1,
                                       memory_order_relaxed);
 
-#ifdef DEBUG_ASSERT
+#ifdef GC_ASSERTIONS
             blockMeta->debugFlag = dbg_partial_free;
 #endif
             // the allocator thread must see the sweeping changes in recycled
@@ -182,7 +182,7 @@ uint32_t Sweeper_sweepSimpleBlock(MutatorThread *thread, BlockMeta *blockMeta,
             fflush(stdout);
 #endif
         } else {
-#ifdef DEBUG_ASSERT
+#ifdef GC_ASSERTIONS
             atomic_thread_fence(memory_order_release);
             blockMeta->debugFlag = dbg_not_free;
 #endif
@@ -203,7 +203,7 @@ uint32_t Sweeper_sweepSuperblock(LargeAllocator *allocator,
     uint32_t superblockSize = BlockMeta_SuperblockSize(blockMeta);
     word_t *blockEnd = blockStart + WORDS_IN_BLOCK * superblockSize;
 
-#ifdef DEBUG_ASSERT
+#ifdef GC_ASSERTIONS
     for (BlockMeta *block = blockMeta; block < blockMeta + superblockSize;
          block++) {
         assert(block->debugFlag == dbg_must_sweep);
@@ -217,14 +217,14 @@ uint32_t Sweeper_sweepSuperblock(LargeAllocator *allocator,
     if (superblockSize > 1 && !ObjectMeta_IsMarked(firstObject)) {
         // release free superblock starting from the first object
         freeCount = superblockSize - 1;
-#ifdef DEBUG_ASSERT
+#ifdef GC_ASSERTIONS
         for (BlockMeta *block = blockMeta; block < blockMeta + freeCount;
              block++) {
             block->debugFlag = dbg_free;
         }
 #endif
     } else {
-#ifdef DEBUG_ASSERT
+#ifdef GC_ASSERTIONS
         for (BlockMeta *block = blockMeta;
              block < blockMeta + superblockSize - 1; block++) {
             block->debugFlag = dbg_not_free;
@@ -266,11 +266,11 @@ uint32_t Sweeper_sweepSuperblock(LargeAllocator *allocator,
     if (chunkStart == lastBlockStart) {
         // free chunk covers the entire last block, released it
         freeCount += 1;
-#ifdef DEBUG_ASSERT
+#ifdef GC_ASSERTIONS
         lastBlock->debugFlag = dbg_free;
 #endif
     } else {
-#ifdef DEBUG_ASSERT
+#ifdef GC_ASSERTIONS
         lastBlock->debugFlag = dbg_not_free;
 #endif
         if (ObjectMeta_IsFree(firstObject)) {
@@ -468,7 +468,7 @@ void Sweeper_Sweep(Stats *stats, atomic_uint_fast32_t *cursorDone,
             assert(BlockMeta_IsFree(current));
             freeCount = 1;
             assert(current->debugFlag == dbg_must_sweep);
-#ifdef DEBUG_ASSERT
+#ifdef GC_ASSERTIONS
             current->debugFlag = dbg_free;
 #endif
 #ifdef DEBUG_PRINT
@@ -659,7 +659,7 @@ void Sweeper_LazyCoalesce(Heap *heap, Stats *stats) {
     }
 }
 
-#ifdef DEBUG_ASSERT
+#ifdef GC_ASSERTIONS
 void Sweeper_ClearIsSwept(Heap *heap) {
     BlockMeta *current = (BlockMeta *)heap->blockMetaStart;
     BlockMeta *limit = (BlockMeta *)heap->blockMetaEnd;
@@ -710,6 +710,6 @@ void Sweeper_AssertIsConsistent(Heap *heap) {
     }
     assert(current == limit);
 }
-#endif // DEBUG_ASSERT
+#endif // GC_ASSERTIONS
 
 #endif

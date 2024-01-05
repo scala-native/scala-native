@@ -9,7 +9,7 @@
 #define MUTATOR_THREAD_H
 
 typedef struct {
-    _Atomic(MutatorThreadState) state;
+    _Atomic(GC_MutatorThreadState) state;
     atomic_intptr_t stackTop;
     atomic_bool isWaiting;
     jmp_buf executionContext;
@@ -29,7 +29,7 @@ typedef MutatorThreadNode *MutatorThreads;
 void MutatorThread_init(word_t **stackBottom);
 void MutatorThread_delete(MutatorThread *self);
 void MutatorThread_switchState(MutatorThread *self,
-                               MutatorThreadState newState);
+                               GC_MutatorThreadState newState);
 
 void MutatorThreads_init();
 void MutatorThreads_add(MutatorThread *node);

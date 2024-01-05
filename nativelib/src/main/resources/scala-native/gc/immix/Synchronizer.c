@@ -81,12 +81,12 @@ void Synchronizer_init() {
 
 void Synchronizer_wait() {
     MutatorThread *self = currentMutatorThread;
-    MutatorThread_switchState(self, MutatorThreadState_Unmanaged);
+    MutatorThread_switchState(self, GC_MutatorThreadState_Unmanaged);
     atomic_thread_fence(memory_order_seq_cst);
 
     Synchronizer_SuspendThread(self);
 
-    MutatorThread_switchState(self, MutatorThreadState_Managed);
+    MutatorThread_switchState(self, GC_MutatorThreadState_Managed);
     atomic_thread_fence(memory_order_seq_cst);
 }
 
@@ -101,7 +101,7 @@ bool Synchronizer_acquire() {
     MutatorThreads_lock();
     Synchronizer_SuspendThreads();
     MutatorThread *self = currentMutatorThread;
-    MutatorThread_switchState(self, MutatorThreadState_Unmanaged);
+    MutatorThread_switchState(self, GC_MutatorThreadState_Unmanaged);
 
     int iteration = 0;
     int activeThreads;
@@ -140,7 +140,8 @@ void Synchronizer_release() {
             thread_yield();
         }
     } while (stoppedThreads > 0);
-    MutatorThread_switchState(currentMutatorThread, MutatorThreadState_Managed);
+    MutatorThread_switchState(currentMutatorThread,
+                              GC_MutatorThreadState_Managed);
     MutatorThreads_unlock();
     mutex_unlock(&synchronizerLock);
 }

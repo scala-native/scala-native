@@ -11,23 +11,23 @@ import scala.scalanative.annotation.alwaysinline
  */
 @extern
 object GC {
-  @name("scalanative_alloc")
+  @name("scalanative_GC_alloc")
   def alloc(cls: Class[_], size: Int): RawPtr = extern
-  @name("scalanative_alloc_atomic")
+  @name("scalanative_GC_alloc_atomic")
   def alloc_atomic(cls: Class[_], size: Int): RawPtr = extern
-  @name("scalanative_alloc_small")
+  @name("scalanative_GC_alloc_small")
   def alloc_small(cls: Class[_], size: Int): RawPtr = extern
-  @name("scalanative_alloc_large")
+  @name("scalanative_GC_alloc_large")
   def alloc_large(cls: Class[_], size: Int): RawPtr = extern
-  @name("scalanative_collect")
+  @name("scalanative_GC_collect")
   def collect(): Unit = extern
-  @name("scalanative_init")
+  @name("scalanative_GC_init")
   def init(): Unit = extern
-  @name("scalanative_register_weak_reference_handler")
+  @name("scalanative_GC_register_weak_reference_handler")
   def registerWeakReferenceHandler(handler: CFuncPtr0[Unit]): Unit = extern
-  @name("scalanative_get_init_heapsize")
+  @name("scalanative_GC_get_init_heapsize")
   def getInitHeapSize(): CSize = extern
-  @name("scalanative_get_max_heapsize")
+  @name("scalanative_GC_get_max_heapsize")
   def getMaxHeapSize(): CSize = extern
 
   /*  Multithreading awareness for GC Every implementation of GC supported in
@@ -47,7 +47,7 @@ object GC {
   type ThreadStartRoutine = CFuncPtr1[ThreadRoutineArg, PtrAny]
 
   /** Proxy to pthread_create which registers created thread in the GC */
-  @name("scalanative_pthread_create")
+  @name("scalanative_GC_pthread_create")
   def pthread_create(
       thread: Ptr[pthread_t],
       attr: Ptr[pthread_attr_t],
@@ -56,7 +56,7 @@ object GC {
   ): CInt = extern
 
   /** Proxy to CreateThread which registers created thread in the GC */
-  @name("scalanative_CreateThread")
+  @name("scalanative_GC_CreateThread")
   def CreateThread(
       threadAttributes: Ptr[SecurityAttributes],
       stackSize: CSize,
@@ -85,7 +85,7 @@ object GC {
   /** Notifies change of internal state of thread to the GC. Used by Scala
    *  Native runtime on calls/returns from potentially blocking extern functions
    */
-  @name("scalanative_gc_set_mutator_thread_state")
+  @name("scalanative_GC_set_mutator_thread_state")
   private[scalanative] def setMutatorThreadState(
       newState: MutatorThreadState
   ): Unit = extern
@@ -96,7 +96,7 @@ object GC {
    *  Lowering phase would introduce calls of this function to check if it
    *  should stop execution of the thread.
    */
-  @name("scalanative_gc_yield")
+  @name("scalanative_GC_yield")
   private[scalanative] def `yield`(): Unit = extern
 
   /** Notify the Garbage Collector about the range of memory which should be
@@ -111,7 +111,7 @@ object GC {
    *    End of the range including the last address that should be scanned when
    *    marking
    */
-  @name("scalanative_add_roots")
+  @name("scalanative_GC_add_roots")
   def addRoots(addressLow: Ptr[_], addressHigh: Ptr[_]): Unit = extern
 
   /** Notify the Garbage Collector about the range of memory which should no
@@ -128,6 +128,6 @@ object GC {
    *    End of the range including the last address that should be scanned when
    *    marking
    */
-  @name("scalanative_remove_roots")
+  @name("scalanative_GC_remove_roots")
   def removeRoots(addressLow: Ptr[_], addressHigh: Ptr[_]): Unit = extern
 }

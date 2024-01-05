@@ -647,7 +647,7 @@ object Generate {
     )
 
     val InitSig = nir.Type.Function(Seq.empty, nir.Type.Unit)
-    val InitDecl = nir.Defn.Declare(nir.Attrs.None, extern("scalanative_init"), InitSig)
+    val InitDecl = nir.Defn.Declare(nir.Attrs.None, extern("scalanative_GC_init"), InitSig)
     val Init = nir.Val.Global(InitDecl.name, nir.Type.Ptr)
 
     val stackBottomName = extern("__stack_bottom")

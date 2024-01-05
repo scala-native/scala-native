@@ -1776,10 +1776,10 @@ object Lower {
   def allocSig(clsType: nir.Type.RefKind): nir.Type.Function =
     allocSig.copy(ret = clsType)
 
-  val allocSmallName = extern("scalanative_alloc_small")
+  val allocSmallName = extern("scalanative_GC_alloc_small")
   val alloc = nir.Val.Global(allocSmallName, allocSig)
 
-  val largeAllocName = extern("scalanative_alloc_large")
+  val largeAllocName = extern("scalanative_GC_alloc_large")
   val largeAlloc = nir.Val.Global(largeAllocName, allocSig)
 
   val SafeZone =
@@ -2030,14 +2030,14 @@ object Lower {
 
   val GC = nir.Global.Top("scala.scalanative.runtime.GC$")
   val GCYieldName =
-    GC.member(nir.Sig.Extern("scalanative_gc_yield"))
+    GC.member(nir.Sig.Extern("scalanative_GC_yield"))
   val GCYieldSig = nir.Type.Function(Nil, nir.Type.Unit)
   val GCYield = nir.Val.Global(GCYieldName, nir.Type.Ptr)
 
   val GCSetMutatorThreadStateSig =
     nir.Type.Function(Seq(nir.Type.Int), nir.Type.Unit)
   val GCSetMutatorThreadState = nir.Val.Global(
-    GC.member(nir.Sig.Extern("scalanative_gc_set_mutator_thread_state")),
+    GC.member(nir.Sig.Extern("scalanative_GC_set_mutator_thread_state")),
     nir.Type.Ptr
   )
 
