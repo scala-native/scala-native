@@ -16,7 +16,7 @@ void MutatorThread_init(Field_t *stackbottom) {
     currentMutatorThread = self;
 
     self->stackBottom = stackbottom;
-    MutatorThread_switchState(self, MutatorThreadState_Managed);
+    MutatorThread_switchState(self, GC_MutatorThreadState_Managed);
     Allocator_Init(&self->allocator, &blockAllocator, heap.bytemap,
                    heap.blockMetaStart, heap.heapStart);
 
@@ -30,7 +30,7 @@ void MutatorThread_init(Field_t *stackbottom) {
 }
 
 void MutatorThread_delete(MutatorThread *self) {
-    MutatorThread_switchState(self, MutatorThreadState_Unmanaged);
+    MutatorThread_switchState(self, GC_MutatorThreadState_Unmanaged);
     MutatorThreads_remove(self);
     atomic_fetch_add(&mutatorThreadsCount, -1);
     free(self);
@@ -51,10 +51,10 @@ NOINLINE static stackptr_t MutatorThread_approximateStackTop() {
 }
 
 void MutatorThread_switchState(MutatorThread *self,
-                               MutatorThreadState newState) {
+                               GC_MutatorThreadState newState) {
     assert(self != NULL);
     intptr_t newStackTop = 0;
-    if (newState == MutatorThreadState_Unmanaged) {
+    if (newState == GC_MutatorThreadState_Unmanaged) {
         // Dump registers to allow for their marking later
         setjmp(self->executionContext);
         newStackTop = (intptr_t)MutatorThread_approximateStackTop();

@@ -12,8 +12,8 @@
 // #include "Zone.h"
 // #include "Util.h"
 
-// void scalanative_add_roots(void *start, void *end) {}
-// void scalanative_remove_roots(void *start, void *end) {}
+// void scalanative_GC_add_roots(void *start, void *end) {}
+// void scalanative_GC_remove_roots(void *start, void *end) {}
 // void calculate_memory_pool_info(size_t n, size_t *sizes, size_t *pagesSize,
 //                                 size_t *pageOffsets);
 // size_t Util_debug_pages_length(MemoryPage *head);

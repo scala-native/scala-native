@@ -272,7 +272,7 @@ void Heap_Collect(Heap *heap, Stack *stack) {
         return;
 #else
     MutatorThread_switchState(currentMutatorThread,
-                              MutatorThreadState_Unmanaged);
+                              GC_MutatorThreadState_Unmanaged);
 #endif
     uint64_t start_ns, nullify_start_ns, sweep_start_ns, end_ns;
     Stats *stats = heap->stats;
@@ -301,7 +301,7 @@ void Heap_Collect(Heap *heap, Stack *stack) {
     Synchronizer_release();
     GCThread_WeakThreadsHandler_Resume(weakRefsHandlerThread);
 #else
-    MutatorThread_switchState(currentMutatorThread, MutatorThreadState_Managed);
+    MutatorThread_switchState(currentMutatorThread, GC_MutatorThreadState_Managed);
     WeakRefStack_CallHandlers();
 #endif
 #ifdef DEBUG_PRINT

@@ -226,7 +226,7 @@ void Heap_Collect(Heap *heap) {
         thread_yield();
 #else
     MutatorThread_switchState(currentMutatorThread,
-                              MutatorThreadState_Unmanaged);
+                              GC_MutatorThreadState_Unmanaged);
     assert(Sweeper_IsSweepDone(heap));
 #endif
     Stats *stats = Stats_OrNull(heap->stats);
@@ -246,9 +246,9 @@ void Heap_Collect(Heap *heap) {
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
     Synchronizer_release();
     GCThread_WeakThreadsHandler_Resume(weakRefsHandlerThread);
-
 #else
-    MutatorThread_switchState(currentMutatorThread, MutatorThreadState_Managed);
+    MutatorThread_switchState(currentMutatorThread,
+                              GC_MutatorThreadState_Managed);
     WeakRefGreyList_CallHandlers();
 #endif
 }

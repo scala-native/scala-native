@@ -36,7 +36,7 @@ double Settings_MaxMarkTimeRatio() {
 }
 
 double Settings_MinFreeRatio() {
-    char *str = getenv("SCALANATIVE_FREE_RATIO");
+    char *str = getenv("scalanative_GC_free_RATIO");
     if (str == NULL) {
         return DEFAULT_FREE_RATIO;
     } else {
