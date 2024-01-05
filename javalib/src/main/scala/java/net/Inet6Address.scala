@@ -120,9 +120,6 @@ object Inet6Address {
       }
     }
 
-//    if (!in6Addr.zoneIdent.isEmpty) {
-//      val zi = in6Addr.zoneIdent
-
     val zi = in6Addr.zoneIdent
     if (!zi.isEmpty) {
       val suffix =
