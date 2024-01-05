@@ -88,11 +88,7 @@ class InetAddress protected (ipAddress: Array[Byte], originalHost: String)
     if (ipAddress.length == 4) {
       formatIn4Addr(bytes)
     } else if (ipAddress.length == 16) {
-      if (isIPv4MappedAddress(bytes)) {
-        formatIn4Addr(extractIP4Bytes(bytes).at(0))
-      } else {
-        Inet6Address.formatInet6Address(this.asInstanceOf[Inet6Address])
-      }
+      Inet6Address.formatInet6Address(this.asInstanceOf[Inet6Address])
     } else {
       "<unknown>"
     }
