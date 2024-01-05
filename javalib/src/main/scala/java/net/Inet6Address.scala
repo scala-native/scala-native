@@ -8,11 +8,11 @@ import scalanative.unsigned._
 import scala.scalanative.posix.net.`if`._
 import scala.scalanative.posix.stddef
 
-final class Inet6Address private (
-    val ipAddress: Array[Byte],
+final class Inet6Address(
+    ipAddress: Array[Byte],
     host: String,
-    scopeId: Int,
-    val zoneIdent: String
+    private val scopeId: Int,
+    private val zoneIdent: String
 ) extends InetAddress(ipAddress, host) {
 
   def this(ipAddress: Array[Byte], host: String, scope: Int) =
@@ -92,7 +92,7 @@ object Inet6Address {
      * Translate by hand as before but avoid non-local returns.
      */
 
-    val ia6ByteArray = in6Addr.ipAddress
+    val ia6ByteArray = in6Addr.getAddress()
 
     val buffer = new StringBuilder()
     var isFirst = true
@@ -120,8 +120,11 @@ object Inet6Address {
       }
     }
 
-    if (!in6Addr.zoneIdent.isEmpty) {
-      val zi = in6Addr.zoneIdent
+//    if (!in6Addr.zoneIdent.isEmpty) {
+//      val zi = in6Addr.zoneIdent
+
+    val zi = in6Addr.zoneIdent
+    if (!zi.isEmpty) {
       val suffix =
         try {
           val ifIndex = Integer.parseInt(zi)
