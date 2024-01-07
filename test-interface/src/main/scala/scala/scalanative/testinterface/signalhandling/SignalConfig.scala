@@ -153,17 +153,11 @@ private[testinterface] object SignalConfig {
     setHandler(SIGFPE)
     setHandler(SIGILL)
     setHandler(SIGTERM)
-    if (!isMultithreadingEnabled || isMac) {
-      // Used in GC traps, MacOS uses SIGBUS instead
-      setHandler(SIGSEGV)
-    }
-
+    setHandler(SIGSEGV)
+  
     if (!isWindows) {
       import scala.scalanative.posix.signal._
-      if (!isMultithreadingEnabled || !isMac) {
-        // Used in Immix GC traps on MacOS
-        setHandler(SIGBUS)
-      }
+      setHandler(SIGBUS)
       setHandler(SIGALRM)
       setHandler(SIGHUP)
       setHandler(SIGPIPE)
