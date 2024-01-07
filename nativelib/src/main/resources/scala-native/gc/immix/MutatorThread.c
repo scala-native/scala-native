@@ -74,7 +74,7 @@ void MutatorThread_switchState(MutatorThread *self,
     intptr_t newStackTop = 0;
     if (newState == GC_MutatorThreadState_Unmanaged) {
         // Dump registers to allow for their marking later
-        setjmp(self->executionContext);
+        int unused = setjmp(self->executionContext);
         newStackTop = (intptr_t)MutatorThread_approximateStackTop();
     }
     atomic_store_explicit(&self->stackTop, newStackTop, memory_order_release);
