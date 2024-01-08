@@ -28,7 +28,7 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
   import MetadataCodeGen._
   import Metadata._
   import Writer._
-  import self.meta.platform
+  import self.meta.target
 
   final val generateDebugMetadata = self.meta.config.sourceLevelDebuggingConfig.enabled
   final val generateLocalVariables =
@@ -350,7 +350,7 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
     DIDerivedType(
       DWTag.Pointer,
       baseType = ty,
-      size = platform.sizeOfPtr.toDISize
+      size = target.sizeOfPtr.toDISize
     )
 
   private def ObjectMonitorUnionType(implicit metaCtx: MetadataCodeGen.Context) =
@@ -358,7 +358,7 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
       DICompositeType(
         DWTag.Union,
         name = name,
-        size = platform.sizeOfPtr.toDISize,
+        size = target.sizeOfPtr.toDISize,
         flags = DIFlags(DIFlag.DIFlagArtificial)
       ).withDependentElements { headerRef =>
         Seq(
@@ -366,13 +366,13 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
             DWTag.Member,
             name = "thinLock",
             baseType = DIBasicTypes(nir.Type.Size),
-            size = platform.sizeOfPtr.toDISize
+            size = target.sizeOfPtr.toDISize
           ),
           DIDerivedType(
             DWTag.Member,
             name = "fatLock",
             baseType = toMetadataType(nir.Rt.RuntimeObjectMonitor),
-            size = platform.sizeOfPtr.toDISize
+            size = target.sizeOfPtr.toDISize
           )
         )
       }

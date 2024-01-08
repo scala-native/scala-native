@@ -150,8 +150,7 @@ class LocalNamesTest extends OptimizerSpec {
     |}""".stripMargin)
   ) {
     case (config, result) =>
-      val platformInfo = codegen.PlatformInfo(config)
-      val usesOpaquePointers = platformInfo.useOpaquePointers
+      val usesOpaquePointers = codegen.TargetInfo(config).useOpaquePointers
       def checkLocalNames(defns: Seq[nir.Defn], beforeLowering: Boolean) =
         findEntry(defns)
           .foreach { defn =>

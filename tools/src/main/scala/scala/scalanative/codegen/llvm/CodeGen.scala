@@ -28,7 +28,7 @@ object CodeGen {
     val proxies = GenerateReflectiveProxies(analysis.dynimpls, defns)
 
     implicit def logger: build.Logger = config.logger
-    implicit val platform: PlatformInfo = PlatformInfo(config)
+    implicit val target: TargetInfo = TargetInfo(config)
     implicit val meta: CodeGenMetadata =
       new CodeGenMetadata(analysis, config, proxies)
 
@@ -165,7 +165,7 @@ object CodeGen {
 
       new AbstractCodeGen(env, defns) {
         override val os: OsCompat = {
-          if (this.meta.platform.targetsWindows) new WindowsCompat(this)
+          if (this.meta.target.targetsWindows) new WindowsCompat(this)
           else new UnixCompat(this)
         }
         override def sourceCodeCache: SourceCodeCache = sourcesCache
@@ -174,9 +174,9 @@ object CodeGen {
   }
 
   /** The symbols required by generation on `platform`. */
-  def dependencies(implicit platform: PlatformInfo): Seq[nir.Global] = {
+  def dependencies(target: TargetInfo): Seq[nir.Global] = {
     val buf = mutable.UnrolledBuffer.empty[nir.Global]
-    buf ++= Lower.depends
+    buf ++= Lower.depends(target)
     buf ++= Generate.depends
     buf.toSeq
   }

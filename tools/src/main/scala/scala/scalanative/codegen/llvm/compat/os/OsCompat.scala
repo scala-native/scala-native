@@ -12,7 +12,7 @@ private[codegen] abstract class OsCompat(
 
   protected def osPersonalityType: String
 
-  def useOpaquePointers = codegen.meta.platform.useOpaquePointers
+  def useOpaquePointers = codegen.meta.target.useOpaquePointers
 
   def genPrelude()(implicit sb: ShowBuilder): Unit
   def genLandingPad(

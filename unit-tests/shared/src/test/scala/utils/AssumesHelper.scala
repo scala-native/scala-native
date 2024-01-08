@@ -10,7 +10,7 @@ object AssumesHelper {
   def assumeNot32Bit(): Unit = if (!Platform.executingInJVM) {
     Assume.assumeFalse(
       "Not compliant on 32-bit platforms",
-      Platform.is32BitPlatform
+      target.is32BitPlatform
     )
   }
 

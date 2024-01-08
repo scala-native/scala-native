@@ -8,11 +8,11 @@ class Metadata(
     val analysis: ReachabilityAnalysis.Result,
     val buildConfig: build.Config,
     proxies: Seq[nir.Defn]
-)(implicit val platform: PlatformInfo) {
+)(implicit val target: TargetInfo) {
   def config: build.NativeConfig = buildConfig.compilerConfig
   implicit private def self: Metadata = this
 
-  final val usesLockWords = platform.isMultithreadingEnabled
+  final val usesLockWords = target.isMultithreadingEnabled
   val lockWordType = if (usesLockWords) Some(nir.Type.Ptr) else None
   private[codegen] val lockWordVals = lockWordType.map(_ => nir.Val.Null).toList
 

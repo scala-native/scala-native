@@ -12,7 +12,7 @@ object FieldLayout {
 class FieldLayout(cls: Class)(implicit meta: Metadata) {
 
   import meta.layouts.{Object, ObjectHeader}
-  import meta.platform
+  import meta.target
 
   def index(fld: Field) = entries.indexOf(fld) + Object.ValuesOffset
   // Proxy fields due to cyclic dependency

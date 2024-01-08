@@ -642,7 +642,7 @@ object Lower {
         case nir.Op.Load(nir.Type.Bool, ptr, memoryOrder @ Some(_)) =>
           val valueAsByte = fresh()
           val asPtr =
-            if (platform.useOpaquePointers) ptr
+            if (target.useOpaquePointers) ptr
             else {
               val asPtr = fresh()
               genConvOp(
@@ -686,7 +686,7 @@ object Lower {
         case nir.Op.Store(nir.Type.Bool, ptr, value, memoryOrder @ Some(_)) =>
           val valueAsByte = fresh()
           val asPtr =
-            if (platform.useOpaquePointers) ptr
+            if (target.useOpaquePointers) ptr
             else {
               val asPtr = fresh()
               genConvOp(
@@ -741,7 +741,7 @@ object Lower {
         case Immix | Commix => true
         case _              => false
       }
-      private val multithreadingEnabled = meta.platform.isMultithreadingEnabled
+      private val multithreadingEnabled = meta.target.isMultithreadingEnabled
       private val usesGCYieldPoints = multithreadingEnabled && supportedGC
 
       def apply(defn: nir.Defn.Define): Boolean = {
@@ -799,7 +799,7 @@ object Lower {
       )
 
       def shouldSwitchThreadState(name: nir.Global) =
-        platform.isMultithreadingEnabled && analysis.infos.get(name).exists {
+        target.isMultithreadingEnabled && analysis.infos.get(name).exists {
           info =>
             val attrs = info.attrs
             attrs.isExtern && attrs.isBlocking
@@ -1100,7 +1100,7 @@ object Lower {
           )
 
           label(castL)
-          if (platform.useOpaquePointers)
+          if (target.useOpaquePointers)
             let(n, nir.Op.Copy(v), unwind)
           else
             let(n, nir.Op.Conv(nir.Conv.Bitcast, ty, v), unwind)
@@ -1344,7 +1344,7 @@ object Lower {
           case nir.Type.Long =>
             nir.Val.Long(java.lang.Long.MIN_VALUE)
           case nir.Type.Size =>
-            if (platform.is32Bit) nir.Val.Size(java.lang.Integer.MIN_VALUE)
+            if (target.is32Bit) nir.Val.Size(java.lang.Integer.MIN_VALUE)
             else nir.Val.Size(java.lang.Long.MIN_VALUE)
           case _ =>
             util.unreachable
@@ -1637,8 +1637,8 @@ object Lower {
             case _ =>
               val asSize = sizeV.ty match {
                 case nir.Type.FixedSizeI(width, _) =>
-                  if (width == platform.sizeOfPtrBits) sizeV
-                  else if (width > platform.sizeOfPtrBits)
+                  if (width == target.sizeOfPtrBits) sizeV
+                  else if (width > target.sizeOfPtrBits)
                     buf.conv(nir.Conv.Trunc, nir.Type.Size, sizeV, unwind)
                   else
                     buf.conv(nir.Conv.Zext, nir.Type.Size, sizeV, unwind)
@@ -2063,7 +2063,7 @@ object Lower {
     buf.toSeq
   }
 
-  def depends(implicit platform: PlatformInfo): Seq[nir.Global] = {
+  def depends(target: TargetInfo): Seq[nir.Global] = {
     val buf = mutable.UnrolledBuffer.empty[nir.Global]
     buf ++= nir.Rt.PrimitiveTypes
     buf += nir.Rt.ClassName
@@ -2099,7 +2099,7 @@ object Lower {
     buf += throwNoSuchMethod
     buf += RuntimeNull.name
     buf += RuntimeNothing.name
-    if (platform.isMultithreadingEnabled) {
+    if (target.isMultithreadingEnabled) {
       buf += GCYield.name
       buf += GCSetMutatorThreadState.name
     }

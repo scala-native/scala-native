@@ -58,7 +58,9 @@ trait Visit { self: Interflow =>
         analysis.entries.foreach(visitEntry)
     }
 
-  /** Adds `name` and its owner (if any) the symbols to process if they should be optimized. */
+  /** Adds `name` and its owner (if any) the symbols to process if they should
+   *  be optimized.
+   */
   def visitEntry(name: nir.Global): Unit = {
     if (!name.isTop) {
       visitEntry(name.top)

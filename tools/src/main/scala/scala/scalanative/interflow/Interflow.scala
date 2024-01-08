@@ -2,7 +2,7 @@ package scala.scalanative
 package interflow
 
 import scala.collection.mutable
-import scala.scalanative.codegen.PlatformInfo
+import scala.scalanative.codegen.TargetInfo
 import scala.scalanative.nir.Defn.Define.DebugInfo
 import scala.scalanative.linker._
 import scala.scalanative.util.ScopedVar
@@ -22,9 +22,7 @@ class Interflow(val config: build.Config)(implicit
     with Log {
 
   /** The target machine for which code is being compiled. */
-  // QUESTION: Is it the host or the target.
-  // QUESTION: If the latter, shouldn't we rename this "target"?
-  implicit val platform: PlatformInfo = PlatformInfo(config)
+  implicit val target: TargetInfo = TargetInfo(config)
 
   /** A map from symbol to its original definition. */
   private val originals = {

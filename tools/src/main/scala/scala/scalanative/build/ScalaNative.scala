@@ -4,7 +4,7 @@ package build
 import java.nio.file.{Path, Files}
 import scala.collection.mutable
 import scala.scalanative.checker.Check
-import scala.scalanative.codegen.PlatformInfo
+import scala.scalanative.codegen.TargetInfo
 import scala.scalanative.codegen.llvm.CodeGen
 import scala.scalanative.interflow.Interflow
 import scala.scalanative.linker.{ReachabilityAnalysis, Reach, Link}
@@ -19,9 +19,9 @@ private[scalanative] object ScalaNative {
 
   /** Gathers the symbols that must be reachable based on given `config`. */
   def entries(config: Config): Seq[nir.Global] = {
-    implicit val platform: PlatformInfo = PlatformInfo(config)
+    val target = TargetInfo(config)
     val entry = encodedMainClass(config).map(_.member(nir.Rt.ScalaMainSig))
-    entry ++: (CodeGen.dependencies ++ Interflow.dependencies)
+    entry ++: (CodeGen.dependencies(target) ++ Interflow.dependencies)
   }
 
   /** Given the classpath and main entry point, link under closed-world

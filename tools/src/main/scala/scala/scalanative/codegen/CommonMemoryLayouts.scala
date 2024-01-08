@@ -7,7 +7,7 @@ class CommonMemoryLayouts(implicit meta: Metadata) {
     def this(types: nir.Type*) = this(types.toList)
 
     val layout: nir.Type.StructValue = nir.Type.StructValue(types.toList)
-    def size: Long = MemoryLayout.sizeOf(layout)(meta.platform)
+    def size: Long = MemoryLayout.sizeOf(layout)(meta.target)
   }
 
   private object Common {
