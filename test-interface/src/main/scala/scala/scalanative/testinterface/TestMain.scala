@@ -57,7 +57,13 @@ object TestMain {
       throw new IllegalArgumentException("One argument expected")
     }
 
-    SignalConfig.setDefaultHandlers()
+    locally {
+      val shouldSetupSignalHandlers = sys.env
+        .get("SCALANATIVE_TEST_DEBUG_SIGNALS")
+        .exists(v => v.isEmpty() || v == "1")
+      if (shouldSetupSignalHandlers)
+        SignalConfig.setDefaultHandlers()
+    }
 
     // Loading debug metadata can take up to few seconds which might mess up timeout specific tests
     // Prefetch the debug metadata before the actual tests do start
