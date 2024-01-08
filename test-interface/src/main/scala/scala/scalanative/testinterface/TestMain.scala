@@ -65,8 +65,15 @@ object TestMain {
         SignalConfig.setDefaultHandlers()
     }
 
+    if (LinktimeInfo.isFreeBSD) setFreeBSDWorkaround()
+    val serverPort = args(0).toInt
+    val clientSocket = new Socket("127.0.0.1", serverPort)
+    val nativeRPC = new NativeRPC(clientSocket)(ExecutionContext.global)
+    val bridge = new TestAdapterBridge(nativeRPC)
+
     // Loading debug metadata can take up to few seconds which might mess up timeout specific tests
     // Prefetch the debug metadata before the actual tests do start
+    // Execute after creating connection with the TestRunnner server
     if (LinktimeInfo.sourceLevelDebuging.generateFunctionSourcePositions) {
       val shouldPrefetch =
         sys.env
@@ -75,12 +82,6 @@ object TestMain {
       if (shouldPrefetch)
         new RuntimeException().fillInStackTrace().ensuring(_ != null)
     }
-
-    if (LinktimeInfo.isFreeBSD) setFreeBSDWorkaround()
-    val serverPort = args(0).toInt
-    val clientSocket = new Socket("127.0.0.1", serverPort)
-    val nativeRPC = new NativeRPC(clientSocket)(ExecutionContext.global)
-    val bridge = new TestAdapterBridge(nativeRPC)
 
     bridge.start()
 
