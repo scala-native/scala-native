@@ -9,19 +9,17 @@ import scala.scalanative.posix.net.`if`._
 import scala.scalanative.posix.stddef
 
 final class Inet6Address private (
-    val ipAddress: Array[Byte],
+    ipAddress: Array[Byte],
     host: String,
     scopeId: Int,
     val zoneIdent: String
 ) extends InetAddress(ipAddress, host) {
 
-  def this(ipAddress: Array[Byte], host: String, scope: Int) =
+  private[net] def this(ipAddress: Array[Byte], host: String, scope: Int) =
     this(ipAddress, host, scope, "")
 
-  def this(ipAddress: Array[Byte], host: String) =
+  private[net] def this(ipAddress: Array[Byte], host: String) =
     this(ipAddress, host, 0)
-
-  def this(ipAddress: Array[Byte]) = this(ipAddress, null)
 
   def getScopeId(): Int = scopeId
 
@@ -92,7 +90,7 @@ object Inet6Address {
      * Translate by hand as before but avoid non-local returns.
      */
 
-    val ia6ByteArray = in6Addr.ipAddress
+    val ia6ByteArray = in6Addr.getAddress()
 
     val buffer = new StringBuilder()
     var isFirst = true
