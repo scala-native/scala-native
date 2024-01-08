@@ -93,16 +93,31 @@ private[testinterface] object SignalConfig {
           ) == 0) {
         sym(symMax - 1) = 0.toByte
         val className: Ptr[CChar] = stackalloc[CChar](512)
-        val methodName: Ptr[CChar] = stackalloc[CChar](512)
-        SymbolFormatter.asyncSafeFromSymbol(sym, className, methodName)
+        val methodName: Ptr[CChar] = stackalloc[CChar](256)
+        val fileName = if (isWindows) stackalloc[CChar](512) else null
+        val unused = stackalloc[Int]()
+        SymbolFormatter.asyncSafeFromSymbol(
+          sym,
+          className,
+          methodName,
+          fileName,
+          lineOut
+        )
 
-        val formattedSymbol: Ptr[CChar] = stackalloc[CChar](1100)
+        val formattedSymbol: Ptr[CChar] = stackalloc[CChar](750)
         formattedSymbol(0) = 0.toByte
         strcat(formattedSymbol, c"   at ")
         strcat(formattedSymbol, className)
         strcat(formattedSymbol, c".")
         strcat(formattedSymbol, methodName)
-        strcat(formattedSymbol, c"(Unknown Source)\n")
+        if (fileName != null) {
+          strcat(formattedSymbol, c"(")
+          strcat(formattedSymbol, fileName)
+          // Cannot call itoa in signal handler
+          strcat(formattedSymbol, c":-1)")
+        } else {
+          strcat(formattedSymbol, c"(Unknown Source)\n")
+        }
         printError(formattedSymbol)
       }
     }
