@@ -124,7 +124,13 @@ object Type {
       case r: Type.Ref   => r.name
     }
 
-    /** TODO */
+    /** `true` iff the referenced type is exactly the type denoted by `this`.
+     *
+     *  Given an instance `r` of `RefKind` denoting a reference to some time
+     *  `T`, `r.isExact` holds iff the referenced type is exactly `T` and not a
+     *  subtype thereof. The optimizer may be able to compute the exact variant
+     *  of an arbitrary reference after it has replaced a virtual call.
+     */
     final def isExact: Boolean = this match {
       case Type.Null     => true
       case Type.Unit     => true
@@ -150,7 +156,9 @@ object Type {
 
   /** The type of an array reference.
    *
-   *  TODO: Explain the difference with `ArrayValue`.
+   *  An `Array` is a reference to `scala.Array[T]`. It contains a header
+   *  followed by a tail allocated buffer, which typically sit on the heap. That
+   *  is unlike `ArrayValue`, which corresponds to LLVM's fixed-size array type.
    */
   final case class Array(ty: Type, nullable: Boolean = true) extends RefKind
 
