@@ -1035,7 +1035,9 @@ trait Eval { self: Interflow =>
     offset >= 0 && offset < length
   }
 
-  /** Returns `true` iff `clsName`  */
+  /** Returns `true` iff `clsName` does not contain any field requiring
+   *  instantiation.
+   */
   private def isPureModule(clsName: nir.Global.Top): Boolean = {
     var visiting = List[nir.Global.Top]()
 
