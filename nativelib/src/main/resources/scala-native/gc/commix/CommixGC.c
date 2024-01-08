@@ -91,10 +91,6 @@ INLINE void *scalanative_GC_alloc_atomic(void *info, size_t size) {
 }
 
 INLINE void scalanative_GC_collect() {
-    // Wait until sweeping will end, otherwise we risk segmentation
-    // fault or failing an assertion.
-    while (!Sweeper_IsSweepDone(&heap))
-        thread_yield();
     Heap_Collect(&heap);
 }
 
