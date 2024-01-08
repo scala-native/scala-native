@@ -39,8 +39,10 @@ void MutatorThread_init(Field_t *stackbottom) {
     // Following init operations might trigger GC, needs to be executed after
     // acknownleding the new thread in MutatorThreads_add
     Allocator_InitCursors(&self->allocator);
+#ifdef SCALANATIVE_MULTITHREADING_ENABLED
     // Stop if there is ongoing GC_collection
     scalanative_GC_yield();
+#endif
 }
 
 void MutatorThread_delete(MutatorThread *self) {
