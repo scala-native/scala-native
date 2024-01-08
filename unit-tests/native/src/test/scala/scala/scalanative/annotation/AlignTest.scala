@@ -67,7 +67,7 @@ object AlignTest {
     sys.env.contains("CI") && sys.env
       .get("SCALANATIVE_OPTIMIZE")
       .map(_.trim())
-      .contains("true")
+      .contains("false")
   )
 }
 class AlignTest {

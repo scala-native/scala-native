@@ -47,7 +47,7 @@ Immix GC
 
 The Immix GC uses the two variables shown above as well as the following variable.
 
-* SCALANATIVE_STATS_FILE (set to the file name)
+* GC_STATS_FILE (set to the file name)
 
 Commix GC
 ---------
@@ -59,11 +59,11 @@ variable shared with Boehm.
 
 Commix also adds a few more variables which do not match the Boehm settings yet.
 
-* SCALANATIVE_TIME_RATIO (default is .05)
-* SCALANATIVE_FREE_RATIO (default is .5)
+* GC_TIME_RATIO (default is .05)
+* GC_FREE_RATIO (default is .5)
 
-Note: STATS_FILE_SETTING shared with Immix is only available if the compiler defines
--DENABLE_GC_STATS for Commix.
+Note: GC_STATS_FILE shared with Immix is only honored if the compiler defines
+-DGC_ENABLE_STATS for Commix.
 
 Examples
 --------

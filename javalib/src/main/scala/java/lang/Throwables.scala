@@ -28,7 +28,7 @@ private[lang] object StackTrace {
     // behavior is not defined for non-zero-terminated strings.
     name(nameMax - 1) = 0.toByte
     val position =
-      if (LinktimeInfo.isMac && LinktimeInfo.hasDebugMetadata)
+      if (LinktimeInfo.isMac && LinktimeInfo.sourceLevelDebuging.generateFunctionSourcePositions)
         Backtrace.decodePosition(ip.toLong)
       else Backtrace.Position.empty
     try StackTraceElement(name, position)

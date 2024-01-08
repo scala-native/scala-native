@@ -14,6 +14,9 @@ sealed trait VirtualDirectory {
   /** A unique identifier for this directory */
   def uri: URI
 
+  /** Java NIO Path pointing to underlying directory */
+  def path: Path
+
   /** Check if file with given path is in the directory. */
   def contains(path: Path): Boolean =
     files.contains(path)
@@ -35,6 +38,11 @@ sealed trait VirtualDirectory {
 
   /** Merges content of source paths into single file in target */
   def merge(sources: Seq[Path], target: Path): Path
+
+  /** Returns a Java NIO path matcher for given pattern based on underlying file
+   *  system
+   */
+  def pathMatcher(pattern: String): PathMatcher
 }
 
 object VirtualDirectory {
@@ -140,7 +148,8 @@ object VirtualDirectory {
     }
   }
 
-  private final class LocalDirectory(path: Path) extends NioDirectory {
+  private final class LocalDirectory(override val path: Path)
+      extends NioDirectory {
 
     def uri: URI = path.toUri
 
@@ -152,10 +161,15 @@ object VirtualDirectory {
         Files
           .walk(path, Integer.MAX_VALUE, FileVisitOption.FOLLOW_LINKS)
           .iterator()
-      }.map(fp => path.relativize(fp))
+      }
+        .filter(Files.isRegularFile(_))
+        .map(fp => path.relativize(fp))
+
+    override def pathMatcher(pattern: String): PathMatcher =
+      path.getFileSystem().getPathMatcher(pattern)
   }
 
-  private final class JarDirectory(path: Path)(implicit in: Scope)
+  private final class JarDirectory(override val path: Path)(implicit in: Scope)
       extends NioDirectory {
     def uri: URI = URI.create(s"jar:${path.toUri}")
     private val fileSystem: FileSystem =
@@ -170,6 +184,9 @@ object VirtualDirectory {
         }
       }
 
+    override def pathMatcher(pattern: String): PathMatcher =
+      fileSystem.getPathMatcher(pattern)
+
     override def files: Seq[Path] = {
       val roots = jIteratorToSeq(fileSystem.getRootDirectories.iterator())
 
@@ -179,13 +196,13 @@ object VirtualDirectory {
             Files
               .walk(path, Integer.MAX_VALUE, FileVisitOption.FOLLOW_LINKS)
               .iterator()
-          }
+          }.filter(Files.isRegularFile(_))
         }
     }
   }
 
   private object EmptyDirectory extends VirtualDirectory {
-
+    override def path: Path = Paths.get("")
     val uri: URI = URI.create("")
 
     override def files = Seq.empty
@@ -206,5 +223,7 @@ object VirtualDirectory {
     override def merge(sources: Seq[Path], target: Path): Path =
       throw new UnsupportedOperationException("Can't merge in empty directory.")
 
+    override def pathMatcher(pattern: String): PathMatcher =
+      throw new UnsupportedOperationException("Can't match in empty directory.")
   }
 }

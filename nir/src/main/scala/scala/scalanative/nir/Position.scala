@@ -4,33 +4,28 @@ import java.nio.file.Paths
 import scala.util.Try
 import java.nio.file.Path
 
+sealed case class NIRSource(directory: Path, path: Path) {
+  def debugName = s"${directory}:${path}"
+  def exists: Boolean = this ne NIRSource.None
+}
+object NIRSource {
+  object None extends NIRSource(null, null) {
+    override def debugName: String = "<no-source>"
+  }
+}
+
 final case class Position(
-    /** Source file. */
-    source: Position.SourceFile,
-    /** Zero-based line number. */
+    /** Scala source file containing definition of element */
+    source: SourceFile,
+    /** Zero-based line number in the source. */
     line: Int,
-    /** Zero-based column number. */
-    column: Int
+    /** Zero-based column number in the source */
+    column: Int,
+    /** NIR file coordinates used to deserialize the symbol, populated only when
+     *  linking
+     */
+    nirSource: NIRSource = NIRSource.None
 ) {
-
-  lazy val path: Option[Path] = {
-    source.getScheme() match {
-      case "file"           => Some(Paths.get(source))
-      case "https" | "http" => Some(Paths.get(source.getRawPath()))
-      case _                => None
-
-    }
-  }
-
-  lazy val filename: Option[String] = path.map(_.getFileName().toString)
-
-  lazy val dir: Option[String] = source.getScheme() match {
-    case "file" => path.map(_.getParent().toString)
-    case "http" | "https" =>
-      val fullStr = source.toString()
-      filename.map(fname => fullStr.stripSuffix(fname))
-    case _ => None
-  }
 
   /** One-based line number */
   def sourceLine: Int = line + 1
@@ -39,25 +34,38 @@ final case class Position(
   def sourceColumn: Int = column + 1
   def show: String = s"$source:$sourceLine:$sourceColumn"
 
-  def isEmpty: Boolean = {
-    def isEmptySlowPath(): Boolean = {
-      source.getScheme == null && source.getRawAuthority == null &&
-      source.getRawQuery == null && source.getRawFragment == null
-    }
-    source.getRawPath == "" && isEmptySlowPath()
-  }
-
+  def isEmpty: Boolean = this eq Position.NoPosition
   def isDefined: Boolean = !isEmpty
-
-  def orElse(that: => Position): Position = if (isDefined) this else that
 }
 
 object Position {
-  type SourceFile = java.net.URI
+  val NoPosition = Position(SourceFile.Virtual, 0, 0)
+}
 
-  object SourceFile {
-    def apply(f: java.io.File): SourceFile = f.toURI
-    def apply(f: String): SourceFile = new java.net.URI(f)
+sealed trait SourceFile {
+  def filename: Option[String] = this match {
+    case SourceFile.Virtual => None
+    case source: SourceFile.SourceRootRelative =>
+      Option(source.path.getFileName()).map(_.toString())
   }
-  val NoPosition = Position(SourceFile(""), 0, 0)
+  def directory: Option[String] = this match {
+    case SourceFile.Virtual => None
+    case source: SourceFile.SourceRootRelative =>
+      Option(source.path.getParent()).map(_.toString())
+  }
+}
+object SourceFile {
+
+  /** An abstract file without location, eg. in-memory source or generated */
+  case object Virtual extends SourceFile
+
+  /** Relative path to source file based on the workspace path. Used for
+   *  providing source files defined from the local project dependencies.
+   *  @param pathString
+   *    path relative to `-sourceroot` setting defined when compiling source -
+   *    typically it's root directory of workspace
+   */
+  case class SourceRootRelative(pathString: String) extends SourceFile {
+    lazy val path: Path = Paths.get(pathString)
+  }
 }

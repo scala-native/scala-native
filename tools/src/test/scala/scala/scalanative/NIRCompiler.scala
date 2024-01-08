@@ -5,6 +5,7 @@ import java.io.{File, PrintWriter}
 import scala.scalanative.buildinfo.ScalaNativeBuildInfo
 import java.lang.ProcessBuilder
 import java.nio.charset.StandardCharsets
+import java.nio.file.StandardCopyOption
 
 object NIRCompiler {
 
@@ -101,7 +102,15 @@ object NIRCompiler {
   }
 
   private def makeFile(base: Path, name: String, content: String): Unit = {
-    val writer = new PrintWriter(Files.newBufferedWriter(base.resolve(name)))
+    val relativePath = name
+      .replace("/", File.separator)
+      .replace("\\", File.separator)
+    val path = base.resolve(relativePath)
+    val dir = path.getParent()
+    if (dir != base) {
+      Files.createDirectories(dir)
+    }
+    val writer = new PrintWriter(Files.newBufferedWriter(path))
     writer.write(content)
     writer.close()
   }
@@ -113,8 +122,19 @@ class NIRCompiler(outDir: Path) {
   def this() = this(Files.createTempDirectory("scala-native-target"))
 
   def compile(base: Path): Array[Path] = {
-    val files = getFiles(base.toFile(), _.getName endsWith ".scala")
-    compile(files)
+    val files = getFiles(base.toFile(), _ => true)
+    val (sources, resources) = files.partition(_.getName() endsWith ".scala")
+    val resourceFiles = resources
+      .filter(_.isFile())
+      .map { file =>
+        val targetFile = outDir.resolve(base.relativize(file.toPath))
+        Files.createDirectories(targetFile.getParent())
+        Files.copy(
+          file.toPath(),
+          outDir.resolve(base.relativize(file.toPath))
+        )
+      }
+    (compile(sources) ++ resourceFiles).toArray
   }
 
   def compile(source: String): Array[Path] = {

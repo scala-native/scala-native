@@ -23,6 +23,11 @@ import scala.concurrent.duration.Duration
 import scala.scalanative.build.Platform
 import sjsonnew.BasicJsonProtocol._
 import java.nio.file.{Files, Path}
+import sbt.librarymanagement.{
+  DependencyResolution,
+  UpdateConfiguration,
+  UnresolvedWarningConfiguration
+}
 
 /** ScalaNativePlugin delegates to this object
  *
@@ -153,6 +158,7 @@ object ScalaNativePluginInternal {
       mainClass: Option[String],
       testConfig: Boolean,
       classpath: Seq[Path],
+      sourcesClassPath: Seq[Path],
       nativeLogger: build.Logger
   ) = {
 
@@ -160,6 +166,7 @@ object ScalaNativePluginInternal {
       build.Config.empty
         .withLogger(nativeLogger)
         .withClassPath(classpath)
+        .withSourcesClassPath(sourcesClassPath)
         .withBaseDir(baseDir)
         .withModuleName(moduleName)
         .withMainClass(mainClass)
@@ -181,19 +188,23 @@ object ScalaNativePluginInternal {
    *  times per project.
    */
   def scalaNativeConfigSettings(testConfig: Boolean): Seq[Setting[_]] = Seq(
-    nativeConfig := {
-      val config = nativeConfig.value
-      config
-    },
     nativeLinkReleaseFull := Def
       .task {
-        val classpath = fullClasspath.value.map(_.data.toPath)
         val sbtLogger = streams.value.log
         val nativeLogger = sbtLogger.toLogger
+        val classpath = fullClasspath.value.map(_.data.toPath)
+        val userConfig = nativeConfig.value
+        val sourcesClassPath = resolveSourcesClassPath(
+          userConfig,
+          dependencyResolution.value,
+          externalDependencyClasspath.value,
+          sbtLogger
+        )
 
         nativeLinkImpl(
-          nativeConfig = nativeConfig.value.withMode(Mode.releaseFull),
+          nativeConfig = userConfig.withMode(Mode.releaseFull),
           classpath = classpath,
+          sourcesClassPath = sourcesClassPath,
           sbtLogger = sbtLogger,
           nativeLogger = nativeLogger,
           mainClass = selectMainClass.value,
@@ -206,13 +217,21 @@ object ScalaNativePluginInternal {
       .value,
     nativeLinkReleaseFast := Def
       .task {
-        val classpath = fullClasspath.value.map(_.data.toPath)
         val sbtLogger = streams.value.log
         val nativeLogger = sbtLogger.toLogger
+        val classpath = fullClasspath.value.map(_.data.toPath)
+        val userConfig = nativeConfig.value
+        val sourcesClassPath = resolveSourcesClassPath(
+          userConfig,
+          dependencyResolution.value,
+          externalDependencyClasspath.value,
+          sbtLogger
+        )
 
         nativeLinkImpl(
-          nativeConfig = nativeConfig.value.withMode(Mode.releaseFast),
+          nativeConfig = userConfig.withMode(Mode.releaseFast),
           classpath = classpath,
+          sourcesClassPath = sourcesClassPath,
           sbtLogger = sbtLogger,
           nativeLogger = nativeLogger,
           mainClass = selectMainClass.value,
@@ -225,13 +244,21 @@ object ScalaNativePluginInternal {
       .value,
     nativeLink := Def
       .task {
-        val classpath = fullClasspath.value.map(_.data.toPath)
         val sbtLogger = streams.value.log
         val nativeLogger = sbtLogger.toLogger
+        val classpath = fullClasspath.value.map(_.data.toPath)
+        val userConfig = nativeConfig.value
+        val sourcesClassPath = resolveSourcesClassPath(
+          userConfig,
+          dependencyResolution.value,
+          externalDependencyClasspath.value,
+          sbtLogger
+        )
 
         nativeLinkImpl(
-          nativeConfig = nativeConfig.value,
+          nativeConfig = userConfig,
           classpath = classpath,
+          sourcesClassPath = sourcesClassPath,
           sbtLogger = sbtLogger,
           nativeLogger = nativeLogger,
           mainClass = selectMainClass.value,
@@ -369,6 +396,44 @@ object ScalaNativePluginInternal {
     val prev = l.get()
     if (l.compareAndSet(prev, r :: prev)) r
     else registerResource(l, r)
+  }
+
+  private def resolveSourcesClassPath(
+      userConfig: NativeConfig,
+      dependencyResolution: DependencyResolution,
+      externalClassPath: Classpath,
+      log: util.Logger
+  ): Seq[Path] = {
+    if (!userConfig.sourceLevelDebuggingConfig.enabled) Nil
+    else
+      externalClassPath.par.flatMap { classpath =>
+        try {
+          classpath.metadata
+            .get(moduleID.key)
+            .toSeq
+            .map(_.classifier("sources").withConfigurations(None))
+            .map(dependencyResolution.wrapDependencyInModule)
+            .map(
+              dependencyResolution.update(
+                _,
+                UpdateConfiguration(),
+                UnresolvedWarningConfiguration(),
+                util.Logger.Null
+              )
+            )
+            .flatMap(_.right.toOption)
+            .flatMap(_.allFiles)
+            .filter(_.name.endsWith("-sources.jar"))
+            .map(_.toPath())
+        } catch {
+          case ex: Throwable =>
+            log.warn(
+              s"Failed to resolved sources of classpath entry '$classpath', source level debuging might work incorrectly"
+            )
+            log.trace(ex)
+            Nil
+        }
+      }.seq
   }
 
 }

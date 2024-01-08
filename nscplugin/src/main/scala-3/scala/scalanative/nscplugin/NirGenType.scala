@@ -148,6 +148,19 @@ trait NirGenType(using Context) {
     defn.DoubleClass -> genType(defn.BoxedDoubleClass)
   )
 
+  lazy val jlStringBuilderAppendForSymbol = defnNir.jlStringBuilderAppendAlts
+    .flatMap(sym =>
+      val sig = genMethodSig(sym)
+      def name = genMethodName(sym)
+      sig match
+        case nir.Type.Function(Seq(_, arg), _) =>
+          Some(
+            nir.Type.normalize(arg) -> (nir.Val.Global(name, nir.Type.Ptr), sig)
+          )
+        case _ => None
+    )
+    .toMap
+
   def genExternType(st: SimpleType): nir.Type = {
     if (st.sym.isCFuncPtrClass)
       nir.Type.Ptr

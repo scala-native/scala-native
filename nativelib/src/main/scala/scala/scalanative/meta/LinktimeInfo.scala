@@ -6,8 +6,6 @@ import scala.scalanative.unsafe._
  *  discard some parts of NIR instructions when linking
  */
 object LinktimeInfo {
-  @resolvedAtLinktime("scala.scalanative.meta.linktimeinfo.hasDebugMetadata")
-  def hasDebugMetadata: Boolean = resolved
 
   @resolvedAtLinktime("scala.scalanative.meta.linktimeinfo.debugMode")
   def debugMode: Boolean = resolved
@@ -58,5 +56,18 @@ object LinktimeInfo {
     def os: String = resolved
     @resolvedAtLinktime("scala.scalanative.meta.linktimeinfo.target.env")
     def env: String = resolved
+  }
+
+  object sourceLevelDebuging {
+    @resolvedAtLinktime(
+      "scala.scalanative.meta.linktimeinfo.debugMetadata.enabled"
+    )
+    def enabled: Boolean = resolved
+
+    @resolvedAtLinktime(
+      "scala.scalanative.meta.linktimeinfo.debugMetadata.generateFunctionSourcePositions"
+    )
+    def generateFunctionSourcePositions: Boolean = resolved
+
   }
 }

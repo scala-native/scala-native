@@ -260,4 +260,19 @@ trait NirGenType[G <: Global with Singleton] { self: NirGenPhase[G] =>
       }
     }
   }
+
+  lazy val jlStringBuilderAppendForSymbol =
+    nirDefinitions.jlStringBuilderAppendAlts.flatMap { sym =>
+      val sig = genMethodSig(sym)
+      def name = genMethodName(sym)
+      sig match {
+        case nir.Type.Function(Seq(_, arg), _)
+            if sym.owner == nirDefinitions.jlStringBuilderRef =>
+          Some(
+            nir.Type.normalize(arg) -> (nir.Val.Global(name, nir.Type.Ptr), sig)
+          )
+        case _ => None
+      }
+    }.toMap
+
 }

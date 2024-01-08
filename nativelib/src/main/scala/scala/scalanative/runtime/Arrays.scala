@@ -101,9 +101,9 @@ object Array {
     } else if (len < 0) {
       throw new ArrayIndexOutOfBoundsException("length is negative")
     } else if (fromPos < 0 || fromPos + len > from.length) {
-      throwOutOfBounds(fromPos)
+      throwOutOfBounds(fromPos, from.length)
     } else if (toPos < 0 || toPos + len > to.length) {
-      throwOutOfBounds(toPos)
+      throwOutOfBounds(toPos, to.length)
     } else if (len == 0) {
       ()
     } else {
@@ -146,9 +146,9 @@ object Array {
     } else if (len < 0) {
       throw new ArrayIndexOutOfBoundsException("length is negative")
     } else if (leftPos < 0 || leftPos + len > left.length) {
-      throwOutOfBounds(leftPos)
+      throwOutOfBounds(leftPos, left.length)
     } else if (rightPos < 0 || rightPos + len > right.length) {
-      throwOutOfBounds(rightPos)
+      throwOutOfBounds(rightPos, right.length)
     } else if (len == 0) {
       0
     } else {
@@ -166,7 +166,7 @@ final class BooleanArray private () extends Array[Boolean] {
 
   @inline def atRaw(i: Int): RawPtr =
     if (i < 0 || i >= length) {
-      throwOutOfBounds(i)
+      throwOutOfBounds(i, length)
     } else {
       atRawUnsafe(i)
     }
@@ -218,10 +218,12 @@ object BooleanArray {
 
   @inline def snapshot(length: Int, data: RawPtr): BooleanArray = {
     val arr  = alloc(length)
-    val dst  = arr.atRaw(0)
-    val src  = data
-    val size = castIntToRawSizeUnsigned(1 * length)
-    libc.memcpy(dst, src, size)
+    if(length > 0) {
+      val dst  = arr.atRawUnsafe(0)
+      val src  = data
+      val size = castIntToRawSizeUnsigned(1 * length)
+      libc.memcpy(dst, src, size)
+    }
     arr
   }
 }
@@ -232,7 +234,7 @@ final class CharArray private () extends Array[Char] {
 
   @inline def atRaw(i: Int): RawPtr =
     if (i < 0 || i >= length) {
-      throwOutOfBounds(i)
+      throwOutOfBounds(i, length)
     } else {
       atRawUnsafe(i)
     }
@@ -284,10 +286,12 @@ object CharArray {
 
   @inline def snapshot(length: Int, data: RawPtr): CharArray = {
     val arr  = alloc(length)
-    val dst  = arr.atRaw(0)
-    val src  = data
-    val size = castIntToRawSizeUnsigned(2 * length)
-    libc.memcpy(dst, src, size)
+    if(length > 0) {
+      val dst  = arr.atRawUnsafe(0)
+      val src  = data
+      val size = castIntToRawSizeUnsigned(2 * length)
+      libc.memcpy(dst, src, size)
+    }
     arr
   }
 }
@@ -298,7 +302,7 @@ final class ByteArray private () extends Array[Byte] {
 
   @inline def atRaw(i: Int): RawPtr =
     if (i < 0 || i >= length) {
-      throwOutOfBounds(i)
+      throwOutOfBounds(i, length)
     } else {
       atRawUnsafe(i)
     }
@@ -350,10 +354,12 @@ object ByteArray {
 
   @inline def snapshot(length: Int, data: RawPtr): ByteArray = {
     val arr  = alloc(length)
-    val dst  = arr.atRaw(0)
-    val src  = data
-    val size = castIntToRawSizeUnsigned(1 * length)
-    libc.memcpy(dst, src, size)
+    if(length > 0) {
+      val dst  = arr.atRawUnsafe(0)
+      val src  = data
+      val size = castIntToRawSizeUnsigned(1 * length)
+      libc.memcpy(dst, src, size)
+    }
     arr
   }
 }
@@ -364,7 +370,7 @@ final class ShortArray private () extends Array[Short] {
 
   @inline def atRaw(i: Int): RawPtr =
     if (i < 0 || i >= length) {
-      throwOutOfBounds(i)
+      throwOutOfBounds(i, length)
     } else {
       atRawUnsafe(i)
     }
@@ -416,10 +422,12 @@ object ShortArray {
 
   @inline def snapshot(length: Int, data: RawPtr): ShortArray = {
     val arr  = alloc(length)
-    val dst  = arr.atRaw(0)
-    val src  = data
-    val size = castIntToRawSizeUnsigned(2 * length)
-    libc.memcpy(dst, src, size)
+    if(length > 0) {
+      val dst  = arr.atRawUnsafe(0)
+      val src  = data
+      val size = castIntToRawSizeUnsigned(2 * length)
+      libc.memcpy(dst, src, size)
+    }
     arr
   }
 }
@@ -430,7 +438,7 @@ final class IntArray private () extends Array[Int] {
 
   @inline def atRaw(i: Int): RawPtr =
     if (i < 0 || i >= length) {
-      throwOutOfBounds(i)
+      throwOutOfBounds(i, length)
     } else {
       atRawUnsafe(i)
     }
@@ -482,10 +490,12 @@ object IntArray {
 
   @inline def snapshot(length: Int, data: RawPtr): IntArray = {
     val arr  = alloc(length)
-    val dst  = arr.atRaw(0)
-    val src  = data
-    val size = castIntToRawSizeUnsigned(4 * length)
-    libc.memcpy(dst, src, size)
+    if(length > 0) {
+      val dst  = arr.atRawUnsafe(0)
+      val src  = data
+      val size = castIntToRawSizeUnsigned(4 * length)
+      libc.memcpy(dst, src, size)
+    }
     arr
   }
 }
@@ -496,7 +506,7 @@ final class LongArray private () extends Array[Long] {
 
   @inline def atRaw(i: Int): RawPtr =
     if (i < 0 || i >= length) {
-      throwOutOfBounds(i)
+      throwOutOfBounds(i, length)
     } else {
       atRawUnsafe(i)
     }
@@ -548,10 +558,12 @@ object LongArray {
 
   @inline def snapshot(length: Int, data: RawPtr): LongArray = {
     val arr  = alloc(length)
-    val dst  = arr.atRaw(0)
-    val src  = data
-    val size = castIntToRawSizeUnsigned(8 * length)
-    libc.memcpy(dst, src, size)
+    if(length > 0) {
+      val dst  = arr.atRawUnsafe(0)
+      val src  = data
+      val size = castIntToRawSizeUnsigned(8 * length)
+      libc.memcpy(dst, src, size)
+    }
     arr
   }
 }
@@ -562,7 +574,7 @@ final class FloatArray private () extends Array[Float] {
 
   @inline def atRaw(i: Int): RawPtr =
     if (i < 0 || i >= length) {
-      throwOutOfBounds(i)
+      throwOutOfBounds(i, length)
     } else {
       atRawUnsafe(i)
     }
@@ -614,10 +626,12 @@ object FloatArray {
 
   @inline def snapshot(length: Int, data: RawPtr): FloatArray = {
     val arr  = alloc(length)
-    val dst  = arr.atRaw(0)
-    val src  = data
-    val size = castIntToRawSizeUnsigned(4 * length)
-    libc.memcpy(dst, src, size)
+    if(length > 0) {
+      val dst  = arr.atRawUnsafe(0)
+      val src  = data
+      val size = castIntToRawSizeUnsigned(4 * length)
+      libc.memcpy(dst, src, size)
+    }
     arr
   }
 }
@@ -628,7 +642,7 @@ final class DoubleArray private () extends Array[Double] {
 
   @inline def atRaw(i: Int): RawPtr =
     if (i < 0 || i >= length) {
-      throwOutOfBounds(i)
+      throwOutOfBounds(i, length)
     } else {
       atRawUnsafe(i)
     }
@@ -680,10 +694,12 @@ object DoubleArray {
 
   @inline def snapshot(length: Int, data: RawPtr): DoubleArray = {
     val arr  = alloc(length)
-    val dst  = arr.atRaw(0)
-    val src  = data
-    val size = castIntToRawSizeUnsigned(8 * length)
-    libc.memcpy(dst, src, size)
+    if(length > 0) {
+      val dst  = arr.atRawUnsafe(0)
+      val src  = data
+      val size = castIntToRawSizeUnsigned(8 * length)
+      libc.memcpy(dst, src, size)
+    }
     arr
   }
 }
@@ -694,7 +710,7 @@ final class ObjectArray private () extends Array[Object] {
 
   @inline def atRaw(i: Int): RawPtr =
     if (i < 0 || i >= length) {
-      throwOutOfBounds(i)
+      throwOutOfBounds(i, length)
     } else {
       atRawUnsafe(i)
     }
@@ -746,10 +762,12 @@ object ObjectArray {
 
   @inline def snapshot(length: Int, data: RawPtr): ObjectArray = {
     val arr  = alloc(length)
-    val dst  = arr.atRaw(0)
-    val src  = data
-    val size = castIntToRawSizeUnsigned(castRawSizeToInt(Intrinsics.sizeOf[RawPtr]) * length)
-    libc.memcpy(dst, src, size)
+    if(length > 0) {
+      val dst  = arr.atRawUnsafe(0)
+      val src  = data
+      val size = castIntToRawSizeUnsigned(castRawSizeToInt(Intrinsics.sizeOf[RawPtr]) * length)
+      libc.memcpy(dst, src, size)
+    }
     arr
   }
 }

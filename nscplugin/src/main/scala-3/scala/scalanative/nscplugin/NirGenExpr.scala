@@ -451,7 +451,11 @@ trait NirGenExpr(using Context) {
     def genIf(tree: If): nir.Val = {
       given nir.Position = tree.span
       val If(cond, thenp, elsep) = tree
-      val retty = genType(tree.tpe)
+      def isUnitType(tpe: Type) =
+        tpe =:= defn.UnitType || defn.isBoxedUnitClass(tpe.sym)
+      val retty =
+        if (isUnitType(thenp.tpe) || isUnitType(elsep.tpe)) nir.Type.Unit
+        else genType(tree.tpe)
       genIf(retty, cond, thenp, elsep)
     }
 
@@ -471,7 +475,7 @@ trait NirGenExpr(using Context) {
         given nir.Position = condp.span
         getLinktimeCondition(condp) match {
           case Some(cond) =>
-            curMethodUsesLinktimeResolvedValues = true
+            curMethodEnv.get.isUsingLinktimeResolvedValue = true
             buf.branchLinktime(cond, nir.Next(thenn), nir.Next(elsen))
           case None =>
             if ensureLinktime then
@@ -1087,7 +1091,7 @@ trait NirGenExpr(using Context) {
 
       (code: @switch) match {
         case THROW                  => genThrow(app, args)
-        case CONCAT                 => genStringConcat(receiver, arg)
+        case CONCAT                 => genStringConcat(app)
         case HASH                   => genHashCode(arg)
         case BOXED_UNIT             => nir.Val.Unit
         case SYNCHRONIZED           => genSynchronized(receiver, arg)
@@ -1103,6 +1107,7 @@ trait NirGenExpr(using Context) {
           genReflectiveCall(app, isSelectDynamic = true)
         case REFLECT_SELECTABLE_APPLYDYN =>
           genReflectiveCall(app, isSelectDynamic = false)
+        case USES_LINKTIME_INTRINSIC => genLinktimeIntrinsicApply(app)
         case _ =>
           if (isArithmeticOp(code) || isLogicalOp(code) || isComparisonOp(code))
             genSimpleOp(app, receiver :: args, code)
@@ -1121,6 +1126,39 @@ trait NirGenExpr(using Context) {
             nir.Val.Null
           }
       }
+    }
+
+    private def genLinktimeIntrinsicApply(app: Apply): nir.Val = {
+      import defnNir.*
+      given nir.Position = app.span
+      val Apply(fun, args) = app
+
+      val sym = fun.symbol
+      def isStatic = sym.owner.isStaticOwner
+      def qualifier0 = qualifierOf(fun)
+      def qualifier = qualifier0.withSpan(qualifier0.span.orElse(fun.span))
+
+      sym match {
+        case _
+            if JavaUtilServiceLoaderLoad.contains(sym) ||
+              JavaUtilServiceLoaderLoadInstalled == sym =>
+          args.head match {
+            case Literal(c: Constant) => () // ok
+            case _ =>
+              report.error(
+                s"Limitation of ScalaNative runtime: first argument of ${sym.show} needs to be literal constant of class type, use `classOf[T]` instead.",
+                app.srcPos
+              )
+          }
+        case _ =>
+          report.error(
+            s"Unhandled intrinsic function call for ${sym.show}",
+            app.srcPos
+          )
+      }
+
+      curMethodEnv.get.isUsingIntrinsics = true
+      genApplyMethod(sym, statically = isStatic, qualifier, args)
     }
 
     private def genApplyTypeApply(app: Apply): nir.Val = {
@@ -1746,45 +1784,130 @@ trait NirGenExpr(using Context) {
         Seq(argp)
       )
 
-    private def genStringConcat(leftp: Tree, rightp: Tree): nir.Val = {
-      def stringify(sym: Symbol, value: nir.Val)(using
-          nir.Position
-      ): nir.Val = {
-        val cond = ContTree { () =>
-          buf.comp(nir.Comp.Ieq, nir.Rt.Object, value, nir.Val.Null, unwind)
-        }
-        val thenp = ContTree { () => nir.Val.String("null") }
-        val elsep = ContTree { () =>
-          if (sym == defn.StringClass) value
-          else {
-            val meth = defn.Any_toString
-            genApplyMethod(meth, statically = false, value, Seq.empty)
-          }
-        }
-        genIf(nir.Rt.String, cond, thenp, elsep)
-      }
+    /*
+     * Returns a list of trees that each should be concatenated, from left to right.
+     * It turns a chained call like "a".+("b").+("c") into a list of arguments.
+     */
+    def liftStringConcat(tree: Tree): List[Tree] = tree match {
+      case tree @ Apply(fun @ DesugaredSelect(larg, method), rarg) =>
+        if (nirPrimitives.isPrimitive(fun) &&
+            nirPrimitives.getPrimitive(tree, larg.tpe) == CONCAT)
+          liftStringConcat(larg) ::: rarg
+        else
+          tree :: Nil
+      case _ =>
+        tree :: Nil
+    }
 
-      val left = {
-        given nir.Position = leftp.span
-        val typesym = leftp.tpe.typeSymbol
-        val unboxed = genExpr(leftp)
-        val boxed = boxValue(typesym, unboxed)
-        stringify(typesym, boxed)
-      }
+    /* Issue a call to `StringBuilder#append` for the right element type     */
+    private final def genStringBuilderAppend(
+        stringBuilder: nir.Val.Local,
+        tree: Tree
+    ): Unit = {
+      given nir.Position = tree.span
+      val tpe = tree.tpe
+      val argType =
+        if (tpe <:< defn.StringType) nir.Rt.String
+        else if (tpe <:< defnNir.jlStringBufferType)
+          genType(defnNir.jlStringBufferRef)
+        else if (tpe <:< defnNir.jlCharSequenceType)
+          genType(defnNir.jlCharSequenceRef)
+        // Don't match for `Array(Char)`, even though StringBuilder has such an overload:
+        // `"a" + Array('b')` should NOT be "ab", but "a[C@...".
+        else if (tpe <:< defn.ObjectType) nir.Rt.Object
+        else genType(tpe)
 
-      val right = {
-        given nir.Position = rightp.span
-        val typesym = rightp.tpe.typeSymbol
-        val boxed = genExpr(rightp)
-        stringify(typesym, boxed)
+      val value = genExpr(tree)
+      val (adaptedValue, targetType) = argType match {
+        // jlStringBuilder does not have overloads for byte and short, but we can just use the int version
+        case nir.Type.Byte | nir.Type.Short =>
+          genCoercion(value, value.ty, nir.Type.Int) -> nir.Type.Int
+        case nirType => value -> nirType
       }
+      val (appendFunction, appendSig) = jlStringBuilderAppendForSymbol(
+        targetType
+      )
+      buf.call(
+        appendSig,
+        appendFunction,
+        Seq(stringBuilder, adaptedValue),
+        unwind
+      )
+    }
 
-      genApplyMethod(
-        defn.String_+,
-        statically = true,
-        left,
-        Seq(ValTree(right))
-      )(using leftp.span: nir.Position)
+    private lazy val jlStringBuilderRef =
+      nir.Type.Ref(genTypeName(defnNir.jlStringBuilderRef))
+    private lazy val jlStringBuilderCtor =
+      jlStringBuilderRef.name.member(nir.Sig.Ctor(Seq(nir.Type.Int)))
+    private lazy val jlStringBuilderCtorSig = nir.Type.Function(
+      Seq(jlStringBuilderRef, nir.Type.Int),
+      nir.Type.Unit
+    )
+    private lazy val jlStringBuilderToString =
+      jlStringBuilderRef.name.member(
+        nir.Sig.Method("toString", Seq(nir.Rt.String))
+      )
+    private lazy val jlStringBuilderToStringSig = nir.Type.Function(
+      Seq(jlStringBuilderRef),
+      nir.Rt.String
+    )
+
+    private def genStringConcat(tree: Apply): nir.Val = {
+      given nir.Position = tree.span
+      liftStringConcat(tree) match {
+        // Optimization for expressions of the form "" + x
+        case List(Literal(Constant("")), arg) =>
+          genApplyStaticMethod(
+            defn.String_valueOf_Object,
+            defn.StringClass,
+            Seq(arg)
+          )
+
+        case concatenations =>
+          val concatArguments = concatenations.view
+            .filter {
+              // empty strings are no-ops in concatenation
+              case Literal(Constant("")) => false
+              case _                     => true
+            }
+            .map {
+              // Eliminate boxing of primitive values. Boxing is introduced by erasure because
+              // there's only a single synthetic `+` method "added" to the string class.
+              case Apply(boxOp, value :: Nil)
+                  // TODO: SN specific boxing
+                  if Erasure.Boxing.isBox(boxOp.symbol) &&
+                    boxOp.symbol.denot.owner != defn.UnitModuleClass =>
+                value
+              case other => other
+            }
+            .toList
+          // Estimate capacity needed for the string builder
+          val approxBuilderSize = concatArguments.view.map {
+            case Literal(Constant(s: String)) => s.length
+            case Literal(c: Constant) if c.isNonUnitAnyVal =>
+              String.valueOf(c).length
+            case _ => 0
+          }.sum
+
+          // new StringBuidler(approxBuilderSize)
+          val stringBuilder =
+            buf.classalloc(jlStringBuilderRef.name, unwind, None)
+          buf.call(
+            jlStringBuilderCtorSig,
+            nir.Val.Global(jlStringBuilderCtor, nir.Type.Ptr),
+            Seq(stringBuilder, nir.Val.Int(approxBuilderSize)),
+            unwind
+          )
+          // concat substrings
+          concatArguments.foreach(genStringBuilderAppend(stringBuilder, _))
+          // stringBuilder.toString
+          buf.call(
+            jlStringBuilderToStringSig,
+            nir.Val.Global(jlStringBuilderToString, nir.Type.Ptr),
+            Seq(stringBuilder),
+            unwind
+          )
+      }
     }
 
     private def genStaticMember(sym: Symbol, receiver: Symbol)(using
@@ -2109,11 +2232,11 @@ trait NirGenExpr(using Context) {
         case LOAD_RAW_SIZE => nir.Type.Size
         case LOAD_OBJECT   => nir.Rt.Object
       }
-      val syncAttrs =
+      val memoryOrder =
         Option.when(ptrp.symbol.isVolatile)(
-          nir.SyncAttrs(nir.MemoryOrder.Acquire)
+          nir.MemoryOrder.Acquire
         )
-      buf.load(ty, ptr, unwind, syncAttrs)
+      buf.load(ty, ptr, unwind, memoryOrder)
     }
 
     private def genRawPtrStoreOp(app: Apply, code: Int): nir.Val = {
@@ -2136,10 +2259,10 @@ trait NirGenExpr(using Context) {
         case STORE_RAW_SIZE => nir.Type.Size
         case STORE_OBJECT   => nir.Rt.Object
       }
-      val syncAttrs = Option.when(ptrp.symbol.isVolatile)(
-        nir.SyncAttrs(nir.MemoryOrder.Release)
+      val memoryOrder = Option.when(ptrp.symbol.isVolatile)(
+        nir.MemoryOrder.Release
       )
-      buf.store(ty, ptr, value, unwind, syncAttrs)
+      buf.store(ty, ptr, value, unwind, memoryOrder)
     }
 
     private def genRawPtrElemOp(app: Apply): nir.Val = {
@@ -2550,12 +2673,12 @@ trait NirGenExpr(using Context) {
       assert(sym.isExtern, "loadExtern was not extern")
 
       val name = nir.Val.Global(genName(sym), nir.Type.Ptr)
-      val syncAttrs = Option.when(sym.isVolatile)(
-        nir.SyncAttrs(nir.MemoryOrder.Acquire)
+      val memoryOrder = Option.when(sym.isVolatile)(
+        nir.MemoryOrder.Acquire
       )
       fromExtern(
         ty,
-        buf.load(externTy, name, unwind, syncAttrs)
+        buf.load(externTy, name, unwind, memoryOrder)
       )
     }
 
@@ -2565,11 +2688,11 @@ trait NirGenExpr(using Context) {
       assert(sym.isExtern, "storeExtern was not extern")
       val name = nir.Val.Global(genName(sym), nir.Type.Ptr)
       val externValue = toExtern(externTy, value)
-      val syncAttrs = Option.when(sym.isVolatile)(
-        nir.SyncAttrs(nir.MemoryOrder.Release)
+      val memoryOrder = Option.when(sym.isVolatile)(
+        nir.MemoryOrder.Release
       )
 
-      buf.store(externTy, name, externValue, unwind, syncAttrs)
+      buf.store(externTy, name, externValue, unwind, memoryOrder)
     }
 
     def toExtern(expectedTy: nir.Type, value: nir.Val)(using

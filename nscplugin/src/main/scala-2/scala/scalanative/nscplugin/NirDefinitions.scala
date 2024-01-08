@@ -325,8 +325,19 @@ trait NirDefinitions {
     lazy val NStringClass = getRequiredClass("java.lang._String")
     lazy val NStringModule = getRequiredModule("java.lang._String")
 
-    // Scala library & runtime
+    lazy val JavaUtilServiceLoader = getRequiredModule(
+      "java.util.ServiceLoader"
+    )
+    lazy val JavaUtilServiceLoaderLoad: Seq[Symbol] =
+      getDecl(JavaUtilServiceLoader, TermName("load")).alternatives
 
+    lazy val JavaUtilServiceLoaderLoadInstalled =
+      getDecl(JavaUtilServiceLoader, TermName("loadInstalled"))
+
+    lazy val LinktimeIntrinsics: Seq[Symbol] = JavaUtilServiceLoaderLoad ++
+      Seq(JavaUtilServiceLoaderLoadInstalled)
+
+    // Scala library & runtime
     lazy val InlineClass = getRequiredClass("scala.inline")
     lazy val NoInlineClass = getRequiredClass("scala.noinline")
     lazy val EnumerationClass = getRequiredClass("scala.Enumeration")
@@ -334,6 +345,21 @@ trait NirDefinitions {
     lazy val JavaProperties = getRequiredClass("java.util.Properties")
 
     lazy val StringConcatMethod = getMember(StringClass, TermName("concat"))
+    lazy val String_valueOf_Object =
+      getMember(StringModule, nme.valueOf).filter(sym =>
+        sym.info.paramTypes match {
+          case List(pt) => pt.typeSymbol == ObjectClass
+          case _        => false
+        }
+      )
+    lazy val jlStringBuilderRef = getRequiredClass("java.lang.StringBuilder")
+    lazy val jlStringBuilderType = jlStringBuilderRef.toType
+    lazy val jlStringBuilderAppendAlts =
+      getMemberMethod(jlStringBuilderRef, TermName("append")).alternatives
+    lazy val jlStringBufferRef = getRequiredClass("java.lang.StringBuffer")
+    lazy val jlStringBufferType = jlStringBufferRef.toType
+    lazy val jlCharSequenceRef = getRequiredClass("java.lang.CharSequence")
+    lazy val jlCharSequenceType = jlCharSequenceRef.toType
 
     lazy val BoxMethod = Map[Char, Symbol](
       'B' -> getDecl(BoxesRunTimeModule, TermName("boxToBoolean")),

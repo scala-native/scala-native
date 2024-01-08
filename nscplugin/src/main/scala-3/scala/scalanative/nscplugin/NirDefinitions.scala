@@ -91,17 +91,13 @@ final class NirDefinitions()(using ctx: Context) {
   @tu lazy val RuntimePackage_fromRawSize = RuntimePackageClass.requiredMethod("fromRawSize")
   @tu lazy val RuntimePackage_fromRawUSize = RuntimePackageClass.requiredMethod("fromRawUSize")
 
-  @tu lazy val RuntimePackage_toRawSizeAlts = RuntimePackageClass.info
-    .member(termName("toRawSize"))
-    .alternatives
-    .map(_.symbol)
+  @tu lazy val RuntimePackage_toRawSizeAlts = RuntimePackageClass
+    .alternatives("toRawSize")
     .ensuring(_.size == 2)
 
   @tu lazy val RuntimeSafeZoneAllocatorModuleRef = requiredModuleRef("scala.scalanative.runtime.SafeZoneAllocator")
   @tu lazy val RuntimeSafeZoneAllocatorModule = RuntimeSafeZoneAllocatorModuleRef.symbol
-  @tu lazy val RuntimeSafeZoneAllocator_allocate =
-    try Some(RuntimeSafeZoneAllocatorModule.requiredMethod("allocate"))
-    catch { case _: dotty.tools.dotc.core.TypeError => None }
+  @tu lazy val RuntimeSafeZoneAllocator_allocate = optional(RuntimeSafeZoneAllocatorModule.requiredMethod("allocate"))
 
   // Runtime intriniscs
   @tu lazy val IntrinsicsModule = requiredModule("scala.scalanative.runtime.Intrinsics")
@@ -162,10 +158,8 @@ final class NirDefinitions()(using ctx: Context) {
   @tu lazy val Intrinsics_castIntToRawSize = IntrinsicsModule.requiredMethod("castIntToRawSize")
   @tu lazy val Intrinsics_castIntToRawSizeUnsigned = IntrinsicsModule.requiredMethod("castIntToRawSizeUnsigned")
   @tu lazy val Intrinsics_castLongToRawSize = IntrinsicsModule.requiredMethod("castLongToRawSize")
-  @tu lazy val Intrinsics_stackallocAlts = IntrinsicsModule.info
-    .member(termName("stackalloc"))
-    .alternatives
-    .map(_.symbol)
+  @tu lazy val Intrinsics_stackallocAlts = IntrinsicsModule
+    .alternatives("stackalloc")
     .ensuring(_.size == 2)
   @tu lazy val IntrinsicsInternal_stackalloc = IntrinsicsInternalModule.requiredMethod("stackalloc")
   @tu lazy val Intrinsics_classFieldRawPtr = IntrinsicsModule.requiredMethod("classFieldRawPtr")
@@ -174,10 +168,8 @@ final class NirDefinitions()(using ctx: Context) {
   @tu lazy val Intrinsics_alignmentOf = IntrinsicsModule.requiredMethod("alignmentOf")
   @tu lazy val IntrinsicsInternal_alignmentOf = IntrinsicsInternalModule.requiredMethod("alignmentOf")
   @tu lazy val Intrinsics_unsignedOfAlts =
-    IntrinsicsModule.info
-      .member(termName("unsignedOf"))
-      .alternatives
-      .map(_.symbol)
+    IntrinsicsModule
+      .alternatives("unsignedOf")
       .ensuring(_.size == 5)
 
   // Runtime types
@@ -283,8 +275,30 @@ final class NirDefinitions()(using ctx: Context) {
 
   @tu lazy val String_concat = defn.StringClass.requiredMethod("concat")
 
+  @tu lazy val JavaUtilServiceLoader = requiredModule("java.util.ServiceLoader")
+  @tu lazy val JavaUtilServiceLoaderLoad = JavaUtilServiceLoader.alternatives("load")
+  @tu lazy val JavaUtilServiceLoaderLoadInstalled = JavaUtilServiceLoader.requiredMethod("loadInstalled")
+  @tu lazy val LinktimeIntrinsics = JavaUtilServiceLoaderLoad ++ Seq(JavaUtilServiceLoaderLoadInstalled)
+
+  @tu lazy val jlStringBuilderRef = requiredClass("java.lang.StringBuilder")
+  @tu lazy val jlStringBuilderType = jlStringBuilderRef.typeRef
+  @tu lazy val jlStringBuilderAppendAlts = jlStringBuilderRef.info
+    .decl(termName("append"))
+    .alternatives
+    .map(_.symbol)
+  @tu lazy val jlStringBufferRef = requiredClass("java.lang.StringBuffer")
+  @tu lazy val jlStringBufferType = jlStringBufferRef.typeRef
+  @tu lazy val jlCharSequenceRef = requiredClass("java.lang.CharSequence")
+  @tu lazy val jlCharSequenceType = jlCharSequenceRef.typeRef
+
   // Scala library & runtime
   @tu lazy val InlineClass = requiredClass("scala.inline")
   @tu lazy val NoInlineClass = requiredClass("scala.noinline")
 
+  extension (sym: Symbol)
+    def alternatives(member: String) = sym.info.member(termName(member)).alternatives.map(_.symbol)
+
+  private transparent inline def optional[T](selector: => T) =
+    try Some(selector)
+    catch { case _: dotty.tools.dotc.core.TypeError => None }
 }

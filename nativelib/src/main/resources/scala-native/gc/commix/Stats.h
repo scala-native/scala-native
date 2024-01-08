@@ -8,7 +8,7 @@
 
 #define MUTATOR_THREAD_ID -1
 
-#ifdef ENABLE_GC_STATS_SYNC
+#ifdef GC_ENABLE_STATS_SYNC
 #define ENABLE_GC_STATS_BATCHES
 #endif
 
@@ -107,7 +107,7 @@ static inline void Stats_CollectionStarted(Stats *stats) {}
 #define Stats_RecordEventBatches(S, E, A, B)
 #endif // ENABLE_GC_STATS_BATCHES
 
-#ifdef ENABLE_GC_STATS_SYNC
+#ifdef GC_ENABLE_STATS_SYNC
 #define Stats_RecordTimeSync(S, T)                                             \
     uint64_t T;                                                                \
     do {                                                                       \
@@ -128,6 +128,6 @@ static inline void Stats_PhaseStarted(Stats *stats) {}
 #define Stats_GotNotEmptyPacket(S, B, E)
 #define Stats_NoNotEmptyPacket(S, A, B)
 
-#endif // ENABLE_GC_STATS_SYNC
+#endif // GC_ENABLE_STATS_SYNC
 
 #endif // IMMIX_STATS_H

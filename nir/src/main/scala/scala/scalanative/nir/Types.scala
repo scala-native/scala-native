@@ -199,7 +199,7 @@ object Type {
   def isArray(clsName: Global.Top): Boolean =
     arrayToType.contains(clsName)
 
-  def typeToName(tpe: Type): Global = tpe match {
+  def typeToName(tpe: Type): Global.Top = tpe match {
     case Rt.BoxedUnit => Global.Top("scala.scalanative.runtime.PrimitiveUnit")
     case Bool   => Global.Top("scala.scalanative.runtime.PrimitiveBoolean")
     case Char   => Global.Top("scala.scalanative.runtime.PrimitiveChar")

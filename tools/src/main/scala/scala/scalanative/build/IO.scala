@@ -78,7 +78,7 @@ private[scalanative] object IO {
   /** Does a `pattern` match starting at base */
   def existsInDir(base: Path, pattern: String): Boolean = {
     var out = false
-    val matcher = FileSystems.getDefault.getPathMatcher(pattern)
+    val matcher = base.getFileSystem.getPathMatcher(pattern)
     val visitor = new SimpleFileVisitor[Path] {
       override def preVisitDirectory(
           directory: Path,

@@ -2,6 +2,7 @@ package scala.scalanative
 package linker
 
 import scala.collection.mutable
+import scala.scalanative.linker.LinktimeIntrinsicCallsResolver.FoundServiceProviders
 
 sealed abstract class Info {
   def attrs: nir.Attrs
@@ -11,6 +12,7 @@ sealed abstract class Info {
 
 sealed abstract class ScopeInfo extends Info {
   override def name: nir.Global.Top
+  def ty: nir.Type.Ref = nir.Type.Ref(name)
   val members = mutable.UnrolledBuffer.empty[MemberInfo]
   val calls = mutable.Set.empty[nir.Sig]
   val responds = mutable.Map.empty[nir.Sig, nir.Global.Member]
@@ -126,8 +128,6 @@ final class Class(
 
   lazy val hasFinalFields: Boolean = fields.exists(_.attrs.isFinal)
 
-  val ty: nir.Type =
-    nir.Type.Ref(name)
   def isConstantModule(implicit
       analysis: ReachabilityAnalysis.Result
   ): Boolean = {
@@ -228,6 +228,9 @@ sealed trait ReachabilityAnalysis {
   /** The definitions that are reachable. */
   def defns: Seq[nir.Defn]
 
+  /** TODO */
+  def foundServiceProviders: FoundServiceProviders
+
   /** `true` if the analysis was successful. */
   def isSuccessful: Boolean = this.isInstanceOf[ReachabilityAnalysis.Result]
 
@@ -239,7 +242,8 @@ object ReachabilityAnalysis {
   final class Failure(
       val defns: Seq[nir.Defn],
       val unreachable: Seq[Reach.UnreachableSymbol],
-      val unsupportedFeatures: Seq[Reach.UnsupportedFeature]
+      val unsupportedFeatures: Seq[Reach.UnsupportedFeature],
+      val foundServiceProviders: FoundServiceProviders
   ) extends ReachabilityAnalysis
 
   /** A successful reachability analysis. */
@@ -251,7 +255,8 @@ object ReachabilityAnalysis {
       val defns: Seq[nir.Defn],
       val dynsigs: Seq[nir.Sig],
       val dynimpls: Seq[nir.Global.Member],
-      val resolvedVals: mutable.Map[String, nir.Val]
+      val resolvedVals: mutable.Map[String, nir.Val],
+      val foundServiceProviders: FoundServiceProviders
   ) extends ReachabilityAnalysis {
     lazy val ObjectClass = infos(nir.Rt.Object.name).asInstanceOf[Class]
     lazy val StringClass = infos(nir.Rt.StringName).asInstanceOf[Class]

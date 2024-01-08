@@ -13,6 +13,7 @@ import java.nio.file.Paths
 import java.nio.file.SimpleFileVisitor
 import java.nio.file.attribute.BasicFileAttributes
 import java.nio.file.FileSystems
+import java.nio.file.PathMatcher
 import java.util.EnumSet
 import scala.annotation.tailrec
 import scala.collection.mutable
@@ -29,43 +30,70 @@ private[scalanative] object ResourceEmbedder {
       classpathDirectory: VirtualDirectory
   )
 
-  private final val ScalaNativeExcludePattern: String = "/scala-native/**"
-
   def apply(config: Config): Seq[nir.Defn.Var] = Scope { implicit scope =>
     val classpath = config.classPath
-    val fs = FileSystems.getDefault()
+    def toGlob(pattern: String) = s"glob:$pattern"
+
+    // Internal patterns which should be always excluded and never logged
+    val internalExclusionPatterns =
+      Seq(
+        "/scala-native/**",
+        "/LICENSE",
+        "/NOTICE",
+        "/rootdoc.txt",
+        "/META-INF/**"
+      ).map(toGlob)
+
     val includePatterns =
-      config.compilerConfig.resourceIncludePatterns.map(p =>
-        fs.getPathMatcher(s"glob:$p")
-      )
-    val excludePatterns =
-      (config.compilerConfig.resourceExcludePatterns :+ ScalaNativeExcludePattern)
-        .map(p => fs.getPathMatcher(s"glob:$p"))
+      config.compilerConfig.resourceIncludePatterns.map(toGlob)
+      // explicitly enabled pattern overwrites exclude pattern
+    val excludePatterns = {
+      (config.compilerConfig.resourceExcludePatterns).map(toGlob) ++
+        internalExclusionPatterns
+    }.diff(includePatterns)
 
     implicit val position: nir.Position = nir.Position.NoPosition
 
     val notInIncludePatterns =
-      s"Not matched by any include path ${includePatterns.mkString}"
-    type IgnoreReason = String
+      s"Not matched by any include pattern: [${includePatterns.map(pat => s"'$pat'").mkString(", ")}]"
+    case class IgnoreReason(reason: String, shouldLog: Boolean = true)
+    case class Matcher(matcher: PathMatcher, pattern: String)
 
     /** If the return value is defined, the given path should be ignored. If
      *  it's None, the path should be included.
      */
-    def shouldIgnore(path: Path): Option[IgnoreReason] =
-      includePatterns.find(_.matches(path)).fold(Option(notInIncludePatterns)) {
-        includePattern =>
-          excludePatterns
-            .find(_.matches(path))
+    def shouldIgnore(
+        includeMatchers: Seq[Matcher],
+        excludeMatchers: Seq[Matcher]
+    )(path: Path): Option[IgnoreReason] =
+      includeMatchers
+        .find(_.matcher.matches(path))
+        .map(_.pattern)
+        .fold(Option(IgnoreReason(notInIncludePatterns))) { includePattern =>
+          excludeMatchers
+            .find(_.matcher.matches(path))
+            .map(_.pattern)
             .map(excludePattern =>
-              s"Matched by '$includePattern', but excluded by '$excludePattern'"
+              IgnoreReason(
+                s"Matched by '$includePattern', but excluded by '$excludePattern'",
+                shouldLog = !internalExclusionPatterns.contains(excludePattern)
+              )
             )
-      }
+        }
 
     val foundFiles =
       if (config.compilerConfig.embedResources) {
         classpath.flatMap { classpath =>
           val virtualDir = VirtualDirectory.real(classpath)
-
+          def makeMatcher(pattern: String) =
+            Matcher(
+              matcher = virtualDir.pathMatcher(pattern),
+              pattern = pattern
+            )
+          val includeMatchers = includePatterns.map(makeMatcher)
+          val excludeMatchers = excludePatterns.map(makeMatcher)
+          val applyPathMatchers =
+            shouldIgnore(includeMatchers, excludeMatchers)(_)
           virtualDir.files
             .flatMap { path =>
               // Use the same path separator on all OSs
@@ -77,9 +105,10 @@ private[scalanative] object ResourceEmbedder {
                   (pathString, path)
                 }
 
-              shouldIgnore(path) match {
-                case Some(reason) =>
-                  config.logger.debug(s"Did not embed: $pathName - $reason")
+              applyPathMatchers(path) match {
+                case Some(IgnoreReason(reason, shouldLog)) =>
+                  if (shouldLog)
+                    config.logger.info(s"Did not embed: $pathName - $reason")
                   None
                 case None =>
                   if (isSourceFile((path))) None

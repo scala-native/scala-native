@@ -34,7 +34,7 @@ typedef struct {
             UInt24 size;
         } superblock;
     } block;
-#ifdef DEBUG_ASSERT
+#ifdef GC_ASSERTIONS
     int32_t nextBlock : BLOCK_COUNT_BITS;
     uint8_t debugFlag; // only for debugging
 #else
@@ -46,7 +46,7 @@ typedef struct {
 static_assert(sizeof_field(BlockMeta, block) == sizeof(uint32_t),
               "BlockMeta block should have size of uint32");
 
-#ifdef DEBUG_ASSERT
+#ifdef GC_ASSERTIONS
 typedef enum {
     dbg_must_sweep = 0x0,
 

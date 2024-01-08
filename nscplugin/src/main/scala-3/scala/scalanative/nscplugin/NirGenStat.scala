@@ -292,11 +292,14 @@ trait NirGenStat(using Context) {
           scoped(
             curMethodSig := sig
           ) {
-            curMethodUsesLinktimeResolvedValues = false
             val body = genMethodBody(dd, rhs, isExtern)
+            val env = curMethodEnv.get
             val methodAttrs =
-              if (curMethodUsesLinktimeResolvedValues)
-                attrs.copy(isLinktimeResolved = true)
+              if (env.isUsingLinktimeResolvedValue || env.isUsingIntrinsics)
+                attrs.copy(
+                  isLinktimeResolved = env.isUsingLinktimeResolvedValue,
+                  isUsingIntrinsics = env.isUsingIntrinsics
+                )
               else attrs
             val defn = nir.Defn.Define(
               methodAttrs,

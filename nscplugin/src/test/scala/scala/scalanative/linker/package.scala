@@ -20,8 +20,7 @@ package object linker {
         .filter(_.toString.endsWith(".nir"))
         .map(outDir.relativize(_))
         .flatMap { path =>
-          val buffer = dir.read(path)
-          nir.serialization.deserializeBinary(buffer, path.toString)
+          nir.serialization.deserializeBinary(dir, path)
         }
       fn(defns)
     }

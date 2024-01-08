@@ -22,8 +22,6 @@ private[testinterface] object SignalConfig {
    * async-signal-safe methods the way POSIX does.
    */
   private def asyncSafePrintStackTrace(sig: CInt): Unit = {
-    val errorTag = c"[\u001b[0;31merror\u001b[0;0m]"
-
     def printError(str: CString): Unit =
       if (isWindows) {
         val written = stackalloc[DWord]()
@@ -70,7 +68,6 @@ private[testinterface] object SignalConfig {
       }
 
     val stackTraceHeader: Ptr[CChar] = stackalloc[CChar](100)
-    strcat(stackTraceHeader, errorTag)
     strcat(stackTraceHeader, c" Fatal signal ")
     strcat(stackTraceHeader, signalNumberStr)
     strcat(stackTraceHeader, c" caught\n")
@@ -101,7 +98,6 @@ private[testinterface] object SignalConfig {
 
         val formattedSymbol: Ptr[CChar] = stackalloc[CChar](1100)
         formattedSymbol(0) = 0.toByte
-        strcat(formattedSymbol, errorTag)
         strcat(formattedSymbol, c"   at ")
         strcat(formattedSymbol, className)
         strcat(formattedSymbol, c".")

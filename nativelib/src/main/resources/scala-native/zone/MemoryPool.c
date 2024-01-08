@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <memory.h>
 #include "MemoryPool.h"
-#include "shared/GCScalaNative.h"
+#include "shared/ScalaNativeGC.h"
 #include "shared/MemoryMap.h"
 
 MemoryPool *MemoryPool_open() {
@@ -47,7 +47,7 @@ MemoryPage *MemoryPool_claim(MemoryPool *pool) {
     result->next = NULL;
     result->offset = 0;
     // Notify the GC that the page is in use.
-    scalanative_add_roots(result->start, result->start + result->size);
+    scalanative_GC_add_roots(result->start, result->start + result->size);
     return result;
 }
 
@@ -55,7 +55,7 @@ void MemoryPool_reclaim(MemoryPool *pool, MemoryPage *head) {
     // Notify the GC that the pages are no longer in use.
     MemoryPage *page = head, *tail = NULL;
     while (page != NULL) {
-        scalanative_remove_roots(page->start, page->start + page->size);
+        scalanative_GC_remove_roots(page->start, page->start + page->size);
         tail = page;
         page = page->next;
     }

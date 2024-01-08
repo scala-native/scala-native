@@ -13,6 +13,7 @@ jobs:
   # Build testing image that would be used to build and run against different platforms
   # Currently only Linux x64 is tested
   build-image:
+    if: "github.event_name == 'pull_request' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')"
     name: Build image
     runs-on: ubuntu-22.04
     outputs:
@@ -72,6 +73,7 @@ jobs:
   #It can be extended to test against different OS and Arch settings
   test-runtime:
     name: Test runtime
+    if: "github.event_name == 'pull_request' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')"
     runs-on: ubuntu-22.04
     needs: build-image
     env:

@@ -41,7 +41,7 @@ class MinimalRequiredSymbolsTest extends LinkerSpec {
     )(expected =
       if (isScala3) SymbolsCount(types = 1630, members = 12000)
       else if (isScala2_13) SymbolsCount(types = 1500, members = 11700)
-      else SymbolsCount(types = 1540, members = 12800)
+      else SymbolsCount(types = 1560, members = 12900)
     )
 
   @Test def multithreading(): Unit =
@@ -56,14 +56,16 @@ class MinimalRequiredSymbolsTest extends LinkerSpec {
       withMultithreading: Boolean = false,
       withTargetTriple: String = "x86_64-unknown-unknown"
   )(expected: SymbolsCount) = usingMinimalApp(
-    _.withDebugMetadata(withDebugMetadata)
+    _.withSourceLevelDebuggingConfig(conf =>
+      if (withDebugMetadata) conf.enableAll else conf.disableAll
+    )
       .withMultithreadingSupport(withMultithreading)
       .withTargetTriple(withTargetTriple)
   ) { (config: Config, result: ReachabilityAnalysis.Result) =>
     assertEquals(
       "debugMetadata",
       withDebugMetadata,
-      config.compilerConfig.debugMetadata
+      config.compilerConfig.sourceLevelDebuggingConfig.enabled
     )
     assertEquals(
       "multithreading",

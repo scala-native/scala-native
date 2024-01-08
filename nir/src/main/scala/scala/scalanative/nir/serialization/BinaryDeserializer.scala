@@ -26,10 +26,10 @@ class DeserializationException(
     )
 
 // scalafmt: { maxColumn = 120}
-final class BinaryDeserializer(buffer: ByteBuffer, fileName: String) {
+final class BinaryDeserializer(buffer: ByteBuffer, nirSource: NIRSource) {
   import buffer._
 
-  lazy val prelude = Prelude.readFrom(buffer, fileName)
+  lazy val prelude = Prelude.readFrom(buffer, nirSource.debugName)
 
   final def deserialize(): Seq[Defn] = {
     val allDefns = mutable.UnrolledBuffer.empty[Defn]
@@ -41,7 +41,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, fileName: String) {
           case NonFatal(ex) =>
             throw new DeserializationException(
               global,
-              fileName,
+              nirSource.debugName,
               compatVersion = prelude.compat,
               revision = prelude.revision,
               cause = ex
@@ -202,6 +202,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, fileName: String) {
     case T.FinalAttr    => Attr.Final
 
     case T.LinktimeResolvedAttr => Attr.LinktimeResolved
+    case T.UsesIntrinsicAttr    => Attr.UsesIntrinsic
     case T.AlignAttr            => Attr.Alignment(getLebSignedInt(), getOpt(getString()))
   }
 
@@ -354,19 +355,19 @@ final class BinaryDeserializer(buffer: ByteBuffer, fileName: String) {
 
   private def getOp(): Op = {
     (getTag(): @switch) match {
-      case T.CallOp       => Op.Call(getType().narrow[Type.Function], getVal(), getVals())
-      case T.LoadOp       => Op.Load(getType(), getVal(), None)
-      case T.LoadSyncOp   => Op.Load(getType(), getVal(), Some(getSyncAttrs()))
-      case T.StoreOp      => Op.Store(getType(), getVal(), getVal(), None)
-      case T.StoreSyncOp  => Op.Store(getType(), getVal(), getVal(), Some(getSyncAttrs()))
-      case T.ElemOp       => Op.Elem(getType(), getVal(), getVals())
-      case T.ExtractOp    => Op.Extract(getVal(), getSeq(getLebSignedInt()))
-      case T.InsertOp     => Op.Insert(getVal(), getVal(), getSeq(getLebSignedInt()))
-      case T.StackallocOp => Op.Stackalloc(getType(), getVal())
-      case T.BinOp        => Op.Bin(getBin(), getType(), getVal(), getVal())
-      case T.CompOp       => Op.Comp(getComp(), getType(), getVal(), getVal())
-      case T.ConvOp       => Op.Conv(getConv(), getType(), getVal())
-      case T.FenceOp      => Op.Fence(getSyncAttrs())
+      case T.CallOp        => Op.Call(getType().narrow[Type.Function], getVal(), getVals())
+      case T.LoadOp        => Op.Load(getType(), getVal(), None)
+      case T.LoadAtomicOp  => Op.Load(getType(), getVal(), Some(getMemoryOrder()))
+      case T.StoreOp       => Op.Store(getType(), getVal(), getVal(), None)
+      case T.StoreAtomicOp => Op.Store(getType(), getVal(), getVal(), Some(getMemoryOrder()))
+      case T.ElemOp        => Op.Elem(getType(), getVal(), getVals())
+      case T.ExtractOp     => Op.Extract(getVal(), getSeq(getLebSignedInt()))
+      case T.InsertOp      => Op.Insert(getVal(), getVal(), getSeq(getLebSignedInt()))
+      case T.StackallocOp  => Op.Stackalloc(getType(), getVal())
+      case T.BinOp         => Op.Bin(getBin(), getType(), getVal(), getVal())
+      case T.CompOp        => Op.Comp(getComp(), getType(), getVal(), getVal())
+      case T.ConvOp        => Op.Conv(getConv(), getType(), getVal())
+      case T.FenceOp       => Op.Fence(getMemoryOrder())
 
       case T.ClassallocOp     => Op.Classalloc(getGlobal().narrow[nir.Global.Top], None)
       case T.ClassallocZoneOp => Op.Classalloc(getGlobal().narrow[nir.Global.Top], Some(getVal()))
@@ -449,16 +450,10 @@ final class BinaryDeserializer(buffer: ByteBuffer, fileName: String) {
       case T.ConstVal   => Val.Const(getVal())
       case T.StringVal  => Val.String(getString())
       case T.VirtualVal => Val.Virtual(getLebUnsignedLong())
-      case T.ClassOfVal => Val.ClassOf(getGlobal())
+      case T.ClassOfVal => Val.ClassOf(getGlobal().narrow[Global.Top])
       case T.SizeVal    => Val.Size(getLebUnsignedLong())
     }
   }
-
-  private def getSyncAttrs(): SyncAttrs =
-    SyncAttrs(
-      memoryOrder = getMemoryOrder(),
-      isVolatile = getBool()
-    )
 
   private def getMemoryOrder(): MemoryOrder = (getTag(): @switch) match {
     case T.Unordered      => MemoryOrder.Unordered
@@ -488,11 +483,14 @@ final class BinaryDeserializer(buffer: ByteBuffer, fileName: String) {
       case n => util.unsupported(s"Unknown linktime condition tag: ${n}")
     }
 
-  def getPosition(): Position = in(prelude.sections.positions) {
-    val file = new URI(getString())
+  def getPosition(): nir.Position = in(prelude.sections.positions) {
+    val file = getString() match {
+      case ""   => nir.SourceFile.Virtual
+      case path => nir.SourceFile.SourceRootRelative(path)
+    }
     val line = getLebUnsignedInt()
     val column = getLebUnsignedInt()
-    Position(file, line, column)
+    nir.Position(source = file, line = line, column = column, nirSource = nirSource)
   }
 
   def getLocalNames(): LocalNames = {

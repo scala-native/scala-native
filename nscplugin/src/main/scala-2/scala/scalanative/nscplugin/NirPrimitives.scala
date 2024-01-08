@@ -76,6 +76,9 @@ object NirPrimitives {
   final val CLASS_FIELD_RAWPTR = 1 + CFUNCPTR_APPLY
   final val SIZE_OF = 1 + CLASS_FIELD_RAWPTR
   final val ALIGNMENT_OF = 1 + SIZE_OF
+  final val USES_LINKTIME_INTRINSIC = 1 + ALIGNMENT_OF
+
+  final val LastNirPrimitiveCode = USES_LINKTIME_INTRINSIC
 }
 
 abstract class NirPrimitives {
@@ -197,5 +200,6 @@ abstract class NirPrimitives {
     addPrimitive(ClassFieldRawPtrMethod, CLASS_FIELD_RAWPTR)
     addPrimitive(SizeOfInternalMethod, SIZE_OF)
     addPrimitive(AlignmentOfInternalMethod, ALIGNMENT_OF)
+    addPrimitives(LinktimeIntrinsics, USES_LINKTIME_INTRINSIC)
   }
 }

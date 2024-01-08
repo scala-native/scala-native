@@ -204,7 +204,7 @@ object Lower {
               buf.fence(nir.MemoryOrder.Release)
             case _ => ()
           }
-          genGCSafepoint(buf)
+          genGCYieldpoint(buf)
           val retVal =
             if (v.ty == nir.Type.Unit) optionallyBoxedUnit(v)
             else genVal(buf, v)
@@ -212,11 +212,11 @@ object Lower {
 
         case inst @ nir.Inst.Jump(next) =>
           implicit val pos: nir.Position = inst.pos
-          // Generate safepoint before backward jumps, eg. in loops
+          // Generate GC yield points before backward jumps, eg. in loops
           next match {
             case nir.Next.Label(target, _)
                 if labelPositions(target) < currentBlockPosition =>
-              genGCSafepoint(buf)
+              genGCYieldpoint(buf)
             case _ => ()
           }
           buf += nir.Inst.Jump(genNext(buf, next))
@@ -229,13 +229,15 @@ object Lower {
           buf += inst
       }
 
-      implicit val pos: nir.Position = nir.Position.NoPosition
-      genNullPointerSlowPath(buf)
-      genDivisionByZeroSlowPath(buf)
-      genClassCastSlowPath(buf)
-      genUnreachableSlowPath(buf)
-      genOutOfBoundsSlowPath(buf)
-      genNoSuchMethodSlowPath(buf)
+      locally {
+        implicit val pos: nir.Position = nir.Position.NoPosition
+        genNullPointerSlowPath(buf)
+        genDivisionByZeroSlowPath(buf)
+        genClassCastSlowPath(buf)
+        genUnreachableSlowPath(buf)
+        genOutOfBoundsSlowPath(buf)
+        genNoSuchMethodSlowPath(buf)
+      }
 
       nullPointerSlowPath.clear()
       divisionByZeroSlowPath.clear()
@@ -380,12 +382,13 @@ object Lower {
             unwindHandler := slowPathUnwindHandler
           ) {
             val idx = nir.Val.Local(fresh(), nir.Type.Int)
+            val len = nir.Val.Local(fresh(), nir.Type.Int)
 
-            buf.label(slowPath, Seq(idx))
+            buf.label(slowPath, Seq(idx, len))
             buf.call(
               throwOutOfBoundsTy,
               throwOutOfBoundsVal,
-              Seq(nir.Val.Null, idx),
+              Seq(nir.Val.Null, idx, len),
               unwind
             )
             buf.unreachable(nir.Next.None)
@@ -557,7 +560,7 @@ object Lower {
       branch(
         inBounds,
         nir.Next(inBoundsL),
-        nir.Next.Label(outOfBoundsL, Seq(idx))
+        nir.Next.Label(outOfBoundsL, Seq(idx, len))
       )
       label(inBoundsL)
     }
@@ -591,17 +594,12 @@ object Lower {
           throw new LinkingException(s"Metadata for field '$name' not found")
       }
 
-      val isVolatile = field.attrs.isVolatile
-      val syncAttrs = nir.SyncAttrs(
-        memoryOrder =
-          if (isVolatile) nir.MemoryOrder.SeqCst
-          else if (field.attrs.isFinal) nir.MemoryOrder.Monotonic
-          else nir.MemoryOrder.Unordered,
-        isVolatile = isVolatile
-      )
-
+      val memoryOrder =
+        if (field.attrs.isVolatile) nir.MemoryOrder.SeqCst
+        else if (field.attrs.isFinal) nir.MemoryOrder.Acquire
+        else nir.MemoryOrder.Unordered
       val elem = genFieldElemOp(buf, genVal(buf, obj), name)
-      genLoadOp(buf, n, nir.Op.Load(ty, elem, Some(syncAttrs)))
+      genLoadOp(buf, n, nir.Op.Load(ty, elem, Some(memoryOrder)))
     }
 
     def genFieldstoreOp(buf: nir.Buffer, n: nir.Local, op: nir.Op.Fieldstore)(
@@ -616,16 +614,13 @@ object Lower {
           throw new LinkingException(s"Metadata for field '$name' not found")
       }
 
-      val isVolatile = field.attrs.isVolatile
-      val syncAttrs = nir.SyncAttrs(
-        memoryOrder =
-          if (isVolatile) nir.MemoryOrder.SeqCst
-          else if (field.attrs.isFinal) nir.MemoryOrder.Monotonic
-          else nir.MemoryOrder.Unordered,
-        isVolatile = isVolatile
-      )
+      // No explicit memory order for store of final field,
+      // all final fields are published with release fence when existing the constructor
+      val memoryOrder =
+        if (field.attrs.isVolatile) nir.MemoryOrder.SeqCst
+        else nir.MemoryOrder.Unordered
       val elem = genFieldElemOp(buf, genVal(buf, obj), name)
-      genStoreOp(buf, n, nir.Op.Store(ty, elem, value, Some(syncAttrs)))
+      genStoreOp(buf, n, nir.Op.Store(ty, elem, value, Some(memoryOrder)))
     }
 
     def genFieldOp(buf: nir.Buffer, n: nir.Local, op: nir.Op)(implicit
@@ -644,7 +639,7 @@ object Lower {
       op match {
         // Convert synchronized load(bool) into load(byte)
         // LLVM is not providing synchronization on booleans
-        case nir.Op.Load(nir.Type.Bool, ptr, syncAttrs @ Some(_)) =>
+        case nir.Op.Load(nir.Type.Bool, ptr, memoryOrder @ Some(_)) =>
           val valueAsByte = fresh()
           val asPtr =
             if (platform.useOpaquePointers) ptr
@@ -660,7 +655,7 @@ object Lower {
           genLoadOp(
             buf,
             valueAsByte,
-            nir.Op.Load(nir.Type.Byte, asPtr, syncAttrs)
+            nir.Op.Load(nir.Type.Byte, asPtr, memoryOrder)
           )
           genConvOp(
             buf,
@@ -672,10 +667,10 @@ object Lower {
             )
           )
 
-        case nir.Op.Load(ty, ptr, syncAttrs) =>
+        case nir.Op.Load(ty, ptr, memoryOrder) =>
           buf.let(
             n,
-            nir.Op.Load(ty, genVal(buf, ptr), syncAttrs),
+            nir.Op.Load(ty, genVal(buf, ptr), memoryOrder),
             unwind
           )
       }
@@ -688,7 +683,7 @@ object Lower {
       op match {
         // Convert synchronized store(bool) into store(byte)
         // LLVM is not providing synchronization on booleans
-        case nir.Op.Store(nir.Type.Bool, ptr, value, syncAttrs @ Some(_)) =>
+        case nir.Op.Store(nir.Type.Bool, ptr, value, memoryOrder @ Some(_)) =>
           val valueAsByte = fresh()
           val asPtr =
             if (platform.useOpaquePointers) ptr
@@ -713,14 +708,14 @@ object Lower {
               nir.Type.Byte,
               asPtr,
               nir.Val.Local(valueAsByte, nir.Type.Byte),
-              syncAttrs
+              memoryOrder
             )
           )
 
-        case nir.Op.Store(ty, ptr, value, syncAttrs) =>
+        case nir.Op.Store(ty, ptr, value, memoryOrder) =>
           buf.let(
             n,
-            nir.Op.Store(ty, genVal(buf, ptr), genVal(buf, value), syncAttrs),
+            nir.Op.Store(ty, genVal(buf, ptr), genVal(buf, value), memoryOrder),
             unwind
           )
       }
@@ -737,20 +732,20 @@ object Lower {
     }
 
     // Cached function
-    private object shouldGenerateSafepoints {
+    private object shouldGenerateGCYieldPoints {
       import scalanative.build.GC._
       private var lastDefn: nir.Defn.Define = _
       private var lastResult: Boolean = false
 
       private val supportedGC = meta.config.gc match {
-        case Immix => true
-        case _     => false
+        case Immix | Commix => true
+        case _              => false
       }
       private val multithreadingEnabled = meta.platform.isMultithreadingEnabled
-      private val usesSafepoints = multithreadingEnabled && supportedGC
+      private val usesGCYieldPoints = multithreadingEnabled && supportedGC
 
       def apply(defn: nir.Defn.Define): Boolean = {
-        if (!usesSafepoints) false
+        if (!usesGCYieldPoints) false
         else if (defn eq lastDefn) lastResult
         else {
           lastDefn = defn
@@ -765,22 +760,17 @@ object Lower {
         }
       }
     }
-    private def genGCSafepoint(buf: nir.Buffer, genUnwind: Boolean = true)(
+    private def genGCYieldpoint(buf: nir.Buffer, genUnwind: Boolean = true)(
         implicit
         srcPosition: nir.Position,
         scopeId: nir.ScopeId
     ): Unit = {
-      if (shouldGenerateSafepoints(currentDefn.get)) {
+      if (shouldGenerateGCYieldPoints(currentDefn.get)) {
         val handler = {
           if (genUnwind && unwindHandler.isInitialized) unwind
           else nir.Next.None
         }
-        val syncAttrs = nir.SyncAttrs(
-          memoryOrder = nir.MemoryOrder.Unordered,
-          isVolatile = true
-        )
-        val safepointAddr = buf.load(nir.Type.Ptr, GCSafepoint, handler)
-        buf.load(nir.Type.Ptr, safepointAddr, handler, Some(syncAttrs))
+        buf.call(GCYieldSig, GCYield, Nil, handler)
       }
     }
 
@@ -819,7 +809,7 @@ object Lower {
         case nir.Val.Global(global, _) if shouldSwitchThreadState(global) =>
           switchThreadState(managed = false)
           genCall()
-          genGCSafepoint(buf, genUnwind = false)
+          genGCYieldpoint(buf, genUnwind = false)
           switchThreadState(managed = true)
 
         case _ => genCall()
@@ -1181,7 +1171,7 @@ object Lower {
           buf.let(
             n,
             nir.Op.Call(
-              allocSig,
+              allocSig(cls.ty),
               allocMethod,
               Seq(rtti(cls).const, nir.Val.Size(size.toInt))
             ),
@@ -1536,7 +1526,23 @@ object Lower {
           val func = arraySnapshot.getOrElse(ty, arraySnapshot(nir.Rt.Object))
           val module = genModuleOp(buf, fresh(), nir.Op.Module(func.owner))
           val len = nir.Val.Int(arrval.values.length)
-          val init = nir.Val.Const(arrval)
+          val init =
+            if (arrval.values.exists(!_.isCanonical)) {
+              // At least one of init values in non canonical (e.g. Val.Local), create a copy on stack
+              val alloc = buf.stackalloc(arrval.ty, one, unwind)
+              arrval.values.zipWithIndex.foreach {
+                case (value, idx) =>
+                  val innerPtr =
+                    buf.elem(
+                      arrval.ty,
+                      alloc,
+                      Seq(zero, nir.Val.Int(idx)),
+                      unwind
+                    )
+                  buf.store(arrval.elemty, innerPtr, genVal(buf, value), unwind)
+              }
+              alloc
+            } else nir.Val.Const(arrval)
           buf.let(
             n,
             nir.Op.Call(
@@ -1765,13 +1771,15 @@ object Lower {
 
   val LARGE_OBJECT_MIN_SIZE = 8192
 
-  val allocSig =
+  val allocSig: nir.Type.Function =
     nir.Type.Function(Seq(nir.Type.Ptr, nir.Type.Size), nir.Type.Ptr)
+  def allocSig(clsType: nir.Type.RefKind): nir.Type.Function =
+    allocSig.copy(ret = clsType)
 
-  val allocSmallName = extern("scalanative_alloc_small")
+  val allocSmallName = extern("scalanative_GC_alloc_small")
   val alloc = nir.Val.Global(allocSmallName, allocSig)
 
-  val largeAllocName = extern("scalanative_alloc_large")
+  val largeAllocName = extern("scalanative_GC_alloc_large")
   val largeAlloc = nir.Val.Global(largeAllocName, allocSig)
 
   val SafeZone =
@@ -1995,11 +2003,17 @@ object Lower {
     nir.Val.Global(throwUndefined, nir.Type.Ptr)
 
   val throwOutOfBoundsTy =
-    nir.Type.Function(Seq(nir.Type.Ptr, nir.Type.Int), nir.Type.Nothing)
+    nir.Type.Function(
+      Seq(nir.Type.Ptr, nir.Type.Int, nir.Type.Int),
+      nir.Type.Nothing
+    )
   val throwOutOfBounds =
     nir.Global.Member(
       nir.Rt.Runtime.name,
-      nir.Sig.Method("throwOutOfBounds", Seq(nir.Type.Int, nir.Type.Nothing))
+      nir.Sig.Method(
+        "throwOutOfBounds",
+        Seq(nir.Type.Int, nir.Type.Int, nir.Type.Nothing)
+      )
     )
   val throwOutOfBoundsVal =
     nir.Val.Global(throwOutOfBounds, nir.Type.Ptr)
@@ -2015,13 +2029,15 @@ object Lower {
     nir.Val.Global(throwNoSuchMethod, nir.Type.Ptr)
 
   val GC = nir.Global.Top("scala.scalanative.runtime.GC$")
-  val GCSafepointName = GC.member(nir.Sig.Extern("scalanative_gc_safepoint"))
-  val GCSafepoint = nir.Val.Global(GCSafepointName, nir.Type.Ptr)
+  val GCYieldName =
+    GC.member(nir.Sig.Extern("scalanative_GC_yield"))
+  val GCYieldSig = nir.Type.Function(Nil, nir.Type.Unit)
+  val GCYield = nir.Val.Global(GCYieldName, nir.Type.Ptr)
 
   val GCSetMutatorThreadStateSig =
     nir.Type.Function(Seq(nir.Type.Int), nir.Type.Unit)
   val GCSetMutatorThreadState = nir.Val.Global(
-    GC.member(nir.Sig.Extern("scalanative_gc_set_mutator_thread_state")),
+    GC.member(nir.Sig.Extern("scalanative_GC_set_mutator_thread_state")),
     nir.Type.Ptr
   )
 
@@ -2084,7 +2100,7 @@ object Lower {
     buf += RuntimeNull.name
     buf += RuntimeNothing.name
     if (platform.isMultithreadingEnabled) {
-      buf += GCSafepoint.name
+      buf += GCYield.name
       buf += GCSetMutatorThreadState.name
     }
     buf.toSeq

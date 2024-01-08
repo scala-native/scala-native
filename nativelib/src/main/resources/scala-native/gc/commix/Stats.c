@@ -73,7 +73,7 @@ void Stats_OnExit(Stats *stats) {
 }
 #endif // ENABLE_GC_STATS
 
-#ifdef ENABLE_GC_STATS_SYNC
+#ifdef GC_ENABLE_STATS_SYNC
 void Stats_PhaseStarted(Stats *stats) {
     if (stats != NULL) {
         stats->packet_waiting_start_ns = 0;
@@ -97,6 +97,6 @@ void Stats_NoNotEmptyPacket(Stats *stats, uint64_t start_ns, uint64_t end_ns) {
         stats->packet_waiting_end_ns = end_ns;
     }
 }
-#endif // ENABLE_GC_STATS_SYNC
+#endif // GC_ENABLE_STATS_SYNC
 
 #endif

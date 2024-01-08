@@ -272,7 +272,7 @@ void Heap_Collect(Heap *heap, Stack *stack) {
         return;
 #else
     MutatorThread_switchState(currentMutatorThread,
-                              MutatorThreadState_Unmanaged);
+                              GC_MutatorThreadState_Unmanaged);
 #endif
     uint64_t start_ns, nullify_start_ns, sweep_start_ns, end_ns;
     Stats *stats = heap->stats;
@@ -299,14 +299,12 @@ void Heap_Collect(Heap *heap, Stack *stack) {
     }
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
     Synchronizer_release();
+    GCThread_WeakThreadsHandler_Resume(weakRefsHandlerThread);
 #else
-    MutatorThread_switchState(currentMutatorThread, MutatorThreadState_Managed);
+    MutatorThread_switchState(currentMutatorThread,
+                              GC_MutatorThreadState_Managed);
+    WeakRefStack_CallHandlers();
 #endif
-    // Skip calling WeakRef handlers on thread which is being initialized
-    // If the current block is set to null it means it failed to allocate
-    // memory for allocator and forced GC
-    if (currentMutatorThread->allocator.block)
-        WeakRefStack_CallHandlers();
 #ifdef DEBUG_PRINT
     printf("End collect\n");
     fflush(stdout);
@@ -347,23 +345,33 @@ void Heap_Recycle(Heap *heap) {
     word_t *currentBlockStart = heap->heapStart;
     LineMeta *lineMetas = (LineMeta *)heap->lineMetaStart;
     word_t *end = heap->blockMetaEnd;
+
+#ifdef SCALANATIVE_MULTITHREADING_ENABLED
     MutatorThreads threadsCursor = mutatorThreads;
+    // NextMutatorThread is always going to be assigned with it's first
+    // expression
+#define NextMutatorThread()                                                    \
+    threadsCursor->value;                                                      \
+    threadsCursor = threadsCursor->next;                                       \
+    if (threadsCursor == NULL) {                                               \
+        threadsCursor = mutatorThreads;                                        \
+    }
+#else
+    MutatorThread *mainThread = currentMutatorThread;
+#define NextMutatorThread() mainThread
+#endif
+
     while ((word_t *)current < end) {
         int size = 1;
-        MutatorThread *recycleBlocksTo = threadsCursor->value;
-#ifdef SCALANATIVE_MULTITHREADING_ENABLED
-        threadsCursor = threadsCursor->next;
-        if (threadsCursor == NULL) {
-            threadsCursor = mutatorThreads;
-        }
-#endif
 
         assert(!BlockMeta_IsSuperblockMiddle(current));
         if (BlockMeta_IsSimpleBlock(current)) {
+            MutatorThread *recycleBlocksTo = NextMutatorThread();
             Block_Recycle(&recycleBlocksTo->allocator, current,
                           currentBlockStart, lineMetas);
         } else if (BlockMeta_IsSuperblockStart(current)) {
             size = BlockMeta_SuperblockSize(current);
+            MutatorThread *recycleBlocksTo = NextMutatorThread();
             LargeAllocator_Sweep(&recycleBlocksTo->largeAllocator, current,
                                  currentBlockStart);
         } else {

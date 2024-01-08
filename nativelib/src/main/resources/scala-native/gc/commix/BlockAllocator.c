@@ -3,8 +3,19 @@
 #include "BlockAllocator.h"
 #include "immix_commix/Log.h"
 #include "immix_commix/utils/MathUtils.h"
-#include <stdio.h>
 #include "Heap.h"
+#include "shared/ThreadUtil.h"
+#include <stdio.h>
+#include <stdatomic.h>
+
+INLINE void BlockAllocator_Acquire(BlockAllocator *blockAllocator) {
+    mutex_lock(&blockAllocator->allocationLock);
+    atomic_thread_fence(memory_order_acquire);
+}
+INLINE void BlockAllocator_Release(BlockAllocator *blockAllocator) {
+    atomic_thread_fence(memory_order_release);
+    mutex_unlock(&blockAllocator->allocationLock);
+}
 
 void BlockAllocator_splitAndAdd(BlockAllocator *blockAllocator,
                                 BlockMeta *superblock, uint32_t count);
@@ -32,7 +43,9 @@ void BlockAllocator_Init(BlockAllocator *blockAllocator, word_t *blockMetaStart,
 
     blockAllocator->concurrent = false;
 
-#ifdef DEBUG_ASSERT
+    mutex_init(&blockAllocator->allocationLock);
+
+#ifdef GC_ASSERTIONS
     BlockMeta *limit = sCursor + blockCount;
     for (BlockMeta *current = sCursor; current < limit; current++) {
         current->debugFlag = dbg_free_in_collection;
@@ -97,7 +110,7 @@ BlockAllocator_getFreeBlockSlow(BlockAllocator *blockAllocator) {
         blockAllocator->smallestSuperblock.limit = superblock + size;
         assert(BlockMeta_IsFree(superblock));
         assert(superblock->debugFlag == dbg_free_in_collection);
-#ifdef DEBUG_ASSERT
+#ifdef GC_ASSERTIONS
         superblock->debugFlag = dbg_in_use;
 #endif
         BlockMeta_SetFlag(superblock, block_simple);
@@ -127,7 +140,7 @@ BlockAllocator_getFreeBlockSlow(BlockAllocator *blockAllocator) {
         if (block != NULL) {
             assert(BlockMeta_IsFree(block));
             assert(block->debugFlag == dbg_free_in_collection);
-#ifdef DEBUG_ASSERT
+#ifdef GC_ASSERTIONS
             block->debugFlag = dbg_in_use;
 #endif
             BlockMeta_SetFlag(block, block_simple);
@@ -137,18 +150,24 @@ BlockAllocator_getFreeBlockSlow(BlockAllocator *blockAllocator) {
 }
 
 INLINE BlockMeta *BlockAllocator_GetFreeBlock(BlockAllocator *blockAllocator) {
+    BlockMeta *block;
+    BlockAllocator_Acquire(blockAllocator);
     if (blockAllocator->smallestSuperblock.cursor >=
         blockAllocator->smallestSuperblock.limit) {
-        return BlockAllocator_getFreeBlockSlow(blockAllocator);
+        block = BlockAllocator_getFreeBlockSlow(blockAllocator);
+        BlockAllocator_Release(blockAllocator);
+        return block;
     }
-    BlockMeta *block = blockAllocator->smallestSuperblock.cursor;
+    block = blockAllocator->smallestSuperblock.cursor;
     assert(BlockMeta_IsFree(block));
     assert(block->debugFlag == dbg_free_in_collection);
-#ifdef DEBUG_ASSERT
+#ifdef GC_ASSERTIONS
     block->debugFlag = dbg_in_use;
 #endif
     BlockMeta_SetFlag(block, block_simple);
     blockAllocator->smallestSuperblock.cursor++;
+
+    BlockAllocator_Release(blockAllocator);
 
 // not decrementing freeBlockCount, because it is only used after sweep
 #ifdef DEBUG_PRINT
@@ -161,6 +180,7 @@ INLINE BlockMeta *BlockAllocator_GetFreeBlock(BlockAllocator *blockAllocator) {
 
 BlockMeta *BlockAllocator_GetFreeSuperblock(BlockAllocator *blockAllocator,
                                             uint32_t size) {
+    BlockAllocator_Acquire(blockAllocator);
     BlockMeta *superblock;
     BlockMeta *sCursor = blockAllocator->smallestSuperblock.cursor;
     BlockMeta *sLimit = blockAllocator->smallestSuperblock.limit;
@@ -198,6 +218,7 @@ BlockMeta *BlockAllocator_GetFreeSuperblock(BlockAllocator *blockAllocator,
         }
 
         if (superblock == NULL) {
+            BlockAllocator_Release(blockAllocator);
             return NULL;
         }
     }
@@ -206,7 +227,7 @@ BlockMeta *BlockAllocator_GetFreeSuperblock(BlockAllocator *blockAllocator,
 
     assert(BlockMeta_IsFree(superblock));
     assert(superblock->debugFlag == dbg_free_in_collection);
-#ifdef DEBUG_ASSERT
+#ifdef GC_ASSERTIONS
     superblock->debugFlag = dbg_in_use;
 #endif
     BlockMeta_SetFlagAndSuperblockSize(superblock, block_superblock_start,
@@ -215,11 +236,12 @@ BlockMeta *BlockAllocator_GetFreeSuperblock(BlockAllocator *blockAllocator,
     for (BlockMeta *current = superblock + 1; current < limit; current++) {
         assert(BlockMeta_IsFree(current));
         assert(current->debugFlag == dbg_free_in_collection);
-#ifdef DEBUG_ASSERT
+#ifdef GC_ASSERTIONS
         current->debugFlag = dbg_in_use;
 #endif
         BlockMeta_SetFlag(current, block_superblock_tail);
     }
+    BlockAllocator_Release(blockAllocator);
 // not decrementing freeBlockCount, because it is only used after sweep
 #ifdef DEBUG_PRINT
     printf("BlockAllocator_GetFreeSuperblock(%" PRIu32 ") = %p %" PRIu32 "\n",
@@ -289,7 +311,7 @@ void BlockAllocator_AddFreeSuperblockLocal(BlockAllocator *blockAllocator,
         // check for double sweeping
         assert(current->debugFlag == dbg_free);
         BlockMeta_Clear(current);
-#ifdef DEBUG_ASSERT
+#ifdef GC_ASSERTIONS
         current->debugFlag = dbg_free_in_collection;
 #endif
     }
@@ -315,7 +337,7 @@ void BlockAllocator_AddFreeSuperblock(BlockAllocator *blockAllocator,
         // check for double sweeping
         assert(current->debugFlag == dbg_free);
         BlockMeta_Clear(current);
-#ifdef DEBUG_ASSERT
+#ifdef GC_ASSERTIONS
         current->debugFlag = dbg_free_in_collection;
 #endif
     }
@@ -341,7 +363,7 @@ void BlockAllocator_AddFreeBlocks(BlockAllocator *blockAllocator,
         assert(current->debugFlag == dbg_free);
         assert(!BlockMeta_IsSuperblockStartMe(current));
         BlockMeta_Clear(current);
-#ifdef DEBUG_ASSERT
+#ifdef GC_ASSERTIONS
         current->debugFlag = dbg_free_in_collection;
 #endif
     }
@@ -379,6 +401,7 @@ void BlockAllocator_Clear(BlockAllocator *blockAllocator) {
 }
 
 void BlockAllocator_ReserveBlocks(BlockAllocator *blockAllocator) {
+    BlockAllocator_Acquire(blockAllocator);
     int index = MathUtils_Log2Ceil((size_t)SWEEP_RESERVE_BLOCKS);
     assert(blockAllocator->concurrent);
     BlockMeta *superblock =
@@ -402,7 +425,7 @@ void BlockAllocator_ReserveBlocks(BlockAllocator *blockAllocator) {
         }
     }
 
-#ifdef DEBUG_ASSERT
+#ifdef GC_ASSERTIONS
     BlockMeta *limit = superblock + SWEEP_RESERVE_BLOCKS;
     for (BlockMeta *current = superblock; current < limit; current++) {
         assert(BlockMeta_IsFree(current));
@@ -415,14 +438,17 @@ void BlockAllocator_ReserveBlocks(BlockAllocator *blockAllocator) {
     } else {
         blockAllocator->reservedSuperblock = (word_t)NULL;
     }
+    BlockAllocator_Release(blockAllocator);
 }
 
 void BlockAllocator_UseReserve(BlockAllocator *blockAllocator) {
+    BlockAllocator_Acquire(blockAllocator);
     BlockMeta *reserved = (BlockMeta *)blockAllocator->reservedSuperblock;
     if (reserved != NULL) {
         BlockAllocator_splitAndAdd(blockAllocator, reserved,
                                    SWEEP_RESERVE_BLOCKS);
     }
+    BlockAllocator_Release(blockAllocator);
 }
 
 #endif

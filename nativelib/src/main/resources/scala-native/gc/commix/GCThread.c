@@ -64,7 +64,7 @@ static inline void GCThread_sweep(GCThread *thread, Heap *heap, Stats *stats) {
     Stats_RecordTime(stats, start_ns);
 
     while (heap->sweep.cursor < heap->sweep.limit) {
-        Sweeper_Sweep(heap, stats, &thread->sweep.cursorDone, SWEEP_BATCH_SIZE);
+        Sweeper_Sweep(stats, &thread->sweep.cursorDone, SWEEP_BATCH_SIZE, NULL);
     }
     thread->sweep.cursorDone = heap->sweep.limit;
 
@@ -78,7 +78,7 @@ static inline void GCThread_sweepMaster(GCThread *thread, Heap *heap,
     Stats_RecordTime(stats, start_ns);
 
     while (heap->sweep.cursor < heap->sweep.limit) {
-        Sweeper_Sweep(heap, stats, &thread->sweep.cursorDone, SWEEP_BATCH_SIZE);
+        Sweeper_Sweep(stats, &thread->sweep.cursorDone, SWEEP_BATCH_SIZE, NULL);
         Sweeper_LazyCoalesce(heap, stats);
     }
     thread->sweep.cursorDone = heap->sweep.limit;
@@ -248,6 +248,83 @@ void GCThread_ScaleMarkerThreads(Heap *heap, uint32_t remainingFullPackets) {
         if (toSpawn > 0) {
             GCThread_WakeWorkers(heap, toSpawn);
         }
+    }
+}
+
+static void
+GCThread_WeakThreadsHandler_init(struct GCWeakRefsHandlerThread *self) {
+    MutatorThread_init((word_t **)&self);
+    MutatorThread_switchState(currentMutatorThread,
+                              GC_MutatorThreadState_Unmanaged);
+#ifdef _WIN32
+    self->resumeEvent = CreateEvent(NULL, true, false, NULL);
+    if (self->resumeEvent == NULL) {
+        fprintf(stderr,
+                "Failed to setup GC weak refs threads event: errno=%lu\n",
+                GetLastError());
+        exit(1);
+    }
+#else
+    if (pthread_mutex_init(&self->resumeEvent.lock, NULL) != 0 ||
+        pthread_cond_init(&self->resumeEvent.cond, NULL) != 0) {
+        perror("Failed to setup GC weak refs thread");
+        exit(1);
+    }
+#endif
+}
+
+// ----------------
+// Weak Refs handler
+// -----------------
+static void *GCThread_WeakThreadsHandlerLoop(void *arg) {
+    struct GCWeakRefsHandlerThread *self =
+        (struct GCWeakRefsHandlerThread *)arg;
+    GCThread_WeakThreadsHandler_init(self);
+    // main loop
+    while (true) {
+        // Wait for dispatch
+#ifdef _WIN32
+        while (!atomic_load(&self->isActive)) {
+            WaitForSingleObject(self->resumeEvent, INFINITE);
+            ResetEvent(self->resumeEvent);
+        }
+#else
+        pthread_mutex_lock(&self->resumeEvent.lock);
+        while (!atomic_load(&self->isActive)) {
+            pthread_cond_wait(&self->resumeEvent.cond, &self->resumeEvent.lock);
+        }
+        pthread_mutex_unlock(&self->resumeEvent.lock);
+#endif
+        MutatorThread_switchState(currentMutatorThread,
+                                  GC_MutatorThreadState_Managed);
+        WeakRefGreyList_CallHandlers();
+        MutatorThread_switchState(currentMutatorThread,
+                                  GC_MutatorThreadState_Unmanaged);
+        atomic_store(&self->isActive, false);
+    }
+    free(self);
+}
+
+struct GCWeakRefsHandlerThread *GCThread_WeakThreadsHandler_Start() {
+    struct GCWeakRefsHandlerThread *thread =
+        (struct GCWeakRefsHandlerThread *)malloc(
+            sizeof(struct GCWeakRefsHandlerThread));
+    thread_create(&thread->handle, GCThread_WeakThreadsHandlerLoop,
+                  (void *)thread);
+    return thread;
+}
+
+void GCThread_WeakThreadsHandler_Resume(
+    struct GCWeakRefsHandlerThread *thread) {
+    bool expected = false;
+    if (atomic_compare_exchange_weak(&thread->isActive, &expected, true)) {
+#ifdef _WIN32
+        SetEvent(thread->resumeEvent);
+#else
+        pthread_mutex_lock(&thread->resumeEvent.lock);
+        pthread_cond_signal(&thread->resumeEvent.cond);
+        pthread_mutex_unlock(&thread->resumeEvent.lock);
+#endif
     }
 }
 

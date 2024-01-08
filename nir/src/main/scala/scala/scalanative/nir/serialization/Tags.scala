@@ -27,7 +27,8 @@ object Tags {
   final val VolatileAttr = 1 + AbstractAttr
   final val FinalAttr = 1 + VolatileAttr
   final val LinktimeResolvedAttr = 1 + FinalAttr
-  final val AlignAttr = 1 + LinktimeResolvedAttr
+  final val UsesIntrinsicAttr = 1 + LinktimeResolvedAttr
+  final val AlignAttr = 1 + UsesIntrinsicAttr
   final val DefineAttr = 1 + AlignAttr
 
   // Binary ops
@@ -128,10 +129,10 @@ object Tags {
   // Ops
   final val CallOp = 1
   final val LoadOp = 1 + CallOp
-  final val LoadSyncOp = 1 + LoadOp
-  final val StoreOp = 1 + LoadSyncOp
-  final val StoreSyncOp = 1 + StoreOp
-  final val ElemOp = 1 + StoreSyncOp
+  final val LoadAtomicOp = 1 + LoadOp
+  final val StoreOp = 1 + LoadAtomicOp
+  final val StoreAtomicOp = 1 + StoreOp
+  final val ElemOp = 1 + StoreAtomicOp
   final val ExtractOp = 1 + ElemOp
   final val InsertOp = 1 + ExtractOp
   final val StackallocOp = 1 + InsertOp

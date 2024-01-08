@@ -9,8 +9,9 @@ import scala.collection.mutable
 class Reach(
     protected val config: build.Config,
     entries: Seq[nir.Global],
-    loader: ClassLoader
-) extends LinktimeValueResolver {
+    protected val loader: ClassLoader
+) extends LinktimeValueResolver
+    with LinktimeIntrinsicCallsResolver {
   import Reach._
 
   val loaded =
@@ -82,13 +83,15 @@ class Reach(
         defns = defns.toSeq,
         dynsigs = dynsigs.toSeq,
         dynimpls = dynimpls.toSeq,
-        resolvedVals = resolvedNirValues
+        resolvedVals = resolvedNirValues,
+        foundServiceProviders = foundServiceProviders
       )
     else
       new ReachabilityAnalysis.Failure(
         defns = defns.toSeq,
         unreachable = unreachable.values.toSeq,
-        unsupportedFeatures = unsupported.values.toSeq
+        unsupportedFeatures = unsupported.values.toSeq,
+        foundServiceProviders = foundServiceProviders
       )
   }
 
@@ -122,7 +125,7 @@ class Reach(
   def lookup(global: nir.Global): Option[nir.Defn] =
     lookup(global, ignoreIfUnavailable = false)
 
-  private def lookup(
+  protected def lookup(
       global: nir.Global,
       ignoreIfUnavailable: Boolean
   ): Option[nir.Defn] = {
@@ -196,19 +199,14 @@ class Reach(
       if (defn.attrs.isStub && !config.linkStubs) {
         reachUnavailable(name)
       } else {
-        val maybeFixedDefn = defn match {
-          case defn: nir.Defn.Define =>
-            resolveLinktimeDefine(defn)
-          case _ =>
-            defn
-        }
-        reachDefn(maybeFixedDefn)
+        reachDefn(defn)
       }
     }
     stack = stack.tail
   }
 
-  def reachDefn(defn: nir.Defn): Unit = {
+  def reachDefn(defninition: nir.Defn): Unit = {
+    val defn = preprocessDefn(defninition)
     implicit val srcPosition = defn.pos
     defn match {
       case defn: nir.Defn.Var =>
@@ -222,7 +220,7 @@ class Reach(
         if (nir.Rt.arrayAlloc.contains(sig)) {
           classInfo(nir.Rt.arrayAlloc(sig)).foreach(reachAllocation)
         }
-        reachDefine(resolveLinktimeDefine(defn))
+        reachDefine(defn)
       case defn: nir.Defn.Trait =>
         reachTrait(defn)
       case defn: nir.Defn.Class =>
@@ -231,6 +229,25 @@ class Reach(
         reachModule(defn)
     }
     done(defn.name) = defn
+  }
+
+  private def preprocessDefn(defn: nir.Defn): nir.Defn = {
+    defn match {
+      case defn: nir.Defn.Define =>
+        (resolveLinktimeDefine _)
+          .andThen(resolveDefineIntrinsics)
+          .apply(defn)
+
+      case _ => defn
+    }
+  }
+
+  private def resolveDefineIntrinsics(
+      defn: nir.Defn.Define
+  ): nir.Defn.Define = {
+    if (defn.attrs.isUsingIntrinsics)
+      defn.copy(insts = resolveIntrinsicsCalls(defn))(defn.pos)
+    else defn
   }
 
   def reachEntry(name: nir.Global)(implicit srcPosition: nir.Position): Unit = {
@@ -373,6 +390,7 @@ class Reach(
                   fail(s"Required method ${sig} not found in ${info.name}")
                 )
             }
+
             if (sig.isMethod || sig.isCtor || sig.isClinit || sig.isGenerated) {
               update(sig)
             }
@@ -724,10 +742,10 @@ class Reach(
       reachType(ty)
       reachVal(ptrv)
       argvs.foreach(reachVal)
-    case nir.Op.Load(ty, ptrv, syncAttrs) =>
+    case nir.Op.Load(ty, ptrv, _) =>
       reachType(ty)
       reachVal(ptrv)
-    case nir.Op.Store(ty, ptrv, v, syncAttrs) =>
+    case nir.Op.Store(ty, ptrv, v, _) =>
       reachType(ty)
       reachVal(ptrv)
       reachVal(v)
@@ -1017,7 +1035,7 @@ class Reach(
       val current = from.getOrElse(name, ReferencedFrom.Root)
       if (current == ReferencedFrom.Root) buf.result()
       else {
-        val file = current.srcPosition.filename.getOrElse("unknown")
+        val file = current.srcPosition.source.filename.getOrElse("unknown")
         val line = current.srcPosition.line
         buf += BackTraceElement(
           name = current.referencedBy,

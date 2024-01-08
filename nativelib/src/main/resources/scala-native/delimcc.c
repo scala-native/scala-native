@@ -15,7 +15,7 @@
 #define ASM_JMPBUF_SIZE 192
 #define JMPBUF_STACK_POINTER_OFFSET (104 / 8)
 #elif defined(__x86_64__) &&                                                   \
-    (defined(__linux__) || defined(__APPLE__)) // x86-64 linux and macOS
+    (defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__))
 #define ASM_JMPBUF_SIZE 72
 #define JMPBUF_STACK_POINTER_OFFSET (16 / 8)
 #elif defined(__i386__) &&                                                     \
@@ -25,6 +25,8 @@
 #elif defined(__x86_64__) && defined(_WIN64) // x86-64 Windows
 #define ASM_JMPBUF_SIZE 256
 #define JMPBUF_STACK_POINTER_OFFSET (16 / 8)
+#else
+#error "Unsupported platform"
 #endif
 
 #ifdef DELIMCC_DEBUG
@@ -57,7 +59,9 @@
 #define __externc extern
 #define __noreturn __attribute__((noreturn))
 #define __returnstwice __attribute__((returns_twice))
+#ifndef __noinline
 #define __noinline __attribute__((noinline))
+#endif
 // define the lh_jmp_buf in terms of `void*` elements to have natural alignment
 typedef void *lh_jmp_buf[ASM_JMPBUF_SIZE / sizeof(void *)];
 // Non-standard setjmp.
