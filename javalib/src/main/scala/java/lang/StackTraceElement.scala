@@ -25,7 +25,7 @@ final class StackTraceElement(
 
   override def toString: String = {
     val (file, line) =
-      if (getFileName == null) ("Unknown Source", "")
+      if (getFileName == null || getFileName.isEmpty()) ("Unknown Source", "")
       else if (getLineNumber <= 0) (getFileName, "")
       else (getFileName, ":" + getLineNumber)
     s"$getClassName.$getMethodName($file$line)"
