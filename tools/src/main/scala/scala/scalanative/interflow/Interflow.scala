@@ -109,7 +109,7 @@ class Interflow(val config: build.Config)(implicit
   /** Thread-safely accesses the list of symbols to process. */
   def allTodo(): Seq[nir.Global.Member] =
     todo.synchronized {
-      todo.toSeq // QUESTION: is this a copy?
+      todo.toSeq
     }
 
   /** Returns `true` iff `name` has been processed. */
@@ -165,59 +165,72 @@ class Interflow(val config: build.Config)(implicit
       denylist += name
     }
 
-  // QUESTION: What is module purity?
+  /** `true` iff the purity of `name` is defined. */
   def hasModulePurity(name: nir.Global.Top): Boolean =
     modulePurity.synchronized {
       modulePurity.contains(name)
     }
 
+  /** Defines the purity of `name` as `value`. */
   def setModulePurity(name: nir.Global.Top, value: Boolean): Unit =
     modulePurity.synchronized {
       modulePurity(name) = value
     }
 
+  /** `true` iff `name` does not contain any field requiring instantiation.
+   *
+   *  `this.hasModulePurity(name)` must be `true`.
+   */
   def getModulePurity(name: nir.Global.Top): Boolean =
     modulePurity.synchronized {
       modulePurity(name)
     }
 
-  // QUESTION: What is the depth of a context?
+  /** The size of the backtrace (i.e., a log of operations). */
   def contextDepth(): Int =
     contextTl.get.size
 
-  // QUESTION: What is a context?
+  /** `true` iff the algorithm has a backtrace.
+   *
+   *  Contexts are used for logging and for detecting that some operation is
+   *  being done recursively.
+   */
   def hasContext(value: String): Boolean =
     contextTl.get.contains(value)
 
+  /** Adds an operation on the backtrace. */
   def pushContext(value: String): Unit =
     contextTl.set(value :: contextTl.get)
 
+  /** Removes the operation on the top of the backtrace. */
   def popContext(): Unit =
     contextTl.set(contextTl.get.tail)
 
-  // QUESTION: What is a processor.
+  /** The current inlining preprocessor. */
   def mergeProcessor: MergeProcessor =
     mergeProcessorTl.get.head
 
+  /** Adds a new inlining preprocessor on top of the current one. */
   def pushMergeProcessor(value: MergeProcessor): Unit =
     mergeProcessorTl.set(value :: mergeProcessorTl.get)
 
+  /** Removes current inlining preprocessor. */
   def popMergeProcessor(): Unit =
     mergeProcessorTl.set(mergeProcessorTl.get.tail)
 
-  // QUESTION: What is a block?
+  /** The current NIR block in which instructions are inserted. */
   def blockFresh: nir.Fresh =
     blockFreshTl.get.head
 
+  /** Adds a new NIR block for inserting instructions. */
   def pushBlockFresh(value: nir.Fresh): Unit =
     blockFreshTl.set(value :: blockFreshTl.get)
 
+  /** Removes the current NIR block. */
   def popBlockFresh(): Unit =
     blockFreshTl.set(blockFreshTl.get.tail)
 
-  /** Returns a collection with the original definitions and their optimized
-   *  forms.
-   */
+  /** Returns a collection with the optimized forms of all definitions. */
   def result(): Seq[nir.Defn] = {
     val optimized = originals.clone()
     optimized ++= done

@@ -7,6 +7,14 @@ import scala.scalanative.nir.Defn.Define.DebugInfo
 import scala.scalanative.linker._
 import scala.annotation.tailrec
 
+/** A helper for inlining and merging functions.
+ *
+ *  A merge processor is responsible for inlining and merging functions during
+ *  interflow. Multiple processors can co-exist, as interflow runs recursively.
+ *  Hence, if a method `a` starts inlining a method `b` and detetcs a call to a
+ *  method `c` to be inlined, the latter will be handled by another processor.
+ *  All instances live in a thread-local stack.
+ */
 final class MergeProcessor(
     insts: Array[nir.Inst],
     debugInfo: DebugInfo,

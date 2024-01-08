@@ -46,8 +46,8 @@ trait Visit { self: Interflow =>
         }
     }
 
-  /** In debug mode, visits all reachable definitions. In release mode, visits
-   *  all entry symbols.
+  /** In debug mode, visits all reachable definitions from defined entries. In
+   *  release mode, visits all entry symbols.
    */
   // QUESTION: What is exactly an entry?
   def visitEntries(): Unit =
