@@ -116,19 +116,29 @@ object SymbolFormatter {
         } else false
       } else {
         val lineSeperator = strrchr(location, ':')
-        val filenameOffset = 2
+        val fileName = strrchr(location, '\\')
+        val fileOffset = 2 // ':('
         if (lineSeperator != null) {
           // skip ':(', take until line number ':num)'
-          strncpy(
-            fileNameOut,
-            location + filenameOffset,
-            toRawSize(
-              strlen(location) - strlen(lineSeperator) - filenameOffset.toUSize
+          if (fileName != null) {
+            strncpy(
+              fileNameOut,
+              fileName + 1,
+              toRawSize(strlen(fileName) - strlen(lineSeperator) - 1.toUSize)
             )
-          )
+          } else {
+            strncpy(
+              fileNameOut,
+              location + fileOffset,
+              toRawSize(
+                strlen(location) - strlen(lineSeperator) - fileOffset.toUSize
+              )
+            )
+          }
           pos = (lineSeperator - sym).toInt + 1
           !lineOut = readNumber()
-        } else strcpy(fileNameOut, location + filenameOffset)
+        } else if (fileName != null) strcpy(fileNameOut, fileName + 1)
+        else strcpy(fileNameOut, location + fileOffset)
 
         // Find methodStart, we cannot use strrchr becouse there is no last index limitter and filename would contain extension
         var methodStart = sym
@@ -139,15 +149,16 @@ object SymbolFormatter {
           if (isBeforeLocation) methodStart = nextDot + 1
           isBeforeLocation
         }) ()
-        if (methodStart != null && methodStart != sym) {
+        if (methodStart != null) {
           strncpy(
             methodNameOut,
-            methodStart + 1,
+            methodStart,
             toRawSize(location - methodStart)
           )
-          strncpy(classNameOut, sym, toRawSize(methodStart - sym))
-          true
-        } else false
+        }
+        if (methodStart == sym) strcpy(classNameOut, c"<none>")
+        else strncpy(classNameOut, sym, toRawSize(methodStart - sym - 1))
+        true
       }
     }
 

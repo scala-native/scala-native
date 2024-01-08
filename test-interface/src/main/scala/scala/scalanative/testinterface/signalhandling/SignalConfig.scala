@@ -101,7 +101,7 @@ private[testinterface] object SignalConfig {
           className,
           methodName,
           fileName,
-          lineOut
+          unused
         )
 
         val formattedSymbol: Ptr[CChar] = stackalloc[CChar](750)

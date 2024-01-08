@@ -65,12 +65,11 @@ private[lang] object StackTraceElement {
       fileNameOut = fileName,
       lineOut = lineOut
     )
-
     val filename =
-      if (position.filename.nonEmpty) position.filename
+      if (position.filename != null || fileName == null) position.filename
       else fromCString(fileName)
     val line =
-      if (position.line > 0 || fileName == null) position.line
+      if (position.line > 0 || filename == null) position.line
       else !lineOut
 
     new StackTraceElement(
