@@ -37,6 +37,7 @@ NOINLINE void scalanative_GC_init() {
 #endif
     MutatorThreads_init();
     MutatorThread_init((word_t **)&dummy); // approximate stack bottom
+    customRoots = GC_Roots_Init();
     atexit(scalanative_afterexit);
 }
 
@@ -153,11 +154,11 @@ void scalanative_GC_yield() {
 
 void scalanative_GC_add_roots(void *addr_low, void *addr_high) {
     AddressRange range = {addr_low, addr_high};
-    GC_Roots_Add(&roots, range);
+    GC_Roots_Add(customRoots, range);
 }
 
 void scalanative_GC_remove_roots(void *addr_low, void *addr_high) {
     AddressRange range = {addr_low, addr_high};
-    GC_Roots_RemoveByRange(&roots, range);
+    GC_Roots_RemoveByRange(customRoots, range);
 }
 #endif

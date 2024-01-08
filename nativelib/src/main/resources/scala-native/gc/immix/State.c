@@ -8,7 +8,7 @@ Stack weakRefStack = {};
 BlockAllocator blockAllocator = {};
 _Atomic(MutatorThreads) mutatorThreads = NULL;
 thread_local MutatorThread *currentMutatorThread = NULL;
-GC_Roots *roots = NULL;
+GC_Roots *customRoots = NULL;
 
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
 struct GCWeakRefsHandlerThread *weakRefsHandlerThread = NULL;

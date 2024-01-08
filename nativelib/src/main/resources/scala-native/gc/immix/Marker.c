@@ -12,6 +12,7 @@
 #include "WeakRefStack.h"
 #include "shared/GCTypes.h"
 #include <stdatomic.h>
+#include "shared/ThreadUtil.h"
 
 extern word_t *__modules;
 extern int __modules_size;
@@ -146,12 +147,12 @@ void Marker_markModules(Heap *heap, Stack *stack) {
 }
 
 void Marker_markCustomRoots(Heap *heap, Stack *stack, GC_Roots *roots) {
-    GC_Roots *it = roots;
-    while (it != NULL) {
+    mutex_lock(&roots->modificationLock);
+    for (GC_Root *it = roots->head; it != NULL; it = it->next) {
         Marker_markRange(heap, stack, (word_t **)it->range.address_low,
                          (word_t **)it->range.address_high);
-        it = it->next;
     }
+    mutex_unlock(&roots->modificationLock);
 }
 
 void Marker_MarkRoots(Heap *heap, Stack *stack) {
@@ -163,7 +164,7 @@ void Marker_MarkRoots(Heap *heap, Stack *stack) {
         Marker_markProgramStack(thread, heap, stack);
     }
     Marker_markModules(heap, stack);
-    Marker_markCustomRoots(heap, stack, roots);
+    Marker_markCustomRoots(heap, stack, customRoots);
     Marker_Mark(heap, stack);
 }
 
