@@ -1223,15 +1223,21 @@ private[codegen] abstract class AbstractCodeGen(
   ): Unit = conv match {
     case nir.Conv.ZSizeCast | nir.Conv.SSizeCast =>
       val fromSize = fromType match {
-        case nir.Type.Size             => platform.sizeOfPtrBits
-        case nir.Type.FixedSizeI(s, _) => s
-        case o                         => unsupported(o)
+        case nir.Type.Size =>
+          platform.sizeOfPtrBits
+        case i: nir.Type.FixedSizeI =>
+          i.width
+        case o =>
+          unsupported(o)
       }
 
       val toSize = toType match {
-        case nir.Type.Size             => platform.sizeOfPtrBits
-        case nir.Type.FixedSizeI(s, _) => s
-        case o                         => unsupported(o)
+        case nir.Type.Size =>
+          platform.sizeOfPtrBits
+        case i: nir.Type.FixedSizeI =>
+          i.width
+        case o =>
+          unsupported(o)
       }
 
       val castOp =

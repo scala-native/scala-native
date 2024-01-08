@@ -88,20 +88,18 @@ object Mangle {
     }
 
     def mangleType(ty: Type): Unit = ty match {
-      case Type.Vararg               => str("v")
-      case Type.Ptr                  => str("R_")
-      case Type.Bool                 => str("z")
-      case Type.Char                 => str("c")
-      case Type.FixedSizeI(8, true)  => str("b")
-      case Type.FixedSizeI(16, true) => str("s")
-      case Type.FixedSizeI(32, true) => str("i")
-      case Type.FixedSizeI(64, true) => str("j")
-      case Type.Size                 => str("w")
-      case Type.Float                => str("f")
-      case Type.Double               => str("d")
-      case Type.Null                 => str("l")
-      case Type.Nothing              => str("n")
-      case Type.Unit                 => str("u")
+      case Type.Vararg => str("v")
+      case Type.Ptr    => str("R_")
+      case Type.Bool   => str("z")
+      case Type.Char   => str("c")
+      case i: Type.FixedSizeI =>
+        mangleFixedSizeIntegerType(i)
+      case Type.Size    => str("w")
+      case Type.Float   => str("f")
+      case Type.Double  => str("d")
+      case Type.Null    => str("l")
+      case Type.Nothing => str("n")
+      case Type.Unit    => str("u")
       case Type.ArrayValue(ty, n) =>
         str("A")
         mangleType(ty)
@@ -134,6 +132,18 @@ object Mangle {
         mangleIdent(id)
       case _ =>
         util.unreachable
+    }
+
+    /** Appends the mangled representation of `ty` to `this.sb`. */
+    def mangleFixedSizeIntegerType(ty: Type.FixedSizeI): Unit = {
+      assert(ty.signed, "unsupported unsigned fixed-size integer")
+      ty.width match {
+        case 8  => str("b")
+        case 16 => str("s")
+        case 32 => str("i")
+        case 64 => str("j")
+        case _  => util.unreachable
+      }
     }
 
     def mangleIdent(id: String): Unit = {

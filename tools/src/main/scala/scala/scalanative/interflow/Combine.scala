@@ -598,25 +598,25 @@ trait Combine { self: Interflow =>
       // trunc[iN] (trunc[iM] x) ==> trunc[iN] x if N < M
       case (
             Trunc,
-            nir.Type.FixedSizeI(n, _),
-            ConvRef(Trunc, nir.Type.FixedSizeI(m, _), x)
-          ) if n < m =>
+            n: nir.Type.FixedSizeI,
+            ConvRef(Trunc, m: nir.Type.FixedSizeI, x)
+          ) if n.width < m.width =>
         combine(Trunc, ty, x)
 
       // sext[iN] (sext[iM] x) ==> sext[iN] x if N > M
       case (
             Sext,
-            nir.Type.FixedSizeI(n, _),
-            ConvRef(Sext, nir.Type.FixedSizeI(m, _), x)
-          ) if n > m =>
+            n: nir.Type.FixedSizeI,
+            ConvRef(Sext, m: nir.Type.FixedSizeI, x)
+          ) if n.width > m.width =>
         combine(Sext, ty, x)
 
       // zext[iN] (zext[iM] x) ==> zext[iN] x if N > M
       case (
             Zext,
-            nir.Type.FixedSizeI(n, _),
-            ConvRef(Zext, nir.Type.FixedSizeI(m, _), x)
-          ) if n > m =>
+            n: nir.Type.FixedSizeI,
+            ConvRef(Zext, m: nir.Type.FixedSizeI, x)
+          ) if n.width > m.width =>
         combine(Zext, ty, x)
 
       // ptrtoint[long] (inttoptr[long] x) ==> x
