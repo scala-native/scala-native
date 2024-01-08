@@ -1,18 +1,37 @@
 package scala.scalanative
+
 package posix
 
 import scalanative.unsafe._
+import scalanative.posix.stdio.va_list
+
+/* Open Group 2018 (X/Open System Interfaces (XSI)
+ * Reference:
+ *   https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/syslog.h.html
+ */
+
+// XSI - all of syslog.scala is marked XSI
+
+/* Four methods are now marked "// Neither XSI nor POSIX, Why here?".
+ * Once understood, they should be marked deprecated. Once the depreciation
+ * period has expired they and their "glue" code should be deleted.
+ */
 
 @extern
 object syslog {
   @name("scalanative_closelog")
-  def closelog(): Unit = extern
+  @blocking def closelog(): Unit = extern
 
   @name("scalanative_openlog")
-  def openlog(ident: CString, logopt: CInt, facility: CInt): Unit = extern
+  @blocking def openlog(ident: CString, logopt: CInt, facility: CInt): Unit =
+    extern
 
   @name("scalanative_setlogmask")
-  def setlogmask(maskpri: CInt): CInt = extern
+  @blocking def setlogmask(maskpri: CInt): CInt = extern
+
+  // "glue" code is not used here so that implementation of va_list is simpler.
+  @blocking def syslog(priority: CInt, format: CString, vargs: Any*): Unit =
+    extern
 
   @name("scalanative_log_emerg")
   def LOG_EMERG: CInt = extern
@@ -119,9 +138,11 @@ object syslog {
   @name("scalanative_log_local7")
   def LOG_LOCAL7: CInt = extern
 
+// Neither XSI nor POSIX, Why here?
   @name("scalanative_log_nfacilities")
   def LOG_NFACILITIES: CInt = extern
 
+// Neither XSI nor POSIX, Why here?
   @name("scalanative_log_facmask")
   def LOG_FACMASK: CInt = extern
 
@@ -131,6 +152,7 @@ object syslog {
   @name("scalanative_log_mask")
   def LOG_MASK(pri: CInt): CInt = extern
 
+  // Neither XSI nor POSIX, Why here?
   @name("scalanative_log_upto")
   def LOG_UPTO(pri: CInt): CInt = extern
 
@@ -149,6 +171,7 @@ object syslog {
   @name("scalanative_log_nowait")
   def LOG_NOWAIT: CInt = extern
 
+  // Neither XSI nor POSIX, Why here?
   @name("scalanative_log_perror")
   def LOG_PERROR: CInt = extern
 }
