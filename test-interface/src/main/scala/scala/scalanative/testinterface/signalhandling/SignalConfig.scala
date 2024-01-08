@@ -154,7 +154,7 @@ private[testinterface] object SignalConfig {
     setHandler(SIGILL)
     setHandler(SIGTERM)
     setHandler(SIGSEGV)
-  
+
     if (!isWindows) {
       import scala.scalanative.posix.signal._
       setHandler(SIGBUS)
