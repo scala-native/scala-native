@@ -839,8 +839,8 @@ trait Eval { self: Interflow =>
         def size(ty: nir.Type) = ty match {
           case nir.Type.Size =>
             if (target.is32Bit) 32 else 64
-          case nir.Type.FixedSizeI(s, _) =>
-            s
+          case i: nir.Type.FixedSizeI =>
+            i.width
           case o =>
             bailOut
         }
@@ -1035,6 +1035,7 @@ trait Eval { self: Interflow =>
     offset >= 0 && offset < length
   }
 
+  /** Returns `true` iff `clsName`  */
   private def isPureModule(clsName: nir.Global.Top): Boolean = {
     var visiting = List[nir.Global.Top]()
 

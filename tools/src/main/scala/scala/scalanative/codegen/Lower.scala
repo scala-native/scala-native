@@ -1636,9 +1636,9 @@ object Lower {
             case nir.Val.Size(v) => nir.Val.Size(v * elemSize)
             case _ =>
               val asSize = sizeV.ty match {
-                case nir.Type.FixedSizeI(width, _) =>
-                  if (width == target.sizeOfPtrBits) sizeV
-                  else if (width > target.sizeOfPtrBits)
+                case i: nir.Type.FixedSizeI =>
+                  if (i.width == target.sizeOfPtrBits) sizeV
+                  else if (i.width > target.sizeOfPtrBits)
                     buf.conv(nir.Conv.Trunc, nir.Type.Size, sizeV, unwind)
                   else
                     buf.conv(nir.Conv.Zext, nir.Type.Size, sizeV, unwind)

@@ -1786,29 +1786,45 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       // Bug compatibility with scala/bug/issues/11253
       case (nir.Type.Long, nir.Type.Float) =>
         nir.Type.Double
+
       case (nir.Type.Ptr, _: nir.Type.RefKind) =>
         lty
+
       case (_: nir.Type.RefKind, nir.Type.Ptr) =>
         rty
+
       case (nir.Type.Bool, nir.Type.Bool) =>
         nir.Type.Bool
-      case (nir.Type.FixedSizeI(lwidth, _), nir.Type.FixedSizeI(rwidth, _))
-          if lwidth < 32 && rwidth < 32 =>
-        nir.Type.Int
-      case (nir.Type.FixedSizeI(lwidth, _), nir.Type.FixedSizeI(rwidth, _)) =>
-        if (lwidth >= rwidth) lty else rty
-      case (nir.Type.FixedSizeI(_, _), nir.Type.F(_)) =>
+
+      case (lhs: nir.Type.FixedSizeI, rhs: nir.Type.FixedSizeI) =>
+        if (lhs.width < 32 && rhs.width < 32) {
+          nir.Type.Int
+        } else if (lhs.width >= rhs.width) {
+          lhs
+        } else {
+          rhs
+        }
+
+      case (_: nir.Type.FixedSizeI, _: nir.Type.F) =>
         rty
-      case (nir.Type.F(_), nir.Type.FixedSizeI(_, _)) =>
+
+      case (_: nir.Type.F, _: nir.Type.FixedSizeI) =>
         lty
-      case (nir.Type.F(lwidth), nir.Type.F(rwidth)) =>
-        if (lwidth >= rwidth) lty else rty
+
+      case (lhs: nir.Type.F, rhs: nir.Type.F) =>
+        if (lhs.width >= rhs.width) lhs else rhs
+
       case (_: nir.Type.RefKind, _: nir.Type.RefKind) =>
         nir.Rt.Object
+
       case (ty1, ty2) if ty1 == ty2 =>
         ty1
-      case (nir.Type.Nothing, ty) => ty
-      case (ty, nir.Type.Nothing) => ty
+
+      case (nir.Type.Nothing, ty) =>
+        ty
+
+      case (ty, nir.Type.Nothing) =>
+        ty
 
       case _ =>
         abort(s"can't perform binary operation between $lty and $rty")
@@ -2140,9 +2156,9 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           Some(nir.Conv.Bitcast)
         case (_: nir.Type.RefKind, _: nir.Type.I) => Some(nir.Conv.Ptrtoint)
         case (_: nir.Type.I, _: nir.Type.RefKind) => Some(nir.Conv.Inttoptr)
-        case (nir.Type.FixedSizeI(w1, _), nir.Type.F(w2)) if w1 == w2 =>
+        case (l: nir.Type.FixedSizeI, r: nir.Type.F) if l.width == r.width =>
           Some(nir.Conv.Bitcast)
-        case (nir.Type.F(w1), nir.Type.FixedSizeI(w2, _)) if w1 == w2 =>
+        case (l: nir.Type.F, r: nir.Type.FixedSizeI) if l.width == r.width =>
           Some(nir.Conv.Bitcast)
         case _ if fromty == toty               => None
         case (nir.Type.Float, nir.Type.Double) => Some(nir.Conv.Fpext)
@@ -2522,17 +2538,14 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             nir.Conv.Bitcast
           case (_: nir.Type.RefKind, nir.Type.Ptr) =>
             nir.Conv.Bitcast
-          case (
-                nir.Type.FixedSizeI(fromw, froms),
-                nir.Type.FixedSizeI(tow, tos)
-              ) =>
-            if (fromw < tow) {
-              if (froms) {
+          case (l: nir.Type.FixedSizeI, r: nir.Type.FixedSizeI) =>
+            if (l.width < r.width) {
+              if (l.signed) {
                 nir.Conv.Sext
               } else {
                 nir.Conv.Zext
               }
-            } else if (fromw > tow) {
+            } else if (l.width > r.width) {
               nir.Conv.Trunc
             } else {
               nir.Conv.Bitcast
@@ -2541,14 +2554,14 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             nir.Conv.Sitofp
           case (i: nir.Type.I, _: nir.Type.F) if !i.signed =>
             nir.Conv.Uitofp
-          case (_: nir.Type.F, nir.Type.FixedSizeI(iwidth, true)) =>
-            if (iwidth < 32) {
+          case (_: nir.Type.F, i: nir.Type.FixedSizeI) if i.signed =>
+            if (i.width < 32) {
               val ivalue = genCoercion(value, fromty, nir.Type.Int)
               return genCoercion(ivalue, nir.Type.Int, toty)
             }
             nir.Conv.Fptosi
-          case (_: nir.Type.F, nir.Type.FixedSizeI(iwidth, false)) =>
-            if (iwidth < 32) {
+          case (_: nir.Type.F, i: nir.Type.FixedSizeI) if !i.signed =>
+            if (i.width < 32) {
               val ivalue = genCoercion(value, fromty, nir.Type.Int)
               return genCoercion(ivalue, nir.Type.Int, toty)
             }
@@ -2916,8 +2929,8 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
                   val promotedArg = arg.ty match {
                     case nir.Type.Float =>
                       this.genCastOp(nir.Type.Float, nir.Type.Double, arg)
-                    case nir.Type.FixedSizeI(width, _)
-                        if width < nir.Type.Int.width =>
+                    case i: nir.Type.FixedSizeI
+                        if i.width < nir.Type.Int.width =>
                       val conv =
                         if (isUnsigned) nir.Conv.Zext
                         else nir.Conv.Sext

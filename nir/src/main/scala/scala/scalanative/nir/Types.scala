@@ -26,73 +26,143 @@ sealed abstract class Type {
     case _                      => true
   }
 
+  /** A textual representation of `this`. */
   final def show: String = nir.Show(this)
+
+  /** The mangled representation of `this`. */
   final def mangle: String = nir.Mangle(this)
+
 }
 
 object Type {
 
-  /** Value types are either primitive or aggregate. */
+  /** The type of an aggregate or primitive value. */
   sealed abstract class ValueKind extends Type
 
-  /** Primitive value types. */
+  /** A primitive value type.
+   *
+   *  @param width
+   *    The bit width of the type's instances.
+   */
   sealed abstract class PrimitiveKind(val width: Int) extends ValueKind
-  case object Bool extends PrimitiveKind(1)
-  case object Ptr extends ValueKind
 
+  /** The type of an integer. */
   sealed trait I extends ValueKind {
+
+    /** `true` iff instances of this type are signed. */
     val signed: Boolean
+
   }
 
+  /** The type of a fixed-size integer.
+   *
+   *  @param width
+   *    The bit width of the type's instances.
+   *  @param signed
+   *    `true` iff the type's instances are signed.
+   */
   sealed abstract class FixedSizeI(width: Int, val signed: Boolean)
       extends PrimitiveKind(width)
       with I
-  object FixedSizeI {
-    def unapply(i: FixedSizeI): Some[(Int, Boolean)] = Some((i.width, i.signed))
+
+  /** The type of a floating-point number.
+   *
+   *  @param width
+   *    The bit width of the type's instances.
+   */
+  sealed abstract class F(width: Int) extends PrimitiveKind(width)
+
+  /** The type of pointers. */
+  case object Ptr extends ValueKind
+
+  /** The type of Boolean values. */
+  case object Bool extends PrimitiveKind(1)
+
+  /** The type of a value suitable to represent the size of a container. */
+  case object Size extends ValueKind with I {
+    val signed = true
   }
-  case object Size extends I {
-    val signed = true;
-  }
+
+  /** The type of a 16-bit unsigned integer. */
   case object Char extends FixedSizeI(16, signed = false)
+
+  /** The type of a 8-bit signed integer. */
   case object Byte extends FixedSizeI(8, signed = true)
+
+  /** The type of a 16-bit signed integer. */
   case object Short extends FixedSizeI(16, signed = true)
+
+  /** The type of a 32-bit signed integer. */
   case object Int extends FixedSizeI(32, signed = true)
+
+  /** The type of a 64-bit signed integer. */
   case object Long extends FixedSizeI(64, signed = true)
 
-  sealed abstract class F(width: Int) extends PrimitiveKind(width)
-  object F { def unapply(f: F): Some[Int] = Some(f.width) }
+  /** The type of a 32-bit IEEE 754 single-precision float. */
   case object Float extends F(32)
+
+  /** The type of a 64-bit IEEE 754 single-precision float. */
   case object Double extends F(64)
 
-  /** Aggregate value types. */
+  /** The type of an aggregate. */
   sealed abstract class AggregateKind extends ValueKind
+
+  /** The type of a homogeneous collection of data members. */
   final case class ArrayValue(ty: Type, n: Int) extends AggregateKind
+
+  /** The type of a heterogeneous collection of data members. */
   final case class StructValue(tys: Seq[Type]) extends AggregateKind
 
-  /** Reference types. */
+  /** A reference type. */
   sealed abstract class RefKind extends Type {
+
+    /** The identifier of the class corresponding to this type. */
     final def className: Global.Top = this match {
-      case Type.Null            => Rt.BoxedNull.name
-      case Type.Unit            => Rt.BoxedUnit.name
-      case Type.Array(ty, _)    => toArrayClass(ty)
-      case Type.Ref(name, _, _) => name
+      case Type.Null     => Rt.BoxedNull.name
+      case Type.Unit     => Rt.BoxedUnit.name
+      case a: Type.Array => toArrayClass(a.ty)
+      case r: Type.Ref   => r.name
     }
+
+    /** `true` iff the referenced type is exactly the type denoted by `this`.
+     *
+     *  Given an instance `r` of `RefKind` denoting a reference to some time
+     *  `T`, `r.isExact` holds iff the referenced type is exactly `T` and not a
+     *  subtype thereof. The optimizer may be able to compute the exact variant
+     *  of an arbitrary reference after it has replaced a virtual call.
+     */
     final def isExact: Boolean = this match {
-      case Type.Null         => true
-      case Type.Unit         => true
-      case _: Type.Array     => true
-      case Type.Ref(_, e, _) => e
+      case Type.Null     => true
+      case Type.Unit     => true
+      case _: Type.Array => true
+      case r: Type.Ref   => r.exact
     }
+
+    /** `true` iff instances of this type are nullable. */
     final def isNullable: Boolean = this match {
-      case Type.Null         => true
-      case Type.Unit         => false
-      case Type.Array(_, n)  => n
-      case Type.Ref(_, _, n) => n
+      case Type.Null     => true
+      case Type.Unit     => false
+      case a: Type.Array => a.nullable
+      case r: Type.Ref   => r.nullable
     }
+
   }
+
+  /** The null reference type. */
   case object Null extends RefKind
+
+  /** The unit type. */
   case object Unit extends RefKind
+
+  /** The type of an array reference.
+   *
+   *  An `Array` is a reference to `scala.Array[T]`. It contains a header
+   *  followed by a tail allocated buffer, which typically sit on the heap. That
+   *  is unlike `ArrayValue`, which corresponds to LLVM's fixed-size array type.
+   */
   final case class Array(ty: Type, nullable: Boolean = true) extends RefKind
+
+  /** The type of a reference. */
   final case class Ref(
       name: Global.Top,
       exact: Boolean = false,
@@ -216,4 +286,5 @@ object Type {
     case _ =>
       throw new Exception(s"typeToName: unexpected type ${tpe.show}")
   }
+
 }
