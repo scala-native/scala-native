@@ -457,7 +457,8 @@ NO_SANITIZE void Marker_markProgramStack(MutatorThread *thread, Heap *heap,
     word_t **stackTop = NULL;
     do {
         // Can spuriously fail, very rare, yet deadly
-        stackTop = (word_t **)atomic_load(&thread->stackTop);
+        stackTop = (word_t **)atomic_load_explicit(&thread->stackTop,
+                                                   memory_order_acquire);
     } while (stackTop == NULL);
     // Extend scanning slightly over the approximated stack top
     // In the past we were frequently missing objects allocated just before GC

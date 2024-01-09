@@ -74,17 +74,14 @@ void MutatorThread_switchState(MutatorThread *self,
     intptr_t newStackTop = 0;
     if (newState == GC_MutatorThreadState_Unmanaged) {
         // Dump registers to allow for their marking later
-        int unused = setjmp(self->executionContext);
+        setjmp(self->executionContext);
         newStackTop = (intptr_t)MutatorThread_approximateStackTop();
     }
     atomic_store_explicit(&self->stackTop, newStackTop, memory_order_release);
     self->state = newState;
 }
 
-void MutatorThreads_init() {
-    mutex_init(&threadListsModificationLock);
-    atomic_init(&mutatorThreads, NULL);
-}
+void MutatorThreads_init() { mutex_init(&threadListsModificationLock); }
 
 void MutatorThreads_add(MutatorThread *node) {
     if (!node)
@@ -93,8 +90,8 @@ void MutatorThreads_add(MutatorThread *node) {
         (MutatorThreadNode *)malloc(sizeof(MutatorThreadNode));
     newNode->value = node;
     MutatorThreads_lock();
-    newNode->next = atomic_load_explicit(&mutatorThreads, memory_order_acquire);
-    atomic_store_explicit(&mutatorThreads, newNode, memory_order_release);
+    newNode->next = mutatorThreads;
+    mutatorThreads = newNode;
     MutatorThreads_unlock();
 }
 
@@ -103,11 +100,9 @@ void MutatorThreads_remove(MutatorThread *node) {
         return;
 
     MutatorThreads_lock();
-    MutatorThreads current =
-        atomic_load_explicit(&mutatorThreads, memory_order_acquire);
+    MutatorThreads current = mutatorThreads;
     if (current->value == node) { // expected is at head
-        atomic_store_explicit(&mutatorThreads, current->next,
-                              memory_order_release);
+        mutatorThreads = current->next;
         free(current);
     } else {
         while (current->next && current->next->value != node) {
@@ -117,7 +112,6 @@ void MutatorThreads_remove(MutatorThread *node) {
         if (next) {
             current->next = next->next;
             free(next);
-            atomic_thread_fence(memory_order_release);
         }
     }
     MutatorThreads_unlock();
