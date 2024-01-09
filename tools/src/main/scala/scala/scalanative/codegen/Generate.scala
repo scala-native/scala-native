@@ -49,7 +49,6 @@ object Generate {
       genObjectArrayId()
       genWeakRefUtils()
       genArrayIds()
-      genStackBottom()
 
       buf.toSeq
     }
@@ -257,17 +256,8 @@ object Generate {
 
     private def genGcInit(unwindProvider: () => nir.Next)(implicit fresh: nir.Fresh) = {
       def unwind: nir.Next = unwindProvider()
-      val stackBottom = nir.Val.Local(fresh(), nir.Type.Ptr)
-      val StackBottomVar = nir.Val.Global(stackBottomName, nir.Type.Ptr)
 
       Seq(
-        // init __stack_bottom variable
-        nir.Inst.Let(
-          stackBottom.id,
-          nir.Op.Stackalloc(nir.Type.Ptr, nir.Val.Long(0)),
-          unwind
-        ),
-        nir.Inst.Let(nir.Op.Store(nir.Type.Ptr, StackBottomVar, stackBottom), unwind),
         // Init GC
         nir.Inst.Let(nir.Op.Call(InitSig, Init, Seq.empty), unwind)
       )
@@ -329,9 +319,6 @@ object Generate {
         }
       )
     }
-
-    def genStackBottom(): Unit =
-      buf += nir.Defn.Var(nir.Attrs.None, stackBottomName, nir.Type.Ptr, nir.Val.Null)
 
     def genModuleAccessors(): Unit = {
       val LoadModuleSig = nir.Type.Function(
@@ -650,7 +637,6 @@ object Generate {
     val InitDecl = nir.Defn.Declare(nir.Attrs.None, extern("scalanative_GC_init"), InitSig)
     val Init = nir.Val.Global(InitDecl.name, nir.Type.Ptr)
 
-    val stackBottomName = extern("__stack_bottom")
     val moduleArrayName = extern("__modules")
     val moduleArraySizeName = extern("__modules_size")
     val objectArrayIdName = extern("__object_array_id")

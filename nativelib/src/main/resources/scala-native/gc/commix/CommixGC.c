@@ -27,9 +27,6 @@
 #include "MutatorThread.h"
 #include <stdatomic.h>
 
-// Stack boottom of the main thread
-extern word_t **__stack_bottom;
-
 void scalanative_GC_collect();
 
 void scalanative_afterexit() {
@@ -45,13 +42,14 @@ void scalanative_afterexit() {
 }
 
 NOINLINE void scalanative_GC_init() {
+    volatile int dummy = 0;
     Heap_Init(&heap, Settings_MinHeapSize(), Settings_MaxHeapSize());
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
     Synchronizer_init();
     weakRefsHandlerThread = GCThread_WeakThreadsHandler_Start();
 #endif
     MutatorThreads_init();
-    MutatorThread_init(__stack_bottom);
+    MutatorThread_init((word_t**)&dummy); // approximate stack bottom
 #ifdef ENABLE_GC_STATS
     atexit(scalanative_afterexit);
 #endif
