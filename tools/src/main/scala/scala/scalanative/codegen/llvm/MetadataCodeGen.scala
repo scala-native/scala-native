@@ -245,15 +245,25 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
         isOptimized = defn.attrs.opt == nir.Attr.DidOpt
       )
       val linkageName = mangled(defn.name)
+      val ownerName = defn.name.owner.id
+
+      // On Windows if there are no method symbols (LTO enabled) stack traces might return linkage names from found debug symbols
+      // Use it to implement stacktraces
+      val useFQCName =
+        meta.buildConfig.targetsWindows &&
+          meta.config.lto != scalanative.build.LTO.None
+      def fqcn(methodName: String) = s"$ownerName.$methodName"
+      def maybeFQCName(methodName: String) = if (useFQCName) fqcn(methodName) else methodName
       def methodNameInfo(sig: nir.Sig.Unmangled): (String, DIFlags) = sig match {
-        case nir.Sig.Extern(id)           => id -> DIFlags()
-        case nir.Sig.Method(id, _, scope) => id -> DIFlags(sigAccessibilityFlags(scope): _*)
-        case nir.Sig.Duplicate(of, _)     => methodNameInfo(of.unmangled)
-        case nir.Sig.Clinit               => "class constructor" -> DIFlags(DIFlag.DIFlagPrivate)
-        case nir.Sig.Generated(id)        => id -> DIFlags(DIFlag.DIFlagArtificial)
-        case nir.Sig.Ctor(_)              => defn.name.owner.id -> DIFlags()
-        case nir.Sig.Proxy(id, _)         => id -> DIFlags()
-        case _: nir.Sig.Field             => util.unreachable
+        case nir.Sig.Extern(id) => id -> DIFlags()
+        case nir.Sig.Method(id, _, scope) =>
+          maybeFQCName(id) -> DIFlags(sigAccessibilityFlags(scope): _*)
+        case nir.Sig.Duplicate(of, _) => methodNameInfo(of.unmangled)
+        case nir.Sig.Clinit           => "<clinit>" -> DIFlags(DIFlag.DIFlagPrivate)
+        case nir.Sig.Generated(id)    => maybeFQCName(id) -> DIFlags(DIFlag.DIFlagArtificial)
+        case nir.Sig.Ctor(_)          => maybeFQCName("<init>") -> DIFlags()
+        case nir.Sig.Proxy(id, _)     => maybeFQCName(id) -> DIFlags()
+        case _: nir.Sig.Field         => util.unreachable
       }
       val nir.Type.Function(argtys, retty) = defn.ty: @unchecked
       val (name, flags) = methodNameInfo(defn.name.sig.unmangled)

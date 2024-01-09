@@ -1,6 +1,6 @@
 package scala.scalanative.runtime
 
-import scala.scalanative.meta.LinktimeInfo.isWindows
+import scala.scalanative.meta.LinktimeInfo.{isWindows, sourceLevelDebuging}
 import scalanative.unsigned._
 import scala.scalanative.unsafe._
 import scala.scalanative.runtime.libc._
@@ -13,17 +13,13 @@ object SymbolFormatter {
   def asyncSafeFromSymbol(
       sym: CString,
       classNameOut: CString,
-      methodNameOut: CString
+      methodNameOut: CString,
+      fileNameOut: CString, // Windows only
+      lineOut: Ptr[Int] // Windows only
   ): Unit = {
 
     val len = strlen(sym)
     var pos = 0
-    val ident =
-      fromRawPtr[CChar](
-        Intrinsics.stackalloc[CChar](
-          Intrinsics.castIntToRawSizeUnsigned(1024)
-        )
-      )
     classNameOut(0) = 0.toByte
     methodNameOut(0) = 0.toByte
 
@@ -31,34 +27,23 @@ object SymbolFormatter {
       // On Windows symbol names are different then on Unix platforms.
       // Due to differences in implementation between WinDbg and libUnwind used
       // on each platform, symbols on Windows do not contain '_' prefix.
-      if (!isWindows) {
-        if (read() != '_') {
-          false
-        } else if (read() != 'S') {
-          false
-        } else {
-          readGlobal()
-        }
-      } else {
-        if (read() != 'S') {
-          false
-        } else {
-          readGlobal()
-        }
-      }
+      // When debug metadata is generated and there is no symbols (LTO) then
+      // returned sybmols have form `fqcn.methodName:(file:line)` (linkage name from MetadataCodeGen)
+      def mayHaveLinkageSymbol =
+        isWindows && sourceLevelDebuging.generateFunctionSourcePositions
+      // If symbol is not linkage symbol when it would skip Windows specific prefix allowing to continue unix-like reading
+      val head = read()
+      // unlikekly that package name would start with upper case 'S'
+      if (mayHaveLinkageSymbol && head != 'S')
+        readLinkageSymbol()
+      else if (head == 'S') readGlobal() // Windows
+      else if (head == '_' && read() == 'S') readGlobal() // Unix
+      else false
     }
 
     def readGlobal(): Boolean = read() match {
-      case 'M' =>
-        readIdent()
-        if (strlen(ident) == 0) {
-          false
-        } else {
-          strcpy(classNameOut, ident)
-          readSig()
-        }
-      case _ =>
-        false
+      case 'M' => readIdent(classNameOut) && readSig()
+      case _   => false
     }
 
     def readSig(): Boolean = read() match {
@@ -66,33 +51,19 @@ object SymbolFormatter {
         strcpy(methodNameOut, c"<init>")
         true
       case 'D' | 'P' | 'C' | 'G' =>
-        readIdent()
-        if (strlen(ident) == 0) {
-          false
-        } else {
-          strcpy(methodNameOut, ident)
-          true
-        }
+        readIdent(methodNameOut)
       case 'K' =>
         readSig()
       case _ =>
         false
     }
 
-    def readIdent(): Unit = {
+    def readIdent(output: CString): Boolean = {
       val n = readNumber()
-      if (n <= 0) {
-        ident(0) = 0.toByte
-      } else if (!inBounds(pos) || !inBounds(pos + n)) {
-        ident(0) = 0.toByte
-      } else {
-        var i = 0
-        while (i < n) {
-          ident(i) = sym(pos + i)
-          i += 1
-        }
-        ident(i) = 0.toByte
+      (n > 0 && inBounds(pos) && inBounds(pos + n)) && {
+        strncpy(output, sym + pos, Intrinsics.castIntToRawSize(n))
         pos += n
+        true
       }
     }
 
@@ -130,6 +101,66 @@ object SymbolFormatter {
 
     def inBounds(pos: Int) =
       pos >= 0 && pos < len.toLong
+
+    // Windows only
+    def readLinkageSymbol(): Boolean = {
+      fileNameOut(0) = 0.toByte
+      val location = strchr(sym, ':')
+      if (location == null) {
+        // No location part, simplifield
+        val methodNamePos = strrchr(sym, '.')
+        if (methodNamePos != null) {
+          strncpy(classNameOut, sym, toRawSize(methodNamePos - sym))
+          strcpy(methodNameOut, methodNamePos + 1)
+          true
+        } else false
+      } else {
+        val lineSeperator = strrchr(location, ':')
+        val fileName = strrchr(location, '\\')
+        val fileOffset = 2 // ':('
+        if (lineSeperator != null) {
+          // skip ':(', take until line number ':num)'
+          if (fileName != null) {
+            strncpy(
+              fileNameOut,
+              fileName + 1,
+              toRawSize(strlen(fileName) - strlen(lineSeperator) - 1.toUSize)
+            )
+          } else {
+            strncpy(
+              fileNameOut,
+              location + fileOffset,
+              toRawSize(
+                strlen(location) - strlen(lineSeperator) - fileOffset.toUSize
+              )
+            )
+          }
+          pos = (lineSeperator - sym).toInt + 1
+          !lineOut = readNumber()
+        } else if (fileName != null) strcpy(fileNameOut, fileName + 1)
+        else strcpy(fileNameOut, location + fileOffset)
+
+        // Find methodStart, we cannot use strrchr becouse there is no last index limitter and filename would contain extension
+        var methodStart = sym
+        while ({
+          val nextDot = strchr(methodStart, '.')
+          val isBeforeLocation =
+            nextDot != null && (nextDot.toLong < location.toLong)
+          if (isBeforeLocation) methodStart = nextDot + 1
+          isBeforeLocation
+        }) ()
+        if (methodStart != null) {
+          strncpy(
+            methodNameOut,
+            methodStart,
+            toRawSize(location - methodStart)
+          )
+        }
+        if (methodStart == sym) strcpy(classNameOut, c"<none>")
+        else strncpy(classNameOut, sym, toRawSize(methodStart - sym - 1))
+        true
+      }
+    }
 
     if (!readSymbol()) {
       strcpy(classNameOut, c"<none>")

@@ -5,6 +5,7 @@ import scalanative.unsigned._
 import scala.scalanative.unsafe._
 import scala.scalanative.runtime.SymbolFormatter
 import scala.scalanative.runtime.Backtrace
+import scala.scalanative.meta.LinktimeInfo.isWindows
 
 final class StackTraceElement(
     val getClassName: String,
@@ -24,7 +25,7 @@ final class StackTraceElement(
 
   override def toString: String = {
     val (file, line) =
-      if (getFileName == null) ("Unknown Source", "")
+      if (getFileName == null || getFileName.isEmpty()) ("Unknown Source", "")
       else if (getLineNumber <= 0) (getFileName, "")
       else (getFileName, ":" + getLineNumber)
     s"$getClassName.$getMethodName($file$line)"
@@ -53,15 +54,29 @@ private[lang] object StackTraceElement {
       sym: CString,
       position: Backtrace.Position
   ): StackTraceElement = {
-    val className: Ptr[CChar] = stackalloc[CChar](1024)
-    val methodName: Ptr[CChar] = stackalloc[CChar](1024)
-    SymbolFormatter.asyncSafeFromSymbol(sym, className, methodName)
+    val className: Ptr[CChar] = stackalloc[CChar](512)
+    val methodName: Ptr[CChar] = stackalloc[CChar](256)
+    val fileName: Ptr[CChar] = if (isWindows) stackalloc[CChar](512) else null
+    val lineOut = stackalloc[Int]()
+    SymbolFormatter.asyncSafeFromSymbol(
+      sym = sym,
+      classNameOut = className,
+      methodNameOut = methodName,
+      fileNameOut = fileName,
+      lineOut = lineOut
+    )
+    val filename =
+      if (position.filename != null || fileName == null) position.filename
+      else fromCString(fileName)
+    val line =
+      if (position.line > 0 || filename == null) position.line
+      else !lineOut
 
     new StackTraceElement(
       fromCString(className),
       fromCString(methodName),
-      position.filename,
-      position.line
+      filename,
+      line
     )
   }
 }
