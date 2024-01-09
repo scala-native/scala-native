@@ -49,7 +49,7 @@ NOINLINE void scalanative_GC_init() {
     weakRefsHandlerThread = GCThread_WeakThreadsHandler_Start();
 #endif
     MutatorThreads_init();
-    MutatorThread_init((word_t**)&dummy); // approximate stack bottom
+    MutatorThread_init((word_t **)&dummy); // approximate stack bottom
 #ifdef ENABLE_GC_STATS
     atexit(scalanative_afterexit);
 #endif
