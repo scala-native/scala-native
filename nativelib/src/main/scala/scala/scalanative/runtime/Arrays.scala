@@ -29,6 +29,7 @@ package runtime
 
 import scalanative.unsafe._
 import scalanative.unsigned._
+import scalanative.annotation.alwaysinline
 import scala.scalanative.memory.SafeZone
 import scalanative.runtime.Intrinsics._
 
@@ -209,8 +210,8 @@ object BooleanArray {
       throw new NegativeArraySizeException
     }
     val arrcls  = classOf[BooleanArray]
-    val arrsize = Intrinsics.castIntToRawSizeUnsigned(MemoryLayout.Array.ValuesOffset + 1 * length)
-    val arr = zone.allocImpl(Intrinsics.castObjectToRawPtr(arrcls), arrsize)
+    val arrsize = castIntToRawSizeUnsigned(MemoryLayout.Array.ValuesOffset + 1 * length)
+    val arr = zone.allocImpl(castObjectToRawPtr(arrcls), arrsize)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.LengthOffset), length)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.StrideOffset), 1)
     castRawPtrToObject(arr).asInstanceOf[BooleanArray]
@@ -277,8 +278,8 @@ object CharArray {
       throw new NegativeArraySizeException
     }
     val arrcls  = classOf[CharArray]
-    val arrsize = Intrinsics.castIntToRawSizeUnsigned(MemoryLayout.Array.ValuesOffset + 2 * length)
-    val arr = zone.allocImpl(Intrinsics.castObjectToRawPtr(arrcls), arrsize)
+    val arrsize = castIntToRawSizeUnsigned(MemoryLayout.Array.ValuesOffset + 2 * length)
+    val arr = zone.allocImpl(castObjectToRawPtr(arrcls), arrsize)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.LengthOffset), length)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.StrideOffset), 2)
     castRawPtrToObject(arr).asInstanceOf[CharArray]
@@ -345,8 +346,8 @@ object ByteArray {
       throw new NegativeArraySizeException
     }
     val arrcls  = classOf[ByteArray]
-    val arrsize = Intrinsics.castIntToRawSizeUnsigned(MemoryLayout.Array.ValuesOffset + 1 * length)
-    val arr = zone.allocImpl(Intrinsics.castObjectToRawPtr(arrcls), arrsize)
+    val arrsize = castIntToRawSizeUnsigned(MemoryLayout.Array.ValuesOffset + 1 * length)
+    val arr = zone.allocImpl(castObjectToRawPtr(arrcls), arrsize)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.LengthOffset), length)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.StrideOffset), 1)
     castRawPtrToObject(arr).asInstanceOf[ByteArray]
@@ -413,8 +414,8 @@ object ShortArray {
       throw new NegativeArraySizeException
     }
     val arrcls  = classOf[ShortArray]
-    val arrsize = Intrinsics.castIntToRawSizeUnsigned(MemoryLayout.Array.ValuesOffset + 2 * length)
-    val arr = zone.allocImpl(Intrinsics.castObjectToRawPtr(arrcls), arrsize)
+    val arrsize = castIntToRawSizeUnsigned(MemoryLayout.Array.ValuesOffset + 2 * length)
+    val arr = zone.allocImpl(castObjectToRawPtr(arrcls), arrsize)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.LengthOffset), length)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.StrideOffset), 2)
     castRawPtrToObject(arr).asInstanceOf[ShortArray]
@@ -481,8 +482,8 @@ object IntArray {
       throw new NegativeArraySizeException
     }
     val arrcls  = classOf[IntArray]
-    val arrsize = Intrinsics.castIntToRawSizeUnsigned(MemoryLayout.Array.ValuesOffset + 4 * length)
-    val arr = zone.allocImpl(Intrinsics.castObjectToRawPtr(arrcls), arrsize)
+    val arrsize = castIntToRawSizeUnsigned(MemoryLayout.Array.ValuesOffset + 4 * length)
+    val arr = zone.allocImpl(castObjectToRawPtr(arrcls), arrsize)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.LengthOffset), length)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.StrideOffset), 4)
     castRawPtrToObject(arr).asInstanceOf[IntArray]
@@ -549,8 +550,8 @@ object LongArray {
       throw new NegativeArraySizeException
     }
     val arrcls  = classOf[LongArray]
-    val arrsize = Intrinsics.castIntToRawSizeUnsigned(MemoryLayout.Array.ValuesOffset + 8 * length)
-    val arr = zone.allocImpl(Intrinsics.castObjectToRawPtr(arrcls), arrsize)
+    val arrsize = castIntToRawSizeUnsigned(MemoryLayout.Array.ValuesOffset + 8 * length)
+    val arr = zone.allocImpl(castObjectToRawPtr(arrcls), arrsize)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.LengthOffset), length)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.StrideOffset), 8)
     castRawPtrToObject(arr).asInstanceOf[LongArray]
@@ -617,8 +618,8 @@ object FloatArray {
       throw new NegativeArraySizeException
     }
     val arrcls  = classOf[FloatArray]
-    val arrsize = Intrinsics.castIntToRawSizeUnsigned(MemoryLayout.Array.ValuesOffset + 4 * length)
-    val arr = zone.allocImpl(Intrinsics.castObjectToRawPtr(arrcls), arrsize)
+    val arrsize = castIntToRawSizeUnsigned(MemoryLayout.Array.ValuesOffset + 4 * length)
+    val arr = zone.allocImpl(castObjectToRawPtr(arrcls), arrsize)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.LengthOffset), length)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.StrideOffset), 4)
     castRawPtrToObject(arr).asInstanceOf[FloatArray]
@@ -685,8 +686,8 @@ object DoubleArray {
       throw new NegativeArraySizeException
     }
     val arrcls  = classOf[DoubleArray]
-    val arrsize = Intrinsics.castIntToRawSizeUnsigned(MemoryLayout.Array.ValuesOffset + 8 * length)
-    val arr = zone.allocImpl(Intrinsics.castObjectToRawPtr(arrcls), arrsize)
+    val arrsize = castIntToRawSizeUnsigned(MemoryLayout.Array.ValuesOffset + 8 * length)
+    val arr = zone.allocImpl(castObjectToRawPtr(arrcls), arrsize)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.LengthOffset), length)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.StrideOffset), 8)
     castRawPtrToObject(arr).asInstanceOf[DoubleArray]
@@ -753,8 +754,8 @@ object ObjectArray {
       throw new NegativeArraySizeException
     }
     val arrcls  = classOf[ObjectArray]
-    val arrsize = Intrinsics.castIntToRawSizeUnsigned(MemoryLayout.Array.ValuesOffset + castRawSizeToInt(Intrinsics.sizeOf[RawPtr]) * length)
-    val arr = zone.allocImpl(Intrinsics.castObjectToRawPtr(arrcls), arrsize)
+    val arrsize = castIntToRawSizeUnsigned(MemoryLayout.Array.ValuesOffset + castRawSizeToInt(Intrinsics.sizeOf[RawPtr]) * length)
+    val arr = zone.allocImpl(castObjectToRawPtr(arrcls), arrsize)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.LengthOffset), length)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.StrideOffset), castRawSizeToInt(Intrinsics.sizeOf[RawPtr]))
     castRawPtrToObject(arr).asInstanceOf[ObjectArray]
@@ -772,7 +773,24 @@ object ObjectArray {
   }
 }
 
+/** Implementation of [[Array[Byte]]] potentially containing pointers to other GC allocated objects. Unlike [[ByteArray]] it is conservatively scanned. When running with Immix or Commix GC allows to set [[scannableLimit]] of maximal number of bytes to scan.  */
 final class BlobArray private () extends Array[Byte] {
+  @alwaysinline private def limitPtr: RawPtr = {
+    val rawptr = castObjectToRawPtr(this)
+    elemRawPtr(rawptr, MemoryLayout.Array.StrideOffset)
+  }
+  /** Maximal number of elements to scan by the garbage collector (best effort) */
+  @inline def scannableLimit: Int = loadInt(limitPtr)
+  /** Set maximal number of elements to scan by the garbage collector (best effort), new limit needs to smaller or equal to length of array  */
+  @inline def scannableLimit_=(v: Int): Unit = {
+    if(v < 0 || v > length) throwOutOfBounds(v, length)
+    else storeInt(limitPtr, v)
+  }
+  /** Set maximal number of elements to scan by the garbage collector (best effort), new limit needs to smaller or equal to length of array  */
+  @inline def withScannableLimit(v: Int): this.type = {
+    scannableLimit = v
+    this
+  }
 
   @inline def stride: Int = 1
 
@@ -812,7 +830,7 @@ object BlobArray {
     val arrsize = MemoryLayout.Array.ValuesOffset + 1 * length
     val arr = GC.alloc(arrcls, arrsize) 
     storeInt(elemRawPtr(arr, MemoryLayout.Array.LengthOffset), length)
-    storeInt(elemRawPtr(arr, MemoryLayout.Array.StrideOffset), 1)
+    storeInt(elemRawPtr(arr, MemoryLayout.Array.StrideOffset), length)
     castRawPtrToObject(arr).asInstanceOf[BlobArray]
   }
 
@@ -821,10 +839,10 @@ object BlobArray {
       throw new NegativeArraySizeException
     }
     val arrcls  = classOf[BlobArray]
-    val arrsize = Intrinsics.castIntToRawSizeUnsigned(MemoryLayout.Array.ValuesOffset + 1 * length)
-    val arr = zone.allocImpl(Intrinsics.castObjectToRawPtr(arrcls), arrsize)
+    val arrsize = castIntToRawSizeUnsigned(MemoryLayout.Array.ValuesOffset + 1 * length)
+    val arr = zone.allocImpl(castObjectToRawPtr(arrcls), arrsize)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.LengthOffset), length)
-    storeInt(elemRawPtr(arr, MemoryLayout.Array.StrideOffset), 1)
+    storeInt(elemRawPtr(arr, MemoryLayout.Array.StrideOffset), length)
     castRawPtrToObject(arr).asInstanceOf[BlobArray]
   }
 

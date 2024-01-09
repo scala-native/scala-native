@@ -280,7 +280,7 @@ static int Marker_markBlobArray(Heap *heap, Stats *stats, Object *object,
                                 GreyPacket **outHolder,
                                 GreyPacket **outWeakRefHolder) {
     ArrayHeader *arrayHeader = (ArrayHeader *)object;
-    size_t bytesLength = arrayHeader->length;
+    size_t bytesLength = BlobArray_ScannableLimit(arrayHeader);
     size_t objectsLength = bytesLength / sizeof(word_t);
     word_t **blobStart = (word_t **)(arrayHeader + 1);
     int objectsTraced;

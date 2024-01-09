@@ -74,13 +74,24 @@ static inline bool Object_IsArray(const Object *object) {
     return __array_ids_min <= id && id <= __array_ids_max;
 }
 
+static inline size_t Array_Stride(const ArrayHeader *header) {
+    return (header->rtti->rt.id == __blob_array_id) ? 1
+                                                    : (size_t)header->stride;
+}
+
+static inline size_t BlobArray_ScannableLimit(const ArrayHeader *header) {
+    assert(header->rtti->rt.id == __blob_array_id);
+    size_t length = (size_t)header->length;
+    size_t limit = (size_t)header->stride;
+    return (length > limit) ? limit : length;
+}
+
 static inline size_t Object_Size(const Object *object) {
     if (Object_IsArray(object)) {
         ArrayHeader *arrayHeader = (ArrayHeader *)object;
-        return MathUtils_RoundToNextMultiple(
-            sizeof(ArrayHeader) +
-                (size_t)arrayHeader->length * (size_t)arrayHeader->stride,
-            ALLOCATION_ALIGNMENT);
+        size_t size = sizeof(ArrayHeader) +
+                      (size_t)arrayHeader->length * Array_Stride(arrayHeader);
+        return MathUtils_RoundToNextMultiple(size, ALLOCATION_ALIGNMENT);
     } else {
         return MathUtils_RoundToNextMultiple((size_t)object->rtti->size,
                                              ALLOCATION_ALIGNMENT);
