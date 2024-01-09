@@ -57,6 +57,14 @@ object TestMain {
       throw new IllegalArgumentException("One argument expected")
     }
 
+    locally {
+      val shouldSetupSignalHandlers = sys.env
+        .get("SCALANATIVE_TEST_DEBUG_SIGNALS")
+        .exists(v => v.isEmpty() || v == "1")
+      if (shouldSetupSignalHandlers)
+        SignalConfig.setDefaultHandlers()
+    }
+
     if (LinktimeInfo.isFreeBSD) setFreeBSDWorkaround()
     val serverPort = args(0).toInt
     val clientSocket = new Socket("127.0.0.1", serverPort)
@@ -64,8 +72,6 @@ object TestMain {
     val bridge = new TestAdapterBridge(nativeRPC)
 
     bridge.start()
-
-    SignalConfig.setDefaultHandlers()
 
     val exitCode = nativeRPC.loop()
     sys.exit(exitCode)

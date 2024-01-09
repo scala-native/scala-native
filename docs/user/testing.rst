@@ -50,4 +50,11 @@ You may also use `testOnly` to run a particular test, for example:
     testOnly MyTest
     testOnly MyTest.superComplicatedTest
 
+Debugging sygnals
+-----------------
+In case of problems with unexpected signals crashing the test (SIGSEGV, SIGBUS)
+you can set the environment variable `SCALANATIVE_TEST_DEBUG_SIGNALS=1` to enable debug signal handlers
+in the test runner. When enabled test runner would set up signal handlers printing stack trace for most of the available signals for a given platform.
+
+
 Continue to :ref:`profiling`.
