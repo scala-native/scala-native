@@ -1,7 +1,6 @@
+#if defined(SCALANATIVE_GC_COMMIX)
 #include "shared/GCTypes.h"
 #include <stdint.h>
-#if defined(SCALANATIVE_GC_COMMIX)
-
 #include <stdio.h>
 #include <setjmp.h>
 #include "Marker.h"
