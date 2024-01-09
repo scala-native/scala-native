@@ -10,12 +10,13 @@
 #include "immix_commix/utils/MathUtils.h"
 #include "shared/GCTypes.h"
 
-extern int __object_array_id;
-extern int __weak_ref_ids_min;
-extern int __weak_ref_ids_max;
-extern int __weak_ref_field_offset;
-extern int __array_ids_min;
-extern int __array_ids_max;
+extern const int __object_array_id;
+extern const int __blob_array_id;
+extern const int __weak_ref_ids_min;
+extern const int __weak_ref_ids_max;
+extern const int __weak_ref_field_offset;
+extern const int __array_ids_min;
+extern const int __array_ids_max;
 
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
 #define USES_LOCKWORD 1

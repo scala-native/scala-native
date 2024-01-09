@@ -46,7 +46,7 @@ object Generate {
       genModuleAccessors()
       genModuleArray()
       genModuleArraySize()
-      genObjectArrayId()
+      genScanableArrayIds()
       genWeakRefUtils()
       genArrayIds()
 
@@ -474,7 +474,7 @@ object Generate {
 
     def genModuleArraySize(): Unit =
       buf +=
-        nir.Defn.Var(
+        nir.Defn.Const(
           nir.Attrs.None,
           moduleArraySizeName,
           nir.Type.Int,
@@ -490,19 +490,25 @@ object Generate {
       meta.ids(clazz)
     }
 
-    def genObjectArrayId(): Unit = {
-      buf += nir.Defn.Var(
-        nir.Attrs.None,
-        objectArrayIdName,
-        nir.Type.Int,
-        nir.Val.Int(tpe2arrayId("Object"))
-      )
+    def genScanableArrayIds(): Unit = {
+      // Ids of array types that can contain pointers
+      for ((symbol, tpeName) <- Seq(
+            (objectArrayIdName, "Object"),
+            (blobArrayIdName, "Blob")
+          )) {
+        buf += nir.Defn.Const(
+          nir.Attrs.None,
+          symbol,
+          nir.Type.Int,
+          nir.Val.Int(tpe2arrayId(tpeName))
+        )
+      }
     }
 
     def genWeakRefUtils(): Unit = {
       def addToBuf(name: nir.Global.Member, value: Int) =
         buf +=
-          nir.Defn.Var(
+          nir.Defn.Const(
             nir.Attrs.None,
             name,
             nir.Type.Int,
@@ -546,7 +552,8 @@ object Generate {
         "Long",
         "Float",
         "Double",
-        "Object"
+        "Object",
+        "Blob"
       )
       val ids = tpes.map(tpe2arrayId).sorted
 
@@ -559,10 +566,8 @@ object Generate {
         )
       }
 
-      buf += nir.Defn.Var(nir.Attrs.None, arrayIdsMinName, nir.Type.Int, nir.Val.Int(min))
-
-      buf += nir.Defn.Var(nir.Attrs.None, arrayIdsMaxName, nir.Type.Int, nir.Val.Int(max))
-
+      buf += nir.Defn.Const(nir.Attrs.None, arrayIdsMinName, nir.Type.Int, nir.Val.Int(min))
+      buf += nir.Defn.Const(nir.Attrs.None, arrayIdsMaxName, nir.Type.Int, nir.Val.Int(max))
     }
 
     def genTraitDispatchTables(): Unit = {
@@ -640,6 +645,7 @@ object Generate {
     val moduleArrayName = extern("__modules")
     val moduleArraySizeName = extern("__modules_size")
     val objectArrayIdName = extern("__object_array_id")
+    val blobArrayIdName = extern("__blob_array_id")
     val weakRefIdsMaxName = extern("__weak_ref_ids_max")
     val weakRefIdsMinName = extern("__weak_ref_ids_min")
     val weakRefFieldOffsetName = extern("__weak_ref_field_offset")

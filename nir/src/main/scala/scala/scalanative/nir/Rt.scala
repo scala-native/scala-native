@@ -71,7 +71,8 @@ object Rt {
     "LongArray",
     "FloatArray",
     "DoubleArray",
-    "ObjectArray"
+    "ObjectArray",
+    "BlobArray"
   ).map { arr =>
     val cls = Global.Top("scala.scalanative.runtime." + arr)
     val sig = Sig.Method("alloc", Seq(Int, Ref(cls))).mangled

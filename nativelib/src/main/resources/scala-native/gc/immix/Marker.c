@@ -1,3 +1,4 @@
+#include <stdint.h>
 #if defined(SCALANATIVE_GC_IMMIX)
 
 #include <stdio.h>
@@ -21,6 +22,8 @@ extern int __modules_size;
 
 static inline void Marker_markLockWords(Heap *heap, Stack *stack,
                                         Object *object);
+static void Marker_markRange(Heap *heap, Stack *stack, word_t **from,
+                             word_t **to);
 
 void Marker_markObject(Heap *heap, Stack *stack, Bytemap *bytemap,
                        Object *object, ObjectMeta *objectMeta) {
@@ -87,13 +90,20 @@ void Marker_Mark(Heap *heap, Stack *stack) {
     while (!Stack_IsEmpty(stack)) {
         Object *object = Stack_Pop(stack);
         if (Object_IsArray(object)) {
-            if (object->rtti->rt.id == __object_array_id) {
-                ArrayHeader *arrayHeader = (ArrayHeader *)object;
-                size_t length = arrayHeader->length;
+            ArrayHeader *arrayHeader = (ArrayHeader *)object;
+            const int arrayId = object->rtti->rt.id;
+            const size_t length = arrayHeader->length;
+
+            if (arrayId == __object_array_id) {
                 word_t **fields = (word_t **)(arrayHeader + 1);
                 for (int i = 0; i < length; i++) {
                     Marker_markField(heap, stack, fields[i]);
                 }
+            } else if (arrayId == __blob_array_id) {
+                int8_t **blobStart = (int8_t **)(arrayHeader + 1);
+                int8_t **blobEnd = blobStart + length;
+                Marker_markRange(heap, stack, (word_t **)blobStart,
+                                 (word_t **)blobEnd);
             }
             // non-object arrays do not contain pointers
         } else {
@@ -107,8 +117,8 @@ void Marker_Mark(Heap *heap, Stack *stack) {
     }
 }
 
-NO_SANITIZE void Marker_markRange(Heap *heap, Stack *stack, word_t **from,
-                                  word_t **to) {
+NO_SANITIZE static void Marker_markRange(Heap *heap, Stack *stack,
+                                         word_t **from, word_t **to) {
     assert(from != NULL);
     assert(to != NULL);
     for (word_t **current = from; current <= to; current += 1) {

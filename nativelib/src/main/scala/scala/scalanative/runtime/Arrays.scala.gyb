@@ -161,7 +161,10 @@ object Array {
 
 %{
    types = {'Boolean': 1, 'Char': 2, 'Byte': 1, 'Short': 2,
-            'Int': 4, 'Long': 8, 'Float': 4, 'Double': 8, 'Object': 'castRawSizeToInt(Intrinsics.sizeOf[RawPtr])'}
+            'Int': 4, 'Long': 8, 'Float': 4, 'Double': 8, 
+            'Object': 'castRawSizeToInt(Intrinsics.sizeOf[RawPtr])',
+            'Blob': 1 # Array[Byte] but scanned
+          }
 }%
 % # BEWARE: Order of iteration of the dictionary depends on version of Python
 % #         used to run this script.
@@ -173,10 +176,11 @@ object Array {
 % #         used to run this script.
 % for T, sizeT in types.items():
 %{
-   allocGC = 'GC.alloc_atomic' if T != 'Object' else 'GC.alloc'
+   Repr = 'Byte' if T == 'Blob' else T
+   allocGC = 'GC.alloc' if T == 'Object' else 'GC.alloc' if T == 'Blob' else 'GC.alloc_atomic'
 }%
 
-final class ${T}Array private () extends Array[${T}] {
+final class ${T}Array private () extends Array[${Repr}] {
 
   @inline def stride: Int = ${sizeT}
 
@@ -192,9 +196,9 @@ final class ${T}Array private () extends Array[${T}] {
     elemRawPtr(rawptr, MemoryLayout.Array.ValuesOffset + ${sizeT} * i)
   }
 
-  @inline def apply(i: Int): ${T} = load${T}(atRaw(i))
+  @inline def apply(i: Int): ${Repr} = load${Repr}(atRaw(i))
 
-  @inline def update(i: Int, value: ${T}): Unit = store${T}(atRaw(i), value)
+  @inline def update(i: Int, value: ${Repr}): Unit = store${Repr}(atRaw(i), value)
 
   @inline override def clone(): ${T}Array = {
     val arrcls  = classOf[${T}Array]

@@ -771,3 +771,71 @@ object ObjectArray {
     arr
   }
 }
+
+final class BlobArray private () extends Array[Byte] {
+
+  @inline def stride: Int = 1
+
+  @inline def atRaw(i: Int): RawPtr =
+    if (i < 0 || i >= length) {
+      throwOutOfBounds(i, length)
+    } else {
+      atRawUnsafe(i)
+    }
+
+  @inline def atRawUnsafe(i: Int): RawPtr = {
+    val rawptr = castObjectToRawPtr(this)
+    elemRawPtr(rawptr, MemoryLayout.Array.ValuesOffset + 1 * i)
+  }
+
+  @inline def apply(i: Int): Byte = loadByte(atRaw(i))
+
+  @inline def update(i: Int, value: Byte): Unit = storeByte(atRaw(i), value)
+
+  @inline override def clone(): BlobArray = {
+    val arrcls  = classOf[BlobArray]
+    val arrsize = MemoryLayout.Array.ValuesOffset + 1 * length
+    val arr     = GC.alloc(arrcls, arrsize)
+    val src     = castObjectToRawPtr(this)
+    libc.memcpy(arr, src, castIntToRawSizeUnsigned(arrsize))
+    castRawPtrToObject(arr).asInstanceOf[BlobArray]
+  }
+}
+
+object BlobArray {
+
+  @inline def alloc(length: Int): BlobArray = {
+    if (length < 0) {
+      throw new NegativeArraySizeException
+    }
+    val arrcls  = classOf[BlobArray]
+    val arrsize = MemoryLayout.Array.ValuesOffset + 1 * length
+    val arr = GC.alloc(arrcls, arrsize) 
+    storeInt(elemRawPtr(arr, MemoryLayout.Array.LengthOffset), length)
+    storeInt(elemRawPtr(arr, MemoryLayout.Array.StrideOffset), 1)
+    castRawPtrToObject(arr).asInstanceOf[BlobArray]
+  }
+
+  @inline def alloc(length: Int, zone: SafeZone): BlobArray = {
+    if (length < 0) {
+      throw new NegativeArraySizeException
+    }
+    val arrcls  = classOf[BlobArray]
+    val arrsize = Intrinsics.castIntToRawSizeUnsigned(MemoryLayout.Array.ValuesOffset + 1 * length)
+    val arr = zone.allocImpl(Intrinsics.castObjectToRawPtr(arrcls), arrsize)
+    storeInt(elemRawPtr(arr, MemoryLayout.Array.LengthOffset), length)
+    storeInt(elemRawPtr(arr, MemoryLayout.Array.StrideOffset), 1)
+    castRawPtrToObject(arr).asInstanceOf[BlobArray]
+  }
+
+  @inline def snapshot(length: Int, data: RawPtr): BlobArray = {
+    val arr  = alloc(length)
+    if(length > 0) {
+      val dst  = arr.atRawUnsafe(0)
+      val src  = data
+      val size = castIntToRawSizeUnsigned(1 * length)
+      libc.memcpy(dst, src, size)
+    }
+    arr
+  }
+}
