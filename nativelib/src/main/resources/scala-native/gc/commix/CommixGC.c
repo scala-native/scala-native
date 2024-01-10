@@ -50,6 +50,7 @@ NOINLINE void scalanative_GC_init() {
 #endif
     MutatorThreads_init();
     MutatorThread_init((word_t **)&dummy); // approximate stack bottom
+    customRoots = GC_Roots_Init();
 #ifdef ENABLE_GC_STATS
     atexit(scalanative_afterexit);
 #endif
@@ -120,12 +121,12 @@ size_t scalanative_GC_get_max_heapsize() {
 
 void scalanative_GC_add_roots(void *addr_low, void *addr_high) {
     AddressRange range = {addr_low, addr_high};
-    GC_Roots_Add(&roots, range);
+    GC_Roots_Add(customRoots, range);
 }
 
 void scalanative_GC_remove_roots(void *addr_low, void *addr_high) {
     AddressRange range = {addr_low, addr_high};
-    GC_Roots_RemoveByRange(&roots, range);
+    GC_Roots_RemoveByRange(customRoots, range);
 }
 
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED

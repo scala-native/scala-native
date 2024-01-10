@@ -6,6 +6,7 @@ import org.junit.Assume._
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform
 import scala.scalanative.junit.utils.AssumesHelper
+import java.util.concurrent.atomic.AtomicInteger
 
 object ObjectMonitorTest {
   @BeforeClass def checkRuntime(): Unit = {
@@ -147,12 +148,12 @@ class ObjectMonitorTest {
     @volatile var released = false
     @volatile var canRelease = false
     @volatile var done = false
-    @volatile var startedThreads = 0
+    val startedThreads = new AtomicInteger(0)
     val lock = new {}
     val thread = simpleStartedThread("t1") {
       // wait for start of t2 and inflation of object monitor
-      startedThreads += 1
-      while (startedThreads != 2) ()
+      startedThreads.incrementAndGet()
+      while (startedThreads.get() != 2) ()
       // should be inflated already
       lock.synchronized {
         lock.synchronized {
@@ -170,10 +171,10 @@ class ObjectMonitorTest {
 
     simpleStartedThread("t2") {
       lock.synchronized {
-        startedThreads += 1
+        startedThreads.incrementAndGet()
         // Force inflation of object monitor
         lock.wait(10)
-        while (startedThreads != 2 && !canRelease) lock.wait(10)
+        while (startedThreads.get() != 2 && !canRelease) lock.wait(10)
         released = true
         lock.notify()
       }
