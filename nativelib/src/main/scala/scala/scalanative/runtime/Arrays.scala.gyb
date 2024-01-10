@@ -182,7 +182,7 @@ object Array {
 }%
 
 % if T == 'Blob':
-/** Implementation of [[Array[Byte]]] potentially containing pointers to other GC allocated objects. Unlike [[ByteArray]] it is conservatively scanned. When running with Immix or Commix GC allows to set [[scannableLimit]] of maximal number of bytes to scan.  */
+/** Implementation of Array[Byte] potentially containing pointers to other GC allocated objects. Unlike [[ByteArray]] it is conservatively scanned. When running with Immix or Commix GC allows to set [[scannableLimit]] of maximal number of bytes to scan.  */
 % end 
 final class ${T}Array private () extends Array[${Repr}] {
 % if T == 'Blob':

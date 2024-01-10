@@ -773,7 +773,7 @@ object ObjectArray {
   }
 }
 
-/** Implementation of [[Array[Byte]]] potentially containing pointers to other GC allocated objects. Unlike [[ByteArray]] it is conservatively scanned. When running with Immix or Commix GC allows to set [[scannableLimit]] of maximal number of bytes to scan.  */
+/** Implementation of Array[Byte] potentially containing pointers to other GC allocated objects. Unlike [[ByteArray]] it is conservatively scanned. When running with Immix or Commix GC allows to set [[scannableLimit]] of maximal number of bytes to scan.  */
 final class BlobArray private () extends Array[Byte] {
   @alwaysinline private def limitPtr: RawPtr = {
     val rawptr = castObjectToRawPtr(this)
