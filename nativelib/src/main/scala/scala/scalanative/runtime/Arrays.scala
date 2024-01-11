@@ -784,13 +784,11 @@ final class BlobArray private () extends Array[Byte] {
   /** Set maximal number of elements to scan by the garbage collector (best effort), new limit needs to smaller or equal to length of array  */
   @inline def scannableLimit_=(v: Int): Unit = {
     if(v < 0 || v > length) throwOutOfBounds(v, length)
-    else storeInt(limitPtr, -v)
+    else setScannableLimitUnsafe(limitPtr, v)
   }
   /** Set maximal number of elements to scan by the garbage collector (best effort), new limit needs to smaller or equal to length of array. This version of scannableLimit setter is not checking the bound of argument. */
-  @inline def setScannableLimitUnsafe(v: Int): Unit = {
-    if(v < 0 || v > length) throwOutOfBounds(v, length)
-    else storeInt(limitPtr, -v)
-  }
+  @inline def setScannableLimitUnsafe(v: Int): Unit = storeInt(limitPtr, -v)
+
   /** Set maximal number of elements to scan by the garbage collector (best effort), new limit needs to smaller or equal to length of array  */
   @inline def withScannableLimit(v: Int): this.type = {
     scannableLimit = v
