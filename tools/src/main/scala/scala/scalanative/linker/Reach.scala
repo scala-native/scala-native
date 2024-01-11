@@ -216,9 +216,9 @@ class Reach(
         reachDeclare(defn)
       case defn: nir.Defn.Define =>
         val nir.Global.Member(_, sig) = defn.name
-        if (nir.Rt.arrayAlloc.contains(sig)) {
-          classInfo(nir.Rt.arrayAlloc(sig)).foreach(reachAllocation)
-        }
+        nir.Rt.arrayAlloc
+          .get(sig)
+          .foreach { classInfo(_).foreach(reachAllocation) }
         reachDefine(defn)
       case defn: nir.Defn.Trait =>
         reachTrait(defn)

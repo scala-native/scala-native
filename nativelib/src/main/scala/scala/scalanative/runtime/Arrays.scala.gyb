@@ -29,6 +29,7 @@ package runtime
 
 import scalanative.unsafe._
 import scalanative.unsigned._
+import scalanative.annotation.alwaysinline
 import scala.scalanative.memory.SafeZone
 import scalanative.runtime.Intrinsics._
 
@@ -161,7 +162,10 @@ object Array {
 
 %{
    types = {'Boolean': 1, 'Char': 2, 'Byte': 1, 'Short': 2,
-            'Int': 4, 'Long': 8, 'Float': 4, 'Double': 8, 'Object': 'castRawSizeToInt(Intrinsics.sizeOf[RawPtr])'}
+            'Int': 4, 'Long': 8, 'Float': 4, 'Double': 8, 
+            'Object': 'castRawSizeToInt(Intrinsics.sizeOf[RawPtr])',
+            'Blob': 1 # Array[Byte] but scanned
+          }
 }%
 % # BEWARE: Order of iteration of the dictionary depends on version of Python
 % #         used to run this script.
@@ -173,10 +177,35 @@ object Array {
 % #         used to run this script.
 % for T, sizeT in types.items():
 %{
-   allocGC = 'GC.alloc_atomic' if T != 'Object' else 'GC.alloc'
+   Repr = 'Byte' if T == 'Blob' else T
+   allocGC = 'GC.alloc' if T == 'Object' else 'GC.alloc' if T == 'Blob' else 'GC.alloc_atomic'
 }%
 
-final class ${T}Array private () extends Array[${T}] {
+% if T == 'Blob':
+/** Implementation of Array[Byte] potentially containing pointers to other GC allocated objects. Unlike [[ByteArray]] it is conservatively scanned. When running with Immix or Commix GC allows to set [[scannableLimit]] of maximal number of bytes to scan.  */
+% end 
+final class ${T}Array private () extends Array[${Repr}] {
+% if T == 'Blob':
+  @alwaysinline private def limitPtr: RawPtr = {
+    val rawptr = castObjectToRawPtr(this)
+    elemRawPtr(rawptr, MemoryLayout.Array.StrideOffset)
+  }
+  /** Maximal number of elements to scan by the garbage collector (best effort) */
+  @inline def scannableLimit: Int = -loadInt(limitPtr)
+  /** Set maximal number of elements to scan by the garbage collector (best effort), new limit needs to smaller or equal to length of array  */
+  @inline def scannableLimit_=(v: Int): Unit = {
+    if(v < 0 || v > length) throwOutOfBounds(v, length)
+    else setScannableLimitUnsafe(v)
+  }
+  /** Set maximal number of elements to scan by the garbage collector (best effort), new limit needs to smaller or equal to length of array. This version of scannableLimit setter is not checking the bound of argument. */
+  @inline def setScannableLimitUnsafe(v: Int): Unit = storeInt(limitPtr, -v)
+
+  /** Set maximal number of elements to scan by the garbage collector (best effort), new limit needs to smaller or equal to length of array  */
+  @inline def withScannableLimit(v: Int): this.type = {
+    scannableLimit = v
+    this
+  }
+% end
 
   @inline def stride: Int = ${sizeT}
 
@@ -192,9 +221,9 @@ final class ${T}Array private () extends Array[${T}] {
     elemRawPtr(rawptr, MemoryLayout.Array.ValuesOffset + ${sizeT} * i)
   }
 
-  @inline def apply(i: Int): ${T} = load${T}(atRaw(i))
+  @inline def apply(i: Int): ${Repr} = load${Repr}(atRaw(i))
 
-  @inline def update(i: Int, value: ${T}): Unit = store${T}(atRaw(i), value)
+  @inline def update(i: Int, value: ${Repr}): Unit = store${Repr}(atRaw(i), value)
 
   @inline override def clone(): ${T}Array = {
     val arrcls  = classOf[${T}Array]
@@ -216,7 +245,11 @@ object ${T}Array {
     val arrsize = MemoryLayout.Array.ValuesOffset + ${sizeT} * length
     val arr = ${allocGC}(arrcls, arrsize) 
     storeInt(elemRawPtr(arr, MemoryLayout.Array.LengthOffset), length)
+  % if T == 'Blob':
+    storeInt(elemRawPtr(arr, MemoryLayout.Array.StrideOffset), -length)
+  % else:
     storeInt(elemRawPtr(arr, MemoryLayout.Array.StrideOffset), ${sizeT})
+  % end
     castRawPtrToObject(arr).asInstanceOf[${T}Array]
   }
 
@@ -225,10 +258,14 @@ object ${T}Array {
       throw new NegativeArraySizeException
     }
     val arrcls  = classOf[${T}Array]
-    val arrsize = Intrinsics.castIntToRawSizeUnsigned(MemoryLayout.Array.ValuesOffset + ${sizeT} * length)
-    val arr = zone.allocImpl(Intrinsics.castObjectToRawPtr(arrcls), arrsize)
+    val arrsize = castIntToRawSizeUnsigned(MemoryLayout.Array.ValuesOffset + ${sizeT} * length)
+    val arr = zone.allocImpl(castObjectToRawPtr(arrcls), arrsize)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.LengthOffset), length)
+  % if T == 'Blob':
+    storeInt(elemRawPtr(arr, MemoryLayout.Array.StrideOffset), -length)
+  % else:
     storeInt(elemRawPtr(arr, MemoryLayout.Array.StrideOffset), ${sizeT})
+  % end
     castRawPtrToObject(arr).asInstanceOf[${T}Array]
   }
 
