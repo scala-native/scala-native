@@ -780,11 +780,16 @@ final class BlobArray private () extends Array[Byte] {
     elemRawPtr(rawptr, MemoryLayout.Array.StrideOffset)
   }
   /** Maximal number of elements to scan by the garbage collector (best effort) */
-  @inline def scannableLimit: Int = loadInt(limitPtr)
+  @inline def scannableLimit: Int = -loadInt(limitPtr)
   /** Set maximal number of elements to scan by the garbage collector (best effort), new limit needs to smaller or equal to length of array  */
   @inline def scannableLimit_=(v: Int): Unit = {
     if(v < 0 || v > length) throwOutOfBounds(v, length)
-    else storeInt(limitPtr, v)
+    else storeInt(limitPtr, -v)
+  }
+  /** Set maximal number of elements to scan by the garbage collector (best effort), new limit needs to smaller or equal to length of array. This version of scannableLimit setter is not checking the bound of argument. */
+  @inline def setScannableLimitUnsafe(v: Int): Unit = {
+    if(v < 0 || v > length) throwOutOfBounds(v, length)
+    else storeInt(limitPtr, -v)
   }
   /** Set maximal number of elements to scan by the garbage collector (best effort), new limit needs to smaller or equal to length of array  */
   @inline def withScannableLimit(v: Int): this.type = {
@@ -830,7 +835,7 @@ object BlobArray {
     val arrsize = MemoryLayout.Array.ValuesOffset + 1 * length
     val arr = GC.alloc(arrcls, arrsize) 
     storeInt(elemRawPtr(arr, MemoryLayout.Array.LengthOffset), length)
-    storeInt(elemRawPtr(arr, MemoryLayout.Array.StrideOffset), length)
+    storeInt(elemRawPtr(arr, MemoryLayout.Array.StrideOffset), -length)
     castRawPtrToObject(arr).asInstanceOf[BlobArray]
   }
 
@@ -842,7 +847,7 @@ object BlobArray {
     val arrsize = castIntToRawSizeUnsigned(MemoryLayout.Array.ValuesOffset + 1 * length)
     val arr = zone.allocImpl(castObjectToRawPtr(arrcls), arrsize)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.LengthOffset), length)
-    storeInt(elemRawPtr(arr, MemoryLayout.Array.StrideOffset), length)
+    storeInt(elemRawPtr(arr, MemoryLayout.Array.StrideOffset), -length)
     castRawPtrToObject(arr).asInstanceOf[BlobArray]
   }
 

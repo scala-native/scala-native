@@ -9,6 +9,7 @@
 #include "immix_commix/Log.h"
 #include "immix_commix/utils/MathUtils.h"
 #include "shared/GCTypes.h"
+#include "limits.h"
 
 extern const int __object_array_id;
 extern const int __blob_array_id;
@@ -75,15 +76,17 @@ static inline bool Object_IsArray(const Object *object) {
 }
 
 static inline size_t Array_Stride(const ArrayHeader *header) {
-    return (header->rtti->rt.id == __blob_array_id) ? 1
-                                                    : (size_t)header->stride;
+    // clang would optimize it to llvm.max(stride, 1)
+    // negative stride is used only for blob array
+    size_t stride = (size_t)header->stride;
+    return (stride > 0) ? stride : 1;
 }
 
 static inline size_t BlobArray_ScannableLimit(const ArrayHeader *header) {
     assert(header->rtti->rt.id == __blob_array_id);
     size_t length = (size_t)header->length;
-    size_t limit = (size_t)header->stride;
-    return (length > limit) ? limit : length;
+    size_t limit = (size_t)-header->stride; // limit is stored as negative
+    return (limit < length) ? limit : length;
 }
 
 static inline size_t Object_Size(const Object *object) {
