@@ -71,12 +71,6 @@ object TestMain {
     val nativeRPC = new NativeRPC(clientSocket)(ExecutionContext.global)
     val bridge = new TestAdapterBridge(nativeRPC)
 
-    if (LinktimeInfo.isFreeBSD) setFreeBSDWorkaround()
-    val serverPort = args(0).toInt
-    val clientSocket = new Socket("127.0.0.1", serverPort)
-    val nativeRPC = new NativeRPC(clientSocket)(ExecutionContext.global)
-    val bridge = new TestAdapterBridge(nativeRPC)
-
     // Loading debug metadata can take up to few seconds which might mess up timeout specific tests
     // Prefetch the debug metadata before the actual tests do start
     // Execute after creating connection with the TestRunnner server
