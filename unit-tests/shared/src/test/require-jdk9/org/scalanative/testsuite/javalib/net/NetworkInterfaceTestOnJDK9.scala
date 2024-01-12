@@ -18,6 +18,13 @@ class NetworkInterfaceTestOnJDK9 {
     if (Platform.isLinux) "lo"
     else "lo0"
 
+  val osIPv6LoopbackSuffix =
+    s":0:0:0:0:0:0:1%${localhostIf}"
+
+  val osIPv6LoopbackAddress =
+    if (Platform.isMacOs) s"fe80${osIPv6LoopbackSuffix}"
+    else s"0${osIPv6LoopbackSuffix}"
+
 // Test instance method(s)
 
   @Test def instanceInetAddresses(): Unit = {
@@ -26,19 +33,32 @@ class NetworkInterfaceTestOnJDK9 {
     val lbIf = NetworkInterface.getByName(localhostIf)
     assertNotNull(lbIf)
 
-    // SN Stream implements neither Stream.count() nor Stream.reduce()
     val iaStream = lbIf.inetAddresses()
 
-    var count = 0
+    val count = iaStream
+      .filter(e => {
 
-    val itr = iaStream.iterator()
+        val hostAddr = e.getHostAddress()
 
-    while (itr.hasNext()) {
-      itr.next()
-      count += 1
-    }
+        // macOS can have two forms of IPv6 loopback address.
+        val expected =
+          if (!hostAddr.contains(":")) {
+            "127.0.0.1"
+          } else if (hostAddr.startsWith("0")) {
+            s"0:0:0:0:0:0:0:1%${localhostIf}"
+          } else if (hostAddr.startsWith("f")) {
+            s"${osIPv6LoopbackAddress}"
+          } else "" // fail in a way that will print out ifAddrString
 
-    assertTrue("count > 0", count > 0)
+        assertEquals("Unexpected result", expected, hostAddr)
+        true
+      })
+      .count
+
+    /* Linux tends to have two addresses, one IPv4 & one IPv6.
+     * macOS has three. It adds a link local (fe80) address.
+     */
+    assertTrue("count > 0", count > 2)
   }
 
 }

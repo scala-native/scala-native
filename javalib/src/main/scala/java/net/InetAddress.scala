@@ -116,8 +116,6 @@ class InetAddress protected (ipAddress: Array[Byte], originalHost: String)
       | ((bytes(start) & 255) << 24))
   }
 
-  protected def getZoneIdent(): String = "" // Ease Inet6Address declaration
-
   override def hashCode(): Int =
     if (ipAddress.length == 4) bytesToInt(ipAddress, 0) // too scared to change
     else ju.Arrays.hashCode(ipAddress)
@@ -212,30 +210,61 @@ object InetAddress {
      * to leave the host field blank/empty.
      */
     val effectiveHost = if (isNumeric) null else host
-    val ipAddress = SocketHelpers.sockaddrToByteArray(addrinfoP.ai_addr)
-    if (ipAddress.length == 4) {
-      new Inet4Address(ipAddress, effectiveHost)
-    } else {
+
+    if (addrinfoP.ai_family == AF_INET) {
+      new Inet4Address(addrinfoToByteArray(addrinfoP), effectiveHost)
+    } else if (addrinfoP.ai_family == AF_INET6) {
       val addr = addrinfoP.ai_addr.asInstanceOf[Ptr[sockaddr_in6]]
-      /* Yes, Java specifies Int for scope_id in a way which disallows
-       * some values POSIX/IEEE/IETF allows.
-       */
-      val scope_id = addr.sin6_scope_id.toInt
+      val addrBytes = addr.sin6_addr.at1.at(0).asInstanceOf[Ptr[Byte]]
 
-      val zoneIdent = {
-        val ifIndex = host.indexOf('%')
-        val ifNameStart = ifIndex + 1
-        if ((ifIndex < 0) || (ifNameStart >= host.length)) ""
-        else host.substring(ifNameStart)
+      // Scala JVM down-converts even when preferIPv6Addresses is "true"
+      if (isIPv4MappedAddress(addrBytes)) {
+        new Inet4Address(extractIP4Bytes(addrBytes), effectiveHost)
+      } else {
+        /* Yes, Java specifies Int for scope_id in a way which disallows
+         * some values POSIX/IEEE/IETF allows.
+         */
+
+        val scope_id = addr.sin6_scope_id.toInt
+
+        /* Be aware some trickiness here.
+         * Java treats a 0 scope_id (qua NetworkInterface index)
+         * as having been not supplied.
+         * Exactly the same 0 scope_id explicitly passed to
+         * Inet6Address.getByAddress() is considered supplied and
+         * displayed as such.
+         */
+
+        if (scope_id == 0)
+          Inet6Address(addrinfoToByteArray(addrinfoP), effectiveHost)
+        else
+          Inet6Address.getByAddress(
+            effectiveHost,
+            addrinfoToByteArray(addrinfoP),
+            scope_id
+          )
       }
-
-      Inet6Address(
-        ipAddress,
-        effectiveHost,
-        scope_id,
-        zoneIdent
+    } else {
+      val af = addrinfoP.ai_family
+      throw new IOException(
+        s"The requested address family is not supported: ${af}."
       )
     }
+  }
+
+  private def addrinfoToByteArray(
+      addrinfoP: Ptr[addrinfo]
+  ): Array[Byte] = {
+    SocketHelpers.sockaddrToByteArray(addrinfoP.ai_addr)
+  }
+
+  private def extractIP4Bytes(pb: Ptr[Byte]): Array[Byte] = {
+    val buf = new Array[Byte](4)
+    buf(0) = pb(12)
+    buf(1) = pb(13)
+    buf(2) = pb(14)
+    buf(3) = pb(15)
+    buf
   }
 
   private def formatIn4Addr(pb: Ptr[Byte]): String = {
@@ -312,6 +341,15 @@ object InetAddress {
         }
   }
 
+  private def vetScopeText(host: String): Unit = { // callers have handled null
+    // Fail on either numeric %-2 and non-numeric (text) %-abc
+    val idx = host.indexOf("%-")
+    if (idx >= 0) {
+      val invalidIf = host.substring(idx + 1)
+      throw new UnknownHostException(s"no such interface: ${invalidIf}")
+    }
+  }
+
   private def getByNonNumericName(host: String): InetAddress = Zone {
     implicit z =>
       /* Design Note:
@@ -379,6 +417,8 @@ object InetAddress {
           }
         }
       }
+
+      vetScopeText(host)
 
       val hints = stackalloc[addrinfo]() // stackalloc clears its memory
       val addrinfo = stackalloc[Ptr[addrinfo]]()
@@ -592,6 +632,12 @@ object InetAddress {
       retArray.toArray
     }
 
+  private def isIPv4MappedAddress(pb: Ptr[Byte]): Boolean = {
+    val ptrInt = pb.asInstanceOf[Ptr[Int]]
+    val ptrLong = pb.asInstanceOf[Ptr[Long]]
+    (ptrInt(2) == 0xffff0000) && (ptrLong(0) == 0x0L)
+  }
+
   private def mapGaiStatus(gaiStatus: Int): Int = {
     /* This is where some arcane Operating System specific behavior
      * comes to puddle and pool. This method is not for small children
@@ -638,10 +684,12 @@ object InetAddress {
       val ia = if (lbBytes.length == 4) {
         new Inet4Address(lbBytes, "localhost")
       } else {
-        new Inet6Address(lbBytes, "localhost")
+        Inet6Address(lbBytes, "localhost")
       }
       Array[InetAddress](ia)
     } else {
+      vetScopeText(host)
+
       val ips = InetAddress.hostToInetAddressArray(host)
       if (ips.isEmpty) {
         throw new UnknownHostException(host + ": Name or service not known")
@@ -660,7 +708,7 @@ object InetAddress {
     if (addr.length == 4) {
       new Inet4Address(addr.clone, host)
     } else if (addr.length == 16) {
-      new Inet6Address(addr.clone, host)
+      Inet6Address(addr.clone, host)
     } else {
       throw new UnknownHostException(
         s"addr is of illegal length: ${addr.length}"

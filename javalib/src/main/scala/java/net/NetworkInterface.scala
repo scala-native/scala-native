@@ -48,6 +48,25 @@ import macOsIfDl._
  *      C examples are provided in the documentation on MSDN.
  */
 
+/* Design Note_2:
+ *   This file does not support Windows, so this note describes
+ *   Linux & macOS behavior. FreeBSD has not been studied or exercised.
+ *
+ *   Running unit-tests NetworkInterfaceTest, its Java 9 variant, and
+ *   InterfaceAddressTest on Java show that the Inet6Address and
+ *   InterfaceAddress instances created by NetworkInterface always
+ *   have a network interface index specified.
+ *
+ *   This differs from the 'normal' C library practice of sin6_scope_id
+ *   fields in data structures returned by ifaddrs() and getaddrinfo()
+ *   being set to 0 ('unknown' or 'any') on IPv6 global addresses.
+ *   They are only set to the actual, non-zero, interface for link-local
+ *   and other non-global addresses.
+ *
+ *   This file explicitly sets the network index (Java scopeId) and does
+ *   not rely upon the possibly zero contents of sin6_scope_id.
+ */
+
 class NetworkInterface private (ifName: String) {
 
   override def equals(that: Any): Boolean = that match {
@@ -231,7 +250,7 @@ object NetworkInterface {
 
   private def createInetAddress(
       ifa: Ptr[ifaddrs],
-      ifName: String
+      ifIndex: Int
   ): Option[InetAddress] = {
     val sa = ifa.ifa_addr
     val af = sa.sa_family.toInt
@@ -242,15 +261,14 @@ object NetworkInterface {
       if (af == AF_INET) {
         Some(InetAddress.getByAddress(bytes))
       } else {
-        val scopeId = sa.asInstanceOf[Ptr[sockaddr_in6]].sin6_scope_id.toInt
-        Some(Inet6Address(bytes, "", scopeId, ifName))
+        Some(Inet6Address.getByAddress("", bytes, ifIndex))
       }
     }
   }
 
   private def createInterfaceAddress(
       ifa: Ptr[ifaddrs],
-      interfaceName: String
+      ifIndex: Int
   ): Option[InterfaceAddress] = {
 
     def decodePrefixLength(sa: Ptr[sockaddr]): Short = {
@@ -279,8 +297,7 @@ object NetworkInterface {
       val inetAddress = if (af == AF_INET) {
         InetAddress.getByAddress(bytes)
       } else {
-        val scopeId = sa.asInstanceOf[Ptr[sockaddr_in6]].sin6_scope_id
-        Inet6Address(bytes, "", scopeId.toInt, interfaceName)
+        Inet6Address.getByAddress("", bytes, ifIndex)
       }
 
       val broadcastAddress: Option[Array[Byte]] =
@@ -687,21 +704,23 @@ object NetworkInterface {
   }
 
   private def unixAccumulateInetAddresses(
-      ifNameJ: String,
+      ifName: String,
       accumulator: (InetAddress) => Unit
   ): Unit = Zone { implicit z =>
     @tailrec
     def accumulateInetAddresses(
         ifNameC: CString,
+        ifIndex: Int,
         addOne: (InetAddress) => Unit,
         ifa: Ptr[ifaddrs]
     ): Unit = {
       if (ifa != null) {
         if (strcmp(ifNameC, ifa.ifa_name) == 0) {
-          createInetAddress(ifa, ifNameJ).map(ia => addOne(ia))
+          createInetAddress(ifa, ifIndex).map(ia => addOne(ia))
         }
         accumulateInetAddresses(
           ifNameC,
+          ifIndex,
           addOne,
           ifa.ifa_next.asInstanceOf[Ptr[ifaddrs]]
         )
@@ -718,7 +737,9 @@ object NetworkInterface {
       )
 
     try {
-      accumulateInetAddresses(toCString(ifNameJ), accumulator, !ifap)
+      val ifNameC = toCString(ifName)
+      val ifIndex = if_nametoindex(ifNameC).toInt
+      accumulateInetAddresses(ifNameC, ifIndex, accumulator, !ifap)
     } finally {
       freeifaddrs(!ifap)
     }
@@ -730,18 +751,18 @@ object NetworkInterface {
   ): Unit = Zone { implicit z =>
     @tailrec
     def accumulateInterfaceAddresses(
-        ifNameJ: String,
         ifNameC: CString,
+        ifIndex: Int,
         addOne: (InterfaceAddress) => Unit,
         ifa: Ptr[ifaddrs]
     ): Unit = {
       if (ifa != null) {
         if (strcmp(ifNameC, ifa.ifa_name) == 0) {
-          createInterfaceAddress(ifa, ifNameJ).map(ia => addOne(ia))
+          createInterfaceAddress(ifa, ifIndex).map(ia => addOne(ia))
         }
         accumulateInterfaceAddresses(
-          ifNameJ,
           ifNameC,
+          ifIndex,
           addOne,
           ifa.ifa_next.asInstanceOf[Ptr[ifaddrs]]
         )
@@ -758,9 +779,11 @@ object NetworkInterface {
       )
 
     try {
+      val ifNameC = toCString(ifName)
+      val ifIndex = if_nametoindex(ifNameC).toInt
       accumulateInterfaceAddresses(
-        ifName,
-        toCString(ifName),
+        ifNameC,
+        ifIndex,
         accumulator,
         !ifap
       )
