@@ -47,4 +47,11 @@ object ScopedVar {
     try body
     finally stack.reverse.foreach(_.pop())
   }
+  @nowarn("msg=`_` is deprecated for wildcard arguments of types")
+  def scopedPushIf[T](
+      shouldPushAssignments: Boolean
+  )(lazyAssignments: => Seq[Assignment[_]])(body: => T): T = {
+    if (shouldPushAssignments) scoped(lazyAssignments:_*)(body)
+    else body
+  }
 }

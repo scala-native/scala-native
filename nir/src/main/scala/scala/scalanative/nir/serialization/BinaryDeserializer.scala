@@ -7,6 +7,7 @@ import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
 
 import scala.collection.mutable
+import scala.collection.immutable
 import scala.util.control.NonFatal
 
 import scala.scalanative.nir.serialization.{Tags => T}
@@ -159,7 +160,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, nirSource: NIRSource) {
   }
 
   private def getSeq[T](getT: => T): Seq[T] =
-    Seq.fill(getLebUnsignedInt())(getT)
+    Vector.fill(getLebUnsignedInt())(getT)
   private def getOpt[T](getT: => T): Option[T] =
     if (get == 0) None
     else Some(getT)

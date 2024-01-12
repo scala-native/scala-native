@@ -5,7 +5,6 @@ import scala.collection.mutable
 import scala.scalanative.util.unreachable
 import scala.scalanative.nir.Defn.Define.DebugInfo
 import scala.scalanative.linker._
-import scala.annotation.tailrec
 
 final class MergeProcessor(
     insts: Array[nir.Inst],
@@ -56,7 +55,7 @@ final class MergeProcessor(
       incoming: Seq[(nir.Local, (Seq[nir.Val], State))]
   )(implicit analysis: ReachabilityAnalysis.Result): (Seq[MergePhi], State) = {
     val localIds = incoming.map { case (n, (_, _)) => n }
-    val states = incoming.map { case (_, (_, s)) => s }.toList
+    val states = incoming.map { case (_, (_, s)) => s }
 
     incoming match {
       case Seq() =>
@@ -109,7 +108,9 @@ final class MergeProcessor(
             val id = mergeFresh()
             val paramty = Sub.lub(materialized.map(_.ty), bound)
             val param = nir.Val.Local(id, paramty)
-            localName.foreach(mergeLocalNames.getOrElseUpdate(id, _))
+            if (eval.preserveDebugInfo) {
+              localName.foreach(mergeLocalNames.getOrElseUpdate(id, _))
+            }
             mergePhis += MergePhi(param, localIds.zip(materialized))
             param
           }
@@ -150,7 +151,7 @@ final class MergeProcessor(
           def escapes(addr: Addr): Boolean =
             states.exists(_.hasEscaped(addr))
 
-          states.head.heap.keys
+          states.head.heap.keys.iterator
             .filter(includeAddr)
             .foreach { addr =>
               val headInstance = states.head.deref(addr)
@@ -561,6 +562,8 @@ object MergeProcessor {
     builder
   }
 
+  private val emptyScopeMapping: nir.ScopeId => nir.ScopeId = _ =>
+    nir.ScopeId.TopLevel
   private def createScopeMapping(
       state: State,
       lexicalScopes: Seq[DebugInfo.LexicalScope],
@@ -569,7 +572,7 @@ object MergeProcessor {
       parentScopeId: nir.ScopeId,
       interflow: Interflow
   ): nir.ScopeId => nir.ScopeId = {
-    if (!preserveDebugInfo) _ => nir.ScopeId.TopLevel
+    if (!preserveDebugInfo) emptyScopeMapping
     else {
       val freshScope = interflow.currentFreshScope.get
       val scopes = interflow.currentLexicalScopes.get
@@ -599,17 +602,8 @@ object MergeProcessor {
     }
   }
 
-  @tailrec
   private def findNameOf(
       extract: State => Option[nir.LocalName]
-  )(states: List[State]): Option[nir.LocalName] = {
-    states match {
-      case Nil => None
-      case head :: tail =>
-        val opt = extract(head)
-        if (opt.isDefined) opt
-        else findNameOf(extract)(tail)
-    }
-  }
-
+  )(states: Seq[State]): Option[nir.LocalName] =
+    states.iterator.map(extract(_)).collectFirst { case Some(v) => v }
 }
