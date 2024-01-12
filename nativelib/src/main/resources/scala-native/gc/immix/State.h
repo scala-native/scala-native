@@ -12,7 +12,7 @@ extern Stack stack;
 extern Stack weakRefStack;
 extern BlockAllocator blockAllocator;
 extern _Atomic(MutatorThreads) mutatorThreads;
-extern thread_local MutatorThread *currentMutatorThread;
+extern SN_ThreadLocal MutatorThread *currentMutatorThread;
 extern GC_Roots *customRoots;
 
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED

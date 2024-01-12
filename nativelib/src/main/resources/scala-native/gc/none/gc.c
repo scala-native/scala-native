@@ -30,8 +30,8 @@
 #endif
 #endif
 
-thread_local void *current = 0;
-thread_local void *end = 0;
+SN_ThreadLocal void *current = 0;
+SN_ThreadLocal void *end = 0;
 
 static size_t DEFAULT_CHUNK;
 static size_t PREALLOC_CHUNK;

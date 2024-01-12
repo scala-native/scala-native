@@ -31,7 +31,8 @@
 #else
 #error "Cannot define thread_local"
 #endif
-#endif
+#endif // thread_local
+#define SN_ThreadLocal __attribute__((tls_model("local-exec"))) __attribute__((visibility("hidden"))) thread_local
 #endif
 
 typedef void *(*routine_fn)(void *);
