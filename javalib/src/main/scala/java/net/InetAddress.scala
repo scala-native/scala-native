@@ -38,10 +38,8 @@ import scala.scalanative.meta.LinktimeInfo.{isLinux, isMac}
  *    That information is handled separately.
  */
 
-class InetAddress protected (
-    val ipAddress: Array[Byte],
-    originalHost: String
-) extends Serializable {
+class InetAddress protected (ipAddress: Array[Byte], originalHost: String)
+    extends Serializable {
   import InetAddress._
 
   private def this(ipAddress: Array[Byte]) = this(ipAddress, null)

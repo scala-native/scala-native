@@ -14,7 +14,6 @@ abstract class DatagramSocketImpl extends SocketOptions {
   protected[net] def send(p: DatagramPacket): Unit
   protected[net] def connect(address: InetAddress, port: Int): Unit
   protected[net] def disconnect(): Unit
-  protected[net] def peek(i: InetAddress): Int
   protected[net] def peekData(p: DatagramPacket): Int
   protected[net] def receive(p: DatagramPacket): Unit
   protected[net] def setTTL(ttl: Byte): Unit

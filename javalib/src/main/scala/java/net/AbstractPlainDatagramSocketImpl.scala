@@ -391,25 +391,6 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
     }
   }
 
-  override def peek(i: InetAddress): Int = {
-    throwIfClosed("peek")
-    val p = new DatagramPacket(Array.ofDim[Byte](1), 1)
-    recvfrom(p, posix.sys.socket.MSG_PEEK, "peek")
-    val ipAddress = p.getAddress().getAddress()
-    // make sure the received address is of the same length as the given one
-    // for dual stack, we can potentially map received IPv4 to IPv6 ?
-    // peekData should be preferred so received address is returned unmodified
-    if (i.ipAddress.length == ipAddress.length) {
-      ipAddress.copyToArray(i.ipAddress)
-    } else {
-      throw new SocketException(
-        "Address family mismatch," +
-          s"expected ${i.ipAddress.length} bytes, got ${ipAddress.length} bytes"
-      )
-    }
-    p.getPort()
-  }
-
   override def peekData(p: DatagramPacket): Int = {
     throwIfClosed("peekData")
     recvfrom(p, posix.sys.socket.MSG_PEEK, "peekData")
