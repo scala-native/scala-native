@@ -201,6 +201,8 @@ java.net
 """"""""
 * ``BindException``
 * ``ConnectException``
+* ``DatagramPacket``
+* ``DatagramSocket``
 * ``Inet4Address``
 * ``Inet6Address``
 * ``InetAddress``
