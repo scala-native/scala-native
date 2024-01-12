@@ -29,7 +29,7 @@ class NirCodeGen(val settings: GenNIR.Settings)(using ctx: Context)
 
   protected val defnNir = NirDefinitions.get
   protected val nirPrimitives = new NirPrimitives()
-  protected val positionsConversions = new NirPositions(settings.sourceURIMaps)
+  protected val positionsConversions = new NirPositions()
   protected val cachedMethodSig =
     collection.mutable.Map.empty[(Symbol, Boolean), nir.Type.Function]
 
@@ -45,7 +45,6 @@ class NirCodeGen(val settings: GenNIR.Settings)(using ctx: Context)
     new util.ScopedVar[mutable.Map[nir.Local, nir.LocalName]]
   protected val curMethodThis = new util.ScopedVar[Option[nir.Val]]
   protected val curMethodIsExtern = new util.ScopedVar[Boolean]
-  protected var curMethodUsesLinktimeResolvedValues = false
 
   protected val curFresh = new util.ScopedVar[nir.Fresh]
   protected var curScopes =
@@ -192,6 +191,8 @@ class NirCodeGen(val settings: GenNIR.Settings)(using ctx: Context)
 
   class MethodEnv(val fresh: nir.Fresh) {
     private val env = mutable.Map.empty[Symbol, nir.Val]
+    var isUsingIntrinsics: Boolean = false
+    var isUsingLinktimeResolvedValue: Boolean = false
 
     def enter(sym: Symbol, value: nir.Val): Unit = env += sym -> value
     def enterLabel(ld: Labeled): nir.Local = {

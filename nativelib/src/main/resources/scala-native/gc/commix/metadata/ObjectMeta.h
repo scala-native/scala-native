@@ -86,7 +86,7 @@ static inline void ObjectMeta_Sweep(ObjectMeta *cursor) {
     *cursor = (*cursor & 0x04) >> 1;
 }
 
-#ifdef DEBUG_ASSERT
+#ifdef GC_ASSERTIONS
 static inline void ObjectMeta_AssertIsValidAllocation(ObjectMeta *start,
                                                       size_t size) {
     ObjectMeta *limit = start + (size / ALLOCATION_ALIGNMENT);

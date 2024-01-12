@@ -15,9 +15,9 @@ final class Locale(
 ) extends Serializable
     with Cloneable {
 
-  private[this] val language: String = languageRaw.toLowerCase()
+  private val language: String = languageRaw.toLowerCase()
 
-  private[this] val country: String = countryRaw.toUpperCase()
+  private val country: String = countryRaw.toUpperCase()
 
   if (language == null || country == null || variant == null)
     throw new NullPointerException()

@@ -9,7 +9,7 @@ import scala.scalanative.testinterface.common._
 
 private[testinterface] class TestAdapterBridge(rpcClient: NativeRPC) {
 
-  private[this] val mux = new RunMuxRPC(rpcClient)
+  private val mux = new RunMuxRPC(rpcClient)
 
   def start(): Unit = {
     rpcClient.attach(detectFrameworks)(detectFrameworksFun)

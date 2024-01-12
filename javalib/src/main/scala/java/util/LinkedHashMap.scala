@@ -123,23 +123,23 @@ class LinkedHashMap[K, V](
 
   private final class NodeIterator
       extends AbstractLinkedHashMapIterator[HashMap.Node[K, V]] {
-    protected[this] def extract(node: Node[K, V]): Node[K, V] = node
+    protected def extract(node: Node[K, V]): Node[K, V] = node
   }
 
   private final class KeyIterator extends AbstractLinkedHashMapIterator[K] {
-    protected[this] def extract(node: Node[K, V]): K = node.key
+    protected def extract(node: Node[K, V]): K = node.key
   }
 
   private final class ValueIterator extends AbstractLinkedHashMapIterator[V] {
-    protected[this] def extract(node: Node[K, V]): V = node.value
+    protected def extract(node: Node[K, V]): V = node.value
   }
 
   private abstract class AbstractLinkedHashMapIterator[A]
       extends ju.Iterator[A] {
-    private[this] var nextNode: Node[K, V] = eldest
-    private[this] var lastNode: Node[K, V] = _
+    private var nextNode: Node[K, V] = eldest
+    private var lastNode: Node[K, V] = _
 
-    protected[this] def extract(node: Node[K, V]): A
+    protected def extract(node: Node[K, V]): A
 
     def hasNext(): Boolean =
       nextNode ne null

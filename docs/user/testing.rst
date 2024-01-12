@@ -59,4 +59,11 @@ This behavior can influence tests expecting to finish within some fixed amount o
 To mitigate this issue set the environment variable `SCALANATIVE_TEST_PREFETCH_DEBUG_INFO=1` to ensure that debug info would be loaded
 before starting test execution.
 
+Debugging sygnals
+-----------------
+In case of problems with unexpected signals crashing the test (SIGSEGV, SIGBUS) 
+you can set the environment variable `SCALANATIVE_TEST_DEBUG_SIGNALS=1` to enable debug signal handlers
+in the test runner. When enabled test runner would set up signal handlers printing stack trace for most of the available signals for a given platform.
+
+
 Continue to :ref:`profiling`.

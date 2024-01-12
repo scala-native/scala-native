@@ -5,10 +5,10 @@ package java.io
 class LineNumberReader(in: Reader, sz: Int) extends BufferedReader(in, sz) {
   def this(in: Reader) = this(in, 4096)
 
-  private[this] var lineNumber: Int = 0
-  private[this] var lastWasCR: Boolean = false
-  private[this] var markedLineNumber: Int = -1
-  private[this] var markedLastWasCR: Boolean = false
+  private var lineNumber: Int = 0
+  private var lastWasCR: Boolean = false
+  private var markedLineNumber: Int = -1
+  private var markedLastWasCR: Boolean = false
 
   override def mark(readAheadLimit: Int): Unit = {
     super.mark(readAheadLimit)

@@ -21,7 +21,7 @@ class LexicalScopesTest extends OptimizerSpec {
       sources,
       { (config: NativeConfig) =>
         config
-          .withDebugMetadata(true)
+          .withSourceLevelDebuggingConfig(_.enableAll)
           .withMode(build.Mode.releaseFull)
       }.andThen(setupConfig)
     )(fn)

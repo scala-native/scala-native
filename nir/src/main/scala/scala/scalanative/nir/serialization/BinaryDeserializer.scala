@@ -26,10 +26,10 @@ class DeserializationException(
     )
 
 // scalafmt: { maxColumn = 120}
-final class BinaryDeserializer(buffer: ByteBuffer, fileName: String) {
+final class BinaryDeserializer(buffer: ByteBuffer, nirSource: NIRSource) {
   import buffer._
 
-  lazy val prelude = Prelude.readFrom(buffer, fileName)
+  lazy val prelude = Prelude.readFrom(buffer, nirSource.debugName)
 
   final def deserialize(): Seq[Defn] = {
     val allDefns = mutable.UnrolledBuffer.empty[Defn]
@@ -41,7 +41,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, fileName: String) {
           case NonFatal(ex) =>
             throw new DeserializationException(
               global,
-              fileName,
+              nirSource.debugName,
               compatVersion = prelude.compat,
               revision = prelude.revision,
               cause = ex
@@ -202,6 +202,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, fileName: String) {
     case T.FinalAttr    => Attr.Final
 
     case T.LinktimeResolvedAttr => Attr.LinktimeResolved
+    case T.UsesIntrinsicAttr    => Attr.UsesIntrinsic
     case T.AlignAttr            => Attr.Alignment(getLebSignedInt(), getOpt(getString()))
   }
 
@@ -449,7 +450,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, fileName: String) {
       case T.ConstVal   => Val.Const(getVal())
       case T.StringVal  => Val.String(getString())
       case T.VirtualVal => Val.Virtual(getLebUnsignedLong())
-      case T.ClassOfVal => Val.ClassOf(getGlobal())
+      case T.ClassOfVal => Val.ClassOf(getGlobal().narrow[Global.Top])
       case T.SizeVal    => Val.Size(getLebUnsignedLong())
     }
   }
@@ -482,11 +483,14 @@ final class BinaryDeserializer(buffer: ByteBuffer, fileName: String) {
       case n => util.unsupported(s"Unknown linktime condition tag: ${n}")
     }
 
-  def getPosition(): Position = in(prelude.sections.positions) {
-    val file = new URI(getString())
+  def getPosition(): nir.Position = in(prelude.sections.positions) {
+    val file = getString() match {
+      case ""   => nir.SourceFile.Virtual
+      case path => nir.SourceFile.SourceRootRelative(path)
+    }
     val line = getLebUnsignedInt()
     val column = getLebUnsignedInt()
-    Position(file, line, column)
+    nir.Position(source = file, line = line, column = column, nirSource = nirSource)
   }
 
   def getLocalNames(): LocalNames = {

@@ -792,4 +792,32 @@ network is first used.
 
       System.setProperty("java.net.preferIPv6Addresses", "true")
 
+
+Support for discovering service providers
+-----------------------------------------
+
+Scala Native does implement partial support usage Java service providers pattern including
+loading available implementations of given interface using ``java.util.ServiceLoader``.
+Similarly to JVM toolchain would try to discover implementations of services using ``META-INF/servives/<fully-qualified-class-name>`` 
+files found in resources of dependencies. However, due to ahead of time compilation model Scala Native requires additional configuration,
+allowing to load only requested implementation based on provided configuration.
+
+.. code-block:: scala
+
+  nativeConfig ~= { _.withServiceProviders(
+    Map(
+      "MyServiceName" -> Seq("MyImplementation1", "foo.bar.MyOtherImplementation",
+      "java.nio.file.spi.FileSystemProvider" -> Seq("my.lib.MyCustomFileSystem"))
+    )
+  )}
+
+All providers of service referenced by ``java.util.ServiceLoader.load`` that were reached from any of entrypoints, would be enlisted when linking.
+The providers might have 1 out 5 available statuses: 
+  * ``Loaded`` - this provider was allowed by the config and found on the classpath. It would be available at runtime.
+  * ``Available`` - this provider was found on classpath, but it was not enlisted in the config. It would not be available at runtime.
+  * ``UnknownConfigEntry`` - provider enlisted in config was not found on classpath. It might suggest typo in configuration or in ``META-INF/servies`` file.
+  * ``NotFoundOnClasspath`` - given provider was found both in config and in ``META-INF/services`` file, but it was not found on classpath. It might suggest that given provider was not cross-compiled for Scala Native.
+  * ``NoProviders`` - status assigned for services without any available implementations found on classpath and without config entries
+
+
 Continue to :ref:`libc`.

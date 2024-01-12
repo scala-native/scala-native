@@ -21,6 +21,7 @@ import scala.scalanative.linker.{
 import scala.scalanative.linker.ReachabilityAnalysis
 import scala.scalanative.util.ScopedVar
 import scala.scalanative.codegen.llvm.Metadata.conversions.optionWrapper
+import scala.scalanative.nir.SourceFile.SourceRootRelative
 
 // scalafmt: { maxColumn = 100}
 trait MetadataCodeGen { self: AbstractCodeGen =>
@@ -29,7 +30,11 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
   import Writer._
   import self.meta.platform
 
-  final val generateDebugMetadata = self.meta.config.debugMetadata
+  final val generateDebugMetadata = self.meta.config.sourceLevelDebuggingConfig.enabled
+  final val generateLocalVariables =
+    self.meta.config.sourceLevelDebuggingConfig.generateLocalVariables
+
+  def sourceCodeCache: SourceCodeCache
 
   /* Create a name debug metadata entry and write it on the metadata section */
   def dbg(name: => String)(values: Metadata.Node*)(implicit ctx: Context): Unit =
@@ -112,7 +117,7 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
       defnScopes: DefnScopes,
       metadataCtx: Context,
       sb: ShowBuilder
-  ): Unit = if (generateDebugMetadata && canHaveDebugValue(ty)) {
+  ): Unit = if (generateLocalVariables && canHaveDebugValue(ty)) {
     implicit def _srcPosition: nir.Position = srcPosition
     implicit def _scopeId: nir.ScopeId = scopeId
     implicit def analysis: linker.ReachabilityAnalysis.Result = meta.analysis
@@ -203,10 +208,17 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
       .getOrElse(Nil)
 
   def toDIFile(pos: nir.Position): DIFile = {
-    pos.filename
-      .zip(pos.dir)
-      .headOption
-      .map((DIFile.apply _).tupled)
+    pos.source
+      .flatMap {
+        case source: SourceRootRelative => sourceCodeCache.findSources(source, pos)
+        case _                          => None
+      }
+      .map { sourcePath =>
+        DIFile(
+          filename = sourcePath.getFileName().toString(),
+          directory = sourcePath.getParent().toString()
+        )
+      }
       .getOrElse(DIFile("unknown", "unknown"))
   }
 
@@ -233,15 +245,25 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
         isOptimized = defn.attrs.opt == nir.Attr.DidOpt
       )
       val linkageName = mangled(defn.name)
+      val ownerName = defn.name.owner.id
+
+      // On Windows if there are no method symbols (LTO enabled) stack traces might return linkage names from found debug symbols
+      // Use it to implement stacktraces
+      val useFQCName =
+        meta.buildConfig.targetsWindows &&
+          meta.config.lto != scalanative.build.LTO.None
+      def fqcn(methodName: String) = s"$ownerName.$methodName"
+      def maybeFQCName(methodName: String) = if (useFQCName) fqcn(methodName) else methodName
       def methodNameInfo(sig: nir.Sig.Unmangled): (String, DIFlags) = sig match {
-        case nir.Sig.Extern(id)           => id -> DIFlags()
-        case nir.Sig.Method(id, _, scope) => id -> DIFlags(sigAccessibilityFlags(scope): _*)
-        case nir.Sig.Duplicate(of, _)     => methodNameInfo(of.unmangled)
-        case nir.Sig.Clinit               => "class constructor" -> DIFlags(DIFlag.DIFlagPrivate)
-        case nir.Sig.Generated(id)        => id -> DIFlags(DIFlag.DIFlagArtificial)
-        case nir.Sig.Ctor(_)              => defn.name.owner.id -> DIFlags()
-        case nir.Sig.Proxy(id, _)         => id -> DIFlags()
-        case _: nir.Sig.Field             => util.unreachable
+        case nir.Sig.Extern(id) => id -> DIFlags()
+        case nir.Sig.Method(id, _, scope) =>
+          maybeFQCName(id) -> DIFlags(sigAccessibilityFlags(scope): _*)
+        case nir.Sig.Duplicate(of, _) => methodNameInfo(of.unmangled)
+        case nir.Sig.Clinit           => "<clinit>" -> DIFlags(DIFlag.DIFlagPrivate)
+        case nir.Sig.Generated(id)    => maybeFQCName(id) -> DIFlags(DIFlag.DIFlagArtificial)
+        case nir.Sig.Ctor(_)          => maybeFQCName("<init>") -> DIFlags()
+        case nir.Sig.Proxy(id, _)     => maybeFQCName(id) -> DIFlags()
+        case _: nir.Sig.Field         => util.unreachable
       }
       val nir.Type.Function(argtys, retty) = defn.ty: @unchecked
       val (name, flags) = methodNameInfo(defn.name.sig.unmangled)
@@ -924,7 +946,7 @@ object MetadataCodeGen {
           .field("isOptimized", isOptimized)
           .field("emissionKind", "FullDebug".const)
           // TODO: update once SN has its own DWARF language code
-          .field("language", "DW_LANG_C".const)
+          .field("language", "DW_LANG_C_plus_plus".const)
     }
 
     implicit lazy val ofDIFile: Specialized[DIFile] = {

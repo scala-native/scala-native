@@ -22,7 +22,7 @@ class NIRCompilerTest {
 
   @Test def returnCompilationProducts(): Unit = {
     val files =
-      NIRCompiler { _ compile "class A" }
+      NIRCompiler { _.compile("class A") }
         .filter(Files.isRegularFile(_))
         .map(_.getFileName.toString)
     val expectedNames = Seq("A.class", "A.nir")
@@ -52,14 +52,14 @@ class NIRCompilerTest {
   @Test def reportCompilationErrors(): Unit = {
     assertThrows(
       classOf[api.CompilationFailedException],
-      () => NIRCompiler { _ compile "invalid" }
+      () => NIRCompiler { _.compile("invalid") }
     )
   }
 
   @Test def compileSpecifiedDirectory(): Unit = {
     val temporaryDir = Files.createTempDirectory("my-target")
     val nirFiles =
-      NIRCompiler(outDir = temporaryDir) { _ compile "class A" }
+      NIRCompiler(outDir = temporaryDir) { _.compile("class A") }
         .filter(Files.isRegularFile(_))
     nirFiles.foreach { file =>
       assertEquals(temporaryDir, file.getParent())

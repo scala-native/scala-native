@@ -15,25 +15,27 @@ pos/t6367.scala
 # Does not create tasty.jar
 neg/t12134
 
+# Not deterministic order of warnings
+neg/case-collision.scala 
+
 #
 # RUN
 #
 
 # Uses .java files
 run/t12195
+run/t12380
 run/t9200
 run/t8348
 run/noInlineUnknownIndy
 run/specialize-functional-interface
 
-# Relies on the exact toString() representation of Floats/Doubles
-run/t2378.scala
+## Uses testkit java files
+run/small-seq-apply.scala
 
 # Using parts of the javalib we don't plan to support
 
 run/t5018.scala
-run/t2417.scala
-run/lazy-concurrent.scala
 run/t3667.scala
 run/t3038d.scala
 run/shutdownhooks.scala
@@ -46,7 +48,6 @@ run/lambda-serialization-gc.scala
 run/t9390.scala
 run/t9390b.scala
 run/t9390c.scala
-run/trait-defaults-super.scala
 run/t2849.scala
 run/t10488.scala
 run/various-flat-classpath-types.scala
@@ -56,6 +57,7 @@ run/t9437a.scala
 run/t12002.scala
 run/BoxUnboxTest.scala
 run/module-serialization-proxy-class-unload.scala
+run/t12481.scala
 
 # Uses java.math.BigDecimal / BigInteger : but failures not due to them
 run/is-valid-num.scala
@@ -63,20 +65,20 @@ run/is-valid-num.scala
 # Documented semantic difference on String.split(x: Array[Char])
 run/t0325.scala
 
-# Using Threads
-run/inner-obj-auto.scala
-run/predef-cycle.scala
-run/synchronized.scala
-run/sd409.scala
-
 # Uses java.security
 run/t2318.scala
 
 # Tries to catch java.lang.StackOverflowError
 run/t6154.scala
 
+# Using java.util.Locale
+run/f-interpolator-unit.scala
+
+# Using java.util.concurrent.ConcurrentSkipListMap() + java.util.Timer
+run/t12572.scala
+
 # Taking too much time >60sec
-run/t10594.scala
+run/t2417.scala
 run/t3989.scala
 
 # Using IO
@@ -85,6 +87,7 @@ run/t6488.scala
 run/t6988.scala
 
 # Object{Output|Input}Streams
+run/t12774.scala
 run/defaults-serizaliable-no-forwarders.scala
 run/defaults-serizaliable-with-forwarders.scala
 run/t6935.scala
@@ -109,15 +112,17 @@ run/t4426.scala
 
 run/t7336.scala
 run/t7775.scala
-run/t10513.scala
-run/future-flatmap-exec-count.scala
 
 # Using detailed stack trace
-
 run/t6308.scala
+run/t10277.scala
+run/t10277b.scala
 
 # Using reflection
+##java.lang.SuppressWarnings + java.lang.Deprecated
+run/t9400.scala
 
+run/t12799
 run/reflection-package-name-conflict
 run/sip23-toolbox-eval.scala
 run/t6063
@@ -589,6 +594,10 @@ run/typetags_caching.scala
 run/type-tag-leak.scala
 run/t10856.scala
 run/module-static.scala
+run/dotty-i11332.scala
+run/dotty-i11332b.scala
+run/dotty-t12348.scala
+run/t12348.scala
 
 # Uses reflection indirectly through
 # scala.runtime.ScalaRunTime.replStringOf
@@ -625,9 +634,6 @@ run/t10334.scala
 run/classfile-format-51.scala
 run/classfile-format-52.scala
 
-# Concurrent collections (TrieMap)
-# has too much stuff implemented in *.java, so no support
-run/triemap-hash.scala
 
 # Using Swing
 
@@ -768,6 +774,11 @@ run/interpolation-repl.scala
 run/t12292.scala
 run/t12276.scala
 run/t10943.scala
+run/StringConcat.scala
+run/repl-release.scala
+run/t10016.scala
+run/t10655.scala
+run/t12390.scala
 
 # Using Scala Script (partest.ScriptTest)
 
@@ -777,7 +788,9 @@ run/t4625c.scala
 run/t4625b.scala
 
 # Using the compiler API
-
+run/sd409.scala
+run/t8465.scala
+run/t9644b
 run/nowarn.scala
 run/t9944.scala
 run/t3368.scala
@@ -830,6 +843,14 @@ run/t12062.scala
 
 
 # partest.DirectTest
+run/t1406.scala
+run/t12405.scala
+run/t12490.scala
+run/t12597.scala
+run/t12705.scala
+run/t12757.scala
+run/t12757b.scala
+run/t12757c.scala
 run/t12019
 run/t11815.scala
 run/t11746.scala
@@ -891,9 +912,24 @@ run/patmat-no-inline-unapply.scala
 run/splain-tree.scala
 run/splain-truncrefined.scala
 run/splain.scala
+run/eta-dependent.scala
+run/infix-rangepos.scala
+run/infixPostfixAttachments.scala
+run/print-args.scala
+
 
 # Using partest.StoreReporterDirectTest
 run/t10171
+run/argfile.scala
+run/badout.scala
+run/debug-type-error.scala
+run/package-object-stale-decl.scala
+run/package-object-toolbox.scala
+run/package-object-with-inner-class-in-ancestor.scala
+run/package-object-with-inner-class-in-ancestor-simpler.scala
+run/package-object-with-inner-class-in-ancestor-simpler-still.scala
+run/smallseq.scala
+
 
 # partest.StubErrorMessageTest
 run/StubErrorBInheritsFromA.scala
@@ -929,7 +965,7 @@ run/t8935-object.scala
 run/t8608-no-format.scala
 
 # Using .java source files
-
+run/t12523
 run/t4317
 run/t4238
 run/t2296c
@@ -1011,6 +1047,9 @@ run/t7791-script-linenums.scala
 # Using scalap
 run/scalapInvokedynamic.scala
 
+# Not a valid main method
+run/t7448.scala
+
 # Using Manifests (which use Class.getInterfaces)
 run/valueclasses-manifest-existential.scala
 run/existentials3-old.scala
@@ -1026,35 +1065,33 @@ run/t6246.scala
 
 # Using ScalaRunTime.stringOf
 run/value-class-extractor-seq.scala
-run/t3493.scala
 
-# Custom invoke dynamic node
+# Custom invoke dynamic node + uses .java sources
 run/indy-via-macro
 run/indy-via-macro-with-dynamic-args
+run/indy-via-macro-class-constant-bsa 
+run/indy-via-macro-method-type-bsa
+run/indy-via-macro-reflector
 
+# TODO:
 ### Bugs
 ## Compiler
 run/anyval-box-types.scala
 run/structural.scala
-run/t8017
-run/t8601b.scala
 run/t8601d.scala
 run/t10069b.scala
+run/t11665.scala
 
 ## JVM compliance
 run/t5680.scala
-run/try-catch-unify.scala
 run/t2755.scala
-run/java-erasure.scala
 
 
 ## Fails
-run/t10290.scala
-run/t6827.scala
 run/classtags-cached.scala
 run/sip23-cast-1.scala
 
-#OutOfMemoryError
+# Infinite loop
 run/stream-gc.scala
 
 ## Check not passing
@@ -1063,16 +1100,6 @@ run/t4300.scala
 run/t8334.scala
 run/t8803.scala
 run/t9697.scala
+run/t10290.scala
 
-#Missing symbols
-run/t9400.scala
 
-## LLVM compilation fails
-run/t7269.scala
-
-## Other
-run/t10277.scala
-run/t10277b.scala
-
-run/t12380
-run/t7448.scala

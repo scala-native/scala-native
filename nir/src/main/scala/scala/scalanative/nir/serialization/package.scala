@@ -3,7 +3,9 @@ package nir
 
 import java.io.OutputStream
 import java.nio._
+import java.nio.file.Path
 import java.nio.channels.WritableByteChannel
+import scala.scalanative.io.VirtualDirectory
 
 package object serialization {
   @inline
@@ -18,8 +20,13 @@ package object serialization {
     new BinarySerializer(channel).serialize(defns)
   }
 
-  def deserializeBinary(buffer: ByteBuffer, fileName: String): Seq[Defn] =
+  def deserializeBinary(directory: VirtualDirectory, path: Path): Seq[Defn] = {
+    val buffer = directory.read(path)
     withBigEndian(buffer) {
-      new BinaryDeserializer(_, fileName).deserialize()
+      new BinaryDeserializer(
+        _,
+        new NIRSource(directory.path, path)
+      ).deserialize()
     }
+  }
 }

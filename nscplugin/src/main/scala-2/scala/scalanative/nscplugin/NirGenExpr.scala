@@ -212,7 +212,11 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
     def genIf(tree: If): nir.Val = {
       val If(cond, thenp, elsep) = tree
-      val retty = genType(tree.tpe)
+      def isUnitType(tpe: Type) =
+        defn.isUnitType(tpe) || tpe =:= defn.BoxedUnitTpe
+      val retty =
+        if (isUnitType(thenp.tpe) || isUnitType(elsep.tpe)) nir.Type.Unit
+        else genType(tree.tpe)
       genIf(retty, cond, thenp, elsep)(tree.pos)
     }
 
@@ -236,7 +240,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         val cond = genExpr(condp)
         buf.branch(cond, nir.Next(thenn), nir.Next(elsen))(condp.pos)
       } { cond =>
-        curMethodUsesLinktimeResolvedValues = true
+        curMethodEnv.get.isUsingLinktimeResolvedValue = true
         buf.branchLinktime(cond, nir.Next(thenn), nir.Next(elsen))(condp.pos)
       }
 
@@ -1207,19 +1211,20 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       val sym = app.symbol
       val code = scalaPrimitives.getPrimitive(sym, receiver.tpe)
       (code: @switch) match {
-        case CONCAT                 => genStringConcat(receiver, args.head)
+        case CONCAT                 => genStringConcat(app)
         case HASH                   => genHashCode(args.head)
         case CFUNCPTR_APPLY         => genCFuncPtrApply(app, code)
         case CFUNCPTR_FROM_FUNCTION => genCFuncFromScalaFunction(app)
         case SYNCHRONIZED =>
           val Apply(Select(receiverp, _), List(argp)) = app
           genSynchronized(receiverp, argp)(app.pos)
-        case STACKALLOC         => genStackalloc(app)
-        case CLASS_FIELD_RAWPTR => genClassFieldRawPtr(app)
-        case SIZE_OF            => genSizeOf(app)
-        case ALIGNMENT_OF       => genAlignmentOf(app)
-        case CQUOTE             => genCQuoteOp(app)
-        case BOXED_UNIT         => nir.Val.Unit
+        case STACKALLOC              => genStackalloc(app)
+        case CLASS_FIELD_RAWPTR      => genClassFieldRawPtr(app)
+        case SIZE_OF                 => genSizeOf(app)
+        case ALIGNMENT_OF            => genAlignmentOf(app)
+        case CQUOTE                  => genCQuoteOp(app)
+        case BOXED_UNIT              => nir.Val.Unit
+        case USES_LINKTIME_INTRINSIC => genLinktimeIntrinsicApply(app)
         case code =>
           if (isArithmeticOp(code) || isLogicalOp(code) || isComparisonOp(code))
             genSimpleOp(app, receiver :: args, code)
@@ -1239,6 +1244,38 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             )
           }
       }
+    }
+
+    private def genLinktimeIntrinsicApply(app: Apply): nir.Val = {
+      import nirDefinitions._
+      implicit def pos: nir.Position = app.pos
+      val Apply(fun, args) = app
+
+      val sym = fun.symbol
+      val Select(receiverp, _) = fun
+      val isStatic = sym.owner.isStaticOwner
+
+      sym match {
+        case _
+            if JavaUtilServiceLoaderLoad.contains(sym) ||
+              JavaUtilServiceLoaderLoadInstalled == sym =>
+          args.head match {
+            case Literal(c: Constant) => () // ok
+            case _ =>
+              reporter.error(
+                app.pos,
+                s"Limitation of ScalaNative runtime: first argument of ${sym} needs to be literal constant of class type, use `classOf[T]` instead."
+              )
+          }
+        case _ =>
+          reporter.error(
+            app.pos,
+            s"Unhandled intrinsic function call for $sym"
+          )
+      }
+
+      curMethodEnv.get.isUsingIntrinsics = true
+      genApplyMethod(sym, statically = isStatic, receiverp, args)
     }
 
     private final val ExternForwarderSig =
@@ -1749,71 +1786,181 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       // Bug compatibility with scala/bug/issues/11253
       case (nir.Type.Long, nir.Type.Float) =>
         nir.Type.Double
+
       case (nir.Type.Ptr, _: nir.Type.RefKind) =>
         lty
+
       case (_: nir.Type.RefKind, nir.Type.Ptr) =>
         rty
+
       case (nir.Type.Bool, nir.Type.Bool) =>
         nir.Type.Bool
-      case (nir.Type.FixedSizeI(lwidth, _), nir.Type.FixedSizeI(rwidth, _))
-          if lwidth < 32 && rwidth < 32 =>
-        nir.Type.Int
-      case (nir.Type.FixedSizeI(lwidth, _), nir.Type.FixedSizeI(rwidth, _)) =>
-        if (lwidth >= rwidth) lty else rty
-      case (nir.Type.FixedSizeI(_, _), nir.Type.F(_)) =>
+
+      case (lhs: nir.Type.FixedSizeI, rhs: nir.Type.FixedSizeI) =>
+        if (lhs.width < 32 && rhs.width < 32) {
+          nir.Type.Int
+        } else if (lhs.width >= rhs.width) {
+          lhs
+        } else {
+          rhs
+        }
+
+      case (_: nir.Type.FixedSizeI, _: nir.Type.F) =>
         rty
-      case (nir.Type.F(_), nir.Type.FixedSizeI(_, _)) =>
+
+      case (_: nir.Type.F, _: nir.Type.FixedSizeI) =>
         lty
-      case (nir.Type.F(lwidth), nir.Type.F(rwidth)) =>
-        if (lwidth >= rwidth) lty else rty
+
+      case (lhs: nir.Type.F, rhs: nir.Type.F) =>
+        if (lhs.width >= rhs.width) lhs else rhs
+
       case (_: nir.Type.RefKind, _: nir.Type.RefKind) =>
         nir.Rt.Object
+
       case (ty1, ty2) if ty1 == ty2 =>
         ty1
-      case (nir.Type.Nothing, ty) => ty
-      case (ty, nir.Type.Nothing) => ty
+
+      case (nir.Type.Nothing, ty) =>
+        ty
+
+      case (ty, nir.Type.Nothing) =>
+        ty
 
       case _ =>
         abort(s"can't perform binary operation between $lty and $rty")
     }
 
-    def genStringConcat(leftp: Tree, rightp: Tree): nir.Val = {
-      def stringify(sym: Symbol, value: nir.Val)(implicit
-          pos: nir.Position
-      ): nir.Val = {
-        val cond = ContTree { () =>
-          buf.comp(nir.Comp.Ieq, nir.Rt.Object, value, nir.Val.Null, unwind)
+    /*
+     * Returns a list of trees that each should be concatenated, from left to right.
+     * It turns a chained call like "a".+("b").+("c") into a list of arguments.
+     */
+    def liftStringConcat(tree: Tree): List[Tree] = {
+      val result = collection.mutable.ListBuffer[Tree]()
+      def loop(tree: Tree): Unit = {
+        tree match {
+          case Apply(fun @ Select(larg, method), rarg :: Nil)
+              if (scalaPrimitives.isPrimitive(fun.symbol) &&
+                scalaPrimitives.getPrimitive(fun.symbol) ==
+                scalaPrimitives.CONCAT) =>
+            loop(larg)
+            loop(rarg)
+          case _ =>
+            result += tree
         }
-        val thenp = ContTree { () => nir.Val.String("null") }
-        val elsep = ContTree { () =>
-          if (sym == StringClass) {
-            value
-          } else {
-            val meth = Object_toString
-            genApplyMethod(meth, statically = false, value, Seq.empty)
-          }
-        }
-        genIf(nir.Rt.String, cond, thenp, elsep)
+      }
+      loop(tree)
+      result.toList
+    }
+
+    /* Issue a call to `StringBuilder#append` for the right element type     */
+    private final def genStringBuilderAppend(
+        stringBuilder: nir.Val.Local,
+        tree: Tree
+    ): Unit = {
+      implicit val nirPos: nir.Position = tree.pos
+
+      val tpe = tree.tpe
+      val argType =
+        if (tpe <:< defn.StringTpe) nir.Rt.String
+        else if (tpe <:< nirDefinitions.jlStringBufferType)
+          genType(nirDefinitions.jlStringBufferRef)
+        else if (tpe <:< nirDefinitions.jlCharSequenceType)
+          genType(nirDefinitions.jlCharSequenceRef)
+        // Don't match for `Array(Char)`, even though StringBuilder has such an overload:
+        // `"a" + Array('b')` should NOT be "ab", but "a[C@...".
+        else if (tpe <:< defn.ObjectTpe) nir.Rt.Object
+        else genType(tpe)
+
+      val value = genExpr(tree)
+      val (adaptedValue, targetType) = argType match {
+        // jlStringBuilder does not have overloads for byte and short, but we can just use the int version
+        case nir.Type.Byte | nir.Type.Short =>
+          genCoercion(value, value.ty, nir.Type.Int) -> nir.Type.Int
+        case nirType => value -> nirType
       }
 
-      val left = {
-        implicit val pos: nir.Position = leftp.pos
-
-        val typesym = leftp.tpe.typeSymbol
-        val unboxed = genExpr(leftp)
-        val boxed = boxValue(typesym, unboxed)
-        stringify(typesym, boxed)
-      }
-
-      val right = {
-        val typesym = rightp.tpe.typeSymbol
-        val boxed = genExpr(rightp)
-        stringify(typesym, boxed)(rightp.pos)
-      }
-
-      genApplyMethod(String_+, statically = true, left, Seq(ValTree(right)))(
-        leftp.pos
+      val (appendFunction, appendSig) =
+        jlStringBuilderAppendForSymbol(targetType)
+      buf.call(
+        appendSig,
+        appendFunction,
+        Seq(stringBuilder, adaptedValue),
+        unwind
       )
+    }
+
+    private lazy val jlStringBuilderRef =
+      nir.Type.Ref(genTypeName(nirDefinitions.jlStringBuilderRef))
+    private lazy val jlStringBuilderCtor =
+      jlStringBuilderRef.name.member(nir.Sig.Ctor(Seq(nir.Type.Int)))
+    private lazy val jlStringBuilderCtorSig = nir.Type.Function(
+      Seq(jlStringBuilderRef, nir.Type.Int),
+      nir.Type.Unit
+    )
+    private lazy val jlStringBuilderToString =
+      jlStringBuilderRef.name.member(
+        nir.Sig.Method("toString", Seq(nir.Rt.String))
+      )
+    private lazy val jlStringBuilderToStringSig = nir.Type.Function(
+      Seq(jlStringBuilderRef),
+      nir.Rt.String
+    )
+
+    private def genStringConcat(tree: Apply): nir.Val = {
+      implicit val nirPos: nir.Position = tree.pos
+      liftStringConcat(tree) match {
+        // Optimization for expressions of the form "" + x
+        case List(Literal(Constant("")), arg) =>
+          genApplyStaticMethod(
+            nirDefinitions.String_valueOf_Object,
+            defn.StringClass,
+            Seq(arg)
+          )
+
+        case concatenations =>
+          val concatArguments = concatenations.view
+            .filter {
+              // empty strings are no-ops in concatenation
+              case Literal(Constant("")) => false
+              case _                     => true
+            }
+            .map {
+              // Eliminate boxing of primitive values. Boxing is introduced by erasure because
+              // there's only a single synthetic `+` method "added" to the string class.
+              case Apply(boxOp, value :: Nil)
+                  // TODO: SN specific boxing
+                  if currentRun.runDefinitions.isBox(boxOp.symbol) =>
+                value
+              case other => other
+            }
+            .toList
+          // Estimate capacity needed for the string builder
+          val approxBuilderSize = concatArguments.view.map {
+            case Literal(Constant(s: String)) => s.length
+            case Literal(c @ Constant(_)) if c.isNonUnitAnyVal =>
+              String.valueOf(c).length
+            case _ => 0
+          }.sum
+
+          // new StringBuidler(approxBuilderSize)
+          val stringBuilder =
+            buf.classalloc(jlStringBuilderRef.name, unwind, None)
+          buf.call(
+            jlStringBuilderCtorSig,
+            nir.Val.Global(jlStringBuilderCtor, nir.Type.Ptr),
+            Seq(stringBuilder, nir.Val.Int(approxBuilderSize)),
+            unwind
+          )
+          // concat substrings
+          concatArguments.foreach(genStringBuilderAppend(stringBuilder, _))
+          // stringBuilder.toString
+          buf.call(
+            jlStringBuilderToStringSig,
+            nir.Val.Global(jlStringBuilderToString, nir.Type.Ptr),
+            Seq(stringBuilder),
+            unwind
+          )
+      }
     }
 
     def genHashCode(argp: Tree)(implicit pos: nir.Position): nir.Val = {
@@ -2009,9 +2156,9 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           Some(nir.Conv.Bitcast)
         case (_: nir.Type.RefKind, _: nir.Type.I) => Some(nir.Conv.Ptrtoint)
         case (_: nir.Type.I, _: nir.Type.RefKind) => Some(nir.Conv.Inttoptr)
-        case (nir.Type.FixedSizeI(w1, _), nir.Type.F(w2)) if w1 == w2 =>
+        case (l: nir.Type.FixedSizeI, r: nir.Type.F) if l.width == r.width =>
           Some(nir.Conv.Bitcast)
-        case (nir.Type.F(w1), nir.Type.FixedSizeI(w2, _)) if w1 == w2 =>
+        case (l: nir.Type.F, r: nir.Type.FixedSizeI) if l.width == r.width =>
           Some(nir.Conv.Bitcast)
         case _ if fromty == toty               => None
         case (nir.Type.Float, nir.Type.Double) => Some(nir.Conv.Fpext)
@@ -2391,17 +2538,14 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             nir.Conv.Bitcast
           case (_: nir.Type.RefKind, nir.Type.Ptr) =>
             nir.Conv.Bitcast
-          case (
-                nir.Type.FixedSizeI(fromw, froms),
-                nir.Type.FixedSizeI(tow, tos)
-              ) =>
-            if (fromw < tow) {
-              if (froms) {
+          case (l: nir.Type.FixedSizeI, r: nir.Type.FixedSizeI) =>
+            if (l.width < r.width) {
+              if (l.signed) {
                 nir.Conv.Sext
               } else {
                 nir.Conv.Zext
               }
-            } else if (fromw > tow) {
+            } else if (l.width > r.width) {
               nir.Conv.Trunc
             } else {
               nir.Conv.Bitcast
@@ -2410,14 +2554,14 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             nir.Conv.Sitofp
           case (i: nir.Type.I, _: nir.Type.F) if !i.signed =>
             nir.Conv.Uitofp
-          case (_: nir.Type.F, nir.Type.FixedSizeI(iwidth, true)) =>
-            if (iwidth < 32) {
+          case (_: nir.Type.F, i: nir.Type.FixedSizeI) if i.signed =>
+            if (i.width < 32) {
               val ivalue = genCoercion(value, fromty, nir.Type.Int)
               return genCoercion(ivalue, nir.Type.Int, toty)
             }
             nir.Conv.Fptosi
-          case (_: nir.Type.F, nir.Type.FixedSizeI(iwidth, false)) =>
-            if (iwidth < 32) {
+          case (_: nir.Type.F, i: nir.Type.FixedSizeI) if !i.signed =>
+            if (i.width < 32) {
               val ivalue = genCoercion(value, fromty, nir.Type.Int)
               return genCoercion(ivalue, nir.Type.Int, toty)
             }
@@ -2785,8 +2929,8 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
                   val promotedArg = arg.ty match {
                     case nir.Type.Float =>
                       this.genCastOp(nir.Type.Float, nir.Type.Double, arg)
-                    case nir.Type.FixedSizeI(width, _)
-                        if width < nir.Type.Int.width =>
+                    case i: nir.Type.FixedSizeI
+                        if i.width < nir.Type.Int.width =>
                       val conv =
                         if (isUnsigned) nir.Conv.Zext
                         else nir.Conv.Sext

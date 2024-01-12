@@ -46,7 +46,7 @@ private[lang] class UnixProcessGen2 private (
     errfds: Ptr[CInt]
 ) extends UnixProcess() {
 
-  private[this] var _exitValue: Option[Int] = None
+  private var _exitValue: Option[Int] = None
 
   override def destroy(): Unit = kill(pid, SIGTERM)
 
@@ -113,21 +113,21 @@ private[lang] class UnixProcessGen2 private (
     0 // Sole caller, PipeIO, never checks value. Just no-op & match signature.
   }
 
-  private[this] val _inputStream =
+  private val _inputStream =
     PipeIO[PipeIO.Stream](
       this,
       new FileDescriptor(!outfds),
       builder.redirectOutput()
     )
 
-  private[this] val _errorStream =
+  private val _errorStream =
     PipeIO[PipeIO.Stream](
       this,
       new FileDescriptor(!errfds),
       builder.redirectError()
     )
 
-  private[this] val _outputStream =
+  private val _outputStream =
     PipeIO[OutputStream](
       this,
       new FileDescriptor(!(infds + 1)),
@@ -775,10 +775,10 @@ object UnixProcessGen2 {
       environment: java.util.Map[String, String],
       bin: String
   ): Seq[String] = {
-    if ((bin startsWith "/") || (bin startsWith ".")) {
+    if ((bin.startsWith("/")) || (bin.startsWith("."))) {
       Seq(bin)
     } else {
-      val path = environment get "PATH" match {
+      val path = environment.get("PATH") match {
         case null => "/bin:/usr/bin:/usr/local/bin"
         case p    => p
       }

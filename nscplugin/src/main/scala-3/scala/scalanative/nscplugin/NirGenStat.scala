@@ -11,7 +11,7 @@ import core.Constants._
 import core.StdNames._
 import core.Flags._
 import core.Phases._
-import dotty.tools.dotc.transform.SymUtils._
+import scala.scalanative.nscplugin.CompilerCompat.SymUtilsCompat._
 
 import scala.collection.mutable
 import scala.scalanative.nir.Defn.Define.DebugInfo
@@ -292,11 +292,14 @@ trait NirGenStat(using Context) {
           scoped(
             curMethodSig := sig
           ) {
-            curMethodUsesLinktimeResolvedValues = false
             val body = genMethodBody(dd, rhs, isExtern)
+            val env = curMethodEnv.get
             val methodAttrs =
-              if (curMethodUsesLinktimeResolvedValues)
-                attrs.copy(isLinktimeResolved = true)
+              if (env.isUsingLinktimeResolvedValue || env.isUsingIntrinsics)
+                attrs.copy(
+                  isLinktimeResolved = env.isUsingLinktimeResolvedValue,
+                  isUsingIntrinsics = env.isUsingIntrinsics
+                )
               else attrs
             val defn = nir.Defn.Define(
               methodAttrs,
@@ -666,7 +669,7 @@ trait NirGenStat(using Context) {
 
     def isInheritedField(f: Symbol) =
       classSym.directlyInheritedTraits.exists {
-        _.info.decls.exists(_ matches f.getter)
+        _.info.decls.exists(_.matches(f.getter))
       }
 
     for f <- classSym.info.decls

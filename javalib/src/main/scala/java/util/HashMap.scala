@@ -43,12 +43,12 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Float)
    *  `growTable()`. Since the number of buckets is not observable from the
    *  outside, this deviation does not change any semantics.
    */
-  private[this] var table = new Array[Node[K, V]](tableSizeFor(initialCapacity))
+  private var table = new Array[Node[K, V]](tableSizeFor(initialCapacity))
 
   /** The next size value at which to resize (capacity * load factor). */
-  private[this] var threshold: Int = newThreshold(table.length)
+  private var threshold: Int = newThreshold(table.length)
 
-  private[this] var contentSize: Int = 0
+  private var contentSize: Int = 0
 
   /* Internal API for LinkedHashMap: these methods are overridden in
    * LinkedHashMap to implement its insertion- or access-order.
@@ -330,7 +330,7 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Float)
    *    the old value associated with `key`, or `null` if there was none
    */
   @inline
-  private[this] def put0(key: K, value: V, ifAbsent: Boolean): V =
+  private def put0(key: K, value: V, ifAbsent: Boolean): V =
     put0(key, value, computeHash(key), ifAbsent)
 
   /** Puts a key-value pair into this map.
@@ -352,7 +352,7 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Float)
    *  @return
    *    the old value associated with `key`, or `null` if there was none
    */
-  private[this] def put0(key: K, value: V, hash: Int, ifAbsent: Boolean): V = {
+  private def put0(key: K, value: V, hash: Int, ifAbsent: Boolean): V = {
     // scalastyle:off return
     val newContentSize = contentSize + 1
     if (newContentSize >= threshold)
@@ -414,7 +414,7 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Float)
    *  @param node
    *    the entry for the given `key`, or `null` if there is no such entry
    */
-  private[this] def put0(
+  private def put0(
       key: K,
       value: V,
       hash: Int,
@@ -484,7 +484,7 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Float)
   }
 
   /** Grow the size of the table (always times 2). */
-  private[this] def growTable(): Unit = {
+  private def growTable(): Unit = {
     val oldTable = table
     val oldlen = oldTable.length
     val newlen = oldlen * 2
@@ -531,10 +531,10 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Float)
   }
 
   /** Rounds up `capacity` to a power of 2, with a maximum of 2^30. */
-  @inline private[this] def tableSizeFor(capacity: Int): Int =
+  @inline private def tableSizeFor(capacity: Int): Int =
     Math.min(Integer.highestOneBit(Math.max(capacity - 1, 4)) * 2, 1 << 30)
 
-  @inline private[this] def newThreshold(size: Int): Int =
+  @inline private def newThreshold(size: Int): Int =
     (size.toDouble * loadFactor.toDouble).toInt
 
   // Iterators
@@ -553,24 +553,24 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Float)
     nodeIterator().asInstanceOf[ju.Iterator[Map.Entry[K, V]]]
 
   private final class NodeIterator extends AbstractHashMapIterator[Node[K, V]] {
-    protected[this] def extract(node: Node[K, V]): Node[K, V] = node
+    protected def extract(node: Node[K, V]): Node[K, V] = node
   }
 
   private final class KeyIterator extends AbstractHashMapIterator[K] {
-    protected[this] def extract(node: Node[K, V]): K = node.key
+    protected def extract(node: Node[K, V]): K = node.key
   }
 
   private final class ValueIterator extends AbstractHashMapIterator[V] {
-    protected[this] def extract(node: Node[K, V]): V = node.value
+    protected def extract(node: Node[K, V]): V = node.value
   }
 
   private abstract class AbstractHashMapIterator[A] extends ju.Iterator[A] {
-    private[this] val len = table.length
-    private[this] var nextIdx: Int = _ // 0
-    private[this] var nextNode: Node[K, V] = _ // null
-    private[this] var lastNode: Node[K, V] = _ // null
+    private val len = table.length
+    private var nextIdx: Int = _ // 0
+    private var nextNode: Node[K, V] = _ // null
+    private var lastNode: Node[K, V] = _ // null
 
-    protected[this] def extract(node: Node[K, V]): A
+    protected def extract(node: Node[K, V]): A
 
     /* Movements of `nextNode` and `nextIdx` are spread over `hasNext()` to
      * simplify initial conditions, and preserving as much performance as

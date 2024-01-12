@@ -19,7 +19,7 @@ static inline bool Sweeper_IsSweepDone(Heap *heap) {
     return heap->sweep.postSweepDone;
 }
 
-#ifdef DEBUG_ASSERT
+#ifdef GC_ASSERTIONS
 void Sweeper_ClearIsSwept(Heap *heap);
 void Sweeper_AssertIsConsistent(Heap *heap);
 #endif

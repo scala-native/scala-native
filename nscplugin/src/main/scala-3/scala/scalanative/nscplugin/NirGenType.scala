@@ -16,7 +16,7 @@ import core.TypeErasure._
 import core.TypeError
 import dotty.tools.dotc.report
 import dotty.tools.dotc.typer.TyperPhase
-import dotty.tools.dotc.transform.SymUtils._
+import scala.scalanative.nscplugin.CompilerCompat.SymUtilsCompat.*
 
 import scala.scalanative.util.unsupported
 
@@ -147,6 +147,19 @@ trait NirGenType(using Context) {
     defn.FloatClass -> genType(defn.BoxedFloatClass),
     defn.DoubleClass -> genType(defn.BoxedDoubleClass)
   )
+
+  lazy val jlStringBuilderAppendForSymbol = defnNir.jlStringBuilderAppendAlts
+    .flatMap(sym =>
+      val sig = genMethodSig(sym)
+      def name = genMethodName(sym)
+      sig match
+        case nir.Type.Function(Seq(_, arg), _) =>
+          Some(
+            nir.Type.normalize(arg) -> (nir.Val.Global(name, nir.Type.Ptr), sig)
+          )
+        case _ => None
+    )
+    .toMap
 
   def genExternType(st: SimpleType): nir.Type = {
     if (st.sym.isCFuncPtrClass)

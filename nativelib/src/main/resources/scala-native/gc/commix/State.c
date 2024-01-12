@@ -7,7 +7,10 @@ BlockAllocator blockAllocator = {};
 _Atomic(MutatorThreads) mutatorThreads = NULL;
 atomic_int_fast32_t mutatorThreadsCount = 0;
 thread_local MutatorThread *currentMutatorThread = NULL;
-safepoint_t scalanative_gc_safepoint = NULL;
-GC_Roots *roots = NULL;
+GC_Roots *customRoots = NULL;
+
+#ifdef SCALANATIVE_MULTITHREADING_ENABLED
+struct GCWeakRefsHandlerThread *weakRefsHandlerThread = NULL;
+#endif
 
 #endif

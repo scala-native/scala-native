@@ -1,7 +1,7 @@
 #ifndef IMMIX_SETTINGS_H
 #define IMMIX_SETTINGS_H
 
-#define STATS_FILE_SETTING "SCALANATIVE_STATS_FILE"
+#define GC_STATS_FILE_SETTING "GC_STATS_FILE"
 
 #include <stddef.h>
 

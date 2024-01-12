@@ -9,159 +9,99 @@
 
 #include "State.h"
 #include "shared/ThreadUtil.h"
-#include "shared/Safepoint.h"
 #include "MutatorThread.h"
-#include "immix_commix/StackTrace.h"
 
-#ifdef _WIN32
-#include <errhandlingapi.h>
-#else
-#include <signal.h>
-#include <pthread.h>
-#include <sys/mman.h>
-#include <sys/time.h>
-#include <unistd.h>
-#endif
-
-static volatile bool isCollecting = false;
+atomic_bool Synchronizer_stopThreads = false;
 static mutex_t synchronizerLock;
-
-#define SafepointInstance (scalanative_gc_safepoint)
-
 #ifdef _WIN32
-static LONG WINAPI SafepointTrapHandler(EXCEPTION_POINTERS *ex) {
-    switch (ex->ExceptionRecord->ExceptionCode) {
-    case EXCEPTION_ACCESS_VIOLATION:
-        ULONG_PTR addr = ex->ExceptionRecord->ExceptionInformation[1];
-        if (SafepointInstance == (void *)addr) {
-            Synchronizer_wait();
-            return EXCEPTION_CONTINUE_EXECUTION;
-        }
-        fprintf(stderr, "Caught exception code %p in GC exception handler\n",
-                (void *)(uintptr_t)ex->ExceptionRecord->ExceptionCode);
-        fflush(stdout);
-        StackTrace_PrintStackTrace(ex);
-    // pass-through
-    default:
-        return EXCEPTION_CONTINUE_SEARCH;
-    }
-}
+static HANDLE threadSuspensionEvent;
 #else
-#ifdef __APPLE__
-#define SAFEPOINT_TRAP_SIGNAL SIGBUS
-#else
-#define SAFEPOINT_TRAP_SIGNAL SIGSEGV
+static struct {
+    pthread_mutex_t lock;
+    pthread_cond_t resume;
+} threadSuspension;
 #endif
-#define THREAD_WAKEUP_SIGNAL SIGCONT
-static struct sigaction defaultAction;
-static sigset_t threadWakupSignals;
-static void SafepointTrapHandler(int signal, siginfo_t *siginfo, void *uap) {
-    if (siginfo->si_addr == SafepointInstance) {
-        Synchronizer_wait();
-    } else {
-        fprintf(stderr,
-                "Unexpected signal %d when accessing memory at address %p\n",
-                signal, siginfo->si_addr);
-        StackTrace_PrintStackTrace();
-        defaultAction.sa_handler(signal);
-    }
-}
-#endif
-
-static void SetupPageFaultHandler() {
-#ifdef _WIN32
-    // Call it as last exception handler
-    AddVectoredExceptionHandler(1, &SafepointTrapHandler);
-#else
-    sigemptyset(&threadWakupSignals);
-    sigaddset(&threadWakupSignals, THREAD_WAKEUP_SIGNAL);
-    sigprocmask(SIG_BLOCK, &threadWakupSignals, NULL);
-    assert(sigismember(&threadWakupSignals, THREAD_WAKEUP_SIGNAL));
-
-    struct sigaction sa;
-    memset(&sa, 0, sizeof(struct sigaction));
-    sigemptyset(&sa.sa_mask);
-    sa.sa_sigaction = &SafepointTrapHandler;
-    sa.sa_flags = SA_SIGINFO | SA_RESTART;
-    if (sigaction(SAFEPOINT_TRAP_SIGNAL, &sa, &defaultAction) == -1) {
-        perror("Error: cannot setup safepoint synchronization handler");
-        exit(errno);
-    }
-#endif
-}
 
 static void Synchronizer_SuspendThread(MutatorThread *thread) {
     assert(thread == currentMutatorThread);
+    atomic_store_explicit(&thread->isWaiting, true, memory_order_release);
 #ifdef _WIN32
-    if (!ResetEvent(thread->wakeupEvent)) {
-        fprintf(stderr, "Failed to reset event %lu\n", GetLastError());
-    }
-    if (WAIT_OBJECT_0 != WaitForSingleObject(thread->wakeupEvent, INFINITE)) {
-        fprintf(stderr, "Error: suspend thread");
-        exit(GetLastError());
-    }
+    WaitForSingleObject(threadSuspensionEvent, INFINITE);
 #else
-    int signum;
-    if (0 != sigwait(&threadWakupSignals, &signum)) {
-        perror("Error: sig wait");
-        exit(errno);
+    pthread_mutex_lock(&threadSuspension.lock);
+    while (atomic_load(&Synchronizer_stopThreads)) {
+        pthread_cond_wait(&threadSuspension.resume, &threadSuspension.lock);
     }
-    assert(signum == THREAD_WAKEUP_SIGNAL);
+    pthread_mutex_unlock(&threadSuspension.lock);
+#endif
+    atomic_store_explicit(&thread->isWaiting, false, memory_order_release);
+}
+
+static void Synchronizer_SuspendThreads() {
+#ifdef _WIN32
+    ResetEvent(threadSuspensionEvent);
+    atomic_store_explicit(&Synchronizer_stopThreads, true,
+                          memory_order_release);
+#else
+    pthread_mutex_lock(&threadSuspension.lock);
+    atomic_store_explicit(&Synchronizer_stopThreads, true,
+                          memory_order_release);
+    pthread_mutex_unlock(&threadSuspension.lock);
 #endif
 }
 
-static void Synchronizer_WakeupThread(MutatorThread *thread) {
+static void Synchronizer_WakeupThreads() {
+    assert(Synchronizer_stopThreads == false);
 #ifdef _WIN32
-    assert(thread != currentMutatorThread);
-    if (!SetEvent(thread->wakeupEvent)) {
-        fprintf(stderr, "Failed to set event %lu\n", GetLastError());
-    }
+    SetEvent(threadSuspensionEvent);
 #else
-    int status = pthread_kill(thread->thread, THREAD_WAKEUP_SIGNAL);
-    if (status != 0) {
-        fprintf(stderr, "Failed to resume thread after GC, retval: %d\n",
-                status);
-    }
+    pthread_mutex_lock(&threadSuspension.lock);
+    pthread_cond_broadcast(&threadSuspension.resume);
+    pthread_mutex_unlock(&threadSuspension.lock);
 #endif
 }
 
 void Synchronizer_init() {
-    Safepoint_init(&SafepointInstance);
     mutex_init(&synchronizerLock);
-    SetupPageFaultHandler();
+#ifdef _WIN32
+    threadSuspensionEvent = CreateEvent(NULL, true, false, NULL);
+    if (threadSuspensionEvent == NULL) {
+        fprintf(stderr, "Failed to setup synchronizer event: errno=%lu\n",
+                GetLastError());
+        exit(1);
+    }
+#else
+    if (pthread_mutex_init(&threadSuspension.lock, NULL) != 0 ||
+        pthread_cond_init(&threadSuspension.resume, NULL) != 0) {
+        perror("Failed to setup synchronizer lock");
+        exit(1);
+    }
+#endif
 }
 
 void Synchronizer_wait() {
     MutatorThread *self = currentMutatorThread;
-    MutatorThread_switchState(self, MutatorThreadState_Unmanaged);
-    atomic_signal_fence(memory_order_seq_cst);
+    MutatorThread_switchState(self, GC_MutatorThreadState_Unmanaged);
     atomic_thread_fence(memory_order_seq_cst);
 
-    atomic_store_explicit(&self->isWaiting, true, memory_order_release);
-    while (isCollecting) {
-        Synchronizer_SuspendThread(self);
-    }
-    atomic_store_explicit(&self->isWaiting, false, memory_order_release);
+    Synchronizer_SuspendThread(self);
 
-    MutatorThread_switchState(self, MutatorThreadState_Managed);
+    MutatorThread_switchState(self, GC_MutatorThreadState_Managed);
     atomic_thread_fence(memory_order_seq_cst);
 }
 
 bool Synchronizer_acquire() {
     if (!mutex_tryLock(&synchronizerLock)) {
-        if (isCollecting)
+        if (atomic_load(&Synchronizer_stopThreads))
             Synchronizer_wait();
         return false;
     }
 
-    isCollecting = true;
-    MutatorThread *self = currentMutatorThread;
-    MutatorThread_switchState(self, MutatorThreadState_Unmanaged);
-
     // Don't allow for registration of any new threads;
     MutatorThreads_lockRead();
-    Safepoint_arm(SafepointInstance);
-    atomic_thread_fence(memory_order_seq_cst);
+    Synchronizer_SuspendThreads();
+    MutatorThread *self = currentMutatorThread;
+    MutatorThread_switchState(self, GC_MutatorThreadState_Unmanaged);
 
     int iteration = 0;
     int activeThreads;
@@ -171,7 +111,7 @@ bool Synchronizer_acquire() {
         activeThreads = 0;
         MutatorThreads_foreach(mutatorThreads, node) {
             MutatorThread *it = node->value;
-            if (it->stackTop == NULL) {
+            if ((void *)atomic_load(&it->stackTop) == NULL) {
                 activeThreads++;
             }
         }
@@ -182,9 +122,8 @@ bool Synchronizer_acquire() {
 }
 
 void Synchronizer_release() {
-    Safepoint_disarm(SafepointInstance);
-    isCollecting = false;
-    atomic_thread_fence(memory_order_seq_cst);
+    atomic_store_explicit(&Synchronizer_stopThreads, false,
+                          memory_order_release);
 
     int stoppedThreads;
     do {
@@ -194,13 +133,15 @@ void Synchronizer_release() {
             if (atomic_load_explicit(&thread->isWaiting,
                                      memory_order_acquire)) {
                 stoppedThreads++;
-                Synchronizer_WakeupThread(thread);
             }
         }
-        if (stoppedThreads > 0)
+        if (stoppedThreads > 0) {
+            Synchronizer_WakeupThreads();
             thread_yield();
+        }
     } while (stoppedThreads > 0);
-    MutatorThread_switchState(currentMutatorThread, MutatorThreadState_Managed);
+    MutatorThread_switchState(currentMutatorThread,
+                              GC_MutatorThreadState_Managed);
     MutatorThreads_unlockRead();
     mutex_unlock(&synchronizerLock);
 }

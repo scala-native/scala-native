@@ -149,20 +149,10 @@ object MyScalaNativePlugin extends AutoPlugin {
       nc.withCheck(true)
         .withCheckFatalWarnings(true)
         .withDump(true)
-        .withDebugMetadata(true)
+        .withSourceLevelDebuggingConfig(_.enableAll)
         .withMultithreadingSupport(
           multithreadingEnabledBySbtSysProps()
             .getOrElse(nc.multithreadingSupport)
-        )
-    },
-    scalacOptions ++= {
-      // Link source maps to GitHub sources
-      val isSnapshot = nativeVersion.endsWith("-SNAPSHOT")
-      if (isSnapshot) Nil
-      else
-        Settings.scalaNativeMapSourceURIOption(
-          (LocalProject("scala-native") / baseDirectory).value,
-          s"https://raw.githubusercontent.com/scala-native/scala-native/v$nativeVersion/"
         )
     },
     inConfig(Compile) {

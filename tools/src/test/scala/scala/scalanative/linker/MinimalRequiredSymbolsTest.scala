@@ -21,15 +21,15 @@ class MinimalRequiredSymbolsTest extends LinkerSpec {
   def isScala2_12 = ScalaNativeBuildInfo.scalaVersion.startsWith("2.12")
 
   @Test def default(): Unit = checkMinimalRequiredSymbols()(expected =
-    if (isScala3) SymbolsCount(types = 710, members = 3600)
-    else if (isScala2_13) SymbolsCount(types = 620, members = 3300)
+    if (isScala3) SymbolsCount(types = 710, members = 3650)
+    else if (isScala2_13) SymbolsCount(types = 630, members = 3400)
     else SymbolsCount(types = 700, members = 4300)
   )
 
   @Test def debugMetadata(): Unit =
     checkMinimalRequiredSymbols(withDebugMetadata = true)(expected =
-      if (isScala3) SymbolsCount(types = 710, members = 3600)
-      else if (isScala2_13) SymbolsCount(types = 620, members = 3300)
+      if (isScala3) SymbolsCount(types = 710, members = 3650)
+      else if (isScala2_13) SymbolsCount(types = 630, members = 3400)
       else SymbolsCount(types = 700, members = 4300)
     )
 
@@ -41,14 +41,14 @@ class MinimalRequiredSymbolsTest extends LinkerSpec {
     )(expected =
       if (isScala3) SymbolsCount(types = 1630, members = 12000)
       else if (isScala2_13) SymbolsCount(types = 1500, members = 11700)
-      else SymbolsCount(types = 1540, members = 12800)
+      else SymbolsCount(types = 1560, members = 12900)
     )
 
   @Test def multithreading(): Unit =
     checkMinimalRequiredSymbols(withMultithreading = true)(expected =
       if (isScala3) SymbolsCount(types = 800, members = 4300)
-      else if (isScala2_13) SymbolsCount(types = 720, members = 4000)
-      else SymbolsCount(types = 780, members = 4900)
+      else if (isScala2_13) SymbolsCount(types = 740, members = 4100)
+      else SymbolsCount(types = 780, members = 4950)
     )
 
   private def checkMinimalRequiredSymbols(
@@ -56,14 +56,16 @@ class MinimalRequiredSymbolsTest extends LinkerSpec {
       withMultithreading: Boolean = false,
       withTargetTriple: String = "x86_64-unknown-unknown"
   )(expected: SymbolsCount) = usingMinimalApp(
-    _.withDebugMetadata(withDebugMetadata)
+    _.withSourceLevelDebuggingConfig(conf =>
+      if (withDebugMetadata) conf.enableAll else conf.disableAll
+    )
       .withMultithreadingSupport(withMultithreading)
       .withTargetTriple(withTargetTriple)
   ) { (config: Config, result: ReachabilityAnalysis.Result) =>
     assertEquals(
       "debugMetadata",
       withDebugMetadata,
-      config.compilerConfig.debugMetadata
+      config.compilerConfig.sourceLevelDebuggingConfig.enabled
     )
     assertEquals(
       "multithreading",

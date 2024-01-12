@@ -27,7 +27,7 @@ object Collector {
     final val UNORDERED = new Characteristics("UNORDERED", 1)
     final val IDENTITY_FINISH = new Characteristics("IDENTITY_FINISH", 2)
 
-    private[this] val cachedValues =
+    private val cachedValues =
       Array(CONCURRENT, IDENTITY_FINISH, UNORDERED)
 
     def values(): Array[Characteristics] = cachedValues.clone()

@@ -1,5 +1,6 @@
 #if defined(SCALANATIVE_GC_COMMIX)
-
+#include "shared/GCTypes.h"
+#include <stdint.h>
 #include <stdio.h>
 #include <setjmp.h>
 #include "Marker.h"
@@ -182,9 +183,10 @@ void Marker_markConservative(Heap *heap, Stats *stats, GreyPacket **outHolder,
     }
 }
 
-int Marker_markRange(Heap *heap, Stats *stats, GreyPacket **outHolder,
-                     GreyPacket **outWeakRefHolder, word_t **fields,
-                     size_t length) {
+NO_SANITIZE int Marker_markRange(Heap *heap, Stats *stats,
+                                 GreyPacket **outHolder,
+                                 GreyPacket **outWeakRefHolder, word_t **fields,
+                                 size_t length) {
     int objectsTraced = 0;
     word_t **limit = fields + length;
     for (word_t **current = fields; current < limit; current++) {
@@ -255,9 +257,9 @@ int Marker_splitObjectArray(Heap *heap, Stats *stats, GreyPacket **outHolder,
     return objectsTraced;
 }
 
-int Marker_markObjectArray(Heap *heap, Stats *stats, Object *object,
-                           GreyPacket **outHolder,
-                           GreyPacket **outWeakRefHolder, Bytemap *bytemap) {
+static int Marker_markObjectArray(Heap *heap, Stats *stats, Object *object,
+                                  GreyPacket **outHolder,
+                                  GreyPacket **outWeakRefHolder) {
     ArrayHeader *arrayHeader = (ArrayHeader *)object;
     size_t length = arrayHeader->length;
     word_t **fields = (word_t **)(arrayHeader + 1);
@@ -270,6 +272,27 @@ int Marker_markObjectArray(Heap *heap, Stats *stats, Object *object,
         // to handle
         objectsTraced = Marker_splitObjectArray(
             heap, stats, outHolder, outWeakRefHolder, fields, length);
+    }
+    return objectsTraced;
+}
+
+static int Marker_markBlobArray(Heap *heap, Stats *stats, Object *object,
+                                GreyPacket **outHolder,
+                                GreyPacket **outWeakRefHolder) {
+    ArrayHeader *arrayHeader = (ArrayHeader *)object;
+    size_t bytesLength = BlobArray_ScannableLimit(arrayHeader);
+    size_t objectsLength = bytesLength / sizeof(word_t);
+    word_t **blobStart = (word_t **)(arrayHeader + 1);
+    int objectsTraced;
+    // From that point we can treat it similary as object array
+    if (objectsLength <= ARRAY_SPLIT_THRESHOLD) {
+        objectsTraced = Marker_markRange(
+            heap, stats, outHolder, outWeakRefHolder, blobStart, objectsLength);
+    } else {
+        // object array is two large, split it into pieces for multiple threads
+        // to handle
+        objectsTraced = Marker_splitObjectArray(
+            heap, stats, outHolder, outWeakRefHolder, blobStart, objectsLength);
     }
     return objectsTraced;
 }
@@ -303,9 +326,13 @@ void Marker_markPacket(Heap *heap, Stats *stats, GreyPacket *in,
     while (!GreyPacket_IsEmpty(in)) {
         Object *object = GreyPacket_Pop(in);
         if (Object_IsArray(object)) {
-            if (object->rtti->rt.id == __object_array_id) {
+            const int arrayId = object->rtti->rt.id;
+            if (arrayId == __object_array_id) {
                 objectsTraced += Marker_markObjectArray(
-                    heap, stats, object, outHolder, outWeakRefHolder, bytemap);
+                    heap, stats, object, outHolder, outWeakRefHolder);
+            } else if (arrayId == __blob_array_id) {
+                objectsTraced += Marker_markBlobArray(
+                    heap, stats, object, outHolder, outWeakRefHolder);
             }
             // non-object arrays do not contain pointers
         } else {
@@ -423,22 +450,15 @@ void Marker_MarkUntilDone(Heap *heap, Stats *stats) {
     }
 }
 
-void Marker_markProgramStack(MutatorThread *thread, Heap *heap, Stats *stats,
-                             GreyPacket **outHolder,
-                             GreyPacket **outWeakRefHolder) {
+NO_SANITIZE void Marker_markProgramStack(MutatorThread *thread, Heap *heap,
+                                         Stats *stats, GreyPacket **outHolder,
+                                         GreyPacket **outWeakRefHolder) {
     word_t **stackBottom = thread->stackBottom;
-    /* At this point ALL threads are stopped and their stackTop is not NULL -
-     * that's the condition to exit Sychronizer_acquire However, for some
-     * reasons I'm not aware of there are some rare situations upon which on the
-     * first read of volatile stackTop it still would return NULL.
-     * Due to the lack of alternatives or knowledge why this happends, just
-     * retry to reach non-null state
-     */
-    word_t **stackTop;
-    do {
-        stackTop = thread->stackTop;
-    } while (stackTop == NULL);
-
+    word_t **stackTop = (word_t **)atomic_load(&thread->stackTop);
+    // Extend scanning slightly over the approximated stack top
+    // In the past we were frequently missing objects allocated just before GC
+    // (mostly under LTO enabled)
+    stackTop -= 8;
     size_t stackSize = stackBottom - stackTop;
     Marker_markRange(heap, stats, outHolder, outWeakRefHolder, stackTop,
                      stackSize);
@@ -463,7 +483,8 @@ void Marker_markModules(Heap *heap, Stats *stats, GreyPacket **outHolder,
 
 void Marker_markCustomRoots(Heap *heap, Stats *stats, GreyPacket **outHolder,
                             GreyPacket **outWeakRefHolder, GC_Roots *roots) {
-    for (GC_Roots *it = roots; it != NULL; it = it->next) {
+    mutex_lock(&roots->modificationLock);
+    for (GC_Root *it = roots->head; it != NULL; it = it->next) {
         word_t **current = (word_t **)it->range.address_low;
         word_t **limit = (word_t **)it->range.address_high;
         while (current < limit) {
@@ -475,6 +496,7 @@ void Marker_markCustomRoots(Heap *heap, Stats *stats, GreyPacket **outHolder,
             current += 1;
         }
     }
+    mutex_unlock(&roots->modificationLock);
 }
 
 void Marker_MarkRoots(Heap *heap, Stats *stats) {
@@ -487,7 +509,7 @@ void Marker_MarkRoots(Heap *heap, Stats *stats) {
         Marker_markProgramStack(thread, heap, stats, &out, &weakRefOut);
     }
     Marker_markModules(heap, stats, &out, &weakRefOut);
-    Marker_markCustomRoots(heap, stats, &out, &weakRefOut, roots);
+    Marker_markCustomRoots(heap, stats, &out, &weakRefOut, customRoots);
     Marker_giveFullPacket(heap, stats, out);
     Marker_giveWeakRefPacket(heap, stats, weakRefOut);
 }

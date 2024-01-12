@@ -21,7 +21,7 @@ object AtomicStampedReference {
 import AtomicStampedReference._
 
 class AtomicStampedReference[V <: AnyRef] private (
-    private[this] var value: StampedReference[V]
+    private var value: StampedReference[V]
 ) {
 
   def this(initialRef: V, initialStamp: Int) = {

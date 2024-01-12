@@ -9,7 +9,6 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include "shared/GCScalaNative.h"
 #include "shared/MemoryMap.h"
 #include "shared/MemoryInfo.h"
 #include "shared/Parsing.h"
@@ -45,11 +44,11 @@ static void exitWithOutOfMemory() {
     exit(1);
 }
 
-size_t scalanative_get_init_heapsize() {
+size_t scalanative_GC_get_init_heapsize() {
     return Parse_Env_Or_Default("GC_INITIAL_HEAP_SIZE", 0L);
 }
 
-size_t scalanative_get_max_heapsize() {
+size_t scalanative_GC_get_max_heapsize() {
     return Parse_Env_Or_Default("GC_MAXIMUM_HEAP_SIZE", getMemorySize());
 }
 
@@ -86,7 +85,7 @@ void Prealloc_Or_Default() {
     }
 }
 
-void scalanative_init() {
+void scalanative_GC_init() {
 #ifndef GC_ASAN
     Prealloc_Or_Default();
     current = memoryMapPrealloc(CHUNK, DO_PREALLOC);
@@ -102,7 +101,7 @@ void scalanative_init() {
 #endif // GC_ASAN
 }
 
-void *scalanative_alloc(void *info, size_t size) {
+void *scalanative_GC_alloc(void *info, size_t size) {
     size = size + (8 - size % 8);
 #ifndef GC_ASAN
     if (current + size < end) {
@@ -111,8 +110,8 @@ void *scalanative_alloc(void *info, size_t size) {
         current += size;
         return alloc;
     } else {
-        scalanative_init();
-        return scalanative_alloc(info, size);
+        scalanative_GC_init();
+        return scalanative_GC_alloc(info, size);
     }
 #else
     void **alloc = calloc(size, 1);
@@ -121,45 +120,43 @@ void *scalanative_alloc(void *info, size_t size) {
 #endif
 }
 
-void *scalanative_alloc_small(void *info, size_t size) {
-    return scalanative_alloc(info, size);
+void *scalanative_GC_alloc_small(void *info, size_t size) {
+    return scalanative_GC_alloc(info, size);
 }
 
-void *scalanative_alloc_large(void *info, size_t size) {
-    return scalanative_alloc(info, size);
+void *scalanative_GC_alloc_large(void *info, size_t size) {
+    return scalanative_GC_alloc(info, size);
 }
 
-void *scalanative_alloc_atomic(void *info, size_t size) {
-    return scalanative_alloc(info, size);
+void *scalanative_GC_alloc_atomic(void *info, size_t size) {
+    return scalanative_GC_alloc(info, size);
 }
 
-void scalanative_collect() {}
+void scalanative_GC_collect() {}
 
-void scalanative_register_weak_reference_handler(void *handler) {}
+void scalanative_GC_register_weak_reference_handler(void *handler) {}
 
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
 #ifdef _WIN32
-HANDLE scalanative_CreateThread(LPSECURITY_ATTRIBUTES threadAttributes,
-                                SIZE_T stackSize, ThreadStartRoutine routine,
-                                RoutineArgs args, DWORD creationFlags,
-                                DWORD *threadId) {
+HANDLE scalanative_GC_CreateThread(LPSECURITY_ATTRIBUTES threadAttributes,
+                                   SIZE_T stackSize, ThreadStartRoutine routine,
+                                   RoutineArgs args, DWORD creationFlags,
+                                   DWORD *threadId) {
     return CreateThread(threadAttributes, stackSize, routine, args,
                         creationFlags, threadId);
 }
 #else
-int scalanative_pthread_create(pthread_t *thread, pthread_attr_t *attr,
-                               ThreadStartRoutine routine, RoutineArgs args) {
+int scalanative_GC_pthread_create(pthread_t *thread, pthread_attr_t *attr,
+                                  ThreadStartRoutine routine,
+                                  RoutineArgs args) {
     return pthread_create(thread, attr, routine, args);
 }
 #endif
 #endif // SCALANATIVE_MULTITHREADING_ENABLED
 
 // ScalaNativeGC interface stubs. None GC does not need STW
-void scalanative_gc_set_mutator_thread_state(MutatorThreadState unused){};
-void scalanative_gc_safepoint_poll(){};
-safepoint_t scalanative_gc_safepoint = NULL;
-
-void scalanative_add_roots(void *addr_low, void *addr_high) {}
-
-void scalanative_remove_roots(void *addr_low, void *addr_high) {}
+void scalanative_GC_set_mutator_thread_state(GC_MutatorThreadState unused){};
+void scalanative_GC_yield(){};
+void scalanative_GC_add_roots(void *addr_low, void *addr_high) {}
+void scalanative_GC_remove_roots(void *addr_low, void *addr_high) {}
 #endif

@@ -10,7 +10,7 @@ import scala.scalanative.util.{unreachable, And}
 trait Eval { self: Interflow =>
   def interflow: Interflow = self
   final val preserveDebugInfo: Boolean =
-    self.config.compilerConfig.debugMetadata
+    self.config.compilerConfig.sourceLevelDebuggingConfig.generateLocalVariables
 
   def run(
       insts: Array[nir.Inst],
@@ -839,8 +839,8 @@ trait Eval { self: Interflow =>
         def size(ty: nir.Type) = ty match {
           case nir.Type.Size =>
             if (platform.is32Bit) 32 else 64
-          case nir.Type.FixedSizeI(s, _) =>
-            s
+          case i: nir.Type.FixedSizeI =>
+            i.width
           case o =>
             bailOut
         }
@@ -1019,8 +1019,11 @@ trait Eval { self: Interflow =>
             ()
         }
         value
-      case _ =>
-        value.canonicalize
+      case v @ nir.Val.ArrayValue(_, values) =>
+        v.copy(values = values.map(eval(_)))
+      case v @ nir.Val.StructValue(values) =>
+        v.copy(values = values.map(eval(_)))
+      case _ => value.canonicalize
     }
   }
 
@@ -1041,7 +1044,7 @@ trait Eval { self: Interflow =>
       } else {
         visiting = clsName :: visiting
 
-        val init = clsName member nir.Sig.Ctor(Seq.empty)
+        val init = clsName.member(nir.Sig.Ctor(Seq.empty))
         val isPure =
           !shallVisit(init) ||
             visitDuplicate(init, argumentTypes(init)).fold(false)(

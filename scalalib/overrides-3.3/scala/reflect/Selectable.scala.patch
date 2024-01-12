@@ -1,0 +1,39 @@
+--- 3.1.2/scala/reflect/Selectable.scala
++++ overrides-3/scala/reflect/Selectable.scala
+@@ -16,16 +16,16 @@
+    */
+   protected def selectedValue: Any = this
+ 
++  private def unreachable(methodName: String): Nothing =
++    throw new IllegalStateException(
++      "Reflection is not fully supported in Scala Native. " +
++      s"Call to method scala.reflect.Selectable.$methodName should have been " +
++      "replaced by Scala Native. Please report it to the Scala Native team."
++    )
++
+   // The Scala.js codegen relies on this method being final for correctness
+   /** Select member with given name */
+-  final def selectDynamic(name: String): Any =
+-    val rcls = selectedValue.getClass
+-    try
+-      val fld = rcls.getField(name).nn
+-      ensureAccessible(fld)
+-      fld.get(selectedValue)
+-    catch case ex: NoSuchFieldException =>
+-      applyDynamic(name)()
++  final def selectDynamic(name: String): Any = unreachable("selectDynamic")
+ 
+   // The Scala.js codegen relies on this method being final for correctness
+   /** Select method and apply to arguments.
+@@ -34,10 +34,7 @@
+    *  @param args       The arguments to pass to the selected method
+    */
+   final def applyDynamic(name: String, paramTypes: Class[_]*)(args: Any*): Any =
+-    val rcls = selectedValue.getClass
+-    val mth = rcls.getMethod(name, paramTypes: _*).nn
+-    ensureAccessible(mth)
+-    mth.invoke(selectedValue, args.asInstanceOf[Seq[AnyRef]]: _*)
++    unreachable("applyDynamic")
+ 
+ object Selectable:
+ 

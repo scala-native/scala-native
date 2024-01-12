@@ -123,6 +123,8 @@ object Show {
           str(", "); str(escapeQuotes(v))
         }
         str(")")
+      case Attr.UsesIntrinsic =>
+        str("uses-intrinsics")
     }
     def show(next: Next): Unit = onNext(next)(DebugInfo.empty)
     def onNext(next: Next)(implicit debugInfo: DebugInfo): Unit = next match {

@@ -7,10 +7,10 @@ import core.Contexts._
 import core.Symbols._
 import core.Flags._
 import core.StdNames._
-import dotty.tools.dotc.transform.SymUtils._
-import dotty.tools.backend.jvm.DottyBackendInterface.symExtensions
+import scala.scalanative.nscplugin.CompilerCompat.SymUtilsCompat.*
 import scalanative.util.unreachable
 import scala.language.implicitConversions
+import dotty.tools.backend.jvm.DottyBackendInterface.symExtensions
 
 trait NirGenName(using Context) {
   self: NirCodeGen =>

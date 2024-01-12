@@ -1,0 +1,4 @@
+macro-bundle-need-qualifier.scala:10: error: package java.lang.impl is not a value
+  def foo: Any = macro impl
+                       ^
+1 error

@@ -14,7 +14,10 @@ object libc {
   def free(ptr: RawPtr): Unit = extern
   def free(ptr: Ptr[_]): Unit = extern
   def strlen(str: CString): CSize = extern
+  def strchr(str: CString, ch: CInt): CString = extern
+  def strrchr(str: CString, ch: CInt): CString = extern
   def wcslen(str: CWideString): CSize = extern
+  def strncpy(dest: CString, src: CString, count: RawSize): CString = extern
   def strcpy(dest: CString, src: CString): CString = extern
   def strcat(dest: CString, src: CString): CString = extern
   def memcpy(dst: Ptr[_], src: Ptr[_], count: CSize): RawPtr = extern

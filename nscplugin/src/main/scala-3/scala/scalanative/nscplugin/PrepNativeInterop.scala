@@ -4,7 +4,7 @@ import dotty.tools.dotc.plugins.PluginPhase
 import dotty.tools._
 import dotc._
 import dotc.ast.tpd._
-import dotc.transform.SymUtils._
+import scala.scalanative.nscplugin.CompilerCompat.SymUtilsCompat.*
 import core.Contexts._
 import core.Definitions
 import core.Names._
@@ -71,9 +71,30 @@ class PrepNativeInterop extends PluginPhase with NativeInteropUtil {
     }
   end extension
 
+  private val exportTargets = collection.mutable.Map.empty[Symbol, Symbol]
+  override def runOn(
+      units: List[CompilationUnit]
+  )(using Context): List[CompilationUnit] = {
+    // Collect information about exported method dependencies with run
+    val traverser = new TreeTraverser {
+      override def traverse(tree: Tree)(using Context): Unit = tree match {
+        case dd: DefDef =>
+          val sym = dd.symbol
+          if sym.is(Exported)
+          then exportTargets.update(sym, dd.rhs.symbol)
+        case tree => traverseChildren(tree)
+      }
+    }
+    for unit <- units
+    do traverser.traverse(unit.tpdTree)
+
+    // Execute standard run
+    try super.runOn(units)
+    finally exportTargets.clear()
+  }
+
   override def transformDefDef(dd: DefDef)(using Context): Tree = {
     val sym = dd.symbol
-    lazy val rhsSym = dd.rhs.symbol
     // Set `@extern` annotation for top-level extern functions
     if (isTopLevelExtern(dd) && !sym.hasAnnotation(defnNir.ExternClass)) {
       sym.addAnnotation(defnNir.ExternClass)
@@ -105,7 +126,8 @@ class PrepNativeInterop extends PluginPhase with NativeInteropUtil {
       else if sym.isExported then
         report.error("Exported method cannot be inlined", dd.srcPos)
 
-    if sym.is(Exported) && rhsSym.isExtern && sym.usesVariadicArgs
+    lazy val exportTarget = finalExportTarget(dd.rhs.symbol)
+    if sym.is(Exported) && sym.usesVariadicArgs && exportTarget.isExtern
     then
       // Externs with varargs need to be called directly, replace proxy
       // with redifintion of extern method
@@ -116,6 +138,18 @@ class PrepNativeInterop extends PluginPhase with NativeInteropUtil {
     else dd
   }
 
+  private def finalExportTarget(sym: Symbol): Symbol = {
+    var current = sym
+    while exportTargets
+          .get(current)
+          .match
+            case Some(target) if target ne NoSymbol =>
+              current = target; true // continue search
+            case _ => false // final target found
+    do ()
+    current
+  }
+
   override def transformValDef(vd: ValDef)(using Context): Tree = {
     val enumsCtx = EnumerationsContext.get
     import enumsCtx._
@@ -123,11 +157,11 @@ class PrepNativeInterop extends PluginPhase with NativeInteropUtil {
     vd match {
       case ValDef(_, tpt, ScalaEnumValue.NoName(optIntParam)) =>
         val nrhs = scalaEnumValName(sym.owner.asClass, sym, optIntParam)
-        cpy.ValDef(vd)(tpt = transformAllDeep(tpt), nrhs)
+        cpy.ValDef(vd)(tpt = transformAllDeep(tpt), rhs = nrhs)
 
       case ValDef(_, tpt, ScalaEnumValue.NullName(optIntParam)) =>
         val nrhs = scalaEnumValName(sym.owner.asClass, sym, optIntParam)
-        cpy.ValDef(vd)(tpt = transformAllDeep(tpt), nrhs)
+        cpy.ValDef(vd)(tpt = transformAllDeep(tpt), rhs = nrhs)
 
       case _ =>
         // Set `@extern` annotation for top-level extern variables

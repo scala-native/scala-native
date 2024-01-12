@@ -15,6 +15,7 @@ jobs:
   # Test tools, if any of them fails, further tests will not start.
   tests-tools:
     name: Compile & test tools
+    if: "github.event_name == 'pull_request' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')"
     runs-on: ubuntu-22.04
     env:
       ENABLE_EXPERIMENTAL_COMPILER: true
@@ -32,35 +33,9 @@ jobs:
       - name: Test tools
         run: sbt "test-tools ${{ matrix.scala }}; toolsBenchmarks${{env.project-version}}/Jmh/compile"
 
-        # Make sure that Scala partest denylisted tests contain only valid test names
-      - name: Setup Scala-cli
-        uses: VirtusLab/scala-cli-setup@v0.1
-
-      - name: Check partest disabled tests list
-        # No partests support for Scala 3
-        if: ${{ !startsWith(matrix.scala, '3') }}
-        run: |
-          sbt "scalaPartest${{env.project-version}}/fetchScalaSource"
-          scala-cli scripts/partest-check-files.scala
-
-        # scala-cli-setup can override default java version
-      - uses: ./.github/actions/linux-setup-env
-        with:
-          scala-version: ${{matrix.scala}}
-          java-version: 8
-
-        # Running all partests would take ~2h for each Scala version, run only single test of each kind
-        # to make sure that infrastructure works correctly.
-      - name: Run subset of partest tests
-        # No partests support for Scala 3
-        if: ${{ !startsWith(matrix.scala, '3') }}
-        run: |
-          sbt \
-          "-J-Xmx3G" \
-          "scalaPartestTests${{env.project-version}}/testOnly -- --showDiff neg/abstract.scala pos/abstract.scala run/Course-2002-01.scala"
-  
   tests-compile-scala3PublishVersion:
     name: Compile sources with the Scala 3 version used for publishing artifacts
+    if: "github.event_name == 'pull_request' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')"
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v3
@@ -75,13 +50,13 @@ jobs:
     
   test-scala-cross-build:
     runs-on: ubuntu-22.04
+    if: "(github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native'"
     env:
       ENABLE_EXPERIMENTAL_COMPILER: true
     strategy:
       fail-fast: false
       matrix:
         scala: [2.12, 2.13, 3, 3-next]
-    if: "(github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native'"
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/linux-setup-env
@@ -94,6 +69,7 @@ jobs:
 
   test-runtime:
     name: Test runtime
+    if: "github.event_name == 'pull_request' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')"
     runs-on: ubuntu-22.04
     needs: tests-tools
     env:
@@ -124,11 +100,11 @@ jobs:
 
   test-runtime-ext:
     name: Test runtime extension
+    if: "(github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native'"
     runs-on: ubuntu-22.04
     needs: [tests-tools, test-runtime]
     env:
       ENABLE_EXPERIMENTAL_COMPILER: true
-    if: "(github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native'"
     strategy:
       fail-fast: false
       matrix:
@@ -181,11 +157,11 @@ jobs:
   # Main difference is disabled optimization and fixed Immix GC
   test-runtime-no-opt:
     name: Test runtime no-opt
+    if: "(github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native'"
     runs-on: ubuntu-22.04
     needs: tests-tools
     env:
       ENABLE_EXPERIMENTAL_COMPILER: true
-    if: "(github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native'"
     strategy:
       fail-fast: false
       matrix:
@@ -210,6 +186,7 @@ jobs:
   # Scripted tests take a long time to run, ~30 minutes, and should be limited and absolute minimum.
   test-scripted:
     name: Test scripted
+    if: "github.event_name == 'pull_request' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')"
     runs-on: ubuntu-22.04
     needs: tests-tools
     strategy:
@@ -232,13 +209,13 @@ jobs:
           sbt "test-scripted ${{matrix.scala}}"
 
   test-llvm-versions:
+    if: "(github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native'"
     runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
         scala: [3]
         llvm: [14, 15, 16, 17, 18] # Last 3 stable versions + available future versions
-    if: "(github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native'"
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/linux-setup-env
@@ -255,4 +232,52 @@ jobs:
           LLVM_BIN: "/usr/lib/llvm-${{ matrix.llvm }}/bin"
           SCALANATIVE_TEST_PREFETCH_DEBUG_INFO: 1
         run: sbt "test-runtime ${{ matrix.scala }}"
+
+  test-scala-partests:
+    if: "github.event_name == 'pull_request' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')"
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        scala: [2.13]
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/linux-setup-env
+        with:
+          scala-version: ${{matrix.scala}}
+          java-version: 11
+
+        # Make sure that Scala partest denylisted tests contain only valid test names
+      - name: Setup Scala-cli
+        uses: VirtusLab/scala-cli-setup@v0.1
+
+      - name: Check partest disabled tests list
+        # No partests support for Scala 3
+        if: ${{ !startsWith(matrix.scala, '3') }}
+        run: |
+          sbt "scalaPartest${{env.project-version}}/fetchScalaSource"
+          scala-cli scripts/partest-check-files.scala
+
+        # scala-cli-setup can override default java version
+      - uses: ./.github/actions/linux-setup-env
+        with:
+          scala-version: ${{matrix.scala}}
+          java-version: 11
+
+        # Running all partests would take ~2h for each Scala version, run only single test of each kind
+        # to make sure that infrastructure works correctly.
+      - name: Test partests infrastracture
+        if: "github.event_name == 'pull_request'"
+        run: |
+          sbt \
+          "-J-Xmx3G" \
+          "scalaPartestTests${{env.project-version}}/testOnly -- --showDiff neg/abstract.scala pos/abstract.scala run/Course-2002-01.scala"
+      
+      - name: Run all of partests
+        if: "github.event_name == 'schedule'"
+        timeout-minutes: 300
+        run: |
+          sbt \
+          "-J-Xmx3G" \
+          "scalaPartestTests${{env.project-version}}/testOnly -- --showDiff"
 

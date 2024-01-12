@@ -45,7 +45,7 @@ void BlockAllocator_Init(BlockAllocator *blockAllocator, word_t *blockMetaStart,
 
     mutex_init(&blockAllocator->allocationLock);
 
-#ifdef DEBUG_ASSERT
+#ifdef GC_ASSERTIONS
     BlockMeta *limit = sCursor + blockCount;
     for (BlockMeta *current = sCursor; current < limit; current++) {
         current->debugFlag = dbg_free_in_collection;
@@ -110,7 +110,7 @@ BlockAllocator_getFreeBlockSlow(BlockAllocator *blockAllocator) {
         blockAllocator->smallestSuperblock.limit = superblock + size;
         assert(BlockMeta_IsFree(superblock));
         assert(superblock->debugFlag == dbg_free_in_collection);
-#ifdef DEBUG_ASSERT
+#ifdef GC_ASSERTIONS
         superblock->debugFlag = dbg_in_use;
 #endif
         BlockMeta_SetFlag(superblock, block_simple);
@@ -140,7 +140,7 @@ BlockAllocator_getFreeBlockSlow(BlockAllocator *blockAllocator) {
         if (block != NULL) {
             assert(BlockMeta_IsFree(block));
             assert(block->debugFlag == dbg_free_in_collection);
-#ifdef DEBUG_ASSERT
+#ifdef GC_ASSERTIONS
             block->debugFlag = dbg_in_use;
 #endif
             BlockMeta_SetFlag(block, block_simple);
@@ -161,7 +161,7 @@ INLINE BlockMeta *BlockAllocator_GetFreeBlock(BlockAllocator *blockAllocator) {
     block = blockAllocator->smallestSuperblock.cursor;
     assert(BlockMeta_IsFree(block));
     assert(block->debugFlag == dbg_free_in_collection);
-#ifdef DEBUG_ASSERT
+#ifdef GC_ASSERTIONS
     block->debugFlag = dbg_in_use;
 #endif
     BlockMeta_SetFlag(block, block_simple);
@@ -227,7 +227,7 @@ BlockMeta *BlockAllocator_GetFreeSuperblock(BlockAllocator *blockAllocator,
 
     assert(BlockMeta_IsFree(superblock));
     assert(superblock->debugFlag == dbg_free_in_collection);
-#ifdef DEBUG_ASSERT
+#ifdef GC_ASSERTIONS
     superblock->debugFlag = dbg_in_use;
 #endif
     BlockMeta_SetFlagAndSuperblockSize(superblock, block_superblock_start,
@@ -236,7 +236,7 @@ BlockMeta *BlockAllocator_GetFreeSuperblock(BlockAllocator *blockAllocator,
     for (BlockMeta *current = superblock + 1; current < limit; current++) {
         assert(BlockMeta_IsFree(current));
         assert(current->debugFlag == dbg_free_in_collection);
-#ifdef DEBUG_ASSERT
+#ifdef GC_ASSERTIONS
         current->debugFlag = dbg_in_use;
 #endif
         BlockMeta_SetFlag(current, block_superblock_tail);
@@ -311,7 +311,7 @@ void BlockAllocator_AddFreeSuperblockLocal(BlockAllocator *blockAllocator,
         // check for double sweeping
         assert(current->debugFlag == dbg_free);
         BlockMeta_Clear(current);
-#ifdef DEBUG_ASSERT
+#ifdef GC_ASSERTIONS
         current->debugFlag = dbg_free_in_collection;
 #endif
     }
@@ -337,7 +337,7 @@ void BlockAllocator_AddFreeSuperblock(BlockAllocator *blockAllocator,
         // check for double sweeping
         assert(current->debugFlag == dbg_free);
         BlockMeta_Clear(current);
-#ifdef DEBUG_ASSERT
+#ifdef GC_ASSERTIONS
         current->debugFlag = dbg_free_in_collection;
 #endif
     }
@@ -363,7 +363,7 @@ void BlockAllocator_AddFreeBlocks(BlockAllocator *blockAllocator,
         assert(current->debugFlag == dbg_free);
         assert(!BlockMeta_IsSuperblockStartMe(current));
         BlockMeta_Clear(current);
-#ifdef DEBUG_ASSERT
+#ifdef GC_ASSERTIONS
         current->debugFlag = dbg_free_in_collection;
 #endif
     }
@@ -425,7 +425,7 @@ void BlockAllocator_ReserveBlocks(BlockAllocator *blockAllocator) {
         }
     }
 
-#ifdef DEBUG_ASSERT
+#ifdef GC_ASSERTIONS
     BlockMeta *limit = superblock + SWEEP_RESERVE_BLOCKS;
     for (BlockMeta *current = superblock; current < limit; current++) {
         assert(BlockMeta_IsFree(current));

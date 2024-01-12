@@ -21,7 +21,7 @@ class LocalNamesTest extends OptimizerSpec {
       entry,
       sources,
       setupConfig.andThen(
-        _.withDebugMetadata(true)
+        _.withSourceLevelDebuggingConfig(_.enableAll)
           .withMode(build.Mode.releaseFull)
       )
     )(fn)
@@ -43,7 +43,7 @@ class LocalNamesTest extends OptimizerSpec {
     |  }
     |}
     """.stripMargin),
-    setupConfig = _.withDebugMetadata(true)
+    setupConfig = _.withSourceLevelDebuggingConfig(_.enableAll)
   ) {
     case (config, result) =>
       def checkLocalNames(defns: Seq[nir.Defn]) =

@@ -18,9 +18,7 @@ import java.util.function.IntUnaryOperator
 import scala.scalanative.runtime.Intrinsics
 
 @SerialVersionUID(6214790243416807050L)
-class AtomicInteger(private[this] var value: Int)
-    extends Number
-    with Serializable {
+class AtomicInteger(private var value: Int) extends Number with Serializable {
 
   def this() = {
     this(0)

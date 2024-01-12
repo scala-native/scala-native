@@ -23,6 +23,7 @@ import scala.scalanative.nio.fs.unix.UnixFileSystemProvider
 import scala.scalanative.nio.fs.windows.WindowsFileSystemProvider
 
 import scala.scalanative.meta.LinktimeInfo.isWindows
+import java.util.ServiceLoader
 
 abstract class FileSystemProvider protected () {
 
@@ -150,10 +151,13 @@ abstract class FileSystemProvider protected () {
 object FileSystemProvider {
   def installedProviders: List[FileSystemProvider] = {
     val list = new LinkedList[FileSystemProvider]
-    if (isWindows)
-      list.add(new WindowsFileSystemProvider())
-    else
-      list.add(new UnixFileSystemProvider())
+    val defaultProvider =
+      if (isWindows) new WindowsFileSystemProvider()
+      else new UnixFileSystemProvider()
+
+    list.add(defaultProvider)
+    ServiceLoader.load(classOf[FileSystemProvider]).forEach(list.add(_))
+
     list
   }
 

@@ -12,6 +12,8 @@ import scala.scalanative.build.Logger
 
 // scalafmt: { maxColumn = 120}
 object Generate {
+  private implicit val pos: nir.Position = nir.Position.NoPosition
+  private implicit val scopeId: nir.ScopeId = nir.ScopeId.TopLevel
   import Impl._
 
   val ClassHasTraitName = nir.Global.Member(rttiModule, nir.Sig.Extern("__check_class_has_trait"))
@@ -26,8 +28,6 @@ object Generate {
     (new Impl(entry, defns)).generate()
 
   implicit def reachabilityAnalysis(implicit meta: Metadata): ReachabilityAnalysis.Result = meta.analysis
-  private implicit val pos: nir.Position = nir.Position.NoPosition
-  private implicit val scopeId: nir.ScopeId = nir.ScopeId.TopLevel
 
   private class Impl(entry: Option[nir.Global.Top], defns: Seq[nir.Defn])(implicit
       meta: Metadata
@@ -46,10 +46,9 @@ object Generate {
       genModuleAccessors()
       genModuleArray()
       genModuleArraySize()
-      genObjectArrayId()
+      genScanableArrayIds()
       genWeakRefUtils()
       genArrayIds()
-      genStackBottom()
 
       buf.toSeq
     }
@@ -257,17 +256,8 @@ object Generate {
 
     private def genGcInit(unwindProvider: () => nir.Next)(implicit fresh: nir.Fresh) = {
       def unwind: nir.Next = unwindProvider()
-      val stackBottom = nir.Val.Local(fresh(), nir.Type.Ptr)
-      val StackBottomVar = nir.Val.Global(stackBottomName, nir.Type.Ptr)
 
       Seq(
-        // init __stack_bottom variable
-        nir.Inst.Let(
-          stackBottom.id,
-          nir.Op.Stackalloc(nir.Type.Ptr, nir.Val.Long(0)),
-          unwind
-        ),
-        nir.Inst.Let(nir.Op.Store(nir.Type.Ptr, StackBottomVar, stackBottom), unwind),
         // Init GC
         nir.Inst.Let(nir.Op.Call(InitSig, Init, Seq.empty), unwind)
       )
@@ -329,9 +319,6 @@ object Generate {
         }
       )
     }
-
-    def genStackBottom(): Unit =
-      buf += nir.Defn.Var(nir.Attrs.None, stackBottomName, nir.Type.Ptr, nir.Val.Null)
 
     def genModuleAccessors(): Unit = {
       val LoadModuleSig = nir.Type.Function(
@@ -487,7 +474,7 @@ object Generate {
 
     def genModuleArraySize(): Unit =
       buf +=
-        nir.Defn.Var(
+        nir.Defn.Const(
           nir.Attrs.None,
           moduleArraySizeName,
           nir.Type.Int,
@@ -503,19 +490,25 @@ object Generate {
       meta.ids(clazz)
     }
 
-    def genObjectArrayId(): Unit = {
-      buf += nir.Defn.Var(
-        nir.Attrs.None,
-        objectArrayIdName,
-        nir.Type.Int,
-        nir.Val.Int(tpe2arrayId("Object"))
-      )
+    def genScanableArrayIds(): Unit = {
+      // Ids of array types that can contain pointers
+      for ((symbol, tpeName) <- Seq(
+            (objectArrayIdName, "Object"),
+            (blobArrayIdName, "Blob")
+          )) {
+        buf += nir.Defn.Const(
+          nir.Attrs.None,
+          symbol,
+          nir.Type.Int,
+          nir.Val.Int(tpe2arrayId(tpeName))
+        )
+      }
     }
 
     def genWeakRefUtils(): Unit = {
       def addToBuf(name: nir.Global.Member, value: Int) =
         buf +=
-          nir.Defn.Var(
+          nir.Defn.Const(
             nir.Attrs.None,
             name,
             nir.Type.Int,
@@ -559,7 +552,8 @@ object Generate {
         "Long",
         "Float",
         "Double",
-        "Object"
+        "Object",
+        "Blob"
       )
       val ids = tpes.map(tpe2arrayId).sorted
 
@@ -572,10 +566,8 @@ object Generate {
         )
       }
 
-      buf += nir.Defn.Var(nir.Attrs.None, arrayIdsMinName, nir.Type.Int, nir.Val.Int(min))
-
-      buf += nir.Defn.Var(nir.Attrs.None, arrayIdsMaxName, nir.Type.Int, nir.Val.Int(max))
-
+      buf += nir.Defn.Const(nir.Attrs.None, arrayIdsMinName, nir.Type.Int, nir.Val.Int(min))
+      buf += nir.Defn.Const(nir.Attrs.None, arrayIdsMaxName, nir.Type.Int, nir.Val.Int(max))
     }
 
     def genTraitDispatchTables(): Unit = {
@@ -647,13 +639,13 @@ object Generate {
     )
 
     val InitSig = nir.Type.Function(Seq.empty, nir.Type.Unit)
-    val InitDecl = nir.Defn.Declare(nir.Attrs.None, extern("scalanative_init"), InitSig)
+    val InitDecl = nir.Defn.Declare(nir.Attrs.None, extern("scalanative_GC_init"), InitSig)
     val Init = nir.Val.Global(InitDecl.name, nir.Type.Ptr)
 
-    val stackBottomName = extern("__stack_bottom")
     val moduleArrayName = extern("__modules")
     val moduleArraySizeName = extern("__modules_size")
     val objectArrayIdName = extern("__object_array_id")
+    val blobArrayIdName = extern("__blob_array_id")
     val weakRefIdsMaxName = extern("__weak_ref_ids_max")
     val weakRefIdsMinName = extern("__weak_ref_ids_min")
     val weakRefFieldOffsetName = extern("__weak_ref_field_offset")

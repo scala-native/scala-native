@@ -17,7 +17,7 @@ private[testinterface] final class NativeRunnerRPC(
 )(implicit ec: ExecutionContext)
     extends RPCCore() {
 
-  private[this] val serverSocket: ServerSocket = new ServerSocket(
+  private val serverSocket: ServerSocket = new ServerSocket(
     /* port = */ 0,
     /* backlog = */ 1
   )

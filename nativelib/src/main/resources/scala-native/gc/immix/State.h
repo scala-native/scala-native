@@ -4,7 +4,6 @@
 #include "Heap.h"
 #include "shared/ThreadUtil.h"
 #include "MutatorThread.h"
-#include "shared/Safepoint.h"
 #include "immix_commix/GCRoots.h"
 #include "stddef.h"
 
@@ -14,7 +13,11 @@ extern Stack weakRefStack;
 extern BlockAllocator blockAllocator;
 extern _Atomic(MutatorThreads) mutatorThreads;
 extern thread_local MutatorThread *currentMutatorThread;
-extern safepoint_t scalanative_gc_safepoint;
-extern GC_Roots *roots;
+extern GC_Roots *customRoots;
+
+#ifdef SCALANATIVE_MULTITHREADING_ENABLED
+#include "GCThreads.h"
+extern struct GCWeakRefsHandlerThread *weakRefsHandlerThread;
+#endif
 
 #endif // IMMIX_STATE_H

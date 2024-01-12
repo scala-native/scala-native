@@ -201,7 +201,13 @@ def sourcesExistsOrFetch(scalaVersion: String, sourcesDir: os.Path)(implicit
 ) = {
   if (!exists(sourcesDir)) {
     println(s"Fetching Scala $scalaVersion sources")
-    os.proc("sbt", s"++ $scalaVersion", "scalalib/fetchScalaSource").call()
+    val suffix = scalaVersion match {
+      case s"2.12.${patch}"       => "2_12"
+      case s"2.13.${patch}"       => "2_13"
+      case s"3.${minor}.${patch}" => "3"
+    }
+    os.proc("sbt", s"++ $scalaVersion", s"scalalib${suffix}/fetchScalaSource")
+      .call()
   }
   assert(os.exists(sourcesDir), s"Sources at $sourcesDir missing")
 }

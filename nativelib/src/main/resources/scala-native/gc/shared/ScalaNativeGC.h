@@ -19,28 +19,29 @@ typedef void *ThreadRoutineReturnType;
 typedef ThreadRoutineReturnType (*ThreadStartRoutine)(void *);
 typedef void *RoutineArgs;
 
-void scalanative_init();
-void *scalanative_alloc(void *info, size_t size);
-void *scalanative_alloc_small(void *info, size_t size);
-void *scalanative_alloc_large(void *info, size_t size);
-void *scalanative_alloc_atomic(void *info, size_t size);
-void scalanative_collect();
-void scalanative_register_weak_reference_handler(void *handler);
-size_t scalanative_get_init_heapsize();
-size_t scalanative_get_max_heapsize();
+void scalanative_GC_init();
+void *scalanative_GC_alloc(void *info, size_t size);
+void *scalanative_GC_alloc_small(void *info, size_t size);
+void *scalanative_GC_alloc_large(void *info, size_t size);
+void *scalanative_GC_alloc_atomic(void *info, size_t size);
+void scalanative_GC_collect();
+void scalanative_GC_register_weak_reference_handler(void *handler);
+
+size_t scalanative_GC_get_init_heapsize();
+size_t scalanative_GC_get_max_heapsize();
 
 // Functions used to create a new thread supporting multithreading support in
 // the garbage collector. Would execute a proxy startup routine to register
 // newly created thread upon startup and unregister it from the GC upon
 // termination.
 #ifdef _WIN32
-HANDLE scalanative_CreateThread(LPSECURITY_ATTRIBUTES threadAttributes,
-                                SIZE_T stackSize, ThreadStartRoutine routine,
-                                RoutineArgs args, DWORD creationFlags,
-                                DWORD *threadId);
+HANDLE scalanative_GC_CreateThread(LPSECURITY_ATTRIBUTES threadAttributes,
+                                   SIZE_T stackSize, ThreadStartRoutine routine,
+                                   RoutineArgs args, DWORD creationFlags,
+                                   DWORD *threadId);
 #else
-int scalanative_pthread_create(pthread_t *thread, pthread_attr_t *attr,
-                               ThreadStartRoutine routine, RoutineArgs args);
+int scalanative_GC_pthread_create(pthread_t *thread, pthread_attr_t *attr,
+                                  ThreadStartRoutine routine, RoutineArgs args);
 #endif
 
 // Current type of execution by given threadin foreign scope be included in the
@@ -48,30 +49,27 @@ int scalanative_pthread_create(pthread_t *thread, pthread_attr_t *attr,
 // GC. Upon conversion from Managed to Unmanged state calling thread shall dump
 // the contents of the register to the stack and save the top address of the
 // stack.
-typedef enum scalanative_MutatorThreadState {
+typedef enum scalanative_GC_MutatorThreadState {
     /*  Thread executes Scala Native code using GC following cooperative mode -
      *  it periodically polls for synchronization events.
      */
-    MutatorThreadState_Managed = 0,
+    GC_MutatorThreadState_Managed = 0,
     /*  Thread executes foreign code (syscalls, C functions) and is not able to
      *  modify the state of the GC. Upon synchronization event garbage collector
      *  would ignore this thread. Upon returning from foreign execution thread
      *  would stop until synchronization event would finish.
      */
-    MutatorThreadState_Unmanaged = 1
-} MutatorThreadState;
+    GC_MutatorThreadState_Unmanaged = 1
+} GC_MutatorThreadState;
 
 // Receiver for notifications on entering/exiting potentially blocking extern
 // functions. Changes the internal state of current (calling) thread
-void scalanative_gc_set_mutator_thread_state(MutatorThreadState);
-
-// Conditionally protected memory address used for STW events polling
-typedef void **safepoint_t;
-extern safepoint_t scalanative_gc_safepoint;
+void scalanative_GC_set_mutator_thread_state(GC_MutatorThreadState);
 
 // Check for StopTheWorld event and wait for its end if needed
-// Used internally only in GC. Scala Native safepoints polling would be inlined
-// in the code.
-void scalanative_gc_safepoint_poll();
+void scalanative_GC_yield();
+
+void scalanative_GC_add_roots(void *addr_low, void *addr_high);
+void scalanative_GC_remove_roots(void *addr_low, void *addr_high);
 
 #endif // SCALA_NATIVE_GC_H

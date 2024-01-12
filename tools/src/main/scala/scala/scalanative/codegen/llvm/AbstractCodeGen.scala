@@ -161,7 +161,7 @@ private[codegen] abstract class AbstractCodeGen(
       newline()
     }
     os.genPrelude()
-    if (config.debugMetadata) {
+    if (config.sourceLevelDebuggingConfig.generateLocalVariables) {
       newline()
       line("declare void @llvm.dbg.declare(metadata, metadata, metadata)")
       line("declare void @llvm.dbg.value(metadata, metadata, metadata)")
@@ -272,27 +272,29 @@ private[codegen] abstract class AbstractCodeGen(
       case _: nir.Defn.Declare => ()
       case defn: nir.Defn.Define =>
         implicit lazy val defnScopes: DefnScopes = new DefnScopes(defn)
+        insts.foreach {
+          case nir.Inst.Let(n, nir.Op.Copy(v), _) => copies(n) = v
+          case _                                  => ()
+        }
+        implicit val cfg: CFG = CFG(insts)
+        implicit val _fresh: nir.Fresh = fresh
+        implicit val _debugInfo: DebugInfo = debugInfo
         str(" ")
         str(os.gxxPersonality)
-
-        dbgUsing(defnScopes.getDISubprogramScope) { subprogramNode =>
+        def genBody() = {
           str(" {")
-          insts.foreach {
-            case nir.Inst.Let(n, nir.Op.Copy(v), _) => copies(n) = v
-            case _                                  => ()
-          }
-          ScopedVar.scoped {
-            metaCtx.currentSubprogram := subprogramNode
-          } {
-            implicit val cfg: CFG = CFG(insts)
-            implicit val _fresh: nir.Fresh = fresh
-            implicit val _debugInfo: DebugInfo = debugInfo
-            cfg.all.foreach(genBlock)
-            cfg.all.foreach(genBlockLandingPads)
-            newline()
-          }
+          cfg.all.foreach(genBlock)
+          cfg.all.foreach(genBlockLandingPads)
+          newline()
           str("}")
         }
+        if (generateLocalVariables) dbgUsing(defnScopes.getDISubprogramScope) {
+          subprogramNode =>
+            ScopedVar.scoped {
+              metaCtx.currentSubprogram := subprogramNode
+            } { genBody() }
+        }
+        else genBody()
 
         copies.clear()
       case _ => unreachable
@@ -434,7 +436,7 @@ private[codegen] abstract class AbstractCodeGen(
           }
       }
     }
-    if (generateDebugMetadata) {
+    if (generateLocalVariables) {
       lazy val scopeId =
         if (block.isEntry) nir.ScopeId.TopLevel
         else
@@ -758,7 +760,7 @@ private[codegen] abstract class AbstractCodeGen(
     val id = inst.id
     val unwind = inst.unwind
     val ty = inst.op.resty
-    val scope = defnScopes.toDIScope(inst.scopeId)
+    lazy val scope = defnScopes.toDIScope(inst.scopeId)
 
     def genBind() =
       if (!isVoid(ty)) {
@@ -982,7 +984,7 @@ private[codegen] abstract class AbstractCodeGen(
      *  situations where a null check is generated (and the function call is
      *  throwNullPointer) in this case we can only use NoPosition
      */
-    val dbgPosition = toDILocation(srcPos, scopeId)
+    lazy val dbgPosition = toDILocation(srcPos, scopeId)
     def genDbgPosition() = dbg(",", dbgPosition)
 
     call match {
@@ -1221,15 +1223,21 @@ private[codegen] abstract class AbstractCodeGen(
   ): Unit = conv match {
     case nir.Conv.ZSizeCast | nir.Conv.SSizeCast =>
       val fromSize = fromType match {
-        case nir.Type.Size             => platform.sizeOfPtrBits
-        case nir.Type.FixedSizeI(s, _) => s
-        case o                         => unsupported(o)
+        case nir.Type.Size =>
+          platform.sizeOfPtrBits
+        case i: nir.Type.FixedSizeI =>
+          i.width
+        case o =>
+          unsupported(o)
       }
 
       val toSize = toType match {
-        case nir.Type.Size             => platform.sizeOfPtrBits
-        case nir.Type.FixedSizeI(s, _) => s
-        case o                         => unsupported(o)
+        case nir.Type.Size =>
+          platform.sizeOfPtrBits
+        case i: nir.Type.FixedSizeI =>
+          i.width
+        case o =>
+          unsupported(o)
       }
 
       val castOp =

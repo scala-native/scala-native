@@ -142,8 +142,10 @@ bool Allocator_getNextLine(Allocator *allocator) {
 
     allocator->cursor = line;
     FreeLineMeta *lineMeta = (FreeLineMeta *)line;
-    BlockMeta_SetFirstFreeLine(block, lineMeta->next);
     uint16_t size = lineMeta->size;
+    if (size == 0)
+        return Allocator_newBlock(allocator);
+    BlockMeta_SetFirstFreeLine(block, lineMeta->next);
     allocator->limit = line + (size * WORDS_IN_LINE);
     assert(allocator->limit <= Block_GetBlockEnd(blockStart));
 
@@ -175,7 +177,7 @@ bool Allocator_newBlock(Allocator *allocator) {
         fflush(stdout);
 #endif
         assert(block->debugFlag == dbg_partial_free);
-#ifdef DEBUG_ASSERT
+#ifdef GC_ASSERTIONS
         block->debugFlag = dbg_in_use;
 #endif
         blockStart = BlockMeta_GetBlockStart(blockMetaStart,
@@ -252,7 +254,7 @@ NOINLINE word_t *Allocator_allocSlow(Allocator *allocator, Heap *heap,
             assert(object != NULL);
             memset(object, 0, size);
             ObjectMeta *objectMeta = Bytemap_Get(allocator->bytemap, object);
-#ifdef DEBUG_ASSERT
+#ifdef GC_ASSERTIONS
             ObjectMeta_AssertIsValidAllocation(objectMeta, size);
 #endif
             ObjectMeta_SetAllocated(objectMeta);
@@ -308,7 +310,7 @@ INLINE word_t *Allocator_Alloc(Heap *heap, uint32_t size) {
 
     word_t *object = start;
     ObjectMeta *objectMeta = Bytemap_Get(heap->bytemap, object);
-#ifdef DEBUG_ASSERT
+#ifdef GC_ASSERTIONS
     ObjectMeta_AssertIsValidAllocation(objectMeta, size);
 #endif
     ObjectMeta_SetAllocated(objectMeta);

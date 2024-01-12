@@ -2,6 +2,7 @@ package scala.scalanative
 package linker
 
 import scala.collection.mutable
+import scala.scalanative.linker.LinktimeIntrinsicCallsResolver.FoundServiceProviders
 
 sealed abstract class Info {
   def attrs: nir.Attrs
@@ -133,7 +134,7 @@ final class Class(
     val hasNoFields =
       fields.isEmpty
     val hasEmptyOrNoCtor = {
-      val ctor = name member nir.Sig.Ctor(Seq.empty)
+      val ctor = name.member(nir.Sig.Ctor(Seq.empty))
       analysis.infos
         .get(ctor)
         .fold[Boolean] {
@@ -224,6 +225,7 @@ final class Field(
 
 sealed trait ReachabilityAnalysis {
   def defns: Seq[nir.Defn]
+  def foundServiceProviders: FoundServiceProviders
   def isSuccessful: Boolean = this.isInstanceOf[ReachabilityAnalysis.Result]
 }
 
@@ -231,7 +233,8 @@ object ReachabilityAnalysis {
   final class Failure(
       val defns: Seq[nir.Defn],
       val unreachable: Seq[Reach.UnreachableSymbol],
-      val unsupportedFeatures: Seq[Reach.UnsupportedFeature]
+      val unsupportedFeatures: Seq[Reach.UnsupportedFeature],
+      val foundServiceProviders: FoundServiceProviders
   ) extends ReachabilityAnalysis
   final class Result(
       val infos: mutable.Map[nir.Global, Info],
@@ -241,7 +244,8 @@ object ReachabilityAnalysis {
       val defns: Seq[nir.Defn],
       val dynsigs: Seq[nir.Sig],
       val dynimpls: Seq[nir.Global.Member],
-      val resolvedVals: mutable.Map[String, nir.Val]
+      val resolvedVals: mutable.Map[String, nir.Val],
+      val foundServiceProviders: FoundServiceProviders
   ) extends ReachabilityAnalysis {
     lazy val ObjectClass = infos(nir.Rt.Object.name).asInstanceOf[Class]
     lazy val StringClass = infos(nir.Rt.StringName).asInstanceOf[Class]

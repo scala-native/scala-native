@@ -134,6 +134,7 @@ object Build {
       ) {
         case (2, _) => Seq("-Xno-patmat-analysis")
       },
+      scalacOptions --= ignoredScalaDeprecations(scalaVersion.value),
       libraryDependencies ++= Deps.JUnitJvm,
       Test / fork := true
     )
@@ -167,7 +168,10 @@ object Build {
     }
 
   lazy val junitPlugin = MultiScalaProject("junitPlugin", file("junit-plugin"))
-    .settings(compilerPluginSettings)
+    .settings(
+      compilerPluginSettings,
+      scalacOptions --= ignoredScalaDeprecations(scalaVersion.value)
+    )
 
   private val withSharedCrossPlatformSources = {
     def sharedSourceDirs(
@@ -262,24 +266,6 @@ object Build {
     toolSettings,
     withSharedCrossPlatformSources,
     buildInfoSettings,
-    scalacOptions ++= {
-      val scala213StdLibDeprecations = Seq(
-        // In 2.13 lineStream_! was replaced with lazyList_!.
-        "method lineStream_!",
-        // OpenHashMap is used with value class parameter type, we cannot replace it with AnyRefMap or LongMap
-        // Should not be replaced with HashMap due to performance reasons.
-        "class|object OpenHashMap",
-        "class Stream",
-        "method retain in trait SetOps"
-      ).map(msg => s"-Wconf:cat=deprecation&msg=$msg:s")
-      CrossVersion
-        .partialVersion(scalaVersion.value)
-        .fold(Seq.empty[String]) {
-          case (2, 12) => Nil
-          case (2, 13) => scala213StdLibDeprecations
-          case (3, _)  => scala213StdLibDeprecations
-        }
-    },
     // Running tests in parallel results in `FileSystemAlreadyExistsException`
     Test / parallelExecution := false
   )
@@ -558,7 +544,8 @@ object Build {
       .enablePlugins(MyScalaNativePlugin)
       .settings(
         publishSettings(Some(VersionScheme.BreakOnMajor)),
-        disabledDocsSettings
+        disabledDocsSettings,
+        scalacOptions --= ignoredScalaDeprecations(scalaVersion.value)
       )
       .withNativeCompilerPlugin
       .mapBinaryVersions {
@@ -633,6 +620,14 @@ object Build {
           .withEmbedResources(true)
           // Tests using threads are ignored in runtime, skip checks and allow to link
           .withCheckFeatures(false)
+          .withServiceProviders(
+            Map(
+              "org.scalanative.testsuite.javalib.util.MyService" -> Seq(
+                "org.scalanative.testsuite.javalib.util.MyServiceImpl1",
+                "org.scalanative.testsuite.javalib.util.MyServiceImpl2"
+              )
+            )
+          )
       },
       Test / unmanagedSourceDirectories ++= {
         val base = (Test / sourceDirectory).value
@@ -703,6 +698,7 @@ object Build {
       .enablePlugins(MyScalaNativePlugin)
       .withNativeCompilerPlugin
       .withJUnitPlugin
+      .settings(noJavaReleaseSettings)
       .dependsOn(scalalib, javalib, testInterface % "test")
 
 // Testing infrastructure ------------------------------------------------

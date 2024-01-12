@@ -29,6 +29,7 @@ package runtime
 
 import scalanative.unsafe._
 import scalanative.unsigned._
+import scalanative.annotation.alwaysinline
 import scala.scalanative.memory.SafeZone
 import scalanative.runtime.Intrinsics._
 
@@ -101,9 +102,9 @@ object Array {
     } else if (len < 0) {
       throw new ArrayIndexOutOfBoundsException("length is negative")
     } else if (fromPos < 0 || fromPos + len > from.length) {
-      throwOutOfBounds(fromPos)
+      throwOutOfBounds(fromPos, from.length)
     } else if (toPos < 0 || toPos + len > to.length) {
-      throwOutOfBounds(toPos)
+      throwOutOfBounds(toPos, to.length)
     } else if (len == 0) {
       ()
     } else {
@@ -146,9 +147,9 @@ object Array {
     } else if (len < 0) {
       throw new ArrayIndexOutOfBoundsException("length is negative")
     } else if (leftPos < 0 || leftPos + len > left.length) {
-      throwOutOfBounds(leftPos)
+      throwOutOfBounds(leftPos, left.length)
     } else if (rightPos < 0 || rightPos + len > right.length) {
-      throwOutOfBounds(rightPos)
+      throwOutOfBounds(rightPos, right.length)
     } else if (len == 0) {
       0
     } else {
@@ -166,7 +167,7 @@ final class BooleanArray private () extends Array[Boolean] {
 
   @inline def atRaw(i: Int): RawPtr =
     if (i < 0 || i >= length) {
-      throwOutOfBounds(i)
+      throwOutOfBounds(i, length)
     } else {
       atRawUnsafe(i)
     }
@@ -209,8 +210,8 @@ object BooleanArray {
       throw new NegativeArraySizeException
     }
     val arrcls  = classOf[BooleanArray]
-    val arrsize = Intrinsics.castIntToRawSizeUnsigned(MemoryLayout.Array.ValuesOffset + 1 * length)
-    val arr = zone.allocImpl(Intrinsics.castObjectToRawPtr(arrcls), arrsize)
+    val arrsize = castIntToRawSizeUnsigned(MemoryLayout.Array.ValuesOffset + 1 * length)
+    val arr = zone.allocImpl(castObjectToRawPtr(arrcls), arrsize)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.LengthOffset), length)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.StrideOffset), 1)
     castRawPtrToObject(arr).asInstanceOf[BooleanArray]
@@ -218,10 +219,12 @@ object BooleanArray {
 
   @inline def snapshot(length: Int, data: RawPtr): BooleanArray = {
     val arr  = alloc(length)
-    val dst  = arr.atRaw(0)
-    val src  = data
-    val size = castIntToRawSizeUnsigned(1 * length)
-    libc.memcpy(dst, src, size)
+    if(length > 0) {
+      val dst  = arr.atRawUnsafe(0)
+      val src  = data
+      val size = castIntToRawSizeUnsigned(1 * length)
+      libc.memcpy(dst, src, size)
+    }
     arr
   }
 }
@@ -232,7 +235,7 @@ final class CharArray private () extends Array[Char] {
 
   @inline def atRaw(i: Int): RawPtr =
     if (i < 0 || i >= length) {
-      throwOutOfBounds(i)
+      throwOutOfBounds(i, length)
     } else {
       atRawUnsafe(i)
     }
@@ -275,8 +278,8 @@ object CharArray {
       throw new NegativeArraySizeException
     }
     val arrcls  = classOf[CharArray]
-    val arrsize = Intrinsics.castIntToRawSizeUnsigned(MemoryLayout.Array.ValuesOffset + 2 * length)
-    val arr = zone.allocImpl(Intrinsics.castObjectToRawPtr(arrcls), arrsize)
+    val arrsize = castIntToRawSizeUnsigned(MemoryLayout.Array.ValuesOffset + 2 * length)
+    val arr = zone.allocImpl(castObjectToRawPtr(arrcls), arrsize)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.LengthOffset), length)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.StrideOffset), 2)
     castRawPtrToObject(arr).asInstanceOf[CharArray]
@@ -284,10 +287,12 @@ object CharArray {
 
   @inline def snapshot(length: Int, data: RawPtr): CharArray = {
     val arr  = alloc(length)
-    val dst  = arr.atRaw(0)
-    val src  = data
-    val size = castIntToRawSizeUnsigned(2 * length)
-    libc.memcpy(dst, src, size)
+    if(length > 0) {
+      val dst  = arr.atRawUnsafe(0)
+      val src  = data
+      val size = castIntToRawSizeUnsigned(2 * length)
+      libc.memcpy(dst, src, size)
+    }
     arr
   }
 }
@@ -298,7 +303,7 @@ final class ByteArray private () extends Array[Byte] {
 
   @inline def atRaw(i: Int): RawPtr =
     if (i < 0 || i >= length) {
-      throwOutOfBounds(i)
+      throwOutOfBounds(i, length)
     } else {
       atRawUnsafe(i)
     }
@@ -341,8 +346,8 @@ object ByteArray {
       throw new NegativeArraySizeException
     }
     val arrcls  = classOf[ByteArray]
-    val arrsize = Intrinsics.castIntToRawSizeUnsigned(MemoryLayout.Array.ValuesOffset + 1 * length)
-    val arr = zone.allocImpl(Intrinsics.castObjectToRawPtr(arrcls), arrsize)
+    val arrsize = castIntToRawSizeUnsigned(MemoryLayout.Array.ValuesOffset + 1 * length)
+    val arr = zone.allocImpl(castObjectToRawPtr(arrcls), arrsize)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.LengthOffset), length)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.StrideOffset), 1)
     castRawPtrToObject(arr).asInstanceOf[ByteArray]
@@ -350,10 +355,12 @@ object ByteArray {
 
   @inline def snapshot(length: Int, data: RawPtr): ByteArray = {
     val arr  = alloc(length)
-    val dst  = arr.atRaw(0)
-    val src  = data
-    val size = castIntToRawSizeUnsigned(1 * length)
-    libc.memcpy(dst, src, size)
+    if(length > 0) {
+      val dst  = arr.atRawUnsafe(0)
+      val src  = data
+      val size = castIntToRawSizeUnsigned(1 * length)
+      libc.memcpy(dst, src, size)
+    }
     arr
   }
 }
@@ -364,7 +371,7 @@ final class ShortArray private () extends Array[Short] {
 
   @inline def atRaw(i: Int): RawPtr =
     if (i < 0 || i >= length) {
-      throwOutOfBounds(i)
+      throwOutOfBounds(i, length)
     } else {
       atRawUnsafe(i)
     }
@@ -407,8 +414,8 @@ object ShortArray {
       throw new NegativeArraySizeException
     }
     val arrcls  = classOf[ShortArray]
-    val arrsize = Intrinsics.castIntToRawSizeUnsigned(MemoryLayout.Array.ValuesOffset + 2 * length)
-    val arr = zone.allocImpl(Intrinsics.castObjectToRawPtr(arrcls), arrsize)
+    val arrsize = castIntToRawSizeUnsigned(MemoryLayout.Array.ValuesOffset + 2 * length)
+    val arr = zone.allocImpl(castObjectToRawPtr(arrcls), arrsize)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.LengthOffset), length)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.StrideOffset), 2)
     castRawPtrToObject(arr).asInstanceOf[ShortArray]
@@ -416,10 +423,12 @@ object ShortArray {
 
   @inline def snapshot(length: Int, data: RawPtr): ShortArray = {
     val arr  = alloc(length)
-    val dst  = arr.atRaw(0)
-    val src  = data
-    val size = castIntToRawSizeUnsigned(2 * length)
-    libc.memcpy(dst, src, size)
+    if(length > 0) {
+      val dst  = arr.atRawUnsafe(0)
+      val src  = data
+      val size = castIntToRawSizeUnsigned(2 * length)
+      libc.memcpy(dst, src, size)
+    }
     arr
   }
 }
@@ -430,7 +439,7 @@ final class IntArray private () extends Array[Int] {
 
   @inline def atRaw(i: Int): RawPtr =
     if (i < 0 || i >= length) {
-      throwOutOfBounds(i)
+      throwOutOfBounds(i, length)
     } else {
       atRawUnsafe(i)
     }
@@ -473,8 +482,8 @@ object IntArray {
       throw new NegativeArraySizeException
     }
     val arrcls  = classOf[IntArray]
-    val arrsize = Intrinsics.castIntToRawSizeUnsigned(MemoryLayout.Array.ValuesOffset + 4 * length)
-    val arr = zone.allocImpl(Intrinsics.castObjectToRawPtr(arrcls), arrsize)
+    val arrsize = castIntToRawSizeUnsigned(MemoryLayout.Array.ValuesOffset + 4 * length)
+    val arr = zone.allocImpl(castObjectToRawPtr(arrcls), arrsize)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.LengthOffset), length)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.StrideOffset), 4)
     castRawPtrToObject(arr).asInstanceOf[IntArray]
@@ -482,10 +491,12 @@ object IntArray {
 
   @inline def snapshot(length: Int, data: RawPtr): IntArray = {
     val arr  = alloc(length)
-    val dst  = arr.atRaw(0)
-    val src  = data
-    val size = castIntToRawSizeUnsigned(4 * length)
-    libc.memcpy(dst, src, size)
+    if(length > 0) {
+      val dst  = arr.atRawUnsafe(0)
+      val src  = data
+      val size = castIntToRawSizeUnsigned(4 * length)
+      libc.memcpy(dst, src, size)
+    }
     arr
   }
 }
@@ -496,7 +507,7 @@ final class LongArray private () extends Array[Long] {
 
   @inline def atRaw(i: Int): RawPtr =
     if (i < 0 || i >= length) {
-      throwOutOfBounds(i)
+      throwOutOfBounds(i, length)
     } else {
       atRawUnsafe(i)
     }
@@ -539,8 +550,8 @@ object LongArray {
       throw new NegativeArraySizeException
     }
     val arrcls  = classOf[LongArray]
-    val arrsize = Intrinsics.castIntToRawSizeUnsigned(MemoryLayout.Array.ValuesOffset + 8 * length)
-    val arr = zone.allocImpl(Intrinsics.castObjectToRawPtr(arrcls), arrsize)
+    val arrsize = castIntToRawSizeUnsigned(MemoryLayout.Array.ValuesOffset + 8 * length)
+    val arr = zone.allocImpl(castObjectToRawPtr(arrcls), arrsize)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.LengthOffset), length)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.StrideOffset), 8)
     castRawPtrToObject(arr).asInstanceOf[LongArray]
@@ -548,10 +559,12 @@ object LongArray {
 
   @inline def snapshot(length: Int, data: RawPtr): LongArray = {
     val arr  = alloc(length)
-    val dst  = arr.atRaw(0)
-    val src  = data
-    val size = castIntToRawSizeUnsigned(8 * length)
-    libc.memcpy(dst, src, size)
+    if(length > 0) {
+      val dst  = arr.atRawUnsafe(0)
+      val src  = data
+      val size = castIntToRawSizeUnsigned(8 * length)
+      libc.memcpy(dst, src, size)
+    }
     arr
   }
 }
@@ -562,7 +575,7 @@ final class FloatArray private () extends Array[Float] {
 
   @inline def atRaw(i: Int): RawPtr =
     if (i < 0 || i >= length) {
-      throwOutOfBounds(i)
+      throwOutOfBounds(i, length)
     } else {
       atRawUnsafe(i)
     }
@@ -605,8 +618,8 @@ object FloatArray {
       throw new NegativeArraySizeException
     }
     val arrcls  = classOf[FloatArray]
-    val arrsize = Intrinsics.castIntToRawSizeUnsigned(MemoryLayout.Array.ValuesOffset + 4 * length)
-    val arr = zone.allocImpl(Intrinsics.castObjectToRawPtr(arrcls), arrsize)
+    val arrsize = castIntToRawSizeUnsigned(MemoryLayout.Array.ValuesOffset + 4 * length)
+    val arr = zone.allocImpl(castObjectToRawPtr(arrcls), arrsize)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.LengthOffset), length)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.StrideOffset), 4)
     castRawPtrToObject(arr).asInstanceOf[FloatArray]
@@ -614,10 +627,12 @@ object FloatArray {
 
   @inline def snapshot(length: Int, data: RawPtr): FloatArray = {
     val arr  = alloc(length)
-    val dst  = arr.atRaw(0)
-    val src  = data
-    val size = castIntToRawSizeUnsigned(4 * length)
-    libc.memcpy(dst, src, size)
+    if(length > 0) {
+      val dst  = arr.atRawUnsafe(0)
+      val src  = data
+      val size = castIntToRawSizeUnsigned(4 * length)
+      libc.memcpy(dst, src, size)
+    }
     arr
   }
 }
@@ -628,7 +643,7 @@ final class DoubleArray private () extends Array[Double] {
 
   @inline def atRaw(i: Int): RawPtr =
     if (i < 0 || i >= length) {
-      throwOutOfBounds(i)
+      throwOutOfBounds(i, length)
     } else {
       atRawUnsafe(i)
     }
@@ -671,8 +686,8 @@ object DoubleArray {
       throw new NegativeArraySizeException
     }
     val arrcls  = classOf[DoubleArray]
-    val arrsize = Intrinsics.castIntToRawSizeUnsigned(MemoryLayout.Array.ValuesOffset + 8 * length)
-    val arr = zone.allocImpl(Intrinsics.castObjectToRawPtr(arrcls), arrsize)
+    val arrsize = castIntToRawSizeUnsigned(MemoryLayout.Array.ValuesOffset + 8 * length)
+    val arr = zone.allocImpl(castObjectToRawPtr(arrcls), arrsize)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.LengthOffset), length)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.StrideOffset), 8)
     castRawPtrToObject(arr).asInstanceOf[DoubleArray]
@@ -680,10 +695,12 @@ object DoubleArray {
 
   @inline def snapshot(length: Int, data: RawPtr): DoubleArray = {
     val arr  = alloc(length)
-    val dst  = arr.atRaw(0)
-    val src  = data
-    val size = castIntToRawSizeUnsigned(8 * length)
-    libc.memcpy(dst, src, size)
+    if(length > 0) {
+      val dst  = arr.atRawUnsafe(0)
+      val src  = data
+      val size = castIntToRawSizeUnsigned(8 * length)
+      libc.memcpy(dst, src, size)
+    }
     arr
   }
 }
@@ -694,7 +711,7 @@ final class ObjectArray private () extends Array[Object] {
 
   @inline def atRaw(i: Int): RawPtr =
     if (i < 0 || i >= length) {
-      throwOutOfBounds(i)
+      throwOutOfBounds(i, length)
     } else {
       atRawUnsafe(i)
     }
@@ -737,8 +754,8 @@ object ObjectArray {
       throw new NegativeArraySizeException
     }
     val arrcls  = classOf[ObjectArray]
-    val arrsize = Intrinsics.castIntToRawSizeUnsigned(MemoryLayout.Array.ValuesOffset + castRawSizeToInt(Intrinsics.sizeOf[RawPtr]) * length)
-    val arr = zone.allocImpl(Intrinsics.castObjectToRawPtr(arrcls), arrsize)
+    val arrsize = castIntToRawSizeUnsigned(MemoryLayout.Array.ValuesOffset + castRawSizeToInt(Intrinsics.sizeOf[RawPtr]) * length)
+    val arr = zone.allocImpl(castObjectToRawPtr(arrcls), arrsize)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.LengthOffset), length)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.StrideOffset), castRawSizeToInt(Intrinsics.sizeOf[RawPtr]))
     castRawPtrToObject(arr).asInstanceOf[ObjectArray]
@@ -746,10 +763,100 @@ object ObjectArray {
 
   @inline def snapshot(length: Int, data: RawPtr): ObjectArray = {
     val arr  = alloc(length)
-    val dst  = arr.atRaw(0)
-    val src  = data
-    val size = castIntToRawSizeUnsigned(castRawSizeToInt(Intrinsics.sizeOf[RawPtr]) * length)
-    libc.memcpy(dst, src, size)
+    if(length > 0) {
+      val dst  = arr.atRawUnsafe(0)
+      val src  = data
+      val size = castIntToRawSizeUnsigned(castRawSizeToInt(Intrinsics.sizeOf[RawPtr]) * length)
+      libc.memcpy(dst, src, size)
+    }
+    arr
+  }
+}
+
+/** Implementation of Array[Byte] potentially containing pointers to other GC allocated objects. Unlike [[ByteArray]] it is conservatively scanned. When running with Immix or Commix GC allows to set [[scannableLimit]] of maximal number of bytes to scan.  */
+final class BlobArray private () extends Array[Byte] {
+  @alwaysinline private def limitPtr: RawPtr = {
+    val rawptr = castObjectToRawPtr(this)
+    elemRawPtr(rawptr, MemoryLayout.Array.StrideOffset)
+  }
+  /** Maximal number of elements to scan by the garbage collector (best effort) */
+  @inline def scannableLimit: Int = -loadInt(limitPtr)
+  /** Set maximal number of elements to scan by the garbage collector (best effort), new limit needs to smaller or equal to length of array  */
+  @inline def scannableLimit_=(v: Int): Unit = {
+    if(v < 0 || v > length) throwOutOfBounds(v, length)
+    else setScannableLimitUnsafe(v)
+  }
+  /** Set maximal number of elements to scan by the garbage collector (best effort), new limit needs to smaller or equal to length of array. This version of scannableLimit setter is not checking the bound of argument. */
+  @inline def setScannableLimitUnsafe(v: Int): Unit = storeInt(limitPtr, -v)
+
+  /** Set maximal number of elements to scan by the garbage collector (best effort), new limit needs to smaller or equal to length of array  */
+  @inline def withScannableLimit(v: Int): this.type = {
+    scannableLimit = v
+    this
+  }
+
+  @inline def stride: Int = 1
+
+  @inline def atRaw(i: Int): RawPtr =
+    if (i < 0 || i >= length) {
+      throwOutOfBounds(i, length)
+    } else {
+      atRawUnsafe(i)
+    }
+
+  @inline def atRawUnsafe(i: Int): RawPtr = {
+    val rawptr = castObjectToRawPtr(this)
+    elemRawPtr(rawptr, MemoryLayout.Array.ValuesOffset + 1 * i)
+  }
+
+  @inline def apply(i: Int): Byte = loadByte(atRaw(i))
+
+  @inline def update(i: Int, value: Byte): Unit = storeByte(atRaw(i), value)
+
+  @inline override def clone(): BlobArray = {
+    val arrcls  = classOf[BlobArray]
+    val arrsize = MemoryLayout.Array.ValuesOffset + 1 * length
+    val arr     = GC.alloc(arrcls, arrsize)
+    val src     = castObjectToRawPtr(this)
+    libc.memcpy(arr, src, castIntToRawSizeUnsigned(arrsize))
+    castRawPtrToObject(arr).asInstanceOf[BlobArray]
+  }
+}
+
+object BlobArray {
+
+  @inline def alloc(length: Int): BlobArray = {
+    if (length < 0) {
+      throw new NegativeArraySizeException
+    }
+    val arrcls  = classOf[BlobArray]
+    val arrsize = MemoryLayout.Array.ValuesOffset + 1 * length
+    val arr = GC.alloc(arrcls, arrsize) 
+    storeInt(elemRawPtr(arr, MemoryLayout.Array.LengthOffset), length)
+    storeInt(elemRawPtr(arr, MemoryLayout.Array.StrideOffset), -length)
+    castRawPtrToObject(arr).asInstanceOf[BlobArray]
+  }
+
+  @inline def alloc(length: Int, zone: SafeZone): BlobArray = {
+    if (length < 0) {
+      throw new NegativeArraySizeException
+    }
+    val arrcls  = classOf[BlobArray]
+    val arrsize = castIntToRawSizeUnsigned(MemoryLayout.Array.ValuesOffset + 1 * length)
+    val arr = zone.allocImpl(castObjectToRawPtr(arrcls), arrsize)
+    storeInt(elemRawPtr(arr, MemoryLayout.Array.LengthOffset), length)
+    storeInt(elemRawPtr(arr, MemoryLayout.Array.StrideOffset), -length)
+    castRawPtrToObject(arr).asInstanceOf[BlobArray]
+  }
+
+  @inline def snapshot(length: Int, data: RawPtr): BlobArray = {
+    val arr  = alloc(length)
+    if(length > 0) {
+      val dst  = arr.atRawUnsafe(0)
+      val src  = data
+      val size = castIntToRawSizeUnsigned(1 * length)
+      libc.memcpy(dst, src, size)
+    }
     arr
   }
 }

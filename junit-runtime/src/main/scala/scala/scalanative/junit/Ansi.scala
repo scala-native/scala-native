@@ -5,7 +5,7 @@ package junit
 
 private[junit] object Ansi {
 
-  private[this] final val NORMAL = "\u001B[0m"
+  private final val NORMAL = "\u001B[0m"
 
   def c(s: String, colorSequence: String): String =
     if (colorSequence == null) s

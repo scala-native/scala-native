@@ -272,7 +272,7 @@ void Heap_Collect(Heap *heap, Stack *stack) {
         return;
 #else
     MutatorThread_switchState(currentMutatorThread,
-                              MutatorThreadState_Unmanaged);
+                              GC_MutatorThreadState_Unmanaged);
 #endif
     uint64_t start_ns, nullify_start_ns, sweep_start_ns, end_ns;
     Stats *stats = heap->stats;
@@ -299,14 +299,12 @@ void Heap_Collect(Heap *heap, Stack *stack) {
     }
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
     Synchronizer_release();
+    GCThread_WeakThreadsHandler_Resume(weakRefsHandlerThread);
 #else
-    MutatorThread_switchState(currentMutatorThread, MutatorThreadState_Managed);
+    MutatorThread_switchState(currentMutatorThread,
+                              GC_MutatorThreadState_Managed);
+    WeakRefStack_CallHandlers();
 #endif
-    // Skip calling WeakRef handlers on thread which is being initialized
-    // If the current block is set to null it means it failed to allocate
-    // memory for allocator and forced GC
-    if (currentMutatorThread->allocator.block)
-        WeakRefStack_CallHandlers();
 #ifdef DEBUG_PRINT
     printf("End collect\n");
     fflush(stdout);
