@@ -12,7 +12,7 @@ class DatagramSocket protected (
   import DatagramSocket._
 
   private[net] var connectState: Int = ST_NOT_CONNECTED
-  private[net] var connectedAddress: InetAddress = null
+  private[net] var connectedAddress: InetAddress = _
   private[net] var connectedPort: Int = -1
 
   private[net] var created = false

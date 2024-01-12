@@ -31,7 +31,7 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
 
   protected[net] var fd = new FileDescriptor
   protected[net] var localport = 0
-  protected[net] var address: InetAddress = null
+  protected[net] var address: InetAddress = _
   protected[net] var port = 0
 
   protected[net] var socket: DatagramSocket = _
@@ -40,7 +40,7 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
 
   protected[net] var timeout = 0
   protected[net] var connected = false
-  protected[net] var connectedAddress: InetAddress = null
+  protected[net] var connectedAddress: InetAddress = _
   protected[net] var connectedPort = -1
 
   override def getFileDescriptor(): FileDescriptor = fd

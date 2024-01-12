@@ -34,7 +34,7 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
 
   protected[net] var fd = new FileDescriptor
   protected[net] var localport = 0
-  protected[net] var address: InetAddress = null
+  protected[net] var address: InetAddress = _
   protected[net] var port = 0
 
   protected var timeout = 0
