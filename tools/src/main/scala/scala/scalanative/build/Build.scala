@@ -104,11 +104,15 @@ object Build {
       checkWorkdirExists(initialConfig)
 
       // validate Config
-      val config = Validator.validate(initialConfig)
+      var config = Validator.validate(initialConfig)
       config.logger.debug(config.toString())
 
       ScalaNative
         .link(config, entries(config))
+        .map { linkerResult =>
+          config = postRechabilityAnalysisConfigUpdate(config, linkerResult)
+          linkerResult
+        }
         .flatMap(optimize(config, _))
         .flatMap(linkerResult =>
           codegen(config, linkerResult)
@@ -177,6 +181,42 @@ object Build {
     s"Linking native code (${config.gc.name} gc, ${config.LTO.name} lto)"
   ) {
     LLVM.link(config, analysis, compiled)
+  }
+
+  /** Based on reachability analysis check if config can be tuned for better
+   *  performance
+   */
+  private def postRechabilityAnalysisConfigUpdate(
+      config: Config,
+      analysis: ReachabilityAnalysis.Result
+  ): Config = {
+    var currentConfig = config
+    // Each block can modify currentConfig stat,
+    // modification should be lazy to not reconstruct object when not required
+    locally { // disable unused mulithreading
+      val envFlag = "SCALANATIVE_DISABLE_UNUSED_MULTITHREADING"
+      val suppressDisablingThreads = sys.env.get(envFlag).contains("0")
+      if (!suppressDisablingThreads && config.compilerConfig.multithreadingSupport) {
+        // format: off
+        val jlThread = nir.Global.Top("java.lang.Thread")
+        val jlThreadStart = jlThread.member(nir.Sig.Method("start", Seq(nir.Type.Unit)))
+        val jlPlatformContext = nir.Global.Top("java.lang.PlatformThreadContext")
+        val jlPlatformContextStart = jlPlatformContext.member(nir.Sig.Method("start", Seq(nir.Type.Ref(jlThread), nir.Type.Unit)))
+        val usesSystemThreads = analysis.infos.contains(jlThreadStart) && analysis.infos.contains(jlPlatformContextStart)
+        // format: on
+        if (!usesSystemThreads) {
+          config.logger.info(
+            "Detected enabled multithreading, but not found any usage of system threads. " +
+              "Multihreading would be disabled to improve performance. " +
+              s"This behavior can be disabled by setting enviornment variable $envFlag=0."
+          )
+          currentConfig = currentConfig.withCompilerConfig(
+            _.withMultithreadingSupport(false)
+          )
+        }
+      }
+    }
+    currentConfig
   }
 
   /** Links the DWARF debug information found in the object files. */

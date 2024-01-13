@@ -7,7 +7,7 @@
 #include <gc/gc.h>
 #include "shared/ScalaNativeGC.h"
 #include <stdlib.h>
-#include <stdio.h>
+#include <errno.h>
 #include <string.h>
 #include "shared/Parsing.h"
 
@@ -58,23 +58,32 @@ void scalanative_GC_collect() { GC_gcollect(); }
 
 void scalanative_GC_register_weak_reference_handler(void *handler) {}
 
-#ifdef SCALANATIVE_MULTITHREADING_ENABLED
 #ifdef _WIN32
 HANDLE scalanative_GC_CreateThread(LPSECURITY_ATTRIBUTES threadAttributes,
                                    SIZE_T stackSize, ThreadStartRoutine routine,
                                    RoutineArgs args, DWORD creationFlags,
                                    DWORD *threadId) {
+#ifdef SCALANATIVE_MULTITHREADING_ENABLED
+
     return GC_CreateThread(threadAttributes, stackSize, routine, args,
                            creationFlags, threadId);
+#endif
+    // We can end up here only if we started build with enabled multihreading
+    // but it was disabled, becouse it was unused
+    return NULL;
 }
 #else
 int scalanative_GC_pthread_create(pthread_t *thread, pthread_attr_t *attr,
                                   ThreadStartRoutine routine,
                                   RoutineArgs args) {
+#ifdef SCALANATIVE_MULTITHREADING_ENABLED
     return GC_pthread_create(thread, attr, routine, args);
+#endif
+    // We can end up here only if we started build with enabled multihreading
+    // but it was disabled, becouse it was unused
+    return EAGAIN;
 }
 #endif
-#endif // SCALANATIVE_MULTITHREADING_ENABLED
 
 // ScalaNativeGC interface stubs. Boehm GC relies on STW using signal handlers
 void scalanative_GC_set_mutator_thread_state(GC_MutatorThreadState unused){};
