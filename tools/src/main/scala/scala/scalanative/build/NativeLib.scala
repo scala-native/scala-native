@@ -89,7 +89,7 @@ private[scalanative] object NativeLib {
 
         val projectSettings = resolveDescriptorFlags(
           desc = descriptor,
-          gc = config.compilerConfig.gc,
+          config = config,
           analysis = analysis,
           nativeCodePath = nativeCodePath
         )
@@ -104,7 +104,7 @@ private[scalanative] object NativeLib {
 
   private def resolveDescriptorFlags(
       desc: Descriptor,
-      gc: GC,
+      config: Config,
       analysis: ReachabilityAnalysis.Result,
       nativeCodePath: Path
   ): Seq[String] = {
@@ -127,12 +127,18 @@ private[scalanative] object NativeLib {
      * Note: The zone directory is also part of the garbage collection
      * system and shares code from the gc directory.
      */
-    val gcDefine = desc.gcProject match {
-      case false => None
-      case true  => Some(s"-DSCALANATIVE_GC_${gc.toString.toUpperCase}")
-    }
+    val gcMaybeDefines =
+      if (!desc.gcProject) Nil
+      else {
+        val gcName = config.compilerConfig.gc.toString().toUpperCase()
+        Seq(
+          Some(s"-DSCALANATIVE_GC_${gcName}"),
+          if (!config.useTrapBasedGCYieldPoints) None
+          else Some("-DSCALANATIVE_GC_USE_YIELDPOINT_TRAPS")
+        ).flatten
+      }
 
-    linkDefines ++ defines ++ gcDefine ++ includePaths
+    linkDefines ++ defines ++ gcMaybeDefines ++ includePaths
   }
 
   /** Create a platform path string from a base path and unix path string

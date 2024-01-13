@@ -175,7 +175,17 @@ sealed trait Config {
     }
 
   // see https://no-color.org/
-  private[scalanative] def noColor: Boolean = sys.env.contains("NO_COLOR")
+  private[scalanative] lazy val noColor: Boolean = sys.env.contains("NO_COLOR")
+
+  private[scalanative] lazy val useTrapBasedGCYieldPoints =
+    compilerConfig.gc match {
+      case GC.Immix | GC.Commix | GC.Experimental =>
+        sys.env
+          .get("SCALANATIVE_GC_TRAP_BASED_YIELDPOINTS")
+          .map(_ == "1")
+          .getOrElse(compilerConfig.mode.isInstanceOf[Mode.Release])
+      case _ => false
+    }
 }
 
 /** Factory to create [[#empty]] [[Config]] objects */
