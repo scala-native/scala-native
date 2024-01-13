@@ -161,7 +161,9 @@ object Inet6Address {
 
     val buffer = new StringBuilder(64)
     var isFirst = true
-    for (i <- 0 until ia6ByteArray.length) {
+
+    // IPv6 binary addresses are defined as 16 bytes, so loop count is known.
+    for (i <- 0 until 16) {
       if ((i & 1) == 0)
         isFirst = true
 
