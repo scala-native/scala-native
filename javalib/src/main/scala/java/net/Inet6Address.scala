@@ -21,7 +21,9 @@ final class Inet6Address private (
   /* Note on scopeId constructor argument:
    *
    *   For most intents and purposes a Java scopeId is a NetworkInterface index
-   *   equivalent to a C or IETF (Internet Engineering Task Force) sin6_scope_id.
+   *   equivalent to a C or IETF (Internet Engineering Task Force)
+   *   sin6_scope_id.
+   *
    *   IETF discussions sometimes call it a 'zoneId'.
    *
    *   See the "Design Note_2" in NetworkInterface.scala for a description of

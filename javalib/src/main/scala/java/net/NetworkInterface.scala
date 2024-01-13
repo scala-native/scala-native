@@ -63,6 +63,14 @@ import macOsIfDl._
  *   They are only set to the actual, non-zero, interface for link-local
  *   and other non-global addresses.
  *
+ *   IETF RFC (Internet Engineering Task Force, Request for Comments)
+ *   2553 (https://datatracker.ietf.org/doc/html/rfc2553) states:
+ *       "The sin6_scope_id field is a 32-bit integer that identifies a set of
+ *        interfaces as appropriate for the scope of the address carried in the
+ *        sin6_addr field.  For a link scope sin6_addr sin6_scope_id would be
+ *        an interface index.  For a site scope sin6_addr, sin6_scope_id would
+ *        be a site identifier."
+ *
  *   This file explicitly sets the network index (Java scopeId) and does
  *   not rely upon the possibly zero contents of sin6_scope_id.
  */

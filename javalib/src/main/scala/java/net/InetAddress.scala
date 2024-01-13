@@ -487,8 +487,12 @@ object InetAddress {
       // By contract the 'sockaddr' argument passed in is cleared/all_zeros.
       if (ipBA.length == 16) {
         val v6addr = addr.asInstanceOf[Ptr[sockaddr_in6]]
+        /* No need to set other sin6 fields, particularly sin6_scope_id
+         * and sin6_flowinfo. v6addr is later passed to getnameinfo() which
+         * is likely to ignore, reject, or get confused by non-zero values
+         * in those fields.
+         */
         v6addr.sin6_family = AF_INET6.toUShort
-        // because the FQDN scope is Global, no need to set sin6_scope_id
         val dst = v6addr.sin6_addr.at1.at(0).asInstanceOf[Ptr[Byte]]
         memcpy(dst, from, 16.toUInt)
       } else if (ipBA.length == 4) {
