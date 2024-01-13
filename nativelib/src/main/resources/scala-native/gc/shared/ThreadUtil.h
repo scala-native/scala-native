@@ -18,6 +18,7 @@
 #ifndef SCALANATIVE_MULTITHREADING_ENABLED
 #undef thread_local
 #define thread_local
+#define SN_ThreadLocal
 #else
 #ifndef thread_local
 #if __STDC_VERSION__ >= 201112 && !defined __STDC_NO_THREADS__
@@ -31,8 +32,8 @@
 #else
 #error "Cannot define thread_local"
 #endif
+#define SN_ThreadLocal __attribute__((tls_model("local-exec"))) thread_local
 #endif // thread_local
-#define SN_ThreadLocal __attribute__((tls_model("local-exec"))) __attribute__((visibility("hidden"))) thread_local
 #endif
 
 typedef void *(*routine_fn)(void *);
