@@ -27,7 +27,7 @@ safepoint_t YieldPointTrap_init() {
 #ifdef _WIN32
         VirtualAlloc(NULL, sizeof(safepoint_t), MEM_RESERVE | MEM_COMMIT,
                      PAGE_READONLY);
-    allocated == addr != NULL;
+    allocated = addr != NULL;
 #else
         mmap(NULL, sizeof(safepoint_t), PROT_READ,
              MAP_NORESERVE | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
