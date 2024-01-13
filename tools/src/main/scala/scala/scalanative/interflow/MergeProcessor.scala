@@ -151,7 +151,7 @@ final class MergeProcessor(
           def escapes(addr: Addr): Boolean =
             states.exists(_.hasEscaped(addr))
 
-          states.head.heap.keys.iterator
+          states.head.heap.keysIterator
             .filter(includeAddr)
             .foreach { addr =>
               val headInstance = states.head.deref(addr)
