@@ -55,10 +55,12 @@ class NetworkInterfaceTestOnJDK9 {
       })
       .count
 
-    /* Linux tends to have two addresses, one IPv4 & one IPv6.
+    /* Out-of-the-box Linux tends to have two addresses, one IPv4 & one IPv6.
      * macOS has three. It adds a link local (fe80) address.
+     * Of course, a user may configure their system differently and
+     * break this test.
      */
-    assertTrue("count > 0", count > 2)
+    assertTrue("count ${count} not >= 2", count >= 2)
   }
 
 }
