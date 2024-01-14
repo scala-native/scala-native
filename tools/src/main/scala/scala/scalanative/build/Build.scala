@@ -212,7 +212,7 @@ object Build {
         if (!usesSystemThreads) {
           config.logger.info(
             "Detected enabled multithreading, but not found any usage of system threads. " +
-              "Multihreading would be disabled to improve performance. " +
+              "Multihreading will be disabled to improve performance. " +
               s"This behavior can be disabled by setting enviornment variable $envFlag=0."
           )
           currentConfig = currentConfig.withCompilerConfig(
