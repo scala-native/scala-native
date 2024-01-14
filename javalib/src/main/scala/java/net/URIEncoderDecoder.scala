@@ -1,13 +1,14 @@
 package java.net
 
 import java.io.ByteArrayOutputStream;
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets
 
-object URIEncoderDecoder {
+// ScalaNative specific
+private[net] object URIEncoderDecoder {
 
   val digits: String = "0123456789ABCDEF"
 
-  val encoding: String = "UTF8"
+  val encoding = StandardCharsets.UTF_8
 
   def validate(s: String, legal: String): Unit = {
     var i: Int = 0
