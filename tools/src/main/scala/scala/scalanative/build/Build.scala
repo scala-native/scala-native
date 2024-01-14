@@ -106,12 +106,15 @@ object Build {
       // validate Config
       var config = Validator.validate(initialConfig)
       config.logger.debug(config.toString())
+      def linkNIRForEntries = ScalaNative.link(config, entries(config))
 
-      ScalaNative
-        .link(config, entries(config))
-        .map { linkerResult =>
-          config = postRechabilityAnalysisConfigUpdate(config, linkerResult)
-          linkerResult
+      linkNIRForEntries
+        .flatMap { linkerResult =>
+          val (updatedConfig, needsToReload) =
+            postRechabilityAnalysisConfigUpdate(config, linkerResult)
+          config = updatedConfig
+          if (needsToReload) linkNIRForEntries
+          else Future.successful(linkerResult)
         }
         .flatMap(optimize(config, _))
         .flatMap(linkerResult =>
@@ -189,8 +192,10 @@ object Build {
   private def postRechabilityAnalysisConfigUpdate(
       config: Config,
       analysis: ReachabilityAnalysis.Result
-  ): Config = {
+  ): (Config, Boolean) = {
     var currentConfig = config
+    var needsToReload = true
+
     // Each block can modify currentConfig stat,
     // modification should be lazy to not reconstruct object when not required
     locally { // disable unused mulithreading
@@ -202,7 +207,7 @@ object Build {
         val jlThreadStart = jlThread.member(nir.Sig.Method("start", Seq(nir.Type.Unit)))
         val jlPlatformContext = nir.Global.Top("java.lang.PlatformThreadContext")
         val jlPlatformContextStart = jlPlatformContext.member(nir.Sig.Method("start", Seq(nir.Type.Ref(jlThread), nir.Type.Unit)))
-        val usesSystemThreads = analysis.infos.contains(jlThreadStart) && analysis.infos.contains(jlPlatformContextStart)
+        val usesSystemThreads = analysis.infos.contains(jlThreadStart) || analysis.infos.contains(jlPlatformContextStart)
         // format: on
         if (!usesSystemThreads) {
           config.logger.info(
@@ -213,10 +218,11 @@ object Build {
           currentConfig = currentConfig.withCompilerConfig(
             _.withMultithreadingSupport(false)
           )
+          needsToReload = true
         }
       }
     }
-    currentConfig
+    currentConfig -> needsToReload
   }
 
   /** Links the DWARF debug information found in the object files. */
