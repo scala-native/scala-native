@@ -1,4 +1,4 @@
-#if defined(SCALANATIVE_GC_IMMIX)
+#if defined(SCALANATIVE_MULTITHREADING_ENABLED) && defined(SCALANATIVE_GC_IMMIX)
 
 #include "immix_commix/Synchronizer.h"
 #include "shared/ScalaNativeGC.h"
