@@ -81,7 +81,8 @@ void YieldPointTrap_disarm(safepoint_t ref) {
     success = VirtualProtect((LPVOID)ref, sizeof(safepoint_t), PAGE_READWRITE,
                              &oldAccess);
 #else
-    success = mprotect((void *)ref, sizeof(safepoint_t), PROT_WRITE | PROT_READ) == 0;
+    success =
+        mprotect((void *)ref, sizeof(safepoint_t), PROT_WRITE | PROT_READ) == 0;
 #endif
     if (!success) {
         perror("Failed to disable GC collect trap");
