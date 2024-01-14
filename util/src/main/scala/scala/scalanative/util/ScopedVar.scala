@@ -51,7 +51,7 @@ object ScopedVar {
   def scopedPushIf[T](
       shouldPushAssignments: Boolean
   )(lazyAssignments: => Seq[Assignment[_]])(body: => T): T = {
-    if (shouldPushAssignments) scoped(lazyAssignments:_*)(body)
+    if (shouldPushAssignments) scoped(lazyAssignments: _*)(body)
     else body
   }
 }
