@@ -43,13 +43,13 @@ final class Inet6Address private (
     else nif.getIndex()
 
   override def hashCode(): Int = {
-    val base = ju.Arrays.hashCode(ipAddress)
-      + host.hashCode()
-      + useScopeId.hashCode()
-      + scopeId.hashCode()
-
-    val hash = if (nif == null) base else (base + nif.hashCode())
-    hash
+    var res = 1
+    res = 31 * res + ju.Arrays.hashCode(ipAddress)
+    res = 31 * res + host.hashCode()
+    res = 31 * res + useScopeId.hashCode()
+    res = 31 * res + scopeId.hashCode()
+    res = if (nif != null) (res = 31 * res + nif.hashCode())
+    res
   }
 
   override def isLinkLocalAddress(): Boolean =

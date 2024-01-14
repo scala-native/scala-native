@@ -24,8 +24,13 @@ class InterfaceAddress private[net] (
 
   /** This hashCode is not intended or guaranteed to match Java.
    */
-  override def hashCode(): Int =
-    inetAddr.hashCode() + broadcastAddr.hashCode() + prefixLength
+  override def hashCode(): Int = {
+    var res = 1
+    res = 31 * res + inetAddr.hashCode()
+    res = 31 * res + broadcastAddr.hashCode()
+    res = 31 * res + prefixLength
+    res
+  }
 
   override def toString(): String = {
     val iaPart = inetAddr.getHostAddress()

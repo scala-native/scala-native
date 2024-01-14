@@ -184,7 +184,7 @@ class NetworkInterface private (ifName: String) {
   // relies upon convention that Virtual or sub-interfaces have colon in name.
   def isVirtual(): Boolean = ifName.indexOf(':') >= 0 // a best guess
 
-  override def hashCode(): Int = ifName.hashCode()
+  override def hashCode(): Int = 31 * ifName.hashCode()
 
   def subInterfaces(): Stream[NetworkInterface] = {
     val allIfs = NetworkInterface.networkInterfaces()

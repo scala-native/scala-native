@@ -116,9 +116,13 @@ class InetAddress protected (ipAddress: Array[Byte], originalHost: String)
       | ((bytes(start) & 255) << 24))
   }
 
-  override def hashCode(): Int =
-    if (ipAddress.length == 4) bytesToInt(ipAddress, 0) // too scared to change
-    else ju.Arrays.hashCode(ipAddress)
+  override def hashCode(): Int = {
+    ju.Arrays.hashCode(ipAddress)
+    var res = 1
+    res = 31 * res + ju.Arrays.hashCode(ipAddress)
+    res = if (originalHost != null) (res = 31 * res + originalHost.hashCode())
+    res
+  }
 
   def isLinkLocalAddress(): Boolean = false
 
