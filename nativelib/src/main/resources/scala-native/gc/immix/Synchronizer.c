@@ -46,7 +46,7 @@ static LONG WINAPI SafepointTrapHandler(EXCEPTION_POINTERS *ex) {
     case EXCEPTION_ACCESS_VIOLATION:
         ULONG_PTR addr = ex->ExceptionRecord->ExceptionInformation[1];
         if ((void *)addr == scalanative_GC_yieldpoint_trap) {
-            Synchronizer_WaitForResumption();
+            Synchronizer_yield();
             return EXCEPTION_CONTINUE_EXECUTION;
         }
         fprintf(stderr, "Caught exception code %p in GC exception handler\n",
