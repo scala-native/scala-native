@@ -778,7 +778,7 @@ object Lower {
         }
         if (platform.useGCYieldPointTraps) {
           val trap = buf.load(nir.Type.Ptr, GCYieldPointTrap, handler)
-          buf.store(nir.Type.Ptr, trap, zero, handler, memoryOrder = None)
+          buf.store(nir.Type.Int, trap, zero, handler, memoryOrder = None)
         } else {
           buf.call(GCYieldSig, GCYield, Nil, handler)
         }
