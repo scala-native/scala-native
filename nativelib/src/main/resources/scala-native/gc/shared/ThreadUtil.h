@@ -18,13 +18,14 @@
 #ifndef SCALANATIVE_MULTITHREADING_ENABLED
 #define SN_ThreadLocal
 #else
-#define TLS_MODEL_ATTR __attribute__((tls_model("local-exec")))
 #if __STDC_VERSION__ >= 201112L
-#define SN_ThreadLocal TLS_MODEL_ATTR _Thread_local
+// TODO Use tls_model hints when building application, but not when creating
+// library #define TLS_MODEL_ATTR __attribute__((tls_model("local-exec")))
+#define SN_ThreadLocal _Thread_local
 #elif defined(_MSC_VER)
 #define SN_ThreadLocal __declspec(thread)
 #elif defined(__GNUC__) || defined(__clang__)
-#define SN_ThreadLocal TLS_MODEL_ATTR __thread
+#define SN_ThreadLocal __thread
 #else
 #error Unable to create thread local storage
 #endif
