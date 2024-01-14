@@ -26,10 +26,10 @@ safepoint_t YieldPointTrap_init() {
     void *addr =
 #ifdef _WIN32
         VirtualAlloc(NULL, sizeof(safepoint_t), MEM_RESERVE | MEM_COMMIT,
-                     PAGE_READONLY);
+                     PAGE_READWRITE);
     allocated = addr != NULL;
 #else
-        mmap(NULL, sizeof(safepoint_t), PROT_READ,
+        mmap(NULL, sizeof(safepoint_t), PROT_WRITE | PROT_READ,
              MAP_NORESERVE | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     allocated = addr != MAP_FAILED;
 #endif
@@ -78,10 +78,10 @@ void YieldPointTrap_disarm(safepoint_t ref) {
     bool success;
 #ifdef _WIN32
     DWORD oldAccess;
-    success = VirtualProtect((LPVOID)ref, sizeof(safepoint_t), PAGE_READONLY,
+    success = VirtualProtect((LPVOID)ref, sizeof(safepoint_t), PAGE_READWRITE,
                              &oldAccess);
 #else
-    success = mprotect((void *)ref, sizeof(safepoint_t), PROT_READ) == 0;
+    success = mprotect((void *)ref, sizeof(safepoint_t), PROT_WRITE | PROT_READ) == 0;
 #endif
     if (!success) {
         perror("Failed to disable GC collect trap");

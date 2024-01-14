@@ -145,11 +145,14 @@ static void Synchronizer_SuspendThreads(void) {
 }
 
 static void Synchronizer_ResumeThreads(void) {
+    YieldPointTrap_disarm(scalanative_GC_yieldpoint_trap);
     atomic_store_explicit(&Synchronizer_stopThreads, false,
                           memory_order_release);
-    YieldPointTrap_disarm(scalanative_GC_yieldpoint_trap);
     MutatorThreads_foreach(mutatorThreads, node) {
-        Synchronizer_ResumeThread(node->value);
+        MutatorThread *thread = node->value;
+        if (atomic_load_explicit(&thread->isWaiting, memory_order_acquire)) {
+            Synchronizer_ResumeThread(thread);
+        }
     }
 }
 
@@ -166,7 +169,6 @@ static struct {
 
 static void Synchronizer_WaitForResumption(MutatorThread *selfThread) {
     assert(thread == currentMutatorThread);
-    atomic_store_explicit(&selfThread->isWaiting, true, memory_order_release);
 #ifdef _WIN32
     WaitForSingleObject(threadSuspensionEvent, INFINITE);
 #else
@@ -176,7 +178,6 @@ static void Synchronizer_WaitForResumption(MutatorThread *selfThread) {
     }
     pthread_mutex_unlock(&threadSuspension.lock);
 #endif
-    atomic_store_explicit(&selfThread->isWaiting, false, memory_order_release);
 }
 
 static void Synchronizer_SuspendThreads() {
@@ -212,6 +213,7 @@ void Synchronizer_init() {
     mutex_init(&synchronizerLock);
 #ifdef SCALANATIVE_GC_USE_YIELDPOINT_TRAPS
     scalanative_GC_yieldpoint_trap = YieldPointTrap_init();
+    YieldPointTrap_disarm(scalanative_GC_yieldpoint_trap);
     SetupYieldPointTrapHandler();
 #else
 #ifdef _WIN32
@@ -240,7 +242,12 @@ void Synchronizer_yield() {
     MutatorThread_switchState(self, GC_MutatorThreadState_Unmanaged);
     atomic_thread_fence(memory_order_seq_cst);
 
-    Synchronizer_WaitForResumption(self);
+    atomic_store_explicit(&self->isWaiting, true, memory_order_release);
+    while (
+        atomic_load_explicit(&Synchronizer_stopThreads, memory_order_consume)) {
+        Synchronizer_WaitForResumption(self);
+    }
+    atomic_store_explicit(&self->isWaiting, false, memory_order_release);
 
     MutatorThread_switchState(self, GC_MutatorThreadState_Managed);
     atomic_thread_fence(memory_order_seq_cst);
@@ -248,8 +255,7 @@ void Synchronizer_yield() {
 
 bool Synchronizer_acquire() {
     if (!mutex_tryLock(&synchronizerLock)) {
-        if (atomic_load(&Synchronizer_stopThreads))
-            Synchronizer_yield();
+        scalanative_GC_yield();
         return false;
     }
 
@@ -259,11 +265,9 @@ bool Synchronizer_acquire() {
     MutatorThread *self = currentMutatorThread;
     MutatorThread_switchState(self, GC_MutatorThreadState_Unmanaged);
 
-    int iteration = 0;
     int activeThreads;
     do {
         atomic_thread_fence(memory_order_seq_cst);
-        iteration++;
         activeThreads = 0;
         MutatorThreads_foreach(mutatorThreads, node) {
             MutatorThread *it = node->value;
@@ -272,8 +276,9 @@ bool Synchronizer_acquire() {
                 activeThreads++;
             }
         }
-        if (activeThreads > 0)
+        if (activeThreads > 0) {
             thread_yield();
+        }
     } while (activeThreads > 0);
     return true;
 }
@@ -281,9 +286,9 @@ bool Synchronizer_acquire() {
 void Synchronizer_release() {
     Synchronizer_ResumeThreads();
     MutatorThreads_unlockRead();
+    mutex_unlock(&synchronizerLock);
     MutatorThread_switchState(currentMutatorThread,
                               GC_MutatorThreadState_Managed);
-    mutex_unlock(&synchronizerLock);
 }
 
 #endif

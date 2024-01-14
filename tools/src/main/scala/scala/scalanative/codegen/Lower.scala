@@ -754,7 +754,12 @@ object Lower {
           lastResult = {
             // Exclude accessors and generated methods
             def mayContainLoops =
-              defn.insts.exists(_.isInstanceOf[nir.Inst.Jump])
+              defn.insts.exists {
+                case jmp: nir.Inst.Jump =>
+                  // might contain loops
+                  jmp.next.isInstanceOf[nir.Next.Label]
+                case _ => false
+              }
             !sig.isGenerated && (defn.insts.size > 4 || mayContainLoops)
           }
           lastResult
@@ -773,7 +778,7 @@ object Lower {
         }
         if (platform.useGCYieldPointTraps) {
           val trap = buf.load(nir.Type.Ptr, GCYieldPointTrap, handler)
-          buf.load(nir.Type.Ptr, trap, handler, memoryOrder = None)
+          buf.store(nir.Type.Ptr, trap, zero, handler, memoryOrder = None)
         } else {
           buf.call(GCYieldSig, GCYield, Nil, handler)
         }
