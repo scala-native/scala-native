@@ -234,7 +234,7 @@ class MsgIoSocketTest {
    */
   @Test def linux64ControlMessages(): Unit = if (!isWindows) {
     // The focus is on control messages, the data sent is only an excuse.
-    if (Platform.isLinux && !Platform.is32BitPlatform) Zone { implicit z =>
+    if (Platform.isLinux && !target.is32BitPlatform) Zone { implicit z =>
       // Linux bit definition. Useful for cmsg_level & cmsg_type on 64 bit OS.
       type l64cmsghdr = CStruct3[
         size_t, // cmsg_len

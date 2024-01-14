@@ -50,12 +50,12 @@ object MemoryLayout {
 
   final case class PositionedType(ty: nir.Type, offset: Long)
 
-  def sizeOf(ty: nir.Type)(implicit platform: PlatformInfo): Long =
+  def sizeOf(ty: nir.Type)(implicit target: TargetInfo): Long =
     ty match {
       case _: nir.Type.RefKind | nir.Type.Nothing | nir.Type.Ptr =>
-        platform.sizeOfPtr
+        target.sizeOfPtr
       case nir.Type.Size =>
-        platform.sizeOfPtr
+        target.sizeOfPtr
       case t: nir.Type.PrimitiveKind =>
         math.max(t.width / BITS_IN_BYTE, 1)
       case nir.Type.ArrayValue(ty, n) =>
@@ -66,12 +66,12 @@ object MemoryLayout {
         unsupported(s"sizeof $ty")
     }
 
-  def alignmentOf(ty: nir.Type)(implicit platform: PlatformInfo): Long =
+  def alignmentOf(ty: nir.Type)(implicit target: TargetInfo): Long =
     ty match {
       case nir.Type.Long | nir.Type.Double | nir.Type.Size =>
-        platform.sizeOfPtr
+        target.sizeOfPtr
       case nir.Type.Nothing | nir.Type.Ptr | _: nir.Type.RefKind =>
-        platform.sizeOfPtr
+        target.sizeOfPtr
       case t: nir.Type.PrimitiveKind =>
         math.max(t.width / BITS_IN_BYTE, 1)
       case nir.Type.ArrayValue(ty, n) =>
@@ -94,7 +94,7 @@ object MemoryLayout {
 
   def apply(
       tys: Seq[nir.Type]
-  )(implicit platform: PlatformInfo): MemoryLayout = {
+  )(implicit target: TargetInfo): MemoryLayout = {
     val pos = mutable.UnrolledBuffer.empty[PositionedType]
     var offset = 0L
 
@@ -114,7 +114,7 @@ object MemoryLayout {
 
   def ofAlignedFields(
       fields: Seq[Field]
-  )(implicit platform: PlatformInfo, meta: Metadata): MemoryLayout = {
+  )(implicit target: TargetInfo, meta: Metadata): MemoryLayout = {
     import meta.layouts.ObjectHeader
 
     val pos = mutable.UnrolledBuffer.empty[PositionedType]

@@ -838,7 +838,7 @@ trait Eval { self: Interflow =>
       case nir.Conv.SSizeCast | nir.Conv.ZSizeCast =>
         def size(ty: nir.Type) = ty match {
           case nir.Type.Size =>
-            if (platform.is32Bit) 32 else 64
+            if (target.is32Bit) 32 else 64
           case i: nir.Type.FixedSizeI =>
             i.width
           case o =>
@@ -865,7 +865,7 @@ trait Eval { self: Interflow =>
           case (nir.Val.Long(v), nir.Type.Char)  => nir.Val.Char(v.toChar)
           case (nir.Val.Size(v), nir.Type.Byte)  => nir.Val.Byte(v.toByte)
           case (nir.Val.Size(v), nir.Type.Short) => nir.Val.Short(v.toShort)
-          case (nir.Val.Size(v), nir.Type.Int) if !platform.is32Bit =>
+          case (nir.Val.Size(v), nir.Type.Int) if !target.is32Bit =>
             nir.Val.Int(v.toInt)
           case (nir.Val.Size(v), nir.Type.Char) => nir.Val.Char(v.toChar)
           case _                                => bailOut
@@ -882,9 +882,9 @@ trait Eval { self: Interflow =>
             nir.Val.Long(v.toChar.toLong)
           case (nir.Val.Int(v), nir.Type.Long) =>
             nir.Val.Long(java.lang.Integer.toUnsignedLong(v))
-          case (nir.Val.Int(v), nir.Type.Size) if !platform.is32Bit =>
+          case (nir.Val.Int(v), nir.Type.Size) if !target.is32Bit =>
             nir.Val.Size(java.lang.Integer.toUnsignedLong(v))
-          case (nir.Val.Size(v), nir.Type.Long) if platform.is32Bit =>
+          case (nir.Val.Size(v), nir.Type.Long) if target.is32Bit =>
             nir.Val.Long(java.lang.Integer.toUnsignedLong(v.toInt))
           case _ =>
             bailOut
@@ -898,9 +898,9 @@ trait Eval { self: Interflow =>
           case (nir.Val.Short(v), nir.Type.Int)  => nir.Val.Int(v.toInt)
           case (nir.Val.Short(v), nir.Type.Long) => nir.Val.Long(v.toLong)
           case (nir.Val.Int(v), nir.Type.Long)   => nir.Val.Long(v.toLong)
-          case (nir.Val.Int(v), nir.Type.Size) if !platform.is32Bit =>
+          case (nir.Val.Int(v), nir.Type.Size) if !target.is32Bit =>
             nir.Val.Size(v.toLong)
-          case (nir.Val.Size(v), nir.Type.Long) if platform.is32Bit =>
+          case (nir.Val.Size(v), nir.Type.Long) if target.is32Bit =>
             nir.Val.Long(v.toInt.toLong)
           case _ => bailOut
         }
@@ -980,13 +980,13 @@ trait Eval { self: Interflow =>
             nir.Val.Int(java.lang.Float.floatToRawIntBits(value))
           case (nir.Val.Double(value), nir.Type.Long) =>
             nir.Val.Long(java.lang.Double.doubleToRawLongBits(value))
-          case (nir.Val.Size(value), nir.Type.Int) if platform.is32Bit =>
+          case (nir.Val.Size(value), nir.Type.Int) if target.is32Bit =>
             nir.Val.Int(value.toInt)
-          case (nir.Val.Int(value), nir.Type.Size) if platform.is32Bit =>
+          case (nir.Val.Int(value), nir.Type.Size) if target.is32Bit =>
             nir.Val.Size(value.toLong)
-          case (nir.Val.Size(value), nir.Type.Long) if !platform.is32Bit =>
+          case (nir.Val.Size(value), nir.Type.Long) if !target.is32Bit =>
             nir.Val.Long(value)
-          case (nir.Val.Long(value), nir.Type.Size) if !platform.is32Bit =>
+          case (nir.Val.Long(value), nir.Type.Size) if !target.is32Bit =>
             nir.Val.Size(value)
           case (nir.Val.Null, nir.Type.Ptr) =>
             nir.Val.Null
@@ -1035,6 +1035,9 @@ trait Eval { self: Interflow =>
     offset >= 0 && offset < length
   }
 
+  /** Returns `true` iff `clsName` does not contain any field requiring
+   *  instantiation.
+   */
   private def isPureModule(clsName: nir.Global.Top): Boolean = {
     var visiting = List[nir.Global.Top]()
 

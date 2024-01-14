@@ -2,7 +2,7 @@ package scala.scalanative
 package interflow
 
 import scala.collection.mutable
-import scala.scalanative.codegen.PlatformInfo
+import scala.scalanative.codegen.TargetInfo
 import scala.scalanative.nir.Defn.Define.DebugInfo
 import scala.scalanative.linker._
 import scala.scalanative.util.ScopedVar
@@ -20,44 +20,74 @@ class Interflow(val config: build.Config)(implicit
     with PolyInline
     with Intrinsics
     with Log {
-  implicit val platform: PlatformInfo = PlatformInfo(config)
 
+  /** The target machine for which code is being compiled. */
+  implicit val target: TargetInfo = TargetInfo(config)
+
+  /** A map from symbol to its original definition. */
   private val originals = {
     val out = mutable.Map.empty[nir.Global, nir.Defn]
     analysis.defns.foreach { defn => out(defn.name) = defn }
     out
   }
 
+  /** The set of definitions to process. */
   private val todo = mutable.Queue.empty[nir.Global.Member]
+
+  /** A map from symbol to its optimized definition. */
   private val done = mutable.Map.empty[nir.Global.Member, nir.Defn.Define]
+
+  /** A set with the symbols for which Interflow has started. */
   private val started = mutable.Set.empty[nir.Global.Member]
+
+  /** A set with the symbols that shouldn't be processed. */
   private val denylist = mutable.Set.empty[nir.Global.Member]
+
+  /** A set with the symbols that are accessible from code roots. */
   private val reached = mutable.HashSet.empty[nir.Global.Member]
+
+  /** A map indicatting whether a particular symbol is pure. */
   private val modulePurity = mutable.Map.empty[nir.Global.Top, Boolean]
 
+  // QUESTION: What does "Tl" mean?
   def currentFreshScope = freshScopeTl.get()
+
   private val freshScopeTl =
     ThreadLocal.withInitial(() => new ScopedVar[nir.Fresh])
 
   def currentLexicalScopes = lexicalScopesTl.get()
+
   private val lexicalScopesTl = ThreadLocal.withInitial(() =>
     new ScopedVar[mutable.UnrolledBuffer[DebugInfo.LexicalScope]]
   )
 
   private val contextTl =
     ThreadLocal.withInitial(() => List.empty[String])
+
   private val mergeProcessorTl =
     ThreadLocal.withInitial(() => List.empty[MergeProcessor])
+
   private val blockFreshTl =
     ThreadLocal.withInitial(() => List.empty[nir.Fresh])
 
+  /** Returns `true` iff `name` has an original, unmodified definition. */
   def hasOriginal(name: nir.Global.Member): Boolean =
     originals.contains(name) && originals(name).isInstanceOf[nir.Defn.Define]
+
+  /** Returns the original, unmodified definition of `name`.
+   *
+   *    - Requires: `name` has an original definition.
+   */
   def getOriginal(name: nir.Global.Member): nir.Defn.Define =
     originals(name).asInstanceOf[nir.Defn.Define]
+
+  /** Returns the original, unmodified definition of `name` if it has one. */
   def maybeOriginal(name: nir.Global.Member): Option[nir.Defn.Define] =
     originals.get(name).collect { case defn: nir.Defn.Define => defn }
 
+  /** Thread-safely returns the next symbol to process, or `Global.None` if
+   *  there aren't any.
+   */
   def popTodo(): nir.Global =
     todo.synchronized {
       if (todo.isEmpty) {
@@ -66,6 +96,8 @@ class Interflow(val config: build.Config)(implicit
         todo.dequeue()
       }
     }
+
+  /** Thread-safely adds a symbol to process. */
   def pushTodo(name: nir.Global.Member): Unit =
     todo.synchronized {
       if (!reached.contains(name)) {
@@ -73,94 +105,146 @@ class Interflow(val config: build.Config)(implicit
         reached += name
       }
     }
+
+  /** Thread-safely accesses the list of symbols to process. */
   def allTodo(): Seq[nir.Global.Member] =
     todo.synchronized {
       todo.toSeq
     }
 
+  /** Returns `true` iff `name` has been processed. */
   def isDone(name: nir.Global.Member): Boolean =
     done.synchronized {
       done.contains(name)
     }
+
+  /** Sets `value` as the optimized form of `name`. */
+  // QUESTION: This should be renamed.
   def setDone(name: nir.Global.Member, value: nir.Defn.Define) =
     done.synchronized {
       done(name) = value
     }
+
+  /** Returns the optimized form of `name`.
+   *
+   *    - Requires: `name` has been processed.
+   */
+  // QUESTION: This should be renamed.
   def getDone(name: nir.Global.Member): nir.Defn.Define =
     done.synchronized {
       done(name)
     }
+
+  /** Returns the optimized form of `name` if there is one. */
   def maybeDone(name: nir.Global.Member): Option[nir.Defn.Define] =
     done.synchronized {
       done.get(name)
     }
 
+  /** Returns the optimized form of `name` if there is one. */
   def hasStarted(name: nir.Global.Member): Boolean =
     started.synchronized {
       started.contains(name)
     }
+
+  /** Register the fact that interflow analysis has started for `name`. */
   def markStarted(name: nir.Global.Member): Unit =
     started.synchronized {
       started += name
     }
 
+  /** Returns `true` iff `name` should not be processed. */
   def isDenylisted(name: nir.Global.Member): Boolean =
     denylist.synchronized {
       denylist.contains(name)
     }
+
+  /** Register the fact that `name` should not be processed. */
   def markDenylisted(name: nir.Global.Member): Unit =
     denylist.synchronized {
       denylist += name
     }
 
+  /** `true` iff the purity of `name` is defined. */
   def hasModulePurity(name: nir.Global.Top): Boolean =
     modulePurity.synchronized {
       modulePurity.contains(name)
     }
+
+  /** Defines the purity of `name` as `value`. */
   def setModulePurity(name: nir.Global.Top, value: Boolean): Unit =
     modulePurity.synchronized {
       modulePurity(name) = value
     }
+
+  /** `true` iff `name` does not contain any field requiring instantiation.
+   *
+   *  `this.hasModulePurity(name)` must be `true`.
+   */
   def getModulePurity(name: nir.Global.Top): Boolean =
     modulePurity.synchronized {
       modulePurity(name)
     }
 
+  /** The size of the backtrace (i.e., a log of operations). */
   def contextDepth(): Int =
     contextTl.get.size
+
+  /** `true` iff the algorithm has a backtrace.
+   *
+   *  Contexts are used for logging and for detecting that some operation is
+   *  being done recursively.
+   */
   def hasContext(value: String): Boolean =
     contextTl.get.contains(value)
+
+  /** Adds an operation on the backtrace. */
   def pushContext(value: String): Unit =
     contextTl.set(value :: contextTl.get)
+
+  /** Removes the operation on the top of the backtrace. */
   def popContext(): Unit =
     contextTl.set(contextTl.get.tail)
 
+  /** The current inlining preprocessor. */
   def mergeProcessor: MergeProcessor =
     mergeProcessorTl.get.head
+
+  /** Adds a new inlining preprocessor on top of the current one. */
   def pushMergeProcessor(value: MergeProcessor): Unit =
     mergeProcessorTl.set(value :: mergeProcessorTl.get)
+
+  /** Removes current inlining preprocessor. */
   def popMergeProcessor(): Unit =
     mergeProcessorTl.set(mergeProcessorTl.get.tail)
 
+  /** The current NIR block in which instructions are inserted. */
   def blockFresh: nir.Fresh =
     blockFreshTl.get.head
+
+  /** Adds a new NIR block for inserting instructions. */
   def pushBlockFresh(value: nir.Fresh): Unit =
     blockFreshTl.set(value :: blockFreshTl.get)
+
+  /** Removes the current NIR block. */
   def popBlockFresh(): Unit =
     blockFreshTl.set(blockFreshTl.get.tail)
 
+  /** Returns a collection with the optimized forms of all definitions. */
   def result(): Seq[nir.Defn] = {
     val optimized = originals.clone()
     optimized ++= done
     optimized.values.toSeq
   }
 
+  /** Returns the mode (debug or release) in which compilation takes place. */
   protected def mode: build.Mode = config.compilerConfig.mode
 
 }
 
 object Interflow {
 
+  /** Runs Interflow with the given `config`. */
   def optimize(config: build.Config, analysis: ReachabilityAnalysis.Result)(
       implicit ec: ExecutionContext
   ): Future[Seq[nir.Defn]] = {
@@ -185,7 +269,8 @@ object Interflow {
     val StackRestoreSig = nir.Type.Function(Seq(nir.Type.Ptr), nir.Type.Unit)
   }
 
-  val depends: Seq[nir.Global] = Seq(
+  /** The symbols required by Interflow. */
+  val dependencies: Seq[nir.Global] = Seq(
     LLVMIntrinsics.StackSave.name,
     LLVMIntrinsics.StackRestore.name
   )

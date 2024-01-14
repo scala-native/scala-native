@@ -7,6 +7,7 @@ import scala.annotation.tailrec
 
 trait Visit { self: Interflow =>
 
+  /** Returns `true` iff `name` should be processed by Interflow. */
   def shallVisit(name: nir.Global.Member): Boolean = {
     val orig = originalName(name)
 
@@ -45,6 +46,10 @@ trait Visit { self: Interflow =>
         }
     }
 
+  /** In debug mode, visits all reachable definitions from defined entries. In
+   *  release mode, visits all entry symbols.
+   */
+  // QUESTION: What is exactly an entry?
   def visitEntries(): Unit =
     mode match {
       case build.Mode.Debug =>
@@ -53,6 +58,9 @@ trait Visit { self: Interflow =>
         analysis.entries.foreach(visitEntry)
     }
 
+  /** Adds `name` and its owner (if any) the symbols to process if they should
+   *  be optimized.
+   */
   def visitEntry(name: nir.Global): Unit = {
     if (!name.isTop) {
       visitEntry(name.top)
@@ -70,6 +78,7 @@ trait Visit { self: Interflow =>
     }
   }
 
+  /** Adds `name` to the symbols to process iff it should be optimized. */
   def visitRoot(name: nir.Global.Member): Unit =
     if (shallVisit(name)) {
       pushTodo(name)

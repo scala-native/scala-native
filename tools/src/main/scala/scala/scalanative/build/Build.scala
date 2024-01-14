@@ -97,26 +97,37 @@ object Build {
   def build(
       config: Config
   )(implicit scope: Scope, ec: ExecutionContext): Future[Path] = {
-    val initialConfig = config
-    import config.logger
-    logger.timeAsync("Total") {
+    config.logger.timeAsync("Total") {
       // called each time for clean or directory removal
-      checkWorkdirExists(initialConfig)
+      checkWorkdirExists(config)
 
-      // validate Config
-      val config = Validator.validate(initialConfig)
-      config.logger.debug(config.toString())
+      val validatedConfig = Validator.validate(config)
+      validatedConfig.logger.debug(config.toString())
 
       ScalaNative
-        .link(config, entries(config))
-        .flatMap(optimize(config, _))
-        .flatMap(linkerResult =>
-          codegen(config, linkerResult)
-            .flatMap(ir => compile(config, linkerResult, ir))
-            .map(objects => link(config, linkerResult, objects))
-            .map(artifact => postProcess(config, artifact))
-        )
+        .link(validatedConfig, entries(validatedConfig))
+        .flatMap(linkerResult => optimize(validatedConfig, linkerResult))
+        .flatMap(linkerResult => compileBinary(validatedConfig, linkerResult))
     }
+  }
+
+  /** Compiles the deinitions in `linkerResult` into a native binary.
+   *
+   *  @param config
+   *    The configuration of the toolchain, which has been validated.
+   *  @param linkerResult
+   *    The result of reachability analysis.
+   *  @return
+   *    [[Config#artifactPath]], the path to the resulting native binary.
+   */
+  private def compileBinary(
+      config: Config,
+      linkerResult: ReachabilityAnalysis.Result
+  )(implicit ec: ExecutionContext): Future[Path] = {
+    codegen(config, linkerResult)
+      .flatMap(ir => compile(config, linkerResult, ir))
+      .map(objects => link(config, linkerResult, objects))
+      .map(artifact => postProcess(config, artifact))
   }
 
   /** Emits LLVM IR for the definitions in `analysis` to
@@ -133,15 +144,15 @@ object Build {
     Future.reduceLeft(tasks)(_ ++ _)
   }
 
-  /** Compiles `generatedIR`, which is a sequence of LLVM IR files. */
+  /** Compiles `llvmAssembly`, which is a sequence of LLVM IR files. */
   private def compile(
       config: Config,
       analysis: ReachabilityAnalysis.Result,
-      generatedIR: Seq[Path]
+      llvmAssembly: Seq[Path]
   )(implicit ec: ExecutionContext): Future[Seq[Path]] =
     config.logger.timeAsync("Compiling to native code") {
       // compile generated LLVM IR
-      val compileGeneratedIR = LLVM.compile(config, generatedIR)
+      val compileGeneratedIR = LLVM.compile(config, llvmAssembly)
 
       /* Used to pass alternative paths of compiled native (lib) sources,
        * eg: reused native sources used in partests.

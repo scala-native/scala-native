@@ -24,12 +24,11 @@ private[codegen] abstract class AbstractCodeGen(
     defns: Seq[nir.Defn]
 )(implicit val meta: CodeGenMetadata)
     extends MetadataCodeGen {
-  import meta.platform
+  import meta.target
   import meta.config
-  import platform._
 
   val os: OsCompat
-  val pointerType = if (useOpaquePointers) "ptr" else "i8*"
+  val pointerType = if (target.useOpaquePointers) "ptr" else "i8*"
 
   private var currentBlockName: nir.Local = _
   private var currentBlockSplit: Int = _
@@ -154,7 +153,7 @@ private[codegen] abstract class AbstractCodeGen(
 
   private def genPrelude()(implicit sb: ShowBuilder): Unit = {
     import sb._
-    targetTriple.foreach { target =>
+    target.targetTriple.foreach { target =>
       str("target triple = \"")
       str(target)
       str("\"")
@@ -239,7 +238,7 @@ private[codegen] abstract class AbstractCodeGen(
 
     newline()
     str(if (isDecl) "declare " else "define ")
-    if (targetsWindows && !isDecl && attrs.isExtern) {
+    if (target.targetsWindows && !isDecl && attrs.isExtern) {
       // Generate export modifier only for extern (C-ABI compliant) signatures
       val nir.Global.Member(_, sig) = name: @unchecked
       if (sig.isExtern) str("dllexport ")
@@ -483,7 +482,7 @@ private[codegen] abstract class AbstractCodeGen(
       case i: nir.Type.FixedSizeI => str("i"); str(i.width)
       case nir.Type.Size =>
         str("i")
-        str(platform.sizeOfPtrBits)
+        str(target.sizeOfPtrBits)
       case nir.Type.Float  => str("float")
       case nir.Type.Double => str("double")
       case nir.Type.ArrayValue(ty, n) =>
@@ -545,7 +544,7 @@ private[codegen] abstract class AbstractCodeGen(
       case nir.Val.Zero(ty) => str("zeroinitializer")
       case nir.Val.Byte(v)  => str(v)
       case nir.Val.Size(v) =>
-        if (!platform.is32Bit) str(v)
+        if (!target.is32Bit) str(v)
         else if (v.toInt == v) str(v.toInt)
         else unsupported("Emitting size values that exceed the platform bounds")
       case nir.Val.Char(v)   => str(v.toInt)
@@ -568,7 +567,7 @@ private[codegen] abstract class AbstractCodeGen(
         str("%")
         genLocal(n)
       case nir.Val.Global(n: nir.Global.Member, ty) =>
-        if (useOpaquePointers) {
+        if (target.useOpaquePointers) {
           lookup(n)
           str("@")
           genGlobal(n)
@@ -795,9 +794,9 @@ private[codegen] abstract class AbstractCodeGen(
 
       case nir.Op.Load(ty, ptr, memoryOrder) =>
         val pointee = fresh()
-        val isAtomic = isMultithreadingEnabled && memoryOrder.isDefined
+        val isAtomic = target.isMultithreadingEnabled && memoryOrder.isDefined
 
-        if (!useOpaquePointers) {
+        if (!target.useOpaquePointers) {
           newline()
           str("%")
           genLocal(pointee)
@@ -814,7 +813,7 @@ private[codegen] abstract class AbstractCodeGen(
         if (isAtomic) str("atomic ")
         genType(ty)
         str(", ")
-        if (useOpaquePointers) genVal(ptr)
+        if (target.useOpaquePointers) genVal(ptr)
         else {
           genType(ty)
           str("* %")
@@ -845,9 +844,9 @@ private[codegen] abstract class AbstractCodeGen(
 
       case nir.Op.Store(ty, ptr, value, memoryOrder) =>
         val pointee = fresh()
-        val isAtomic = isMultithreadingEnabled && memoryOrder.isDefined
+        val isAtomic = target.isMultithreadingEnabled && memoryOrder.isDefined
 
-        if (!useOpaquePointers) {
+        if (!target.useOpaquePointers) {
           newline()
           str("%")
           genLocal(pointee)
@@ -863,7 +862,7 @@ private[codegen] abstract class AbstractCodeGen(
         str("store ")
         if (isAtomic) str("atomic ")
         genVal(value)
-        if (useOpaquePointers) {
+        if (target.useOpaquePointers) {
           str(", ptr")
           genJustVal(ptr)
         } else {
@@ -883,7 +882,7 @@ private[codegen] abstract class AbstractCodeGen(
         val pointee = fresh()
         val derived = fresh()
 
-        if (!useOpaquePointers) {
+        if (!target.useOpaquePointers) {
           newline()
           str("%")
           genLocal(pointee)
@@ -895,7 +894,7 @@ private[codegen] abstract class AbstractCodeGen(
         }
 
         newline()
-        if (useOpaquePointers) genBind()
+        if (target.useOpaquePointers) genBind()
         else {
           str("%")
           genLocal(derived)
@@ -904,12 +903,14 @@ private[codegen] abstract class AbstractCodeGen(
         str("getelementptr ")
         genType(ty)
         str(", ")
-        if (ty.isInstanceOf[nir.Type.AggregateKind] || !useOpaquePointers) {
+        if (ty.isInstanceOf[
+              nir.Type.AggregateKind
+            ] || !target.useOpaquePointers) {
           genType(ty)
           str("*")
         } else str(pointerType)
         str(" ")
-        if (useOpaquePointers) genJustVal(ptr)
+        if (target.useOpaquePointers) genJustVal(ptr)
         else {
           str("%")
           genLocal(pointee)
@@ -917,7 +918,7 @@ private[codegen] abstract class AbstractCodeGen(
         str(", ")
         rep(indexes, sep = ", ")(genVal)
 
-        if (!useOpaquePointers) {
+        if (!target.useOpaquePointers) {
           newline()
           genBind()
           str("bitcast ")
@@ -932,7 +933,7 @@ private[codegen] abstract class AbstractCodeGen(
         val pointee = fresh()
 
         newline()
-        if (useOpaquePointers) genBind()
+        if (target.useOpaquePointers) genBind()
         else {
           str("%")
           genLocal(pointee)
@@ -943,9 +944,9 @@ private[codegen] abstract class AbstractCodeGen(
         str(", ")
         genVal(n)
         str(", align ")
-        str(platform.sizeOfPtr)
+        str(target.sizeOfPtr)
 
-        if (!useOpaquePointers) {
+        if (!target.useOpaquePointers) {
           newline()
           genBind()
           str("bitcast ")
@@ -991,7 +992,7 @@ private[codegen] abstract class AbstractCodeGen(
       // Lower emits a alloc function with exact result type of the class instead of a raw pointer
       // It's probablatic to emit when not using opaque pointers. Retry with simplified signature
       case nir.Op.Call(ty, Lower.alloc | Lower.largeAlloc, _)
-          if !useOpaquePointers && ty != Lower.allocSig =>
+          if !target.useOpaquePointers && ty != Lower.allocSig =>
         genCall(
           genBind,
           call.copy(ty = Lower.allocSig),
@@ -1032,7 +1033,7 @@ private[codegen] abstract class AbstractCodeGen(
 
         val pointee = fresh()
 
-        if (!useOpaquePointers) {
+        if (!target.useOpaquePointers) {
           newline()
           str("%")
           genLocal(pointee)
@@ -1048,7 +1049,7 @@ private[codegen] abstract class AbstractCodeGen(
         str(if (unwind ne nir.Next.None) "invoke " else "call ")
         genCallFunctionType(ty)
         str(" ")
-        if (useOpaquePointers) genJustVal(ptr)
+        if (target.useOpaquePointers) genJustVal(ptr)
         else {
           str("%")
           genLocal(pointee)
@@ -1224,7 +1225,7 @@ private[codegen] abstract class AbstractCodeGen(
     case nir.Conv.ZSizeCast | nir.Conv.SSizeCast =>
       val fromSize = fromType match {
         case nir.Type.Size =>
-          platform.sizeOfPtrBits
+          target.sizeOfPtrBits
         case i: nir.Type.FixedSizeI =>
           i.width
         case o =>
@@ -1233,7 +1234,7 @@ private[codegen] abstract class AbstractCodeGen(
 
       val toSize = toType match {
         case nir.Type.Size =>
-          platform.sizeOfPtrBits
+          target.sizeOfPtrBits
         case i: nir.Type.FixedSizeI =>
           i.width
         case o =>

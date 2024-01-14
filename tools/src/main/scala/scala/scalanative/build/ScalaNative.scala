@@ -4,7 +4,7 @@ package build
 import java.nio.file.{Path, Files}
 import scala.collection.mutable
 import scala.scalanative.checker.Check
-import scala.scalanative.codegen.PlatformInfo
+import scala.scalanative.codegen.TargetInfo
 import scala.scalanative.codegen.llvm.CodeGen
 import scala.scalanative.interflow.Interflow
 import scala.scalanative.linker.{ReachabilityAnalysis, Reach, Link}
@@ -17,13 +17,11 @@ import scala.scalanative.linker.LinkingException
  */
 private[scalanative] object ScalaNative {
 
-  /** Compute all globals that must be reachable based on given configuration.
-   */
+  /** Gathers the symbols that must be reachable based on given `config`. */
   def entries(config: Config): Seq[nir.Global] = {
-    implicit val platform: PlatformInfo = PlatformInfo(config)
+    val target = TargetInfo(config)
     val entry = encodedMainClass(config).map(_.member(nir.Rt.ScalaMainSig))
-    val dependencies = CodeGen.depends ++ Interflow.depends
-    entry ++: dependencies
+    entry ++: (CodeGen.dependencies(target) ++ Interflow.dependencies)
   }
 
   /** Given the classpath and main entry point, link under closed-world
@@ -49,9 +47,8 @@ private[scalanative] object ScalaNative {
   def optimize(config: Config, analysis: ReachabilityAnalysis.Result)(implicit
       ec: ExecutionContext
   ): Future[ReachabilityAnalysis.Result] = {
-    import config.logger
-    if (config.compilerConfig.optimize)
-      logger.timeAsync(s"Optimizing (${config.mode} mode)") {
+    if (config.compilerConfig.optimize) {
+      config.logger.timeAsync(s"Optimizing (${config.mode} mode)") {
         withReachabilityPostprocessing(
           config,
           stage = "optimization",
@@ -60,11 +57,11 @@ private[scalanative] object ScalaNative {
         ) {
           Interflow
             .optimize(config, analysis)
-            .map(Link(config, analysis.entries, _))
+            .map((defn) => Link(config, analysis.entries, defn))
         }
       }
-    else {
-      logger.info("Optimizing skipped")
+    } else {
+      config.logger.info("Optimizing skipped")
       Future.successful(analysis)
     }
   }

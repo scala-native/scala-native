@@ -5,6 +5,7 @@ import java.nio.file.{Path, Paths}
 import scala.annotation.tailrec
 import scala.collection.mutable
 
+/** The algorithm gathering definitions reachable from a set of root symbols. */
 class Reach(
     protected val config: build.Config,
     entries: Seq[nir.Global],
@@ -1145,6 +1146,8 @@ class Reach(
 }
 
 object Reach {
+
+  /** Returns the definitions reachable from `entries`. */
   def apply(
       config: build.Config,
       entries: Seq[nir.Global],

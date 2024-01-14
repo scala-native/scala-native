@@ -22,7 +22,7 @@ import org.junit.Assert._
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
-import org.scalanative.testsuite.utils.Platform.is32BitPlatform
+import org.scalanative.testsuite.utils.target.is32BitPlatform
 
 class FloatTest {
   @Test def testEquals(): Unit = {

@@ -59,7 +59,7 @@ class Udp6SocketTest {
       )
       assumeFalse(
         "IPv6 UDP loopback is not available on linux-x86 CI",
-        Platform.is32BitPlatform
+        target.is32BitPlatform
       )
     }
   }
