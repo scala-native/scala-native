@@ -16,7 +16,18 @@ void MutatorThread_init(Field_t *stackbottom) {
     currentMutatorThread = self;
 
     self->stackBottom = stackbottom;
-
+#ifdef SCALANATIVE_GC_USE_YIELDPOINT_TRAPS
+#ifdef _WIN32
+    self->wakeupEvent = CreateEvent(NULL, true, false, NULL);
+    if (self->wakeupEvent == NULL) {
+        fprintf(stderr, "Failed to setup mutator thread: errno=%lu\n",
+                GetLastError());
+        exit(1);
+    }
+#else
+    self->thread = pthread_self();
+#endif
+#endif // SCALANATIVE_GC_USE_YIELDPOINT_TRAPS
     MutatorThread_switchState(self, GC_MutatorThreadState_Managed);
     Allocator_Init(&self->allocator, &blockAllocator, heap.bytemap,
                    heap.blockMetaStart, heap.heapStart);
@@ -37,6 +48,9 @@ void MutatorThread_init(Field_t *stackbottom) {
 void MutatorThread_delete(MutatorThread *self) {
     MutatorThread_switchState(self, GC_MutatorThreadState_Unmanaged);
     MutatorThreads_remove(self);
+#if defined(SCALANATIVE_GC_USE_YIELDPOINT_TRAPS) && defined(_WIN32)
+    CloseHandle(self->wakeupEvent);
+#endif
     free(self);
 }
 

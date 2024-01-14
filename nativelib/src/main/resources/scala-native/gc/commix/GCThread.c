@@ -8,6 +8,7 @@
 #include "WeakRefGreyList.h"
 #include <errno.h>
 #include <stdlib.h>
+#include "State.h"
 
 static inline void GCThread_markMaster(Heap *heap, Stats *stats) {
     Stats_RecordTime(stats, start_ns);

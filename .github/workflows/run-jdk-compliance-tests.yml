@@ -42,6 +42,7 @@ jobs:
         run: >
           _JAVA_OPTIONS='${{ matrix.java-options }}'
           SCALANATIVE_TEST_PREFETCH_DEBUG_INFO=1
+          SCALANATIVE_MODE=release-fast
           sbt 
           "-J-Xmx3G" 
           "test-runtime ${{matrix.scala}}"
@@ -70,6 +71,7 @@ jobs:
         run: >
           set SCALANATIVE_INCLUDE_DIRS=${{steps.setup.outputs.vcpkg-dir}}\include&
           set SCALANATIVE_LIB_DIRS=${{steps.setup.outputs.vcpkg-dir}}\lib&
+          set SCALANATIVE_MODE=release-fast&
           set SCALANATIVE &
           set _JAVA_OPTIONS=${{ matrix.java-options }} &
           set SCALANATIVE_TEST_PREFETCH_DEBUG_INFO=1 &

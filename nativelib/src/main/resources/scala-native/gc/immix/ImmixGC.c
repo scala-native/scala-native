@@ -16,7 +16,7 @@
 #include "WeakRefStack.h"
 #include "shared/Parsing.h"
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
-#include "Synchronizer.h"
+#include "immix_commix/Synchronizer.h"
 #include "GCThreads.h"
 #endif
 #include "MutatorThread.h"
@@ -148,7 +148,7 @@ void scalanative_GC_set_mutator_thread_state(GC_MutatorThreadState state) {
 
 void scalanative_GC_yield() {
     if (atomic_load_explicit(&Synchronizer_stopThreads, memory_order_relaxed))
-        Synchronizer_wait();
+        Synchronizer_yield();
 }
 #endif // SCALANATIVE_MULTITHREADING_ENABLED
 

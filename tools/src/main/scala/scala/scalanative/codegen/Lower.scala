@@ -743,6 +743,7 @@ object Lower {
       }
       private val multithreadingEnabled = meta.platform.isMultithreadingEnabled
       private val usesGCYieldPoints = multithreadingEnabled && supportedGC
+      private val useYieldPointTraps = platform.useGCYieldPointTraps
 
       def apply(defn: nir.Defn.Define): Boolean = {
         if (!usesGCYieldPoints) false
@@ -753,7 +754,12 @@ object Lower {
           lastResult = {
             // Exclude accessors and generated methods
             def mayContainLoops =
-              defn.insts.exists(_.isInstanceOf[nir.Inst.Jump])
+              defn.insts.exists {
+                case jmp: nir.Inst.Jump =>
+                  // might contain loops
+                  jmp.next.isInstanceOf[nir.Next.Label]
+                case _ => false
+              }
             !sig.isGenerated && (defn.insts.size > 4 || mayContainLoops)
           }
           lastResult
@@ -770,7 +776,12 @@ object Lower {
           if (genUnwind && unwindHandler.isInitialized) unwind
           else nir.Next.None
         }
-        buf.call(GCYieldSig, GCYield, Nil, handler)
+        if (platform.useGCYieldPointTraps) {
+          val trap = buf.load(nir.Type.Ptr, GCYieldPointTrap, handler)
+          buf.store(nir.Type.Int, trap, zero, handler, memoryOrder = None)
+        } else {
+          buf.call(GCYieldSig, GCYield, Nil, handler)
+        }
       }
     }
 
@@ -2034,6 +2045,10 @@ object Lower {
   val GCYieldSig = nir.Type.Function(Nil, nir.Type.Unit)
   val GCYield = nir.Val.Global(GCYieldName, nir.Type.Ptr)
 
+  val GCYieldPointTrapName =
+    GC.member(nir.Sig.Extern("scalanative_GC_yieldpoint_trap"))
+  val GCYieldPointTrap = nir.Val.Global(GCYieldPointTrapName, nir.Type.Ptr)
+
   val GCSetMutatorThreadStateSig =
     nir.Type.Function(Seq(nir.Type.Int), nir.Type.Unit)
   val GCSetMutatorThreadState = nir.Val.Global(
@@ -2101,6 +2116,7 @@ object Lower {
     buf += RuntimeNothing.name
     if (platform.isMultithreadingEnabled) {
       buf += GCYield.name
+      if (platform.useGCYieldPointTraps) buf += GCYieldPointTrap.name
       buf += GCSetMutatorThreadState.name
     }
     buf.toSeq

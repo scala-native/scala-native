@@ -99,6 +99,17 @@ object GC {
   @name("scalanative_GC_yield")
   private[scalanative] def `yield`(): Unit = extern
 
+  /** Address of yield point trap - conditionally protected memory address used
+   *  for polling StopTheWorld event. Lowering phase would introduce write/read
+   *  instruction to this address to check if it should stop execution of the
+   *  thread. Upon write/read to protected memory special signal handler (UNIX)
+   *  or exceptions filter (Windows) would be triggered leading to stopping
+   *  execution of the thread. Used only in release mode for low-overhead
+   *  yieldpoints
+   */
+  @name("scalanative_GC_yieldpoint_trap")
+  private[scalanative] var yieldPointTrap: RawPtr = extern
+
   /** Notify the Garbage Collector about the range of memory which should be
    *  scanned when marking the objects. The range should contain only memory NOT
    *  allocated using the GC, eg. using malloc. Otherwise it might lead to the
