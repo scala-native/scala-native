@@ -80,7 +80,7 @@ static void SafepointTrapHandler(int signal, siginfo_t *siginfo, void *uap) {
 }
 #endif
 
-static void SetupPageFaultHandler() {
+static void SetupYieldPointTrapHandler() {
 #ifdef _WIN32
     // Call it as first exception handler
     AddVectoredExceptionHandler(1, &SafepointTrapHandler);
@@ -212,6 +212,7 @@ void Synchronizer_init() {
     mutex_init(&synchronizerLock);
 #ifdef SCALANATIVE_GC_USE_YIELDPOINT_TRAPS
     scalanative_GC_yieldpoint_trap = YieldPointTrap_init();
+    SetupYieldPointTrapHandler();
 #else
 #ifdef _WIN32
     threadSuspensionEvent = CreateEvent(NULL, true, false, NULL);
