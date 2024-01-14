@@ -65,9 +65,11 @@ class InetSocketAddress private[net] (
 
   override final def hashCode: Int = {
     var res = 1
-    res = if (addr != null) (res = 31 * res + addr.hashCode())
+    if (addr != null)
+      res = 31 * res + addr.hashCode()
     res = 31 * res + port.hashCode()
-    res = if (hostname != null) (res = 31 * res + hostname.hashCode())
+    if (hostname != null)
+      res = 31 * res + hostname.hashCode()
     res = 31 * res + needsResolving.hashCode()
     res
   }

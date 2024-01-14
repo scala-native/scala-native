@@ -120,7 +120,8 @@ class InetAddress protected (ipAddress: Array[Byte], originalHost: String)
     ju.Arrays.hashCode(ipAddress)
     var res = 1
     res = 31 * res + ju.Arrays.hashCode(ipAddress)
-    res = if (originalHost != null) (res = 31 * res + originalHost.hashCode())
+    if (originalHost != null)
+      res = 31 * res + originalHost.hashCode()
     res
   }
 

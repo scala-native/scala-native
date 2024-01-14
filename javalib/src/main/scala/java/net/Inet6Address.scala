@@ -48,7 +48,8 @@ final class Inet6Address private (
     res = 31 * res + host.hashCode()
     res = 31 * res + useScopeId.hashCode()
     res = 31 * res + scopeId.hashCode()
-    res = if (nif != null) (res = 31 * res + nif.hashCode())
+    if (nif != null)
+      res = 31 * res + nif.hashCode()
     res
   }
 
