@@ -4,7 +4,7 @@ package interflow
 import scala.scalanative.nir.Defn.Define.DebugInfo
 import scala.scalanative.linker._
 import scala.collection.mutable
-import scala.scalanative.util.ScopedVar.scoped
+import scala.scalanative.util.ScopedVar.scopedPushIf
 
 trait Opt { self: Interflow =>
 
@@ -40,14 +40,17 @@ trait Opt { self: Interflow =>
           debugInfo: DebugInfo
       ) = {
         val insts = nir.ControlFlow.removeDeadBlocks(rawInsts)
-        // TODO: filter-out unreachable scopes
-        val scopes = debugInfo.lexicalScopes.sorted
+        val newDebugInfo = if (preserveDebugInfo) {
+          // TODO: filter-out unreachable scopes
+          val scopes = debugInfo.lexicalScopes.sorted
+          debugInfo.copy(lexicalScopes = scopes)
+        } else debugInfo
         origdefn.copy(
           name = name,
           attrs = origdefn.attrs.copy(opt = nir.Attr.DidOpt),
           ty = nir.Type.Function(argtys, retty),
           insts = insts,
-          debugInfo = debugInfo.copy(lexicalScopes = scopes)
+          debugInfo = newDebugInfo
         )(origdefn.pos)
       }
 
@@ -91,9 +94,11 @@ trait Opt { self: Interflow =>
         )
         result(nir.Type.Nothing, insts, DebugInfo.empty)
       } else
-        scoped(
-          currentFreshScope := nir.Fresh(0L),
-          currentLexicalScopes := mutable.UnrolledBuffer.empty
+        scopedPushIf(preserveDebugInfo)(
+          Seq(
+            currentFreshScope := nir.Fresh(0L),
+            currentLexicalScopes := mutable.UnrolledBuffer.empty
+          )
         ) {
           // Run a merge processor starting from the entry basic block.
           val blocks =

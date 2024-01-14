@@ -16,23 +16,20 @@
 #endif
 
 #ifndef SCALANATIVE_MULTITHREADING_ENABLED
-#undef thread_local
-#define thread_local
+#define SN_ThreadLocal
 #else
-#ifndef thread_local
-#if __STDC_VERSION__ >= 201112 && !defined __STDC_NO_THREADS__
-#define thread_local _Thread_local
-#elif defined _WIN32 && (defined _MSC_VER || defined __ICL ||                  \
-                         defined __DMC__ || defined __BORLANDC__)
-#define thread_local __declspec(thread)
-/* note that ICC (linux) and Clang are covered by __GNUC__ */
-#elif defined __GNUC__ || defined __SUNPRO_C || defined __xlC__
-#define thread_local __thread
+#if __STDC_VERSION__ >= 201112L
+// TODO Use tls_model hints when building application, but not when creating
+// library #define TLS_MODEL_ATTR __attribute__((tls_model("local-exec")))
+#define SN_ThreadLocal _Thread_local
+#elif defined(_MSC_VER)
+#define SN_ThreadLocal __declspec(thread)
+#elif defined(__GNUC__) || defined(__clang__)
+#define SN_ThreadLocal __thread
 #else
-#error "Cannot define thread_local"
+#error Unable to create thread local storage
 #endif
-#endif
-#endif
+#endif // SCALANATIVE_MULTITHREADING_ENABLED
 
 typedef void *(*routine_fn)(void *);
 #ifdef _WIN32

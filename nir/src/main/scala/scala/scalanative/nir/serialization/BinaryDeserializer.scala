@@ -7,12 +7,15 @@ import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
 
 import scala.collection.mutable
+import scala.collection.immutable
 import scala.util.control.NonFatal
 
 import scala.scalanative.nir.serialization.{Tags => T}
 import scala.scalanative.util.TypeOps.TypeNarrowing
+import scala.scalanative.util.ScalaStdlibCompat.ArraySeqCompat
 
 import scala.annotation.{tailrec, switch}
+import scala.reflect.ClassTag
 
 class DeserializationException(
     global: nir.Global,
@@ -158,8 +161,8 @@ final class BinaryDeserializer(buffer: ByteBuffer, nirSource: NIRSource) {
     result
   }
 
-  private def getSeq[T](getT: => T): Seq[T] =
-    Seq.fill(getLebUnsignedInt())(getT)
+  private def getSeq[T: ClassTag](getT: => T): Seq[T] =
+    ArraySeqCompat.fill(getLebUnsignedInt())(getT)
   private def getOpt[T](getT: => T): Option[T] =
     if (get == 0) None
     else Some(getT)

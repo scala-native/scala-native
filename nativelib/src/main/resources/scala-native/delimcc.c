@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdatomic.h>
+#include "gc/shared/ThreadUtil.h"
 
 // Defined symbols here:
 // - ASM_JMPBUF_SIZE: The size of the jmpbuf, should be a constant defined in
@@ -105,7 +106,7 @@ typedef struct Handlers {
  * function is suspended and resumed on different threads, a cached thread-local
  * address might wreck havoc on its users.
  */
-static _Thread_local Handlers *__handlers = NULL;
+static SN_ThreadLocal Handlers *__handlers = NULL;
 
 static void print_handlers(Handlers *hs) {
     while (hs != NULL) {

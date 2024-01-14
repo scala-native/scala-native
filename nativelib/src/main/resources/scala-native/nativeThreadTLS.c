@@ -1,7 +1,8 @@
 #include "nativeThreadTLS.h"
+#include "gc/shared/ThreadUtil.h"
 
-thread_local JavaThread currentThread = NULL;
-thread_local NativeThread currentNativeThread = NULL;
+SN_ThreadLocal JavaThread currentThread = NULL;
+SN_ThreadLocal NativeThread currentNativeThread = NULL;
 
 void scalanative_assignCurrentThread(JavaThread thread,
                                      NativeThread nativeThread) {

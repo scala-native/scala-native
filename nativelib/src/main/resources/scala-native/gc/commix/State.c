@@ -6,7 +6,7 @@ Heap heap = {};
 BlockAllocator blockAllocator = {};
 _Atomic(MutatorThreads) mutatorThreads = NULL;
 atomic_int_fast32_t mutatorThreadsCount = 0;
-thread_local MutatorThread *currentMutatorThread = NULL;
+SN_ThreadLocal MutatorThread *currentMutatorThread = NULL;
 GC_Roots *customRoots = NULL;
 
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
