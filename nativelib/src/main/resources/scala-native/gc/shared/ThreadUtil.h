@@ -28,6 +28,7 @@
 #else
 #error Unable to create thread local storage
 #endif
+#endif // SCALANATIVE_MULTITHREADING_ENABLED
 
 typedef void *(*routine_fn)(void *);
 #ifdef _WIN32
