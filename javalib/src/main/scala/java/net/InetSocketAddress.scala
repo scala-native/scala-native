@@ -68,8 +68,8 @@ class InetSocketAddress private[net] (
     if (addr != null)
       res = 31 * res + addr.hashCode()
     res = 31 * res + port.hashCode()
-    if (hostname != null)
-      res = 31 * res + hostname.hashCode()
+    if (hostName != null)
+      res = 31 * res + hostName.hashCode()
     res = 31 * res + needsResolving.hashCode()
     res
   }
