@@ -54,7 +54,10 @@ class SafeZoneTest {
         |}
         |""".stripMargin))
     )
-    assertTrue(err.getMessage.contains("Sealed type variable T cannot  be instantiated to box A^"))
+    assertTrue(
+      "Got:" + err.getMessage,
+     err.getMessage.contains("local reference sz1 leaks into outer capture set of type parameter T of method apply")
+     )
   }
 
   @Test def typeCheckCapturedZone(): Unit = nativeCompilation(

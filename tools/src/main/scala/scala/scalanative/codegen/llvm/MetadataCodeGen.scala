@@ -860,7 +860,10 @@ object MetadataCodeGen {
           implicit val DISizeField: FieldWriter[DISize] = (ctx: Context, value: DISize) =>
             ctx.sb.str(value.sizeOfBits)
           implicit def MetadataNodeField[T <: Metadata.Node: InternedWriter]: FieldWriter[T] =
-            (ctx: Context, value: T) => writeInterned(value)(implicitly, ctx)
+            (ctx: Context, value: T) => {
+              implicit def _ctx: Context = ctx
+              writeInterned(value)
+            }
           implicit def MetadataField[T <: Metadata: Writer]: FieldWriter[T] =
             (ctx: Context, value: T) => implicitly[Writer[T]].write(value)(ctx)
           implicit val ofDIFlags: FieldWriter[DIFlags] = (ctx: Context, value: DIFlags) =>
