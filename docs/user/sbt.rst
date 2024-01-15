@@ -345,4 +345,4 @@ project's
 `README <https://github.com/portable-scala/sbt-crossproject/blob/master/README.md>`_
 for details.
 
-Continue to :ref:`lang`.
+Continue to :ref:`maven`.
