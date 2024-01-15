@@ -194,7 +194,7 @@ object Build {
       analysis: ReachabilityAnalysis.Result
   ): (Config, Boolean) = {
     var currentConfig = config
-    var needsToReload = true
+    var needsToReload = false
 
     // Each block can modify currentConfig stat,
     // modification should be lazy to not reconstruct object when not required
