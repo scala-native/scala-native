@@ -222,8 +222,17 @@ void Heap_Collect(Heap *heap) {
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
     if (!Synchronizer_acquire())
         return;
-    while (!Sweeper_IsSweepDone(heap))
+    while (!Sweeper_IsSweepDone(heap)) {
+        // Unlock mutator threads list to allow registration of new threads
+        // WriteLock has higher priority then ReadLock - it does NOT wait until
+        // all readers would release a resource GC Threads executing sweep might
+        // need to lock-read mutator threads leading to deadlock Any
+        // MutatorThread added in the meantime would be stopped until GC is
+        // done.
+        MutatorThreads_unlockRead();
         thread_yield();
+        MutatorThreads_lockRead();
+    }
 #else
     MutatorThread_switchState(currentMutatorThread,
                               GC_MutatorThreadState_Unmanaged);

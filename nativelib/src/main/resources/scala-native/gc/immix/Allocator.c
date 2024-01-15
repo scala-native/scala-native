@@ -46,7 +46,7 @@ void Allocator_InitCursors(Allocator *allocator) {
         largeBlock = BlockAllocator_GetFreeBlock(allocator->blockAllocator);
         if (didInit && largeBlock != NULL)
             break;
-        Heap_Collect(&heap, &stack);
+        Heap_Grow(&heap, 2);
     }
     allocator->largeBlock = largeBlock;
     word_t *largeBlockStart = BlockMeta_GetBlockStart(
