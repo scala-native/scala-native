@@ -155,6 +155,7 @@ private[scalanative] object LLVM {
         else Seq("pthread", "dl")
       platformsLinks ++ srclinks ++ gclinks
     }
+    config.logger.info(s"Linking with [${links.mkString(", ")}]")
     val linkopts = config.linkingOptions ++ links.map("-l" + _)
 
     val flags = {
