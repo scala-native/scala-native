@@ -46,4 +46,13 @@ object ScopedVar {
     try body
     finally stack.reverse.foreach(_.pop())
   }
+  // @nowarn("msg=The syntax `x: _\\*` is no longer supported for vararg splices")
+  // @nowarn("msg=`_` is deprecated for wildcard arguments of types")
+  @nowarn() // Cannot define multiple @nowarn annottations in Scala 2.12
+  def scopedPushIf[T](
+      shouldPushAssignments: Boolean
+  )(lazyAssignments: => Seq[Assignment[_]])(body: => T): T = {
+    if (shouldPushAssignments) scoped(lazyAssignments: _*)(body)
+    else body
+  }
 }
