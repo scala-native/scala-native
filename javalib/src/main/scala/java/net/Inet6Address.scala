@@ -142,7 +142,7 @@ object Inet6Address {
     new Inet6Address(addr, host, false, 0, null)
   }
 
-  private final val hexCharacters = "0123456789abcdef"
+  private final val HexCharacters = "0123456789abcdef"
 
   private[net] def formatInet6Address(in6Addr: Inet6Address): String = {
     /* ScalaJVM expects the long form of, say "0:0:0:0:0:0:0:1"
@@ -172,12 +172,12 @@ object Inet6Address {
 
       var j = (ia6ByteArray(i) & 0xf0) >>> 4
       if (j != 0 || !isFirst) {
-        buffer.append(hexCharacters.charAt(j))
+        buffer.append(HexCharacters.charAt(j))
         isFirst = false
       }
       j = ia6ByteArray(i) & 0x0f
       if (j != 0 || !isFirst) {
-        buffer.append(hexCharacters.charAt(j))
+        buffer.append(HexCharacters.charAt(j))
         isFirst = false
       }
       if ((i & 1) != 0 && (i + 1) < ia6ByteArray.length) {
