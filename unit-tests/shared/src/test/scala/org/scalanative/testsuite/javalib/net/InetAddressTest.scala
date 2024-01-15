@@ -77,6 +77,16 @@ class InetAddressTest {
     assertEquals("a6.1", 1, list.length)
   }
 
+  // Issue 3657
+  @Test def getAllByNameWithInvalidScopeId(): Unit = {
+    val nameWithInvalidScopeId = "::1%-2"
+    assertThrows(
+      s"getAllByName(${nameWithInvalidScopeId})",
+      classOf[java.net.UnknownHostException],
+      InetAddress.getAllByName(nameWithInvalidScopeId)
+    )
+  }
+
   @Test def getByName(): Unit = {
     val ia = InetAddress.getByName("127.0.0.1") // numeric lookup path
 
