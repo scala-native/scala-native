@@ -26,10 +26,10 @@ void Allocator_Init(Allocator *allocator, BlockAllocator *blockAllocator,
 }
 
 void Allocator_InitCursors(Allocator *allocator) {
-    while (!Allocator_newBlock(allocator))
-        Heap_Collect(&heap);
-    while (!Allocator_newOverflowBlock(allocator))
-        Heap_Collect(&heap);
+    while (!(Allocator_newBlock(allocator) &&
+             Allocator_newOverflowBlock(allocator))) {
+        Heap_Grow(&heap, 2);
+    }
 }
 
 /**
