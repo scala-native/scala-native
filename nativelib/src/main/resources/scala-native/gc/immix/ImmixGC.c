@@ -91,7 +91,6 @@ size_t scalanative_GC_get_max_heapsize() {
     return Parse_Env_Or_Default("GC_MAXIMUM_HEAP_SIZE", Heap_getMemoryLimit());
 }
 
-#ifdef SCALANATIVE_MULTITHREADING_ENABLED
 typedef void *RoutineArgs;
 typedef struct {
     ThreadStartRoutine fn;
@@ -147,10 +146,11 @@ void scalanative_GC_set_mutator_thread_state(GC_MutatorThreadState state) {
 }
 
 void scalanative_GC_yield() {
+#ifdef SCALANATIVE_MULTITHREADING_ENABLED
     if (atomic_load_explicit(&Synchronizer_stopThreads, memory_order_relaxed))
         Synchronizer_yield();
+#endif
 }
-#endif // SCALANATIVE_MULTITHREADING_ENABLED
 
 void scalanative_GC_add_roots(void *addr_low, void *addr_high) {
     AddressRange range = {addr_low, addr_high};

@@ -7,7 +7,6 @@
 #include <gc/gc.h>
 #include "shared/ScalaNativeGC.h"
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
 #include "shared/Parsing.h"
 
