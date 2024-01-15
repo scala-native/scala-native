@@ -14,7 +14,7 @@
 package java.util
 
 import scala.annotation.tailrec
-import scala.scalanative.compat.annotation.nowarn
+import scala.annotation.nowarn
 
 class PriorityQueue[E] private (
     private val comp: Comparator[_ >: E],
