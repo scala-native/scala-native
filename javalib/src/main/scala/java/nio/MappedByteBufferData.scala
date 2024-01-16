@@ -39,11 +39,52 @@ private class MappedByteBufferFinalizer(
 // as they can change classes via views (fe. MappedByteBuffer can become IntBuffer)
 // on runtime.
 private[nio] class MappedByteBufferData(
-    private[nio] val mode: MapMode,
-    private[nio] val ptr: Ptr[Byte],
-    private[nio] val length: Int,
-    private[nio] val windowsMappingHandle: Option[Handle]
+    val mode: MapMode,
+    mapAddress: Ptr[Byte],
+    val length: Int,
+    /** Offset from mapped address (page boundary) to start of requested data */
+    val pagePosition: Int,
+    val windowsMappingHandle: Option[Handle]
 ) {
+  val data: Ptr[Byte] =
+    if (mapAddress != null) mapAddress + pagePosition
+    else null
+
+  // Finalization. Unmapping is done on garbage collection, like on JVM.
+//  private val selfWeakReference = new WeakReference(this)
+
+  if (mapAddress != null) {
+    // Finalization. Unmapping is done on garbage collection, like on JVM.
+    val selfWeakReference = new WeakReference(this)
+
+    new MappedByteBufferFinalizer(
+      selfWeakReference,
+      mapAddress,
+      length,
+      windowsMappingHandle
+    )
+  }
+
+  def force(): Unit = {
+    if (mode eq MapMode.READ_WRITE) {
+      if (isWindows) {
+        if (!FlushViewOfFile(mapAddress, 0.toUInt))
+          throw new IOException("Could not flush view of file")
+      } else {
+        if (msync(mapAddress, length.toUInt, MS_SYNC) == -1)
+          throw new IOException("Could not sync with file")
+      }
+    }
+  }
+
+  @inline def update(index: Int, value: Byte): Unit =
+    data(index) = value
+
+  @inline def apply(index: Int): Byte =
+    data(index)
+}
+
+object MappedByteBufferData {
 
   /* Create an "empty" instance for the special case of size == 0.
    * This removes that complexity from the execution paths of the
@@ -62,43 +103,10 @@ private[nio] class MappedByteBufferData(
    * keep the compiler happy; it can be any Byte, zero seemed to make the
    * most sense. Fielder's choice redux.
    */
-  def this() = {
-    this(MapMode.READ_ONLY, null, 0, None)
-    def force(): Unit = () // do nothing
-    def update(index: Int, value: Byte): Unit = () // do nothing
-    def apply(index: Int): Byte = 0 // Should never reach here
+  def empty = new MappedByteBufferData(MapMode.READ_ONLY, null, 0, 0, None) {
+    override def force(): Unit = () // do nothing
+    override def update(index: Int, value: Byte): Unit = () // do nothing
+    override def apply(index: Int): Byte = 0 // Should never reach here
   }
 
-  // Finalization. Unmapping is done on garbage collection, like on JVM.
-//  private val selfWeakReference = new WeakReference(this)
-
-  if (ptr != null) {
-    // Finalization. Unmapping is done on garbage collection, like on JVM.
-    val selfWeakReference = new WeakReference(this)
-
-    new MappedByteBufferFinalizer(
-      selfWeakReference,
-      ptr,
-      length,
-      windowsMappingHandle
-    )
-  }
-
-  def force(): Unit = {
-    if (mode eq MapMode.READ_WRITE) {
-      if (isWindows) {
-        if (!FlushViewOfFile(ptr, 0.toUInt))
-          throw new IOException("Could not flush view of file")
-      } else {
-        if (msync(ptr, length.toUInt, MS_SYNC) == -1)
-          throw new IOException("Could not sync with file")
-      }
-    }
-  }
-
-  @inline def update(index: Int, value: Byte): Unit =
-    ptr(index) = value
-
-  @inline def apply(index: Int): Byte =
-    ptr(index)
 }

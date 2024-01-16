@@ -4,7 +4,10 @@ import scala.scalanative.meta.LinktimeInfo.isWindows
 
 import scala.scalanative.annotation.alwaysinline
 
+import scala.scalanative.libc.errno
+import scala.scalanative.libc.string
 import scala.scalanative.posix.sys.mman._
+import scala.scalanative.posix.unistd.{sysconf, _SC_PAGESIZE}
 
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
@@ -12,6 +15,9 @@ import scala.scalanative.unsigned._
 import scala.scalanative.windows.WinBaseApi.CreateFileMappingA
 import scala.scalanative.windows.WinBaseApiExt._
 import scala.scalanative.windows.MemoryApi._
+import scala.scalanative.windows.ErrorHandlingApi.GetLastError
+import scala.scalanative.windows.SysInfoApi._
+import scala.scalanative.windows.SysInfoApiOps._
 import scala.scalanative.windows._
 
 import java.io.IOException
@@ -19,6 +25,7 @@ import java.io.FileDescriptor
 
 import java.nio.channels.FileChannel.MapMode
 import java.nio.channels.FileChannel
+import scala.scalanative.windows.SysInfoApi.GetSystemInfo
 
 private class MappedByteBufferImpl(
     _capacity: Int,
@@ -101,7 +108,7 @@ private class MappedByteBufferImpl(
   // Here begins the stuff specific to ByteArrays
 
   @inline @inline private def byteArrayBits: ByteArrayBits =
-    ByteArrayBits(_mappedData.ptr, _offset, isBigEndian)
+    ByteArrayBits(_mappedData.data, _offset, isBigEndian)
 
   @noinline def getChar(): Char =
     byteArrayBits.loadChar(getPosAndAdvanceRead(2))
@@ -260,8 +267,12 @@ private[nio] object MappedByteBufferImpl {
       )
   }
 
-  @alwaysinline private def failMapping(): Unit =
-    throw new IOException("Could not map file to memory")
+  @alwaysinline private def failMapping(): Unit = {
+    val reason =
+      if (isWindows) ErrorHandlingApiOps.errorMessage(GetLastError())
+      else fromCString(string.strerror(errno.errno))
+    throw new IOException(s"Could not map file to memory: $reason")
+  }
 
   private def mapWindows(
       position: Long,
@@ -276,6 +287,13 @@ private[nio] object MappedByteBufferImpl {
       case _ => throw new IllegalStateException("Unknown MapMode")
     }
 
+    val sysInfo = stackalloc[SystemInfo]()
+    GetSystemInfo(sysInfo)
+    val pageSize = sysInfo.allocationGranularity.toInt
+    val pagePosition = (position % pageSize).toInt
+    val offset = position - pagePosition
+    val length = size + pagePosition
+
     val mappingHandle =
       CreateFileMappingA(
         fd.handle,
@@ -287,19 +305,25 @@ private[nio] object MappedByteBufferImpl {
       )
     if (mappingHandle == null) failMapping()
 
-    val dwFileOffsetHigh = (position >>> 32).toUInt
-    val dwFileOffsetLow = position.toUInt
+    val dwFileOffsetHigh = (offset >>> 32).toUInt
+    val dwFileOffsetLow = offset.toUInt
 
     val ptr = MapViewOfFile(
       mappingHandle,
       dwDesiredAccess,
       dwFileOffsetHigh,
       dwFileOffsetLow,
-      size.toUInt
+      length.toUInt
     )
     if (ptr == null) failMapping()
 
-    new MappedByteBufferData(mode, ptr, size, Some(mappingHandle))
+    new MappedByteBufferData(
+      mode = mode,
+      mapAddress = ptr,
+      length = size,
+      pagePosition = pagePosition,
+      windowsMappingHandle = Some(mappingHandle)
+    )
   }
 
   private def mapUnix(
@@ -321,17 +345,22 @@ private[nio] object MappedByteBufferImpl {
       case _ => throw new IllegalStateException("Unknown MapMode")
     }
 
+    val pageSize = sysconf(_SC_PAGESIZE).toInt
+    val pagePosition = (position % pageSize).toInt
+    val offset = position - pagePosition
+    val length = size + pagePosition
+
     val ptr = mmap(
-      null,
-      size.toUInt,
-      prot,
-      isPrivate,
-      fd.fd,
-      position.toSize
+      addr = null,
+      length = length.toUSize,
+      prot = prot,
+      flags = isPrivate,
+      fd = fd.fd,
+      offset = offset.toSize
     )
     if (ptr.toInt == -1) failMapping()
 
-    new MappedByteBufferData(mode, ptr, size, None)
+    new MappedByteBufferData(mode, ptr, size, pagePosition, None)
   }
 
   private def mapData(
@@ -363,7 +392,7 @@ private[nio] object MappedByteBufferImpl {
        *   it is easier to match the JDK by creating an empty
        *   MappedByteBufferData on the Windows branch also.
        */
-      new MappedByteBufferData()
+      MappedByteBufferData.empty
     }
   }
 

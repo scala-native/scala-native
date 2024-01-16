@@ -1,3 +1,6 @@
 package java.nio
 
-class BufferOverflowException extends RuntimeException
+class BufferOverflowException private[java] (msg: String)
+    extends RuntimeException(msg) {
+  def this() = this(null)
+}
