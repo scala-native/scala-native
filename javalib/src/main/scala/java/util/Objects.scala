@@ -87,7 +87,7 @@ object Objects {
    *
    *  @return
    *    fromIndex argument
-   *  @throws IndexOutOfBoundsException
+   *  @throws java.lang.IndexOutOfBoundsException
    *    if not in subrange
    */
   def checkFromIndexSize(fromIndex: Int, size: Int, length: Int): Int = {
