@@ -67,6 +67,8 @@ abstract class ${T}Buffer private[nio] (
   def this(_capacity: Int) = this(_capacity, null: Array[${T}], -1)
 
   def slice(): ${T}Buffer
+  // Since JDK 13
+  def slice(index: Int, length: Int): ${T}Buffer
 
   def duplicate(): ${T}Buffer
 

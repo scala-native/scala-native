@@ -27,6 +27,10 @@ private[nio] final class HeapCharBuffer private (
     GenHeapBuffer[CharBuffer](this).generic_slice()
 
   @noinline
+  def slice(index: Int, length: Int): CharBuffer =
+    GenHeapBuffer[CharBuffer](this).generic_slice(index, length)
+
+  @noinline
   def duplicate(): CharBuffer =
     GenHeapBuffer[CharBuffer](this).generic_duplicate()
 
@@ -173,6 +177,10 @@ private[nio] final class HeapShortBuffer private (
     GenHeapBuffer[ShortBuffer](this).generic_slice()
 
   @noinline
+  def slice(index: Int, length: Int): ShortBuffer =
+    GenHeapBuffer[ShortBuffer](this).generic_slice(index, length)
+
+  @noinline
   def duplicate(): ShortBuffer =
     GenHeapBuffer[ShortBuffer](this).generic_duplicate()
 
@@ -305,6 +313,10 @@ private[nio] final class HeapIntBuffer private (
   @noinline
   def slice(): IntBuffer =
     GenHeapBuffer[IntBuffer](this).generic_slice()
+
+  @noinline
+  def slice(index: Int, length: Int): IntBuffer =
+    GenHeapBuffer[IntBuffer](this).generic_slice(index, length)
 
   @noinline
   def duplicate(): IntBuffer =
@@ -441,6 +453,10 @@ private[nio] final class HeapLongBuffer private (
     GenHeapBuffer[LongBuffer](this).generic_slice()
 
   @noinline
+  def slice(index: Int, length: Int): LongBuffer =
+    GenHeapBuffer[LongBuffer](this).generic_slice(index, length)
+
+  @noinline
   def duplicate(): LongBuffer =
     GenHeapBuffer[LongBuffer](this).generic_duplicate()
 
@@ -575,6 +591,10 @@ private[nio] final class HeapFloatBuffer private (
     GenHeapBuffer[FloatBuffer](this).generic_slice()
 
   @noinline
+  def slice(index: Int, length: Int): FloatBuffer =
+    GenHeapBuffer[FloatBuffer](this).generic_slice(index, length)
+
+  @noinline
   def duplicate(): FloatBuffer =
     GenHeapBuffer[FloatBuffer](this).generic_duplicate()
 
@@ -707,6 +727,10 @@ private[nio] final class HeapDoubleBuffer private (
   @noinline
   def slice(): DoubleBuffer =
     GenHeapBuffer[DoubleBuffer](this).generic_slice()
+
+  @noinline
+  def slice(index: Int, length: Int): DoubleBuffer =
+    GenHeapBuffer[DoubleBuffer](this).generic_slice(index, length)
 
   @noinline
   def duplicate(): DoubleBuffer =

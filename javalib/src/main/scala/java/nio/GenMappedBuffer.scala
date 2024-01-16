@@ -4,6 +4,7 @@ import scala.scalanative.runtime.ByteArray
 import scala.scalanative.unsigned._
 import scala.scalanative.unsafe._
 import scala.scalanative.libc.string
+import java.util.Objects
 
 // Based on the code ported from Scala.js,
 // see GenHeapBuffer.scala
@@ -39,6 +40,22 @@ private[nio] final class GenMappedBuffer[B <: Buffer](val self: B)
       newCapacity,
       _mappedData,
       _offset + position(),
+      0,
+      newCapacity,
+      isReadOnly()
+    )
+  }
+
+  @inline
+  def generic_slice(index: Int, length: Int)(implicit
+      newMappedBuffer: NewThisMappedBuffer
+  ): BufferType = {
+    Objects.checkFromIndexSize(index, length, limit())
+    val newCapacity = length
+    newMappedBuffer(
+      newCapacity,
+      _mappedData,
+      _offset + index,
       0,
       newCapacity,
       isReadOnly()

@@ -15,6 +15,7 @@ sealed abstract class BufferAdapter[BT <: Buffer, ET] {
    */
 
   def sliceChain(): BufferType
+  def sliceChain(index: Int, length: Int): BufferType
   def duplicateChain(): BufferType
   def asReadOnlyBuffer(): BufferType
   def get(): ElementType
@@ -37,6 +38,8 @@ object BufferAdapter {
   class ByteBufferAdapater(val buffer: ByteBuffer)
       extends BufferAdapter[ByteBuffer, Byte] {
     def sliceChain(): BufferType = buffer.slice()
+    def sliceChain(index: Int, length: Int): BufferType =
+      buffer.slice(index, length)
     def duplicateChain(): BufferType = buffer.duplicate()
     def asReadOnlyBuffer(): BufferType = buffer.asReadOnlyBuffer()
     def get(): ElementType = buffer.get()
@@ -63,6 +66,8 @@ object BufferAdapter {
   class CharBufferAdapater(val buffer: CharBuffer)
       extends BufferAdapter[CharBuffer, Char] {
     def sliceChain(): BufferType = buffer.slice()
+    def sliceChain(index: Int, length: Int): BufferType =
+      buffer.slice(index, length)
     def duplicateChain(): BufferType = buffer.duplicate()
     def asReadOnlyBuffer(): BufferType = buffer.asReadOnlyBuffer()
     def get(): ElementType = buffer.get()
@@ -89,6 +94,8 @@ object BufferAdapter {
   class ShortBufferAdapater(val buffer: ShortBuffer)
       extends BufferAdapter[ShortBuffer, Short] {
     def sliceChain(): BufferType = buffer.slice()
+    def sliceChain(index: Int, length: Int): BufferType =
+      buffer.slice(index, length)
     def duplicateChain(): BufferType = buffer.duplicate()
     def asReadOnlyBuffer(): BufferType = buffer.asReadOnlyBuffer()
     def get(): ElementType = buffer.get()
@@ -115,6 +122,8 @@ object BufferAdapter {
   class IntBufferAdapater(val buffer: IntBuffer)
       extends BufferAdapter[IntBuffer, Int] {
     def sliceChain(): BufferType = buffer.slice()
+    def sliceChain(index: Int, length: Int): BufferType =
+      buffer.slice(index, length)
     def duplicateChain(): BufferType = buffer.duplicate()
     def asReadOnlyBuffer(): BufferType = buffer.asReadOnlyBuffer()
     def get(): ElementType = buffer.get()
@@ -141,6 +150,8 @@ object BufferAdapter {
   class LongBufferAdapater(val buffer: LongBuffer)
       extends BufferAdapter[LongBuffer, Long] {
     def sliceChain(): BufferType = buffer.slice()
+    def sliceChain(index: Int, length: Int): BufferType =
+      buffer.slice(index, length)
     def duplicateChain(): BufferType = buffer.duplicate()
     def asReadOnlyBuffer(): BufferType = buffer.asReadOnlyBuffer()
     def get(): ElementType = buffer.get()
@@ -167,6 +178,8 @@ object BufferAdapter {
   class FloatBufferAdapater(val buffer: FloatBuffer)
       extends BufferAdapter[FloatBuffer, Float] {
     def sliceChain(): BufferType = buffer.slice()
+    def sliceChain(index: Int, length: Int): BufferType =
+      buffer.slice(index, length)
     def duplicateChain(): BufferType = buffer.duplicate()
     def asReadOnlyBuffer(): BufferType = buffer.asReadOnlyBuffer()
     def get(): ElementType = buffer.get()
@@ -193,6 +206,8 @@ object BufferAdapter {
   class DoubleBufferAdapater(val buffer: DoubleBuffer)
       extends BufferAdapter[DoubleBuffer, Double] {
     def sliceChain(): BufferType = buffer.slice()
+    def sliceChain(index: Int, length: Int): BufferType =
+      buffer.slice(index, length)
     def duplicateChain(): BufferType = buffer.duplicate()
     def asReadOnlyBuffer(): BufferType = buffer.asReadOnlyBuffer()
     def get(): ElementType = buffer.get()

@@ -28,6 +28,10 @@ private[nio] final class MappedByteBufferCharView private (
     GenMappedBufferView[CharBuffer](this).generic_slice()
 
   @noinline
+  def slice(index: Int, length: Int): CharBuffer =
+    GenMappedBufferView[CharBuffer](this).generic_slice(index, length)
+
+  @noinline
   def duplicate(): CharBuffer =
     GenMappedBufferView[CharBuffer](this).generic_duplicate()
 
@@ -150,6 +154,10 @@ private[nio] final class MappedByteBufferShortView private (
     GenMappedBufferView[ShortBuffer](this).generic_slice()
 
   @noinline
+  def slice(index: Int, length: Int): ShortBuffer =
+    GenMappedBufferView[ShortBuffer](this).generic_slice(index, length)
+
+  @noinline
   def duplicate(): ShortBuffer =
     GenMappedBufferView[ShortBuffer](this).generic_duplicate()
 
@@ -257,6 +265,10 @@ private[nio] final class MappedByteBufferIntView private (
   @noinline
   def slice(): IntBuffer =
     GenMappedBufferView[IntBuffer](this).generic_slice()
+
+  @noinline
+  def slice(index: Int, length: Int): IntBuffer =
+    GenMappedBufferView[IntBuffer](this).generic_slice(index, length)
 
   @noinline
   def duplicate(): IntBuffer =
@@ -368,6 +380,10 @@ private[nio] final class MappedByteBufferLongView private (
     GenMappedBufferView[LongBuffer](this).generic_slice()
 
   @noinline
+  def slice(index: Int, length: Int): LongBuffer =
+    GenMappedBufferView[LongBuffer](this).generic_slice(index, length)
+
+  @noinline
   def duplicate(): LongBuffer =
     GenMappedBufferView[LongBuffer](this).generic_duplicate()
 
@@ -477,6 +493,10 @@ private[nio] final class MappedByteBufferFloatView private (
     GenMappedBufferView[FloatBuffer](this).generic_slice()
 
   @noinline
+  def slice(index: Int, length: Int): FloatBuffer =
+    GenMappedBufferView[FloatBuffer](this).generic_slice(index, length)
+
+  @noinline
   def duplicate(): FloatBuffer =
     GenMappedBufferView[FloatBuffer](this).generic_duplicate()
 
@@ -584,6 +604,10 @@ private[nio] final class MappedByteBufferDoubleView private (
   @noinline
   def slice(): DoubleBuffer =
     GenMappedBufferView[DoubleBuffer](this).generic_slice()
+
+  @noinline
+  def slice(index: Int, length: Int): DoubleBuffer =
+    GenMappedBufferView[DoubleBuffer](this).generic_slice(index, length)
 
   @noinline
   def duplicate(): DoubleBuffer =

@@ -364,6 +364,41 @@ abstract class BaseBufferTest extends BaseBufferPlatformTest {
     }
   }
 
+  @Test def slice2(): Unit = {
+    val buf1 = withContent(10, elemRange(0, 10): _*)
+    buf1.position(3)
+    buf1.limit(7)
+    buf1.mark()
+    val buf2 = buf1.sliceChain(2, 4)
+    assertEquals(0, buf2.position())
+    assertEquals(4, buf2.limit())
+    assertEquals(4, buf2.capacity())
+    assertThrows(classOf[InvalidMarkException], buf2.reset())
+
+    assertEquals(elemFromInt(3), buf2.get(1))
+
+    buf2.position(2)
+    assertEquals(3, buf1.position())
+
+    if (!createsReadOnly) {
+      buf2.put(89)
+      assertEquals(elemFromInt(5), buf1.get(5))
+      assertEquals(3, buf2.position())
+      assertEquals(3, buf1.position())
+    }
+
+    assertThrows(classOf[IllegalArgumentException], buf2.limit(5))
+    assertEquals(4, buf2.limit())
+
+    buf2.limit(3)
+    assertEquals(7, buf1.limit())
+
+    if (!createsReadOnly) {
+      buf1.put(3, 23)
+      assertEquals(elemFromInt(2), buf2.get(0))
+    }
+  }
+
   @Test def duplicate(): Unit = {
     val buf1 = withContent(10, elemRange(0, 10): _*)
     buf1.position(3)
