@@ -33,6 +33,9 @@ abstract class ByteBuffer private[nio] (
 
   private[nio] var _isBigEndian: Boolean = true
 
+  // TODO: JDK11
+  // def mismatch(that: ByteBuffer): Int  = ???
+
   private def genBuffer = GenBuffer[ByteBuffer](this)
 
   def this(_capacity: Int) = this(_capacity, null: Array[Byte], -1)
@@ -52,6 +55,14 @@ abstract class ByteBuffer private[nio] (
   def get(index: Int): Byte
 
   def put(index: Int, b: Byte): ByteBuffer
+  
+  // Since: JDK 13
+  def get(index: Int, dst: Array[Byte], offset: Int, length: Int): ByteBuffer = GenBuffer[ByteBuffer](this).generic_get(index, dst, offset, length)
+  def get(index: Int, dst: Array[Byte]): ByteBuffer = get(index, dst, 0, dst.length) 
+
+  // Since: JDK13
+  def put(index: Int, src: Array[Byte], offset: Int, length: Int): ByteBuffer = GenBuffer[ByteBuffer](this).generic_put(index, src, offset, length)
+  def put(index: Int, src: Array[Byte]): ByteBuffer = put(index, src, 0, src.length)  
 
   @noinline
   def get(dst: Array[Byte], offset: Int, length: Int): ByteBuffer =
@@ -63,14 +74,16 @@ abstract class ByteBuffer private[nio] (
   @noinline
   def put(src: ByteBuffer): ByteBuffer =
     genBuffer.generic_put(src)
-
+    // Since: JDK16
+  def put(index: Int, src: ByteBuffer, offset: Int, length: Int) = GenBuffer[ByteBuffer](this).generic_put(index, src, offset, length)
+    
   @noinline
   def put(src: Array[Byte], offset: Int, length: Int): ByteBuffer =
     genBuffer.generic_put(src, offset, length)
 
   final def put(src: Array[Byte]): ByteBuffer =
     put(src, 0, src.length)
-    
+
 
   @inline final def hasArray(): Boolean =
     genBuffer.generic_hasArray()
@@ -120,6 +133,9 @@ abstract class ByteBuffer private[nio] (
 
   def isDirect(): Boolean
 
+  // Since JDK 15
+  final def isEmpty(): Boolean = remaining() == 0
+
   // toString(): String inherited from Buffer
 
   @noinline
@@ -143,6 +159,25 @@ abstract class ByteBuffer private[nio] (
       throw new NullPointerException
     _isBigEndian = bo == ByteOrder.BIG_ENDIAN
     this
+  }
+  // Since JDK 9
+  final def alignedSlice(unitSize: Int): ByteBuffer = {
+    val pos = position()
+    val lim = limit()
+    val alignedPos = alignmentOffset(pos, unitSize) match {
+      case n if n > 0 => pos + (unitSize - n)
+      case _ => pos
+    }
+    val alignedLimit = (lim - alignmentOffset(lim, unitSize))
+    if(alignedPos > lim || alignedLimit < pos) slice(pos, 0)
+    else slice(alignedPos, alignedLimit - alignedPos)
+  }
+   // Since JDK 9
+  final def alignmentOffset(index: Int, unitSize: Int): Int = {
+    require(index >= 0, "Index less then zero: " + index)
+    require(unitSize >= 1 && (unitSize & (unitSize - 1)) == 0, "Unit size not a power of two: " + unitSize)
+    if(unitSize > 8 && !isDirect()) throw new UnsupportedOperationException("Unit size unsupported for non-direct dufferes: " + unitSize)
+    ((this.address.toLong + index) & (unitSize -1)).toInt
   }
 
   def getChar(): Char
@@ -247,6 +282,9 @@ abstract class CharBuffer private[nio] (
   private[nio] type BufferType = CharBuffer
 
 
+  // TODO: JDK11
+  // def mismatch(that: CharBuffer): Int  = ???
+
   private def genBuffer = GenBuffer[CharBuffer](this)
 
   def this(_capacity: Int) = this(_capacity, null: Array[Char], -1)
@@ -266,6 +304,14 @@ abstract class CharBuffer private[nio] (
   def get(index: Int): Char
 
   def put(index: Int, b: Char): CharBuffer
+  
+  // Since: JDK 13
+  def get(index: Int, dst: Array[Char], offset: Int, length: Int): CharBuffer = GenBuffer[CharBuffer](this).generic_get(index, dst, offset, length)
+  def get(index: Int, dst: Array[Char]): CharBuffer = get(index, dst, 0, dst.length) 
+
+  // Since: JDK13
+  def put(index: Int, src: Array[Char], offset: Int, length: Int): CharBuffer = GenBuffer[CharBuffer](this).generic_put(index, src, offset, length)
+  def put(index: Int, src: Array[Char]): CharBuffer = put(index, src, 0, src.length)  
 
   @noinline
   def get(dst: Array[Char], offset: Int, length: Int): CharBuffer =
@@ -277,14 +323,16 @@ abstract class CharBuffer private[nio] (
   @noinline
   def put(src: CharBuffer): CharBuffer =
     genBuffer.generic_put(src)
-
+    // Since: JDK16
+  def put(index: Int, src: CharBuffer, offset: Int, length: Int) = GenBuffer[CharBuffer](this).generic_put(index, src, offset, length)
+    
   @noinline
   def put(src: Array[Char], offset: Int, length: Int): CharBuffer =
     genBuffer.generic_put(src, offset, length)
 
   final def put(src: Array[Char]): CharBuffer =
     put(src, 0, src.length)
-    
+
   def put(src: String, start: Int, end: Int): CharBuffer =
     put(CharBuffer.wrap(src, start, end))
 
@@ -338,6 +386,9 @@ abstract class CharBuffer private[nio] (
   def compact(): CharBuffer
 
   def isDirect(): Boolean
+
+  // Since JDK 15
+  final def isEmpty(): Boolean = remaining() == 0
 
   // toString(): String inherited from Buffer
 
@@ -451,6 +502,9 @@ abstract class ShortBuffer private[nio] (
   private[nio] type BufferType = ShortBuffer
 
 
+  // TODO: JDK11
+  // def mismatch(that: ShortBuffer): Int  = ???
+
   private def genBuffer = GenBuffer[ShortBuffer](this)
 
   def this(_capacity: Int) = this(_capacity, null: Array[Short], -1)
@@ -470,6 +524,14 @@ abstract class ShortBuffer private[nio] (
   def get(index: Int): Short
 
   def put(index: Int, b: Short): ShortBuffer
+  
+  // Since: JDK 13
+  def get(index: Int, dst: Array[Short], offset: Int, length: Int): ShortBuffer = GenBuffer[ShortBuffer](this).generic_get(index, dst, offset, length)
+  def get(index: Int, dst: Array[Short]): ShortBuffer = get(index, dst, 0, dst.length) 
+
+  // Since: JDK13
+  def put(index: Int, src: Array[Short], offset: Int, length: Int): ShortBuffer = GenBuffer[ShortBuffer](this).generic_put(index, src, offset, length)
+  def put(index: Int, src: Array[Short]): ShortBuffer = put(index, src, 0, src.length)  
 
   @noinline
   def get(dst: Array[Short], offset: Int, length: Int): ShortBuffer =
@@ -481,14 +543,16 @@ abstract class ShortBuffer private[nio] (
   @noinline
   def put(src: ShortBuffer): ShortBuffer =
     genBuffer.generic_put(src)
-
+    // Since: JDK16
+  def put(index: Int, src: ShortBuffer, offset: Int, length: Int) = GenBuffer[ShortBuffer](this).generic_put(index, src, offset, length)
+    
   @noinline
   def put(src: Array[Short], offset: Int, length: Int): ShortBuffer =
     genBuffer.generic_put(src, offset, length)
 
   final def put(src: Array[Short]): ShortBuffer =
     put(src, 0, src.length)
-    
+
 
   @inline final def hasArray(): Boolean =
     genBuffer.generic_hasArray()
@@ -537,6 +601,9 @@ abstract class ShortBuffer private[nio] (
   def compact(): ShortBuffer
 
   def isDirect(): Boolean
+
+  // Since JDK 15
+  final def isEmpty(): Boolean = remaining() == 0
 
   // toString(): String inherited from Buffer
 
@@ -607,6 +674,9 @@ abstract class IntBuffer private[nio] (
   private[nio] type BufferType = IntBuffer
 
 
+  // TODO: JDK11
+  // def mismatch(that: IntBuffer): Int  = ???
+
   private def genBuffer = GenBuffer[IntBuffer](this)
 
   def this(_capacity: Int) = this(_capacity, null: Array[Int], -1)
@@ -626,6 +696,14 @@ abstract class IntBuffer private[nio] (
   def get(index: Int): Int
 
   def put(index: Int, b: Int): IntBuffer
+  
+  // Since: JDK 13
+  def get(index: Int, dst: Array[Int], offset: Int, length: Int): IntBuffer = GenBuffer[IntBuffer](this).generic_get(index, dst, offset, length)
+  def get(index: Int, dst: Array[Int]): IntBuffer = get(index, dst, 0, dst.length) 
+
+  // Since: JDK13
+  def put(index: Int, src: Array[Int], offset: Int, length: Int): IntBuffer = GenBuffer[IntBuffer](this).generic_put(index, src, offset, length)
+  def put(index: Int, src: Array[Int]): IntBuffer = put(index, src, 0, src.length)  
 
   @noinline
   def get(dst: Array[Int], offset: Int, length: Int): IntBuffer =
@@ -637,14 +715,16 @@ abstract class IntBuffer private[nio] (
   @noinline
   def put(src: IntBuffer): IntBuffer =
     genBuffer.generic_put(src)
-
+    // Since: JDK16
+  def put(index: Int, src: IntBuffer, offset: Int, length: Int) = GenBuffer[IntBuffer](this).generic_put(index, src, offset, length)
+    
   @noinline
   def put(src: Array[Int], offset: Int, length: Int): IntBuffer =
     genBuffer.generic_put(src, offset, length)
 
   final def put(src: Array[Int]): IntBuffer =
     put(src, 0, src.length)
-    
+
 
   @inline final def hasArray(): Boolean =
     genBuffer.generic_hasArray()
@@ -693,6 +773,9 @@ abstract class IntBuffer private[nio] (
   def compact(): IntBuffer
 
   def isDirect(): Boolean
+
+  // Since JDK 15
+  final def isEmpty(): Boolean = remaining() == 0
 
   // toString(): String inherited from Buffer
 
@@ -763,6 +846,9 @@ abstract class LongBuffer private[nio] (
   private[nio] type BufferType = LongBuffer
 
 
+  // TODO: JDK11
+  // def mismatch(that: LongBuffer): Int  = ???
+
   private def genBuffer = GenBuffer[LongBuffer](this)
 
   def this(_capacity: Int) = this(_capacity, null: Array[Long], -1)
@@ -782,6 +868,14 @@ abstract class LongBuffer private[nio] (
   def get(index: Int): Long
 
   def put(index: Int, b: Long): LongBuffer
+  
+  // Since: JDK 13
+  def get(index: Int, dst: Array[Long], offset: Int, length: Int): LongBuffer = GenBuffer[LongBuffer](this).generic_get(index, dst, offset, length)
+  def get(index: Int, dst: Array[Long]): LongBuffer = get(index, dst, 0, dst.length) 
+
+  // Since: JDK13
+  def put(index: Int, src: Array[Long], offset: Int, length: Int): LongBuffer = GenBuffer[LongBuffer](this).generic_put(index, src, offset, length)
+  def put(index: Int, src: Array[Long]): LongBuffer = put(index, src, 0, src.length)  
 
   @noinline
   def get(dst: Array[Long], offset: Int, length: Int): LongBuffer =
@@ -793,14 +887,16 @@ abstract class LongBuffer private[nio] (
   @noinline
   def put(src: LongBuffer): LongBuffer =
     genBuffer.generic_put(src)
-
+    // Since: JDK16
+  def put(index: Int, src: LongBuffer, offset: Int, length: Int) = GenBuffer[LongBuffer](this).generic_put(index, src, offset, length)
+    
   @noinline
   def put(src: Array[Long], offset: Int, length: Int): LongBuffer =
     genBuffer.generic_put(src, offset, length)
 
   final def put(src: Array[Long]): LongBuffer =
     put(src, 0, src.length)
-    
+
 
   @inline final def hasArray(): Boolean =
     genBuffer.generic_hasArray()
@@ -849,6 +945,9 @@ abstract class LongBuffer private[nio] (
   def compact(): LongBuffer
 
   def isDirect(): Boolean
+
+  // Since JDK 15
+  final def isEmpty(): Boolean = remaining() == 0
 
   // toString(): String inherited from Buffer
 
@@ -919,6 +1018,9 @@ abstract class FloatBuffer private[nio] (
   private[nio] type BufferType = FloatBuffer
 
 
+  // TODO: JDK11
+  // def mismatch(that: FloatBuffer): Int  = ???
+
   private def genBuffer = GenBuffer[FloatBuffer](this)
 
   def this(_capacity: Int) = this(_capacity, null: Array[Float], -1)
@@ -938,6 +1040,14 @@ abstract class FloatBuffer private[nio] (
   def get(index: Int): Float
 
   def put(index: Int, b: Float): FloatBuffer
+  
+  // Since: JDK 13
+  def get(index: Int, dst: Array[Float], offset: Int, length: Int): FloatBuffer = GenBuffer[FloatBuffer](this).generic_get(index, dst, offset, length)
+  def get(index: Int, dst: Array[Float]): FloatBuffer = get(index, dst, 0, dst.length) 
+
+  // Since: JDK13
+  def put(index: Int, src: Array[Float], offset: Int, length: Int): FloatBuffer = GenBuffer[FloatBuffer](this).generic_put(index, src, offset, length)
+  def put(index: Int, src: Array[Float]): FloatBuffer = put(index, src, 0, src.length)  
 
   @noinline
   def get(dst: Array[Float], offset: Int, length: Int): FloatBuffer =
@@ -949,14 +1059,16 @@ abstract class FloatBuffer private[nio] (
   @noinline
   def put(src: FloatBuffer): FloatBuffer =
     genBuffer.generic_put(src)
-
+    // Since: JDK16
+  def put(index: Int, src: FloatBuffer, offset: Int, length: Int) = GenBuffer[FloatBuffer](this).generic_put(index, src, offset, length)
+    
   @noinline
   def put(src: Array[Float], offset: Int, length: Int): FloatBuffer =
     genBuffer.generic_put(src, offset, length)
 
   final def put(src: Array[Float]): FloatBuffer =
     put(src, 0, src.length)
-    
+
 
   @inline final def hasArray(): Boolean =
     genBuffer.generic_hasArray()
@@ -1005,6 +1117,9 @@ abstract class FloatBuffer private[nio] (
   def compact(): FloatBuffer
 
   def isDirect(): Boolean
+
+  // Since JDK 15
+  final def isEmpty(): Boolean = remaining() == 0
 
   // toString(): String inherited from Buffer
 
@@ -1075,6 +1190,9 @@ abstract class DoubleBuffer private[nio] (
   private[nio] type BufferType = DoubleBuffer
 
 
+  // TODO: JDK11
+  // def mismatch(that: DoubleBuffer): Int  = ???
+
   private def genBuffer = GenBuffer[DoubleBuffer](this)
 
   def this(_capacity: Int) = this(_capacity, null: Array[Double], -1)
@@ -1094,6 +1212,14 @@ abstract class DoubleBuffer private[nio] (
   def get(index: Int): Double
 
   def put(index: Int, b: Double): DoubleBuffer
+  
+  // Since: JDK 13
+  def get(index: Int, dst: Array[Double], offset: Int, length: Int): DoubleBuffer = GenBuffer[DoubleBuffer](this).generic_get(index, dst, offset, length)
+  def get(index: Int, dst: Array[Double]): DoubleBuffer = get(index, dst, 0, dst.length) 
+
+  // Since: JDK13
+  def put(index: Int, src: Array[Double], offset: Int, length: Int): DoubleBuffer = GenBuffer[DoubleBuffer](this).generic_put(index, src, offset, length)
+  def put(index: Int, src: Array[Double]): DoubleBuffer = put(index, src, 0, src.length)  
 
   @noinline
   def get(dst: Array[Double], offset: Int, length: Int): DoubleBuffer =
@@ -1105,14 +1231,16 @@ abstract class DoubleBuffer private[nio] (
   @noinline
   def put(src: DoubleBuffer): DoubleBuffer =
     genBuffer.generic_put(src)
-
+    // Since: JDK16
+  def put(index: Int, src: DoubleBuffer, offset: Int, length: Int) = GenBuffer[DoubleBuffer](this).generic_put(index, src, offset, length)
+    
   @noinline
   def put(src: Array[Double], offset: Int, length: Int): DoubleBuffer =
     genBuffer.generic_put(src, offset, length)
 
   final def put(src: Array[Double]): DoubleBuffer =
     put(src, 0, src.length)
-    
+
 
   @inline final def hasArray(): Boolean =
     genBuffer.generic_hasArray()
@@ -1161,6 +1289,9 @@ abstract class DoubleBuffer private[nio] (
   def compact(): DoubleBuffer
 
   def isDirect(): Boolean
+
+  // Since JDK 15
+  final def isEmpty(): Boolean = remaining() == 0
 
   // toString(): String inherited from Buffer
 

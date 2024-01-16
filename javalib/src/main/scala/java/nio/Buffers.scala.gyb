@@ -20,7 +20,7 @@ object ${T}Buffer {
 
   def allocate(capacity: Int): ${T}Buffer = wrap(new Array[${T}](capacity))
 
-% if T == 'Byte':
+% if T == 'Byte': 
   def allocateDirect(capacity: Int): ${T}Buffer = allocate(capacity)
 % end
 
@@ -62,6 +62,9 @@ abstract class ${T}Buffer private[nio] (
   private[nio] var _isBigEndian: Boolean = true
 % end
 
+  // TODO: JDK11
+  // def mismatch(that: ${T}Buffer): Int  = ???
+
   private def genBuffer = GenBuffer[${T}Buffer](this)
 
   def this(_capacity: Int) = this(_capacity, null: Array[${T}], -1)
@@ -81,6 +84,14 @@ abstract class ${T}Buffer private[nio] (
   def get(index: Int): ${T}
 
   def put(index: Int, b: ${T}): ${T}Buffer
+  
+  // Since: JDK 13
+  def get(index: Int, dst: Array[${T}], offset: Int, length: Int): ${T}Buffer = GenBuffer[${T}Buffer](this).generic_get(index, dst, offset, length)
+  def get(index: Int, dst: Array[${T}]): ${T}Buffer = get(index, dst, 0, dst.length) 
+
+  // Since: JDK13
+  def put(index: Int, src: Array[${T}], offset: Int, length: Int): ${T}Buffer = GenBuffer[${T}Buffer](this).generic_put(index, src, offset, length)
+  def put(index: Int, src: Array[${T}]): ${T}Buffer = put(index, src, 0, src.length)  
 
   @noinline
   def get(dst: Array[${T}], offset: Int, length: Int): ${T}Buffer =
@@ -92,14 +103,16 @@ abstract class ${T}Buffer private[nio] (
   @noinline
   def put(src: ${T}Buffer): ${T}Buffer =
     genBuffer.generic_put(src)
-
+    // Since: JDK16
+  def put(index: Int, src: ${T}Buffer, offset: Int, length: Int) = GenBuffer[${T}Buffer](this).generic_put(index, src, offset, length)
+    
   @noinline
   def put(src: Array[${T}], offset: Int, length: Int): ${T}Buffer =
     genBuffer.generic_put(src, offset, length)
 
   final def put(src: Array[${T}]): ${T}Buffer =
     put(src, 0, src.length)
-    
+
 % if T == 'Char':
   def put(src: String, start: Int, end: Int): CharBuffer =
     put(CharBuffer.wrap(src, start, end))
@@ -156,6 +169,9 @@ abstract class ${T}Buffer private[nio] (
 
   def isDirect(): Boolean
 
+  // Since JDK 15
+  final def isEmpty(): Boolean = remaining() == 0
+
   // toString(): String inherited from Buffer
 
   @noinline
@@ -180,6 +196,25 @@ abstract class ${T}Buffer private[nio] (
       throw new NullPointerException
     _isBigEndian = bo == ByteOrder.BIG_ENDIAN
     this
+  }
+  // Since JDK 9
+  final def alignedSlice(unitSize: Int): ByteBuffer = {
+    val pos = position()
+    val lim = limit()
+    val alignedPos = alignmentOffset(pos, unitSize) match {
+      case n if n > 0 => pos + (unitSize - n)
+      case _ => pos
+    }
+    val alignedLimit = (lim - alignmentOffset(lim, unitSize))
+    if(alignedPos > lim || alignedLimit < pos) slice(pos, 0)
+    else slice(alignedPos, alignedLimit - alignedPos)
+  }
+   // Since JDK 9
+  final def alignmentOffset(index: Int, unitSize: Int): Int = {
+    require(index >= 0, "Index less then zero: " + index)
+    require(unitSize >= 1 && (unitSize & (unitSize - 1)) == 0, "Unit size not a power of two: " + unitSize)
+    if(unitSize > 8 && !isDirect()) throw new UnsupportedOperationException("Unit size unsupported for non-direct dufferes: " + unitSize)
+    ((this.address.toLong + index) & (unitSize -1)).toInt
   }
 %else:
   def order(): ByteOrder

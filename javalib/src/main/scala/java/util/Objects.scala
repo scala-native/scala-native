@@ -93,7 +93,7 @@ object Objects {
   def checkFromIndexSize(fromIndex: Int, size: Int, length: Int): Int = {
     if ((length | fromIndex | size) < 0 || size > length - fromIndex) {
       throw new IndexOutOfBoundsException(
-        s"Range check failed: checkFromIndexSize(fromIndex=$fromIndex, size=$$size, length=$length)"
+        s"Range [$fromIndex, $fromIndex + $size] out of bounds for length $length"
       )
     }
     fromIndex
@@ -103,7 +103,7 @@ object Objects {
   def checkFromIndexSize(fromIndex: Long, size: Long, length: Long): Long = {
     if ((length | fromIndex | size) < 0L || size > length - fromIndex) {
       throw new IndexOutOfBoundsException(
-        s"Range check failed: checkFromIndexSize(fromIndex=$fromIndex, size=$$size, length=$length)"
+        s"Range [$fromIndex, $fromIndex + $size] out of bounds for length $length"
       )
     }
     fromIndex

@@ -183,6 +183,63 @@ abstract class BaseBufferTest extends BaseBufferPlatformTest {
     assertThrows(classOf[IndexOutOfBoundsException], buf.get(5))
   }
 
+  @Test def absoluteBulkGet(): Unit = {
+    val buf = withContent(10, elemRange(0, 10): _*)
+    val arr = arrayOfElemType(capacity = 8)
+    buf.position(1)
+    assertSame(buf, buf.get(4, arr, 2, 4))
+    assertEquals(1, buf.position())
+    arr.zipWithIndex.foreach {
+      case (elem, idx @ (0 | 1 | 6 | 7)) => assertEquals(elemFromInt(0), elem)
+      case (elem, idx) => assertEquals(elemFromInt(idx + 2), elem)
+    }
+    assertThrows(
+      "negative idx",
+      classOf[IndexOutOfBoundsException],
+      buf.get(-1, arr, 2, 4)
+    )
+    assertThrows(
+      "offset+length < limit",
+      classOf[IndexOutOfBoundsException],
+      buf.get(4, arr, 8, 4)
+    )
+    assertThrows(
+      "negative length",
+      classOf[IndexOutOfBoundsException],
+      buf.get(4, arr, 2, -1)
+    )
+
+    buf.limit(4)
+    assertThrows(
+      "idx > limit",
+      classOf[IndexOutOfBoundsException],
+      buf.get(5, arr, 2, 4)
+    )
+  }
+
+  @Test def absoluteBulkGet2(): Unit = {
+    val buf = withContent(10, elemRange(0, 10): _*)
+    val arr = arrayOfElemType(capacity = 6)
+    buf.position(1)
+    assertSame(buf, buf.get(4, arr))
+    assertEquals(1, buf.position())
+    arr.zipWithIndex.foreach {
+      case (elem, idx) => assertEquals(elemFromInt(idx + 4), elem)
+    }
+    assertThrows(
+      "negative idx",
+      classOf[IndexOutOfBoundsException],
+      buf.get(-1, arr)
+    )
+
+    buf.limit(4)
+    assertThrows(
+      "idx > limit",
+      classOf[IndexOutOfBoundsException],
+      buf.get(5, arr)
+    )
+  }
+
   @Test def absolutePut(): Unit = {
     val buf = allocBuffer(10)
     if (!createsReadOnly) {
@@ -205,6 +262,60 @@ abstract class BaseBufferTest extends BaseBufferPlatformTest {
 
       assertThrows(classOf[ReadOnlyBufferException], buf.put(-2, 1))
       assertThrows(classOf[ReadOnlyBufferException], buf.put(12, 1))
+    }
+  }
+
+  @Test def absoluteBulkPut(): Unit = {
+    val buf = allocBuffer(10)
+    val arr = arrayOfElemType(6)
+    arr.indices.foreach(idx => arr(idx) = elemFromInt(idx))
+    if (!createsReadOnly) {
+      buf.put(4, arr, 2, 3)
+      assertEquals(0, buf.position())
+      arr.indices.foreach { idx =>
+        val elem = buf.get(idx)
+        if (idx < 4 || idx > 7) assertEquals(elemFromInt(0), elem)
+        else assertEquals(elemFromInt(idx - 2), elem)
+      }
+      assertThrows(classOf[IndexOutOfBoundsException], buf.put(-1, arr, 2, 3))
+      assertThrows(classOf[IndexOutOfBoundsException], buf.put(14, arr, 2, 3))
+
+      buf.limit(4)
+      assertThrows(classOf[IndexOutOfBoundsException], buf.put(4, arr, 2, 3))
+    } else {
+      assertThrows(classOf[ReadOnlyBufferException], buf.put(2, arr, 2, 3))
+      assertEquals(elemFromInt(0), buf.get(2))
+      assertEquals(0, buf.position())
+
+      assertThrows(classOf[ReadOnlyBufferException], buf.put(-2, arr, 2, 3))
+      assertThrows(classOf[ReadOnlyBufferException], buf.put(12, arr, 2, 3))
+    }
+  }
+
+  @Test def absoluteBulkPut2(): Unit = {
+    val buf = allocBuffer(10)
+    val arr = arrayOfElemType(6)
+    arr.indices.foreach(idx => arr(idx) = elemFromInt(idx))
+    if (!createsReadOnly) {
+      buf.put(4, arr)
+      assertEquals(0, buf.position())
+      arr.indices.foreach { idx =>
+        val elem = buf.get(idx)
+        if (idx < 4) assertEquals(elemFromInt(0), elem)
+        else assertEquals(elemFromInt(idx - 4), elem)
+      }
+      assertThrows(classOf[IndexOutOfBoundsException], buf.put(-1, arr))
+      assertThrows(classOf[IndexOutOfBoundsException], buf.put(14, arr))
+
+      buf.limit(4)
+      assertThrows(classOf[IndexOutOfBoundsException], buf.put(4, arr))
+    } else {
+      assertThrows(classOf[ReadOnlyBufferException], buf.put(2, arr))
+      assertEquals(elemFromInt(0), buf.get(2))
+      assertEquals(0, buf.position())
+
+      assertThrows(classOf[ReadOnlyBufferException], buf.put(-2, arr))
+      assertThrows(classOf[ReadOnlyBufferException], buf.put(12, arr))
     }
   }
 
@@ -294,6 +405,68 @@ abstract class BaseBufferTest extends BaseBufferPlatformTest {
       assertThrows(
         classOf[ReadOnlyBufferException],
         buf.put(Array[ElementType](6, 7, 12))
+      )
+      assertEquals(0, buf.position())
+      assertEquals(elemFromInt(0), buf.get(0))
+
+      buf.position(8)
+      assertEquals(8, buf.position())
+      assertEquals(elemFromInt(0), buf.get(8))
+    }
+  }
+
+  @Test def putBuffer(): Unit = {
+    val bufSize = 10
+    val srcSize = 8
+    val buf = allocBuffer(bufSize)
+    val src = withContent(srcSize, elemRange(0, srcSize): _*)
+    val srcOffset = 1
+    src.position(srcOffset)
+    assertEquals(srcOffset, src.position())
+    if (!createsReadOnly) {
+      assertSame(buf, buf.put(src))
+      (0 until bufSize).foreach { n =>
+        val elem = buf.get(n)
+        if (n >= srcSize - 1) assertEquals(elemFromInt(0), elem)
+        else assertEquals(s"$n", elemFromInt(n + srcOffset), elem)
+      }
+      assertEquals(buf.position(), srcSize - srcOffset)
+      assertEquals(srcSize, src.position())
+    } else {
+      assertThrows(
+        classOf[ReadOnlyBufferException],
+        buf.put(src)
+      )
+      assertEquals(0, buf.position())
+      assertEquals(elemFromInt(0), buf.get(0))
+
+      buf.position(8)
+      assertEquals(8, buf.position())
+      assertEquals(elemFromInt(0), buf.get(8))
+    }
+  }
+
+  @Test def putAbsoluteBuffer(): Unit = {
+    val bufSize = 10
+    val srcSize = 8
+    val buf = allocBuffer(bufSize)
+    val src = withContent(srcSize, elemRange(0, srcSize): _*)
+    val srcOffset = 1
+    src.position(srcOffset)
+    assertEquals(srcOffset, src.position())
+    if (!createsReadOnly) {
+      assertSame(buf, buf.put(2, src, 3, 4))
+      (0 until bufSize).foreach { n =>
+        val elem = buf.get(n)
+        if (n < 2 || n >= 2 + 4) assertEquals(s"$n", elemFromInt(0), elem)
+        else assertEquals(s"$n", elemFromInt(n + srcOffset), elem)
+      }
+      assertEquals("bufPositon", 0, buf.position())
+      assertEquals("srcPosition", srcOffset, src.position())
+    } else {
+      assertThrows(
+        classOf[ReadOnlyBufferException],
+        buf.put(src)
       )
       assertEquals(0, buf.position())
       assertEquals(elemFromInt(0), buf.get(0))
