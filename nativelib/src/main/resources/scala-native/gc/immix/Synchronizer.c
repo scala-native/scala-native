@@ -173,7 +173,8 @@ static void Synchronizer_WaitForResumption(MutatorThread *selfThread) {
     WaitForSingleObject(threadSuspensionEvent, INFINITE);
 #else
     pthread_mutex_lock(&threadSuspension.lock);
-    while (atomic_load(&Synchronizer_stopThreads)) {
+    while (
+        atomic_load_explicit(&Synchronizer_stopThreads, memory_order_acquire)) {
         pthread_cond_wait(&threadSuspension.resume, &threadSuspension.lock);
     }
     pthread_mutex_unlock(&threadSuspension.lock);
@@ -272,7 +273,7 @@ bool Synchronizer_acquire() {
         MutatorThreads_foreach(mutatorThreads, node) {
             MutatorThread *it = node->value;
             if ((void *)atomic_load_explicit(&it->stackTop,
-                                             memory_order_acquire) == NULL) {
+                                             memory_order_consume) == NULL) {
                 activeThreads++;
             }
         }

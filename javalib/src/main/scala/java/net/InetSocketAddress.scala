@@ -64,10 +64,14 @@ class InetSocketAddress private[net] (
   final def isUnresolved: Boolean = !isResolved
 
   override final def hashCode: Int = {
-    if (addr == null)
-      hostName.hashCode + port
-    else
-      addr.hashCode + port
+    var res = 1
+    if (addr != null)
+      res = 31 * res + addr.hashCode()
+    res = 31 * res + port.hashCode()
+    if (hostName != null)
+      res = 31 * res + hostName.hashCode()
+    res = 31 * res + needsResolving.hashCode()
+    res
   }
 
   override def equals(obj: Any): Boolean = {

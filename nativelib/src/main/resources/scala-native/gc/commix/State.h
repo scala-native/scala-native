@@ -9,7 +9,7 @@
 
 extern Heap heap;
 extern BlockAllocator blockAllocator;
-extern _Atomic(MutatorThreads) mutatorThreads;
+extern MutatorThreads mutatorThreads;
 extern atomic_int_fast32_t mutatorThreadsCount;
 extern SN_ThreadLocal MutatorThread *currentMutatorThread;
 extern GC_Roots *customRoots;

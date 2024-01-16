@@ -718,9 +718,9 @@ object Arrays {
       from: Int,
       to: Int
   ): Array[T] = {
-    copyOfRangeImpl[T](original, from, to)(
-      ClassTag(original.getClass.getComponentType)
-    ).asInstanceOf[Array[T]]
+    implicit def tag: ClassTag[T] = ClassTag(original.getClass.getComponentType)
+    copyOfRangeImpl[T](original, from, to)
+      .asInstanceOf[Array[T]]
   }
 
   @noinline
@@ -730,9 +730,9 @@ object Arrays {
       to: Int,
       newType: Class[_ <: Array[T]]
   ): Array[T] = {
-    copyOfRangeImpl[AnyRef](original.asInstanceOf[Array[AnyRef]], from, to)(
-      ClassTag(newType.getComponentType)
-    ).asInstanceOf[Array[T]]
+    implicit def tag: ClassTag[T] = ClassTag(original.getClass.getComponentType)
+    copyOfRangeImpl[AnyRef](original.asInstanceOf[Array[AnyRef]], from, to)
+      .asInstanceOf[Array[T]]
   }
 
   @noinline

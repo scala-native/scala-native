@@ -772,15 +772,11 @@ object Lower {
         scopeId: nir.ScopeId
     ): Unit = {
       if (shouldGenerateGCYieldPoints(currentDefn.get)) {
-        val handler = {
-          if (genUnwind && unwindHandler.isInitialized) unwind
-          else nir.Next.None
-        }
         if (platform.useGCYieldPointTraps) {
-          val trap = buf.load(nir.Type.Ptr, GCYieldPointTrap, handler)
-          buf.store(nir.Type.Int, trap, zero, handler, memoryOrder = None)
+          val trap = buf.load(nir.Type.Ptr, GCYieldPointTrap, nir.Next.None)
+          buf.store(nir.Type.Int, trap, zero, nir.Next.None, memoryOrder = None)
         } else {
-          buf.call(GCYieldSig, GCYield, Nil, handler)
+          buf.call(GCYieldSig, GCYield, Nil, nir.Next.None)
         }
       }
     }

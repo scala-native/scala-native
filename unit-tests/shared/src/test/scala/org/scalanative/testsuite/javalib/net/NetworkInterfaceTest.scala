@@ -26,6 +26,13 @@ class NetworkInterfaceTest {
     if (Platform.isLinux) "lo"
     else "lo0"
 
+  val osIPv6LoopbackSuffix =
+    s":0:0:0:0:0:0:1%${localhostIf}"
+
+  val osIPv6LoopbackAddress =
+    if (Platform.isMacOs) s"fe80${osIPv6LoopbackSuffix}"
+    else s"0${osIPv6LoopbackSuffix}"
+
 // Test static (object) methods
 
   @Test def getByIndexMinusTwo(): Unit = {
@@ -224,11 +231,26 @@ class NetworkInterfaceTest {
 
     var count = 0
     while (iaEnumeration.hasMoreElements()) {
-      iaEnumeration.nextElement()
+      val hostAddr = iaEnumeration.nextElement().getHostAddress()
       count += 1
+
+      // macOS can have two forms of IPv6 loopback address.
+      val expected =
+        if (!hostAddr.contains(":")) {
+          "127.0.0.1"
+        } else if (hostAddr.startsWith("0")) {
+          s"0:0:0:0:0:0:0:1%${localhostIf}"
+        } else if (hostAddr.startsWith("f")) {
+          s"${osIPv6LoopbackAddress}"
+        } else "" // fail in a way that will print out ifAddrString
+
+      assertEquals("Unexpected result", expected, hostAddr)
     }
 
     assertTrue("count > 0", count > 0)
   }
 
+  /* NetworkInterface#getInterfaceAddresses() is exercised in
+   * InternetAddressTest#testGetAddress()
+   */
 }
