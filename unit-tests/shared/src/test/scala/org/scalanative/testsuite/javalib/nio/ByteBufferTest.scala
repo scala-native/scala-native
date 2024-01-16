@@ -1247,6 +1247,67 @@ abstract class ByteBufferTest extends BaseBufferTest {
       assertThrows(classOf[ReadOnlyBufferException], doubleBuf1.put(1, Math.PI))
     }
   }
+
+  @Test def testAlignmentOffset(): Unit = {
+    for (input @ (capacity, unitSize) <- Seq(
+          (0, 1),
+          (5, 2),
+          (10, 4),
+          (20, 8),
+          (30, 16)
+        )) {
+      val buf = allocBuffer(capacity)
+      def getAlignmentOffset() = buf.alignmentOffset(capacity, unitSize)
+      if (buf.isDirect() || unitSize <= 8) {
+        val alignment = getAlignmentOffset()
+        assertTrue(s"$input", alignment >= 0 && alignment < unitSize)
+      } else {
+        assertThrows(
+          s"$input",
+          classOf[UnsupportedOperationException],
+          getAlignmentOffset()
+        )
+      }
+    }
+  }
+
+  @Test def testAlignmentSlice(): Unit = {
+    for (input @ (capacity, unitSize) <- Seq(
+          (0, 1),
+          (7, 2),
+          (13, 4),
+          (21, 8),
+          (31, 16)
+        )) {
+      val buf = withContent(capacity, elemRange(1, capacity): _*)
+      def getAlignmentSlice() = buf.alignedSlice(unitSize)
+      if (buf.isDirect() || unitSize <= 8) {
+        val alignBuf = getAlignmentSlice()
+        assertEquals(0, alignBuf.limit() % unitSize)
+        assertEquals(0, alignBuf.capacity() % unitSize)
+        assertTrue(alignBuf.limit() <= buf.limit())
+        assertTrue(alignBuf.capacity() <= buf.capacity())
+        if (capacity > 0) {
+          assertNotSame(buf, alignBuf)
+          val offset = (0 until alignBuf.capacity())
+            .find { n =>
+              buf.get(n) == alignBuf.get(0)
+            }
+            .getOrElse { fail("Not matching elements in sliced buffer"); ??? }
+          assertTrue(offset < unitSize)
+          (0 until alignBuf.capacity()).foreach { n =>
+            assertEquals(buf.get(n + offset), alignBuf.get(n))
+          }
+        }
+      } else {
+        assertThrows(
+          s"$input",
+          classOf[UnsupportedOperationException],
+          getAlignmentSlice()
+        )
+      }
+    }
+  }
 }
 
 class AllocByteBufferTest extends ByteBufferTest {
@@ -1267,4 +1328,14 @@ class ReadOnlyWrappedByteBufferTest extends ByteBufferTest {
 class SlicedAllocByteBufferTest extends ByteBufferTest {
   val factory: ByteBufferFactory =
     new ByteBufferFactories.SlicedAllocByteBufferFactory
+}
+
+class AllocDirectByteBufferTest extends ByteBufferTest {
+  val factory: ByteBufferFactory =
+    new ByteBufferFactories.AllocDirectByteBufferFactory
+}
+
+class SlicedAllocDirectByteBufferTest extends ByteBufferTest {
+  val factory: ByteBufferFactory =
+    new ByteBufferFactories.SlicedAllocDirectByteBufferFactory
 }
