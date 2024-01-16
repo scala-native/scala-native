@@ -10,7 +10,7 @@ object ErrorHandlingApi {
 }
 
 object ErrorHandlingApiOps {
-  def errorMessage(errCode: DWord): String = Zone { implicit z =>
+  def errorMessage(errCode: DWord): String = {
     import WinBaseApi._
     import WinBaseApiExt._
 

@@ -113,7 +113,7 @@ private[nio] final class GenMappedBuffer[B <: Buffer](val self: B)
       ()
     } else {
       val dstPtr = dst.asInstanceOf[ByteArray].at(0) + offset
-      val srcPtr = _mappedData.ptr + startIndex
+      val srcPtr = _mappedData.data + startIndex
       string.memcpy(dstPtr, srcPtr, length.toUInt)
     }
   }
@@ -135,7 +135,7 @@ private[nio] final class GenMappedBuffer[B <: Buffer](val self: B)
       ()
     } else {
       val srcPtr = src.asInstanceOf[ByteArray].at(0) + offset
-      val dstPtr = _mappedData.ptr + startIndex
+      val dstPtr = _mappedData.data + startIndex
       string.memcpy(dstPtr, srcPtr, length.toUInt)
     }
   }

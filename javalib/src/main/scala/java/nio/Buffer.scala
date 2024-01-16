@@ -165,13 +165,12 @@ abstract class Buffer private[nio] (val _capacity: Int) {
       length: Int
   ): Unit = {
     if (offset < 0 || length < 0 || offset > array.length - length)
-      throw new IndexOutOfBoundsException
+      throwOutOfBounds(offset)
   }
 
   @inline private[nio] def getPosAndAdvanceRead(): Int = {
     val p = _position
-    if (p == limit())
-      throw new BufferUnderflowException
+    if (p >= limit()) throwBufferUnderflow(p)
     _position = p + 1
     p
   }
@@ -179,16 +178,14 @@ abstract class Buffer private[nio] (val _capacity: Int) {
   @inline private[nio] def getPosAndAdvanceRead(length: Int): Int = {
     val p = _position
     val newPos = p + length
-    if (newPos > limit())
-      throw new BufferUnderflowException
+    if (newPos > limit()) throwBufferUnderflow(newPos)
     _position = newPos
     p
   }
 
   @inline private[nio] def getPosAndAdvanceWrite(): Int = {
     val p = _position
-    if (p == limit())
-      throw new BufferOverflowException
+    if (p >= limit()) throwBufferOverflow(p)
     _position = p + 1
     p
   }
@@ -196,21 +193,32 @@ abstract class Buffer private[nio] (val _capacity: Int) {
   @inline private[nio] def getPosAndAdvanceWrite(length: Int): Int = {
     val p = _position
     val newPos = p + length
-    if (newPos > limit())
-      throw new BufferOverflowException
+    if (newPos > limit()) throwBufferOverflow(newPos)
     _position = newPos
     p
   }
 
   @inline private[nio] def validateIndex(index: Int): Int = {
-    if (index < 0 || index >= limit())
-      throw new IndexOutOfBoundsException
-    index
+    if (index < 0 || index >= limit()) throwOutOfBounds(index)
+    else index
   }
 
   @inline private[nio] def validateIndex(index: Int, length: Int): Int = {
-    if (index < 0 || index + length > limit())
-      throw new IndexOutOfBoundsException
-    index
+    if (index < 0) throwOutOfBounds(index)
+    else if (index + length > limit()) throwOutOfBounds(index + length)
+    else index
   }
+
+  private def throwOutOfBounds(index: Int): Nothing =
+    throw new IndexOutOfBoundsException(
+      s"Index $index out of bounds for length ${limit()}"
+    )
+  private def throwBufferUnderflow(index: Int): Nothing =
+    throw new BufferOverflowException(
+      s"Access at index $index underflows buffer of length ${limit()}"
+    )
+  private def throwBufferOverflow(index: Int): Nothing =
+    throw new BufferUnderflowException(
+      s"Access at index $index overflows buffer of length ${limit()}"
+    )
 }

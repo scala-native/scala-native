@@ -272,4 +272,48 @@ class MappedByteBufferTest {
     assertEquals(50, mbb.getInt());
   }
 
+  @Test def testReadNonPageAlligned(): Unit = {
+    // Ensure that read from non page-alligned segments of memory works correctly
+    val tmp = File.createTempFile("chunked", "tmp");
+    tmp.deleteOnExit();
+    val f = new RandomAccessFile(tmp, "rw");
+    val ch = f.getChannel();
+    // We want segments which would be a multiply of PageSize typically 4 or 16 KB
+    val segmentSize = 31 * 1024
+    assertEquals(0, segmentSize % 8)
+
+    case class Segment(from: Int, until: Int)
+    val segments = 0.to(9).map(_ * segmentSize).sliding(2).map {
+      case Seq(from, until) => Segment(from, until)
+    }
+    segments.foreach {
+      case Segment(from, until) =>
+        val mbb = ch.map(MapMode.READ_WRITE, from, until)
+        val max = (until - from) / 8
+        var i = 0
+        assertEquals("start position", 0, mbb.position())
+        while (i < max) {
+          mbb.putLong(i)
+          i += 1
+        }
+        assertEquals("end position", max * 8, mbb.position())
+    }
+    ch.close();
+
+    val ch2 = f.getChannel()
+    segments.foreach {
+      case Segment(from, until) =>
+        val mbb = ch.map(MapMode.READ_ONLY, from, until)
+        val max = (until - from) / 8
+        var i = 0
+        assertEquals("start position", 0, mbb.position())
+        while (i < max) {
+          assertEquals(i, mbb.getLong())
+          i += 1
+        }
+        assertEquals("end position", max * 8, mbb.position())
+    }
+    ch2.close()
+  }
+
 }

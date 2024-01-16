@@ -118,7 +118,7 @@ private[nio] final class GenMappedBufferView[B <: Buffer](val self: B)
       newMappedBufferView: NewThisMappedBufferView
   ): ByteArrayBits = {
     ByteArrayBits(
-      _mappedData.ptr,
+      _mappedData.data,
       _offset,
       isBigEndian,
       newMappedBufferView.bytesPerElem

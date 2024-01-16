@@ -1,3 +1,6 @@
 package java.nio
 
-class BufferUnderflowException extends RuntimeException
+class BufferUnderflowException private[java] (message: String)
+    extends RuntimeException(message) {
+  def this() = this(null)
+}
