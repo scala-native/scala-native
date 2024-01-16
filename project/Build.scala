@@ -659,9 +659,24 @@ object Build {
         javaVersionSharedTestSources,
         Test / fork := true,
         Test / parallelExecution := false,
-        libraryDependencies ++= Deps.JUnitJvm
+        libraryDependencies ++= Deps.JUnitJvm,
+        Test / unmanagedSources --= {
+          // Exclude Native specific tests from JVM project
+          val baseDir =
+            (Test / baseDirectory).value.getParentFile().getParentFile()
+          val nio =
+            baseDir / "shared/src/test/require-jdk16/org/scalanative/testsuite/javalib/nio/"
+          Seq(
+            nio / "ByteBufferViewsNativeTests.scala",
+            nio / "ByteBufferNativeFactories.scala",
+            nio / "ByteBufferNativeTest.scala",
+            nio / "ScalaNativeBufferTests.scala"
+          )
+        }
       )
       .dependsOn(junitAsyncJVM % "test")
+      // We need API for PointerBuffer due to problems in decoupling ByteBuffer tests based on required JDK version
+      .dependsOn(nativelib)
 
   lazy val testsExt =
     MultiScalaProject("testsExt", file("unit-tests-ext/native"))
