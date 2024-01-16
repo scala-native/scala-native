@@ -90,11 +90,8 @@ object Discover {
       (libDirs ++ llvmLibDir).map(s => s"-L$s")
     }
 
-    val opts =
-      if (!Platform.isLinux) libs
-      else libs ++ Seq("-z", "noexecstack") // Issue #3648, .S files
-
-    opts
+    if (!Platform.isLinux) libs
+    else libs ++ Seq("-z", "noexecstack") // Issue #3648, .S files
   }
 
   private case class ClangInfo(
