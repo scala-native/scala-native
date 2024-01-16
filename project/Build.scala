@@ -669,8 +669,7 @@ object Build {
           Seq(
             nio / "ByteBufferViewsNativeTests.scala",
             nio / "ByteBufferNativeFactories.scala",
-            nio / "ByteBufferNativeTest.scala",
-            nio / "ScalaNativeBufferTests.scala"
+            nio / "ByteBufferNativeTest.scala"
           )
         }
       )
