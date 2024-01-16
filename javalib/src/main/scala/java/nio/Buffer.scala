@@ -214,11 +214,11 @@ abstract class Buffer private[nio] (val _capacity: Int) {
       s"Index $index out of bounds for length ${limit()}"
     )
   private def throwBufferUnderflow(index: Int): Nothing =
-    throw new BufferOverflowException(
+    throw new BufferUnderflowException(
       s"Access at index $index underflows buffer of length ${limit()}"
     )
   private def throwBufferOverflow(index: Int): Nothing =
-    throw new BufferUnderflowException(
+    throw new BufferOverflowException(
       s"Access at index $index overflows buffer of length ${limit()}"
     )
 }
