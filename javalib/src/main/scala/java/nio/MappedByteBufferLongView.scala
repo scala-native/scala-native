@@ -18,7 +18,7 @@ private[nio] final class MappedByteBufferLongView private (
   private def genBuffer = GenBuffer[LongBuffer](this)
   protected def genMappedBufferView = GenMappedBufferView[LongBuffer](this)
   @inline private def byteArrayBits = genMappedBufferView.byteArrayBits
-  private[this] implicit def newMappedLongBufferView
+  private implicit def newMappedLongBufferView
       : GenMappedBufferView.NewMappedBufferView[LongBuffer] =
     MappedByteBufferLongView.NewMappedByteBufferLongView
 

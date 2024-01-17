@@ -67,7 +67,7 @@ private[scalanative] object NativeLib {
         .forEach(new java.util.function.Consumer[Path] {
           def accept(path: Path): Unit = {
             def matchesPattern =
-              path.getFileName().toString() matches nativeCodePattern
+              path.getFileName().toString().matches(nativeCodePattern)
             def notIgnored =
               expectedPaths.contains(path.toAbsolutePath())
 

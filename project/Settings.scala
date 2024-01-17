@@ -624,14 +624,6 @@ object Settings {
     },
     exportJars := true
   )
-  lazy val commonJavalibSettings = Def.settings(
-    recompileAllOrNothingSettings,
-    noJavaReleaseSettings, // we don't emit classfiles
-    Compile / scalacOptions ++= scalaNativeCompilerOptions(
-      "genStaticForwardersForNonTopLevelObjects"
-    ),
-    NIROnlySettings
-  )
 
   // Calculates all prefixes of the current Scala version
   // (including the empty prefix) to construct Scala version depenent

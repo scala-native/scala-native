@@ -13,7 +13,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, bufferName: String) {
 
   import buffer._
 
-  private[this] var lastPosition: Position = Position.NoPosition
+  private var lastPosition: Position = Position.NoPosition
 
   private val (prelude, header, files)
       : (Prelude, Seq[(Global, Int)], Array[URI]) = {

@@ -10,11 +10,11 @@ import scala.collection.mutable
 import scala.scalanative.nir.serialization.{Tags => T}
 
 final class BinarySerializer {
-  private[this] val bufferUnderyling = new JumpBackByteArrayOutputStream
-  private[this] val buffer = new DataOutputStream(bufferUnderyling)
+  private val bufferUnderyling = new JumpBackByteArrayOutputStream
+  private val buffer = new DataOutputStream(bufferUnderyling)
 
-  private[this] var lastPosition: Position = Position.NoPosition
-  private[this] val fileIndexMap = mutable.Map.empty[URI, Int]
+  private var lastPosition: Position = Position.NoPosition
+  private val fileIndexMap = mutable.Map.empty[URI, Int]
 
   // Methods were renamed in order to not pollute git blame history.
   // Original implementation used ByteBuffers

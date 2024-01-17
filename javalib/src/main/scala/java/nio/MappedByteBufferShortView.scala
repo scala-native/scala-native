@@ -19,7 +19,7 @@ private[nio] final class MappedByteBufferShortView private (
   protected def genMappedBufferView =
     GenMappedBufferView[ShortBuffer](this)
   @inline private def byteArrayBits = genMappedBufferView.byteArrayBits
-  private[this] implicit def newMappedShortBufferView
+  private implicit def newMappedShortBufferView
       : GenMappedBufferView.NewMappedBufferView[ShortBuffer] =
     MappedByteBufferShortView.NewMappedByteBufferShortView
 

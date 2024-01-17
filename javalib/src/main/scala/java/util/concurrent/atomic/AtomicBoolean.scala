@@ -1,6 +1,6 @@
 package java.util.concurrent.atomic
 
-class AtomicBoolean(private[this] var value: Boolean) extends Serializable {
+class AtomicBoolean(private var value: Boolean) extends Serializable {
   def this() = this(false)
 
   final def get(): Boolean = value

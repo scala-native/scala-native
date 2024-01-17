@@ -19,7 +19,7 @@ private[nio] final class MappedByteBufferDoubleView private (
   protected lazy val genMappedBufferView =
     GenMappedBufferView[DoubleBuffer](this)
   @inline private def byteArrayBits = genMappedBufferView.byteArrayBits
-  private[this] implicit def newMappedDoubleBufferView
+  private implicit def newMappedDoubleBufferView
       : GenMappedBufferView.NewMappedBufferView[DoubleBuffer] =
     MappedByteBufferDoubleView.NewMappedByteBufferDoubleView
 

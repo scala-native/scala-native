@@ -26,7 +26,7 @@ class ConcurrentHashMap[K, V] private (initialCapacity: Int, loadFactor: Float)
   def this(initialCapacity: Int, loadFactor: Float, concurrencyLevel: Int) =
     this(initialCapacity, loadFactor) // ignore concurrencyLevel
 
-  private[this] val inner: InnerHashMap[K, V] =
+  private val inner: InnerHashMap[K, V] =
     new InnerHashMap[K, V](initialCapacity, loadFactor)
 
   override def size(): Int =
@@ -148,8 +148,8 @@ object ConcurrentHashMap {
     }
 
     private abstract class AbstractCHMIterator[A] extends Iterator[A] {
-      private[this] val innerIter = makeSnapshot().iterator()
-      private[this] var lastNode: Node[K, V] = _ // null
+      private val innerIter = makeSnapshot().iterator()
+      private var lastNode: Node[K, V] = _ // null
 
       protected[this] def extract(node: Node[K, V]): A
 

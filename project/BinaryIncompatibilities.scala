@@ -96,7 +96,10 @@ object BinaryIncompatibilities {
 
   final val AuxLib, JavaLib, ScalaLib, Scala3Lib: Filters = Nil
   final val TestRunner: Filters = Nil
-  final val TestInterface: Filters = Nil
+  final val TestInterface: Filters = Seq(
+    // internals
+    exclude[Problem]("scala.scalanative.testinterface.TestMain.*")
+  )
   final val TestInterfaceSbtDefs: Filters = Nil
   final val JUnitRuntime: Filters = Seq(
     // Internal method, package-private

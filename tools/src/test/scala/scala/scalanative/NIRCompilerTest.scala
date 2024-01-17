@@ -12,7 +12,7 @@ class NIRCompilerTest extends AnyFlatSpec with Matchers with Inspectors {
 
   "The compiler" should "return products of compilation" in {
     val files =
-      NIRCompiler { _ compile "class A" }
+      NIRCompiler { _.compile("class A") }
         .filter(Files.isRegularFile(_))
         .map(_.getFileName.toString)
     val expectedNames = Seq("A.class", "A.nir")
@@ -41,14 +41,14 @@ class NIRCompilerTest extends AnyFlatSpec with Matchers with Inspectors {
 
   it should "report compilation errors" in {
     assertThrows[api.CompilationFailedException] {
-      NIRCompiler { _ compile "invalid" }
+      NIRCompiler { _.compile("invalid") }
     }
   }
 
   it should "compile to a specified directory" in {
     val temporaryDir = Files.createTempDirectory("my-target")
     val nirFiles =
-      NIRCompiler(outDir = temporaryDir) { _ compile "class A" }
+      NIRCompiler(outDir = temporaryDir) { _.compile("class A") }
         .filter(Files.isRegularFile(_))
     forAll(nirFiles) { _.getParent should be(temporaryDir) }
   }

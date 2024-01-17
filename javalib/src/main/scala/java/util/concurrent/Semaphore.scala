@@ -14,7 +14,7 @@ package java.util.concurrent
 
 import java.util.{Collection, Collections}
 
-class Semaphore(private[this] var permits: Int, fairness: Boolean)
+class Semaphore(private var permits: Int, fairness: Boolean)
     extends java.io.Serializable {
 
   def this(permits: Int) = this(permits, false)

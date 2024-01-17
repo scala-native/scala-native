@@ -118,7 +118,7 @@ object Build {
         Seq.empty[String]
       ) {
         case (2, _) => Seq("-Xno-patmat-analysis")
-      }
+      },
       scalacOptions --= ignoredScalaDeprecations(scalaVersion.value)
     )
     .dependsOnSource(nir)
@@ -336,7 +336,9 @@ object Build {
   lazy val scalalib: MultiScalaProject =
     MultiScalaProject("scalalib")
       .enablePlugins(MyScalaNativePlugin)
-      .settings(mavenPublishSettings, disabledDocsSettings,
+      .settings(
+        mavenPublishSettings,
+        disabledDocsSettings,
         scalacOptions --= ignoredScalaDeprecations(scalaVersion.value)
       )
       .withNativeCompilerPlugin
@@ -375,6 +377,7 @@ object Build {
             scalacOptions ++= Seq(
               "-language:implicitConversions"
             ),
+            scalacOptions --= Seq("-Xfatal-warnings", "-deprecation"),
             libraryDependencies += ("org.scala-native" %%% "scalalib" % nativeVersion)
               .excludeAll(ExclusionRule("org.scala-native"))
               .cross(CrossVersion.for3Use2_13),
