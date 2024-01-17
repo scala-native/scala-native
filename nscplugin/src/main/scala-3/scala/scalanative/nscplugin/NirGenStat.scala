@@ -258,14 +258,14 @@ trait NirGenStat(using Context) {
           None
       }
     sym.annotations.foreach { ann =>
-      ann.symbol match {
-        case defnNir.NoInlineClass     => attrs += nir.Attr.NoInline
-        case defnNir.AlwaysInlineClass => attrs += nir.Attr.AlwaysInline
-        case defnNir.InlineClass       => attrs += nir.Attr.InlineHint
-        case defnNir.NoOptimizeClass   => attrs += nir.Attr.NoOpt
-        case defnNir.NoSpecializeClass => attrs += nir.Attr.NoSpecialize
-        case defnNir.StubClass         => attrs += nir.Attr.Stub
-        case defnNir.LinkClass =>
+      ann.symbol.typeRef match {
+        case defnNir.NoInlineType     => attrs += nir.Attr.NoInline
+        case defnNir.AlwaysInlineType => attrs += nir.Attr.AlwaysInline
+        case defnNir.InlineType       => attrs += nir.Attr.InlineHint
+        case defnNir.NoOptimizeType   => attrs += nir.Attr.NoOpt
+        case defnNir.NoSpecializeType => attrs += nir.Attr.NoSpecialize
+        case defnNir.StubType         => attrs += nir.Attr.Stub
+        case defnNir.LinkType =>
           requireLiteralStringAnnotation(ann)
             .foreach(attrs += nir.Attr.Link(_))
         case _ => ()

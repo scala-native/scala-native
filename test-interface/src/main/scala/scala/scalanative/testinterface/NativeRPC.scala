@@ -37,7 +37,7 @@ private[testinterface] class NativeRPC(clientSocket: Socket)(implicit
     } else {
       val msg = Array.fill(msgLength)(inStream.readChar).mkString
       handleMessage(msg)
-      if (!LinktimeInfo.isMultithreadingEnabled) scalanative.runtime.loop()
+      scalanative.runtime.loop()
       loop()
     }
   }
