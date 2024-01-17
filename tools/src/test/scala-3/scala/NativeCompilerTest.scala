@@ -99,3 +99,39 @@ class NativeCompilerTest extends AnyFlatSpec:
         |}""".stripMargin
     )
   }
+
+  it should "issue3231 allow MultiLevel Export" in {
+    // Exporting extern function should work for recursive exports
+    compileAll(
+      "level_1.scala" -> s"""
+        |package issue.level1
+        |
+        |import scala.scalanative.unsafe.extern
+        |
+        |@extern
+        |private[issue] object extern_functions:
+        |  def test(bla: Int, args: Any*): Unit = extern
+        |
+        |export extern_functions.* // should comppile
+        |
+        """.stripMargin,
+      "level_2.scala" -> s"""
+        |package issue.level2
+        |
+        |export _root_.issue.level1.test
+        |
+        """.stripMargin,
+      "level_3.scala" -> s"""
+        |package issue.level3
+        |
+        |export _root_.issue.level2.test
+        |
+        """.stripMargin,
+      "level_4.scala" -> s"""
+        |package issue.level4
+        |
+        |export _root_.issue.level3.test
+        |
+      """.stripMargin
+    )
+  }

@@ -20,17 +20,17 @@ import scalanative.posix.stdio.va_list
 @extern
 object syslog {
   @name("scalanative_closelog")
-  @blocking def closelog(): Unit = extern
+  def closelog(): Unit = extern
 
   @name("scalanative_openlog")
-  @blocking def openlog(ident: CString, logopt: CInt, facility: CInt): Unit =
+  def openlog(ident: CString, logopt: CInt, facility: CInt): Unit =
     extern
 
   @name("scalanative_setlogmask")
-  @blocking def setlogmask(maskpri: CInt): CInt = extern
+  def setlogmask(maskpri: CInt): CInt = extern
 
   // "glue" code is not used here so that implementation of va_list is simpler.
-  @blocking def syslog(priority: CInt, format: CString, vargs: Any*): Unit =
+  def syslog(priority: CInt, format: CString, vargs: Any*): Unit =
     extern
 
   @name("scalanative_log_emerg")
