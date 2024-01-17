@@ -175,10 +175,10 @@ abstract class NirGenPhase[G <: Global with Singleton](override val global: G)
       )
   }
 
-  private[this] object nirPositionCachedConverter {
+  private object nirPositionCachedConverter {
     import scala.reflect.internal.util._
-    private[this] var lastNscSource: SourceFile = _
-    private[this] var lastNIRSource: nir.Position.SourceFile = _
+    private var lastNscSource: SourceFile = _
+    private var lastNIRSource: nir.Position.SourceFile = _
 
     def toNIRSource(nscSource: SourceFile): nir.Position.SourceFile = {
       if (nscSource != lastNscSource) {
@@ -188,7 +188,7 @@ abstract class NirGenPhase[G <: Global with Singleton](override val global: G)
       lastNIRSource
     }
 
-    private[this] def convert(
+    private def convert(
         nscSource: SourceFile
     ): nir.Position.SourceFile = {
       nscSource.file.file match {

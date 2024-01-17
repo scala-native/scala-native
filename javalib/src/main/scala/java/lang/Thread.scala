@@ -8,7 +8,7 @@ class Thread private (runnable: Runnable) extends Runnable {
   if (runnable ne Thread.MainRunnable) ???
 
   private var interruptedState = false
-  private[this] var name: String = "main" // default name of the main thread
+  private var name: String = "main" // default name of the main thread
 
   private[java] var threadLocalRandomSeed: scala.Long = 0
   private[java] var threadLocalRandomProbe: Int = 0

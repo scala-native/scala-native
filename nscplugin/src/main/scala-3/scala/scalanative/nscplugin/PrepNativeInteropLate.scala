@@ -4,7 +4,6 @@ import dotty.tools.dotc.plugins.PluginPhase
 import dotty.tools._
 import dotc._
 import dotc.ast.tpd._
-import dotc.transform.SymUtils.setter
 import core.Contexts._
 import core.Definitions
 import core.Names._

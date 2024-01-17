@@ -15,7 +15,7 @@ package java.util.concurrent.atomic
 import java.io.Serializable
 
 class LongAdder extends Number with Serializable {
-  private[this] var value: Long = 0L
+  private var value: Long = 0L
 
   final def add(x: Long): Unit =
     value = value + x

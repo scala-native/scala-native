@@ -87,31 +87,31 @@ private[lang] class UnixProcess private (
     res
   }
 
-  private[this] val _inputStream =
+  private val _inputStream =
     PipeIO[PipeIO.Stream](
       this,
       new FileDescriptor(!outfds),
       builder.redirectOutput()
     )
-  private[this] val _errorStream =
+  private val _errorStream =
     PipeIO[PipeIO.Stream](
       this,
       new FileDescriptor(!errfds),
       builder.redirectError()
     )
-  private[this] val _outputStream =
+  private val _outputStream =
     PipeIO[OutputStream](
       this,
       new FileDescriptor(!(infds + 1)),
       builder.redirectInput()
     )
 
-  private[this] var _exitValue = -1
+  private var _exitValue = -1
   private[lang] def checkResult(): CInt = {
     if (_exitValue == -1) setExitValue(UnixProcess.checkResult(pid))
     _exitValue
   }
-  private[this] def setExitValue(value: CInt): Unit = {
+  private def setExitValue(value: CInt): Unit = {
     if (_exitValue == -1 && value != -1) {
       _exitValue = value
       _inputStream.drain()
@@ -119,7 +119,7 @@ private[lang] class UnixProcess private (
       _outputStream.close()
     }
   }
-  private[this] def waitFor(ts: Ptr[timespec]): Int = {
+  private def waitFor(ts: Ptr[timespec]): Int = {
     val res = stackalloc[CInt]()
     !res = -1
     val result = UnixProcess.waitForPid(pid, ts, res)
@@ -131,7 +131,7 @@ private[lang] class UnixProcess private (
 object UnixProcess {
   @link("pthread")
   @extern
-  private[this] object ProcessMonitor {
+  private object ProcessMonitor {
     @name("scalanative_process_monitor_notify")
     def notifyMonitor(): Unit = extern
     @name("scalanative_process_monitor_check_result")
@@ -304,10 +304,10 @@ object UnixProcess {
       environment: java.util.Map[String, String],
       bin: String
   ): Seq[String] = {
-    if ((bin startsWith "/") || (bin startsWith ".")) {
+    if (bin.startsWith("/") || bin.startsWith(".")) {
       Seq(bin)
     } else {
-      val path = environment get "PATH" match {
+      val path = environment.get("PATH") match {
         case null => "/bin:/usr/bin:/usr/local/bin"
         case p    => p
       }

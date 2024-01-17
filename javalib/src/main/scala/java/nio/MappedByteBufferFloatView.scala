@@ -18,7 +18,7 @@ private[nio] final class MappedByteBufferFloatView private (
   private def genBuffer = GenBuffer[FloatBuffer](this)
   protected def genMappedBufferView = GenMappedBufferView[FloatBuffer](this)
   private lazy val byteArrayBits = genMappedBufferView.byteArrayBits
-  private[this] implicit def newMappedFloatBufferView
+  private implicit def newMappedFloatBufferView
       : GenMappedBufferView.NewMappedBufferView[FloatBuffer] =
     MappedByteBufferFloatView.NewMappedByteBufferFloatView
 

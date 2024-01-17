@@ -5,8 +5,7 @@ package java.util.concurrent.atomic
 
 import java.util.function.UnaryOperator
 
-class AtomicReference[T <: AnyRef](private[this] var value: T)
-    extends Serializable {
+class AtomicReference[T <: AnyRef](private var value: T) extends Serializable {
 
   def this() = this(null.asInstanceOf[T])
 

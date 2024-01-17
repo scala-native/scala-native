@@ -15,7 +15,7 @@ private[nio] final class HeapFloatBuffer private (
 
   private def genBuffer = GenBuffer[FloatBuffer](this)
   private def genHeapBuffer = GenHeapBuffer[FloatBuffer](this)
-  private[this] implicit def newHeapFloatBuffer
+  private implicit def newHeapFloatBuffer
       : HeapFloatBuffer.NewHeapFloatBuffer.type =
     HeapFloatBuffer.NewHeapFloatBuffer
 
