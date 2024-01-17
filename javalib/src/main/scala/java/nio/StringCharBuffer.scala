@@ -1,5 +1,7 @@
 package java.nio
 
+import java.util.Objects
+
 // Ported from Scala.js
 
 private[nio] final class StringCharBuffer private (
@@ -22,6 +24,13 @@ private[nio] final class StringCharBuffer private (
   def slice(): CharBuffer = {
     val cap = remaining()
     new StringCharBuffer(cap, _csq, _csqOffset + position(), 0, cap)
+  }
+
+  // Since JDK 13
+  def slice(index: Int, length: Int): CharBuffer = {
+    Objects.checkFromIndexSize(index, length, limit())
+    val cap = length
+    new StringCharBuffer(cap, _csq, _csqOffset + index, 0, cap)
   }
 
   def duplicate(): CharBuffer = {

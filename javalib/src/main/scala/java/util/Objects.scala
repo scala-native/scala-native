@@ -80,4 +80,32 @@ object Objects {
   def requireNonNull[T](obj: T, messageSupplier: Supplier[String]): T =
     if (obj == null) throw new NullPointerException(messageSupplier.get())
     else obj
+
+  // since JDK9
+  /** Checks if subrange <fromIndex, {fromIndex+size}) is withing the bounds of
+   *  range <0, length)
+   *
+   *  @return
+   *    fromIndex argument
+   *  @throws java.lang.IndexOutOfBoundsException
+   *    if not in subrange
+   */
+  def checkFromIndexSize(fromIndex: Int, size: Int, length: Int): Int = {
+    if ((length | fromIndex | size) < 0 || size > length - fromIndex) {
+      throw new IndexOutOfBoundsException(
+        s"Range [$fromIndex, $fromIndex + $size] out of bounds for length $length"
+      )
+    }
+    fromIndex
+  }
+
+  // since JDK16
+  def checkFromIndexSize(fromIndex: Long, size: Long, length: Long): Long = {
+    if ((length | fromIndex | size) < 0L || size > length - fromIndex) {
+      throw new IndexOutOfBoundsException(
+        s"Range [$fromIndex, $fromIndex + $size] out of bounds for length $length"
+      )
+    }
+    fromIndex
+  }
 }

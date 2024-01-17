@@ -11,7 +11,8 @@ import org.junit.Assume._
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform._
 
-abstract class BaseBufferTest extends BaseBufferPlatformTest {
+// Most of this tests should not be require JDK 16, but decoupling the BaseBuffer tests infrastructure is way to hard right now
+abstract class BaseBufferTest extends ScalaNativeBufferTests {
 
   type Factory <: BufferFactory
 
@@ -399,5 +400,4 @@ abstract class BaseBufferTest extends BaseBufferPlatformTest {
       assertEquals(elemFromInt(23), buf2.get(6))
     }
   }
-
 }

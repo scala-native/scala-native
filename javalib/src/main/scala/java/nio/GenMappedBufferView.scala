@@ -1,5 +1,7 @@
 package java.nio
 
+import java.util.Objects
+
 // Based on the code ported from Scala.js,
 // see GenHeapBufferView.scala
 private[nio] object GenMappedBufferView {
@@ -58,6 +60,24 @@ private[nio] final class GenMappedBufferView[B <: Buffer](val self: B)
       newCapacity,
       _mappedData,
       _offset + bytesPerElem * position(),
+      0,
+      newCapacity,
+      isReadOnly(),
+      isBigEndian
+    )
+  }
+
+  @inline
+  def generic_slice(index: Int, length: Int)(implicit
+      newMappedBufferView: NewThisMappedBufferView
+  ): BufferType = {
+    Objects.checkFromIndexSize(index, length, limit())
+    val newCapacity = length
+    val bytesPerElem = newMappedBufferView.bytesPerElem
+    newMappedBufferView(
+      newCapacity,
+      _mappedData,
+      _offset + bytesPerElem * index,
       0,
       newCapacity,
       isReadOnly(),

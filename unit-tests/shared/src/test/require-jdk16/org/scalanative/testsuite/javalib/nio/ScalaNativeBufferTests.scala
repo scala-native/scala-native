@@ -2,26 +2,26 @@ package org.scalanative.testsuite.javalib.nio
 
 import java.nio._
 
-// Ported from Scala.js
-
 import org.junit.Test
 import org.junit.Assert._
+import org.scalanative.testsuite.utils.Platform._
 
+// Extended Scala Native API
 import scala.scalanative.memory.PointerBuffer
 import scala.scalanative.memory.PointerBufferOps._
 
-trait BaseBufferPlatformTest { self: BaseBufferTest =>
-  import factory._
+trait ScalaNativeBufferTests { self: BaseBufferTest =>
+  // TODO: It should not be shared with JVM, but it's required due to BaseBuffer coupling with JDK8
 
-  // Extended Scala Native API
-  @Test def hasPointer(): Unit = {
+  import factory._
+  @Test def hasPointer(): Unit = if (executingInScalaNative) {
     val buf = factory.allocBuffer(8)
     if (createsReadOnly)
       assertFalse("read-only, access to pointer", buf.hasPointer())
     else assertEquals("hasPointer", createsPointerBuffer, buf.hasPointer())
   }
 
-  @Test def getPointer(): Unit = {
+  @Test def getPointer(): Unit = if (executingInScalaNative) {
     val buf = factory.allocBuffer(8)
     if (createsReadOnly || !createsPointerBuffer)
       assertThrows(
@@ -30,4 +30,5 @@ trait BaseBufferPlatformTest { self: BaseBufferTest =>
       )
     else assertNotNull(buf.pointer())
   }
+
 }
