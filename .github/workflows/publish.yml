@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-22.04
     if: github.repository == 'scala-native/scala-native'
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: "2.13" #Unused, any version can be placed here
@@ -33,7 +33,7 @@ jobs:
       matrix:
         scala: ["2.12", "2.13", "3"]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: ${{ matrix.scala }} #Unused, any version can be placed here

@@ -26,7 +26,7 @@ jobs:
             scala: 2.12
             os: macos-12
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: ./.github/actions/macos-setup-env
         if: ${{ startsWith(matrix.os, 'macos') }}
         with:
@@ -59,7 +59,7 @@ jobs:
       # Disable autocrlf setting, otherwise scalalib patches might not be possible to apply
       - name: Setup git config
         run: git config --global core.autocrlf false
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: ./.github/actions/windows-setup-env
         id: setup
         with:
