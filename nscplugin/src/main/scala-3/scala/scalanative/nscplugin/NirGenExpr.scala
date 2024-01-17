@@ -427,7 +427,7 @@ trait NirGenExpr(using Context) {
     def genIf(tree: If): Val = {
       given nir.Position = tree.span
       val If(cond, thenp, elsep) = tree
-      def isUnitType(tpe: Type) =
+      def isUnitType(tpe: Types.Type) =
         tpe =:= defn.UnitType || defn.isBoxedUnitClass(tpe.sym)
       val retty =
         if (isUnitType(thenp.tpe) || isUnitType(elsep.tpe)) nir.Type.Unit
