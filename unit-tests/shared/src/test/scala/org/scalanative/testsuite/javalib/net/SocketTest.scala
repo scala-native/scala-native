@@ -139,12 +139,20 @@ class SocketTest {
   }
 
   @Test def trafficClass(): Unit = {
-    // When execution on Windows with Java 17 trafficClass is not set.
-    // s.getTrafficClass returns 0 instead of 0x28
-    assumeFalse(
-      "Skipped due to unexpected behaviour in JDK 17 on Windows",
-      Platform.isWindows && Platform.executingInJVMOnJDK17
-    )
+    val disabled = Platform.isWindows && {
+      // No sense testing in these cases
+      val prop = System.getProperty("java.net.preferIPv4Stack")
+      val useIPv4 = (prop != null) && (prop.toLowerCase() == "true")
+      /* Windows lacks support for setoption IPV6_TCLASS.
+       *
+       * When execution on Windows with Java 17 trafficClass is not set.
+       * s.getTrafficClass returns 0 instead of 0x28
+       * See above, it is normal for some network implementations to not
+       * take the hint.
+       */
+      (!useIPv4) || (Platform.executingInJVMOnJDK17)
+    }
+    assumeFalse("Invalid behaviour on JDK 17+", disabled)
     val s = new Socket()
     try {
       s.setTrafficClass(0x28)
