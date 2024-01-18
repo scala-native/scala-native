@@ -73,10 +73,10 @@ object CodeGen {
       val outputDir = VirtualDirectory.real(outputDirPath)
       val sourceCodeCache = new SourceCodeCache(config)
 
-      def sourceDirOf(defn: nir.Defn): String = {
+      def outputFileId(defn: nir.Defn): String = {
         val nirSource = defn.pos.nirSource
         if (nirSource.exists)
-          s"${nirSource.directory}:${nirSource.path.getParent()}"
+          s"${nirSource.path.getParent()}"
         else
           EmptyPath
       }
@@ -86,11 +86,11 @@ object CodeGen {
       // across IR module boundary unless LTO is turned on.
       def separate(): Future[Seq[Path]] =
         Future
-          .traverse(partitionBy(assembly, procs)(sourceDirOf).toSeq) {
+          .traverse(partitionBy(assembly, procs)(outputFileId).toSeq) {
             case (id, defns) =>
               Future {
                 val sorted = defns.sortBy(_.name)
-                Impl(env, sorted, sourceCodeCache).gen(id.toString, outputDir)
+                Impl(env, sorted, sourceCodeCache).gen(id.toString(), outputDir)
               }
           }
 
@@ -116,10 +116,10 @@ object CodeGen {
         // This will ensure that each LLVM IR file only references a single Scala source file,
         // which will prevent the Darwin linker failing to generate N_OSO symbols.
         Future
-          .traverse(assembly.groupBy(sourceDirOf).toSeq) {
-            case (dir, defns) =>
+          .traverse(assembly.groupBy(outputFileId).toSeq) {
+            case (id, defns) =>
               Future {
-                val hash = dir.hashCode().toHexString
+                val hash = id.hashCode().toHexString
                 val outFile = outputDirPath.resolve(s"$hash.ll")
                 val ownerDirectory = outFile.getParent()
 
@@ -132,7 +132,7 @@ object CodeGen {
                 } else {
                   assert(ownerDirectory.toFile.exists())
                   config.logger.debug(
-                    s"Content of directory in $dir has not changed, skiping generation of $hash.ll"
+                    s"Content of definitions in chunk '$id' has not changed, skipping generation of $hash.ll"
                   )
                   outFile
                 }
