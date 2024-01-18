@@ -30,7 +30,7 @@ jobs:
             gc: immix
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: ./.github/actions/macos-setup-env
         id: setup
         with:
@@ -83,7 +83,7 @@ jobs:
           #   lto: full
           #   gc: commix
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: ./.github/actions/macos-setup-env
         with:
           scala-version: ${{matrix.scala}}
@@ -134,7 +134,7 @@ jobs:
       matrix:
         scala: [2.12, 3]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: ./.github/actions/macos-setup-env
         with:
           scala-version: ${{matrix.scala}}
@@ -153,7 +153,7 @@ jobs:
         scala: [3]
         llvm: [14, 16, latest] # Last 3 stable versions. 15 is tested by default,  latest version == 17
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: ./.github/actions/macos-setup-env
         with:
           scala-version: ${{matrix.scala}}
