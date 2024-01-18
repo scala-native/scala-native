@@ -10,9 +10,11 @@ import java.nio.charset.StandardCharsets
 import scala.scalanative.meta.LinktimeInfo
 
 /** Native RPC Core. */
-private[testinterface] class NativeRPC(clientSocket: Socket)(implicit
+private[testinterface] class NativeRPC(
+    clientSocket: Socket,
     ec: ExecutionContext
-) extends RPCCore {
+) extends RPCCore()(ec) {
+  def this(clientSocket: Socket) = this(clientSocket, ExecutionContext.global)
   private lazy val inStream = new DataInputStream(clientSocket.getInputStream)
   private lazy val outStream = new DataOutputStream(
     clientSocket.getOutputStream
