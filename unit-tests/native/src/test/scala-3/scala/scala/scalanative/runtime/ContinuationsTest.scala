@@ -6,7 +6,7 @@ import org.junit.Assert._
 import Continuations._
 import scala.scalanative.meta.LinktimeInfo.{isWindows, is32BitPlatform}
 
-class ContinuationsTestScala3:
+class ContinuationsTest:
   @Test def canBoundaryNoSuspend() =
     if !isWindows then
       val res = boundary[Int] {
@@ -99,4 +99,4 @@ class ContinuationsTestScala3:
         case End(v) =>
           assert(false)
   }
-end ContinuationsTestScala3
+end ContinuationsTest
