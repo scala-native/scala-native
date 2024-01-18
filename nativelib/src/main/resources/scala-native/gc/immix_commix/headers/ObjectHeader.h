@@ -78,8 +78,8 @@ static inline bool Object_IsArray(const Object *object) {
 static inline size_t Array_Stride(const ArrayHeader *header) {
     // clang would optimize it to llvm.max(stride, 1)
     // negative stride is used only for blob array
-    size_t stride = (size_t)header->stride;
-    return (stride > 0) ? stride : 1;
+    int32_t stride = header->stride;
+    return (stride > 0) ? (size_t)stride : 1;
 }
 
 static inline size_t BlobArray_ScannableLimit(const ArrayHeader *header) {
