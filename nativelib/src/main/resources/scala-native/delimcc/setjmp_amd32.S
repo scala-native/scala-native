@@ -3,7 +3,7 @@
 /* ----------------------------------------------------------------------------
 // Copyright (c) 2016, 2017 Microsoft Research, Daan Leijen
 // This is free software// you can redistribute it and/or modify it under the
-// terms of the Apache License, Version 2.0. 
+// terms of the Apache License, Version 2.0.
 // -----------------------------------------------------------------------------
 
 // -------------------------------------------------------
@@ -95,7 +95,7 @@ ok:
    f
    old_esp+8 -- new esp = old esp - 12
 */
-_lh_boundary_entry: 
+_lh_boundary_entry:
 __lh_boundary_entry:
   /* copy arguments */
   movl    4 (%esp), %edx /* f */
@@ -134,5 +134,14 @@ _lh_get_sp:
 __lh_get_sp:
   leal   4 (%esp), %eax
   ret
+
+#endif
+
+#if defined(__linux__) && defined(__ELF__)
+/* Reference:
+ *   https://wiki.gentoo.org/wiki/Hardened/GNU_stack_quickstart
+ */
+
+.section .note.GNU-stack,"",%progbits
 
 #endif
