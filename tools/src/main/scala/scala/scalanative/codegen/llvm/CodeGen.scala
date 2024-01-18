@@ -73,13 +73,9 @@ object CodeGen {
       val outputDir = VirtualDirectory.real(outputDirPath)
       val sourceCodeCache = new SourceCodeCache(config)
 
-      def outputFileId(defn: nir.Defn): String = {
-        val nirSource = defn.pos.nirSource
-        if (nirSource.exists)
-          s"${nirSource.path.getParent()}"
-        else
-          EmptyPath
-      }
+      def outputFileId(defn: nir.Defn): String =
+        defn.pos.source.directory
+          .getOrElse(EmptyPath)
 
       // Partition into multiple LLVM IR files proportional to number
       // of available processesors. This prevents LLVM from optimizing
