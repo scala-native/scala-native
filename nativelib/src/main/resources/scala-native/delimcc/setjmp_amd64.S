@@ -1,4 +1,3 @@
-
 #if defined(__x86_64__) && (defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__))
 
 /* ----------------------------------------------------------------------------
@@ -112,5 +111,14 @@ __lh_get_sp:
   movq %rsp, %rax
   addq $8, %rax
   ret
+
+#endif
+
+#if defined(__linux__) && defined(__ELF__)
+/* Reference:
+ *   https://wiki.gentoo.org/wiki/Hardened/GNU_stack_quickstart
+ */
+
+.section .note.GNU-stack,"",%progbits
 
 #endif
