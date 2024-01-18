@@ -486,11 +486,11 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         // initialising and returning an instance of the class, using C.
         for ((ctor, ctorIdx) <- ctors.zipWithIndex) {
           val ctorSig = genMethodSig(ctor)
-          val ctorArgsSig = ctorSig.args.map(_.mangle).mkString
+          val ctorSuffix = if (ctorIdx == 0) "" else s"$$$ctorIdx"
           implicit val pos: nir.Position = ctor.pos
 
           reflectiveInstantiationInfo += ReflectiveInstantiationBuffer(
-            fqSymId + ctorArgsSig
+            fqSymId + ctorSuffix
           )
           val reflInstBuffer = reflectiveInstantiationInfo.last
 
