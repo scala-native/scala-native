@@ -95,10 +95,13 @@ object BinaryIncompatibilities {
   final val WindowsLib: Filters = Nil
 
   final val AuxLib, JavaLib, ScalaLib, Scala3Lib: Filters = Nil
-  final val TestRunner: Filters = Nil
+  final val TestRunner: Filters = Seq(
+    // exclude[Problem]("scala.scalanative.testinterface.ComRunner.*")
+  )
   final val TestInterface: Filters = Seq(
     // internals
     exclude[Problem]("scala.scalanative.testinterface.TestMain.*")
+    // exclude[Problem]("scala.scalanative.testinterface.NativeRPC.*")
   )
   final val TestInterfaceSbtDefs: Filters = Nil
   final val JUnitRuntime: Filters = Seq(

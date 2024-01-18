@@ -13,9 +13,17 @@ private[testinterface] final class NativeRunnerRPC(
     executableFile: File,
     envVars: Map[String, String],
     args: Seq[String],
-    logger: Logger
-)(implicit ec: ExecutionContext)
-    extends RPCCore() {
+    logger: Logger,
+    ec: ExecutionContext
+) extends RPCCore()(ec) {
+  def this(
+      executableFile: File,
+      envVars: Map[String, String],
+      args: Seq[String],
+      logger: Logger
+  ) = this(executableFile, envVars, args, logger, ExecutionContext.global)
+
+  implicit def executionContext: ExecutionContext = ec
 
   private val serverSocket: ServerSocket = new ServerSocket(
     /* port = */ 0,
@@ -28,7 +36,8 @@ private[testinterface] final class NativeRunnerRPC(
     logger,
     serverSocket.getLocalPort
   )
-  val runner = new ComRunner(processRunner, serverSocket, logger, handleMessage)
+  val runner =
+    new ComRunner(processRunner, serverSocket, logger, handleMessage)
 
   /* Once the com closes, ensure all still pending calls are failing.
    * Note: We do not need to give a grace time here, since the reply

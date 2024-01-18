@@ -18,10 +18,25 @@ private[testinterface] class ComRunner(
     processRunner: ProcessRunner,
     serverSocket: ServerSocket,
     logger: Logger,
-    handleMessage: String => Unit
-)(implicit ec: ExecutionContext)
-    extends AutoCloseable {
+    handleMessage: String => Unit,
+    ec: ExecutionContext
+) extends AutoCloseable {
+  def this(
+      processRunner: ProcessRunner,
+      serverSocket: ServerSocket,
+      logger: Logger,
+      handleMessage: String => Unit
+  ) = this(
+    processRunner,
+    serverSocket,
+    logger,
+    handleMessage,
+    ExecutionContext.global
+  )
+
   import ComRunner._
+
+  implicit def executionContext: ExecutionContext = ec
 
   processRunner.future.onComplete {
     case Failure(exception) => forceClose(exception)
