@@ -14,6 +14,7 @@ import core.Flags._
 import core.StdNames._
 import core.Constants.Constant
 import NirGenUtil.ContextCached
+import dotty.tools.dotc.transform.SeqLiterals
 
 /** This phase does:
  *    - handle TypeApply -> Apply conversion for intrinsic methods
@@ -27,11 +28,6 @@ class PostInlineNativeInterop extends PluginPhase with NativeInteropUtil {
   override val runsBefore = Set(transform.FirstTransform.name)
   val phaseName = PostInlineNativeInterop.name
   override def description: String = "prepare ASTs for Native interop"
-
-  private def isTopLevelExtern(dd: ValOrDefDef)(using Context) = {
-    dd.rhs.symbol == defnNir.UnsafePackage_extern &&
-    dd.symbol.isWrappedToplevelDef
-  }
 
   private class DealiasTypeMapper(using Context) extends TypeMap {
     override def apply(tp: Type): Type =
@@ -83,6 +79,23 @@ class PostInlineNativeInterop extends PluginPhase with NativeInteropUtil {
             tree.srcPos
           )
         tree.withAttachment(NirDefinitions.NonErasedType, tpe)
+
+      case Apply(fun, args)
+          if fun.symbol.isExtern && fun.symbol.usesVariadicArgs =>
+        args
+          .collectFirst {
+            case SeqLiteral(args, _)           => args
+            case Typed(SeqLiteral(args, _), _) => args
+          }
+          .toList
+          .flatten
+          .foreach { varArg =>
+            varArg.pushAttachment(
+              NirDefinitions.NonErasedType,
+              varArg.typeOpt.widenDealias
+            )
+          }
+        tree
 
       case _ => tree
 

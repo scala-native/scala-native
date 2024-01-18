@@ -144,6 +144,14 @@ abstract class PrepNativeInterop[G <: Global with Singleton](
             )
           tree.updateAttachment(NonErasedType(tpe))
 
+        case Apply(fun, args)
+            if isExternType(fun.symbol.owner) &&
+              fun.tpe.paramss.exists(isScalaVarArgs(_)) =>
+          args.foreach { arg =>
+            arg.updateAttachment(NonErasedType(widenDealiasType(arg.tpe)))
+          }
+          tree
+
         // Catch the definition of scala.Enumeration itself
         case cldef: ClassDef if cldef.symbol == EnumerationClass =>
           enterOwner(OwnerKind.EnumImpl) { super.transform(cldef) }
