@@ -154,7 +154,7 @@ private[scalanative] object LLVM {
         if (config.targetsWindows) Seq("Dbghelp")
         else Seq("pthread", "dl")
       platformsLinks ++ srclinks ++ gclinks
-    }
+    }.distinct
     config.logger.info(s"Linking with [${links.mkString(", ")}]")
     val linkopts = config.linkingOptions ++ links.map("-l" + _)
 
