@@ -2,9 +2,8 @@ package scala.scalanative
 package codegen
 
 import scala.scalanative.io.VirtualDirectory
-import java.nio.file.Path
-import java.nio.file.Paths
-import java.nio.file.Files
+import java.nio.file._
+import java.nio.file.attribute.BasicFileAttributes
 import scala.collection.mutable
 import scala.collection.concurrent.TrieMap
 import scala.annotation.nowarn
@@ -41,9 +40,36 @@ class SourceCodeCache(config: build.Config) {
   private val loggedMissingSourcesForCp = mutable.Set.empty[Path]
 
   private val cwd = Paths.get(".").toRealPath()
+  private lazy val localSourceDirs = {
+    val directories = IndexedSeq.newBuilder[Path]
+    Files.walkFileTree(
+      cwd,
+      java.util.EnumSet.of(FileVisitOption.FOLLOW_LINKS),
+      Integer.MAX_VALUE,
+      new SimpleFileVisitor[Path] {
+        override def visitFile(
+            file: Path,
+            attrs: BasicFileAttributes
+        ): FileVisitResult = FileVisitResult.CONTINUE
+
+        override def preVisitDirectory(
+            dir: Path,
+            attrs: BasicFileAttributes
+        ): FileVisitResult = {
+          val sourcesStream = Files.newDirectoryStream(dir, "*.scala")
+          val hasScalaSources =
+            try sourcesStream.iterator().hasNext()
+            finally sourcesStream.close()
+          if (hasScalaSources) directories += dir
+          FileVisitResult.CONTINUE
+        }
+      }
+    )
+    directories.result()
+  }
 
   def findSources(
-      source: nir.SourceFile.SourceRootRelative,
+      source: nir.SourceFile.Relative,
       pos: nir.Position
   ): Option[Path] = {
     assert(
@@ -67,14 +93,6 @@ class SourceCodeCache(config: build.Config) {
           ).map(_.resolve(filename))
             .getOrElse(filename)
         }
-        @nowarn
-        def isLocalProject = {
-          import scala.collection.JavaConverters._
-          pos.nirSource.directory
-            .iterator()
-            .asScala
-            .exists(_.toString() == "target")
-        }
 
         // most-likely for external dependency
         def fromCorrespondingSourcesJar = classpathJarsSources
@@ -89,13 +107,16 @@ class SourceCodeCache(config: build.Config) {
             .find(Files.exists(_))
 
         // likekly for local sub-projects
-        def fromRelativePath =
-          if (!isLocalProject) None
-          else {
-            val projectSource = cwd.resolve(source.path)
-            if (Files.exists(projectSource)) Some(projectSource)
-            else None
-          }
+        def fromRelativePath = {
+          val filename = source.path.getFileName()
+          source.directory
+            .foldLeft(localSourceDirs.iterator) {
+              case (it, sourceRelativeDir) =>
+                it.filter(_.endsWith(sourceRelativeDir))
+            }
+            .map(_.resolve(filename))
+            .find(Files.exists(_))
+        }
 
         def fromCustomSourceRoots = {
           def asJar = customSourceRootJars.iterator
@@ -117,8 +138,8 @@ class SourceCodeCache(config: build.Config) {
         }
 
         fromCorrespondingSourcesJar
-          .orElse(fromRelativePath)
           .orElse(fromCustomSourceRoots)
+          .orElse(fromRelativePath)
           .orElse(fromAnySourcesJar)
           .orElse {
             if (loggedMissingSourcesForCp.add(pos.nirSource.directory))
@@ -189,12 +210,12 @@ class SourceCodeCache(config: build.Config) {
 
   private def sourcesJarToJar(sourcesJar: Path): Path = {
     sourcesJar.resolveSibling(
-      sourcesJar.getFileName().toString().stripPrefix("-sources.jar") + "jar"
+      sourcesJar.getFileName().toString().stripSuffix("-sources.jar") + "jar"
     )
   }
   private def jarToSourcesJar(sourcesJar: Path): Path = {
     sourcesJar.resolveSibling(
-      sourcesJar.getFileName().toString().stripPrefix(".jar") + "-sources.jar"
+      sourcesJar.getFileName().toString().stripSuffix(".jar") + "-sources.jar"
     )
   }
 }

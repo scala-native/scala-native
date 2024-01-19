@@ -290,10 +290,10 @@ trait GenReflectiveInstantisation(using Context) {
     // initialising and returning an instance of the class, using C.
     for ((ctor, ctorIdx) <- ctors.zipWithIndex) {
       val ctorSig = genMethodSig(ctor)
-      val ctorArgsSig = ctorSig.args.map(_.mangle).mkString
       given nir.Position = ctor.span
+      val ctorSuffix = if (ctorIdx == 0) "" else s"$$$ctorIdx"
       given reflInstBuffer: ReflectiveInstantiationBuffer =
-        ReflectiveInstantiationBuffer(fqSymName.id + ctorArgsSig)
+        ReflectiveInstantiationBuffer(fqSymName.id + ctorSuffix)
 
       // Lambda generation consists of generating a class which extends
       // scala.runtime.AbstractFunction1, with an apply method that accepts

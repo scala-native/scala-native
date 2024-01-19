@@ -7,8 +7,9 @@ import dotty.tools.dotc.util.{SourceFile, SourcePosition}
 import dotty.tools.dotc.util.Spans.Span
 import scalanative.nir
 import scala.compiletime.uninitialized
+import java.nio.file.{Path, Paths}
 
-class NirPositions()(using Context) {
+class NirPositions(positionRelativizationPaths: Seq[Path])(using Context) {
   given fromSourcePosition: Conversion[SourcePosition, nir.Position] = {
     sourcePos =>
       sourceAndSpanToNirPos(sourcePos.source, sourcePos.span)
@@ -44,16 +45,24 @@ class NirPositions()(using Context) {
       lastNIRSource
     }
 
-    private val sourceRoot =
-      if !ctx.settings.sourcepath.isDefault
-      then ctx.settings.sourcepath.value
-      else ctx.settings.sourceroot.value
+    private val sourceRoot = Paths
+      .get(
+        if !ctx.settings.sourcepath.isDefault
+        then ctx.settings.sourcepath.value
+        else ctx.settings.sourceroot.value
+      )
+      .toAbsolutePath()
     private def convert(dotcSource: SourceFile): nir.SourceFile = {
       if dotcSource.file.isVirtual
       then nir.SourceFile.Virtual
-      else
-        val sourceRelativePath = SourceFile.relativePath(dotcSource, sourceRoot)
-        nir.SourceFile.SourceRootRelative(sourceRelativePath)
+      else {
+        val absSourcePath = dotcSource.file.absolute.jpath
+        val relativeTo = positionRelativizationPaths
+          .find(absSourcePath.startsWith(_))
+          .getOrElse(sourceRoot)
+          .toString()
+        nir.SourceFile.Relative(SourceFile.relativePath(dotcSource, relativeTo))
+      }
     }
   }
 }

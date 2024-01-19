@@ -1,7 +1,7 @@
 package scala.scalanative
 package nscplugin
 
-import java.nio.file.{Path => JPath}
+import java.nio.file.{Path => JPath, Paths => JPaths}
 import java.util.stream.{Stream => JStream}
 import java.util.function.{Consumer => JConsumer}
 import scala.collection.mutable
@@ -206,15 +206,14 @@ abstract class NirGenPhase[G <: Global with Singleton](override val global: G)
      *  It returns the absolute path of `source` if it is not contained in
      *  `reference`.
      */
-    def relativePath(source: CompilerSourceFile, reference: String): String = {
+    def relativePath(source: CompilerSourceFile, reference: JPath): String = {
       val file = source.file
       val jfile = file.file
       if (jfile eq null)
         file.path // repl and other custom tests use abstract files with no path
       else {
         val sourcePath = jfile.toPath.toAbsolutePath.normalize
-        val refPath =
-          java.nio.file.Paths.get(reference).toAbsolutePath.normalize
+        val refPath = reference.normalize
         if (sourcePath.startsWith(refPath)) {
           val path = refPath.relativize(sourcePath)
           import scala.collection.JavaConverters._
@@ -223,20 +222,26 @@ abstract class NirGenPhase[G <: Global with Singleton](override val global: G)
       }
     }
 
-    private val sourceRoot: String = {
-      val sourcePath = settings.sourcepath.value
-      if (sourcePath.isEmpty) settings.rootdir.value
-      else sourcePath
-    }
+    private val sourceRoot = JPaths
+      .get {
+        val sourcePath = settings.sourcepath.value
+        if (sourcePath.isEmpty) settings.rootdir.value
+        else sourcePath
+      }
+      .toAbsolutePath()
+
     private[this] def convert(
         nscSource: CompilerSourceFile
     ): nir.SourceFile = {
       if (nscSource.file.isVirtual) nir.SourceFile.Virtual
       else {
-        val sourceRelativePath = relativePath(nscSource, sourceRoot)
-        nir.SourceFile.SourceRootRelative(sourceRelativePath)
+        val absSourcePath = nscSource.file.absolute.file.toPath()
+        val relativeTo = scalaNativeOpts.positionRelativizationPaths
+          .find(absSourcePath.startsWith(_))
+          .map(_.toAbsolutePath())
+          .getOrElse(sourceRoot)
+        nir.SourceFile.Relative(relativePath(nscSource, relativeTo))
       }
-
     }
   }
 }

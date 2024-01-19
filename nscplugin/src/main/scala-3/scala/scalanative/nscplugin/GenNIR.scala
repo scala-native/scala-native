@@ -7,6 +7,7 @@ import core._
 import Contexts._
 
 import java.net.URI
+import java.nio.file.Path
 
 class GenNIR(settings: GenNIR.Settings) extends PluginPhase {
   val phaseName = GenNIR.name
@@ -28,6 +29,10 @@ object GenNIR {
        *  this option can be used to opt in. This is necessary for
        *  implementations of JDK classes.
        */
-      genStaticForwardersForNonTopLevelObjects: Boolean = false
+      genStaticForwardersForNonTopLevelObjects: Boolean = false,
+
+      /** List of paths usd for relativization of source file positions
+       */
+      positionRelativizationPaths: Seq[Path] = Nil
   )
 }

@@ -1,6 +1,6 @@
 package scala.scalanative.nscplugin
 
-import java.net.URI
+import java.nio.file.Path
 
 /** This trait allows to query all options to the ScalaNative Plugin
  *
@@ -16,4 +16,7 @@ trait ScalaNativeOptions {
    *  of JDK classes.
    */
   def genStaticForwardersForNonTopLevelObjects: Boolean
+
+  /** List of paths usd for relativization of source file positions */
+  def positionRelativizationPaths: Seq[Path]
 }
