@@ -76,7 +76,16 @@ abstract class PrepNativeInterop[G <: Global with Singleton](
       }
     }
 
-    override def transform(tree: Tree): Tree =
+    override def transform(tree: Tree): Tree = {
+      // Recursivly widen and dealias all nested types (compler dealiases only top-level)
+      def widenDealiasType(tpe0: Type): Type = {
+        val tpe =
+          if (tpe0.typeSymbol.isAbstract) tpe0.upperBound
+          else tpe0
+        val widened = tpe.dealiasWiden.map(_.dealiasWiden)
+        if (widened != tpe) widened.map(widenDealiasType(_))
+        else widened
+      }
       tree match {
         // Catch calls to Predef.classOf[T]. These should NEVER reach this phase
         // but unfortunately do. In normal cases, the typer phase replaces these
@@ -98,12 +107,19 @@ abstract class PrepNativeInterop[G <: Global with Singleton](
           // Replace call by literal constant containing type
           if (typer.checkClassTypeOrModule(tpeArg)) {
             val widenedTpe = tpeArg.tpe.dealias.widen
-            println("rewriting class of for" + widenedTpe)
             typer.typed { Literal(Constant(widenedTpe)) }
           } else {
             reporter.error(tpeArg.pos, s"Type ${tpeArg} is not a class type")
             EmptyTree
           }
+
+        case Apply(fun, args)
+            if isExternType(fun.symbol.owner) &&
+              fun.tpe.paramss.exists(isScalaVarArgs(_)) =>
+          args.foreach { arg =>
+            arg.updateAttachment(NonErasedType(widenDealiasType(arg.tpe)))
+          }
+          tree
 
         // Catch the definition of scala.Enumeration itself
         case cldef: ClassDef if cldef.symbol == EnumerationClass =>
@@ -188,7 +204,20 @@ abstract class PrepNativeInterop[G <: Global with Singleton](
         case _ =>
           super.transform(tree)
       }
+    }
   }
+
+  private def isExternType(sym: Symbol): Boolean = {
+    sym != null &&
+    (sym.isModuleClass || sym.isTraitOrInterface) &&
+    sym.annotations.exists(_.symbol == ExternAnnotationClass)
+  }
+
+  // Differs from ExternClass defined in NirDefinitions, but points to the same type
+  // At the phases of prepNativeInterop the symbol has different name
+  private lazy val ExternAnnotationClass = rootMirror.getRequiredClass(
+    "scala.scalanative.unsafe.extern"
+  )
 
   private def isScalaEnum(implDef: ImplDef) =
     implDef.symbol.tpe.typeSymbol isSubClass EnumerationClass

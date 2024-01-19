@@ -10,6 +10,8 @@ trait NirDefinitions {
   import rootMirror._
 
   object nirDefinitions {
+    case class NonErasedType(tpe: Type) extends PlainAttachment
+    case class NonErasedTypes(tpes: List[Type]) extends PlainAttachment
 
     // Native library
 

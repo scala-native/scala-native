@@ -23,48 +23,11 @@ object PrepNativeInterop {
   val name = "scalanative-prepareInterop"
 }
 
-class PrepNativeInterop extends PluginPhase {
+class PrepNativeInterop extends PluginPhase with NativeInteropUtil {
   override val runsAfter = Set(transform.PostTyper.name)
   override val runsBefore = Set(transform.Pickler.name)
   val phaseName = PrepNativeInterop.name
   override def description: String = "prepare ASTs for Native interop"
-
-  def defn(using Context): Definitions = ctx.definitions
-  def defnNir(using Context): NirDefinitions = NirDefinitions.get
-
-  private def isTopLevelExtern(dd: ValOrDefDef)(using Context) = {
-    dd.rhs.symbol == defnNir.UnsafePackage_extern &&
-    dd.symbol.isWrappedToplevelDef
-  }
-
-  extension (sym: Symbol)
-    def isTraitOrInterface(using Context): Boolean =
-      sym.is(Trait) || sym.isAllOf(JavaInterface)
-
-    def isScalaModule(using Context): Boolean =
-      sym.is(ModuleClass, butNot = Lifted)
-
-    def isExtern(using Context): Boolean = sym.exists && {
-      sym.owner.isExternType ||
-      sym.hasAnnotation(defnNir.ExternClass) ||
-      (sym.is(Accessor) && sym.field.isExtern)
-    }
-
-    def isExternType(using Context): Boolean =
-      (isScalaModule || sym.isTraitOrInterface) &&
-        sym.hasAnnotation(defnNir.ExternClass)
-
-    def isExported(using Context) =
-      sym.hasAnnotation(defnNir.ExportedClass) ||
-        sym.hasAnnotation(defnNir.ExportAccessorsClass)
-
-    /** `true` iff `sym` uses variadic arguments. */
-    def usesVariadicArgs(using Context) = sym.paramInfo.stripPoly match {
-      case MethodTpe(_, paramTypes, _) =>
-        paramTypes.exists(param => param.isRepeatedParam)
-      case t => t.isVarArgsMethod
-    }
-  end extension
 
   private val exportTargets = collection.mutable.Map.empty[Symbol, Symbol]
   override def runOn(
