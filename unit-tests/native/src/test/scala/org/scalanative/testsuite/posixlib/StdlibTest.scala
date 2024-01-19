@@ -32,51 +32,54 @@ class StdlibTest {
    * methods.
    */
 
-  @Test def testGetsubopt(): Unit = Zone { implicit z =>
-    val expectedNameValue = "SvantePääbo"
-    val expectedAccessValue = "ro"
+  @Test def testGetsubopt(): Unit = {
 
-    val optionp = stackalloc[CString](2)
+    if (!Platform.isWindows) Zone { implicit z =>
+      val expectedNameValue = "SvantePääbo"
+      val expectedAccessValue = "ro"
 
-    // optionp string must be mutable.
-    optionp(0) = toCString(
-      s"doNotFind,name=${expectedNameValue},access=${expectedAccessValue}"
-    )
-    // Last option, optionp(1) is already null, keep it that way.
+      val optionp = stackalloc[CString](2)
 
-    val tokens = stackalloc[CString](4)
+      // optionp string must be mutable.
+      optionp(0) = toCString(
+        s"doNotFind,name=${expectedNameValue},access=${expectedAccessValue}"
+      )
+      // Last option, optionp(1) is already null, keep it that way.
 
-    // Specification describes these as 'const'
-    tokens(0) = c"skip"
-    tokens(1) = c"access"
-    tokens(2) = c"name"
-    // Last token, tokens(3) is already null, keep it that way.
+      val tokens = stackalloc[CString](4)
 
-    val valuep = stackalloc[CString]()
+      // Specification describes these as 'const'
+      tokens(0) = c"skip"
+      tokens(1) = c"access"
+      tokens(2) = c"name"
+      // Last token, tokens(3) is already null, keep it that way.
 
-    // Options not in tokens are not found, even at index 0.
-    val status_1 = stdlib.getsubopt(optionp, tokens, valuep)
-    assertEquals("Should not have found first option", -1, status_1)
+      val valuep = stackalloc[CString]()
 
-    // Options with tokens are found, even at an index offset > 0.
-    val status_name = stdlib.getsubopt(optionp, tokens, valuep)
-    assertEquals("failed to get 'name' option", 2, status_name)
-    assertNotNull("'name' value is NULL", valuep)
-    assertEquals(
-      "Unexpected 'name' value",
-      expectedNameValue,
-      fromCString(valuep(0))
-    )
+      // Options not in tokens are not found, even at index 0.
+      val status_1 = stdlib.getsubopt(optionp, tokens, valuep)
+      assertEquals("Should not have found first option", -1, status_1)
 
-    // Do it again, to make sure pointer offsets are working properly.
-    val status_access = stdlib.getsubopt(optionp, tokens, valuep)
-    assertEquals("failed to get 'access' option", 1, status_access)
-    assertNotNull("'access' value is NULL", valuep)
-    assertEquals(
-      "Unexpected 'access' value",
-      expectedAccessValue,
-      fromCString(valuep(0))
-    )
+      // Options with tokens are found, even at an index offset > 0.
+      val status_name = stdlib.getsubopt(optionp, tokens, valuep)
+      assertEquals("failed to get 'name' option", 2, status_name)
+      assertNotNull("'name' value is NULL", valuep)
+      assertEquals(
+        "Unexpected 'name' value",
+        expectedNameValue,
+        fromCString(valuep(0))
+      )
+
+      // Do it again, to make sure pointer offsets are working properly.
+      val status_access = stdlib.getsubopt(optionp, tokens, valuep)
+      assertEquals("failed to get 'access' option", 1, status_access)
+      assertNotNull("'access' value is NULL", valuep)
+      assertEquals(
+        "Unexpected 'access' value",
+        expectedAccessValue,
+        fromCString(valuep(0))
+      )
+    }
   }
 
 }
