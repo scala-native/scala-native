@@ -5,7 +5,7 @@ import java.nio.file.Files
 import org.scalatest._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.flatspec.AnyFlatSpec
-
+import scala.scalanative.linker.StaticForwardersSuite.compileAndLoad
 import scala.scalanative.api.CompilationFailedException
 
 class NIRCompilerTest extends AnyFlatSpec with Matchers with Inspectors {
@@ -431,5 +431,62 @@ class NIRCompilerTest extends AnyFlatSpec with Matchers with Inspectors {
     |  final val bar = 42
     |}""".stripMargin
   })
+
+  it should "use unboxed types for extern var args" in {
+    compileAndLoad(
+      "Test.scala" ->
+        """import scala.scalanative.unsafe._
+          | 
+          |@extern object FFI {
+          |  def printf(format: CString, args: Any*): Unit = extern
+          |}
+          |
+          |object Test{
+          |  def main(): Unit = {
+          |    def string: Ptr[Byte] = ???
+          |    def int: Ptr[Int] = ???
+          |    def long: Ptr[Long] = ???
+          |    def float: Ptr[Float] = ???
+          |    FFI.printf(c"", !(string + 1), string, !int, !long, long, !float)
+          |  }
+          |}
+          |""".stripMargin
+    ) { defns =>
+      val TestModule = nir.Global.Top("Test$")
+      val MainMethod =
+        TestModule.member(nir.Sig.Method("main", Seq(nir.Type.Unit)))
+      val FFIModule = nir.Global.Top("FFI$")
+      val PrintfMethod = FFIModule.member(nir.Sig.Extern("printf"))
+      val callArgs: Seq[nir.Val] = defns
+        .collectFirst {
+          case nir.Defn.Define(_, MainMethod, _, insts) => insts
+        }
+        .flatMap {
+          _.collectFirst {
+            case nir.Inst.Let(
+                  _,
+                  nir.Op.Call(_, nir.Val.Global(PrintfMethod, _), args),
+                  _
+                ) =>
+              args
+          }
+        }
+        .headOption
+        .getOrElse {
+          fail("Not found either tested method or the extern calls"); ???
+        }
+      val expectedCallArgs = Seq(
+        nir.Type.Ptr, // format CString
+        nir.Type.Int, // byte extended to Int
+        nir.Type.Ptr, // Ptr[Byte]
+        nir.Type.Int, // int,
+        nir.Type.Long, // long
+        nir.Type.Ptr, // Ptr[Long]
+        nir.Type.Double // float extended to double
+      )
+
+      (expectedCallArgs.toList).shouldEqual(callArgs.map(_.ty).toList)
+    }
+  }
 
 }

@@ -18,7 +18,7 @@ class CVarArgTest {
     val buff: Ptr[CChar] = stackalloc[CChar](1024.toUInt)
     generator(buff, cstr)
     val got = fromCString(buff)
-    assertEquals(got, output)
+    assertEquals(output, got)
   }
 
   @Test def empty(): Unit =
@@ -250,11 +250,11 @@ class CVarArgTest {
     )
 
   @Test def longValue0(): Unit =
-    vatest(c"%d", "0")(stdio.sprintf(_, _, 0L))
+    vatest(c"%lld", "0")(stdio.sprintf(_, _, 0L))
   @Test def longValue1(): Unit =
-    vatest(c"%d", "1")(stdio.sprintf(_, _, 1L))
+    vatest(c"%lld", "1")(stdio.sprintf(_, _, 1L))
   @Test def longValueMinus1(): Unit =
-    vatest(c"%d", "-1")(stdio.sprintf(_, _, -1L))
+    vatest(c"%lld", "-1")(stdio.sprintf(_, _, -1L))
   @Test def longValueMin(): Unit = {
     vatest(c"%lld", "-9223372036854775808")(
       stdio.sprintf(_, _, java.lang.Long.MIN_VALUE)
@@ -266,31 +266,36 @@ class CVarArgTest {
     )
   }
   @Test def longArgs1(): Unit =
-    vatest(c"%d", "1")(stdio.sprintf(_, _, 1L))
+    vatest(c"%lld", "1")(stdio.sprintf(_, _, 1L))
   @Test def longArgs2(): Unit =
-    vatest(c"%d %d", "1 2")(stdio.sprintf(_, _, 1L, 2L))
+    vatest(c"%lld %lld", "1 2")(stdio.sprintf(_, _, 1L, 2L))
   @Test def longArgs3(): Unit =
-    vatest(c"%d %d %d", "1 2 3")(stdio.sprintf(_, _, 1L, 2L, 3L))
+    vatest(c"%lld %lld %lld", "1 2 3")(stdio.sprintf(_, _, 1L, 2L, 3L))
   @Test def longArgs4(): Unit =
-    vatest(c"%d %d %d %d", "1 2 3 4")(stdio.sprintf(_, _, 1L, 2L, 3L, 4L))
+    vatest(c"%lld %lld %lld %lld", "1 2 3 4")(
+      stdio.sprintf(_, _, 1L, 2L, 3L, 4L)
+    )
   @Test def longArgs5(): Unit =
-    vatest(c"%d %d %d %d %d", "1 2 3 4 5")(
+    vatest(c"%lld %lld %lld %lld %lld", "1 2 3 4 5")(
       stdio.sprintf(_, _, 1L, 2L, 3L, 4L, 5L)
     )
   @Test def longArgs6(): Unit =
-    vatest(c"%d %d %d %d %d %d", "1 2 3 4 5 6")(
+    vatest(c"%lld %lld %lld %lld %lld %lld", "1 2 3 4 5 6")(
       stdio.sprintf(_, _, 1L, 2L, 3L, 4L, 5L, 6L)
     )
   @Test def longArgs7(): Unit =
-    vatest(c"%d %d %d %d %d %d %d", "1 2 3 4 5 6 7")(
+    vatest(c"%lld %lld %lld %lld %lld %lld %lld", "1 2 3 4 5 6 7")(
       stdio.sprintf(_, _, 1L, 2L, 3L, 4L, 5L, 6L, 7L)
     )
   @Test def longArgs8(): Unit =
-    vatest(c"%d %d %d %d %d %d %d %d", "1 2 3 4 5 6 7 8")(
+    vatest(c"%lld %lld %lld %lld %lld %lld %lld %lld", "1 2 3 4 5 6 7 8")(
       stdio.sprintf(_, _, 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L)
     )
   @Test def longArgs9(): Unit =
-    vatest(c"%d %d %d %d %d %d %d %d %d", "1 2 3 4 5 6 7 8 9")(
+    vatest(
+      c"%lld %lld %lld %lld %lld %lld %lld %lld %lld",
+      "1 2 3 4 5 6 7 8 9"
+    )(
       stdio.sprintf(_, _, 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L)
     )
 
@@ -573,23 +578,23 @@ class CVarArgTest {
     vatest(c"%llu", "18446744073709551615")(stdio.sprintf(_, _, ULong.MaxValue))
   }
   @Test def ulongArgs1(): Unit =
-    vatest(c"%d", "1")(stdio.sprintf(_, _, 1.toULong))
+    vatest(c"%llu", "1")(stdio.sprintf(_, _, 1.toULong))
   @Test def ulongArgs2(): Unit =
-    vatest(c"%d %d", "1 2")(stdio.sprintf(_, _, 1.toULong, 2.toULong))
+    vatest(c"%llu %llu", "1 2")(stdio.sprintf(_, _, 1.toULong, 2.toULong))
   @Test def ulongArgs3(): Unit =
-    vatest(c"%d %d %d", "1 2 3")(
+    vatest(c"%llu %llu %llu", "1 2 3")(
       stdio.sprintf(_, _, 1.toULong, 2.toULong, 3.toULong)
     )
   @Test def ulongArgs4(): Unit =
-    vatest(c"%d %d %d %d", "1 2 3 4")(
+    vatest(c"%llu %llu %llu %llu", "1 2 3 4")(
       stdio.sprintf(_, _, 1.toULong, 2.toULong, 3.toULong, 4.toULong)
     )
   @Test def ulongArgs5(): Unit =
-    vatest(c"%d %d %d %d %d", "1 2 3 4 5")(
+    vatest(c"%llu %llu %llu %llu %llu", "1 2 3 4 5")(
       stdio.sprintf(_, _, 1.toULong, 2.toULong, 3.toULong, 4.toULong, 5.toULong)
     )
   @Test def ulongArgs6(): Unit =
-    vatest(c"%d %d %d %d %d %d", "1 2 3 4 5 6")(
+    vatest(c"%llu %llu %llu %llu %llu %llu", "1 2 3 4 5 6")(
       stdio.sprintf(
         _,
         _,
@@ -603,7 +608,7 @@ class CVarArgTest {
     )
   @Test def ulongArgs7(): Unit =
     vatest(
-      c"%d %d %d %d %d %d %d",
+      c"%llu %llu %llu %llu %llu %llu %llu",
       "1 2 3 4 5 6 7"
     )(
       stdio.sprintf(
@@ -620,7 +625,7 @@ class CVarArgTest {
     )
   @Test def ulongArgs8(): Unit =
     vatest(
-      c"%d %d %d %d %d %d %d %d",
+      c"%llu %llu %llu %llu %llu %llu %llu %llu",
       "1 2 3 4 5 6 7 8"
     )(
       stdio.sprintf(
@@ -638,7 +643,7 @@ class CVarArgTest {
     )
   @Test def ulongArgs9(): Unit =
     vatest(
-      c"%d %d %d %d %d %d %d %d %d",
+      c"%llu %llu %llu %llu %llu %llu %llu %llu %llu",
       "1 2 3 4 5 6 7 8 9"
     )(
       stdio.sprintf(

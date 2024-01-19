@@ -1492,11 +1492,17 @@ trait NirGenExpr(using Context) {
 
       def genArg(
           argp: Tree,
-          paramTpe: Types.Type
+          paramTpe: Types.Type,
+          isVarArg: Boolean = false
       ): nir.Val = {
         given nir.Position = argp.span
+        given ExprBuffer = buf
         val externType = genExternType(paramTpe.finalResultType)
-        val value = (genExpr(argp), Type.box.get(externType)) match {
+        val rawValue = genExpr(argp)
+        val maybeUnboxed =
+          if (isVarArg) ensureUnboxed(rawValue, paramTpe.finalResultType)
+          else rawValue
+        val value = (maybeUnboxed, Type.box.get(externType)) match {
           case (value @ Val.Null, Some(unboxedType)) =>
             externType match {
               case Type.Ptr | _: Type.RefKind => value
@@ -1522,8 +1528,11 @@ trait NirGenExpr(using Context) {
                 for tree <- seqLiteral.elems
                 do
                   given nir.Position = tree.span
-                  val arg = genArg(tree, tree.tpe)
-                  def isUnsigned = Type.isUnsignedType(genType(tree.tpe))
+                  val tpe = tree
+                    .getAttachment(NirDefinitions.NonErasedType)
+                    .getOrElse(tree.tpe)
+                  val arg = genArg(tree, tpe, isVarArg = true)
+                  def isUnsigned = Type.isUnsignedType(genType(tpe))
                   // Decimal varargs needs to be promoted to at least Int, and Float needs to be promoted to Double
                   val promotedArg = arg.ty match {
                     case Type.Float =>

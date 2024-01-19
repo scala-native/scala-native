@@ -11,11 +11,14 @@ import dotty.tools.backend.jvm.DottyPrimitives
 import scala.annotation.{threadUnsafe => tu}
 import dotty.tools.dotc.parsing.Scanners.IndentWidth.Run
 import dotty.tools.dotc.core.Definitions
+import dotty.tools.dotc.util.Property.StickyKey
 import NirGenUtil.ContextCached
 
 object NirDefinitions {
   private val cached = ContextCached(NirDefinitions())
   def get(using Context): NirDefinitions = cached.get
+  object NonErasedType extends StickyKey[Type]
+  object NonErasedTypes extends StickyKey[List[Type]]
 }
 
 // scalafmt: { maxColumn = 120}

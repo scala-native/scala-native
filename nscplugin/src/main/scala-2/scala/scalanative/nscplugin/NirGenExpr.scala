@@ -956,6 +956,35 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       }
     }
 
+    private def ensureUnboxed(
+        value: nir.Val,
+        tpeEnteringPosterasure: Type
+    )(implicit buf: ExprBuffer, pos: nir.Position): nir.Val = {
+      tpeEnteringPosterasure match {
+        case tpe if isPrimitiveValueType(tpe) =>
+          val targetTpe = genType(tpeEnteringPosterasure)
+          if (targetTpe == value.ty) value
+          else buf.unbox(genBoxType(tpe), value, nir.Next.None)
+
+        case tpe: ErasedValueType =>
+          val valueClass = tpe.valueClazz
+          val unboxMethod = treeInfo.ValueClass.valueUnbox(tpe)
+          val castedValue = buf.genCastOp(value.ty, genType(valueClass), value)
+          buf.genApplyMethod(
+            sym = unboxMethod,
+            statically = false,
+            self = castedValue,
+            argsp = Nil
+          )
+
+        case tpe =>
+          val unboxed = buf.unboxValue(tpe, partial = true, value)
+          if (unboxed == value) // no need to or cannot unbox, we should cast
+            buf.genCastOp(genType(tpeEnteringPosterasure), genType(tpe), value)
+          else unboxed
+      }
+    }
+
     // Compute a set of method symbols that SAM-generated class needs to implement.
     def functionMethodSymbols(tree: Function): Seq[Symbol] = {
       val funSym = tree.tpe.typeSymbolDirect
@@ -2451,11 +2480,17 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
       def genArg(
           argp: Tree,
-          paramTpe: global.Type
+          paramTpe: global.Type,
+          isVarArg: Boolean = false
       ): nir.Val = {
         implicit def pos: nir.Position = argp.pos
-        val externType = genExternType(paramTpe)
-        val value = (genExpr(argp), Type.box.get(externType)) match {
+        implicit def exprBuf: ExprBuffer = buf
+        val rawValue = genExpr(argp)
+        val maybeUnboxed =
+          if (isVarArg) ensureUnboxed(rawValue, paramTpe.finalResultType)
+          else rawValue
+        val externType = genExternType(paramTpe.finalResultType)
+        val value = (maybeUnboxed, Type.box.get(externType)) match {
           case (value @ Val.Null, Some(unboxedType)) =>
             externType match {
               case Type.Ptr | _: Type.RefKind => value
@@ -2481,10 +2516,15 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
                   implicit def pos: nir.Position = tree.pos
                   val sym = tree.symbol
                   val tpe =
-                    if (tree.symbol != null && tree.symbol.exists)
-                      tree.symbol.tpe.finalResultType
-                    else tree.tpe
-                  val arg = genArg(tree, tpe)
+                    tree.attachments
+                      .get[nirDefinitions.NonErasedType]
+                      .map(_.tpe)
+                      .getOrElse {
+                        if (tree.symbol != null && tree.symbol.exists)
+                          tree.symbol.tpe.finalResultType
+                        else tree.tpe
+                      }
+                  val arg = genArg(tree, tpe, isVarArg = true)
                   def isUnsigned = Type.isUnsignedType(genType(tpe))
                   // Decimal varargs needs to be promoted to at least Int, and float needs to be promoted to Double
                   val promotedArg = arg.ty match {
@@ -2494,7 +2534,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
                       val conv =
                         if (isUnsigned) nir.Conv.Zext
                         else nir.Conv.Sext
-                      buf.conv(conv, Type.Int, arg, unwind)
+                      buf.conv(conv, nir.Type.Int, arg, unwind)
                     case _ => arg
                   }
                   res += promotedArg
