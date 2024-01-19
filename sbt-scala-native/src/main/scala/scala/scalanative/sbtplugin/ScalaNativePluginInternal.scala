@@ -188,6 +188,9 @@ object ScalaNativePluginInternal {
    *  times per project.
    */
   def scalaNativeConfigSettings(testConfig: Boolean): Seq[Setting[_]] = Seq(
+    scalacOptions += s"-P:scalanative:positionRelativizationPaths:${sourceDirectories.value
+        .map(_.absString())
+        .mkString(";")}",
     nativeLinkReleaseFull := Def
       .task {
         val sbtLogger = streams.value.log

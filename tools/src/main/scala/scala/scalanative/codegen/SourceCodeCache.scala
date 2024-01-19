@@ -43,7 +43,7 @@ class SourceCodeCache(config: build.Config) {
   private val cwd = Paths.get(".").toRealPath()
 
   def findSources(
-      source: nir.SourceFile.SourceRootRelative,
+      source: nir.SourceFile.Relative,
       pos: nir.Position
   ): Option[Path] = {
     assert(

@@ -489,7 +489,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, nirSource: NIRSource) {
   def getPosition(): nir.Position = in(prelude.sections.positions) {
     val file = getString() match {
       case ""   => nir.SourceFile.Virtual
-      case path => nir.SourceFile.SourceRootRelative(path)
+      case path => nir.SourceFile.Relative(path)
     }
     val line = getLebUnsignedInt()
     val column = getLebUnsignedInt()

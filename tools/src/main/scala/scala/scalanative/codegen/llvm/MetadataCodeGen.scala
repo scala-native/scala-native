@@ -21,7 +21,7 @@ import scala.scalanative.linker.{
 import scala.scalanative.linker.ReachabilityAnalysis
 import scala.scalanative.util.ScopedVar
 import scala.scalanative.codegen.llvm.Metadata.conversions.optionWrapper
-import scala.scalanative.nir.SourceFile.SourceRootRelative
+import scala.scalanative.nir.SourceFile.Relative
 
 // scalafmt: { maxColumn = 100}
 trait MetadataCodeGen { self: AbstractCodeGen =>
@@ -210,8 +210,8 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
   def toDIFile(pos: nir.Position): DIFile = {
     pos.source
       .flatMap {
-        case source: SourceRootRelative => sourceCodeCache.findSources(source, pos)
-        case _                          => None
+        case source: Relative => sourceCodeCache.findSources(source, pos)
+        case _                => None
       }
       .map { sourcePath =>
         DIFile(

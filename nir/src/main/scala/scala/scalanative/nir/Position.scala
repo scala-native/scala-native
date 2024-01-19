@@ -45,12 +45,12 @@ object Position {
 sealed trait SourceFile {
   def filename: Option[String] = this match {
     case SourceFile.Virtual => None
-    case source: SourceFile.SourceRootRelative =>
+    case source: SourceFile.Relative =>
       Option(source.path.getFileName()).map(_.toString())
   }
   def directory: Option[String] = this match {
     case SourceFile.Virtual => None
-    case source: SourceFile.SourceRootRelative =>
+    case source: SourceFile.Relative =>
       Option(source.path.getParent()).map(_.toString())
   }
 }
@@ -65,7 +65,7 @@ object SourceFile {
    *    path relative to `-sourceroot` setting defined when compiling source -
    *    typically it's root directory of workspace
    */
-  case class SourceRootRelative(pathString: String) extends SourceFile {
+  case class Relative(pathString: String) extends SourceFile {
     lazy val path: Path = Paths.get(pathString)
   }
 }

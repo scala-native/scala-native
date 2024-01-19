@@ -81,8 +81,8 @@ final class BinarySerializer(channel: WritableByteChannel) {
     override def put(pos: nir.Position): Unit = {
       putString {
         pos.source match { // interned
-          case nir.SourceFile.Virtual                        => ""
-          case nir.SourceFile.SourceRootRelative(pathString) => pathString
+          case nir.SourceFile.Virtual              => ""
+          case nir.SourceFile.Relative(pathString) => pathString
         }
       }
       putLebUnsignedInt(pos.line)

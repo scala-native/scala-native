@@ -720,12 +720,12 @@ object Settings {
       libraryDependencies += "org.scala-lang" % libraryName % scalaVersion.value,
       fetchScalaSource / artifactPath :=
         baseDirectory.value.getParentFile / "target" / "scalaSources" / scalaVersion.value,
-      scalacOptions ++= Seq(
-        // Create nir.SourceFile relative to Scala sources dir instead of root dir
-        // It should use -sourcepath for both, but it fails to compile under Scala 2
-        if (scalaVersion.value.startsWith("2.")) "-rootdir" else "-sourcepath",
-        (fetchScalaSource / artifactPath).value.toString
-      ),
+      // Create nir.SourceFile relative to Scala sources dir instead of root dir
+      // It should use -sourcepath for both, but it fails to compile under Scala 2
+      scalacOptions ++=
+        scalaNativeCompilerOptions(
+          s"positionRelativizationPaths:${crossTarget.value / "patched"};${(fetchScalaSource / artifactPath).value}"
+        ),
       // Scala.js original comment modified to clarify issue is Scala.js.
       /* Work around for https://github.com/scala-js/scala-js/issues/2649
        * We would like to always use `update`, but

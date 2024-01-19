@@ -3,8 +3,7 @@ package nscplugin
 
 import scala.tools.nsc._
 import scala.tools.nsc.plugins._
-import java.net.URI
-import java.net.URISyntaxException
+import java.nio.file.{Path, Paths}
 
 class ScalaNativePlugin(val global: Global) extends Plugin {
   val name = "scalanative"
@@ -25,6 +24,8 @@ class ScalaNativePlugin(val global: Global) extends Plugin {
 
   object scalaNativeOpts extends ScalaNativeOptions {
     var genStaticForwardersForNonTopLevelObjects: Boolean = false
+
+    var positionRelativizationPaths: Seq[Path] = Nil
   }
 
   object prepNativeInterop extends PrepNativeInterop[global.type](global) {
@@ -48,6 +49,16 @@ class ScalaNativePlugin(val global: Global) extends Plugin {
     options.foreach {
       case "genStaticForwardersForNonTopLevelObjects" =>
         genStaticForwardersForNonTopLevelObjects = true
+
+      case opt if opt.startsWith("positionRelativizationPaths:") =>
+        positionRelativizationPaths = {
+          positionRelativizationPaths ++ opt
+            .stripPrefix("positionRelativizationPaths:")
+            .split(';')
+            .map(Paths.get(_))
+            .filter(_.isAbsolute())
+        }.distinct.sortBy(-_.getNameCount())
+
       case opt if opt.startsWith("mapSourceURI:") =>
         global.reporter.warning(
           global.NoPosition,
@@ -65,6 +76,12 @@ class ScalaNativePlugin(val global: Global) extends Plugin {
       |     Generate static forwarders for non-top-level objects.
       |     This option should be used by codebases that implement JDK classes.
       |     When used together with -Xno-forwarders, this option has no effect.
+      |  -P:$name:positionRelativizationPaths
+      |     Change the source file positions in generated outputs based on list of provided paths.
+      |     It would strip the prefix of the source file if it matches given path.
+      |     Non-absolute paths would be ignored.
+      |     Multiple paths should be seperated by a single semicolon ';' character.
+      |     If none of the patches matches path would be relative to -sourcepath if defined or -sourceroot otherwise.
       """.stripMargin)
 
 }
