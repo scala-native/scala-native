@@ -10,10 +10,9 @@ import scala.annotation.tailrec
 import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.libc._
 import scala.scalanative.libc.stdio._
-import scala.scalanative.libc.stdlib._
 import scala.scalanative.libc.string._
 import scala.scalanative.nio.fs.FileHelpers
-import scala.scalanative.posix
+import scala.scalanative.posix.stdlib._
 import scala.scalanative.posix.sys.stat
 import scala.scalanative.posix.unistd._
 import scala.scalanative.posix.{limits, unistd, utime}
@@ -300,7 +299,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
       fromCWideString(resolvedName, StandardCharsets.UTF_16LE)
     } else {
       val resolvedName: Ptr[Byte] = alloc[Byte](limits.PATH_MAX)
-      if (posix.stdlib.realpath(toCString(path), resolvedName) == null) {
+      if (realpath(toCString(path), resolvedName) == null) {
         throw new IOException(
           s"realpath can't resolve: ${fromCString(resolvedName)}"
         )
