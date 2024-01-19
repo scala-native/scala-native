@@ -10,15 +10,16 @@ import scala.scalanative.unsigned._
 
 import scala.scalanative.posix.stdlib
 
+import scala.scalanative.meta.LinktimeInfo
 import org.scalanative.testsuite.utils.Platform
 
 object StdlibTest {
 
   @BeforeClass
   def beforeClass(): Unit = {
-    assumeTrue(
+    assumeFalse(
       "posixlib stdlib.scala is not implemented on Windows",
-      !Platform.isWindows
+      Platform.isWindows
     )
   }
 }
@@ -34,7 +35,7 @@ class StdlibTest {
 
   @Test def testGetsubopt(): Unit = {
 
-    if (!Platform.isWindows) Zone { implicit z =>
+    if (!LinktimeInfo.isWindows) Zone { implicit z =>
       val expectedNameValue = "SvantePääbo"
       val expectedAccessValue = "ro"
 
