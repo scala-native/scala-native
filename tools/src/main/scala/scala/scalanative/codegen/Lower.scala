@@ -594,10 +594,15 @@ object Lower {
           throw new LinkingException(s"Metadata for field '$name' not found")
       }
 
+      // No explicit memory order for load of final field,
+      // all final fields are loaded after a acquire fence
       val memoryOrder =
         if (field.attrs.isVolatile) nir.MemoryOrder.SeqCst
-        else if (field.attrs.isFinal) nir.MemoryOrder.Acquire
         else nir.MemoryOrder.Unordered
+
+      // Acquire memory fence before loading a final field
+      if (field.attrs.isFinal) buf.fence(nir.MemoryOrder.Acquire)
+
       val elem = genFieldElemOp(buf, genVal(buf, obj), name)
       genLoadOp(buf, n, nir.Op.Load(ty, elem, Some(memoryOrder)))
     }
