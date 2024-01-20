@@ -3,7 +3,7 @@ package org.scalanative.testsuite.posixlib
 import org.junit.Test
 import org.junit.Assert._
 import org.junit.Assume._
-import org.junit.{Before, After}
+import org.junit.{BeforeClass, AfterClass}
 
 import scala.scalanative.meta.LinktimeInfo.{isLinux, isWindows}
 
@@ -16,14 +16,16 @@ import scala.scalanative.posix.localeOps._
 import scala.scalanative.posix.stdlib
 import scala.scalanative.posix.string
 
-class LocaleTest {
-
-  // See also MonetaryTest.scala where number of locale methods are exercised.
-
+object LocaleTest {
   var savedLocale: Option[CString] = None
 
-  @Before
-  def before(): Unit = {
+  @BeforeClass
+  def beforeClass(): Unit = {
+    assumeTrue(
+      "locale.scala is not implemented on Windows",
+      !isWindows
+    )
+
     if (!isWindows) {
       val entryLocale = setlocale(LC_ALL, null)
       assertNotNull(
@@ -49,8 +51,8 @@ class LocaleTest {
     }
   }
 
-  @After
-  def after(): Unit = {
+  @AfterClass
+  def afterClass(): Unit = {
     if (!isWindows) {
       savedLocale.map { sl =>
         errno = 0
@@ -64,12 +66,15 @@ class LocaleTest {
       }
     }
   }
+}
+
+// See also MonetaryTest.scala where number of locale methods are exercised.
+
+class LocaleTest {
+
+  import LocaleTest.savedLocale
 
   @Test def localeconv_Using_en_US(): Unit = {
-    assumeTrue(
-      "locale.scala is not implemented on Windows",
-      !isWindows
-    )
 
     // Multi-arch CI tests do not have an en_US locale; warn not fail
     assumeTrue(

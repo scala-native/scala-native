@@ -22,14 +22,17 @@ import scala.scalanative.windows.ErrorHandlingApi._
 import org.junit.Test
 import org.junit.Assert._
 import org.junit.Assume._
-import org.junit.Before
+import org.junit.BeforeClass
 
-class UdpSocketTest {
-  @Before
-  def before(): Unit = {
+object UdpSocketTest {
+  @BeforeClass
+  def beforeClass(): Unit = {
     val isIPv4Available = hasLoopbackAddress(AF_INET, SOCK_DGRAM, IPPROTO_UDP)
     assumeTrue("IPv4 UDP loopback is not available", isIPv4Available)
   }
+}
+
+class UdpSocketTest {
 
   @Test def sendtoRecvfrom(): Unit = Zone { implicit z =>
     if (isWindows) {

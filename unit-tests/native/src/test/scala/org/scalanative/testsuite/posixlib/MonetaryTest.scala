@@ -3,7 +3,7 @@ package org.scalanative.testsuite.posixlib
 import org.junit.Test
 import org.junit.Assert._
 import org.junit.Assume._
-import org.junit.Before
+import org.junit.BeforeClass
 
 import scala.scalanative.meta.LinktimeInfo.isWindows
 
@@ -20,15 +20,18 @@ import scala.scalanative.posix.errno.errno
 import scala.scalanative.posix.locale._
 import scala.scalanative.posix.monetary._
 
-class MonetaryTest {
+object MonetaryTest {
 
-  @Before
-  def before(): Unit = {
+  @BeforeClass
+  def beforeClass(): Unit = {
     assumeTrue(
       "monetary.scala is not implemented on Windows",
       !isWindows
     )
   }
+}
+
+class MonetaryTest {
 
   @Test def strfmon_l_Using_en_US(): Unit =
     if (!isWindows) {

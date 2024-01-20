@@ -26,15 +26,16 @@ import org.scalanative.testsuite.utils.Platform
 import org.junit.Test
 import org.junit.Assert._
 import org.junit.Assume._
-import org.junit.Before
+import org.junit.BeforeClass
 
 /** Exercise the POSIX socket.h sendmsg and recvmg routines.
  *
  *  Those functions do not exist on Windows.
  */
-class MsgIoSocketTest {
 
-  @Before
+object MsgIoSocketTest {
+
+  @BeforeClass
   def before(): Unit = {
     val isIPv4Available = hasLoopbackAddress(AF_INET, SOCK_DGRAM, IPPROTO_UDP)
     assumeTrue("IPv4 UDP loopback is not available", isIPv4Available)
@@ -44,7 +45,9 @@ class MsgIoSocketTest {
       !isWindows
     )
   }
+}
 
+class MsgIoSocketTest {
   /* Percy Bysshe Shelly - Ozymandias - 1818
    * This poem is in the public domain.
    *

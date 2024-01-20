@@ -3,7 +3,7 @@ package org.scalanative.testsuite.posixlib
 import org.junit.Test
 import org.junit.Assert._
 import org.junit.Assume._
-import org.junit.Before
+import org.junit.BeforeClass
 
 import java.io.IOException
 
@@ -26,23 +26,27 @@ import scala.scalanative.unsigned._
 import scala.scalanative.posix.time._
 import scala.scalanative.posix.timeOps.{timespecOps, tmOps}
 
-class TimeTest {
-  @Before
-  def before(): Unit = {
-    tzset()
+object TimeTest {
 
-    /* Many tests below use the "if (!isWindows)" idiom rather than one
-     * obvious and simpler, but wrong, assumption here:
-     *     assumeFalse("POSIX tests are not run on Windows", isWindows)
-     *
-     * The reason is that "isWindows" is a link time option which avoids
-     * linking "!isWindows" code. "assumeFalse()" is executed at runtime,
-     * after the link on Windows fails from missing symbols.
-     *
-     * A motivated developer could arrange for POSIX tests never to be
-     * compiled at all on Windows. A bigger task than today allows.
-     */
+  @BeforeClass
+  def beforeClass(): Unit = {
+    tzset()
   }
+}
+
+class TimeTest {
+
+  /* Many tests below use the "if (!isWindows)" idiom rather than one
+   * obvious and simpler, but wrong, assumption here:
+   *     assumeFalse("POSIX tests are not run on Windows", isWindows)
+   *
+   * The reason is that "isWindows" is a link time option which avoids
+   * linking "!isWindows" code. "assumeFalse()" is executed at runtime,
+   * after the link on Windows fails from missing symbols.
+   *
+   * A motivated developer could arrange for POSIX tests never to be
+   * compiled at all on Windows. A bigger task than today allows.
+   */
 
   // Note: both alloc & stackalloc clears allocated memory.
 
