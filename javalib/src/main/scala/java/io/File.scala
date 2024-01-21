@@ -10,9 +10,9 @@ import scala.annotation.tailrec
 import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.libc._
 import scala.scalanative.libc.stdio._
-import scala.scalanative.libc.stdlib._
 import scala.scalanative.libc.string._
 import scala.scalanative.nio.fs.FileHelpers
+import scala.scalanative.posix.stdlib._
 import scala.scalanative.posix.sys.stat
 import scala.scalanative.posix.unistd._
 import scala.scalanative.posix.{limits, unistd, utime}

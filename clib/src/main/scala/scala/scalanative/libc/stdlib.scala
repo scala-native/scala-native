@@ -75,10 +75,6 @@ import scalanative.unsafe._
       comparator: CFuncPtr2[Ptr[Byte], Ptr[Byte], CInt]
   ): Unit = extern
 
-  // File management
-
-  def realpath(file_name: CString, resolved_name: CString): CString = extern
-
   // Macros
 
   @name("scalanative_exit_success")
