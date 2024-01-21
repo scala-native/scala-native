@@ -3,39 +3,72 @@ package org.scalanative.testsuite.posixlib
 import org.junit.Test
 import org.junit.Assert._
 import org.junit.Assume._
-import org.junit.{Before, After}
-import scala.scalanative.posix.limits
-import scala.scalanative.meta.LinktimeInfo.{isLinux, isWindows}
+import org.junit.BeforeClass
 
-import scala.scalanative.libc.stdio
+// import scala.scalanative.meta.LinktimeInfo.{isLinux, isWindows}
+import scala.scalanative.meta.LinktimeInfo.isWindows
+
+import java.nio.file.{Files, Path}
+
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
 
-import scala.scalanative.posix.errno
-import scala.scalanative.posix.fcntl
+import scala.scalanative.posix.errno.errno
+import scala.scalanative.posix.stdlib.mkstemp
+import scala.scalanative.posix.string.strerror
 import scala.scalanative.posix.sys.stat
-import scala.scalanative.posix.unistd
+
+object StatTest {
+  private var workDirString: String = _
+
+  /* It would be nice someday to have a @AfterClass which cleaned up
+   * after a successful Test run by deleting the files created by the Test.
+   * There would probably need to be a debug configuration toggle to always
+   * leave the file in place, successful or not
+   */
+
+  @BeforeClass
+  def beforeClass(): Unit = {
+    if (!isWindows) {
+      val orgDir = Files.createTempDirectory("scala-native-testsuite")
+      val posixlibDir = orgDir.resolve("posixlib")
+      workDirString = Files
+        .createDirectories(posixlibDir.resolve("StatTest"))
+        .toString()
+    }
+  }
+}
 
 class StatTest {
+  import StatTest.workDirString
 
   @Test def fileStatTest(): Unit = if (!isWindows) {
     Zone { implicit z =>
       import scala.scalanative.posix.sys.statOps.statOps
-      val partSize = limits.PATH_MAX.toUInt
-      val buf: CString = alloc[Byte](partSize)
-      val tmpname = stdio.tmpnam(buf)
-      val fd = fcntl.open(tmpname, fcntl.O_CREAT)
-      val statFromPath = alloc[stat.stat]()
+
+      // Note: tmpname template gets modified by a successful mkstemp().
+      val tmpname = toCString(s"${workDirString}/StatTestFileXXXXXX")
+      val fd = mkstemp(tmpname)
+
+      assertTrue(
+        s"failed to create ${fromCString(tmpname)}:" +
+          s" ${fromCString(strerror(errno))}",
+        fd > -1
+      )
+
+      val statFromPath = stackalloc[stat.stat]()
       val code = stat.stat(tmpname, statFromPath)
       assertEquals(
-        s"failed to get stat from $tmpname, errno = ${errno.errno}",
+        s"failed to get stat from ${fromCString(tmpname)}:" +
+          s" ${fromCString(strerror(errno))}",
         0,
         code
       )
-      val statFromFd = alloc[stat.stat]()
+      val statFromFd = stackalloc[stat.stat]()
       val code0 = stat.fstat(fd, statFromFd)
       assertEquals(
-        s"failed to get stat from fd $fd of $tmpname, errno = ${errno.errno}",
+        s"failed to get stat from fd $fd of ${fromCString(tmpname)}:" +
+          s" ${fromCString(strerror(errno))}",
         0,
         code0
       )
@@ -168,10 +201,27 @@ class StatTest {
         stat.S_ISSOCK(statFromPath.st_mode)
       )
 
-      val dirnamebuf: CString = alloc[Byte](partSize)
-      val tmpdirname = stdio.tmpnam(dirnamebuf)
+      /* Note well:
+       *   This _exactly_ the classic "tmpnam()" race discussion that
+       *   lead to that function being deprecated.
+       *
+       *   The objective here is to exercise stat.mkdir(), so mkdtemp() is
+       *   not appropriate.
+       *
+       *   The chance of two concurrent executions of StatTest trying to
+       *   create the exact same directory are reduced/avoided in this code
+       *   by having the almost-top level orgDir be created as a temporary
+       *   file. Different StatTest instances should be always using different
+       *   working directories.
+       *
+       *   If experience demands, one could also create the posixlibDir
+       *   and workDir as temporary directories.
+       */
+
+      val tmpdirname = toCString(s"${workDirString}/StatTestDir")
       val dirFd = stat.mkdir(tmpdirname, Integer.parseInt("0777", 8).toUInt)
-      val dirStatFromPath = alloc[stat.stat]()
+
+      val dirStatFromPath = stackalloc[stat.stat]()
       val dircode = stat.stat(tmpdirname, dirStatFromPath)
       assertEquals(0, dircode)
       assertEquals(
