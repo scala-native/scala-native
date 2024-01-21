@@ -23,6 +23,7 @@ import scala.scalanative.posix.netdb._
 import scala.scalanative.posix.netdbOps._
 import scala.scalanative.posix.string.{memcpy, strerror}
 import scala.scalanative.posix.sys.socket._
+import scala.scalanative.posix.sys.socketOps._
 import scala.scalanative.posix.time.{time_t, time, difftime}
 import scala.scalanative.posix.unistd
 
@@ -215,61 +216,8 @@ object InetAddress {
      * to leave the host field blank/empty.
      */
     val effectiveHost = if (isNumeric) null else host
+    SocketHelpers.sockaddrToInetAddress(addrinfoP.ai_addr, effectiveHost)
 
-    if (addrinfoP.ai_family == AF_INET) {
-      new Inet4Address(addrinfoToByteArray(addrinfoP), effectiveHost)
-    } else if (addrinfoP.ai_family == AF_INET6) {
-      val addr = addrinfoP.ai_addr.asInstanceOf[Ptr[sockaddr_in6]]
-      val addrBytes = addr.sin6_addr.at1.at(0).asInstanceOf[Ptr[Byte]]
-
-      // Scala JVM down-converts even when preferIPv6Addresses is "true"
-      if (isIPv4MappedAddress(addrBytes)) {
-        new Inet4Address(extractIP4Bytes(addrBytes), effectiveHost)
-      } else {
-        /* Yes, Java specifies Int for scope_id in a way which disallows
-         * some values POSIX/IEEE/IETF allows.
-         */
-
-        val scope_id = addr.sin6_scope_id.toInt
-
-        /* Be aware some trickiness here.
-         * Java treats a 0 scope_id (qua NetworkInterface index)
-         * as having been not supplied.
-         * Exactly the same 0 scope_id explicitly passed to
-         * Inet6Address.getByAddress() is considered supplied and
-         * displayed as such.
-         */
-
-        if (scope_id == 0)
-          Inet6Address(addrinfoToByteArray(addrinfoP), effectiveHost)
-        else
-          Inet6Address.getByAddress(
-            effectiveHost,
-            addrinfoToByteArray(addrinfoP),
-            scope_id
-          )
-      }
-    } else {
-      val af = addrinfoP.ai_family
-      throw new IOException(
-        s"The requested address family is not supported: ${af}."
-      )
-    }
-  }
-
-  private def addrinfoToByteArray(
-      addrinfoP: Ptr[addrinfo]
-  ): Array[Byte] = {
-    SocketHelpers.sockaddrToByteArray(addrinfoP.ai_addr)
-  }
-
-  private def extractIP4Bytes(pb: Ptr[Byte]): Array[Byte] = {
-    val buf = new Array[Byte](4)
-    buf(0) = pb(12)
-    buf(1) = pb(13)
-    buf(2) = pb(14)
-    buf(3) = pb(15)
-    buf
   }
 
   private def formatIn4Addr(pb: Ptr[Byte]): String = {
