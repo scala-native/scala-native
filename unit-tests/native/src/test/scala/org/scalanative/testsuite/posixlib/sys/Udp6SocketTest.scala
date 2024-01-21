@@ -27,11 +27,12 @@ import org.scalanative.testsuite.utils.Platform
 import org.junit.Test
 import org.junit.Assert._
 import org.junit.Assume._
-import org.junit.Before
+import org.junit.BeforeClass
 
-class Udp6SocketTest {
-  @Before
-  def before(): Unit = {
+object Udp6SocketTest {
+
+  @BeforeClass
+  def beforeClass(): Unit = {
     assumeTrue(
       "IPv6 UDP loopback is not available",
       hasLoopbackAddress(AF_INET6, SOCK_DGRAM, IPPROTO_UDP)
@@ -63,6 +64,9 @@ class Udp6SocketTest {
       )
     }
   }
+}
+
+class Udp6SocketTest {
 
   private def formatIn6addr(addr: in6_addr): String = Zone { implicit z =>
     val dstSize = INET6_ADDRSTRLEN + 1

@@ -21,16 +21,12 @@ import scalanative.meta.LinktimeInfo.isWindows
 import org.junit.Test
 import org.junit.Assert._
 import org.junit.Assume._
-import org.junit.Before
+import org.junit.BeforeClass
 
-class UioTest {
-  /* writev() & readv() also work with files. Using sockets here makes
-   * it easier to eventually create a unit-test for socket-only methods
-   * sendmsg() & recvmsg() and to highlight the parallels.
-   */
+object UioTest {
 
-  @Before
-  def before(): Unit = {
+  @BeforeClass
+  def beforeClass(): Unit = {
     assumeTrue(
       "POSIX uio writev() & readv() are not available on Windows",
       !isWindows
@@ -39,6 +35,13 @@ class UioTest {
     val isIPv4Available = hasLoopbackAddress(AF_INET, SOCK_DGRAM, IPPROTO_UDP)
     assumeTrue("IPv4 UDP loopback is not available", isIPv4Available)
   }
+}
+
+class UioTest {
+  /* writev() & readv() also work with files. Using sockets here makes
+   * it easier to eventually create a unit-test for socket-only methods
+   * sendmsg() & recvmsg() and to highlight the parallels.
+   */
 
   private def getConnectedUdp4LoopbackSockets()(implicit
       z: Zone
