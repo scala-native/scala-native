@@ -3,6 +3,8 @@ package java.net
 import scala.scalanative.unsigned._
 import scala.scalanative.unsafe._
 
+import java.io.IOException
+
 import scala.scalanative.posix.arpa.inet
 import scala.scalanative.posix.{netdb, netdbOps}, netdb._, netdbOps._
 import scala.scalanative.posix.netinet.{in, inOps}, in._, inOps._
@@ -137,6 +139,60 @@ object SocketHelpers {
     (ptrInt(2) == 0xffff0000) && (ptrLong(0) == 0x0L)
   }
 
+  /* Fill in the given sockaddr_in6 with the given InetAddress, either
+   * Inet4Address or Inet6Address, and the given port.
+   * Set the af_family for IPv6.  On return, the sockaddr_in6 should
+   * be ready to use in bind() or connect().
+   *
+   * By contract, all the bytes in sa6 are zero coming in.
+   */
+  private[net] def prepareSockaddrIn6(
+      inetAddress: InetAddress,
+      port: Int,
+      sa6: Ptr[in.sockaddr_in6]
+  ): Unit = {
+
+    /* BEWARE: This is Unix-only code.
+     *   Currently (2022-08-27) execution on Windows never get here. IPv4Only
+     *   is forced on.  If that ever changes, this method may need
+     *   Windows code.
+     *
+     *   Having the complexity in one place, it should make adding
+     *   Windows support easier.
+     */
+
+    sa6.sin6_family = AF_INET6.toUShort
+    sa6.sin6_port = inet.htons(port.toUShort)
+
+    val src = inetAddress.getAddress()
+
+    if (inetAddress.isInstanceOf[Inet6Address]) {
+      val from = src.asInstanceOf[scala.scalanative.runtime.Array[Byte]].at(0)
+      val dst = sa6.sin6_addr.at1.at(0).asInstanceOf[Ptr[Byte]]
+      memcpy(dst, from, 16.toUInt)
+
+      sa6.sin6_scope_id = inetAddress
+        .asInstanceOf[Inet6Address]
+        .getScopeId()
+        .toUShort
+    } else { // Use IPv4mappedIPv6 address
+      // IPv4 addresses do not have a scope_id, so leave at current value 0
+
+      val dst = sa6.sin6_addr.toPtr.s6_addr
+
+      // By contract, the leading bytes are already zero already.
+      val FF = 255.toUByte
+      dst(10) = FF // set the IPv4mappedIPv6 indicator bytes
+      dst(11) = FF
+
+      // add the IPv4 trailing bytes, unrolling small loop
+      dst(12) = src(0).toUByte
+      dst(13) = src(1).toUByte
+      dst(14) = src(2).toUByte
+      dst(15) = src(3).toUByte
+    }
+  }
+
   private[net] def sockaddrToByteArray(sockAddr: Ptr[sockaddr]): Array[Byte] = {
     val af = sockAddr.sa_family.toInt
     val (src, size) = if (af == AF_INET6) {
@@ -174,10 +230,92 @@ object SocketHelpers {
     inet.ntohs(inPort).toInt
   }
 
+  private def extractIP4Bytes(pb: Ptr[Byte]): Array[Byte] = {
+    val buf = new Array[Byte](4)
+    buf(0) = pb(12)
+    buf(1) = pb(13)
+    buf(2) = pb(14)
+    buf(3) = pb(15)
+    buf
+  }
+
+  /* The goal is to have a single implementation of InetAddress class &
+   * subclass creation that can be used by InetAddress.scala and
+   * NetworkInterface.scala, by way of sockaddrStorageToInetSocketAddress().
+   *
+   * One would expect such a routine to be in InetAddress.scala
+   * to make the creation of Inet4Address & Inet6Address instances
+   * simpler and have better performance.
+   *
+   * test-runtime compiles & executes across many versions using that
+   * scheme.  Unfortunately, test-scripted on Scala 2.12 (and possibly
+   * other versions) fails to compile the java-net-socket test.
+   * Good design wrecked upon the rocks of hard reality.
+   */
+
+  private[net] def sockaddrToInetAddress(
+      sin: Ptr[sockaddr],
+      host: String
+  ): InetAddress = {
+
+    if (sin.sa_family == AF_INET) {
+      InetAddress.getByAddress(host, SocketHelpers.sockaddrToByteArray(sin))
+    } else if (sin.sa_family == AF_INET6) {
+      val sin6 = sin.asInstanceOf[Ptr[sockaddr_in6]]
+      val addrBytes = sin6.sin6_addr.at1.at(0).asInstanceOf[Ptr[Byte]]
+
+      // Scala JVM down-converts even when preferIPv6Addresses is "true"
+      /* 2024-01-21 10:16 -0500
+       * Yes this is still astonishing but true. Not just a trick of
+       * output formatting.
+       *
+       * Using scala.cli
+       *
+       * scala> import
+       * scala> val ia1 = InetAddress.getByName("::FFFF:127.0.0.1")
+       * val ia1: java.net.InetAddress = /127.0.0.1
+       * scala> ia1.isInstanceOf[Inet4Address]
+       * val res0: Boolean = true
+       */
+      if (isIPv4MappedAddress(addrBytes)) {
+        InetAddress.getByAddress(host, extractIP4Bytes(addrBytes))
+      } else {
+        /* Yes, Java specifies Int for scope_id in a way which disallows
+         * some values POSIX/IEEE/IETF allows.
+         */
+
+        val scope_id = sin6.sin6_scope_id.toInt
+
+        /* Be aware some trickiness here.
+         * Java treats a 0 scope_id (qua NetworkInterface index)
+         * as having been not supplied.
+         * Exactly the same 0 scope_id explicitly passed to
+         * Inet6Address.getByAddress() is considered supplied and
+         * displayed as such.
+         */
+
+        // Keep address bytes passed in immutable, get new Array.
+        val clonedBytes = SocketHelpers.sockaddrToByteArray(sin)
+        if (scope_id == 0)
+          InetAddress.getByAddress(host, clonedBytes)
+        else
+          Inet6Address.getByAddress(
+            host,
+            clonedBytes,
+            scope_id
+          )
+      }
+    } else {
+      throw new IOException(
+        s"The requested address family is not supported: ${sin.sa_family}."
+      )
+    }
+  }
+
   private[net] def sockaddrStorageToInetSocketAddress(
       sockAddr: Ptr[sockaddr]
   ): InetSocketAddress = {
-    val addr = InetAddress.getByAddress(sockaddrToByteArray(sockAddr))
+    val addr = sockaddrToInetAddress(sockAddr, "")
     val port = sockddrToPort(sockAddr)
     new InetSocketAddress(addr, port)
   }

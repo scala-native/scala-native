@@ -119,53 +119,6 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
     }
   }
 
-  /* Fill in the given sockaddr_in6 with the given InetAddress, either
-   * Inet4Address or Inet6Address, and the given port.
-   * Set the af_family for IPv6.  On return, the sockaddr_in6 should
-   * be ready to use in bind() or connect().
-   *
-   * By contract, all the bytes in sa6 are zero coming in.
-   */
-  private def prepareSockaddrIn6(
-      inetAddress: InetAddress,
-      port: Int,
-      sa6: Ptr[in.sockaddr_in6]
-  ): Unit = {
-
-    /* BEWARE: This is Unix-only code.
-     *   Currently (2022-08-27) execution on Windows never get here. IPv4Only
-     *   is forced on.  If that ever changes, this method may need
-     *   Windows code.
-     *
-     *   Having the complexity in one place, it should make adding
-     *   Windows support easier.
-     */
-
-    sa6.sin6_family = posix.sys.socket.AF_INET6.toUShort
-    sa6.sin6_port = inet.htons(port.toUShort)
-
-    val src = inetAddress.getAddress()
-
-    if (inetAddress.isInstanceOf[Inet6Address]) {
-      val from = src.asInstanceOf[scala.scalanative.runtime.Array[Byte]].at(0)
-      val dst = sa6.sin6_addr.at1.at(0).asInstanceOf[Ptr[Byte]]
-      memcpy(dst, from, 16.toUInt)
-    } else { // Use IPv4mappedIPv6 address
-      val dst = sa6.sin6_addr.toPtr.s6_addr
-
-      // By contract, the leading bytes are already zero already.
-      val FF = 255.toUByte
-      dst(10) = FF // set the IPv4mappedIPv6 indicator bytes
-      dst(11) = FF
-
-      // add the IPv4 trailing bytes, unrolling small loop
-      dst(12) = src(0).toUByte
-      dst(13) = src(1).toUByte
-      dst(14) = src(2).toUByte
-      dst(15) = src(3).toUByte
-    }
-  }
-
   private def bind4(addr: InetAddress, port: Int): Unit = {
     val hints = stackalloc[addrinfo]()
     val sa4Ptr = stackalloc[Ptr[addrinfo]]()
@@ -197,7 +150,7 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
     val sa6Len = sizeof[in.sockaddr_in6].toUInt
 
     // By contract, all the bytes in sa6 are zero going in.
-    prepareSockaddrIn6(addr, port, sa6)
+    SocketHelpers.prepareSockaddrIn6(addr, port, sa6)
 
     val bindRes = posix.sys.socket.bind(
       fd.fd,
@@ -256,7 +209,7 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
     val sa6Len = sizeof[in.sockaddr_in6].toUInt
 
     // By contract, all the bytes in sa6 are zero going in.
-    prepareSockaddrIn6(insAddr.getAddress, insAddr.getPort, sa6)
+    SocketHelpers.prepareSockaddrIn6(insAddr.getAddress, insAddr.getPort, sa6)
 
     val buffer = p.getData()
     val cArr = buffer.at(p.getOffset())
@@ -303,7 +256,7 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
     val sa6Len = sizeof[in.sockaddr_in6].toUInt
 
     // By contract, all the bytes in sa6 are zero going in.
-    prepareSockaddrIn6(address, port, sa6)
+    SocketHelpers.prepareSockaddrIn6(address, port, sa6)
 
     val connectRet = posix.sys.socket.connect(
       fd.fd,
