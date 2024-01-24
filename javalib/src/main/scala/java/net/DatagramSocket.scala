@@ -98,7 +98,7 @@ class DatagramSocket protected (
     val inetAddr =
       if (addr == null ||
           addr.asInstanceOf[InetSocketAddress].getAddress == null)
-        new InetSocketAddress(InetAddress.getLoopbackAddress(), 0)
+        new InetSocketAddress(SocketHelpers.getWildcardAddressForBind(), 0)
       else {
         addr.asInstanceOf[InetSocketAddress]
       }
