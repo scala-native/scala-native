@@ -1,0 +1,40 @@
+name: Run tests Linux
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        type: string
+        description: "Revision of build to test against"
+        required: true
+
+jobs:
+  test-runtime:
+    name: Test runtime
+    runs-on: ubuntu-22.04
+    env:
+      ENABLE_EXPERIMENTAL_COMPILER: true
+    strategy:
+      fail-fast: false
+      matrix:
+        scala: [3]
+        gc: [boehm, immix, commix]
+        include:
+          - scala: 2.13
+            gc: immix
+          - scala: 2.13
+            gc: commix
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+      - uses: ./.github/actions/linux-setup-env
+        with:
+          scala-version: ${{matrix.scala}}
+      - name: Run tests
+        timeout-minutes: 45
+        env:
+          SCALANATIVE_GC: ${{ matrix.gc }}
+          SCALANATIVE_TEST_PREFETCH_DEBUG_INFO: 1
+        run: sbt "test-runtime ${{ matrix.scala }}"
+
+ 
