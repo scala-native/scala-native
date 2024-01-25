@@ -5,6 +5,7 @@ import java.net._
 import org.junit.Test
 import org.junit.Assert._
 import org.junit.Assume._
+import org.junit.BeforeClass
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform
@@ -20,23 +21,42 @@ import org.scalanative.testsuite.utils.Platform
  *       editing to reflect that local configuration.
  */
 
+object NetworkInterfaceTest {
+  @BeforeClass
+  def beforeClass(): Unit = {
+
+//    assumeFalse(
+    assumeTrue(
+      "Test has not yet been configured for FreeBSD",
+      Platform.isFreeBSD
+    )
+
+    assumeFalse("Not implemented in Windows", Platform.isWindows)
+  }
+}
+
 class NetworkInterfaceTest {
 
-  val localhostIf =
+  val loopbackIfName =
     if (Platform.isLinux) "lo"
     else "lo0"
 
+  val loopbackIfIndex =
+    if (Platform.isFreeBSD) 2
+    else 1
+
   val osIPv6LoopbackSuffix =
-    s":0:0:0:0:0:0:1%${localhostIf}"
+    s":0:0:0:0:0:0:1%${loopbackIfName}"
 
   val osIPv6LoopbackAddress =
-    if (Platform.isMacOs) s"fe80${osIPv6LoopbackSuffix}"
-    else s"0${osIPv6LoopbackSuffix}"
+    if ((Platform.isMacOs) || (Platform.isFreeBSD))
+      s"fe80${osIPv6LoopbackSuffix}"
+    else
+      s"0${osIPv6LoopbackSuffix}"
 
 // Test static (object) methods
 
   @Test def getByIndexMinusTwo(): Unit = {
-    assumeFalse("Not implemented in Windows", Platform.isWindows)
     assertThrows(
       "getByIndex(-2)",
       classOf[IllegalArgumentException],
@@ -45,29 +65,27 @@ class NetworkInterfaceTest {
   }
 
   @Test def getByIndexZero(): Unit = {
-    assumeFalse("Not implemented in Windows", Platform.isWindows)
     assertNull(NetworkInterface.getByIndex(0))
   }
 
   @Test def getByIndexOne(): Unit = {
-    assumeFalse("Not implemented in Windows", Platform.isWindows)
-    val netIf = NetworkInterface.getByIndex(1) // loopback
+    val netIf = NetworkInterface.getByIndex(1)
 
     assertNotNull("a1", netIf)
 
-    val sought = localhostIf
+    val sought =
+      if (Platform.isFreeBSD) "em0"
+      else loopbackIfName
     val ifName = netIf.getName()
     assertEquals("a2", sought, ifName)
   }
 
   @Test def getByIndexMaxValue(): Unit = {
-    assumeFalse("Not implemented in Windows", Platform.isWindows)
     val netIf = NetworkInterface.getByIndex(Integer.MAX_VALUE)
     assertNull("Unlikely interface found for MAX_VALUE index", netIf)
   }
 
   @Test def getByInetAddressNull(): Unit = {
-    assumeFalse("Not implemented in Windows", Platform.isWindows)
     assertThrows(
       "getByInetAddress(null)",
       classOf[NullPointerException],
@@ -76,34 +94,31 @@ class NetworkInterfaceTest {
   }
 
   @Test def getByInetAddressLoopbackIPv4(): Unit = {
-    assumeFalse("Not implemented in Windows", Platform.isWindows)
     val lba4 = InetAddress.getByName("127.0.0.1")
 
     val netIf = NetworkInterface.getByInetAddress(lba4)
 
     assertNotNull("a1", netIf)
 
-    val sought = localhostIf
+    val sought = loopbackIfName
     val ifName = netIf.getName()
     assertEquals("a1", sought, ifName)
   }
 
   @Test def getByInetAddressLoopbackIPv6(): Unit = {
-    assumeFalse("Not implemented in Windows", Platform.isWindows)
     val lba6 = InetAddress.getByName("::1")
 
     val netIf = NetworkInterface.getByInetAddress(lba6)
 
     // Do not fail on null. IPv6 might not be enabled on the system.
     if (netIf != null) {
-      val sought = localhostIf
+      val sought = loopbackIfName
       val ifName = netIf.getName()
       assertEquals("a1", sought, ifName)
     }
   }
 
   @Test def getByNameNull(): Unit = {
-    assumeFalse("Not implemented in Windows", Platform.isWindows)
     assertThrows(
       "getByName(null)",
       classOf[NullPointerException],
@@ -112,9 +127,7 @@ class NetworkInterfaceTest {
   }
 
   @Test def getByName(): Unit = {
-    assumeFalse("Not implemented in Windows", Platform.isWindows)
-
-    val sought = localhostIf
+    val sought = loopbackIfName
     val netIf = NetworkInterface.getByName(sought)
     assertNotNull(netIf)
 
@@ -124,9 +137,7 @@ class NetworkInterfaceTest {
   }
 
   @Test def testToString(): Unit = {
-    assumeFalse("Not implemented in Windows", Platform.isWindows)
-
-    val netIf = NetworkInterface.getByIndex(1) // loopback
+    val netIf = NetworkInterface.getByIndex(loopbackIfIndex)
     assertNotNull(netIf)
 
     val ifName = netIf.getName()
@@ -138,8 +149,6 @@ class NetworkInterfaceTest {
   }
 
   @Test def getNetworkInterfaces(): Unit = {
-    assumeFalse("Not implemented in Windows", Platform.isWindows)
-
     val netIfs = NetworkInterface.getNetworkInterfaces()
     assertNotNull(netIfs)
 
@@ -157,11 +166,9 @@ class NetworkInterfaceTest {
 // Test instance methods
 
   @Test def instanceGetIndex(): Unit = {
-    assumeFalse("Not implemented in Windows", Platform.isWindows)
-
-    val lbIf1 = NetworkInterface.getByName(localhostIf)
+    val lbIf1 = NetworkInterface.getByName(loopbackIfName)
     assertNotNull(lbIf1)
-    assertEquals(1, lbIf1.getIndex())
+    assertEquals(loopbackIfIndex, lbIf1.getIndex())
   }
 
   /*  @Test def instanceGetHardwareAddress(): Unit = {
@@ -171,9 +178,7 @@ class NetworkInterfaceTest {
    */
 
   @Test def instanceGetMTU(): Unit = {
-    assumeFalse("Not implemented in Windows", Platform.isWindows)
-
-    val lbIf = NetworkInterface.getByName(localhostIf)
+    val lbIf = NetworkInterface.getByName(loopbackIfName)
     assertNotNull(lbIf)
 
     val mtu = lbIf.getMTU()
@@ -184,47 +189,36 @@ class NetworkInterfaceTest {
   }
 
   @Test def instanceIsLoopback(): Unit = {
-    assumeFalse("Not implemented in Windows", Platform.isWindows)
-
-    val lbIf = NetworkInterface.getByName(localhostIf)
+    val lbIf = NetworkInterface.getByName(loopbackIfName)
     assertNotNull(lbIf)
     assertEquals("a1", true, lbIf.isLoopback())
   }
 
   @Test def instanceIsPoinToPoint(): Unit = {
-    assumeFalse("Not implemented in Windows", Platform.isWindows)
-
-    val lbIf = NetworkInterface.getByName(localhostIf)
+    val lbIf = NetworkInterface.getByName(loopbackIfName)
     assertNotNull(lbIf)
     assertEquals("a1", false, lbIf.isPointToPoint())
   }
 
   @Test def instanceIsUp(): Unit = {
-    assumeFalse("Not implemented in Windows", Platform.isWindows)
-
-    val lbIf = NetworkInterface.getByName(localhostIf)
+    val lbIf = NetworkInterface.getByName(loopbackIfName)
     assertNotNull(lbIf)
     assertEquals("a1", true, lbIf.isUp())
   }
 
   @Test def instanceSupportsMulticast(): Unit = {
-    assumeFalse("Not implemented in Windows", Platform.isWindows)
-
-    val lbIf = NetworkInterface.getByName(localhostIf)
+    val lbIf = NetworkInterface.getByName(loopbackIfName)
     assertNotNull(lbIf)
 
     val expected =
-      if (Platform.isMacOs) true
+      if ((Platform.isMacOs) || (Platform.isFreeBSD)) true
       else false // Linux
-    // else (FreeBSD?)
 
     assertEquals("a1", expected, lbIf.supportsMulticast())
   }
 
   @Test def instanceGetInetAddresses(): Unit = {
-    assumeFalse("Not implemented in Windows", Platform.isWindows)
-
-    val lbIf = NetworkInterface.getByName(localhostIf)
+    val lbIf = NetworkInterface.getByName(loopbackIfName)
     assertNotNull(lbIf)
 
     val iaEnumeration = lbIf.getInetAddresses()
@@ -239,7 +233,7 @@ class NetworkInterfaceTest {
         if (!hostAddr.contains(":")) {
           "127.0.0.1"
         } else if (hostAddr.startsWith("0")) {
-          s"0:0:0:0:0:0:0:1%${localhostIf}"
+          s"0:0:0:0:0:0:0:1%${loopbackIfName}"
         } else if (hostAddr.startsWith("f")) {
           s"${osIPv6LoopbackAddress}"
         } else "" // fail in a way that will print out ifAddrString

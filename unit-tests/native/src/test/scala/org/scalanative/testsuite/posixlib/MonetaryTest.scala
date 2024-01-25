@@ -77,6 +77,8 @@ class MonetaryTest {
 
         val expected = if (Platform.isLinux()) {
           "[ $**1234.57] [ USD **1,234.57]"
+        } else if (Platform.isFreeBSD()) {
+          "[ **1234.57 ] [ **1234.57 ]"
         } else {
           "[ $**1234.57] [ USD**1,234.57]"
         }
