@@ -92,8 +92,12 @@ abstract class Buffer private[nio] (val _capacity: Int) {
 
   def isDirect(): Boolean
 
+  // Since JDK 9
   def slice(): Buffer
+  // Since JDK 13
+  def slice(index: Int, length: Int): Buffer
 
+  // Since JDK 9
   def duplicate(): Buffer
 
   override def toString(): String =
@@ -123,6 +127,15 @@ abstract class Buffer private[nio] (val _capacity: Int) {
 
   // PointerByteBuffer specific
   private[nio] def _rawDataPointer: unsafe.Ptr[Byte] = null
+
+  private[nio] def address: unsafe.Ptr[Byte] =
+    if (_rawDataPointer != null) _rawDataPointer
+    else if (_mappedData != null) _mappedData.data
+    else
+      _array
+        .asInstanceOf[scalanative.runtime.Array[_]]
+        .atUnsafe(_offset)
+        .asInstanceOf[unsafe.Ptr[Byte]]
 
   // HeapByteBuffer specific
   private[nio] def _byteArray: Array[Byte] =

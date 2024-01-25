@@ -31,6 +31,10 @@ private[nio] class HeapByteBuffer(
     genHeapBuffer.generic_slice()
 
   @noinline
+  def slice(index: Int, length: Int): ByteBuffer =
+    genHeapBuffer.generic_slice(index, length)
+
+  @noinline
   def duplicate(): ByteBuffer =
     genHeapBuffer.generic_duplicate()
 

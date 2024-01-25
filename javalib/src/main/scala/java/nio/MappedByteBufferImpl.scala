@@ -70,6 +70,10 @@ private class MappedByteBufferImpl(
     genMappedBuffer.generic_slice()
 
   @noinline
+  def slice(index: Int, length: Int): ByteBuffer =
+    genMappedBuffer.generic_slice(index, length)
+
+  @noinline
   def duplicate(): ByteBuffer =
     genMappedBuffer.generic_duplicate()
 
