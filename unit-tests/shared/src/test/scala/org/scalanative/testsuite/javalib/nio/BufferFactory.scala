@@ -29,9 +29,6 @@ sealed abstract class BufferFactory {
   def createsReadOnly: Boolean = false
   def createsPointerBuffer: Boolean = false
 
-  def arrayOfElemType(capacity: Int): Array[ElementType] =
-    Array.ofDim[ElementType](capacity)
-
   def allocBuffer(capacity: Int): BufferType
 
   def allocBuffer(pos: Int, limit: Int, capacity: Int): BufferType = {

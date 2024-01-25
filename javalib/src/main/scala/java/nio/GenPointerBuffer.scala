@@ -4,7 +4,7 @@ import scala.scalanative.runtime.ByteArray
 import scala.scalanative.unsigned._
 import scala.scalanative.unsafe._
 import scala.scalanative.libc.string
-import java.util.Objects
+import java.lang.annotation.ElementType
 
 private[nio] object GenPointerBuffer {
   def apply[B <: Buffer](self: B): GenPointerBuffer[B] =
@@ -38,22 +38,6 @@ private[nio] final class GenPointerBuffer[B <: Buffer](val self: B)
       ptr = _rawDataPointer,
       capacity = newCapacity,
       arrayOffset = _offset + position(),
-      initialPosition = 0,
-      initialLimit = newCapacity,
-      isReadOnly = isReadOnly()
-    )
-  }
-
-  @inline
-  def generic_slice(index: Int, length: Int)(implicit
-      newPointerBuffer: NewPointerBuffer
-  ): BufferType = {
-    Objects.checkFromIndexSize(index, length, limit())
-    val newCapacity = length
-    newPointerBuffer(
-      ptr = _rawDataPointer,
-      capacity = newCapacity,
-      arrayOffset = _offset + index,
       initialPosition = 0,
       initialLimit = newCapacity,
       isReadOnly = isReadOnly()

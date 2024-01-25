@@ -1,7 +1,5 @@
 package java.nio
 
-import java.util.Objects
-
 // Ported from Scala.js
 
 private[nio] object GenBuffer {
@@ -46,19 +44,6 @@ private[nio] final class GenBuffer[B <: Buffer](val self: B) extends AnyVal {
   }
 
   @inline
-  def generic_get(
-      index: Int,
-      dst: Array[ElementType],
-      offset: Int,
-      length: Int
-  ): BufferType = {
-    Objects.checkFromIndexSize(index, length, limit())
-    Objects.checkFromIndexSize(offset, length, dst.length)
-    load(index, dst, offset, length)
-    self
-  }
-
-  @inline
   def generic_put(src: BufferType): BufferType = {
     if (src eq self)
       throw new IllegalArgumentException
@@ -85,35 +70,6 @@ private[nio] final class GenBuffer[B <: Buffer](val self: B) extends AnyVal {
 
   @inline
   def generic_put(
-      index: Int,
-      src: BufferType,
-      offset: Int,
-      length: Int
-  ): BufferType = {
-    if (src eq self)
-      throw new IllegalArgumentException
-    ensureNotReadOnly()
-    Objects.checkFromIndexSize(index, length, limit())
-    Objects.checkFromIndexSize(offset, length, src.limit())
-
-    val srcArray = src._array // even if read-only
-    if (srcArray != null) {
-      store(index, srcArray, src._offset + offset, length)
-    } else {
-      val srcLimit = offset + length
-      var srcPos = offset
-      var selfPos = index
-      while (srcPos != srcLimit) {
-        store(selfPos, src.load(srcPos))
-        srcPos += 1
-        selfPos += 1
-      }
-    }
-    self
-  }
-
-  @inline
-  def generic_put(
       src: Array[ElementType],
       offset: Int,
       length: Int
@@ -121,20 +77,6 @@ private[nio] final class GenBuffer[B <: Buffer](val self: B) extends AnyVal {
     ensureNotReadOnly()
     validateArrayIndexRange(src, offset, length)
     store(getPosAndAdvanceWrite(length), src, offset, length)
-    self
-  }
-
-  @inline
-  def generic_put(
-      index: Int,
-      src: Array[ElementType],
-      offset: Int,
-      length: Int
-  ): BufferType = {
-    ensureNotReadOnly()
-    Objects.checkFromIndexSize(index, length, limit())
-    Objects.checkFromIndexSize(offset, length, src.length)
-    store(index, src, offset, length)
     self
   }
 

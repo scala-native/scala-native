@@ -35,10 +35,6 @@ private[nio] final class MappedByteBuffer${T}View private (
     GenMappedBufferView[${T}Buffer](this).generic_slice()
 
   @noinline
-  def slice(index: Int, length: Int): ${T}Buffer =
-    GenMappedBufferView[${T}Buffer](this).generic_slice(index, length)
-
-  @noinline
   def duplicate(): ${T}Buffer =
     GenMappedBufferView[${T}Buffer](this).generic_duplicate()
 

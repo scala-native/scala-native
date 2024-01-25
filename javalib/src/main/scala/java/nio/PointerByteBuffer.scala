@@ -26,10 +26,6 @@ private[nio] final class PointerByteBuffer private (
     GenPointerBuffer[ByteBuffer](this).generic_slice()
 
   @noinline
-  def slice(index: Int, length: Int): ByteBuffer =
-    GenPointerBuffer[ByteBuffer](this).generic_slice(index, length)
-
-  @noinline
   def duplicate(): ByteBuffer =
     GenPointerBuffer[ByteBuffer](this).generic_duplicate()
 

@@ -1,0 +1,151 @@
+package java.nio
+
+// Ported from Scala.js
+object ShortBuffer {
+  private final val HashSeed = 383731478 // "java.nio.ShortBuffer".##
+
+  def allocate(capacity: Int): ShortBuffer =
+    wrap(new Array[Short](capacity))
+
+  def wrap(array: Array[Short], offset: Int, length: Int): ShortBuffer =
+    HeapShortBuffer.wrap(array, 0, array.length, offset, length, false)
+
+  def wrap(array: Array[Short]): ShortBuffer =
+    wrap(array, 0, array.length)
+}
+
+abstract class ShortBuffer private[nio] (
+    _capacity: Int,
+    override private[nio] val _array: Array[Short],
+    private[nio] val _offset: Int
+) extends Buffer(_capacity)
+    with Comparable[ShortBuffer] {
+
+  private[nio] type ElementType = Short
+  private[nio] type BufferType = ShortBuffer
+
+  private def genBuffer = GenBuffer[ShortBuffer](this)
+
+  def this(_capacity: Int) = this(_capacity, null, -1)
+
+  def slice(): ShortBuffer
+
+  def duplicate(): ShortBuffer
+
+  def asReadOnlyBuffer(): ShortBuffer
+
+  def get(): Short
+
+  def put(s: Short): ShortBuffer
+
+  def get(index: Int): Short
+
+  def put(index: Int, s: Short): ShortBuffer
+
+  @noinline
+  def get(dst: Array[Short], offset: Int, length: Int): ShortBuffer =
+    genBuffer.generic_get(dst, offset, length)
+
+  def get(dst: Array[Short]): ShortBuffer =
+    get(dst, 0, dst.length)
+
+  @noinline
+  def put(src: ShortBuffer): ShortBuffer =
+    genBuffer.generic_put(src)
+
+  @noinline
+  def put(src: Array[Short], offset: Int, length: Int): ShortBuffer =
+    genBuffer.generic_put(src, offset, length)
+
+  final def put(src: Array[Short]): ShortBuffer =
+    put(src, 0, src.length)
+
+  @inline final def hasArray(): Boolean =
+    genBuffer.generic_hasArray()
+
+  @inline final def array(): Array[Short] =
+    genBuffer.generic_array()
+
+  @inline final def arrayOffset(): Int =
+    genBuffer.generic_offset()
+
+  @inline override def position(newPosition: Int): ShortBuffer = {
+    super.position(newPosition)
+    this
+  }
+
+  @inline override def limit(newLimit: Int): ShortBuffer = {
+    super.limit(newLimit)
+    this
+  }
+
+  @inline override def mark(): ShortBuffer = {
+    super.mark()
+    this
+  }
+
+  @inline override def reset(): ShortBuffer = {
+    super.reset()
+    this
+  }
+
+  @inline override def clear(): ShortBuffer = {
+    super.clear()
+    this
+  }
+
+  @inline override def flip(): ShortBuffer = {
+    super.flip()
+    this
+  }
+
+  @inline override def rewind(): ShortBuffer = {
+    super.rewind()
+    this
+  }
+
+  def compact(): ShortBuffer
+
+  def isDirect(): Boolean
+
+  // toString(): String inherited from Buffer
+
+  @noinline
+  override def hashCode(): Int =
+    genBuffer.generic_hashCode(ShortBuffer.HashSeed)
+
+  override def equals(that: Any): Boolean = that match {
+    case that: ShortBuffer => compareTo(that) == 0
+    case _                 => false
+  }
+
+  @noinline
+  def compareTo(that: ShortBuffer): Int =
+    genBuffer.generic_compareTo(that)(_.compareTo(_))
+
+  def order(): ByteOrder
+
+  // Internal API
+
+  private[nio] def load(index: Int): Short
+
+  private[nio] def store(index: Int, elem: Short): Unit
+
+  @inline
+  private[nio] def load(
+      startIndex: Int,
+      dst: Array[Short],
+      offset: Int,
+      length: Int
+  ): Unit =
+    genBuffer.generic_load(startIndex, dst, offset, length)
+
+  @inline
+  private[nio] def store(
+      startIndex: Int,
+      src: Array[Short],
+      offset: Int,
+      length: Int
+  ): Unit =
+    genBuffer.generic_store(startIndex, src, offset, length)
+}

@@ -1,7 +1,5 @@
 package java.nio
 
-import java.util.Objects
-
 // Ported from Scala.js
 
 private[nio] object GenHeapBuffer {
@@ -63,22 +61,6 @@ private[nio] final class GenHeapBuffer[B <: Buffer](val self: B)
       newCapacity,
       _array,
       _offset + position(),
-      0,
-      newCapacity,
-      isReadOnly()
-    )
-  }
-
-  @inline
-  def generic_slice(index: Int, length: Int)(implicit
-      newHeapBuffer: NewThisHeapBuffer
-  ): BufferType = {
-    Objects.checkFromIndexSize(index, length, limit())
-    val newCapacity = length
-    newHeapBuffer(
-      newCapacity,
-      _array,
-      _offset + index,
       0,
       newCapacity,
       isReadOnly()

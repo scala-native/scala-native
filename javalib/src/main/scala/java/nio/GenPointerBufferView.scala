@@ -3,7 +3,6 @@ package java.nio
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
 import scala.scalanative.libc.string
-import java.util.Objects
 
 // Based on the code ported from Scala.js,
 // see GenHeapBufferView.scala
@@ -64,24 +63,6 @@ private[nio] final class GenPointerBufferView[B <: Buffer](val self: B)
       newCapacity,
       _rawDataPointer,
       _offset + bytesPerElem * position(),
-      0,
-      newCapacity,
-      isReadOnly(),
-      isBigEndian
-    )
-  }
-
-  @inline
-  def generic_slice(index: Int, length: Int)(implicit
-      newPointerBufferView: NewThisPointerBufferView
-  ): BufferType = {
-    Objects.checkFromIndexSize(index, length, limit())
-    val newCapacity = length
-    val bytesPerElem = newPointerBufferView.bytesPerElem
-    newPointerBufferView(
-      newCapacity,
-      _rawDataPointer,
-      _offset + bytesPerElem * index,
       0,
       newCapacity,
       isReadOnly(),
