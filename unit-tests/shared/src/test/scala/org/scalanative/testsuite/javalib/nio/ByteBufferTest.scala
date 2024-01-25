@@ -1268,3 +1268,13 @@ class SlicedAllocByteBufferTest extends ByteBufferTest {
   val factory: ByteBufferFactory =
     new ByteBufferFactories.SlicedAllocByteBufferFactory
 }
+
+class AllocDirectByteBufferTest extends ByteBufferTest {
+  val factory: ByteBufferFactory =
+    new ByteBufferFactories.AllocDirectByteBufferFactory
+}
+
+class SlicedAllocDirectByteBufferTest extends ByteBufferTest {
+  val factory: ByteBufferFactory =
+    new ByteBufferFactories.SlicedAllocDirectByteBufferFactory
+}
