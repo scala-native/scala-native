@@ -88,17 +88,17 @@ void Marker_Mark(Heap *heap, Stack *stack) {
     Bytemap *bytemap = heap->bytemap;
     while (!Stack_IsEmpty(stack)) {
         Object *object = Stack_Pop(stack);
+        const int objectId = object->rtti->rt.id;
         if (Object_IsArray(object)) {
             ArrayHeader *arrayHeader = (ArrayHeader *)object;
-            const int arrayId = object->rtti->rt.id;
 
-            if (arrayId == __object_array_id) {
+            if (objectId == __object_array_id) {
                 const size_t length = arrayHeader->length;
                 word_t **fields = (word_t **)(arrayHeader + 1);
                 for (int i = 0; i < length; i++) {
                     Marker_markField(heap, stack, fields[i]);
                 }
-            } else if (arrayId == __blob_array_id) {
+            } else if (objectId == __blob_array_id) {
                 int8_t *start = (int8_t *)(arrayHeader + 1);
                 int8_t *end = start + BlobArray_ScannableLimit(arrayHeader);
                 Marker_markRange(heap, stack, (word_t **)start, (word_t **)end);
@@ -110,6 +110,13 @@ void Marker_Mark(Heap *heap, Stack *stack) {
                 if (Object_IsReferantOfWeakReference(object, ptr_map[i]))
                     continue;
                 Marker_markField(heap, stack, object->fields[ptr_map[i]]);
+            }
+            if (objectId == __boxed_ptr_id) {
+                word_t *rawPtr = object->fields[0];
+                if (Heap_IsWordInHeap(heap, rawPtr)) {
+                    // Boxed ptr always has a single field
+                    Marker_markConservative(heap, stack, rawPtr);
+                }
             }
         }
     }

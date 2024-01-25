@@ -227,6 +227,15 @@ int Marker_markRegularObject(Heap *heap, Stats *stats, Object *object,
             objectsTraced += 1;
         }
     }
+    if (object->rtti->rt.id == __boxed_ptr_id) {
+        // Boxed ptr always has a single field
+        word_t *rawPtr = object->fields[0];
+        if (Heap_IsWordInHeap(heap, rawPtr)) {
+            Marker_markConservative(heap, stats, outHolder, outWeakRefHolder,
+                                    rawPtr);
+            objectsTraced += 1;
+        }
+    }
     return objectsTraced;
 }
 

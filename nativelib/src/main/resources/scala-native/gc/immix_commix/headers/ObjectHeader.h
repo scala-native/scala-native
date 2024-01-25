@@ -18,6 +18,7 @@ extern const int __weak_ref_ids_max;
 extern const int __weak_ref_field_offset;
 extern const int __array_ids_min;
 extern const int __array_ids_max;
+extern const int __boxed_ptr_id;
 
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
 #define USES_LOCKWORD 1
