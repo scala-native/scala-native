@@ -41,14 +41,15 @@ void scalanative_afterexit() {
 }
 
 NOINLINE void scalanative_GC_init() {
-    volatile int dummy = 0;
+    volatile word_t dummy = 0;
+    dummy = (word_t)&dummy;
     Heap_Init(&heap, Settings_MinHeapSize(), Settings_MaxHeapSize());
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
     Synchronizer_init();
     weakRefsHandlerThread = GCThread_WeakThreadsHandler_Start();
 #endif
     MutatorThreads_init();
-    MutatorThread_init((word_t **)&dummy); // approximate stack bottom
+    MutatorThread_init((word_t **)dummy); // approximate stack bottom
     customRoots = GC_Roots_Init();
 #ifdef ENABLE_GC_STATS
     atexit(scalanative_afterexit);
@@ -133,13 +134,14 @@ static ThreadRoutineReturnType WINAPI ProxyThreadStartRoutine(void *args) {
 #else
 static ThreadRoutineReturnType ProxyThreadStartRoutine(void *args) {
 #endif
+    volatile word_t stackBottom;
+    stackBottom = (word_t)&stackBottom;
     WrappedFunctionCallArgs *wrapped = (WrappedFunctionCallArgs *)args;
     ThreadStartRoutine originalFn = wrapped->fn;
     RoutineArgs originalArgs = wrapped->args;
-    int stackBottom = 0;
 
     free(args);
-    MutatorThread_init((Field_t *)&stackBottom);
+    MutatorThread_init((Field_t *)stackBottom);
     originalFn(originalArgs);
     MutatorThread_delete(currentMutatorThread);
     return (ThreadRoutineReturnType)0;

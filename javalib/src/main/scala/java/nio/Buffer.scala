@@ -129,8 +129,8 @@ abstract class Buffer private[nio] (val _capacity: Int) {
   private[nio] def _rawDataPointer: unsafe.Ptr[Byte] = null
 
   private[nio] def address: unsafe.Ptr[Byte] =
-    if (_rawDataPointer != null) _rawDataPointer
-    else if (_mappedData != null) _mappedData.data
+    if (_rawDataPointer != null) _rawDataPointer + _offset
+    else if (_mappedData != null) _mappedData.data + _offset
     else
       _array
         .asInstanceOf[scalanative.runtime.Array[_]]

@@ -169,7 +169,7 @@ static struct {
 #endif
 
 static void Synchronizer_WaitForResumption(MutatorThread *selfThread) {
-    assert(thread == currentMutatorThread);
+    assert(selfThread == currentMutatorThread);
 #ifdef _WIN32
     WaitForSingleObject(threadSuspensionEvent, INFINITE);
 #else
@@ -278,9 +278,8 @@ bool Synchronizer_acquire() {
                 activeThreads++;
             }
         }
-        if (activeThreads > 0) {
+        if (activeThreads > 0)
             thread_yield();
-        }
     } while (activeThreads > 0);
     return true;
 }

@@ -1,6 +1,7 @@
 #ifndef UINT24_H
 #define UINT24_H
-#include <stddef.h>
+#include <stdint.h>
+#include <stdbool.h>
 
 typedef struct {
     uint8_t bytes[3];

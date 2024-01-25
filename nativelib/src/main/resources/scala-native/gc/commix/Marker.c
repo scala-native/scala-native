@@ -460,10 +460,6 @@ NO_SANITIZE void Marker_markProgramStack(MutatorThread *thread, Heap *heap,
         stackTop = (word_t **)atomic_load_explicit(&thread->stackTop,
                                                    memory_order_acquire);
     } while (stackTop == NULL);
-    // Extend scanning slightly over the approximated stack top
-    // In the past we were frequently missing objects allocated just before GC
-    // (mostly under LTO enabled)
-    stackTop -= 8;
     size_t stackSize = stackBottom - stackTop;
     Marker_markRange(heap, stats, outHolder, outWeakRefHolder, stackTop,
                      stackSize);

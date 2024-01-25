@@ -255,7 +255,9 @@ object Type {
     Rt.Object -> Global.Top("scala.scalanative.runtime.ObjectArray")
   )
   val arrayToType: Map[Global.Top, Type] =
-    typeToArray.map { case (k, v) => (v, k) }
+    typeToArray.map { case (k, v) => (v, k) } ++ Map(
+      Global.Top("scala.scalanative.runtime.BlobArray") -> Type.Byte
+    )
   def toArrayClass(ty: Type): Global.Top = ty match {
     case _ if typeToArray.contains(ty) =>
       typeToArray(ty)

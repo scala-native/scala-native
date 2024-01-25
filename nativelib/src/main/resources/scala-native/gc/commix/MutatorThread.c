@@ -57,7 +57,7 @@ void MutatorThread_delete(MutatorThread *self) {
 
 typedef word_t **stackptr_t;
 
-NOINLINE static stackptr_t MutatorThread_approximateStackTop() {
+NOINLINE NO_OPTIMIZE static stackptr_t MutatorThread_approximateStackTop() {
     volatile word_t sp;
 #if GNUC_PREREQ(4, 0)
     sp = (word_t)__builtin_frame_address(0);
@@ -75,7 +75,7 @@ void MutatorThread_switchState(MutatorThread *self,
     intptr_t newStackTop = 0;
     if (newState == GC_MutatorThreadState_Unmanaged) {
         // Dump registers to allow for their marking later
-        setjmp(self->executionContext);
+        (void)setjmp(self->executionContext);
         newStackTop = (intptr_t)MutatorThread_approximateStackTop();
     }
     atomic_store_explicit(&self->stackTop, newStackTop, memory_order_release);
@@ -96,7 +96,10 @@ static void MutatorThreads_unlockWrite() {
     rwlock_unlockWrite(&threadListsModificationLock);
 }
 
-void MutatorThreads_init() { rwlock_init(&threadListsModificationLock); }
+void MutatorThreads_init() {
+    rwlock_init(&threadListsModificationLock);
+    atomic_init(&mutatorThreads, NULL);
+}
 
 void MutatorThreads_add(MutatorThread *node) {
     if (!node)
@@ -105,8 +108,8 @@ void MutatorThreads_add(MutatorThread *node) {
         (MutatorThreadNode *)malloc(sizeof(MutatorThreadNode));
     newNode->value = node;
     MutatorThreads_lockWrite();
-    newNode->next = mutatorThreads;
-    mutatorThreads = newNode;
+    newNode->next = atomic_load_explicit(&mutatorThreads, memory_order_acquire);
+    atomic_store_explicit(&mutatorThreads, newNode, memory_order_release);
     MutatorThreads_unlockWrite();
 }
 
@@ -115,9 +118,11 @@ void MutatorThreads_remove(MutatorThread *node) {
         return;
 
     MutatorThreads_lockWrite();
-    MutatorThreads current = mutatorThreads;
+    MutatorThreads current =
+        atomic_load_explicit(&mutatorThreads, memory_order_acquire);
     if (current->value == node) { // expected is at head
-        mutatorThreads = current->next;
+        atomic_store_explicit(&mutatorThreads, current->next,
+                              memory_order_release);
         free(current);
     } else {
         while (current->next && current->next->value != node) {
@@ -127,6 +132,7 @@ void MutatorThreads_remove(MutatorThread *node) {
         if (next) {
             current->next = next->next;
             free(next);
+            atomic_thread_fence(memory_order_release);
         }
     }
     MutatorThreads_unlockWrite();

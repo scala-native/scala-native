@@ -91,9 +91,9 @@ void Marker_Mark(Heap *heap, Stack *stack) {
         if (Object_IsArray(object)) {
             ArrayHeader *arrayHeader = (ArrayHeader *)object;
             const int arrayId = object->rtti->rt.id;
-            const size_t length = arrayHeader->length;
 
             if (arrayId == __object_array_id) {
+                const size_t length = arrayHeader->length;
                 word_t **fields = (word_t **)(arrayHeader + 1);
                 for (int i = 0; i < length; i++) {
                     Marker_markField(heap, stack, fields[i]);
@@ -136,10 +136,6 @@ NO_SANITIZE void Marker_markProgramStack(MutatorThread *thread, Heap *heap,
         stackTop = (word_t **)atomic_load_explicit(&thread->stackTop,
                                                    memory_order_acquire);
     } while (stackTop == NULL);
-    // Extend scanning slightly over the approximated stack top
-    // In the past we were frequently missing objects allocated just before GC
-    // (mostly under LTO enabled)
-    stackTop -= 8;
     Marker_markRange(heap, stack, stackTop, stackBottom);
 
     // Mark last context of execution
