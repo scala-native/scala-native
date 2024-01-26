@@ -21,7 +21,6 @@
 #include "shared/Parsing.h"
 
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
-#include "Synchronizer.h"
 #endif
 #include "MutatorThread.h"
 #include <stdatomic.h>
