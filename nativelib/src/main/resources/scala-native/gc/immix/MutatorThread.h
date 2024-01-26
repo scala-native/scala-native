@@ -3,15 +3,15 @@
 #include "Allocator.h"
 #include "LargeAllocator.h"
 #include "shared/ScalaNativeGC.h"
+#include "immix_commix/RegistersCapture.h"
 #include <stdatomic.h>
-#include <setjmp.h>
 
 typedef struct {
     _Atomic(GC_MutatorThreadState) state;
     word_t **stackBottom;
     atomic_intptr_t stackTop;
     atomic_bool isWaiting;
-    jmp_buf executionContext;
+    RegistersBuffer registersBuffer;
     // immutable fields
 #ifdef SCALANATIVE_GC_USE_YIELDPOINT_TRAPS
 #ifdef _WIN32

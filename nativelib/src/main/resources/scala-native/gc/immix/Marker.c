@@ -91,7 +91,6 @@ void Marker_Mark(Heap *heap, Stack *stack) {
         const int objectId = object->rtti->rt.id;
         if (Object_IsArray(object)) {
             ArrayHeader *arrayHeader = (ArrayHeader *)object;
-
             if (objectId == __object_array_id) {
                 const size_t length = arrayHeader->length;
                 word_t **fields = (word_t **)(arrayHeader + 1);
@@ -113,7 +112,8 @@ void Marker_Mark(Heap *heap, Stack *stack) {
             }
             if (objectId == __boxed_ptr_id) {
                 word_t *rawPtr = object->fields[0];
-                if (Heap_IsWordInHeap(heap, rawPtr)) {
+                if (Heap_IsWordInHeap(heap, rawPtr) &&
+                    Bytemap_isPtrAligned(rawPtr)) {
                     // Boxed ptr always has a single field
                     Marker_markConservative(heap, stack, rawPtr);
                 }
@@ -145,11 +145,9 @@ NO_SANITIZE void Marker_markProgramStack(MutatorThread *thread, Heap *heap,
     } while (stackTop == NULL);
     Marker_markRange(heap, stack, stackTop, stackBottom);
 
-    // Mark last context of execution
-    assert(thread->executionContext != NULL);
-    word_t **regs = (word_t **)thread->executionContext;
-    size_t regsSize = sizeof(jmp_buf) / sizeof(word_t *);
-    Marker_markRange(heap, stack, regs, regs + regsSize);
+    // Mark registers buffer
+    Marker_markRange(heap, stack, (word_t **)&thread->registersBuffer,
+                     (word_t **)(&thread->registersBuffer + 1));
 }
 
 void Marker_markModules(Heap *heap, Stack *stack) {

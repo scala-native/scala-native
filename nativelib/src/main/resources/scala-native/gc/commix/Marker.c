@@ -474,10 +474,9 @@ NO_SANITIZE void Marker_markProgramStack(MutatorThread *thread, Heap *heap,
                      stackSize);
 
     // Mark last context of execution
-    assert(thread->executionContext != NULL);
-    word_t **regs = (word_t **)thread->executionContext;
-    size_t regsSize = sizeof(jmp_buf) / sizeof(word_t *);
-    Marker_markRange(heap, stats, outHolder, outWeakRefHolder, regs, regsSize);
+    Marker_markRange(heap, stats, outHolder, outWeakRefHolder,
+                     (word_t **)&thread->registersBuffer,
+                     sizeof(thread->registersBuffer) / sizeof(word_t));
 }
 
 void Marker_markModules(Heap *heap, Stats *stats, GreyPacket **outHolder,

@@ -34,15 +34,14 @@ void MutatorThread_init(Field_t *stackbottom) {
 
     LargeAllocator_Init(&self->largeAllocator, &blockAllocator, heap.bytemap,
                         heap.blockMetaStart, heap.heapStart);
-    Allocator_Init(&self->allocator, &blockAllocator, heap.bytemap,
-                   heap.blockMetaStart, heap.heapStart);
-
-    LargeAllocator_Init(&self->largeAllocator, &blockAllocator, heap.bytemap,
-                        heap.blockMetaStart, heap.heapStart);
     MutatorThreads_add(self);
     // Following init operations might trigger GC, needs to be executed after
     // acknownleding the new thread in MutatorThreads_add
     Allocator_InitCursors(&self->allocator);
+#ifdef SCALANATIVE_MULTITHREADING_ENABLED
+    // Stop if there is ongoing GC_collection
+    scalanative_GC_yield();
+#endif
 }
 
 void MutatorThread_delete(MutatorThread *self) {
@@ -56,35 +55,31 @@ void MutatorThread_delete(MutatorThread *self) {
 
 typedef word_t **stackptr_t;
 
-NO_OPTIMIZE NOINLINE static stackptr_t MutatorThread_approximateStackTop() {
-    volatile word_t sp;
-#if GNUC_PREREQ(4, 0)
-    sp = (word_t)__builtin_frame_address(0);
-#else
+INLINE static stackptr_t MutatorThread_approximateStackTop() {
+    volatile word_t sp = 1;
     sp = (word_t)&sp;
-#endif
     /* Also force stack to grow if necessary. Otherwise the later accesses might
      * cause the kernel to think we're doing something wrong. */
     return (stackptr_t)sp;
 }
 
-void MutatorThread_switchState(MutatorThread *self,
-                               GC_MutatorThreadState newState) {
+INLINE void MutatorThread_switchState(MutatorThread *self,
+                                      GC_MutatorThreadState newState) {
     assert(self != NULL);
-    intptr_t newStackTop = 0;
     if (newState == GC_MutatorThreadState_Unmanaged) {
         // Dump registers to allow for their marking later
-        (void)setjmp(self->executionContext);
-        newStackTop = (intptr_t)MutatorThread_approximateStackTop();
+        RegistersCapture(self->registersBuffer);
+        intptr_t newStackTop = (intptr_t)MutatorThread_approximateStackTop();
+        self->stackTop = newStackTop;
+        atomic_thread_fence(memory_order_release);
+    } else {
+        atomic_store_explicit(&self->stackTop, 0, memory_order_release);
+        atomic_thread_fence(memory_order_acquire);
     }
-    atomic_store_explicit(&self->stackTop, newStackTop, memory_order_release);
     self->state = newState;
 }
 
-void MutatorThreads_init() {
-    mutex_init(&threadListsModificationLock);
-    atomic_init(&mutatorThreads, NULL);
-}
+void MutatorThreads_init() { mutex_init(&threadListsModificationLock); }
 
 void MutatorThreads_add(MutatorThread *node) {
     if (!node)

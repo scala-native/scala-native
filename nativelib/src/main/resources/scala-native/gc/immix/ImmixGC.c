@@ -27,7 +27,7 @@ void scalanative_GC_collect();
 void scalanative_afterexit() { Stats_OnExit(heap.stats); }
 
 NOINLINE void scalanative_GC_init() {
-    volatile word_t dummy;
+    volatile word_t dummy = 0;
     dummy = (word_t)&dummy;
     Heap_Init(&heap, Settings_MinHeapSize(), Settings_MaxHeapSize());
     Stack_Init(&stack, INITIAL_STACK_SIZE);
