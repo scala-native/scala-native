@@ -175,7 +175,6 @@ void Marker_markConservative(Heap *heap, Stats *stats, GreyPacket **outHolder,
     Bytemap *bytemap = heap->bytemap;
     if (object != NULL) {
         ObjectMeta *objectMeta = Bytemap_Get(bytemap, (word_t *)object);
-        assert(ObjectMeta_IsAllocated(objectMeta));
         if (ObjectMeta_IsAllocated(objectMeta)) {
             Marker_markObject(heap, stats, outHolder, outWeakRefHolder, bytemap,
                               object, objectMeta);
@@ -474,9 +473,10 @@ NO_SANITIZE void Marker_markProgramStack(MutatorThread *thread, Heap *heap,
                      stackSize);
 
     // Mark last context of execution
+    size_t registersBufferBytes = sizeof(thread->registersBuffer);
     Marker_markRange(heap, stats, outHolder, outWeakRefHolder,
                      (word_t **)&thread->registersBuffer,
-                     sizeof(thread->registersBuffer) / sizeof(word_t));
+                     registersBufferBytes / sizeof(word_t));
 }
 
 void Marker_markModules(Heap *heap, Stats *stats, GreyPacket **outHolder,

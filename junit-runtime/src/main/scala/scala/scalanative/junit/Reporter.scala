@@ -184,7 +184,7 @@ private[junit] final class Reporter(
     }
     val i = trace.indexWhere { p =>
       p.getClassName() != null &&
-      p.getClassName().startsWith("scala.scalanative.junit.")
+      p.getClassName().startsWith("scala.scalanative.junit.JUnitTask")
     } - 1
     val m = if (i > 0) i else trace.length - 1
     logStackTracePart(trace, m, trace.length - m - 1, t, testFileName)

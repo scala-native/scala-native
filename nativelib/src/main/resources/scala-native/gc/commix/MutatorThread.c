@@ -58,25 +58,29 @@ void MutatorThread_delete(MutatorThread *self) {
 typedef word_t **stackptr_t;
 
 INLINE static stackptr_t MutatorThread_approximateStackTop() {
-    volatile word_t sp = 1;
+    volatile word_t sp = 0;
     sp = (word_t)&sp;
     /* Also force stack to grow if necessary. Otherwise the later accesses might
      * cause the kernel to think we're doing something wrong. */
+    assert(sp > 0);
     return (stackptr_t)sp;
 }
 
 INLINE void MutatorThread_switchState(MutatorThread *self,
                                       GC_MutatorThreadState newState) {
     assert(self != NULL);
-    if (newState == GC_MutatorThreadState_Unmanaged) {
-        // Dump registers to allow for their marking later
+    switch (newState) {
+    case GC_MutatorThreadState_Unmanaged:
         RegistersCapture(self->registersBuffer);
-        intptr_t newStackTop = (intptr_t)MutatorThread_approximateStackTop();
-        self->stackTop = newStackTop;
-        atomic_thread_fence(memory_order_release);
-    } else {
+        atomic_store_explicit(&self->stackTop,
+                              (intptr_t)MutatorThread_approximateStackTop(),
+                              memory_order_release);
+        break;
+
+    case GC_MutatorThreadState_Managed:
         atomic_store_explicit(&self->stackTop, 0, memory_order_release);
         atomic_thread_fence(memory_order_acquire);
+        break;
     }
     self->state = newState;
 }
@@ -107,8 +111,8 @@ void MutatorThreads_add(MutatorThread *node) {
         (MutatorThreadNode *)malloc(sizeof(MutatorThreadNode));
     newNode->value = node;
     MutatorThreads_lockWrite();
-    newNode->next = atomic_load_explicit(&mutatorThreads, memory_order_acquire);
-    atomic_store_explicit(&mutatorThreads, newNode, memory_order_release);
+    newNode->next = mutatorThreads;
+    mutatorThreads = newNode;
     MutatorThreads_unlockWrite();
 }
 
@@ -117,11 +121,9 @@ void MutatorThreads_remove(MutatorThread *node) {
         return;
 
     MutatorThreads_lockWrite();
-    MutatorThreads current =
-        atomic_load_explicit(&mutatorThreads, memory_order_acquire);
+    MutatorThreads current = mutatorThreads;
     if (current->value == node) { // expected is at head
-        atomic_store_explicit(&mutatorThreads, current->next,
-                              memory_order_release);
+        mutatorThreads = current->next;
         free(current);
     } else {
         while (current->next && current->next->value != node) {

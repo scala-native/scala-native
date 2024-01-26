@@ -77,7 +77,6 @@ void Marker_markConservative(Heap *heap, Stack *stack, word_t *address) {
     Bytemap *bytemap = heap->bytemap;
     if (object != NULL) {
         ObjectMeta *objectMeta = Bytemap_Get(bytemap, (word_t *)object);
-        assert(ObjectMeta_IsAllocated(objectMeta));
         if (ObjectMeta_IsAllocated(objectMeta)) {
             Marker_markObject(heap, stack, bytemap, object, objectMeta);
         }
