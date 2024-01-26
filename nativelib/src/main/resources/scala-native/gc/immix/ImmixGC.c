@@ -103,7 +103,7 @@ static ThreadRoutineReturnType WINAPI ProxyThreadStartRoutine(void *args) {
 #else
 static ThreadRoutineReturnType ProxyThreadStartRoutine(void *args) {
 #endif
-    volatile word_t stackBottom;
+    volatile word_t stackBottom = 1;
     stackBottom = (word_t)&stackBottom;
     WrappedFunctionCallArgs *wrapped = (WrappedFunctionCallArgs *)args;
     ThreadStartRoutine originalFn = wrapped->fn;

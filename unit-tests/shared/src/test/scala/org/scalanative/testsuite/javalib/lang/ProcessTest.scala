@@ -307,6 +307,7 @@ class ProcessTest {
     val proc = processForScript(Scripts.hello).start()
 
     assertProcessExitOrTimeout(proc)
+    assertEquals(0, proc.exitValue())
     assertEquals("", readInputStream(proc.getErrorStream()))
     assertEquals(s"hello$EOL", readInputStream(proc.getInputStream()))
   }
