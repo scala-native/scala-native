@@ -66,16 +66,13 @@ INLINE static stackptr_t MutatorThread_approximateStackTop() {
 INLINE void MutatorThread_switchState(MutatorThread *self,
                                       GC_MutatorThreadState newState) {
     assert(self != NULL);
+    intptr_t newStackTop = 0;
     if (newState == GC_MutatorThreadState_Unmanaged) {
         // Dump registers to allow for their marking later
         RegistersCapture(self->registersBuffer);
-        intptr_t newStackTop = (intptr_t)MutatorThread_approximateStackTop();
-        self->stackTop = newStackTop;
-        atomic_thread_fence(memory_order_release);
-    } else {
-        atomic_store_explicit(&self->stackTop, 0, memory_order_release);
-        atomic_thread_fence(memory_order_acquire);
+        newStackTop = (intptr_t)MutatorThread_approximateStackTop();
     }
+    atomic_store_explicit(&self->stackTop, newStackTop, memory_order_release);
     self->state = newState;
 }
 
