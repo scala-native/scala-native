@@ -14,9 +14,6 @@ class ServerSocket(
   private var bound = false
   private var closed = false
 
-  if (bindAddr == null)
-    bindAddr = SocketHelpers.getWildcardAddress()
-
   if (port >= 0)
     startup()
 
@@ -30,15 +27,13 @@ class ServerSocket(
     this(port, backlog, null)
 
   private def create(): Unit = {
-    // Sockets & ServerSockets always stream.
-    impl.create(stream = true)
+    impl.create(stream = true) // Sockets & ServerSockets always stream.
     created = true
   }
 
   private def startup(): Unit = {
     this.create()
     bind(new InetSocketAddress(bindAddr, port), backlog)
-    bound = true
   }
 
   private def checkClosedAndCreate: Unit = {
@@ -78,18 +73,46 @@ class ServerSocket(
       )
     }
 
-    val addr =
-      if (endpoint == null ||
-          endpoint.asInstanceOf[InetSocketAddress].getAddress == null)
-        new InetSocketAddress(InetAddress.getLoopbackAddress(), 0)
-      else {
-        endpoint.asInstanceOf[InetSocketAddress]
+    val ep = endpoint.asInstanceOf[InetSocketAddress]
+    val (addr, port, choseWildcardAddress) = {
+      val effectivePort = if (endpoint == null) 0 else ep.getPort
+      if ((endpoint == null) || ep.getAddress == null) {
+        (SocketHelpers.getWildcardAddressForBind(), effectivePort, true)
+      } else {
+        (ep.getAddress, effectivePort, false)
       }
+    }
 
     checkClosedAndCreate
 
-    this.bindAddr = addr.getAddress
-    impl.bind(this.bindAddr, addr.getPort)
+    /* When presented with a true IPv6 wildcard address, Scala JVM on
+     * Linux & macOS will bind using an IPv6 address, so that the listen
+     * will happen for both IPv6 & IPv4.
+     *
+     * On macOS "netstat -a | grep LISTEN"" will show a tcp46 socket in
+     * use (example uses port 8090, your results may vary.):
+     *   "tcp46      0      0  *.8090 *.* LISTEN"
+     *
+     * Linux shows:
+     *    "tcp6       0      0 [::]:8090 [::]:* LISTEN"
+     * Shows "tcp6" but also listening on the IPv4 address is implied.
+     *
+     * The tricky part is that they display (toString()) the local
+     * InetAddress as IPv4 (0.0.0.0).
+     *   "LocalSocketAddress: |0.0.0.0/0.0.0.0:8090|"
+     *
+     * This section, and SocketHelpers.getWildcardAddressForBind()
+     * will need to be revisited for robust FreeBSD support.
+     * See also notes in getWildcardAddressForBind().
+     */
+
+    val trickyAddr =
+      if (addr != SocketHelpers.getWildcardAddress()) addr
+      else SocketHelpers.getWildcardAddressForBind()
+
+    impl.bind(trickyAddr, port)
+
+    this.bindAddr = addr
     this.port = impl.localport
     bound = true
     impl.listen(backlog)

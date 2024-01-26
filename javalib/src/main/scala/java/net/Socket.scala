@@ -137,7 +137,7 @@ class Socket protected (
     val addr =
       if (bindpoint == null ||
           bindpoint.asInstanceOf[InetSocketAddress].getAddress == null)
-        new InetSocketAddress(InetAddress.getLoopbackAddress(), 0)
+        new InetSocketAddress(SocketHelpers.getWildcardAddressForBind(), 0)
       else {
         bindpoint.asInstanceOf[InetSocketAddress]
       }
