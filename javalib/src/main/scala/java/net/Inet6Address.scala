@@ -44,8 +44,10 @@ final class Inet6Address private (
 
   override def hashCode(): Int = {
     var res = 1
+    // Arrays.hashCode() returns 0 if ipAddress is null.
     res = 31 * res + ju.Arrays.hashCode(ipAddress)
-    res = 31 * res + host.hashCode()
+    if (host != null)
+      res = 31 * res + host.hashCode()
     res = 31 * res + useScopeId.hashCode()
     res = 31 * res + scopeId.hashCode()
     if (nif != null)

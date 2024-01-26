@@ -180,4 +180,83 @@ class Inet6AddressTest {
     )
   }
 
+  // Issue 3707
+  @Test def hashcodeShouldBeRobustToNullHostnames(): Unit = {
+    /* hashCode() was throwing NullPointerException when the Inet6Address
+     * was created with an explicitly null hostname. If such creation
+     * _can_ be done, it _will_ be done in the wild.
+     *
+     * Use the == method to test both itself & the hashCode it uses internally.
+     */
+
+    val addrBytes = Array[Byte](
+      0xfe.toByte,
+      0x80.toByte,
+      0.toByte,
+      0.toByte,
+      0.toByte,
+      0.toByte,
+      0.toByte,
+      0.toByte,
+      0x02.toByte,
+      0x11.toByte,
+      0x25.toByte,
+      0xff.toByte,
+      0xfe.toByte,
+      0xf8.toByte,
+      0x7c.toByte,
+      0xb2.toByte
+    )
+
+    val commonScopeId = 41 // Use an arbitrary non-zero positive number.
+
+    val addr6_1 = Inet6Address.getByAddress(null, addrBytes, commonScopeId)
+    val addr6_2 = Inet6Address.getByAddress(null, addrBytes, commonScopeId)
+
+    // make addrs differ. Pick an arbitrary byte & arbitrary different value.
+    val differentAddrBytes = addrBytes.clone() // ensure different arrays
+    differentAddrBytes(14) = 0xff.toByte
+    val addr6_3 =
+      Inet6Address.getByAddress(null, differentAddrBytes, commonScopeId)
+
+    assertNotNull("addr6_1", addr6_1)
+    assertNotNull("addr6_2", addr6_2)
+    assertNotNull("addr6_3", addr6_3)
+
+    assertEquals(
+      "hashCodes addr6_1 & addr6_2 ",
+      addr6_1.hashCode(),
+      addr6_2.hashCode()
+    )
+
+    /* Careful here!
+     *   One would expect the "assertTrue" here and the corresponding
+     *   "assertFalse" statements here to be "assertEquals" &
+     *   "assertNotEquals" so that the arguments would get printed out
+     *   on failure. That speeds debugging.
+     *
+     *   Unfortunately, "assertEquals" and "assertNotEquals" are not
+     *   useful here.
+     *
+     *   The addresses in this test have a strictly positive scope_id
+     *   by intent. That will cause, say, addr6_1.toString() to create
+     *   a string containing the '%' character.
+     *
+     *   Both Scala JVM and Native have difficulties formatting
+     *   the '%' when used in a string interpolator. "assertEquals"
+     *   and "assertNotEquals" appear to use a string interpolator
+     *   and fail when given the '%'.
+     */
+
+    assertTrue("expected addr6_1 & addr6_2 to be ==", addr6_1 == addr6_2)
+
+    assertNotEquals(
+      "hashCodes addr6_1 & addr6_3",
+      addr6_1.hashCode(),
+      addr6_3.hashCode()
+    )
+
+    assertFalse("expected addr6_1 & addr6_3 to be !=", addr6_1 == addr6_3)
+  }
+
 }
