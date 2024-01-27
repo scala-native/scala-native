@@ -3,7 +3,7 @@
 
 #include "shared/ThreadUtil.h"
 #include <stdio.h>
-#include <errno.h>
+#include <limits.h>
 
 INLINE
 bool thread_create(thread_t *ref, routine_fn routine, void *data) {
@@ -92,7 +92,7 @@ bool mutex_unlock(mutex_t *ref) {
 INLINE
 bool semaphore_open(semaphore_t *ref, char *name, unsigned int initValue) {
 #ifdef _WIN32
-    HANDLE sem = CreateSemaphore(NULL, initValue, 128, NULL);
+    HANDLE sem = CreateSemaphore(NULL, initValue, LONG_MAX, NULL);
     *ref = sem;
     return sem != NULL;
 #else

@@ -118,9 +118,9 @@ void *GCThread_loop(void *arg) {
                     LastError);
             exit(ExitValue);
         }
+        thread->active = true;
         // hard fence before proceeding with the next phase
         atomic_thread_fence(memory_order_seq_cst);
-        thread->active = true;
 
         uint8_t phase = heap->gcThreads.phase;
         switch (phase) {
@@ -157,9 +157,9 @@ void *GCThread_loopMaster(void *arg) {
                     LastError);
             exit(ExitValue);
         }
+        thread->active = true;
         // hard fence before proceeding with the next phase
         atomic_thread_fence(memory_order_seq_cst);
-        thread->active = true;
 
         uint8_t phase = heap->gcThreads.phase;
         switch (phase) {
@@ -233,8 +233,17 @@ INLINE void GCThread_WakeMaster(Heap *heap) {
 
 INLINE void GCThread_WakeWorkers(Heap *heap, int toWake) {
     semaphore_t startWorkers = heap->gcThreads.startWorkers;
+    int maxThreads = heap->gcThreads.count;
+    long prevCount = 0;
     for (int i = 0; i < toWake; i++) {
+#ifdef _WIN32
+        bool status = ReleaseSemaphore(startWorkers, 1, &prevCount);
+        if (prevCount > maxThreads)
+            break;
+        if (!status) {
+#else
         if (!semaphore_unlock(startWorkers)) {
+#endif
             fprintf(stderr,
                     "Releasing semaphore failed in commix "
                     "GCThread_WakeWorkers, error=%" PRIdErr "\n",
@@ -247,20 +256,20 @@ INLINE void GCThread_WakeWorkers(Heap *heap, int toWake) {
 INLINE void GCThread_Wake(Heap *heap, int toWake) {
     if (toWake > 0) {
         GCThread_WakeMaster(heap);
+        GCThread_WakeWorkers(heap, toWake - 1);
     }
-    GCThread_WakeWorkers(heap, toWake - 1);
 }
 
 void GCThread_ScaleMarkerThreads(Heap *heap, uint32_t remainingFullPackets) {
     if (remainingFullPackets > MARK_SPAWN_THREADS_MIN_PACKETS) {
         int maxThreads = heap->gcThreads.count;
-        int activeThreads = GCThread_ActiveCount(heap);
         int targetThreadCount =
             (remainingFullPackets - MARK_SPAWN_THREADS_MIN_PACKETS) /
             MARK_MIN_PACKETS_PER_THREAD;
         if (targetThreadCount > maxThreads) {
             targetThreadCount = maxThreads;
         }
+        int activeThreads = GCThread_ActiveCount(heap);
         int toSpawn = targetThreadCount - activeThreads;
         if (toSpawn > 0) {
             GCThread_WakeWorkers(heap, toSpawn);
