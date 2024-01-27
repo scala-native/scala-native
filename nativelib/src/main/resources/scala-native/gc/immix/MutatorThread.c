@@ -4,7 +4,6 @@
 #include "State.h"
 #include <stdlib.h>
 #include <stdatomic.h>
-#include <setjmp.h>
 #include "shared/ThreadUtil.h"
 #include <assert.h>
 

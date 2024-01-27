@@ -166,7 +166,8 @@ void Phase_StartSweep(Heap *heap) {
     if (threadsToStart > gcThreadCount) {
         threadsToStart = gcThreadCount;
     }
-    GCThread_Wake(heap, threadsToStart);
+    int activeThreads = GCThread_ActiveCount(heap);
+    GCThread_Wake(heap, threadsToStart - activeThreads);
 }
 
 void Phase_SweepDone(Heap *heap, Stats *stats) {
