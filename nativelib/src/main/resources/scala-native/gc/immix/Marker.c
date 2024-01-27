@@ -73,12 +73,14 @@ static inline void Marker_markLockWords(Heap *heap, Stack *stack,
 
 void Marker_markConservative(Heap *heap, Stack *stack, word_t *address) {
     assert(Heap_IsWordInHeap(heap, address));
-    Object *object = Object_GetUnmarkedObject(heap, address);
-    Bytemap *bytemap = heap->bytemap;
-    if (object != NULL) {
-        ObjectMeta *objectMeta = Bytemap_Get(bytemap, (word_t *)object);
-        if (ObjectMeta_IsAllocated(objectMeta)) {
-            Marker_markObject(heap, stack, bytemap, object, objectMeta);
+    if (Bytemap_isPtrAligned(address)) {
+        Object *object = Object_GetUnmarkedObject(heap, address);
+        Bytemap *bytemap = heap->bytemap;
+        if (object != NULL) {
+            ObjectMeta *objectMeta = Bytemap_Get(bytemap, (word_t *)object);
+            if (ObjectMeta_IsAllocated(objectMeta)) {
+                Marker_markObject(heap, stack, bytemap, object, objectMeta);
+            }
         }
     }
 }
@@ -110,10 +112,9 @@ void Marker_Mark(Heap *heap, Stack *stack) {
                 Marker_markField(heap, stack, object->fields[ptr_map[i]]);
             }
             if (objectId == __boxed_ptr_id) {
+                // Boxed ptr always has a single field
                 word_t *rawPtr = object->fields[0];
-                if (Heap_IsWordInHeap(heap, rawPtr) &&
-                    Bytemap_isPtrAligned(rawPtr)) {
-                    // Boxed ptr always has a single field
+                if (Heap_IsWordInHeap(heap, rawPtr)) {
                     Marker_markConservative(heap, stack, rawPtr);
                 }
             }
@@ -127,7 +128,7 @@ NO_SANITIZE static void Marker_markRange(Heap *heap, Stack *stack,
     assert(to != NULL);
     for (word_t **current = from; current <= to; current += 1) {
         word_t *addr = *current;
-        if (Heap_IsWordInHeap(heap, addr) && Bytemap_isPtrAligned(addr)) {
+        if (Heap_IsWordInHeap(heap, addr)) {
             Marker_markConservative(heap, stack, addr);
         }
     }

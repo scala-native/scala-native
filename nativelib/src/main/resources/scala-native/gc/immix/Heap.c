@@ -384,6 +384,9 @@ void Heap_Recycle(Heap *heap) {
         lineMetas += LINE_COUNT * size;
     }
 
+#ifdef SCALANATIVE_MULTITHREADING_ENABLED
+    atomic_thread_fence(memory_order_seq_cst);
+#endif
     if (Heap_shouldGrow(heap)) {
         double growth;
         if (heap->heapSize < EARLY_GROWTH_THRESHOLD) {
@@ -409,6 +412,9 @@ void Heap_Recycle(Heap *heap) {
         }
         Allocator_InitCursors(&thread->allocator);
     }
+#ifdef SCALANATIVE_MULTITHREADING_ENABLED
+    atomic_thread_fence(memory_order_seq_cst);
+#endif
 }
 
 void Heap_Grow(Heap *heap, uint32_t incrementInBlocks) {

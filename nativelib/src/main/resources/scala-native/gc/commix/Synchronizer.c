@@ -69,8 +69,10 @@ static LONG WINAPI SafepointTrapHandler(EXCEPTION_POINTERS *ex) {
 static struct sigaction defaultAction;
 static sigset_t threadWakupSignals;
 static void SafepointTrapHandler(int signal, siginfo_t *siginfo, void *uap) {
+    int old_errno = errno;
     if (siginfo->si_addr == scalanative_GC_yieldpoint_trap) {
         Synchronizer_yield();
+        errno = old_errno;
     } else {
         fprintf(stderr,
                 "Unexpected signal %d when accessing memory at address %p\n",

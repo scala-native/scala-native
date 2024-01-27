@@ -51,7 +51,9 @@ static void *GCThread_WeakThreadsHandlerLoop(void *arg) {
 #endif
         MutatorThread_switchState(currentMutatorThread,
                                   GC_MutatorThreadState_Managed);
+        atomic_thread_fence(memory_order_seq_cst);
         WeakRefStack_CallHandlers();
+        atomic_thread_fence(memory_order_release);
         MutatorThread_switchState(currentMutatorThread,
                                   GC_MutatorThreadState_Unmanaged);
         atomic_store(&self->isActive, false);
