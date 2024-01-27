@@ -76,7 +76,6 @@ INLINE void MutatorThread_switchState(MutatorThread *self,
 
     case GC_MutatorThreadState_Managed:
         atomic_store_explicit(&self->stackTop, 0, memory_order_release);
-        atomic_thread_fence(memory_order_acquire);
         break;
     }
     self->state = newState;
