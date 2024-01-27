@@ -91,7 +91,16 @@ class InetAddressTest {
     val ia = InetAddress.getByName("127.0.0.1") // numeric lookup path
 
     val ia2 = InetAddress.getByName("localhost") // non-numeric lookup path
-    assertEquals("a1", ia, ia2)
+
+    /* compare only address parts. host names may well differ because of
+     * the way the InternetAddresses were gotten.
+     * ia host should null or "". ia2 host should be "localhost".
+     */
+//    assertEquals("a1", ia.getHostAddress(), ia2.getHostAddress)
+    assertTrue(
+      "ia and ia2 address bytes should be the same",
+      java.util.Arrays.equals(ia.getAddress(), ia2.getAddress())
+    )
 
     // Test IPv4 archaic variant addresses.
     val i1 = InetAddress.getByName("1.2.3")

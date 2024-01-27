@@ -1,5 +1,6 @@
 package org.scalanative.testsuite.javalib.net
 
+import java.io.IOException
 import java.net.BindException
 import java.net.DatagramPacket
 import java.net.DatagramSocket
@@ -9,12 +10,11 @@ import java.net.NetworkInterface
 import java.net.SocketAddress
 import java.net.SocketException
 import java.net.SocketTimeoutException
+import java.{util => ju}
 
 import org.junit.Test
 import org.junit.Assert._
 import org.junit.Assume._
-
-import java.io.IOException
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform
@@ -290,11 +290,16 @@ class DatagramSocketTest {
       val remoteAddress =
         result.getSocketAddress().asInstanceOf[InetSocketAddress]
       assertEquals("Received incorrect data", data, receivedData)
-      assertEquals(
+
+      // Compare only address bytes, host names may vary (null, "", etc)
+      assertTrue(
         "Received incorrect address",
-        ds1.getLocalAddress(),
-        remoteAddress.getAddress()
+        ju.Arrays.equals(
+          ds1.getLocalAddress().getAddress,
+          remoteAddress.getAddress().getAddress
+        )
       )
+
       assertEquals(
         "Received incorrect port",
         ds1.getLocalPort(),

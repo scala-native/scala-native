@@ -115,10 +115,11 @@ object Inet6Address {
      * Explicitly specified 0 scopeIds are considered supplied.
      * Elsewhere implicit 0 scopeIds, say from a sin6_scope_id, are not.
      */
+    val clonedAddr = addr.clone
     if (scopeId < 0)
-      Inet6Address(addr, host)
+      Inet6Address(clonedAddr, host)
     else
-      new Inet6Address(addr, host, true, scopeId, null)
+      new Inet6Address(clonedAddr, host, true, scopeId, null)
   }
 
   def getByAddress(
@@ -134,9 +135,15 @@ object Inet6Address {
      * scopeId of 0.
      */
 
-    new Inet6Address(addr, host, false, 0, nif)
+    new Inet6Address(addr.clone, host, false, 0, nif)
   }
 
+  /* All callers are under the control of java.net., so one can use the
+   * well performing but fragile convention that caller has provided addr
+   * bytes which not be mutated later. This means there need to pay the
+   * price of cloning bytes which have already been cloned (or
+   * carefully guarded).
+   */
   private[net] def apply(
       addr: Array[Byte],
       host: String
