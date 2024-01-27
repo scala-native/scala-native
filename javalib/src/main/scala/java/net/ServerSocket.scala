@@ -56,7 +56,7 @@ class ServerSocket(
     s.port = s.impl.port
     s.localPort = s.impl.localport
     s.addr = s.impl.address
-    s.localAddr = SocketHelpers.fetchFdLocalAddress(s.impl.fd)
+    s.localAddr = SocketHelpers.fetchFdLocalAddress(s.impl.fd.fd)
 
     s.created = true
     s.bound = true

@@ -392,15 +392,15 @@ object SocketHelpers {
     else wildcardIPv6()
   }
 
-  private[net] def fetchFdLocalAddress(fd: FileDescriptor): InetAddress = {
+  private[net] def fetchFdLocalAddress(osFd: Int): InetAddress = {
+    // allocate largest possible buffer, then pass generic overlay 'sin' to C.
     val storage = stackalloc[socket.sockaddr_storage]()
     val sin = storage.asInstanceOf[Ptr[socket.sockaddr]]
-    val address = storage.asInstanceOf[Ptr[socket.sockaddr]]
     val addressLen = stackalloc[socket.socklen_t]()
     !addressLen = sizeof[in.sockaddr_in6].toUInt
 
     if (socket.getsockname(
-          fd.fd,
+          osFd,
           sin,
           addressLen
         ) == -1) {
