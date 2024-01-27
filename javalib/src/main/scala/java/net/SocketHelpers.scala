@@ -4,10 +4,12 @@ import scala.scalanative.unsigned._
 import scala.scalanative.unsafe._
 
 import java.io.IOException
+import java.io.FileDescriptor
 
 import scala.scalanative.posix.arpa.inet
 import scala.scalanative.posix.{netdb, netdbOps}, netdb._, netdbOps._
 import scala.scalanative.posix.netinet.{in, inOps}, in._, inOps._
+import scala.scalanative.posix.sys.socket
 import scala.scalanative.posix.sys.socket._
 import scala.scalanative.posix.sys.socketOps._
 import scala.scalanative.posix.string.memcpy
@@ -388,6 +390,24 @@ object SocketHelpers {
     if (LinktimeInfo.isFreeBSD) wildcardIPv4()
     else if (useIPv4Stack) wildcardIPv4()
     else wildcardIPv6()
+  }
+
+  private[net] def fetchFdLocalAddress(fd: FileDescriptor): InetAddress = {
+    val storage = stackalloc[socket.sockaddr_storage]()
+    val sin = storage.asInstanceOf[Ptr[socket.sockaddr]]
+    val address = storage.asInstanceOf[Ptr[socket.sockaddr]]
+    val addressLen = stackalloc[socket.socklen_t]()
+    !addressLen = sizeof[in.sockaddr_in6].toUInt
+
+    if (socket.getsockname(
+          fd.fd,
+          sin,
+          addressLen
+        ) == -1) {
+      throw new SocketException("getsockname failed")
+    }
+
+    SocketHelpers.sockaddrToInetAddress(sin, "")
   }
 
 }
