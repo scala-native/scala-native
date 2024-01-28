@@ -328,19 +328,19 @@ object SocketHelpers {
   private[net] lazy val loopbackIPv4: InetAddress =
     InetAddress.getByAddress(Array[Byte](127, 0, 0, 1))
 
-  private[net] lazy val loopbackIPv6: InetAddress = InetAddress.getByAddress(
+  private[net] lazy val loopbackIPv6 = InetAddress.getByAddress(
     Array[Byte](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1)
   )
 
-  private lazy val wildcardIPv4: InetAddress =
+  private lazy val wildcardIPv4 =
     InetAddress.getByAddress("0.0.0.0", Array[Byte](0, 0, 0, 0))
 
-  private lazy val wildcardIPv6: InetAddress = InetAddress.getByAddress(
+  private lazy val wildcardIPv6 = InetAddress.getByAddress(
     "0:0:0:0:0:0:0:0",
     Array[Byte](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
   )
 
-  private lazy val useLoopbackIPv6: Boolean = {
+  private lazy val useLoopbackIPv6 = {
     getPreferIPv6Addresses() match {
       case Some(useIPv6) => useIPv6
       case None =>
@@ -363,7 +363,7 @@ object SocketHelpers {
     else loopbackIPv4
   }
 
-  private lazy val useWildcardIPv6: Boolean = {
+  private lazy val useWildcardIPv6 = {
     getPreferIPv6Addresses() match {
       case Some(useIPv6) => useIPv6
       // For "system" case assume wildcard & loopback both use same protocol.
