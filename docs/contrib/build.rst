@@ -81,7 +81,7 @@ Organization of the build
 The build has roughly five groups of sub-projects as follows:
 
 1.  The compiler plugin, which generates NIR files. It is used in all the
-    Scana Native artifacts in the build, with
+    Scala Native artifacts in the build, with
     ``.dependsOn(nscplugin % "plugin")``. This is a JVM project.
 
     - ``nscplugin``
@@ -164,15 +164,15 @@ Working with scalalib overrides
 -------------------------------
 Scalalib project does not introduce any new classes but provides overrides
 for the existing Scala standard library. Some of these overrides exist to improve
-the performance of Scala Native, eg. by explicit inlining of some methods. 
-When running `scalalib/compile` it will automatically use existing `*.scala` files defined in `overrides` directories. To reduce the number of changes between overrides and 
-original Scala sources, we have introduced a patching mechanism. 
+the performance of Scala Native, eg. by explicit inlining of some methods.
+When running `scalalib/compile` it will automatically use existing `*.scala` files defined in `overrides` directories. To reduce the number of changes between overrides and
+original Scala sources, we have introduced a patching mechanism.
 Each file defined with the name `*.scala.patch` contains generated patch, which would be applied
 onto source defined for the current Scala version inside its standard library.
 In case `overrides*` directory contains both `*.scala` file and its corresponding patch file,
-only `*.scala` file would be added to the compilation sources.  
+only `*.scala` file would be added to the compilation sources.
 
-To operate with patches it is recommended to use ScalaCLI script `scripts/scalalib-patch-tool.sc`. 
+To operate with patches it is recommended to use ScalaCLI script `scripts/scalalib-patch-tool.sc`.
 It takes 2 mandatory arguments: command to use and Scala version. There are currently 3 supported commands defined:
 * recreate - creates `*.scala` files based on original sources with applied patches corresponding to their name;
 * create - creates `*.scala.patch` files from defined `*.scala` files in overrides directory with corresponding name;
@@ -180,10 +180,10 @@ It takes 2 mandatory arguments: command to use and Scala version. There are curr
 
 (e.g. `scala-cli scripts/scalalib-patch-tool.sc -- recreate 2.13.10`)
 
-Each of these commands is applied to all files defined in the overrides directory. 
-By default override directory is selected based on the used scala version, 
-if it's not the present script will try to use directory with corresponding Scala binary version, 
-or it would try to use Scala epoch version or `overrides` directory. If none of these directories exists it will fail. 
+Each of these commands is applied to all files defined in the overrides directory.
+By default override directory is selected based on the used scala version,
+if it's not the present script will try to use directory with corresponding Scala binary version,
+or it would try to use Scala epoch version or `overrides` directory. If none of these directories exists it will fail.
 It is also possible to define explicitly overrides directory to use by passing it as the third argument to the script.
 
 The next section has more build and development information for those wanting
