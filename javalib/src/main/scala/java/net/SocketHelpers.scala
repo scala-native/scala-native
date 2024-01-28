@@ -325,17 +325,17 @@ object SocketHelpers {
    */
 
   // ScalaJVM shows loopbacks with null host, wildcards with numeric host.
-  private[net] val loopbackIPv4: InetAddress =
+  private[net] lazy val loopbackIPv4: InetAddress =
     InetAddress.getByAddress(Array[Byte](127, 0, 0, 1))
 
-  private[net] val loopbackIPv6: InetAddress = InetAddress.getByAddress(
+  private[net] lazy val loopbackIPv6: InetAddress = InetAddress.getByAddress(
     Array[Byte](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1)
   )
 
-  private val wildcardIPv4: InetAddress =
+  private lazy val wildcardIPv4: InetAddress =
     InetAddress.getByAddress("0.0.0.0", Array[Byte](0, 0, 0, 0))
 
-  private val wildcardIPv6: InetAddress = InetAddress.getByAddress(
+  private lazy val wildcardIPv6: InetAddress = InetAddress.getByAddress(
     "0:0:0:0:0:0:0:0",
     Array[Byte](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
   )
