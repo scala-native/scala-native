@@ -320,20 +320,22 @@ object SocketHelpers {
     new InetSocketAddress(addr, port)
   }
 
-  // Create copies of loopback & wildcard, so that originals never get changed
+  /* InetAddress() & Inet6Address() make defensive copies of the Array[Byte].
+   * As a result, these originals can never get changed.
+   */
 
   // ScalaJVM shows loopbacks with null host, wildcards with numeric host.
-  private[net] def loopbackIPv4(): InetAddress =
+  private[net] val loopbackIPv4: InetAddress =
     InetAddress.getByAddress(Array[Byte](127, 0, 0, 1))
 
-  private[net] def loopbackIPv6(): InetAddress = InetAddress.getByAddress(
+  private[net] val loopbackIPv6: InetAddress = InetAddress.getByAddress(
     Array[Byte](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1)
   )
 
-  private def wildcardIPv4(): InetAddress =
+  private val wildcardIPv4: InetAddress =
     InetAddress.getByAddress("0.0.0.0", Array[Byte](0, 0, 0, 0))
 
-  private def wildcardIPv6(): InetAddress = InetAddress.getByAddress(
+  private val wildcardIPv6: InetAddress = InetAddress.getByAddress(
     "0:0:0:0:0:0:0:0",
     Array[Byte](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
   )
@@ -357,8 +359,8 @@ object SocketHelpers {
   }
 
   private[net] def getLoopbackAddress(): InetAddress = {
-    if (useLoopbackIPv6) loopbackIPv6()
-    else loopbackIPv4()
+    if (useLoopbackIPv6) loopbackIPv6
+    else loopbackIPv4
   }
 
   private lazy val useWildcardIPv6: Boolean = {
@@ -370,8 +372,8 @@ object SocketHelpers {
   }
 
   private[net] def getWildcardAddress(): InetAddress = {
-    if (useWildcardIPv6) wildcardIPv6()
-    else wildcardIPv4()
+    if (useWildcardIPv6) wildcardIPv6
+    else wildcardIPv4
   }
 
 }

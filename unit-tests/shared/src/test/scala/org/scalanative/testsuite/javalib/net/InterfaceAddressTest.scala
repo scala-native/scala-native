@@ -91,7 +91,10 @@ class InterfaceAddressTest {
           if (!hostAddr.contains(":")) {
             "127.0.0.1"
           } else if (hostAddr.startsWith("0")) {
-            s"0:0:0:0:0:0:0:1%${loopbackIfName}"
+            val suffix =
+              if (Platform.isFreeBSD) ""
+              else s"%${loopbackIfName}"
+            s"0:0:0:0:0:0:0:1${suffix}"
           } else if (hostAddr.startsWith("f")) {
             s"${osIPv6LoopbackAddress}"
           } else "" // fail in a way that will print out ifAddrString
@@ -161,7 +164,10 @@ class InterfaceAddressTest {
           if (!ifAddrString.contains(":")) {
             "/127.0.0.1/8 [null]"
           } else if (ifAddrString.startsWith("/0")) {
-            s"/0:0:0:0:0:0:0:1%${loopbackIfName}/128 [null]"
+            val stem =
+              if (Platform.isFreeBSD) ""
+              else s"%${loopbackIfName}"
+            s"/0:0:0:0:0:0:0:1${stem}/128 [null]"
           } else if (ifAddrString.startsWith("/f")) {
             s"/${osIPv6LoopbackAddress}/${osIPv6PrefixLength} [null]"
           } else "" // fail in a way that will print out ifAddrString

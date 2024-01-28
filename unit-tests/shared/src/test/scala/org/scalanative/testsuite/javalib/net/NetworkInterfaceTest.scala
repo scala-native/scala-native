@@ -25,12 +25,6 @@ object NetworkInterfaceTest {
   @BeforeClass
   def beforeClass(): Unit = {
 
-//    assumeFalse(
-    assumeTrue(
-      "Test has not yet been configured for FreeBSD",
-      Platform.isFreeBSD
-    )
-
     assumeFalse("Not implemented in Windows", Platform.isWindows)
   }
 }
@@ -233,7 +227,9 @@ class NetworkInterfaceTest {
         if (!hostAddr.contains(":")) {
           "127.0.0.1"
         } else if (hostAddr.startsWith("0")) {
-          s"0:0:0:0:0:0:0:1%${loopbackIfName}"
+          val stem = "0:0:0:0:0:0:0:1"
+          if (Platform.isFreeBSD) stem
+          else s"${stem}%${loopbackIfName}"
         } else if (hostAddr.startsWith("f")) {
           s"${osIPv6LoopbackAddress}"
         } else "" // fail in a way that will print out ifAddrString

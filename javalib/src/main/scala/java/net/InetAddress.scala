@@ -732,7 +732,7 @@ object InetAddress {
          *   to creating an InetAddress using the hostname and the IPv4
          *   loopback address 127.0.0.1.  Be robust and do the same here.
          */
-        case e: UnknownHostException => SocketHelpers.loopbackIPv4()
+        case e: UnknownHostException => SocketHelpers.loopbackIPv4
       }
     }
   }
