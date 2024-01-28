@@ -92,7 +92,7 @@ static inline Chunk *LargeAllocator_getChunkForSize(LargeAllocator *allocator,
     return NULL;
 }
 
-Object *LargeAllocator_GetBlock(LargeAllocator *allocator,
+word_t *LargeAllocator_tryAlloc(LargeAllocator *allocator,
                                 size_t requestedBlockSize) {
     size_t actualBlockSize =
         MathUtils_RoundToNextMultiple(requestedBlockSize, MIN_BLOCK_SIZE);
@@ -133,7 +133,7 @@ Object *LargeAllocator_GetBlock(LargeAllocator *allocator,
 
     ObjectMeta *objectMeta = Bytemap_Get(allocator->bytemap, (word_t *)chunk);
     ObjectMeta_SetAllocated(objectMeta);
-    Object *object = (Object *)chunk;
+    word_t *object = (word_t *)chunk;
     memset(object, 0, actualBlockSize);
     return object;
 }
@@ -206,6 +206,33 @@ void LargeAllocator_Sweep(LargeAllocator *allocator, BlockMeta *blockMeta,
         size_t currentSize = (current - chunkStart) * WORD_SIZE;
         LargeAllocator_AddChunk(allocator, (Chunk *)chunkStart, currentSize);
     }
+}
+
+word_t *LargeAllocator_Alloc(Heap *heap, uint32_t size) {
+    assert(size % ALLOCATION_ALIGNMENT == 0);
+    assert(size >= MIN_BLOCK_SIZE);
+    LargeAllocator *largeAllocator = &currentMutatorThread->largeAllocator;
+    word_t *object = LargeAllocator_tryAlloc(largeAllocator, size);
+    if (object != NULL) {
+    done:
+        assert(object != NULL);
+        assert(Heap_IsWordInHeap(heap, (word_t *)object));
+        return object;
+    }
+
+    Heap_Collect(heap, &stack);
+
+    object = LargeAllocator_tryAlloc(largeAllocator, size);
+    if (object != NULL)
+        goto done;
+
+    size_t increment = MathUtils_DivAndRoundUp(size, BLOCK_TOTAL_SIZE);
+    uint32_t pow2increment = 1U << MathUtils_Log2Ceil(increment);
+    Heap_Grow(heap, pow2increment);
+
+    object = LargeAllocator_tryAlloc(largeAllocator, size);
+
+    goto done;
 }
 
 #endif

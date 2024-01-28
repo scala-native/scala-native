@@ -10,6 +10,7 @@
 
 bool Allocator_getNextLine(Allocator *allocator);
 bool Allocator_newBlock(Allocator *allocator);
+bool Allocator_newOverflowBlock(Allocator *allocator);
 
 void Allocator_Init(Allocator *allocator, BlockAllocator *blockAllocator,
                     Bytemap *bytemap, word_t *blockMetaStart,
@@ -20,7 +21,6 @@ void Allocator_Init(Allocator *allocator, BlockAllocator *blockAllocator,
     allocator->heapStart = heapStart;
 
     BlockList_Init(&allocator->recycledBlocks, blockMetaStart);
-
     allocator->recycledBlockCount = 0;
 }
 
@@ -33,20 +33,39 @@ void Allocator_Init(Allocator *allocator, BlockAllocator *blockAllocator,
  * otherwise.
  */
 bool Allocator_CanInitCursors(Allocator *allocator) {
-    uint64_t freeBlockCount = allocator->blockAllocator->freeBlockCount;
+    uint32_t freeBlockCount =
+        (uint32_t)allocator->blockAllocator->freeBlockCount;
     return freeBlockCount >= 2 ||
            (freeBlockCount == 1 && allocator->recycledBlockCount > 0);
 }
 
-void Allocator_InitCursors(Allocator *allocator) {
-    // Init cursor
-    BlockMeta *largeBlock;
-    while (true) {
-        bool didInit = Allocator_newBlock(allocator);
-        largeBlock = BlockAllocator_GetFreeBlock(allocator->blockAllocator);
-        if (didInit && largeBlock != NULL)
-            break;
-        Heap_Grow(&heap, 2);
+void Allocator_InitCursors(Allocator *allocator, bool canCollect) {
+    while (!(Allocator_newBlock(allocator) &&
+             Allocator_newOverflowBlock(allocator))) {
+        if (Heap_isGrowingPossible(&heap, 2))
+            Heap_Grow(&heap, 2);
+        else if (canCollect)
+            Heap_Collect(&heap, &stack);
+        else
+            Heap_exitWithOutOfMemory(
+                "Not enough memory to allocate GC mutator thread allocator");
+    }
+}
+
+void Allocator_Clear(Allocator *allocator) {
+    BlockList_Clear(&allocator->recycledBlocks);
+    allocator->recycledBlockCount = 0;
+    allocator->limit = NULL;
+    allocator->block = NULL;
+    allocator->largeLimit = NULL;
+    allocator->largeBlock = NULL;
+}
+
+bool Allocator_newOverflowBlock(Allocator *allocator) {
+    BlockMeta *largeBlock =
+        BlockAllocator_GetFreeBlock(allocator->blockAllocator);
+    if (largeBlock == NULL) {
+        return false;
     }
     allocator->largeBlock = largeBlock;
     word_t *largeBlockStart = BlockMeta_GetBlockStart(
@@ -54,11 +73,7 @@ void Allocator_InitCursors(Allocator *allocator) {
     allocator->largeBlockStart = largeBlockStart;
     allocator->largeCursor = largeBlockStart;
     allocator->largeLimit = Block_GetBlockEnd(largeBlockStart);
-}
-
-void Allocator_Clear(Allocator *allocator) {
-    BlockList_Clear(&allocator->recycledBlocks);
-    allocator->recycledBlockCount = 0;
+    return true;
 }
 
 /**
@@ -71,21 +86,11 @@ word_t *Allocator_overflowAllocation(Allocator *allocator, size_t size) {
     word_t *end = (word_t *)((uint8_t *)start + size);
 
     if (end > allocator->largeLimit) {
-        BlockMeta *block =
-            BlockAllocator_GetFreeBlock(allocator->blockAllocator);
-        if (block == NULL) {
+        if (!Allocator_newOverflowBlock(allocator)) {
             return NULL;
         }
-        allocator->largeBlock = block;
-        word_t *blockStart = BlockMeta_GetBlockStart(
-            allocator->blockMetaStart, allocator->heapStart, block);
-        allocator->largeBlockStart = blockStart;
-        allocator->largeCursor = blockStart;
-        allocator->largeLimit = Block_GetBlockEnd(blockStart);
         return Allocator_overflowAllocation(allocator, size);
     }
-
-    memset(start, 0, size);
 
     allocator->largeCursor = end;
 
@@ -95,25 +100,23 @@ word_t *Allocator_overflowAllocation(Allocator *allocator, size_t size) {
 /**
  * Allocation fast path, uses the cursor and limit.
  */
-INLINE word_t *Allocator_Alloc(Allocator *allocator, size_t size) {
+INLINE word_t *Allocator_tryAlloc(Allocator *allocator, size_t size) {
     word_t *start = allocator->cursor;
     word_t *end = (word_t *)((uint8_t *)start + size);
     // Checks if the end of the block overlaps with the limit
     if (end > allocator->limit) {
-        // If it overlaps but the block to allocate is a `medium` sized block,
-        // use overflow allocation
+        // If it overlaps but the block to allocate is a `medium` sized
+        // block, use overflow allocation
         if (size > LINE_SIZE) {
             return Allocator_overflowAllocation(allocator, size);
         } else {
             // Otherwise try to get a new line.
             if (Allocator_getNextLine(allocator)) {
-                return Allocator_Alloc(allocator, size);
+                return Allocator_tryAlloc(allocator, size);
             }
             return NULL;
         }
     }
-
-    memset(start, 0, size);
 
     allocator->cursor = end;
 
@@ -125,6 +128,9 @@ INLINE word_t *Allocator_Alloc(Allocator *allocator, size_t size) {
  */
 bool Allocator_getNextLine(Allocator *allocator) {
     BlockMeta *block = allocator->block;
+    if (block == NULL) {
+        return Allocator_newBlock(allocator);
+    }
     word_t *blockStart = allocator->blockStart;
 
     int lineIndex = BlockMeta_FirstFreeLine(block);
@@ -137,9 +143,8 @@ bool Allocator_getNextLine(Allocator *allocator) {
     allocator->cursor = line;
     FreeLineMeta *lineMeta = (FreeLineMeta *)line;
     uint16_t size = lineMeta->size;
-    if (size == 0) {
+    if (size == 0)
         return Allocator_newBlock(allocator);
-    }
     BlockMeta_SetFirstFreeLine(block, lineMeta->next);
     allocator->limit = line + (size * WORDS_IN_LINE);
     assert(allocator->limit <= Block_GetBlockEnd(blockStart));
@@ -148,8 +153,8 @@ bool Allocator_getNextLine(Allocator *allocator) {
 }
 
 /**
- * Updates the the cursor and the limit of the Allocator to point to the first
- * free line of the new block.
+ * Updates the the cursor and the limit of the Allocator to point to the
+ * first free line of the new block.
  */
 bool Allocator_newBlock(Allocator *allocator) {
     assert(allocator != NULL);
@@ -188,6 +193,67 @@ bool Allocator_newBlock(Allocator *allocator) {
     allocator->blockStart = blockStart;
 
     return true;
+}
+
+NOINLINE word_t *Allocator_allocSlow(Allocator *allocator, Heap *heap,
+                                     uint32_t size) {
+    do {
+        word_t *object = Allocator_tryAlloc(allocator, size);
+
+        if (object != NULL) {
+        done:
+            assert(Heap_IsWordInHeap(heap, object));
+            assert(object != NULL);
+            memset(object, 0, size);
+            ObjectMeta *objectMeta = Bytemap_Get(allocator->bytemap, object);
+            ObjectMeta_SetAllocated(objectMeta);
+            return object;
+        }
+        Heap_Collect(heap, &stack);
+        object = Allocator_tryAlloc(allocator, size);
+
+        if (object != NULL)
+            goto done;
+
+        // A small object can always fit in a single free block
+        // because it is no larger than 8K while the block is 32K.
+        if (Heap_isGrowingPossible(heap, 1))
+            Heap_Grow(heap, 1);
+        else
+            Heap_exitWithOutOfMemory("");
+    } while (true);
+    return NULL; // unreachable
+}
+
+INLINE word_t *Allocator_Alloc(Heap *heap, uint32_t size) {
+    assert(size % ALLOCATION_ALIGNMENT == 0);
+    assert(size < MIN_BLOCK_SIZE);
+
+    Allocator *allocator = &currentMutatorThread->allocator;
+    word_t *start = allocator->cursor;
+    word_t *end = (word_t *)((uint8_t *)start + size);
+
+    // Checks if the end of the block overlaps with the limit
+    if (end > allocator->limit) {
+        return Allocator_allocSlow(allocator, heap, size);
+    }
+
+    allocator->cursor = end;
+
+    memset(start, 0, size);
+
+    word_t *object = start;
+    ObjectMeta *objectMeta = Bytemap_Get(heap->bytemap, object);
+    ObjectMeta_SetAllocated(objectMeta);
+
+    // prefetch starting from 36 words away from the object start
+    // rw = 0 => prefetch for reading
+    // locality = 3 => data has high locality, leave the values in as many
+    // caches as possible
+    __builtin_prefetch(object + 36, 0, 3);
+
+    assert(Heap_IsWordInHeap(heap, object));
+    return object;
 }
 
 #endif

@@ -176,6 +176,7 @@ int scalanative_GC_pthread_create(pthread_t *thread, pthread_attr_t *attr,
 void scalanative_GC_set_mutator_thread_state(GC_MutatorThreadState state) {
     MutatorThread_switchState(currentMutatorThread, state);
 }
+
 void scalanative_GC_yield() {
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
     if (atomic_load_explicit(&Synchronizer_stopThreads, memory_order_relaxed))

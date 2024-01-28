@@ -2,13 +2,10 @@
 #define IMMIX_HEAP_H
 
 #include "shared/GCTypes.h"
-#include "Allocator.h"
-#include "LargeAllocator.h"
 #include "datastructures/Stack.h"
 #include "datastructures/Bytemap.h"
 #include "metadata/LineMeta.h"
 #include "Stats.h"
-#include <stdio.h>
 #include "shared/ThreadUtil.h"
 
 typedef struct {
@@ -44,14 +41,12 @@ static inline LineMeta *Heap_LineMetaForWord(Heap *heap, word_t *word) {
 }
 
 void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize);
-word_t *Heap_Alloc(Heap *heap, uint32_t objectSize);
-word_t *Heap_AllocSmall(Heap *heap, uint32_t objectSize);
-word_t *Heap_AllocLarge(Heap *heap, uint32_t objectSize);
 
+bool Heap_isGrowingPossible(Heap *heap, uint32_t incrementInBlocks);
 void Heap_Collect(Heap *heap, Stack *stack);
-
 void Heap_Recycle(Heap *heap);
 void Heap_Grow(Heap *heap, uint32_t increment);
+void Heap_exitWithOutOfMemory(const char *details);
 size_t Heap_getMemoryLimit();
 
 #endif // IMMIX_HEAP_H

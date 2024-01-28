@@ -96,9 +96,7 @@ static inline void GCThread_sweepMaster(GCThread *thread, Heap *heap,
     while (!Sweeper_IsCoalescingDone(heap)) {
         Sweeper_LazyCoalesce(heap, stats);
     }
-    if (!heap->sweep.postSweepDone) {
-        Phase_SweepDone(heap, stats);
-    }
+    Phase_SweepDone(heap, stats);
     Stats_RecordTime(stats, end_ns);
     Stats_RecordEvent(stats, event_concurrent_sweep, start_ns, end_ns);
 }
