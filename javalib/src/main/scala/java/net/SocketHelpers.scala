@@ -373,7 +373,7 @@ object SocketHelpers {
 
   private[net] def getWildcardAddress(): InetAddress = {
     if (useWildcardIPv6) wildcardIPv6
-    else wildcardIPv4 
+    else wildcardIPv4
   }
 
 }
