@@ -41,6 +41,9 @@ inline static int BlockAllocator_sizeToLinkedListIndex(uint32_t size) {
 
 inline static BlockMeta *
 BlockAllocator_pollSuperblock(BlockAllocator *blockAllocator, int first) {
+#ifdef SCALANATIVE_MULTITHREADING_ENABLED
+    atomic_thread_fence(memory_order_acquire);
+#endif
     int maxNonEmptyIndex = blockAllocator->maxNonEmptyIndex;
     for (int i = first; i <= maxNonEmptyIndex; i++) {
         BlockMeta *superblock =
@@ -181,7 +184,11 @@ void BlockAllocator_AddFreeBlocks(BlockAllocator *blockAllocator,
         blockAllocator->coalescingSuperblock.first = block;
         blockAllocator->coalescingSuperblock.limit = block + count;
     }
-    blockAllocator->freeBlockCount += count;
+    atomic_fetch_add_explicit(&blockAllocator->freeBlockCount, count,
+                              memory_order_relaxed);
+#ifdef SCALANATIVE_MULTITHREADING_ENABLED
+    atomic_thread_fence(memory_order_release);
+#endif
 }
 
 void BlockAllocator_SweepDone(BlockAllocator *blockAllocator) {

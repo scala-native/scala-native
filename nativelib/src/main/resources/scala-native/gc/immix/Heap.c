@@ -295,7 +295,7 @@ void Heap_Recycle(Heap *heap) {
         if (!Allocator_CanInitCursors(&thread->allocator)) {
             Heap_exitWithOutOfMemory("growIfNeeded:re-init cursors");
         }
-        Allocator_InitCursors(&thread->allocator);
+        Allocator_InitCursors(&thread->allocator, false);
     }
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
     atomic_thread_fence(memory_order_seq_cst);
@@ -304,6 +304,9 @@ void Heap_Recycle(Heap *heap) {
 
 void Heap_Grow(Heap *heap, uint32_t incrementInBlocks) {
     BlockAllocator_Acquire(&blockAllocator);
+#ifdef SCALANATIVE_MULTITHREADING_ENABLED
+    atomic_thread_fence(memory_order_seq_cst);
+#endif
     if (!Heap_isGrowingPossible(heap, incrementInBlocks)) {
         Heap_exitWithOutOfMemory("grow heap");
     }

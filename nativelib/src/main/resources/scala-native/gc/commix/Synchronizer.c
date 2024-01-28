@@ -75,8 +75,9 @@ static void SafepointTrapHandler(int signal, siginfo_t *siginfo, void *uap) {
         errno = old_errno;
     } else {
         fprintf(stderr,
-                "Unexpected signal %d when accessing memory at address %p\n",
-                signal, siginfo->si_addr);
+                "Unexpected signal %d when accessing memory at address %p, "
+                "code=%d\n",
+                signal, siginfo->si_addr, siginfo->si_code);
         StackTrace_PrintStackTrace();
         defaultAction.sa_handler(signal);
     }

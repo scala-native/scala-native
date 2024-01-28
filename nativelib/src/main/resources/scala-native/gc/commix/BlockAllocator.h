@@ -3,9 +3,7 @@
 
 #include "datastructures/BlockList.h"
 #include "datastructures/BlockRange.h"
-#include "Constants.h"
 #include "shared/ThreadUtil.h"
-#include <stddef.h>
 #include <stdatomic.h>
 #include <stdbool.h>
 

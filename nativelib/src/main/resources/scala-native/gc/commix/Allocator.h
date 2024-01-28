@@ -2,11 +2,9 @@
 #define IMMIX_ALLOCATOR_H
 
 #include "shared/GCTypes.h"
-#include <stddef.h>
 #include "datastructures/BlockList.h"
 #include "datastructures/Bytemap.h"
 #include "metadata/BlockMeta.h"
-#include "metadata/ObjectMeta.h"
 #include "BlockAllocator.h"
 #include "Heap.h"
 
@@ -42,7 +40,7 @@ void Allocator_Init(Allocator *allocator, BlockAllocator *blockAllocator,
                     Bytemap *bytemap, word_t *blockMetaStart,
                     word_t *heapStart);
 bool Allocator_CanInitCursors(Allocator *allocator);
-void Allocator_InitCursors(Allocator *allocator);
+void Allocator_InitCursors(Allocator *allocator, bool canCollect);
 void Allocator_Clear(Allocator *allocator);
 word_t *Allocator_Alloc(Heap *heap, uint32_t objectSize);
 

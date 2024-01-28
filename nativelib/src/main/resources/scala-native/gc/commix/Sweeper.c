@@ -163,7 +163,6 @@ uint32_t Sweeper_sweepSimpleBlock(MutatorThread *thread, BlockMeta *blockMeta,
 
             assert(BlockMeta_FirstFreeLine(blockMeta) >= 0);
             assert(BlockMeta_FirstFreeLine(blockMeta) < LINE_COUNT);
-            // allocator->recycledBlockCount++;
             atomic_fetch_add_explicit(&allocator->recycledBlockCount, 1,
                                       memory_order_relaxed);
 
