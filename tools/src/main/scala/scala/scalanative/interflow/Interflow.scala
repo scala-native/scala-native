@@ -164,7 +164,12 @@ class Interflow(val config: build.Config)(implicit
       denylist += name
     }
 
-  /** `true` iff the purity of `name` is defined. */
+  /** `true` iff the purity of `name` is defined.
+   *
+   *  An object is pure iff it is statically reachable, none of its fields
+   *  requires instantiation, and its constructor is empty. In that case, a
+   *  non-null instance can be compiled as a constant value.
+   */
   def hasModulePurity(name: nir.Global.Top): Boolean =
     modulePurity.synchronized {
       modulePurity.contains(name)
