@@ -1,12 +1,12 @@
 package org.scalanative.testsuite.posixlib
+package sys
 
 import org.junit.Test
 import org.junit.Assert._
 import org.junit.Assume._
 import org.junit.BeforeClass
 
-// import scala.scalanative.meta.LinktimeInfo.{isLinux, isWindows}
-import scala.scalanative.meta.LinktimeInfo.isWindows
+import scala.scalanative.meta.LinktimeInfo
 
 import java.nio.file.{Files, Path}
 
@@ -29,7 +29,7 @@ object StatTest {
 
   @BeforeClass
   def beforeClass(): Unit = {
-    if (!isWindows) {
+    if (!LinktimeInfo.isWindows) {
       val orgDir = Files.createTempDirectory("scala-native-testsuite")
       val posixlibDir = orgDir.resolve("posixlib")
       workDirString = Files
@@ -42,7 +42,7 @@ object StatTest {
 class StatTest {
   import StatTest.workDirString
 
-  @Test def fileStatTest(): Unit = if (!isWindows) {
+  @Test def fileStatTest(): Unit = if (!LinktimeInfo.isWindows) {
     Zone { implicit z =>
       import scala.scalanative.posix.sys.statOps.statOps
 
@@ -82,9 +82,14 @@ class StatTest {
         statFromPath.st_rdev,
         statFromFd.st_rdev
       )
+
+      val expectedRdev =
+        if (!LinktimeInfo.isFreeBSD) 0.toUSize // Linux, macOS
+        else ULong.MaxValue.toUSize
+
       assertEquals(
-        "st_rdev must be 0 for regular file",
-        0.toUSize,
+        s"st_rdev must be ${expectedRdev} for regular file",
+        expectedRdev,
         statFromPath.st_rdev
       )
       assertEquals(
@@ -102,10 +107,25 @@ class StatTest {
         statFromPath.st_gid,
         statFromFd.st_gid
       )
+
       assertEquals("tmpfile must be empty", 0, statFromPath.st_size)
       assertEquals("tmpfile must be empty", 0, statFromFd.st_size)
-      assertEquals("tmpfile must not have blksize", 0, statFromPath.st_blocks)
-      assertEquals("tmpfile must not have blksize", 0, statFromFd.st_blocks)
+
+      val expectedBlksize =
+        if (!LinktimeInfo.isFreeBSD) 0 // Linux, macOS
+        else 1
+
+      assertEquals(
+        "unexpected statFromPath.blksize",
+        expectedBlksize,
+        statFromPath.st_blocks
+      )
+      assertEquals(
+        "unexpected statFromFd.blksize",
+        expectedBlksize,
+        statFromFd.st_blocks
+      )
+
       assertEquals(
         "st_atime from path and from fd must be the same",
         statFromPath.st_atime,
@@ -232,11 +252,13 @@ class StatTest {
         1,
         stat.S_ISDIR(dirStatFromPath.st_mode)
       )
+
       assertEquals(
-        "st_rdev must be 0 for dir",
-        0.toUSize,
+        s"st_rdev must be ${expectedRdev} for dir file",
+        expectedRdev,
         dirStatFromPath.st_rdev
       )
+
       assert(
         dirStatFromPath.st_nlink.toInt >= 2
       )

@@ -5,7 +5,7 @@ import org.junit.Assert._
 import org.junit.Assume._
 import org.junit.{BeforeClass, AfterClass}
 
-import scala.scalanative.meta.LinktimeInfo.{isLinux, isWindows}
+import scala.scalanative.meta.LinktimeInfo
 
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
@@ -23,10 +23,10 @@ object LocaleTest {
   def beforeClass(): Unit = {
     assumeTrue(
       "locale.scala is not implemented on Windows",
-      !isWindows
+      !LinktimeInfo.isWindows
     )
 
-    if (!isWindows) {
+    if (!LinktimeInfo.isWindows) {
       val entryLocale = setlocale(LC_ALL, null)
       assertNotNull(
         "setlocale() could not determine locale at start of test.",
@@ -53,7 +53,7 @@ object LocaleTest {
 
   @AfterClass
   def afterClass(): Unit = {
-    if (!isWindows) {
+    if (!LinktimeInfo.isWindows) {
       savedLocale.map { sl =>
         errno = 0
         // restore Locale as recorded on entry
@@ -82,7 +82,7 @@ class LocaleTest {
       savedLocale.isDefined
     )
 
-    if (!isWindows) {
+    if (!LinktimeInfo.isWindows) {
       val currentLconv = localeconv() // documented as always succeeds.
 
       assertEquals(
@@ -97,12 +97,21 @@ class LocaleTest {
         fromCString(currentLconv.thousands_sep)
       )
 
-      // Expect three byte-integers 3, 3, 0, meaning infinite group-by-three
-      assertEquals(
-        "US grouping",
-        "\u0003\u0003",
-        fromCString(currentLconv.grouping)
-      )
+      /* Skip grouping testing on FreeBSD. There is some long standing
+       * discussion that FreeBSD does not use POSIX compliant values.
+       * Do not test for an exact value that is known to be buggy.
+       * The is to reduce them maintenance headache & cost if that
+       * bug ever gets fixed.
+       */
+
+      if (!LinktimeInfo.isFreeBSD) {
+        // Expect three byte-integers 3, 3, 0  meaning infinite group-by-three
+        assertEquals(
+          "US grouping",
+          "\u0003\u0003",
+          fromCString(currentLconv.grouping)
+        )
+      }
 
       assertEquals(
         "US int_curr_symbol",
@@ -128,12 +137,16 @@ class LocaleTest {
         fromCString(currentLconv.mon_thousands_sep)
       )
 
-      // Expect three byte-integers 3, 3, 0, meaning infinite group-by-3
-      assertEquals(
-        "US mon_grouping",
-        "\u0003\u0003",
-        fromCString(currentLconv.mon_grouping)
-      )
+      // See "skip "FreeBSD"" comment before US grouping check above.
+
+      if (!LinktimeInfo.isFreeBSD) {
+        // Expect three byte-integers 3, 3, 0, meaning infinite group-by-3
+        assertEquals(
+          "US mon_grouping",
+          "\u0003\u0003",
+          fromCString(currentLconv.mon_grouping)
+        )
+      }
 
       assertEquals(
         "US positive_sign",
@@ -167,7 +180,7 @@ class LocaleTest {
 
       assertEquals("US int_n_cs_precedes", 1, currentLconv.int_n_cs_precedes)
 
-      if (isLinux) {
+      if (LinktimeInfo.isLinux) {
         assertEquals(
           "US int_p_sep_by_space",
           1,
