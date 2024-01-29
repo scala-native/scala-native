@@ -242,6 +242,7 @@ word_t *Allocator_lazySweep(Allocator *allocator, Heap *heap, uint32_t size) {
         object = Allocator_tryAlloc(allocator, size);
         if (object == NULL) {
             thread_yield();
+            atomic_thread_fence(memory_order_acquire);
         }
     }
     Stats_RecordTime(stats, end_ns);

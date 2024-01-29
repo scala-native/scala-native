@@ -161,6 +161,9 @@ bool Allocator_newBlock(Allocator *allocator) {
     word_t *blockStart;
 
     if (block != NULL) {
+#ifdef SCALANATIVE_MULTITHREADING_ENABLED
+        atomic_thread_fence(memory_order_acquire);
+#endif
         blockStart = BlockMeta_GetBlockStart(allocator->blockMetaStart,
                                              allocator->heapStart, block);
 

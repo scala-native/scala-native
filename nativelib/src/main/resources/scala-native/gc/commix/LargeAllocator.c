@@ -211,6 +211,7 @@ word_t *LargeAllocator_lazySweep(LargeAllocator *largeAllocator, Heap *heap,
         object = LargeAllocator_tryAlloc(largeAllocator, size);
         if (object == NULL) {
             thread_yield();
+            atomic_thread_fence(memory_order_acquire);
         }
     }
     Stats_RecordTime(stats, end_ns);

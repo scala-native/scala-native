@@ -182,6 +182,7 @@ void Phase_SweepDone(Heap *heap, Stats *stats) {
                           heap->stats->collection_start_ns, end_ns);
 
         heap->sweep.postSweepDone = true;
+        atomic_thread_fence(memory_order_release);
     }
 }
 
