@@ -168,8 +168,10 @@ trait Inline { self: Interflow =>
   ): nir.Val =
     in(s"inlining ${name.show}") {
       val defn = mode match {
-        case build.Mode.Debug      => getOriginal(name)
-        case _: build.Mode.Release => getDone(name)
+        case build.Mode.Debug =>
+          getOriginal(name)
+        case _: build.Mode.Release =>
+          getOptimizedDefinition(name)
       }
       val nir.Type.Function(_, origRetTy) = defn.ty
 

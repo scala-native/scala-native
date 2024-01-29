@@ -113,14 +113,13 @@ class Interflow(val config: build.Config)(implicit
     }
 
   /** Returns `true` iff `name` has been processed. */
-  def isDone(name: nir.Global.Member): Boolean =
+  def hasOptimizedDefinition(name: nir.Global.Member): Boolean =
     done.synchronized {
       done.contains(name)
     }
 
   /** Sets `value` as the optimized form of `name`. */
-  // QUESTION: This should be renamed.
-  def setDone(name: nir.Global.Member, value: nir.Defn.Define) =
+  def setOptimizedDefinition(name: nir.Global.Member, value: nir.Defn.Define) =
     done.synchronized {
       done(name) = value
     }
@@ -129,8 +128,7 @@ class Interflow(val config: build.Config)(implicit
    *
    *    - Requires: `name` has been processed.
    */
-  // QUESTION: This should be renamed.
-  def getDone(name: nir.Global.Member): nir.Defn.Define =
+  def getOptimizedDefinition(name: nir.Global.Member): nir.Defn.Define =
     done.synchronized {
       done(name)
     }

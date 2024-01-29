@@ -94,7 +94,7 @@ trait Visit { self: Interflow =>
       case _: build.Mode.Release =>
         val dup = duplicateName(name, argtys)
         if (shallVisit(dup)) {
-          if (!isDone(dup)) {
+          if (!hasOptimizedDefinition(dup)) {
             visitMethod(dup)
           }
           maybeDone(dup)
@@ -106,7 +106,7 @@ trait Visit { self: Interflow =>
 
   def visitLoop()(implicit ec: ExecutionContext): Future[Unit] = {
     def visit(name: nir.Global.Member): Unit = {
-      if (!isDone(name)) {
+      if (!hasOptimizedDefinition(name)) {
         visitMethod(name)
       }
     }
@@ -139,11 +139,11 @@ trait Visit { self: Interflow =>
       val origdefn = getOriginal(origname)
       try {
         if (shallOpt(name)) {
-          setDone(name, opt(name))
+          setOptimizedDefinition(name, opt(name))
         } else {
           noOpt(origdefn)
-          setDone(name, origdefn)
-          setDone(origname, origdefn)
+          setOptimizedDefinition(name, origdefn)
+          setOptimizedDefinition(origname, origdefn)
         }
       } catch {
         case BailOut(msg) =>
@@ -155,8 +155,8 @@ trait Visit { self: Interflow =>
               origdefn.pos
             )
           noOpt(origdefn)
-          setDone(name, baildefn)
-          setDone(origname, baildefn)
+          setOptimizedDefinition(name, baildefn)
+          setOptimizedDefinition(origname, baildefn)
           markDenylisted(name)
           markDenylisted(origname)
       }
