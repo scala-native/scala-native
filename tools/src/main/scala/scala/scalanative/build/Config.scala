@@ -153,8 +153,8 @@ sealed trait Config {
     }
   }
 
-  private[scalanative] lazy val targetsMac: Boolean = Platform.isMac ||
-    compilerConfig.targetTriple.exists { customTriple =>
+  private[scalanative] lazy val targetsMac: Boolean =
+    compilerConfig.targetTriple.fold(Platform.isMac) { customTriple =>
       Seq("mac", "apple", "darwin").exists(customTriple.contains(_))
     }
 
@@ -169,8 +169,8 @@ sealed trait Config {
     }
   }
 
-  private[scalanative] lazy val targetsLinux: Boolean = Platform.isLinux ||
-    compilerConfig.targetTriple.exists { customTriple =>
+  private[scalanative] lazy val targetsLinux: Boolean =
+    compilerConfig.targetTriple.fold(Platform.isLinux) { customTriple =>
       Seq("linux").exists(customTriple.contains(_))
     }
 
@@ -301,7 +301,7 @@ object Config {
         | - buildPath:        $buildPath
         | - mainClass:        $mainClass
         | - classPath:        ${formatClassPath(classPath)}
-        | - sourcesClasspath: ${formatClassPath(sourcesClassPath)} 
+        | - sourcesClasspath: ${formatClassPath(sourcesClassPath)}
         | - compilerConfig:   $compilerConfig
         |)""".stripMargin
     }
