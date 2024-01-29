@@ -3,8 +3,7 @@
 
 #include "Heap.h"
 #include "Stats.h"
-#include "datastructures/BlockRange.h"
-#include "SweepResult.h"
+#include "Phase.h"
 #include "MutatorThread.h"
 
 void Sweeper_Sweep(Stats *stats, atomic_uint_fast32_t *cursorDone,
@@ -16,7 +15,7 @@ static inline bool Sweeper_IsCoalescingDone(Heap *heap) {
 }
 
 static inline bool Sweeper_IsSweepDone(Heap *heap) {
-    return heap->sweep.postSweepDone;
+    return heap->sweep.postSweepDone && heap->gcThreads.phase != gc_sweep;
 }
 
 #ifdef GC_ASSERTIONS
