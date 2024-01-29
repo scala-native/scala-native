@@ -9,7 +9,7 @@ private[nio] final class PointerByteBuffer private (
     _initialPosition: Int,
     _initialLimit: Int,
     _readOnly: Boolean
-) extends ByteBuffer(_capacity) {
+) extends ByteBuffer(_capacity, _rawDataPointer + _offset) {
 
   position(_initialPosition)
   limit(_initialLimit)
@@ -44,14 +44,6 @@ private[nio] final class PointerByteBuffer private (
   @noinline
   def put(b: Byte): ByteBuffer =
     GenBuffer[ByteBuffer](this).generic_put(b)
-
-  @noinline
-  def get(index: Int): Byte =
-    GenBuffer[ByteBuffer](this).generic_get(index)
-
-  @noinline
-  def put(index: Int, b: Byte): ByteBuffer =
-    GenBuffer[ByteBuffer](this).generic_put(index, b)
 
   @noinline
   override def get(dst: Array[Byte], offset: Int, length: Int): ByteBuffer =
@@ -177,15 +169,6 @@ private[nio] final class PointerByteBuffer private (
     PointerByteBufferDoubleView.fromPointerByteBuffer(this)
 
   // Internal API
-
-  @inline
-  private[nio] def load(index: Int): Byte =
-    GenPointerBuffer[ByteBuffer](this).generic_load(index)
-
-  @inline
-  private[nio] def store(index: Int, elem: Byte): Unit =
-    GenPointerBuffer[ByteBuffer](this).generic_store(index, elem)
-
   @inline
   override private[nio] def load(
       startIndex: Int,

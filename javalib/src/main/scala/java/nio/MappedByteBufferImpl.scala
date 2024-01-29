@@ -90,14 +90,6 @@ private class MappedByteBufferImpl(
     genBuffer.generic_put(b)
 
   @noinline
-  def get(index: Int): Byte =
-    genBuffer.generic_get(index)
-
-  @noinline
-  def put(index: Int, b: Byte): ByteBuffer =
-    genBuffer.generic_put(index, b)
-
-  @noinline
   override def get(dst: Array[Byte], offset: Int, length: Int): ByteBuffer =
     genBuffer.generic_get(dst, offset, length)
 
@@ -222,14 +214,6 @@ private class MappedByteBufferImpl(
     MappedByteBufferDoubleView.fromMappedByteBuffer(this)
 
   // Internal API
-
-  @inline
-  private[nio] def load(index: Int): Byte =
-    genMappedBuffer.generic_load(index)
-
-  @inline
-  private[nio] def store(index: Int, elem: Byte): Unit =
-    genMappedBuffer.generic_store(index, elem)
 
   @inline
   override private[nio] def load(

@@ -3,6 +3,8 @@ package java.nio
 
 // Ported from Scala.js
 import scala.scalanative.unsafe
+import scala.scalanative.unsafe.UnsafeRichArray
+
 %{
    variants = [
     ('Byte',   '-547316498' ),
@@ -46,8 +48,9 @@ object ${T}Buffer {
 abstract class ${T}Buffer private[nio] (
     _capacity: Int,
     override private[nio] val _array: Array[${T}],
-    private[nio] val _offset: Int
-) extends Buffer(_capacity)
+    private[nio] val _offset: Int,
+    _address: unsafe.Ptr[_],
+) extends Buffer(_capacity, _address)
     with Comparable[${T}Buffer] 
 % if T == 'Char':
     with CharSequence
@@ -67,7 +70,8 @@ abstract class ${T}Buffer private[nio] (
 
   private def genBuffer = GenBuffer[${T}Buffer](this)
 
-  def this(_capacity: Int) = this(_capacity, null: Array[${T}], -1)
+  private[nio] def this(_capacity: Int, _array: Array[${T}], _offset: Int) = this(_capacity, _array, _offset, _array.atUnsafe(_offset))
+  private[nio] def this(_capacity: Int, address: unsafe.Ptr[_]) = this(_capacity, null: Array[${T}], -1, address)
 
   def slice(): ${T}Buffer
   // Since JDK 13
@@ -81,9 +85,13 @@ abstract class ${T}Buffer private[nio] (
 
   def put(b: ${T}): ${T}Buffer
 
-  def get(index: Int): ${T}
+  def get(index: Int): ${T} = load(validateIndex(index))
 
-  def put(index: Int, b: ${T}): ${T}Buffer
+  def put(index: Int, elem: ${T}): ${T}Buffer = {
+    ensureNotReadOnly()
+    store(validateIndex(index), elem)
+    this
+  }
   
   // Since: JDK 13
   def get(index: Int, dst: Array[${T}], offset: Int, length: Int): ${T}Buffer = GenBuffer[${T}Buffer](this).generic_get(index, dst, offset, length)
@@ -314,9 +322,11 @@ abstract class ${T}Buffer private[nio] (
   override private[nio] def isBigEndian: Boolean = _isBigEndian
 % end
 
-  private[nio] def load(index: Int): ${T}
+  // @inline
+  private[nio] def load(index: Int): ${T} = this.data(index)
 
-  private[nio] def store(index: Int, elem: ${T}): Unit
+  // @inline
+  private[nio] def store(index: Int, elem: ${T}): Unit = this.data(index) = elem
 
   @inline
   private[nio] def load(

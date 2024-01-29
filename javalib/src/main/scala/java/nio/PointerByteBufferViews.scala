@@ -12,7 +12,7 @@ private[nio] final class PointerByteBufferCharView private (
     _initialLimit: Int,
     _readOnly: Boolean,
     override private[nio] val isBigEndian: Boolean
-) extends CharBuffer(_capacity) {
+) extends CharBuffer(_capacity, _rawDataPointer + _offset) {
 
   position(_initialPosition)
   limit(_initialLimit)
@@ -64,14 +64,6 @@ private[nio] final class PointerByteBufferCharView private (
     GenBuffer[CharBuffer](this).generic_put(c)
 
   @noinline
-  def get(index: Int): Char =
-    GenBuffer[CharBuffer](this).generic_get(index)
-
-  @noinline
-  def put(index: Int, c: Char): CharBuffer =
-    GenBuffer[CharBuffer](this).generic_put(index, c)
-
-  @noinline
   override def get(dst: Array[Char], offset: Int, length: Int): CharBuffer =
     GenBuffer[CharBuffer](this).generic_get(dst, offset, length)
 
@@ -90,11 +82,11 @@ private[nio] final class PointerByteBufferCharView private (
   // Private API
 
   @inline
-  private[nio] def load(index: Int): Char =
+  private[nio] override def load(index: Int): Char =
     GenPointerBufferView[CharBuffer](this).byteArrayBits.loadChar(index)
 
   @inline
-  private[nio] def store(index: Int, elem: Char): Unit =
+  private[nio] override def store(index: Int, elem: Char): Unit =
     GenPointerBufferView[CharBuffer](this).byteArrayBits.storeChar(index, elem)
 }
 
@@ -138,7 +130,7 @@ private[nio] final class PointerByteBufferShortView private (
     _initialLimit: Int,
     _readOnly: Boolean,
     override private[nio] val isBigEndian: Boolean
-) extends ShortBuffer(_capacity) {
+) extends ShortBuffer(_capacity, _rawDataPointer + _offset) {
 
   position(_initialPosition)
   limit(_initialLimit)
@@ -177,14 +169,6 @@ private[nio] final class PointerByteBufferShortView private (
     GenBuffer[ShortBuffer](this).generic_put(c)
 
   @noinline
-  def get(index: Int): Short =
-    GenBuffer[ShortBuffer](this).generic_get(index)
-
-  @noinline
-  def put(index: Int, c: Short): ShortBuffer =
-    GenBuffer[ShortBuffer](this).generic_put(index, c)
-
-  @noinline
   override def get(dst: Array[Short], offset: Int, length: Int): ShortBuffer =
     GenBuffer[ShortBuffer](this).generic_get(dst, offset, length)
 
@@ -203,11 +187,11 @@ private[nio] final class PointerByteBufferShortView private (
   // Private API
 
   @inline
-  private[nio] def load(index: Int): Short =
+  private[nio] override def load(index: Int): Short =
     GenPointerBufferView[ShortBuffer](this).byteArrayBits.loadShort(index)
 
   @inline
-  private[nio] def store(index: Int, elem: Short): Unit =
+  private[nio] override def store(index: Int, elem: Short): Unit =
     GenPointerBufferView[ShortBuffer](this).byteArrayBits.storeShort(index, elem)
 }
 
@@ -251,7 +235,7 @@ private[nio] final class PointerByteBufferIntView private (
     _initialLimit: Int,
     _readOnly: Boolean,
     override private[nio] val isBigEndian: Boolean
-) extends IntBuffer(_capacity) {
+) extends IntBuffer(_capacity, _rawDataPointer + _offset) {
 
   position(_initialPosition)
   limit(_initialLimit)
@@ -290,14 +274,6 @@ private[nio] final class PointerByteBufferIntView private (
     GenBuffer[IntBuffer](this).generic_put(c)
 
   @noinline
-  def get(index: Int): Int =
-    GenBuffer[IntBuffer](this).generic_get(index)
-
-  @noinline
-  def put(index: Int, c: Int): IntBuffer =
-    GenBuffer[IntBuffer](this).generic_put(index, c)
-
-  @noinline
   override def get(dst: Array[Int], offset: Int, length: Int): IntBuffer =
     GenBuffer[IntBuffer](this).generic_get(dst, offset, length)
 
@@ -316,11 +292,11 @@ private[nio] final class PointerByteBufferIntView private (
   // Private API
 
   @inline
-  private[nio] def load(index: Int): Int =
+  private[nio] override def load(index: Int): Int =
     GenPointerBufferView[IntBuffer](this).byteArrayBits.loadInt(index)
 
   @inline
-  private[nio] def store(index: Int, elem: Int): Unit =
+  private[nio] override def store(index: Int, elem: Int): Unit =
     GenPointerBufferView[IntBuffer](this).byteArrayBits.storeInt(index, elem)
 }
 
@@ -364,7 +340,7 @@ private[nio] final class PointerByteBufferLongView private (
     _initialLimit: Int,
     _readOnly: Boolean,
     override private[nio] val isBigEndian: Boolean
-) extends LongBuffer(_capacity) {
+) extends LongBuffer(_capacity, _rawDataPointer + _offset) {
 
   position(_initialPosition)
   limit(_initialLimit)
@@ -403,14 +379,6 @@ private[nio] final class PointerByteBufferLongView private (
     GenBuffer[LongBuffer](this).generic_put(c)
 
   @noinline
-  def get(index: Int): Long =
-    GenBuffer[LongBuffer](this).generic_get(index)
-
-  @noinline
-  def put(index: Int, c: Long): LongBuffer =
-    GenBuffer[LongBuffer](this).generic_put(index, c)
-
-  @noinline
   override def get(dst: Array[Long], offset: Int, length: Int): LongBuffer =
     GenBuffer[LongBuffer](this).generic_get(dst, offset, length)
 
@@ -429,11 +397,11 @@ private[nio] final class PointerByteBufferLongView private (
   // Private API
 
   @inline
-  private[nio] def load(index: Int): Long =
+  private[nio] override def load(index: Int): Long =
     GenPointerBufferView[LongBuffer](this).byteArrayBits.loadLong(index)
 
   @inline
-  private[nio] def store(index: Int, elem: Long): Unit =
+  private[nio] override def store(index: Int, elem: Long): Unit =
     GenPointerBufferView[LongBuffer](this).byteArrayBits.storeLong(index, elem)
 }
 
@@ -477,7 +445,7 @@ private[nio] final class PointerByteBufferFloatView private (
     _initialLimit: Int,
     _readOnly: Boolean,
     override private[nio] val isBigEndian: Boolean
-) extends FloatBuffer(_capacity) {
+) extends FloatBuffer(_capacity, _rawDataPointer + _offset) {
 
   position(_initialPosition)
   limit(_initialLimit)
@@ -516,14 +484,6 @@ private[nio] final class PointerByteBufferFloatView private (
     GenBuffer[FloatBuffer](this).generic_put(c)
 
   @noinline
-  def get(index: Int): Float =
-    GenBuffer[FloatBuffer](this).generic_get(index)
-
-  @noinline
-  def put(index: Int, c: Float): FloatBuffer =
-    GenBuffer[FloatBuffer](this).generic_put(index, c)
-
-  @noinline
   override def get(dst: Array[Float], offset: Int, length: Int): FloatBuffer =
     GenBuffer[FloatBuffer](this).generic_get(dst, offset, length)
 
@@ -542,11 +502,11 @@ private[nio] final class PointerByteBufferFloatView private (
   // Private API
 
   @inline
-  private[nio] def load(index: Int): Float =
+  private[nio] override def load(index: Int): Float =
     GenPointerBufferView[FloatBuffer](this).byteArrayBits.loadFloat(index)
 
   @inline
-  private[nio] def store(index: Int, elem: Float): Unit =
+  private[nio] override def store(index: Int, elem: Float): Unit =
     GenPointerBufferView[FloatBuffer](this).byteArrayBits.storeFloat(index, elem)
 }
 
@@ -590,7 +550,7 @@ private[nio] final class PointerByteBufferDoubleView private (
     _initialLimit: Int,
     _readOnly: Boolean,
     override private[nio] val isBigEndian: Boolean
-) extends DoubleBuffer(_capacity) {
+) extends DoubleBuffer(_capacity, _rawDataPointer + _offset) {
 
   position(_initialPosition)
   limit(_initialLimit)
@@ -629,14 +589,6 @@ private[nio] final class PointerByteBufferDoubleView private (
     GenBuffer[DoubleBuffer](this).generic_put(c)
 
   @noinline
-  def get(index: Int): Double =
-    GenBuffer[DoubleBuffer](this).generic_get(index)
-
-  @noinline
-  def put(index: Int, c: Double): DoubleBuffer =
-    GenBuffer[DoubleBuffer](this).generic_put(index, c)
-
-  @noinline
   override def get(dst: Array[Double], offset: Int, length: Int): DoubleBuffer =
     GenBuffer[DoubleBuffer](this).generic_get(dst, offset, length)
 
@@ -655,11 +607,11 @@ private[nio] final class PointerByteBufferDoubleView private (
   // Private API
 
   @inline
-  private[nio] def load(index: Int): Double =
+  private[nio] override def load(index: Int): Double =
     GenPointerBufferView[DoubleBuffer](this).byteArrayBits.loadDouble(index)
 
   @inline
-  private[nio] def store(index: Int, elem: Double): Unit =
+  private[nio] override def store(index: Int, elem: Double): Unit =
     GenPointerBufferView[DoubleBuffer](this).byteArrayBits.storeDouble(index, elem)
 }
 

@@ -3,6 +3,8 @@ package java.nio
 
 // Ported from Scala.js
 import scala.scalanative.unsafe
+import scala.scalanative.unsafe.UnsafeRichArray
+
 object ByteBuffer {
   private final val HashSeed = -547316498 // "java.nio.ByteBuffer".##
 
@@ -24,8 +26,9 @@ object ByteBuffer {
 abstract class ByteBuffer private[nio] (
     _capacity: Int,
     override private[nio] val _array: Array[Byte],
-    private[nio] val _offset: Int
-) extends Buffer(_capacity)
+    private[nio] val _offset: Int,
+    _address: unsafe.Ptr[_],
+) extends Buffer(_capacity, _address)
     with Comparable[ByteBuffer] 
   {
   private[nio] type ElementType = Byte
@@ -38,7 +41,8 @@ abstract class ByteBuffer private[nio] (
 
   private def genBuffer = GenBuffer[ByteBuffer](this)
 
-  def this(_capacity: Int) = this(_capacity, null: Array[Byte], -1)
+  private[nio] def this(_capacity: Int, _array: Array[Byte], _offset: Int) = this(_capacity, _array, _offset, _array.atUnsafe(_offset))
+  private[nio] def this(_capacity: Int, address: unsafe.Ptr[_]) = this(_capacity, null: Array[Byte], -1, address)
 
   def slice(): ByteBuffer
   // Since JDK 13
@@ -52,9 +56,13 @@ abstract class ByteBuffer private[nio] (
 
   def put(b: Byte): ByteBuffer
 
-  def get(index: Int): Byte
+  def get(index: Int): Byte = load(validateIndex(index))
 
-  def put(index: Int, b: Byte): ByteBuffer
+  def put(index: Int, elem: Byte): ByteBuffer = {
+    ensureNotReadOnly()
+    store(validateIndex(index), elem)
+    this
+  }
   
   // Since: JDK 13
   def get(index: Int, dst: Array[Byte], offset: Int, length: Int): ByteBuffer = GenBuffer[ByteBuffer](this).generic_get(index, dst, offset, length)
@@ -226,9 +234,11 @@ abstract class ByteBuffer private[nio] (
   // Internal API
   override private[nio] def isBigEndian: Boolean = _isBigEndian
 
-  private[nio] def load(index: Int): Byte
+  // @inline
+  private[nio] def load(index: Int): Byte = this.data(index)
 
-  private[nio] def store(index: Int, elem: Byte): Unit
+  // @inline
+  private[nio] def store(index: Int, elem: Byte): Unit = this.data(index) = elem
 
   @inline
   private[nio] def load(
@@ -271,8 +281,9 @@ object CharBuffer {
 abstract class CharBuffer private[nio] (
     _capacity: Int,
     override private[nio] val _array: Array[Char],
-    private[nio] val _offset: Int
-) extends Buffer(_capacity)
+    private[nio] val _offset: Int,
+    _address: unsafe.Ptr[_],
+) extends Buffer(_capacity, _address)
     with Comparable[CharBuffer] 
     with CharSequence
     with Appendable
@@ -287,7 +298,8 @@ abstract class CharBuffer private[nio] (
 
   private def genBuffer = GenBuffer[CharBuffer](this)
 
-  def this(_capacity: Int) = this(_capacity, null: Array[Char], -1)
+  private[nio] def this(_capacity: Int, _array: Array[Char], _offset: Int) = this(_capacity, _array, _offset, _array.atUnsafe(_offset))
+  private[nio] def this(_capacity: Int, address: unsafe.Ptr[_]) = this(_capacity, null: Array[Char], -1, address)
 
   def slice(): CharBuffer
   // Since JDK 13
@@ -301,9 +313,13 @@ abstract class CharBuffer private[nio] (
 
   def put(b: Char): CharBuffer
 
-  def get(index: Int): Char
+  def get(index: Int): Char = load(validateIndex(index))
 
-  def put(index: Int, b: Char): CharBuffer
+  def put(index: Int, elem: Char): CharBuffer = {
+    ensureNotReadOnly()
+    store(validateIndex(index), elem)
+    this
+  }
   
   // Since: JDK 13
   def get(index: Int, dst: Array[Char], offset: Int, length: Int): CharBuffer = GenBuffer[CharBuffer](this).generic_get(index, dst, offset, length)
@@ -453,9 +469,11 @@ abstract class CharBuffer private[nio] (
 
   // Internal API
 
-  private[nio] def load(index: Int): Char
+  // @inline
+  private[nio] def load(index: Int): Char = this.data(index)
 
-  private[nio] def store(index: Int, elem: Char): Unit
+  // @inline
+  private[nio] def store(index: Int, elem: Char): Unit = this.data(index) = elem
 
   @inline
   private[nio] def load(
@@ -494,8 +512,9 @@ object ShortBuffer {
 abstract class ShortBuffer private[nio] (
     _capacity: Int,
     override private[nio] val _array: Array[Short],
-    private[nio] val _offset: Int
-) extends Buffer(_capacity)
+    private[nio] val _offset: Int,
+    _address: unsafe.Ptr[_],
+) extends Buffer(_capacity, _address)
     with Comparable[ShortBuffer] 
   {
   private[nio] type ElementType = Short
@@ -507,7 +526,8 @@ abstract class ShortBuffer private[nio] (
 
   private def genBuffer = GenBuffer[ShortBuffer](this)
 
-  def this(_capacity: Int) = this(_capacity, null: Array[Short], -1)
+  private[nio] def this(_capacity: Int, _array: Array[Short], _offset: Int) = this(_capacity, _array, _offset, _array.atUnsafe(_offset))
+  private[nio] def this(_capacity: Int, address: unsafe.Ptr[_]) = this(_capacity, null: Array[Short], -1, address)
 
   def slice(): ShortBuffer
   // Since JDK 13
@@ -521,9 +541,13 @@ abstract class ShortBuffer private[nio] (
 
   def put(b: Short): ShortBuffer
 
-  def get(index: Int): Short
+  def get(index: Int): Short = load(validateIndex(index))
 
-  def put(index: Int, b: Short): ShortBuffer
+  def put(index: Int, elem: Short): ShortBuffer = {
+    ensureNotReadOnly()
+    store(validateIndex(index), elem)
+    this
+  }
   
   // Since: JDK 13
   def get(index: Int, dst: Array[Short], offset: Int, length: Int): ShortBuffer = GenBuffer[ShortBuffer](this).generic_get(index, dst, offset, length)
@@ -625,9 +649,11 @@ abstract class ShortBuffer private[nio] (
 
   // Internal API
 
-  private[nio] def load(index: Int): Short
+  // @inline
+  private[nio] def load(index: Int): Short = this.data(index)
 
-  private[nio] def store(index: Int, elem: Short): Unit
+  // @inline
+  private[nio] def store(index: Int, elem: Short): Unit = this.data(index) = elem
 
   @inline
   private[nio] def load(
@@ -666,8 +692,9 @@ object IntBuffer {
 abstract class IntBuffer private[nio] (
     _capacity: Int,
     override private[nio] val _array: Array[Int],
-    private[nio] val _offset: Int
-) extends Buffer(_capacity)
+    private[nio] val _offset: Int,
+    _address: unsafe.Ptr[_],
+) extends Buffer(_capacity, _address)
     with Comparable[IntBuffer] 
   {
   private[nio] type ElementType = Int
@@ -679,7 +706,8 @@ abstract class IntBuffer private[nio] (
 
   private def genBuffer = GenBuffer[IntBuffer](this)
 
-  def this(_capacity: Int) = this(_capacity, null: Array[Int], -1)
+  private[nio] def this(_capacity: Int, _array: Array[Int], _offset: Int) = this(_capacity, _array, _offset, _array.atUnsafe(_offset))
+  private[nio] def this(_capacity: Int, address: unsafe.Ptr[_]) = this(_capacity, null: Array[Int], -1, address)
 
   def slice(): IntBuffer
   // Since JDK 13
@@ -693,9 +721,13 @@ abstract class IntBuffer private[nio] (
 
   def put(b: Int): IntBuffer
 
-  def get(index: Int): Int
+  def get(index: Int): Int = load(validateIndex(index))
 
-  def put(index: Int, b: Int): IntBuffer
+  def put(index: Int, elem: Int): IntBuffer = {
+    ensureNotReadOnly()
+    store(validateIndex(index), elem)
+    this
+  }
   
   // Since: JDK 13
   def get(index: Int, dst: Array[Int], offset: Int, length: Int): IntBuffer = GenBuffer[IntBuffer](this).generic_get(index, dst, offset, length)
@@ -797,9 +829,11 @@ abstract class IntBuffer private[nio] (
 
   // Internal API
 
-  private[nio] def load(index: Int): Int
+  // @inline
+  private[nio] def load(index: Int): Int = this.data(index)
 
-  private[nio] def store(index: Int, elem: Int): Unit
+  // @inline
+  private[nio] def store(index: Int, elem: Int): Unit = this.data(index) = elem
 
   @inline
   private[nio] def load(
@@ -838,8 +872,9 @@ object LongBuffer {
 abstract class LongBuffer private[nio] (
     _capacity: Int,
     override private[nio] val _array: Array[Long],
-    private[nio] val _offset: Int
-) extends Buffer(_capacity)
+    private[nio] val _offset: Int,
+    _address: unsafe.Ptr[_],
+) extends Buffer(_capacity, _address)
     with Comparable[LongBuffer] 
   {
   private[nio] type ElementType = Long
@@ -851,7 +886,8 @@ abstract class LongBuffer private[nio] (
 
   private def genBuffer = GenBuffer[LongBuffer](this)
 
-  def this(_capacity: Int) = this(_capacity, null: Array[Long], -1)
+  private[nio] def this(_capacity: Int, _array: Array[Long], _offset: Int) = this(_capacity, _array, _offset, _array.atUnsafe(_offset))
+  private[nio] def this(_capacity: Int, address: unsafe.Ptr[_]) = this(_capacity, null: Array[Long], -1, address)
 
   def slice(): LongBuffer
   // Since JDK 13
@@ -865,9 +901,13 @@ abstract class LongBuffer private[nio] (
 
   def put(b: Long): LongBuffer
 
-  def get(index: Int): Long
+  def get(index: Int): Long = load(validateIndex(index))
 
-  def put(index: Int, b: Long): LongBuffer
+  def put(index: Int, elem: Long): LongBuffer = {
+    ensureNotReadOnly()
+    store(validateIndex(index), elem)
+    this
+  }
   
   // Since: JDK 13
   def get(index: Int, dst: Array[Long], offset: Int, length: Int): LongBuffer = GenBuffer[LongBuffer](this).generic_get(index, dst, offset, length)
@@ -969,9 +1009,11 @@ abstract class LongBuffer private[nio] (
 
   // Internal API
 
-  private[nio] def load(index: Int): Long
+  // @inline
+  private[nio] def load(index: Int): Long = this.data(index)
 
-  private[nio] def store(index: Int, elem: Long): Unit
+  // @inline
+  private[nio] def store(index: Int, elem: Long): Unit = this.data(index) = elem
 
   @inline
   private[nio] def load(
@@ -1010,8 +1052,9 @@ object FloatBuffer {
 abstract class FloatBuffer private[nio] (
     _capacity: Int,
     override private[nio] val _array: Array[Float],
-    private[nio] val _offset: Int
-) extends Buffer(_capacity)
+    private[nio] val _offset: Int,
+    _address: unsafe.Ptr[_],
+) extends Buffer(_capacity, _address)
     with Comparable[FloatBuffer] 
   {
   private[nio] type ElementType = Float
@@ -1023,7 +1066,8 @@ abstract class FloatBuffer private[nio] (
 
   private def genBuffer = GenBuffer[FloatBuffer](this)
 
-  def this(_capacity: Int) = this(_capacity, null: Array[Float], -1)
+  private[nio] def this(_capacity: Int, _array: Array[Float], _offset: Int) = this(_capacity, _array, _offset, _array.atUnsafe(_offset))
+  private[nio] def this(_capacity: Int, address: unsafe.Ptr[_]) = this(_capacity, null: Array[Float], -1, address)
 
   def slice(): FloatBuffer
   // Since JDK 13
@@ -1037,9 +1081,13 @@ abstract class FloatBuffer private[nio] (
 
   def put(b: Float): FloatBuffer
 
-  def get(index: Int): Float
+  def get(index: Int): Float = load(validateIndex(index))
 
-  def put(index: Int, b: Float): FloatBuffer
+  def put(index: Int, elem: Float): FloatBuffer = {
+    ensureNotReadOnly()
+    store(validateIndex(index), elem)
+    this
+  }
   
   // Since: JDK 13
   def get(index: Int, dst: Array[Float], offset: Int, length: Int): FloatBuffer = GenBuffer[FloatBuffer](this).generic_get(index, dst, offset, length)
@@ -1141,9 +1189,11 @@ abstract class FloatBuffer private[nio] (
 
   // Internal API
 
-  private[nio] def load(index: Int): Float
+  // @inline
+  private[nio] def load(index: Int): Float = this.data(index)
 
-  private[nio] def store(index: Int, elem: Float): Unit
+  // @inline
+  private[nio] def store(index: Int, elem: Float): Unit = this.data(index) = elem
 
   @inline
   private[nio] def load(
@@ -1182,8 +1232,9 @@ object DoubleBuffer {
 abstract class DoubleBuffer private[nio] (
     _capacity: Int,
     override private[nio] val _array: Array[Double],
-    private[nio] val _offset: Int
-) extends Buffer(_capacity)
+    private[nio] val _offset: Int,
+    _address: unsafe.Ptr[_],
+) extends Buffer(_capacity, _address)
     with Comparable[DoubleBuffer] 
   {
   private[nio] type ElementType = Double
@@ -1195,7 +1246,8 @@ abstract class DoubleBuffer private[nio] (
 
   private def genBuffer = GenBuffer[DoubleBuffer](this)
 
-  def this(_capacity: Int) = this(_capacity, null: Array[Double], -1)
+  private[nio] def this(_capacity: Int, _array: Array[Double], _offset: Int) = this(_capacity, _array, _offset, _array.atUnsafe(_offset))
+  private[nio] def this(_capacity: Int, address: unsafe.Ptr[_]) = this(_capacity, null: Array[Double], -1, address)
 
   def slice(): DoubleBuffer
   // Since JDK 13
@@ -1209,9 +1261,13 @@ abstract class DoubleBuffer private[nio] (
 
   def put(b: Double): DoubleBuffer
 
-  def get(index: Int): Double
+  def get(index: Int): Double = load(validateIndex(index))
 
-  def put(index: Int, b: Double): DoubleBuffer
+  def put(index: Int, elem: Double): DoubleBuffer = {
+    ensureNotReadOnly()
+    store(validateIndex(index), elem)
+    this
+  }
   
   // Since: JDK 13
   def get(index: Int, dst: Array[Double], offset: Int, length: Int): DoubleBuffer = GenBuffer[DoubleBuffer](this).generic_get(index, dst, offset, length)
@@ -1313,9 +1369,11 @@ abstract class DoubleBuffer private[nio] (
 
   // Internal API
 
-  private[nio] def load(index: Int): Double
+  // @inline
+  private[nio] def load(index: Int): Double = this.data(index)
 
-  private[nio] def store(index: Int, elem: Double): Unit
+  // @inline
+  private[nio] def store(index: Int, elem: Double): Unit = this.data(index) = elem
 
   @inline
   private[nio] def load(
