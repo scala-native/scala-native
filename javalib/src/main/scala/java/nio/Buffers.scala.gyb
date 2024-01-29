@@ -4,19 +4,22 @@ package java.nio
 // Ported from Scala.js
 import scala.scalanative.unsafe
 import scala.scalanative.unsafe.UnsafeRichArray
+import scala.scalanative.runtime.{fromRawPtr, toRawPtr}
+import scala.scalanative.runtime.Intrinsics
+import scala.scalanative.annotation.alwaysinline
 
 %{
    variants = [
-    ('Byte',   '-547316498' ),
-    ('Char',   '-182887236' ),
-    ('Short',  '383731478'  ),
-    ('Int',    '39599817'   ),
-    ('Long',   '-1709696158'),
-    ('Float',  '1920204022' ),
-    ('Double', '2140173175' )
+    ('Byte',   '-547316498' , 1, 'Byte'),
+    ('Char',   '-182887236' , 2, 'Character'),
+    ('Short',  '383731478'  , 2, 'Short'),
+    ('Int',    '39599817'   , 4, 'Integer'),
+    ('Long',   '-1709696158', 8, 'Long'),
+    ('Float',  '1920204022' , 4, 'Float'),
+    ('Double', '2140173175' , 8, 'Double')
    ]
 }%
-% for (T, Seed) in variants:
+% for (T, Seed, unusedSize, unusedJavaType) in variants:
 object ${T}Buffer {
   private final val HashSeed = ${Seed} // "java.nio.${T}Buffer".##
 
@@ -233,47 +236,51 @@ abstract class ${T}Buffer private[nio] (
 %end 
 
 %if T == 'Byte':
-  def getChar(): Char
-  def putChar(value: Char): ByteBuffer
-  def getChar(index: Int): Char
-  def putChar(index: Int, value: Char): ByteBuffer
-
-  def asCharBuffer(): CharBuffer
-
-  def getShort(): Short
-  def putShort(value: Short): ByteBuffer
-  def getShort(index: Int): Short
-  def putShort(index: Int, value: Short): ByteBuffer
-
-  def asShortBuffer(): ShortBuffer
-
-  def getInt(): Int
-  def putInt(value: Int): ByteBuffer
-  def getInt(index: Int): Int
-  def putInt(index: Int, value: Int): ByteBuffer
-
-  def asIntBuffer(): IntBuffer
-
-  def getLong(): Long
-  def putLong(value: Long): ByteBuffer
-  def getLong(index: Int): Long
-  def putLong(index: Int, value: Long): ByteBuffer
-
-  def asLongBuffer(): LongBuffer
-
-  def getFloat(): Float
-  def putFloat(value: Float): ByteBuffer
-  def getFloat(index: Int): Float
-  def putFloat(index: Int, value: Float): ByteBuffer
-
-  def asFloatBuffer(): FloatBuffer
-
-  def getDouble(): Double
-  def putDouble(value: Double): ByteBuffer
-  def getDouble(index: Int): Double
-  def putDouble(index: Int, value: Double): ByteBuffer
-
-  def asDoubleBuffer(): DoubleBuffer
+%for (E, unused, Size, JavaType) in variants:
+%if E != 'Byte':
+  def as${E}Buffer(): ${E}Buffer
+  def get${E}(): ${E} = load${E}(getPosAndAdvanceRead(${Size}))
+  def put${E}(value: ${E}): ByteBuffer = {
+    ensureNotReadOnly()
+    store${E}(getPosAndAdvanceWrite(${Size}), value)
+  }
+  def get${E}(index: Int): ${E} = load${E}(validateIndex(index, ${Size}))
+  def put${E}(index: Int, value: ${E}): ByteBuffer = {
+    ensureNotReadOnly()
+    store${E}(validateIndex(index, ${Size}), value)
+  }  
+  @alwaysinline private def load${E}(index: Int): ${E} = {
+%if E == 'Float':
+    val value = Intrinsics.loadInt(Intrinsics.elemRawPtr(_rawAddress, index))
+    val maybeReversed = if (isBigEndian) java.lang.Integer.reverseBytes(value) else value
+    java.lang.Float.intBitsToFloat(maybeReversed)
+%elif E == 'Double':
+    val value = Intrinsics.loadLong(Intrinsics.elemRawPtr(_rawAddress, index))
+    val maybeReversed = if (isBigEndian) java.lang.Long.reverseBytes(value) else value
+    java.lang.Double.longBitsToDouble(maybeReversed)
+%else:
+    val value = Intrinsics.load${E}(Intrinsics.elemRawPtr(_rawAddress, index))
+    val maybeReversed = if (isBigEndian) java.lang.${JavaType}.reverseBytes(value) else value
+    maybeReversed
+%end
+  }
+  @alwaysinline private def store${E}(index: Int, value: ${E}): ByteBuffer = {
+%if E == 'Float':
+    val integerValue = java.lang.Float.floatToIntBits(value)
+    val maybeReversed = if (isBigEndian) java.lang.Integer.reverseBytes(integerValue) else integerValue
+    Intrinsics.storeInt(Intrinsics.elemRawPtr(_rawAddress, index), maybeReversed)
+%elif E == 'Double':
+    val integerValue = java.lang.Double.doubleToLongBits(value)
+    val maybeReversed = if (isBigEndian) java.lang.Long.reverseBytes(integerValue) else integerValue
+    Intrinsics.storeLong(Intrinsics.elemRawPtr(_rawAddress, index), maybeReversed)
+%else:
+    val maybeReversed = if (isBigEndian) java.lang.${JavaType}.reverseBytes(value) else value
+    Intrinsics.store${E}(Intrinsics.elemRawPtr(_rawAddress, index), maybeReversed)
+%end
+    this
+  }
+%end
+%end
 
 % elif T == 'Char':
   override def toString(): String = {

@@ -4,6 +4,9 @@ package java.nio
 // Ported from Scala.js
 import scala.scalanative.unsafe
 import scala.scalanative.unsafe.UnsafeRichArray
+import scala.scalanative.runtime.{fromRawPtr, toRawPtr}
+import scala.scalanative.runtime.Intrinsics
+import scala.scalanative.annotation.alwaysinline
 
 object ByteBuffer {
   private final val HashSeed = -547316498 // "java.nio.ByteBuffer".##
@@ -192,47 +195,134 @@ abstract class ByteBuffer private[nio] (
     ((this.address.toLong + index) & (unitSize -1)).toInt
   }
 
-  def getChar(): Char
-  def putChar(value: Char): ByteBuffer
-  def getChar(index: Int): Char
-  def putChar(index: Int, value: Char): ByteBuffer
-
   def asCharBuffer(): CharBuffer
-
-  def getShort(): Short
-  def putShort(value: Short): ByteBuffer
-  def getShort(index: Int): Short
-  def putShort(index: Int, value: Short): ByteBuffer
-
+  def getChar(): Char = loadChar(getPosAndAdvanceRead(2))
+  def putChar(value: Char): ByteBuffer = {
+    ensureNotReadOnly()
+    storeChar(getPosAndAdvanceWrite(2), value)
+  }
+  def getChar(index: Int): Char = loadChar(validateIndex(index, 2))
+  def putChar(index: Int, value: Char): ByteBuffer = {
+    ensureNotReadOnly()
+    storeChar(validateIndex(index, 2), value)
+  }  
+  @alwaysinline private def loadChar(index: Int): Char = {
+    val value = Intrinsics.loadChar(Intrinsics.elemRawPtr(_rawAddress, index))
+    val maybeReversed = if (isBigEndian) java.lang.Character.reverseBytes(value) else value
+    maybeReversed
+  }
+  @alwaysinline private def storeChar(index: Int, value: Char): ByteBuffer = {
+    val maybeReversed = if (isBigEndian) java.lang.Character.reverseBytes(value) else value
+    Intrinsics.storeChar(Intrinsics.elemRawPtr(_rawAddress, index), maybeReversed)
+    this
+  }
   def asShortBuffer(): ShortBuffer
-
-  def getInt(): Int
-  def putInt(value: Int): ByteBuffer
-  def getInt(index: Int): Int
-  def putInt(index: Int, value: Int): ByteBuffer
-
+  def getShort(): Short = loadShort(getPosAndAdvanceRead(2))
+  def putShort(value: Short): ByteBuffer = {
+    ensureNotReadOnly()
+    storeShort(getPosAndAdvanceWrite(2), value)
+  }
+  def getShort(index: Int): Short = loadShort(validateIndex(index, 2))
+  def putShort(index: Int, value: Short): ByteBuffer = {
+    ensureNotReadOnly()
+    storeShort(validateIndex(index, 2), value)
+  }  
+  @alwaysinline private def loadShort(index: Int): Short = {
+    val value = Intrinsics.loadShort(Intrinsics.elemRawPtr(_rawAddress, index))
+    val maybeReversed = if (isBigEndian) java.lang.Short.reverseBytes(value) else value
+    maybeReversed
+  }
+  @alwaysinline private def storeShort(index: Int, value: Short): ByteBuffer = {
+    val maybeReversed = if (isBigEndian) java.lang.Short.reverseBytes(value) else value
+    Intrinsics.storeShort(Intrinsics.elemRawPtr(_rawAddress, index), maybeReversed)
+    this
+  }
   def asIntBuffer(): IntBuffer
-
-  def getLong(): Long
-  def putLong(value: Long): ByteBuffer
-  def getLong(index: Int): Long
-  def putLong(index: Int, value: Long): ByteBuffer
-
+  def getInt(): Int = loadInt(getPosAndAdvanceRead(4))
+  def putInt(value: Int): ByteBuffer = {
+    ensureNotReadOnly()
+    storeInt(getPosAndAdvanceWrite(4), value)
+  }
+  def getInt(index: Int): Int = loadInt(validateIndex(index, 4))
+  def putInt(index: Int, value: Int): ByteBuffer = {
+    ensureNotReadOnly()
+    storeInt(validateIndex(index, 4), value)
+  }  
+  @alwaysinline private def loadInt(index: Int): Int = {
+    val value = Intrinsics.loadInt(Intrinsics.elemRawPtr(_rawAddress, index))
+    val maybeReversed = if (isBigEndian) java.lang.Integer.reverseBytes(value) else value
+    maybeReversed
+  }
+  @alwaysinline private def storeInt(index: Int, value: Int): ByteBuffer = {
+    val maybeReversed = if (isBigEndian) java.lang.Integer.reverseBytes(value) else value
+    Intrinsics.storeInt(Intrinsics.elemRawPtr(_rawAddress, index), maybeReversed)
+    this
+  }
   def asLongBuffer(): LongBuffer
-
-  def getFloat(): Float
-  def putFloat(value: Float): ByteBuffer
-  def getFloat(index: Int): Float
-  def putFloat(index: Int, value: Float): ByteBuffer
-
+  def getLong(): Long = loadLong(getPosAndAdvanceRead(8))
+  def putLong(value: Long): ByteBuffer = {
+    ensureNotReadOnly()
+    storeLong(getPosAndAdvanceWrite(8), value)
+  }
+  def getLong(index: Int): Long = loadLong(validateIndex(index, 8))
+  def putLong(index: Int, value: Long): ByteBuffer = {
+    ensureNotReadOnly()
+    storeLong(validateIndex(index, 8), value)
+  }  
+  @alwaysinline private def loadLong(index: Int): Long = {
+    val value = Intrinsics.loadLong(Intrinsics.elemRawPtr(_rawAddress, index))
+    val maybeReversed = if (isBigEndian) java.lang.Long.reverseBytes(value) else value
+    maybeReversed
+  }
+  @alwaysinline private def storeLong(index: Int, value: Long): ByteBuffer = {
+    val maybeReversed = if (isBigEndian) java.lang.Long.reverseBytes(value) else value
+    Intrinsics.storeLong(Intrinsics.elemRawPtr(_rawAddress, index), maybeReversed)
+    this
+  }
   def asFloatBuffer(): FloatBuffer
-
-  def getDouble(): Double
-  def putDouble(value: Double): ByteBuffer
-  def getDouble(index: Int): Double
-  def putDouble(index: Int, value: Double): ByteBuffer
-
+  def getFloat(): Float = loadFloat(getPosAndAdvanceRead(4))
+  def putFloat(value: Float): ByteBuffer = {
+    ensureNotReadOnly()
+    storeFloat(getPosAndAdvanceWrite(4), value)
+  }
+  def getFloat(index: Int): Float = loadFloat(validateIndex(index, 4))
+  def putFloat(index: Int, value: Float): ByteBuffer = {
+    ensureNotReadOnly()
+    storeFloat(validateIndex(index, 4), value)
+  }  
+  @alwaysinline private def loadFloat(index: Int): Float = {
+    val value = Intrinsics.loadInt(Intrinsics.elemRawPtr(_rawAddress, index))
+    val maybeReversed = if (isBigEndian) java.lang.Integer.reverseBytes(value) else value
+    java.lang.Float.intBitsToFloat(maybeReversed)
+  }
+  @alwaysinline private def storeFloat(index: Int, value: Float): ByteBuffer = {
+    val integerValue = java.lang.Float.floatToIntBits(value)
+    val maybeReversed = if (isBigEndian) java.lang.Integer.reverseBytes(integerValue) else integerValue
+    Intrinsics.storeInt(Intrinsics.elemRawPtr(_rawAddress, index), maybeReversed)
+    this
+  }
   def asDoubleBuffer(): DoubleBuffer
+  def getDouble(): Double = loadDouble(getPosAndAdvanceRead(8))
+  def putDouble(value: Double): ByteBuffer = {
+    ensureNotReadOnly()
+    storeDouble(getPosAndAdvanceWrite(8), value)
+  }
+  def getDouble(index: Int): Double = loadDouble(validateIndex(index, 8))
+  def putDouble(index: Int, value: Double): ByteBuffer = {
+    ensureNotReadOnly()
+    storeDouble(validateIndex(index, 8), value)
+  }  
+  @alwaysinline private def loadDouble(index: Int): Double = {
+    val value = Intrinsics.loadLong(Intrinsics.elemRawPtr(_rawAddress, index))
+    val maybeReversed = if (isBigEndian) java.lang.Long.reverseBytes(value) else value
+    java.lang.Double.longBitsToDouble(maybeReversed)
+  }
+  @alwaysinline private def storeDouble(index: Int, value: Double): ByteBuffer = {
+    val integerValue = java.lang.Double.doubleToLongBits(value)
+    val maybeReversed = if (isBigEndian) java.lang.Long.reverseBytes(integerValue) else integerValue
+    Intrinsics.storeLong(Intrinsics.elemRawPtr(_rawAddress, index), maybeReversed)
+    this
+  }
 
 
   // Internal API

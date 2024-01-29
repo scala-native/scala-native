@@ -14,9 +14,9 @@ abstract class Buffer private[nio] (
     type ElementType = Buffer.this.ElementType
   }
 
-  // TODO: Teach optimizer to conver Ptr[A].asInstanceOf[Ptr[B]] as identitye2
+  // TODO: Teach optimizer to convert Ptr[A].asInstanceOf[Ptr[B]] as identity
   // Keep only RawPtr as field, this way optimizer would erase boxed variant
-  private val _rawAddress = toRawPtr(_address)
+  protected val _rawAddress = toRawPtr(_address)
   private[nio] def address: unsafe.Ptr[Byte] = fromRawPtr(_rawAddress)
   private[nio] def data: unsafe.Ptr[ElementType] = fromRawPtr(_rawAddress)
 
