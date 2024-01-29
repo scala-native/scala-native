@@ -49,12 +49,13 @@ class Interflow(val config: build.Config)(implicit
   /** A map indicatting whether a particular symbol is pure. */
   private val modulePurity = mutable.Map.empty[nir.Global.Top, Boolean]
 
-  // QUESTION: What does "Tl" mean?
+  /** Returns the current scope. */
   def currentFreshScope = freshScopeTl.get()
 
   private val freshScopeTl =
     ThreadLocal.withInitial(() => new ScopedVar[nir.Fresh])
 
+  /** Returns the current lexical scopes. */
   def currentLexicalScopes = lexicalScopesTl.get()
 
   private val lexicalScopesTl = ThreadLocal.withInitial(() =>
