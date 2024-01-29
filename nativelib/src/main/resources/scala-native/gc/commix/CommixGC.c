@@ -21,7 +21,6 @@
 #include "shared/Parsing.h"
 
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
-#include "Synchronizer.h"
 #endif
 #include "MutatorThread.h"
 #include <stdatomic.h>
@@ -41,14 +40,15 @@ void scalanative_afterexit() {
 }
 
 NOINLINE void scalanative_GC_init() {
-    volatile int dummy = 0;
+    volatile word_t dummy = 0;
+    dummy = (word_t)&dummy;
     Heap_Init(&heap, Settings_MinHeapSize(), Settings_MaxHeapSize());
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
     Synchronizer_init();
     weakRefsHandlerThread = GCThread_WeakThreadsHandler_Start();
 #endif
     MutatorThreads_init();
-    MutatorThread_init((word_t **)&dummy); // approximate stack bottom
+    MutatorThread_init((word_t **)dummy); // approximate stack bottom
     customRoots = GC_Roots_Init();
 #ifdef ENABLE_GC_STATS
     atexit(scalanative_afterexit);
@@ -133,13 +133,14 @@ static ThreadRoutineReturnType WINAPI ProxyThreadStartRoutine(void *args) {
 #else
 static ThreadRoutineReturnType ProxyThreadStartRoutine(void *args) {
 #endif
+    volatile word_t stackBottom = 1;
+    stackBottom = (word_t)&stackBottom;
     WrappedFunctionCallArgs *wrapped = (WrappedFunctionCallArgs *)args;
     ThreadStartRoutine originalFn = wrapped->fn;
     RoutineArgs originalArgs = wrapped->args;
-    int stackBottom = 0;
 
     free(args);
-    MutatorThread_init((Field_t *)&stackBottom);
+    MutatorThread_init((Field_t *)stackBottom);
     originalFn(originalArgs);
     MutatorThread_delete(currentMutatorThread);
     return (ThreadRoutineReturnType)0;
@@ -175,6 +176,7 @@ int scalanative_GC_pthread_create(pthread_t *thread, pthread_attr_t *attr,
 void scalanative_GC_set_mutator_thread_state(GC_MutatorThreadState state) {
     MutatorThread_switchState(currentMutatorThread, state);
 }
+
 void scalanative_GC_yield() {
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
     if (atomic_load_explicit(&Synchronizer_stopThreads, memory_order_relaxed))

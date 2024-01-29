@@ -3,11 +3,9 @@
 #include <stdio.h>
 #include <memory.h>
 #include "Block.h"
-#include "Object.h"
 #include "metadata/ObjectMeta.h"
 #include "immix_commix/Log.h"
 #include "Allocator.h"
-#include "Marker.h"
 
 INLINE void Block_recycleUnmarkedBlock(Allocator *allocator,
                                        BlockMeta *blockMeta,
@@ -97,7 +95,8 @@ void Block_Recycle(Allocator *allocator, BlockMeta *blockMeta,
 
             assert(BlockMeta_FirstFreeLine(blockMeta) >= 0);
             assert(BlockMeta_FirstFreeLine(blockMeta) < LINE_COUNT);
-            allocator->recycledBlockCount++;
+            atomic_fetch_add_explicit(&allocator->recycledBlockCount, 1,
+                                      memory_order_relaxed);
         }
     }
 }

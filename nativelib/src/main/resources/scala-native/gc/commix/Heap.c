@@ -20,7 +20,7 @@
 #include <time.h>
 #include <inttypes.h>
 #include "WeakRefGreyList.h"
-#include "Synchronizer.h"
+#include "immix_commix/Synchronizer.h"
 
 void Heap_exitWithOutOfMemory(const char *details) {
     fprintf(stderr, "Out of heap space %s\n", details);
@@ -232,6 +232,7 @@ void Heap_Collect(Heap *heap) {
         MutatorThreads_unlockRead();
         thread_yield();
         MutatorThreads_lockRead();
+        atomic_thread_fence(memory_order_acquire);
     }
 #else
     MutatorThread_switchState(currentMutatorThread,

@@ -760,10 +760,8 @@ object Lower {
             // Exclude accessors and generated methods
             def mayContainLoops =
               defn.insts.exists {
-                case jmp: nir.Inst.Jump =>
-                  // might contain loops
-                  jmp.next.isInstanceOf[nir.Next.Label]
-                case _ => false
+                case nir.Inst.Jump(_: nir.Next.Label) => true
+                case _                                => false
               }
             !sig.isGenerated && (defn.insts.size > 4 || mayContainLoops)
           }
@@ -777,12 +775,8 @@ object Lower {
         scopeId: nir.ScopeId
     ): Unit = {
       if (shouldGenerateGCYieldPoints(currentDefn.get)) {
-        if (platform.useGCYieldPointTraps) {
-          val trap = buf.load(nir.Type.Ptr, GCYieldPointTrap, nir.Next.None)
-          buf.store(nir.Type.Int, trap, zero, nir.Next.None, memoryOrder = None)
-        } else {
-          buf.call(GCYieldSig, GCYield, Nil, nir.Next.None)
-        }
+        // Intrinsic method for LLVM codegen
+        buf.call(GCYieldSig, GCYield, Nil, nir.Next.None)
       }
     }
 

@@ -45,4 +45,5 @@ gyb $javaNIO/HeapByteBufferViews.scala.gyb
 gyb $javaNIO/MappedByteBufferViews.scala.gyb
 gyb $javaNIO/PointerByteBufferViews.scala.gyb
 
-gyb unit-tests/shared/src/test/require-jdk16/org/scalanative/testsuite/javalib/nio/ByteBufferViewsNativeTests.scala.gyb
+gyb unit-tests/native/src/test/scala/org/scalanative/testsuite/niobuffer/ByteBufferViewsNativeTests.scala.gyb
+gyb unit-tests/shared/src/test/scala/org/scalanative/testsuite/javalib/nio/BufferAdapter.scala.template.gyb

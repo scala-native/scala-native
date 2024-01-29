@@ -11,7 +11,7 @@ extern Heap heap;
 extern Stack stack;
 extern Stack weakRefStack;
 extern BlockAllocator blockAllocator;
-extern MutatorThreads mutatorThreads;
+extern _Atomic(MutatorThreads) mutatorThreads;
 extern SN_ThreadLocal MutatorThread *currentMutatorThread;
 extern GC_Roots *customRoots;
 

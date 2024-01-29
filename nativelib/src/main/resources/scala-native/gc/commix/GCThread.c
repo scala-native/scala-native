@@ -10,6 +10,16 @@
 #include <stdlib.h>
 #include "State.h"
 
+#ifdef _WIN32
+#define LastError GetLastError()
+#define ExitValue 1
+#define PRIdErr "lu"
+#else
+#define LastError errno
+#define ExitValue errno
+#define PRIdErr "d"
+#endif
+
 static inline void GCThread_markMaster(Heap *heap, Stats *stats) {
     Stats_RecordTime(stats, start_ns);
     Stats_PhaseStarted(stats);
@@ -86,9 +96,7 @@ static inline void GCThread_sweepMaster(GCThread *thread, Heap *heap,
     while (!Sweeper_IsCoalescingDone(heap)) {
         Sweeper_LazyCoalesce(heap, stats);
     }
-    if (!heap->sweep.postSweepDone) {
-        Phase_SweepDone(heap, stats);
-    }
+    Phase_SweepDone(heap, stats);
     Stats_RecordTime(stats, end_ns);
     Stats_RecordEvent(stats, event_concurrent_sweep, start_ns, end_ns);
 }
@@ -103,12 +111,14 @@ void *GCThread_loop(void *arg) {
         thread->active = false;
         if (!semaphore_wait(start)) {
             fprintf(stderr,
-                    "Acquiring semaphore failed in commix GCThread_loop\n");
-            exit(errno);
+                    "Acquiring semaphore failed in commix GCThread_loop, "
+                    "error=%" PRIdErr "\n",
+                    LastError);
+            exit(ExitValue);
         }
+        thread->active = true;
         // hard fence before proceeding with the next phase
         atomic_thread_fence(memory_order_seq_cst);
-        thread->active = true;
 
         uint8_t phase = heap->gcThreads.phase;
         switch (phase) {
@@ -139,14 +149,15 @@ void *GCThread_loopMaster(void *arg) {
     while (true) {
         thread->active = false;
         if (!semaphore_wait(start)) {
-            fprintf(
-                stderr,
-                "Acquiring semaphore failed in commix GCThread_loopMaster\n");
-            exit(errno);
+            fprintf(stderr,
+                    "Acquiring semaphore failed in commix GCThread_loopMaster "
+                    "error=%" PRIdErr "\n",
+                    LastError);
+            exit(ExitValue);
         }
+        thread->active = true;
         // hard fence before proceeding with the next phase
         atomic_thread_fence(memory_order_seq_cst);
-        thread->active = true;
 
         uint8_t phase = heap->gcThreads.phase;
         switch (phase) {
@@ -211,19 +222,31 @@ int GCThread_ActiveCount(Heap *heap) {
 INLINE void GCThread_WakeMaster(Heap *heap) {
     if (!semaphore_unlock(heap->gcThreads.startMaster)) {
         fprintf(stderr,
-                "Releasing semaphore failed in commix GCThread_WakeMaster\n");
-        exit(errno);
+                "Releasing semaphore failed in commix GCThread_WakeMaster, "
+                "error=%" PRIdErr "\n",
+                LastError);
+        exit(ExitValue);
     }
 }
 
 INLINE void GCThread_WakeWorkers(Heap *heap, int toWake) {
     semaphore_t startWorkers = heap->gcThreads.startWorkers;
+    int maxThreads = heap->gcThreads.count;
+    long prevCount = 0;
     for (int i = 0; i < toWake; i++) {
+#ifdef _WIN32
+        bool status = ReleaseSemaphore(startWorkers, 1, &prevCount);
+        if (prevCount > maxThreads)
+            break;
+        if (!status) {
+#else
         if (!semaphore_unlock(startWorkers)) {
-            fprintf(
-                stderr,
-                "Releasing semaphore failed in commix GCThread_WakeWorkers\n");
-            exit(errno);
+#endif
+            fprintf(stderr,
+                    "Releasing semaphore failed in commix "
+                    "GCThread_WakeWorkers, error=%" PRIdErr "\n",
+                    LastError);
+            exit(ExitValue);
         }
     }
 }
@@ -231,20 +254,20 @@ INLINE void GCThread_WakeWorkers(Heap *heap, int toWake) {
 INLINE void GCThread_Wake(Heap *heap, int toWake) {
     if (toWake > 0) {
         GCThread_WakeMaster(heap);
+        GCThread_WakeWorkers(heap, toWake - 1);
     }
-    GCThread_WakeWorkers(heap, toWake - 1);
 }
 
 void GCThread_ScaleMarkerThreads(Heap *heap, uint32_t remainingFullPackets) {
     if (remainingFullPackets > MARK_SPAWN_THREADS_MIN_PACKETS) {
         int maxThreads = heap->gcThreads.count;
-        int activeThreads = GCThread_ActiveCount(heap);
         int targetThreadCount =
             (remainingFullPackets - MARK_SPAWN_THREADS_MIN_PACKETS) /
             MARK_MIN_PACKETS_PER_THREAD;
         if (targetThreadCount > maxThreads) {
             targetThreadCount = maxThreads;
         }
+        int activeThreads = GCThread_ActiveCount(heap);
         int toSpawn = targetThreadCount - activeThreads;
         if (toSpawn > 0) {
             GCThread_WakeWorkers(heap, toSpawn);
@@ -261,9 +284,10 @@ GCThread_WeakThreadsHandler_init(struct GCWeakRefsHandlerThread *self) {
     self->resumeEvent = CreateEvent(NULL, true, false, NULL);
     if (self->resumeEvent == NULL) {
         fprintf(stderr,
-                "Failed to setup GC weak refs threads event: errno=%lu\n",
-                GetLastError());
-        exit(1);
+                "Failed to setup GC weak refs threads event: error=%" PRIdErr
+                "\n",
+                LastError);
+        exit(ExitValue);
     }
 #else
     if (pthread_mutex_init(&self->resumeEvent.lock, NULL) != 0 ||

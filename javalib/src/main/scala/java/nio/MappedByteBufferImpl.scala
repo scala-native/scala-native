@@ -294,6 +294,7 @@ private[nio] object MappedByteBufferImpl {
     val sysInfo = stackalloc[SystemInfo]()
     GetSystemInfo(sysInfo)
     val pageSize = sysInfo.allocationGranularity.toInt
+    if (pageSize <= 0) failMapping()
     val pagePosition = (position % pageSize).toInt
     val offset = position - pagePosition
     val length = size + pagePosition
@@ -350,6 +351,7 @@ private[nio] object MappedByteBufferImpl {
     }
 
     val pageSize = sysconf(_SC_PAGESIZE).toInt
+    if (pageSize <= 0) failMapping()
     val pagePosition = (position % pageSize).toInt
     val offset = position - pagePosition
     val length = size + pagePosition

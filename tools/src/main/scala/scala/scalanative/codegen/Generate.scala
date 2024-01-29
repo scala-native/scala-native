@@ -46,7 +46,7 @@ object Generate {
       genModuleAccessors()
       genModuleArray()
       genModuleArraySize()
-      genScanableArrayIds()
+      genScanableTypesIds()
       genWeakRefUtils()
       genArrayIds()
 
@@ -490,7 +490,7 @@ object Generate {
       meta.ids(clazz)
     }
 
-    def genScanableArrayIds(): Unit = {
+    def genScanableTypesIds(): Unit = {
       // Ids of array types that can contain pointers
       for ((symbol, tpeName) <- Seq(
             (objectArrayIdName, "Object"),
@@ -503,6 +503,14 @@ object Generate {
           nir.Val.Int(tpe2arrayId(tpeName))
         )
       }
+      // Boxed pointer can conain erased reference to objects
+      val boxedPtrClass = reachabilityAnalysis.infos(nir.Rt.BoxedPtr.name).asInstanceOf[Class]
+      buf += nir.Defn.Const(
+        nir.Attrs.None,
+        boxedPtrIdName,
+        nir.Type.Int,
+        nir.Val.Int(meta.ids(boxedPtrClass))
+      )
     }
 
     def genWeakRefUtils(): Unit = {
@@ -646,6 +654,7 @@ object Generate {
     val moduleArraySizeName = extern("__modules_size")
     val objectArrayIdName = extern("__object_array_id")
     val blobArrayIdName = extern("__blob_array_id")
+    val boxedPtrIdName = extern("__boxed_ptr_id")
     val weakRefIdsMaxName = extern("__weak_ref_ids_max")
     val weakRefIdsMinName = extern("__weak_ref_ids_min")
     val weakRefFieldOffsetName = extern("__weak_ref_field_offset")

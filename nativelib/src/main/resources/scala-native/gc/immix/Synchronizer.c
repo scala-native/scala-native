@@ -68,12 +68,15 @@ static LONG WINAPI SafepointTrapHandler(EXCEPTION_POINTERS *ex) {
 static struct sigaction defaultAction;
 static sigset_t threadWakupSignals;
 static void SafepointTrapHandler(int signal, siginfo_t *siginfo, void *uap) {
+    int old_errno = errno;
     if (siginfo->si_addr == scalanative_GC_yieldpoint_trap) {
         Synchronizer_yield();
+        errno = old_errno;
     } else {
         fprintf(stderr,
-                "Unexpected signal %d when accessing memory at address %p\n",
-                signal, siginfo->si_addr);
+                "Unexpected signal %d when accessing memory at address %p, "
+                "code=%d\n",
+                signal, siginfo->si_addr, siginfo->si_code);
         StackTrace_PrintStackTrace();
         defaultAction.sa_handler(signal);
     }
@@ -168,7 +171,7 @@ static struct {
 #endif
 
 static void Synchronizer_WaitForResumption(MutatorThread *selfThread) {
-    assert(thread == currentMutatorThread);
+    assert(selfThread == currentMutatorThread);
 #ifdef _WIN32
     WaitForSingleObject(threadSuspensionEvent, INFINITE);
 #else

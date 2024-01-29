@@ -171,35 +171,33 @@ static inline void Marker_markLockWords(Heap *heap, Stats *stats,
 void Marker_markConservative(Heap *heap, Stats *stats, GreyPacket **outHolder,
                              GreyPacket **outWeakRefHolder, word_t *address) {
     assert(Heap_IsWordInHeap(heap, address));
-    Object *object = Object_GetUnmarkedObject(heap, address);
-    Bytemap *bytemap = heap->bytemap;
-    if (object != NULL) {
-        ObjectMeta *objectMeta = Bytemap_Get(bytemap, (word_t *)object);
-        assert(ObjectMeta_IsAllocated(objectMeta));
-        if (ObjectMeta_IsAllocated(objectMeta)) {
-            Marker_markObject(heap, stats, outHolder, outWeakRefHolder, bytemap,
-                              object, objectMeta);
+    if (Bytemap_isPtrAligned(address)) {
+        Object *object = Object_GetUnmarkedObject(heap, address);
+        Bytemap *bytemap = heap->bytemap;
+        if (object != NULL) {
+            ObjectMeta *objectMeta = Bytemap_Get(bytemap, (word_t *)object);
+            if (ObjectMeta_IsAllocated(objectMeta)) {
+                Marker_markObject(heap, stats, outHolder, outWeakRefHolder,
+                                  bytemap, object, objectMeta);
+            }
         }
     }
 }
 
 NO_SANITIZE int Marker_markRange(Heap *heap, Stats *stats,
                                  GreyPacket **outHolder,
-                                 GreyPacket **outWeakRefHolder, word_t **fields,
+                                 GreyPacket **outWeakRefHolder, word_t **from,
                                  size_t length) {
     int objectsTraced = 0;
-    word_t **limit = fields + length;
-    for (word_t **current = fields; current < limit; current++) {
+    word_t **limit = from + length;
+    for (word_t **current = from; current <= limit; current++) {
         word_t *field = *current;
         // Memory allocated by GC is alligned, ignore unaligned pointers e.g.
         // interim pointers, otherwise we risk undefined behaviour when assuming
         // memory layout of underlying object.
-        if (Heap_IsWordInHeap(heap, field) && Bytemap_isPtrAligned(field)) {
-            ObjectMeta *fieldMeta = Bytemap_Get(heap->bytemap, field);
-            if (ObjectMeta_IsAllocated(fieldMeta)) {
-                Marker_markObject(heap, stats, outHolder, outWeakRefHolder,
-                                  heap->bytemap, (Object *)field, fieldMeta);
-            }
+        if (Heap_IsWordInHeap(heap, field)) {
+            Marker_markConservative(heap, stats, outHolder, outWeakRefHolder,
+                                    field);
             objectsTraced += 1;
         }
     }
@@ -224,6 +222,15 @@ int Marker_markRegularObject(Heap *heap, Stats *stats, Object *object,
                 Marker_markObject(heap, stats, outHolder, outWeakRefHolder,
                                   bytemap, (Object *)field, fieldMeta);
             }
+            objectsTraced += 1;
+        }
+    }
+    if (object->rtti->rt.id == __boxed_ptr_id) {
+        // Boxed ptr always has a single field
+        word_t *rawPtr = object->fields[0];
+        if (Heap_IsWordInHeap(heap, rawPtr)) {
+            Marker_markConservative(heap, stats, outHolder, outWeakRefHolder,
+                                    rawPtr);
             objectsTraced += 1;
         }
     }
@@ -460,19 +467,15 @@ NO_SANITIZE void Marker_markProgramStack(MutatorThread *thread, Heap *heap,
         stackTop = (word_t **)atomic_load_explicit(&thread->stackTop,
                                                    memory_order_acquire);
     } while (stackTop == NULL);
-    // Extend scanning slightly over the approximated stack top
-    // In the past we were frequently missing objects allocated just before GC
-    // (mostly under LTO enabled)
-    stackTop -= 8;
     size_t stackSize = stackBottom - stackTop;
     Marker_markRange(heap, stats, outHolder, outWeakRefHolder, stackTop,
                      stackSize);
 
     // Mark last context of execution
-    assert(thread->executionContext != NULL);
-    word_t **regs = (word_t **)thread->executionContext;
-    size_t regsSize = sizeof(jmp_buf) / sizeof(word_t *);
-    Marker_markRange(heap, stats, outHolder, outWeakRefHolder, regs, regsSize);
+    size_t registersBufferBytes = sizeof(thread->registersBuffer);
+    Marker_markRange(heap, stats, outHolder, outWeakRefHolder,
+                     (word_t **)&thread->registersBuffer,
+                     registersBufferBytes / sizeof(word_t));
 }
 
 void Marker_markModules(Heap *heap, Stats *stats, GreyPacket **outHolder,
@@ -492,7 +495,7 @@ void Marker_markCustomRoots(Heap *heap, Stats *stats, GreyPacket **outHolder,
     for (GC_Root *it = roots->head; it != NULL; it = it->next) {
         word_t **current = (word_t **)it->range.address_low;
         word_t **limit = (word_t **)it->range.address_high;
-        while (current < limit) {
+        while (current <= limit) {
             word_t *object = *current;
             if (Heap_IsWordInHeap(heap, object)) {
                 Marker_markConservative(heap, stats, outHolder,

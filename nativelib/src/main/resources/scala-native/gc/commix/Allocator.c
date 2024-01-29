@@ -25,13 +25,6 @@ void Allocator_Init(Allocator *allocator, BlockAllocator *blockAllocator,
     allocator->recycledBlockCount = 0;
 }
 
-void Allocator_InitCursors(Allocator *allocator) {
-    while (!(Allocator_newBlock(allocator) &&
-             Allocator_newOverflowBlock(allocator))) {
-        Heap_Grow(&heap, 2);
-    }
-}
-
 /**
  * The Allocator needs one free block for overflow allocation and a free or
  * recyclable block for normal allocation.
@@ -45,6 +38,19 @@ bool Allocator_CanInitCursors(Allocator *allocator) {
         (uint32_t)allocator->blockAllocator->freeBlockCount;
     return freeBlockCount >= 2 ||
            (freeBlockCount == 1 && allocator->recycledBlockCount > 0);
+}
+
+void Allocator_InitCursors(Allocator *allocator, bool canCollect) {
+    while (!(Allocator_newBlock(allocator) &&
+             Allocator_newOverflowBlock(allocator))) {
+        if (Heap_isGrowingPossible(&heap, 2))
+            Heap_Grow(&heap, 2);
+        else if (canCollect)
+            Heap_Collect(&heap);
+        else
+            Heap_exitWithOutOfMemory(
+                "Not enough memory to allocate GC mutator thread allocator");
+    }
 }
 
 void Allocator_Clear(Allocator *allocator) {
@@ -236,6 +242,7 @@ word_t *Allocator_lazySweep(Allocator *allocator, Heap *heap, uint32_t size) {
         object = Allocator_tryAlloc(allocator, size);
         if (object == NULL) {
             thread_yield();
+            atomic_thread_fence(memory_order_acquire);
         }
     }
     Stats_RecordTime(stats, end_ns);

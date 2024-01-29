@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 
+#define NO_OPTIMIZE __attribute__((optnone))
 #define NOINLINE __attribute__((noinline))
 #define INLINE __attribute__((always_inline))
 

@@ -6,12 +6,8 @@
 #include "shared/GCTypes.h"
 #include "Heap.h"
 #include "datastructures/Stack.h"
-#include "Marker.h"
-#include "immix_commix/Log.h"
-#include "Object.h"
 #include "State.h"
 #include "immix_commix/utils/MathUtils.h"
-#include "Constants.h"
 #include "Settings.h"
 #include "WeakRefStack.h"
 #include "shared/Parsing.h"
@@ -27,7 +23,8 @@ void scalanative_GC_collect();
 void scalanative_afterexit() { Stats_OnExit(heap.stats); }
 
 NOINLINE void scalanative_GC_init() {
-    volatile int dummy = 0;
+    volatile word_t dummy = 0;
+    dummy = (word_t)&dummy;
     Heap_Init(&heap, Settings_MinHeapSize(), Settings_MaxHeapSize());
     Stack_Init(&stack, INITIAL_STACK_SIZE);
     Stack_Init(&weakRefStack, INITIAL_STACK_SIZE);
@@ -36,7 +33,7 @@ NOINLINE void scalanative_GC_init() {
     weakRefsHandlerThread = GCThread_WeakThreadsHandler_Start();
 #endif
     MutatorThreads_init();
-    MutatorThread_init((word_t **)&dummy); // approximate stack bottom
+    MutatorThread_init((word_t **)dummy); // approximate stack bottom
     customRoots = GC_Roots_Init();
     atexit(scalanative_afterexit);
 }
@@ -44,7 +41,14 @@ NOINLINE void scalanative_GC_init() {
 INLINE void *scalanative_GC_alloc(void *info, size_t size) {
     size = MathUtils_RoundToNextMultiple(size, ALLOCATION_ALIGNMENT);
 
-    void **alloc = (void **)Heap_Alloc(&heap, size);
+    assert(size % ALLOCATION_ALIGNMENT == 0);
+
+    void **alloc;
+    if (size >= LARGE_BLOCK_SIZE) {
+        alloc = (void **)LargeAllocator_Alloc(&heap, size);
+    } else {
+        alloc = (void **)Allocator_Alloc(&heap, size);
+    }
     *alloc = info;
     return (void *)alloc;
 }
@@ -52,7 +56,7 @@ INLINE void *scalanative_GC_alloc(void *info, size_t size) {
 INLINE void *scalanative_GC_alloc_small(void *info, size_t size) {
     size = MathUtils_RoundToNextMultiple(size, ALLOCATION_ALIGNMENT);
 
-    void **alloc = (void **)Heap_AllocSmall(&heap, size);
+    void **alloc = (void **)Allocator_Alloc(&heap, size);
     *alloc = info;
     return (void *)alloc;
 }
@@ -60,7 +64,7 @@ INLINE void *scalanative_GC_alloc_small(void *info, size_t size) {
 INLINE void *scalanative_GC_alloc_large(void *info, size_t size) {
     size = MathUtils_RoundToNextMultiple(size, ALLOCATION_ALIGNMENT);
 
-    void **alloc = (void **)Heap_AllocLarge(&heap, size);
+    void **alloc = (void **)LargeAllocator_Alloc(&heap, size);
     *alloc = info;
     return (void *)alloc;
 }
@@ -91,6 +95,16 @@ size_t scalanative_GC_get_max_heapsize() {
     return Parse_Env_Or_Default("GC_MAXIMUM_HEAP_SIZE", Heap_getMemoryLimit());
 }
 
+void scalanative_GC_add_roots(void *addr_low, void *addr_high) {
+    AddressRange range = {addr_low, addr_high};
+    GC_Roots_Add(customRoots, range);
+}
+
+void scalanative_GC_remove_roots(void *addr_low, void *addr_high) {
+    AddressRange range = {addr_low, addr_high};
+    GC_Roots_RemoveByRange(customRoots, range);
+}
+
 typedef void *RoutineArgs;
 typedef struct {
     ThreadStartRoutine fn;
@@ -102,13 +116,14 @@ static ThreadRoutineReturnType WINAPI ProxyThreadStartRoutine(void *args) {
 #else
 static ThreadRoutineReturnType ProxyThreadStartRoutine(void *args) {
 #endif
+    volatile word_t stackBottom = 0;
+    stackBottom = (word_t)&stackBottom;
     WrappedFunctionCallArgs *wrapped = (WrappedFunctionCallArgs *)args;
     ThreadStartRoutine originalFn = wrapped->fn;
     RoutineArgs originalArgs = wrapped->args;
-    int stackBottom = 0;
 
     free(args);
-    MutatorThread_init((Field_t *)&stackBottom);
+    MutatorThread_init((Field_t *)stackBottom);
     originalFn(originalArgs);
     MutatorThread_delete(currentMutatorThread);
     return (ThreadRoutineReturnType)0;
@@ -152,13 +167,4 @@ void scalanative_GC_yield() {
 #endif
 }
 
-void scalanative_GC_add_roots(void *addr_low, void *addr_high) {
-    AddressRange range = {addr_low, addr_high};
-    GC_Roots_Add(customRoots, range);
-}
-
-void scalanative_GC_remove_roots(void *addr_low, void *addr_high) {
-    AddressRange range = {addr_low, addr_high};
-    GC_Roots_RemoveByRange(customRoots, range);
-}
 #endif

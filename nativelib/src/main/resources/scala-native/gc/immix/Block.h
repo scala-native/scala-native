@@ -2,7 +2,7 @@
 #define IMMIX_BLOCK_H
 
 #include "metadata/BlockMeta.h"
-#include "Heap.h"
+#include "Allocator.h"
 
 void Block_Recycle(Allocator *allocator, BlockMeta *block, word_t *blockStart,
                    LineMeta *lineMetas);

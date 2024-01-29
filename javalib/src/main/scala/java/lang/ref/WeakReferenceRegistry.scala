@@ -75,13 +75,13 @@ private[java] object WeakReferenceRegistry {
       var head = weakRefsHead
       val expected = stackalloc[WeakReference[_]]()
       !expected = null
-      if (atomic_compare_exchange_strong(weakRefsHeadPtr, expected, weakRef)) ()
+      if (atomic_compare_exchange_weak(weakRefsHeadPtr, expected, weakRef)) ()
       else
         while ({
           var currentHead = !expected
           weakRef.nextReference = currentHead
           !expected = currentHead
-          !atomic_compare_exchange_strong(weakRefsHeadPtr, expected, weakRef)
+          !atomic_compare_exchange_weak(weakRefsHeadPtr, expected, weakRef)
         }) ()
     }
 

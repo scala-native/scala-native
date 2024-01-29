@@ -5,6 +5,8 @@
 #include "State.h"
 #include "GCThread.h"
 #include "shared/GCTypes.h"
+#include "datastructures/BlockRange.h"
+#include "SweepResult.h"
 
 // Sweeper implements concurrent sweeping by coordinating lazy sweeper on the
 // mutator thread with one or more concurrent sweepers on GC threads.
@@ -163,7 +165,6 @@ uint32_t Sweeper_sweepSimpleBlock(MutatorThread *thread, BlockMeta *blockMeta,
 
             assert(BlockMeta_FirstFreeLine(blockMeta) >= 0);
             assert(BlockMeta_FirstFreeLine(blockMeta) < LINE_COUNT);
-            // allocator->recycledBlockCount++;
             atomic_fetch_add_explicit(&allocator->recycledBlockCount, 1,
                                       memory_order_relaxed);
 

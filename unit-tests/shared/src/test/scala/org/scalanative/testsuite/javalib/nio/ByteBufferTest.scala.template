@@ -1248,6 +1248,7 @@ abstract class ByteBufferTest extends BaseBufferTest {
     }
   }
 
+/* >>REQUIRE-JDK-16
   @Test def absoluteBulkGet(): Unit = {
     val buf = withContent(10, elemRange(0, 10): _*)
     val arr = arrayOfElemType(capacity = 8)
@@ -1516,7 +1517,7 @@ abstract class ByteBufferTest extends BaseBufferTest {
       }
     }
   }
-
+<<REQUIRE-JDK-16 */
 }
 
 class AllocByteBufferTest extends ByteBufferTest {

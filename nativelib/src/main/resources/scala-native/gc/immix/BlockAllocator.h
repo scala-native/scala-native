@@ -2,9 +2,8 @@
 #define IMMIX_BLOCKALLOCATOR_H
 
 #include "datastructures/BlockList.h"
-#include "immix/Constants.h"
 #include "shared/ThreadUtil.h"
-#include <stddef.h>
+#include <stdatomic.h>
 
 #define SUPERBLOCK_LIST_SIZE (BLOCK_COUNT_BITS + 1)
 
@@ -13,9 +12,9 @@ typedef struct {
         BlockMeta *cursor;
         BlockMeta *limit;
     } smallestSuperblock;
-    int minNonEmptyIndex;
-    int maxNonEmptyIndex;
-    uint32_t freeBlockCount;
+    atomic_int_fast32_t minNonEmptyIndex;
+    atomic_int_fast32_t maxNonEmptyIndex;
+    atomic_uint_fast32_t freeBlockCount;
     struct {
         BlockMeta *first;
         BlockMeta *limit;
