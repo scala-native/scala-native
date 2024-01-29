@@ -53,12 +53,23 @@ class InetAddress protected (ipAddress: Array[Byte], originalHost: String)
     if (obj == null || obj.getClass != this.getClass) {
       false
     } else {
-      val objIPAddress = obj.asInstanceOf[InetAddress].getAddress()
-      objIPAddress.indices.forall(i => objIPAddress(i) == ipAddress(i))
+      /* Both address bytes and hostname must be the same.
+       * This is stricter Java/Scala concept of equality.
+       *
+       * Scala Native has historically used a looser sense of
+       * comparing only address bytes and letting hostname differ.
+       *
+       * This is analogous to the difference between a case sensitive and
+       * insensitive test of strings. Each has its use case.
+       *
+       * Currently the looser comparison of InetAddress instances must be done
+       * manually.
+       */
+      this.hashCode() == obj.asInstanceOf[InetAddress].hashCode()
     }
   }
 
-  def getAddress() = ipAddress.clone
+  def getAddress() = ipAddress.clone // Disallow outside change to arg contents
 
   def getCanonicalHostName(): String = {
     // reverse name lookup with cache

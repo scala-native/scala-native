@@ -259,4 +259,51 @@ class Inet6AddressTest {
     assertFalse("expected addr6_1 & addr6_3 to be !=", addr6_1 == addr6_3)
   }
 
+  // Issue 3708
+  @Test def constructorIpAddressShouldBeImmutable(): Unit = {
+    val addrBytes = Array[Byte](
+      0xfe.toByte,
+      0x80.toByte,
+      0.toByte,
+      0.toByte,
+      0.toByte,
+      0.toByte,
+      0.toByte,
+      0.toByte,
+      0x02.toByte,
+      0x11.toByte,
+      0x25.toByte,
+      0xff.toByte,
+      0xfe.toByte,
+      0xf8.toByte,
+      0x7c.toByte,
+      0xb2.toByte
+    )
+
+    val commonScopeId = 43 // Use an arbitrary non-zero positive number.
+
+    val addr6_1 = Inet6Address.getByAddress(null, addrBytes, commonScopeId)
+    val addr6_2 = Inet6Address.getByAddress(null, addrBytes, commonScopeId)
+
+    // Mutate common array. Pick an arbitrary index & arbitrary different value
+    val differentAddrBytes = addrBytes // mutate common array.
+    addrBytes(14) = 0xff.toByte
+    val addr6_3 =
+      Inet6Address.getByAddress(null, addrBytes, commonScopeId)
+
+    assertNotNull("addr6_1", addr6_1)
+    assertNotNull("addr6_2", addr6_2)
+    assertNotNull("addr6_3", addr6_3)
+
+    /* Careful here!
+     *   See comment about difficulties using "assertEquals" &
+     *   "assertNotEquals" with strings containing the '%' character
+     *   in Test hashcodeShouldBeRobustToNullHostnames() above.
+     */
+
+    assertTrue("expected addr6_1 & addr6_2 to be ==", addr6_1 == addr6_2)
+
+    assertFalse("expected addr6_1 & addr6_3 to be !=", addr6_1 == addr6_3)
+  }
+
 }
