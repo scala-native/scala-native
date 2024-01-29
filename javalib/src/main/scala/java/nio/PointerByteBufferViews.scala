@@ -56,14 +56,6 @@ private[nio] final class PointerByteBufferCharView private (
   }
 
   @noinline
-  def get(): Char =
-    GenBuffer[CharBuffer](this).generic_get()
-
-  @noinline
-  def put(c: Char): CharBuffer =
-    GenBuffer[CharBuffer](this).generic_put(c)
-
-  @noinline
   override def get(dst: Array[Char], offset: Int, length: Int): CharBuffer =
     GenBuffer[CharBuffer](this).generic_get(dst, offset, length)
 
@@ -159,14 +151,6 @@ private[nio] final class PointerByteBufferShortView private (
   def asReadOnlyBuffer(): ShortBuffer =
     GenPointerBufferView[ShortBuffer](this).generic_asReadOnlyBuffer()
 
-
-  @noinline
-  def get(): Short =
-    GenBuffer[ShortBuffer](this).generic_get()
-
-  @noinline
-  def put(c: Short): ShortBuffer =
-    GenBuffer[ShortBuffer](this).generic_put(c)
 
   @noinline
   override def get(dst: Array[Short], offset: Int, length: Int): ShortBuffer =
@@ -266,14 +250,6 @@ private[nio] final class PointerByteBufferIntView private (
 
 
   @noinline
-  def get(): Int =
-    GenBuffer[IntBuffer](this).generic_get()
-
-  @noinline
-  def put(c: Int): IntBuffer =
-    GenBuffer[IntBuffer](this).generic_put(c)
-
-  @noinline
   override def get(dst: Array[Int], offset: Int, length: Int): IntBuffer =
     GenBuffer[IntBuffer](this).generic_get(dst, offset, length)
 
@@ -369,14 +345,6 @@ private[nio] final class PointerByteBufferLongView private (
   def asReadOnlyBuffer(): LongBuffer =
     GenPointerBufferView[LongBuffer](this).generic_asReadOnlyBuffer()
 
-
-  @noinline
-  def get(): Long =
-    GenBuffer[LongBuffer](this).generic_get()
-
-  @noinline
-  def put(c: Long): LongBuffer =
-    GenBuffer[LongBuffer](this).generic_put(c)
 
   @noinline
   override def get(dst: Array[Long], offset: Int, length: Int): LongBuffer =
@@ -476,14 +444,6 @@ private[nio] final class PointerByteBufferFloatView private (
 
 
   @noinline
-  def get(): Float =
-    GenBuffer[FloatBuffer](this).generic_get()
-
-  @noinline
-  def put(c: Float): FloatBuffer =
-    GenBuffer[FloatBuffer](this).generic_put(c)
-
-  @noinline
   override def get(dst: Array[Float], offset: Int, length: Int): FloatBuffer =
     GenBuffer[FloatBuffer](this).generic_get(dst, offset, length)
 
@@ -579,14 +539,6 @@ private[nio] final class PointerByteBufferDoubleView private (
   def asReadOnlyBuffer(): DoubleBuffer =
     GenPointerBufferView[DoubleBuffer](this).generic_asReadOnlyBuffer()
 
-
-  @noinline
-  def get(): Double =
-    GenBuffer[DoubleBuffer](this).generic_get()
-
-  @noinline
-  def put(c: Double): DoubleBuffer =
-    GenBuffer[DoubleBuffer](this).generic_put(c)
 
   @noinline
   override def get(dst: Array[Double], offset: Int, length: Int): DoubleBuffer =

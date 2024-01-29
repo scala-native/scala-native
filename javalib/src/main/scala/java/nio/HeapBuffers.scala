@@ -52,14 +52,6 @@ private[nio] final class HeapCharBuffer private (
   }
 
   @noinline
-  def get(): Char =
-    GenBuffer[CharBuffer](this).generic_get()
-
-  @noinline
-  def put(v: Char): CharBuffer =
-    GenBuffer[CharBuffer](this).generic_put(v)
-
-  @noinline
   override def get(dst: Array[Char], offset: Int, length: Int): CharBuffer =
     GenBuffer[CharBuffer](this).generic_get(dst, offset, length)
 
@@ -172,14 +164,6 @@ private[nio] final class HeapShortBuffer private (
   def asReadOnlyBuffer(): ShortBuffer =
     GenHeapBuffer[ShortBuffer](this).generic_asReadOnlyBuffer()
 
-
-  @noinline
-  def get(): Short =
-    GenBuffer[ShortBuffer](this).generic_get()
-
-  @noinline
-  def put(v: Short): ShortBuffer =
-    GenBuffer[ShortBuffer](this).generic_put(v)
 
   @noinline
   override def get(dst: Array[Short], offset: Int, length: Int): ShortBuffer =
@@ -296,14 +280,6 @@ private[nio] final class HeapIntBuffer private (
 
 
   @noinline
-  def get(): Int =
-    GenBuffer[IntBuffer](this).generic_get()
-
-  @noinline
-  def put(v: Int): IntBuffer =
-    GenBuffer[IntBuffer](this).generic_put(v)
-
-  @noinline
   override def get(dst: Array[Int], offset: Int, length: Int): IntBuffer =
     GenBuffer[IntBuffer](this).generic_get(dst, offset, length)
 
@@ -416,14 +392,6 @@ private[nio] final class HeapLongBuffer private (
   def asReadOnlyBuffer(): LongBuffer =
     GenHeapBuffer[LongBuffer](this).generic_asReadOnlyBuffer()
 
-
-  @noinline
-  def get(): Long =
-    GenBuffer[LongBuffer](this).generic_get()
-
-  @noinline
-  def put(v: Long): LongBuffer =
-    GenBuffer[LongBuffer](this).generic_put(v)
 
   @noinline
   override def get(dst: Array[Long], offset: Int, length: Int): LongBuffer =
@@ -540,14 +508,6 @@ private[nio] final class HeapFloatBuffer private (
 
 
   @noinline
-  def get(): Float =
-    GenBuffer[FloatBuffer](this).generic_get()
-
-  @noinline
-  def put(v: Float): FloatBuffer =
-    GenBuffer[FloatBuffer](this).generic_put(v)
-
-  @noinline
   override def get(dst: Array[Float], offset: Int, length: Int): FloatBuffer =
     GenBuffer[FloatBuffer](this).generic_get(dst, offset, length)
 
@@ -660,14 +620,6 @@ private[nio] final class HeapDoubleBuffer private (
   def asReadOnlyBuffer(): DoubleBuffer =
     GenHeapBuffer[DoubleBuffer](this).generic_asReadOnlyBuffer()
 
-
-  @noinline
-  def get(): Double =
-    GenBuffer[DoubleBuffer](this).generic_get()
-
-  @noinline
-  def put(v: Double): DoubleBuffer =
-    GenBuffer[DoubleBuffer](this).generic_put(v)
 
   @noinline
   override def get(dst: Array[Double], offset: Int, length: Int): DoubleBuffer =

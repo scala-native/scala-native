@@ -81,9 +81,13 @@ abstract class ${T}Buffer private[nio] (
 
   def asReadOnlyBuffer(): ${T}Buffer
 
-  def get(): ${T}
+  def get(): ${T} = load(getPosAndAdvanceRead())
 
-  def put(b: ${T}): ${T}Buffer
+  def put(elem: ${T}): ${T}Buffer ={
+    ensureNotReadOnly()
+    store(getPosAndAdvanceWrite(), elem)
+    this
+  }
 
   def get(index: Int): ${T} = load(validateIndex(index))
 
@@ -322,10 +326,10 @@ abstract class ${T}Buffer private[nio] (
   override private[nio] def isBigEndian: Boolean = _isBigEndian
 % end
 
-  // @inline
+  @inline
   private[nio] def load(index: Int): ${T} = this.data(index)
 
-  // @inline
+  @inline
   private[nio] def store(index: Int, elem: ${T}): Unit = this.data(index) = elem
 
   @inline

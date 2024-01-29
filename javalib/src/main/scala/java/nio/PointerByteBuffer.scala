@@ -38,14 +38,6 @@ private[nio] final class PointerByteBuffer private (
     GenPointerBuffer[ByteBuffer](this).generic_asReadOnlyBuffer()
 
   @noinline
-  def get(): Byte =
-    GenBuffer[ByteBuffer](this).generic_get()
-
-  @noinline
-  def put(b: Byte): ByteBuffer =
-    GenBuffer[ByteBuffer](this).generic_put(b)
-
-  @noinline
   override def get(dst: Array[Byte], offset: Int, length: Int): ByteBuffer =
     GenBuffer[ByteBuffer](this).generic_get(dst, offset, length)
 

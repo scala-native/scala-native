@@ -54,15 +54,6 @@ private[nio] final class MappedByteBufferCharView private (
   }
 
   @noinline
-  def get(): Char =
-    GenBuffer[CharBuffer](this).generic_get()
-
-  @noinline
-  def put(c: Char): CharBuffer =
-    GenBuffer[CharBuffer](this).generic_put(c)
-
-
-  @noinline
   override def get(dst: Array[Char], offset: Int, length: Int): CharBuffer =
     GenBuffer[CharBuffer](this).generic_get(dst, offset, length)
 
@@ -157,15 +148,6 @@ private[nio] final class MappedByteBufferShortView private (
   @noinline
   def asReadOnlyBuffer(): ShortBuffer =
     GenMappedBufferView[ShortBuffer](this).generic_asReadOnlyBuffer()
-
-
-  @noinline
-  def get(): Short =
-    GenBuffer[ShortBuffer](this).generic_get()
-
-  @noinline
-  def put(c: Short): ShortBuffer =
-    GenBuffer[ShortBuffer](this).generic_put(c)
 
 
   @noinline
@@ -266,15 +248,6 @@ private[nio] final class MappedByteBufferIntView private (
 
 
   @noinline
-  def get(): Int =
-    GenBuffer[IntBuffer](this).generic_get()
-
-  @noinline
-  def put(c: Int): IntBuffer =
-    GenBuffer[IntBuffer](this).generic_put(c)
-
-
-  @noinline
   override def get(dst: Array[Int], offset: Int, length: Int): IntBuffer =
     GenBuffer[IntBuffer](this).generic_get(dst, offset, length)
 
@@ -369,15 +342,6 @@ private[nio] final class MappedByteBufferLongView private (
   @noinline
   def asReadOnlyBuffer(): LongBuffer =
     GenMappedBufferView[LongBuffer](this).generic_asReadOnlyBuffer()
-
-
-  @noinline
-  def get(): Long =
-    GenBuffer[LongBuffer](this).generic_get()
-
-  @noinline
-  def put(c: Long): LongBuffer =
-    GenBuffer[LongBuffer](this).generic_put(c)
 
 
   @noinline
@@ -478,15 +442,6 @@ private[nio] final class MappedByteBufferFloatView private (
 
 
   @noinline
-  def get(): Float =
-    GenBuffer[FloatBuffer](this).generic_get()
-
-  @noinline
-  def put(c: Float): FloatBuffer =
-    GenBuffer[FloatBuffer](this).generic_put(c)
-
-
-  @noinline
   override def get(dst: Array[Float], offset: Int, length: Int): FloatBuffer =
     GenBuffer[FloatBuffer](this).generic_get(dst, offset, length)
 
@@ -581,15 +536,6 @@ private[nio] final class MappedByteBufferDoubleView private (
   @noinline
   def asReadOnlyBuffer(): DoubleBuffer =
     GenMappedBufferView[DoubleBuffer](this).generic_asReadOnlyBuffer()
-
-
-  @noinline
-  def get(): Double =
-    GenBuffer[DoubleBuffer](this).generic_get()
-
-  @noinline
-  def put(c: Double): DoubleBuffer =
-    GenBuffer[DoubleBuffer](this).generic_put(c)
 
 
   @noinline

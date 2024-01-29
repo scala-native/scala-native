@@ -82,14 +82,6 @@ private class MappedByteBufferImpl(
     genMappedBuffer.generic_asReadOnlyBuffer()
 
   @noinline
-  def get(): Byte =
-    genBuffer.generic_get()
-
-  @noinline
-  def put(b: Byte): ByteBuffer =
-    genBuffer.generic_put(b)
-
-  @noinline
   override def get(dst: Array[Byte], offset: Int, length: Int): ByteBuffer =
     genBuffer.generic_get(dst, offset, length)
 

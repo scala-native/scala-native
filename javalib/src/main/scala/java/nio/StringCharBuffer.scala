@@ -55,10 +55,10 @@ private[nio] final class StringCharBuffer private (
   }
 
   @noinline
-  def get(): Char =
+  override def get(): Char =
     genBuffer.generic_get()
 
-  def put(c: Char): CharBuffer =
+  override def put(c: Char): CharBuffer =
     throw new ReadOnlyBufferException
 
   @noinline

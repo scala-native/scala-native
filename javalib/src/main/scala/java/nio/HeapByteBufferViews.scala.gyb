@@ -65,14 +65,6 @@ private[nio] final class HeapByteBuffer${T}View private (
   % end
 
   @noinline
-  def get(): ${T} =
-    GenBuffer[${T}Buffer](this).generic_get()
-
-  @noinline
-  def put(c: ${T}): ${T}Buffer =
-    GenBuffer[${T}Buffer](this).generic_put(c)
-
-  @noinline
   override def get(dst: Array[${T}], offset: Int, length: Int): ${T}Buffer =
     GenBuffer[${T}Buffer](this).generic_get(dst, offset, length)
 

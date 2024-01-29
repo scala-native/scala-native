@@ -52,9 +52,13 @@ abstract class ByteBuffer private[nio] (
 
   def asReadOnlyBuffer(): ByteBuffer
 
-  def get(): Byte
+  def get(): Byte = load(getPosAndAdvanceRead())
 
-  def put(b: Byte): ByteBuffer
+  def put(elem: Byte): ByteBuffer ={
+    ensureNotReadOnly()
+    store(getPosAndAdvanceWrite(), elem)
+    this
+  }
 
   def get(index: Int): Byte = load(validateIndex(index))
 
@@ -234,10 +238,10 @@ abstract class ByteBuffer private[nio] (
   // Internal API
   override private[nio] def isBigEndian: Boolean = _isBigEndian
 
-  // @inline
+  @inline
   private[nio] def load(index: Int): Byte = this.data(index)
 
-  // @inline
+  @inline
   private[nio] def store(index: Int, elem: Byte): Unit = this.data(index) = elem
 
   @inline
@@ -309,9 +313,13 @@ abstract class CharBuffer private[nio] (
 
   def asReadOnlyBuffer(): CharBuffer
 
-  def get(): Char
+  def get(): Char = load(getPosAndAdvanceRead())
 
-  def put(b: Char): CharBuffer
+  def put(elem: Char): CharBuffer ={
+    ensureNotReadOnly()
+    store(getPosAndAdvanceWrite(), elem)
+    this
+  }
 
   def get(index: Int): Char = load(validateIndex(index))
 
@@ -469,10 +477,10 @@ abstract class CharBuffer private[nio] (
 
   // Internal API
 
-  // @inline
+  @inline
   private[nio] def load(index: Int): Char = this.data(index)
 
-  // @inline
+  @inline
   private[nio] def store(index: Int, elem: Char): Unit = this.data(index) = elem
 
   @inline
@@ -537,9 +545,13 @@ abstract class ShortBuffer private[nio] (
 
   def asReadOnlyBuffer(): ShortBuffer
 
-  def get(): Short
+  def get(): Short = load(getPosAndAdvanceRead())
 
-  def put(b: Short): ShortBuffer
+  def put(elem: Short): ShortBuffer ={
+    ensureNotReadOnly()
+    store(getPosAndAdvanceWrite(), elem)
+    this
+  }
 
   def get(index: Int): Short = load(validateIndex(index))
 
@@ -649,10 +661,10 @@ abstract class ShortBuffer private[nio] (
 
   // Internal API
 
-  // @inline
+  @inline
   private[nio] def load(index: Int): Short = this.data(index)
 
-  // @inline
+  @inline
   private[nio] def store(index: Int, elem: Short): Unit = this.data(index) = elem
 
   @inline
@@ -717,9 +729,13 @@ abstract class IntBuffer private[nio] (
 
   def asReadOnlyBuffer(): IntBuffer
 
-  def get(): Int
+  def get(): Int = load(getPosAndAdvanceRead())
 
-  def put(b: Int): IntBuffer
+  def put(elem: Int): IntBuffer ={
+    ensureNotReadOnly()
+    store(getPosAndAdvanceWrite(), elem)
+    this
+  }
 
   def get(index: Int): Int = load(validateIndex(index))
 
@@ -829,10 +845,10 @@ abstract class IntBuffer private[nio] (
 
   // Internal API
 
-  // @inline
+  @inline
   private[nio] def load(index: Int): Int = this.data(index)
 
-  // @inline
+  @inline
   private[nio] def store(index: Int, elem: Int): Unit = this.data(index) = elem
 
   @inline
@@ -897,9 +913,13 @@ abstract class LongBuffer private[nio] (
 
   def asReadOnlyBuffer(): LongBuffer
 
-  def get(): Long
+  def get(): Long = load(getPosAndAdvanceRead())
 
-  def put(b: Long): LongBuffer
+  def put(elem: Long): LongBuffer ={
+    ensureNotReadOnly()
+    store(getPosAndAdvanceWrite(), elem)
+    this
+  }
 
   def get(index: Int): Long = load(validateIndex(index))
 
@@ -1009,10 +1029,10 @@ abstract class LongBuffer private[nio] (
 
   // Internal API
 
-  // @inline
+  @inline
   private[nio] def load(index: Int): Long = this.data(index)
 
-  // @inline
+  @inline
   private[nio] def store(index: Int, elem: Long): Unit = this.data(index) = elem
 
   @inline
@@ -1077,9 +1097,13 @@ abstract class FloatBuffer private[nio] (
 
   def asReadOnlyBuffer(): FloatBuffer
 
-  def get(): Float
+  def get(): Float = load(getPosAndAdvanceRead())
 
-  def put(b: Float): FloatBuffer
+  def put(elem: Float): FloatBuffer ={
+    ensureNotReadOnly()
+    store(getPosAndAdvanceWrite(), elem)
+    this
+  }
 
   def get(index: Int): Float = load(validateIndex(index))
 
@@ -1189,10 +1213,10 @@ abstract class FloatBuffer private[nio] (
 
   // Internal API
 
-  // @inline
+  @inline
   private[nio] def load(index: Int): Float = this.data(index)
 
-  // @inline
+  @inline
   private[nio] def store(index: Int, elem: Float): Unit = this.data(index) = elem
 
   @inline
@@ -1257,9 +1281,13 @@ abstract class DoubleBuffer private[nio] (
 
   def asReadOnlyBuffer(): DoubleBuffer
 
-  def get(): Double
+  def get(): Double = load(getPosAndAdvanceRead())
 
-  def put(b: Double): DoubleBuffer
+  def put(elem: Double): DoubleBuffer ={
+    ensureNotReadOnly()
+    store(getPosAndAdvanceWrite(), elem)
+    this
+  }
 
   def get(index: Int): Double = load(validateIndex(index))
 
@@ -1369,10 +1397,10 @@ abstract class DoubleBuffer private[nio] (
 
   // Internal API
 
-  // @inline
+  @inline
   private[nio] def load(index: Int): Double = this.data(index)
 
-  // @inline
+  @inline
   private[nio] def store(index: Int, elem: Double): Unit = this.data(index) = elem
 
   @inline
