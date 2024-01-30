@@ -126,6 +126,7 @@ final class Class(
     out.toSeq
   }
 
+  lazy val hasFinalFields: Boolean = fields.exists(_.attrs.isFinal)
   lazy val hasFinalSafePublishFields: Boolean =
     fields.exists(_.attrs.finalWithSafePublish)
 

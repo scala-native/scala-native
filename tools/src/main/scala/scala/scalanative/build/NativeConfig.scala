@@ -88,6 +88,9 @@ sealed trait NativeConfig {
   /** Configuration when doing optimization */
   def optimizerConfig: OptimizerConfig
 
+  /** Configuration for semantics of generated program */
+  def semanticsConfig: SemanticsConfig
+
   /** Configuration for LLVM metadata generation controlling source level
    *  debugging support
    */
@@ -241,6 +244,13 @@ sealed trait NativeConfig {
 
   /** Modify a optimization configuration */
   def withOptimizerConfig(update: Mapping[OptimizerConfig]): NativeConfig
+
+  /** Create a semantics configuration */
+  final def withSemanticsConfig(value: SemanticsConfig): NativeConfig =
+    withSemanticsConfig(_ => value)
+
+  /** Modify a semantics configuration */
+  def withSemanticsConfig(update: Mapping[SemanticsConfig]): NativeConfig
 }
 
 object NativeConfig {
@@ -277,7 +287,8 @@ object NativeConfig {
       serviceProviders = Map.empty,
       baseName = "",
       optimizerConfig = OptimizerConfig.empty,
-      sourceLevelDebuggingConfig = SourceLevelDebuggingConfig.disabled
+      sourceLevelDebuggingConfig = SourceLevelDebuggingConfig.disabled,
+      semanticsConfig = SemanticsConfig.default
     )
 
   private final case class Impl(
@@ -306,7 +317,8 @@ object NativeConfig {
       serviceProviders: Map[ServiceName, Iterable[ServiceProviderName]],
       baseName: String,
       optimizerConfig: OptimizerConfig,
-      sourceLevelDebuggingConfig: SourceLevelDebuggingConfig
+      sourceLevelDebuggingConfig: SourceLevelDebuggingConfig,
+      semanticsConfig: SemanticsConfig
   ) extends NativeConfig {
 
     def withClang(value: Path): NativeConfig =
@@ -414,6 +426,10 @@ object NativeConfig {
     ): NativeConfig =
       copy(sourceLevelDebuggingConfig = update(sourceLevelDebuggingConfig))
 
+    override def withSemanticsConfig(
+        update: Mapping[SemanticsConfig]
+    ): NativeConfig = copy(semanticsConfig = update(semanticsConfig))
+
     override def toString: String = {
       def showSeq(it: Iterable[Any]) = it.mkString("[", ", ", "]")
       def showMap(map: Map[String, Any], indent: Int = 4): String =
@@ -461,6 +477,7 @@ object NativeConfig {
         | - resourceExcludePatterns: ${showSeq(resourceExcludePatterns)}
         | - serviceProviders:        ${showMap(serviceProviders)}
         | - optimizerConfig:         ${optimizerConfig.show(" " * 4)}
+        | - semanticsConfig:         ${semanticsConfig.show(" " * 4)}
         | - sourceLevelDebuggingConfig: ${sourceLevelDebuggingConfig.show(
           " " * 4
         )}
