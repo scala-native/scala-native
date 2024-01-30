@@ -16,7 +16,6 @@ final class State(block: nir.Local)(preserveDebugInfo: Boolean) {
   var delayed = mutable.AnyRefMap.empty[nir.Op, nir.Val]
   var emitted = mutable.AnyRefMap.empty[nir.Op, nir.Val.Local]
   var emit = new nir.InstructionBuilder()(fresh)
-  var inlineDepth = 0
 
   // Delayed init
   var localNames: mutable.OpenHashMap[nir.Local, String] = _
@@ -284,7 +283,6 @@ final class State(block: nir.Local)(preserveDebugInfo: Boolean) {
     newstate.locals = locals.clone()
     newstate.delayed = delayed.clone()
     newstate.emitted = emitted.clone()
-    newstate.inlineDepth = inlineDepth
     if (preserveDebugInfo) {
       newstate.virtualNames = virtualNames.mapValuesNow(identity)
       newstate.localNames = localNames.clone()

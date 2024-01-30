@@ -44,6 +44,32 @@ class Interflow(val config: build.Config)(implicit
     new ScopedVar[mutable.UnrolledBuffer[DebugInfo.LexicalScope]]
   )
 
+  // Not thread-safe, each thread shall contain it's own stack
+  protected class SymbolsStack {
+    private var state: List[nir.Global.Member] = Nil
+    private var cachedSize = 0
+
+    def tracked[T](symbol: nir.Global.Member)(block: => T): T = {
+      push(symbol)
+      try block
+      finally pop()
+    }
+    def size = cachedSize
+    def contains(symbol: nir.Global.Member): Boolean = state.contains(symbol)
+    def push(symbol: nir.Global.Member): Unit = {
+      state = symbol :: state
+      cachedSize += 1
+    }
+    def pop(): nir.Global.Member = {
+      require(state.nonEmpty, "Cannot pop empty stack")
+      val head :: tail = state: @unchecked
+      state = tail
+      cachedSize -= 1
+      head
+    }
+  }
+  private val inliningBacktraceTl =
+    ThreadLocal.withInitial(() => new SymbolsStack())
   private val contextTl =
     ThreadLocal.withInitial(() => List.empty[String])
   private val mergeProcessorTl =
@@ -134,6 +160,9 @@ class Interflow(val config: build.Config)(implicit
     contextTl.set(value :: contextTl.get)
   def popContext(): Unit =
     contextTl.set(contextTl.get.tail)
+
+  def inliningBacktrace: SymbolsStack =
+    inliningBacktraceTl.get
 
   def mergeProcessor: MergeProcessor =
     mergeProcessorTl.get.head

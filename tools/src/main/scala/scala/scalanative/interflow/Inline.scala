@@ -6,72 +6,41 @@ import scala.scalanative.linker._
 import scala.scalanative.util.unreachable
 
 trait Inline { self: Interflow =>
-
-  private val maxInlineSize =
-    config.compilerConfig.optimizerConfig.maxInlineSize
-      .getOrElse(8)
-  private val maxCallerSize =
-    config.compilerConfig.optimizerConfig.maxCallerSize
-      .getOrElse(8192)
-  private val maxInlineDepth =
-    config.compilerConfig.optimizerConfig.maxInlineDepth
+  val optimizerConfig = config.compilerConfig.optimizerConfig
+  import optimizerConfig.{
+    smallFunctionSize,
+    maxCallerSize,
+    maxCalleeSize,
+    maxInlineDepth
+  }
 
   def shallInline(name: nir.Global.Member, args: Seq[nir.Val])(implicit
       state: State,
       analysis: ReachabilityAnalysis.Result
   ): Boolean = {
     val maybeDefn = mode match {
-      case build.Mode.Debug =>
-        maybeOriginal(name)
-      case _: build.Mode.Release =>
-        maybeDone(name)
+      case build.Mode.Debug      => maybeOriginal(name)
+      case _: build.Mode.Release => maybeDone(name)
     }
 
     maybeDefn
       .fold[Boolean] {
         false
       } { defn =>
-        def isCtor = originalName(name) match {
-          case nir.Global.Member(_, sig) if sig.isCtor =>
-            true
-          case _ =>
-            false
-        }
-        def isSmall =
-          defn.insts.size <= maxInlineSize
-        val isExtern =
-          defn.attrs.isExtern
-        def hasVirtualArgs =
-          args.exists(_.isInstanceOf[nir.Val.Virtual])
-        val noOpt =
-          defn.attrs.opt == nir.Attr.NoOpt
-        val noInline =
-          defn.attrs.inlineHint == nir.Attr.NoInline
-        val alwaysInline =
-          defn.attrs.inlineHint == nir.Attr.AlwaysInline
-        val hintInline =
-          defn.attrs.inlineHint == nir.Attr.InlineHint
-        def isRecursive =
-          hasContext(s"inlining ${name.show}")
-        def isDenylisted =
-          this.isDenylisted(name)
-        def calleeTooBig =
-          defn.insts.size > maxCallerSize
-        def callerTooBig =
-          mergeProcessor.currentSize() > maxCallerSize
-        def inlineDepthLimitExceeded =
-          maxInlineDepth.exists(_ > state.inlineDepth)
-
-        def hasUnwind = defn.insts.exists {
-          case nir.Inst.Let(_, _, unwind) =>
-            unwind ne nir.Next.None
-          case nir.Inst.Throw(_, unwind) =>
-            unwind ne nir.Next.None
-          case nir.Inst.Unreachable(unwind) =>
-            unwind ne nir.Next.None
-          case _ =>
-            false
-        }
+        def isCtor = name.sig.isCtor
+        def isSmall = defn.insts.size <= smallFunctionSize
+        def isExtern = defn.attrs.isExtern
+        def hasVirtualArgs = args.exists(_.isInstanceOf[nir.Val.Virtual])
+        def noOpt = defn.attrs.opt == nir.Attr.NoOpt
+        def noInline = defn.attrs.inlineHint == nir.Attr.NoInline
+        def alwaysInline = defn.attrs.inlineHint == nir.Attr.AlwaysInline
+        def hintInline = defn.attrs.inlineHint == nir.Attr.InlineHint
+        def isRecursive = inliningBacktrace.contains(name)
+        def isDenylisted = this.isDenylisted(name)
+        def calleeTooBig = defn.insts.size > maxCalleeSize
+        def callerTooBig = mergeProcessor.currentSize() > maxCallerSize
+        def inlineDepthLimitExceeded = inliningBacktrace.size > maxInlineDepth
+        def hasUnwind = defn.hasUnwind
 
         val shall = mode match {
           case build.Mode.Debug =>
@@ -89,21 +58,11 @@ trait Inline { self: Interflow =>
           if (shall) {
             if (shallNot) {
               logger(s"not inlining ${name.show}, because:")
-              if (noInline) {
-                logger("* has noinline attr")
-              }
-              if (isRecursive) {
-                logger("* is recursive")
-              }
-              if (isDenylisted) {
-                logger("* is denylisted")
-              }
-              if (callerTooBig) {
-                logger("* caller is too big")
-              }
-              if (calleeTooBig) {
-                logger("* callee is too big")
-              }
+              if (noInline) logger("* has noinline attr")
+              if (isRecursive) logger("* is recursive")
+              if (isDenylisted) logger("* is denylisted")
+              if (callerTooBig) logger("* caller is too big")
+              if (calleeTooBig) logger("* callee is too big")
               if (inlineDepthLimitExceeded)
                 logger("* inline depth limit exceeded")
             }
@@ -174,15 +133,18 @@ trait Inline { self: Interflow =>
       val nir.Type.Function(_, origRetTy) = defn.ty
 
       implicit val srcPosition: nir.Position = defn.pos
-      val blocks = process(
-        insts = defn.insts.toArray,
-        debugInfo = defn.debugInfo,
-        args = adapt(args, defn.ty),
-        state = state,
-        doInline = true,
-        retTy = origRetTy,
-        parentScopeId = parentScopeId
-      )
+
+      val blocks = inliningBacktrace.tracked(name) {
+        process(
+          insts = defn.insts.toArray,
+          debugInfo = defn.debugInfo,
+          args = adapt(args, defn.ty),
+          state = state,
+          doInline = true,
+          retTy = origRetTy,
+          parentScopeId = parentScopeId
+        )
+      }
 
       val emit = new nir.InstructionBuilder()(state.fresh)
 

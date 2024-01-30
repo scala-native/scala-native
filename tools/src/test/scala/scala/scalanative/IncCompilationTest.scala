@@ -43,11 +43,7 @@ class IncCompilationTest extends codegen.CodeGenSpec {
       val outDir = Files.createTempDirectory("native-test-out")
       val files = NIRCompiler.getCompiler(outDir).compile(source)
       makeChanged(outDir, changedTop)
-      val optimizerConfig = build.OptimizerConfig.empty
-        .withMaxCallerSize(10000)
-        .withMaxInlineSize(1)
-      val nativeConfig = defaultNativeConfig
-        .withOptimizerConfig(optimizerConfig)
+      val nativeConfig = defaultNativeConfig.withOptimize(false)
       val config = makeConfig(outDir, "out", entry, nativeConfig)
       buildAwait(config)
     }

@@ -93,7 +93,14 @@ object Defn {
       insts: Seq[Inst],
       debugInfo: Define.DebugInfo = Define.DebugInfo.empty
   )(implicit val pos: Position)
-      extends Defn
+      extends Defn {
+    private[scalanative] lazy val hasUnwind = insts.exists {
+      case nir.Inst.Let(_, _, unwind)   => unwind ne nir.Next.None
+      case nir.Inst.Throw(_, unwind)    => unwind ne nir.Next.None
+      case nir.Inst.Unreachable(unwind) => unwind ne nir.Next.None
+      case _                            => false
+    }
+  }
 
   object Define {
 
