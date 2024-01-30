@@ -254,6 +254,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           isVolatile = f.isVolatile,
           isFinal = isFinal,
           isSafePublish = isFinal && {
+            scalaNativeOpts.forceStrictFinalFields ||
             f.hasAnnotation(SafePublishClass) ||
             f.owner.hasAnnotation(SafePublishClass)
           },

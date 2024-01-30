@@ -31,6 +31,10 @@ object GenNIR {
        */
       genStaticForwardersForNonTopLevelObjects: Boolean = false,
 
+      /** Treat all final fields like if they would be marked with safePublish
+       */
+      forceStrictFinalFields: Boolean = false,
+
       /** List of paths usd for relativization of source file positions
        */
       positionRelativizationPaths: Seq[Path] = Nil

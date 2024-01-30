@@ -196,6 +196,7 @@ trait NirGenStat(using Context) {
         isVolatile = f.isVolatile,
         isFinal = isFinal,
         isSafePublish = isFinal && {
+          settings.forceStrictFinalFields ||
           f.hasAnnotation(defnNir.SafePublishClass) ||
           f.owner.hasAnnotation(defnNir.SafePublishClass)
         },
