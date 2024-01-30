@@ -8,6 +8,7 @@ package java.util.concurrent.locks
 
 import java.util
 import java.util.concurrent.TimeUnit
+import scala.scalanative.annotation.safePublish
 
 object ReentrantReadWriteLock {
 
@@ -341,8 +342,9 @@ object ReentrantReadWriteLock {
     override final def readerShouldBlock: Boolean = hasQueuedPredecessors()
   }
 
-  class ReadLock private (final private val sync: ReentrantReadWriteLock.Sync)
-      extends Lock
+  class ReadLock private (
+      @safePublish final private val sync: ReentrantReadWriteLock.Sync
+  ) extends Lock
       with Serializable {
     protected[ReentrantReadWriteLock] def this(lock: ReentrantReadWriteLock) =
       this(lock.sync)
@@ -413,8 +415,10 @@ class ReentrantReadWriteLock(val fair: Boolean)
     if (fair) new ReentrantReadWriteLock.FairSync
     else new ReentrantReadWriteLock.NonfairSync
 
+  @safePublish
   final private val readerLock = new ReentrantReadWriteLock.ReadLock(this)
 
+  @safePublish
   final private val writerLock = new ReentrantReadWriteLock.WriteLock(this)
 
   override def writeLock(): ReentrantReadWriteLock.WriteLock = this.writerLock

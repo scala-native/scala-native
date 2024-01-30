@@ -8,6 +8,7 @@ package java.util.concurrent
 import java.util.Collection
 import java.util.concurrent.locks.AbstractQueuedSynchronizer
 import scala.annotation.tailrec
+import scala.scalanative.annotation.safePublish
 
 object Semaphore {
 
@@ -89,7 +90,8 @@ object Semaphore {
 }
 
 @SerialVersionUID(-3222578661600680210L)
-class Semaphore private (sync: Semaphore.Sync) extends Serializable {
+class Semaphore private (@safePublish sync: Semaphore.Sync)
+    extends Serializable {
 
   def this(permits: Int) = {
     this(sync = new Semaphore.NonfairSync(permits))

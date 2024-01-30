@@ -32,6 +32,7 @@ object Attr {
   case object Abstract extends Attr
   case object Volatile extends Attr
   case object Final extends Attr
+  case object SafePublish extends Attr
   case object LinktimeResolved extends Attr
   case object UsesIntrinsic extends Attr
   case class Alignment(size: Int, group: Option[String]) extends Attr
@@ -53,11 +54,13 @@ final case class Attrs(
     isAbstract: Boolean = false,
     isVolatile: Boolean = false,
     isFinal: Boolean = false,
+    isSafePublish: Boolean = false,
     isLinktimeResolved: Boolean = false,
     isUsingIntrinsics: Boolean = false,
     links: Seq[Attr.Link] = Seq.empty,
     preprocessorDefinitions: Seq[Attr.Define] = Seq.empty
 ) {
+  def finalWithSafePublish: Boolean = isFinal && isSafePublish
   def toSeq: Seq[Attr] = {
     val out = Seq.newBuilder[Attr]
 
@@ -71,6 +74,7 @@ final case class Attrs(
     if (isAbstract) out += Abstract
     if (isVolatile) out += Volatile
     if (isFinal) out += Final
+    if (isSafePublish) out += SafePublish
     if (isLinktimeResolved) out += LinktimeResolved
     if (isUsingIntrinsics) out += UsesIntrinsic
     out ++= links
@@ -94,6 +98,7 @@ object Attrs {
     var isBlocking = false
     var isVolatile = false
     var isFinal = false
+    var isSafePublish = false
     var isLinktimeResolved = false
     var isUsingIntrinsics = false
     val links = Seq.newBuilder[Attr.Link]
@@ -115,6 +120,7 @@ object Attrs {
       case Abstract            => isAbstract = true
       case Volatile            => isVolatile = true
       case Final               => isFinal = true
+      case SafePublish         => isSafePublish = true
 
       case LinktimeResolved => isLinktimeResolved = true
       case UsesIntrinsic    => isUsingIntrinsics = true
@@ -132,6 +138,7 @@ object Attrs {
       isAbstract = isAbstract,
       isVolatile = isVolatile,
       isFinal = isFinal,
+      isSafePublish = isSafePublish,
       isLinktimeResolved = isLinktimeResolved,
       isUsingIntrinsics = isUsingIntrinsics,
       links = links.result(),

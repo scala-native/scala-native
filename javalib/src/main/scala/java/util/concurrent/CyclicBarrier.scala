@@ -7,6 +7,7 @@
 package java.util.concurrent
 
 import java.util.concurrent.locks.ReentrantLock
+import scala.scalanative.annotation.safePublish
 
 object CyclicBarrier {
   private[concurrent] class Generation() {
@@ -15,9 +16,9 @@ object CyclicBarrier {
 }
 class CyclicBarrier(
     /* The number of parties */
-    val parties: Int,
+    @safePublish val parties: Int,
     /* The command to run when tripped */
-    val barrierCommand: Runnable
+    @safePublish val barrierCommand: Runnable
 ) {
 
   def this(parties: Int) = this(parties, null)

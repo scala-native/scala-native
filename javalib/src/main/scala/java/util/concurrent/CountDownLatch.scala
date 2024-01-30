@@ -7,6 +7,7 @@ package java.util.concurrent
 
 import java.util.concurrent.locks.AbstractQueuedSynchronizer
 import scala.annotation.tailrec
+import scala.scalanative.annotation.safePublish
 
 object CountDownLatch {
 
@@ -39,7 +40,7 @@ object CountDownLatch {
   }
 }
 
-class CountDownLatch private (sync: CountDownLatch.Sync) {
+class CountDownLatch private (@safePublish sync: CountDownLatch.Sync) {
   def this(count: Int) = {
     this(sync = {
       if (count < 0) throw new IllegalArgumentException("count < 0")

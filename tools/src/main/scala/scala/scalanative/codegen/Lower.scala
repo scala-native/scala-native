@@ -198,13 +198,17 @@ object Lower {
 
         case inst @ nir.Inst.Ret(v) =>
           implicit val pos: nir.Position = inst.pos
-          currentDefn.get.name match {
-            case nir.Global.Member(ClassRef(cls), sig)
-                if sig.isCtor && cls.hasFinalFields =>
-              // Release memory fence after initialization of constructor with final fields
-              buf.fence(nir.MemoryOrder.Release)
-            case _ => ()
-          }
+          if (config.semanticsConfig.finalFields.isNone) () // no-op
+          else
+            currentDefn.get.name match {
+              case nir.Global.Member(ClassRef(cls), sig) if sig.isCtor && {
+                    (config.semanticsConfig.finalFields.isStrict && cls.hasFinalFields) ||
+                    (config.semanticsConfig.finalFields.isRelaxed && cls.hasFinalSafePublishFields)
+                  } =>
+                // Release memory fence after initialization of constructor with final fields
+                buf.fence(nir.MemoryOrder.Release)
+              case _ => () // no-op
+            }
           genGCYieldpoint(buf)
           val retVal =
             if (v.ty == nir.Type.Unit) optionallyBoxedUnit(v)
@@ -607,7 +611,10 @@ object Lower {
         else nir.MemoryOrder.Unordered
 
       // Acquire memory fence before loading a final field
-      if (field.attrs.isFinal) buf.fence(nir.MemoryOrder.Acquire)
+      if (field.attrs.isFinal && {
+            config.semanticsConfig.finalFields.isStrict ||
+            (field.attrs.isSafePublish && config.semanticsConfig.finalFields.isRelaxed)
+          }) buf.fence(nir.MemoryOrder.Acquire)
 
       val elem = genFieldElemOp(buf, genVal(buf, obj), name)
       genLoadOp(buf, n, nir.Op.Load(ty, elem, Some(memoryOrder)))

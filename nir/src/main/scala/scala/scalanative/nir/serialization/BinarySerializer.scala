@@ -199,6 +199,7 @@ final class BinarySerializer(channel: WritableByteChannel) {
       case Attr.Abstract           => putTag(T.AbstractAttr)
       case Attr.Volatile           => putTag(T.VolatileAttr)
       case Attr.Final              => putTag(T.FinalAttr)
+      case Attr.SafePublish        => putTag(T.SafePublishAttr)
 
       case Attr.LinktimeResolved => putTag(T.LinktimeResolvedAttr)
       case Attr.UsesIntrinsic    => putTag(T.UsesIntrinsicAttr)

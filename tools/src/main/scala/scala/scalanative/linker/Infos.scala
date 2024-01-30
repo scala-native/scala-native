@@ -127,6 +127,8 @@ final class Class(
   }
 
   lazy val hasFinalFields: Boolean = fields.exists(_.attrs.isFinal)
+  lazy val hasFinalSafePublishFields: Boolean =
+    fields.exists(_.attrs.finalWithSafePublish)
 
   def isConstantModule(implicit
       analysis: ReachabilityAnalysis.Result

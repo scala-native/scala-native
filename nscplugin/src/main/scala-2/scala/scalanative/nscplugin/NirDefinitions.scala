@@ -68,6 +68,9 @@ trait NirDefinitions {
       "scala.scalanative.annotation.nospecialize"
     )
     lazy val AlignClass = getRequiredClass("scala.scalanative.annotation.align")
+    lazy val SafePublishClass = getRequiredClass(
+      "scala.scalanative.annotation.safePublish"
+    )
 
     lazy val NativeModule = getRequiredModule(
       "scala.scalanative.unsafe.package"

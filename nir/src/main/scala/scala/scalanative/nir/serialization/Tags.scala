@@ -26,7 +26,8 @@ object Tags {
   final val AbstractAttr = 1 + StubAttr
   final val VolatileAttr = 1 + AbstractAttr
   final val FinalAttr = 1 + VolatileAttr
-  final val LinktimeResolvedAttr = 1 + FinalAttr
+  final val SafePublishAttr = 1 + FinalAttr
+  final val LinktimeResolvedAttr = 1 + SafePublishAttr
   final val UsesIntrinsicAttr = 1 + LinktimeResolvedAttr
   final val AlignAttr = 1 + UsesIntrinsicAttr
   final val DefineAttr = 1 + AlignAttr

@@ -19,7 +19,7 @@ import java.util.function._
 import java.util.stream.Stream
 import java.io.{ObjectInputStream, ObjectOutputStream}
 
-import scala.scalanative.annotation.{align => Contended}
+import scala.scalanative.annotation.{align => Contended, safePublish}
 import scala.scalanative.unsafe._
 import scala.scalanative.runtime.Intrinsics.classFieldRawPtr
 import scala.scalanative.runtime.fromRawPtr
@@ -295,8 +295,8 @@ object ConcurrentHashMap {
 
   /* ---------------- Nodes -------------- */
   private[concurrent] class Node[K <: AnyRef, V <: AnyRef] private[concurrent] (
-      private[concurrent] val hash: Int,
-      private[concurrent] val key: K,
+      @safePublish private[concurrent] val hash: Int,
+      @safePublish private[concurrent] val key: K,
       @volatile private[concurrent] var `val`: V
   ) extends util.Map.Entry[K, V] {
     @volatile private[concurrent] var next: Node[K, V] = _

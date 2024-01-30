@@ -19,4 +19,7 @@ trait ScalaNativeOptions {
 
   /** List of paths usd for relativization of source file positions */
   def positionRelativizationPaths: Seq[Path]
+
+  /** Treat all final fields like if they would be marked with safePublish */
+  def forceStrictFinalFields: Boolean
 }

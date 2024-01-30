@@ -249,9 +249,15 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         val pos: nir.Position = f.pos
         // Thats what JVM backend does
         // https://github.com/scala/scala/blob/fe724bcbbfdc4846e5520b9708628d994ae76798/src/compiler/scala/tools/nsc/backend/jvm/BTypesFromSymbols.scala#L760-L764
+        val isFinal = !f.isMutable
         val fieldAttrs = attrs.copy(
           isVolatile = f.isVolatile,
-          isFinal = !f.isMutable,
+          isFinal = isFinal,
+          isSafePublish = isFinal && {
+            scalaNativeOpts.forceStrictFinalFields ||
+            f.hasAnnotation(SafePublishClass) ||
+            f.owner.hasAnnotation(SafePublishClass)
+          },
           align = getAlignmentAttr(f).orElse(classAlign)
         )
 

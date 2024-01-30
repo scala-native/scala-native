@@ -44,7 +44,7 @@ class ForkJoinPool private (
   // target number of workers
   @Contended("fjpctl") final var parallelism: Int = _
 
-  final val registrationLock = new ReentrantLock()
+  @safePublish final val registrationLock = new ReentrantLock()
 
   private[concurrent] var queues: Array[WorkQueue] = _ // main registry
   private[concurrent] var termination: Condition = _
@@ -1949,7 +1949,6 @@ object ForkJoinPool {
     final def setClearThreadLocals(): Unit = config |= CLEAR_TLS
   }
 
-  // TODO should be final, but it leads to problems with static forwarders
   final val defaultForkJoinWorkerThreadFactory: ForkJoinWorkerThreadFactory =
     new DefaultForkJoinWorkerThreadFactory()
 

@@ -11,6 +11,7 @@ import java.util._
 import java.util.concurrent.locks._
 import java.util.function._
 import scala.annotation.tailrec
+import scala.scalanative.annotation.safePublish
 
 @SerialVersionUID(-817911632652898426L)
 object ArrayBlockingQueue {
@@ -62,6 +63,7 @@ class ArrayBlockingQueue[E <: AnyRef](val capacity: Int, val fair: Boolean)
 
   if (capacity <= 0) throw new IllegalArgumentException
 
+  @safePublish
   private[concurrent] final val items = new Array[AnyRef](capacity)
 
   private[concurrent] var takeIndex = 0
@@ -72,6 +74,7 @@ class ArrayBlockingQueue[E <: AnyRef](val capacity: Int, val fair: Boolean)
 
   private[concurrent] var itrs: Itrs = _
 
+  @safePublish
   final private[concurrent] val lock: ReentrantLock = new ReentrantLock(fair)
 
   final private val notEmpty: Condition = lock.newCondition()

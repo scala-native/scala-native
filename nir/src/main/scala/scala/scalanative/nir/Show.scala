@@ -114,6 +114,7 @@ object Show {
         str("volatile")
       case Attr.Final =>
         str("final")
+      case Attr.SafePublish => str("safe-publish")
       case Attr.LinktimeResolved =>
         str("linktime")
       case Attr.Alignment(size, group) =>

@@ -16,11 +16,19 @@ those in :ref:`interop` section.
 Multithreading
 --------------
 
-Scala Native doesn't yet provide libraries for parallel multi-threaded
-programming and assumes single-threaded execution by default.
+Scala Native supports parallel multi-threaded programming and assumes multi-threaded execution by default.
+Upon the absence of system threads in the linked program, Scala Native can automatically switch to single-threaded mode, 
+allowing to get rid of redundant synchronization, as the state is never shared between threads.
 
-It's possible to use C libraries to get access to multi-threading and
-synchronization primitives but this is not officially supported at the moment.
+Scala Native tries to follow the Java Memory Model, but by default uses more relaxed semantics in some areas. 
+Due to the majority of immutable shared states in most Scala programs, Scala Native does not follow Java final fields semantics. 
+Safe publication of final fields (`val`s in Scala) can be enabled by annotating fields or the whole class with `@scala.scalanative.annotation.safePublish`, 
+this behaviour can be also enabled on whole project scope by providing a Scala compiler plugin options `-Pscalanative:forceStrictFinalFields`.
+Semantics of final fields can be also overriden at linktime using `NativeConfig.semanticsConfig` - 
+it can be configured to override default relaxed memory model, allowing to replace it with strict JMM semantics or disable synchronization entierely.
+
+Scala Native ensures that all class field operations would be executed atomically, but does not impose any synchronization or happens-before guarantee. 
+
 
 Finalization
 ------------

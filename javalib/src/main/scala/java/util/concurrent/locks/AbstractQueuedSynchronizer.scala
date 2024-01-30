@@ -29,13 +29,13 @@ object AbstractQueuedSynchronizer { // Node status bits, also used as argument a
     @volatile var next: Node = _ // visibly nonnull when signallable
     @volatile var status: Int = 0 // written by owner, atomic bit ops by others
 
-    private val prevAtomic = new AtomicRef[Node](
+    private def prevAtomic = new AtomicRef[Node](
       fromRawPtr(Intrinsics.classFieldRawPtr(this, "prev"))
     )
-    private val nextAtomic = new AtomicRef[Node](
+    private def nextAtomic = new AtomicRef[Node](
       fromRawPtr(Intrinsics.classFieldRawPtr(this, "next"))
     )
-    private val statusAtomic = new AtomicInt(
+    private def statusAtomic = new AtomicInt(
       fromRawPtr(Intrinsics.classFieldRawPtr(this, "status"))
     )
 
