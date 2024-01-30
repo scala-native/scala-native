@@ -160,7 +160,7 @@ object ControlFlow {
 
   def removeDeadBlocks(insts: Seq[Inst]): Seq[Inst] = {
     val cfg = ControlFlow.Graph(insts)
-    val buf = new nir.Buffer()(Fresh(insts))
+    val buf = new nir.InstructionBuilder()(Fresh(insts))
 
     cfg.all.foreach { b =>
       buf += b.label

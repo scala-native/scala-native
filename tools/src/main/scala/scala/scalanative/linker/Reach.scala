@@ -1079,7 +1079,7 @@ class Reach(
             ty = nir.Type.Function(Nil, nir.Type.Unit),
             insts = {
               implicit val fresh: nir.Fresh = nir.Fresh()
-              val buf = new nir.Buffer()
+              val buf = new nir.InstructionBuilder()
               buf.label(fresh(), Nil)
               buf.call(
                 throwUndefinedTy,

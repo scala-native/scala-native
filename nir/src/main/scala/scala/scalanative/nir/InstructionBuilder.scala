@@ -3,11 +3,13 @@ package nir
 
 import scala.collection.mutable
 
-class Buffer(implicit fresh: Fresh) {
+/** A class to build sequences of NIR instructions. */
+class InstructionBuilder(implicit fresh: Fresh) {
+
   private val buffer = mutable.UnrolledBuffer.empty[Inst]
   def +=(inst: Inst): Unit = buffer += inst
   def ++=(insts: Seq[Inst]): Unit = buffer ++= insts
-  def ++=(other: Buffer): Unit = buffer ++= other.buffer
+  def ++=(other: InstructionBuilder): Unit = buffer ++= other.buffer
 
   def toSeq: Seq[Inst] = buffer.toSeq
   def size: Int = buffer.size

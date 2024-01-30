@@ -293,7 +293,7 @@ trait NirGenExpr(using Context) {
             curScopeId := nir.ScopeId.TopLevel
           ) {
             val fresh = nir.Fresh()
-            val buf = new nir.Buffer()(fresh)
+            val buf = new nir.InstructionBuilder()(fresh)
 
             val superTy = nir.Type.Function(Seq(nir.Rt.Object), nir.Type.Unit)
             val superName = nir.Rt.Object.name.member(nir.Sig.Ctor(Seq.empty))
@@ -3100,7 +3100,8 @@ trait NirGenExpr(using Context) {
 
   }
 
-  sealed class FixupBuffer(using fresh: nir.Fresh) extends nir.Buffer {
+  sealed class FixupBuffer(using fresh: nir.Fresh)
+      extends nir.InstructionBuilder {
     private var labeled = false
 
     override def +=(inst: nir.Inst): Unit = {
@@ -3129,7 +3130,7 @@ trait NirGenExpr(using Context) {
     override def ++=(insts: Seq[nir.Inst]): Unit =
       insts.foreach { inst => this += inst }
 
-    override def ++=(other: nir.Buffer): Unit =
+    override def ++=(other: nir.InstructionBuilder): Unit =
       this ++= other.toSeq
   }
 

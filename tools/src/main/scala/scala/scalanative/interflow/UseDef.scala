@@ -152,7 +152,7 @@ object UseDef {
     val fresh = nir.Fresh(insts)
     val cfg = nir.ControlFlow.Graph(insts)
     val usedef = UseDef(cfg)
-    val buf = new nir.Buffer()(fresh)
+    val buf = new nir.InstructionBuilder()(fresh)
 
     cfg.all.foreach { block =>
       if (usedef(block.id).alive) {

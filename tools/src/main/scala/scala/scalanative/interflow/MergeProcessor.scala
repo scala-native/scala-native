@@ -255,7 +255,7 @@ final class MergeProcessor(
         // Wrap up anre rturn a new merge state
 
         val mergeState = new State(merge)(eval.preserveDebugInfo)
-        mergeState.emit = new nir.Buffer()(mergeFresh)
+        mergeState.emit = new nir.InstructionBuilder()(mergeFresh)
         mergeState.fresh = mergeFresh
         mergeState.locals = mergeLocals
         if (eval.preserveDebugInfo) {

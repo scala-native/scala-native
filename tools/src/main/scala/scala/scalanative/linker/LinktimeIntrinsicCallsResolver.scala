@@ -193,15 +193,20 @@ trait LinktimeIntrinsicCallsResolver { self: Reach =>
     val insts = defn.insts
     implicit def logger: Logger = self.config.logger
     implicit val fresh: Fresh = Fresh(insts)
-    implicit val buffer: Buffer = new Buffer()
+    implicit val buffer: InstructionBuilder = new InstructionBuilder()
     insts.foreach {
-      case inst @ ServiceLoaderLoadCall(cls) => onServiceLoaderLoad(inst, cls)
-      case inst                              => buffer += inst
+      case inst @ ServiceLoaderLoadCall(cls) =>
+        onServiceLoaderLoad(inst, cls)
+      case inst =>
+        buffer += inst
     }
     buffer.toSeq
   }
 
-  private def onServiceLoaderLoad(inst: Inst, cls: Val.ClassOf)(implicit fresh: Fresh, buf: Buffer): Unit = {
+  private def onServiceLoaderLoad(inst: Inst, cls: Val.ClassOf)(implicit
+      fresh: Fresh,
+      buf: InstructionBuilder
+  ): Unit = {
     val let @ Inst.Let(_, op: Op.Call, _) = inst: @unchecked
     implicit val pos: Position = let.pos
     implicit val scopeId: ScopeId = let.scopeId
@@ -239,7 +244,7 @@ trait LinktimeIntrinsicCallsResolver { self: Reach =>
               ty = Type.Function(Nil, providerClsRef),
               insts = {
                 val fresh = Fresh()
-                val buf = new Buffer()(fresh)
+                val buf = new InstructionBuilder()(fresh)
                 buf.label(fresh(), Nil)
                 val alloc = buf.classalloc(providerCls, let.unwind)
                 val callCtor = buf.call(

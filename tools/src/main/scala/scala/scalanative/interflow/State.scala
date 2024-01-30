@@ -15,7 +15,7 @@ final class State(block: nir.Local)(preserveDebugInfo: Boolean) {
   var locals = mutable.OpenHashMap.empty[nir.Local, nir.Val]
   var delayed = mutable.AnyRefMap.empty[nir.Op, nir.Val]
   var emitted = mutable.AnyRefMap.empty[nir.Op, nir.Val.Local]
-  var emit = new nir.Buffer()(fresh)
+  var emit = new nir.InstructionBuilder()(fresh)
   var inlineDepth = 0
 
   // Delayed init
