@@ -189,7 +189,7 @@ class NIRCompilerTest3 {
     |  val evtype = cmark_event_type.CMARK_EVENT_NONE
     |  stdio.printf(c"bla: %s, hello: %d", evtype)
     |""".stripMargin
- )
+  )
 
   @Test def inlineExternFunction(): Unit = {
     val err = assertThrows(
