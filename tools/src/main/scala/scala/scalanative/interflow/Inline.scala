@@ -35,11 +35,11 @@ trait Inline { self: Interflow =>
         def noInline = defn.attrs.inlineHint == nir.Attr.NoInline
         def alwaysInline = defn.attrs.inlineHint == nir.Attr.AlwaysInline
         def hintInline = defn.attrs.inlineHint == nir.Attr.InlineHint
-        def isRecursive = hasContext(s"inlining ${name.show}")
+        def isRecursive = inliningBacktrace.contains(name)
         def isDenylisted = this.isDenylisted(name)
         def calleeTooBig = defn.insts.size > maxCalleeSize
         def callerTooBig = mergeProcessor.currentSize() > maxCallerSize
-        def inlineDepthLimitExceeded = state.inlineDepth > maxInlineDepth
+        def inlineDepthLimitExceeded = inliningBacktrace.size > maxInlineDepth
         def hasUnwind = defn.hasUnwind
 
         val shall = mode match {
@@ -133,15 +133,18 @@ trait Inline { self: Interflow =>
       val nir.Type.Function(_, origRetTy) = defn.ty
 
       implicit val srcPosition: nir.Position = defn.pos
-      val blocks = process(
-        insts = defn.insts.toArray,
-        debugInfo = defn.debugInfo,
-        args = adapt(args, defn.ty),
-        state = state,
-        doInline = true,
-        retTy = origRetTy,
-        parentScopeId = parentScopeId
-      )
+
+      val blocks = inliningBacktrace.tracked(name) {
+        process(
+          insts = defn.insts.toArray,
+          debugInfo = defn.debugInfo,
+          args = adapt(args, defn.ty),
+          state = state,
+          doInline = true,
+          retTy = origRetTy,
+          parentScopeId = parentScopeId
+        )
+      }
 
       val emit = new nir.InstructionBuilder()(state.fresh)
 

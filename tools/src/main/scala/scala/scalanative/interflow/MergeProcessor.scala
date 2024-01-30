@@ -282,13 +282,6 @@ final class MergeProcessor(
         mergeState.heap = mergeHeap
         mergeState.delayed = mergeDelayed
         mergeState.emitted = mergeEmitted
-        mergeState.inlineDepth = incoming match {
-          case Seq(head @ (_, (_, state)), tail @ _*) => state.inlineDepth
-          case _ =>
-            throw new IllegalStateException(
-              "Merging empty list of incoming blocks"
-            )
-        }
         (mergePhis.toSeq, mergeState)
     }
   }
@@ -568,8 +561,6 @@ object MergeProcessor {
     val entryMergeBlock = builder.findMergeBlock(entryName)
     val entryState = new State(entryMergeBlock.id)(eval.preserveDebugInfo)
     entryState.inherit(state, args)
-    entryState.inlineDepth = state.inlineDepth
-    if (doInline) entryState.inlineDepth += 1
 
     entryMergeBlock.incoming(nir.Local(-1)) = (args, entryState)
     builder.todo += entryName
