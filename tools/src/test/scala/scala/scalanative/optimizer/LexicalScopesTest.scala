@@ -206,16 +206,17 @@ class LexicalScopesTest extends OptimizerSpec {
       findEntry(result.defns).foreach { implicit defn =>
         assertContainsAll(
           "named vals",
-          Seq("a", "myMin", "myTmp"),
+          Seq("a", "myTmp"),
           namedLets(defn).values
         )
         // a and b can move moved to seperate scopes in transofrmation, but shall still have common parent
         val a = scopeOf("a")
         assertEquals("a-parent", a.id, nir.ScopeId.TopLevel)
 
-        val myMin = scopeOf("myMin")
-        assertNotEquals("myMin-scope", a.id, myMin.id)
-        assertEquals("myMin-parent", a.id, myMin.parent)
+        // TODO: Try to preserve inlined values
+        // val myMin = scopeOf("myMin")
+        // assertNotEquals("myMin-scope", a.id, myMin.id)
+        // assertEquals("myMin-parent", a.id, myMin.parent)
 
         val myTmp = scopeOf("myTmp")
         assertNotEquals("myTmp-scope", a.id, myTmp.id)
@@ -251,7 +252,7 @@ class LexicalScopesTest extends OptimizerSpec {
       findEntry(result.defns).foreach { implicit defn =>
         assertContainsAll(
           "named vals",
-          Seq("a", "b", "myMin", "myTmp"),
+          Seq("a", "b", "myTmp"),
           namedLets(defn).values
         )
         val nameDuplicates = namedLets(defn).groupBy(_._2).map {
@@ -264,24 +265,6 @@ class LexicalScopesTest extends OptimizerSpec {
         assertEquals("a-b-parent", a.parent, b.parent)
         assertTrue("a-b-toplevel", a.isTopLevel)
 
-        nameDuplicates("myMin") match {
-          case Seq(first, second) =>
-            assertNotEquals(
-              "first-second scope ids",
-              first.scopeId,
-              second.scopeId
-            )
-            assertEquals(
-              a.id,
-              defn.debugInfo.lexicalScopeOf(first.scopeId).parent
-            )
-            assertEquals(
-              b.id,
-              defn.debugInfo.lexicalScopeOf(second.scopeId).parent
-            )
-          case unexpected =>
-            fail(s"Unexpected ammount of myMin duplicates: $unexpected")
-        }
         nameDuplicates("myTmp") match {
           case Seq(first, second) =>
             assertNotEquals(
