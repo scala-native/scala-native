@@ -107,11 +107,6 @@ installation of FreeBSD.
 *Note 3:* Using the boehm GC with multi-threaded binaries doesn't work
 out-of-the-box yet.
 
-*Note 4:* A number of tests, primarily unit-tests, are known to fail
-or not terminate on FreeBSD. It is believed that the code-under-test
-is correct and that the defect is in the test itself.
-Work is underway to fix these tests.
-
 **Nix/NixOS**
 
 .. code-block:: shell

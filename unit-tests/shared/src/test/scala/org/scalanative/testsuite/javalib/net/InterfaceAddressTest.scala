@@ -28,20 +28,26 @@ class InterfaceAddressTest {
    * They also assume, perhaps unwisely, that the loopback address has index 1.
    */
 
-  val localhostIf =
+  val loopbackIfName =
     if (Platform.isLinux) "lo"
     else "lo0"
 
+  val loopbackIfIndex =
+    if (Platform.isFreeBSD) 2
+    else 1
+
   val osIPv6PrefixLength =
-    if (Platform.isMacOs) 64
+    if ((Platform.isMacOs) || (Platform.isFreeBSD)) 64
     else 128
 
   val osIPv6LoopbackSuffix =
-    s":0:0:0:0:0:0:1%${localhostIf}"
+    s":0:0:0:0:0:0:1%${loopbackIfName}"
 
   val osIPv6LoopbackAddress =
-    if (Platform.isMacOs) s"fe80${osIPv6LoopbackSuffix}"
-    else s"0${osIPv6LoopbackSuffix}"
+    if ((Platform.isMacOs) || (Platform.isFreeBSD))
+      s"fe80${osIPv6LoopbackSuffix}"
+    else
+      s"0${osIPv6LoopbackSuffix}"
 
   /* Test equals() but there is no good, simple way to test corresponding
    * hashCode(). The contents of the components used in the hash vary by
@@ -52,7 +58,7 @@ class InterfaceAddressTest {
   @Test def testEquals(): Unit = {
     assumeFalse("Not implemented in Windows", Platform.isWindows)
 
-    val netIf = NetworkInterface.getByIndex(1) // loopback
+    val netIf = NetworkInterface.getByIndex(loopbackIfIndex)
     assertNotNull(netIf)
 
     val ifAddresses = netIf.getInterfaceAddresses()
@@ -70,7 +76,7 @@ class InterfaceAddressTest {
   @Test def testGetAddress(): Unit = {
     assumeFalse("Not implemented in Windows", Platform.isWindows)
 
-    val netIf = NetworkInterface.getByIndex(1) // loopback
+    val netIf = NetworkInterface.getByIndex(loopbackIfIndex)
     assertNotNull(netIf)
 
     val ifAddresses = netIf.getInterfaceAddresses()
@@ -85,7 +91,10 @@ class InterfaceAddressTest {
           if (!hostAddr.contains(":")) {
             "127.0.0.1"
           } else if (hostAddr.startsWith("0")) {
-            s"0:0:0:0:0:0:0:1%${localhostIf}"
+            val suffix =
+              if (Platform.isFreeBSD) ""
+              else s"%${loopbackIfName}"
+            s"0:0:0:0:0:0:0:1${suffix}"
           } else if (hostAddr.startsWith("f")) {
             s"${osIPv6LoopbackAddress}"
           } else "" // fail in a way that will print out ifAddrString
@@ -106,7 +115,7 @@ class InterfaceAddressTest {
   @Test def testGetNetworkPrefixLength(): Unit = {
     assumeFalse("Not implemented in Windows", Platform.isWindows)
 
-    val netIf = NetworkInterface.getByIndex(1) // loopback
+    val netIf = NetworkInterface.getByIndex(loopbackIfIndex)
     assertNotNull(netIf)
 
     val ifAddresses = netIf.getInterfaceAddresses()
@@ -139,7 +148,7 @@ class InterfaceAddressTest {
      *     InetAddress / prefix length [ broadcast address ]
      */
 
-    val netIf = NetworkInterface.getByIndex(1) // loopback
+    val netIf = NetworkInterface.getByIndex(loopbackIfIndex)
     assertNotNull(netIf)
 
     val ifAddresses = netIf.getInterfaceAddresses()
@@ -155,7 +164,10 @@ class InterfaceAddressTest {
           if (!ifAddrString.contains(":")) {
             "/127.0.0.1/8 [null]"
           } else if (ifAddrString.startsWith("/0")) {
-            s"/0:0:0:0:0:0:0:1%${localhostIf}/128 [null]"
+            val stem =
+              if (Platform.isFreeBSD) ""
+              else s"%${loopbackIfName}"
+            s"/0:0:0:0:0:0:0:1${stem}/128 [null]"
           } else if (ifAddrString.startsWith("/f")) {
             s"/${osIPv6LoopbackAddress}/${osIPv6PrefixLength} [null]"
           } else "" // fail in a way that will print out ifAddrString
