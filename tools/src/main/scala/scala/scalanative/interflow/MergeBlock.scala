@@ -25,7 +25,7 @@ final class MergeBlock(val label: nir.Inst.Label, val id: nir.Local) {
   def toInsts(): Seq[nir.Inst] = {
     import Interflow.LLVMIntrinsics._
     val block = this
-    val result = new nir.Buffer()(nir.Fresh(0))
+    val result = new nir.InstructionBuilder()(nir.Fresh(0))
 
     def mergeNext(next: nir.Next.Label): nir.Next.Label = {
       val nextBlock = outgoing(next.id)
@@ -98,7 +98,7 @@ final class MergeBlock(val label: nir.Inst.Label, val id: nir.Local) {
   private def emitIfMissing(
       id: => nir.Local,
       op: nir.Op.Call
-  )(result: nir.Buffer, block: MergeBlock): Boolean = {
+  )(result: nir.InstructionBuilder, block: MergeBlock): Boolean = {
     // Check if original defn already contains this op
     val alreadyEmmited = block.end.emit.exists {
       case nir.Inst.Let(_, `op`, _) =>

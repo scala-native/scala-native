@@ -184,7 +184,7 @@ trait Inline { self: Interflow =>
         parentScopeId = parentScopeId
       )
 
-      val emit = new nir.Buffer()(state.fresh)
+      val emit = new nir.InstructionBuilder()(state.fresh)
 
       def nothing = {
         emit.label(state.fresh(), Seq.empty)

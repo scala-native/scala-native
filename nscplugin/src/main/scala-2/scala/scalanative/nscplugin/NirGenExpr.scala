@@ -19,7 +19,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
   sealed case class ValTree(value: nir.Val) extends Tree
   sealed case class ContTree(f: () => nir.Val) extends Tree
 
-  class FixupBuffer(implicit fresh: nir.Fresh) extends nir.Buffer {
+  class FixupBuffer(implicit fresh: nir.Fresh) extends nir.InstructionBuilder {
     private var labeled = false
 
     override def +=(inst: nir.Inst): Unit = {
@@ -49,7 +49,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     override def ++=(insts: Seq[nir.Inst]): Unit =
       insts.foreach { inst => this += inst }
 
-    override def ++=(other: nir.Buffer): Unit =
+    override def ++=(other: nir.InstructionBuilder): Unit =
       this ++= other.toSeq
   }
 
@@ -817,7 +817,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         nir.Type.Function(nir.Type.Ref(anonName) +: captureTypes, nir.Type.Unit)
       val ctorBody = scoped(curScopeId := nir.ScopeId.TopLevel) {
         val fresh = nir.Fresh()
-        val buf = new nir.Buffer()(fresh)
+        val buf = new nir.InstructionBuilder()(fresh)
         val self = nir.Val.Local(fresh(), nir.Type.Ref(anonName))
         val captureFormals = captureTypes.map { ty =>
           nir.Val.Local(fresh(), ty)

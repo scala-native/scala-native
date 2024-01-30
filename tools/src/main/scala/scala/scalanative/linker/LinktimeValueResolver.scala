@@ -59,7 +59,7 @@ trait LinktimeValueResolver { self: Reach =>
     def evaluated() = {
       implicit val fresh = nir.Fresh()
       lazy val buf = {
-        val buf = new nir.Buffer()
+        val buf = new nir.InstructionBuilder()
         buf += defn.insts.head
         buf
       }
