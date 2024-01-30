@@ -46,7 +46,6 @@ object Lower {
     private val fresh = new util.ScopedVar[nir.Fresh]
     private val unwindHandler = new util.ScopedVar[Option[nir.Local]]
     private val currentDefn = new util.ScopedVar[nir.Defn.Define]
-    private val acquiredFinalFieldsOf = new util.ScopedVar[mutable.Set[nir.Val]]
     private val nullGuardedVals = mutable.Set.empty[nir.Val]
     private def currentDefnRetType = {
       val nir.Type.Function(_, ret) = currentDefn.get.ty
@@ -96,8 +95,7 @@ object Lower {
         val nir.Type.Function(_, ty) = defn.ty
         ScopedVar.scoped(
           fresh := nir.Fresh(defn.insts),
-          currentDefn := defn,
-          acquiredFinalFieldsOf := mutable.Set.empty
+          currentDefn := defn
         ) {
           try super.onDefn(defn)
           finally nullGuardedVals.clear()
@@ -603,10 +601,7 @@ object Lower {
         else nir.MemoryOrder.Unordered
 
       // Acquire memory fence before loading a final field
-      // It's required only on the first access to obj fields
-      if (field.attrs.finalWithSafePublish && acquiredFinalFieldsOf.get.add(
-            obj
-          ))
+      if (field.attrs.finalWithSafePublish)
         buf.fence(nir.MemoryOrder.Acquire)
 
       val elem = genFieldElemOp(buf, genVal(buf, obj), name)
