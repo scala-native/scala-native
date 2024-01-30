@@ -14,8 +14,8 @@ sealed trait OptimizerConfig {
   def maxCalleeSize: Int
 
   /** The maximum number of instructions defined in function classifing it as a
-   *  small function. Small functions are always inlined in relea value would be
-   *  used
+   *  small function. Small functions are always treated as inlining candidates
+   *  when release mode is being used.
    */
   def smallFunctionSize: Int
 
@@ -39,7 +39,7 @@ object OptimizerConfig {
   def empty: OptimizerConfig =
     Impl(
       maxInlineDepth = 32,
-      maxCallerSize = 1024,
+      maxCallerSize = 2048,
       maxCalleeSize = 256,
       smallFunctionSize = 12
     )
