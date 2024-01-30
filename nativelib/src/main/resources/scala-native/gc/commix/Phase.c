@@ -160,14 +160,14 @@ void Phase_StartSweep(Heap *heap) {
     int gcThreadCount = heap->gcThreads.count;
     int numberOfBatches = blockCount / SWEEP_BATCH_SIZE;
     int threadsToStart = numberOfBatches / MIN_SWEEP_BATCHES_PER_THREAD;
+    threadsToStart -= GCThread_ActiveCount(heap);
     if (threadsToStart <= 0) {
         threadsToStart = 1;
     }
     if (threadsToStart > gcThreadCount) {
         threadsToStart = gcThreadCount;
     }
-    int activeThreads = GCThread_ActiveCount(heap);
-    GCThread_Wake(heap, threadsToStart - activeThreads);
+    GCThread_Wake(heap, threadsToStart);
 }
 
 void Phase_SweepDone(Heap *heap, Stats *stats) {
