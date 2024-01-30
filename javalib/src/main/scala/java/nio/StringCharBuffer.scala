@@ -10,7 +10,7 @@ private[nio] final class StringCharBuffer private (
     _csqOffset: Int,
     _initialPosition: Int,
     _initialLimit: Int
-) extends CharBuffer(_capacity) {
+) extends CharBuffer(_capacity, null) { // TODO: eliminate nulls
 
   position(_initialPosition)
   limit(_initialLimit)
@@ -55,17 +55,17 @@ private[nio] final class StringCharBuffer private (
   }
 
   @noinline
-  def get(): Char =
+  override def get(): Char =
     genBuffer.generic_get()
 
-  def put(c: Char): CharBuffer =
+  override def put(c: Char): CharBuffer =
     throw new ReadOnlyBufferException
 
   @noinline
-  def get(index: Int): Char =
+  override def get(index: Int): Char =
     genBuffer.generic_get(index)
 
-  def put(index: Int, c: Char): CharBuffer =
+  override def put(index: Int, c: Char): CharBuffer =
     throw new ReadOnlyBufferException
 
   @noinline
@@ -88,11 +88,11 @@ private[nio] final class StringCharBuffer private (
   // Internal API
 
   @inline
-  private[nio] def load(index: Int): Char =
+  private[nio] override def load(index: Int): Char =
     _csq.charAt(_csqOffset + index)
 
   @inline
-  private[nio] def store(index: Int, elem: Char): Unit =
+  private[nio] override def store(index: Int, elem: Char): Unit =
     throw new ReadOnlyBufferException
 
   @inline

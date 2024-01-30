@@ -52,22 +52,6 @@ private[nio] final class HeapCharBuffer private (
   }
 
   @noinline
-  def get(): Char =
-    GenBuffer[CharBuffer](this).generic_get()
-
-  @noinline
-  def put(v: Char): CharBuffer =
-    GenBuffer[CharBuffer](this).generic_put(v)
-
-  @noinline
-  def get(index: Int): Char =
-    GenBuffer[CharBuffer](this).generic_get(index)
-
-  @noinline
-  def put(index: Int, v: Char): CharBuffer =
-    GenBuffer[CharBuffer](this).generic_put(index, v)
-
-  @noinline
   override def get(dst: Array[Char], offset: Int, length: Int): CharBuffer =
     GenBuffer[CharBuffer](this).generic_get(dst, offset, length)
 
@@ -82,14 +66,6 @@ private[nio] final class HeapCharBuffer private (
   def order(): ByteOrder = ByteOrder.nativeOrder()
 
   // Internal API
-
-  @inline
-  private[nio] def load(index: Int): Char =
-    GenHeapBuffer[CharBuffer](this).generic_load(index)
-
-  @inline
-  private[nio] def store(index: Int, elem: Char): Unit =
-    GenHeapBuffer[CharBuffer](this).generic_store(index, elem)
 
   @inline
   override private[nio] def load(
@@ -190,22 +166,6 @@ private[nio] final class HeapShortBuffer private (
 
 
   @noinline
-  def get(): Short =
-    GenBuffer[ShortBuffer](this).generic_get()
-
-  @noinline
-  def put(v: Short): ShortBuffer =
-    GenBuffer[ShortBuffer](this).generic_put(v)
-
-  @noinline
-  def get(index: Int): Short =
-    GenBuffer[ShortBuffer](this).generic_get(index)
-
-  @noinline
-  def put(index: Int, v: Short): ShortBuffer =
-    GenBuffer[ShortBuffer](this).generic_put(index, v)
-
-  @noinline
   override def get(dst: Array[Short], offset: Int, length: Int): ShortBuffer =
     GenBuffer[ShortBuffer](this).generic_get(dst, offset, length)
 
@@ -220,14 +180,6 @@ private[nio] final class HeapShortBuffer private (
   def order(): ByteOrder = ByteOrder.nativeOrder()
 
   // Internal API
-
-  @inline
-  private[nio] def load(index: Int): Short =
-    GenHeapBuffer[ShortBuffer](this).generic_load(index)
-
-  @inline
-  private[nio] def store(index: Int, elem: Short): Unit =
-    GenHeapBuffer[ShortBuffer](this).generic_store(index, elem)
 
   @inline
   override private[nio] def load(
@@ -328,22 +280,6 @@ private[nio] final class HeapIntBuffer private (
 
 
   @noinline
-  def get(): Int =
-    GenBuffer[IntBuffer](this).generic_get()
-
-  @noinline
-  def put(v: Int): IntBuffer =
-    GenBuffer[IntBuffer](this).generic_put(v)
-
-  @noinline
-  def get(index: Int): Int =
-    GenBuffer[IntBuffer](this).generic_get(index)
-
-  @noinline
-  def put(index: Int, v: Int): IntBuffer =
-    GenBuffer[IntBuffer](this).generic_put(index, v)
-
-  @noinline
   override def get(dst: Array[Int], offset: Int, length: Int): IntBuffer =
     GenBuffer[IntBuffer](this).generic_get(dst, offset, length)
 
@@ -358,14 +294,6 @@ private[nio] final class HeapIntBuffer private (
   def order(): ByteOrder = ByteOrder.nativeOrder()
 
   // Internal API
-
-  @inline
-  private[nio] def load(index: Int): Int =
-    GenHeapBuffer[IntBuffer](this).generic_load(index)
-
-  @inline
-  private[nio] def store(index: Int, elem: Int): Unit =
-    GenHeapBuffer[IntBuffer](this).generic_store(index, elem)
 
   @inline
   override private[nio] def load(
@@ -466,22 +394,6 @@ private[nio] final class HeapLongBuffer private (
 
 
   @noinline
-  def get(): Long =
-    GenBuffer[LongBuffer](this).generic_get()
-
-  @noinline
-  def put(v: Long): LongBuffer =
-    GenBuffer[LongBuffer](this).generic_put(v)
-
-  @noinline
-  def get(index: Int): Long =
-    GenBuffer[LongBuffer](this).generic_get(index)
-
-  @noinline
-  def put(index: Int, v: Long): LongBuffer =
-    GenBuffer[LongBuffer](this).generic_put(index, v)
-
-  @noinline
   override def get(dst: Array[Long], offset: Int, length: Int): LongBuffer =
     GenBuffer[LongBuffer](this).generic_get(dst, offset, length)
 
@@ -496,14 +408,6 @@ private[nio] final class HeapLongBuffer private (
   def order(): ByteOrder = ByteOrder.nativeOrder()
 
   // Internal API
-
-  @inline
-  private[nio] def load(index: Int): Long =
-    GenHeapBuffer[LongBuffer](this).generic_load(index)
-
-  @inline
-  private[nio] def store(index: Int, elem: Long): Unit =
-    GenHeapBuffer[LongBuffer](this).generic_store(index, elem)
 
   @inline
   override private[nio] def load(
@@ -604,22 +508,6 @@ private[nio] final class HeapFloatBuffer private (
 
 
   @noinline
-  def get(): Float =
-    GenBuffer[FloatBuffer](this).generic_get()
-
-  @noinline
-  def put(v: Float): FloatBuffer =
-    GenBuffer[FloatBuffer](this).generic_put(v)
-
-  @noinline
-  def get(index: Int): Float =
-    GenBuffer[FloatBuffer](this).generic_get(index)
-
-  @noinline
-  def put(index: Int, v: Float): FloatBuffer =
-    GenBuffer[FloatBuffer](this).generic_put(index, v)
-
-  @noinline
   override def get(dst: Array[Float], offset: Int, length: Int): FloatBuffer =
     GenBuffer[FloatBuffer](this).generic_get(dst, offset, length)
 
@@ -634,14 +522,6 @@ private[nio] final class HeapFloatBuffer private (
   def order(): ByteOrder = ByteOrder.nativeOrder()
 
   // Internal API
-
-  @inline
-  private[nio] def load(index: Int): Float =
-    GenHeapBuffer[FloatBuffer](this).generic_load(index)
-
-  @inline
-  private[nio] def store(index: Int, elem: Float): Unit =
-    GenHeapBuffer[FloatBuffer](this).generic_store(index, elem)
 
   @inline
   override private[nio] def load(
@@ -742,22 +622,6 @@ private[nio] final class HeapDoubleBuffer private (
 
 
   @noinline
-  def get(): Double =
-    GenBuffer[DoubleBuffer](this).generic_get()
-
-  @noinline
-  def put(v: Double): DoubleBuffer =
-    GenBuffer[DoubleBuffer](this).generic_put(v)
-
-  @noinline
-  def get(index: Int): Double =
-    GenBuffer[DoubleBuffer](this).generic_get(index)
-
-  @noinline
-  def put(index: Int, v: Double): DoubleBuffer =
-    GenBuffer[DoubleBuffer](this).generic_put(index, v)
-
-  @noinline
   override def get(dst: Array[Double], offset: Int, length: Int): DoubleBuffer =
     GenBuffer[DoubleBuffer](this).generic_get(dst, offset, length)
 
@@ -772,14 +636,6 @@ private[nio] final class HeapDoubleBuffer private (
   def order(): ByteOrder = ByteOrder.nativeOrder()
 
   // Internal API
-
-  @inline
-  private[nio] def load(index: Int): Double =
-    GenHeapBuffer[DoubleBuffer](this).generic_load(index)
-
-  @inline
-  private[nio] def store(index: Int, elem: Double): Unit =
-    GenHeapBuffer[DoubleBuffer](this).generic_store(index, elem)
 
   @inline
   override private[nio] def load(

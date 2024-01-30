@@ -2,6 +2,8 @@
 
 package java.nio
 
+import scala.scalanative.unsafe._
+
 private[nio] final class HeapByteBufferCharView private (
     _capacity: Int,
     override private[nio] val _byteArray: Array[Byte],
@@ -10,7 +12,7 @@ private[nio] final class HeapByteBufferCharView private (
     _initialLimit: Int,
     _readOnly: Boolean,
     override private[nio] val isBigEndian: Boolean
-) extends CharBuffer(_capacity) {
+) extends CharBuffer(_capacity, _byteArray.atUnsafe(_offset)) {
 
   position(_initialPosition)
   limit(_initialLimit)
@@ -54,22 +56,6 @@ private[nio] final class HeapByteBufferCharView private (
   }
 
   @noinline
-  def get(): Char =
-    GenBuffer[CharBuffer](this).generic_get()
-
-  @noinline
-  def put(c: Char): CharBuffer =
-    GenBuffer[CharBuffer](this).generic_put(c)
-
-  @noinline
-  def get(index: Int): Char =
-    GenBuffer[CharBuffer](this).generic_get(index)
-
-  @noinline
-  def put(index: Int, c: Char): CharBuffer =
-    GenBuffer[CharBuffer](this).generic_put(index, c)
-
-  @noinline
   override def get(dst: Array[Char], offset: Int, length: Int): CharBuffer =
     GenBuffer[CharBuffer](this).generic_get(dst, offset, length)
 
@@ -88,11 +74,11 @@ private[nio] final class HeapByteBufferCharView private (
   // Private API
 
   @inline
-  private[nio] def load(index: Int): Char =
+  private[nio] override def load(index: Int): Char =
     GenHeapBufferView[CharBuffer](this).byteArrayBits.loadChar(index)
 
   @inline
-  private[nio] def store(index: Int, elem: Char): Unit =
+  private[nio] override def store(index: Int, elem: Char): Unit =
     GenHeapBufferView[CharBuffer](this).byteArrayBits.storeChar(index, elem)
 }
 
@@ -134,7 +120,7 @@ private[nio] final class HeapByteBufferShortView private (
     _initialLimit: Int,
     _readOnly: Boolean,
     override private[nio] val isBigEndian: Boolean
-) extends ShortBuffer(_capacity) {
+) extends ShortBuffer(_capacity, _byteArray.atUnsafe(_offset)) {
 
   position(_initialPosition)
   limit(_initialLimit)
@@ -165,22 +151,6 @@ private[nio] final class HeapByteBufferShortView private (
 
 
   @noinline
-  def get(): Short =
-    GenBuffer[ShortBuffer](this).generic_get()
-
-  @noinline
-  def put(c: Short): ShortBuffer =
-    GenBuffer[ShortBuffer](this).generic_put(c)
-
-  @noinline
-  def get(index: Int): Short =
-    GenBuffer[ShortBuffer](this).generic_get(index)
-
-  @noinline
-  def put(index: Int, c: Short): ShortBuffer =
-    GenBuffer[ShortBuffer](this).generic_put(index, c)
-
-  @noinline
   override def get(dst: Array[Short], offset: Int, length: Int): ShortBuffer =
     GenBuffer[ShortBuffer](this).generic_get(dst, offset, length)
 
@@ -199,11 +169,11 @@ private[nio] final class HeapByteBufferShortView private (
   // Private API
 
   @inline
-  private[nio] def load(index: Int): Short =
+  private[nio] override def load(index: Int): Short =
     GenHeapBufferView[ShortBuffer](this).byteArrayBits.loadShort(index)
 
   @inline
-  private[nio] def store(index: Int, elem: Short): Unit =
+  private[nio] override def store(index: Int, elem: Short): Unit =
     GenHeapBufferView[ShortBuffer](this).byteArrayBits.storeShort(index, elem)
 }
 
@@ -245,7 +215,7 @@ private[nio] final class HeapByteBufferIntView private (
     _initialLimit: Int,
     _readOnly: Boolean,
     override private[nio] val isBigEndian: Boolean
-) extends IntBuffer(_capacity) {
+) extends IntBuffer(_capacity, _byteArray.atUnsafe(_offset)) {
 
   position(_initialPosition)
   limit(_initialLimit)
@@ -276,22 +246,6 @@ private[nio] final class HeapByteBufferIntView private (
 
 
   @noinline
-  def get(): Int =
-    GenBuffer[IntBuffer](this).generic_get()
-
-  @noinline
-  def put(c: Int): IntBuffer =
-    GenBuffer[IntBuffer](this).generic_put(c)
-
-  @noinline
-  def get(index: Int): Int =
-    GenBuffer[IntBuffer](this).generic_get(index)
-
-  @noinline
-  def put(index: Int, c: Int): IntBuffer =
-    GenBuffer[IntBuffer](this).generic_put(index, c)
-
-  @noinline
   override def get(dst: Array[Int], offset: Int, length: Int): IntBuffer =
     GenBuffer[IntBuffer](this).generic_get(dst, offset, length)
 
@@ -310,11 +264,11 @@ private[nio] final class HeapByteBufferIntView private (
   // Private API
 
   @inline
-  private[nio] def load(index: Int): Int =
+  private[nio] override def load(index: Int): Int =
     GenHeapBufferView[IntBuffer](this).byteArrayBits.loadInt(index)
 
   @inline
-  private[nio] def store(index: Int, elem: Int): Unit =
+  private[nio] override def store(index: Int, elem: Int): Unit =
     GenHeapBufferView[IntBuffer](this).byteArrayBits.storeInt(index, elem)
 }
 
@@ -356,7 +310,7 @@ private[nio] final class HeapByteBufferLongView private (
     _initialLimit: Int,
     _readOnly: Boolean,
     override private[nio] val isBigEndian: Boolean
-) extends LongBuffer(_capacity) {
+) extends LongBuffer(_capacity, _byteArray.atUnsafe(_offset)) {
 
   position(_initialPosition)
   limit(_initialLimit)
@@ -387,22 +341,6 @@ private[nio] final class HeapByteBufferLongView private (
 
 
   @noinline
-  def get(): Long =
-    GenBuffer[LongBuffer](this).generic_get()
-
-  @noinline
-  def put(c: Long): LongBuffer =
-    GenBuffer[LongBuffer](this).generic_put(c)
-
-  @noinline
-  def get(index: Int): Long =
-    GenBuffer[LongBuffer](this).generic_get(index)
-
-  @noinline
-  def put(index: Int, c: Long): LongBuffer =
-    GenBuffer[LongBuffer](this).generic_put(index, c)
-
-  @noinline
   override def get(dst: Array[Long], offset: Int, length: Int): LongBuffer =
     GenBuffer[LongBuffer](this).generic_get(dst, offset, length)
 
@@ -421,11 +359,11 @@ private[nio] final class HeapByteBufferLongView private (
   // Private API
 
   @inline
-  private[nio] def load(index: Int): Long =
+  private[nio] override def load(index: Int): Long =
     GenHeapBufferView[LongBuffer](this).byteArrayBits.loadLong(index)
 
   @inline
-  private[nio] def store(index: Int, elem: Long): Unit =
+  private[nio] override def store(index: Int, elem: Long): Unit =
     GenHeapBufferView[LongBuffer](this).byteArrayBits.storeLong(index, elem)
 }
 
@@ -467,7 +405,7 @@ private[nio] final class HeapByteBufferFloatView private (
     _initialLimit: Int,
     _readOnly: Boolean,
     override private[nio] val isBigEndian: Boolean
-) extends FloatBuffer(_capacity) {
+) extends FloatBuffer(_capacity, _byteArray.atUnsafe(_offset)) {
 
   position(_initialPosition)
   limit(_initialLimit)
@@ -498,22 +436,6 @@ private[nio] final class HeapByteBufferFloatView private (
 
 
   @noinline
-  def get(): Float =
-    GenBuffer[FloatBuffer](this).generic_get()
-
-  @noinline
-  def put(c: Float): FloatBuffer =
-    GenBuffer[FloatBuffer](this).generic_put(c)
-
-  @noinline
-  def get(index: Int): Float =
-    GenBuffer[FloatBuffer](this).generic_get(index)
-
-  @noinline
-  def put(index: Int, c: Float): FloatBuffer =
-    GenBuffer[FloatBuffer](this).generic_put(index, c)
-
-  @noinline
   override def get(dst: Array[Float], offset: Int, length: Int): FloatBuffer =
     GenBuffer[FloatBuffer](this).generic_get(dst, offset, length)
 
@@ -532,11 +454,11 @@ private[nio] final class HeapByteBufferFloatView private (
   // Private API
 
   @inline
-  private[nio] def load(index: Int): Float =
+  private[nio] override def load(index: Int): Float =
     GenHeapBufferView[FloatBuffer](this).byteArrayBits.loadFloat(index)
 
   @inline
-  private[nio] def store(index: Int, elem: Float): Unit =
+  private[nio] override def store(index: Int, elem: Float): Unit =
     GenHeapBufferView[FloatBuffer](this).byteArrayBits.storeFloat(index, elem)
 }
 
@@ -578,7 +500,7 @@ private[nio] final class HeapByteBufferDoubleView private (
     _initialLimit: Int,
     _readOnly: Boolean,
     override private[nio] val isBigEndian: Boolean
-) extends DoubleBuffer(_capacity) {
+) extends DoubleBuffer(_capacity, _byteArray.atUnsafe(_offset)) {
 
   position(_initialPosition)
   limit(_initialLimit)
@@ -609,22 +531,6 @@ private[nio] final class HeapByteBufferDoubleView private (
 
 
   @noinline
-  def get(): Double =
-    GenBuffer[DoubleBuffer](this).generic_get()
-
-  @noinline
-  def put(c: Double): DoubleBuffer =
-    GenBuffer[DoubleBuffer](this).generic_put(c)
-
-  @noinline
-  def get(index: Int): Double =
-    GenBuffer[DoubleBuffer](this).generic_get(index)
-
-  @noinline
-  def put(index: Int, c: Double): DoubleBuffer =
-    GenBuffer[DoubleBuffer](this).generic_put(index, c)
-
-  @noinline
   override def get(dst: Array[Double], offset: Int, length: Int): DoubleBuffer =
     GenBuffer[DoubleBuffer](this).generic_get(dst, offset, length)
 
@@ -643,11 +549,11 @@ private[nio] final class HeapByteBufferDoubleView private (
   // Private API
 
   @inline
-  private[nio] def load(index: Int): Double =
+  private[nio] override def load(index: Int): Double =
     GenHeapBufferView[DoubleBuffer](this).byteArrayBits.loadDouble(index)
 
   @inline
-  private[nio] def store(index: Int, elem: Double): Unit =
+  private[nio] override def store(index: Int, elem: Double): Unit =
     GenHeapBufferView[DoubleBuffer](this).byteArrayBits.storeDouble(index, elem)
 }
 

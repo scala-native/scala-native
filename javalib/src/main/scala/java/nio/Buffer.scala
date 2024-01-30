@@ -2,13 +2,23 @@ package java.nio
 
 // Ported from Scala.js
 import scala.scalanative.unsafe
+import scala.scalanative.runtime.{toRawPtr, fromRawPtr}
 
-abstract class Buffer private[nio] (val _capacity: Int) {
+abstract class Buffer private[nio] (
+    val _capacity: Int,
+    _address: unsafe.Ptr[_]
+) {
   private[nio] type ElementType
 
   private[nio] type BufferType >: this.type <: Buffer {
     type ElementType = Buffer.this.ElementType
   }
+
+  // TODO: Teach optimizer to convert Ptr[A].asInstanceOf[Ptr[B]] as identity
+  // Keep only RawPtr as field, this way optimizer would erase boxed variant
+  protected val _rawAddress = toRawPtr(_address)
+  private[nio] def address: unsafe.Ptr[Byte] = fromRawPtr(_rawAddress)
+  private[nio] def data: unsafe.Ptr[ElementType] = fromRawPtr(_rawAddress)
 
   // Normal implementation of Buffer
 
@@ -127,15 +137,6 @@ abstract class Buffer private[nio] (val _capacity: Int) {
 
   // PointerByteBuffer specific
   private[nio] def _rawDataPointer: unsafe.Ptr[Byte] = null
-
-  private[nio] def address: unsafe.Ptr[Byte] =
-    if (_rawDataPointer != null) _rawDataPointer + _offset
-    else if (_mappedData != null) _mappedData.data + _offset
-    else
-      _array
-        .asInstanceOf[scalanative.runtime.Array[_]]
-        .atUnsafe(_offset)
-        .asInstanceOf[unsafe.Ptr[Byte]]
 
   // HeapByteBuffer specific
   private[nio] def _byteArray: Array[Byte] =

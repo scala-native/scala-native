@@ -61,22 +61,6 @@ private[nio] final class Heap${T}Buffer private (
   % end
 
   @noinline
-  def get(): ${T} =
-    GenBuffer[${T}Buffer](this).generic_get()
-
-  @noinline
-  def put(v: ${T}): ${T}Buffer =
-    GenBuffer[${T}Buffer](this).generic_put(v)
-
-  @noinline
-  def get(index: Int): ${T} =
-    GenBuffer[${T}Buffer](this).generic_get(index)
-
-  @noinline
-  def put(index: Int, v: ${T}): ${T}Buffer =
-    GenBuffer[${T}Buffer](this).generic_put(index, v)
-
-  @noinline
   override def get(dst: Array[${T}], offset: Int, length: Int): ${T}Buffer =
     GenBuffer[${T}Buffer](this).generic_get(dst, offset, length)
 
@@ -91,14 +75,6 @@ private[nio] final class Heap${T}Buffer private (
   def order(): ByteOrder = ByteOrder.nativeOrder()
 
   // Internal API
-
-  @inline
-  private[nio] def load(index: Int): ${T} =
-    GenHeapBuffer[${T}Buffer](this).generic_load(index)
-
-  @inline
-  private[nio] def store(index: Int, elem: ${T}): Unit =
-    GenHeapBuffer[${T}Buffer](this).generic_store(index, elem)
 
   @inline
   override private[nio] def load(
