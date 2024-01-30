@@ -147,8 +147,8 @@ object Build {
     .mapBinaryVersions(_ => _.dependsOn(testingCompilerInterface % "test"))
     .dependsOnSource(nirJVM)
     .dependsOnSource(utilJVM)
-    .zippedSettings(Seq("testingCompiler", "nativelib", "clib")) {
-      case Seq(testingCompiler, nativelib, clib) =>
+    .zippedSettings(Seq("testingCompiler", "nativelib")) {
+      case Seq(testingCompiler, nativelib) =>
         Test / javaOptions ++= {
           val nscCompilerJar =
             (Compile / Keys.`package`).value.getAbsolutePath()
@@ -159,14 +159,10 @@ object Build {
           val nativelibCp = (nativelib / Compile / fullClasspath).value.files
             .map(_.getAbsolutePath)
             .mkString(pathSeparator)
-          val clibCp = (clib / Compile / fullClasspath).value.files
-            .map(_.getAbsolutePath)
-            .mkString(pathSeparator)
           Seq(
             "-Dscalanative.nscplugin.jar=" + nscCompilerJar,
             "-Dscalanative.testingcompiler.cp=" + testingCompilerCp,
-            "-Dscalanative.nativeruntime.cp=" + nativelibCp,
-            "-Dscalanative.clib.cp=" + clibCp
+            "-Dscalanative.nativeruntime.cp=" + nativelibCp
           )
         }
     }

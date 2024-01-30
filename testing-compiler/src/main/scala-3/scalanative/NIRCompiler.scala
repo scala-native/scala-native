@@ -39,10 +39,7 @@ class NIRCompiler(outputDir: Path) extends api.NIRCompiler {
   private def compile(sources: Seq[SourceFile]): Seq[Path] = {
     val outPath = outputDir.toAbsolutePath
     val jarPath = sys.props("scalanative.nscplugin.jar")
-    val classpath = List(
-      sys.props("scalanative.nativeruntime.cp"),
-      sys.props("scalanative.clib.cp")
-    )
+    val classpath = List(sys.props("scalanative.nativeruntime.cp"))
       .filterNot(_.isEmpty)
       .mkString("-cp ", File.pathSeparator, "")
 

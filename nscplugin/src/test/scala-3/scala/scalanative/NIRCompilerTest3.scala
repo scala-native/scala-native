@@ -176,7 +176,6 @@ class NIRCompilerTest3 {
 
   @Test def opaqueTypes(): Unit = nativeCompilation(
     """
-    |import scalanative.libc.stdio
     |import scalanative.unsafe.*
     |import scalanative.unsigned.*
     |
@@ -187,7 +186,9 @@ class NIRCompilerTest3 {
     |
     |@main def hello(): Unit =
     |  val evtype = cmark_event_type.CMARK_EVENT_NONE
-    |  stdio.printf(c"bla: %s, hello: %d", evtype)
+    |  test(evtype)
+    |
+    |def test(t: Any*): Unit = extern
     |""".stripMargin
   )
 
