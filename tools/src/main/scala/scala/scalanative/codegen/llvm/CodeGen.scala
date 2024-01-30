@@ -164,7 +164,7 @@ object CodeGen {
         sourcesCache: SourceCodeCache
     )(implicit
         meta: CodeGenMetadata
-    ): AbstractCodeGen = new StdCodeGen(env, defns,sourcesCache)
+    ): AbstractCodeGen = new StdCodeGen(env, defns, sourcesCache)
 
     private class StdCodeGen(
         env: Map[nir.Global, nir.Defn],
@@ -223,7 +223,8 @@ object CodeGen {
           dbg("llvm.ident")(tuple(s"$compilerInfo ($buildInfo)"))
         }
       }
-      override def sourceCodeCache: SourceCodeCache = throw new UnsupportedOperationException()
+      override def sourceCodeCache: SourceCodeCache =
+        throw new UnsupportedOperationException()
     }
   }
 
