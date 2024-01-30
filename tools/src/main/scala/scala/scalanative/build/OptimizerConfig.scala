@@ -3,20 +3,21 @@ package scala.scalanative.build
 /** An object describing how to configure the Scala Native Optimizer. */
 sealed trait OptimizerConfig {
 
-  /** The maximum inline depth during the optimization phase. If set to None
-   *  inline depth would not be checked.
+  /** The maximum inline depth during the optimization phase.
    */
-  def maxInlineDepth: Option[Int]
+  def maxInlineDepth: Int
 
-  /** The maximum caller and callee size during the optimization phase. If set
-   *  to None default value would be used.
-   */
-  def maxCallerSize: Option[Int]
+  /** The maximum number of instructions allowed in the caller function */
+  def maxCallerSize: Int
 
-  /** The maximum callee size that directly does inline. If set to None default
-   *  value would be used
+  /** The maximum number of instructions allowed in the inlined function */
+  def maxCalleeSize: Int
+
+  /** The maximum number of instructions defined in function classifing it as a
+   *  small function. Small functions are always inlined in relea value would be
+   *  used
    */
-  def maxInlineSize: Option[Int]
+  def smallFunctionSize: Int
 
   /** Create a new config with the given max inline depth. */
   def withMaxInlineDepth(value: Int): OptimizerConfig
@@ -24,8 +25,11 @@ sealed trait OptimizerConfig {
   /** Create a new config with the max caller size. */
   def withMaxCallerSize(value: Int): OptimizerConfig
 
-  /** Create a new config with the max inline size. */
-  def withMaxInlineSize(value: Int): OptimizerConfig
+  /** Create a new config with the max callee size. */
+  def withMaxCalleeSize(value: Int): OptimizerConfig
+
+  /** Create a new config with the small function size. */
+  def withSmallFunctionSize(value: Int): OptimizerConfig
 
   private[scalanative] def show(indent: String): String
 
@@ -34,35 +38,38 @@ sealed trait OptimizerConfig {
 object OptimizerConfig {
   def empty: OptimizerConfig =
     Impl(
-      maxInlineDepth = None,
-      maxCallerSize = None,
-      maxInlineSize = None
+      maxInlineDepth = 32,
+      maxCallerSize = 1024,
+      maxCalleeSize = 256,
+      smallFunctionSize = 12
     )
 
   private final case class Impl(
-      maxInlineDepth: Option[Int],
-      maxCallerSize: Option[Int],
-      maxInlineSize: Option[Int]
+      maxInlineDepth: Int,
+      maxCallerSize: Int,
+      maxCalleeSize: Int,
+      smallFunctionSize: Int
   ) extends OptimizerConfig {
 
-    /** Create a new config with the given max inline depth. */
     override def withMaxInlineDepth(value: Int): OptimizerConfig =
-      copy(maxInlineDepth = Option(value))
+      copy(maxInlineDepth = value)
 
-    /** Create a new config with the max caller size. */
     override def withMaxCallerSize(value: Int): OptimizerConfig =
-      copy(maxCallerSize = Option(value))
+      copy(maxCallerSize = value)
 
-    /** Create a new config with the max inline size. */
-    override def withMaxInlineSize(value: Int): OptimizerConfig =
-      copy(maxInlineSize = Option(value))
+    override def withMaxCalleeSize(value: Int): OptimizerConfig =
+      copy(maxCalleeSize = value)
+
+    override def withSmallFunctionSize(value: Int): OptimizerConfig =
+      copy(smallFunctionSize = value)
 
     override def toString: String = show(indent = " ")
     override private[scalanative] def show(indent: String): String =
       s"""
-          |$indent- maxInlineDepth: $maxInlineDepth
-          |$indent- maxInlineSize:  ${maxInlineSize.getOrElse("default")}
-          |$indent- maxCallerSize:  ${maxCallerSize.getOrElse("default")}
+          |$indent- maxInlineDepth:    $maxInlineDepth functions
+          |$indent- smallFunctionSize: $smallFunctionSize instructions
+          |$indent- maxCallerSize:     $maxCallerSize instructions
+          |$indent- maxCalleeSize:     $maxCalleeSize instructions
           |""".stripMargin
   }
 }

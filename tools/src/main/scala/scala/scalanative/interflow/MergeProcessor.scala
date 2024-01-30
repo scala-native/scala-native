@@ -28,8 +28,22 @@ final class MergeProcessor(
   val blocks = mutable.Map.empty[nir.Local, MergeBlock]
   val todo = mutable.SortedSet.empty[nir.Local](Ordering.by(offsets))
 
-  def currentSize(): Int =
-    blocks.values.map { b => if (b.end == null) 0 else b.end.emit.size }.sum
+  object currentSize extends Function0[Int] { // context-cached function
+    var lastBlocksHash: Int = _
+    var lastSize: Int = _
+    def apply(): Int = {
+      val hash = blocks.##
+      if (blocks.## == lastBlocksHash) lastSize
+      else {
+        val size = blocks.values.iterator.map { b =>
+          if (b.end == null) 0 else b.end.emit.size
+        }.sum
+        lastSize = size
+        lastBlocksHash = blocks.##
+        size
+      }
+    }
+  }
 
   def findMergeBlock(id: nir.Local): MergeBlock = {
     def newMergeBlock = {
