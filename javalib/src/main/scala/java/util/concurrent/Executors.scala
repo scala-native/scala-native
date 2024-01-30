@@ -8,7 +8,7 @@ package java.util.concurrent
 import java.util.Collection
 import java.util.List
 import java.util.concurrent.atomic.AtomicInteger
-import scala.scalanative.annotation.alwaysinline
+import scala.scalanative.annotation.{alwaysinline, safePublish}
 import java.security.{PrivilegedAction, PrivilegedExceptionAction}
 
 object Executors {
@@ -164,8 +164,8 @@ object Executors {
   }
 
   final private class RunnableAdapter[T](
-      val task: Runnable,
-      val result: T
+      @safePublish val task: Runnable,
+      @safePublish val result: T
   ) extends Callable[T] {
     override def call(): T = {
       task.run()
@@ -177,7 +177,7 @@ object Executors {
   }
 
   final private class PrivilegedCallable[T](
-      val task: Callable[T]
+      @safePublish val task: Callable[T]
   ) extends Callable[T] {
     @throws[Exception]
     override def call(): T = task.call()
@@ -188,7 +188,7 @@ object Executors {
   }
 
   final private class PrivilegedCallableUsingCurrentClassLoader[T](
-      val task: Callable[T]
+      @safePublish val task: Callable[T]
   ) extends Callable[T] {
 
     @throws[Exception]
@@ -231,7 +231,7 @@ object Executors {
   }
 
   private class DelegatedExecutorService(
-      val executor: ExecutorService
+      @safePublish val executor: ExecutorService
   ) extends ExecutorService {
 
     // Stub used in place of JVM intrinsic

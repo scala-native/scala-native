@@ -5,10 +5,11 @@
  */
 
 package java.util.concurrent;
+import scala.scalanative.annotation.safePublish
 
 class ForkJoinWorkerThread private[concurrent] (
     group: ThreadGroup,
-    private[concurrent] val pool: ForkJoinPool,
+    @safePublish private[concurrent] val pool: ForkJoinPool,
     useSystemClassLoader: Boolean, // unused
     clearThreadLocals: Boolean
 ) extends Thread(
@@ -18,6 +19,7 @@ class ForkJoinWorkerThread private[concurrent] (
       stackSize = 0L,
       inheritThreadLocals = !clearThreadLocals
     ) {
+  @safePublish
   private[concurrent] val workQueue =
     new ForkJoinPool.WorkQueue(this, 0)
 

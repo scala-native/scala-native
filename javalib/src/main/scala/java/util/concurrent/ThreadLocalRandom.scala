@@ -10,6 +10,7 @@ import java.util._
 import java.util.function._
 import java.util.stream._
 import java.util.concurrent.atomic._
+import scala.scalanative.annotation.safePublish
 
 @SerialVersionUID(-5851777807851030925L)
 object ThreadLocalRandom {
@@ -265,8 +266,10 @@ object ThreadLocalRandom {
 
   private val nextLocalGaussian = new ThreadLocal[java.lang.Double]
 
+  @safePublish
   private val probeGenerator = new AtomicInteger
 
+  @safePublish
   private[concurrent] val instance = new ThreadLocalRandom
 
   private val seeder = new AtomicLong(

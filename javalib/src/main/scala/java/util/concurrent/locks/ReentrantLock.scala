@@ -8,6 +8,7 @@ package java.util
 package concurrent.locks
 
 import java.util.concurrent.TimeUnit
+import scala.scalanative.annotation.safePublish
 
 @SerialVersionUID(7373984872572414699L)
 object ReentrantLock {
@@ -144,7 +145,7 @@ object ReentrantLock {
 }
 
 @SerialVersionUID(7373984872572414699L)
-class ReentrantLock private (sync: ReentrantLock.Sync)
+class ReentrantLock private (@safePublish sync: ReentrantLock.Sync)
     extends Lock
     with Serializable {
 

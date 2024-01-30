@@ -5,10 +5,11 @@
  */
 
 package java.util.concurrent
+import scala.scalanative.annotation.safePublish
 
 class ExecutorCompletionService[V <: AnyRef](
-    val executor: Executor,
-    val completionQueue: BlockingQueue[Future[V]]
+    @safePublish val executor: Executor,
+    @safePublish val completionQueue: BlockingQueue[Future[V]]
 ) extends CompletionService[V] {
   import ExecutorCompletionService._
 
@@ -59,8 +60,8 @@ class ExecutorCompletionService[V <: AnyRef](
 
 object ExecutorCompletionService {
   private class QueueingFuture[V <: AnyRef](
-      task: RunnableFuture[V],
-      completionQueue: BlockingQueue[Future[V]]
+      @safePublish task: RunnableFuture[V],
+      @safePublish completionQueue: BlockingQueue[Future[V]]
   ) extends FutureTask(task, null.asInstanceOf[V]) {
     override protected def done(): Unit = completionQueue.add(task)
   }

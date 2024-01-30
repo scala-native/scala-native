@@ -195,14 +195,15 @@ final class BinaryDeserializer(buffer: ByteBuffer, nirSource: NIRSource) {
     case T.DidOptAttr  => Attr.DidOpt
     case T.BailOptAttr => Attr.BailOpt(getString())
 
-    case T.DynAttr      => Attr.Dyn
-    case T.StubAttr     => Attr.Stub
-    case T.ExternAttr   => Attr.Extern(getBool())
-    case T.LinkAttr     => Attr.Link(getString())
-    case T.DefineAttr   => Attr.Define(getString())
-    case T.AbstractAttr => Attr.Abstract
-    case T.VolatileAttr => Attr.Volatile
-    case T.FinalAttr    => Attr.Final
+    case T.DynAttr         => Attr.Dyn
+    case T.StubAttr        => Attr.Stub
+    case T.ExternAttr      => Attr.Extern(getBool())
+    case T.LinkAttr        => Attr.Link(getString())
+    case T.DefineAttr      => Attr.Define(getString())
+    case T.AbstractAttr    => Attr.Abstract
+    case T.VolatileAttr    => Attr.Volatile
+    case T.FinalAttr       => Attr.Final
+    case T.SafePublishAttr => Attr.SafePublish
 
     case T.LinktimeResolvedAttr => Attr.LinktimeResolved
     case T.UsesIntrinsicAttr    => Attr.UsesIntrinsic

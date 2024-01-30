@@ -12,9 +12,11 @@ import java.util._
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.locks._
 import scala.annotation.tailrec
+import scala.scalanative.annotation.safePublish
 
 object ScheduledThreadPoolExecutor {
 
+  @safePublish
   private val sequencer = new AtomicLong
 
   private val DEFAULT_KEEPALIVE_MILLIS = 10L

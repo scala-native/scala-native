@@ -11,6 +11,7 @@ import java.util._
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.locks._
 import java.util.function._
+import scala.scalanative.annotation.safePublish
 
 @SerialVersionUID(-6903933977591709194L)
 object LinkedBlockingQueue {
@@ -34,14 +35,19 @@ class LinkedBlockingQueue[E <: AnyRef](
 
   private var last = head
 
+  @safePublish
   final private val count = new AtomicInteger()
 
+  @safePublish
   final private val takeLock = new ReentrantLock()
 
+  @safePublish
   final private val notEmpty: Condition = takeLock.newCondition()
 
+  @safePublish
   final private val putLock = new ReentrantLock()
 
+  @safePublish
   final private val notFull = putLock.newCondition()
 
   private def signalNotEmpty(): Unit = {

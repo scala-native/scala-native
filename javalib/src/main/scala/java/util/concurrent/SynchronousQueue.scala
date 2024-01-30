@@ -12,6 +12,7 @@ import java.util.concurrent.locks._
 import scala.scalanative.libc.stdatomic.AtomicRef
 import scala.scalanative.libc.stdatomic.memory_order._
 import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
+import scala.scalanative.annotation.safePublish
 
 /** A {@linkplain BlockingQueue blocking queue} in which each insert operation
  *  must wait for a corresponding remove operation by another thread, and vice
@@ -563,12 +564,12 @@ object SynchronousQueue {
   private[concurrent] class FifoWaitQueue extends SynchronousQueue.WaitQueue {}
 }
 
-class SynchronousQueue[E <: AnyRef](val fair: Boolean)
+class SynchronousQueue[E <: AnyRef](@safePublish val fair: Boolean)
     extends util.AbstractQueue[E]
     with BlockingQueue[E]
     with Serializable {
   import SynchronousQueue._
-  @volatile private var transferer =
+  @safePublish private val transferer =
     if (fair) new SynchronousQueue.TransferQueue[E]
     else new SynchronousQueue.TransferStack[E]
 

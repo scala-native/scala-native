@@ -10,6 +10,7 @@ import java.util.ConcurrentModificationException
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.locks._
 import scala.annotation.tailrec
+import scala.scalanative.annotation.safePublish
 
 object ThreadPoolExecutor {
   private val COUNT_BITS: Int = Integer.SIZE - 3
@@ -77,7 +78,7 @@ class ThreadPoolExecutor(
     @volatile private var maximumPoolSize: Int,
     @volatile private var keepAliveTime: Long,
     unit: TimeUnit,
-    workQueue: BlockingQueue[Runnable],
+    @safePublish workQueue: BlockingQueue[Runnable],
     @volatile private var threadFactory: ThreadFactory,
     @volatile private var handler: RejectedExecutionHandler
 ) extends AbstractExecutorService {
@@ -144,10 +145,13 @@ class ThreadPoolExecutor(
 
   private def decrementWorkerCount(): Unit = ctl.addAndGet(-(1))
 
+  @safePublish
   final private val mainLock: ReentrantLock = new ReentrantLock
 
+  @safePublish
   final private val workers: util.HashSet[Worker] = new util.HashSet[Worker]
 
+  @safePublish
   final private val termination: Condition = mainLock.newCondition()
 
   private var largestPoolSize: Int = 0
@@ -164,7 +168,8 @@ class ThreadPoolExecutor(
       with Runnable {
     setState(-1) // inhibit interrupts until runWorker
 
-    final private[concurrent] var thread: Thread =
+    @safePublish
+    final private[concurrent] val thread: Thread =
       getThreadFactory().newThread(this)
 
     @volatile private[concurrent] var completedTasks: Long = 0L

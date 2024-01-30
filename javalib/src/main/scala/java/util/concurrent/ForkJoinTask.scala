@@ -14,7 +14,7 @@ import java.lang.invoke.VarHandle
 
 import scala.scalanative.libc.stdatomic._
 import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
-import scala.scalanative.annotation.alwaysinline
+import scala.scalanative.annotation.{alwaysinline, safePublish}
 
 import scala.annotation.tailrec
 
@@ -27,10 +27,10 @@ abstract class ForkJoinTask[V]() extends Future[V] with Serializable {
   @volatile private var aux: Aux = _ // either waiters or thrown Exception
 
   // Support for atomic operations
-  private val statusAtomic = new AtomicInt(
+  private def statusAtomic = new AtomicInt(
     fromRawPtr(Intrinsics.classFieldRawPtr(this, "status"))
   )
-  private val auxAtomic = new AtomicRef[Aux](
+  private def auxAtomic = new AtomicRef[Aux](
     fromRawPtr(Intrinsics.classFieldRawPtr(this, "aux"))
   )
   @alwaysinline private def getAndBitwiseOrStatus(v: Int): Int =
@@ -453,12 +453,13 @@ abstract class ForkJoinTask[V]() extends Future[V] with Serializable {
 
 object ForkJoinTask {
 
+  @safePublish
   final private[concurrent] class Aux(
       val thread: Thread,
       val ex: Throwable // null if a waiter
   ) {
     var next: Aux = _ // accessed only via memory-acquire chains
-    final private val nextAtomic =
+    final private def nextAtomic =
       new AtomicRef[Aux](fromRawPtr(Intrinsics.classFieldRawPtr(this, "next")))
     final def casNext(c: Aux, v: Aux) = nextAtomic.compareExchangeStrong(c, v)
   }
@@ -669,7 +670,7 @@ object ForkJoinTask {
 
   @SerialVersionUID(5232453952276885070L)
   final private[concurrent] class AdaptedRunnable[T] private[concurrent] (
-      val runnable: Runnable,
+      @safePublish val runnable: Runnable,
       var result: T
   ) // OK to set this even before completion
       extends ForkJoinTask[T]
@@ -688,7 +689,7 @@ object ForkJoinTask {
 
   @SerialVersionUID(5232453952276885070L)
   final private[concurrent] class AdaptedRunnableAction private[concurrent] (
-      val runnable: Runnable
+      @safePublish val runnable: Runnable
   ) extends ForkJoinTask[Void]
       with RunnableFuture[Void] {
     if (runnable == null) throw new NullPointerException
@@ -705,7 +706,7 @@ object ForkJoinTask {
 
   @SerialVersionUID(5232453952276885070L)
   final private[concurrent] class RunnableExecuteAction private[concurrent] (
-      val runnable: Runnable
+      @safePublish val runnable: Runnable
   ) extends ForkJoinTask[Void] {
     if (runnable == null) throw new NullPointerException
     override final def getRawResult(): Void = null
@@ -730,7 +731,7 @@ object ForkJoinTask {
 
   @SerialVersionUID(2838392045355241008L)
   final private[concurrent] class AdaptedCallable[T] private[concurrent] (
-      val callable: Callable[T]
+      @safePublish val callable: Callable[T]
   ) extends ForkJoinTask[T]
       with RunnableFuture[T] {
     if (callable == null) throw new NullPointerException
@@ -750,7 +751,7 @@ object ForkJoinTask {
   }
   @SerialVersionUID(2838392045355241008L)
   final private[concurrent] class AdaptedInterruptibleCallable[T](
-      val callable: Callable[T]
+      @safePublish val callable: Callable[T]
   ) extends ForkJoinTask[T]
       with RunnableFuture[T] {
     if (callable == null) throw new NullPointerException

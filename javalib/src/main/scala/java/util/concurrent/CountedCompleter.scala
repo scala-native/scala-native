@@ -9,14 +9,15 @@ package java.util.concurrent
 import scala.scalanative.runtime.{Intrinsics, fromRawPtr}
 import scala.scalanative.libc.stdatomic.AtomicInt
 import scala.annotation.tailrec
+import scala.scalanative.annotation.safePublish
 
 abstract class CountedCompleter[T] protected (
-    final private[concurrent] val completer: CountedCompleter[_],
+    @safePublish final private[concurrent] val completer: CountedCompleter[_],
     initialPendingCount: Int
 ) extends ForkJoinTask[T] {
 
   @volatile private var pending = initialPendingCount
-  private val atomicPending = new AtomicInt(
+  private def atomicPending = new AtomicInt(
     fromRawPtr(Intrinsics.classFieldRawPtr(this, "pending"))
   )
 

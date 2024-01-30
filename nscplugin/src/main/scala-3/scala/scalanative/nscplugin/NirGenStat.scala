@@ -190,10 +190,15 @@ trait NirGenStat(using Context) {
       }
       // That what JVM backend does
       // https://github.com/lampepfl/dotty/blob/786ad3ff248cca39e2da80c3a15b27b38eec2ff6/compiler/src/dotty/tools/backend/jvm/BTypesFromSymbols.scala#L340-L347
+      val isFinal = !f.is(Mutable)
       val attrs = nir.Attrs(
         isExtern = isExtern,
         isVolatile = f.isVolatile,
-        isFinal = !f.is(Mutable),
+        isFinal = isFinal,
+        isSafePublish = isFinal && {
+          f.hasAnnotation(defnNir.SafePublishClass) ||
+          f.owner.hasAnnotation(defnNir.SafePublishClass)
+        },
         align = getAlignmentAttr(f).orElse(classAlignment)
       )
       val ty = genType(f.info.resultType)
