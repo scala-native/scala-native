@@ -23,7 +23,9 @@ allowing to get rid of redundant synchronization, as the state is never shared b
 Scala Native tries to follow the Java Memory Model, but by default uses more relaxed semantics in some areas. 
 Due to the majority of immutable shared states in most Scala programs, Scala Native does not follow Java final fields semantics. 
 Safe publication of final fields (`val`s in Scala) can be enabled by annotating fields or the whole class with `@scala.scalanative.annotation.safePublish`, 
-this behaviour can be also enabled on whole project scope by providing a Scala compiler plugin options `-Pscalanative:forceStrictFinalFields`
+this behaviour can be also enabled on whole project scope by providing a Scala compiler plugin options `-Pscalanative:forceStrictFinalFields`.
+Semantics of final fields can be also overriden at linktime using `NativeConfig.semanticsConfig` - 
+it can be configured to override default relaxed memory model, allowing to replace it with strict JMM semantics or disable synchronization entierely.
 
 Scala Native ensures that all class field operations would be executed atomically, but does not impose any synchronization or happens-before guarantee. 
 
