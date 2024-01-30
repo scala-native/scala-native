@@ -15,7 +15,7 @@ static inline bool Sweeper_IsCoalescingDone(Heap *heap) {
 }
 
 static inline bool Sweeper_IsSweepDone(Heap *heap) {
-    return heap->sweep.postSweepDone && heap->gcThreads.phase != gc_sweep;
+    return heap->sweep.postSweepDone;
 }
 
 #ifdef GC_ASSERTIONS
