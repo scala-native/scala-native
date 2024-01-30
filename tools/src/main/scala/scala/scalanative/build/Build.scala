@@ -6,6 +6,7 @@ import scala.scalanative.util.Scope
 import scala.scalanative.linker.ReachabilityAnalysis
 import scala.util.Try
 import java.nio.file.FileVisitOption
+import java.nio.file.StandardOpenOption
 import java.util.Optional
 import java.nio.file.attribute.FileTime
 import scala.concurrent._
@@ -123,6 +124,7 @@ object Build {
             .map(objects => link(config, linkerResult, objects))
             .map(artifact => postProcess(config, artifact))
         )
+        .andThen { case Success(_) => dumpUserConfigHash(config) }
     }
   }
 
@@ -299,5 +301,25 @@ object Build {
         .map[FileTime](getLastModified(_))
         .max(_.compareTo(_))
     else Optional.empty()
+
+  private[scalanative] final val userConfigHashFile = "userConfigHash"
+
+  private[scalanative] def userConfigHasChanged(config: Config): Boolean = {
+    val hashFile = config.workDir.resolve(userConfigHashFile)
+    !Files.exists(hashFile) || Files
+      .readString(hashFile)
+      .trim() != config.compilerConfig.##.toString()
+  }
+
+  private[scalanative] def dumpUserConfigHash(config: Config): Unit = {
+    val hashFile = config.workDir.resolve(userConfigHashFile)
+    Files.createDirectories(hashFile.getParent())
+    Files.writeString(
+      hashFile,
+      config.compilerConfig.##.toString(),
+      StandardOpenOption.CREATE,
+      StandardOpenOption.WRITE
+    )
+  }
 
 }
