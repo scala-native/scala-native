@@ -100,7 +100,11 @@ trait NirGenType(using Context) {
       tpe.widenDealias match {
         case JavaArrayType(_)   => false
         case _: ErasedValueType => false
-        case t                  => t.typeSymbol.asClass.isPrimitiveValueClass
+        // t.typeSymbol may not be a ClassSymbol when it is an opaque type
+        // https://github.com/scala-native/scala-native/issues/3700
+        case t if t.typeSymbol.isClass =>
+          t.typeSymbol.asClass.isPrimitiveValueClass
+        case _ => false
       }
     }
   end extension
