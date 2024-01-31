@@ -306,17 +306,19 @@ object Build {
 
   private[scalanative] def userConfigHasChanged(config: Config): Boolean = {
     val hashFile = config.workDir.resolve(userConfigHashFile)
-    !Files.exists(hashFile) || Files
-      .readString(hashFile)
-      .trim() != config.compilerConfig.##.toString()
+    !Files.exists(hashFile) || {
+      val source = scala.io.Source.fromFile(hashFile.toFile())
+      try source.mkString.trim() != config.compilerConfig.##.toString()
+      finally source.close()
+    }
   }
 
   private[scalanative] def dumpUserConfigHash(config: Config): Unit = {
     val hashFile = config.workDir.resolve(userConfigHashFile)
     Files.createDirectories(hashFile.getParent())
-    Files.writeString(
+    Files.write(
       hashFile,
-      config.compilerConfig.##.toString(),
+      config.compilerConfig.##.toString().getBytes(),
       StandardOpenOption.CREATE,
       StandardOpenOption.WRITE
     )
