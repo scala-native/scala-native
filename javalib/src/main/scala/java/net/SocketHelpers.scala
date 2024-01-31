@@ -323,20 +323,22 @@ object SocketHelpers {
     new InetSocketAddress(addr, port)
   }
 
-  // Create copies of loopback & wildcard, so that originals never get changed
+  /* InetAddress() & Inet6Address() make defensive copies of the Array[Byte].
+   * As a result, these originals can never get changed.
+   */
 
   // ScalaJVM shows loopbacks with null host, wildcards with numeric host.
-  private[net] def loopbackIPv4(): InetAddress =
+  private[net] lazy val loopbackIPv4: InetAddress =
     InetAddress.getByAddress(Array[Byte](127, 0, 0, 1))
 
-  private[net] def loopbackIPv6(): InetAddress = InetAddress.getByAddress(
+  private[net] lazy val loopbackIPv6: InetAddress = InetAddress.getByAddress(
     Array[Byte](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1)
   )
 
-  private def wildcardIPv4(): InetAddress =
+  private lazy val wildcardIPv4: InetAddress =
     InetAddress.getByAddress("0.0.0.0", Array[Byte](0, 0, 0, 0))
 
-  private def wildcardIPv6(): InetAddress = InetAddress.getByAddress(
+  private lazy val wildcardIPv6: InetAddress = InetAddress.getByAddress(
     "0:0:0:0:0:0:0:0",
     Array[Byte](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
   )
@@ -360,8 +362,8 @@ object SocketHelpers {
   }
 
   private[net] def getLoopbackAddress(): InetAddress = {
-    if (useLoopbackIPv6) loopbackIPv6()
-    else loopbackIPv4()
+    if (useLoopbackIPv6) loopbackIPv6
+    else loopbackIPv4
   }
 
   private lazy val useWildcardIPv6: Boolean = {
@@ -373,8 +375,8 @@ object SocketHelpers {
   }
 
   private[net] def getWildcardAddress(): InetAddress = {
-    if (useWildcardIPv6) wildcardIPv6()
-    else wildcardIPv4()
+    if (useWildcardIPv6) wildcardIPv6
+    else wildcardIPv4
   }
 
   /* Return the wildcard address corresponding directly to the IP stack in use.
@@ -387,9 +389,9 @@ object SocketHelpers {
    */
 
   private[net] def getWildcardAddressForBind(): InetAddress = {
-    if (LinktimeInfo.isFreeBSD) wildcardIPv4()
-    else if (useIPv4Stack) wildcardIPv4()
-    else wildcardIPv6()
+    if (LinktimeInfo.isFreeBSD) wildcardIPv4
+    else if (useIPv4Stack) wildcardIPv4
+    else wildcardIPv6
   }
 
   private[net] def fetchFdLocalAddress(osFd: Int): InetAddress = {

@@ -78,8 +78,10 @@ import macOsIfDl._
 class NetworkInterface private (ifName: String) {
 
   override def equals(that: Any): Boolean = that match {
-    case that: NetworkInterface => this.hashCode() == that.hashCode()
-    case _                      => false
+    case that: NetworkInterface =>
+      if (that == null) false
+      else this.hashCode() == that.hashCode()
+    case _ => false
   }
 
   def getDisplayName(): String = getName()
@@ -256,7 +258,42 @@ object NetworkInterface {
     }
   }
 
-  private def createInetAddress(
+  /* Return an InetAddress created with regard for operating system
+   * practices.
+   *
+   * Linux and macOS always provides the scopeId/NetworkInterfaceId for
+   * InetAddresses used in the InterfaceAddressses created by NetworkInterface.
+   *
+   * FreeBSD provides that value only for IPv6 addresses which are not Global
+   * and not "special" (loopback, "any" a.k.a wildcard). The ipv4compatible
+   * (as distinct from the IPv4 mapped IPv6) address has not been verified
+   * since it is one step above deprecated and almost never used in the wild.
+   */
+  private def createOsConditionedInetAddress(
+      sa: Ptr[sockaddr],
+      ifIndex: Int
+  ): InetAddress = {
+    val af = sa.sa_family.toInt
+
+    val bytes = sockaddrToByteArray(sa) // will throw if != AF_INET or AF_INET6
+
+    if (af == AF_INET) {
+      InetAddress.getByAddress(bytes)
+    } else {
+      val provideScopeId =
+        if (!LinktimeInfo.isFreeBSD) true
+        else {
+          (((bytes(0) & 0xff) >>> 5) > 1) // top (leftmost) 2 bits are 00
+        }
+
+      if (!provideScopeId)
+        Inet6Address(bytes, "")
+      else
+        Inet6Address.getByAddress("", bytes, ifIndex)
+    }
+  }
+
+  private def createInetAddressOption(
       ifa: Ptr[ifaddrs],
       ifIndex: Int
   ): Option[InetAddress] = {
@@ -264,17 +301,10 @@ object NetworkInterface {
     val af = sa.sa_family.toInt
 
     if (!((af == AF_INET) || (af == AF_INET6))) None
-    else {
-      val bytes = sockaddrToByteArray(sa)
-      if (af == AF_INET) {
-        Some(InetAddress.getByAddress(bytes))
-      } else {
-        Some(Inet6Address.getByAddress("", bytes, ifIndex))
-      }
-    }
+    else Some(createOsConditionedInetAddress(sa, ifIndex))
   }
 
-  private def createInterfaceAddress(
+  private def createInterfaceAddressOption(
       ifa: Ptr[ifaddrs],
       ifIndex: Int
   ): Option[InterfaceAddress] = {
@@ -301,12 +331,7 @@ object NetworkInterface {
     if (!((af == AF_INET) || (af == AF_INET6))) {
       None // Silently skip AF_PACKET (17) and such.
     } else {
-      val bytes = sockaddrToByteArray(sa)
-      val inetAddress = if (af == AF_INET) {
-        InetAddress.getByAddress(bytes)
-      } else {
-        Inet6Address.getByAddress("", bytes, ifIndex)
-      }
+      val inetAddress = createOsConditionedInetAddress(sa, ifIndex)
 
       val broadcastAddress: Option[Array[Byte]] =
         if (sa.sa_family.toInt == AF_INET6) None
@@ -724,7 +749,7 @@ object NetworkInterface {
     ): Unit = {
       if (ifa != null) {
         if (strcmp(ifNameC, ifa.ifa_name) == 0) {
-          createInetAddress(ifa, ifIndex).map(ia => addOne(ia))
+          createInetAddressOption(ifa, ifIndex).map(ia => addOne(ia))
         }
         accumulateInetAddresses(
           ifNameC,
@@ -766,7 +791,7 @@ object NetworkInterface {
     ): Unit = {
       if (ifa != null) {
         if (strcmp(ifNameC, ifa.ifa_name) == 0) {
-          createInterfaceAddress(ifa, ifIndex).map(ia => addOne(ia))
+          createInterfaceAddressOption(ifa, ifIndex).map(ia => addOne(ia))
         }
         accumulateInterfaceAddresses(
           ifNameC,
