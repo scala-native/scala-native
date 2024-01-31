@@ -895,6 +895,9 @@ object Build {
         noIDEExportSettings,
         Test / fork := true,
         Test / javaOptions += "-Xmx1G",
+        Test / envVars ++= Map(
+          "SCALANATIVE_DISABLE_UNUSED_MULTITHREADING" -> "0"
+        ),
         // Override the dependency of partest - see Scala.js issue #1889
         dependencyOverrides += Deps.ScalaLibrary(scalaVersion.value) % "test",
         testFrameworks ++= {
