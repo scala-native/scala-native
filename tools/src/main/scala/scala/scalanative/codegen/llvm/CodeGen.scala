@@ -7,13 +7,14 @@ import java.nio.file.{Path, Paths, Files}
 import scala.collection.mutable
 import scala.scalanative.build.Config
 import scala.scalanative.build.ScalaNative.{dumpDefns, encodedMainClass}
+import scala.scalanative.build.Build
 import scala.scalanative.io.VirtualDirectory
 import scala.scalanative.build
+import scala.scalanative.build.IO
 import scala.scalanative.linker.ReachabilityAnalysis
 import scala.scalanative.util.{Scope, partitionBy, procs}
 import java.nio.file.StandardCopyOption
 
-import scala.scalanative.build.ScalaNative
 import scala.scalanative.codegen.{Metadata => CodeGenMetadata}
 import scala.concurrent._
 import scala.util.Success
@@ -69,6 +70,8 @@ object CodeGen {
     Scope { implicit in =>
       val env = assembly.map(defn => defn.name -> defn).toMap
       val outputDirPath = config.workDir.resolve("generated")
+      if (Build.userConfigHasChanged(config))
+        IO.deleteRecursive(outputDirPath)
       Files.createDirectories(outputDirPath)
       val outputDir = VirtualDirectory.real(outputDirPath)
       val sourceCodeCache = new SourceCodeCache(config)

@@ -189,6 +189,8 @@ private[scalanative] object NativeLib {
     val workDir = config.workDir
     val classpath = config.classPath
     val nativeCodeDir = workDir.resolve("dependencies")
+    if (Build.userConfigHasChanged(config))
+      IO.deleteRecursive(nativeCodeDir)
 
     val nativeLibPaths = classpath.flatMap { path =>
       if (isJar(path)) readJar(path)
