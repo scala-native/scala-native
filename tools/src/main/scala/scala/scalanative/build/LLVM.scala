@@ -36,21 +36,17 @@ private[scalanative] object LLVM {
    *  @return
    *    The paths of the `.o` files.
    */
-  def compile(config: Config, paths: Seq[Path])(implicit
+  def compile(config: Config, path: Path)(implicit
       ec: ExecutionContext
-  ): Future[Seq[Path]] = {
+  ): Future[Path] = {
     implicit val _config: Config = config
 
-    def compileIfNeeded(srcPath: Path): Future[Path] = {
-      val inpath = srcPath.abs
-      val outpath = inpath + oExt
-      val objPath = Paths.get(outpath)
-      // compile if out of date or no object file
-      if (needsCompiling(srcPath, objPath)) compileFile(srcPath, objPath)
-      else Future.successful(objPath)
-    }
-    // generate .o files for included source files
-    Future.traverse(paths)(compileIfNeeded)
+    val inpath = path.abs
+    val outpath = inpath + oExt
+    val objPath = Paths.get(outpath)
+    // compile if out of date or no object file
+    if (needsCompiling(path, objPath)) compileFile(path, objPath)
+    else Future.successful(objPath)
   }
 
   private def compileFile(srcPath: Path, objPath: Path)(implicit
@@ -422,39 +418,5 @@ private[scalanative] object LLVM {
     "-DNO_OLDNAMES",
     "-D_LIBUNWIND_BUILD_ZERO_COST_APIS"
   )
-
-  private[scalanative] def generateLLVMIdent(config: Config): Seq[Path] = {
-    def constructIdent: String = {
-      val mt = config.compilerConfig.multithreadingSupport
-      val snVersion = scala.scalanative.nir.Versions.current
-
-      val ident1 = s"Scala Native ${snVersion}"
-      val ident2 = s"Multithread: ${mt},"
-      val ident3 = s"Mode: ${config.mode}, LTO: ${config.LTO}, GC: ${config.gc}"
-
-      s"${ident1} (${ident2} ${ident3})"
-    }
-
-    /* Enable feature only where known to work. Add to list as experience grows
-     * FreeBSD uses elf format so it _should_ work, but it has not been
-     * exercised.
-     */
-    if (!config.targetsLinux) Seq.empty[Path]
-    else {
-      // From lld.llvm.org doc: readelf --string-dump .comment <output-file>
-      val workDir = config.workDir
-      val identPath = workDir.resolve("ScalaNativeIdent.ll")
-      val ident = constructIdent
-
-      val pw = new java.io.PrintWriter(identPath.toFile) // truncate if exists
-
-      try {
-        pw.println("!llvm.ident = !{!0}")
-        pw.println(s"""!0 = !{!"${ident}"}""")
-      } finally pw.close()
-
-      Seq(identPath)
-    }
-  }
 
 }

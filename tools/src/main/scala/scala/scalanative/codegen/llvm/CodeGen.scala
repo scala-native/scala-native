@@ -18,13 +18,17 @@ import java.nio.file.StandardCopyOption
 import scala.scalanative.codegen.{Metadata => CodeGenMetadata}
 import scala.concurrent._
 import scala.util.Success
+import scala.scalanative.codegen.llvm.compat.os.OsCompat
+import scala.scalanative.util.ShowBuilder
 
 object CodeGen {
+  type IRGenerator = Future[Path]
+  type IRGenerators = Seq[IRGenerator]
 
   /** Lower and generate code for given assembly. */
   def apply(config: build.Config, analysis: ReachabilityAnalysis.Result)(
       implicit ec: ExecutionContext
-  ): Future[Seq[Path]] = {
+  ): Future[IRGenerators] = {
     val defns = analysis.defns
     val proxies = GenerateReflectiveProxies(analysis.dynimpls, defns)
 
@@ -38,7 +42,7 @@ object CodeGen {
     val lowered = lower(generated ++ embedded)
     lowered
       .andThen { case Success(defns) => dumpDefns(config, "lowered", defns) }
-      .flatMap(emit(config, _))
+      .map(emit(config, _))
   }
 
   private[scalanative] def lower(
@@ -66,7 +70,7 @@ object CodeGen {
   private def emit(config: build.Config, assembly: Seq[nir.Defn])(implicit
       meta: CodeGenMetadata,
       ec: ExecutionContext
-  ): Future[Seq[Path]] =
+  ): IRGenerators =
     Scope { implicit in =>
       val env = assembly.map(defn => defn.name -> defn).toMap
       val outputDirPath = config.workDir.resolve("generated")
@@ -83,18 +87,17 @@ object CodeGen {
       // Partition into multiple LLVM IR files proportional to number
       // of available processesors. This prevents LLVM from optimizing
       // across IR module boundary unless LTO is turned on.
-      def separate(): Future[Seq[Path]] =
-        Future
-          .traverse(partitionBy(assembly, procs)(outputFileId).toSeq) {
-            case (id, defns) =>
-              Future {
-                val sorted = defns.sortBy(_.name)
-                Impl(env, sorted, sourceCodeCache).gen(id.toString(), outputDir)
-              }
-          }
+      def separate(): IRGenerators =
+        partitionBy(assembly, procs)(outputFileId).toSeq.map {
+          case (id, defns) =>
+            Future {
+              val sorted = defns.sortBy(_.name)
+              Impl(env, sorted, sourceCodeCache).gen(id.toString, outputDir)
+            }
+        }
 
       // Incremental compilation code generation
-      def seperateIncrementally(): Future[Seq[Path]] = {
+      def seperateIncrementally(): IRGenerators = {
         val ctx = new IncrementalCodeGenContext(config.workDir)
         ctx.collectFromPreviousState()
 
@@ -114,61 +117,117 @@ object CodeGen {
         // To address this issue, we partition into multiple LLVM IR files per Scala source file originated from.
         // This will ensure that each LLVM IR file only references a single Scala source file,
         // which will prevent the Darwin linker failing to generate N_OSO symbols.
-        Future
-          .traverse(assembly.groupBy(outputFileId).toSeq) {
-            case (id, defns) =>
-              Future {
-                val hash = id.hashCode().toHexString
-                val outFile = outputDirPath.resolve(s"$hash.ll")
-                val ownerDirectory = outFile.getParent()
+        val llvmIRGenerators = assembly.groupBy(outputFileId).toSeq.map {
+          case (dir, defns) =>
+            Future {
+              val hash = dir.hashCode().toHexString
+              val outFile = outputDirPath.resolve(s"$hash.ll")
+              val ownerDirectory = outFile.getParent()
 
-                ctx.addEntry(hash, defns)
-                if (ctx.shouldCompile(hash)) {
-                  val sorted = defns.sortBy(_.name)
-                  if (!Files.exists(ownerDirectory))
-                    Files.createDirectories(ownerDirectory)
-                  Impl(env, sorted, sourceCodeCache).gen(hash, outputDir)
-                } else {
-                  assert(ownerDirectory.toFile.exists())
-                  config.logger.debug(
-                    s"Content of definitions in chunk '$id' has not changed, skipping generation of $hash.ll"
-                  )
-                  outFile
-                }
+              ctx.addEntry(hash, defns)
+              if (ctx.shouldCompile(hash)) {
+                val sorted = defns.sortBy(_.name)
+                if (!Files.exists(ownerDirectory))
+                  Files.createDirectories(ownerDirectory)
+                Impl(env, sorted, sourceCodeCache).gen(hash, outputDir)
+              } else {
+                assert(ownerDirectory.toFile.exists())
+                config.logger.debug(
+                  s"Content of directory in $dir has not changed, skiping generation of $hash.ll"
+                )
+                outFile
               }
-          }
-          .andThen {
-            case _ =>
-              // Save current state for next compilation run
-              ctx.dump()
-              ctx.clear()
-          }
+            }
+        }
+        Future.sequence(llvmIRGenerators).andThen {
+          case _ =>
+            // Save current state for next compilation run
+            ctx.dump()
+            ctx.clear()
+        }
+        llvmIRGenerators
       }
 
-      if (config.compilerConfig.useIncrementalCompilation)
-        seperateIncrementally()
-      else separate()
+      val maybeBuildInfoGenerator = new Impl.BuildInfoCodegen(env)
+        .generateIfSupported(outputDir, config)
+        .map(Future.successful)
+
+      val llvmIRGenerators =
+        if (config.compilerConfig.useIncrementalCompilation)
+          seperateIncrementally()
+        else separate()
+      llvmIRGenerators ++ maybeBuildInfoGenerator
     }
 
   object Impl {
     import scala.scalanative.codegen.llvm.AbstractCodeGen
-    import scala.scalanative.codegen.llvm.compat.os._
-
     def apply(
         env: Map[nir.Global, nir.Defn],
         defns: Seq[nir.Defn],
         sourcesCache: SourceCodeCache
     )(implicit
         meta: CodeGenMetadata
-    ): AbstractCodeGen = {
+    ): AbstractCodeGen = new StdCodeGen(env, defns, sourcesCache)
 
-      new AbstractCodeGen(env, defns) {
-        override val os: OsCompat = {
-          if (this.meta.platform.targetsWindows) new WindowsCompat(this)
-          else new UnixCompat(this)
+    private class StdCodeGen(
+        env: Map[nir.Global, nir.Defn],
+        defns: Seq[nir.Defn],
+        sourcesCache: SourceCodeCache
+    )(implicit
+        meta: CodeGenMetadata
+    ) extends AbstractCodeGen(env, defns) {
+      override def sourceCodeCache: SourceCodeCache = sourcesCache
+    }
+
+    class BuildInfoCodegen(env: Map[nir.Global, nir.Defn])(implicit
+        meta: CodeGenMetadata
+    ) extends AbstractCodeGen(env, Nil) {
+      import meta.config
+      val buildInfos: Map[String, Any] = Map(
+        "ASAN support" -> config.asan,
+        "Debug metadata" -> config.sourceLevelDebuggingConfig.enabled,
+        "Embed resources" -> config.embedResources,
+        "GC" -> config.gc,
+        "LTO" -> config.lto,
+        "Link stubs" -> config.linkStubs,
+        "Mode" -> config.mode,
+        "Multithreading" -> config.multithreadingSupport,
+        "Optimize" -> config.optimize
+      )
+
+      /* Enable feature only where known to work. Add to list as experience grows
+       * FreeBSD uses elf format so it _should_ work, but it has not been
+       * exercised.
+       */
+
+      def generateIfSupported(
+          dir: VirtualDirectory,
+          config: build.Config
+      ): Option[Path] =
+        if (config.targetsLinux) Some(gen("", dir))
+        else None
+
+      override def gen(unused: String, dir: VirtualDirectory): Path = {
+        dir.write(Paths.get(s"__buildInfo.ll")) { writer =>
+          implicit val metadata: MetadataCodeGen.Context =
+            new MetadataCodeGen.Context(
+              this,
+              new ShowBuilder.FileShowBuilder(writer)
+            )
+
+          val snVersion = scala.scalanative.nir.Versions.current
+          val compilerInfo = s"Scala Native v$snVersion"
+          val buildInfo = buildInfos
+            .map { case (key, value) => s"$key: $value" }
+            .mkString(", ")
+
+          import Metadata.conversions.{tuple, stringToStr}
+          // From lld.llvm.org doc: readelf --string-dump .comment <output-file>
+          dbg("llvm.ident")(tuple(s"$compilerInfo ($buildInfo)"))
         }
-        override def sourceCodeCache: SourceCodeCache = sourcesCache
       }
+      override def sourceCodeCache: SourceCodeCache =
+        throw new UnsupportedOperationException()
     }
   }
 
