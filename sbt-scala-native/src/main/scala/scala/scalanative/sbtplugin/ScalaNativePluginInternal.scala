@@ -23,6 +23,8 @@ import scala.concurrent.duration.Duration
 import scala.scalanative.build.Platform
 import sjsonnew.BasicJsonProtocol._
 import java.nio.file.{Files, Path}
+import java.lang.Runtime
+import java.util.concurrent.Executors
 import sbt.librarymanagement.{
   DependencyResolution,
   UpdateConfiguration,
@@ -144,10 +146,11 @@ object ScalaNativePluginInternal {
   private def await[T](
       log: sbt.Logger
   )(body: ExecutionContext => Future[T]): T = {
-    val ec =
-      ExecutionContext.fromExecutor(ExecutionContext.global, t => log.trace(t))
-
-    Await.result(body(ec), Duration.Inf)
+    val executor =
+      Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors())
+    val ec = ExecutionContext.fromExecutor(executor, log.trace(_))
+    try Await.result(body(ec), Duration.Inf)
+    finally executor.shutdown()
   }
 
   private def nativeLinkImpl(
