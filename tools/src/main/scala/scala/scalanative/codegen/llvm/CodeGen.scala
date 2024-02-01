@@ -98,7 +98,7 @@ object CodeGen {
 
       // Incremental compilation code generation
       def seperateIncrementally(): IRGenerators = {
-        val ctx = new IncrementalCodeGenContext(config.workDir)
+        val ctx = new IncrementalCodeGenContext(config)
         ctx.collectFromPreviousState()
 
         // Partition into multiple LLVM IR files per Scala source file originated from.
