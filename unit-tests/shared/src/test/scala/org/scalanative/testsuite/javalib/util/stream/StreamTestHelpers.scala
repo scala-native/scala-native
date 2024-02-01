@@ -67,7 +67,7 @@ object StreamTestHelpers {
       System.getProperty("java.version", s"${defaultVersion}")
 
     /* This parse is lazy in the sense of developer lazy & easier to get right.
-     * It is reasonably robust but not fool-proof. Feel free to to better.
+     * It is reasonably robust but not fool-proof. Feel free to do better.
      */
 
     val parseFailMsg = s"Could not parse java.version: ${jvmVersionString}"

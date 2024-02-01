@@ -385,7 +385,17 @@ private[stream] class StreamImpl[T](
   ): IntStream = {
     commenceOperation()
 
-    throw new UnsupportedOperationException("Not Yet Implemented")
+    val supplier =
+      new StreamImpl.IntPrimitiveCompoundSpliteratorFactory[T](
+        _spliter,
+        mapper,
+        closeOnFirstTouch = true
+      )
+
+    val coercedPriorStages = pipeline
+      .asInstanceOf[ArrayDeque[IntStreamImpl]]
+
+    new IntStreamImpl(supplier.get(), _parallel, coercedPriorStages)
   }
 
   def flatMapToLong(
@@ -393,7 +403,17 @@ private[stream] class StreamImpl[T](
   ): LongStream = {
     commenceOperation()
 
-    throw new UnsupportedOperationException("Not Yet Implemented")
+    val supplier =
+      new StreamImpl.LongPrimitiveCompoundSpliteratorFactory[T](
+        _spliter,
+        mapper,
+        closeOnFirstTouch = true
+      )
+
+    val coercedPriorStages = pipeline
+      .asInstanceOf[ArrayDeque[LongStreamImpl]]
+
+    new LongStreamImpl(supplier.get(), _parallel, coercedPriorStages)
   }
 
   def forEach(action: Consumer[_ >: T]): Unit = {
@@ -496,14 +516,51 @@ private[stream] class StreamImpl[T](
       coercedPriorStages
     )
       .asInstanceOf[DoubleStream]
-
   }
 
-  def mapToInt(mapper: ToIntFunction[_ >: T]): IntStream =
-    throw new UnsupportedOperationException("Not Yet Implemented")
+  def mapToInt(mapper: ToIntFunction[_ >: T]): IntStream = {
+    commenceOperation()
 
-  def mapToLong(mapper: ToLongFunction[_ >: T]): LongStream =
-    throw new UnsupportedOperationException("Not Yet Implemented")
+    val spl = new Spliterators.AbstractIntSpliterator(
+      _spliter.estimateSize(),
+      _spliter.characteristics()
+    ) {
+      def tryAdvance(action: IntConsumer): Boolean =
+        _spliter.tryAdvance((e: T) => action.accept(mapper.applyAsInt(e)))
+    }
+
+    val coercedPriorStages = pipeline
+      .asInstanceOf[ArrayDeque[IntStreamImpl]]
+
+    new IntStreamImpl(
+      spl,
+      _parallel,
+      coercedPriorStages
+    )
+      .asInstanceOf[IntStream]
+  }
+
+  def mapToLong(mapper: ToLongFunction[_ >: T]): LongStream = {
+    commenceOperation()
+
+    val spl = new Spliterators.AbstractLongSpliterator(
+      _spliter.estimateSize(),
+      _spliter.characteristics()
+    ) {
+      def tryAdvance(action: LongConsumer): Boolean =
+        _spliter.tryAdvance((e: T) => action.accept(mapper.applyAsLong(e)))
+    }
+
+    val coercedPriorStages = pipeline
+      .asInstanceOf[ArrayDeque[LongStreamImpl]]
+
+    new LongStreamImpl(
+      spl,
+      _parallel,
+      coercedPriorStages
+    )
+      .asInstanceOf[LongStream]
+  }
 
   def max(comparator: Comparator[_ >: T]): Optional[T] = {
     commenceOperation()
@@ -1031,6 +1088,154 @@ object StreamImpl {
                 .tryAdvance((e: DoubleStream) =>
                   currentSpliter = {
                     val eOfDS = e.asInstanceOf[DoubleStreamImpl]
+                    currentStream = Optional.of(eOfDS)
+
+                    /* Tricky bit here!
+                     *   Use internal _spliter and not public spliterator().
+                     *   This method may have been called in a stream created
+                     *   by concat(). Following JVM practice, concat()
+                     *   set each of its input streams as "operated upon"
+                     *   before returning its stream.
+                     *
+                     *   e.spliterator() checks _operatedUpon, which is true
+                     *   in a stream from concat(), and throws.
+                     *   Using _spliter skips that check and succeeds.
+                     */
+
+                    eOfDS._spliter
+                  }
+                )
+            }
+          }
+          advanced
+        }
+      }
+    }
+  }
+
+  private class IntPrimitiveCompoundSpliteratorFactory[T](
+      spliter: Spliterator[T],
+      mapper: Function[_ >: T, _ <: IntStream],
+      closeOnFirstTouch: Boolean
+  ) {
+
+    def get(): ju.Spliterator.OfInt = {
+      val substreams =
+        new Spliterators.AbstractSpliterator[IntStream](
+          Long.MaxValue,
+          spliter.characteristics()
+        ) {
+          def tryAdvance(action: Consumer[_ >: IntStream]): Boolean = {
+            spliter.tryAdvance(e => action.accept(mapper(e)))
+          }
+        }
+
+      new ju.Spliterator.OfInt {
+        override def getExactSizeIfKnown(): Long = -1
+        def characteristics(): Int = 0
+        def estimateSize(): Long = Long.MaxValue
+        def trySplit(): Spliterator.OfInt =
+          null.asInstanceOf[Spliterator.OfInt]
+
+        private var currentSpliter: ju.Spliterator.OfInt =
+          Spliterators.emptyIntSpliterator()
+
+        var currentStream = Optional.empty[IntStreamImpl]()
+
+        def tryAdvance(action: IntConsumer): Boolean = {
+          var advanced = false
+          var done = false
+
+          while (!done) {
+            if (currentSpliter.tryAdvance(action)) {
+              /* JVM flatMap() closes substreams on first touch.
+               * Stream.concat() does not.
+               */
+
+              if (closeOnFirstTouch)
+                currentStream.get().close()
+
+              advanced = true
+              done = true
+            } else {
+              done = !substreams
+                .tryAdvance((e: IntStream) =>
+                  currentSpliter = {
+                    val eOfDS = e.asInstanceOf[IntStreamImpl]
+                    currentStream = Optional.of(eOfDS)
+
+                    /* Tricky bit here!
+                     *   Use internal _spliter and not public spliterator().
+                     *   This method may have been called in a stream created
+                     *   by concat(). Following JVM practice, concat()
+                     *   set each of its input streams as "operated upon"
+                     *   before returning its stream.
+                     *
+                     *   e.spliterator() checks _operatedUpon, which is true
+                     *   in a stream from concat(), and throws.
+                     *   Using _spliter skips that check and succeeds.
+                     */
+
+                    eOfDS._spliter
+                  }
+                )
+            }
+          }
+          advanced
+        }
+      }
+    }
+  }
+
+  private class LongPrimitiveCompoundSpliteratorFactory[T](
+      spliter: Spliterator[T],
+      mapper: Function[_ >: T, _ <: LongStream],
+      closeOnFirstTouch: Boolean
+  ) {
+
+    def get(): ju.Spliterator.OfLong = {
+      val substreams =
+        new Spliterators.AbstractSpliterator[LongStream](
+          Long.MaxValue,
+          spliter.characteristics()
+        ) {
+          def tryAdvance(action: Consumer[_ >: LongStream]): Boolean = {
+            spliter.tryAdvance(e => action.accept(mapper(e)))
+          }
+        }
+
+      new ju.Spliterator.OfLong {
+        override def getExactSizeIfKnown(): Long = -1
+        def characteristics(): Int = 0
+        def estimateSize(): Long = Long.MaxValue
+        def trySplit(): Spliterator.OfLong =
+          null.asInstanceOf[Spliterator.OfLong]
+
+        private var currentSpliter: ju.Spliterator.OfLong =
+          Spliterators.emptyLongSpliterator()
+
+        var currentStream = Optional.empty[LongStreamImpl]()
+
+        def tryAdvance(action: LongConsumer): Boolean = {
+          var advanced = false
+          var done = false
+
+          while (!done) {
+            if (currentSpliter.tryAdvance(action)) {
+              /* JVM flatMap() closes substreams on first touch.
+               * Stream.concat() does not.
+               */
+
+              if (closeOnFirstTouch)
+                currentStream.get().close()
+
+              advanced = true
+              done = true
+            } else {
+              done = !substreams
+                .tryAdvance((e: LongStream) =>
+                  currentSpliter = {
+                    val eOfDS = e.asInstanceOf[LongStreamImpl]
                     currentStream = Optional.of(eOfDS)
 
                     /* Tricky bit here!

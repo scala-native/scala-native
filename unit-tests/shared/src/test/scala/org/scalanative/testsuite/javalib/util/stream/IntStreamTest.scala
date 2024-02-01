@@ -2,7 +2,7 @@ package org.scalanative.testsuite.javalib.util.stream
 
 /* It is hard to assure oneself that the desired primitive DoubleStream,
  * LongStream, & IntStream are being used instead of a/an (object) Stream.
- * Create DoubleStream & kin using the methods in Arrays.
+ * Create IntStream & kin using the methods in Arrays.
  *
  * Do not import ArrayList here, to guard against a Test populating
  * an ArrayList and then inadvertently creating an (object) Stream with it.
@@ -12,39 +12,38 @@ package org.scalanative.testsuite.javalib.util.stream
 import java.{lang => jl}
 
 import java.{util => ju}
-import java.util.{Arrays, ArrayList}
-import java.util.{OptionalDouble, DoubleSummaryStatistics}
-import java.util.Spliterator
-import java.util.Spliterators
+import java.util.Arrays
+import java.util.IntSummaryStatistics
+import java.util.OptionalInt
+import java.util.{Spliterator, Spliterators}
 
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 import java.util.concurrent.CountDownLatch._
 
-import java.util.function.{DoubleConsumer, DoubleFunction, DoubleSupplier}
+import java.util.function.{IntConsumer, IntFunction, IntSupplier}
 import java.util.function.Supplier
 
 import java.util.stream._
 
 import org.junit.Test
 import org.junit.Assert._
-import org.junit.BeforeClass
 import org.junit.Ignore
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
-class DoubleStreamTest {
+class IntStreamTest {
 
   final val epsilon = 0.00001 // tolerance for Floating point comparisons.
 
 // Methods specified in interface BaseStream ----------------------------
 
   @Test def streamUnorderedOnUnorderedStream(): Unit = {
-    val dataSet = new ju.HashSet[Double]()
-    dataSet.add(0.1)
-    dataSet.add(1.1)
-    dataSet.add(-1.1)
-    dataSet.add(2.2)
-    dataSet.add(-2.2)
+    val dataSet = new ju.HashSet[Int]()
+    dataSet.add(1)
+    dataSet.add(11)
+    dataSet.add(-11)
+    dataSet.add(22)
+    dataSet.add(-22)
 
     val s0 = dataSet.stream()
     val s0Spliter = s0.spliterator()
@@ -63,7 +62,7 @@ class DoubleStreamTest {
   }
 
   @Test def streamUnorderedOnOrderedStream(): Unit = {
-    val s = DoubleStream.of(0.1, 1.1, -1.1, 2.2, -2.2)
+    val s = IntStream.of(1, 11, -11, 22, -22)
     val sSpliter = s.spliterator()
 
     assertTrue(
@@ -72,7 +71,7 @@ class DoubleStreamTest {
     )
 
     // s was ordered, 'so' should be same same. Avoid "already used" exception
-    val so = DoubleStream.of(0.1, 1.1, -1.1, 2.2, -2.2)
+    val so = IntStream.of(1, 11, -11, 22, -22)
     val su = so.unordered()
     val suSpliter = su.spliterator()
 
@@ -85,15 +84,15 @@ class DoubleStreamTest {
   @Test def streamParallel(): Unit = {
     val nElements = 5
 
-    val wild = new Array[Double](nElements) // holds arbitrarily jumbled data
-    wild(0) = 132.45
-    wild(1) = 4.21
-    wild(2) = 2.11
-    wild(3) = 55.31
-    wild(4) = 16.68
+    val wild = new Array[Int](nElements) // holds arbitrarily jumbled data
+    wild(0) = 13245
+    wild(1) = 421
+    wild(2) = 211
+    wild(3) = 5531
+    wild(4) = 1668
 
     val sPar0 =
-      StreamSupport.doubleStream(Spliterators.spliterator(wild, 0), true)
+      StreamSupport.intStream(Spliterators.spliterator(wild, 0), true)
 
     assertTrue(
       "Expected parallel stream",
@@ -111,7 +110,7 @@ class DoubleStreamTest {
     )
 
     val sPar =
-      StreamSupport.doubleStream(Spliterators.spliterator(wild, 0), true)
+      StreamSupport.intStream(Spliterators.spliterator(wild, 0), true)
 
     val sSeq = sPar.sequential()
     assertFalse(
@@ -135,12 +134,11 @@ class DoubleStreamTest {
 
     // sequential stream has expected contents
     var count = 0
-    sSeqSpliterator.forEachRemaining((e: Double) => {
+    sSeqSpliterator.forEachRemaining((e: Int) => {
       assertEquals(
         s"sequential stream contents(${count})",
         wild(count),
-        e,
-        epsilon
+        e
       )
       count += 1
     })
@@ -149,15 +147,15 @@ class DoubleStreamTest {
   @Test def streamSequential(): Unit = {
     val nElements = 5
 
-    val wild = new Array[Double](nElements) // holds arbitrarily jumbled data
-    wild(0) = 132.45
-    wild(1) = 4.21
-    wild(2) = 2.11
-    wild(3) = 55.31
-    wild(4) = 16.68
+    val wild = new Array[Int](nElements) // holds arbitrarily jumbled data
+    wild(0) = 13245
+    wild(1) = 421
+    wild(2) = 211
+    wild(3) = 5531
+    wild(4) = 1668
 
     val sSeq0 =
-      StreamSupport.doubleStream(Spliterators.spliterator(wild, 0), false)
+      StreamSupport.intStream(Spliterators.spliterator(wild, 0), false)
 
     assertFalse(
       "Expected sequential stream",
@@ -175,7 +173,7 @@ class DoubleStreamTest {
     )
 
     val sSeq =
-      StreamSupport.doubleStream(Spliterators.spliterator(wild, 0), false)
+      StreamSupport.intStream(Spliterators.spliterator(wild, 0), false)
 
     val sPar = sSeq.parallel()
     assertTrue(
@@ -199,31 +197,30 @@ class DoubleStreamTest {
 
     // parallel stream has expected contents
     var count = 0
-    sParSpliterator.forEachRemaining((e: Double) => {
+    sParSpliterator.forEachRemaining((e: Int) => {
       assertEquals(
         s"parallel stream contents(${count})",
         wild(count),
-        e,
-        epsilon
+        e
       )
       count += 1
     })
   }
 
-// Methods specified in interface Double Stream -------------------------
+// Methods specified in interface Int Stream -------------------------
 
-  @Test def doubleStreamBuilderCanBuildAnEmptyStream(): Unit = {
-    val s = DoubleStream.builder().build()
+  @Test def intStreamBuilderCanBuildAnEmptyStream(): Unit = {
+    val s = IntStream.builder().build()
     val it = s.iterator()
     assertFalse(it.hasNext())
   }
 
-  @Test def doubleStreamBuilderCharacteristics(): Unit = {
-    val bldr = Stream.builder[Double]()
+  @Test def intStreamBuilderCharacteristics(): Unit = {
+    val bldr = Stream.builder[Int]()
     bldr
-      .add(1.1)
-      .add(-1.1)
-      .add(9.9)
+      .add(11)
+      .add(-11)
+      .add(99)
 
     val s = bldr.build()
     val spliter = s.spliterator()
@@ -238,25 +235,25 @@ class DoubleStreamTest {
     )
   }
 
-  @Test def doubleStreamEmptyIsEmpty(): Unit = {
-    val s = DoubleStream.empty()
+  @Test def intStreamEmptyIsEmpty(): Unit = {
+    val s = IntStream.empty()
     val it = s.iterator()
     assertFalse(it.hasNext())
   }
 
-  @Test def doubleStreamOf_SingleElement(): Unit = {
-    val expected = 7.7
-    val s = DoubleStream.of(expected)
+  @Test def intStreamOf_SingleElement(): Unit = {
+    val expected = 77
+    val s = IntStream.of(expected)
     val it = s.iterator()
-    assertTrue("DoubleStream should not be empty", it.hasNext())
-    assertEquals("unexpected element", it.nextDouble(), expected, epsilon)
-    assertFalse("DoubleStream should be empty and is not.", it.hasNext())
+    assertTrue("IntStream should not be empty", it.hasNext())
+    assertEquals("unexpected element", it.nextInt(), expected)
+    assertFalse("IntStream should be empty and is not.", it.hasNext())
   }
 
   @Test def streamOf_SingleElementCharacteristics(): Unit = {
-    val expected = 7.7
+    val expected = 77
 
-    val s = DoubleStream.of(expected)
+    val s = IntStream.of(expected)
     val spliter = s.spliterator()
 
     val expectedCharacteristics =
@@ -270,17 +267,17 @@ class DoubleStreamTest {
     )
   }
 
-  @Test def doubleStreamOf_MultipleElements(): Unit = {
-    val s = DoubleStream.of(1.1, 2.2, 3.3)
+  @Test def intStreamOf_MultipleElements(): Unit = {
+    val s = IntStream.of(11, 22, 33)
     val it = s.iterator()
-    assertEquals("element_1", 1.1, it.nextDouble(), epsilon)
-    assertEquals("element_2", 2.2, it.nextDouble(), epsilon)
-    assertEquals("element_3", 3.3, it.nextDouble(), epsilon)
+    assertEquals("element_1", 11, it.nextInt())
+    assertEquals("element_2", 22, it.nextInt())
+    assertEquals("element_3", 33, it.nextInt())
     assertFalse(it.hasNext())
   }
 
   @Test def streamOf_MultipleElementsCharacteristics(): Unit = {
-    val s = DoubleStream.of(1.1, 2.2, 3.3)
+    val s = IntStream.of(11, 22, 33)
     val spliter = s.spliterator()
 
     val expectedCharacteristics =
@@ -294,53 +291,53 @@ class DoubleStreamTest {
     )
   }
 
-  @Test def doubleStreamFlatMapWorks(): Unit = {
-    val s = DoubleStream.of(1.1, 2.2, 3.3)
+  @Test def intStreamFlatMapWorks(): Unit = {
+    val s = IntStream.of(11, 22, 33)
 
-    val mapper = new DoubleFunction[DoubleStream] {
-      override def apply(v: Double): DoubleStream =
-        DoubleStream.of(v, v)
+    val mapper = new IntFunction[IntStream] {
+      override def apply(v: Int): IntStream =
+        IntStream.of(v, v)
     }
 
     val s2 = s.flatMap(mapper)
 
     val it = s2.iterator()
 
-    assertEquals(1.1, it.nextDouble(), epsilon)
-    assertEquals(1.1, it.nextDouble(), epsilon)
+    assertEquals(11, it.nextInt())
+    assertEquals(11, it.nextInt())
 
-    assertEquals(2.2, it.nextDouble(), epsilon)
-    assertEquals(2.2, it.nextDouble(), epsilon)
+    assertEquals(22, it.nextInt())
+    assertEquals(22, it.nextInt())
 
-    assertEquals(3.3, it.nextDouble(), epsilon)
-    assertEquals(3.3, it.nextDouble(), epsilon)
+    assertEquals(33, it.nextInt())
+    assertEquals(33, it.nextInt())
 
     assertFalse(it.hasNext())
   }
 
-  @Test def doubleStreamForEachWorks(): Unit = {
-    val s = DoubleStream.of(-1.1, -2.2, -3.3, 0.0)
+  @Test def intStreamForEachWorks(): Unit = {
+    val s = IntStream.of(-11, -22, -33, 0)
 
-    var sum = 0.0
-    val doubleConsumer = new DoubleConsumer {
-      def accept(d: Double): Unit = sum += d
+    var sum = 0
+    val intConsumer = new IntConsumer {
+      def accept(i: Int): Unit = sum += i
     }
 
-    s.forEach(doubleConsumer)
-    assertEquals(-6.6, sum, epsilon)
+    s.forEach(intConsumer)
+    assertEquals(-66, sum)
   }
 
-  @Test def doubleStreamFlatMapWorksTwice(): Unit = {
-    val s = DoubleStream.of(1.1, 2.2, 3.3)
+  @Test def intStreamFlatMapWorksTwice(): Unit = {
+    val s = IntStream.of(11, 22, 33)
 
-    val mapper1 = new DoubleFunction[DoubleStream] {
-      override def apply(v: Double): DoubleStream =
-        DoubleStream.of(v, v)
+    val mapper1 = new IntFunction[IntStream] {
+      override def apply(v: Int): IntStream =
+        IntStream.of(v, v)
     }
 
-    val mapper2 = new DoubleFunction[DoubleStream] {
-      override def apply(v: Double): DoubleStream =
-        DoubleStream.of(-v, -v, -v)
+    val mapper2 = new IntFunction[IntStream] {
+      override def apply(v: Int): IntStream =
+        IntStream.of(-v, -v, -v)
     }
 
     val s2 = s
@@ -350,30 +347,30 @@ class DoubleStreamTest {
 // format: off
     val expected =
       Seq(
-        -1.1, -1.1, -1.1, -1.1, -1.1, -1.1,
-        -2.2, -2.2, -2.2, -2.2, -2.2, -2.2,
-        -3.3, -3.3, -3.3, -3.3, -3.3, -3.3
+        -11, -11, -11, -11, -11, -11,
+        -22, -22, -22, -22, -22, -22,
+        -33, -33, -33, -33, -33, -33
       )
 // format: on
 
-    val result = scala.collection.mutable.ArrayBuffer.empty[Double]
+    val result = scala.collection.mutable.ArrayBuffer.empty[Int]
     val it = s2.iterator()
 
     while (it.hasNext()) {
-      result += it.nextDouble()
+      result += it.nextInt()
     }
 
     assertTrue(result == expected)
   }
 
-  @Test def doubleStreamOnCloseWorks(): Unit = {
+  @Test def intStreamOnCloseWorks(): Unit = {
     var latch = new CountDownLatch(1)
 
     class Closer(cdLatch: CountDownLatch) extends Runnable {
       override def run(): Unit = cdLatch.countDown()
     }
 
-    val s = DoubleStream.empty().onClose(new Closer(latch))
+    val s = IntStream.empty().onClose(new Closer(latch))
     s.close()
 
     val timeout = 30L
@@ -385,88 +382,88 @@ class DoubleStreamTest {
 
 // Static methods -------------------------------------------------------
 
-  @Test def doubleStreamConcat(): Unit = {
-    val a = DoubleStream.of(9.9, 8.8, 6.6, 7.7, 5.5)
-    val b = DoubleStream.of(0.0, 3.3, 2.2)
+  @Test def intStreamConcat(): Unit = {
+    val a = IntStream.of(99, 88, 66, 77, 55)
+    val b = IntStream.of(0, 33, 22)
 
-    val s = DoubleStream.concat(a, b)
+    val s = IntStream.concat(a, b)
 
     val it = s.iterator()
     assertNotNull("s.iterator() should not be NULL", it)
     assertTrue("stream should not be empty", it.hasNext())
 
-    assertEquals(s"element", 9.9, it.nextDouble(), epsilon)
-    assertEquals(s"element", 8.8, it.nextDouble(), epsilon)
-    assertEquals(s"element", 6.6, it.nextDouble(), epsilon)
-    assertEquals(s"element", 7.7, it.nextDouble(), epsilon)
-    assertEquals(s"element", 5.5, it.nextDouble(), epsilon)
+    assertEquals(s"element", 99, it.nextInt())
+    assertEquals(s"element", 88, it.nextInt())
+    assertEquals(s"element", 66, it.nextInt())
+    assertEquals(s"element", 77, it.nextInt())
+    assertEquals(s"element", 55, it.nextInt())
 
-    assertEquals(s"element", 0.0, it.nextDouble(), epsilon)
-    assertEquals(s"element", 3.3, it.nextDouble(), epsilon)
-    assertEquals(s"element", 2.2, it.nextDouble(), epsilon)
+    assertEquals(s"element", 0, it.nextInt())
+    assertEquals(s"element", 33, it.nextInt())
+    assertEquals(s"element", 22, it.nextInt())
 
     assertFalse("stream should be empty", it.hasNext())
   }
 
   @Test def doubleStreamGenerate(): Unit = {
     val nElements = 5
-    val data = new Array[Double](nElements)
-    data(0) = 0.0
-    data(1) = 1.1
-    data(2) = 2.2
-    data(3) = 3.3
-    data(4) = 4.4
+    val data = new Array[Int](nElements)
+    data(0) = 0
+    data(1) = 11
+    data(2) = 22
+    data(3) = 33
+    data(4) = 44
 
-    val src = new DoubleSupplier() {
+    val src = new IntSupplier() {
       var count = -1
 
-      def getAsDouble(): Double = {
+      def getAsInt(): Int = {
         count += 1
         data(count % nElements)
       }
     }
 
-    val s = DoubleStream.generate(src)
+    val s = IntStream.generate(src)
 
     val it = s.iterator()
 
-    assertTrue("DoubleStream should not be empty", it.hasNext())
+    assertTrue("IntStream should not be empty", it.hasNext())
 
     for (j <- 0 until nElements)
-      assertEquals(s"data(${j})", it.nextDouble(), data(j), epsilon)
+      assertEquals(s"data(${j})", it.nextInt(), data(j))
 
-    assertTrue("DoubleStream should not be empty", it.hasNext())
+    assertTrue("IntStream should not be empty", it.hasNext())
   }
 
-  @Test def doubleStreamIterate_Unbounded(): Unit = {
+  @Test def intStreamIterate_Unbounded(): Unit = {
     val nElements = 4
     var count = -1.0
 
-    val expectedSeed = 3.14
+    val expectedSeed = 1775
 
-    val expected = Seq(expectedSeed, 4.24, 5.34, 6.44)
+    val expected = Seq(expectedSeed, 1786, 1797, 1808)
 
-    val s = DoubleStream.iterate(
+    val s = IntStream.iterate(
       expectedSeed,
-      e => e + 1.1
+      e => e + 11
     )
 
     val it = s.iterator()
 
-    assertTrue("DoubleStream should not be empty", it.hasNext())
+    assertTrue("IntStream should not be empty", it.hasNext())
 
     for (j <- 0 until nElements)
-      assertEquals(s"element: ${j})", expected(j), it.nextDouble(), epsilon)
+      assertEquals(s"element: ${j})", expected(j), it.nextInt())
 
-    assertTrue("DoubleStream should not be empty", it.hasNext())
+    assertTrue("IntStream should not be empty", it.hasNext())
   }
 
-  @Test def doubleStreamIterate_Unbounded_Characteristics(): Unit = {
-    val s = DoubleStream.iterate(0.0, n => n + 1.1)
+  @Test def intStreamIterate_Unbounded_Characteristics(): Unit = {
+    val s = IntStream.iterate(0, n => n + 11)
     val spliter = s.spliterator()
 
     // spliterator should have required characteristics and no others.
-    // Note: DoubleStream requires NONNULL, whereas Stream[T] does not.
+    // Note: IntStream requires NONNULL, whereas Stream[T] does not.
     val requiredPresent =
       Seq(Spliterator.ORDERED, Spliterator.IMMUTABLE, Spliterator.NONNULL)
 
@@ -487,108 +484,214 @@ class DoubleStreamTest {
     assertEquals(s"estimateSize", Long.MaxValue, spliter.estimateSize())
   }
 
-  @Test def doubleStreamOf_NoItems(): Unit = {
-    val s = DoubleStream.of()
+  @Test def intStreamOf_NoItems(): Unit = {
+    val s = IntStream.of()
 
     val it = s.iterator()
-    assertFalse("DoubleStream should be empty", it.hasNext())
+    assertFalse("IntStream should be empty", it.hasNext())
   }
 
-  @Test def doubleStreamOf_OneItem(): Unit = {
-    val expected = 6.67
-    val s = DoubleStream.of(expected)
+  @Test def intStreamOf_OneItem(): Unit = {
+    val expected = 667
+    val s = IntStream.of(expected)
 
     val it = s.iterator()
     assertTrue("stream should not be empty", it.hasNext())
-    assertEquals(s"element", expected, it.nextDouble(), epsilon)
+    assertEquals(s"element", expected, it.nextInt())
 
-    assertFalse("DoubleStream should be empty", it.hasNext())
+    assertFalse("IntStream should be empty", it.hasNext())
   }
 
-  // DoubleStream.of() with more than two arguments is exercised in many other
+  // IntStream.of() with more than two arguments is exercised in many other
   // places in this file, so no Test for that case here.
+
+  @Test def intStreamRange(): Unit = {
+    val startInclusive = 5
+    val endExclusive = 15
+    val expectedCount = endExclusive - startInclusive
+
+    val s = IntStream.range(startInclusive, endExclusive)
+
+    var count = 0
+
+    s.spliterator()
+      .forEachRemaining((e: Int) => {
+        assertEquals(
+          s"range contents",
+          count + startInclusive,
+          e
+        )
+        count += 1
+      })
+
+    assertEquals(s"unexpected range count", expectedCount, count)
+  }
+
+  @Test def intStreamRangeClosed(): Unit = {
+
+    val startInclusive = 5
+    val endInclusive = 15
+    val expectedCount = endInclusive - startInclusive + 1
+
+    val s = IntStream.rangeClosed(startInclusive, endInclusive)
+
+    var count = 0
+
+    s.spliterator()
+      .forEachRemaining((e: Int) => {
+        assertEquals(
+          s"rangeClosed contents",
+          count + startInclusive,
+          e
+        )
+        count += 1
+      })
+
+    assertEquals(s"unexpected rangeClosed count", expectedCount, count)
+  }
 
 // Instance methods -----------------------------------------------------
 
-  @Test def doubleStreamAllMatch_EmptyStream(): Unit = {
-    val s = DoubleStream.empty()
+  @Test def intStreamAllMatch_EmptyStream(): Unit = {
+    val s = IntStream.empty()
     var predEvaluated = false
 
-    val matched = s.allMatch((e) => { predEvaluated = true; true })
+    val matched = s.allMatch(e => { predEvaluated = true; true })
     assertTrue("unexpected match failure", matched)
     assertFalse("predicate should not have been evaluated", predEvaluated)
   }
 
-  @Test def doubleStreamAllMatch_True(): Unit = {
+  @Test def intStreamAllMatch_True(): Unit = {
 
-    /* DoubleStream.allMatch() will return "true" on an empty stream.
-     *  Try to distinguish that "true" from an actual all-elements-match "true"
-     *  Since streams can not be re-used, count s0. If it is non-empty, assume
+    /* IntStream.allMatch() will return "true" on an empty stream.
+     * Try to distinguish that "true" from an actual all-elements-match "true"
+     * Since streams can not be re-used, count s0. If it is non-empty, assume
      * its sibling s is also non-empty, distingishing the two "true"s.
      */
-    val s0 = DoubleStream.of(0.0, 1.1, 2.2, 3.3)
+    val s0 = IntStream.of(0, 11, 22, 33)
     assertTrue("unexpected empty stream", s0.count > 0)
 
-    val s = DoubleStream.of(0.0, 1.1, 2.2, 3.3)
+    val s = IntStream.of(0, 11, 22, 33)
 
-    val matched = s.allMatch((e) => { (e >= 0.0) && (e < 10.0) })
+    val matched = s.allMatch(e => { (e >= 0) && (e < 90) })
     assertTrue("unexpected match failure", matched)
   }
 
-  @Test def doubleStreamAllMatch_False(): Unit = {
-    val s = DoubleStream.of(0.0, 1.1, 2.2, 3.3)
+  @Test def intStreamAllMatch_False(): Unit = {
+    val s = IntStream.of(0, 11, 22, 33)
 
-    val matched = s.allMatch((e) => e > 2.2)
+    val matched = s.allMatch(e => e > 22)
     assertFalse("unexpected match", matched)
   }
 
-  @Test def doubleStreamAnyMatch_EmptyStream(): Unit = {
-    val s = DoubleStream.empty()
+  @Test def intStreamAnyMatch_EmptyStream(): Unit = {
+    val s = IntStream.empty()
     var predEvaluated = false
 
-    val matched = s.anyMatch((e) => { predEvaluated = true; true })
+    val matched = s.anyMatch(e => { predEvaluated = true; true })
     assertFalse("unexpected match", matched)
     assertFalse("predicate should not have been evaluated", predEvaluated)
   }
 
-  @Test def doubleStreamAnyMatch_True(): Unit = {
-    val s = DoubleStream.of(0.0, 1.1, 2.2, 3.3)
+  @Test def intStreamAnyMatch_True(): Unit = {
+    val s = IntStream.of(0, 11, 22, 33)
 
-    val matched = s.anyMatch((e) => (e > 1.0) && (e < 2.0))
+    val matched = s.anyMatch(e => (e > 10) && (e < 20))
     assertTrue("unexpected predicate failure", matched)
   }
 
-  @Test def doubleStreamAnyMatch_False(): Unit = {
-    val s = DoubleStream.of(0.0, 1.1, 2.2, 3.3)
+  @Test def intStreamAnyMatch_False(): Unit = {
+    val s = IntStream.of(0, 11, 22, 33)
 
-    val matched = s.anyMatch((e) => e > 10.0)
+    val matched = s.anyMatch((e) => e > 90)
     assertFalse("unexpected predicate failure", matched)
   }
 
-  @Test def doubleStreamAverage_EmptyStream(): Unit = {
-    val s = DoubleStream.empty()
+  @Test def intStreamAsDoubleStream(): Unit = {
+    val nElements = 4
+    var count = 0
+
+    val s0 = IntStream.of(11, 22, 33, 44)
+
+    val s1 = s0.asDoubleStream()
+
+    // Right resultant types
+    s1.forEach(e => {
+      count += 1
+      assertEquals(s"unexpected type", classOf[Double], e.getClass())
+    })
+
+    // Right count
+    assertEquals("unexpected count", nElements, count)
+
+    // Right content
+    val s2 = IntStream.of(11, 22, 33, 44)
+
+    val s3 = s2.asDoubleStream()
+
+    val it = s3.iterator()
+
+    for (j <- 1 to nElements)
+      assertEquals(
+        "unexpected element",
+        (j * 11).toDouble,
+        it.nextDouble(),
+        epsilon
+      )
+  }
+
+  @Test def intStreamAsLongStream(): Unit = {
+    val nElements = 4
+    var count = 0
+
+    val s0 = IntStream.of(11, 22, 33, 44)
+
+    val s1 = s0.asLongStream()
+
+    // Right resultant types
+    s1.forEach(e => {
+      count += 1
+      assertEquals(s"unexpected type", classOf[Long], e.getClass())
+    })
+
+    // Right count
+    assertEquals("unexpected count", nElements, count)
+
+    // Right content
+    val s2 = IntStream.of(11, 22, 33, 44)
+
+    val s3 = s2.asLongStream()
+
+    val it = s3.iterator()
+
+    for (j <- 1 to nElements)
+      assertEquals("unexpected element", (j * 11).toLong, it.nextLong())
+  }
+
+  @Test def intStreamAverage_EmptyStream(): Unit = {
+    val s = IntStream.empty()
 
     val optional = s.average()
 
     assertFalse(s"expected empty optional, got value", optional.isPresent())
   }
 
-  @Test def doubleStreamAverage(): Unit = {
+  @Test def intStreamAverage(): Unit = {
     val nElements = 8
 
-    val wild = new Array[Double](nElements) // holds arbitrarily jumbled data
-    wild(0) = 132.45
-    wild(1) = 4.21
-    wild(2) = 2.11
-    wild(3) = 55.31
-    wild(4) = 16.68
-    wild(5) = 77.3
-    wild(6) = 44.61
-    wild(7) = 60.9
+    val wild = new Array[Int](nElements) // holds arbitrarily jumbled data
+    wild(0) = 13245
+    wild(1) = 421
+    wild(2) = 211
+    wild(3) = 5531
+    wild(4) = 1668
+    wild(5) = 773
+    wild(6) = 4461
+    wild(7) = 609
 
-    val expectedAverage = 49.19625
+    val expectedAverage = 3364.875 // test against known value, not calculated.
 
-    val s = DoubleStream.of(wild: _*)
+    val s = IntStream.of(wild: _*)
 
     val optional = s.average()
 
@@ -602,39 +705,39 @@ class DoubleStreamTest {
     )
   }
 
-  @Test def doubleStreamBoxed(): Unit = {
+  @Test def intStreamBoxed(): Unit = {
     val nElements = 5
-    val data = new Array[Double](nElements)
-    data(0) = 0.0
-    data(1) = 1.1
-    data(2) = 2.2
-    data(3) = 3.3
-    data(4) = 4.4
+    val data = new Array[Int](nElements)
+    data(0) = 0
+    data(1) = 11
+    data(2) = 22
+    data(3) = 33
+    data(4) = 44
 
     val sd = Arrays.stream(data)
 
     assertTrue(
-      "stream should be a DoubleStream",
-      sd.isInstanceOf[DoubleStream]
+      "stream should be a IntStream",
+      sd.isInstanceOf[IntStream]
     )
 
     val sBoxed = sd.boxed()
 
     assertTrue(
-      "resultant stream should be boxed Stream[Double]",
+      "resultant stream should be boxed Stream[Int]",
       sBoxed.isInstanceOf[Stream[_]]
     )
 
     assertFalse(
-      "resultant stream should not be a DoubleStream",
-      sBoxed.isInstanceOf[DoubleStream]
+      "resultant stream should not be a IntStream",
+      sBoxed.isInstanceOf[IntStream]
     )
   }
 
-  @Test def doubleStreamCollect_EmptyStreamUsingSupplier(): Unit = {
-    type U = ju.ArrayList[Double]
+  @Test def intStreamCollect_EmptyStreamUsingSupplier(): Unit = {
+    type U = ju.ArrayList[Int]
 
-    val s = DoubleStream.empty()
+    val s = IntStream.empty()
 
     val supplier = new Supplier[U]() {
       def get(): U = new U
@@ -642,7 +745,7 @@ class DoubleStreamTest {
 
     val collected = s.collect(
       supplier,
-      (list: U, e: Double) => list.add(e),
+      (list: U, e: Int) => list.add(e),
       (list1: U, list2: U) => list1.addAll(list2)
     )
 
@@ -650,16 +753,16 @@ class DoubleStreamTest {
     assertEquals("list size", 0, collected.size())
   }
 
-  @Test def doubleStreamCollect_UsingSupplier(): Unit = {
-    type U = ju.ArrayList[Double]
+  @Test def intStreamCollect_UsingSupplier(): Unit = {
+    type U = ju.ArrayList[Int]
 
     val nElements = 5
-    val data = new Array[Double](nElements)
-    data(0) = 0.0
-    data(1) = 1.1
-    data(2) = 2.2
-    data(3) = 3.3
-    data(4) = 4.4
+    val data = new Array[Int](nElements)
+    data(0) = 0
+    data(1) = 11
+    data(2) = 22
+    data(3) = 33
+    data(4) = 44
 
     val s = Arrays.stream(data)
 
@@ -669,7 +772,7 @@ class DoubleStreamTest {
 
     val collected = s.collect(
       supplier,
-      (list: U, e: Double) => list.add(e),
+      (list: U, e: Int) => list.add(e),
       (list1: U, list2: U) => list1.addAll(list2)
     )
 
@@ -678,59 +781,59 @@ class DoubleStreamTest {
 
     // Proper elements, in encounter order
     for (j <- 0 until nElements)
-      assertEquals("list element", data(j), collected.get(j), epsilon)
+      assertEquals("list element", data(j), collected.get(j))
   }
 
-  @Test def doubleStreamCollect_UsingSummaryStatistics(): Unit = {
+  @Test def intStreamCollect_UsingSummaryStatistics(): Unit = {
     /* This is the example given at the top of the JVM
-     *  DoubleSummaryStatistics description, translate to Scala.
+     *  DoubleSummaryStatistics description, translate to Scala & Int.
      *
-     *  It tests DoubleStream.collect() using user-designated arguments.
+     *  It tests IntStream.collect() using user-designated arguments.
      *
      *  Along the way, it shows a succinct way of using collect() in Scala.
      */
 
-    type U = DoubleSummaryStatistics
+    type U = IntSummaryStatistics
 
     val nElements = 6
-    val expectedSum = 16.5
-    val expectedMin = 0.0
-    val expectedAverage = expectedSum / nElements
-    val expectedMax = 5.5
+    val expectedSum = 165
+    val expectedMin = 0
+    val expectedAverage = expectedSum.toDouble / nElements
+    val expectedMax = 55
 
-    val data = new Array[Double](nElements)
-    data(0) = 1.1
-    data(1) = 2.2
+    val data = new Array[Int](nElements)
+    data(0) = 11
+    data(1) = 22
     data(2) = expectedMin
-    data(3) = 3.3
+    data(3) = 33
     data(4) = expectedMax
-    data(5) = 4.4
+    data(5) = 44
 
     val s = Arrays.stream(data)
 
     val collected = s.collect(
       () => new U,
-      (summary: U, e: Double) => summary.accept(e),
+      (summary: U, e: Int) => summary.accept(e),
       (summary1: U, summary2: U) => summary1.combine(summary2)
     )
 
     // Proper stats
     assertEquals("count", nElements, collected.getCount())
-    assertEquals("sum", expectedSum, collected.getSum(), epsilon)
-    assertEquals("min", expectedMin, collected.getMin(), epsilon)
+    assertEquals("sum", expectedSum, collected.getSum())
+    assertEquals("min", expectedMin, collected.getMin())
     assertEquals("average", expectedAverage, collected.getAverage(), epsilon)
-    assertEquals("max", expectedMax, collected.getMax(), epsilon)
+    assertEquals("max", expectedMax, collected.getMax())
   }
 
-  @Test def doubleStreamCount(): Unit = {
+  @Test def intStreamCount(): Unit = {
     val expectedCount = 5
 
-    val s = DoubleStream.of(0.0, 1.1, 2.2, 3.3, 4.4)
+    val s = IntStream.of(0, 11, 22, 33, 44)
 
     assertEquals(s"unexpected element count", expectedCount, s.count())
   }
 
-  @Test def doubleStreamDistinct(): Unit = {
+  @Test def intStreamDistinct(): Unit = {
 
     // There must be a harder way of doing this setup.
     // Using " scala.jdk.CollectionConverters._" and futzing with it
@@ -740,17 +843,17 @@ class DoubleStreamTest {
     val expectedCount = 5
     val range = 0 until expectedCount
 
-    val expectedElements = new Array[Double](expectedCount)
+    val expectedElements = new Array[Int](expectedCount)
     for (j <- range)
-      expectedElements(j) = j * 2.0
+      expectedElements(j) = j * 2
 
-    val expectedSet = new ju.HashSet[Double]()
+    val expectedSet = new ju.HashSet[Int]()
     for (j <- range)
       expectedSet.add(expectedElements(j))
 
-    val s = DoubleStream
+    val s = IntStream
       .of(expectedElements: _*)
-      .flatMap((e) => DoubleStream.of(e, e, e))
+      .flatMap((e) => IntStream.of(e, e, e))
       .distinct()
 
     assertEquals(s"unexpected count", expectedCount, s.count())
@@ -759,9 +862,9 @@ class DoubleStreamTest {
 
     // count() exhausted s1, so create second stream, s2
 
-    val s2 = DoubleStream
+    val s2 = IntStream
       .of(expectedElements: _*)
-      .flatMap((e) => DoubleStream.of(e, e, e))
+      .flatMap((e) => IntStream.of(e, e, e))
       .distinct()
 
     s2.forEach((e) => {
@@ -775,40 +878,40 @@ class DoubleStreamTest {
     assertTrue("expectedSet has remaining elements", expectedSet.isEmpty())
   }
 
-  @Test def doubleStreamFindAny_Null(): Unit = {
-    val s = DoubleStream.of(null.asInstanceOf[Double])
-    // Double nulls get seen as 0.0
+  @Test def intStreamFindAny_Null(): Unit = {
+    val s = IntStream.of(null.asInstanceOf[Int])
+    // Int nulls get seen as 0
     val optional = s.findAny()
     assertTrue("unexpected failure to findAny", optional.isPresent())
-    assertEquals("unexpected element", 0.0, optional.getAsDouble(), epsilon)
+    assertEquals("unexpected element", 0, optional.getAsInt())
   }
 
-  @Test def doubleStreamFindAny_True(): Unit = {
-    val s = DoubleStream.of(0.0, 1.1, 2.2, 3.3)
-    val acceptableValues = List(0.0, 1.1, 2.2, 3.3)
+  @Test def intStreamFindAny_True(): Unit = {
+    val s = IntStream.of(0, 11, 22, 33)
+    val acceptableValues = List(0, 11, 22, 33)
 
     val optional = s.findAny()
 
     assertTrue("unexpected empty optional", optional.isPresent())
 
-    val found = optional.getAsDouble()
+    val found = optional.getAsInt()
     assertTrue(
       s"unexpected value: '${found}'",
       acceptableValues.contains(found)
     )
   }
 
-  @Test def doubleStreamFindAny_False(): Unit = {
-    val s = DoubleStream.empty()
+  @Test def intStreamFindAny_False(): Unit = {
+    val s = IntStream.empty()
 
     val optional = s.findAny()
 
     assertFalse("unexpected failure", optional.isPresent())
   }
 
-  @Test def doubleStreamFindFirst_True(): Unit = {
-    val expectedFirst = 0.0
-    val s = DoubleStream.of(expectedFirst, 1.1, 2.2, 3.3)
+  @Test def intStreamFindFirst_True(): Unit = {
+    val expectedFirst = 0
+    val s = IntStream.of(expectedFirst, 11, 22, 33)
 
     val optional = s.findFirst()
 
@@ -816,53 +919,52 @@ class DoubleStreamTest {
     assertEquals(
       "unexpected mismatch",
       expectedFirst,
-      optional.getAsDouble(),
-      epsilon
+      optional.getAsInt()
     )
   }
 
-  @Test def doubleStreamFindFirst_False(): Unit = {
-    val s = DoubleStream.empty()
+  @Test def intStreamFindFirst_False(): Unit = {
+    val s = IntStream.empty()
 
     val optional = s.findFirst()
 
     assertFalse("unexpected failure", optional.isPresent())
   }
 
-  @Test def doubleStreamFilter(): Unit = {
+  @Test def intStreamFilter(): Unit = {
     val expectedCount = 4
 
-    val s0 = DoubleStream.of(
-      101.1, 1.1, 102.2, 2.2, 103.2, 3.3, 4.4
+    val s0 = IntStream.of(
+      1011, 11, 1022, 22, 1032, 33, 44
     )
 
-    val s1 = s0.filter(e => e < 100.0)
+    val s1 = s0.filter(e => e < 1000)
     assertEquals(s"unexpected element count", expectedCount, s1.count())
   }
 
-  @Test def doubleStreamForeachOrdered(): Unit = {
-    val s = DoubleStream.of(1.1, 2.2, 3.3)
+  @Test def intStreamForeachOrdered(): Unit = {
+    val s = IntStream.of(11, 22, 33)
 
-    var sum = 0.0
-    val consumer = new DoubleConsumer {
-      def accept(i: Double): Unit = { sum = sum + i }
+    var sum = 0
+    val consumer = new IntConsumer {
+      def accept(i: Int): Unit = { sum = sum + i }
     }
     s.forEachOrdered(consumer)
-    assertEquals("unexpected sum", 6.6, sum, epsilon)
+    assertEquals("unexpected sum", 66, sum)
   }
 
-  @Test def doubleStreamLimit_NegativeArg(): Unit = {
-    val s = DoubleStream.of(1.1, 2.2, 3.3)
+  @Test def intStreamLimit_NegativeArg(): Unit = {
+    val s = IntStream.of(11, 22, 33)
     assertThrows(classOf[IllegalArgumentException], s.limit(-1))
   }
 
-  @Test def doubleStreamLimit(): Unit = {
+  @Test def intStreamLimit(): Unit = {
     val expectedCount = 10
     var data = -1
 
-    val s0 = DoubleStream.iterate(
-      1.61803,
-      e => e + 1.0
+    val s0 = IntStream.iterate(
+      161803,
+      e => e + 10
     )
 
     val s1 = s0.limit(expectedCount)
@@ -875,13 +977,13 @@ class DoubleStreamTest {
    */
 
   // Issue #3309 - 1 of 5
-  @Test def doubleSstreamLimit_Size(): Unit = {
+  @Test def intStreamLimit_Size(): Unit = {
     StreamTestHelpers.requireJDK8CompatibleCharacteristics()
 
     val srcSize = 10
 
-    val spliter = DoubleStream
-      .iterate(2.71828, e => e + 1.0)
+    val spliter = IntStream
+      .iterate(271828, e => e + 10)
       .limit(srcSize)
       .spliterator()
 
@@ -901,15 +1003,15 @@ class DoubleStreamTest {
   }
 
   // Issue #3309 - 2 of 5
-  @Test def doubleStreamLimit_Characteristics(): Unit = {
+  @Test def intStreamLimit_Characteristics(): Unit = {
     StreamTestHelpers.requireJDK8CompatibleCharacteristics()
 
     val zeroCharacteristicsSpliter =
-      new Spliterators.AbstractDoubleSpliterator(Long.MaxValue, 0x0) {
-        def tryAdvance(action: DoubleConsumer): Boolean = true
+      new Spliterators.AbstractIntSpliterator(Long.MaxValue, 0x0) {
+        def tryAdvance(action: IntConsumer): Boolean = true
       }
 
-    val sZero = StreamSupport.doubleStream(zeroCharacteristicsSpliter, false)
+    val sZero = StreamSupport.intStream(zeroCharacteristicsSpliter, false)
     val sZeroLimited = sZero.limit(9)
 
     val sZeroLimitedSpliter = sZeroLimited.spliterator()
@@ -930,11 +1032,11 @@ class DoubleStreamTest {
      * streamLimit_SortedCharacteristics() handle SORTED.
      */
     val allCharacteristicsSpliter =
-      new Spliterators.AbstractDoubleSpliterator(Long.MaxValue, 0x5551) {
-        def tryAdvance(action: DoubleConsumer): Boolean = true
+      new Spliterators.AbstractIntSpliterator(Long.MaxValue, 0x5551) {
+        def tryAdvance(action: IntConsumer): Boolean = true
       }
 
-    val sAll = StreamSupport.doubleStream(allCharacteristicsSpliter, false)
+    val sAll = StreamSupport.intStream(allCharacteristicsSpliter, false)
 
     val sAllLimited = sAll.limit(9)
     val sAllLimitedSpliter = sAllLimited.spliterator()
@@ -953,18 +1055,18 @@ class DoubleStreamTest {
   }
 
   // Issue #3309 - 3 of 5
-  @Test def streamLimit_SortedCharacteristics(): Unit = {
+  @Test def intStreamLimit_SortedCharacteristics(): Unit = {
     StreamTestHelpers.requireJDK8CompatibleCharacteristics()
 
     /* Address issues with SORTED described in Test
      * streamLimit_sequentialAlwaysCharacteristics
      */
     val allCharacteristicsSpliter =
-      new Spliterators.AbstractDoubleSpliterator(0, 0x5551) {
-        def tryAdvance(action: DoubleConsumer): Boolean = false
+      new Spliterators.AbstractIntSpliterator(0, 0x5551) {
+        def tryAdvance(action: IntConsumer): Boolean = false
       }
 
-    val sAll = StreamSupport.doubleStream(allCharacteristicsSpliter, false)
+    val sAll = StreamSupport.intStream(allCharacteristicsSpliter, false)
 
     val sAllLimited = sAll.sorted().limit(9)
     val sAllLimitedSpliter = sAllLimited.spliterator()
@@ -986,8 +1088,8 @@ class DoubleStreamTest {
 
     val srcSize = 20
 
-    val unsizedSpliter = DoubleStream
-      .iterate(1.2, n => n + 1.1)
+    val unsizedSpliter = IntStream
+      .iterate(12, n => n + 11)
       .limit(srcSize)
       .spliterator()
 
@@ -1004,7 +1106,7 @@ class DoubleStreamTest {
   @Test def streamLimit_SizedCharacteristics(): Unit = {
     StreamTestHelpers.requireJDK8CompatibleCharacteristics()
 
-    val proofSpliter = DoubleStream.of(1.12, 2.23, 3.34, -1.12).spliterator()
+    val proofSpliter = IntStream.of(112, 223, 334, -112).spliterator()
 
     val expectedProofCharacteristics =
       Spliterator.SIZED | Spliterator.SUBSIZED |
@@ -1016,8 +1118,8 @@ class DoubleStreamTest {
       proofSpliter.characteristics()
     )
 
-    val sizedSpliter = DoubleStream
-      .of(1.12, 2.23, 3.34, -1.12)
+    val sizedSpliter = IntStream
+      .of(112, 223, 334, -112)
       .limit(3)
       .spliterator()
 
@@ -1031,12 +1133,12 @@ class DoubleStreamTest {
     )
   }
 
-  @Test def doubleStreamMap(): Unit = {
+  @Test def intStreamMap(): Unit = {
     val nElements = 4
     val prefix = "mapped_"
     var count = 0
 
-    val s0 = DoubleStream.of(1.1, 2.2, 3.3, 4.4)
+    val s0 = IntStream.of(11, 22, 33, 44)
 
     val s1 = s0.map((e) => {
       count += 1
@@ -1053,45 +1155,50 @@ class DoubleStreamTest {
     s1.forEach((e) =>
       assertTrue(
         s"unexpected map element: ${e}",
-        (e > 10.0) && (e < 45.0)
+        (e > 100) && (e < 450)
       )
     )
     assertEquals("unexpected count", nElements, count)
   }
 
-  @Test def doubleStreamMapToInt(): Unit = {
+  @Test def intStreamMapToDouble(): Unit = {
     val nElements = 4
     var count = 0
 
-    val s0 = DoubleStream.of(1.1, 2.2, 3.3, 4.4)
+    val s0 = IntStream.of(11, 22, 33, 44)
 
-    val s1 = s0.mapToInt((e) => e.toInt)
+    val s1 = s0.mapToDouble((e) => e.toDouble)
 
     // Right resultant types
     s1.forEach(e => {
       count += 1
-      assertEquals(s"unexpected type", classOf[Int], e.getClass())
+      assertEquals(s"unexpected type", classOf[Double], e.getClass())
     })
 
     // Right count
     assertEquals("unexpected count", nElements, count)
 
     // Right content
-    val s2 = DoubleStream.of(1.1, 2.2, 3.3, 4.4)
+    val s2 = IntStream.of(11, 22, 33, 44)
 
-    val s3 = s2.mapToInt((e) => e.toInt)
+    val s3 = s2.mapToDouble((e) => e.toDouble)
 
     val it = s3.iterator()
 
     for (j <- 1 to nElements)
-      assertEquals("unexpected element", j, it.nextInt())
+      assertEquals(
+        "unexpected element",
+        (j * 11).toDouble,
+        it.nextDouble(),
+        epsilon
+      )
   }
 
-  @Test def doubleStreamMapToLong: Unit = {
+  @Test def intStreamMapToLong: Unit = {
     val nElements = 4
     var count = 0
 
-    val s0 = DoubleStream.of(1.1, 2.2, 3.3, 4.4)
+    val s0 = IntStream.of(11, 22, 33, 44)
 
     val s1 = s0.mapToLong((e) => e.toLong)
 
@@ -1105,22 +1212,22 @@ class DoubleStreamTest {
     assertEquals("unexpected count", nElements, count)
 
     // Right content
-    val s2 = DoubleStream.of(1.1, 2.2, 3.3, 4.4)
+    val s2 = IntStream.of(11, 22, 33, 44)
 
     val s3 = s2.mapToLong((e) => e.toLong)
 
     val it = s3.iterator()
 
     for (j <- 1 to nElements)
-      assertEquals("unexpected element", j.toLong, it.nextLong())
+      assertEquals("unexpected element", (j * 11).toLong, it.nextLong())
   }
 
-  @Test def doubleStreamMapToObj(): Unit = {
+  @Test def intStreamMapToObj(): Unit = {
     val nElements = 4
     val prefix = "mapped_"
     var count = 0
 
-    val s0 = DoubleStream.of(1.1, 2.2, 3.3, 4.4)
+    val s0 = IntStream.of(11, 22, 33, 44)
 
     val s1 = s0.mapToObj[String]((e) => {
       count += 1
@@ -1150,8 +1257,8 @@ class DoubleStreamTest {
     assertEquals("unexpected count", nElements, count)
   }
 
-  @Test def doubleStreamNoneMatch_EmptyStream(): Unit = {
-    val s = DoubleStream.empty()
+  @Test def intStreamNoneMatch_EmptyStream(): Unit = {
+    val s = IntStream.empty()
     var predEvaluated = false
 
     val noneMatched = s.noneMatch((e) => { predEvaluated = true; true })
@@ -1159,30 +1266,30 @@ class DoubleStreamTest {
     assertFalse("predicate should not have been evaluated", predEvaluated)
   }
 
-  @Test def doubleStreamNoneMatch_True(): Unit = {
-    val s = DoubleStream.of(0.0, 1.1, 2.2, 3.3)
+  @Test def intStreamNoneMatch_True(): Unit = {
+    val s = IntStream.of(0, 11, 22, 33)
 
-    val matched = s.noneMatch((e) => e < 0.0)
+    val matched = s.noneMatch((e) => e < 0)
     assertTrue("unexpected predicate failure", matched)
   }
 
-  @Test def doubleStreamNone_MatchFalse(): Unit = {
-    val s = DoubleStream.of(0.0, 1.1, 2.2, 3.3)
+  @Test def intStreamNone_MatchFalse(): Unit = {
+    val s = IntStream.of(0, 11, 22, 33)
 
-    val matched = s.noneMatch((e) => e > 2.2)
+    val matched = s.noneMatch((e) => e > 22)
     assertFalse("unexpected predicate failure", matched)
   }
 
-  @Test def doubleStreamMax_EmptyStream(): Unit = {
-    val s = DoubleStream.empty()
+  @Test def intStreamMax_EmptyStream(): Unit = {
+    val s = IntStream.empty()
 
     val max = s.max()
 
     assertFalse("max optional should be empty", max.isPresent)
   }
 
-  @Test def doubleStreamMax(): Unit = {
-    val stream = DoubleStream.of(85.85, 4.4, 87.87, 25.25, 7.7)
+  @Test def intStreamMax(): Unit = {
+    val stream = IntStream.of(8585, 44, 8787, 2525, 77)
 
     val maxOpt = stream.max()
 
@@ -1190,55 +1297,35 @@ class DoubleStreamTest {
 
     assertEquals(
       "wrong max item found",
-      87.87,
-      maxOpt.getAsDouble(),
-      epsilon
+      8787,
+      maxOpt.getAsInt()
     )
   }
 
-  @Test def doubleStreamMax_NaN(): Unit = {
-    val stream = DoubleStream.of(85.85, Double.NaN, 87.87, 25.25, 7.7)
+  @Test def intStreamMax_NegativeZero(): Unit = {
+    val stream = IntStream.of(-8585, -0, -8787, -2525, -77)
 
     val maxOpt = stream.max()
 
     assertTrue("max not found", maxOpt.isPresent())
 
     assertEquals(
-      "wrong max item found",
-      Double.NaN,
-      maxOpt.getAsDouble(),
-      epsilon
-    )
-  }
-
-  @Test def doubleStreamMax_NegativeZero(): Unit = {
-    val stream = DoubleStream.of(-85.85, -0.0, -87.87, -25.25, -7.7)
-
-    val maxOpt = stream.max()
-
-    assertTrue("max not found", maxOpt.isPresent())
-
-    /* This Test expects a -0.0, exactly, not a -0.0 squashed to 0.0.
-     * ==, <, and > will conflate -0.0 and 0.0: i.e. -0.0 == 0.0.
-     * Double.compare will distinguish them: i.e. -0.0 != 0.0.
-     */
-    assertEquals(
-      s"wrong max item found: '${maxOpt.getAsDouble()}'",
+      s"wrong max item found: '${maxOpt.getAsInt()}'",
       0,
-      jl.Double.compare(-0.0, maxOpt.getAsDouble()) // distinguish -0.0
+      maxOpt.getAsInt()
     )
   }
 
-  @Test def doubleStreamMin_EmptyStream(): Unit = {
-    val s = DoubleStream.empty()
+  @Test def intStreamMin_EmptyStream(): Unit = {
+    val s = IntStream.empty()
 
     val minOpt = s.min()
 
     assertFalse("min optional should be empty", minOpt.isPresent)
   }
 
-  @Test def doubleStreamMin(): Unit = {
-    val stream = DoubleStream.of(85.85, 4.4, 87.87, 25.25, 7.7)
+  @Test def intStreamMin(): Unit = {
+    val stream = IntStream.of(8585, 44, 8787, 2525, 77)
 
     val minOpt = stream.min()
 
@@ -1246,42 +1333,22 @@ class DoubleStreamTest {
 
     assertEquals(
       "wrong min item found",
-      4.4,
-      minOpt.getAsDouble(),
-      epsilon
+      44,
+      minOpt.getAsInt()
     )
   }
 
-  @Test def doubleStreamMin_NaN(): Unit = {
-    val stream = DoubleStream.of(85.85, Double.NaN, 87.87, 25.25, 7.7)
+  @Test def intStreamMin_NegativeZero(): Unit = {
+    val stream = IntStream.of(8585, -0, 8787, 0, 2525, 77)
 
     val minOpt = stream.min()
 
     assertTrue("min not found", minOpt.isPresent())
 
     assertEquals(
-      "wrong min item found",
-      Double.NaN,
-      minOpt.getAsDouble(),
-      epsilon
-    )
-  }
-
-  @Test def doubleStreamMin_NegativeZero(): Unit = {
-    val stream = DoubleStream.of(85.85, -0.0, 87.87, 0.0, 25.25, 7.7)
-
-    val minOpt = stream.min()
-
-    assertTrue("min not found", minOpt.isPresent())
-
-    /* This Test expects a -0.0, exactly, not a -0.0 squashed to 0.0.
-     * ==, <, and > will conflate -0.0 and 0.0: i.e. -0.0 == 0.0.
-     * Double.compare will distinguish them: i.e. -0.0 != 0.0.
-     */
-    assertEquals(
-      s"wrong min item found: '${minOpt.getAsDouble()}'",
+      s"wrong min item found: '${minOpt.getAsInt()}'",
       0,
-      jl.Double.compare(-0.0, minOpt.getAsDouble()) // distinguish -0.0
+      minOpt.getAsInt()
     )
   }
 
@@ -1290,115 +1357,118 @@ class DoubleStreamTest {
    * JVM documentations suggests that "peek()" be mainly used for debugging.
    */
   @Ignore
-  @Test def doubleStreamPeek(): Unit = {
+  @Test def intStreamPeek(): Unit = {
     val expectedCount = 3
 
-    val s = DoubleStream.of(7.7, 5.5, 3.3)
+    val s = IntStream.of(7, 5, 3)
 
     // The ".count()" is a terminal operation to force the pipeline to
     // evalute. The real interest is if the peek() side-effect happened
     // correctly.  Currently that can only be evaluated manually/visually.
-    val n = s.peek((e: Double) => printf(s"peek: |${e}|\n")).count()
+
+    val n = s.peek((e: Int) => printf(s"peek: |${e}|\n")).count()
 
     assertEquals(s"unexpected count", expectedCount, n)
   }
 
   @Ignore // see @Ignore comment above "streamShouldPeek()" above.
-  @Test def doubleStreamPeek_CompositeStream(): Unit = {
+  @Test def intStreamPeek_CompositeStream(): Unit = {
     // Test that peek() works with all substreams of a composite stream.
-    val expectedCount = 8
+    val expectedCount = 10
 
     // See ".count()" comment in streamShouldPeek above.
 
     // One should see the original data before and then after transformation
     // done by flatmap to each original element. Something like:
-    //   before: <1.1>
-    //     after: <1.1>
-    //     after: <1.1>
-    //   before: <2.2>
-    //     after: <2.2>
-    //     after: <2.2>
-    //   before: <3.3>
-    //     after: <3.3>
-    //     after: <3.3>
-    //   before: <4.4>
-    //     after: <4.4>
-    //     after: <4.4>
+    //   before: <1>
+    //     after: <1>
+    //   before: <2>
+    //     after: <1>
+    //     after: <2>
+    //   before: <3>
+    //     after: <1>
+    //     after: <2>
+    //     after: <3>
+    //   before: <4>
+    //     after: <1>
+    //     after: <2>
+    //     after: <3>
+    //     after: <4>
 
-    val n = DoubleStream
-      .of(1.1, 2.2, 3.3, 4.4)
-      .peek((e: Double) =>
+    val n = IntStream
+      .of(1, 2, 3, 4)
+      .peek((e: Int) =>
         printf(s"composite peek - before: <${e}>|\n")
       ) // simple str
-      .flatMap((e: Double) => DoubleStream.of(e, e))
-      .peek((e) => printf(s"composite peek - after: <${e}>|\n")) // composite
+      .flatMap((e: Int) => IntStream.of((1 to e): _*))
+      .peek((e: Int) =>
+        printf(s"composite peek - after: <${e}>|\n")
+      ) // composite
       .count()
 
     assertEquals(s"unexpected count", expectedCount, n)
   }
 
-  @Test def doubleStreamReduce_OneArgEmpty(): Unit = {
-    val s = DoubleStream.empty()
+  @Test def intStreamReduce_OneArgEmpty(): Unit = {
+    val s = IntStream.empty()
 
-    val optional: OptionalDouble = s.reduce((r, e) => r + e)
+    val optional: OptionalInt = s.reduce((r, e) => r + e)
 
     assertFalse("unexpected non-empty optional", optional.isPresent())
   }
 
-  @Test def doubleStreamReduce_OneArg(): Unit = {
-    val s = DoubleStream.of(3.3, 5.5, 7.7, 11.11)
-    val expectedSum = 27.61
+  @Test def intStreamReduce_OneArg(): Unit = {
+    val s = IntStream.of(33, 55, 77, 1111)
+    val expectedSum = 1276
 
-    val optional: OptionalDouble = s.reduce((r, e) => r + e)
+    val optional: OptionalInt = s.reduce((r, e) => r + e)
 
     assertTrue("unexpected empty optional", optional.isPresent())
     assertEquals(
       "unexpected reduction result",
       expectedSum,
-      optional.getAsDouble(),
-      epsilon
+      optional.getAsInt()
     )
   }
 
-  @Test def doubleStreamReduce_TwoArgEmpty(): Unit = {
-    val s = DoubleStream.empty()
+  @Test def intStreamReduce_TwoArgEmpty(): Unit = {
+    val s = IntStream.empty()
 
-    val firstArg = 1.1
+    val firstArg = 11
 
-    val product: Double = s.reduce(firstArg, (r, e) => r * e)
+    val product: Int = s.reduce(firstArg, (r, e) => r * e)
 
-    assertEquals("unexpected reduction result", firstArg, product, epsilon)
+    assertEquals("unexpected reduction result", firstArg, product)
   }
 
-  @Test def doubleStreamReduce_TwoArg(): Unit = {
-    val s = DoubleStream.of(3.3, 5.5, 7.7, 11.11)
-    val expectedProduct = 1552.67805
+  @Test def intStreamReduce_TwoArg(): Unit = {
+    val s = IntStream.of(33, 55, 77, 1111)
+    val expectedProduct = 155267805
 
-    val product: Double = s.reduce(1, (r, e) => r * e)
+    val product: Int = s.reduce(1, (r, e) => r * e)
 
     assertEquals(
       "unexpected reduction result",
       expectedProduct,
-      product,
-      epsilon
+      product
     )
   }
 
-  @Test def doubleStreamSkip_NegativeArg(): Unit = {
-    val s = DoubleStream.of(1.1, 2.2, 3.3)
+  @Test def intStreamSkip_NegativeArg(): Unit = {
+    val s = IntStream.of(11, 22, 33)
     assertThrows(classOf[IllegalArgumentException], s.skip(-1))
   }
 
-  @Test def doubleStreamSkip_TooMany(): Unit = {
-    val s = DoubleStream.of(1.1, 2.2, 3.3)
+  @Test def intStreamSkip_TooMany(): Unit = {
+    val s = IntStream.of(11, 22, 33)
 
     val isEmptyStream = !s.skip(10).iterator.hasNext()
     assertTrue("expected empty stream", isEmptyStream)
   }
 
-  @Test def doubleStreamSkip(): Unit = {
-    val expectedValue = 99.99
-    val s = DoubleStream.of(1.1, 2.2, 3.3, 4.4, expectedValue, 6.6, 7.7)
+  @Test def intStreamSkip(): Unit = {
+    val expectedValue = 9999
+    val s = IntStream.of(11, 22, 33, 44, expectedValue, 66, 77)
 
     val iter = s.skip(4).iterator()
 
@@ -1406,43 +1476,42 @@ class DoubleStreamTest {
     assertEquals(
       "unexpected first value: ",
       expectedValue,
-      iter.nextDouble(),
-      epsilon
+      iter.nextInt()
     )
   }
 
-  @Test def doubleStreamSorted(): Unit = {
+  @Test def intStreamSorted(): Unit = {
     val nElements = 8
-    val wild = new Array[Double](nElements)
+    val wild = new Array[Int](nElements)
 
     // Ensure that the Elements are not inserted in sorted or reverse order.
-    wild(0) = 45.32
-    wild(1) = 21.4
-    wild(2) = 11.2
-    wild(3) = 31.5
-    wild(4) = 68.16
-    wild(5) = 3.77
-    wild(6) = 61.44
-    wild(7) = 9.60
+    wild(0) = 4532
+    wild(1) = 214
+    wild(2) = 112
+    wild(3) = 315
+    wild(4) = 6816
+    wild(5) = 377
+    wild(6) = 6144
+    wild(7) = 960
 
-    val ordered = new Array[Double](nElements)
-    ordered(0) = 3.77
-    ordered(1) = 9.60
-    ordered(2) = 11.2
-    ordered(3) = 21.4
-    ordered(4) = 31.5
-    ordered(5) = 45.32
-    ordered(6) = 61.44
-    ordered(7) = 68.16
+    val ordered = new Array[Int](nElements)
+    ordered(0) = 112
+    ordered(1) = 214
+    ordered(2) = 315
+    ordered(3) = 377
+    ordered(4) = 960
+    ordered(5) = 4532
+    ordered(6) = 6144
+    ordered(7) = 6816
 
-    val s = DoubleStream.of(wild: _*)
+    val s = IntStream.of(wild: _*)
 
     val sorted = s.sorted()
 
     var count = 0
 
     sorted.forEachOrdered((e) => {
-      assertEquals("mismatched elements", ordered(count), e, epsilon)
+      assertEquals("mismatched elements", ordered(count), e)
       count += 1
     })
 
@@ -1453,26 +1522,26 @@ class DoubleStreamTest {
     assertEquals(msg, nElements, count)
   }
 
-  @Test def doubleStreamSorted_Characteristics(): Unit = {
+  @Test def intStreamSorted_Characteristics(): Unit = {
     // See comments in StreamTest#streamSorted_Characteristics
 
     val nElements = 8
-    val wild = new Array[Double](nElements)
+    val wild = new Array[Int](nElements)
 
     // Ensure that the Elements are not inserted in sorted or reverse order.
-    wild(0) = 45.32
-    wild(1) = 21.4
-    wild(2) = 11.2
-    wild(3) = 31.5
-    wild(4) = 68.16
-    wild(5) = 3.77
-    wild(6) = 61.44
-    wild(7) = 9.60
+    wild(0) = 4532
+    wild(1) = 214
+    wild(2) = 112
+    wild(3) = 315
+    wild(4) = 6816
+    wild(5) = 377
+    wild(6) = 6144
+    wild(7) = 960
 
-    val seqDoubleStream = DoubleStream.of(wild: _*)
+    val seqIntStream = IntStream.of(wild: _*)
     assertFalse(
       "Expected sequential stream",
-      seqDoubleStream.isParallel()
+      seqIntStream.isParallel()
     )
 
     // same expected values for SN sequential, SN parallel, & JVM streams
@@ -1492,26 +1561,25 @@ class DoubleStreamTest {
       (expectedPreCharacteristics & ~Spliterator.IMMUTABLE) +
         Spliterator.SORTED
 
-    val seqDoubleSpliter = seqDoubleStream.spliterator()
+    val seqIntSpliter = seqIntStream.spliterator()
 
     assertEquals(
       "sequential characteristics",
       expectedPreCharacteristics,
-      seqDoubleSpliter.characteristics()
+      seqIntSpliter.characteristics()
     )
 
-    val sortedSeqDoubleStream = DoubleStream.of(wild: _*).sorted()
-    val sortedSeqSpliter = sortedSeqDoubleStream.spliterator()
+    val sortedSeqIntStream = IntStream.of(wild: _*).sorted()
+    val sortedSeqSpliter = sortedSeqIntStream.spliterator()
 
     assertEquals(
       "sorted sequential characteristics",
       expectedPostCharacteristics,
       sortedSeqSpliter.characteristics()
     )
-
   }
 
-  @Test def doubleStreamSortedUnknownSizeButSmall(): Unit = {
+  @Test def intStreamSortedUnknownSizeButSmall(): Unit = {
 
     /* To fit array, nElements should be <= Integer.MAX_VALUE.
      * Machine must have sufficient memory to support chosen number of
@@ -1523,7 +1591,7 @@ class DoubleStreamTest {
     val rng = new ju.Random(567890123)
 
     val wild = rng
-      .doubles(nElements, 0.0, jl.Double.MAX_VALUE)
+      .ints(nElements, 0, jl.Integer.MAX_VALUE)
       .toArray()
 
     val ordered = wild.clone()
@@ -1533,7 +1601,7 @@ class DoubleStreamTest {
     val iter0 = Spliterators.iterator(Spliterators.spliterator(wild, 0))
     val spliter0 = Spliterators.spliteratorUnknownSize(iter0, 0)
 
-    val s0 = StreamSupport.doubleStream(spliter0, false)
+    val s0 = StreamSupport.intStream(spliter0, false)
 
     val s0Spliter = s0.spliterator()
     assertFalse(
@@ -1545,14 +1613,14 @@ class DoubleStreamTest {
     val iter1 = Spliterators.iterator(Spliterators.spliterator(wild, 0))
     val spliter1 = Spliterators.spliteratorUnknownSize(iter1, 0)
 
-    val s = StreamSupport.doubleStream(spliter1, false)
+    val s = StreamSupport.intStream(spliter1, false)
 
     val ascending = s.sorted()
 
     var count = 0
 
     ascending.forEachOrdered((e) => {
-      assertEquals("mismatched elements", ordered(count), e, epsilon)
+      assertEquals("mismatched elements", ordered(count), e)
       count += 1
     })
 
@@ -1565,7 +1633,7 @@ class DoubleStreamTest {
   }
 
   @Ignore
-  @Test def doubleStreamSortedUnknownSizeButHuge(): Unit = {
+  @Test def intStreamSortedUnknownSizeButHuge(): Unit = {
     /* This test is for development and Issue verification.
      * It is Ignored in normal Continuous Integration because it takes
      * a long time.
@@ -1579,11 +1647,11 @@ class DoubleStreamTest {
 
     // Are the characteristics correct?
     val rs0 = rng
-      .doubles(0.0, jl.Double.MAX_VALUE) // "Infinite" stream
+      .ints(0, jl.Integer.MAX_VALUE) // "Infinite" stream
 
     val iter0 = rs0.iterator()
     val spliter0 = Spliterators.spliteratorUnknownSize(iter0, 0)
-    val s0 = StreamSupport.doubleStream(spliter0, false)
+    val s0 = StreamSupport.intStream(spliter0, false)
 
     val s0Spliter = s0.spliterator()
     assertFalse(
@@ -1593,10 +1661,10 @@ class DoubleStreamTest {
 
     // Validating un-SIZED terminated s0, so need fresh similar stream.
     val rs1 = rng
-      .doubles(0.0, jl.Double.MAX_VALUE) // "Infinite" stream
+      .ints(0, jl.Integer.MAX_VALUE) // "Infinite" stream
 
     val spliter1 = Spliterators.spliteratorUnknownSize(iter0, 0)
-    val s = StreamSupport.doubleStream(spliter1, false)
+    val s = StreamSupport.intStream(spliter1, false)
 
     val uut = s.sorted() // unit-under-test
 
@@ -1604,13 +1672,13 @@ class DoubleStreamTest {
     assertThrows(classOf[OutOfMemoryError], uut.findFirst())
   }
 
-  @Test def doubleStreamSortedZeroSize(): Unit = {
+  @Test def intStreamSortedZeroSize(): Unit = {
     val nElements = 0
 
     val rng = new ju.Random(567890123)
 
     val wild = rng
-      .doubles(nElements, 0.0, jl.Double.MAX_VALUE)
+      .ints(nElements, 0, jl.Integer.MAX_VALUE)
       .toArray()
 
     val ordered = wild.clone()
@@ -1618,7 +1686,7 @@ class DoubleStreamTest {
 
     val spliter = Spliterators.spliterator(wild, 0)
 
-    val s = StreamSupport.doubleStream(spliter, false)
+    val s = StreamSupport.intStream(spliter, false)
 
     val sorted = s.sorted()
     val count = sorted.count()
@@ -1627,7 +1695,7 @@ class DoubleStreamTest {
   }
 
   // Issue 3378
-  @Test def doubleStreamSortedLongSize(): Unit = {
+  @Test def intStreamSortedLongSize(): Unit = {
     /* This tests streams with the SIZED characteristics and a
      *  know length is larger than the largest possible Java array:
      *  approximately Integer.MAX_VALUE.
@@ -1635,7 +1703,7 @@ class DoubleStreamTest {
     val rng = new ju.Random(1234567890)
 
     val s = rng
-      .doubles(0.0, jl.Double.MAX_VALUE) // "Infinite" stream
+      .ints(0, jl.Integer.MAX_VALUE) // "Infinite" stream
 
     /* The sorted() implementation should be a late binding, intermediate
      * operation. Expect no "max array size" error here, but later.
@@ -1652,48 +1720,48 @@ class DoubleStreamTest {
     assertThrows(classOf[IllegalArgumentException], uut.findFirst())
   }
 
-  @Test def doubleStreamSum(): Unit = {
+  @Test def intStreamSum(): Unit = {
     val nElements = 9
 
-    val wild = new Array[Double](nElements) // holds arbitrarily jumbled data
-    wild(0) = 45.32
-    wild(1) = 21.4
-    wild(2) = 11.2
-    wild(3) = 31.5
-    wild(4) = 68.16
-    wild(5) = 3.77
-    wild(6) = 61.44
-    wild(7) = 9.60
+    val wild = new Array[Int](nElements) // holds arbitrarily jumbled data
+    wild(0) = 4532
+    wild(1) = 214
+    wild(2) = 112
+    wild(3) = 315
+    wild(4) = 6816
+    wild(5) = 377
+    wild(6) = 6144
+    wild(7) = 960
 
-    val expectedSum = 252.39
+    val expectedSum = 19470
 
-    val s = DoubleStream.of(wild: _*)
+    val s = IntStream.of(wild: _*)
 
     val sum = s.sum()
 
-    assertEquals("unexpected sum", expectedSum, sum, epsilon)
+    assertEquals("unexpected sum", expectedSum, sum)
   }
 
-  @Test def doubleStreamSummaryStatistics(): Unit = {
+  @Test def intStreamSummaryStatistics(): Unit = {
     val nElements = 8
 
-    val wild = new Array[Double](nElements) // holds arbitrarily jumbled data
-    wild(0) = 45.32
-    wild(1) = 21.4
-    wild(2) = 11.2
-    wild(3) = 31.5
-    wild(4) = 68.16
-    wild(5) = 3.77
-    wild(6) = 61.44
-    wild(7) = 9.60
+    val wild = new Array[Int](nElements) // holds arbitrarily jumbled data
+    wild(0) = 4532
+    wild(1) = 214
+    wild(2) = 112
+    wild(3) = 315
+    wild(4) = 6816
+    wild(5) = 377
+    wild(6) = 6144
+    wild(7) = 960
 
-    val expectedAverage = 31.54875
     val expectedCount = nElements
-    val expectedMax = 68.16
-    val expectedMin = 3.77
-    val expectedSum = 252.39
+    val expectedMax = 6816
+    val expectedMin = 112
+    val expectedSum = 19470
+    val expectedAverage = expectedSum.toDouble / nElements
 
-    val s = DoubleStream.of(wild: _*)
+    val s = IntStream.of(wild: _*)
 
     val stats = s.summaryStatistics()
 
@@ -1706,27 +1774,27 @@ class DoubleStreamTest {
 
     assertEquals("unexpected count", expectedCount, stats.getCount())
 
-    assertEquals("unexpected max", expectedMax, stats.getMax(), epsilon)
+    assertEquals("unexpected max", expectedMax, stats.getMax())
 
-    assertEquals("unexpected min", expectedMin, stats.getMin(), epsilon)
+    assertEquals("unexpected min", expectedMin, stats.getMin())
 
-    assertEquals("unexpected sum", expectedSum, stats.getSum(), epsilon)
+    assertEquals("unexpected sum", expectedSum, stats.getSum())
   }
 
-  @Test def doubleStreamToArray(): Unit = {
+  @Test def intStreamToArray(): Unit = {
     val nElements = 9
 
-    val wild = new Array[Double](nElements) // holds arbitrarily jumbled data
-    wild(0) = 45.32
-    wild(1) = 21.4
-    wild(2) = 11.2
-    wild(3) = 31.5
-    wild(4) = 68.16
-    wild(5) = 3.77
-    wild(6) = 61.44
-    wild(7) = 9.60
+    val wild = new Array[Int](nElements) // holds arbitrarily jumbled data
+    wild(0) = 4532
+    wild(1) = 214
+    wild(2) = 112
+    wild(3) = 315
+    wild(4) = 6816
+    wild(5) = 377
+    wild(6) = 6144
+    wild(7) = 960
 
-    val s = DoubleStream.of(wild: _*)
+    val s = IntStream.of(wild: _*)
 
     val resultantArray = s.toArray()
 
@@ -1735,7 +1803,7 @@ class DoubleStreamTest {
 
     // Proper elements, in encounter order
     for (j <- 0 until nElements)
-      assertEquals("elements do not match", wild(j), resultantArray(j), epsilon)
+      assertEquals("elements do not match", wild(j), resultantArray(j))
   }
 
 }

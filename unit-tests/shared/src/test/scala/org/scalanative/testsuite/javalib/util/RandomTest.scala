@@ -3,13 +3,22 @@ package org.scalanative.testsuite.javalib.util
 import java.{lang => jl}
 
 import java.util._
-import java.util.function.DoubleConsumer
+import java.util.function.{DoubleConsumer, IntConsumer, LongConsumer}
 
 import org.junit.Test
 import org.junit.Assert._
 import org.junit.Assume._
 
 import scala.scalanative.junit.utils.AssumesHelper._
+
+/* Design note:
+ *   The content, characteristics, and when appropriate the size of
+ *   the Streams returned by the various doubles(), ints(), and longs()
+ *   methods are checked. None of them are checked to have a uniform
+ *   distribution of values. If the one checked content item is correct
+ *   it is assumed/hoped/reasoned that the distribution of the rest of
+ *   the stream is correct, in order to get to that point.
+ */
 
 class RandomTest {
 
@@ -461,6 +470,430 @@ class RandomTest {
     }
 
     ds3.forEach(doubleConsumer)
+  }
+
+  @Test def intsZeroArg(): Unit = {
+    // ints()
+
+    val seed = 0xa5a5a5a5a5a5a5a5L
+
+    val rng1 = new Random(seed)
+    val ds1 = rng1.ints()
+
+    val ds1Spliter = ds1.spliterator()
+
+    assertEquals(
+      "characteristics",
+      expectedCharacteristics,
+      ds1Spliter.characteristics()
+    )
+
+    assertEquals("estimated size", jl.Long.MAX_VALUE, ds1Spliter.estimateSize())
+
+    assertEquals(
+      s"getExactSizeIfKnown",
+      jl.Long.MAX_VALUE,
+      ds1Spliter.getExactSizeIfKnown()
+    )
+
+    assertFalse(
+      "Expected sequential stream",
+      ds1.isParallel()
+    )
+
+    val rng2 = new Random(seed)
+    val ds2 = rng2.ints()
+
+    val expectedContent = -1324917134 // JVM value
+
+    // for the skipTo element to be right, everything before it should be OK.
+    val actualContent = ds2
+      .skip(10)
+      .findFirst()
+      .orElse(0)
+
+    assertEquals("content", expectedContent, actualContent)
+  }
+
+  @Test def intsOneArg(): Unit = {
+    // ints(long streamSize)
+    val seed = 0xa5a5a5a5a5a5a5a5L
+    val streamSize = 7
+
+    val rng1 = new Random(seed)
+    val ds1 = rng1.ints(streamSize)
+
+    val ds1Spliter = ds1.spliterator()
+
+    assertEquals(
+      "characteristics",
+      expectedCharacteristics,
+      ds1Spliter.characteristics()
+    )
+
+    assertEquals("estimated size", streamSize, ds1Spliter.estimateSize())
+
+    assertEquals(
+      s"getExactSizeIfKnown",
+      streamSize,
+      ds1Spliter.getExactSizeIfKnown()
+    )
+
+    assertFalse(
+      "Expected sequential stream",
+      ds1.isParallel()
+    )
+
+    val rng2 = new Random(seed)
+    val ds2 = rng2.ints(streamSize)
+
+    assertEquals("count", streamSize, ds2.count())
+
+    val rng3 = new Random(seed)
+    val ds3 = rng3.ints(streamSize)
+
+    val expectedContent = -1689095446 // JVM value
+
+    // for the skipTo element to be right, everything before it should be OK.
+    val actualContent = ds3
+      .skip(5)
+      .findFirst()
+      .orElse(0)
+
+    assertEquals("content", expectedContent, actualContent)
+  }
+
+  @Test def intsTwoArg(): Unit = {
+    // ints(int randomNumberOrigin, int randomNumberBound)
+
+    // This test is not guaranteed. It samples to build correctness confidence.
+
+    val seed = 0xa5a5a5a5a5a5a5a5L
+    val streamSize = 100
+
+    val rnOrigin = 2
+    val rnBound = 80
+
+    val rng1 = new Random(seed)
+    val ds1 = rng1.ints(rnOrigin, rnBound)
+
+    val ds1Spliter = ds1.spliterator()
+
+    assertEquals(
+      "characteristics",
+      expectedCharacteristics,
+      ds1Spliter.characteristics()
+    )
+
+    assertEquals("estimated size", jl.Long.MAX_VALUE, ds1Spliter.estimateSize())
+
+    assertEquals(
+      s"getExactSizeIfKnown",
+      jl.Long.MAX_VALUE,
+      ds1Spliter.getExactSizeIfKnown()
+    )
+
+    assertFalse(
+      "Expected sequential stream",
+      ds1.isParallel()
+    )
+
+    val rng2 = new Random(seed)
+    val ds2 = rng2
+      .ints(rnOrigin, rnBound)
+      .limit(streamSize)
+
+    // Keep Scala 2 happy. Can use lambda when only Scala > 2 is supported.
+    val intConsumer = new IntConsumer {
+      def accept(d: Int): Unit = {
+        assertTrue(
+          s"Found value ${d} < low bound ${rnOrigin}",
+          d >= rnOrigin
+        )
+
+        assertTrue(
+          s"Found value ${d} >= high bound ${rnBound}",
+          d < rnBound
+        )
+      }
+    }
+
+    ds2.forEach(intConsumer)
+  }
+
+  @Test def intsThreeArg(): Unit = {
+    // ints(long streamSize, int randomNumberOrigin,
+    //         int randomNumberBound)
+
+    // This test is not guaranteed. It samples to build correctness confidence.
+
+    val seed = 0xa5a5a5a5a5a5a5a5L
+    val streamSize = 100
+
+    val rnOrigin = 1
+    val rnBound = 90
+
+    val rng1 = new Random(seed)
+    val ds1 = rng1.ints(streamSize, rnOrigin, rnBound)
+
+    val ds1Spliter = ds1.spliterator()
+
+    assertEquals(
+      "characteristics",
+      expectedCharacteristics,
+      ds1Spliter.characteristics()
+    )
+
+    assertEquals("estimated size", streamSize, ds1Spliter.estimateSize())
+
+    assertEquals(
+      s"getExactSizeIfKnown",
+      streamSize,
+      ds1Spliter.getExactSizeIfKnown()
+    )
+
+    assertFalse(
+      "Expected sequential stream",
+      ds1.isParallel()
+    )
+
+    val rng2 = new Random(seed)
+    val ds2 = rng2.ints(streamSize, rnOrigin, rnBound)
+
+    assertEquals("count", streamSize, ds2.count())
+
+    val rng3 = new Random(seed)
+    val ds3 = rng3.ints(streamSize, rnOrigin, rnBound)
+
+    // Keep Scala 2 happy. Can use lambda when only Scala > 2 is supported.
+    val intConsumer = new IntConsumer {
+      def accept(d: Int): Unit = {
+        assertTrue(
+          s"Found value ${d} < low bound ${rnOrigin}",
+          d >= rnOrigin
+        )
+
+        assertTrue(
+          s"Found value ${d} >= high bound ${rnBound}",
+          d < rnBound
+        )
+      }
+    }
+
+    ds3.forEach(intConsumer)
+  }
+
+  @Test def longsZeroArg(): Unit = {
+    // longs()
+
+    val seed = 0xa5a5a5a5a5a5a5a5L
+
+    val rng1 = new Random(seed)
+    val ds1 = rng1.longs()
+
+    val ds1Spliter = ds1.spliterator()
+
+    assertEquals(
+      "characteristics",
+      expectedCharacteristics,
+      ds1Spliter.characteristics()
+    )
+
+    assertEquals("estimated size", jl.Long.MAX_VALUE, ds1Spliter.estimateSize())
+
+    assertEquals(
+      s"getExactSizeIfKnown",
+      jl.Long.MAX_VALUE,
+      ds1Spliter.getExactSizeIfKnown()
+    )
+
+    assertFalse(
+      "Expected sequential stream",
+      ds1.isParallel()
+    )
+
+    val rng2 = new Random(seed)
+    val ds2 = rng2.longs()
+
+    val expectedContent = 1924946078025745628L // JVM value
+
+    // for the skipTo element to be right, everything before it should be OK.
+    val actualContent = ds2
+      .skip(10)
+      .findFirst()
+      .orElse(0)
+
+    assertEquals("content", expectedContent, actualContent)
+  }
+
+  @Test def longsOneArg(): Unit = {
+    // longs(long streamSize)
+    val seed = 0xa5a5a5a5a5a5a5a5L
+    val streamSize = 7
+
+    val rng1 = new Random(seed)
+    val ds1 = rng1.longs(streamSize)
+
+    val ds1Spliter = ds1.spliterator()
+
+    assertEquals(
+      "characteristics",
+      expectedCharacteristics,
+      ds1Spliter.characteristics()
+    )
+
+    assertEquals("estimated size", streamSize, ds1Spliter.estimateSize())
+
+    assertEquals(
+      s"getExactSizeIfKnown",
+      streamSize,
+      ds1Spliter.getExactSizeIfKnown()
+    )
+
+    assertFalse(
+      "Expected sequential stream",
+      ds1.isParallel()
+    )
+
+    val rng2 = new Random(seed)
+    val ds2 = rng2.longs(streamSize)
+
+    assertEquals("count", streamSize, ds2.count())
+
+    val rng3 = new Random(seed)
+    val ds3 = rng3.longs(streamSize)
+
+    val expectedContent = -5690475761489855045L // JVM value
+
+    // for the skipTo element to be right, everything before it should be OK.
+    val actualContent = ds3
+      .skip(5)
+      .findFirst()
+      .orElse(0L)
+
+    assertEquals("content", expectedContent, actualContent)
+  }
+
+  @Test def longsTwoArg(): Unit = {
+    // longs(long randomNumberOrigin, long randomNumberBound)
+
+    // This test is not guaranteed. It samples to build correctness confidence.
+
+    val seed = 0xa5a5a5a5a5a5a5a5L
+    val streamSize = 100
+
+    val longBase = jl.Integer.MAX_VALUE.toLong
+    val rnOrigin = -longBase - 202L // Try to trip it up, use a negative origin
+    val rnBound = 80L + longBase
+
+    val rng1 = new Random(seed)
+    val ds1 = rng1.longs(rnOrigin, rnBound)
+
+    val ds1Spliter = ds1.spliterator()
+
+    assertEquals(
+      "characteristics",
+      expectedCharacteristics,
+      ds1Spliter.characteristics()
+    )
+
+    assertEquals("estimated size", jl.Long.MAX_VALUE, ds1Spliter.estimateSize())
+
+    assertEquals(
+      s"getExactSizeIfKnown",
+      jl.Long.MAX_VALUE,
+      ds1Spliter.getExactSizeIfKnown()
+    )
+
+    assertFalse(
+      "Expected sequential stream",
+      ds1.isParallel()
+    )
+
+    val rng2 = new Random(seed)
+    val ds2 = rng2
+      .longs(rnOrigin, rnBound)
+      .limit(streamSize)
+
+    // Keep Scala 2 happy. Can use lambda when only Scala > 2 is supported.
+    val longConsumer = new LongConsumer {
+      def accept(d: Long): Unit = {
+        assertTrue(
+          s"Found value ${d} < low bound ${rnOrigin}",
+          d >= rnOrigin
+        )
+
+        assertTrue(
+          s"Found value ${d} >= high bound ${rnBound}",
+          d < rnBound
+        )
+      }
+    }
+
+    ds2.forEach(longConsumer)
+  }
+
+  @Test def longsThreeArg(): Unit = {
+    // longs(long streamSize, long randomNumberOrigin,
+    //         long randomNumberBound)
+
+    // This test is not guaranteed. It samples to build correctness confidence.
+
+    val seed = 0xa5a5a5a5a5a5a5a5L
+    val streamSize = 100
+
+    val longBase = jl.Integer.MAX_VALUE.toLong
+    val rnOrigin = 1L + longBase
+    val rnBound = 90L + longBase
+
+    val rng1 = new Random(seed)
+    val ds1 = rng1.longs(streamSize, rnOrigin, rnBound)
+
+    val ds1Spliter = ds1.spliterator()
+
+    assertEquals(
+      "characteristics",
+      expectedCharacteristics,
+      ds1Spliter.characteristics()
+    )
+
+    assertEquals("estimated size", streamSize, ds1Spliter.estimateSize())
+
+    assertEquals(
+      s"getExactSizeIfKnown",
+      streamSize,
+      ds1Spliter.getExactSizeIfKnown()
+    )
+
+    assertFalse(
+      "Expected sequential stream",
+      ds1.isParallel()
+    )
+
+    val rng2 = new Random(seed)
+    val ds2 = rng2.longs(streamSize, rnOrigin, rnBound)
+
+    assertEquals("count", streamSize, ds2.count())
+
+    val rng3 = new Random(seed)
+    val ds3 = rng3.longs(streamSize, rnOrigin, rnBound)
+
+    // Keep Scala 2 happy. Can use lambda when only Scala > 2 is supported.
+    val longConsumer = new LongConsumer {
+      def accept(d: Long): Unit = {
+        assertTrue(
+          s"Found value ${d} < low bound ${rnOrigin}",
+          d >= rnOrigin
+        )
+
+        assertTrue(
+          s"Found value ${d} >= high bound ${rnBound}",
+          d < rnBound
+        )
+      }
+    }
+
+    ds3.forEach(longConsumer)
   }
 
 }

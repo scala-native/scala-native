@@ -1,5 +1,7 @@
 package org.scalanative.testsuite.javalib.util.stream
 
+import java.{lang => jl}
+
 import java.util.Arrays
 import java.util.function.Consumer
 import java.util.stream._
@@ -112,6 +114,68 @@ class StreamTestOnJDK16 {
     var sum = mappedMultiToDouble.sum()
 
     assertEquals("unexpected sum", expectedSum, sum, epsilon)
+  }
+
+  // Since: Java 16
+  @Test def streamMapMultiToInt(): Unit = {
+    case class Item(name: String, upc: Double)
+
+    val initialCount = 6
+
+    val data = new Array[Item](initialCount)
+    data(0) = Item("Hydrogen", 1.1)
+    data(1) = Item("Helium", 2.2)
+    data(2) = Item("", 3.3)
+    data(3) = Item("Rabbit", 4.4)
+    data(4) = Item("Beryllium", 5.5)
+    data(5) = Item("Boron", 6.6)
+
+    val expectedSum = (4 + 8) + (5 + 10) + (6 + 12) + (7 + 14)
+
+    val s = Arrays.stream(data)
+
+    // By design & intent, the element and result types differ.
+    val mappedMultiToInt = s.mapMultiToInt((element, intConsumer) =>
+      if (element.upc >= 3.0)
+        for (j <- 1 to 2) // One way to increase your silver.
+          intConsumer.accept(j * element.upc.ceil.toInt)
+    )
+
+    var sum = mappedMultiToInt.sum()
+
+    assertEquals("unexpected sum", expectedSum, sum)
+  }
+
+  // Since: Java 16
+  @Test def streamMapMultiToLong(): Unit = {
+    case class Item(name: String, upc: Double)
+
+    val initialCount = 6
+    val willConvertToLong = (jl.Integer.MAX_VALUE + 1L).toDouble
+
+    val data = new Array[Item](initialCount)
+    data(0) = Item("Hydrogen", 1.1)
+    data(1) = Item("Helium", 2.2)
+    data(2) = Item("", 3.3)
+    data(3) = Item("Rabbit", 4.4)
+    data(4) = Item("Beryllium", 5.5)
+    data(5) = Item("Boron", willConvertToLong)
+
+    val expectedSum = (4 + 8) + (5 + 10) + (6 + 12) +
+      ((3 * willConvertToLong.ceil).toLong)
+
+    val s = Arrays.stream(data)
+
+    // By design & intent, the element and result types differ.
+    val mappedMultiToLong = s.mapMultiToLong((element, longConsumer) =>
+      if (element.upc >= 3.0)
+        for (j <- 1 to 2) // One way to increase your bronze.
+          longConsumer.accept(j * element.upc.ceil.toLong)
+    )
+
+    var sum = mappedMultiToLong.sum()
+
+    assertEquals("unexpected sum", expectedSum, sum)
   }
 
   // Since: Java 16

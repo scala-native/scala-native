@@ -209,14 +209,102 @@ trait Stream[T] extends BaseStream[T, Stream[T]] {
   def mapMultiToInt(
       mapper: BiConsumer[_ >: T, _ >: IntConsumer]
   ): IntStream = {
-    throw new UnsupportedOperationException("Not Yet Implemented")
+    // See implementation notes in mapMulti[R]()
+
+    val spliter = this.spliterator() //  also marks this stream "operated upon"
+
+    val buffer = new ArrayDeque[Int]()
+
+    // Can not predict replacements, so Spliterator can not be SIZED.
+    // May need to adjust other characteristics.
+    val unSized = spliter.characteristics() &
+      ~(Spliterator.SIZED | Spliterator.SUBSIZED)
+
+    val spl =
+      new Spliterators.AbstractIntSpliterator(Long.MaxValue, unSized) {
+        val dc: IntConsumer = intValue => buffer.add(intValue)
+
+        def tryAdvance(action: IntConsumer): Boolean = {
+          var advanced = false
+
+          var done = false
+          while (!done) {
+            if (buffer.size() == 0) {
+              val stepped = spliter.tryAdvance(e => mapper.accept(e, dc))
+              done = !stepped
+            } else {
+              action.accept(buffer.removeFirst())
+              advanced = true
+              done = true
+            }
+          }
+
+          advanced
+        }
+      }
+
+    val coercedPriorStages = this
+      .asInstanceOf[StreamImpl[T]]
+      .pipeline
+      .asInstanceOf[ArrayDeque[IntStreamImpl]]
+
+    (new IntStreamImpl(
+      spl,
+      parallel = false,
+      coercedPriorStages
+    ))
+      .asInstanceOf[IntStream]
   }
 
   // Since: Java 16
   def mapMultiToLong(
       mapper: BiConsumer[_ >: T, _ >: LongConsumer]
   ): LongStream = {
-    throw new UnsupportedOperationException("Not Yet Implemented")
+    // See implementation notes in mapMulti[R]()
+
+    val spliter = this.spliterator() //  also marks this stream "operated upon"
+
+    val buffer = new ArrayDeque[Long]()
+
+    // Can not predict replacements, so Spliterator can not be SIZED.
+    // May need to adjust other characteristics.
+    val unSized = spliter.characteristics() &
+      ~(Spliterator.SIZED | Spliterator.SUBSIZED)
+
+    val spl =
+      new Spliterators.AbstractLongSpliterator(Long.MaxValue, unSized) {
+        val dc: LongConsumer = longValue => buffer.add(longValue)
+
+        def tryAdvance(action: LongConsumer): Boolean = {
+          var advanced = false
+
+          var done = false
+          while (!done) {
+            if (buffer.size() == 0) {
+              val stepped = spliter.tryAdvance(e => mapper.accept(e, dc))
+              done = !stepped
+            } else {
+              action.accept(buffer.removeFirst())
+              advanced = true
+              done = true
+            }
+          }
+
+          advanced
+        }
+      }
+
+    val coercedPriorStages = this
+      .asInstanceOf[StreamImpl[T]]
+      .pipeline
+      .asInstanceOf[ArrayDeque[LongStreamImpl]]
+
+    (new LongStreamImpl(
+      spl,
+      parallel = false,
+      coercedPriorStages
+    ))
+      .asInstanceOf[LongStream]
   }
 
   def mapToDouble(mapper: ToDoubleFunction[_ >: T]): DoubleStream

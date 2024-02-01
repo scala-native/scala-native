@@ -460,7 +460,7 @@ class ThreadLocalRandom private () extends Random {
     v1 * multiplier
   }
 
-  def ints(streamSize: Long): IntStream = {
+  override def ints(streamSize: Long): IntStream = {
     if (streamSize < 0L)
       throw new IllegalArgumentException(ThreadLocalRandom.BAD_SIZE)
     StreamSupport.intStream(
@@ -474,7 +474,7 @@ class ThreadLocalRandom private () extends Random {
     )
   }
 
-  def ints(): IntStream =
+  override def ints(): IntStream =
     StreamSupport.intStream(
       new ThreadLocalRandom.RandomIntsSpliterator(
         0L,
@@ -485,7 +485,7 @@ class ThreadLocalRandom private () extends Random {
       false
     )
 
-  def ints(
+  override def ints(
       streamSize: Long,
       randomNumberOrigin: Int,
       randomNumberBound: Int
@@ -505,7 +505,10 @@ class ThreadLocalRandom private () extends Random {
     )
   }
 
-  def ints(randomNumberOrigin: Int, randomNumberBound: Int): IntStream = {
+  override def ints(
+      randomNumberOrigin: Int,
+      randomNumberBound: Int
+  ): IntStream = {
     if (randomNumberOrigin >= randomNumberBound)
       throw new IllegalArgumentException(ThreadLocalRandom.BAD_RANGE)
     StreamSupport.intStream(
@@ -519,7 +522,7 @@ class ThreadLocalRandom private () extends Random {
     )
   }
 
-  def longs(streamSize: Long): LongStream = {
+  override def longs(streamSize: Long): LongStream = {
     if (streamSize < 0L)
       throw new IllegalArgumentException(ThreadLocalRandom.BAD_SIZE)
     StreamSupport.longStream(
@@ -533,7 +536,7 @@ class ThreadLocalRandom private () extends Random {
     )
   }
 
-  def longs(): LongStream =
+  override def longs(): LongStream =
     StreamSupport.longStream(
       new ThreadLocalRandom.RandomLongsSpliterator(
         0L,
@@ -544,7 +547,7 @@ class ThreadLocalRandom private () extends Random {
       false
     )
 
-  def longs(
+  override def longs(
       streamSize: Long,
       randomNumberOrigin: Long,
       randomNumberBound: Long
@@ -564,7 +567,10 @@ class ThreadLocalRandom private () extends Random {
     )
   }
 
-  def longs(randomNumberOrigin: Long, randomNumberBound: Long): LongStream = {
+  override def longs(
+      randomNumberOrigin: Long,
+      randomNumberBound: Long
+  ): LongStream = {
     if (randomNumberOrigin >= randomNumberBound)
       throw new IllegalArgumentException(ThreadLocalRandom.BAD_RANGE)
     StreamSupport.longStream(
