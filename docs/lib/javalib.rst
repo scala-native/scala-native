@@ -580,6 +580,12 @@ java.util.stream
 * ``DoubleStream``
 * ``DoubleStream.Builder``
 * ``DoubleStream.DoubleMapMultiConsumer``
+* ``IntStream``
+* ``IntStream.Builder``
+* ``IntStream.IntMapMultiConsumer``
+* ``LongStream``
+* ``LongStream.Builder``
+* ``LongStream.LongMapMultiConsumer``
 * ``Stream``
 * ``Stream.Builder``
 * ``StreamSupport``
