@@ -7,15 +7,18 @@ import java.nio.file.{Path, Paths, Files}
 import scala.collection.concurrent.TrieMap
 import scala.io.Source
 import scala.language.implicitConversions
+import scala.scalanative.build.Build
 
-class IncrementalCodeGenContext(workDir: Path) {
+class IncrementalCodeGenContext(config: build.Config) {
   private val package2hash: TrieMap[String, Long] = TrieMap[String, Long]()
   private val pack2hashPrev: TrieMap[String, Long] = TrieMap[String, Long]()
   private val changed: TrieMap[String, Long] = TrieMap[String, Long]()
-  private val dumpPackage2hash: Path = workDir.resolve("package2hash")
+  private val dumpPackage2hash: Path = config.workDir.resolve("package2hash")
 
   def collectFromPreviousState(): Unit = {
-    if (Files.exists(dumpPackage2hash)) {
+    if (Build.userConfigHasChanged(config))
+      Files.deleteIfExists(dumpPackage2hash)
+    else if (Files.exists(dumpPackage2hash)) {
       Source
         .fromFile(dumpPackage2hash.toUri())
         .getLines()
