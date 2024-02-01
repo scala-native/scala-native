@@ -166,3 +166,45 @@ class NativeCompilerTest:
       """.stripMargin
     )
   }
+
+  // https://github.com/scala-native/scala-native/issues/3726
+  @Test def issue3726(): Unit = compileAll(
+    "Test.scala" -> s"""
+    |import _root_.scala.scalanative.unsafe.*
+    |
+    |object structs:
+    |  opaque type MyStruct = CStruct1[CInt]
+    |  object MyStruct:
+    |    given _tag: Tag[MyStruct] = ???
+    |    extension (struct: MyStruct)
+    |      def field: CInt = struct._1
+    |      def field_=(value: CInt): Unit = !struct.at1 = value
+    |
+    |object all:
+    |  export structs.MyStruct
+    |
+    |object nested:
+    |  export all.MyStruct
+    |
+    |def Test1 = {
+    |  import structs.*
+    |  val myStruct = stackalloc[MyStruct]()
+    |  (!myStruct).field = 2
+    |  println((!myStruct).field)
+    |}
+    |
+    |def Test2 = {
+    |  import all.*
+    |  val myStruct = stackalloc[MyStruct]()
+    |  (!myStruct).field = 2
+    |  println((!myStruct).field)
+    |}
+    |
+    |def Test3 = {
+    |  import nested.*
+    |  val myStruct = stackalloc[MyStruct]()
+    |  (!myStruct).field = 2
+    |  println((!myStruct).field)
+    |}
+    |""".stripMargin
+  )
