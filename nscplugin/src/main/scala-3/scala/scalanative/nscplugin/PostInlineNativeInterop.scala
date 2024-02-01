@@ -38,7 +38,8 @@ class PostInlineNativeInterop extends PluginPhase with NativeInteropUtil {
       dealiased.widenDealias match
         case AppliedType(tycon, args) =>
           AppliedType(this(tycon), args.map(this))
-        case ty => ty
+        case ty if ty != tp => this(ty)
+        case ty             => ty
   }
 
   override def transformApply(tree: Apply)(using Context): Tree = {
