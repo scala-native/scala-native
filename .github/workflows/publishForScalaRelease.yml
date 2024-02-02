@@ -30,7 +30,25 @@ jobs:
         env:
           PGP_SECRET: ${{ secrets.PGP_SECRET }}
 
-      - name: Publish release
+      - name: Publish release 0.4.x
+        if: {{ startsWith(inputs.scala-native-version, '0.4.') }}
+        env:
+          MAVEN_USER: "${{ secrets.SONATYPE_USER }}"
+          MAVEN_PASSWORD: "${{ secrets.SONATYPE_PASSWORD }}"
+          PGP_PASSPHRASE: "${{ secrets.PGP_PASSWORD }}"
+        run: >
+          sbt '
+            set crossScalaVersions += "${{ inputs.scala-version }}";
+            set nscPlugin.forBinaryVersion("${{ env.binary-version }}")/crossScalaVersions += "${{ inputs.scala-version }}";
+            set junitPlugin.forBinaryVersion("${{ env.binary-version }}")/crossScalaVersions += "${{ inputs.scala-version }}";
+            ++${{ inputs.scala-version }} -v; 
+            nscplugin${{ env.project-version }}/test;
+            nscplugin${{ env.project-version }}/publishSigned;
+            junitPlugin${{ env.project-version }}/publishSigned;
+          '
+
+      - name: Publish release 0.5.x
+        if: {{ startsWith(inputs.scala-native-version, '0.5.') }}
         env:
           MAVEN_USER: "${{ secrets.SONATYPE_USER }}"
           MAVEN_PASSWORD: "${{ secrets.SONATYPE_PASSWORD }}"
@@ -46,4 +64,12 @@ jobs:
             nscplugin${{ env.project-version }}/publishSigned;
             junitPlugin${{ env.project-version }}/publishSigned;
             scalalib${{ env.project-version }}/publishSigned
+          '
+
+      - name: Test runtime
+        run: >
+          sbt '
+            set crossScalaVersions += "${{ inputs.scala-version }}";
+            ++${{ inputs.scala-version }} -v; 
+            test-runtime ${{ env.binary-version }};
           '
