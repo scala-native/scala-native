@@ -31,7 +31,7 @@ jobs:
           PGP_SECRET: ${{ secrets.PGP_SECRET }}
 
       - name: Publish release 0.4.x
-        if: {{ startsWith(inputs.scala-native-version, '0.4.') }}
+        if: ${{ startsWith(inputs.scala-native-version, '0.4.') }}
         env:
           MAVEN_USER: "${{ secrets.SONATYPE_USER }}"
           MAVEN_PASSWORD: "${{ secrets.SONATYPE_PASSWORD }}"
@@ -48,7 +48,7 @@ jobs:
           '
 
       - name: Publish release 0.5.x
-        if: {{ startsWith(inputs.scala-native-version, '0.5.') }}
+        if: ${{ startsWith(inputs.scala-native-version, '0.5.') }}
         env:
           MAVEN_USER: "${{ secrets.SONATYPE_USER }}"
           MAVEN_PASSWORD: "${{ secrets.SONATYPE_PASSWORD }}"
