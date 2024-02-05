@@ -79,17 +79,35 @@ class Random(seed_in: Long) extends AnyRef with java.io.Serializable {
    *   use unbounded "while" loops. Those loops are in the original
    *   algorithms. Yes, including the JSR-166 code. Such unbounded
    *   loops can easily become what appear to be time consuming if not
-   *   infinite loops. Consider the case where the origin and bound are close
-   *   together, say 0 and 2. There are way more Ints or Longs that are
-   *   not in the range than that are. You do the math.
+   *   infinite loops.
+   * 
+   *   TL; DR
+   *      Each of the loops will terminate but have a worst case which can
+   *      take substantial time.
    */
+
+  /*   The int while() loop will terminate but has poor worst case performance.
+   *   By the pigeon hole principle of discrete math, we know that the
+   *   maximum number of iterations for an int is abs(jl.Integer.MIN_VALUE).
+   *   A noticeable but finite pause.
+   *
+   *   The expected behavior is more acceptable. The probability of a
+   *   "successful draw" for any one draw is
+   *   (nInBounds/(abs(MIN_VALUE) + MAX_VALUE)). Call this probSuccess.
+   *   probFailure is (1 - probSuccess).
+   *   For a series of n draws, the probability of overall success is
+   *   (1 - exp(probFailure), n)). For 10 draws, the probability of success
+   *   is greater than 0.999.
+   */
+
+  // By convention, caller has checked that origin < bound
 
   private def nextInt(origin: Int, bound: Int): Int = {
     val n = bound - origin;
     if (n > 0) {
       nextInt(n) + origin
-    } else { // range not representable as int
-      var r: Integer = 0
+    } else { // range not representable as int. e.g. [-1, Integer.MAX_VALUE]
+      var r = 0
       while ({ r = nextInt(); (r < origin || r >= bound); }) ()
       r
     }
@@ -101,6 +119,30 @@ class Random(seed_in: Long) extends AnyRef with java.io.Serializable {
    * The loop code in the "reject over-represented" clause is adapted
    * from there. Same algorithm as Java code but already in Scala.
    */
+
+  /*  The long while() loop will terminate but has poor worst case performance.
+   *  It is more difficult to analyze. The JSR-166 algorithm
+   *  documents that nextLong() might not return all possible long values.
+   *
+   *  With a range where "bound - origin" is 1 and that value is exactly one of
+   *  the values which nextLong() could not return, the loop would not
+   *  terminate.
+   * 
+   *  However, the while() loop is called only when the range
+   *  is larger than Long.MAX_VALUE. The probability of nextLong() not being
+   *  able to return _any_ of those values is vanishing low. 
+   *  From there, the reasoning is similar to the ints case, but with
+   *  larger values.
+   *  In particular, the denominator for probSuccess is much larger, making
+   *  the probability of success on any given draw smaller. That, in turn,
+   *  requires a larger number of draws for a given overall probability of
+   *  success.
+   * 
+   *  The worst case could look like a "busy wait" non-terminating loop.
+   */
+
+
+  // By convention, caller has checked that origin < bound
 
   private def nextLong(origin: Long, bound: Long): Long = {
     var r = nextLong()
@@ -116,7 +158,7 @@ class Random(seed_in: Long) extends AnyRef with java.io.Serializable {
         u = nextLong() >>> 1 // retry
 
       r += origin;
-    } else { // range not representable as long
+    } else { // range not representable as long. e.g. [-1, Long.MAX_VALUE]
       while (r < origin || r >= bound)
         r = nextLong()
     }
@@ -231,21 +273,6 @@ class Random(seed_in: Long) extends AnyRef with java.io.Serializable {
         true
       }
     }
-
-    override def forEachRemaining(consumer: DoubleConsumer): Unit = {
-      if (consumer == null)
-        throw new NullPointerException
-
-      if (index < fence) {
-        var i = index
-        index = fence
-        while ({
-          consumer.accept(nextDouble(origin, bound))
-          i += 1
-          i < fence
-        }) ()
-      }
-    }
   }
 
   def doubles(): DoubleStream =
@@ -319,21 +346,6 @@ class Random(seed_in: Long) extends AnyRef with java.io.Serializable {
         consumer.accept(nextInt(origin, bound))
         index += 1
         true
-      }
-    }
-
-    override def forEachRemaining(consumer: IntConsumer): Unit = {
-      if (consumer == null)
-        throw new NullPointerException
-
-      if (index < fence) {
-        var i = index
-        index = fence
-        while ({
-          consumer.accept(nextInt(origin, bound))
-          i += 1
-          i < fence
-        }) ()
       }
     }
   }
@@ -414,21 +426,6 @@ class Random(seed_in: Long) extends AnyRef with java.io.Serializable {
         consumer.accept(nextLong(origin, bound))
         index += 1
         true
-      }
-    }
-
-    override def forEachRemaining(consumer: LongConsumer): Unit = {
-      if (consumer == null)
-        throw new NullPointerException
-
-      if (index < fence) {
-        var i = index
-        index = fence
-        while ({
-          consumer.accept(nextLong(origin, bound))
-          i += 1
-          i < fence
-        }) ()
       }
     }
   }
