@@ -80,7 +80,7 @@ class Random(seed_in: Long) extends AnyRef with java.io.Serializable {
    *   algorithms. Yes, including the JSR-166 code. Such unbounded
    *   loops can easily become what appear to be time consuming if not
    *   infinite loops.
-   * 
+   *
    *   TL; DR
    *      Each of the loops will terminate but have a worst case which can
    *      take substantial time.
@@ -127,20 +127,19 @@ class Random(seed_in: Long) extends AnyRef with java.io.Serializable {
    *  With a range where "bound - origin" is 1 and that value is exactly one of
    *  the values which nextLong() could not return, the loop would not
    *  terminate.
-   * 
+   *
    *  However, the while() loop is called only when the range
    *  is larger than Long.MAX_VALUE. The probability of nextLong() not being
-   *  able to return _any_ of those values is vanishing low. 
+   *  able to return _any_ of those values is vanishing low.
    *  From there, the reasoning is similar to the ints case, but with
    *  larger values.
    *  In particular, the denominator for probSuccess is much larger, making
    *  the probability of success on any given draw smaller. That, in turn,
    *  requires a larger number of draws for a given overall probability of
    *  success.
-   * 
+   *
    *  The worst case could look like a "busy wait" non-terminating loop.
    */
-
 
   // By convention, caller has checked that origin < bound
 

@@ -515,7 +515,6 @@ private[stream] class StreamImpl[T](
       _parallel,
       coercedPriorStages
     )
-      .asInstanceOf[DoubleStream]
   }
 
   def mapToInt(mapper: ToIntFunction[_ >: T]): IntStream = {
@@ -537,7 +536,6 @@ private[stream] class StreamImpl[T](
       _parallel,
       coercedPriorStages
     )
-      .asInstanceOf[IntStream]
   }
 
   def mapToLong(mapper: ToLongFunction[_ >: T]): LongStream = {
@@ -559,7 +557,6 @@ private[stream] class StreamImpl[T](
       _parallel,
       coercedPriorStages
     )
-      .asInstanceOf[LongStream]
   }
 
   def max(comparator: Comparator[_ >: T]): Optional[T] = {

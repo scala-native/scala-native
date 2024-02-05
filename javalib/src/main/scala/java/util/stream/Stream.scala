@@ -151,7 +151,6 @@ trait Stream[T] extends BaseStream[T, Stream[T]] {
       parallel = false,
       parent = this.asInstanceOf[Stream[R]]
     ))
-      .asInstanceOf[Stream[R]]
   }
 
   // Since: Java 16
@@ -202,7 +201,6 @@ trait Stream[T] extends BaseStream[T, Stream[T]] {
       parallel = false,
       coercedPriorStages
     ))
-      .asInstanceOf[DoubleStream]
   }
 
   // Since: Java 16
@@ -253,7 +251,6 @@ trait Stream[T] extends BaseStream[T, Stream[T]] {
       parallel = false,
       coercedPriorStages
     ))
-      .asInstanceOf[IntStream]
   }
 
   // Since: Java 16
@@ -304,7 +301,6 @@ trait Stream[T] extends BaseStream[T, Stream[T]] {
       parallel = false,
       coercedPriorStages
     ))
-      .asInstanceOf[LongStream]
   }
 
   def mapToDouble(mapper: ToDoubleFunction[_ >: T]): DoubleStream
