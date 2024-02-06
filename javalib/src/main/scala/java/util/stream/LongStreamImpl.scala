@@ -9,15 +9,15 @@ import java.util.function._
  * TL;DR - later is explicitly used where a primitive is desired.
  */
 
-private[stream] class DoubleStreamImpl(
-    val pipeline: ArrayDeque[DoubleStreamImpl]
-) extends DoubleStream {
-  var _spliterArg: Spliterator.OfDouble = _
-  var _supplier: Supplier[Spliterator.OfDouble] = _
+private[stream] class LongStreamImpl(
+    val pipeline: ArrayDeque[LongStreamImpl]
+) extends LongStream {
+  var _spliterArg: Spliterator.OfLong = _
+  var _supplier: Supplier[Spliterator.OfLong] = _
   var _parallel: Boolean = _ // Scaffolding for later improvements.
   var _characteristics: Int = 0
 
-  lazy val _spliter: Spliterator.OfDouble =
+  lazy val _spliter: Spliterator.OfLong =
     if (_spliterArg != null) _spliterArg
     else _supplier.get()
 
@@ -31,28 +31,28 @@ private[stream] class DoubleStreamImpl(
   pipeline.addLast(this)
 
   def this(
-      spliterator: Spliterator.OfDouble,
+      spliterator: Spliterator.OfLong,
       parallel: Boolean
   ) = {
-    this(new ArrayDeque[DoubleStreamImpl])
+    this(new ArrayDeque[LongStreamImpl])
     _spliterArg = spliterator
     _parallel = parallel
   }
 
   def this(
-      spliterator: Spliterator.OfDouble,
+      spliterator: Spliterator.OfLong,
       parallel: Boolean,
-      parent: DoubleStream
+      parent: LongStream
   ) = {
-    this(parent.asInstanceOf[DoubleStreamImpl].pipeline)
+    this(parent.asInstanceOf[LongStreamImpl].pipeline)
     _spliterArg = spliterator
     _parallel = parallel
   }
 
   def this(
-      spliterator: Spliterator.OfDouble,
+      spliterator: Spliterator.OfLong,
       parallel: Boolean,
-      pipeline: ArrayDeque[DoubleStreamImpl]
+      pipeline: ArrayDeque[LongStreamImpl]
   ) = {
     this(pipeline)
     _spliterArg = spliterator
@@ -60,11 +60,11 @@ private[stream] class DoubleStreamImpl(
   }
 
   def this(
-      supplier: Supplier[Spliterator.OfDouble],
+      supplier: Supplier[Spliterator.OfLong],
       characteristics: Int,
       parallel: Boolean
   ) = {
-    this(new ArrayDeque[DoubleStreamImpl])
+    this(new ArrayDeque[LongStreamImpl])
     _supplier = supplier
     _parallel = parallel
     _characteristics = characteristics
@@ -87,7 +87,7 @@ private[stream] class DoubleStreamImpl(
 
   def close(): Unit = {
     if (!_closed) {
-      val exceptionBuffer = new DoubleStreamImpl.CloseExceptionBuffer()
+      val exceptionBuffer = new LongStreamImpl.CloseExceptionBuffer()
       val it = pipeline.iterator()
 
       while (it.hasNext()) {
@@ -105,7 +105,7 @@ private[stream] class DoubleStreamImpl(
   private def closeStage(): Unit = {
     _closed = true
 
-    val exceptionBuffer = new DoubleStreamImpl.CloseExceptionBuffer()
+    val exceptionBuffer = new LongStreamImpl.CloseExceptionBuffer()
 
     if (onCloseQueueActive) {
       val it = onCloseQueue.iterator()
@@ -123,12 +123,12 @@ private[stream] class DoubleStreamImpl(
 
   def isParallel(): Boolean = _parallel
 
-  def iterator(): ju.PrimitiveIterator.OfDouble = {
+  def iterator(): ju.PrimitiveIterator.OfLong = {
     commenceOperation()
     Spliterators.iterator(_spliter)
   }
 
-  def onClose(closeHandler: Runnable): DoubleStream = {
+  def onClose(closeHandler: Runnable): LongStream = {
     // JVM appears to not set "operated upon" here.
 
     if (_closed)
@@ -143,24 +143,24 @@ private[stream] class DoubleStreamImpl(
     this
   }
 
-  def parallel(): DoubleStream = {
+  def parallel(): LongStream = {
     if (!_parallel)
       _parallel = true
     this
   }
 
-  def sequential(): DoubleStream = {
+  def sequential(): LongStream = {
     if (_parallel)
       _parallel = false
     this
   }
 
-  def spliterator(): Spliterator.OfDouble = {
+  def spliterator(): Spliterator.OfLong = {
     commenceOperation()
     _spliter
   }
 
-  def unordered(): DoubleStream = {
+  def unordered(): LongStream = {
     val masked = _spliter.characteristics() & Spliterator.ORDERED
 
     if (masked != Spliterator.ORDERED) this // already unordered.
@@ -177,104 +177,105 @@ private[stream] class DoubleStreamImpl(
 
       val purifiedBits = _characteristics & ~(bitsToClear)
 
-      val spl = new Spliterators.AbstractDoubleSpliterator(
+      val spl = new Spliterators.AbstractLongSpliterator(
         _spliter.estimateSize(),
         purifiedBits
       ) {
-        def tryAdvance(action: DoubleConsumer): Boolean =
-          _spliter.tryAdvance((e: scala.Double) => action.accept(e))
+        def tryAdvance(action: LongConsumer): Boolean =
+          _spliter.tryAdvance((e: scala.Long) => action.accept(e))
       }
 
-      new DoubleStreamImpl(spl, _parallel, pipeline)
+      new LongStreamImpl(spl, _parallel, pipeline)
     }
   }
 
 // Methods specified in interface Stream --------------------------------
 
-  def allMatch(pred: DoublePredicate): Boolean = {
+  def allMatch(pred: LongPredicate): Boolean = {
     commenceOperation()
 
     // Be careful with documented "true" return for empty stream.
     var mismatchFound = false
 
     while (!mismatchFound &&
-        _spliter.tryAdvance((e: scala.Double) =>
+        _spliter.tryAdvance((e: scala.Long) =>
           if (!pred.test(e))
             mismatchFound = true
         )) { /* search */ }
     !mismatchFound
   }
 
-  def anyMatch(pred: DoublePredicate): Boolean = {
+  def anyMatch(pred: LongPredicate): Boolean = {
     commenceOperation()
 
     var matchFound = false
 
     while (!matchFound &&
-        _spliter.tryAdvance((e: scala.Double) =>
+        _spliter.tryAdvance((e: scala.Long) =>
           if (pred.test(e))
             matchFound = true
         )) { /* search */ }
     matchFound
   }
 
+  def asDoubleStream(): DoubleStream =
+    this.mapToDouble(e => e.toDouble)
+
   def average(): OptionalDouble = {
     commenceOperation()
 
-    var count = 0
-    var sum = 0.0
+    var count = 0L
+    var sum = 0L
 
-    _spliter.forEachRemaining((d: scala.Double) => { count += 1; sum += d })
+    _spliter.forEachRemaining((d: scala.Long) => { count += 1; sum += d })
     if (count == 0) OptionalDouble.empty()
-    else OptionalDouble.of(sum / count)
+    else OptionalDouble.of(sum.toDouble / count)
   }
 
-  def boxed(): Stream[jl.Double] =
-    this.mapToObj[jl.Double](d => scala.Double.box(d))
+  def boxed(): Stream[jl.Long] =
+    this.mapToObj[jl.Long](d => scala.Long.box(d))
 
   def collect[R](
       supplier: Supplier[R],
-      accumulator: ObjDoubleConsumer[R],
+      accumulator: ObjLongConsumer[R],
       combiner: BiConsumer[R, R]
   ): R = {
     commenceOperation()
 
     val result = supplier.get()
 
-    _spliter.forEachRemaining((e: scala.Double) =>
-      accumulator.accept(result, e)
-    )
+    _spliter.forEachRemaining((e: scala.Long) => accumulator.accept(result, e))
 
     result
   }
 
-  def count(): Long = {
+  def count(): scala.Long = {
     commenceOperation()
 
     var count = 0L
-    _spliter.forEachRemaining((d: scala.Double) => count += 1)
+    _spliter.forEachRemaining((d: scala.Long) => count += 1)
     count
   }
 
-  def distinct(): DoubleStream = {
+  def distinct(): LongStream = {
     commenceOperation()
 
-    val seenElements = new ju.HashSet[scala.Double]()
+    val seenElements = new ju.HashSet[scala.Long]()
 
     // Some items may be dropped, so the estimated size is a high bound.
     val estimatedSize = _spliter.estimateSize()
 
     val spl =
-      new Spliterators.AbstractDoubleSpliterator(
+      new Spliterators.AbstractLongSpliterator(
         estimatedSize,
         _spliter.characteristics()
       ) {
-        def tryAdvance(action: DoubleConsumer): Boolean = {
+        def tryAdvance(action: LongConsumer): Boolean = {
           var success = false
           var done = false
           while (!done) {
             var advanced =
-              _spliter.tryAdvance((e: scala.Double) => {
+              _spliter.tryAdvance((e: scala.Long) => {
                 val added = seenElements.add(e)
 
                 if (added) {
@@ -290,25 +291,25 @@ private[stream] class DoubleStreamImpl(
         }
       }
 
-    new DoubleStreamImpl(spl, _parallel, pipeline)
+    new LongStreamImpl(spl, _parallel, pipeline)
   }
 
-  def filter(pred: DoublePredicate): DoubleStream = {
+  def filter(pred: LongPredicate): LongStream = {
     commenceOperation()
 
     // Some items may be filtered out, so the estimated size is a high bound.
     val estimatedSize = _spliter.estimateSize()
 
-    val spl = new Spliterators.AbstractDoubleSpliterator(
+    val spl = new Spliterators.AbstractLongSpliterator(
       estimatedSize,
       _spliter.characteristics()
     ) {
-      def tryAdvance(action: DoubleConsumer): Boolean = {
+      def tryAdvance(action: LongConsumer): Boolean = {
         var success = false
         var done = false
         while (!done) {
           var advanced =
-            _spliter.tryAdvance((e: scala.Double) => {
+            _spliter.tryAdvance((e: scala.Long) => {
               if (pred.test(e)) {
                 action.accept(e)
                 done = true
@@ -323,56 +324,56 @@ private[stream] class DoubleStreamImpl(
       }
     }
 
-    new DoubleStreamImpl(spl, _parallel, pipeline)
+    new LongStreamImpl(spl, _parallel, pipeline)
   }
 
   /* delegating to findFirst() is an implementation ~~hack~~ expediency.
    * Probably near-optimal for sequential streams. Parallel streams may
    * offer better possibilities.
    */
-  def findAny(): OptionalDouble = {
+  def findAny(): OptionalLong = {
     // commenceOperation() // findFirst will call, so do not do twice.
     findFirst()
   }
 
-  def findFirst(): OptionalDouble = {
+  def findFirst(): OptionalLong = {
     commenceOperation()
-    var optional = OptionalDouble.empty()
-    _spliter.tryAdvance((e: scala.Double) => {
-      optional = OptionalDouble.of(e)
+    var optional = OptionalLong.empty()
+    _spliter.tryAdvance((e: scala.Long) => {
+      optional = OptionalLong.of(e)
     })
     optional
   }
 
   def flatMap(
-      mapper: DoubleFunction[_ <: DoubleStream]
-  ): DoubleStream = {
+      mapper: LongFunction[_ <: LongStream]
+  ): LongStream = {
     commenceOperation()
 
     val supplier =
-      new DoubleStreamImpl.DoublePrimitiveCompoundSpliteratorFactory(
+      new LongStreamImpl.LongPrimitiveCompoundSpliteratorFactory(
         _spliter,
         mapper,
         closeOnFirstTouch = true
       )
 
     val coercedPriorStages = pipeline
-      .asInstanceOf[ArrayDeque[DoubleStreamImpl]]
+      .asInstanceOf[ArrayDeque[LongStreamImpl]]
 
-    new DoubleStreamImpl(supplier.get(), _parallel, coercedPriorStages)
+    new LongStreamImpl(supplier.get(), _parallel, coercedPriorStages)
   }
 
-  def forEach(action: DoubleConsumer): Unit = {
+  def forEach(action: LongConsumer): Unit = {
     commenceOperation()
     _spliter.forEachRemaining(action)
   }
 
-  def forEachOrdered(action: DoubleConsumer): Unit = {
+  def forEachOrdered(action: LongConsumer): Unit = {
     commenceOperation()
     _spliter.forEachRemaining(action)
   }
 
-  def limit(maxSize: Long): DoubleStream = {
+  def limit(maxSize: Long): LongStream = {
 
     /* Important:
      * See Issue #3309 & StreamImpl#limit for discussion of size
@@ -396,15 +397,15 @@ private[stream] class DoubleStreamImpl(
 
     val newStreamCharacteristics = startingBits & ~alwaysClearedBits
 
-    val spl = new Spliterators.AbstractDoubleSpliterator(
+    val spl = new Spliterators.AbstractLongSpliterator(
       Long.MaxValue,
       newStreamCharacteristics
     ) {
-      def tryAdvance(action: DoubleConsumer): Boolean =
+      def tryAdvance(action: LongConsumer): Boolean =
         if (nSeen >= maxSize) false
         else {
           var advanced =
-            _spliter.tryAdvance((e: scala.Double) => action.accept(e))
+            _spliter.tryAdvance((e: scala.Long) => action.accept(e))
           nSeen =
             if (advanced) nSeen + 1
             else Long.MaxValue
@@ -413,12 +414,28 @@ private[stream] class DoubleStreamImpl(
         }
     }
 
-    new DoubleStreamImpl(spl, _parallel, pipeline)
+    new LongStreamImpl(spl, _parallel, pipeline)
   }
 
   def map(
-      mapper: DoubleUnaryOperator
-  ): DoubleStream = {
+      mapper: LongUnaryOperator
+  ): LongStream = {
+    commenceOperation()
+
+    val spl = new Spliterators.AbstractLongSpliterator(
+      _spliter.estimateSize(),
+      _spliter.characteristics()
+    ) {
+      def tryAdvance(action: LongConsumer): Boolean =
+        _spliter.tryAdvance((e: scala.Long) =>
+          action.accept(mapper.applyAsLong(e))
+        )
+    }
+
+    new LongStreamImpl(spl, _parallel, pipeline)
+  }
+
+  def mapToDouble(mapper: LongToDoubleFunction): DoubleStream = {
     commenceOperation()
 
     val spl = new Spliterators.AbstractDoubleSpliterator(
@@ -426,15 +443,19 @@ private[stream] class DoubleStreamImpl(
       _spliter.characteristics()
     ) {
       def tryAdvance(action: DoubleConsumer): Boolean =
-        _spliter.tryAdvance((e: scala.Double) =>
+        _spliter.tryAdvance((e: scala.Long) =>
           action.accept(mapper.applyAsDouble(e))
         )
     }
 
-    new DoubleStreamImpl(spl, _parallel, pipeline)
+    new DoubleStreamImpl(
+      spl,
+      _parallel,
+      pipeline.asInstanceOf[ArrayDeque[DoubleStreamImpl]]
+    )
   }
 
-  def mapToInt(mapper: DoubleToIntFunction): IntStream = {
+  def mapToInt(mapper: LongToIntFunction): IntStream = {
     commenceOperation()
 
     val spl = new Spliterators.AbstractIntSpliterator(
@@ -442,7 +463,7 @@ private[stream] class DoubleStreamImpl(
       _spliter.characteristics()
     ) {
       def tryAdvance(action: IntConsumer): Boolean =
-        _spliter.tryAdvance((e: scala.Double) =>
+        _spliter.tryAdvance((e: scala.Long) =>
           action.accept(mapper.applyAsInt(e))
         )
     }
@@ -454,34 +475,14 @@ private[stream] class DoubleStreamImpl(
     )
   }
 
-  def mapToLong(mapper: DoubleToLongFunction): LongStream = {
-    commenceOperation()
-
-    val spl = new Spliterators.AbstractLongSpliterator(
-      _spliter.estimateSize(),
-      _spliter.characteristics()
-    ) {
-      def tryAdvance(action: LongConsumer): Boolean =
-        _spliter.tryAdvance((e: scala.Double) =>
-          action.accept(mapper.applyAsLong(e))
-        )
-    }
-
-    new LongStreamImpl(
-      spl,
-      _parallel,
-      pipeline.asInstanceOf[ArrayDeque[LongStreamImpl]]
-    )
-  }
-
-  def mapToObj[U](mapper: DoubleFunction[_ <: U]): Stream[U] = {
+  def mapToObj[U](mapper: LongFunction[_ <: U]): Stream[U] = {
 
     val spl = new Spliterators.AbstractSpliterator[U](
       _spliter.estimateSize(),
       _spliter.characteristics()
     ) {
       def tryAdvance(action: Consumer[_ >: U]): Boolean =
-        _spliter.tryAdvance((e: scala.Double) => action.accept(mapper(e)))
+        _spliter.tryAdvance((e: scala.Long) => action.accept(mapper(e)))
     }
 
     new StreamImpl[U](
@@ -492,114 +493,103 @@ private[stream] class DoubleStreamImpl(
     )
   }
 
-  def max(): OptionalDouble = {
+  def max(): OptionalLong = {
     commenceOperation()
 
-    var max: scala.Double = jl.Double.NEGATIVE_INFINITY
+    var max: scala.Long = jl.Long.MIN_VALUE
 
-    var exitEarly = false // leave loop after first NaN encountered, if any.
-
-    def body(d: scala.Double): Unit = {
-      if (d.isNaN()) {
+    def body(d: scala.Long): Unit = {
+      if (max < d)
         max = d
-        exitEarly = true
-      } else if (jl.Double.compare(max, d) < 0) { // sorts -0.0 lower than +0.0
-        max = d
-      }
     }
 
-    val advanced = _spliter.tryAdvance((d: scala.Double) => body(d))
+    val advanced = _spliter.tryAdvance((d: scala.Long) => body(d))
 
-    if (!advanced) OptionalDouble.empty()
+    if (!advanced) OptionalLong.empty()
     else {
-      while (!exitEarly &&
-          _spliter.tryAdvance((d: scala.Double) => body(d))) { /* search */ }
-      OptionalDouble.of(max)
+      while (_spliter.tryAdvance((d: scala.Long) => body(d))) { /* search */ }
+
+      OptionalLong.of(max)
     }
   }
 
-  def min(): OptionalDouble = {
+  def min(): OptionalLong = {
     commenceOperation()
 
-    var min: scala.Double = jl.Double.POSITIVE_INFINITY
+    var min: scala.Long = jl.Long.MAX_VALUE
 
-    var exitEarly = false // leave loop after first NaN encountered, if any.
-
-    def body(d: scala.Double): Unit = {
-      if (d.isNaN()) {
+    def body(d: scala.Long): Unit = {
+      if (min > d)
         min = d
-        exitEarly = true
-      } else if (jl.Double.compare(min, d) > 0) { // sorts -0.0 lower than +0.0
-        min = d
-      }
     }
-    val advanced = _spliter.tryAdvance((d: scala.Double) => body(d))
 
-    if (!advanced) OptionalDouble.empty()
+    val advanced = _spliter.tryAdvance((d: scala.Long) => body(d))
+
+    if (!advanced) OptionalLong.empty()
     else {
-      while (!exitEarly &&
-          _spliter.tryAdvance((d: scala.Double) => body(d))) { /* search */ }
-      OptionalDouble.of(min)
+      while (_spliter.tryAdvance((d: scala.Long) => body(d))) { /* search */ }
+
+      OptionalLong.of(min)
     }
   }
 
-  def noneMatch(pred: DoublePredicate): Boolean = {
+  def noneMatch(pred: LongPredicate): Boolean = {
     // anyMatch() will call commenceOperation()
     !this.anyMatch(pred)
   }
 
-  def peek(action: DoubleConsumer): DoubleStream = {
+  def peek(action: LongConsumer): LongStream = {
     commenceOperation()
 
     val peekAction = action
 
-    val spl = new Spliterators.AbstractDoubleSpliterator(
+    val spl = new Spliterators.AbstractLongSpliterator(
       _spliter.estimateSize(),
       _spliter.characteristics()
     ) {
 
-      def tryAdvance(action: DoubleConsumer): Boolean =
-        _spliter.tryAdvance((e: scala.Double) => {
+      def tryAdvance(action: LongConsumer): Boolean =
+        _spliter.tryAdvance((e: scala.Long) => {
           peekAction.accept(e)
           action.accept(e)
         })
     }
 
-    new DoubleStreamImpl(spl, _parallel, pipeline)
+    new LongStreamImpl(spl, _parallel, pipeline)
   }
 
-  def reduce(accumulator: DoubleBinaryOperator): OptionalDouble = {
+  def reduce(accumulator: LongBinaryOperator): OptionalLong = {
     commenceOperation()
 
-    var reduceOpt = OptionalDouble.empty()
+    var reduceOpt = OptionalLong.empty()
 
-    _spliter.tryAdvance((e: scala.Double) => reduceOpt = OptionalDouble.of(e))
+    _spliter.tryAdvance((e: scala.Long) => reduceOpt = OptionalLong.of(e))
     reduceOpt.ifPresent((first) => {
       var previous = first
-      _spliter.forEachRemaining((e: scala.Double) =>
-        previous = accumulator.applyAsDouble(previous, e)
+      _spliter.forEachRemaining((e: scala.Long) =>
+        previous = accumulator.applyAsLong(previous, e)
       )
-      reduceOpt = OptionalDouble.of(previous)
+      reduceOpt = OptionalLong.of(previous)
     })
 
     reduceOpt
   }
 
   def reduce(
-      identity: scala.Double,
-      accumulator: DoubleBinaryOperator
-  ): scala.Double = {
+      identity: scala.Long,
+      accumulator: LongBinaryOperator
+  ): scala.Long = {
     commenceOperation()
 
     var accumulated = identity
 
-    _spliter.forEachRemaining((e: scala.Double) =>
-      accumulated = accumulator.applyAsDouble(accumulated, e)
+    _spliter.forEachRemaining((e: scala.Long) =>
+      accumulated = accumulator.applyAsLong(accumulated, e)
     )
     accumulated
   }
 
-  def skip(n: Long): DoubleStream = {
+  def skip(n: scala.Long): LongStream = {
     if (n < 0)
       throw new IllegalArgumentException(n.toString())
 
@@ -609,23 +599,23 @@ private[stream] class DoubleStreamImpl(
 
     while ((nSkipped < n)
         && (_spliter
-          .tryAdvance((e: scala.Double) => nSkipped += 1L))) { /* skip */ }
+          .tryAdvance((e: scala.Long) => nSkipped += 1L))) { /* skip */ }
 
     // Follow JVM practice; return new stream, not remainder of "this" stream.
-    new DoubleStreamImpl(_spliter, _parallel, pipeline)
+    new LongStreamImpl(_spliter, _parallel, pipeline)
   }
 
-  def sorted(): DoubleStream = {
+  def sorted(): LongStream = {
     // No commenceOperation() here. This is an intermediate operation.
 
-    class SortingSpliterOfDoubleSupplier(
-        srcSpliter: Spliterator.OfDouble
-    ) extends Supplier[Spliterator.OfDouble] {
+    class SortingSpliterOfLongSupplier(
+        srcSpliter: Spliterator.OfLong
+    ) extends Supplier[Spliterator.OfLong] {
 
-      def get(): Spliterator.OfDouble = {
+      def get(): Spliterator.OfLong = {
         val knownSize = _spliter.getExactSizeIfKnown()
 
-        if (knownSize > Integer.MAX_VALUE) {
+        if (knownSize > jl.Integer.MAX_VALUE) {
           throw new IllegalArgumentException(
             "Stream size exceeds max array size"
           )
@@ -657,85 +647,85 @@ private[stream] class DoubleStreamImpl(
     }
 
     // Do the sort in the eventual terminal operation, not now.
-    val spl = new SortingSpliterOfDoubleSupplier(_spliter)
-    new DoubleStreamImpl(spl, 0, _parallel)
+    val spl = new SortingSpliterOfLongSupplier(_spliter)
+    new LongStreamImpl(spl, 0, _parallel)
   }
 
-  def sum(): scala.Double = {
+  def sum(): scala.Long = {
     commenceOperation()
 
-    var sum = 0.0
+    var sum = 0L
 
-    _spliter.forEachRemaining((d: scala.Double) => sum += d)
+    _spliter.forEachRemaining((d: scala.Long) => sum += d)
     sum
   }
 
-  def summaryStatistics(): DoubleSummaryStatistics = {
+  def summaryStatistics(): LongSummaryStatistics = {
     commenceOperation()
 
-    val stats = new DoubleSummaryStatistics()
+    val stats = new LongSummaryStatistics()
 
-    _spliter.forEachRemaining((d: scala.Double) => stats.accept(d))
+    _spliter.forEachRemaining((d: scala.Long) => stats.accept(d))
 
     stats
   }
 
-  def toArray(): Array[scala.Double] = {
+  def toArray(): Array[scala.Long] = {
     commenceOperation()
 
     val knownSize = _spliter.getExactSizeIfKnown()
 
     if (knownSize < 0) {
-      val buffer = new ArrayList[scala.Double]()
-      _spliter.forEachRemaining((e: scala.Double) => { buffer.add(e); () })
+      val buffer = new ArrayList[scala.Long]()
+      _spliter.forEachRemaining((e: scala.Long) => { buffer.add(e); () })
 
       // See if there is a more efficient way of doing this.
       val nElements = buffer.size()
-      val primitiveDoubles = new Array[scala.Double](nElements)
+      val primitiveLongs = new Array[scala.Long](nElements)
       for (j <- 0 until nElements)
-        primitiveDoubles(j) = buffer.get(j)
+        primitiveLongs(j) = buffer.get(j)
 
-      primitiveDoubles
+      primitiveLongs
     } else {
-      val primitiveDoubles = new Array[scala.Double](knownSize.toInt)
+      val primitiveLongs = new Array[scala.Long](knownSize.toInt)
       var j = 0
 
-      _spliter.forEachRemaining((e: scala.Double) => {
-        primitiveDoubles(j) = e
+      _spliter.forEachRemaining((e: scala.Long) => {
+        primitiveLongs(j) = e
         j += 1
       })
-      primitiveDoubles
+      primitiveLongs
     }
   }
 
 }
 
-object DoubleStreamImpl {
+object LongStreamImpl {
 
-  class Builder extends DoubleStream.Builder {
-    private val buffer = new ArrayList[scala.Double]()
+  class Builder extends LongStream.Builder {
+    private val buffer = new ArrayList[scala.Long]()
     private var built = false
 
-    override def accept(t: scala.Double): Unit =
+    override def accept(t: scala.Long): Unit =
       if (built) StreamImpl.throwIllegalStateException()
       else buffer.add(t)
 
-    override def build(): DoubleStream = {
+    override def build(): LongStream = {
       built = true
       // See if there is a more efficient way of doing this.
       val nElements = buffer.size()
-      val primitiveDoubles = new Array[scala.Double](nElements)
+      val primitiveLongs = new Array[scala.Long](nElements)
       for (j <- 0 until nElements)
-        primitiveDoubles(j) = buffer.get(j)
+        primitiveLongs(j) = buffer.get(j)
 
-      val spliter = Arrays.spliterator(primitiveDoubles)
+      val spliter = Arrays.spliterator(primitiveLongs)
 
-      new DoubleStreamImpl(spliter, parallel = false)
+      new LongStreamImpl(spliter, parallel = false)
     }
   }
 
-  /* This does not depend on Double. As IntStreamImpl and LongStreamImpl
-   * are implemented, it should be moved to a common StreamHelpers.scala.
+  /* This does not depend on Int. As LongStreamImpl
+   * is implemented, it should be moved to a common StreamHelpers.scala.
    * Let it prove itself before propagating.
    */
   private class CloseExceptionBuffer() {
@@ -757,36 +747,36 @@ object DoubleStreamImpl {
     }
   }
 
-  private class DoublePrimitiveCompoundSpliteratorFactory(
-      spliter: Spliterator.OfDouble,
-      mapper: DoubleFunction[_ <: DoubleStream],
+  private class LongPrimitiveCompoundSpliteratorFactory(
+      spliter: Spliterator.OfLong,
+      mapper: LongFunction[_ <: LongStream],
       closeOnFirstTouch: Boolean
   ) {
 
-    def get(): ju.Spliterator.OfDouble = {
+    def get(): ju.Spliterator.OfLong = {
       val substreams =
-        new Spliterators.AbstractSpliterator[DoubleStream](
+        new Spliterators.AbstractSpliterator[LongStream](
           Long.MaxValue,
           spliter.characteristics()
         ) {
-          def tryAdvance(action: Consumer[_ >: DoubleStream]): Boolean = {
-            spliter.tryAdvance((e: scala.Double) => action.accept(mapper(e)))
+          def tryAdvance(action: Consumer[_ >: LongStream]): Boolean = {
+            spliter.tryAdvance((e: scala.Long) => action.accept(mapper(e)))
           }
         }
 
-      new ju.Spliterator.OfDouble {
+      new ju.Spliterator.OfLong {
         override def getExactSizeIfKnown(): Long = -1
         def characteristics(): Int = 0
         def estimateSize(): Long = Long.MaxValue
-        def trySplit(): Spliterator.OfDouble =
-          null.asInstanceOf[Spliterator.OfDouble]
+        def trySplit(): Spliterator.OfLong =
+          null.asInstanceOf[Spliterator.OfLong]
 
-        private var currentSpliter: ju.Spliterator.OfDouble =
-          Spliterators.emptyDoubleSpliterator()
+        private var currentSpliter: ju.Spliterator.OfLong =
+          Spliterators.emptyLongSpliterator()
 
-        var currentStream = Optional.empty[DoubleStreamImpl]()
+        var currentStream = Optional.empty[LongStreamImpl]()
 
-        def tryAdvance(action: DoubleConsumer): Boolean = {
+        def tryAdvance(action: LongConsumer): Boolean = {
           var advanced = false
           var done = false
 
@@ -795,7 +785,6 @@ object DoubleStreamImpl {
               /* JVM flatMap() closes substreams on first touch.
                * Stream.concat() does not.
                */
-
               if (closeOnFirstTouch)
                 currentStream.get().close()
 
@@ -803,9 +792,9 @@ object DoubleStreamImpl {
               done = true
             } else {
               done = !substreams
-                .tryAdvance((e: DoubleStream) =>
+                .tryAdvance((e: LongStream) =>
                   currentSpliter = {
-                    val eOfDS = e.asInstanceOf[DoubleStreamImpl]
+                    val eOfDS = e.asInstanceOf[LongStreamImpl]
                     currentStream = Optional.of(eOfDS)
 
                     /* Tricky bit here!
@@ -831,26 +820,26 @@ object DoubleStreamImpl {
     }
   }
 
-  private class DoubleConcatSpliteratorFactory(
-      spliter: Spliterator[DoubleStream]
+  private class IntConcatSpliteratorFactory(
+      spliter: Spliterator[LongStream]
   ) {
 
-    def get(): ju.Spliterator.OfDouble = {
+    def get(): ju.Spliterator.OfLong = {
       val substreams = spliter
 
-      new ju.Spliterator.OfDouble {
+      new ju.Spliterator.OfLong {
         override def getExactSizeIfKnown(): Long = -1
         def characteristics(): Int = 0
         def estimateSize(): Long = Long.MaxValue
-        def trySplit(): Spliterator.OfDouble =
-          null.asInstanceOf[Spliterator.OfDouble]
+        def trySplit(): Spliterator.OfLong =
+          null.asInstanceOf[Spliterator.OfLong]
 
-        private var currentSpliter: ju.Spliterator.OfDouble =
-          Spliterators.emptyDoubleSpliterator()
+        private var currentSpliter: ju.Spliterator.OfLong =
+          Spliterators.emptyLongSpliterator()
 
-        var currentStream = Optional.empty[DoubleStreamImpl]()
+        var currentStream = Optional.empty[LongStreamImpl]()
 
-        def tryAdvance(action: DoubleConsumer): Boolean = {
+        def tryAdvance(action: LongConsumer): Boolean = {
           var advanced = false
           var done = false
 
@@ -860,9 +849,9 @@ object DoubleStreamImpl {
               done = true
             } else {
               done = !substreams
-                .tryAdvance((e: DoubleStream) =>
+                .tryAdvance((e: LongStream) =>
                   currentSpliter = {
-                    val eOfDS = e.asInstanceOf[DoubleStreamImpl]
+                    val eOfDS = e.asInstanceOf[LongStreamImpl]
                     currentStream = Optional.of(eOfDS)
 
                     /* Tricky bit here!
@@ -888,12 +877,12 @@ object DoubleStreamImpl {
     }
   }
 
-  def concat(a: DoubleStream, b: DoubleStream): DoubleStream = {
+  def concat(a: LongStream, b: LongStream): LongStream = {
     /* See ""Design Note" at corresponding place in StreamImpl.
      * This implementaton shares the same noted "features".
      */
-    val aImpl = a.asInstanceOf[DoubleStreamImpl]
-    val bImpl = b.asInstanceOf[DoubleStreamImpl]
+    val aImpl = a.asInstanceOf[LongStreamImpl]
+    val bImpl = b.asInstanceOf[LongStreamImpl]
 
     aImpl.commenceOperation()
     bImpl.commenceOperation()
@@ -903,16 +892,16 @@ object DoubleStreamImpl {
     arr(1) = bImpl
 
     val supplier =
-      new DoubleStreamImpl.DoubleConcatSpliteratorFactory(
-        Arrays.spliterator[DoubleStream](arr)
+      new LongStreamImpl.IntConcatSpliteratorFactory(
+        Arrays.spliterator[LongStream](arr)
       )
 
     val pipelineA = aImpl.pipeline
     val pipelineB = bImpl.pipeline
-    val pipelines = new ArrayDeque[DoubleStreamImpl](pipelineA)
+    val pipelines = new ArrayDeque[LongStreamImpl](pipelineA)
     pipelines.addAll(pipelineB)
 
-    new DoubleStreamImpl(supplier.get(), parallel = false, pipelines)
+    new LongStreamImpl(supplier.get(), parallel = false, pipelines)
   }
 
 }

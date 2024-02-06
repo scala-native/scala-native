@@ -709,7 +709,7 @@ class StreamTest {
     s2.forEach((e) => {
       val inSet = expectedSet.remove(e)
       // Detect both unknown elements and
-      // occurances of unwanted, non-distinct elements
+      // occurrences of unwanted, non-distinct elements
       assertTrue(s"element ${e} not in expectedSet", inSet)
     })
 
@@ -795,11 +795,25 @@ class StreamTest {
   }
 
   @Test def streamFlatMapToInt(): Unit = {
-    // Stream#flatMapToInt is Not Yet Implemented
+    val expectedSum = 9
+
+    val s = jus.Stream.of[String]("AA", "B", "CC", "D", "EE", "F")
+
+    val sum = s.flatMapToInt(e => IntStream.of(e.length())).sum()
+
+    assertEquals(s"unexpected sum", expectedSum, sum)
   }
 
   @Test def streamFlatMapToLong(): Unit = {
-    // Stream#flatMapToLong is Not Yet Implemented
+    val offset = jl.Integer.MAX_VALUE.toLong
+    val expectedSum = 9 + (6 * offset)
+
+    val s = jus.Stream.of[String]("AA", "B", "CC", "D", "EE", "F")
+
+    val sum =
+      s.flatMapToLong(e => LongStream.of(e.length().toLong + offset)).sum()
+
+    assertEquals(s"unexpected sum", expectedSum, sum)
   }
 
   @Test def streamForeachOrdered(): Unit = {
@@ -1064,6 +1078,34 @@ class StreamTest {
     val sum = s.mapToDouble(e => 3.14 * e.length()).sum()
 
     assertEquals(s"unexpected sum", expectedSum, sum, 0.00001)
+  }
+
+  @Test def streamMapToInt(): Unit = {
+    val expectedSum = 9
+
+    val s = jus.Stream.of[String]("AA", "B", "CC", "D", "EE", "F")
+
+    /* Chose the items in S and the mapper function to yield an obviously
+     * floating point sum, not something that could be an Int implicitly
+     * converted to Double.
+     * Let the compiler distinguish Double as Object and Double
+     * as primitive. Only DoubleStream will have the sum method.
+     */
+
+    val sum = s.mapToInt(e => e.length()).sum()
+
+    assertEquals(s"unexpected sum", expectedSum, sum)
+  }
+
+  @Test def streamMapToLong(): Unit = {
+    val offset = jl.Integer.MAX_VALUE.toLong
+    val expectedSum = 9 + (6 * offset)
+
+    val s = jus.Stream.of[String]("AA", "B", "CC", "D", "EE", "F")
+
+    val sum = s.mapToLong(e => e.length().toLong + offset).sum()
+
+    assertEquals(s"unexpected sum", expectedSum, sum)
   }
 
   @Test def streamNoneMatch_EmptyStream(): Unit = {

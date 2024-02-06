@@ -5,13 +5,6 @@ import java.util.Spliterator
 
 object StreamSupport {
 
-  /* Design Note:
-   *   stream() and doubleStream() are implemented. intStream() and
-   *   longStream() are not.  The first two need to mature before
-   *   doubleStream() gets propagated into the latter two. No sense
-   *   multiplying bugs beyond necessity, said William.
-   */
-
   def doubleStream(
       spliterator: Spliterator.OfDouble,
       parallel: Boolean
@@ -31,7 +24,7 @@ object StreamSupport {
       spliterator: Spliterator.OfInt,
       parallel: Boolean
   ): IntStream = {
-    throw new UnsupportedOperationException("Not Yet Implemented")
+    new IntStreamImpl(spliterator, parallel)
   }
 
   def intStream(
@@ -39,14 +32,14 @@ object StreamSupport {
       characteristics: Int,
       parallel: Boolean
   ): IntStream = {
-    throw new UnsupportedOperationException("Not Yet Implemented")
+    new IntStreamImpl(supplier, characteristics, parallel)
   }
 
   def longStream(
       spliterator: Spliterator.OfLong,
       parallel: Boolean
   ): LongStream = {
-    throw new UnsupportedOperationException("Not Yet Implemented")
+    new LongStreamImpl(spliterator, parallel)
   }
 
   def longStream(
@@ -54,7 +47,7 @@ object StreamSupport {
       characteristics: Int,
       parallel: Boolean
   ): LongStream = {
-    throw new UnsupportedOperationException("Not Yet Implemented")
+    new LongStreamImpl(supplier, characteristics, parallel)
   }
 
   def stream[T](
@@ -71,4 +64,5 @@ object StreamSupport {
   ): Stream[T] = {
     new StreamImpl[T](supplier, characteristics, parallel)
   }
+
 }
