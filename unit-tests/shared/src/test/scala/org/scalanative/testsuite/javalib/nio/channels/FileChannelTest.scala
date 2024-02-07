@@ -36,6 +36,7 @@ object FileChannelTest {
     val orgDir = Files.createTempDirectory("scala-native-testsuite")
     val javalibDir = orgDir.resolve("javalib")
     val testDirRootPath = javalibDir
+      .resolve("java")
       .resolve("nio")
       .resolve("channels")
       .resolve("FileChannelTest")
