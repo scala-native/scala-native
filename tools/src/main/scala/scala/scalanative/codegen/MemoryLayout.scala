@@ -23,10 +23,15 @@ final case class MemoryLayout(
    */
   def referenceFieldsOffsets(implicit meta: Metadata): Seq[nir.Val.Long] = {
     val sizeOfHeader = meta.layouts.ObjectHeader.size
+    import nir.Type._
     val ptrOffsets =
       tys.collect {
         // offset in words without object header
-        case MemoryLayout.PositionedType(_: nir.Type.RefKind, offset) =>
+        case MemoryLayout.PositionedType(
+              _: RefKind | // normal or alligned reference field
+              StructValue((_: RefKind) :: ArrayValue(nir.Type.Byte, _) :: Nil),
+              offset
+            ) =>
           nir.Val.Long(
             (offset - sizeOfHeader) / MemoryLayout.BYTES_IN_LONG
           )
