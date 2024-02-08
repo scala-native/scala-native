@@ -548,7 +548,7 @@ object Generate {
                 .index(weakRefReferantField)
                 .ensuring(
                   _ > 0,
-                  "Runtime implementaiton error, no \"_gc_modified_referent\" field in java.lang.ref.WeakReference"
+                  "Runtime implementation error, no \"_gc_modified_referent\" field in java.lang.ref.WeakReference"
                 )
               val gcModifiedFieldReferentOffset = layout.layout
                 .tys(gcModifiedFieldReferentIdx)
