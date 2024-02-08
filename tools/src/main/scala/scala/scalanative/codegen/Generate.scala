@@ -4,6 +4,7 @@ package codegen
 import scala.collection.mutable
 import scala.scalanative.linker.{
   Class,
+  Field,
   ScopeInfo,
   Unavailable,
   ReachabilityAnalysis
@@ -523,28 +524,42 @@ object Generate {
             nir.Val.Int(value)
           )
 
-      val (weakRefIdsMin, weakRefIdsMax, modifiedFieldOffset) = reachabilityAnalysis.infos
-        .get(nir.Global.Top("java.lang.ref.WeakReference"))
+      val WeakReferenceClass = nir.Global.Top("java.lang.ref.WeakReference")
+      val WeakReferenceGCReferent = WeakReferenceClass.member(
+        nir.Sig.Field("_gc_modified_referent")
+      )
+      def weakRefClsInfo = reachabilityAnalysis.infos
+        .get(WeakReferenceClass)
         .collect { case cls: Class if cls.allocated => cls }
-        .fold((-1, -1, -1)) { weakRef =>
-          // if WeakReferences are being compiled and therefore supported
-          val gcModifiedFieldIndexes: Seq[Int] =
-            meta.layout(weakRef).entries.zipWithIndex.collect {
-              case (field, index) if field.name.mangle.contains("_gc_modified_") =>
-                index
-            }
+      def weakRefReferentField =
+        reachabilityAnalysis.infos
+          .get(WeakReferenceGCReferent)
+          .collect { case field: Field => field }
 
-          if (gcModifiedFieldIndexes.size != 1)
-            throw new Exception(
-              "Exactly one field should have the \"_gc_modified_\" modifier in java.lang.ref.WeakReference"
-            )
+      val (weakRefIdsMin, weakRefIdsMax, modifiedFieldOffset) =
+        weakRefClsInfo
+          .zip(weakRefReferentField)
+          .headOption
+          .fold((-1, -1, -1)) {
+            case (weakRef, weakRefReferantField) =>
+              // if WeakReferences are being compiled and therefore supported
+              val layout = meta.layout(weakRef)
+              val gcModifiedFieldReferentIdx = layout
+                .index(weakRefReferantField)
+                .ensuring(
+                  _ > 0,
+                  "Runtime implementation error, no \"_gc_modified_referent\" field in java.lang.ref.WeakReference"
+                )
+              val gcModifiedFieldReferentOffset = layout.layout
+                .tys(gcModifiedFieldReferentIdx)
+                .offset
 
-          (
-            meta.ranges(weakRef).start,
-            meta.ranges(weakRef).end,
-            gcModifiedFieldIndexes.head
-          )
-        }
+              (
+                meta.ranges(weakRef).start,
+                meta.ranges(weakRef).end,
+                gcModifiedFieldReferentOffset.toInt
+              )
+          }
       addToBuf(weakRefIdsMaxName, weakRefIdsMax)
       addToBuf(weakRefIdsMinName, weakRefIdsMin)
       addToBuf(weakRefFieldOffsetName, modifiedFieldOffset)

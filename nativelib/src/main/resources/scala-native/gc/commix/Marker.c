@@ -208,22 +208,16 @@ int Marker_markRegularObject(Heap *heap, Stats *stats, Object *object,
                              GreyPacket **outHolder,
                              GreyPacket **outWeakRefHolder, Bytemap *bytemap) {
     int objectsTraced = 0;
-    int64_t *ptr_map = object->rtti->refMapStruct;
-
-    for (int i = 0; ptr_map[i] != LAST_FIELD_OFFSET; i++) {
-        word_t current = ptr_map[i];
-        if (Object_IsReferantOfWeakReference(object, ptr_map[i]))
+    int32_t *refFieldOffsets = object->rtti->refFieldOffsets;
+    for (int i = 0; refFieldOffsets[i] != LAST_FIELD_OFFSET; i++) {
+        size_t fieldOffset = (size_t)refFieldOffsets[i];
+        Field_t *fieldRef = (Field_t *)((int8_t *)object + fieldOffset);
+        Field_t fieldReferant = *fieldRef;
+        if (Object_IsReferantOfWeakReference(object, fieldOffset)) {
             continue;
-
-        word_t *field = object->fields[current];
-        if (Heap_IsWordInHeap(heap, field)) {
-            ObjectMeta *fieldMeta = Bytemap_Get(bytemap, field);
-            if (ObjectMeta_IsAllocated(fieldMeta)) {
-                Marker_markObject(heap, stats, outHolder, outWeakRefHolder,
-                                  bytemap, (Object *)field, fieldMeta);
-            }
-            objectsTraced += 1;
         }
+        objectsTraced += Marker_markField(heap, stats, outHolder,
+                                          outWeakRefHolder, fieldReferant);
     }
     if (object->rtti->rt.id == __boxed_ptr_id) {
         // Boxed ptr always has a single field

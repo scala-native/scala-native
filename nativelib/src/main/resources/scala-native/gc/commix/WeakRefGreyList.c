@@ -33,16 +33,16 @@ static void WeakRefGreyList_NullifyPacket(Heap *heap, Stats *stats,
         Object *object = GreyPacket_Pop(weakRefsPacket);
         assert(Object_IsWeakReference(object));
 
-        word_t fieldOffset = __weak_ref_field_offset;
-        word_t *refObject = object->fields[fieldOffset];
-        if (Heap_IsWordInHeap(heap, refObject)) {
-            ObjectMeta *objectMeta = Bytemap_Get(bytemap, refObject);
-            if (ObjectMeta_IsAllocated(objectMeta)) {
-                if (!ObjectMeta_IsMarked(objectMeta)) {
-                    object->fields[fieldOffset] = NULL;
-                    // idempotent operation - does not need to be synchronized
-                    anyVisited = true;
-                }
+        Object **weakRefReferantField =
+            (Object **)((int8_t *)object + __weak_ref_field_offset);
+        word_t *weakRefReferant = (word_t *)*weakRefReferantField;
+        if (Heap_IsWordInHeap(heap, weakRefReferant)) {
+            ObjectMeta *objectMeta = Bytemap_Get(bytemap, weakRefReferant);
+            if (ObjectMeta_IsAllocated(objectMeta) &&
+                !ObjectMeta_IsMarked(objectMeta)) {
+                *weakRefReferantField = NULL;
+                // idempotent operation - does not need to be synchronized
+                anyVisited = true;
             }
         }
     }
