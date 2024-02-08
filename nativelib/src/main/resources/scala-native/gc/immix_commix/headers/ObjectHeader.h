@@ -41,7 +41,8 @@ typedef struct {
     } rt;
     int32_t size;
     int32_t idRangeUntil;
-    int64_t *refMapStruct;
+    int32_t *refFieldOffsets; // Array of field offsets (in bytes) from object
+                              // start, terminated with -1
 } Rtti;
 
 typedef word_t *Field_t;

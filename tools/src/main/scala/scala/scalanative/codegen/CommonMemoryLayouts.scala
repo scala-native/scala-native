@@ -44,7 +44,7 @@ class CommonMemoryLayouts(implicit meta: Metadata) {
       Rtti.layout ::
         nir.Type.Int :: // class size
         nir.Type.Int :: // id range
-        FieldLayout.referenceOffsetsTy :: // reference offsets
+        nir.Type.Ptr :: // reference offsets
         dynMapType.toList
 
     override val layout =

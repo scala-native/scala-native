@@ -3,12 +3,6 @@ package codegen
 
 import scalanative.linker.{Class, Field}
 
-object FieldLayout {
-
-  val referenceOffsetsTy = nir.Type.StructValue(Seq(nir.Type.Ptr))
-
-}
-
 class FieldLayout(cls: Class)(implicit meta: Metadata) {
 
   import meta.layouts.{Object, ObjectHeader}
@@ -39,12 +33,8 @@ class FieldLayout(cls: Class)(implicit meta: Metadata) {
 
   val struct = nir.Type.StructValue(layout.tys.map(_.ty))
   val size = layout.size
-  val referenceOffsetsValue = nir.Val.StructValue(
-    Seq(
-      nir.Val.Const(
-        nir.Val.ArrayValue(nir.Type.Long, layout.referenceFieldsOffsets)
-      )
-    )
+  val referenceOffsetsValue = nir.Val.Const(
+    nir.Val.ArrayValue(nir.Type.Int, layout.referenceFieldsOffsets)
   )
 
 }

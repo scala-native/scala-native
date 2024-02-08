@@ -21,10 +21,11 @@ final case class MemoryLayout(
    *  end expresed as number of words. Used by the GC for scanning objects.
    *  Terminated with offset=-1
    */
-  def referenceFieldsOffsets(implicit meta: Metadata): Seq[nir.Val.Long] = {
-    val sizeOfHeader = meta.layouts.ObjectHeader.size
+  private[codegen] def referenceFieldsOffsets(implicit
+      meta: Metadata
+  ): Seq[nir.Val.Int] = {
     import nir.Type._
-    val ptrOffsets =
+    val offsets =
       tys.collect {
         // offset in words without object header
         case MemoryLayout.PositionedType(
@@ -32,12 +33,10 @@ final case class MemoryLayout(
               StructValue((_: RefKind) :: ArrayValue(nir.Type.Byte, _) :: Nil),
               offset
             ) =>
-          nir.Val.Long(
-            (offset - sizeOfHeader) / MemoryLayout.BYTES_IN_LONG
-          )
+          offset.toInt
       }
 
-    ptrOffsets :+ nir.Val.Long(-1)
+    (offsets :+ -1).map(nir.Val.Int(_))
   }
 
   /** A list of offsets pointing to all inner reference types excluding object

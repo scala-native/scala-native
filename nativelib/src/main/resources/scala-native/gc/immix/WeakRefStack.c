@@ -19,14 +19,16 @@ void WeakRefStack_Nullify(void) {
     Bytemap *bytemap = heap.bytemap;
     while (!Stack_IsEmpty(&weakRefStack)) {
         Object *object = Stack_Pop(&weakRefStack);
-        int64_t fieldOffset = __weak_ref_field_offset;
-        word_t *refObject = object->fields[fieldOffset];
-        if (Heap_IsWordInHeap(&heap, refObject)) {
-            ObjectMeta *objectMeta = Bytemap_Get(bytemap, refObject);
-            if (!ObjectMeta_IsMarked(objectMeta)) {
+        Object **weakRefReferantField =
+            (Object **)((int8_t *)object + __weak_ref_field_offset);
+        word_t *weakRefReferant = (word_t *)*weakRefReferantField;
+        if (Heap_IsWordInHeap(&heap, weakRefReferant)) {
+            ObjectMeta *objectMeta = Bytemap_Get(bytemap, weakRefReferant);
+            if (ObjectMeta_IsAllocated(objectMeta) &&
+                !ObjectMeta_IsMarked(objectMeta)) {
                 // WeakReferences should have the held referent
                 // field set to null if collected
-                object->fields[fieldOffset] = NULL;
+                *weakRefReferantField = NULL;
                 visited = true;
             }
         }

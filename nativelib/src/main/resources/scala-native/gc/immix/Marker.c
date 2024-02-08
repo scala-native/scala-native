@@ -105,11 +105,13 @@ void Marker_Mark(Heap *heap, Stack *stack) {
             }
             // non-object arrays do not contain pointers
         } else {
-            int64_t *ptr_map = object->rtti->refMapStruct;
-            for (int i = 0; ptr_map[i] != LAST_FIELD_OFFSET; i++) {
-                if (Object_IsReferantOfWeakReference(object, ptr_map[i]))
+            int32_t *refFieldOffsets = object->rtti->refFieldOffsets;
+            for (int i = 0; refFieldOffsets[i] != LAST_FIELD_OFFSET; i++) {
+                size_t fieldOffset = (size_t)refFieldOffsets[i];
+                Field_t *fieldRef = (Field_t *)((int8_t *)object + fieldOffset);
+                if (Object_IsReferantOfWeakReference(object, fieldOffset))
                     continue;
-                Marker_markField(heap, stack, object->fields[ptr_map[i]]);
+                Marker_markField(heap, stack, *fieldRef);
             }
             if (objectId == __boxed_ptr_id) {
                 // Boxed ptr always has a single field
