@@ -59,7 +59,7 @@ object FileChannelTest {
       else "unit-tests"
 
     val inputSubDirs =
-      s"shared/src/test/resources/testsuite/javalib/nio/channels/"
+      s"shared/src/test/resources/testsuite/javalib/java/nio/channels/"
 
     val inputDir = s"${inputRootDir}/${inputSubDirs}"
 
