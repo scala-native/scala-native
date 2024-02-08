@@ -1,21 +1,112 @@
 package org.scalanative.testsuite.javalib.nio.channels
 
-import java.nio.channels._
-
-import java.nio.ByteBuffer
-import java.nio.file.{Files, Path, StandardOpenOption}
-import java.nio.file.AccessDeniedException
-import java.io.File
-
 import org.junit.Test
 import org.junit.Assert._
+import org.junit.Ignore
+import org.junit.BeforeClass
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
+import org.scalanative.testsuite.utils.Platform
 
+import java.{lang => jl}
+
+import java.io.File
 import java.io.{FileInputStream, FileOutputStream}
 import java.io.RandomAccessFile
 
+import java.nio.ByteBuffer
+
+import java.nio.channels._
+
+import java.nio.file.AccessDeniedException
+import java.nio.file.{Files, StandardOpenOption}
+import java.nio.file.{Path, Paths}
+
+object FileChannelTest {
+
+  private var fileChannelTestDirString: String = _
+
+  /* Magic value from external reality, not from SN software ecology.
+   * Must match OS size for inOutFileName and be kept in sync manually.
+   */
+  private final val expectedFileSize = 655
+  private val inOutFileName = "FileChannelsTestData.jar"
+
+  private def makeFileChannelTestDirs(): String = {
+    val orgDir = Files.createTempDirectory("scala-native-testsuite")
+    val javalibDir = orgDir.resolve("javalib")
+    val testDirRootPath = javalibDir
+      .resolve("java")
+      .resolve("nio")
+      .resolve("channels")
+      .resolve("FileChannelTest")
+
+    val testDirSrcPath = testDirRootPath.resolve("src")
+    val testDirDstPath = testDirRootPath.resolve("dst")
+
+    Files.createDirectories(testDirRootPath)
+
+    Files.createDirectory(testDirSrcPath)
+    Files.createDirectory(testDirDstPath)
+
+    testDirRootPath.toString()
+  }
+
+  private def provisionFileChannelTestData(fcTestDir: String): Unit = {
+    // In JVM, cwd is set to unit-tests/jvm/[scala-version]
+    val inputRootDir =
+      if (Platform.executingInJVM) "../.."
+      else "unit-tests"
+
+    val inputSubDirs =
+      s"shared/src/test/resources/testsuite/javalib/java/nio/channels/"
+
+    val inputDir = s"${inputRootDir}/${inputSubDirs}"
+
+    val inputFileName = s"${inputDir}/${inOutFileName}"
+
+    val outputFileName = s"${fcTestDir}/src/${inOutFileName}"
+
+    Files.copy(Paths.get(inputFileName), Paths.get(outputFileName))
+  }
+
+  private def filesHaveSameContents(file1: String, file2: String): Boolean = {
+    val raf1 = new RandomAccessFile(file1, "r")
+    try {
+      val raf2 = new RandomAccessFile(file2, "r")
+      try {
+        val ch1 = raf1.getChannel()
+        val ch2 = raf2.getChannel()
+        val commonSize = ch1.size()
+
+        if (commonSize != ch2.size()) {
+          false
+        } else {
+          val m1 = ch1.map(FileChannel.MapMode.READ_ONLY, 0L, commonSize)
+          val m2 = ch2.map(FileChannel.MapMode.READ_ONLY, 0L, commonSize)
+
+          m1.equals(m2)
+        }
+      } finally {
+        raf2.close()
+      }
+    } finally {
+      raf1.close()
+    }
+  }
+
+  @BeforeClass
+  def beforeClass(): Unit = {
+
+    fileChannelTestDirString = makeFileChannelTestDirs()
+
+    provisionFileChannelTestData(fileChannelTestDirString)
+  }
+}
+
 class FileChannelTest {
+  import FileChannelTest._
+
   def withTemporaryDirectory(fn: Path => Unit): Unit = {
     val file = File.createTempFile("test", ".tmp")
     assertTrue(file.delete())
@@ -551,7 +642,7 @@ class FileChannelTest {
         val mappedChan = channel.map(FileChannel.MapMode.READ_WRITE, 0, 0)
 
         assertThrows(
-          classOf[java.lang.IndexOutOfBoundsException],
+          classOf[jl.IndexOutOfBoundsException],
           mappedChan.get(0)
         )
 
@@ -710,6 +801,99 @@ class FileChannelTest {
         channel.close()
       }
     }
+  }
+
+  @Test def canTransferFrom(): Unit = {
+    val src =
+      s"${fileChannelTestDirString}/src/FileChannelsTestData.jar"
+
+    val dst =
+      s"${fileChannelTestDirString}/dst/transferFromResult.jar"
+
+    var srcChannel: FileChannel = null
+    var dstChannel: FileChannel = null
+
+    try {
+      srcChannel = new FileInputStream(src).getChannel()
+      val srcSize = srcChannel.size()
+      assertTrue("src size <= 0", srcSize > 0)
+
+      try {
+        dstChannel = new FileOutputStream(dst).getChannel()
+        val dstBeforePosition = dstChannel.position()
+
+        val nTransferred = dstChannel.transferFrom(srcChannel, 0, srcSize)
+
+        assertEquals("source size", expectedFileSize, srcSize)
+        assertEquals("number of bytes transferred", srcSize, nTransferred)
+        assertEquals("destination size", srcSize, dstChannel.size())
+
+        val srcAfterPosition = srcChannel.position()
+        assertEquals("source position changed", nTransferred, srcAfterPosition)
+
+        val dstAfterPosition = dstChannel.position()
+        assertEquals(
+          "destination position changed",
+          dstBeforePosition,
+          dstAfterPosition
+        )
+      } finally {
+        dstChannel.close();
+      }
+    } finally {
+      srcChannel.close();
+    }
+
+    assertTrue("file contents are not equal", filesHaveSameContents(src, dst))
+  }
+
+  @Test def canTransferTo(): Unit = {
+    val src =
+      s"${fileChannelTestDirString}/src/FileChannelsTestData.jar"
+
+    val dst =
+      s"${fileChannelTestDirString}/dst/transferToResult.jar"
+
+    var srcChannel: FileChannel = null
+    var dstChannel: FileChannel = null
+
+    try {
+      srcChannel = new FileInputStream(src).getChannel()
+      val srcSize = srcChannel.size()
+      assertTrue("src size <= 0", srcSize > 0)
+
+      try {
+        dstChannel = new FileOutputStream(dst).getChannel()
+        val srcBeforePosition = srcChannel.position()
+        val dstBeforePosition = dstChannel.position()
+
+        val nTransferred = srcChannel.transferTo(0, srcSize, dstChannel)
+
+        assertEquals("source size", expectedFileSize, srcSize)
+        assertEquals("number of bytes transferred", srcSize, nTransferred)
+        assertEquals("destination size", srcSize, dstChannel.size())
+
+        val srcAfterPosition = srcChannel.position()
+        assertEquals(
+          "source position changed",
+          srcBeforePosition,
+          srcAfterPosition
+        )
+
+        val dstAfterPosition = dstChannel.position()
+        assertEquals(
+          "destination position changed",
+          nTransferred,
+          dstAfterPosition
+        )
+      } finally {
+        dstChannel.close();
+      }
+    } finally {
+      srcChannel.close();
+    }
+
+    assertTrue("file contents are not equal", filesHaveSameContents(src, dst))
   }
 
 }

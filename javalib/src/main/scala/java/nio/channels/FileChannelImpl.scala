@@ -380,23 +380,54 @@ private[java] final class FileChannelImpl(
       position: Long,
       count: Long
   ): Long = {
+    if (position < 0)
+      throw new IllegalArgumentException("Negative position")
+
+    if (count < 0)
+      throw new IllegalArgumentException("Negative count")
+
     ensureOpen()
-    val buf = ByteBuffer.allocate(count.toInt)
-    src.read(buf)
-    write(buf, position)
+
+    if (position > this.size()) {
+      0L
+    } else {
+      // Yes, this section has _major_ I/O bugs, See Issue 3733
+      val buf = ByteBuffer.allocate(count.toInt)
+      src.read(buf)
+      buf.flip()
+      write(buf, position)
+    }
   }
 
   override def transferTo(
-      pos: Long,
+      _position: Long,
       count: Long,
       target: WritableByteChannel
   ): Long = {
-    ensureOpen()
-    position(pos)
-    val buf = new Array[Byte](count.toInt)
-    val nb = read(buf, 0, buf.length)
-    target.write(ByteBuffer.wrap(buf, 0, nb))
-    nb
+    if (_position < 0)
+      throw new IllegalArgumentException("Negative position")
+
+    if (count < 0)
+      throw new IllegalArgumentException("Negative count")
+
+    if (_position > this.size()) {
+      0L
+    } else {
+      ensureOpen()
+
+      val savedPosition = position()
+      if (_position != savedPosition)
+        position(_position)
+
+      // Yes, this section has _major_ I/O bugs, See Issue 3733
+      val buf = new Array[Byte](count.toInt)
+      val nb = read(buf, 0, buf.length)
+      target.write(ByteBuffer.wrap(buf, 0, nb))
+
+      position(savedPosition)
+
+      nb
+    }
   }
 
   private def lengthen(newFileSize: Long): Unit = {
