@@ -5,6 +5,8 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <wchar.h>
 #include "immix_commix/CommonConstants.h"
 #include "immix_commix/Log.h"
 #include "immix_commix/utils/MathUtils.h"
@@ -29,6 +31,8 @@ extern const int __boxed_ptr_id;
 
 #endif
 
+typedef struct StringObject StringObject;
+
 typedef struct {
     struct {
         word_t *cls;
@@ -37,7 +41,7 @@ typedef struct {
 #endif
         int32_t id;
         int32_t tid;
-        word_t *name;
+        StringObject *name;
     } rt;
     int32_t size;
     int32_t idRangeUntil;
@@ -63,6 +67,25 @@ typedef struct {
     int32_t length;
     int32_t stride;
 } ArrayHeader;
+
+typedef struct {
+    ArrayHeader header;
+    uint16_t values[0];
+} CharArray;
+
+typedef struct StringObject {
+    // ObjectHeader
+    Rtti *rtti;
+#ifdef USES_LOCKWORD
+    word_t *lockWord;
+#endif
+    // Object fields
+    // Best effort, order of fields is not guaranteed
+    CharArray *value;
+    int32_t offset;
+    int32_t count;
+    int32_t cached_hash_code;
+} StringObject;
 
 typedef struct Chunk Chunk;
 
@@ -123,5 +146,23 @@ static inline Field_t Field_allignedLockRef(const Field_t field) {
     return (Field_t)((word_t)field & MONITOR_OBJECT_MASK);
 }
 #endif
+
+/* Returns a wide string containg Class.name of given object based on UTF-8
+ * java.lang.String value.
+ * Caller of this function is responsible for freeing returned pointer. Function
+ * can fail if StringObject layout does not match the runtime layout
+ */
+static inline wchar_t *Object_nameWString(Object *object) {
+    // Depending on platform wchar_t might be 2 or 4 bytes
+    // Always convert Scala Char to wchar_t
+    CharArray *strChars = object->rtti->rt.name->value;
+    int nameLength = strChars->header.length;
+    wchar_t *buf = calloc(nameLength + 1, sizeof(wchar_t));
+    for (int i = 0; i < nameLength; i++) {
+        buf[i] = (wchar_t)strChars->values[i];
+    }
+    buf[nameLength] = 0;
+    return buf;
+}
 
 #endif // IMMIX_OBJECTHEADER_H
