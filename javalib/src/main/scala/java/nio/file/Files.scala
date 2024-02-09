@@ -277,7 +277,13 @@ object Files {
       attrs: Array[FileAttribute[_]]
   ): Path = {
     val p = if (prefix == null) "" else prefix
-    val temp = FileHelpers.createTempFile(p, "", dir, minLength = false)
+    val temp = FileHelpers.createTempFile(
+      p,
+      "",
+      dir,
+      minLength = false,
+      throwOnError = true
+    )
     if (temp.delete() && temp.mkdir()) {
       val tempPath = temp.toPath()
       setAttributes(tempPath, attrs)
@@ -307,7 +313,13 @@ object Files {
       attrs: Array[FileAttribute[_]]
   ): Path = {
     val p = if (prefix == null) "" else prefix
-    val temp = FileHelpers.createTempFile(p, suffix, dir, minLength = false)
+    val temp = FileHelpers.createTempFile(
+      p,
+      suffix,
+      dir,
+      minLength = false,
+      throwOnError = true
+    )
     val tempPath = temp.toPath()
     setAttributes(tempPath, attrs)
     tempPath
