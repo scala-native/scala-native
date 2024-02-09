@@ -16,6 +16,7 @@ import StandardCopyOption._
 import org.junit.Test
 import org.junit.Assert._
 import org.junit.Assume._
+import org.junit.Ignore
 
 import scala.util.{Try, Failure}
 
@@ -552,6 +553,31 @@ class FilesTest {
     } finally Files.delete(dir)
   }
 
+  /* This test is @Ignore'd for Continuous Integration (CI) because
+   * it creates, on purpose, an infinite loop when the condition described
+   * in Issue 3738 is present: bad path argument causes an infinite loop.
+   *
+   * The test can be run manually. It passes on JVM and should soon pass
+   * on Scala Native.
+   *
+   * If ever Scala Native gets the JUnit test timeout feature, this
+   * test can be changed for use in CI.
+   */
+
+  // Issue 3738
+  @Ignore
+  @Test def filesCreateTempDirectoryDoesNotLoopInfinitely(): Unit = {
+    val path = Paths.get("/+")
+
+    try {
+      val f = Files.createTempFile(path, "Alpha", "Omega")
+      Files.delete(f)
+      fail("expected IOException or a sub-class of it")
+    } catch {
+      case e: IOException =>
+    }
+  }
+
   @Test def filesCreateTempFileWorksWithNullPrefix(): Unit = {
     val file = Files.createTempFile(null, "txt")
     try {
@@ -574,6 +600,24 @@ class FilesTest {
       assertTrue("a2", Files.exists(file))
       assertTrue("a3", Files.isRegularFile(file))
     } finally Files.delete(file)
+  }
+
+  /* See comments above filesCreateTempDirectoryDoesNotLoopInfinitely()
+   * test above. Same song, next verse.
+   */
+
+  // Issue 3738
+  @Ignore
+  @Test def filesCreateTempFileDoesNotLoopInfinitely(): Unit = {
+    val path = Paths.get("/+")
+
+    try {
+      val f = Files.createTempFile(path, "Alpha", "Omega")
+      Files.delete(f)
+      fail("expected IOException or a sub-class of it")
+    } catch {
+      case e: IOException =>
+    }
   }
 
   @Test def filesIsRegularFileReportsFilesAsSuch(): Unit = {
