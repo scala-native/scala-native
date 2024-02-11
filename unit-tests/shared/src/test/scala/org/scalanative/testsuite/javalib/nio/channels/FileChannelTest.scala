@@ -4,6 +4,7 @@ import org.junit.Test
 import org.junit.Assert._
 import org.junit.Assume._
 import org.junit.BeforeClass
+import org.junit.Ignore
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform
@@ -965,6 +966,18 @@ class FileChannelTest {
     assertTrue("file contents are not equal", filesHaveSameContents(src, dst))
   }
 
+  /* Make this test available to be run manually. Do not run it in CI
+   * because some of the Linux systems there are like macOS and always
+   * return 0 bytes read on /dev/zero.
+   *
+   * The "Platform.isLinux" test is not sufficiently determinative.
+   *
+   * See what your system of interest does when you run it manually.
+   * If you get a zero read count from /dev/zero, then, if you have enough
+   * disk space, you can create file > 2 GB and specify it as the 'src'.
+   */
+
+  @Ignore
   @Test def canTransferToGivenLongCount(): Unit = {
     assumeTrue("Test is Linux specific", Platform.isLinux)
 
