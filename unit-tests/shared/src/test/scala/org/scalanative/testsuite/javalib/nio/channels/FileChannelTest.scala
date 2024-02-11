@@ -2,7 +2,7 @@ package org.scalanative.testsuite.javalib.nio.channels
 
 import org.junit.Test
 import org.junit.Assert._
-import org.junit.Ignore
+import org.junit.Assume._
 import org.junit.BeforeClass
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
@@ -847,6 +847,75 @@ class FileChannelTest {
     assertTrue("file contents are not equal", filesHaveSameContents(src, dst))
   }
 
+  private class InfiniteByteSourceChannel extends ReadableByteChannel {
+    private var available = true
+
+    def close(): Unit =
+      available = false
+
+    def isOpen(): Boolean = available
+
+    def read(dst: ByteBuffer): Int = {
+      val full = dst.limit()
+      dst.limit(full)
+      dst.position(full)
+      full
+    }
+  }
+
+  private class InfiniteByteSinkChannel extends WritableByteChannel {
+    private var available = true
+
+    def close(): Unit =
+      available = false
+
+    def isOpen(): Boolean = available
+
+    def write(dst: ByteBuffer): Int = {
+      val nWritten = dst.limit()
+      dst.position(nWritten)
+      nWritten
+    }
+  }
+
+  @Test def canTransferFromGivenLongCount(): Unit = {
+    // Runs on Linux & macOS. Not exercised on FreeBSD.
+    assumeFalse(
+      "Linux device specific tests are not run on Windows",
+      Platform.isWindows
+    )
+    assumeFalse(
+      "Linux device specific tests are not run on Windows",
+      Platform.isFreeBSD
+    )
+
+    val srcChannel = new InfiniteByteSourceChannel
+
+    val dst =
+      if (!Platform.isWindows) "/dev/null"
+      else "NUL" // Buyer beware, Test not yet exercised on Windows.
+
+    val dstChannel =
+      FileChannel.open(Paths.get(dst), StandardOpenOption.WRITE)
+
+    /* An arbitrary value larger than Integer.MAX_VALUE.
+     * To be distinguishable during debugging, should differ from
+     * value used in 'canTransferToGivenLongCount()'.
+     */
+    val MAX_TRANSFER = Integer.MAX_VALUE + 1024L
+
+    try {
+      val nTransferred =
+        dstChannel.transferFrom(srcChannel, 0L, MAX_TRANSFER)
+
+      assertEquals("number of bytes transferred", MAX_TRANSFER, nTransferred)
+
+    } finally {
+      srcChannel.close();
+      dstChannel.close();
+    }
+  }
+
   @Test def canTransferTo(): Unit = {
     val src =
       s"${fileChannelTestDirString}/src/FileChannelsTestData.jar"
@@ -894,6 +963,43 @@ class FileChannelTest {
     }
 
     assertTrue("file contents are not equal", filesHaveSameContents(src, dst))
+  }
+
+  @Test def canTransferToGivenLongCount(): Unit = {
+    assumeTrue("Test is Linux specific", Platform.isLinux)
+
+    /* - macOS seems to always returns 0 bytes read when reading from
+     *   character special files, such as /dev/zero.
+     *
+     * - Neither implemented nor tested on Windows.
+     *   bootstrap: Windows probably uses "NUL" instead of "/dev/null"
+     *
+     * - Neither implemented nor tested on FreeBSD or elsewhere.
+     *   Probably similar 0 length issue as macOS.
+     */
+
+    val src = "/dev/zero" // Glitch: macOs always reads 0 bytes. Arrgh!
+    val srcChannel =
+      FileChannel.open(Paths.get(src), StandardOpenOption.READ)
+
+    val dstChannel = new InfiniteByteSinkChannel
+
+    /* An arbitrary value larger than Integer.MAX_VALUE.
+     * To be distinguishable during debugging, should differ from
+     * value used in 'canTransferFromGivenLongCount()'.
+     */
+    val MAX_TRANSFER = Integer.MAX_VALUE + 1024L + 109L
+
+    try {
+      val nTransferred =
+        srcChannel.transferTo(0L, MAX_TRANSFER, dstChannel)
+
+      assertEquals("number of bytes transferred", MAX_TRANSFER, nTransferred)
+
+    } finally {
+      srcChannel.close();
+      dstChannel.close();
+    }
   }
 
 }
