@@ -27,8 +27,6 @@ import scala.scalanative.windows.WinSocketApiExt._
 
 private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
   import AbstractPlainSocketImpl._
-
-  protected def setSocketFdBlocking(fd: FileDescriptor, blocking: Boolean): Unit
   protected def tryPollOnConnect(timeout: Int): Unit
   protected def tryPollOnAccept(): Unit
 
@@ -44,6 +42,7 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
 
   override def getInetAddress: InetAddress = address
   override def getFileDescriptor: FileDescriptor = fd
+
   final protected var isClosed: Boolean =
     fd == InvalidSocketDescriptor
 
@@ -137,6 +136,11 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
     if (useIPv4Only) bind4(_: InetAddress, _: Int)
     else bind6(_: InetAddress, _: Int)
 
+  override def create(stream: Boolean): Unit = {
+    val family = SocketHelpers.getGaiHintsProtocolFamily()
+    fd = Net.socket(family, stream)
+  }
+
   override def bind(addr: InetAddress, port: Int): Unit = {
     throwIfClosed("bind")
 
@@ -176,10 +180,10 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
   private def connect4(addr: InetAddress, port: Int, timeout: Int): Unit = {
     val sa4 = stackalloc[in.sockaddr_in]()
     val sa4Len = sizeof[in.sockaddr_in].toUInt
+
     SocketHelpers.prepareSockaddrIn4(addr, port, sa4)
 
-    if (timeout != 0)
-      setSocketFdBlocking(fd, blocking = false)
+    if (timeout != 0) Net.setSocketBlocking(fd, blocking = false)
 
     val connectRet = socket.connect(
       fd.fd,
@@ -220,8 +224,7 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
     // By contract, all the bytes in sa6 are zero going in.
     SocketHelpers.prepareSockaddrIn6(addr, port, sa6)
 
-    if (timeout != 0)
-      setSocketFdBlocking(fd, blocking = false)
+    if (timeout != 0) Net.setSocketBlocking(fd, blocking = false)
 
     val connectRet = socket.connect(
       fd.fd,

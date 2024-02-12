@@ -38,6 +38,11 @@ object SocketHelpers {
     isReachable
   }
 
+  def getGaiHintsProtocolFamily(): ProtocolFamily = {
+    if (useIPv4Stack) StandardProtocolFamily.INET
+    else StandardProtocolFamily.INET6
+  }
+
   private[net] def getGaiHintsAddressFamily(): Int = {
     getPreferIPv6Addresses() match {
       // let getaddrinfo() decide what is returned and its order.
@@ -98,7 +103,7 @@ object SocketHelpers {
     systemPropertyForcesIPv4 || !isIPv6Configured()
   }
 
-  private[net] def getUseIPv4Stack(): Boolean = useIPv4Stack
+  def getUseIPv4Stack(): Boolean = useIPv4Stack
 
   private lazy val preferIPv6Addresses: Option[Boolean] = {
     if (getUseIPv4Stack()) {
@@ -504,4 +509,20 @@ private[net] object ip6 {
   implicit class ip6Extension(self: ip6.type) {
     def IPV6_MULTICAST_HOPS: CInt = in.IPV6_MULTICAST_HOPS
   }
+}
+
+@extern
+object async {
+
+  // only in Linux and FreeBSD, but not macOS
+  @name("scalanative_async_sock_nonblock")
+  def SOCK_NONBLOCK: CInt = extern
+
+  // only on Linux and FreeBSD, but not macOS
+  @name("scalanative_async_msg_nosignal")
+  def MSG_NOSIGNAL: CInt = extern
+
+  // only on macOS and some BSDs (?)
+  @name("scalanative_async_so_nosigpipe")
+  def SO_NOSIGPIPE: CInt = extern
 }

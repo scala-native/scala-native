@@ -150,6 +150,26 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
     bindFunc(laddr, port)
   }
 
+  override def create(): Unit = {
+    val family = SocketHelpers.getGaiHintsProtocolFamily()
+    val s = Net.socket(family, stream = false)
+
+    // enable broadcast by default
+    val broadcastPrt = stackalloc[CInt]()
+    !broadcastPrt = 1
+    if (posix.sys.socket.setsockopt(
+      s.fd,
+      posix.sys.socket.SOL_SOCKET,
+      posix.sys.socket.SO_BROADCAST,
+      broadcastPrt.asInstanceOf[Ptr[Byte]],
+      sizeof[CInt].toUInt
+    ) < 0) {
+      Net.close(s)
+      throw new IOException(s"Could not set SO_BROADCAST on socket: $errno")
+    }
+    fd = s
+  }
+
   private def send4(p: DatagramPacket): Unit = {
     val insAddr = p.getSocketAddress().asInstanceOf[InetSocketAddress]
     val sa4 = stackalloc[in.sockaddr_in]()

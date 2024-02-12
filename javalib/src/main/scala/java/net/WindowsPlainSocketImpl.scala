@@ -12,25 +12,6 @@ private[net] class WindowsPlainSocketImpl extends AbstractPlainSocketImpl {
   import WinSocketApiExt._
   import WinSocketApiOps._
 
-  override def create(streaming: Boolean): Unit = {
-    WinSocketApiOps.init()
-    val socket = WSASocketW(
-      addressFamily = unixSocket.AF_INET,
-      socketType = unixSocket.SOCK_STREAM,
-      protocol = 0, // choosed by provider
-      protocolInfo = null,
-      group = 0.toUInt,
-      flags = WSA_FLAG_OVERLAPPED
-    )
-    if (socket == InvalidSocket) {
-      throw new IOException(s"Couldn't create a socket: ${WSAGetLastError()}")
-    }
-    fd = new FileDescriptor(
-      FileDescriptor.FileHandle(socket),
-      readOnly = false
-    )
-  }
-
   final protected def tryPollOnConnect(timeout: Int): Unit = {
     val hasTimeout = timeout > 0
     val deadline = if (hasTimeout) System.currentTimeMillis() + timeout else 0L
@@ -75,7 +56,7 @@ private[net] class WindowsPlainSocketImpl extends AbstractPlainSocketImpl {
     }
 
     try loop(timeout)
-    finally setSocketFdBlocking(fd, blocking = true)
+    finally WindowsNet.setSocketBlocking(fd, blocking = true)
   }
 
   protected def tryPollOnAccept(): Unit = {
@@ -115,20 +96,4 @@ private[net] class WindowsPlainSocketImpl extends AbstractPlainSocketImpl {
       )
     }
   }
-
-  protected def setSocketFdBlocking(
-      fd: FileDescriptor,
-      blocking: Boolean
-  ): Unit = {
-    val mode = stackalloc[Int]()
-    if (blocking)
-      !mode = 0
-    else
-      !mode = 1
-    if (ioctlSocket(fd.handle, FIONBIO, mode) != 0)
-      throw new SocketException(
-        s"Failed to set socket ${if (!blocking) "non-" else ""}blocking"
-      )
-  }
-
 }
