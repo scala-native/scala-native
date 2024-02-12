@@ -11,7 +11,7 @@ import scalanative.nscplugin.NirPrimitives._
 trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
   import global.{definitions => defn, _}
   import defn._
-  import treeInfo.hasSynthCaseSymbol
+  import treeInfo.{hasSynthCaseSymbol, StripCast}
   import nirAddons._
   import nirDefinitions._
   import SimpleType.{fromType, fromSymbol}
@@ -607,7 +607,13 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     def genArrayValue(av: ArrayValue): nir.Val = {
       val ArrayValue(tpt, elems) = av
       implicit val pos: nir.SourcePosition = av.pos
+      genArrayValue(tpt, elems)
+    }
 
+    def genArrayValue(tpt: Tree, elems: Seq[Tree])(implicit
+        pos: nir.SourcePosition
+    ): nir.Val = {
+      // println(s"array[${tpt.tpe}]: {${elems.mkString(", ")}}")
       val elemty = genType(tpt.tpe)
       val values = genSimpleArgs(elems)
 
@@ -1166,6 +1172,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     }
 
     def genApply(app: Apply): nir.Val = {
+      def tree = app
       val Apply(fun, args) = app
 
       implicit val pos: nir.SourcePosition = app.pos
@@ -1173,20 +1180,76 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         reporter.error(app.pos, msg)
         nir.Val.Null
       }
-      fun match {
+      tree match {
         case _ if fun.symbol == ExternMethod =>
           fail(s"extern can be used only from non-inlined extern methods")
-        case _: TypeApply =>
+        case Apply(_: TypeApply, _) =>
           genApplyTypeApply(app)
-        case Select(Super(_, _), _) =>
+        case Apply(Select(Super(_, _), _), _) =>
           genApplyMethod(
             fun.symbol,
             statically = true,
             curMethodThis.get.get,
             args
           )
-        case Select(New(_), nme.CONSTRUCTOR) =>
+        case Apply(Select(New(_), nme.CONSTRUCTOR), _) =>
           genApplyNew(app)
+
+        // Based on Scala2 Cleanup phase, and WrapArray extractor defined in Scala.js variant
+        // Replaces `Array(<ScalaRunTime>.wrapArray(ArrayValue(...).$asInstanceOf[...]), <tag>)`
+        // with just `ArrayValue(...).$asInstanceOf[...]`
+        //
+        // See scala/bug#6611; we must *only* do this for literal vararg arrays.
+        // format: off
+        case Apply(appMeth @ Select(appMethQual, _), Apply(wrapRefArrayMeth, StripCast(arrValue @ ArrayValue(elemtpt, elems)) :: Nil) :: classTagEvidence :: Nil)
+        if WrapArray.isClassTagBasedWrapArrayMethod(wrapRefArrayMeth.symbol) &&
+                appMeth.symbol == ArrayModule_genericApply &&
+                !elemtpt.tpe.typeSymbol.isBottomClass &&
+                !elemtpt.tpe.typeSymbol.isPrimitiveValueClass /* can happen via specialization.*/ =>
+        
+          classTagEvidence.attachments.get[analyzer.MacroExpansionAttachment] match {
+            case Some(att) 
+            if att.expandee.symbol.name == nme.materializeClassTag && 
+               tree.isInstanceOf[ApplyToImplicitArgs] =>
+                 genArrayValue(arrValue)
+            case _ =>
+              val arrValue = genApplyMethod(
+                  ClassTagClass.info.decl(nme.newArray),
+                  statically = false,
+                  ValTree(genExpr(classTagEvidence)),
+                  ValTree(nir.Val.Int(elems.size)) :: Nil
+                )
+              val scalaRuntimeTimeModule = genModule(ScalaRunTimeModule)
+              elems.zipWithIndex.foreach { case (elem, i) =>
+                genApplyModuleMethod(
+                  ScalaRunTimeModule,
+                  currentRun.runDefinitions.arrayUpdateMethod,
+                  ValTree(arrValue) :: ValTree(nir.Val.Int(i)) :: elem :: Nil
+                )
+              }
+              arrValue
+          }
+
+        // case Apply(appMeth @ Select(appMethQual, _), elem0 :: Apply(wrapArrayMeth, ArrayValue(elemtpt, elems) :: Nil) :: Nil)
+        case Apply(appMeth @ Select(appMethQual, _), elem0 :: WrapArray(rest @ ArrayValue(elemtpt, elems)) :: Nil)
+            if appMeth.symbol == ArrayModule_apply(elemtpt.tpe) && 
+               treeInfo.isQualifierSafeToElide(appMethQual) =>
+          genArrayValue(elemtpt, elem0 +: elems)
+
+        // See scala/bug#12201, should be rewrite as Primitive Array.
+        // Match Array
+        case Apply(appMeth @ Select(appMethQual, _), WrapArray(arrValue: ArrayValue) :: _ :: Nil) 
+        if appMeth.symbol == ArrayModule_genericApply && 
+           treeInfo.isQualifierSafeToElide(appMethQual) =>
+          genArrayValue(arrValue)
+
+        case Apply(appMeth @ Select(appMethQual, _), elem :: (nil: RefTree) :: Nil)
+        if nil.symbol == NilModule && appMeth.symbol == ArrayModule_apply(elem.tpe.widen) && 
+           treeInfo.isExprSafeToInline(nil) && 
+           treeInfo.isQualifierSafeToElide(appMethQual) =>
+          genArrayValue(TypeTree(elem.tpe.widen), elem :: Nil)
+        
+        // format: on
         case _ =>
           val sym = fun.symbol
           if (sym.isLabel) {
@@ -3021,4 +3084,47 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           buf.jump(label, Seq(value))
       }
   }
+
+  object WrapArray {
+    private lazy val hasNewCollections =
+      !scala.util.Properties.versionNumberString.startsWith("2.12.")
+
+    private val wrapArrayModule =
+      if (hasNewCollections) ScalaRunTimeModule
+      else PredefModule
+
+    val wrapRefArrayMethod: Symbol =
+      getMemberMethod(wrapArrayModule, nme.wrapRefArray)
+
+    val genericWrapArrayMethod: Symbol =
+      getMemberMethod(wrapArrayModule, nme.genericWrapArray)
+
+    def isClassTagBasedWrapArrayMethod(sym: Symbol): Boolean =
+      sym == wrapRefArrayMethod || sym == genericWrapArrayMethod
+
+    private val isWrapArray: Set[Symbol] = {
+      Seq(
+        nme.wrapRefArray,
+        nme.wrapByteArray,
+        nme.wrapShortArray,
+        nme.wrapCharArray,
+        nme.wrapIntArray,
+        nme.wrapLongArray,
+        nme.wrapFloatArray,
+        nme.wrapDoubleArray,
+        nme.wrapBooleanArray,
+        nme.wrapUnitArray,
+        nme.genericWrapArray
+      ).map(getMemberMethod(wrapArrayModule, _)).toSet
+    }
+
+    def unapply(tree: Apply): Option[Tree] = tree match {
+      case Apply(wrapArray_?, List(wrapped))
+          if isWrapArray(wrapArray_?.symbol) =>
+        Some(wrapped)
+      case _ =>
+        None
+    }
+  }
+
 }
