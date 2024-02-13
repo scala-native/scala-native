@@ -129,7 +129,7 @@ trait NirGenExpr(using Context) {
           if (nirPrimitives.isPrimitive(fun)) genApplyPrimitive(app)
           else if (Erasure.Boxing.isBox(sym)) genApplyBox(arg.tpe, arg)
           else if (Erasure.Boxing.isUnbox(sym)) genApplyUnbox(app.tpe, arg)
-          else genApplyMethod(sym, statically = isStatic, qualifier, args)
+          else genApplyMethod(sym, statically = false, qualifier, args)
       }
     }
 
