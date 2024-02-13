@@ -124,7 +124,12 @@ trait NirGenUtil(using Context) { self: NirCodeGen =>
               defnNir.NatDigitClasses
             ).flatMap(wrap)
 
-            asCStruct.orElse(asNatBase).orElse(asNatDigit)
+            def asCFuncPtr = optIndexOf(
+              defnNir.UnsafeTag_materializeCFuncPtrTags,
+              defnNir.CFuncPtrNClass
+            ).flatMap(wrap)
+
+            asCStruct.orElse(asNatBase).orElse(asNatDigit).orElse(asCFuncPtr)
           }
         }
 

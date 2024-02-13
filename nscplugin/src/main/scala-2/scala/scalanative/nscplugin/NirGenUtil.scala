@@ -83,6 +83,8 @@ trait NirGenUtil[G <: Global with Singleton] { self: NirGenPhase[G] =>
             just(NatBaseClass(NatBaseTagMethod.indexOf(sym)))
           case sym if NatDigitTagMethod.contains(sym) =>
             wrap(NatDigitClass(NatDigitTagMethod.indexOf(sym)))
+          case sym if CFuncPtrNTagMethod.contains(sym) =>
+            wrap(CFuncPtrNClass(CFuncPtrNTagMethod.indexOf(sym)))
           case _ =>
             None
         }
