@@ -10,7 +10,11 @@ import java.io.{
   InputStream,
   RandomAccessFile
 }
+
 import java.util.Enumeration
+
+import java.{util => ju}
+import java.util.{stream => jus}
 
 class ZipFile(file: File, mode: Int, charset: Charset) extends Closeable {
   def this(file: File, mode: Int) = this(file, mode, StandardCharsets.UTF_8)
@@ -22,7 +26,8 @@ class ZipFile(file: File, mode: Int, charset: Charset) extends Closeable {
 
   private final val fileName: String = file.getPath()
 
-  if (mode != ZipFile.OPEN_READ && mode != (ZipFile.OPEN_READ | ZipFile.OPEN_DELETE)) {
+  if (mode != ZipFile.OPEN_READ &&
+      mode != (ZipFile.OPEN_READ | ZipFile.OPEN_DELETE)) {
     throw new IllegalArgumentException()
   }
 
@@ -35,7 +40,39 @@ class ZipFile(file: File, mode: Int, charset: Charset) extends Closeable {
 
   private var mRaf = new RandomAccessFile(fileName, "r")
   private val ler = new ZipEntry.LittleEndianReader()
-  private val mEntries = scala.collection.mutable.Map.empty[String, ZipEntry]
+
+  /* A note on concurrency:
+   *
+   *   One might expect to see the mEntires map wrapped in the heavy weight
+   *   ju.Collections.synchronizedMap().  It may come to that but it would
+   *   be nice to avoid that cost, if correctness can be established/maintained.
+   *
+   *   Most users of this class will probably be using it in a single thread.
+   *   jdk.zipfs is defined in such a way that two or more threads in the
+   *   same JVM/SN might come to access the same instance of this class.
+   *
+   *   The central directory is read when this class is instantiated, so
+   *   a second instantiation would be blocked until the first completed.
+   *
+   *   All other uses of mEnties are read-only, so synchronization is OK
+   *   there. Reading the entries is synchronized in RAF.
+   *
+   *   The working presumption is that any I/O reads done by this class
+   *   that might block have the @blocking annotation at actual method
+   *   which could block.
+   *
+   *   Now, let Cold Experience show what I have missed in this analysis.
+   */
+
+  /* The magic number 64 is a guess.
+   * With the defaults of 16 entries and a 0.75 load factor, the map will
+   * resize at 12 entires.  Seems like most zip archives will have more than
+   * that number. With specified 64 entries and the default load factor,
+   * the map will resize at 48 entries & the "growth" will be be larger to
+   * boot. The number could probably be more like 128 or so.
+   */
+
+  private val mEntries = ju.LinkedHashMap[String, ZipEntry](64)
 
   readCentralDir()
 
@@ -64,12 +101,12 @@ class ZipFile(file: File, mode: Int, charset: Charset) extends Closeable {
 
   def entries(): Enumeration[_ <: ZipEntry] = {
     checkNotClosed()
-    val iterator = mEntries.values.iterator
+    val iterator = mEntries.values().iterator()
 
     new Enumeration[ZipEntry] {
       override def hasMoreElements(): Boolean = {
         checkNotClosed()
-        iterator.hasNext
+        iterator.hasNext()
       }
 
       override def nextElement(): ZipEntry = {
@@ -81,14 +118,10 @@ class ZipFile(file: File, mode: Int, charset: Charset) extends Closeable {
 
   def getEntry(entryName: String): ZipEntry = {
     checkNotClosed()
-    if (entryName == null) {
+    if (entryName == null)
       throw new NullPointerException()
-    }
 
-    mEntries.get(entryName) match {
-      case None     => mEntries.getOrElse(entryName + "/", null)
-      case Some(ze) => ze
-    }
+    mEntries.getOrDefault(entryName + "/", null)
   }
 
   def getInputStream(_entry: ZipEntry): InputStream = {
@@ -132,7 +165,12 @@ class ZipFile(file: File, mode: Int, charset: Charset) extends Closeable {
 
   def size(): Int = {
     checkNotClosed()
-    mEntries.size
+    mEntries.size()
+  }
+
+  def stream(): jus.Stream[ZipEntry] = {
+    val spliter = mEntries.values().spliterator()
+    jus.StreamSupport.stream(spliter, parallel = false)
   }
 
   private def readCentralDir(): Unit = {
@@ -210,13 +248,13 @@ class ZipFile(file: File, mode: Int, charset: Charset) extends Closeable {
     // If CDE is found then go and read all the entries
     rafs = new ZipFile.RAFStream(mRaf, scanOffset)
     bin = new BufferedInputStream(rafs, 4096)
+
     var i = 0
     while (i < numEntries) {
       val newEntry = ZipEntry.fromInputStream(ler, bin)
-      mEntries += newEntry.getName() -> newEntry
+      mEntries.put(newEntry.getName(), newEntry)
       i += 1
     }
-
   }
 
 }
