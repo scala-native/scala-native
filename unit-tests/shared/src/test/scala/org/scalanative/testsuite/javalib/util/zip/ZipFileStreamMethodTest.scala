@@ -45,8 +45,6 @@ class ZipFileStreamMethodTest {
       location: String,
       entryNames: Array[String]
   ): Unit = {
-    val index = 0
-
     val zipOut = new ZipOutputStream(new FileOutputStream(location))
     try {
       zipOut.setComment("Some interesting moons of Saturn.")
