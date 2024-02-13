@@ -90,7 +90,7 @@ class MsgIoSocketTest {
 
   @Test def msgIoShouldScatterGather(): Unit = if (!isWindows) {
     // sendmsg() should gather, recvmsg() should scatter, the twain shall meet
-    Zone { implicit z =>
+    Zone.acquire { implicit z =>
       val (inSocket, outSocket, dstAddr) = getUdpLoopbackSockets(AF_INET)
 
       try {
@@ -237,169 +237,170 @@ class MsgIoSocketTest {
    */
   @Test def linux64ControlMessages(): Unit = if (!isWindows) {
     // The focus is on control messages, the data sent is only an excuse.
-    if (Platform.isLinux && !Platform.is32BitPlatform) Zone { implicit z =>
-      // Linux bit definition. Useful for cmsg_level & cmsg_type on 64 bit OS.
-      type l64cmsghdr = CStruct3[
-        size_t, // cmsg_len
-        CInt, // cmsg_level
-        CInt // cmsg_type
-      ]
+    if (Platform.isLinux && !Platform.is32BitPlatform) Zone.acquire {
+      implicit z =>
+        // Linux bit definition. Useful for cmsg_level & cmsg_type on 64 bit OS.
+        type l64cmsghdr = CStruct3[
+          size_t, // cmsg_len
+          CInt, // cmsg_level
+          CInt // cmsg_type
+        ]
 
-      val (inSocket, outSocket, dstAddr) = getUdpLoopbackSockets(AF_INET)
+        val (inSocket, outSocket, dstAddr) = getUdpLoopbackSockets(AF_INET)
 
-      try {
-        // Linux values, empirically determined
-        val SO_TIMESTAMP = 0x1d // decimal 29
-        val SCM_TIMESTAMP = 0x1d // decimal 29
-        val SOF_TIMESTAMPING_SOFTWARE = 0x10 // decimal 16
+        try {
+          // Linux values, empirically determined
+          val SO_TIMESTAMP = 0x1d // decimal 29
+          val SCM_TIMESTAMP = 0x1d // decimal 29
+          val SOF_TIMESTAMPING_SOFTWARE = 0x10 // decimal 16
 
-        val sOpt = stackalloc[Int](1)
-        !sOpt = SOF_TIMESTAMPING_SOFTWARE
+          val sOpt = stackalloc[Int](1)
+          !sOpt = SOF_TIMESTAMPING_SOFTWARE
 
-        val ssoStatus = setsockopt(
-          inSocket,
-          SOL_SOCKET,
-          SO_TIMESTAMP,
-          sOpt.asInstanceOf[Ptr[Byte]],
-          sizeof[Int].toUInt
-        )
+          val ssoStatus = setsockopt(
+            inSocket,
+            SOL_SOCKET,
+            SO_TIMESTAMP,
+            sOpt.asInstanceOf[Ptr[Byte]],
+            sizeof[Int].toUInt
+          )
 
-        assertEquals(s"setsockopt errno: ${errno}", 0, ssoStatus)
+          assertEquals(s"setsockopt errno: ${errno}", 0, ssoStatus)
 
-        val outData0 = poemHeader + chunk1 + chunk2
-        val outData1 = chunk3
+          val outData0 = poemHeader + chunk1 + chunk2
+          val outData1 = chunk3
 
-        val nOutIovs = 2
-        val outVec = alloc[iovec](nOutIovs)
+          val nOutIovs = 2
+          val outVec = alloc[iovec](nOutIovs)
 
-        // outData created with only 1 byte UTF-8 chars, so length method OK.
+          // outData created with only 1 byte UTF-8 chars, so length method OK.
 
-        outVec(0).iov_base = toCString(outData0)
-        outVec(0).iov_len = outData0.length.toUSize
+          outVec(0).iov_base = toCString(outData0)
+          outVec(0).iov_len = outData0.length.toUSize
 
-        outVec(1).iov_base = toCString(outData1)
-        outVec(1).iov_len = outData1.length.toUSize
+          outVec(1).iov_base = toCString(outData1)
+          outVec(1).iov_len = outData1.length.toUSize
 
-        val outMsgHdr = alloc[msghdr]()
-        outMsgHdr.msg_name = dstAddr.asInstanceOf[Ptr[Byte]]
-        outMsgHdr.msg_namelen = sizeof[sockaddr_in].toUInt
-        outMsgHdr.msg_iov = outVec
-        outMsgHdr.msg_iovlen = nOutIovs
+          val outMsgHdr = alloc[msghdr]()
+          outMsgHdr.msg_name = dstAddr.asInstanceOf[Ptr[Byte]]
+          outMsgHdr.msg_namelen = sizeof[sockaddr_in].toUInt
+          outMsgHdr.msg_iov = outVec
+          outMsgHdr.msg_iovlen = nOutIovs
 
-        val nBytesSent = sendmsg(outSocket, outMsgHdr, 0)
+          val nBytesSent = sendmsg(outSocket, outMsgHdr, 0)
 
-        checkIoResult(nBytesSent, "sendmsg_1")
+          checkIoResult(nBytesSent, "sendmsg_1")
 
-        // When sending a small UDP datagram, data will be sent in one shot.
-        val expectedBytesSent = outData0.size + outData1.size
-        assertEquals("sendmsg_2", expectedBytesSent, nBytesSent.toInt)
+          // When sending a small UDP datagram, data will be sent in one shot.
+          val expectedBytesSent = outData0.size + outData1.size
+          assertEquals("sendmsg_2", expectedBytesSent, nBytesSent.toInt)
 
-        // If inSocket did not get data by timeout, it probably never will.
-        pollReadyToRecv(
-          inSocket,
-          30 * 1000
-        ) // assert fail on error or timeout
+          // If inSocket did not get data by timeout, it probably never will.
+          pollReadyToRecv(
+            inSocket,
+            30 * 1000
+          ) // assert fail on error or timeout
 
-        // Read all in one gulp. We are only marginally interested in data.
+          // Read all in one gulp. We are only marginally interested in data.
 
-        val inData0Size = nBytesSent
-        val inData0: Ptr[Byte] = alloc[Byte](inData0Size.toInt)
+          val inData0Size = nBytesSent
+          val inData0: Ptr[Byte] = alloc[Byte](inData0Size.toInt)
 
-        val nInIovs = 1
-        val inVec = alloc[iovec](nInIovs)
+          val nInIovs = 1
+          val inVec = alloc[iovec](nInIovs)
 
-        inVec(0).iov_base = inData0
-        inVec(0).iov_len = inData0Size.toUInt
+          inVec(0).iov_base = inData0
+          inVec(0).iov_len = inData0Size.toUInt
 
-        /* Here we get down to the matter at hand: control messages
-         * Pause for a moment and get your true geek on before proceeding.
-         * Do you know Dante's famous quote about the Gates of Hell?
-         */
+          /* Here we get down to the matter at hand: control messages
+           * Pause for a moment and get your true geek on before proceeding.
+           * Do you know Dante's famous quote about the Gates of Hell?
+           */
 
-        /* BEWARE: The obvious
-         *	   'type timestampCtlMsg_t = CStruct2[cmsghdr, timeval]'
-         *	   will pad 4 bytes between the two fields, yielding 32
-         *	   bytes. ptr._2 will not match OS and you will waste time.
-         *
-         * Supply a buffer slightly larger than sizeof[linux cmsghdr].
-         * Make it less than one complete linux cmsghdr so that any
-         * unexpected additional message(s) returned get reported as truncated.
-         */
+          /* BEWARE: The obvious
+           *	   'type timestampCtlMsg_t = CStruct2[cmsghdr, timeval]'
+           *	   will pad 4 bytes between the two fields, yielding 32
+           *	   bytes. ptr._2 will not match OS and you will waste time.
+           *
+           * Supply a buffer slightly larger than sizeof[linux cmsghdr].
+           * Make it less than one complete linux cmsghdr so that any
+           * unexpected additional message(s) returned get reported as truncated.
+           */
 
-        val nCtlBuf = 40 // sizeof[linux cmsghdr] + 8 // 8 is a guess
-        val ctlBuf = alloc[Byte](nCtlBuf)
+          val nCtlBuf = 40 // sizeof[linux cmsghdr] + 8 // 8 is a guess
+          val ctlBuf = alloc[Byte](nCtlBuf)
 
-        val inMsgHdr = alloc[msghdr]()
-        inMsgHdr.msg_iov = inVec
-        inMsgHdr.msg_iovlen = nInIovs.toInt
-        inMsgHdr.msg_control = ctlBuf
-        inMsgHdr.msg_controllen = nCtlBuf.toUInt
+          val inMsgHdr = alloc[msghdr]()
+          inMsgHdr.msg_iov = inVec
+          inMsgHdr.msg_iovlen = nInIovs.toInt
+          inMsgHdr.msg_control = ctlBuf
+          inMsgHdr.msg_controllen = nCtlBuf.toUInt
 
-        val nBytesRead = recvmsg(inSocket, inMsgHdr, 0)
+          val nBytesRead = recvmsg(inSocket, inMsgHdr, 0)
 
-        checkIoResult(nBytesRead, "recvmsg_1")
+          checkIoResult(nBytesRead, "recvmsg_1")
 
-        assertEquals(
-          "recmsg content data was truncated",
-          0,
-          (inMsgHdr.msg_flags & MSG_TRUNC)
-        )
+          assertEquals(
+            "recmsg content data was truncated",
+            0,
+            (inMsgHdr.msg_flags & MSG_TRUNC)
+          )
 
-        assertEquals(
-          "recmsg control data was truncated",
-          0,
-          (inMsgHdr.msg_flags & MSG_TRUNC)
-        )
+          assertEquals(
+            "recmsg control data was truncated",
+            0,
+            (inMsgHdr.msg_flags & MSG_TRUNC)
+          )
 
-        // When reading small UDP packets, all data should be there together.
-        // Given msg_flags MSG_TRUNC assert above, this should never trigger.
-        assertEquals("recvmsg_2", nBytesRead, nBytesSent)
+          // When reading small UDP packets, all data should be there together.
+          // Given msg_flags MSG_TRUNC assert above, this should never trigger.
+          assertEquals("recvmsg_2", nBytesRead, nBytesSent)
 
-        /* Open Group 2018 documenataion discourages hand parsing of cmsghdr.
-         * The Scala Native implementation of the CMSG 'macros' work on
-         * Linux, macOS, and others.
-         */
+          /* Open Group 2018 documenataion discourages hand parsing of cmsghdr.
+           * The Scala Native implementation of the CMSG 'macros' work on
+           * Linux, macOS, and others.
+           */
 
-        // A Linux64 OS cmsghdr, cmsg_level & cmsg_type are harder to get.
-        val l64cmsg = CMSG_FIRSTHDR(inMsgHdr).asInstanceOf[Ptr[l64cmsghdr]]
-        assertNotNull("l64cmsg_1", l64cmsg)
+          // A Linux64 OS cmsghdr, cmsg_level & cmsg_type are harder to get.
+          val l64cmsg = CMSG_FIRSTHDR(inMsgHdr).asInstanceOf[Ptr[l64cmsghdr]]
+          assertNotNull("l64cmsg_1", l64cmsg)
 
-        // redundant, but establishes a confidence baseline.
-        assertEquals("l64cmsg should == ctlBuf", l64cmsg, ctlBuf)
+          // redundant, but establishes a confidence baseline.
+          assertEquals("l64cmsg should == ctlBuf", l64cmsg, ctlBuf)
 
-        // Received the expected TIMESTAMP?
-        assertEquals(
-          "l64cmsg.cmsg_level is not SOL_SOCKET",
-          SOL_SOCKET,
-          l64cmsg._2
-        )
-        assertEquals(
-          "l64cmsg.cmsg_type is not SCM_TIMESTAMP",
-          SCM_TIMESTAMP,
-          l64cmsg._3
-        )
+          // Received the expected TIMESTAMP?
+          assertEquals(
+            "l64cmsg.cmsg_level is not SOL_SOCKET",
+            SOL_SOCKET,
+            l64cmsg._2
+          )
+          assertEquals(
+            "l64cmsg.cmsg_type is not SCM_TIMESTAMP",
+            SCM_TIMESTAMP,
+            l64cmsg._3
+          )
 
-        val tv = CMSG_DATA(l64cmsg.asInstanceOf[Ptr[cmsghdr]])
-          .asInstanceOf[Ptr[timeval]]
+          val tv = CMSG_DATA(l64cmsg.asInstanceOf[Ptr[cmsghdr]])
+            .asInstanceOf[Ptr[timeval]]
 
-        val now: time_t = scala.scalanative.posix.time.time(null)
+          val now: time_t = scala.scalanative.posix.time.time(null)
 
-        /* Is value received as CMS_DATA roughly correct/as_expected?
-         *
-         * Comparing timestamps is exact, especially when they are
-         * not retrieved atomically.
-         *
-         * Another instance of a classic ROC (receiver operating
-         * characteristic) curve decision.
-         */
-        val tolerance = 3.0f // Allow _some_ slack, but not too much!
-        assertEquals(tv.tv_sec.toLong.toFloat, now.toLong.toFloat, tolerance)
+          /* Is value received as CMS_DATA roughly correct/as_expected?
+           *
+           * Comparing timestamps is exact, especially when they are
+           * not retrieved atomically.
+           *
+           * Another instance of a classic ROC (receiver operating
+           * characteristic) curve decision.
+           */
+          val tolerance = 3.0f // Allow _some_ slack, but not too much!
+          assertEquals(tv.tv_sec.toLong.toFloat, now.toLong.toFloat, tolerance)
 
-        // Q.E.D.
-      } finally {
-        SocketTestHelpers.closeSocket(inSocket)
-        SocketTestHelpers.closeSocket(outSocket)
-      }
+          // Q.E.D.
+        } finally {
+          SocketTestHelpers.closeSocket(inSocket)
+          SocketTestHelpers.closeSocket(outSocket)
+        }
     }
   }
 }

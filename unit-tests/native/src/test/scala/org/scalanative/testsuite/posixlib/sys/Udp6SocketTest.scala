@@ -68,23 +68,24 @@ object Udp6SocketTest {
 
 class Udp6SocketTest {
 
-  private def formatIn6addr(addr: in6_addr): String = Zone { implicit z =>
-    val dstSize = INET6_ADDRSTRLEN + 1
-    val dst = alloc[Byte](dstSize)
+  private def formatIn6addr(addr: in6_addr): String = Zone.acquire {
+    implicit z =>
+      val dstSize = INET6_ADDRSTRLEN + 1
+      val dst = alloc[Byte](dstSize)
 
-    val result = inet_ntop(
-      AF_INET6,
-      addr.at1.at(0).asInstanceOf[Ptr[Byte]],
-      dst,
-      dstSize.toUInt
-    )
+      val result = inet_ntop(
+        AF_INET6,
+        addr.at1.at(0).asInstanceOf[Ptr[Byte]],
+        dst,
+        dstSize.toUInt
+      )
 
-    assertNotEquals(s"inet_ntop failed errno: ${errno}", result, null)
+      assertNotEquals(s"inet_ntop failed errno: ${errno}", result, null)
 
-    fromCString(dst)
+      fromCString(dst)
   }
 
-  @Test def sendtoRecvfrom(): Unit = Zone { implicit z =>
+  @Test def sendtoRecvfrom(): Unit = Zone.acquire { implicit z =>
     if (isWindows) {
       WinSocketApiOps.init()
     }

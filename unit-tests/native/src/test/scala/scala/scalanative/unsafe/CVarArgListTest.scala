@@ -15,7 +15,7 @@ import scala.scalanative.junit.utils.AssumesHelper._
 
 class CVarArgListTest {
   def vatest(cstr: CString, varargs: Seq[CVarArg], output: String): Unit =
-    Zone { implicit z =>
+    Zone.acquire { implicit z =>
       val buff: Ptr[CChar] = alloc[CChar](1024)
       stdio.vsprintf(buff, cstr, toCVarArgList(varargs))
       val got = fromCString(buff)

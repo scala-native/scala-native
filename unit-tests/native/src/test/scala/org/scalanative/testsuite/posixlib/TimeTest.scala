@@ -114,7 +114,7 @@ class TimeTest {
 
   @Test def localtime_rShouldHandleEpochPlusTimezone(): Unit =
     if (!isWindows) {
-      Zone { implicit z =>
+      Zone.acquire { implicit z =>
         assumeFalse(
           "Skipping localtime_r test since FreeBSD hasn't the 'timezone' variable",
           Platform.isFreeBSD
@@ -145,7 +145,7 @@ class TimeTest {
 
   @Test def strftimeDoesNotReadMemoryOutsideStructTm(): Unit =
     if (!isWindows) {
-      Zone { implicit z =>
+      Zone.acquire { implicit z =>
         // The purpose of this test is to check two closely related conditions.
         // These conditions not a concern when the size of the C structure
         // is the same as the Scala Native structure and the order of the
@@ -225,7 +225,7 @@ class TimeTest {
     }
 
   @Test def strftimeForJanOne1900ZeroZulu(): Unit = if (!isWindows) {
-    Zone { implicit z =>
+    Zone.acquire { implicit z =>
       val isoDatePtr: Ptr[CChar] = alloc[CChar](70)
       val timePtr = alloc[tm]()
 
@@ -240,7 +240,7 @@ class TimeTest {
   }
 
   @Test def strftimeForMondayJanOne1990ZeroTime(): Unit = if (!isWindows) {
-    Zone { implicit z =>
+    Zone.acquire { implicit z =>
       val timePtr = alloc[tm]()
       val datePtr: Ptr[CChar] = alloc[CChar](70)
 
@@ -293,7 +293,7 @@ class TimeTest {
 
   @Test def strptimeDoesNotWriteMemoryOutsideStructTm(): Unit =
     if (!isWindows) {
-      Zone { implicit z =>
+      Zone.acquire { implicit z =>
         // The purpose of this test is to check that time.scala method
         // declaration had an "@name" annotation, so that structure
         // copy-in/copy-out happened? Failure case is if 36 byte

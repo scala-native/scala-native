@@ -53,7 +53,7 @@ class FileOutputStream(fd: FileDescriptor, file: Option[File])
 
 object FileOutputStream {
   private def fileDescriptor(file: File, append: Boolean) =
-    Zone { implicit z =>
+    Zone.acquire { implicit z =>
       if (isWindows) {
         val handle = CreateFileW(
           toCWideStringUTF16LE(file.getPath()),

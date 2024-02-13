@@ -86,11 +86,11 @@ class CStringTest {
   }
 
   @Test def toCStringNullReturnsNullIssue1796(): Unit = {
-    Zone { implicit z => assertNull(toCString(null)) }
+    Zone.acquire { implicit z => assertNull(toCString(null)) }
   }
 
   @Test def testToCString(): Unit = {
-    Zone { implicit z =>
+    Zone.acquire { implicit z =>
       val szFrom = "abcde"
       val cstrTo = toCString(szFrom)
       assertEquals(5.toUSize, strlen(cstrTo))
@@ -114,7 +114,7 @@ class CStringTest {
   }
 
   @Test def toFromCString(): Unit = {
-    Zone { implicit z =>
+    Zone.acquire { implicit z =>
       type _11 = Nat.Digit2[Nat._1, Nat._1]
       val arr = unsafe.stackalloc[CArray[Byte, _11]]()
 

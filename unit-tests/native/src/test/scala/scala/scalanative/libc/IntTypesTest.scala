@@ -26,14 +26,14 @@ class IntTypesTest {
     assertEquals(3, res._2)
   }
   @Test def testStrtoimax(): Unit = {
-    Zone { implicit z =>
+    Zone.acquire { implicit z =>
       val nptr = toCString("10345134932abc")
       val res = strtoimax(nptr, null, 10)
       assertEquals(res, 10345134932L)
     }
   }
   @Test def testStrtoumax(): Unit = {
-    Zone { implicit z =>
+    Zone.acquire { implicit z =>
       val res = strtoimax(toCString("10345134932abc"), null, 10)
       assertEquals(res, 10345134932L)
     }

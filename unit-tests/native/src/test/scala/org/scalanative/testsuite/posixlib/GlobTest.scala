@@ -74,7 +74,7 @@ class GlobTest {
       !isWindows
     )
 
-    if (!isWindows) Zone { implicit z =>
+    if (!isWindows) Zone.acquire { implicit z =>
       val globP = stackalloc[glob_t]()
 
       val wdAbsP = workDir.toAbsolutePath()
@@ -101,7 +101,7 @@ class GlobTest {
       !isWindows
     )
 
-    if (!isWindows) Zone { implicit z =>
+    if (!isWindows) Zone.acquire { implicit z =>
       val globP = stackalloc[glob_t]()
 
       val wdAbsP = workDir.toAbsolutePath()

@@ -63,19 +63,19 @@ class File(_path: String) extends Serializable with Comparable[File] {
   }
 
   def canExecute(): Boolean =
-    Zone { implicit z =>
+    Zone.acquire { implicit z =>
       if (isWindows) path.nonEmpty && exists()
       else access(toCString(path), unistd.X_OK) == 0
     }
 
   def canRead(): Boolean =
-    Zone { implicit z =>
+    Zone.acquire { implicit z =>
       if (isWindows) checkWindowsAccess(FILE_GENERIC_READ)
       else access(toCString(path), unistd.R_OK) == 0
     }
 
   def canWrite(): Boolean =
-    Zone { implicit z =>
+    Zone.acquire { implicit z =>
       if (isWindows)
         checkWindowsAccess(FILE_GENERIC_WRITE) &&
           fileAttributeIsSet(FILE_ATTRIBUTE_READONLY, checkIsNotSet = true)
@@ -132,7 +132,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
       mask: stat.mode_t,
       grant: Boolean
   ): Boolean =
-    Zone { implicit z =>
+    Zone.acquire { implicit z =>
       if (grant) {
         stat.chmod(toCString(path), accessMode() | mask) == 0
       } else {
@@ -145,7 +145,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
       grant: Boolean,
       ownerOnly: Boolean
   ): Boolean =
-    Zone { implicit z =>
+    Zone.acquire { implicit z =>
       val filename = toCWideStringUTF16LE(properPath)
       val securityDescriptorPtr = alloc[Ptr[SecurityDescriptor]]()
       val previousDacl, newDacl = alloc[ACLPtr]()
@@ -212,7 +212,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
     }
 
   def exists(): Boolean =
-    Zone { implicit z =>
+    Zone.acquire { implicit z =>
       if (isWindows) {
         val filename = toCWideStringUTF16LE(properPath)
         val attrs = GetFileAttributesW(filename)
@@ -244,14 +244,14 @@ class File(_path: String) extends Serializable with Comparable[File] {
       deleteFileImpl()
     }
 
-  private def deleteDirImpl(): Boolean = Zone { implicit z =>
+  private def deleteDirImpl(): Boolean = Zone.acquire { implicit z =>
     if (isWindows) {
       RemoveDirectoryW(toCWideStringUTF16LE(properPath))
     } else
       remove(toCString(path)) == 0
   }
 
-  private def deleteFileImpl(): Boolean = Zone { implicit z =>
+  private def deleteFileImpl(): Boolean = Zone.acquire { implicit z =>
     if (isWindows) {
       setReadOnlyWindows(enabled = false)
       DeleteFileW(toCWideStringUTF16LE(properPath))
@@ -275,7 +275,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
   def getAbsoluteFile(): File = new File(this.getAbsolutePath())
 
   def getCanonicalPath(): String =
-    Zone { implicit z =>
+    Zone.acquire { implicit z =>
       if (exists()) {
         simplifyExistingPath(properPath)
       } else {
@@ -372,7 +372,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
     File.isAbsolute(path)
 
   def isDirectory(): Boolean =
-    Zone { implicit z =>
+    Zone.acquire { implicit z =>
       if (isWindows)
         fileAttributeIsSet(FILE_ATTRIBUTE_DIRECTORY)
       else
@@ -380,7 +380,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
     }
 
   def isFile(): Boolean =
-    Zone { implicit z =>
+    Zone.acquire { implicit z =>
       if (isWindows)
         fileAttributeIsSet(FILE_ATTRIBUTE_DIRECTORY, checkIsNotSet = true)
       else
@@ -394,7 +394,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
   }
 
   def lastModified(): Long =
-    Zone { implicit z =>
+    Zone.acquire { implicit z =>
       if (isWindows) {
         withFileOpen(
           path,
@@ -436,7 +436,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
   private def fileAttributeIsSet(
       flags: windows.DWord,
       checkIsNotSet: Boolean = false
-  ): Boolean = Zone { implicit z =>
+  ): Boolean = Zone.acquire { implicit z =>
     GetFileAttributesW(toCWideStringUTF16LE(properPath)) match {
       case INVALID_FILE_ATTRIBUTES => false // File does not exist
       case attrsSet =>
@@ -451,7 +451,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
     if (time < 0) {
       throw new IllegalArgumentException("Negative time")
     } else
-      Zone { implicit z =>
+      Zone.acquire { implicit z =>
         if (isWindows) {
           withFileOpen(
             path,
@@ -485,7 +485,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
       }
 
   def setReadOnly(): Boolean =
-    Zone { implicit z =>
+    Zone.acquire { implicit z =>
       if (isWindows) setReadOnlyWindows(enabled = true)
       else {
         import stat._
@@ -509,7 +509,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
     currentAttributes != INVALID_FILE_ATTRIBUTES && setNewAttributes()
   }
 
-  def length(): Long = Zone { implicit z =>
+  def length(): Long = Zone.acquire { implicit z =>
     if (isWindows) {
       withFileOpen(
         path,
@@ -539,7 +539,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
     if (!isDirectory() || !canRead()) {
       null
     } else
-      Zone { implicit z =>
+      Zone.acquire { implicit z =>
         val elements =
           FileHelpers.list(properPath, (n, _) => n, allowEmpty = true)
         if (elements == null)
@@ -568,7 +568,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
   }
 
   def mkdir(): Boolean =
-    Zone { implicit z =>
+    Zone.acquire { implicit z =>
       if (isWindows)
         CreateDirectoryW(
           toCWideStringUTF16LE(properPath),
@@ -598,7 +598,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
     FileHelpers.createNewFile(path, throwOnError = true)
 
   def renameTo(dest: File): Boolean =
-    Zone { implicit z =>
+    Zone.acquire { implicit z =>
       rename(toCString(properPath), toCString(dest.properPath)) == 0
     }
 
@@ -714,7 +714,7 @@ object File {
     Integer.parseInt(v, 8).toUInt
 
   private def getUserDir(): String =
-    Zone { implicit z =>
+    Zone.acquire { implicit z =>
       if (isWindows) {
         val buffSize = GetCurrentDirectoryW(0.toUInt, null)
         val buff: Ptr[windows.WChar] = alloc[windows.WChar](buffSize + 1.toUInt)

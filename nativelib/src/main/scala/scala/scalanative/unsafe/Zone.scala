@@ -39,10 +39,10 @@ trait Zone {
 
 }
 
-object Zone {
+object Zone extends ZoneCompanionScalaVersionSpecific {
 
   /** Run given function with a fresh zone and destroy it afterwards. */
-  final def apply[T](f: Zone => T): T = {
+  final def acquire[T](f: Zone => T): T = {
     val zone = open()
     try f(zone)
     finally zone.close()

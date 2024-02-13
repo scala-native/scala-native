@@ -124,7 +124,7 @@ class UioTest {
           |
           |""".stripMargin
 
-  @Test def writevReadvShouldPlayNicely(): Unit = Zone { implicit z =>
+  @Test def writevReadvShouldPlayNicely(): Unit = Zone.acquire { implicit z =>
     // writev() should gather, readv() should scatter, the 2 should pass data.
     if (!isWindows) {
       val (inSocket, outSocket) = getConnectedUdp4LoopbackSockets()

@@ -75,7 +75,7 @@ final class WindowsDosFileAttributeView(path: Path, options: Array[LinkOption])
       lastModifiedTime: FileTime,
       lastAccessTime: FileTime,
       createTime: FileTime
-  ): Unit = Zone { implicit z =>
+  ): Unit = Zone.acquire { implicit z =>
     def setOrNull(ref: Ptr[WinFileTime], value: FileTime): Ptr[WinFileTime] = {
       if (value == null) null
       else {
@@ -103,60 +103,61 @@ final class WindowsDosFileAttributeView(path: Path, options: Array[LinkOption])
 
   def readAttributes(): DosFileAttributes = attributes
 
-  private lazy val attributes: DosFileAttributes = Zone { implicit z: Zone =>
-    val fileInfo = alloc[ByHandleFileInformation]()
+  private lazy val attributes: DosFileAttributes = Zone.acquire {
+    implicit z: Zone =>
+      val fileInfo = alloc[ByHandleFileInformation]()
 
-    withFileOpen(
-      pathAbs,
-      access = FILE_READ_ATTRIBUTES,
-      attributes = fileOpeningFlags
-    ) {
-      FileApi.GetFileInformationByHandle(_, fileInfo)
-    }
-
-    new DosFileAttributes {
-      class DosFileKey(volumeId: DWord, fileIndex: ULargeInteger)
-
-      private val attrs = fileInfo.fileAttributes
-      private val createdAt = toFileTime(fileInfo.creationTime)
-      private val accessedAt = toFileTime(fileInfo.lastAccessTime)
-      private val modifiedAt = toFileTime(fileInfo.lastWriteTime)
-      private val fileSize = fileInfo.fileSize
-      private val dosFileKey =
-        new DosFileKey(
-          volumeId = fileInfo.volumeSerialNumber,
-          fileIndex = fileInfo.fileIndex
-        )
-
-      def creationTime(): FileTime = createdAt
-      def lastAccessTime(): FileTime = accessedAt
-      def lastModifiedTime(): FileTime = modifiedAt
-      def fileKey(): Object = dosFileKey
-      def size(): Long = fileSize.toLong
-
-      // to replace with checking reparse tag
-      def isSymbolicLink(): Boolean = hasAttrSet(FILE_ATTRIBUTE_REPARSE_POINT)
-      def isDirectory(): Boolean = hasAttrSet(FILE_ATTRIBUTE_DIRECTORY)
-      def isOther(): Boolean =
-        hasAttrSet(FILE_ATTRIBUTE_REPARSE_POINT | FILE_ATTRIBUTE_DEVICE)
-      def isRegularFile(): Boolean = {
-        !isSymbolicLink() &&
-        !isDirectory() &&
-        !isOther()
+      withFileOpen(
+        pathAbs,
+        access = FILE_READ_ATTRIBUTES,
+        attributes = fileOpeningFlags
+      ) {
+        FileApi.GetFileInformationByHandle(_, fileInfo)
       }
 
-      def isArchive(): Boolean = hasAttrSet(FILE_ATTRIBUTE_ARCHIVE)
-      def isHidden(): Boolean = hasAttrSet(FILE_ATTRIBUTE_HIDDEN)
-      def isReadOnly(): Boolean = hasAttrSet(FILE_ATTRIBUTE_READONLY)
-      def isSystem(): Boolean = hasAttrSet(FILE_ATTRIBUTE_SYSTEM)
+      new DosFileAttributes {
+        class DosFileKey(volumeId: DWord, fileIndex: ULargeInteger)
 
-      private def hasAttrSet(attr: DWord): Boolean =
-        (attrs & attr) != 0
-    }
+        private val attrs = fileInfo.fileAttributes
+        private val createdAt = toFileTime(fileInfo.creationTime)
+        private val accessedAt = toFileTime(fileInfo.lastAccessTime)
+        private val modifiedAt = toFileTime(fileInfo.lastWriteTime)
+        private val fileSize = fileInfo.fileSize
+        private val dosFileKey =
+          new DosFileKey(
+            volumeId = fileInfo.volumeSerialNumber,
+            fileIndex = fileInfo.fileIndex
+          )
+
+        def creationTime(): FileTime = createdAt
+        def lastAccessTime(): FileTime = accessedAt
+        def lastModifiedTime(): FileTime = modifiedAt
+        def fileKey(): Object = dosFileKey
+        def size(): Long = fileSize.toLong
+
+        // to replace with checking reparse tag
+        def isSymbolicLink(): Boolean = hasAttrSet(FILE_ATTRIBUTE_REPARSE_POINT)
+        def isDirectory(): Boolean = hasAttrSet(FILE_ATTRIBUTE_DIRECTORY)
+        def isOther(): Boolean =
+          hasAttrSet(FILE_ATTRIBUTE_REPARSE_POINT | FILE_ATTRIBUTE_DEVICE)
+        def isRegularFile(): Boolean = {
+          !isSymbolicLink() &&
+          !isDirectory() &&
+          !isOther()
+        }
+
+        def isArchive(): Boolean = hasAttrSet(FILE_ATTRIBUTE_ARCHIVE)
+        def isHidden(): Boolean = hasAttrSet(FILE_ATTRIBUTE_HIDDEN)
+        def isReadOnly(): Boolean = hasAttrSet(FILE_ATTRIBUTE_READONLY)
+        def isSystem(): Boolean = hasAttrSet(FILE_ATTRIBUTE_SYSTEM)
+
+        private def hasAttrSet(attr: DWord): Boolean =
+          (attrs & attr) != 0
+      }
   }
 
-  private def setWinAttribute(attribute: DWord, enabled: Boolean): Unit = Zone {
-    implicit z =>
+  private def setWinAttribute(attribute: DWord, enabled: Boolean): Unit =
+    Zone.acquire { implicit z =>
       val filename = toCWideStringUTF16LE(pathAbs)
       val previousAttrs = FileApi.GetFileAttributesW(filename)
       def setNewAttrs(): Boolean = {
@@ -169,7 +170,7 @@ final class WindowsDosFileAttributeView(path: Path, options: Array[LinkOption])
       if (previousAttrs == INVALID_FILE_ATTRIBUTES || !setNewAttrs()) {
         throw WindowsException("Failed to set file attributes")
       }
-  }
+    }
 
   private lazy val pathAbs = path.toAbsolutePath().toString
 

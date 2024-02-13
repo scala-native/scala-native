@@ -35,7 +35,7 @@ object ExternTest {
   }
 
   // workaround for CI
-  def runTest(): Unit = Zone { implicit z: Zone =>
+  def runTest(): Unit = Zone.acquire { implicit z: Zone =>
     import scalanative.libc.string
     val bufsize = 10.toUInt
     val buf1: Ptr[Byte] = stackalloc[Byte](bufsize)
@@ -63,7 +63,7 @@ class ExternTest {
 
     val args = Seq("skipped", "skipped", "skipped", "-b", "-f", "farg")
 
-    Zone { implicit z =>
+    Zone.acquire { implicit z =>
       val argv: Ptr[CString] = stackalloc[CString](args.length)
 
       for ((arg, i) <- args.zipWithIndex) {

@@ -178,7 +178,7 @@ class PtrBoxingTest {
       v
     }
 
-    Zone { implicit z =>
+    Zone.acquire { implicit z =>
       val out = collection.mutable.ListBuffer.empty[Int]
       var head = cons(10, cons(20, cons(30, null)))
       while (head != null) {
@@ -190,7 +190,7 @@ class PtrBoxingTest {
   }
 
   @Test def loadAndStoreCFuncPtr(): Unit = {
-    Zone { implicit z =>
+    Zone.acquire { implicit z =>
       val x: Ptr[Functions] = stackalloc[Functions]()
       x._1 = CFuncPtr0.fromScalaFunction(getInt _)
       x._2 = CFuncPtr1.fromScalaFunction(stringLength _)

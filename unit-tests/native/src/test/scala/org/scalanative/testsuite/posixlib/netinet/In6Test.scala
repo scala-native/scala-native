@@ -16,7 +16,7 @@ import org.junit.Assert._
 
 class In6Test {
 
-  @Test def testSetSin6Family(): Unit = Zone { implicit z =>
+  @Test def testSetSin6Family(): Unit = Zone.acquire { implicit z =>
     /* Setting the sin6_family field should work and should not clobber the
      * sin6_len field, if such exists on executing OS.
      */
@@ -40,7 +40,7 @@ class In6Test {
     )
   }
 
-  @Test def testSetSin6Len(): Unit = Zone { implicit z =>
+  @Test def testSetSin6Len(): Unit = Zone.acquire { implicit z =>
     /* Setting the sin6_len field should work and should not clobber the
      * sin6_family field.
      */

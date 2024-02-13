@@ -27,7 +27,7 @@ class ZoneTest {
   }
 
   @Test def zoneAllocatorAllocWithApply(): Unit = {
-    Zone { implicit z =>
+    Zone.acquire { implicit z =>
       val ptr = z.alloc(64.toUSize * sizeof[Int])
 
       assertAccessible(ptr, 64)

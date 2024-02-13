@@ -59,7 +59,7 @@ object Date {
   else tzset()
 
   private def secondsToString(seconds: Long, default: => String): String =
-    Zone { implicit z =>
+    Zone.acquire { implicit z =>
       val ttPtr = alloc[time_t]()
       !ttPtr = seconds.toSize
 

@@ -19,7 +19,7 @@ class WindowsAclFileAttributeView(path: Path, options: Array[LinkOption])
   def name(): String = "acl"
 
   def getOwner(): UserPrincipal =
-    Zone { implicit z =>
+    Zone.acquire { implicit z =>
       val filename = toCWideStringUTF16LE(path.toString)
       val ownerSid = stackalloc[SIDPtr]()
 
@@ -38,7 +38,7 @@ class WindowsAclFileAttributeView(path: Path, options: Array[LinkOption])
       WindowsUserPrincipal(!ownerSid)
     }
 
-  def setOwner(owner: UserPrincipal): Unit = Zone { implicit z =>
+  def setOwner(owner: UserPrincipal): Unit = Zone.acquire { implicit z =>
     val filename = toCWideStringUTF16LE(path.toString)
 
     val sidCString = owner match {

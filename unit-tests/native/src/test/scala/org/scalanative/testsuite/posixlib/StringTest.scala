@@ -45,7 +45,7 @@ class StringTest {
     }
 
   @Test def strtok_rShouldFindTokens(): Unit =
-    if (!isWindows) Zone { implicit z =>
+    if (!isWindows) Zone.acquire { implicit z =>
       /* On this happy path, strtok_r() will attempt to write NULs into
        * the string, so DO NOT USE c"" interpolator.
        * "Segmentation fault caught" will remind you

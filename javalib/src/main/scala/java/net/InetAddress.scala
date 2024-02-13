@@ -246,8 +246,8 @@ object InetAddress {
     fromCString(dst)
   }
 
-  private def getByNumericName(host: String): Option[InetAddress] = Zone {
-    implicit z =>
+  private def getByNumericName(host: String): Option[InetAddress] =
+    Zone.acquire { implicit z =>
       val hints = stackalloc[addrinfo]() // stackalloc clears its memory
       val addrinfo = stackalloc[Ptr[addrinfo]]()
 
@@ -303,7 +303,7 @@ object InetAddress {
         } finally {
           freeaddrinfo(!addrinfo)
         }
-  }
+    }
 
   private def vetScopeText(host: String): Unit = { // callers have handled null
     // Fail on either numeric %-2 and non-numeric (text) %-abc
@@ -314,7 +314,7 @@ object InetAddress {
     }
   }
 
-  private def getByNonNumericName(host: String): InetAddress = Zone {
+  private def getByNonNumericName(host: String): InetAddress = Zone.acquire {
     implicit z =>
       /* Design Note:
        *   Host-to-ip-address translation is known to be fraught with
@@ -469,7 +469,7 @@ object InetAddress {
     }
 
     def ipToHost(ipBA: Array[Byte]): Option[String] =
-      Zone { implicit z =>
+      Zone.acquire { implicit z =>
         // Reserve extra space for NUL terminator.
         val hostSize = MAXDNAME + 1.toUInt
         val host: Ptr[CChar] = alloc[CChar](hostSize)
@@ -498,7 +498,7 @@ object InetAddress {
   }
 
   private def hostToInetAddressArray(host: String): Array[InetAddress] =
-    Zone { implicit z =>
+    Zone.acquire { implicit z =>
       /* The JVM implementations in both the manual testing &
        * Continuous Integration environments have the "feature" of
        * not filling in the host field of an InetAddress if the name

@@ -35,7 +35,7 @@ class WordexpTest {
       "wordexp.scala is not implemented on Windows",
       !isWindows
     )
-    if (!isWindows) Zone { implicit z =>
+    if (!isWindows) Zone.acquire { implicit z =>
       val wrdeP = stackalloc[wordexp_t]()
 
       /* wordexp is defined as using the sh shell. That shell does not
@@ -59,7 +59,7 @@ class WordexpTest {
       !isWindows
     )
 
-    if (!isWindows) Zone { implicit z =>
+    if (!isWindows) Zone.acquire { implicit z =>
       val wrdeP = stackalloc[wordexp_t]()
 
       val pattern = "~"
@@ -102,7 +102,7 @@ class WordexpTest {
       hasHomeEnvvar != null
     )
 
-    if (!isWindows) Zone { implicit z =>
+    if (!isWindows) Zone.acquire { implicit z =>
       val wrdeP = stackalloc[wordexp_t]()
 
       val pattern = "Phil $HOME Ochs"

@@ -116,7 +116,7 @@ object FileDescriptor {
   }
 
   private[io] def openReadOnly(file: File): FileDescriptor =
-    Zone { implicit z =>
+    Zone.acquire { implicit z =>
       def fail() =
         throw new FileNotFoundException("No such file " + file.getPath())
 

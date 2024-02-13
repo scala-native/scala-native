@@ -181,42 +181,47 @@ object Files {
     path
   }
 
-  def createLink(link: Path, existing: Path): Path = Zone { implicit z =>
-    if (isWindows) {
-      if (exists(link, Array.empty)) {
-        throw new FileAlreadyExistsException(link.toString)
+  def createLink(link: Path, existing: Path): Path = Zone.acquire {
+    implicit z =>
+      if (isWindows) {
+        if (exists(link, Array.empty)) {
+          throw new FileAlreadyExistsException(link.toString)
+        } else {
+          val created = CreateHardLinkW(
+            toCWideStringUTF16LE(link.toString),
+            toCWideStringUTF16LE(existing.toString),
+            securityAttributes = null
+          )
+          if (created) {
+            link
+          } else {
+            throw new IOException("Cannot create link")
+          }
+        }
+
       } else {
-        val created = CreateHardLinkW(
-          toCWideStringUTF16LE(link.toString),
-          toCWideStringUTF16LE(existing.toString),
-          securityAttributes = null
+        val rtn = unistd.link(
+          toCString(existing.toString()),
+          toCString(link.toString())
         )
-        if (created) {
+
+        if (rtn == 0) {
           link
         } else {
-          throw new IOException("Cannot create link")
+          val e = errno
+          if (e == EEXIST)
+            throw new FileAlreadyExistsException(link.toString)
+          else if (e == ENOENT)
+            throw new NoSuchFileException(
+              link.toString,
+              existing.toString,
+              null
+            )
+          else
+            throw new IOException(fromCString(string.strerror(e)))
         }
+
       }
-
-    } else {
-      val rtn = unistd.link(
-        toCString(existing.toString()),
-        toCString(link.toString())
-      )
-
-      if (rtn == 0) {
-        link
-      } else {
-        val e = errno
-        if (e == EEXIST)
-          throw new FileAlreadyExistsException(link.toString)
-        else if (e == ENOENT)
-          throw new NoSuchFileException(link.toString, existing.toString, null)
-        else
-          throw new IOException(fromCString(string.strerror(e)))
-      }
-
-    }
   }
 
   def createSymbolicLink(
@@ -225,7 +230,7 @@ object Files {
       attrs: Array[FileAttribute[_]]
   ): Path = {
 
-    def tryCreateLink() = Zone { implicit z =>
+    def tryCreateLink() = Zone.acquire { implicit z =>
       if (isWindows) {
         import WinBaseApiExt._
         val targetFilename = toCWideStringUTF16LE(target.toString())
@@ -340,7 +345,7 @@ object Files {
     }
   }
 
-  private def unixDeletePath(path: Path): Unit = Zone { implicit z =>
+  private def unixDeletePath(path: Path): Unit = Zone.acquire { implicit z =>
     val ps = path.toString
     if (stdio.remove(toCString(ps)) == -1) {
       // For historical reasons, some systems report ENOTEMPTY as EEXIST
@@ -467,7 +472,7 @@ object Files {
     if (isWindows) {
       getAttribute(path, "basic:isRegularFile", options).asInstanceOf[Boolean]
     } else
-      Zone { implicit z =>
+      Zone.acquire { implicit z =>
         val buf = alloc[stat.stat]()
         val err =
           if (options.contains(LinkOption.NOFOLLOW_LINKS)) {
@@ -483,7 +488,7 @@ object Files {
   def isSameFile(path: Path, path2: Path): Boolean =
     path.toFile().getCanonicalPath() == path2.toFile().getCanonicalPath()
 
-  def isSymbolicLink(path: Path): Boolean = Zone { implicit z =>
+  def isSymbolicLink(path: Path): Boolean = Zone.acquire { implicit z =>
     if (isWindows) {
       val filename = toCWideStringUTF16LE(path.toFile().getPath())
       val attrs = FileApi.GetFileAttributesW(filename)
@@ -548,7 +553,7 @@ object Files {
       target: Path,
       replaceExisting: => Boolean
   ) =
-    Zone { implicit z =>
+    Zone.acquire { implicit z =>
       val sourceAbs = source.toAbsolutePath().toString
       val targetAbs = target.toAbsolutePath().toString
       // We cannot replace directory, it needs to be removed first
@@ -660,7 +665,7 @@ object Files {
   def notExists(path: Path, options: Array[LinkOption]): Boolean =
     !exists(path, options)
 
-  def readAllBytes(path: Path): Array[Byte] = Zone { implicit z =>
+  def readAllBytes(path: Path): Array[Byte] = Zone.acquire { implicit z =>
     /* if 'path' does not exist at all, should get
      * java.nio.file.NoSuchFileException here.
      */
@@ -797,7 +802,7 @@ object Files {
     if (!isSymbolicLink(link)) {
       throw new NotLinkException(link.toString)
     } else
-      Zone { implicit z =>
+      Zone.acquire { implicit z =>
         val name = if (isWindows) {
           withFileOpen(
             link.toString,

@@ -34,7 +34,7 @@ object UdpSocketTest {
 
 class UdpSocketTest {
 
-  @Test def sendtoRecvfrom(): Unit = Zone { implicit z =>
+  @Test def sendtoRecvfrom(): Unit = Zone.acquire { implicit z =>
     if (isWindows) {
       WinSocketApiOps.init()
     }

@@ -145,7 +145,7 @@ One can wrap a function in a nicer API like:
    import scala.scalanative.unsafe._
 
    def myprintf(format: CString, args: CVarArg*): CInt =
-     Zone { implicit z =>
+     Zone { 
        mystdio.vprintf(format, toCVarArgList(args.toSeq))
      }
 
@@ -308,7 +308,12 @@ runtime system, one has to be extra careful when working with unmanaged memory.
 
       import scala.scalanative.unsafe._
 
-      Zone { implicit z =>
+      // For Scala 3
+      Zone {
+        val buffer = alloc[Byte](n)
+      }
+      // For Scala 2.13
+      Zone.acquire { implicit z =>
         val buffer = alloc[Byte](n)
       }
 

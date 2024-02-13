@@ -35,7 +35,7 @@ class StdlibTest {
 
   @Test def testGetsubopt(): Unit = {
 
-    if (!LinktimeInfo.isWindows) Zone { implicit z =>
+    if (!LinktimeInfo.isWindows) Zone.acquire { implicit z =>
       val expectedNameValue = "SvantePääbo"
       val expectedAccessValue = "ro"
 
