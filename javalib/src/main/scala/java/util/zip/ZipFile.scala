@@ -72,7 +72,7 @@ class ZipFile(file: File, mode: Int, charset: Charset) extends Closeable {
    * boot. The number could probably be more like 128 or so.
    */
 
-  private val mEntries = ju.LinkedHashMap[String, ZipEntry](64)
+  private val mEntries = new ju.LinkedHashMap[String, ZipEntry](64)
 
   readCentralDir()
 

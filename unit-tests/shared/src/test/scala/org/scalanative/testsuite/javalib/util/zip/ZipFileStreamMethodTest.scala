@@ -81,7 +81,7 @@ class ZipFileStreamMethodTest {
 
     var index = 0
 
-    val zf = ZipFile(zfileName)
+    val zf = new ZipFile(zfileName)
     try {
       zf.stream()
         .forEach(e => {
