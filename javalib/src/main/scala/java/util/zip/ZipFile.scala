@@ -121,7 +121,10 @@ class ZipFile(file: File, mode: Int, charset: Charset) extends Closeable {
     if (entryName == null)
       throw new NullPointerException()
 
-    mEntries.getOrDefault(entryName + "/", null)
+    mEntries.getOrDefault(
+      entryName,
+      mEntries.getOrDefault(entryName + "/", null)
+    )
   }
 
   def getInputStream(_entry: ZipEntry): InputStream = {
@@ -169,6 +172,7 @@ class ZipFile(file: File, mode: Int, charset: Charset) extends Closeable {
   }
 
   def stream(): jus.Stream[ZipEntry] = {
+    checkNotClosed()
     val spliter = mEntries.values().spliterator()
     jus.StreamSupport.stream(spliter, parallel = false)
   }
