@@ -14,11 +14,12 @@ class JarInputStream(in: InputStream, verify: Boolean)
   private var mEntry: JarEntry = null
   private var jarEntry: JarEntry = null
   private var isMeta: Boolean = false
-  private var verifier: JarVerifier = null
+  // private var verifier: JarVerifier = null
   private var verStream: OutputStream = null
 
   if (verify) {
-    verifier = new JarVerifier("JarInputStream")
+    throw new UnsupportedOperationException("Jar verifying is not supported")
+    // verifier = new JarVerifier("JarInputStream")
   }
 
   mEntry = getNextJarEntry()
@@ -35,12 +36,12 @@ class JarInputStream(in: InputStream, verify: Boolean)
       mEntry = null
       manifest = new Manifest(this, verify)
       closeEntry()
-      if (verify) {
-        verifier.setManifest(manifest)
-        if (manifest != null) {
-          verifier.mainAttributesEnd = manifest.getMainAttributesEnd()
-        }
-      }
+      // if (verify) {
+      //   verifier.setManifest(manifest)
+      //   if (manifest != null) {
+      //     verifier.mainAttributesEnd = manifest.getMainAttributesEnd()
+      //   }
+      // }
     } else {
       val temp = new Attributes(3)
       temp.getMap().put("hidden", null)
@@ -49,7 +50,7 @@ class JarInputStream(in: InputStream, verify: Boolean)
        * if not from the first entry, we will not get enough
        * information,so no verify will be taken out.
        */
-      verifier = null
+      // verifier = null
     }
   }
 
@@ -67,18 +68,18 @@ class JarInputStream(in: InputStream, verify: Boolean)
       if (verStream != null && !eos) {
         if (r == -1) {
           eos = true
-          if (verifier != null) {
-            if (isMeta) {
-              verifier.addMetaEntry(
-                jarEntry.getName(),
-                verStream.asInstanceOf[ByteArrayOutputStream].toByteArray()
-              )
-              try verifier.readCertificates()
-              catch { case e: SecurityException => verifier = null; throw e }
-            } else {
-              verStream.asInstanceOf[JarVerifier#VerifierEntry].verify()
-            }
-          }
+          // if (verifier != null) {
+          //   if (isMeta) {
+          //     verifier.addMetaEntry(
+          //       jarEntry.getName(),
+          //       verStream.asInstanceOf[ByteArrayOutputStream].toByteArray()
+          //     )
+          //     try verifier.readCertificates()
+          //     catch { case e: SecurityException => verifier = null; throw e }
+          //   } else {
+          //     verStream.asInstanceOf[JarVerifier#VerifierEntry].verify()
+          //   }
+          // }
         } else {
           verStream.write(buffer, offset, r)
         }
@@ -98,17 +99,17 @@ class JarInputStream(in: InputStream, verify: Boolean)
       if (jarEntry == null) {
         null
       } else {
-        if (verifier != null) {
-          isMeta = jarEntry
-            .getName()
-            .map(JarFile.toASCIIUpperCase)
-            .startsWith(JarFile.META_DIR)
-          if (isMeta) {
-            verStream = new ByteArrayOutputStream()
-          } else {
-            verStream = verifier.initEntry(jarEntry.getName())
-          }
-        }
+        // if (verifier != null) {
+        //   isMeta = jarEntry
+        //     .getName()
+        //     .map(JarFile.toASCIIUpperCase)
+        //     .startsWith(JarFile.META_DIR)
+        //   if (isMeta) {
+        //     verStream = new ByteArrayOutputStream()
+        //   } else {
+        //     verStream = verifier.initEntry(jarEntry.getName())
+        //   }
+        // }
         eos = false
         jarEntry
       }

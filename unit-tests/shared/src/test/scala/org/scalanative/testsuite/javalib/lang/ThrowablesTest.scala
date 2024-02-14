@@ -453,7 +453,7 @@ class ThrowablesTest {
       new RuntimeException(msg),
       new RuntimeException(throwable),
       new RuntimeException(msg, throwable),
-      new RuntimeException(msg, throwable, false, false) {},
+      new RuntimeException(msg, throwable, false, false) {}
     ).foreach(assertNotNull(_))
   }
 }

@@ -162,32 +162,32 @@ class JarFileTest {
     assertTrue(b(3) == 0xbe.toByte)
   }
 
-  @Ignore("#956")
-  @Test def inputStreamOperationsWithSignedFiles(): Unit = {
-    var jar = getJAR4()
-    var entry = new JarEntry(JAR4_SIGNED_ENTRY)
-    var in = jar.getInputStream(entry)
-    in.read()
+  // @Ignore("#956")
+  // @Test def inputStreamOperationsWithSignedFiles(): Unit = {
+  //   var jar = getJAR4()
+  //   var entry = new JarEntry(JAR4_SIGNED_ENTRY)
+  //   var in = jar.getInputStream(entry)
+  //   in.read()
 
-    // RI verifies only entries which appear via getJarEntry method
-    jar = getJAR4()
-    entry = jar.getJarEntry(JAR4_SIGNED_ENTRY)
-    in = jar.getInputStream(entry)
-    readExactly(in, entry.getSize().toInt - 1)
-    assertTrue(entry.getCertificates() == null)
-    in.read()
-    assertTrue(entry.getCertificates() != null)
-    assertTrue(-1 == in.read())
+  //   // RI verifies only entries which appear via getJarEntry method
+  //   jar = getJAR4()
+  //   entry = jar.getJarEntry(JAR4_SIGNED_ENTRY)
+  //   in = jar.getInputStream(entry)
+  //   readExactly(in, entry.getSize().toInt - 1)
+  //   assertTrue(entry.getCertificates() == null)
+  //   in.read()
+  //   assertTrue(entry.getCertificates() != null)
+  //   assertTrue(-1 == in.read())
 
-    jar = getJAR4()
-    entry = jar.getJarEntry(JAR4_SIGNED_ENTRY)
-    entry.setSize(entry.getSize() - 1)
-    in = jar.getInputStream(entry)
-    readExactly(in, entry.getSize().toInt - 1)
-    assertTrue(entry.getCertificates() == null)
-    assertThrows(classOf[SecurityException], in.read())
-    assertTrue(in.read() == -1)
-  }
+  //   jar = getJAR4()
+  //   entry = jar.getJarEntry(JAR4_SIGNED_ENTRY)
+  //   entry.setSize(entry.getSize() - 1)
+  //   in = jar.getInputStream(entry)
+  //   readExactly(in, entry.getSize().toInt - 1)
+  //   assertTrue(entry.getCertificates() == null)
+  //   assertThrows(classOf[SecurityException], in.read())
+  //   assertTrue(in.read() == -1)
+  // }
 
   @Test def jarCreatedWithJavaVersion1_4(): Unit = {
     val jarFile = getJarFile(createdBy14Bytes)
@@ -208,23 +208,23 @@ class JarFileTest {
     }
   }
 
-  @Ignore("#956")
-  @Test def jarVerificationModifiedEntry(): Unit = {
-    // The jar is instact, but the entry object is modified.
-    var jarFile = getJAR5()
-    var zipEntry = jarFile.getJarEntry(JAR5_SIGNED_ENTRY)
-    zipEntry.setSize(zipEntry.getSize() + 1)
-    jarFile.getInputStream(zipEntry).skip(Long.MaxValue)
+  // @Ignore("#956")
+  // @Test def jarVerificationModifiedEntry(): Unit = {
+  //   // The jar is instact, but the entry object is modified.
+  //   var jarFile = getJAR5()
+  //   var zipEntry = jarFile.getJarEntry(JAR5_SIGNED_ENTRY)
+  //   zipEntry.setSize(zipEntry.getSize() + 1)
+  //   jarFile.getInputStream(zipEntry).skip(Long.MaxValue)
 
-    jarFile = getJAR5()
-    zipEntry = jarFile.getJarEntry(JAR5_SIGNED_ENTRY)
-    zipEntry.setSize(zipEntry.getSize() - 1)
+  //   jarFile = getJAR5()
+  //   zipEntry = jarFile.getJarEntry(JAR5_SIGNED_ENTRY)
+  //   zipEntry.setSize(zipEntry.getSize() - 1)
 
-    assertThrows(
-      classOf[SecurityException],
-      jarFile.getInputStream(zipEntry).read(new Array[Byte](5000), 0, 5000)
-    )
-  }
+  //   assertThrows(
+  //     classOf[SecurityException],
+  //     jarFile.getInputStream(zipEntry).read(new Array[Byte](5000), 0, 5000)
+  //   )
+  // }
 
   @Test def jarFileInsertEntryInManifestJar(): Unit = {
     // If another entry is inserted into Manifest, no security exception will be
@@ -240,84 +240,84 @@ class JarFileTest {
     assertTrue(count == 5)
   }
 
-  @Ignore("#956")
-  @Test def jarFileModifiedClass(): Unit = {
-    // The content of Test.class is modified, jarFile.getInputStream will not
-    // throw security Exception, but it will anytime before the inputStream got
-    // from getInputStream method has been read to end.
-    val path = Files.createTempFile("jarfile", ".jar")
-    Files.write(path, modifiedClassBytes)
-    val jarFile = new JarFile(path.toFile, true)
-    val entries = jarFile.entries()
-    while (entries.hasMoreElements()) {
-      val zipEntry = entries.nextElement()
-      jarFile.getInputStream(zipEntry)
-    }
-    // The content of Test.class has been tampered.
-    val zipEntry = jarFile.getEntry("Test.class")
-    val in = jarFile.getInputStream(zipEntry)
-    val buffer = new Array[Byte](1024)
-    assertThrows(
-      classOf[SecurityException],
-      while (in.available() > 0) {
-        in.read(buffer)
-      }
-    )
-  }
+  // @Ignore("#956")
+  // @Test def jarFileModifiedClass(): Unit = {
+  //   // The content of Test.class is modified, jarFile.getInputStream will not
+  //   // throw security Exception, but it will anytime before the inputStream got
+  //   // from getInputStream method has been read to end.
+  //   val path = Files.createTempFile("jarfile", ".jar")
+  //   Files.write(path, modifiedClassBytes)
+  //   val jarFile = new JarFile(path.toFile, true)
+  //   val entries = jarFile.entries()
+  //   while (entries.hasMoreElements()) {
+  //     val zipEntry = entries.nextElement()
+  //     jarFile.getInputStream(zipEntry)
+  //   }
+  //   // The content of Test.class has been tampered.
+  //   val zipEntry = jarFile.getEntry("Test.class")
+  //   val in = jarFile.getInputStream(zipEntry)
+  //   val buffer = new Array[Byte](1024)
+  //   assertThrows(
+  //     classOf[SecurityException],
+  //     while (in.available() > 0) {
+  //       in.read(buffer)
+  //     }
+  //   )
+  // }
 
-  @Ignore("#956")
-  @Test def jarFileModifiedManifestMainAttributes(): Unit = {
-    // In the Modified.jar, the main attributes of META-INF/MANIFEST.MF is
-    // tampered manually. Hence the RI 5.0 JarFile.getInputStram of any
-    // JarEntry will throw security exception.
-    val path = Files.createTempFile("jarfile", ".jar")
-    Files.write(path, modifiedManifestMainAttributesBytes)
-    val jarFile = new JarFile(path.toFile, true)
-    val entries = jarFile.entries()
-    while (entries.hasMoreElements()) {
-      val zipEntry = entries.nextElement()
-      jarFile.getInputStream(zipEntry)
-    }
-    // The content of Test.class has been tampered.
-    val zipEntry = jarFile.getEntry("Test.class")
-    val in = jarFile.getInputStream(zipEntry)
-    val buffer = new Array[Byte](1024)
-    assertThrows(
-      classOf[SecurityException],
-      while (in.available() > 0) {
-        in.read(buffer)
-      }
-    )
-  }
+  // @Ignore("#956")
+  // @Test def jarFileModifiedManifestMainAttributes(): Unit = {
+  //   // In the Modified.jar, the main attributes of META-INF/MANIFEST.MF is
+  //   // tampered manually. Hence the RI 5.0 JarFile.getInputStram of any
+  //   // JarEntry will throw security exception.
+  //   val path = Files.createTempFile("jarfile", ".jar")
+  //   Files.write(path, modifiedManifestMainAttributesBytes)
+  //   val jarFile = new JarFile(path.toFile, true)
+  //   val entries = jarFile.entries()
+  //   while (entries.hasMoreElements()) {
+  //     val zipEntry = entries.nextElement()
+  //     jarFile.getInputStream(zipEntry)
+  //   }
+  //   // The content of Test.class has been tampered.
+  //   val zipEntry = jarFile.getEntry("Test.class")
+  //   val in = jarFile.getInputStream(zipEntry)
+  //   val buffer = new Array[Byte](1024)
+  //   assertThrows(
+  //     classOf[SecurityException],
+  //     while (in.available() > 0) {
+  //       in.read(buffer)
+  //     }
+  //   )
+  // }
 
-  @Ignore("#956")
-  @Test def jarFileModifiedManifestEntryAttributes(): Unit = {
-    // It is all right in our origian lJarFile. If the Entry Attributes, for
-    // example Test.class in our jar, the jarFile.getInputStream will throw
-    // Security Exception.
-    val path = Files.createTempFile("jarfile", ".jar")
-    Files.write(path, modifiedManifestEntryAttributesBytes)
-    val jarFile = new JarFile(path.toFile, true)
-    val entries = jarFile.entries()
-    while (entries.hasMoreElements()) {
-      val zipEntry = entries.nextElement()
-      assertThrows(classOf[SecurityException], jarFile.getInputStream(zipEntry))
-    }
-  }
+  // @Ignore("#956")
+  // @Test def jarFileModifiedManifestEntryAttributes(): Unit = {
+  //   // It is all right in our origian lJarFile. If the Entry Attributes, for
+  //   // example Test.class in our jar, the jarFile.getInputStream will throw
+  //   // Security Exception.
+  //   val path = Files.createTempFile("jarfile", ".jar")
+  //   Files.write(path, modifiedManifestEntryAttributesBytes)
+  //   val jarFile = new JarFile(path.toFile, true)
+  //   val entries = jarFile.entries()
+  //   while (entries.hasMoreElements()) {
+  //     val zipEntry = entries.nextElement()
+  //     assertThrows(classOf[SecurityException], jarFile.getInputStream(zipEntry))
+  //   }
+  // }
 
-  @Ignore("#956")
-  @Test def jarFileModifiedSfEntryAttributes(): Unit = {
-    // If the content of the .SA file is modified, no matter what it resides,
-    // JarFile.getInputStream of any JarEntry will trop SecurityException()
-    val path = Files.createTempFile("jarfile", ".jar")
-    Files.write(path, modifiedSFEntryAttributesBytes)
-    val jarFile = new JarFile(path.toFile, true)
-    val entries = jarFile.entries()
-    while (entries.hasMoreElements()) {
-      val zipEntry = entries.nextElement()
-      assertThrows(classOf[SecurityException], jarFile.getInputStream(zipEntry))
-    }
-  }
+  // @Ignore("#956")
+  // @Test def jarFileModifiedSfEntryAttributes(): Unit = {
+  //   // If the content of the .SA file is modified, no matter what it resides,
+  //   // JarFile.getInputStream of any JarEntry will trop SecurityException()
+  //   val path = Files.createTempFile("jarfile", ".jar")
+  //   Files.write(path, modifiedSFEntryAttributesBytes)
+  //   val jarFile = new JarFile(path.toFile, true)
+  //   val entries = jarFile.entries()
+  //   while (entries.hasMoreElements()) {
+  //     val zipEntry = entries.nextElement()
+  //     assertThrows(classOf[SecurityException], jarFile.getInputStream(zipEntry))
+  //   }
+  // }
 
   @Test def getInputStreamJarEntry(): Unit = {
     var jf = getJAR1()
