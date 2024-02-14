@@ -648,7 +648,7 @@ class IssuesTest {
     }
 
     object Names {
-      def single[T <: Named](t: T): Names = Names(List(t))
+      def single[T <: Named](t: T): Names = new Names(List(t))
     }
 
     // Test
