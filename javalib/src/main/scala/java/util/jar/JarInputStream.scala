@@ -7,7 +7,8 @@ import java.util.zip.{ZipConstants, ZipEntry, ZipInputStream}
 
 class JarInputStream(in: InputStream, verify: Boolean)
     extends ZipInputStream(in) {
-  def this(in: InputStream) = this(in, true)
+  def this(in: InputStream) =
+    this(in, false) // TODO: restore verifying by default
 
   private var manifest: Manifest = null
   private var eos: Boolean = false

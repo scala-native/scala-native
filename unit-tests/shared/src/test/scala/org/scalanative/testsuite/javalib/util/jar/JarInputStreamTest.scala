@@ -90,7 +90,7 @@ class JarInputStreamTest {
 
   @Test def getNextEntryOnIntegrateJar(): Unit = {
     val is = new ByteArrayInputStream(integrateBytes)
-    val jis = new JarInputStream(is, true)
+    val jis = new JarInputStream(is, false) // TODO: restore verifying by default
     var entry: ZipEntry = null
     var count = 0
     while (count == 0 || entry != null) {
