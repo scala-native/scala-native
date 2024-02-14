@@ -1,5 +1,8 @@
 package java.lang.process
 
+// Required only for cross-compilation with Scala 2
+import scala.language.existentials
+
 import java.io.{FileDescriptor, InputStream, OutputStream}
 import java.lang.ProcessBuilder._
 
