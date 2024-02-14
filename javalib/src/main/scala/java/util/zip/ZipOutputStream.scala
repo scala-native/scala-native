@@ -124,7 +124,7 @@ class ZipOutputStream(_out: OutputStream, charset: Charset)
 
   override def finish(): Unit = {
     if (out == null)
-      throw new IOException("Stream is closed")
+      throw new IOException("Stream closed")
 
     if (currentEntry != null)
       closeEntry()
@@ -172,7 +172,7 @@ class ZipOutputStream(_out: OutputStream, charset: Charset)
       }
     }
     if (cDir == null) {
-      throw new IOException("Stream is closed")
+      throw new IOException("Stream closed")
     }
     if (entries.contains(ze.name)) {
       /* [MSG "archive.29", "Entry already exists: {0}"] */

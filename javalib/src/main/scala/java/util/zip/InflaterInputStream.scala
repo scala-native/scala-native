@@ -40,7 +40,7 @@ class InflaterInputStream private (
 
   override def read(buffer: Array[Byte], off: Int, nbytes: Int): Int = {
     if (closed) {
-      throw new IOException("Stream is closed")
+      throw new IOException("Stream closed")
     }
 
     if (null == buffer) {
@@ -102,7 +102,7 @@ class InflaterInputStream private (
 
   protected def fill(): Unit = {
     if (closed) {
-      throw new IOException("Stream is closed")
+      throw new IOException("Stream closed")
     } else if ({ len = in.read(buf); len > 0 }) {
       inf.setInput(buf, 0, len)
     }
@@ -136,7 +136,7 @@ class InflaterInputStream private (
 
   override def available(): Int = {
     if (closed) {
-      throw new IOException("Stream is closed")
+      throw new IOException("Stream closed")
     } else if (eof) {
       0
     } else {

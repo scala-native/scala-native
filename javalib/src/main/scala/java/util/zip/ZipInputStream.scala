@@ -41,7 +41,7 @@ class ZipInputStream(_in: InputStream, charset: Charset)
 
   def closeEntry(): Unit = {
     if (closed) {
-      throw new IOException("Stream is closed")
+      throw new IOException("Stream closed")
     }
     if (currentEntry == null) {
       return
@@ -239,7 +239,7 @@ class ZipInputStream(_in: InputStream, charset: Charset)
 
   override def read(buffer: Array[Byte], start: Int, length: Int): Int = {
     if (closed) {
-      throw new IOException("Stream is closed")
+      throw new IOException("Stream closed")
     }
     if (inf.finished() || currentEntry == null) {
       return -1
@@ -317,7 +317,7 @@ class ZipInputStream(_in: InputStream, charset: Charset)
 
   override def available(): Int = {
     if (closed) {
-      throw new IOException("Stream is closed")
+      throw new IOException("Stream closed")
     } else if (currentEntry == null || inRead < currentEntry.size) {
       1
     } else {
