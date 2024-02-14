@@ -8,9 +8,9 @@ import scalanative.windows.{Word => WinWord}
 @extern
 object WinSocketApi {
 
-  type Socket = Ptr[Byte]
+  type Socket = CVoidPtr
   type Group = DWord
-  type WSAProtocolInfoW = Ptr[Byte]
+  type WSAProtocolInfoW = CVoidPtr
   type WSAPollFd = CStruct3[Socket, CShort, CShort]
   // This structures contains additional 5 fields with different order in Win_64 and others
   // Should only be treated as read-only and never allocated in ScalaNative.

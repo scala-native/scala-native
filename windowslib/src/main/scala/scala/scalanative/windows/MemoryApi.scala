@@ -14,11 +14,11 @@ object MemoryApi {
       dwNumberOfBytesToMap: CSize
   ): Ptr[Byte] = extern
 
-  def UnmapViewOfFile(lpBaseAddress: Ptr[Byte]): Boolean = extern
+  def UnmapViewOfFile(lpBaseAddress: CVoidPtr): Boolean = extern
 
   @blocking
   def FlushViewOfFile(
-      lpBaseAddress: Ptr[Byte],
+      lpBaseAddress: CVoidPtr,
       dwNumberOfBytesToFlush: DWord
   ): Boolean = extern
 

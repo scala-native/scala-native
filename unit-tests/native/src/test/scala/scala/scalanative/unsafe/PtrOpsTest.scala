@@ -35,7 +35,7 @@ class PtrOpsTest {
   val fn0: CFuncPtr0[CInt] = () => 1
 
   @Test def castsPtrByteToCFuncPtr(): Unit = {
-    val fnPtr: Ptr[Byte] = CFuncPtr.toPtr(fn0)
+    val fnPtr: Ptr[_] = CFuncPtr.toPtr(fn0)
     val fnFromPtr = CFuncPtr.fromPtr[CFuncPtr0[CInt]](fnPtr)
     val expectedResult = 1
 
@@ -47,7 +47,7 @@ class PtrOpsTest {
 
   @Test def castedCFuncPtrHandlesArguments(): Unit = {
     type Add1Fn = CFuncPtr1[Int, Int]
-    val ptr: Ptr[Byte] = CFuncPtr.toPtr(fn1)
+    val ptr: Ptr[_] = CFuncPtr.toPtr(fn1)
     val fnFromPtr = CFuncPtr.fromPtr[CFuncPtr1[Int, Int]](ptr)
     val aliasedFn = CFuncPtr.fromPtr[Add1Fn](ptr)
 

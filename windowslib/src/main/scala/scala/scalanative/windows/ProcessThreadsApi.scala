@@ -24,7 +24,7 @@ object ProcessThreadsApi {
     DWord,
     Word,
     Word,
-    Ptr[Byte],
+    CVoidPtr,
     Handle,
     Handle,
     Handle
@@ -38,7 +38,7 @@ object ProcessThreadsApi {
       threadAttributes: Ptr[SecurityAttributes],
       inheritHandle: Boolean,
       creationFlags: DWord,
-      environment: Ptr[Byte],
+      environment: CVoidPtr,
       currentDirectory: CWString,
       startupInfo: Ptr[StartupInfoW],
       processInformation: Ptr[ProcessInformation]
@@ -156,7 +156,7 @@ object ProcessThreadsApiOps {
     def flags: DWord = ref._12
     def showWindow: Word = ref._13
     def cbReserved2: Word = ref._14
-    def lpReserved2: Ptr[Byte] = ref._15
+    def lpReserved2: CVoidPtr = ref._15
     def stdInput: Handle = ref._16
     def stdOutput: Handle = ref._17
     def stdError: Handle = ref._18
@@ -175,7 +175,7 @@ object ProcessThreadsApiOps {
     def flags_=(v: DWord): Unit = ref._12 = v
     def showWindow_=(v: Word): Unit = ref._13 = v
     def cbReserved2_=(v: Word): Unit = ref._14 = v
-    def lpReserved2_=(v: Ptr[Byte]): Unit = ref._15 = v
+    def lpReserved2_=(v: CVoidPtr): Unit = ref._15 = v
     def stdInput_=(v: Handle): Unit = ref._16 = v
     def stdOutput_=(v: Handle): Unit = ref._17 = v
     def stdError_=(v: Handle): Unit = ref._18 = v

@@ -11,7 +11,7 @@ import scala.scalanative.unsafe._
 
 @extern object nl_types {
 
-  type nl_catd = Ptr[Byte] // Scala Native idiom for void *.
+  type nl_catd = CVoidPtr // Scala Native idiom for void *.
 
   type nl_item = CInt
 

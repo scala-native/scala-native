@@ -325,7 +325,7 @@ private[monitor] class ObjectMonitor() {
       expected: Thread,
       value: Thread
   ): Boolean = {
-    val expectedPtr = stackalloc[Ptr[_]]()
+    val expectedPtr = stackalloc[CVoidPtr]()
     storeObject(expectedPtr, expected)
     atomic_compare_exchange_intptr(
       ownerThreadPtr,
@@ -338,7 +338,7 @@ private[monitor] class ObjectMonitor() {
       expected: Thread,
       value: Thread
   ): Boolean = {
-    val expectedPtr = stackalloc[Ptr[_]]()
+    val expectedPtr = stackalloc[CVoidPtr]()
     storeObject(expectedPtr, expected)
     atomic_compare_exchange_intptr(
       activeWaiterThreadPtr,
@@ -352,7 +352,7 @@ private[monitor] class ObjectMonitor() {
       expected: WaiterNode,
       value: WaiterNode
   ): Boolean = {
-    val expectedPtr = stackalloc[Ptr[_]]()
+    val expectedPtr = stackalloc[CVoidPtr]()
     storeObject(expectedPtr, expected)
     atomic_compare_exchange_intptr(ref, expectedPtr, castObjectToRawPtr(value))
   }

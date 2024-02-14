@@ -153,7 +153,7 @@ import stddef.size_t
    *    [[https://en.cppreference.com/w/c/io/fread]]
    */
   @blocking def fread(
-      buffer: Ptr[Byte],
+      buffer: CVoidPtr,
       size: CSize,
       count: CSize,
       stream: Ptr[FILE]
@@ -190,7 +190,7 @@ import stddef.size_t
    */
 
   @blocking def fwrite(
-      buffer: Ptr[Byte],
+      buffer: CVoidPtr,
       size: CSize,
       count: CSize,
       stream: Ptr[FILE]

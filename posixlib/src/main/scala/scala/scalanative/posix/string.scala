@@ -28,14 +28,14 @@ import scala.scalanative.posix.sys.types
   type locale_t = locale.locale_t
 
   /** XSI */
-  def memccpy(dest: Ptr[Byte], src: Ptr[Byte], c: CInt, n: size_t): Ptr[Byte] =
+  def memccpy(dest: CVoidPtr, src: CVoidPtr, c: CInt, n: size_t): CVoidPtr =
     extern
 
   /** CX */
-  def stpcpy(dest: Ptr[Byte], src: String): Ptr[Byte] = extern
+  def stpcpy(dest: CString, src: CString): CVoidPtr = extern
 
   /** CX */
-  def stpncpy(dest: Ptr[Byte], src: String, n: size_t): Ptr[Byte] = extern
+  def stpncpy(dest: CString, src: CString, n: size_t): CVoidPtr = extern
 
   def stroll(s1: CString, s2: CString): CInt = extern
 
@@ -63,13 +63,13 @@ import scala.scalanative.posix.sys.types
   def strsignal(signum: CInt): CString = extern
 
   /** CX */
-  def strtok_r(str: CString, delim: CString, saveptr: Ptr[Ptr[Byte]]): CString =
+  def strtok_r(str: CString, delim: CString, saveptr: Ptr[CString]): CString =
     extern
 
   /** CX */
   def strxfrm_l(
-      dest: Ptr[Byte],
-      src: Ptr[Byte],
+      dest: CString,
+      src: CString,
       n: size_t,
       locale: locale_t
   ): size_t = extern

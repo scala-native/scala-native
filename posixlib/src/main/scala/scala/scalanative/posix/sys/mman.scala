@@ -9,7 +9,7 @@ import scala.scalanative.posix.sys.types._
 @extern
 object mman {
   def mmap(
-      addr: Ptr[_],
+      addr: CVoidPtr,
       length: size_t,
       prot: CInt,
       flags: CInt,
@@ -17,10 +17,10 @@ object mman {
       offset: off_t
   ): Ptr[Byte] = extern
 
-  def munmap(addr: Ptr[_], length: size_t): CInt = extern
+  def munmap(addr: CVoidPtr, length: size_t): CInt = extern
 
   @blocking
-  def msync(addr: Ptr[_], length: size_t, flags: CInt): CInt = extern
+  def msync(addr: CVoidPtr, length: size_t, flags: CInt): CInt = extern
 
   @name("scalanative_prot_exec")
   def PROT_EXEC: CInt = extern

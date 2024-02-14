@@ -299,7 +299,7 @@ class StackallocStateRestoreTest extends OptimizerSpec {
           |}
           |
           |object CList {
-          |  type Node = CStruct2[Int, Ptr[_]]
+          |  type Node = CStruct2[Int, CVoidPtr]
           |
           |  implicit class NodeOps(val self: Ptr[Node]) extends AnyVal {
           |    def init(value: Int, next: Ptr[Node]) = {
@@ -357,7 +357,7 @@ class StackallocStateRestoreTest extends OptimizerSpec {
           |}
           |
           |object CList {
-          |  type Node = CStruct2[Int, Ptr[_]]
+          |  type Node = CStruct2[Int, CVoidPtr]
           |
           |  implicit class NodeOps(val self: Ptr[Node]) extends AnyVal {
           |    def init(value: Int, next: Ptr[Node]) = {
@@ -420,7 +420,7 @@ class StackallocStateRestoreTest extends OptimizerSpec {
           |}
           |
           |object CList {
-          |  type Node = CStruct2[Int, Ptr[_]]
+          |  type Node = CStruct2[Int, CVoidPtr]
           |
           |  implicit class NodeOps(val self: Ptr[Node]) extends AnyVal {
           |    def init(value: Int, next: Ptr[Node]) = {

@@ -14,7 +14,7 @@ import scala.scalanative.unsafe._
 
 @extern object locale extends libc.locale {
 
-  type locale_t = Ptr[Byte] // CX, so can get no simpler.
+  type locale_t = CVoidPtr // CX, so can get no simpler.
 
 // Symbolic constants
 

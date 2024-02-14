@@ -15,7 +15,7 @@ object NamedPipeApi {
 
   def PeekNamedPipe(
       pipe: Handle,
-      buffer: Ptr[Byte],
+      buffer: CVoidPtr,
       bufferSize: DWord,
       bytesRead: Ptr[DWord],
       totalBytesAvailable: Ptr[DWord],

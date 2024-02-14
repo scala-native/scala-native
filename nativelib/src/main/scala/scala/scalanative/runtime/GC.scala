@@ -39,10 +39,10 @@ object GC {
    */
   private type pthread_t = CUnsignedLongInt
   private type pthread_attr_t = CUnsignedLongLong
-  private type Handle = Ptr[Byte]
+  private type Handle = CVoidPtr
   private type DWord = CUnsignedInt
-  private type SecurityAttributes = CStruct3[DWord, Ptr[Byte], Boolean]
-  private type PtrAny = Ptr[Byte]
+  private type SecurityAttributes = CStruct3[DWord, CVoidPtr, Boolean]
+  private type PtrAny = CVoidPtr
   type ThreadRoutineArg = PtrAny
   type ThreadStartRoutine = CFuncPtr1[ThreadRoutineArg, PtrAny]
 
@@ -123,7 +123,7 @@ object GC {
    *    marking
    */
   @name("scalanative_GC_add_roots")
-  def addRoots(addressLow: Ptr[_], addressHigh: Ptr[_]): Unit = extern
+  def addRoots(addressLow: CVoidPtr, addressHigh: CVoidPtr): Unit = extern
 
   /** Notify the Garbage Collector about the range of memory which should no
    *  longer should be scanned when marking the objects. Every previously
@@ -140,5 +140,5 @@ object GC {
    *    marking
    */
   @name("scalanative_GC_remove_roots")
-  def removeRoots(addressLow: Ptr[_], addressHigh: Ptr[_]): Unit = extern
+  def removeRoots(addressLow: CVoidPtr, addressHigh: CVoidPtr): Unit = extern
 }

@@ -307,7 +307,7 @@ object socket {
       socket: CInt,
       level: CInt,
       option_name: CInt,
-      options_value: Ptr[Byte],
+      options_value: CVoidPtr,
       option_len: Ptr[socklen_t]
   ): CInt = extern
 
@@ -316,7 +316,7 @@ object socket {
   @blocking
   def recv(
       socket: CInt,
-      buffer: Ptr[Byte],
+      buffer: CVoidPtr,
       length: CSize,
       flags: CInt
   ): CSSize = extern
@@ -324,7 +324,7 @@ object socket {
   @blocking
   def recvfrom(
       socket: CInt,
-      buffer: Ptr[Byte],
+      buffer: CVoidPtr,
       length: CSize,
       flags: CInt,
       dest_addr: Ptr[sockaddr],
@@ -343,7 +343,7 @@ object socket {
   @blocking
   def send(
       socket: CInt,
-      buffer: Ptr[Byte],
+      buffer: CVoidPtr,
       length: CSize,
       flags: CInt
   ): CSSize = extern
@@ -360,7 +360,7 @@ object socket {
   @blocking
   def sendto(
       socket: CInt,
-      buffer: Ptr[Byte],
+      buffer: CVoidPtr,
       length: CSize,
       flags: CInt,
       dest_addr: Ptr[sockaddr],
@@ -371,7 +371,7 @@ object socket {
       socket: CInt,
       level: CInt,
       option_name: CInt,
-      options_value: Ptr[Byte],
+      options_value: CVoidPtr,
       option_len: socklen_t
   ): CInt = extern
 

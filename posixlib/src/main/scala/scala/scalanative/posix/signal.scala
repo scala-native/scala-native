@@ -47,7 +47,7 @@ import scala.scalanative.unsafe._
   // Integer or structure type of an object used to represent sets of signals
   // macOS CUnsignedInt
   // Linux CStruct1[CArray[CUnsignedLong, Nat.Digit[Nat._1, Nat._6]]]
-  type sigset_t = Ptr[Byte]
+  type sigset_t = CVoidPtr
 
   type pid_t = types.pid_t
   type pthread_attr_t = types.pthread_attr_t
@@ -164,7 +164,7 @@ import scala.scalanative.unsafe._
                            // of the signal handling func
     CInt,                  // sa_flags Special flags
                            // sa_sigaction Pointer to a signal-catching function
-    CFuncPtr3[CInt, Ptr[siginfo_t], Ptr[Byte], Unit]
+    CFuncPtr3[CInt, Ptr[siginfo_t], CVoidPtr, Unit]
   ]
 
 // format: on
@@ -217,17 +217,17 @@ import scala.scalanative.unsafe._
   // A machine-specific representation of the saved context
   // mac OS type mcontext_t = Ptr[__darwin_mcontext64]
   // __darwin_mcontext64 -> _STRUCT_MCONTEXT64 -> typedef _STRUCT_MCONTEXT64	*mcontext_t;
-  type mcontext_t = Ptr[Byte]
+  type mcontext_t = CVoidPtr
 
   type ucontext_t = CStruct4[
-    Ptr[Byte], // ucontext_t *uc_link Ptr to the resumed context when context returns (Ptr[Byte] instead)
+    CVoidPtr, // ucontext_t *uc_link Ptr to the resumed context when context returns (CVoidPtr instead)
     sigset_t, // c_sigmask The set of signals that are blocked when this context is active
     Ptr[stack_t], // uc_stack The stack context (Ptr instead of value)
     mcontext_t // uc_mcontext A machine-specific representation of the saved context
   ]
 
   type stack_t = CStruct3[
-    Ptr[Byte], // void *ss_sp Stack base or pointer
+    CVoidPtr, // void *ss_sp Stack base or pointer
     size_t, // ss_size Stack size
     CInt // ss_flags Flags
   ]
@@ -238,7 +238,7 @@ import scala.scalanative.unsafe._
     CInt, // si_errno If non-zero, an errno value associated with this signal, as described in <errno.h>
     pid_t, // si_pid Sending process ID
     uid_t, // si_uid Real user ID of sending process
-    Ptr[Byte], // void *si_addr Address of faulting instruction
+    CVoidPtr, // void *si_addr Address of faulting instruction
     CInt, // si_status Exit value or signal
     CLong, // si_band Band event for SIGPOLL
     Ptr[sigval] // si_value Signal value (Ptr instead of value)
@@ -401,9 +401,9 @@ object signalOps {
   implicit class sigval_ops(val p: Ptr[sigval]) extends AnyVal {
     def sival_int: Ptr[CInt] = p.asInstanceOf[Ptr[CInt]]
     def sival_int_=(value: CInt): Unit = !p.asInstanceOf[Ptr[CInt]] = value
-    def sival_ptr: Ptr[Ptr[Byte]] = p.asInstanceOf[Ptr[Ptr[Byte]]]
-    def sival_ptr_=(value: Ptr[Byte]): Unit =
-      !p.asInstanceOf[Ptr[Ptr[Byte]]] = value
+    def sival_ptr: Ptr[CVoidPtr] = p.asInstanceOf[Ptr[CVoidPtr]]
+    def sival_ptr_=(value: CVoidPtr): Unit =
+      !p.asInstanceOf[Ptr[CVoidPtr]] = value
   }
 
   def union_sigval()(implicit z: Zone): Ptr[sigval] = alloc[sigval]()
@@ -415,9 +415,9 @@ object signalOps {
     def sa_mask_=(value: sigset_t): Unit = p._2 = value
     def sa_flags: CInt = p._3
     def sa_flags_=(value: CInt): Unit = p._3 = value
-    def sa_sigaction: CFuncPtr3[CInt, Ptr[siginfo_t], Ptr[Byte], Unit] = p._4
+    def sa_sigaction: CFuncPtr3[CInt, Ptr[siginfo_t], CVoidPtr, Unit] = p._4
     def sa_sigaction_=(
-        value: CFuncPtr3[CInt, Ptr[siginfo_t], Ptr[Byte], Unit]
+        value: CFuncPtr3[CInt, Ptr[siginfo_t], CVoidPtr, Unit]
     ): Unit =
       p._4 = value
   }
@@ -427,22 +427,22 @@ object signalOps {
   // mcontext_t - platform specific
 
   implicit class ucontext_t_ops(val p: Ptr[ucontext_t]) extends AnyVal {
-    def uc_link: Ptr[Byte] = p._1
-    def uc_link_=(value: Ptr[Byte]): Unit = !p._1
+    def uc_link: CVoidPtr = p._1
+    def uc_link_=(value: CVoidPtr): Unit = p._1 = value
     def c_sigmask: sigset_t = p._2
-    def c_sigmask_=(value: sigset_t): Unit = !p._2
+    def c_sigmask_=(value: sigset_t): Unit = p._2 = value
     def uc_stack: Ptr[stack_t] = p._3
-    def uc_stack_=(value: Ptr[stack_t]): Unit = !p._3
+    def uc_stack_=(value: Ptr[stack_t]): Unit = p._3 = value
     def uc_mcontext: mcontext_t = p._4
-    def uc_mcontext_=(value: mcontext_t): Unit = !p._4
+    def uc_mcontext_=(value: mcontext_t): Unit = p._4 = value
   }
 
   def struct_ucontext_t()(implicit z: Zone): Ptr[ucontext_t] =
     alloc[ucontext_t]()
 
   implicit class stack_t_ops(val p: Ptr[stack_t]) extends AnyVal {
-    def ss_sp: Ptr[Byte] = p._1
-    def ss_sp_=(value: Ptr[Byte]): Unit = p._1 = value
+    def ss_sp: CVoidPtr = p._1
+    def ss_sp_=(value: CVoidPtr): Unit = p._1 = value
     def ss_size: size_t = p._2
     def ss_size_=(value: size_t): Unit = p._2 = value
     def ss_flags: CInt = p._3
@@ -462,8 +462,8 @@ object signalOps {
     def si_pid_=(value: pid_t): Unit = p._4 = value
     def si_uid: uid_t = p._5
     def si_uid_=(value: uid_t): Unit = p._5 = value
-    def si_addr: Ptr[Byte] = p._6
-    def si_addr_=(value: Ptr[Byte]): Unit = p._6 = value
+    def si_addr: CVoidPtr = p._6
+    def si_addr_=(value: CVoidPtr): Unit = p._6 = value
     def si_status: CInt = p._7
     def si_status_=(value: CInt): Unit = p._7 = value
     def si_band: CLong = p._8

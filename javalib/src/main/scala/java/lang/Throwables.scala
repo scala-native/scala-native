@@ -18,7 +18,7 @@ private[lang] object StackTrace {
       ip: CUnsignedLong
   ): StackTraceElement = {
     val nameMax = 1024
-    val name = calloc(nameMax.toUSize, sizeof[CChar])
+    val name = calloc(nameMax.toUSize, sizeof[CChar]).asInstanceOf[Ptr[CChar]]
     val offset = stackalloc[scala.Long]()
 
     unwind.get_proc_name(cursor, name, nameMax.toUSize, offset)

@@ -83,10 +83,13 @@ package object unsafe extends unsafe.UnsafePackageCompat {
   /** The C/C++ 'ptrdiff_t' type. */
   type CPtrDiff = Size
 
+  /** The C/C++ 'void *' type; by convention, not declaration. */
+  type CVoidPtr = Ptr[_]
+
   /** C-style string with trailing 0. */
   type CString = Ptr[CChar]
 
-  /* C-style wide string with trail 0. */
+  /** C-style wide string with trail 0. */
   type CWideString = Ptr[CWideChar]
 
   /** Materialize tag for given type. */

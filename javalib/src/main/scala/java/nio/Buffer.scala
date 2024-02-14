@@ -6,7 +6,7 @@ import scala.scalanative.runtime.{toRawPtr, fromRawPtr}
 
 abstract class Buffer private[nio] (
     val _capacity: Int,
-    _address: unsafe.Ptr[_]
+    _address: unsafe.CVoidPtr
 ) {
   private[nio] type ElementType
 

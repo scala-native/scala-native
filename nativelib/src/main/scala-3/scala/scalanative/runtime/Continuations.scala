@@ -98,7 +98,7 @@ object Continuations:
     def apply(x: R): T =
       resume(inner, x).get
 
-    private[Continuations] def alloc(size: CUnsignedLong): Ptr[Byte] =
+    private[Continuations] def alloc(size: CUnsignedLong): Ptr[?] =
       val obj = BlobArray.alloc(size.toInt) // round up the blob size
       allocas += obj
       obj.atUnsafe(0)
@@ -109,10 +109,10 @@ object Continuations:
   /** Transformed version of the suspend lambda, to be passed to cont_suspend.
    *  Takes:
    *    - `continuation`: the reified continuation
-   *    - `onSuspend`: The suspend lambda as Continuation => Ptr[Byte] (the
+   *    - `onSuspend`: The suspend lambda as Continuation => Ptr[?] (the
    *      returned object, cast to a pointer)
    *
-   *  Returns Ptr[Byte] / void*.
+   *  Returns Ptr[?] / void*.
    */
   inline def suspendFn[R, T] = suspendFnAny.asInstanceOf[SuspendFnPtr[R, T]]
   private val suspendFnAny: SuspendFnPtr[Any, Any] =
@@ -123,10 +123,10 @@ object Continuations:
   /** Transformed version of the boundary body, to be passed to cont_boundary.
    *  Takes:
    *    - `label`: the boundary label
-   *    - `arg`: The boundary body as BoundaryLabel ?=> Ptr[Byte] (the returned
+   *    - `arg`: The boundary body as BoundaryLabel ?=> Ptr[?] (the returned
    *      object, cast to a pointer)
    *
-   *  Returns Ptr[Byte] / void*.
+   *  Returns Ptr[?] / void*.
    */
   inline def boundaryBodyFn[T] =
     boundaryBodyFnAny.asInstanceOf[ContinuationBodyPtr[T]]
@@ -139,14 +139,14 @@ object Continuations:
   private def allocateBlob(
       size: CUnsignedLong,
       continuation: Continuation[Any, Any]
-  ): Ptr[Byte] = continuation.alloc(size)
+  ): Ptr[?] = continuation.alloc(size)
 
   /** Continuations implementation imported from C (see `delimcc.h`) */
   @extern private object Impl:
     private type ContinuationLabel = CUnsignedLong
     type BoundaryLabel = ContinuationLabel
 
-    type Continuation = Ptr[Byte]
+    type Continuation = Ptr[?]
 
     // We narrow the arguments of `boundary` to functions returning Try[T]
     type ContinuationBody[T] = BoundaryLabel => Try[T]
@@ -180,7 +180,7 @@ object Continuations:
         continuation_alloc_fn: CFuncPtr2[
           CUnsignedLong,
           Continuations.Continuation[Any, Any],
-          Ptr[Byte]
+          Ptr[?]
         ]
     ): Unit =
       extern
