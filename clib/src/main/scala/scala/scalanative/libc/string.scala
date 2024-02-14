@@ -22,11 +22,11 @@ import scalanative.unsafe._
   def strpbrk(dest: CString, breakset: CString): CString = extern
   def strstr(str: CString, substr: CString): CString = extern
   def strtok(str: CString, delim: CString): CString = extern
-  def memchr(ptr: Ptr[_], ch: CInt, count: CSize): Ptr[Byte] = extern
-  def memcmp(lhs: Ptr[_], rhs: Ptr[_], count: CSize): CInt = extern
+  def memchr(ptr: CVoidPtr, ch: CInt, count: CSize): Ptr[Byte] = extern
+  def memcmp(lhs: CVoidPtr, rhs: CVoidPtr, count: CSize): CInt = extern
   def memset[T](dest: Ptr[T], ch: CInt, count: CSize): Ptr[T] = extern
-  def memcpy[T](dest: Ptr[T], src: Ptr[_], count: CSize): Ptr[T] = extern
-  def memmove[T](dest: Ptr[T], src: Ptr[_], count: CSize): Ptr[T] =
+  def memcpy[T](dest: Ptr[T], src: CVoidPtr, count: CSize): Ptr[T] = extern
+  def memmove[T](dest: Ptr[T], src: CVoidPtr, count: CSize): Ptr[T] =
     extern
   def strerror(errnum: CInt): CString = extern
 }

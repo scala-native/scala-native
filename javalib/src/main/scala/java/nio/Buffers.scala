@@ -30,7 +30,7 @@ abstract class ByteBuffer private[nio] (
     _capacity: Int,
     override private[nio] val _array: Array[Byte],
     private[nio] val _offset: Int,
-    _address: unsafe.Ptr[_],
+    _address: unsafe.CVoidPtr,
 ) extends Buffer(_capacity, _address)
     with Comparable[ByteBuffer] 
   {
@@ -45,7 +45,7 @@ abstract class ByteBuffer private[nio] (
   private def genBuffer = GenBuffer[ByteBuffer](this)
 
   private[nio] def this(_capacity: Int, _array: Array[Byte], _offset: Int) = this(_capacity, _array, _offset, _array.atUnsafe(_offset))
-  private[nio] def this(_capacity: Int, address: unsafe.Ptr[_]) = this(_capacity, null: Array[Byte], -1, address)
+  private[nio] def this(_capacity: Int, address: unsafe.CVoidPtr) = this(_capacity, null: Array[Byte], -1, address)
 
   def slice(): ByteBuffer
   // Since JDK 13
@@ -376,7 +376,7 @@ abstract class CharBuffer private[nio] (
     _capacity: Int,
     override private[nio] val _array: Array[Char],
     private[nio] val _offset: Int,
-    _address: unsafe.Ptr[_],
+    _address: unsafe.CVoidPtr,
 ) extends Buffer(_capacity, _address)
     with Comparable[CharBuffer] 
     with CharSequence
@@ -393,7 +393,7 @@ abstract class CharBuffer private[nio] (
   private def genBuffer = GenBuffer[CharBuffer](this)
 
   private[nio] def this(_capacity: Int, _array: Array[Char], _offset: Int) = this(_capacity, _array, _offset, _array.atUnsafe(_offset))
-  private[nio] def this(_capacity: Int, address: unsafe.Ptr[_]) = this(_capacity, null: Array[Char], -1, address)
+  private[nio] def this(_capacity: Int, address: unsafe.CVoidPtr) = this(_capacity, null: Array[Char], -1, address)
 
   def slice(): CharBuffer
   // Since JDK 13
@@ -611,7 +611,7 @@ abstract class ShortBuffer private[nio] (
     _capacity: Int,
     override private[nio] val _array: Array[Short],
     private[nio] val _offset: Int,
-    _address: unsafe.Ptr[_],
+    _address: unsafe.CVoidPtr,
 ) extends Buffer(_capacity, _address)
     with Comparable[ShortBuffer] 
   {
@@ -625,7 +625,7 @@ abstract class ShortBuffer private[nio] (
   private def genBuffer = GenBuffer[ShortBuffer](this)
 
   private[nio] def this(_capacity: Int, _array: Array[Short], _offset: Int) = this(_capacity, _array, _offset, _array.atUnsafe(_offset))
-  private[nio] def this(_capacity: Int, address: unsafe.Ptr[_]) = this(_capacity, null: Array[Short], -1, address)
+  private[nio] def this(_capacity: Int, address: unsafe.CVoidPtr) = this(_capacity, null: Array[Short], -1, address)
 
   def slice(): ShortBuffer
   // Since JDK 13
@@ -795,7 +795,7 @@ abstract class IntBuffer private[nio] (
     _capacity: Int,
     override private[nio] val _array: Array[Int],
     private[nio] val _offset: Int,
-    _address: unsafe.Ptr[_],
+    _address: unsafe.CVoidPtr,
 ) extends Buffer(_capacity, _address)
     with Comparable[IntBuffer] 
   {
@@ -809,7 +809,7 @@ abstract class IntBuffer private[nio] (
   private def genBuffer = GenBuffer[IntBuffer](this)
 
   private[nio] def this(_capacity: Int, _array: Array[Int], _offset: Int) = this(_capacity, _array, _offset, _array.atUnsafe(_offset))
-  private[nio] def this(_capacity: Int, address: unsafe.Ptr[_]) = this(_capacity, null: Array[Int], -1, address)
+  private[nio] def this(_capacity: Int, address: unsafe.CVoidPtr) = this(_capacity, null: Array[Int], -1, address)
 
   def slice(): IntBuffer
   // Since JDK 13
@@ -979,7 +979,7 @@ abstract class LongBuffer private[nio] (
     _capacity: Int,
     override private[nio] val _array: Array[Long],
     private[nio] val _offset: Int,
-    _address: unsafe.Ptr[_],
+    _address: unsafe.CVoidPtr,
 ) extends Buffer(_capacity, _address)
     with Comparable[LongBuffer] 
   {
@@ -993,7 +993,7 @@ abstract class LongBuffer private[nio] (
   private def genBuffer = GenBuffer[LongBuffer](this)
 
   private[nio] def this(_capacity: Int, _array: Array[Long], _offset: Int) = this(_capacity, _array, _offset, _array.atUnsafe(_offset))
-  private[nio] def this(_capacity: Int, address: unsafe.Ptr[_]) = this(_capacity, null: Array[Long], -1, address)
+  private[nio] def this(_capacity: Int, address: unsafe.CVoidPtr) = this(_capacity, null: Array[Long], -1, address)
 
   def slice(): LongBuffer
   // Since JDK 13
@@ -1163,7 +1163,7 @@ abstract class FloatBuffer private[nio] (
     _capacity: Int,
     override private[nio] val _array: Array[Float],
     private[nio] val _offset: Int,
-    _address: unsafe.Ptr[_],
+    _address: unsafe.CVoidPtr,
 ) extends Buffer(_capacity, _address)
     with Comparable[FloatBuffer] 
   {
@@ -1177,7 +1177,7 @@ abstract class FloatBuffer private[nio] (
   private def genBuffer = GenBuffer[FloatBuffer](this)
 
   private[nio] def this(_capacity: Int, _array: Array[Float], _offset: Int) = this(_capacity, _array, _offset, _array.atUnsafe(_offset))
-  private[nio] def this(_capacity: Int, address: unsafe.Ptr[_]) = this(_capacity, null: Array[Float], -1, address)
+  private[nio] def this(_capacity: Int, address: unsafe.CVoidPtr) = this(_capacity, null: Array[Float], -1, address)
 
   def slice(): FloatBuffer
   // Since JDK 13
@@ -1347,7 +1347,7 @@ abstract class DoubleBuffer private[nio] (
     _capacity: Int,
     override private[nio] val _array: Array[Double],
     private[nio] val _offset: Int,
-    _address: unsafe.Ptr[_],
+    _address: unsafe.CVoidPtr,
 ) extends Buffer(_capacity, _address)
     with Comparable[DoubleBuffer] 
   {
@@ -1361,7 +1361,7 @@ abstract class DoubleBuffer private[nio] (
   private def genBuffer = GenBuffer[DoubleBuffer](this)
 
   private[nio] def this(_capacity: Int, _array: Array[Double], _offset: Int) = this(_capacity, _array, _offset, _array.atUnsafe(_offset))
-  private[nio] def this(_capacity: Int, address: unsafe.Ptr[_]) = this(_capacity, null: Array[Double], -1, address)
+  private[nio] def this(_capacity: Int, address: unsafe.CVoidPtr) = this(_capacity, null: Array[Double], -1, address)
 
   def slice(): DoubleBuffer
   // Since JDK 13

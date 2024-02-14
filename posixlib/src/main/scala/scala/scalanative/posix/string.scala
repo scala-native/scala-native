@@ -28,14 +28,14 @@ import scala.scalanative.posix.sys.types
   type locale_t = locale.locale_t
 
   /** XSI */
-  def memccpy(dest: Ptr[_], src: Ptr[_], c: CInt, n: size_t): Ptr[_] =
+  def memccpy(dest: CVoidPtr, src: CVoidPtr, c: CInt, n: size_t): CVoidPtr =
     extern
 
   /** CX */
-  def stpcpy(dest: CString, src: CString): Ptr[_] = extern
+  def stpcpy(dest: CString, src: CString): CVoidPtr = extern
 
   /** CX */
-  def stpncpy(dest: CString, src: CString, n: size_t): Ptr[_] = extern
+  def stpncpy(dest: CString, src: CString, n: size_t): CVoidPtr = extern
 
   def stroll(s1: CString, s2: CString): CInt = extern
 

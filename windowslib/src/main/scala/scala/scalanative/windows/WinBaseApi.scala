@@ -11,10 +11,10 @@ object WinBaseApi {
   import SecurityBaseApi._
 
   type SecurityInformation = DWord
-  type SecurityAttributes = CStruct3[DWord, Ptr[_], Boolean]
-  type CallbackContext = Ptr[_]
+  type SecurityAttributes = CStruct3[DWord, CVoidPtr, Boolean]
+  type CallbackContext = CVoidPtr
   type WaitOrTimerCallback = CFuncPtr2[CallbackContext, Boolean, Unit]
-  type LocalHandle = Ptr[_]
+  type LocalHandle = CVoidPtr
 
   def CreateHardLinkW(
       linkFileName: CWString,
@@ -29,7 +29,7 @@ object WinBaseApi {
   ): Boolean = extern
   def FormatMessageA(
       flags: DWord,
-      source: Ptr[_],
+      source: CVoidPtr,
       messageId: DWord,
       languageId: DWord,
       buffer: Ptr[CWString],
@@ -39,7 +39,7 @@ object WinBaseApi {
 
   def FormatMessageW(
       flags: DWord,
-      source: Ptr[_],
+      source: CVoidPtr,
       messageId: DWord,
       languageId: DWord,
       buffer: Ptr[CWString],
@@ -111,7 +111,7 @@ object WinBaseApi {
       retHandle: Ptr[Handle],
       ref: Handle,
       callbackFn: WaitOrTimerCallback,
-      context: Ptr[_],
+      context: CVoidPtr,
       miliseconds: DWord,
       flags: DWord
   ): Boolean = extern
@@ -195,11 +195,11 @@ object WinBaseApiOps {
   implicit class SecurityAttributesOps(val ref: Ptr[SecurityAttributes])
       extends AnyVal {
     def length: DWord = ref._1
-    def securityDescriptor: Ptr[_] = ref._2
+    def securityDescriptor: CVoidPtr = ref._2
     def inheritHandle: Boolean = ref._3
 
     def length_=(v: DWord): Unit = ref._1 = v
-    def securityDescriptor_=(v: Ptr[_]): Unit = ref._2 = v
+    def securityDescriptor_=(v: CVoidPtr): Unit = ref._2 = v
     def inheritHandle_=(v: Boolean): Unit = ref._3 = v
   }
 }

@@ -34,20 +34,20 @@ object ops {
       ref._5.asInstanceOf[Ptr[ObjectsAndNameW]]
 
     def multipleTrustee_=(v: Ptr[TrusteeW]): Unit = {
-      ref._1 = v.asInstanceOf[Ptr[_]]
+      ref._1 = v.asInstanceOf[CVoidPtr]
     }
     def multipleTrusteeOperation_=(v: MultipleTruteeOperation): Unit = {
       ref._2 = v
     }
     def trusteeForm_=(v: TrusteeForm): Unit = { ref._3 = v }
     def trusteeType_=(v: TrusteeType): Unit = { ref._4 = v }
-    def strName_=(v: CWString): Unit = { ref._5 = v.asInstanceOf[Ptr[_]] }
-    def sid_=(v: SIDPtr): Unit = { ref._5 = v.asInstanceOf[Ptr[_]] }
+    def strName_=(v: CWString): Unit = { ref._5 = v.asInstanceOf[CVoidPtr] }
+    def sid_=(v: SIDPtr): Unit = { ref._5 = v.asInstanceOf[CVoidPtr] }
     def objectsAndSid_=(v: Ptr[ObjectsAndSid]): Unit = {
-      ref._5 = v.asInstanceOf[Ptr[_]]
+      ref._5 = v.asInstanceOf[CVoidPtr]
     }
     def objectsAndName_=(v: Ptr[ObjectsAndNameW]): Unit = {
-      ref._5 = v.asInstanceOf[Ptr[_]]
+      ref._5 = v.asInstanceOf[CVoidPtr]
     }
   }
 

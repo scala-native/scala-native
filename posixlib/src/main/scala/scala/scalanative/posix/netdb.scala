@@ -36,7 +36,7 @@ object netdb {
     socket.socklen_t, // ai_addrlen
     Ptr[socket.sockaddr], // ai_addr
     Ptr[CChar], // ai_canonname
-    Ptr[_] // ai_next
+    CVoidPtr // ai_next
   ]
 
   def freeaddrinfo(addr: Ptr[addrinfo]): Unit = extern

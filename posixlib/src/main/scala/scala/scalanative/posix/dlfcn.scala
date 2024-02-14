@@ -28,13 +28,13 @@ import scala.scalanative.unsafe._
 
 // Methods
 
-  // Convention: A C "void *" is represented in Scala Native as a "Ptr[_]".
+  // Convention: A C "void *" is represented in Scala Native as a "CVoidPtr".
 
-  def dlclose(handle: Ptr[_]): Int = extern
+  def dlclose(handle: CVoidPtr): Int = extern
 
   def dlerror(): CString = extern
 
-  def dlopen(filename: CString, flags: Int): Ptr[_] = extern
+  def dlopen(filename: CString, flags: Int): CVoidPtr = extern
 
-  def dlsym(handle: Ptr[_], symbol: CString): Ptr[_] = extern
+  def dlsym(handle: CVoidPtr, symbol: CString): CVoidPtr = extern
 }

@@ -6,21 +6,21 @@ import scalanative.unsafe._
 @extern
 object unwind {
   @name("scalanative_unwind_get_context")
-  def get_context(context: Ptr[_]): CInt = extern
+  def get_context(context: CVoidPtr): CInt = extern
   @name("scalanative_unwind_init_local")
-  def init_local(cursor: Ptr[_], context: Ptr[_]): CInt = extern
+  def init_local(cursor: CVoidPtr, context: CVoidPtr): CInt = extern
   @name("scalanative_unwind_step")
-  def step(cursor: Ptr[_]): CInt = extern
+  def step(cursor: CVoidPtr): CInt = extern
   @name("scalanative_unwind_get_proc_name")
   def get_proc_name(
-      cursor: Ptr[_],
+      cursor: CVoidPtr,
       buffer: CString,
       length: CSize,
       offset: Ptr[Long]
   ): CInt = extern
   @name("scalanative_unwind_get_reg")
   def get_reg(
-      cursor: Ptr[_],
+      cursor: CVoidPtr,
       reg: CInt,
       valp: Ptr[CSize]
   ): CInt = extern

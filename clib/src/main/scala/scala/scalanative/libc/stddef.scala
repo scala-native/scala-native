@@ -12,9 +12,8 @@ import scala.scalanative.unsafe._
 
   // Macros
 
-  // Ptr[_] is Scala Native convention for C (void *).
   @name("scalanative_clib_null")
-  def NULL: Ptr[_] = extern
+  def NULL: CVoidPtr = extern
 
   // offsetof() is not implemented in Scala Native.
 }

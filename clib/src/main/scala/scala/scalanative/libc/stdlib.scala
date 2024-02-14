@@ -12,7 +12,7 @@ import scalanative.unsafe._
   def malloc(size: CSize): Ptr[Byte] = extern
   def calloc(num: CSize, size: CSize): Ptr[Byte] = extern
   def realloc[T](ptr: Ptr[T], newSize: CSize): Ptr[T] = extern
-  def free(ptr: Ptr[_]): Unit = extern
+  def free(ptr: CVoidPtr): Unit = extern
   def aligned_alloc(alignment: CSize, size: CSize): Unit = extern
 
   // Program utilities
@@ -61,18 +61,18 @@ import scalanative.unsafe._
   // Searching and sorting
 
   def bsearch(
-      key: Ptr[_],
-      data: Ptr[_],
+      key: CVoidPtr,
+      data: CVoidPtr,
       num: CSize,
       size: CSize,
-      comparator: CFuncPtr2[Ptr[_], Ptr[_], CInt]
+      comparator: CFuncPtr2[CVoidPtr, CVoidPtr, CInt]
   ): Unit = extern
 
   def qsort[T](
       data: Ptr[T],
       num: CSize,
       size: CSize,
-      comparator: CFuncPtr2[Ptr[_], Ptr[_], CInt]
+      comparator: CFuncPtr2[CVoidPtr, CVoidPtr, CInt]
   ): Unit = extern
 
   // Macros

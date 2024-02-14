@@ -19,10 +19,10 @@ import scala.scalanative.runtime.{RawPtr, intrinsic}
 sealed abstract class CFuncPtr private[unsafe] (private[scalanative] val rawptr: RawPtr)
 
 object CFuncPtr {
-  @alwaysinline def fromPtr[F <: CFuncPtr](ptr: Ptr[_])(implicit tag: Tag.CFuncPtrTag[F]): F =
+  @alwaysinline def fromPtr[F <: CFuncPtr](ptr: CVoidPtr)(implicit tag: Tag.CFuncPtrTag[F]): F =
     tag.fromRawPtr(ptr.rawptr)
 
-  @alwaysinline def toPtr(ptr: CFuncPtr): Ptr[_] = {
+  @alwaysinline def toPtr(ptr: CFuncPtr): CVoidPtr = {
     boxToPtr(ptr.rawptr)
   }
 }

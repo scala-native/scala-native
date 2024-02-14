@@ -88,7 +88,7 @@ object pthread {
 
   def pthread_attr_setstackaddr(
       attr: Ptr[pthread_attr_t],
-      stackaddr: Ptr[_]
+      stackaddr: CVoidPtr
   ): CInt = extern
 
   def pthread_attr_setstacksize(
@@ -150,15 +150,15 @@ object pthread {
   def pthread_create(
       thread: Ptr[pthread_t],
       attr: Ptr[pthread_attr_t],
-      startroutine: CFuncPtr1[Ptr[_], Ptr[_]],
-      args: Ptr[_]
+      startroutine: CFuncPtr1[CVoidPtr, CVoidPtr],
+      args: CVoidPtr
   ): CInt = extern
 
   def pthread_detach(thread: pthread_t): CInt = extern
 
   def pthread_equal(thread1: pthread_t, thread2: pthread_t): CInt = extern
 
-  def pthread_exit(retval: Ptr[_]): Unit = extern
+  def pthread_exit(retval: CVoidPtr): Unit = extern
 
   def pthread_getconcurrency(): CInt = extern
 
@@ -168,14 +168,14 @@ object pthread {
       param: Ptr[sched_param]
   ): CInt = extern
 
-  def pthread_getspecific(key: pthread_key_t): Ptr[_] = extern
+  def pthread_getspecific(key: pthread_key_t): CVoidPtr = extern
 
   @blocking
-  def pthread_join(thread: pthread_t, value_ptr: Ptr[Ptr[_]]): CInt = extern
+  def pthread_join(thread: pthread_t, value_ptr: Ptr[CVoidPtr]): CInt = extern
 
   def pthread_key_create(
       key: Ptr[pthread_key_t],
-      destructor: CFuncPtr1[Ptr[_], Unit]
+      destructor: CFuncPtr1[CVoidPtr, Unit]
   ): CInt = extern
 
   def pthread_key_delete(key: pthread_key_t): CInt = extern
@@ -303,7 +303,7 @@ object pthread {
       param: Ptr[sched_param]
   ): CInt = extern
 
-  def pthread_setspecific(key: pthread_key_t, value: Ptr[_]): CInt = extern
+  def pthread_setspecific(key: pthread_key_t, value: CVoidPtr): CInt = extern
 
   def pthread_testcancel(): Unit = extern
 
@@ -322,7 +322,7 @@ object pthread {
   def PTHREAD_CANCEL_DISABLE: CInt = extern
 
   @name("scalanative_pthread_canceled")
-  def PTHREAD_CANCELED: Ptr[_] = extern
+  def PTHREAD_CANCELED: CVoidPtr = extern
 
   @name("scalanative_pthread_create_detached")
   def PTHREAD_CREATE_DETACHED: CInt = extern

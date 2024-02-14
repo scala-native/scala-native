@@ -15,11 +15,11 @@ package object accctrl {
   type ObjectsPresent = DWord
   type ExplicitAccessW = CStruct4[DWord, AccessMode, DWord, TrusteeW]
   type TrusteeW = CStruct6[
-    Ptr[_],
+    CVoidPtr,
     MultipleTruteeOperation,
     TrusteeForm,
     TrusteeType,
-    Ptr[_],
+    CVoidPtr,
     CWString
   ]
   type GUID = CStruct4[UInt, UShort, UShort, CArray[UByte, Nat._8]]

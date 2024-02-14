@@ -8,7 +8,7 @@ import scala.scalanative.windows.HandleApi.Handle
 
 @extern
 object HandleApi {
-  type Handle = Ptr[_]
+  type Handle = CVoidPtr
 
   @blocking
   def CloseHandle(handle: Handle): Boolean = extern

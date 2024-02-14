@@ -22,9 +22,9 @@ private[ffi] object zlibPlatformCompat {
 @extern
 trait zlib {
   import zlibOps.{z_stream, gz_header}
-  type voidpf = Ptr[Byte]
-  type voidp = Ptr[Byte]
-  type voidpc = Ptr[Byte]
+  type voidpf = CVoidPtr
+  type voidp = CVoidPtr
+  type voidpc = CVoidPtr
   type uInt = CUnsignedInt
   type uLong = CUnsignedLong
   type uLongf = CUnsignedLong
@@ -38,7 +38,7 @@ trait zlib {
     CFuncPtr2[Ptr[Byte], Ptr[Ptr[CUnsignedChar]], CUnsignedInt]
   type out_func =
     CFuncPtr3[Ptr[Byte], Ptr[CUnsignedChar], CUnsignedInt, CInt]
-  type gzFile = Ptr[Byte]
+  type gzFile = CVoidPtr
   type z_streamp = Ptr[z_stream[AnyVal, AnyVal]]
   type gz_headerp = Ptr[gz_header[AnyVal, AnyVal]]
 
