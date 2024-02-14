@@ -3,6 +3,7 @@ package nscplugin
 
 import scala.language.implicitConversions
 
+import dotty.tools.dotc.ast.tpd
 import dotty.tools.dotc.ast.tpd._
 import dotty.tools.dotc.core
 import core.Contexts._
@@ -238,8 +239,9 @@ trait NirGenStat(using Context) {
       case _: TypeDef => Nil
       case dd: DefDef =>
         lazyValsAdapter.transformDefDef(dd) match {
-          case dd: DefDef => genMethod(dd)
-          case _          => Nil // erased
+          case dd: DefDef =>
+            genMethod(dd) ++ genInterfaceMethodBridgeForDefDef(dd)
+          case _ => Nil // erased
         }
       case tree =>
         throw new FatalError("Illegal tree in body of genMethods():" + tree)
@@ -824,6 +826,38 @@ trait NirGenStat(using Context) {
         }
       )
     }
+  }
+
+  private def genInterfaceMethodBridgeForDefDef(dd: DefDef): Seq[nir.Defn] =
+    val sym = dd.symbol
+    sym.owner.directlyInheritedTraits
+      .flatMap { parent =>
+        val inheritedSym = parent.info.decl(sym.name)
+        Option.when(
+          inheritedSym.exists &&
+          inheritedSym.symbol.is(Deferred) &&
+          sym.signature != inheritedSym.signature &&
+          sym.info <:< inheritedSym.info
+        )(inheritedSym.symbol.asTerm)
+      }
+      .distinctBy(_.signature)
+      .flatMap(genInterfaceMethodBridge(sym.asTerm, _))
+
+  private def genInterfaceMethodBridge(
+      sym: TermSymbol,
+      inheritedSym: TermSymbol
+  ): Option[nir.Defn] = {
+    assert(sym.name == inheritedSym.name, "Not an override")
+    val owner = sym.owner.asClass
+    val bridgeSym = inheritedSym.copy(owner = owner, flags = sym.flags).asTerm
+    val bridge = tpd.DefDef(
+      bridgeSym,
+      { paramss =>
+        val params = paramss.head
+        tpd.Apply(tpd.This(owner).select(sym), params)
+      }
+    )
+    genMethod(bridge)
   }
 
   private def genStaticMethodForwarders(
