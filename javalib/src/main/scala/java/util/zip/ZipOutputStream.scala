@@ -123,35 +123,35 @@ class ZipOutputStream(_out: OutputStream, charset: Charset)
   }
 
   override def finish(): Unit = {
-    if (out == null) {
-      throw new IOException("Stream is closed")
-    } else if (cDir == null) {
-      ()
-    } else if (entries.size == 0) {
-      throw new ZipException("No entries")
-    } else if (currentEntry != null) {
+    if (out == null)
+      throw new IOException("Stream closed")
+
+    if (currentEntry != null)
       closeEntry()
-    }
 
-    val cdirSize = cDir.size()
-    // Write Central Dir End
-    writeLong(cDir, ENDSIG)
-    writeShort(cDir, 0) // Disk Number
-    writeShort(cDir, 0) // Start Disk
-    writeShort(cDir, entries.size) // Number of entries
-    writeShort(cDir, entries.size) // Number of entries (yes, twice)
-    writeLong(cDir, cdirSize) // Size of central dir
-    writeLong(cDir, offset) // Offset of central dir
-    if (comment != null) {
-      writeShort(cDir, comment.length())
-      cDir.write(comment.getBytes())
-    } else {
-      writeShort(cDir, 0)
-    }
-    // Write the central dir
-    out.write(cDir.toByteArray())
-    cDir = null
+    if (entries.size == 0)
+      throw new ZipException("No entries")
 
+    if (cDir != null) {
+      val cdirSize = cDir.size()
+      // Write Central Dir End
+      writeLong(cDir, ENDSIG)
+      writeShort(cDir, 0) // Disk Number
+      writeShort(cDir, 0) // Start Disk
+      writeShort(cDir, entries.size) // Number of entries
+      writeShort(cDir, entries.size) // Number of entries (yes, twice)
+      writeLong(cDir, cdirSize) // Size of central dir
+      writeLong(cDir, offset) // Offset of central dir
+      if (comment != null) {
+        writeShort(cDir, comment.length())
+        cDir.write(comment.getBytes())
+      } else {
+        writeShort(cDir, 0)
+      }
+      // Write the central dir
+      out.write(cDir.toByteArray())
+      cDir = null
+    }
   }
 
   def putNextEntry(ze: ZipEntry): Unit = {
@@ -172,7 +172,7 @@ class ZipOutputStream(_out: OutputStream, charset: Charset)
       }
     }
     if (cDir == null) {
-      throw new IOException("Stream is closed")
+      throw new IOException("Stream closed")
     }
     if (entries.contains(ze.name)) {
       /* [MSG "archive.29", "Entry already exists: {0}"] */
