@@ -11,8 +11,8 @@ object WinBaseApi {
   import SecurityBaseApi._
 
   type SecurityInformation = DWord
-  type SecurityAttributes = CStruct3[DWord, Ptr[Byte], Boolean]
-  type CallbackContext = Ptr[Byte]
+  type SecurityAttributes = CStruct3[DWord, Ptr[_], Boolean]
+  type CallbackContext = Ptr[_]
   type WaitOrTimerCallback = CFuncPtr2[CallbackContext, Boolean, Unit]
   type LocalHandle = Ptr[_]
 
@@ -29,7 +29,7 @@ object WinBaseApi {
   ): Boolean = extern
   def FormatMessageA(
       flags: DWord,
-      source: Ptr[Byte],
+      source: Ptr[_],
       messageId: DWord,
       languageId: DWord,
       buffer: Ptr[CWString],
@@ -39,7 +39,7 @@ object WinBaseApi {
 
   def FormatMessageW(
       flags: DWord,
-      source: Ptr[Byte],
+      source: Ptr[_],
       messageId: DWord,
       languageId: DWord,
       buffer: Ptr[CWString],
@@ -111,7 +111,7 @@ object WinBaseApi {
       retHandle: Ptr[Handle],
       ref: Handle,
       callbackFn: WaitOrTimerCallback,
-      context: Ptr[Byte],
+      context: Ptr[_],
       miliseconds: DWord,
       flags: DWord
   ): Boolean = extern
@@ -195,11 +195,11 @@ object WinBaseApiOps {
   implicit class SecurityAttributesOps(val ref: Ptr[SecurityAttributes])
       extends AnyVal {
     def length: DWord = ref._1
-    def securityDescriptor: Ptr[Byte] = ref._2
+    def securityDescriptor: Ptr[_] = ref._2
     def inheritHandle: Boolean = ref._3
 
     def length_=(v: DWord): Unit = ref._1 = v
-    def securityDescriptor_=(v: Ptr[Byte]): Unit = ref._2 = v
+    def securityDescriptor_=(v: Ptr[_]): Unit = ref._2 = v
     def inheritHandle_=(v: Boolean): Unit = ref._3 = v
   }
 }

@@ -161,10 +161,10 @@ object FileApi {
   @blocking
   def ReadFile(
       fileHandle: Handle,
-      buffer: Ptr[Byte],
+      buffer: Ptr[_],
       bytesToRead: DWord,
       bytesReadPtr: Ptr[DWord],
-      overlapped: Ptr[Byte]
+      overlapped: Ptr[_]
   ): Boolean = extern
 
   def RemoveDirectoryW(filename: CWString): Boolean = extern
@@ -189,10 +189,10 @@ object FileApi {
 
   @blocking def WriteFile(
       fileHandle: Handle,
-      buffer: Ptr[Byte],
+      buffer: Ptr[_],
       bytesToRead: DWord,
       bytesWritten: Ptr[DWord],
-      overlapped: Ptr[Byte]
+      overlapped: Ptr[_]
   ): Boolean = extern
 
   def LockFile(

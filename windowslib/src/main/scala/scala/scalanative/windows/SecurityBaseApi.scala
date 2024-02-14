@@ -24,9 +24,9 @@ object SecurityBaseApi {
   type GenericMapping = CStruct4[AccessMask, AccessMask, AccessMask, AccessMask]
 
   // Internal Windows structures, might have variable size and should not be modifed by the user
-  type SIDPtr = Ptr[Byte]
-  type ACLPtr = Ptr[Byte]
-  type PrivilegeSetPtr = Ptr[Byte]
+  type SIDPtr = Ptr[_]
+  type ACLPtr = Ptr[_]
+  type PrivilegeSetPtr = Ptr[_]
 
   def AccessCheck(
       securityDescriptor: Ptr[SecurityDescriptor],
@@ -46,11 +46,11 @@ object SecurityBaseApi {
       duplicateTokenHandle: Ptr[Handle]
   ): Boolean = extern
 
-  def FreeSid(sid: SIDPtr): Ptr[Byte] = extern
+  def FreeSid(sid: SIDPtr): Ptr[_] = extern
   def GetTokenInformation(
       handle: Handle,
       informationClass: TokenInformationClass,
-      information: Ptr[Byte],
+      information: Ptr[_],
       informationLength: DWord,
       returnLength: Ptr[DWord]
   ): Boolean = extern

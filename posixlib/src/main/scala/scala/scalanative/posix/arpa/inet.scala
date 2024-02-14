@@ -41,12 +41,12 @@ object inet {
 
   def inet_ntop(
       af: CInt,
-      src: Ptr[Byte],
+      src: Ptr[_],
       dst: CString,
       size: socklen_t
   ): CString = extern
 
-  def inet_pton(af: CInt, src: CString, dst: Ptr[Byte]): CInt = extern
+  def inet_pton(af: CInt, src: CString, dst: Ptr[_]): CInt = extern
 
   def inet_addr(in: CString): in_addr_t = extern
 }

@@ -36,7 +36,7 @@ object netdb {
     socket.socklen_t, // ai_addrlen
     Ptr[socket.sockaddr], // ai_addr
     Ptr[CChar], // ai_canonname
-    Ptr[Byte] // ai_next
+    Ptr[_] // ai_next
   ]
 
   def freeaddrinfo(addr: Ptr[addrinfo]): Unit = extern
@@ -168,7 +168,7 @@ object netdbOps {
       if (!useBsdAddrinfo) ptr._7
       else ptr._6.asInstanceOf[Ptr[CChar]]
 
-    def ai_next: Ptr[Byte] = ptr._8
+    def ai_next: Ptr[addrinfo] = ptr._8.asInstanceOf[Ptr[addrinfo]]
 
     def ai_flags_=(v: CInt): Unit = ptr._1 = v
     def ai_family_=(v: CInt): Unit = ptr._2 = v
@@ -184,6 +184,6 @@ object netdbOps {
       if (!useBsdAddrinfo) ptr._7 = v
       else ptr._6 = v.asInstanceOf[Ptr[socket.sockaddr]]
 
-    def ai_next_=(v: Ptr[Byte]): Unit = ptr._8 = v
+    def ai_next_=(v: Ptr[addrinfo]): Unit = ptr._8 = v
   }
 }

@@ -41,7 +41,7 @@ import scalanative.posix.sys.types, types.{off_t, size_t}
   @blocking def flockfile(filehandle: Ptr[FILE]): Unit = extern
 
   @blocking def fmemopen(
-      buf: Ptr[Byte],
+      buf: Ptr[_],
       size: size_t,
       mode: CString
   ): Ptr[FILE] = extern

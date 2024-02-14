@@ -141,10 +141,10 @@ object unistd {
   def pause(): CInt = extern
   def pipe(fildes: Ptr[CInt]): CInt = extern
   @blocking
-  def pread(fd: CInt, buf: Ptr[Byte], count: size_t, offset: off_t): ssize_t =
+  def pread(fd: CInt, buf: Ptr[_], count: size_t, offset: off_t): ssize_t =
     extern
   @blocking
-  def pwrite(fd: CInt, buf: Ptr[Byte], count: size_t, offset: off_t): ssize_t =
+  def pwrite(fd: CInt, buf: Ptr[_], count: size_t, offset: off_t): ssize_t =
     extern
 
   @blocking
@@ -175,7 +175,7 @@ object unistd {
   def sleep(seconds: CUnsignedInt): CUnsignedInt = extern
 
 // XSI
-  def swab(from: Ptr[Byte], to: Ptr[Byte], n: ssize_t): Unit = extern
+  def swab(from: Ptr[_], to: Ptr[_], n: ssize_t): Unit = extern
 
   def symlink(path1: CString, path2: CString): CInt = extern
   def symlinkat(path1: CString, fd: CInt, path2: CString): CInt = extern

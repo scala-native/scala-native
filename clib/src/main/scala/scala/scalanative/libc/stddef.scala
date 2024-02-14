@@ -12,9 +12,9 @@ import scala.scalanative.unsafe._
 
   // Macros
 
-  // Ptr[Byte] is Scala Native convention for C (void *).
+  // Ptr[_] is Scala Native convention for C (void *).
   @name("scalanative_clib_null")
-  def NULL: Ptr[Byte] = extern
+  def NULL: Ptr[_] = extern
 
   // offsetof() is not implemented in Scala Native.
 }

@@ -67,7 +67,7 @@ C Type                    Scala Type
 ``char32_t``              ``unsafe.CChar32``
 ``float``                 ``unsafe.CFloat``
 ``double``                ``unsafe.CDouble``
-``void*``                 ``unsafe.Ptr[Byte]`` [2]_
+``void*``                 ``unsafe.Ptr[_]`` [2]_
 ``int*``                  ``unsafe.Ptr[unsafe.CInt]`` [2]_
 ``char*``                 ``unsafe.CString`` [2]_ [3]_
 ``int (*)(int)``          ``unsafe.CFuncPtr1[unsafe.CInt, unsafe.CInt]`` [2]_ [4]_
@@ -263,7 +263,7 @@ and unboxing result. You can create them from C pointer using `CFuncPtr` helper 
 
     def fnDef(str: CString): CInt = ???
 
-    val anyPtr: Ptr[Byte] = CFuncPtr.toPtr {
+    val anyPtr: Ptr[_] = CFuncPtr.toPtr {
       CFuncPtr1.fromScalaFunction(fnDef)
     }
 

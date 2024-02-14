@@ -86,7 +86,7 @@ import scalanative.posix.sys.types.size_t
 
   /** ADV */
   def posix_memalign(
-      memptr: Ptr[Ptr[Byte]],
+      memptr: Ptr[Ptr[_]],
       alignment: size_t,
       size: size_t
   ): CInt = extern

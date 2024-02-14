@@ -39,10 +39,10 @@ object GC {
    */
   private type pthread_t = CUnsignedLongInt
   private type pthread_attr_t = CUnsignedLongLong
-  private type Handle = Ptr[Byte]
+  private type Handle = Ptr[_]
   private type DWord = CUnsignedInt
-  private type SecurityAttributes = CStruct3[DWord, Ptr[Byte], Boolean]
-  private type PtrAny = Ptr[Byte]
+  private type SecurityAttributes = CStruct3[DWord, Ptr[_], Boolean]
+  private type PtrAny = Ptr[_]
   type ThreadRoutineArg = PtrAny
   type ThreadStartRoutine = CFuncPtr1[ThreadRoutineArg, PtrAny]
 

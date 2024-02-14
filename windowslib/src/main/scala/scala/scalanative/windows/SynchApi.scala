@@ -7,8 +7,8 @@ import HandleApi.Handle
 
 @extern
 object SynchApi {
-  type CriticalSection = Ptr[Byte]
-  type ConditionVariable = Ptr[Byte]
+  type CriticalSection = Ptr[_]
+  type ConditionVariable = Ptr[_]
 
   @name("scalanative_sizeof_CriticalSection")
   def SizeOfCriticalSection: CSize = extern
