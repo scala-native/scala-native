@@ -119,6 +119,8 @@ final class NirDefinitions()(using ctx: Context) {
     (2 to 9).map(n => TagModule.requiredMethodRef(s"materializeNatDigit${n}Tag"))
   @tu lazy val UnsafeTag_materializeCStructTagsR =
     (0 to 22).map(n => TagModule.requiredMethodRef(s"materializeCStruct${n}Tag"))
+  @tu lazy val UnsafeTag_materializeCFuncPtrTagsR =
+    (0 to 22).map(n => TagModule.requiredMethodRef(s"materializeCFuncPtr${n}"))
   def UnsafeTag_materializeUnitTag(using Context) = UnsafeTag_materializeUnitTagR.symbol
   def UnsafeTag_materializeBooleanTag(using Context) = UnsafeTag_materializeBooleanTagR.symbol
   def UnsafeTag_materializeCharTag(using Context) = UnsafeTag_materializeCharTagR.symbol
@@ -138,6 +140,7 @@ final class NirDefinitions()(using ctx: Context) {
   def UnsafeTag_materializeNatBaseTags(using Context) = UnsafeTag_materializeNatBaseTagsR.map(_.symbol)
   def UnsafeTag_materializeNatDigitTags(using Context) = UnsafeTag_materializeNatDigitTagsR.map(_.symbol)
   def UnsafeTag_materializeCStructTags(using Context) = UnsafeTag_materializeCStructTagsR.map(_.symbol)
+  def UnsafeTag_materializeCFuncPtrTags(using Context) = UnsafeTag_materializeCFuncPtrTagsR.map(_.symbol)
   @tu lazy val UnsafeTag_materializePtrWildcardTag = TagModule.requiredMethod("materializePtrWildcard")
   @tu lazy val UnsafeTag_materializePtrClassNotGivenClassTag =
     TagModule.requiredMethod("materializePtrClassNotGivenClassTag")

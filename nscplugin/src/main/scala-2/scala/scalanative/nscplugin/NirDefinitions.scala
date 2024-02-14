@@ -119,6 +119,9 @@ trait NirDefinitions {
     lazy val CStructTagMethod = (0 to 22).map { n =>
       getDecl(TagModule, TermName("materializeCStruct" + n + "Tag"))
     }
+    lazy val CFuncPtrNTagMethod = (0 to 22).map { n =>
+      getDecl(TagModule, TermName("materializeCFuncPtr" + n))
+    }
 
     // scala names
 
