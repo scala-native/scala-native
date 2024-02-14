@@ -334,31 +334,6 @@ java.nio
 * ``file.attribute.UserPrincipalNotFoundException``
 * ``file.spi.FileSystemProvider``
 
-java.rmi
-""""""""
-* ``Remote``
-* ``RemoteException``
-
-java.security
-"""""""""""""
-* ``AccessControlException``
-* ``CodeSigner``
-* ``DummyMessageDigest``
-* ``GeneralSecurityException``
-* ``MessageDigest``
-* ``MessageDigestSpi``
-* ``NoSuchAlgorithmException``
-* ``Principal``
-* ``Timestamp``
-* ``TimestampConstructorHelper``
-* ``cert.CertPath``
-* ``cert.Certificate``
-* ``cert.CertificateEncodingException``
-* ``cert.CertificateException``
-* ``cert.CertificateFactory``
-* ``cert.X509Certificate``
-* ``cert.X509Extension``
-
 
 java.util
 """""""""
