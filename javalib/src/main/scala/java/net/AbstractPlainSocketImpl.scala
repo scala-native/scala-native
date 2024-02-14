@@ -100,7 +100,7 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
     hints.ai_flags = AI_NUMERICHOST
     hints.ai_socktype = socket.SOCK_STREAM
 
-    Zone { implicit z =>
+    Zone.acquire { implicit z =>
       val cIP = toCString(addr.getHostAddress())
       if (getaddrinfo(cIP, toCString(port.toString), hints, ret) != 0) {
         throw new BindException(
@@ -201,7 +201,7 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
     hints.ai_socktype = socket.SOCK_STREAM
     val remoteAddress = inetAddr.getAddress.getHostAddress()
 
-    Zone { implicit z =>
+    Zone.acquire { implicit z =>
       val cIP = toCString(remoteAddress)
       val cPort = toCString(inetAddr.getPort.toString)
 

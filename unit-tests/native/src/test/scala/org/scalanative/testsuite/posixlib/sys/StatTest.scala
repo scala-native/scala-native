@@ -43,7 +43,7 @@ class StatTest {
   import StatTest.workDirString
 
   @Test def fileStatTest(): Unit = if (!LinktimeInfo.isWindows) {
-    Zone { implicit z =>
+    Zone.acquire { implicit z =>
       import scala.scalanative.posix.sys.statOps.statOps
 
       // Note: tmpname template gets modified by a successful mkstemp().

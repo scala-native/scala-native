@@ -28,7 +28,7 @@ final class PosixFileAttributeViewImpl(path: Path, options: Array[LinkOption])
       lastModifiedTime: FileTime,
       lastAccessTime: FileTime,
       createTime: FileTime
-  ): Unit = Zone { implicit z =>
+  ): Unit = Zone.acquire { implicit z =>
     import scala.scalanative.posix.sys.statOps.statOps
     val sb = getStat()
 
@@ -45,7 +45,7 @@ final class PosixFileAttributeViewImpl(path: Path, options: Array[LinkOption])
   }
 
   override def setOwner(owner: UserPrincipal): Unit =
-    Zone { implicit z =>
+    Zone.acquire { implicit z =>
       val uid = owner match {
         case u: PosixUserPrincipal => u.uid
 
@@ -58,7 +58,7 @@ final class PosixFileAttributeViewImpl(path: Path, options: Array[LinkOption])
     }
 
   override def setPermissions(perms: Set[PosixFilePermission]): Unit =
-    Zone { implicit z =>
+    Zone.acquire { implicit z =>
       var mask = 0.toUInt
       PosixFileAttributeViewImpl.permMap.foreach {
         case (flag, value) => if (perms.contains(value)) mask = mask | flag
@@ -71,7 +71,7 @@ final class PosixFileAttributeViewImpl(path: Path, options: Array[LinkOption])
   override def getOwner(): UserPrincipal = attributes.owner()
 
   override def setGroup(group: GroupPrincipal): Unit =
-    Zone { implicit z =>
+    Zone.acquire { implicit z =>
       val gid = group match {
         case g: PosixGroupPrincipal => g.gid
 
@@ -96,7 +96,7 @@ final class PosixFileAttributeViewImpl(path: Path, options: Array[LinkOption])
       private var st_mtime: time.time_t = _
       private var st_mode: stat.mode_t = _
 
-      Zone { implicit z =>
+      Zone.acquire { implicit z =>
         val buf = getStat()
         import scala.scalanative.posix.sys.statOps.statOps
 

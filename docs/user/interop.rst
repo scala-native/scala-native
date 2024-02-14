@@ -126,8 +126,14 @@ Variadic functions
 ``````````````````
 
 Scala Native supports native interoperability with C's variadic argument
-list type (i.e. ``va_list``), but not ``...`` varargs. For example ``vprintf``
-can be declared as:
+list type (i.e. ``va_list``), and partially for ``...`` varargs. For example ``vprintf`` and ``printf``
+defined in C as:
+
+.. code-block:: C
+  int vprintf(const char * format, va_list arg);
+  int printf(const char * format, ... );  
+
+can be declared in Scala as:
 
 .. code-block:: scala
 
@@ -136,24 +142,31 @@ can be declared as:
    @extern
    object mystdio {
      def vprintf(format: CString, args: CVarArgList): CInt = extern
+     def printf(format: CString, args: Any*): CInt = extern
    }
 
-One can wrap a function in a nicer API like:
+The limitation of `...` interop requires that it's arguments needs to passed directly to variadic arguments function or arguments need to be inlined.
+This is required to obtain enough information on how arguments show be passed in regards to C ABI.
+Passing a sequence to extern method variadic arguments is not allowed and would result in compilation failure. 
+
+For ``va_list`` interop, one can wrap a function in a nicer API like:
 
 .. code-block:: scala
 
    import scala.scalanative.unsafe._
 
    def myprintf(format: CString, args: CVarArg*): CInt =
-     Zone { implicit z =>
+     Zone { 
        mystdio.vprintf(format, toCVarArgList(args.toSeq))
      }
 
+See `Memory management`_ for a guide of using ``unsafe.Zone``
 And then call it just like a regular Scala function:
 
 .. code-block:: scala
 
    myprintf(c"2 + 3 = %d, 4 + 5 = %d", 2 + 3, 4 + 5)
+   printf(c"2 + 3 = %d, 4 + 5 = %d", 2 + 3, 4 + 5)
 
 Exported methods
 ----------------
@@ -308,7 +321,12 @@ runtime system, one has to be extra careful when working with unmanaged memory.
 
       import scala.scalanative.unsafe._
 
-      Zone { implicit z =>
+      // For Scala 3
+      Zone {
+        val buffer = alloc[Byte](n)
+      }
+      // For Scala 2, works, but is not idiomatic on Scala 3
+      Zone.acquire { implicit z =>
         val buffer = alloc[Byte](n)
       }
 

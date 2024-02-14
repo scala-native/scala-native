@@ -109,7 +109,7 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
     hints.ai_flags = AI_NUMERICHOST
     hints.ai_socktype = posix.sys.socket.SOCK_DGRAM
 
-    Zone { implicit z =>
+    Zone.acquire { implicit z =>
       val cIP = toCString(inetAddress.getHostAddress())
       if (getaddrinfo(cIP, toCString(port.toString), hints, ret) != 0) {
         throw new BindException(

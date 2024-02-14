@@ -67,7 +67,7 @@ class UnixFileSystem(
   override def isOpen(): Boolean =
     closed == false
 
-  override def isReadOnly(): Boolean = Zone { implicit z =>
+  override def isReadOnly(): Boolean = Zone.acquire { implicit z =>
     val stat = alloc[statvfs.statvfs]()
     val err = statvfs.statvfs(toCString(root), stat)
     if (err != 0) {

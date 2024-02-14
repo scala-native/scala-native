@@ -150,7 +150,7 @@ object UnixProcessGen1 {
   private def waitForPid(pid: Int, ts: Ptr[timespec], res: Ptr[CInt]): CInt =
     ProcessMonitor.waitForPid(pid, ts, res)
 
-  def apply(builder: ProcessBuilder): Process = Zone { implicit z =>
+  def apply(builder: ProcessBuilder): Process = Zone.acquire { implicit z =>
     val infds: Ptr[CInt] = stackalloc[CInt](2)
     val outfds: Ptr[CInt] = stackalloc[CInt](2)
     val errfds =
@@ -306,7 +306,7 @@ object UnixProcessGen1 {
     }
   }
 
-  @inline def open(f: File, flags: CInt) = Zone { implicit z =>
+  @inline def open(f: File, flags: CInt) = Zone.acquire { implicit z =>
     fcntl.open(toCString(f.getAbsolutePath()), flags, 0.toUInt) match {
       case -1 => throw new IOException(s"Unable to open file $f ($errno)")
       case fd => fd

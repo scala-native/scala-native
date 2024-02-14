@@ -55,7 +55,7 @@ object FileHelpers {
       path: String,
       f: (String, FileType) => T,
       allowEmpty: Boolean = false
-  ): Array[T] = Zone { implicit z =>
+  ): Array[T] = Zone.acquire { implicit z =>
     lazy val buffer = UnrolledBuffer.empty[T]
 
     def collectFile(name: String, fileType: FileType): Unit = {
@@ -72,7 +72,7 @@ object FileHelpers {
         if (!allowEmpty) throw UnixException(path, posixErrno.errno)
         null
       } else {
-        Zone { implicit z =>
+        Zone.acquire { implicit z =>
           var elem = alloc[dirent]()
           var res = 0
           while ({ res = readdir(dir, elem); res == 0 }) {
@@ -90,7 +90,7 @@ object FileHelpers {
       }
     }
 
-    def listWindows() = Zone { implicit z =>
+    def listWindows() = Zone.acquire { implicit z =>
       val searchPath = raw"$path\*"
       if (searchPath.length.toUInt > FileApiExt.MAX_PATH)
         throw new IOException("File name to long")
@@ -131,7 +131,7 @@ object FileHelpers {
     } else if (exists(path)) {
       false
     } else
-      Zone { implicit z =>
+      Zone.acquire { implicit z =>
         if (isWindows) {
           val handle = CreateFileW(
             toCWideStringUTF16LE(path),
@@ -186,7 +186,7 @@ object FileHelpers {
     }
 
   def exists(path: String): Boolean =
-    Zone { implicit z =>
+    Zone.acquire { implicit z =>
       if (isWindows) {
         import ErrorCodes._
         def canAccessAttributes = // fast-path

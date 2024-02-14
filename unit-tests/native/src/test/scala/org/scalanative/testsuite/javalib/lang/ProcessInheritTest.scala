@@ -22,7 +22,7 @@ class ProcessInheritTest {
       val f = Files.createTempFile("/tmp", "out")
       val savedFD = unistd.dup(unistd.STDOUT_FILENO)
       val flags = fcntl.O_RDWR | fcntl.O_TRUNC | fcntl.O_CREAT
-      val fd = Zone { implicit z =>
+      val fd = Zone.acquire { implicit z =>
         fcntl.open(toCString(f.toAbsolutePath.toString), flags, 0.toUInt)
       }
 
@@ -62,7 +62,7 @@ class ProcessInheritTest {
         )
       )
 
-      Zone { implicit z =>
+      Zone.acquire { implicit z =>
         val handle = CreateFileW(
           toCWideStringUTF16LE(f.toAbsolutePath.toString),
           desiredAccess = FILE_GENERIC_WRITE | FILE_GENERIC_READ,

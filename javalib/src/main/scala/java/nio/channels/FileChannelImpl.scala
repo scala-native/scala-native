@@ -358,7 +358,7 @@ private[java] final class FileChannelImpl(
       if (GetFileSizeEx(fd.handle, size)) (!size).toLong
       else 0L
     } else
-      Zone { implicit z =>
+      Zone.acquire { implicit z =>
         /* statbuf is too large to be thread stack friendly.
          * Even a Zone and an alloc() per size() call should be cheaper than
          * the required three (yes 3 to get it right and not move current

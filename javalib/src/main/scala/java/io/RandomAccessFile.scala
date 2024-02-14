@@ -246,7 +246,7 @@ private object RandomAccessFile {
         s"""Illegal mode "${_flags}" must be one of "r", "rw", "rws" or "rwd""""
       )
 
-    def unixFileDescriptor() = Zone { implicit z =>
+    def unixFileDescriptor() = Zone.acquire { implicit z =>
       import fcntl._
       import stat._
 
@@ -265,7 +265,7 @@ private object RandomAccessFile {
       new FileDescriptor(FileDescriptor.FileHandle(fd), readOnly = false)
     }
 
-    def windowsFileDescriptor() = Zone { implicit z =>
+    def windowsFileDescriptor() = Zone.acquire { implicit z =>
       import windows.winnt.AccessRights._
       val (access, dispostion) = _flags match {
         case "r" => FILE_GENERIC_READ -> OPEN_EXISTING

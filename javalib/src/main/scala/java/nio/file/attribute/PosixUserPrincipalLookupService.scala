@@ -28,7 +28,7 @@ final case class PosixGroupPrincipal(gid: stat.gid_t)(name: Option[String])
 
 object PosixUserPrincipalLookupService extends UserPrincipalLookupService {
   override def lookupPrincipalByGroupName(group: String): PosixGroupPrincipal =
-    Zone { implicit z =>
+    Zone.acquire { implicit z =>
       val gid = getGroup(toCString(group)).fold {
         try {
           group.toInt.toUInt
@@ -41,7 +41,7 @@ object PosixUserPrincipalLookupService extends UserPrincipalLookupService {
       PosixGroupPrincipal(gid)(Some(group))
     }
 
-  private[attribute] def getGroupName(gid: stat.gid_t): String = Zone {
+  private[attribute] def getGroupName(gid: stat.gid_t): String = Zone.acquire {
     implicit z =>
       val buf = alloc[grp.group]()
 
@@ -57,7 +57,7 @@ object PosixUserPrincipalLookupService extends UserPrincipalLookupService {
       }
   }
 
-  private[attribute] def getUsername(uid: stat.uid_t): String = Zone {
+  private[attribute] def getUsername(uid: stat.uid_t): String = Zone.acquire {
     implicit z =>
       val buf = alloc[pwd.passwd]()
 
@@ -90,8 +90,8 @@ object PosixUserPrincipalLookupService extends UserPrincipalLookupService {
     }
   }
 
-  override def lookupPrincipalByName(name: String): PosixUserPrincipal = Zone {
-    implicit z =>
+  override def lookupPrincipalByName(name: String): PosixUserPrincipal =
+    Zone.acquire { implicit z =>
       val uid = getPasswd(toCString(name)).fold {
         try {
           name.toInt.toUInt
@@ -102,7 +102,7 @@ object PosixUserPrincipalLookupService extends UserPrincipalLookupService {
       }(_._2)
 
       PosixUserPrincipal(uid)(Some(name))
-  }
+    }
 
   private def getPasswd(
       name: CString

@@ -22,7 +22,7 @@ class DlfcnTest {
    */
 
   @Test def dlfcnOpensAndObtainsSymbolAddressLinux(): Unit = {
-    if (isLinux) Zone { implicit z =>
+    if (isLinux) Zone.acquire { implicit z =>
       val soFilePrefix =
         if (is32BitPlatform)
           "/lib/i386-linux-gnu/"
@@ -81,7 +81,7 @@ class DlfcnTest {
   }
 
   @Test def dlfcnOpensAndObtainsSymbolAddressMacOs(): Unit = {
-    if (isMac) Zone { implicit z =>
+    if (isMac) Zone.acquire { implicit z =>
       val soFile = "/usr/lib/libSystem.dylib"
 
       val handle = dlopen(toCString(soFile), RTLD_LAZY | RTLD_LOCAL)

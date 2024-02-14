@@ -352,7 +352,7 @@ private[lang] class UnixProcessGen2 private (
 
 object UnixProcessGen2 {
 
-  def apply(builder: ProcessBuilder): Process = Zone { implicit z =>
+  def apply(builder: ProcessBuilder): Process = Zone.acquire { implicit z =>
     /* If builder.directory is not null, it specifies a new working
      * directory for the process (chdir()).
      *
@@ -762,7 +762,7 @@ object UnixProcessGen2 {
     }
   }
 
-  def open(f: File, flags: CInt) = Zone { implicit z =>
+  def open(f: File, flags: CInt) = Zone.acquire { implicit z =>
     fcntl.open(toCString(f.getAbsolutePath()), flags, 0.toUInt) match {
       case -1 => throw new IOException(s"Unable to open file $f ($errno)")
       case fd => fd

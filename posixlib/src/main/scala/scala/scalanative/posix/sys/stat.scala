@@ -78,7 +78,7 @@ object stat {
    *    {{{
    *    import scala.scalanative.unsafe._
    *    import scala.scalanative.posix.sys.stat
-   *    Zone { implicit z =>
+   *    Zone.acquire { implicit z =>
    *      val s = alloc[stat.stat]()
    *      val code = stat.stat(filename,s)
    *      if (code == 0) {

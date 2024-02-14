@@ -224,7 +224,7 @@ class ReflectiveInstantiationTest {
     val classData = optClassData.get
 
     // test with array of bytes
-    Zone { implicit z =>
+    Zone.acquire { implicit z =>
       val size = 64
       val buffer: Ptr[Byte] = alloc[Byte](size)
 

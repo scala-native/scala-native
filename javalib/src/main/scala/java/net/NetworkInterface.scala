@@ -428,7 +428,7 @@ object NetworkInterface {
     }
   }
 
-  private def unixGetByName(name: String): NetworkInterface = Zone {
+  private def unixGetByName(name: String): NetworkInterface = Zone.acquire {
     implicit z =>
       @tailrec
       def findIfName(
@@ -553,7 +553,7 @@ object NetworkInterface {
       )
 
     try
-      Zone { implicit z =>
+      Zone.acquire { implicit z =>
         val foundIfa = findAfLinkIfName(toCString(ifName), !ifap)
         callback(foundIfa)
       }
@@ -562,10 +562,11 @@ object NetworkInterface {
     }
   }
 
-  private def unixImplGetIndex(ifName: String): Int = Zone { implicit z =>
-    // toInt truncation OK, since index will never be larger than MAX_INT
-    if_nametoindex(toCString(ifName)).toInt
-      // Return 0 on error. Do not give errno error message.
+  private def unixImplGetIndex(ifName: String): Int = Zone.acquire {
+    implicit z =>
+      // toInt truncation OK, since index will never be larger than MAX_INT
+      if_nametoindex(toCString(ifName)).toInt
+        // Return 0 on error. Do not give errno error message.
   }
 
   private def unixImplGetHardwareAddress(ifName: String): Array[Byte] = {
@@ -601,8 +602,8 @@ object NetworkInterface {
     macOsImplExecCallback(ifName, cb)._2
   }
 
-  private def linuxImplGetHardwareAddress(ifName: String): Array[Byte] = Zone {
-    implicit z =>
+  private def linuxImplGetHardwareAddress(ifName: String): Array[Byte] =
+    Zone.acquire { implicit z =>
       // acknowledge:
       //   https://www.geekpage.jp/en/programming/linux-network/get-macaddr.php
 
@@ -637,7 +638,7 @@ object NetworkInterface {
         hwAddress(j) = hwAddrBytes(j)
 
       hwAddress
-  }
+    }
 
   private def unixImplGetIfMTU(ifName: String): Int = {
     if (LinktimeInfo.isLinux)
@@ -659,33 +660,34 @@ object NetworkInterface {
     macOsImplExecCallback(ifName, cb)._1
   }
 
-  private def linuxImplGetIfMTU(ifName: String): Int = Zone { implicit z =>
-    val request = stackalloc[unixIf.ifreq_mtu]()
+  private def linuxImplGetIfMTU(ifName: String): Int = Zone.acquire {
+    implicit z =>
+      val request = stackalloc[unixIf.ifreq_mtu]()
 
-    strncpy(
-      request.at1.asInstanceOf[CString],
-      toCString(ifName),
-      (unixIf.IFNAMSIZ - 1).toUSize
-    )
+      strncpy(
+        request.at1.asInstanceOf[CString],
+        toCString(ifName),
+        (unixIf.IFNAMSIZ - 1).toUSize
+      )
 
-    val saP = request.at2.asInstanceOf[Ptr[sockaddr]]
-    saP.sa_family = AF_INET.toUShort
+      val saP = request.at2.asInstanceOf[Ptr[sockaddr]]
+      saP.sa_family = AF_INET.toUShort
 
-    val fd = linuxImplGetIoctlFd()
+      val fd = linuxImplGetIoctlFd()
 
-    try {
-      val status =
-        ioctl(fd, unixIf.SIOCGIFMTU, request.asInstanceOf[Ptr[Byte]]);
-      if (status != 0)
-        throw new SocketException(
-          s"ioctl SIOCGIFMTU failed: ${fromCString(strerror(errno))}"
-        )
+      try {
+        val status =
+          ioctl(fd, unixIf.SIOCGIFMTU, request.asInstanceOf[Ptr[Byte]]);
+        if (status != 0)
+          throw new SocketException(
+            s"ioctl SIOCGIFMTU failed: ${fromCString(strerror(errno))}"
+          )
 
-    } finally {
-      unistd.close(fd)
-    }
+      } finally {
+        unistd.close(fd)
+      }
 
-    request._2 // ifr_mtu
+      request._2 // ifr_mtu
   }
 
   private def unixImplGetIfFlags(ifName: String): Short = {
@@ -707,39 +709,40 @@ object NetworkInterface {
     macOsImplExecCallback(ifName, cb)._1.toShort
   }
 
-  private def linuxImplGetIfFlags(ifName: String): Short = Zone { implicit z =>
-    val request = stackalloc[unixIf.ifreq_flags]()
+  private def linuxImplGetIfFlags(ifName: String): Short = Zone.acquire {
+    implicit z =>
+      val request = stackalloc[unixIf.ifreq_flags]()
 
-    strncpy(
-      request.at1.asInstanceOf[CString],
-      toCString(ifName),
-      (unixIf.IFNAMSIZ - 1).toUSize
-    )
+      strncpy(
+        request.at1.asInstanceOf[CString],
+        toCString(ifName),
+        (unixIf.IFNAMSIZ - 1).toUSize
+      )
 
-    val saP = request.at2.asInstanceOf[Ptr[sockaddr]]
-    saP.sa_family = AF_INET.toUShort
+      val saP = request.at2.asInstanceOf[Ptr[sockaddr]]
+      saP.sa_family = AF_INET.toUShort
 
-    val fd = linuxImplGetIoctlFd()
+      val fd = linuxImplGetIoctlFd()
 
-    try {
-      val status =
-        ioctl(fd, unixIf.SIOCGIFFLAGS, request.asInstanceOf[Ptr[Byte]]);
+      try {
+        val status =
+          ioctl(fd, unixIf.SIOCGIFFLAGS, request.asInstanceOf[Ptr[Byte]]);
 
-      if (status != 0) {
-        val msg = fromCString(strerror(errno))
-        throw new SocketException(s"ioctl SIOCGIFFLAGS failed: ${msg}\n")
+        if (status != 0) {
+          val msg = fromCString(strerror(errno))
+          throw new SocketException(s"ioctl SIOCGIFFLAGS failed: ${msg}\n")
+        }
+      } finally {
+        unistd.close(fd)
       }
-    } finally {
-      unistd.close(fd)
-    }
 
-    request._2 // ifr_flags
+      request._2 // ifr_flags
   }
 
   private def unixAccumulateInetAddresses(
       ifName: String,
       accumulator: (InetAddress) => Unit
-  ): Unit = Zone { implicit z =>
+  ): Unit = Zone.acquire { implicit z =>
     @tailrec
     def accumulateInetAddresses(
         ifNameC: CString,
@@ -781,7 +784,7 @@ object NetworkInterface {
   private def unixAccumulateInterfaceAddresses(
       ifName: String,
       accumulator: (InterfaceAddress) => Unit
-  ): Unit = Zone { implicit z =>
+  ): Unit = Zone.acquire { implicit z =>
     @tailrec
     def accumulateInterfaceAddresses(
         ifNameC: CString,

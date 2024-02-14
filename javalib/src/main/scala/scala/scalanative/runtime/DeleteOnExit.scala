@@ -8,7 +8,9 @@ object DeleteOnExit {
   private val toDelete: mutable.ArrayBuffer[String] =
     mutable.ArrayBuffer.empty
   Shutdown.addHook(() =>
-    toDelete.foreach { f => Zone { implicit z => libc.remove(toCString(f)) } }
+    toDelete.foreach { f =>
+      Zone.acquire { implicit z => libc.remove(toCString(f)) }
+    }
   )
   def addFile(name: String) = toDelete.synchronized {
     if (toDeleteSet.add(name)) toDelete += name
