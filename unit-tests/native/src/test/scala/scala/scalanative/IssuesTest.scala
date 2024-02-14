@@ -632,6 +632,29 @@ class IssuesTest {
     assertNotNull(xs.sortBy(i => -i))
   }
 
+  @Test def dottyIssue15402(): Unit = {
+    trait Named {
+      def name: String
+      def me: Named
+    }
+    trait Foo extends Named {
+      def name = "foo"
+      def me: Foo = this
+      def foo(x: String): String
+    }
+
+    class Names(xs: List[Named]) {
+      def mkString = xs.iterator.map(_.me.name).mkString(",")
+    }
+
+    object Names {
+      def single[T <: Named](t: T): Names = new Names(List(t))
+    }
+
+    // Test
+    val names = Names.single[Foo](x => x)
+    assertEquals("foo", names.mkString)
+  }
 }
 
 package issue1090 {
