@@ -5,14 +5,18 @@ import scala.scalanative.unsafe.{Zone, toCString}
 
 object DeleteOnExit {
   private val toDeleteSet: mutable.Set[String] = mutable.Set.empty
-  private val toDelete: mutable.ArrayBuffer[String] =
-    mutable.ArrayBuffer.empty
-  Shutdown.addHook(() =>
-    toDelete.foreach { f =>
-      Zone.acquire { implicit z => libc.remove(toCString(f)) }
-    }
-  )
-  def addFile(name: String) = toDelete.synchronized {
-    if (toDeleteSet.add(name)) toDelete += name
+
+  lazy val setupShutdownHook = Runtime.getRuntime().addShutdownHook {
+    val t = new Thread(() => {
+      Zone.acquire { implicit z =>
+        toDeleteSet.foreach(f => libc.remove(toCString(f)))
+      }
+    })
+    t.setName("shutdown-hook:delete-on-exit")
+    t
+  }
+  def addFile(name: String) = toDeleteSet.synchronized {
+    toDeleteSet.add(name)
+    setupShutdownHook
   }
 }

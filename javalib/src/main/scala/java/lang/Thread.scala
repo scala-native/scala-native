@@ -249,6 +249,7 @@ class Thread private[lang] (
 
   def start(): Unit = synchronized {
     if (!isMultithreadingEnabled) UnsupportedFeature.threads()
+    if (!isDaemon()) JoinNonDaemonThreads.registerExitHook
     if (isVirtual())
       throw new UnsupportedOperationException(
         "VirtualThreads are not yet supported"
@@ -505,7 +506,6 @@ object Thread {
     override protected val tid: scala.Long = 0L
     inheritableThreadLocals = new ThreadLocal.Values()
     platformCtx.nativeThread = nativeCompanion.create(this, 0L)
-    if (isMultithreadingEnabled) JoinNonDaemonThreads.registerExitHook()
   }
 
   @alwaysinline private[lang] def nativeCompanion: NativeThread.Companion =

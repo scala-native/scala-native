@@ -1,6 +1,8 @@
 package java.lang
 
 import java.io.File
+import java.util.{Set => juSet}
+import java.util.Comparator
 import scala.scalanative.libc.stdlib
 import scala.scalanative.posix.unistd._
 import scala.scalanative.windows.SysInfoApi._
@@ -9,6 +11,78 @@ import scala.scalanative.unsafe._
 import scala.scalanative.meta.LinktimeInfo.isWindows
 
 class Runtime private () {
+  import Runtime._
+  @volatile private var shutdownStarted = false
+  private lazy val hooks: juSet[Thread] = new java.util.HashSet()
+
+  lazy val setupAtExitHandler = {
+    stdlib.atexit(() => Runtime.getRuntime().runHooks())
+  }
+  private def ensureCanModify(hook: Thread): Unit = if (shutdownStarted) {
+    throw new IllegalStateException(
+      s"Shutdown sequence started, cannot add/remove hook $hook"
+    )
+  }
+
+  def addShutdownHook(thread: Thread): Unit = hooks.synchronized {
+    ensureCanModify(thread)
+    hooks.add(thread)
+    setupAtExitHandler
+  }
+
+  def removeShutdownHook(thread: Thread): Boolean = hooks.synchronized {
+    ensureCanModify(thread)
+    hooks.remove(thread)
+  }
+
+  private def runHooksConcurrent() = {
+    val hooks = this.hooks
+      .toArray()
+      .asInstanceOf[Array[Thread]]
+      .sorted(Ordering.by[Thread, Int](-_.getPriority()))
+    hooks.foreach { t =>
+      t.setUncaughtExceptionHandler(ShutdownHookUncoughExceptionHandler)
+    }
+    // JDK specifies that hooks might run in any order.
+    // However, for Scala Native it might be beneficial to support partial ordering
+    // E.g. Zone/MemoryPool shutdownHook cleaning pools should be run after DeleteOnExit using `toCString`
+    // Group the hooks by priority starting with the ones with highest priority
+    val limit = hooks.size
+    var idx = 0
+    while (idx < limit) {
+      val groupStart = idx
+      val groupPriority = hooks(groupStart).getPriority()
+      while (idx < limit && hooks(idx).getPriority() == groupPriority) {
+        hooks(idx).start()
+        idx += 1
+      }
+      for (i <- groupStart until limit) {
+        hooks(i).join()
+      }
+    }
+  }
+  private def runHooksSequential() = {
+    this.hooks
+      .toArray()
+      .asInstanceOf[Array[Thread]]
+      .sorted(Ordering.by[Thread, Int](-_.getPriority()))
+      .foreach { t =>
+        try t.run()
+        catch {
+          case ex: Throwable =>
+            ShutdownHookUncoughExceptionHandler.uncaughtException(t, ex)
+        }
+      }
+  }
+  private def runHooks() = {
+    import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
+    hooks.synchronized {
+      shutdownStarted = true
+      if (isMultithreadingEnabled) runHooksConcurrent()
+      else runHooksSequential()
+    }
+  }
+
   import Runtime.ProcessBuilderOps
   def availableProcessors(): Int = {
     val available = if (isWindows) {
@@ -22,8 +96,6 @@ class Runtime private () {
   def exit(status: Int): Unit = stdlib.exit(status)
   def gc(): Unit = System.gc()
 
-  // def addShutdownHook(thread: java.lang.Thread): Unit = ???
-
   def exec(cmdarray: Array[String]): Process =
     new ProcessBuilder(cmdarray).start()
   def exec(cmdarray: Array[String], envp: Array[String]): Process =
@@ -36,10 +108,16 @@ class Runtime private () {
     exec(Array(cmd), envp, dir)
 }
 
-object Runtime {
-  private val currentRuntime = new Runtime()
+private object ShutdownHookUncoughExceptionHandler
+    extends Thread.UncaughtExceptionHandler {
+  def uncaughtException(t: Thread, e: Throwable): Unit = {
+    System.err.println(s"Shutdown hook $t failed, reason: $e")
+    t.getThreadGroup().uncaughtException(t, e)
+  }
+}
 
-  def getRuntime(): Runtime = currentRuntime
+object Runtime extends Runtime() {
+  def getRuntime(): Runtime = this
 
   private implicit class ProcessBuilderOps(val pb: ProcessBuilder)
       extends AnyVal {

@@ -888,7 +888,6 @@ object File {
       val resolved = resolveLink(part, resolveAbsolute = true)
       // overlap can lead to undefined behaviour
       if (resolved != part) strcpy(part, resolved)
-      strcpy(part, resolved)
       strcat(part, path + i + `1U`)
 
       if (strncmp(resolved, path, i + `1U`) == 0) {
