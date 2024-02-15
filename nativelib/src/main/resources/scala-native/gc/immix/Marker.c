@@ -128,7 +128,12 @@ NO_SANITIZE static void Marker_markRange(Heap *heap, Stack *stack,
                                          word_t **from, word_t **to) {
     assert(from != NULL);
     assert(to != NULL);
-    for (word_t **current = from; current <= to; current += 1) {
+    // Align start address
+    const intptr_t alignmentMask = ~(sizeof(word_t) - 1);
+    word_t **alignedFrom = (word_t **)((intptr_t)from & alignmentMask);
+    // Align end address to be optionally 1 higher when unalligned
+    word_t **alignedTo = (word_t **)((intptr_t)(to + 1) & alignmentMask);
+    for (word_t **current = alignedFrom; current <= alignedTo; current += 1) {
         word_t *addr = *current;
         if (Heap_IsWordInHeap(heap, addr)) {
             Marker_markConservative(heap, stack, addr);
