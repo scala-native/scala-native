@@ -189,12 +189,11 @@ NO_SANITIZE int Marker_markRange(Heap *heap, Stats *stats,
                                  GreyPacket **outWeakRefHolder, word_t **from,
                                  size_t length) {
     int objectsTraced = 0;
-    word_t **limit = from + length;
-    for (word_t **current = from; current <= limit; current++) {
+    const intptr_t alignmentMask = ~(sizeof(word_t) - 1);
+    word_t **alignedFrom = (word_t **)((intptr_t)from & alignmentMask);
+    word_t **limit = alignedFrom + length;
+    for (word_t **current = alignedFrom; current <= limit; current++) {
         word_t *field = *current;
-        // Memory allocated by GC is alligned, ignore unaligned pointers e.g.
-        // interim pointers, otherwise we risk undefined behaviour when assuming
-        // memory layout of underlying object.
         if (Heap_IsWordInHeap(heap, field)) {
             Marker_markConservative(heap, stats, outHolder, outWeakRefHolder,
                                     field);
