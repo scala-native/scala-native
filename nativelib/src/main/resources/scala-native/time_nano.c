@@ -4,11 +4,6 @@
 #include "win_freq.h"
 #else
 #include <time.h>
-#if defined(__APPLE__)
-#if (__MAC_OS_X_VERSION_MIN_REQUIRED < __MAC_10_12)
-#error "macOS version must be 10.12 or greater"
-#endif
-#endif // defined(__APPLE__)
 #endif // defined(_WIN32)
 
 /**
