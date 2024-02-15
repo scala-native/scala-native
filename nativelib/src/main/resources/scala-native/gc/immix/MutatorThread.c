@@ -54,7 +54,7 @@ void MutatorThread_delete(MutatorThread *self) {
 
 typedef word_t **stackptr_t;
 
-INLINE static stackptr_t MutatorThread_approximateStackTop() {
+NOINLINE static stackptr_t MutatorThread_approximateStackTop() {
     volatile word_t sp = 0;
     sp = (word_t)&sp;
     /* Also force stack to grow if necessary. Otherwise the later accesses might

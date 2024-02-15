@@ -128,6 +128,11 @@ NO_SANITIZE static void Marker_markRange(Heap *heap, Stack *stack,
                                          word_t **from, word_t **to) {
     assert(from != NULL);
     assert(to != NULL);
+    if (from > to) {
+        word_t **tmp = from;
+        from = to;
+        to = tmp;
+    }
     // Align start address
     const intptr_t alignmentMask = ~(sizeof(word_t) - 1);
     word_t **alignedFrom = (word_t **)((intptr_t)from & alignmentMask);
