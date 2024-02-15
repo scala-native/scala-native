@@ -19,7 +19,6 @@ object JoinNonDaemonThreads {
             .continually(pollDaemonThreads)
             .takeWhile(_.hasNext)
             .flatten
-            .tapEach(v => println("wait for: " + v))
             .foreach(_.join())
         })
         t.setPriority(Thread.MIN_PRIORITY)
