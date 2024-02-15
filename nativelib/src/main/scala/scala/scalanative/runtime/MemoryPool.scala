@@ -70,9 +70,15 @@ object MemoryPool {
 
   lazy val defaultMemoryPool: MemoryPool = {
     // Release allocated chunks satisfy AdressSanitizer
-    if (asanEnabled) libc.atexit { () =>
-      defaultMemoryPool.freeChunks()
-    }
+    if (asanEnabled)
+      try
+        Runtime.getRuntime().addShutdownHook {
+          val t = new Thread(() => defaultMemoryPool.freeChunks())
+          t.setPriority(Thread.MIN_PRIORITY)
+          t.setName("shutdown-hook:memory-pool-cleanup")
+          t
+        }
+      catch { case ex: IllegalStateException => () } // shutdown already started
     new MemoryPool()
   }
 

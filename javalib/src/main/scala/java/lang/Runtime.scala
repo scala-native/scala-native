@@ -1,6 +1,8 @@
 package java.lang
 
 import java.io.File
+import java.util.{Vector => juVector}
+import java.util.Comparator
 import scala.scalanative.libc.stdlib
 import scala.scalanative.posix.unistd._
 import scala.scalanative.windows.SysInfoApi._
@@ -9,6 +11,67 @@ import scala.scalanative.unsafe._
 import scala.scalanative.meta.LinktimeInfo.isWindows
 
 class Runtime private () {
+  import Runtime._
+  @volatile private var shutdownStarted = false
+  private val hooks: juVector[Thread] = new juVector(8)
+
+  lazy val setupAtExitHandler = {
+    stdlib.atexit(() => Runtime.getRuntime().runHooks())
+  }
+  private def ensureCanModify(hook: Thread): Unit = if (shutdownStarted) {
+    throw new IllegalStateException(
+      s"Shutdown sequence started, cannot add/remove hook $hook"
+    )
+  }
+
+  def addShutdownHook(thread: Thread): Unit = {
+    ensureCanModify(thread)
+    hooks.add(thread)
+    setupAtExitHandler
+  }
+  def removeShutdownHook(thread: Thread): Boolean = {
+    ensureCanModify(thread)
+    hooks.remove(thread)
+  }
+
+  private def runHooksConcurrent() = {
+    // assume: hooks sorted by -priority
+    hooks.forEach { t =>
+      t.setUncaughtExceptionHandler(ShutdownHookUncoughExceptionHandler)
+    }
+    val limit = hooks.size()
+    var idx = 0
+    while (idx < limit) {
+      val groupStart = idx
+      val groupPriority = hooks.get(groupStart).getPriority()
+      while (idx < limit && hooks.get(idx).getPriority() == groupPriority) {
+        hooks.get(idx).start()
+        idx += 1
+      }
+      for (i <- groupStart until limit) {
+        hooks.get(i).join()
+      }
+    }
+  }
+  private def runHooksSequential() = {
+    // assume: hooks sorted by -priority
+    hooks
+      .forEach { t =>
+        try t.run()
+        catch {
+          case ex: Throwable =>
+            ShutdownHookUncoughExceptionHandler.uncaughtException(t, ex)
+        }
+      }
+  }
+  private def runHooks() = {
+    import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
+    shutdownStarted = true
+    hooks.sort(Comparator.comparingInt(-_.getPriority()))
+    if (isMultithreadingEnabled) runHooksConcurrent()
+    else runHooksSequential()
+  }
+
   import Runtime.ProcessBuilderOps
   def availableProcessors(): Int = {
     val available = if (isWindows) {
@@ -22,8 +85,6 @@ class Runtime private () {
   def exit(status: Int): Unit = stdlib.exit(status)
   def gc(): Unit = System.gc()
 
-  // def addShutdownHook(thread: java.lang.Thread): Unit = ???
-
   def exec(cmdarray: Array[String]): Process =
     new ProcessBuilder(cmdarray).start()
   def exec(cmdarray: Array[String], envp: Array[String]): Process =
@@ -36,10 +97,15 @@ class Runtime private () {
     exec(Array(cmd), envp, dir)
 }
 
-object Runtime {
-  private val currentRuntime = new Runtime()
+private object ShutdownHookUncoughExceptionHandler
+    extends Thread.UncaughtExceptionHandler {
+  def uncaughtException(t: Thread, e: Throwable): Unit =
+    System.err.println(s"Shutdown hook $t failed, reason: $e")
+    t.getThreadGroup().uncaughtException(t, e)
+}
 
-  def getRuntime(): Runtime = currentRuntime
+object Runtime extends Runtime() {
+  def getRuntime(): Runtime = this
 
   private implicit class ProcessBuilderOps(val pb: ProcessBuilder)
       extends AnyVal {
