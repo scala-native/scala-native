@@ -43,6 +43,10 @@ class Runtime private () {
     hooks.foreach { t =>
       t.setUncaughtExceptionHandler(ShutdownHookUncoughExceptionHandler)
     }
+    // JDK specifies that hooks might run in any order.
+    // However, for Scala Native it might be beneficial to support partial ordering
+    // E.g. Zone/MemoryPool shutdownHook cleaning pools should be run after DeleteOnExit using `toCString`
+    // Group the hooks by priority starting with the ones with highest priority
     val limit = hooks.size
     var idx = 0
     while (idx < limit) {
