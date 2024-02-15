@@ -15,7 +15,7 @@ class JarFile(file: File, verify: Boolean, mode: Int)
 
   private var manifest: Manifest = null
   private var manifestEntry: ZipEntry = null
-  private[jar] var verifier: JarVerifier = null
+  // private[jar] var verifier: JarVerifier = null
 
   private var closed: Boolean = false
 
@@ -47,14 +47,14 @@ class JarFile(file: File, verify: Boolean, mode: Int)
     } else {
       try {
         var is = super.getInputStream(manifestEntry)
-        if (verifier != null) {
-          verifier.addMetaEntry(
-            manifestEntry.getName(),
-            JarFile.readFullyAndClose(is)
-          )
-          is = super.getInputStream(manifestEntry)
-        }
-        try manifest = new Manifest(is, verifier != null)
+        // if (verifier != null) {
+        //   verifier.addMetaEntry(
+        //     manifestEntry.getName(),
+        //     JarFile.readFullyAndClose(is)
+        //   )
+        //   is = super.getInputStream(manifestEntry)
+        // }
+        try manifest = new Manifest(is, false) // verifier != null)
         finally is.close()
         manifestEntry = null // Can discard the entry now.
       } catch {
@@ -66,7 +66,7 @@ class JarFile(file: File, verify: Boolean, mode: Int)
   private def readMetaEntries(): Unit = {
     val metaEntries = getMetaEntriesImpl()
     if (metaEntries == null) {
-      verifier = null
+      // verifier = null
     } else {
       var signed = false
       var i = 0
@@ -75,33 +75,31 @@ class JarFile(file: File, verify: Boolean, mode: Int)
         val entry = metaEntries(i)
         val entryName = entry.getName()
         // Is this the entry for META-INF/MANIFEST.MF ?
-        if (manifestEntry == null && JarFile.asciiEqualsIgnoreCase(
-              JarFile.MANIFEST_NAME,
-              entryName
-            )) {
+        if (manifestEntry == null &&
+            JarFile.asciiEqualsIgnoreCase(JarFile.MANIFEST_NAME, entryName)) {
           manifestEntry = entry
           // If there is no verifier then we don't need to look any further,
-          if (verifier == null) {
-            done = true
-          }
+          // if (verifier == null) {
+          done = true
+          // }
         } else {
           // Is this an entry that the verifier needs?
-          if (verifier != null && (JarFile.asciiEndsWithIgnoreCase(
-                entryName,
-                ".SF"
-              ) || JarFile.asciiEndsWithIgnoreCase(entryName, ".DSA") || JarFile
-                .asciiEndsWithIgnoreCase(entryName, ".RSA"))) {
-            signed = true
-            val is = super.getInputStream(entry)
-            val buf = JarFile.readFullyAndClose(is)
-            verifier.addMetaEntry(entryName, buf)
-          }
+          // if (verifier != null && {
+          //       JarFile.asciiEndsWithIgnoreCase(entryName, ".SF") ||
+          //       JarFile.asciiEndsWithIgnoreCase(entryName, ".DSA") ||
+          //       JarFile.asciiEndsWithIgnoreCase(entryName, ".RSA")
+          //     }) {
+          //   signed = true
+          //   val is = super.getInputStream(entry)
+          //   val buf = JarFile.readFullyAndClose(is)
+          //   verifier.addMetaEntry(entryName, buf)
+          // }
         }
         i += 1
       }
-      if (!signed) {
-        verifier = null
-      }
+      // if (!signed) {
+      //   verifier = null
+      // }
     }
   }
 
@@ -109,33 +107,34 @@ class JarFile(file: File, verify: Boolean, mode: Int)
     if (manifestEntry != null) {
       getManifest()
     }
-    if (verifier != null) {
-      verifier.setManifest(getManifest())
-      if (manifest != null) {
-        verifier.mainAttributesEnd = manifest.getMainAttributesEnd()
-      }
-      if (verifier.readCertificates()) {
-        verifier.removeMetaEntries()
-        if (manifest != null) {
-          manifest.removeChunks()
-        }
-        if (!verifier.isSignedJar()) {
-          verifier = null
-        }
-      }
-    }
+    // if (verifier != null) {
+    //   verifier.setManifest(getManifest())
+    //   if (manifest != null) {
+    //     verifier.mainAttributesEnd = manifest.getMainAttributesEnd()
+    //   }
+    //   if (verifier.readCertificates()) {
+    //     verifier.removeMetaEntries()
+    //     if (manifest != null) {
+    //       manifest.removeChunks()
+    //     }
+    //     if (!verifier.isSignedJar()) {
+    //       verifier = null
+    //     }
+    //   }
+    // }
     val in = super.getInputStream(ze)
     if (in == null) {
       null
-    } else if (verifier == null || ze.getSize() == -1) {
+    } else if (/*verifier == null || */ ze.getSize() == -1) {
       in
     } else {
-      val entry = verifier.initEntry(ze.getName())
-      if (entry == null) {
-        in
-      } else {
-        new JarFile.JarFileInputStream(in, ze, entry)
-      }
+      in
+      // val entry = verifier.initEntry(ze.getName())
+      // if (entry == null) {
+      //   in
+      // } else {
+      //   new JarFile.JarFileInputStream(in, ze, entry)
+      // }
     }
   }
 
@@ -256,87 +255,87 @@ object JarFile extends ZipConstants {
       c
     }
 
-  private[jar] final class JarFileInputStream(
-      is: InputStream,
-      zipEntry: ZipEntry,
-      entry: JarVerifier#VerifierEntry
-  ) extends FilterInputStream(is) {
-    private var count: Long = zipEntry.getSize()
-    private var done: Boolean = false
+  // private[jar] final class JarFileInputStream(
+  //     is: InputStream,
+  //     zipEntry: ZipEntry,
+  //     entry: JarVerifier#VerifierEntry
+  // ) extends FilterInputStream(is) {
+  //   private var count: Long = zipEntry.getSize()
+  //   private var done: Boolean = false
 
-    override def read(): Int =
-      if (done) {
-        -1
-      } else if (count > 0) {
-        val r = super.read()
-        if (r != -1) {
-          entry.write(r)
-          count -= 1
-        } else {
-          count = 0
-        }
-        if (count == 0) {
-          done = true
-          entry.verify()
-        }
-        r
-      } else {
-        done = true
-        entry.verify()
-        -1
-      }
+  //   override def read(): Int =
+  //     if (done) {
+  //       -1
+  //     } else if (count > 0) {
+  //       val r = super.read()
+  //       if (r != -1) {
+  //         entry.write(r)
+  //         count -= 1
+  //       } else {
+  //         count = 0
+  //       }
+  //       if (count == 0) {
+  //         done = true
+  //         entry.verify()
+  //       }
+  //       r
+  //     } else {
+  //       done = true
+  //       entry.verify()
+  //       -1
+  //     }
 
-    override def read(buf: Array[Byte], off: Int, nbytes: Int): Int =
-      if (done) {
-        -1
-      } else {
-        if (count > 0) {
-          val r = super.read(buf, off, nbytes)
-          if (r != -1) {
-            var size = r
-            if (count < size) {
-              size = count.toInt
-            }
-            entry.write(buf, off, size)
-            count -= size
-          } else {
-            count = 0
-          }
-          if (count == 0) {
-            done = true
-            entry.verify()
-          }
-          r
-        } else {
-          done = true
-          entry.verify()
-          -1
-        }
-      }
+  //   override def read(buf: Array[Byte], off: Int, nbytes: Int): Int =
+  //     if (done) {
+  //       -1
+  //     } else {
+  //       if (count > 0) {
+  //         val r = super.read(buf, off, nbytes)
+  //         if (r != -1) {
+  //           var size = r
+  //           if (count < size) {
+  //             size = count.toInt
+  //           }
+  //           entry.write(buf, off, size)
+  //           count -= size
+  //         } else {
+  //           count = 0
+  //         }
+  //         if (count == 0) {
+  //           done = true
+  //           entry.verify()
+  //         }
+  //         r
+  //       } else {
+  //         done = true
+  //         entry.verify()
+  //         -1
+  //       }
+  //     }
 
-    override def available(): Int =
-      if (done) 0
-      else super.available()
+  //   override def available(): Int =
+  //     if (done) 0
+  //     else super.available()
 
-    override def skip(nbytes: Long): Long = {
-      var cnt = 0L
-      var rem = 0L
-      var done = false
-      val buf = new Array[Byte](Math.min(nbytes, 2048L).toInt)
-      while (!done && cnt < nbytes) {
-        val x = read(
-          buf,
-          0, {
-            rem = nbytes - cnt; if (rem > buf.length) buf.length else rem.toInt
-          }
-        )
-        if (x == -1) {
-          done = true
-        } else {
-          cnt += x
-        }
-      }
-      cnt
-    }
-  }
+  //   override def skip(nbytes: Long): Long = {
+  //     var cnt = 0L
+  //     var rem = 0L
+  //     var done = false
+  //     val buf = new Array[Byte](Math.min(nbytes, 2048L).toInt)
+  //     while (!done && cnt < nbytes) {
+  //       val x = read(
+  //         buf,
+  //         0, {
+  //           rem = nbytes - cnt; if (rem > buf.length) buf.length else rem.toInt
+  //         }
+  //       )
+  //       if (x == -1) {
+  //         done = true
+  //       } else {
+  //         cnt += x
+  //       }
+  //     }
+  //     cnt
+  //   }
+  // }
 }
