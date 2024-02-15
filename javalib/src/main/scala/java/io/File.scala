@@ -616,7 +616,10 @@ class File(_path: String) extends Serializable with Comparable[File] {
       new URI(
         "file",
         null,
-        new StringBuilder(path.length + 1).append('/').append(path).toString,
+        new java.lang.StringBuilder(path.length + 1)
+          .append('/')
+          .append(path)
+          .toString,
         null,
         null
       )

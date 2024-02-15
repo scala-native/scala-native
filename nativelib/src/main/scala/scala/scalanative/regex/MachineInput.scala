@@ -192,7 +192,9 @@ object MachineInput {
       hayStack match {
         case hayStack: String =>
           hayStack.indexOf(needle, pos)
-        case hayStack: StringBuilder =>
+        case hayStack: java.lang.StringBuilder =>
+          hayStack.indexOf(needle, pos)
+        case hayStack: collection.mutable.StringBuilder =>
           hayStack.indexOf(needle, pos)
         case _ =>
           indexOfFallback(hayStack, needle, pos)

@@ -428,7 +428,7 @@ object CharClass {
 
   // Exposed, since useful for debugging CharGroups too.
   def charClassToString(r: Array[Int], len: Int): String = {
-    val b = new StringBuilder()
+    val b = new java.lang.StringBuilder()
     b.append('[')
     var i = 0
     while (i < len) {

@@ -182,7 +182,7 @@ object Inet6Address {
      * The math need not be exact, the buffer will grow if we guess wrong.
      */
 
-    val buffer = new StringBuilder(64)
+    val buffer = new java.lang.StringBuilder(64)
     var isFirst = true
 
     // IPv6 binary addresses are defined as 16 bytes, so loop count is known.

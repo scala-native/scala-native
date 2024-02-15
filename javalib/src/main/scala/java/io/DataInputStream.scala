@@ -124,7 +124,7 @@ class DataInputStream(in: InputStream)
     var v = in.read()
     if (v == -1) null
     else {
-      val builder = new StringBuilder
+      val builder = new java.lang.StringBuilder
       var c = v.toChar
       while (v != -1 && c != '\n' && c != '\r') {
         builder.append(c)

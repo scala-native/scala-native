@@ -105,7 +105,7 @@ object FileChannel {
       }
     }
 
-    val mode = new StringBuilder("r")
+    val mode = new java.lang.StringBuilder("r")
     if (writing) mode.append("w")
 
     if (!Files.exists(path, Array.empty)) {

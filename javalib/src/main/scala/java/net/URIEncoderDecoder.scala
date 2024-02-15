@@ -56,7 +56,7 @@ private[net] object URIEncoderDecoder {
   }
 
   def quoteIllegal(s: String, legal: String): String = {
-    val buf: StringBuilder = new StringBuilder()
+    val buf = new java.lang.StringBuilder()
     for (i <- 0 until s.length) {
       val ch: Char = s.charAt(i)
       if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') ||
@@ -78,7 +78,7 @@ private[net] object URIEncoderDecoder {
   }
 
   def encodeOthers(s: String): String = {
-    val buf: StringBuilder = new StringBuilder()
+    val buf = new java.lang.StringBuilder()
     for (i <- 0 until s.length) {
       val ch: Char = s.charAt(i)
       if (ch <= 127) {
@@ -96,7 +96,7 @@ private[net] object URIEncoderDecoder {
   }
 
   def decode(s: String): String = {
-    val result: StringBuilder = new StringBuilder()
+    val result = new java.lang.StringBuilder()
     val out: ByteArrayOutputStream = new ByteArrayOutputStream()
     var i: Int = 0
     while (i < s.length) {

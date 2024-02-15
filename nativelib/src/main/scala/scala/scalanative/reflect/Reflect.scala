@@ -113,7 +113,7 @@ final class InvokableConstructor private[reflect] (
   }
 
   override def toString: String = {
-    val builder = new mutable.StringBuilder("InvokableContructor")
+    val builder = new java.lang.StringBuilder("InvokableContructor")
     builder.append("(")
     for (tpe <- parameterTypes) {
       builder.append(tpe.getName)

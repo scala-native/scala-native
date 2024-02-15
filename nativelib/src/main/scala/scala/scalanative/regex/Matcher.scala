@@ -613,7 +613,7 @@ object Matcher {
     if (s.indexOf('\\') < 0 && s.indexOf('$') < 0) {
       return s
     }
-    val sb = new StringBuilder()
+    val sb = new java.lang.StringBuilder()
     var i = 0
     while (i < s.length()) {
       val c = s.charAt(i)

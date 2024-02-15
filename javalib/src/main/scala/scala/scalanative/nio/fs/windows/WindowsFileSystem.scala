@@ -34,7 +34,7 @@ class WindowsFileSystem(fsProvider: WindowsFileSystemProvider)
     if (more.length == 0) WindowsPathParser(first)(this)
     else {
       val sep = getSeparator()
-      val sb = new StringBuilder(first)
+      val sb = new java.lang.StringBuilder(first)
       more.foreach { element =>
         if (element.length > 0) {
           if (sb.length() > 0) sb.append(sep)

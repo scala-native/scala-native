@@ -29,7 +29,7 @@ object PosixFilePermissions {
 
   def toString(perms: Set[PosixFilePermission]): String = {
     import PosixFilePermission._
-    val builder = new StringBuilder
+    val builder = new java.lang.StringBuilder
     if (perms.contains(OWNER_READ)) builder.append('r')
     else builder.append('-')
     if (perms.contains(OWNER_WRITE)) builder.append('w')

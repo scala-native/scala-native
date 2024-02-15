@@ -469,7 +469,7 @@ object Machine {
     }
 
     override def toString = {
-      val out = new StringBuilder
+      val out = new java.lang.StringBuilder
       out.append('{')
       var i = 0
       while (i < size) {
