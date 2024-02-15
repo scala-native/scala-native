@@ -99,9 +99,10 @@ class Runtime private () {
 
 private object ShutdownHookUncoughExceptionHandler
     extends Thread.UncaughtExceptionHandler {
-  def uncaughtException(t: Thread, e: Throwable): Unit =
+  def uncaughtException(t: Thread, e: Throwable): Unit = {
     System.err.println(s"Shutdown hook $t failed, reason: $e")
     t.getThreadGroup().uncaughtException(t, e)
+  }
 }
 
 object Runtime extends Runtime() {
