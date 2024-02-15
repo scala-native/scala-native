@@ -101,15 +101,15 @@ object Array {
       throw new ArrayStoreException("Invalid array copy.")
     } else if (len < 0) {
       throw new ArrayIndexOutOfBoundsException("length is negative")
+    } else if (len == 0) {
+      ()
     } else if (fromPos < 0 || fromPos + len > from.length) {
       throwOutOfBounds(fromPos, from.length)
     } else if (toPos < 0 || toPos + len > to.length) {
       throwOutOfBounds(toPos, to.length)
-    } else if (len == 0) {
-      ()
     } else {
-      val fromPtr = from.atRaw(fromPos)
-      val toPtr   = to.atRaw(toPos)
+      val fromPtr = from.atRawUnsafe(fromPos)
+      val toPtr   = to.atRawUnsafe(toPos)
       val size    = to.stride * len
       libc.memmove(toPtr, fromPtr, castIntToRawSizeUnsigned(size))
     }
