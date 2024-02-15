@@ -134,7 +134,24 @@ class ZipOutputStreamTest {
         zipOut.finish() // Throws no Null Pointer Exception
         zipOut.finish() // and can be done more than once without error.
 
-        zipOut.close() // internally calls finish() again; for 3rd time series
+        /* "put" after "finish" makes no sense, but someday someone
+         * is going to do it. JVM silently skips such absurdity and does not
+         * corrupt the output file after its Central Directory End Record
+         * has been written by first finish().
+         */
+
+        zipOut.putNextEntry(new ZipEntry("IllAdvised"))
+        zipOut.closeEntry()
+
+        // close() internally calls finish() again; for 3rd time. Bug be gone!
+        zipOut.close()
+
+        /* One can now manually examine the output zip using, say Linux/Mark's
+         * "unzip -l" (ell). The archive ought to be readable and it ought
+         * to contain exactly the entries of the src file: no more, no less.
+         * Difficult to automate that for CI but a time-saver to know for
+         * debugging.
+         */
       }
     } finally {
       zf.close()

@@ -38,88 +38,89 @@ class ZipOutputStream(_out: OutputStream, charset: Charset)
   }
 
   def closeEntry(): Unit = {
-    if (cDir == null) {
-      throw new IOException()
-    } else if (currentEntry == null) {
-      ()
-    } else if (currentEntry.getMethod() == DEFLATED) {
-      super.finish()
-    }
+    if ((cDir == null) || (currentEntry == null)) {
+      () // Centeral Directory has been finish()'ed or no work to be done
+    } else {
+      if (currentEntry.getMethod() == DEFLATED)
+        super.finish()
 
-    // Verify values for STORED types
-    if (currentEntry.getMethod() == STORED) {
-      if (crc.getValue() != currentEntry.crc) {
-        throw new ZipException("Crc mismatch")
-      } else if (currentEntry.size != crc.tbytes) {
-        throw new ZipException("Size mismatch")
+      // Verify values for STORED types
+      if (currentEntry.getMethod() == STORED) {
+        if (crc.getValue() != currentEntry.crc) {
+          throw new ZipException("Crc mismatch")
+        } else if (currentEntry.size != crc.tbytes) {
+          throw new ZipException("Size mismatch")
+        }
       }
-    }
-    curOffset = LOCHDR
 
-    // Write the DataDescriptor
-    if (currentEntry.getMethod() != STORED) {
-      curOffset += EXTHDR
-      writeLong(out, EXTSIG)
-      writeLong(out, { currentEntry.crc = crc.getValue(); currentEntry.crc })
-      writeLong(
-        out, {
-          currentEntry.compressedSize = `def`.getTotalOut();
-          currentEntry.compressedSize
-        }
+      curOffset = LOCHDR
+
+      // Write the DataDescriptor
+      if (currentEntry.getMethod() != STORED) {
+        curOffset += EXTHDR
+        writeLong(out, EXTSIG)
+        writeLong(out, { currentEntry.crc = crc.getValue(); currentEntry.crc })
+        writeLong(
+          out, {
+            currentEntry.compressedSize = `def`.getTotalOut();
+            currentEntry.compressedSize
+          }
+        )
+        writeLong(
+          out, {
+            currentEntry.size = `def`.getTotalIn(); currentEntry.size
+          }
+        )
+      }
+
+      // Update the CentralDirectory
+      writeLong(cDir, CENSIG)
+      writeShort(cDir, ZIPLocalHeaderVersionNeeded) // Version created
+      writeShort(cDir, ZIPLocalHeaderVersionNeeded) // Version to extract
+      writeShort(
+        cDir,
+        if (currentEntry.getMethod() == STORED) 0 else ZIPDataDescriptorFlag
       )
-      writeLong(
-        out, {
-          currentEntry.size = `def`.getTotalIn(); currentEntry.size
-        }
-      )
+      writeShort(cDir, currentEntry.getMethod())
+      writeShort(cDir, currentEntry.time)
+      writeShort(cDir, currentEntry.modDate)
+      writeLong(cDir, crc.getValue())
+      if (currentEntry.getMethod() == DEFLATED) {
+        curOffset += writeLong(cDir, `def`.getTotalOut()).toInt
+        writeLong(cDir, `def`.getTotalIn())
+      } else {
+        curOffset += writeLong(cDir, crc.tbytes).toInt
+        writeLong(cDir, crc.tbytes)
+      }
+      curOffset += writeShort(cDir, nameLength)
+      if (currentEntry.extra != null) {
+        curOffset += writeShort(cDir, currentEntry.extra.length)
+      } else {
+        writeShort(cDir, 0)
+      }
+      var c: String = null
+      if ({ c = currentEntry.getComment(); c != null }) {
+        writeShort(cDir, c.length())
+      } else {
+        writeShort(cDir, 0)
+      }
+      writeShort(cDir, 0) // Disk Start
+      writeShort(cDir, 0) // Internal File Attributes
+      writeLong(cDir, 0) // External File Attributes
+      writeLong(cDir, offset)
+      cDir.write(nameBytes)
+      if (currentEntry.extra != null) {
+        cDir.write(currentEntry.extra)
+      }
+      offset += curOffset
+      if (c != null) {
+        cDir.write(c.getBytes())
+      }
+      currentEntry = null
+      crc.reset()
+      `def`.reset()
+      done = false
     }
-    // Update the CentralDirectory
-    writeLong(cDir, CENSIG)
-    writeShort(cDir, ZIPLocalHeaderVersionNeeded) // Version created
-    writeShort(cDir, ZIPLocalHeaderVersionNeeded) // Version to extract
-    writeShort(
-      cDir,
-      if (currentEntry.getMethod() == STORED) 0 else ZIPDataDescriptorFlag
-    )
-    writeShort(cDir, currentEntry.getMethod())
-    writeShort(cDir, currentEntry.time)
-    writeShort(cDir, currentEntry.modDate)
-    writeLong(cDir, crc.getValue())
-    if (currentEntry.getMethod() == DEFLATED) {
-      curOffset += writeLong(cDir, `def`.getTotalOut()).toInt
-      writeLong(cDir, `def`.getTotalIn())
-    } else {
-      curOffset += writeLong(cDir, crc.tbytes).toInt
-      writeLong(cDir, crc.tbytes)
-    }
-    curOffset += writeShort(cDir, nameLength)
-    if (currentEntry.extra != null) {
-      curOffset += writeShort(cDir, currentEntry.extra.length)
-    } else {
-      writeShort(cDir, 0)
-    }
-    var c: String = null
-    if ({ c = currentEntry.getComment(); c != null }) {
-      writeShort(cDir, c.length())
-    } else {
-      writeShort(cDir, 0)
-    }
-    writeShort(cDir, 0) // Disk Start
-    writeShort(cDir, 0) // Internal File Attributes
-    writeLong(cDir, 0) // External File Attributes
-    writeLong(cDir, offset)
-    cDir.write(nameBytes)
-    if (currentEntry.extra != null) {
-      cDir.write(currentEntry.extra)
-    }
-    offset += curOffset
-    if (c != null) {
-      cDir.write(c.getBytes())
-    }
-    currentEntry = null
-    crc.reset()
-    `def`.reset()
-    done = false
   }
 
   override def finish(): Unit = {
@@ -155,9 +156,9 @@ class ZipOutputStream(_out: OutputStream, charset: Charset)
   }
 
   def putNextEntry(ze: ZipEntry): Unit = {
-    if (currentEntry != null) {
+    if (currentEntry != null)
       closeEntry()
-    }
+
     if (ze.getMethod() == STORED
         || (compressMethod == STORED && ze.getMethod() == -1)) {
       if (ze.crc == -1) {
@@ -171,62 +172,64 @@ class ZipOutputStream(_out: OutputStream, charset: Charset)
         throw new ZipException("Size mismatch")
       }
     }
+
     if (cDir == null) {
-      throw new IOException("Stream closed")
-    }
-    if (entries.contains(ze.name)) {
-      /* [MSG "archive.29", "Entry already exists: {0}"] */
-      throw new ZipException(s"Entry already exists: ${ze.name}")
-    }
-    nameLength = utf8Count(ze.name);
-    if (nameLength > 0xffff) {
-      /* [MSG "archive.2A", "Name too long: {0}"] */
-      throw new IllegalArgumentException(s"Name too long: ${ze.name}")
-    }
-
-    `def`.setLevel(compressLevel)
-    currentEntry = ze
-    entries += currentEntry.name
-    if (currentEntry.getMethod() == -1) {
-      currentEntry.setMethod(compressMethod)
-    }
-    writeLong(out, LOCSIG) // Entry header
-    writeShort(out, ZIPLocalHeaderVersionNeeded) // Extraction version
-    writeShort(
-      out,
-      if (currentEntry.getMethod() == STORED) 0 else ZIPDataDescriptorFlag
-    )
-    writeShort(out, currentEntry.getMethod())
-    if (currentEntry.getTime() == -1) {
-      currentEntry.setTime(System.currentTimeMillis())
-    }
-    writeShort(out, currentEntry.time)
-    writeShort(out, currentEntry.modDate)
-
-    if (currentEntry.getMethod() == STORED) {
-      if (currentEntry.size == -1) {
-        currentEntry.size = currentEntry.compressedSize
-      } else if (currentEntry.compressedSize == -1) {
-        currentEntry.compressedSize = currentEntry.size
+      () // Centeral Directory has been finish()'ed.
+    } else {
+      if (entries.contains(ze.name)) {
+        /* [MSG "archive.29", "Entry already exists: {0}"] */
+        throw new ZipException(s"Entry already exists: ${ze.name}")
       }
-      writeLong(out, currentEntry.crc)
-      writeLong(out, currentEntry.size)
-      writeLong(out, currentEntry.size)
-    } else {
-      writeLong(out, 0)
-      writeLong(out, 0)
-      writeLong(out, 0)
-    }
-    writeShort(out, nameLength)
-    if (currentEntry.extra != null) {
-      writeShort(out, currentEntry.extra.length)
-    } else {
-      writeShort(out, 0)
-    }
-    nameBytes = toUTF8Bytes(currentEntry.name, nameLength)
-    out.write(nameBytes)
-    if (currentEntry.extra != null) {
-      out.write(currentEntry.extra)
+      nameLength = utf8Count(ze.name);
+      if (nameLength > 0xffff) {
+        /* [MSG "archive.2A", "Name too long: {0}"] */
+        throw new IllegalArgumentException(s"Name too long: ${ze.name}")
+      }
+
+      `def`.setLevel(compressLevel)
+      currentEntry = ze
+      entries += currentEntry.name
+      if (currentEntry.getMethod() == -1) {
+        currentEntry.setMethod(compressMethod)
+      }
+      writeLong(out, LOCSIG) // Entry header
+      writeShort(out, ZIPLocalHeaderVersionNeeded) // Extraction version
+      writeShort(
+        out,
+        if (currentEntry.getMethod() == STORED) 0 else ZIPDataDescriptorFlag
+      )
+      writeShort(out, currentEntry.getMethod())
+      if (currentEntry.getTime() == -1) {
+        currentEntry.setTime(System.currentTimeMillis())
+      }
+      writeShort(out, currentEntry.time)
+      writeShort(out, currentEntry.modDate)
+
+      if (currentEntry.getMethod() == STORED) {
+        if (currentEntry.size == -1) {
+          currentEntry.size = currentEntry.compressedSize
+        } else if (currentEntry.compressedSize == -1) {
+          currentEntry.compressedSize = currentEntry.size
+        }
+        writeLong(out, currentEntry.crc)
+        writeLong(out, currentEntry.size)
+        writeLong(out, currentEntry.size)
+      } else {
+        writeLong(out, 0)
+        writeLong(out, 0)
+        writeLong(out, 0)
+      }
+      writeShort(out, nameLength)
+      if (currentEntry.extra != null) {
+        writeShort(out, currentEntry.extra.length)
+      } else {
+        writeShort(out, 0)
+      }
+      nameBytes = toUTF8Bytes(currentEntry.name, nameLength)
+      out.write(nameBytes)
+      if (currentEntry.extra != null) {
+        out.write(currentEntry.extra)
+      }
     }
   }
 
