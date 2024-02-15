@@ -191,6 +191,7 @@ void scalanative_continuation_init(void *(*alloc_f)(unsigned long, void *)) {
     atomic_init(&label_count, 0);
 }
 
+NO_SANITIZE
 __returnstwice void *
 __continuation_boundary_impl(void **btm, ContinuationBody *body, void *arg) {
     // debug_printf("Boundary btm is %p\n", btm);
@@ -243,6 +244,7 @@ static void *continuation_alloc_by_malloc(unsigned long size, void *arg) {
 }
 
 // suspend[T, R] : BoundaryLabel[T] -> T -> R
+NO_SANITIZE
 void *scalanative_continuation_suspend(ContinuationBoundaryLabel b,
                                        SuspendFn *f, void *arg, void *alloc_arg)
     __attribute__((disable_tail_calls)) {
@@ -292,6 +294,7 @@ static Handlers *handler_clone_fix(Handlers *other, ptrdiff_t diff) {
 }
 
 // Resumes the continuation to [tail - size, tail).
+NO_SANITIZE
 void __continuation_resume_impl(void *tail, Continuation *continuation,
                                 void *out, void *ret_addr) {
     // Allocate all values up front so we know how many to deal with.
