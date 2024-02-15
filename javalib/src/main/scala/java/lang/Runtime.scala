@@ -1,7 +1,7 @@
 package java.lang
 
 import java.io.File
-import java.util.{Vector => juVector}
+import java.util.{Set => juSet}
 import java.util.Comparator
 import scala.scalanative.libc.stdlib
 import scala.scalanative.posix.unistd._
@@ -13,7 +13,7 @@ import scala.scalanative.meta.LinktimeInfo.isWindows
 class Runtime private () {
   import Runtime._
   @volatile private var shutdownStarted = false
-  private val hooks: juVector[Thread] = new juVector(8)
+  private lazy val hooks: juSet[Thread] = new java.util.HashSet()
 
   lazy val setupAtExitHandler = {
     stdlib.atexit(() => Runtime.getRuntime().runHooks())
@@ -24,39 +24,45 @@ class Runtime private () {
     )
   }
 
-  def addShutdownHook(thread: Thread): Unit = {
+  def addShutdownHook(thread: Thread): Unit = hooks.synchronized {
     ensureCanModify(thread)
     hooks.add(thread)
     setupAtExitHandler
   }
-  def removeShutdownHook(thread: Thread): Boolean = {
+
+  def removeShutdownHook(thread: Thread): Boolean = hooks.synchronized {
     ensureCanModify(thread)
     hooks.remove(thread)
   }
 
   private def runHooksConcurrent() = {
-    // assume: hooks sorted by -priority
-    hooks.forEach { t =>
+    val hooks = this.hooks
+      .toArray()
+      .asInstanceOf[Array[Thread]]
+      .sorted(Ordering.by[Thread, Int](-_.getPriority()))
+    hooks.foreach { t =>
       t.setUncaughtExceptionHandler(ShutdownHookUncoughExceptionHandler)
     }
-    val limit = hooks.size()
+    val limit = hooks.size
     var idx = 0
     while (idx < limit) {
       val groupStart = idx
-      val groupPriority = hooks.get(groupStart).getPriority()
-      while (idx < limit && hooks.get(idx).getPriority() == groupPriority) {
-        hooks.get(idx).start()
+      val groupPriority = hooks(groupStart).getPriority()
+      while (idx < limit && hooks(idx).getPriority() == groupPriority) {
+        hooks(idx).start()
         idx += 1
       }
       for (i <- groupStart until limit) {
-        hooks.get(i).join()
+        hooks(i).join()
       }
     }
   }
   private def runHooksSequential() = {
-    // assume: hooks sorted by -priority
-    hooks
-      .forEach { t =>
+    this.hooks
+      .toArray()
+      .asInstanceOf[Array[Thread]]
+      .sorted(Ordering.by[Thread, Int](-_.getPriority()))
+      .foreach { t =>
         try t.run()
         catch {
           case ex: Throwable =>
@@ -66,10 +72,11 @@ class Runtime private () {
   }
   private def runHooks() = {
     import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
-    shutdownStarted = true
-    hooks.sort(Comparator.comparingInt(-_.getPriority()))
-    if (isMultithreadingEnabled) runHooksConcurrent()
-    else runHooksSequential()
+    hooks.synchronized {
+      shutdownStarted = true
+      if (isMultithreadingEnabled) runHooksConcurrent()
+      else runHooksSequential()
+    }
   }
 
   import Runtime.ProcessBuilderOps
