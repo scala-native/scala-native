@@ -906,10 +906,6 @@ trait NirGenExpr(using Context) {
         finallyp: Tree,
         insts: Seq[nir.Inst]
     ): Seq[nir.Inst] = {
-      println()
-      // println(finallyp)
-      // insts.foreach(println)
-      // println("---")
       val labels =
         insts.collect {
           case nir.Inst.Label(n, _) => n
