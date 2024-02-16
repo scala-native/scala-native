@@ -1200,9 +1200,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         (o eq ObjectClass) || (o eq AnyRefClass) || (o eq AnyClass)
       }
 
-      m.isDeferred || m.isConstructor || m.hasAccessBoundary ||
-        m.isExtern ||
-        isOfJLObject
+      m.isDeferred || m.isConstructor || m.isExtern || isOfJLObject
     }
 
     val forwarders = for {
