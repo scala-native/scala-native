@@ -1,5 +1,5 @@
 BUILD_PLATFORM=linux/amd64
 BUILD_DEPS=true
 BASE_IMAGE=dockcross/linux-arm64
-LLVM_VERSION=14
-TARGET_EMULATOR=qemu-aarch64-static
+LLVM_VERSION=15
+TARGET_EMULATOR=qemu-aarch64
