@@ -414,6 +414,16 @@ class StringTest {
     assertTrue("fubår".indexOf(97, 4) == -1)
   }
 
+  @Test def indexOfSubStringWithSurrogatePair(): Unit = {
+    val helloInSurrogatePairs =
+      "\ud835\udd59\ud835\udd56\ud835\udd5d\ud835\udd5d\ud835\udd60"
+
+    val needle = "\ud835\udd5d\ud835\udd60" // outlined ell oh
+
+    val index = helloInSurrogatePairs.indexOf(needle)
+    assertEquals("indexOf surrogate outlined ell oh", 6, index)
+  }
+
   @Test def lastIndexOf(): Unit = {
     assertTrue("afoobar".lastIndexOf("a") == 5)
     assertTrue("afoobar".lastIndexOf(97) == 5)
@@ -427,6 +437,16 @@ class StringTest {
     assertTrue("fubår".lastIndexOf(97) == -1)
     assertTrue("fubår".lastIndexOf("a", 4) == -1)
     assertTrue("fubår".lastIndexOf(97, 4) == -1)
+  }
+
+  @Test def lastIndexOfSubStringWithSurrogatePair(): Unit = {
+    val helloInSurrogatePairs =
+      "\ud835\udd59\ud835\udd56\ud835\udd5d\ud835\udd5d\ud835\udd60"
+
+    val needle = "\ud835\udd56\ud835\udd5d" // outlined e ell
+
+    val index = helloInSurrogatePairs.lastIndexOf(needle)
+    assertEquals("lastIndexOf surrorate outlined ell", 2, index)
   }
 
   @Test def toUpperCase(): Unit = {
@@ -646,7 +666,7 @@ class StringTest {
    */
 
 
-// format: off  
+// format: off
     val testByteArray = Array(
       'f'.toByte, 0.toByte,
       'o'.toByte, 0.toByte,

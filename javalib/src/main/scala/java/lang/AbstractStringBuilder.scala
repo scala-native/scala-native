@@ -2,12 +2,30 @@
 package java.lang
 
 import java.util.Arrays
-import scala.util.control.Breaks._
 
 import scala.scalanative.runtime.ieee754tostring.ryu._
 
-protected abstract class AbstractStringBuilder private (unit: Unit) {
+/* Design Note:
+ * The public methods indexOf(string) and lastIndexOf(string) and their
+ * private indexOf(char) and lastIndexOf(char) are slightly modified
+ * copies of the String.scala code. The methods in String.scala are
+ * more likely to have been heavily exercised and to be correct.
+ *
+ * Textually duplicating code is regrettable but there was no easy
+ * way to call into the String code or to have common code with reasonable
+ * performance. String code is performance sensitive.
+ *
+ * The coding style in the routines here is a bit strange. It is designed
+ * to minimize changes from the String code.  A "bridge" variable "offset"
+ * is introduced, set to 0, and otherwise unused. That means that number
+ * of other lines of code do not need to change.
+ *
+ * Most of the necessary changes from the String code, such as getting
+ * lengths and substring contents are marked. This code will probably
+ * be visited again.
+ */
 
+protected abstract class AbstractStringBuilder private (unit: Unit) {
   import AbstractStringBuilder._
 
   protected var value: Array[Char] = _
@@ -20,17 +38,6 @@ protected abstract class AbstractStringBuilder private (unit: Unit) {
     shared = true
     value
   }
-
-  /*final def set(chars: Array[scala.Char], len: scala.Int): Unit = {
-    val chars0 = if (chars != null) chars else new Array[scala.Char](0)
-    if (chars0.length < len) {
-      throw new InvalidObjectException("")
-    }
-
-    shared = false
-    value = chars0
-    count = len
-  }*/
 
   def this() = {
     this(())
@@ -565,97 +572,142 @@ protected abstract class AbstractStringBuilder private (unit: Unit) {
   def indexOf(string: String): scala.Int =
     indexOf(string, 0)
 
+  // See Design Note at top of this file.
+  private def indexOf(c: Int, _start: Int): Int = {
+    var offset = 0 // different than SN String.scala
+    var start = _start
+    if (start < count) {
+      if (start < 0) {
+        start = 0
+      }
+      if (c >= 0 && c <= Character.MAX_VALUE) {
+        var i = offset + start
+        while (i < offset + count) {
+          if (value(i) == c) {
+            return i - offset
+          }
+          i += 1
+        }
+      } else if (c > Character.MAX_VALUE && c <= Character.MAX_CODE_POINT) {
+        var i = start
+        while (i < count) {
+          val codePoint = codePointAt(i)
+          if (codePoint == c) {
+            return i
+          } else if (codePoint >= Character.MIN_SUPPLEMENTARY_CODE_POINT) {
+            i += 1
+          }
+          i += 1
+        }
+      }
+    }
+    -1
+  }
+
+  // See Design Note at top of this file.
   def indexOf(subString: String, _start: scala.Int): scala.Int = {
+    var offset = 0 // different than SN String.scala
     var start = _start
     if (start < 0) {
       start = 0
     }
-    val subCount = subString.length
+    val subCount = subString.length() // different than SN String.scala
     if (subCount > 0) {
       if (subCount + start > count) {
         return -1
       }
-      val firstChar = subString.charAt(0)
+      val target = subString.toCharArray() // different than SN String.scala
+      val subOffset = 0 // different than SN String.scala
+      val firstChar = target(subOffset)
+      val end = subOffset + subCount
       while (true) {
-        var found = false
-        var i = start
-        breakable {
-          while (!found && i < count) {
-            if (value(i) == firstChar) {
-              found = true
-              break()
-            }
-            i += 1
-          }
-        }
-        if (!found || subCount + i > count) {
+        val i = indexOf(firstChar, start)
+        if (i == -1 || subCount + i > count) {
           return -1
         }
-        var o1 = i
-        var o2 = 0
-        breakable {
-          while (true) {
-            o2 += 1
-            if (!(o2 < subCount)) break()
-            o1 += 1
-            if (!(value(o1) == subString.charAt(o2))) break()
-          }
-        }
-        if (o2 == subCount) {
+        var o1 = offset + i
+        var o2 = subOffset
+        while ({ o2 += 1; o2 } < end && value({ o1 += 1; o1 }) == target(o2)) ()
+        if (o2 == end) {
           return i
         }
         start = i + 1
       }
     }
-    return if (start < count || start == 0) start else count
+    if (start < count) start else count
   }
 
   def lastIndexOf(string: String): scala.Int =
     lastIndexOf(string, count)
 
-  def lastIndexOf(subString: String, _start: scala.Int): scala.Int = {
+  // See Design Note at top of this file.
+  private def lastIndexOf(c: Int, _start: Int): Int = {
+    var offset = 0 // different than SN String.scala
     var start = _start
-    val subCount = subString.length
+    if (start >= 0) {
+      if (start >= count) {
+        start = count - 1
+      }
+      if (c >= 0 && c <= Character.MAX_VALUE) {
+        var i = offset + start
+        while (i >= offset) {
+          if (value(i) == c) {
+            return i - offset
+          } else {
+            i -= 1
+          }
+        }
+      } else if (c > Character.MAX_VALUE && c <= Character.MAX_CODE_POINT) {
+        var i = start
+        while (i >= 0) {
+          val codePoint = codePointAt(i)
+          if (codePoint == c) {
+            return i
+          } else if (codePoint >= Character.MIN_SUPPLEMENTARY_CODE_POINT) {
+            i -= 1
+          }
+
+          i -= 1
+        }
+      }
+    }
+    -1
+  }
+
+  // See Design Note at top of this file.
+  def lastIndexOf(subString: String, _start: scala.Int): scala.Int = {
+    var offset = 0 // different than SN String.scala
+    var start = _start
+    val subCount = subString.length() // different than SN String.scala
     if (subCount <= count && start >= 0) {
       if (subCount > 0) {
         if (start > count - subCount) {
           start = count - subCount
         }
-        val firstChar = subString.charAt(0)
+        val target = subString.toCharArray() // different than SN String.scala
+        val subOffset = 0 // different than SN String.scala
+        val firstChar = target(subOffset)
+        val end = subOffset + subCount
         while (true) {
-          var i = start
-          var found = false
-          breakable {
-            while (!found && i >= 0) {
-              if (value(i) == firstChar) {
-                found = true
-                break()
-              }
-              i -= 1
-            }
-          }
-          if (!found) {
+          val i = lastIndexOf(firstChar, start)
+          if (i == -1) {
             return -1
           }
-          var o1 = i
-          var o2 = 0
-          breakable {
-            while (true) {
-              o2 += 1
-              if (!(o2 < subCount)) break()
-              o1 += 1
-              if (!(value(o1) == subString.charAt(o2))) break()
-            }
-          }
-          if (o2 == subCount) {
+          var o1 = offset + i
+          var o2 = subOffset
+          while ({ o2 += 1; o2 } < end && value({ o1 += 1; o1 }) == target(o2))
+            ()
+          if (o2 == end) {
             return i
           }
           start = i - 1
         }
       }
-      return if (start < count) start else count
+
+      if (start < count) start else count
+    } else {
+      -1
     }
-    return -1
   }
 
   def trimToSize(): Unit = {
