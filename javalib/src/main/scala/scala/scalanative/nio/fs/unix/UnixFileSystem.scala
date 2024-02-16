@@ -2,7 +2,7 @@ package scala.scalanative.nio.fs.unix
 
 import java.io.IOException
 import java.lang.Iterable
-import java.lang.StringBuilder
+import java.{lang => jl}
 import java.nio.file.{
   FileStore,
   FileSystem,
@@ -41,7 +41,7 @@ class UnixFileSystem(
   override def getPath(first: String, more: Array[String]): Path = {
     if (more.length == 0) new UnixPath(this, first)
     else {
-      val sb = new java.lang.StringBuilder(first)
+      val sb = new jl.StringBuilder(first)
       more.foreach { element =>
         if (element.length > 0) {
           if (sb.length() > 0) sb.append('/')

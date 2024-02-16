@@ -1,6 +1,7 @@
 package scala.scalanative.reflect
 
 import scala.collection.mutable
+import java.{lang => jl}
 
 final class LoadableModuleClass private[reflect] (
     val runtimeClass: Class[_],
@@ -113,7 +114,7 @@ final class InvokableConstructor private[reflect] (
   }
 
   override def toString: String = {
-    val builder = new java.lang.StringBuilder("InvokableContructor")
+    val builder = new jl.StringBuilder("InvokableContructor")
     builder.append("(")
     for (tpe <- parameterTypes) {
       builder.append(tpe.getName)

@@ -9,6 +9,7 @@ package scala.scalanative
 package regex
 
 import java.util.ArrayList
+import java.{lang => jl}
 
 import Inst.{Op => IOP}
 
@@ -155,7 +156,7 @@ class Prog {
   // ---
 
   override def toString = {
-    val out = new java.lang.StringBuilder()
+    val out = new jl.StringBuilder()
     var pc = 0
     while (pc < inst.size()) {
       val len = out.length()

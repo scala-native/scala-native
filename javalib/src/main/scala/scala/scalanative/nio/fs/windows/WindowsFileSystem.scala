@@ -2,6 +2,7 @@ package scala.scalanative.nio.fs.windows
 
 import java.lang.Iterable
 import java.lang.StringBuilder
+import java.{lang => jl}
 import java.nio.charset.StandardCharsets
 import java.nio.file.{
   FileStore,
@@ -34,7 +35,7 @@ class WindowsFileSystem(fsProvider: WindowsFileSystemProvider)
     if (more.length == 0) WindowsPathParser(first)(this)
     else {
       val sep = getSeparator()
-      val sb = new java.lang.StringBuilder(first)
+      val sb = new jl.StringBuilder(first)
       more.foreach { element =>
         if (element.length > 0) {
           if (sb.length() > 0) sb.append(sep)

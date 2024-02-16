@@ -1,6 +1,7 @@
 package java.io
 
 import java.nio.ByteBuffer
+import java.{lang => jl}
 
 import scala.annotation.tailrec
 
@@ -124,7 +125,7 @@ class DataInputStream(in: InputStream)
     var v = in.read()
     if (v == -1) null
     else {
-      val builder = new java.lang.StringBuilder
+      val builder = new jl.StringBuilder
       var c = v.toChar
       while (v != -1 && c != '\n' && c != '\r') {
         builder.append(c)

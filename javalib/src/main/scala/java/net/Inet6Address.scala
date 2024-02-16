@@ -6,6 +6,7 @@ import scalanative.unsafe._
 import scalanative.unsigned._
 
 import java.{util => ju}
+import java.{lang => jl}
 
 import scala.scalanative.posix.net.`if`._
 import scala.scalanative.posix.stddef
@@ -182,7 +183,7 @@ object Inet6Address {
      * The math need not be exact, the buffer will grow if we guess wrong.
      */
 
-    val buffer = new java.lang.StringBuilder(64)
+    val buffer = new jl.StringBuilder(64)
     var isFirst = true
 
     // IPv6 binary addresses are defined as 16 bytes, so loop count is known.

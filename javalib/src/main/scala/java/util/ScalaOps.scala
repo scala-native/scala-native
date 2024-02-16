@@ -15,6 +15,8 @@
 
 package java.util
 
+import java.{lang => jl}
+
 /** Make some Scala collection APIs available on Java collections. */
 private[java] object ScalaOps {
 
@@ -156,7 +158,7 @@ private[java] object ScalaOps {
      * java.lang.StringBuilder for Scala Native
      */
     @inline def mkString(start: String, sep: String, end: String): String = {
-      val sb = new java.lang.StringBuilder(start)
+      val sb = new jl.StringBuilder(start)
       var first = true
       while (__self.hasNext()) {
         if (first)

@@ -10,6 +10,7 @@ package regex
 
 import java.util.Arrays
 import java.util.Map
+import java.{lang => jl}
 
 import scala.annotation.switch
 
@@ -64,7 +65,7 @@ class Regexp {
   }
 
   override def toString = {
-    val out = new java.lang.StringBuilder
+    val out = new jl.StringBuilder
     appendTo(out)
     out.toString
   }

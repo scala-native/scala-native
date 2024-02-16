@@ -4,6 +4,7 @@ package scala.scalanative
 package regex
 
 import java.util.Map
+import java.{lang => jl}
 
 // A stateful iterator that interprets a regex {@code Pattern} on a
 // specific input.  Its interface mimics the JDK 1.4.2
@@ -613,7 +614,7 @@ object Matcher {
     if (s.indexOf('\\') < 0 && s.indexOf('$') < 0) {
       return s
     }
-    val sb = new java.lang.StringBuilder()
+    val sb = new jl.StringBuilder()
     var i = 0
     while (i < s.length()) {
       val c = s.charAt(i)

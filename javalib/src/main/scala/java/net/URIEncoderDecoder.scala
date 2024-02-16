@@ -2,6 +2,7 @@ package java.net
 
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets
+import java.{lang => jl}
 
 // ScalaNative specific
 private[net] object URIEncoderDecoder {
@@ -56,7 +57,7 @@ private[net] object URIEncoderDecoder {
   }
 
   def quoteIllegal(s: String, legal: String): String = {
-    val buf = new java.lang.StringBuilder()
+    val buf = new jl.StringBuilder()
     for (i <- 0 until s.length) {
       val ch: Char = s.charAt(i)
       if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') ||
@@ -78,7 +79,7 @@ private[net] object URIEncoderDecoder {
   }
 
   def encodeOthers(s: String): String = {
-    val buf = new java.lang.StringBuilder()
+    val buf = new jl.StringBuilder()
     for (i <- 0 until s.length) {
       val ch: Char = s.charAt(i)
       if (ch <= 127) {
@@ -96,7 +97,7 @@ private[net] object URIEncoderDecoder {
   }
 
   def decode(s: String): String = {
-    val result = new java.lang.StringBuilder()
+    val result = new jl.StringBuilder()
     val out: ByteArrayOutputStream = new ByteArrayOutputStream()
     var i: Int = 0
     while (i < s.length) {

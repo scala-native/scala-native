@@ -8,6 +8,8 @@
 package scala.scalanative
 package regex
 
+import java.{lang => jl}
+
 // A single instruction in the regular expression virtual machine.
 // @see http://swtch.com/~rsc/regexp/regexp2.html
 class Inst(var op: Inst.Op) {
@@ -136,7 +138,7 @@ object Inst {
 
   // Returns an RE2 expression matching exactly |runes|.
   private def escapeRunes(runes: Array[Int]): String = {
-    val out = new java.lang.StringBuilder
+    val out = new jl.StringBuilder
     out.append('"')
     var i = 0
     while (i < runes.length) {

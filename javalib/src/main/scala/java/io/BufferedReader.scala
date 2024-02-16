@@ -1,5 +1,6 @@
 package java.io
 
+import java.{lang => jl}
 import java.util.Spliterators
 import java.util.function.Consumer
 import java.util.stream.{Stream, StreamSupport}
@@ -74,7 +75,7 @@ class BufferedReader(in: Reader, sz: Int) extends Reader {
   def readLine(): String = {
     ensureOpen()
 
-    val sb = new java.lang.StringBuilder(80)
+    val sb = new jl.StringBuilder(80)
 
     while (prepareRead() && buf(pos) != '\n' && buf(pos) != '\r') {
       sb.append(buf(pos))
