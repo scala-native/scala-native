@@ -312,4 +312,29 @@ class StringBuilderTest {
       'f' == s.charAt(0)
     )
   }
+
+  @Test def indexOfSubStringWithSurrogatePair(): Unit = {
+    // Outlined "hello" in surrogate pairs
+    val sb = new StringBuilder(
+      "\ud835\udd59\ud835\udd56\ud835\udd5d\ud835\udd5d\ud835\udd60"
+    )
+
+    val needle = "\ud835\udd5d\ud835\udd60" // outlined ell oh
+
+    val index = sb.indexOf(needle)
+    assertEquals("indexOf surrogate outlined ell oh", 6, index)
+  }
+
+  @Test def lastIndexOfSubStringWithSurrogatePair(): Unit = {
+    // Outlined "hello" in surrogate pairs
+    val sb = new StringBuilder(
+      "\ud835\udd59\ud835\udd56\ud835\udd5d\ud835\udd5d\ud835\udd60"
+    )
+
+    val needle = "\ud835\udd56\ud835\udd5d" // outlined e ell
+
+    val index = sb.lastIndexOf(needle)
+    assertEquals("lastIndexOf surrogate outlined ell", 2, index)
+  }
+
 }
