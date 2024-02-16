@@ -88,16 +88,19 @@ class PrintStream private (
   private var closed: Boolean = false
   private var errorFlag: Boolean = false
 
-  override def flush(): Unit =
+  override def flush(): Unit = synchronized {
     ensureOpenAndTrapIOExceptions(out.flush())
+  }
 
-  override def close(): Unit = trapIOExceptions {
-    if (!closing) {
-      closing = true
-      encoder.close()
-      flush()
-      closed = true
-      out.close()
+  override def close(): Unit = synchronized {
+    trapIOExceptions {
+      if (!closing) {
+        closing = true
+        encoder.close()
+        flush()
+        closed = true
+        out.close()
+      }
     }
   }
 
@@ -142,21 +145,23 @@ class PrintStream private (
    * This is consistent with the behavior of the JDK.
    */
 
-  override def write(b: Int): Unit = {
+  override def write(b: Int): Unit = synchronized {
     ensureOpenAndTrapIOExceptions {
       out.write(b)
       if (autoFlush && b == '\n')
         flush()
     }
+
   }
 
-  override def write(buf: Array[Byte], off: Int, len: Int): Unit = {
-    ensureOpenAndTrapIOExceptions {
-      out.write(buf, off, len)
-      if (autoFlush)
-        flush()
+  override def write(buf: Array[Byte], off: Int, len: Int): Unit =
+    synchronized {
+      ensureOpenAndTrapIOExceptions {
+        out.write(buf, off, len)
+        if (autoFlush)
+          flush()
+      }
     }
-  }
 
   def print(b: Boolean): Unit = printString(String.valueOf(b))
   def print(c: Char): Unit = printString(String.valueOf(c))
@@ -167,32 +172,38 @@ class PrintStream private (
   def print(s: String): Unit = printString(if (s == null) "null" else s)
   def print(obj: AnyRef): Unit = printString(String.valueOf(obj))
 
-  private def printString(s: String): Unit = ensureOpenAndTrapIOExceptions {
-    encoder.write(s)
-    encoder.flushBuffer()
+  private def printString(s: String): Unit = synchronized {
+    ensureOpenAndTrapIOExceptions {
+      encoder.write(s)
+      encoder.flushBuffer()
+    }
   }
 
-  def print(s: Array[Char]): Unit = ensureOpenAndTrapIOExceptions {
-    encoder.write(s)
-    encoder.flushBuffer()
+  def print(s: Array[Char]): Unit = synchronized {
+    ensureOpenAndTrapIOExceptions {
+      encoder.write(s)
+      encoder.flushBuffer()
+    }
   }
 
-  def println(): Unit = ensureOpenAndTrapIOExceptions {
-    encoder.write(System.lineSeparator())
-    encoder.flushBuffer()
-    if (autoFlush)
-      flush()
+  def println(): Unit = synchronized {
+    ensureOpenAndTrapIOExceptions {
+      encoder.write(System.lineSeparator())
+      encoder.flushBuffer()
+      if (autoFlush)
+        flush()
+    }
   }
 
-  def println(b: Boolean): Unit = { print(b); println() }
-  def println(c: Char): Unit = { print(c); println() }
-  def println(i: Int): Unit = { print(i); println() }
-  def println(l: Long): Unit = { print(l); println() }
-  def println(f: Float): Unit = { print(f); println() }
-  def println(d: Double): Unit = { print(d); println() }
-  def println(s: Array[Char]): Unit = { print(s); println() }
-  def println(s: String): Unit = { print(s); println() }
-  def println(obj: AnyRef): Unit = { print(obj); println() }
+  def println(b: Boolean): Unit = synchronized { print(b); println() }
+  def println(c: Char): Unit = synchronized { print(c); println() }
+  def println(i: Int): Unit = synchronized { print(i); println() }
+  def println(l: Long): Unit = synchronized { print(l); println() }
+  def println(f: Float): Unit = synchronized { print(f); println() }
+  def println(d: Double): Unit = synchronized { print(d); println() }
+  def println(s: Array[Char]): Unit = synchronized { print(s); println() }
+  def println(s: String): Unit = synchronized { print(s); println() }
+  def println(obj: AnyRef): Unit = synchronized { print(obj); println() }
 
   def printf(fmt: String, args: Array[Object]): PrintStream =
     format(fmt, args)
@@ -200,7 +211,7 @@ class PrintStream private (
   // Not implemented:
   // def printf(l: java.util.Locale, fmt: String, args: Array[Object]): PrintStream = ???
 
-  def format(fmt: String, args: Array[Object]): PrintStream = {
+  def format(fmt: String, args: Array[Object]): PrintStream = synchronized {
     new Formatter(this).format(fmt, args)
     this
   }
