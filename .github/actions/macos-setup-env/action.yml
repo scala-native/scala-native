@@ -14,7 +14,7 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - uses: actions/setup-java@v3
+    - uses: actions/setup-java@v4
       with:
         distribution: "zulu"
         java-version: ${{inputs.java-version}}
@@ -51,7 +51,7 @@ runs:
 
     # Loads cache with dependencies created in test-tools job
     - name: Cache dependencies
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: |
           ~/.cache/coursier
