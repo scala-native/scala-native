@@ -3,6 +3,7 @@ package java.net
 // Ported from Harmony
 
 import scala.annotation.tailrec
+import java.{lang => jl}
 
 object URLEncoder {
   private val digits = "0123456789ABCDEF".toCharArray
@@ -13,7 +14,7 @@ object URLEncoder {
     }
     // check for UnsupportedEncodingException
     "".getBytes(enc)
-    val buf = new java.lang.StringBuilder(s.length + 16)
+    val buf = new jl.StringBuilder(s.length + 16)
     var start = -1
     @tailrec
     def loop(i: Int): Unit = {

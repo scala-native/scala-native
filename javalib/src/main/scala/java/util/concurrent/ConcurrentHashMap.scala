@@ -8,6 +8,7 @@
 package java.util.concurrent
 
 import java.io.Serializable
+import java.{lang => jl}
 import java.util
 import java.util._
 import java.util.NoSuchElementException
@@ -1470,7 +1471,7 @@ object ConcurrentHashMap {
     }
 
     override final def toString(): String = {
-      val sb = new java.lang.StringBuilder()
+      val sb = new jl.StringBuilder()
       sb.append('[')
       val it = iterator()
       var break = false
@@ -4073,7 +4074,7 @@ class ConcurrentHashMap[K <: AnyRef, V <: AnyRef]()
       if ({ t = table; t } == null) 0
       else t.length
     val it = new Traverser[K, V](t, f, 0, f)
-    val sb = new java.lang.StringBuilder
+    val sb = new jl.StringBuilder
     sb.append('{')
     var p: Node[K, V] = null
     var break = false

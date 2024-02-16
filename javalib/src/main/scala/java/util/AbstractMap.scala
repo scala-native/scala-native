@@ -16,6 +16,7 @@
 package java.util
 
 import scala.annotation.tailrec
+import java.{lang => jl}
 
 import ScalaOps._
 
@@ -60,7 +61,7 @@ object AbstractMap {
      * java.lang.StringBuilder for Scala Native
      */
     override def toString(): String =
-      new java.lang.StringBuilder()
+      new jl.StringBuilder()
         .append(getKey().asInstanceOf[Object])
         .append("=")
         .append(getValue().asInstanceOf[Object])
@@ -91,7 +92,7 @@ object AbstractMap {
      * java.lang.StringBuilder for Scala Native
      */
     override def toString(): String =
-      new java.lang.StringBuilder()
+      new jl.StringBuilder()
         .append(getKey().asInstanceOf[Object])
         .append("=")
         .append(getValue().asInstanceOf[Object])
@@ -204,7 +205,7 @@ abstract class AbstractMap[K, V] protected () extends java.util.Map[K, V] {
    * java.lang.StringBuilder for Scala Native
    */
   override def toString(): String = {
-    val sb = new java.lang.StringBuilder("{")
+    val sb = new jl.StringBuilder("{")
     var first = true
     val iter = entrySet().iterator()
     while (iter.hasNext()) {

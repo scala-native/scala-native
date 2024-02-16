@@ -6,6 +6,7 @@ import java.nio.{ByteBuffer, MappedByteBuffer}
 import java.nio.channels.spi.AbstractInterruptibleChannel
 import java.nio.file._
 import java.nio.file.attribute.FileAttribute
+import java.{lang => jl}
 
 import java.util.{HashSet, Set}
 
@@ -105,7 +106,7 @@ object FileChannel {
       }
     }
 
-    val mode = new StringBuilder("r")
+    val mode = new jl.StringBuilder("r")
     if (writing) mode.append("w")
 
     if (!Files.exists(path, Array.empty)) {

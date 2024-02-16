@@ -11,6 +11,7 @@ package regex
 import java.util.ArrayList
 import java.util.Arrays
 import java.util.List
+import java.{lang => jl}
 import scala.util.control.Breaks._
 
 import Inst.{Op => IOP}
@@ -469,7 +470,7 @@ object Machine {
     }
 
     override def toString = {
-      val out = new StringBuilder
+      val out = new jl.StringBuilder
       out.append('{')
       var i = 0
       while (i < size) {

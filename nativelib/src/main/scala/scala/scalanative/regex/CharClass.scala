@@ -8,6 +8,8 @@
 package scala.scalanative
 package regex
 
+import java.{lang => jl}
+
 // A "builder"-style helper class for manipulating character classes
 // represented as an array of pairs of runes [lo, hi], each denoting an
 // inclusive interval.
@@ -428,7 +430,7 @@ object CharClass {
 
   // Exposed, since useful for debugging CharGroups too.
   def charClassToString(r: Array[Int], len: Int): String = {
-    val b = new StringBuilder()
+    val b = new jl.StringBuilder()
     b.append('[')
     var i = 0
     while (i < len) {

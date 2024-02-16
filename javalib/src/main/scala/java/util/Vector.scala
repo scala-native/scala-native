@@ -19,6 +19,7 @@ package java.util
 
 import java.io._
 import java.util._
+import java.{lang => jl}
 
 @SerialVersionUID(-2767605614048989439L)
 object Vector {
@@ -426,7 +427,7 @@ class Vector[E <: AnyRef](
   override def toString: String = synchronized {
     if (elementCount == 0) return "[]"
     val length = elementCount - 1
-    val buffer = new java.lang.StringBuilder(elementCount * 16)
+    val buffer = new jl.StringBuilder(elementCount * 16)
     buffer.append('[')
     for (i <- 0 until length) {
       if (elementData(i) eq this)

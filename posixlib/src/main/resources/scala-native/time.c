@@ -1,12 +1,5 @@
 #if !defined(_WIN32)
 
-#if defined(__APPLE__)
-// clock_gettime() & ilk were introduced in MacOS 10.12
-#if (__MAC_OS_X_VERSION_MIN_REQUIRED < __MAC_10_12)
-#error "macOS version must be 10.12 or greater"
-#endif
-#endif // defined(__APPLE__)
-
 // X/Open System Interfaces (XSI), also sets _POSIX_C_SOURCE.
 // Partial, but useful, implementation of X/Open 7, incorporating Posix 2008.
 

@@ -11,6 +11,7 @@ import java.nio.charset._
 import java.util.Objects
 import java.util.ScalaOps._
 import java.lang.constant.{Constable, ConstantDesc}
+import java.{lang => jl}
 import scala.annotation.{switch, tailrec}
 import _String.{string2_string, _string2string}
 
@@ -656,7 +657,7 @@ final class _String()
 
       if (ts.isEmpty()) {
         val buffer =
-          new java.lang.StringBuilder(count + (rs.length() * (count + 1)))
+          new jl.StringBuilder(count + (rs.length() * (count + 1)))
         buffer.append(rs)
 
         var i = 0
@@ -669,7 +670,7 @@ final class _String()
         return buffer.toString
       }
 
-      val buffer = new java.lang.StringBuilder(count + rs.length)
+      val buffer = new jl.StringBuilder(count + rs.length)
       val tl = target.length()
       var tail = 0
       while ({
@@ -1035,7 +1036,7 @@ for (cp <- 0 to Character.MAX_CODE_POINT) {
 
   private def toCase(convert: Int => Int): _String = {
     if (count == 0) return this
-    val buf = new java.lang.StringBuilder(count)
+    val buf = new jl.StringBuilder(count)
     var i = offset
     while (i < offset + count) {
       val high = value(i)
@@ -1090,7 +1091,7 @@ for (cp <- 0 to Character.MAX_CODE_POINT) {
       val replacement = replacementAtIndex(i)
       if (replacement != null) {
         if (prep == null) {
-          prep = new java.lang.StringBuilder(len * 2)
+          prep = new jl.StringBuilder(len * 2)
         }
         prep.append(this.substring(startOfSegment, i))
         prep.append(replacement)

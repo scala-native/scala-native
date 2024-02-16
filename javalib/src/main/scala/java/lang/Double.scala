@@ -7,6 +7,7 @@ import scalanative.runtime.Intrinsics
 
 import java.lang.IEEE754Helpers.parseIEEE754
 import java.lang.constant.{Constable, ConstantDesc}
+import java.{lang => jl}
 
 final class Double(val _value: scala.Double)
     extends Number
@@ -241,7 +242,7 @@ object Double {
         if (negative) "-0x0.0p0"
         else "0x0.0p0"
       } else {
-        val hexString = new java.lang.StringBuilder(24)
+        val hexString = new jl.StringBuilder(24)
 
         if (negative) {
           hexString.append("-0x")

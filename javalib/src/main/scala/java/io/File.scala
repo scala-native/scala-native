@@ -1,5 +1,6 @@
 package java.io
 
+import java.{lang => jl}
 import java.net.URI
 import java.nio.charset.StandardCharsets
 import java.nio.file.{FileSystems, Path}
@@ -616,7 +617,10 @@ class File(_path: String) extends Serializable with Comparable[File] {
       new URI(
         "file",
         null,
-        new StringBuilder(path.length + 1).append('/').append(path).toString,
+        new jl.StringBuilder(path.length + 1)
+          .append('/')
+          .append(path)
+          .toString,
         null,
         null
       )

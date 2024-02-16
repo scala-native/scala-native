@@ -26,6 +26,7 @@ import java.util.List
 import java.util.Map
 import java.util.Queue
 import java.nio.charset.StandardCharsets
+import java.{lang => jl}
 
 // An RE2 class instance is a compiled representation of an RE2 regular
 // expression, independent of the public Java-like Pattern/Matcher API.
@@ -224,7 +225,7 @@ class RE2 private {
   ): String = {
     var lastMatchEnd = 0 // end position of the most recent match
     var searchPos = 0 // position where we next look for a match
-    val buf = new java.lang.StringBuilder()
+    val buf = new jl.StringBuilder()
     val input = MachineInput.fromUTF16(src)
     var numReplaces = 0
     var break = false
@@ -775,7 +776,7 @@ object RE2 {
     re = Simplify.simplify(re)
     val prog = Compiler.compileRegexp(re)
     val re2 = new RE2(expr, prog, maxCap, longest)
-    val prefixBuilder = new java.lang.StringBuilder()
+    val prefixBuilder = new jl.StringBuilder()
     re2.prefixComplete = prog.prefix(prefixBuilder)
     re2.prefix = prefixBuilder.toString
     re2.prefixUTF8 = re2.prefix.getBytes(StandardCharsets.UTF_8)
@@ -808,7 +809,7 @@ object RE2 {
   // expression matching the literal text.  For example,
   // {@code quoteMeta("[foo]").equals("\\[foo\\]")}.
   def quoteMeta(s: String): String = {
-    val b = new java.lang.StringBuilder(2 * s.length())
+    val b = new jl.StringBuilder(2 * s.length())
     // A char loop is correct because all metacharacters fit in one UTF-16 code.
     var i = 0
     var len = s.length()
