@@ -33,7 +33,7 @@ runs:
       uses: al-cheb/configure-pagefile-action@v1.4
       with:
         minimum-size: 4GB
-        maximum-size: 16GB
+        maximum-size: 12GB
 
     #Prepare environment, clang needs to be installed
     #Compilation on MSVC needs c++14 or higher and expects llvm 11.0.0 or newer
