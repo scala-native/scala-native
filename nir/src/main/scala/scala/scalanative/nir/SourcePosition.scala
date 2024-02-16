@@ -11,6 +11,7 @@ sealed case class NIRSource(directory: Path, path: Path) {
 object NIRSource {
   object None extends NIRSource(null, null) {
     override def debugName: String = "<no-source>"
+    override def toString(): String = s"NIRSource($debugName)"
   }
 }
 
@@ -36,6 +37,9 @@ final case class SourcePosition(
 
   def isEmpty: Boolean = this eq SourcePosition.NoPosition
   def isDefined: Boolean = !isEmpty
+  def orElse(other: => SourcePosition): SourcePosition =
+    if (isEmpty) other
+    else this
 }
 
 object SourcePosition {

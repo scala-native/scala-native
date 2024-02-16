@@ -20,17 +20,13 @@ import scala.scalanative.nir.Defn.Define
  *  their semantics (e.g., whether a method may be inlined). Attributes are also
  *  used to mark special-purpose definitions, such as stubs, proxies and FFIs.
  */
-sealed abstract class Defn {
+sealed abstract class Defn extends Positioned {
 
   /** Returns the name of the definition. */
   def name: Global
 
   /** Returns the attributes of the definition. */
   def attrs: Attrs
-
-  /** Returns the site in the program sources corresponding to the definition.
-   */
-  def pos: SourcePosition
 
   /** Returns a textual representation of `this`. */
   final def show: String =

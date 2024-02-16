@@ -173,7 +173,7 @@ trait GenNativeExports(using Context):
           val boxedParams = paramTypes
             .zip(entryParams)
             .map(buf.fromExtern(_, _))
-          val argsp = boxedParams.map(ValTree(_))
+          val argsp = boxedParams.map(ValTree(_)(member.span))
           val res = buf.genApplyModuleMethod(owner, member, argsp)
           val unboxedRes = buf.toExtern(externRetType, res)
           buf.ret(unboxedRes)

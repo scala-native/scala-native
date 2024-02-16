@@ -178,6 +178,8 @@ abstract class NirGenPhase[G <: Global with Singleton](override val global: G)
     }
   }
 
+  def fallbackSourcePosition: nir.SourcePosition = curMethodSym.get.pos
+
   protected implicit def toNirPosition(
       pos: global.Position
   ): nir.SourcePosition = {
