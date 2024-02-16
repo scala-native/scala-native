@@ -246,7 +246,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         }
         val ty = genType(f.tpe)
         val name = genFieldName(f)
-        val pos: nir.SourcePosition = f.pos
+        val pos: nir.SourcePosition = f.pos.orElse(cd.pos)
         // Thats what JVM backend does
         // https://github.com/scala/scala/blob/fe724bcbbfdc4846e5520b9708628d994ae76798/src/compiler/scala/tools/nsc/backend/jvm/BTypesFromSymbols.scala#L760-L764
         val isFinal = !f.isMutable
@@ -443,7 +443,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         exprBuf.genApplyModuleMethod(
           ReflectModule,
           Reflect_registerLoadableModuleClass,
-          Seq(fqcnArg, runtimeClassArg, loadModuleFunArg).map(ValTree(_))
+          Seq(fqcnArg, runtimeClassArg, loadModuleFunArg).map(ValTree(cd)(_))
         )
 
         exprBuf.ret(nir.Val.Unit)
@@ -641,7 +641,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             ReflectModule,
             Reflect_registerInstantiatableClass,
             Seq(fqcnArg, runtimeClassArg, instantiateClassFunArg).map(
-              ValTree(_)
+              ValTree(cd)(_)
             )
           )
 
@@ -782,8 +782,8 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
                 case If(cond, thenp, elsep) =>
                   buf.genIf(retty, cond, thenp, elsep, ensureLinktime = true)
                 case tree: Apply if retty == nir.Type.Bool =>
-                  val True = ValTree(nir.Val.True)
-                  val False = ValTree(nir.Val.False)
+                  val True = ValTree(tree)(nir.Val.True)
+                  val False = ValTree(tree)(nir.Val.False)
                   buf.genIf(retty, tree, True, False, ensureLinktime = true)
                 case Block(stats, expr) =>
                   stats.foreach { v =>
@@ -1005,7 +1005,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       val sym = dd.symbol
       val isStatic = sym.isStaticInNIR
 
-      implicit val pos: nir.SourcePosition = bodyp.pos
+      implicit val pos: nir.SourcePosition = bodyp.pos.orElse(dd.pos)
 
       val paramSyms = genParamSyms(dd, isStatic)
       val params = paramSyms.map {
@@ -1043,7 +1043,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
               s"cannot generate `synchronized` for method ${curMethodSym.name}, curMethodThis was empty"
             )
           }
-          buf.genSynchronized(ValTree(syncedIn))(bodyGen)
+          buf.genSynchronized(ValTree(syncedIn)())(bodyGen)
         }
       }
 
@@ -1207,7 +1207,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       sym <- members
       if !isExcluded(sym)
     } yield {
-      implicit val pos: nir.SourcePosition = sym.pos
+      implicit val pos: nir.SourcePosition = sym.pos.orElse(moduleClass.pos)
 
       val methodName = genMethodName(sym)
       val forwarderName = genStaticMemberName(sym, moduleClass)
@@ -1245,7 +1245,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
                 buf.genApplyModuleMethod(
                   moduleClass,
                   sym,
-                  entryParams.map(ValTree(_))
+                  entryParams.map(ValTree(_)())
                 )
               buf.ret(res)
             }

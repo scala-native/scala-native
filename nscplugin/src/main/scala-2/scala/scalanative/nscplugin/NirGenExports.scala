@@ -168,7 +168,7 @@ trait NirGenExports[G <: nsc.Global with Singleton] {
           val boxedParams = paramTypes
             .zip(entryParams)
             .map((buf.fromExtern _).tupled(_))
-          val argsp = boxedParams.map(ValTree(_))
+          val argsp = boxedParams.map(ValTree(_)(member.pos))
           val res = buf.genApplyModuleMethod(owner, member, argsp)
           val unboxedRes = buf.toExtern(externRetType, res)
           buf.ret(unboxedRes)

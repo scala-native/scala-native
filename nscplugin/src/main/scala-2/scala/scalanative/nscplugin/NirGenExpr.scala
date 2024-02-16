@@ -16,8 +16,25 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
   import nirDefinitions._
   import SimpleType.{fromType, fromSymbol}
 
-  sealed case class ValTree(value: nir.Val) extends Tree
-  sealed case class ContTree(f: ExprBuffer => nir.Val) extends Tree
+  sealed case class ValTree(value: nir.Val)(
+      pos: global.Position = global.NoPosition
+  ) extends Tree {
+    super.setPos(pos)
+  }
+  object ValTree {
+    def apply(from: Tree)(value: nir.Val) =
+      new ValTree(value = value)(pos = from.pos)
+  }
+
+  sealed case class ContTree(f: ExprBuffer => nir.Val)(
+      pos: global.Position
+  ) extends Tree { super.setPos(pos) }
+  object ContTree {
+    def apply(from: Tree)(build: ExprBuffer => nir.Val) =
+      new ContTree(f = build)(
+        pos = from.pos
+      )
+  }
 
   class FixupBuffer(implicit fresh: nir.Fresh) extends nir.InstructionBuilder {
     private var labeled = false
@@ -217,7 +234,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       val retty =
         if (isUnitType(thenp.tpe) || isUnitType(elsep.tpe)) nir.Type.Unit
         else genType(tree.tpe)
-      genIf(retty, cond, thenp, elsep)(tree.pos)
+      genIf(retty, cond, thenp, elsep)(tree.pos.orElse(fallbackSourcePosition))
     }
 
     def genIf(
@@ -238,19 +255,23 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           )
         }
         val cond = genExpr(condp)
-        buf.branch(cond, nir.Next(thenn), nir.Next(elsen))(condp.pos)
+        buf.branch(cond, nir.Next(thenn), nir.Next(elsen))(
+          condp.pos.orElse(ifPos)
+        )
       } { cond =>
         curMethodEnv.get.isUsingLinktimeResolvedValue = true
-        buf.branchLinktime(cond, nir.Next(thenn), nir.Next(elsen))(condp.pos)
+        buf.branchLinktime(cond, nir.Next(thenn), nir.Next(elsen))(
+          condp.pos.orElse(ifPos)
+        )
       }
 
       locally {
-        buf.label(thenn)(thenp.pos)
+        buf.label(thenn)(thenp.pos.orElse(ifPos))
         val thenv = genExpr(thenp)
         buf.jumpExcludeUnitValue(retty)(mergen, thenv)
       }
       locally {
-        buf.label(elsen)(elsep.pos)
+        buf.label(elsen)(elsep.pos.orElse(ifPos))
         val elsev = genExpr(elsep)
         buf.jumpExcludeUnitValue(retty)(mergen, elsev)
       }
@@ -259,7 +280,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
     def genMatch(m: Match): nir.Val = {
       val Match(scrutp, allcaseps) = m
-      type Case = (nir.Local, nir.Val, Tree, nir.SourcePosition)
+      type Case = (nir.Local, nir.Val, Tree, global.Position)
 
       // Extract switch cases and assign unique names to them.
       val caseps: Seq[Case] = allcaseps.flatMap {
@@ -277,7 +298,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             case _ =>
               Nil
           }
-          vals.map((fresh(), _, body, cd.pos: nir.SourcePosition))
+          vals.map((fresh(), _, body, cd.pos))
       }
 
       // Extract default case.
@@ -351,16 +372,16 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
               val cond =
                 buf.genClassEquality(
-                  leftp = ValTree(scrut),
-                  rightp = ValTree(caze),
+                  leftp = ValTree(scrut)(p),
+                  rightp = ValTree(caze)(p),
                   ref = false,
                   negated = false
                 )
               buf.genIf(
                 retty = retty,
-                condp = ValTree(cond),
-                thenp = ContTree(_.genExpr(body)),
-                elsep = ContTree(_ => loop(elsep))
+                condp = ValTree(cond)(p),
+                thenp = ContTree(body)(_.genExpr(body)),
+                elsep = ContTree(_ => loop(elsep))(p)
               )
 
             case Nil => optDefaultLabel.getOrElse(genExpr(defaultp))
@@ -397,7 +418,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         genExpr(expr)
       case Try(expr, catches, finalizer) =>
         val retty = genType(tree.tpe)
-        genTry(retty, expr, catches, finalizer)
+        genTry(retty, expr, catches, finalizer)(tree.pos)
     }
 
     def genTry(
@@ -405,7 +426,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         expr: Tree,
         catches: List[Tree],
         finallyp: Tree
-    ): nir.Val = {
+    )(enclosingPos: nir.SourcePosition): nir.Val = {
       val handler = fresh()
       val excn = fresh()
       val normaln = fresh()
@@ -413,7 +434,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       val excv = nir.Val.Local(fresh(), nir.Rt.Object)
       val mergev = nir.Val.Local(fresh(), retty)
 
-      implicit val pos: nir.SourcePosition = expr.pos
+      implicit val pos: nir.SourcePosition = expr.pos.orElse(enclosingPos)
       // Nested code gen to separate out try/catch-related instructions.
       val nested = new ExprBuffer
       withFreshBlockScope(pos) { _ =>
@@ -449,7 +470,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         catches: List[Tree]
     )(implicit exprPos: nir.SourcePosition): nir.Val = {
       val cases = catches.map {
-        case cd @ CaseDef(pat, _, body) =>
+        case CaseDef(pat, _, body) =>
           val (excty, symopt) = pat match {
             case Typed(Ident(nme.WILDCARD), tpt) =>
               (genType(tpt.tpe), None)
@@ -458,7 +479,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             case Bind(_, _) =>
               (genType(pat.symbol.tpe), Some(pat.symbol))
           }
-          val f = ContTree { (buf: ExprBuffer) =>
+          val f = ContTree(body) { (buf: ExprBuffer) =>
             withFreshBlockScope(body.pos) { _ =>
               symopt.foreach { sym =>
                 val cast = buf.as(excty, exc, unwind)
@@ -484,9 +505,9 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             val cond = buf.is(excty, exc, unwind)(pos, getScopeId)
             genIf(
               retty,
-              ValTree(cond),
+              ValTree(f)(cond),
               f,
-              ContTree(_ => wrap(rest))
+              ContTree(f)(_ => wrap(rest))
             )(pos)
         }
 
@@ -562,7 +583,8 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
     def genLiteral(lit: Literal): nir.Val = {
       val value = lit.value
-      implicit val pos: nir.SourcePosition = lit.pos
+      implicit val pos: nir.SourcePosition =
+        lit.pos.orElse(fallbackSourcePosition)
       value.tag match {
         case UnitTag | NullTag | BooleanTag | ByteTag | ShortTag | CharTag |
             IntTag | LongTag | FloatTag | DoubleTag | StringTag =>
@@ -606,7 +628,8 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
     def genArrayValue(av: ArrayValue): nir.Val = {
       val ArrayValue(tpt, elems) = av
-      implicit val pos: nir.SourcePosition = av.pos
+      implicit val pos: nir.SourcePosition =
+        av.pos.orElse(fallbackSourcePosition)
       genArrayValue(tpt, elems)
     }
 
@@ -624,7 +647,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           case ((v, elem), i) =>
             if (!v.isZero) {
               buf.arraystore(elemty, alloc, nir.Val.Int(i), v, unwind)(
-                elem.pos,
+                elem.pos.orElse(pos),
                 getScopeId
               )
             }
@@ -668,7 +691,8 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
     def genIdent(tree: Ident): nir.Val = {
       val sym = tree.symbol
-      implicit val pos: nir.SourcePosition = tree.pos
+      implicit val pos: nir.SourcePosition =
+        tree.pos.orElse(fallbackSourcePosition)
       if (curMethodInfo.mutableVars.contains(sym)) {
         buf.varload(curMethodEnv.resolve(sym), unwind)
       } else if (sym.isModule) {
@@ -683,7 +707,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
       val sym = tree.symbol
       val owner = sym.owner
-      implicit val pos: nir.SourcePosition = tree.pos
+      implicit val pos: nir.SourcePosition = tree.pos.orElse(curMethodSym.pos)
 
       if (sym.isModule) {
         genModule(sym)
@@ -717,7 +741,8 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
     def genAssign(tree: Assign): nir.Val = {
       val Assign(lhsp, rhsp) = tree
-      implicit val pos: nir.SourcePosition = tree.pos
+      implicit val pos: nir.SourcePosition =
+        tree.pos.orElse(lhsp.pos).orElse(rhsp.pos).orElse(curMethodSym.pos)
 
       lhsp match {
         case sel @ Select(qualp, _) =>
@@ -1090,14 +1115,14 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         val last = genClassEquality(obj, args.head, ref = false, negated = neg)
         buf.box(nir.Type.Ref(nir.Global.Top("java.lang.Boolean")), last, unwind)
       } else {
-        val self = genExpr(obj)
-        genApplyDynamic(sym, self, args)
+        genApplyDynamic(sym, obj, args)
       }
     }
 
-    def genApplyDynamic(sym: Symbol, self: nir.Val, argsp: Seq[Tree])(implicit
+    def genApplyDynamic(sym: Symbol, obj: Tree, argsp: Seq[Tree])(implicit
         pos: nir.SourcePosition
     ): nir.Val = {
+      val self = genExpr(obj)
       val methodSig = genMethodSig(sym).asInstanceOf[nir.Type.Function]
       val params = sym.tpe.params
 
@@ -1147,7 +1172,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
       // If the signature matches an array update, tests at runtime if it really is an array update.
       if (isArrayLikeOp) {
-        val cond = ContTree { (buf: ExprBuffer) =>
+        val cond = ContTree(obj) { (buf: ExprBuffer) =>
           buf.is(
             nir.Type.Ref(
               nir.Global.Top("scala.scalanative.runtime.ObjectArray")
@@ -1156,8 +1181,8 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             unwind
           )
         }
-        val thenp = ContTree(genDynCall(arrayUpdate = true))
-        val elsep = ContTree(genDynCall(arrayUpdate = false))
+        val thenp = ContTree(obj)(genDynCall(arrayUpdate = true))
+        val elsep = ContTree(obj)(genDynCall(arrayUpdate = false))
         genIf(
           nir.Type.Ref(nir.Global.Top("java.lang.Object")),
           cond,
@@ -1174,7 +1199,8 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       def tree = app
       val Apply(fun, args) = app
 
-      implicit val pos: nir.SourcePosition = app.pos
+      implicit val pos: nir.SourcePosition =
+        app.pos.orElse(fallbackSourcePosition)
       def fail(msg: String) = {
         reporter.error(app.pos, msg)
         nir.Val.Null
@@ -1215,21 +1241,20 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
               val arrValue = genApplyMethod(
                   ClassTagClass.info.decl(nme.newArray),
                   statically = false,
-                  ValTree(genExpr(classTagEvidence)),
-                  ValTree(nir.Val.Int(elems.size)) :: Nil
+                  classTagEvidence,
+                  ValTree(tree)(nir.Val.Int(elems.size)) :: Nil
                 )
               val scalaRuntimeTimeModule = genModule(ScalaRunTimeModule)
               elems.zipWithIndex.foreach { case (elem, i) =>
                 genApplyModuleMethod(
                   ScalaRunTimeModule,
                   currentRun.runDefinitions.arrayUpdateMethod,
-                  ValTree(arrValue) :: ValTree(nir.Val.Int(i)) :: elem :: Nil
+                  ValTree(tree)(arrValue) :: ValTree(tree)(nir.Val.Int(i)) :: elem :: Nil
                 )
               }
               arrValue
           }
 
-        // case Apply(appMeth @ Select(appMethQual, _), elem0 :: Apply(wrapArrayMeth, ArrayValue(elemtpt, elems) :: Nil) :: Nil)
         case Apply(appMeth @ Select(appMethQual, _), elem0 :: WrapArray(rest @ ArrayValue(elemtpt, elems)) :: Nil)
             if appMeth.symbol == ArrayModule_apply(elemtpt.tpe) && 
                treeInfo.isQualifierSafeToElide(appMethQual) =>
@@ -1275,10 +1300,15 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       nir.Val.Unit
     }
 
-    def genApplyBox(st: SimpleType, argp: Tree): nir.Val = {
+    def genApplyBox(st: SimpleType, argp: Tree)(implicit
+        enclosingPos: nir.SourcePosition
+    ): nir.Val = {
       val value = genExpr(argp)
 
-      buf.box(genBoxType(st), value, unwind)(argp.pos, getScopeId)
+      buf.box(genBoxType(st), value, unwind)(
+        argp.pos.orElse(enclosingPos),
+        getScopeId
+      )
     }
 
     def genApplyUnbox(st: SimpleType, argp: Tree)(implicit
@@ -1573,7 +1603,8 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     def genSimpleOp(app: Apply, args: List[Tree], code: Int): nir.Val = {
       val retty = genType(app.tpe)
 
-      implicit val pos: nir.SourcePosition = app.pos
+      implicit val pos: nir.SourcePosition =
+        app.pos.orElse(fallbackSourcePosition)
 
       args match {
         case List(right)       => genUnaryOp(code, right, retty)
@@ -1753,14 +1784,15 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         leftp: Tree,
         rightp: Tree,
         opty: nir.Type
-    ): nir.Val = {
-      implicit val leftPos: nir.SourcePosition = leftp.pos
+    )(implicit enclosingPos: nir.SourcePosition): nir.Val = {
+      val leftPos: nir.SourcePosition = leftp.pos.orElse(enclosingPos)
       val leftty = genType(leftp.tpe)
       val left = genExpr(leftp)
-      val leftcoerced = genCoercion(left, leftty, opty)
+      val leftcoerced = genCoercion(left, leftty, opty)(leftPos)
       val rightty = genType(rightp.tpe)
+      val rightPos: nir.SourcePosition = rightp.pos.orElse(enclosingPos)
       val right = genExpr(rightp)
-      val rightcoerced = genCoercion(right, rightty, opty)(rightp.pos)
+      val rightcoerced = genCoercion(right, rightty, opty)
 
       buf.let(op(opty, leftcoerced, rightcoerced), unwind)
     }
@@ -1950,7 +1982,8 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         stringBuilder: nir.Val.Local,
         tree: Tree
     ): Unit = {
-      implicit val nirPos: nir.SourcePosition = tree.pos
+      implicit val nirPos: nir.SourcePosition =
+        tree.pos.orElse(fallbackSourcePosition)
 
       val tpe = tree.tpe
       val argType =
@@ -2099,13 +2132,13 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           genApplyModuleMethod(
             RuntimeBoxesModule,
             BoxUnsignedMethod(st.sym),
-            Seq(ValTree(value))
+            Seq(ValTree(value)())
           )
         case _ =>
           if (genPrimCode(st) == 'O') {
             value
           } else {
-            genApplyBox(st, ValTree(value))
+            genApplyBox(st, ValTree(value)())
           }
       }
 
@@ -2121,14 +2154,14 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           genApplyModuleMethod(
             RuntimeBoxesModule,
             UnboxUnsignedMethod(st.sym),
-            Seq(ValTree(value))
+            Seq(ValTree(value)())
           )
         }
       case _ =>
         if (genPrimCode(st) == 'O') {
           value
         } else {
-          genApplyUnbox(st, ValTree(value))
+          genApplyUnbox(st, ValTree(value)())
         }
     }
 
@@ -2611,7 +2644,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       buf.jump(nir.Next(normaln))
       buf ++= genTryFinally(
         // scalanative.runtime.`package`.exitMonitor(receiver)
-        finallyp = ContTree(
+        finallyp = ContTree(receiverp)(
           _.genApplyStaticMethod(
             sym = RuntimeExitMonitorMethod,
             receiver = RuntimePackageClass,
@@ -2749,9 +2782,9 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       val toty = genType(targs.head.tpe)
       def boxty = genBoxType(targs.head.tpe)
       val value = genExpr(receiverp)
-      lazy val boxed = boxValue(receiverp.tpe, value)(receiverp.pos)
-
-      implicit val pos: nir.SourcePosition = tapp.pos
+      implicit val pos: nir.SourcePosition =
+        tapp.pos.orElse(app.pos).orElse(fallbackSourcePosition)
+      lazy val boxed = boxValue(receiverp.tpe, value)(receiverp.pos.orElse(pos))
 
       fun.symbol match {
         case Object_isInstanceOf =>
@@ -2782,13 +2815,14 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
         case Object_synchronized =>
           assert(argsp.size == 1, "synchronized with wrong number of args")
-          genSynchronized(ValTree(boxed), argsp.head)
+          genSynchronized(ValTree(receiverp)(boxed), argsp.head)
       }
     }
 
     def genApplyNew(app: Apply): nir.Val = {
       val Apply(fun @ Select(New(tpt), nme.CONSTRUCTOR), args) = app
-      implicit val pos: nir.SourcePosition = app.pos
+      implicit val pos: nir.SourcePosition =
+        app.pos.orElse(fallbackSourcePosition)
 
       SimpleType.fromType(tpt.tpe) match {
         case SimpleType(ArrayClass, Seq(targ)) =>
@@ -2997,7 +3031,8 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           paramTpe: global.Type,
           isVarArg: Boolean = false
       ): nir.Val = {
-        implicit def pos: nir.SourcePosition = argp.pos
+        implicit def pos: nir.SourcePosition =
+          argp.pos.orElse(fallbackSourcePosition)
         implicit def exprBuf: ExprBuffer = buf
         val rawValue = genExpr(argp)
         val maybeUnboxed =
@@ -3027,7 +3062,8 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             argp match {
               case Apply(_, List(ArrayValue(_, args))) =>
                 for (tree <- args) {
-                  implicit def pos: nir.SourcePosition = tree.pos
+                  implicit def pos: nir.SourcePosition =
+                    tree.pos.orElse(fallbackSourcePosition)
                   val sym = tree.symbol
                   val tpe =
                     tree.attachments

@@ -28,7 +28,6 @@ class NirPositions(positionRelativizationPaths: Seq[Path])(using Context) {
       val line = source.offsetToLine(point)
       val column = source.column(point)
       nir.SourcePosition(nirSource, line, column)
-    else if (source.exists) nir.SourcePosition(nirSource, 0, 0)
     else nir.SourcePosition.NoPosition
   }
 

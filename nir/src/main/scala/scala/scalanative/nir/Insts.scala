@@ -1,9 +1,8 @@
 package scala.scalanative
 package nir
 
-sealed abstract class Inst {
+sealed abstract class Inst extends Positioned {
   final def show: String = nir.Show(this)
-  def pos: SourcePosition
 }
 
 object Inst {

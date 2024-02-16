@@ -110,7 +110,7 @@ trait GenReflectiveInstantisation(using Context) {
       buf.genApplyModuleMethod(
         defnNir.ReflectModule,
         defnNir.Reflect_registerLoadableModuleClass,
-        Seq(fqcnArg, runtimeClassArg, loadModuleFunArg).map(ValTree(_))
+        Seq(fqcnArg, runtimeClassArg, loadModuleFunArg).map(ValTree(_)(td.span))
       )
       buf.ret(nir.Val.Unit)
       buf.toSeq
@@ -148,7 +148,7 @@ trait GenReflectiveInstantisation(using Context) {
           defnNir.ReflectModule,
           defnNir.Reflect_registerInstantiatableClass,
           Seq(fqcnArg, runtimeClassArg, instantiateClassFunArg)
-            .map(ValTree(_))
+            .map(ValTree(_)(td.span))
         )
         buf.ret(nir.Val.Unit)
         buf.toSeq
