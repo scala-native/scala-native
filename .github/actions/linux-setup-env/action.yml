@@ -12,7 +12,7 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - uses: actions/setup-java@v3
+    - uses: actions/setup-java@v4
       with:
         distribution: "zulu"
         java-version: ${{inputs.java-version}}
@@ -33,7 +33,7 @@ runs:
         fi
 
     - name: Install dependencies
-      uses: nick-fields/retry@v2
+      uses: nick-fields/retry@v3
       with:
         timeout_minutes: 10
         max_attempts: 10
@@ -53,7 +53,7 @@ runs:
         
     # Loads cache with dependencies created in test-tools job
     - name: Cache dependencies
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: |
           ~/.cache/coursier
