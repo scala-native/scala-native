@@ -43,21 +43,25 @@ void **scalanative_GC_yieldpoint_trap;
 
 #ifdef _WIN32
 static LONG WINAPI SafepointTrapHandler(EXCEPTION_POINTERS *ex) {
-    switch (ex->ExceptionRecord->ExceptionCode) {
-    case EXCEPTION_ACCESS_VIOLATION:
-        ULONG_PTR addr = ex->ExceptionRecord->ExceptionInformation[1];
-        if ((void *)addr == scalanative_GC_yieldpoint_trap) {
-            Synchronizer_yield();
-            return EXCEPTION_CONTINUE_EXECUTION;
+    if (ex->ExceptionRecord->ExceptionFlags == 0) {
+        switch (ex->ExceptionRecord->ExceptionCode) {
+        case EXCEPTION_ACCESS_VIOLATION:
+            ULONG_PTR addr = ex->ExceptionRecord->ExceptionInformation[1];
+            if ((void *)addr == scalanative_GC_yieldpoint_trap) {
+                Synchronizer_yield();
+                return EXCEPTION_CONTINUE_EXECUTION;
+            }
+            fprintf(stderr,
+                    "Caught exception code %p in GC exception handler\n",
+                    (void *)(uintptr_t)ex->ExceptionRecord->ExceptionCode);
+            fflush(stderr);
+            StackTrace_PrintStackTrace();
+        // pass-through
+        default:
+            return EXCEPTION_CONTINUE_SEARCH;
         }
-        fprintf(stderr, "Caught exception code %p in GC exception handler\n",
-                (void *)(uintptr_t)ex->ExceptionRecord->ExceptionCode);
-        fflush(stdout);
-        StackTrace_PrintStackTrace();
-    // pass-through
-    default:
-        return EXCEPTION_CONTINUE_SEARCH;
     }
+    return EXCEPTION_CONTINUE_SEARCH;
 }
 #else
 #ifdef __APPLE__
@@ -70,12 +74,13 @@ static struct sigaction defaultAction;
 static sigset_t threadWakupSignals;
 static void SafepointTrapHandler(int signal, siginfo_t *siginfo, void *uap) {
     int old_errno = errno;
-    if (siginfo->si_addr == scalanative_GC_yieldpoint_trap) {
+    if (signal == SAFEPOINT_TRAP_SIGNAL &&
+        siginfo->si_addr == scalanative_GC_yieldpoint_trap) {
         Synchronizer_yield();
         errno = old_errno;
     } else {
         fprintf(stderr,
-                "Unexpected signal %d when accessing memory at address %p, "
+                "Signal %d triggered when accessing memory at address %p, "
                 "code=%d\n",
                 signal, siginfo->si_addr, siginfo->si_code);
         StackTrace_PrintStackTrace();
@@ -87,7 +92,7 @@ static void SafepointTrapHandler(int signal, siginfo_t *siginfo, void *uap) {
 static void SetupYieldPointTrapHandler() {
 #ifdef _WIN32
     // Call it as first exception handler
-    AddVectoredExceptionHandler(1, &SafepointTrapHandler);
+    SetUnhandledExceptionFilter(&SafepointTrapHandler);
 #else
     sigemptyset(&threadWakupSignals);
     sigaddset(&threadWakupSignals, THREAD_WAKEUP_SIGNAL);
