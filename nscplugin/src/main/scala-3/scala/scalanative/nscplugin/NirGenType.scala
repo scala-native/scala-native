@@ -309,15 +309,19 @@ trait NirGenType(using Context) {
     defn.DoubleClass -> 'D'
   )
 
-  def genMethodSig(sym: Symbol): nir.Type.Function =
-    genMethodSigImpl(sym, isExtern = false)
+  def genMethodSig(
+      sym: Symbol,
+      statically: Boolean = false
+  ): nir.Type.Function =
+    genMethodSigImpl(sym, statically = statically, isExtern = false)
 
   def genExternMethodSig(sym: Symbol): nir.Type.Function =
-    genMethodSigImpl(sym, isExtern = true)
+    genMethodSigImpl(sym, isExtern = true, statically = true)
 
   private def genMethodSigImpl(
       sym: Symbol,
-      isExtern: Boolean
+      isExtern: Boolean,
+      statically: Boolean
   ): nir.Type.Function = {
     def resolve() = {
       require(
@@ -327,7 +331,7 @@ trait NirGenType(using Context) {
 
       val owner = sym.owner
       val paramtys = genMethodSigParamsImpl(sym, isExtern)
-      val selfty = Option.unless(isExtern || sym.isStaticInNIR) {
+      val selfty = Option.unless(statically | isExtern || sym.isStaticInNIR) {
         genType(owner)
       }
       val resultType = sym.info.resultType

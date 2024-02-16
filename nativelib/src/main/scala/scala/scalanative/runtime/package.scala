@@ -20,24 +20,25 @@ package object runtime {
   /** Used as a stub right hand of intrinsified methods. */
   private[scalanative] def intrinsic: Nothing = throwUndefined()
 
+  // Called statically by the compiler, do not modify!
   /** Enter monitor of given object. */
   @alwaysinline
-  def enterMonitor(obj: Object): Unit =
+  private[runtime] def enterMonitor(obj: _Object): Unit =
     if (isMultithreadingEnabled) {
       getMonitor(obj).enter(obj)
     }
 
+  // Called statically by the compiler, do not modify!
   /** Enter monitor of given object. */
-
   @alwaysinline
-  def exitMonitor(obj: Object): Unit =
+  private[runtime] def exitMonitor(obj: _Object): Unit =
     if (isMultithreadingEnabled) {
       getMonitor(obj).exit(obj)
     }
 
   /** Get monitor for given object. */
   @alwaysinline
-  def getMonitor(obj: Object) = {
+  def getMonitor(obj: _Object) = {
     if (isMultithreadingEnabled)
       new BasicMonitor(
         elemRawPtr(

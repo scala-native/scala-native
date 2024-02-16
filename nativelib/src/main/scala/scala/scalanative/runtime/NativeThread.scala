@@ -90,7 +90,7 @@ object NativeThread {
   @alwaysinline def onSpinWait(): Unit = Platform.yieldProcessor()
 
   @inline def holdsLock(obj: Object): Boolean = if (isMultithreadingEnabled) {
-    getMonitor(obj).isLockedBy(currentThread)
+    getMonitor(obj.asInstanceOf[_Object]).isLockedBy(currentThread)
   } else false
 
   def threadRoutineArgs(thread: NativeThread): ThreadRoutineArg =
