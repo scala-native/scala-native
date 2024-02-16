@@ -130,20 +130,21 @@ list type (i.e. ``va_list``), and partially for ``...`` varargs. For example ``v
 defined in C as:
 
 .. code-block:: C
-  int vprintf(const char * format, va_list arg);
-  int printf(const char * format, ... );  
+
+    int vprintf(const char * format, va_list arg);
+    int printf(const char * format, ... );  
 
 can be declared in Scala as:
 
 .. code-block:: scala
 
-   import scala.scalanative.unsafe._
+    import scala.scalanative.unsafe._
 
-   @extern
-   object mystdio {
-     def vprintf(format: CString, args: CVarArgList): CInt = extern
-     def printf(format: CString, args: Any*): CInt = extern
-   }
+    @extern
+    object mystdio {
+      def vprintf(format: CString, args: CVarArgList): CInt = extern
+      def printf(format: CString, args: Any*): CInt = extern
+    }
 
 The limitation of `...` interop requires that it's arguments needs to passed directly to variadic arguments function or arguments need to be inlined.
 This is required to obtain enough information on how arguments show be passed in regards to C ABI.
@@ -153,20 +154,20 @@ For ``va_list`` interop, one can wrap a function in a nicer API like:
 
 .. code-block:: scala
 
-   import scala.scalanative.unsafe._
+    import scala.scalanative.unsafe._
 
-   def myprintf(format: CString, args: CVarArg*): CInt =
-     Zone { 
-       mystdio.vprintf(format, toCVarArgList(args.toSeq))
-     }
+    def myprintf(format: CString, args: CVarArg*): CInt =
+      Zone { 
+        mystdio.vprintf(format, toCVarArgList(args.toSeq))
+      }
 
 See `Memory management`_ for a guide of using ``unsafe.Zone``
 And then call it just like a regular Scala function:
 
 .. code-block:: scala
 
-   myprintf(c"2 + 3 = %d, 4 + 5 = %d", 2 + 3, 4 + 5)
-   printf(c"2 + 3 = %d, 4 + 5 = %d", 2 + 3, 4 + 5)
+    myprintf(c"2 + 3 = %d, 4 + 5 = %d", 2 + 3, 4 + 5)
+    printf(c"2 + 3 = %d, 4 + 5 = %d", 2 + 3, 4 + 5)
 
 Exported methods
 ----------------
@@ -290,19 +291,19 @@ from the corresponding companion object.
 
 .. code-block:: scala
 
-   import scalanative.unsafe.CFuncPtr0
-   def myFunc(): Unit = println("hi there!")
+    import scalanative.unsafe.CFuncPtr0
+    def myFunc(): Unit = println("hi there!")
 
-   val myFuncPtr: CFuncPtr0[Unit] = CFuncPtr0.fromScalaFunction(myFunc)
-   val myImplFn: CFuncPtr0[Unit] = myFunc _
-   val myLambdaFuncPtr: CFuncPtr0[Unit] = () => println("hello!")
+    val myFuncPtr: CFuncPtr0[Unit] = CFuncPtr0.fromScalaFunction(myFunc)
+    val myImplFn: CFuncPtr0[Unit] = myFunc _
+    val myLambdaFuncPtr: CFuncPtr0[Unit] = () => println("hello!")
 
 On Scala 2.12 or newer, the Scala language automatically converts
 from closures to SAM types:
 
 .. code-block:: scala
 
-   val myfuncptr: unsafe.CFuncPtr0[Unit] = () => println("hi there!")
+    val myfuncptr: unsafe.CFuncPtr0[Unit] = () => println("hi there!")
 
 Memory management
 `````````````````
@@ -312,23 +313,23 @@ runtime system, one has to be extra careful when working with unmanaged memory.
 
 1. **Zone allocation.** (since 0.3)
 
-   Zones (also known as memory regions/contexts) are a technique for
-   semi-automatic memory management. Using them one can bind allocations
-   to a temporary scope in the program and the zone allocator will
-   automatically clean them up for you as soon as execution goes out of it:
+    Zones (also known as memory regions/contexts) are a technique for
+    semi-automatic memory management. Using them one can bind allocations
+    to a temporary scope in the program and the zone allocator will
+    automatically clean them up for you as soon as execution goes out of it:
 
-   .. code-block:: scala
+    .. code-block:: scala
 
-      import scala.scalanative.unsafe._
+        import scala.scalanative.unsafe._
 
-      // For Scala 3
-      Zone {
-        val buffer = alloc[Byte](n)
-      }
-      // For Scala 2, works, but is not idiomatic on Scala 3
-      Zone.acquire { implicit z =>
-        val buffer = alloc[Byte](n)
-      }
+        // For Scala 3
+        Zone {
+          val buffer = alloc[Byte](n)
+        }
+        // For Scala 2, works, but is not idiomatic on Scala 3
+        Zone.acquire { implicit z =>
+          val buffer = alloc[Byte](n)
+        }
 
    ``alloc`` requests memory sufficient to contain `n` values of a given type.
    If number of elements is not specified, it defaults to a single element.
@@ -348,34 +349,34 @@ runtime system, one has to be extra careful when working with unmanaged memory.
 
 2. **Stack allocation.**
 
-   Scala Native provides a built-in way to perform stack allocations of
-   using ``unsafe.stackalloc`` function:
+    Scala Native provides a built-in way to perform stack allocations of
+    using ``unsafe.stackalloc`` function:
 
-   .. code-block:: scala
+    .. code-block:: scala
 
-       val buffer = unsafe.stackalloc[Byte](256)
+        val buffer = unsafe.stackalloc[Byte](256)
 
-   This code will allocate 256 bytes that are going to be available until
-   the enclosing method returns. Number of elements to be allocated is optional
-   and defaults to 1 otherwise. Memory **is zeroed out** by default.
+    This code will allocate 256 bytes that are going to be available until
+    the enclosing method returns. Number of elements to be allocated is optional
+    and defaults to 1 otherwise. Memory **is zeroed out** by default.
 
-   When using stack allocated memory one has to be careful not to capture
-   this memory beyond the lifetime of the method. Dereferencing stack allocated
-   memory after the method's execution has completed is undefined behavior.
+    When using stack allocated memory one has to be careful not to capture
+    this memory beyond the lifetime of the method. Dereferencing stack allocated
+    memory after the method's execution has completed is undefined behavior.
 
 3. **Manual heap allocation.**
 
-   Scala Native's library contains a bindings for a subset of the standard
-   libc functionality. This includes the trio of ``malloc``, ``realloc`` and
-   ``free`` functions that are defined in ``unsafe.stdlib`` extern object.
+    Scala Native's library contains a bindings for a subset of the standard
+    libc functionality. This includes the trio of ``malloc``, ``realloc`` and
+    ``free`` functions that are defined in ``unsafe.stdlib`` extern object.
 
-   Calling those will let you allocate memory using system's standard
-   dynamic memory allocator. Every single manual allocation must also
-   be freed manually as soon as it's not needed any longer.
+    Calling those will let you allocate memory using system's standard
+    dynamic memory allocator. Every single manual allocation must also
+    be freed manually as soon as it's not needed any longer.
 
-   Apart from the standard system allocator one might
-   also bind to plethora of 3-rd party allocators such as jemalloc_ to
-   serve the same purpose.
+    Apart from the standard system allocator one might
+    also bind to plethora of 3-rd party allocators such as jemalloc_ to
+    serve the same purpose.
 
 .. Comment - https does not work with jemalloc.net
 .. _jemalloc: http://jemalloc.net/

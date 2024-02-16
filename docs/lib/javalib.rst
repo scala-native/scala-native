@@ -696,9 +696,9 @@ For that to work, you have to specify an additional NativeConfig option:
 
 .. code-block:: scala
 
-  nativeConfig ~= {
-    _.withEmbedResources(true)
-  }
+    nativeConfig ~= {
+      _.withEmbedResources(true)
+    }
 
 This will include the resource files found on the classpath in the resulting
 binary file.
@@ -712,11 +712,11 @@ The example below will include all the text and png files in the classpath, whil
 
 .. code-block:: scala
 
-  nativeConfig ~= {
-    _.withEmbedResources(true)
-      .withResourceIncludePatterns(Seq("**.txt", "**.png"))
-      .withResourceExcludePatterns(Seq("rootdoc.txt"))
-  }
+    nativeConfig ~= {
+      _.withEmbedResources(true)
+        .withResourceIncludePatterns(Seq("**.txt", "**.png"))
+        .withResourceExcludePatterns(Seq("rootdoc.txt"))
+    }
 
 Also, note that this featuer is using Java's PathMatcher, which behave a bit different from the posix glob. https://docs.oracle.com/javase/tutorial/essential/io/find.html
 
@@ -785,20 +785,20 @@ allowing to load only requested implementation based on provided configuration.
 
 .. code-block:: scala
 
-  nativeConfig ~= { _.withServiceProviders(
-    Map(
-      "MyServiceName" -> Seq("MyImplementation1", "foo.bar.MyOtherImplementation",
-      "java.nio.file.spi.FileSystemProvider" -> Seq("my.lib.MyCustomFileSystem"))
-    )
-  )}
+    nativeConfig ~= { _.withServiceProviders(
+      Map(
+        "MyServiceName" -> Seq("MyImplementation1", "foo.bar.MyOtherImplementation",
+        "java.nio.file.spi.FileSystemProvider" -> Seq("my.lib.MyCustomFileSystem"))
+      )
+    )}
 
 All providers of service referenced by ``java.util.ServiceLoader.load`` that were reached from any of entrypoints, would be enlisted when linking.
 The providers might have 1 out 5 available statuses: 
-  * ``Loaded`` - this provider was allowed by the config and found on the classpath. It would be available at runtime.
-  * ``Available`` - this provider was found on classpath, but it was not enlisted in the config. It would not be available at runtime.
-  * ``UnknownConfigEntry`` - provider enlisted in config was not found on classpath. It might suggest typo in configuration or in ``META-INF/servies`` file.
-  * ``NotFoundOnClasspath`` - given provider was found both in config and in ``META-INF/services`` file, but it was not found on classpath. It might suggest that given provider was not cross-compiled for Scala Native.
-  * ``NoProviders`` - status assigned for services without any available implementations found on classpath and without config entries
+* ``Loaded`` - this provider was allowed by the config and found on the classpath. It would be available at runtime.
+* ``Available`` - this provider was found on classpath, but it was not enlisted in the config. It would not be available at runtime.
+* ``UnknownConfigEntry`` - provider enlisted in config was not found on classpath. It might suggest typo in configuration or in ``META-INF/servies`` file.
+* ``NotFoundOnClasspath`` - given provider was found both in config and in ``META-INF/services`` file, but it was not found on classpath. It might suggest that given provider was not cross-compiled for Scala Native.
+* ``NoProviders`` - status assigned for services without any available implementations found on classpath and without config entries
 
 
 Continue to :ref:`libc`.
