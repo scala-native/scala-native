@@ -1,0 +1,17 @@
+00_README_ScalaNative_makedocs.utf-8
+
+To create html pages for the Scala Native project, run the "makedocs"
+script in the "scripts" directory under this project root.
+From the "docs" directory, that would be "../scripts/makedocs".
+
+The script will check for required software, provide the
+"sphinx_last_updated_by_git" python module and execute the Makefile
+in the "docs" directory.
+
+A python virtual environment (.venv) is created in the "docs" directory.
+That may take up considerable storage space after the documentation
+has been built.  It may also become outdated or stale if the documentation
+has not been built in a few weeks.  One may want to get into the habit
+of recursively deleting that directory after the last intended
+documentation build.  The script will recreate it if needed in the future.
+
