@@ -208,15 +208,19 @@ trait NirGenType[G <: Global with Singleton] { self: NirGenPhase[G] =>
     case _            => 'O'
   }
 
-  def genMethodSig(sym: Symbol): nir.Type.Function =
-    genMethodSigImpl(sym, isExtern = false)
+  def genMethodSig(
+      sym: Symbol,
+      statically: Boolean = false
+  ): nir.Type.Function =
+    genMethodSigImpl(sym, statically = statically, isExtern = false)
 
   def genExternMethodSig(sym: Symbol): nir.Type.Function =
-    genMethodSigImpl(sym, isExtern = true)
+    genMethodSigImpl(sym, isExtern = true, statically = true)
 
   private def genMethodSigImpl(
       sym: Symbol,
-      isExtern: Boolean
+      isExtern: Boolean,
+      statically: Boolean
   ): nir.Type.Function = {
     def resolve() = {
       require(sym.isMethod || sym.isStaticMember, "symbol is not a method")
@@ -225,7 +229,7 @@ trait NirGenType[G <: Global with Singleton] { self: NirGenPhase[G] =>
       val owner = sym.owner
       val paramtys = genMethodSigParamsImpl(sym, isExtern)
       val selfty =
-        if (isExtern || sym.isStaticInNIR) None
+        if (statically | isExtern || sym.isStaticInNIR) None
         else Some(genType(owner.tpe))
       val retty =
         if (sym.isClassConstructor) nir.Type.Unit

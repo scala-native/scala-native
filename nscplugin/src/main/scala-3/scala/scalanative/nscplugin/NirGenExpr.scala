@@ -40,7 +40,7 @@ trait NirGenExpr(using Context) {
   import positionsConversions.fromSpan
 
   sealed case class ValTree(value: nir.Val) extends Tree
-  sealed case class ContTree(f: () => nir.Val) extends Tree
+  sealed case class ContTree(f: ExprBuffer => nir.Val) extends Tree
 
   class ExprBuffer(using fresh: nir.Fresh) extends FixupBuffer {
     buf =>
@@ -49,7 +49,7 @@ trait NirGenExpr(using Context) {
       tree match {
         case EmptyTree      => nir.Val.Unit
         case ValTree(value) => value
-        case ContTree(f)    => f()
+        case ContTree(f)    => f(this)
         case tree: Apply =>
           val updatedTree = lazyValsAdapter.transformApply(tree)
           genApply(updatedTree)
@@ -679,8 +679,8 @@ trait NirGenExpr(using Context) {
               buf.genIf(
                 retty = retty,
                 condp = ValTree(cond),
-                thenp = ContTree(() => genExpr(body)),
-                elsep = ContTree(() => loop(elsep))
+                thenp = ContTree(_.genExpr(body)),
+                elsep = ContTree(_ => loop(elsep))
               )
 
             case Nil => optDefaultLabel.getOrElse(genExpr(defaultp))
@@ -867,7 +867,7 @@ trait NirGenExpr(using Context) {
             case Bind(_, _) =>
               genType(pat.tpe) -> Some(pat.symbol)
           }
-          val f = { () =>
+          val f = ContTree { (buf: ExprBuffer) =>
             withFreshBlockScope(body.span) { _ =>
               symopt.foreach { sym =>
                 val cast = buf.as(excty, exc, unwind)(cd.span, getScopeId)
@@ -883,7 +883,7 @@ trait NirGenExpr(using Context) {
       }
 
       def wrap(
-          cases: Seq[(nir.Type, () => nir.Val, nir.SourcePosition)]
+          cases: Seq[(nir.Type, ContTree, nir.SourcePosition)]
       ): nir.Val =
         cases match {
           case Seq() =>
@@ -894,8 +894,8 @@ trait NirGenExpr(using Context) {
             genIf(
               retty,
               ValTree(cond),
-              ContTree(f),
-              ContTree(() => wrap(rest))
+              f,
+              ContTree(_ => wrap(rest))
             )(using pos)
         }
 
@@ -1296,7 +1296,7 @@ trait NirGenExpr(using Context) {
     )(using nir.SourcePosition): nir.Val = {
       require(!sym.isExtern, sym)
 
-      val sig = genMethodSig(sym)
+      val sig = genMethodSig(sym, statically = true)
       val args = genMethodArgs(sym, argsp)
       val methodName = genStaticMemberName(sym, receiver)
       val method = nir.Val.Global(methodName, nir.Type.Ptr)
@@ -1969,7 +1969,11 @@ trait NirGenExpr(using Context) {
       val mergen = fresh()
 
       // scalanative.runtime.`package`.enterMonitor(receiver)
-      genExpr(Apply(ref(defnNir.RuntimePackage_enterMonitor), List(receiverp)))
+      genApplyStaticMethod(
+        defnNir.RuntimePackage_enterMonitor,
+        defnNir.RuntimePackageClass,
+        List(receiverp)
+      )
 
       // synchronized block
       val retValue = scoped(curUnwindHandler := Some(handler)) {
@@ -1993,7 +1997,13 @@ trait NirGenExpr(using Context) {
       buf.jump(nir.Next(normaln))
       buf ++= genTryFinally(
         // scalanative.runtime.`package`.exitMonitor(receiver)
-        Apply(ref(defnNir.RuntimePackage_exitMonitor), List(receiverp)),
+        ContTree(
+          _.genApplyStaticMethod(
+            defnNir.RuntimePackage_exitMonitor,
+            defnNir.RuntimePackageClass,
+            List(receiverp)
+          )
+        ),
         nested.toSeq
       )
       buf.labelExcludeUnitValue(mergen, mergev)

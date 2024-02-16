@@ -17,7 +17,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
   import SimpleType.{fromType, fromSymbol}
 
   sealed case class ValTree(value: nir.Val) extends Tree
-  sealed case class ContTree(f: () => nir.Val) extends Tree
+  sealed case class ContTree(f: ExprBuffer => nir.Val) extends Tree
 
   class FixupBuffer(implicit fresh: nir.Fresh) extends nir.InstructionBuilder {
     private var labeled = false
@@ -60,7 +60,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       case ValTree(value) =>
         value
       case ContTree(f) =>
-        f()
+        f(this)
       case tree: Block =>
         genBlock(tree)
       case tree: LabelDef =>
@@ -359,8 +359,8 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
               buf.genIf(
                 retty = retty,
                 condp = ValTree(cond),
-                thenp = ContTree(() => genExpr(body)),
-                elsep = ContTree(() => loop(elsep))
+                thenp = ContTree(_.genExpr(body)),
+                elsep = ContTree(_ => loop(elsep))
               )
 
             case Nil => optDefaultLabel.getOrElse(genExpr(defaultp))
@@ -458,7 +458,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             case Bind(_, _) =>
               (genType(pat.symbol.tpe), Some(pat.symbol))
           }
-          val f = { () =>
+          val f = ContTree { (buf: ExprBuffer) =>
             withFreshBlockScope(body.pos) { _ =>
               symopt.foreach { sym =>
                 val cast = buf.as(excty, exc, unwind)
@@ -474,7 +474,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       }
 
       def wrap(
-          cases: Seq[(nir.Type, () => nir.Val, nir.SourcePosition)]
+          cases: Seq[(nir.Type, ContTree, nir.SourcePosition)]
       ): nir.Val =
         cases match {
           case Seq() =>
@@ -485,8 +485,8 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             genIf(
               retty,
               ValTree(cond),
-              ContTree(f),
-              ContTree(() => wrap(rest))
+              f,
+              ContTree(_ => wrap(rest))
             )(pos)
         }
 
@@ -613,7 +613,6 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     def genArrayValue(tpt: Tree, elems: Seq[Tree])(implicit
         pos: nir.SourcePosition
     ): nir.Val = {
-      // println(s"array[${tpt.tpe}]: {${elems.mkString(", ")}}")
       val elemty = genType(tpt.tpe)
       val values = genSimpleArgs(elems)
 
@@ -1107,7 +1106,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         params.size == 2 && params.head.tpe.typeSymbol == IntClass
       }
 
-      def genDynCall(arrayUpdate: Boolean) = {
+      def genDynCall(arrayUpdate: Boolean)(buf: ExprBuffer) = {
 
         // In the case of an array update we need to manually erase the return type.
         val methodName: nir.Sig =
@@ -1148,7 +1147,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
       // If the signature matches an array update, tests at runtime if it really is an array update.
       if (isArrayLikeOp) {
-        val cond = ContTree { () =>
+        val cond = ContTree { (buf: ExprBuffer) =>
           buf.is(
             nir.Type.Ref(
               nir.Global.Top("scala.scalanative.runtime.ObjectArray")
@@ -1157,8 +1156,8 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             unwind
           )
         }
-        val thenp = ContTree { () => genDynCall(arrayUpdate = true) }
-        val elsep = ContTree { () => genDynCall(arrayUpdate = false) }
+        val thenp = ContTree(genDynCall(arrayUpdate = true))
+        val elsep = ContTree(genDynCall(arrayUpdate = false))
         genIf(
           nir.Type.Ref(nir.Global.Top("java.lang.Object")),
           cond,
@@ -1167,7 +1166,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         )
 
       } else {
-        genDynCall(arrayUpdate = false)
+        genDynCall(arrayUpdate = false)(this)
       }
     }
 
@@ -2586,8 +2585,10 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       val mergen = fresh()
 
       // scalanative.runtime.`package`.enterMonitor(receiver)
-      genExpr(
-        treeBuild.mkMethodCall(RuntimeEnterMonitorMethod, List(receiverp))
+      genApplyStaticMethod(
+        sym = RuntimeEnterMonitorMethod,
+        receiver = RuntimePackageClass,
+        argsp = List(receiverp)
       )
       // synchronized block
       val retValue = scoped(curUnwindHandler := Some(handler)) {
@@ -2610,8 +2611,13 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       buf.jump(nir.Next(normaln))
       buf ++= genTryFinally(
         // scalanative.runtime.`package`.exitMonitor(receiver)
-        finallyp =
-          treeBuild.mkMethodCall(RuntimeExitMonitorMethod, List(receiverp)),
+        finallyp = ContTree(
+          _.genApplyStaticMethod(
+            sym = RuntimeExitMonitorMethod,
+            receiver = RuntimePackageClass,
+            argsp = List(receiverp)
+          )
+        ),
         insts = nested.toSeq
       )
       val mergev = nir.Val.Local(fresh(), retty)
@@ -2860,7 +2866,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       require(!sym.isExtern, sym.owner)
       val name = genStaticMemberName(sym, receiver)
       val method = nir.Val.Global(name, nir.Type.Ptr)
-      val sig = genMethodSig(sym)
+      val sig = genMethodSig(sym, statically = true)
       val args = genMethodArgs(sym, argsp)
       buf.call(sig, method, args, unwind)
     }
