@@ -777,27 +777,82 @@ network is first used.
 Support for discovering service providers
 -----------------------------------------
 
-Scala Native does implement partial support usage Java service providers pattern including
-loading available implementations of given interface using ``java.util.ServiceLoader``.
-Similarly to JVM toolchain would try to discover implementations of services using ``META-INF/servives/<fully-qualified-class-name>`` 
-files found in resources of dependencies. However, due to ahead of time compilation model Scala Native requires additional configuration,
-allowing to load only requested implementation based on provided configuration.
+Scala Native implements partial support for using the Java service providers
+pattern. This includes using ``java.util.ServiceLoader`` to load available
+implementations of a given interface.
+
+Step 1: Configure META-INF/services
+"""""""""""""""""""""""""""""""""""
+
+Similarly to the JVM toolchain, the Scala Native toolchain will try to
+discover implementations of services using
+``META-INF/services/<fully-qualified-class-name>``  files found in
+resources of dependencies.
+
+The example in "Step 2" below provides a custom
+``java.nio.file.spi.FileSystemProvider`` implementation
+called ``my.lib.MyCustomFileSystem``.
+
+To use the custom implementation, the project's 
+``<projectRoot>/src/main/resources/META-INF/services/``
+directory must contain a file called ``java.nio.file.spi.FileSystemProvider``.
+
+That file contains the line: ``my.lib.MyCustomFileSystem``
+
+Step 2: Configure Scala Native
+""""""""""""""""""""""""""""""
+
+Scala Native uses an ahead of time compilation model and requires additional
+configuration. This allows loading only implementations requested in
+the provided configuration. 
+
+A snippet to configure one local implementation for
+"java.nio.file.spi.FileSystemProvider" and two for "MyServiceName"
+looks like:
 
 .. code-block:: scala
 
+    /* The project defines a Map in a .sbt or .scala file. The Map
+     * is then used to configure the available providers.
+     *		
+     * The entries of this map have the general form:
+     *  "<ServiceName>" -> Seq("<ServiceProviderClassName>")
+     *
+     * If additional implementations are to be defined, this becomes:
+     *  "<ServiceName>" -> Seq("<ServiceProviderClassName_1>",
+     *                         "<ServiceProviderClassName_2>")
+     *
+     * The first entry below is a better model than the second.
+     * The names in the second entry are simplified for demonstration.
+     * More fully qualified names would be used in real world code.
+     */
+
     nativeConfig ~= { _.withServiceProviders(
       Map(
-        "MyServiceName" -> Seq("MyImplementation1", "foo.bar.MyOtherImplementation",
-        "java.nio.file.spi.FileSystemProvider" -> Seq("my.lib.MyCustomFileSystem"))
-      )
+        "java.nio.file.spi.FileSystemProvider" -> Seq(
+	    "my.lib.MyCustomFileSystem"),
+        "MyServiceName" -> Seq(
+	    "MyImplementation1",
+	    "foo.bar.MyOtherImplementation")
+	 )
     )}
 
-All providers of service referenced by ``java.util.ServiceLoader.load`` that were reached from any of entrypoints, would be enlisted when linking.
-The providers might have 1 out 5 available statuses: 
-* ``Loaded`` - this provider was allowed by the config and found on the classpath. It would be available at runtime.
-* ``Available`` - this provider was found on classpath, but it was not enlisted in the config. It would not be available at runtime.
+When linking the project, all providers of service referenced by
+``java.util.ServiceLoader.load``
+that were reached from any entrypoint will be enlisted.
+
+These providers will report one of the five status values:
+
+* ``Loaded`` - this provider was allowed by the config and found on the
+  classpath. It would be available at runtime.
+
+* ``Available`` - this provider was found on classpath, but it was not
+  enlisted in the config. It would not be available at runtime.
+
 * ``UnknownConfigEntry`` - provider enlisted in config was not found on classpath. It might suggest typo in configuration or in ``META-INF/servies`` file.
+
 * ``NotFoundOnClasspath`` - given provider was found both in config and in ``META-INF/services`` file, but it was not found on classpath. It might suggest that given provider was not cross-compiled for Scala Native.
+
 * ``NoProviders`` - status assigned for services without any available implementations found on classpath and without config entries
 
 
