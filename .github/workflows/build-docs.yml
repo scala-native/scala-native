@@ -1,3 +1,4 @@
+# Testing the docs build with -W works
 name: Build docs
 on:
   pull_request:
@@ -16,4 +17,4 @@ jobs:
           pip install -r requirements.txt
       - name: Build docs
         run: |
-          cd docs && SPHINXOPTS="-W" make html
+          cd docs && sphinx-build -M html . _build -W
