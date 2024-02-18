@@ -10,5 +10,5 @@ setup_docs:
 # Needs to run from the project root so that `sphinx-last-updated-by-git` can find the `.git` directory.
 PHONY: build_docs
 build_docs: setup_docs
-	docker run --rm -v .:/docs $(DOCKER_TAG) sphinx-build -M html $(DOCSDIR) $(DOCSDIR)/$(BUILDDIR)
+	docker run --rm -v .:/docs $(DOCKER_TAG) sphinx-build -M html $(DOCSDIR) $(DOCSDIR)/$(BUILDDIR) -W
 
