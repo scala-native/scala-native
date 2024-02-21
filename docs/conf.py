@@ -89,6 +89,8 @@ language = 'en'
 #
 # today_fmt = '%B %d, %Y'
 
+today_fmt = '%Y-%m-%d %H:%M:%S' # Scala Native change. Use ISO format.
+
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This patterns also effect to html_static_path and html_extra_path
