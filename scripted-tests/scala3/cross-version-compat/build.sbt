@@ -46,7 +46,10 @@ def commonScala213Settigns = Def.settings(
         "-Ytasty-reader"
       )
     else Nil
-  }
+  },
+  // Scala 2.13.13 regression https://github.com/scala/bug/issues/12955
+  // Not important for our tests
+  Compile / doc := { new File("not-existing") }
 )
 
 lazy val base = project
