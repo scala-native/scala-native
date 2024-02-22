@@ -19,14 +19,13 @@ package build
 object ScalaVersions {
   // Versions of Scala used for publishing compiler plugins
   val crossScala212 = (14 to 19).map(v => s"2.12.$v")
-  val crossScala213 = (8 to 12).map(v => s"2.13.$v")
+  val crossScala213 = (8 to 13).map(v => s"2.13.$v")
   val crossScala3 = List(
-    // Move it to last entry (default binary version) when Scala 2.13 supports Scala 3.4 TASTy
-    (0 to 0).map(v => s"3.4.$v"),
     // windowslib fails to compile with 3.1.{0-1}
     (2 to 3).map(v => s"3.1.$v"),
     (0 to 2).map(v => s"3.2.$v"),
-    (0 to 2).map(v => s"3.3.$v")
+    (0 to 2).map(v => s"3.3.$v"),
+    (0 to 0).map(v => s"3.4.$v")
   ).flatten
 
   // Scala versions used for publishing libraries
