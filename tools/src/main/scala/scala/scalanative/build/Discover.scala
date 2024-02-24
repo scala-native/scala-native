@@ -31,17 +31,21 @@ object Discover {
 
   /** Use the clang binary on the path or via LLVM_BIN env var. */
   def clang(): Path = {
-    val path = discover("clang", "LLVM_BIN")
+    val path = discover(getenv("SCALANATIVE_CC").getOrElse("clang"), "LLVM_BIN")
     checkClangVersion(path)
     path
   }
 
   /** Use the clang++ binary on the path or via LLVM_BIN env var. */
   def clangpp(): Path = {
-    val path = discover("clang++", "LLVM_BIN")
+    val path =
+      discover(getenv("SCALANATIVE_CXX").getOrElse("clang++"), "LLVM_BIN")
     checkClangVersion(path)
     path
   }
+
+  def llvmConfig(): String =
+    getenv("SCALANATIVE_LLVM_CONFIG").getOrElse("llvm-config")
 
   private def filterExisting(paths: Seq[String]): Seq[String] =
     paths.filter(new File(_).exists())
@@ -50,7 +54,7 @@ object Discover {
   def compileOptions(): Seq[String] = {
     val includes = {
       val llvmIncludeDir =
-        Try(Process("llvm-config --includedir").lineStream_!.toSeq)
+        Try(Process(s"${llvmConfig()} --includedir").lineStream_!.toSeq)
           .getOrElse(Seq.empty)
       // dirs: standard, macports, brew M1 arm
       val includeDirs =
@@ -75,7 +79,7 @@ object Discover {
   def linkingOptions(): Seq[String] = {
     val libs = {
       val llvmLibDir =
-        Try(Process("llvm-config --libdir").lineStream_!.toSeq)
+        Try(Process(s"${llvmConfig()} --libdir").lineStream_!.toSeq)
           .getOrElse(Seq.empty)
 
       val libDirs =

@@ -49,6 +49,10 @@ The `optimize` setting is controlled via the `SCALANATIVE_OPTIMIZE` environment
 variable. Valid values are `true` and `false`. The default value is `true`.
 This setting controls whether the Interflow optimizer is enabled or not.
 
+The path to used `clang`, `clang++` and `llvm-config` are controled
+via environment variables the `SCALANATIVE_CC`, `SCALANATIVE_CXX`
+and `SCALANATIVE_LLVM_CONFIG`.
+
 The path to used include and library dirs is controlled via environment variables
 the `SCALANATIVE_INCLUDE_DIRS` and `SCALANATIVE_LIB_DIRS`.
 
