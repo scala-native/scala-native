@@ -13,8 +13,8 @@ import java.util.Arrays
 
 import java.util.zip.{ZipEntry, ZipFile, ZipOutputStream}
 
-/* Test(s) written well after the Harmony code was ported to SN are
- * consolided hereso as to not disturb the peace that Harmony code.
+/* Do not disturb the peace of the Harmony code ported to Scala Native.
+ * Consolidate Test(s) written well after that port in this separate file.
  */
 
 object ZipEntryIssuesTest {
