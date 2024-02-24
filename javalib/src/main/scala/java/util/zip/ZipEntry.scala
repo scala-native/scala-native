@@ -189,7 +189,10 @@ object ZipEntry extends ZipConstants {
     }
   }
 
-  def fromInputStream(ler: LittleEndianReader, in: InputStream): ZipEntry = {
+  private[zip] def fromInputStream(
+      ler: LittleEndianReader,
+      in: InputStream
+  ): ZipEntry = {
     val hdrBuf = ler.hdrBuf
     myReadFully(in, hdrBuf)
 
