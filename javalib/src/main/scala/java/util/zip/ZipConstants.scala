@@ -1,7 +1,5 @@
 package java.util.zip
 
-// FIXME :: describe use of hex to ease matching Linux/macOS "hexdump -C"
-// with documentation.
 /* Reference:
  *   https://en.wikipedia.org/wiki/ZIP_(file_format) // or your local language
  *

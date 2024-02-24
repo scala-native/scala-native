@@ -227,20 +227,20 @@ object ZipEntry extends ZipConstants {
     val nameBytes = new Array[Byte](nameLen)
     myReadFully(in, nameBytes)
 
-    val commentBytes =
-      if (commentLen > 0) {
-        val commentBytes = new Array[Byte](commentLen)
-        myReadFully(in, commentBytes)
-        commentBytes
-      } else {
-        null
-      }
-
     val extra =
       if (extraLen > 0) {
         val extra = new Array[Byte](extraLen)
         myReadFully(in, extra)
         extra
+      } else {
+        null
+      }
+
+    val commentBytes =
+      if (commentLen > 0) {
+        val commentBytes = new Array[Byte](commentLen)
+        myReadFully(in, commentBytes)
+        commentBytes
       } else {
         null
       }
