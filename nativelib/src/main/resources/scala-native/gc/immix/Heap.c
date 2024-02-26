@@ -304,6 +304,9 @@ void Heap_Recycle(Heap *heap) {
         }
         Allocator_InitCursors(&thread->allocator, false);
     }
+#ifdef SCALANATIVE_MULTITHREADING_ENABLED
+    atomic_thread_fence(memory_order_seq_cst);
+#endif
 }
 
 void Heap_Grow(Heap *heap, uint32_t incrementInBlocks) {
