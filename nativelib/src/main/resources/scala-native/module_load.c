@@ -105,7 +105,8 @@ ModuleRef __scalanative_loadModule(ModuleSlot slot, void *classInfo,
             return waitForInitialization(slot, classInfo);
         }
     }
-    if (*module == classInfo)
+    // Plain read instead of atomic seq_cst load
+    if (*(void **)module == classInfo)
         return module;
     else
         return waitForInitialization(slot, classInfo);
