@@ -66,6 +66,13 @@ typedef enum scalanative_GC_MutatorThreadState {
 // functions. Changes the internal state of current (calling) thread
 void scalanative_GC_set_mutator_thread_state(GC_MutatorThreadState);
 
+/* Marks current mutator thread as interruptible making it ignore yieldpoints.
+ * Used internally to protect sections of code fragile to premature yielding
+ * initialization, e.g.: array allocation before stride/length info assignment,
+ * object copy before memcpy
+ */
+void scalanative_GC_set_mutator_thread_interruptible(bool);
+
 // Check for StopTheWorld event and wait for its end if needed
 void scalanative_GC_yield();
 #ifdef SCALANATIVE_GC_USE_YIELDPOINT_TRAPS

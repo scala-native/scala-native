@@ -1,8 +1,9 @@
 #ifndef IMMIX_COMMON_CONSTANTS_H
 #define IMMIX_COMMON_CONSTANTS_H
 
-#define WORD_SIZE_BITS 3
-#define WORD_SIZE (1 << WORD_SIZE_BITS)
+// TODO: It should sizeof(word_t) but it leads to runtime issues under 32bit
+// archs Probably it's due to size assumptions when casting
+#define WORD_SIZE 8
 
 #define ALLOCATION_ALIGNMENT_WORDS 2
 #define ALLOCATION_ALIGNMENT (ALLOCATION_ALIGNMENT_WORDS * WORD_SIZE)
@@ -12,11 +13,9 @@
 #define LINE_SIZE_BITS 8
 #define BLOCK_COUNT_BITS 24
 
-#define LINE_METADATA_SIZE_BITS 0
-
 #define BLOCK_TOTAL_SIZE (1 << BLOCK_SIZE_BITS)
 #define LINE_SIZE (1ULL << LINE_SIZE_BITS)
-#define LINE_METADATA_SIZE (1 << LINE_METADATA_SIZE_BITS)
+#define LINE_METADATA_SIZE 1
 #define MAX_BLOCK_COUNT (1 << BLOCK_COUNT_BITS)
 
 #define LINE_COUNT (BLOCK_TOTAL_SIZE / LINE_SIZE)

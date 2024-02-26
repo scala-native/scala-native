@@ -90,6 +90,9 @@ object GC {
       newState: MutatorThreadState
   ): Unit = extern
 
+  @name("scalanative_GC_set_mutator_thread_interruptible")
+  def setMutatorThreadInterruptible(interruptible: Boolean): Unit = extern
+
   /** A call to GC yield mechanism used for polling the GC StopTheWorld event.
    *  If the GarbageCollector wants to perform collection it would stop the
    *  calling thread until GC is done and it's safe to continue execution.

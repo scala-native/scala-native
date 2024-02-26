@@ -22,7 +22,7 @@ extern int __modules_size;
 static inline void Marker_markLockWords(Heap *heap, Stack *stack,
                                         Object *object);
 static void Marker_markRange(Heap *heap, Stack *stack, word_t **from,
-                             word_t **to);
+                             word_t **to, const size_t stride);
 
 void Marker_markObject(Heap *heap, Stack *stack, Bytemap *bytemap,
                        Object *object, ObjectMeta *objectMeta) {
@@ -101,7 +101,8 @@ void Marker_Mark(Heap *heap, Stack *stack) {
             } else if (objectId == __blob_array_id) {
                 int8_t *start = (int8_t *)(arrayHeader + 1);
                 int8_t *end = start + BlobArray_ScannableLimit(arrayHeader);
-                Marker_markRange(heap, stack, (word_t **)start, (word_t **)end);
+                Marker_markRange(heap, stack, (word_t **)start, (word_t **)end,
+                                 sizeof(word_t));
             }
             // non-object arrays do not contain pointers
         } else {
@@ -125,7 +126,8 @@ void Marker_Mark(Heap *heap, Stack *stack) {
 }
 
 NO_SANITIZE static void Marker_markRange(Heap *heap, Stack *stack,
-                                         word_t **from, word_t **to) {
+                                         word_t **from, word_t **to,
+                                         const size_t stride) {
     assert(from != NULL);
     assert(to != NULL);
     if (from > to) {
@@ -135,11 +137,12 @@ NO_SANITIZE static void Marker_markRange(Heap *heap, Stack *stack,
     }
     // Align start address
     const intptr_t alignmentMask = ~(sizeof(word_t) - 1);
-    word_t **alignedFrom = (word_t **)((intptr_t)from & alignmentMask);
+    ubyte_t *alignedFrom = (ubyte_t *)((intptr_t)from & alignmentMask);
     // Align end address to be optionally 1 higher when unaligned
-    word_t **alignedTo = (word_t **)((intptr_t)(to + 1) & alignmentMask);
-    for (word_t **current = alignedFrom; current <= alignedTo; current += 1) {
-        word_t *addr = *current;
+    ubyte_t *alignedTo = (ubyte_t *)((intptr_t)(to + 1) & alignmentMask);
+    for (ubyte_t *current = alignedFrom; current <= alignedTo;
+         current += stride) {
+        word_t *addr = *(word_t **)current;
         if (Heap_IsWordInHeap(heap, addr)) {
             Marker_markConservative(heap, stack, addr);
         }
@@ -155,11 +158,19 @@ NO_SANITIZE void Marker_markProgramStack(MutatorThread *thread, Heap *heap,
         stackTop = (word_t **)atomic_load_explicit(&thread->stackTop,
                                                    memory_order_acquire);
     } while (stackTop == NULL);
-    Marker_markRange(heap, stack, stackTop, stackBottom);
+    Marker_markRange(heap, stack, stackTop, stackBottom, sizeof(word_t));
 
     // Mark registers buffer
+    size_t registerBufferStride =
+#if defined(CAPTURE_SETJMP)
+        // Pointers in jmp_bufr might be non word-size aligned
+        sizeof(uint32_t);
+#else
+        sizeof(word_t);
+#endif
     Marker_markRange(heap, stack, (word_t **)&thread->registersBuffer,
-                     (word_t **)(&thread->registersBuffer + 1));
+                     (word_t **)(&thread->registersBuffer + 1),
+                     registerBufferStride);
 }
 
 void Marker_markModules(Heap *heap, Stack *stack) {
@@ -176,7 +187,7 @@ void Marker_markCustomRoots(Heap *heap, Stack *stack, GC_Roots *roots) {
     mutex_lock(&roots->modificationLock);
     for (GC_Root *it = roots->head; it != NULL; it = it->next) {
         Marker_markRange(heap, stack, (word_t **)it->range.address_low,
-                         (word_t **)it->range.address_high);
+                         (word_t **)it->range.address_high, sizeof(word_t));
     }
     mutex_unlock(&roots->modificationLock);
 }

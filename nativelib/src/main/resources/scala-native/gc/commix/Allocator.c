@@ -56,10 +56,12 @@ void Allocator_InitCursors(Allocator *allocator, bool canCollect) {
 void Allocator_Clear(Allocator *allocator) {
     BlockList_Clear(&allocator->recycledBlocks);
     allocator->recycledBlockCount = 0;
-    allocator->limit = NULL;
     allocator->block = NULL;
-    allocator->largeLimit = NULL;
+    allocator->cursor = NULL;
+    allocator->limit = NULL;
     allocator->largeBlock = NULL;
+    allocator->largeCursor = NULL;
+    allocator->largeLimit = NULL;
 }
 
 bool Allocator_newOverflowBlock(Allocator *allocator) {
@@ -84,6 +86,7 @@ bool Allocator_newOverflowBlock(Allocator *allocator) {
  */
 word_t *Allocator_overflowAllocation(Allocator *allocator, size_t size) {
     word_t *start = allocator->largeCursor;
+    assert(start != NULL);
     word_t *end = (word_t *)((uint8_t *)start + size);
 
     // allocator->largeLimit == NULL implies end > allocator->largeLimit
@@ -105,6 +108,7 @@ word_t *Allocator_overflowAllocation(Allocator *allocator, size_t size) {
  */
 INLINE word_t *Allocator_tryAlloc(Allocator *allocator, size_t size) {
     word_t *start = allocator->cursor;
+    assert(start != NULL);
     word_t *end = (word_t *)((uint8_t *)start + size);
 
     // allocator->limit == NULL implies end > allocator->limit
@@ -119,7 +123,6 @@ INLINE word_t *Allocator_tryAlloc(Allocator *allocator, size_t size) {
             if (Allocator_getNextLine(allocator)) {
                 return Allocator_tryAlloc(allocator, size);
             }
-
             return NULL;
         }
     }
@@ -137,13 +140,13 @@ bool Allocator_getNextLine(Allocator *allocator) {
     if (block == NULL) {
         return Allocator_newBlock(allocator);
     }
-    word_t *blockStart = allocator->blockStart;
 
     int lineIndex = BlockMeta_FirstFreeLine(block);
     if (lineIndex == LAST_HOLE) {
         return Allocator_newBlock(allocator);
     }
 
+    word_t *blockStart = allocator->blockStart;
     word_t *line = Block_GetLineAddress(blockStart, lineIndex);
 
     allocator->cursor = line;
@@ -151,6 +154,8 @@ bool Allocator_getNextLine(Allocator *allocator) {
     uint16_t size = lineMeta->size;
     if (size == 0)
         return Allocator_newBlock(allocator);
+    assert(lineMeta->next == LAST_HOLE ||
+           (lineMeta->next >= 0 && lineMeta->next <= LINE_COUNT));
     BlockMeta_SetFirstFreeLine(block, lineMeta->next);
     allocator->limit = line + (size * WORDS_IN_LINE);
     assert(allocator->limit <= Block_GetBlockEnd(blockStart));
@@ -193,11 +198,14 @@ bool Allocator_newBlock(Allocator *allocator) {
         assert(lineIndex < LINE_COUNT);
         word_t *line = Block_GetLineAddress(blockStart, lineIndex);
 
-        allocator->cursor = line;
         FreeLineMeta *lineMeta = (FreeLineMeta *)line;
-        BlockMeta_SetFirstFreeLine(block, lineMeta->next);
         uint16_t size = lineMeta->size;
         assert(size > 0);
+        assert(lineMeta->next == LAST_HOLE ||
+               (lineMeta->next >= 0 && lineMeta->next <= LINE_COUNT));
+        assert(line >= allocator->cursor);
+        BlockMeta_SetFirstFreeLine(block, lineMeta->next);
+        allocator->cursor = line;
         allocator->limit = line + (size * WORDS_IN_LINE);
         assert(allocator->limit <= Block_GetBlockEnd(blockStart));
     } else {
@@ -292,8 +300,6 @@ NOINLINE word_t *Allocator_allocSlow(Allocator *allocator, Heap *heap,
         // because it is no larger than 8K while the block is 32K.
         if (Heap_isGrowingPossible(heap, 1))
             Heap_Grow(heap, 1);
-        else
-            Heap_exitWithOutOfMemory("");
     } while (true);
     return NULL; // unreachable
 }

@@ -18,8 +18,6 @@
 #include "MutatorThread.h"
 #include <stdatomic.h>
 
-void scalanative_GC_collect();
-
 void scalanative_afterexit() { Stats_OnExit(heap.stats); }
 
 NOINLINE void scalanative_GC_init() {
@@ -73,7 +71,10 @@ INLINE void *scalanative_GC_alloc_atomic(void *info, size_t size) {
     return scalanative_GC_alloc(info, size);
 }
 
-INLINE void scalanative_GC_collect() { Heap_Collect(&heap, &stack); }
+INLINE void scalanative_GC_collect() {
+    assert(!currentMutatorThread->interruptible);
+    Heap_Collect(&heap, &stack);
+}
 
 INLINE void scalanative_GC_register_weak_reference_handler(void *handler) {
     WeakRefStack_SetHandler(handler);
@@ -158,6 +159,9 @@ int scalanative_GC_pthread_create(pthread_t *thread, pthread_attr_t *attr,
 
 void scalanative_GC_set_mutator_thread_state(GC_MutatorThreadState state) {
     MutatorThread_switchState(currentMutatorThread, state);
+}
+void scalanative_GC_set_mutator_thread_interruptible(bool interruptible) {
+    currentMutatorThread->interruptible = interruptible;
 }
 
 void scalanative_GC_yield() {

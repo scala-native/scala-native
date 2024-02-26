@@ -42,6 +42,7 @@ void BlockAllocator_Init(BlockAllocator *blockAllocator, word_t *blockMetaStart,
     blockAllocator->reservedSuperblock = (word_t)sLimit;
 
     blockAllocator->concurrent = false;
+    blockAllocator->freeBlockCount = blockCount;
 
     mutex_init(&blockAllocator->allocationLock);
 
@@ -114,6 +115,8 @@ BlockAllocator_getFreeBlockSlow(BlockAllocator *blockAllocator) {
         superblock->debugFlag = dbg_in_use;
 #endif
         BlockMeta_SetFlag(superblock, block_simple);
+        atomic_fetch_add_explicit(&blockAllocator->freeBlockCount, -1,
+                                  memory_order_relaxed);
         return superblock;
     } else {
         // as the last resort look in the superblock being coalesced
@@ -144,6 +147,8 @@ BlockAllocator_getFreeBlockSlow(BlockAllocator *blockAllocator) {
             block->debugFlag = dbg_in_use;
 #endif
             BlockMeta_SetFlag(block, block_simple);
+            atomic_fetch_add_explicit(&blockAllocator->freeBlockCount, -1,
+                                      memory_order_relaxed);
         }
         return block;
     }
@@ -249,6 +254,8 @@ BlockMeta *BlockAllocator_GetFreeSuperblock(BlockAllocator *blockAllocator,
            BlockMeta_GetBlockIndex(blockAllocator->blockMetaStart, superblock));
     fflush(stdout);
 #endif
+    atomic_fetch_add_explicit(&blockAllocator->freeBlockCount, -size,
+                              memory_order_relaxed);
     return superblock;
 }
 

@@ -90,7 +90,10 @@ INLINE void *scalanative_GC_alloc_atomic(void *info, size_t size) {
     return scalanative_GC_alloc(info, size);
 }
 
-INLINE void scalanative_GC_collect() { Heap_Collect(&heap); }
+INLINE void scalanative_GC_collect() {
+    assert(!currentMutatorThread->interruptible);
+    Heap_Collect(&heap);
+}
 
 INLINE void scalanative_GC_register_weak_reference_handler(void *handler) {
     WeakRefGreyList_SetHandler(handler);
@@ -104,8 +107,8 @@ INLINE void scalanative_GC_register_weak_reference_handler(void *handler) {
 size_t scalanative_GC_get_init_heapsize() { return Settings_MinHeapSize(); }
 
 /* Get the maximum heap size */
-/* If the user has set a maximum heap size using the GC_MAXIMUM_HEAP_SIZE */
-/* environment variable,*/
+/* If the user has set a maximum heap size using the GC_MAXIMUM_HEAP_SIZE
+ * environment variable,*/
 /* then this size will be returned.*/
 /* Otherwise, the total size of the physical memory (guarded) will be returned*/
 size_t scalanative_GC_get_max_heapsize() {
@@ -133,7 +136,7 @@ static ThreadRoutineReturnType WINAPI ProxyThreadStartRoutine(void *args) {
 #else
 static ThreadRoutineReturnType ProxyThreadStartRoutine(void *args) {
 #endif
-    volatile word_t stackBottom = 1;
+    volatile word_t stackBottom = 0;
     stackBottom = (word_t)&stackBottom;
     WrappedFunctionCallArgs *wrapped = (WrappedFunctionCallArgs *)args;
     ThreadStartRoutine originalFn = wrapped->fn;
@@ -175,6 +178,9 @@ int scalanative_GC_pthread_create(pthread_t *thread, pthread_attr_t *attr,
 
 void scalanative_GC_set_mutator_thread_state(GC_MutatorThreadState state) {
     MutatorThread_switchState(currentMutatorThread, state);
+}
+void scalanative_GC_set_mutator_thread_interruptible(bool interruptible) {
+    currentMutatorThread->interruptible = interruptible;
 }
 
 void scalanative_GC_yield() {

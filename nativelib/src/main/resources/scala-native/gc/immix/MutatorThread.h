@@ -5,12 +5,14 @@
 #include "shared/ScalaNativeGC.h"
 #include "immix_commix/RegistersCapture.h"
 #include <stdatomic.h>
+#include <stdbool.h>
 
 typedef struct {
     _Atomic(GC_MutatorThreadState) state;
     word_t **stackBottom;
     atomic_intptr_t stackTop;
     atomic_bool isWaiting;
+    bool interruptible;
     RegistersBuffer registersBuffer;
     // immutable fields
 #ifdef SCALANATIVE_GC_USE_YIELDPOINT_TRAPS
@@ -35,6 +37,7 @@ void MutatorThread_init(word_t **stackBottom);
 void MutatorThread_delete(MutatorThread *self);
 void MutatorThread_switchState(MutatorThread *self,
                                GC_MutatorThreadState newState);
+bool MutatorThread_setInterruptible(MutatorThread *self, bool interruptible);
 
 void MutatorThreads_init();
 void MutatorThreads_add(MutatorThread *node);

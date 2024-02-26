@@ -184,9 +184,11 @@ final class BooleanArray private () extends Array[Boolean] {
   @inline override def clone(): BooleanArray = {
     val arrcls  = classOf[BooleanArray]
     val arrsize = MemoryLayout.Array.ValuesOffset + 1 * length
+    GC.setMutatorThreadInterruptible(false)
     val arr     = GC.alloc_atomic(arrcls, arrsize)
     val src     = castObjectToRawPtr(this)
     libc.memcpy(arr, src, castIntToRawSizeUnsigned(arrsize))
+    GC.setMutatorThreadInterruptible(true)
     castRawPtrToObject(arr).asInstanceOf[BooleanArray]
   }
 }
@@ -199,9 +201,11 @@ object BooleanArray {
     }
     val arrcls  = classOf[BooleanArray]
     val arrsize = MemoryLayout.Array.ValuesOffset + 1 * length
+    GC.setMutatorThreadInterruptible(false)
     val arr = GC.alloc_atomic(arrcls, arrsize) 
     storeInt(elemRawPtr(arr, MemoryLayout.Array.LengthOffset), length)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.StrideOffset), 1)
+    GC.setMutatorThreadInterruptible(true)
     castRawPtrToObject(arr).asInstanceOf[BooleanArray]
   }
 
@@ -252,9 +256,11 @@ final class CharArray private () extends Array[Char] {
   @inline override def clone(): CharArray = {
     val arrcls  = classOf[CharArray]
     val arrsize = MemoryLayout.Array.ValuesOffset + 2 * length
+    GC.setMutatorThreadInterruptible(false)
     val arr     = GC.alloc_atomic(arrcls, arrsize)
     val src     = castObjectToRawPtr(this)
     libc.memcpy(arr, src, castIntToRawSizeUnsigned(arrsize))
+    GC.setMutatorThreadInterruptible(true)
     castRawPtrToObject(arr).asInstanceOf[CharArray]
   }
 }
@@ -267,9 +273,11 @@ object CharArray {
     }
     val arrcls  = classOf[CharArray]
     val arrsize = MemoryLayout.Array.ValuesOffset + 2 * length
+    GC.setMutatorThreadInterruptible(false)
     val arr = GC.alloc_atomic(arrcls, arrsize) 
     storeInt(elemRawPtr(arr, MemoryLayout.Array.LengthOffset), length)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.StrideOffset), 2)
+    GC.setMutatorThreadInterruptible(true)
     castRawPtrToObject(arr).asInstanceOf[CharArray]
   }
 
@@ -320,9 +328,11 @@ final class ByteArray private () extends Array[Byte] {
   @inline override def clone(): ByteArray = {
     val arrcls  = classOf[ByteArray]
     val arrsize = MemoryLayout.Array.ValuesOffset + 1 * length
+    GC.setMutatorThreadInterruptible(false)
     val arr     = GC.alloc_atomic(arrcls, arrsize)
     val src     = castObjectToRawPtr(this)
     libc.memcpy(arr, src, castIntToRawSizeUnsigned(arrsize))
+    GC.setMutatorThreadInterruptible(true)
     castRawPtrToObject(arr).asInstanceOf[ByteArray]
   }
 }
@@ -335,9 +345,11 @@ object ByteArray {
     }
     val arrcls  = classOf[ByteArray]
     val arrsize = MemoryLayout.Array.ValuesOffset + 1 * length
+    GC.setMutatorThreadInterruptible(false)
     val arr = GC.alloc_atomic(arrcls, arrsize) 
     storeInt(elemRawPtr(arr, MemoryLayout.Array.LengthOffset), length)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.StrideOffset), 1)
+    GC.setMutatorThreadInterruptible(true)
     castRawPtrToObject(arr).asInstanceOf[ByteArray]
   }
 
@@ -388,9 +400,11 @@ final class ShortArray private () extends Array[Short] {
   @inline override def clone(): ShortArray = {
     val arrcls  = classOf[ShortArray]
     val arrsize = MemoryLayout.Array.ValuesOffset + 2 * length
+    GC.setMutatorThreadInterruptible(false)
     val arr     = GC.alloc_atomic(arrcls, arrsize)
     val src     = castObjectToRawPtr(this)
     libc.memcpy(arr, src, castIntToRawSizeUnsigned(arrsize))
+    GC.setMutatorThreadInterruptible(true)
     castRawPtrToObject(arr).asInstanceOf[ShortArray]
   }
 }
@@ -403,9 +417,11 @@ object ShortArray {
     }
     val arrcls  = classOf[ShortArray]
     val arrsize = MemoryLayout.Array.ValuesOffset + 2 * length
+    GC.setMutatorThreadInterruptible(false)
     val arr = GC.alloc_atomic(arrcls, arrsize) 
     storeInt(elemRawPtr(arr, MemoryLayout.Array.LengthOffset), length)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.StrideOffset), 2)
+    GC.setMutatorThreadInterruptible(true)
     castRawPtrToObject(arr).asInstanceOf[ShortArray]
   }
 
@@ -456,9 +472,11 @@ final class IntArray private () extends Array[Int] {
   @inline override def clone(): IntArray = {
     val arrcls  = classOf[IntArray]
     val arrsize = MemoryLayout.Array.ValuesOffset + 4 * length
+    GC.setMutatorThreadInterruptible(false)
     val arr     = GC.alloc_atomic(arrcls, arrsize)
     val src     = castObjectToRawPtr(this)
     libc.memcpy(arr, src, castIntToRawSizeUnsigned(arrsize))
+    GC.setMutatorThreadInterruptible(true)
     castRawPtrToObject(arr).asInstanceOf[IntArray]
   }
 }
@@ -471,9 +489,11 @@ object IntArray {
     }
     val arrcls  = classOf[IntArray]
     val arrsize = MemoryLayout.Array.ValuesOffset + 4 * length
+    GC.setMutatorThreadInterruptible(false)
     val arr = GC.alloc_atomic(arrcls, arrsize) 
     storeInt(elemRawPtr(arr, MemoryLayout.Array.LengthOffset), length)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.StrideOffset), 4)
+    GC.setMutatorThreadInterruptible(true)
     castRawPtrToObject(arr).asInstanceOf[IntArray]
   }
 
@@ -524,9 +544,11 @@ final class LongArray private () extends Array[Long] {
   @inline override def clone(): LongArray = {
     val arrcls  = classOf[LongArray]
     val arrsize = MemoryLayout.Array.ValuesOffset + 8 * length
+    GC.setMutatorThreadInterruptible(false)
     val arr     = GC.alloc_atomic(arrcls, arrsize)
     val src     = castObjectToRawPtr(this)
     libc.memcpy(arr, src, castIntToRawSizeUnsigned(arrsize))
+    GC.setMutatorThreadInterruptible(true)
     castRawPtrToObject(arr).asInstanceOf[LongArray]
   }
 }
@@ -539,9 +561,11 @@ object LongArray {
     }
     val arrcls  = classOf[LongArray]
     val arrsize = MemoryLayout.Array.ValuesOffset + 8 * length
+    GC.setMutatorThreadInterruptible(false)
     val arr = GC.alloc_atomic(arrcls, arrsize) 
     storeInt(elemRawPtr(arr, MemoryLayout.Array.LengthOffset), length)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.StrideOffset), 8)
+    GC.setMutatorThreadInterruptible(true)
     castRawPtrToObject(arr).asInstanceOf[LongArray]
   }
 
@@ -592,9 +616,11 @@ final class FloatArray private () extends Array[Float] {
   @inline override def clone(): FloatArray = {
     val arrcls  = classOf[FloatArray]
     val arrsize = MemoryLayout.Array.ValuesOffset + 4 * length
+    GC.setMutatorThreadInterruptible(false)
     val arr     = GC.alloc_atomic(arrcls, arrsize)
     val src     = castObjectToRawPtr(this)
     libc.memcpy(arr, src, castIntToRawSizeUnsigned(arrsize))
+    GC.setMutatorThreadInterruptible(true)
     castRawPtrToObject(arr).asInstanceOf[FloatArray]
   }
 }
@@ -607,9 +633,11 @@ object FloatArray {
     }
     val arrcls  = classOf[FloatArray]
     val arrsize = MemoryLayout.Array.ValuesOffset + 4 * length
+    GC.setMutatorThreadInterruptible(false)
     val arr = GC.alloc_atomic(arrcls, arrsize) 
     storeInt(elemRawPtr(arr, MemoryLayout.Array.LengthOffset), length)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.StrideOffset), 4)
+    GC.setMutatorThreadInterruptible(true)
     castRawPtrToObject(arr).asInstanceOf[FloatArray]
   }
 
@@ -660,9 +688,11 @@ final class DoubleArray private () extends Array[Double] {
   @inline override def clone(): DoubleArray = {
     val arrcls  = classOf[DoubleArray]
     val arrsize = MemoryLayout.Array.ValuesOffset + 8 * length
+    GC.setMutatorThreadInterruptible(false)
     val arr     = GC.alloc_atomic(arrcls, arrsize)
     val src     = castObjectToRawPtr(this)
     libc.memcpy(arr, src, castIntToRawSizeUnsigned(arrsize))
+    GC.setMutatorThreadInterruptible(true)
     castRawPtrToObject(arr).asInstanceOf[DoubleArray]
   }
 }
@@ -675,9 +705,11 @@ object DoubleArray {
     }
     val arrcls  = classOf[DoubleArray]
     val arrsize = MemoryLayout.Array.ValuesOffset + 8 * length
+    GC.setMutatorThreadInterruptible(false)
     val arr = GC.alloc_atomic(arrcls, arrsize) 
     storeInt(elemRawPtr(arr, MemoryLayout.Array.LengthOffset), length)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.StrideOffset), 8)
+    GC.setMutatorThreadInterruptible(true)
     castRawPtrToObject(arr).asInstanceOf[DoubleArray]
   }
 
@@ -728,9 +760,11 @@ final class ObjectArray private () extends Array[Object] {
   @inline override def clone(): ObjectArray = {
     val arrcls  = classOf[ObjectArray]
     val arrsize = MemoryLayout.Array.ValuesOffset + castRawSizeToInt(Intrinsics.sizeOf[RawPtr]) * length
+    GC.setMutatorThreadInterruptible(false)
     val arr     = GC.alloc(arrcls, arrsize)
     val src     = castObjectToRawPtr(this)
     libc.memcpy(arr, src, castIntToRawSizeUnsigned(arrsize))
+    GC.setMutatorThreadInterruptible(true)
     castRawPtrToObject(arr).asInstanceOf[ObjectArray]
   }
 }
@@ -743,9 +777,11 @@ object ObjectArray {
     }
     val arrcls  = classOf[ObjectArray]
     val arrsize = MemoryLayout.Array.ValuesOffset + castRawSizeToInt(Intrinsics.sizeOf[RawPtr]) * length
+    GC.setMutatorThreadInterruptible(false)
     val arr = GC.alloc(arrcls, arrsize) 
     storeInt(elemRawPtr(arr, MemoryLayout.Array.LengthOffset), length)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.StrideOffset), castRawSizeToInt(Intrinsics.sizeOf[RawPtr]))
+    GC.setMutatorThreadInterruptible(true)
     castRawPtrToObject(arr).asInstanceOf[ObjectArray]
   }
 
@@ -816,9 +852,11 @@ final class BlobArray private () extends Array[Byte] {
   @inline override def clone(): BlobArray = {
     val arrcls  = classOf[BlobArray]
     val arrsize = MemoryLayout.Array.ValuesOffset + 1 * length
+    GC.setMutatorThreadInterruptible(false)
     val arr     = GC.alloc(arrcls, arrsize)
     val src     = castObjectToRawPtr(this)
     libc.memcpy(arr, src, castIntToRawSizeUnsigned(arrsize))
+    GC.setMutatorThreadInterruptible(true)
     castRawPtrToObject(arr).asInstanceOf[BlobArray]
   }
 }
@@ -831,9 +869,11 @@ object BlobArray {
     }
     val arrcls  = classOf[BlobArray]
     val arrsize = MemoryLayout.Array.ValuesOffset + 1 * length
+    GC.setMutatorThreadInterruptible(false)
     val arr = GC.alloc(arrcls, arrsize) 
     storeInt(elemRawPtr(arr, MemoryLayout.Array.LengthOffset), length)
     storeInt(elemRawPtr(arr, MemoryLayout.Array.StrideOffset), -length)
+    GC.setMutatorThreadInterruptible(true)
     castRawPtrToObject(arr).asInstanceOf[BlobArray]
   }
 
