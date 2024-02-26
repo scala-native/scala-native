@@ -65,7 +65,7 @@ class SourceCodeCache(config: build.Config) {
         }
       }
     )
-    directories.result()
+    directories.result().sortBy(f => (f.getNameCount(), f.toString()))
   }
 
   def findSources(
@@ -82,6 +82,7 @@ class SourceCodeCache(config: build.Config) {
     )
     cache.getOrElseUpdate(
       pos.source, {
+
         // NIR sources are always put in the package name similarry to sources in jar
         // Reconstruct path as it might have been created in incompatibe file system
         val packageBasedSourcePath = {
@@ -136,7 +137,6 @@ class SourceCodeCache(config: build.Config) {
 
           asJar.orElse(asDir)
         }
-
         fromCorrespondingSourcesJar
           .orElse(fromCustomSourceRoots)
           .orElse(fromRelativePath)
