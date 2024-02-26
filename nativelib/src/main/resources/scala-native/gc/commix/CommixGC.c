@@ -25,8 +25,6 @@
 #include "MutatorThread.h"
 #include <stdatomic.h>
 
-void scalanative_GC_collect();
-
 void scalanative_afterexit() {
 #ifdef ENABLE_GC_STATS
     Stats_OnExit(heap.stats);
@@ -90,10 +88,7 @@ INLINE void *scalanative_GC_alloc_atomic(void *info, size_t size) {
     return scalanative_GC_alloc(info, size);
 }
 
-INLINE void scalanative_GC_collect() {
-    assert(!currentMutatorThread->interruptible);
-    Heap_Collect(&heap);
-}
+INLINE void scalanative_GC_collect() { Heap_Collect(&heap); }
 
 INLINE void scalanative_GC_register_weak_reference_handler(void *handler) {
     WeakRefGreyList_SetHandler(handler);
