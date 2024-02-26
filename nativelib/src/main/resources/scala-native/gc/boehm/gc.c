@@ -77,7 +77,7 @@ int scalanative_GC_pthread_create(pthread_t *thread, pthread_attr_t *attr,
 
 // ScalaNativeGC interface stubs. Boehm GC relies on STW using signal handlers
 void scalanative_GC_set_mutator_thread_state(GC_MutatorThreadState unused){};
-void scalanative_GC_set_mutator_thread_interruptible(bool){};
+void scalanative_GC_set_mutator_thread_interruptible(bool interruptible){};
 void scalanative_GC_yield(){};
 
 void scalanative_GC_add_roots(void *addr_low, void *addr_high) {
