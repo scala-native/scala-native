@@ -154,7 +154,6 @@ void LargeAllocator_Sweep(LargeAllocator *allocator, BlockMeta *blockMeta,
     // Therefore we only need to look at a few locations.
     uint32_t superblockSize = BlockMeta_SuperblockSize(blockMeta);
     ObjectMeta *firstObjectMeta = Bytemap_Get(heap.bytemap, blockStart);
-    size_t firstObjectSize = Object_Size((Object *)blockStart);
 
     word_t *blockEnd = blockStart + WORDS_IN_BLOCK * superblockSize;
 
@@ -178,8 +177,7 @@ void LargeAllocator_Sweep(LargeAllocator *allocator, BlockMeta *blockMeta,
     }
     ObjectMeta_Sweep(firstObjectMeta);
 
-    word_t *current = (word_t *)((ubyte_t *)lastBlockStart +
-                                 firstObjectSize % BLOCK_TOTAL_SIZE);
+    word_t *current = lastBlockStart + (MIN_BLOCK_SIZE / WORD_SIZE);
     ObjectMeta *currentMeta = Bytemap_Get(heap.bytemap, current);
     while (current < blockEnd) {
         if (chunkStart == NULL) {
