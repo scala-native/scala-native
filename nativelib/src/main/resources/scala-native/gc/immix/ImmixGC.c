@@ -157,8 +157,8 @@ int scalanative_GC_pthread_create(pthread_t *thread, pthread_attr_t *attr,
 void scalanative_GC_set_mutator_thread_state(GC_MutatorThreadState state) {
     MutatorThread_switchState(currentMutatorThread, state);
 }
-void scalanative_GC_set_mutator_thread_interruptible(bool interruptible) {
-    currentMutatorThread->interruptible = interruptible;
+bool scalanative_GC_set_mutator_thread_interruptible(bool interruptible) {
+    return MutatorThread_setInterruptible(currentMutatorThread, interruptible);
 }
 
 void scalanative_GC_yield() {

@@ -81,7 +81,11 @@ inline static ModuleRef waitForInitialization(ModuleSlot slot,
             YieldThread();
         else
             sleep_ms(1);
+        bool wasInterruptible =
+            scalanative_GC_set_mutator_thread_interruptible(true);
         scalanative_GC_yield();
+        scalanative_GC_set_mutator_thread_interruptible(wasInterruptible);
+
         module = atomic_load_explicit(slot, memory_order_acquire);
     }
     return module;

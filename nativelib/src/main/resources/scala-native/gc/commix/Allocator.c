@@ -292,10 +292,19 @@ NOINLINE word_t *Allocator_allocSlow(Allocator *allocator, Heap *heap,
         if (object != NULL)
             goto done;
 
+        if (!Sweeper_IsSweepDone(heap)) {
+            object = Allocator_lazySweep(allocator, heap, size);
+
+            if (object != NULL)
+                goto done;
+        }
+
         // A small object can always fit in a single free block
         // because it is no larger than 8K while the block is 32K.
         if (Heap_isGrowingPossible(heap, 1))
             Heap_Grow(heap, 1);
+        else
+            Heap_exitWithOutOfMemory("");
     } while (true);
     return NULL; // unreachable
 }

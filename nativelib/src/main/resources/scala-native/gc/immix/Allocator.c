@@ -236,6 +236,8 @@ NOINLINE word_t *Allocator_allocSlow(Allocator *allocator, Heap *heap,
         // because it is no larger than 8K while the block is 32K.
         if (Heap_isGrowingPossible(heap, 1))
             Heap_Grow(heap, 1);
+        else
+            Heap_exitWithOutOfMemory("cannot allocate more objects");
     } while (true);
     return NULL; // unreachable
 }
