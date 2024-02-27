@@ -15,28 +15,28 @@
 
 void scalanative_GC_init() { GC_INIT(); }
 
-void *scalanative_GC_alloc(void *info, size_t size) {
-    void **alloc = (void **)GC_malloc(size);
-    *alloc = info;
+void *scalanative_GC_alloc(Rtti *info, size_t size) {
+    Object *alloc = (Object *)GC_malloc(size);
+    alloc->rtti = info;
     return (void *)alloc;
 }
 
-void *scalanative_GC_alloc_small(void *info, size_t size) {
-    void **alloc = (void **)GC_malloc(size);
-    *alloc = info;
+void *scalanative_GC_alloc_small(Rtti *info, size_t size) {
+    Object *alloc = (Object *)GC_malloc(size);
+    alloc->rtti = info;
     return (void *)alloc;
 }
 
-void *scalanative_GC_alloc_large(void *info, size_t size) {
-    void **alloc = (void **)GC_malloc(size);
-    *alloc = info;
+void *scalanative_GC_alloc_large(Rtti *info, size_t size) {
+    Object *alloc = (Object *)GC_malloc(size);
+    alloc->rtti = info;
     return (void *)alloc;
 }
 
-void *scalanative_GC_alloc_atomic(void *info, size_t size) {
-    void **alloc = (void **)GC_malloc_atomic(size);
+void *scalanative_GC_alloc_atomic(Rtti *info, size_t size) {
+    Object *alloc = (Object *)GC_malloc_atomic(size);
     memset(alloc, 0, size);
-    *alloc = info;
+    alloc->rtti = info;
     return (void *)alloc;
 }
 

@@ -107,10 +107,11 @@ void Marker_markObject(Heap *heap, Stats *stats, GreyPacket **outHolder,
                        Object *object, ObjectMeta *objectMeta) {
     assert(ObjectMeta_IsAllocated(objectMeta) ||
            ObjectMeta_IsMarked(objectMeta));
+    assert(object->rtti != NULL);
+    assert(Object_Size(object) != 0);
 
     Marker_markLockWords(heap, stats, outHolder, outWeakRefHolder, object);
 
-    assert(Object_Size(object) != 0);
     Object_Mark(heap, object, objectMeta);
     GreyPacket *out;
     if (Object_IsWeakReference(object)) {
@@ -191,7 +192,8 @@ NO_SANITIZE int Marker_markRange(Heap *heap, Stats *stats,
     int objectsTraced = 0;
     const intptr_t alignmentMask = ~(sizeof(word_t) - 1);
     ubyte_t *alignedFrom = (ubyte_t *)((intptr_t)from & alignmentMask);
-    ubyte_t *limit = alignedFrom + wordsLength * sizeof(word_t);
+    ubyte_t *to = alignedFrom + (wordsLength + 1) * sizeof(word_t);
+    ubyte_t *limit = (ubyte_t *)((uintptr_t)to & alignmentMask);
     for (ubyte_t *current = alignedFrom; current <= limit; current += stride) {
         word_t *field = *(word_t **)current;
         if (Heap_IsWordInHeap(heap, field)) {
@@ -463,9 +465,10 @@ NO_SANITIZE void Marker_markProgramStack(MutatorThread *thread, Heap *heap,
         stackTop = (word_t **)atomic_load_explicit(&thread->stackTop,
                                                    memory_order_acquire);
     } while (stackTop == NULL);
-    size_t stackSize = stackBottom - stackTop;
-    Marker_markRange(heap, stats, outHolder, outWeakRefHolder, stackTop,
-                     stackSize, sizeof(word_t));
+    size_t rangeSize = labs(stackBottom - stackTop);
+    word_t **rangeStart = stackTop < stackBottom ? stackTop : stackBottom;
+    Marker_markRange(heap, stats, outHolder, outWeakRefHolder, rangeStart,
+                     rangeSize, sizeof(word_t));
 
     // Mark registers buffer
     size_t registersBufferBytes = sizeof(thread->registersBuffer);
@@ -497,16 +500,10 @@ void Marker_markCustomRoots(Heap *heap, Stats *stats, GreyPacket **outHolder,
                             GreyPacket **outWeakRefHolder, GC_Roots *roots) {
     mutex_lock(&roots->modificationLock);
     for (GC_Root *it = roots->head; it != NULL; it = it->next) {
-        word_t **current = (word_t **)it->range.address_low;
-        word_t **limit = (word_t **)it->range.address_high;
-        while (current <= limit) {
-            word_t *object = *current;
-            if (Heap_IsWordInHeap(heap, object)) {
-                Marker_markConservative(heap, stats, outHolder,
-                                        outWeakRefHolder, object);
-            }
-            current += 1;
-        }
+        size_t size = labs(it->range.address_high - it->range.address_low);
+        Marker_markRange(heap, stats, outHolder, outWeakRefHolder,
+                         (word_t **)it->range.address_low, size,
+                         sizeof(word_t));
     }
     mutex_unlock(&roots->modificationLock);
 }

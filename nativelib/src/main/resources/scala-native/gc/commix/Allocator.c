@@ -108,6 +108,10 @@ word_t *Allocator_overflowAllocation(Allocator *allocator, size_t size) {
  */
 INLINE word_t *Allocator_tryAlloc(Allocator *allocator, size_t size) {
     word_t *start = allocator->cursor;
+    if (start == NULL) {
+        Allocator_InitCursors(allocator, true);
+        start = allocator->cursor;
+    }
     assert(start != NULL);
     word_t *end = (word_t *)((uint8_t *)start + size);
 
@@ -183,8 +187,8 @@ bool Allocator_newBlock(Allocator *allocator) {
         // get all the changes done by sweeping
         atomic_thread_fence(memory_order_acquire);
 #ifdef DEBUG_PRINT
-        printf("Allocator_newBlock RECYCLED %p %" PRIu32 "\n", block,
-               BlockMeta_GetBlockIndex(blockMetaStart, block));
+        printf("Allocator_newBlock RECYCLED %p %" PRIu32 " for %p\n", block,
+               BlockMeta_GetBlockIndex(blockMetaStart, block), allocator);
         fflush(stdout);
 #endif
         assert(block->debugFlag == dbg_partial_free);
@@ -195,7 +199,7 @@ bool Allocator_newBlock(Allocator *allocator) {
                                              allocator->heapStart, block);
 
         int lineIndex = BlockMeta_FirstFreeLine(block);
-        assert(lineIndex < LINE_COUNT);
+        assert(lineIndex >= 0 && lineIndex < LINE_COUNT);
         word_t *line = Block_GetLineAddress(blockStart, lineIndex);
 
         FreeLineMeta *lineMeta = (FreeLineMeta *)line;
@@ -203,7 +207,6 @@ bool Allocator_newBlock(Allocator *allocator) {
         assert(size > 0);
         assert(lineMeta->next == LAST_HOLE ||
                (lineMeta->next >= 0 && lineMeta->next <= LINE_COUNT));
-        assert(line >= allocator->cursor);
         BlockMeta_SetFirstFreeLine(block, lineMeta->next);
         allocator->cursor = line;
         allocator->limit = line + (size * WORDS_IN_LINE);
@@ -211,8 +214,8 @@ bool Allocator_newBlock(Allocator *allocator) {
     } else {
         block = BlockAllocator_GetFreeBlock(allocator->blockAllocator);
 #ifdef DEBUG_PRINT
-        printf("Allocator_newBlock %p %" PRIu32 "\n", block,
-               BlockMeta_GetBlockIndex(blockMetaStart, block));
+        printf("Allocator_newBlock %p %" PRIu32 " for %p\n", block,
+               BlockMeta_GetBlockIndex(blockMetaStart, block), allocator);
         fflush(stdout);
 #endif
         if (block == NULL) {
@@ -267,11 +270,11 @@ NOINLINE word_t *Allocator_allocSlow(Allocator *allocator, Heap *heap,
         done:
             assert(Heap_IsWordInHeap(heap, object));
             assert(object != NULL);
-            memset(object, 0, size);
             ObjectMeta *objectMeta = Bytemap_Get(allocator->bytemap, object);
 #ifdef GC_ASSERTIONS
             ObjectMeta_AssertIsValidAllocation(objectMeta, size);
 #endif
+            memset(object, 0, size);
             ObjectMeta_SetAllocated(objectMeta);
             return object;
         }
@@ -288,13 +291,6 @@ NOINLINE word_t *Allocator_allocSlow(Allocator *allocator, Heap *heap,
 
         if (object != NULL)
             goto done;
-
-        if (!Sweeper_IsSweepDone(heap)) {
-            object = Allocator_lazySweep(allocator, heap, size);
-
-            if (object != NULL)
-                goto done;
-        }
 
         // A small object can always fit in a single free block
         // because it is no larger than 8K while the block is 32K.
@@ -313,19 +309,18 @@ INLINE word_t *Allocator_Alloc(Heap *heap, uint32_t size) {
     word_t *end = (word_t *)((uint8_t *)start + size);
 
     // Checks if the end of the block overlaps with the limit
-    if (end > allocator->limit) {
+    if (start == NULL || end > allocator->limit) {
         return Allocator_allocSlow(allocator, heap, size);
     }
 
     allocator->cursor = end;
-
-    memset(start, 0, size);
 
     word_t *object = start;
     ObjectMeta *objectMeta = Bytemap_Get(heap->bytemap, object);
 #ifdef GC_ASSERTIONS
     ObjectMeta_AssertIsValidAllocation(objectMeta, size);
 #endif
+    memset(start, 0, size);
     ObjectMeta_SetAllocated(objectMeta);
 
     // prefetch starting from 36 words away from the object start

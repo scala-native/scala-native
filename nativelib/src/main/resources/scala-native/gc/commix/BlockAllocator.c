@@ -433,10 +433,12 @@ void BlockAllocator_ReserveBlocks(BlockAllocator *blockAllocator) {
     }
 
 #ifdef GC_ASSERTIONS
-    BlockMeta *limit = superblock + SWEEP_RESERVE_BLOCKS;
-    for (BlockMeta *current = superblock; current < limit; current++) {
-        assert(BlockMeta_IsFree(current));
-        assert(current->debugFlag == dbg_free_in_collection);
+    if (superblock != NULL) {
+        BlockMeta *limit = superblock + SWEEP_RESERVE_BLOCKS;
+        for (BlockMeta *current = superblock; current < limit; current++) {
+            assert(BlockMeta_IsFree(current));
+            assert(current->debugFlag == dbg_free_in_collection);
+        }
     }
 #endif
 

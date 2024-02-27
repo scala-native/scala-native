@@ -1,4 +1,3 @@
-#include <stdbool.h>
 #if defined(SCALANATIVE_GC_IMMIX)
 
 #include <stdio.h>
@@ -37,38 +36,38 @@ NOINLINE void scalanative_GC_init() {
     atexit(scalanative_afterexit);
 }
 
-INLINE void *scalanative_GC_alloc(void *info, size_t size) {
+INLINE void *scalanative_GC_alloc(Rtti *info, size_t size) {
     size = MathUtils_RoundToNextMultiple(size, ALLOCATION_ALIGNMENT);
 
     assert(size % ALLOCATION_ALIGNMENT == 0);
 
-    void **alloc;
+    Object *alloc;
     if (size >= LARGE_BLOCK_SIZE) {
-        alloc = (void **)LargeAllocator_Alloc(&heap, size);
+        alloc = (Object *)LargeAllocator_Alloc(&heap, size);
     } else {
-        alloc = (void **)Allocator_Alloc(&heap, size);
+        alloc = (Object *)Allocator_Alloc(&heap, size);
     }
-    *alloc = info;
+    alloc->rtti = info;
     return (void *)alloc;
 }
 
-INLINE void *scalanative_GC_alloc_small(void *info, size_t size) {
+INLINE void *scalanative_GC_alloc_small(Rtti *info, size_t size) {
     size = MathUtils_RoundToNextMultiple(size, ALLOCATION_ALIGNMENT);
 
-    void **alloc = (void **)Allocator_Alloc(&heap, size);
-    *alloc = info;
+    Object *alloc = (Object *)Allocator_Alloc(&heap, size);
+    alloc->rtti = info;
     return (void *)alloc;
 }
 
-INLINE void *scalanative_GC_alloc_large(void *info, size_t size) {
+INLINE void *scalanative_GC_alloc_large(Rtti *info, size_t size) {
     size = MathUtils_RoundToNextMultiple(size, ALLOCATION_ALIGNMENT);
 
-    void **alloc = (void **)LargeAllocator_Alloc(&heap, size);
-    *alloc = info;
+    Object *alloc = (Object *)LargeAllocator_Alloc(&heap, size);
+    alloc->rtti = info;
     return (void *)alloc;
 }
 
-INLINE void *scalanative_GC_alloc_atomic(void *info, size_t size) {
+INLINE void *scalanative_GC_alloc_atomic(Rtti *info, size_t size) {
     return scalanative_GC_alloc(info, size);
 }
 

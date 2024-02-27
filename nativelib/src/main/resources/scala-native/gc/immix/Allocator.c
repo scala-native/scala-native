@@ -104,6 +104,10 @@ word_t *Allocator_overflowAllocation(Allocator *allocator, size_t size) {
  */
 INLINE word_t *Allocator_tryAlloc(Allocator *allocator, size_t size) {
     word_t *start = allocator->cursor;
+    if (start == NULL) {
+        Allocator_InitCursors(allocator, true);
+        start = allocator->cursor;
+    }
     assert(start != NULL);
     word_t *end = (word_t *)((uint8_t *)start + size);
     // Checks if the end of the block overlaps with the limit
@@ -182,7 +186,6 @@ bool Allocator_newBlock(Allocator *allocator) {
         assert(size > 0);
         assert(lineMeta->next == LAST_HOLE ||
                (lineMeta->next >= 0 && lineMeta->next <= LINE_COUNT));
-        assert(line >= allocator->cursor);
         BlockMeta_SetFirstFreeLine(block, lineMeta->next);
         allocator->cursor = line;
         allocator->limit = line + (size * WORDS_IN_LINE);
@@ -217,6 +220,9 @@ NOINLINE word_t *Allocator_allocSlow(Allocator *allocator, Heap *heap,
             assert(object != NULL);
             memset(object, 0, size);
             ObjectMeta *objectMeta = Bytemap_Get(allocator->bytemap, object);
+#ifdef GC_ASSERTIONS
+            ObjectMeta_AssertIsValidAllocation(objectMeta, size);
+#endif
             ObjectMeta_SetAllocated(objectMeta);
             return object;
         }
@@ -243,7 +249,7 @@ INLINE word_t *Allocator_Alloc(Heap *heap, uint32_t size) {
     word_t *end = (word_t *)((uint8_t *)start + size);
 
     // Checks if the end of the block overlaps with the limit
-    if (end > allocator->limit) {
+    if (start == NULL || end > allocator->limit) {
         return Allocator_allocSlow(allocator, heap, size);
     }
 
@@ -253,6 +259,9 @@ INLINE word_t *Allocator_Alloc(Heap *heap, uint32_t size) {
 
     word_t *object = start;
     ObjectMeta *objectMeta = Bytemap_Get(heap->bytemap, object);
+#ifdef GC_ASSERTIONS
+    ObjectMeta_AssertIsValidAllocation(objectMeta, size);
+#endif
     ObjectMeta_SetAllocated(objectMeta);
 
     // prefetch starting from 36 words away from the object start
