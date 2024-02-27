@@ -67,8 +67,13 @@ INLINE void *scalanative_GC_alloc_large(Rtti *info, size_t size) {
     return (void *)alloc;
 }
 
-INLINE void *scalanative_GC_alloc_atomic(Rtti *info, size_t size) {
-    return scalanative_GC_alloc(info, size);
+INLINE void *scalanative_GC_alloc_array(Rtti *info, size_t length,
+                                        size_t stride) {
+    size_t size = info->size + length * stride;
+    ArrayHeader *alloc = (ArrayHeader *)scalanative_GC_alloc(info, size);
+    alloc->length = length;
+    alloc->stride = stride;
+    return (void *)alloc;
 }
 
 INLINE void scalanative_GC_collect() { Heap_Collect(&heap, &stack); }
@@ -156,9 +161,6 @@ int scalanative_GC_pthread_create(pthread_t *thread, pthread_attr_t *attr,
 
 void scalanative_GC_set_mutator_thread_state(GC_MutatorThreadState state) {
     MutatorThread_switchState(currentMutatorThread, state);
-}
-bool scalanative_GC_set_mutator_thread_interruptible(bool interruptible) {
-    return MutatorThread_setInterruptible(currentMutatorThread, interruptible);
 }
 
 void scalanative_GC_yield() {

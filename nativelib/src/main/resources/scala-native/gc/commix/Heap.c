@@ -220,13 +220,9 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
 
 void Heap_Collect(Heap *heap) {
     MutatorThread *mutatorThread = currentMutatorThread;
-    // GC collect triggered during StopTheWorld in interruptible thread might
-    // lead to deadlock It's fine to interrupt thread if it's done before
-    // allocating memory
-    bool wasInterruptible = MutatorThread_setInterruptible(mutatorThread, true);
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
     if (!Synchronizer_acquire())
-        goto done;
+        return;
     while (!Sweeper_IsSweepDone(heap)) {
         // Unlock mutator threads list to allow registration of new threads
         // WriteLock has higher priority then ReadLock - it does NOT wait until
@@ -266,8 +262,6 @@ void Heap_Collect(Heap *heap) {
                               GC_MutatorThreadState_Managed);
     WeakRefGreyList_CallHandlers();
 #endif
-done:
-    MutatorThread_setInterruptible(mutatorThread, wasInterruptible);
 }
 
 bool Heap_shouldGrow(Heap *heap) {

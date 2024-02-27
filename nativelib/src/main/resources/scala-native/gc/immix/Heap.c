@@ -153,13 +153,9 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
 
 void Heap_Collect(Heap *heap, Stack *stack) {
     MutatorThread *mutatorThread = currentMutatorThread;
-    // GC collect triggered during StopTheWorld in interruptible thread might
-    // lead to deadlock It's fine to interrupt thread if it's done before
-    // allocating memory
-    bool wasInterruptible = MutatorThread_setInterruptible(mutatorThread, true);
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
     if (!Synchronizer_acquire())
-        goto done;
+        return;
 #else
     MutatorThread_switchState(currentMutatorThread,
                               GC_MutatorThreadState_Unmanaged);
@@ -199,8 +195,6 @@ void Heap_Collect(Heap *heap, Stack *stack) {
     printf("End collect\n");
     fflush(stdout);
 #endif
-done:
-    MutatorThread_setInterruptible(mutatorThread, wasInterruptible);
 }
 
 bool Heap_shouldGrow(Heap *heap) {

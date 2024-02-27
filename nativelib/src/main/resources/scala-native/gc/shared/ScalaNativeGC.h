@@ -24,7 +24,7 @@ void scalanative_GC_init();
 void *scalanative_GC_alloc(Rtti *info, size_t size);
 void *scalanative_GC_alloc_small(Rtti *info, size_t size);
 void *scalanative_GC_alloc_large(Rtti *info, size_t size);
-void *scalanative_GC_alloc_atomic(Rtti *info, size_t size);
+void *scalanative_GC_alloc_array(Rtti *info, size_t length, size_t stride);
 void scalanative_GC_collect();
 void scalanative_GC_register_weak_reference_handler(void *handler);
 
@@ -66,13 +66,6 @@ typedef enum scalanative_GC_MutatorThreadState {
 // Receiver for notifications on entering/exiting potentially blocking extern
 // functions. Changes the internal state of current (calling) thread
 void scalanative_GC_set_mutator_thread_state(GC_MutatorThreadState);
-
-/* Marks current mutator thread as interruptible making it ignore yieldpoints.
- * Used internally to protect sections of code fragile to premature yielding
- * initialization, e.g.: array allocation before stride/length info assignment,
- * object copy before memcpy
- */
-bool scalanative_GC_set_mutator_thread_interruptible(bool);
 
 // Check for StopTheWorld event and wait for its end if needed
 void scalanative_GC_yield();

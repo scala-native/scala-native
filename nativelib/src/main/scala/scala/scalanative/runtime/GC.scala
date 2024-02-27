@@ -13,12 +13,16 @@ import scala.scalanative.annotation.alwaysinline
 object GC {
   @name("scalanative_GC_alloc")
   def alloc(cls: Class[_], size: Int): RawPtr = extern
-  @name("scalanative_GC_alloc_atomic")
-  def alloc_atomic(cls: Class[_], size: Int): RawPtr = extern
   @name("scalanative_GC_alloc_small")
-  def alloc_small(cls: Class[_], size: Int): RawPtr = extern
+  private[runtime] def alloc_small(cls: Class[_], size: Int): RawPtr = extern
   @name("scalanative_GC_alloc_large")
-  def alloc_large(cls: Class[_], size: Int): RawPtr = extern
+  private[runtime] def alloc_large(cls: Class[_], size: Int): RawPtr = extern
+  @name("scalanative_GC_alloc_array")
+  private[runtime] def alloc_array[T <: Array[_]](
+      cls: Class[T],
+      length: Int,
+      stride: Int
+  ): RawPtr = extern
   @name("scalanative_GC_collect")
   def collect(): Unit = extern
   @name("scalanative_GC_init")
@@ -89,9 +93,6 @@ object GC {
   private[scalanative] def setMutatorThreadState(
       newState: MutatorThreadState
   ): Unit = extern
-
-  @name("scalanative_GC_set_mutator_thread_interruptible")
-  def setMutatorThreadInterruptible(interruptible: Boolean): Unit = extern
 
   /** A call to GC yield mechanism used for polling the GC StopTheWorld event.
    *  If the GarbageCollector wants to perform collection it would stop the

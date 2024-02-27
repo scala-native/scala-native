@@ -83,12 +83,6 @@ INLINE void MutatorThread_switchState(MutatorThread *self,
     self->state = newState;
 }
 
-bool MutatorThread_setInterruptible(MutatorThread *self, bool interruptible) {
-    bool previous = self->interruptible;
-    self->interruptible = interruptible;
-    return previous;
-}
-
 void MutatorThreads_lockRead() {
     rwlock_lockRead(&threadListsModificationLock);
 }

@@ -1,3 +1,5 @@
+#include "immix_commix/headers/ObjectHeader.h"
+#include <stdint.h>
 #if defined(SCALANATIVE_GC_BOEHM)
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
 // Enable support for multithreading in BoehmGC
@@ -33,10 +35,18 @@ void *scalanative_GC_alloc_large(Rtti *info, size_t size) {
     return (void *)alloc;
 }
 
-void *scalanative_GC_alloc_atomic(Rtti *info, size_t size) {
-    Object *alloc = (Object *)GC_malloc_atomic(size);
+void *scalanative_GC_alloc_array(Rtti *info, size_t length, size_t stride) {
+    size_t size = info->size + length * stride;
+    ArrayHeader *alloc;
+    int32_t classId = info->rt.id;
+    if (classId == __object_array_id || classId == __blob_array_id)
+        alloc = (ArrayHeader *)GC_malloc(size);
+    else
+        alloc = (ArrayHeader *)GC_malloc_atomic(size);
     memset(alloc, 0, size);
     alloc->rtti = info;
+    alloc->length = length;
+    alloc->stride = stride;
     return (void *)alloc;
 }
 
@@ -77,9 +87,7 @@ int scalanative_GC_pthread_create(pthread_t *thread, pthread_attr_t *attr,
 
 // ScalaNativeGC interface stubs. Boehm GC relies on STW using signal handlers
 void scalanative_GC_set_mutator_thread_state(GC_MutatorThreadState unused){};
-bool scalanative_GC_set_mutator_thread_interruptible(bool interruptible) {
-    return true;
-};
+
 void scalanative_GC_yield(){};
 
 void scalanative_GC_add_roots(void *addr_low, void *addr_high) {

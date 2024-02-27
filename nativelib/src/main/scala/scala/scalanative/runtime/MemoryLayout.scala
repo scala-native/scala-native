@@ -19,7 +19,7 @@ object MemoryLayout {
     "Field available only in multithreading mode"
   )
 
-  private[scalanative] object Rtti {
+  object Rtti {
     @alwaysinline def ClassOffset = 0
     @alwaysinline def LockWordOffset =
       if (isMultithreadingEnabled) PtrSize
@@ -43,7 +43,7 @@ object MemoryLayout {
     // they should never be accessed in the runtime
   }
 
-  private[scalanative] object Object {
+  object Object {
     @alwaysinline def RttiOffset = 0
     @alwaysinline def LockWordOffset =
       if (isMultithreadingEnabled) PtrSize
@@ -53,7 +53,7 @@ object MemoryLayout {
       else PtrSize
   }
 
-  private[scalanative] object Array {
+  object Array {
     @alwaysinline def RttiOffset = 0
     @alwaysinline def LockWordOffset =
       if (isMultithreadingEnabled) PtrSize

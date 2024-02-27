@@ -48,11 +48,16 @@ class _Object {
     case _: Cloneable =>
       val cls = __getClass()
       val size = cls.size
-      GC.setMutatorThreadInterruptible(false)
       val clone = GC.alloc(cls.asInstanceOf[Class[_]], size)
       val src = castObjectToRawPtr(this)
       libc.memcpy(clone, src, Intrinsics.castIntToRawSize(size))
-      GC.setMutatorThreadInterruptible(true)
+      if (isMultithreadingEnabled) {
+        // Reset object monitor
+        storeRawSize(
+          elemRawPtr(clone, MemoryLayout.Array.LockWordOffset),
+          castIntToRawSize(0)
+        )
+      }
       castRawPtrToObject(clone).asInstanceOf[_Object]
     case _ =>
       throw new CloneNotSupportedException(

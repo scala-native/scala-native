@@ -128,8 +128,12 @@ void *scalanative_GC_alloc_large(Rtti *info, size_t size) {
     return scalanative_GC_alloc(info, size);
 }
 
-void *scalanative_GC_alloc_atomic(Rtti *info, size_t size) {
-    return scalanative_GC_alloc(info, size);
+void *scalanative_GC_alloc_array(Rtti *info, size_t length, size_t stride) {
+    size_t size = info->size + length * stride;
+    ArrayHeader *alloc = (ArrayHeader *)scalanative_GC_alloc(info, size);
+    alloc->length = length;
+    alloc->stride = stride;
+    return alloc;
 }
 
 void scalanative_GC_collect() {}
@@ -154,9 +158,6 @@ int scalanative_GC_pthread_create(pthread_t *thread, pthread_attr_t *attr,
 
 // ScalaNativeGC interface stubs. None GC does not need STW
 void scalanative_GC_set_mutator_thread_state(GC_MutatorThreadState unused){};
-bool scalanative_GC_set_mutator_thread_interruptible(bool interruptible) {
-    return true;
-};
 void scalanative_GC_yield(){};
 void scalanative_GC_add_roots(void *addr_low, void *addr_high) {}
 void scalanative_GC_remove_roots(void *addr_low, void *addr_high) {}
