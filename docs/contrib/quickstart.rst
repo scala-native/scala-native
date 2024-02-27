@@ -100,19 +100,28 @@ Then you'll be able to use locally published version in other projects.
 Locally build docs
 --------------------
 
-1. First time building the docs. This command will setup & build the docs.
-
-.. code-block:: text
-
-    $ bash scripts/makedocs setup
-
-2. If setup is already done. This command will only build the docs assuming setup is already done.
+1. With the current directory set to the project root, execute:
 
 .. code-block:: text
 
     $ bash scripts/makedocs 
 
-3. Navigate to ``docs/_build/html`` directory and open ``index.html`` file in your browser.
+2. For use in the next step, note the full, absolute path to the
+   ``docs/_build/html`` directory. For example:
+
+.. code-block:: text
+		
+    /Users/Νίκη/MyScalaNativeProject/docs/_build/html
+    
+3. Verify the results by opening the ``index.html`` of that directory
+   in your favorite browser using a URL of the form
+   ``file://<absolute_path>/index.html``,
+   where ``<absolute_path>`` is the path
+   noted in step 2. For example:
+
+.. code-block:: text
+
+    file:///Users/Νίκη/MyScalaNativeProject/docs/_build/html/index.html
 
 Configure Native Build
 ----------------------

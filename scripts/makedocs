@@ -1,29 +1,125 @@
 #!/usr/bin/env bash
-cd docs
+# Create html documentation for the Scala Native project.
+#
+#
+
+function popd_handler() {
+    popd > /dev/null
+    exit 1
+}
+
+trap popd_handler ERR
+
+REQIRED_SOFTWARE="make pip python sphinx-build" 
+
+function sw_exists() {
+    CMD=$1
+    hash $CMD > /dev/null
+    if [[ $? -ne 0 ]]; then
+	echo "Required software '$CMD' not found."
+	echo "required software: $REQUIRED_SOFTWARE"
+	exit 1
+    fi
+}
+
+function check_required_software {
+    # Even Archimedes needed a lever and a place to stand.
+    for i in $REQUIRED_SOFTWARE ; do
+	sw_exists $i
+    done
+}    
+
 function create_venv {
-  python -m venv .venv
+    python -m venv .venv
 }
 
 function activate_venv {
-  source .venv/bin/activate
+    source .venv/bin/activate
 }
 
-function install_req {
-  pip install -r ../docs/requirements.txt
+function install_sphinx_req {
+    pip install -r requirements.txt # ${project_root}/docs/
 }
 
 function generate_docs {
-  make SPHINX_OPTS="-W" html
+    make SPHINX_OPTS="-W" html
 }
 
-function usage {
-  echo "  Usage:"
-  echo "    1. bash makedocs setup # if setup is not done."
-  echo "    2. bash makedocs       # if setup is done and building docs is needed"
-}
+function setup_docbuild {
+    # Someday this function should be improved.  The .venv file may
+    # exist but its contends may be outdated or stale.
+    # Checking for file or directory last access time in a way that
+    # is robust across platforms is complicated.
+    # "find" works on Linux, macOS, and probably FreeBSD.
+    #
+    # Writing a special python script would probably work across all
+    # supported operating systems, but that would be beyond the scope
+    # of the current effort. Such a script could probably replace
+    # the entire "create" logic of this function. An improvement for
+    # python literate keeners.
 
-case $@ in
-  "")       activate_venv; generate_docs; exit 0 ;;
-  setup)    create_venv; activate_venv; install_req; generate_docs; exit 0 ;;
-  *)        echo "Unknown parameters $@"; usage; exit 1 ;;
-esac
+    ACTIVATED=false
+    if [[ ! -d .venv ]]; then
+	echo "${PWD}/.venv directory not found, setting it up. Expect pauses."
+	create_venv
+	activate_venv
+	ACTIVATED=true
+	install_sphinx_req
+    fi
+
+    if [[ "$ACTIVATED" = false ]]; then
+	activate_venv
+    fi
+}    
+
+function prepare {
+    check_required_software
+    setup_docbuild
+}    
+
+## Begin
+
+# This script expects the directory layout of the Scala Native project.
+# This allows running the script from any of a number of reasonably expected
+# locations:  the project root, the "scripts" sub-directory where it is
+# located or the "docs" directory which might cause it to be used.  
+
+DOCDIR="docs"
+CWD=${PWD##*/} ## last path element, basename using bash builtins
+
+if [[ ! -d .git ]]; then # project root, DOCDIR already set correctly
+    # check likely alternatives
+    if [[ "$CWD" = "scripts" ]]; then
+	DOCDIR="../$DOCDIR"     
+    elif [[ "$CWD" = $DOCDIR ]]; then
+	# Yes, unnecessary but makes the rest of the pushd/popd logic easier.
+	DOCDIR="."
+    else
+	echo "No .git directory found."
+	echo "Please change directory to project root and try again."
+	exit 1
+    fi
+fi
+
+if [[ ! -d $DOCDIR ]]; then
+    echo "Documentaton directory '$DOCDIR' not found."
+    exit 1
+fi
+
+pushd $DOCDIR > /dev/null
+
+if [[ $? -ne 0 ]]; then
+    echo "Changing to directory '$DOCDIR' failed"
+    exit 1
+fi
+
+trap popd_handler ERR
+set -e # error if any after this command returns non-zero/fails.
+
+prepare
+
+generate_docs
+
+popd > /dev/null
+
+## End
