@@ -189,7 +189,10 @@ object ZipEntry extends ZipConstants {
     }
   }
 
-  def fromInputStream(ler: LittleEndianReader, in: InputStream): ZipEntry = {
+  private[zip] def fromInputStream(
+      ler: LittleEndianReader,
+      in: InputStream
+  ): ZipEntry = {
     val hdrBuf = ler.hdrBuf
     myReadFully(in, hdrBuf)
 
@@ -227,20 +230,20 @@ object ZipEntry extends ZipConstants {
     val nameBytes = new Array[Byte](nameLen)
     myReadFully(in, nameBytes)
 
-    val commentBytes =
-      if (commentLen > 0) {
-        val commentBytes = new Array[Byte](commentLen)
-        myReadFully(in, commentBytes)
-        commentBytes
-      } else {
-        null
-      }
-
     val extra =
       if (extraLen > 0) {
         val extra = new Array[Byte](extraLen)
         myReadFully(in, extra)
         extra
+      } else {
+        null
+      }
+
+    val commentBytes =
+      if (commentLen > 0) {
+        val commentBytes = new Array[Byte](commentLen)
+        myReadFully(in, commentBytes)
+        commentBytes
       } else {
         null
       }
