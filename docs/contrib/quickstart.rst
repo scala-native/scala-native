@@ -100,17 +100,13 @@ Then you'll be able to use locally published version in other projects.
 Locally build docs
 --------------------
 
-1. First time building the docs. This command will setup & build the docs.
+1. Install `docker`
+
+2. Run the following command to build the docs. This command will build the Docker image and run the sphinx build.
 
 .. code-block:: text
 
-    $ bash scripts/makedocs setup
-
-2. If setup is already done. This command will only build the docs assuming setup is already done.
-
-.. code-block:: text
-
-    $ bash scripts/makedocs 
+    $ make build_docs
 
 3. Navigate to ``docs/_build/html`` directory and open ``index.html`` file in your browser.
 
