@@ -24,6 +24,10 @@ void scalanative_GC_init();
 void *scalanative_GC_alloc(Rtti *info, size_t size);
 void *scalanative_GC_alloc_small(Rtti *info, size_t size);
 void *scalanative_GC_alloc_large(Rtti *info, size_t size);
+/* Allocate an array with capacity of `length` elements of element size equal to
+ * `stride`. Total ammount of allocated memory should be at least equal to
+ * `info->rtti + length * stride`. After successful allocation GC is
+ * responsible to assign length and stride to Array header. */
 void *scalanative_GC_alloc_array(Rtti *info, size_t length, size_t stride);
 void scalanative_GC_collect();
 void scalanative_GC_register_weak_reference_handler(void *handler);

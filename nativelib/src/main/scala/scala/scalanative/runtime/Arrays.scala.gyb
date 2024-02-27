@@ -250,12 +250,11 @@ object ${T}Array {
     }
     val arrcls  = classOf[${T}Array]
     val arr = GC.alloc_array(arrcls, length, ${sizeT}) 
+    val array = castRawPtrToObject(arr).asInstanceOf[${T}Array]
   % if T == 'Blob':
-    storeInt(elemRawPtr(arr, MemoryLayout.Array.StrideOffset), -length)
-  % else:
-    storeInt(elemRawPtr(arr, MemoryLayout.Array.StrideOffset), ${sizeT})
+    array.setScannableLimitUnsafe(length)
   % end
-    castRawPtrToObject(arr).asInstanceOf[${T}Array]
+    array
   }
 
   @inline def alloc(length: Int, zone: SafeZone): ${T}Array = {
@@ -265,13 +264,14 @@ object ${T}Array {
     val arrcls  = classOf[${T}Array]
     val arrsize = castIntToRawSizeUnsigned(MemoryLayout.Array.ValuesOffset + ${sizeT} * length)
     val arr = zone.allocImpl(castObjectToRawPtr(arrcls), arrsize)
+    val array = castRawPtrToObject(arr).asInstanceOf[${T}Array]
     storeInt(elemRawPtr(arr, MemoryLayout.Array.LengthOffset), length)
   % if T == 'Blob':
-    storeInt(elemRawPtr(arr, MemoryLayout.Array.StrideOffset), -length)
+    array.setScannableLimitUnsafe(length)
   % else:
     storeInt(elemRawPtr(arr, MemoryLayout.Array.StrideOffset), ${sizeT})
   % end
-    castRawPtrToObject(arr).asInstanceOf[${T}Array]
+    array
   }
 
   @inline def snapshot(length: Int, data: RawPtr): ${T}Array = {

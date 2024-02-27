@@ -1,5 +1,3 @@
-#include "immix_commix/headers/ObjectHeader.h"
-#include <stdint.h>
 #if defined(SCALANATIVE_GC_BOEHM)
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
 // Enable support for multithreading in BoehmGC
