@@ -77,6 +77,9 @@ run/f-interpolator-unit.scala
 # Using java.util.concurrent.ConcurrentSkipListMap() + java.util.Timer
 run/t12572.scala
 
+# Using java.util.concurrent.CompletionStage + java.util.concurrent.CompletableFuture
+run/t12918.scala
+
 # Taking too much time >60sec
 run/t2417.scala
 run/t3989.scala
@@ -843,6 +846,8 @@ run/t12062.scala
 
 
 # partest.DirectTest
+run/t7324.scala
+run/repl-suspended-warnings.scala
 run/t1406.scala
 run/t12405.scala
 run/t12490.scala
@@ -945,6 +950,7 @@ run/StubErrorTypeDef.scala
 run/t9403
 
 # partest.BytecodeTest
+run/nonfatal.scala
 run/t7106
 run/t7974
 run/t8601-closure-elim.scala
@@ -964,6 +970,7 @@ run/t8935-object.scala
 run/t8608-no-format.scala
 
 # Using .java source files
+run/t9714
 run/t12523
 run/t4317
 run/t4238
