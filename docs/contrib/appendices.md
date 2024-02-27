@@ -1,4 +1,4 @@
-# Appendix A: Finding main methods in .ll files[]
+# Appendix A: Finding main methods in .ll files
 
 [Name mangling](./mangling.md) describes the precise, low level details Scala Native uses to transform names when generating code into `.ll` files.
 
