@@ -132,6 +132,9 @@ word_t *LargeAllocator_tryAlloc(LargeAllocator *allocator,
     }
 
     ObjectMeta *objectMeta = Bytemap_Get(allocator->bytemap, (word_t *)chunk);
+#ifdef GC_ASSERTIONS
+    ObjectMeta_AssertIsValidAllocation(objectMeta, actualBlockSize);
+#endif
     ObjectMeta_SetAllocated(objectMeta);
     word_t *object = (word_t *)chunk;
     memset(object, 0, actualBlockSize);
@@ -153,12 +156,13 @@ void LargeAllocator_Sweep(LargeAllocator *allocator, BlockMeta *blockMeta,
     // the first block or anywhere at the last block, except the begining.
     // Therefore we only need to look at a few locations.
     uint32_t superblockSize = BlockMeta_SuperblockSize(blockMeta);
+    ObjectMeta *firstObjectMeta = Bytemap_Get(heap.bytemap, blockStart);
+
     word_t *blockEnd = blockStart + WORDS_IN_BLOCK * superblockSize;
 
-    ObjectMeta *firstObject = Bytemap_Get(heap.bytemap, blockStart);
-    assert(!ObjectMeta_IsFree(firstObject));
+    assert(!ObjectMeta_IsFree(firstObjectMeta));
     BlockMeta *lastBlock = blockMeta + superblockSize - 1;
-    if (superblockSize > 1 && !ObjectMeta_IsMarked(firstObject)) {
+    if (superblockSize > 1 && !ObjectMeta_IsMarked(firstObjectMeta)) {
         // release free superblock starting from the first object
         BlockAllocator_AddFreeBlocks(&blockAllocator, blockMeta,
                                      superblockSize - 1);
@@ -171,18 +175,17 @@ void LargeAllocator_Sweep(LargeAllocator *allocator, BlockMeta *blockMeta,
     word_t *chunkStart = NULL;
 
     // the tail end of the first object
-    if (!ObjectMeta_IsMarked(firstObject)) {
+    if (!ObjectMeta_IsMarked(firstObjectMeta)) {
         chunkStart = lastBlockStart;
     }
-    ObjectMeta_Sweep(firstObject);
+    ObjectMeta_Sweep(firstObjectMeta);
 
     word_t *current = lastBlockStart + (MIN_BLOCK_SIZE / WORD_SIZE);
     ObjectMeta *currentMeta = Bytemap_Get(heap.bytemap, current);
     while (current < blockEnd) {
         if (chunkStart == NULL) {
-            // if (ObjectMeta_IsAllocated(currentMeta)||
-            // ObjectMeta_IsPlaceholder(currentMeta)) {
-            if (*currentMeta & 0x3) {
+            if (ObjectMeta_IsAllocated(currentMeta) ||
+                ObjectMeta_IsPlaceholder(currentMeta)) {
                 chunkStart = current;
             }
         } else {

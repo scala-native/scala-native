@@ -37,7 +37,6 @@ void MutatorThread_init(word_t **stackBottom);
 void MutatorThread_delete(MutatorThread *self);
 void MutatorThread_switchState(MutatorThread *self,
                                GC_MutatorThreadState newState);
-
 void MutatorThreads_init();
 void MutatorThreads_add(MutatorThread *node);
 void MutatorThreads_remove(MutatorThread *node);

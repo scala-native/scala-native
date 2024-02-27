@@ -101,12 +101,12 @@ void scalanative_GC_init() {
 #endif // GC_ASAN
 }
 
-void *scalanative_GC_alloc(void *info, size_t size) {
+void *scalanative_GC_alloc(Rtti *info, size_t size) {
     size = size + (8 - size % 8);
 #ifndef GC_ASAN
     if (current + size < end) {
-        void **alloc = current;
-        *alloc = info;
+        Object *alloc = (Object *)current;
+        alloc->rtti = info;
         current += size;
         return alloc;
     } else {
@@ -114,22 +114,26 @@ void *scalanative_GC_alloc(void *info, size_t size) {
         return scalanative_GC_alloc(info, size);
     }
 #else
-    void **alloc = calloc(size, 1);
-    *alloc = info;
+    Object *alloc = (Object *)calloc(size, 1);
+    alloc->rtti = info;
     return alloc;
 #endif
 }
 
-void *scalanative_GC_alloc_small(void *info, size_t size) {
+void *scalanative_GC_alloc_small(Rtti *info, size_t size) {
     return scalanative_GC_alloc(info, size);
 }
 
-void *scalanative_GC_alloc_large(void *info, size_t size) {
+void *scalanative_GC_alloc_large(Rtti *info, size_t size) {
     return scalanative_GC_alloc(info, size);
 }
 
-void *scalanative_GC_alloc_atomic(void *info, size_t size) {
-    return scalanative_GC_alloc(info, size);
+void *scalanative_GC_alloc_array(Rtti *info, size_t length, size_t stride) {
+    size_t size = info->size + length * stride;
+    ArrayHeader *alloc = (ArrayHeader *)scalanative_GC_alloc(info, size);
+    alloc->length = length;
+    alloc->stride = stride;
+    return alloc;
 }
 
 void scalanative_GC_collect() {}

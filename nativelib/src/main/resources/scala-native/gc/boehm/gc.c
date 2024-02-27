@@ -15,28 +15,36 @@
 
 void scalanative_GC_init() { GC_INIT(); }
 
-void *scalanative_GC_alloc(void *info, size_t size) {
-    void **alloc = (void **)GC_malloc(size);
-    *alloc = info;
+void *scalanative_GC_alloc(Rtti *info, size_t size) {
+    Object *alloc = (Object *)GC_malloc(size);
+    alloc->rtti = info;
     return (void *)alloc;
 }
 
-void *scalanative_GC_alloc_small(void *info, size_t size) {
-    void **alloc = (void **)GC_malloc(size);
-    *alloc = info;
+void *scalanative_GC_alloc_small(Rtti *info, size_t size) {
+    Object *alloc = (Object *)GC_malloc(size);
+    alloc->rtti = info;
     return (void *)alloc;
 }
 
-void *scalanative_GC_alloc_large(void *info, size_t size) {
-    void **alloc = (void **)GC_malloc(size);
-    *alloc = info;
+void *scalanative_GC_alloc_large(Rtti *info, size_t size) {
+    Object *alloc = (Object *)GC_malloc(size);
+    alloc->rtti = info;
     return (void *)alloc;
 }
 
-void *scalanative_GC_alloc_atomic(void *info, size_t size) {
-    void **alloc = (void **)GC_malloc_atomic(size);
+void *scalanative_GC_alloc_array(Rtti *info, size_t length, size_t stride) {
+    size_t size = info->size + length * stride;
+    ArrayHeader *alloc;
+    int32_t classId = info->rt.id;
+    if (classId == __object_array_id || classId == __blob_array_id)
+        alloc = (ArrayHeader *)GC_malloc(size);
+    else
+        alloc = (ArrayHeader *)GC_malloc_atomic(size);
     memset(alloc, 0, size);
-    *alloc = info;
+    alloc->rtti = info;
+    alloc->length = length;
+    alloc->stride = stride;
     return (void *)alloc;
 }
 
@@ -77,6 +85,7 @@ int scalanative_GC_pthread_create(pthread_t *thread, pthread_attr_t *attr,
 
 // ScalaNativeGC interface stubs. Boehm GC relies on STW using signal handlers
 void scalanative_GC_set_mutator_thread_state(GC_MutatorThreadState unused){};
+
 void scalanative_GC_yield(){};
 
 void scalanative_GC_add_roots(void *addr_low, void *addr_high) {

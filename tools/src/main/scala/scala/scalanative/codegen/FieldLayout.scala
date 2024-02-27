@@ -5,7 +5,7 @@ import scalanative.linker.{Class, Field}
 
 class FieldLayout(cls: Class)(implicit meta: Metadata) {
 
-  import meta.layouts.{Object, ObjectHeader}
+  import meta.layouts.{Object, ObjectHeader, ArrayHeader}
   import meta.platform
 
   def index(fld: Field) = entries.indexOf(fld) + Object.ValuesOffset
@@ -21,12 +21,15 @@ class FieldLayout(cls: Class)(implicit meta: Metadata) {
       base ++ cls.members.collect { case f: Field => f }
     }
     val usesCustomAlignment = entries.exists(_.attrs.align.isDefined)
+    val isArray = nir.Type.isArray(cls.name)
     if (usesCustomAlignment) {
+      assert(!isArray) // Only regular object can have custom alignmet
       val fields = entries.sortBy(_.attrs.align.flatMap(_.group))
       val layout = MemoryLayout.ofAlignedFields(fields)
       (fields, layout)
     } else {
-      val layout = MemoryLayout(ObjectHeader.layout +: entries.map(_.ty))
+      val rttiHeader = if (isArray) ArrayHeader else ObjectHeader
+      val layout = MemoryLayout(rttiHeader.layout +: entries.map(_.ty))
       (entries, layout)
     }
   }

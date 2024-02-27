@@ -219,6 +219,7 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
 }
 
 void Heap_Collect(Heap *heap) {
+    MutatorThread *mutatorThread = currentMutatorThread;
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
     if (!Synchronizer_acquire())
         return;

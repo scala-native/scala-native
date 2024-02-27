@@ -31,7 +31,8 @@ import scalanative.unsafe._
 import scalanative.unsigned._
 import scalanative.annotation.alwaysinline
 import scala.scalanative.memory.SafeZone
-import scalanative.runtime.Intrinsics._
+import scala.scalanative.runtime.Intrinsics._
+import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
 
 sealed abstract class Array[T]
     extends java.io.Serializable
@@ -101,15 +102,15 @@ object Array {
       throw new ArrayStoreException("Invalid array copy.")
     } else if (len < 0) {
       throw new ArrayIndexOutOfBoundsException("length is negative")
+    } else if (len == 0) {
+      ()
     } else if (fromPos < 0 || fromPos + len > from.length) {
       throwOutOfBounds(fromPos, from.length)
     } else if (toPos < 0 || toPos + len > to.length) {
       throwOutOfBounds(toPos, to.length)
-    } else if (len == 0) {
-      ()
     } else {
-      val fromPtr = from.atRaw(fromPos)
-      val toPtr   = to.atRaw(toPos)
+      val fromPtr = from.atRawUnsafe(fromPos)
+      val toPtr   = to.atRawUnsafe(toPos)
       val size    = to.stride * len
       libc.memmove(toPtr, fromPtr, castIntToRawSizeUnsigned(size))
     }
@@ -178,7 +179,6 @@ object Array {
 % for T, sizeT in types.items():
 %{
    Repr = 'Byte' if T == 'Blob' else T
-   allocGC = 'GC.alloc' if T == 'Object' else 'GC.alloc' if T == 'Blob' else 'GC.alloc_atomic'
 }%
 
 % if T == 'Blob':
@@ -227,11 +227,18 @@ final class ${T}Array private () extends Array[${Repr}] {
 
   @inline override def clone(): ${T}Array = {
     val arrcls  = classOf[${T}Array]
-    val arrsize = MemoryLayout.Array.ValuesOffset + ${sizeT} * length
-    val arr     = ${allocGC}(arrcls, arrsize)
+    val arr     = GC.alloc_array(arrcls, length, ${sizeT})
     val src     = castObjectToRawPtr(this)
-    libc.memcpy(arr, src, castIntToRawSizeUnsigned(arrsize))
-    castRawPtrToObject(arr).asInstanceOf[${T}Array]
+    libc.memcpy(
+      elemRawPtr(arr, MemoryLayout.Array.ValuesOffset),
+      elemRawPtr(src, MemoryLayout.Array.ValuesOffset),
+      castIntToRawSizeUnsigned(${sizeT} * length)
+    )
+    val array = castRawPtrToObject(arr).asInstanceOf[${T}Array]
+  % if T == 'Blob':
+    array.setScannableLimitUnsafe(this.scannableLimit)
+  % end
+    array
   }
 }
 
@@ -242,15 +249,12 @@ object ${T}Array {
       throw new NegativeArraySizeException
     }
     val arrcls  = classOf[${T}Array]
-    val arrsize = MemoryLayout.Array.ValuesOffset + ${sizeT} * length
-    val arr = ${allocGC}(arrcls, arrsize) 
-    storeInt(elemRawPtr(arr, MemoryLayout.Array.LengthOffset), length)
+    val arr = GC.alloc_array(arrcls, length, ${sizeT}) 
+    val array = castRawPtrToObject(arr).asInstanceOf[${T}Array]
   % if T == 'Blob':
-    storeInt(elemRawPtr(arr, MemoryLayout.Array.StrideOffset), -length)
-  % else:
-    storeInt(elemRawPtr(arr, MemoryLayout.Array.StrideOffset), ${sizeT})
+    array.setScannableLimitUnsafe(length)
   % end
-    castRawPtrToObject(arr).asInstanceOf[${T}Array]
+    array
   }
 
   @inline def alloc(length: Int, zone: SafeZone): ${T}Array = {
@@ -260,13 +264,14 @@ object ${T}Array {
     val arrcls  = classOf[${T}Array]
     val arrsize = castIntToRawSizeUnsigned(MemoryLayout.Array.ValuesOffset + ${sizeT} * length)
     val arr = zone.allocImpl(castObjectToRawPtr(arrcls), arrsize)
+    val array = castRawPtrToObject(arr).asInstanceOf[${T}Array]
     storeInt(elemRawPtr(arr, MemoryLayout.Array.LengthOffset), length)
   % if T == 'Blob':
-    storeInt(elemRawPtr(arr, MemoryLayout.Array.StrideOffset), -length)
+    array.setScannableLimitUnsafe(length)
   % else:
     storeInt(elemRawPtr(arr, MemoryLayout.Array.StrideOffset), ${sizeT})
   % end
-    castRawPtrToObject(arr).asInstanceOf[${T}Array]
+    array
   }
 
   @inline def snapshot(length: Int, data: RawPtr): ${T}Array = {

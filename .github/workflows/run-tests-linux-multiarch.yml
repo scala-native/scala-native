@@ -98,13 +98,14 @@ jobs:
             lto: none
           - build-mode: debug
             lto: thin
+          # Fails frequently
+          - gc: commix
+            lto: thin
           # Reduce ammount of builds combinations
           - gc: immix
             lto: none
           - gc: immix
             build-mode: debug
-          - gc: commix
-            lto: none
           - gc: commix
             build-mode: debug
           - gc: boehm

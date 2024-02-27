@@ -246,9 +246,8 @@ uint32_t Sweeper_sweepSuperblock(LargeAllocator *allocator,
     ObjectMeta *currentMeta = Bytemap_Get(allocator->bytemap, current);
     while (current < blockEnd) {
         if (chunkStart == NULL) {
-            // if (ObjectMeta_IsAllocated(currentMeta)||
-            // ObjectMeta_IsPlaceholder(currentMeta)) {
-            if (*currentMeta & 0x3) {
+            if (ObjectMeta_IsAllocated(currentMeta) ||
+                ObjectMeta_IsPlaceholder(currentMeta)) {
                 chunkStart = current;
             }
         } else {
@@ -390,10 +389,10 @@ void Sweeper_Sweep(Stats *stats, atomic_uint_fast32_t *cursorDone,
 #endif
 
     // skip superblock_middle these are handled by the previous batch
-    // (BlockMeta_IsSuperblockStartMe(first) ||
-    // BlockMeta_IsSuperblockTail(first) || BlockMeta_IsCoalesceMe(first)) &&
-    // first < limit 0xb, 0x3, 0x13).contains(flags)
-    while (((first->block.simple.flags & 0x3) == 0x3) && first < limit) {
+    while ((BlockMeta_IsSuperblockStartMe(first) ||
+            BlockMeta_IsSuperblockTail(first) ||
+            BlockMeta_IsCoalesceMe(first)) &&
+           first < limit) {
 #ifdef DEBUG_PRINT
         printf("Sweeper_Sweep SuperblockTail %p %" PRIu32 "\n", first,
                BlockMeta_GetBlockIndex(heap.blockMetaStart, first));
@@ -664,12 +663,12 @@ void Sweeper_LazyCoalesce(Heap *heap, Stats *stats) {
 void Sweeper_ClearIsSwept(Heap *heap) {
     BlockMeta *current = (BlockMeta *)heap->blockMetaStart;
     BlockMeta *limit = (BlockMeta *)heap->blockMetaEnd;
+    BlockMeta *reserveFirst = (BlockMeta *)blockAllocator.reservedSuperblock;
+    BlockMeta *reserveLimit = reserveFirst + SWEEP_RESERVE_BLOCKS;
+    if (reserveFirst == NULL)
+        return;
     while (current < limit) {
-        BlockMeta *reserveFirst =
-            (BlockMeta *)blockAllocator.reservedSuperblock;
-        BlockMeta *reserveLimit = reserveFirst + SWEEP_RESERVE_BLOCKS;
         if (current < reserveFirst || current >= reserveLimit) {
-            assert(reserveFirst != NULL);
             current->debugFlag = dbg_must_sweep;
         }
         current++;

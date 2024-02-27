@@ -17,6 +17,7 @@ void BlockAllocator_Init(BlockAllocator *blockAllocator, word_t *blockMetaStart,
     }
     BlockAllocator_Clear(blockAllocator);
 
+    blockAllocator->freeBlockCount = blockCount;
     blockAllocator->smallestSuperblock.cursor = (BlockMeta *)blockMetaStart;
     blockAllocator->smallestSuperblock.limit =
         (BlockMeta *)blockMetaStart + blockCount;
@@ -69,10 +70,8 @@ BlockAllocator_getFreeBlockSlow(BlockAllocator *blockAllocator) {
         // it might be safe to remove this
         BlockMeta_SetSuperblockSize(superblock, 0);
         BlockMeta_SetFlag(superblock, block_simple);
-        return superblock;
-    } else {
-        return NULL;
     }
+    return superblock;
 }
 
 INLINE BlockMeta *BlockAllocator_GetFreeBlock(BlockAllocator *blockAllocator) {
@@ -87,8 +86,10 @@ INLINE BlockMeta *BlockAllocator_GetFreeBlock(BlockAllocator *blockAllocator) {
         blockAllocator->smallestSuperblock.cursor++;
     }
     BlockAllocator_Release(blockAllocator);
-
-    // not decrementing freeBlockCount, because it is only used after sweep
+    if (block != NULL) {
+        atomic_fetch_add_explicit(&blockAllocator->freeBlockCount, -1,
+                                  memory_order_relaxed);
+    }
     return block;
 }
 
@@ -108,26 +109,24 @@ BlockMeta *BlockAllocator_GetFreeSuperblock(BlockAllocator *blockAllocator,
         int minNonEmptyIndex = blockAllocator->minNonEmptyIndex;
         int first = (minNonEmptyIndex > target) ? minNonEmptyIndex : target;
         superblock = BlockAllocator_pollSuperblock(blockAllocator, first);
-        if (superblock == NULL) {
-            BlockAllocator_Release(blockAllocator);
-            return NULL;
-        }
-        if (BlockMeta_SuperblockSize(superblock) > size) {
+        if (superblock != NULL && BlockMeta_SuperblockSize(superblock) > size) {
             BlockMeta *leftover = superblock + size;
             BlockAllocator_addFreeBlocksInternal(
                 blockAllocator, leftover,
                 BlockMeta_SuperblockSize(superblock) - size);
         }
     }
-    BlockAllocator_Release(blockAllocator);
-
-    BlockMeta_SetFlag(superblock, block_superblock_start);
-    BlockMeta_SetSuperblockSize(superblock, size);
-    BlockMeta *limit = superblock + size;
-    for (BlockMeta *current = superblock + 1; current < limit; current++) {
-        BlockMeta_SetFlag(current, block_superblock_middle);
+    if (superblock != NULL) {
+        BlockMeta_SetFlag(superblock, block_superblock_start);
+        BlockMeta_SetSuperblockSize(superblock, size);
+        BlockMeta *limit = superblock + size;
+        for (BlockMeta *current = superblock + 1; current < limit; current++) {
+            BlockMeta_SetFlag(current, block_superblock_middle);
+        }
+        atomic_fetch_add_explicit(&blockAllocator->freeBlockCount, -size,
+                                  memory_order_relaxed);
     }
-    // not decrementing freeBlockCount, because it is only used after sweep
+    BlockAllocator_Release(blockAllocator);
     return superblock;
 }
 

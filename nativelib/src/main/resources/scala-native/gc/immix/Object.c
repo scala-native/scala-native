@@ -10,8 +10,7 @@
 word_t *Object_LastWord(Object *object) {
     size_t size = Object_Size(object);
     assert(size < LARGE_BLOCK_SIZE);
-    word_t *last =
-        (word_t *)((ubyte_t *)object + size) - ALLOCATION_ALIGNMENT_WORDS;
+    word_t *last = (word_t *)((ubyte_t *)object + size) - 1;
     return last;
 }
 
@@ -38,7 +37,7 @@ Object *Object_getInnerPointer(Heap *heap, BlockMeta *blockMeta, word_t *word,
     }
     Object *object = (Object *)current;
     if (ObjectMeta_IsAllocated(currentMeta) &&
-        word < current + Object_Size(object) / WORD_SIZE) {
+        (ubyte_t *)word < (ubyte_t *)current + Object_Size(object)) {
         return object;
     } else {
         return NULL;

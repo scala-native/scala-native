@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <stdbool.h>
 #include "immix_commix/CommonConstants.h"
+#include "immix_commix/Log.h"
 #include "shared/GCTypes.h"
 
 typedef enum {
