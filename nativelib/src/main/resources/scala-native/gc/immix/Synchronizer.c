@@ -248,8 +248,8 @@ void Synchronizer_init() {
 
 void Synchronizer_yield() {
     MutatorThread *self = currentMutatorThread;
-    if (!self->interruptible)
-        return;
+    // if (!self->interruptible)
+    //     return;
     MutatorThread_switchState(self, GC_MutatorThreadState_Unmanaged);
     atomic_thread_fence(memory_order_seq_cst);
 
