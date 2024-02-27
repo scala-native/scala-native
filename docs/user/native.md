@@ -211,4 +211,4 @@ sbt --debug
 
 Other **experimental** features may be added for new requirements.
 
-Continue to `testing`{.interpreted-text role="ref"}.
+Continue to [testing](./testing.md).

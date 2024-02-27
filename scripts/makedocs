@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 cd docs
 function create_venv {
-  python -m venv .venv
+  python3 -m venv .venv
 }
 
 function activate_venv {

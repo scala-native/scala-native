@@ -470,7 +470,7 @@ they handle literals differently. Helper methods
 == 255`or`65535 ==
 -1.toUShort`would yield`true`` ,  However, similar to signed integers on JVM, class equality between different (boxed) integer types is not supported. Usage of `-1.toUByte.equals(255)` would return ``false`, as we're comparing different boxed types (`scala.scalanative.unsigned.UByte`with`java.lang.Integer\`\`)
 
-Continue to `native`{.interpreted-text role="ref"}.
+Continue to [native](./native.md).
 
 [^1]: See [Unsigned integer types](#unsigned-integer-types).
 

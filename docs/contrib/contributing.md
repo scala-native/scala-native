@@ -41,7 +41,7 @@ version of LLVM and `clang`. In order to make this easier we
 have a environment variable, `CLANG_FORMAT_PATH` which can
 be set to a compatible version. Another option is to make sure the
 correct version of `clang-format` is available in your path.
-Refer to `setup`{.interpreted-text role="ref"} for the minimum version
+Refer to [setup](../user/setup.md) for the minimum version
 of `clang` supported.
 
 The following shows examples for two common operating systems. You may

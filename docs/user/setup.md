@@ -45,14 +45,8 @@ library and header files must be provided at build time.
 If you use classes from the `java.util.zip` for compression
 zlib needs to be installed.
 
-:::: note
-::: title
-Note
-:::
-
-Some package managers provide the library header files in separate
+*Note:* Some package managers provide the library header files in separate
 `-dev` packages.
-::::
 
 Here are install instructions for a number of operating systems Scala
 Native has been used with:
@@ -169,4 +163,4 @@ Using the install path above, you would add the following:
 C:\Users\<login>\AppData\Local\LLVM\bin
 ```
 
-Continue to `sbt`{.interpreted-text role="ref"}.
+Continue to [sbt](./sbt.md).

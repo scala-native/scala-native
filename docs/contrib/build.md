@@ -198,7 +198,7 @@ explicitly overrides directory to use by passing it as the third
 argument to the script.
 
 The next section has more build and development information for those
-wanting to work on `compiler`{.interpreted-text role="ref"}.
+wanting to work on [compiler](./compiler.md).
 
 [^1]: <http://www.scala-native.org/en/latest/user/setup.html>
 

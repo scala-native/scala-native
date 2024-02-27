@@ -5,9 +5,6 @@ the representation is a subset of LLVM instructions, types and values,
 augmented with a number of high-level primitives that are necessary to
 efficiently compile modern languages like Scala.
 
-::: contents
-:::
-
 ## Introduction
 
 Lets have a look at the textual form of NIR generated for a simple Scala

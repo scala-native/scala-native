@@ -10,7 +10,7 @@ Document built:
 
 ## Project Structure Overview
 
-See `build`{.interpreted-text role="ref"}
+See [build](./build.md)
 
 ## Project suffix
 
@@ -153,8 +153,8 @@ To configure the native build in this project, you can edit
 
     Scala Native Internal
 
-    :   -   `compiler`{.interpreted-text role="ref"}
-        -   `nir`{.interpreted-text role="ref"}
-        -   `name_mangling`{.interpreted-text role="ref"}
+    :   -   [compiler](./compiler.md)
+        -   [nir](./nir.md)
+        -   [name_mangling](./name_mangling.md)
 
--   How to setup IDEs `ides`{.interpreted-text role="ref"}
+-   How to setup IDEs [ides](./ides.md)

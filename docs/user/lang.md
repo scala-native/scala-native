@@ -8,7 +8,7 @@ here.
 
 Annotations and types defined `scala.scalanative.unsafe` may modify
 semantics of the language for sake of interoperability with C libraries,
-read more about those in `interop`{.interpreted-text role="ref"}
+read more about those in [interop](./interop.md)
 section.
 
 ## Multithreading
@@ -59,4 +59,4 @@ There are a few exceptions:
 2.  Exhausting a heap space results in crash with a stack trace instead
     of throwing `OutOfMemoryError`.
 
-Continue to `interop`{.interpreted-text role="ref"}.
+Continue to [interop](./interop.md).

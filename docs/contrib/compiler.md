@@ -1,7 +1,7 @@
 # The compiler plugin and code generator
 
 Compilation to native code happens in two steps. First, Scala code is
-compiled into `nir`{.interpreted-text role="ref"} by nscplugin, the
+compiled into [nir](./nir.md) by nscplugin, the
 Scala compiler plugin. It runs as one of the later phases of the Scala
 compiler and inspects the AST and generates `.nir` files. Finally, the
 `.nir` files are compiled into `.ll` files and passed to LLVM by the
@@ -54,12 +54,12 @@ A Linux example on system with 4 CPUs:
     sandbox/.3/target/scala-3.1.3/native/0.ll
 
 Any method, including the `main` method, might be defined in any of
-these files. `appendix_a`{.interpreted-text role="ref"} will help
+these files. [Appendix A](./appendices.md#appendix-a-finding-main-methods-in-ll-files) will help
 locating the code you are interested in.
 
 Once you have located the code, you must be familiar with the [LLVM
 assembly language](http://llvm.org/docs/LangRef.html). NIR is a subset
-of the LLVM assembly language, so `nir`{.interpreted-text role="ref"}
+of the LLVM assembly language, so [nir](./nir.md)
 may be a gentler starting point.
 
 When working on the compiler plugin you\'ll need to clean the sandbox

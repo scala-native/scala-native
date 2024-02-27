@@ -10,22 +10,16 @@ template. In an empty working directory, execute:
 
     sbt new scala-native/scala-native.g8
 
-:::: note
-::: title
-Note
-:::
-
+*Note:*
 On Windows, new project should not be created in `mounted`
 directories, like external storage devices.
-
 In the case of WSL2 (Windows Subsystem Linux), Windows file system
 drives like `C` or `D` are perceived as
 `mounted`. So creating new projects in these locations will
 not work.
-
 In the WSL2 environment, it is recommended to create projects in the
 user files path, e.g /home/\<USER\>/sn-projects.
-::::
+
 
 This will:
 
@@ -39,16 +33,12 @@ This will:
     location in this new project sub-directory.
     -   [project/plugins.sbt](https://github.com/scala-native/scala-native.g8/blob/main/src/main/g8/project/plugins.sbt)
         adds the Scala Native plugin dependency and its version.
-
     -   [project/build.properties](https://github.com/scala-native/scala-native.g8/blob/main/src/main/g8/project/build.properties)
         specifies the sbt version.
-
     -   [build.sbt](https://github.com/scala-native/scala-native.g8/blob/main/src/main/g8/build.sbt)
         enables the plugin and specifies the Scala version.
-
     -   [src/main/scala/Main.scala](https://github.com/scala-native/scala-native.g8/blob/main/src/main/g8/src/main/scala/Main.scala)
         is a minimal application. :
-
             object Main {
               def main(args: Array[String]): Unit =
                 println("Hello, world!")
@@ -57,7 +47,6 @@ This will:
 To use the new project:
 
 -   Change the current working directory to the new project directory.
-
     > -   For example, on linux with a project named
     >     AnswerToProjectNamePrompt, type
     >     `cd AnswerToProjectNamePrompt`.
@@ -66,7 +55,7 @@ To use the new project:
 
 This will get everything compiled and should have the expected output!
 
-Please refer to the `faq`{.interpreted-text role="ref"} if you encounter
+Please refer to the [faq](../faq.md) if you encounter
 any problems.
 
 The generated project is a starting point. After the first run, you
@@ -75,22 +64,6 @@ possibly, update or customize them.
 [Scaladex](https://index.scala-lang.org/) is a useful resource for
 software versions.
 
-## Scala versions
-
-Scala Native supports following Scala versions for corresponding
-releases:
-
-  Scala Native Version         Scala Versions
-  ---------------------------- -------------------------------------------------
-  0.1.x                        2.11.8
-  0.2.x                        2.11.8, 2.11.11
-  0.3.0-0.3.3                  2.11.8, 2.11.11
-  0.3.4+, 0.4.0-M1, 0.4.0-M2   2.11.8, 2.11.11, 2.11.12
-  0.4.0                        2.11.12, 2.12.13, 2.13.4
-  0.4.1                        2.11.12, 2.12.13, 2.13.4, 2.13.5
-  0.4.2                        2.11.12, 2.12.{13..15}, 2.13.{4..8}
-  0.4.3-RC1, 0.4.3-RC2         2.11.12, 2.12.{13..15}, 2.13.{4..8}, 3.1.0
-  0.4.3                        2.11.12, 2.12.{13..15}, 2.13.{4..8}, 3.1.{0..1}
 
 ## Sbt settings and tasks
 
@@ -311,7 +284,7 @@ nativeConfig ~= { _.withBuildTarget(BuildTarget.libraryDynamic) }
 
     Results in dynamic library being built based on entry point methods
     annotated with `\@exported`, for details see
-    `interop`{.interpreted-text role="ref"}.
+    [interop](./interop.md).
 
 3.  **libraryStatic**
 
@@ -346,4 +319,4 @@ cross-projects. Please refer to the project\'s
 [README](https://github.com/portable-scala/sbt-crossproject/blob/master/README.md)
 for details.
 
-Continue to `lang`{.interpreted-text role="ref"}.
+Continue to [lang](./lang.md).

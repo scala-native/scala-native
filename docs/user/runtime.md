@@ -76,4 +76,4 @@ $ export GC_INITIAL_HEAP_SIZE=2m; export GC_MAXIMUM_HEAP_SIZE=1m; sandbox/.2.13/
 GC_MAXIMUM_HEAP_SIZE should be at least GC_INITIAL_HEAP_SIZE
 ```
 
-Continue to [lib](../lib/communitylib.rst)
+Continue to [lib](../lib/communitylib.md)

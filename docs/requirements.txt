@@ -1,3 +1,4 @@
 recommonmark==0.7.1
 Sphinx==7.2.6
 sphinx-last-updated-by-git==0.3.6
+sphinx-markdown-tables==0.0.17
