@@ -16,7 +16,7 @@ include the following line:
 testOptions += Tests.Argument(TestFrameworks.JUnit, "-a", "-s", "-v")
 ```
 
-Then, add your tests, for example in the [src/test/scala/]{.title-ref}
+Then, add your tests, for example in the `src/test/scala/`
 directory:
 
 ``` scala
@@ -30,9 +30,9 @@ class MyTest {
 }
 ```
 
-Finally, run the tests in [sbt]{.title-ref} by running
-[test]{.title-ref} to run all tests. You may also use
-[testOnly]{.title-ref} to run a particular test, for example:
+Finally, run the tests in `sbt` by running
+`test` to run all tests. You may also use
+`testOnly` to run a particular test, for example:
 
 ``` shell
 testOnly MyTest
@@ -54,7 +54,7 @@ For best experience run with disabled optimizations:
     .withMode(scalanative.build.Mode.debug) // compile using LLVM without optimizations
     } 
   ```
-When using LLDB based debugger you can use our [custom formatter](../../ScalaNativeLLDBFormatter.py) which would provide more user friendly information about Scala types, e.g. representation of Arrays and Strings.
+When using LLDB based debugger you can use our [custom formatter](https://github.com/scala-native/scala-native/blob/main/ScalaNativeLLDBFormatter.py) which would provide more user friendly information about Scala types, e.g. representation of Arrays and Strings.
 
 ### Testing with debug metadata
 Debug builds with enabled debug metadata allows to produce stack traces containing source positions, however, to obtain them runtime needs to parse the produced debug metadata. This operation is performed when generating stack traces for the first time and can take more than 1 second. This behavior can influence tests expecting to finish within some fixed amount of time. 
@@ -71,4 +71,4 @@ In case of problems with unexpected signals crashing the test (SIGSEGV, SIGBUS) 
 When enabled test runner would set up signal handlers printing stack trace for most of the available signals
 for a given platform.
 
-Continue to [profiling](./profiling.rst).
+Continue to [profiling](profiling.md).
