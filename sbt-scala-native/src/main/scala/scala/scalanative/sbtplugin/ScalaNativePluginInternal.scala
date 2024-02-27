@@ -186,13 +186,22 @@ object ScalaNativePluginInternal {
     }
   }
 
+  // see: https://github.com/scalameta/metals/blob/0176a491cd209a09852ab33f99fd7de639e8e2dd/metals/src/main/scala/scala/meta/internal/builds/BloopInstall.scala#L81
+  private final val isGeneratingForIDE =
+    sys.env.getOrElse("METALS_ENABLED", "false").toBoolean
+
   /** Config settings are called for each project, for each Scala version, and
    *  for test and app configurations. The total with 3 Scala versions equals 6
    *  times per project.
    */
   def scalaNativeConfigSettings(testConfig: Boolean): Seq[Setting[_]] = Seq(
-    scalacOptions +=
-      s"-P:scalanative:positionRelativizationPaths:${sourceDirectories.value.map(_.getAbsolutePath()).mkString(";")}",
+    scalacOptions ++= {
+      if (isGeneratingForIDE) None
+      else
+        Some(
+          s"-P:scalanative:positionRelativizationPaths:${sourceDirectories.value.map(_.getAbsolutePath()).mkString(";")}"
+        )
+    },
     nativeLinkReleaseFull := Def
       .task {
         val sbtLogger = streams.value.log
