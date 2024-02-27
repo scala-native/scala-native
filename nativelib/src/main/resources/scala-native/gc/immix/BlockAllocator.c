@@ -42,7 +42,9 @@ inline static int BlockAllocator_sizeToLinkedListIndex(uint32_t size) {
 
 inline static BlockMeta *
 BlockAllocator_pollSuperblock(BlockAllocator *blockAllocator, int first) {
+#ifdef SCALANATIVE_MULTITHREADING_ENABLED
     atomic_thread_fence(memory_order_acquire);
+#endif
     int maxNonEmptyIndex = blockAllocator->maxNonEmptyIndex;
     for (int i = first; i <= maxNonEmptyIndex; i++) {
         BlockMeta *superblock =
