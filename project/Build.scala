@@ -628,7 +628,6 @@ object Build {
               )
             )
           )
-          .withCompileOptions(_ :+ "-DGC_ASSERTIONS")
       },
       Test / unmanagedSourceDirectories ++= {
         val base = (Test / sourceDirectory).value
@@ -1004,10 +1003,7 @@ object Build {
         "-Xfatal-warnings"
       ),
       // No control over sources
-      nativeConfig ~= {
-        _.withCheckFeatures(false)
-          .withCompileOptions(_ :+ "-DGC_ASSERTIONS")
-      },
+      nativeConfig ~= { _.withCheckFeatures(false) },
       testOptions += Tests.Argument(TestFrameworks.JUnit, "-a", "-s"),
       shouldPartest := {
         (Test / resourceDirectory).value / scalaVersion.value
