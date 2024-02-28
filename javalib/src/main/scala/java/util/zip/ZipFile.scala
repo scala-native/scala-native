@@ -121,13 +121,14 @@ class ZipFile(file: File, mode: Int, charset: Charset) extends Closeable {
     if (entryName == null)
       throw new NullPointerException()
 
-    mEntries
+    val me = mEntries
       .getOrDefault(
         entryName,
         mEntries.getOrDefault(entryName + "/", null)
       )
-      .clone()
-      .asInstanceOf[ZipEntry]
+
+    if (me == null) null
+    else me.clone().asInstanceOf[ZipEntry] // keep original entry immutable
   }
 
   def getInputStream(_entry: ZipEntry): InputStream = {
