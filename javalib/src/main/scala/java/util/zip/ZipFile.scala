@@ -121,10 +121,13 @@ class ZipFile(file: File, mode: Int, charset: Charset) extends Closeable {
     if (entryName == null)
       throw new NullPointerException()
 
-    mEntries.getOrDefault(
-      entryName,
-      mEntries.getOrDefault(entryName + "/", null)
-    )
+    mEntries
+      .getOrDefault(
+        entryName,
+        mEntries.getOrDefault(entryName + "/", null)
+      )
+      .clone()
+      .asInstanceOf[ZipEntry]
   }
 
   def getInputStream(_entry: ZipEntry): InputStream = {
