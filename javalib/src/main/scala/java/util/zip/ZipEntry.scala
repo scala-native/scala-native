@@ -89,6 +89,8 @@ class ZipEntry private (
       tm.tm_min = (time >> 5) & 0x3f
       tm.tm_sec = (time & 0x1f) << 1
 
+      tm.tm_isdst = -1
+
       val unixEpochSeconds = mktime(tm)
 
       if (unixEpochSeconds < 0) -1L // Per JVM doc, -1 means "Unspecified"

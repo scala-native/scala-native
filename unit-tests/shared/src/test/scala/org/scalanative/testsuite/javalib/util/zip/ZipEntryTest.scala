@@ -61,6 +61,11 @@ class ZipEntryTest {
     assertEquals("getComment", "Testing", zentry2.getComment())
     assertEquals("getCompressedSize", 4L, zentry2.getCompressedSize())
     assertEquals("getCrc", orgCrc, zentry2.getCrc())
+
+    /* First test against known JVM value. This checks that
+     * Daylight Saving Time offset is handled.
+     */
+    assertEquals("orgTime", 927667206000L, orgTime)
     assertEquals("getTime", orgTime, zentry2.getTime())
   }
 
