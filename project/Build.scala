@@ -84,13 +84,6 @@ object Build {
     }.value
   }
 
-  val crossPublish = taskKey[Unit](
-    "Cross publish project without signing and excluding currently used version"
-  )
-  val crossPublishSigned = taskKey[Unit](
-    "Cross publish signed project excluding currently used version"
-  )
-
   lazy val root: Project =
     Project(id = "scala-native", base = file("."))
       .settings(
@@ -105,17 +98,8 @@ object Build {
         Seq(Compile / compile, Test / compile).map(
           setDepenencyForCurrentBinVersion(_, allMultiScalaProjects)
         ),
-        crossPublish := {},
-        crossPublishSigned := {},
         Seq(publish, publishSigned, publishLocal).map(
           setDepenencyForCurrentBinVersion(_, publishedMultiScalaProjects)
-        ),
-        Seq(crossPublish, crossPublishSigned).map(
-          setDepenencyForCurrentBinVersion(
-            _,
-            crossPublishedMultiScalaProjects,
-            includeNoCrossProjects = false
-          )
         )
       )
 
@@ -592,17 +576,6 @@ object Build {
               }.value
             }
           )
-      }
-      .mapBinaryVersions { version =>
-        // Compiling both nscplugins and scalalib might lead to dataraces and missing classfiles
-        _.settings(
-          crossPublish := crossPublish
-            .dependsOn(nscPlugin.forBinaryVersion(version) / crossPublish)
-            .value,
-          crossPublishSigned := crossPublish
-            .dependsOn(nscPlugin.forBinaryVersion(version) / crossPublishSigned)
-            .value
-        )
       }
       .dependsOn(auxlib)
 

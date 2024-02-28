@@ -15,7 +15,6 @@ import com.jsuereth.sbtpgp.PgpKeys
 
 import scala.collection.mutable
 import scala.scalanative.build.Platform
-import Build.{crossPublish, crossPublishSigned}
 import MyScalaNativePlugin.isGeneratingForIDE
 
 import java.io.File
@@ -582,51 +581,7 @@ object Settings {
     publishSettings(None),
     mavenPublishSettings,
     exportJars := true,
-    crossPublishSettings
   )
-
-  lazy val crossPublishSettings = Def.settings(
-    crossPublish := crossPublishProject(publish).value,
-    crossPublishSigned := crossPublishProject(publishSigned).value
-  )
-
-  /** Builds a given project across all crossScalaVersion values. It does not
-   *  modify the value of scalaVersion outside of it's scope. This allows to
-   *  build multiple projects in parallel.
-   */
-  def crossPublishProject(publishKey: TaskKey[Unit]) = Def.task {
-    val currentVersion = scalaVersion.value
-    val binVersion = CrossVersion.binaryScalaVersion(currentVersion)
-    val s = state.value
-    val log = s.log
-    val extracted = sbt.Project.extract(s)
-    val id = thisProjectRef.value.project
-    val selfRef = thisProjectRef.value
-    val _ = crossScalaVersions.value.foreach {
-      case `currentVersion` =>
-        log.info(
-          s"Skip publish $id ${currentVersion} - it should be already published"
-        )
-      case crossVersion =>
-        log.info(s"Try publish $id ${crossVersion}")
-        val (_, result) = sbt.Project
-          .runTask(
-            selfRef / publishKey,
-            state = extracted.appendWithoutSession(
-              Build.allMultiScalaProjects
-                .map(
-                  _.forBinaryVersion(binVersion) / scalaVersion := crossVersion
-                ),
-              s
-            )
-          )
-          .get
-        result.toEither match {
-          case Left(failure) => throw new RuntimeException(failure)
-          case Right(_)      => System.gc()
-        }
-    }
-  }
 
   lazy val sbtPluginSettings = Def.settings(
     commonSettings,
@@ -738,7 +693,6 @@ object Settings {
   def commonScalalibSettings(libraryName: String): Seq[Setting[_]] = {
     Def.settings(
       version := scalalibVersion(scalaVersion.value, nativeVersion),
-      crossPublishSettings,
       mavenPublishSettings,
       disabledDocsSettings,
       recompileAllOrNothingSettings,
