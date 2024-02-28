@@ -1,13 +1,9 @@
-.. _name_mangling:
+# Name mangling
 
-Name mangling
--------------
-
-Scala Native toolchain mangles names for all definitions except
-the ones which have been explicitly exported to C using
-``extern``. Mangling scheme is defined through a simple grammar
-that uses a notation inspired by
-`Itanium ABI <http://refspecs.linuxbase.org/cxxabi-1.83.html>`_::
+Scala Native toolchain mangles names for all definitions except the ones
+which have been explicitly exported to C using `extern`. Mangling scheme
+is defined through a simple grammar that uses a notation inspired by
+[Itanium ABI](http://refspecs.linuxbase.org/cxxabi-1.83.html):
 
     <mangled-name> ::=
         _S <defn-name>
@@ -54,7 +50,7 @@ that uses a notation inspired by
         s                              // scala.Short
         i                              // scala.Int
         j                              // scala.Long
-    
+
     <scope> ::=
         P <defn-name>                  // private to defn-name
         O                              // public
@@ -62,7 +58,6 @@ that uses a notation inspired by
     <name> ::=
         <length number> [-] <chars>    // raw identifier of given length; `-` separator is only used when <chars> starts with digit or `-` itself
 
-
-Mangling identifiers containing special characters follows Scala JVM conventions.
-Each double-quote `"` character is always converted to `$u0022`
-
+Mangling identifiers containing special characters follows Scala JVM
+conventions. Each double-quote `\"` character is always
+converted to `\$u0022`

@@ -2,8 +2,6 @@
 Scala Native
 ============
 
-Document built at : |today|
-
 Version: |release|
 
 Scala Native is an optimizing ahead-of-time compiler and lightweight managed
@@ -90,3 +88,5 @@ and the development process behind the project.
   blog/index
   changelog/index
   faq
+
+Document built at : |today|
