@@ -22,6 +22,17 @@ class ZipEntryTest {
   var orgTime: Long = 0L
   var orgComment: String = null
 
+  @Before
+  def setUp(): Unit = {
+    zfile = getZipFile(zipFile)
+    zentry = zfile.getEntry("File1.txt")
+    orgSize = zentry.getSize()
+    orgCompressedSize = zentry.getCompressedSize()
+    orgCrc = zentry.getCrc()
+    orgTime = zentry.getTime()
+    orgComment = zentry.getComment()
+  }
+
   @Test def constructorString(): Unit = {
     zentry = zfile.getEntry("File3.txt")
     assertTrue(zentry != null)
@@ -41,16 +52,16 @@ class ZipEntryTest {
   }
 
   @Test def constructorZipEntry(): Unit = {
-    zentry.setSize(2)
-    zentry.setCompressedSize(4)
+    zentry.setSize(2L)
+    zentry.setCompressedSize(4L)
     zentry.setComment("Testing")
 
     val zentry2 = new ZipEntry(zentry)
-    assertTrue(zentry2.getSize() == 2)
-    assertTrue(zentry2.getComment() == "Testing")
-    assertTrue(zentry2.getCompressedSize() == 4)
-    assertTrue(zentry2.getCrc() == orgCrc)
-    assertTrue(zentry2.getTime() == orgTime)
+    assertEquals("getSize", 2L, zentry2.getSize())
+    assertEquals("getComment", "Testing", zentry2.getComment())
+    assertEquals("getCompressedSize", 4L, zentry2.getCompressedSize())
+    assertEquals("getCrc", orgCrc, zentry2.getCrc())
+    assertEquals("getTime", orgTime, zentry2.getTime())
   }
 
   @Test def getComment(): Unit = {
@@ -96,7 +107,7 @@ class ZipEntryTest {
   }
 
   @Test def getTime(): Unit = {
-    assertTrue(zentry.getTime() == orgTime)
+    assertEquals("getTime", orgTime, zentry.getTime())
   }
 
   @Test def isDirectory(): Unit = {
@@ -234,16 +245,4 @@ class ZipEntryTest {
       )
     }
   }
-
-  @Before
-  def setUp(): Unit = {
-    zfile = getZipFile(zipFile)
-    zentry = zfile.getEntry("File1.txt")
-    orgSize = zentry.getSize()
-    orgCompressedSize = zentry.getCompressedSize()
-    orgCrc = zentry.getCrc()
-    orgTime = zentry.getTime()
-    orgComment = zentry.getComment()
-  }
-
 }

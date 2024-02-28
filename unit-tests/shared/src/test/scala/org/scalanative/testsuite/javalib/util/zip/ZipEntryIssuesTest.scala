@@ -3,7 +3,6 @@ package org.scalanative.testsuite.javalib.util.zip
 import org.junit.Test
 import org.junit.Assert._
 import org.junit.BeforeClass
-import org.junit.Ignore // FIXME
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform

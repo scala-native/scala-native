@@ -30,7 +30,7 @@ class ZipEntry private (
     with Cloneable {
 
   def this(name: String) =
-    this(name, null, -1, -1, -1, -1, -1, -1, null, -1, -1)
+    this(name, null, -1L, -1L, -1L, -1, -1, -1, null, -1, -1L)
 
   def this(e: ZipEntry) =
     this(
@@ -50,6 +50,7 @@ class ZipEntry private (
   if (name == null) {
     throw new NullPointerException()
   }
+
   if (name.length() > 0xffff) {
     throw new IllegalArgumentException()
   }
@@ -76,7 +77,7 @@ class ZipEntry private (
     size
 
   def getTime(): Long = {
-    if (time == -1) -1L
+    if ((time == -1) || (modDate == -1)) -1L
     else {
       val tm = stackalloc[tm]()
 
