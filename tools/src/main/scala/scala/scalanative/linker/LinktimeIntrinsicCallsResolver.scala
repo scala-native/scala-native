@@ -105,12 +105,12 @@ object LinktimeIntrinsicCallsResolver {
      *  | foo.bar.baz | my.foo.bar      | NotFound  |
      *  |-------------------------------------------|
      */
-    def asTable(noColor: Boolean): String = {
+    def asTable(noColor: Boolean): Seq[String] = {
       import scala.io.AnsiColor.{RESET, RED, YELLOW, GREEN}
       import ServiceProviderStatus._
 
       type Entry = (String, String, String)
-      val builder = new java.lang.StringBuilder()
+      val builder = Seq.newBuilder[String]
       val header: Entry = ("Service", "Service Provider", "Status")
       val entryPadding = 3
       val (serviceNameWidth, provideNameWidth, stateWidth) = serviceProviders
@@ -126,22 +126,17 @@ object LinktimeIntrinsicCallsResolver {
         }
       def addLine() = {
         val dashlineLength = serviceNameWidth + provideNameWidth + stateWidth + 8 // extra padding columns
-        builder.append("|").append("-" * dashlineLength).append("|\n")
+        builder += s"|${"-" * dashlineLength}|"
       }
       def addEntry(entry: Entry, statusColor: String, skipServiceName: Boolean) = {
         val (serviceName, providerName, status) = entry
         import ServiceProviderStatus._
         val serviceNameOrBlank = if (skipServiceName) "" else serviceName
-        builder
-          .append("| ")
-          .append(serviceNameOrBlank.padTo(serviceNameWidth, ' '))
-          .append(" | ")
-          .append(providerName.padTo(provideNameWidth, ' '))
-          .append(" | ")
-          .append(statusColor)
-          .append(status.toString.padTo(stateWidth, ' '))
-          .append(if (statusColor.nonEmpty) RESET else "")
-          .append(" |\n")
+        val servicePadded = serviceNameOrBlank.padTo(serviceNameWidth, ' ')
+        val providerPadded = providerName.padTo(provideNameWidth, ' ')
+        val statusPadded =
+          s"$statusColor${status.toString.padTo(stateWidth, ' ')}${if (statusColor.nonEmpty) RESET else ""}"
+        builder += s"| $servicePadded | $providerPadded | $statusPadded |"
       }
 
       def addBlankEntry() = addEntry(("", "", ""), "", skipServiceName = false)
@@ -171,7 +166,7 @@ object LinktimeIntrinsicCallsResolver {
         )
       }
       addLine()
-      builder.toString()
+      builder.result()
     }
   }
 }

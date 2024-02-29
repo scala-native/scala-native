@@ -580,7 +580,7 @@ object Settings {
     libraryDependencies ++= Deps.compilerPluginDependencies(scalaVersion.value),
     publishSettings(None),
     mavenPublishSettings,
-    exportJars := true,
+    exportJars := true
   )
 
   lazy val sbtPluginSettings = Def.settings(
