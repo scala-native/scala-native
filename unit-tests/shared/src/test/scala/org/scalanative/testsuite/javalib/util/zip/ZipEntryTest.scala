@@ -19,12 +19,11 @@ object ZipEntryTest {
   val zfile: ZipFile = getZipFile(zipFile)
   val zentry = zfile.getEntry("File1.txt")
 
-  var orgSize = zentry.getSize()
-  var orgCompressedSize = zentry.getCompressedSize()
-  var orgCrc = zentry.getCrc()
-  var orgTime = zentry.getTime()
-  var orgComment = zentry.getComment()
-
+  val orgSize = zentry.getSize()
+  val orgCompressedSize = zentry.getCompressedSize()
+  val orgCrc = zentry.getCrc()
+  lazy val orgTime = zentry.getTime()
+  val orgComment = zentry.getComment()
 }
 
 class ZipEntryTest {
@@ -88,7 +87,7 @@ class ZipEntryTest {
     assertEquals("getComment", "Testing", ze2.getComment())
     assertEquals("getCompressedSize", 4L, ze2.getCompressedSize())
     assertEquals("getCrc", orgCrc, ze2.getCrc())
-    assertEquals("getTime", orgTime, ze2.getTime())
+    assertEquals("getTime", ze.getTime(), ze2.getTime())
   }
 
   @Test def getComment(): Unit = {
