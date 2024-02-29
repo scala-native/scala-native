@@ -53,8 +53,8 @@ jobs:
           MAVEN_USER: "${{ secrets.SONATYPE_USER }}"
           MAVEN_PASSWORD: "${{ secrets.SONATYPE_PASSWORD }}"
           PGP_PASSPHRASE: "${{ secrets.PGP_PASSWORD }}"
+        # TODO Hot fix, replace with dedicated command or env var for next release to set correct cross scala versions
         run: >
-          # TODO Hot fix, replace with dedicated command or env var for next release to set correct cross scala versions
           sbt '
             set crossScalaVersions += "${{ inputs.scala-version }}";
             set nscPlugin.forBinaryVersion("${{ env.binary-version }}")/crossScalaVersions += "${{ inputs.scala-version }}";
