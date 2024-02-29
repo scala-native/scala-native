@@ -4,6 +4,7 @@ package org.scalanative.testsuite.javalib.util.zip
 
 import org.junit.Test
 import org.junit.Assert._
+import org.junit.AfterClass
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform.executingInJVM
@@ -16,7 +17,7 @@ import java.util.zip._
 object ZipEntryTest {
   import ZipBytes.{getZipFile, zipFile}
 
-  val zfile: ZipFile = getZipFile(zipFile)
+  val zfile = getZipFile(zipFile)
   val zentry = zfile.getEntry("File1.txt")
 
   val orgSize = zentry.getSize()
@@ -24,6 +25,11 @@ object ZipEntryTest {
   val orgCrc = zentry.getCrc()
   lazy val orgTime = zentry.getTime()
   val orgComment = zentry.getComment()
+
+  @AfterClass
+  def cleanup(): Unit =
+    zfile.close()
+
 }
 
 class ZipEntryTest {

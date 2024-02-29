@@ -78,24 +78,25 @@ class ZipEntry private (
 
   def getTime(): Long = {
     if ((time == -1) || (modDate == -1)) -1L
-    else {
-      val tm = stackalloc[tm]()
+    else
+      synchronized {
+        val tm = stackalloc[tm]()
 
-      tm.tm_year = ((modDate >> 9) & 0x7f) + 80
-      tm.tm_mon = ((modDate >> 5) & 0xf) - 1
-      tm.tm_mday = modDate & 0x1f
+        tm.tm_year = ((modDate >> 9) & 0x7f) + 80
+        tm.tm_mon = ((modDate >> 5) & 0xf) - 1
+        tm.tm_mday = modDate & 0x1f
 
-      tm.tm_hour = (time >> 11) & 0x1f
-      tm.tm_min = (time >> 5) & 0x3f
-      tm.tm_sec = (time & 0x1f) << 1
+        tm.tm_hour = (time >> 11) & 0x1f
+        tm.tm_min = (time >> 5) & 0x3f
+        tm.tm_sec = (time & 0x1f) << 1
 
-      tm.tm_isdst = -1
+        tm.tm_isdst = -1
 
-      val unixEpochSeconds = mktime(tm)
+        val unixEpochSeconds = mktime(tm)
 
-      if (unixEpochSeconds < 0) -1L // Per JVM doc, -1 means "Unspecified"
-      else unixEpochSeconds * 1000L
-    }
+        if (unixEpochSeconds < 0) -1L // Per JVM doc, -1 means "Unspecified"
+        else unixEpochSeconds * 1000L
+      }
   }
 
   def isDirectory(): Boolean =
