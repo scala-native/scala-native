@@ -74,7 +74,6 @@ jobs:
             set testRunner.forBinaryVersion("${{ env.binary-version }}")/crossScalaVersions += "${{ inputs.scala-version }}";
             set junitRuntime.forBinaryVersion("${{ env.binary-version }}")/crossScalaVersions += "${{ inputs.scala-version }}";
             ++${{ inputs.scala-version }} -v; 
-            nscplugin${{ env.project-version }}/test;
             nscplugin${{ env.project-version }}/publishSigned;
             junitPlugin${{ env.project-version }}/publishSigned;
             scalalib${{ env.project-version }}/publishSigned
