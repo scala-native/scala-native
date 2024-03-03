@@ -48,7 +48,8 @@ struct scalanative_ifaddrs {
         /* Point-to-point destination address */
     } ifa_ifu;
 #endif
-    void *ifa_data; // Address-specific data
+    /* Address-specific data */
+    void *ifa_data;
 };
 
 _Static_assert(sizeof(struct scalanative_ifaddrs) <= sizeof(struct ifaddrs),
