@@ -1,181 +1,238 @@
 package org.scalanative.testsuite.javalib.util.zip
 
-// Ported from Apache Harmony
+// Ported from Apache Harmony. Contains extensive changes for Scala Native.
 
-import java.util.zip._
-
-import org.junit.Before
 import org.junit.Test
 import org.junit.Assert._
+import org.junit.AfterClass
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform.executingInJVM
-import ZipBytes._
+
+import java.{lang => jl}
+
+import java.util.Arrays
+import java.util.zip._
+
+object ZipEntryTest {
+  import ZipBytes.{getZipFile, zipFile}
+
+  val zfile = getZipFile(zipFile)
+  val zentry = zfile.getEntry("File1.txt")
+
+  val orgSize = zentry.getSize()
+  val orgCompressedSize = zentry.getCompressedSize()
+  val orgCrc = zentry.getCrc()
+  lazy val orgTime = zentry.getTime()
+  val orgComment = zentry.getComment()
+
+  @AfterClass
+  def cleanup(): Unit =
+    zfile.close()
+
+}
 
 class ZipEntryTest {
+  import ZipEntryTest._
 
-  var zfile: ZipFile = null
-  var zentry: ZipEntry = null
-  var orgSize: Long = 0L
-  var orgCompressedSize: Long = 0L
-  var orgCrc: Long = 0L
-  var orgTime: Long = 0L
-  var orgComment: String = null
+  /* Use a 'def' rather than a 'val' because two tests each append a char
+   * to the StringBuilder returned.
+   *
+   * It is unclear if these tests are ever run in parallel.  If they were
+   * un-synchronized access to a 'val' might show intermittent errors.
+   * A person with some time could probably develop a synchronized 'val'
+   * and save some allocation and setting of memory.  An optimization for
+   * a future devo. java.util.zip has bigger problems today.
+   */
+  private def jumboZipNameSB(): jl.StringBuilder = {
+    //  Also the maximum comment length.
+    val maxZipNameLen = 0xffff // decimal 65535.
+
+    // 0xFFFF has 4 prime factors, decimal 3, 5, 17, 257
+    val maxChunk = 3 * 5 * 257 // 3855, approx 4K, yielding 17 loops iterations
+    val chunk = new Array[Char](maxChunk)
+    Arrays.fill(chunk, 'a')
+
+    // Allocate +1 to allow testing going over the max, without reallocation.
+    val s = new jl.StringBuilder(maxZipNameLen + 1)
+
+    for (j <- 1 to maxZipNameLen / maxChunk)
+      s.append(chunk)
+
+    assertEquals("jumboZipName length", maxZipNameLen, s.length())
+
+    s
+  }
 
   @Test def constructorString(): Unit = {
-    zentry = zfile.getEntry("File3.txt")
-    assertTrue(zentry != null)
-
     assertThrows(classOf[NullPointerException], zfile.getEntry(null))
-    val s = new StringBuffer()
-    var i = 0
-    while (i < 65535) {
-      s.append('a')
-      i += 1
-    }
 
-    new ZipEntry(s.toString)
+    val atMax = jumboZipNameSB()
 
-    s.append('a')
-    assertThrows(classOf[IllegalArgumentException], new ZipEntry(s.toString()))
+    val ze = new ZipEntry(atMax.toString())
+    assertNotNull("string == 0xFFFF", ze)
+
+    val overMax = atMax.append('a')
+    assertThrows(
+      classOf[IllegalArgumentException],
+      new ZipEntry(overMax.toString())
+    )
   }
 
   @Test def constructorZipEntry(): Unit = {
-    zentry.setSize(2)
-    zentry.setCompressedSize(4)
-    zentry.setComment("Testing")
+    val ze = zfile.getEntry("File1.txt")
+    ze.setSize(2L)
+    ze.setCompressedSize(4L)
+    ze.setComment("Testing")
 
-    val zentry2 = new ZipEntry(zentry)
-    assertTrue(zentry2.getSize() == 2)
-    assertTrue(zentry2.getComment() == "Testing")
-    assertTrue(zentry2.getCompressedSize() == 4)
-    assertTrue(zentry2.getCrc() == orgCrc)
-    assertTrue(zentry2.getTime() == orgTime)
+    val ze2 = new ZipEntry(ze)
+
+    assertNotEquals("Need clone, not identity", ze, ze2)
+
+    assertEquals("getSize", 2L, ze2.getSize())
+    assertEquals("getComment", "Testing", ze2.getComment())
+    assertEquals("getCompressedSize", 4L, ze2.getCompressedSize())
+    assertEquals("getCrc", orgCrc, ze2.getCrc())
+    assertEquals("getTime", ze.getTime(), ze2.getTime())
   }
 
   @Test def getComment(): Unit = {
-    val zipEntry = new ZipEntry("zippy.zip")
-    assertTrue(zipEntry.getComment() == null)
-    zipEntry.setComment("This Is A Comment")
-    assertTrue(zipEntry.getComment() == "This Is A Comment")
+    val ze = new ZipEntry("zippy.zip")
+    assertNull("null comment", ze.getComment())
+
+    val expected = "This Is A Comment"
+    ze.setComment(expected)
+    assertEquals("comment", expected, ze.getComment())
   }
 
   @Test def getCompressedSize(): Unit = {
-    assertTrue(zentry.getCompressedSize() == orgCompressedSize)
+    val ze = zfile.getEntry("File1.txt")
+    assertEquals("compressed size", orgCompressedSize, ze.getCompressedSize())
   }
 
   @Test def getCrc(): Unit = {
-    assertTrue(zentry.getCrc() == orgCrc)
+    val ze = zfile.getEntry("File1.txt")
+    assertTrue(ze.getCrc() == orgCrc)
   }
 
   @Test def getExtra(): Unit = {
-    assertTrue(zentry.getExtra() == null)
+    val ze = zfile.getEntry("File1.txt")
+    assertTrue(ze.getExtra() == null)
     val ba = Array[Byte]('T', 'E', 'S', 'T')
-    zentry = new ZipEntry("test.tst")
-    zentry.setExtra(ba)
-    assertTrue(zentry.getExtra() == ba)
+    val ze2 = new ZipEntry("test.tst")
+    ze2.setExtra(ba)
+    assertTrue(ze2.getExtra() == ba)
   }
 
   @Test def getMethod(): Unit = {
-    zentry = zfile.getEntry("File1.txt")
-    assertTrue(zentry.getMethod() == ZipEntry.STORED)
+    val ze = zfile.getEntry("File1.txt")
+    assertTrue(ze.getMethod() == ZipEntry.STORED)
+    assertEquals("File1.txt", ZipEntry.STORED, ze.getMethod())
 
-    zentry = zfile.getEntry("File3.txt")
-    assertTrue(zentry.getMethod() == ZipEntry.DEFLATED)
+    val ze2 = zfile.getEntry("File3.txt")
+    assertEquals("File2.txt", ZipEntry.DEFLATED, ze2.getMethod())
 
-    zentry = new ZipEntry("test.tst")
-    assertTrue(zentry.getMethod() == -1)
+    val ze3 = new ZipEntry("test.tst")
+    assertTrue(ze3.getMethod() == -1)
+    assertEquals("test.tst", -1, ze3.getMethod())
   }
 
   @Test def getName(): Unit = {
-    assertTrue(zentry.getName() == "File1.txt")
+    val expected = "File1.txt"
+    val ze = zfile.getEntry(expected)
+    assertEquals(expected, ze.getName())
   }
 
   @Test def getSize(): Unit = {
-    assertTrue(zentry.getSize() == orgSize)
+    val ze = zfile.getEntry("File1.txt")
+    assertTrue(ze.getSize() == orgSize)
   }
 
   @Test def getTime(): Unit = {
-    assertTrue(zentry.getTime() == orgTime)
+    val ze = zfile.getEntry("File1.txt")
+    assertEquals("getTime", orgTime, ze.getTime())
   }
 
   @Test def isDirectory(): Unit = {
-    assertTrue(!zentry.isDirectory())
-    zentry = new ZipEntry("Directory/")
-    assertTrue(zentry.isDirectory())
+    val ze = zfile.getEntry("File1.txt")
+    assertTrue("Expected non-directory", !ze.isDirectory())
+
+    val ze2 = new ZipEntry("Directory/")
+    assertTrue("Expected non-directory", ze2.isDirectory())
   }
 
   @Test def setCommentString(): Unit = {
-    zentry = zfile.getEntry("File1.txt")
-    zentry.setComment("Set comment using api")
-    assertTrue(zentry.getComment() == "Set comment using api")
-    zentry.setComment(null)
-    assertTrue(zentry.getComment() == null)
-    val s = new StringBuffer()
-    var i = 0
-    while (i < 0xffff) {
-      s.append('a')
-      i += 1
-    }
-    zentry.setComment(s.toString)
+    val ze = zfile.getEntry("File1.txt")
+    ze.setComment("Set comment using api")
+    assertTrue(ze.getComment() == "Set comment using api")
+    assertEquals("getComment", "Set comment using api", ze.getComment())
+
+    ze.setComment(null)
+    assertNull("setComment(null)", ze.getComment())
+
+    val atMax = jumboZipNameSB()
+    ze.setComment(atMax.toString())
 
     // From Java API docs:
     // ZIP entry comments have maximum length of 0xffff. If the length of the
     // specified comment string is greater than 0xFFFF bytes after encoding,
     // only the first 0xFFFF bytes are output to the ZIP file entry.
-    s.append('a')
-    zentry.setComment(s.toString)
+
+    val overMax = atMax.append('a')
+    ze.setComment(overMax.toString()) // Should silently truncate, not throw().
   }
 
   @Test def setCompressedSizeLong(): Unit = {
-    zentry.setCompressedSize(orgCompressedSize + 10)
-    assertTrue(zentry.getCompressedSize() == orgCompressedSize + 10)
+    val ze = zfile.getEntry("File1.txt")
+    ze.setCompressedSize(orgCompressedSize + 10)
+    assertTrue(ze.getCompressedSize() == orgCompressedSize + 10)
 
-    zentry.setCompressedSize(0)
-    assertTrue(zentry.getCompressedSize() == 0)
+    ze.setCompressedSize(0)
+    assertTrue(ze.getCompressedSize() == 0)
 
-    zentry.setCompressedSize(-25)
-    assertTrue(zentry.getCompressedSize() == -25)
+    ze.setCompressedSize(-25)
+    assertTrue(ze.getCompressedSize() == -25)
 
-    zentry.setCompressedSize(4294967296L)
-    assertTrue(zentry.getCompressedSize() == 4294967296L)
+    ze.setCompressedSize(4294967296L)
+    assertTrue(ze.getCompressedSize() == 4294967296L)
   }
 
   @Test def setCrcLong(): Unit = {
-    zentry.setCrc(orgCrc + 100)
-    assertTrue(zentry.getCrc == orgCrc + 100)
+    val ze = zfile.getEntry("File1.txt")
+    ze.setCrc(orgCrc + 100)
+    assertTrue(ze.getCrc == orgCrc + 100)
 
-    zentry.setCrc(0)
-    assertTrue(zentry.getCrc == 0)
+    ze.setCrc(0)
+    assertTrue(ze.getCrc == 0)
 
-    assertThrows(classOf[IllegalArgumentException], zentry.setCrc(-25))
+    assertThrows(classOf[IllegalArgumentException], ze.setCrc(-25))
 
-    zentry.setCrc(4294967295L)
-    assertTrue(zentry.getCrc == 4294967295L)
+    ze.setCrc(4294967295L)
+    assertTrue(ze.getCrc == 4294967295L)
 
-    assertThrows(classOf[IllegalArgumentException], zentry.setCrc(4294967296L))
+    assertThrows(classOf[IllegalArgumentException], ze.setCrc(4294967296L))
   }
 
   @Test def setExtraArrayByte(): Unit = {
-    zentry = zfile.getEntry("File1.txt")
-    zentry.setExtra("Test setting extra information".getBytes())
+    val ze = zfile.getEntry("File1.txt")
+    ze.setExtra("Test setting extra information".getBytes())
     assertTrue(
       new String(
-        zentry.getExtra(),
+        ze.getExtra(),
         0,
-        zentry.getExtra().length
+        ze.getExtra().length
       ) == "Test setting extra information"
     )
 
-    zentry = new ZipEntry("test.tst")
+    val ze2 = new ZipEntry("test.tst")
     var ba = new Array[Byte](0xffff)
-    zentry.setExtra(ba)
-    assertTrue(zentry.getExtra() == ba)
+    ze2.setExtra(ba)
+    assertTrue(ze2.getExtra() == ba)
 
     assertThrows(
       classOf[IllegalArgumentException], {
         ba = new Array[Byte](0xffff + 1)
-        zentry.setExtra(ba)
+        ze2.setExtra(ba)
       }
     )
 
@@ -194,56 +251,43 @@ class ZipEntryTest {
   }
 
   @Test def setMethodInt(): Unit = {
-    zentry = zfile.getEntry("File3.txt")
-    zentry.setMethod(ZipEntry.STORED)
-    assertTrue(zentry.getMethod() == ZipEntry.STORED)
+    val ze = zfile.getEntry("File3.txt")
+    ze.setMethod(ZipEntry.STORED)
+    assertTrue(ze.getMethod() == ZipEntry.STORED)
 
-    zentry.setMethod(ZipEntry.DEFLATED)
-    assertTrue(zentry.getMethod() == ZipEntry.DEFLATED)
+    ze.setMethod(ZipEntry.DEFLATED)
+    assertTrue(ze.getMethod() == ZipEntry.DEFLATED)
 
     val error = 1
     assertThrows(
-      classOf[IllegalArgumentException], {
-        zentry = new ZipEntry("test.tst")
-        zentry.setMethod(error)
-      }
+      classOf[IllegalArgumentException],
+      (new ZipEntry("test.tst")).setMethod(error)
     )
   }
 
   @Test def setSizeLong(): Unit = {
-    zentry.setSize(orgSize + 10)
-    assertTrue(zentry.getSize() == orgSize + 10)
+    val ze = zfile.getEntry("File1.txt")
+    ze.setSize(orgSize + 10)
+    assertTrue(ze.getSize() == orgSize + 10)
 
-    zentry.setSize(0)
-    assertTrue(zentry.getSize() == 0)
+    ze.setSize(0)
+    assertTrue(ze.getSize() == 0)
 
-    assertThrows(classOf[IllegalArgumentException], zentry.setSize(-25))
+    assertThrows(classOf[IllegalArgumentException], ze.setSize(-25))
 
     if (!executingInJVM) {
-      // Cannot determinate wheter ZIP64 support is uspported on Windows
+      // Cannot determine whether ZIP64 support is supported on Windows
       // From Java API: throws IllegalArgumentException if:
       // * the specified size is less than 0
       // * is greater than 0xFFFFFFFF when ZIP64 format is not supported
       // * or is less than 0 when ZIP64 is supported
       // ScalaNative supports ZIP64
-      zentry.setSize(4294967295L)
+      ze.setSize(4294967295L)
 
       assertThrows(
         classOf[IllegalArgumentException],
-        zentry.setSize(4294967296L)
+        ze.setSize(4294967296L)
       )
     }
   }
-
-  @Before
-  def setUp(): Unit = {
-    zfile = getZipFile(zipFile)
-    zentry = zfile.getEntry("File1.txt")
-    orgSize = zentry.getSize()
-    orgCompressedSize = zentry.getCompressedSize()
-    orgCrc = zentry.getCrc()
-    orgTime = zentry.getTime()
-    orgComment = zentry.getComment()
-  }
-
 }

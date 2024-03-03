@@ -9,7 +9,8 @@ import java.nio.file.Files
 object ZipBytes {
 
   def getFile(bs: Array[Byte]): File = {
-    val path = Files.createTempFile("zipFile", ".zip")
+    val path =
+      Files.createTempFile("scala-native-testsuite_javalib_zipFile", ".zip")
     Files.write(path, bs)
     path.toFile
   }

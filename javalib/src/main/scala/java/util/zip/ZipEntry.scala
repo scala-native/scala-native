@@ -1,6 +1,6 @@
 package java.util.zip
 
-// Ported from Apache Harmony
+// Ported from Apache Harmony. Extensive changes for Scala Native.
 
 import java.io.{
   EOFException,
@@ -8,6 +8,12 @@ import java.io.{
   RandomAccessFile,
   UnsupportedEncodingException
 }
+
+import scala.scalanative.posix.time._
+import scala.scalanative.posix.timeOps.tmOps
+
+import scala.scalanative.unsafe._
+
 class ZipEntry private (
     private[zip] var name: String,
     private[zip] var comment: String,
@@ -24,7 +30,7 @@ class ZipEntry private (
     with Cloneable {
 
   def this(name: String) =
-    this(name, null, -1, -1, -1, -1, -1, -1, null, -1, -1)
+    this(name, null, -1L, -1L, -1L, -1, -1, -1, null, -1, -1L)
 
   def this(e: ZipEntry) =
     this(
@@ -44,6 +50,7 @@ class ZipEntry private (
   if (name == null) {
     throw new NullPointerException()
   }
+
   if (name.length() > 0xffff) {
     throw new IllegalArgumentException()
   }
@@ -69,22 +76,28 @@ class ZipEntry private (
   def getSize(): Long =
     size
 
-  def getTime(): Long =
-    -1
-  // TODO: Uncomment once we have Calendar
-  // if (time != -1) {
-  //   val cal = new GregorianCalendar()
-  //   cal.set(Calendar.MILLISECOND, 0)
-  //   cal.set(1980 + ((modDate >> 9) & 0x7f),
-  //           ((modDate >> 5) & 0xf) - 1,
-  //           modDate & 0x1f,
-  //           (time >> 11) & 0x1f,
-  //           (time >> 5) & 0x3f,
-  //           (time & 0x1f) << 1)
-  //   cal.getTime().getTime()
-  // } else {
-  //   -1
-  // }
+  def getTime(): Long = {
+    if ((time == -1) || (modDate == -1)) -1L
+    else
+      synchronized {
+        val tm = stackalloc[tm]()
+
+        tm.tm_year = ((modDate >> 9) & 0x7f) + 80
+        tm.tm_mon = ((modDate >> 5) & 0xf) - 1
+        tm.tm_mday = modDate & 0x1f
+
+        tm.tm_hour = (time >> 11) & 0x1f
+        tm.tm_min = (time >> 5) & 0x3f
+        tm.tm_sec = (time & 0x1f) << 1
+
+        tm.tm_isdst = -1
+
+        val unixEpochSeconds = mktime(tm)
+
+        if (unixEpochSeconds < 0) -1L // Per JVM doc, -1 means "Unspecified"
+        else unixEpochSeconds * 1000L
+      }
+  }
 
   def isDirectory(): Boolean =
     name.charAt(name.length - 1) == '/'
@@ -130,21 +143,50 @@ class ZipEntry private (
     }
 
   def setTime(value: Long): Unit = {
-    // TODO: Uncomment once we have Date
-    // val cal = new GregorianCalendar()
-    // cal.setTime(new Date(value))
-    // val year = cal.get(Calendar.YEAR)
-    // if (year < 1980) {
-    //   modDate = 0x21
-    //   time = 0
-    // } else {
-    //   modDate = cal.get(Calendar.DATE)
-    //   modDate = (cal.get(Calendar.MONTH) + 1 << 5) | modDate
-    //   modDate = ((cal.get(Calendar.YEAR) - 1980) << 9) | modDate
-    //   time = cal.get(Calendar.SECOND) >> 1
-    //   time = (cal.get(Calendar.MINUTE) << 5) | time
-    //   time = (cal.get(Calendar.HOUR_OF_DAY) << 11) | time
-    // }
+    /* Convert Java time in milliseconds since the Unix epoch to
+     * MS-DOS standard time.
+     *
+     * This URL gives a good description of standard MS-DOS time & the
+     * required bit manipulations:
+     *     https://learn.microsoft.com/en-us/windows/win32/api/oleauto/
+     *         nf-oleauto-dosdatetimetovarianttime
+     *
+     * Someone familiar with Windows could probably provide an operating
+     * system specific version of this method.
+     */
+
+    /* Concurrency issue:
+     *   localtime() is not required to be thread-safe, but is likely to exist
+     *   on Windows. Change to known thread-safe localtime_r() when this
+     *   section is unix-only.
+     */
+
+    val timer = stackalloc[time_t]()
+
+    // truncation OK, MS-DOS uses 2 second intervals, no rounding.
+    !timer = (value / 1000L).toSize
+
+    val tm = localtime(timer) // Not necessarily thread safe.
+
+    if (tm == null) {
+      modDate = 0x21
+      time = 0
+    } else {
+      val msDosYears = tm.tm_year - 80
+
+      if (msDosYears <= 0) {
+        modDate = 0x21 // 01-01-1980 00:00 MS-DOS epoch
+        time = 0
+      } else {
+        modDate = tm.tm_mday
+        modDate = ((tm.tm_mon + 1) << 5) | modDate
+        modDate = (msDosYears << 9) | modDate
+
+        time = tm.tm_sec >> 1
+        time = (tm.tm_min << 5) | time
+        time = (tm.tm_hour << 11) | time
+      }
+    }
   }
 
   override def toString(): String =
