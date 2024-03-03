@@ -54,7 +54,7 @@ object Settings {
           prePush,
           """#!/bin/sh
           |set -eux
-          |./scripts/check-lint.sh
+          |CHECK_MODIFIED_ONLY=1 ./scripts/check-lint.sh
           |""".stripMargin.getBytes()
         )
         prePush.toFile.setExecutable(true)

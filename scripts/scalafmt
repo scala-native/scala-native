@@ -17,4 +17,10 @@ if [ ! -f $SCALAFMT ]; then
   chmod +x $SCALAFMT
 fi
 
-$SCALAFMT "$@"
+if [[ "$CHECK_MODIFIED_ONLY" -eq "1" ]]; then
+  git diff --name-only main | \
+    grep -E '.*\.scala$' |
+    xargs "$SCALAFMT"
+else 
+  $SCALAFMT "$@"
+fi
