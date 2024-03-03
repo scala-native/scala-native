@@ -44,6 +44,22 @@ object Settings {
           "This build requires JDK 8 or later. Aborting."
         )
       v
+    },
+    Global / onLoad ~= { prev =>
+      if (!scala.util.Properties.isWin) {
+        import java.nio.file._
+        val prePush = Paths.get(".git", "hooks", "pre-push")
+        Files.createDirectories(prePush.getParent)
+        Files.write(
+          prePush,
+          """#!/bin/sh
+          |set -eux
+          |./scripts/check-lint.sh
+          |""".stripMargin.getBytes()
+          )
+          prePush.toFile.setExecutable(true)
+        }
+      prev
     }
   )
 
@@ -580,7 +596,7 @@ object Settings {
     libraryDependencies ++= Deps.compilerPluginDependencies(scalaVersion.value),
     publishSettings(None),
     mavenPublishSettings,
-    exportJars := true,
+    exportJars := true
   )
 
   lazy val sbtPluginSettings = Def.settings(
