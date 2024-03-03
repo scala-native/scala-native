@@ -56,9 +56,9 @@ object Settings {
           |set -eux
           |./scripts/check-lint.sh
           |""".stripMargin.getBytes()
-          )
-          prePush.toFile.setExecutable(true)
-        }
+        )
+        prePush.toFile.setExecutable(true)
+      }
       prev
     }
   )
