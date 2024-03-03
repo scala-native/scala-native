@@ -85,7 +85,9 @@ fi
 if [ "$#" -gt 0 ]; then
   "$clang_format" --style=file "$opts" "$@"
 else
-  find . -name "*.[ch]" -or -name "*.cpp" -or -name "*.hpp" | \
+  find . -name "*.[ch]" -or -name "*.[ch]pp" | \
+    grep -E -v '.*/target/scala.*' | \
+    grep -E -v ".*/(.venv|.scala-build)/" | \
     xargs "$clang_format" --style=file "$opts" $err || \
       die "C/C++ code formatting changes detected" \
           "Run '$0' to reformat."
