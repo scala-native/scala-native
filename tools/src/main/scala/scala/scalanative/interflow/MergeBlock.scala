@@ -17,27 +17,18 @@ final class MergeBlock(val label: nir.Inst.Label, val id: nir.Local) {
     if (cf != null) cf.pos
     else label.pos
   }
-
-  private var stackSavePtr: nir.Val.Local = _
+  private var stackSavePtr: Option[nir.Val.Local] = None
   private[interflow] var emitStackSaveOp = false
-  private[interflow] var emitStackRestoreFor: List[nir.Local] = Nil
+  private[interflow] var emitStackRestoreFromBlocks: List[MergeBlock] = Nil
 
-  def toInsts(): Seq[nir.Inst] = {
+  def toInsts(): Seq[nir.Inst] = toInstsCached
+  private lazy val toInstsCached: Seq[nir.Inst] = {
     import Interflow.LLVMIntrinsics._
     val block = this
     val result = new nir.InstructionBuilder()(nir.Fresh(0))
 
     def mergeNext(next: nir.Next.Label): nir.Next.Label = {
       val nextBlock = outgoing(next.id)
-
-      if (nextBlock.stackSavePtr != null &&
-          emitStackRestoreFor.contains(next.id)) {
-        emitIfMissing(
-          end.fresh(),
-          nir.Op
-            .Call(StackRestoreSig, StackRestore, Seq(nextBlock.stackSavePtr))
-        )(result, block)
-      }
       val mergeValues = nextBlock.phis.flatMap {
         case MergePhi(_, incoming) =>
           incoming.collect {
@@ -57,14 +48,27 @@ final class MergeBlock(val label: nir.Inst.Label, val id: nir.Local) {
 
     val params = block.phis.map(_.param)
     result.label(block.id, params)
+
     if (emitStackSaveOp) {
       val id = block.end.fresh()
-      val emmited = emitIfMissing(
-        id = id,
-        op = nir.Op.Call(StackSaveSig, StackSave, Nil)
-      )(result, block)
-      if (emmited) block.stackSavePtr = nir.Val.Local(id, nir.Type.Ptr)
+      if (emitIfMissing(
+            id = id,
+            op = nir.Op.Call(StackSaveSig, StackSave, Nil)
+          )(result, block)) {
+        block.stackSavePtr = Some(nir.Val.Local(id, nir.Type.Ptr))
+      }
     }
+    block.emitStackRestoreFromBlocks
+      .filterNot(block == _)
+      .flatMap(_.stackSavePtr)
+      .distinct
+      .foreach { stackSavePtr =>
+        emitIfMissing(
+          end.fresh(),
+          nir.Op.Call(StackRestoreSig, StackRestore, Seq(stackSavePtr))
+        )(result, block)
+      }
+
     result ++= block.end.emit
     block.cf match {
       case ret: nir.Inst.Ret =>
