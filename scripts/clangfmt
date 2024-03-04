@@ -14,6 +14,8 @@ set -euo pipefail
 # The minimum version of clang-format with the new options
 CLANG_FORMAT_VERSION=10
 
+CHECK_MODIFIED_ONLY=${CHECK_MODIFIED_ONLY:-false}
+
 die() {
   while [ "$#" -gt 0 ]; do
     echo >&2 "$1"; shift
@@ -84,8 +86,16 @@ fi
 
 if [ "$#" -gt 0 ]; then
   "$clang_format" --style=file "$opts" "$@"
+elif [[ "$CHECK_MODIFIED_ONLY" == "1" ]]; then
+  git diff --name-only main | \
+    grep -E '.*\.(c|h|cpp|hpp)$' | \
+    xargs "$clang_format" --style=file "$opts" $err || \
+      die "C/C++ code formatting changes detected" \
+          "Run '$0' to reformat."
 else
-  find . -name "*.[ch]" -or -name "*.cpp" -or -name "*.hpp" | \
+  find . -name "*.[ch]" -or -name "*.[ch]pp" | \
+    grep -E -v '.*/target/scala.*' | \
+    grep -E -v ".*/(.venv|.scala-build)/" | \
     xargs "$clang_format" --style=file "$opts" $err || \
       die "C/C++ code formatting changes detected" \
           "Run '$0' to reformat."

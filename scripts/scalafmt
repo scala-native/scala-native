@@ -6,6 +6,7 @@ HERE="`dirname $0`"
 VERSION=$(sed -nre "s#[[:space:]]*version[^0-9]+([0-9.]+)#\1#p" $HERE/../.scalafmt.conf)
 COURSIER="$HERE/.coursier"
 SCALAFMT="$HERE/.scalafmt-$VERSION"
+CHECK_MODIFIED_ONLY=${CHECK_MODIFIED_ONLY:-false}
 
 if [ ! -f $COURSIER ]; then
   curl -L -o $COURSIER https://git.io/coursier-cli
@@ -17,4 +18,10 @@ if [ ! -f $SCALAFMT ]; then
   chmod +x $SCALAFMT
 fi
 
-$SCALAFMT "$@"
+if [[ "$CHECK_MODIFIED_ONLY" == "1" ]]; then
+  git diff --name-only main | \
+    grep -E '.*\.scala$' |
+    xargs "$SCALAFMT"
+else 
+  $SCALAFMT "$@"
+fi
