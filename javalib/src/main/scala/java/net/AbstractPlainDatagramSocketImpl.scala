@@ -54,11 +54,8 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
   final protected var isClosed: Boolean =
     fd == InvalidSocketDescriptor
 
-  private def throwIfClosed(methodName: String): Unit = {
-    if (isClosed) {
-      throw new SocketException(s"$methodName: Socket is closed")
-    }
-  }
+  @inline private def throwIfClosed(methodName: String): Unit =
+    if (isClosed) throw new SocketException(s"$methodName: Socket is closed")
 
   private def throwCannotBind(addr: InetAddress): Nothing = {
     throw new BindException(
@@ -151,19 +148,19 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
   }
 
   override def create(): Unit = {
-    val family = SocketHelpers.getGaiHintsProtocolFamily()
+    val family = Net.getGaiHintsProtocolFamily()
     val s = Net.socket(family, stream = false)
 
     // enable broadcast by default
     val broadcastPrt = stackalloc[CInt]()
     !broadcastPrt = 1
     if (posix.sys.socket.setsockopt(
-      s.fd,
-      posix.sys.socket.SOL_SOCKET,
-      posix.sys.socket.SO_BROADCAST,
-      broadcastPrt.asInstanceOf[Ptr[Byte]],
-      sizeof[CInt].toUInt
-    ) < 0) {
+          s.fd,
+          posix.sys.socket.SOL_SOCKET,
+          posix.sys.socket.SO_BROADCAST,
+          broadcastPrt.asInstanceOf[Ptr[Byte]],
+          sizeof[CInt].toUInt
+        ) < 0) {
       Net.close(s)
       throw new IOException(s"Could not set SO_BROADCAST on socket: $errno")
     }

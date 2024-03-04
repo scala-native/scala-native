@@ -1,6 +1,5 @@
 package java.nio.channels.spi
 
-
 import java.nio.channels._
 import java.net.ProtocolFamily
 

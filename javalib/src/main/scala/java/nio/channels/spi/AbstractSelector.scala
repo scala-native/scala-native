@@ -4,11 +4,12 @@ import java.nio.channels.{SelectionKey, Selector}
 import java.util.concurrent.atomic.AtomicBoolean
 import scala.collection.mutable
 
-abstract class AbstractSelector(override val provider: SelectorProvider) extends Selector {
+abstract class AbstractSelector(override val provider: SelectorProvider)
+    extends Selector {
 
   private val opened = new AtomicBoolean(true)
 
-  private val cancelledKeySet = mutable.Set.empty[SelectionKey]
+  protected val cancelledKeySet = new java.util.HashSet[SelectionKey]()
 
   final protected def begin(): Unit = ???
 
@@ -25,10 +26,17 @@ abstract class AbstractSelector(override val provider: SelectorProvider) extends
 
   final protected def end(): Unit = ???
 
+  final protected def cancelledKeys: java.util.Set[SelectionKey] =
+    cancelledKeySet
+
   final def isOpen: Boolean = opened.get()
   protected def implCloseSelector(): Unit
 
-  private[nio] def register(ch: AbstractSelectableChannel, ops: Int, att: Object): SelectionKey
+  private[nio] def register(
+      ch: AbstractSelectableChannel,
+      ops: Int,
+      att: Object
+  ): SelectionKey
   private[nio] def cancel(key: SelectionKey): Unit =
     cancelledKeySet.synchronized {
       cancelledKeySet.add(key)

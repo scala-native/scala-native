@@ -38,11 +38,6 @@ object SocketHelpers {
     isReachable
   }
 
-  def getGaiHintsProtocolFamily(): ProtocolFamily = {
-    if (useIPv4Stack) StandardProtocolFamily.INET
-    else StandardProtocolFamily.INET6
-  }
-
   private[net] def getGaiHintsAddressFamily(): Int = {
     getPreferIPv6Addresses() match {
       // let getaddrinfo() decide what is returned and its order.
@@ -103,7 +98,7 @@ object SocketHelpers {
     systemPropertyForcesIPv4 || !isIPv6Configured()
   }
 
-  def getUseIPv4Stack(): Boolean = useIPv4Stack
+  private[net] def getUseIPv4Stack(): Boolean = useIPv4Stack
 
   private lazy val preferIPv6Addresses: Option[Boolean] = {
     if (getUseIPv4Stack()) {
@@ -130,6 +125,12 @@ object SocketHelpers {
     if (getUseIPv4Stack()) in.IP_TOS else ip6.IPV6_TCLASS
 
   private[net] def getTrafficClassSocketOption(): Int =
+    trafficClassSocketOption
+
+  private lazy val multicastTtlSocketOption: Int =
+    if (getUseIPv4Stack()) ip.IP_MULTICAST_TTL else ip6.IPV6_MULTICAST_HOPS
+
+  private[net] def getMulticastTtlSocketOption(): Int =
     trafficClassSocketOption
 
   // Return text translation of getaddrinfo (gai) error code.
@@ -335,7 +336,7 @@ object SocketHelpers {
     }
   }
 
-  private[net] def sockaddrStorageToInetSocketAddress(
+  private[java] def sockaddrStorageToInetSocketAddress(
       sockAddr: Ptr[sockaddr]
   ): InetSocketAddress = {
     val addr = sockaddrToInetAddress(sockAddr, "")

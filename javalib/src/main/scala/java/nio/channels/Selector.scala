@@ -9,10 +9,10 @@ abstract class Selector protected () {
   def isOpen: Boolean
   def keys: Set[SelectionKey]
   def provider: SelectorProvider
-  def select: Int
+  def select(): Int
   def select(timeout: Long): Int
   def selectedKeys: Set[SelectionKey]
-  def selectNow: Int
+  def selectNow(): Int
   def wakeup(): Selector
 
 }

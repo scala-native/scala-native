@@ -5,11 +5,11 @@ import java.nio.ByteBuffer
 import java.nio.channels.spi.{AbstractSelectableChannel, SelectorProvider}
 
 abstract class DatagramChannel(provider: SelectorProvider)
-  extends AbstractSelectableChannel(provider)
-  with ByteChannel
-  with ScatteringByteChannel
-  with GatheringByteChannel
-  with MulticastChannel {
+    extends AbstractSelectableChannel(provider)
+    with ByteChannel
+    with ScatteringByteChannel
+    with GatheringByteChannel
+    with MulticastChannel {
 
   override def validOps: Int = ???
 
@@ -23,12 +23,15 @@ abstract class DatagramChannel(provider: SelectorProvider)
   def receive(dst: java.nio.ByteBuffer): SocketAddress
   def send(src: java.nio.ByteBuffer, target: SocketAddress): Int
 
-  final override def read(dsts: Array[ByteBuffer]): Long = read(dsts, 0, dsts.length)
-  final override def write(srcs: Array[ByteBuffer]): Long = write(srcs, 0, srcs.length)
+  final override def read(dsts: Array[ByteBuffer]): Long =
+    read(dsts, 0, dsts.length)
+  final override def write(srcs: Array[ByteBuffer]): Long =
+    write(srcs, 0, srcs.length)
 }
 
 object DatagramChannel {
   def open(): DatagramChannel = SelectorProvider.provider.openDatagramChannel()
 
-  def open(family: ProtocolFamily): DatagramChannel = SelectorProvider.provider.openDatagramChannel(family)
+  def open(family: ProtocolFamily): DatagramChannel =
+    SelectorProvider.provider.openDatagramChannel(family)
 }
