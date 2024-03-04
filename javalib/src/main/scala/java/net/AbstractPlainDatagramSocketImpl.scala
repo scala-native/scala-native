@@ -99,48 +99,22 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
     portOpt.map(inet.ntohs(_).toInt)
   }
 
-  private def prepareSockaddrIn4(
-      inetAddress: InetAddress,
-      port: Int,
-      hints: Ptr[addrinfo],
-      ret: Ptr[Ptr[addrinfo]]
-  ): Unit = {
-    hints.ai_family = posix.sys.socket.AF_UNSPEC
-    hints.ai_flags = AI_NUMERICHOST
-    hints.ai_socktype = posix.sys.socket.SOCK_DGRAM
-
-    Zone.acquire { implicit z =>
-      val cIP = toCString(inetAddress.getHostAddress())
-      if (getaddrinfo(cIP, toCString(port.toString), hints, ret) != 0) {
-        throw new BindException(
-          "Couldn't resolve address: " + inetAddress.getHostAddress()
-        )
-      }
-    }
-  }
-
   private def bind4(addr: InetAddress, port: Int): Unit = {
-    val hints = stackalloc[addrinfo]()
-    val sa4Ptr = stackalloc[Ptr[addrinfo]]()
-
-    prepareSockaddrIn4(addr, port, hints, sa4Ptr)
-    val sa4 = (!sa4Ptr).ai_addr
-    val sa4Len = (!sa4Ptr).ai_addrlen
-    val sa4Family = (!sa4Ptr).ai_family
+    val sa4 = stackalloc[in.sockaddr_in]()
+    val sa4Len = sizeof[in.sockaddr_in].toUInt
+    SocketHelpers.prepareSockaddrIn4(addr, port, sa4)
 
     val bindRes = posix.sys.socket.bind(
       fd.fd,
-      sa4,
+      sa4.asInstanceOf[Ptr[posix.sys.socket.sockaddr]],
       sa4Len
     )
-
-    freeaddrinfo(!sa4Ptr)
 
     if (bindRes < 0) {
       throwCannotBind(addr)
     }
 
-    this.localport = fetchLocalPort(sa4Family).getOrElse {
+    this.localport = fetchLocalPort(posix.sys.socket.AF_INET).getOrElse {
       throwCannotBind(addr)
     }
   }
@@ -178,11 +152,9 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
 
   private def send4(p: DatagramPacket): Unit = {
     val insAddr = p.getSocketAddress().asInstanceOf[InetSocketAddress]
-    val hints = stackalloc[addrinfo]()
-    val sa4Ptr = stackalloc[Ptr[addrinfo]]()
-    prepareSockaddrIn4(insAddr.getAddress, insAddr.getPort, hints, sa4Ptr)
-    val sa4 = (!sa4Ptr).ai_addr
-    val sa4Len = (!sa4Ptr).ai_addrlen
+    val sa4 = stackalloc[in.sockaddr_in]()
+    val sa4Len = sizeof[in.sockaddr_in].toUInt
+    SocketHelpers.prepareSockaddrIn4(insAddr.getAddress, insAddr.getPort, sa4)
 
     val buffer = p.getData()
     val cArr = buffer.at(p.getOffset())
@@ -192,11 +164,9 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
       cArr,
       len.toUInt,
       posix.sys.socket.MSG_NOSIGNAL,
-      sa4,
+      sa4.asInstanceOf[Ptr[posix.sys.socket.sockaddr]],
       sa4Len
     )
-
-    freeaddrinfo(!sa4Ptr)
 
     if (ret < 0) {
       throw new IOException("Could not send the datagram packet to the client")
@@ -234,13 +204,15 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
   }
 
   private def connect4(address: InetAddress, port: Int): Unit = {
-    val hints = stackalloc[addrinfo]()
-    val sa4Ptr = stackalloc[Ptr[addrinfo]]()
-    prepareSockaddrIn4(address, port, hints, sa4Ptr)
-    val sa4 = (!sa4Ptr).ai_addr
-    val sa4Len = (!sa4Ptr).ai_addrlen
+    val sa4 = stackalloc[in.sockaddr_in]()
+    val sa4Len = sizeof[in.sockaddr_in].toUInt
+    SocketHelpers.prepareSockaddrIn4(address, port, sa4)
 
-    val connectRet = posix.sys.socket.connect(fd.fd, sa4, sa4Len)
+    val connectRet = posix.sys.socket.connect(
+      fd.fd,
+      sa4.asInstanceOf[Ptr[posix.sys.socket.sockaddr]],
+      sa4Len
+    )
 
     if (connectRet < 0) {
       throw new ConnectException(

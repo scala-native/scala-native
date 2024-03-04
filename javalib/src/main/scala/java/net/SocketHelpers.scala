@@ -142,6 +142,21 @@ object SocketHelpers {
     (ptrInt(2) == 0xffff0000) && (ptrLong(0) == 0x0L)
   }
 
+  private[net] def prepareSockaddrIn4(
+      inetAddress: InetAddress,
+      port: Int,
+      sa4: Ptr[in.sockaddr_in]
+  ): Unit = {
+    require(inetAddress.isInstanceOf[Inet4Address])
+
+    sa4.sin_family = AF_INET.toUShort
+    sa4.sin_port = inet.htons(port.toUShort)
+    val src = inetAddress.getAddress()
+    val from = src.asInstanceOf[scala.scalanative.runtime.Array[Byte]].at(0)
+    val dst = sa4.sin_addr.at1.asInstanceOf[Ptr[Byte]]
+    memcpy(dst, from, 4.toUInt)
+  }
+
   /* Fill in the given sockaddr_in6 with the given InetAddress, either
    * Inet4Address or Inet6Address, and the given port.
    * Set the af_family for IPv6.  On return, the sockaddr_in6 should

@@ -128,24 +128,21 @@ class Socket protected (
   }
 
   def bind(bindpoint: SocketAddress): Unit = {
-    if (bindpoint != null && !bindpoint.isInstanceOf[InetSocketAddress]) {
-      throw new IllegalArgumentException(
-        "Endpoint SocketAddress subclass is not supported"
-      )
-    }
-
-    val addr =
-      if (bindpoint == null ||
-          bindpoint.asInstanceOf[InetSocketAddress].getAddress == null)
+    val insAddr = bindpoint match {
+      case null =>
         new InetSocketAddress(SocketHelpers.getWildcardAddressForBind(), 0)
-      else {
-        bindpoint.asInstanceOf[InetSocketAddress]
-      }
+      case insAddr: InetSocketAddress if insAddr.isUnresolved =>
+        throw new SocketException("Unresolved address")
+      case insAddr: InetSocketAddress =>
+        insAddr
+      case _ =>
+        throw new IllegalArgumentException("Unsupported address type")
+    }
 
     checkClosedAndCreate()
 
-    impl.bind(addr.getAddress, addr.getPort)
-    this.localAddr = addr.getAddress
+    impl.bind(insAddr.getAddress, insAddr.getPort)
+    this.localAddr = insAddr.getAddress
     this.localPort = impl.localport
     bound = true
   }
@@ -153,13 +150,17 @@ class Socket protected (
   def connect(endpoint: SocketAddress): Unit = connect(endpoint, 0)
 
   def connect(endpoint: SocketAddress, timeout: Int): Unit = {
-    if (!endpoint.isInstanceOf[InetSocketAddress] || endpoint == null) {
-      throw new IllegalArgumentException(
-        "Invalid address argument to connect - " +
-          "either of unsupported SocketAddress subclass or null"
-      )
+    if (endpoint == null)
+      throw new IllegalArgumentException("connect: The address can't be null")
+
+    val inetAddr = endpoint match {
+      case inetAddr: InetSocketAddress => inetAddr
+      case _ => throw new IllegalArgumentException("Unsupported address type")
     }
-    val inetAddr = endpoint.asInstanceOf[InetSocketAddress]
+
+    if (inetAddr.isUnresolved)
+      throw new UnknownHostException(inetAddr.getHostName)
+
     this.addr = inetAddr.getAddress
     this.port = inetAddr.getPort
     startup(addr, port, timeout)
