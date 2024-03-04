@@ -647,7 +647,7 @@ class IssuesTest {
 
     assertThrows(
       classOf[java.util.concurrent.TimeoutException],
-      Await.result(loop(0), 5.seconds)
+      Await.result(loop(0), 2.seconds)
     )
   }
 
