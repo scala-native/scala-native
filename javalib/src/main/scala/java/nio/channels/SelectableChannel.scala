@@ -1,9 +1,10 @@
 package java.nio.channels
 
-
 import java.nio.channels.spi._
 
-abstract class SelectableChannel extends AbstractInterruptibleChannel with Channel {
+abstract class SelectableChannel
+    extends AbstractInterruptibleChannel
+    with Channel {
   def provider: SelectorProvider
   def validOps: Int
   def isRegistered: Boolean

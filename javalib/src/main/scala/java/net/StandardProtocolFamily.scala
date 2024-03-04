@@ -1,8 +1,8 @@
 package java.net
 
 sealed class StandardProtocolFamily(name: String, ordinal: Int)
-  extends _Enum[StandardProtocolFamily](name, ordinal)
-  with ProtocolFamily {
+    extends _Enum[StandardProtocolFamily](name, ordinal)
+    with ProtocolFamily {
   override def toString() = this.name
 }
 
@@ -14,7 +14,9 @@ object StandardProtocolFamily {
   def values(): Array[StandardProtocolFamily] = cachedValues.clone()
   def valueOf(name: String): StandardProtocolFamily = {
     cachedValues.find(_.name() == name).getOrElse {
-      throw new IllegalArgumentException("No enum const StandardProtocolFamily." + name)
+      throw new IllegalArgumentException(
+        "No enum const StandardProtocolFamily." + name
+      )
     }
   }
 }

@@ -56,7 +56,7 @@ private[net] class WindowsPlainSocketImpl extends AbstractPlainSocketImpl {
     }
 
     try loop(timeout)
-    finally WindowsNet.setSocketBlocking(fd, blocking = true)
+    finally WindowsNet.configureBlocking(fd, blocking = true)
   }
 
   protected def tryPollOnAccept(): Unit = {

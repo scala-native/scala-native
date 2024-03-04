@@ -57,7 +57,7 @@ private[net] class UnixPlainSocketImpl extends AbstractPlainSocketImpl {
     }
 
     try loop(timeout)
-    finally UnixNet.setSocketBlocking(fd, blocking = true)
+    finally UnixNet.configureBlocking(fd, blocking = true)
 
   }
 

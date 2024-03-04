@@ -46,11 +46,8 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
   final protected var isClosed: Boolean =
     fd == InvalidSocketDescriptor
 
-  private def throwIfClosed(methodName: String): Unit = {
-    if (isClosed) {
-      throw new SocketException(s"$methodName: Socket is closed")
-    }
-  }
+  @inline private def throwIfClosed(methodName: String): Unit =
+    if (isClosed) throw new SocketException(s"$methodName: Socket is closed")
 
   private def throwCannotBind(addr: InetAddress): Nothing = {
     throw new BindException(
@@ -137,7 +134,7 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
     else bind6(_: InetAddress, _: Int)
 
   override def create(stream: Boolean): Unit = {
-    val family = SocketHelpers.getGaiHintsProtocolFamily()
+    val family = Net.getGaiHintsProtocolFamily()
     fd = Net.socket(family, stream)
   }
 
@@ -183,7 +180,7 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
 
     SocketHelpers.prepareSockaddrIn4(addr, port, sa4)
 
-    if (timeout != 0) Net.setSocketBlocking(fd, blocking = false)
+    if (timeout != 0) Net.configureBlocking(fd, blocking = false)
 
     val connectRet = socket.connect(
       fd.fd,
@@ -224,7 +221,7 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
     // By contract, all the bytes in sa6 are zero going in.
     SocketHelpers.prepareSockaddrIn6(addr, port, sa6)
 
-    if (timeout != 0) Net.setSocketBlocking(fd, blocking = false)
+    if (timeout != 0) Net.configureBlocking(fd, blocking = false)
 
     val connectRet = socket.connect(
       fd.fd,

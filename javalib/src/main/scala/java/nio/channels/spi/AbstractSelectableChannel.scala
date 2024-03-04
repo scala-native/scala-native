@@ -1,29 +1,42 @@
 package java.nio.channels.spi
 
-import java.nio.channels.{CancelledKeyException, ClosedChannelException, IllegalBlockingModeException, IllegalSelectorException, SelectableChannel, SelectionKey, Selector}
+import java.nio.channels.{
+  CancelledKeyException,
+  ClosedChannelException,
+  IllegalBlockingModeException,
+  IllegalSelectorException,
+  SelectableChannel,
+  SelectionKey,
+  Selector
+}
 import scala.collection.mutable.ArrayBuffer
 
-abstract class AbstractSelectableChannel(val provider: SelectorProvider) extends SelectableChannel {
+abstract class AbstractSelectableChannel(val provider: SelectorProvider)
+    extends SelectableChannel {
 
   private val keyList = new ArrayBuffer[SelectionKey]
 
-  private val lock     = new Object
+  private val lock = new Object
   private var blocking = true
 
   final override def isRegistered: Boolean = synchronized {
-    !keyList.isEmpty
+    keyList.nonEmpty
   }
 
   final override def keyFor(sel: Selector): SelectionKey = synchronized {
-    keyList.find(key => key != null && key.selector == sel).orNull
+    keyList.find(_.selector == sel).orNull
   }
 
-  final override def register(sel: Selector, ops: Int, att: Object): SelectionKey = {
+  final override def register(
+      sel: Selector,
+      ops: Int,
+      att: Object
+  ): SelectionKey = {
     if (!isOpen()) throw new ClosedChannelException
     if (!((ops & ~validOps) == 0)) throw new IllegalArgumentException
 
     lock.synchronized {
-      if (isBlocking) throw new IllegalBlockingModeException
+      if (blocking) throw new IllegalBlockingModeException
       if (!sel.isOpen) {
         if (ops == 0) throw new IllegalSelectorException
         throw new NullPointerException
@@ -67,17 +80,15 @@ abstract class AbstractSelectableChannel(val provider: SelectorProvider) extends
 
   protected[spi] final def implCloseChannel(): Unit = synchronized {
     implCloseSelectableChannel()
-    keyList.foreach(key => if (key != null) key.cancel())
+    keyList.foreach(_.cancel())
   }
 
   private def containsValidKeys: Boolean = synchronized {
-    keyList.exists(key => key != null && key.isValid)
+    keyList.exists(_.isValid)
   }
 
   private[spi] def deregister(k: SelectionKey): Unit = synchronized {
-    if (keyList != null) {
-      keyList -= k
-    }
+    keyList -= k
   }
 
 }
