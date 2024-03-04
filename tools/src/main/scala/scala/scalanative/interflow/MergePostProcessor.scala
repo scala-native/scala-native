@@ -62,12 +62,6 @@ private[interflow] object MergePostProcessor {
           .foreach { cycle =>
             val startIdx = cycle.map(blockIndices(_)).min
             val start = blocks(startIdx)
-            val startName = start.label.id
-            val end = cycle((cycle.indexOf(start) + 1) % cycle.size)
-            assert(
-              end.outgoing.contains(start.label.id),
-              "Invalid cycle, last block does not point to cycle start"
-            )
 
             def canEscapeAlloc = allocationEscapeCheck(
               allocatingBlock = block,
@@ -77,8 +71,19 @@ private[interflow] object MergePostProcessor {
             // If memory escapes current loop we cannot create stack stage guards
             // Instead try to insert guard in outer loop
             if (!canEscapeAlloc || innerCycleStart.exists(cycle.contains)) {
-              start.emitStackSaveOp = true
-              end.emitStackRestoreFor ::= startName
+              val loopEntries = start.incoming
+                .flatMap {
+                  case (_, (_, state)) =>
+                    val block = blocks.find(_.id == state.blockId).get
+                    if (cycle.contains(block)) None
+                    else if (blockIndices(block) >= startIdx) None
+                    else Some(block)
+                }
+              // assert(entries.size == 1)
+              loopEntries.foreach { loopEnteringBlock =>
+                loopEnteringBlock.emitStackSaveOp = true
+              }
+              start.emitStackRestoreFromBlocks :::= loopEntries.toList
             } else if (innerCycleStart.isEmpty) {
               // If allocation escapes direct loop try to create state restore in outer loop
               // Outer loop is a while loop which does not perform stack allocation, but is a cycle

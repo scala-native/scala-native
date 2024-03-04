@@ -2,6 +2,7 @@ package scala.scalanative
 
 import org.junit.Test
 import org.junit.Assert._
+import org.junit.Assume._
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 import scalanative.unsigned._
@@ -10,6 +11,7 @@ import scala.annotation.nowarn
 import scala.scalanative.annotation.alwaysinline
 
 import scala.language.higherKinds
+import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
 
 class IssuesTest {
 
@@ -630,6 +632,23 @@ class IssuesTest {
   @Test def issue3504(): Unit = {
     val xs: Array[Int] = (0 to 300).toArray
     assertNotNull(xs.sortBy(i => -i))
+  }
+
+  @Test def issue3799(): Unit = {
+    assumeTrue(isMultithreadingEnabled)
+    import scala.concurrent._
+    import scala.concurrent.duration._
+    implicit val ec: ExecutionContext = ExecutionContext.global
+    def loop(nextSchedule: Long): Future[Unit] = Future {
+      if (System.currentTimeMillis() > nextSchedule) {
+        System.currentTimeMillis() + 100
+      } else nextSchedule
+    }.flatMap { next => loop(next) }
+
+    assertThrows(
+      classOf[java.util.concurrent.TimeoutException],
+      Await.result(loop(0), 5.seconds)
+    )
   }
 
   @Test def dottyIssue15402(): Unit = {
