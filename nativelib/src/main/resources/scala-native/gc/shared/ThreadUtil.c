@@ -1,6 +1,3 @@
-#if defined(SCALANATIVE_GC_IMMIX) || defined(SCALANATIVE_GC_COMMIX) ||         \
-    defined(SCALANATIVE_GC_NONE) || defined(SCALANATIVE_GC_EXPERIMENTAL)
-
 #include "shared/ThreadUtil.h"
 #include <stdio.h>
 #include <limits.h>
@@ -163,5 +160,3 @@ bool rwlock_unlockRead(rwlock_t *ref) {
     return pthread_rwlock_unlock(ref) == 0;
 #endif
 }
-
-#endif

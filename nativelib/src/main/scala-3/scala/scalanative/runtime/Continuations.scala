@@ -1,7 +1,7 @@
 package scala.scalanative.runtime
 
 import scala.scalanative.unsafe.*
-import scala.scalanative.runtime.libc.{malloc, free}
+import scala.scalanative.runtime.ffi.{malloc, free}
 import scala.scalanative.runtime.Intrinsics.*
 import scala.collection.mutable
 

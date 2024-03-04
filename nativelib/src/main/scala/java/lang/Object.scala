@@ -50,7 +50,7 @@ class _Object {
       val size = cls.size
       val clone = GC.alloc(cls.asInstanceOf[Class[_]], size)
       val src = castObjectToRawPtr(this)
-      libc.memcpy(clone, src, Intrinsics.castIntToRawSize(size))
+      ffi.memcpy(clone, src, Intrinsics.castIntToRawSize(size))
       if (isMultithreadingEnabled) {
         // Reset object monitor
         storeRawSize(

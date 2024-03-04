@@ -411,7 +411,7 @@ object Tag {
       val dst = rawptr
       if (value != null) {
         val src = value.rawptr
-        libc.memcpy(dst, src, castIntToRawSizeUnsigned(size))
+        ffi.memcpy(dst, src, castIntToRawSizeUnsigned(size))
       } else storeRawPtr(dst, null)
     }
   }
@@ -449,7 +449,7 @@ object Tag {
       val dst = rawptr
       if (value != null) {
         val src = value.rawptr
-        libc.memcpy(dst, src, castIntToRawSizeUnsigned(size))
+        ffi.memcpy(dst, src, castIntToRawSizeUnsigned(size))
       } else storeRawPtr(dst, null)
     }
   }
@@ -482,7 +482,7 @@ object Tag {
       val dst = rawptr
       if (value != null) {
         val src = value.rawptr
-        libc.memcpy(dst, src, castIntToRawSizeUnsigned(size))
+        ffi.memcpy(dst, src, castIntToRawSizeUnsigned(size))
       } else storeRawPtr(dst, null)
     }
   }
@@ -521,7 +521,7 @@ object Tag {
       val dst = rawptr
       if (value != null) {
         val src = value.rawptr
-        libc.memcpy(dst, src, castIntToRawSizeUnsigned(size))
+        ffi.memcpy(dst, src, castIntToRawSizeUnsigned(size))
       } else storeRawPtr(dst, null)
     }
   }
@@ -567,7 +567,7 @@ object Tag {
       val dst = rawptr
       if (value != null) {
         val src = value.rawptr
-        libc.memcpy(dst, src, castIntToRawSizeUnsigned(size))
+        ffi.memcpy(dst, src, castIntToRawSizeUnsigned(size))
       } else storeRawPtr(dst, null)
     }
   }
@@ -621,7 +621,7 @@ object Tag {
       val dst = rawptr
       if (value != null) {
         val src = value.rawptr
-        libc.memcpy(dst, src, castIntToRawSizeUnsigned(size))
+        ffi.memcpy(dst, src, castIntToRawSizeUnsigned(size))
       } else storeRawPtr(dst, null)
     }
   }
@@ -684,7 +684,7 @@ object Tag {
       val dst = rawptr
       if (value != null) {
         val src = value.rawptr
-        libc.memcpy(dst, src, castIntToRawSizeUnsigned(size))
+        ffi.memcpy(dst, src, castIntToRawSizeUnsigned(size))
       } else storeRawPtr(dst, null)
     }
   }
@@ -757,7 +757,7 @@ object Tag {
       val dst = rawptr
       if (value != null) {
         val src = value.rawptr
-        libc.memcpy(dst, src, castIntToRawSizeUnsigned(size))
+        ffi.memcpy(dst, src, castIntToRawSizeUnsigned(size))
       } else storeRawPtr(dst, null)
     }
   }
@@ -841,7 +841,7 @@ object Tag {
       val dst = rawptr
       if (value != null) {
         val src = value.rawptr
-        libc.memcpy(dst, src, castIntToRawSizeUnsigned(size))
+        ffi.memcpy(dst, src, castIntToRawSizeUnsigned(size))
       } else storeRawPtr(dst, null)
     }
   }
@@ -937,7 +937,7 @@ object Tag {
       val dst = rawptr
       if (value != null) {
         val src = value.rawptr
-        libc.memcpy(dst, src, castIntToRawSizeUnsigned(size))
+        ffi.memcpy(dst, src, castIntToRawSizeUnsigned(size))
       } else storeRawPtr(dst, null)
     }
   }
@@ -1046,7 +1046,7 @@ object Tag {
       val dst = rawptr
       if (value != null) {
         val src = value.rawptr
-        libc.memcpy(dst, src, castIntToRawSizeUnsigned(size))
+        ffi.memcpy(dst, src, castIntToRawSizeUnsigned(size))
       } else storeRawPtr(dst, null)
     }
   }
@@ -1169,7 +1169,7 @@ object Tag {
       val dst = rawptr
       if (value != null) {
         val src = value.rawptr
-        libc.memcpy(dst, src, castIntToRawSizeUnsigned(size))
+        ffi.memcpy(dst, src, castIntToRawSizeUnsigned(size))
       } else storeRawPtr(dst, null)
     }
   }
@@ -1307,7 +1307,7 @@ object Tag {
       val dst = rawptr
       if (value != null) {
         val src = value.rawptr
-        libc.memcpy(dst, src, castIntToRawSizeUnsigned(size))
+        ffi.memcpy(dst, src, castIntToRawSizeUnsigned(size))
       } else storeRawPtr(dst, null)
     }
   }
@@ -1461,7 +1461,7 @@ object Tag {
       val dst = rawptr
       if (value != null) {
         val src = value.rawptr
-        libc.memcpy(dst, src, castIntToRawSizeUnsigned(size))
+        ffi.memcpy(dst, src, castIntToRawSizeUnsigned(size))
       } else storeRawPtr(dst, null)
     }
   }
@@ -1632,7 +1632,7 @@ object Tag {
       val dst = rawptr
       if (value != null) {
         val src = value.rawptr
-        libc.memcpy(dst, src, castIntToRawSizeUnsigned(size))
+        ffi.memcpy(dst, src, castIntToRawSizeUnsigned(size))
       } else storeRawPtr(dst, null)
     }
   }
@@ -1821,7 +1821,7 @@ object Tag {
       val dst = rawptr
       if (value != null) {
         val src = value.rawptr
-        libc.memcpy(dst, src, castIntToRawSizeUnsigned(size))
+        ffi.memcpy(dst, src, castIntToRawSizeUnsigned(size))
       } else storeRawPtr(dst, null)
     }
   }
@@ -2029,7 +2029,7 @@ object Tag {
       val dst = rawptr
       if (value != null) {
         val src = value.rawptr
-        libc.memcpy(dst, src, castIntToRawSizeUnsigned(size))
+        ffi.memcpy(dst, src, castIntToRawSizeUnsigned(size))
       } else storeRawPtr(dst, null)
     }
   }
@@ -2257,7 +2257,7 @@ object Tag {
       val dst = rawptr
       if (value != null) {
         val src = value.rawptr
-        libc.memcpy(dst, src, castIntToRawSizeUnsigned(size))
+        ffi.memcpy(dst, src, castIntToRawSizeUnsigned(size))
       } else storeRawPtr(dst, null)
     }
   }
@@ -2506,7 +2506,7 @@ object Tag {
       val dst = rawptr
       if (value != null) {
         val src = value.rawptr
-        libc.memcpy(dst, src, castIntToRawSizeUnsigned(size))
+        ffi.memcpy(dst, src, castIntToRawSizeUnsigned(size))
       } else storeRawPtr(dst, null)
     }
   }
@@ -2777,7 +2777,7 @@ object Tag {
       val dst = rawptr
       if (value != null) {
         val src = value.rawptr
-        libc.memcpy(dst, src, castIntToRawSizeUnsigned(size))
+        ffi.memcpy(dst, src, castIntToRawSizeUnsigned(size))
       } else storeRawPtr(dst, null)
     }
   }
@@ -3071,7 +3071,7 @@ object Tag {
       val dst = rawptr
       if (value != null) {
         val src = value.rawptr
-        libc.memcpy(dst, src, castIntToRawSizeUnsigned(size))
+        ffi.memcpy(dst, src, castIntToRawSizeUnsigned(size))
       } else storeRawPtr(dst, null)
     }
   }
@@ -3389,7 +3389,7 @@ object Tag {
       val dst = rawptr
       if (value != null) {
         val src = value.rawptr
-        libc.memcpy(dst, src, castIntToRawSizeUnsigned(size))
+        ffi.memcpy(dst, src, castIntToRawSizeUnsigned(size))
       } else storeRawPtr(dst, null)
     }
   }
@@ -3732,7 +3732,7 @@ object Tag {
       val dst = rawptr
       if (value != null) {
         val src = value.rawptr
-        libc.memcpy(dst, src, castIntToRawSizeUnsigned(size))
+        ffi.memcpy(dst, src, castIntToRawSizeUnsigned(size))
       } else storeRawPtr(dst, null)
     }
   }
@@ -4101,7 +4101,7 @@ object Tag {
       val dst = rawptr
       if (value != null) {
         val src = value.rawptr
-        libc.memcpy(dst, src, castIntToRawSizeUnsigned(size))
+        ffi.memcpy(dst, src, castIntToRawSizeUnsigned(size))
       } else storeRawPtr(dst, null)
     }
   }

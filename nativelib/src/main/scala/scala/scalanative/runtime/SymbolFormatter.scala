@@ -3,7 +3,7 @@ package scala.scalanative.runtime
 import scala.scalanative.meta.LinktimeInfo.{isWindows, sourceLevelDebuging}
 import scalanative.unsigned._
 import scala.scalanative.unsafe._
-import scala.scalanative.runtime.libc._
+import scala.scalanative.runtime.ffi._
 
 object SymbolFormatter {
 

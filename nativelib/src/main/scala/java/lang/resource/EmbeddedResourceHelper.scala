@@ -1,6 +1,6 @@
 package java.lang.resource
 
-import scala.scalanative.runtime.libc
+import scala.scalanative.runtime.ffi
 import scala.scalanative.unsigned._
 import scala.scalanative.runtime.{ByteArray, Intrinsics}
 import scala.scalanative.unsafe.Ptr
@@ -15,7 +15,7 @@ private[lang] object EmbeddedResourceHelper {
     Array.tabulate(filePathAmount) { idx =>
       val pathSize = EmbeddedResourceReader.getPathLength(idx)
       val path = Array.ofDim[Byte](pathSize)
-      libc.memcpy(
+      ffi.memcpy(
         path.asInstanceOf[ByteArray].atRaw(0),
         EmbeddedResourceReader.getPathPtr(idx),
         Intrinsics.castIntToRawSize(pathSize)

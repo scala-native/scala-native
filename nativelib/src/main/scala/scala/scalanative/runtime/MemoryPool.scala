@@ -26,14 +26,14 @@ final class MemoryPool private {
       chunkPageCount *= 2.toUSize
     }
     val chunkSize = MemoryPool.PAGE_SIZE * chunkPageCount
-    val start = libc.malloc(chunkSize)
+    val start = ffi.malloc(chunkSize)
     chunk = new MemoryPool.Chunk(start, 0.toUSize, chunkSize, chunk)
   }
 
   /** Released all claimed memory chunks */
   private[scalanative] def freeChunks(): Unit = synchronized {
     while (chunk != null) {
-      libc.free(chunk.start)
+      ffi.free(chunk.start)
       chunk = chunk.next
     }
   }
@@ -130,7 +130,7 @@ final class MemoryPoolZone(private val pool: MemoryPool) extends Zone {
     if (largeAllocations != null) {
       var i = 0
       while (i < largeOffset) {
-        libc.free(largeAllocations(i))
+        ffi.free(largeAllocations(i))
         i += 1
       }
       largeAllocations = null
@@ -193,7 +193,7 @@ final class MemoryPoolZone(private val pool: MemoryPool) extends Zone {
       )
       largeAllocations = newLargeAllocations
     }
-    val result = fromRawPtr[Byte](libc.malloc(size))
+    val result = fromRawPtr[Byte](ffi.malloc(size))
     largeAllocations(largeOffset) = result
     largeOffset += 1
 

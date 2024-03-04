@@ -150,6 +150,7 @@ object ScalaNativePluginInternal {
       Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors())
     val ec = ExecutionContext.fromExecutor(executor, log.trace(_))
     try Await.result(body(ec), Duration.Inf)
+    catch { case ex: Exception => executor.shutdownNow(); throw ex }
     finally executor.shutdown()
   }
 

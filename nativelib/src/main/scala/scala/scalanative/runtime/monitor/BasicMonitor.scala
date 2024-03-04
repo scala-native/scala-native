@@ -6,8 +6,8 @@ import scala.annotation.tailrec
 import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.unsafe.{stackalloc => _, _}
 import scala.scalanative.runtime.Intrinsics._
-import scala.scalanative.runtime.libc._
-import scala.scalanative.runtime.libc.memory_order._
+import scala.scalanative.runtime.ffi._
+import scala.scalanative.runtime.ffi.memory_order._
 import scala.scalanative.meta.LinktimeInfo.{is32BitPlatform => is32bit}
 
 /** Lightweight monitor used for single-threaded execution, upon detection of

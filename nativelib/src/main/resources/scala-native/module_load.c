@@ -1,14 +1,7 @@
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
 #include "stdatomic.h"
 #include "gc/shared/ScalaNativeGC.h"
-
-#ifdef _WIN32
-#include "windows.h"
-#define YieldThread() SwitchToThread()
-#else
-#include "sched.h"
-#define YieldThread() sched_yield()
-#endif
+#include "gc/shared/ThreadUtil.h"
 
 #ifdef WIN32
 #include <windows.h>
@@ -78,7 +71,7 @@ inline static ModuleRef waitForInitialization(ModuleSlot slot,
             return ctx->instance;
         }
         if (spin++ < 32)
-            YieldThread();
+            thread_yield();
         else
             sleep_ms(1);
         scalanative_GC_yield();

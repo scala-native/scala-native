@@ -154,7 +154,7 @@ object CVarArgList {
       )
       .asInstanceOf[Ptr[Long]]
     val storageStart = storage.at(0)
-    libc.memcpy(
+    ffi.memcpy(
       toRawPtr(resultStorage),
       toRawPtr(storageStart),
       castIntToRawSizeUnsigned(
@@ -236,7 +236,7 @@ object CVarArgList {
   private def toCVarArgList_X86_64_Windows(
       varargs: Seq[CVarArg]
   )(implicit z: Zone) = {
-    import scalanative.runtime.libc.realloc
+    import scalanative.runtime.ffi.realloc
     import scalanative.runtime.{fromRawPtr, toRawPtr}
     var storage: Ptr[Long] = null
     var count = 0
@@ -265,14 +265,14 @@ object CVarArgList {
     val resultStorage = toRawPtr(
       z.alloc(count.toUSize * fromRawUSize(Intrinsics.sizeOf[Size]))
     )
-    libc.memcpy(
+    ffi.memcpy(
       resultStorage,
       toRawPtr(storage),
       castIntToRawSizeUnsigned(
         count * castRawSizeToInt(Intrinsics.sizeOf[Size])
       )
     )
-    libc.free(toRawPtr(storage))
+    ffi.free(toRawPtr(storage))
     new CVarArgList(resultStorage)
   }
 

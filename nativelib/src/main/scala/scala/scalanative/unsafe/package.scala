@@ -2,7 +2,7 @@ package scala.scalanative
 
 import java.nio.charset.{Charset, StandardCharsets}
 import scalanative.annotation.alwaysinline
-import scalanative.runtime.{Platform, fromRawPtr, intrinsic, libc}
+import scalanative.runtime.{Platform, fromRawPtr, intrinsic, ffi}
 import scalanative.runtime.Intrinsics._
 import scalanative.unsigned._
 import scala.scalanative.meta.LinktimeInfo
@@ -154,12 +154,12 @@ package object unsafe extends unsafe.UnsafePackageCompat {
     if (cstr == null) {
       null
     } else {
-      val len = libc.strlen(cstr)
+      val len = ffi.strlen(cstr)
       val intLen = len.toInt
       if (intLen > 0) {
         val bytes = new Array[Byte](intLen)
 
-        libc.memcpy(bytes.at(0), cstr, len)
+        ffi.memcpy(bytes.at(0), cstr, len)
 
         new String(bytes, charset)
       } else ""
@@ -185,7 +185,7 @@ package object unsafe extends unsafe.UnsafePackageCompat {
         val size = unsignedOf(rawSize)
 
         val cstr = z.alloc(size)
-        libc.memcpy(cstr, bytes.at(0), size)
+        ffi.memcpy(cstr, bytes.at(0), size)
         cstr(len) = 0.toByte
 
         cstr
@@ -275,7 +275,7 @@ package object unsafe extends unsafe.UnsafePackageCompat {
       null
     } else {
       val cwstr = bytes.asInstanceOf[CWideString]
-      val len = charSize * libc.wcslen(cwstr).toInt
+      val len = charSize * ffi.wcslen(cwstr).toInt
       val buf = new Array[Byte](len)
 
       var c = 0
