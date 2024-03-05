@@ -25,7 +25,7 @@ private[runtime] object rtti {
 import rtti._
 
 // Emitted as java.lang.Class
-final class _Class[A] {
+private[runtime] final class _Class[A] {
   var id: Int = _
   var traitId: Int = _
   var name: String = _
