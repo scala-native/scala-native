@@ -654,6 +654,13 @@ trait NirGenStat(using Context) {
           None
         }
 
+      case Apply(target @ Select(Super(_, _), _), _)
+          if dd.symbol.isAllOf(Synthetic | Bridge) &&
+            target.symbol.name == dd.symbol.name &&
+            genMethodSig(target.symbol) == origSig =>
+        dd.symbol.addAnnotation(defnNir.NonExternClass)
+        genMethod(dd)
+
       case _ =>
         report.error(
           s"methods in extern objects must have extern body",

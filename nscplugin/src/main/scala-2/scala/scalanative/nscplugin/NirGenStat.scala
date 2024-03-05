@@ -912,6 +912,13 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             None
           }
 
+        case Apply(target @ Select(Super(_, _), _), _)
+            if dd.symbol.isSynthetic && dd.symbol.isBridge &&
+              target.symbol.name == dd.symbol.name &&
+              genMethodSig(target.symbol) == origSig =>
+          dd.symbol.addAnnotation(NonExternClass)
+          genMethod(dd)
+
         case _ =>
           reporter.error(
             rhs.pos,
