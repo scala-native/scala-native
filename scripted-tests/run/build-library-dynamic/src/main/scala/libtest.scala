@@ -1,5 +1,5 @@
-import scala.scalanative.runtime.{fromRawPtr, libc}
 import scala.scalanative.unsafe._
+import scala.scalanative.libc.stdlib.malloc
 
 object libtest {
   @exportAccessors("native_number", "native_set_number")
@@ -26,7 +26,7 @@ object libtest {
 
   @exported
   def retStructPtr(): Ptr[Foo] = {
-    val ptr = fromRawPtr[Foo](libc.malloc(sizeof[Foo]))
+    val ptr = malloc(sizeof[Foo]).asInstanceOf[Ptr[Foo]]
 
     ptr._1 = 42
     ptr._2 = 2020
