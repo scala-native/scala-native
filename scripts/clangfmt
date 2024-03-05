@@ -89,14 +89,11 @@ if [ "$#" -gt 0 ]; then
 elif [[ "$CHECK_MODIFIED_ONLY" == "1" ]]; then
   git diff --name-only main | \
     grep -E '.*\.(c|h|cpp|hpp)$' | \
-    xargs "$clang_format" --style=file "$opts" $err || \
-      die "C/C++ code formatting changes detected" \
-          "Run '$0' to reformat."
+    (xargs "$clang_format" --style=file "$opts" $err || die "C/C++ code formatting changes detected, Run '$0' to reformat.")
+
 else
   find . -name "*.[ch]" -or -name "*.[ch]pp" | \
     grep -E -v '.*/target/scala.*' | \
     grep -E -v ".*/(.venv|.scala-build)/" | \
-    xargs "$clang_format" --style=file "$opts" $err || \
-      die "C/C++ code formatting changes detected" \
-          "Run '$0' to reformat."
+    (xargs "$clang_format" --style=file "$opts" $err || die "C/C++ code formatting changes detected, Run '$0' to reformat.")
 fi
