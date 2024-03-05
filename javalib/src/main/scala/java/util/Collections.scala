@@ -67,7 +67,7 @@ object Collections {
   }
 
   // Differs from original type definition, original: [T <: jl.Comparable[_ >: T]]
-  def sort[T <: jl.Comparable[T]](list: List[T]): Unit =
+  def sort[T <: jl._Comparable[T]](list: List[T]): Unit =
     list.sort(null)
 
   def sort[T](list: List[T], c: Comparator[_ >: T]): Unit =
@@ -274,14 +274,14 @@ object Collections {
   }
 
   // Differs from original type definition, original: [T <: jl.Comparable[_ >: T]], returning T
-  def min[T <: AnyRef with jl.Comparable[T]](coll: Collection[_ <: T]): AnyRef =
+  def min[T <: AnyRef with jl._Comparable[T]](coll: Collection[_ <: T]): AnyRef =
     min(coll, Comparator.naturalOrder[T]())
 
   def min[T](coll: Collection[_ <: T], comp: Comparator[_ >: T]): T =
     coll.scalaOps.reduceLeft((a, b) => if (comp.compare(a, b) <= 0) a else b)
 
-  // Differs from original type definition, original: [T <: jl.Comparable[_ >: T]], returning T
-  def max[T <: AnyRef with jl.Comparable[T]](coll: Collection[_ <: T]): AnyRef =
+  // Differs from original type definition, original: [T <: jl.Comparable[_ >: T]], returning 
+  def max[T <: AnyRef with jl._Comparable[T]](coll: Collection[_ <: T]): AnyRef =
     max(coll, Comparator.naturalOrder[T]())
 
   def max[T](coll: Collection[_ <: T], comp: Comparator[_ >: T]): T =
