@@ -231,7 +231,9 @@ object CodeGen {
     }
   }
 
-  private[scalanative] def depends(implicit platform: PlatformInfo): Seq[nir.Global] = {
+  private[scalanative] def depends(implicit
+      platform: PlatformInfo
+  ): Seq[nir.Global] = {
     val buf = mutable.UnrolledBuffer.empty[nir.Global]
     buf ++= Lower.depends
     buf ++= Generate.depends

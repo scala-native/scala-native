@@ -34,7 +34,8 @@ private[interflow] sealed abstract class Instance(implicit
   }
 }
 
-private[interflow] final case class EscapedInstance(val escapedValue: nir.Val)(implicit
+private[interflow] final case class EscapedInstance(val escapedValue: nir.Val)(
+    implicit
     srcPosition: nir.SourcePosition,
     scopeId: nir.ScopeId
 ) extends Instance {
@@ -42,7 +43,8 @@ private[interflow] final case class EscapedInstance(val escapedValue: nir.Val)(i
     this(escapedValue)(instance.srcPosition, instance.scopeId)
 }
 
-private[interflow] final case class DelayedInstance(val delayedOp: nir.Op)(implicit
+private[interflow] final case class DelayedInstance(val delayedOp: nir.Op)(
+    implicit
     srcPosition: nir.SourcePosition,
     scopeId: nir.ScopeId
 ) extends Instance

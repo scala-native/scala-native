@@ -4,7 +4,9 @@ package codegen
 import scalanative.util.unreachable
 import scalanative.linker.{ScopeInfo, Class, Trait}
 
-private[codegen] class RuntimeTypeInformation(info: ScopeInfo)(implicit meta: Metadata) {
+private[codegen] class RuntimeTypeInformation(info: ScopeInfo)(implicit
+    meta: Metadata
+) {
 
   import RuntimeTypeInformation._
 

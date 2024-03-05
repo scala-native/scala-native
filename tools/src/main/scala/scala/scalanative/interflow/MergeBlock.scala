@@ -4,7 +4,10 @@ package interflow
 import scala.collection.mutable
 import scala.annotation.tailrec
 
-private[interflow] final class MergeBlock(val label: nir.Inst.Label, val id: nir.Local) {
+private[interflow] final class MergeBlock(
+    val label: nir.Inst.Label,
+    val id: nir.Local
+) {
 
   var incoming = mutable.Map.empty[nir.Local, (Seq[nir.Val], State)]
   var outgoing = mutable.Map.empty[nir.Local, MergeBlock]
