@@ -70,7 +70,7 @@ class MinimalRequiredSymbolsTest extends LinkerSpec {
     assertEquals(
       "multithreading",
       withMultithreading,
-      config.compilerConfig.multithreading
+      config.compilerConfig.multithreadingSupport
     )
     assertEquals(
       "targetTriple",
