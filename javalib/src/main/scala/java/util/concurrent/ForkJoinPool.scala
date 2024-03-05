@@ -316,7 +316,10 @@ class ForkJoinPool private (
   import scala.scalanative.unsafe._
   def debug(pivot: CVoidPtr) = {
     val alloca = stackalloc[Int]().asInstanceOf[CVoidPtr]
-    if((alloca.toLong - pivot.toLong).abs > 100) println(s"Stack leak in ${Thread.currentThread()}: pivot=$pivot, current=$alloca")
+    if ((alloca.toLong - pivot.toLong).abs > 100)
+      println(
+        s"Stack leak in ${Thread.currentThread()}: pivot=$pivot, current=$alloca"
+      )
   }
 
   final private[concurrent] def runWorker(w: WorkQueue): Unit = {
