@@ -643,6 +643,7 @@ class IssuesTest {
       i += 1
       if (System.currentTimeMillis() > nextSchedule) {
         println(s"issue3799: cycles=$cycles, iteration=$i")
+        cycles += 1
         System.currentTimeMillis() + 100
       } else nextSchedule
     }.flatMap { next => loop(next) }
@@ -651,6 +652,7 @@ class IssuesTest {
       classOf[java.util.concurrent.TimeoutException],
       Await.result(loop(0), 2.seconds)
     )
+    println("issue3799: done")
   }
 
   @Test def dottyIssue15402(): Unit = {
