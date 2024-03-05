@@ -6,9 +6,9 @@ import scalanative.util.unreachable
 import scalanative.linker._
 import scalanative.codegen.Lower
 
-final class State(block: nir.Local)(preserveDebugInfo: Boolean) {
+final class State(val blockId: nir.Local)(preserveDebugInfo: Boolean) {
 
-  var fresh = nir.Fresh(block.id)
+  var fresh = nir.Fresh(blockId.id)
   /* Performance Note: nir.OpenHashMap/LongMap/AnyRefMap have a faster clone()
    * operation. This really makes a difference on fullClone() */
   var heap = mutable.LongMap.empty[Instance]

@@ -1510,16 +1510,16 @@ object ForkJoinPool {
 
   final val UNCOMPENSATE = 1 << 16 // tryCompensate return
   // Lower and upper word masks
-  private val SP_MASK: Long = 0xffffffffL
-  private val UC_MASK: Long = ~SP_MASK
+  private final val SP_MASK: Long = 0xffffffffL
+  private final val UC_MASK: Long = ~SP_MASK
   // Release counts
-  private val RC_SHIFT: Int = 48
-  private val RC_UNIT: Long = 0x0001L << RC_SHIFT
-  private val RC_MASK: Long = 0xffffL << RC_SHIFT
+  private final val RC_SHIFT: Int = 48
+  private final val RC_UNIT: Long = 0x0001L << RC_SHIFT
+  private final val RC_MASK: Long = 0xffffL << RC_SHIFT
   // Total counts
-  private val TC_SHIFT: Int = 32
-  private val TC_UNIT: Long = 0x0001L << TC_SHIFT
-  private val TC_MASK: Long = 0xffffL << TC_SHIFT
+  private final val TC_SHIFT: Int = 32
+  private final val TC_UNIT: Long = 0x0001L << TC_SHIFT
+  private final val TC_MASK: Long = 0xffffL << TC_SHIFT
   // sp bits
   private final val SS_SEQ = 1 << 16; // version count
   private final val INACTIVE = 1 << 31; // phase bit when idle

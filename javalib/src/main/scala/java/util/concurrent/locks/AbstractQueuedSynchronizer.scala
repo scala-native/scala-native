@@ -180,7 +180,8 @@ abstract class AbstractQueuedSynchronizer protected ()
     val current = Thread.currentThread()
 
     var node: Node = _node
-    var spins, postSpins = 0 // retries upon unpark of first thread
+    var spins: Byte = 0
+    var postSpins: Byte = 0 // retries upon unpark of first thread
     var interrupted, first = false
     var pred: Node = null // predecessor of node when enqueued
 
@@ -254,7 +255,7 @@ abstract class AbstractQueuedSynchronizer protected ()
           else if (!casTail(t, node)) node.setPrevRelaxed(null) // back out
           else t.next = node
         } else if (first && spins != 0) {
-          spins -= 1 // reduce unfairness on rewaits
+          spins = (spins - 1).toByte // reduce unfairness on rewaits
           Thread.onSpinWait()
         } else if (node.status == 0)
           node.status = WAITING // enable signal and recheck

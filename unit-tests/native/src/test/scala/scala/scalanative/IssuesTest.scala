@@ -2,6 +2,7 @@ package scala.scalanative
 
 import org.junit.Test
 import org.junit.Assert._
+import org.junit.Assume._
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 import scalanative.unsigned._
@@ -10,6 +11,10 @@ import scala.annotation.nowarn
 import scala.scalanative.annotation.alwaysinline
 
 import scala.language.higherKinds
+import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
+import java.util.concurrent.ThreadFactory
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 class IssuesTest {
 
@@ -630,6 +635,39 @@ class IssuesTest {
   @Test def issue3504(): Unit = {
     val xs: Array[Int] = (0 to 300).toArray
     assertNotNull(xs.sortBy(i => -i))
+  }
+
+  @Test def issue3799(): Unit = if (isMultithreadingEnabled) {
+    import scala.concurrent._
+    import scala.concurrent.duration._
+    // Use a dedicated thread pool with threads of limited stack size for easier stack overflow detection
+    val executor = Executors.newFixedThreadPool(
+      2,
+      new Thread(
+        Thread.currentThread().getThreadGroup(),
+        _,
+        "test-issue3799:",
+        128 * 1024L
+      )
+    )
+    implicit val ec: ExecutionContext = ExecutionContext.fromExecutor(executor)
+    def loop(nextSchedule: Long): Future[Unit] = Future {
+      if (System.currentTimeMillis() > nextSchedule) {
+        System.currentTimeMillis() + 100
+      } else nextSchedule
+    }.flatMap { next => loop(next) }
+
+    try
+      assertThrows(
+        classOf[java.util.concurrent.TimeoutException],
+        Await.result(loop(0), 2.seconds)
+      )
+    finally {
+      executor.shutdown()
+      if (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
+        executor.shutdownNow()
+      }
+    }
   }
 
   @Test def dottyIssue15402(): Unit = {
