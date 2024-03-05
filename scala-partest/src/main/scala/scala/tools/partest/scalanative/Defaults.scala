@@ -43,5 +43,6 @@ object Defaults {
           .withLTO(Discover.LTO())
           .withLinkingOptions(Discover.linkingOptions())
           .withCompileOptions(Discover.compileOptions())
+          .withMultithreading(true)
       )
 }
