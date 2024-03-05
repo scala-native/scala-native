@@ -1,7 +1,7 @@
 package scala.scalanative
 package interflow
 
-trait Log { self: Interflow =>
+private[interflow] trait Log { self: Interflow =>
   private def show: Boolean =
     false
 

@@ -11,7 +11,7 @@ import scala.scalanative.nir.Attr.Alignment
 import scala.scalanative.build.BuildException
 import scala.annotation.tailrec
 
-final case class MemoryLayout(
+private[codegen] final case class MemoryLayout(
     size: Long,
     tys: Seq[MemoryLayout.PositionedType]
 ) {
@@ -48,7 +48,7 @@ final case class MemoryLayout(
       .map(_.offset)
 }
 
-object MemoryLayout {
+private[scalanative] object MemoryLayout {
   final val BITS_IN_BYTE = 8
   final val BYTES_IN_LONG = 8
 

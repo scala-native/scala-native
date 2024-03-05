@@ -270,7 +270,7 @@ object Discover {
     }
   }
 
-  class ContextBasedCache[Ctx, Key, Value <: AnyRef] {
+  private class ContextBasedCache[Ctx, Key, Value <: AnyRef] {
     private val cachedValues = scala.collection.mutable.Map.empty[Key, Value]
     private var lastContext: Ctx = _
     def apply[T <: Value: ClassTag](

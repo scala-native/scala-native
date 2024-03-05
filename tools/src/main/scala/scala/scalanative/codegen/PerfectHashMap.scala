@@ -6,7 +6,7 @@ import scalanative.linker.Method
 /** Implementation based on the article: 'Throw away the keys: Easy, Minimal
  *  Perfect Hashing' by Steve Hanov (http://stevehanov.ca/blog/index.php?id=119)
  */
-object PerfectHashMap {
+private[codegen] object PerfectHashMap {
 
   val MAX_D_VALUE = 10000
 
@@ -144,7 +144,7 @@ object PerfectHashMap {
 
 }
 
-class PerfectHashMap[K, V](
+private[codegen] class PerfectHashMap[K, V](
     val keys: Seq[Int],
     val values: Seq[Option[V]],
     hashFunc: (K, Int) => Int
@@ -166,7 +166,7 @@ class PerfectHashMap[K, V](
 
 }
 
-object DynmethodPerfectHashMap {
+private[codegen] object DynmethodPerfectHashMap {
 
   def apply(
       dynmethods: Seq[nir.Global.Member],

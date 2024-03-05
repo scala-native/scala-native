@@ -4,8 +4,8 @@ package llvm
 
 import scala.language.implicitConversions
 import scala.collection.mutable
-sealed trait Metadata
-object Metadata {
+private[codegen] sealed trait Metadata
+private[codegen] object Metadata {
   case class Id(value: Int) extends AnyVal {
     def show = "!" + value.toString()
   }

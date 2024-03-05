@@ -9,7 +9,7 @@ import scala.io.Source
 import scala.language.implicitConversions
 import scala.scalanative.build.Build
 
-class IncrementalCodeGenContext(config: build.Config) {
+private[codegen] class IncrementalCodeGenContext(config: build.Config) {
   private val package2hash: TrieMap[String, Long] = TrieMap[String, Long]()
   private val pack2hashPrev: TrieMap[String, Long] = TrieMap[String, Long]()
   private val changed: TrieMap[String, Long] = TrieMap[String, Long]()

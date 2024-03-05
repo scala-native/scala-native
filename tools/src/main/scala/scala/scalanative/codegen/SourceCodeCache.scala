@@ -8,7 +8,7 @@ import scala.collection.mutable
 import scala.collection.concurrent.TrieMap
 import scala.annotation.nowarn
 
-class SourceCodeCache(config: build.Config) {
+private[codegen] class SourceCodeCache(config: build.Config) {
   lazy val sourceCodeDir = {
     val dir = config.workDir.resolve("sources")
     if (!Files.exists(dir)) Files.createDirectories(dir)

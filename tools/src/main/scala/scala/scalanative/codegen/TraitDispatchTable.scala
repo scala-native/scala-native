@@ -4,7 +4,7 @@ package codegen
 import scala.collection.mutable
 import scalanative.linker.{Method, Trait, Class}
 
-class TraitDispatchTable(meta: Metadata) {
+private[codegen] class TraitDispatchTable(meta: Metadata) {
 
   val dispatchName =
     nir.Global

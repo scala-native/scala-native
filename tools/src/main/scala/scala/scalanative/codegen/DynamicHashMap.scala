@@ -3,11 +3,11 @@ package codegen
 
 import scalanative.linker.{Class, Method}
 
-object DynamicHashMap {
+private[codegen] object DynamicHashMap {
   final val ty: nir.Type = nir.Type.Ptr
 }
 
-class DynamicHashMap(cls: Class, proxies: Seq[nir.Defn])(implicit
+private[codegen] class DynamicHashMap(cls: Class, proxies: Seq[nir.Defn])(implicit
     meta: Metadata
 ) {
 

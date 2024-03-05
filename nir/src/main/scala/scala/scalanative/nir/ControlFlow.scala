@@ -10,7 +10,7 @@ import util.unsupported
  *
  *  * What are the successors of given block?
  */
-object ControlFlow {
+private[scalanative] object ControlFlow {
   final case class Edge(from: Block, to: Block, next: Next)
 
   final case class Block(

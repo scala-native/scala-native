@@ -3,7 +3,7 @@ package scala.scalanative.build
 import java.nio.file.Files
 
 /** Used to validate config objects */
-object Validator {
+private[build] object Validator {
 
   /** Runs all the individual private validators
    *

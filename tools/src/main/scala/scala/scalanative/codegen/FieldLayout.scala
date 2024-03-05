@@ -3,7 +3,7 @@ package codegen
 
 import scalanative.linker.{Class, Field}
 
-class FieldLayout(cls: Class)(implicit meta: Metadata) {
+private[codegen] class FieldLayout(cls: Class)(implicit meta: Metadata) {
 
   import meta.layouts.{Object, ObjectHeader, ArrayHeader}
   import meta.platform

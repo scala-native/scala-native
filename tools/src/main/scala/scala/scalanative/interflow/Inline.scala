@@ -5,7 +5,7 @@ import scala.scalanative.nir.Defn.Define.DebugInfo
 import scala.scalanative.linker._
 import scala.scalanative.util.unreachable
 
-trait Inline { self: Interflow =>
+private[interflow] trait Inline { self: Interflow =>
   val optimizerConfig = config.compilerConfig.optimizerConfig
   import optimizerConfig.{
     smallFunctionSize,

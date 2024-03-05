@@ -8,7 +8,7 @@ import nir.Bin.{And => Iand, _}
 import nir.Comp._
 import nir.Conv._
 
-trait Combine { self: Interflow =>
+private[interflow] trait Combine { self: Interflow =>
 
   def combine(bin: nir.Bin, ty: nir.Type, l: nir.Val, r: nir.Val)(implicit
       state: State,

@@ -6,7 +6,7 @@ import scalanative.util.{ScopedVar, unsupported}
 import scalanative.linker._
 import scalanative.interflow.UseDef.eliminateDeadCode
 
-object Lower {
+private[scalanative] object Lower {
 
   def apply(
       defns: Seq[nir.Defn]

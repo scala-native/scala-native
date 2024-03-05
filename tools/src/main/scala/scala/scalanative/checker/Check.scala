@@ -6,7 +6,7 @@ import scalanative.linker._
 import scalanative.util.partitionBy
 import scala.concurrent._
 
-sealed abstract class NIRCheck(implicit analysis: ReachabilityAnalysis.Result) {
+private[scalanative] sealed abstract class NIRCheck(implicit analysis: ReachabilityAnalysis.Result) {
   val errors = mutable.UnrolledBuffer.empty[Check.Error]
   var name: nir.Global = nir.Global.None
   var ctx: List[String] = Nil
@@ -77,7 +77,7 @@ sealed abstract class NIRCheck(implicit analysis: ReachabilityAnalysis.Result) {
   }
 }
 
-final class Check(implicit analysis: ReachabilityAnalysis.Result)
+private[scalanative] final class Check(implicit analysis: ReachabilityAnalysis.Result)
     extends NIRCheck {
   val labels = mutable.Map.empty[nir.Local, Seq[nir.Type]]
   val env = mutable.Map.empty[nir.Local, nir.Type]
@@ -741,7 +741,7 @@ final class Check(implicit analysis: ReachabilityAnalysis.Result)
   }
 }
 
-final class QuickCheck(implicit analysis: ReachabilityAnalysis.Result)
+private[scalanative] final class QuickCheck(implicit analysis: ReachabilityAnalysis.Result)
     extends NIRCheck {
   override def checkMethod(meth: Method): Unit = {
     meth.insts.foreach(checkInst)
@@ -765,7 +765,7 @@ final class QuickCheck(implicit analysis: ReachabilityAnalysis.Result)
 
 }
 
-object Check {
+private[scalanative] object Check {
   final case class Error(name: nir.Global, ctx: List[String], msg: String)
 
   private def run(

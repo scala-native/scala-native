@@ -4,7 +4,7 @@ package codegen
 import scala.collection.mutable
 import scalanative.linker.Class
 
-class ModuleArray(meta: Metadata) {
+private[codegen] class ModuleArray(meta: Metadata) {
 
   val index = mutable.Map.empty[Class, Int]
   val modules = mutable.UnrolledBuffer.empty[Class]

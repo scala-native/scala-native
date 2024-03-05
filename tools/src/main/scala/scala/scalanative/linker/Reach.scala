@@ -5,7 +5,7 @@ import java.nio.file.{Path, Paths}
 import scala.annotation.tailrec
 import scala.collection.mutable
 
-class Reach(
+private[linker] class Reach(
     protected val config: build.Config,
     entries: Seq[nir.Global],
     protected val loader: ClassLoader
@@ -1156,7 +1156,7 @@ class Reach(
   lazy val injects: Seq[nir.Defn] = UnsupportedFeatureExtractor.injects
 }
 
-object Reach {
+private[scalanative] object Reach {
   def apply(
       config: build.Config,
       entries: Seq[nir.Global],

@@ -5,7 +5,7 @@ import scalanative.linker._
 import scala.concurrent._
 import scala.annotation.tailrec
 
-trait Visit { self: Interflow =>
+private[interflow] trait Visit { self: Interflow =>
 
   def shallVisit(name: nir.Global.Member): Boolean = {
     val orig = originalName(name)

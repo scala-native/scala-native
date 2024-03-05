@@ -9,7 +9,7 @@ import scala.scalanative.util.ScopedVar
 import java.util.function.Supplier
 import scala.concurrent._
 
-class Interflow(val config: build.Config)(implicit
+private[scalanative] class Interflow(val config: build.Config)(implicit
     val analysis: ReachabilityAnalysis.Result
 ) extends Visit
     with Opt
@@ -200,7 +200,7 @@ object Interflow {
       .map(_ => interflow.result())
   }
 
-  object LLVMIntrinsics {
+  private[interflow] object LLVMIntrinsics {
     private val externAttrs = nir.Attrs(isExtern = true)
     private val LLVMI =
       nir.Global.Top("scala.scalanative.runtime.LLVMIntrinsics$")
@@ -214,7 +214,7 @@ object Interflow {
     val StackRestoreSig = nir.Type.Function(Seq(nir.Type.Ptr), nir.Type.Unit)
   }
 
-  val depends: Seq[nir.Global] = Seq(
+  private[scalanative] val depends: Seq[nir.Global] = Seq(
     LLVMIntrinsics.StackSave.name,
     LLVMIntrinsics.StackRestore.name
   )

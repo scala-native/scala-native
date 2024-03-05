@@ -5,7 +5,7 @@ import scala.collection.mutable
 
 /** Created by lukaskellenberger on 17.12.16.
  */
-object GenerateReflectiveProxies {
+private[codegen] object GenerateReflectiveProxies {
   implicit val scopeId: nir.ScopeId = nir.ScopeId.TopLevel
 
   private def genReflProxy(defn: nir.Defn.Define): nir.Defn.Define = {
