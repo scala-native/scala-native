@@ -33,6 +33,8 @@ final class Size(private[scalanative] val rawSize: RawSize)
   @inline def toUInt: UInt     = toUSize.toUInt
   @inline def toULong: ULong   = toUSize.toULong
   @inline def toUSize: USize   = USize.valueOf(rawSize)
+  @inline def toCSize: CSize = toUSize
+  @inline def toCSSize: CSSize = this
 
 
   @inline override def doubleValue(): Double = toLong.toDouble

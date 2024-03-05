@@ -112,7 +112,7 @@ object Array {
       val fromPtr = from.atRawUnsafe(fromPos)
       val toPtr   = to.atRawUnsafe(toPos)
       val size    = to.stride * len
-      libc.memmove(toPtr, fromPtr, castIntToRawSizeUnsigned(size))
+      ffi.memmove(toPtr, fromPtr, castIntToRawSizeUnsigned(size))
     }
   }
 
@@ -156,7 +156,7 @@ object Array {
     } else {
       val leftPtr  = left.atRaw(leftPos)
       val rightPtr = right.atRaw(rightPos)
-      libc.memcmp(leftPtr, rightPtr, castIntToRawSizeUnsigned(len * left.stride))
+      ffi.memcmp(leftPtr, rightPtr, castIntToRawSizeUnsigned(len * left.stride))
     }
   }
 }
@@ -229,7 +229,7 @@ final class ${T}Array private () extends Array[${Repr}] {
     val arrcls  = classOf[${T}Array]
     val arr     = GC.alloc_array(arrcls, length, ${sizeT})
     val src     = castObjectToRawPtr(this)
-    libc.memcpy(
+    ffi.memcpy(
       elemRawPtr(arr, MemoryLayout.Array.ValuesOffset),
       elemRawPtr(src, MemoryLayout.Array.ValuesOffset),
       castIntToRawSizeUnsigned(${sizeT} * length)
@@ -280,7 +280,7 @@ object ${T}Array {
       val dst  = arr.atRawUnsafe(0)
       val src  = data
       val size = castIntToRawSizeUnsigned(${sizeT} * length)
-      libc.memcpy(dst, src, size)
+      ffi.memcpy(dst, src, size)
     }
     arr
   }

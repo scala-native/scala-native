@@ -203,6 +203,8 @@ object Tag {
   private[scalanative] sealed trait NatTag {
     def toInt: Int
     def toUInt: UInt = toInt.toUInt
+    def toCSize: CSize = toInt.toCSize
+    def toCSSize: CSSize = toInt.toCSSize
   }
 
   object Nat0 extends Tag[unsafe.Nat._0] with NatTag {

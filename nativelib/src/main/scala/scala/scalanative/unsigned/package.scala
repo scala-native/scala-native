@@ -1,6 +1,7 @@
 package scala.scalanative
 
 import scala.scalanative.runtime.Intrinsics._
+import scala.scalanative.unsafe.CSize
 
 package object unsigned {
 
@@ -12,6 +13,9 @@ package object unsigned {
     @inline def toUShort: UShort = unsignedOf(value.toShort)
     @inline def toUInt: UInt = unsignedOf(byteToUInt(value))
     @inline def toULong: ULong = unsignedOf(byteToULong(value))
+    @inline def toCSize: CSize = unsignedOf(
+      castIntToRawSizeUnsigned(byteToUInt(value))
+    )
   }
 
   /** Scala Native unsigned extensions to the standard Short. */
@@ -20,6 +24,9 @@ package object unsigned {
     @inline def toUShort: UShort = unsignedOf(value)
     @inline def toUInt: UInt = unsignedOf(shortToUInt(value))
     @inline def toULong: ULong = unsignedOf(shortToULong(value))
+    @inline def toCSize: CSize = unsignedOf(
+      castIntToRawSizeUnsigned(shortToUInt(value))
+    )
   }
 
   /** Scala Native unsigned extensions to the standard Int. */
@@ -29,6 +36,7 @@ package object unsigned {
     @inline def toUInt: UInt = unsignedOf(value)
     @inline def toULong: ULong = unsignedOf(intToULong(value))
     @inline def toUSize: USize = unsignedOf(castIntToRawSizeUnsigned(value))
+    @inline def toCSize: CSize = toUSize
   }
 
   /** Scala Native unsigned extensions to the standard Long. */
@@ -38,5 +46,6 @@ package object unsigned {
     @inline def toUInt: UInt = unsignedOf(value.toInt)
     @inline def toULong: ULong = unsignedOf(value)
     @inline def toUSize: USize = unsignedOf(castLongToRawSize(value))
+    @inline def toCSize: CSize = toUSize
   }
 }
