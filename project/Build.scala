@@ -1003,7 +1003,8 @@ object Build {
               val base =
                 denylistedFromFile(versionTestsDir / "DenylistedTests.txt")
               val requiringMultithreading =
-                if (nativeConfig.value.multithreading.contains(true)) Set.empty[String]
+                if (nativeConfig.value.multithreading.getOrElse(true))
+                  Set.empty[String]
                 else
                   denylistedFromFile(
                     versionTestsDir / "DenylistedTests-require-threads.txt",

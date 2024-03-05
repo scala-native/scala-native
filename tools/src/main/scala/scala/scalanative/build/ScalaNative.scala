@@ -38,7 +38,8 @@ private[scalanative] object ScalaNative {
     dumpFile = "linked",
     forceQuickCheck = true
   )(Future {
-    val mtSupport = config.compilerConfig.multithreading.getOrElse("true, disable if not used")
+    val mtSupport = config.compilerConfig.multithreading
+      .getOrElse("true, disable if not used")
     val linkingMsg = s"Linking (multithreadingEnabled=${mtSupport})"
     config.logger.time(linkingMsg) {
       Link(config, entries)
