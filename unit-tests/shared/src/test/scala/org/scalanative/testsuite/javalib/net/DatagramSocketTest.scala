@@ -10,6 +10,7 @@ import java.net.NetworkInterface
 import java.net.SocketAddress
 import java.net.SocketException
 import java.net.SocketTimeoutException
+import java.net.UnknownHostException
 import java.{util => ju}
 
 import org.junit.Test
@@ -213,7 +214,11 @@ class DatagramSocketTest {
     try {
       val nonLocalAddr =
         new InetSocketAddress(InetAddress.getByName("123.123.123.123"), 0)
-      assertThrows("ds1", classOf[BindException], ds1.bind(nonLocalAddr))
+      assertThrows(
+        "bind must fail for non local address",
+        classOf[BindException],
+        ds1.bind(nonLocalAddr)
+      )
     } finally {
       ds1.close()
     }
@@ -222,9 +227,9 @@ class DatagramSocketTest {
     try {
       ds2.bind(new InetSocketAddress(loopback, 0))
       val port = ds2.getLocalPort
-      assertTrue("ds2", ds2.isBound())
+      assertTrue("socket must be bound", ds2.isBound())
       assertEquals(
-        "ds2",
+        "bind must use the given address",
         new InetSocketAddress(loopback, port),
         ds2.getLocalSocketAddress
       )
@@ -235,8 +240,11 @@ class DatagramSocketTest {
     val ds3 = new DatagramSocket(null)
     try {
       ds3.bind(null)
-      assertTrue("ds3", ds3.isBound())
-      assertTrue("ds3", ds3.getLocalSocketAddress != null)
+      assertTrue("socket must be bound", ds3.isBound())
+      assertTrue(
+        "bind must use any available address when not provided",
+        ds3.getLocalSocketAddress != null
+      )
     } finally {
       ds3.close()
     }
@@ -247,7 +255,7 @@ class DatagramSocketTest {
       val ds5 = new DatagramSocket()
       try {
         assertThrows(
-          "ds4",
+          "bind must fail if the address is already in use",
           classOf[SocketException],
           ds5.bind(ds4.getLocalSocketAddress)
         )
@@ -262,12 +270,23 @@ class DatagramSocketTest {
     val ds6 = new DatagramSocket(null)
     try {
       assertThrows(
-        "ds6",
+        "bind must fail for unsupported SocketAddress type",
         classOf[IllegalArgumentException],
         ds6.bind(new UnsupportedSocketAddress)
       )
     } finally {
       ds6.close()
+    }
+
+    val ds7 = new DatagramSocket(null)
+    try {
+      assertThrows(
+        "bind must fail for unresolved address",
+        classOf[SocketException],
+        ds7.bind(InetSocketAddress.createUnresolved("localhost", 0))
+      )
+    } finally {
+      ds7.close()
     }
   }
 
@@ -363,6 +382,15 @@ class DatagramSocketTest {
       ds2.close()
       ds3.close()
     }
+
+    val ds4 = new DatagramSocket(new InetSocketAddress(loopback, 0))
+    try {
+      assertThrows(
+        "Unresolved address can't be connected to",
+        classOf[SocketException],
+        ds4.connect(InetSocketAddress.createUnresolved("localhost", 8080))
+      )
+    } finally {}
   }
 
   @Test def sendReceiveBroadcast(): Unit = {

@@ -89,32 +89,35 @@ class DatagramSocket protected (
       throw new SocketException("already bound")
     }
 
-    if (addr != null && !addr.isInstanceOf[InetSocketAddress]) {
-      throw new IllegalArgumentException(
-        "Endpoint is of unsupported SocketAddress subclass"
-      )
+    val insAddr = addr match {
+      case null =>
+        new InetSocketAddress(SocketHelpers.getWildcardAddressForBind(), 0)
+      case insAddr: InetSocketAddress =>
+        insAddr
+      case _ =>
+        throw new IllegalArgumentException(
+          "Endpoint is of unsupported SocketAddress subclass"
+        )
     }
 
-    val inetAddr =
-      if (addr == null ||
-          addr.asInstanceOf[InetSocketAddress].getAddress == null)
-        new InetSocketAddress(SocketHelpers.getWildcardAddressForBind(), 0)
-      else {
-        addr.asInstanceOf[InetSocketAddress]
-      }
+    if (insAddr.isUnresolved)
+      throw new SocketException("Unresolved address")
 
     checkClosedAndCreate()
 
-    impl.bind(inetAddr.getPort, inetAddr.getAddress)
-    this.localAddr = inetAddr.getAddress
+    impl.bind(insAddr.getPort, insAddr.getAddress)
+    this.localAddr = insAddr.getAddress
     this.localPort = impl.localport
     bound = true
   }
 
   private[net] def checkAddress(addr: InetAddress, op: String) = addr match {
-    case null                              =>
+    case null =>
+      throw new IllegalArgumentException(op + ": null address")
     case _: Inet4Address | _: Inet6Address =>
-    case _ => new IllegalArgumentException(op + ": invalid address type")
+      ()
+    case _ =>
+      throw new IllegalArgumentException(op + ": invalid address type")
   }
 
   def connect(address: InetAddress, port: Int): Unit = {
@@ -136,14 +139,19 @@ class DatagramSocket protected (
     }
   }
 
-  def connect(address: SocketAddress): Unit = address match {
-    case iaddr: InetSocketAddress =>
-      connect(iaddr.getAddress, iaddr.getPort)
-    case _ =>
-      throw new IllegalArgumentException(
-        "Invalid address argument to connect - " +
-          "either of unsupported SocketAddress subclass or null"
-      )
+  def connect(address: SocketAddress): Unit = {
+    if (address == null)
+      throw new IllegalArgumentException("Address can't be null")
+
+    val inetAddr = address match {
+      case inetAddr: InetSocketAddress => inetAddr
+      case _ => throw new IllegalArgumentException("Unsupported address type")
+    }
+
+    if (inetAddr.isUnresolved)
+      throw new SocketException("Unresolved address")
+
+    connect(inetAddr.getAddress, inetAddr.getPort)
   }
 
   def disconnect(): Unit = {

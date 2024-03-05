@@ -210,6 +210,18 @@ class SocketTest {
     }
   }
 
+  @Test def connect(): Unit = {
+    val s = new Socket()
+    try {
+      assertThrows(
+        classOf[UnknownHostException],
+        s.connect(InetSocketAddress.createUnresolved("localhost", 0))
+      )
+    } finally {
+      s.close()
+    }
+  }
+
   @Test def connectWithTimeout(): Unit = {
     val s = new Socket()
     try {
@@ -227,7 +239,11 @@ class SocketTest {
     try {
       val nonLocalAddr =
         new InetSocketAddress(InetAddress.getByName("123.123.123.123"), 0)
-      assertThrows("a1", classOf[BindException], s1.bind(nonLocalAddr))
+      assertThrows(
+        "bind must fail for non local address",
+        classOf[BindException],
+        s1.bind(nonLocalAddr)
+      )
     } finally {
       s1.close()
     }
@@ -237,7 +253,7 @@ class SocketTest {
       s2.bind(new InetSocketAddress(InetAddress.getLoopbackAddress, 0))
       val port = s2.getLocalPort
       assertEquals(
-        "a2",
+        "bind must use the given address",
         new InetSocketAddress(InetAddress.getLoopbackAddress, port),
         s2.getLocalSocketAddress
       )
@@ -248,7 +264,10 @@ class SocketTest {
     val s3 = new Socket()
     try {
       s3.bind(null)
-      assertTrue("a3", s3.getLocalSocketAddress != null)
+      assertTrue(
+        "bind must use any available address when not provided",
+        s3.getLocalSocketAddress != null
+      )
     } finally {
       s3.close()
     }
@@ -259,7 +278,7 @@ class SocketTest {
       val s5 = new Socket()
       try {
         assertThrows(
-          "a4",
+          "bind must fail if the address is already in use",
           classOf[BindException],
           s5.bind(s4.getLocalSocketAddress)
         )
@@ -274,12 +293,23 @@ class SocketTest {
     val s6 = new Socket()
     try {
       assertThrows(
-        "a5",
+        "bind must fail for unsupported SocketAddress type",
         classOf[IllegalArgumentException],
         s6.bind(new UnsupportedSocketAddress)
       )
     } finally {
       s6.close()
+    }
+
+    val s7 = new Socket()
+    try {
+      assertThrows(
+        "bind must fail for unresolved address",
+        classOf[SocketException],
+        s7.bind(InetSocketAddress.createUnresolved("localhost", 0))
+      )
+    } finally {
+      s7.close()
     }
   }
 
