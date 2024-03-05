@@ -12,6 +12,9 @@ import scala.scalanative.annotation.alwaysinline
 
 import scala.language.higherKinds
 import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
+import java.util.concurrent.ThreadFactory
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 class IssuesTest {
 
@@ -637,7 +640,17 @@ class IssuesTest {
   @Test def issue3799(): Unit = if (isMultithreadingEnabled) {
     import scala.concurrent._
     import scala.concurrent.duration._
-    implicit val ec: ExecutionContext = ExecutionContext.global
+    // Use a dedicated thread pool with threads of limited stack size for easier stack overflow detection
+    val executor = Executors.newFixedThreadPool(
+      2,
+      new Thread(
+        Thread.currentThread().getThreadGroup(),
+        _,
+        "test-issue3799:",
+        32 * 1024L
+      )
+    )
+    implicit val ec: ExecutionContext = ExecutionContext.fromExecutor(executor)
     var i, cycles = 0
     def loop(nextSchedule: Long): Future[Unit] = Future {
       i += 1
@@ -648,11 +661,18 @@ class IssuesTest {
       } else nextSchedule
     }.flatMap { next => loop(next) }
 
-    assertThrows(
-      classOf[java.util.concurrent.TimeoutException],
-      Await.result(loop(0), 2.seconds)
-    )
-    println("issue3799: done")
+    try
+      assertThrows(
+        classOf[java.util.concurrent.TimeoutException],
+        Await.result(loop(0), 2.seconds)
+      )
+    finally {
+      println("issue3799: done")
+      executor.shutdown()
+      if(!executor.awaitTermination(5, TimeUnit.SECONDS)){
+        executor.shutdownNow()
+      }
+    }
   }
 
   @Test def dottyIssue15402(): Unit = {
