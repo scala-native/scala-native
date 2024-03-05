@@ -120,23 +120,27 @@ package object unsafe extends unsafe.UnsafePackageCompat {
   /** Scala Native unsafe extensions to the standard Byte. */
   implicit class UnsafeRichByte(val value: Byte) extends AnyVal {
     @inline def toSize: Size = Size.valueOf(castIntToRawSize(value.toInt))
+    @inline def toCSSize: CSSize = toSize
   }
 
   /** Scala Native unsafe extensions to the standard Short. */
   implicit class UnsafeRichShort(val value: Short) extends AnyVal {
     @inline def toSize: Size = Size.valueOf(castIntToRawSize(value.toInt))
+    @inline def toCSSize: CSSize = toSize
   }
 
   /** Scala Native unsafe extensions to the standard Int. */
   implicit class UnsafeRichInt(val value: Int) extends AnyVal {
     @inline def toPtr[T]: Ptr[T] = fromRawPtr[T](castIntToRawPtr(value))
     @inline def toSize: Size = Size.valueOf(castIntToRawSize(value))
+    @inline def toCSSize: CSSize = toSize
   }
 
   /** Scala Native unsafe extensions to the standard Long. */
   implicit class UnsafeRichLong(val value: Long) extends AnyVal {
     @inline def toPtr[T]: Ptr[T] = fromRawPtr[T](castLongToRawPtr(value))
     @inline def toSize: Size = Size.valueOf(castLongToRawSize(value))
+    @inline def toCSSize: CSSize = toSize
   }
 
   /** Scala Native unsafe extensions to Arrays */

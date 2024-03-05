@@ -28,10 +28,14 @@ final class USize(private[scalanative] val rawSize: RawSize) extends scala.math.
   @inline def toLong: Long        = castRawSizeToLongUnsigned(rawSize)
   @inline def toSize: unsafe.Size = new unsafe.Size(rawSize)
 
+  @inline def toCSize: unsafe.CSize = this
+  @inline def toCSSize: unsafe.CSSize = toSize
+
   @inline def toUByte: UByte   = toByte.toUByte
   @inline def toUShort: UShort = toShort.toUShort
   @inline def toUInt: UInt     = unsignedOf(castRawSizeToInt(rawSize))
   @inline def toULong: ULong   = unsignedOf(castRawSizeToLongUnsigned(rawSize))
+  @inline def toUSize: USize   = this
 
   @inline override def doubleValue(): Double = toLong.toDouble
   @inline override def floatValue(): Float = toInt.toFloat
