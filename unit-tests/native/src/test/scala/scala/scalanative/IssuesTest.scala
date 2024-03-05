@@ -634,22 +634,24 @@ class IssuesTest {
     assertNotNull(xs.sortBy(i => -i))
   }
 
-  // @Test def issue3799(): Unit = {
-  //   assumeTrue(isMultithreadingEnabled)
-  //   import scala.concurrent._
-  //   import scala.concurrent.duration._
-  //   implicit val ec: ExecutionContext = ExecutionContext.global
-  //   def loop(nextSchedule: Long): Future[Unit] = Future {
-  //     if (System.currentTimeMillis() > nextSchedule) {
-  //       System.currentTimeMillis() + 100
-  //     } else nextSchedule
-  //   }.flatMap { next => loop(next) }
+  @Test def issue3799(): Unit = if (isMultithreadingEnabled) {
+    import scala.concurrent._
+    import scala.concurrent.duration._
+    implicit val ec: ExecutionContext = ExecutionContext.global
+    var i, cycles = 0
+    def loop(nextSchedule: Long): Future[Unit] = Future {
+      i += 1
+      if (System.currentTimeMillis() > nextSchedule) {
+        println(s"issue3799: cycles=$cycles, iteration=$i")
+        System.currentTimeMillis() + 100
+      } else nextSchedule
+    }.flatMap { next => loop(next) }
 
-  //   assertThrows(
-  //     classOf[java.util.concurrent.TimeoutException],
-  //     Await.result(loop(0), 2.seconds)
-  //   )
-  // }
+    assertThrows(
+      classOf[java.util.concurrent.TimeoutException],
+      Await.result(loop(0), 2.seconds)
+    )
+  }
 
   @Test def dottyIssue15402(): Unit = {
     trait Named {
