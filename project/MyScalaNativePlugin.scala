@@ -145,6 +145,7 @@ object MyScalaNativePlugin extends AutoPlugin {
     libraryDependencies ~= { libDeps =>
       libDeps.filterNot(_.organization == "org.scala-native")
     },
+    Test / parallelExecution := false,
     nativeConfig ~= { nc =>
       nc.withCheck(true)
         .withCheckFatalWarnings(true)
