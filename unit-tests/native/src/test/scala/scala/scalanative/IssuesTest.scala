@@ -647,7 +647,7 @@ class IssuesTest {
         Thread.currentThread().getThreadGroup(),
         _,
         "test-issue3799:",
-        32 * 1024L
+        128 * 1024L
       )
     )
     implicit val ec: ExecutionContext = ExecutionContext.fromExecutor(executor)
