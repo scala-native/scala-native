@@ -1,7 +1,8 @@
 package scala.scalanative
 package libc
 
-import scalanative.unsafe._
+import scala.scalanative.unsafe._
+import scala.scalanative.unsigned._
 
 @extern object stdlib extends stdlib
 
@@ -14,6 +15,20 @@ import scalanative.unsafe._
   def realloc[T](ptr: Ptr[T], newSize: CSize): Ptr[T] = extern
   def free(ptr: CVoidPtr): Unit = extern
   def aligned_alloc(alignment: CSize, size: CSize): Unit = extern
+
+  def malloc(size: Int): Ptr[Byte] = malloc(size.toCSize)
+  def malloc(size: Long): Ptr[Byte] = malloc(size.toCSize)
+  def calloc(num: Int, size: Int): Ptr[Byte] = calloc(num.toCSize, size.toCSize)
+  def calloc(num: Long, size: Long): Ptr[Byte] =
+    calloc(num.toCSize, size.toCSize)
+  def realloc[T](ptr: Ptr[T], newSize: Int): Ptr[T] =
+    realloc(ptr, newSize.toCSize)
+  def realloc[T](ptr: Ptr[T], newSize: Long): Ptr[T] =
+    realloc(ptr, newSize.toCSize)
+  def aligned_alloc(alignment: Int, size: Int): Unit =
+    aligned_alloc(alignment.toCSize, size.toCSize)
+  def aligned_alloc(alignment: Long, size: Long): Unit =
+    aligned_alloc(alignment.toCSize, size.toCSize)
 
   // Program utilities
 
@@ -33,6 +48,7 @@ import scalanative.unsafe._
 
   def rand(): CInt = extern
   def srand(seed: CUnsignedInt): Unit = extern
+  def srand(seed: Int): Unit = srand(seed.toUInt)
 
   // Conversions to numeric formats
 
@@ -68,12 +84,27 @@ import scalanative.unsafe._
       comparator: CFuncPtr2[CVoidPtr, CVoidPtr, CInt]
   ): Unit = extern
 
+  def bsearch(
+      key: CVoidPtr,
+      data: CVoidPtr,
+      num: Int,
+      size: Int,
+      comparator: CFuncPtr2[CVoidPtr, CVoidPtr, CInt]
+  ): Unit = bsearch(key, data, num.toCSize, size.toCSize, comparator)
+
   def qsort[T](
       data: Ptr[T],
       num: CSize,
       size: CSize,
       comparator: CFuncPtr2[CVoidPtr, CVoidPtr, CInt]
   ): Unit = extern
+
+  def qsort[T](
+      data: Ptr[T],
+      num: Int,
+      size: Int,
+      comparator: CFuncPtr2[CVoidPtr, CVoidPtr, CInt]
+  ): Unit = qsort(data, num.toCSize, size.toCSize, comparator)
 
   // Macros
 

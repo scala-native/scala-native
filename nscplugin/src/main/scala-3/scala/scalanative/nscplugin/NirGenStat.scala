@@ -623,11 +623,14 @@ trait NirGenStat(using Context) {
       case Apply(target, args) if target.symbol.isExtern =>
         val sym = target.symbol
         val nir.Global.Member(_, selfSig) = name: @unchecked
-        def isExternMethodForwarder =
-          genExternSig(sym) == selfSig &&
-            genExternMethodSig(sym) == origSig
-
+        val hasSameName = genExternSig(sym).mangle == selfSig.mangle
+        val hasSameSignature = genExternMethodSig(sym) == origSig
+        def isExternMethodForwarder = hasSameName && hasSameSignature
+        def isExternMethodRuntimeOverload = hasSameName && !hasSameSignature
         if isExternMethodForwarder then externMethodDecl()
+        else if isExternMethodRuntimeOverload then
+          dd.symbol.addAnnotation(defnNir.NonExternClass)
+          return genMethod(dd)
         else {
           report.error(
             "Referencing other extern symbols in not supported",

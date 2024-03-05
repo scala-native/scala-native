@@ -845,7 +845,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     def genExternMethod(
         attrs: nir.Attrs,
         name: nir.Global.Member,
-        origSig: nir.Type,
+        origSig: nir.Type.Function,
         dd: DefDef
     ): Option[nir.Defn] = {
       val rhs = dd.rhs
@@ -859,12 +859,6 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       def isCallingExternMethod(sym: Symbol) =
         sym.isExtern
 
-      def isExternMethodAlias(target: Symbol) =
-        (name, genName(target)) match {
-          case (nir.Global.Member(_, lsig), nir.Global.Member(_, rsig)) =>
-            lsig == rsig
-          case _ => false
-        }
       val defaultArgs = dd.symbol.paramss.flatten.filter(_.hasDefault)
       rhs match {
         case _ if defaultArgs.nonEmpty =>
@@ -880,14 +874,32 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
         case Apply(target, _) if isCallingExternMethod(target.symbol) =>
           val sym = target.symbol
-          if (isExternMethodAlias(sym)) externMethodDecl()
-          else {
+          val (hasSameName: Boolean, hasMatchingSignature: Boolean) =
+            (name, genName(sym)) match {
+              case (nir.Global.Member(_, lsig), nir.Global.Member(_, rsig)) =>
+                val nameMatch = lsig == rsig
+                val sigMatch = {
+                  val externSig = genExternMethodSig(sym)
+                  externSig == origSig ||
+                    externSig.args == origSig.args &&
+                    nir.Type.isBoxOf(externSig.ret)(origSig.ret)
+                }
+                (nameMatch, sigMatch)
+              case _ => (false, false)
+            }
+          def isExternMethodForwarder = hasSameName && hasMatchingSignature
+          def isExternMethodRuntimeOverload =
+            hasSameName && !hasMatchingSignature
+          if (isExternMethodForwarder) externMethodDecl()
+          else if (isExternMethodRuntimeOverload) {
+            dd.symbol.addAnnotation(NonExternClass)
+            return genMethod(dd)
+          } else
             reporter.error(
               target.pos,
               "Referencing other extern symbols in not supported"
             )
-            None
-          }
+          None
 
         case _ =>
           reporter.error(

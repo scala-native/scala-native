@@ -222,7 +222,7 @@ object Type {
       unreachable
   }.toSeq
 
-  private def isBoxOf(primitiveType: Type)(boxType: Type) =
+  private[scalanative] def isBoxOf(primitiveType: Type)(boxType: Type) =
     unbox
       .get(normalize(boxType))
       .contains(primitiveType)

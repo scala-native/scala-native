@@ -140,6 +140,20 @@ class NIRCompilerTest {
     )
   }
 
+  @Test def externMemberOverload(): Unit = {
+    val code =
+      """import scala.scalanative.unsafe.extern
+          |
+          |@extern object Dummy {
+          |  def foo(v: Long): Int = extern
+          |  def foo(v: Int): Int = foo(v.toLong)
+          |}
+          |
+          |""".stripMargin
+
+    NIRCompiler(_.compile(code))
+  }
+
   @Test def externExternTrait(): Unit = {
     val code =
       """import scala.scalanative.unsafe.extern
