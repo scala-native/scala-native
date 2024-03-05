@@ -22,27 +22,21 @@ user files path, e.g /home/\<USER\>/sn-projects.
 
 
 This will:
-
 -   start sbt.
 -   prompt for a project name
--   use the [.g8
-    template](https://github.com/scala-native/scala-native.g8/tree/main/src/main/g8).
-    to generate a basic project with that name.
+-   use the [.g8 template](https://github.com/scala-native/scala-native.g8/tree/main/src/main/g8) to generate a basic project with that name.
 -   create a project sub-directory with the project name.
--   copy the contents at these template links to the corresponding
-    location in this new project sub-directory.
-    -   [project/plugins.sbt](https://github.com/scala-native/scala-native.g8/blob/main/src/main/g8/project/plugins.sbt)
-        adds the Scala Native plugin dependency and its version.
-    -   [project/build.properties](https://github.com/scala-native/scala-native.g8/blob/main/src/main/g8/project/build.properties)
-        specifies the sbt version.
-    -   [build.sbt](https://github.com/scala-native/scala-native.g8/blob/main/src/main/g8/build.sbt)
-        enables the plugin and specifies the Scala version.
-    -   [src/main/scala/Main.scala](https://github.com/scala-native/scala-native.g8/blob/main/src/main/g8/src/main/scala/Main.scala)
-        is a minimal application. :
+-   copy the contents at these template links to the corresponding location in this new project sub-directory.
+    -   [project/plugins.sbt](https://github.com/scala-native/scala-native.g8/blob/main/src/main/g8/project/plugins.sbt) adds the Scala Native plugin dependency and its version.
+    -   [project/build.properties](https://github.com/scala-native/scala-native.g8/blob/main/src/main/g8/project/build.properties) specifies the sbt version.
+    -   [build.sbt](https://github.com/scala-native/scala-native.g8/blob/main/src/main/g8/build.sbt) enables the plugin and specifies the Scala version.
+    -   [src/main/scala/Main.scala](https://github.com/scala-native/scala-native.g8/blob/main/src/main/g8/src/main/scala/Main.scala) is a minimal application. 
+        ```scala
             object Main {
               def main(args: Array[String]): Unit =
                 println("Hello, world!")
             }
+        ```
 
 To use the new project:
 
@@ -50,7 +44,6 @@ To use the new project:
     > -   For example, on linux with a project named
     >     AnswerToProjectNamePrompt, type
     >     `cd AnswerToProjectNamePrompt`.
-
 -   Type `sbt run`.
 
 This will get everything compiled and should have the expected output!
@@ -126,25 +119,16 @@ nativeConfig ~= { c =>
 | 0.1    | `package`               | `File`          | Similar to standard package with addition of NIR                              |
 | 0.1    | `publish`               | `Unit`          | Similar to standard publish with addition of NIR (1)                          |
 | 0.1    | `nativeLink`            | `File`          | Link NIR and generate native binary                                           |
-| 0.1    | `nativeClang`           | `File`          | Path to `clang` command                                                       |
-| 0.1    | `nativeClangPP`         | `File`          | Path to `clang++` command                                                     |
-| 0.1    | `nativeCompileOptions`  | `Seq[String]`   | Extra options passed to clang verbatim during compilation                     |
-| 0.1    | `nativeLinkingOptions`  | `Seq[String]`   | Extra options passed to clang verbatim during linking                         |
-| 0.1    | `nativeMode`            | `String`        | One of `"debug"`, `"release-fast"`, `"release-size"` or `"release-full"` (2)  |
-| 0.2    | `nativeGC`              | `String`        | One of `"none"`, `"boehm"`, `"immix"` or `"commix"` (3)                       |
-| 0.3.3  | `nativeLinkStubs`       | `Boolean`       | Whether to link `@stub` definitions, or to ignore them                        |
 | 0.4.0  | `nativeConfig`          | `NativeConfig`  | Configuration of the Scala Native plugin                                      |
-| 0.4.0  | `nativeLTO`             | `String`        | One of `"none"`, `"full"` or `"thin"` (4)                                     |
-| 0.4.0  | `targetTriple`          | `String`        | The platform LLVM target triple                                               |
-| 0.4.0  | `nativeCheck`           | `Boolean`       | Shall the linker check intermediate results for correctness?                  |
-| 0.4.0  | `nativeDump`            | `Boolean`       | Shall the linker dump intermediate results to disk?                           |
+| 0.5.0  | `nativeLinkReleaseFast` | `File`          | Alias for `nativeLink` using fast release build mode                          |
+| 0.5.0  | `nativeLinkReleaseFull` | `File`          | Alias for `nativeLink` using full release build mode                          |
 
-1.  See [Publishing](#publishing) and [Cross
-    compilation](#cross-compilation) for details.
+For the details of available `NativeConfig` options see [API](https://javadoc.io/doc/org.scala-native/tools_3/latest/scala/scalanative/build/NativeConfig.html)
+
+1.  See [Publishing](#publishing) and [Cross compilation](#cross-compilation) for details.
 2.  See [Compilation modes](#compilation-modes) for details.
 3.  See [Garbage collectors](#garbage-collectors) for details.
-4.  See [Link-Time Optimization (LTO)](#link-time-optimization-lto) for
-    details.
+4.  See [Link-Time Optimization (LTO)](#link-time-optimization-lto) for details.
 
 ## Compilation modes
 
