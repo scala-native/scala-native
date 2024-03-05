@@ -20,6 +20,4 @@ void Stats_RecordCollection(Stats *stats, uint64_t start_ns,
                             uint64_t end_ns);
 void Stats_OnExit(Stats *stats);
 
-extern long long scalanative_nano_time();
-
 #endif // IMMIX_STATS_H

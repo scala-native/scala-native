@@ -11,6 +11,7 @@ object ffi {
   def malloc(size: CSize): RawPtr = extern
   def malloc(size: RawSize): RawPtr = extern
   def realloc(ptr: RawPtr, size: RawSize): RawPtr = extern
+  def calloc(elems: RawSize, size: RawSize): RawPtr = extern
   def free(ptr: RawPtr): Unit = extern
   def free(ptr: CVoidPtr): Unit = extern
   def strlen(str: CString): CSize = extern

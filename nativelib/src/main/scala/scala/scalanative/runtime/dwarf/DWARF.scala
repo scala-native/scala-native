@@ -8,7 +8,7 @@ import scala.collection.mutable
 
 import scalanative.unsigned._
 
-object DWARF {
+private[runtime] object DWARF {
   implicit val endi: Endianness = Endianness.LITTLE
   import CommonParsers._
 

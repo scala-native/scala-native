@@ -4,7 +4,7 @@ package testinterface
 import scalanative.meta.LinktimeInfo
 
 import java.net.Socket
-import signalhandling.SignalConfig
+import scala.scalanative.runtime.testinterface.signalhandling.SignalConfig
 
 import scalanative.posix.sys.socket._
 import scalanative.posix.netinet.in

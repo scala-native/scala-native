@@ -5,8 +5,7 @@ import java.lang.constant.Constable
 import scala.scalanative.runtime.LLVMIntrinsics
 
 class Character(val _value: scala.Char)
-    extends _Object
-    with java.io.Serializable
+    extends java.io.Serializable
     with Comparable[Character]
     with Constable {
   def charValue(): scala.Char =

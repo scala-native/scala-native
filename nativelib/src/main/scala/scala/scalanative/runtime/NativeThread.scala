@@ -16,6 +16,7 @@ trait NativeThread {
 
   val thread: Thread
 
+  private[runtime] var isFillingStackTrace: scala.Boolean = false
   @volatile private var _state: State = State.New
   def state: State = _state
   protected[runtime] def state_=(newState: State): Unit = _state match {

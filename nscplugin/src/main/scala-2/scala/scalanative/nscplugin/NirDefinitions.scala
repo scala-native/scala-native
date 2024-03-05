@@ -322,7 +322,9 @@ trait NirDefinitions {
 
     // Java library
 
-    lazy val NObjectClass = getRequiredClass("java.lang._Object")
+    lazy val NObjectClass = getRequiredClass(
+      "scala.scalanative.runtime._Object"
+    )
     lazy val NObjectInitMethod = getDecl(NObjectClass, TermName("<init>"))
 
     lazy val NStringClass = getRequiredClass("java.lang._String")

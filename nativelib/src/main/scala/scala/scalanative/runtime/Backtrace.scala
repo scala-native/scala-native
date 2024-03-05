@@ -16,7 +16,7 @@ import scala.annotation.tailrec
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 
-object Backtrace {
+private[runtime] object Backtrace {
   private sealed trait Format
   private case object MACHO extends Format
   private case object ELF extends Format

@@ -12,7 +12,7 @@ import java.io.File
 import java.io.BufferedInputStream
 import java.io.InputStream
 
-class SeekableBufferedInputStream(
+private[runtime] class SeekableBufferedInputStream(
     in: InputStream,
     size: Int = SeekableBufferedInputStream.DEFAULT_BUF_SIZE
 ) extends BufferedInputStream(in, size) {
@@ -20,11 +20,11 @@ class SeekableBufferedInputStream(
   def getPos() = pos
   def seek(pos: Int) = this.pos = pos
 }
-object SeekableBufferedInputStream {
+private object SeekableBufferedInputStream {
   val DEFAULT_BUF_SIZE = 8192
 }
 
-class BinaryFile(file: File) {
+private[runtime] class BinaryFile(file: File) {
   private val raf = new RandomAccessFile(file, "r")
   private val ch = raf.getChannel()
   private var buf =

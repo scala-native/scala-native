@@ -1,6 +1,6 @@
 package java.util
 
-import java.lang.Enum
+import java.lang.{_Enum => Enum}
 
 final class EnumSet[E <: Enum[E]] private (values: Set[E])
     extends AbstractSet[E]

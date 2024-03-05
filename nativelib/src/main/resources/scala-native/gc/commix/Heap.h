@@ -7,11 +7,11 @@
 #include "datastructures/GreyPacket.h"
 #include "metadata/LineMeta.h"
 #include "Stats.h"
-#include <stdio.h>
 #include <stdatomic.h>
 #include <stdbool.h>
 #include "shared/ThreadUtil.h"
 #include <fcntl.h>
+#include "immix_commix/utils/Time.h"
 
 typedef struct {
     word_t *blockMetaStart;
@@ -65,8 +65,6 @@ typedef struct {
     Stats *stats;
     mutex_t lock;
 } Heap;
-
-extern long long scalanative_nano_time();
 
 static inline bool Heap_IsWordInHeap(Heap *heap, word_t *word) {
     return word >= heap->heapStart && word < heap->heapEnd;

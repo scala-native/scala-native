@@ -1,3 +1,4 @@
+#include "immix_commix/utils/Time.h"
 #if defined(SCALANATIVE_GC_COMMIX)
 
 #include <stdlib.h>
@@ -212,7 +213,7 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
         GCThread_Init(&gcThreads[i], i, heap, stats);
     }
 
-    heap->mark.lastEnd_ns = scalanative_nano_time();
+    heap->mark.lastEnd_ns = Time_current_nanos();
 
     mutex_init(&heap->sweep.growMutex);
     mutex_init(&heap->lock);

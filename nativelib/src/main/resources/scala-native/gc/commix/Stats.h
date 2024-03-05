@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <time.h>
+#include "immix_commix/utils/Time.h"
 
 #define MUTATOR_THREAD_ID -1
 
@@ -86,7 +87,7 @@ static inline void Stats_CollectionStarted(Stats *stats) {}
     uint64_t T;                                                                \
     do {                                                                       \
         if (S != NULL) {                                                       \
-            T = scalanative_nano_time();                                       \
+            T = Time_current_nanos();                                          \
         }                                                                      \
     } while (0)
 #else
@@ -98,7 +99,7 @@ static inline void Stats_CollectionStarted(Stats *stats) {}
     uint64_t T;                                                                \
     do {                                                                       \
         if (S != NULL) {                                                       \
-            T = scalanative_nano_time();                                       \
+            T = Time_current_nanos();                                          \
         }                                                                      \
     } while (0)
 #define Stats_RecordEventBatches(S, E, A, B) Stats_RecordEvent(S, E, A, B)
@@ -112,7 +113,7 @@ static inline void Stats_CollectionStarted(Stats *stats) {}
     uint64_t T;                                                                \
     do {                                                                       \
         if (S != NULL) {                                                       \
-            T = scalanative_nano_time();                                       \
+            T = Time_current_nanos();                                          \
         }                                                                      \
     } while (0)
 #define Stats_RecordEventSync(S, E, A, B) Stats_RecordEvent(S, E, A, B)
