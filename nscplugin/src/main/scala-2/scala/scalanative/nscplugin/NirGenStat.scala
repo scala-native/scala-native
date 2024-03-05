@@ -849,10 +849,9 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         dd: DefDef
     ): Option[nir.Defn] = {
       val rhs = dd.rhs
-      def externMethodDecl() = {
-        val externSig = genExternMethodSig(curMethodSym)
+      def externMethodDecl(methodSym: Symbol) = {
+        val externSig = genExternMethodSig(methodSym)
         val externDefn = nir.Defn.Declare(attrs, name, externSig)(rhs.pos)
-
         Some(externDefn)
       }
 
@@ -868,7 +867,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           )
           None
         case Apply(ref: RefTree, Seq()) if ref.symbol == ExternMethod =>
-          externMethodDecl()
+          externMethodDecl(curMethodSym.get)
 
         case _ if curMethodSym.hasFlag(ACCESSOR) => None
 
@@ -880,9 +879,20 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
                 val nameMatch = lsig == rsig
                 val sigMatch = {
                   val externSig = genExternMethodSig(sym)
-                  externSig == origSig ||
-                    externSig.args == origSig.args &&
-                    nir.Type.isBoxOf(externSig.ret)(origSig.ret)
+                  externSig == origSig || {
+                    val nir.Type.Function(externArgs, externRet) = externSig
+                    val nir.Type.Function(origArgs, origRet) = origSig
+                    val usesVarArgs =
+                      externArgs.nonEmpty && externArgs.last == nir.Type.Vararg
+                    val argsMatch =
+                      if (usesVarArgs)
+                        externArgs.size == origArgs.size && externArgs.init == origArgs.init
+                      else
+                        externArgs == origArgs
+                    val retTyMatch = externRet == origRet ||
+                      nir.Type.isBoxOf(externRet)(origRet)
+                    argsMatch && retTyMatch
+                  }
                 }
                 (nameMatch, sigMatch)
               case _ => (false, false)
@@ -890,16 +900,17 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           def isExternMethodForwarder = hasSameName && hasMatchingSignature
           def isExternMethodRuntimeOverload =
             hasSameName && !hasMatchingSignature
-          if (isExternMethodForwarder) externMethodDecl()
+          if (isExternMethodForwarder) externMethodDecl(target.symbol)
           else if (isExternMethodRuntimeOverload) {
             dd.symbol.addAnnotation(NonExternClass)
-            return genMethod(dd)
-          } else
+            genMethod(dd)
+          } else {
             reporter.error(
               target.pos,
               "Referencing other extern symbols in not supported"
             )
-          None
+            None
+          }
 
         case _ =>
           reporter.error(

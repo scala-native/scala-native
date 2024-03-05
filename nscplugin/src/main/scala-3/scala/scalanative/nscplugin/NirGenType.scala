@@ -347,10 +347,11 @@ trait NirGenType(using Context) {
 
   private def genMethodSigParamsImpl(
       sym: Symbol,
-      isExtern: Boolean
+      isExternHint: Boolean
   )(using Context): Seq[nir.Type] = {
     import core.Phases._
-    val repeatedParams = if (sym.isExtern) {
+    val isExtern = isExternHint || sym.isExtern
+    val repeatedParams = if (isExtern) {
       atPhase(typerPhase) {
         sym.paramInfo.stripPoly match {
           // @extern def foo(a: Int): Int

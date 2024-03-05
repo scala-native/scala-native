@@ -243,10 +243,11 @@ trait NirGenType[G <: Global with Singleton] { self: NirGenPhase[G] =>
 
   private def genMethodSigParamsImpl(
       sym: Symbol,
-      isExtern: Boolean
+      isExternHint: Boolean
   ): Seq[nir.Type] = {
     val params = sym.tpe.params
-    if (!isExtern && !sym.isExtern)
+    val isExtern = isExternHint || sym.isExtern
+    if (!isExtern)
       params.map { p => genType(p.tpe) }
     else {
       val wereRepeated = exitingPhase(currentRun.typerPhase) {
@@ -259,8 +260,9 @@ trait NirGenType[G <: Global with Singleton] { self: NirGenPhase[G] =>
       }.toMap
 
       params.map { p =>
-        if (wereRepeated(p.name)) nir.Type.Vararg
-        else genExternType(p.tpe)
+        if (isExtern && wereRepeated(p.name)) nir.Type.Vararg
+        else if (isExtern) genExternType(p.tpe)
+        else genType(p.tpe)
       }
     }
   }
