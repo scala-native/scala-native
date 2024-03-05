@@ -651,12 +651,8 @@ class IssuesTest {
       )
     )
     implicit val ec: ExecutionContext = ExecutionContext.fromExecutor(executor)
-    var i, cycles = 0
     def loop(nextSchedule: Long): Future[Unit] = Future {
-      i += 1
       if (System.currentTimeMillis() > nextSchedule) {
-        println(s"issue3799: cycles=$cycles, iteration=$i")
-        cycles += 1
         System.currentTimeMillis() + 100
       } else nextSchedule
     }.flatMap { next => loop(next) }
@@ -667,7 +663,6 @@ class IssuesTest {
         Await.result(loop(0), 2.seconds)
       )
     finally {
-      println("issue3799: done")
       executor.shutdown()
       if (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
         executor.shutdownNow()
