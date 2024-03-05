@@ -29,7 +29,7 @@ private[scalanative] trait UnsafePackageCompat {
   inline def alloc[T]()(using zone: Zone): Ptr[T] = {
     val size = sizeof[T]
     val ptr = zone.alloc(size)
-    libc.memset(ptr, 0, size)
+    ffi.memset(ptr, 0, size)
     ptr.asInstanceOf[Ptr[T]]
   }
 
@@ -52,7 +52,7 @@ private[scalanative] trait UnsafePackageCompat {
     val rawSize = castIntToRawSizeUnsigned(toInt(elemSize) * toInt(elements))
     val size = unsignedOf(rawSize)
     val ptr = zone.alloc(size)
-    libc.memset(ptr.rawptr, 0, rawSize)
+    ffi.memset(ptr.rawptr, 0, rawSize)
     ptr.asInstanceOf[Ptr[T]]
   }
 

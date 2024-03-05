@@ -5,7 +5,7 @@ import scalanative.unsafe._
 import scala.scalanative.unsigned._
 
 object Intrinsics {
-  object internal {
+  private[runtime] object internal {
     def stackalloc(cls: Class[_], size: Any): RawPtr = intrinsic
     def alignmentOf(cls: Class[_]): RawSize = intrinsic
     def sizeOf(cls: Class[_]): RawSize = intrinsic

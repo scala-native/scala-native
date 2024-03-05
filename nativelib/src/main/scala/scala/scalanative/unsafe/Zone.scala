@@ -6,7 +6,6 @@ import scala.scalanative.runtime.Intrinsics.{
   unsignedOf,
   castIntToRawSizeUnsigned
 }
-import scala.scalanative.runtime.{MemoryPool, MemoryPoolZone}
 import scala.scalanative.unsigned._
 
 /** Zone allocator which manages memory allocations. */

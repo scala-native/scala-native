@@ -21,7 +21,7 @@ object Arrays {
   @inline
   private final implicit def naturalOrdering[T <: AnyRef]: Ordering[T] = {
     new Ordering[T] {
-      def compare(x: T, y: T): Int = x.asInstanceOf[Comparable[T]].compareTo(y)
+      def compare(x: T, y: T): Int = x.asInstanceOf[_Comparable[T]].compareTo(y)
     }
   }
 
@@ -505,7 +505,7 @@ object Arrays {
     } else {
       // Indices are unsigned 31-bit integer, so this does not overflow
       val mid = (startIndex + endIndex) >>> 1
-      val cmp = key.asInstanceOf[Comparable[AnyRef]].compareTo(a(mid))
+      val cmp = key.asInstanceOf[_Comparable[AnyRef]].compareTo(a(mid))
       if (cmp < 0) {
         binarySearchImplRef(a, startIndex, mid, key)
       } else if (cmp == 0) {
@@ -1202,11 +1202,10 @@ object Arrays {
     sort(a, fromIndex, toIndex)
 
 // parallelSort(T[])
-//  def parallelSort(a: Array[AnyRef]): Unit =
-//    sort(a)
+  def parallelSort(a: Array[AnyRef]): Unit = sort(a)
 
 //  def parallelSort[T <: Comparable[AnyRef]](
-  def parallelSort[T <: Comparable[_ <: AnyRef]](
+  def parallelSort[T <: _Comparable[_ <: AnyRef]](
       array: Array[T]
   ): Unit = {
     sort(array.asInstanceOf[Array[AnyRef]])
@@ -1221,7 +1220,7 @@ object Arrays {
   }
 
 // parallelSort(T[] a, int fromIndex, int toIndex)
-  def parallelSort[T <: Comparable[_ <: AnyRef]](
+  def parallelSort[T <: _Comparable[_ <: AnyRef]](
       array: Array[T],
       fromIndex: Int,
       toIndex: Int

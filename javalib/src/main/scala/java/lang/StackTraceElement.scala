@@ -45,38 +45,3 @@ final class StackTraceElement(
         false
     }
 }
-
-private[lang] object StackTraceElement {
-  object Fail extends scala.util.control.NoStackTrace
-
-  // ScalaNative specific
-  private[lang] def apply(
-      sym: CString,
-      position: Backtrace.Position
-  ): StackTraceElement = {
-    val className: Ptr[CChar] = stackalloc[CChar](512)
-    val methodName: Ptr[CChar] = stackalloc[CChar](256)
-    val fileName: Ptr[CChar] = if (isWindows) stackalloc[CChar](512) else null
-    val lineOut = stackalloc[Int]()
-    SymbolFormatter.asyncSafeFromSymbol(
-      sym = sym,
-      classNameOut = className,
-      methodNameOut = methodName,
-      fileNameOut = fileName,
-      lineOut = lineOut
-    )
-    val filename =
-      if (position.filename != null || fileName == null) position.filename
-      else fromCString(fileName).trim()
-    val line =
-      if (position.line > 0 || filename == null) position.line
-      else !lineOut
-
-    new StackTraceElement(
-      fromCString(className),
-      fromCString(methodName),
-      filename,
-      line
-    )
-  }
-}

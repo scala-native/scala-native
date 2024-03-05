@@ -9,7 +9,7 @@ object DeleteOnExit {
   lazy val setupShutdownHook = Runtime.getRuntime().addShutdownHook {
     val t = new Thread(() => {
       Zone.acquire { implicit z =>
-        toDeleteSet.foreach(f => libc.remove(toCString(f)))
+        toDeleteSet.foreach(f => ffi.remove(toCString(f)))
       }
     })
     t.setName("shutdown-hook:delete-on-exit")

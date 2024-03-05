@@ -8,7 +8,7 @@ import java.nio.channels.Channels
 import scalanative.unsigned._
 import MachO._
 
-object CommonParsers {
+private[runtime] object CommonParsers {
   val BYTE = 1
   val INT = 4
   val LONG = 8

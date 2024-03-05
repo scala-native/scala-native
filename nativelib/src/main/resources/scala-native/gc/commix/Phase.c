@@ -6,7 +6,6 @@
 #include "Allocator.h"
 #include "BlockAllocator.h"
 #include <stdio.h>
-#include <limits.h>
 #include "shared/ThreadUtil.h"
 #include <errno.h>
 #include <stdlib.h>
@@ -15,6 +14,7 @@
 #ifndef _WIN32
 #include <unistd.h>
 #endif
+#include "immix_commix/utils/Time.h"
 
 /*
 If in OSX, sem_open cannot create a semaphore whose name is longer than
@@ -98,7 +98,7 @@ void Phase_Init(Heap *heap, uint32_t initialBlockCount) {
 
 void Phase_StartMark(Heap *heap) {
     heap->mark.lastEnd_ns = heap->mark.currentEnd_ns;
-    heap->mark.currentStart_ns = scalanative_nano_time();
+    heap->mark.currentStart_ns = Time_current_nanos();
     Phase_Set(heap, gc_mark);
     // make sure the gc phase is propagated
     atomic_thread_fence(memory_order_release);
@@ -107,12 +107,12 @@ void Phase_StartMark(Heap *heap) {
 
 void Phase_MarkDone(Heap *heap) {
     Phase_Set(heap, gc_idle);
-    heap->mark.currentEnd_ns = scalanative_nano_time();
+    heap->mark.currentEnd_ns = Time_current_nanos();
 }
 
 void Phase_Nullify(Heap *heap, Stats *stats) {
     if (GreyList_Size(&heap->mark.foundWeakRefs) != 0) {
-        uint64_t nullifyStart = scalanative_nano_time();
+        uint64_t nullifyStart = Time_current_nanos();
         Phase_Set(heap, gc_nullify);
         // make sure all threads see the phase change
         atomic_thread_fence(memory_order_release);
@@ -121,7 +121,7 @@ void Phase_Nullify(Heap *heap, Stats *stats) {
         WeakRefGreyList_NullifyUntilDone(heap, stats);
         Phase_Set(heap, gc_idle);
 
-        uint64_t nullifyEnd = scalanative_nano_time();
+        uint64_t nullifyEnd = Time_current_nanos();
         Stats_RecordEvent(stats, event_nullify, nullifyStart, nullifyEnd);
     }
 }

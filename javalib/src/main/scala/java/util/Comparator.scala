@@ -46,10 +46,10 @@ trait Comparator[A] { self =>
     thenComparing(comparing[A, U](keyExtractor, keyComparator))
   }
 
-  /* Should be U <: Comparable[_ >: U] but scalac fails with
+  /* Should be U <: _Comparable[_ >: U] but scalac fails with
    * > illegal cyclic reference involving type U
    */
-  def thenComparing[U <: Comparable[U]](
+  def thenComparing[U <: _Comparable[U]](
       keyExtractor: Function[_ >: A, _ <: U]
   ): Comparator[A] = {
     thenComparing(comparing[A, U](keyExtractor))
@@ -70,17 +70,17 @@ trait Comparator[A] { self =>
 
 object Comparator {
 
-  /* Should be T <: Comparable[_ >: T] but scalac fails with
+  /* Should be T <: _Comparable[_ >: T] but scalac fails with
    * > illegal cyclic reference involving type U
    */
-  def reverseOrder[T <: Comparable[T]](): Comparator[T] =
+  def reverseOrder[T <: _Comparable[T]](): Comparator[T] =
     naturalOrder[T]().reversed()
 
-  /* Should be T <: Comparable[_ >: T] but scalac fails with
+  /* Should be T <: _Comparable[_ >: T] but scalac fails with
    * > illegal cyclic reference involving type U
    */
   @inline
-  def naturalOrder[T <: Comparable[T]](): Comparator[T] =
+  def naturalOrder[T <: _Comparable[T]](): Comparator[T] =
     ReusableNaturalComparator.asInstanceOf[Comparator[T]]
 
   /* Not the same object as NaturalComparator.
@@ -129,11 +129,11 @@ object Comparator {
     }
   }
 
-  /* Should be U <: Comparable[_ >: U] but scalac fails with
+  /* Should be U <: _Comparable[_ >: U] but scalac fails with
    * > illegal cyclic reference involving type U
    */
   @inline
-  def comparing[T, U <: Comparable[U]](
+  def comparing[T, U <: _Comparable[U]](
       keyExtractor: Function[_ >: T, _ <: U]
   ): Comparator[T] = {
     Objects.requireNonNull(keyExtractor)

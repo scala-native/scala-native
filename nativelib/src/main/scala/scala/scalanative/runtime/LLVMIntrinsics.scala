@@ -84,4 +84,5 @@ object LLVMIntrinsics {
   def `llvm.cttz.i64`(source: Long, iszeroundef: Boolean): Long = extern
   def `llvm.stacksave`(): RawPtr = extern
   def `llvm.stackrestore`(state: RawPtr): Unit = extern
+  def `llvm.donothing`: Unit = extern
 }

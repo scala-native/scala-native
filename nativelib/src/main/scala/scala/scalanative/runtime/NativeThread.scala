@@ -4,9 +4,9 @@ import scala.scalanative.runtime.Intrinsics._
 import scala.scalanative.runtime.GC.{ThreadRoutineArg, ThreadStartRoutine}
 import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.unsafe._
-import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
-import scala.scalanative.runtime.libc.atomic_thread_fence
-import scala.scalanative.runtime.libc.memory_order._
+import scala.scalanative.meta.LinktimeInfo.{isMultithreadingEnabled, isWindows}
+import scala.scalanative.runtime.ffi.atomic_thread_fence
+import scala.scalanative.runtime.ffi.memory_order._
 import scala.annotation.nowarn
 
 import java.util.concurrent.ConcurrentHashMap
@@ -16,6 +16,7 @@ trait NativeThread {
 
   val thread: Thread
 
+  private[runtime] var isFillingStackTrace: scala.Boolean = false
   @volatile private var _state: State = State.New
   def state: State = _state
   protected[runtime] def state_=(newState: State): Unit = _state match {
@@ -87,7 +88,7 @@ object NativeThread {
   @alwaysinline def currentThread: Thread = TLS.currentThread
   @alwaysinline def currentNativeThread: NativeThread = TLS.currentNativeThread
 
-  @alwaysinline def onSpinWait(): Unit = Platform.yieldProcessor()
+  def onSpinWait(): Unit = LLVMIntrinsics.`llvm.donothing`
 
   @inline def holdsLock(obj: Object): Boolean = if (isMultithreadingEnabled) {
     getMonitor(obj.asInstanceOf[_Object]).isLockedBy(currentThread)
@@ -162,11 +163,4 @@ object NativeThread {
     @name("scalanative_currentThread")
     def currentThread: Thread = extern
   }
-
-  @extern object Platform {
-    @blocking
-    @name("scalanative_yield_processor")
-    def yieldProcessor(): Unit = extern
-  }
-
 }

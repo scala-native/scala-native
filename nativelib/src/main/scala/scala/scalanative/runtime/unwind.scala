@@ -4,7 +4,7 @@ package runtime
 import scalanative.unsafe._
 
 @extern
-object unwind {
+private[runtime] object unwind {
   @name("scalanative_unwind_get_context")
   def get_context(context: CVoidPtr): CInt = extern
   @name("scalanative_unwind_init_local")

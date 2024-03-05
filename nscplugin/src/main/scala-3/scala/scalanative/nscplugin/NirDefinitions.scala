@@ -268,7 +268,7 @@ final class NirDefinitions()(using ctx: Context) {
   @tu lazy val ReflectSelectable_selectedValue = ReflectSelectableClass.requiredMethod("selectedValue")
 
   // Java library
-  @tu lazy val NObjectClass = requiredClass("java.lang._Object")
+  @tu lazy val NObjectClass = requiredClass("scala.scalanative.runtime._Object")
   @tu lazy val NObject_init = NObjectClass.requiredMethod("<init>")
 
   @tu lazy val NStringClass = requiredClass("java.lang._String")

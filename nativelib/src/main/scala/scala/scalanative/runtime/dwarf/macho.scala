@@ -5,21 +5,21 @@ import Endianness.BIG
 import java.nio.channels.Channels
 import scalanative.unsigned._
 
-sealed trait Endianness extends Product with Serializable
-object Endianness {
+private[runtime] sealed trait Endianness extends Product with Serializable
+private[runtime] object Endianness {
   case object LITTLE extends Endianness
   case object BIG extends Endianness
 }
 
 import MachO._
 
-case class MachO private (
+private[runtime] case class MachO private (
     header: Header,
     segments: List[Segment],
     uuid: List[UInt]
 ) {}
 
-object MachO {
+private[runtime] object MachO {
   import CommonParsers._
 
   def parse(ds: BinaryFile): MachO = {

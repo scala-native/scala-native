@@ -9,8 +9,7 @@
 #include "shared/GCTypes.h"
 #include <stdio.h>
 #include <inttypes.h>
-
-extern long long scalanative_nano_time();
+#include "immix_commix/utils/Time.h"
 
 #ifdef ENABLE_GC_STATS
 const char *const Stats_eventNames[] = {
@@ -28,7 +27,7 @@ void Stats_Init(Stats *stats, const char *statsFile, int8_t gc_thread) {
 
 void Stats_CollectionStarted(Stats *stats) {
     if (stats != NULL) {
-        stats->collection_start_ns = scalanative_nano_time();
+        stats->collection_start_ns = Time_current_nanos();
     }
 }
 

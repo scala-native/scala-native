@@ -1,6 +1,8 @@
-package scala.scalanative
+// Placed in scala.scalanative.runtime to grant access to MemoryLayout objects
+package scala.scalanative.runtime
 package annotation
 
+import scala.scalanative.annotation.align
 import org.junit.{Test, Assume, BeforeClass}
 import org.junit.Assert._
 import org.junit.Assume._

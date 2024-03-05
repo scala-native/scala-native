@@ -63,22 +63,11 @@ class RyuDoubleTest {
       expected == result
     )
 
-    val result2 = doubleToString(d)
+    val result2 = java.lang.Double.toString(d)
     assertTrue(
       s"result from RyuDouble.doubleToChars: $result2 != expected: $expected",
       expected == result2
     )
-  }
-
-  def doubleToString(
-      value: Double
-  ): String = {
-
-    val result = new scala.Array[Char](RyuDouble.RESULT_STRING_MAX_LENGTH)
-    val strLen =
-      RyuDouble.doubleToChars(value, RyuRoundingMode.Conservative, result, 0)
-
-    new String(result, 0, strLen)
   }
 
   @Test def simpleCases(): Unit = {

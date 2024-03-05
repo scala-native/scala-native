@@ -2,7 +2,7 @@ package java.lang
 
 import scala.math.ScalaNumber
 
-abstract class Number extends java.lang._Object with java.io.Serializable {
+abstract class Number extends java.io.Serializable {
   def byteValue(): scala.Byte = intValue().toByte
   def shortValue(): scala.Short = intValue().toShort
   def intValue(): scala.Int

@@ -96,7 +96,7 @@ private object MacroImpl {
           val $rawSize = $runtime.Intrinsics.sizeOf[$T]
           val $size    = $runtime.fromRawUSize($rawSize)
           val $ptr     = $z.alloc($size)
-          $runtime.libc.memset($ptr, 0, $size)
+          $runtime.ffi.memset($ptr, 0, $size)
           $ptr.asInstanceOf[Ptr[$T]]
         }"""
   }
@@ -116,7 +116,7 @@ private object MacroImpl {
           val $size = 
             $unsignedOf($elemSize) * $unsignedOf(${validateSize(c)(n)})
           val $ptr     = $z.alloc($size)
-          $runtime.libc.memset($ptr, 0, $size)
+          $runtime.ffi.memset($ptr, 0, $size)
           $ptr.asInstanceOf[Ptr[$T]]
         }"""
   }
@@ -136,7 +136,7 @@ private object MacroImpl {
           val $rawSize = $runtime.Intrinsics.sizeOf[$T]
           val $size    = $runtime.fromRawUSize($rawSize) * $n
           val $ptr     = $z.alloc($size)
-          $runtime.libc.memset($ptr, 0, $size)
+          $runtime.ffi.memset($ptr, 0, $size)
           $ptr.asInstanceOf[Ptr[$T]]
         }"""
   }

@@ -182,16 +182,22 @@ trait NirGenName[G <: Global with Singleton] {
   }
 
   private val MappedNames = Map(
-    "java.lang._Class" -> "java.lang.Class",
+    "scala.scalanative.runtime._Class" -> "java.lang.Class",
+    "scala.scalanative.runtime._Object" -> "java.lang.Object",
+    "java.lang._Cloneable" -> "java.lang.Cloneable",
+    "java.lang._Comparable" -> "java.lang.Comparable",
     "java.lang._Enum" -> "java.lang.Enum",
-    "java.lang._Object" -> "java.lang.Object",
+    "java.lang._NullPointerException" -> "java.lang.NullPointerException",
     "java.lang._String" -> "java.lang.String",
+    "java.lang.annotation._Retention" -> "java.lang.annotation.Retention",
+    "java.io._Serializable" -> "java.io.Serializable",
     "scala.Nothing" -> "scala.runtime.Nothing$",
     "scala.Null" -> "scala.runtime.Null$"
   ).flatMap {
     case classEntry @ (nativeName, javaName) =>
-      classEntry ::
-        (nativeName + "$", javaName + "$") ::
-        Nil
+      List(
+        classEntry,
+        (nativeName + "$", javaName + "$")
+      )
   }
 }
