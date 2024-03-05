@@ -313,6 +313,12 @@ class ForkJoinPool private (
     false // unreachable
   }
 
+  import scala.scalanative.unsafe._
+  def debug(pivot: CVoidPtr) = {
+    val alloca = stackalloc[Int]().asInstanceOf[CVoidPtr]
+    if((alloca.toLong - pivot.toLong).abs > 100) println(s"Stack leak in ${Thread.currentThread()}: pivot=$pivot, current=$alloca")
+  }
+
   final private[concurrent] def runWorker(w: WorkQueue): Unit = {
     if (w != null) { // skip on failed init
 
@@ -328,13 +334,14 @@ class ForkJoinPool private (
         src = awaitWork(w)
         src == 0
       }
+      val alloca = stackalloc[Int]()
 
       while ({
         r ^= r << 13
         r ^= r >>> 17
         r ^= r << 5 // xorshift
         tryScan() || tryAwaitWork()
-      }) ()
+      }) debug(alloca)
       w.access = STOP; // record normal termination
     }
   }
