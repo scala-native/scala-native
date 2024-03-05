@@ -669,7 +669,7 @@ class IssuesTest {
     finally {
       println("issue3799: done")
       executor.shutdown()
-      if(!executor.awaitTermination(5, TimeUnit.SECONDS)){
+      if (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
         executor.shutdownNow()
       }
     }
