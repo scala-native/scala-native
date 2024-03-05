@@ -166,7 +166,7 @@ jobs:
                 .withCheck(true)
                 .withCheckFatalWarnings(true)
                 .withTargetTriple(sys.env.get("CROSS_TRIPLE"))
-                .withMultithreadingSupport(${{ matrix.gc != 'commix' }})
+                .withMultithreading(${{ matrix.gc != 'commix' }})
                 .withCompileOptions(_ ++ sysRoot ++ List("-fuse-ld=lld"))
                 .withLinkingOptions(_ ++ sysRoot ++ List("-fuse-ld=lld", "-latomic"))
             }

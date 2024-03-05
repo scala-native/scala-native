@@ -10,7 +10,7 @@ scalaVersion := {
   else scalaVersion
 }
 
-nativeConfig ~= { _.withMultithreadingSupport(false) }
+nativeConfig ~= { _.withMultithreading(false) }
 
 lazy val runAndCheck = taskKey[Unit]("...")
 

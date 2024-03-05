@@ -332,7 +332,7 @@ object Generate {
         LoadModuleSig
       )
       val LoadModule = nir.Val.Global(LoadModuleDecl.name, nir.Type.Ptr)
-      val useSynchronizedAccessors = meta.config.multithreadingSupport
+      val useSynchronizedAccessors = meta.platform.isMultithreadingEnabled
       if (useSynchronizedAccessors) {
         buf += LoadModuleDecl
       }

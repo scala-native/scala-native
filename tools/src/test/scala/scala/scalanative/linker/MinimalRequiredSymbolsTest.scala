@@ -59,7 +59,7 @@ class MinimalRequiredSymbolsTest extends LinkerSpec {
     _.withSourceLevelDebuggingConfig(conf =>
       if (withDebugMetadata) conf.enableAll else conf.disableAll
     )
-      .withMultithreadingSupport(withMultithreading)
+      .withMultithreading(withMultithreading)
       .withTargetTriple(withTargetTriple)
   ) { (config: Config, result: ReachabilityAnalysis.Result) =>
     assertEquals(
@@ -70,7 +70,7 @@ class MinimalRequiredSymbolsTest extends LinkerSpec {
     assertEquals(
       "multithreading",
       withMultithreading,
-      config.compilerConfig.multithreadingSupport
+      config.compilerConfig.multithreading
     )
     assertEquals(
       "targetTriple",
