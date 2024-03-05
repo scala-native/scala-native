@@ -16,14 +16,17 @@ class CloneableTest {
   }
 
   @Test def isNotClonable(): Unit = {
+    val instance = new Foo(42, "*")
+    assertFalse(instance.isInstanceOf[Cloneable])
     assertThrows(
       classOf[CloneNotSupportedException],
-      () => (new Foo(42, "*").clone())
+      () => instance.clone()
     )
   }
 
   @Test def isClonable(): Unit = {
     val instance = new CloneableFoo(42, "*")
+    assertTrue(instance.isInstanceOf[Cloneable])
     val clone = instance.clone()
     assertEquals(instance.getClass(), clone.getClass())
     assertEquals(instance.x, clone.x)

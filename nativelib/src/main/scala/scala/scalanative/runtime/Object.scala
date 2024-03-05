@@ -46,7 +46,7 @@ private[runtime] class _Object {
     }
 
   protected def __clone(): _Object = this match {
-    case _: Cloneable =>
+    case _: java.lang.Cloneable =>
       val cls = __getClass()
       val size = cls.size
       val clone = GC.alloc(cls.asInstanceOf[Class[_]], size)
@@ -62,7 +62,7 @@ private[runtime] class _Object {
       castRawPtrToObject(clone).asInstanceOf[_Object]
     case _ =>
       throw new CloneNotSupportedException(
-        "Doesn't implement Cloneable interface!"
+        s"${this.getClass().getName()} does not implement java.lang.Cloneable interface"
       )
   }
 
