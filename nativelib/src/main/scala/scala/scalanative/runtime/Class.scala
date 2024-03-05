@@ -11,7 +11,6 @@ import scala.scalanative.runtime.resource.EmbeddedResourceHelper
 import java.io.InputStream
 import java.nio.file.Paths
 
-
 // These two methods are generated at link-time by the toolchain
 // using current closed-world knowledge of classes and traits in
 // the current application.

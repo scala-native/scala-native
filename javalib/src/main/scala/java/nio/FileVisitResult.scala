@@ -1,4 +1,3 @@
-
 package java.nio.file
 
 final class FileVisitResult private (name: String, ordinal: Int)

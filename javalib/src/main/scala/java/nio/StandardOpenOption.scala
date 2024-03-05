@@ -1,4 +1,3 @@
-
 package java.nio.file
 
 class StandardOpenOption private (name: String, ordinal: Int)

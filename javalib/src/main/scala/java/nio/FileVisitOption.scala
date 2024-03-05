@@ -1,4 +1,3 @@
-
 package java.nio.file
 
 class FileVisitOption private (name: String, ordinal: Int)

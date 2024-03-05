@@ -7,7 +7,6 @@ import scala.scalanative.runtime.{RawPtr, fromRawPtr}
 import scala.scalanative.runtime.ffi
 import scala.scalanative.runtime.Intrinsics
 
-
 /** Efficient pool of fixed-size memory pages. Allocations from underlying
  *  allocator are performed in big chunks of memory that are sliced into pages
  *  of requested size.

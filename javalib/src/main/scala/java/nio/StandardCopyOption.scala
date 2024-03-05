@@ -1,4 +1,3 @@
-
 package java.nio.file
 
 class StandardCopyOption private (name: String, ordinal: Int)

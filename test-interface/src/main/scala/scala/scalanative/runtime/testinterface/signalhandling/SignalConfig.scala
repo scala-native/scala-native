@@ -12,7 +12,6 @@ import scalanative.unsigned._
 import scala.scalanative.windows._
 import scala.scalanative.runtime.SymbolFormatter
 
-
 private[scalanative] object SignalConfig {
 
   /* StackTrace.currentStackTrace had to be rewritten to accomodate using

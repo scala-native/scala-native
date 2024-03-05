@@ -1,4 +1,3 @@
-
 package java.nio.file.attribute
 
 class PosixFilePermission private (name: String, ordinal: Int)

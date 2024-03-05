@@ -1,4 +1,3 @@
-
 package java.nio.file
 
 final class LinkOption private (name: String, ordinal: Int)
