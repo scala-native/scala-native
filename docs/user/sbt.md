@@ -120,15 +120,13 @@ nativeConfig ~= { c =>
 | 0.1    | `publish`               | `Unit`          | Similar to standard publish with addition of NIR (1)                          |
 | 0.1    | `nativeLink`            | `File`          | Link NIR and generate native binary                                           |
 | 0.4.0  | `nativeConfig`          | `NativeConfig`  | Configuration of the Scala Native plugin                                      |
-| 0.5.0  | `nativeLinkReleaseFast` | `File`          | Alias for `nativeLink` using fast release build mode                          |
-| 0.5.0  | `nativeLinkReleaseFull` | `File`          | Alias for `nativeLink` using full release build mode                          |
+| 0.5.0  | `nativeLinkReleaseFast` | `File`          | Alias for `nativeLink` using fast release build mode (2)                      |
+| 0.5.0  | `nativeLinkReleaseFull` | `File`          | Alias for `nativeLink` using full release build mode (2)                      |
 
 For the details of available `NativeConfig` options see [API](https://javadoc.io/doc/org.scala-native/tools_3/latest/scala/scalanative/build/NativeConfig.html)
 
 1.  See [Publishing](#publishing) and [Cross compilation](#cross-compilation) for details.
 2.  See [Compilation modes](#compilation-modes) for details.
-3.  See [Garbage collectors](#garbage-collectors) for details.
-4.  See [Link-Time Optimization (LTO)](#link-time-optimization-lto) for details.
 
 ## Compilation modes
 
