@@ -6,7 +6,7 @@ import scala.scalanative.util.unsupported
 import scala.scalanative.build.NativeConfig.{ServiceName, ServiceProviderName}
 import scala.scalanative.build.Logger
 
-private[linker] object LinktimeIntrinsicCallsResolver {
+private[scala] object LinktimeIntrinsicCallsResolver {
   // scalafmt: { maxColumn = 120}
   final val ServiceLoader = Global.Top("java.util.ServiceLoader")
   final val ServiceLoaderModule = Global.Top("java.util.ServiceLoader$")
