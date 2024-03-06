@@ -1,7 +1,6 @@
 enablePlugins(ScalaNativePlugin)
 
 import scala.sys.process._
-import scala.scalanative.build.Platform.isWindows
 
 scalaVersion := {
   val scalaVersion = System.getProperty("scala.version")
@@ -54,6 +53,10 @@ Compile / compile := {
     opath
   }
 
+  val isWindows = System
+    .getProperty("os.name", "unknown")
+    .toLowerCase(Locale.ROOT)
+    .startsWith("windows")
   val libName =
     if (isWindows) "link-order-test.lib"
     else "liblink-order-test.a"
