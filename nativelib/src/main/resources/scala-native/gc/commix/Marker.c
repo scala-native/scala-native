@@ -465,8 +465,9 @@ NO_SANITIZE void Marker_markProgramStack(MutatorThread *thread, Heap *heap,
         stackTop = (word_t **)atomic_load_explicit(&thread->stackTop,
                                                    memory_order_acquire);
     } while (stackTop == NULL);
-    size_t rangeSize = labs(stackBottom - stackTop);
     word_t **rangeStart = stackTop < stackBottom ? stackTop : stackBottom;
+    word_t **rangeEnd = stackTop < stackBottom ? stackBottom : stackTop;
+    size_t rangeSize = rangeEnd - rangeStart;
     Marker_markRange(heap, stats, outHolder, outWeakRefHolder, rangeStart,
                      rangeSize, sizeof(word_t));
 
@@ -500,7 +501,7 @@ void Marker_markCustomRoots(Heap *heap, Stats *stats, GreyPacket **outHolder,
                             GreyPacket **outWeakRefHolder, GC_Roots *roots) {
     mutex_lock(&roots->modificationLock);
     for (GC_Root *it = roots->head; it != NULL; it = it->next) {
-        size_t size = labs(it->range.address_high - it->range.address_low);
+        size_t size = it->range.address_high - it->range.address_low;
         Marker_markRange(heap, stats, outHolder, outWeakRefHolder,
                          (word_t **)it->range.address_low, size,
                          sizeof(word_t));
