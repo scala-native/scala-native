@@ -9,13 +9,15 @@ import java.io.{
   UnsupportedEncodingException
 }
 
+import java.nio.charset.Charset
+
 import scala.scalanative.posix.time._
 import scala.scalanative.posix.timeOps.tmOps
 
 import scala.scalanative.unsafe._
 
 class ZipEntry private (
-    private[zip] var name: String,
+    private[zip] val name: String, // immutable for safety
     private[zip] var comment: String,
     private[zip] var compressedSize: Long,
     private[zip] var crc: Long,
@@ -24,13 +26,12 @@ class ZipEntry private (
     private[zip] var time: Int,
     private[zip] var modDate: Int,
     private[zip] var extra: Array[Byte],
-    private[zip] var nameLen: Int,
     private[zip] var mLocalHeaderRelOffset: Long
 ) extends ZipConstants
     with Cloneable {
 
   def this(name: String) =
-    this(name, null, -1L, -1L, -1L, -1, -1, -1, null, -1, -1L)
+    this(name, null, -1L, -1L, -1L, -1, -1, -1, null, -1L)
 
   def this(e: ZipEntry) =
     this(
@@ -43,7 +44,6 @@ class ZipEntry private (
       e.time,
       e.modDate,
       e.extra,
-      e.nameLen,
       e.mLocalHeaderRelOffset
     )
 
@@ -103,6 +103,14 @@ class ZipEntry private (
     name.charAt(name.length - 1) == '/'
 
   def setComment(string: String): Unit = {
+    /* This length is a count of Java UTF-16 characters. It is
+     * accurate for Strings which contain characters < 128 but may
+     * not be for greater values.
+     *
+     * Depending on the charset given to ZipOutputStream, its conversion
+     * to bytes may generate more than lengthLimit bytes, resulting in
+     * truncation that is not obvious or tested here.
+     */
     val lengthLimit = 0xffff
     comment =
       if (string == null || string.length() <= lengthLimit) string
@@ -204,18 +212,20 @@ object ZipEntry extends ZipConstants {
   final val DEFLATED = 8
   final val STORED = 0
 
-  private def myReadFully(in: InputStream, b: Array[Byte]): Unit = {
+  private[zip] def myReadFully(in: InputStream, b: Array[Byte]): Array[Byte] = {
     var len = b.length
     var off = 0
 
     while (len > 0) {
       val count = in.read(b, off, len)
-      if (count <= 0) {
+      if (count <= 0)
         throw new EOFException()
-      }
+
       off += count
       len -= count
     }
+
+    b
   }
 
   private[zip] def readIntLE(raf: RandomAccessFile): Long = {
@@ -233,10 +243,10 @@ object ZipEntry extends ZipConstants {
 
   private[zip] def fromInputStream(
       ler: LittleEndianReader,
-      in: InputStream
+      in: InputStream,
+      defaultCharset: Charset
   ): ZipEntry = {
-    val hdrBuf = ler.hdrBuf
-    myReadFully(in, hdrBuf)
+    val hdrBuf = myReadFully(in, ler.hdrBuf)
 
     val sig =
       ((hdrBuf(0) & 0xff) | ((hdrBuf(1) & 0xff) << 8) |
@@ -246,6 +256,7 @@ object ZipEntry extends ZipConstants {
       throw new ZipException("Central Directory Entry not found")
     }
 
+    val gpBitFlag = ((hdrBuf(8) & 0xff) | ((hdrBuf(9) & 0xff) << 8)).toShort
     val compressionMethod = (hdrBuf(10) & 0xff) | ((hdrBuf(11) & 0xff) << 8)
     val time = (hdrBuf(12) & 0xff) | ((hdrBuf(13) & 0xff) << 8)
     val modDate = (hdrBuf(14) & 0xff) | ((hdrBuf(15) & 0xff) << 8)
@@ -261,48 +272,37 @@ object ZipEntry extends ZipConstants {
       (hdrBuf(24) & 0xff) | ((hdrBuf(25) & 0xff) << 8) | ((hdrBuf(
         26
       ) & 0xff) << 16) | ((hdrBuf(27) << 24) & 0xffffffffL)
+
     val nameLen = (hdrBuf(28) & 0xff) | ((hdrBuf(29) & 0xff) << 8)
     val extraLen = (hdrBuf(30) & 0xff) | ((hdrBuf(31) & 0xff) << 8)
     val commentLen = (hdrBuf(32) & 0xff) | ((hdrBuf(33) & 0xff) << 8)
+
     val mLocalHeaderRelOffset =
       (hdrBuf(42) & 0xff) | ((hdrBuf(43) & 0xff) << 8) | ((hdrBuf(
         44
       ) & 0xff) << 16) | ((hdrBuf(45) << 24) & 0xffffffffL)
 
-    val nameBytes = new Array[Byte](nameLen)
-    myReadFully(in, nameBytes)
+    val nameBytes = myReadFully(in, new Array[Byte](nameLen))
 
     val extra =
-      if (extraLen > 0) {
-        val extra = new Array[Byte](extraLen)
-        myReadFully(in, extra)
-        extra
-      } else {
-        null
-      }
+      if (extraLen <= 0) null
+      else myReadFully(in, new Array[Byte](extraLen))
 
     val commentBytes =
-      if (commentLen > 0) {
-        val commentBytes = new Array[Byte](commentLen)
-        myReadFully(in, commentBytes)
-        commentBytes
-      } else {
-        null
-      }
+      if (commentLen <= 0) null
+      else myReadFully(in, new Array[Byte](commentLen))
 
     try {
-      /*
-       * The actual character set is "IBM Code Page 437".  As of
-       * Sep 2006, the Zip spec (APPNOTE.TXT) supports UTF-8.  When
-       * bit 11 of the GP flags field is set, the file name and
-       * comment fields are UTF-8.
-       *
-       * TODO: add correct UTF-8 support.
-       */
-      val name = new String(nameBytes, "iso-8859-1")
+      val name =
+        ZipByteConversions.bytesToString(nameBytes, gpBitFlag, defaultCharset)
+
       val comment =
-        if (commentBytes != null) new String(commentBytes, "iso-8859-1")
-        else null
+        ZipByteConversions.bytesToString(
+          commentBytes,
+          gpBitFlag,
+          defaultCharset
+        )
+
       new ZipEntry(
         name,
         comment,
@@ -313,7 +313,6 @@ object ZipEntry extends ZipConstants {
         time,
         modDate,
         extra,
-        nameLen,
         mLocalHeaderRelOffset
       )
     } catch {
