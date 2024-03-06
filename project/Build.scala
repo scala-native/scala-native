@@ -868,9 +868,6 @@ object Build {
         noIDEExportSettings,
         Test / fork := true,
         Test / javaOptions += "-Xmx1G",
-        Test / envVars ++= Map(
-          "SCALANATIVE_DISABLE_UNUSED_MULTITHREADING" -> "0"
-        ),
         // Override the dependency of partest - see Scala.js issue #1889
         dependencyOverrides += Deps.ScalaLibrary(scalaVersion.value) % "test",
         testFrameworks ++= {
@@ -1006,7 +1003,8 @@ object Build {
               val base =
                 denylistedFromFile(versionTestsDir / "DenylistedTests.txt")
               val requiringMultithreading =
-                if (nativeConfig.value.multithreadingSupport) Set.empty[String]
+                if (nativeConfig.value.multithreading.getOrElse(true))
+                  Set.empty[String]
                 else
                   denylistedFromFile(
                     versionTestsDir / "DenylistedTests-require-threads.txt",

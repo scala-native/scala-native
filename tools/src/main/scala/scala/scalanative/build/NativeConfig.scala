@@ -61,8 +61,15 @@ sealed trait NativeConfig {
   /** Shall we use the incremental compilation? */
   def useIncrementalCompilation: Boolean
 
-  /** Shall be compiled with multithreading support */
-  def multithreadingSupport: Boolean
+  /** Shall be compiled with multithreading support. If equal to `None` the
+   *  toolchain would detect if program uses system threads - when not thrads
+   *  are not used, the program would be linked without multihreading support.
+   */
+  def multithreading: Option[Boolean]
+
+  /*  Was multhithreadinng explicitly select, if not default to true */
+  private[scalanative] def multithreadingSupport: Boolean =
+    multithreading.getOrElse(true)
 
   /** Map of user defined properties resolved at linktime */
   def linktimeProperties: NativeConfig.LinktimeProperites
@@ -202,7 +209,10 @@ sealed trait NativeConfig {
   def withIncrementalCompilation(value: Boolean): NativeConfig
 
   /** Create a new config with support for multithreading */
-  def withMultithreadingSupport(enabled: Boolean): NativeConfig
+  def withMultithreading(enabled: Boolean): NativeConfig
+
+  /** Create a new config with support for multithreading */
+  def withMultithreading(defined: Option[Boolean]): NativeConfig
 
   /** Create a new config with given linktime properites */
   final def withLinktimeProperties(
@@ -279,7 +289,7 @@ object NativeConfig {
       linkStubs = false,
       optimize = true,
       useIncrementalCompilation = true,
-      multithreadingSupport = true,
+      multithreading = None, // detect
       linktimeProperties = Map.empty,
       embedResources = false,
       resourceIncludePatterns = Seq("**"),
@@ -309,7 +319,7 @@ object NativeConfig {
       linkStubs: Boolean,
       optimize: Boolean,
       useIncrementalCompilation: Boolean,
-      multithreadingSupport: Boolean,
+      multithreading: Option[Boolean],
       linktimeProperties: LinktimeProperites,
       embedResources: Boolean,
       resourceIncludePatterns: Seq[String],
@@ -382,8 +392,11 @@ object NativeConfig {
     override def withIncrementalCompilation(value: Boolean): NativeConfig =
       copy(useIncrementalCompilation = value)
 
-    def withMultithreadingSupport(enabled: Boolean): NativeConfig =
-      copy(multithreadingSupport = enabled)
+    def withMultithreading(enabled: Boolean): NativeConfig =
+      copy(multithreading = Some(enabled))
+
+    def withMultithreading(defined: Option[Boolean]): NativeConfig =
+      copy(multithreading = defined)
 
     def withLinktimeProperties(
         update: Mapping[LinktimeProperites]
@@ -470,7 +483,7 @@ object NativeConfig {
         | - linkStubs:               $linkStubs
         | - optimize                 $optimize
         | - incrementalCompilation:  $useIncrementalCompilation
-        | - multithreading           $multithreadingSupport
+        | - multithreading           $multithreading
         | - linktimeProperties:      ${showMap(linktimeProperties)}
         | - embedResources:          $embedResources
         | - resourceIncludePatterns: ${showSeq(resourceIncludePatterns)}

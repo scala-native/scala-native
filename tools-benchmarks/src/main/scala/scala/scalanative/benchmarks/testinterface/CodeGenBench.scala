@@ -64,12 +64,12 @@ abstract class CodeGenBench(nativeConfig: NativeConfig => NativeConfig) {
 
 class CodeGen
     extends CodeGenBench(
-      nativeConfig = _.withMultithreadingSupport(false)
+      nativeConfig = _.withMultithreading(false)
         .withIncrementalCompilation(false)
     )
 class CodeGenWithMultithreading
     extends CodeGenBench(
-      nativeConfig = _.withMultithreadingSupport(true)
+      nativeConfig = _.withMultithreading(true)
         .withGC(GC.Immix) // to ensure generation of GC yieldpoints
         .withIncrementalCompilation(false)
     )

@@ -74,7 +74,7 @@ object Build {
    *        NativeConfig.empty
    *        .withGC(GC.default)
    *        .withMode(Mode.default)
-   *        .withMultithreadingSupport(enabled = false)
+   *        .withMultithreading(enabled = false)
    *        .withClang(clang)
    *        .withClangPP(clangpp)
    *        .withLinkingOptions(linkopts)
@@ -198,9 +198,7 @@ object Build {
     // Each block can modify currentConfig stat,
     // modification should be lazy to not reconstruct object when not required
     locally { // disable unused mulithreading
-      val envFlag = "SCALANATIVE_DISABLE_UNUSED_MULTITHREADING"
-      val suppressDisablingThreads = sys.env.get(envFlag).contains("0")
-      if (!suppressDisablingThreads && config.compilerConfig.multithreadingSupport) {
+      if (config.compilerConfig.multithreading.isEmpty) {
         // format: off
         val jlThread = nir.Global.Top("java.lang.Thread")
         val jlThreadStart = jlThread.member(nir.Sig.Method("start", Seq(nir.Type.Unit)))
@@ -210,12 +208,11 @@ object Build {
         // format: on
         if (!usesSystemThreads) {
           config.logger.info(
-            "Detected enabled multithreading, but not found any usage of system threads. " +
-              "Multithreading will be disabled to improve performance. " +
-              s"This behavior can be disabled by setting the environment variable $envFlag=0."
+            "Multithreading was not explicitly enabled - initial class loading has not detected any usage of system threads. " +
+              "Multithreading support will be disabled to improve performance."
           )
           currentConfig = currentConfig.withCompilerConfig(
-            _.withMultithreadingSupport(false)
+            _.withMultithreading(false)
           )
           needsToReload = true
         }
