@@ -1,6 +1,7 @@
 enablePlugins(ScalaNativePlugin)
 
 import scala.sys.process._
+import java.util.Locale
 
 scalaVersion := {
   val scalaVersion = System.getProperty("scala.version")
