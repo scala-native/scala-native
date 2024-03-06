@@ -845,26 +845,19 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     def genExternMethod(
         attrs: nir.Attrs,
         name: nir.Global.Member,
-        origSig: nir.Type,
+        origSig: nir.Type.Function,
         dd: DefDef
     ): Option[nir.Defn] = {
       val rhs = dd.rhs
-      def externMethodDecl() = {
-        val externSig = genExternMethodSig(curMethodSym)
+      def externMethodDecl(methodSym: Symbol) = {
+        val externSig = genExternMethodSig(methodSym)
         val externDefn = nir.Defn.Declare(attrs, name, externSig)(rhs.pos)
-
         Some(externDefn)
       }
 
       def isCallingExternMethod(sym: Symbol) =
         sym.isExtern
 
-      def isExternMethodAlias(target: Symbol) =
-        (name, genName(target)) match {
-          case (nir.Global.Member(_, lsig), nir.Global.Member(_, rsig)) =>
-            lsig == rsig
-          case _ => false
-        }
       val defaultArgs = dd.symbol.paramss.flatten.filter(_.hasDefault)
       rhs match {
         case _ if defaultArgs.nonEmpty =>
@@ -874,20 +867,57 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           )
           None
         case Apply(ref: RefTree, Seq()) if ref.symbol == ExternMethod =>
-          externMethodDecl()
+          externMethodDecl(curMethodSym.get)
 
         case _ if curMethodSym.hasFlag(ACCESSOR) => None
 
         case Apply(target, _) if isCallingExternMethod(target.symbol) =>
           val sym = target.symbol
-          if (isExternMethodAlias(sym)) externMethodDecl()
-          else {
+          val (hasSameName: Boolean, hasMatchingSignature: Boolean) =
+            (name, genName(sym)) match {
+              case (nir.Global.Member(_, lsig), nir.Global.Member(_, rsig)) =>
+                val nameMatch = lsig == rsig
+                val sigMatch = {
+                  val externSig = genExternMethodSig(sym)
+                  externSig == origSig || {
+                    val nir.Type.Function(externArgs, externRet) = externSig
+                    val nir.Type.Function(origArgs, origRet) = origSig
+                    val usesVarArgs =
+                      externArgs.nonEmpty && externArgs.last == nir.Type.Vararg
+                    val argsMatch =
+                      if (usesVarArgs)
+                        externArgs.size == origArgs.size && externArgs.init == origArgs.init
+                      else
+                        externArgs == origArgs
+                    val retTyMatch = externRet == origRet ||
+                      nir.Type.isBoxOf(externRet)(origRet)
+                    argsMatch && retTyMatch
+                  }
+                }
+                (nameMatch, sigMatch)
+              case _ => (false, false)
+            }
+          def isExternMethodForwarder = hasSameName && hasMatchingSignature
+          def isExternMethodRuntimeOverload =
+            hasSameName && !hasMatchingSignature
+          if (isExternMethodForwarder) externMethodDecl(target.symbol)
+          else if (isExternMethodRuntimeOverload) {
+            dd.symbol.addAnnotation(NonExternClass)
+            genMethod(dd)
+          } else {
             reporter.error(
               target.pos,
               "Referencing other extern symbols in not supported"
             )
             None
           }
+
+        case Apply(target @ Select(Super(_, _), _), _)
+            if dd.symbol.isSynthetic && dd.symbol.isBridge &&
+              target.symbol.name == dd.symbol.name &&
+              genMethodSig(target.symbol) == origSig =>
+          dd.symbol.addAnnotation(NonExternClass)
+          genMethod(dd)
 
         case _ =>
           reporter.error(

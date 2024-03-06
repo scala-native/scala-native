@@ -11,9 +11,10 @@ class ExternVarArgsTest {
       "Test.scala" ->
         """import scala.scalanative.unsafe._
           | 
-          |@extern object FFI {
+          |@extern trait FFI {
           |  def printf(format: CString, args: Any*): Unit = extern
           |}
+          |@extern object FFI extends FFI
           |
           |object Test{
           |  def main(): Unit = {
@@ -22,6 +23,8 @@ class ExternVarArgsTest {
           |    def long: Ptr[Long] = ???
           |    def float: Ptr[Float] = ???
           |    FFI.printf(c"", !(string + 1), string, !size, !long, long, !float)
+          |    val ffi: FFI = null
+          |    ffi.printf(c"", !(string + 1), string, !size, !long, long, !float)
           |  }
           |}
           |""".stripMargin
@@ -30,25 +33,22 @@ class ExternVarArgsTest {
       val MainMethod =
         TestModule.member(nir.Sig.Method("main", Seq(nir.Type.Unit)))
       val FFIModule = nir.Global.Top("FFI$")
-      val PrintfMethod = FFIModule.member(nir.Sig.Extern("printf"))
-      val callArgs: Seq[nir.Val] = defns
-        .collectFirst {
-          case nir.Defn.Define(_, MainMethod, _, insts, _) => insts
+      val FFITrait = nir.Global.Top("FFI")
+      val PrintfSig = nir.Sig.Extern("printf")
+      val PrintfMethod = FFIModule.member(PrintfSig)
+      val PrintfTraitMethod = FFITrait.member(PrintfSig)
+
+      // Enusre has correct signature
+      defns
+        .collect {
+          case nir.Defn.Declare(_, name @ PrintfMethod, ty)      => ty
+          case nir.Defn.Declare(_, name @ PrintfTraitMethod, ty) => ty
         }
-        .flatMap {
-          _.collectFirst {
-            case nir.Inst.Let(
-                  _,
-                  nir.Op.Call(_, nir.Val.Global(PrintfMethod, _), args),
-                  _
-                ) =>
-              args
-          }
+        .ensuring(_.size == 2)
+        .foreach { ty =>
+          assertEquals(ty.args.last, nir.Type.Vararg)
         }
-        .headOption
-        .getOrElse {
-          fail("Not found either tested method or the extern calls"); ???
-        }
+
       val expectedCallArgs = Seq(
         nir.Type.Ptr, // format CString
         nir.Type.Int, // byte extended to Int
@@ -58,8 +58,31 @@ class ExternVarArgsTest {
         nir.Type.Ptr, // Ptr[Long]
         nir.Type.Double // float extended to double
       )
-
-      assertEquals(expectedCallArgs.toList, callArgs.map(_.ty).toList)
+      defns
+        .collectFirst {
+          case defn @ nir.Defn.Define(_, MainMethod, _, insts, _) => insts
+        }
+        .ensuring(_.isDefined, "Not found main method")
+        .head
+        .collect {
+          case nir.Inst.Let(
+                _,
+                nir.Op.Call(
+                  _,
+                  nir.Val.Global(PrintfMethod | PrintfTraitMethod, _),
+                  args
+                ),
+                _
+              ) =>
+            args
+        }
+        .ensuring(
+          _.size == 2,
+          "Not found either tested method or the extern calls"
+        )
+        .foreach { callArgs =>
+          assertEquals(expectedCallArgs.toList, callArgs.map(_.ty).toList)
+        }
     }
   }
 }

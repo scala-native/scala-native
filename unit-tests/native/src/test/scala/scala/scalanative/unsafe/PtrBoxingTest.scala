@@ -15,8 +15,8 @@ class PtrBoxingTest {
   var any: Any = null
 
   @noinline lazy val nullPtr: Ptr[Byte] = null
-  @noinline lazy val ptr: Ptr[Byte] = malloc(64.toUSize)
-  @noinline lazy val ptr2: Ptr[Byte] = malloc(64.toUSize)
+  @noinline lazy val ptr: Ptr[Byte] = malloc(64)
+  @noinline lazy val ptr2: Ptr[Byte] = malloc(64L)
 
   @noinline def f[T](x: T): T = x
   @noinline def cond(): Boolean = true

@@ -53,9 +53,8 @@ trait NirGenType(using Context) {
       sym.owner.isExternType ||
       sym.hasAnnotation(defnNir.ExternClass) ||
       (sym.is(Accessor) && sym.field.isExtern)
-    } && !sym.hasAnnotation(
-      defnNir.NonExternClass
-    ) // Added in PrepNativeInterop
+      // NonExtern is added PrepNativeInterop
+    } && !sym.hasAnnotation(defnNir.NonExternClass)
 
     def isExtensionMethod: Boolean =
       sym.flags.isAllOf(Extension | Method) || {
@@ -347,10 +346,11 @@ trait NirGenType(using Context) {
 
   private def genMethodSigParamsImpl(
       sym: Symbol,
-      isExtern: Boolean
+      isExternHint: Boolean
   )(using Context): Seq[nir.Type] = {
     import core.Phases._
-    val repeatedParams = if (sym.isExtern) {
+    val isExtern = isExternHint || sym.isExtern
+    val repeatedParams = if (isExtern) {
       atPhase(typerPhase) {
         sym.paramInfo.stripPoly match {
           // @extern def foo(a: Int): Int

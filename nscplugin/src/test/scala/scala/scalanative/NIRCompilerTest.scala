@@ -140,6 +140,20 @@ class NIRCompilerTest {
     )
   }
 
+  @Test def externMemberOverload(): Unit = {
+    val code =
+      """import scala.scalanative.unsafe.extern
+          |
+          |@extern object Dummy {
+          |  def foo(v: Long): Int = extern
+          |  def foo(v: Int): Int = foo(v.toLong)
+          |}
+          |
+          |""".stripMargin
+
+    NIRCompiler(_.compile(code))
+  }
+
   @Test def externExternTrait(): Unit = {
     val code =
       """import scala.scalanative.unsafe.extern
@@ -176,13 +190,12 @@ class NIRCompilerTest {
       () => NIRCompiler(_.compile(code))
     )
 
-    assertTrue(
-      err
-        .getMessage()
-        .contains(
-          "Extern object can only extend extern traits"
-        )
-    )
+    // Order of error might differ
+    val expectedMsg =
+      if (scalaVersion.startsWith("3."))
+        "methods in extern objects must have extern body"
+      else "Extern object can only extend extern traits"
+    assertTrue(err.getMessage().contains(expectedMsg))
   }
 
   @Test def mixExternObjectWithNonExternClass(): Unit = {
