@@ -20,6 +20,7 @@ is defined through a simple grammar that uses a notation inspired by
         C <name>                            // c extern name
         G <name>                            // generated name
         K <sig-name> <type-name>+ E         // duplicate name
+        I                                   // <clinit>
 
     <type-name> ::=
         v                              // c vararg
@@ -53,7 +54,9 @@ is defined through a simple grammar that uses a notation inspired by
 
     <scope> ::=
         P <defn-name>                  // private to defn-name
+        p <defn-name>                  // private to defn-name (static)
         O                              // public
+        o                              // public static
 
     <name> ::=
         <length number> [-] <chars>    // raw identifier of given length; `-` separator is only used when <chars> starts with digit or `-` itself
