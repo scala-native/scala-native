@@ -28,14 +28,15 @@ object Commands {
   // Compile and run the sandbox for each GC as a minimal check
   lazy val testSandboxGC = projectVersionCommand("test-sandbox-gc") {
     case (version, state) =>
+      val GCImplementations = List("none", "boehm", "immix", "commix")
       val runs =
-        List(sandbox)
-          .map(_.forBinaryVersion(version).id)
-          .flatMap(id =>
-            List("none", "boehm", "immix", "commix").map(gc =>
-              s"set ThisBuild / nativeConfig ~= (_.withGC(scala.scalanative.build.GC.$gc)); $id/run"
-            )
-          )
+        for {
+          gc <- GCImplementations
+          project <- List(sandbox, testInterface)
+        } yield {
+          val projectId = project.forBinaryVersion(version).id
+          s"""set ${project.name}.forBinaryVersion("${version}")/nativeConfig ~= (_.withGC(scala.scalanative.build.GC.$gc)); $projectId/run"""
+        }
       runs :::
         state
   }
