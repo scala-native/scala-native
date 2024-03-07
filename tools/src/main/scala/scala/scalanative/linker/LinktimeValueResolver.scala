@@ -5,7 +5,7 @@ import scala.collection.mutable
 import scala.scalanative.build._
 import scala.scalanative.util.unsupported
 
-trait LinktimeValueResolver { self: Reach =>
+private[linker] trait LinktimeValueResolver { self: Reach =>
 
   import LinktimeValueResolver._
 

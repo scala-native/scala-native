@@ -27,7 +27,7 @@ object LinktimeCondition {
 
 }
 
-object Linktime {
+private[scalanative] object Linktime {
 
   final val Linktime = Global.Top("scala.scalanative.linktime")
 

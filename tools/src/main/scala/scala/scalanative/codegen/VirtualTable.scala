@@ -3,7 +3,9 @@ package codegen
 
 import scala.collection.mutable
 
-class VirtualTable(cls: linker.Class)(implicit meta: Metadata) {
+private[codegen] class VirtualTable(cls: linker.Class)(implicit
+    meta: Metadata
+) {
 
   private val slots: mutable.UnrolledBuffer[nir.Sig] =
     cls.parent.fold {

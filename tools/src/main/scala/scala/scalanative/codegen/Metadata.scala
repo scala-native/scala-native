@@ -4,7 +4,7 @@ package codegen
 import scala.collection.mutable
 import scalanative.linker.{Trait, Class, ReachabilityAnalysis}
 
-class Metadata(
+private[scalanative] class Metadata(
     val analysis: ReachabilityAnalysis.Result,
     val buildConfig: build.Config,
     proxies: Seq[nir.Defn]

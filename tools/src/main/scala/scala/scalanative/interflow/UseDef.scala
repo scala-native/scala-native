@@ -7,20 +7,20 @@ import scalanative.linker.Ref
 
 object UseDef {
 
-  sealed abstract class Def {
+  private sealed abstract class Def {
     def id: nir.Local
     def deps: mutable.UnrolledBuffer[Def]
     def uses: mutable.UnrolledBuffer[Def]
     var alive: Boolean = false
   }
 
-  final case class InstDef(
+  private final case class InstDef(
       id: nir.Local,
       deps: mutable.UnrolledBuffer[Def],
       uses: mutable.UnrolledBuffer[Def]
   ) extends Def
 
-  final case class BlockDef(
+  private final case class BlockDef(
       id: nir.Local,
       deps: mutable.UnrolledBuffer[Def],
       uses: mutable.UnrolledBuffer[Def],
@@ -71,7 +71,7 @@ object UseDef {
       false
   }
 
-  def apply(cfg: nir.ControlFlow.Graph): Map[nir.Local, Def] = {
+  private def apply(cfg: nir.ControlFlow.Graph): Map[nir.Local, Def] = {
     val defs = mutable.Map.empty[nir.Local, Def]
     val blocks = cfg.all
 

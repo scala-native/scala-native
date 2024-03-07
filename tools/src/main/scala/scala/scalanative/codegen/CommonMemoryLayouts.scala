@@ -1,7 +1,7 @@
 package scala.scalanative
 package codegen
 
-class CommonMemoryLayouts(implicit meta: Metadata) {
+private[codegen] class CommonMemoryLayouts(implicit meta: Metadata) {
 
   sealed abstract class Layout(types: List[nir.Type]) {
     def this(types: nir.Type*) = this(types.toList)

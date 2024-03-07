@@ -7,7 +7,7 @@ import scala.scalanative.linker._
 import scala.scalanative.codegen.MemoryLayout
 import scala.scalanative.util.{unreachable, And}
 
-trait Eval { self: Interflow =>
+private[interflow] trait Eval { self: Interflow =>
   def interflow: Interflow = self
   final val preserveDebugInfo: Boolean =
     self.config.compilerConfig.sourceLevelDebuggingConfig.generateLocalVariables

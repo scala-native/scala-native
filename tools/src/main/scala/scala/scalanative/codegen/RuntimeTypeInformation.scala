@@ -4,7 +4,9 @@ package codegen
 import scalanative.util.unreachable
 import scalanative.linker.{ScopeInfo, Class, Trait}
 
-class RuntimeTypeInformation(info: ScopeInfo)(implicit meta: Metadata) {
+private[codegen] class RuntimeTypeInformation(info: ScopeInfo)(implicit
+    meta: Metadata
+) {
 
   import RuntimeTypeInformation._
 
@@ -51,7 +53,7 @@ class RuntimeTypeInformation(info: ScopeInfo)(implicit meta: Metadata) {
   }
 }
 
-object RuntimeTypeInformation {
+private[codegen] object RuntimeTypeInformation {
 
   private val classConst =
     nir.Val.Global(

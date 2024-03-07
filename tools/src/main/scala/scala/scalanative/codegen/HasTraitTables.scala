@@ -3,7 +3,7 @@ package codegen
 
 import scalanative.linker.{Trait, Class}
 
-class HasTraitTables(meta: Metadata) {
+private[codegen] class HasTraitTables(meta: Metadata) {
 
   private implicit val pos: nir.SourcePosition = nir.SourcePosition.NoPosition
 

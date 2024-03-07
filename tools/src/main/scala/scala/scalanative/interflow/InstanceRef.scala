@@ -3,7 +3,7 @@ package interflow
 
 import scalanative.linker._
 
-object InstanceRef {
+private[interflow] object InstanceRef {
 
   def unapply(addr: Addr)(implicit state: State): Option[nir.Type] =
     unapply(nir.Val.Virtual(addr))
@@ -18,7 +18,7 @@ object InstanceRef {
 
 }
 
-object VirtualRef {
+private[interflow] object VirtualRef {
 
   type Extract = (Kind, Class, Array[nir.Val])
 
@@ -43,7 +43,7 @@ object VirtualRef {
 
 }
 
-object DelayedRef {
+private[interflow] object DelayedRef {
 
   def unapply(addr: Addr)(implicit state: State): Option[nir.Op] =
     unapply(nir.Val.Virtual(addr))
@@ -63,7 +63,7 @@ object DelayedRef {
 
 }
 
-object BinRef {
+private[interflow] object BinRef {
 
   type Extract = (nir.Bin, nir.Val, nir.Val)
 
@@ -85,7 +85,7 @@ object BinRef {
 
 }
 
-object ConvRef {
+private[interflow] object ConvRef {
 
   type Extract = (nir.Conv, nir.Type, nir.Val)
 
@@ -107,7 +107,7 @@ object ConvRef {
 
 }
 
-object CompRef {
+private[interflow] object CompRef {
 
   type Extract = (nir.Comp, nir.Type, nir.Val, nir.Val)
 
@@ -133,7 +133,7 @@ object CompRef {
 
 }
 
-object EscapedRef {
+private[interflow] object EscapedRef {
 
   def unapply(addr: Addr)(implicit state: State): Option[nir.Val] =
     unapply(nir.Val.Virtual(addr))

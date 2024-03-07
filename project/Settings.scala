@@ -14,10 +14,10 @@ import ScriptedPlugin.autoImport._
 import com.jsuereth.sbtpgp.PgpKeys
 
 import scala.collection.mutable
-import scala.scalanative.build.Platform
 import MyScalaNativePlugin.isGeneratingForIDE
 
 import java.io.File
+import java.util.Locale
 
 object Settings {
   lazy val fetchScalaSource = taskKey[File](
@@ -182,7 +182,11 @@ object Settings {
       apiMappings += file("/modules/java.base") -> url(javaDocBaseURL),
       Compile / doc / sources := {
         val prev = (Compile / doc / sources).value
-        if (Platform.isWindows &&
+        val isWindows = System
+          .getProperty("os.name", "unknown")
+          .toLowerCase(Locale.ROOT)
+          .startsWith("windows")
+        if (isWindows &&
             sys.env.contains("CI") // Always present in GitHub Actions
         ) Nil
         else prev

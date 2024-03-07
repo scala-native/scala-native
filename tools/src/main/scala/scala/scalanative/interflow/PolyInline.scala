@@ -4,7 +4,7 @@ package interflow
 import scala.collection.mutable
 import scalanative.linker._
 
-trait PolyInline { self: Interflow =>
+private[interflow] trait PolyInline { self: Interflow =>
 
   private def polyTargets(
       op: nir.Op.Method

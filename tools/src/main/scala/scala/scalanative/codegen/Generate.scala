@@ -12,7 +12,7 @@ import scala.scalanative.linker.{
 import scala.scalanative.build.Logger
 
 // scalafmt: { maxColumn = 120}
-object Generate {
+private[codegen] object Generate {
   private implicit val pos: nir.SourcePosition = nir.SourcePosition.NoPosition
   private implicit val scopeId: nir.ScopeId = nir.ScopeId.TopLevel
   import Impl._

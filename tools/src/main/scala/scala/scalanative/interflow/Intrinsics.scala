@@ -6,7 +6,7 @@ import scalanative.codegen.Lower
 import java.util.Arrays
 import scalanative.linker._
 
-trait Intrinsics { self: Interflow =>
+private[interflow] trait Intrinsics { self: Interflow =>
 
   val arrayApplyIntrinsics = Lower.arrayApply.values.toSet[nir.Global]
   val arrayUpdateIntrinsics = Lower.arrayUpdate.values.toSet[nir.Global]

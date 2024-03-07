@@ -4,7 +4,7 @@ package interflow
 import scala.collection.mutable
 import scalanative.codegen.Lower
 
-object Allowlist {
+private[scalanative] object Allowlist {
 
   val constantModules = {
     val out = collection.mutable.Set.empty[nir.Global]

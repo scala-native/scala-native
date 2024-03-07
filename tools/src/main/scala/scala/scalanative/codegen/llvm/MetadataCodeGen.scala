@@ -24,7 +24,7 @@ import scala.scalanative.codegen.llvm.Metadata.conversions.optionWrapper
 import scala.scalanative.nir.SourceFile.Relative
 
 // scalafmt: { maxColumn = 100}
-trait MetadataCodeGen { self: AbstractCodeGen =>
+private[codegen] trait MetadataCodeGen { self: AbstractCodeGen =>
   import MetadataCodeGen._
   import Metadata._
   import Writer._
@@ -650,7 +650,7 @@ trait MetadataCodeGen { self: AbstractCodeGen =>
   }
 }
 
-object MetadataCodeGen {
+private[codegen] object MetadataCodeGen {
   case class Context(codeGen: AbstractCodeGen, sb: ShowBuilder) {
     type WriterCache[T <: Metadata.Node] = mutable.Map[T, Metadata.Id]
     private[MetadataCodeGen] val writersCache

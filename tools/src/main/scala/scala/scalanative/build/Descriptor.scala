@@ -8,7 +8,7 @@ import scala.util.Try
 import java.io.Reader
 import scala.annotation.tailrec
 
-final case class Descriptor(
+private[build] final case class Descriptor(
     organization: Option[String],
     name: Option[String],
     gcProject: Boolean,
@@ -17,7 +17,7 @@ final case class Descriptor(
     includes: List[String]
 )
 
-object Descriptor {
+private[build] object Descriptor {
 
   def load(path: Path): Try[Descriptor] = Try {
     var reader: Reader = null

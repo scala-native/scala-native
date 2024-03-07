@@ -3,7 +3,7 @@ package nir
 
 import Type._
 
-object Rt {
+private[scalanative] object Rt {
   val Object = Ref(Global.Top("java.lang.Object"))
   val Class = Ref(Global.Top("java.lang.Class"))
   val String = Ref(Global.Top("java.lang.String"))

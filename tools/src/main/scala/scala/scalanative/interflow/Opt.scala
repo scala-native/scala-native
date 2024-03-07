@@ -6,7 +6,7 @@ import scala.scalanative.linker._
 import scala.collection.mutable
 import scala.scalanative.util.ScopedVar.scopedPushIf
 
-trait Opt { self: Interflow =>
+private[interflow] trait Opt { self: Interflow =>
 
   def shallOpt(name: nir.Global.Member): Boolean = {
     val defn =

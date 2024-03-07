@@ -3,7 +3,7 @@ package scala.scalanative.build
 import java.util.Locale
 
 /** Utility methods indicating the platform type */
-object Platform {
+private[scala] object Platform {
   final val isJVM = true
 
   private lazy val osUsed =

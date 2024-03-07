@@ -4,7 +4,7 @@ package interflow
 import java.util.Arrays
 import scalanative.linker.Class
 
-sealed abstract class Instance(implicit
+private[interflow] sealed abstract class Instance(implicit
     val srcPosition: nir.SourcePosition,
     val scopeId: nir.ScopeId
 ) extends Cloneable {
@@ -34,7 +34,8 @@ sealed abstract class Instance(implicit
   }
 }
 
-final case class EscapedInstance(val escapedValue: nir.Val)(implicit
+private[interflow] final case class EscapedInstance(val escapedValue: nir.Val)(
+    implicit
     srcPosition: nir.SourcePosition,
     scopeId: nir.ScopeId
 ) extends Instance {
@@ -42,12 +43,13 @@ final case class EscapedInstance(val escapedValue: nir.Val)(implicit
     this(escapedValue)(instance.srcPosition, instance.scopeId)
 }
 
-final case class DelayedInstance(val delayedOp: nir.Op)(implicit
+private[interflow] final case class DelayedInstance(val delayedOp: nir.Op)(
+    implicit
     srcPosition: nir.SourcePosition,
     scopeId: nir.ScopeId
 ) extends Instance
 
-final case class VirtualInstance(
+private[interflow] final case class VirtualInstance(
     kind: Kind,
     cls: Class,
     values: Array[nir.Val],

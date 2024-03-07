@@ -3,7 +3,7 @@ package interflow
 
 import scalanative.linker._
 
-trait NoOpt { self: Interflow =>
+private[interflow] trait NoOpt { self: Interflow =>
 
   def noOpt(defn: nir.Defn.Define): Unit =
     noOptInsts(defn.insts)

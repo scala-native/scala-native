@@ -159,7 +159,7 @@ object CodeGen {
       llvmIRGenerators ++ maybeBuildInfoGenerator
     }
 
-  object Impl {
+  private object Impl {
     import scala.scalanative.codegen.llvm.AbstractCodeGen
     def apply(
         env: Map[nir.Global, nir.Defn],
@@ -231,7 +231,9 @@ object CodeGen {
     }
   }
 
-  def depends(implicit platform: PlatformInfo): Seq[nir.Global] = {
+  private[scalanative] def depends(implicit
+      platform: PlatformInfo
+  ): Seq[nir.Global] = {
     val buf = mutable.UnrolledBuffer.empty[nir.Global]
     buf ++= Lower.depends
     buf ++= Generate.depends

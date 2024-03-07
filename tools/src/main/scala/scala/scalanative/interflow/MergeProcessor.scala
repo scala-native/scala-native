@@ -6,7 +6,7 @@ import scala.scalanative.util.unreachable
 import scala.scalanative.nir.Defn.Define.DebugInfo
 import scala.scalanative.linker._
 
-final class MergeProcessor(
+private[interflow] final class MergeProcessor(
     insts: Array[nir.Inst],
     debugInfo: DebugInfo,
     blockFresh: nir.Fresh,
@@ -521,7 +521,7 @@ final class MergeProcessor(
   }
 }
 
-object MergeProcessor {
+private[interflow] object MergeProcessor {
   case object Restart extends Exception with scala.util.control.NoStackTrace
 
   /* To mitigate risk of duplicated ids each merge block uses a dedicated
