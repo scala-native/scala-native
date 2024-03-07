@@ -14,7 +14,7 @@
 #include "Constants.h"
 #include "Settings.h"
 #include "GCThread.h"
-#include "WeakRefGreyList.h"
+#include "WeakReferences.h"
 #include "Sweeper.h"
 #include "immix_commix/Synchronizer.h"
 
@@ -43,7 +43,6 @@ NOINLINE void scalanative_GC_init() {
     Heap_Init(&heap, Settings_MinHeapSize(), Settings_MaxHeapSize());
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
     Synchronizer_init();
-    weakRefsHandlerThread = GCThread_WeakThreadsHandler_Start();
 #endif
     MutatorThreads_init();
     MutatorThread_init((word_t **)dummy); // approximate stack bottom
@@ -94,8 +93,9 @@ INLINE void *scalanative_GC_alloc_array(Rtti *info, size_t length,
 
 INLINE void scalanative_GC_collect() { Heap_Collect(&heap); }
 
-INLINE void scalanative_GC_register_weak_reference_handler(void *handler) {
-    WeakRefGreyList_SetHandler(handler);
+INLINE void scalanative_GC_set_weak_references_collected_callback(
+    WeakReferencesCollectedCallback callback) {
+    WeakReferences_SetGCFinishedCallback(callback);
 }
 
 /* Get the minimum heap size */

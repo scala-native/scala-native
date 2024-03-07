@@ -1,21 +1,20 @@
 #if defined(SCALANATIVE_GC_IMMIX)
 
-#include "WeakRefStack.h"
+#include "WeakReferences.h"
 #include "datastructures/Stack.h"
 #include "metadata/ObjectMeta.h"
 #include "immix_commix/headers/ObjectHeader.h"
 #include "State.h"
 #include <stdbool.h>
 
-bool visited = false;
-void (*handlerFn)() = NULL;
+static bool collectedWeakReferences = false;
+static void (*gcFinishedCallback)() = NULL;
 
 // A collection of marked WeakReferences.
 // Used to correctly set "NULL" values in place of cleaned objects
 // and to call other handler functions with WeakRefStack_CallHandlers.
 
-void WeakRefStack_Nullify(void) {
-    visited = false;
+void WeakReferences_Nullify(void) {
     Bytemap *bytemap = heap.bytemap;
     while (!Stack_IsEmpty(&weakRefStack)) {
         Object *object = Stack_Pop(&weakRefStack);
@@ -29,18 +28,19 @@ void WeakRefStack_Nullify(void) {
                 // WeakReferences should have the held referent
                 // field set to null if collected
                 *weakRefReferantField = NULL;
-                visited = true;
+                collectedWeakReferences = true;
             }
         }
     }
 }
 
-void WeakRefStack_SetHandler(void *handler) { handlerFn = handler; }
+void WeakReferences_SetGCFinishedCallback(void *handler) {
+    gcFinishedCallback = handler;
+}
 
-void WeakRefStack_CallHandlers(void) {
-    if (visited && handlerFn != NULL) {
-        visited = false;
-        handlerFn();
+void WeakReferences_InvokeGCFinishedCallback(void) {
+    if (collectedWeakReferences && gcFinishedCallback != NULL) {
+        gcFinishedCallback();
     }
 }
 

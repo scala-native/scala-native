@@ -75,7 +75,7 @@ class WeakReferenceTest {
               val _ = Seq.fill(1000)(new Object {})
             }
             Thread.sleep(200)
-            GC.collect()
+            System.gc()
             assertEventuallyIsCollected(clue, ref, deadline)
           } else {
             fail(
@@ -92,7 +92,7 @@ class WeakReferenceTest {
     val weakRef3 = allocSubclassedWeakRef(refQueue)
     val weakRefList = List(weakRef1, weakRef2, weakRef3)
 
-    GC.collect()
+    System.gc()
     def newDeadline() = System.currentTimeMillis() + 60 * 1000
     assertEventuallyIsCollected("weakRef1", weakRef1, deadline = newDeadline())
     assertEventuallyIsCollected("weakRef2", weakRef2, deadline = newDeadline())

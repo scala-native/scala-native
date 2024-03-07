@@ -7,6 +7,7 @@ import scala.language.implicitConversions
 import MyScalaNativePlugin.{ideScalaVersion, enableExperimentalCompiler}
 
 final case class MultiScalaProject private (
+    val name: String,
     private val projects: Map[String, Project],
     val dependsOnSourceInIDE: Boolean
 ) extends CompositeProject {
@@ -212,6 +213,7 @@ object MultiScalaProject {
     }
 
     new MultiScalaProject(
+      name,
       projects,
       dependsOnSourceInIDE = additionalIDEScalaVersions.nonEmpty
     ).settings(

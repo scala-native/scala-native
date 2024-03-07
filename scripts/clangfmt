@@ -88,10 +88,10 @@ if [ "$#" -gt 0 ]; then
   "$clang_format" --style=file "$opts" "$@"
 elif [[ "$CHECK_MODIFIED_ONLY" == "1" ]]; then
   # exit early with 0 if no modified files found
-  git diff --name-only main | \
-    (grep -E '.*\.(c|h|cpp|hpp)$' || exit 0) | \
-    (xargs "$clang_format" --style=file "$opts" $err || die "C/C++ code formatting changes detected, Run '$0' to reformat.")
-
+  for path in $(git diff --name-only main | (grep -E '.*\.(c|h|cpp|hpp)$' || exit 0)); do 
+    [ -f $path ] || continue # skip if file does not exist (was removed)
+    "$clang_format" --style=file "$opts" $err $path || die "C/C++ code formatting changes detected, Run '$0' to reformat."
+  done   
 else
   find . -name "*.[ch]" -or -name "*.[ch]pp" | \
     grep -E -v '.*/target/scala.*' | \

@@ -63,7 +63,8 @@ size_t scalanative_GC_get_max_heapsize() {
 
 void scalanative_GC_collect() { GC_gcollect(); }
 
-void scalanative_GC_register_weak_reference_handler(void *handler) {}
+void scalanative_GC_set_weak_references_collected_callback(
+    WeakReferencesCollectedCallback callback) {}
 
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
 #ifdef _WIN32

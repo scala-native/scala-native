@@ -9,7 +9,7 @@
 #include "shared/ThreadUtil.h"
 #include <errno.h>
 #include <stdlib.h>
-#include "WeakRefGreyList.h"
+#include "WeakReferences.h"
 #include "Stats.h"
 #ifndef _WIN32
 #include <unistd.h>
@@ -118,7 +118,7 @@ void Phase_Nullify(Heap *heap, Stats *stats) {
         atomic_thread_fence(memory_order_release);
 
         GCThread_WakeMaster(heap);
-        WeakRefGreyList_NullifyUntilDone(heap, stats);
+        WeakReferences_NullifyUntilDone(heap, stats);
         Phase_Set(heap, gc_idle);
 
         uint64_t nullifyEnd = Time_current_nanos();

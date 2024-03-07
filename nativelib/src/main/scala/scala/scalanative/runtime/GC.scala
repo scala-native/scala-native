@@ -23,12 +23,19 @@ object GC {
       length: Int,
       stride: Int
   ): RawPtr = extern
+
   @name("scalanative_GC_collect")
-  def collect(): Unit = extern
+  private[runtime] def collect(): Unit = extern
+
+  private[runtime] type WeakReferencesCollectedCallback = CFuncPtr0[Unit]
+  @name("scalanative_GC_set_weak_references_collected_callback")
+  private[runtime] def setWeakReferencesCollectedCallback(
+      callback: WeakReferencesCollectedCallback
+  ): Unit = extern
+
   @name("scalanative_GC_init")
   private[runtime] def init(): Unit = extern
-  @name("scalanative_GC_register_weak_reference_handler")
-  def registerWeakReferenceHandler(handler: CFuncPtr0[Unit]): Unit = extern
+
   @name("scalanative_GC_get_init_heapsize")
   def getInitHeapSize(): CSize = extern
   @name("scalanative_GC_get_max_heapsize")

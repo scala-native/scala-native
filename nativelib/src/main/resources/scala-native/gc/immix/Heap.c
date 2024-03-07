@@ -14,7 +14,7 @@
 #include "shared/MemoryInfo.h"
 #include "shared/MemoryMap.h"
 #include <time.h>
-#include "WeakRefStack.h"
+#include "WeakReferences.h"
 #include "immix_commix/Synchronizer.h"
 
 void Heap_exitWithOutOfMemory(const char *details) {
@@ -173,7 +173,7 @@ void Heap_Collect(Heap *heap, Stack *stack) {
     if (stats != NULL) {
         nullify_start_ns = Time_current_nanos();
     }
-    WeakRefStack_Nullify();
+    WeakReferences_Nullify();
     if (stats != NULL) {
         sweep_start_ns = Time_current_nanos();
     }
@@ -185,12 +185,11 @@ void Heap_Collect(Heap *heap, Stack *stack) {
     }
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
     Synchronizer_release();
-    GCThread_WeakThreadsHandler_Resume(weakRefsHandlerThread);
 #else
     MutatorThread_switchState(currentMutatorThread,
                               GC_MutatorThreadState_Managed);
-    WeakRefStack_CallHandlers();
 #endif
+    WeakReferences_InvokeGCFinishedCallback();
 #ifdef DEBUG_PRINT
     printf("End collect\n");
     fflush(stdout);

@@ -26,20 +26,4 @@ void GCThread_WakeMaster(Heap *heap);
 void GCThread_WakeWorkers(Heap *heap, int toWake);
 void GCThread_ScaleMarkerThreads(Heap *heap, uint32_t remainingFullPackets);
 
-struct GCWeakRefsHandlerThread {
-    thread_t handle;
-    atomic_bool isActive;
-#ifdef _WIN32
-    HANDLE resumeEvent;
-#else
-    struct {
-        pthread_mutex_t lock;
-        pthread_cond_t cond;
-    } resumeEvent;
-#endif
-};
-
-struct GCWeakRefsHandlerThread *GCThread_WeakThreadsHandler_Start();
-void GCThread_WeakThreadsHandler_Resume(struct GCWeakRefsHandlerThread *);
-
 #endif // IMMIX_GCTHREAD_H

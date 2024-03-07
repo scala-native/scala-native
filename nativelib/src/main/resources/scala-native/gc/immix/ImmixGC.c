@@ -8,12 +8,11 @@
 #include "datastructures/Stack.h"
 #include "State.h"
 #include "immix_commix/utils/MathUtils.h"
+#include "WeakReferences.h"
 #include "Settings.h"
-#include "WeakRefStack.h"
 #include "shared/Parsing.h"
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
 #include "immix_commix/Synchronizer.h"
-#include "GCThreads.h"
 #endif
 #include "MutatorThread.h"
 #include <stdatomic.h>
@@ -28,7 +27,6 @@ NOINLINE void scalanative_GC_init() {
     Stack_Init(&weakRefStack, INITIAL_STACK_SIZE);
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
     Synchronizer_init();
-    weakRefsHandlerThread = GCThread_WeakThreadsHandler_Start();
 #endif
     MutatorThreads_init();
     MutatorThread_init((word_t **)dummy); // approximate stack bottom
@@ -78,8 +76,9 @@ INLINE void *scalanative_GC_alloc_array(Rtti *info, size_t length,
 
 INLINE void scalanative_GC_collect() { Heap_Collect(&heap, &stack); }
 
-INLINE void scalanative_GC_register_weak_reference_handler(void *handler) {
-    WeakRefStack_SetHandler(handler);
+INLINE void scalanative_GC_set_weak_references_collected_callback(
+    WeakReferencesCollectedCallback callback) {
+    WeakReferences_SetGCFinishedCallback(callback);
 }
 
 /* Get the minimum heap size */

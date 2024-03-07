@@ -7,7 +7,7 @@ class ReferenceQueue[T] {
   private[ref] def enqueue(reference: Reference[T]): Unit =
     synchronized {
       underlying += reference
-      notify()
+      notifyAll()
     }
 
   def poll(): Reference[T] = {
@@ -20,25 +20,24 @@ class ReferenceQueue[T] {
     }
   }
 
-  def remove(): Reference[_ <: T] =
-    remove(0)
-
+  def remove(): Reference[_ <: T] = remove(None)
   def remove(timeout: Long): Reference[_ <: T] = {
     if (timeout < 0) throw new IllegalArgumentException()
+    remove(Some(timeout))
+  }
 
+  private def remove(timeout: Option[Long]): Reference[_ <: T] =
     synchronized[Reference[_ <: T]] {
       def now() = System.currentTimeMillis()
-      val deadline = now() + timeout
-      def timeoutExceeded(current: Long): Boolean = {
-        if (timeout == 0) false
-        else current > deadline
-      }
+      val hasTimeout = timeout.isDefined
+      val deadline = now() + timeout.getOrElse(0L)
+      def timeoutExceeded(current: Long): Boolean =
+        hasTimeout && current > deadline
 
       while (underlying.isEmpty && !timeoutExceeded(now())) {
-        val timeoutMillis = (deadline - now()).min(0L)
-        wait(timeoutMillis)
+        if (hasTimeout) wait((deadline - now()).min(0L))
+        else wait()
       }
       poll()
     }
-  }
 }

@@ -13,4 +13,10 @@ object Proxy {
     thread = thread,
     throwable = ex
   )
+
+  def GC_collect(): Unit = GC.collect()
+  type GCWeakReferencesCollectedCallback = GC.WeakReferencesCollectedCallback
+  def GC_setWeakReferencesCollectedCallback(
+      callback: GCWeakReferencesCollectedCallback
+  ): Unit = GC.setWeakReferencesCollectedCallback(callback)
 }

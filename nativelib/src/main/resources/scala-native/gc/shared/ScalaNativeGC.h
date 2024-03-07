@@ -30,7 +30,10 @@ void *scalanative_GC_alloc_large(Rtti *info, size_t size);
  * responsible to assign length and stride to Array header. */
 void *scalanative_GC_alloc_array(Rtti *info, size_t length, size_t stride);
 void scalanative_GC_collect();
-void scalanative_GC_register_weak_reference_handler(void *handler);
+
+typedef void (*WeakReferencesCollectedCallback)();
+void scalanative_GC_set_weak_references_collected_callback(
+    WeakReferencesCollectedCallback);
 
 size_t scalanative_GC_get_init_heapsize();
 size_t scalanative_GC_get_max_heapsize();

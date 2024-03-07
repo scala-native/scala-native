@@ -138,7 +138,8 @@ void *scalanative_GC_alloc_array(Rtti *info, size_t length, size_t stride) {
 
 void scalanative_GC_collect() {}
 
-void scalanative_GC_register_weak_reference_handler(void *handler) {}
+void scalanative_GC_set_weak_references_collected_callback(
+    WeakReferencesCollectedCallback callback) {}
 
 #ifdef _WIN32
 HANDLE scalanative_GC_CreateThread(LPSECURITY_ATTRIBUTES threadAttributes,
