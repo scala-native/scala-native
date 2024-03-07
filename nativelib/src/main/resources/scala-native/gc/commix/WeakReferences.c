@@ -1,13 +1,13 @@
 #if defined(SCALANATIVE_GC_COMMIX)
 
-#include "WeakRefGreyList.h"
+#include "WeakReferences.h"
 #include "immix_commix/headers/ObjectHeader.h"
 #include "GCThread.h"
 #include "SyncGreyLists.h"
 #include <stdio.h>
 #include <stdbool.h>
 
-// WeakRefGreyList is a structure used for the gc_nullify phase.
+// WeakReferences is a structure used for the gc_nullify phase.
 // It collects WeakReference objects visited during marking phase.
 // Later, during nullify phase, every WeakReference is checked if
 // it is pointing to a marked object. If not, the referent field
@@ -17,17 +17,17 @@
 // Grey Packets are being distributed over different threads, until no
 // more are available.
 
-bool anyVisited = false;
-void (*handlerFn)() = NULL;
+bool collectedWeakReferences = false;
+void (*gcFinishedCallback)() = NULL;
 
-static inline GreyPacket *WeakRefGreyList_takeWeakRefPacket(Heap *heap,
-                                                            Stats *stats) {
+static inline GreyPacket *WeakReferences_takeWeakRefPacket(Heap *heap,
+                                                           Stats *stats) {
     return SyncGreyLists_takeNotEmptyPacket(
         heap, stats, &heap->mark.foundWeakRefs, nullify_waiting);
 }
 
-static void WeakRefGreyList_NullifyPacket(Heap *heap, Stats *stats,
-                                          GreyPacket *weakRefsPacket) {
+static void WeakReferences_NullifyPacket(Heap *heap, Stats *stats,
+                                         GreyPacket *weakRefsPacket) {
     Bytemap *bytemap = heap->bytemap;
     while (!GreyPacket_IsEmpty(weakRefsPacket)) {
         Object *object = GreyPacket_Pop(weakRefsPacket);
@@ -42,28 +42,28 @@ static void WeakRefGreyList_NullifyPacket(Heap *heap, Stats *stats,
                 !ObjectMeta_IsMarked(objectMeta)) {
                 *weakRefReferantField = NULL;
                 // idempotent operation - does not need to be synchronized
-                anyVisited = true;
+                collectedWeakReferences = true;
             }
         }
     }
 }
 
-void WeakRefGreyList_Nullify(Heap *heap, Stats *stats) {
-    GreyPacket *weakRefsPacket = WeakRefGreyList_takeWeakRefPacket(heap, stats);
+void WeakReferences_Nullify(Heap *heap, Stats *stats) {
+    GreyPacket *weakRefsPacket = WeakReferences_takeWeakRefPacket(heap, stats);
 
     while (weakRefsPacket != NULL) {
-        WeakRefGreyList_NullifyPacket(heap, stats, weakRefsPacket);
+        WeakReferences_NullifyPacket(heap, stats, weakRefsPacket);
         SyncGreyLists_giveEmptyPacket(heap, stats, weakRefsPacket);
-        weakRefsPacket = WeakRefGreyList_takeWeakRefPacket(heap, stats);
+        weakRefsPacket = WeakReferences_takeWeakRefPacket(heap, stats);
     }
 }
 
-void WeakRefGreyList_NullifyAndScale(Heap *heap, Stats *stats) {
-    GreyPacket *weakRefsPacket = WeakRefGreyList_takeWeakRefPacket(heap, stats);
+void WeakReferences_NullifyAndScale(Heap *heap, Stats *stats) {
+    GreyPacket *weakRefsPacket = WeakReferences_takeWeakRefPacket(heap, stats);
     while (weakRefsPacket != NULL) {
-        WeakRefGreyList_NullifyPacket(heap, stats, weakRefsPacket);
+        WeakReferences_NullifyPacket(heap, stats, weakRefsPacket);
 
-        GreyPacket *next = WeakRefGreyList_takeWeakRefPacket(heap, stats);
+        GreyPacket *next = WeakReferences_takeWeakRefPacket(heap, stats);
         SyncGreyLists_giveEmptyPacket(heap, stats, weakRefsPacket);
         if (next != NULL) {
             uint32_t remainingPackets = UInt24_toUInt32(next->next.sep.size);
@@ -76,26 +76,26 @@ void WeakRefGreyList_NullifyAndScale(Heap *heap, Stats *stats) {
     }
 }
 
-bool WeakRefGreyList_IsNullifyDone(Heap *heap) {
+bool WeakReferences_IsNullifyDone(Heap *heap) {
     return GreyList_Size(&heap->mark.empty) == heap->mark.total;
 }
 
-void WeakRefGreyList_NullifyUntilDone(Heap *heap, Stats *stats) {
-    while (!WeakRefGreyList_IsNullifyDone(heap)) {
-        WeakRefGreyList_Nullify(heap, stats);
-        if (!WeakRefGreyList_IsNullifyDone(heap)) {
+void WeakReferences_NullifyUntilDone(Heap *heap, Stats *stats) {
+    while (!WeakReferences_IsNullifyDone(heap)) {
+        WeakReferences_Nullify(heap, stats);
+        if (!WeakReferences_IsNullifyDone(heap)) {
             thread_yield();
         }
     }
 }
 
-void WeakRefGreyList_SetHandler(void *handler) { handlerFn = handler; }
+void WeakReferences_SetGCFinishedCallback(void *handler) {
+    gcFinishedCallback = handler;
+}
 
-void WeakRefGreyList_CallHandlers() {
-    if (anyVisited && handlerFn != NULL) {
-        anyVisited = false;
-
-        handlerFn();
+void WeakReferences_InvokeGCFinishedCallback() {
+    if (collectedWeakReferences && gcFinishedCallback != NULL) {
+        gcFinishedCallback();
     }
 }
 

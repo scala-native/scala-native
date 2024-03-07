@@ -9,7 +9,6 @@
 #include "datastructures/Stack.h"
 #include "immix_commix/headers/ObjectHeader.h"
 #include "Block.h"
-#include "WeakRefStack.h"
 #include "shared/GCTypes.h"
 #include <stdatomic.h>
 #include "shared/ThreadUtil.h"

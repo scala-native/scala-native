@@ -20,7 +20,7 @@
 #include <memory.h>
 #include <time.h>
 #include <inttypes.h>
-#include "WeakRefGreyList.h"
+#include "WeakReferences.h"
 #include "immix_commix/Synchronizer.h"
 
 void Heap_exitWithOutOfMemory(const char *details) {
@@ -257,12 +257,11 @@ void Heap_Collect(Heap *heap) {
     Phase_StartSweep(heap);
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
     Synchronizer_release();
-    GCThread_WeakThreadsHandler_Resume(weakRefsHandlerThread);
 #else
     MutatorThread_switchState(currentMutatorThread,
                               GC_MutatorThreadState_Managed);
-    WeakRefGreyList_CallHandlers();
 #endif
+    WeakReferences_InvokeGCFinishedCallback();
 }
 
 bool Heap_shouldGrow(Heap *heap) {
