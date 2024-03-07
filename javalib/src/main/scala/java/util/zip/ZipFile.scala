@@ -1,8 +1,7 @@
 package java.util.zip
 
-// Ported from Apache Harmony
+// Ported from Apache Harmony. Extensively changed for Scala Native.
 
-import java.nio.charset.{Charset, StandardCharsets}
 import java.io.{
   BufferedInputStream,
   Closeable,
@@ -11,9 +10,10 @@ import java.io.{
   RandomAccessFile
 }
 
-import java.util.Enumeration
+import java.nio.charset.{Charset, StandardCharsets}
 
 import java.{util => ju}
+import java.util.Enumeration
 import java.util.{stream => jus}
 
 class ZipFile(file: File, mode: Int, charset: Charset) extends Closeable {
@@ -23,6 +23,8 @@ class ZipFile(file: File, mode: Int, charset: Charset) extends Closeable {
   def this(file: File) = this(file, StandardCharsets.UTF_8)
   def this(name: String, charset: Charset) = this(new File(name), charset)
   def this(name: String) = this(name, StandardCharsets.UTF_8)
+
+  var archiveComment: String = null
 
   private final val fileName: String = file.getPath()
 
@@ -116,6 +118,11 @@ class ZipFile(file: File, mode: Int, charset: Charset) extends Closeable {
     }
   }
 
+  def getComment(): String = {
+    checkNotClosed()
+    archiveComment
+  }
+
   def getEntry(entryName: String): ZipEntry = {
     checkNotClosed()
     if (entryName == null)
@@ -149,8 +156,10 @@ class ZipFile(file: File, mode: Int, charset: Charset) extends Closeable {
         val rafstrm =
           new ZipFile.RAFStream(raf, entry.mLocalHeaderRelOffset + 28)
         val localExtraLenOrWhatever = ler.readShortLE(rafstrm)
+
         // Skip the name and this "extra" data or whatever it is:
-        rafstrm.skip(entry.nameLen + localExtraLenOrWhatever)
+        rafstrm.skip(entry.name.length() + localExtraLenOrWhatever)
+
         rafstrm.mLength = rafstrm.mOffset + entry.compressedSize
         if (entry.compressionMethod == ZipEntry.DEFLATED) {
           val bufSize = Math.max(1024, Math.min(entry.getSize(), 65535L).toInt)
@@ -223,10 +232,15 @@ class ZipFile(file: File, mode: Int, charset: Charset) extends Closeable {
     /*centralDirSize =*/
     ler.readIntLE(bin)
     val centralDirOffset = ler.readIntLE(bin)
-    /*commentLen =*/
-    ler.readShortLE(bin)
 
-    if (numEntries != totalNumEntries || diskNumber != 0 || diskWithCentralDir != 0) {
+    val archiveCommentLen = ler.readShortLE(bin)
+    val archiveCommentBytes = new Array[Byte](archiveCommentLen)
+
+    ZipEntry.myReadFully(bin, archiveCommentBytes)
+    archiveComment = new String(archiveCommentBytes, charset)
+
+    if (numEntries != totalNumEntries || diskNumber != 0
+        || diskWithCentralDir != 0) {
       throw new ZipException("spanned archves not supported")
     }
 
@@ -234,8 +248,8 @@ class ZipFile(file: File, mode: Int, charset: Charset) extends Closeable {
      * Seek to the first CDE and read all entries.
      * However, when Z_SYNC_FLUSH is used the offset may not point directly
      * to the CDE so skip over until we find it.
-     * At most it will be 6 bytes away (one or two bytes for empty block, 4 bytes for
-     * empty block signature).
+     * At most it will be 6 bytes away (one or two bytes for empty block,
+     * 4 bytes for empty block signature).
      */
     scanOffset = centralDirOffset
     stopOffset = scanOffset + 6
@@ -253,18 +267,31 @@ class ZipFile(file: File, mode: Int, charset: Charset) extends Closeable {
       }
     }
 
+    rafs.close()
+    bin.close()
+
+// Also, should probably explicitly close both of the new ones here
+// after they are done.  Done reasonably right, that means some
+// try/finally blocks.  Does the rafs and/or bin need to hang around
+// for later I/O and _not_ be closed? Think a future "getEntry()" call.
+// Study this well, do not "just hack it".
+
     // If CDE is found then go and read all the entries
     rafs = new ZipFile.RAFStream(mRaf, scanOffset)
     bin = new BufferedInputStream(rafs, 4096)
 
-    var i = 0
-    while (i < numEntries) {
-      val newEntry = ZipEntry.fromInputStream(ler, bin)
-      mEntries.put(newEntry.getName(), newEntry)
-      i += 1
+    try {
+      var i = 0
+      while (i < numEntries) {
+        val newEntry = ZipEntry.fromInputStream(ler, bin, charset)
+        mEntries.put(newEntry.getName(), newEntry)
+        i += 1
+      }
+    } finally {
+      bin.close()
+      rafs.close()
     }
   }
-
 }
 
 object ZipFile extends ZipConstants {
