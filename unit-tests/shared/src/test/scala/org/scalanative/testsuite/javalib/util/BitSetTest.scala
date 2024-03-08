@@ -1550,8 +1550,7 @@ class BitSetTest {
       Spliterator.DISTINCT |
         Spliterator.SORTED |
         Spliterator.ORDERED |
-        Spliterator.SIZED |
-        Spliterator.SUBSIZED
+        Spliterator.SIZED
 
     val expectedSet = new TreeSet[Int]()
     val resultSet = new TreeSet[Int]()
@@ -1566,10 +1565,18 @@ class BitSetTest {
         bs.set(e)
       })
 
+    /* It appears that JVMs circa Java 8 set SUBSIZED and that sometime
+     * after that they stopped. Mask off that bit to avoid having JVM
+     * version specific code here. The presence or absence of the bits
+     * that are checked is far more important.
+     */
+    val resultCharacteristics =
+      bs.stream().spliterator().characteristics() & ~Spliterator.SUBSIZED
+
     assertEquals(
       "stream spliterator characteristics",
       expectedCharacteristics,
-      bs.stream().spliterator().characteristics()
+      resultCharacteristics
     )
 
     /* The values returned by stream() are _probably_ monotonically increasing

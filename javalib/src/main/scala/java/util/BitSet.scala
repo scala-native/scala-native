@@ -661,8 +661,12 @@ class BitSet private (private var bits: Array[Long])
       Spliterator.DISTINCT |
         Spliterator.SORTED |
         Spliterator.ORDERED |
-        Spliterator.SIZED |
-        Spliterator.SUBSIZED
+        Spliterator.SIZED
+
+    /* JVM versions around 8 seem to set Spliterator.SUBSIZED.
+     * Later versions seem to leave it clear. Follow the latter practice.
+     * At some point, may need to add some JVM version specific code here.
+     */
 
     val spliter = new AbstractIntSpliterator(size, characteristics) {
       var fromIndex = 0
