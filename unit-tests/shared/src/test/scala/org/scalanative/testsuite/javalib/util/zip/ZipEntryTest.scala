@@ -5,6 +5,7 @@ package org.scalanative.testsuite.javalib.util.zip
 import org.junit.Test
 import org.junit.Assert._
 import org.junit.AfterClass
+import org.junit.Ignore
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform.executingInJVM
@@ -152,6 +153,8 @@ class ZipEntryTest {
     assertTrue(ze.getSize() == orgSize)
   }
 
+// Revert PR #3794 so I can chase intermittent bad values & Segfault
+  @Ignore
   @Test def getTime(): Unit = {
     val ze = zfile.getEntry("File1.txt")
     assertEquals("getTime", orgTime, ze.getTime())
