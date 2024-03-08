@@ -23,7 +23,11 @@ object ZipEntryTest {
   val orgSize = zentry.getSize()
   val orgCompressedSize = zentry.getCompressedSize()
   val orgCrc = zentry.getCrc()
-  lazy val orgTime = zentry.getTime()
+
+// Revert PR #3794 so I can chase intermittent bad values & Segfault
+//  lazy val orgTime = zentry.getTime()
+  val orgTime = -1
+
   val orgComment = zentry.getComment()
 
   @AfterClass
