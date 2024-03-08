@@ -3,6 +3,7 @@ package java.lang
 import java.io.File
 import java.util.{Set => juSet}
 import java.util.Comparator
+import scala.scalanative.libc.signal
 import scala.scalanative.libc.stdlib
 import scala.scalanative.posix.unistd._
 import scala.scalanative.windows.SysInfoApi._
@@ -16,8 +17,18 @@ class Runtime private () {
   private lazy val hooks: juSet[Thread] = new java.util.HashSet()
 
   lazy val setupAtExitHandler = {
-    stdlib.atexit(() => Runtime.getRuntime().runHooks())
+    stdlib.atexit(() => if (!shutdownStarted) Runtime.getRuntime().runHooks())
   }
+
+  lazy val setupSignalHandler = {
+    signal.signal(signal.SIGINT, handleSignal(_))
+    signal.signal(signal.SIGTERM, handleSignal(_))
+  }
+
+  private def handleSignal(sig: CInt): Unit = {
+    if (!shutdownStarted) Runtime.getRuntime().runHooks()
+  }
+
   private def ensureCanModify(hook: Thread): Unit = if (shutdownStarted) {
     throw new IllegalStateException(
       s"Shutdown sequence started, cannot add/remove hook $hook"
@@ -28,6 +39,7 @@ class Runtime private () {
     ensureCanModify(thread)
     hooks.add(thread)
     setupAtExitHandler
+    setupSignalHandler
   }
 
   def removeShutdownHook(thread: Thread): Boolean = hooks.synchronized {
@@ -67,7 +79,7 @@ class Runtime private () {
       .asInstanceOf[Array[Thread]]
       .sorted(Ordering.by[Thread, Int](-_.getPriority()))
       .foreach { t =>
-        try t.run()
+        try t.start()
         catch {
           case ex: Throwable =>
             ShutdownHookUncoughExceptionHandler.uncaughtException(t, ex)
@@ -81,6 +93,7 @@ class Runtime private () {
       if (isMultithreadingEnabled) runHooksConcurrent()
       else runHooksSequential()
     }
+    exit(0)
   }
 
   import Runtime.ProcessBuilderOps
