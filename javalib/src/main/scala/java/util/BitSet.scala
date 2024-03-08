@@ -1,11 +1,16 @@
 // Ported from Scala.js commit: c0be6b6 dated: 2021-12-22
+// stream() method added for Scala Native
 
 package java.util
 
 import java.io.Serializable
 import java.lang.Long.bitCount
 import java.nio.{ByteBuffer, LongBuffer}
+
 import java.util
+import java.util.Spliterators.AbstractIntSpliterator
+import java.util.function.IntConsumer
+import java.util.stream.{IntStream, StreamSupport}
 
 private object BitSet {
   private final val AddressBitsPerWord = 6 // Int Based 2^6 = 64
@@ -642,6 +647,40 @@ class BitSet private (private var bits: Array[Long])
 
     result += "}"
     result
+  }
+
+  def stream(): IntStream = {
+    /* A high estimated upper bound, if all bits are set, not an actual count.
+     * Fit enough for purpose. A real count could get expensive with large
+     * sets and the spliterator size is never really used.
+     */
+    val size = bits.length * 64
+
+    // As reported by the JVM
+    val characteristics =
+      Spliterator.DISTINCT |
+        Spliterator.SORTED |
+        Spliterator.ORDERED |
+        Spliterator.SIZED |
+        Spliterator.SUBSIZED
+
+    val spliter = new AbstractIntSpliterator(size, characteristics) {
+      var fromIndex = 0
+
+      def tryAdvance(action: IntConsumer): Boolean = {
+        Objects.requireNonNull(action)
+        val nextSet = nextSetBit(fromIndex)
+
+        if (nextSet < 0) false
+        else {
+          action.accept(nextSet)
+          fromIndex = nextSet + 1
+          true
+        }
+      }
+    }
+
+    StreamSupport.intStream(spliter, parallel = false)
   }
 
   final private def ensureLength(len: Int): Unit = {

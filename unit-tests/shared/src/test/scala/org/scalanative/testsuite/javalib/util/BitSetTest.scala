@@ -1,9 +1,14 @@
 // Ported from Scala.js commit: c0be6b6 dated: 2021-12-22
+// test_stream() added for Scala Native
 
 package org.scalanative.testsuite.javalib.util
 
 import java.nio.{ByteBuffer, LongBuffer}
-import java.util.BitSet
+
+import java.{util => ju}
+import java.util.{BitSet, Spliterator, TreeSet}
+import java.util.stream.IntStream
+
 import org.junit.Assert.{assertThrows => junitAssertThrows, _}
 import org.junit.Assume._
 import org.junit.Test
@@ -1538,4 +1543,44 @@ class BitSetTest {
     }
     eightbs
   }
+
+  @Test def test_stream(): Unit = {
+    // As reported by the JVM
+    val expectedCharacteristics =
+      Spliterator.DISTINCT |
+        Spliterator.SORTED |
+        Spliterator.ORDERED |
+        Spliterator.SIZED |
+        Spliterator.SUBSIZED
+
+    val expectedSet = new TreeSet[Int]()
+    val resultSet = new TreeSet[Int]()
+
+    // Use enough bits for something to go wrong. Span multiple longwords.
+    val bs = new BitSet(256)
+
+    IntStream
+      .of(3, 7, 9, 10, 72, 110, 181, 219, 220) // Arbitrary numbers used above.
+      .forEach(e => {
+        expectedSet.add(e)
+        bs.set(e)
+      })
+
+    assertEquals(
+      "stream spliterator characteristics",
+      expectedCharacteristics,
+      bs.stream().spliterator().characteristics()
+    )
+
+    /* The values returned by stream() are _probably_ monotonically increasing
+     * but that is not a specified condition.
+     * Collect the results into a set, to ease comparison.
+     */
+
+    bs.stream()
+      .forEach(e => resultSet.add(e))
+
+    assertEquals("stream contents", expectedSet, resultSet)
+  }
+
 }
