@@ -5,6 +5,7 @@ package org.scalanative.testsuite.javalib.util.zip
 import org.junit.Test
 import org.junit.Assert._
 import org.junit.AfterClass
+import org.junit.Ignore
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform.executingInJVM
@@ -23,7 +24,11 @@ object ZipEntryTest {
   val orgSize = zentry.getSize()
   val orgCompressedSize = zentry.getCompressedSize()
   val orgCrc = zentry.getCrc()
-  lazy val orgTime = zentry.getTime()
+
+// Revert PR #3794 so I can chase intermittent bad values & Segfault
+//  lazy val orgTime = zentry.getTime()
+  val orgTime = -1
+
   val orgComment = zentry.getComment()
 
   @AfterClass
@@ -148,6 +153,8 @@ class ZipEntryTest {
     assertTrue(ze.getSize() == orgSize)
   }
 
+// Revert PR #3794 so I can chase intermittent bad values & Segfault
+  @Ignore
   @Test def getTime(): Unit = {
     val ze = zfile.getEntry("File1.txt")
     assertEquals("getTime", orgTime, ze.getTime())

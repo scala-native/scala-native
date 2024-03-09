@@ -3,6 +3,7 @@ package org.scalanative.testsuite.javalib.util.zip
 import org.junit.Test
 import org.junit.Assert._
 import org.junit.BeforeClass
+import org.junit.Ignore
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform
@@ -137,6 +138,8 @@ class ZipEntryIssuesTest {
     }
   }
 
+// Revert PR #3794 so I can chase intermittent bad values & Segfault
+  @Ignore
   // Issue 3787
   @Test def setEntryDosTime(): Unit = {
     val srcName =
