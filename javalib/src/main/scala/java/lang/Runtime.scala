@@ -27,7 +27,7 @@ class Runtime private () {
 
   private def handleSignal(sig: CInt): Unit = {
     Runtime.getRuntime().runHooks()
-    exit(0)
+    exit(128 + sig)
   }
 
   private def ensureCanModify(hook: Thread): Unit = if (shutdownStarted) {
