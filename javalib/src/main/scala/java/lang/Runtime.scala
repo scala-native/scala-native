@@ -27,6 +27,7 @@ class Runtime private () {
 
   private def handleSignal(sig: CInt): Unit = {
     Runtime.getRuntime().runHooks()
+    exit(0)
   }
 
   private def ensureCanModify(hook: Thread): Unit = if (shutdownStarted) {
@@ -89,9 +90,11 @@ class Runtime private () {
   private def runHooks() = {
     import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
     hooks.synchronized {
-      shutdownStarted = true
-      if (isMultithreadingEnabled) runHooksConcurrent()
-      else runHooksSequential()
+      if (!shutdownStarted) {
+        shutdownStarted = true
+        if (isMultithreadingEnabled) runHooksConcurrent()
+        else runHooksSequential()
+      }
     }
   }
 
