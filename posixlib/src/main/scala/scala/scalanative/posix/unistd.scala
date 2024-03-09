@@ -50,6 +50,7 @@ object unistd {
   def alarm(seconds: CUnsignedInt): CUnsignedInt = extern
 
   def chdir(path: CString): CInt = extern
+  def chroot(path: CString): CInt = extern
   def chown(path: CString, owner: uid_t, group: gid_t): CInt = extern
   def close(fildes: CInt): CInt = extern
   def confstr(name: CInt, buf: Ptr[CChar], len: size_t): size_t = extern
