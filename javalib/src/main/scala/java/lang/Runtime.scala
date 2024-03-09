@@ -17,7 +17,7 @@ class Runtime private () {
   private lazy val hooks: juSet[Thread] = new java.util.HashSet()
 
   lazy val setupAtExitHandler = {
-    stdlib.atexit(() => if (!shutdownStarted) Runtime.getRuntime().runHooks())
+    stdlib.atexit(() => Runtime.getRuntime().runHooks())
   }
 
   lazy val setupSignalHandler = {
@@ -26,7 +26,7 @@ class Runtime private () {
   }
 
   private def handleSignal(sig: CInt): Unit = {
-    if (!shutdownStarted) Runtime.getRuntime().runHooks()
+    Runtime.getRuntime().runHooks()
   }
 
   private def ensureCanModify(hook: Thread): Unit = if (shutdownStarted) {
@@ -79,7 +79,7 @@ class Runtime private () {
       .asInstanceOf[Array[Thread]]
       .sorted(Ordering.by[Thread, Int](-_.getPriority()))
       .foreach { t =>
-        try t.start()
+        try t.run()
         catch {
           case ex: Throwable =>
             ShutdownHookUncoughExceptionHandler.uncaughtException(t, ex)
@@ -93,7 +93,6 @@ class Runtime private () {
       if (isMultithreadingEnabled) runHooksConcurrent()
       else runHooksSequential()
     }
-    exit(0)
   }
 
   import Runtime.ProcessBuilderOps
