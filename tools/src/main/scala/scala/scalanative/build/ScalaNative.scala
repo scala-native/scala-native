@@ -178,7 +178,7 @@ private[scalanative] object ScalaNative {
       log.info(
         s"Loaded ${serviceProvidersLoaded} service provider(s) for ${servicesFound} referenced service(s):"
       )
-      log.info(analysis.foundServiceProviders.asTable(config.noColor))
+      analysis.foundServiceProviders.asTable(config.noColor).foreach(log.info)
     }
 
     def showStats(): Unit = {
