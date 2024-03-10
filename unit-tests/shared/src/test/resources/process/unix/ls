@@ -1,3 +1,12 @@
 #!/bin/sh
 
+# /bin/sh can be a symlink to some shell, this some shell
+# may not have printf command. OpenBSD uses ksh without printf
+# for example. Instead it expects to run /usr/bin/printf on that case.
+#
+# Test may reset PATH variable, add /bin and /usr/bin to make this test
+# works again on edge case like OpenBSD's ksh
+
+export PATH=$PATH:/bin:/usr/bin
+
 printf 1

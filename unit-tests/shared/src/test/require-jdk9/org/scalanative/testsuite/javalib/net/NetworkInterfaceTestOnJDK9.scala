@@ -19,10 +19,15 @@ class NetworkInterfaceTestOnJDK9 {
     else "lo0"
 
   val osIPv6LoopbackSuffix =
-    s":0:0:0:0:0:0:1%${localhostIf}"
+    if (Platform.isOpenBSD && Platform.executingInScalaNative)
+      s":3:0:0:0:0:0:1%${localhostIf}"
+    else
+      s":0:0:0:0:0:0:1%${localhostIf}"
 
   val osIPv6LoopbackAddress =
     if (Platform.isMacOs) s"fe80${osIPv6LoopbackSuffix}"
+    else if (Platform.isOpenBSD && Platform.executingInScalaNative)
+      s"fe80${osIPv6LoopbackSuffix}"
     else s"0${osIPv6LoopbackSuffix}"
 
 // Test instance method(s)
@@ -58,9 +63,12 @@ class NetworkInterfaceTestOnJDK9 {
     /* Out-of-the-box Linux tends to have two addresses, one IPv4 & one IPv6.
      * macOS has three. It adds a link local (fe80) address.
      * Of course, a user may configure their system differently and
-     * break this test.
+     * break this test. Thus, OpenBSD has only one IPv4 address by default.
      */
-    assertTrue("count ${count} not >= 2", count >= 2)
+    val atLeast =
+      if (Platform.isOpenBSD) 1
+      else 2
+    assertTrue(s"count ${count} not >= ${atLeast}", count >= atLeast)
   }
 
 }

@@ -35,7 +35,7 @@ object unOps {
 
   @resolvedAtLinktime
   def useSinXLen = !isLinux &&
-    (isMac || isFreeBSD)
+    (isMac || isFreeBSD || isOpenBSD)
 
   implicit class sockaddr_unOps(val ptr: Ptr[sockaddr_un]) extends AnyVal {
     def sun_len: uint8_t = if (!useSinXLen) {

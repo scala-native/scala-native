@@ -10,6 +10,26 @@
 #define VTDLY VTDELAY
 #endif
 
+#if defined(__OpenBSD__)
+// OpenBSD has missed some constatn, use 0 instead
+#define NLDLY 0
+#define CRDLY 0
+#define BSDLY 0
+#define VTDLY 0
+#define BS0 0
+#define BS1 0
+#define CR0 0
+#define CR1 0
+#define CR2 0
+#define CR3 0
+#define FF0 0
+#define FF1 0
+#define NL0 0
+#define NL1 0
+#define TAB1 0
+#define TAB2 0
+#endif
+
 // symbolic constants for use as subscripts for the array c_cc
 
 int scalanative_termios_veof() { return VEOF; }

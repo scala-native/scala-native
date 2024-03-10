@@ -174,6 +174,11 @@ sealed trait Config {
       Seq("linux").exists(customTriple.contains(_))
     }
 
+  private[scalanative] lazy val targetsOpenBSD: Boolean =
+    compilerConfig.targetTriple.fold(Platform.isOpenBSD) { customTriple =>
+      Seq("openbsd").exists(customTriple.contains(_))
+    }
+
   // see https://no-color.org/
   private[scalanative] lazy val noColor: Boolean = sys.env.contains("NO_COLOR")
 

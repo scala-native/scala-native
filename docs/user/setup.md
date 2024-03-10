@@ -27,6 +27,12 @@ instructions for your operating system.
 $ pkg install sbt
 ```
 
+**OpenBSD**
+
+``` shell
+$ pkg_add sbt
+```
+
 ## Installing clang and runtime dependencies
 
 Scala Native requires Clang, which is part of the
@@ -102,6 +108,15 @@ $ pkg install boehm-gc # optional
 
 *Note 3:* Using the boehm GC with multi-threaded binaries doesn\'t work
 out-of-the-box yet.
+
+**OpenBSD 7.5 and later**
+
+*Note 1:* OpenBSD support is experimental and limited to only AMD64
+architecture.
+
+``` shell
+$ pkg_add boehm-gc # optional
+```
 
 **Nix/NixOS**
 

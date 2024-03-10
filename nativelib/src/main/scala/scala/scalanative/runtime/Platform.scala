@@ -10,6 +10,9 @@ object Platform {
   @name("scalanative_platform_is_freebsd")
   def isFreeBSD(): Boolean = extern
 
+  @name("scalanative_platform_is_openbsd")
+  def isOpenBSD(): Boolean = extern
+
   @name("scalanative_platform_is_linux")
   def isLinux(): Boolean = extern
 

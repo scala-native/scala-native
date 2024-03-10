@@ -534,10 +534,11 @@ class TimeTest {
        */
     } else if (result == EINTR) {
       // EINTR means sleep was interrupted, clock_nanosleep() executed.
-    } else if (Platform.isMacOs) {
-      // No macOS clock_nanosleep(). time.c stub should always return ENOTSUP.
+    } else if (Platform.isMacOs || Platform.isOpenBSD) {
+      // No macOS and OpenBSD clock_nanosleep().
+      // time.c stub should always return ENOTSUP.
       assumeTrue(
-        s"macOS clock_nanosleep failed with return code: ${result}",
+        s"macOS or OpenBSD clock_nanosleep failed with return code: ${result}",
         result == ENOTSUP
       )
     } else {

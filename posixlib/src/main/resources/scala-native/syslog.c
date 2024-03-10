@@ -22,7 +22,13 @@ int scalanative_log_debug() { return LOG_DEBUG; }
 int scalanative_log_primask() { return LOG_PRIMASK; }
 
 int scalanative_log_pri(int p) { return LOG_PRI(p); }
-int scalanative_log_makepri(int fac, int pri) { return LOG_MAKEPRI(fac, pri); }
+int scalanative_log_makepri(int fac, int pri) {
+#ifdef LOG_MAKEPRI
+    return LOG_MAKEPRI(fac, pri);
+#else
+    return fac | pri;
+#endif
+}
 
 int scalanative_log_kern() { return LOG_KERN; }
 int scalanative_log_user() { return LOG_USER; }

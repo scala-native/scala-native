@@ -7,7 +7,7 @@
 #include <unistd.h>
 #include "types.h" // scalanative_* types, not <sys/types.h>
 
-#if defined(__FreeBSD__)
+#if defined(__FreeBSD__) || defined(__OpenBSD__)
 
 /* Apply a Pareto cost/benefit analysis here.
  *
@@ -32,7 +32,7 @@
 #define _SC_TRACE_NAME_MAX 0
 #define _SC_TRACE_SYS_MAX 0
 #define _SC_TRACE_USER_EVENT_MAX 0
-#endif // __FreeBSD__
+#endif // __FreeBSD__ || __OpenBSD__
 
 long scalanative__posix_version() { return _POSIX_VERSION; }
 

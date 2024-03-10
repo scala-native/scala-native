@@ -21,7 +21,13 @@ int scalanative_dt_blk() { return DT_BLK; }
 int scalanative_dt_reg() { return DT_REG; }
 int scalanative_dt_lnk() { return DT_LNK; }
 int scalanative_dt_sock() { return DT_SOCK; }
-int scalanative_dt_wht() { return DT_WHT; }
+int scalanative_dt_wht() {
+#ifdef DW_WHT
+    return DT_WHT;
+#else
+    return 0;
+#endif
+}
 
 DIR *scalanative_opendir(const char *name) { return opendir(name); }
 

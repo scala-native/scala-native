@@ -1,4 +1,4 @@
-#if defined(__x86_64__) && (defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__))
+#if defined(__x86_64__) && (defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__))
 
 /* ----------------------------------------------------------------------------
   Copyright (c) 2016, Microsoft Research, Daan Leijen

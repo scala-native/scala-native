@@ -112,7 +112,13 @@ int scalanative_enoexec() { return ENOEXEC; }
 
 int scalanative_enolck() { return ENOLCK; }
 
-int scalanative_enolink() { return ENOLINK; }
+int scalanative_enolink() {
+#ifdef ENOLINK
+    return ENOLINK;
+#else
+    return 0;
+#endif
+}
 
 int scalanative_enomem() { return ENOMEM; }
 

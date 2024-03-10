@@ -127,10 +127,10 @@ static void scalanative_tm_init(struct scalanative_tm *scala_tm,
 int scalanative_clock_nanosleep(clockid_t clockid, int flags,
                                 struct timespec *request,
                                 struct timespec *remain) {
-#if !defined(__APPLE__)
+#if !defined(__APPLE__) && !defined(__OpenBSD__)
     return clock_nanosleep(clockid, flags, request, remain);
 #else
-    errno = ENOTSUP; // No clock_nanosleep() on Apple.
+    errno = ENOTSUP; // No clock_nanosleep() on Apple or OpenBSD.
     return ENOTSUP;
 #endif
 }

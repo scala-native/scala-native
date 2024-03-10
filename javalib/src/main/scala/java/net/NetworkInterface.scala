@@ -310,12 +310,20 @@ object NetworkInterface {
   ): Option[InterfaceAddress] = {
 
     def decodePrefixLength(sa: Ptr[sockaddr]): Short = {
+      val af =
+        // When interface has IPv4 and IPv6 OpenBSD sets AF_UNSPEC as
+        // sa_family on IPv4's netmask's sockaddr, recover to AF_INET.
+        if (LinktimeInfo.isOpenBSD) {
+          val af = sa.sa_family
+          if (af == AF_UNSPEC) AF_INET else af
+        } else sa.sa_family
+
       val result =
-        if (sa.sa_family.toInt == AF_INET) {
+        if (af == AF_INET) {
           val sin4 = sa.asInstanceOf[Ptr[sockaddr_in]]
           val mask = sin4.sin_addr.s_addr.toInt
           Integer.bitCount(mask)
-        } else if (sa.sa_family.toInt == AF_INET6) {
+        } else if (af == AF_INET6) {
           val sin6 = sa.asInstanceOf[Ptr[sockaddr_in6]]
           val longs =
             sin6.sin6_addr.at1.at(0).asInstanceOf[Ptr[scala.Long]]
@@ -979,15 +987,30 @@ private object macOsIf {
    *   u_int32_t       ifi_mtu;        // maximum transmission unit
    */
 
+  /* Reference: OpenBSD 7.5
+   *   /usr/include/net/if.h
+   *
+   * struct  if_data {
+   *   // generic interface information
+   *   u_char          ifi_type;               // ethernet, tokenring, etc.
+   *   u_char          ifi_addrlen;            // media address length
+   *   u_char          ifi_hdrlen;             // media header length
+   *   u_char          ifi_link_state;         // current link state
+   *   u_int32_t       ifi_mtu;                // maximum transmission unit
+   */
+
   // Incomplete
-  type if_data = CStruct2[
-    CLongLong, // Placeholder, consolidate & skip fields of no interest.
+  type if_data = CStruct3[
+    CUnsignedInt, // Placeholder, consolidate & skip fields of no interest.
+    CUnsignedInt, // ifi_mtu or placeholder
     CUnsignedInt // ifi_mtu
   ]
 
   // Incomplete, corresponding to incomplete if_data just above.
   implicit class ifDataOps(val ptr: Ptr[if_data]) extends AnyVal {
-    def ifi_mtu: CUnsignedInt = ptr._2
+    def ifi_mtu: CUnsignedInt =
+      if (LinktimeInfo.isOpenBSD) ptr._2
+      else ptr._3
   }
   // ifi fields read-only fields in use, so no Ops here to set them.
 }

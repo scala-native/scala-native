@@ -4,7 +4,7 @@ import org.junit.Test
 import org.junit.Assert._
 import org.junit.Assume._
 
-import scala.scalanative.meta.LinktimeInfo.isWindows
+import scala.scalanative.meta.LinktimeInfo._
 
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
@@ -32,10 +32,10 @@ class WordexpTest {
 
   @Test def wordexpExpectBadcharError(): Unit = {
     assumeTrue(
-      "wordexp.scala is not implemented on Windows",
-      !isWindows
+      "wordexp.scala is not implemented on Windows or OpenBSD",
+      !isWindows && !isOpenBSD
     )
-    if (!isWindows) Zone.acquire { implicit z =>
+    if (!isWindows && !isOpenBSD) Zone.acquire { implicit z =>
       val wrdeP = stackalloc[wordexp_t]()
 
       /* wordexp is defined as using the sh shell. That shell does not
@@ -55,11 +55,11 @@ class WordexpTest {
 
   @Test def wordexpTildeExpansion: Unit = {
     assumeTrue(
-      "wordexp.scala is not implemented on Windows",
-      !isWindows
+      "wordexp.scala is not implemented on Windows or OpenBSD",
+      !isWindows && !isOpenBSD
     )
 
-    if (!isWindows) Zone.acquire { implicit z =>
+    if (!isWindows && !isOpenBSD) Zone.acquire { implicit z =>
       val wrdeP = stackalloc[wordexp_t]()
 
       val pattern = "~"
@@ -80,13 +80,13 @@ class WordexpTest {
       } finally {
         wordfree(wrdeP)
       }
-    } // !isWindows
+    } // !isWindows && !isOpenBSD
   }
 
   @Test def wordexpVariableSubstitution: Unit = {
     assumeTrue(
-      "wordexp.scala is not implemented on Windows",
-      !isWindows
+      "wordexp.scala is not implemented on Windows or OpenBSD",
+      !isWindows && !isOpenBSD
     )
 
     /* The environment variable $HOME may not exist on all non-CI systems.
@@ -102,7 +102,7 @@ class WordexpTest {
       hasHomeEnvvar != null
     )
 
-    if (!isWindows) Zone.acquire { implicit z =>
+    if (!isWindows && !isOpenBSD) Zone.acquire { implicit z =>
       val wrdeP = stackalloc[wordexp_t]()
 
       val pattern = "Phil $HOME Ochs"
@@ -123,6 +123,6 @@ class WordexpTest {
       } finally {
         wordfree(wrdeP)
       }
-    } // !isWindows
+    } // !isWindows && !isOpenBSD
   }
 }
