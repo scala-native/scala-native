@@ -37,6 +37,11 @@ Scala Native ensures that all class field operations would be executed
 atomically, but does not impose any synchronization or happens-before
 guarantee.
 
+ When executing extern functions Garbage Collector needs to be notified about the internal state of the calling thread. This notification is required to correctly track reachable objects and skip waiting for threads executing unmanged code - these may block (e.g. waiting on socket connection) for long time leading to deadlocks during GC. 
+ By default only calls to methods annotated with `@scala.scalanative.unsafe.blocking` would notify the GC - it allows to reduce overhead of extern method calls, but might lead to deadlocks or longer GC pauses when waiting for unannotated blocking function call.
+ This behaviour can be changed by enabling `NativeConfig.strictExternCallSemantics`. Under this mode every invocation of foreign function would notify the GC about the thread state which guarantess no deadlocks introduced by waiting for threads executing foreign code, but might reduce overall performance.
+
+
 ## Finalization
 
 Finalize method from `java.lang.Object` is never called in Scala Native.

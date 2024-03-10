@@ -821,15 +821,52 @@ private[scalanative] object Lower {
         if (unwindHandler.isInitialized) unwind else nir.Next.None
       )
 
-      def shouldSwitchThreadState(name: nir.Global) =
+      // Extern functions that don't block in strict mode
+      object isWellKnownNonBlockingExternFunction
+          extends Function1[nir.Sig, Boolean] {
+        var nonBlocking = mutable.HashSet.empty[nir.Sig]
+        nonBlocking ++= Seq(
+          "scalanative_GC_alloc",
+          "scalanative_GC_alloc_small",
+          "scalanative_GC_alloc_large",
+          "scalanative_GC_alloc_array",
+          "memcpy",
+          "errno"
+        ).map(nir.Sig.Extern(_).mangled)
+        nonBlocking ++= Set(
+          GCYieldName.sig,
+          memsetName.sig
+        )
+
+        def apply(sig: nir.Sig): Boolean = {
+          nonBlocking.contains(sig) || {
+            sig.unmangled match {
+              case nir.Sig.Extern(name) =>
+                val isNonBlocking =
+                  name.startsWith("scalanative_atomic_") ||
+                    name.startsWith("llvm.")
+                if (isNonBlocking) nonBlocking += sig
+                isNonBlocking
+              case _ => false
+            }
+          }
+        }
+      }
+      def shouldSwitchThreadState(name: nir.Global.Member) =
         platform.isMultithreadingEnabled && analysis.infos.get(name).exists {
           info =>
             val attrs = info.attrs
-            attrs.isExtern && attrs.isBlocking
+            attrs.isExtern && {
+              config.semanticsConfig.strictExternCallSemantics match {
+                case false => attrs.isBlocking
+                case _     => !isWellKnownNonBlockingExternFunction(name.sig)
+              }
+            }
         }
 
       ptr match {
-        case nir.Val.Global(global, _) if shouldSwitchThreadState(global) =>
+        case nir.Val.Global(global: nir.Global.Member, _)
+            if shouldSwitchThreadState(global) =>
           switchThreadState(managed = false)
           genCall()
           genGCYieldpoint(buf, genUnwind = false)
