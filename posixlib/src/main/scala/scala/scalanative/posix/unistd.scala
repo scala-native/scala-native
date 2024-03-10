@@ -217,6 +217,10 @@ object unistd {
 
   @blocking def write(fildes: CInt, buf: CVoidPtr, nbyte: CSize): CInt = extern
 
+  def pledge(promises: CString, execpromises: CString): CInt = extern
+
+  def unveil(path: CString, permissions: CString): CInt = extern
+
 // Symbolic constants
 
   // NULL, see POSIX stddef
