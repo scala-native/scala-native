@@ -358,6 +358,10 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
         onUnix = { err => err == EAGAIN || err == EWOULDBLOCK },
         onWindows = { err => err == WSAEWOULDBLOCK || err == WSAETIMEDOUT }
       )
+      def interruptDetected = mapLastError(
+        onUnix = { _ == EINTR },
+        onWindows = { _ == WSAEINTR }
+      )
 
       bytesNum match {
         case _ if (bytesNum > 0) => bytesNum
@@ -366,6 +370,9 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
 
         case _ if timeoutDetected =>
           throw new SocketTimeoutException("Socket timeout while reading data")
+
+        case _ if interruptDetected && !Thread.interrupted() =>
+          read(buffer, offset, count)
 
         case _ =>
           throw new SocketException(s"read failed, errno: ${lastError()}")
