@@ -21,14 +21,14 @@ sealed trait SemanticsConfig {
   /**
     * Controls behaviour of calls to extern methods when executing in multithreading mode.
     * When executing extern functions Garbage Collector needs to be notified about the internal state of thread, it's required to correctly track reachable objects and skip waiting for threads executing unmanged code.
-    * When disabled (default) only calls to methods annotated with [[scala.scalanative.unsafe.blocking]] would notify the GC - it allows to reduce overhead of extern method calls, but might lead to deadlocks or longer GC pauses when waiting for unannotated blocking function call.
+    * When disabled (default) only calls to methods annotated with `scala.scalanative.unsafe.blocking` would notify the GC - it allows to reduce overhead of extern method calls, but might lead to deadlocks or longer GC pauses when waiting for unannotated blocking function call.
     * When enabled every invocation of foreign function would notify the GC about the thread state which guarantess no deadlocks introduced by waiting for threads executing foreign code, but might reduce overall performance.
     */
   def strictExternCallSemantics: Boolean
   /**
     * Sets behaviour of calls to extern methods when executing in multithreading mode.
     * When executing extern functions Garbage Collector needs to be notified about the internal state of thread, it's required to correctly track reachable objects and skip waiting for threads executing unmanged code.
-    * When disabled only calls to methods annotated with [[scala.scalanative.unsafe.blocking]] would notify the GC - it allows to reduce overhead of extern method calls, but might lead to deadlocks or longer GC pauses when waiting for unannotated blocking function call.
+    * When disabled only calls to methods annotated with `scala.scalanative.unsafe.blocking` would notify the GC - it allows to reduce overhead of extern method calls, but might lead to deadlocks or longer GC pauses when waiting for unannotated blocking function call.
     * When enabled every invocation of foreign function would notify the GC about the thread state which guarantess no deadlocks introduced by waiting for threads executing foreign code, but might reduce overall performance.
     */
   def withStrictExternCallSemantics(value: Boolean): SemanticsConfig
