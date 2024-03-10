@@ -99,9 +99,21 @@ int scalanative_ai_numerichost() { return AI_NUMERICHOST; }
 
 int scalanative_ai_numericserv() { return AI_NUMERICSERV; }
 
-int scalanative_ai_v4mapped() { return AI_V4MAPPED; }
+int scalanative_ai_v4mapped() {
+#ifdef AI_V4MAPPED
+    return AI_V4MAPPED;
+#else
+    return 0;
+#endif
+}
 
-int scalanative_ai_all() { return AI_ALL; }
+int scalanative_ai_all() {
+#ifdef AI_ALL
+    return AI_ALL;
+#else
+    return 0;
+#endif
+}
 
 int scalanative_ai_addrconfig() { return AI_ADDRCONFIG; }
 

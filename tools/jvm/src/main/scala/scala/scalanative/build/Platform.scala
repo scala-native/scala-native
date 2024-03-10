@@ -44,6 +44,13 @@ private[scala] object Platform {
    */
   lazy val isFreeBSD: Boolean = osUsed.contains("freebsd")
 
+  /** Test for the platform type
+   *
+   *  @return
+   *    true if `OpenBSD`, false otherwise
+   */
+  lazy val isOpenBSD: Boolean = osUsed.contains("openbsd")
+
   /** Test for the target type
    *
    *  @return

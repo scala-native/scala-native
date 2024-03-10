@@ -1,5 +1,6 @@
 #if defined(__unix__) || defined(__unix) || defined(unix) ||                   \
     (defined(__APPLE__) && defined(__MACH__))
+#ifndef __OpenBSD__
 
 #include <stddef.h>
 #include <wordexp.h>
@@ -39,9 +40,10 @@ _Static_assert(offsetof(struct scalanative_wordexp_t, we_offs) ==
                "offset mismatch: wordexp_t we_offs");
 
 #endif // __STDC_VERSION__
+#endif // !OpenBSD
 #endif // Unix or Mac OS
 
-#if defined(_WIN32) // bogus values to keep linker happy
+#if defined(_WIN32) || defined(__OpenBSD__) // bogus values to keep linker happy
 #define WRDE_APPEND -1
 #define WRDE_DOOFFS -1
 #define WRDE_NOCMD -1

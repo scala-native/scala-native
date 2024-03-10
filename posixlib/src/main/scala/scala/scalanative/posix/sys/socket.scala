@@ -15,7 +15,7 @@ import scalanative.meta.LinktimeInfo._
 @extern
 object socket {
   type _14 = Nat.Digit2[Nat._1, Nat._4]
-  type _15 = Nat.Digit2[Nat._1, Nat._5]
+  type _31 = Nat.Digit2[Nat._3, Nat._1]
 
   /* Design Note:
    *  C11 _Static_assert() statements in socket.c check that the
@@ -57,14 +57,14 @@ object socket {
     CArray[CChar, _14] // sa_data, size = 14 in OS X and Linux
   ]
 
-  /* The declaration of sockaddr_storage should yield 128 bytes,
-   * with an overall alignment so that pointers have natural (64 )alignment.
+  /* The declaration of sockaddr_storage should yield 256 bytes,
+   * with an overall alignment so that pointers have natural (64) alignment.
    */
   type sockaddr_storage = CStruct4[
     sa_family_t, // ss_family, // ss_family, sa_len is synthesized if needed
     CUnsignedShort, // __opaquePadTo32
     CUnsignedInt, // opaque, __opaquePadTo64
-    CArray[CUnsignedLongLong, _15] // __opaqueAlignStructure to 8 bytes.
+    CArray[CUnsignedLongLong, _31] // __opaqueAlignStructure to 8 bytes.
   ]
 
   /* This is the POSIX 2018 & prior definition. Because SN 'naturally'
@@ -396,7 +396,7 @@ object socketOps {
   // Also used by posixlib netinet/in.scala
   @resolvedAtLinktime
   def useSinXLen = !isLinux &&
-    (isMac || isFreeBSD)
+    (isMac || isFreeBSD || isOpenBSD)
 
   implicit class sockaddrOps(val ptr: Ptr[sockaddr]) extends AnyVal {
     def sa_len: uint8_t = if (!useSinXLen) {

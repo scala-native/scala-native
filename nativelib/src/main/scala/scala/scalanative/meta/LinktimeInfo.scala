@@ -25,6 +25,9 @@ object LinktimeInfo {
   @resolvedAtLinktime
   def isFreeBSD: Boolean = target.os == "freebsd"
 
+  @resolvedAtLinktime
+  def isOpenBSD: Boolean = target.os == "openbsd"
+
   @resolvedAtLinktime("scala.scalanative.meta.linktimeinfo.is32BitPlatform")
   def is32BitPlatform: Boolean = resolved
 

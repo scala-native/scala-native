@@ -5,7 +5,7 @@ import org.junit.Assert._
 import org.junit.Assume._
 import org.junit.BeforeClass
 
-import scala.scalanative.meta.LinktimeInfo.isWindows
+import scala.scalanative.meta.LinktimeInfo._
 
 /* Using both LinktimeInfo & runtime.Platform looks strange.
  * It is a workaround to let this test run whilst I a suspected bug
@@ -25,8 +25,8 @@ object MonetaryTest {
   @BeforeClass
   def beforeClass(): Unit = {
     assumeTrue(
-      "monetary.scala is not implemented on Windows",
-      !isWindows
+      "monetary.scala is not implemented on Windows and OpenBSD",
+      !isWindows && !isOpenBSD
     )
   }
 }
@@ -34,7 +34,7 @@ object MonetaryTest {
 class MonetaryTest {
 
   @Test def strfmon_l_Using_en_US(): Unit =
-    if (!isWindows) {
+    if (!isWindows && !isOpenBSD) {
       errno = 0
 
       val locale = {

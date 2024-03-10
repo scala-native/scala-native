@@ -5,7 +5,12 @@ import org.junit.Assert._
 import org.junit.Assume._
 import org.junit.{BeforeClass, AfterClass}
 
-import scala.scalanative.meta.LinktimeInfo.{isLinux, isMac, isWindows}
+import scala.scalanative.meta.LinktimeInfo.{
+  isLinux,
+  isMac,
+  isWindows,
+  isOpenBSD
+}
 
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
@@ -101,7 +106,7 @@ class LanginfoTest {
     if (!isWindows) {
       val osSharedItems = Array(
         LanginfoItem("CODESET", CODESET, "UTF-8"),
-        LanginfoItem("D_FMT", D_FMT, "%m/%d/%Y"),
+        LanginfoItem("D_FMT", D_FMT, if (isOpenBSD) "%m/%d/%y" else "%m/%d/%Y"),
         LanginfoItem("T_FMT_AMPM", T_FMT_AMPM, "%I:%M:%S %p"),
         LanginfoItem("AM_STR", AM_STR, "AM"),
         LanginfoItem("PM_STR", PM_STR, "PM"),
@@ -143,17 +148,21 @@ class LanginfoTest {
         LanginfoItem("ABMON_10", ABMON_10, "Oct"),
         LanginfoItem("ABMON_11", ABMON_11, "Nov"),
         LanginfoItem("ABMON_12", ABMON_12, "Dec"),
-        LanginfoItem("ERA", ERA, ""),
-        LanginfoItem("ERA_D_FMT", ERA_D_FMT, ""),
-        LanginfoItem("ERA_D_T_FMT", ERA_D_T_FMT, ""),
-        LanginfoItem("ERA_T_FMT", ERA_T_FMT, ""),
         LanginfoItem("ALT_DIGITS", ALT_DIGITS, ""),
-        LanginfoItem("RADIXCHAR", RADIXCHAR, "."),
-        LanginfoItem("THOUSEP", THOUSEP, ","), // linux
-        LanginfoItem("CRNCYSTR", CRNCYSTR, "-$")
+        LanginfoItem("RADIXCHAR", RADIXCHAR, ".")
       )
 
       osSharedItems.foreach(verify(_))
+
+      if (!isWindows && !isOpenBSD)
+        Array(
+          LanginfoItem("ERA", ERA, ""),
+          LanginfoItem("ERA_D_FMT", ERA_D_FMT, ""),
+          LanginfoItem("ERA_D_T_FMT", ERA_D_T_FMT, ""),
+          LanginfoItem("ERA_T_FMT", ERA_T_FMT, ""),
+          LanginfoItem("THOUSEP", THOUSEP, ","), // linux
+          LanginfoItem("CRNCYSTR", CRNCYSTR, "-$")
+        ).foreach(verify(_))
 
       if (isLinux) {
         Array(

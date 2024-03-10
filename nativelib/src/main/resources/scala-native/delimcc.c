@@ -15,8 +15,8 @@
 #if defined(__aarch64__) // ARM64
 #define ASM_JMPBUF_SIZE 192
 #define JMPBUF_STACK_POINTER_OFFSET (104 / 8)
-#elif defined(__x86_64__) &&                                                   \
-    (defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__))
+#elif defined(__x86_64__) && (defined(__linux__) || defined(__APPLE__) ||      \
+                              defined(__FreeBSD__) || defined(__OpenBSD__))
 #define ASM_JMPBUF_SIZE 72
 #define JMPBUF_STACK_POINTER_OFFSET (16 / 8)
 #elif defined(__i386__) &&                                                     \

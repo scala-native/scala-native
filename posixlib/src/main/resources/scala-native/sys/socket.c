@@ -56,7 +56,7 @@ struct scalanative_sockaddr_storage {
     scalanative_sa_family_t ss_family;
     unsigned short __opaquePadTo32;
     unsigned int __opaquePadTo64;
-    unsigned long long __opaqueAlignStructure[15];
+    unsigned long long __opaqueAlignStructure[31];
 };
 
 // Also verifies that Scala Native sa_family field has the traditional size.
@@ -67,8 +67,13 @@ _Static_assert(offsetof(struct scalanative_sockaddr, sa_data) ==
                    offsetof(struct sockaddr, sa_data),
                "offset mismatch: sockaddr sa_data");
 
+#if defined(__OpenBSD__)
+_Static_assert(sizeof(struct sockaddr_storage) == 256,
+               "unexpected size for sockaddr_storage");
+#else
 _Static_assert(sizeof(struct sockaddr_storage) == 128,
                "unexpected size for sockaddr_storage");
+#endif
 
 // struct msghdr - POSIX 48 byte (padding) on 64 bit machines, 28 on 32 bit.
 struct scalanative_msghdr {

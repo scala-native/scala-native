@@ -28,7 +28,7 @@ object TestMain {
       |""".stripMargin
   }
 
-  private def setFreeBSDWorkaround(): Unit = {
+  private def maybeSetPreferIPv4Stack(): Unit = {
     /* Standard out-of-the-box FreeBSD differs from Linux & macOS in
      * not allowing IPv4-mapped IPv6 addresses, such as :FFFF:127.0.0.1
      * or ::ffff:7f00:1.
@@ -45,7 +45,14 @@ object TestMain {
      * with different Java versions, is to set
      * java.net.preferIPv4Stack=true in Scala Native, before the first
      * Java network call, in order to always use an AF_INET IPv4 socket.
+     *
+     * Thus, OpenBSD has the same behaviour as well.
+     *
+     * See: https://github.com/scala-native/scala-native/issues/3630
      */
+
+    if (!LinktimeInfo.isFreeBSD && !LinktimeInfo.isOpenBSD)
+      return
 
     System.setProperty("java.net.preferIPv4Stack", "true")
   }
@@ -65,7 +72,8 @@ object TestMain {
         SignalConfig.setDefaultHandlers()
     }
 
-    if (LinktimeInfo.isFreeBSD) setFreeBSDWorkaround()
+    maybeSetPreferIPv4Stack()
+
     val serverPort = args(0).toInt
     val clientSocket = new Socket("127.0.0.1", serverPort)
     val nativeRPC = new NativeRPC(clientSocket)(ExecutionContext.global)

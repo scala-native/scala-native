@@ -63,6 +63,14 @@
 #define CRNCYSTR -1
 #endif // _WIN32
 
+#if defined(__OpenBSD__)
+#define ERA -1
+#define ERA_D_FMT -1
+#define ERA_D_T_FMT -1
+#define ERA_T_FMT -1
+#define ALT_DIGITS -1
+#endif // OpenBSD
+
 int scalanative_codeset() { return CODESET; };
 
 int scalanative_d_t_fmt() { return D_T_FMT; };

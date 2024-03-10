@@ -17,7 +17,11 @@ import org.scalanative.testsuite.utils.Platform
 class InetAddressTest {
 
   @Test def equalsShouldWorkOnLocalhostsFromGetByName(): Unit = {
-    val ia1 = InetAddress.getByName("127.1")
+    val ia1 =
+      if (Platform.isOpenBSD && Platform.executingInScalaNative)
+        InetAddress.getByName("127.0.0.1")
+      else
+        InetAddress.getByName("127.1")
     val ia2 = InetAddress.getByName("127.0.0.1")
     assertEquals(ia1, ia2)
   }
@@ -103,14 +107,16 @@ class InetAddressTest {
     )
 
     // Test IPv4 archaic variant addresses.
-    val i1 = InetAddress.getByName("1.2.3")
-    assertEquals("a2", "1.2.0.3", i1.getHostAddress())
+    if (!(Platform.isOpenBSD && Platform.executingInScalaNative)) {
+      val i1 = InetAddress.getByName("1.2.3")
+      assertEquals("a2", "1.2.0.3", i1.getHostAddress())
 
-    val i2 = InetAddress.getByName("1.2")
-    assertEquals("a3", "1.0.0.2", i2.getHostAddress())
+      val i2 = InetAddress.getByName("1.2")
+      assertEquals("a3", "1.0.0.2", i2.getHostAddress())
 
-    val i3 = InetAddress.getByName(String.valueOf(0xffffffffL))
-    assertEquals("a4", "255.255.255.255", i3.getHostAddress())
+      val i3 = InetAddress.getByName(String.valueOf(0xffffffffL))
+      assertEquals("a4", "255.255.255.255", i3.getHostAddress())
+    }
 
     // case from 'Comcast/ip4s' project, lookup non-existing host.
     assertThrows(
@@ -121,7 +127,6 @@ class InetAddressTest {
   }
 
   @Test def getByNameInvalidIPv4Addresses(): Unit = {
-
     assertThrows(
       "getByName(\"240.0.0.\" )",
       classOf[UnknownHostException],
@@ -129,7 +134,15 @@ class InetAddressTest {
     )
 
     // Establish baseline: variant IPv4 address does not throw
-    val ia1 = InetAddress.getByName("10")
+    if (Platform.isOpenBSD && Platform.executingInScalaNative) {
+      assertThrows(
+        "getByName(\"10\")",
+        classOf[UnknownHostException],
+        InetAddress.getByName("10")
+      )
+    } else {
+      val ia1 = InetAddress.getByName("10")
+    }
 
     /* same address with scope_id is detected as invalid.
      * It is taken as a non-numeric host, which is never found because
@@ -147,8 +160,14 @@ class InetAddressTest {
     assertEquals(
       "a1",
       "1.3.0.4",
-      InetAddress.getByName("1.3.4").getHostAddress()
+      InetAddress
+        .getByName(
+          if (Platform.isOpenBSD && Platform.executingInScalaNative) "1.3.0.4"
+          else "1.3.4"
+        )
+        .getHostAddress()
     )
+
     assertEquals(
       "a2",
       "0:0:0:0:0:0:0:1",

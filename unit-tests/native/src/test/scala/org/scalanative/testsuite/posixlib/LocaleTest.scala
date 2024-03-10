@@ -82,7 +82,10 @@ class LocaleTest {
       savedLocale.isDefined
     )
 
-    if (!LinktimeInfo.isWindows) {
+    // OpenBSD support of locale quite incomplete, it never changes
+    // LC_NUMERIC and LC_MONETARY that means that it always returns
+    // the smae value with C locale.
+    if (!LinktimeInfo.isWindows && !LinktimeInfo.isOpenBSD) {
       val currentLconv = localeconv() // documented as always succeeds.
 
       assertEquals(

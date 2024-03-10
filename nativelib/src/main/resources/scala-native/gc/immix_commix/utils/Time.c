@@ -82,9 +82,11 @@ long long Time_current_nanos() {
 #else
 #if defined(__FreeBSD__)
     int clock = CLOCK_MONOTONIC_PRECISE; // OS has no CLOCK_MONOTONIC_RAW
+#elif defined(__OpenBSD__)
+    int clock = CLOCK_MONOTONIC; // OpenBSD has only CLOCK_MONOTONIC
 #else  // Linux, macOS
     int clock = CLOCK_MONOTONIC_RAW;
-#endif // !FreeBSD
+#endif // !FreeBSD || !OpenBSD
 
     // return value of 0 is success
     struct timespec ts;

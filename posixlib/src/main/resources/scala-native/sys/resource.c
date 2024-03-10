@@ -83,7 +83,13 @@ rlim_t scalanative_rlim_saved_cur() { return RLIM_SAVED_CUR; };
 
 rlim_t scalanative_rlim_saved_max() { return RLIM_SAVED_MAX; };
 
-int scalanative_rlimit_as() { return RLIMIT_AS; };
+int scalanative_rlimit_as() {
+#ifdef RLIMIT_AS
+    return RLIMIT_AS;
+#else
+    return 0;
+#endif
+};
 
 int scalanative_rlimit_core() { return RLIMIT_CORE; };
 

@@ -51,7 +51,8 @@ class ResourceTest {
 
     // Most operating systems will return EINVAL. Handle corner cases here.
     if (errno != EINVAL) {
-      if (!(Platform.isLinux() || Platform.isFreeBSD())) {
+      if (!(Platform.isLinux() || Platform.isFreeBSD() || Platform
+            .isOpenBSD())) {
         assertEquals("unexpected errno", EINVAL, errno)
       } else if (errno != 0) { // Linux, FreeBSD
         // A pid of UInt.MaxValue is highly unlikely but, by one reading,

@@ -136,7 +136,7 @@ _Static_assert(offsetof(struct scalanative_lconv, int_p_cs_precedes) ==
                    offsetof(struct lconv, int_p_cs_precedes),
                "Unexpected offset: scalanative_lconv.int_p_cs_precedes");
 
-#ifdef __linux__
+#if defined(__linux__) || defined(__OpenBSD__)
 _Static_assert(offsetof(struct scalanative_lconv, int_n_cs_precedes) ==
                    offsetof(struct lconv, int_n_cs_precedes),
                "Unexpected offset: scalanative_lconv.int_n_cs_precedes");

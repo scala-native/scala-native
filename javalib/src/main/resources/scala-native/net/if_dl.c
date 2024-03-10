@@ -4,8 +4,8 @@
 // Does not exist on Linux, so no check
 #else // macOS, FreeBSD, etc.
 
-#if defined(__FreeBSD__)
-// Make u_* types required/used by FreeBSD net/if_dl.h available
+#if defined(__FreeBSD__) || defined(__OpenBSD__)
+// Make u_* types required/used by FreeBSD / OpenBSD net/if_dl.h available
 #undef __BSD_VISIBLE
 #define __BSD_VISIBLE 1
 #include <sys/types.h> // size_t
