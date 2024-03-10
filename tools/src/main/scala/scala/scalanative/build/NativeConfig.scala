@@ -49,8 +49,8 @@ sealed trait NativeConfig {
   /** Shall linker dump intermediate NIR after every phase? */
   def dump: Boolean
 
-  /** Should address sanitizer be used? */
-  def asan: Boolean
+  /** Should sanitizer implemention be used? */
+  def sanitizer: Option[Sanitizer]
 
   /** Should stubs be linked? */
   def linkStubs: Boolean
@@ -196,8 +196,11 @@ sealed trait NativeConfig {
   /** Create a new config with given dump value. */
   def withDump(value: Boolean): NativeConfig
 
-  /** Create a new config with given asan value. */
-  def withASAN(value: Boolean): NativeConfig
+  /** Create a new config with given sanitizer enabled. */
+  def withSanitizer(value: Sanitizer): NativeConfig = withSanitizer(Some(value))
+
+  /** Create a new config with given sanitizer enabled. */
+  def withSanitizer(value: Option[Sanitizer]): NativeConfig
 
   /** Create a new config with given behavior for stubs. */
   def withLinkStubs(value: Boolean): NativeConfig
@@ -285,7 +288,7 @@ object NativeConfig {
       checkFatalWarnings = false,
       checkFeatures = true,
       dump = false,
-      asan = false,
+      sanitizer = None,
       linkStubs = false,
       optimize = true,
       useIncrementalCompilation = true,
@@ -315,7 +318,7 @@ object NativeConfig {
       checkFatalWarnings: Boolean,
       checkFeatures: Boolean,
       dump: Boolean,
-      asan: Boolean,
+      sanitizer: Option[Sanitizer],
       linkStubs: Boolean,
       optimize: Boolean,
       useIncrementalCompilation: Boolean,
@@ -383,8 +386,8 @@ object NativeConfig {
     def withDump(value: Boolean): NativeConfig =
       copy(dump = value)
 
-    def withASAN(value: Boolean): NativeConfig =
-      copy(asan = value)
+    def withSanitizer(value: Option[Sanitizer]): NativeConfig =
+      copy(sanitizer = value)
 
     def withOptimize(value: Boolean): NativeConfig =
       copy(optimize = value)
@@ -479,7 +482,7 @@ object NativeConfig {
         | - checkFatalWarnings:      $checkFatalWarnings
         | - checkFeatures            $checkFeatures
         | - dump:                    $dump
-        | - asan:                    $asan
+        | - sanitizer:               ${sanitizer.map(_.name).getOrElse("none")}
         | - linkStubs:               $linkStubs
         | - optimize                 $optimize
         | - incrementalCompilation:  $useIncrementalCompilation

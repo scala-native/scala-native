@@ -60,7 +60,7 @@ class LinktimeConditionsSpec extends OptimizerSpec {
   val ignoredPropertiesNames = {
     val linktimeInfo = "scala.scalanative.meta.linktimeinfo"
     Set(
-      s"$linktimeInfo.asanEnabled",
+      s"$linktimeInfo.enabledSanitizer",
       s"$linktimeInfo.is32BitPlatform",
       s"$linktimeInfo.isMultithreadingEnabled",
       s"$linktimeInfo.isWeakReferenceSupported",

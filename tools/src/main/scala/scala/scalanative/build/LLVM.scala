@@ -90,7 +90,7 @@ private[scalanative] object LLVM {
       else Nil
 
     val flags: Seq[String] =
-      buildTargetCompileOpts ++ flto ++ asan ++ target ++
+      buildTargetCompileOpts ++ flto ++ sanitizer ++ target ++
         stdflag ++ platformFlags ++ debugFlags ++ exceptionsHandling ++
         configFlags ++ Seq("-fvisibility=hidden", opt) ++
         Seq("-fomit-frame-pointer") ++
@@ -234,7 +234,7 @@ private[scalanative] object LLVM {
 
       val output = Seq("-o", config.buildPath.abs)
 
-      buildTargetLinkOpts ++ flto ++ debugFlags ++ platformFlags ++ linkNameFlags ++ output ++ asan ++ target
+      buildTargetLinkOpts ++ flto ++ debugFlags ++ platformFlags ++ linkNameFlags ++ output ++ sanitizer ++ target
     }
     val paths = objectsPaths.map(_.abs)
     // it's a fix for passing too many file paths to the clang compiler,
@@ -350,10 +350,11 @@ private[scalanative] object LLVM {
       case lto      => Seq(s"-flto=${lto.name}")
     }
 
-  private def asan(implicit config: Config): Seq[String] =
-    config.compilerConfig.asan match {
-      case true  => Seq("-fsanitize=address", "-fno-omit-frame-pointer")
-      case false => Seq.empty
+  private def sanitizer(implicit config: Config): Seq[String] =
+    config.compilerConfig.sanitizer match {
+      case Some(sanitizer) =>
+        Seq(s"-fsanitize=${sanitizer.name}", "-fno-omit-frame-pointer")
+      case _ => Seq.empty
     }
 
   private def target(implicit config: Config): Seq[String] =
