@@ -137,7 +137,7 @@ private[scalanative] object IO {
   /** Deletes recursively `directory` and all its content. */
   def deleteRecursive(directory: Path): Unit = {
     // On Windows the file permissions / locks are slow leading to AccessDeniedException
-    // we might need to revisit the directory to ensure it is deleated
+    // we might need to revisit the directory to ensure it is deleted
     var shouldRetry = false
     var remainingRetries = 3
     def tryDelete(path: Path, isRetry: Boolean = false): Unit =
