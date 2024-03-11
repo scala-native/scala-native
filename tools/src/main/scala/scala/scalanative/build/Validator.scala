@@ -42,6 +42,7 @@ private[build] object Validator {
   private def validateCompileConfig(config: Config): Config = {
     val c = config.compilerConfig
     val issues = List.newBuilder[String]
+    def warn(msg: String) = config.logger.warn(msg)
 
     if (!Files.exists(c.clang))
       issues += s"Provided clang path '${c.clang.toAbsolutePath()}' does not exist, specify a valid path to LLVM Toolchain distribution using config or LLVM_BIN environment variable"
@@ -50,6 +51,11 @@ private[build] object Validator {
     // config.baseName provides default value when config.compileConfig.baseName is empty
     if (config.baseName.trim().isEmpty())
       issues += s"Provided baseName is blank, provide a name of target artifact without extensions to allow for determinstic builds"
+
+    if (config.targetsMac && c.lto == LTO.thin)
+      warn(
+        "LTO.thin is unstable on MacOS, it can lead to compilation errors. Consider using LTO.full (legacy, slower) or LTO.none (disabled)"
+      )
 
     issues.result() match {
       case Nil => config
