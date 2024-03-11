@@ -184,7 +184,7 @@ object CodeGen {
     ) extends AbstractCodeGen(env, Nil) {
       import meta.config
       val buildInfos: Map[String, Any] = Map(
-        "ASAN support" -> config.asan,
+        "Sanitizer" -> config.sanitizer.map(_.name).getOrElse("disabled"),
         "Debug metadata" -> config.sourceLevelDebuggingConfig.enabled,
         "Embed resources" -> config.embedResources,
         "GC" -> config.gc,
