@@ -3,6 +3,7 @@ package build
 
 import java.io.IOException
 import java.nio.file.{
+  AccessDeniedException,
   Files,
   FileSystems,
   FileVisitOption,
@@ -16,6 +17,8 @@ import java.nio.file.attribute.BasicFileAttributes
 import java.util.EnumSet
 import java.util.zip.{ZipEntry, ZipInputStream}
 import java.security.{DigestInputStream, MessageDigest}
+import java.nio.file.attribute.DosFileAttributes
+import scala.util.control.NonFatal
 
 /** Internal I/O utilities. */
 private[scalanative] object IO {
@@ -133,7 +136,30 @@ private[scalanative] object IO {
 
   /** Deletes recursively `directory` and all its content. */
   def deleteRecursive(directory: Path): Unit = {
-    if (Files.exists(directory)) {
+    // On Windows the file permissions / locks are slow leading to AccessDeniedException
+    // we might need to revisit the directory to ensure it is deleted
+    var shouldRetry = false
+    var remainingRetries = 3
+    def tryDelete(path: Path, isRetry: Boolean = false): Unit =
+      try Files.deleteIfExists(path)
+      catch {
+        case _: AccessDeniedException if Platform.isWindows && !isRetry =>
+          if (Files.notExists(path)) ()
+          else
+            try {
+              val attrs = Files.readAttributes(path, classOf[DosFileAttributes])
+              if (attrs.isReadOnly()) {
+                Files.setAttribute(path, "dos:readonly", false)
+              }
+              tryDelete(path, isRetry = true)
+            } catch { case NonFatal(_) => shouldRetry = true }
+        case NonFatal(_) => shouldRetry = true
+      }
+
+    while (Files.exists(directory) && remainingRetries > 0) {
+      // If retrying the cleanup give OS a bit of time to close any pending locks
+      if (shouldRetry) Thread.sleep(50)
+      shouldRetry = false
       Files.walkFileTree(
         directory,
         new SimpleFileVisitor[Path]() {
@@ -141,18 +167,19 @@ private[scalanative] object IO {
               file: Path,
               attrs: BasicFileAttributes
           ): FileVisitResult = {
-            Files.delete(file)
+            tryDelete(file)
             FileVisitResult.CONTINUE
           }
           override def postVisitDirectory(
               dir: Path,
               exc: IOException
           ): FileVisitResult = {
-            Files.delete(dir)
+            tryDelete(dir)
             FileVisitResult.CONTINUE
           }
         }
       )
+      remainingRetries -= 1
     }
   }
 
