@@ -41,6 +41,30 @@ object sched {
       cpuset: Ptr[cpu_set_t]
   ): CInt = extern
 
+  @name("scalanative_sched_other")
+  def SCHED_OTHER: CInt = extern
+
+  @name("scalanative_sched_fifo")
+  def SCHED_FIFO: CInt = extern
+
+  @name("scalanative_sched_rr")
+  def SCHED_RR: CInt = extern
+
+  @name("scalanative_sched_sporadic")
+  def SCHED_SPORADIC: CInt = extern
+
+  /** Not defined in POSIX standard, might lead to runtime errors */
+  @name("scalanative_sched_batch")
+  def SCHED_BATCH: CInt = extern
+
+  /** Not defined in POSIX standard, might lead to runtime errors */
+  @name("scalanative_sched_idle")
+  def SCHED_IDLE: CInt = extern
+
+  /** Not defined in POSIX standard, might lead to runtime errors */
+  @name("scalanative_sched_deadline")
+  def SCHED_DEADLINE: CInt = extern
+
   // Types
   type cpu_set_t = CInt
 
