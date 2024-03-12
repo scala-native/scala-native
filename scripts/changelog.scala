@@ -1,5 +1,6 @@
 // Based on Ammonite script created by Tomasz Godzik in scalameta/metals https://github.com/scalameta/metals/commits/main/bin/merged_prs.sc
-import $ivy.`org.kohsuke:github-api:1.114`
+//> using dep org.kohsuke:github-api:1.316
+//> using toolkit latest
 
 import scala.collection.mutable.ListBuffer
 import scala.collection.JavaConverters._
@@ -16,7 +17,7 @@ val defaultToken = sys.env.get("GITHUB_TOKEN")
 def main(
     firstTag: String,
     lastTag: String,
-    githubToken: Option[String]
+    githubToken: String
 ) = {
   val author = os.proc(List("git", "config", "user.name")).call().out.trim()
   val commits = os
@@ -46,9 +47,10 @@ def main(
     "--pretty=format:%H"
   )
 
-  val token = githubToken.orElse(defaultToken).getOrElse {
-    throw new Exception("No github API token was specified")
-  }
+  val token =
+    Option(githubToken).filter(_.nonEmpty).orElse(defaultToken).getOrElse {
+      throw new Exception("No github API token was specified")
+    }
 
   val output = os.proc(command).call().out.trim()
 
@@ -92,8 +94,8 @@ def main(
     )
 
   val pathToReleaseNotes =
-    os.pwd / "docs" / "changelog" / s"$today-release-$lastTag.md"
-  os.write(pathToReleaseNotes, releaseNotes)
+    os.pwd / "docs" / "changelog" / s"$lastTag.md"
+  os.write.over(pathToReleaseNotes, releaseNotes)
 }
 
 def today: String = {
