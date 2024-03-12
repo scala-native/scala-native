@@ -5,6 +5,7 @@ on:
   schedule:
     # Every day at 2 AM UTC
     - cron: "0 2 * * *"
+  workflow_dispatch:
 concurrency:
   group: linux-${{ github.head_ref }}-${{ github.event_name }}
   cancel-in-progress: true
@@ -15,7 +16,7 @@ jobs:
   # Test tools, if any of them fails, further tests will not start.
   tests-tools:
     name: Compile & test tools
-    if: "github.event_name == 'pull_request' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')"
+    if: "github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')"
     runs-on: ubuntu-22.04
     env:
       ENABLE_EXPERIMENTAL_COMPILER: true

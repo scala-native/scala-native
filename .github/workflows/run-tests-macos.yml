@@ -5,6 +5,7 @@ on:
   schedule:
     # Every day at 2 AM UTC
     - cron: "0 2 * * *"
+  workflow_dispatch:
 concurrency:
   group: macOS-${{ github.head_ref }}-${{ github.event_name }}
   cancel-in-progress: true
@@ -12,7 +13,7 @@ concurrency:
 jobs:
   test-runtime:
     name: Test runtime
-    if: "github.event_name == 'pull_request' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')"
+    if: "github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')"
     runs-on: macos-12
     env:
       ENABLE_EXPERIMENTAL_COMPILER: true

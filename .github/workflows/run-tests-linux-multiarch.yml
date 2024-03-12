@@ -5,6 +5,7 @@ on:
   schedule:
     # Every day at 2 AM UTC
     - cron: "0 2 * * *"
+  workflow_dispatch:
 concurrency:
   group: linux-multiarch-${{ github.head_ref }}-${{ github.event_name }}
   cancel-in-progress: true
@@ -13,7 +14,7 @@ jobs:
   # Build testing image that would be used to build and run against different platforms
   # Currently only Linux x64 is tested
   build-image:
-    if: "github.event_name == 'pull_request' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')"
+    if: "github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')"
     name: Build image
     runs-on: ubuntu-22.04
     outputs:
