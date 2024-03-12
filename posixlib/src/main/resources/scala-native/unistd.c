@@ -7,7 +7,7 @@
 #include <unistd.h>
 #include "types.h" // scalanative_* types, not <sys/types.h>
 
-#if defined(__FreeBSD__) || defined(__OpenBSD__)
+#if defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__)
 
 /* Apply a Pareto cost/benefit analysis here.
  *
@@ -32,7 +32,7 @@
 #define _SC_TRACE_NAME_MAX 0
 #define _SC_TRACE_SYS_MAX 0
 #define _SC_TRACE_USER_EVENT_MAX 0
-#endif // __FreeBSD__ || __OpenBSD__
+#endif // __FreeBSD__ || __OpenBSD__ || __NetBSD__
 
 long scalanative__posix_version() { return _POSIX_VERSION; }
 
@@ -101,9 +101,21 @@ int scalanative__cs_path() { return _CS_PATH; };
 
 int scalanative__pc_2_symlinks() { return _PC_2_SYMLINKS; };
 
-int scalanative__pc_alloc_size_min() { return _PC_ALLOC_SIZE_MIN; };
+int scalanative__pc_alloc_size_min() {
+#ifdef _PC_ALLOC_SIZE_MIN
+    return _PC_ALLOC_SIZE_MIN;
+#else
+    return 0;
+#endif
+};
 
-int scalanative__pc_async_io() { return _PC_ASYNC_IO; };
+int scalanative__pc_async_io() {
+#ifdef _PC_ASYNC_IO
+    return _PC_ASYNC_IO;
+#else
+    return 0;
+#endif
+};
 
 int scalanative__pc_chown_restricted() { return _PC_CHOWN_RESTRICTED; };
 
@@ -123,15 +135,45 @@ int scalanative__pc_path_max() { return _PC_PATH_MAX; };
 
 int scalanative__pc_pipe_buf() { return _PC_PIPE_BUF; };
 
-int scalanative__pc_prio_io() { return _PC_PRIO_IO; };
+int scalanative__pc_prio_io() {
+#ifdef _PC_PRIO_IO
+    return _PC_PRIO_IO;
+#else
+    return 0;
+#endif
+};
 
-int scalanative__pc_rec_incr_xfer_size() { return _PC_REC_INCR_XFER_SIZE; };
+int scalanative__pc_rec_incr_xfer_size() {
+#ifdef _PC_REC_INCR_XFER_SIZE
+    return _PC_REC_INCR_XFER_SIZE;
+#else
+    return 0;
+#endif
+};
 
-int scalanative__pc_rec_max_xfer_size() { return _PC_REC_MAX_XFER_SIZE; };
+int scalanative__pc_rec_max_xfer_size() {
+#ifdef _PC_REC_MAX_XFER_SIZE
+    return _PC_REC_MAX_XFER_SIZE;
+#else
+    return 0;
+#endif
+};
 
-int scalanative__pc_rec_min_xfer_size() { return _PC_REC_MIN_XFER_SIZE; };
+int scalanative__pc_rec_min_xfer_size() {
+#ifdef _PC_REC_MIN_XFER_SIZE
+    return _PC_REC_MIN_XFER_SIZE;
+#else
+    return 0;
+#endif
+};
 
-int scalanative__pc_rec_xfer_align() { return _PC_REC_XFER_ALIGN; };
+int scalanative__pc_rec_xfer_align() {
+#ifdef _PC_REC_XFER_ALIGN
+    return _PC_REC_XFER_ALIGN;
+#else
+    return 0;
+#endif
+};
 
 int scalanative__pc_symlink_max() { return _PC_SYMLINK_MAX; };
 
@@ -175,13 +217,25 @@ int scalanative__sc_2_upe() { return _SC_2_UPE; };
 
 int scalanative__sc_2_version() { return _SC_2_VERSION; };
 
-int scalanative__sc_advisory_info() { return _SC_ADVISORY_INFO; };
+int scalanative__sc_advisory_info() {
+#ifdef _SC_ADVISORY_INFO
+    return _SC_ADVISORY_INFO;
+#else
+    return 0;
+#endif
+};
 
 int scalanative__sc_aio_listio_max() { return _SC_AIO_LISTIO_MAX; };
 
 int scalanative__sc_aio_max() { return _SC_AIO_MAX; };
 
-int scalanative__sc_aio_prio_delta_max() { return _SC_AIO_PRIO_DELTA_MAX; };
+int scalanative__sc_aio_prio_delta_max() {
+#ifdef _SC_AIO_PRIO_DELTA_MAX
+    return _SC_AIO_PRIO_DELTA_MAX;
+#else
+    return 0;
+#endif
+};
 
 int scalanative__sc_arg_max() { return _SC_ARG_MAX; };
 
@@ -223,7 +277,13 @@ int scalanative__sc_host_name_max() { return _SC_HOST_NAME_MAX; };
 
 int scalanative__sc_iov_max() { return _SC_IOV_MAX; };
 
-int scalanative__sc_ipv6() { return _SC_IPV6; };
+int scalanative__sc_ipv6() {
+#ifdef _SC_IPV6
+    return _SC_IPV6;
+#else
+    return 0;
+#endif
+};
 
 int scalanative__sc_job_control() { return _SC_JOB_CONTROL; };
 
@@ -259,11 +319,23 @@ int scalanative__sc_page_size() { return _SC_PAGE_SIZE; };
 
 int scalanative__sc_pagesize() { return _SC_PAGESIZE; };
 
-int scalanative__sc_prioritized_io() { return _SC_PRIORITIZED_IO; };
+int scalanative__sc_prioritized_io() {
+#ifdef _SC_PRIORITIZED_IO
+    return _SC_PRIORITIZED_IO;
+#else
+    return 0;
+#endif
+};
 
 int scalanative__sc_priority_scheduling() { return _SC_PRIORITY_SCHEDULING; };
 
-int scalanative__sc_raw_sockets() { return _SC_RAW_SOCKETS; };
+int scalanative__sc_raw_sockets() {
+#ifdef _SC_RAW_SOCKETS
+    return _SC_RAW_SOCKETS;
+#else
+    return 0;
+#endif
+};
 
 int scalanative__sc_re_dup_max() { return _SC_RE_DUP_MAX; };
 
@@ -273,13 +345,25 @@ int scalanative__sc_realtime_signals() { return _SC_REALTIME_SIGNALS; };
 
 int scalanative__sc_regexp() { return _SC_REGEXP; };
 
-int scalanative__sc_rtsig_max() { return _SC_RTSIG_MAX; };
+int scalanative__sc_rtsig_max() {
+#ifdef _SC_RTSIG_MAX
+    return _SC_RTSIG_MAX;
+#else
+    return 0;
+#endif
+};
 
 int scalanative__sc_saved_ids() { return _SC_SAVED_IDS; };
 
 int scalanative__sc_sem_nsems_max() { return _SC_SEM_NSEMS_MAX; };
 
-int scalanative__sc_sem_value_max() { return _SC_SEM_VALUE_MAX; };
+int scalanative__sc_sem_value_max() {
+#ifdef _SC_SEM_VALUE_MAX
+    return _SC_SEM_VALUE_MAX;
+#else
+    return 0;
+#endif
+};
 
 int scalanative__sc_semaphores() { return _SC_SEMAPHORES; };
 
@@ -295,7 +379,13 @@ int scalanative__sc_spawn() { return _SC_SPAWN; };
 
 int scalanative__sc_spin_locks() { return _SC_SPIN_LOCKS; };
 
-int scalanative__sc_sporadic_server() { return _SC_SPORADIC_SERVER; };
+int scalanative__sc_sporadic_server() {
+#ifdef _SC_SPORADIC_SERVER
+    return _SC_SPORADIC_SERVER;
+#else
+    return 0;
+#endif
+};
 
 int scalanative__sc_ss_repl_max() { return _SC_SS_REPL_MAX; };
 
@@ -344,7 +434,11 @@ int scalanative__sc_thread_safe_functions() {
 };
 
 int scalanative__sc_thread_sporadic_server() {
+#ifdef _SC_THREAD_SPORADIC_SERVER
     return _SC_THREAD_SPORADIC_SERVER;
+#else
+    return 0;
+#endif
 };
 
 int scalanative__sc_thread_stack_min() { return _SC_THREAD_STACK_MIN; };
@@ -353,21 +447,51 @@ int scalanative__sc_thread_threads_max() { return _SC_THREAD_THREADS_MAX; };
 
 int scalanative__sc_threads() { return _SC_THREADS; };
 
-int scalanative__sc_timeouts() { return _SC_TIMEOUTS; };
+int scalanative__sc_timeouts() {
+#ifdef _SC_TIMEOUTS
+    return _SC_TIMEOUTS;
+#else
+    return 0;
+#endif
+};
 
 int scalanative__sc_timer_max() { return _SC_TIMER_MAX; };
 
 int scalanative__sc_timers() { return _SC_TIMERS; };
 
-int scalanative__sc_trace() { return _SC_TRACE; };
+int scalanative__sc_trace() {
+#ifdef _SC_TRACE
+    return _SC_TRACE;
+#else
+    return 0;
+#endif
+};
 
-int scalanative__sc_trace_event_filter() { return _SC_TRACE_EVENT_FILTER; };
+int scalanative__sc_trace_event_filter() {
+#ifdef _SC_TRACE_EVENT_FILTER
+    return _SC_TRACE_EVENT_FILTER;
+#else
+    return 0;
+#endif
+};
 
 int scalanative__sc_trace_event_name_max() { return _SC_TRACE_EVENT_NAME_MAX; };
 
-int scalanative__sc_trace_inherit() { return _SC_TRACE_INHERIT; };
+int scalanative__sc_trace_inherit() {
+#ifdef _SC_TRACE_INHERIT
+    return _SC_TRACE_INHERIT;
+#else
+    return 0;
+#endif
+};
 
-int scalanative__sc_trace_log() { return _SC_TRACE_LOG; };
+int scalanative__sc_trace_log() {
+#ifdef _SC_TRACE_LOG
+    return _SC_TRACE_LOG;
+#else
+    return 0;
+#endif
+};
 
 int scalanative__sc_trace_name_max() { return _SC_TRACE_NAME_MAX; };
 
@@ -377,7 +501,13 @@ int scalanative__sc_trace_user_event_max() { return _SC_TRACE_USER_EVENT_MAX; };
 
 int scalanative__sc_tty_name_max() { return _SC_TTY_NAME_MAX; };
 
-int scalanative__sc_typed_memory_objects() { return _SC_TYPED_MEMORY_OBJECTS; };
+int scalanative__sc_typed_memory_objects() {
+#ifdef _SC_TYPED_MEMORY_OBJECTS
+    return _SC_TYPED_MEMORY_OBJECTS;
+#else
+    return 0;
+#endif
+};
 
 int scalanative__sc_tzname_max() { return _SC_TZNAME_MAX; };
 
@@ -390,26 +520,66 @@ int scalanative__sc_tzname_max() { return _SC_TZNAME_MAX; };
 
 int scalanative__sc_version() { return _SC_VERSION; };
 
-int scalanative__sc_xopen_crypt() { return _SC_XOPEN_CRYPT; };
+int scalanative__sc_xopen_crypt() {
+#ifdef _SC_XOPEN_CRYPT
+    return _SC_XOPEN_CRYPT;
+#else
+    return 0;
+#endif
+};
 
-int scalanative__sc_xopen_enh_i18n() { return _SC_XOPEN_ENH_I18N; };
+int scalanative__sc_xopen_enh_i18n() {
+#ifdef _SC_XOPEN_ENH_I18N
+    return _SC_XOPEN_ENH_I18N;
+#else
+    return 0;
+#endif
+};
 
-int scalanative__sc_xopen_realtime() { return _SC_XOPEN_REALTIME; };
+int scalanative__sc_xopen_realtime() {
+#ifdef _SC_XOPEN_REALTIME
+    return _SC_XOPEN_REALTIME;
+#else
+    return 0;
+#endif
+};
 
 int scalanative__sc_xopen_realtime_threads() {
+#ifdef _SC_XOPEN_REALTIME_THREADS
     return _SC_XOPEN_REALTIME_THREADS;
+#else
+    return 0;
+#endif
 };
 
 int scalanative__sc_xopen_shm() { return _SC_XOPEN_SHM; };
 
-int scalanative__sc_xopen_streams() { return _SC_XOPEN_STREAMS; };
+int scalanative__sc_xopen_streams() {
+#ifdef _SC_XOPEN_STREAMS
+    return _SC_XOPEN_STREAMS;
+#else
+    return 0;
+#endif
+};
 
-int scalanative__sc_xopen_unix() { return _SC_XOPEN_UNIX; };
+int scalanative__sc_xopen_unix() {
+#ifdef _SC_XOPEN_UNIX
+    return _SC_XOPEN_UNIX;
+#else
+    return 0;
+#endif
+};
 
 /* Not implemented, not defined on Linux.
  *	_SC_XOPEN_UUCP
  */
 
-int scalanative__sc_xopen_version() { return _SC_XOPEN_VERSION; };
+int scalanative__sc_xopen_version() {
+#ifdef _SC_XOPEN_VERSION
+    return _SC_XOPEN_VERSION;
+#else
+    return 0;
+#endif
+};
 
 #endif // Unix or Mac OS

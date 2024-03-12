@@ -33,6 +33,12 @@ $ pkg install sbt
 $ pkg_add sbt
 ```
 
+**NetBSD**
+
+``` shell
+$ pkg_add scala-sbt
+```
+
 ## Installing clang and runtime dependencies
 
 Scala Native requires Clang, which is part of the
@@ -115,6 +121,16 @@ out-of-the-box yet.
 architecture.
 
 ``` shell
+$ pkg_add boehm-gc # optional
+```
+
+**NetBSD 9.3 and later**
+
+*Note 1:* NetBSD support is experimental and limited to only AMD64
+architecture.
+
+``` shell
+$ pkg_add clang
 $ pkg_add boehm-gc # optional
 ```
 

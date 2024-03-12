@@ -51,7 +51,7 @@ object TestMain {
      * See: https://github.com/scala-native/scala-native/issues/3630
      */
 
-    if (!LinktimeInfo.isFreeBSD && !LinktimeInfo.isOpenBSD)
+    if (!LinktimeInfo.isFreeBSD && !LinktimeInfo.isOpenBSD && !LinktimeInfo.isNetBSD)
       return
 
     System.setProperty("java.net.preferIPv4Stack", "true")

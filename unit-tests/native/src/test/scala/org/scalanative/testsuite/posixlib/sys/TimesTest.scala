@@ -8,6 +8,7 @@ import org.junit.Assume._
 import scala.scalanative.meta.LinktimeInfo.{
   is32BitPlatform,
   isFreeBSD,
+  isNetBSD,
   isWindows
 }
 
@@ -133,7 +134,7 @@ class TimesTest {
       !isWindows
     )
 
-    if (!isWindows && !isFreeBSD) {
+    if (!isWindows && !isFreeBSD && !isNetBSD) {
       /* Test the 'natural' cases where there is no FreeBSD64 overlay
        * of tms fields. Here each of those fields is a Scala Size, 64
        * or 32 bits as appropriate to the architecture.
@@ -169,8 +170,8 @@ class TimesTest {
     }
   }
 
-  @Test def freeBSD64TimesOpsShouldGetAndSetFields(): Unit = {
-    if (isFreeBSD && !is32BitPlatform) {
+  @Test def use32BitOn64BitTimesOpsShouldGetAndSetFields(): Unit = {
+    if ((isFreeBSD || isNetBSD) && !is32BitPlatform) {
       val timesBuf = stackalloc[tms]()
 
       val expectedUTime = 222L.toSize

@@ -12,7 +12,7 @@
 // 2023-01-03 FIXME -- need to fuss with timesOps in times.scala
 // 2023-01-03 FIXME -- need to explain here the useful lie.
 
-#if !defined(__FreeBSD__)
+#if !defined(__FreeBSD__) && !defined(__NetBSD__)
 // C long will mirror machine architecture: 64 bits or 32 bit.
 typedef long scalanative_clock_t;
 #else // __FreeBSD
@@ -26,10 +26,10 @@ typedef long scalanative_clock_t;
  */
 #import <sys/types.h>
 typedef __int32_t scalanative_clock_t;
-#endif // __FreeBSD__
+#endif // __FreeBSD__ || __NetBSD__
 
 struct scalanative_tms {
-    scalanative_clock_t tms_utime;  //  User CPU time
+    scalanative_clock_t tms_utime;  // User CPU time
     scalanative_clock_t tms_stime;  // System CPU time
     scalanative_clock_t tms_cutime; // User CPU time terminated children
     scalanative_clock_t tms_cstime; // System CPU time of terminated children

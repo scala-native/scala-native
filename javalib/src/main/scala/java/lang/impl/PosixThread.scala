@@ -268,12 +268,20 @@ private[java] class PosixThread(val thread: Thread, stackSize: Long)
       threadPriority: Int,
       schedulerPolicy: CInt
   ): Int = {
+
+    // min and max priority usually defines behavior for SCHED_FIFO or
+    // SCHED_RR. Other policies may ignore priority or require a special
+    // value such as 0 or some constant. Such a constant may be outside
+    // the valid range for priority. For example, NetBSD uses -1 for
+    // NONE priority, and the same -1 is returned on error. However, in
+    // the case of an error, these functions should also change errno.
+    // So, use modified errno as a flag.
+
+    errno = 0
     val minPriority = sched_get_priority_min(schedulerPolicy)
     val maxPriority = sched_get_priority_max(schedulerPolicy)
-    assert(
-      minPriority >= 0 && maxPriority >= 0,
-      "Failed to resolve priority range"
-    )
+    assert(errno == 0, "Failed to resolve priority range")
+
     val priorityRange = maxPriority - minPriority
     val javaPriorityRange = Thread.MAX_PRIORITY - Thread.MIN_PRIORITY
     val priority =

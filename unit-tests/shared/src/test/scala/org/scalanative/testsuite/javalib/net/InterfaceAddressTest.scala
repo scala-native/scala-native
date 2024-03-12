@@ -33,22 +33,25 @@ class InterfaceAddressTest {
     else "lo0"
 
   val loopbackIfIndex =
-    if (Platform.isFreeBSD) 2
+    if (Platform.isFreeBSD || Platform.isNetBSD) 2
     else if (Platform.isOpenBSD) 3
     else 1
 
   val osIPv6PrefixLength =
-    if ((Platform.isMacOs) || (Platform.isFreeBSD) || (Platform.isOpenBSD)) 64
+    if ((Platform.isMacOs) || (Platform.isFreeBSD) || (Platform.isOpenBSD) || (Platform.isNetBSD))
+      64
     else 128
 
   val osIPv6LoopbackSuffix =
     if (Platform.isOpenBSD)
       s":3:0:0:0:0:0:1%${loopbackIfName}"
+    else if (Platform.isNetBSD)
+      s":2:0:0:0:0:0:1%${loopbackIfName}"
     else
       s":0:0:0:0:0:0:1%${loopbackIfName}"
 
   val osIPv6LoopbackAddress =
-    if ((Platform.isMacOs) || (Platform.isFreeBSD) || (Platform.isOpenBSD))
+    if ((Platform.isMacOs) || (Platform.isFreeBSD) || (Platform.isOpenBSD) || (Platform.isNetBSD))
       s"fe80${osIPv6LoopbackSuffix}"
     else
       s"0${osIPv6LoopbackSuffix}"

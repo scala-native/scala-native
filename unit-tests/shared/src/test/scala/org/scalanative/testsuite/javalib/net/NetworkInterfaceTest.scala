@@ -36,18 +36,20 @@ class NetworkInterfaceTest {
     else "lo0"
 
   val loopbackIfIndex =
-    if (Platform.isFreeBSD) 2
+    if (Platform.isFreeBSD || Platform.isNetBSD) 2
     else if (Platform.isOpenBSD) 3
     else 1
 
   val osIPv6LoopbackSuffix =
     if (Platform.isOpenBSD)
       s":3:0:0:0:0:0:1%${loopbackIfName}"
+    else if (Platform.isNetBSD)
+      s":2:0:0:0:0:0:1%${loopbackIfName}"
     else
       s":0:0:0:0:0:0:1%${loopbackIfName}"
 
   val osIPv6LoopbackAddress =
-    if ((Platform.isMacOs) || (Platform.isFreeBSD) || (Platform.isOpenBSD))
+    if ((Platform.isMacOs) || (Platform.isFreeBSD) || (Platform.isOpenBSD) || (Platform.isNetBSD))
       s"fe80${osIPv6LoopbackSuffix}"
     else
       s"0${osIPv6LoopbackSuffix}"
@@ -74,6 +76,7 @@ class NetworkInterfaceTest {
     val sought =
       if (Platform.isFreeBSD) "em0"
       else if (Platform.isOpenBSD) "iwx0"
+      else if (Platform.isNetBSD) "wm0"
       else loopbackIfName
     val ifName = netIf.getName()
     assertEquals("a2", sought, ifName)
@@ -210,7 +213,7 @@ class NetworkInterfaceTest {
     assertNotNull(lbIf)
 
     val expected =
-      if ((Platform.isMacOs) || (Platform.isFreeBSD) || (Platform.isOpenBSD))
+      if ((Platform.isMacOs) || (Platform.isFreeBSD) || (Platform.isOpenBSD) || (Platform.isNetBSD))
         true
       else false // Linux
 

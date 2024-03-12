@@ -1,7 +1,12 @@
 #ifdef _WIN32
 // NO Windows support
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__NetBSD__)
 // Does not exist on Linux, so no check
+// Does exist on NetBSD but it has defines:
+//   #define sdl_type        sdl_addr.dl_type
+//   #define sdl_nlen        sdl_addr.dl_nlen
+//   ...
+// what requires to rewrite whole file from scratch
 #else // macOS, FreeBSD, etc.
 
 #if defined(__FreeBSD__) || defined(__OpenBSD__)

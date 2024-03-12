@@ -30,6 +30,7 @@ object Platform {
   private val osNameProp = System.getProperty("os.name")
   final val isFreeBSD = osNameProp.equals("FreeBSD")
   final val isOpenBSD = osNameProp.equals("OpenBSD")
+  final val isNetBSD = osNameProp.equals("NetBSD")
   final val isLinux = osNameProp.toLowerCase.contains("linux")
   final val isMacOs = osNameProp.toLowerCase.contains("mac")
   final val isWindows = osNameProp.toLowerCase.startsWith("windows")

@@ -28,6 +28,14 @@ int scalanative_platform_is_openbsd() {
 #endif
 }
 
+int scalanative_platform_is_netbsd() {
+#if defined(__NetBSD__)
+    return 1;
+#else
+    return 0;
+#endif
+}
+
 int scalanative_platform_is_linux() {
 #ifdef __linux__
     return 1;

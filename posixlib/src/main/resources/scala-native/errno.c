@@ -152,7 +152,13 @@ int scalanative_enotdir() { return ENOTDIR; }
 
 int scalanative_enotempty() { return ENOTEMPTY; }
 
-int scalanative_enotrecoverable() { return ENOTRECOVERABLE; }
+int scalanative_enotrecoverable() {
+#ifdef ENOTRECOVERABLE
+    return ENOTRECOVERABLE;
+#else
+    return 0;
+#endif
+}
 
 int scalanative_enotsock() { return ENOTSOCK; }
 
@@ -166,7 +172,13 @@ int scalanative_eopnotsupp() { return EOPNOTSUPP; }
 
 int scalanative_eoverflow() { return EOVERFLOW; }
 
-int scalanative_eownerdead() { return EOWNERDEAD; }
+int scalanative_eownerdead() {
+#ifdef EOWNERDEAD
+    return EOWNERDEAD;
+#else
+    return 0;
+#endif
+}
 
 int scalanative_eperm() { return EPERM; }
 

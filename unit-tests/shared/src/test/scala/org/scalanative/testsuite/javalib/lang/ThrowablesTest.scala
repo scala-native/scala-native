@@ -373,7 +373,7 @@ class ThrowablesTest {
   }
 
   @Test def setStackTraceStackTraceWriteToReturnedStack(): Unit = {
-    assumeNotASAN()
+    assumeSupportsStackTraces()
     val throwable = new Throwable()
     val trace1 = throwable.getStackTrace()
 

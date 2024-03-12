@@ -51,7 +51,8 @@ _Static_assert(offsetof(struct scalanative_addrinfo, ai_addrlen) ==
                    offsetof(struct addrinfo, ai_addrlen),
                "Unexpected offset: scalanative_addrinfo.ai_addrlen");
 
-#if !(defined(__APPLE__) || defined(__FreeBSD__) || defined(_WIN32))
+#if !(defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__) ||     \
+      defined(_WIN32))
 // Linux, etc.
 
 _Static_assert(offsetof(struct scalanative_addrinfo, ai_addr) ==
@@ -70,7 +71,8 @@ _Static_assert(offsetof(struct scalanative_addrinfo, ai_canonname) ==
                    offsetof(struct addrinfo, ai_addr),
                "Unexpected offset: BSD addrinfo ai_canonname fixup");
 
-#endif // (defined(__APPLE__) || defined(__FreeBSD__) || defined(_WIN32))
+#endif // (defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__) ||
+       // defined(_WIN32))
 
 _Static_assert(offsetof(struct scalanative_addrinfo, ai_next) ==
                    offsetof(struct addrinfo, ai_next),

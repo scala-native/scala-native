@@ -192,7 +192,8 @@ private[scalanative] object LLVM {
       // * Dbghelp for windows implementation of unwind libunwind API
       val platformsLinks =
         if (config.targetsWindows) Seq("Dbghelp")
-        else if (config.targetsOpenBSD) Seq("pthread")
+        else if (config.targetsOpenBSD || config.targetsNetBSD)
+          Seq("pthread")
         else Seq("pthread", "dl")
       platformsLinks ++ srclinks ++ gclinks
     }.distinct

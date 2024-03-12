@@ -84,7 +84,8 @@ class StatTest {
       )
 
       val expectedRdev =
-        if (!LinktimeInfo.isFreeBSD) 0.toUSize // Linux, macOS
+        if (!LinktimeInfo.isFreeBSD && !LinktimeInfo.isNetBSD)
+          0.toUSize // Linux, macOS
         else ULong.MaxValue.toUSize
 
       assertEquals(
