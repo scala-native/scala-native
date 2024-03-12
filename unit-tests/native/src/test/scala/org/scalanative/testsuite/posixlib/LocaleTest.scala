@@ -107,7 +107,7 @@ class LocaleTest {
        * bug ever gets fixed.
        */
 
-      if (!LinktimeInfo.isFreeBSD) {
+      if (!LinktimeInfo.isFreeBSD && !LinktimeInfo.isNetBSD) {
         // Expect three byte-integers 3, 3, 0  meaning infinite group-by-three
         assertEquals(
           "US grouping",
@@ -142,7 +142,7 @@ class LocaleTest {
 
       // See "skip "FreeBSD"" comment before US grouping check above.
 
-      if (!LinktimeInfo.isFreeBSD) {
+      if (!LinktimeInfo.isFreeBSD && !LinktimeInfo.isNetBSD) {
         // Expect three byte-integers 3, 3, 0, meaning infinite group-by-3
         assertEquals(
           "US mon_grouping",

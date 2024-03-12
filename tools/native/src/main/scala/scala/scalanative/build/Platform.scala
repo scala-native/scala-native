@@ -49,6 +49,13 @@ private[scala] object Platform {
    */
   lazy val isOpenBSD: Boolean = LinktimeInfo.isOpenBSD
 
+  /** Test for the platform type
+   *
+   *  @return
+   *    true if `NetBSD`, false otherwise
+   */
+  lazy val isNetBSD: Boolean = LinktimeInfo.isNetBSD
+
   /** Test for the target type
    *
    *  @return

@@ -37,7 +37,7 @@ long long scalanative_nano_time() {
 #else
 #if defined(__FreeBSD__)
     int clock = CLOCK_MONOTONIC_PRECISE; // OS has no CLOCK_MONOTONIC_RAW
-#elif defined(__OpenBSD__)
+#elif defined(__OpenBSD__) || defined(__NetBSD__)
     int clock = CLOCK_MONOTONIC; // OpenBSD has only CLOCK_MONOTONIC
 #else  // Linux, macOS
     int clock = CLOCK_MONOTONIC_RAW;

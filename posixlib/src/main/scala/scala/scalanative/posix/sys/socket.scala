@@ -396,7 +396,7 @@ object socketOps {
   // Also used by posixlib netinet/in.scala
   @resolvedAtLinktime
   def useSinXLen = !isLinux &&
-    (isMac || isFreeBSD || isOpenBSD)
+    (isMac || isFreeBSD || isOpenBSD || isNetBSD)
 
   implicit class sockaddrOps(val ptr: Ptr[sockaddr]) extends AnyVal {
     def sa_len: uint8_t = if (!useSinXLen) {

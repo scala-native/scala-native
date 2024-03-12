@@ -135,11 +135,12 @@ void scalanative_process_monitor_init() {
     // on M1 chips) leading to deadlocks
     char semaphoreName[SEM_MAX_LENGTH];
 
-#if defined(__FreeBSD__)
-#define SEM_NAME_PREFIX "/" // FreeBSD semaphore names must start with '/'
+#if defined(__FreeBSD__) || defined(__NetBSD__)
+#define SEM_NAME_PREFIX                                                        \
+    "/" // FreeBSD and NetBSD semaphore names must start with '/'
 #else
 #define SEM_NAME_PREFIX ""
-#endif // __FreeBSD__
+#endif // __FreeBSD__ || __NetBSD__
 
     snprintf(semaphoreName, SEM_MAX_LENGTH,
              SEM_NAME_PREFIX "__sn_%d-process-monitor", getpid());

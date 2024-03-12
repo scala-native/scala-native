@@ -9,7 +9,8 @@ import scala.scalanative.meta.LinktimeInfo.{
   isLinux,
   isMac,
   isWindows,
-  isOpenBSD
+  isOpenBSD,
+  isNetBSD
 }
 
 import scala.scalanative.unsafe._
@@ -106,7 +107,13 @@ class LanginfoTest {
     if (!isWindows) {
       val osSharedItems = Array(
         LanginfoItem("CODESET", CODESET, "UTF-8"),
-        LanginfoItem("D_FMT", D_FMT, if (isOpenBSD) "%m/%d/%y" else "%m/%d/%Y"),
+        LanginfoItem(
+          "D_FMT",
+          D_FMT,
+          if (isOpenBSD) "%m/%d/%y"
+          else if (isNetBSD) "%m/%e/%y"
+          else "%m/%d/%Y"
+        ),
         LanginfoItem("T_FMT_AMPM", T_FMT_AMPM, "%I:%M:%S %p"),
         LanginfoItem("AM_STR", AM_STR, "AM"),
         LanginfoItem("PM_STR", PM_STR, "PM"),
@@ -160,7 +167,11 @@ class LanginfoTest {
           LanginfoItem("ERA_D_FMT", ERA_D_FMT, ""),
           LanginfoItem("ERA_D_T_FMT", ERA_D_T_FMT, ""),
           LanginfoItem("ERA_T_FMT", ERA_T_FMT, ""),
-          LanginfoItem("THOUSEP", THOUSEP, ","), // linux
+          LanginfoItem("THOUSEP", THOUSEP, ",") // linux
+        ).foreach(verify(_))
+
+      if (!isWindows && !isOpenBSD && !isNetBSD)
+        Array(
           LanginfoItem("CRNCYSTR", CRNCYSTR, "-$")
         ).foreach(verify(_))
 

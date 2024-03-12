@@ -28,6 +28,11 @@ object AssumesHelper {
     )
 
   def assumeSupportsStackTraces() = {
+    Assume.assumeFalse(
+      "NetBSD doesn't work well with unwind, disable stacktrace tests",
+      Platform.isNetBSD
+    )
+
     // On Windows linking with LTO Full does not provide debug symbols, even
     // if flag -g is used. Becouse of that limitation StackTraces do not work.
     // If env variable exists and is set to true don't run tests in this file

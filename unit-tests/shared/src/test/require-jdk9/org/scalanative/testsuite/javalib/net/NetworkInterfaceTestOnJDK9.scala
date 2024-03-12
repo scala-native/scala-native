@@ -21,12 +21,16 @@ class NetworkInterfaceTestOnJDK9 {
   val osIPv6LoopbackSuffix =
     if (Platform.isOpenBSD && Platform.executingInScalaNative)
       s":3:0:0:0:0:0:1%${localhostIf}"
+    else if (Platform.isNetBSD && Platform.executingInScalaNative)
+      s":2:0:0:0:0:0:1%${localhostIf}"
     else
       s":0:0:0:0:0:0:1%${localhostIf}"
 
   val osIPv6LoopbackAddress =
     if (Platform.isMacOs) s"fe80${osIPv6LoopbackSuffix}"
     else if (Platform.isOpenBSD && Platform.executingInScalaNative)
+      s"fe80${osIPv6LoopbackSuffix}"
+    else if (Platform.isNetBSD && Platform.executingInScalaNative)
       s"fe80${osIPv6LoopbackSuffix}"
     else s"0${osIPv6LoopbackSuffix}"
 
@@ -66,7 +70,7 @@ class NetworkInterfaceTestOnJDK9 {
      * break this test. Thus, OpenBSD has only one IPv4 address by default.
      */
     val atLeast =
-      if (Platform.isOpenBSD) 1
+      if (Platform.isOpenBSD || Platform.isNetBSD) 1
       else 2
     assertTrue(s"count ${count} not >= ${atLeast}", count >= atLeast)
   }

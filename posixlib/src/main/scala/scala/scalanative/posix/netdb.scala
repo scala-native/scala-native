@@ -151,6 +151,7 @@ object netdbOps {
   @resolvedAtLinktime
   def useBsdAddrinfo = (LinktimeInfo.isMac ||
     LinktimeInfo.isFreeBSD ||
+    LinktimeInfo.isNetBSD ||
     LinktimeInfo.isWindows)
 
   implicit class addrinfoOps(private val ptr: Ptr[addrinfo]) extends AnyVal {

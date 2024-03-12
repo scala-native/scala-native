@@ -5,7 +5,7 @@ import org.junit.Assert._
 import org.junit.Assume._
 import org.junit.{BeforeClass, AfterClass}
 
-import scala.scalanative.meta.LinktimeInfo.isWindows
+import scala.scalanative.meta.LinktimeInfo.{isWindows, isNetBSD}
 
 import java.nio.file.{Path, Paths}
 import java.nio.file.Files
@@ -101,7 +101,12 @@ class GlobTest {
       !isWindows
     )
 
-    if (!isWindows) Zone.acquire { implicit z =>
+    assumeTrue(
+      "glob seems doesn't work on NetBSD",
+      !isNetBSD
+    )
+
+    if (!isWindows && !isNetBSD) Zone.acquire { implicit z =>
       val globP = stackalloc[glob_t]()
 
       val wdAbsP = workDir.toAbsolutePath()
