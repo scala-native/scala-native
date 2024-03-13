@@ -616,7 +616,7 @@ private[codegen] object Generate {
   }
 
   private object Impl {
-    val rttiModule = nir.Global.Top("java.lang.rtti$")
+    val rttiModule = nir.Global.Top("scala.scalanative.runtime.rtti$")
 
     val ObjectArray = nir.Type.Ref(nir.Global.Top("scala.scalanative.runtime.ObjectArray"))
 
