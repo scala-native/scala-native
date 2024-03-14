@@ -119,6 +119,11 @@ package object runtime {
    */
   @noinline def loop(): Unit = ExecutionContext.loop()
 
+  /** Run the runtime's event loop once and return true when internal queue has
+   *  more Runnable to run.
+   */
+  @noinline def loopRunOnce(): Boolean = ExecutionContext.loopRunOnce()
+
   /** Called by the generated code in case of division by zero. */
   @noinline
   private[scalanative] def throwDivisionByZero(): Nothing =
