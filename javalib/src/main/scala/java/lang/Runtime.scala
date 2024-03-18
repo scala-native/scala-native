@@ -54,7 +54,7 @@ class Runtime private () {
       .asInstanceOf[Array[Thread]]
       .sorted(Ordering.by[Thread, Int](-_.getPriority()))
     hooks.foreach { t =>
-      t.setUncaughtExceptionHandler(ShutdownHookUncoughExceptionHandler)
+      t.setUncaughtExceptionHandler(ShutdownHookUncaughtExceptionHandler)
     }
     // JDK specifies that hooks might run in any order.
     // However, for Scala Native it might be beneficial to support partial ordering
@@ -83,7 +83,7 @@ class Runtime private () {
         try t.run()
         catch {
           case ex: Throwable =>
-            ShutdownHookUncoughExceptionHandler.uncaughtException(t, ex)
+            ShutdownHookUncaughtExceptionHandler.uncaughtException(t, ex)
         }
       }
   }
@@ -123,7 +123,7 @@ class Runtime private () {
     exec(Array(cmd), envp, dir)
 }
 
-private object ShutdownHookUncoughExceptionHandler
+private object ShutdownHookUncaughtExceptionHandler
     extends Thread.UncaughtExceptionHandler {
   def uncaughtException(t: Thread, e: Throwable): Unit = {
     System.err.println(s"Shutdown hook $t failed, reason: $e")
