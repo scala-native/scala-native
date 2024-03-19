@@ -20,6 +20,9 @@ class Runtime private () {
     stdlib.atexit(() => Runtime.getRuntime().runHooks())
   }
 
+  // https://docs.oracle.com/en/java/javase/21/docs/specs/man/java.html
+  // Currently, we use C lib signals so SIGHUP is not covered for POSIX platforms.
+
   lazy val setupSignalHandler = {
     signal.signal(signal.SIGINT, handleSignal(_))
     signal.signal(signal.SIGTERM, handleSignal(_))
