@@ -1,3 +1,4 @@
+#if defined(__SCALANATIVE_DELIMCC)
 #if defined(__x86_64__) && (defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__))
 
 /* ----------------------------------------------------------------------------
@@ -121,4 +122,5 @@ __lh_get_sp:
 
 .section .note.GNU-stack,"",%progbits
 
+#endif
 #endif

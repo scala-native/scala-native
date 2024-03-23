@@ -1,3 +1,4 @@
+#if defined(__SCALANATIVE_MEMORY_SAFEZONE)
 #include <stdio.h>
 #include <stdlib.h>
 #include <memory.h>
@@ -85,3 +86,4 @@ void MemoryPool_close(MemoryPool *pool) {
     // Free the pool.
     free(pool);
 }
+#endif

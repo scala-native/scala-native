@@ -4,6 +4,7 @@ import scala.scalanative.unsafe._
 import scala.scalanative.unsafe.Nat._
 
 @extern
+@define("__SCALANATIVE_POSIX_SYS_UTSNAME")
 object utsname {
   /* Design notes:
    * 1) The 256 "magic"" number appears to be the macOS macro _SYS_NAMELEN.

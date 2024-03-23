@@ -1,67 +1,8 @@
+#if defined(__SCALANATIVE_POSIX_LANGINFO)
 #if defined(__unix__) || defined(__unix) || defined(unix) ||                   \
     (defined(__APPLE__) && defined(__MACH__))
 
 #include <langinfo.h>
-
-#endif // Unix or Mac OS
-
-#if defined(_WIN32) // bogus values to keep compiler happy
-#define CODESET -1
-#define D_T_FMT -1
-#define D_FMT -1
-#define T_FMT -1
-#define T_FMT_AMPM -1
-#define AM_STR -1
-#define PM_STR -1
-#define DAY_1 -1
-#define DAY_2 -1
-#define DAY_3 -1
-#define DAY_4 -1
-#define DAY_5 -1
-#define DAY_6 -1
-#define DAY_7 -1
-#define ABDAY_1 -1
-#define ABDAY_2 -1
-#define ABDAY_3 -1
-#define ABDAY_4 -1
-#define ABDAY_5 -1
-#define ABDAY_6 -1
-#define ABDAY_7 -1
-#define MON_1 -1
-#define MON_2 -1
-#define MON_3 -1
-#define MON_4 -1
-#define MON_5 -1
-#define MON_6 -1
-#define MON_7 -1
-#define MON_8 -1
-#define MON_9 -1
-#define MON_10 -1
-#define MON_11 -1
-#define MON_12 -1
-#define ABMON_1 -1
-#define ABMON_2 -1
-#define ABMON_3 -1
-#define ABMON_4 -1
-#define ABMON_5 -1
-#define ABMON_6 -1
-#define ABMON_7 -1
-#define ABMON_8 -1
-#define ABMON_9 -1
-#define ABMON_10 -1
-#define ABMON_11 -1
-#define ABMON_12 -1
-#define ERA -1
-#define ERA_D_FMT -1
-#define ERA_D_T_FMT -1
-#define ERA_T_FMT -1
-#define ALT_DIGITS -1
-#define RADIXCHAR -1
-#define THOUSEP -1
-#define YESEXPR -1
-#define NOEXPR -1
-#define CRNCYSTR -1
-#endif // _WIN32
 
 #if defined(__OpenBSD__)
 #define ERA -1
@@ -180,3 +121,6 @@ int scalanative_yesexpr() { return YESEXPR; };
 int scalanative_noexpr() { return NOEXPR; };
 
 int scalanative_crncystr() { return CRNCYSTR; };
+
+#endif // Unix or Mac OS
+#endif

@@ -1,6 +1,5 @@
-#ifdef _WIN32
-// No Windows support
-#else
+
+#if !defined(_WIN32) && defined(__SCALANATIVE_POSIX_SYS_TIMES)
 #if !(defined __STDC_VERSION__) || (__STDC_VERSION__ < 201112L)
 #ifndef SCALANATIVE_SUPPRESS_STRUCT_CHECK_WARNING
 #warning "Size and order of C structures are not checked when -std < c11."

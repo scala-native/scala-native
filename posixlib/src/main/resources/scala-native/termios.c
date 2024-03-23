@@ -1,3 +1,4 @@
+#if defined(__SCALANATIVE_POSIX_TERMIOS)
 #if defined(__unix__) || defined(__unix) || defined(unix) ||                   \
     (defined(__APPLE__) && defined(__MACH__))
 #include <termios.h>
@@ -196,3 +197,4 @@ int scalanative_termios_tcooff() { return TCOOFF; }
 int scalanative_termios_tcoon() { return TCOON; }
 
 #endif // Unix or Mac OS
+#endif

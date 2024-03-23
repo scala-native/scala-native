@@ -7,7 +7,8 @@ import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.unsafe.{stackalloc => _, _}
 import scala.scalanative.runtime.Intrinsics._
 import scala.scalanative.runtime.ffi._
-import scala.scalanative.runtime.ffi.memory_order._
+import scala.scalanative.runtime.ffi.stdatomic._
+import scala.scalanative.runtime.ffi.stdatomic.memory_order._
 import scala.scalanative.meta.LinktimeInfo.{is32BitPlatform => is32bit}
 
 /** Lightweight monitor used for single-threaded execution, upon detection of

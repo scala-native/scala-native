@@ -1,3 +1,4 @@
+#if defined(__SCALANATIVE_POSIX_SYS_UTSNAME)
 #if defined(__unix__) || defined(__unix) || defined(unix) ||                   \
     (defined(__APPLE__) && defined(__MACH__))
 #include <sys/utsname.h>
@@ -56,3 +57,4 @@ int scalanative_uname(struct scalanative_utsname *scalanative_utsname) {
 #undef SIZEOF_FIELD
 
 #endif // Unix or Mac OS
+#endif

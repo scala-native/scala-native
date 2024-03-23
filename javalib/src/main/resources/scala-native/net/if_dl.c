@@ -1,3 +1,4 @@
+#if defined(__SCALANATIVE_JAVALIB_NET_IF_DL)
 #ifdef _WIN32
 // NO Windows support
 #elif defined(__linux__) || defined(__NetBSD__)
@@ -92,3 +93,4 @@ _Static_assert(offsetof(struct scalanative_sockaddr_dl, sdl_data) ==
                "Unexpected offset: ifaddrs sdl_data");
 #endif
 #endif // not _WIN32
+#endif // __SCALANATIVE_JAVALIB_NET_IF_DL

@@ -1,3 +1,4 @@
+#if defined(__SCALANATIVE_POSIX_SYS_SELECT)
 #include <stdbool.h>
 #include <errno.h>
 #include <stddef.h>
@@ -86,3 +87,4 @@ int scalanative_select(int nfds, struct scalanative_fd_set *readfds,
 
     return status;
 }
+#endif

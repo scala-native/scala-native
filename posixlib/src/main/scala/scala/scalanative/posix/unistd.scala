@@ -9,6 +9,7 @@ import scalanative.posix.sys.types
  *    [[https://scala-native.readthedocs.io/en/latest/lib/posixlib.html]]
  */
 @extern
+@define("__SCALANATIVE_POSIX_UNISTD")
 object unistd {
 
   type gid_t = types.gid_t

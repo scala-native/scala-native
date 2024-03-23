@@ -1,3 +1,4 @@
+#if defined(__SCALANATIVE_POSIX_DLFCN)
 #if defined(__unix__) || defined(__unix) || defined(unix) ||                   \
     (defined(__APPLE__) && defined(__MACH__))
 
@@ -12,3 +13,4 @@ int scalanative_rtld_global() { return RTLD_GLOBAL; };
 int scalanative_rtld_local() { return RTLD_LOCAL; };
 
 #endif // Unix or Mac OS
+#endif

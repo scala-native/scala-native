@@ -7,7 +7,9 @@ import scala.scalanative.unsigned._
 import scala.language.implicitConversions
 
 
-@extern object stdatomic extends stdatomicExt {
+@extern
+@define("__SCALANATIVE_C_STDATOMIC")
+object stdatomic extends stdatomicExt {
 
   type atomic_bool = Boolean
   type atomic_char = Byte

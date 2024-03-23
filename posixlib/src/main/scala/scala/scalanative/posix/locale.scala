@@ -12,7 +12,9 @@ import scala.scalanative.unsafe._
  *  described by POSIX as being a CX extension.
  */
 
-@extern object locale extends libc.locale {
+@extern
+@define("__SCALANATIVE_POSIX_LOCALE")
+object locale extends libc.locale {
 
   type locale_t = CVoidPtr // CX, so can get no simpler.
 

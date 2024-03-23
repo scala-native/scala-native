@@ -11,6 +11,7 @@ import scala.scalanative.meta.LinktimeInfo
  *    [[https://scala-native.readthedocs.io/en/latest/lib/posixlib.html]]
  */
 @extern
+@define("__SCALANATIVE_POSIX_NETDB")
 object netdb {
   /* This is the Linux layout. FreeBSD, macOS, and Windows have the same
    * size but swap ai_addr and ai_canonname. FreeBSD & Windows document this.

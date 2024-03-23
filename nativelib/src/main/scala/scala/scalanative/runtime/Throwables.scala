@@ -1,6 +1,8 @@
 package scala.scalanative
 package runtime
 
+import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
+
 /** An exception that is thrown whenever an undefined behavior happens in a
  *  checked mode.
  */
@@ -16,9 +18,12 @@ import scala.scalanative.meta.LinktimeInfo
 import scala.scalanative.runtime.ffi.{malloc, calloc, free}
 
 import java.util.concurrent.ConcurrentHashMap
+import java.{util => ju}
 
 object StackTrace {
-  private val cache = new ConcurrentHashMap[CUnsignedLong, StackTraceElement]
+  private val cache: ju.AbstractMap[CUnsignedLong, StackTraceElement] =
+    if (isMultithreadingEnabled) new ConcurrentHashMap
+    else new ju.HashMap
 
   @noinline def currentStackTrace(): scala.Array[StackTraceElement] = {
     // Used to prevent filling stacktraces inside `currentStackTrace` which might lead to infinite loop

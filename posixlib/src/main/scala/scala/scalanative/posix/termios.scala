@@ -1,21 +1,12 @@
 package scala.scalanative
 package posix
 
-import scalanative.unsafe.{
-  CArray,
-  CChar,
-  CInt,
-  CLong,
-  CStruct7,
-  Nat,
-  Ptr,
-  extern,
-  name
-}
+import scalanative.unsafe._
 import scalanative.unsafe.Nat._
 import posix.sys.types.pid_t
 
 @extern
+@define("__SCALANATIVE_POSIX_TERMIOS")
 object termios {
 
   // types

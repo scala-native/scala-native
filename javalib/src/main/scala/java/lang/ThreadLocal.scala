@@ -22,11 +22,13 @@ import java.lang.ref.{Reference, WeakReference}
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.function.Supplier
 import java.util.Objects
+import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
 
 object ThreadLocal {
 
   /** Hash counter. */
-  private val hashCounter = new AtomicInteger(0)
+  private lazy val hashCounterAtomic = new AtomicInteger(0)
+  private var hashCounter = 0
 
   def withInitial[T <: AnyRef](supplier: Supplier[_ <: T]): ThreadLocal[T] =
     new SuppliedThreadLocal(supplier)
@@ -429,5 +431,10 @@ class ThreadLocal[T <: AnyRef]() {
    *  We increment by Doug Lea's Magic Number(TM) (*2 since keys are in every
    *  other bucket) to help prevent clustering.
    */
-  final private val hash = ThreadLocal.hashCounter.getAndAdd(0x61c88647 << 1)
+  final private val hash =
+    if (isMultithreadingEnabled)
+      ThreadLocal.hashCounterAtomic.getAndAdd(0x61c88647 << 1)
+    else
+      try ThreadLocal.hashCounter
+      finally ThreadLocal.hashCounter += 0x61c88647 << 1
 }

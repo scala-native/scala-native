@@ -1,3 +1,4 @@
+#if defined(__SCALANATIVE_POSIX_PTHREAD)
 #if defined(__unix__) || defined(__unix) || defined(unix) ||                   \
     (defined(__APPLE__) && defined(__MACH__))
 #include <pthread.h>
@@ -71,3 +72,4 @@ size_t scalanative_pthread_mutexattr_t_size() {
 }
 
 #endif // Unix or Mac OS
+#endif

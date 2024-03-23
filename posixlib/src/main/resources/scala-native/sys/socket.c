@@ -1,3 +1,4 @@
+#if defined(__SCALANATIVE_POSIX_SYS_SOCKET)
 #include <string.h>
 #include <stddef.h>
 #include <stdlib.h>
@@ -426,3 +427,4 @@ int scalanative_socketpair(int domain, int type, int protocol, int *sv) {
     return socketpair(domain, type, protocol, sv);
 #endif
 }
+#endif

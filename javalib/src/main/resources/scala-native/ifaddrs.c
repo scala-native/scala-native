@@ -1,3 +1,4 @@
+#if defined(__SCALANATIVE_JAVALIB_IFADDRS)
 #if defined(_WIN32)
 // No Windows support. These are dummies for linking.
 int getifaddrs(void *dummy) { return -1; };
@@ -85,3 +86,4 @@ _Static_assert(offsetof(struct scalanative_ifaddrs, ifa_data) ==
 
 #endif
 #endif // not _WIN32
+#endif // defined(__SCALANATIVE_JAVALIB_IFADDRS)

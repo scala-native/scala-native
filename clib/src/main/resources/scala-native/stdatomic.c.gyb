@@ -1,5 +1,5 @@
 // clang-format off
-
+#if defined(__SCALANATIVE_C_STDATOMIC)
 #include <stdatomic.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -47,3 +47,4 @@ ${T} scalanative_atomic_fetch_${op}_${N}(_Atomic(${T})* atm, ${T} val) { return 
 ${T} scalanative_atomic_fetch_${op}_explicit_${N}(_Atomic(${T})* atm, ${T} val, memory_order memoryOrder) { return atomic_fetch_${op}_explicit(atm, val, memoryOrder);}
 % end
 % end
+#endif // defined(__SCALANATIVE_C_STDATOMIC)

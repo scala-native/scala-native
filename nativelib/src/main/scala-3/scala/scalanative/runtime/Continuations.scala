@@ -142,7 +142,7 @@ object Continuations:
   ): Ptr[?] = continuation.alloc(size)
 
   /** Continuations implementation imported from C (see `delimcc.h`) */
-  @extern private object Impl:
+  @extern @define("__SCALANATIVE_DELIMCC") private object Impl:
     private type ContinuationLabel = CUnsignedLong
     type BoundaryLabel = ContinuationLabel
 

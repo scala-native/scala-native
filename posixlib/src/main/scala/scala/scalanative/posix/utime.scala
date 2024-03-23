@@ -10,6 +10,5 @@ object utime {
     time.time_t // modtime
   ]
 
-  @name("scalanative_utime")
   def utime(path: CString, times: Ptr[utimbuf]): CInt = extern
 }

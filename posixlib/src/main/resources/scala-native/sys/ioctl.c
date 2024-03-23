@@ -1,3 +1,4 @@
+#if defined(__SCALANATIVE_POSIX_SYS_IOCTL)
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <winsock2.h>
@@ -15,3 +16,4 @@ int scalanative_ioctl(int fd, long int request, void *argp) {
 }
 
 long int scalanative_fionread() { return FIONREAD; }
+#endif

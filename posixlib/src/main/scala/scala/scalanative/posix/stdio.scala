@@ -28,6 +28,7 @@ import scalanative.posix.sys.types, types.{off_t, size_t}
    * files.
    */
   @name("scalanative_l_ctermid")
+  @define("__SCALANATIVE_POSIX_STDIO")
   def L_ctermid: CUnsignedInt = extern
 
 // Methods

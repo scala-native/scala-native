@@ -726,7 +726,11 @@ trait NirGenExpr(using Context) {
     }
 
     def genModule(sym: Symbol)(using nir.SourcePosition): nir.Val = {
-      val moduleSym = if (sym.isTerm) sym.moduleClass else sym
+      val moduleSym = if (sym.isTerm) sym.moduleClass match {
+        case NoSymbol  => sym.info.typeSymbol
+        case moduleCls => moduleCls
+      }
+      else sym
       val name = genModuleName(moduleSym)
       buf.module(name, unwind)
     }

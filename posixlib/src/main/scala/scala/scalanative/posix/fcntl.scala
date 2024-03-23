@@ -7,6 +7,7 @@ import scala.scalanative.posix.unistd.off_t
 import scala.scalanative.posix.sys.types.pid_t
 
 @extern
+@define("__SCALANATIVE_POSIX_FCNTL")
 object fcntl {
 
   def open(pathname: CString, flags: CInt): CInt = extern

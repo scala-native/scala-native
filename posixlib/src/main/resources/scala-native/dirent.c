@@ -1,3 +1,4 @@
+#if defined(__SCALANATIVE_POSIX_DIRENT)
 #if defined(__unix__) || defined(__unix) || defined(unix) ||                   \
     (defined(__APPLE__) && defined(__MACH__))
 #include <dirent.h>
@@ -58,3 +59,4 @@ int scalanative_readdir(DIR *dirp, struct scalanative_dirent *buf) {
 int scalanative_closedir(DIR *dirp) { return closedir(dirp); }
 
 #endif // Unix or Mac OS
+#endif

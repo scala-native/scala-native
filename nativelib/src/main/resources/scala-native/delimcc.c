@@ -1,3 +1,4 @@
+#if defined(__SCALANATIVE_DELIMCC)
 #include "delimcc.h"
 #include <stddef.h>
 #include <stdio.h>
@@ -397,3 +398,5 @@ void scalanative_continuation_free(Continuation *continuation) {
     free(continuation);
 }
 #endif // DELIMCC_DEBUG
+
+#endif

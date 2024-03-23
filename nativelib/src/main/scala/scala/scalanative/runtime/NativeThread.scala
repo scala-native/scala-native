@@ -5,8 +5,8 @@ import scala.scalanative.runtime.GC.{ThreadRoutineArg, ThreadStartRoutine}
 import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.unsafe._
 import scala.scalanative.meta.LinktimeInfo.{isMultithreadingEnabled, isWindows}
-import scala.scalanative.runtime.ffi.atomic_thread_fence
-import scala.scalanative.runtime.ffi.memory_order._
+import scala.scalanative.runtime.ffi.stdatomic.atomic_thread_fence
+import scala.scalanative.runtime.ffi.stdatomic.memory_order._
 import scala.annotation.nowarn
 
 import java.util.concurrent.ConcurrentHashMap

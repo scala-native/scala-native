@@ -10,7 +10,9 @@ import scala.scalanative.unsafe._
  */
 
 @link("dl")
-@extern object dlfcn {
+@extern
+@define("__SCALANATIVE_POSIX_DLFCN")
+object dlfcn {
 
 // Symbolic constants
 

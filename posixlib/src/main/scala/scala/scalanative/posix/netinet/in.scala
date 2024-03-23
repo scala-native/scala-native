@@ -9,6 +9,7 @@ import scalanative.posix.sys.socket
 import scalanative.posix.sys.socketOps
 
 @extern
+@define("__SCALANATIVE_POSIX_NETINET_IN")
 object in {
   type _8 = Nat._8
   type _16 = Nat.Digit2[Nat._1, Nat._6]

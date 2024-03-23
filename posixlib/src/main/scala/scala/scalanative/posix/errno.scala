@@ -1,11 +1,13 @@
 package scala.scalanative
 package posix
 
-import scalanative.unsafe.{CInt, extern, name}
+import scalanative.unsafe._
 
 @extern object errno extends errno
 
-@extern trait errno extends libc.errno {
+@extern
+@define("__SCALANATIVE_POSIX_ERRNO")
+trait errno extends libc.errno {
 
   // Macros
 

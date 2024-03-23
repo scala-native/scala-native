@@ -10,6 +10,7 @@ import scalanative.unsafe._
  */
 
 @extern
+@define("__SCALANATIVE_POSIX_FNMATCH")
 object fnmatch {
   // Symbolic constants
 

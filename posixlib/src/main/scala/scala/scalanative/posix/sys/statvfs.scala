@@ -5,6 +5,7 @@ package sys
 import scalanative.unsafe._
 
 @extern
+@define("__SCALANATIVE_POSIX_STATVFS")
 object statvfs {
 
   type fsblkcnt_t = CUnsignedLong

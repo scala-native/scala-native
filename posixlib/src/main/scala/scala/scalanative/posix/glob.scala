@@ -14,6 +14,7 @@ import scalanative.posix.sys.types
  */
 
 @extern
+@define("__SCALANATIVE_POSIX_FNMATCH")
 object glob {
 
   type size_t = types.size_t

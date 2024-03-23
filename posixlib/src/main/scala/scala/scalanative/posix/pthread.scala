@@ -10,6 +10,7 @@ import scala.scalanative.posix.sys.types._
 // see http://pubs.opengroup.org/onlinepubs/007908799/xsh/threads.html
 
 @link("pthread")
+@define("__SCALANATIVE_POSIX_PTHREAD")
 @extern
 object pthread {
 

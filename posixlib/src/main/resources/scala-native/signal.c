@@ -1,3 +1,4 @@
+#if defined(__SCALANATIVE_POSIX_SIGNAL)
 #if defined(__unix__) || defined(__unix) || defined(unix) ||                   \
     (defined(__APPLE__) && defined(__MACH__))
 #include <signal.h>
@@ -113,3 +114,4 @@ int scalanative_si_timer() { return SI_TIMER; }
 int scalanative_si_asyncio() { return SI_ASYNCIO; }
 int scalanative_si_mesgq() { return SI_MESGQ; }
 #endif // is Unix or MacOS
+#endif

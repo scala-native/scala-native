@@ -1,3 +1,4 @@
+#if defined(__SCALANATIVE_POSIX_SCHED)
 #if defined(__unix__) || defined(__unix) || defined(unix) ||                   \
     (defined(__APPLE__) && defined(__MACH__))
 
@@ -42,3 +43,4 @@ int scalanative_sched_deadline() {
 }
 
 #endif // Unix or Mac OS
+#endif

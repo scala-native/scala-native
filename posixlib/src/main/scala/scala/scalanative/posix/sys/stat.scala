@@ -7,6 +7,7 @@ import scalanative.posix.time._
 import scalanative.posix.sys.types._
 
 @extern
+@define("__SCALANATIVE_POSIX_SYS_STAT")
 object stat {
 
   /* This file is incomplete and DOES NOT comply with POSIX 2018.

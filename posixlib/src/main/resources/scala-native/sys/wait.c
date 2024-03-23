@@ -1,4 +1,4 @@
-#if !defined(_WIN32)
+#if !defined(_WIN32) && defined(__SCALANATIVE_POSIX_SYS_WAIT)
 
 #include <stdbool.h>
 #include <sys/types.h>

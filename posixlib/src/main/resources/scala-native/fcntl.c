@@ -1,3 +1,4 @@
+#if defined(__SCALANATIVE_POSIX_FCNTL)
 #if defined(__unix__) || defined(__unix) || defined(unix) ||                   \
     (defined(__APPLE__) && defined(__MACH__))
 #include <fcntl.h>
@@ -86,3 +87,4 @@ int scalanative_open_m(const char *pathname, int flags, mode_t mode) {
 }
 
 #endif // Unix or Mac OS
+#endif

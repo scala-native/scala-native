@@ -1,3 +1,4 @@
+#if defined(__SCALANATIVE_POSIX_NETINET_IN)
 #include <stddef.h>
 #include <string.h>
 #include "in.h"
@@ -155,3 +156,4 @@ int scalanative_in6_is_addr_mc_orglocal(struct scalanative_in6_addr *arg) {
 int scalanative_in6_is_addr_mc_global(struct scalanative_in6_addr *arg) {
     return IN6_IS_ADDR_MC_GLOBAL((struct in6_addr *)arg);
 }
+#endif

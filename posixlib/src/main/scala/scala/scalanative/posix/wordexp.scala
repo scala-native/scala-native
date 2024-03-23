@@ -13,6 +13,7 @@ import scalanative.posix.sys.types.size_t
  */
 
 @extern
+@define("__SCALANATIVE_POSIX_WORDEXP")
 object wordexp {
 
   type wordexp_t = CStruct5[

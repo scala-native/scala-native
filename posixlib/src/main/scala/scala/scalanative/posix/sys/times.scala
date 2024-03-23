@@ -13,6 +13,7 @@ import scalanative.meta.LinktimeInfo.{is32BitPlatform, isFreeBSD, isNetBSD}
  */
 
 @extern
+@define("__SCALANATIVE_POSIX_SYS_TIMES")
 object times {
 
   /* The 'tms' structure below is defined in a way which allows fast

@@ -14,6 +14,7 @@ import scala.scalanative.posix.sys.types
  *  "Process Scheduling", not base POSIX.
  */
 @extern
+@define("__SCALANATIVE_POSIX_SPAWN")
 object spawn {
 
   /* posix_spawnattr_t & posix_spawn_file_actions_t are opaque bulk storage

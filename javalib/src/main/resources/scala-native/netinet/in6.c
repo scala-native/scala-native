@@ -1,3 +1,4 @@
+#if defined(__SCALANATIVE_JAVALIB_NETINET_IN6)
 #ifndef _WIN32
 #include <netinet/in.h>
 #endif
@@ -23,3 +24,4 @@ int scalanative_ipv6_tclass() {
     return IPV6_TCLASS;
 #endif
 }
+#endif

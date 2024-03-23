@@ -1,3 +1,4 @@
+#if defined(__SCALANATIVE_POSIX_NETDB)
 #ifdef _WIN32
 #include <WinSock2.h>
 #include <ws2tcpip.h> // socklen_t
@@ -197,3 +198,4 @@ int scalanative_eai_system() { return -1; }
 int scalanative_eai_overflow() { return -1; }
 
 #endif // _Win32
+#endif

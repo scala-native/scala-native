@@ -3,15 +3,18 @@ package java.lang.invoke
 import scala.scalanative.libc.stdatomic._
 import scala.scalanative.libc.stdatomic.memory_order._
 import scala.scalanative.annotation._
+import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
 
 class VarHandle {}
 
 object VarHandle {
   @alwaysinline
-  private def loadFence(): Unit = atomic_thread_fence(memory_order_acquire)
+  private def loadFence(): Unit =
+    if (isMultithreadingEnabled) atomic_thread_fence(memory_order_acquire)
 
   @alwaysinline
-  private def storeFence(): Unit = atomic_thread_fence(memory_order_release)
+  private def storeFence(): Unit =
+    if (isMultithreadingEnabled) atomic_thread_fence(memory_order_release)
 
   /** Ensures that loads before the fence will not be reordered with loads and
    *  stores after the fence.
@@ -29,7 +32,8 @@ object VarHandle {
    *  loads and stores after the fence.
    */
   @alwaysinline
-  def fullFence(): Unit = atomic_thread_fence(memory_order_seq_cst)
+  def fullFence(): Unit =
+    if (isMultithreadingEnabled) atomic_thread_fence(memory_order_seq_cst)
 
   /** Ensures that loads before the fence will not be reordered with loads after
    *  the fence.

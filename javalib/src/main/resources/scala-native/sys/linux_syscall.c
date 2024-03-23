@@ -1,4 +1,4 @@
-#if defined(__linux__)
+#if defined(__SCALANATIVE_JAVALIB_SYS_LINUX_SYSCALL) && defined(__linux__)
 
 #if __has_include(<sys/syscall.h>) // Should almost always be true
 #include <sys/syscall.h>

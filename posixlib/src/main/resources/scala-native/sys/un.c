@@ -1,7 +1,4 @@
-#ifdef _WIN32
-// Recent Windows has <afunix.h>, which uses 108 for sun_path.
-// No code here to assure that.
-#else
+#if !defined(_WIN32) && defined(__SCALANATIVE_POSIX_SYS_UN)
 #include <sys/socket.h>
 #if !(defined __STDC_VERSION__) || (__STDC_VERSION__ < 201112L)
 #ifndef SCALANATIVE_SUPPRESS_STRUCT_CHECK_WARNING
