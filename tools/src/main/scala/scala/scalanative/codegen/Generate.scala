@@ -300,7 +300,19 @@ private[codegen] object Generate {
           val arr = nir.Val.Local(fresh(), ObjectArray)
 
           def unwind = unwindProvider()
-
+          def genJoinNonDeamonThreads(): Seq[nir.Inst] =
+            if (!meta.platform.isMultithreadingEnabled) Nil
+            else
+              Seq(
+                nir.Inst.Let(
+                  nir.Op.Call(
+                    JoinNonDaemonThreadsRunSig,
+                    nir.Val.Global(JoinNonDaemonThreadsRun, nir.Type.Ptr),
+                    Seq()
+                  ),
+                  unwind
+                )
+              )
           Seq(nir.Inst.Label(fresh(), Seq(argc, argv))) ++
             genGcInit(unwindProvider) ++
             genClassInitializersCalls(unwindProvider) ++
@@ -316,7 +328,7 @@ private[codegen] object Generate {
                 unwind
               ),
               nir.Inst.Let(nir.Op.Call(RuntimeLoopSig, RuntimeLoop, Seq(rt)), unwind)
-            )
+            ) ++ genJoinNonDeamonThreads()
         }
       )
     }
@@ -661,6 +673,12 @@ private[codegen] object Generate {
       nir.Sig.Method("executeUncaughtExceptionHandler", Seq(JavaThreadUEHRef, JavaThreadRef, Throwable, nir.Type.Unit))
     )
 
+    val JoinNonDaemonThreadsModule = nir.Type.Ref(nir.Global.Top("scala.scalanative.runtime.JoinNonDaemonThreads"))
+    val JoinNonDaemonThreadsRun =
+      JoinNonDaemonThreadsModule.name
+        .member(nir.Sig.Method("run", Seq(nir.Type.Unit), nir.Sig.Scope.PublicStatic))
+    val JoinNonDaemonThreadsRunSig = nir.Type.Function(Seq(), nir.Type.Unit)
+
     val InitSig = nir.Type.Function(Seq.empty, nir.Type.Unit)
     val InitDecl = nir.Defn.Declare(nir.Attrs.None, extern("scalanative_GC_init"), InitSig)
     val Init = nir.Val.Global(InitDecl.name, nir.Type.Ptr)
@@ -682,15 +700,17 @@ private[codegen] object Generate {
       nir.Global.Member(nir.Global.Top("__"), nir.Sig.Extern(id))
   }
 
-  val depends: Seq[nir.Global] = Seq(
-    ObjectArray.name,
-    Runtime.name,
-    RuntimeInit.name,
-    RuntimeLoop.name,
-    RuntimeExecuteUEH,
-    JavaThread,
-    JavaThreadCurrentThread,
-    JavaThreadGetUEH,
-    JavaThreadUEH
-  )
+  def depends(implicit platform: PlatformInfo): Seq[nir.Global] = {
+    Seq(
+      ObjectArray.name,
+      Runtime.name,
+      RuntimeInit.name,
+      RuntimeLoop.name,
+      RuntimeExecuteUEH,
+      JavaThread,
+      JavaThreadCurrentThread,
+      JavaThreadGetUEH,
+      JavaThreadUEH
+    ) ++ { if (platform.isMultithreadingEnabled) Seq(JoinNonDaemonThreadsRun) else Nil }
+  }
 }

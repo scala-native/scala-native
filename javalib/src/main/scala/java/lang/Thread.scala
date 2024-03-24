@@ -249,7 +249,6 @@ class Thread private[lang] (
 
   def start(): Unit = synchronized {
     if (!isMultithreadingEnabled) UnsupportedFeature.threads()
-    if (!isDaemon()) JoinNonDaemonThreads.registerExitHook
     if (isVirtual())
       throw new UnsupportedOperationException(
         "VirtualThreads are not yet supported"

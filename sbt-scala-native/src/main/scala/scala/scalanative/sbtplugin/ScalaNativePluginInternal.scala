@@ -147,7 +147,21 @@ object ScalaNativePluginInternal {
       log: sbt.Logger
   )(body: ExecutionContext => Future[T]): T = {
     val executor =
-      Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors())
+      Executors.newFixedThreadPool(
+        Runtime.getRuntime().availableProcessors(),
+        (task: Runnable) => {
+          val thread = Executors.defaultThreadFactory().newThread(task)
+          val defaultExceptionHandler = thread.getUncaughtExceptionHandler()
+          thread.setUncaughtExceptionHandler {
+            (thread: Thread, ex: Throwable) =>
+              ex match {
+                case _: InterruptedException => log.trace(ex)
+                case _ => defaultExceptionHandler.uncaughtException(thread, ex)
+              }
+          }
+          thread
+        }
+      )
     val ec = ExecutionContext.fromExecutor(executor, log.trace(_))
     try Await.result(body(ec), Duration.Inf)
     catch { case ex: Exception => executor.shutdownNow(); throw ex }
