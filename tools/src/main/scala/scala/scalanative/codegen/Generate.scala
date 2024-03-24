@@ -302,8 +302,7 @@ private[codegen] object Generate {
           def unwind = unwindProvider()
           def genJoinNonDeamonThreads(): Seq[nir.Inst] =
             if (!meta.platform.isMultithreadingEnabled) Nil
-            else {
-              val module = nir.Val.Local(fresh(), JoinNonDaemonThreadsModule)
+            else
               Seq(
                 nir.Inst.Let(
                   nir.Op.Call(
@@ -314,7 +313,6 @@ private[codegen] object Generate {
                   unwind
                 )
               )
-            }
           Seq(nir.Inst.Label(fresh(), Seq(argc, argv))) ++
             genGcInit(unwindProvider) ++
             genClassInitializersCalls(unwindProvider) ++
