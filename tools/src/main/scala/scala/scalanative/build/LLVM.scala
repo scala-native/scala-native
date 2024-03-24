@@ -323,8 +323,11 @@ private[scalanative] object LLVM {
    *  @return
    *    true if it needs compiling false otherwise.
    */
-  @inline private def needsCompiling(in: Path, out: Path): Boolean = {
-    in.toFile().lastModified() > out.toFile().lastModified()
+  @inline private def needsCompiling(in: Path, out: Path)(implicit
+      config: Config
+  ): Boolean = {
+    in.toFile().lastModified() > out.toFile().lastModified() ||
+    Build.userConfigHasChanged(config)
   }
 
   /** Looks at all the object files to see if one is newer than the output
