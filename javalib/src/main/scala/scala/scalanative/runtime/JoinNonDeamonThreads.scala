@@ -7,7 +7,7 @@ object JoinNonDaemonThreads {
     try
       Runtime.getRuntime().addShutdownHook {
         val t = new Thread(() => {
-          def pollDaemonThreads = Registry.aliveThreads.iterator
+          def pollNonDaemonThreads = Registry.aliveThreads.iterator
             .map(_.thread)
             .filter { thread =>
               thread != Thread.currentThread() && !thread.isDaemon() && thread
@@ -16,7 +16,7 @@ object JoinNonDaemonThreads {
 
           Registry.onMainThreadTermination()
           Iterator
-            .continually(pollDaemonThreads)
+            .continually(pollNonDaemonThreads)
             .takeWhile(_.hasNext)
             .flatten
             .foreach(_.join())
