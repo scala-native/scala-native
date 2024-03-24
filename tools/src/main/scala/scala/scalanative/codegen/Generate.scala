@@ -679,7 +679,7 @@ private[codegen] object Generate {
     val JoinNonDaemonThreadsRun =
       JoinNonDaemonThreadsModule.name
         .member(nir.Sig.Method("run", Seq(nir.Type.Unit), nir.Sig.Scope.PublicStatic))
-    val JoinNonDaemonThreadsRunSig = nir.Type.Function(Seq(JoinNonDaemonThreadsModule), nir.Type.Unit)
+    val JoinNonDaemonThreadsRunSig = nir.Type.Function(Seq(), nir.Type.Unit)
 
     val InitSig = nir.Type.Function(Seq.empty, nir.Type.Unit)
     val InitDecl = nir.Defn.Declare(nir.Attrs.None, extern("scalanative_GC_init"), InitSig)
