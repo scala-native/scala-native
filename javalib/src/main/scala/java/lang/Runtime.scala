@@ -22,8 +22,10 @@ class Runtime private () {
 
   // https://docs.oracle.com/en/java/javase/21/docs/specs/man/java.html
   // Currently, we use C lib signals so SIGHUP is not covered for POSIX platforms.
-
   lazy val setupSignalHandler = {
+    // Executing handler during GC might lead to deadlock
+    // Make sure include any additional signals in `Synchronizer_init` and `sigset_t signalsBlockedDuringGC` in both Immix/Commix GC
+    // Warning: We cannot safetly adapt Boehm GC - it can deadlock for the same reasons as above
     signal.signal(signal.SIGINT, handleSignal(_))
     signal.signal(signal.SIGTERM, handleSignal(_))
   }

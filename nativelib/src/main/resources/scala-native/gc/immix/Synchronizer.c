@@ -9,9 +9,15 @@
 #include "State.h"
 #include "shared/ThreadUtil.h"
 #include "MutatorThread.h"
+#include <signal.h>
 
 atomic_bool Synchronizer_stopThreads = false;
 static mutex_t synchronizerLock;
+/* Receiving and handling SIGINT/SIGTERM during GC would lead to deadlocks
+   It can happen when thread executing GC would be suspended by signal handler.
+   Function executing handler might allocate new objects using GC, but when
+   doing so it would be stopped in Synchronizer_yield */
+static sigset_t signalsBlockedDuringGC;
 
 // Internal API used to implement threads execution yielding
 static void Synchronizer_SuspendThreads(void);
@@ -31,7 +37,6 @@ static void Synchronizer_WaitForResumption(MutatorThread *selfThread);
 #ifdef _WIN32
 #include <errhandlingapi.h>
 #else
-#include <signal.h>
 #include <pthread.h>
 #include <sys/mman.h>
 #include <sys/time.h>
@@ -233,6 +238,9 @@ void Synchronizer_init() {
         exit(1);
     }
 #else
+    sigemptyset(&signalsBlockedDuringGC);
+    sigaddset(&signalsBlockedDuringGC, SIGINT);
+    sigaddset(&signalsBlockedDuringGC, SIGTERM);
     if (pthread_mutex_init(&threadSuspension.lock, NULL) != 0 ||
         pthread_cond_init(&threadSuspension.resume, NULL) != 0) {
         perror("Failed to setup synchronizer lock");
@@ -268,6 +276,7 @@ bool Synchronizer_acquire() {
         return false;
     }
 
+    sigprocmask(SIG_BLOCK, &signalsBlockedDuringGC, NULL);
     // Don't allow for registration of any new threads;
     MutatorThreads_lock();
     Synchronizer_SuspendThreads();
@@ -297,6 +306,7 @@ void Synchronizer_release() {
     mutex_unlock(&synchronizerLock);
     MutatorThread_switchState(currentMutatorThread,
                               GC_MutatorThreadState_Managed);
+    sigprocmask(SIG_UNBLOCK, &signalsBlockedDuringGC, NULL);
 }
 
 #endif
