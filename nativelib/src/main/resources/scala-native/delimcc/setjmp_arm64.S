@@ -1,3 +1,4 @@
+#if defined(SCALANATIVE_COMPILE_ALWAYS) || defined(__SCALANATIVE_DELIMCC)
 #if defined(__aarch64__)
 /* ----------------------------------------------------------------------------
   Copyright (c) 2016, 2017, Microsoft Research, Daan Leijen
@@ -138,4 +139,5 @@ _lh_get_sp:
 
 .section .note.GNU-stack,"",%progbits
 
+#endif
 #endif

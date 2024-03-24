@@ -870,6 +870,7 @@ object NetworkInterface {
 }
 
 @extern
+@define("__SCALANATIVE_JAVALIB_IFADDRS")
 private object unixIfaddrs {
   /* Reference: man getifaddrs
    *            #include <ifaddrs.h>
@@ -912,6 +913,7 @@ private object unixIfaddrsOps {
 }
 
 @extern
+@define("__SCALANATIVE_JAVALIB_NETINET_UNIXIF")
 private object unixIf {
   /* Reference: man 7 netdevice
    *            #include <net/if.h>
@@ -1015,6 +1017,7 @@ private object macOsIf {
   // ifi fields read-only fields in use, so no Ops here to set them.
 }
 
+@define("__SCALANATIVE_JAVALIB_NET_IF_DL")
 private object macOsIfDl {
   /*  Scala sockaddr_dl & corresponding sockaddrDlOps definitions are not
    *  complete. They are only what NetworkInterface uses.

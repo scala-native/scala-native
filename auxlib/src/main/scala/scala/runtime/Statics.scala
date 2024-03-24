@@ -2,6 +2,7 @@ package scala.runtime
 
 import scala.scalanative.libc.stdatomic._
 import scala.scalanative.libc.stdatomic.memory_order._
+import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
 
 /** Not for public consumption. Usage by the runtime only.
  */
@@ -89,7 +90,8 @@ object Statics {
 
   private object PFMarker
 
-  @inline def releaseFence(): Unit = atomic_thread_fence(memory_order_release)
+  @inline def releaseFence(): Unit =
+    if (isMultithreadingEnabled) atomic_thread_fence(memory_order_release)
 
   /** Just throws an exception.
    *

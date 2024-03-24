@@ -11,6 +11,7 @@ import scalanative.meta.LinktimeInfo._
  */
 
 @extern
+@define("__SCALANATIVE_POSIX_SYS_UN")
 object un {
   type _108 = Nat.Digit3[Nat._1, Nat._0, Nat._8]
 

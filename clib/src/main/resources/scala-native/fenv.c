@@ -1,3 +1,4 @@
+#if defined(SCALANATIVE_COMPILE_ALWAYS) || defined(__SCALANATIVE_C_FENV)
 #include <fenv.h>
 
 int scalanative_fe_divbyzero() { return FE_DIVBYZERO; }
@@ -10,3 +11,4 @@ int scalanative_fe_downward() { return FE_DOWNWARD; }
 int scalanative_fe_tonearest() { return FE_TONEAREST; }
 int scalanative_fe_towardzero() { return FE_TOWARDZERO; }
 int scalanative_fe_upward() { return FE_UPWARD; }
+#endif

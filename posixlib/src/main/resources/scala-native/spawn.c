@@ -1,3 +1,4 @@
+#if defined(SCALANATIVE_COMPILE_ALWAYS) || defined(__SCALANATIVE_POSIX_SPAWN)
 #if !defined(_WIN32)
 
 #include <spawn.h>
@@ -51,3 +52,4 @@ int scalanative_posix_spawn_setsigdef() { return POSIX_SPAWN_SETSIGDEF; }
 int scalanative_posix_spawn_setsigmask() { return POSIX_SPAWN_SETSIGMASK; }
 
 #endif // Unix or Mac OS
+#endif

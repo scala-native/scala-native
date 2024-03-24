@@ -1,3 +1,4 @@
+#if defined(SCALANATIVE_COMPILE_ALWAYS) || defined(__SCALANATIVE_POSIX_SYS_MMAN)
 #if defined(__unix__) || defined(__unix) || defined(unix) ||                   \
     (defined(__APPLE__) && defined(__MACH__))
 
@@ -17,3 +18,4 @@ int scalanative_ms_async() { return MS_ASYNC; }
 int scalanative_ms_invalidate() { return MS_INVALIDATE; }
 
 #endif // Unix or Mac OS
+#endif

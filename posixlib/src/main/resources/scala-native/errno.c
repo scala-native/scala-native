@@ -1,3 +1,4 @@
+#if defined(SCALANATIVE_COMPILE_ALWAYS) || defined(__SCALANATIVE_POSIX_ERRNO)
 #include <errno.h>
 
 // Omitting EDOM EILSEQ and ERANGE since they are in clib.
@@ -219,3 +220,4 @@ int scalanative_etxtbsy() { return ETXTBSY; }
 int scalanative_ewouldblock() { return EWOULDBLOCK; }
 
 int scalanative_exdev() { return EXDEV; }
+#endif

@@ -13,6 +13,7 @@ import scalanative.unsafe.Nat._
  *    edition.
  */
 @extern
+@define("__SCALANATIVE_POSIX_SYS_SELECT")
 object select {
 
   // Use single points of truth for types required by POSIX specification.

@@ -1,3 +1,5 @@
+#if defined(SCALANATIVE_COMPILE_ALWAYS) ||                                     \
+    defined(__SCALANATIVE_POSIX_SYS_RESOURCE)
 #if defined(__unix__) || defined(__unix) || defined(unix) ||                   \
     (defined(__APPLE__) && defined(__MACH__))
 // The Open Group Base Specifications Issue 7, 2018 edition
@@ -108,3 +110,4 @@ int scalanative_rusage_children() { return RUSAGE_CHILDREN; };
 int scalanative_rusage_self() { return RUSAGE_SELF; };
 
 #endif // Unix or Mac OS
+#endif

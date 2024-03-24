@@ -497,9 +497,11 @@ private[net] object ipOps {
  */
 @extern
 private[net] object ip6 {
+  @define("__SCALANATIVE_JAVALIB_NETINET_IN6")
   @name("scalanative_ipv6_tclass")
   def IPV6_TCLASS: CInt = extern
 
-  @name("scalanative_ipv6_multicast_hops")
-  def IPV6_MULTICAST_HOPS: CInt = extern
+  implicit class ip6Extension(self: ip6.type) {
+    def IPV6_MULTICAST_HOPS: CInt = in.IPV6_MULTICAST_HOPS
+  }
 }

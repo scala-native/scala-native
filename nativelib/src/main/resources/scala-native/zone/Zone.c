@@ -1,3 +1,5 @@
+#if defined(SCALANATIVE_COMPILE_ALWAYS) ||                                     \
+    defined(__SCALANATIVE_MEMORY_SAFEZONE)
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -65,3 +67,4 @@ void *scalanative_zone_alloc(void *_zone, void *info, size_t size) {
     }
     return (void *)alloc;
 }
+#endif

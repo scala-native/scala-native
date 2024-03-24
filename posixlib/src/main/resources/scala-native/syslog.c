@@ -1,3 +1,4 @@
+#if defined(SCALANATIVE_COMPILE_ALWAYS) || defined(__SCALANATIVE_POSIX_SYSLOG)
 #if defined(__unix__) || defined(__unix) || defined(unix) ||                   \
     (defined(__APPLE__) && defined(__MACH__))
 #include <syslog.h>
@@ -68,3 +69,4 @@ int scalanative_log_nowait() { return LOG_NOWAIT; }
 int scalanative_log_perror() { return LOG_PERROR; }
 
 #endif // Unix or Mac OS
+#endif

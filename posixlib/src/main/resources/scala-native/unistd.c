@@ -1,3 +1,4 @@
+#if defined(SCALANATIVE_COMPILE_ALWAYS) || defined(__SCALANATIVE_POSIX_UNISTD)
 #if defined(__unix__) || defined(__unix) || defined(unix) ||                   \
     (defined(__APPLE__) && defined(__MACH__))
 
@@ -583,3 +584,4 @@ int scalanative__sc_xopen_version() {
 };
 
 #endif // Unix or Mac OS
+#endif

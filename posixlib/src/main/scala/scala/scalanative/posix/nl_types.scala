@@ -9,7 +9,9 @@ import scala.scalanative.unsafe._
  *  [[https://pubs.opengroup.org/onlinepubs/9699919799 Issue 7, 2018]] edition.
  */
 
-@extern object nl_types {
+@extern
+@define("__SCALANATIVE_POSIX_NL_TYPES")
+object nl_types {
 
   type nl_catd = CVoidPtr // Scala Native idiom for void *.
 

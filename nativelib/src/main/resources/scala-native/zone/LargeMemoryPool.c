@@ -1,3 +1,5 @@
+#if defined(SCALANATIVE_COMPILE_ALWAYS) ||                                     \
+    defined(__SCALANATIVE_MEMORY_SAFEZONE)
 #include <stdio.h>
 #include <stdlib.h>
 #include "LargeMemoryPool.h"
@@ -84,3 +86,4 @@ void LargeMemoryPool_close(LargeMemoryPool *largePool) {
     // Free the pool.
     free(largePool);
 }
+#endif

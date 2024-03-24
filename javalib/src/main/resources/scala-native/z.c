@@ -1,4 +1,4 @@
-#ifdef SCALANATIVE_Z
+#ifdef __SCALANATIVE_JAVALIB_Z
 
 #include <zlib.h>
 

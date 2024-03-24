@@ -1,3 +1,4 @@
+#if defined(SCALANATIVE_COMPILE_ALWAYS) || defined(__SCALANATIVE_POSIX_NET_IF)
 #ifdef _WIN32
 #include <WinSock2.h>
 #pragma comment(lib, "Ws2_32.lib")
@@ -49,3 +50,4 @@ _Static_assert(offsetof(struct scalanative_if_nameindex, if_name) ==
  * buffer overrun defects.
  */
 int scalanative_if_namesize() { return IF_NAMESIZE + 1; }
+#endif

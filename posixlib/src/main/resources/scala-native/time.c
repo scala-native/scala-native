@@ -1,4 +1,5 @@
-#if !defined(_WIN32)
+#if defined(SCALANATIVE_COMPILE_ALWAYS) ||                                     \
+    defined(__SCALANATIVE_POSIX_TIME) && !defined(_WIN32)
 
 // X/Open System Interfaces (XSI), also sets _POSIX_C_SOURCE.
 // Partial, but useful, implementation of X/Open 7, incorporating Posix 2008.

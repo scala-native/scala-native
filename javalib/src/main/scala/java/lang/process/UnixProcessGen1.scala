@@ -134,6 +134,7 @@ private[lang] class UnixProcessGen1 private (
 object UnixProcessGen1 {
   @link("pthread")
   @extern
+  @define("__SCALANATIVE_JAVALIB_PROCESS_MONITOR")
   private object ProcessMonitor {
     @name("scalanative_process_monitor_notify")
     def notifyMonitor(): Unit = extern

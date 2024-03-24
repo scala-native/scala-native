@@ -9,7 +9,9 @@ import scalanative.unsafe._
  *  The Open Group Base Specifications
  *  [[https://pubs.opengroup.org/onlinepubs/9699919799 Issue 7, 2018]] edition.
  */
-@extern object `if` {
+@extern
+@define("__SCALANATIVE_POSIX_NET_IF")
+object `if` {
 
   type if_nameindex = CStruct2[
     CUnsignedInt, // if_index

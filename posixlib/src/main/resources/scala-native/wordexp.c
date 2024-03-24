@@ -1,3 +1,4 @@
+#if defined(SCALANATIVE_COMPILE_ALWAYS) || defined(__SCALANATIVE_POSIX_WORDEXP)
 #if defined(__unix__) || defined(__unix) || defined(unix) ||                   \
     (defined(__APPLE__) && defined(__MACH__))
 #ifndef __OpenBSD__
@@ -43,22 +44,8 @@ _Static_assert(offsetof(struct scalanative_wordexp_t, we_offs) ==
 #endif // !OpenBSD
 #endif // Unix or Mac OS
 
-#if defined(_WIN32) || defined(__OpenBSD__) // bogus values to keep linker happy
-#define WRDE_APPEND -1
-#define WRDE_DOOFFS -1
-#define WRDE_NOCMD -1
-#define WRDE_REUSE -1
-#define WRDE_SHOWERR -1
-#define WRDE_UNDEF -1
-#define WRDE_BADCHAR -1
-#define WRDE_BADVAL -1
-#define WRDE_CMDSUB -1
-#define WRDE_NOSPACE -1
-#define WRDE_SYNTAX -1
-#endif // _WIN32
-
 // flags
-
+#if !defined(__OpenBSD__)
 int scalanative_wrde_append() { return WRDE_APPEND; };
 
 int scalanative_wrde_dooffs() { return WRDE_DOOFFS; };
@@ -81,3 +68,7 @@ int scalanative_wrde_cmdsub() { return WRDE_CMDSUB; };
 int scalanative_wrde_nospace() { return WRDE_NOSPACE; };
 
 int scalanative_wrde_syntax() { return WRDE_SYNTAX; };
+
+#endif // not bsd
+
+#endif // __SCALANATIVE_POSIX_WORDEXP

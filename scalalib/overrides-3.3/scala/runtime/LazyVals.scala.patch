@@ -1,5 +1,5 @@
---- 3.3.0-RC4/scala/runtime/LazyVals.scala
-+++ overrides-3/scala/runtime/LazyVals.scala
+--- 3.3.0/scala/runtime/LazyVals.scala
++++ overrides-3.3/scala/runtime/LazyVals.scala
 @@ -4,44 +4,13 @@
  
  import scala.annotation.*
@@ -47,7 +47,19 @@
  
    /* ------------- Start of public API ------------- */
  
-@@ -70,94 +39,47 @@
+@@ -52,7 +21,10 @@
+    * Used to indicate the state of a lazy val that is being
+    * evaluated and of which other threads await the result.
+    */
+-  final class Waiting extends CountDownLatch(1) with LazyValControlState
++  final class Waiting extends CountDownLatch(1) with LazyValControlState {
++    override def countDown(): Unit = if(isMultithreadingEnabled) super.countDown()
++    override def await(): Unit =  if(isMultithreadingEnabled) super.await()
++  }
+ 
+   /**
+    * Used to indicate the state of a lazy val that is currently being
+@@ -70,94 +42,47 @@
  
    def STATE(cur: Long, ord: Int): Long = {
      val r = (cur >> (ord * BITS_PER_LAZY_VAL)) & LAZY_VAL_MASK

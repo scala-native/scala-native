@@ -149,25 +149,10 @@ object Build {
           )
         }
 
-      /* Used to pass alternative paths of compiled native (lib) sources,
-       * eg: reused native sources used in partests.
+      /* Finds all the libraries on the classpath that contain native
+       * code and then compiles them.
        */
-      val compileNativeLibs = {
-        Properties.propOrNone("scalanative.build.paths.libobj") match {
-          case None =>
-            /* Finds all the libraries on the classpath that contain native
-             * code and then compiles them.
-             */
-            findAndCompileNativeLibraries(config, analysis)
-          case Some(libObjectPaths) =>
-            Future.successful {
-              libObjectPaths
-                .split(java.io.File.pathSeparatorChar)
-                .toSeq
-                .map(Paths.get(_))
-            }
-        }
-      }
+      val compileNativeLibs = findAndCompileNativeLibraries(config, analysis)
 
       Future.reduceLeft(
         immutable.Seq(compileGeneratedIR, compileNativeLibs)

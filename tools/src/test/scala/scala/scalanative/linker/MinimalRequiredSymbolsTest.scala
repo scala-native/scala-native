@@ -21,16 +21,16 @@ class MinimalRequiredSymbolsTest extends LinkerSpec {
   def isScala2_12 = ScalaNativeBuildInfo.scalaVersion.startsWith("2.12")
 
   @Test def default(): Unit = checkMinimalRequiredSymbols()(expected =
-    if (isScala3) SymbolsCount(types = 710, members = 3650)
-    else if (isScala2_13) SymbolsCount(types = 630, members = 3400)
-    else SymbolsCount(types = 700, members = 4300)
+    if (isScala3) SymbolsCount(types = 650, members = 3000)
+    else if (isScala2_13) SymbolsCount(types = 600, members = 3000)
+    else SymbolsCount(types = 700, members = 4000)
   )
 
   @Test def debugMetadata(): Unit =
     checkMinimalRequiredSymbols(withDebugMetadata = true)(expected =
-      if (isScala3) SymbolsCount(types = 710, members = 3650)
-      else if (isScala2_13) SymbolsCount(types = 630, members = 3400)
-      else SymbolsCount(types = 700, members = 4300)
+      if (isScala3) SymbolsCount(types = 650, members = 3000)
+      else if (isScala2_13) SymbolsCount(types = 600, members = 3000)
+      else SymbolsCount(types = 700, members = 4000)
     )
 
   // Only MacOS uses DWARF metadata currently
@@ -39,9 +39,9 @@ class MinimalRequiredSymbolsTest extends LinkerSpec {
       withDebugMetadata = true,
       withTargetTriple = "x86_64-apple-darwin22.6.0"
     )(expected =
-      if (isScala3) SymbolsCount(types = 1630, members = 12000)
-      else if (isScala2_13) SymbolsCount(types = 1500, members = 11700)
-      else SymbolsCount(types = 1610, members = 13150)
+      if (isScala3) SymbolsCount(types = 1450, members = 10500)
+      else if (isScala2_13) SymbolsCount(types = 1400, members = 11000)
+      else SymbolsCount(types = 1400, members = 11300)
     )
 
   @Test def multithreading(): Unit =

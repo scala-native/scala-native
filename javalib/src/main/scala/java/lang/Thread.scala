@@ -494,14 +494,15 @@ object Thread {
   final val MIN_PRIORITY = 1
   final val NORM_PRIORITY = 5
 
-  final val MainThread = new Thread(
-    name = "main",
-    platformCtx = PlatformThreadContext(
-      group = new ThreadGroup(ThreadGroup.System, "main"),
-      task = null: Runnable,
-      stackSize = 0L
-    )
-  ) {
+  object MainThread
+      extends Thread(
+        name = "main",
+        platformCtx = PlatformThreadContext(
+          group = new ThreadGroup(ThreadGroup.System, "main"),
+          task = null: Runnable,
+          stackSize = 0L
+        )
+      ) {
     override protected val tid: scala.Long = 0L
     inheritableThreadLocals = new ThreadLocal.Values()
     platformCtx.nativeThread = nativeCompanion.create(this, 0L)
@@ -599,10 +600,14 @@ object Thread {
   // Counter used to generate thread's ID, 0 resevered for main
   sealed abstract class Numbering {
     final protected var cursor = 1L
-    final protected val cursorRef = new AtomicLongLong(
+    @inline def cursorRef = new AtomicLongLong(
       fromRawPtr(classFieldRawPtr(this, "cursor"))
     )
-    def next(): scala.Long = cursorRef.fetchAdd(1L)
+    def next(): scala.Long =
+      if (isMultithreadingEnabled) cursorRef.fetchAdd(1L)
+      else
+        try cursor
+        finally cursor += 1L
   }
   object ThreadNamesNumbering extends Numbering
   object ThreadIdentifiers extends Numbering

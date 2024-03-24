@@ -18,6 +18,7 @@ import scalanative.posix.stdio.va_list
  */
 
 @extern
+@define("__SCALANATIVE_POSIX_SYSLOG")
 object syslog {
   @name("scalanative_closelog")
   @blocking def closelog(): Unit = extern

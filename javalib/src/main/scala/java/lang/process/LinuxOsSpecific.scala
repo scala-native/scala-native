@@ -17,6 +17,7 @@ object LinuxOsSpecific {
   def hasPidfdOpen(): Boolean = _hasPidfdOpen
 
   @extern
+  @define("__SCALANATIVE_JAVALIB_SYS_LINUX_SYSCALL")
   object Extern {
     @name("scalanative_linux_has_pidfd_open")
     def linux_has_pidfd_open(): CBool = extern

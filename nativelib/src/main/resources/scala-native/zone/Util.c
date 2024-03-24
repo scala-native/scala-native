@@ -1,3 +1,5 @@
+#if defined(SCALANATIVE_COMPILE_ALWAYS) ||                                     \
+    defined(__SCALANATIVE_MEMORY_SAFEZONE)
 #include <stdio.h>
 #include <stdlib.h>
 #include "Util.h"
@@ -9,3 +11,4 @@ size_t Util_pad(size_t addr, size_t alignment) {
                          : (alignment - (addr & alignment_mask));
     return addr + padding;
 }
+#endif

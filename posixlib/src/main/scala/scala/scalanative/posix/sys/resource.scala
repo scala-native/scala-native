@@ -10,9 +10,10 @@ package sys
 //   Method argument names come from Ubuntu 19.04 linux man pages.
 //   Open Group seems to no longer suggest them.
 
-import scalanative.unsafe.{CInt, CStruct2, CUnsignedLongInt, Ptr, name, extern}
+import scalanative.unsafe._
 
 @extern
+@define("__SCALANATIVE_POSIX_SYS_RESOURCE")
 object resource {
 
   type id_t = sys.types.id_t

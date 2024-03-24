@@ -1,3 +1,5 @@
+#if defined(SCALANATIVE_COMPILE_ALWAYS) ||                                     \
+    defined(__SCALANATIVE_JAVALIB_NETINET_UNIXIF)
 #if defined(_WIN32)
 // No Windows support. These are dummies for linking.
 int scalanative_iff_loopback() { return 0; }
@@ -53,3 +55,5 @@ int scalanative_siocgifmtu() { return SIOCGIFMTU; }
 int scalanative_iff_up() { return IFF_UP; }
 
 #endif // !_WIN32
+#endif // defined(SCALANATIVE_COMPILE_ALWAYS) ||
+       // defined(__SCALANATIVE_JAVALIB_NETINET_UNIXIF)

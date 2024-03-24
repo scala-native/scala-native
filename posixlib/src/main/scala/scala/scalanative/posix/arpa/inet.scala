@@ -8,6 +8,7 @@ import scalanative.posix.sys.socket.socklen_t
 import scalanative.posix.netinet.in.{in_addr, in_addr_t}
 
 @extern
+@define("__SCALANATIVE_POSIX_ARPA_INET")
 object inet {
   /* Declarations where the arguments are passed to and from the
    * implementing extern code do not need "@name" intermediate code.

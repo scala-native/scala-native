@@ -7,6 +7,7 @@ import scala.scalanative.unsafe.extern
 import scala.scalanative.posix.sys.types._
 
 @extern
+@define("__SCALANATIVE_POSIX_SYS_MMAN")
 object mman {
   def mmap(
       addr: CVoidPtr,

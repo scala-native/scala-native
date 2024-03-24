@@ -1,3 +1,4 @@
+#if defined(SCALANATIVE_COMPILE_ALWAYS) || defined(__SCALANATIVE_C_LOCALE)
 #ifdef _WIN32
 // No Windows support
 #else
@@ -182,3 +183,4 @@ int scalanative_lc_time() { return LC_TIME; }
 
 #endif // POSIX
 #endif // ! _WIN32
+#endif

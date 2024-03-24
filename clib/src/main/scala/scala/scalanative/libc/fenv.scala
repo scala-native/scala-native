@@ -5,7 +5,9 @@ import scala.scalanative.unsafe._
 
 @extern object fenv extends fenv
 
-@extern private[scalanative] trait fenv {
+@extern
+@define("__SCALANATIVE_C_FENV")
+private[scalanative] trait fenv {
   type fexcept_t = CStruct0
   type fenv_t = CStruct0
 

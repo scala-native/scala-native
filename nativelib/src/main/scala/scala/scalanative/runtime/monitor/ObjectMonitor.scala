@@ -5,7 +5,8 @@ import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.runtime.Intrinsics._
 import scala.scalanative.runtime.{RawPtr, NativeThread, Intrinsics}
 import scala.scalanative.runtime.ffi._
-import scala.scalanative.runtime.ffi.memory_order._
+import scala.scalanative.runtime.ffi.stdatomic._
+import scala.scalanative.runtime.ffi.stdatomic.memory_order._
 import scala.scalanative.unsafe.{stackalloc => _, sizeOf => _, _}
 import java.util.concurrent.locks.LockSupport
 

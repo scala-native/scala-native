@@ -27,6 +27,7 @@ import scalanative.unsafe._
  *  your variable. val status = Wait.wait(Ptr[CInt])
  */
 @extern
+@define("__SCALANATIVE_POSIX_SYS_WAIT")
 object wait {
   type id_t = types.id_t
   type pid_t = types.pid_t

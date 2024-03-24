@@ -1,3 +1,4 @@
+#if defined(SCALANATIVE_COMPILE_ALWAYS) || defined(__SCALANATIVE_DELIMCC)
 #if defined(__i386__) && (defined(__linux__) || defined(__APPLE__))
 
 /* ----------------------------------------------------------------------------
@@ -144,4 +145,5 @@ __lh_get_sp:
 
 .section .note.GNU-stack,"",%progbits
 
+#endif
 #endif

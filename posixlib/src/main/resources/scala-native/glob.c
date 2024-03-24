@@ -1,3 +1,4 @@
+#if defined(SCALANATIVE_COMPILE_ALWAYS) || defined(__SCALANATIVE_POSIX_FNMATCH)
 #if defined(__unix__) || defined(__unix) || defined(unix) ||                   \
     (defined(__APPLE__) && defined(__MACH__))
 
@@ -42,22 +43,8 @@ _Static_assert(offsetof(struct scalanative_glob_t, gl_pathv) ==
                "offset mismatch: glob_t gl_pathv");
 #endif // __APPLE__
 #endif // __STDC_VERSION__
-#endif // Unix or Mac OS
 
-#if defined(_WIN32) // bogus values to keep linker happy
-#define GLOB_APPEND -1
-#define GLOB_DOOFFS -1
-#define GLOB_ERR -1
-#define GLOB_MARK -1
-#define GLOB_NOCHECK -1
-#define GLOB_NOESCAPE -1
-#define GLOB_NOSORT -1
-#define GLOB_ABORTED -1
-#define GLOB_NOMATCH -1
-#define GLOB_NOSPACE -1
-#endif // _WIN32
 // flags
-
 int scalanative_glob_append() { return GLOB_APPEND; };
 
 int scalanative_glob_dooffs() { return GLOB_DOOFFS; };
@@ -78,3 +65,6 @@ int scalanative_glob_aborted() { return GLOB_ABORTED; };
 int scalanative_glob_nomatch() { return GLOB_NOMATCH; };
 
 int scalanative_glob_nospace() { return GLOB_NOSPACE; };
+
+#endif // Unix or Mac OS
+#endif

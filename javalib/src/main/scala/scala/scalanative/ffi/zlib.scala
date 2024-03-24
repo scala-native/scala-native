@@ -18,7 +18,7 @@ private[ffi] object zlibPlatformCompat {
     else zlibDefault
 }
 
-@define("SCALANATIVE_Z")
+@define("__SCALANATIVE_JAVALIB_Z")
 @extern
 trait zlib {
   import zlibOps.{z_stream, gz_header}

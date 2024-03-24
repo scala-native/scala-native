@@ -1,3 +1,4 @@
+#if defined(SCALANATIVE_COMPILE_ALWAYS) || defined(__SCALANATIVE_POSIX_STDIO)
 #include <stdio.h>
 
 #if !defined(L_ctermid)
@@ -16,3 +17,4 @@
 
 // CX extension
 int scalanative_l_ctermid() { return L_ctermid; }
+#endif

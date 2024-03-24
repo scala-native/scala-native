@@ -13,7 +13,7 @@ import scala.scalanative.unsafe._
 object SafeZoneAllocator {
   def allocate[T](sz: SafeZone^, obj: T): T^{sz} = intrinsic
 
-  @extern object Impl{
+  @extern @define("__SCALANATIVE_MEMORY_SAFEZONE") object Impl{
     @name("scalanative_zone_open")
     def open(): RawPtr = extern
 

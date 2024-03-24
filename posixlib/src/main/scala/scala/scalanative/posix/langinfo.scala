@@ -9,7 +9,9 @@ import scala.scalanative.unsafe._
  *  [[https://pubs.opengroup.org/onlinepubs/9699919799 Issue 7, 2018]] edition.
  */
 
-@extern object langinfo {
+@extern
+@define("__SCALANATIVE_POSIX_LANGINFO")
+object langinfo {
 
   type locale_t = locale.locale_t
 
