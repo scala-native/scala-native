@@ -19,6 +19,6 @@ object Proxy {
   def GC_setWeakReferencesCollectedCallback(
       callback: GCWeakReferencesCollectedCallback
   ): Unit = GC.setWeakReferencesCollectedCallback(callback)
-  
+
   def skipWaitingForNonDeamonThreads(): Unit = JoinNonDaemonThreads.skip()
 }
