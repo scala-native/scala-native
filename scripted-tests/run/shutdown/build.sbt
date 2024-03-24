@@ -1,6 +1,12 @@
 import java.util.concurrent.TimeUnit
 import java.nio.file.Files
 import java.io.File
+import java.util.Locale
+
+val osName = System
+  .getProperty("os.name", "unknown")
+  .toLowerCase(Locale.ROOT)
+val isWindows = osName.startsWith("windows")
 
 scalaVersion := {
   val scalaVersion = System.getProperty("scala.version")
@@ -46,7 +52,13 @@ def checkThreadsJoin(cmd: String, joinInMain: Boolean): Unit = {
 }
 val runTestThreadsJoin = taskKey[Unit]("test multithreaded shutdown")
 runTestThreadsJoin := {
-  val cmd = (Compile / nativeLink).value.toString
-  checkThreadsJoin(cmd, joinInMain = true)
-  checkThreadsJoin(cmd, joinInMain = false)
+  if (isWindows)
+    System.err.println(
+      "Not testing multithreaded shutdown on Windows - it can deadlock during the GC, due to the lack of signals blocking"
+    )
+  else {
+    val cmd = (Compile / nativeLink).value.toString
+    checkThreadsJoin(cmd, joinInMain = true)
+    checkThreadsJoin(cmd, joinInMain = false)
+  }
 }
