@@ -22,8 +22,7 @@ case class ScalaNativePartestOptions private (
     s"-Dscalanative.partest.mode=${buildMode.name}",
     s"-Dscalanative.partest.gc=${gc.name}",
     s"-Dscalanative.partest.lto=${lto.name}",
-    s"-Dscalanative.partest.nativeCp=${nativeClasspath.mkString(pathSeparator)}",
-    s"-Dscalanative.build.paths.libobj=${precompiledLibrariesPaths.mkString(pathSeparator)}"
+    s"-Dscalanative.partest.nativeCp=${nativeClasspath.mkString(pathSeparator)}"
   )
 
   def show: String =

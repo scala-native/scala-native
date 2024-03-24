@@ -48,15 +48,6 @@ class MainGenericRunner {
             )
             .withGC(loadSetting("gc", Discover.GC())(GC.apply))
             .withLTO(loadSetting("lto", Discover.LTO())(LTO(_)))
-            .withLinkingOptions {
-              // If we precompile libs we need to make sure, that we link libraries needed by Scala Native
-              Defaults.config.linkingOptions ++
-                Option(System.getProperty("scalanative.build.paths.libobj"))
-                  .filter(_.nonEmpty)
-                  .fold(Seq.empty[String]) { _ =>
-                    Defaults.links.map(_.name).map("-l" + _)
-                  }
-            }
             .withBaseName("output")
         }
         .withClassPath {
