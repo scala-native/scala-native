@@ -13,11 +13,14 @@
 
 atomic_bool Synchronizer_stopThreads = false;
 static mutex_t synchronizerLock;
+
+#ifndef _WIN32
 /* Receiving and handling SIGINT/SIGTERM during GC would lead to deadlocks
    It can happen when thread executing GC would be suspended by signal handler.
    Function executing handler might allocate new objects using GC, but when
    doing so it would be stopped in Synchronizer_yield */
 static sigset_t signalsBlockedDuringGC;
+#endif
 
 // Internal API used to implement threads execution yielding
 static void Synchronizer_SuspendThreads(void);
@@ -275,8 +278,9 @@ bool Synchronizer_acquire() {
         scalanative_GC_yield();
         return false;
     }
-
+#ifndef _WIN32
     sigprocmask(SIG_BLOCK, &signalsBlockedDuringGC, NULL);
+#endif
     // Don't allow for registration of any new threads;
     MutatorThreads_lock();
     Synchronizer_SuspendThreads();
@@ -306,7 +310,9 @@ void Synchronizer_release() {
     mutex_unlock(&synchronizerLock);
     MutatorThread_switchState(currentMutatorThread,
                               GC_MutatorThreadState_Managed);
+#ifndef _WIN32
     sigprocmask(SIG_UNBLOCK, &signalsBlockedDuringGC, NULL);
+#endif
 }
 
 #endif
