@@ -9,7 +9,7 @@ import scala.scalanative.posix.unistd._
 import scala.scalanative.windows.SysInfoApi._
 import scala.scalanative.windows.SysInfoApiOps._
 import scala.scalanative.unsafe._
-import scala.scalanative.meta.LinktimeInfo.isWindows
+import scala.scalanative.meta.LinktimeInfo._
 
 class Runtime private () {
   import Runtime._
@@ -29,6 +29,9 @@ class Runtime private () {
   }
 
   private def handleSignal(sig: CInt): Unit = {
+    if (isMultithreadingEnabled) {
+      scalanative.runtime.Proxy.skipWaitingForNonDeamonThreads()
+    }
     Runtime.getRuntime().runHooks()
     exit(128 + sig)
   }
