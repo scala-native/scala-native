@@ -29,12 +29,13 @@ private[java] object WeakReferenceRegistry {
       current: WeakReference[_],
       prev: WeakReference[_]
   ): (WeakReference[Any], WeakReference[Any]) =
-    if (current == null)
+    if (current == null) {
+      val tail = if (prev != null) prev else head
       (
         head.asInstanceOf[WeakReference[Any]],
-        prev.asInstanceOf[WeakReference[Any]]
+        tail.asInstanceOf[WeakReference[Any]]
       )
-    else
+    } else
       current.get() match {
         case collected @ null =>
           current.enqueue()
@@ -81,6 +82,7 @@ private[java] object WeakReferenceRegistry {
 
       // Reattach the weak refs list to the possibly updated head
       if (newDetachedHead != null) while ({
+        assert(detachedTail != null)
         val currentHead = weakRefsHead
         !expected = currentHead
         detachedTail.nextReference = currentHead
