@@ -1,6 +1,7 @@
 // This mechanism is only used in POSIX compliant platforms.
 // On Windows other build in approach is used.
-#if defined(__SCALANATIVE_PROCESS_MONITOR)
+#if defined(SCALANATIVE_COMPILE_ALWAYS) ||                                     \
+    defined(__SCALANATIVE_JAVALIB_PROCESS_MONITOR)
 #if defined(__unix__) || defined(__unix) || defined(unix) ||                   \
     (defined(__APPLE__) && defined(__MACH__))
 #include <memory>

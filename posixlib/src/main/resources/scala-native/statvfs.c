@@ -1,4 +1,4 @@
-#if defined(__SCALANATIVE_POSIX_STATVFS)
+#if defined(SCALANATIVE_COMPILE_ALWAYS) || defined(__SCALANATIVE_POSIX_STATVFS)
 #if defined(__unix__) || defined(__unix) || defined(unix) ||                   \
     (defined(__APPLE__) && defined(__MACH__))
 #include <stdlib.h>

@@ -1,4 +1,5 @@
-#if !defined(_WIN32) && defined(__SCALANATIVE_POSIX_SYS_UN)
+#if !defined(_WIN32) && defined(SCALANATIVE_COMPILE_ALWAYS) ||                 \
+    defined(__SCALANATIVE_POSIX_SYS_UN)
 #include <sys/socket.h>
 #if !(defined __STDC_VERSION__) || (__STDC_VERSION__ < 201112L)
 #ifndef SCALANATIVE_SUPPRESS_STRUCT_CHECK_WARNING

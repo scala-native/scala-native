@@ -1,4 +1,4 @@
-#if defined(__SCALANATIVE_C_LOCALE)
+#if defined(SCALANATIVE_COMPILE_ALWAYS) || defined(__SCALANATIVE_C_LOCALE)
 #ifdef _WIN32
 // No Windows support
 #else

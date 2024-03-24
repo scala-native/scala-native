@@ -1,4 +1,5 @@
-#if defined(__SCALANATIVE_POSIX_SYS_SELECT)
+#if defined(SCALANATIVE_COMPILE_ALWAYS) ||                                     \
+    defined(__SCALANATIVE_POSIX_SYS_SELECT)
 #include <stdbool.h>
 #include <errno.h>
 #include <stddef.h>

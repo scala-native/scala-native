@@ -1,4 +1,5 @@
-#if defined(__SCALANATIVE_MEMORY_SAFEZONE)
+#if defined(SCALANATIVE_COMPILE_ALWAYS) ||                                     \
+    defined(__SCALANATIVE_MEMORY_SAFEZONE)
 #include <stdio.h>
 #include <stdlib.h>
 #include "LargeMemoryPool.h"

@@ -1,4 +1,4 @@
-#if defined(__SCALANATIVE_POSIX_LANGINFO)
+#if defined(SCALANATIVE_COMPILE_ALWAYS) || defined(__SCALANATIVE_POSIX_LANGINFO)
 #if defined(__unix__) || defined(__unix) || defined(unix) ||                   \
     (defined(__APPLE__) && defined(__MACH__))
 

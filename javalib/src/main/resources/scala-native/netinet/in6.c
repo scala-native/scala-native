@@ -1,4 +1,5 @@
-#if defined(__SCALANATIVE_JAVALIB_NETINET_IN6)
+#if defined(SCALANATIVE_COMPILE_ALWAYS) ||                                     \
+    defined(__SCALANATIVE_JAVALIB_NETINET_IN6)
 #ifndef _WIN32
 #include <netinet/in.h>
 #endif

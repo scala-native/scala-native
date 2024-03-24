@@ -1,4 +1,4 @@
-#if defined(__SCALANATIVE_POSIX_STDIO)
+#if defined(SCALANATIVE_COMPILE_ALWAYS) || defined(__SCALANATIVE_POSIX_STDIO)
 #include <stdio.h>
 
 #if !defined(L_ctermid)

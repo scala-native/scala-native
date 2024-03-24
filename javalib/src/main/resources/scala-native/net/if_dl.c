@@ -1,4 +1,5 @@
-#if defined(__SCALANATIVE_JAVALIB_NET_IF_DL)
+#if defined(SCALANATIVE_COMPILE_ALWAYS) ||                                     \
+    defined(__SCALANATIVE_JAVALIB_NET_IF_DL)
 #ifdef _WIN32
 // NO Windows support
 #elif defined(__linux__) || defined(__NetBSD__)

@@ -1,4 +1,4 @@
-#if defined(__SCALANATIVE_POSIX_ERRNO)
+#if defined(SCALANATIVE_COMPILE_ALWAYS) || defined(__SCALANATIVE_POSIX_ERRNO)
 #include <errno.h>
 
 // Omitting EDOM EILSEQ and ERANGE since they are in clib.

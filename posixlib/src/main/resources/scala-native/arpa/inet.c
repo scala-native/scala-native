@@ -1,4 +1,5 @@
-#if defined(__SCALANATIVE_POSIX_ARPA_INET)
+#if defined(SCALANATIVE_COMPILE_ALWAYS) ||                                     \
+    defined(__SCALANATIVE_POSIX_ARPA_INET)
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #define _WINSOCK_DEPRECATED_NO_WARNINGS

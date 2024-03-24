@@ -1,4 +1,5 @@
-#if defined(__SCALANATIVE_POSIX_NETINET_IN)
+#if defined(SCALANATIVE_COMPILE_ALWAYS) ||                                     \
+    defined(__SCALANATIVE_POSIX_NETINET_IN)
 #include <stddef.h>
 #include <string.h>
 #include "in.h"

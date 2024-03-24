@@ -1,4 +1,5 @@
-#if defined(__SCALANATIVE_POSIX_NETINET_TCP)
+#if defined(SCALANATIVE_COMPILE_ALWAYS) ||                                     \
+    defined(__SCALANATIVE_POSIX_NETINET_TCP)
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <WinSock2.h>

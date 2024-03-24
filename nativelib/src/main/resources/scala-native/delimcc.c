@@ -1,4 +1,4 @@
-#if defined(__SCALANATIVE_DELIMCC)
+#if defined(SCALANATIVE_COMPILE_ALWAYS) || defined(__SCALANATIVE_DELIMCC)
 #include "delimcc.h"
 #include <stddef.h>
 #include <stdio.h>

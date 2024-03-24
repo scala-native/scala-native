@@ -1,4 +1,4 @@
-#if defined(__SCALANATIVE_POSIX_CPIO)
+#if defined(SCALANATIVE_COMPILE_ALWAYS) || defined(__SCALANATIVE_POSIX_CPIO)
 #if defined(__unix__) || defined(__unix) || defined(unix) ||                   \
     (defined(__APPLE__) && defined(__MACH__))
 #include <cpio.h>

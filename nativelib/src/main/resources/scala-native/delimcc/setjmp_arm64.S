@@ -1,4 +1,4 @@
-#if defined(__SCALANATIVE_DELIMCC)
+#if defined(SCALANATIVE_COMPILE_ALWAYS) || defined(__SCALANATIVE_DELIMCC)
 #if defined(__aarch64__)
 /* ----------------------------------------------------------------------------
   Copyright (c) 2016, 2017, Microsoft Research, Daan Leijen

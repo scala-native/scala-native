@@ -1,4 +1,4 @@
-#if defined(__SCALANATIVE_POSIX_SPAWN)
+#if defined(SCALANATIVE_COMPILE_ALWAYS) || defined(__SCALANATIVE_POSIX_SPAWN)
 #if !defined(_WIN32)
 
 #include <spawn.h>

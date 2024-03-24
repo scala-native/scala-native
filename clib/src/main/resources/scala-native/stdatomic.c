@@ -1,5 +1,5 @@
 // clang-format off
-#if defined(__SCALANATIVE_C_STDATOMIC)
+#if defined(SCALANATIVE_COMPILE_ALWAYS) || defined(__SCALANATIVE_C_STDATOMIC)
 #include <stdatomic.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -277,4 +277,4 @@ intptr_t scalanative_atomic_fetch_or_intptr(_Atomic(intptr_t)* atm, intptr_t val
 intptr_t scalanative_atomic_fetch_or_explicit_intptr(_Atomic(intptr_t)* atm, intptr_t val, memory_order memoryOrder) { return atomic_fetch_or_explicit(atm, val, memoryOrder);}
 intptr_t scalanative_atomic_fetch_xor_intptr(_Atomic(intptr_t)* atm, intptr_t val) { return atomic_fetch_xor(atm, val);}
 intptr_t scalanative_atomic_fetch_xor_explicit_intptr(_Atomic(intptr_t)* atm, intptr_t val, memory_order memoryOrder) { return atomic_fetch_xor_explicit(atm, val, memoryOrder);}
-#endif // defined(__SCALANATIVE_C_STDATOMIC)
+#endif // defined(SCALANATIVE_COMPILE_ALWAYS) || defined(__SCALANATIVE_C_STDATOMIC)

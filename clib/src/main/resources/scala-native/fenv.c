@@ -1,4 +1,4 @@
-#if defined(__SCALANATIVE_C_FENV)
+#if defined(SCALANATIVE_COMPILE_ALWAYS) || defined(__SCALANATIVE_C_FENV)
 #include <fenv.h>
 
 int scalanative_fe_divbyzero() { return FE_DIVBYZERO; }

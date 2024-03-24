@@ -1,4 +1,4 @@
-#if defined(__SCALANATIVE_C_COMPLEX)
+#if defined(SCALANATIVE_COMPILE_ALWAYS) || defined(__SCALANATIVE_C_COMPLEX)
 #include <complex.h>
 
 #if defined(_WIN32)

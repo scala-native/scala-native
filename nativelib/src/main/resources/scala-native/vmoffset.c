@@ -1,4 +1,6 @@
-#if (defined(__SCALANATIVE_VMOFFSET) && defined(__APPLE__) && defined(__MACH__))
+#if (defined(SCALANATIVE_COMPILE_ALWAYS) || defined(__SCALANATIVE_VMOFFSET) && \
+                                                defined(__APPLE__) &&          \
+                                                defined(__MACH__))
 #include <mach-o/dyld.h>
 #include <stdio.h>
 #include <stdint.h>

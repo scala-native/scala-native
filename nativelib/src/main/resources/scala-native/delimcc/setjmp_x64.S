@@ -1,4 +1,4 @@
-#if defined(__SCALANATIVE_DELIMCC)
+#if defined(SCALANATIVE_COMPILE_ALWAYS) || defined(__SCALANATIVE_DELIMCC)
 #if defined(__x86_64__) && defined(_WIN64)
 /* ----------------------------------------------------------------------------
   Copyright (c) 2016, Microsoft Research, Daan Leijen

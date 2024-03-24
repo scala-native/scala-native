@@ -1,4 +1,4 @@
-#if defined(__SCALANATIVE_DELIMCC)
+#if defined(SCALANATIVE_COMPILE_ALWAYS) || defined(__SCALANATIVE_DELIMCC)
 #if defined(__i386__) && (defined(__linux__) || defined(__APPLE__))
 
 /* ----------------------------------------------------------------------------
