@@ -10,17 +10,16 @@ object NativeExecutionContext {
   /** Single-threaded queue based execution context. Each runable is executed
    *  sequentially after termination of the main method
    */
-  def queue(): ExecutionContextExecutor = QueueExecutionContext
+  val queue: ExecutionContextExecutor = QueueExecutionContext
 
   private object QueueExecutionContext extends ExecutionContextExecutor {
     private val queue: ListBuffer[Runnable] = new ListBuffer
-    def execute(runnable: Runnable): Unit = queue += runnable
-    def reportFailure(t: Throwable): Unit = t.printStackTrace()
+    override def execute(runnable: Runnable): Unit = queue += runnable
+    override def reportFailure(t: Throwable): Unit = t.printStackTrace()
 
-    def hasNext: Boolean = queue.nonEmpty
-    def scheduled: Int = queue.size
+    def hasNextTask: Boolean = queue.nonEmpty
 
-    def runNext(): Unit = if (hasNext) {
+    def executeNextTask(): Unit = if (hasNextTask) {
       val runnable = queue.remove(0)
       try runnable.run()
       catch {
@@ -29,9 +28,13 @@ object NativeExecutionContext {
       }
     }
 
-    def loop(): Unit = while (hasNext) runNext()
+    /** Execute all the available tasks. Returns the number of executed tasks */
+    def executeAvailableTasks(): Unit = while (hasNextTask) {
+      executeNextTask()
+    }
   }
 
   /** Execute all the tasks in the queue until there is none left */
-  private[runtime] def loop(): Unit = QueueExecutionContext.loop()
+  private[runtime] def loop(): Unit =
+    QueueExecutionContext.executeAvailableTasks()
 }

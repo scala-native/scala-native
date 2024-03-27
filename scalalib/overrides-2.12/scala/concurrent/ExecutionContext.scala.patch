@@ -15,7 +15,7 @@
 -    implicit lazy val global: ExecutionContext = impl.ExecutionContextImpl.fromExecutor(null: Executor)
 +    implicit lazy val global: ExecutionContext = {
 +      if(isMultithreadingEnabled) impl.ExecutionContextImpl.fromExecutor(null: Executor)
-+      else scala.scalanative.runtime.NativeExecutionContext.queue()
++      else scala.scalanative.runtime.NativeExecutionContext.queue
 +    }
    }
  

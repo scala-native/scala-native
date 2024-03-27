@@ -640,10 +640,10 @@ private[codegen] object Generate {
     val RuntimeInit = nir.Val.Global(RuntimeInitName, nir.Type.Ptr)
 
     val NativeExecutionContext =
-      nir.Type.Ref(nir.Global.Top("scala.scalanative.runtime.NativeExecutionContext$"))
+      nir.Type.Ref(nir.Global.Top("scala.scalanative.runtime.NativeExecutionContext$QueueExecutionContext$"))
     val NativeExecutionContextLoopSig = nir.Type.Function(Seq(NativeExecutionContext), nir.Type.Unit)
     val NativeExecutionContextLoopName = NativeExecutionContext.name
-      .member(nir.Sig.Method("loop", Seq(nir.Type.Unit)))
+      .member(nir.Sig.Method("executeAvailableTasks", Seq(nir.Type.Unit)))
     val NativeExecutionContextLoop = nir.Val.Global(NativeExecutionContextLoopName, nir.Type.Ptr)
 
     val LibraryInitName = extern("ScalaNativeInit")

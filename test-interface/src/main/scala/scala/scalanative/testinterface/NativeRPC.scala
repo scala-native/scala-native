@@ -38,7 +38,9 @@ private[testinterface] class NativeRPC(clientSocket: Socket)(implicit
     } else {
       val msg = Array.fill(msgLength)(inStream.readChar).mkString
       handleMessage(msg)
-      if (!isMultithreadingEnabled) runtime.loop()
+      // We cannot control which ExecutionContext implementation is used by users
+      // Run the queue execution context loop just to be sure we don't create deadlock
+      runtime.loop()
       loop()
     }
   }
