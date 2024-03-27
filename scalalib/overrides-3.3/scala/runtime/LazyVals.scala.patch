@@ -5,6 +5,7 @@
  import scala.annotation.*
  
 +import scala.scalanative.runtime.*
++import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
 +
  /**
   * Helper methods used in thread-safe lazy vals.
