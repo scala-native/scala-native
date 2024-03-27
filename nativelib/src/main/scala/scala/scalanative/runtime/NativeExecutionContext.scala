@@ -19,6 +19,7 @@ object NativeExecutionContext {
     override def reportFailure(t: Throwable): Unit = t.printStackTrace()
 
     def hasNextTask: Boolean = queue.nonEmpty
+    def availableTasks: Int = queue.size
 
     def executeNextTask(): Unit = if (hasNextTask) {
       val runnable = queue.remove(0)
