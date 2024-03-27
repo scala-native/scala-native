@@ -300,20 +300,19 @@ private[codegen] object Generate {
           val arr = nir.Val.Local(fresh(), ObjectArray)
 
           def unwind = unwindProvider()
-          def awaitRunnables: nir.Op.Call = {
-            if (meta.platform.isMultithreadingEnabled)
-              nir.Op.Call(
-                JoinNonDaemonThreadsRunSig,
-                nir.Val.Global(JoinNonDaemonThreadsRun, nir.Type.Ptr),
-                Seq()
-              )
+          def genJoinNonDeamonThreads(): Seq[nir.Inst] =
+            if (!meta.platform.isMultithreadingEnabled) Nil
             else
-              nir.Op.Call(
-                NativeExecutionContextLoopSig,
-                NativeExecutionContextLoop,
-                Seq(rt)
+              Seq(
+                nir.Inst.Let(
+                  nir.Op.Call(
+                    JoinNonDaemonThreadsRunSig,
+                    nir.Val.Global(JoinNonDaemonThreadsRun, nir.Type.Ptr),
+                    Seq()
+                  ),
+                  unwind
+                )
               )
-          }
           Seq(nir.Inst.Label(fresh(), Seq(argc, argv))) ++
             genGcInit(unwindProvider) ++
             genClassInitializersCalls(unwindProvider) ++
@@ -328,8 +327,8 @@ private[codegen] object Generate {
                 nir.Op.Call(entryMainTy, entryMainMethod, Seq(arr)),
                 unwind
               ),
-              nir.Inst.Let(awaitRunnables, unwind)
-            )
+              nir.Inst.Let(nir.Op.Call(NativeExecutionContextLoopSig, NativeExecutionContextLoop, Seq(rt)), unwind)
+            ) ++ genJoinNonDeamonThreads()
         }
       )
     }
@@ -710,14 +709,12 @@ private[codegen] object Generate {
       ObjectArray.name,
       Runtime.name,
       RuntimeInit.name,
+      NativeExecutionContextLoop.name,
       RuntimeExecuteUEH,
       JavaThread,
       JavaThreadCurrentThread,
       JavaThreadGetUEH,
-      JavaThreadUEH, {
-        if (platform.isMultithreadingEnabled) JoinNonDaemonThreadsRun
-        else NativeExecutionContextLoop.name
-      }
-    )
+      JavaThreadUEH
+    ) ++ { if (platform.isMultithreadingEnabled) Seq(JoinNonDaemonThreadsRun) else Nil }
   }
 }

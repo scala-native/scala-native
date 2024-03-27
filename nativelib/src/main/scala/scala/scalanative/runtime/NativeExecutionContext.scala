@@ -10,17 +10,7 @@ object NativeExecutionContext {
   /** Single-threaded queue based execution context. Each runable is executed
    *  sequentially after termination of the main method
    */
-  def queue: ExecutionContextExecutor = QueueExecutionContext
-
-  @deprecated(
-    "Use `queue` instead, since `global` may infer that it supports concurrent execution.",
-    since = "0.5.0"
-  )
-  def global: ExecutionContextExecutor = queue
-
-  object Implicits {
-    implicit val queue: ExecutionContextExecutor = NativeExecutionContext.queue
-  }
+  def queue(): ExecutionContextExecutor = QueueExecutionContext
 
   private object QueueExecutionContext extends ExecutionContextExecutor {
     private val queue: ListBuffer[Runnable] = new ListBuffer
