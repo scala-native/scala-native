@@ -11,23 +11,23 @@ class NativeExecutionContextTest {
       def run(): Unit = i += 1
     }
 
-    val ctx = NativeExecutionContext.queue
-    ctx.execute(runnable)
-    ctx.execute(runnable)
+    val queue = NativeExecutionContext.QueueExecutionContext
+    queue.execute(runnable)
+    queue.execute(runnable)
 
-    assertTrue(NativeExecutionContext.hasNext)
-    assertEquals(2, NativeExecutionContext.scheduled)
-    NativeExecutionContext.runNext()
+    assertTrue(queue.hasNextTask)
+    assertEquals(2, queue.availableTasks)
+    queue.runNextTask()
     assertEquals(1, i)
 
-    assertTrue(NativeExecutionContext.hasNext)
-    assertEquals(1, NativeExecutionContext.scheduled)
-    NativeExecutionContext.runNext()
+    assertTrue(queue.hasNextTask)
+    assertEquals(1, queue.availableTasks)
+    queue.executeNextTask()
     assertEquals(2, i)
 
-    assertFalse(NativeExecutionContext.hasNext)
-    assertEquals(0, NativeExecutionContext.scheduled)
-    NativeExecutionContext.runNext()
+    assertFalse(queue.hasNextTask)
+    assertEquals(0, queue.availableTasks)
+    queue.executeNextTask()
     assertEquals(2, i)
   }
 }
