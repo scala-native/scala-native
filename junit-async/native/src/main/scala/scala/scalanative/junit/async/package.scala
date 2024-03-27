@@ -11,8 +11,8 @@ package object async {
     if (isMultithreadingEnabled)
       Await.result(future, Duration.Inf)
     else {
-      if (!LinktimeInfo.isMultithreadingEnabled)
-        runtime.junit.drainNativeExecutionContext()
+      if (!isMultithreadingEnabled)
+        runtime.NativeExecutionContext.loop()
       future.value.get.get
     }
   }

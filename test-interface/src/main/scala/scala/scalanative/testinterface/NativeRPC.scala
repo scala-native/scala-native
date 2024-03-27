@@ -8,7 +8,7 @@ import scala.concurrent.ExecutionContext
 import scala.scalanative.testinterface.common.RPCCore
 import scala.util.{Failure, Success, Try}
 import java.nio.charset.StandardCharsets
-import scala.scalanative.meta.LinktimeInfo
+import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
 
 /** Native RPC Core. */
 private[testinterface] class NativeRPC(clientSocket: Socket)(implicit
@@ -38,8 +38,8 @@ private[testinterface] class NativeRPC(clientSocket: Socket)(implicit
     } else {
       val msg = Array.fill(msgLength)(inStream.readChar).mkString
       handleMessage(msg)
-      if (!LinktimeInfo.isMultithreadingEnabled)
-        runtime.testinterface.drainNativeExecutionContext()
+      if (!isMultithreadingEnabled)
+        runtime.NativeExecutionContext.loop()
       loop()
     }
   }

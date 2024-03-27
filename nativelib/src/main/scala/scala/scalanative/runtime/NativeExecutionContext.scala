@@ -46,15 +46,15 @@ object NativeExecutionContext {
   // to interact with our private execution context without leaking the abstraction
 
   /** Checks if there is any scheduled runnable which can be executed */
-  private[runtime] def hasNext: Boolean = QueueExecutionContext.hasNext
+  def hasNext: Boolean = QueueExecutionContext.hasNext
 
   /** Exuecute next available runnable in the queue. No-op if the queue is empty
    */
-  private[runtime] def runNext(): Unit = QueueExecutionContext.runNext()
+  def runNext(): Unit = QueueExecutionContext.runNext()
 
   /** Returns the number of currently scheduled tasks */
-  private[runtime] def scheduled: Int = QueueExecutionContext.scheduled
+  def scheduled: Int = QueueExecutionContext.scheduled
 
   /** Execute all the tasks in the queue until there is none left */
-  private[runtime] def loop(): Unit = QueueExecutionContext.loop()
+  def loop(): Unit = QueueExecutionContext.loop()
 }
