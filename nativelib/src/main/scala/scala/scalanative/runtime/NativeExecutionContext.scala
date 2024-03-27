@@ -42,19 +42,6 @@ object NativeExecutionContext {
     def loop(): Unit = while (hasNext) runNext()
   }
 
-  // The proxy methods here are defined to allow integrating projects
-  // to interact with our private execution context without leaking the abstraction
-
-  /** Checks if there is any scheduled runnable which can be executed */
-  def hasNext: Boolean = QueueExecutionContext.hasNext
-
-  /** Exuecute next available runnable in the queue. No-op if the queue is empty
-   */
-  def runNext(): Unit = QueueExecutionContext.runNext()
-
-  /** Returns the number of currently scheduled tasks */
-  def scheduled: Int = QueueExecutionContext.scheduled
-
   /** Execute all the tasks in the queue until there is none left */
-  def loop(): Unit = QueueExecutionContext.loop()
+  private[runtime] def loop(): Unit = QueueExecutionContext.loop()
 }

@@ -117,10 +117,6 @@ package object runtime {
   /** Run the runtime's event loop. The method is called from the generated
    *  C-style after the application's main method terminates.
    */
-  @deprecated(
-    "Use `scala.scalanative.runtime.NativeExecutionContext.loop()",
-    since = "0.5.0"
-  )
   @noinline def loop(): Unit = NativeExecutionContext.loop()
 
   /** Called by the generated code in case of division by zero. */

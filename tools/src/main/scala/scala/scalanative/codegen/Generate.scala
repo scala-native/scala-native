@@ -300,7 +300,7 @@ private[codegen] object Generate {
           val arr = nir.Val.Local(fresh(), ObjectArray)
 
           def unwind = unwindProvider()
-          def drainExecutionContext: nir.Op.Call = {
+          def awaitRunnables: nir.Op.Call = {
             if (meta.platform.isMultithreadingEnabled)
               nir.Op.Call(
                 JoinNonDaemonThreadsRunSig,
@@ -328,7 +328,7 @@ private[codegen] object Generate {
                 nir.Op.Call(entryMainTy, entryMainMethod, Seq(arr)),
                 unwind
               ),
-              nir.Inst.Let(drainExecutionContext, unwind)
+              nir.Inst.Let(awaitRunnables, unwind)
             )
         }
       )
@@ -505,7 +505,7 @@ private[codegen] object Generate {
     }
 
     def genScanableTypesIds(): Unit = {
-      // Ids of array nir.Types that can contain pointers
+      // Ids of array types that can contain pointers
       for ((symbol, tpeName) <- Seq(
             (objectArrayIdName, "Object"),
             (blobArrayIdName, "Blob")
