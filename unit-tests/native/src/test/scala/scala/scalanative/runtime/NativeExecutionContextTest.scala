@@ -10,7 +10,7 @@ class NativeExecutionContextTest {
     val runnable = new Runnable {
       def run(): Unit = i += 1
     }
-    
+
     val ctx = NativeExecutionContext.queue
     ctx.execute(runnable)
     ctx.execute(runnable)
