@@ -12,7 +12,8 @@ object NativeExecutionContext {
    */
   val queue: ExecutionContextExecutor = QueueExecutionContext
 
-  private object QueueExecutionContext extends ExecutionContextExecutor {
+  private[runtime] object QueueExecutionContext
+      extends ExecutionContextExecutor {
     private val queue: ListBuffer[Runnable] = new ListBuffer
     override def execute(runnable: Runnable): Unit = queue += runnable
     override def reportFailure(t: Throwable): Unit = t.printStackTrace()
@@ -33,8 +34,4 @@ object NativeExecutionContext {
       executeNextTask()
     }
   }
-
-  /** Execute all the tasks in the queue until there is none left */
-  private[runtime] def loop(): Unit =
-    QueueExecutionContext.executeAvailableTasks()
 }

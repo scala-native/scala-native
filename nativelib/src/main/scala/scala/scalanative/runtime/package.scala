@@ -55,7 +55,7 @@ package object runtime {
   /** Initialize runtime with given arguments and return the rest as Java-style
    *  array.
    */
-  private[scalanative] def init(
+  private[runtime] def init(
       argc: Int,
       rawargv: RawPtr
   ): scala.Array[String] = {
@@ -79,6 +79,14 @@ package object runtime {
 
     _filename = fromCString(argv(0))
     args
+  }
+
+  /* Internal shutdown method called after successfully running the main method.
+   * Ensures that all scheduled tasks / non-deamon threads would finish before exit.
+   */
+  @noinline private[runtime] def onShutdown(): Unit = {
+    NativeExecutionContext.QueueExecutionContext.executeAvailableTasks()
+    if (isMultithreadingEnabled) JoinNonDaemonThreads.run()
   }
 
   private[scalanative] final def executeUncaughtExceptionHandler(
@@ -117,7 +125,8 @@ package object runtime {
   /** Run the runtime's event loop. The method is called from the generated
    *  C-style after the application's main method terminates.
    */
-  @noinline def loop(): Unit = NativeExecutionContext.loop()
+  @noinline def loop(): Unit =
+    NativeExecutionContext.QueueExecutionContext.executeAvailableTasks()
 
   /** Called by the generated code in case of division by zero. */
   @noinline

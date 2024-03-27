@@ -300,19 +300,6 @@ private[codegen] object Generate {
           val arr = nir.Val.Local(fresh(), ObjectArray)
 
           def unwind = unwindProvider()
-          def genJoinNonDeamonThreads(): Seq[nir.Inst] =
-            if (!meta.platform.isMultithreadingEnabled) Nil
-            else
-              Seq(
-                nir.Inst.Let(
-                  nir.Op.Call(
-                    JoinNonDaemonThreadsRunSig,
-                    nir.Val.Global(JoinNonDaemonThreadsRun, nir.Type.Ptr),
-                    Seq()
-                  ),
-                  unwind
-                )
-              )
           Seq(nir.Inst.Label(fresh(), Seq(argc, argv))) ++
             genGcInit(unwindProvider) ++
             genClassInitializersCalls(unwindProvider) ++
@@ -327,8 +314,8 @@ private[codegen] object Generate {
                 nir.Op.Call(entryMainTy, entryMainMethod, Seq(arr)),
                 unwind
               ),
-              nir.Inst.Let(nir.Op.Call(NativeExecutionContextLoopSig, NativeExecutionContextLoop, Seq(rt)), unwind)
-            ) ++ genJoinNonDeamonThreads()
+              nir.Inst.Let(nir.Op.Call(RuntimeOnShutdownSig, RuntimeOnShutdown, Seq(rt)), unwind)
+            )
         }
       )
     }
@@ -638,13 +625,10 @@ private[codegen] object Generate {
       nir.Sig.Method("init", Seq(nir.Type.Int, nir.Type.Ptr, nir.Type.Array(nir.Rt.String)))
     )
     val RuntimeInit = nir.Val.Global(RuntimeInitName, nir.Type.Ptr)
-
-    val NativeExecutionContext =
-      nir.Type.Ref(nir.Global.Top("scala.scalanative.runtime.NativeExecutionContext$QueueExecutionContext$"))
-    val NativeExecutionContextLoopSig = nir.Type.Function(Seq(NativeExecutionContext), nir.Type.Unit)
-    val NativeExecutionContextLoopName = NativeExecutionContext.name
-      .member(nir.Sig.Method("executeAvailableTasks", Seq(nir.Type.Unit)))
-    val NativeExecutionContextLoop = nir.Val.Global(NativeExecutionContextLoopName, nir.Type.Ptr)
+    val RuntimeOnShutdownSig = nir.Type.Function(Seq(Runtime), nir.Type.Unit)
+    val RuntimeOnShutdownName = Runtime.name
+      .member(nir.Sig.Method("onShutdown", Seq(nir.Type.Unit)))
+    val RuntimeOnShutdown = nir.Val.Global(RuntimeOnShutdownName, nir.Type.Ptr)
 
     val LibraryInitName = extern("ScalaNativeInit")
     val LibraryInitSig = nir.Type.Function(Seq.empty, nir.Type.Int)
@@ -709,7 +693,7 @@ private[codegen] object Generate {
       ObjectArray.name,
       Runtime.name,
       RuntimeInit.name,
-      NativeExecutionContextLoop.name,
+      RuntimeOnShutdown.name,
       RuntimeExecuteUEH,
       JavaThread,
       JavaThreadCurrentThread,
