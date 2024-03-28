@@ -3,7 +3,7 @@ package scala.scalanative.windows
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
 
-@link("Kernel32")
+@link("kernel32")
 @extern()
 object WinNlsApi {
   type LCType = Int

@@ -2,7 +2,7 @@ package scala.scalanative.windows.winnt
 
 import scalanative.unsafe._
 
-@link("Advapi32")
+@link("advapi32")
 @extern
 object TokenInformationClass {
   @name("scalanative_tokenuser")

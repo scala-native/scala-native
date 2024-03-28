@@ -2,7 +2,7 @@ package scala.scalanative.windows
 
 import scala.scalanative.unsafe._
 
-@link("Advapi32")
+@link("advapi32")
 @extern()
 object SddlApi {
   import SecurityBaseApi._
