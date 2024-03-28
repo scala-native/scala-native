@@ -96,7 +96,7 @@ package object runtime {
     def shouldWaitForThreads =
       if (isMultithreadingEnabled) gracefully && pollNonDaemonThreads.hasNext
       else false
-    def shouldRunQueuedTasks = gracefully && queue.hasNextTask
+    def shouldRunQueuedTasks = gracefully && queue.hasAvailableTasks
 
     // Both runnable from the NativeExecutionContext.queue and the running threads can spawn new runnables
     while ({
