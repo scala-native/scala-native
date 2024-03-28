@@ -1,4 +1,5 @@
-package scala.scalanative.testinterface
+package scala.scalanative
+package testinterface
 
 import java.io.{DataInputStream, DataOutputStream, EOFException}
 import java.net.Socket
@@ -7,7 +8,7 @@ import scala.concurrent.ExecutionContext
 import scala.scalanative.testinterface.common.RPCCore
 import scala.util.{Failure, Success, Try}
 import java.nio.charset.StandardCharsets
-import scala.scalanative.meta.LinktimeInfo
+import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
 
 /** Native RPC Core. */
 private[testinterface] class NativeRPC(clientSocket: Socket)(implicit
@@ -37,7 +38,9 @@ private[testinterface] class NativeRPC(clientSocket: Socket)(implicit
     } else {
       val msg = Array.fill(msgLength)(inStream.readChar).mkString
       handleMessage(msg)
-      if (!LinktimeInfo.isMultithreadingEnabled) scalanative.runtime.loop()
+      // We cannot control which ExecutionContext implementation is used by users
+      // Run the queue execution context loop just to be sure we don't create deadlock
+      runtime.loop()
       loop()
     }
   }
