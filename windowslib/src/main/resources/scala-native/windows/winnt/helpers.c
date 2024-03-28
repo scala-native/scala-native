@@ -1,6 +1,6 @@
 #if defined(_WIN32) || defined(WIN32)
 #define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
+#include <windows.h>
 #pragma comment(lib, "Advapi32.lib")
 
 size_t scalanative_winnt_empty_priviliges_size() {

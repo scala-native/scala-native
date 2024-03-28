@@ -10,7 +10,7 @@
 #include <ws2tcpip.h>
 #endif
 #ifdef _WIN32
-#include <WinSock2.h>
+#include <winsock2.h>
 #pragma comment(lib, "Ws2_32.lib")
 typedef SSIZE_T ssize_t;
 #else

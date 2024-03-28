@@ -1,6 +1,6 @@
 #if defined(_WIN32) || defined(WIN32)
 #define WIN32_LEAN_AND_MEAN
-#include "Windows.h"
+#include "windows.h"
 #include <winsock2.h>
 
 #pragma comment(lib, "Ws2_32.lib")
