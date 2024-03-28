@@ -191,7 +191,7 @@ private[scalanative] object LLVM {
       // * libpthread for process APIs and parallel garbage collection.
       // * Dbghelp for windows implementation of unwind libunwind API
       val platformsLinks =
-        if (config.targetsWindows) Seq("Dbghelp")
+        if (config.targetsWindows) Seq("dbghelp")
         else if (config.targetsOpenBSD || config.targetsNetBSD)
           Seq("pthread")
         else Seq("pthread", "dl")

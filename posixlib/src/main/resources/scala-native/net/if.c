@@ -1,10 +1,10 @@
 #if defined(SCALANATIVE_COMPILE_ALWAYS) || defined(__SCALANATIVE_POSIX_NET_IF)
 #ifdef _WIN32
 #include <winsock2.h>
-#pragma comment(lib, "Ws2_32.lib")
+#pragma comment(lib, "ws2_32.lib")
 #include <netioapi.h>
 #include <iphlpapi.h>
-#pragma comment(lib, "Iphlpapi.lib")
+#pragma comment(lib, "iphlpapi.lib")
 #else
 #include <net/if.h>
 
