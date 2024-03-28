@@ -41,7 +41,7 @@ object NativeExecutionContext {
     def helpComplete(): Unit
   }
 
-  private object QueueExecutionContext
+  private[runtime] object QueueExecutionContext
       extends ExecutionContextExecutor
       with WorkStealingExecutor {
     private val queue: ListBuffer[Runnable] = new ListBuffer
