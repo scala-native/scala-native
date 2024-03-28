@@ -107,7 +107,7 @@ class ThreadGroup(
     if (out == null) throw new NullPointerException()
     if (out.length == 0) 0
     else {
-      val aliveThreads = NativeThread.Registry.aliveThreads
+      val aliveThreads = NativeThread.Registry.aliveThreads.toArray
       @tailrec def loop(idx: Int, included: Int): Int =
         if (idx == aliveThreads.length || included == out.length) included
         else {

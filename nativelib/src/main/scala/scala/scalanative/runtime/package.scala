@@ -5,17 +5,12 @@ import scalanative.unsafe._
 import scalanative.unsigned.USize
 import scalanative.runtime.Intrinsics._
 import scalanative.runtime.monitor._
+import scalanative.runtime.ffi.stdatomic.{atomic_thread_fence, memory_order}
 import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
-
-// Extract any fields from runtime package to ensure it does not require initialization
-private object runtimeState {
-  var _filename: String = null
-}
+import java.util.concurrent.locks.LockSupport
 
 package object runtime {
-  import runtimeState._
-
-  def filename = _filename
+  def filename = ExecInfo.filename
 
   /** Used as a stub right hand of intrinsified methods. */
   private[scalanative] def intrinsic: Nothing = throwUndefined()
@@ -77,7 +72,7 @@ package object runtime {
       c += 1
     }
 
-    _filename = fromCString(argv(0))
+    ExecInfo.filename = fromCString(argv(0))
     args
   }
 
@@ -85,8 +80,35 @@ package object runtime {
    * Ensures that all scheduled tasks / non-deamon threads would finish before exit.
    */
   @noinline private[runtime] def onShutdown(): Unit = {
-    NativeExecutionContext.QueueExecutionContext.executeAvailableTasks()
-    if (isMultithreadingEnabled) JoinNonDaemonThreads.run()
+    import MainThreadShutdownContext._
+    if (isMultithreadingEnabled) {
+      shutdownThread = Thread.currentThread()
+      atomic_thread_fence(memory_order.memory_order_seq_cst)
+    }
+    def pollNonDaemonThreads = NativeThread.Registry.aliveThreads.iterator
+      .map(_.thread)
+      .filter { thread =>
+        (thread ne shutdownThread) && !thread.isDaemon() &&
+        thread.isAlive()
+      }
+
+    def queue = NativeExecutionContext.QueueExecutionContext
+    def shouldWaitForThreads =
+      if (isMultithreadingEnabled) gracefully && pollNonDaemonThreads.hasNext
+      else false
+    def shouldRunQueuedTasks = gracefully && queue.hasNextTask
+
+    // Both runnable from the NativeExecutionContext.queue and the running threads can spawn new runnables
+    while ({
+      // drain the queue
+      queue.executeAvailableTasks()
+      // queue is empty, threads might be still running
+      if (isMultithreadingEnabled) {
+        if (shouldWaitForThreads) LockSupport.park()
+        // When unparked thread has either finished execution or there are new tasks enqueued
+      }
+      shouldWaitForThreads || shouldRunQueuedTasks
+    }) ()
   }
 
   private[scalanative] final def executeUncaughtExceptionHandler(

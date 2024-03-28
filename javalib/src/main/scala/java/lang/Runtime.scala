@@ -31,9 +31,7 @@ class Runtime private () {
   }
 
   private def handleSignal(sig: CInt): Unit = {
-    if (isMultithreadingEnabled) {
-      scalanative.runtime.Proxy.skipWaitingForNonDeamonThreads()
-    }
+    scalanative.runtime.Proxy.disableGracefullShutdown()
     Runtime.getRuntime().runHooks()
     exit(128 + sig)
   }

@@ -661,12 +661,6 @@ private[codegen] object Generate {
       nir.Sig.Method("executeUncaughtExceptionHandler", Seq(JavaThreadUEHRef, JavaThreadRef, Throwable, nir.Type.Unit))
     )
 
-    val JoinNonDaemonThreadsModule = nir.Type.Ref(nir.Global.Top("scala.scalanative.runtime.JoinNonDaemonThreads"))
-    val JoinNonDaemonThreadsRun =
-      JoinNonDaemonThreadsModule.name
-        .member(nir.Sig.Method("run", Seq(nir.Type.Unit), nir.Sig.Scope.PublicStatic))
-    val JoinNonDaemonThreadsRunSig = nir.Type.Function(Seq(), nir.Type.Unit)
-
     val InitSig = nir.Type.Function(Seq.empty, nir.Type.Unit)
     val InitDecl = nir.Defn.Declare(nir.Attrs.None, extern("scalanative_GC_init"), InitSig)
     val Init = nir.Val.Global(InitDecl.name, nir.Type.Ptr)
@@ -699,6 +693,6 @@ private[codegen] object Generate {
       JavaThreadCurrentThread,
       JavaThreadGetUEH,
       JavaThreadUEH
-    ) ++ { if (platform.isMultithreadingEnabled) Seq(JoinNonDaemonThreadsRun) else Nil }
+    )
   }
 }
