@@ -85,7 +85,7 @@ package object runtime {
    * Ensures that all scheduled tasks / non-deamon threads would finish before exit.
    */
   @noinline private[runtime] def onShutdown(): Unit = {
-    NativeExecutionContext.queue.executeAvailableTasks()
+    NativeExecutionContext.queue.helpComplete()
     if (isMultithreadingEnabled) JoinNonDaemonThreads.run()
   }
 
@@ -126,11 +126,11 @@ package object runtime {
    *  C-style after the application's main method terminates.
    */
   @deprecated(
-    "Use `scala.scalanative.runtime.NativeExecutionContext.queue.executeAvailableTasks())",
+    "Use `scala.scalanative.runtime.NativeExecutionContext.queue.helpComplete())",
     since = "0.5.0"
   )
   @noinline def loop(): Unit =
-    NativeExecutionContext.queue.executeAvailableTasks()
+    NativeExecutionContext.queue.helpComplete()
 
   /** Called by the generated code in case of division by zero. */
   @noinline
