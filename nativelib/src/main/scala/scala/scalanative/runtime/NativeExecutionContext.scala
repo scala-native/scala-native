@@ -3,6 +3,8 @@ package runtime
 
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.ExecutionContextExecutor
+import scala.concurrent.duration._
+import java.util.concurrent.ConcurrentLinkedQueue
 import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
 
 object NativeExecutionContext {
@@ -10,10 +12,39 @@ object NativeExecutionContext {
   /** Single-threaded queue based execution context. Each runable is executed
    *  sequentially after termination of the main method
    */
-  val queue: ExecutionContextExecutor = QueueExecutionContext
+  val queue: ExecutionContextExecutor with WorkStealingExecutor =
+    QueueExecutionContext
+
+  trait WorkStealingExecutor { self: ExecutionContextExecutor =>
+
+    /** Apply work-stealing mechanism to help with completion of any tasks
+     *  available for execution.Returns after work-stealing maximal number or
+     *  tasks or there is no more tasks available for execution
+     *  @param maxSteals
+     *    maximal ammount of tasks that can be executed, if <= 0 then no tasks
+     *    would be completed
+     */
+    def stealWork(maxSteals: Int): Unit
+
+    /** Apply work-stealing mechanism to help with completion of any tasks
+     *  available for execution. Returns when timeout passed out or there is no
+     *  more tasks available for execution
+     *  @param timeout
+     *    maximal ammount of time for which execution of new tasks can be
+     *    started
+     */
+    def stealWork(timeout: FiniteDuration): Unit
+
+    /** Apply work-stealing mechanism to help with completion of available tasks
+     *  available for execution. Returns when there is no more tasks available
+     *  for execution
+     */
+    def helpComplete(): Unit
+  }
 
   private[runtime] object QueueExecutionContext
-      extends ExecutionContextExecutor {
+      extends ExecutionContextExecutor
+      with WorkStealingExecutor {
     private val queue: Queue =
       if (isMultithreadingEnabled) new Queue.Concurrent()
       else new Queue.Singlethreaded()
@@ -27,21 +58,34 @@ object NativeExecutionContext {
 
     override def reportFailure(t: Throwable): Unit = t.printStackTrace()
 
-    def hasNextTask: Boolean = !queue.isEmpty
-    def availableTasks: Int = queue.size
-
-    def executeNextTask(): Unit = if (hasNextTask) {
-      queue.dequeue() match {
-        case null => ()
-        case runnable =>
-          try runnable.run()
-          catch { case t: Throwable => QueueExecutionContext.reportFailure(t) }
+    override def stealWork(maxSteals: Int): Unit = {
+      if (maxSteals <= 0) ()
+      else {
+        var steals = 0
+        while (steals < maxSteals && hasAvailableTasks) {
+          doStealWork()
+          steals += 1
+        }
       }
     }
 
-    /** Execute all the available tasks. Returns the number of executed tasks */
-    def executeAvailableTasks(): Unit = while (hasNextTask) {
-      executeNextTask()
+    override def stealWork(timeout: FiniteDuration): Unit = {
+      val deadline = System.currentTimeMillis() + timeout.toMillis
+      while (System.currentTimeMillis() < deadline && hasAvailableTasks) {
+        doStealWork()
+      }
+    }
+
+    override def helpComplete(): Unit = while (hasAvailableTasks) doStealWork()
+
+    private[runtime] def hasAvailableTasks: Boolean = !queue.isEmpty
+    private[runtime] def availableTasks: Int = queue.size
+
+    private def doStealWork(): Unit = queue.dequeue() match {
+      case null => ()
+      case runnable =>
+        try runnable.run()
+        catch { case t: Throwable => reportFailure(t) }
     }
 
     private trait Queue {
@@ -52,18 +96,20 @@ object NativeExecutionContext {
     }
     private object Queue {
       class Concurrent() extends Queue {
-        val backend = new java.util.concurrent.ConcurrentLinkedQueue[Runnable]()
-        override def enqueue(runnable: Runnable): Unit = backend.add(runnable)
-        override def dequeue(): Runnable = backend.poll()
-        override def size: Int = backend.size()
-        override def isEmpty: Boolean = backend.isEmpty()
+        private val tasks = new ConcurrentLinkedQueue[Runnable]()
+        override def enqueue(runnable: Runnable): Unit = tasks.add(runnable)
+        override def dequeue(): Runnable = tasks.poll()
+        override def size: Int = tasks.size()
+        override def isEmpty: Boolean = tasks.isEmpty()
       }
       class Singlethreaded() extends Queue {
-        val backend = ListBuffer.empty[Runnable]
-        override def enqueue(runnable: Runnable) = backend += runnable
-        override def dequeue(): Runnable = backend.remove(0)
-        override def size: Int = backend.size
-        override def isEmpty: Boolean = backend.isEmpty
+        private val tasks = ListBuffer.empty[Runnable]
+        override def enqueue(runnable: Runnable) = tasks += runnable
+        override def dequeue(): Runnable =
+          if (tasks.nonEmpty) tasks.remove(0)
+          else null
+        override def size: Int = tasks.size
+        override def isEmpty: Boolean = tasks.isEmpty
       }
     }
   }
