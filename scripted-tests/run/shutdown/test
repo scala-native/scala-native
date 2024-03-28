@@ -3,3 +3,6 @@ $ copy-file variants/SetDeleteOnExit.scala src/main/scala/Main.scala
 
 $ copy-file variants/ThreadsJoin.scala src/main/scala/Main.scala
 > runTestThreadsJoin
+
+$ copy-file variants/QueueWithThreads.scala src/main/scala/Main.scala
+> runTestQueueWithThreads

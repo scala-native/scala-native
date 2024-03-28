@@ -20,5 +20,6 @@ object Proxy {
       callback: GCWeakReferencesCollectedCallback
   ): Unit = GC.setWeakReferencesCollectedCallback(callback)
 
-  def skipWaitingForNonDeamonThreads(): Unit = JoinNonDaemonThreads.skip()
+  def disableGracefullShutdown(): Unit =
+    MainThreadShutdownContext.gracefully = false
 }

@@ -1,4 +1,5 @@
-package scala.scalanative.runtime
+package scala.scalanative
+package runtime
 
 import scala.scalanative.runtime.Intrinsics._
 import scala.scalanative.runtime.GC.{ThreadRoutineArg, ThreadStartRoutine}
@@ -10,6 +11,7 @@ import scala.scalanative.runtime.ffi.stdatomic.memory_order._
 import scala.annotation.nowarn
 
 import java.util.concurrent.ConcurrentHashMap
+import java.{util => ju}
 
 trait NativeThread {
   import NativeThread._
@@ -58,6 +60,7 @@ trait NativeThread {
   protected def onTermination(): Unit = if (isMultithreadingEnabled) {
     state = NativeThread.State.Terminated
     Registry.remove(this)
+    MainThreadShutdownContext.onThreadFinished(this.thread)
   }
 }
 
@@ -104,14 +107,14 @@ object NativeThread {
     private[NativeThread] def add(thread: NativeThread): Unit =
       _aliveThreads.put(thread.thread.getId(): @nowarn, thread)
 
-    private[NativeThread] def remove(thread: NativeThread): Unit =
+    private[NativeThread] def remove(thread: NativeThread): Unit = {
       _aliveThreads.remove(thread.thread.getId(): @nowarn)
+    }
 
-    def aliveThreads: scala.Array[NativeThread] =
-      _aliveThreads.values.toArray().asInstanceOf[scala.Array[NativeThread]]
-
-    def onMainThreadTermination() = {
-      _aliveThreads.remove(MainThreadId)
+    @nowarn
+    def aliveThreads: Iterable[NativeThread] = {
+      import scala.collection.JavaConverters._
+      _aliveThreads.values.asScala
     }
   }
 
