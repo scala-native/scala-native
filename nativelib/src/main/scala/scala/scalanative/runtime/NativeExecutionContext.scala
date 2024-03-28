@@ -44,17 +44,27 @@ object NativeExecutionContext {
   private[runtime] object QueueExecutionContext
       extends ExecutionContextExecutor
       with WorkStealingExecutor {
-    private val queue: ListBuffer[Runnable] = new ListBuffer
-    override def execute(runnable: Runnable): Unit = queue += runnable
+
+    private val queue: Queue =
+      if (isMultithreadingEnabled) new Queue.Concurrent()
+      else new Queue.Singlethreaded()
+
+    override def execute(runnable: Runnable): Unit = {
+      queue.enqueue(runnable)
+      if (isMultithreadingEnabled) {
+        MainThreadShutdownContext.onTaskEnqueued()
+      }
+    }
     override def reportFailure(t: Throwable): Unit = t.printStackTrace()
 
     private[runtime] def hasAvailableTasks: Boolean = queue.nonEmpty
     private[runtime] def availableTasks: Int = queue.size
 
-    private def doStealWork(): Unit = {
-      val runnable = queue.remove(0)
-      try runnable.run()
-      catch { case t: Throwable => reportFailure(t) }
+    private def doStealWork(): Unit = queue.dequeue match {
+      case null => ()
+      case runnable =>
+        try runnable.run()
+        catch { case t: Throwable => reportFailure(t) }
     }
 
     override def stealWork(maxSteals: Int): Unit = {
@@ -76,5 +86,36 @@ object NativeExecutionContext {
     }
 
     override def helpComplete(): Unit = while (hasAvailableTasks) doStealWork()
+
+    private trait Queue {
+      def enqueue(runnable: Runnable): Unit
+      def dequeue(): Runnable
+      def size: Int
+      def isEmpty: Boolean
+    }
+    private object Queue {
+      class Concurrent() extends Queue {
+        private val tasks =
+          new java.util.concurrent.ConcurrentLinkedQueue[Runnable]()
+        override def enqueue(runnable: Runnable): Unit = tasks.add(runnable)
+        override def dequeue(): Runnable = tasks.poll()
+        override def size: Int = tasks.size()
+        override def isEmpty: Boolean = tasks.isEmpty()
+      }
+      class Singlethreaded() extends Queue {
+        private var tasks = List.empty[Runnable]
+        private var _size = 0
+        override def enqueue(runnable: Runnable) = {
+          tasks = runnable :: tasks
+          _size += 1
+        }
+        override def dequeue(): Runnable = tasks match {
+          case head :: tail => tasks = next; _size -= 1; head
+          case Nil          => null // fine, concurrent version can return null
+        }
+        override def size: Int = _size
+        override def isEmpty: Boolean = tasks.isEmpty
+      }
+    }
   }
 }

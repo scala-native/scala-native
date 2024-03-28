@@ -62,3 +62,13 @@ runTestThreadsJoin := {
     checkThreadsJoin(cmd, joinInMain = false)
   }
 }
+
+val runTestQueueWithThreads = taskKey[Unit](
+  "test multithreaded shutdown in mixed environement using Queue and Threads scheduling"
+)
+runTestQueueWithThreads := {
+  val cmd = (Compile / nativeLink).value.toString
+  val proc = new ProcessBuilder(cmd).start()
+  assert(proc.waitFor(5, TimeUnit.SECONDS))
+  assert(proc.exitValue == 0)
+}

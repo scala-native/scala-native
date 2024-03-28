@@ -17,8 +17,6 @@ import scala.scalanative.libc.stdatomic.{AtomicLongLong, atomic_thread_fence}
 import scala.scalanative.libc.stdatomic.memory_order._
 import scala.scalanative.runtime.UnsupportedFeature
 
-import scala.scalanative.runtime.JoinNonDaemonThreads
-
 class Thread private[lang] (
     @volatile private var name: String,
     private[java] val platformCtx: PlatformThreadContext /* | Null */
