@@ -8,7 +8,7 @@ object Test {
     def spawnRunnable(name: String)(fn: => Unit) =
       NativeExecutionContext.queue
         .execute(() => { fn; println(s"task $name done") })
-        
+
     def spawnThread(name: String)(fn: => Unit) = {
       val t = new Thread(() => { fn; println(s"thread $name done") })
       t.setName(name)
