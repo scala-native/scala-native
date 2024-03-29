@@ -60,7 +60,7 @@ private[java] object WeakReferenceRegistry {
             prev.nextReference = current.nextReference
             enqueueCollectedReferences(head, current.nextReference, current)
           }
-        case _ => enqueueCollectedReferences(head, current.nextReference, prev)
+        case _ => enqueueCollectedReferences(head, current.nextReference, current)
       }
   private def handleCollectedReferences(): Unit = {
     // This method is designed for calls from C and therefore should not include
