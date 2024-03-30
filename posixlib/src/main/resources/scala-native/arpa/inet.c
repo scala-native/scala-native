@@ -3,8 +3,8 @@
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
-#pragma comment(lib, "Ws2_32.lib")
-#include <WinSock2.h>
+#pragma comment(lib, "ws2_32.lib")
+#include <winsock2.h>
 #else
 #include <arpa/inet.h>
 #endif

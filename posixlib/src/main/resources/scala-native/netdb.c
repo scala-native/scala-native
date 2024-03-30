@@ -1,8 +1,8 @@
 #if defined(SCALANATIVE_COMPILE_ALWAYS) || defined(__SCALANATIVE_POSIX_NETDB)
 #ifdef _WIN32
-#include <WinSock2.h>
+#include <winsock2.h>
 #include <ws2tcpip.h> // socklen_t
-// #include <Winerror.h>
+// #include <winerror.h>
 #else // not _WIN32
 /* FreeBSD wants AF_INET, which is in <sys/socket.h>
  *

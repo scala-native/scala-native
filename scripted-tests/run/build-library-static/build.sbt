@@ -53,7 +53,7 @@ def compileAndTest(
     outFile: File
 ): Unit = {
   val platformLibs =
-    if (Platform.isWindows) Seq("Advapi32", "Userenv", "Dbghelp")
+    if (Platform.isWindows) Seq("advapi32", "userenv", "dbghelp")
     else Seq("pthread", "dl")
   val cmd: Seq[String] =
     Seq(

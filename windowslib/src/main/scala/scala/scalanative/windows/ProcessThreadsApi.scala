@@ -5,8 +5,8 @@ import scalanative.unsigned._
 import HandleApi.Handle
 import WinBaseApi.SecurityAttributes
 
-@link("Advapi32")
-@link("Kernel32")
+@link("advapi32")
+@link("kernel32")
 @extern()
 object ProcessThreadsApi {
   type StartupInfoW = CStruct18[

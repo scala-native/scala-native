@@ -1,6 +1,6 @@
 #if defined(_WIN32) || defined(WIN32)
 #define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
+#include <windows.h>
 
 // Needed to find symbols from UCRT - Windows Universal C Runtime
 #pragma comment(lib, "legacy_stdio_definitions.lib")

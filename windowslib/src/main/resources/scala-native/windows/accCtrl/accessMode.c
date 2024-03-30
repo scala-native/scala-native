@@ -1,6 +1,6 @@
 #if defined(_WIN32) || defined(WIN32)
 #define WIN32_LEAN_AND_MEAN
-#include <AccCtrl.h>
+#include <accctrl.h>
 
 int scalanative_not_used_access() { return NOT_USED_ACCESS; }
 int scalanative_grant_access() { return GRANT_ACCESS; }

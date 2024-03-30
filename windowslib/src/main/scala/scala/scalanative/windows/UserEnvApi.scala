@@ -3,7 +3,7 @@ package scala.scalanative.windows
 import scala.scalanative.unsafe._
 import scala.scalanative.windows.HandleApi.Handle
 
-@link("Userenv")
+@link("userenv")
 @extern()
 object UserEnvApi {
   def GetUserProfileDirectoryA(

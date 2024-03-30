@@ -5,7 +5,7 @@ import scala.scalanative.unsigned._
 import HandleApi.Handle
 import scala.scalanative.windows.winnt._
 
-@link("Advapi32")
+@link("advapi32")
 @extern()
 object WinBaseApi {
   import SecurityBaseApi._

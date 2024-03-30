@@ -3,7 +3,7 @@ package scala.scalanative.windows
 import scala.scalanative.unsafe.{Word => _, _}
 import scala.scalanative.windows.HandleApi.Handle
 
-@link("Advapi32")
+@link("advapi32")
 @extern()
 object SecurityBaseApi {
   import winnt.TokenInformationClass

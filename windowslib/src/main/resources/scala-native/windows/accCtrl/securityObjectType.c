@@ -1,6 +1,6 @@
 #if (defined(_WIN32) || defined(WIN32)) && !defined(__MINGW64__)
 #define WIN32_LEAN_AND_MEAN
-#include <AccCtrl.h>
+#include <accctrl.h>
 
 int scalanative_se_unknown_object_type() { return SE_UNKNOWN_OBJECT_TYPE; }
 int scalanative_se_file_object() { return SE_FILE_OBJECT; }
