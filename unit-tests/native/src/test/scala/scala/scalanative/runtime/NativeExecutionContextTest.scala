@@ -15,17 +15,17 @@ class NativeExecutionContextTest {
     queue.execute(runnable)
     queue.execute(runnable)
 
-    assertTrue(queue.hasAvailableTasks)
+    assertTrue(queue.isWorkStealingPossible)
     assertEquals(2, queue.availableTasks)
     queue.stealWork(1)
     assertEquals(1, i)
 
-    assertTrue(queue.hasAvailableTasks)
+    assertTrue(queue.isWorkStealingPossible)
     assertEquals(1, queue.availableTasks)
     queue.stealWork(1)
     assertEquals(2, i)
 
-    assertFalse(queue.hasAvailableTasks)
+    assertFalse(queue.isWorkStealingPossible)
     assertEquals(0, queue.availableTasks)
     queue.stealWork(1)
     assertEquals(2, i)

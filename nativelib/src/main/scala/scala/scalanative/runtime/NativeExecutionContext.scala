@@ -2,7 +2,7 @@ package scala.scalanative
 package runtime
 
 import scala.collection.mutable.ListBuffer
-import scala.concurrent.ExecutionContextExecutor
+import scala.concurrent.{ExecutionContextExecutor, ExecutionContext}
 import scala.concurrent.duration._
 import java.util.concurrent.ConcurrentLinkedQueue
 import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
@@ -15,7 +15,17 @@ object NativeExecutionContext {
   val queue: ExecutionContextExecutor with WorkStealingExecutor =
     QueueExecutionContext
 
+  object Implicits {
+    implicit final def queue: ExecutionContext = NativeExecutionContext.queue
+  }
+
   trait WorkStealingExecutor { self: ExecutionContextExecutor =>
+
+    /** Check if there are any tasks available for work stealing.
+     *  @return
+     *    true if there are tasks available, false otherwise
+     */
+    def isWorkStealingPossible: Boolean
 
     /** Apply work-stealing mechanism to help with completion of any tasks
      *  available for execution.Returns after work-stealing maximal number or
@@ -58,27 +68,27 @@ object NativeExecutionContext {
 
     override def reportFailure(t: Throwable): Unit = t.printStackTrace()
 
-    override def stealWork(maxSteals: Int): Unit = {
-      if (maxSteals <= 0) ()
-      else {
-        var steals = 0
-        while (steals < maxSteals && hasAvailableTasks) {
-          doStealWork()
-          steals += 1
-        }
+    override def isWorkStealingPossible: Boolean = !queue.isEmpty
+
+    override def stealWork(maxSteals: Int): Unit = if (maxSteals > 0) {
+      var steals = 0
+      while (isWorkStealingPossible && steals < maxSteals) {
+        doStealWork()
+        steals += 1
       }
     }
 
     override def stealWork(timeout: FiniteDuration): Unit = {
       val deadline = System.currentTimeMillis() + timeout.toMillis
-      while (System.currentTimeMillis() < deadline && hasAvailableTasks) {
+      while (isWorkStealingPossible && System.currentTimeMillis() < deadline) {
         doStealWork()
       }
     }
 
-    override def helpComplete(): Unit = while (hasAvailableTasks) doStealWork()
+    override def helpComplete(): Unit = while (isWorkStealingPossible) {
+      doStealWork()
+    }
 
-    private[runtime] def hasAvailableTasks: Boolean = !queue.isEmpty
     private[runtime] def availableTasks: Int = queue.size
 
     private def doStealWork(): Unit = queue.dequeue() match {
