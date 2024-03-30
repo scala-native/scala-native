@@ -1,0 +1,5 @@
+> set Compile/mainClass := Some("SingleThreaded")
+> run
+
+> set Compile/mainClass := Some("MultiThreaded")
+> run

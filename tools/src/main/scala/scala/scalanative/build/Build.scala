@@ -186,10 +186,14 @@ object Build {
       if (config.compilerConfig.multithreading.isEmpty) {
         // format: off
         val jlThread = nir.Global.Top("java.lang.Thread")
-        val jlThreadStart = jlThread.member(nir.Sig.Method("start", Seq(nir.Type.Unit)))
-        val jlPlatformContext = nir.Global.Top("java.lang.PlatformThreadContext")
-        val jlPlatformContextStart = jlPlatformContext.member(nir.Sig.Method("start", Seq(nir.Type.Ref(jlThread), nir.Type.Unit)))
-        val usesSystemThreads = analysis.infos.contains(jlThreadStart) || analysis.infos.contains(jlPlatformContextStart)
+        val jlMainThread = nir.Global.Top("java.lang.Thread$MainThread$")
+        val jlVirtualThread = nir.Global.Top("java.lang.VirtualThread")
+        val usesSystemThreads = analysis.infos.get(jlThread).collect{
+          case cls: linker.Class =>
+            cls.subclasses.size > 2 ||
+            cls.subclasses.map(_.name).diff(Set(jlMainThread, jlVirtualThread)).nonEmpty || 
+            cls.allocations > 4 // minimal number of allocations
+        }.getOrElse(false)
         // format: on
         if (!usesSystemThreads) {
           config.logger.info(
