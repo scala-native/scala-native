@@ -418,8 +418,9 @@ private[linker] class Reach(
   def reachAllocation(
       info: Class
   )(implicit srcPosition: nir.SourcePosition): Unit =
-    if (!info.allocated) {
-      info.allocated = true
+    if (info.allocated) info.allocations += 1
+    else {
+      info.allocations += 1
 
       // Handle all class and trait virtual calls
       // on this class. This includes virtual calls
