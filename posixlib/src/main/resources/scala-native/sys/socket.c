@@ -10,8 +10,8 @@
 #include <ws2tcpip.h>
 #endif
 #ifdef _WIN32
-#include <WinSock2.h>
-#pragma comment(lib, "Ws2_32.lib")
+#include <winsock2.h>
+#pragma comment(lib, "ws2_32.lib")
 typedef SSIZE_T ssize_t;
 #else
 #if defined(__FreeBSD__)

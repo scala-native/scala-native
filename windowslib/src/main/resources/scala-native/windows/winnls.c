@@ -1,6 +1,6 @@
 #if defined(_WIN32) || defined(WIN32)
 #define WIN32_LEAN_AND_MEAN
-#include "Windows.h"
+#include "windows.h"
 
 PCWSTR scalanative_locale_name_invariant() { return LOCALE_NAME_INVARIANT; }
 PCWSTR scalanative_locale_name_system_default() {

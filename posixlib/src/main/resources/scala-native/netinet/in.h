@@ -6,9 +6,9 @@
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #define WINSOCK_DEPRECATED_NO_WARNINGS
-#pragma comment(lib, "Ws2_32.lib")
-#include <WinSock2.h>
-#include <WS2tcpip.h>
+#pragma comment(lib, "ws2_32.lib")
+#include <winsock2.h>
+#include <ws2tcpip.h>
 typedef uint32_t in_addr_t;
 typedef uint16_t in_port_t;
 #else

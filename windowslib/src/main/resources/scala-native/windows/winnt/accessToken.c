@@ -1,6 +1,6 @@
 #if defined(_WIN32) || defined(WIN32)
 #define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
+#include <windows.h>
 
 DWORD scalanative_token_adjust_default() { return TOKEN_ADJUST_DEFAULT; }
 DWORD scalanative_token_adjust_groups() { return TOKEN_ADJUST_GROUPS; }

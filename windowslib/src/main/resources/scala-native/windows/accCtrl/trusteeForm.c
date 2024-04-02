@@ -1,6 +1,6 @@
 #if defined(_WIN32) || defined(WIN32)
 #define WIN32_LEAN_AND_MEAN
-#include <AccCtrl.h>
+#include <accctrl.h>
 
 int scalanative_trustee_is_sid() { return TRUSTEE_IS_SID; }
 int scalanative_trustee_is_name() { return TRUSTEE_IS_NAME; }

@@ -111,7 +111,8 @@ final class Class(
   val implementors = mutable.SortedSet[Class](this)
   val subclasses = mutable.Set.empty[Class]
   val defaultResponds = mutable.Map.empty[nir.Sig, nir.Global.Member]
-  var allocated = false
+  var allocations = 0
+  def allocated = allocations > 0
 
   lazy val fields: Seq[Field] = {
     val out = mutable.UnrolledBuffer.empty[Field]

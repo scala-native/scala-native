@@ -8,8 +8,8 @@
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 // Boehm on Windows needs User32.lib linked
-#pragma comment(lib, "User32.lib")
-#pragma comment(lib, "Kernel32.lib")
+#pragma comment(lib, "user32.lib")
+#pragma comment(lib, "kernel32.lib")
 #include <windows.h>
 typedef DWORD ThreadRoutineReturnType;
 #else

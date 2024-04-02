@@ -6,8 +6,8 @@
 #include <string.h>
 
 #ifdef _WIN32
-#pragma comment(lib, "Ws2_32.lib")
-#include <WinSock2.h>
+#pragma comment(lib, "ws2_32.lib")
+#include <winsock2.h>
 typedef long int suseconds_t;
 #else
 #include <sys/select.h>
