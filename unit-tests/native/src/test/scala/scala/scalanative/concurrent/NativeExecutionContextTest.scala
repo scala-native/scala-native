@@ -1,5 +1,5 @@
 // Needs to be defined in this package to allow for accessing package-private members
-package scala.scalanative.runtime
+package scala.scalanative.concurrent
 
 import org.junit.Assert._
 import org.junit.Test
@@ -11,7 +11,7 @@ class NativeExecutionContextTest {
       def run(): Unit = i += 1
     }
 
-    val queue = NativeExecutionContext.QueueExecutionContext
+    val queue = NativeExecutionContext.queue.asInstanceOf[QueueExecutionContext]
     queue.execute(runnable)
     queue.execute(runnable)
 

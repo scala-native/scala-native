@@ -2,17 +2,19 @@
 import LibUV._
 import scala.scalanative.libc.stdlib
 import scala.scalanative.unsafe._
-import scala.scalanative.runtime.NativeExecutionContext
+import scala.scalanative.concurrent.NativeExecutionContext
 import scala.scalanative.runtime.Intrinsics._
 import EventLoop.loop
 import scala.util.{Success, Try}
 import scala.concurrent._
 import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext
 
 object Test {
   def main(args: Array[String]): Unit = {
     import NativeExecutionContext.Implicits.queue
     recursiveTask()
+    scheduleHandler()
   }
 
   def recursiveTask()(implicit ec: ExecutionContext): Unit = {
@@ -30,6 +32,11 @@ object Test {
     Timer.delay(10.millis).map { _ => completed = true }
     assert(await(task) == Success(42))
     assert(counter > 2)
+  }
+
+  def scheduleHandler(): Unit = {
+    implicit val ec: EventLoopExecutionContext = NativeExecutionContext.queue
+    // val handler = ec.
   }
 
   def await[T](task: Future[T]): Try[T] = {

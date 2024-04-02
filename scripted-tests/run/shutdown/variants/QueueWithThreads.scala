@@ -1,6 +1,6 @@
 import java.util.concurrent.locks.ReentrantLock
 import java.util.concurrent.CountDownLatch
-import scala.scalanative.runtime.NativeExecutionContext
+import scala.scalanative.concurrent.NativeExecutionContext
 
 object Test {
   def main(args: Array[String]): Unit = {
