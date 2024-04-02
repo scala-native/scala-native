@@ -34,7 +34,7 @@ object Test {
     assert(counter > 2)
   }
 
-   def await[T](task: Future[T]): Try[T] = {
+  def await[T](task: Future[T]): Try[T] = {
     while (!task.isCompleted) EventLoop.`yield`()
     task.value.get
   }

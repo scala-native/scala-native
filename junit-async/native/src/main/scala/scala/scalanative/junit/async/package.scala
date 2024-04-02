@@ -11,7 +11,7 @@ package object async {
     if (isMultithreadingEnabled)
       Await.result(future, Duration.Inf)
     else {
-      concurrent.NativeExecutionContext.queue.helpComplete()
+      concurrent.NativeExecutionContext.queueInternal.helpComplete()
       future.value.get.get
     }
   }

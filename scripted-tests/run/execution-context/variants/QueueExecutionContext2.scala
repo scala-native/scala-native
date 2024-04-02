@@ -1,7 +1,10 @@
 package scala.scalanative.concurrent
 
 import scala.concurrent.Future
-import scala.scalanative.concurrent.{NativeExecutionContext, QueueExecutionContextImpl}
+import scala.scalanative.concurrent.{
+  NativeExecutionContext,
+  QueueExecutionContextImpl
+}
 import NativeExecutionContext.Implicits.queue
 
 object Test {
