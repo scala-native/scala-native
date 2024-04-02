@@ -34,9 +34,41 @@ object Test {
     assert(counter > 2)
   }
 
-  def scheduleHandler(): Unit = {
+ def scheduleHandler(): Unit = {
+    import NativeExecutionContext.{EventLoopExecutionContext, EventHandler}
     implicit val ec: EventLoopExecutionContext = NativeExecutionContext.queue
-    // val handler = ec.
+    val handler = ec.createEventHandler(
+      0,
+      (handler: EventHandler[Int, Unit]) => {
+        println(handler.state)
+        if (handler.state == 2) Right(())
+        else Left(handler.state + 1)
+      }
+    )
+    // Does not iterate when not signaled
+    assert(!handler.result.isCompleted)
+    assert(handler.state == 0)
+    EventLoop.`yield`()
+    assert(!handler.result.isCompleted)
+    assert(handler.state == 0)
+
+    // Can be iterated when signaled
+    assert(!ec.isWorkStealingPossible)
+    handler.signal()
+    assert(ec.isWorkStealingPossible)
+    EventLoop.`yield`()
+    assert(handler.state == 1)
+
+    // Can be iterated by scheduled task
+    ec.schedule(100.millis, () => handler.signal())
+    ec.untilNextScheduledTask.map(_.toMillis).foreach(Thread.sleep(_))
+    EventLoop.drain()
+    assert(handler.state == 2)
+
+    Timer.delay(100.millis).foreach { _ =>
+      println("cb"); handler.signal()
+    }
+    await(handler.result)
   }
 
   def await[T](task: Future[T]): Try[T] = {
