@@ -12,6 +12,8 @@ import scala.annotation.nowarn
 
 import java.util.concurrent.ConcurrentHashMap
 import java.{util => ju}
+import scala.scalanative.concurrent.NativeExecutionContext
+import scala.concurrent.duration._
 
 trait NativeThread {
   import NativeThread._
@@ -42,16 +44,22 @@ trait NativeThread {
 
   @alwaysinline
   final def park(): Unit =
-    park(0, isAbsolute = false)
+    if (isMultithreadingEnabled) park(0, isAbsolute = false)
+    else NativeExecutionContext.queue.helpComplete()
 
   @alwaysinline
   final def parkNanos(nanos: Long): Unit = if (nanos > 0) {
-    park(nanos, isAbsolute = false)
+    if (isMultithreadingEnabled) park(nanos, isAbsolute = false)
+    else NativeExecutionContext.queue.stealWork(nanos.nanos)
   }
 
   @alwaysinline
   final def parkUntil(deadlineEpoch: scala.Long): Unit =
-    park(deadlineEpoch, isAbsolute = true)
+    if (isMultithreadingEnabled) park(deadlineEpoch, isAbsolute = true)
+    else {
+      val timeout = (deadlineEpoch - System.currentTimeMillis()).millis
+      NativeExecutionContext.queue.stealWork(timeout)
+    }
 
   @alwaysinline
   @nowarn // Thread.getId is deprecated since JDK 19

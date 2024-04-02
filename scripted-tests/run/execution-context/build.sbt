@@ -60,3 +60,13 @@ testEventLoop := Def.taskDyn {
       assert(finished)
     }
 }.value
+
+lazy val testIssue3859 = taskKey[Unit]("...")
+testIssue3859 := {
+  import java.util.concurrent.TimeUnit
+  val bin = (Compile / nativeLink).value
+  val proc = new ProcessBuilder(bin.getAbsolutePath).start()
+  val finished = proc.waitFor(1, TimeUnit.SECONDS)
+  if (!finished) proc.destroyForcibly()
+  assert(finished)
+}
