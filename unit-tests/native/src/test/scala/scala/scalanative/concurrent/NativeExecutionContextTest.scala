@@ -11,7 +11,7 @@ class NativeExecutionContextTest {
       def run(): Unit = i += 1
     }
 
-    val queue = NativeExecutionContext.queue.asInstanceOf[QueueExecutionContext]
+    val queue = NativeExecutionContext.queue.asInstanceOf[QueueExecutionContextImpl]
     queue.execute(runnable)
     queue.execute(runnable)
 

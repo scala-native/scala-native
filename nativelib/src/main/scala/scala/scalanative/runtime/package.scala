@@ -92,7 +92,7 @@ package object runtime {
         thread.isAlive()
       }
 
-    def queue = concurrent.NativeExecutionContext.queue
+    def queue = concurrent.NativeExecutionContext.queueInternal
     def shouldWaitForThreads =
       if (isMultithreadingEnabled) gracefully && pollNonDaemonThreads.hasNext
       else false
@@ -148,11 +148,18 @@ package object runtime {
    *  C-style after the application's main method terminates.
    */
   @deprecated(
-    "Use `scala.scalanative.concurrent.NativeExecutionContext.queue.helpComplete())",
+    "Usage in the users code is discouraged, public method would be removed in the future. Use `scala.scalanative` package private method `scala.scalanative.concurrent.NativeExecutionContext.queueInternal.helpComplete()) instead",
     since = "0.5.0"
   )
   @noinline def loop(): Unit =
-    concurrent.NativeExecutionContext.queue.helpComplete()
+    concurrent.NativeExecutionContext.queueInternal.helpComplete()
+
+  // It should be val but we don't want any fields in runtime package object
+  @deprecated(
+    "Use `scala.scalanative.concurrent.NativeExecutionContext",
+    since = "0.5.0"
+  )
+  def ExecutionContext = concurrent.NativeExecutionContext
 
   /** Called by the generated code in case of division by zero. */
   @noinline

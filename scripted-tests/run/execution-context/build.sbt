@@ -36,6 +36,16 @@ testQueueExecutionContext := {
   )
 }
 
+lazy val testQueueExecutionContext2 = taskKey[Unit]("...")
+testQueueExecutionContext2 := {
+  import java.util.concurrent.TimeUnit
+  val bin = (Compile / nativeLink).value
+  val proc = new ProcessBuilder(bin.getAbsolutePath).start()
+  val finished = proc.waitFor(1, TimeUnit.SECONDS)
+  if (!finished) proc.destroyForcibly()
+  assert(finished)
+}
+
 lazy val testEventLoop = taskKey[Unit]("...")
 testEventLoop := Def.taskDyn {
   if (isWindows) Def.task { println("EvenLoop test skipped") }

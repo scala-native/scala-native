@@ -1,5 +1,8 @@
 $ copy-file variants/QueueExecutionContext.scala src/main/scala/Main.scala
 > testQueueExecutionContext
 
+$ copy-file variants/QueueExecutionContext2.scala src/main/scala/Main.scala
+> testQueueExecutionContext2
+
 $ copy-file variants/EventLoop.scala src/main/scala/Main.scala
 > testEventLoop
