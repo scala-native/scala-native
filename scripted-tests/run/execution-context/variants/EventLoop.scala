@@ -52,10 +52,10 @@ object EventLoop {
     uv_run(loop, UV_RUN_NOWAIT)
   }
 
-  def drain(): Unit = while (queue.isWorkStealingPossible) `yield`()
+  def drain(): Unit = while (queue.nonEmpty) `yield`()
 
   def run(): Unit =
-    while (uv_loop_alive(loop) != 0 || queue.isWorkStealingPossible) {
+    while (uv_loop_alive(loop) != 0 || queue.nonEmpty) {
       drain()
       uv_run(loop, UV_RUN_ONCE)
     }

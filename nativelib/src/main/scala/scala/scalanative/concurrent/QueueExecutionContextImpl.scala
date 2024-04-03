@@ -12,7 +12,7 @@ import java.util.{AbstractQueue, ArrayDeque, Comparator, Deque, PriorityQueue}
 import java.util.concurrent.{ConcurrentLinkedQueue, RejectedExecutionException}
 
 private[concurrent] class QueueExecutionContextImpl()
-    extends QueueExecutionContext {
+    extends InternalQueueExecutionContext {
 
   private val computeQueue: Queue =
     if (isMultithreadingEnabled) new Queue.Concurrent
@@ -20,13 +20,16 @@ private[concurrent] class QueueExecutionContextImpl()
 
   private def nowMillis(): Long = System.currentTimeMillis()
 
+  // QueueExecutionContext
+  override def isEmpty: Boolean = computeQueue.isEmpty
+
   // EventEventLoopExecutionContext
   private var isClosed = false
   override def inShutdown: Boolean = isClosed
   override def shutdown(): Unit = isClosed = true
   override def awaitTermination(timeout: FiniteDuration): Boolean = {
     stealWork(timeout)
-    !isWorkStealingPossible
+    nonEmpty
   }
 
   override def close(): Unit = shutdown()
@@ -53,11 +56,9 @@ private[concurrent] class QueueExecutionContextImpl()
   //
   private[scalanative] def availableTasks: Int = computeQueue.size
 
-  override def isWorkStealingPossible: Boolean = computeQueue.nonEmpty
-
   override def stealWork(maxSteals: Int): Unit = if (maxSteals > 0) {
     var steals = 0
-    while (isWorkStealingPossible && steals < maxSteals) {
+    while (nonEmpty && steals < maxSteals) {
       doStealWork()
       steals += 1
     }
@@ -67,14 +68,14 @@ private[concurrent] class QueueExecutionContextImpl()
     if (timeout > Duration.Zero) {
       var clock = nowMillis()
       val deadline = clock + timeout.toMillis
-      while (isWorkStealingPossible && clock < deadline) {
+      while (nonEmpty && clock < deadline) {
         doStealWork()
         clock = nowMillis()
       }
     }
 
   override def helpComplete(): Unit =
-    while (isWorkStealingPossible) stealWork(Int.MaxValue)
+    while (nonEmpty) stealWork(Int.MaxValue)
 
   private def doStealWork(): Unit = computeQueue.dequeue() match {
     case null => ()

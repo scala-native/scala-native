@@ -9,20 +9,29 @@ object NativeExecutionContext {
   /** Single-threaded computeQueue based execution context. Points to the same
    *  instance as `queue` but grants additional access to internal API.
    */
-  private[scalanative] val queueInternal: QueueExecutionContext =
+  private[scalanative] val queueInternal: InternalQueueExecutionContext =
     new QueueExecutionContextImpl()
 
   /** Single-threaded computeQueue based execution context. Each runable is
    *  executed sequentially after termination of the main method
    */
-  val queue: ExecutionContextExecutor = queueInternal
+  val queue: QueueExecutionContext = queueInternal
 
   object Implicits {
     implicit final def queue: ExecutionContext = NativeExecutionContext.queue
   }
 
-  private[scalanative] trait QueueExecutionContext
-      extends ExecutionContextExecutor
+  trait QueueExecutionContext extends ExecutionContextExecutor {
+
+    /** Check if there are no tasks queued for execution */
+    def isEmpty: Boolean
+
+    /** Check if there are any tasks queued for execution */
+    final def nonEmpty: Boolean = !isEmpty
+  }
+
+  private[scalanative] trait InternalQueueExecutionContext
+      extends QueueExecutionContext
       with WorkStealing
       with AutoCloseable {
 
@@ -41,13 +50,7 @@ object NativeExecutionContext {
     def awaitTermination(timeout: FiniteDuration): Boolean
   }
 
-  private[scalanative] trait WorkStealing { self: ExecutionContextExecutor =>
-
-    /** Check if there are any tasks available for work stealing.
-     *  @return
-     *    true if there are tasks available, false otherwise
-     */
-    def isWorkStealingPossible: Boolean
+  private[scalanative] trait WorkStealing { self: QueueExecutionContext =>
 
     /** Apply work-stealing mechanism to help with completion of any tasks
      *  available for execution.Returns after work-stealing maximal number or
