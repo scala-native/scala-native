@@ -3,7 +3,7 @@ package java.lang.ref
 import scala.scalanative.unsafe._
 import scala.scalanative.meta.LinktimeInfo.isWeakReferenceSupported
 import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
-import scala.scalanative.runtime.Proxy
+import scala.scalanative.runtime.javalib.Proxy
 import scala.scalanative.libc.stdatomic._
 import scala.scalanative.runtime.fromRawPtr
 import scala.scalanative.runtime.Intrinsics.classFieldRawPtr
@@ -11,7 +11,6 @@ import scala.scalanative.annotation.alwaysinline
 import scala.util.control.NonFatal
 import java.util.concurrent.locks.LockSupport
 import scala.annotation.tailrec
-import scala.scalanative.runtime.Proxy.GCWeakReferencesCollectedCallback
 
 /* Should always be treated as a module by the compiler.
  * _gc_modified_postGCControlField is explicitly acccessed

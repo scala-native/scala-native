@@ -15,7 +15,8 @@ import scala.scalanative.runtime.NativeThread.{State => _, _}
 import scala.scalanative.runtime.NativeThread.State._
 import scala.scalanative.libc.stdatomic.{AtomicLongLong, atomic_thread_fence}
 import scala.scalanative.libc.stdatomic.memory_order._
-import scala.scalanative.runtime.{UnsupportedFeature, Proxy}
+import scala.scalanative.runtime.UnsupportedFeature
+import scala.scalanative.runtime.javalib.Proxy
 import scala.concurrent.duration._
 import scala.scalanative.concurrent.NativeExecutionContext
 

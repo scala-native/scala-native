@@ -6,7 +6,8 @@ import java.util.{Collections, HashMap, Map, Properties, WindowsHelperMethods}
 import scala.scalanative.posix.pwdOps._
 import scala.scalanative.posix.{pwd, unistd}
 import scala.scalanative.meta.LinktimeInfo.isWindows
-import scala.scalanative.runtime.{Proxy, Intrinsics, Platform}
+import scala.scalanative.runtime.{Intrinsics, Platform}
+import scala.scalanative.runtime.javalib.Proxy
 import scala.scalanative.ffi.time
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._

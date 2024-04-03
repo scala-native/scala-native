@@ -10,6 +10,7 @@ import scala.scalanative.windows.SysInfoApi._
 import scala.scalanative.windows.SysInfoApiOps._
 import scala.scalanative.unsafe._
 import scala.scalanative.meta.LinktimeInfo._
+import scala.scalanative.runtime.javalib.Proxy
 
 class Runtime private () {
   import Runtime._
@@ -31,7 +32,7 @@ class Runtime private () {
   }
 
   private def handleSignal(sig: CInt): Unit = {
-    scalanative.runtime.Proxy.disableGracefullShutdown()
+    Proxy.disableGracefullShutdown()
     Runtime.getRuntime().runHooks()
     exit(128 + sig)
   }
