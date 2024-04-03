@@ -6,3 +6,6 @@ $ copy-file variants/QueueExecutionContext2.scala src/main/scala/Main.scala
 
 $ copy-file variants/EventLoop.scala src/main/scala/Main.scala
 > testEventLoop
+
+$ copy-file variants/Issue3859.scala src/main/scala/Main.scala
+> testIssue3859

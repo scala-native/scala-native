@@ -67,8 +67,8 @@ private[concurrent] class QueueExecutionContextImpl()
   override def stealWork(timeout: FiniteDuration): Unit =
     if (timeout > Duration.Zero) {
       var clock = nowMillis()
-      val deadline = clock + timeout.toMillis
-      while (nonEmpty && clock < deadline) {
+      val deadline = clock + timeout.toMillis + 1
+      while (nonEmpty && clock <= deadline) {
         doStealWork()
         clock = nowMillis()
       }

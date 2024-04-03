@@ -1,6 +1,8 @@
-package scala.scalanative.runtime
+package scala.scalanative
+package runtime
 
 import scala.scalanative.annotation.alwaysinline
+import scala.concurrent.duration.FiniteDuration
 
 object Proxy {
   @alwaysinline
@@ -22,4 +24,10 @@ object Proxy {
 
   def disableGracefullShutdown(): Unit =
     MainThreadShutdownContext.gracefully = false
+
+  def stealWork(maxSteals: Int): Unit =
+    concurrent.NativeExecutionContext.queueInternal.stealWork(maxSteals)
+  def stealWork(timeout: FiniteDuration): Unit =
+    concurrent.NativeExecutionContext.queueInternal.stealWork(timeout)
+
 }
