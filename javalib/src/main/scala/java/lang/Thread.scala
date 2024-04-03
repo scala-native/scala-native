@@ -15,7 +15,7 @@ import scala.scalanative.runtime.NativeThread.{State => _, _}
 import scala.scalanative.runtime.NativeThread.State._
 import scala.scalanative.libc.stdatomic.{AtomicLongLong, atomic_thread_fence}
 import scala.scalanative.libc.stdatomic.memory_order._
-import scala.scalanative.runtime.UnsupportedFeature
+import scala.scalanative.runtime.{UnsupportedFeature, Proxy}
 import scala.concurrent.duration._
 import scala.scalanative.concurrent.NativeExecutionContext
 
@@ -569,11 +569,11 @@ object Thread {
     }
 
     if (isMultithreadingEnabled) doSleep(millis, nanos)
-    else if (NativeExecutionContext.queue.isWorkStealingPossible) {
+    else if (NativeExecutionContext.queue.nonEmpty) {
       val now = System.nanoTime()
       val timeout = millis.millis + nanos.nanos
       val deadline = now + timeout.toNanos
-      NativeExecutionContext.queue.stealWork(timeout)
+      Proxy.stealWork(timeout)
       val remainingNanos = deadline - System.nanoTime()
       if (remainingNanos > 0) {
         doSleep(remainingNanos / 1000000, (remainingNanos % 1000000).toInt)
@@ -585,7 +585,7 @@ object Thread {
 
   @alwaysinline def `yield`(): Unit =
     if (isMultithreadingEnabled) nativeCompanion.yieldThread()
-    else NativeExecutionContext.queue.stealWork(1)
+    else Proxy.stealWork(1)
 
   // Since JDK 19
   @throws[InterruptedException](

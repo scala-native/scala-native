@@ -45,12 +45,12 @@ trait NativeThread {
   @alwaysinline
   final def park(): Unit =
     if (isMultithreadingEnabled) park(0, isAbsolute = false)
-    else NativeExecutionContext.queue.helpComplete()
+    else NativeExecutionContext.queueInternal.helpComplete()
 
   @alwaysinline
   final def parkNanos(nanos: Long): Unit = if (nanos > 0) {
     if (isMultithreadingEnabled) park(nanos, isAbsolute = false)
-    else NativeExecutionContext.queue.stealWork(nanos.nanos)
+    else NativeExecutionContext.queueInternal.stealWork(nanos.nanos)
   }
 
   @alwaysinline
@@ -58,7 +58,7 @@ trait NativeThread {
     if (isMultithreadingEnabled) park(deadlineEpoch, isAbsolute = true)
     else {
       val timeout = (deadlineEpoch - System.currentTimeMillis()).millis
-      NativeExecutionContext.queue.stealWork(timeout)
+      NativeExecutionContext.queueInternal.stealWork(timeout)
     }
 
   @alwaysinline
