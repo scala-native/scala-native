@@ -92,16 +92,16 @@ package object runtime {
         thread.isAlive()
       }
 
-    def queue = NativeExecutionContext.QueueExecutionContext
+    def queue = concurrent.NativeExecutionContext.queueInternal
     def shouldWaitForThreads =
       if (isMultithreadingEnabled) gracefully && pollNonDaemonThreads.hasNext
       else false
-    def shouldRunQueuedTasks = gracefully && queue.hasNextTask
+    def shouldRunQueuedTasks = gracefully && queue.nonEmpty
 
     // Both runnable from the NativeExecutionContext.queue and the running threads can spawn new runnables
     while ({
       // drain the queue
-      queue.executeAvailableTasks()
+      queue.helpComplete()
       // queue is empty, threads might be still running
       if (isMultithreadingEnabled) {
         if (shouldWaitForThreads) LockSupport.park()
@@ -147,8 +147,19 @@ package object runtime {
   /** Run the runtime's event loop. The method is called from the generated
    *  C-style after the application's main method terminates.
    */
+  @deprecated(
+    "Usage in the users code is discouraged, public method would be removed in the future. Use `scala.scalanative` package private method `scala.scalanative.concurrent.NativeExecutionContext.queueInternal.helpComplete()) instead",
+    since = "0.5.0"
+  )
   @noinline def loop(): Unit =
-    NativeExecutionContext.QueueExecutionContext.executeAvailableTasks()
+    concurrent.NativeExecutionContext.queueInternal.helpComplete()
+
+  // It should be val but we don't want any fields in runtime package object
+  @deprecated(
+    "Use `scala.scalanative.concurrent.NativeExecutionContext",
+    since = "0.5.0"
+  )
+  def ExecutionContext = concurrent.NativeExecutionContext
 
   /** Called by the generated code in case of division by zero. */
   @noinline

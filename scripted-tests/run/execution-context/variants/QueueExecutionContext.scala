@@ -1,5 +1,5 @@
 import scala.concurrent.Future
-import scala.concurrent.ExecutionContext.Implicits.global
+import scala.scalanative.concurrent.NativeExecutionContext.Implicits.queue
 
 object Test {
   def main(args: Array[String]): Unit = {

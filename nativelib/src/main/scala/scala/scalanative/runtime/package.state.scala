@@ -4,7 +4,7 @@ import java.util.concurrent.locks.LockSupport
 import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
 
 // Extracted fields from runtime package to ensure it does not require initialization
-private[runtime] object MainThreadShutdownContext {
+private[scalanative] object MainThreadShutdownContext {
   @volatile var shutdownThread: Thread = _
   var gracefully: Boolean = true
 

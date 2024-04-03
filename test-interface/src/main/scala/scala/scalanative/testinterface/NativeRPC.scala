@@ -40,7 +40,7 @@ private[testinterface] class NativeRPC(clientSocket: Socket)(implicit
       handleMessage(msg)
       // We cannot control which ExecutionContext implementation is used by users
       // Run the queue execution context loop just to be sure we don't create deadlock
-      runtime.loop()
+      concurrent.NativeExecutionContext.queueInternal.helpComplete()
       loop()
     }
   }
