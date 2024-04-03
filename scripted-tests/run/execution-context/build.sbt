@@ -16,7 +16,7 @@ import java.util.Locale
 val osName = System
   .getProperty("os.name", "unknown")
   .toLowerCase(Locale.ROOT)
-val isWindows = osName.startsWith("windows")
+val isMac = osName.startsWith("mac")
 
 lazy val testQueueExecutionContext = taskKey[Unit]("...")
 testQueueExecutionContext := {
@@ -48,7 +48,8 @@ testQueueExecutionContext2 := {
 
 lazy val testEventLoop = taskKey[Unit]("...")
 testEventLoop := Def.taskDyn {
-  if (isWindows) Def.task { println("EvenLoop test skipped") }
+  // libuv is preintstalled only on MacOS GithubRunners
+  if (!isMac) Def.task { println("EvenLoop test skipped") }
   else
     Def.task {
       import java.util.concurrent.TimeUnit
