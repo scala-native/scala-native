@@ -572,8 +572,8 @@ object Thread {
     else if (NativeExecutionContext.queue.nonEmpty) {
       val now = System.nanoTime()
       val timeout = millis.millis + nanos.nanos
-      val deadline = now + timeout.toNanos
       Proxy.stealWork(timeout)
+      val deadline = now + timeout.toNanos
       val remainingNanos = deadline - System.nanoTime()
       if (remainingNanos > 0) {
         doSleep(remainingNanos / 1000000, (remainingNanos % 1000000).toInt)
