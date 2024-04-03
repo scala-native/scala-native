@@ -1,5 +1,6 @@
 package scala.scalanative
 package runtime
+package javalib
 
 import scala.scalanative.annotation.alwaysinline
 import scala.concurrent.duration.FiniteDuration

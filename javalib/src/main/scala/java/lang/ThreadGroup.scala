@@ -6,7 +6,9 @@ import java.lang.Thread.UncaughtExceptionHandler
 import java.lang.ref.WeakReference
 
 import scala.annotation.tailrec
-import scala.scalanative.runtime.{NativeThread, Proxy}
+import scala.scalanative.runtime.NativeThread
+import scala.scalanative.runtime.javalib.Proxy
+
 class ThreadGroup(
     final val parent: ThreadGroup,
     final val name: String,
