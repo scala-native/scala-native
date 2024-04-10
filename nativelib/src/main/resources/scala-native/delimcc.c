@@ -32,8 +32,8 @@
 #error "Unsupported platform"
 #endif
 
-#ifdef DELIMCC_DEBUG
-#define debug_printf(...) debug_printf(__VA_ARGS__)
+#ifdef SCALANATIVE_DELIMCC_DEBUG
+#define debug_printf(...) printf(__VA_ARGS__)
 #else
 #define debug_printf(...) (void)0
 #endif
@@ -207,7 +207,7 @@ __continuation_boundary_impl(void **btm, ContinuationBody *body, void *arg) {
         .stack_btm = btm,
         .result = &result,
     };
-    // debug_printf("Setting up result slot at %p\n", &result);
+    debug_printf("Setting up result slot at %p, header = %p\n", &result, &h);
     ContinuationBoundaryLabel l = h.id;
     handler_push(&h);
 
@@ -269,13 +269,13 @@ void *scalanative_continuation_suspend(ContinuationBoundaryLabel b,
     volatile void *ret_val = NULL;
     continuation->return_slot = &ret_val;
 
-    debug_printf("Putting result %p to slot %p\n", *last_handler->h->result,
-                 last_handler->h->result);
-
     // we will be back...
     if (_lh_setjmp(continuation->buf) == 0) {
         // assign it to the handler's return value
         *last_handler->h->result = f(continuation, arg);
+        debug_printf("Putting result %p to slot %p, header = %p\n",
+                     *last_handler->h->result, last_handler->h->result,
+                     last_handler);
         return _lh_longjmp(last_handler->h->buf, 1);
     } else {
         // We're back, ret_val should be populated.
@@ -318,8 +318,9 @@ void __continuation_resume_impl(void *tail, Continuation *continuation,
     debug_printf(
         "diff is %td, stack (size = %td) goes %p~%p -> %p~%p | original "
         "cont = %p [%p]\n",
-        diff, cont->size, cont->stack_top, cont->stack_top + cont->size, target,
-        tail, cont, cont->stack);
+        diff, continuation->size, continuation->stack_top,
+        continuation->stack_top + continuation->size, target, tail,
+        continuation, continuation->stack);
     // clone the handler chain, with fixes.
     to_install = nw = handler_clone_fix(continuation->handlers, diff);
 #define fixed_addr(X) (void *)(X) + diff
