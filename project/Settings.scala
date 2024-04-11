@@ -201,9 +201,8 @@ object Settings {
   // MiMa
   lazy val mimaSettings = Seq(
     mimaFailOnNoPrevious := false,
-    mimaBinaryIssueFilters ++= BinaryIncompatibilities.moduleFilters(
-      name.value
-    ),
+    mimaBinaryIssueFilters ++= BinaryIncompatibilities.moduleFilters
+      .getOrElse(name.value, Nil),
     mimaPreviousArtifacts ++= {
       // The previous releases of Scala Native with which this version is binary compatible.
       val binCompatVersions = Set("0.5.0")
@@ -674,7 +673,8 @@ object Settings {
         case (_, path) => !ignoredExtensions.exists(path.endsWith(_))
       }
     },
-    exportJars := true
+    exportJars := true,
+    mimaPreviousArtifacts := Set.empty // No bytecode, so no point to check MiMa
   )
   lazy val commonJavalibSettings = Def.settings(
     recompileAllOrNothingSettings,

@@ -529,7 +529,8 @@ object Build {
       .settings(
         publishSettings(Some(VersionScheme.BreakOnMajor)),
         disabledDocsSettings,
-        scalacOptions --= ignoredScalaDeprecations(scalaVersion.value)
+        scalacOptions --= ignoredScalaDeprecations(scalaVersion.value),
+        NIROnlySettings
       )
       .withNativeCompilerPlugin
       .mapBinaryVersions {
