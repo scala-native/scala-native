@@ -2,7 +2,7 @@ package scala.scalanative.nscplugin
 
 import dotty.tools.dotc.plugins._
 import dotty.tools.dotc.report
-import dotty.tools.dotc.core.Contexts.NoContext
+import dotty.tools.dotc.core.Contexts.ContextBase
 import java.net.URI
 import java.net.URISyntaxException
 import dotty.tools.dotc.core.Contexts.Context
@@ -45,7 +45,7 @@ class ScalaNativePlugin extends StandardPlugin:
               .filter(_.isAbsolute())).distinct.sortBy(-_.getNameCount())
           )
         case (config, s"mapSourceURI:${mapping}") =>
-          given Context = NoContext
+          given Context = ContextBase().initialCtx
           report.warning("'mapSourceURI' is deprecated, it's ignored.")
           config
         case (config, _) => config
