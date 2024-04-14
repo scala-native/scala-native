@@ -38,9 +38,18 @@ private[codegen] abstract class AbstractCodeGen(
   private val generated = mutable.Set.empty[String]
   private val externSigMembers = mutable.Map.empty[nir.Sig, nir.Global.Member]
 
+  private def isGnu: Boolean = {
+    meta.buildConfig.compilerConfig.configuredOrDetectedTriple.env
+      .startsWith("gnu")
+  }
+
   final val os: OsCompat = {
     import scala.scalanative.codegen.llvm.compat.os._
-    if (meta.platform.targetsWindows) new WindowsCompat(this)
+    if (meta.platform.targetsWindows)
+      if (isGnu)
+        new WindowsGnuCompat(this)
+      else
+        new WindowsCompat(this)
     else new UnixCompat(this)
   }
 

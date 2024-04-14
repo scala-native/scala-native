@@ -59,7 +59,7 @@ int scalanative_unwind_get_proc_name(void *cursor, char *buffer, size_t length,
         void *address = ucontext->stack[ucontext->cursor];
         PSYMBOL_INFOW symbol = &ucontext->symbol.info;
         SymFromAddrW(ucontext->process, (DWORD64)address, 0, symbol);
-        snprintf(buffer, length, "%ws", symbol->Name);
+        snprintf(buffer, length, "%S", symbol->Name);
         memcpy(offset, &(symbol->Address), sizeof(void *));
         if (SymGetLineFromAddr(ucontext->process, (DWORD64)address,
                                &displacement, &line)) {
