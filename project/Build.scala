@@ -642,6 +642,9 @@ object Build {
       .enablePlugins(MyScalaNativePlugin)
       .settings(noPublishSettings)
       .settings(
+        // Setting only used to ensure that compiler does not crash when reporting deprecated options
+        scalacOptions += "-P:scalanative:mapSourceURI:path->unused",
+        scalacOptions -= "-Xfatal-warnings",
         nativeConfig ~= {
           _.withLinkStubs(true)
         },
