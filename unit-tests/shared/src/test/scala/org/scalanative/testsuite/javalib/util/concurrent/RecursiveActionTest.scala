@@ -239,7 +239,7 @@ class RecursiveActionTest extends JSR166Test {
    *  isCancelled return false for normally completed tasks. getRawResult of a
    *  RecursiveAction returns null;
    */
-  def testInvoke(): Unit = {
+  @Test def testInvoke(): Unit = {
     val a = new CheckedRecursiveAction() {
       protected def realCompute(): Unit = {
         val f = new FibAction(8)
@@ -255,7 +255,7 @@ class RecursiveActionTest extends JSR166Test {
    *  isCompletedAbnormally and isCancelled return false for normally completed
    *  tasks
    */
-  def testQuietlyInvoke(): Unit = {
+  @Test def testQuietlyInvoke(): Unit = {
     val a = new CheckedRecursiveAction() {
       protected def realCompute(): Unit = {
         val f = new FibAction(8)
@@ -269,7 +269,7 @@ class RecursiveActionTest extends JSR166Test {
 
   /** join of a forked task returns when task completes
    */
-  def testForkJoin(): Unit = {
+  @Test def testForkJoin(): Unit = {
     val a = new CheckedRecursiveAction() {
       protected def realCompute(): Unit = {
         val f = new FibAction(8)
@@ -284,7 +284,7 @@ class RecursiveActionTest extends JSR166Test {
 
   /** join/quietlyJoin of a forked task succeeds in the presence of interrupts
    */
-  def testJoinIgnoresInterrupts(): Unit = {
+  @Test def testJoinIgnoresInterrupts(): Unit = {
     val a = new CheckedRecursiveAction() {
       protected def realCompute(): Unit = {
         var f = new FibAction(8)
@@ -352,7 +352,7 @@ class RecursiveActionTest extends JSR166Test {
   /** join/quietlyJoin of a forked task when not in ForkJoinPool succeeds in the
    *  presence of interrupts
    */
-  def testJoinIgnoresInterruptsOutsideForkJoinPool(): Unit = {
+  @Test def testJoinIgnoresInterruptsOutsideForkJoinPool(): Unit = {
     val sq = new SynchronousQueue[Array[FibAction]]
     val a = new CheckedRecursiveAction() {
       @throws[InterruptedException]
@@ -436,7 +436,7 @@ class RecursiveActionTest extends JSR166Test {
 
   /** get of a forked task returns when task completes
    */
-  def testForkGet(): Unit = {
+  @Test def testForkGet(): Unit = {
     val a = new CheckedRecursiveAction() {
       @throws[Exception]
       protected def realCompute(): Unit = {
@@ -452,7 +452,7 @@ class RecursiveActionTest extends JSR166Test {
 
   /** timed get of a forked task returns when task completes
    */
-  def testForkTimedGet(): Unit = {
+  @Test def testForkTimedGet(): Unit = {
     val a = new CheckedRecursiveAction() {
       @throws[Exception]
       protected def realCompute(): Unit = {
@@ -468,7 +468,7 @@ class RecursiveActionTest extends JSR166Test {
 
   /** timed get with null time unit throws NPE
    */
-  def testForkTimedGetNPE(): Unit = {
+  @Test def testForkTimedGetNPE(): Unit = {
     val a = new CheckedRecursiveAction() {
       @throws[Exception]
       protected def realCompute(): Unit = {
@@ -488,7 +488,7 @@ class RecursiveActionTest extends JSR166Test {
 
   /** quietlyJoin of a forked task returns when task completes
    */
-  def testForkQuietlyJoin(): Unit = {
+  @Test def testForkQuietlyJoin(): Unit = {
     val a = new CheckedRecursiveAction() {
       protected def realCompute(): Unit = {
         val f = new FibAction(8)
@@ -504,7 +504,7 @@ class RecursiveActionTest extends JSR166Test {
   /** helpQuiesce returns when tasks are complete. getQueuedTaskCount returns 0
    *  when quiescent
    */
-  def testForkHelpQuiesce(): Unit = {
+  @Test def testForkHelpQuiesce(): Unit = {
     val a = new CheckedRecursiveAction() {
       protected def realCompute(): Unit = {
         val f = new FibAction(8)
@@ -522,7 +522,7 @@ class RecursiveActionTest extends JSR166Test {
 
   /** invoke task throws exception when task completes abnormally
    */
-  def testAbnormalInvoke(): Unit = {
+  @Test def testAbnormalInvoke(): Unit = {
     val a = new CheckedRecursiveAction() {
       protected def realCompute(): Unit = {
         val f = new RecursiveActionTest.FailingFibAction(8)
@@ -540,7 +540,7 @@ class RecursiveActionTest extends JSR166Test {
 
   /** quietlyInvoke task returns when task completes abnormally
    */
-  def testAbnormalQuietlyInvoke(): Unit = {
+  @Test def testAbnormalQuietlyInvoke(): Unit = {
     val a = new CheckedRecursiveAction() {
       protected def realCompute(): Unit = {
         val f = new RecursiveActionTest.FailingFibAction(8)
@@ -554,7 +554,7 @@ class RecursiveActionTest extends JSR166Test {
 
   /** join of a forked task throws exception when task completes abnormally
    */
-  def testAbnormalForkJoin(): Unit = {
+  @Test def testAbnormalForkJoin(): Unit = {
     val a = new CheckedRecursiveAction() {
       protected def realCompute(): Unit = {
         val f = new RecursiveActionTest.FailingFibAction(8)
@@ -573,7 +573,7 @@ class RecursiveActionTest extends JSR166Test {
 
   /** get of a forked task throws exception when task completes abnormally
    */
-  def testAbnormalForkGet(): Unit = {
+  @Test def testAbnormalForkGet(): Unit = {
     val a = new CheckedRecursiveAction() {
       @throws[Exception]
       protected def realCompute(): Unit = {
@@ -595,7 +595,7 @@ class RecursiveActionTest extends JSR166Test {
 
   /** timed get of a forked task throws exception when task completes abnormally
    */
-  def testAbnormalForkTimedGet(): Unit = {
+  @Test def testAbnormalForkTimedGet(): Unit = {
     val a = new CheckedRecursiveAction() {
       @throws[Exception]
       protected def realCompute(): Unit = {
@@ -617,7 +617,7 @@ class RecursiveActionTest extends JSR166Test {
 
   /** quietlyJoin of a forked task returns when task completes abnormally
    */
-  def testAbnormalForkQuietlyJoin(): Unit = {
+  @Test def testAbnormalForkQuietlyJoin(): Unit = {
     val a = new CheckedRecursiveAction() {
       protected def realCompute(): Unit = {
         val f = new RecursiveActionTest.FailingFibAction(8)
@@ -632,7 +632,7 @@ class RecursiveActionTest extends JSR166Test {
 
   /** invoke task throws exception when task cancelled
    */
-  def testCancelledInvoke(): Unit = {
+  @Test def testCancelledInvoke(): Unit = {
     val a = new CheckedRecursiveAction() {
       protected def realCompute(): Unit = {
         val f = new FibAction(8)
@@ -651,7 +651,7 @@ class RecursiveActionTest extends JSR166Test {
 
   /** join of a forked task throws exception when task cancelled
    */
-  def testCancelledForkJoin(): Unit = {
+  @Test def testCancelledForkJoin(): Unit = {
     val a = new CheckedRecursiveAction() {
       protected def realCompute(): Unit = {
         val f = new FibAction(8)
@@ -671,7 +671,7 @@ class RecursiveActionTest extends JSR166Test {
 
   /** get of a forked task throws exception when task cancelled
    */
-  def testCancelledForkGet(): Unit = {
+  @Test def testCancelledForkGet(): Unit = {
     val a = new CheckedRecursiveAction() {
       @throws[Exception]
       protected def realCompute(): Unit = {
@@ -692,7 +692,7 @@ class RecursiveActionTest extends JSR166Test {
 
   /** timed get of a forked task throws exception when task cancelled
    */
-  def testCancelledForkTimedGet(): Unit = {
+  @Test def testCancelledForkTimedGet(): Unit = {
     val a = new CheckedRecursiveAction() {
       @throws[Exception]
       protected def realCompute(): Unit = {
@@ -713,7 +713,7 @@ class RecursiveActionTest extends JSR166Test {
 
   /** quietlyJoin of a forked task returns when task cancelled
    */
-  def testCancelledForkQuietlyJoin(): Unit = {
+  @Test def testCancelledForkQuietlyJoin(): Unit = {
     val a = new CheckedRecursiveAction() {
       protected def realCompute(): Unit = {
         val f = new FibAction(8)
@@ -728,7 +728,7 @@ class RecursiveActionTest extends JSR166Test {
 
   /** getPool of executing task returns its pool
    */
-  def testGetPool(): Unit = {
+  @Test def testGetPool(): Unit = {
     val mainPool = RecursiveActionTest.mainPool
     val a = new CheckedRecursiveAction() {
       protected def realCompute(): Unit = { assertSame(mainPool, getPool) }
@@ -738,7 +738,8 @@ class RecursiveActionTest extends JSR166Test {
 
   /** getPool of non-FJ task returns null
    */
-  def testGetPool2(): Unit = {
+  @Ignore("All Scala Native tests are exuected in the pool")
+  @Test def testGetPool2(): Unit = {
     val a = new CheckedRecursiveAction() {
       protected def realCompute(): Unit = { assertNull(getPool) }
     }
@@ -747,7 +748,7 @@ class RecursiveActionTest extends JSR166Test {
 
   /** inForkJoinPool of executing task returns true
    */
-  def testInForkJoinPool(): Unit = {
+  @Test def testInForkJoinPool(): Unit = {
     val a = new CheckedRecursiveAction() {
       protected def realCompute(): Unit = { assertTrue(inForkJoinPool) }
     }
@@ -756,7 +757,8 @@ class RecursiveActionTest extends JSR166Test {
 
   /** inForkJoinPool of non-FJ task returns false
    */
-  def testInForkJoinPool2(): Unit = {
+  @Ignore("All Scala Native etests are exuected in the pool")
+  @Test def testInForkJoinPool2(): Unit = {
     val a = new CheckedRecursiveAction() {
       protected def realCompute(): Unit = { assertFalse(inForkJoinPool) }
     }
@@ -765,7 +767,7 @@ class RecursiveActionTest extends JSR166Test {
 
   /** getPool of current thread in pool returns its pool
    */
-  def testWorkerGetPool(): Unit = {
+  @Test def testWorkerGetPool(): Unit = {
     val mainPool = RecursiveActionTest.mainPool
     val a = new CheckedRecursiveAction() {
       protected def realCompute(): Unit = {
@@ -778,7 +780,7 @@ class RecursiveActionTest extends JSR166Test {
 
   /** getPoolIndex of current thread in pool returns 0 <= value < poolSize
    */
-  def testWorkerGetPoolIndex(): Unit = {
+  @Test def testWorkerGetPoolIndex(): Unit = {
     val mainPool = RecursiveActionTest.mainPool
     val a = new CheckedRecursiveAction() {
       protected def realCompute(): Unit = {
@@ -793,7 +795,7 @@ class RecursiveActionTest extends JSR166Test {
 
   /** setRawResult(null) succeeds
    */
-  def testSetRawResult(): Unit = {
+  @Test def testSetRawResult(): Unit = {
     val a = new CheckedRecursiveAction() {
       protected def realCompute(): Unit = {
         setRawResult(null)
@@ -805,7 +807,7 @@ class RecursiveActionTest extends JSR166Test {
 
   /** A reinitialized normally completed task may be re-invoked
    */
-  def testReinitialize(): Unit = {
+  @Test def testReinitialize(): Unit = {
     val a = new CheckedRecursiveAction() {
       protected def realCompute(): Unit = {
         val f = new FibAction(8)
@@ -824,7 +826,7 @@ class RecursiveActionTest extends JSR166Test {
 
   /** A reinitialized abnormally completed task may be re-invoked
    */
-  def testReinitializeAbnormal(): Unit = {
+  @Test def testReinitializeAbnormal(): Unit = {
     val a = new CheckedRecursiveAction() {
       protected def realCompute(): Unit = {
         val f = new RecursiveActionTest.FailingFibAction(8)
@@ -847,7 +849,7 @@ class RecursiveActionTest extends JSR166Test {
 
   /** invoke task throws exception after invoking completeExceptionally
    */
-  def testCompleteExceptionally(): Unit = {
+  @Test def testCompleteExceptionally(): Unit = {
     val a = new CheckedRecursiveAction() {
       protected def realCompute(): Unit = {
         val f = new FibAction(8)
@@ -866,7 +868,7 @@ class RecursiveActionTest extends JSR166Test {
 
   /** invoke task suppresses execution invoking complete
    */
-  def testComplete(): Unit = {
+  @Test def testComplete(): Unit = {
     val a = new CheckedRecursiveAction() {
       protected def realCompute(): Unit = {
         val f = new FibAction(8)
@@ -881,7 +883,7 @@ class RecursiveActionTest extends JSR166Test {
 
   /** invokeAll(t1, t2) invokes all task arguments
    */
-  def testInvokeAll2(): Unit = {
+  @Test def testInvokeAll2(): Unit = {
     val a = new CheckedRecursiveAction() {
       protected def realCompute(): Unit = {
         val f = new FibAction(8)
@@ -898,7 +900,7 @@ class RecursiveActionTest extends JSR166Test {
 
   /** invokeAll(tasks) with 1 argument invokes task
    */
-  def testInvokeAll1(): Unit = {
+  @Test def testInvokeAll1(): Unit = {
     val a = new CheckedRecursiveAction() {
       protected def realCompute(): Unit = {
         val f = new FibAction(8)
@@ -912,7 +914,7 @@ class RecursiveActionTest extends JSR166Test {
 
   /** invokeAll(tasks) with > 2 argument invokes tasks
    */
-  def testInvokeAll3(): Unit = {
+  @Test def testInvokeAll3(): Unit = {
     val a = new CheckedRecursiveAction() {
       protected def realCompute(): Unit = {
         val f = new FibAction(8)
@@ -935,7 +937,7 @@ class RecursiveActionTest extends JSR166Test {
 
   /** invokeAll(collection) invokes all tasks in the collection
    */
-  def testInvokeAllCollection(): Unit = {
+  @Test def testInvokeAllCollection(): Unit = {
     val a = new CheckedRecursiveAction() {
       protected def realCompute(): Unit = {
         val f = new FibAction(8)
@@ -962,7 +964,7 @@ class RecursiveActionTest extends JSR166Test {
 
   /** invokeAll(tasks) with any null task throws NPE
    */
-  def testInvokeAllNPE(): Unit = {
+  @Test def testInvokeAllNPE(): Unit = {
     val a = new CheckedRecursiveAction() {
       protected def realCompute(): Unit = {
         val f = new FibAction(8)
@@ -982,7 +984,7 @@ class RecursiveActionTest extends JSR166Test {
 
   /** invokeAll(t1, t2) throw exception if any task does
    */
-  def testAbnormalInvokeAll2(): Unit = {
+  @Test def testAbnormalInvokeAll2(): Unit = {
     val a = new CheckedRecursiveAction() {
       protected def realCompute(): Unit = {
         val f = new FibAction(8)
@@ -1001,7 +1003,7 @@ class RecursiveActionTest extends JSR166Test {
 
   /** invokeAll(tasks) with 1 argument throws exception if task does
    */
-  def testAbnormalInvokeAll1(): Unit = {
+  @Test def testAbnormalInvokeAll1(): Unit = {
     val a = new CheckedRecursiveAction() {
       protected def realCompute(): Unit = {
         val g = new RecursiveActionTest.FailingFibAction(9)
@@ -1019,7 +1021,7 @@ class RecursiveActionTest extends JSR166Test {
 
   /** invokeAll(tasks) with > 2 argument throws exception if any task does
    */
-  def testAbnormalInvokeAll3(): Unit = {
+  @Test def testAbnormalInvokeAll3(): Unit = {
     val a = new CheckedRecursiveAction() {
       protected def realCompute(): Unit = {
         val f = new FibAction(8)
@@ -1039,7 +1041,7 @@ class RecursiveActionTest extends JSR166Test {
 
   /** invokeAll(collection) throws exception if any task does
    */
-  def testAbnormalInvokeAllCollection(): Unit = {
+  @Test def testAbnormalInvokeAllCollection(): Unit = {
     val a = new CheckedRecursiveAction() {
       protected def realCompute(): Unit = {
         val f = new RecursiveActionTest.FailingFibAction(8)
@@ -1064,7 +1066,7 @@ class RecursiveActionTest extends JSR166Test {
   /** tryUnfork returns true for most recent unexecuted task, and suppresses
    *  execution
    */
-  def testTryUnfork(): Unit = {
+  @Test def testTryUnfork(): Unit = {
     val a = new CheckedRecursiveAction() {
       protected def realCompute(): Unit = {
         val g = new FibAction(9)
@@ -1083,7 +1085,7 @@ class RecursiveActionTest extends JSR166Test {
   /** getSurplusQueuedTaskCount returns > 0 when there are more tasks than
    *  threads
    */
-  def testGetSurplusQueuedTaskCount(): Unit = {
+  @Test def testGetSurplusQueuedTaskCount(): Unit = {
     val a = new CheckedRecursiveAction() {
       protected def realCompute(): Unit = {
         val h = new FibAction(7)
@@ -1105,7 +1107,7 @@ class RecursiveActionTest extends JSR166Test {
 
   /** peekNextLocalTask returns most recent unexecuted task.
    */
-  def testPeekNextLocalTask(): Unit = {
+  @Test def testPeekNextLocalTask(): Unit = {
     val a = new CheckedRecursiveAction() {
       protected def realCompute(): Unit = {
         val g = new FibAction(9)
@@ -1125,7 +1127,7 @@ class RecursiveActionTest extends JSR166Test {
 
   /** pollNextLocalTask returns most recent unexecuted task without executing it
    */
-  def testPollNextLocalTask(): Unit = {
+  @Test def testPollNextLocalTask(): Unit = {
     val a = new CheckedRecursiveAction() {
       protected def realCompute(): Unit = {
         val g = new FibAction(9)
@@ -1143,7 +1145,7 @@ class RecursiveActionTest extends JSR166Test {
 
   /** pollTask returns an unexecuted task without executing it
    */
-  def testPollTask(): Unit = {
+  @Test def testPollTask(): Unit = {
     val a = new CheckedRecursiveAction() {
       protected def realCompute(): Unit = {
         val g = new FibAction(9)
@@ -1161,7 +1163,7 @@ class RecursiveActionTest extends JSR166Test {
 
   /** peekNextLocalTask returns least recent unexecuted task in async mode
    */
-  def testPeekNextLocalTaskAsync(): Unit = {
+  @Test def testPeekNextLocalTaskAsync(): Unit = {
     val a = new CheckedRecursiveAction() {
       protected def realCompute(): Unit = {
         val g = new FibAction(9)
@@ -1181,7 +1183,7 @@ class RecursiveActionTest extends JSR166Test {
   /** pollNextLocalTask returns least recent unexecuted task without executing
    *  it, in async mode
    */
-  def testPollNextLocalTaskAsync(): Unit = {
+  @Test def testPollNextLocalTaskAsync(): Unit = {
     val a = new CheckedRecursiveAction() {
       protected def realCompute(): Unit = {
         val g = new FibAction(9)
@@ -1199,7 +1201,7 @@ class RecursiveActionTest extends JSR166Test {
 
   /** pollTask returns an unexecuted task without executing it, in async mode
    */
-  def testPollTaskAsync(): Unit = {
+  @Test def testPollTaskAsync(): Unit = {
     val a = new CheckedRecursiveAction() {
       protected def realCompute(): Unit = {
         val g = new FibAction(9)
@@ -1217,7 +1219,7 @@ class RecursiveActionTest extends JSR166Test {
 
   /** SortTask demo works as advertised
    */
-  def testSortTaskDemo(): Unit = {
+  @Test def testSortTaskDemo(): Unit = {
     val rnd = ThreadLocalRandom.current
     val array = new Array[Long](1007)
     for (i <- 0 until array.length) { array(i) = rnd.nextLong }

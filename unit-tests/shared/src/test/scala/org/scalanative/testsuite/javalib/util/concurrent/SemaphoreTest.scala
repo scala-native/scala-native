@@ -635,7 +635,7 @@ class SemaphoreTest extends JSR166Test {
       AcquireMethod.acquireUninterruptibly
     )
   }
-  def testReleaseAcquireDifferentThreads_acquireUninterruptiblyN_fair()
+  @Test def testReleaseAcquireDifferentThreads_acquireUninterruptiblyN_fair()
       : Unit = {
     testReleaseAcquireDifferentThreads(
       true,

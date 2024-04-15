@@ -122,20 +122,22 @@ class LongAdderTest extends JSR166Test {
   /** adds by multiple threads produce correct sum
    */
   @throws[Throwable]
-  def testAddAndSumMT(): Unit = {
+  @Test def testAddAndSumMT(): Unit = {
     val incs = 1000000
     val nthreads = 4
     val pool = Executors.newCachedThreadPool()
-    val a = new LongAdder
-    val barrier = new CyclicBarrier(nthreads + 1)
-    for (i <- 0 until nthreads) {
-      pool.execute(new AdderTask(a, barrier, incs))
+    usingPoolCleaner(pool) { _ =>
+      val a = new LongAdder
+      val barrier = new CyclicBarrier(nthreads + 1)
+      for (i <- 0 until nthreads) {
+        pool.execute(new AdderTask(a, barrier, incs))
+      }
+      barrier.await
+      barrier.await
+      val total = nthreads.toLong * incs
+      val sum = a.sum
+      assertEquals(sum, total)
     }
-    barrier.await
-    barrier.await
-    val total = nthreads.toLong * incs
-    val sum = a.sum
-    assertEquals(sum, total)
     pool.shutdown()
   }
   final class AdderTask(

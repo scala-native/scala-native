@@ -260,7 +260,7 @@ class RecursiveTaskTest extends JSR166Test {
 
   /** get of a forked task returns when task completes
    */
-  def testForkGet(): Unit = {
+  @Test def testForkGet(): Unit = {
     val a = new CheckedRecursiveTask[Integer] {
       protected def realCompute(): Integer = {
         val f = new FibTask(8)

@@ -56,8 +56,11 @@ abstract class AbstractCollection[E] protected () extends Collection[E] {
     findAndRemove(iterator())
   }
 
-  def containsAll(c: Collection[_]): Boolean =
-    c.scalaOps.forall(this.contains(_))
+  def containsAll(c: Collection[_]): Boolean = {
+    var it = c.iterator()
+    while (it.hasNext()) if (!contains(it.next())) return false
+    true
+  }
 
   def addAll(c: Collection[_ <: E]): Boolean =
     c.scalaOps.foldLeft(false)((prev, elem) => add(elem) || prev)

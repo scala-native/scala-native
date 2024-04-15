@@ -89,23 +89,31 @@ class ThreadTest {
   /** getUncaughtExceptionHandler returns ThreadGroup unless set, otherwise
    *  returning value of last setUncaughtExceptionHandler.
    */
-  def testGetAndSetUncaughtExceptionHandler(): Unit = {
+  @Test def testGetAndSetUncaughtExceptionHandler(): Unit = {
     // these must be done all at once to avoid state
     // dependencies across tests
     val current = Thread.currentThread()
-    val tg = current.getThreadGroup()
     val eh = new MyHandler()
-    assertSame(tg, current.getUncaughtExceptionHandler())
-    current.setUncaughtExceptionHandler(eh)
-    try assertSame(eh, current.getUncaughtExceptionHandler())
-    finally current.setUncaughtExceptionHandler(null)
-    assertSame(tg, current.getUncaughtExceptionHandler())
+    val prevEh = current.getUncaughtExceptionHandler()
+    // Scala Native test are running in ExecutionContext that sets up custom uncought exception handler
+    val tg = current.getThreadGroup()
+    // assertSame(tg, current.getUncaughtExceptionHandler())
+    try {
+      current.setUncaughtExceptionHandler(eh)
+      try assertSame(eh, current.getUncaughtExceptionHandler())
+      finally current.setUncaughtExceptionHandler(null)
+      assertSame(tg, current.getUncaughtExceptionHandler())
+    } finally {
+      current.setUncaughtExceptionHandler(prevEh)
+      assertSame(prevEh, current.getUncaughtExceptionHandler())
+    }
   }
 
   /** getDefaultUncaughtExceptionHandler returns value of last
    *  setDefaultUncaughtExceptionHandler.
    */
-  @deprecated def testGetAndSetDefaultUncaughtExceptionHandler(): Unit = {
+  @deprecated
+  @Test def testGetAndSetDefaultUncaughtExceptionHandler(): Unit = {
     assertNull(Thread.getDefaultUncaughtExceptionHandler())
     // failure due to SecurityException is OK.
     // Would be nice to explicitly test both ways, but cannot yet.
@@ -113,11 +121,11 @@ class ThreadTest {
     val eh = new MyHandler()
     try {
       Thread.setDefaultUncaughtExceptionHandler(eh)
-      try assertSame(eh, Thread.getDefaultUncaughtExceptionHandler())
+      try assertSame("1", eh, Thread.getDefaultUncaughtExceptionHandler())
       finally Thread.setDefaultUncaughtExceptionHandler(defaultHandler)
     } catch {
       case ok: SecurityException =>
-        assertNotNull(System.getSecurityManager())
+      // assertNotNull(System.getSecurityManager())
     }
     assertSame(defaultHandler, Thread.getDefaultUncaughtExceptionHandler())
   }

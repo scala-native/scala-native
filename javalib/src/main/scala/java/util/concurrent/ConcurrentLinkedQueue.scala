@@ -27,7 +27,6 @@ import scala.scalanative.libc.stdatomic.memory_order.memory_order_relaxed
 
 @SerialVersionUID(196745693267521676L)
 object ConcurrentLinkedQueue {
-  // import _
 
   final private[concurrent] class Node[E <: AnyRef] private[concurrent]
   /** Constructs a dead dummy node. */
@@ -83,7 +82,21 @@ class ConcurrentLinkedQueue[E <: AnyRef]
   @alwaysinline private def TAIL: AtomicRef[Node[E]] =
     fromRawPtr[Node[E]](classFieldRawPtr(this, "tail")).atomic
 
-  // def this(c: Collection[_ <: E])
+  def this(c: Collection[_ <: E]) = {
+    this()
+    var h, t: Node[E] = head
+    c.forEach { e =>
+      val newNode = new Node[E](Objects.requireNonNull(e))
+      t.appendRelaxed(newNode)
+      t = newNode
+    }
+    if (h == null) {
+      h = new Node[E]();
+      t = h
+    }
+    head = h;
+    tail = t;
+  }
 
   override def add(e: E): Boolean = offer(e)
 
@@ -93,10 +106,11 @@ class ConcurrentLinkedQueue[E <: AnyRef]
       h.NEXT.store(h, memory_order_release)
   }
 
-  final private[concurrent] def succ(_p: Node[E]) = {
-    val p = _p.next
-    if (_p eq p) p
-    else head
+  final private[concurrent] def succ(p: Node[E]) = {
+    p.next match {
+      case `p`  => head
+      case next => next
+    }
   }
 
   private def tryCasSuccessor(
@@ -149,10 +163,8 @@ class ConcurrentLinkedQueue[E <: AnyRef]
           // for e to become an element of this queue,
           // and for newNode to become "live".
           if (p ne t)
-            this.TAIL.compareExchangeWeak(
-              t,
-              newNode
-            ) // hop two nodes at a time; failure is OK
+            // hop two nodes at a time; failure is OK
+            this.TAIL.compareExchangeWeak(t, newNode)
           return true
         }
       } else if (p eq q) // We have fallen off list.  If tail is unchanged, it
@@ -220,7 +232,7 @@ class ConcurrentLinkedQueue[E <: AnyRef]
     null.asInstanceOf[E]
   }
 
-  private[concurrent] def first: Node[E] = {
+  private[concurrent] def first(): Node[E] = {
     while (true) {
       val h = head
       var p = h
@@ -240,12 +252,12 @@ class ConcurrentLinkedQueue[E <: AnyRef]
     null
   }
 
-  override def isEmpty(): Boolean = first == null
+  override def isEmpty(): Boolean = first() == null
 
   override def size(): Int = {
     while (true) {
       var count = 0
-      var p = first
+      var p = first()
       var restart = false
       while (p != null && !restart) {
         if (p.item != null) {
@@ -262,39 +274,30 @@ class ConcurrentLinkedQueue[E <: AnyRef]
   }
 
   override def contains(_o: Any): Boolean = {
-    if (_o == null || !_o.isInstanceOf[AnyRef]) return false
+    if (_o == null) return false
     val o = _o.asInstanceOf[AnyRef]
-    while (true) {
-      var p = head
-      var pred: Node[E] = null
-      var restart = false
-      while (p != null && !restart) {
-        var q = p.next
-        val item: E = p.item
-        var skip = false
-        if (item != null) {
-          if (o eq item) return true
-          pred = p
-          p = q
-          skip = true
-        }
-        if (!skip) {
-          val c = p
-          var break = false
-          while (!break && !restart) {
-            if (q == null || q.item != null) {
-              pred = skipDeadNodes(pred, c, p, q)
-              p = q
-              break = true
-            }
-            if (p eq { p = q; p }) restart = true
-            else q = p.next
+    var p = head
+    var pred: Node[E] = null
+    while (p != null) {
+      var q = p.next
+      val item: E = p.item
+      if (item != null) {
+        if (o.equals(item)) return true
+        pred = p
+        p = q
+      } else {
+        var c = p
+        var break = false
+        while (!break) {
+          if (q == null || q.item != null) {
+            pred = skipDeadNodes(pred, c, p, q)
+            p = q
+            break = true
           }
+          if (!break && (p eq { p = q; q })) break = true
         }
       }
-      if (!restart) return false
     }
-    // unreachable
     false
   }
 
@@ -302,40 +305,38 @@ class ConcurrentLinkedQueue[E <: AnyRef]
     if (_o == null || !_o.isInstanceOf[AnyRef]) return false
     val o = _o.asInstanceOf[AnyRef]
 
-    while (true) {
+    var restartFromHead = true
+    while (restartFromHead) {
+      restartFromHead = false
       var p = head
       var pred: Node[E] = null
-      var restart = false
-      while (p != null && !restart) {
+      while (p != null && !restartFromHead) {
         var q = p.next
         val item: E = p.item
-        var continue = false
         if (item != null) {
-          if (o == item && p.casItem(item, null.asInstanceOf[E])) {
+          if (o.equals(item) && p.casItem(item, null.asInstanceOf[E])) {
             skipDeadNodes(pred, p, p, q)
             return true
           }
           pred = p
           p = q
-          continue = true
-        }
-        if (!continue) {
-          val c = p
+        } else {
+          var c = p
           var break = false
-          while (!break && !restart) {
+          while (!break) {
             if (q == null || q.item != null) {
               pred = skipDeadNodes(pred, c, p, q)
               p = q
               break = true
             }
-            if (p eq { p = q; p }) restart = true
-            else q = p.next
+            if (!break && { p eq { p = q; q } }) {
+              break = true
+              restartFromHead = true
+            }
           }
         }
       }
-      if (!restart) return false
     }
-    // unrachable
     false
   }
 
@@ -393,7 +394,7 @@ class ConcurrentLinkedQueue[E <: AnyRef]
     while (true) {
       var charLength = 0
       var size = 0
-      var p = first
+      var p = first()
       var restart = false
       while (p != null && !restart) {
         val item: E = p.item
@@ -418,11 +419,12 @@ class ConcurrentLinkedQueue[E <: AnyRef]
 
   private def toArrayInternal(a: Array[AnyRef]): Array[AnyRef] = {
     var x = a
+    var restartFromHead = true
     while (true) {
       var size = 0
-      var p = first
-      var restart = false
-      while (p != null && !restart) {
+      var p = first()
+      restartFromHead = false
+      while (p != null && !restartFromHead) {
         val item: E = p.item
         if (item != null) {
           if (x == null) x = new Array[AnyRef](4)
@@ -430,9 +432,9 @@ class ConcurrentLinkedQueue[E <: AnyRef]
           x(size) = item
           size += 1
         }
-        if (p eq { p = p.next; p }) restart = true
+        if (p eq { p = p.next; p }) restartFromHead = true
       }
-      if (!restart) {
+      if (!restartFromHead) {
         if (x == null) return new Array[AnyRef](0)
         else if (a != null && size <= a.length) {
           if (a ne x) System.arraycopy(x, 0, a, 0, size)
@@ -443,8 +445,7 @@ class ConcurrentLinkedQueue[E <: AnyRef]
         else Arrays.copyOf(x, size)
       }
     }
-    // unreachalbe
-    a
+    a // unreachable
   }
 
   override def toArray(): Array[AnyRef] = toArrayInternal(null)
@@ -461,50 +462,56 @@ class ConcurrentLinkedQueue[E <: AnyRef]
     private var nextItem: E = _
     private var lastRet: Node[E] = _
 
-    locally {
-      var done = false
-      while (!done) {
+    private def _init(): Unit = {
+      var restartFromHead = true
+      while (restartFromHead) {
+        restartFromHead = false
         var h: Node[E] = head
         var p: Node[E] = h
         var q: Node[E] = null
         var break = false
-        var restart = false
-        while (!break && !restart) {
+        while (!break) {
           val item: E = p.item
           if (item != null) {
             nextNode = p
             nextItem = item
             break = true
-          } else if ({ q = p.next; q } == null) break = true
-          else if (p eq q) restart = true
-          else p = q
+          } else if ({ q = p.next; q == null }) {
+            break = true
+          } else if (p eq q) {
+            restartFromHead = true
+            break = true
+          }
+          if (!break) p = q
         }
-        if (!restart) {
+        if (!restartFromHead) {
           updateHead(h, p)
-          done = true
+          return
         }
       }
     }
+    _init()
 
     override def hasNext(): Boolean = nextItem != null
 
     override def next(): E = {
       val pred = nextNode
-      if (pred == null) throw new NoSuchElementException
-      // assert nextItem != null;
+      if (pred == null) throw new NoSuchElementException()
       lastRet = pred
       var item: E = null.asInstanceOf[E]
+
       var p = succ(pred)
       var q: Node[E] = null
       while (true) {
-        if (p == null || { item = p.item; item } != null) {
+        if (p == null || { item = p.item; item != null }) {
           nextNode = p
           val x = nextItem
           nextItem = item
           return x
         }
         // unlink deleted nodes
-        if ({ q = succ(p); q } != null) pred.NEXT.compareExchangeStrong(p, q)
+        if ({ q = succ(p); q != null })
+          pred.NEXT.compareExchangeStrong(p, q)
         p = q
       }
       // unreachable
@@ -514,7 +521,7 @@ class ConcurrentLinkedQueue[E <: AnyRef]
     // Default implementation of forEachRemaining is "good enough".
     override def remove(): Unit = {
       val l = lastRet
-      if (l == null) throw new IllegalStateException
+      if (l == null) throw new IllegalStateException()
       // rely on a future traversal to relink.
       l.item = null.asInstanceOf[E]
       lastRet = null
@@ -526,7 +533,7 @@ class ConcurrentLinkedQueue[E <: AnyRef]
     // Write out any hidden stuff
     s.defaultWriteObject()
     // Write out all elements in the proper order.
-    var p = first
+    var p = first()
     while (p != null) {
       val item: E = p.item
       if (item != null) s.writeObject(item)
@@ -579,7 +586,7 @@ class ConcurrentLinkedQueue[E <: AnyRef]
           a(i) = e
           i += 1
         }
-        if (p eq { p = q; p }) p = first
+        if (p eq { p = q; p }) p = first()
         p != null && { q = p.next; q } != null && i < n
       }) ()
       setCurrent(p)
@@ -610,7 +617,7 @@ class ConcurrentLinkedQueue[E <: AnyRef]
         var e: E = null.asInstanceOf[E]
         while ({
           e = p.item
-          if (p eq { p = p.next; p }) p = first
+          if (p eq { p = p.next; p }) p = first()
           e == null && p != null
         }) ()
         setCurrent(p)
@@ -628,7 +635,7 @@ class ConcurrentLinkedQueue[E <: AnyRef]
 
     private def getCurrent() = {
       var p: Node[E] = current
-      if (p == null && !exhausted) setCurrent({ p = first; p })
+      if (p == null && !exhausted) setCurrent({ p = first(); p })
       p
     }
 
@@ -661,41 +668,40 @@ class ConcurrentLinkedQueue[E <: AnyRef]
 
   private def bulkRemove(filter: Predicate[_ >: E]): Boolean = {
     var removed = false
-
-    while (true) {
+    var restartFromHead = true
+    while (restartFromHead) {
+      restartFromHead = false
       var hops = MAX_HOPS
+      var p, c: Node[E] = head
+      var pred, q: Node[E] = null
       // c will be CASed to collapse intervening dead nodes between
       // pred (or head if null) and p.
-      var p = head
-      var c = p
-      var pred: Node[E] = null
-      var q: Node[E] = null
-      var restart = false
-      while (p != null && !restart) {
+      while (p != null && !restartFromHead) {
         q = p.next
-        val item: E = p.item
+        val item = p.item
         var pAlive = item != null
-        if (pAlive) if (filter.test(item)) {
-          if (p.casItem(item, null.asInstanceOf[E])) removed = true
-          pAlive = false
+        if (pAlive) {
+          if (filter.test(item)) {
+            if (p.casItem(item, null.asInstanceOf[E])) removed = true
+            // Set pAlive to false to signify that the node is no longer alive
+            pAlive = false
+          }
         }
-        if (pAlive || q == null || { hops -= 1; hops } == 0) {
+        if (pAlive || q == null || { hops -= 1; hops == 0 }) {
           // p might already be self-linked here, but if so:
           // - CASing head will surely fail
           // - CASing pred's next will be useless but harmless.
-          if (((c ne p) && !tryCasSuccessor(pred, c, { c = p; c })) || pAlive) {
+          if (((c ne p) && !tryCasSuccessor(pred, c, { c = p; p })) || pAlive) {
             // if CAS failed or alive, abandon old pred
             hops = MAX_HOPS
             pred = p
             c = q
           }
-        } else if (p eq q) restart = true
-        else p = q
+        } else if (p eq q) restartFromHead = true
+        p = q
       }
-      if (!restart) return removed
     }
-    // unreachable
-    false
+    return removed
   }
 
   /** Runs action on each element found during a traversal starting at p. If p
