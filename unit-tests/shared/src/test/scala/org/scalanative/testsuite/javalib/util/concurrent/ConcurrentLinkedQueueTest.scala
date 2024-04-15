@@ -12,6 +12,7 @@ import java.util.{Arrays, Collection, NoSuchElementException, Queue}
 import java.util.concurrent.ConcurrentLinkedQueue
 
 import org.junit.Assert._
+import org.junit._
 
 object ConcurrentLinkedQueueTest {
   import JSR166Test._
@@ -37,13 +38,13 @@ class ConcurrentLinkedQueueTest extends JSR166Test {
 
   /** new queue is empty
    */
-  def testConstructor1(): Unit = {
+  @Test def testConstructor1(): Unit = {
     mustEqual(0, new ConcurrentLinkedQueue[Item]().size)
   }
 
   /** Initializing from null Collection throws NPE
    */
-  def testConstructor3(): Unit = {
+  @Test def testConstructor3(): Unit = {
     try {
       new ConcurrentLinkedQueue[Item](null.asInstanceOf[Collection[Item]])
       shouldThrow()
@@ -54,7 +55,7 @@ class ConcurrentLinkedQueueTest extends JSR166Test {
 
   /** Initializing from Collection of null elements throws NPE
    */
-  def testConstructor4(): Unit = {
+  @Test def testConstructor4(): Unit = {
     try {
       new ConcurrentLinkedQueue[Item](Arrays.asList(new Array[Item](SIZE): _*))
       shouldThrow()
@@ -66,7 +67,7 @@ class ConcurrentLinkedQueueTest extends JSR166Test {
 
   /** Initializing from Collection with some null elements throws NPE
    */
-  def testConstructor5(): Unit = {
+  @Test def testConstructor5(): Unit = {
     val items: Array[Item] = new Array[Item](2)
     items(0) = zero
     try {
@@ -80,7 +81,7 @@ class ConcurrentLinkedQueueTest extends JSR166Test {
 
   /** Queue contains all elements of collection used to initialize
    */
-  def testConstructor6(): Unit = {
+  @Test def testConstructor6(): Unit = {
     val items: Array[Item] = defaultItems
     val q: ConcurrentLinkedQueue[Item] = new ConcurrentLinkedQueue(
       Arrays.asList(items: _*)
@@ -94,7 +95,7 @@ class ConcurrentLinkedQueueTest extends JSR166Test {
 
   /** isEmpty is true before add, false after
    */
-  def testEmpty(): Unit = {
+  @Test def testEmpty(): Unit = {
     val q: ConcurrentLinkedQueue[Item] = new ConcurrentLinkedQueue[Item]
     assertTrue(q.isEmpty)
     q.add(one)
@@ -107,7 +108,7 @@ class ConcurrentLinkedQueueTest extends JSR166Test {
 
   /** size changes when elements added and removed
    */
-  def testSize(): Unit = {
+  @Test def testSize(): Unit = {
     val q: ConcurrentLinkedQueue[Item] =
       ConcurrentLinkedQueueTest.populatedQueue(SIZE)
     var i: Int = 0
@@ -128,7 +129,7 @@ class ConcurrentLinkedQueueTest extends JSR166Test {
 
   /** offer(null) throws NPE
    */
-  def testOfferNull(): Unit = {
+  @Test def testOfferNull(): Unit = {
     val q: ConcurrentLinkedQueue[Item] = new ConcurrentLinkedQueue[Item]
     try {
       q.offer(null)
@@ -141,7 +142,7 @@ class ConcurrentLinkedQueueTest extends JSR166Test {
 
   /** add(null) throws NPE
    */
-  def testAddNull(): Unit = {
+  @Test def testAddNull(): Unit = {
     val q: ConcurrentLinkedQueue[Item] = new ConcurrentLinkedQueue[Item]
     try {
       q.add(null)
@@ -154,7 +155,7 @@ class ConcurrentLinkedQueueTest extends JSR166Test {
 
   /** Offer returns true
    */
-  def testOffer(): Unit = {
+  @Test def testOffer(): Unit = {
     val q: ConcurrentLinkedQueue[Item] = new ConcurrentLinkedQueue[Item]
     assertTrue(q.offer(zero))
     assertTrue(q.offer(one))
@@ -162,7 +163,7 @@ class ConcurrentLinkedQueueTest extends JSR166Test {
 
   /** add returns true
    */
-  def testAdd(): Unit = {
+  @Test def testAdd(): Unit = {
     val q: ConcurrentLinkedQueue[Item] = new ConcurrentLinkedQueue[Item]
     var i: Int = 0
     while (i < SIZE) {
@@ -175,7 +176,7 @@ class ConcurrentLinkedQueueTest extends JSR166Test {
 
   /** addAll(null) throws NullPointerException
    */
-  def testAddAll1(): Unit = {
+  @Test def testAddAll1(): Unit = {
     val q: ConcurrentLinkedQueue[Item] = new ConcurrentLinkedQueue[Item]
     try {
       q.addAll(null)
@@ -188,7 +189,7 @@ class ConcurrentLinkedQueueTest extends JSR166Test {
 
   /** addAll(this) throws IllegalArgumentException
    */
-  def testAddAllSelf(): Unit = {
+  @Test def testAddAllSelf(): Unit = {
     val q: ConcurrentLinkedQueue[Item] =
       ConcurrentLinkedQueueTest.populatedQueue(SIZE)
     try {
@@ -202,7 +203,7 @@ class ConcurrentLinkedQueueTest extends JSR166Test {
 
   /** addAll of a collection with null elements throws NullPointerException
    */
-  def testAddAll2(): Unit = {
+  @Test def testAddAll2(): Unit = {
     val q: ConcurrentLinkedQueue[Item] = new ConcurrentLinkedQueue[Item]
     try {
       q.addAll(Arrays.asList(new Array[Item](SIZE): _*))
@@ -216,7 +217,7 @@ class ConcurrentLinkedQueueTest extends JSR166Test {
   /** addAll of a collection with any null elements throws NPE after possibly
    *  adding some elements
    */
-  def testAddAll3(): Unit = {
+  @Test def testAddAll3(): Unit = {
     val q: ConcurrentLinkedQueue[Item] = new ConcurrentLinkedQueue[Item]
     val items: Array[Item] = new Array[Item](2)
     items(0) = zero
@@ -231,7 +232,7 @@ class ConcurrentLinkedQueueTest extends JSR166Test {
 
   /** Queue contains all elements, in traversal order, of successful addAll
    */
-  def testAddAll5(): Unit = {
+  @Test def testAddAll5(): Unit = {
     val empty: Array[Item] = new Array[Item](0)
     val items: Array[Item] = defaultItems
     val q: ConcurrentLinkedQueue[Item] = new ConcurrentLinkedQueue[Item]
@@ -246,7 +247,7 @@ class ConcurrentLinkedQueueTest extends JSR166Test {
 
   /** poll succeeds unless empty
    */
-  def testPoll(): Unit = {
+  @Test def testPoll(): Unit = {
     val q: ConcurrentLinkedQueue[Item] =
       ConcurrentLinkedQueueTest.populatedQueue(SIZE)
     var i: Int = 0
@@ -260,7 +261,7 @@ class ConcurrentLinkedQueueTest extends JSR166Test {
 
   /** peek returns next element, or null if empty
    */
-  def testPeek(): Unit = {
+  @Test def testPeek(): Unit = {
     val q: ConcurrentLinkedQueue[Item] =
       ConcurrentLinkedQueueTest.populatedQueue(SIZE)
     var i: Int = 0
@@ -276,7 +277,7 @@ class ConcurrentLinkedQueueTest extends JSR166Test {
 
   /** element returns next element, or throws NSEE if empty
    */
-  def testElement(): Unit = {
+  @Test def testElement(): Unit = {
     val q: ConcurrentLinkedQueue[Item] =
       ConcurrentLinkedQueueTest.populatedQueue(SIZE)
     var i: Int = 0
@@ -297,7 +298,7 @@ class ConcurrentLinkedQueueTest extends JSR166Test {
 
   /** remove removes next element, or throws NSEE if empty
    */
-  def testRemove(): Unit = {
+  @Test def testRemove(): Unit = {
     val q: ConcurrentLinkedQueue[Item] =
       ConcurrentLinkedQueueTest.populatedQueue(SIZE)
     var i: Int = 0
@@ -317,7 +318,7 @@ class ConcurrentLinkedQueueTest extends JSR166Test {
 
   /** remove(x) removes x and returns true if present
    */
-  def testRemoveElement(): Unit = {
+  @Test def testRemoveElement(): Unit = {
     val q: ConcurrentLinkedQueue[Item] =
       ConcurrentLinkedQueueTest.populatedQueue(SIZE)
     var i: Int = 1
@@ -344,7 +345,7 @@ class ConcurrentLinkedQueueTest extends JSR166Test {
 
   /** contains(x) reports true when elements added but not yet removed
    */
-  def testContains(): Unit = {
+  @Test def testContains(): Unit = {
     val q: ConcurrentLinkedQueue[Item] =
       ConcurrentLinkedQueueTest.populatedQueue(SIZE)
     var i: Int = 0
@@ -359,7 +360,7 @@ class ConcurrentLinkedQueueTest extends JSR166Test {
 
   /** clear removes all elements
    */
-  def testClear(): Unit = {
+  @Test def testClear(): Unit = {
     val q: ConcurrentLinkedQueue[Item] =
       ConcurrentLinkedQueueTest.populatedQueue(SIZE)
     q.clear()
@@ -373,7 +374,7 @@ class ConcurrentLinkedQueueTest extends JSR166Test {
 
   /** containsAll(c) is true when c contains a subset of elements
    */
-  def testContainsAll(): Unit = {
+  @Test def testContainsAll(): Unit = {
     val q: ConcurrentLinkedQueue[Item] =
       ConcurrentLinkedQueueTest.populatedQueue(SIZE)
     val p: ConcurrentLinkedQueue[Item] = new ConcurrentLinkedQueue[Item]
@@ -390,7 +391,7 @@ class ConcurrentLinkedQueueTest extends JSR166Test {
 
   /** retainAll(c) retains only those elements of c and reports true if change
    */
-  def testRetainAll(): Unit = {
+  @Test def testRetainAll(): Unit = {
     val q: ConcurrentLinkedQueue[Item] =
       ConcurrentLinkedQueueTest.populatedQueue(SIZE)
     val p: ConcurrentLinkedQueue[Item] =
@@ -413,7 +414,7 @@ class ConcurrentLinkedQueueTest extends JSR166Test {
 
   /** removeAll(c) removes only those elements of c and reports true if changed
    */
-  def testRemoveAll(): Unit = {
+  @Test def testRemoveAll(): Unit = {
     var i: Int = 1
     while (i < SIZE) {
       val q: ConcurrentLinkedQueue[Item] =
@@ -433,7 +434,7 @@ class ConcurrentLinkedQueueTest extends JSR166Test {
 
   /** toArray contains all elements in FIFO order
    */
-  def testToArray(): Unit = {
+  @Test def testToArray(): Unit = {
     val q: ConcurrentLinkedQueue[Item] =
       ConcurrentLinkedQueueTest.populatedQueue(SIZE)
     val a: Array[AnyRef] = q.toArray
@@ -446,7 +447,7 @@ class ConcurrentLinkedQueueTest extends JSR166Test {
 
   /** toArray(a) contains all elements in FIFO order
    */
-  def testToArray2(): Unit = {
+  @Test def testToArray2(): Unit = {
     val q: ConcurrentLinkedQueue[Item] =
       ConcurrentLinkedQueueTest.populatedQueue(SIZE)
     val items: Array[Item] = new Array[Item](SIZE)
@@ -460,7 +461,7 @@ class ConcurrentLinkedQueueTest extends JSR166Test {
 
   /** toArray(null) throws NullPointerException
    */
-  def testToArray_NullArg(): Unit = {
+  @Test def testToArray_NullArg(): Unit = {
     val q: ConcurrentLinkedQueue[Item] =
       ConcurrentLinkedQueueTest.populatedQueue(SIZE)
     try {
@@ -474,9 +475,8 @@ class ConcurrentLinkedQueueTest extends JSR166Test {
 
   /** toArray(incompatible array type) throws ArrayStoreException
    */
-  @SuppressWarnings(
-    Array("CollectionToArraySafeParameter")
-  ) def testToArray_incompatibleArrayType(): Unit = {
+  @Ignore("No array object exact element type information in SN runtime")
+  @Test def testToArray_incompatibleArrayType(): Unit = {
     val q: ConcurrentLinkedQueue[Item] =
       ConcurrentLinkedQueueTest.populatedQueue(SIZE)
     try {
@@ -484,13 +484,12 @@ class ConcurrentLinkedQueueTest extends JSR166Test {
       shouldThrow()
     } catch {
       case success: ArrayStoreException =>
-
     }
   }
 
   /** iterator iterates through all elements
    */
-  def testIterator(): Unit = {
+  @Test def testIterator(): Unit = {
     val q: ConcurrentLinkedQueue[Item] =
       ConcurrentLinkedQueueTest.populatedQueue(SIZE)
     val it: java.util.Iterator[_ <: Item] = q.iterator()
@@ -506,13 +505,13 @@ class ConcurrentLinkedQueueTest extends JSR166Test {
 
   /** iterator of empty collection has no elements
    */
-  def testEmptyIterator(): Unit = {
+  @Test def testEmptyIterator(): Unit = {
     assertIteratorExhausted(new ConcurrentLinkedQueue[AnyRef]().iterator)
   }
 
   /** iterator ordering is FIFO
    */
-  def testIteratorOrdering(): Unit = {
+  @Test def testIteratorOrdering(): Unit = {
     val q: ConcurrentLinkedQueue[Item] = new ConcurrentLinkedQueue[Item]
     q.add(one)
     q.add(two)
@@ -532,7 +531,7 @@ class ConcurrentLinkedQueueTest extends JSR166Test {
 
   /** Modifications do not cause iterators to fail
    */
-  def testWeaklyConsistentIteration(): Unit = {
+  @Test def testWeaklyConsistentIteration(): Unit = {
     val q: ConcurrentLinkedQueue[Item] = new ConcurrentLinkedQueue[Item]
     q.add(one)
     q.add(two)
@@ -547,23 +546,23 @@ class ConcurrentLinkedQueueTest extends JSR166Test {
 
   /** iterator.remove removes current element
    */
-  def testIteratorRemove(): Unit = {
+  @Test def testIteratorRemove(): Unit = {
     val q: ConcurrentLinkedQueue[Item] = new ConcurrentLinkedQueue[Item]
-    q.add(one)
-    q.add(two)
-    q.add(three)
+    q.add(itemFor(one))
+    q.add(itemFor(two))
+    q.add(itemFor(three))
     var it: java.util.Iterator[_ <: Item] = q.iterator
     it.next
     it.remove()
     it = q.iterator
-    assertSame(it.next, two)
-    assertSame(it.next, three)
+    assertSame(it.next, itemFor(two))
+    assertSame(it.next, itemFor(three))
     assertFalse(it.hasNext)
   }
 
   /** toString contains toStrings of elements
    */
-  def testToString(): Unit = {
+  @Test def testToString(): Unit = {
     val q: ConcurrentLinkedQueue[Item] =
       ConcurrentLinkedQueueTest.populatedQueue(SIZE)
     val s: String = q.toString
@@ -596,7 +595,7 @@ class ConcurrentLinkedQueueTest extends JSR166Test {
 
   /** remove(null), contains(null) always return false
    */
-  def testNeverContainsNull(): Unit = {
+  @Test def testNeverContainsNull(): Unit = {
     val qs: Array[Collection[_]] = Array(
       new ConcurrentLinkedQueue[AnyRef],
       ConcurrentLinkedQueueTest.populatedQueue(2)
