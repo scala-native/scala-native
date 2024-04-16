@@ -89,7 +89,7 @@ language = 'en'
 #
 # today_fmt = '%B %d, %Y'
 
-today_fmt = '%Y-%m-%d %H:%M:%S' # Scala Native change. Use ISO format.
+today_fmt = '%Y-%m-%d' # Scala Native change. Use ISO format.
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -181,7 +181,7 @@ html_static_path = ['_static']
 # bottom, using the given strftime format.
 # The empty string is equivalent to '%b %d, %Y'.
 #
-html_last_updated_fmt = '%Y-%m-%d %H:%M:%S'
+html_last_updated_fmt = '%Y-%m-%d'
 
 # If true, SmartyPants will be used to convert quotes and dashes to
 # typographically correct entities.
