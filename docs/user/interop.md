@@ -38,37 +38,37 @@ external function must match the signature of the original C function
 To find a correct signature for a given C function one must provide an
 equivalent Scala type for each of the arguments:
 
-  C Type                    Scala Type
-  ------------------------- -------------------------------------------------------------------
-  `void`                    `Unit`
-  `bool`                    `unsafe.CBool`
-  `char`                    `unsafe.CChar`
-  `signed char`             `unsafe.CSignedChar`
-  `unsigned char`           `unsafe.CUnsignedChar`[^1]
-  `short`                   `unsafe.CShort`
-  `unsigned short`          `unsafe.CUnsignedShort`[^2]
-  `int`                     `unsafe.CInt`
-  `long int`                `unsafe.CLongInt`
-  `unsigned int`            `unsafe.CUnsignedInt`[^3]
-  `unsigned long int`       `unsafe.CUnsignedLongInt`[^4]
-  `long`                    `unsafe.CLong`
-  `unsigned long`           `unsafe.CUnsignedLong`[^5]
-  `long long`               `unsafe.CLongLong`
-  `unsigned long long`      `unsafe.CUnsignedLongLong`[^6]
-  `size_t`                  `unsafe.CSize`
-  `ssize_t`                 `unsafe.CSSize`
-  `ptrdiff_t`               `unsafe.CPtrDiff`[^7]
-  `wchar_t`                 `unsafe.CWideChar`
-  `char16_t`                `unsafe.CChar16`
-  `char32_t`                `unsafe.CChar32`
-  `float`                   `unsafe.CFloat`
-  `double`                  `unsafe.CDouble`
-  `void*`                   `unsafe.CVoidPtr`[^8]
-  `int*`                    `unsafe.Ptr[unsafe.CInt]`[^9]
-  `char*`                   `unsafe.CString`[^10][^11]
-  `int (*)(int)`            `unsafe.CFuncPtr1[unsafe.CInt, unsafe.CInt]`[^12][^13]
-  `struct { int x, y; }*`   `unsafe.Ptr[unsafe.CStruct2[unsafe.CInt, unsafe.CInt]]`[^14][^15]
-  `struct { int x, y; }`    Not supported
+  |C Type                   |Scala Type                                                         |
+  |-------------------------|-------------------------------------------------------------------|
+  |`void`                   |`Unit`                                                             |
+  |`bool`                   |`unsafe.CBool`                                                     |
+  |`char`                   |`unsafe.CChar`                                                     |
+  |`signed char`            |`unsafe.CSignedChar`                                               |
+  |`unsigned char`          |`unsafe.CUnsignedChar`[^1]                                         |
+  |`short`                  |`unsafe.CShort`                                                    |
+  |`unsigned short`         |`unsafe.CUnsignedShort`[^2]                                        |
+  |`int`                    |`unsafe.CInt`                                                      |
+  |`long int`               |`unsafe.CLongInt`                                                  |
+  |`unsigned int`           |`unsafe.CUnsignedInt`[^3]                                          |
+  |`unsigned long int`      |`unsafe.CUnsignedLongInt`[^4]                                      |
+  |`long`                   |`unsafe.CLong`                                                     |
+  |`unsigned long`          |`unsafe.CUnsignedLong`[^5]                                         |
+  |`long long`              |`unsafe.CLongLong`                                                 |
+  |`unsigned long long`     |`unsafe.CUnsignedLongLong`[^6]                                     |
+  |`size_t`                 |`unsafe.CSize`                                                     |
+  |`ssize_t`                |`unsafe.CSSize`                                                    |
+  |`ptrdiff_t`              |`unsafe.CPtrDiff`[^7]                                              |
+  |`wchar_t`                |`unsafe.CWideChar`                                                 |
+  |`char16_t`               |`unsafe.CChar16`                                                   |
+  |`char32_t`               |`unsafe.CChar32`                                                   |
+  |`float`                  |`unsafe.CFloat`                                                    |
+  |`double`                 |`unsafe.CDouble`                                                   |
+  |`void*`                  |`unsafe.CVoidPtr`[^8]                                              |
+  |`int*`                   |`unsafe.Ptr[unsafe.CInt]`[^9]                                      |
+  |`char*`                  |`unsafe.CString`[^10][^11]                                         |
+  |`int (*)(int)`           |`unsafe.CFuncPtr1[unsafe.CInt, unsafe.CInt]`[^12][^13]             |
+  |`struct { int x, y; }*`  |`unsafe.Ptr[unsafe.CStruct2[unsafe.CInt, unsafe.CInt]]`[^14][^15]  |
+  |`struct { int x, y; }`   |Not supported
 
 ### Linking with native libraries
 
@@ -238,17 +238,17 @@ unmanaged machine pointers.
 Operations on pointers are closely related to their C counterparts and
 are compiled into equivalent machine code:
 
-  Operation          C syntax               Scala Syntax
-  ------------------ ---------------------- ------------------
-  Load value         `*ptr`                 `!ptr`
-  Store value        `*ptr = value`         `!ptr = value`
-  Pointer to index   `ptr + i`, `&ptr[i]`   `ptr + i`
-  Elements between   `ptr1 - ptr2`          `ptr1 - ptr2`
-  Load at index      `ptr[i]`               `ptr(i)`
-  Store at index     `ptr[i] = value`       `ptr(i) = value`
-  Pointer to field   `&ptr->name`           `ptr.atN`
-  Load a field       `ptr->name`            `ptr._N`
-  Store a field      `ptr->name = value`    `ptr._N = value`
+  |Operation         |C syntax              |Scala Syntax      |
+  |------------------|----------------------|------------------|
+  |Load value        |`*ptr`                |`!ptr`            |
+  |Store value       |`*ptr = value`        |`!ptr = value`    |
+  |Pointer to index  |`ptr + i`, `&ptr[i]`  |`ptr + i`         |
+  |Elements between  |`ptr1 - ptr2`         |`ptr1 - ptr2`     |
+  |Load at index     |`ptr[i]`              |`ptr(i)`          |
+  |Store at index    |`ptr[i] = value`      |`ptr(i) = value`  |
+  |Pointer to field  |`&ptr->name`          |`ptr.atN`         |
+  |Load a field      |`ptr->name`           |`ptr._N`          |
+  |Store a field     |`ptr->name = value`   |`ptr._N = value`  |
 
 Where `N` is the index of the field `name` in the struct. See [Memory
 layout types](#memory-layout-types) for details.
