@@ -463,12 +463,70 @@ and `unsafe.toCString` to convert between C-style `CString`
 Java-style `String` (sequence of 2-byte Chars usually
 interpreted as UTF-16).
 
-It\'s worth to remember that `unsafe.toCString` and
-`c\"\...\"` interpreter cannot be used interchangeably as
-they handle literals differently. Helper methods
-`` unsafe.fromCString` and ``unsafe.toCString`` are charset aware. They will always assume `String` is UTF-16, and take a `Charset` parameter to know what encoding to assume for the byte string (`CString`) - if not present it is UTF-8.  If passed a null as an argument, they will return a null of the appropriate type instead of throwing a NullPointerException.   Platform-specific types -----------------------  Scala Native defines the type ``Size`and its unsigned counterpart,`USize`. A size corresponds to`Int`on 32-bit architectures and to`Long`on 64-bit ones.  Size and alignment of types ---------------------------  In order to statically determine the size of a type, you can use the`sizeof`function which is Scala Native's counterpart of the eponymous C operator. It returns the size in bytes:  .. code-block:: scala      println(unsafe.sizeof[Byte])    // 1     println(unsafe.sizeof[CBool])   // 1     println(unsafe.sizeof[CShort])  // 2     println(unsafe.sizeof[CInt])    // 4     println(unsafe.sizeof[CLong])   // 8  It can also be used to obtain the size of a structure:  .. code-block:: scala      type TwoBytes = unsafe.CStruct2[Byte, Byte]     println(unsafe.sizeof[TwoBytes])  // 2  Additionally, you can also use`alignmentof`to find the alignment of a given type:  .. code-block:: scala      println(unsafe.alignmentof[Int])                         // 4     println(unsafe.alignmentof[unsafe.CStruct2[Byte, Long]]) // 8  Unsigned integer types ----------------------  Scala Native provides support for four unsigned integer types:  1.`unsigned.UByte`2.`unsigned.UShort`3.`unsigned.UInt`4.`unsigned.ULong`5.`unsigned.USize`They share the same primitive operations as signed integer types. Primitive operation between two integer values are supported only if they have the same signedness (they must both signed or both unsigned.)  Conversions between signed and unsigned integers must be done explicitly using`byteValue.toUByte`,`shortValue.toUShort`,`intValue.toUInt`,`longValue.toULong`,`sizeValue.toUSize`and conversely`unsignedByteValue.toByte`,`unsignedShortValue.toShort`,`unsignedIntValue.toInt`,`unsignedLongValue.toLong`,`unsignedSizeValue.toSize`.  Universal equality is supported between signed and unsigned integers, for example`-1.toUByte
-== 255`or`65535 ==
--1.toUShort`would yield`true`` ,  However, similar to signed integers on JVM, class equality between different (boxed) integer types is not supported. Usage of `-1.toUByte.equals(255)` would return ``false`, as we're comparing different boxed types (`scala.scalanative.unsigned.UByte`with`java.lang.Integer\`\`)
+It's worth to remember that `unsafe.toCString` and `c"..."` interpreter cannot be used interchangeably as they handle literals differently.
+Helper methods `unsafe.fromCString` and `unsafe.toCString` are charset aware.
+They will always assume `String` is UTF-16, and take a `Charset` parameter to know what encoding to assume for the byte string (`CString`) - if not present it is UTF-8.
+
+If passed a null as an argument, they will return a null of the appropriate
+type instead of throwing a NullPointerException.
+
+
+### Platform-specific types
+
+Scala Native defines the type `Size` and its unsigned counterpart, `USize`.
+A size corresponds to `Int` on 32-bit architectures and to `Long` on 64-bit
+ones.
+
+### Size and alignment of types
+
+In order to statically determine the size of a type, you can use the `sizeof`
+function which is Scala Native's counterpart of the eponymous C operator. It
+returns the size in bytes:
+
+``` scala
+println(unsafe.sizeof[Byte])    // 1
+println(unsafe.sizeof[CBool])   // 1
+println(unsafe.sizeof[CShort])  // 2
+println(unsafe.sizeof[CInt])    // 4
+println(unsafe.sizeof[CLong])   // 8
+```
+
+It can also be used to obtain the size of a structure:
+
+``` scala
+type TwoBytes = unsafe.CStruct2[Byte, Byte]
+println(unsafe.sizeof[TwoBytes])  // 2
+```
+
+Additionally, you can also use `alignmentof` to find the alignment of a given type:
+
+``` scala
+println(unsafe.alignmentof[Int])                         // 4
+println(unsafe.alignmentof[unsafe.CStruct2[Byte, Long]]) // 8
+```
+
+### Unsigned integer types
+
+Scala Native provides support for four unsigned integer types:
+
+1. `unsigned.UByte`
+2. `unsigned.UShort`
+3. `unsigned.UInt`
+4. `unsigned.ULong`
+5. `unsigned.USize`
+
+They share the same primitive operations as signed integer types.
+Primitive operation between two integer values are supported only
+if they have the same signedness (they must both signed or both unsigned.)
+
+Conversions between signed and unsigned integers must be done explicitly
+using `byteValue.toUByte`, `shortValue.toUShort`, `intValue.toUInt`, `longValue.toULong`, `sizeValue.toUSize`
+and conversely `unsignedByteValue.toByte`, `unsignedShortValue.toShort`, `unsignedIntValue.toInt`,
+`unsignedLongValue.toLong`, `unsignedSizeValue.toSize`.
+
+Universal equality is supported between signed and unsigned integers, for example `-1.toUByte == 255` or `65535 == -1.toUShort` would yield `true`, 
+However, similar to signed integers on JVM, class equality between different (boxed) integer types is not supported.
+Usage of `-1.toUByte.equals(255)` would return `false`, as we're comparing different boxed types (`scala.scalanative.unsigned.UByte` with `java.lang.Integer`)
 
 Continue to [native](./native.md).
 
