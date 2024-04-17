@@ -31,14 +31,14 @@ object Discover {
 
   /** Use the clang binary on the path or via LLVM_BIN env var. */
   def clang(): Path = {
-    val path = discover("clang", "LLVM_BIN")
+    val path = discover("clang-cl", "LLVM_BIN")
     checkClangVersion(path)
     path
   }
 
   /** Use the clang++ binary on the path or via LLVM_BIN env var. */
   def clangpp(): Path = {
-    val path = discover("clang++", "LLVM_BIN")
+    val path = discover("clang-cl", "LLVM_BIN")
     checkClangVersion(path)
     path
   }
