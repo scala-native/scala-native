@@ -695,6 +695,39 @@ class FilesTest {
     }
   }
 
+  // I3874
+  @Test def filesDeleteDoesNotFollowUnbrokenSymlinks(): Unit = {
+    assumeShouldTestSymlinks()
+
+    withTemporaryDirectory { dirFile =>
+      val dir = dirFile.toPath()
+      val unbrokenLink = dir.resolve("unbroken-link")
+      val linkTarget = dir.resolve("link-target")
+
+      Files.createFile(linkTarget)
+      assertTrue("link target should exist", Files.exists(linkTarget))
+
+      Files.createSymbolicLink(unbrokenLink, linkTarget)
+      Files.delete(unbrokenLink)
+
+      // deleted symlink but not its target
+      assertFalse("symlink was not deleted", Files.exists(unbrokenLink))
+      assertTrue("target was deleted", Files.exists(linkTarget))
+    }
+  }
+
+  // I3874
+  @Test def filesDeleteDoesNotFollowBrokenSymlinks(): Unit = {
+    assumeShouldTestSymlinks()
+
+    withTemporaryDirectory { dirFile =>
+      val dir = dirFile.toPath()
+      val brokenLink = dir.resolve("broken-link")
+      Files.createSymbolicLink(brokenLink, dir.resolve("doesnt-exist"))
+      Files.delete(brokenLink)
+    }
+  }
+
   @Test def filesDeleteThrowsWhenDeletingNonExistingFile(): Unit = {
     withTemporaryDirectory { dirFile =>
       val dir = dirFile.toPath()

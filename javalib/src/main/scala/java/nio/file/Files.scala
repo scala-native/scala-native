@@ -367,7 +367,7 @@ object Files {
   }
 
   def delete(path: Path): Unit = {
-    if (!exists(path, Array.empty)) {
+    if (!exists(path, Array(LinkOption.NOFOLLOW_LINKS))) {
       throw new NoSuchFileException(path.toString)
     } else if (isWindows) {
       windowsDeletePath(path)
