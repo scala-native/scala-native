@@ -695,7 +695,7 @@ class FilesTest {
     }
   }
 
-  // I3874
+  // I3878
   @Test def filesDeleteDoesNotFollowUnbrokenSymlinks(): Unit = {
     assumeShouldTestSymlinks()
 
@@ -716,7 +716,7 @@ class FilesTest {
     }
   }
 
-  // I3874
+  // I3878
   @Test def filesDeleteDoesNotFollowBrokenSymlinks(): Unit = {
     assumeShouldTestSymlinks()
 
