@@ -31,6 +31,6 @@ class SimpleFileVisitor[T] protected () extends FileVisitor[T] {
     FileVisitResult.CONTINUE
 
   override def visitFileFailed(file: T, error: IOException): FileVisitResult =
-    FileVisitResult.CONTINUE
+    throw error
 
 }
