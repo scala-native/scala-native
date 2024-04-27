@@ -8,7 +8,7 @@
 
 // Check consistency of Scala Native and operating system definitions.
 
-_Static_assert(sizeof(ino_t) <= 64,
+_Static_assert(sizeof(((struct dirent *)0)->d_ino) <= 8,
                "os ino_t does not match Scala Native dirent");
 
 _Static_assert(sizeof(((struct dirent *)0)->d_type) <= 2,
