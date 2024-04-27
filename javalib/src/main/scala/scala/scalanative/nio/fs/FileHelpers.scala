@@ -3,6 +3,7 @@ package scala.scalanative.nio.fs
 import scalanative.unsigned._
 import scalanative.libc._
 import scalanative.posix.dirent._
+import scalanative.posix.DirentImpl.scalanative_readdirImpl
 
 // Import posix name errno as variable, not class or type.
 import scalanative.posix.{errno => posixErrno}, posixErrno._
@@ -75,7 +76,8 @@ object FileHelpers {
         Zone.acquire { implicit z =>
           var elem = alloc[dirent]()
           var res = 0
-          while ({ res = readdir(dir, elem); res == 0 }) {
+          // Avoid deprecated non-POSIX method by using private implementation.
+          while ({ res = scalanative_readdirImpl(dir, elem); res == 0 }) {
             val name = fromCString(elem._2.at(0))
             val fileType = FileType.unixFileType(elem._3)
             collectFile(name, fileType)
