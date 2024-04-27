@@ -72,24 +72,24 @@ object FileHelpers {
       if (dir == null) {
         if (!allowEmpty) throw UnixException(path, posixErrno.errno)
         null
-      } else {
-        Zone.acquire { implicit z =>
-          var elem = alloc[dirent]()
-          var res = 0
-          // Avoid deprecated non-POSIX method by using private implementation.
-          while ({ res = scalanative_readdirImpl(dir, elem); res == 0 }) {
-            val name = fromCString(elem._2.at(0))
-            val fileType = FileType.unixFileType(elem._3)
-            collectFile(name, fileType)
+      } else
+        try {
+          Zone.acquire { implicit z =>
+            var elem = alloc[dirent]()
+            var res = 0
+            // Avoid deprecated non-POSIX method by using private implementation.
+            while ({ res = scalanative_readdirImpl(dir, elem); res == 0 }) {
+              val name = fromCString(elem._2.at(0))
+              val fileType = FileType.unixFileType(elem._3)
+              collectFile(name, fileType)
+            }
+
+            res match {
+              case s if (s == 0) || (s == -1) => buffer.toArray
+              case _                          => throw UnixException(path, res)
+            }
           }
-          closedir(dir)
-          res match {
-            case e if e == EBADF || e == EFAULT || e == EIO =>
-              throw UnixException(path, res)
-            case _ => buffer.toArray
-          }
-        }
-      }
+        } finally closedir(dir)
     }
 
     def listWindows() = Zone.acquire { implicit z =>
