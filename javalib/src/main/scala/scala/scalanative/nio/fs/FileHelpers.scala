@@ -60,6 +60,9 @@ object FileHelpers {
     lazy val buffer = UnrolledBuffer.empty[T]
 
     def collectFile(name: String, fileType: FileType): Unit = {
+      if (name == "") // DEBUG -
+        throw new IOException("empty file name, should never happen")
+
       // java doesn't list '.' and '..', we filter them out.
       if (name != "." && name != "..") {
         buffer += f(name, fileType)
@@ -84,9 +87,10 @@ object FileHelpers {
               collectFile(name, fileType)
             }
 
-            res match {
-              case s if (s == 0) || (s == -1) => buffer.toArray
-              case _                          => throw UnixException(path, res)
+            res match { // should never reach here with res == 0
+              case eof if (eof == -1) => buffer.toArray
+              case _ =>
+                throw UnixException(path, res)
             }
           }
         } finally closedir(dir)
