@@ -60,9 +60,6 @@ object FileHelpers {
     lazy val buffer = UnrolledBuffer.empty[T]
 
     def collectFile(name: String, fileType: FileType): Unit = {
-      if (name == "") // DEBUG -
-        throw new IOException("empty file name, should never happen")
-
       // java doesn't list '.' and '..', we filter them out.
       if (name != "." && name != "..") {
         buffer += f(name, fileType)
@@ -76,24 +73,27 @@ object FileHelpers {
         if (!allowEmpty) throw UnixException(path, posixErrno.errno)
         null
       } else
-        try {
-          Zone.acquire { implicit z =>
+        Zone.acquire { implicit z =>
+          try {
             var elem = alloc[dirent]()
             var res = 0
             // Avoid deprecated non-POSIX method by using private implementation.
             while ({ res = scalanative_readdirImpl(dir, elem); res == 0 }) {
               val name = fromCString(elem._2.at(0))
+              if (name == "") // DEBUG -
+                throw new IOException("empty file name, should never happen")
+
               val fileType = FileType.unixFileType(elem._3)
               collectFile(name, fileType)
             }
 
-            res match { // should never reach here with res == 0
-              case eof if (eof == -1) => buffer.toArray
-              case _ =>
+            res match {
+              case e if e == EBADF || e == EFAULT || e == EIO =>
                 throw UnixException(path, res)
+              case _ => buffer.toArray
             }
-          }
-        } finally closedir(dir)
+          } finally closedir(dir)
+        }
     }
 
     def listWindows() = Zone.acquire { implicit z =>

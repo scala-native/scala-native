@@ -5,7 +5,7 @@ import scalanative.posix.sys.types.ino_t
 
 import scala.scalanative.unsafe._, Nat._
 
-object DirentTypes {
+private[scalanative] object DirentTypes {
   type _256 = Digit3[_2, _5, _6] // see comment above 'type dirent' below.
 
   type DIR = CStruct0 // An opaque structure from os. Deconstruct a your peril.
@@ -39,7 +39,7 @@ object DirentTypes {
    */
 
   type dirent =
-    CStruct3[ino_t, CArray[CChar, _256], CShort]
+    CStruct3[CUnsignedLongLong, CArray[CChar, _256], CShort]
 }
 
 // not __SCALANATIVE_POSIX_DIRENTIMPL for historical/version_compatibility.
@@ -71,7 +71,6 @@ private[scalanative] object DirentImpl {
 }
 
 object dirent {
-  import DirentTypes._
   import DirentImpl._
 
   type DIR = DirentTypes.DIR
