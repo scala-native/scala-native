@@ -35,7 +35,20 @@ private[scalanative] object DirentTypes {
 
   /* Code in dirent.c manually checks that the sizes & declarations
    * of this structure are compatible with the operating system definitions.
-   * Devo: if you change anything here, please examine the  dirent.c checks.
+   * Devo: if you change anything here, please examine the dirent.c checks.
+   *
+   * Re: lack of ino_t.
+   *     One would expect to see the _1 field below declared as ino_t.
+   *     The CUnsignedLongLong is surprising but should not be changed.
+   *     dirent.c defines its idea of a Scala Native dirent using "long long".
+   *     That gives 64 bytes on both 32 & 64 bit systems.
+   *
+   *     Scala Native defines 'ino_t' as CUnsignedLong, which is 32 bits
+   *     on a 32 bit system.  Using CUnsignedLongLong (guaranteed 64 bits)
+   *     allocates space sufficient for  both the 32 & 64 bit cases.
+   *     It also is robust to dirent.c being compiled with
+   *     _FILE_OFFSET_BITS=64 on 32 bit systems, perhaps by user specified
+   *     compilation flags.
    */
 
   type dirent =

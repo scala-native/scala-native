@@ -77,12 +77,9 @@ object FileHelpers {
           try {
             var elem = alloc[dirent]()
             var res = 0
-            // Avoid deprecated non-POSIX method by using private implementation.
+            // Avoid deprecated non-POSIX method, use private implementation.
             while ({ res = scalanative_readdirImpl(dir, elem); res == 0 }) {
               val name = fromCString(elem._2.at(0))
-              if (name == "") // DEBUG -
-                throw new IOException("empty file name, should never happen")
-
               val fileType = FileType.unixFileType(elem._3)
               collectFile(name, fileType)
             }
