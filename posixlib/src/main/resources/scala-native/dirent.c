@@ -105,7 +105,7 @@ int scalanative_readdirImpl(DIR *dirp, struct scalanative_dirent *buf) {
  */
 
 int scalanative_readdir(DIR *dirp, struct scalanative_dirent *buf) {
-    scalanative_readdirImpl(dirp, buf);
+    return scalanative_readdirImpl(dirp, buf);
 }
 
 int scalanative_closedir(DIR *dirp) { return closedir(dirp); }
