@@ -17,7 +17,7 @@ package build
  */
 
 object ScalaVersions {
-  val extraCrossScalaVersion(binVersionPrefix: String) = sys.env
+  def extraCrossScalaVersion(binVersionPrefix: String) = sys.env
     .get("EXTRA_CROSS_SCALA_VERSION")
     .filter(_.startsWith(binVersionPrefix))
   // Versions of Scala used for publishing compiler plugins
