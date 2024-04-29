@@ -19,7 +19,7 @@ package build
 object ScalaVersions {
   // Versions of Scala used for publishing compiler plugins
   val crossScala212 = (14 to 19).map(v => s"2.12.$v")
-  val crossScala213 = (8 to 13).map(v => s"2.13.$v")
+  val crossScala213 = (8 to 14).map(v => s"2.13.$v")
   val crossScala3 = List(
     // windowslib fails to compile with 3.1.{0-1}
     (2 to 3).map(v => s"3.1.$v"),
