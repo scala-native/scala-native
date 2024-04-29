@@ -765,7 +765,9 @@ object Settings {
           import sbt.librarymanagement.ivy._
           val ivyConfig = InlineIvyConfiguration()
             .withLog(s.log)
-            .withResolvers(resolvers.value.toVector)
+            .withResolvers(
+              resolvers.value.toVector ++ InlineIvyConfiguration().resolvers
+            )
           IvyDependencyResolution(ivyConfig)
         }
         lazy val scalaLibSourcesJar = lm
