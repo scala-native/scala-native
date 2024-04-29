@@ -17,16 +17,21 @@ package build
  */
 
 object ScalaVersions {
+  val extraCrossScalaVersion(binVersionPrefix: String) = sys.env
+    .get("EXTRA_CROSS_SCALA_VERSION")
+    .filter(_.startsWith(binVersionPrefix))
   // Versions of Scala used for publishing compiler plugins
-  val crossScala212 = (14 to 19).map(v => s"2.12.$v")
-  val crossScala213 = (8 to 14).map(v => s"2.13.$v")
+  val crossScala212 =
+    (14 to 19).map(v => s"2.12.$v") ++ extraCrossScalaVersion("2.12.")
+  val crossScala213 =
+    (8 to 14).map(v => s"2.13.$v") ++ extraCrossScalaVersion("2.13.")
   val crossScala3 = List(
     // windowslib fails to compile with 3.1.{0-1}
     (2 to 3).map(v => s"3.1.$v"),
     (0 to 2).map(v => s"3.2.$v"),
     (0 to 3).map(v => s"3.3.$v"),
     (0 to 1).map(v => s"3.4.$v")
-  ).flatten
+  ).flatten ++ extraCrossScalaVersion("3.")
 
   // Scala versions used for publishing libraries
   val scala212: String = crossScala212.last
