@@ -553,9 +553,9 @@ object Files {
        * (circa 2024) operating systems supported by Scala Native describe
        * the same guarantee.
        *
-       * The calls to readdir() here use the same opendir() result.
-       * Exactly the kind of access pattern which "must be externally
-       * synchronized".
+       * The calls to readdir() here are two uses of result of the same
+       * one opendir() call. Exactly the kind of access pattern which
+       * "must be externally synchronized".
        *
        * 'dirLock' here is used to provide single execution and
        * guard the 'posixDir' and 'posixDirClosed' instance variables.
@@ -613,7 +613,6 @@ object Files {
                   false
                 }
               } else {
-
                 /* Consume "." and "..", Java does not want to see them.
                  *
                  * Those two entries are usually the first two, but that
