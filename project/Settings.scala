@@ -763,7 +763,11 @@ object Settings {
         val report = (fetchScalaSource / update).value
         lazy val lm = {
           import sbt.librarymanagement.ivy._
-          val ivyConfig = InlineIvyConfiguration().withLog(s.log)
+          val ivyConfig = InlineIvyConfiguration()
+            .withLog(s.log)
+            .withResolvers(
+              resolvers.value.toVector ++ InlineIvyConfiguration().resolvers
+            )
           IvyDependencyResolution(ivyConfig)
         }
         lazy val scalaLibSourcesJar = lm
@@ -823,6 +827,16 @@ object Settings {
         def listFilesInOrder(patterns: Glob*) =
           patterns.flatMap(fileTree.list(_))
 
+          /* Exclude files coming from Scala's `library-aux` directory, as they are not
+           * meant to be compiled. They are part of the source jar since Scala 2.13.14.
+           */
+        val ignoredSourceFiles = Set(
+          "Any.scala",
+          "AnyRef.scala",
+          "Singleton.scala",
+          "Nothing.scala",
+          "Null.scala"
+        ).map(java.nio.file.Paths.get("scala", _))
         var failedToApplyPatches = false
         for {
           srcDir <- sourceDirectories
@@ -830,6 +844,7 @@ object Settings {
           scalaGlob = srcDir.toGlob / ** / "*.scala"
           patchGlob = srcDir.toGlob / ** / "*.scala.patch"
           (sourcePath, _) <- listFilesInOrder(scalaGlob, patchGlob)
+          if !ignoredSourceFiles.exists(sourcePath.endsWith(_))
           path = normPath(sourcePath.toFile).substring(normSrcDir.length)
         } {
           def addSource(path: String)(optSource: => Option[File]): Unit = {

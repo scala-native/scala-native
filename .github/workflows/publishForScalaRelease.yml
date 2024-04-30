@@ -53,36 +53,21 @@ jobs:
           MAVEN_USER: "${{ secrets.SONATYPE_USER }}"
           MAVEN_PASSWORD: "${{ secrets.SONATYPE_PASSWORD }}"
           PGP_PASSPHRASE: "${{ secrets.PGP_PASSWORD }}"
-        # TODO Hot fix, replace with dedicated command or env var for next release to set correct cross scala versions
+          EXTRA_CROSS_SCALA_VERSION: "${{ inputs.scala-version }}"
         run: >
           sbt '
-            set crossScalaVersions += "${{ inputs.scala-version }}";
-            set nscPlugin.forBinaryVersion("${{ env.binary-version }}")/crossScalaVersions += "${{ inputs.scala-version }}";
-            set junitPlugin.forBinaryVersion("${{ env.binary-version }}")/crossScalaVersions += "${{ inputs.scala-version }}";
-            set scalalib.forBinaryVersion("${{ env.binary-version }}")/crossScalaVersions += "${{ inputs.scala-version }}";
-            set nir.forBinaryVersion("${{ env.binary-version }}")/crossScalaVersions += "${{ inputs.scala-version }}";
-            set util.forBinaryVersion("${{ env.binary-version }}")/crossScalaVersions += "${{ inputs.scala-version }}";
-            set tools.forBinaryVersion("${{ env.binary-version }}")/crossScalaVersions += "${{ inputs.scala-version }}";
-            set nativelib.forBinaryVersion("${{ env.binary-version }}")/crossScalaVersions += "${{ inputs.scala-version }}";
-            set clib.forBinaryVersion("${{ env.binary-version }}")/crossScalaVersions += "${{ inputs.scala-version }}";
-            set posixlib.forBinaryVersion("${{ env.binary-version }}")/crossScalaVersions += "${{ inputs.scala-version }}";
-            set windowslib.forBinaryVersion("${{ env.binary-version }}")/crossScalaVersions += "${{ inputs.scala-version }}";
-            set auxlib.forBinaryVersion("${{ env.binary-version }}")/crossScalaVersions += "${{ inputs.scala-version }}";
-            set javalib.forBinaryVersion("${{ env.binary-version }}")/crossScalaVersions += "${{ inputs.scala-version }}";
-            set testInterface.forBinaryVersion("${{ env.binary-version }}")/crossScalaVersions += "${{ inputs.scala-version }}";
-            set testInterfaceSbtDefs.forBinaryVersion("${{ env.binary-version }}")/crossScalaVersions += "${{ inputs.scala-version }}";
-            set testRunner.forBinaryVersion("${{ env.binary-version }}")/crossScalaVersions += "${{ inputs.scala-version }}";
-            set junitRuntime.forBinaryVersion("${{ env.binary-version }}")/crossScalaVersions += "${{ inputs.scala-version }}";
             ++${{ inputs.scala-version }} -v; 
             nscplugin${{ env.project-version }}/publishSigned;
             junitPlugin${{ env.project-version }}/publishSigned;
             scalalib${{ env.project-version }}/publishSigned
           '
 
-      # - name: Test runtime
-      #   run: >
-      #     sbt '
-      #       set crossScalaVersions += "${{ inputs.scala-version }}";
-      #       ++${{ inputs.scala-version }} -v; 
-      #       test-runtime ${{ env.binary-version }};
-      #     '
+      - name: Test runtime
+        if: ${{ startsWith(inputs.scala-native-version, 'v0.5.') }}
+        env:
+          EXTRA_CROSS_SCALA_VERSION: "${{ inputs.scala-version }}"
+        run: >
+          sbt '
+            ++${{ inputs.scala-version }} -v; 
+            test-runtime ${{ env.binary-version }};
+          '
