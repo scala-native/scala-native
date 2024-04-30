@@ -568,16 +568,29 @@ object Files {
     Zone.acquire { implicit z =>
       val sourceAbs = source.toAbsolutePath().toString
       val targetAbs = target.toAbsolutePath().toString
-      // We cannot replace directory, it needs to be removed first
+
       if (replaceExisting && target.toFile().isDirectory()) {
-        // todo delete children
-        Files.delete(target)
+        val mustDeleteTarget =
+          if (isWindows) {
+            // We can not replace directory at all, it must be removed first.
+            true
+          } else {
+            // We can not replace a directory with a file on unix-like.
+            (!source.toFile().isDirectory())
+          }
+
+        if (mustDeleteTarget)
+          Files.delete(target)
       }
+
       if (isWindows) {
         val sourceCString = toCWideStringUTF16LE(sourceAbs)
         val targetCString = toCWideStringUTF16LE(targetAbs)
 
         // stdio.rename on Windows does not replace existing file
+        if (replaceExisting && target.toFile().isDirectory())
+          Files.delete(target)
+
         val flags = {
           val replace =
             if (replaceExisting) MOVEFILE_REPLACE_EXISTING else 0.toUInt

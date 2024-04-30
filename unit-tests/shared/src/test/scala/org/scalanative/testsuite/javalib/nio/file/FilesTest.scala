@@ -1743,13 +1743,23 @@ class FilesTest {
     }
   }
 
-  def moveDirectoryTest(delete: Boolean, options: CopyOption*): Unit = {
+  def moveDirectoryTest(
+      delete: Boolean,
+      populateTarget: Boolean,
+      options: CopyOption*
+  ): Unit = {
     withTemporaryDirectory { dirFile =>
       val dir = dirFile.toPath()
       val f0 = dir.resolve("f0")
       Files.write(f0, "foo\n".getBytes)
       val target = Files.createTempDirectory(null)
-      if (delete) assertTrue(Files.deleteIfExists(target))
+
+      if (delete) {
+        assertTrue(Files.deleteIfExists(target))
+      } else if (populateTarget) {
+        Files.createFile(target.resolve("ergoSum"))
+      }
+
       Files.move(dir, target, options: _*)
       assertFalse("a1", Files.exists(dir))
       assertFalse("a2", Files.exists(f0))
@@ -1763,17 +1773,24 @@ class FilesTest {
     }
   }
   @Test def filesMoveDirectory(): Unit = {
-    moveDirectoryTest(delete = true)
+    moveDirectoryTest(delete = true, populateTarget = false)
   }
 
   @Test def filesMoveReplaceDirectory(): Unit = {
-    moveDirectoryTest(delete = false, REPLACE_EXISTING)
+    moveDirectoryTest(delete = false, populateTarget = false, REPLACE_EXISTING)
+  }
+
+  @Test def filesMoveReplaceDoesNotReplacePopulatedDirectory(): Unit = {
+    assertThrows(
+      classOf[DirectoryNotEmptyException],
+      moveDirectoryTest(delete = false, populateTarget = true, REPLACE_EXISTING)
+    )
   }
 
   @Test def filesMoveDoesNotReplaceDirectory(): Unit = {
     assertThrows(
       classOf[FileAlreadyExistsException],
-      moveDirectoryTest(delete = false)
+      moveDirectoryTest(delete = false, populateTarget = false)
     )
   }
 
