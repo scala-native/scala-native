@@ -580,7 +580,7 @@ object Files {
           }
 
         if (mustDeleteTarget)
-          Files.delete(target)
+          Files.delete(target) // will detect & throw if target is not empty.
       }
 
       if (isWindows) {
