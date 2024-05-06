@@ -5,7 +5,7 @@ import java.net._
 import java.nio.ByteBuffer
 import java.nio.channels.spi.SelectorProvider
 import java.util
-
+import java.util.Objects
 import scala.scalanative.meta.LinktimeInfo.isWindows
 import scala.scalanative.posix
 import scala.scalanative.posix.errno.{EAGAIN, EWOULDBLOCK, errno}
@@ -171,13 +171,31 @@ class DatagramChannelImpl(family: ProtocolFamily, provider: SelectorProvider)
   override def join(
       group: InetAddress,
       networkInterface: NetworkInterface
-  ): MembershipKey = ???
+  ): MembershipKey = join0(group, networkInterface, null)
 
   override def join(
       group: InetAddress,
       networkInterface: NetworkInterface,
       source: InetAddress
-  ): MembershipKey = ???
+  ): MembershipKey = {
+    Objects.requireNonNull(source)
+    join0(group, networkInterface, source)
+  }
+
+  private def join0(
+      group: InetAddress,
+      networkInterface: NetworkInterface,
+      source: InetAddress
+  ): MembershipKey = {
+    throwIfClosed()
+    Net.join(fd, family, group, networkInterface, source)
+    new MembershipKeyImpl(this, group, networkInterface, source)
+  }
+
+  private[channels] def drop(key: MembershipKeyImpl): Unit = {
+    key.invalidate()
+    Net.drop(fd, family, key.group(), key.networkInterface(), key.sourceAddress())
+  }
 
   override protected def implCloseSelectableChannel(): Unit = ???
 
