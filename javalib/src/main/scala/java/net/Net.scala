@@ -10,6 +10,8 @@ import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
 
 trait Net {
+  import Net._
+
   def POLLIN: Int
   def POLLOUT: Int
 
@@ -67,6 +69,33 @@ trait Net {
     posix.sys.socket.connect(fd.fd, sa, len)
   }
 
+  def join(
+      fd: FileDescriptor,
+      family: ProtocolFamily,
+      group: InetAddress,
+      interf: NetworkInterface,
+      source: InetAddress
+  ): Unit =
+    changeMembership(Membership.Join, fd, family, group, interf, source)
+
+  def drop(
+      fd: FileDescriptor,
+      family: ProtocolFamily,
+      group: InetAddress,
+      interf: NetworkInterface,
+      source: InetAddress
+  ): Unit =
+    changeMembership(Membership.Drop, fd, family, group, interf, source)
+
+  protected def changeMembership(
+      membership: Membership,
+      fd: FileDescriptor,
+      family: ProtocolFamily,
+      group: InetAddress,
+      interf: NetworkInterface,
+      source: InetAddress
+  ): Unit
+
   def close(fd: FileDescriptor): Unit
   def localAddress(fd: FileDescriptor, family: ProtocolFamily): SocketAddress
   def configureBlocking(fd: FileDescriptor, blocking: Boolean): Unit
@@ -80,6 +109,12 @@ trait Net {
 }
 
 object Net extends Net {
+
+  private[net] sealed trait Membership
+  private[net] object Membership {
+    case object Join extends Membership
+    case object Drop extends Membership
+  }
 
   def getGaiHintsProtocolFamily(): ProtocolFamily = {
     if (SocketHelpers.getUseIPv4Stack()) StandardProtocolFamily.INET
@@ -99,6 +134,17 @@ object Net extends Net {
     netImpl.checkAddress(sa)
   @inline override def bind(fd: FileDescriptor, local: SocketAddress): Unit =
     netImpl.bind(fd, local)
+
+  @inline override def changeMembership(
+      membership: Membership,
+      fd: FileDescriptor,
+      family: ProtocolFamily,
+      group: InetAddress,
+      interf: NetworkInterface,
+      source: InetAddress
+  ): Unit =
+    netImpl.changeMembership(membership, fd, family, group, interf, source)
+
   @inline override def close(fd: FileDescriptor): Unit =
     netImpl.close(fd)
   @inline override def localAddress(

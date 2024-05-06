@@ -1,15 +1,19 @@
 package java.net
 
+import java.net.ipOps._
 import java.io.{FileDescriptor, IOException}
 import java.nio.channels.{
   UnresolvedAddressException,
   UnsupportedAddressTypeException
 }
 import scala.scalanative.posix
+import scala.scalanative.posix.arpa.inet
 import scala.scalanative.posix.netdb.addrinfo
-import scala.scalanative.posix.netinet.{in, tcp}
+import scala.scalanative.posix.netinet.in
+import scala.scalanative.posix.netinet.tcp
+import scala.scalanative.posix.netinet.inOps._
 import scala.scalanative.posix.sys.{socket => unixsocket}
-import scala.scalanative.unsafe.{CInt, Ptr, sizeof, stackalloc}
+import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
 import scala.scalanative.windows._
 
@@ -65,6 +69,82 @@ object WindowsNet extends Net {
       isa
     case _ =>
       throw new UnsupportedAddressTypeException()
+  }
+
+  override protected def changeMembership(
+      membership: Net.Membership,
+      fd: FileDescriptor,
+      family: ProtocolFamily,
+      group: InetAddress,
+      interf: NetworkInterface,
+      source: InetAddress
+  ): Unit = {
+    require(group.isMulticastAddress(), "Address is not a multicast address")
+    if (source != null) {
+      require(
+        !source.isAnyLocalAddress(),
+        "Source address is a wildcard address"
+      )
+      require(
+        !source.isMulticastAddress(),
+        "Source address is multicast address"
+      )
+      require(
+        source.getClass == group.getClass,
+        "Source address is different type to group"
+      )
+    }
+
+    val (name, optName) = membership match {
+      case Net.Membership.Join => ("IP_ADD_MEMBERSHIP", ip.IP_ADD_MEMBERSHIP)
+      case Net.Membership.Drop => ("IP_DROP_MEMBERSHIP", ip.IP_DROP_MEMBERSHIP)
+    }
+
+    val (optValue, optLen) = (family, group) match {
+      case (StandardProtocolFamily.INET, group: Inet4Address) =>
+        val mName = stackalloc[ip.ip_mreq]()
+        if (interf != null) {
+          val ifAddrs = interf.getInetAddresses()
+          if (!ifAddrs.hasMoreElements()) {
+            throw new SocketException(
+              s"bad argument for $name: No IP addresses bound to interface"
+            )
+          }
+          val addrPtr = group.getAddress().at(0).asInstanceOf[Ptr[in.in_addr_t]]
+          val ifAddrPtr =
+            ifAddrs
+              .nextElement()
+              .getAddress()
+              .at(0)
+              .asInstanceOf[Ptr[in.in_addr_t]]
+          mName.imr_multiaddr.s_addr = inet.htonl(!addrPtr)
+          mName.imr_address.s_addr = inet.htonl(!ifAddrPtr)
+        } else {
+          val addrPtr = group.getAddress().at(0).asInstanceOf[Ptr[in.in_addr_t]]
+          val ifAddrPtr = getMulticastInterfaceOption(fd).getAddress
+            .getAddress()
+            .at(0)
+            .asInstanceOf[Ptr[in.in_addr_t]]
+          mName.imr_multiaddr.s_addr = inet.htonl(!addrPtr)
+          mName.imr_address.s_addr = inet.htonl(!ifAddrPtr)
+        }
+        (mName.asInstanceOf[Ptr[Byte]], sizeof[ip.ip_mreq].toUInt)
+      // case (StandardProtocolFamily.INET6, group: Inet6Address) =>
+      case _ =>
+        throw new IllegalArgumentException("Address type not supported")
+    }
+
+    if (posix.sys.socket.setsockopt(
+          fd.fd,
+          in.IPPROTO_IP,
+          optName,
+          optValue,
+          optLen
+        ) != 0) {
+      throw new SocketException(
+        s"Exception while setting socket option $name, errno: ${WSAGetLastError()}"
+      )
+    }
   }
 
   override def close(fd: FileDescriptor): Unit = closeSocket(fd.handle)
@@ -149,7 +229,7 @@ object WindowsNet extends Net {
           optLen
         ) != 0) {
       throw new SocketException(
-        s"Exception while getting socket option: ${name.name}, errno: ${WSAGetLastError()}"
+        s"Exception while getting socket option: , errno: ${WSAGetLastError()}"
       )
     }
 
@@ -159,6 +239,30 @@ object WindowsNet extends Net {
       case `jBoolean` =>
         Boolean.box(!(optValue.asInstanceOf[Ptr[CInt]]) != 0)
     }
+  }
+
+  private def getMulticastInterfaceOption(
+      fd: FileDescriptor
+  ): InetSocketAddress = {
+    val optValue = stackalloc[Ptr[in.sockaddr_in]]()
+    val optLen = stackalloc[posix.sys.socket.socklen_t]()
+    !optLen = sizeof[in.sockaddr_in].toUInt
+
+    if (posix.sys.socket.getsockopt(
+          fd.fd,
+          in.IPPROTO_IP,
+          in.IP_MULTICAST_IF,
+          optValue.asInstanceOf[Ptr[Byte]],
+          optLen
+        ) != 0) {
+      throw new SocketException(
+        s"Exception while getting socket option with id: IP_MULTICAST_IF, errno: ${WSAGetLastError()}"
+      )
+    }
+
+    SocketHelpers.sockaddrStorageToInetSocketAddress(
+      (!optValue).asInstanceOf[Ptr[unixsocket.sockaddr]]
+    )
   }
 
   override def setSocketOption[T](
