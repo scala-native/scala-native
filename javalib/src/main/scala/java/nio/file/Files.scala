@@ -9,13 +9,17 @@ import java.nio.file.attribute._
 import java.nio.file.StandardCopyOption.{COPY_ATTRIBUTES, REPLACE_EXISTING}
 
 import java.util._
-import java.util.function.BiPredicate
-import java.util.stream.Stream
+import java.util.function.{BiPredicate, Consumer, Supplier}
+
+import java.util.stream.{Stream, StreamSupport}
+import java.util.{Spliterator, Spliterators}
 
 import scalanative.unsigned._
 import scalanative.unsafe._
 import scalanative.libc._
 
+import scalanative.posix.dirent._
+import scalanative.posix.direntOps._
 import scalanative.posix.errno.{errno, EEXIST, ENOENT, ENOTEMPTY}
 import scalanative.posix.{fcntl, limits, unistd}
 import scalanative.posix.sys.stat
@@ -527,6 +531,139 @@ object Files {
   def lines(path: Path, cs: Charset): Stream[String] =
     newBufferedReader(path, cs).lines(true)
 
+  private final val nul = 0.toByte // ASCII NUL
+  private final val dot = 46.toByte // ASCII period or dot
+
+  private def posixList(dir: Path, dirString: String): Stream[Path] = {
+    /* The JVM specification describes the returned stream as lazy.
+     * The synchronization overhead below is an unfortunate cost of
+     * that requirement.
+     *
+     * FileHelpers.unixList() is not used here because it eagerly creates an
+     * Array of all the entries in the directory.
+     */
+
+    class PosixDir(dir: Path, dirString: String)
+        extends Supplier[Spliterator[Path]] {
+      /* Older operating system provided no guarantee that the
+       * dirent data returned by readdir() would not be overwritten.
+       *
+       * Open Group 2018 says "They shall not be affected by a call to
+       * readdir() on a different directory stream.". Most if not all current
+       * (circa 2024) operating systems supported by Scala Native describe
+       * the same guarantee.
+       *
+       * The calls to readdir() here are two uses of result of the same
+       * one opendir() call. Exactly the kind of access pattern which
+       * "must be externally synchronized".
+       *
+       * 'dirLock' here is used to provide single execution and
+       * guard the 'posixDir' and 'posixDirClosed' instance variables.
+       */
+
+      private val dirLock = new Object()
+
+      /* Ensure that the DIR is closed no more than once: i.e. only if
+       * extant and open.
+       *
+       * Access this variable only within blocks synchronized on dirLock.
+       * That should make this variable effectively volatile.
+       */
+
+      private var posixDirClosed = true
+
+      private lazy val posixDir: Ptr[DIR] = Zone.acquire { implicit z =>
+        val ptr = opendir(toCString(dirString))
+        if (ptr == null)
+          throw PosixException(dirString, errno)
+
+        posixDirClosed = false
+        ptr
+      }
+
+      private type T = Path
+
+      def get(): Spliterator[T] = {
+
+        new Spliterators.AbstractSpliterator[T](Long.MaxValue, 0) {
+          private def appendToStream(
+              cName: CString,
+              action: Consumer[_ >: T]
+          ): Boolean = {
+            val entryPath = dir.resolve(fromCString(cName))
+
+            action.accept(entryPath)
+            true
+          }
+
+          def tryAdvance(action: Consumer[_ >: T]): Boolean =
+            dirLock.synchronized {
+
+              /* Reduce execution cost by relying upon readdir() to detect
+               * a closed directory rather than checking posixDirclosed.
+               */
+
+              val entry = { errno = 0; readdir(posixDir) }
+
+              if (entry == null) {
+                if (errno != 0) {
+                  throw PosixException(dirString, errno)
+                } else { // End of OS directory stream
+                  closeImpl()
+                  false
+                }
+              } else {
+                /* Consume "." and "..", Java does not want to see them.
+                 *
+                 * Those two entries are usually the first two, but that
+                 * is not guaranteed. There are obscure scenarios where
+                 * at least '.' can come later.
+                 *
+                 * This is conceptually a 'stream.filter()' operation but
+                 * with less overhead.
+                 */
+
+                val entryName = entry.d_name // A CString, so byte comparisons
+
+                if (entryName(0) != dot)
+                  appendToStream(entryName, action)
+                else if (entryName(1) == nul)
+                  tryAdvance(action) // past "."
+                else if ((entryName(1) == dot) && (entryName(2) == nul))
+                  tryAdvance(action) // past ".."
+                else
+                  appendToStream(entryName, action) // ".git" or such
+              }
+            }
+        }
+      }
+
+      /* Call only while holding dirLock.
+       * When closedir() is called more than once, some operating systems
+       * set errno to EBADF. Others are not so robust and fail (signal? exit?).
+       */
+
+      private def closeImpl() = {
+        if (!posixDirClosed) {
+          val err = closedir(posixDir)
+          if (err != 0)
+            throw PosixException(dirString, errno)
+
+          posixDirClosed = true
+        }
+      }
+
+      def close() = {
+        dirLock.synchronized {
+          closeImpl()
+        }
+      }
+    }
+
+    val posixDir = new PosixDir(dir, dirString)
+    StreamSupport.stream(posixDir, 0, false).onClose(() => posixDir.close())
+  }
+
   def list(dir: Path): Stream[Path] = {
     /* Fix Issue 3165 - From Java "Path" documentation URL:
      * https://docs.oracle.com/javase/8/docs/api/java/nio/file/Path.html
@@ -537,11 +674,16 @@ object Files {
      * Operating Systems can not opendir() an empty string, so expand "" to
      * "./".
      */
+
     val dirString =
       if (dir.equals(emptyPath)) "./"
       else dir.toString()
 
-    Arrays.stream[Path](FileHelpers.list(dirString, (n, _) => dir.resolve(n)))
+    if (!isWindows)
+      posixList(dir, dirString) // see comment re: args at top of that method
+    else {
+      Arrays.stream[Path](FileHelpers.list(dirString, (n, _) => dir.resolve(n)))
+    }
   }
 
   def move(source: Path, target: Path, options: Array[CopyOption]): Path = {

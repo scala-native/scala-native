@@ -69,7 +69,7 @@ private[scalanative] object DirentImpl {
 
   def scalanative_readdir(dirp: Ptr[DIR]): CInt = extern
 
-  // Not POSIX, javalib internal use only.
+  // Not POSIX, javalib & scalanative/nio/fs/ internal use only.
   def scalanative_readdirImpl(dirp: Ptr[DIR], buf: Ptr[dirent]): CInt = extern
 
   def scalanative_dt_unknown: CInt = extern
@@ -136,4 +136,12 @@ object dirent {
   def DT_SOCK: CInt = scalanative_dt_sock
 
   def DT_WHT: CInt = scalanative_dt_wht
+}
+
+object direntOps {
+  implicit class direntOps(val ptr: Ptr[dirent.dirent]) extends AnyVal {
+    def d_ino = ptr._1
+    def d_name = ptr._2.at(0).asInstanceOf[CString]
+    def d_type = ptr._3
+  }
 }

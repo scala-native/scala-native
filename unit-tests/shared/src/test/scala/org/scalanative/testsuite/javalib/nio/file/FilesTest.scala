@@ -791,15 +791,29 @@ class FilesTest {
       assertTrue("a3", Files.exists(f1) && Files.isRegularFile(f1))
       assertTrue("a4", Files.exists(f2) && Files.isRegularFile(f2))
 
-      val it = Files.list(dir).iterator()
-      val files = scala.collection.mutable.Set.empty[Path]
-      while (it.hasNext()) {
-        files += it.next()
-      }
-      assertTrue("a5", files.size == 3)
-      assertTrue("a6", files contains d0)
-      assertTrue("a7", files contains f0)
-      assertTrue("a8", files contains f1)
+      val fileStream = Files.list(dir)
+      try {
+        val it = fileStream.iterator()
+
+        val files = new java.util.HashSet[Path]()
+        while (it.hasNext())
+          files.add(it.next())
+
+        assertEquals("file count", 3, files.size)
+
+        assertTrue(
+          s"entry not found in stream: '${d0.toString()}'",
+          files.contains(d0)
+        )
+        assertTrue(
+          s"entry not found in stream: '${f0.toString()}'",
+          files.contains(f0)
+        )
+        assertTrue(
+          s"entry not found in stream '{f1.toString()}'",
+          files.contains(f1)
+        )
+      } finally fileStream.close()
     }
   }
 
