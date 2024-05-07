@@ -87,11 +87,6 @@ final class PosixFileAttributeViewImpl(path: Path, options: Array[LinkOption])
 
   override def readAttributes(): BasicFileAttributes = attributes
 
-  /*
-  private case class PosixFileKey(deviceId: stat.dev_t,
-                                  inodeNumber: stat.ino_t)
-   */
-
   private class PosixFileKey(deviceId: stat.dev_t, inodeNumber: stat.ino_t) {
 
     override def equals(that: Any): Boolean = that match {

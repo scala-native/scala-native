@@ -1598,12 +1598,6 @@ class FilesTest {
       assertFalse("a4", d0isSym)
       assertFalse("a5", d0isOth)
 
-      /* The two NotNull fileKey assertions in this Test must change if/when
-       * SN ever implements a file system which returns null fileKeys.
-       */
-      val d0fkey = Files.getAttribute(d0, "fileKey")
-      assertNotNull("fileKey: directory", d0fkey)
-
       val f0mtime =
         Files.getAttribute(f0, "lastModifiedTime").asInstanceOf[FileTime]
       val f0atime =
@@ -1631,6 +1625,12 @@ class FilesTest {
       assertFalse("a10", f0isSym)
       assertFalse("a11", f0isOth)
 
+      /* This fileKey section must change if/when SN ever implements a
+       * FileSystem which returns null fileKeys.
+       */
+      val d0fkey = Files.getAttribute(d0, "fileKey")
+      assertNotNull("fileKey: directory", d0fkey)
+
       val f0fkey1 = Files.getAttribute(f0, "fileKey")
       assertNotNull("fileKey 1: file", f0fkey1)
 
@@ -1641,7 +1641,8 @@ class FilesTest {
       assertNotNull("fileKey 2: file", f0fkey2)
 
       /* fileKeys may or may not be reference equal, depending on
-       * implementaton. fileKeys should, as in _must_, have content equality.
+       * implementation and possible caching. fileKeys referring to the
+       * same file _must_ have content equality.
        */
       assertEquals(
         s"fileKeys should be content equal; key1: ${f0fkey1.toString()}," +
