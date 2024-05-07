@@ -8,9 +8,7 @@ import java.nio.channels.{
 }
 import scala.scalanative.posix
 import scala.scalanative.posix.arpa.inet
-import scala.scalanative.posix.netdb.addrinfo
 import scala.scalanative.posix.netinet.in
-import scala.scalanative.posix.netinet.tcp
 import scala.scalanative.posix.netinet.inOps._
 import scala.scalanative.posix.sys.{socket => unixsocket}
 import scala.scalanative.unsafe._
@@ -21,9 +19,6 @@ object WindowsNet extends Net {
   import WinSocketApi._
   import WinSocketApiExt._
   import WinSocketApiOps._
-
-  private val jInteger = classOf[java.lang.Integer]
-  private val jBoolean = classOf[java.lang.Boolean]
 
   WinSocketApiOps.init()
 
@@ -54,7 +49,7 @@ object WindowsNet extends Net {
       flags = WSA_FLAG_OVERLAPPED
     )
     if (socket == InvalidSocket) {
-      throw new IOException(s"Couldn't create socket: ${WSAGetLastError()}")
+      throw new IOException(s"Could not create socket: ${WSAGetLastError()}")
     }
 
     new FileDescriptor(FileDescriptor.FileHandle(socket), readOnly = false)
@@ -184,112 +179,6 @@ object WindowsNet extends Net {
     if (ioctlSocket(fd.handle, FIONBIO, mode) != 0) {
       throw new SocketException(
         s"Failed to set socket ${if (!blocking) "non-" else ""}blocking"
-      )
-    }
-  }
-
-  private def optionLevel(name: SocketOption[_]): CInt = name match {
-    case StandardSocketOptions.IP_TOS => SocketHelpers.getIPPROTO()
-    case _                            => unixsocket.SOL_SOCKET
-  }
-
-  private def nativeOptionName(name: SocketOption[_]): CInt = name match {
-    // case StandardSocketOptions.IP_MULTICAST_IF =>
-    // case StandardSocketOptions.IP_MULTICAST_LOOP =>
-    case StandardSocketOptions.IP_MULTICAST_TTL =>
-      SocketHelpers.getMulticastTtlSocketOption()
-    case StandardSocketOptions.IP_TOS =>
-      SocketHelpers.getTrafficClassSocketOption()
-    case StandardSocketOptions.SO_KEEPALIVE => unixsocket.SO_KEEPALIVE
-    case StandardSocketOptions.SO_LINGER    => unixsocket.SO_LINGER
-    //      case SocketOptions.SO_LINGER    => socket.SO_LINGER
-    case StandardSocketOptions.SO_RCVBUF    => unixsocket.SO_RCVBUF
-    case StandardSocketOptions.SO_SNDBUF    => unixsocket.SO_SNDBUF
-    case StandardSocketOptions.SO_REUSEADDR => unixsocket.SO_REUSEADDR
-    // case StandardSocketOptions.SO_REUSEPORT => unixsocket.SO_REUSEPORT
-    case StandardSocketOptions.SO_BROADCAST => unixsocket.SO_BROADCAST
-    case StandardSocketOptions.TCP_NODELAY  => tcp.TCP_NODELAY
-  }
-
-  override def getSocketOption[T](
-      fd: FileDescriptor,
-      name: SocketOption[T]
-  ): T = {
-    val level = optionLevel(name)
-    val optName = nativeOptionName(name)
-    val optValue = stackalloc[CInt]().asInstanceOf[Ptr[Byte]]
-    val optLen = stackalloc[unixsocket.socklen_t]()
-    !optLen = sizeof[CInt].toUInt
-
-    if (posix.sys.socket.getsockopt(
-          fd.fd,
-          level,
-          optName,
-          optValue,
-          optLen
-        ) != 0) {
-      throw new SocketException(
-        s"Exception while getting socket option: , errno: ${WSAGetLastError()}"
-      )
-    }
-
-    name.`type` match {
-      case `jInteger` =>
-        Integer.valueOf(!(optValue.asInstanceOf[Ptr[CInt]]))
-      case `jBoolean` =>
-        Boolean.box(!(optValue.asInstanceOf[Ptr[CInt]]) != 0)
-    }
-  }
-
-  private def getMulticastInterfaceOption(
-      fd: FileDescriptor
-  ): InetSocketAddress = {
-    val optValue = stackalloc[Ptr[in.sockaddr_in]]()
-    val optLen = stackalloc[posix.sys.socket.socklen_t]()
-    !optLen = sizeof[in.sockaddr_in].toUInt
-
-    if (posix.sys.socket.getsockopt(
-          fd.fd,
-          in.IPPROTO_IP,
-          in.IP_MULTICAST_IF,
-          optValue.asInstanceOf[Ptr[Byte]],
-          optLen
-        ) != 0) {
-      throw new SocketException(
-        s"Exception while getting socket option with id: IP_MULTICAST_IF, errno: ${WSAGetLastError()}"
-      )
-    }
-
-    SocketHelpers.sockaddrStorageToInetSocketAddress(
-      (!optValue).asInstanceOf[Ptr[unixsocket.sockaddr]]
-    )
-  }
-
-  override def setSocketOption[T](
-      fd: FileDescriptor,
-      name: SocketOption[T],
-      value: T
-  ): Unit = {
-    val level = optionLevel(name)
-    val optName = nativeOptionName(name)
-    val optValue = stackalloc[CInt]()
-    name.`type` match {
-      case `jInteger` =>
-        !optValue = value.asInstanceOf[Int]
-      case `jBoolean` =>
-        !optValue = if (value.asInstanceOf[Boolean]) 1 else 0
-    }
-    val optLen = sizeof[CInt].toUInt
-
-    if (posix.sys.socket.setsockopt(
-          fd.fd,
-          level,
-          optName,
-          optValue.asInstanceOf[Ptr[Byte]],
-          optLen
-        ) != 0) {
-      throw new SocketException(
-        s"Exception while setting socket option: ${name.name}, errno: ${WSAGetLastError()}"
       )
     }
   }

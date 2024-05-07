@@ -30,7 +30,7 @@ object UnixNet extends Net {
       family: ProtocolFamily,
       stream: Boolean
   ): FileDescriptor = {
-    val af = family match {
+    val addressFamily = family match {
       case StandardProtocolFamily.INET  => unixsocket.AF_INET
       case StandardProtocolFamily.INET6 => unixsocket.AF_INET6
       case _ =>
@@ -41,10 +41,10 @@ object UnixNet extends Net {
     val socketType =
       if (stream) unixsocket.SOCK_STREAM else unixsocket.SOCK_DGRAM
 
-    val sock = unixsocket.socket(af, socketType, 0)
+    val sock = unixsocket.socket(addressFamily, socketType, 0)
     if (sock < 0) {
       throw new IOException(
-        s"Could not create socket in address family: ${family.name()}"
+        s"Could not create socket in address family ${family.name()}: $errno"
       )
     }
     val fileHandle = FileDescriptor.FileHandle(sock)
@@ -191,112 +191,6 @@ object UnixNet extends Net {
     updateSocketFdOpts(fd.fd) { oldOpts =>
       if (blocking) oldOpts & ~O_NONBLOCK
       else oldOpts | O_NONBLOCK
-    }
-  }
-
-  private def optionLevel(name: SocketOption[_]): CInt = name match {
-    case StandardSocketOptions.IP_TOS => SocketHelpers.getIPPROTO()
-    case _                            => unixsocket.SOL_SOCKET
-  }
-
-  private def nativeOptionName(name: SocketOption[_]): CInt = name match {
-    // case StandardSocketOptions.IP_MULTICAST_IF =>
-    // case StandardSocketOptions.IP_MULTICAST_LOOP =>
-    case StandardSocketOptions.IP_MULTICAST_TTL =>
-      SocketHelpers.getMulticastTtlSocketOption()
-    case StandardSocketOptions.IP_TOS =>
-      SocketHelpers.getTrafficClassSocketOption()
-    case StandardSocketOptions.SO_KEEPALIVE => unixsocket.SO_KEEPALIVE
-    case StandardSocketOptions.SO_LINGER    => unixsocket.SO_LINGER
-    //      case SocketOptions.SO_LINGER    => socket.SO_LINGER
-    case StandardSocketOptions.SO_RCVBUF    => unixsocket.SO_RCVBUF
-    case StandardSocketOptions.SO_SNDBUF    => unixsocket.SO_SNDBUF
-    case StandardSocketOptions.SO_REUSEADDR => unixsocket.SO_REUSEADDR
-    // case StandardSocketOptions.SO_REUSEPORT => unixsocket.SO_REUSEPORT
-    case StandardSocketOptions.SO_BROADCAST => unixsocket.SO_BROADCAST
-    case StandardSocketOptions.TCP_NODELAY  => tcp.TCP_NODELAY
-  }
-
-  override def getSocketOption[T](
-      fd: FileDescriptor,
-      name: SocketOption[T]
-  ): T = {
-    val level = optionLevel(name)
-    val optName = nativeOptionName(name)
-    val optValue = stackalloc[CInt]().asInstanceOf[Ptr[Byte]]
-    val optLen = stackalloc[unixsocket.socklen_t]()
-    !optLen = sizeof[CInt].toUInt
-
-    if (posix.sys.socket.getsockopt(
-          fd.fd,
-          level,
-          optName,
-          optValue,
-          optLen
-        ) != 0) {
-      throw new SocketException(
-        s"Exception while getting socket option: ${name.name}, errno: $errno"
-      )
-    }
-
-    name.`type` match {
-      case `jInteger` =>
-        Integer.valueOf(!(optValue.asInstanceOf[Ptr[CInt]]))
-      case `jBoolean` =>
-        Boolean.box(!(optValue.asInstanceOf[Ptr[CInt]]) != 0)
-    }
-  }
-
-  private def getMulticastInterfaceOption(
-      fd: FileDescriptor
-  ): InetSocketAddress = {
-    val optValue = stackalloc[Ptr[in.sockaddr_in]]()
-    val optLen = stackalloc[posix.sys.socket.socklen_t]()
-    !optLen = sizeof[in.sockaddr_in].toUInt
-
-    if (posix.sys.socket.getsockopt(
-          fd.fd,
-          in.IPPROTO_IP,
-          in.IP_MULTICAST_IF,
-          optValue.asInstanceOf[Ptr[Byte]],
-          optLen
-        ) != 0) {
-      throw new SocketException(
-        s"Exception while getting socket option with id: IP_MULTICAST_IF, errno: $errno"
-      )
-    }
-
-    SocketHelpers.sockaddrStorageToInetSocketAddress(
-      (!optValue).asInstanceOf[Ptr[unixsocket.sockaddr]]
-    )
-  }
-
-  override def setSocketOption[T](
-      fd: FileDescriptor,
-      name: SocketOption[T],
-      value: T
-  ): Unit = {
-    val level = optionLevel(name)
-    val optName = nativeOptionName(name)
-    val optValue = stackalloc[CInt]()
-    name.`type` match {
-      case `jInteger` =>
-        !optValue = value.asInstanceOf[Int]
-      case `jBoolean` =>
-        !optValue = if (value.asInstanceOf[Boolean]) 1 else 0
-    }
-    val optLen = sizeof[CInt].toUInt
-
-    if (posix.sys.socket.setsockopt(
-          fd.fd,
-          level,
-          optName,
-          optValue.asInstanceOf[Ptr[Byte]],
-          optLen
-        ) != 0) {
-      throw new SocketException(
-        s"Exception while setting socket option: ${name.name}, errno: $errno"
-      )
     }
   }
 

@@ -21,9 +21,12 @@ import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform
 import scala.collection.JavaConverters._
 
-class DatagramSocketTest {
-
+object DatagramSocketTest {
   private val loopback = InetAddress.getLoopbackAddress()
+}
+
+class DatagramSocketTest {
+  import DatagramSocketTest._
 
   @Test def constructor(): Unit = {
     val ds = new DatagramSocket(0, loopback)

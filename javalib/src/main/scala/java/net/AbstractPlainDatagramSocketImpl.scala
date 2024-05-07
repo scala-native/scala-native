@@ -329,7 +329,7 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
       case _ if timeoutDetected =>
         throw new SocketTimeoutException("Socket timeout while reading data")
       case _ =>
-        throw new SocketException(s"read failed, errno: ${lastError()}")
+        throw new SocketException(s"$op failed, errno: ${lastError()}")
     }
   }
 
@@ -404,131 +404,18 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
     Integer.valueOf(!opt)
   }
 
-  def mcastJoinLeave4(
-      inetaddr: InetAddress,
-      netIf: NetworkInterface,
-      join: Boolean
-  ): Unit = {
-    val mName = stackalloc[ip.ip_mreq]()
-    if (netIf != null) {
-      val ifAddrs = netIf.getInetAddresses()
-      if (!ifAddrs.hasMoreElements()) {
-        throw new SocketException(
-          "bad argument for IP_ADD_MEMBERSHIP: No IP addresses bound to interface"
-        )
-      }
-      val addrPtr = inetaddr.getAddress().at(0).asInstanceOf[Ptr[in.in_addr_t]]
-      val ifAddrPtr =
-        ifAddrs.nextElement().getAddress().at(0).asInstanceOf[Ptr[in.in_addr_t]]
-      mName.imr_multiaddr.s_addr = inet.htonl(!addrPtr)
-      mName.imr_address.s_addr = inet.htonl(!ifAddrPtr)
-    } else {
-      val opt = stackalloc[Ptr[in.sockaddr_in]]()
-      val len = stackalloc[posix.sys.socket.socklen_t]()
-      !len = sizeof[in.sockaddr_in].toUInt
-
-      if (posix.sys.socket.getsockopt(
-            fd.fd,
-            in.IPPROTO_IP,
-            in.IP_MULTICAST_IF,
-            opt.asInstanceOf[Ptr[Byte]],
-            len
-          ) != 0) {
-        throw new SocketException(
-          "Exception while getting socket option with id: IP_MULTICAST_IF, errno: " + lastError()
-        )
-      }
-
-      val addrPtr = inetaddr.getAddress().at(0).asInstanceOf[Ptr[in.in_addr_t]]
-      val ifAddrPtr = (!opt).sin_addr.asInstanceOf[Ptr[in.in_addr_t]]
-      mName.imr_multiaddr.s_addr = inet.htonl(!addrPtr)
-      mName.imr_address.s_addr = inet.htonl(!ifAddrPtr)
-    }
-
-    // join / leave the multicast group.
-    val optID = if (join) ip.IP_ADD_MEMBERSHIP else ip.IP_DROP_MEMBERSHIP
-    if (posix.sys.socket.setsockopt(
-          fd.fd,
-          in.IPPROTO_IP,
-          optID,
-          mName.asInstanceOf[Ptr[Byte]],
-          sizeof[ip.ip_mreq].toUInt
-        ) != 0) {
-      throw new SocketException(
-        "Exception while setting socket option with id: "
-          + optID + ", errno: " + lastError()
-      )
-    }
-  }
-
-  def mcastJoinLeave6(
-      inetaddr: InetAddress,
-      netIf: NetworkInterface,
-      join: Boolean
-  ): Unit = {
-    val mName = stackalloc[ip.ip_mreqn]()
-    if (netIf != null) {
-      val addrPtr = inetaddr.getAddress().at(0).asInstanceOf[Ptr[in.in_addr_t]]
-      val ifIdx = netIf.getIndex()
-      mName.imr_multiaddr.s_addr = inet.htonl(!addrPtr)
-      mName.imr_address.s_addr = 0.toUInt
-      mName.imr_ifindex = ifIdx
-    } else {
-      val opt = stackalloc[Ptr[in.sockaddr_in]]()
-      val len = stackalloc[posix.sys.socket.socklen_t]()
-      !len = sizeof[in.sockaddr_in].toUInt
-
-      if (posix.sys.socket.getsockopt(
-            fd.fd,
-            in.IPPROTO_IP,
-            in.IP_MULTICAST_IF,
-            opt.asInstanceOf[Ptr[Byte]],
-            len
-          ) != 0) {
-        throw new SocketException(
-          "Exception while getting socket option with id: IP_MULTICAST_IF, errno: " + lastError()
-        )
-      }
-      val addrPtr = inetaddr.getAddress().at(0).asInstanceOf[Ptr[in.in_addr_t]]
-      val ifAddrPtr = (!opt).sin_addr.asInstanceOf[Ptr[in.in_addr_t]]
-      mName.imr_multiaddr.s_addr = inet.htonl(!addrPtr)
-      mName.imr_address.s_addr = inet.htonl(!ifAddrPtr)
-      mName.imr_ifindex = 0
-    }
-
-    // join / leave the multicast group.
-    val optID = if (join) ip.IP_ADD_MEMBERSHIP else ip.IP_DROP_MEMBERSHIP
-    if (posix.sys.socket.setsockopt(
-          fd.fd,
-          in.IPPROTO_IP,
-          optID,
-          mName.asInstanceOf[Ptr[Byte]],
-          sizeof[ip.ip_mreqn].toUInt
-        ) != 0) {
-      throw new SocketException(
-        "Exception while setting socket option with id: "
-          + optID + ", errno: " + lastError()
-      )
-    }
-  }
-
-  def mcastJoinLeave(
-      inetaddr: InetAddress,
-      netIf: NetworkInterface,
-      join: Boolean
-  ): Unit = {
-    if (useIPv4Only) mcastJoinLeave4(inetaddr, netIf, join)
-    else mcastJoinLeave6(inetaddr, netIf, join)
-  }
-
   override def join(inetaddr: InetAddress): Unit = {
     throwIfClosed("join")
-    mcastJoinLeave(inetaddr, null, true)
+    if (useIPv4Only)
+      Net.join(fd, StandardProtocolFamily.INET, inetaddr, null, null)
+    else Net.join(fd, StandardProtocolFamily.INET6, inetaddr, null, null)
   }
 
   override def leave(inetaddr: InetAddress): Unit = {
     throwIfClosed("leave")
-    mcastJoinLeave(inetaddr, null, false)
+    if (useIPv4Only)
+      Net.drop(fd, StandardProtocolFamily.INET, inetaddr, null, null)
+    else Net.drop(fd, StandardProtocolFamily.INET6, inetaddr, null, null)
   }
 
   override def joinGroup(
@@ -538,7 +425,10 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
     throwIfClosed("joinGroup")
     mcastaddr match {
       case inetaddr: InetSocketAddress =>
-        mcastJoinLeave(inetaddr.getAddress, netIf, true)
+        val addr = inetaddr.getAddress
+        if (useIPv4Only)
+          Net.join(fd, StandardProtocolFamily.INET, addr, null, null)
+        else Net.join(fd, StandardProtocolFamily.INET6, addr, null, null)
       case _ =>
         throw new IllegalArgumentException("Unsupported address type")
     }
@@ -551,7 +441,10 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
     throwIfClosed("leaveGroup")
     mcastaddr match {
       case inetaddr: InetSocketAddress =>
-        mcastJoinLeave(inetaddr.getAddress, netIf, false)
+        val addr = inetaddr.getAddress
+        if (useIPv4Only)
+          Net.drop(fd, StandardProtocolFamily.INET, addr, null, null)
+        else Net.drop(fd, StandardProtocolFamily.INET6, addr, null, null)
       case _ =>
         throw new IllegalArgumentException("Unsupported address type")
     }

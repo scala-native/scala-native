@@ -4,7 +4,7 @@ import java.io.FileDescriptor
 import java.nio.channels.UnsupportedAddressTypeException
 import scala.scalanative.meta.LinktimeInfo.isWindows
 import scala.scalanative.posix
-import scala.scalanative.posix.netinet.in
+import scala.scalanative.posix.netinet.{in, tcp}
 import scala.scalanative.posix.sys.socketOps._
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
@@ -17,17 +17,19 @@ trait Net {
 
   def prepareSockaddrIn(
       isa: InetSocketAddress
+  )(implicit
+      zone: Zone
   ): (Ptr[posix.sys.socket.sockaddr], posix.sys.socket.socklen_t) = {
     val addr = isa.getAddress
     val port = isa.getPort
     addr match {
       case ipv4: Inet4Address =>
-        val sa4 = stackalloc[in.sockaddr_in]()
+        val sa4 = alloc[in.sockaddr_in]()
         val sa4Len = sizeof[in.sockaddr_in].toUInt
         SocketHelpers.prepareSockaddrIn4(ipv4, port, sa4)
         (sa4.asInstanceOf[Ptr[posix.sys.socket.sockaddr]], sa4Len)
       case ipv6: Inet6Address =>
-        val sa6 = stackalloc[in.sockaddr_in6]()
+        val sa6 = alloc[in.sockaddr_in6]()
         val sa6Len = sizeof[in.sockaddr_in6].toUInt
         SocketHelpers.prepareSockaddrIn6(ipv6, port, sa6)
         (sa6.asInstanceOf[Ptr[posix.sys.socket.sockaddr]], sa6Len)
@@ -37,13 +39,17 @@ trait Net {
 
   def socket(family: ProtocolFamily, stream: Boolean): FileDescriptor
   def checkAddress(sa: SocketAddress): InetSocketAddress
+
   def bind(fd: FileDescriptor, local: SocketAddress): Unit = {
     val isa = local match {
-      case null => new InetSocketAddress(SocketHelpers.getLoopbackAddress(), 0)
-      case _    => checkAddress(local)
+      case null =>
+        new InetSocketAddress(SocketHelpers.getWildcardAddressForBind(), 0)
+      case _ => checkAddress(local)
     }
-    val (sa, len) = prepareSockaddrIn(isa)
-    val bindRes = posix.sys.socket.bind(fd.fd, sa, len)
+    val bindRes = Zone.acquire { implicit z =>
+      val (sa, len) = prepareSockaddrIn(isa)
+      posix.sys.socket.bind(fd.fd, sa, len)
+    }
 
     if (bindRes < 0) {
       throw new BindException(
@@ -51,10 +57,14 @@ trait Net {
       )
     }
   }
+
   def connect(fd: FileDescriptor, remote: SocketAddress): Unit = {
     val isa = checkAddress(remote)
-    val (sa, len) = prepareSockaddrIn(isa)
-    val connectRes = posix.sys.socket.connect(fd.fd, sa, len)
+
+    val connectRes = Zone.acquire { implicit z =>
+      val (sa, len) = prepareSockaddrIn(isa)
+      posix.sys.socket.connect(fd.fd, sa, len)
+    }
     if (connectRes < 0) {
       throw new ConnectException(
         "Couldn't connect to an address: " + isa.getAddress.getHostAddress()
@@ -99,16 +109,121 @@ trait Net {
   def close(fd: FileDescriptor): Unit
   def localAddress(fd: FileDescriptor, family: ProtocolFamily): SocketAddress
   def configureBlocking(fd: FileDescriptor, blocking: Boolean): Unit
-  def getSocketOption[T](fd: FileDescriptor, name: SocketOption[T]): T
+
+  private def optionLevel(name: SocketOption[_]): CInt = name match {
+    case StandardSocketOptions.IP_TOS => SocketHelpers.getIPPROTO()
+    case _                            => posix.sys.socket.SOL_SOCKET
+  }
+
+  private def nativeOptionName(name: SocketOption[_]): CInt = name match {
+    // case StandardSocketOptions.IP_MULTICAST_IF =>
+    // case StandardSocketOptions.IP_MULTICAST_LOOP =>
+    case StandardSocketOptions.IP_MULTICAST_TTL =>
+      SocketHelpers.getMulticastTtlSocketOption()
+    case StandardSocketOptions.IP_TOS =>
+      SocketHelpers.getTrafficClassSocketOption()
+    case StandardSocketOptions.SO_KEEPALIVE => posix.sys.socket.SO_KEEPALIVE
+    case StandardSocketOptions.SO_LINGER    => posix.sys.socket.SO_LINGER
+    // case SocketOptions.SO_LINGER           => posix.sys.socket.SO_LINGER
+    case StandardSocketOptions.SO_RCVBUF    => posix.sys.socket.SO_RCVBUF
+    case StandardSocketOptions.SO_SNDBUF    => posix.sys.socket.SO_SNDBUF
+    case StandardSocketOptions.SO_REUSEADDR => posix.sys.socket.SO_REUSEADDR
+    // case StandardSocketOptions.SO_REUSEPORT => posix.sys.socket.SO_REUSEPORT
+    case StandardSocketOptions.SO_BROADCAST => posix.sys.socket.SO_BROADCAST
+    case StandardSocketOptions.TCP_NODELAY  => tcp.TCP_NODELAY
+  }
+
+  def getSocketOption[T](
+      fd: FileDescriptor,
+      name: SocketOption[T]
+  ): T = {
+    val level = optionLevel(name)
+    val optName = nativeOptionName(name)
+    val optValue = stackalloc[CInt]().asInstanceOf[Ptr[Byte]]
+    val optLen = stackalloc[posix.sys.socket.socklen_t]()
+    !optLen = sizeof[CInt].toUInt
+
+    if (posix.sys.socket.getsockopt(
+          fd.fd,
+          level,
+          optName,
+          optValue,
+          optLen
+        ) != 0) {
+      throw new SocketException(
+        s"Exception while getting socket option: ${name.name}, errno: ${lastError()}"
+      )
+    }
+
+    name.`type` match {
+      case JInteger =>
+        Integer.valueOf(!(optValue.asInstanceOf[Ptr[CInt]]))
+      case JBoolean =>
+        Boolean.box(!(optValue.asInstanceOf[Ptr[CInt]]) != 0)
+    }
+  }
+
+  protected def getMulticastInterfaceOption(
+      fd: FileDescriptor
+  ): InetSocketAddress = {
+    val optValue = stackalloc[Ptr[posix.sys.socket.sockaddr]]()
+    val optLen = stackalloc[posix.sys.socket.socklen_t]()
+    !optLen = sizeof[posix.sys.socket.socklen_t].toUInt
+
+    if (posix.sys.socket.getsockopt(
+          fd.fd,
+          in.IPPROTO_IP,
+          in.IP_MULTICAST_IF,
+          optValue.asInstanceOf[Ptr[Byte]],
+          optLen
+        ) != 0) {
+      throw new SocketException(
+        s"Exception while getting socket option with id: IP_MULTICAST_IF, errno: ${lastError()}"
+      )
+    }
+
+    SocketHelpers.sockaddrStorageToInetSocketAddress((!optValue))
+  }
+
   def setSocketOption[T](
       fd: FileDescriptor,
       name: SocketOption[T],
       value: T
-  ): Unit
+  ): Unit = {
+    val level = optionLevel(name)
+    val optName = nativeOptionName(name)
+    val optValue = stackalloc[CInt]()
+    name.`type` match {
+      case JInteger =>
+        !optValue = value.asInstanceOf[Int]
+      case JBoolean =>
+        !optValue = if (value.asInstanceOf[Boolean]) 1 else 0
+    }
+    val optLen = sizeof[CInt].toUInt
+
+    if (posix.sys.socket.setsockopt(
+          fd.fd,
+          level,
+          optName,
+          optValue.asInstanceOf[Ptr[Byte]],
+          optLen
+        ) != 0) {
+      throw new SocketException(
+        s"Exception while setting socket option: ${name.name}, errno: ${lastError()}"
+      )
+    }
+  }
+
+  @inline def lastError(): CInt =
+    if (isWindows) scala.scalanative.windows.WinSocketApi.WSAGetLastError()
+    else scala.scalanative.libc.errno.errno
 
 }
 
 object Net extends Net {
+
+  private val JInteger = classOf[java.lang.Integer]
+  private val JBoolean = classOf[java.lang.Boolean]
 
   private[net] sealed trait Membership
   private[net] object Membership {
