@@ -145,28 +145,63 @@ class FileChannelTest {
       assertTrue(Files.getAttribute(f, "size") == 5)
 
       val channel = FileChannel.open(f)
-      val bufferA = ByteBuffer.allocate(2)
-      val bufferB = ByteBuffer.allocate(3)
-      val buffers = Array[ByteBuffer](bufferA, bufferB)
 
-      val bread = channel.read(buffers)
-      bufferA.flip()
-      bufferB.flip()
+      val offset = 1
+      val limit = 2
+      val dsts = Array[ByteBuffer](
+        ByteBuffer.allocate(1),
+        ByteBuffer.allocate(2),
+        ByteBuffer.allocate(3),
+        ByteBuffer.allocate(4)
+      )
 
-      assertTrue(bufferA.limit() == 2)
-      assertTrue(bufferB.limit() == 3)
-      assertTrue(bufferA.position() == 0)
-      assertTrue(bufferB.position() == 0)
+      val bread = channel.read(dsts, offset, limit)
+      dsts.foreach(_.flip())
 
       assertTrue(bread == 5L)
-      assertTrue(bufferA.array() sameElements Array[Byte](1, 2))
-      assertTrue(bufferB.array() sameElements Array[Byte](3, 4, 5))
+
+      assertTrue(dsts(0).remaining() == 0)
+      assertTrue(dsts(1).remaining() == 2)
+      assertTrue(dsts(2).remaining() == 3)
+      assertTrue(dsts(3).remaining() == 0)
+
+      assertTrue(dsts(1).array() sameElements Array[Byte](1, 2))
+      assertTrue(dsts(2).array() sameElements Array[Byte](3, 4, 5))
 
       channel.close()
     }
   }
 
   @Test def fileChannelCanWriteToFile(): Unit = {
+    withTemporaryDirectory { dir =>
+      val f = dir.resolve("f")
+      val offset = 1
+      val limit = 3
+      val srcs = Array[ByteBuffer](
+        ByteBuffer.wrap(Array[Byte](1)),
+        ByteBuffer.wrap(Array[Byte](2, 3)),
+        ByteBuffer.wrap(Array[Byte](4, 5, 6)),
+        ByteBuffer.wrap(Array[Byte](7, 8, 9, 10))
+      )
+      val channel =
+        FileChannel.open(f, StandardOpenOption.WRITE, StandardOpenOption.CREATE)
+
+      val expected = Array[Byte](2, 3, 4, 5, 6)
+      var written = 0
+      while (written < expected.length) {
+        written += channel.write(srcs, offset, limit).toInt
+      }
+
+      val in = Files.newInputStream(f)
+      var i = 0
+      while (i < expected.length) {
+        assertTrue(in.read() == expected(i))
+        i += 1
+      }
+    }
+  }
+
+  @Test def fileChannelCanWriteBuffersToFile(): Unit = {
     withTemporaryDirectory { dir =>
       val f = dir.resolve("f")
       val bytes = Array.apply[Byte](1, 2, 3, 4, 5)

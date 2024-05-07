@@ -257,27 +257,33 @@ private[java] final class FileChannelImpl(
       start: Int,
       number: Int
   ): Long = {
+    Objects.requireNonNull(buffers, "dsts")
+    Objects.checkFromIndexSize(start, number, buffers.length)
+
     ensureOpen()
 
-    var bytesRead = 0L
     var i = 0
+    var partialReadSeen = false
+    var totalRead = 0L
+    while (i < number && !partialReadSeen) {
+      val dst = buffers(start + i)
+      val len = dst.remaining()
 
-    while (i < number) {
-      val startPos = buffers(i).position()
-      val len = buffers(i).limit() - startPos
-      val dst = new Array[Byte](len)
-      val nb = read(dst, 0, dst.length)
+      val bs = new Array[Byte](len)
+      val n = read(bs, 0, len)
 
-      if (nb > 0) {
-        buffers(i).put(dst)
-        buffers(i).position(startPos + nb)
+      if (n > 0) {
+        dst.put(bs, 0, n)
+        totalRead += n
       }
 
-      bytesRead += nb
+      if (n < len) {
+        partialReadSeen = true
+      }
       i += 1
     }
 
-    bytesRead
+    totalRead
   }
 
   override def read(buffer: ByteBuffer, pos: Long): Int = {
@@ -676,35 +682,25 @@ private[java] final class FileChannelImpl(
       offset: Int,
       length: Int
   ): Long = {
-
     Objects.requireNonNull(srcs, "srcs")
-
-    if ((offset < 0) ||
-        (offset > srcs.length) ||
-        (length < 0) ||
-        (length > srcs.length - offset))
-      throw new IndexOutOfBoundsException
+    Objects.checkFromIndexSize(offset, length, srcs.length)
 
     ensureOpenForWrite()
 
-    var totalWritten = 0
-
+    var i = 0
     var partialWriteSeen = false
-    var j = 0
+    var totalWritten = 0
+    while (i < length && !partialWriteSeen) {
+      val src = srcs(offset + i)
+      val len = src.remaining()
 
-    while ((j < length) && !partialWriteSeen) {
-      val src = srcs(j)
-      val srcPos = src.position()
-      val srcLim = src.limit()
-      val nExpected = srcLim - srcPos // number of bytes in range.
+      val n = writeByteBuffer(src)
 
-      val nWritten = writeByteBuffer(src)
-
-      totalWritten += nWritten
-      if (nWritten < nExpected)
+      totalWritten += n
+      if (n < len) {
         partialWriteSeen = true
-
-      j += 1
+      }
+      i += 1
     }
 
     totalWritten
