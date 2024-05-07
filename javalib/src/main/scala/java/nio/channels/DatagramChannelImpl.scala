@@ -9,6 +9,7 @@ import java.util.Objects
 import scala.scalanative.meta.LinktimeInfo.isWindows
 import scala.scalanative.posix
 import scala.scalanative.posix.errno.{EAGAIN, EWOULDBLOCK, errno}
+import scala.scalanative.posix.netinet.in
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
 import scala.scalanative.windows.WinSocketApi.WSAGetLastError
@@ -18,24 +19,37 @@ class DatagramChannelImpl(family: ProtocolFamily, provider: SelectorProvider)
     extends DatagramChannel(provider) {
 
   private var isBound: Boolean = false
+  private var localAddress: SocketAddress = _
   private var remoteAddress: SocketAddress = _
 
-  // TODO even if DGRAM, channel is stream ?
-  private val fd: FileDescriptor = Net.socket(family, stream = true)
-  private val localAddress: SocketAddress = Net.localAddress(fd, family)
+  private val fd: FileDescriptor = Net.socket(family, stream = false)
 
   @inline private def throwIfClosed(): Unit =
     if (!isOpen()) throw new ClosedChannelException()
+
+  @inline private def throwIfNotConnected(): Unit =
+    if (!isConnected()) throw new NotYetConnectedException()
 
   @inline private def blockingDetected = mapLastError(
     onUnix = { err => err == EAGAIN || err == EWOULDBLOCK },
     onWindows = { err => err == WSAEWOULDBLOCK || err == WSAETIMEDOUT }
   )
 
+  private def flushQueue(): Unit = {
+    val state = isBlocking
+    configureBlocking(false)
+    val buffer = ByteBuffer.allocate(100)
+    while (recvfrom(buffer, 0, "connect")._1 > 0) {
+      buffer.clear()
+    }
+    configureBlocking(state)
+  }
+
   override def bind(local: SocketAddress): DatagramChannel = {
     throwIfClosed()
     if (isBound) throw new AlreadyBoundException
     Net.bind(fd, local)
+    localAddress = Net.localAddress(fd, family)
     isBound = true
     this
   }
@@ -44,6 +58,7 @@ class DatagramChannelImpl(family: ProtocolFamily, provider: SelectorProvider)
   override def isConnected(): Boolean = remoteAddress != null
 
   override def connect(remote: SocketAddress): DatagramChannel = {
+    throwIfClosed()
     if (isConnected()) throw new AlreadyConnectedException()
     if (!isBound) {
       Net.bind(fd, null)
@@ -51,12 +66,7 @@ class DatagramChannelImpl(family: ProtocolFamily, provider: SelectorProvider)
     }
     Net.connect(fd, remote)
     remoteAddress = remote
-    // clear receive buffer
-    // TODO blocking ?
-    val buffer = ByteBuffer.allocate(100)
-    while (read(buffer) > 0) {
-      buffer.clear()
-    }
+    flushQueue()
     this
   }
 
@@ -75,20 +85,20 @@ class DatagramChannelImpl(family: ProtocolFamily, provider: SelectorProvider)
   }
 
   private def recvfrom(
-      buf: ByteBuffer,
+      dst: ByteBuffer,
       flag: CInt,
       op: String
-  ): SocketAddress = {
+  ): (Int, SocketAddress) = {
     val storage = stackalloc[posix.sys.socket.sockaddr_storage]()
     val destAddr = storage.asInstanceOf[Ptr[posix.sys.socket.sockaddr]]
     val addressLen = stackalloc[posix.sys.socket.socklen_t]()
     !addressLen = sizeof[posix.sys.socket.sockaddr_storage].toUInt
 
-    val buffer = buf.array()
-    val offset = buf.position()
+    val buffer = dst.array()
+    val offset = dst.position()
     val length = buffer.length - offset
 
-    val bytesNum = posix.sys.socket
+    val n = posix.sys.socket
       .recvfrom(
         fd.fd,
         buffer.at(offset),
@@ -99,19 +109,71 @@ class DatagramChannelImpl(family: ProtocolFamily, provider: SelectorProvider)
       )
       .toInt
 
-    bytesNum match {
-      case _ if bytesNum >= 0 =>
-        SocketHelpers.sockaddrStorageToInetSocketAddress(destAddr)
+    n match {
+      case _ if n >= 0 =>
+        dst.position(offset + n)
+        (n, SocketHelpers.sockaddrStorageToInetSocketAddress(destAddr))
       case _ if !isBlocking && blockingDetected =>
-        null
+        (0, null)
       case _ =>
-        throw new SocketException(s"read failed, errno: ${lastError()}")
+        throw new SocketException(s"$op failed, errno: ${lastError()}")
     }
   }
 
   override def receive(dst: ByteBuffer): SocketAddress = {
     throwIfClosed()
-    recvfrom(dst, 0, "receive")
+    val (_, source) = recvfrom(dst, 0, "receive")
+    source
+  }
+
+  private def sendto(
+      src: ByteBuffer,
+      target: SocketAddress,
+      op: String
+  ): Int = {
+    val buffer = src.array()
+    val offset = src.position()
+    val length = src.remaining()
+
+    val cArr = buffer.at(offset)
+    val cLen = length.toUInt
+
+    val bytesSent = Zone.acquire { implicit z =>
+      val (sa, saLen) =
+        Net.prepareSockaddrIn(target.asInstanceOf[InetSocketAddress])
+      var n = posix.sys.socket
+        .sendto(
+          fd.fd,
+          cArr,
+          cLen,
+          posix.sys.socket.MSG_NOSIGNAL,
+          sa,
+          saLen
+        )
+        .toInt
+      while (n < 0 && isBlocking && blockingDetected) {
+        n = posix.sys.socket
+          .sendto(
+            fd.fd,
+            cArr,
+            cLen,
+            posix.sys.socket.MSG_NOSIGNAL,
+            sa,
+            saLen
+          )
+          .toInt
+      }
+      n
+    }
+
+    if (bytesSent < 0) {
+      throw new SocketException(s"$op failed, errno: ${lastError()}")
+    }
+
+    // check sent == len ?
+    // datagram must send full buffer or error
+    src.position(offset + bytesSent)
+    bytesSent
   }
 
   override def send(src: ByteBuffer, target: SocketAddress): Int = {
@@ -123,49 +185,7 @@ class DatagramChannelImpl(family: ProtocolFamily, provider: SelectorProvider)
 
     if (!isBound) bind(null)
 
-    val (sa, saLen) = Net.prepareSockaddrIn(isa)
-    val pos = if (src.hasArray()) src.position() else 0
-    val len = src.remaining()
-    val cArr =
-      if (src.hasArray()) src.array().at(pos)
-      else {
-        val bs = new Array[Byte](src.remaining())
-        src.get(bs)
-        src.position(src.position()) // reset position
-        bs.at(0)
-      }
-
-    var ret = posix.sys.socket.sendto(
-      fd.fd,
-      cArr,
-      len.toUInt,
-      posix.sys.socket.MSG_NOSIGNAL,
-      sa,
-      saLen
-    )
-
-    if (isBlocking) {
-      while (ret < 0 && blockingDetected) {
-        ret = posix.sys.socket.sendto(
-          fd.fd,
-          cArr,
-          len.toUInt,
-          posix.sys.socket.MSG_NOSIGNAL,
-          sa,
-          saLen
-        )
-      }
-    }
-
-    if (ret < 0) {
-      throw new SocketException(s"send failed, errno: ${lastError()}")
-    }
-
-    // check sent == len ?
-    // datagram must send full buffer or error
-    val sent = ret.toInt
-    src.position(pos + sent)
-    sent
+    sendto(src, isa, "send")
   }
 
   override def join(
@@ -189,26 +209,90 @@ class DatagramChannelImpl(family: ProtocolFamily, provider: SelectorProvider)
   ): MembershipKey = {
     throwIfClosed()
     Net.join(fd, family, group, networkInterface, source)
+    // TODO implement membership registry
     new MembershipKeyImpl(this, group, networkInterface, source)
   }
 
   private[channels] def drop(key: MembershipKeyImpl): Unit = {
     key.invalidate()
-    Net.drop(fd, family, key.group(), key.networkInterface(), key.sourceAddress())
+    Net.drop(
+      fd,
+      family,
+      key.group(),
+      key.networkInterface(),
+      key.sourceAddress()
+    )
   }
 
-  override protected def implCloseSelectableChannel(): Unit = ???
+  override protected def implCloseSelectableChannel(): Unit = {
+    Net.close(fd)
+  }
 
-  override def read(dst: ByteBuffer): Int =
-    ???
+  override def read(dst: ByteBuffer): Int = {
+    throwIfClosed()
+    throwIfNotConnected()
+    val (length, _) = recvfrom(dst, 0, "read") // TODO check source == remote ?
+    length
+  }
 
-  override def read(dsts: Array[ByteBuffer], offset: Int, length: Int): Long =
-    ???
+  override def read(dsts: Array[ByteBuffer], offset: Int, length: Int): Long = {
+    Objects.checkFromIndexSize(offset, length, dsts.length)
+    throwIfClosed()
+    throwIfNotConnected()
 
-  override def write(src: ByteBuffer): Int = ???
+    var bytesRead = 0L
+    var partialRead = false
+    var i = 0
 
-  override def write(srcs: Array[ByteBuffer], offset: Int, length: Int): Long =
-    ???
+    while (i < length && !partialRead) {
+      val dst = dsts(offset + i)
+      val len = dst.remaining()
+      val (n, _) = recvfrom(dst, 0, "read")
+
+      bytesRead += n
+      if (n < len) {
+        partialRead = true
+      }
+      i += 1
+    }
+
+    bytesRead
+  }
+
+  override def write(src: ByteBuffer): Int = {
+    throwIfClosed()
+    throwIfNotConnected()
+
+    sendto(src, remoteAddress, "write")
+  }
+
+  override def write(
+      srcs: Array[ByteBuffer],
+      offset: Int,
+      length: Int
+  ): Long = {
+    Objects.checkFromIndexSize(offset, length, srcs.length)
+    throwIfClosed()
+    throwIfNotConnected()
+
+    var bytesWritten = 0L
+    var partialWrite = false
+    var i = 0
+
+    while (i < length && !partialWrite) {
+      val src = srcs(offset + i)
+      val len = src.remaining()
+      val (n, _) = recvfrom(src, 0, "write")
+
+      bytesWritten += n
+      if (n < len) {
+        partialWrite = true
+      }
+      i += 1
+    }
+
+    bytesWritten
+  }
 
   override def getLocalAddress: SocketAddress = {
     throwIfClosed()

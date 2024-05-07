@@ -1,6 +1,5 @@
 package java.nio.channels
 
-
 import java.io.IOException
 
 class AcceptPendingException extends IllegalStateException
