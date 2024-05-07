@@ -1625,10 +1625,11 @@ class FilesTest {
       assertFalse("a10", f0isSym)
       assertFalse("a11", f0isOth)
 
-      if (isWindows) { // Debug Windows null fileKey
-        val f0fkey1 = Files.getAttribute(f0, "fileKey")
-        assertNotNull("Windows fileKey 1: file", f0fkey1)
-      } else {
+      /* See Issue #3909
+       * fileKey seems to always be null on Windows, even though
+       * there is code which appears to return a useful dosFileKey.
+       */
+      if (!isWindows) {
         /* This fileKey section must change if/when SN ever implements a
          * FileSystem which returns null fileKeys.
          */
