@@ -157,9 +157,11 @@ trait Net {
 
     name.`type` match {
       case JInteger =>
-        Integer.valueOf(!(optValue.asInstanceOf[Ptr[CInt]]))
+        // cast to T required for scala 2
+        Integer.valueOf(!(optValue.asInstanceOf[Ptr[CInt]])).asInstanceOf[T]
       case JBoolean =>
-        Boolean.box(!(optValue.asInstanceOf[Ptr[CInt]]) != 0)
+        // cast to T required for scala 2
+        Boolean.box(!(optValue.asInstanceOf[Ptr[CInt]]) != 0).asInstanceOf[T]
     }
   }
 
