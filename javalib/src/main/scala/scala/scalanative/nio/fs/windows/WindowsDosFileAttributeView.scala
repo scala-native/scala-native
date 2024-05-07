@@ -132,7 +132,19 @@ final class WindowsDosFileAttributeView(path: Path, options: Array[LinkOption])
         def creationTime(): FileTime = createdAt
         def lastAccessTime(): FileTime = accessedAt
         def lastModifiedTime(): FileTime = modifiedAt
-        def fileKey(): Object = dosFileKey
+
+        def fileKey(): Object = {
+          val result = dosFileKey
+          printf(s"\n\n")
+          if (dosFileKey == null)
+            printf(s"LeeT Debug: DosFileKey is NULL\n")
+          else {
+            printf(s"LeeT Debug: DosFileKey is non-null\n")
+          }
+          printf(s"\n\n")
+          dosFileKey
+        }
+
         def size(): Long = fileSize.toLong
 
         // to replace with checking reparse tag
