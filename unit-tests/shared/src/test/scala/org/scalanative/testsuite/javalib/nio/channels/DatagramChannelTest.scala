@@ -123,7 +123,7 @@ class DatagramChannelTest {
     }
   }
 
-  @Test def nonBLocking(): Unit = {
+  @Test def nonBlocking(): Unit = {
     withDatagramChannel { dc =>
       assertTrue("Channel should be blocking by default", dc.isBlocking())
       dc.configureBlocking(false)
