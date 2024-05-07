@@ -43,6 +43,12 @@ object Discover {
     path
   }
 
+  /** Use llvm-config binary on the path or via LLVM_BIN env var */
+  private lazy val llvmConfigCLI: String =
+    tryDiscover("llvm-config", "LLVM_BIN")
+      .map(_.toAbsolutePath.toString)
+      .getOrElse("llvm-config")
+
   private def filterExisting(paths: Seq[String]): Seq[String] =
     paths.filter(new File(_).exists())
 
@@ -50,7 +56,7 @@ object Discover {
   def compileOptions(): Seq[String] = {
     val includes = {
       val llvmIncludeDir =
-        Try(Process("llvm-config --includedir").lineStream_!.toSeq)
+        Try(Process(s"$llvmConfigCLI --includedir").lineStream_!.toSeq)
           .getOrElse(Seq.empty)
       // dirs: standard, macports, brew M1 arm
       val includeDirs =
@@ -75,7 +81,7 @@ object Discover {
   def linkingOptions(): Seq[String] = {
     val libs = {
       val llvmLibDir =
-        Try(Process("llvm-config --libdir").lineStream_!.toSeq)
+        Try(Process(s"$llvmConfigCLI --libdir").lineStream_!.toSeq)
           .getOrElse(Seq.empty)
 
       val libDirs =
