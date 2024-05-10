@@ -92,17 +92,16 @@ object Files {
       else classOf[PosixFileAttributes]
 
     val attrs = Files.readAttributes(source, attrsCls, linkOpts)
-    if (attrs.isSymbolicLink())
-      throw new IOException(
-        s"Unsupported operation: copy symbolic link $source to $target"
-      )
-
     val targetExists = exists(target, linkOpts)
     if (targetExists && !options.contains(REPLACE_EXISTING))
       throw new FileAlreadyExistsException(target.toString)
 
     if (isDirectory(source, Array.empty)) {
       createDirectory(target, Array.empty)
+    } else if (attrs.isSymbolicLink() &&
+        options.contains(LinkOption.NOFOLLOW_LINKS)) {
+      if (targetExists) Files.delete(target)
+      createSymbolicLink(target, source, Array.empty)
     } else {
       val in = newInputStream(source, Array.empty)
       try copy(in, target, options.filter(_ == REPLACE_EXISTING))
