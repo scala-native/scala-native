@@ -129,7 +129,7 @@ abstract class InputStream extends Closeable {
   /** Java 9
    */
   def transferTo(out: OutputStream): Long = {
-    val limit = 1024
+    val limit = 4096 // sector & page sizes on most architectures circa 2024
     val buffer = new Array[Byte](limit)
 
     var nTransferred = 0L
