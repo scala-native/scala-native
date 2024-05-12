@@ -96,12 +96,12 @@ object Files {
     if (targetExists && !options.contains(REPLACE_EXISTING))
       throw new FileAlreadyExistsException(target.toString)
 
-    if (isDirectory(source, Array.empty)) {
-      createDirectory(target, Array.empty)
-    } else if (attrs.isSymbolicLink() &&
+    if (attrs.isSymbolicLink() &&
         options.contains(LinkOption.NOFOLLOW_LINKS)) {
       if (targetExists) Files.delete(target)
       createSymbolicLink(target, source, Array.empty)
+    } else if (isDirectory(source, Array.empty)) {
+      createDirectory(target, Array.empty)
     } else {
       val in = newInputStream(source, Array.empty)
       try copy(in, target, options.filter(_ == REPLACE_EXISTING))
@@ -239,8 +239,9 @@ object Files {
         val targetFilename = toCWideStringUTF16LE(target.toString())
         val linkFilename = toCWideStringUTF16LE(link.toString())
         val flags =
-          if (target.toFile().isFile()) SYMBOLIC_LINK_FLAG_FILE
-          else SYMBOLIC_LINK_FLAG_DIRECTORY
+          if (isDirectory(target, Array(LinkOption.NOFOLLOW_LINKS)))
+            SYMBOLIC_LINK_FLAG_DIRECTORY
+          else SYMBOLIC_LINK_FLAG_FILE
         val created =
           CreateSymbolicLinkW(
             symlinkFileName = linkFilename,
@@ -263,9 +264,25 @@ object Files {
           }
         } else created
       } else {
-        val targetFilename = toCString(target.toString())
-        val linkFilename = toCString(link.toString())
-        unistd.symlink(targetFilename, linkFilename) == 0
+        val targetFilename = toCString(target.toAbsolutePath().toString())
+        val linkFilename = toCString(link.toAbsolutePath().toString())
+        if (link.getNameCount() == 1)
+          unistd.symlink(targetFilename, linkFilename) == 0
+        else {
+          val parentDir = link.toAbsolutePath().getParent()
+          createDirectories(parentDir, Array.empty)
+          val dirFD =
+            fcntl.open(toCString(parentDir.toString()), fcntl.O_RDONLY)
+          dirFD > 0 && {
+            try
+              unistd.symlinkat(
+                targetFilename,
+                dirFD,
+                toCString(link.getFileName().toString())
+              ) == 0
+            finally unistd.close(dirFD)
+          }
+        }
       }
     }
 

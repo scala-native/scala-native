@@ -240,6 +240,42 @@ class FilesTest {
     }
   }
 
+  @Test def filesCopyDoesCopySymlinkDirs(): Unit = {
+    assumeShouldTestSymlinks()
+
+    withTemporaryDirectory { dirFile =>
+      val dir = dirFile.toPath
+      val targetDir = Files.createDirectory(dir.resolve("target-dir"))
+      val testFile = "test.file"
+      val targetFile = Files.createFile(targetDir.resolve(testFile))
+      val testString = "test-string"
+      Files.write(targetFile, testString.getBytes(StandardCharsets.UTF_8))
+      val link = Files.createSymbolicLink(dir.resolve("link"), targetDir)
+      assertTrue(Files.isSymbolicLink(link))
+
+      val linkCopy =
+        Files.copy(
+          link,
+          dir.resolve("dir-link.copy"),
+          LinkOption.NOFOLLOW_LINKS
+        )
+      assertTrue(Files.isSymbolicLink(linkCopy))
+      assertTrue(Files.exists(linkCopy.resolve(testFile)))
+      assertFalse(Files.isSymbolicLink(linkCopy.resolve(testFile)))
+      assertEquals(
+        targetDir,
+        Files.readSymbolicLink(linkCopy)
+      )
+      assertEquals(
+        testString,
+        new String(
+          Files.readAllBytes(linkCopy.resolve(testFile)),
+          java.nio.charset.StandardCharsets.UTF_8
+        )
+      )
+    }
+  }
+
   @Test def filesCopyShouldCopyAttributes(): Unit = {
     // Incompatible resolution
     assumeNotJVMCompliant()
