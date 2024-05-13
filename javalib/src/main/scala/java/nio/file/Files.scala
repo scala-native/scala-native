@@ -255,25 +255,9 @@ object Files {
           }
         } else created
       } else {
-        val targetFilename = toCString(target.toAbsolutePath().toString())
-        val linkFilename = toCString(link.toAbsolutePath().toString())
-        if (link.getNameCount() == 1)
-          unistd.symlink(targetFilename, linkFilename) == 0
-        else {
-          val parentDir = link.toAbsolutePath().getParent()
-          createDirectories(parentDir, Array.empty)
-          val dirFD =
-            fcntl.open(toCString(parentDir.toString()), fcntl.O_RDONLY)
-          dirFD > 0 && {
-            try
-              unistd.symlinkat(
-                targetFilename,
-                dirFD,
-                toCString(link.getFileName().toString())
-              ) == 0
-            finally unistd.close(dirFD)
-          }
-        }
+        val targetFilename = toCString(target.toString())
+        val linkFilename = toCString(link.toString())
+        unistd.symlink(targetFilename, linkFilename) == 0
       }
     }
 
