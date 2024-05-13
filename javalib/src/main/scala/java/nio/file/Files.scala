@@ -1048,7 +1048,7 @@ object Files {
       maxDepth: Int,
       currentDepth: Int,
       options: Array[FileVisitOption],
-      visited: Set[Path] // Java Set, gets mutated. Private so no footgun.
+      visitedDirs: Set[Path] // Java Set, gets mutated. Private so no footgun.
   ): Stream[Path] = {
     /* Design Note:
      *    This implementation is an update to Java streams of the historical
@@ -1070,6 +1070,7 @@ object Files {
         (maxDepth == 0)) {
       Stream.of(start)
     } else {
+      val followLinks = options.contains(FileVisitOption.FOLLOW_LINKS)
       Stream.concat(
         Stream.of(start),
         Arrays
@@ -1082,23 +1083,34 @@ object Files {
 
               val target = readSymbolicLink(path)
 
-              visited.add(path)
+              // TODO: use FileAttributes key instead of isSameFile
+              if (followLinks) {
+                // No need to detect cycles when not following links
+                val wouldLoop =
+                  try {
+                    isDirectory(target, Array.empty) && visitedDirs
+                      .stream()
+                      .filter(isSameFile(_, target))
+                      .findFirst()
+                      .isPresent()
+                  } catch { case _: IOException => false }
+                if (wouldLoop)
+                  throw new UncheckedIOException(
+                    new FileSystemLoopException(path.toString)
+                  )
+              }
 
-              if (visited.contains(target))
-                throw new UncheckedIOException(
-                  new FileSystemLoopException(path.toString)
-                )
-              else if (!exists(target, Array(LinkOption.NOFOLLOW_LINKS)))
+              if (!exists(target, Array(LinkOption.NOFOLLOW_LINKS)))
                 Stream.of(start.resolve(name))
               else
-                walk(path, maxDepth, currentDepth + 1, options, visited)
+                walk(path, maxDepth, currentDepth + 1, options, visitedDirs)
 
             case (name, FileHelpers.FileType.Directory)
                 if currentDepth < maxDepth =>
               val path = start.resolve(name)
               if (options.contains(FileVisitOption.FOLLOW_LINKS))
-                visited.add(path)
-              walk(path, maxDepth, currentDepth + 1, options, visited)
+                visitedDirs.add(path)
+              walk(path, maxDepth, currentDepth + 1, options, visitedDirs)
 
             case (name, _) =>
               Stream.of(start.resolve(name))
