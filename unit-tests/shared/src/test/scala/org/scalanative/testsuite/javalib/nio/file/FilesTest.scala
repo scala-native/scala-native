@@ -7,7 +7,7 @@ import java.nio.ByteBuffer
 import java.io._
 import java.nio.file.attribute._
 
-import java.util.{Arrays, TreeSet}
+import java.util.{Arrays, TreeSet, Collections}
 import java.util.function.{BiPredicate, IntFunction}
 
 import PosixFilePermission._
@@ -911,6 +911,30 @@ class FilesTest {
     }
   }
 
+  @Test def filesReadSymbolicLinkCanReadRecursive(): Unit = {
+    assumeShouldTestSymlinks()
+
+    withTemporaryDirectory { dirFile =>
+      val dir = dirFile.toPath()
+      val file = Files.createFile(dir.resolve("file"))
+      val link1 = Files.createSymbolicLink(dir.resolve("link1"), file)
+      val link2 = Files.createSymbolicLink(dir.resolve("link2"), link1)
+      val link3 =
+        Files.createSymbolicLink(dir.resolve("link3"), Path.of("./link2"))
+
+      assertTrue("a1", Files.exists(file))
+      assertTrue("a2", Files.exists(link1))
+      assertTrue("a2", Files.exists(link2))
+      assertEquals("read 1", file, Files.readSymbolicLink(link1))
+      assertEquals("read 2", link1, Files.readSymbolicLink(link2))
+      assertEquals(
+        "read 3",
+        Path.of(".", "link2"),
+        Files.readSymbolicLink(link3)
+      )
+    }
+  }
+
   @Test def filesWalk_File(): Unit = {
     withTemporaryDirectory { dirFile =>
       val f0 = dirFile.toPath.resolve("f0")
@@ -1064,6 +1088,75 @@ class FilesTest {
       assertTrue("a6", files contains f0)
       assertTrue("a7", files contains f1)
       assertTrue("a8", files contains link)
+    }
+  }
+
+  @Test def filesWalkCorrectSymlinksAttributes(): Unit = {
+    assumeShouldTestSymlinks()
+
+    withTemporaryDirectory { dirFile =>
+      val dir = dirFile.toPath()
+      val dir2 = Files.createDirectories(dir.resolve("dir2"))
+      val file = Files.createFile(dir.resolve("file"))
+      val link1 = Files.createSymbolicLink(dir.resolve("link1"), file)
+      val link2 = Files.createSymbolicLink(dir.resolve("link2"), link1)
+      val link3 =
+        Files.copy(link2, dir.resolve("link3"), LinkOption.NOFOLLOW_LINKS)
+      val link4 =
+        Files.createSymbolicLink(dir.resolve("link4"), Path.of(".", "link2"))
+      val link5 =
+        Files.createSymbolicLink(dir2.resolve("link5"), Path.of("..", "link2"))
+      val link6 = Files.createSymbolicLink(dir.resolve("link6"), link5)
+
+      val links = Seq(link1, link2, link3, link4, link5, link6)
+      val linksAbs = links.map(_.toAbsolutePath())
+      (Seq(file) ++ links).foreach { path =>
+        assertTrue(s"exists $path", Files.exists(path))
+      }
+      def check(followLinks: Boolean): Unit = {
+        Files.walkFileTree(
+          dir,
+          if (followLinks) EnumSet.of(FileVisitOption.FOLLOW_LINKS)
+          else Collections.emptySet(),
+          Int.MaxValue,
+          new FileVisitor[Path] {
+            override def postVisitDirectory(
+                dir: Path,
+                error: IOException
+            ): FileVisitResult = FileVisitResult.CONTINUE
+            override def preVisitDirectory(
+                dir: Path,
+                attributes: BasicFileAttributes
+            ): FileVisitResult = FileVisitResult.CONTINUE
+
+            override def visitFile(
+                file: Path,
+                attributes: BasicFileAttributes
+            ): FileVisitResult = {
+              if (linksAbs.contains(file.toAbsolutePath())) {
+                assertEquals(
+                  s"isRegularFile $file followLinks=$followLinks",
+                  followLinks,
+                  attributes.isRegularFile()
+                )
+                assertEquals(
+                  s"isSymLink $file followLinks=$followLinks",
+                  !followLinks,
+                  attributes.isSymbolicLink()
+                )
+              }
+              FileVisitResult.CONTINUE
+            }
+            override def visitFileFailed(
+                file: Path,
+                error: IOException
+            ): FileVisitResult = FileVisitResult.CONTINUE
+          }
+        )
+      }
+      check(followLinks = false)
+      check(followLinks = true)
+
     }
   }
 
@@ -2015,6 +2108,51 @@ class FilesTest {
         classOf[NoSuchFileException],
         Files.readAttributes(brokenLink, classOf[BasicFileAttributes])
       )
+    }
+  }
+
+  @Test def filesReadAttributesOnSymbolicLinks(): Unit = {
+    assumeShouldTestSymlinks()
+
+    withTemporaryDirectory { dirFile =>
+      val dir = dirFile.toPath()
+      val dir2 = Files.createDirectories(dir.resolve("dir2"))
+      val file = Files.createFile(dir.resolve("file"))
+      val link1 = Files.createSymbolicLink(dir.resolve("link1"), file)
+      val link2 = Files.createSymbolicLink(dir.resolve("link2"), link1)
+      val link3 =
+        Files.copy(link2, dir.resolve("link3"), LinkOption.NOFOLLOW_LINKS)
+      val link4 =
+        Files.createSymbolicLink(dir.resolve("link4"), Path.of(".", "link2"))
+      val link5 =
+        Files.createSymbolicLink(dir2.resolve("link5"), Path.of("..", "link2"))
+      val link6 = Files.createSymbolicLink(dir.resolve("link6"), link5)
+      Seq(file, link1, link2, link3, link4, link5, link6).foreach { path =>
+        assertTrue(s"exists $path", Files.exists(path))
+        val attrsFollow =
+          Files.readAttributes(path, classOf[BasicFileAttributes])
+        val attrsNoFollow = Files.readAttributes(
+          path,
+          classOf[BasicFileAttributes],
+          LinkOption.NOFOLLOW_LINKS
+        )
+        assertTrue(s"isFile followLinks $path", attrsFollow.isRegularFile())
+        assertEquals(
+          s"isFile no-followLinks $path",
+          path == file,
+          attrsNoFollow.isRegularFile()
+        )
+
+        assertFalse(
+          s"isSymLink followLinks $path",
+          attrsFollow.isSymbolicLink()
+        )
+        assertEquals(
+          s"isSymLink no-followLinks $path",
+          path != file,
+          attrsNoFollow.isSymbolicLink()
+        )
+      }
     }
   }
 
