@@ -209,7 +209,8 @@ object UnixProcessGen1 {
           val bin = toCString(b)
           if (unistd.execve(bin, argv, envp) == -1 && errno == e.ENOEXEC) {
             val al = new ArrayList[String](3)
-            al.add("/bin/sh"); al.add("-c"); al.add(b)
+            al.add("/bin/sh"); al.add("-c");
+            al.add(cmd.scalaOps.mkString(sep = " "))
             val newArgv = nullTerminate(al)
             unistd.execve(c"/bin/sh", newArgv, envp)
           }
