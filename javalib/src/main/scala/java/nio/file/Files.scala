@@ -969,9 +969,7 @@ object Files {
           }
           fromCString(buf)
         }
-        val target = Paths.get(name, Array.empty)
-        if (Files.isSymbolicLink(target)) readSymbolicLink(target)
-        else target
+        Paths.get(name, Array.empty)
       }
 
   def setAttribute(
