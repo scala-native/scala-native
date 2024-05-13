@@ -137,17 +137,8 @@ object Files {
     target
   }
 
-  private def copy(in: InputStream, out: OutputStream): Long = {
-    var written: Long = 0L
-    var value: Int = 0
-
-    while ({ value = in.read(); value != -1 }) {
-      out.write(value)
-      written += 1
-    }
-
-    written
-  }
+  private def copy(in: InputStream, out: OutputStream): Long =
+    in.transferTo(out)
 
   def createDirectories(dir: Path, attrs: Array[FileAttribute[_]]): Path =
     if (exists(dir, Array.empty) && !isDirectory(dir, Array.empty))
