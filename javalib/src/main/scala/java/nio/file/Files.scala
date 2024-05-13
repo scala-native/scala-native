@@ -99,7 +99,7 @@ object Files {
     if (attrs.isSymbolicLink() &&
         options.contains(LinkOption.NOFOLLOW_LINKS)) {
       if (targetExists) Files.delete(target)
-      createSymbolicLink(target, source, Array.empty)
+      createSymbolicLink(target, readSymbolicLink(source), Array.empty)
     } else if (isDirectory(source, Array.empty)) {
       createDirectory(target, Array.empty)
     } else {
