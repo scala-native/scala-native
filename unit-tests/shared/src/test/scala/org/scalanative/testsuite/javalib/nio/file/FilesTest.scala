@@ -24,6 +24,7 @@ import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import scala.scalanative.junit.utils.CollectionConverters._
 import scala.scalanative.junit.utils.AssumesHelper.assumeNotJVMCompliant
 import org.scalanative.testsuite.utils.Platform.{isWindows, executingInJVM}
+import java.nio.charset.StandardCharsets
 
 class FilesTest {
   import FilesTest._
@@ -202,15 +203,76 @@ class FilesTest {
     }
   }
 
-  @Test def filesCopyDoesNotCopySymlinks(): Unit = {
+  @Test def filesCopyDoesCopySymlinks(): Unit = {
     assumeShouldTestSymlinks()
 
     withTemporaryDirectory { dirFile =>
       val dir = dirFile.toPath
-      val link = dir.resolve("link")
-      val file = dir.resolve("target")
-      Files.createSymbolicLink(link, dir.resolve("foo"))
-      assertThrows(classOf[IOException], Files.copy(link, file))
+      val targetFile = Files.createFile(dir.resolve("target"))
+      val testString = "test-string"
+      Files.write(targetFile, testString.getBytes(StandardCharsets.UTF_8))
+      val link = Files.createSymbolicLink(dir.resolve("link"), targetFile)
+      assertTrue(Files.isSymbolicLink(link))
+
+      // With NOFOLLOW_LINKS we get a new symbolic link
+      val linkCopy =
+        Files.copy(link, dir.resolve("link.copy"), LinkOption.NOFOLLOW_LINKS)
+      assertTrue(Files.isSymbolicLink(linkCopy))
+      assertEquals(targetFile, Files.readSymbolicLink(linkCopy))
+      assertEquals(
+        testString,
+        new String(
+          Files.readAllBytes(linkCopy),
+          java.nio.charset.StandardCharsets.UTF_8
+        )
+      )
+
+      // Without NOFOLLOW_LINKS we resolve target file and create copy of a file
+      val targetCopy = Files.copy(link, dir.resolve("target.copy"))
+      assertFalse(Files.isSymbolicLink(targetCopy))
+      assertEquals(
+        testString,
+        new String(
+          Files.readAllBytes(targetCopy),
+          java.nio.charset.StandardCharsets.UTF_8
+        )
+      )
+    }
+  }
+
+  @Test def filesCopyDoesCopySymlinkDirs(): Unit = {
+    assumeShouldTestSymlinks()
+
+    withTemporaryDirectory { dirFile =>
+      val dir = dirFile.toPath
+      val targetDir = Files.createDirectory(dir.resolve("target-dir"))
+      val testFile = "test.file"
+      val targetFile = Files.createFile(targetDir.resolve(testFile))
+      val testString = "test-string"
+      Files.write(targetFile, testString.getBytes(StandardCharsets.UTF_8))
+      val link = Files.createSymbolicLink(dir.resolve("link"), targetDir)
+      assertTrue(Files.isSymbolicLink(link))
+
+      val linkCopy =
+        Files.copy(
+          link,
+          dir.resolve("dir-link.copy"),
+          LinkOption.NOFOLLOW_LINKS
+        )
+      assertTrue(Files.isSymbolicLink(linkCopy))
+      assertTrue(Files.exists(linkCopy.resolve(testFile)))
+      assertFalse(Files.isSymbolicLink(linkCopy.resolve(testFile)))
+      assertEquals(
+        targetDir,
+        Files.readSymbolicLink(linkCopy)
+      )
+      assertEquals(
+        testString,
+        new String(
+          Files.readAllBytes(linkCopy.resolve(testFile)),
+          java.nio.charset.StandardCharsets.UTF_8
+        )
+      )
     }
   }
 
