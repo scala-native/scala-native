@@ -475,12 +475,11 @@ object Files {
     getAttribute(path, "posix:permissions", options)
       .asInstanceOf[Set[PosixFilePermission]]
 
-  def isDirectory(path: Path, options: Array[LinkOption]): Boolean = {
-    def notALink =
-      if (options.contains(LinkOption.NOFOLLOW_LINKS)) !isSymbolicLink(path)
-      else true
-    exists(path, options) && notALink && path.toFile().isDirectory()
-  }
+  def isDirectory(path: Path, options: Array[LinkOption]): Boolean =
+    try {
+      val attrs = readAttributes(path, classOf[BasicFileAttributes], options)
+      attrs != null && attrs.isDirectory()
+    } catch { case _: IOException => false }
 
   def isExecutable(path: Path): Boolean =
     path.toFile().canExecute()
@@ -492,42 +491,24 @@ object Files {
     path.toFile().canRead()
 
   def isRegularFile(path: Path, options: Array[LinkOption]): Boolean = {
-    if (isWindows) {
-      getAttribute(path, "basic:isRegularFile", options).asInstanceOf[Boolean]
-    } else
-      Zone.acquire { implicit z =>
-        val buf = alloc[stat.stat]()
-        val err =
-          if (options.contains(LinkOption.NOFOLLOW_LINKS)) {
-            stat.lstat(toCString(path.toFile().getPath()), buf)
-          } else {
-            stat.stat(toCString(path.toFile().getPath()), buf)
-          }
-        if (err == 0) stat.S_ISREG(buf._13) == 1
-        else false
-      }
+    try {
+      val attrs = readAttributes(path, classOf[BasicFileAttributes], options)
+      attrs != null && attrs.isRegularFile()
+    } catch { case _: IOException => false }
   }
 
   def isSameFile(path: Path, path2: Path): Boolean =
     path.toFile().getCanonicalPath() == path2.toFile().getCanonicalPath()
 
-  def isSymbolicLink(path: Path): Boolean = Zone.acquire { implicit z =>
-    if (isWindows) {
-      val filename = toCWideStringUTF16LE(path.toFile().getPath())
-      val attrs = FileApi.GetFileAttributesW(filename)
-      val exists = attrs != INVALID_FILE_ATTRIBUTES
-      def isReparsePoint = (attrs & FILE_ATTRIBUTE_REPARSE_POINT) != 0
-      exists & isReparsePoint
-    } else {
-      val filename = toCString(path.toFile().getPath())
-      val buf = alloc[stat.stat]()
-      if (stat.lstat(filename, buf) == 0) {
-        stat.S_ISLNK(buf._13) == 1
-      } else {
-        false
-      }
-    }
-  }
+  def isSymbolicLink(path: Path): Boolean =
+    try {
+      val attrs = readAttributes(
+        path,
+        classOf[BasicFileAttributes],
+        Array(LinkOption.NOFOLLOW_LINKS)
+      )
+      attrs != null && attrs.isSymbolicLink()
+    } catch { case _: IOException => false }
 
   def isWritable(path: Path): Boolean =
     path.toFile().canWrite()
