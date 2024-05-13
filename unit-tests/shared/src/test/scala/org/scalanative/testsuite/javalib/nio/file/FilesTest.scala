@@ -920,7 +920,7 @@ class FilesTest {
       val link1 = Files.createSymbolicLink(dir.resolve("link1"), file)
       val link2 = Files.createSymbolicLink(dir.resolve("link2"), link1)
       val link3 =
-        Files.createSymbolicLink(dir.resolve("link3"), Path.of("./link2"))
+        Files.createSymbolicLink(dir.resolve("link3"), Paths.get("./link2"))
 
       assertTrue("a1", Files.exists(file))
       assertTrue("a2", Files.exists(link1))
@@ -929,7 +929,7 @@ class FilesTest {
       assertEquals("read 2", link1, Files.readSymbolicLink(link2))
       assertEquals(
         "read 3",
-        Path.of(".", "link2"),
+        Paths.get(".", "link2"),
         Files.readSymbolicLink(link3)
       )
     }
@@ -1103,9 +1103,12 @@ class FilesTest {
       val link3 =
         Files.copy(link2, dir.resolve("link3"), LinkOption.NOFOLLOW_LINKS)
       val link4 =
-        Files.createSymbolicLink(dir.resolve("link4"), Path.of(".", "link2"))
+        Files.createSymbolicLink(dir.resolve("link4"), Paths.get(".", "link2"))
       val link5 =
-        Files.createSymbolicLink(dir2.resolve("link5"), Path.of("..", "link2"))
+        Files.createSymbolicLink(
+          dir2.resolve("link5"),
+          Paths.get("..", "link2")
+        )
       val link6 = Files.createSymbolicLink(dir.resolve("link6"), link5)
 
       val links = Seq(link1, link2, link3, link4, link5, link6)
@@ -2123,9 +2126,12 @@ class FilesTest {
       val link3 =
         Files.copy(link2, dir.resolve("link3"), LinkOption.NOFOLLOW_LINKS)
       val link4 =
-        Files.createSymbolicLink(dir.resolve("link4"), Path.of(".", "link2"))
+        Files.createSymbolicLink(dir.resolve("link4"), Paths.get(".", "link2"))
       val link5 =
-        Files.createSymbolicLink(dir2.resolve("link5"), Path.of("..", "link2"))
+        Files.createSymbolicLink(
+          dir2.resolve("link5"),
+          Paths.get("..", "link2")
+        )
       val link6 = Files.createSymbolicLink(dir.resolve("link6"), link5)
       Seq(file, link1, link2, link3, link4, link5, link6).foreach { path =>
         assertTrue(s"exists $path", Files.exists(path))
