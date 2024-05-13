@@ -392,14 +392,9 @@ object Files {
     val nofollow = Array(LinkOption.NOFOLLOW_LINKS)
     val stream =
       walk(start, maxDepth, 0, options, new HashSet[Path]()).filter { p =>
-        val brokenSymLink =
-          if (isSymbolicLink(p)) {
-            val target = readSymbolicLink(p)
-            val targetExists = exists(target, nofollow)
-            !targetExists
-          } else false
         val linkOpts =
-          if (!brokenSymLink) linkOptsFromFileVisitOpts(options) else nofollow
+          if (isBrokenSymbolicLink(p)) nofollow
+          else linkOptsFromFileVisitOpts(options)
         val attributes =
           getFileAttributeView(p, classOf[BasicFileAttributeView], linkOpts)
             .readAttributes()
@@ -1148,6 +1143,15 @@ object Files {
     else Array(LinkOption.NOFOLLOW_LINKS)
   }
 
+  private def isBrokenSymbolicLink(path: Path): Boolean =
+    isSymbolicLink(path) && {
+      val target = readSymbolicLink(path)
+      val resolvedTarget =
+        if (target.isAbsolute()) target
+        else path.resolveSibling(target)
+      !exists(resolvedTarget, Array(LinkOption.NOFOLLOW_LINKS))
+    }
+
   private def _walkFileTree(
       start: Path,
       options: Set[FileVisitOption],
@@ -1171,16 +1175,9 @@ object Files {
       if (dirsToSkip.contains(parent)) ()
       else {
         try {
-          val brokenSymLink =
-            if (isSymbolicLink(p)) {
-              val target = readSymbolicLink(p)
-              val targetExists = exists(target, nofollow)
-              !targetExists
-            } else false
-
           val linkOpts =
-            if (!brokenSymLink) linkOptsFromFileVisitOpts(optsArray)
-            else nofollow
+            if (isBrokenSymbolicLink(p)) nofollow
+            else linkOptsFromFileVisitOpts(optsArray)
 
           val attributes =
             getFileAttributeView(p, classOf[BasicFileAttributeView], linkOpts)
