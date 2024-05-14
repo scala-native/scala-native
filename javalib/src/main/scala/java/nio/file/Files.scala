@@ -99,7 +99,7 @@ object Files {
     if (attrs.isSymbolicLink() &&
         options.contains(LinkOption.NOFOLLOW_LINKS)) {
       if (targetExists) Files.delete(target)
-      createSymbolicLink(target, source, Array.empty)
+      createSymbolicLink(target, readSymbolicLink(source), Array.empty)
     } else if (isDirectory(source, Array.empty)) {
       createDirectory(target, Array.empty)
     } else {
@@ -255,25 +255,9 @@ object Files {
           }
         } else created
       } else {
-        val targetFilename = toCString(target.toAbsolutePath().toString())
-        val linkFilename = toCString(link.toAbsolutePath().toString())
-        if (link.getNameCount() == 1)
-          unistd.symlink(targetFilename, linkFilename) == 0
-        else {
-          val parentDir = link.toAbsolutePath().getParent()
-          createDirectories(parentDir, Array.empty)
-          val dirFD =
-            fcntl.open(toCString(parentDir.toString()), fcntl.O_RDONLY)
-          dirFD > 0 && {
-            try
-              unistd.symlinkat(
-                targetFilename,
-                dirFD,
-                toCString(link.getFileName().toString())
-              ) == 0
-            finally unistd.close(dirFD)
-          }
-        }
+        val targetFilename = toCString(target.toString())
+        val linkFilename = toCString(link.toString())
+        unistd.symlink(targetFilename, linkFilename) == 0
       }
     }
 
@@ -408,14 +392,9 @@ object Files {
     val nofollow = Array(LinkOption.NOFOLLOW_LINKS)
     val stream =
       walk(start, maxDepth, 0, options, new HashSet[Path]()).filter { p =>
-        val brokenSymLink =
-          if (isSymbolicLink(p)) {
-            val target = readSymbolicLink(p)
-            val targetExists = exists(target, nofollow)
-            !targetExists
-          } else false
         val linkOpts =
-          if (!brokenSymLink) linkOptsFromFileVisitOpts(options) else nofollow
+          if (isBrokenSymbolicLink(p)) nofollow
+          else linkOptsFromFileVisitOpts(options)
         val attributes =
           getFileAttributeView(p, classOf[BasicFileAttributeView], linkOpts)
             .readAttributes()
@@ -475,12 +454,11 @@ object Files {
     getAttribute(path, "posix:permissions", options)
       .asInstanceOf[Set[PosixFilePermission]]
 
-  def isDirectory(path: Path, options: Array[LinkOption]): Boolean = {
-    def notALink =
-      if (options.contains(LinkOption.NOFOLLOW_LINKS)) !isSymbolicLink(path)
-      else true
-    exists(path, options) && notALink && path.toFile().isDirectory()
-  }
+  def isDirectory(path: Path, options: Array[LinkOption]): Boolean =
+    try {
+      val attrs = readAttributes(path, classOf[BasicFileAttributes], options)
+      attrs != null && attrs.isDirectory()
+    } catch { case _: IOException => false }
 
   def isExecutable(path: Path): Boolean =
     path.toFile().canExecute()
@@ -492,42 +470,24 @@ object Files {
     path.toFile().canRead()
 
   def isRegularFile(path: Path, options: Array[LinkOption]): Boolean = {
-    if (isWindows) {
-      getAttribute(path, "basic:isRegularFile", options).asInstanceOf[Boolean]
-    } else
-      Zone.acquire { implicit z =>
-        val buf = alloc[stat.stat]()
-        val err =
-          if (options.contains(LinkOption.NOFOLLOW_LINKS)) {
-            stat.lstat(toCString(path.toFile().getPath()), buf)
-          } else {
-            stat.stat(toCString(path.toFile().getPath()), buf)
-          }
-        if (err == 0) stat.S_ISREG(buf._13) == 1
-        else false
-      }
+    try {
+      val attrs = readAttributes(path, classOf[BasicFileAttributes], options)
+      attrs != null && attrs.isRegularFile()
+    } catch { case _: IOException => false }
   }
 
   def isSameFile(path: Path, path2: Path): Boolean =
     path.toFile().getCanonicalPath() == path2.toFile().getCanonicalPath()
 
-  def isSymbolicLink(path: Path): Boolean = Zone.acquire { implicit z =>
-    if (isWindows) {
-      val filename = toCWideStringUTF16LE(path.toFile().getPath())
-      val attrs = FileApi.GetFileAttributesW(filename)
-      val exists = attrs != INVALID_FILE_ATTRIBUTES
-      def isReparsePoint = (attrs & FILE_ATTRIBUTE_REPARSE_POINT) != 0
-      exists & isReparsePoint
-    } else {
-      val filename = toCString(path.toFile().getPath())
-      val buf = alloc[stat.stat]()
-      if (stat.lstat(filename, buf) == 0) {
-        stat.S_ISLNK(buf._13) == 1
-      } else {
-        false
-      }
-    }
-  }
+  def isSymbolicLink(path: Path): Boolean =
+    try {
+      val attrs = readAttributes(
+        path,
+        classOf[BasicFileAttributes],
+        Array(LinkOption.NOFOLLOW_LINKS)
+      )
+      attrs != null && attrs.isSymbolicLink()
+    } catch { case _: IOException => false }
 
   def isWritable(path: Path): Boolean =
     path.toFile().canWrite()
@@ -1009,9 +969,7 @@ object Files {
           }
           fromCString(buf)
         }
-        val target = Paths.get(name, Array.empty)
-        if (Files.isSymbolicLink(target)) readSymbolicLink(target)
-        else target
+        Paths.get(name, Array.empty)
       }
 
   def setAttribute(
@@ -1090,7 +1048,7 @@ object Files {
       maxDepth: Int,
       currentDepth: Int,
       options: Array[FileVisitOption],
-      visited: Set[Path] // Java Set, gets mutated. Private so no footgun.
+      visitedDirs: Set[Path] // Java Set, gets mutated. Private so no footgun.
   ): Stream[Path] = {
     /* Design Note:
      *    This implementation is an update to Java streams of the historical
@@ -1112,6 +1070,7 @@ object Files {
         (maxDepth == 0)) {
       Stream.of(start)
     } else {
+      val followLinks = options.contains(FileVisitOption.FOLLOW_LINKS)
       Stream.concat(
         Stream.of(start),
         Arrays
@@ -1124,23 +1083,34 @@ object Files {
 
               val target = readSymbolicLink(path)
 
-              visited.add(path)
+              // TODO: use FileAttributes key instead of isSameFile
+              if (followLinks) {
+                // No need to detect cycles when not following links
+                val wouldLoop =
+                  try {
+                    isDirectory(target, Array.empty) && visitedDirs
+                      .stream()
+                      .filter(isSameFile(_, target))
+                      .findFirst()
+                      .isPresent()
+                  } catch { case _: IOException => false }
+                if (wouldLoop)
+                  throw new UncheckedIOException(
+                    new FileSystemLoopException(path.toString)
+                  )
+              }
 
-              if (visited.contains(target))
-                throw new UncheckedIOException(
-                  new FileSystemLoopException(path.toString)
-                )
-              else if (!exists(target, Array(LinkOption.NOFOLLOW_LINKS)))
+              if (!exists(target, Array(LinkOption.NOFOLLOW_LINKS)))
                 Stream.of(start.resolve(name))
               else
-                walk(path, maxDepth, currentDepth + 1, options, visited)
+                walk(path, maxDepth, currentDepth + 1, options, visitedDirs)
 
             case (name, FileHelpers.FileType.Directory)
                 if currentDepth < maxDepth =>
               val path = start.resolve(name)
               if (options.contains(FileVisitOption.FOLLOW_LINKS))
-                visited.add(path)
-              walk(path, maxDepth, currentDepth + 1, options, visited)
+                visitedDirs.add(path)
+              walk(path, maxDepth, currentDepth + 1, options, visitedDirs)
 
             case (name, _) =>
               Stream.of(start.resolve(name))
@@ -1183,6 +1153,15 @@ object Files {
     else Array(LinkOption.NOFOLLOW_LINKS)
   }
 
+  private def isBrokenSymbolicLink(path: Path): Boolean =
+    isSymbolicLink(path) && {
+      val target = readSymbolicLink(path)
+      val resolvedTarget =
+        if (target.isAbsolute()) target
+        else path.resolveSibling(target)
+      !exists(resolvedTarget, Array(LinkOption.NOFOLLOW_LINKS))
+    }
+
   private def _walkFileTree(
       start: Path,
       options: Set[FileVisitOption],
@@ -1206,16 +1185,9 @@ object Files {
       if (dirsToSkip.contains(parent)) ()
       else {
         try {
-          val brokenSymLink =
-            if (isSymbolicLink(p)) {
-              val target = readSymbolicLink(p)
-              val targetExists = exists(target, nofollow)
-              !targetExists
-            } else false
-
           val linkOpts =
-            if (!brokenSymLink) linkOptsFromFileVisitOpts(optsArray)
-            else nofollow
+            if (isBrokenSymbolicLink(p)) nofollow
+            else linkOptsFromFileVisitOpts(optsArray)
 
           val attributes =
             getFileAttributeView(p, classOf[BasicFileAttributeView], linkOpts)
