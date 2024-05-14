@@ -90,7 +90,11 @@ private[java] object ScalaOps {
     @inline def reduceLeft[B >: A](f: (B, A) => B): B =
       __self.iterator().scalaOps.reduceLeft(f)
 
-    @inline def mkString(start: String, sep: String, end: String): String =
+    @inline def mkString(
+        start: String = "",
+        sep: String = "",
+        end: String = ""
+    ): String =
       __self.iterator().scalaOps.mkString(start, sep, end)
   }
 

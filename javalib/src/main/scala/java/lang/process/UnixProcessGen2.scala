@@ -435,7 +435,8 @@ object UnixProcessGen2 {
           val bin = toCString(b)
           if (unistd.execve(bin, argv, envp) == -1 && errno == ENOEXEC) {
             val al = new ArrayList[String](3)
-            al.add("/bin/sh"); al.add("-c"); al.add(b)
+            al.add("/bin/sh"); al.add("-c")
+            al.add(cmd.scalaOps.mkString(sep = " "))
             val newArgv = nullTerminate(al)
             unistd.execve(c"/bin/sh", newArgv, envp)
           }
@@ -545,7 +546,8 @@ object UnixProcessGen2 {
           unistd.STDERR_FILENO
         )
 
-        val parentFds = new ArrayList[CInt] // No Scala Collections in javalib
+        // No Scala Collections in javalib
+        val parentFds = new ArrayList[CInt](3)
         parentFds.add(!(infds + 1)) // parent's stdout - write, in child
         parentFds.add(!outfds) // parent's stdin - read, in child
         if (!builder.redirectErrorStream())
@@ -580,7 +582,7 @@ object UnixProcessGen2 {
           val fallbackCmd = new ArrayList[String](3)
           fallbackCmd.add("/bin/sh")
           fallbackCmd.add("-c")
-          fallbackCmd.add(exec)
+          fallbackCmd.add(localCmd.scalaOps.mkString(sep = " "))
 
           spawnCommand(builder, fallbackCmd, attempt = 2)
         }
