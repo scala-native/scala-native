@@ -502,7 +502,8 @@ object Build {
     publishSettings(Some(VersionScheme.BreakOnMajor)),
     name := "javalib-intf",
     crossPaths := false,
-    autoScalaLibrary := false
+    autoScalaLibrary := false,
+    scalaVersion := scala3
   )
 
   lazy val javalibExtDummies =
