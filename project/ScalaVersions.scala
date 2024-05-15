@@ -21,13 +21,17 @@ object ScalaVersions {
   val crossScala212 = crossScalaVersions("2.12.", 14 to 19)
   val crossScala213 = crossScalaVersions("2.13.", 8 to 14)
   val crossScala3 = List(
+    extraCrossScalaVersion("3.").toList,
+    scala3RCVersions,
     // windowslib fails to compile with 3.1.{0-1}
     (2 to 3).map(v => s"3.1.$v"),
     (0 to 2).map(v => s"3.2.$v"),
     (0 to 3).map(v => s"3.3.$v"),
-    (0 to 1).map(v => s"3.4.$v"),
-    extraCrossScalaVersion("3.").toList
+    (0 to 2).map(v => s"3.4.$v")
   ).flatten.distinct
+
+  // Tested in scheduled nightly CI to check compiler plugins
+  lazy val scala3RCVersions = List("3.5.0-RC1")
 
   // Scala versions used for publishing libraries
   val scala212: String = crossScala212.last

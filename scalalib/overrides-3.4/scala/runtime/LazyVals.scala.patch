@@ -1,4 +1,4 @@
---- 3.5.0-RC1/scala/runtime/LazyVals.scala
+--- 3.4.0/scala/runtime/LazyVals.scala
 +++ overrides-3/scala/runtime/LazyVals.scala
 @@ -4,44 +4,15 @@
  
@@ -13,7 +13,7 @@
   */
  object LazyVals {
 -  @nowarn
--  private val unsafe: sun.misc.Unsafe = {
+-  private[this] val unsafe: sun.misc.Unsafe = {
 -    def throwInitializationException() =
 -      throw new ExceptionInInitializerError(
 -        new IllegalStateException("Can't find instance of sun.misc.Unsafe")
