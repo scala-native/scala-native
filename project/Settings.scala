@@ -599,7 +599,8 @@ object Settings {
     libraryDependencies ++= Deps.compilerPluginDependencies(scalaVersion.value),
     publishSettings(None),
     mavenPublishSettings,
-    exportJars := true
+    exportJars := true,
+    scalacOptions --= Seq("-deprecation", "-Xfatal-warnings")
   )
 
   lazy val sbtPluginSettings = Def.settings(
@@ -734,6 +735,7 @@ object Settings {
         scalaNativeCompilerOptions(
           s"positionRelativizationPaths:${crossTarget.value / "patched"};${(fetchScalaSource / artifactPath).value}"
         ),
+      scalacOptions --= Seq("-deprecation", "-Xfatal-warnings"),
       // Scala.js original comment modified to clarify issue is Scala.js.
       /* Work around for https://github.com/scala-js/scala-js/issues/2649
        * We would like to always use `update`, but

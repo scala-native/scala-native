@@ -74,7 +74,7 @@ class PostInlineNativeInterop extends PluginPhase with NativeInteropUtil {
         }
         val tpeSym = tpe.typeSymbol
         if (tpe.isAny || tpe.isNothingType || tpe.isNullType ||
-            tpeSym.isAbstractType && !tpeSym.isAllOf(DeferredType | TypeParam))
+            tpeSym.is(DeferredType, butNot = TypeParam))
           report.error(
             s"Stackalloc requires concrete type but ${tpe.show} found",
             tree.srcPos
