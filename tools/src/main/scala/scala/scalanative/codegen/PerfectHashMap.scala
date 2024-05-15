@@ -97,10 +97,10 @@ private[codegen] object PerfectHashMap {
 
           Some(
             buckets
-              .filter(bucket => bucket.size == 1)
+              .collect { case Seq(elem) => elem }
               .zip(freeList)
               .foldLeft((keys, values)) {
-                case ((accKeys, accValues), (Seq(elem), freeValue)) =>
+                case ((accKeys, accValues), (elem, freeValue)) =>
                   val keyIndex = mod(hashFunc(elem, 0), hashMapSize)
                   val keyValue = -freeValue - 1
                   val valueIndex = freeValue
