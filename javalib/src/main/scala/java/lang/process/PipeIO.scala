@@ -51,11 +51,15 @@ private[lang] object PipeIO {
     } finally process.checkResult()
 
     override def read(): Int = synchronized {
+      // Retry read if failed due to termination of the process (file descriptor would become invalidated)
+      // In such case output would be drained and underlying input stream would be replaced with fully read content
       try super.read()
+      catch { case _: IOException if drained => super.read() }
       finally process.checkResult()
     }
     override def read(buf: Array[scala.Byte], offset: Int, len: Int) =
       try super.read(buf, offset, len)
+      catch { case _: IOException if drained => super.read(buf, offset, len) }
       finally process.checkResult()
 
     override def drain() = synchronized {
