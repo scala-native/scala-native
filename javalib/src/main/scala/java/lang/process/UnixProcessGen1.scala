@@ -31,7 +31,7 @@ private[lang] class UnixProcessGen1 private (
     this
   }
 
-  override def exitValue(): scala.Int = {
+  override def exitValue(): scala.Int = synchronized {
     checkResult() match {
       case -1 =>
         throw new IllegalThreadStateException(
@@ -51,7 +51,7 @@ private[lang] class UnixProcessGen1 private (
 
   override def toString = s"UnixProcess($pid)"
 
-  override def waitFor(): scala.Int = {
+  override def waitFor(): scala.Int = synchronized {
     checkResult() match {
       case -1 =>
         waitImpl(() => waitFor(null))
@@ -60,22 +60,24 @@ private[lang] class UnixProcessGen1 private (
     }
   }
   override def waitFor(timeout: scala.Long, unit: TimeUnit): scala.Boolean =
-    checkResult() match {
-      case -1 =>
-        val ts = stackalloc[timespec]()
-        val tv = stackalloc[timeval]()
-        UnixProcessGen1.throwOnError(
-          gettimeofday(tv, null),
-          "Failed to set time of day."
-        )
-        val nsec =
-          unit.toNanos(timeout) + TimeUnit.MICROSECONDS.toNanos(tv._2.toLong)
-        val sec = TimeUnit.NANOSECONDS.toSeconds(nsec)
-        ts._1 = tv._1 + sec.toSize
-        ts._2 =
-          (if (sec > 0) nsec - TimeUnit.SECONDS.toNanos(sec) else nsec).toSize
-        waitImpl(() => waitFor(ts)) == 0
-      case _ => true
+    synchronized {
+      checkResult() match {
+        case -1 =>
+          val ts = stackalloc[timespec]()
+          val tv = stackalloc[timeval]()
+          UnixProcessGen1.throwOnError(
+            gettimeofday(tv, null),
+            "Failed to set time of day."
+          )
+          val nsec =
+            unit.toNanos(timeout) + TimeUnit.MICROSECONDS.toNanos(tv._2.toLong)
+          val sec = TimeUnit.NANOSECONDS.toSeconds(nsec)
+          ts._1 = tv._1 + sec.toSize
+          ts._2 =
+            (if (sec > 0) nsec - TimeUnit.SECONDS.toNanos(sec) else nsec).toSize
+          waitImpl(() => waitFor(ts)) == 0
+        case _ => true
+      }
     }
 
   @inline private def waitImpl(f: () => Int): Int = {

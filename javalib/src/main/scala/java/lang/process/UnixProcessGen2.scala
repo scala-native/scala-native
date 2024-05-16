@@ -55,7 +55,7 @@ private[lang] class UnixProcessGen2 private (
     this
   }
 
-  override def exitValue(): scala.Int = {
+  override def exitValue(): scala.Int = synchronized {
     if (_exitValue.isDefined) { // previous waitFor() discovered _exitValue
       _exitValue.head
     } else { // have to find out for ourselves.
@@ -75,7 +75,7 @@ private[lang] class UnixProcessGen2 private (
 
   override def getOutputStream(): OutputStream = _outputStream
 
-  override def isAlive(): scala.Boolean = {
+  override def isAlive(): scala.Boolean = synchronized {
     waitpidImpl(pid, options = WNOHANG) == 0
   }
 
@@ -84,23 +84,24 @@ private[lang] class UnixProcessGen2 private (
     s"Process[pid=${pid}, exitValue=${ev}]"
   }
 
-  override def waitFor(): scala.Int = {
+  override def waitFor(): scala.Int = synchronized {
     // wait until process exits or forever, whichever comes first.
     _exitValue // avoid wait-after-wait complexity
       .orElse(osWaitForImpl(None))
       .getOrElse(1) // 1 == EXIT_FAILURE, unknown cause
   }
 
-  override def waitFor(timeout: scala.Long, unit: TimeUnit): scala.Boolean = {
-    // avoid wait-after-wait complexity
-    _exitValue // avoid wait-after-wait complexity
-      .orElse {
-        // wait until process exits or times out.
-        val tv = stackalloc[timespec]()
-        fillTimeval(timeout, unit, tv)
-        osWaitForImpl(Some(tv))
-      }.isDefined
-  }
+  override def waitFor(timeout: scala.Long, unit: TimeUnit): scala.Boolean =
+    synchronized {
+      // avoid wait-after-wait complexity
+      _exitValue // avoid wait-after-wait complexity
+        .orElse {
+          // wait until process exits or times out.
+          val tv = stackalloc[timespec]()
+          fillTimeval(timeout, unit, tv)
+          osWaitForImpl(Some(tv))
+        }.isDefined
+    }
 
   private[lang] def checkResult(): CInt = {
     /* checkResult() is a no-op on UnixProcessGen2 but can not be easily deleted.
@@ -179,7 +180,7 @@ private[lang] class UnixProcessGen2 private (
     _exitValue.getOrElse(1) // 1 == EXIT_FAILURE, unknown cause
   }
 
-  private def closeProcessStreams(): Unit = {
+  private def closeProcessStreams(): Unit = synchronized {
     // drain() on a stream will close() it.
     _inputStream.drain()
     _errorStream.drain()

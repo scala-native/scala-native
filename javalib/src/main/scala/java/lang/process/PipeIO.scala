@@ -38,8 +38,8 @@ private[lang] object PipeIO {
   class StreamImpl(val process: GenericProcess, is: FileInputStream)
       extends BufferedInputStream(is)
       with Stream {
-    override def available() = {
-      val res = super.available() match {
+    override def available() = try {
+      super.available() match {
         // Check the FileInputStream in case the BufferedInputStream hasn't been filled yet.
         case 0 =>
           in.available() match {
@@ -48,20 +48,17 @@ private[lang] object PipeIO {
           }
         case a => a
       }
-      process.checkResult()
-      res
+    } finally process.checkResult()
+
+    override def read(): Int = synchronized {
+      try super.read()
+      finally process.checkResult()
     }
-    override def read(): Int = {
-      val res = super.read()
-      process.checkResult()
-      res
-    }
-    override def read(buf: Array[scala.Byte], offset: Int, len: Int) = {
-      val res = super.read(buf, offset, len)
-      process.checkResult()
-      res
-    }
-    override def drain() = {
+    override def read(buf: Array[scala.Byte], offset: Int, len: Int) =
+      try super.read(buf, offset, len)
+      finally process.checkResult()
+
+    override def drain() = synchronized {
       @tailrec
       def loop(readBuf: Array[scala.Byte]): Array[Byte] = {
         if (drained) readBuf
@@ -82,7 +79,7 @@ private[lang] object PipeIO {
       this.in = new ByteArrayInputStream(readBuf)
     }
 
-    private var drained = false
+    @volatile private var drained = false
     private def availableFD() = {
       if (isWindows) {
         val availableTotal = stackalloc[DWord]()
