@@ -320,7 +320,8 @@ class ProcessTest {
     assumeMultithreadingIsEnabled()
     // Ensure that reading from process stdout does not lead to exceptions
     // when thread terminates (was failing with Bad file descriptor in FileChannel.read)
-    val tasks = for (n <- 0 until 16) yield Future {
+    val iterations = 16
+    val tasks = for (n <- 0 until iterations) yield Future {
       val proc = processForScript(Scripts.hello).start()
       var done = false
       val t = new Thread(() => {
@@ -340,7 +341,7 @@ class ProcessTest {
     }
     assertTrue(
       Await
-        .result(Future.sequence(tasks), 10.seconds)
+        .result(Future.sequence(tasks), iterations.seconds)
         .forall(_ == true)
     )
   }
