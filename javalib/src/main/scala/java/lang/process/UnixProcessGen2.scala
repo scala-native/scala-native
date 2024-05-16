@@ -22,7 +22,7 @@ import scalanative.meta.LinktimeInfo
 
 import scalanative.unsafe._
 import scalanative.unsigned._
-import scalanative.posix.{errno => pe}, pe.errno, pe.ENOEXEC
+import scalanative.posix.{errno => pe}, pe.errno, pe.ENOEXEC, pe.EINTR
 import scalanative.posix.fcntl
 
 import scalanative.posix.poll._
@@ -86,12 +86,18 @@ private[lang] class UnixProcessGen2 private (
 
   override def waitFor(): scala.Int = synchronized {
     // wait until process exits or forever, whichever comes first.
-    _exitValue // avoid wait-after-wait complexity
-      .orElse(osWaitForImpl(None))
-      .getOrElse(1) // 1 == EXIT_FAILURE, unknown cause
+    try
+      _exitValue // avoid wait-after-wait complexity
+        .orElse(osWaitForImpl(None))
+        .getOrElse(1) // 1 == EXIT_FAILURE, unknown cause
+    catch {
+      case _: InterruptedException if !Thread.currentThread().isInterrupted() =>
+        waitFor()
+    }
   }
 
-  override def waitFor(timeout: scala.Long, unit: TimeUnit): scala.Boolean =
+  override def waitFor(timeout: scala.Long, unit: TimeUnit): scala.Boolean = {
+    val deadline = System.nanoTime() + unit.toNanos(timeout)
     synchronized {
       // avoid wait-after-wait complexity
       _exitValue // avoid wait-after-wait complexity
@@ -99,9 +105,23 @@ private[lang] class UnixProcessGen2 private (
           // wait until process exits or times out.
           val tv = stackalloc[timespec]()
           fillTimeval(timeout, unit, tv)
-          osWaitForImpl(Some(tv))
+          @tailrec def waitWithRepeat(): Option[Int] = {
+            try osWaitForImpl(Some(tv))
+            catch {
+              case _: InterruptedException
+                  if !Thread.currentThread().isInterrupted() =>
+                deadline - System.nanoTime() match {
+                  case remaining if remaining < 0 => None
+                  case remainingNanos =>
+                    fillTimeval(remainingNanos, TimeUnit.NANOSECONDS, tv)
+                    waitWithRepeat()
+                }
+            }
+          }
+          waitWithRepeat()
         }.isDefined
     }
+  }
 
   private[lang] def checkResult(): CInt = {
     /* checkResult() is a no-op on UnixProcessGen2 but can not be easily deleted.
@@ -262,8 +282,9 @@ private[lang] class UnixProcessGen2 private (
     unistd.close(pidFd) // ensure fd does not leak away.
 
     if (ppollStatus < 0) {
-      val msg = s"ppoll failed: ${errno}"
-      throw new IOException(msg)
+      // handled in the caller
+      if (errno == EINTR) throw new InterruptedException()
+      else throw new IOException(s"ppoll failed: ${errno}")
     } else if (ppollStatus == 0) {
       None
     } else {
@@ -333,8 +354,10 @@ private[lang] class UnixProcessGen2 private (
     unistd.close(kq) // Do not leak kq.
 
     if (status < 0) {
-      val msg = s"kevent failed: ${fromCString(strerror(errno))}"
-      throw new IOException(msg)
+      if (status == EINTR)
+        throw new InterruptedException()
+      else
+        throw new IOException(s"kevent failed: ${fromCString(strerror(errno))}")
     } else if (status == 0) {
       None
     } else {
