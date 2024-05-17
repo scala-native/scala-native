@@ -503,8 +503,6 @@ object Files {
 
   private def posixList(dir: Path, dirString: String): Stream[Path] = {
     /* The JVM specification describes the returned stream as lazy.
-     * The synchronization overhead below is an unfortunate cost of
-     * that requirement.
      *
      * FileHelpers.unixList() is not used here because it eagerly creates an
      * Array of all the entries in the directory.
@@ -524,17 +522,22 @@ object Files {
        * one opendir() call. Exactly the kind of access pattern which
        * "must be externally synchronized".
        *
-       * 'dirLock' here is used to provide single execution and
-       * guard the 'posixDir' and 'posixDirClosed' instance variables.
-       */
-
-      private val dirLock = new Object()
-
-      /* Ensure that the DIR is closed no more than once: i.e. only if
-       * extant and open.
+       * That "external synchronization" exists in this method but is
+       * not obvious on a quick reading.
        *
-       * Access this variable only within blocks synchronized on dirLock.
-       * That should make this variable effectively volatile.
+       * The __essential__ concept that the "trySplit()" method of the
+       * Spliterator for the returned stream is overriden to _never_ split.
+       * No split, no parallel execution of this stream, no conflict.
+       *
+       * The Stream "spliterator" and "iterator" methods are described in
+       * JVM as terminal operations. That is, one should not be able to
+       * obtain more than one. Subsequent attempts will fail.
+       * Both are also described as non-thread safe, only the returned
+       * stream needs to be thread-safe.
+       *
+       * Belt, suspenders, duct tape, and instant glue
+       * "external synchronization" by design rather than runtime
+       * "synchronized" blocks.
        */
 
       private var posixDirClosed = true
@@ -542,7 +545,7 @@ object Files {
       private lazy val posixDir: Ptr[DIR] = Zone.acquire { implicit z =>
         val ptr = opendir(toCString(dirString))
         if (ptr == null)
-          throw PosixException(dirString, errno)
+          throw new UncheckedIOException(PosixException(dirString, errno))
 
         posixDirClosed = false
         ptr
@@ -563,45 +566,50 @@ object Files {
             true
           }
 
-          def tryAdvance(action: Consumer[_ >: T]): Boolean =
-            dirLock.synchronized {
+          /* See Design Note at top of method about serializing access
+           * to C's readdir buffer.
+           *
+           * _Never_ splitting this Spliterator is __critical__.
+           */
+          override def trySplit(): Spliterator[T] = null
 
-              /* Reduce execution cost by relying upon readdir() to detect
-               * a closed directory rather than checking posixDirclosed.
+          def tryAdvance(action: Consumer[_ >: T]): Boolean = {
+            /* Reduce execution cost by relying upon readdir() to detect
+             * a closed directory rather than checking posixDirclosed.
+             */
+
+            val entry = { errno = 0; readdir(posixDir) }
+
+            if (entry == null) {
+              if (errno != 0) {
+                throw new UncheckedIOException(PosixException(dirString, errno))
+              } else { // End of OS directory stream
+                closeImpl()
+                false
+              }
+            } else {
+              /* Consume "." and "..", Java does not want to see them.
+               *
+               * Those two entries are usually the first two, but that
+               * is not guaranteed. There are obscure scenarios where
+               * at least '.' can come later.
+               *
+               * This is conceptually a 'stream.filter()' operation but
+               * with less overhead.
                */
 
-              val entry = { errno = 0; readdir(posixDir) }
+              val entryName = entry.d_name // A CString, so byte comparisons
 
-              if (entry == null) {
-                if (errno != 0) {
-                  throw PosixException(dirString, errno)
-                } else { // End of OS directory stream
-                  closeImpl()
-                  false
-                }
-              } else {
-                /* Consume "." and "..", Java does not want to see them.
-                 *
-                 * Those two entries are usually the first two, but that
-                 * is not guaranteed. There are obscure scenarios where
-                 * at least '.' can come later.
-                 *
-                 * This is conceptually a 'stream.filter()' operation but
-                 * with less overhead.
-                 */
-
-                val entryName = entry.d_name // A CString, so byte comparisons
-
-                if (entryName(0) != dot)
-                  appendToStream(entryName, action)
-                else if (entryName(1) == nul)
-                  tryAdvance(action) // past "."
-                else if ((entryName(1) == dot) && (entryName(2) == nul))
-                  tryAdvance(action) // past ".."
-                else
-                  appendToStream(entryName, action) // ".git" or such
-              }
+              if (entryName(0) != dot)
+                appendToStream(entryName, action)
+              else if (entryName(1) == nul)
+                tryAdvance(action) // past "."
+              else if ((entryName(1) == dot) && (entryName(2) == nul))
+                tryAdvance(action) // past ".."
+              else
+                appendToStream(entryName, action) // ".git" or such
             }
+          }
         }
       }
 
@@ -610,21 +618,18 @@ object Files {
        * set errno to EBADF. Others are not so robust and fail (signal? exit?).
        */
 
-      private def closeImpl() = {
+      private def closeImpl(): Unit = {
         if (!posixDirClosed) {
           val err = closedir(posixDir)
           if (err != 0)
-            throw PosixException(dirString, errno)
+            throw new UncheckedIOException(PosixException(dirString, errno))
 
           posixDirClosed = true
         }
       }
 
-      def close() = {
-        dirLock.synchronized {
-          closeImpl()
-        }
-      }
+      def close(): Unit =
+        closeImpl()
     }
 
     val posixDir = new PosixDir(dir, dirString)
