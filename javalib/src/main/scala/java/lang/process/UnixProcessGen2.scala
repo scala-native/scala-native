@@ -105,7 +105,7 @@ private[lang] class UnixProcessGen2 private (
           // wait until process exits or times out.
           val tv = stackalloc[timespec]()
           fillTimeval(timeout, unit, tv)
-          @tailrec def waitWithRepeat(): Option[Int] = {
+          def waitWithRepeat(): Option[Int] = {
             try osWaitForImpl(Some(tv))
             catch {
               case _: InterruptedException
