@@ -205,7 +205,7 @@ object Discover {
           .map(envPath => s"or via '$envPath' environment variable")
           .getOrElse("")
         throw new BuildException(
-          s"""'$binaryName' not found in PATH$envMessage.
+          s"""'$binaryName' not found in PATH $envMessage.
             |Please refer to ($docSetup)""".stripMargin
         )
       }
