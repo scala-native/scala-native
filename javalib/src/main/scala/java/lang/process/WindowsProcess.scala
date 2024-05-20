@@ -45,7 +45,7 @@ private[lang] class WindowsProcess private (
     this
   }
 
-  override def exitValue(): scala.Int = {
+  override def exitValue(): scala.Int = synchronized {
     checkExitValue
       .getOrElse(
         throw new IllegalThreadStateException(
@@ -66,28 +66,29 @@ private[lang] class WindowsProcess private (
     s"Process[pid=$pid, exitValue=${checkExitValue.getOrElse("\"not exited\"")}"
   }
 
-  override def waitFor(): scala.Int = {
+  override def waitFor(): scala.Int = synchronized {
     WaitForSingleObject(handle, Constants.Infinite)
     exitValue()
   }
 
-  override def waitFor(timeout: scala.Long, unit: TimeUnit): scala.Boolean = {
-    import SynchApiExt._
-    def hasValidTimeout = timeout > 0L
-    def hasFinished =
-      WaitForSingleObject(
-        handle,
-        unit.toMillis(timeout).toUInt
-      ) match {
-        case WAIT_TIMEOUT => false
-        case WAIT_FAILED =>
-          throw WindowsException("Failed to wait on proces handle")
-        case _ => true
-      }
+  override def waitFor(timeout: scala.Long, unit: TimeUnit): scala.Boolean =
+    synchronized {
+      import SynchApiExt._
+      def hasValidTimeout = timeout > 0L
+      def hasFinished =
+        WaitForSingleObject(
+          handle,
+          unit.toMillis(timeout).toUInt
+        ) match {
+          case WAIT_TIMEOUT => false
+          case WAIT_FAILED =>
+            throw WindowsException("Failed to wait on proces handle")
+          case _ => true
+        }
 
-    !isAlive() ||
-      (hasValidTimeout && hasFinished)
-  }
+      !isAlive() ||
+        (hasValidTimeout && hasFinished)
+    }
 
   private val _inputStream =
     PipeIO[PipeIO.Stream](this, outHandle, builder.redirectOutput())

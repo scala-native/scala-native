@@ -22,7 +22,7 @@ import scalanative.meta.LinktimeInfo
 
 import scalanative.unsafe._
 import scalanative.unsigned._
-import scalanative.posix.{errno => pe}, pe.errno, pe.ENOEXEC
+import scalanative.posix.{errno => pe}, pe.errno, pe.ENOEXEC, pe.EINTR
 import scalanative.posix.fcntl
 
 import scalanative.posix.poll._
@@ -55,7 +55,7 @@ private[lang] class UnixProcessGen2 private (
     this
   }
 
-  override def exitValue(): scala.Int = {
+  override def exitValue(): scala.Int = synchronized {
     if (_exitValue.isDefined) { // previous waitFor() discovered _exitValue
       _exitValue.head
     } else { // have to find out for ourselves.
@@ -75,7 +75,7 @@ private[lang] class UnixProcessGen2 private (
 
   override def getOutputStream(): OutputStream = _outputStream
 
-  override def isAlive(): scala.Boolean = {
+  override def isAlive(): scala.Boolean = synchronized {
     waitpidImpl(pid, options = WNOHANG) == 0
   }
 
@@ -84,22 +84,43 @@ private[lang] class UnixProcessGen2 private (
     s"Process[pid=${pid}, exitValue=${ev}]"
   }
 
-  override def waitFor(): scala.Int = {
+  override def waitFor(): scala.Int = synchronized {
     // wait until process exits or forever, whichever comes first.
-    _exitValue // avoid wait-after-wait complexity
-      .orElse(osWaitForImpl(None))
-      .getOrElse(1) // 1 == EXIT_FAILURE, unknown cause
+    try
+      _exitValue // avoid wait-after-wait complexity
+        .orElse(osWaitForImpl(None))
+        .getOrElse(1) // 1 == EXIT_FAILURE, unknown cause
+    catch {
+      case _: InterruptedException if !Thread.currentThread().isInterrupted() =>
+        waitFor()
+    }
   }
 
   override def waitFor(timeout: scala.Long, unit: TimeUnit): scala.Boolean = {
-    // avoid wait-after-wait complexity
-    _exitValue // avoid wait-after-wait complexity
-      .orElse {
-        // wait until process exits or times out.
-        val tv = stackalloc[timespec]()
-        fillTimeval(timeout, unit, tv)
-        osWaitForImpl(Some(tv))
-      }.isDefined
+    val deadline = System.nanoTime() + unit.toNanos(timeout)
+    synchronized {
+      // avoid wait-after-wait complexity
+      _exitValue // avoid wait-after-wait complexity
+        .orElse {
+          // wait until process exits or times out.
+          val tv = stackalloc[timespec]()
+          fillTimeval(timeout, unit, tv)
+          def waitWithRepeat(): Option[Int] = {
+            try osWaitForImpl(Some(tv))
+            catch {
+              case _: InterruptedException
+                  if !Thread.currentThread().isInterrupted() =>
+                deadline - System.nanoTime() match {
+                  case remaining if remaining < 0 => None
+                  case remainingNanos =>
+                    fillTimeval(remainingNanos, TimeUnit.NANOSECONDS, tv)
+                    waitWithRepeat()
+                }
+            }
+          }
+          waitWithRepeat()
+        }.isDefined
+    }
   }
 
   private[lang] def checkResult(): CInt = {
@@ -179,7 +200,7 @@ private[lang] class UnixProcessGen2 private (
     _exitValue.getOrElse(1) // 1 == EXIT_FAILURE, unknown cause
   }
 
-  private def closeProcessStreams(): Unit = {
+  private def closeProcessStreams(): Unit = synchronized {
     // drain() on a stream will close() it.
     _inputStream.drain()
     _errorStream.drain()
@@ -261,8 +282,9 @@ private[lang] class UnixProcessGen2 private (
     unistd.close(pidFd) // ensure fd does not leak away.
 
     if (ppollStatus < 0) {
-      val msg = s"ppoll failed: ${errno}"
-      throw new IOException(msg)
+      // handled in the caller
+      if (errno == EINTR) throw new InterruptedException()
+      else throw new IOException(s"ppoll failed: ${errno}")
     } else if (ppollStatus == 0) {
       None
     } else {
@@ -332,8 +354,10 @@ private[lang] class UnixProcessGen2 private (
     unistd.close(kq) // Do not leak kq.
 
     if (status < 0) {
-      val msg = s"kevent failed: ${fromCString(strerror(errno))}"
-      throw new IOException(msg)
+      if (status == EINTR)
+        throw new InterruptedException()
+      else
+        throw new IOException(s"kevent failed: ${fromCString(strerror(errno))}")
     } else if (status == 0) {
       None
     } else {
