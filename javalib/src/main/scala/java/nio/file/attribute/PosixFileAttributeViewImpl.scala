@@ -1,5 +1,6 @@
 package java.nio.file.attribute
 
+import java.{lang => jl}
 import java.{util => ju}
 import java.util.{HashMap, HashSet, Set}
 import java.util.concurrent.TimeUnit
@@ -86,8 +87,34 @@ final class PosixFileAttributeViewImpl(path: Path, options: Array[LinkOption])
 
   override def readAttributes(): BasicFileAttributes = attributes
 
+  private class PosixFileKey(deviceId: stat.dev_t, inodeNumber: stat.ino_t) {
+
+    override def equals(that: Any): Boolean = that match {
+      case n if that == null => false
+      case that: Object      => this.hashCode() == that.hashCode()
+      case _                 => false
+    }
+
+    // This hashCode is not intended or guaranteed to match Java.
+    override def hashCode(): Int = {
+      var res = 1
+      res = 31 * res + deviceId.##
+      res = 31 * res + inodeNumber.##
+      res
+    }
+
+    override def toString(): String = {
+      /* follow JVM practice of, (hex, decimal). Who knows why they mix
+       * numeric bases.
+       */
+      // Possible truncation of ULong dev_t by .toLong OK. Top bit is always 0.
+      s"(dev=${jl.Long.toHexString(deviceId.toLong)},ino=${inodeNumber})"
+    }
+  }
+
   private def attributes =
     new PosixFileAttributes {
+      private var st_dev: stat.dev_t = _
       private var st_ino: stat.ino_t = _
       private var st_uid: stat.uid_t = _
       private var st_gid: stat.gid_t = _
@@ -101,6 +128,7 @@ final class PosixFileAttributeViewImpl(path: Path, options: Array[LinkOption])
         import scala.scalanative.posix.sys.statOps.statOps
 
         // Copy only what is referenced below. Save runtime cycles.
+        st_dev = buf.st_dev
         st_ino = buf.st_ino
         st_uid = buf.st_uid
         st_gid = buf.st_gid
@@ -110,7 +138,10 @@ final class PosixFileAttributeViewImpl(path: Path, options: Array[LinkOption])
         st_mode = buf.st_mode
       }
 
-      override def fileKey() = st_ino.asInstanceOf[Object]
+      override def fileKey(): Object = new PosixFileKey(
+        deviceId = st_dev,
+        inodeNumber = st_ino
+      )
 
       private lazy val isDir = stat.S_ISDIR(st_mode) == 1
       override def isDirectory() = isDir

@@ -1750,7 +1750,6 @@ class FilesTest {
       val d0isSym =
         Files.getAttribute(d0, "isSymbolicLink").asInstanceOf[Boolean]
       val d0isOth = Files.getAttribute(d0, "isOther").asInstanceOf[Boolean]
-      val d0fkey = Files.getAttribute(d0, "fileKey")
 
       assertFalse("a2", d0isReg)
       assertTrue("a3", d0isDir)
@@ -1770,7 +1769,6 @@ class FilesTest {
       val f0isSym =
         Files.getAttribute(f0, "isSymbolicLink").asInstanceOf[Boolean]
       val f0isOth = Files.getAttribute(f0, "isOther").asInstanceOf[Boolean]
-      val f0fkey = Files.getAttribute(f0, "fileKey")
 
       // Last 3 digits tend to be ignored by JVM
       val lastModifiedResolution = 1000
@@ -1784,6 +1782,38 @@ class FilesTest {
       assertFalse("a9", f0isDir)
       assertFalse("a10", f0isSym)
       assertFalse("a11", f0isOth)
+
+      /* See Issue #3909
+       * fileKey seems to always be null on Windows, even though
+       * there is code which appears to return a useful dosFileKey.
+       */
+      if (!isWindows) {
+        /* This fileKey section must change if/when SN ever implements a
+         * FileSystem which returns null fileKeys.
+         */
+        val d0fkey = Files.getAttribute(d0, "fileKey")
+        assertNotNull("fileKey: directory", d0fkey)
+
+        val f0fkey1 = Files.getAttribute(f0, "fileKey")
+        assertNotNull("fileKey 1: file", f0fkey1)
+
+        // fileKeys for different files be different.
+        assertNotEquals("fileKeys should not be equal", d0fkey, f0fkey1)
+
+        val f0fkey2 = Files.getAttribute(f0, "fileKey")
+        assertNotNull("fileKey 2: file", f0fkey2)
+
+        /* fileKeys may or may not be reference equal, depending on
+         * implementation and possible caching. fileKeys referring to the
+         * same file _must_ have content equality.
+         */
+        assertEquals(
+          s"fileKeys should be content equal; key1: ${f0fkey1.toString()}," +
+            s" key2: ${f0fkey2.toString()}",
+          f0fkey1,
+          f0fkey2
+        )
+      }
     }
   }
 
