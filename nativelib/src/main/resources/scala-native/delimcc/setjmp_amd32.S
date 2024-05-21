@@ -137,6 +137,7 @@ __lh_get_sp:
   ret
 
 #endif
+#endif
 
 #if defined(__linux__) && defined(__ELF__)
 /* Reference:
@@ -145,5 +146,4 @@ __lh_get_sp:
 
 .section .note.GNU-stack,"",%progbits
 
-#endif
 #endif
