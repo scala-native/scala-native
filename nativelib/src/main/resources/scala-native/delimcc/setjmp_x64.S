@@ -157,4 +157,3 @@ __lh_get_sp:
 .section .note.GNU-stack,"",%progbits
 
 #endif
-	
