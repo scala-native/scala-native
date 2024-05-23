@@ -31,7 +31,8 @@ runtime designed specifically for Scala. It features:
         def malloc(size: CSize): Ptr[Byte] = extern
       }
 
-      val ptr = stdlib.malloc(32)
+      val size = sizeof[Int] * 8.toUInt // 32 byte
+      val ptr = stdlib.malloc(size)
 
   Calling C code has never been easier.
   With the help of extern objects you can
