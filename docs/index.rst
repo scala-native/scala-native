@@ -10,7 +10,6 @@ runtime designed specifically for Scala. It features:
 * **Low-level primitives**.
 
   .. code-block:: scala
-
       type Vec = CStruct3[Double, Double, Double]
 
       val vec = stackalloc[Vec]() // allocate c struct on stack
@@ -26,13 +25,14 @@ runtime designed specifically for Scala. It features:
 * **Seamless interop with native code**.
 
   .. code-block:: scala
+      import scala.scalanative.unsafe._
+      import scala.scalanative.unsigned._
 
       @extern object stdlib {
         def malloc(size: CSize): Ptr[Byte] = extern
       }
 
-      val size = sizeof[Int] * 8.toUInt // 32 byte
-      val ptr = stdlib.malloc(size)
+      val ptr = stdlib.malloc(32.toCSize)
 
   Calling C code has never been easier.
   With the help of extern objects you can
