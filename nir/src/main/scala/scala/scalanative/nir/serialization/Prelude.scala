@@ -3,14 +3,24 @@ package serialization
 
 import java.nio.ByteBuffer
 import java.io.DataOutputStream
+import Prelude.Offsets
+import Versions.Version
 
 case class Prelude(
     magic: Int,
     compat: Int,
     revision: Int,
-    sections: Prelude.Offsets,
+    sections: Offsets,
     hasEntryPoints: Boolean
-)
+) {
+  def this(version: Version, sections: Offsets, hasEntryPoints: Boolean) = this(
+    magic = Versions.magic,
+    compat = version.compat,
+    revision = version.revision,
+    sections = sections,
+    hasEntryPoints = hasEntryPoints
+  )
+}
 
 object Prelude {
   // { magic: int, version: int[2], offsets: int[8], bool }
@@ -26,37 +36,53 @@ object Prelude {
       insts: Int
   )
 
-  def readFrom(buffer: ByteBuffer, fileName: => String): Prelude = {
+  private def readNIRVersion(
+      buffer: ByteBuffer,
+      fileName: => String
+  ): Either[NirDeserializationException, Version] = {
     buffer.position(0)
-    val magic = buffer.getInt()
-    val compat = buffer.getInt()
-    val revision = buffer.getInt()
-    assert(magic == Versions.magic, "Can't read non-NIR file.")
-    assert(
-      compat == Versions.compat && revision <= Versions.revision,
-      "Can't read binary-incompatible version of NIR from '" + fileName +
-        "' (expected compat=" + Versions.compat + ", got " + compat +
-        "; expected revision=" + Versions.revision + ", got " + revision + ")."
-    )
+    if (Versions.magic != buffer.getInt()) Left(UnknownFormat)
+    else {
+      val compat = buffer.getInt()
+      val revision = buffer.getInt()
+      val version = Version(compat, revision)
+      if (compat == Versions.compat && revision <= Versions.revision)
+        Right(version)
+      else
+        Left(new IncompatibleVersion(version, fileName))
+    }
+  }
 
-    val offsets = Offsets(
-      offsets = buffer.getInt(),
-      strings = buffer.getInt(),
-      positions = buffer.getInt(),
-      globals = buffer.getInt(),
-      types = buffer.getInt(),
-      defns = buffer.getInt(),
-      vals = buffer.getInt(),
-      insts = buffer.getInt()
-    )
+  def readFrom(buffer: ByteBuffer, fileName: => String): Prelude =
+    tryReadFrom(buffer, fileName) match {
+      case Left(exception) => throw exception
+      case Right(prelude)  => prelude
+    }
 
-    // indicates whether this NIR file has entry points
-    // and thus should be made reachable, no matter
-    // what the reachability algorithm does
-    // example: reflectively instantiatable classes
-    val hasEntryPoints = buffer.get() != 0
+  def tryReadFrom(
+      buffer: ByteBuffer,
+      fileName: => String
+  ): Either[NirDeserializationException, Prelude] = {
+    readNIRVersion(buffer, fileName).map { nirVersion =>
+      val offsets = Offsets(
+        offsets = buffer.getInt(),
+        strings = buffer.getInt(),
+        positions = buffer.getInt(),
+        globals = buffer.getInt(),
+        types = buffer.getInt(),
+        defns = buffer.getInt(),
+        vals = buffer.getInt(),
+        insts = buffer.getInt()
+      )
 
-    Prelude(magic, compat, revision, offsets, hasEntryPoints)
+      // indicates whether this NIR file has entry points
+      // and thus should be made reachable, no matter
+      // what the reachability algorithm does
+      // example: reflectively instantiatable classes
+      val hasEntryPoints = buffer.get() != 0
+
+      new Prelude(nirVersion, offsets, hasEntryPoints)
+    }
   }
 
   def writeTo(out: DataOutputStream, prelude: Prelude): DataOutputStream = {

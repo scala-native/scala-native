@@ -4,6 +4,7 @@ package linker
 import scala.collection.mutable
 import scalanative.io.VirtualDirectory
 import scalanative.util.Scope
+import scala.scalanative.build.Logger
 
 sealed abstract class ClassLoader {
 
@@ -19,7 +20,7 @@ object ClassLoader {
 
   def fromDisk(config: build.Config)(implicit in: Scope): ClassLoader = {
     val classpath = config.classPath.map { path =>
-      ClassPath(VirtualDirectory.real(path))
+      ClassPath(VirtualDirectory.real(path), config.logger)
     }
     new FromDisk(classpath)
   }

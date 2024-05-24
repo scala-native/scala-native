@@ -10,6 +10,8 @@ import scala.collection.mutable
 import scala.scalanative.io.VirtualDirectory
 import scala.scalanative.nir.serialization.deserializeBinary
 import scala.scalanative.nir.serialization.{Prelude => NirPrelude}
+import scala.scalanative.nir.serialization.NirDeserializationException
+import scala.scalanative.build.Logger
 
 sealed trait ClassPath {
 
@@ -29,9 +31,17 @@ object ClassPath {
 
   /** Create classpath based on the virtual directory. */
   private[scalanative] def apply(directory: VirtualDirectory): ClassPath =
-    new Impl(directory)
+    new Impl(directory, Logger.nullLogger)
 
-  private final class Impl(directory: VirtualDirectory) extends ClassPath {
+    /** Create classpath based on the virtual directory. */
+  private[scalanative] def apply(
+      directory: VirtualDirectory,
+      log: Logger
+  ): ClassPath =
+    new Impl(directory, log)
+
+  private final class Impl(directory: VirtualDirectory, log: Logger)
+      extends ClassPath {
     val nirFiles = mutable.Map.empty[nir.Global.Top, Path]
     val serviceProviders = mutable.Map.empty[nir.Global.Top, Path]
 
@@ -74,10 +84,16 @@ object ClassPath {
     lazy val classesWithEntryPoints: Iterable[nir.Global.Top] = {
       nirFiles.filter {
         case (_, file) =>
+          def logUnreadableFile(err: NirDeserializationException): Unit =
+            log.warn(
+              s"Can't check if file contains entrypoints, ${file} would be ignored: ${err.getMessage()}."
+            )
           val buffer = directory.read(file, len = NirPrelude.length)
           NirPrelude
-            .readFrom(buffer, makeBufferName(directory, file))
-            .hasEntryPoints
+            .tryReadFrom(buffer, makeBufferName(directory, file))
+            .left
+            .map(logUnreadableFile)
+            .exists(_.hasEntryPoints)
       }.keySet
     }
 
