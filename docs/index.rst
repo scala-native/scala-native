@@ -27,11 +27,14 @@ runtime designed specifically for Scala. It features:
 
   .. code-block:: scala
 
+      import scala.scalanative.unsafe._
+      import scala.scalanative.unsigned._
+
       @extern object stdlib {
         def malloc(size: CSize): Ptr[Byte] = extern
       }
 
-      val ptr = stdlib.malloc(32)
+      val ptr = stdlib.malloc(32.toCSize)
 
   Calling C code has never been easier.
   With the help of extern objects you can
