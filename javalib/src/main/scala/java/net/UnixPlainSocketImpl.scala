@@ -28,7 +28,7 @@ private[net] class UnixPlainSocketImpl extends AbstractPlainSocketImpl {
     if (sock < 0)
       throw new IOException(
         s"Could not create a socket in address family: ${af}" +
-          " streaming: ${streaming}"
+          s" streaming: ${streaming}"
       )
 
     fd = new FileDescriptor(sock)
