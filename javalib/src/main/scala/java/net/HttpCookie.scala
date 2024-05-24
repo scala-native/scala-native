@@ -120,23 +120,21 @@ object HttpCookie {
     }
   }
 
-  /**
-  * If the string begins and ends with quotes - remove them,
-  * otherwise return the input
-  */
+  /** If the string begins and ends with quotes - remove them, otherwise return
+   *  the input
+   */
   private def unquote(in: String): String = {
     if (in.charAt(0) == '"' && in.charAt(in.length() - 1) == '"') {
       in.substring(1, in.length() - 1)
     } else in
   }
 
-  /**
-  * performs parsing on the section of the cookie following the cookie name,
-  * and constructs the resulting cookie.
-  * If the given value contains multiple cookies - this method will break,
-  * so any input into this method must be pre-processed such that  
-  * only the section that pertains to a single cookie is fed into this method
-  */
+  /** performs parsing on the section of the cookie following the cookie name,
+   *  and constructs the resulting cookie. If the given value contains multiple
+   *  cookies - this method will break, so any input into this method must be
+   *  pre-processed such that only the section that pertains to a single cookie
+   *  is fed into this method
+   */
   private def parseValue(name: String, value: String): HttpCookie = {
 
     val attrs = splitUnquotedAt(value, ';')
@@ -240,9 +238,11 @@ object HttpCookie {
               Version.length()
             )) {
           try {
-            val value =  java.lang.Integer.valueOf(propValue)
+            val value = java.lang.Integer.valueOf(propValue)
             if (value != 0 && value != 1) {
-              throw new IllegalArgumentException("cookie version should be 0 or 1")
+              throw new IllegalArgumentException(
+                "cookie version should be 0 or 1"
+              )
             }
             cookie.setVersion(value)
           } catch {
@@ -330,7 +330,7 @@ final class HttpCookie private (
     private var _portlist: String = null,
     private var _secure: Boolean = false,
     private var _value: String = null,
-    private var _version: Int = 1,
+    private var _version: Int = 1
 ) extends Cloneable {
 
   def this(name: String, value: String) = {
@@ -345,7 +345,7 @@ final class HttpCookie private (
     )
   }
 
-  def canEqual(other: Any): Boolean = 
+  def canEqual(other: Any): Boolean =
     other.isInstanceOf[HttpCookie]
 
   override def hashCode(): Int = {
@@ -361,9 +361,9 @@ final class HttpCookie private (
   }
 
   override def toString(): String = _name + "=" + _value
-  override def equals(obj: Any): Boolean = 
+  override def equals(obj: Any): Boolean =
     obj match {
-      case other: HttpCookie => 
+      case other: HttpCookie =>
         super.equals(other) &&
           canEqual(other) &&
           this.getName() == other.getName() &&
@@ -394,7 +394,8 @@ final class HttpCookie private (
   def getValue(): String = this._value
   def getVersion(): Int = this._version
   def hasExpired(): Boolean = {
-    _maxAge >= 0 && ((System.currentTimeMillis() % 1000) >= (createdAtEpochSecond + _maxAge))
+    _maxAge >= 0 && ((System
+      .currentTimeMillis() % 1000) >= (createdAtEpochSecond + _maxAge))
   }
   def isHttpOnly(): Boolean = this._httpOnly
   def setComment(purpose: String): Unit = this._comment = purpose

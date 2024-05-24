@@ -10,8 +10,8 @@ import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 class HttpCookieTest {
 
   // label parameter gets added to the clue field on assertions
-    def assertCookie(
-    testSubject: HttpCookie,
+  def assertCookie(
+      testSubject: HttpCookie,
       label: String,
       name: String,
       value: String,
@@ -23,9 +23,9 @@ class HttpCookieTest {
       path: String = null,
       portlist: String = null,
       secure: Boolean = false,
-      version: Int = 1 
-          ): Unit = {
-              
+      version: Int = 1
+  ): Unit = {
+
     assertEquals(s"$label: name", name, testSubject.getName())
     assertEquals(s"$label: value", value, testSubject.getValue())
     assertEquals(s"$label: comment", comment, testSubject.getComment())
@@ -37,8 +37,7 @@ class HttpCookieTest {
     assertEquals(s"$label: portlist", portlist, testSubject.getPortlist())
     assertEquals(s"$label: secure", secure, testSubject.getSecure())
     assertEquals(s"$label: version", version, testSubject.getVersion())
-            }
-
+  }
 
   @Test
   def basicParseTest(): Unit = {
@@ -72,8 +71,8 @@ class HttpCookieTest {
       value = "tomato",
       comment = "This is a comment",
       discard = true,
-      commentUrl =  "https://definitely.real.website.cool/",
-      domain =  "definitely.real.webiste.cool",
+      commentUrl = "https://definitely.real.website.cool/",
+      domain = "definitely.real.webiste.cool",
       maxAge = 123,
       path = "/potato/tomato",
       portlist = "123 456 789",
@@ -85,14 +84,17 @@ class HttpCookieTest {
 
   @Test
   def multipleCookieTest(): Unit = {
-    val out = HttpCookie.parse("""set-cookie2: 
+    val out = HttpCookie.parse(
+      """set-cookie2: 
                                |potato = tomato ; 
                                |comment = "This is a comment"; 
                                |discard,
                                |second="second";
                                |secure,
                                |third=third;
-                               |comment = "This is the third cookie" """.stripMargin.replaceAll("\n", ""))
+                               |comment = "This is the third cookie" """.stripMargin
+        .replaceAll("\n", "")
+    )
 
     assertEquals("number of cookies", out.size(), 3)
     assertCookie(
@@ -148,7 +150,7 @@ class HttpCookieTest {
       classOf[IllegalArgumentException],
       HttpCookie.parse("set-cookie2:potato=tomato;max-age=bad")
     )
-    
+
     assertThrows(
       "Version must be a number",
       classOf[IllegalArgumentException],
@@ -178,10 +180,22 @@ class HttpCookieTest {
 
   @Test
   def domainMatchTest: Unit = {
-    assertTrue("equal domains should match", HttpCookie.domainMatches("website.com", "website.com"))
-    assertTrue("should match if host is a subdomain", HttpCookie.domainMatches("website.com", "www.website.com"))
-    assertFalse("if domain is subdomain of host - should not match", HttpCookie.domainMatches("www.website.com", "website.com"))
-    assertFalse("non-subdomain host whose suffix is the domain should not match", HttpCookie.domainMatches("website.com", "awebsite.com"))
+    assertTrue(
+      "equal domains should match",
+      HttpCookie.domainMatches("website.com", "website.com")
+    )
+    assertTrue(
+      "should match if host is a subdomain",
+      HttpCookie.domainMatches("website.com", "www.website.com")
+    )
+    assertFalse(
+      "if domain is subdomain of host - should not match",
+      HttpCookie.domainMatches("www.website.com", "website.com")
+    )
+    assertFalse(
+      "non-subdomain host whose suffix is the domain should not match",
+      HttpCookie.domainMatches("website.com", "awebsite.com")
+    )
   }
 
 }
