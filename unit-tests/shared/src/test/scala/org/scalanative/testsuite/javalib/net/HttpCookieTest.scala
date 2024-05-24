@@ -48,6 +48,22 @@ class HttpCookieTest {
   }
 
   @Test
+  def stringEscapingTest(): Unit = {
+    val out =
+      HttpCookie.parse("set-cookie2:potato=\"toma\\\"t,o=asdf\",second=second")
+    assertEquals("number of cookies", out.size(), 2)
+    val cookieOne = out.get(0)
+    assertCookie(
+      cookieOne,
+      "cookie one",
+      name = "potato",
+      value = "toma\\\"t,o=asdf"
+    )
+    val cookieTwo = out.get(1)
+    assertCookie(cookieTwo, "cookie two", name = "second", value = "second")
+  }
+
+  @Test
   def attributeTest(): Unit = {
     val out = HttpCookie.parse("""set-cookie2: 
                                |potato = tomato ; 
