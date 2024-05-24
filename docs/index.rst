@@ -10,6 +10,7 @@ runtime designed specifically for Scala. It features:
 * **Low-level primitives**.
 
   .. code-block:: scala
+
       type Vec = CStruct3[Double, Double, Double]
 
       val vec = stackalloc[Vec]() // allocate c struct on stack
@@ -25,6 +26,7 @@ runtime designed specifically for Scala. It features:
 * **Seamless interop with native code**.
 
   .. code-block:: scala
+
       import scala.scalanative.unsafe._
       import scala.scalanative.unsigned._
 
