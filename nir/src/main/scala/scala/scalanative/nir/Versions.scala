@@ -23,6 +23,7 @@ object Versions {
    */
   final val compat: Int = 6 // a.k.a. MAJOR version
   final val revision: Int = 10 // a.k.a. MINOR version
+  case class Version(compat: Int, revision: Int)
 
   /* Current public release version of Scala Native. */
   final val current: String = "0.5.2-SNAPSHOT"
