@@ -19,7 +19,7 @@ object HttpCookie {
     val exactMatch = domainL == hostL
     // a host is a subdomain if it ends with the domain, and
     // the character preceeding the domain suffix is a dot
-    def hostIsSubdomain = hostL.endsWith("." + domainL)
+    def hostIsSubdomain = hostL.endsWith(domainL)
 
     exactMatch || hostIsSubdomain
 
@@ -41,9 +41,11 @@ object HttpCookie {
         else
           header
 
-      val unprocessed = splitUnquotedAt(nameless, ',')
+      val unprocessed =
+        nameless.split(",")
+        // splitUnquotedAt(nameless, ',')
 
-      unprocessed.forEach { kv =>
+      Arrays.asList(unprocessed).forEach { kv =>
 
         val eqIndex = kv.indexOf("=")
         require(eqIndex >= 0, "Invalid cookie name-value pair")
@@ -130,7 +132,9 @@ object HttpCookie {
    */
   private def parseValue(name: String, value: String): HttpCookie = {
 
-    val attrs = splitUnquotedAt(value, ';')
+    val attrs =
+      Arrays.asList(value.split(";"))
+      // splitUnquotedAt(value, ';')
 
     if (attrs.size() == 0) {
       new HttpCookie(name, "")
@@ -189,10 +193,7 @@ object HttpCookie {
               val value = java.lang.Integer.valueOf(propValue)
               cookie.setVersion(value)
             } catch {
-              case _: NumberFormatException =>
-                throw new IllegalArgumentException(
-                  "Illegal cookie max-age attribute"
-                )
+              case _: NumberFormatException => ()
             }
           case "httponly" =>
             cookie.setHttpOnly(true)
@@ -205,17 +206,6 @@ object HttpCookie {
     }
   }
 
-  // NAME = attr
-  // attr = token
-  // token = 1*<any CHAR except CTLs or separators>
-  // separators = "(" | ")" | "<" | ">" | "@"
-  //                | "," | ";" | ":" | "\" | <">
-  //                | "/" | "[" | "]" | "?" | "="
-  //                | "{" | "}" | SP | HT
-  // CHAR = <any US-ASCII character (octets 0 - 127)>
-  // CTL = <any US-ASCII control character (octets 0 - 31) and DEL (127)>
-  //
-  // stricter than the JVM, for better or worse
   private def validateName(name: String): Unit = {
     // Testing the $ as that's what the JVM
     // seems to do
@@ -224,10 +214,8 @@ object HttpCookie {
 
     name.foreach { char =>
       val isIllegal = (char: @switch) match {
-        case 127 | '(' | ')' | '<' | '>' | '@' | ',' | ';' | ':' | '\\' | '"' |
-            '/' | '[' | ']' | '?' | '=' | '{' | '}' | ' ' | '\t' =>
-          true
-        case char => char < 32
+        case 127 | ',' | ';' | ' ' | '\t' => true
+        case char                         => char <= 32
       }
       if (isIllegal) throw new IllegalArgumentException("Illegal cookie name")
     }

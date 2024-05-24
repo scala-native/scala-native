@@ -48,19 +48,50 @@ class HttpCookieTest {
   }
 
   @Test
+  def badAttrParsingTest(): Unit = {
+    val out = HttpCookie.parse("set-cookie2:potato=tomato;version=asdf")
+    assertEquals("number of cookies", out.size(), 1)
+    val cookie = out.get(0)
+    assertCookie(
+      cookie,
+      "cookie",
+      name = "potato",
+      value = "tomato",
+      version = 1
+    )
+  }
+
+  @Test
   def stringEscapingTest(): Unit = {
+    // I named this test "string escaping", but really it's more about how
+    // the jvm does no such thing
     val out =
-      HttpCookie.parse("set-cookie2:potato=\"toma\\\"t,o=asdf\",second=second")
-    assertEquals("number of cookies", out.size(), 2)
+      HttpCookie.parse(
+        "set-cookie2:potato=\"toma\\\"t,o=asdf\",second=second;comment=\"something;discard;portlist=123\""
+      )
+    assertEquals("number of cookies", 2, out.size())
     val cookieOne = out.get(0)
     assertCookie(
       cookieOne,
       "cookie one",
       name = "potato",
-      value = "toma\\\"t,o=asdf"
+      value = "\"toma\\\"t"
     )
+    // despite the fact that the first comma is in a quoted string - the JVM
+    // still splits it into a separate cookie at that point. Hence we must do so as well
+    //
+    // Similarly for semicolons - the JVM doesn't seem to distinguish between semicolons
+    // in strings and those outside, and hence we do the same
     val cookieTwo = out.get(1)
-    assertCookie(cookieTwo, "cookie two", name = "second", value = "second")
+    assertCookie(
+      cookieTwo,
+      "cookie two",
+      name = "o",
+      value = "asdf\",second=second",
+      comment = "\"something",
+      discard = true
+    )
+
   }
 
   @Test
@@ -143,10 +174,17 @@ class HttpCookieTest {
   @Test
   def illegalCookieNameTest: Unit = {
     assertThrows(
-      "Names containing special characters should not be allowed",
+      "Names containing CTL characters should not be allowed",
       classOf[IllegalArgumentException],
-      new HttpCookie("a\u0000", "")
+      new HttpCookie(s"potato${5: Char}potato", "tomato")
     )
+
+    assertThrows(
+      "Names containing spaces or tabs should not be allowed",
+      classOf[IllegalArgumentException],
+      new HttpCookie(s"potato potato", "tomato")
+    )
+
     assertThrows(
       "Names are not allowed to start with a '$' character'",
       classOf[IllegalArgumentException],
@@ -167,11 +205,6 @@ class HttpCookieTest {
       HttpCookie.parse("set-cookie2:potato=tomato;max-age=bad")
     )
 
-    assertThrows(
-      "Version must be a number",
-      classOf[IllegalArgumentException],
-      HttpCookie.parse("set-cookie2:potato=tomato;version=bad")
-    )
     assertThrows(
       "Version must be 0 or 1",
       classOf[IllegalArgumentException],
@@ -200,18 +233,12 @@ class HttpCookieTest {
       "equal domains should match",
       HttpCookie.domainMatches("website.com", "website.com")
     )
-    assertTrue(
-      "should match if host is a subdomain",
-      HttpCookie.domainMatches("website.com", "www.website.com")
-    )
     assertFalse(
       "if domain is subdomain of host - should not match",
       HttpCookie.domainMatches("www.website.com", "website.com")
     )
-    assertFalse(
-      "non-subdomain host whose suffix is the domain should not match",
-      HttpCookie.domainMatches("website.com", "awebsite.com")
-    )
+    // I have no words really
+    assertTrue(HttpCookie.domainMatches("website.com", "awebsite.com"))
   }
 
 }
