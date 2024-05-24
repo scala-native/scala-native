@@ -22,16 +22,16 @@ object HttpCookie {
 
   }
 
-  private[HttpCookie] val Discard = "Discard"
-  private[HttpCookie] val Comment = "Comment"
-  private[HttpCookie] val CommentURL = "CommentURL"
-  private[HttpCookie] val Domain = "Domain"
-  private[HttpCookie] val MaxAge = "Max-Age"
-  private[HttpCookie] val Path = "Path"
-  private[HttpCookie] val Port = "Port"
-  private[HttpCookie] val Secure = "Secure"
-  private[HttpCookie] val Version = "Version"
-  private[HttpCookie] val HttpOnly = "HttpOnly"
+  private final val Discard = "Discard"
+  private final val Comment = "Comment"
+  private final val CommentURL = "CommentURL"
+  private final val Domain = "Domain"
+  private final val MaxAge = "Max-Age"
+  private final val Path = "Path"
+  private final val Port = "Port"
+  private final val Secure = "Secure"
+  private final val Version = "Version"
+  private final val HttpOnly = "HttpOnly"
 
   def parse(header: String): java.util.List[HttpCookie] = {
 
@@ -54,7 +54,7 @@ object HttpCookie {
       val unprocessed = splitUnquotedAt(nameless, ',')
 
       var i = 0
-      while (i < unprocessed.size) {
+      while (i < unprocessed.size()) {
         val kv = unprocessed.get(i)
         val eqIndex = kv.indexOf("=")
         val name = kv.substring(0, eqIndex)
@@ -79,7 +79,7 @@ object HttpCookie {
   // however it also respects quoted strings, i.e.
   // occurences of the separator inside quoted strings
   // won't trigger a split
-  // backslash also escapes double quotes inside the string
+  // backslash also escapes double quotes inside the quoted sections
   private def splitUnquotedAt(
       in: String,
       separator: Char
@@ -120,12 +120,23 @@ object HttpCookie {
     }
   }
 
+  /**
+  * If the string begins and ends with quotes - remove them,
+  * otherwise return the input
+  */
   private def unquote(in: String): String = {
     if (in.charAt(0) == '"' && in.charAt(in.length() - 1) == '"') {
       in.substring(1, in.length() - 1)
     } else in
   }
 
+  /**
+  * performs parsing on the section of the cookie following the cookie name,
+  * and constructs the resulting cookie.
+  * If the given value contains multiple cookies - this method will break,
+  * so any input into this method must be pre-processed such that  
+  * only the section that pertains to a single cookie is fed into this method
+  */
   private def parseValue(name: String, value: String): HttpCookie = {
 
     val attrs = splitUnquotedAt(value, ';')
@@ -229,7 +240,11 @@ object HttpCookie {
               Version.length()
             )) {
           try {
-            cookie.setVersion(java.lang.Integer.valueOf(propValue))
+            val value =  java.lang.Integer.valueOf(propValue)
+            if (value != 0 && value != 1) {
+              throw new IllegalArgumentException("cookie version should be 0 or 1")
+            }
+            cookie.setVersion(value)
           } catch {
             case _: NumberFormatException =>
               throw new IllegalArgumentException(
@@ -257,8 +272,12 @@ object HttpCookie {
   //                | "{" | "}" | SP | HT
   // CHAR = <any US-ASCII character (octets 0 - 127)>
   // CTL = <any US-ASCII control character (octets 0 - 31) and DEL (127)>
+  //
+  // stricter than the JVM, for better or worse
   private def validateName(name: String): String = {
-    if (name.length == 0)
+    // Testing the $ as that's what the JVM
+    // seems to do
+    if (name.length == 0 || name.charAt(0) == '$')
       throw new IllegalArgumentException("Illegal cookie name")
 
     var i = 0
@@ -297,7 +316,9 @@ object HttpCookie {
 
 }
 
+/** HttpCookie */
 final class HttpCookie private (
+    private val createdAtEpochSecond: Long,
     private var _comment: String = null,
     private var _commentURL: String = null,
     private var _httpOnly: Boolean = false,
@@ -309,11 +330,12 @@ final class HttpCookie private (
     private var _portlist: String = null,
     private var _secure: Boolean = false,
     private var _value: String = null,
-    private var _version: Int = 1
+    private var _version: Int = 1,
 ) extends Cloneable {
 
   def this(name: String, value: String) = {
     this(
+      System.currentTimeMillis() % 1000,
       _name =
         (if (name.length() == 0) {
            throw new IllegalArgumentException("Illegal cookie name")
@@ -323,27 +345,42 @@ final class HttpCookie private (
     )
   }
 
-  override def equals(obj: Any): Boolean = {
+  def canEqual(other: Any): Boolean = 
+    other.isInstanceOf[HttpCookie]
 
-    if (obj.isInstanceOf[HttpCookie]) {
-      val other = obj.asInstanceOf[HttpCookie]
-      this.getComment().equals(other.getComment()) &&
-        this.getCommentURL().equals(other.getCommentURL()) &&
-        this.isHttpOnly().equals(other.isHttpOnly()) &&
-        this.getDiscard().equals(other.getDiscard()) &&
-        this.getDomain().equals(other.getDomain()) &&
-        this.getMaxAge().equals(other.getMaxAge()) &&
-        this.getName().equals(other.getName()) &&
-        this.getPath().equals(other.getPath()) &&
-        this.getPortlist().equals(other.getPortlist()) &&
-        this.getSecure().equals(other.getSecure()) &&
-        this.getValue().equals(other.getValue()) &&
-        this.getVersion().equals(other.getVersion())
-    } else {
-      false
-    }
-
+  override def hashCode(): Int = {
+    var res = 1
+    // the JVM seems to include
+    // the name, value, domain and path into its
+    // hash code, so that's what we do as well
+    res = 31 * res + _name.##
+    if (_value != null) res = 31 * res + _value.##
+    if (_path != null) res = 31 * res + _path.##
+    if (_domain != null) res = 31 * res + _domain.##
+    res
   }
+
+  override def toString(): String = _name + "=" + _value
+  override def equals(obj: Any): Boolean = 
+    obj match {
+      case other: HttpCookie => 
+        super.equals(other) &&
+          canEqual(other) &&
+          this.getName() == other.getName() &&
+          this.getValue() == other.getValue() &&
+          this.getComment() == other.getComment() &&
+          this.getCommentURL() == other.getCommentURL() &&
+          this.isHttpOnly() == other.isHttpOnly() &&
+          this.getDiscard() == other.getDiscard() &&
+          this.getDomain() == other.getDomain() &&
+          this.getMaxAge() == other.getMaxAge() &&
+          this.getPath() == other.getPath() &&
+          this.getPortlist() == other.getPortlist() &&
+          this.getSecure() == other.getSecure() &&
+          this.getVersion() == other.getVersion()
+
+      case _ => false
+    }
 
   def getComment(): String = this._comment
   def getCommentURL(): String = this._commentURL
@@ -356,8 +393,9 @@ final class HttpCookie private (
   def getSecure(): Boolean = this._secure
   def getValue(): String = this._value
   def getVersion(): Int = this._version
-  def hasExpired(): Boolean = this._maxAge == 0
-  override def hashCode(): Int = toString().hashCode()
+  def hasExpired(): Boolean = {
+    _maxAge >= 0 && ((System.currentTimeMillis() % 1000) >= (createdAtEpochSecond + _maxAge))
+  }
   def isHttpOnly(): Boolean = this._httpOnly
   def setComment(purpose: String): Unit = this._comment = purpose
   def setCommentURL(purpose: String): Unit = this._commentURL = purpose
@@ -370,5 +408,5 @@ final class HttpCookie private (
   def setSecure(flag: Boolean): Unit = this._secure = flag
   def setValue(newValue: String): Unit = this._value = newValue
   def setVersion(v: Int): Unit = this._version = v
-  override def toString(): String = _name + "=" + _value
+
 }
