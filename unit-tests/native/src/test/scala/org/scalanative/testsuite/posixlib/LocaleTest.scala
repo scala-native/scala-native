@@ -46,13 +46,13 @@ object LocaleTest {
           if (en_US_UTF8 != null) en_US_utf8
           else {
             setlocale(LC_ALL, c"en_US") // last chance fallback.
+            // an "assumeTrue" in caller will warn, not fail, on null locale.
           }
         }
       }
 
       if (currentLocale == null) {
         savedLocale = None // Oops, no change! Nothing to restore.
-        fail("setlocale() could not set a en_US locale at start of test.")
       }
     }
   }
@@ -82,6 +82,12 @@ class LocaleTest {
 
   @Test def localeconv_Using_en_US(): Unit = {
 
+    // Multi-arch CI tests do not have an en_US locale; warn not fail
+    assumeTrue(
+      "setlocale() failed to set an en_US test locale",
+      savedLocale.isDefined
+    )
+
     def verifyGrouping(grouping: String, categoryName: String): Unit = {
       // pre-condition: categoryName is not null.
 
@@ -107,12 +113,6 @@ class LocaleTest {
           fail("expected length of 1 or 2, got: ${len}")
       }
     }
-
-    // Multi-arch CI tests do not have an en_US locale; warn not fail
-    assumeTrue(
-      "setlocale() failed to set an en_US test locale",
-      savedLocale.isDefined
-    )
 
     // OpenBSD support of locale quite incomplete, it never changes
     // LC_NUMERIC and LC_MONETARY that means that it always returns
