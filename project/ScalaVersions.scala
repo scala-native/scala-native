@@ -50,8 +50,9 @@ object ScalaVersions {
   //   1.9.0 is required in order to use Java >= 21
   //   1.9.4 fixes (Common Vulnerabilities and Exposures) CVE-2022-46751
   //   1.9.7 fixes sbt IO.unzip vulnerability described in sbt release notes.
+  //   1.10.0 Latest sbt version.
 
-  val sbt10Version: String = "1.9.7"
+  val sbt10Version: String = "1.10.0"
   val sbt10ScalaVersion: String = scala212
 
   val libCrossScalaVersions: Seq[String] =
