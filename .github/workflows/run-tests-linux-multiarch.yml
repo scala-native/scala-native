@@ -85,9 +85,6 @@ jobs:
       matrix:
         arch: [linux-arm64, linux-x86]
         scala: [3]
-        build-mode: [release-fast]
-        lto: [none]
-        gc: [immix]
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/linux-setup-env
@@ -103,13 +100,6 @@ jobs:
         shell: bash
         # Following envs CROSS_ are always present in docker container
         run: |
-          buildMode=${{matrix.build-mode}}
-          if [[ "$buildMode" == "release-fast" ]]; then
-            buildMode=releaseFast
-          elif [[ "$buildMode" == "release-size" ]]; then
-            buildMode=releaseSize
-          fi
-
           SetConfigTemplate=$(cat << EOM
             nativeConfig ~= { prev =>
               val sysRoot: List[String] =
@@ -126,9 +116,6 @@ jobs:
                   )};
 
               prev
-                .withMode(scalanative.build.Mode.${buildMode})
-                .withGC(scalanative.build.GC.${{matrix.gc}})
-                .withLTO(scalanative.build.LTO.${{matrix.lto}})
                 .withTargetTriple(sys.env.get("CROSS_TRIPLE"))
                 .withCompileOptions(_ ++ sysRoot ++ List("-fuse-ld=lld"))
                 .withLinkingOptions(_ ++ sysRoot ++ List("-fuse-ld=lld", "-latomic"))
@@ -149,9 +136,6 @@ jobs:
 
       - name: Run tests
         env:
-          SCALANATIVE_MODE: "${{matrix.build-mode}}"
-          SCALANATIVE_GC: "${{matrix.gc}}"
-          SCALANATIVE_LTO: "${{matrix.lto}}"
           # Temporaly excluded due to failures in linux-x86,
           # missing __mulodi4 symbol used in j.l.Math.addExact(Long,Long)
           # testsExt${{env.project-version}}/test;
@@ -171,6 +155,6 @@ jobs:
         uses: nick-fields/retry@v3
         with:
           timeout_minutes: 180
-          max_attempts: 3
+          max_attempts: 2
           retry_on: error
           command: ./ci-docker/run-test-gha.sh "${{ needs.build-image.outputs.image-name }}:${{ matrix.arch }}"
