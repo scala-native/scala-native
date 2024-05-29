@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [3, 2.13, 2.12, 3-next]
+        scala: [3, 2.13, 2.12]
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/macos-setup-env
