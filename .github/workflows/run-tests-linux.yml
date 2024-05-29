@@ -23,7 +23,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [2.12, 2.13, 3, 3-next]
+        scala: [2.12, 2.13, 3]
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/linux-setup-env
@@ -78,26 +78,20 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [3]
-        gc: [none, boehm, immix, commix]
-        include:
-          - scala: 3-next
-            gc: immix
-          - scala: 2.13
-            gc: immix
-          - scala: 2.12
-            gc: immix
+        scala: [3, 2.13, 2.12, 3-next]
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: ${{matrix.scala}}
+      - name: Test GC compilation
+        timeout-minutes: 15
+        run: sbt "test-gc ${{ matrix.scala }}"
       - name: Run tests
         timeout-minutes: 45
         env:
-          SCALANATIVE_GC: ${{ matrix.gc }}
           SCALANATIVE_TEST_PREFETCH_DEBUG_INFO: 1
-        run: sbt "test-runtime ${{ matrix.scala }}"
+        run: sbt "test-runtime ${{ matrix.scala }}"      
 
   test-runtime-ext:
     name: Test runtime extension
@@ -109,7 +103,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [2.13, 3, 3-next]
+        scala: [2.13, 3]
         build-mode: [debug, release-fast]
         lto: [none, thin]
         gc: [boehm, immix, commix]
@@ -166,7 +160,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [3, 2.13]
+        scala: [3]
         build-mode: [debug]
     steps:
       - uses: actions/checkout@v4
@@ -193,7 +187,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [2.12, 3]
+        scala: [3]
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/linux-setup-env
