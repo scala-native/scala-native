@@ -147,7 +147,7 @@ jobs:
 
             show sandbox${{env.project-version}}/nativeConfig;
 
-            test-gc;
+            test-gc ${{matrix.scala}};
             testsJVM${{env.project-version}}/test;
             tests${{env.project-version}}/test;
             junitTestOutputsNative${{env.project-version}}/test;

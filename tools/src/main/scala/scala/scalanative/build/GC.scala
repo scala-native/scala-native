@@ -76,7 +76,7 @@ object GC {
       experimental
     case value =>
       throw new IllegalArgumentException(
-        "nativeGC can be either \"none\", \"boehm\", \"immix\", \"commix\" or \"experimental\", not: " + value
+        "GC can be either \"none\", \"boehm\", \"immix\", \"commix\" or \"experimental\", not: " + value
       )
   }
 }
