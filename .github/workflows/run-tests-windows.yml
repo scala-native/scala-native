@@ -33,6 +33,9 @@ jobs:
       
       - name: Test GC
         timeout-minutes: 15
+        env:
+          SCALANATIVE_INCLUDE_DIRS: ${{steps.setup.outputs.vcpkg-dir}}\include
+          SCALANATIVE_LIB_DIRS: ${{steps.setup.outputs.vcpkg-dir}}\lib
         run: sbt "test-gc ${{ matrix.scala }}"
 
       # None GC takes too much memory on Windows to execute partest JUnit tests
