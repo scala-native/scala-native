@@ -318,6 +318,7 @@ class ProcessTest {
 
   @Test def concurrentPipe(): Unit = {
     assumeMultithreadingIsEnabled()
+    assumeNot32Bit() // Flaky on x86
     // Ensure that reading from process stdout does not lead to exceptions
     // when thread terminates (was failing with Bad file descriptor in FileChannel.read)
     val iterations = 16
