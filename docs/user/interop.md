@@ -372,7 +372,7 @@ unmanaged memory.
 
     > Scala Native\'s library contains a bindings for a subset of the
     > standard libc functionality. This includes the trio of `malloc`,
-    > `realloc` and `free` functions that are defined in `unsafe.stdlib`
+    > `realloc` and `free` functions that are defined in `libc.stdlib`
     > extern object.
     >
     > Calling those will let you allocate memory using system\'s
