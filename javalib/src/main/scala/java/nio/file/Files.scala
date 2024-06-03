@@ -661,7 +661,7 @@ object Files {
   def move(source: Path, target: Path, options: Array[CopyOption]): Path = {
     lazy val replaceExisting = options.contains(REPLACE_EXISTING)
 
-    if (!exists(source.toAbsolutePath(), Array.empty)) {
+    if (!exists(source.toAbsolutePath(), Array(LinkOption.NOFOLLOW_LINKS))) {
       throw new NoSuchFileException(source.toString)
     } else if (!exists(
           target.toAbsolutePath(),
