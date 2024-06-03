@@ -5,6 +5,7 @@ import scala.collection.mutable
 import scalanative.util.{ScopedVar, unsupported}
 import scalanative.linker._
 import scalanative.interflow.UseDef.eliminateDeadCode
+import scalanative.nir.ControlFlow.{Graph, Block}
 
 private[scalanative] object Lower {
 
@@ -46,7 +47,38 @@ private[scalanative] object Lower {
     private val fresh = new util.ScopedVar[nir.Fresh]
     private val unwindHandler = new util.ScopedVar[Option[nir.Local]]
     private val currentDefn = new util.ScopedVar[nir.Defn.Define]
-    private val nullGuardedVals = mutable.Set.empty[nir.Val]
+    private val currentDefnGraph = new util.ScopedVar[Graph]
+    private val blockInfo = mutable.Map.empty[Block, BlockInfo]
+    private var currentBlock: Block = _
+    private def getCurrentBlockInfo: BlockInfo = {
+      assert(currentBlock != null)
+      blockInfo.getOrElseUpdate(currentBlock, new BlockInfo())
+    }
+    class BlockInfo(
+        val nullGuardedVals: mutable.Set[nir.Val] = mutable.Set.empty
+    )
+    private def findNonRecursive(
+        current: Block,
+        predicate: BlockInfo => Boolean,
+        visited: mutable.Set[Block] = mutable.Set.empty
+    ): Option[BlockInfo] = blockInfo.get(current) match {
+      case Some(info) if predicate(info) => Some(info)
+      case _ =>
+        if (visited.add(current))
+          current.pred.iterator
+            .map(findNonRecursive(_, predicate, visited))
+            .collectFirst { case Some(found) => found }
+        else None
+    }
+    def isNullGuarded(currentBlock: Block, v: nir.Val): Boolean = {
+      def isHandled(block: BlockInfo): Boolean =
+        block.nullGuardedVals.contains(v)
+      blockInfo.get(currentBlock).exists(isHandled) ||
+        currentBlock.pred.nonEmpty && currentBlock.pred.forall {
+          findNonRecursive(_, isHandled).isDefined
+        }
+    }
+
     private def currentDefnRetType = {
       val nir.Type.Function(_, ret) = currentDefn.get.ty
       ret
@@ -95,10 +127,11 @@ private[scalanative] object Lower {
         val nir.Type.Function(_, ty) = defn.ty
         ScopedVar.scoped(
           fresh := nir.Fresh(defn.insts),
-          currentDefn := defn
+          currentDefn := defn,
+          currentDefnGraph := Graph(defn.insts)
         ) {
           try super.onDefn(defn)
-          finally nullGuardedVals.clear()
+          finally blockInfo.clear()
         }
       case _ =>
         super.onDefn(defn)
@@ -160,6 +193,7 @@ private[scalanative] object Lower {
       }
 
       val nir.Inst.Label(firstLabel, _) = insts.head: @unchecked
+      currentBlock = currentDefnGraph.get.find(firstLabel)
       val labelPositions = insts
         .collect { case nir.Inst.Label(id, _) => id }
         .zipWithIndex
@@ -228,6 +262,7 @@ private[scalanative] object Lower {
 
         case inst @ nir.Inst.Label(name, _) =>
           currentBlockPosition = labelPositions(name)
+          currentBlock = currentDefnGraph.get.find(name)
           buf += inst
 
         case inst =>
@@ -538,7 +573,8 @@ private[scalanative] object Lower {
         case ty: nir.Type.RefKind if !ty.isNullable =>
           ()
 
-        case _ if nullGuardedVals.add(obj) =>
+        case _ if !isNullGuarded(currentBlock, obj) =>
+          getCurrentBlockInfo.nullGuardedVals += obj
           import buf._
           val v = genVal(buf, obj)
 
