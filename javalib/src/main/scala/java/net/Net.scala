@@ -16,22 +16,23 @@ private[java] trait Net {
   def POLLOUT: Int
 
   def prepareSockaddrIn(
+      family: ProtocolFamily,
       isa: InetSocketAddress
   )(implicit
       zone: Zone
   ): (Ptr[posix.sys.socket.sockaddr], posix.sys.socket.socklen_t) = {
     val addr = isa.getAddress
     val port = isa.getPort
-    addr match {
-      case ipv4: Inet4Address =>
+    family match {
+      case StandardProtocolFamily.INET =>
         val sa4 = alloc[in.sockaddr_in]()
         val sa4Len = sizeof[in.sockaddr_in].toUInt
-        SocketHelpers.prepareSockaddrIn4(ipv4, port, sa4)
+        SocketHelpers.prepareSockaddrIn4(addr, port, sa4)
         (sa4.asInstanceOf[Ptr[posix.sys.socket.sockaddr]], sa4Len)
-      case ipv6: Inet6Address =>
+      case StandardProtocolFamily.INET6 =>
         val sa6 = alloc[in.sockaddr_in6]()
         val sa6Len = sizeof[in.sockaddr_in6].toUInt
-        SocketHelpers.prepareSockaddrIn6(ipv6, port, sa6)
+        SocketHelpers.prepareSockaddrIn6(addr, port, sa6)
         (sa6.asInstanceOf[Ptr[posix.sys.socket.sockaddr]], sa6Len)
       case _ => throw new UnsupportedAddressTypeException()
     }
@@ -40,37 +41,44 @@ private[java] trait Net {
   def socket(family: ProtocolFamily, stream: Boolean): FileDescriptor
   def checkAddress(sa: SocketAddress): InetSocketAddress
 
-  def bind(fd: FileDescriptor, local: SocketAddress): Unit = {
+  def bind(
+      fd: FileDescriptor,
+      family: ProtocolFamily,
+      local: SocketAddress
+  ): Unit = {
     val isa = local match {
       case null =>
         new InetSocketAddress(SocketHelpers.getWildcardAddressForBind(), 0)
       case _ => checkAddress(local)
     }
     val bindRes = Zone.acquire { implicit z =>
-      val (sa, len) = prepareSockaddrIn(isa)
+      val (sa, len) = prepareSockaddrIn(family, isa)
       posix.sys.socket.bind(fd.fd, sa, len)
     }
 
     if (bindRes < 0) {
       throw new BindException(
-        "Couldn't bind to an address: " + isa.getAddress.getHostAddress()
+        "Couldn't bind to an address: " + isa.getAddress
+          .getHostAddress() + s". err: $bindRes"
       )
     }
   }
 
-  def connect(fd: FileDescriptor, remote: SocketAddress): Unit = {
+  def connect(
+      fd: FileDescriptor,
+      family: ProtocolFamily,
+      remote: SocketAddress
+  ): Int = {
     val isa = checkAddress(remote)
-
-    val connectRes = Zone.acquire { implicit z =>
-      val (sa, len) = prepareSockaddrIn(isa)
+    Zone.acquire { implicit z =>
+      val (sa, len) = prepareSockaddrIn(family, isa)
       posix.sys.socket.connect(fd.fd, sa, len)
     }
-    if (connectRes < 0) {
-      throw new ConnectException(
-        "Couldn't connect to an address: " + isa.getAddress.getHostAddress()
-      )
-    }
   }
+
+  def tryPoll(fd: FileDescriptor, timeout: Int, op: String): Unit
+  def tryPollOnConnect(fd: FileDescriptor, timeout: Int): Unit
+  def tryPollOnAccept(fd: FileDescriptor, timeout: Int): Unit
 
   def disconnect(fd: FileDescriptor): Unit = {
     val sa = stackalloc[posix.sys.socket.sockaddr]()
@@ -107,7 +115,10 @@ private[java] trait Net {
   ): Unit
 
   def close(fd: FileDescriptor): Unit
-  def localAddress(fd: FileDescriptor, family: ProtocolFamily): SocketAddress
+  def localAddress(
+      fd: FileDescriptor,
+      family: ProtocolFamily
+  ): InetSocketAddress
   def configureBlocking(fd: FileDescriptor, blocking: Boolean): Unit
 
   private def optionLevel(name: SocketOption[_]): CInt = name match {
@@ -242,6 +253,7 @@ private[java] object Net extends Net {
 
   @inline def POLLIN = netImpl.POLLIN
   @inline def POLLOUT = netImpl.POLLOUT
+
   @inline override def socket(
       family: ProtocolFamily,
       stream: Boolean
@@ -249,8 +261,12 @@ private[java] object Net extends Net {
     netImpl.socket(family, stream)
   @inline override def checkAddress(sa: SocketAddress): InetSocketAddress =
     netImpl.checkAddress(sa)
-  @inline override def bind(fd: FileDescriptor, local: SocketAddress): Unit =
-    netImpl.bind(fd, local)
+  @inline override def bind(
+      fd: FileDescriptor,
+      family: ProtocolFamily,
+      local: SocketAddress
+  ): Unit =
+    netImpl.bind(fd, family, local)
 
   @inline override def changeMembership(
       membership: Membership,
@@ -267,13 +283,21 @@ private[java] object Net extends Net {
   @inline override def localAddress(
       fd: FileDescriptor,
       family: ProtocolFamily
-  ): SocketAddress =
+  ): InetSocketAddress =
     netImpl.localAddress(fd, family)
   @inline override def configureBlocking(
       fd: FileDescriptor,
       blocking: Boolean
   ): Unit =
     netImpl.configureBlocking(fd, blocking)
+
+  @inline def tryPoll(fd: FileDescriptor, timeout: Int, op: String): Unit =
+    netImpl.tryPoll(fd, timeout, op)
+  @inline def tryPollOnConnect(fd: FileDescriptor, timeout: Int): Unit =
+    netImpl.tryPollOnConnect(fd, timeout)
+  @inline def tryPollOnAccept(fd: FileDescriptor, timeout: Int): Unit =
+    netImpl.tryPollOnAccept(fd, timeout)
+
   @inline override def getSocketOption[T](
       fd: FileDescriptor,
       name: SocketOption[T]

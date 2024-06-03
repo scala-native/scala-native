@@ -25,20 +25,17 @@ import scala.scalanative.windows._
 import scala.scalanative.windows.WinSocketApi._
 import scala.scalanative.windows.WinSocketApiExt._
 
-private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
-  import AbstractPlainSocketImpl._
-  protected def tryPollOnConnect(timeout: Int): Unit
-  protected def tryPollOnAccept(): Unit
+private[net] class PlainSocketImpl extends SocketImpl {
+  import PlainSocketImpl._
 
   protected[net] var fd = new FileDescriptor
   protected[net] var localport = 0
   protected[net] var address: InetAddress = _
   protected[net] var port = 0
 
+  private final val family = Net.getGaiHintsProtocolFamily()
   protected var timeout = 0
   private var listening = false
-
-  private final val useIPv4Only = SocketHelpers.getUseIPv4Stack()
 
   override def getInetAddress: InetAddress = address
   override def getFileDescriptor: FileDescriptor = fd
@@ -49,90 +46,6 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
   @inline private def throwIfClosed(methodName: String): Unit =
     if (isClosed) throw new SocketException(s"$methodName: Socket is closed")
 
-  private def throwCannotBind(addr: InetAddress): Nothing = {
-    throw new BindException(
-      "Couldn't bind to an address: " + addr.getHostAddress() +
-        " on port: " + port.toString
-    )
-  }
-
-  private def fetchLocalPort(family: Int): Option[Int] = {
-    val len = stackalloc[socket.socklen_t]()
-    val portOpt = if (family == socket.AF_INET) {
-      val sin = stackalloc[in.sockaddr_in]()
-      !len = sizeof[in.sockaddr_in].toUInt
-
-      if (socket.getsockname(
-            fd.fd,
-            sin.asInstanceOf[Ptr[socket.sockaddr]],
-            len
-          ) == -1) {
-        None
-      } else {
-        Some(sin.sin_port)
-      }
-    } else {
-      val sin = stackalloc[in.sockaddr_in6]()
-      !len = sizeof[in.sockaddr_in6].toUInt
-
-      if (socket.getsockname(
-            fd.fd,
-            sin.asInstanceOf[Ptr[socket.sockaddr]],
-            len
-          ) == -1) {
-        None
-      } else {
-        Some(sin.sin6_port)
-      }
-    }
-
-    portOpt.map(inet.ntohs(_).toInt)
-  }
-
-  private def bind4(addr: InetAddress, port: Int): Unit = {
-    val sa4 = stackalloc[in.sockaddr_in]()
-    val sa4Len = sizeof[in.sockaddr_in].toUInt
-    SocketHelpers.prepareSockaddrIn4(addr, port, sa4)
-
-    val bindRes = socket.bind(
-      fd.fd,
-      sa4.asInstanceOf[Ptr[socket.sockaddr]],
-      sa4Len
-    )
-
-    if (bindRes < 0)
-      throwCannotBind(addr)
-
-    this.localport = fetchLocalPort(socket.AF_INET).getOrElse {
-      throwCannotBind(addr)
-    }
-  }
-
-  private def bind6(addr: InetAddress, port: Int): Unit = {
-    val sa6 = stackalloc[in.sockaddr_in6]()
-    val sa6Len = sizeof[in.sockaddr_in6].toUInt
-
-    // By contract, all the bytes in sa6 are zero going in.
-    SocketHelpers.prepareSockaddrIn6(addr, port, sa6)
-
-    val bindRes = socket.bind(
-      fd.fd,
-      sa6.asInstanceOf[Ptr[socket.sockaddr]],
-      sa6Len
-    )
-
-    if (bindRes < 0)
-      throwCannotBind(addr)
-
-    this.localport = fetchLocalPort(sa6.sin6_family.toInt).getOrElse {
-      throwCannotBind(addr)
-    }
-  }
-
-  private lazy val bindFunc =
-    if (useIPv4Only) bind4(_: InetAddress, _: Int)
-    else bind6(_: InetAddress, _: Int)
-
   override def create(stream: Boolean): Unit = {
     val family = Net.getGaiHintsProtocolFamily()
     fd = Net.socket(family, stream)
@@ -140,8 +53,8 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
 
   override def bind(addr: InetAddress, port: Int): Unit = {
     throwIfClosed("bind")
-
-    bindFunc(addr, port)
+    Net.bind(fd, family, new InetSocketAddress(addr, port))
+    localport = Net.localAddress(fd, family).getPort
   }
 
   override def listen(backlog: Int): Unit = {
@@ -154,8 +67,7 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
   override def accept(s: SocketImpl): Unit = {
     throwIfClosed("accept") // Do not send negative fd.fd to poll()
 
-    if (timeout > 0)
-      tryPollOnAccept()
+    if (timeout > 0) Net.tryPollOnAccept(fd, timeout)
 
     val storage = stackalloc[socket.sockaddr_storage]()
     val address = storage.asInstanceOf[Ptr[socket.sockaddr]]
@@ -174,62 +86,10 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
     s.fd = new FileDescriptor(newFd)
   }
 
-  private def connect4(addr: InetAddress, port: Int, timeout: Int): Unit = {
-    val sa4 = stackalloc[in.sockaddr_in]()
-    val sa4Len = sizeof[in.sockaddr_in].toUInt
-
-    SocketHelpers.prepareSockaddrIn4(addr, port, sa4)
-
+  private def connectImpl(address: InetAddress, port: Int, timeout: Int = 0) = {
     if (timeout != 0) Net.configureBlocking(fd, blocking = false)
-
-    val connectRet = socket.connect(
-      fd.fd,
-      sa4.asInstanceOf[Ptr[socket.sockaddr]],
-      sa4Len
-    )
-
-    if (connectRet < 0) {
-      def inProgress = mapLastError(
-        onUnix = _ == EINPROGRESS,
-        onWindows = {
-          case WSAEINPROGRESS | WSAEWOULDBLOCK => true
-          case _                               => false
-        }
-      )
-      if (timeout > 0 && inProgress) {
-        tryPollOnConnect(timeout)
-      } else {
-        throw new ConnectException(
-          s"Could not connect to address: $addr on port: $port, errno: ${lastError()}"
-        )
-      }
-    }
-
-    this.address = addr
-    this.port = port
-    this.localport = fetchLocalPort(socket.AF_INET).getOrElse {
-      throw new ConnectException(
-        "Could not resolve a local port when connecting"
-      )
-    }
-  }
-
-  private def connect6(addr: InetAddress, port: Int, timeout: Int): Unit = {
-    val sa6 = stackalloc[in.sockaddr_in6]()
-    val sa6Len = sizeof[in.sockaddr_in6].toUInt
-
-    // By contract, all the bytes in sa6 are zero going in.
-    SocketHelpers.prepareSockaddrIn6(addr, port, sa6)
-
-    if (timeout != 0) Net.configureBlocking(fd, blocking = false)
-
-    val connectRet = socket.connect(
-      fd.fd,
-      sa6.asInstanceOf[Ptr[socket.sockaddr]],
-      sa6Len
-    )
-
-    if (connectRet < 0) {
+    val result = Net.connect(fd, family, new InetSocketAddress(address, port))
+    if (result < 0) {
       def inProgress = mapLastError(
         onUnix = _ == EINPROGRESS,
         onWindows = {
@@ -239,35 +99,27 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
       )
 
       if (timeout > 0 && inProgress) {
-        tryPollOnConnect(timeout)
+        Net.tryPollOnConnect(fd, timeout)
       } else {
         throw new ConnectException(
-          s"Could not connect to address: $addr on port: $port, errno: ${lastError()}"
+          s"Could not connect to address: $address on port: $port, errno: ${lastError()}"
         )
       }
     }
 
-    this.address = addr
+    this.address = address
     this.port = port
-    this.localport = fetchLocalPort(sa6.sin6_family.toInt).getOrElse {
-      throw new ConnectException(
-        "Could not resolve a local port when connecting"
-      )
-    }
+    this.localport = Net.localAddress(fd, family).getPort
   }
-
-  private lazy val connectFunc =
-    if (useIPv4Only) connect4(_: InetAddress, _: Int, _: Int)
-    else connect6(_: InetAddress, _: Int, _: Int)
 
   override def connect(host: String, port: Int): Unit = {
-    throwIfClosed("connect")
     val addr = InetAddress.getByName(host)
-    connectFunc(addr, port, 0)
+    connectImpl(addr, port)
   }
+
   override def connect(address: InetAddress, port: Int): Unit = {
     throwIfClosed("connect")
-    connectFunc(address, port, 0)
+    connectImpl(address, port)
   }
 
   override def connect(address: SocketAddress, timeout: Int): Unit = {
@@ -278,7 +130,7 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
     }
     val addr = insAddr.getAddress
     val port = insAddr.getPort
-    connectFunc(addr, port, timeout)
+    connectImpl(addr, port, timeout)
   }
 
   override def close(): Unit = {
@@ -556,13 +408,7 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
   }
 }
 
-private[net] object AbstractPlainSocketImpl {
+private[net] object PlainSocketImpl {
   final val InvalidSocketDescriptor = new FileDescriptor()
-
-  def apply(): AbstractPlainSocketImpl = {
-    if (isWindows)
-      new WindowsPlainSocketImpl()
-    else
-      new UnixPlainSocketImpl()
-  }
+  def apply(): PlainSocketImpl = new PlainSocketImpl()
 }

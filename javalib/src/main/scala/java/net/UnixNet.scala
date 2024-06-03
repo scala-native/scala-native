@@ -6,22 +6,22 @@ import java.nio.channels.{
   UnresolvedAddressException,
   UnsupportedAddressTypeException
 }
+import scala.annotation.tailrec
 import scala.scalanative.posix
 import scala.scalanative.posix.arpa.inet
 import scala.scalanative.posix.errno._
 import scala.scalanative.posix.fcntl._
 import scala.scalanative.posix.netinet.in
-import scala.scalanative.posix.netinet.tcp
 import scala.scalanative.posix.netinet.inOps._
 import scala.scalanative.posix.sys.{socket => unixsocket}
 import scala.scalanative.posix.unistd
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
+import scala.scalanative.posix.poll._
+import scala.scalanative.posix.pollEvents._
+import scala.scalanative.posix.pollOps._
 
 private[net] object UnixNet extends Net {
-
-  private val jInteger = classOf[java.lang.Integer]
-  private val jBoolean = classOf[java.lang.Boolean]
 
   @inline override def POLLIN: Int = posix.pollEvents.POLLIN
   @inline override def POLLOUT: Int = posix.pollEvents.POLLOUT
@@ -161,7 +161,7 @@ private[net] object UnixNet extends Net {
   override def localAddress(
       fd: FileDescriptor,
       family: ProtocolFamily
-  ): SocketAddress = {
+  ): InetSocketAddress = {
     val len = stackalloc[unixsocket.socklen_t]()
     val saddr = family match {
       case StandardProtocolFamily.INET =>
@@ -191,6 +191,129 @@ private[net] object UnixNet extends Net {
     updateSocketFdOpts(fd.fd) { oldOpts =>
       if (blocking) oldOpts & ~O_NONBLOCK
       else oldOpts | O_NONBLOCK
+    }
+  }
+
+  override def tryPoll(fd: FileDescriptor, timeout: Int, op: String): Unit = {
+    val nAlloc = 1.toUInt
+    val pollFd: Ptr[struct_pollfd] = stackalloc[struct_pollfd](nAlloc)
+
+    pollFd.fd = fd.fd
+    pollFd.revents = 0
+    pollFd.events = POLLIN.toShort
+
+    val pollRes = poll(pollFd, nAlloc, timeout)
+    val revents = pollFd.revents
+
+    pollRes match {
+      case err if err < 0 =>
+        throw new SocketException(s"${op} failed, poll errno: $errno")
+
+      case 0 =>
+        throw new SocketTimeoutException(
+          s"${op} timed out, SO_TIMEOUT: ${timeout}"
+        )
+
+      case _ => // success, carry on
+    }
+
+    if (((revents & POLLERR) | (revents & POLLHUP)) != 0) {
+      throw new SocketException(s"${op} poll failed, POLLERR or POLLHUP")
+    } else if ((revents & POLLNVAL) != 0) {
+      throw new SocketException(
+        s"${op} poll failed, invalid poll request: ${revents}"
+      )
+    } else if (((revents & POLLIN) | (revents & POLLOUT)) == 0) {
+      throw new SocketException(
+        s"${op} poll failed, neither POLLIN nor POLLOUT set, " +
+          s"revents, ${revents}"
+      )
+    }
+  }
+
+  override def tryPollOnConnect(fd: FileDescriptor, timeout: Int): Unit = {
+    val hasTimeout = timeout > 0
+    val deadline = if (hasTimeout) System.currentTimeMillis() + timeout else 0L
+    val nAlloc = 1.toUInt
+    val pollFd: Ptr[struct_pollfd] = stackalloc[struct_pollfd](nAlloc)
+
+    pollFd.fd = fd.fd
+    pollFd.revents = 0
+    pollFd.events = (POLLIN | POLLOUT).toShort
+
+    def failWithTimeout() = throw new SocketTimeoutException(
+      s"connect timed out, SO_TIMEOUT: ${timeout}"
+    )
+
+    @tailrec def loop(remainingTimeout: Int): Unit = {
+      val pollRes = poll(pollFd, nAlloc, remainingTimeout)
+      val revents = pollFd.revents
+
+      pollRes match {
+        case err if err < 0 =>
+          val errCode = errno
+          if (errCode == EINTR && hasTimeout) {
+            val remaining = deadline - System.currentTimeMillis()
+            if (remaining > 0) loop(remaining.toInt)
+            else failWithTimeout()
+          } else
+            throw new SocketException(s"connect failed, poll errno: $errCode")
+
+        case 0 => failWithTimeout()
+
+        case _ =>
+          if ((revents & POLLNVAL) != 0) {
+            val msg = s"connect failed, invalid poll request: ${revents}"
+            throw new ConnectException(msg)
+          } else if ((revents & (POLLIN | POLLHUP)) != 0) {
+            // Not enough information at this point to report remote host:port.
+            val msg = "Connection refused"
+            throw new ConnectException(msg)
+          } else if ((revents & POLLERR) != 0) { // an error was recognized.
+            val msg = s"connect failed, poll POLLERR: ${revents}"
+            throw new ConnectException(msg)
+          } // else should be POLLOUT - Open for Business, ignore XSI bits if set
+      }
+    }
+
+    try loop(timeout)
+    finally UnixNet.configureBlocking(fd, blocking = true)
+  }
+
+  override def tryPollOnAccept(fd: FileDescriptor, timeout: Int): Unit = {
+    val nAlloc = 1.toUInt
+    val pollFd: Ptr[struct_pollfd] = stackalloc[struct_pollfd](nAlloc)
+
+    pollFd.fd = fd.fd
+    pollFd.revents = 0
+    pollFd.events = POLLIN.toShort
+
+    val pollRes = poll(pollFd, nAlloc, timeout)
+    val revents = pollFd.revents
+
+    pollRes match {
+      case err if err < 0 =>
+        throw new SocketException(s"accept failed, poll errno: $errno")
+
+      case 0 =>
+        throw new SocketTimeoutException(
+          s"accept timed out, SO_TIMEOUT: ${timeout}"
+        )
+
+      case _ => // success, carry on
+    }
+
+    if (((revents & POLLERR) | (revents & POLLHUP)) != 0) {
+      throw new SocketException("Accept poll failed, POLLERR or POLLHUP")
+    } else if ((revents & POLLNVAL) != 0) {
+      throw new SocketException(
+        s"accept failed, invalid poll request: ${revents}"
+      )
+    } else if (((revents & POLLIN) | (revents & POLLOUT)) == 0) {
+      throw new SocketException(
+        "accept failed, neither POLLIN nor POLLOUT set, " +
+          s"revents, ${revents}"
+      )
     }
   }
 
