@@ -2,7 +2,7 @@ package org.scalanative.testsuite.javalib.lang
 
 import java.util.concurrent.TimeUnit
 import java.io._
-import java.nio.file.Files
+import java.nio.file._
 import java.nio.charset.StandardCharsets
 
 import scala.io.Source
@@ -345,6 +345,24 @@ class ProcessTest {
         .result(Future.sequence(tasks), iterations.seconds)
         .forall(_ == true)
     )
+  }
+
+  @Test def redirectOutputAccess() = {
+    // Regression test for com-lihaoyi/os-lib
+    val out = Paths.get("all.txt")
+    val catCmd = if (isWindows) "type" else "cat"
+    val proc = new ProcessBuilder(
+      (catCmd +:
+        Files
+          .list(Path.of("."))
+          .filter(_.getFileName().toString().endsWith(".txt"))
+          .toArray()
+          .map(_.toString())): _*
+    ).redirectOutput(out.toFile())
+      .start()
+
+    assertEquals(0, proc.waitFor())
+    assertNotNull(Files.readAllLines(out).toArray())
   }
 
 }

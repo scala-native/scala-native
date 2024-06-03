@@ -311,7 +311,11 @@ object UnixProcessGen1 {
   }
 
   @inline def open(f: File, flags: CInt) = Zone.acquire { implicit z =>
-    fcntl.open(toCString(f.getAbsolutePath()), flags, 0.toUInt) match {
+    def defaultCreateMode = 0x1a4.toUInt // 0644, no octal literal in Scala
+    val mode: CUnsignedInt =
+      if ((flags & fcntl.O_CREAT) != 0) defaultCreateMode
+      else 0.toUInt
+    fcntl.open(toCString(f.getAbsolutePath()), flags, mode) match {
       case -1 => throw new IOException(s"Unable to open file $f ($errno)")
       case fd => fd
     }
