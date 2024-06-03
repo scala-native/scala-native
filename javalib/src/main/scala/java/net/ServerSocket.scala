@@ -8,7 +8,7 @@ class ServerSocket(
     private var bindAddr: InetAddress
 ) extends Closeable {
 
-  private val impl = AbstractPlainSocketImpl()
+  private val impl = PlainSocketImpl()
 
   private var created = false
   private var bound = false

@@ -9,7 +9,6 @@ import java.util.Objects
 import scala.scalanative.meta.LinktimeInfo.isWindows
 import scala.scalanative.posix
 import scala.scalanative.posix.errno.{EAGAIN, EWOULDBLOCK, errno}
-import scala.scalanative.posix.netinet.in
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
 import scala.scalanative.windows.WinSocketApi.WSAGetLastError
@@ -48,7 +47,7 @@ class DatagramChannelImpl(family: ProtocolFamily, provider: SelectorProvider)
   override def bind(local: SocketAddress): DatagramChannel = {
     throwIfClosed()
     if (isBound) throw new AlreadyBoundException
-    Net.bind(fd, local)
+    Net.bind(fd, family, local)
     localAddress = Net.localAddress(fd, family)
     isBound = true
     this
@@ -61,10 +60,10 @@ class DatagramChannelImpl(family: ProtocolFamily, provider: SelectorProvider)
     throwIfClosed()
     if (isConnected()) throw new AlreadyConnectedException()
     if (!isBound) {
-      Net.bind(fd, null)
+      Net.bind(fd, family, null)
       isBound = true
     }
-    Net.connect(fd, remote)
+    Net.connect(fd, family, remote)
     remoteAddress = remote
     flushQueue()
     this
@@ -139,8 +138,8 @@ class DatagramChannelImpl(family: ProtocolFamily, provider: SelectorProvider)
     val cLen = length.toUInt
 
     val bytesSent = Zone.acquire { implicit z =>
-      val (sa, saLen) =
-        Net.prepareSockaddrIn(target.asInstanceOf[InetSocketAddress])
+      val isa = target.asInstanceOf[InetSocketAddress]
+      val (sa, saLen) = Net.prepareSockaddrIn(family, isa)
       var n = posix.sys.socket
         .sendto(
           fd.fd,

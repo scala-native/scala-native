@@ -23,25 +23,18 @@ import scala.scalanative.windows._
 import scala.scalanative.windows.WinSocketApi._
 import scala.scalanative.windows.WinSocketApiExt._
 
-private[net] abstract class AbstractPlainDatagramSocketImpl
-    extends DatagramSocketImpl {
-  import AbstractPlainDatagramSocketImpl._
-
-  protected def tryPoll(op: String): Unit
+private[net] class PlainDatagramSocketImpl extends DatagramSocketImpl {
+  import PlainDatagramSocketImpl._
 
   protected[net] var fd = new FileDescriptor
   protected[net] var localport = 0
-  protected[net] var address: InetAddress = _
-  protected[net] var port = 0
+  protected[net] var remoteAddress: SocketAddress = _
+  protected[net] var connectedAddress: SocketAddress = _
 
   protected[net] var socket: DatagramSocket = _
 
-  private final val useIPv4Only = SocketHelpers.getUseIPv4Stack()
-
+  private final val family = Net.getGaiHintsProtocolFamily()
   protected[net] var timeout = 0
-  protected[net] var connected = false
-  protected[net] var connectedAddress: InetAddress = _
-  protected[net] var connectedPort = -1
 
   override def getFileDescriptor(): FileDescriptor = fd
 
@@ -57,98 +50,13 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
   @inline private def throwIfClosed(methodName: String): Unit =
     if (isClosed) throw new SocketException(s"$methodName: Socket is closed")
 
-  private def throwCannotBind(addr: InetAddress): Nothing = {
-    throw new BindException(
-      "Couldn't bind to an address: " + addr.getHostAddress()
-    )
-  }
-
-  private def fetchLocalPort(family: Int): Option[Int] = {
-    val len = stackalloc[posix.sys.socket.socklen_t]()
-    val portOpt = if (family == posix.sys.socket.AF_INET) {
-      val sin = stackalloc[in.sockaddr_in]()
-      !len = sizeof[in.sockaddr_in].toUInt
-
-      if (posix.sys.socket.getsockname(
-            fd.fd,
-            sin.asInstanceOf[Ptr[posix.sys.socket.sockaddr]],
-            len
-          ) == -1) {
-        None
-      } else {
-        Some(sin.sin_port)
-      }
-    } else {
-      val sin = stackalloc[in.sockaddr_in6]()
-      !len = sizeof[in.sockaddr_in6].toUInt
-
-      if (posix.sys.socket.getsockname(
-            fd.fd,
-            sin.asInstanceOf[Ptr[posix.sys.socket.sockaddr]],
-            len
-          ) == -1) {
-        None
-      } else {
-        Some(sin.sin6_port)
-      }
-    }
-
-    portOpt.map(inet.ntohs(_).toInt)
-  }
-
-  private def bind4(addr: InetAddress, port: Int): Unit = {
-    val sa4 = stackalloc[in.sockaddr_in]()
-    val sa4Len = sizeof[in.sockaddr_in].toUInt
-    SocketHelpers.prepareSockaddrIn4(addr, port, sa4)
-
-    val bindRes = posix.sys.socket.bind(
-      fd.fd,
-      sa4.asInstanceOf[Ptr[posix.sys.socket.sockaddr]],
-      sa4Len
-    )
-
-    if (bindRes < 0) {
-      throwCannotBind(addr)
-    }
-
-    this.localport = fetchLocalPort(posix.sys.socket.AF_INET).getOrElse {
-      throwCannotBind(addr)
-    }
-  }
-
-  private def bind6(addr: InetAddress, port: Int): Unit = {
-    val sa6 = stackalloc[in.sockaddr_in6]()
-    val sa6Len = sizeof[in.sockaddr_in6].toUInt
-
-    // By contract, all the bytes in sa6 are zero going in.
-    SocketHelpers.prepareSockaddrIn6(addr, port, sa6)
-
-    val bindRes = posix.sys.socket.bind(
-      fd.fd,
-      sa6.asInstanceOf[Ptr[posix.sys.socket.sockaddr]],
-      sa6Len
-    )
-
-    if (bindRes < 0) {
-      throwCannotBind(addr)
-    }
-
-    this.localport = fetchLocalPort(sa6.sin6_family.toInt).getOrElse {
-      throwCannotBind(addr)
-    }
-  }
-
-  private lazy val bindFunc =
-    if (useIPv4Only) bind4(_: InetAddress, _: Int)
-    else bind6(_: InetAddress, _: Int)
-
   override def bind(port: Int, laddr: InetAddress): Unit = {
     throwIfClosed("bind")
-    bindFunc(laddr, port)
+    Net.bind(fd, family, new InetSocketAddress(laddr, port))
+    localport = Net.localAddress(fd, family).getPort
   }
 
   override def create(): Unit = {
-    val family = Net.getGaiHintsProtocolFamily()
     val s = Net.socket(family, stream = false)
 
     // enable broadcast by default
@@ -167,119 +75,41 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
     fd = s
   }
 
-  private def send4(p: DatagramPacket): Unit = {
-    val insAddr = p.getSocketAddress().asInstanceOf[InetSocketAddress]
-    val sa4 = stackalloc[in.sockaddr_in]()
-    val sa4Len = sizeof[in.sockaddr_in].toUInt
-    SocketHelpers.prepareSockaddrIn4(insAddr.getAddress, insAddr.getPort, sa4)
-
-    val buffer = p.getData()
-    val cArr = buffer.at(p.getOffset())
-    val len = p.getLength()
-    val ret = posix.sys.socket.sendto(
-      fd.fd,
-      cArr,
-      len.toUInt,
-      posix.sys.socket.MSG_NOSIGNAL,
-      sa4.asInstanceOf[Ptr[posix.sys.socket.sockaddr]],
-      sa4Len
-    )
-
-    if (ret < 0) {
-      throw new IOException("Could not send the datagram packet to the client")
-    }
-  }
-
-  private def send6(p: DatagramPacket): Unit = {
-    val insAddr = p.getSocketAddress().asInstanceOf[InetSocketAddress]
-    val sa6 = stackalloc[in.sockaddr_in6]()
-    val sa6Len = sizeof[in.sockaddr_in6].toUInt
-
-    // By contract, all the bytes in sa6 are zero going in.
-    SocketHelpers.prepareSockaddrIn6(insAddr.getAddress, insAddr.getPort, sa6)
-
-    val buffer = p.getData()
-    val cArr = buffer.at(p.getOffset())
-    val len = p.getLength()
-    val ret = posix.sys.socket.sendto(
-      fd.fd,
-      cArr,
-      len.toUInt,
-      posix.sys.socket.MSG_NOSIGNAL,
-      sa6.asInstanceOf[Ptr[posix.sys.socket.sockaddr]],
-      sa6Len
-    )
-    if (ret < 0) {
-      throw new IOException("Could not send the datagram packet to the client")
-    }
-  }
-
   override def send(p: DatagramPacket): Unit = {
     throwIfClosed("send")
-    if (useIPv4Only) send4(p)
-    else send6(p)
-  }
+    val insAddr = p.getSocketAddress().asInstanceOf[InetSocketAddress]
+    val ret = Zone.acquire { implicit z =>
+      val (sa, saLen) = Net.prepareSockaddrIn(family, insAddr)
 
-  private def connect4(address: InetAddress, port: Int): Unit = {
-    val sa4 = stackalloc[in.sockaddr_in]()
-    val sa4Len = sizeof[in.sockaddr_in].toUInt
-    SocketHelpers.prepareSockaddrIn4(address, port, sa4)
-
-    val connectRet = posix.sys.socket.connect(
-      fd.fd,
-      sa4.asInstanceOf[Ptr[posix.sys.socket.sockaddr]],
-      sa4Len
-    )
-
-    if (connectRet < 0) {
-      throw new ConnectException(
-        s"Could not connect to address: $address"
-          + s" on port: $port"
-          + s", errno: ${lastError()}"
+      val buffer = p.getData()
+      val cArr = buffer.at(p.getOffset())
+      val len = p.getLength()
+      posix.sys.socket.sendto(
+        fd.fd,
+        cArr,
+        len.toUInt,
+        posix.sys.socket.MSG_NOSIGNAL,
+        sa,
+        saLen
       )
     }
-  }
 
-  private def connect6(address: InetAddress, port: Int): Unit = {
-    val sa6 = stackalloc[in.sockaddr_in6]()
-    val sa6Len = sizeof[in.sockaddr_in6].toUInt
-
-    // By contract, all the bytes in sa6 are zero going in.
-    SocketHelpers.prepareSockaddrIn6(address, port, sa6)
-
-    val connectRet = posix.sys.socket.connect(
-      fd.fd,
-      sa6.asInstanceOf[Ptr[posix.sys.socket.sockaddr]],
-      sa6Len
-    )
-
-    if (connectRet < 0) {
-      throw new ConnectException(
-        s"Could not connect to address: $address"
-          + s" on port: $port"
-          + s", errno: ${lastError()}"
-      )
+    if (ret < 0) {
+      throw new IOException("Could not send the datagram packet to the client")
     }
   }
-
-  private lazy val connectFunc =
-    if (useIPv4Only) connect4(_: InetAddress, _: Int)
-    else connect6(_: InetAddress, _: Int)
 
   override def connect(address: InetAddress, port: Int): Unit = {
     throwIfClosed("connect")
-    connectFunc(address, port)
-    connectedAddress = address
-    connectedPort = port
-    connected = true
+    val sa = new InetSocketAddress(address, port)
+    Net.connect(fd, family, sa)
+    connectedAddress = sa
   }
 
   override def disconnect(): Unit = {
     throwIfClosed("disconnect")
-    connectFunc(SocketHelpers.getWildcardAddress(), 0)
+    Net.disconnect(fd)
     connectedAddress = null
-    connectedPort = -1
-    connected = false
   }
 
   override def close(): Unit = {
@@ -292,8 +122,7 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
   }
 
   private def recvfrom(p: DatagramPacket, flag: CInt, op: String): Unit = {
-    if (timeout > 0)
-      tryPoll(op)
+    if (timeout > 0) Net.tryPoll(fd, timeout, op)
 
     val storage = stackalloc[posix.sys.socket.sockaddr_storage]()
     val destAddr = storage.asInstanceOf[Ptr[posix.sys.socket.sockaddr]]
@@ -360,7 +189,8 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
     }
     val level = in.IPPROTO_IP
     val optValue =
-      if (useIPv4Only) ip.IP_MULTICAST_TTL else ip6.IPV6_MULTICAST_HOPS
+      if (family == StandardProtocolFamily.INET) ip.IP_MULTICAST_TTL
+      else ip6.IPV6_MULTICAST_HOPS
     val opt = stackalloc[CInt]()
     val len = sizeof[CInt].toUInt
     !opt = ttl
@@ -384,7 +214,8 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
     }
     val level = in.IPPROTO_IP
     val optValue =
-      if (useIPv4Only) ip.IP_MULTICAST_TTL else ip6.IPV6_MULTICAST_HOPS
+      if (family == StandardProtocolFamily.INET) ip.IP_MULTICAST_TTL
+      else ip6.IPV6_MULTICAST_HOPS
     val opt = stackalloc[CInt]()
     val len = stackalloc[posix.sys.socket.socklen_t]()
     !len = sizeof[CInt].toUInt
@@ -406,16 +237,12 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
 
   override def join(inetaddr: InetAddress): Unit = {
     throwIfClosed("join")
-    if (useIPv4Only)
-      Net.join(fd, StandardProtocolFamily.INET, inetaddr, null, null)
-    else Net.join(fd, StandardProtocolFamily.INET6, inetaddr, null, null)
+    Net.join(fd, family, inetaddr, null, null)
   }
 
   override def leave(inetaddr: InetAddress): Unit = {
     throwIfClosed("leave")
-    if (useIPv4Only)
-      Net.drop(fd, StandardProtocolFamily.INET, inetaddr, null, null)
-    else Net.drop(fd, StandardProtocolFamily.INET6, inetaddr, null, null)
+    Net.drop(fd, family, inetaddr, null, null)
   }
 
   override def joinGroup(
@@ -426,9 +253,7 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
     mcastaddr match {
       case inetaddr: InetSocketAddress =>
         val addr = inetaddr.getAddress
-        if (useIPv4Only)
-          Net.join(fd, StandardProtocolFamily.INET, addr, null, null)
-        else Net.join(fd, StandardProtocolFamily.INET6, addr, null, null)
+        Net.join(fd, family, addr, null, null)
       case _ =>
         throw new IllegalArgumentException("Unsupported address type")
     }
@@ -442,9 +267,7 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
     mcastaddr match {
       case inetaddr: InetSocketAddress =>
         val addr = inetaddr.getAddress
-        if (useIPv4Only)
-          Net.drop(fd, StandardProtocolFamily.INET, addr, null, null)
-        else Net.drop(fd, StandardProtocolFamily.INET6, addr, null, null)
+        Net.drop(fd, family, addr, null, null)
       case _ =>
         throw new IllegalArgumentException("Unsupported address type")
     }
@@ -590,13 +413,7 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
 
 }
 
-private[net] object AbstractPlainDatagramSocketImpl {
+private[net] object PlainDatagramSocketImpl {
   final val InvalidSocketDescriptor = new FileDescriptor()
-
-  def apply(): AbstractPlainDatagramSocketImpl = {
-    if (isWindows)
-      new WindowsPlainDatagramSocketImpl()
-    else
-      new UnixPlainDatagramSocketImpl()
-  }
+  def apply(): PlainDatagramSocketImpl = new PlainDatagramSocketImpl()
 }
