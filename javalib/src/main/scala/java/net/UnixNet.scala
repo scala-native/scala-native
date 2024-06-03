@@ -18,7 +18,7 @@ import scala.scalanative.posix.unistd
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
 
-object UnixNet extends Net {
+private[net] object UnixNet extends Net {
 
   private val jInteger = classOf[java.lang.Integer]
   private val jBoolean = classOf[java.lang.Boolean]

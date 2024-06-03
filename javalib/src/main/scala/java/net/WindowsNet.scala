@@ -15,7 +15,7 @@ import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
 import scala.scalanative.windows._
 
-object WindowsNet extends Net {
+private[net] object WindowsNet extends Net {
   import WinSocketApi._
   import WinSocketApiExt._
   import WinSocketApiOps._
