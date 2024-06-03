@@ -351,7 +351,7 @@ class ProcessTest {
     // Regression test for com-lihaoyi/os-lib
     val out = Paths.get("all.txt")
     val catCmd =
-      if (scala.util.Properties.isWin) List(".EXCMDE", "/C", "type")
+      if (scala.util.Properties.isWin) List("cmd", "/c", "type")
       else List("cat")
     val proc = new ProcessBuilder(
       (catCmd ++
