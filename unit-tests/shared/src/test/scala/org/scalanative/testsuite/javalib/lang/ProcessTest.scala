@@ -356,7 +356,7 @@ class ProcessTest {
     val proc = new ProcessBuilder(
       (catCmd ++
         Files
-          .list(Path.of("."))
+          .list(Paths.get("."))
           .filter(_.getFileName().toString().endsWith(".txt"))
           .toArray()
           .map(_.toString())): _*
