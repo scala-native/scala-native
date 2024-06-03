@@ -350,9 +350,11 @@ class ProcessTest {
   @Test def redirectOutputAccess() = {
     // Regression test for com-lihaoyi/os-lib
     val out = Paths.get("all.txt")
-    val catCmd = if (isWindows) "type" else "cat"
+    val catCmd =
+      if (scala.util.Properties.isWin) List(".EXCMDE", "/C", "type")
+      else List("cat")
     val proc = new ProcessBuilder(
-      (catCmd +:
+      (catCmd ++
         Files
           .list(Path.of("."))
           .filter(_.getFileName().toString().endsWith(".txt"))
