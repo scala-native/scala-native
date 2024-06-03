@@ -9,7 +9,7 @@ import scala.scalanative.posix.sys.socketOps._
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
 
-trait Net {
+private[java] trait Net {
   import Net._
 
   def POLLIN: Int
@@ -222,7 +222,7 @@ trait Net {
 
 }
 
-object Net extends Net {
+private[java] object Net extends Net {
 
   private val JInteger = classOf[java.lang.Integer]
   private val JBoolean = classOf[java.lang.Boolean]
