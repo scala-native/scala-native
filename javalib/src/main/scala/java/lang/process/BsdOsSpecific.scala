@@ -89,7 +89,7 @@ object BsdOsSpecific {
   object Extern {
     def kqueue(): CInt = extern
 
-    def kevent(
+    @blocking def kevent(
         kq: CInt,
         changelist: Ptr[kevent],
         nchanges: CInt,
@@ -98,7 +98,7 @@ object BsdOsSpecific {
         timeout: Ptr[timespec]
     ): CInt = extern
 
-    def kevent64(
+    @blocking def kevent64(
         kq: CInt,
         changelist: Ptr[kevent64_s],
         nchanges: CInt,
