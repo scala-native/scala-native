@@ -121,6 +121,7 @@ class DatagramChannelImpl(family: ProtocolFamily, provider: SelectorProvider)
 
   override def receive(dst: ByteBuffer): SocketAddress = {
     throwIfClosed()
+    if (!isBound) bind(null)
     val (_, source) = recvfrom(dst, 0, "receive")
     source
   }
