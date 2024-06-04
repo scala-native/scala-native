@@ -2011,6 +2011,25 @@ class FilesTest {
     }
   }
 
+  @Test def moveBrokenSymlink(): Unit = {
+    assumeShouldTestSymlinks()
+    withTemporaryDirectory { dirFile =>
+      val dir = dirFile.toPath
+      val symlink = Files.createSymbolicLink(
+        dir.resolve("broken-abs-symlink-1"),
+        Paths.get("/does/not/exist")
+      )
+      val outputDir = Files.createDirectory(dir.resolve("inner-dir"))
+      assertTrue(
+        Files.exists(
+          Files.move(symlink, outputDir.resolve(symlink.getFileName())),
+          LinkOption.NOFOLLOW_LINKS
+        )
+      )
+      assertFalse(Files.exists(symlink, LinkOption.NOFOLLOW_LINKS))
+    }
+  }
+
   @Test def filesSetAttributeCanSetLastModifiedTime(): Unit = {
     withTemporaryDirectory { dirFile =>
       val dir = dirFile.toPath()
