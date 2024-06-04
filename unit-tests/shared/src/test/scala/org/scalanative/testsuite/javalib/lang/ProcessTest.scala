@@ -349,22 +349,26 @@ class ProcessTest {
 
   @Test def redirectOutputAccess() = {
     // Regression test for com-lihaoyi/os-lib
-    val out = Paths.get("all.txt")
-    val catCmd =
-      if (scala.util.Properties.isWin) List("cmd", "/c", "type")
-      else List("cat")
-    val proc = new ProcessBuilder(
-      (catCmd ++
-        Files
-          .list(Paths.get("."))
-          .filter(_.getFileName().toString().endsWith(".txt"))
-          .toArray()
-          .map(_.toString())): _*
-    ).redirectOutput(out.toFile())
+    val dir = Files.createTempDirectory("test-")
+    val out = dir.resolve("all.txt")
+    Files.write(dir.resolve("empty.txt"), "".getBytes())
+    Files.write(dir.resolve("foo.txt"), "foo".getBytes())
+    val files = Files
+      .list(dir)
+      .filter(_.getFileName().toString().endsWith(".txt"))
+      .toArray()
+      .map(_.toString())
+    val cmd = if (scala.util.Properties.isWin) "type" else "cat"
+    val proc = processForCommand((cmd +: files): _*)
+      .redirectOutput(out.toFile())
       .start()
 
-    assertEquals(0, proc.waitFor())
-    assertNotNull(Files.readAllLines(out).toArray())
+    assertEquals(
+      s"stderr='${readInputStream(proc.getErrorStream())}'",
+      0,
+      proc.waitFor()
+    )
+    assertEquals("foo", Files.readAllLines(out).toArray().mkString)
   }
 
 }
