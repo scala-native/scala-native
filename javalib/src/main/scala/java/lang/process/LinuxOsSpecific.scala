@@ -25,7 +25,7 @@ object LinuxOsSpecific {
     @name("scalanative_linux_pidfd_open")
     def pidfd_open(pid: pid_t, flags: CUnsignedInt): CInt = extern
 
-    def ppoll(
+    @blocking def ppoll(
         fds: Ptr[struct_pollfd],
         nfds: nfds_t,
         tmo_p: Ptr[timespec],
