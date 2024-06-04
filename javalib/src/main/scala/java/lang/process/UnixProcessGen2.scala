@@ -22,7 +22,7 @@ import scalanative.meta.LinktimeInfo
 
 import scalanative.unsafe._
 import scalanative.unsigned._
-import scalanative.posix.{errno => pe}, pe.errno, pe.ENOEXEC, pe.EINTR
+import scalanative.posix.errno._
 import scalanative.posix.fcntl
 
 import scalanative.posix.poll._
@@ -75,9 +75,8 @@ private[lang] class UnixProcessGen2 private (
 
   override def getOutputStream(): OutputStream = _outputStream
 
-  override def isAlive(): scala.Boolean = synchronized {
-    waitpidImpl(pid, options = WNOHANG) == 0
-  }
+  override def isAlive(): scala.Boolean =
+    _exitValue.isDefined || waitpidImpl(pid, options = WNOHANG) == 0
 
   override def toString = { // Match JVM output
     val ev = _exitValue.fold("not exited")(_.toString())
@@ -161,6 +160,7 @@ private[lang] class UnixProcessGen2 private (
     val waitStatus = waitpid(pid, wstatus, options)
 
     if (waitStatus == -1) {
+      if (errno == EINTR) throw new InterruptedException()
       val msg = s"waitpid failed: ${fromCString(strerror(errno))}"
       throw new IOException(msg)
     } else if (waitStatus > 0) {
@@ -284,7 +284,7 @@ private[lang] class UnixProcessGen2 private (
     if (ppollStatus < 0) {
       // handled in the caller
       if (errno == EINTR) throw new InterruptedException()
-      else throw new IOException(s"ppoll failed: ${errno}")
+      throw new IOException(s"wait pid=${pid}, ppoll failed: ${errno}")
     } else if (ppollStatus == 0) {
       None
     } else {
@@ -314,8 +314,10 @@ private[lang] class UnixProcessGen2 private (
     val kq = kqueue()
 
     if (kq == -1) {
-      val msg = s"kqueue failed: ${fromCString(strerror(errno))}"
-      throw new IOException(msg)
+      if (errno == EINTR) throw new InterruptedException()
+      throw new IOException(
+        s"wait pid=${pid} kqueue failed: ${fromCString(strerror(errno))}"
+      )
     }
 
     /* Some Scala non-idiomatic slight of hand is going on here to
@@ -354,10 +356,10 @@ private[lang] class UnixProcessGen2 private (
     unistd.close(kq) // Do not leak kq.
 
     if (status < 0) {
-      if (status == EINTR)
-        throw new InterruptedException()
-      else
-        throw new IOException(s"kevent failed: ${fromCString(strerror(errno))}")
+      if (errno == EINTR) throw new InterruptedException()
+      throw new IOException(
+        s"wait pid=${pid}, kevent failed: ${fromCString(strerror(errno))}"
+      )
     } else if (status == 0) {
       None
     } else {
