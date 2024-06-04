@@ -19,16 +19,11 @@ sealed abstract class Mode private (val name: String) {
 }
 object Mode {
   private[scalanative] case object Debug extends Mode("debug")
-  private[scalanative] sealed trait Release
-  private[scalanative] case object ReleaseFast
-      extends Mode("release-fast")
-      with Release
-  private[scalanative] case object ReleaseSize
-      extends Mode("release-size")
-      with Release
-  private[scalanative] case object ReleaseFull
-      extends Mode("release-full")
-      with Release
+  private[scalanative] sealed abstract class Release(name: String)
+      extends Mode(name)
+  private[scalanative] case object ReleaseFast extends Release("release-fast")
+  private[scalanative] case object ReleaseSize extends Release("release-size")
+  private[scalanative] case object ReleaseFull extends Release("release-full")
 
   /** Debug compilation mode. */
   def debug: Mode = Debug

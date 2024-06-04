@@ -40,6 +40,7 @@ object ScalaVersions {
 
   // The latest version of minimal Scala 3 minor version used to publish artifacts
   val scala3PublishVersion = "3.1.3"
+  val scala213PublishVersion = crossScala213.head
 
   // List of nightly version can be found here: https://repo1.maven.org/maven2/org/scala-lang/scala3-compiler_3/
   val scala3Nightly = "3.4.0-RC1-bin-20240114-bfabc31-NIGHTLY"

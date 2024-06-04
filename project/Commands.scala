@@ -185,7 +185,8 @@ object Commands {
       case (binVersion, state) =>
         val (scalaVersion, crossScalaVersions) = binVersion match {
           case "2.12" => ScalaVersions.scala212 -> ScalaVersions.crossScala212
-          case "2.13" => ScalaVersions.scala213 -> ScalaVersions.crossScala213
+          case "2.13" =>
+            ScalaVersions.scala213PublishVersion -> ScalaVersions.crossScala213
           case "3" =>
             ScalaVersions.scala3PublishVersion -> ScalaVersions.crossScala3
           case _ => sys.error(s"Invalid Scala binary version: '$binVersion'")
