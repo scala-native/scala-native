@@ -151,7 +151,7 @@ private[stream] class StreamImpl[T](
     this
   }
 
-  def spliterator(): Spliterator[_ <: T] = {
+  def spliterator(): Spliterator[T] = {
     commenceOperation()
     _spliter
   }
