@@ -76,7 +76,7 @@ private[lang] class UnixProcessGen2 private (
   override def getOutputStream(): OutputStream = _outputStream
 
   override def isAlive(): scala.Boolean =
-    _exitValue.isDefined || waitpidImpl(pid, options = WNOHANG) == 0
+    _exitValue.isEmpty && waitpidImpl(pid, options = WNOHANG) == 0
 
   override def toString = { // Match JVM output
     val ev = _exitValue.fold("not exited")(_.toString())
