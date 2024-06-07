@@ -299,20 +299,10 @@ class ProcessTest {
         proc.waitFor(timeout, TimeUnit.SECONDS)
       )
 
-      /* Allow the OS to release the exited process, so that the pid is
-       * really invalid.
-       *
-       * Also acts as a double check that OS thinks the process has exited.
-       * Knowing that the exitValue is as-expected is a second useful
-       * by-product.
-       */
-
-      assertEquals(0, proc.exitValue)
-
-      /* OS Process id should be truly invalid at this point, so
-       * operating system waitfor() call will return an error if it
-       * is ever called. Can javalib either prevent the call or
-       * handle the error?
+      /* DO NOT do the usual & expected 'assertEquals(0, proc.exitValue)' here.
+       * That would set the internal cached exitValue. Not doing that
+       * call here allows checking if waitFor() is caching that value
+       * to protect itself against a second call.
        */
 
       assertTrue(
