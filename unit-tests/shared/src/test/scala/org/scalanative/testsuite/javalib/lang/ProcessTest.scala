@@ -152,7 +152,7 @@ class ProcessTest {
   }
 
   // PR #3950
-  // @Ignore
+  @Ignore
   @Test def isAliveIsReliable(): Unit = {
     /* Exercise both expected Boolean conditions.
      *
