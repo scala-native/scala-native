@@ -10,6 +10,7 @@ import scala.io.Source
 import org.junit.Test
 import org.junit.Assert._
 import org.junit.Assume._
+import org.junit.Ignore
 
 import org.scalanative.testsuite.utils.Platform, Platform._
 import scala.scalanative.junit.utils.AssumesHelper._
@@ -150,9 +151,48 @@ class ProcessTest {
     assertEquals("foobar", readInputStream(proc.getInputStream))
   }
 
+  // PR #3950
+  // @Ignore
+  @Test def isAliveIsReliable(): Unit = {
+    /* Exercise both expected Boolean conditions.
+     *
+     * This is an advanced test for javalib developers.
+     * It is @Ignore'd in normal CI because it introduces a perceptible
+     * pause. This is needed to ensure that the process is still alive
+     * when the first isAlive() is executed.
+     *
+     * Cutting this pause down to milliseconds risks false failures on
+     * heavily loaded systems. Pick your druthers, Life is short!
+     */
+
+    val proc = processSleep(5.0).start()
+
+    assertTrue("process should be alive", proc.isAlive)
+
+    try {
+      val timeout = 30
+      assertTrue(
+        s"process should have exited but timed out (limit: ${timeout} seconds)",
+        proc.waitFor(timeout, TimeUnit.SECONDS)
+      )
+
+      assertFalse("process should have exited", proc.isAlive)
+
+      assertEquals(0, proc.exitValue)
+
+      assertFalse(
+        "isAlive should be robust to second call after process exit",
+        proc.isAlive
+      )
+
+    } finally {
+      proc.destroyForcibly() // Let OS eliminate any child process still alive.
+    }
+  }
+
   // Issue 3452
   @Test def waitForReturnsExitCode(): Unit = {
-    /* This test neither robust nor CI friendly.
+    /* This test is neither robust nor CI friendly.
      * A buggy implementation of waitFor(pid) and/or of processSleep()
      * could cause it to hang forever.
      *
@@ -238,6 +278,51 @@ class ProcessTest {
     // hanging processes to exit.
     if (!proc.waitFor(10, TimeUnit.SECONDS))
       proc.destroyForcibly()
+  }
+
+  // Defensive code for Issue #3944
+  @Test def waitForWithTimeoutIsRobustAfterProcessExit(): Unit = {
+    /* Check that waitFor(timeout) can safely be called more than once after a
+     * process exits. Both waitFor(timout) calls will probably return
+     * immediatly.
+     *
+     * The idea is to exercise the internals of the second call. How does it
+     * respond to a now invalid process id.
+     */
+
+    val proc = processSleep(0.1).start()
+
+    try {
+      val timeout = 30
+      assertTrue(
+        s"process should have exited but timed out (limit: ${timeout} seconds)",
+        proc.waitFor(timeout, TimeUnit.SECONDS)
+      )
+
+      /* Allow the OS to release the exited process, so that the pid is
+       * really invalid.
+       *
+       * Also acts as a double check that OS thinks the process has exited.
+       * Knowing that the exitValue is as-expected is a second useful
+       * by-product.
+       */
+
+      assertEquals(0, proc.exitValue)
+
+      /* OS Process id should be truly invalid at this point, so
+       * operating system waitfor() call will return an error if it
+       * is ever called. Can javalib either prevent the call or
+       * handle the error?
+       */
+
+      assertTrue(
+        s"Second waitFor after procees exit should be robust.)",
+        proc.waitFor(timeout, TimeUnit.SECONDS)
+      )
+
+    } finally {
+      proc.destroyForcibly() // Let OS eliminate any child process still alive.
+    }
   }
 
   private def processForDestruction(): Process = {
