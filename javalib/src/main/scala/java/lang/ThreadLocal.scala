@@ -289,6 +289,7 @@ object ThreadLocal {
       // Continue search.
       index = next(index)
       while (true) {
+        // println(index)
         val reference = table(index)
         if (reference eq key.reference) return table(index + 1)
         // If no entry was found...

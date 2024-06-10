@@ -26,6 +26,18 @@ object ThreadLocalTest {
 class ThreadLocalTest extends JSR166Test {
   import ThreadLocalTest._
 
+  @Test def testFoo(): Unit = {
+    var i = 0
+    while (i < 1024) {
+      val tl = new ThreadLocal[String]() {
+        override def initialValue: String = "foo"
+      }
+      assertSame(tl.get(), "foo")
+      println("ok")
+      i += 1
+    }
+  }
+
   /** remove causes next access to return initial value
    */
   @Test def testRemove(): Unit = {
