@@ -95,24 +95,30 @@ private[lang] class UnixProcessGen2 private (
     }
   }
 
-  override def waitFor(timeout: scala.Long, unit: TimeUnit): scala.Boolean = {
+  override def waitFor(
+      timeoutArg: scala.Long,
+      unit: TimeUnit
+  ): scala.Boolean = {
+    // Java allows negative timeouts. Simplify timeout math; treat them as 0.
+    val timeout = Math.max(timeoutArg, 0L)
+
     val deadline = System.nanoTime() + unit.toNanos(timeout)
     synchronized {
       // avoid wait-after-wait complexity
       _exitValue // avoid wait-after-wait complexity
         .orElse {
           // wait until process exits or times out.
-          val tv = stackalloc[timespec]()
-          fillTimeval(timeout, unit, tv)
+          val ts = stackalloc[timespec]()
+          fillTimespec(timeout, unit, ts)
           def waitWithRepeat(): Option[Int] = {
-            try osWaitForImpl(Some(tv))
+            try osWaitForImpl(Some(ts))
             catch {
               case _: InterruptedException
                   if !Thread.currentThread().isInterrupted() =>
                 deadline - System.nanoTime() match {
                   case remaining if remaining < 0 => None
                   case remainingNanos =>
-                    fillTimeval(remainingNanos, TimeUnit.NANOSECONDS, tv)
+                    fillTimespec(remainingNanos, TimeUnit.NANOSECONDS, ts)
                     waitWithRepeat()
                 }
             }
@@ -207,17 +213,13 @@ private[lang] class UnixProcessGen2 private (
     _outputStream.close()
   }
 
-  // corral handling timevalue conversion details, fill tv.
-  private def fillTimeval(
+  // corral handling timevalue conversion details, fill ts.
+  private def fillTimespec(
       timeout: scala.Long,
       unit: TimeUnit,
-      tv: Ptr[timespec]
+      ts: Ptr[timespec]
   ): Unit = {
-    if (timeout < 0) {
-      throw new Exception(
-        s"invalid negative timeout: value: ${timeout} unit: ${unit}"
-      )
-    }
+    // Precondition: caller has ensured that timeout >= 0.
 
     /* The longest representation the C structure will accommodate is
      * java.lang.Long.MAX_VALUE seconds and 999,999 nanos.
@@ -230,10 +232,60 @@ private[lang] class UnixProcessGen2 private (
      * and 0 nanos. Perhaps during that time a better solution will be found.
      */
 
-    val seconds = unit.toSeconds(timeout)
+    /* Arguments 'timeout: scala.Long' and 'unit: TimeUnit' allow a greater
+     * range of values than the underlying operating data structure:
+     * C struct timespec. 'timespec' allows only java.lang.Long.MAX_VALUE
+     * seconds and 999,999,999 nanos. Note the restriction on the range
+     * of nanoseconds.
+     *
+     * TimeUnits of TimeUnit.SECOND or larger will always have zero
+     * nanoseconds. Some combinations of timeout and unit will
+     * saturate (overflow) the timspec.tv_sec field.
+     * Consider: java.lang.Long.MAX_VALUE and TimeUnit.DAYS.
+     *
+     * TimeUnits smaller than TimeUnit.SECOND may have  effective
+     * tv nanoseconds. Consider: 1999 and TimeUnit.MILLISECONDS.
+     * The operating system(s) require the timespec to be normalized.
+     * That is, the tv_nsec field must be between 0 and 999,999,999.
+     * That is, represent less than a second, full seconds go into the
+     * tv_sec field.
+     *
+     * The math below is more complicated that the 'usual' algorithm
+     * one might expect because it accounts for saturation and normalization.
+     * NOT:
+     *  tv.tv_nsec =
+     *      (unit.toNanos(timeout) - TimeUnit.SECONDS.toNanos(seconds)).toSize
+     */
 
-    tv.tv_sec = seconds.toSize
-    tv.tv_nsec = (unit.toNanos(timeout) - unit.toNanos(seconds)).toSize
+    ts.tv_sec = unit.toSeconds(timeout).toSize
+
+    /* To the devo or reviewer reading the code down the line and asking
+     * "These are known compile time constants, why not use 1_000 and such?".
+     *
+     * SN currently supports Scala 2.12, which does not allow underscores
+     * in numeric literals: 1_000. Scala versions 2.13 and above do.
+     * The complier should optimize the math of the constants at compile time
+     * but the code looks strange.
+     *
+     * If there is a reason to touch this code once Scala 2.12 is no longer
+     * supported, the literals with underbars expected by contemporary
+     * eyes can be introduced.
+     */
+
+    ts.tv_nsec = {
+      val modulus = unit match {
+        case _ if (unit == TimeUnit.MILLISECONDS) =>
+          1000L
+        case _ if (unit == TimeUnit.MICROSECONDS) =>
+          1000L * 1000
+        case _ if (unit == TimeUnit.NANOSECONDS) =>
+          1000L * 1000 * 1000
+        case _ => 1L // For all i: Int, (i % 1) == 0, which propagates thru.
+      }
+
+      unit.toNanos(timeout % modulus).toSize
+
+    }
   }
 
   // Returns: Some(exitCode) if process has exited, None if timeout.
@@ -253,14 +305,7 @@ private[lang] class UnixProcessGen2 private (
    *     Returns: Some(exitCode) if process has exited, None if timeout.
    */
   private def linuxWaitForImpl(timeout: Option[Ptr[timespec]]): Option[Int] = {
-    /* Design Note:
-     *     This first implementation uses ppoll() because it gets the job
-     *     done and there are fewer SN ecosystem changes to implement.
-     *
-     *     A future evolution could use epoll(). Since only one fd is involved
-     *     I doubt that there is any execution speedup. It would be sweet
-     *     though.
-     */
+    // epoll() is not used in this method since only one fd is involved.
 
     // close-on-exec is automatically set on the pidFd.
     val pidFd = pidfd_open(pid, 0.toUInt)
@@ -284,7 +329,9 @@ private[lang] class UnixProcessGen2 private (
     if (ppollStatus < 0) {
       // handled in the caller
       if (errno == EINTR) throw new InterruptedException()
-      throw new IOException(s"wait pid=${pid}, ppoll failed: ${errno}")
+      throw new IOException(
+        s"waitFor pid=${pid}, ppoll failed: ${fromCString(strerror(errno))}"
+      )
     } else if (ppollStatus == 0) {
       None
     } else {
@@ -316,7 +363,7 @@ private[lang] class UnixProcessGen2 private (
     if (kq == -1) {
       if (errno == EINTR) throw new InterruptedException()
       throw new IOException(
-        s"wait pid=${pid} kqueue failed: ${fromCString(strerror(errno))}"
+        s"waitFor pid=${pid} kqueue failed: ${fromCString(strerror(errno))}"
       )
     }
 
