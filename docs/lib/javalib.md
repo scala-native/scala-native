@@ -10,14 +10,14 @@ For list of currently supported Java Standard Library types and methods refer to
 ## Regular expressions (java.util.regex)
 
 Scala Native implements `java.util.regex`-compatible API
-using [Google\'s RE2 library](https://github.com/google/re2). RE2 is not
+using [Google's RE2 library](https://github.com/google/re2). RE2 is not
 a drop-in replacement for `java.util.regex` but handles most
 common cases well.
 
 Some notes on the implementation:
 
 1.  The included RE2 implements a Unicode version lower than the version
-    used in the Scala Native Character class (\>= 7.0.0). The RE2
+    used in the Scala Native Character class (>= 7.0.0). The RE2
     Unicode version is in the 6.n range. For reference, Java 8 released
     with Unicode 6.2.0.
 
@@ -61,7 +61,7 @@ Some notes on the implementation:
 3.  The reference Java 8 regex package does not support certain commonly
     used Perl expressions supported by this implementation of RE2. For
     example, for named capture groups Java uses the expression
-    \"(?\<foo\>)\" while Perl uses the expression \"(?P\<foo\>)\".
+    `(?<foo>)` while Perl uses the expression `(?P<foo>)`.
 
     Scala Native java.util.regex methods accept both forms. This
     extension is intended to useful but is not strictly Java 8
@@ -69,31 +69,27 @@ Some notes on the implementation:
 
 4.  The following Matcher methods have a minimal implementation:
 
-    -   Matcher.hasAnchoringBounds() - always return true.
+    -   `Matcher.hasAnchoringBounds()` - always return true.
 
-    -   Matcher.hasTransparentBounds() - always throws
-        UnsupportedOperationException because RE2 does not support
+    -   `Matcher.hasTransparentBounds()` - always throws
+        `UnsupportedOperationException` because RE2 does not support
         lookaheads.
 
-    -   Matcher.hitEnd() - always throws UnsupportedOperationException.
+    -   `Matcher.hitEnd()` - always throws `UnsupportedOperationException`.
 
-    -   Matcher.region(int, int)
+    -   `Matcher.region(int, int)`
 
-    -   Matcher.regionEnd()
+    -   `Matcher.regionEnd()`
 
-    -   Matcher.regionStart()
+    -   `Matcher.regionStart()`
 
-    -   Matcher.requireEnd() - always throws
-        UnsupportedOperationException.
+    -   `Matcher.requireEnd()` - always throws
+        `UnsupportedOperationException`.
 
-    -   
+    -   `Matcher.useAnchoringBounds(boolean)` - always throws `UnsupportedOperationException`
 
-        Matcher.useAnchoringBounds(boolean) - always throws
-
-        :   UnsupportedOperationException
-
-    -   Matcher.useTransparentBounds(boolean) - always throws
-        UnsupportedOperationException because RE2 does not support
+    -   `Matcher.useTransparentBounds(boolean)` - always throws
+        `UnsupportedOperationException` because RE2 does not support
         lookaheads.
 
 5.  Scala Native 0.3.8 required POSIX patterns to have the form
@@ -120,7 +116,7 @@ resulting binary file.
 
 Also, you can specify which resources would be embedded in an executable
 using include or exclude glob pattern. By default, scala-native will
-include all the files in the classpath, and exclude none (there\'re some
+include all the files in the classpath, and exclude none (there're some
 exceptions for files such as `.class`, see below). By specifying the
 include patterns, only the files matching the include patterns will be
 included. This can be useful for reducing the size of your executables.
@@ -136,7 +132,7 @@ nativeConfig ~= {
 }
 ```
 
-Also, note that this featuer is using Java\'s PathMatcher, which behave
+Also, note that this featuer is using Java's PathMatcher, which behave
 a bit different from the posix glob.
 <https://docs.oracle.com/javase/tutorial/essential/io/find.html>
 
@@ -148,17 +144,17 @@ used as a resource:
 This is to avoid unnecesarily embedding source files. If necessary,
 please consider using a different file extension for embedding. Files
 found in the `resources/scala-native` directory will not be embedded as
-well. It is recommended to add the \".c\" and \".h\" files there.
+well. It is recommended to add the ".c" and ".h" files there.
 
 Reasoning for the lack of `getResource()` and `getResources()`:
 
 In Scala Native, the outputted file that can be run is a binary, unlike
-JVM\'s classfiles and jars. For that reason, if `getResources()` URI
+JVM's classfiles and jars. For that reason, if `getResources()` URI
 methods would be implemented, a new URI format using a seperate
 FileSystem would have to be added (e.g. instead of obtaining
 `jar:file:path.ext` you would obtain `embedded:path.ext`). As this still
-would provide a meaningful inconsistency between JVM\'s javalib API and
-Scala Native\'s reimplementation, this remains not implemented for now.
+would provide a meaningful inconsistency between JVM's javalib API and
+Scala Native's reimplementation, this remains not implemented for now.
 The added `getClass().getResourceAsInputStream()` however is able to be
 consistent between the platforms.
 
@@ -192,6 +188,7 @@ network is first used.
 
         System.setProperty("java.net.preferIPv6Addresses", "true")
 
+(service_providers)=
 ## Support for discovering service providers
 
 Scala Native implements partial support for using the Java service
@@ -205,11 +202,11 @@ discover implementations of services using
 `META-INF/services/<fully-qualified-class-name>` files found in
 resources of dependencies.
 
-The example in \"Step 2\" below provides a custom
+The example in "Step 2" below provides a custom
 `java.nio.file.spi.FileSystemProvider` implementation called
 `my.lib.MyCustomFileSystem`.
 
-To use the custom implementation, the project\'s
+To use the custom implementation, the project's
 `<projectRoot>/src/main/resources/META-INF/services/` directory must
 contain a file called `java.nio.file.spi.FileSystemProvider`.
 
@@ -222,13 +219,13 @@ additional configuration. This allows loading only implementations
 requested in the provided configuration.
 
 A snippet to configure one local implementation for
-\"java.nio.file.spi.FileSystemProvider\" and two for \"MyServiceName\"
+"java.nio.file.spi.FileSystemProvider" and two for "MyServiceName"
 looks like:
 
 ``` scala
 /* The project defines a Map in a .sbt or .scala file. The Map
  * is then used to configure the available providers.
- *      
+ *
  * The entries of this map have the general form:
  *  "<ServiceName>" -> Seq("<ServiceProviderClassName>")
  *

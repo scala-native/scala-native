@@ -64,7 +64,7 @@ Here we can see a few distinctive features of the representation:
 ..$attrs var @$name: $ty = $value
 ```
 
-Corresponds to LLVM\'s [global
+Corresponds to LLVM's [global
 variables](http://llvm.org/docs/LangRef.html#global-variables) when used
 in the top-level scope and to fields, when used as a member of classes
 and modules.
@@ -75,7 +75,7 @@ and modules.
 ..$attrs const @$name: $type = $value
 ```
 
-Corresponds to LLVM\'s [global
+Corresponds to LLVM's [global
 constant](http://llvm.org/docs/LangRef.html#global-variables). Constants
 may only reside on the top-level and can not be members of classes and
 modules.
@@ -86,7 +86,7 @@ modules.
 ..$attrs def @$name: $type
 ```
 
-Correspond to LLVM\'s
+Correspond to LLVM's
 [declare](http://llvm.org/docs/LangRef.html#functions) when used on the
 top-level of the compilation unit and to abstract methods when used
 inside classes and traits.
@@ -97,7 +97,7 @@ inside classes and traits.
 ..$attrs def @$name: $type { ..$blocks }
 ```
 
-Corresponds to LLVM\'s
+Corresponds to LLVM's
 [define](http://llvm.org/docs/LangRef.html#functions) when used on the
 top-level of the compilation unit and to normal methods when used inside
 classes, traits and modules.
@@ -108,7 +108,7 @@ classes, traits and modules.
 ..$attrs struct @$name { ..$types }
 ```
 
-Corresponds to LLVM\'s [named
+Corresponds to LLVM's [named
 struct](http://llvm.org/docs/LangRef.html#structure-types).
 
 ### Trait
@@ -145,7 +145,7 @@ concrete methods as members.
 void
 ```
 
-Corresponds to LLVM\'s
+Corresponds to LLVM's
 [void](http://llvm.org/docs/LangRef.html#void-type).
 
 ### Vararg
@@ -154,7 +154,7 @@ Corresponds to LLVM\'s
 ...
 ```
 
-Corresponds to LLVM\'s
+Corresponds to LLVM's
 [varargs](http://www.llvm.org/docs/LangRef.html#function-type). May only
 be nested inside function types.
 
@@ -164,9 +164,9 @@ be nested inside function types.
 ptr
 ```
 
-Corresponds to LLVM\'s [pointer
+Corresponds to LLVM's [pointer
 type](http://llvm.org/docs/LangRef.html#pointer-type) with a major
-distinction of not preserving the type of memory that\'s being pointed
+distinction of not preserving the type of memory that's being pointed
 at. Pointers are going to become untyped in LLVM in near future too.
 
 ### Boolean
@@ -175,7 +175,7 @@ at. Pointers are going to become untyped in LLVM in near future too.
 bool
 ```
 
-Corresponds to LLVM\'s
+Corresponds to LLVM's
 [i1](http://llvm.org/docs/LangRef.html#integer-type).
 
 ### Integer
@@ -198,7 +198,7 @@ f32
 f64
 ```
 
-Corresponds to LLVM\'s [floating point
+Corresponds to LLVM's [floating point
 types](http://llvm.org/docs/LangRef.html#floating-point-types).
 
 ### Array
@@ -207,7 +207,7 @@ types](http://llvm.org/docs/LangRef.html#floating-point-types).
 [$type x N]
 ```
 
-Corresponds to LLVM\'s [aggregate array
+Corresponds to LLVM's [aggregate array
 type](http://llvm.org/docs/LangRef.html#array-type).
 
 ### Function
@@ -216,7 +216,7 @@ type](http://llvm.org/docs/LangRef.html#array-type).
 (..$args) => $ret
 ```
 
-Corresponds to LLVM\'s [function
+Corresponds to LLVM's [function
 type](http://llvm.org/docs/LangRef.html#function-type).
 
 ### Struct
@@ -226,7 +226,7 @@ struct @$name
 struct { ..$types }
 ```
 
-Has two forms: named and anonymous. Corresponds to LLVM\'s [aggregate
+Has two forms: named and anonymous. Corresponds to LLVM's [aggregate
 structure type](http://www.llvm.org/docs/LangRef.html#t-struct).
 
 ### Unit
@@ -278,7 +278,7 @@ unreachable
 ```
 
 If execution reaches undefined instruction the behaviour of execution is
-undefined starting from that point. Corresponds to LLVM\'s
+undefined starting from that point. Corresponds to LLVM's
 [unreachable](http://llvm.org/docs/LangRef.html#unreachable-instruction).
 
 ### ret
@@ -287,7 +287,7 @@ undefined starting from that point. Corresponds to LLVM\'s
 ret $value
 ```
 
-Returns a value. Corresponds to LLVM\'s
+Returns a value. Corresponds to LLVM's
 [ret](http://llvm.org/docs/LangRef.html#ret-instruction).
 
 ### jump
@@ -297,7 +297,7 @@ jump $next(..$values)
 ```
 
 Jumps to the next basic block with provided values for the parameters.
-Corresponds to LLVM\'s unconditional version of
+Corresponds to LLVM's unconditional version of
 [br](http://llvm.org/docs/LangRef.html#br-instruction).
 
 ### if
@@ -306,7 +306,7 @@ Corresponds to LLVM\'s unconditional version of
 if $cond then $next1(..$values1) else $next2(..$values2)
 ```
 
-Conditionally jumps to one of the basic blocks. Corresponds to LLVM\'s
+Conditionally jumps to one of the basic blocks. Corresponds to LLVM's
 conditional form of
 [br](http://llvm.org/docs/LangRef.html#br-instruction).
 
@@ -321,7 +321,7 @@ switch $value {
 ```
 
 Jumps to one of the basic blocks if `$value` is equal to corresponding
-`$valueN`. Corresponds to LLVM\'s
+`$valueN`. Corresponds to LLVM's
 [switch](http://llvm.org/docs/LangRef.html#switch-instruction).
 
 ### invoke
@@ -331,7 +331,7 @@ invoke[$type] $ptr(..$values) to $success unwind $failure
 ```
 
 Invoke function pointer, jump to success in case value is returned,
-unwind to failure if exception was thrown. Corresponds to LLVM\'s
+unwind to failure if exception was thrown. Corresponds to LLVM's
 [invoke](http://llvm.org/docs/LangRef.html#invoke-instruction).
 
 ### throw
@@ -361,7 +361,7 @@ call[$type] $ptr(..$values)
 ```
 
 Calls given function of given function type and argument values.
-Corresponds to LLVM\'s
+Corresponds to LLVM's
 [call](http://llvm.org/docs/LangRef.html#call-instruction).
 
 ### load
@@ -370,7 +370,7 @@ Corresponds to LLVM\'s
 load[$type] $ptr
 ```
 
-Load value of given type from memory. Corresponds to LLVM\'s
+Load value of given type from memory. Corresponds to LLVM's
 [load](http://llvm.org/docs/LangRef.html#load-instruction).
 
 ### store
@@ -379,7 +379,7 @@ Load value of given type from memory. Corresponds to LLVM\'s
 store[$type] $ptr, $value
 ```
 
-Store value of given type to memory. Corresponds to LLVM\'s
+Store value of given type to memory. Corresponds to LLVM's
 [store](http://llvm.org/docs/LangRef.html#store-instruction).
 
 ### elem
@@ -389,7 +389,7 @@ elem[$type] $ptr, ..$indexes
 ```
 
 Compute derived pointer starting from given pointer. Corresponds to
-LLVM\'s
+LLVM's
 [getelementptr](http://llvm.org/docs/LangRef.html#getelementptr-instruction).
 
 ### extract
@@ -398,7 +398,7 @@ LLVM\'s
 extract[$type] $aggrvalue, $index
 ```
 
-Extract element from aggregate value. Corresponds to LLVM\'s
+Extract element from aggregate value. Corresponds to LLVM's
 [extractvalue](http://llvm.org/docs/LangRef.html#extractvalue-instruction).
 
 ### insert
@@ -408,7 +408,7 @@ insert[$type] $aggrvalue, $value, $index
 ```
 
 Create a new aggregate value based on existing one with element at index
-replaced with new value. Corresponds to LLVM\'s
+replaced with new value. Corresponds to LLVM's
 [insertvalue](http://llvm.org/docs/LangRef.html#insertvalue-instruction).
 
 ### stackalloc
@@ -418,7 +418,7 @@ stackalloc[$type]()
 ```
 
 Stack allocate a slot of memory big enough to store given type.
-Corresponds to LLVM\'s
+Corresponds to LLVM's
 [alloca](http://llvm.org/docs/LangRef.html#alloca-instruction).
 
 ### bin
@@ -524,7 +524,7 @@ true
 false
 ```
 
-Corresponds to LLVM\'s `true` and `false`.
+Corresponds to LLVM's `true` and `false`.
 
 ### Zero and null
 
@@ -533,7 +533,7 @@ null
 zero $type
 ```
 
-Corresponds to LLVM\'s `null` and `zeroinitializer`.
+Corresponds to LLVM's `null` and `zeroinitializer`.
 
 ### Integer
 
@@ -544,7 +544,7 @@ Ni32
 Ni64
 ```
 
-Correponds to LLVM\'s integer values.
+Correponds to LLVM's integer values.
 
 ### Float
 
@@ -553,7 +553,7 @@ N.Nf32
 N.Nf64
 ```
 
-Corresponds to LLVM\'s floating point values.
+Corresponds to LLVM's floating point values.
 
 ### Struct
 
@@ -561,7 +561,7 @@ Corresponds to LLVM\'s floating point values.
 struct @$name {..$values}`
 ```
 
-Corresponds to LLVM\'s struct values.
+Corresponds to LLVM's struct values.
 
 ### Array
 
@@ -569,7 +569,7 @@ Corresponds to LLVM\'s struct values.
 array $ty {..$values}
 ```
 
-Corresponds to LLVM\'s array value.
+Corresponds to LLVM's array value.
 
 ### Local
 
@@ -733,7 +733,7 @@ calling the method twice.
 extern
 ```
 
-Use C-friendly calling convention and don\'t name-mangle given method.
+Use C-friendly calling convention and don't name-mangle given method.
 
 #### override
 

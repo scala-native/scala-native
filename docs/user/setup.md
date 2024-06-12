@@ -158,7 +158,7 @@ installing [sbt](./sbt.md) documentation.
 
 You may install it via the command line if needed.
 
-``` shell
+``` powershell
 > .\vs_community__<version>.exe
 ```
 
@@ -166,10 +166,11 @@ Select the *Workloads* tab and then *Desktop development with C++*
 checkbox. The defaults are fine. The *C++ Clang tools for Windows* does
 not work so use the next step for details on installing LLVM.
 
-<figure>
-<img src="vs-install.png" alt="vs-install.png" />
-<figcaption>Visual Studio install dialog showing options.</figcaption>
-</figure>
+```{figure} vs-install.png
+:alt: visual studio install
+
+Visual Studio install dialog showing options.
+```
 
 2.  Download and install LLVM
 
@@ -179,10 +180,10 @@ Select *LLVM-12.0.1-win64.exe* or newer. Digital signatures are
 provided.
 
 You may also install LLVM via the command line, and if needed, install
-it into your *C:\\Users\\\<login\>\\AppData\\Local* directory. The
+it into your `C:\Users\<login>\AppData\Local` directory. The
 installer will add *LLVM* and the associated directories and files.
 
-``` shell
+``` powershell
 > .\LLVM-12.0.1-win64.exe
 ```
 
@@ -190,7 +191,7 @@ installer will add *LLVM* and the associated directories and files.
 
 Using the install path above, you would add the following:
 
-``` shell
+``` powershell
 C:\Users\<login>\AppData\Local\LLVM\bin
 ```
 

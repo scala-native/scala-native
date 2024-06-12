@@ -5,7 +5,7 @@ with foreign native code. This includes C and other languages that can
 expose APIs via C ABI (e.g. C++, D, Rust etc.)
 
 All of the interop APIs discussed here are defined in
-`scala.scalanative.unsafe` package. For brevity, we\'re going to refer
+`scala.scalanative.unsafe` package. For brevity, we're going to refer
 to that namespace as just `unsafe`.
 
 ## Extern objects
@@ -15,7 +15,7 @@ methods are treated as their native C ABI-friendly counterparts. They
 are roughly analogous to header files with top-level function
 declarations in C.
 
-For example, to call C\'s `malloc` one might declare it as following:
+For example, to call C's `malloc` one might declare it as following:
 
 ``` scala
 import scala.scalanative.unsafe._
@@ -28,8 +28,7 @@ object libc {
 
 `extern` on the right hand side of the method definition signifies that
 the body of the method is defined elsewhere in a native library that is
-available on the library path (see [Linking with native
-libraries](#linking-with-native-libraries)). The signature of the
+available on the library path (see [](#linking-with-native-libraries)). The signature of the
 external function must match the signature of the original C function
 (see [Finding the right signature](#finding-the-right-signature)).
 
@@ -70,6 +69,7 @@ equivalent Scala type for each of the arguments:
   |`struct { int x, y; }*`  |`unsafe.Ptr[unsafe.CStruct2[unsafe.CInt, unsafe.CInt]]`[^14][^15]  |
   |`struct { int x, y; }`   |Not supported
 
+(linking_with_native_libraries)=
 ### Linking with native libraries
 
 C compilers typically require to pass an additional `-l mylib` flag to
@@ -114,13 +114,13 @@ more than once.
 
 ### Variadic functions
 
-Scala Native supports native interoperability with C\'s variadic
+Scala Native supports native interoperability with C's variadic
 argument list type (i.e. `va_list`), and partially for `...` varargs.
 For example `vprintf` and `printf` defined in C as:
 
 ``` C
 int vprintf(const char * format, va_list arg);
-int printf(const char * format, ... );  
+int printf(const char * format, ... );
 ```
 
 can be declared in Scala as:
@@ -135,7 +135,7 @@ object mystdio {
 }
 ```
 
-The limitation of `...` interop requires that it\'s
+The limitation of `...` interop requires that it's
 arguments needs to passed directly to variadic arguments function or
 arguments need to be inlined. This is required to obtain enough
 information on how arguments show be passed in regards to C ABI. Passing
@@ -148,7 +148,7 @@ For `va_list` interop, one can wrap a function in a nicer API like:
 import scala.scalanative.unsafe._
 
 def myprintf(format: CString, args: CVarArg*): CInt =
-  Zone { 
+  Zone {
     mystdio.vprintf(format, toCVarArgList(args.toSeq))
   }
 ```
@@ -161,6 +161,7 @@ myprintf(c"2 + 3 = %d, 4 + 5 = %d", 2 + 3, 4 + 5)
 printf(c"2 + 3 = %d, 4 + 5 = %d", 2 + 3, 4 + 5)
 ```
 
+(exported_methods)=
 ## Exported methods
 
 When linking Scala Native as library, you can mark functions that should
@@ -176,12 +177,15 @@ name of field.
 `int ScalaNativeInit(void);` function is special exported
 function that needs to be called before invoking any code defined in
 Scala Native. It returns `0` on successful initialization
-and non-zero value in the otherwise. For dynamic libraries a constructor
-would be generated to invoke `ScalaNativeInit`[ function
-automatically upon loading library or startup of the program. If for
-some reason you need to disable automatic initialization of Scala Native
+and non-zero value in the otherwise.
+
+For dynamic libraries a constructor
+would be generated to invoke `ScalaNativeInit` function
+automatically upon loading library or startup of the program.
+
+If for some reason you need to disable automatic initialization of Scala Native
 upon loading dynamic library and invoke it manually in user code set
-\`SCALANATIVE_NO_DYLIB_CTOR]{.title-ref} environment variable. You can
+`SCALANATIVE_NO_DYLIB_CTOR` environment variable. You can
 also disable generation of library constructors by defining
 `-DSCALANATIVE_NO_DYLIB_CTOR` in
 NativeConfig::compileOptions of your build.
@@ -231,7 +235,7 @@ int main(int argc, char** argv){
 
 ## Pointer types
 
-Scala Native provides a built-in equivalent of C\'s pointers via
+Scala Native provides a built-in equivalent of C's pointers via
 `unsafe.Ptr[T]` data type. Under the hood pointers are implemented using
 unmanaged machine pointers.
 
@@ -285,7 +289,7 @@ val func: StringLengthFn = CFuncPtr.fromPtr[StringLengthFn](anyPtr)
 func(c"hello")
 ```
 
-It\'s also possible to create `CFuncPtrN` from Scala
+It's also possible to create `CFuncPtrN` from Scala
 `FunctionN`. You can do this by using implicit method
 conversion method from the corresponding companion object.
 
@@ -337,7 +341,7 @@ unmanaged memory.
     to a single element. Memory is zeroed out by default.
 
     Zone allocation is the preferred way to allocate temporary unmanaged
-    memory. It\'s idiomatic to use implicit zone parameters to abstract
+    memory. It's idiomatic to use implicit zone parameters to abstract
     over code that has to zone allocate.
 
     One typical example of this are C strings that are created from
@@ -365,19 +369,19 @@ unmanaged memory.
     >
     > When using stack allocated memory one has to be careful not to
     > capture this memory beyond the lifetime of the method.
-    > Dereferencing stack allocated memory after the method\'s execution
+    > Dereferencing stack allocated memory after the method's execution
     > has completed is undefined behavior.
 
 3.  **Manual heap allocation.**
 
-    > Scala Native\'s library contains a bindings for a subset of the
+    > Scala Native's library contains a bindings for a subset of the
     > standard libc functionality. This includes the trio of `malloc`,
     > `realloc` and `free` functions that are defined in `libc.stdlib`
     > extern object.
     >
-    > Calling those will let you allocate memory using system\'s
+    > Calling those will let you allocate memory using system's
     > standard dynamic memory allocator. Every single manual allocation
-    > must also be freed manually as soon as it\'s not needed any
+    > must also be freed manually as soon as it's not needed any
     > longer.
     >
     > Apart from the standard system allocator one might also bind to
@@ -524,7 +528,7 @@ using `byteValue.toUByte`, `shortValue.toUShort`, `intValue.toUInt`, `longValue.
 and conversely `unsignedByteValue.toByte`, `unsignedShortValue.toShort`, `unsignedIntValue.toInt`,
 `unsignedLongValue.toLong`, `unsignedSizeValue.toSize`.
 
-Universal equality is supported between signed and unsigned integers, for example `-1.toUByte == 255` or `65535 == -1.toUShort` would yield `true`, 
+Universal equality is supported between signed and unsigned integers, for example `-1.toUByte == 255` or `65535 == -1.toUShort` would yield `true`,
 However, similar to signed integers on JVM, class equality between different (boxed) integer types is not supported.
 Usage of `-1.toUByte.equals(255)` would return `false`, as we're comparing different boxed types (`scala.scalanative.unsigned.UByte` with `java.lang.Integer`)
 

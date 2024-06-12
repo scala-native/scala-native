@@ -55,7 +55,7 @@ as expected.
     tests](https://www.scala-sbt.org/1.x/docs/Testing-sbt-plugins.html)
     of the sbt plugin (this takes a while).
 
--   
+-
 
     `sbtScalaNative/scripted <test directory to run>` - run specific scripted tests of the sbt plugin. e.g. `sbtScalaNative/scripted run/backtrace`
 
@@ -99,7 +99,7 @@ You will see, the log message like the following, which means you have
 successfully published locally for the version `0.5.0-SNAPSHOT`.
 
 ``` text
-[info]  published tools_native0.5.0-SNAPSHOT_3 to ... 
+[info]  published tools_native0.5.0-SNAPSHOT_3 to ...
 [info]  published ivy to ...tools_native0.5.0-SNAPSHOT_3/0.5.0-SNAPSHOT/ivys/ivy.xml
 ```
 
@@ -127,7 +127,7 @@ $ bash scripts/makedocs setup
     assuming setup is already done.
 
 ``` text
-$ bash scripts/makedocs 
+$ bash scripts/makedocs
 ```
 
 3.  Navigate to `docs/_build/html` directory and open `index.html` file
@@ -149,12 +149,10 @@ To configure the native build in this project, you can edit
 -   More detailed build setting explanation `build`{.interpreted-text
     role="ref"}
 
--   
 
-    Scala Native Internal
+## Scala Native Internal
 
-    :   -   [compiler](./compiler.md)
-        -   [nir](./nir.md)
-        -   [name_mangling](./name_mangling.md)
-
+-   [compiler](./compiler.md)
+-   [nir](./nir.md)
+-   [name mangling](./mangling.md)
 -   How to setup IDEs [ides](./ides.md)
