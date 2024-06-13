@@ -10,6 +10,7 @@ import scala.io.Source
 import org.junit.Test
 import org.junit.Assert._
 import org.junit.Assume._
+import org.junit.Ignore
 
 import org.scalanative.testsuite.utils.Platform, Platform._
 import scala.scalanative.junit.utils.AssumesHelper._
@@ -150,9 +151,48 @@ class ProcessTest {
     assertEquals("foobar", readInputStream(proc.getInputStream))
   }
 
+  // PR #3950, aka Issue 3944, part 1
+  @Ignore
+  @Test def isAliveIsReliable(): Unit = {
+    /* Exercise both expected Boolean conditions.
+     *
+     * This is an advanced test for javalib developers.
+     * It is @Ignore'd in normal CI because it introduces a perceptible
+     * pause. This is needed to ensure that the process is still alive
+     * when the first isAlive() is executed.
+     *
+     * Cutting this pause down to milliseconds risks false failures on
+     * heavily loaded systems. Pick your druthers, Life is short!
+     */
+
+    val proc = processSleep(5.0).start()
+
+    assertTrue("process should be alive", proc.isAlive)
+
+    try {
+      val timeout = 30
+      assertTrue(
+        s"process should have exited but timed out (limit: ${timeout} seconds)",
+        proc.waitFor(timeout, TimeUnit.SECONDS)
+      )
+
+      assertFalse("process should have exited", proc.isAlive)
+
+      assertEquals(0, proc.exitValue)
+
+      assertFalse(
+        "isAlive should be robust to second call after process exit",
+        proc.isAlive
+      )
+
+    } finally {
+      proc.destroyForcibly() // Let OS eliminate any child process still alive.
+    }
+  }
+
   // Issue 3452
   @Test def waitForReturnsExitCode(): Unit = {
-    /* This test neither robust nor CI friendly.
+    /* This test is neither robust nor CI friendly.
      * A buggy implementation of waitFor(pid) and/or of processSleep()
      * could cause it to hang forever.
      *
@@ -238,6 +278,81 @@ class ProcessTest {
     // hanging processes to exit.
     if (!proc.waitFor(10, TimeUnit.SECONDS))
       proc.destroyForcibly()
+  }
+
+  // Defensive code for Issue 3944
+  @Test def waitForWithTimeoutIsRobustAfterProcessExit(): Unit = {
+    /* Check that waitFor(timeout) can safely be called more than once after a
+     * process exits. Both waitFor(timout) calls will probably return
+     * immediatly.
+     *
+     * The idea is to exercise the internals of the second call. How does it
+     * respond to a now invalid process id.
+     */
+
+    val proc = processSleep(0.1).start()
+
+    try {
+      val timeout = 30
+      assertTrue(
+        s"process should have exited but timed out (limit: ${timeout} seconds)",
+        proc.waitFor(timeout, TimeUnit.SECONDS)
+      )
+
+      /* DO NOT do the usual & expected 'assertEquals(0, proc.exitValue)' here.
+       * That would set the internal cached exitValue. Not doing that
+       * call here allows checking if waitFor() is caching that value
+       * to protect itself against a second call.
+       */
+
+      assertTrue(
+        s"Second waitFor after procees exit should be robust.)",
+        proc.waitFor(timeout, TimeUnit.SECONDS)
+      )
+
+    } finally {
+      proc.destroyForcibly() // Let OS eliminate any child process still alive.
+    }
+  }
+
+  // Issue 3944, part 2
+  @Test def waitForWithTimeoutAcceptsLargeMilliseconds(): Unit = {
+    val proc = processSleep(2.0).start()
+
+    try {
+      val timeout = 10 * 1000 // Value from Issue 3944
+
+      /*  Exception before fix, where nnnn is a pid number:
+       *
+       *  Linux & non-BSD kin:
+       *   java.io.IOException: wait pid=nnnn, ppoll failed: 22
+       *
+       *  macOS, FreeBSD:
+       *   java.io.IOException: wait pid=nnnn, kevent failed: Invalid argument
+       *
+       *  After the corresponding PR, the messages should never be seen.
+       *  If one is, the Linux case should look like the macOS case.
+       *
+       *  A TimeUnit larger than MILLISECONDS will not trigger the I3944
+       *  defect.
+       *
+       *  The number of that unit needs to be more than those in a second.
+       *  say 1001 for MILLISECONDS. That gives a large number of
+       *  nanoseconds after full seconds (in nanos) have been subtracted off.
+       *  Be generous here, use the value from the Issue,  and not try to
+       *  find too fine an edge of failure.
+       */
+
+      assertTrue(
+        s"process should have exited but timed out (limit: ${timeout} millis)",
+        proc.waitFor(timeout, TimeUnit.MILLISECONDS)
+      )
+
+      assertFalse("process should have exited", proc.isAlive)
+      assertEquals(0, proc.exitValue)
+    } finally {
+      proc.destroyForcibly() // Let OS eliminate any child process still alive.
+    }
   }
 
   private def processForDestruction(): Process = {
