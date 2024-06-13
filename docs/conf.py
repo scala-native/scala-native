@@ -35,8 +35,8 @@ def generateScalaNativeCurrentYear():
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-# recommonmark provides support for '.md' files
-extensions = ['recommonmark', 'sphinx_last_updated_by_git', 'sphinx_markdown_tables']
+# myst_parser provides support for '.md' files
+extensions = ['myst_parser', 'sphinx_last_updated_by_git', 'sphinx_markdown_tables']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -358,3 +358,6 @@ texinfo_documents = [
 # If true, do not generate a @detailmenu in the "Top" node's menu.
 #
 # texinfo_no_detailmenu = False
+
+# permit references to ### level sections
+myst_heading_anchors = 3

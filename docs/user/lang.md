@@ -11,6 +11,7 @@ semantics of the language for sake of interoperability with C libraries,
 read more about those in [interop](./interop.md)
 section.
 
+(multithreading)=
 ## Multithreading
 
 Scala Native supports parallel multi-threaded programming and assumes
@@ -22,9 +23,9 @@ as the state is never shared between threads.
 Scala Native tries to follow the Java Memory Model, but by default uses
 more relaxed semantics in some areas. Due to the majority of immutable
 shared states in most Scala programs, Scala Native does not follow Java
-final fields semantics. Safe publication of final fields ([val\`s in
+final fields semantics. Safe publication of final fields (`val`s in
 Scala) can be enabled by annotating fields or the whole class with
-]{.title-ref}\@scala.scalanative.annotation.safePublish\`, this
+`@scala.scalanative.annotation.safePublish`, this
 behaviour can be also enabled on whole project scope by providing a
 Scala compiler plugin options
 `-Pscalanative:forceStrictFinalFields`. Semantics of final
@@ -37,7 +38,7 @@ Scala Native ensures that all class field operations would be executed
 atomically, but does not impose any synchronization or happens-before
 guarantee.
 
- When executing extern functions Garbage Collector needs to be notified about the internal state of the calling thread. This notification is required to correctly track reachable objects and skip waiting for threads executing unmanged code - these may block (e.g. waiting on socket connection) for long time leading to deadlocks during GC. 
+ When executing extern functions Garbage Collector needs to be notified about the internal state of the calling thread. This notification is required to correctly track reachable objects and skip waiting for threads executing unmanged code - these may block (e.g. waiting on socket connection) for long time leading to deadlocks during GC.
  By default only calls to methods annotated with `@scala.scalanative.unsafe.blocking` would notify the GC - it allows to reduce overhead of extern method calls, but might lead to deadlocks or longer GC pauses when waiting for unannotated blocking function call.
  This behaviour can be changed by enabling `NativeConfig.strictExternCallSemantics`. Under this mode every invocation of foreign function would notify the GC about the thread state which guarantess no deadlocks introduced by waiting for threads executing foreign code, but might reduce overall performance.
 
@@ -53,8 +54,8 @@ similarly to JVM:
 
 1.  Arrays throw `IndexOutOfBoundsException` on out-of-bounds access.
 2.  Casts throw `ClassCastException` on incorrect casts.
-3.  Accessing a field or method on `null`, throwing `null`[ exception,
-    throws ]{.title-ref}`NullPointerException`\`.
+3.  Accessing a field or method on `null`, throwing `null` exception,
+    throws `NullPointerException`.
 4.  Integer division by zero throws `ArithmeticException`.
 
 There are a few exceptions:

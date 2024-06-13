@@ -107,7 +107,7 @@ See indicated source module for limitations, if any, and usage:
 | [wctype.h](https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/wctype.h.html)              | N/A |
 | [wordexp.h](https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/wordexp.h.html)            | [scala.scalanative.posix.wordexp](https://github.com/scala-native/scala-native/blob/main/posixlib/src/main/scala/scala/scalanative/posix/wordexp.scala) |
 
-Continue to [communitylib](./communitylib.md){.interpreted-text role="ref"}.
+Continue to [communitylib](./communitylib.md)
 
 [^1]: The argument to inet_ntoa() differs from the POSIX specification
     because Scala Native supports only passing structures by reference.

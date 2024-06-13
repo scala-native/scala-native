@@ -7,10 +7,11 @@ compiler and inspects the AST and generates `.nir` files. Finally, the
 `.nir` files are compiled into `.ll` files and passed to LLVM by the
 native compiler.
 
-<figure>
-<img src="compilation.png" alt="compilation.png" />
-<figcaption>High-level overview of the compilation process.</figcaption>
-</figure>
+```{figure} compilation.png
+:alt: compilation process
+
+High-level overview of the compilation process.
+```
 
 ## Tips for working on the compiler
 
@@ -27,7 +28,7 @@ of the compilation.
 
 The following directions are using the Scala 3 project. To use other
 Scala versions first find the project name and then use that instead of
-\"sandbox3\", say \"sandbox2_13\":
+`sandbox3`. EG: `sandbox2_13` for 2.13:
 
     sbt> sandbox<TAB>
 
@@ -62,7 +63,7 @@ assembly language](http://llvm.org/docs/LangRef.html). NIR is a subset
 of the LLVM assembly language, so [nir](./nir.md)
 may be a gentler starting point.
 
-When working on the compiler plugin you\'ll need to clean the sandbox
+When working on the compiler plugin you'll need to clean the sandbox
 (or other Scala Native projects) if you want it to be recompiled with
 the newer version of the compiler plugin. This can be achieved with:
 

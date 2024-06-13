@@ -101,7 +101,7 @@ unsigned short scalanative_c_islnk() { return C_ISLNK; }
 
 Since C has a flat namespace most libraries have prefixes and in general
 cannot use the same symbol names so there is no need to add additional
-prefixes. For Scala Native we use `scalanative\_` as a
+prefixes. For Scala Native we use `scalanative_` as a
 prefix for functions.
 
 This is the reason C++ added namespaces so that library designer could
@@ -125,8 +125,8 @@ This the general workflow for contributing to Scala Native.
     and are encouraged to do so.
 5.  After the review, you should resolve issues brought up by the
     reviewers as needed (amending or adding commits to address
-    reviewers\' comments), iterating until the reviewers give their
-    thumbs up, the \"LGTM\" (acronym for \"Looks Good To Me\").
+    reviewers' comments), iterating until the reviewers give their
+    thumbs up, the "LGTM" (acronym for "Looks Good To Me").
 6.  Once the code has passed review the Pull Request can be merged into
     the distribution.
 
@@ -137,15 +137,15 @@ main branch. All of the incoming pull requests are merged using squash
 and merge policy (i.e. one merged pull request corresponds to one
 squashed commit to the main branch.)
 
-You do not need to squash commits manually. It\'s typical to add new
+You do not need to squash commits manually. It's typical to add new
 commits to the PR branch to accommodate changes that were suggested by
 the reviewers. Squashing things manually and/or rewriting history on the
-PR branch is all-right as long as it\'s clear that concerns raised by
+PR branch is all-right as long as it's clear that concerns raised by
 reviewers have been addressed.
 
 Maintaining a long-standing work-in-progress (WIP) branch requires one
 to rebase on top of latest main using `git rebase --onto` from time to
-time. It\'s strongly recommended not to perform any merges on your
+time. It's strongly recommended not to perform any merges on your
 branches that you are planning to use as a PR branch.
 
 ## Pull Request Requirements
@@ -194,22 +194,22 @@ but rewrite the history by squashing the commits into **one commit per
 useful unit of change**, each accompanied by a detailed commit message.
 For more info, see the article: [Git
 Workflow](http://sandofsky.com/blog/git-workflow.html). Additionally,
-every commit should be able to be used in isolation\--that is, each
+every commit should be able to be used in isolation--that is, each
 commit must build and pass all tests.
 
 ## First line of the commit message
 
 The first line should be a descriptive sentence about what the commit is
-doing, written using the imperative style, e.g., \"Change this.\", and
+doing, written using the imperative style, e.g., "Change this.", and
 should not exceed 70 characters. It should be possible to fully
 understand what the commit does by just reading this single line. It is
-**not ok** to only list the ticket number, type \"minor fix\" or
+**not ok** to only list the ticket number, type "minor fix" or
 similar. If the commit has a corresponding ticket, include a reference
-to the ticket number, with the format \"Fix #xxx: Change that.\", as the
-first line. Sometimes, there is no better message than \"Fix #xxx: Fix
-that issue.\", which is redundant. In that case, and assuming that it
+to the ticket number, with the format "Fix #xxx: Change that.", as the
+first line. Sometimes, there is no better message than "Fix #xxx: Fix
+that issue.", which is redundant. In that case, and assuming that it
 aptly and concisely summarizes the commit in a single line, the commit
-message should be \"Fix #xxx: Title of the ticket.\".
+message should be "Fix #xxx: Title of the ticket.".
 
 ## Body of the commit message
 
