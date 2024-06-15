@@ -2,4 +2,4 @@
 
 HERE="`dirname $0`"
 
-nix-shell $HERE/scala-native.nix -A clangEnv
+nix-shell $HERE/scala-native.nix

@@ -138,7 +138,13 @@ $ pkg_add boehm-gc # optional
 
 ``` shell
 $ wget https://raw.githubusercontent.com/scala-native/scala-native/main/scripts/scala-native.nix
-$ nix-shell scala-native.nix -A clangEnv
+$ nix-shell scala-native.nix
+```
+
+You can also use [flakes](https://nixos.wiki/wiki/flakes):
+
+``` shell
+$ nix develop github:scala-native/scala-native?dir=scripts
 ```
 
 **Windows**
