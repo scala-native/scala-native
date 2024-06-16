@@ -45,11 +45,11 @@ object ThreadLocal {
 
     /** Size must always be a power of 2.
      */
-    private val INITIAL_SIZE = 16
+    private final val INITIAL_SIZE = 16
 
-    private def DefaultCapacity = INITIAL_SIZE << 1
-    private def DefaultMask = DefaultCapacity - 1
-    private def DefaultMaximumLoad = DefaultCapacity * 2 / 3
+    private final val DefaultCapacity = INITIAL_SIZE << 1
+    private final val DefaultMask = DefaultCapacity - 1
+    private final val DefaultMaximumLoad = INITIAL_SIZE * 2 / 3
 
     /** Placeholder for deleted entries. */
     private case object TOMBSTONE
@@ -132,7 +132,7 @@ object ThreadLocal {
       this.table = new Array[AnyRef](capacity << 1)
       this.mask = table.length - 1
       this.clean = 0
-      this.maximumLoad = capacity * 2 / 3 // 2/3
+      this.maximumLoad = capacity * 2 / 3
     }
 
     /** Cleans up after garbage-collected thread locals.

@@ -77,4 +77,14 @@ class ThreadLocalTest extends JSR166Test {
     progenitor.join()
     for (i <- 0 until threadCount) { assertEquals(i, x(i)) }
   }
+
+  @Test def issue3956(): Unit = {
+    // Ensure ThreadLocal values table can grow over the initial size of 16 entries
+    0.until(1024).foreach { _ =>
+      val tl = new ThreadLocal[String]() {
+        override def initialValue: String = "foo"
+      }
+      assertSame(tl.get(), "foo")
+    }
+  }
 }
