@@ -1565,6 +1565,59 @@ class FilesTest {
     }
   }
 
+  // Issue 3744
+  @Test def filesWalkFileTreeDetectsCycles(): Unit = {
+    assumeShouldTestSymlinks()
+
+    withTemporaryDirectoryPath { dirPath =>
+
+      val ancestorDir = dirPath.resolve("ancestor")
+
+      Files.createDirectories(ancestorDir)
+      assertTrue("ancestor directory exists()", Files.exists(ancestorDir))
+
+      val linkToAncestor = ancestorDir.resolve("linkToAncestor")
+      Files.createSymbolicLink(linkToAncestor, ancestorDir)
+      assertTrue("link exists()", Files.exists(linkToAncestor))
+
+      val limit = 2
+      var count = 0
+
+      val linkLoopBreakingVisitor =
+        new SimpleFileVisitor[Path] {
+          override def visitFile(f: Path, attrs: BasicFileAttributes) = {
+            count += 1
+            if (count < limit)
+              FileVisitResult.CONTINUE
+            else
+              FileVisitResult.TERMINATE
+          }
+
+          override def preVisitDirectory(
+              dir: Path,
+              attributes: BasicFileAttributes
+          ): FileVisitResult = {
+            FileVisitResult.CONTINUE
+          }
+        }
+
+      val fvoSet = Set(FileVisitOption.FOLLOW_LINKS).toJavaSet
+
+      assertThrows(
+        classOf[FileSystemLoopException],
+        Files.walkFileTree(
+          dirPath,
+          fvoSet,
+          Int.MaxValue,
+          linkLoopBreakingVisitor
+        )
+      )
+
+      // JVM will throw FileSystemLoopException before count ever gets += 1.
+      assertEquals("Expected FileSystemLoopException", 0, count)
+    }
+  }
+
   @Test def filesFindFindsFiles(): Unit = {
     withTemporaryDirectory { dirFile =>
       val dir = dirFile.toPath()
