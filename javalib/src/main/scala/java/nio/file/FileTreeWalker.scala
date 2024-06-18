@@ -266,8 +266,26 @@ private final class WalkContext(
   /* methods to extend Iterator
    */
 
-  // This is where complexity comes to roost.
+  // This method is where complexity comes to roost.
   final def hasNext(): Boolean = {
+
+    def popLevel(): Boolean = {
+      if (levelStack.isEmpty()) {
+        if (currentLevel.depth > 0) {
+          // should never happen, but we want to know about it if it does.
+          throw new IOException(
+            s"empty recursion stack, current depth: ${currentLevel.depth}"
+          )
+        }
+        poisonContext() // No use-after-close, etc.
+        false
+      } else {
+        currentLevel = levelStack.pop()
+        currentIter = currentLevel.iter
+        currentEntry = null
+        true
+      }
+    }
 
     @tailrec
     def hasNextImpl(): Boolean = {
@@ -428,24 +446,6 @@ private final class WalkContext(
 
     lastFileVisitResult == FileVisitResult.TERMINATE
     walkContextHasNext = false
-  }
-
-  private def popLevel(): Boolean = {
-    if (levelStack.isEmpty()) {
-      if (currentLevel.depth > 0) {
-        // should never happen, but we want to know about it if it does.
-        throw new IOException(
-          s"empty recursion stack, current depth: ${currentLevel.depth}"
-        )
-      }
-      poisonContext() // No use-after-close, etc.
-      false
-    } else {
-      currentLevel = levelStack.pop()
-      currentIter = currentLevel.iter
-      currentEntry = null
-      true
-    }
   }
 
   def visitCurrentEntryAsDirectory(): Unit = {
