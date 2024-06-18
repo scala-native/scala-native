@@ -1520,12 +1520,13 @@ class FilesTest {
 
       val skippingVisitor = new WftQueueingVisitor {
         override def visitFile(
-            file: Path,
+            path: Path,
             attributes: BasicFileAttributes
-        ): FileVisitResult =
-          super.visitFile(file, attributes)
-          if (file == f2) FileVisitResult.SKIP_SIBLINGS
+        ): FileVisitResult = {
+          super.visitFile(path, attributes)
+          if (path == f2) FileVisitResult.SKIP_SIBLINGS
           else FileVisitResult.CONTINUE
+        }
       }
 
       Files.walkFileTree(dir, skippingVisitor)
