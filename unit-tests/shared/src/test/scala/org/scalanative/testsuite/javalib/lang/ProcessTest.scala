@@ -110,7 +110,7 @@ class ProcessTest {
       assertEquals("", readInputStream(proc.getErrorStream()))
       val out = Source.fromFile(file.toString).getLines().mkString
 
-      assertEquals("hello", out)
+      assertEquals("inputStreamWritesToFile()", "hello", out)
     } finally {
       file.delete()
     }
@@ -134,7 +134,11 @@ class ProcessTest {
       val proc = pb.start()
       assertProcessExitOrTimeout(proc)
       assertEquals("", readInputStream(proc.getErrorStream()))
-      assertEquals("hello", readInputStream(proc.getInputStream).trim)
+      assertEquals(
+        "outputStreamReadsFromFile()",
+        "hello",
+        readInputStream(proc.getInputStream).trim
+      )
     } finally {
       file.delete()
     }
@@ -428,7 +432,11 @@ class ProcessTest {
     assertProcessExitOrTimeout(proc)
     assertEquals(0, proc.exitValue())
     assertEquals("", readInputStream(proc.getErrorStream()))
-    assertEquals(s"hello$EOL", readInputStream(proc.getInputStream()))
+    assertEquals(
+      "shellFallback()",
+      s"hello$EOL",
+      readInputStream(proc.getInputStream())
+    )
   }
 
   @Test def concurrentPipe(): Unit = {
@@ -445,6 +453,7 @@ class ProcessTest {
         val buffer = new Array[Byte](64)
         while (src.read(buffer) != -1) ()
         assertEquals(
+          "concurrentPipe()",
           s"hello",
           new String(buffer, StandardCharsets.UTF_8).trim()
         )
