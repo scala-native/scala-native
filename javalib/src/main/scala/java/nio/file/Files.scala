@@ -389,20 +389,14 @@ object Files {
       matcher: BiPredicate[Path, BasicFileAttributes],
       options: Array[FileVisitOption]
   ): Stream[Path] = {
-    val nofollow = Array(LinkOption.NOFOLLOW_LINKS)
-    val stream =
-      walk(start, maxDepth, 0, options, new HashSet[Path]()).filter { p =>
-        val linkOpts =
-          if (isBrokenSymbolicLink(p)) nofollow
-          else linkOptsFromFileVisitOpts(options)
-        val attributes =
-          getFileAttributeView(p, classOf[BasicFileAttributeView], linkOpts)
-            .readAttributes()
+    Objects.requireNonNull(start, "start is null")
+    if (maxDepth < 0)
+      throw new IllegalArgumentException("'maxDepth' is negative")
+    Objects.requireNonNull(matcher, "matcher is null")
 
-        matcher.test(p, attributes)
-      }
+    val followLinks = options.contains(FileVisitOption.FOLLOW_LINKS)
 
-    stream
+    FileTreeWalker(start, maxDepth, followLinks, matcher).stream()
   }
 
   def getAttribute(
@@ -1036,92 +1030,13 @@ object Files {
       maxDepth: Int,
       options: Array[FileVisitOption]
   ): Stream[Path] = {
+    Objects.requireNonNull(start, "start is null")
     if (maxDepth < 0)
       throw new IllegalArgumentException("'maxDepth' is negative")
 
-    val visited = new HashSet[Path]()
-    visited.add(start)
+    val followLinks = options.contains(FileVisitOption.FOLLOW_LINKS)
 
-    /* To aid debugging, keep maxDepth and currentDepth sensibly related.
-     * if maxDepth == 0, start currentDepth at zero, else start at 1.
-     */
-    walk(start, maxDepth, Math.min(maxDepth, 1), options, visited)
-  }
-
-  private def walk(
-      start: Path,
-      maxDepth: Int,
-      currentDepth: Int,
-      options: Array[FileVisitOption],
-      visitedDirs: Set[Path] // Java Set, gets mutated. Private so no footgun.
-  ): Stream[Path] = {
-    /* Design Note:
-     *    This implementation is an update to Java streams of the historical
-     *    Scala  stream implementation.  It is somewhat inefficient/costly
-     *    in that it converts known single names to a singleton Stream
-     *    and then relies upon flatmap() to merge streams. Creating a
-     *    full blown Stream has some overhead. A less costly implementation
-     *    would be a good use of time.
-     *
-     *    Some of the historical design is due to the JVM requirements on
-     *    Stream#flatMap. Java 16 introduced Stream#mapMulti which
-     *    relaxes the requirement to create small intermediate streams.
-     *    When Scala Native requires a minimum JDK >= 16, that method
-     *    would fix the problem described.  So watchful waiting is
-     *    probably the most economic approach, once the problem is described.
-     */
-
-    if (!isDirectory(start, linkOptsFromFileVisitOpts(options)) ||
-        (maxDepth == 0)) {
-      Stream.of(start)
-    } else {
-      val followLinks = options.contains(FileVisitOption.FOLLOW_LINKS)
-      Stream.concat(
-        Stream.of(start),
-        Arrays
-          .asList(FileHelpers.list(start.toString, (n, t) => (n, t)))
-          .stream()
-          .flatMap[Path] {
-            case (name, FileHelpers.FileType.Link)
-                if options.contains(FileVisitOption.FOLLOW_LINKS) =>
-              val path = start.resolve(name)
-
-              val target = readSymbolicLink(path)
-
-              // TODO: use FileAttributes key instead of isSameFile
-              if (followLinks) {
-                // No need to detect cycles when not following links
-                val wouldLoop =
-                  try {
-                    isDirectory(target, Array.empty) && visitedDirs
-                      .stream()
-                      .filter(isSameFile(_, target))
-                      .findFirst()
-                      .isPresent()
-                  } catch { case _: IOException => false }
-                if (wouldLoop)
-                  throw new UncheckedIOException(
-                    new FileSystemLoopException(path.toString)
-                  )
-              }
-
-              if (!exists(target, Array(LinkOption.NOFOLLOW_LINKS)))
-                Stream.of(start.resolve(name))
-              else
-                walk(path, maxDepth, currentDepth + 1, options, visitedDirs)
-
-            case (name, FileHelpers.FileType.Directory)
-                if currentDepth < maxDepth =>
-              val path = start.resolve(name)
-              if (options.contains(FileVisitOption.FOLLOW_LINKS))
-                visitedDirs.add(path)
-              walk(path, maxDepth, currentDepth + 1, options, visitedDirs)
-
-            case (name, _) =>
-              Stream.of(start.resolve(name))
-          }
-      )
-    }
+    FileTreeWalker(start, maxDepth, followLinks).stream()
   }
 
   def walkFileTree(start: Path, visitor: FileVisitor[_ >: Path]): Path =
@@ -1132,110 +1047,21 @@ object Files {
       visitor
     )
 
-  private case object TerminateTraversalException extends Exception
-
   def walkFileTree(
       start: Path,
       options: Set[FileVisitOption],
       maxDepth: Int,
       visitor: FileVisitor[_ >: Path]
   ): Path = {
+    Objects.requireNonNull(start, "start is null")
     if (maxDepth < 0)
       throw new IllegalArgumentException("'maxDepth' is negative")
+    Objects.requireNonNull(visitor, "visitor is null")
 
-    try _walkFileTree(start, options, maxDepth, visitor)
-    catch { case TerminateTraversalException => start }
-  }
+    val followLinks = options.contains(FileVisitOption.FOLLOW_LINKS)
 
-  // The sense of how LinkOption follows links or not is somewhat
-  // inverted because of a double negative.  The absense of
-  // LinkOption.NOFOLLOW_LINKS means follow links, the default.
-  // There is no explicit LinkOption.FOLLOW_LINKS.
-  private def linkOptsFromFileVisitOpts(
-      options: Array[FileVisitOption]
-  ): Array[LinkOption] = {
-    if (options.contains(FileVisitOption.FOLLOW_LINKS)) Array.empty[LinkOption]
-    else Array(LinkOption.NOFOLLOW_LINKS)
-  }
+    FileTreeWalker(start, maxDepth, followLinks, visitor).walk()
 
-  private def isBrokenSymbolicLink(path: Path): Boolean =
-    isSymbolicLink(path) && {
-      val target = readSymbolicLink(path)
-      val resolvedTarget =
-        if (target.isAbsolute()) target
-        else path.resolveSibling(target)
-      !exists(resolvedTarget, Array(LinkOption.NOFOLLOW_LINKS))
-    }
-
-  private def _walkFileTree(
-      start: Path,
-      options: Set[FileVisitOption],
-      maxDepth: Int,
-      visitor: FileVisitor[_ >: Path]
-  ): Path = {
-    val nofollow = Array(LinkOption.NOFOLLOW_LINKS)
-    val optsArray = options.toArray(new Array[FileVisitOption](options.size()))
-    val dirsToSkip = new HashSet[Path]
-    val openDirs = scala.collection.mutable.Stack.empty[Path]
-
-    /* To aid debugging, keep maxDepth and currentDepth sensibly related.
-     * if maxDepth == 0, start currentDepth at zero, else start at 1.
-     */
-    val stream =
-      walk(start, maxDepth, Math.min(maxDepth, 1), optsArray, new HashSet[Path])
-
-    stream.forEach { p =>
-      val parent = p.getParent()
-
-      if (dirsToSkip.contains(parent)) ()
-      else {
-        try {
-          val linkOpts =
-            if (isBrokenSymbolicLink(p)) nofollow
-            else linkOptsFromFileVisitOpts(optsArray)
-
-          val attributes =
-            getFileAttributeView(p, classOf[BasicFileAttributeView], linkOpts)
-              .readAttributes()
-
-          while (openDirs.nonEmpty && !parent.startsWith(openDirs.head)) {
-            visitor.postVisitDirectory(openDirs.pop(), null)
-          }
-
-          val result =
-            if (attributes.isRegularFile()) {
-              visitor.visitFile(p, attributes)
-            } else if (attributes.isDirectory()) {
-              openDirs.push(p)
-              visitor.preVisitDirectory(p, attributes) match {
-                case FileVisitResult.SKIP_SUBTREE =>
-                  openDirs.pop(); FileVisitResult.SKIP_SUBTREE
-                case other => other
-              }
-            } else if (attributes.isSymbolicLink()) {
-              visitor.visitFile(p, attributes)
-            } else {
-              FileVisitResult.CONTINUE
-            }
-
-          result match {
-            case FileVisitResult.TERMINATE =>
-              throw TerminateTraversalException
-            case FileVisitResult.SKIP_SUBTREE  => dirsToSkip.add(p)
-            case FileVisitResult.SKIP_SIBLINGS => dirsToSkip.add(parent)
-            case FileVisitResult.CONTINUE      => ()
-          }
-
-        } catch {
-          // Give the visitor a last chance to fix things up.
-          case e: IOException => visitor.visitFileFailed(p, e)
-        }
-      }
-    }
-
-    while (openDirs.nonEmpty) {
-      visitor.postVisitDirectory(openDirs.pop(), null)
-    }
     start
   }
 

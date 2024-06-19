@@ -1484,45 +1484,63 @@ class FilesTest {
 
     withTemporaryDirectory { dirFile =>
       val dir = dirFile.toPath()
-      val f0 = dir.resolve("f0")
       val f1 = dir.resolve("f1")
-      val d0 = dir.resolve("d0")
-      val f2 = d0.resolve("f2")
+      val f2 = dir.resolve("f2")
+      val f3 = dir.resolve("f3")
+      val f4 = dir.resolve("f4")
+      val d1 = dir.resolve("d1")
+      val d1f1 = d1.resolve("d1f1")
+      val d1f2 = d1.resolve("d1f2")
 
-      Files.createDirectory(d0)
-      Files.createFile(f0)
       Files.createFile(f1)
       Files.createFile(f2)
-      assertTrue("a1", Files.exists(d0) && Files.isDirectory(d0))
-      assertTrue("a2", Files.exists(f0) && Files.isRegularFile(f0))
-      assertTrue("a3", Files.exists(f1) && Files.isRegularFile(f1))
-      assertTrue("a4", Files.exists(f2) && Files.isRegularFile(f2))
+      Files.createFile(f3)
+      Files.createFile(f4)
 
-      val visitor = new QueueingVisitor()
-      val expected = scala.collection.mutable.Set.empty[Path]
-      var skip = false
-      val skippingVisitor = new QueueingVisitor {
+      Files.createDirectory(d1)
+      Files.createFile(d1f1)
+      Files.createFile(d1f2)
+
+      assertTrue("a1", Files.exists(f1) && Files.isRegularFile(f1))
+      assertTrue("a2", Files.exists(f2) && Files.isRegularFile(f2))
+      assertTrue("a3", Files.exists(f3) && Files.isRegularFile(f3))
+      assertTrue("a4", Files.exists(f4) && Files.isRegularFile(f4))
+
+      assertTrue("a5", Files.exists(d1) && Files.isDirectory(d1))
+
+      assertTrue("a6", Files.exists(d1f1) && Files.isRegularFile(d1f1))
+      assertTrue("a7", Files.exists(d1f2) && Files.isRegularFile(d1f2))
+
+      /* Why skip after f2? f2 is not the first file created and
+       * it is not the last. It also _could_ have plenty of siblings,
+       * including a directory to mix things up.
+       *
+       * Besides, it spoke to me.
+       */
+
+      val skippingVisitor = new WftQueueingVisitor {
         override def visitFile(
-            file: Path,
+            path: Path,
             attributes: BasicFileAttributes
-        ): FileVisitResult =
-          if (file == f0) FileVisitResult.SKIP_SIBLINGS
-          else super.visitFile(file, attributes)
-      }
-      Files.walkFileTree(dir, visitor)
-      Files.walkFileTree(dir, skippingVisitor)
-      while (!visitor.isEmpty()) {
-        val p = visitor.dequeue()
-        if (p == f0) skip = true
-        if (skip && p.getParent == f0.getParent()) ()
-        else expected += p
+        ): FileVisitResult = {
+          super.visitFile(path, attributes)
+          if (path == f2) FileVisitResult.SKIP_SIBLINGS
+          else FileVisitResult.CONTINUE
+        }
       }
 
-      val result = scala.collection.mutable.Set.empty[Path]
-      while (!skippingVisitor.isEmpty()) {
-        result += skippingVisitor.dequeue()
+      Files.walkFileTree(dir, skippingVisitor)
+
+      /* The operating system can return the elements of a given directory
+       * in any order. f2 should be the last element visited, no matter
+       * the order returned from the os.
+       */
+
+      skippingVisitor.lastOption() match {
+        case None => fail("Unexpected empty visited list")
+        case Some(v) =>
+          assertEquals(s"path '${v}' was not skipped", f2, v)
       }
-      assertEquals("a5", expected, result)
     }
   }
 
@@ -1562,6 +1580,59 @@ class FilesTest {
       // Follow the broken link; expect an exception will not be thrown.
       val fvoSet = Set(FileVisitOption.FOLLOW_LINKS).toJavaSet
       Files.walkFileTree(dirPath, fvoSet, Int.MaxValue, visitor)
+    }
+  }
+
+  // Issue 3744
+  @Test def filesWalkFileTreeDetectsCycles(): Unit = {
+    assumeShouldTestSymlinks()
+
+    withTemporaryDirectoryPath { dirPath =>
+
+      val ancestorDir = dirPath.resolve("ancestor")
+
+      Files.createDirectories(ancestorDir)
+      assertTrue("ancestor directory exists()", Files.exists(ancestorDir))
+
+      val linkToAncestor = ancestorDir.resolve("linkToAncestor")
+      Files.createSymbolicLink(linkToAncestor, ancestorDir)
+      assertTrue("link exists()", Files.exists(linkToAncestor))
+
+      val limit = 2
+      var count = 0
+
+      val linkLoopBreakingVisitor =
+        new SimpleFileVisitor[Path] {
+          override def visitFile(f: Path, attrs: BasicFileAttributes) = {
+            count += 1
+            if (count < limit)
+              FileVisitResult.CONTINUE
+            else
+              FileVisitResult.TERMINATE
+          }
+
+          override def preVisitDirectory(
+              dir: Path,
+              attributes: BasicFileAttributes
+          ): FileVisitResult = {
+            FileVisitResult.CONTINUE
+          }
+        }
+
+      val fvoSet = Set(FileVisitOption.FOLLOW_LINKS).toJavaSet
+
+      assertThrows(
+        classOf[FileSystemLoopException],
+        Files.walkFileTree(
+          dirPath,
+          fvoSet,
+          Int.MaxValue,
+          linkLoopBreakingVisitor
+        )
+      )
+
+      // JVM will throw FileSystemLoopException before count ever gets += 1.
+      assertEquals("Expected FileSystemLoopException", 0, count)
     }
   }
 
@@ -2472,8 +2543,9 @@ class OsLibLikeQueueingVisitor extends SimpleFileVisitor[Path] {
 // WalkFileTreeQueueingVisitor
 class WftQueueingVisitor extends SimpleFileVisitor[Path] {
   private val visited = scala.collection.mutable.Queue.empty[Path]
-  def isEmpty(): Boolean = visited.isEmpty
   def dequeue(): Path = visited.dequeue()
+  def isEmpty(): Boolean = visited.isEmpty
+  def lastOption(): Option[Path] = visited.lastOption
   def length() = visited.length
 
   override def preVisitDirectory(
