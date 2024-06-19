@@ -67,6 +67,10 @@ class RuntimeTest {
     assertEquals(Scripts.values.map(_.filename), out.split(EOL).toSet)
   }
 
+  /* See also /unit-tests/native RuntimeOsTest.scala, which checks the
+   * upper bound on specific operating systems, currently Linux only.
+   */
+
   @Test def availableProcessors(): Unit = {
     assertTrue(Runtime.getRuntime().availableProcessors() >= 1)
   }

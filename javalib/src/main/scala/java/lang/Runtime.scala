@@ -9,7 +9,7 @@ import scala.scalanative.posix.unistd._
 import scala.scalanative.windows.SysInfoApi._
 import scala.scalanative.windows.SysInfoApiOps._
 import scala.scalanative.unsafe._
-import scala.scalanative.meta.LinktimeInfo._
+import scala.scalanative.meta.LinktimeInfo
 import scala.scalanative.runtime.javalib.Proxy
 
 class Runtime private () {
@@ -105,16 +105,47 @@ class Runtime private () {
     }
   }
 
+  /** Return the positive number of logical processors on which the process may
+   *  run. At least 1 is returned.
+   *
+   *  On Linux, there are a number of ways (taskset, cpuset, etc.) to set the
+   *  number less than sysconf(_SC_NPROCESSORS_ONLN). The underlying C code
+   *  currently (2024) will return -1, if there are more than 1024 logical
+   *  processors in the cpuset.
+   *
+   *  Windows also documents some conditions which may lower the number of
+   *  available processors.
+   *
+   *  macOS is culturally adverse to an application lowering the number of
+   *  processors below sysctl "hw.logicalcpu". There appear to be ways to
+   *  accomplish such a reduction, but they are not programmatic.
+   *
+   *  FreeBSD and NetBSD use the _SC_NPROCESSORS_ONLN path in this code. Someday
+   *  they could use os specific code to get finer granularity. FreeBSD has
+   *  "cpuset_getaffinity". NetBSD has sched_getaffinity_np. Implementations for
+   *  these operating systems are left as an exercise for the reader.
+   */
+
   import Runtime.ProcessBuilderOps
   def availableProcessors(): Int = {
-    val available = if (isWindows) {
+    val available = if (LinktimeInfo.isWindows) {
       val sysInfo = stackalloc[SystemInfo]()
       GetSystemInfo(sysInfo)
       sysInfo.numberOfProcessors.toInt
-    } else sysconf(_SC_NPROCESSORS_ONLN).toInt
+    } else {
+      val nLogicalCPUs =
+        if (LinktimeInfo.isLinux)
+          RuntimeLinuxOsSpecific.sched_cpuset_cardinality()
+        else -1
+
+      if (nLogicalCPUs > 0) nLogicalCPUs
+      else sysconf(_SC_NPROCESSORS_ONLN).toInt
+    }
+
     // By contract returned value cannot be lower then 1
     available max 1
   }
+
   def exit(status: Int): Unit = stdlib.exit(status)
   def gc(): Unit = System.gc()
 
