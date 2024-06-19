@@ -21,7 +21,7 @@ int scalanative_sched_cpuset_cardinality() {
      * logical processes configured for the system (_SC_NPROCESSORS).
      *
      * Note that OpenMP environment variables are neither consulted nor used.
-     * This consistent with Java.
+     * This is consistent with Java.
      *
      * Large systems:
      *   This implementation will return -1 if the number of logical processors
