@@ -371,25 +371,8 @@ trait Stream[T] extends BaseStream[T, Stream[T]] {
   def toArray[A <: Object](generator: IntFunction[Array[A]]): Array[A]
 
   // Since: Java 16
-  def toList[T](): List[T] = {
-    // A loose translation of the Java 19 toList example implementation.
-    // That doc suggests that implementations override this inelegant
-    // implementation.
-
-    val spliter = this.spliterator() //  also marks this stream "operated upon"
-
-    // Use size knowledge, if available, to reduce list re-sizing overhead.
-    val knownSize = spliter.getExactSizeIfKnown()
-    val initialSize =
-      if (knownSize < 0) 50 // a guess, intended to be better than default 16
-      else knownSize.toInt
-
-    val aL = new ArrayList[T](initialSize)
-
-    spliter.forEachRemaining((e) => aL.add(e.asInstanceOf[T]))
-
-    Collections.unmodifiableList(aL)
-  }
+  def toList(): List[T] =
+    this.collect(Collectors.toUnmodifiableList())
 }
 
 object Stream {
