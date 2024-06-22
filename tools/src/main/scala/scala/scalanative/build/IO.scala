@@ -34,8 +34,24 @@ private[scalanative] object IO {
 
   /** Write bytes to given file. */
   def write(file: Path, bytes: Array[Byte]): Unit = {
+    import java.nio.file.StandardOpenOption._
     Files.createDirectories(file.getParent)
-    Files.write(file, bytes)
+    Files.write(file, bytes, CREATE, WRITE)
+  }
+
+  /** Write string to given file. */
+  def write(path: Path, content: String): Unit =
+    write(path, content.getBytes())
+
+  // Read fully content of given file if it exists
+  def readFully(path: Path): Option[String] = {
+    if (!Files.exists(path)) None
+    else {
+      val source = scala.io.Source.fromFile(path.toFile())
+      try Some(source.mkString)
+      catch { case _: Exception => None }
+      finally source.close()
+    }
   }
 
   /** Finds all files starting in `base` that match `pattern`. */

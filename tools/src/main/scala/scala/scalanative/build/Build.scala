@@ -18,8 +18,6 @@ import ScalaNative._
 /** Utility methods for building code using Scala Native. */
 object Build {
 
-  private var prevBuildInputCheckSum: Int = 0
-
   /** Run the complete Scala Native pipeline, LLVM optimizer and system linker,
    *  producing a native binary in the end, same as `build` method.
    *
@@ -35,9 +33,10 @@ object Build {
   def buildCached(
       config: Config
   )(implicit scope: Scope, ec: ExecutionContext): Future[Path] = {
-    val inputHash = checkSum(config)
+    val checksumPath = config.workDir.resolve("build-checksum")
+
     if (Files.exists(config.artifactPath) &&
-        prevBuildInputCheckSum == inputHash) {
+        IO.readFully(checksumPath).contains(checkSum(config).toString)) {
       config.logger.info(
         "Build skipped: No changes detected in build configuration and class path contents since last build."
       )
@@ -46,7 +45,10 @@ object Build {
       build(config).andThen {
         case Success(_) =>
           // Need to re-calculate the checksum because the content of `output` have changed.
-          prevBuildInputCheckSum = checkSum(config)
+          IO.write(
+            path = checksumPath,
+            content = checkSum(config).toString
+          )
       }
     }
   }
@@ -287,24 +289,14 @@ object Build {
 
   private[scalanative] final val userConfigHashFile = "userConfigHash"
 
-  private[scalanative] def userConfigHasChanged(config: Config): Boolean = {
-    val hashFile = config.workDir.resolve(userConfigHashFile)
-    !Files.exists(hashFile) || {
-      val source = scala.io.Source.fromFile(hashFile.toFile())
-      try source.mkString.trim() != config.compilerConfig.##.toString()
-      finally source.close()
-    }
-  }
+  private[scalanative] def userConfigHasChanged(config: Config): Boolean =
+    IO.readFully(config.workDir.resolve(userConfigHashFile))
+      .forall(_.trim() != config.compilerConfig.##.toString())
 
-  private[scalanative] def dumpUserConfigHash(config: Config): Unit = {
-    val hashFile = config.workDir.resolve(userConfigHashFile)
-    Files.createDirectories(hashFile.getParent())
-    Files.write(
-      hashFile,
-      config.compilerConfig.##.toString().getBytes(),
-      StandardOpenOption.CREATE,
-      StandardOpenOption.WRITE
+  private[scalanative] def dumpUserConfigHash(config: Config): Unit =
+    IO.write(
+      path = config.workDir.resolve(userConfigHashFile),
+      content = config.compilerConfig.##.toString()
     )
-  }
 
 }
