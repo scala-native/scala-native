@@ -4,7 +4,10 @@ import org.junit.Test
 import org.junit.Assert._
 
 import Continuations._
-import scala.scalanative.meta.LinktimeInfo.{isContinuationsSupported, is32BitPlatform}
+import scala.scalanative.meta.LinktimeInfo.{
+  isContinuationsSupported,
+  is32BitPlatform
+}
 
 class ContinuationsTest:
   @Test def canBoundaryNoSuspend() =
