@@ -6,7 +6,7 @@ import scala.scalanative.runtime.Intrinsics.*
 import scala.collection.mutable
 
 import scala.util.Try
-import scala.scalanative.meta.LinktimeInfo.isWindows
+import scala.scalanative.meta.LinktimeInfo.isContinuationsSupported
 
 object Continuations:
   import Impl.*
@@ -24,7 +24,8 @@ object Continuations:
    *  We want our implementation to use the allocations done by
    *  `Continuation.alloc`, so that the GC is aware of the stack fragment.
    */
-  Impl.init(CFuncPtr2.fromScalaFunction(allocateBlob))
+  if isContinuationsSupported then
+    Impl.init(CFuncPtr2.fromScalaFunction(allocateBlob))
 
   /** Marks the given body as suspendable with a `BoundaryLabel` that `suspend`
    *  can refer to. Forwards the return value of `body`, or the return value of
@@ -35,8 +36,7 @@ object Continuations:
    *  `boundary` call higher on the same call stack is undefined behaviour.
    */
   inline def boundary[T](inline body: BoundaryLabel[T] ?=> T): T =
-    // Disable on Windows
-    if isWindows then UnsupportedFeature.continuations()
+    if !isContinuationsSupported then UnsupportedFeature.continuations()
 
     val call: ContinuationBody[T] = (x: Impl.BoundaryLabel) =>
       Try(body(using x))
