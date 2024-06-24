@@ -31,7 +31,7 @@ object ScalaVersions {
   ).flatten.distinct
 
   // Tested in scheduled nightly CI to check compiler plugins
-  lazy val scala3RCVersions = List("3.5.0-RC1")
+  lazy val scala3RCVersions = List("3.5.0-RC1", "3.5.0-RC2")
 
   // Scala versions used for publishing libraries
   val scala212: String = crossScala212.last
