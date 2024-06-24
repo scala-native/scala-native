@@ -45,6 +45,10 @@ object LinktimeInfo {
   )
   def isWeakReferenceSupported: Boolean = resolved
 
+  @resolvedAtLinktime()
+  def isContinuationsSupported: Boolean =
+    isLinux || isMac || isFreeBSD || isOpenBSD || isNetBSD
+
   @resolvedAtLinktime(
     "scala.scalanative.meta.linktimeinfo.isMultithreadingEnabled"
   )
