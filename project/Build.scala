@@ -98,7 +98,7 @@ object Build {
         Seq(Compile / compile, Test / compile).map(
           setDepenencyForCurrentBinVersion(_, allMultiScalaProjects)
         ),
-        Seq(publish, publishSigned, publishLocal).map(
+        Seq(publish, publishSigned, publishLocal, Compile / doc).map(
           setDepenencyForCurrentBinVersion(_, publishedMultiScalaProjects)
         )
       )

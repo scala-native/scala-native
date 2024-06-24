@@ -64,7 +64,7 @@ private case class WalkLevel(
 private class WalkFileAttrRetriever(
     start: Path,
     followLinks: Boolean,
-    visitor: FileVisitor[? >: Path]
+    visitor: FileVisitor[_ >: Path]
 ) {
 
   /* This class concentrates mind bending intricacy. The goal is to
@@ -131,7 +131,7 @@ private class WalkFileAttrRetriever(
   private def retrieveAttributes(
       path: Path,
       useLinks: Boolean,
-      visitor: FileVisitor[? >: Path]
+      visitor: FileVisitor[_ >: Path]
   ): WalkEntry = {
     import FileTreeWalk.{FOLLOW_LINKS, NOFOLLOW_LINKS}
 
@@ -205,7 +205,7 @@ private class WalkFileAttrRetriever(
 private final class WalkContext(
     start: Path,
     followLinks: Boolean,
-    val visitor: FileVisitor[? >: Path]
+    val visitor: FileVisitor[_ >: Path]
 ) extends Iterator[WalkEntry]
     with FileVisitor[Path] {
 
@@ -495,7 +495,7 @@ private object FileTreeWalker {
       start: Path,
       maxDepth: Int,
       followLinks: Boolean,
-      visitor: FileVisitor[? >: Path]
+      visitor: FileVisitor[_ >: Path]
   ) = new FileTreeWalker(start, maxDepth, followLinks, null, visitor)
 }
 
@@ -504,7 +504,7 @@ private final class FileTreeWalker(
     maxDepth: Int,
     followLinks: Boolean, // Avoid Scala 2,3 varargs expansion differences.
     matcher: BiPredicate[Path, BasicFileAttributes],
-    var visitorArg: FileVisitor[? >: Path]
+    var visitorArg: FileVisitor[_ >: Path]
 ) {
   /* Pre-condition:
    * -  javalib Files caller has checked arguments.
@@ -537,7 +537,7 @@ private final class FileTreeWalker(
       // Punt & avoid concurrency issues by forcing a sequential stream.
       override def trySplit(): Spliterator[Path] = null
 
-      def tryAdvance(action: Consumer[? >: Path]): Boolean = {
+      def tryAdvance(action: Consumer[_ >: Path]): Boolean = {
         val s = next()
 
         if (s.isEmpty()) false
