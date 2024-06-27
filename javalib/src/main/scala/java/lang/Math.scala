@@ -11,6 +11,7 @@ private[lang] object MathRand {
 object Math {
   final val E = 2.718281828459045
   final val PI = 3.141592653589793
+  final val TAU = 6.283185307179586
 
   @alwaysinline def abs(a: scala.Double): scala.Double =
     `llvm.fabs.f64`(a)
@@ -67,6 +68,79 @@ object Math {
 
   @alwaysinline def cosh(a: scala.Double): scala.Double =
     cmath.cosh(a)
+
+  def clamp(
+      value: scala.Double,
+      min: scala.Double,
+      max: scala.Double
+  ): scala.Double = {
+    // JVM checks arguments before checking value.isNaN()
+
+    if (min.isNaN())
+      throw new IllegalArgumentException("min is NaN")
+
+    if (max.isNaN())
+      throw new IllegalArgumentException("max is NaN")
+
+    if (min.compareTo(max) == 1)
+      throw new IllegalArgumentException(s"${min} > ${max}")
+
+    /* Guard LLVM calls: given a NaN and a not-NaN, LLVM returns the not-NaN.
+     * Arguments 'min' and 'max' are known at this point to be non-NaN.
+     * If argument 'value' is a NaN, return it for JVM comparability.
+     */
+    if (value.isNaN()) value
+    else `llvm.minnum.f64`(`llvm.maxnum.f64`(value, min), max)
+  }
+
+  def clamp(
+      value: scala.Float,
+      min: scala.Float,
+      max: scala.Float
+  ): scala.Float = {
+    // JVM checks arguments before checking value.isNaN()
+
+    if (min.isNaN())
+      throw new IllegalArgumentException("min is NaN")
+
+    if (max.isNaN())
+      throw new IllegalArgumentException("max is NaN")
+
+    if (min.compareTo(max) == 1)
+      throw new IllegalArgumentException(s"${min} > ${max}")
+
+    /* Guard LLVM calls: given a NaN and a not-NaN, LLVM returns the not-NaN.
+     * Arguments 'min' and 'max' are known at this point to be non-NaN.
+     * If argument 'value' is a NaN, return it for JVM comparability.
+     */
+    if (value.isNaN()) value
+    else `llvm.minnum.f32`(`llvm.maxnum.f32`(value, min), max)
+  }
+
+  def clamp(
+      value: scala.Long,
+      min: scala.Int,
+      max: scala.Int
+  ): scala.Int = {
+    if (min.compareTo(max) == 1)
+      throw new IllegalArgumentException(s"${min} > ${max}")
+
+    /* The toInt call is safe. 'min' and 'max' arguments are Ints, so computed
+     * result is known to be in range [Integer.MIN_Value, Integer.MAX_VALUE].
+     */
+    Math.min(Math.max(value, min), max).toInt
+  }
+
+  def clamp(
+      value: scala.Long,
+      min: scala.Long,
+      max: scala.Long
+  ): scala.Long = {
+    if (min.compareTo(max) == 1)
+      throw new IllegalArgumentException(s"${min} > ${max}")
+
+    Math.min(Math.max(value, min), max)
+  }
 
   @alwaysinline def decrementExact(a: scala.Int): scala.Int =
     subtractExact(a, 1)
