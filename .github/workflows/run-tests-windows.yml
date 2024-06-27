@@ -20,15 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [3]
-        gc: [none, boehm, immix, commix]
-        include:
-          - scala: 3-next
-            gc: immix
-          - scala: 2.13
-            gc: immix
-          - scala: 2.12
-            gc: immix
+        scala: [2.12, 2.13, 3]
     steps:
       # Disable autocrlf setting, otherwise scalalib patches might not be possible to apply
       - name: Setup git config
@@ -38,6 +30,13 @@ jobs:
         id: setup
         with:
           scala-version: ${{matrix.scala}}
+      
+      - name: Test GC
+        timeout-minutes: 15
+        env:
+          SCALANATIVE_INCLUDE_DIRS: ${{steps.setup.outputs.vcpkg-dir}}\include
+          SCALANATIVE_LIB_DIRS: ${{steps.setup.outputs.vcpkg-dir}}\lib
+        run: sbt "test-gc ${{ matrix.scala }}"
 
       # None GC takes too much memory on Windows to execute partest JUnit tests
       # leading to spurious failures in the CI. Perform subset of tests instead
@@ -78,7 +77,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [2.12, 3]
+        scala: [3]
     steps:
       # Disable autocrlf setting, otherwise scalalib patches might not be possible to apply
       - name: Setup git config
@@ -102,7 +101,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [3, 3-next, 2.13]
+        scala: [2.13, 3]
         build-mode: [debug, release-fast]
         lto: [none, thin]
         gc: [boehm, immix, commix]
