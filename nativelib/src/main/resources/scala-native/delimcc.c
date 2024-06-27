@@ -230,7 +230,6 @@ void *scalanative_continuation_boundary(ContinuationBody *body, void *arg)
 
 struct Continuation {
     ptrdiff_t size;
-    void *stack;
     void *stack_top;
 
     Handlers *handlers;
@@ -238,6 +237,8 @@ struct Continuation {
 
     volatile void **return_slot;
     lh_jmp_buf buf;
+
+    char stack[];
 };
 
 static void *continuation_alloc_by_malloc(unsigned long size, void *arg) {
@@ -250,19 +251,21 @@ NO_SANITIZE
 void *scalanative_continuation_suspend(ContinuationBoundaryLabel b,
                                        SuspendFn *f, void *arg, void *alloc_arg)
     __attribute__((disable_tail_calls)) {
-    // set up the continuation
-    Continuation *continuation =
-        continuation_alloc_fn(sizeof(Continuation), alloc_arg);
-    continuation->stack_top = _lh_get_sp();
-    continuation->handlers = handler_split_at(b);
-    continuation->handlers_len = handler_len(continuation->handlers);
-    Handlers *last_handler = continuation->handlers;
+    void *stack_top = _lh_get_sp();
+    Handlers *handlers = handler_split_at(b);
+    unsigned int handlers_len = handler_len(handlers);
+    Handlers *last_handler = handlers;
+    ptrdiff_t stack_size = last_handler->h->stack_btm - stack_top;
     while (last_handler->next != NULL)
         last_handler = last_handler->next;
     assert(last_handler->h->stack_btm != NULL); // not a resume handler
-    continuation->size = last_handler->h->stack_btm - continuation->stack_top;
-    // make the continuation size a multiple of 16
-    continuation->stack = continuation_alloc_fn(continuation->size, alloc_arg);
+    // set up the continuation
+    Continuation *continuation =
+        continuation_alloc_fn(sizeof(Continuation) + stack_size, alloc_arg);
+    continuation->stack_top = stack_top;
+    continuation->handlers = handlers;
+    continuation->handlers_len = handlers_len;
+    continuation->size = stack_size;
     memcpy(continuation->stack, continuation->stack_top, continuation->size);
 
     // set up return value slot
@@ -395,7 +398,6 @@ static void handler_free(Handlers *hs) {
 
 void scalanative_continuation_free(Continuation *continuation) {
     handler_free(continuation->handlers);
-    free(continuation->stack);
     free(continuation);
 }
 #endif // SCALANATIVE_DELIMCC_DEBUG
