@@ -384,7 +384,7 @@ void *scalanative_continuation_resume(Continuation *continuation, void *out) {
     return (void *)result;
 }
 
-#ifdef DELIMCC_DEBUG
+#ifdef SCALANATIVE_DELIMCC_DEBUG
 static void handler_free(Handlers *hs) {
     while (hs != NULL) {
         Handlers *old = hs;
@@ -398,6 +398,6 @@ void scalanative_continuation_free(Continuation *continuation) {
     free(continuation->stack);
     free(continuation);
 }
-#endif // DELIMCC_DEBUG
+#endif // SCALANATIVE_DELIMCC_DEBUG
 
 #endif
