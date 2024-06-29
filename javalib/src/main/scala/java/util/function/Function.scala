@@ -1,6 +1,7 @@
 // Ported from Scala.js, commit SHA: 7b4e8a80b dated: 2022-12-06
 package java.util.function
 
+@FunctionalInterface
 trait Function[T, R] {
   def apply(t: T): R
 

@@ -3,6 +3,7 @@ package java.util.function
 
 import java.util.Comparator
 
+@FunctionalInterface
 trait BinaryOperator[T] extends BiFunction[T, T, T]
 
 object BinaryOperator {
