@@ -66,17 +66,16 @@ class MathTestOnJDK21 {
      * zero. Detect implementation flaws early.
      *
      * Case in point, see Issue #3977.
+     * The next assertion looks strange because it works around that issue.
      */
 
-    /* // Enable assertion once SN Issue #3977 is fixed. - Begin
     assertTrue(
-      "-0.0 is not strictly less than +0.0",
-      Double.compare(-0.0, +0.0) < 0
+      "-0.0D does not compare less than +0.0D",
+      Double.compare(Double.valueOf(-0.0d), Double.valueOf(+0.0d)) == -1
     )
-     */ // Enable assertion once SN Issue #3977 is fixed. - End
 
     val testPoints = Seq(
-      TestPoint(-0.0, +0.0, 1.0, 0.0), // from JVM 21 clamp(double) description
+      TestPoint(Double.valueOf(-0.0), +0.0, 1.0, 0.0), // JVM 21 doc test case
       TestPoint(+0.0, +0.0, 1.1, 0.0),
       TestPoint(0.5, 0.0, 1.2, 0.5),
       TestPoint(1.3, 0.0, 1.3, 1.3),
@@ -159,14 +158,14 @@ class MathTestOnJDK21 {
     /* The first TestPoint below, from the JVM doc example, only detects
      *  behavior-under-test if IEEE 754 negative zero is less than positive
      *  zero. Detect implementation flaws early.
+     *
+     * The next assertion looks strange because it works around that issue.
      */
 
-    /* // Enable assertion once SN Issue #3977 is fixed. - Begin
     assertTrue(
-      "-0.0 is not strictly less than +0.0",
-      Float.compare(-0.0f, +0.0f) < 0
+      "-0.0F does not compare less than +0.0F",
+      Float.compare(Float.valueOf(-0.0f), Float.valueOf(+0.0f)) == -1
     )
-     */ // Enable assertion once SN Issue #3977 is fixed. - End
 
     val testPoints = Seq(
       TestPoint(-0.0f, +0.0f, 1.0f, +0.0f), // from JVM 21 clamp(float) doc.
