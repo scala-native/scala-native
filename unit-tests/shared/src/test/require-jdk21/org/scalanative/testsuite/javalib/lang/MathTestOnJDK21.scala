@@ -71,7 +71,7 @@ class MathTestOnJDK21 {
 
     assertTrue(
       "-0.0D does not compare less than +0.0D",
-      Double.compare(Double.valueOf(-0.0d), Double.valueOf(+0.0d)) == -1
+      Double.valueOf(-0.0d).compareTo(Double.valueOf(+0.0d)) == -1
     )
 
     val testPoints = Seq(
@@ -105,6 +105,12 @@ class MathTestOnJDK21 {
         epsilonD
       )
     }
+
+    // A closer look at negative zero handling.
+    assertTrue(
+      s"Expected clamp(+0.0, -2.0, -0.0) to be -0.0",
+      Math.clamp(+0.0, -2.0, -0.0).compareTo(Double.valueOf(-0.0)) == 0
+    )
   }
 
   // clamp() Float
@@ -164,7 +170,7 @@ class MathTestOnJDK21 {
 
     assertTrue(
       "-0.0F does not compare less than +0.0F",
-      Float.compare(Float.valueOf(-0.0f), Float.valueOf(+0.0f)) == -1
+      Float.valueOf(-0.0f).compareTo(Float.valueOf(+0.0f)) == -1
     )
 
     val testPoints = Seq(
@@ -198,6 +204,12 @@ class MathTestOnJDK21 {
         epsilonF
       )
     }
+
+    // A closer look at negative zero handling.
+    assertTrue(
+      s"Expected clamp(+0.0F, -2.0F, -0.0F) to be -0.0",
+      Math.clamp(+0.0f, -2.0f, -0.0f).compareTo(Float.valueOf(-0.0f)) == 0
+    )
   }
 
   // clamp() LongToInt
