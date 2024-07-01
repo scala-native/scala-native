@@ -85,21 +85,11 @@ object Math {
     if (min.compareTo(max) == 1)
       throw new IllegalArgumentException(s"${min} > ${max}")
 
-    /* Guard LLVM calls: given a NaN and a not-NaN, LLVM returns the not-NaN.
-     * Arguments 'min' and 'max' are known at this point to be non-NaN.
-     * If argument 'value' is a NaN, return it for JVM comparability.
-     *
-     * llvm.minimum & llv.maximum compare -0.0 less than 0.0.
-     * minnum & maxnum may not.
-     */
+    // works Windows Clang 17, Breen macOS & Linux Clang 18, Fails CI Clang 14
+    // "minimum" intrinsic handles -0.0D and NaNs as JVM defines "correctly".
+    //    `llvm.minimum.f64`(`llvm.maximum.f64`(value, min), max)
 
-//    if (value.isNaN()) value
-//    else `llvm.minimum.f64`(`llvm.maximum.f64`(value, min), max)
-
-    `llvm.minimum.f64`(`llvm.maximum.f64`(value, min), max)
-
-//    val dv = `llvm.maximum.f64`(value, min)
-//    `llvm.minimum.f64`(dv, max)
+    Math.min(Math.max(value, min), max)
   }
 
   def clamp(
@@ -118,20 +108,11 @@ object Math {
     if (min.compareTo(max) == 1)
       throw new IllegalArgumentException(s"${min} > ${max}")
 
-    /* Guard LLVM calls: given a NaN and a not-NaN, LLVM returns the not-NaN.
-     * Arguments 'min' and 'max' are known at this point to be non-NaN.
-     * If argument 'value' is a NaN, return it for JVM comparability.
-     *
-     * llvm.minimum & llv.maximum compare -0.0 less than 0.0.
-     * minnum & maxnum may not.
-     */
+    // works Windows Clang 17, Breen macOS & Linux Clang 18, Fails CI Clang 14
+    // "minimum" intrinsic handles -0.0F and NaNs as JVM defines "correctly".
+    // `llvm.minimum.f32`(`llvm.maximum.f32`(value, min), max)
 
-//    if (value.isNaN()) value
-//    else `llvm.minimum.f32`(`llvm.maximum.f32`(value, min), max)
-//    Math.min(Math.max(value, min), max)
-
-    val fv = `llvm.maximum.f32`(value, min)
-    `llvm.minimum.f32`(fv, max)
+    Math.min(Math.max(value, min), max)
   }
 
   def clamp(
