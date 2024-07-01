@@ -93,8 +93,11 @@ object Math {
      * minnum & maxnum may not.
      */
 
-    if (value.isNaN()) value
-    else `llvm.minimum.f64`(`llvm.maximum.f64`(value, min), max)
+//    if (value.isNaN()) value
+//    else `llvm.minimum.f64`(`llvm.maximum.f64`(value, min), max)
+//    else `llvm.minimum.f64`(`llvm.maximum.f64`(value, min), max)
+    val v = `llvm.maximum.f64`(value, min)
+    `llvm.minimum.f64`(v, max)  
   }
 
   def clamp(
@@ -121,8 +124,9 @@ object Math {
      * minnum & maxnum may not.
      */
 
-    if (value.isNaN()) value
-    else `llvm.minimum.f32`(`llvm.maximum.f32`(value, min), max)
+//    if (value.isNaN()) value
+//    else `llvm.minimum.f32`(`llvm.maximum.f32`(value, min), max)
+    Math.min(Math.max(value, min), max)
   }
 
   def clamp(
