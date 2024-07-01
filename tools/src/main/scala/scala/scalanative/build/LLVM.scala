@@ -96,7 +96,7 @@ private[scalanative] object LLVM {
         Seq("-fomit-frame-pointer") ++
         config.compileOptions
     val compilec: Seq[String] =
-      Seq(compiler, "-c", inpath, "-o", outpath) ++ flags
+      Seq(compiler, "-c", inpath, "-o", outpath) ++ flags.map(f => s"/clang:$f")
 
     // compile
     config.logger.running(compilec)
