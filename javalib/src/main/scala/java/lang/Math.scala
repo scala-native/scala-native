@@ -95,9 +95,11 @@ object Math {
 
 //    if (value.isNaN()) value
 //    else `llvm.minimum.f64`(`llvm.maximum.f64`(value, min), max)
-//    else `llvm.minimum.f64`(`llvm.maximum.f64`(value, min), max)
-    val dv = `llvm.maximum.f64`(value, min)
-    `llvm.minimum.f64`(dv, max)
+
+    `llvm.minimum.f64`(`llvm.maximum.f64`(value, min), max)
+
+//    val dv = `llvm.maximum.f64`(value, min)
+//    `llvm.minimum.f64`(dv, max)
   }
 
   def clamp(
