@@ -47,8 +47,12 @@ object LLVMIntrinsics {
   def `llvm.fma.f64`(a: Double, b: Double, c: Double): Double = extern
   def `llvm.fabs.f32`(value: Float): Float = extern
   def `llvm.fabs.f64`(value: Double): Double = extern
+  def `llvm.minimum.f32`(left: Float, right: Float): Float = extern
+  def `llvm.minimum.f64`(left: Double, right: Double): Double = extern
   def `llvm.minnum.f32`(left: Float, right: Float): Float = extern
   def `llvm.minnum.f64`(left: Double, right: Double): Double = extern
+  def `llvm.maximum.f32`(left: Float, right: Float): Float = extern
+  def `llvm.maximum.f64`(left: Double, right: Double): Double = extern
   def `llvm.maxnum.f32`(left: Float, right: Float): Float = extern
   def `llvm.maxnum.f64`(left: Double, right: Double): Double = extern
   def `llvm.copysign.f32`(magn: Float, sgn: Float): Float = extern

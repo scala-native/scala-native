@@ -88,9 +88,13 @@ object Math {
     /* Guard LLVM calls: given a NaN and a not-NaN, LLVM returns the not-NaN.
      * Arguments 'min' and 'max' are known at this point to be non-NaN.
      * If argument 'value' is a NaN, return it for JVM comparability.
+     *
+     * llvm.minimum & llv.maximum compare -0.0 less than 0.0.
+     * minnum & maxnum may not.
      */
+
     if (value.isNaN()) value
-    else `llvm.minnum.f64`(`llvm.maxnum.f64`(value, min), max)
+    else `llvm.minimum.f64`(`llvm.maximum.f64`(value, min), max)
   }
 
   def clamp(
@@ -112,9 +116,13 @@ object Math {
     /* Guard LLVM calls: given a NaN and a not-NaN, LLVM returns the not-NaN.
      * Arguments 'min' and 'max' are known at this point to be non-NaN.
      * If argument 'value' is a NaN, return it for JVM comparability.
+     *
+     * llvm.minimum & llv.maximum compare -0.0 less than 0.0.
+     * minnum & maxnum may not.
      */
+
     if (value.isNaN()) value
-    else `llvm.minnum.f32`(`llvm.maxnum.f32`(value, min), max)
+    else `llvm.minimum.f32`(`llvm.maximum.f32`(value, min), max)
   }
 
   def clamp(

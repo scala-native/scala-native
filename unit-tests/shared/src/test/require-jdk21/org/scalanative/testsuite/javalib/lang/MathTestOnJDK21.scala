@@ -108,8 +108,8 @@ class MathTestOnJDK21 {
 
     // A closer look at negative zero handling.
     assertTrue(
-      s"Expected clamp(+0.0, -2.0, -0.0) to be -0.0",
-      Math.clamp(+0.0, -2.0, -0.0).compareTo(Double.valueOf(-0.0)) == 0
+      s"Expected clamp(+0.0D, -2.0D, -0.0D) to be -0.0D",
+      Math.clamp(+0.0d, -2.0d, -0.0d).compareTo(Double.valueOf(-0.0d)) == 0
     )
   }
 
@@ -207,7 +207,7 @@ class MathTestOnJDK21 {
 
     // A closer look at negative zero handling.
     assertTrue(
-      s"Expected clamp(+0.0F, -2.0F, -0.0F) to be -0.0",
+      s"Expected clamp(+0.0F, -2.0F, -0.0F) to be -0.0F",
       Math.clamp(+0.0f, -2.0f, -0.0f).compareTo(Float.valueOf(-0.0f)) == 0
     )
   }
