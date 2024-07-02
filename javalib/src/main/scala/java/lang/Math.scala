@@ -249,12 +249,29 @@ object Math {
 //  @alwaysinline def min(a: scala.Double, b: scala.Double): scala.Double =
 //    if (a.isNaN() || b.isNaN()) Double.NaN else `llvm.minnum.f64`(a, b)
 
+  /* // Broken, fails clamp() test
   // See Issue #3984 re: simplification via LLVM 'minimum' intrinsic.
   def min(a: scala.Double, b: scala.Double): scala.Double = {
     if (a.isNaN() || b.isNaN()) Double.NaN
     else {
       val mn = `llvm.minnum.f64`(a, b)
       if (mn != 0.0) mn
+      else if ((1 / a) == Double.NEGATIVE_INFINITY) a // When true, have -0.0
+      else b
+    }
+  }
+   */
+
+  // See Issue #3984 re: simplification via LLVM 'minimum' intrinsic.
+  def min(a: scala.Double, b: scala.Double): scala.Double = {
+    if (a.isNaN() || b.isNaN()) Double.NaN
+    else {
+      val mn = `llvm.minnum.f64`(a, b)
+      if (mn != 0.0) mn
+//      else if ((1 / a) == Double.NEGATIVE_INFINITY) a // When true, have -0.0
+//      else b
+      else if (a < b) a
+      else if (b < a) b
       else if ((1 / a) == Double.NEGATIVE_INFINITY) a // When true, have -0.0
       else b
     }
