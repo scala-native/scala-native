@@ -85,7 +85,7 @@ object Math {
     if (min.compareTo(max) == 1)
       throw new IllegalArgumentException(s"${min} > ${max}")
 
-    // works Windows Clang 17, Breen macOS & Linux Clang 18, Fails CI Clang 14
+    // works Windows Clang 17, local macOS & Linux Clang 18, Fails CI Clang 14
     // "minimum" intrinsic handles -0.0D and NaNs as JVM defines "correctly".
     //    `llvm.minimum.f64`(`llvm.maximum.f64`(value, min), max)
 
@@ -108,7 +108,7 @@ object Math {
     if (min.compareTo(max) == 1)
       throw new IllegalArgumentException(s"${min} > ${max}")
 
-    // works Windows Clang 17, Breen macOS & Linux Clang 18, Fails CI Clang 14
+    // works Windows Clang 17, local macOS & Linux Clang 18, Fails CI Clang 14
     // "minimum" intrinsic handles -0.0F and NaNs as JVM defines "correctly".
     // `llvm.minimum.f32`(`llvm.maximum.f32`(value, min), max)
 
@@ -236,8 +236,18 @@ object Math {
   @alwaysinline def max(a: scala.Long, b: scala.Long): scala.Long =
     if (a > b) a else b
 
-  @alwaysinline def min(a: scala.Double, b: scala.Double): scala.Double =
-    if (a.isNaN() || b.isNaN()) Double.NaN else `llvm.minnum.f64`(a, b)
+//  @alwaysinline def min(a: scala.Double, b: scala.Double): scala.Double =
+//    if (a.isNaN() || b.isNaN()) Double.NaN else `llvm.minnum.f64`(a, b)
+
+  def min(a: scala.Double, b: scala.Double): scala.Double = {
+    if (a.isNaN() || b.isNaN()) Double.NaN
+    else {
+      val min = `llvm.minnum.f64`(a, b)
+      if (min != 0.0) min
+      else if (1 / a == Double.NEGATIVE_INFINITY) a
+      else b
+    }
+  }
 
   @alwaysinline def min(a: scala.Float, b: scala.Float): scala.Float =
     if (a.isNaN() || b.isNaN()) Float.NaN else `llvm.minnum.f32`(a, b)
