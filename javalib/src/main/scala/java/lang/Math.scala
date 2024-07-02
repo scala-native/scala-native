@@ -11,6 +11,7 @@ private[lang] object MathRand {
 object Math {
   final val E = 2.718281828459045
   final val PI = 3.141592653589793
+  final val TAU = 6.283185307179586
 
   @alwaysinline def abs(a: scala.Double): scala.Double =
     `llvm.fabs.f64`(a)
@@ -67,6 +68,69 @@ object Math {
 
   @alwaysinline def cosh(a: scala.Double): scala.Double =
     cmath.cosh(a)
+
+  def clamp(
+      value: scala.Double,
+      min: scala.Double,
+      max: scala.Double
+  ): scala.Double = {
+    // JVM checks arguments before checking value.isNaN()
+
+    if (min.isNaN())
+      throw new IllegalArgumentException("min is NaN")
+
+    if (max.isNaN())
+      throw new IllegalArgumentException("max is NaN")
+
+    if (min.compareTo(max) == 1)
+      throw new IllegalArgumentException(s"${min} > ${max}")
+
+    Math.min(Math.max(value, min), max)
+  }
+
+  def clamp(
+      value: scala.Float,
+      min: scala.Float,
+      max: scala.Float
+  ): scala.Float = {
+    // JVM checks arguments before checking value.isNaN()
+
+    if (min.isNaN())
+      throw new IllegalArgumentException("min is NaN")
+
+    if (max.isNaN())
+      throw new IllegalArgumentException("max is NaN")
+
+    if (min.compareTo(max) == 1)
+      throw new IllegalArgumentException(s"${min} > ${max}")
+
+    Math.min(Math.max(value, min), max)
+  }
+
+  def clamp(
+      value: scala.Long,
+      min: scala.Int,
+      max: scala.Int
+  ): scala.Int = {
+    if (min.compareTo(max) == 1)
+      throw new IllegalArgumentException(s"${min} > ${max}")
+
+    /* The toInt call is safe. 'min' and 'max' arguments are Ints, so computed
+     * result is known to be in range [Integer.MIN_Value, Integer.MAX_VALUE].
+     */
+    Math.min(Math.max(value, min), max).toInt
+  }
+
+  def clamp(
+      value: scala.Long,
+      min: scala.Long,
+      max: scala.Long
+  ): scala.Long = {
+    if (min.compareTo(max) == 1)
+      throw new IllegalArgumentException(s"${min} > ${max}")
+
+    Math.min(Math.max(value, min), max)
+  }
 
   @alwaysinline def decrementExact(a: scala.Int): scala.Int =
     subtractExact(a, 1)
@@ -152,11 +216,26 @@ object Math {
   @alwaysinline def log1p(a: scala.Double): scala.Double =
     cmath.log1p(a)
 
-  @alwaysinline def max(a: scala.Double, b: scala.Double): scala.Double =
-    if (a.isNaN() || b.isNaN()) Double.NaN else `llvm.maxnum.f64`(a, b)
+  // See Issue #3984 re: simplification via LLVM 'maximum' intrinsic.
+  @inline def max(a: scala.Double, b: scala.Double): scala.Double = {
+    if (a.isNaN() || b.isNaN()) Double.NaN
+    else {
+      val mx = `llvm.maxnum.f64`(a, b)
+      if ((mx != 0.0) || (a != b)) mx
+      else if ((1 / a) == Double.POSITIVE_INFINITY) a // When true, have +0.0
+      else b
+    }
+  }
 
-  @alwaysinline def max(a: scala.Float, b: scala.Float): scala.Float =
-    if (a.isNaN() || b.isNaN()) Float.NaN else `llvm.maxnum.f32`(a, b)
+  @inline def max(a: scala.Float, b: scala.Float): scala.Float = {
+    if (a.isNaN() || b.isNaN()) Float.NaN
+    else {
+      val mx = `llvm.maxnum.f32`(a, b)
+      if ((mx != 0.0) || (a != b)) mx
+      else if ((1 / a) == Float.POSITIVE_INFINITY) a // When true, have +0.0
+      else b
+    }
+  }
 
   @alwaysinline def max(a: scala.Int, b: scala.Int): scala.Int =
     if (a > b) a else b
@@ -164,11 +243,26 @@ object Math {
   @alwaysinline def max(a: scala.Long, b: scala.Long): scala.Long =
     if (a > b) a else b
 
-  @alwaysinline def min(a: scala.Double, b: scala.Double): scala.Double =
-    if (a.isNaN() || b.isNaN()) Double.NaN else `llvm.minnum.f64`(a, b)
+  // See Issue #3984 re: simplification via LLVM 'minimum' intrinsic.
+  @inline def min(a: scala.Double, b: scala.Double): scala.Double = {
+    if (a.isNaN() || b.isNaN()) Double.NaN
+    else {
+      val mn = `llvm.minnum.f64`(a, b)
+      if ((mn != 0.0) || (a != b)) mn
+      else if ((1 / a) == Double.NEGATIVE_INFINITY) a // When true, have -0.0
+      else b
+    }
+  }
 
-  @alwaysinline def min(a: scala.Float, b: scala.Float): scala.Float =
-    if (a.isNaN() || b.isNaN()) Float.NaN else `llvm.minnum.f32`(a, b)
+  @inline def min(a: scala.Float, b: scala.Float): scala.Float = {
+    if (a.isNaN() || b.isNaN()) Float.NaN
+    else {
+      val mn = `llvm.minnum.f32`(a, b)
+      if ((mn != 0.0) || (a != b)) mn
+      else if ((1 / a) == Float.NEGATIVE_INFINITY) a // When true, have -0.0
+      else b
+    }
+  }
 
   @alwaysinline def min(a: scala.Int, b: scala.Int): scala.Int =
     if (a < b) a else b
