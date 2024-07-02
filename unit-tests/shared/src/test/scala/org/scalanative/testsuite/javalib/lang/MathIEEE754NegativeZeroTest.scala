@@ -120,7 +120,7 @@ class MathIEEE754NegativeZeroTest {
     )
 
     assertEquals(
-      s"-0.0D.compareTo(+0.0D)",
+      s"-0.0D.compareTo(-0.0D)",
       0,
       negZeroD.compareTo(negZeroD)
     )
@@ -141,7 +141,7 @@ class MathIEEE754NegativeZeroTest {
     )
 
     assertEquals(
-      s"-0.0F.compareTo(+0.0F)",
+      s"-0.0F.compareTo(-0.0F)",
       0,
       negZeroF.compareTo(negZeroF)
     )
@@ -156,19 +156,19 @@ class MathIEEE754NegativeZeroTest {
   @Test def doubleCompareUsingNegativeZero(): Unit = {
 
     assertEquals(
-      s"-0.0D.compareTo(+0.0D)",
+      s"Double.compare(-0.0D, +0.0D)",
       -1,
       jl.Double.compare(negZeroD, posZeroD)
     )
 
     assertEquals(
-      s"-0.0D.compareTo(+0.0D)",
+      s"Double.compare(-0.0D, -0.0D)",
       0,
       jl.Double.compare(negZeroD, negZeroD)
     )
 
     assertEquals(
-      s"+0.0D.compareTo(-0.0D)",
+      s"Double.compare(+0.0D, -0.0D)",
       1,
       jl.Double.compare(posZeroD, negZeroD)
     )
@@ -177,19 +177,19 @@ class MathIEEE754NegativeZeroTest {
   @Test def floatCompareUsingNegativeZero(): Unit = {
 
     assertEquals(
-      s"-0.0F.compareTo(+0.0F)",
+      s"Float.compare(-0.0F, +0.0F)",
       -1,
       jl.Float.compare(negZeroF, posZeroF)
     )
 
     assertEquals(
-      s"-0.0F.compareTo(+0.0F)",
+      s"Float.compare(-0.0D, -0.0D)",
       0,
       jl.Float.compare(negZeroF, negZeroF)
     )
 
     assertEquals(
-      s"+0.0F.compareTo(-0.0F)",
+      s"Float.compare(+0.0D, -0.0D)",
       1,
       jl.Float.compare(posZeroF, negZeroF)
     )
