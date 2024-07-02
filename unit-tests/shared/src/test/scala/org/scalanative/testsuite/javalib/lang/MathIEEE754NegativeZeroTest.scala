@@ -8,7 +8,7 @@ import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import java.{lang => jl}
 import java.lang._
 
-class NegativeZeroTestOnJDK21 {
+class MathIEEE754NegativeZeroTest {
 
   @Test def mathMinWithNegativeZero(): Unit = {
 
@@ -33,6 +33,30 @@ class NegativeZeroTestOnJDK21 {
     assertTrue(
       "wrong min, min(-0.0D, -0.0D)",
       1.0 / min_C == Double.NEGATIVE_INFINITY
+    )
+  }
+
+  @Test def mathMaxWithNegativeZero(): Unit = {
+
+    val max_A = Math.max(jl.Double.valueOf(-0.0d), 0.0d)
+
+    assertTrue(
+      "wrong max_A, max(-0.0D, 0.0D)",
+      1.0 / max_A == Double.POSITIVE_INFINITY
+    )
+
+    val max_B = Math.max(0.0d, jl.Double.valueOf(-0.0d))
+
+    assertTrue(
+      "wrong max_B, max(0.0D, -0.0D)",
+      1.0 / max_B == Double.POSITIVE_INFINITY
+    )
+
+    val max_C = Math.max(jl.Double.valueOf(-0.0d), jl.Double.valueOf(-0.0d))
+
+    assertTrue(
+      "wrong max_C, max(-0.0D, -0.0D)",
+      1.0 / max_C == Double.NEGATIVE_INFINITY
     )
   }
 
