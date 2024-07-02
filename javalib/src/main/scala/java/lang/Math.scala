@@ -216,23 +216,8 @@ object Math {
   @alwaysinline def log1p(a: scala.Double): scala.Double =
     cmath.log1p(a)
 
-//  @alwaysinline def max(a: scala.Double, b: scala.Double): scala.Double =
-//    if (a.isNaN() || b.isNaN()) Double.NaN else `llvm.maxnum.f64`(a, b)
-
-  /*
   // See Issue #3984 re: simplification via LLVM 'maximum' intrinsic.
-  def max(a: scala.Double, b: scala.Double): scala.Double =
-    if (a.isNaN() || b.isNaN()) Double.NaN
-    else {
-      val mx = `llvm.maxnum.f64`(a, b)
-      if (mx != 0.0) mx
-      else if ((1 / a) == Double.POSITIVE_INFINITY) a // When true, have +0.0
-      else b
-    }
-   */
-
-  // See Issue #3984 re: simplification via LLVM 'maximum' intrinsic.
-  def max(a: scala.Double, b: scala.Double): scala.Double =
+  @inline def max(a: scala.Double, b: scala.Double): scala.Double = {
     if (a.isNaN() || b.isNaN()) Double.NaN
     else {
       val mx = `llvm.maxnum.f64`(a, b)
@@ -240,9 +225,17 @@ object Math {
       else if ((1 / a) == Double.POSITIVE_INFINITY) a // When true, have +0.0
       else b
     }
+  }
 
-  @alwaysinline def max(a: scala.Float, b: scala.Float): scala.Float =
-    if (a.isNaN() || b.isNaN()) Float.NaN else `llvm.maxnum.f32`(a, b)
+  @inline def max(a: scala.Float, b: scala.Float): scala.Float = {
+    if (a.isNaN() || b.isNaN()) Float.NaN
+    else {
+      val mx = `llvm.maxnum.f32`(a, b)
+      if ((mx != 0.0) || (a != b)) mx
+      else if ((1 / a) == Float.POSITIVE_INFINITY) a // When true, have +0.0
+      else b
+    }
+  }
 
   @alwaysinline def max(a: scala.Int, b: scala.Int): scala.Int =
     if (a > b) a else b
@@ -250,53 +243,8 @@ object Math {
   @alwaysinline def max(a: scala.Long, b: scala.Long): scala.Long =
     if (a > b) a else b
 
-//  @alwaysinline def min(a: scala.Double, b: scala.Double): scala.Double =
-//    if (a.isNaN() || b.isNaN()) Double.NaN else `llvm.minnum.f64`(a, b)
-
-  /* // Broken, fails clamp() test
   // See Issue #3984 re: simplification via LLVM 'minimum' intrinsic.
-  def min(a: scala.Double, b: scala.Double): scala.Double = {
-    if (a.isNaN() || b.isNaN()) Double.NaN
-    else {
-      val mn = `llvm.minnum.f64`(a, b)
-      if (mn != 0.0) mn
-      else if ((1 / a) == Double.NEGATIVE_INFINITY) a // When true, have -0.0
-      else b
-    }
-  }
-   */
-
-  /*
-  // See Issue #3984 re: simplification via LLVM 'minimum' intrinsic.
-  def min(a: scala.Double, b: scala.Double): scala.Double = {
-    if (a.isNaN() || b.isNaN()) Double.NaN
-    else {
-      val mn = `llvm.minnum.f64`(a, b)
-      if (mn != 0.0) mn
-      else if (a < b) a
-      else if (b < a) b
-      else if ((1 / a) == Double.NEGATIVE_INFINITY) a // When true, have -0.0
-      else b
-    }
-  }
-   */
-
-  /* // Untried
-  // See Issue #3984 re: simplification via LLVM 'minimum' intrinsic.
-  def min(a: scala.Double, b: scala.Double): scala.Double = {
-    if (a.isNaN() || b.isNaN()) Double.NaN
-    else {
-      if (a < b) a
-      else if (b < a) b
-      else if ((a == b) && (a != 0))  // e.g. handle min(1, 1) correctly
-      else if ((1 / a) == Double.NEGATIVE_INFINITY) a // have -0.0
-      else b
-    }
-  }
-   */
-
-  // See Issue #3984 re: simplification via LLVM 'minimum' intrinsic.
-  def min(a: scala.Double, b: scala.Double): scala.Double = {
+  @inline def min(a: scala.Double, b: scala.Double): scala.Double = {
     if (a.isNaN() || b.isNaN()) Double.NaN
     else {
       val mn = `llvm.minnum.f64`(a, b)
@@ -306,8 +254,15 @@ object Math {
     }
   }
 
-  @alwaysinline def min(a: scala.Float, b: scala.Float): scala.Float =
-    if (a.isNaN() || b.isNaN()) Float.NaN else `llvm.minnum.f32`(a, b)
+  @inline def min(a: scala.Float, b: scala.Float): scala.Float = {
+    if (a.isNaN() || b.isNaN()) Float.NaN
+    else {
+      val mn = `llvm.minnum.f32`(a, b)
+      if ((mn != 0.0) || (a != b)) mn
+      else if ((1 / a) == Float.NEGATIVE_INFINITY) a // When true, have -0.0
+      else b
+    }
+  }
 
   @alwaysinline def min(a: scala.Int, b: scala.Int): scala.Int =
     if (a < b) a else b
