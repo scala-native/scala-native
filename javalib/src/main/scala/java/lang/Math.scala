@@ -227,12 +227,24 @@ object Math {
 //  @alwaysinline def max(a: scala.Double, b: scala.Double): scala.Double =
 //    if (a.isNaN() || b.isNaN()) Double.NaN else `llvm.maxnum.f64`(a, b)
 
+  /*
   // See Issue #3984 re: simplification via LLVM 'maximum' intrinsic.
   def max(a: scala.Double, b: scala.Double): scala.Double =
     if (a.isNaN() || b.isNaN()) Double.NaN
     else {
       val mx = `llvm.maxnum.f64`(a, b)
       if (mx != 0.0) mx
+      else if ((1 / a) == Double.POSITIVE_INFINITY) a // When true, have +0.0
+      else b
+    }
+   */
+
+  // See Issue #3984 re: simplification via LLVM 'maximum' intrinsic.
+  def max(a: scala.Double, b: scala.Double): scala.Double =
+    if (a.isNaN() || b.isNaN()) Double.NaN
+    else {
+      val mx = `llvm.maxnum.f64`(a, b)
+      if ((mx != 0.0) || (a != b)) mx
       else if ((1 / a) == Double.POSITIVE_INFINITY) a // When true, have +0.0
       else b
     }
@@ -284,6 +296,7 @@ object Math {
     else {
       if (a < b) a
       else if (b < a) b
+      else if ((a == b) && (a != 0))  // e.g. handle min(1, 1) correctly
       else if ((1 / a) == Double.NEGATIVE_INFINITY) a // have -0.0
       else b
     }
