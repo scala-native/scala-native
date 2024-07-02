@@ -85,10 +85,6 @@ object Math {
     if (min.compareTo(max) == 1)
       throw new IllegalArgumentException(s"${min} > ${max}")
 
-    // works Windows Clang 17, local macOS & Linux Clang 18, Fails CI Clang 14
-    // "minimum" intrinsic handles -0.0D and NaNs as JVM defines "correctly".
-    //    `llvm.minimum.f64`(`llvm.maximum.f64`(value, min), max)
-
     Math.min(Math.max(value, min), max)
   }
 
@@ -107,10 +103,6 @@ object Math {
 
     if (min.compareTo(max) == 1)
       throw new IllegalArgumentException(s"${min} > ${max}")
-
-    // works Windows Clang 17, local macOS & Linux Clang 18, Fails CI Clang 14
-    // "minimum" intrinsic handles -0.0F and NaNs as JVM defines "correctly".
-    // `llvm.minimum.f32`(`llvm.maximum.f32`(value, min), max)
 
     Math.min(Math.max(value, min), max)
   }
