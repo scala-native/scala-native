@@ -99,7 +99,7 @@ class MathTestOnJDK21 {
       val result = Math.clamp(v, min, max)
 
       assertEquals(
-        s"unexpected clamp(${v}, ${min}, ${max}) result",
+        s"unexpected clamp(${v}, ${min}, ${max}) result: ${result}",
         expected,
         result,
         epsilonD
@@ -107,9 +107,10 @@ class MathTestOnJDK21 {
     }
 
     // A closer look at negative zero handling.
+    val crd = Math.clamp(+0.0d, -2.0d, -0.0d)
     assertTrue(
-      s"Expected clamp(+0.0D, -2.0D, -0.0D) to be -0.0D",
-      Math.clamp(+0.0d, -2.0d, -0.0d).compareTo(Double.valueOf(-0.0d)) == 0
+      s"Expected clamp(+0.0D, -2.0D, -0.0D) to be -0.0D, was: ${crd}",
+      (1.0 / crd) == Double.NEGATIVE_INFINITY
     )
   }
 
@@ -198,7 +199,7 @@ class MathTestOnJDK21 {
       val result = Math.clamp(v, min, max)
 
       assertEquals(
-        s"unexpected clamp(${v}, ${min}, ${max}) result",
+        s"unexpected clamp(${v}, ${min}, ${max}) result: ${result}",
         expected,
         result,
         epsilonF
@@ -206,9 +207,10 @@ class MathTestOnJDK21 {
     }
 
     // A closer look at negative zero handling.
+    val crf = Math.clamp(+0.0f, -2.0f, -0.0f)
     assertTrue(
-      s"Expected clamp(+0.0F, -2.0F, -0.0F) to be -0.0F",
-      Math.clamp(+0.0f, -2.0f, -0.0f).compareTo(Float.valueOf(-0.0f)) == 0
+      s"Expected clamp(+0.0F, -2.0F, -0.0F) to be -0.0F, was: ${crf}",
+      (1.0 / crf) == Float.NEGATIVE_INFINITY
     )
   }
 
@@ -267,7 +269,7 @@ class MathTestOnJDK21 {
       val result = Math.clamp(v, min, max)
 
       assertEquals(
-        s"unexpected clamp(${v}, ${min}, ${max}) result",
+        s"unexpected clamp(${v}, ${min}, ${max}) result: ${result}",
         expected,
         result
       )
@@ -323,7 +325,7 @@ class MathTestOnJDK21 {
       val result = Math.clamp(v, min, max)
 
       assertEquals(
-        s"unexpected clamp(${v}, ${min}, ${max}) result",
+        s"unexpected clamp(${v}, ${min}, ${max}) result: ${result}",
         expected,
         result
       )
