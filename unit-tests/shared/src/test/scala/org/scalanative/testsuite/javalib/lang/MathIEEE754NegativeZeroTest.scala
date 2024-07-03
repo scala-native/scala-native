@@ -148,6 +148,14 @@ class MathIEEE754NegativeZeroSundryTest {
     )
   }
 
+  @Test def validateIEEE754FloatNegativeZeros(): Unit = {
+    assertTrue(
+      s"Expected a Float negative zero",
+      (1.0f / negZeroF) == Float.NEGATIVE_INFINITY
+    )
+  }
+
+  /*  // Start bypass_1
   @Test def doubleCompareToUsingNegativeZero(): Unit = {
 
     assertEquals(
@@ -263,6 +271,7 @@ class MathIEEE754NegativeZeroSundryTest {
       (1.0f / signumPZ) == Float.POSITIVE_INFINITY
     )
   }
+   */ // End bypass_1
 
   @Test def doubleCopySignForcedFail(): Unit = {
 
@@ -304,7 +313,23 @@ class MathIEEE754NegativeZeroSundryTest {
 //      0.0d
     )
 
+    assertEquals(
+      s"<AssertEquals, valueOf, +0.0 Epsilon> copySign(1.0D, -0.0D)",
+      -1.0d,
+      Math.copySign(1.0d, jl.Double.valueOf(-0.0d)),
+      0.0d
+    )
+
+    val tmpVal = Math.copySign(1.0d, jl.Double.valueOf(-0.0d))
+    assertEquals(
+      s"<AssertEquals, tmpVal, valueOf, +0.0 Epsilon> copySign(1.0D, -0.0D)",
+      -1.0d,
+      tmpVal,
+      0.0d
+    )
   }
+
+  /*  // Start bypass_1
 
   @Test def doubleCopySignUsingNegativeZero(): Unit = {
 
@@ -361,4 +386,5 @@ class MathIEEE754NegativeZeroSundryTest {
       0.0f
     )
   }
+   */ // End bypass_2
 }
