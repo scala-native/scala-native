@@ -273,17 +273,28 @@ class MathIEEE754NegativeZeroSundryTest {
 
     /* // Using three interventions, expected results are returned.
    // Was it the scala.Double, the "no intermediate variable", or
-   // the absense of "assertEquals".
+   // the absence of "assertEquals".
    // Now, try using a Java Double and leaving the other two interventions.
     fail(
       "forced failure_1: <scala.Double> copySign(1.0D, -0.0D) expect: -1.0 "
         + s"got: ${Math.copySign(1.0d, -0.0d)}"
     )
      */
+
+    /* Double.valueOf(-0.0d) gives expected results.
+     //
     fail(
       "forced failure_2: <Java.Double> copySign(1.0D, -0.0D) expect: -1.0 "
         + s"got: ${Math.copySign(1.0d, jl.Double.valueOf(-0.0d))}"
     )
+     */
+
+    val cs = Math.copySign(1.0d, jl.Double.valueOf(-0.0d))
+    fail(
+      "forced failure_3: <JD, intermed> copySign(1.0D, -0.0D) expect: -1.0 "
+        + s"got: ${cs}"
+    )
+
   }
 
   @Test def doubleCopySignUsingNegativeZero(): Unit = {
