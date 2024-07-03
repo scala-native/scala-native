@@ -121,6 +121,10 @@ class MathIEEE754NegativeZeroSundryTest {
   final val posZeroF = jl.Float.valueOf(+0.0f)
    */
 
+  /* negZeroD is still +0.0d in Mode.ReleaseFast with a non-final val.
+   * This case is simpler because of no "final" processing, so run with
+   * it for a while.
+   */
   val negZeroD = jl.Double.valueOf(-0.0d)
   val posZeroD = jl.Double.valueOf(+0.0d)
 
@@ -148,13 +152,21 @@ class MathIEEE754NegativeZeroSundryTest {
   // Check that proper negative zeros are created, even in Release-fast mode.
   @Test def validateIEEE754NegativeZeros(): Unit = {
     assertTrue(
-      s"Expected a Double negative zero",
+      s"Expected a jl.Double with value negative zero",
       (1.0d / negZeroD) == Double.NEGATIVE_INFINITY
     )
 
     assertTrue(
-      s"Expected a Float negative zero",
+      s"Expected a jl.Float with value negative zero",
       (1.0f / negZeroF) == Float.NEGATIVE_INFINITY
+    )
+  }
+
+  @Test def validateIEEE754LocalNegativeZero(): Unit = {
+    val localNegZeroD = jl.Double.valueOf(-0.0d)
+    assertTrue(
+      s"Expected a local jl.Double with value negative zero",
+      (1.0d / localNegZeroD) == Double.NEGATIVE_INFINITY
     )
   }
 
