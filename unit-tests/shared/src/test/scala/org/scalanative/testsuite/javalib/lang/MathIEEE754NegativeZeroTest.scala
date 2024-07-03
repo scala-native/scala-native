@@ -111,11 +111,21 @@ class MathIEEE754NegativeZeroSundryTest {
    * Their correctness is _critical_ to utility of negative zero in the wild.
    */
 
+  /*
+  // Since this seems to be an optimizer issue, What happens if "final" is
+  // removed?
   final val negZeroD = jl.Double.valueOf(-0.0d)
   final val posZeroD = jl.Double.valueOf(+0.0d)
 
   final val negZeroF = jl.Float.valueOf(-0.0f)
   final val posZeroF = jl.Float.valueOf(+0.0f)
+   */
+
+  val negZeroD = jl.Double.valueOf(-0.0d)
+  val posZeroD = jl.Double.valueOf(+0.0d)
+
+  val negZeroF = jl.Float.valueOf(-0.0f)
+  val posZeroF = jl.Float.valueOf(+0.0f)
 
   /* The methods in this class all pass on JVM (8, 22). They also pass
    * CI when release-mode is Mode.Debug or in a private Clang 18 development
