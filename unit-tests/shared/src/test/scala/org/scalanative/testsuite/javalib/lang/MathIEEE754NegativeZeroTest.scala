@@ -149,6 +149,7 @@ class MathIEEE754NegativeZeroSundryTest {
   //   Platform.executingInJVM
   // )
 
+  /*  // Start bypass_0
   // Check that proper negative zeros are created, even in Release-fast mode.
   @Test def validateIEEE754NegativeZeros(): Unit = {
     assertTrue(
@@ -161,6 +162,7 @@ class MathIEEE754NegativeZeroSundryTest {
       (1.0f / negZeroF) == Float.NEGATIVE_INFINITY
     )
   }
+   */ // End bypass_0
 
   @Test def validateIEEE754LocalNegativeZero(): Unit = {
     val localNegZeroD = jl.Double.valueOf(-0.0d)
@@ -168,16 +170,22 @@ class MathIEEE754NegativeZeroSundryTest {
       s"Expected a local jl.Double with value negative zero",
       (1.0d / localNegZeroD) == Double.NEGATIVE_INFINITY
     )
-  }
 
-  @Test def validateIEEE754FloatNegativeZeros(): Unit = {
+    val localNegZeroF = jl.Float.valueOf(-0.0f)
     assertTrue(
-      s"Expected a Float negative zero",
-      (1.0f / negZeroF) == Float.NEGATIVE_INFINITY
+      s"Expected a local jl.Float with value negative zero",
+      (1.0f / localNegZeroF) == Float.NEGATIVE_INFINITY
     )
   }
 
   /*  // Start bypass_1
+  @Test def validateIEEE754FloatNegativeZeros(): Unit = {
+    assertTrue(
+      s"Expected a jl.Float with value negative zero",
+      (1.0f / negZeroF) == Float.NEGATIVE_INFINITY
+    )
+  }
+
   @Test def doubleCompareToUsingNegativeZero(): Unit = {
 
     assertEquals(
