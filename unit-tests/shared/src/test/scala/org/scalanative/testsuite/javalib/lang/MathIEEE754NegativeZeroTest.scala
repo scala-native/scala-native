@@ -289,10 +289,19 @@ class MathIEEE754NegativeZeroSundryTest {
     )
      */
 
+    /* Intermediate variable gives expected results.
     val cs = Math.copySign(1.0d, jl.Double.valueOf(-0.0d))
     fail(
       "forced failure_3: <JD, intermed> copySign(1.0D, -0.0D) expect: -1.0 "
         + s"got: ${cs}"
+    )
+     */
+    assertEquals(
+      s"{}AssertEquals, valueOf, nz Epsilon> copySign(1.0D, -0.0D)",
+      -1.0d,
+      Math.copySign(1.0d, jl.Double.valueOf(-0.0d)),
+      0.0000001
+//      0.0d
     )
 
   }
