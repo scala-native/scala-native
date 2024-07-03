@@ -243,7 +243,6 @@ object Math {
   @alwaysinline def max(a: scala.Long, b: scala.Long): scala.Long =
     if (a > b) a else b
 
-  /*
   // See Issue #3984 re: simplification via LLVM 'minimum' intrinsic.
   @inline def min(a: scala.Double, b: scala.Double): scala.Double = {
     if (a.isNaN() || b.isNaN()) Double.NaN
@@ -254,12 +253,13 @@ object Math {
       else b
     }
   }
-   */
 
+  /* Yes, Lee, llvm.minimum _really_ is unavailable in currrent CI.
   // See Issue #3984 re: simplification via LLVM 'minimum' intrinsic.
   // Is llvm.minimum rejected only when SN is compiling in mode Release-fast?
   @inline def min(a: scala.Double, b: scala.Double): scala.Double =
     `llvm.minimum.f64`(a, b)
+   */
 
   @inline def min(a: scala.Float, b: scala.Float): scala.Float = {
     if (a.isNaN() || b.isNaN()) Float.NaN

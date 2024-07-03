@@ -297,7 +297,7 @@ class MathIEEE754NegativeZeroSundryTest {
     )
      */
     assertEquals(
-      s"{}AssertEquals, valueOf, nz Epsilon> copySign(1.0D, -0.0D)",
+      s"<AssertEquals, valueOf, nz Epsilon> copySign(1.0D, -0.0D)",
       -1.0d,
       Math.copySign(1.0d, jl.Double.valueOf(-0.0d)),
       0.0000001
