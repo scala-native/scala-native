@@ -21,19 +21,19 @@ class MathIEEE754NegativeZeroTest {
     val min_A = Math.min(jl.Double.valueOf(-0.0d), 0.0d)
     assertTrue(
       s"min(-0.0D, 0.0D) expected: -0.0D got: ${min_A}",
-      1.0 / min_A == Double.NEGATIVE_INFINITY
+      1.0d / min_A == Double.NEGATIVE_INFINITY
     )
 
     val min_B = Math.min(0.0d, jl.Double.valueOf(-0.0d))
     assertTrue(
       s"min(0.0D, -0.0D) expected: -0.0D got: ${min_B}",
-      1.0 / min_B == Double.NEGATIVE_INFINITY
+      1.0d / min_B == Double.NEGATIVE_INFINITY
     )
 
     val min_C = Math.min(jl.Double.valueOf(-0.0d), jl.Double.valueOf(-0.0d))
     assertTrue(
       s"min(-0.0D, -0.0D) expected: -0.0D got: ${min_C}",
-      1.0 / min_C == Double.NEGATIVE_INFINITY
+      1.0d / min_C == Double.NEGATIVE_INFINITY
     )
   }
 
@@ -42,19 +42,19 @@ class MathIEEE754NegativeZeroTest {
     val min_A = Math.min(jl.Float.valueOf(-0.0f), 0.0f)
     assertTrue(
       s"min(-0.0F, 0.0F) expected: -0.0F got: ${min_A}F",
-      1.0 / min_A == Float.NEGATIVE_INFINITY
+      1.0f / min_A == Float.NEGATIVE_INFINITY
     )
 
     val min_B = Math.min(0.0f, jl.Float.valueOf(-0.0f))
     assertTrue(
       s"min(0.0F, -0.0F) expected: -0.0F got: ${min_B}F",
-      1.0 / min_B == Double.NEGATIVE_INFINITY
+      1.0f / min_B == Double.NEGATIVE_INFINITY
     )
 
     val min_C = Math.min(jl.Float.valueOf(-0.0f), jl.Float.valueOf(-0.0f))
     assertTrue(
       s"min(-0.0F, -0.0F) expected: -0.0D got: ${min_C}F",
-      1.0 / min_C == Float.NEGATIVE_INFINITY
+      1.0f / min_C == Float.NEGATIVE_INFINITY
     )
   }
 
@@ -63,19 +63,19 @@ class MathIEEE754NegativeZeroTest {
     val max_A = Math.max(jl.Double.valueOf(-0.0d), 0.0d)
     assertTrue(
       s"max(-0.0D, 0.0D) expected: 0.0D got: ${max_A}",
-      1.0 / max_A == Double.POSITIVE_INFINITY
+      1.0d / max_A == Double.POSITIVE_INFINITY
     )
 
     val max_B = Math.max(0.0d, jl.Double.valueOf(-0.0d))
     assertTrue(
       s"max(0.0D, -0.0D) expected: 0.0D got: ${max_B}",
-      1.0 / max_B == Double.POSITIVE_INFINITY
+      1.0d / max_B == Double.POSITIVE_INFINITY
     )
 
     val max_C = Math.max(jl.Double.valueOf(-0.0d), jl.Double.valueOf(-0.0d))
     assertTrue(
       s"max(-0.0D, -0.0D) expected: -0.0D got: ${max_C}",
-      1.0 / max_C == Double.NEGATIVE_INFINITY
+      1.0d / max_C == Double.NEGATIVE_INFINITY
     )
   }
 
@@ -84,19 +84,19 @@ class MathIEEE754NegativeZeroTest {
     val max_A = Math.max(jl.Float.valueOf(-0.0f), 0.0f)
     assertTrue(
       s"max(-0.0F, 0.0F) expected: 0.0F got: ${max_A}F",
-      1.0 / max_A == Float.POSITIVE_INFINITY
+      1.0f / max_A == Float.POSITIVE_INFINITY
     )
 
     val max_B = Math.max(0.0f, jl.Float.valueOf(-0.0f))
     assertTrue(
       s"max(0.0F, -0.0F) expected: 0.0F got: ${max_B}F",
-      1.0 / max_B == Float.POSITIVE_INFINITY
+      1.0f / max_B == Float.POSITIVE_INFINITY
     )
 
     val max_C = Math.max(jl.Float.valueOf(-0.0f), jl.Float.valueOf(-0.0f))
     assertTrue(
       s"max(-0.0F, -0.0F) expected: -0.0F got: ${max_C}F",
-      1.0 / max_C == Float.NEGATIVE_INFINITY
+      1.0f / max_C == Float.NEGATIVE_INFINITY
     )
   }
 
@@ -110,6 +110,19 @@ class MathIEEE754NegativeZeroTest {
 
   final val negZeroF = jl.Float.valueOf(-0.0f)
   final val posZeroF = jl.Float.valueOf(+0.0f)
+
+  // Check that proper negative zeros are created, even in Release-fast mode.
+  @Test def validateIEEE754NegativeZeros(): Unit = {
+    assertTrue(
+      s"Expected a Double negative zero",
+      (1.0d / negZeroD) == Double.NEGATIVE_INFINITY
+    )
+
+    assertTrue(
+      s"Expected a Float negative zero",
+      (1.0f / negZeroF) == Float.NEGATIVE_INFINITY
+    )
+  }
 
   @Test def doubleCompareToUsingNegativeZero(): Unit = {
 
@@ -202,13 +215,13 @@ class MathIEEE754NegativeZeroTest {
     val signumNZ = Math.signum(negZeroD)
     assertTrue(
       s"signum(-0.0D) expected: -0.0D got: ${signumNZ}",
-      (1.0 / signumNZ) == Double.NEGATIVE_INFINITY
+      (1.0d / signumNZ) == Double.NEGATIVE_INFINITY
     )
 
     val signumPZ = Math.signum(posZeroD)
     assertTrue(
       s"signum(+0.0D) expected: +0.0D got: ${signumPZ}",
-      (1.0 / signumPZ) == Double.POSITIVE_INFINITY
+      (1.0d / signumPZ) == Double.POSITIVE_INFINITY
     )
   }
 
@@ -217,13 +230,13 @@ class MathIEEE754NegativeZeroTest {
     val signumNZ = Math.signum(negZeroF)
     assertTrue(
       s"signum(-0.0F) expected: -0.0f got: ${signumNZ}",
-      (1.0 / signumNZ) == Float.NEGATIVE_INFINITY
+      (1.0f / signumNZ) == Float.NEGATIVE_INFINITY
     )
 
-    val signumPZ = Math.signum(posZeroD)
+    val signumPZ = Math.signum(posZeroF)
     assertTrue(
       s"signum(+0.0F) expected: +0.0F got: ${signumPZ}",
-      (1.0 / signumPZ) == Float.POSITIVE_INFINITY
+      (1.0f / signumPZ) == Float.POSITIVE_INFINITY
     )
   }
 
@@ -232,7 +245,7 @@ class MathIEEE754NegativeZeroTest {
     val negCopiedToOne = Math.copySign(1.0d, negZeroD)
     assertEquals(
       s"copysign(1.0D, -0.0D)",
-      -1.0,
+      -1.0d,
       negCopiedToOne,
       0.0d
     )
@@ -241,7 +254,7 @@ class MathIEEE754NegativeZeroTest {
     assertEquals(
       s"copysign(0.0D, -0.0D)",
       Double.NEGATIVE_INFINITY,
-      1.0 / negCopiedToZero,
+      1.0d / negCopiedToZero,
       0.0d
     )
 
@@ -249,7 +262,7 @@ class MathIEEE754NegativeZeroTest {
 
     assertEquals(
       s"copysign(-1.0D, 0.0D)",
-      1.0,
+      1.0d,
       posCopied,
       0.0d
     )
@@ -269,7 +282,7 @@ class MathIEEE754NegativeZeroTest {
     assertEquals(
       s"copysign(0.0F, -0.0F)",
       Float.NEGATIVE_INFINITY,
-      1.0 / negCopiedToZero,
+      1.0f / negCopiedToZero,
       0.0f
     )
 
@@ -277,11 +290,9 @@ class MathIEEE754NegativeZeroTest {
 
     assertEquals(
       s"copysign(-1.0F, 0.0F)",
-      1.0,
+      1.0f,
       posCopied,
       0.0f
     )
-
   }
-
 }
