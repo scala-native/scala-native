@@ -160,7 +160,7 @@ object Math {
       if ((a != b) || (mx != 0.0)) mx
       else {
         // At this point: a == b == mn == -0.0 == +0.0. Sign bit discriminates.
-        if (Double.doubleToRawLongBits(a) == 0L) a // off: mx is +0.0
+        if (Double.doubleToRawLongBits(a) == 0L) a // off: mx is +0.0D
         else b
       }
     }
@@ -170,10 +170,10 @@ object Math {
     if (a.isNaN() || b.isNaN()) Float.NaN
     else {
       val mx = `llvm.maxnum.f32`(a, b)
-      if ((a != b) || (mx != 0.0)) mx
+      if ((a != b) || (mx != 0.0f)) mx
       else {
         // At this point: a == b == mn == -0.0 == +0.0. Sign bit discriminates.
-        if (Float.floatToRawIntBits(a) == 0f) a // off: mx is +0.0
+        if (Float.floatToRawIntBits(a) == 0) a // off: mx is +0.0F
         else b
       }
     }
@@ -193,7 +193,7 @@ object Math {
       if ((a != b) || (mn != 0.0)) mn
       else {
         // At this point: a == b == mn == -0.0 == +0.0. Sign bit discriminates.
-        if (Double.doubleToRawLongBits(a) != 0L) a // on: mn is -0.0
+        if (Double.doubleToRawLongBits(a) != 0L) a // on: mn is -0.0D
         else b
       }
     }
@@ -203,10 +203,10 @@ object Math {
     if (a.isNaN() || b.isNaN()) Float.NaN
     else {
       val mn = `llvm.minnum.f32`(a, b)
-      if ((a != b) || (mn != 0.0)) mn
+      if ((a != b) || (mn != 0.0f)) mn
       else {
         // At this point: a == b == mn == -0.0 == +0.0. Sign bit discriminates.
-        if (Float.floatToRawIntBits(a) != 0f) a // on: mn is -0.0
+        if (Float.floatToRawIntBits(a) != 0) a // on: mn is -0.0F
         else b
       }
     }
