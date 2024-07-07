@@ -157,9 +157,12 @@ object Math {
     if (a.isNaN() || b.isNaN()) Double.NaN
     else {
       val mx = `llvm.maxnum.f64`(a, b)
-      if ((mx != 0.0) || (a != b)) mx
-      else if ((1 / a) == Double.POSITIVE_INFINITY) a // When true, have +0.0
-      else b
+      if ((a != b) || (mx != 0.0)) mx
+      else {
+        // At this point: a == b == mn == -0.0 == +0.0. Sign bit discriminates.
+        if (Double.doubleToRawLongBits(a) == 0L) a // off: mx is +0.0
+        else b
+      }
     }
   }
 
@@ -167,9 +170,12 @@ object Math {
     if (a.isNaN() || b.isNaN()) Float.NaN
     else {
       val mx = `llvm.maxnum.f32`(a, b)
-      if ((mx != 0.0) || (a != b)) mx
-      else if ((1 / a) == Float.POSITIVE_INFINITY) a // When true, have +0.0
-      else b
+      if ((a != b) || (mx != 0.0)) mx
+      else {
+        // At this point: a == b == mn == -0.0 == +0.0. Sign bit discriminates.
+        if (Float.floatToRawIntBits(a) == 0f) a // off: mx is +0.0
+        else b
+      }
     }
   }
 
@@ -184,9 +190,12 @@ object Math {
     if (a.isNaN() || b.isNaN()) Double.NaN
     else {
       val mn = `llvm.minnum.f64`(a, b)
-      if ((mn != 0.0) || (a != b)) mn
-      else if ((1 / a) == Double.NEGATIVE_INFINITY) a // When true, have -0.0
-      else b
+      if ((a != b) || (mn != 0.0)) mn
+      else {
+        // At this point: a == b == mn == -0.0 == +0.0. Sign bit discriminates.
+        if (Double.doubleToRawLongBits(a) != 0L) a // on: mn is -0.0
+        else b
+      }
     }
   }
 
@@ -194,9 +203,12 @@ object Math {
     if (a.isNaN() || b.isNaN()) Float.NaN
     else {
       val mn = `llvm.minnum.f32`(a, b)
-      if ((mn != 0.0) || (a != b)) mn
-      else if ((1 / a) == Float.NEGATIVE_INFINITY) a // When true, have -0.0
-      else b
+      if ((a != b) || (mn != 0.0)) mn
+      else {
+        // At this point: a == b == mn == -0.0 == +0.0. Sign bit discriminates.
+        if (Float.floatToRawIntBits(a) != 0f) a // on: mn is -0.0
+        else b
+      }
     }
   }
 
