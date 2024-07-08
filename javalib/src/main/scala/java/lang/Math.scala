@@ -152,11 +152,32 @@ object Math {
   @alwaysinline def log1p(a: scala.Double): scala.Double =
     cmath.log1p(a)
 
-  @alwaysinline def max(a: scala.Double, b: scala.Double): scala.Double =
-    if (a.isNaN() || b.isNaN()) Double.NaN else `llvm.maxnum.f64`(a, b)
+  // See Issue #3984 re: simplification via LLVM 'maximum' intrinsic.
+  @inline def max(a: scala.Double, b: scala.Double): scala.Double = {
+    if (a.isNaN() || b.isNaN()) Double.NaN
+    else {
+      val mx = `llvm.maxnum.f64`(a, b)
+      if ((a != b) || (mx != 0.0)) mx
+      else {
+        // At this point: a == b == mn == -0.0 == +0.0. Sign bit discriminates.
+        if (Double.doubleToRawLongBits(a) == 0L) a // off: mx is +0.0D
+        else b
+      }
+    }
+  }
 
-  @alwaysinline def max(a: scala.Float, b: scala.Float): scala.Float =
-    if (a.isNaN() || b.isNaN()) Float.NaN else `llvm.maxnum.f32`(a, b)
+  @inline def max(a: scala.Float, b: scala.Float): scala.Float = {
+    if (a.isNaN() || b.isNaN()) Float.NaN
+    else {
+      val mx = `llvm.maxnum.f32`(a, b)
+      if ((a != b) || (mx != 0.0f)) mx
+      else {
+        // At this point: a == b == mn == -0.0 == +0.0. Sign bit discriminates.
+        if (Float.floatToRawIntBits(a) == 0) a // off: mx is +0.0F
+        else b
+      }
+    }
+  }
 
   @alwaysinline def max(a: scala.Int, b: scala.Int): scala.Int =
     if (a > b) a else b
@@ -164,11 +185,32 @@ object Math {
   @alwaysinline def max(a: scala.Long, b: scala.Long): scala.Long =
     if (a > b) a else b
 
-  @alwaysinline def min(a: scala.Double, b: scala.Double): scala.Double =
-    if (a.isNaN() || b.isNaN()) Double.NaN else `llvm.minnum.f64`(a, b)
+  // See Issue #3984 re: simplification via LLVM 'minimum' intrinsic.
+  @inline def min(a: scala.Double, b: scala.Double): scala.Double = {
+    if (a.isNaN() || b.isNaN()) Double.NaN
+    else {
+      val mn = `llvm.minnum.f64`(a, b)
+      if ((a != b) || (mn != 0.0)) mn
+      else {
+        // At this point: a == b == mn == -0.0 == +0.0. Sign bit discriminates.
+        if (Double.doubleToRawLongBits(a) != 0L) a // on: mn is -0.0D
+        else b
+      }
+    }
+  }
 
-  @alwaysinline def min(a: scala.Float, b: scala.Float): scala.Float =
-    if (a.isNaN() || b.isNaN()) Float.NaN else `llvm.minnum.f32`(a, b)
+  @inline def min(a: scala.Float, b: scala.Float): scala.Float = {
+    if (a.isNaN() || b.isNaN()) Float.NaN
+    else {
+      val mn = `llvm.minnum.f32`(a, b)
+      if ((a != b) || (mn != 0.0f)) mn
+      else {
+        // At this point: a == b == mn == -0.0 == +0.0. Sign bit discriminates.
+        if (Float.floatToRawIntBits(a) != 0) a // on: mn is -0.0F
+        else b
+      }
+    }
+  }
 
   @alwaysinline def min(a: scala.Int, b: scala.Int): scala.Int =
     if (a < b) a else b
