@@ -1,5 +1,5 @@
---- 3.3.4-RC1/scala/reflect/Selectable.scala
-+++ overrides-3.3/scala/reflect/Selectable.scala
+--- 3.1.2/scala/reflect/Selectable.scala
++++ overrides-3/scala/reflect/Selectable.scala
 @@ -16,16 +16,16 @@
     */
    protected def selectedValue: Any = this
@@ -16,7 +16,7 @@
 -  final def selectDynamic(name: String): Any =
 -    val rcls = selectedValue.getClass
 -    try
--      val fld = rcls.getField(NameTransformer.encode(name)).nn
+-      val fld = rcls.getField(name).nn
 -      ensureAccessible(fld)
 -      fld.get(selectedValue)
 -    catch case ex: NoSuchFieldException =>
@@ -30,7 +30,7 @@
     */
    final def applyDynamic(name: String, paramTypes: Class[_]*)(args: Any*): Any =
 -    val rcls = selectedValue.getClass
--    val mth = rcls.getMethod(NameTransformer.encode(name), paramTypes: _*).nn
+-    val mth = rcls.getMethod(name, paramTypes: _*).nn
 -    ensureAccessible(mth)
 -    mth.invoke(selectedValue, args.asInstanceOf[Seq[AnyRef]]: _*)
 +    unreachable("applyDynamic")
