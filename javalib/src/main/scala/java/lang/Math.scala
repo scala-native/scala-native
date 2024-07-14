@@ -11,6 +11,7 @@ private[lang] object MathRand {
 object Math {
   final val E = 2.718281828459045
   final val PI = 3.141592653589793
+  final val TAU = 6.283185307179586
 
   @alwaysinline def abs(a: scala.Double): scala.Double =
     `llvm.fabs.f64`(a)
@@ -53,6 +54,69 @@ object Math {
 
   @alwaysinline def ceil(a: scala.Double): scala.Double =
     `llvm.ceil.f64`(a)
+
+  def clamp(
+      value: scala.Double,
+      min: scala.Double,
+      max: scala.Double
+  ): scala.Double = {
+    // JVM checks arguments before checking value.isNaN()
+
+    if (min.isNaN())
+      throw new IllegalArgumentException("min is NaN")
+
+    if (max.isNaN())
+      throw new IllegalArgumentException("max is NaN")
+
+    if (min.compareTo(max) == 1)
+      throw new IllegalArgumentException(s"${min} > ${max}")
+
+    Math.min(Math.max(value, min), max)
+  }
+
+  def clamp(
+      value: scala.Float,
+      min: scala.Float,
+      max: scala.Float
+  ): scala.Float = {
+    // JVM checks arguments before checking value.isNaN()
+
+    if (min.isNaN())
+      throw new IllegalArgumentException("min is NaN")
+
+    if (max.isNaN())
+      throw new IllegalArgumentException("max is NaN")
+
+    if (min.compareTo(max) == 1)
+      throw new IllegalArgumentException(s"${min} > ${max}")
+
+    Math.min(Math.max(value, min), max)
+  }
+
+  def clamp(
+      value: scala.Long,
+      min: scala.Int,
+      max: scala.Int
+  ): scala.Int = {
+    if (min.compareTo(max) == 1)
+      throw new IllegalArgumentException(s"${min} > ${max}")
+
+    /* The toInt call is safe. 'min' and 'max' arguments are Ints, so computed
+     * result is known to be in range [Integer.MIN_Value, Integer.MAX_VALUE].
+     */
+    Math.min(Math.max(value, min), max).toInt
+  }
+
+  def clamp(
+      value: scala.Long,
+      min: scala.Long,
+      max: scala.Long
+  ): scala.Long = {
+    if (min.compareTo(max) == 1)
+      throw new IllegalArgumentException(s"${min} > ${max}")
+
+    Math.min(Math.max(value, min), max)
+  }
 
   @alwaysinline
   def copySign(magnitude: scala.Double, sign: scala.Double): scala.Double =
