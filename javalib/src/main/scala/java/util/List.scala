@@ -300,12 +300,5 @@ object List {
     appendListOfElement[E](e10, underlying)
 
     new UnmodifiableList[E](underlying)
-    new AbstractList[E] with RandomAccess {
-      def size(): Int =
-        listSize
-
-      def get(index: Int): E =
-        underlying.get(index)
-    }
   }
 }
