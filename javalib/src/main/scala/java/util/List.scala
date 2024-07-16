@@ -72,7 +72,7 @@ object List {
     }
   }
 
-  def copyOf[E](coll: Collection[? <: E]): List[E] = {
+  def copyOf[E](coll: Collection[_ <: E]): List[E] = {
     Objects.requireNonNull(coll)
 
     /*  The JVM List.copyOf() doc _may_ be saying, obtusely, that if the
