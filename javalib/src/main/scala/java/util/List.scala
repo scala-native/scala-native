@@ -72,6 +72,7 @@ object List {
     }
   }
 
+  // Since: Java 10
   def copyOf[E](coll: Collection[_ <: E]): List[E] = {
     Objects.requireNonNull(coll)
 
@@ -102,6 +103,7 @@ object List {
     new UnmodifiableList[E](underlying)
   }
 
+  // Since: Java 9
   def of[E](): List[E] = {
     val listSize = 0
 
@@ -115,6 +117,7 @@ object List {
     al.add(e)
   }
 
+  // Since: Java 9
   def of[E](e1: E): List[E] = {
     val listSize = 1
 
@@ -124,6 +127,7 @@ object List {
     new UnmodifiableList[E](underlying)
   }
 
+  // Since: Java 9
   def of[E](elements: Array[Object]): List[E] = {
     /* This overload handles varargs & must not conflict with single argument
      * overload. That is the reason for 'Array[Object]' rather than 'Array[E]'.
@@ -164,6 +168,7 @@ object List {
     }
   }
 
+  // Since: Java 9
   def of[E](e1: E, e2: E): List[E] = {
     val listSize = 2
 
@@ -174,6 +179,7 @@ object List {
     new UnmodifiableList[E](underlying)
   }
 
+  // Since: Java 9
   def of[E](e1: E, e2: E, e3: E): List[E] = {
     val listSize = 3
 
@@ -185,6 +191,7 @@ object List {
     new UnmodifiableList[E](underlying)
   }
 
+  // Since: Java 9
   def of[E](e1: E, e2: E, e3: E, e4: E): List[E] = {
     val listSize = 4
 
@@ -197,6 +204,7 @@ object List {
     new UnmodifiableList[E](underlying)
   }
 
+  // Since: Java 9
   def of[E](e1: E, e2: E, e3: E, e4: E, e5: E): List[E] = {
     val listSize = 5
 
@@ -210,6 +218,7 @@ object List {
     new UnmodifiableList[E](underlying)
   }
 
+  // Since: Java 9
   def of[E](e1: E, e2: E, e3: E, e4: E, e5: E, e6: E): List[E] = {
     val listSize = 6
 
@@ -224,6 +233,7 @@ object List {
     new UnmodifiableList[E](underlying)
   }
 
+  // Since: Java 9
   def of[E](e1: E, e2: E, e3: E, e4: E, e5: E, e6: E, e7: E): List[E] = {
     val listSize = 7
 
@@ -239,6 +249,7 @@ object List {
     new UnmodifiableList[E](underlying)
   }
 
+  // Since: Java 9
   def of[E](e1: E, e2: E, e3: E, e4: E, e5: E, e6: E, e7: E, e8: E): List[E] = {
     val listSize = 8
 
@@ -255,6 +266,7 @@ object List {
     new UnmodifiableList[E](underlying)
   }
 
+  // Since: Java 9
   def of[E](e1: E, e2: E, e3: E, e4: E, e5: E, e6: E, e7: E, e8: E, e9: E)
       : List[E] = {
     val listSize = 9
@@ -273,6 +285,7 @@ object List {
     new UnmodifiableList[E](underlying)
   }
 
+  // Since: Java 9
   def of[E](
       e1: E,
       e2: E,

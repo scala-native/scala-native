@@ -350,7 +350,7 @@ class ListStaticMethodsTestOnJDK21 {
 
     val expected = new Array[String](expectedSize)
     for (j <- 0 until expectedSize)
-      expected(j) = s"ThreeArgs_${j}"
+      expected(j) = s"FourArgs_${j}"
 
     val result = ju.List.of(
       expected(0),
@@ -403,7 +403,7 @@ class ListStaticMethodsTestOnJDK21 {
 
     val expected = new Array[String](expectedSize)
     for (j <- 0 until expectedSize)
-      expected(j) = s"ThreeArgs_${j}"
+      expected(j) = s"FiveArgs_${j}"
 
     val result = ju.List.of(
       expected(0),
@@ -462,7 +462,7 @@ class ListStaticMethodsTestOnJDK21 {
 
     val expected = new Array[String](expectedSize)
     for (j <- 0 until expectedSize)
-      expected(j) = s"ThreeArgs_${j}"
+      expected(j) = s"SixArgs_${j}"
 
     val result = ju.List.of(
       expected(0),
@@ -529,7 +529,7 @@ class ListStaticMethodsTestOnJDK21 {
 
     val expected = new Array[String](expectedSize)
     for (j <- 0 until expectedSize)
-      expected(j) = s"ThreeArgs_${j}"
+      expected(j) = s"SevenArgs_${j}"
 
     val result = ju.List.of(
       expected(0),
@@ -609,7 +609,7 @@ class ListStaticMethodsTestOnJDK21 {
 
     val expected = new Array[String](expectedSize)
     for (j <- 0 until expectedSize)
-      expected(j) = s"ThreeArgs_${j}"
+      expected(j) = s"EightArgs_${j}"
 
     val result = ju.List.of(
       expected(0),
@@ -696,7 +696,7 @@ class ListStaticMethodsTestOnJDK21 {
 
     val expected = new Array[String](expectedSize)
     for (j <- 0 until expectedSize)
-      expected(j) = s"ThreeArgs_${j}"
+      expected(j) = s"NineArgs_${j}"
 
     val result = ju.List.of(
       expected(0),
@@ -789,7 +789,7 @@ class ListStaticMethodsTestOnJDK21 {
 
     val expected = new Array[String](expectedSize)
     for (j <- 0 until expectedSize)
-      expected(j) = s"ThreeArgs_${j}"
+      expected(j) = s"TenArgs_${j}"
 
     val result = ju.List.of(
       expected(0),
@@ -821,7 +821,7 @@ class ListStaticMethodsTestOnJDK21 {
 
     val expected = new Array[String](expectedSize)
     for (j <- 0 until expectedSize)
-      expected(j) = s"ThreeArgs_${j}"
+      expected(j) = s"ElevenArgs_${j}"
 
     val result = ju.List.of(
       expected(0),
