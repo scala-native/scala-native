@@ -19,4 +19,13 @@ trait Set[E] extends Collection[E] {
   // def toArray[T](array: Array[T]): Array[T]
   // def contains(coll: Collection[_]): scala.Boolean
   // def equals(obj: Any): scala.Boolean
+
+  override def spliterator(): Spliterator[E] = {
+    Spliterators.spliterator[E](
+      this,
+      Spliterator.SIZED |
+        Spliterator.SUBSIZED |
+        Spliterator.DISTINCT
+    )
+  }
 }
