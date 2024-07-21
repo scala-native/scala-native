@@ -68,11 +68,16 @@ examples showing some error conditions using Immix, the default GC.
 Adjust the path to your executable as needed:
 
 ``` shell
-$ export GC_INITIAL_HEAP_SIZE=64k; export GC_MAXIMUM_HEAP_SIZE=512k; sandbox/.2.13/target/scala-2.13/sandbox
+export GC_INITIAL_HEAP_SIZE=64k; export GC_MAXIMUM_HEAP_SIZE=512k; sandbox/.2.13/target/scala-2.13/sandbox
+```
+```
 GC_MAXIMUM_HEAP_SIZE too small to initialize heap.
 Minimum required: 1m
-
-$ export GC_INITIAL_HEAP_SIZE=2m; export GC_MAXIMUM_HEAP_SIZE=1m; sandbox/.2.13/target/scala-2.13/sandbox
+```
+```shell
+export GC_INITIAL_HEAP_SIZE=2m; export GC_MAXIMUM_HEAP_SIZE=1m; sandbox/.2.13/target/scala-2.13/sandbox
+```
+```
 GC_MAXIMUM_HEAP_SIZE should be at least GC_INITIAL_HEAP_SIZE
 ```
 
