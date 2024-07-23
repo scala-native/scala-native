@@ -371,8 +371,17 @@ trait Stream[T] extends BaseStream[T, Stream[T]] {
   def toArray[A <: Object](generator: IntFunction[Array[A]]): Array[A]
 
   // Since: Java 16
-  def toList(): List[T] =
-    this.collect(Collectors.toUnmodifiableList())
+  def toList(): List[T] = {
+    val underlying = this.toArray().asInstanceOf[Array[T]]
+
+    new AbstractList[T] with RandomAccess {
+      def size(): Int =
+        underlying.size
+
+      def get(index: Int): T =
+        underlying(index)
+    }
+  }
 }
 
 object Stream {
