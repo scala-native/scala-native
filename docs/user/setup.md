@@ -24,19 +24,19 @@ instructions for your operating system.
 **FreeBSD**
 
 ``` shell
-$ pkg install sbt
+pkg install sbt
 ```
 
 **OpenBSD**
 
 ``` shell
-$ pkg_add sbt
+pkg_add sbt
 ```
 
 **NetBSD**
 
 ``` shell
-$ pkg_add scala-sbt
+pkg_add scala-sbt
 ```
 
 ## Installing clang and runtime dependencies
@@ -66,8 +66,8 @@ Native has been used with:
 **macOS**
 
 ``` shell
-$ brew install llvm
-$ brew install bdw-gc # optional
+brew install llvm
+brew install bdw-gc # optional
 ```
 
 *Note 1:* Xcode should work as an alternative if preferred:
@@ -79,15 +79,15 @@ installation of macOS.
 **Ubuntu**
 
 ``` shell
-$ sudo apt install clang libstdc++-12-dev
-$ sudo apt install libgc-dev # optional
+sudo apt install clang libstdc++-12-dev
+sudo apt install libgc-dev # optional
 ```
 
 **Arch Linux**
 
 ``` shell
-$ sudo pacman -S llvm clang
-$ sudo pacman -S gc # optional
+sudo pacman -S llvm clang
+sudo pacman -S gc # optional
 ```
 
 *Note:* A version of zlib that is sufficiently recent comes with the
@@ -96,9 +96,9 @@ installation of Arch Linux.
 **Fedora 33**
 
 ``` shell
-$ sudo dnf install llvm clang
-$ sudo dnf groupinstall "Development Tools"
-$ sudo dnf install gc-devel zlib-devel # both optional
+sudo dnf install llvm clang
+sudo dnf groupinstall "Development Tools"
+sudo dnf install gc-devel zlib-devel # both optional
 ```
 
 **FreeBSD 12.4 and later**
@@ -109,7 +109,7 @@ $ sudo dnf install gc-devel zlib-devel # both optional
 installation of FreeBSD.
 
 ``` shell
-$ pkg install boehm-gc # optional
+pkg install boehm-gc # optional
 ```
 
 *Note 3:* Using the boehm GC with multi-threaded binaries doesn\'t work
@@ -121,7 +121,7 @@ out-of-the-box yet.
 architecture.
 
 ``` shell
-$ pkg_add boehm-gc # optional
+pkg_add boehm-gc # optional
 ```
 
 **NetBSD 9.3 and later**
@@ -130,15 +130,15 @@ $ pkg_add boehm-gc # optional
 architecture.
 
 ``` shell
-$ pkg_add clang
-$ pkg_add boehm-gc # optional
+pkg_add clang
+pkg_add boehm-gc # optional
 ```
 
 **Nix/NixOS**
 
 ``` shell
-$ wget https://raw.githubusercontent.com/scala-native/scala-native/main/scripts/scala-native.nix
-$ nix-shell scala-native.nix -A clangEnv
+wget https://raw.githubusercontent.com/scala-native/scala-native/main/scripts/scala-native.nix
+nix-shell scala-native.nix -A clangEnv
 ```
 
 **Windows**
