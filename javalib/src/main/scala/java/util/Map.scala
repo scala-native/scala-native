@@ -176,4 +176,322 @@ object Map {
     def equals(o: Any): Boolean
     def hashCode(): Int
   }
+
+  // Since: Java 10
+  def copyOf[K, V](map: Map[_ <: K, _ <: V]): Map[K, V] = {
+    Objects.requireNonNull(map)
+
+    val mapSize = map.size()
+
+    val underlying = HashMap.newHashMap[K, V](mapSize)
+
+    map.forEach((k, v) => {
+      Objects.requireNonNull(k)
+      underlying.put(k, v)
+    })
+
+    Collections.unmodifiableMap(underlying)
+  }
+
+  // Since: Java 9
+  def entry[K, V](k: K, v: V): Map.Entry[K, V] = {
+    Objects.requireNonNull(k)
+    Objects.requireNonNull(v)
+
+    new Map.Entry[K, V]() {
+      def getKey(): K = k
+
+      def getValue(): V = v
+
+      def setValue(value: V): V =
+        throw new UnsupportedOperationException("not supported")
+
+      override def equals(o: Any): Boolean = o match {
+        case o: Map.Entry[_, _] =>
+          Objects.equals(getKey(), o.getKey()) &&
+            Objects.equals(getValue(), o.getValue())
+        case _ =>
+          false
+      }
+
+      override def hashCode(): Int = {
+        // vals k and v are known to be not null at this point.
+        val res = 31 * 1 + k.hashCode()
+        31 * res + v.hashCode()
+      }
+    }
+  }
+
+  // Since: Java 9
+  def of[K, V](): Map[K, V] = {
+    val mapSize = 0
+
+    val underlying = HashMap.newHashMap[K, V](mapSize)
+
+    Collections.unmodifiableMap(underlying)
+  }
+
+  private def appendMapOfElement[K, V](
+      key: K,
+      value: V,
+      hm: HashMap[K, V]
+  ): Unit = {
+    Objects.requireNonNull(key)
+    Objects.requireNonNull(value)
+
+    if (hm.putIfAbsent(key, value) != null)
+      throw new IllegalArgumentException("duplicate key: ${key}")
+  }
+
+  // Since: Java 9
+  def of[K, V](k1: K, v1: V): Map[K, V] = {
+    val mapSize = 1
+
+    val underlying = HashMap.newHashMap[K, V](mapSize)
+
+    appendMapOfElement[K, V](k1, v1, underlying)
+
+    Collections.unmodifiableMap(underlying)
+  }
+
+  // Since: Java 9
+  def of[K, V](
+// format: off
+      k1: K, v1: V,
+      k2: K, v2: V
+// format: on
+  ): Map[K, V] = {
+    val mapSize = 2
+
+    val underlying = HashMap.newHashMap[K, V](mapSize)
+
+    appendMapOfElement[K, V](k1, v1, underlying)
+    appendMapOfElement[K, V](k2, v2, underlying)
+
+    Collections.unmodifiableMap(underlying)
+  }
+
+  // Since: Java 9
+  def of[K, V](
+// format: off
+      k1: K, v1: V,
+      k2: K, v2: V,
+      k3: K, v3: V,
+// format: on
+  ): Map[K, V] = {
+
+    val mapSize = 3
+
+    val underlying = HashMap.newHashMap[K, V](mapSize)
+
+    appendMapOfElement[K, V](k1, v1, underlying)
+    appendMapOfElement[K, V](k2, v2, underlying)
+    appendMapOfElement[K, V](k3, v3, underlying)
+
+    Collections.unmodifiableMap(underlying)
+  }
+
+  // Since: Java 9
+  def of[K, V](
+// format: off
+      k1: K, v1: V,
+      k2: K, v2: V,
+      k3: K, v3: V,
+      k4: K, v4: V
+// format: on
+  ): Map[K, V] = {
+    val mapSize = 4
+
+    val underlying = HashMap.newHashMap[K, V](mapSize)
+
+    appendMapOfElement[K, V](k1, v1, underlying)
+    appendMapOfElement[K, V](k2, v2, underlying)
+    appendMapOfElement[K, V](k3, v3, underlying)
+    appendMapOfElement[K, V](k4, v4, underlying)
+
+    Collections.unmodifiableMap(underlying)
+  }
+
+  // Since: Java 9
+  def of[K, V](
+// format: off
+      k1: K, v1: V,
+      k2: K, v2: V,
+      k3: K, v3: V,
+      k4: K, v4: V,
+      k5: K, v5: V
+// format: on
+  ): Map[K, V] = {
+    val mapSize = 5
+
+    val underlying = HashMap.newHashMap[K, V](mapSize)
+
+    appendMapOfElement[K, V](k1, v1, underlying)
+    appendMapOfElement[K, V](k2, v2, underlying)
+    appendMapOfElement[K, V](k3, v3, underlying)
+    appendMapOfElement[K, V](k4, v4, underlying)
+    appendMapOfElement[K, V](k5, v5, underlying)
+
+    Collections.unmodifiableMap(underlying)
+  }
+
+  // Since: Java 9
+  def of[K, V](
+// format: off
+      k1: K, v1: V,
+      k2: K, v2: V,
+      k3: K, v3: V,
+      k4: K, v4: V,
+      k5: K, v5: V,
+      k6: K, v6: V
+// format: on
+  ): Map[K, V] = {
+    val mapSize = 6
+
+    val underlying = HashMap.newHashMap[K, V](mapSize)
+
+    appendMapOfElement[K, V](k1, v1, underlying)
+    appendMapOfElement[K, V](k2, v2, underlying)
+    appendMapOfElement[K, V](k3, v3, underlying)
+    appendMapOfElement[K, V](k4, v4, underlying)
+    appendMapOfElement[K, V](k5, v5, underlying)
+    appendMapOfElement[K, V](k6, v6, underlying)
+
+    Collections.unmodifiableMap(underlying)
+  }
+
+  // Since: Java 9
+  def of[K, V](
+// format: off
+      k1: K, v1: V,
+      k2: K, v2: V,
+      k3: K, v3: V,
+      k4: K, v4: V,
+      k5: K, v5: V,
+      k6: K, v6: V,
+      k7: K, v7: V
+// format: on
+  ): Map[K, V] = {
+    val mapSize = 7
+
+    val underlying = HashMap.newHashMap[K, V](mapSize)
+
+    appendMapOfElement[K, V](k1, v1, underlying)
+    appendMapOfElement[K, V](k2, v2, underlying)
+    appendMapOfElement[K, V](k3, v3, underlying)
+    appendMapOfElement[K, V](k4, v4, underlying)
+    appendMapOfElement[K, V](k5, v5, underlying)
+    appendMapOfElement[K, V](k6, v6, underlying)
+    appendMapOfElement[K, V](k7, v7, underlying)
+
+    Collections.unmodifiableMap(underlying)
+  }
+
+  // Since: Java 9
+  def of[K, V](
+// format: off
+      k1: K, v1: V,
+      k2: K, v2: V,
+      k3: K, v3: V,
+      k4: K, v4: V,
+      k5: K, v5: V,
+      k6: K, v6: V,
+      k7: K, v7: V,
+      k8: K, v8: V
+// format: on
+  ): Map[K, V] = {
+    val mapSize = 8
+
+    val underlying = HashMap.newHashMap[K, V](mapSize)
+
+    appendMapOfElement[K, V](k1, v1, underlying)
+    appendMapOfElement[K, V](k2, v2, underlying)
+    appendMapOfElement[K, V](k3, v3, underlying)
+    appendMapOfElement[K, V](k4, v4, underlying)
+    appendMapOfElement[K, V](k5, v5, underlying)
+    appendMapOfElement[K, V](k6, v6, underlying)
+    appendMapOfElement[K, V](k7, v7, underlying)
+    appendMapOfElement[K, V](k8, v8, underlying)
+
+    Collections.unmodifiableMap(underlying)
+  }
+
+  // Since: Java 9
+  def of[K, V](
+// format: off
+      k1: K, v1: V,
+      k2: K, v2: V,
+      k3: K, v3: V,
+      k4: K, v4: V,
+      k5: K, v5: V,
+      k6: K, v6: V,
+      k7: K, v7: V,
+      k8: K, v8: V,
+      k9: K, v9: V
+// format: on
+  ): Map[K, V] = {
+    val mapSize = 9
+
+    val underlying = HashMap.newHashMap[K, V](mapSize)
+
+    appendMapOfElement[K, V](k1, v1, underlying)
+    appendMapOfElement[K, V](k2, v2, underlying)
+    appendMapOfElement[K, V](k3, v3, underlying)
+    appendMapOfElement[K, V](k4, v4, underlying)
+    appendMapOfElement[K, V](k5, v5, underlying)
+    appendMapOfElement[K, V](k6, v6, underlying)
+    appendMapOfElement[K, V](k7, v7, underlying)
+    appendMapOfElement[K, V](k8, v8, underlying)
+    appendMapOfElement[K, V](k9, v9, underlying)
+
+    Collections.unmodifiableMap(underlying)
+  }
+
+  // Since: Java 9
+  def of[K, V](
+// format: off
+      k1: K,  v1: V,
+      k2: K,  v2: V,
+      k3: K,  v3: V,
+      k4: K,  v4: V,
+      k5: K,  v5: V,
+      k6: K,  v6: V,
+      k7: K,  v7: V,
+      k8: K,  v8: V,
+      k9: K,  v9: V,
+      k10: K, v10: V
+// format: on
+  ): Map[K, V] = {
+    val mapSize = 10
+
+    val underlying = HashMap.newHashMap[K, V](mapSize)
+
+    appendMapOfElement[K, V](k1, v1, underlying)
+    appendMapOfElement[K, V](k2, v2, underlying)
+    appendMapOfElement[K, V](k3, v3, underlying)
+    appendMapOfElement[K, V](k4, v4, underlying)
+    appendMapOfElement[K, V](k5, v5, underlying)
+    appendMapOfElement[K, V](k6, v6, underlying)
+    appendMapOfElement[K, V](k7, v7, underlying)
+    appendMapOfElement[K, V](k8, v8, underlying)
+    appendMapOfElement[K, V](k9, v9, underlying)
+    appendMapOfElement[K, V](k10, v10, underlying)
+
+    Collections.unmodifiableMap(underlying)
+  }
+
+  def ofEntries[K, V](entries: Array[Map.Entry[K, V]]): Map[K, V] = {
+    Objects.requireNonNull(entries)
+
+    val mapSize = entries.size
+
+    val underlying = HashMap.newHashMap[K, V](mapSize)
+
+    for (j <- 0 until mapSize) {
+      val e = entries(j)
+      appendMapOfElement[K, V](e.getKey(), e.getValue(), underlying)
+    }
+
+    Collections.unmodifiableMap(underlying)
+  }
 }
