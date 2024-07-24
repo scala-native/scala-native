@@ -132,8 +132,12 @@ final class SplittableRandom private (private var seed: Long, gamma: Long)
 
   // def nextDouble(origin: Double, bound: Double): Double
 
-  // this should be properly tested
-  // looks to work but just by chance maybe
+  /* When nextInt() is uniformly distributed, this implementation is
+   * correct precisely "by chance."
+   * There is the same number of elements in the semi-closed interval
+   * [-Integer.MIN_VALUE, 0) and the closed interval [0, Integer.MAX_VALUE].
+   * Refer to the JDK method description: "Test sign bit".
+   */
   def nextBoolean(): Boolean = nextInt() < 0
 
 }
