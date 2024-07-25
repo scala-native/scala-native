@@ -1,4 +1,7 @@
 // Ported from Scala.js commit: 2253950 dated: 2022-10-02
+//
+// Contains Scala Native specific updates subsequent to original port.
+// See Scala Native git repository history.
 
 /*
  * Scala.js (https://www.scala-js.org/)
@@ -16,6 +19,7 @@ package java.util
 
 import java.{lang => jl}
 import java.io.Serializable
+import java.util.random.RandomGenerator
 
 import scala.language.implicitConversions
 
@@ -145,6 +149,55 @@ object Collections {
 
   def shuffle(list: List[_]): Unit =
     shuffle(list, new Random)
+
+  def shuffle(list: List[_], rndg: RandomGenerator): Unit = {
+    /* This implementation is coyote ugly but avoids breaking binary
+     * compatibility in the Scala Native 0.5.n series.
+     *
+     * When Scala Native 0.6.n opens for changes, Random can be changed
+     * to follow the Java 17 class hierarchy where it extends the
+     * RandomGenerator interface.
+     *
+     * The the shuffleImpl() declaration can be changed to something like:
+     *   private def shuffleImpl[T, R <: RandomGenerator](
+     *      list: List[T], rng: R): Unit = {
+     *
+     * It probably makes sense to remove the "@inline" from shuffleImple().
+     * the method is large enough that one would hope that the compiler
+     * ignores the hint anyway.
+     *
+     * Lastly, the use of Random() can be removed here. Easy Peasy.
+     */
+    val rnd = new Random { // implement just enough for shuffleImpl().
+      override def nextInt(): Int =
+        (rndg.nextLong() >> 32).toInt
+
+      override def nextInt(bound: Int): Int = {
+        // Algorithm adapted from java.util.concurrent.ThreadLocalRandom.
+        if (bound <= 0)
+          throw new IllegalArgumentException("bound must be positive")
+
+        var r = nextInt()
+        val m = bound - 1
+
+        if ((bound & m) == 0) { // power of two
+          r &= m
+        } else { // reject over-represented candidates
+          var u = r >>> 1
+          while ({
+            r = u % bound
+            (u + m - r) < 0
+          }) {
+            u = nextInt() >>> 1
+          }
+        }
+
+        r
+      }
+    }
+
+    shuffle(list, rnd)
+  }
 
   @noinline
   def shuffle(list: List[_], rnd: Random): Unit =
