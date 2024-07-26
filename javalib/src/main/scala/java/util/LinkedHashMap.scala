@@ -1,5 +1,9 @@
 // Ported from Scala.js commit: a6c1451 dated: 2021-10-16
 
+/*
+ *  Static method newLinkedHashMap added for Scala Native.
+ */
+
 package java.util
 
 import java.{util => ju}
@@ -183,4 +187,20 @@ object LinkedHashMap {
       var younger: Node[K, V]
   ) extends HashMap.Node[K, V](key, hash, value, previous, next)
 
+  // Since: Java 19
+  def newLinkedHashMap[K, V](numElements: Int): LinkedHashMap[K, V] = {
+    if (numElements < 0) {
+      throw new IllegalArgumentException(
+        s"Negative number of elements: ${numElements}"
+      )
+    }
+
+    val loadFactor = 0.75f // as defined in JVM method description.
+
+    val desiredCapacity = Math.ceil(numElements * (1.0f / loadFactor)).toInt
+
+    val clampedCapacity = Math.clamp(desiredCapacity, 0, Integer.MAX_VALUE)
+
+    new LinkedHashMap[K, V](clampedCapacity.toInt, loadFactor)
+  }
 }
