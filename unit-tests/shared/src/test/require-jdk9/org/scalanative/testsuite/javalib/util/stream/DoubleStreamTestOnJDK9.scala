@@ -1,6 +1,7 @@
 package org.scalanative.testsuite.javalib.util.stream
 
 import java.util.stream._
+import java.util.List
 import java.util.Spliterator
 
 import org.junit.Test
@@ -137,4 +138,29 @@ class DoubleStreamTestOnJDK9 {
     assertEquals("unexpected taken count", expectedTakenCount, taken.count())
   }
 
+  // Issue 4007
+  @Test def doubleStreamSkip_GivesDownstreamAccurateExpectedSize(): Unit = {
+    /* Tests for Issue 4007 require a SIZED spliterator with a tryAdvance()
+     * which does not change the exactSize() after traversal begins.
+     *
+     * This Test is fragile in that it uses intimate knowledge of
+     * Scala Native internal implementations to provide such a spliterator. If
+     * those implements change, this Test may end up succeeding but
+     * not exercising the Issue 4007 path.
+     *
+     * List.of() followed by mapToDouble() provides a suitable spliterator.
+     * DoubleStream.of() by itself does not provoke the defect, its exactSize()
+     * bookkeeping is too good.
+     */
+
+    val srcData = List.of(1.11, 2.22, 3.33, 4.44, 5.55, 6.66, 7.77)
+    val s = srcData.stream()
+    val ds = s.mapToDouble(e => e)
+
+    val skipSize = 4
+    val expectedSize = srcData.size() - skipSize
+    val resultSize = ds.skip(skipSize).toArray().size
+
+    assertEquals("expectedSize", expectedSize, resultSize)
+  }
 }

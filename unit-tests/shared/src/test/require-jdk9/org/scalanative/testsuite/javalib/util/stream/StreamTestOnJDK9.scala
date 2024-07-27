@@ -2,6 +2,7 @@ package org.scalanative.testsuite.javalib.util.stream
 
 import java.util.stream._
 import java.util.Spliterator
+import java.util.List
 import java.util.function.{Predicate, UnaryOperator}
 
 import org.junit.Test
@@ -187,4 +188,25 @@ class StreamTestOnJDK9 {
     assertEquals("unexpected taken count", expectedTakenCount, taken.count())
   }
 
+  // Issue 4007
+  @Test def streamSkip_GivesDownstreamAccurateExpectedSize(): Unit = {
+    /* Use List.of() in Tests for Issue 4007. That Issue requires
+     * a SIZED spliterator with a tryAdvance() which does not
+     * change the exactSize() after traversal begins. List.of() provides such.
+     *
+     * Stream.of() does not exercise the condition being tested.
+     * The implementation path it uses does bookkeeping to provide
+     * an accurate exactSize() after traversal begins. That work is
+     * allowed but not required by the JDK.
+     */
+
+    val srcData = List.of("R", "S", "T", "U", "V", "X", "Y", "Z")
+    val s = srcData.stream()
+
+    val skipSize = 4
+    val expectedSize = srcData.size() - skipSize
+    val resultSize = s.skip(skipSize).toArray().size
+
+    assertEquals("expectedSize", expectedSize, resultSize)
+  }
 }
