@@ -12,9 +12,8 @@ package org.scalanative.testsuite.javalib.util.stream
 import java.{lang => jl}
 
 import java.{util => ju}
-import java.util.Arrays
-import java.util.LongSummaryStatistics
-import java.util.OptionalLong
+import java.util.{Arrays, List}
+import java.util.{OptionalLong, LongSummaryStatistics}
 import java.util.{Spliterator, Spliterators}
 
 import java.util.concurrent.{CountDownLatch, TimeUnit}
@@ -859,8 +858,8 @@ class LongStreamTest {
   }
 
   @Test def longStreamFindAny_True(): Unit = {
-    val s = LongStream.of(0, 11, 22, 33)
-    val acceptableValues = List(0, 11, 22, 33)
+    val s = LongStream.of(0L, 11L, 22L, 33L)
+    val acceptableValues = List.of(0L, 11L, 22L, 33L)
 
     val optional = s.findAny()
 
@@ -1449,6 +1448,32 @@ class LongStreamTest {
       expectedValue,
       iter.nextLong()
     )
+  }
+
+  // Issue 4007
+  @Test def longStreamSkip_GivesDownstreamAccurateExpectedSize(): Unit = {
+    /* Tests for Issue 4007 require a SIZED spliterator with a tryAdvance()
+     * which does not change the exactSize() after traversal begins.
+     *
+     * This Test is fragile in that it uses intimate knowledge of
+     * Scala Native internal implementations to provide such a spliterator. If
+     * those implements change, this Test may end up succeeding but
+     * not exercising the Issue 4007 path.
+     *
+     * List.of() followed by mapToLong() provides a suitable spliterator.
+     * LongStream.of() by itself does not provoke the defect, its exactSize()
+     * bookkeeping is too good.
+     */
+
+    val srcData = List.of(111L, 222L, 333L, 444L, 555L, 666L, 777L)
+    val s = srcData.stream()
+    val is = s.mapToLong(e => e)
+
+    val skipSize = 4
+    val expectedSize = srcData.size() - skipSize
+    val resultSize = is.skip(skipSize).toArray().size
+
+    assertEquals("expectedSize", expectedSize, resultSize)
   }
 
   @Test def longStreamSorted(): Unit = {
