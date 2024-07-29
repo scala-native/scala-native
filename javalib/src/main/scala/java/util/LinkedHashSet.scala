@@ -21,3 +21,23 @@ class LinkedHashSet[E]
   override protected val inner: mutable.Set[Box[E]] =
     new mutable.LinkedHashSet[Box[E]]()
 }
+
+object LinkedHashSet {
+
+  // Since: Java 19
+  def newLinkedHashSet[T](numElements: Int): LinkedHashSet[T] = {
+    if (numElements < 0) {
+      throw new IllegalArgumentException(
+        s"Negative number of elements: ${numElements}"
+      )
+    }
+
+    val loadFactor = 0.75f // as defined in JVM method description.
+
+    val desiredCapacity = Math.ceil(numElements * (1.0f / loadFactor)).toInt
+
+    val clampedCapacity = Math.clamp(desiredCapacity, 0, Integer.MAX_VALUE)
+
+    new LinkedHashSet[T](clampedCapacity.toInt, loadFactor)
+  }
+}
