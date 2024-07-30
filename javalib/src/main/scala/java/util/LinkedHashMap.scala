@@ -1,4 +1,4 @@
-// Ported from Scala.js commit: a6c1451 dated: 2021-10-16
+// Ported from Scala.js commit: f7be410 dated: 2020-10-12
 
 /*
  *  Static method newLinkedHashMap added for Scala Native.
