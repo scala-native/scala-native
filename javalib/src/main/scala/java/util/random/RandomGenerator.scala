@@ -1,3 +1,5 @@
 package java.util.random
 
-trait RandomGenerator
+trait RandomGenerator {
+  def nextLong(): Long // Abstract
+}
