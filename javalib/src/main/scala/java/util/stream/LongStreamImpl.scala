@@ -595,14 +595,37 @@ private[stream] class LongStreamImpl(
 
     commenceOperation() // JVM tests argument before operatedUpon or closed.
 
+    val preSkipSize = _spliter.getExactSizeIfKnown()
+
     var nSkipped = 0L
 
     while ((nSkipped < n)
         && (_spliter
           .tryAdvance((e: scala.Long) => nSkipped += 1L))) { /* skip */ }
 
+    val spl =
+      if (preSkipSize == -1) _spliter // Not SIZED at beginning
+      else {
+        val postSkipSize = _spliter.getExactSizeIfKnown()
+        if (postSkipSize != preSkipSize) {
+          _spliter // save allocation, use tryAdvance's bookkeeping
+        } else {
+          /* Current stream is SIZED and its tryAdvance does not do
+           * bookkeeping. Give downstream an accurate exactSize().
+           */
+
+          new Spliterators.AbstractLongSpliterator(
+            preSkipSize - nSkipped,
+            _spliter.characteristics()
+          ) {
+            def tryAdvance(action: LongConsumer): Boolean =
+              _spliter.tryAdvance((e: scala.Long) => action.accept(e))
+          }
+        }
+      }
+
     // Follow JVM practice; return new stream, not remainder of "this" stream.
-    new LongStreamImpl(_spliter, _parallel, pipeline)
+    new LongStreamImpl(spl, _parallel, pipeline)
   }
 
   def sorted(): LongStream = {

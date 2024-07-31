@@ -671,13 +671,36 @@ private[stream] class StreamImpl[T](
 
     commenceOperation() // JVM tests argument before operatedUpon or closed.
 
+    val preSkipSize = _spliter.getExactSizeIfKnown()
+
     var nSkipped = 0L
 
     while ((nSkipped < n)
         && (_spliter.tryAdvance((e) => nSkipped += 1L))) { /* skip */ }
 
+    val spl =
+      if (preSkipSize == -1) _spliter // Not SIZED at beginning
+      else {
+        val postSkipSize = _spliter.getExactSizeIfKnown()
+        if (postSkipSize != preSkipSize) {
+          _spliter // save allocation, use tryAdvance's bookkeeping
+        } else {
+          /* Current stream is SIZED and its tryAdvance does not do
+           * bookkeeping. Give downstream an accurate exactSize().
+           */
+
+          new Spliterators.AbstractSpliterator[T](
+            preSkipSize - nSkipped,
+            _spliter.characteristics()
+          ) {
+            def tryAdvance(action: Consumer[_ >: T]): Boolean =
+              _spliter.tryAdvance((e) => action.accept(e))
+          }
+        }
+      }
+
     // Follow JVM practice; return new stream, not remainder of "this" stream.
-    new StreamImpl[T](_spliter, _parallel, pipeline)
+    new StreamImpl[T](spl, _parallel, pipeline)
   }
 
   def sorted(): Stream[T] = {
