@@ -76,23 +76,20 @@ private[scalanative] object ControlFlow {
       }
 
       def block(local: Local)(implicit pos: SourcePosition): Block =
-        blocks.getOrElse(
+        blocks.getOrElseUpdate(
           local, {
             val k = locations(local)
             val Inst.Label(n, params) = insts(k): @unchecked
 
             // copy all instruction up until and including
             // first control-flow instruction after the label
-            val body = mutable.UnrolledBuffer.empty[Inst]
-            var i = k
-            while ({
-              i += 1
-              body += insts(i)
-              !insts(i).isInstanceOf[Inst.Cf]
-            }) ()
+            val firstInst = k + 1
+            val body = insts.slice(
+              firstInst,
+              insts.indexWhere(_.isInstanceOf[Inst.Cf], from = firstInst) + 1
+            )
 
-            val block = Block(n, params, body.toSeq, isEntry = k == 0)
-            blocks(local) = block
+            val block = Block(n, params, body, isEntry = k == 0)
             todo ::= block
             block
           }
