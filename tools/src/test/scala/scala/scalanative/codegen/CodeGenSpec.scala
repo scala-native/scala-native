@@ -11,6 +11,8 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 
 import org.junit.Assert._
+import scala.scalanative.build.NativeConfig
+import java.nio.file.Files
 
 /** Base class to test code generation */
 abstract class CodeGenSpec extends OptimizerSpec {
@@ -26,20 +28,28 @@ abstract class CodeGenSpec extends OptimizerSpec {
    *  @return
    *    The result of applying `fn` to the resulting file.
    */
-  def codegen[T](entry: String, sources: Map[String, String])(
-      f: (Config, ReachabilityAnalysis.Result, Path) => T
+  def codegen[T](
+      entry: String,
+      sources: Map[String, String],
+      setupConfig: NativeConfig => NativeConfig = identity
+  )(
+      f: (Config, ReachabilityAnalysis.Result, Seq[Path]) => T
   ): T =
-    optimize(entry, sources) {
+    optimize(entry, sources, setupConfig.compose(_.withBaseName(entry))) {
       case (config, optimized) =>
         Scope { implicit in =>
           val codeGen = ScalaNative.codegen(config, optimized)
-          Await.ready(codeGen, 1.minute)
-          val workDir = VirtualDirectory.real(config.workDir)
-          val outfile = Paths.get("out.ll")
+          val _ = Await.result(codeGen, 1.minute)
 
-          assertTrue("out.ll not found.", workDir.contains(outfile))
+          val outfiles = Files
+            .list(config.workDir.resolve("generated"))
+            .toArray
+            .toSeq
+            .asInstanceOf[Seq[Path]]
 
-          f(config, optimized, outfile)
+          assertTrue("Empty code generator output", outfiles.nonEmpty)
+
+          f(config, optimized, outfiles)
         }
     }
 
