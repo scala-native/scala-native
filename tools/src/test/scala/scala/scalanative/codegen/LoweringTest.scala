@@ -15,8 +15,9 @@ class LoweringTest extends CodeGenSpec {
     |  }
     |}""".stripMargin),
     setupConfig = _.withOptimize(false)
-  ){case (config, result, _) => 
-    assertFalse(config.compilerConfig.optimize)
-    assertTrue(result.isSuccessful)
+  ) {
+    case (config, result, _) =>
+      assertFalse(config.compilerConfig.optimize)
+      assertTrue(result.isSuccessful)
   }
 }
