@@ -119,6 +119,35 @@ class DatagramChannelImpl(family: ProtocolFamily, provider: SelectorProvider)
     }
   }
 
+  private def recv(
+      dst: ByteBuffer,
+      flag: CInt,
+      op: String
+  ): Int = {
+    val buffer = dst.array()
+    val offset = dst.position()
+    val length = buffer.length - offset
+
+    val n = posix.sys.socket
+      .recv(
+        fd.fd,
+        buffer.at(offset),
+        length.toUInt,
+        flag
+      )
+      .toInt
+
+    n match {
+      case _ if n >= 0 =>
+        dst.position(offset + n)
+        n
+      case _ if !isBlocking && blockingDetected =>
+        0
+      case _ =>
+        throw new SocketException(s"$op failed, errno: ${lastError()}")
+    }
+  }
+
   override def receive(dst: ByteBuffer): SocketAddress = {
     throwIfClosed()
     if (!isBound) bind(null)
@@ -164,6 +193,46 @@ class DatagramChannelImpl(family: ProtocolFamily, provider: SelectorProvider)
           .toInt
       }
       n
+    }
+
+    if (bytesSent < 0) {
+      throw new SocketException(s"$op failed, errno: ${lastError()}")
+    }
+
+    // check sent == len ?
+    // datagram must send full buffer or error
+    src.position(offset + bytesSent)
+    bytesSent
+  }
+
+  private def send(
+      src: ByteBuffer,
+      op: String
+  ): Int = {
+    val buffer = src.array()
+    val offset = src.position()
+    val length = src.remaining()
+
+    val cArr = buffer.at(offset)
+    val cLen = length.toUInt
+
+    var bytesSent = posix.sys.socket
+      .send(
+        fd.fd,
+        cArr,
+        cLen,
+        posix.sys.socket.MSG_NOSIGNAL
+      )
+      .toInt
+    while (bytesSent < 0 && isBlocking && blockingDetected) {
+      bytesSent = posix.sys.socket
+        .send(
+          fd.fd,
+          cArr,
+          cLen,
+          posix.sys.socket.MSG_NOSIGNAL
+        )
+        .toInt
     }
 
     if (bytesSent < 0) {
@@ -231,8 +300,7 @@ class DatagramChannelImpl(family: ProtocolFamily, provider: SelectorProvider)
   override def read(dst: ByteBuffer): Int = {
     throwIfClosed()
     throwIfNotConnected()
-    val (length, _) = recvfrom(dst, 0, "read") // TODO check source == remote ?
-    length
+    recv(dst, 0, "read")
   }
 
   override def read(dsts: Array[ByteBuffer], offset: Int, length: Int): Long = {
@@ -247,7 +315,7 @@ class DatagramChannelImpl(family: ProtocolFamily, provider: SelectorProvider)
     while (i < length && !partialRead) {
       val dst = dsts(offset + i)
       val len = dst.remaining()
-      val (n, _) = recvfrom(dst, 0, "read")
+      val n = recv(dst, 0, "read")
 
       bytesRead += n
       if (n < len) {
@@ -263,7 +331,7 @@ class DatagramChannelImpl(family: ProtocolFamily, provider: SelectorProvider)
     throwIfClosed()
     throwIfNotConnected()
 
-    sendto(src, remoteAddress, "write")
+    send(src, "write")
   }
 
   override def write(
