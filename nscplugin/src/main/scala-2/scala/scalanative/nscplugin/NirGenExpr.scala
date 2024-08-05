@@ -335,6 +335,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         buf.labelExcludeUnitValue(merge, mergev)
       }
 
+      // Unreachable in Scala 2.12
       def genIfsChain(): nir.Val = {
         /* Default label needs to be generated before any others and then added to
          * current MethodEnv. It's label might be referenced in any of them in
@@ -356,12 +357,13 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
          *
          * def default4() = if(cond3) "bar-baz" else "baz-bar
          *
-         * We need to make sure to only generate LabelDef at this stage.
+         * We need to make sure to only reserve id for LabelDef at this stage allowing to 'call it' in genApplyLabel.
+         * Actual default label would be generated at the end of the if-else chain.
          * Generating other ASTs and mutating state might lead to unexpected
          * runtime errors.
          */
         val optDefaultLabel = defaultp match {
-          case label: LabelDef => Some(genLabelDef(label))
+          case label: LabelDef => Some(curMethodEnv.enterLabel(label))
           case _               => None
         }
 
@@ -384,7 +386,15 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
                 elsep = ContTree(_ => loop(elsep))(p)
               )
 
-            case Nil => optDefaultLabel.getOrElse(genExpr(defaultp))
+            case Nil =>
+              (defaultp, optDefaultLabel) match {
+                case (label: LabelDef, Some(labelId)) =>
+                  assert(labelId == curMethodEnv.resolveLabel(label))
+                  buf.jump(nir.Next(labelId))(label.pos)
+                  buf.genLabel(label)
+                case _ =>
+                  buf.genExpr(defaultp)
+              }
           }
         }
         loop(caseps.toList)
