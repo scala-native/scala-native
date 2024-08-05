@@ -260,9 +260,22 @@ private[scalanative] object Lower {
           }
           buf += nir.Inst.Jump(genNext(buf, next))
 
-        case inst @ nir.Inst.Label(name, _) =>
-          currentBlockPosition = labelPositions(name)
-          currentBlock = currentDefnGraph.get.find(name)
+        case inst @ nir.Inst.Label(id, params) =>
+          currentBlockPosition = labelPositions(id)
+          currentBlock = currentDefnGraph.get.find
+            .get(id)
+            .getOrElse {
+              // Block is not reachable, it's not a part of control flow graph
+              val instIdx = insts.indexOf(inst)
+              val lastInstIdx =
+                insts.indexWhere(_.isInstanceOf[nir.Inst.Cf], from = instIdx)
+              Block(
+                id = id,
+                params = params,
+                insts = insts.slice(instIdx, lastInstIdx + 1),
+                isEntry = false
+              )(inst.pos)
+            }
           buf += inst
 
         case inst =>
