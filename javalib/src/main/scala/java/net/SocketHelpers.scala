@@ -513,7 +513,7 @@ private[net] object ip6 {
 }
 
 @extern
-object async {
+private[net] object async {
 
   // only in Linux and FreeBSD, but not macOS
   @name("scalanative_async_sock_nonblock")
