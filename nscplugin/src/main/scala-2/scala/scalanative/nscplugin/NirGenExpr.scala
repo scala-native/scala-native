@@ -1840,11 +1840,16 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           platform.isMaybeBoxed(l.tpe.typeSymbol) &&
           platform.isMaybeBoxed(r.tpe.typeSymbol)
       }
-      def isNull(t: Tree) = PartialFunction.cond(t) {
-        case Literal(Constant(null)) => true
+      def isNull(t: Tree) = t match {
+        case Literal(Constant(null))   => true
+        case ValTree(nir.Val.Null)     => true
+        case ValTree(nir.Val.Zero(ty)) => nir.Type.isPtrType(ty)
+        case _                         => false
       }
-      def isLiteral(t: Tree) = PartialFunction.cond(t) {
-        case Literal(_) => true
+      def isLiteral(t: Tree) = t match {
+        case Literal(_)      => true
+        case ValTree(nirVal) => nirVal.isLiteral
+        case _               => false
       }
       def isNonNullExpr(t: Tree) =
         isLiteral(t) || ((t.symbol ne null) && t.symbol.isModule)

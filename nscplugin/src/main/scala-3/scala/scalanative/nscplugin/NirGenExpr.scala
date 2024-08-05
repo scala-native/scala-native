@@ -1638,12 +1638,19 @@ trait NirGenExpr(using Context) {
           isMaybeBoxed(l.tpe.typeSymbol) &&
           isMaybeBoxed(r.tpe.typeSymbol)
       }
-      def isNull(t: Tree): Boolean = t match {
-        case Literal(Constant(null)) => true
-        case _                       => false
+      def isNull(t: Tree) = t match {
+        case Literal(Constant(null))   => true
+        case ValTree(nir.Val.Null)     => true
+        case ValTree(nir.Val.Zero(ty)) => nir.Type.isPtrType(ty)
+        case _                         => false
+      }
+      def isLiteral(t: Tree) = t match {
+        case Literal(_)      => true
+        case ValTree(nirVal) => nirVal.isLiteral
+        case _               => false
       }
       def isNonNullExpr(t: Tree): Boolean =
-        t.isInstanceOf[Literal] || ((t.symbol ne null) && t.symbol.is(Module))
+        isLiteral(t) || ((t.symbol ne null) && t.symbol.is(Module))
 
       def comparator = if (negated) nir.Comp.Ine else nir.Comp.Ieq
       def maybeNegate(v: nir.Val): nir.Val =
