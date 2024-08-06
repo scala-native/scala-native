@@ -1,4 +1,5 @@
 // Ported from Scala.js, revision c473689, dated 3 May 2021
+// Contains Scala Native specific changes, see repository commit history.
 
 /*
  * Scala.js (https://www.scala-js.org/)
@@ -113,9 +114,9 @@ final class SplittableRandom private (private var seed: Long, gamma: Long)
     seed
   }
 
-  def nextInt(): Int = mix32(nextSeed())
+  override def nextInt(): Int = mix32(nextSeed())
 
-  // def nextInt(bound: Int): Int
+  // def nextInt(bound: Int): Int // SN uses RandomGenerator default method
 
   // def nextInt(origin: Int, bound: Int): Int
 
