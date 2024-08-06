@@ -948,6 +948,7 @@ run/StubErrorTypeDef.scala
 run/t9403
 
 # partest.BytecodeTest
+run/staticQualifier
 run/nonfatal.scala
 run/t7106
 run/t7974

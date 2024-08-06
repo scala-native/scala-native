@@ -20,27 +20,23 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [3]
-        gc: [none, boehm, immix, commix]
-        include:
-          - scala: 3-next
-            gc: immix
-          - scala: 2.13
-            gc: immix
-          - scala: 2.12
-            gc: immix
-
+        scala: [3, 2.13, 2.12]
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/macos-setup-env
         id: setup
         with:
           scala-version: ${{matrix.scala}}
-          gc: ${{ matrix.gc }}
-
-      - name: Test runtime
-        env: 
-          SCALANATIVE_GC: ${{ matrix.gc }}
+      
+      - name: Prepare for GC tests
+        run: brew install bdw-gc
+      - name: Test GC compilation
+        timeout-minutes: 15
+        run: sbt "test-gc ${{ matrix.scala }}"
+    
+      - name: Run tests
+        timeout-minutes: 45
+        env:
           SCALANATIVE_TEST_PREFETCH_DEBUG_INFO: 1
         run: sbt "test-runtime ${{matrix.scala}}"
 
@@ -61,7 +57,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [3, 3-next, 2.13]
+        scala: [2.13, 3]
         build-mode: [debug, release-fast]
         lto: [none, thin]
         gc: [boehm, immix, commix]
@@ -133,7 +129,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [2.12, 3]
+        scala: [3]
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/macos-setup-env

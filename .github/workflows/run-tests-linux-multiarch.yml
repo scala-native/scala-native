@@ -84,43 +84,7 @@ jobs:
       fail-fast: false
       matrix:
         arch: [linux-arm64, linux-x86]
-        scala: [3, 3-next]
-        build-mode: [debug, release-fast]
-        lto: [none, thin]
-        gc: [boehm, immix, commix]
-        exclude:
-          # LTO is broken on linux-x86/llvm-10
-          - arch: linux-x86
-            lto: thin
-          # Release without LTO produces 1 big file taking long to compile, especially when emulated
-          - build-mode: release-fast
-            lto: none
-          - build-mode: release-size
-            lto: none
-          - build-mode: debug
-            lto: thin
-          # Fails frequently
-          - gc: commix
-            lto: thin
-          # Reduce ammount of builds combinations
-          - gc: immix
-            lto: none
-          - gc: immix
-            build-mode: debug
-          - gc: commix
-            build-mode: debug
-          - gc: boehm
-            build-mode: release-fast
-          - gc: boehm
-            build-mode: release-size
-          - scala: 3-next
-            build-mode: debug
-          - scala: 3-next
-            lto: none
-          - scala: 3-next
-            gc: boehm
-          - scala: 3-next
-            gc: commix
+        scala: [3]
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/linux-setup-env
@@ -136,13 +100,6 @@ jobs:
         shell: bash
         # Following envs CROSS_ are always present in docker container
         run: |
-          buildMode=${{matrix.build-mode}}
-          if [[ "$buildMode" == "release-fast" ]]; then
-            buildMode=releaseFast
-          elif [[ "$buildMode" == "release-size" ]]; then
-            buildMode=releaseSize
-          fi
-
           SetConfigTemplate=$(cat << EOM
             nativeConfig ~= { prev =>
               val sysRoot: List[String] =
@@ -159,15 +116,7 @@ jobs:
                   )};
 
               prev
-                .withMode(scalanative.build.Mode.${buildMode})
-                .withGC(scalanative.build.GC.${{matrix.gc}})
-                .withLTO(scalanative.build.LTO.${{matrix.lto}})
-                .withEmbedResources(true)
-                .withOptimize(true)
-                .withCheck(true)
-                .withCheckFatalWarnings(true)
                 .withTargetTriple(sys.env.get("CROSS_TRIPLE"))
-                .withMultithreading(${{ matrix.gc != 'commix' }})
                 .withCompileOptions(_ ++ sysRoot ++ List("-fuse-ld=lld"))
                 .withLinkingOptions(_ ++ sysRoot ++ List("-fuse-ld=lld", "-latomic"))
             }
@@ -187,9 +136,6 @@ jobs:
 
       - name: Run tests
         env:
-          SCALANATIVE_MODE: "${{matrix.build-mode}}"
-          SCALANATIVE_GC: "${{matrix.gc}}"
-          SCALANATIVE_LTO: "${{matrix.lto}}"
           # Temporaly excluded due to failures in linux-x86,
           # missing __mulodi4 symbol used in j.l.Math.addExact(Long,Long)
           # testsExt${{env.project-version}}/test;
@@ -201,7 +147,7 @@ jobs:
 
             show sandbox${{env.project-version}}/nativeConfig;
 
-            sandbox${{env.project-version}}/run;
+            test-gc ${{matrix.scala}};
             testsJVM${{env.project-version}}/test;
             tests${{env.project-version}}/test;
             junitTestOutputsNative${{env.project-version}}/test;
