@@ -693,6 +693,16 @@ class IssuesTest {
     val names = Names.single[Foo](x => x)
     assertEquals("foo", names.mkString)
   }
+
+  @Test def issue3987(): Unit = {
+    // ensure does not hang
+    def is211 = false
+    val result = "scala-2.10" match {
+      case "scala-2.10" if is211 => "a"
+      case _                     => "b"
+    }
+    assertEquals(result, "b")
+  }
 }
 
 package issue1090 {

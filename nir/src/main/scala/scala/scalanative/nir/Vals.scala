@@ -196,6 +196,33 @@ sealed abstract class Val {
     case _ =>
       this
   }
+
+  /** `true` iff `this` is effectively a nullable value. */
+  def isNullable: Boolean = this match {
+    case _: Val.Global | _: Val.Local | _: Val.Zero =>
+      this.ty match {
+        case ref: nir.Type.Ref => ref.isNullable
+        case ty                => nir.Type.isPtrType(ty)
+      }
+    case Val.Null => true
+    // Const is always a non-nullable pointer to possibly nullable data
+    case _: Val.Const => false
+    // All remaining data types can never be nullable
+    // Val.Struct and Val.ArrayValue are aggregate types, can never be null
+    // Val.ByteString is basically Val.ArrayValue
+    case _ => false
+  }
+
+  /** `true` iff `this` is effectively a literal value. */
+  def isLiteral: Boolean = this match {
+    case _: Val.Global | _: Val.Local | _: Val.Const => false
+    case v: Val.StructValue => v.values.forall(_.isLiteral)
+    case v: Val.ArrayValue  => v.values.forall(_.isLiteral)
+    // All remaining value can be always treated as literals
+    // Val.Zero is effectively literal
+    // Val.ByteString is always a literal
+    case _ => true
+  }
 }
 
 object Val {

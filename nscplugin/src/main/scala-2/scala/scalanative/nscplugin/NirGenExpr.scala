@@ -335,6 +335,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         buf.labelExcludeUnitValue(merge, mergev)
       }
 
+      // Unreachable in Scala 2.12
       def genIfsChain(): nir.Val = {
         /* Default label needs to be generated before any others and then added to
          * current MethodEnv. It's label might be referenced in any of them in
@@ -356,12 +357,13 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
          *
          * def default4() = if(cond3) "bar-baz" else "baz-bar
          *
-         * We need to make sure to only generate LabelDef at this stage.
+         * We need to make sure to only reserve id for LabelDef at this stage allowing to 'call it' in genApplyLabel.
+         * Actual default label would be generated at the end of the if-else chain.
          * Generating other ASTs and mutating state might lead to unexpected
          * runtime errors.
          */
         val optDefaultLabel = defaultp match {
-          case label: LabelDef => Some(genLabelDef(label))
+          case label: LabelDef => Some(curMethodEnv.enterLabel(label))
           case _               => None
         }
 
@@ -384,7 +386,15 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
                 elsep = ContTree(_ => loop(elsep))(p)
               )
 
-            case Nil => optDefaultLabel.getOrElse(genExpr(defaultp))
+            case Nil =>
+              (defaultp, optDefaultLabel) match {
+                case (label: LabelDef, Some(labelId)) =>
+                  assert(labelId == curMethodEnv.resolveLabel(label))
+                  buf.jump(nir.Next(labelId))(label.pos)
+                  buf.genLabel(label)
+                case _ =>
+                  buf.genExpr(defaultp)
+              }
           }
         }
         loop(caseps.toList)
@@ -1840,11 +1850,16 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           platform.isMaybeBoxed(l.tpe.typeSymbol) &&
           platform.isMaybeBoxed(r.tpe.typeSymbol)
       }
-      def isNull(t: Tree) = PartialFunction.cond(t) {
-        case Literal(Constant(null)) => true
+      def isNull(t: Tree) = t match {
+        case Literal(Constant(null))   => true
+        case ValTree(nir.Val.Null)     => true
+        case ValTree(nir.Val.Zero(ty)) => nir.Type.isPtrType(ty)
+        case _                         => false
       }
-      def isLiteral(t: Tree) = PartialFunction.cond(t) {
-        case Literal(_) => true
+      def isLiteral(t: Tree) = t match {
+        case Literal(_)      => true
+        case ValTree(nirVal) => nirVal.isLiteral
+        case _               => false
       }
       def isNonNullExpr(t: Tree) =
         isLiteral(t) || ((t.symbol ne null) && t.symbol.isModule)
