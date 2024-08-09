@@ -15,11 +15,11 @@ Getting Started and full documentation can be found at [https://www.scala-native
 
 ## Online Scaladoc
 
-[![Scaladoc nativelib](https://javadoc.io/badge2/org.scala-native/nativelib_native0.4_3/javadoc.svg?label=nativelib)](https://javadoc.io/doc/org.scala-native/nativelib_native0.4_3)
-[![Scaladoc javalib](https://javadoc.io/badge2/org.scala-native/javalib_native0.4_2.13/javadoc.svg?label=javalib)](https://javadoc.io/doc/org.scala-native/javalib_native0.4_2.13)
-[![Scaladoc clib](https://javadoc.io/badge2/org.scala-native/clib_native0.4_3/javadoc.svg?label=clib)](https://javadoc.io/doc/org.scala-native/clib_native0.4_3)
-[![Scaladoc posixlib](https://javadoc.io/badge2/org.scala-native/posixlib_native0.4_3/javadoc.svg?label=posixlib)](https://javadoc.io/doc/org.scala-native/posixlib_native0.4_3)
-[![Scaladoc windowslib](https://javadoc.io/badge2/org.scala-native/windowslib_native0.4_3/javadoc.svg?label=windowslib)](https://javadoc.io/doc/org.scala-native/windowslib_native0.4_3)
+[![Scaladoc nativelib](https://javadoc.io/badge2/org.scala-native/nativelib_native0.5_3/javadoc.svg?label=nativelib)](https://javadoc.io/doc/org.scala-native/nativelib_native0.5_3)
+[![Scaladoc javalib](https://javadoc.io/badge2/org.scala-native/javalib_native0.5_2.13/javadoc.svg?label=javalib)](https://javadoc.io/doc/org.scala-native/javalib_native0.5_2.13)
+[![Scaladoc clib](https://javadoc.io/badge2/org.scala-native/clib_native0.5_3/javadoc.svg?label=clib)](https://javadoc.io/doc/org.scala-native/clib_native0.5_3)
+[![Scaladoc posixlib](https://javadoc.io/badge2/org.scala-native/posixlib_native0.5_3/javadoc.svg?label=posixlib)](https://javadoc.io/doc/org.scala-native/posixlib_native0.5_3)
+[![Scaladoc windowslib](https://javadoc.io/badge2/org.scala-native/windowslib_native0.5_3/javadoc.svg?label=windowslib)](https://javadoc.io/doc/org.scala-native/windowslib_native0.5_3)
 
 ## License
 

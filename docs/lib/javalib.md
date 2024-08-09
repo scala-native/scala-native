@@ -5,7 +5,7 @@ in Scala.
 
 ## Supported classes
 
-For list of currently supported Java Standard Library types and methods refer to [scaladoc package](https://www.javadoc.io/doc/org.scala-native/javalib_native0.4_2.13/latest/index.html) or consult [javalib sources](https://github.com/scala-native/scala-native/tree/main/javalib/src/main/scala/java) for details.
+For list of currently supported Java Standard Library types and methods refer to [scaladoc package](https://www.javadoc.io/doc/org.scala-native/javalib_native0.5_2.13/latest/index.html) or consult [javalib sources](https://github.com/scala-native/scala-native/tree/main/javalib/src/main/scala/java) for details.
 
 ## Regular expressions (java.util.regex)
 

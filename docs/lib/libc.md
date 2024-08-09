@@ -8,6 +8,11 @@ library](https://en.cppreference.com/w/c/header).
 The project now tracks the *C11 standard (ISO/IEC 9899:2011)* but
 currently most bindings are from the *C99 standard (ISO/IEC 9899:1999)*.
  
+## Supported classes
+
+For a list of currently supported C Library types and methods refer to [scaladoc package](https://javadoc.io/doc/org.scala-native/clib_native0.5_3/latest/index.html) or consult the details that follow.
+
+## Supported Headers and Source Location
 
 | C Header | Scala Native Module |
 | -------- | ------------------- | 
