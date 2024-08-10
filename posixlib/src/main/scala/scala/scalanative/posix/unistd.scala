@@ -106,7 +106,7 @@ object unistd {
   def getcwd(buf: CString, size: CSize): CString = extern
 
   // No @blocking necessary. Will block only very early in system boot.
-  def getentropy(buffer: Ptr[CVoidPtr], length: size_t): CInt = extern
+  def getentropy(buffer: CVoidPtr, length: size_t): CInt = extern
 
   def getegid(): gid_t = extern
   def geteuid(): uid_t = extern
