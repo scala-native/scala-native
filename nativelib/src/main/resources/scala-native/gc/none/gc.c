@@ -52,6 +52,8 @@ size_t scalanative_GC_get_max_heapsize() {
     return Parse_Env_Or_Default("GC_MAXIMUM_HEAP_SIZE", getMemorySize());
 }
 
+size_t scalanative_GC_get_used_heapsize() { return -1L; }
+
 void Prealloc_Or_Default() {
 
     if (TO_NORMAL_MMAP == 1L) { // Check if we have prealloc env varible
