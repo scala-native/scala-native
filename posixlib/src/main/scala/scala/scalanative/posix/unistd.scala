@@ -161,8 +161,25 @@ object unistd {
   @blocking
   def pause(): CInt = extern
 
+  /** pipe, pipe2 first argument
+   *
+   *  The description in unistd.h in "The Open Group Base Specifications Issue
+   *  8" gives, in C, the first argument of both pipe() and pipe2() as "pipe(int
+   *  [2])".
+   *
+   *  Kernighan & Ritchie C developers will recognize the direct equivalence to
+   *  "int *", where staying within bounds is up to the user.
+   *
+   *  Here first argument of both pipe() and pipe2() is declared as as
+   *  Ptr[CInt], not CArray[CInt_2]. This is to be consistent with other uses of
+   *  C arrays where the size is not known, cf. "var environ: Ptr[CString]".
+   *
+   *  See Scala Native Pull Request #4019 for discussion.
+   */
+
   def pipe(fildes: Ptr[CInt]): CInt = extern
   def pipe2(fildes: Ptr[CInt], flags: CInt): CInt = extern
+
   def posix_close(fildes: CInt, flag: CInt): CInt = extern
 
   @blocking
