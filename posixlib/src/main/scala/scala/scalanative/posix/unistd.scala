@@ -62,10 +62,11 @@ object unistd {
 
   def dup(fildes: CInt): CInt = extern
   def dup2(fildes: CInt, fildesnew: CInt): CInt = extern
+  def dup3(fildes: CInt, fildesnew: CInt, flags: CInt): CInt = extern
 
   def _exit(status: CInt): Unit = extern
 
-  // XSI
+  // Obsolete XSI
   def encrypt(block: Ptr[Byte], edflag: Int): Unit = extern
 
   def execl(pathname: CString, arg: CString, vargs: Any*): CInt = extern
@@ -92,14 +93,21 @@ object unistd {
   def fdatasync(filedes: CInt): CInt = extern
 
   def fexecve(fd: CInt, argv: Ptr[CString], envp: Ptr[CString]): CInt = extern
+  def _Fork(): pid_t = extern
   def fork(): pid_t = extern
   def fpathconf(fd: CInt, name: CInt): CLong = extern
+
   @blocking
   def fsync(fildes: CInt): CInt = extern
+
   @blocking
   def ftruncate(fildes: CInt, length: off_t): CInt = extern
 
   def getcwd(buf: CString, size: CSize): CString = extern
+
+  // No @blocking necessary. Will block only very early in system boot.
+  def getentropy(buffer: CVoidPtr, length: size_t): CInt = extern
+
   def getegid(): gid_t = extern
   def geteuid(): uid_t = extern
   def getgid(): gid_t = extern
@@ -116,6 +124,15 @@ object unistd {
   def getpgrp(): pid_t = extern
   def getpid(): pid_t = extern
   def getppid(): pid_t = extern
+
+  // XSI
+  def getresgid(rgid: Ptr[gid_t], egid: Ptr[gid_t], sgid: Ptr[gid_t]): CInt =
+    extern
+
+  // XSI
+  def getresuid(ruid: Ptr[uid_t], euid: Ptr[uid_t], suid: Ptr[uid_t]): CInt =
+    extern
+
   def getsid(pid: pid_t): pid_t = extern;
   def getuid(): uid_t = extern
 
@@ -140,18 +157,42 @@ object unistd {
   def nice(inc: CInt): CInt = extern
 
   def pathconf(path: CString, name: CInt): CLong = extern
+
   @blocking
   def pause(): CInt = extern
+
+  /** pipe, pipe2 first argument
+   *
+   *  The description in unistd.h in "The Open Group Base Specifications Issue
+   *  8" gives, in C, the first argument of both pipe() and pipe2() as "pipe(int
+   *  [2])".
+   *
+   *  Kernighan & Ritchie C developers will recognize the direct equivalence to
+   *  "int *", where staying within bounds is up to the user.
+   *
+   *  Here first argument of both pipe() and pipe2() is declared as as
+   *  Ptr[CInt], not CArray[CInt_2]. This is to be consistent with other uses of
+   *  C arrays where the size is not known, cf. "var environ: Ptr[CString]".
+   *
+   *  See Scala Native Pull Request #4019 for discussion.
+   */
+
   def pipe(fildes: Ptr[CInt]): CInt = extern
+  def pipe2(fildes: Ptr[CInt], flags: CInt): CInt = extern
+
+  def posix_close(fildes: CInt, flag: CInt): CInt = extern
+
   @blocking
   def pread(fd: CInt, buf: CVoidPtr, count: size_t, offset: off_t): ssize_t =
     extern
+
   @blocking
   def pwrite(fd: CInt, buf: CVoidPtr, count: size_t, offset: off_t): ssize_t =
     extern
 
   @blocking
   def read(fildes: CInt, buf: CVoidPtr, nbyte: CSize): CInt = extern
+
   def readlink(path: CString, buf: CString, bufsize: CSize): CInt = extern
   def readlinkat(
       dirfd: CInt,
@@ -170,10 +211,19 @@ object unistd {
 
 // XSI
   def setregid(rgid: gid_t, egid: gid_t): CInt = extern
+
+  // XSI
+  def setresgid(rgid: gid_t, egid: gid_t, sgid: gid_t): CInt = extern
+
+  // XSI
+  def setresuid(ruid: uid_t, euid: uid_t, suid: uid_t): CInt = extern
+
+  // XSI
   def setreuid(ruid: gid_t, euid: gid_t): CInt = extern
 
   def setsid(): pid_t = extern
   def setuid(uid: uid_t): CInt = extern
+
   @blocking
   def sleep(seconds: CUnsignedInt): CUnsignedInt = extern
 
