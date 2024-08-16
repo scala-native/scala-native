@@ -12,6 +12,8 @@ class ManagementFactoryTest {
     val memoryUsage = bean.getHeapMemoryUsage()
 
     assertTrue(memoryUsage.getInit() >= 0L)
+    assertTrue(memoryUsage.getCommitted() >= 0L)
+    assertTrue(memoryUsage.getUsed() >= 0L)
     assertTrue(memoryUsage.getMax() >= 0L)
   }
 

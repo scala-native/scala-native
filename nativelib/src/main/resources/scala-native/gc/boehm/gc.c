@@ -62,12 +62,10 @@ size_t scalanative_GC_get_max_heapsize() {
 }
 
 size_t scalanative_GC_get_used_heapsize() {
-    struct GC_prof_stats_s *stats =
-        (struct GC_prof_stats_s *)malloc(sizeof(struct GC_prof_stats_s));
-    GC_get_prof_stats(stats, sizeof(struct GC_prof_stats_s));
-    size_t heap_sz = stats->heapsize_full;
-    size_t unmapped_bytes = stats->unmapped_bytes;
-    free(stats);
+    struct GC_prof_stats_s stats = {};
+    GC_get_prof_stats(&stats, sizeof(struct GC_prof_stats_s));
+    size_t heap_sz = stats.heapsize_full;
+    size_t unmapped_bytes = stats.unmapped_bytes;
     return heap_sz - unmapped_bytes;
 }
 
