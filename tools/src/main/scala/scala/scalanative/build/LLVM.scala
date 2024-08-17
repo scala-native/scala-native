@@ -75,9 +75,13 @@ private[scalanative] object LLVM {
     }
 
     val configFlags = {
-      if (config.compilerConfig.multithreadingSupport)
-        Seq("-DSCALANATIVE_MULTITHREADING_ENABLED")
-      else Nil
+      val multithreadingEnabled =
+        if (config.compilerConfig.multithreadingSupport)
+          Seq("-DSCALANATIVE_MULTITHREADING_ENABLED")
+        else Nil
+      val allowTargetOverrrides =
+        config.compilerConfig.targetTriple.map(_ => s"-Wno-override-module")
+      multithreadingEnabled ++ allowTargetOverrrides
     }
     val exceptionsHandling = {
       val opt = if (isCpp) List("-fcxx-exceptions") else Nil
