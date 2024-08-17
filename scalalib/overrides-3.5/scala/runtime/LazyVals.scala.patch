@@ -1,11 +1,12 @@
---- 3.6.0-RC1-bin-20240815-99f431e-NIGHTLY/scala/runtime/LazyVals.scala
+--- 3.5.0-RC1/scala/runtime/LazyVals.scala
 +++ overrides-3/scala/runtime/LazyVals.scala
-@@ -4,44 +4,14 @@
+@@ -4,44 +4,15 @@
  
  import scala.annotation.*
  
 +import scala.scalanative.runtime.*
 +import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
++import java.util.concurrent.TimeUnit
 +
  /**
   * Helper methods used in thread-safe lazy vals.
@@ -48,16 +49,19 @@
  
    /* ------------- Start of public API ------------- */
  
-@@ -63,6 +33,8 @@
-      * correct.
-      */
-     private def writeReplace(): Any = null
+@@ -52,7 +23,10 @@
+    * Used to indicate the state of a lazy val that is being
+    * evaluated and of which other threads await the result.
+    */
+-  final class Waiting extends CountDownLatch(1) with LazyValControlState
++  final class Waiting extends CountDownLatch(1) with LazyValControlState {
 +    override def countDown(): Unit = if(isMultithreadingEnabled) super.countDown()
 +    override def await(): Unit =  if(isMultithreadingEnabled) super.await()
-   }
++  }
  
    /**
-@@ -86,94 +58,47 @@
+    * Used to indicate the state of a lazy val that is currently being
+@@ -70,94 +44,47 @@
  
    def STATE(cur: Long, ord: Int): Long = {
      val r = (cur >> (ord * BITS_PER_LAZY_VAL)) & LAZY_VAL_MASK

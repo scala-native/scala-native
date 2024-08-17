@@ -40,6 +40,7 @@ abstract class CodeGenSpec extends OptimizerSpec {
         Scope { implicit in =>
           val codeGen = ScalaNative.codegen(config, optimized)
           val _ = Await.result(codeGen, 1.minute)
+          Thread.sleep(1000)
 
           val outfiles = Files
             .list(config.workDir.resolve("generated"))

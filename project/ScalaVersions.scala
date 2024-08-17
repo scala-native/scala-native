@@ -18,23 +18,24 @@ package build
 
 object ScalaVersions {
   // Versions of Scala used for publishing compiler plugins
-  val crossScala212 = crossScalaVersions("2.12.", 14 to 19)
-  val crossScala213 = crossScalaVersions("2.13.", 8 to 14)
+  val crossScala212 = crossScalaVersions("2.12", 14 to 19)
+  val crossScala213 = crossScalaVersions("2.13", 8 to 14)
   val crossScala3 = List(
     extraCrossScalaVersion("3.").toList,
     scala3RCVersions,
     // windowslib fails to compile with 3.1.{0-1}
-    (2 to 3).map(v => s"3.1.$v"),
-    (0 to 2).map(v => s"3.2.$v"),
-    (0 to 3).map(v => s"3.3.$v"),
-    (0 to 2).map(v => s"3.4.$v")
+    crossScalaVersions("3.1", 2 to 3),
+    crossScalaVersions("3.2", 0 to 2),
+    crossScalaVersions("3.3", 0 to 3),
+    crossScalaVersions("3.4", 0 to 3),
+    crossScalaVersions("3.5", 0 to 0)
   ).flatten.distinct
 
   // Tested in scheduled nightly CI to check compiler plugins
   // List maintains only upcoming releases, removed from the list after reaching stable status
   lazy val scala3RCVersions = List(
     1.to(1).map(v => s"3.3.4-RC$v"),
-    1.to(4).map(v => s"3.5.0-RC$v")
+    1.to(2).map(v => s"3.5.1-RC$v")
   ).flatten
 
   // Scala versions used for publishing libraries
@@ -69,10 +70,10 @@ object ScalaVersions {
     .filter(_.startsWith(binVersionPrefix))
 
   private def crossScalaVersions(
-      prefix: String,
+      baseVersion: String,
       patches: Range.Inclusive
   ): List[String] = {
-    patches.map(v => prefix + v) ++
-      extraCrossScalaVersion(prefix)
+    patches.map(v => s"$baseVersion.$v") ++
+      extraCrossScalaVersion(baseVersion)
   }.distinct.toList
 }
