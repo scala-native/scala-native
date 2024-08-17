@@ -21,7 +21,7 @@
 #endif
 
 #else
-#error "Unable to define getMemorySize( ) for an unknown OS."
+#error "Unable to define getMemorySize() for an unknown OS."
 #endif
 
 /**
@@ -93,6 +93,40 @@ size_t getMemorySize() {
         return (size_t)size;
     return 0L; /* Failed? */
 #endif /* sysctl and sysconf variants */
+
+#else
+    return 0L; /* Unknown OS. */
+#endif
+}
+
+/**
+ * Returns the size of available free memory (RAM) in bytes.
+ */
+size_t getFreeMemorySize() {
+#if defined(_WIN32) && (defined(__CYGWIN__) || defined(__CYGWIN32__))
+    /* Cygwin under Windows. ------------------------------------ */
+    /* New 64-bit MEMORYSTATUSEX isn't available.  Use old 32.bit */
+    MEMORYSTATUS status;
+    status.dwLength = sizeof(status);
+    GlobalMemoryStatus(&status);
+    return (size_t)status.dwAvailPhys;
+
+#elif defined(_WIN32)
+    /* Windows. ------------------------------------------------- */
+    /* Use new 64-bit MEMORYSTATUSEX, not old 32-bit MEMORYSTATUS */
+    MEMORYSTATUSEX status;
+    status.dwLength = sizeof(status);
+    GlobalMemoryStatusEx(&status);
+    return (size_t)status.ullAvailPhys;
+
+#elif (defined(__unix__) || defined(__unix) || defined(unix) ||                \
+       (defined(__APPLE__) && defined(__MACH__)) && defined(_SC_AVPHYS_PAGES))
+    /* UNIX variants. ------------------------------------------- */
+    long pages = sysconf(_SC_AVPHYS_PAGES);
+    long page_size = sysconf(_SC_PAGESIZE);
+    if (pages == -1 || page_size == -1)
+        return 0L;
+    return (size_t)pages * (size_t)page_size;
 
 #else
     return 0L; /* Unknown OS. */

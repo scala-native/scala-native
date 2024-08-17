@@ -21,7 +21,7 @@
 // process would not use too much resources.
 #define DEFAULT_CHUNK_SIZE "64M"
 #else
-#define DEFAULT_CHUNK_SIZE "4G"
+#define DEFAULT_CHUNK_SIZE "1G"
 #endif
 
 #if defined(__has_feature)
@@ -49,14 +49,14 @@ size_t scalanative_GC_get_init_heapsize() {
 }
 
 size_t scalanative_GC_get_max_heapsize() {
-    return Parse_Env_Or_Default("GC_MAXIMUM_HEAP_SIZE", getMemorySize());
+    return Parse_Env_Or_Default("GC_MAXIMUM_HEAP_SIZE", getFreeMemorySize());
 }
 
 void Prealloc_Or_Default() {
 
     if (TO_NORMAL_MMAP == 1L) { // Check if we have prealloc env varible
                                 // or execute default mmap settings
-        size_t memorySize = getMemorySize();
+        size_t memorySize = getFreeMemorySize();
 
         DEFAULT_CHUNK = // Default Maximum allocation Map 4GB
             Choose_IF(Parse_Env_Or_Default_String("GC_MAXIMUM_HEAP_SIZE",
@@ -158,8 +158,8 @@ int scalanative_GC_pthread_create(pthread_t *thread, pthread_attr_t *attr,
 #endif
 
 // ScalaNativeGC interface stubs. None GC does not need STW
-void scalanative_GC_set_mutator_thread_state(GC_MutatorThreadState unused){};
-void scalanative_GC_yield(){};
+void scalanative_GC_set_mutator_thread_state(GC_MutatorThreadState unused) {};
+void scalanative_GC_yield() {};
 void scalanative_GC_add_roots(void *addr_low, void *addr_high) {}
 void scalanative_GC_remove_roots(void *addr_low, void *addr_high) {}
 #endif
