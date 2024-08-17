@@ -28,11 +28,21 @@ private[scalanative] object TargetTriple {
   def parse(triple: String): TargetTriple = {
     val components = triple.split("-", 4).toList
     val unknown = "unknown"
+    def parseComponents(indexes: Int*)(parser: String => String): String = {
+      for {
+        idx <- indexes.iterator
+        component <- components.lift(idx).iterator
+      } yield parser(component)
+    }.collectFirst {
+      case parsed if parsed != unknown => parsed
+    }.getOrElse(unknown)
+
     TargetTriple(
-      components.lift(0).map(Arch.parse).getOrElse(unknown),
-      components.lift(1).map(Vendor.parse).getOrElse(unknown),
-      components.lift(2).map(OS.parse).getOrElse(unknown),
-      components.lift(3).map(Env.parse).getOrElse(unknown)
+      arch = parseComponents(0)(Arch.parse),
+      vendor = parseComponents(1)(Vendor.parse),
+      // ARCH-OS-ENV is a valid triple
+      os = parseComponents(2, 1)(OS.parse),
+      env = parseComponents(3, 2)(Env.parse)
     )
   }
 
