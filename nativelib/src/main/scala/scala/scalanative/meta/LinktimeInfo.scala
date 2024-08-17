@@ -47,7 +47,8 @@ object LinktimeInfo {
 
   @resolvedAtLinktime()
   def isContinuationsSupported: Boolean =
-    isLinux || isMac || isFreeBSD || isOpenBSD || isNetBSD
+    (isLinux || isMac || isFreeBSD || isOpenBSD || isNetBSD) &&
+      (target.arch != "arm" && !is32BitPlatform)
 
   @resolvedAtLinktime(
     "scala.scalanative.meta.linktimeinfo.isMultithreadingEnabled"
