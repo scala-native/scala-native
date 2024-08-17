@@ -14,6 +14,7 @@
 #include "shared/Parsing.h"
 #include "shared/ThreadUtil.h"
 #include "shared/ScalaNativeGC.h"
+#include <assert.h>
 
 // Dummy GC that maps chunks of memory and allocates but never frees.
 #ifdef _WIN32
@@ -57,8 +58,11 @@ void Prealloc_Or_Default() {
     if (TO_NORMAL_MMAP == 1L) { // Check if we have prealloc env varible
                                 // or execute default mmap settings
         size_t memorySize = getFreeMemorySize();
+        if (memorySize == 0)
+            memorySize = getMemorySize();
+        assert(memorySize > 0);
 
-        DEFAULT_CHUNK = // Default Maximum allocation Map 4GB
+        DEFAULT_CHUNK = // Default Maximum allocation Map 1GB
             Choose_IF(Parse_Env_Or_Default_String("GC_MAXIMUM_HEAP_SIZE",
                                                   DEFAULT_CHUNK_SIZE),
                       Less_OR_Equal, memorySize);
