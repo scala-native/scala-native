@@ -20,6 +20,7 @@ import org.junit.Assume._
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform
 import scala.collection.JavaConverters._
+import scala.scalanative.junit.utils.AssumesHelper._
 
 class DatagramSocketTest {
 
@@ -396,6 +397,7 @@ class DatagramSocketTest {
   @Test def sendReceiveBroadcast(): Unit = {
     // NetworkInterface.getNetworkInterfaces is not implemented in Windows
     assumeFalse("Not implemented in Windows", Platform.isWindows)
+    assumeNotRoot()
 
     // we need to find a network interface with broadcast support for this test
     NetworkInterface

@@ -12,10 +12,10 @@ class LinktimeInfoTest {
   }
 
   @Test def testOS(): Unit = {
-    assertEquals(Platform.isFreeBSD(), LinktimeInfo.isFreeBSD)
-    assertEquals(Platform.isLinux(), LinktimeInfo.isLinux)
-    assertEquals(Platform.isMac(), LinktimeInfo.isMac)
-    assertEquals(Platform.isWindows(), LinktimeInfo.isWindows)
+    assertEquals("FreeBSD", Platform.isFreeBSD(), LinktimeInfo.isFreeBSD)
+    assertEquals("Linux", Platform.isLinux(), LinktimeInfo.isLinux)
+    assertEquals("Mac", Platform.isMac(), LinktimeInfo.isMac)
+    assertEquals("Windows", Platform.isWindows(), LinktimeInfo.isWindows)
   }
 
 }

@@ -13,6 +13,9 @@ object PosixException {
     case e if e == ENOENT    => new NoSuchFileException(file)
     case e if e == ENOTDIR   => new NotDirectoryException(file)
     case e if e == ENOTEMPTY => new DirectoryNotEmptyException(file)
-    case e                   => new IOException(fromCString(string.strerror(e)))
+    case e =>
+      new IOException(
+        s"Operation on file $file failed: " + fromCString(string.strerror(e))
+      )
   }
 }

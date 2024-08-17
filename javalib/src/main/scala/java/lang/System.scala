@@ -129,6 +129,7 @@ private object SystemProperties {
     getUserHomeDirectory().foreach(sysProps.setProperty("user.home", _))
     getUserCountry().foreach(sysProps.setProperty("user.country", _))
     getUserLanguage().foreach(sysProps.setProperty("user.language", _))
+    getUserName().foreach(sysProps.setProperty("user.name", _))
 
     if (isWindows) {
       sysProps.setProperty("file.separator", "\\")
@@ -223,6 +224,21 @@ private object SystemProperties {
           .drop(1)
       )
     }
+  }
+
+  private def getUserName(): Option[String] = {
+    def nonEmptyEnv(env: String) =
+      Option(getenv(env)).map(_.trim()).filterNot(_.isEmpty())
+    nonEmptyEnv("USER")
+      .orElse(nonEmptyEnv("LOGNAME"))
+      .orElse {
+        if (isWindows) None
+        else {
+          val passwd = stackalloc[pwd.passwd]()
+          if (pwd.getpwuid(unistd.geteuid(), passwd) != 0) None
+          else Option(passwd.pw_name).map(fromCString(_))
+        }
+      }
   }
 }
 

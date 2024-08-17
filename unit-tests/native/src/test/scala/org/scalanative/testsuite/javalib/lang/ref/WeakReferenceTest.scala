@@ -12,6 +12,7 @@ import scala.scalanative.buildinfo.ScalaNativeBuildInfo
 
 import scala.scalanative.runtime.GC
 import org.scalanative.testsuite.utils.Platform
+import scala.scalanative.unsafe._
 
 // "AfterGC" tests are very sensitive to optimizations,
 // both by Scala Native and LLVM.
@@ -29,22 +30,12 @@ class WeakReferenceTest {
   }
 
   @nooptimize @noinline def allocWeakRef(
-      referenceQueue: ReferenceQueue[A]
+      referenceQueue: ReferenceQueue[A],
+      factory: (A, ReferenceQueue[A]) => WeakReference[A]
   ): WeakReference[A] = {
-    var a = A()
-    val weakRef = new WeakReference(a, referenceQueue)
-    assertEquals("get() should return object reference", weakRef.get(), a)
-    a = null
-    weakRef
-  }
-
-  @nooptimize @noinline def allocSubclassedWeakRef(
-      referenceQueue: ReferenceQueue[A]
-  ): SubclassedWeakRef[A] = {
-    var a = A()
-    val weakRef = new SubclassedWeakRef(a, referenceQueue)
-    assertEquals("get() should return object reference", weakRef.get(), a)
-    a = null
+    @nooptimize @noinline def allocA = A()
+    val weakRef = factory(allocA, referenceQueue)
+    assertNotNull("get() should return object reference", weakRef.get())
     weakRef
   }
 
@@ -87,10 +78,13 @@ class WeakReferenceTest {
 
     gcAssumption()
     val refQueue = new ReferenceQueue[A]()
-    val weakRef1 = allocWeakRef(refQueue)
-    val weakRef2 = allocWeakRef(refQueue)
-    val weakRef3 = allocSubclassedWeakRef(refQueue)
+    val weakRef1 = allocWeakRef(refQueue, new WeakReference(_, _))
+    val weakRef2 = allocWeakRef(refQueue, new WeakReference(_, _))
+    val weakRef3 = allocWeakRef(refQueue, new SubclassedWeakRef(_, _))
     val weakRefList = List(weakRef1, weakRef2, weakRef3)
+    // Zero-memory the stack from possible stale references to allocated objects
+    val dummy = stackalloc[Long](128)
+    assert(dummy != null)
 
     System.gc()
     def newDeadline() = System.currentTimeMillis() + 60 * 1000

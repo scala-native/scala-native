@@ -10,6 +10,7 @@ import org.junit.Test
 import org.junit.Assert._
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
+import scala.scalanative.junit.utils.AssumesHelper._
 
 class RandomAccessFileTest {
 
@@ -146,7 +147,7 @@ class RandomAccessFileTest {
 
     try {
       assertTrue("Could not set file read-only", roFile.setReadOnly())
-
+      assumeNotRoot()
       assertThrows(
         classOf[FileNotFoundException],
         new RandomAccessFile(roFile, "rw")

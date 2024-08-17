@@ -24,7 +24,7 @@ class DefaultFormatterTest {
   @Before
   def setUp(): Unit = {
     // disabled, doesn't work on Scala Native right now
-    // root = System.getProperty("user.name").equalsIgnoreCase("root")
+    root = System.getProperty("user.name").equalsIgnoreCase("root")
     notExist = File.createTempFile("notexist", null)
     notExist.delete()
 

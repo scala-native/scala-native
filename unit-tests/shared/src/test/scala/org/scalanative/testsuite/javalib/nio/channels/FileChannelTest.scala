@@ -8,6 +8,7 @@ import org.junit.Ignore
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform
+import scala.scalanative.junit.utils.AssumesHelper._
 
 import java.{lang => jl}
 
@@ -572,6 +573,7 @@ class FileChannelTest {
       val sroStatus = f.toFile().setReadOnly()
       assertTrue("setReadOnly failed", sroStatus)
 
+      assumeNotRoot()
       assertThrows(
         f.toString(),
         classOf[AccessDeniedException],

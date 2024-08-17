@@ -14,17 +14,12 @@ private[testinterface] class ProcessRunner(
 
   private val process = {
     // Optional emualator config used internally for testing non amd64 architectures
-    val emulatorOpts: List[String] = {
-      val optEmulator =
-        sys.props
-          .get("scala.scalanative.testinterface.processrunner.emulator")
-          .filter(_.nonEmpty)
-      val optEmulatorOptions = sys.props
-        .get("scala.scalanative.testinterface.processrunner.emulator-args")
-        .map(_.split(" ").toList)
-        .getOrElse(Nil)
-      optEmulator.toList ++ optEmulatorOptions
-    }
+    val emulatorOpts: List[String] = sys.env
+      .get("CROSSCOMPILING_EMULATOR")
+      .map(_.split(" ").toList)
+      .filter(_.nonEmpty)
+      .getOrElse(Nil)
+
     if (emulatorOpts.nonEmpty) {
       logger.info(s"Using test process emulator: ${emulatorOpts.mkString(" ")}")
     }

@@ -133,7 +133,10 @@ private[java] class PosixThread(val thread: Thread, stackSize: Long)
         return
       }
 
-      assert(conditionIdx == ConditionUnset, "conditiond idx")
+      assert(
+        conditionIdx == ConditionUnset,
+        s"condition idx: $conditionIdx, expected=$ConditionUnset"
+      )
       if (time == 0) {
         conditionIdx = ConditionRelativeIdx
         state = NativeThread.State.ParkedWaiting
