@@ -10,6 +10,7 @@ import org.scalanative.testsuite.javalib.io.IoTestHelpers._
 
 import org.scalanative.testsuite.utils.Platform.isWindows
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
+import scala.scalanative.junit.utils.AssumesHelper._
 
 class FileOutputStreamTest {
 
@@ -51,6 +52,7 @@ class FileOutputStreamTest {
   }
 
   @Test def attemptToOpenReadonlyRegularFile(): Unit = {
+    assumeNotRoot()
     withTemporaryFile { ro =>
       ro.setReadOnly()
       assertThrows(classOf[FileNotFoundException], new FileOutputStream(ro))
@@ -68,6 +70,7 @@ class FileOutputStreamTest {
       "Setting directory read only in Windows does not have affect on creating new files",
       isWindows
     )
+    assumeNotRoot()
     withTemporaryDirectory { ro =>
       ro.setReadOnly()
       assertThrows(

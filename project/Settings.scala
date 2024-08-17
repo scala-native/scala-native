@@ -348,7 +348,7 @@ object Settings {
       Tests.Argument(TestFrameworks.JUnit, "-a", "-s")
     ),
     Test / envVars ++= Map(
-      "USER" -> "scala-native",
+      "USER" -> System.getProperty("user.name"),
       "HOME" -> System.getProperty("user.home"),
       "SCALA_NATIVE_ENV_WITH_EQUALS" -> "1+1=2",
       "SCALA_NATIVE_ENV_WITHOUT_VALUE" -> "",

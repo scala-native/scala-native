@@ -302,7 +302,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
       val resolvedName: Ptr[Byte] = alloc[Byte](limits.PATH_MAX)
       if (realpath(toCString(path), resolvedName) == null) {
         throw new IOException(
-          s"realpath can't resolve: ${fromCString(resolvedName)}"
+          s"realpath can't resolve: ${path}, errno=${fromCString(string.strerror(errno.errno))}"
         )
       }
       fromCString(resolvedName)

@@ -51,4 +51,20 @@ object AssumesHelper {
       Platform.executingInScalaNative && Platform.isMultithreadingEnabled
     )
   }
+
+  def assumeNotCrossCompiling() = {
+    Assume.assumeFalse(
+      "Ignore when running in emulated mode",
+      Seq("CROSSCOMPILING_EMULATOR", "CROSS_ROOT", "CROSS_TRIPLE").exists(
+        sys.env.get(_).isDefined
+      )
+    )
+  }
+
+  def assumeNotRoot() = {
+    Assume.assumeFalse(
+      "Ignore when running as root user",
+      sys.props.get("user.name").forall(_.equalsIgnoreCase("root"))
+    )
+  }
 }

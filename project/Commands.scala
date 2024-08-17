@@ -9,7 +9,7 @@ import ScriptedPlugin.autoImport._
 object Commands {
   lazy val values = Seq(
     testAll,
-    testSandboxGC,
+    testGC,
     testTools,
     testRuntime,
     testMima,
@@ -26,16 +26,21 @@ object Commands {
   }
 
   // Compile and run the sandbox for each GC as a minimal check
-  lazy val testSandboxGC = projectVersionCommand("test-sandbox-gc") {
+  lazy val testGC = projectVersionCommand("test-gc") {
     case (version, state) =>
-      val GCImplementations = List("none", "boehm", "immix", "commix")
+      import scala.scalanative.build.GC
       val runs =
         for {
-          gc <- GCImplementations
-          project <- List(sandbox, testInterface)
+          gc <- List(GC.immix, GC.commix, GC.boehm, GC.none)
+          (project, command) <- Map(
+            sandbox -> "run",
+            testInterface -> "test",
+            junitTestOutputsNative -> "test"
+          )
         } yield {
           val projectId = project.forBinaryVersion(version).id
-          s"""set ${project.name}.forBinaryVersion("${version}")/nativeConfig ~= (_.withGC(scala.scalanative.build.GC.$gc)); $projectId/run"""
+          val selectGC = s"""scala.scalanative.build.GC("${gc.name}")"""
+          s"""set ${project.name}.forBinaryVersion("${version}")/nativeConfig ~= (_.withGC($selectGC)); $projectId/$command"""
         }
       runs :::
         state

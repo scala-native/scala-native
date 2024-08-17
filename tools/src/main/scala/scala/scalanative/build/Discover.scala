@@ -15,7 +15,10 @@ object Discover {
 
   /** Compilation mode name from SCALANATIVE_MODE env var or default. */
   def mode(): Mode =
-    getenv("SCALANATIVE_MODE").map(build.Mode(_)).getOrElse(build.Mode.default)
+    getenv("SCALANATIVE_MODE")
+      .filterNot(_.isEmpty())
+      .map(build.Mode(_))
+      .getOrElse(build.Mode.default)
 
   def optimize(): Boolean =
     getenv("SCALANATIVE_OPTIMIZE").forall(_.toBoolean)
@@ -23,11 +26,17 @@ object Discover {
   /** LTO variant used for release mode from SCALANATIVE_LTO env var or default.
    */
   def LTO(): LTO =
-    getenv("SCALANATIVE_LTO").map(build.LTO(_)).getOrElse(build.LTO.None)
+    getenv("SCALANATIVE_LTO")
+      .filterNot(_.isEmpty())
+      .map(build.LTO(_))
+      .getOrElse(build.LTO.None)
 
   /** GC variant used from SCALANATIVE_GC env var or default. */
   def GC(): GC =
-    getenv("SCALANATIVE_GC").map(build.GC(_)).getOrElse(build.GC.default)
+    getenv("SCALANATIVE_GC")
+      .filterNot(_.isEmpty())
+      .map(build.GC(_))
+      .getOrElse(build.GC.default)
 
   /** Use the clang binary on the path or via LLVM_BIN env var. */
   def clang(): Path = {
