@@ -1,6 +1,6 @@
---- 3.6.0-RC1-bin-20240815-99f431e-NIGHTLY/scala/reflect/Selectable.scala
+--- 3.1.2/scala/reflect/Selectable.scala
 +++ overrides-3/scala/reflect/Selectable.scala
-@@ -16,16 +16,17 @@
+@@ -16,16 +16,16 @@
     */
    protected def selectedValue: Any = this
  
@@ -13,26 +13,26 @@
 +
    // The Scala.js codegen relies on this method being final for correctness
    /** Select member with given name */
-   final def selectDynamic(name: String): Any =
+-  final def selectDynamic(name: String): Any =
 -    val rcls = selectedValue.getClass
 -    try
--      val fld = rcls.getField(NameTransformer.encode(name)).nn
+-      val fld = rcls.getField(name).nn
 -      ensureAccessible(fld)
 -      fld.get(selectedValue)
 -    catch case ex: NoSuchFieldException =>
 -      applyDynamic(name)()
-+    unreachable("selectDynamic")
++  final def selectDynamic(name: String): Any = unreachable("selectDynamic")
  
    // The Scala.js codegen relies on this method being final for correctness
    /** Select method and apply to arguments.
-@@ -34,10 +35,7 @@
+@@ -34,10 +34,7 @@
     *  @param args       The arguments to pass to the selected method
     */
-   final def applyDynamic(name: String, paramTypes: Class[?]*)(args: Any*): Any =
+   final def applyDynamic(name: String, paramTypes: Class[_]*)(args: Any*): Any =
 -    val rcls = selectedValue.getClass
--    val mth = rcls.getMethod(NameTransformer.encode(name), paramTypes*).nn
+-    val mth = rcls.getMethod(name, paramTypes: _*).nn
 -    ensureAccessible(mth)
--    mth.invoke(selectedValue, args.asInstanceOf[Seq[AnyRef]]*)
+-    mth.invoke(selectedValue, args.asInstanceOf[Seq[AnyRef]]: _*)
 +    unreachable("applyDynamic")
  
  object Selectable:

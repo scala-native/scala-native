@@ -837,7 +837,10 @@ object Settings {
           "AnyRef.scala",
           "Singleton.scala",
           "Nothing.scala",
-          "Null.scala"
+          "Null.scala",
+          // Since 3.5.1
+          "AnyKind.scala",
+          "Matchable.scala"
         ).map(java.nio.file.Paths.get("scala", _))
         var failedToApplyPatches = false
         for {
