@@ -33,6 +33,7 @@ private[linker] trait LinktimeValueResolver { self: Reach =>
         .getOrElse(""),
       s"$linktimeInfo.isMsys" -> Platform.isMsys,
       s"$linktimeInfo.isCygwin" -> Platform.isCygwin,
+      s"$linktimeInfo.runtimeVersion" -> nir.Versions.current,
       s"$linktimeInfo.target.arch" -> triple.arch,
       s"$linktimeInfo.target.vendor" -> triple.vendor,
       s"$linktimeInfo.target.os" -> triple.os,

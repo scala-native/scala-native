@@ -61,6 +61,11 @@ object LinktimeInfo {
   )
   def contendedPaddingWidth: Int = resolved
 
+  @resolvedAtLinktime(
+    "scala.scalanative.meta.linktimeinfo.runtimeVersion"
+  )
+  def runtimeVersion: String = resolved
+
   object target {
     @resolvedAtLinktime("scala.scalanative.meta.linktimeinfo.target.arch")
     def arch: String = resolved
