@@ -90,5 +90,6 @@ void Heap_GrowIfNeeded(Heap *heap);
 void Heap_Grow(Heap *heap, uint32_t increment);
 void Heap_exitWithOutOfMemory(const char *details);
 size_t Heap_getMemoryLimit();
+size_t Heap_getMemoryUsed(Heap *heap);
 
 #endif // IMMIX_HEAP_H

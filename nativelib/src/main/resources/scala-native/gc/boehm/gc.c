@@ -61,6 +61,14 @@ size_t scalanative_GC_get_max_heapsize() {
     return Parse_Env_Or_Default("GC_MAXIMUM_HEAP_SIZE", heap_sz);
 }
 
+size_t scalanative_GC_get_used_heapsize() {
+    struct GC_prof_stats_s stats = {};
+    GC_get_prof_stats(&stats, sizeof(struct GC_prof_stats_s));
+    size_t heap_sz = stats.heapsize_full;
+    size_t unmapped_bytes = stats.unmapped_bytes;
+    return heap_sz - unmapped_bytes;
+}
+
 void scalanative_GC_collect() { GC_gcollect(); }
 
 void scalanative_GC_set_weak_references_collected_callback(

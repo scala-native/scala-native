@@ -37,6 +37,7 @@ void scalanative_GC_set_weak_references_collected_callback(
 
 size_t scalanative_GC_get_init_heapsize();
 size_t scalanative_GC_get_max_heapsize();
+size_t scalanative_GC_get_used_heapsize();
 
 // Functions used to create a new thread supporting multithreading support in
 // the garbage collector. Would execute a proxy startup routine to register

@@ -97,6 +97,8 @@ size_t scalanative_GC_get_max_heapsize() {
     return Parse_Env_Or_Default("GC_MAXIMUM_HEAP_SIZE", Heap_getMemoryLimit());
 }
 
+size_t scalanative_GC_get_used_heapsize() { return Heap_getMemoryUsed(&heap); }
+
 void scalanative_GC_add_roots(void *addr_low, void *addr_high) {
     AddressRange range = {addr_low, addr_high};
     GC_Roots_Add(customRoots, range);

@@ -38,6 +38,8 @@ size_t Heap_getMemoryLimit() {
     }
 }
 
+size_t Heap_getMemoryUsed(Heap *heap) { return heap->heapSize; }
+
 /**
  * Maps `MAX_SIZE` of memory and returns the first address aligned on
  * `alignement` mask
