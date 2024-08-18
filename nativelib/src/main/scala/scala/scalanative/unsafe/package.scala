@@ -206,7 +206,7 @@ package object unsafe extends unsafe.UnsafePackageCompat {
   @alwaysinline
   def toCWideString(str: String, charset: Charset = StandardCharsets.UTF_16LE)(
       implicit z: Zone
-  ): Ptr[CWideString] = {
+  ): CWideString = {
     toCWideStringImpl(str, charset, WideCharSize)
   }
 
@@ -241,7 +241,7 @@ package object unsafe extends unsafe.UnsafePackageCompat {
         !(cstrEnd + c) = 0.toByte
         c += 1
       }
-      cstr.asInstanceOf[Ptr[CWideString]]
+      cstr.asInstanceOf[CWideString]
     }
   }
 
