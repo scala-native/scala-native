@@ -26,7 +26,7 @@ object Versions {
   case class Version(compat: Int, revision: Int)
 
   /* Current public release version of Scala Native. */
-  final val current: String = "0.5.5"
+  final val current: String = "0.5.6-SNAPSHOT"
   final val currentBinaryVersion: String = binaryVersion(current)
 
   private object FullVersion {
