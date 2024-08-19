@@ -76,7 +76,8 @@ def main(
   } {
     foundPRs += prNumber
     val login = pr.getUser().getLogin()
-    val formattedPR =s"- ${pr.getTitle()} [#${pr.getNumber()}](${pr.getHtmlUrl()}) ([$login](https://github.com/$login))"
+    val formattedPR =
+      s"- ${pr.getTitle()} [#${pr.getNumber()}](${pr.getHtmlUrl()}) ([$login](https://github.com/$login))"
     mergedPRs += formattedPR
   }
 
