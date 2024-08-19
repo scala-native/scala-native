@@ -119,6 +119,15 @@ object NativeThread {
       _aliveThreads.remove(thread.thread.getId(): @nowarn)
     }
 
+    /** Returns `Some` when a thread with the given id is present in the
+     *  registry and `None` otherwise.
+     *
+     *  @param id
+     *    the id of the thread to find
+     */
+    def getById(id: Long): Option[NativeThread] =
+      Option(_aliveThreads.get(id))
+
     @nowarn
     def aliveThreads: Iterable[NativeThread] = {
       import scala.collection.JavaConverters._
