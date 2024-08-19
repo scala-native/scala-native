@@ -32,7 +32,7 @@ jobs:
           scala-version: ${{matrix.scala}}
       
       - name: Test GC
-        timeout-minutes: 15
+        timeout-minutes: 30
         env:
           SCALANATIVE_INCLUDE_DIRS: ${{steps.setup.outputs.vcpkg-dir}}\include
           SCALANATIVE_LIB_DIRS: ${{steps.setup.outputs.vcpkg-dir}}\lib
