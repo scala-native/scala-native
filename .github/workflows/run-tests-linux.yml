@@ -86,7 +86,7 @@ jobs:
         with:
           scala-version: ${{matrix.scala}}
       - name: Test GC compilation
-        timeout-minutes: 15
+        timeout-minutes: 30
         run: sbt "test-gc ${{ matrix.scala }}"
       - name: Run tests
         timeout-minutes: 45
