@@ -55,4 +55,24 @@ class ManagementFactoryTest {
     )
   }
 
+  @Test def getRuntimeMXBean(): Unit = {
+    val bean = ManagementFactory.getRuntimeMXBean
+
+    assertEquals(bean.getVmName(), sys.props("java.vm.name"))
+    assertEquals(bean.getVmVendor(), sys.props("java.vm.vendor"))
+    assertEquals(bean.getVmVersion(), sys.props("java.vm.version"))
+    assertEquals(bean.getSpecName(), sys.props("java.vm.specification.name"))
+    assertEquals(
+      bean.getSpecVendor(),
+      sys.props("java.vm.specification.vendor")
+    )
+    assertEquals(
+      bean.getSpecVersion(),
+      sys.props("java.vm.specification.version")
+    )
+    assertTrue(bean.getUptime() > 0L)
+    assertTrue(bean.getStartTime() > 0L)
+    assertTrue(bean.getSystemProperties().size() > 0)
+  }
+
 }

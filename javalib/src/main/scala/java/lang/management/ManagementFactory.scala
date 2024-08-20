@@ -5,6 +5,7 @@ object ManagementFactory {
   private lazy val MemoryBean = MemoryMXBean()
   private lazy val ThreadBean = ThreadMXBean()
   private lazy val OperatingSystemBean = OperatingSystemMXBean()
+  private lazy val RuntimeBean = RuntimeMXBean()
 
   /** Returns the memory-specific bean.
    *
@@ -38,5 +39,15 @@ object ManagementFactory {
    *    }}}
    */
   def getOperatingSystemMXBean(): OperatingSystemMXBean = OperatingSystemBean
+
+  /** Returns the runtime-specific bean.
+   *
+   *  @example
+   *    {{{
+   *  val runtimeBean = ManagementFactory.getRuntimeMXBean()
+   *  println(s"pid: $${runtimeBean.getPid()}")
+   *    }}}
+   */
+  def getRuntimeMXBean(): RuntimeMXBean = RuntimeBean
 
 }
