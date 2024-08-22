@@ -1386,10 +1386,14 @@ object Character {
     }
   }
 
-  // Tables to support toUpperCase and toLowerCase transformations
-  // with Unicode 13.0.0 to match JDK15 and JDK16(LTS).
-  // Refer to the following project for the transformation code.
-  // https://github.com/ekrich/scala-unicode
+  /*
+   * Tables to support toUpperCase and toLowerCase transformations
+   * with Unicode 15.1.0 for JDK 22+ and JDK 21(LTS) which uses 15.0.0.
+   * Refer to the following project for the transformation code.
+   * https://github.com/ekrich/scala-unicode
+   */
+
+  // begin generated code (CaseUpperLower.scala)
 
   private lazy val lowerRanges = Array[scala.Int](97, 122, 181, 224, 246, 248,
     254, 255, 257, 303, 305, 307, 311, 314, 328, 331, 375, 378, 382, 383, 384,
@@ -1498,6 +1502,8 @@ object Character {
     0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 1, 0, 2, 0, 2, 0, 0,
     2, 0, 2, 0, 2, 0, 2, 0, 2, 0, 0, 2, 0, 0, 0, 2, 0, 2, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 2, 0, 0, 0, 0, 0, 2, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1)
+
+  // end generated code
 
   private object CaseUtil {
     lazy val a = lowerRanges(0)
@@ -1720,6 +1726,8 @@ object Character {
   }
 
   object UnicodeBlock {
+    // begin generated code (Blocks.scala)
+
     val SURROGATES_AREA = new UnicodeBlock("SURROGATES_AREA", 0x0, 0x0)
     val BASIC_LATIN = new UnicodeBlock("BASIC_LATIN", 0x0, 0x7f)
     val LATIN_1_SUPPLEMENT = new UnicodeBlock("LATIN_1_SUPPLEMENT", 0x80, 0xff)
@@ -2583,6 +2591,8 @@ object Character {
       "SUPPLEMENTARY_PRIVATE_USE_AREA_B",
       SUPPLEMENTARY_PRIVATE_USE_AREA_B
     )
+
+    // end generated code
 
     def forName(blockName: String): UnicodeBlock = {
       if (blockName == null) {
