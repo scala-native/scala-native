@@ -1738,15 +1738,22 @@ object Character {
       new UnicodeBlock("SPACING_MODIFIER_LETTERS", 0x2b0, 0x2ff)
     val COMBINING_DIACRITICAL_MARKS =
       new UnicodeBlock("COMBINING_DIACRITICAL_MARKS", 0x300, 0x36f)
-    val GREEK = new UnicodeBlock("GREEK", 0x370, 0x3ff)
+    val GREEK_AND_COPTIC = new UnicodeBlock("GREEK_AND_COPTIC", 0x370, 0x3ff)
     val CYRILLIC = new UnicodeBlock("CYRILLIC", 0x400, 0x4ff)
-    val CYRILLIC_SUPPLEMENTARY =
-      new UnicodeBlock("CYRILLIC_SUPPLEMENTARY", 0x500, 0x52f)
+    val CYRILLIC_SUPPLEMENT =
+      new UnicodeBlock("CYRILLIC_SUPPLEMENT", 0x500, 0x52f)
     val ARMENIAN = new UnicodeBlock("ARMENIAN", 0x530, 0x58f)
     val HEBREW = new UnicodeBlock("HEBREW", 0x590, 0x5ff)
     val ARABIC = new UnicodeBlock("ARABIC", 0x600, 0x6ff)
     val SYRIAC = new UnicodeBlock("SYRIAC", 0x700, 0x74f)
+    val ARABIC_SUPPLEMENT = new UnicodeBlock("ARABIC_SUPPLEMENT", 0x750, 0x77f)
     val THAANA = new UnicodeBlock("THAANA", 0x780, 0x7bf)
+    val NKO = new UnicodeBlock("NKO", 0x7c0, 0x7ff)
+    val SAMARITAN = new UnicodeBlock("SAMARITAN", 0x800, 0x83f)
+    val MANDAIC = new UnicodeBlock("MANDAIC", 0x840, 0x85f)
+    val SYRIAC_SUPPLEMENT = new UnicodeBlock("SYRIAC_SUPPLEMENT", 0x860, 0x86f)
+    val ARABIC_EXTENDED_B = new UnicodeBlock("ARABIC_EXTENDED_B", 0x870, 0x89f)
+    val ARABIC_EXTENDED_A = new UnicodeBlock("ARABIC_EXTENDED_A", 0x8a0, 0x8ff)
     val DEVANAGARI = new UnicodeBlock("DEVANAGARI", 0x900, 0x97f)
     val BENGALI = new UnicodeBlock("BENGALI", 0x980, 0x9ff)
     val GURMUKHI = new UnicodeBlock("GURMUKHI", 0xa00, 0xa7f)
@@ -1764,6 +1771,8 @@ object Character {
     val GEORGIAN = new UnicodeBlock("GEORGIAN", 0x10a0, 0x10ff)
     val HANGUL_JAMO = new UnicodeBlock("HANGUL_JAMO", 0x1100, 0x11ff)
     val ETHIOPIC = new UnicodeBlock("ETHIOPIC", 0x1200, 0x137f)
+    val ETHIOPIC_SUPPLEMENT =
+      new UnicodeBlock("ETHIOPIC_SUPPLEMENT", 0x1380, 0x139f)
     val CHEROKEE = new UnicodeBlock("CHEROKEE", 0x13a0, 0x13ff)
     val UNIFIED_CANADIAN_ABORIGINAL_SYLLABICS =
       new UnicodeBlock("UNIFIED_CANADIAN_ABORIGINAL_SYLLABICS", 0x1400, 0x167f)
@@ -1775,11 +1784,37 @@ object Character {
     val TAGBANWA = new UnicodeBlock("TAGBANWA", 0x1760, 0x177f)
     val KHMER = new UnicodeBlock("KHMER", 0x1780, 0x17ff)
     val MONGOLIAN = new UnicodeBlock("MONGOLIAN", 0x1800, 0x18af)
+    val UNIFIED_CANADIAN_ABORIGINAL_SYLLABICS_EXTENDED = new UnicodeBlock(
+      "UNIFIED_CANADIAN_ABORIGINAL_SYLLABICS_EXTENDED",
+      0x18b0,
+      0x18ff
+    )
     val LIMBU = new UnicodeBlock("LIMBU", 0x1900, 0x194f)
     val TAI_LE = new UnicodeBlock("TAI_LE", 0x1950, 0x197f)
+    val NEW_TAI_LUE = new UnicodeBlock("NEW_TAI_LUE", 0x1980, 0x19df)
     val KHMER_SYMBOLS = new UnicodeBlock("KHMER_SYMBOLS", 0x19e0, 0x19ff)
+    val BUGINESE = new UnicodeBlock("BUGINESE", 0x1a00, 0x1a1f)
+    val TAI_THAM = new UnicodeBlock("TAI_THAM", 0x1a20, 0x1aaf)
+    val COMBINING_DIACRITICAL_MARKS_EXTENDED =
+      new UnicodeBlock("COMBINING_DIACRITICAL_MARKS_EXTENDED", 0x1ab0, 0x1aff)
+    val BALINESE = new UnicodeBlock("BALINESE", 0x1b00, 0x1b7f)
+    val SUNDANESE = new UnicodeBlock("SUNDANESE", 0x1b80, 0x1bbf)
+    val BATAK = new UnicodeBlock("BATAK", 0x1bc0, 0x1bff)
+    val LEPCHA = new UnicodeBlock("LEPCHA", 0x1c00, 0x1c4f)
+    val OL_CHIKI = new UnicodeBlock("OL_CHIKI", 0x1c50, 0x1c7f)
+    val CYRILLIC_EXTENDED_C =
+      new UnicodeBlock("CYRILLIC_EXTENDED_C", 0x1c80, 0x1c8f)
+    val GEORGIAN_EXTENDED =
+      new UnicodeBlock("GEORGIAN_EXTENDED", 0x1c90, 0x1cbf)
+    val SUNDANESE_SUPPLEMENT =
+      new UnicodeBlock("SUNDANESE_SUPPLEMENT", 0x1cc0, 0x1ccf)
+    val VEDIC_EXTENSIONS = new UnicodeBlock("VEDIC_EXTENSIONS", 0x1cd0, 0x1cff)
     val PHONETIC_EXTENSIONS =
       new UnicodeBlock("PHONETIC_EXTENSIONS", 0x1d00, 0x1d7f)
+    val PHONETIC_EXTENSIONS_SUPPLEMENT =
+      new UnicodeBlock("PHONETIC_EXTENSIONS_SUPPLEMENT", 0x1d80, 0x1dbf)
+    val COMBINING_DIACRITICAL_MARKS_SUPPLEMENT =
+      new UnicodeBlock("COMBINING_DIACRITICAL_MARKS_SUPPLEMENT", 0x1dc0, 0x1dff)
     val LATIN_EXTENDED_ADDITIONAL =
       new UnicodeBlock("LATIN_EXTENDED_ADDITIONAL", 0x1e00, 0x1eff)
     val GREEK_EXTENDED = new UnicodeBlock("GREEK_EXTENDED", 0x1f00, 0x1fff)
@@ -1788,8 +1823,11 @@ object Character {
     val SUPERSCRIPTS_AND_SUBSCRIPTS =
       new UnicodeBlock("SUPERSCRIPTS_AND_SUBSCRIPTS", 0x2070, 0x209f)
     val CURRENCY_SYMBOLS = new UnicodeBlock("CURRENCY_SYMBOLS", 0x20a0, 0x20cf)
-    val COMBINING_MARKS_FOR_SYMBOLS =
-      new UnicodeBlock("COMBINING_MARKS_FOR_SYMBOLS", 0x20d0, 0x20ff)
+    val COMBINING_DIACRITICAL_MARKS_FOR_SYMBOLS = new UnicodeBlock(
+      "COMBINING_DIACRITICAL_MARKS_FOR_SYMBOLS",
+      0x20d0,
+      0x20ff
+    )
     val LETTERLIKE_SYMBOLS =
       new UnicodeBlock("LETTERLIKE_SYMBOLS", 0x2100, 0x214f)
     val NUMBER_FORMS = new UnicodeBlock("NUMBER_FORMS", 0x2150, 0x218f)
@@ -1822,6 +1860,18 @@ object Character {
       new UnicodeBlock("SUPPLEMENTAL_MATHEMATICAL_OPERATORS", 0x2a00, 0x2aff)
     val MISCELLANEOUS_SYMBOLS_AND_ARROWS =
       new UnicodeBlock("MISCELLANEOUS_SYMBOLS_AND_ARROWS", 0x2b00, 0x2bff)
+    val GLAGOLITIC = new UnicodeBlock("GLAGOLITIC", 0x2c00, 0x2c5f)
+    val LATIN_EXTENDED_C = new UnicodeBlock("LATIN_EXTENDED_C", 0x2c60, 0x2c7f)
+    val COPTIC = new UnicodeBlock("COPTIC", 0x2c80, 0x2cff)
+    val GEORGIAN_SUPPLEMENT =
+      new UnicodeBlock("GEORGIAN_SUPPLEMENT", 0x2d00, 0x2d2f)
+    val TIFINAGH = new UnicodeBlock("TIFINAGH", 0x2d30, 0x2d7f)
+    val ETHIOPIC_EXTENDED =
+      new UnicodeBlock("ETHIOPIC_EXTENDED", 0x2d80, 0x2ddf)
+    val CYRILLIC_EXTENDED_A =
+      new UnicodeBlock("CYRILLIC_EXTENDED_A", 0x2de0, 0x2dff)
+    val SUPPLEMENTAL_PUNCTUATION =
+      new UnicodeBlock("SUPPLEMENTAL_PUNCTUATION", 0x2e00, 0x2e7f)
     val CJK_RADICALS_SUPPLEMENT =
       new UnicodeBlock("CJK_RADICALS_SUPPLEMENT", 0x2e80, 0x2eff)
     val KANGXI_RADICALS = new UnicodeBlock("KANGXI_RADICALS", 0x2f00, 0x2fdf)
@@ -1837,6 +1887,7 @@ object Character {
     val KANBUN = new UnicodeBlock("KANBUN", 0x3190, 0x319f)
     val BOPOMOFO_EXTENDED =
       new UnicodeBlock("BOPOMOFO_EXTENDED", 0x31a0, 0x31bf)
+    val CJK_STROKES = new UnicodeBlock("CJK_STROKES", 0x31c0, 0x31ef)
     val KATAKANA_PHONETIC_EXTENSIONS =
       new UnicodeBlock("KATAKANA_PHONETIC_EXTENSIONS", 0x31f0, 0x31ff)
     val ENCLOSED_CJK_LETTERS_AND_MONTHS =
@@ -1851,7 +1902,43 @@ object Character {
       new UnicodeBlock("CJK_UNIFIED_IDEOGRAPHS", 0x4e00, 0x9fff)
     val YI_SYLLABLES = new UnicodeBlock("YI_SYLLABLES", 0xa000, 0xa48f)
     val YI_RADICALS = new UnicodeBlock("YI_RADICALS", 0xa490, 0xa4cf)
+    val LISU = new UnicodeBlock("LISU", 0xa4d0, 0xa4ff)
+    val VAI = new UnicodeBlock("VAI", 0xa500, 0xa63f)
+    val CYRILLIC_EXTENDED_B =
+      new UnicodeBlock("CYRILLIC_EXTENDED_B", 0xa640, 0xa69f)
+    val BAMUM = new UnicodeBlock("BAMUM", 0xa6a0, 0xa6ff)
+    val MODIFIER_TONE_LETTERS =
+      new UnicodeBlock("MODIFIER_TONE_LETTERS", 0xa700, 0xa71f)
+    val LATIN_EXTENDED_D = new UnicodeBlock("LATIN_EXTENDED_D", 0xa720, 0xa7ff)
+    val SYLOTI_NAGRI = new UnicodeBlock("SYLOTI_NAGRI", 0xa800, 0xa82f)
+    val COMMON_INDIC_NUMBER_FORMS =
+      new UnicodeBlock("COMMON_INDIC_NUMBER_FORMS", 0xa830, 0xa83f)
+    val PHAGS_PA = new UnicodeBlock("PHAGS_PA", 0xa840, 0xa87f)
+    val SAURASHTRA = new UnicodeBlock("SAURASHTRA", 0xa880, 0xa8df)
+    val DEVANAGARI_EXTENDED =
+      new UnicodeBlock("DEVANAGARI_EXTENDED", 0xa8e0, 0xa8ff)
+    val KAYAH_LI = new UnicodeBlock("KAYAH_LI", 0xa900, 0xa92f)
+    val REJANG = new UnicodeBlock("REJANG", 0xa930, 0xa95f)
+    val HANGUL_JAMO_EXTENDED_A =
+      new UnicodeBlock("HANGUL_JAMO_EXTENDED_A", 0xa960, 0xa97f)
+    val JAVANESE = new UnicodeBlock("JAVANESE", 0xa980, 0xa9df)
+    val MYANMAR_EXTENDED_B =
+      new UnicodeBlock("MYANMAR_EXTENDED_B", 0xa9e0, 0xa9ff)
+    val CHAM = new UnicodeBlock("CHAM", 0xaa00, 0xaa5f)
+    val MYANMAR_EXTENDED_A =
+      new UnicodeBlock("MYANMAR_EXTENDED_A", 0xaa60, 0xaa7f)
+    val TAI_VIET = new UnicodeBlock("TAI_VIET", 0xaa80, 0xaadf)
+    val MEETEI_MAYEK_EXTENSIONS =
+      new UnicodeBlock("MEETEI_MAYEK_EXTENSIONS", 0xaae0, 0xaaff)
+    val ETHIOPIC_EXTENDED_A =
+      new UnicodeBlock("ETHIOPIC_EXTENDED_A", 0xab00, 0xab2f)
+    val LATIN_EXTENDED_E = new UnicodeBlock("LATIN_EXTENDED_E", 0xab30, 0xab6f)
+    val CHEROKEE_SUPPLEMENT =
+      new UnicodeBlock("CHEROKEE_SUPPLEMENT", 0xab70, 0xabbf)
+    val MEETEI_MAYEK = new UnicodeBlock("MEETEI_MAYEK", 0xabc0, 0xabff)
     val HANGUL_SYLLABLES = new UnicodeBlock("HANGUL_SYLLABLES", 0xac00, 0xd7af)
+    val HANGUL_JAMO_EXTENDED_B =
+      new UnicodeBlock("HANGUL_JAMO_EXTENDED_B", 0xd7b0, 0xd7ff)
     val HIGH_SURROGATES = new UnicodeBlock("HIGH_SURROGATES", 0xd800, 0xdb7f)
     val HIGH_PRIVATE_USE_SURROGATES =
       new UnicodeBlock("HIGH_PRIVATE_USE_SURROGATES", 0xdb80, 0xdbff)
@@ -1865,6 +1952,7 @@ object Character {
       new UnicodeBlock("ARABIC_PRESENTATION_FORMS_A", 0xfb50, 0xfdff)
     val VARIATION_SELECTORS =
       new UnicodeBlock("VARIATION_SELECTORS", 0xfe00, 0xfe0f)
+    val VERTICAL_FORMS = new UnicodeBlock("VERTICAL_FORMS", 0xfe10, 0xfe1f)
     val COMBINING_HALF_MARKS =
       new UnicodeBlock("COMBINING_HALF_MARKS", 0xfe20, 0xfe2f)
     val CJK_COMPATIBILITY_FORMS =
@@ -1881,28 +1969,243 @@ object Character {
     val LINEAR_B_IDEOGRAMS =
       new UnicodeBlock("LINEAR_B_IDEOGRAMS", 0x10080, 0x100ff)
     val AEGEAN_NUMBERS = new UnicodeBlock("AEGEAN_NUMBERS", 0x10100, 0x1013f)
+    val ANCIENT_GREEK_NUMBERS =
+      new UnicodeBlock("ANCIENT_GREEK_NUMBERS", 0x10140, 0x1018f)
+    val ANCIENT_SYMBOLS = new UnicodeBlock("ANCIENT_SYMBOLS", 0x10190, 0x101cf)
+    val PHAISTOS_DISC = new UnicodeBlock("PHAISTOS_DISC", 0x101d0, 0x101ff)
+    val LYCIAN = new UnicodeBlock("LYCIAN", 0x10280, 0x1029f)
+    val CARIAN = new UnicodeBlock("CARIAN", 0x102a0, 0x102df)
+    val COPTIC_EPACT_NUMBERS =
+      new UnicodeBlock("COPTIC_EPACT_NUMBERS", 0x102e0, 0x102ff)
     val OLD_ITALIC = new UnicodeBlock("OLD_ITALIC", 0x10300, 0x1032f)
     val GOTHIC = new UnicodeBlock("GOTHIC", 0x10330, 0x1034f)
+    val OLD_PERMIC = new UnicodeBlock("OLD_PERMIC", 0x10350, 0x1037f)
     val UGARITIC = new UnicodeBlock("UGARITIC", 0x10380, 0x1039f)
+    val OLD_PERSIAN = new UnicodeBlock("OLD_PERSIAN", 0x103a0, 0x103df)
     val DESERET = new UnicodeBlock("DESERET", 0x10400, 0x1044f)
     val SHAVIAN = new UnicodeBlock("SHAVIAN", 0x10450, 0x1047f)
     val OSMANYA = new UnicodeBlock("OSMANYA", 0x10480, 0x104af)
+    val OSAGE = new UnicodeBlock("OSAGE", 0x104b0, 0x104ff)
+    val ELBASAN = new UnicodeBlock("ELBASAN", 0x10500, 0x1052f)
+    val CAUCASIAN_ALBANIAN =
+      new UnicodeBlock("CAUCASIAN_ALBANIAN", 0x10530, 0x1056f)
+    val VITHKUQI = new UnicodeBlock("VITHKUQI", 0x10570, 0x105bf)
+    val LINEAR_A = new UnicodeBlock("LINEAR_A", 0x10600, 0x1077f)
+    val LATIN_EXTENDED_F =
+      new UnicodeBlock("LATIN_EXTENDED_F", 0x10780, 0x107bf)
     val CYPRIOT_SYLLABARY =
       new UnicodeBlock("CYPRIOT_SYLLABARY", 0x10800, 0x1083f)
+    val IMPERIAL_ARAMAIC =
+      new UnicodeBlock("IMPERIAL_ARAMAIC", 0x10840, 0x1085f)
+    val PALMYRENE = new UnicodeBlock("PALMYRENE", 0x10860, 0x1087f)
+    val NABATAEAN = new UnicodeBlock("NABATAEAN", 0x10880, 0x108af)
+    val HATRAN = new UnicodeBlock("HATRAN", 0x108e0, 0x108ff)
+    val PHOENICIAN = new UnicodeBlock("PHOENICIAN", 0x10900, 0x1091f)
+    val LYDIAN = new UnicodeBlock("LYDIAN", 0x10920, 0x1093f)
+    val MEROITIC_HIEROGLYPHS =
+      new UnicodeBlock("MEROITIC_HIEROGLYPHS", 0x10980, 0x1099f)
+    val MEROITIC_CURSIVE =
+      new UnicodeBlock("MEROITIC_CURSIVE", 0x109a0, 0x109ff)
+    val KHAROSHTHI = new UnicodeBlock("KHAROSHTHI", 0x10a00, 0x10a5f)
+    val OLD_SOUTH_ARABIAN =
+      new UnicodeBlock("OLD_SOUTH_ARABIAN", 0x10a60, 0x10a7f)
+    val OLD_NORTH_ARABIAN =
+      new UnicodeBlock("OLD_NORTH_ARABIAN", 0x10a80, 0x10a9f)
+    val MANICHAEAN = new UnicodeBlock("MANICHAEAN", 0x10ac0, 0x10aff)
+    val AVESTAN = new UnicodeBlock("AVESTAN", 0x10b00, 0x10b3f)
+    val INSCRIPTIONAL_PARTHIAN =
+      new UnicodeBlock("INSCRIPTIONAL_PARTHIAN", 0x10b40, 0x10b5f)
+    val INSCRIPTIONAL_PAHLAVI =
+      new UnicodeBlock("INSCRIPTIONAL_PAHLAVI", 0x10b60, 0x10b7f)
+    val PSALTER_PAHLAVI = new UnicodeBlock("PSALTER_PAHLAVI", 0x10b80, 0x10baf)
+    val OLD_TURKIC = new UnicodeBlock("OLD_TURKIC", 0x10c00, 0x10c4f)
+    val OLD_HUNGARIAN = new UnicodeBlock("OLD_HUNGARIAN", 0x10c80, 0x10cff)
+    val HANIFI_ROHINGYA = new UnicodeBlock("HANIFI_ROHINGYA", 0x10d00, 0x10d3f)
+    val RUMI_NUMERAL_SYMBOLS =
+      new UnicodeBlock("RUMI_NUMERAL_SYMBOLS", 0x10e60, 0x10e7f)
+    val YEZIDI = new UnicodeBlock("YEZIDI", 0x10e80, 0x10ebf)
+    val ARABIC_EXTENDED_C =
+      new UnicodeBlock("ARABIC_EXTENDED_C", 0x10ec0, 0x10eff)
+    val OLD_SOGDIAN = new UnicodeBlock("OLD_SOGDIAN", 0x10f00, 0x10f2f)
+    val SOGDIAN = new UnicodeBlock("SOGDIAN", 0x10f30, 0x10f6f)
+    val OLD_UYGHUR = new UnicodeBlock("OLD_UYGHUR", 0x10f70, 0x10faf)
+    val CHORASMIAN = new UnicodeBlock("CHORASMIAN", 0x10fb0, 0x10fdf)
+    val ELYMAIC = new UnicodeBlock("ELYMAIC", 0x10fe0, 0x10fff)
+    val BRAHMI = new UnicodeBlock("BRAHMI", 0x11000, 0x1107f)
+    val KAITHI = new UnicodeBlock("KAITHI", 0x11080, 0x110cf)
+    val SORA_SOMPENG = new UnicodeBlock("SORA_SOMPENG", 0x110d0, 0x110ff)
+    val CHAKMA = new UnicodeBlock("CHAKMA", 0x11100, 0x1114f)
+    val MAHAJANI = new UnicodeBlock("MAHAJANI", 0x11150, 0x1117f)
+    val SHARADA = new UnicodeBlock("SHARADA", 0x11180, 0x111df)
+    val SINHALA_ARCHAIC_NUMBERS =
+      new UnicodeBlock("SINHALA_ARCHAIC_NUMBERS", 0x111e0, 0x111ff)
+    val KHOJKI = new UnicodeBlock("KHOJKI", 0x11200, 0x1124f)
+    val MULTANI = new UnicodeBlock("MULTANI", 0x11280, 0x112af)
+    val KHUDAWADI = new UnicodeBlock("KHUDAWADI", 0x112b0, 0x112ff)
+    val GRANTHA = new UnicodeBlock("GRANTHA", 0x11300, 0x1137f)
+    val NEWA = new UnicodeBlock("NEWA", 0x11400, 0x1147f)
+    val TIRHUTA = new UnicodeBlock("TIRHUTA", 0x11480, 0x114df)
+    val SIDDHAM = new UnicodeBlock("SIDDHAM", 0x11580, 0x115ff)
+    val MODI = new UnicodeBlock("MODI", 0x11600, 0x1165f)
+    val MONGOLIAN_SUPPLEMENT =
+      new UnicodeBlock("MONGOLIAN_SUPPLEMENT", 0x11660, 0x1167f)
+    val TAKRI = new UnicodeBlock("TAKRI", 0x11680, 0x116cf)
+    val AHOM = new UnicodeBlock("AHOM", 0x11700, 0x1174f)
+    val DOGRA = new UnicodeBlock("DOGRA", 0x11800, 0x1184f)
+    val WARANG_CITI = new UnicodeBlock("WARANG_CITI", 0x118a0, 0x118ff)
+    val DIVES_AKURU = new UnicodeBlock("DIVES_AKURU", 0x11900, 0x1195f)
+    val NANDINAGARI = new UnicodeBlock("NANDINAGARI", 0x119a0, 0x119ff)
+    val ZANABAZAR_SQUARE =
+      new UnicodeBlock("ZANABAZAR_SQUARE", 0x11a00, 0x11a4f)
+    val SOYOMBO = new UnicodeBlock("SOYOMBO", 0x11a50, 0x11aaf)
+    val UNIFIED_CANADIAN_ABORIGINAL_SYLLABICS_EXTENDED_A = new UnicodeBlock(
+      "UNIFIED_CANADIAN_ABORIGINAL_SYLLABICS_EXTENDED_A",
+      0x11ab0,
+      0x11abf
+    )
+    val PAU_CIN_HAU = new UnicodeBlock("PAU_CIN_HAU", 0x11ac0, 0x11aff)
+    val DEVANAGARI_EXTENDED_A =
+      new UnicodeBlock("DEVANAGARI_EXTENDED_A", 0x11b00, 0x11b5f)
+    val BHAIKSUKI = new UnicodeBlock("BHAIKSUKI", 0x11c00, 0x11c6f)
+    val MARCHEN = new UnicodeBlock("MARCHEN", 0x11c70, 0x11cbf)
+    val MASARAM_GONDI = new UnicodeBlock("MASARAM_GONDI", 0x11d00, 0x11d5f)
+    val GUNJALA_GONDI = new UnicodeBlock("GUNJALA_GONDI", 0x11d60, 0x11daf)
+    val MAKASAR = new UnicodeBlock("MAKASAR", 0x11ee0, 0x11eff)
+    val KAWI = new UnicodeBlock("KAWI", 0x11f00, 0x11f5f)
+    val LISU_SUPPLEMENT = new UnicodeBlock("LISU_SUPPLEMENT", 0x11fb0, 0x11fbf)
+    val TAMIL_SUPPLEMENT =
+      new UnicodeBlock("TAMIL_SUPPLEMENT", 0x11fc0, 0x11fff)
+    val CUNEIFORM = new UnicodeBlock("CUNEIFORM", 0x12000, 0x123ff)
+    val CUNEIFORM_NUMBERS_AND_PUNCTUATION =
+      new UnicodeBlock("CUNEIFORM_NUMBERS_AND_PUNCTUATION", 0x12400, 0x1247f)
+    val EARLY_DYNASTIC_CUNEIFORM =
+      new UnicodeBlock("EARLY_DYNASTIC_CUNEIFORM", 0x12480, 0x1254f)
+    val CYPRO_MINOAN = new UnicodeBlock("CYPRO_MINOAN", 0x12f90, 0x12fff)
+    val EGYPTIAN_HIEROGLYPHS =
+      new UnicodeBlock("EGYPTIAN_HIEROGLYPHS", 0x13000, 0x1342f)
+    val EGYPTIAN_HIEROGLYPH_FORMAT_CONTROLS =
+      new UnicodeBlock("EGYPTIAN_HIEROGLYPH_FORMAT_CONTROLS", 0x13430, 0x1345f)
+    val ANATOLIAN_HIEROGLYPHS =
+      new UnicodeBlock("ANATOLIAN_HIEROGLYPHS", 0x14400, 0x1467f)
+    val BAMUM_SUPPLEMENT =
+      new UnicodeBlock("BAMUM_SUPPLEMENT", 0x16800, 0x16a3f)
+    val MRO = new UnicodeBlock("MRO", 0x16a40, 0x16a6f)
+    val TANGSA = new UnicodeBlock("TANGSA", 0x16a70, 0x16acf)
+    val BASSA_VAH = new UnicodeBlock("BASSA_VAH", 0x16ad0, 0x16aff)
+    val PAHAWH_HMONG = new UnicodeBlock("PAHAWH_HMONG", 0x16b00, 0x16b8f)
+    val MEDEFAIDRIN = new UnicodeBlock("MEDEFAIDRIN", 0x16e40, 0x16e9f)
+    val MIAO = new UnicodeBlock("MIAO", 0x16f00, 0x16f9f)
+    val IDEOGRAPHIC_SYMBOLS_AND_PUNCTUATION =
+      new UnicodeBlock("IDEOGRAPHIC_SYMBOLS_AND_PUNCTUATION", 0x16fe0, 0x16fff)
+    val TANGUT = new UnicodeBlock("TANGUT", 0x17000, 0x187ff)
+    val TANGUT_COMPONENTS =
+      new UnicodeBlock("TANGUT_COMPONENTS", 0x18800, 0x18aff)
+    val KHITAN_SMALL_SCRIPT =
+      new UnicodeBlock("KHITAN_SMALL_SCRIPT", 0x18b00, 0x18cff)
+    val TANGUT_SUPPLEMENT =
+      new UnicodeBlock("TANGUT_SUPPLEMENT", 0x18d00, 0x18d7f)
+    val KANA_EXTENDED_B = new UnicodeBlock("KANA_EXTENDED_B", 0x1aff0, 0x1afff)
+    val KANA_SUPPLEMENT = new UnicodeBlock("KANA_SUPPLEMENT", 0x1b000, 0x1b0ff)
+    val KANA_EXTENDED_A = new UnicodeBlock("KANA_EXTENDED_A", 0x1b100, 0x1b12f)
+    val SMALL_KANA_EXTENSION =
+      new UnicodeBlock("SMALL_KANA_EXTENSION", 0x1b130, 0x1b16f)
+    val NUSHU = new UnicodeBlock("NUSHU", 0x1b170, 0x1b2ff)
+    val DUPLOYAN = new UnicodeBlock("DUPLOYAN", 0x1bc00, 0x1bc9f)
+    val SHORTHAND_FORMAT_CONTROLS =
+      new UnicodeBlock("SHORTHAND_FORMAT_CONTROLS", 0x1bca0, 0x1bcaf)
+    val ZNAMENNY_MUSICAL_NOTATION =
+      new UnicodeBlock("ZNAMENNY_MUSICAL_NOTATION", 0x1cf00, 0x1cfcf)
     val BYZANTINE_MUSICAL_SYMBOLS =
       new UnicodeBlock("BYZANTINE_MUSICAL_SYMBOLS", 0x1d000, 0x1d0ff)
     val MUSICAL_SYMBOLS = new UnicodeBlock("MUSICAL_SYMBOLS", 0x1d100, 0x1d1ff)
+    val ANCIENT_GREEK_MUSICAL_NOTATION =
+      new UnicodeBlock("ANCIENT_GREEK_MUSICAL_NOTATION", 0x1d200, 0x1d24f)
+    val KAKTOVIK_NUMERALS =
+      new UnicodeBlock("KAKTOVIK_NUMERALS", 0x1d2c0, 0x1d2df)
+    val MAYAN_NUMERALS = new UnicodeBlock("MAYAN_NUMERALS", 0x1d2e0, 0x1d2ff)
     val TAI_XUAN_JING_SYMBOLS =
       new UnicodeBlock("TAI_XUAN_JING_SYMBOLS", 0x1d300, 0x1d35f)
+    val COUNTING_ROD_NUMERALS =
+      new UnicodeBlock("COUNTING_ROD_NUMERALS", 0x1d360, 0x1d37f)
     val MATHEMATICAL_ALPHANUMERIC_SYMBOLS =
       new UnicodeBlock("MATHEMATICAL_ALPHANUMERIC_SYMBOLS", 0x1d400, 0x1d7ff)
+    val SUTTON_SIGNWRITING =
+      new UnicodeBlock("SUTTON_SIGNWRITING", 0x1d800, 0x1daaf)
+    val LATIN_EXTENDED_G =
+      new UnicodeBlock("LATIN_EXTENDED_G", 0x1df00, 0x1dfff)
+    val GLAGOLITIC_SUPPLEMENT =
+      new UnicodeBlock("GLAGOLITIC_SUPPLEMENT", 0x1e000, 0x1e02f)
+    val CYRILLIC_EXTENDED_D =
+      new UnicodeBlock("CYRILLIC_EXTENDED_D", 0x1e030, 0x1e08f)
+    val NYIAKENG_PUACHUE_HMONG =
+      new UnicodeBlock("NYIAKENG_PUACHUE_HMONG", 0x1e100, 0x1e14f)
+    val TOTO = new UnicodeBlock("TOTO", 0x1e290, 0x1e2bf)
+    val WANCHO = new UnicodeBlock("WANCHO", 0x1e2c0, 0x1e2ff)
+    val NAG_MUNDARI = new UnicodeBlock("NAG_MUNDARI", 0x1e4d0, 0x1e4ff)
+    val ETHIOPIC_EXTENDED_B =
+      new UnicodeBlock("ETHIOPIC_EXTENDED_B", 0x1e7e0, 0x1e7ff)
+    val MENDE_KIKAKUI = new UnicodeBlock("MENDE_KIKAKUI", 0x1e800, 0x1e8df)
+    val ADLAM = new UnicodeBlock("ADLAM", 0x1e900, 0x1e95f)
+    val INDIC_SIYAQ_NUMBERS =
+      new UnicodeBlock("INDIC_SIYAQ_NUMBERS", 0x1ec70, 0x1ecbf)
+    val OTTOMAN_SIYAQ_NUMBERS =
+      new UnicodeBlock("OTTOMAN_SIYAQ_NUMBERS", 0x1ed00, 0x1ed4f)
+    val ARABIC_MATHEMATICAL_ALPHABETIC_SYMBOLS = new UnicodeBlock(
+      "ARABIC_MATHEMATICAL_ALPHABETIC_SYMBOLS",
+      0x1ee00,
+      0x1eeff
+    )
+    val MAHJONG_TILES = new UnicodeBlock("MAHJONG_TILES", 0x1f000, 0x1f02f)
+    val DOMINO_TILES = new UnicodeBlock("DOMINO_TILES", 0x1f030, 0x1f09f)
+    val PLAYING_CARDS = new UnicodeBlock("PLAYING_CARDS", 0x1f0a0, 0x1f0ff)
+    val ENCLOSED_ALPHANUMERIC_SUPPLEMENT =
+      new UnicodeBlock("ENCLOSED_ALPHANUMERIC_SUPPLEMENT", 0x1f100, 0x1f1ff)
+    val ENCLOSED_IDEOGRAPHIC_SUPPLEMENT =
+      new UnicodeBlock("ENCLOSED_IDEOGRAPHIC_SUPPLEMENT", 0x1f200, 0x1f2ff)
+    val MISCELLANEOUS_SYMBOLS_AND_PICTOGRAPHS = new UnicodeBlock(
+      "MISCELLANEOUS_SYMBOLS_AND_PICTOGRAPHS",
+      0x1f300,
+      0x1f5ff
+    )
+    val EMOTICONS = new UnicodeBlock("EMOTICONS", 0x1f600, 0x1f64f)
+    val ORNAMENTAL_DINGBATS =
+      new UnicodeBlock("ORNAMENTAL_DINGBATS", 0x1f650, 0x1f67f)
+    val TRANSPORT_AND_MAP_SYMBOLS =
+      new UnicodeBlock("TRANSPORT_AND_MAP_SYMBOLS", 0x1f680, 0x1f6ff)
+    val ALCHEMICAL_SYMBOLS =
+      new UnicodeBlock("ALCHEMICAL_SYMBOLS", 0x1f700, 0x1f77f)
+    val GEOMETRIC_SHAPES_EXTENDED =
+      new UnicodeBlock("GEOMETRIC_SHAPES_EXTENDED", 0x1f780, 0x1f7ff)
+    val SUPPLEMENTAL_ARROWS_C =
+      new UnicodeBlock("SUPPLEMENTAL_ARROWS_C", 0x1f800, 0x1f8ff)
+    val SUPPLEMENTAL_SYMBOLS_AND_PICTOGRAPHS =
+      new UnicodeBlock("SUPPLEMENTAL_SYMBOLS_AND_PICTOGRAPHS", 0x1f900, 0x1f9ff)
+    val CHESS_SYMBOLS = new UnicodeBlock("CHESS_SYMBOLS", 0x1fa00, 0x1fa6f)
+    val SYMBOLS_AND_PICTOGRAPHS_EXTENDED_A =
+      new UnicodeBlock("SYMBOLS_AND_PICTOGRAPHS_EXTENDED_A", 0x1fa70, 0x1faff)
+    val SYMBOLS_FOR_LEGACY_COMPUTING =
+      new UnicodeBlock("SYMBOLS_FOR_LEGACY_COMPUTING", 0x1fb00, 0x1fbff)
     val CJK_UNIFIED_IDEOGRAPHS_EXTENSION_B =
       new UnicodeBlock("CJK_UNIFIED_IDEOGRAPHS_EXTENSION_B", 0x20000, 0x2a6df)
+    val CJK_UNIFIED_IDEOGRAPHS_EXTENSION_C =
+      new UnicodeBlock("CJK_UNIFIED_IDEOGRAPHS_EXTENSION_C", 0x2a700, 0x2b73f)
+    val CJK_UNIFIED_IDEOGRAPHS_EXTENSION_D =
+      new UnicodeBlock("CJK_UNIFIED_IDEOGRAPHS_EXTENSION_D", 0x2b740, 0x2b81f)
+    val CJK_UNIFIED_IDEOGRAPHS_EXTENSION_E =
+      new UnicodeBlock("CJK_UNIFIED_IDEOGRAPHS_EXTENSION_E", 0x2b820, 0x2ceaf)
+    val CJK_UNIFIED_IDEOGRAPHS_EXTENSION_F =
+      new UnicodeBlock("CJK_UNIFIED_IDEOGRAPHS_EXTENSION_F", 0x2ceb0, 0x2ebef)
+    val CJK_UNIFIED_IDEOGRAPHS_EXTENSION_I =
+      new UnicodeBlock("CJK_UNIFIED_IDEOGRAPHS_EXTENSION_I", 0x2ebf0, 0x2ee5f)
     val CJK_COMPATIBILITY_IDEOGRAPHS_SUPPLEMENT = new UnicodeBlock(
       "CJK_COMPATIBILITY_IDEOGRAPHS_SUPPLEMENT",
       0x2f800,
       0x2fa1f
     )
+    val CJK_UNIFIED_IDEOGRAPHS_EXTENSION_G =
+      new UnicodeBlock("CJK_UNIFIED_IDEOGRAPHS_EXTENSION_G", 0x30000, 0x3134f)
+    val CJK_UNIFIED_IDEOGRAPHS_EXTENSION_H =
+      new UnicodeBlock("CJK_UNIFIED_IDEOGRAPHS_EXTENSION_H", 0x31350, 0x323af)
     val TAGS = new UnicodeBlock("TAGS", 0xe0000, 0xe007f)
     val VARIATION_SELECTORS_SUPPLEMENT =
       new UnicodeBlock("VARIATION_SELECTORS_SUPPLEMENT", 0xe0100, 0xe01ef)
@@ -1919,14 +2222,21 @@ object Character {
       IPA_EXTENSIONS,
       SPACING_MODIFIER_LETTERS,
       COMBINING_DIACRITICAL_MARKS,
-      GREEK,
+      GREEK_AND_COPTIC,
       CYRILLIC,
-      CYRILLIC_SUPPLEMENTARY,
+      CYRILLIC_SUPPLEMENT,
       ARMENIAN,
       HEBREW,
       ARABIC,
       SYRIAC,
+      ARABIC_SUPPLEMENT,
       THAANA,
+      NKO,
+      SAMARITAN,
+      MANDAIC,
+      SYRIAC_SUPPLEMENT,
+      ARABIC_EXTENDED_B,
+      ARABIC_EXTENDED_A,
       DEVANAGARI,
       BENGALI,
       GURMUKHI,
@@ -1944,6 +2254,7 @@ object Character {
       GEORGIAN,
       HANGUL_JAMO,
       ETHIOPIC,
+      ETHIOPIC_SUPPLEMENT,
       CHEROKEE,
       UNIFIED_CANADIAN_ABORIGINAL_SYLLABICS,
       OGHAM,
@@ -1954,16 +2265,32 @@ object Character {
       TAGBANWA,
       KHMER,
       MONGOLIAN,
+      UNIFIED_CANADIAN_ABORIGINAL_SYLLABICS_EXTENDED,
       LIMBU,
       TAI_LE,
+      NEW_TAI_LUE,
       KHMER_SYMBOLS,
+      BUGINESE,
+      TAI_THAM,
+      COMBINING_DIACRITICAL_MARKS_EXTENDED,
+      BALINESE,
+      SUNDANESE,
+      BATAK,
+      LEPCHA,
+      OL_CHIKI,
+      CYRILLIC_EXTENDED_C,
+      GEORGIAN_EXTENDED,
+      SUNDANESE_SUPPLEMENT,
+      VEDIC_EXTENSIONS,
       PHONETIC_EXTENSIONS,
+      PHONETIC_EXTENSIONS_SUPPLEMENT,
+      COMBINING_DIACRITICAL_MARKS_SUPPLEMENT,
       LATIN_EXTENDED_ADDITIONAL,
       GREEK_EXTENDED,
       GENERAL_PUNCTUATION,
       SUPERSCRIPTS_AND_SUBSCRIPTS,
       CURRENCY_SYMBOLS,
-      COMBINING_MARKS_FOR_SYMBOLS,
+      COMBINING_DIACRITICAL_MARKS_FOR_SYMBOLS,
       LETTERLIKE_SYMBOLS,
       NUMBER_FORMS,
       ARROWS,
@@ -1984,6 +2311,14 @@ object Character {
       MISCELLANEOUS_MATHEMATICAL_SYMBOLS_B,
       SUPPLEMENTAL_MATHEMATICAL_OPERATORS,
       MISCELLANEOUS_SYMBOLS_AND_ARROWS,
+      GLAGOLITIC,
+      LATIN_EXTENDED_C,
+      COPTIC,
+      GEORGIAN_SUPPLEMENT,
+      TIFINAGH,
+      ETHIOPIC_EXTENDED,
+      CYRILLIC_EXTENDED_A,
+      SUPPLEMENTAL_PUNCTUATION,
       CJK_RADICALS_SUPPLEMENT,
       KANGXI_RADICALS,
       IDEOGRAPHIC_DESCRIPTION_CHARACTERS,
@@ -1994,6 +2329,7 @@ object Character {
       HANGUL_COMPATIBILITY_JAMO,
       KANBUN,
       BOPOMOFO_EXTENDED,
+      CJK_STROKES,
       KATAKANA_PHONETIC_EXTENSIONS,
       ENCLOSED_CJK_LETTERS_AND_MONTHS,
       CJK_COMPATIBILITY,
@@ -2002,7 +2338,32 @@ object Character {
       CJK_UNIFIED_IDEOGRAPHS,
       YI_SYLLABLES,
       YI_RADICALS,
+      LISU,
+      VAI,
+      CYRILLIC_EXTENDED_B,
+      BAMUM,
+      MODIFIER_TONE_LETTERS,
+      LATIN_EXTENDED_D,
+      SYLOTI_NAGRI,
+      COMMON_INDIC_NUMBER_FORMS,
+      PHAGS_PA,
+      SAURASHTRA,
+      DEVANAGARI_EXTENDED,
+      KAYAH_LI,
+      REJANG,
+      HANGUL_JAMO_EXTENDED_A,
+      JAVANESE,
+      MYANMAR_EXTENDED_B,
+      CHAM,
+      MYANMAR_EXTENDED_A,
+      TAI_VIET,
+      MEETEI_MAYEK_EXTENSIONS,
+      ETHIOPIC_EXTENDED_A,
+      LATIN_EXTENDED_E,
+      CHEROKEE_SUPPLEMENT,
+      MEETEI_MAYEK,
       HANGUL_SYLLABLES,
+      HANGUL_JAMO_EXTENDED_B,
       HIGH_SURROGATES,
       HIGH_PRIVATE_USE_SURROGATES,
       LOW_SURROGATES,
@@ -2011,6 +2372,7 @@ object Character {
       ALPHABETIC_PRESENTATION_FORMS,
       ARABIC_PRESENTATION_FORMS_A,
       VARIATION_SELECTORS,
+      VERTICAL_FORMS,
       COMBINING_HALF_MARKS,
       CJK_COMPATIBILITY_FORMS,
       SMALL_FORM_VARIANTS,
@@ -2020,19 +2382,163 @@ object Character {
       LINEAR_B_SYLLABARY,
       LINEAR_B_IDEOGRAMS,
       AEGEAN_NUMBERS,
+      ANCIENT_GREEK_NUMBERS,
+      ANCIENT_SYMBOLS,
+      PHAISTOS_DISC,
+      LYCIAN,
+      CARIAN,
+      COPTIC_EPACT_NUMBERS,
       OLD_ITALIC,
       GOTHIC,
+      OLD_PERMIC,
       UGARITIC,
+      OLD_PERSIAN,
       DESERET,
       SHAVIAN,
       OSMANYA,
+      OSAGE,
+      ELBASAN,
+      CAUCASIAN_ALBANIAN,
+      VITHKUQI,
+      LINEAR_A,
+      LATIN_EXTENDED_F,
       CYPRIOT_SYLLABARY,
+      IMPERIAL_ARAMAIC,
+      PALMYRENE,
+      NABATAEAN,
+      HATRAN,
+      PHOENICIAN,
+      LYDIAN,
+      MEROITIC_HIEROGLYPHS,
+      MEROITIC_CURSIVE,
+      KHAROSHTHI,
+      OLD_SOUTH_ARABIAN,
+      OLD_NORTH_ARABIAN,
+      MANICHAEAN,
+      AVESTAN,
+      INSCRIPTIONAL_PARTHIAN,
+      INSCRIPTIONAL_PAHLAVI,
+      PSALTER_PAHLAVI,
+      OLD_TURKIC,
+      OLD_HUNGARIAN,
+      HANIFI_ROHINGYA,
+      RUMI_NUMERAL_SYMBOLS,
+      YEZIDI,
+      ARABIC_EXTENDED_C,
+      OLD_SOGDIAN,
+      SOGDIAN,
+      OLD_UYGHUR,
+      CHORASMIAN,
+      ELYMAIC,
+      BRAHMI,
+      KAITHI,
+      SORA_SOMPENG,
+      CHAKMA,
+      MAHAJANI,
+      SHARADA,
+      SINHALA_ARCHAIC_NUMBERS,
+      KHOJKI,
+      MULTANI,
+      KHUDAWADI,
+      GRANTHA,
+      NEWA,
+      TIRHUTA,
+      SIDDHAM,
+      MODI,
+      MONGOLIAN_SUPPLEMENT,
+      TAKRI,
+      AHOM,
+      DOGRA,
+      WARANG_CITI,
+      DIVES_AKURU,
+      NANDINAGARI,
+      ZANABAZAR_SQUARE,
+      SOYOMBO,
+      UNIFIED_CANADIAN_ABORIGINAL_SYLLABICS_EXTENDED_A,
+      PAU_CIN_HAU,
+      DEVANAGARI_EXTENDED_A,
+      BHAIKSUKI,
+      MARCHEN,
+      MASARAM_GONDI,
+      GUNJALA_GONDI,
+      MAKASAR,
+      KAWI,
+      LISU_SUPPLEMENT,
+      TAMIL_SUPPLEMENT,
+      CUNEIFORM,
+      CUNEIFORM_NUMBERS_AND_PUNCTUATION,
+      EARLY_DYNASTIC_CUNEIFORM,
+      CYPRO_MINOAN,
+      EGYPTIAN_HIEROGLYPHS,
+      EGYPTIAN_HIEROGLYPH_FORMAT_CONTROLS,
+      ANATOLIAN_HIEROGLYPHS,
+      BAMUM_SUPPLEMENT,
+      MRO,
+      TANGSA,
+      BASSA_VAH,
+      PAHAWH_HMONG,
+      MEDEFAIDRIN,
+      MIAO,
+      IDEOGRAPHIC_SYMBOLS_AND_PUNCTUATION,
+      TANGUT,
+      TANGUT_COMPONENTS,
+      KHITAN_SMALL_SCRIPT,
+      TANGUT_SUPPLEMENT,
+      KANA_EXTENDED_B,
+      KANA_SUPPLEMENT,
+      KANA_EXTENDED_A,
+      SMALL_KANA_EXTENSION,
+      NUSHU,
+      DUPLOYAN,
+      SHORTHAND_FORMAT_CONTROLS,
+      ZNAMENNY_MUSICAL_NOTATION,
       BYZANTINE_MUSICAL_SYMBOLS,
       MUSICAL_SYMBOLS,
+      ANCIENT_GREEK_MUSICAL_NOTATION,
+      KAKTOVIK_NUMERALS,
+      MAYAN_NUMERALS,
       TAI_XUAN_JING_SYMBOLS,
+      COUNTING_ROD_NUMERALS,
       MATHEMATICAL_ALPHANUMERIC_SYMBOLS,
+      SUTTON_SIGNWRITING,
+      LATIN_EXTENDED_G,
+      GLAGOLITIC_SUPPLEMENT,
+      CYRILLIC_EXTENDED_D,
+      NYIAKENG_PUACHUE_HMONG,
+      TOTO,
+      WANCHO,
+      NAG_MUNDARI,
+      ETHIOPIC_EXTENDED_B,
+      MENDE_KIKAKUI,
+      ADLAM,
+      INDIC_SIYAQ_NUMBERS,
+      OTTOMAN_SIYAQ_NUMBERS,
+      ARABIC_MATHEMATICAL_ALPHABETIC_SYMBOLS,
+      MAHJONG_TILES,
+      DOMINO_TILES,
+      PLAYING_CARDS,
+      ENCLOSED_ALPHANUMERIC_SUPPLEMENT,
+      ENCLOSED_IDEOGRAPHIC_SUPPLEMENT,
+      MISCELLANEOUS_SYMBOLS_AND_PICTOGRAPHS,
+      EMOTICONS,
+      ORNAMENTAL_DINGBATS,
+      TRANSPORT_AND_MAP_SYMBOLS,
+      ALCHEMICAL_SYMBOLS,
+      GEOMETRIC_SHAPES_EXTENDED,
+      SUPPLEMENTAL_ARROWS_C,
+      SUPPLEMENTAL_SYMBOLS_AND_PICTOGRAPHS,
+      CHESS_SYMBOLS,
+      SYMBOLS_AND_PICTOGRAPHS_EXTENDED_A,
+      SYMBOLS_FOR_LEGACY_COMPUTING,
       CJK_UNIFIED_IDEOGRAPHS_EXTENSION_B,
+      CJK_UNIFIED_IDEOGRAPHS_EXTENSION_C,
+      CJK_UNIFIED_IDEOGRAPHS_EXTENSION_D,
+      CJK_UNIFIED_IDEOGRAPHS_EXTENSION_E,
+      CJK_UNIFIED_IDEOGRAPHS_EXTENSION_F,
+      CJK_UNIFIED_IDEOGRAPHS_EXTENSION_I,
       CJK_COMPATIBILITY_IDEOGRAPHS_SUPPLEMENT,
+      CJK_UNIFIED_IDEOGRAPHS_EXTENSION_G,
+      CJK_UNIFIED_IDEOGRAPHS_EXTENSION_H,
       TAGS,
       VARIATION_SELECTORS_SUPPLEMENT,
       SUPPLEMENTARY_PRIVATE_USE_AREA_A,
@@ -2072,42 +2578,82 @@ object Character {
       "COMBINING_DIACRITICAL_MARKS",
       COMBINING_DIACRITICAL_MARKS
     )
-    BLOCKS_BY_NAME.update("Greek and Coptic", GREEK)
-    BLOCKS_BY_NAME.update("GreekandCoptic", GREEK)
-    BLOCKS_BY_NAME.update("GREEK", GREEK)
-    BLOCKS_BY_NAME.update("Greek", GREEK)
-    BLOCKS_BY_NAME.update("Greek", GREEK)
+    BLOCKS_BY_NAME.update("Greek and Coptic", GREEK_AND_COPTIC)
+    BLOCKS_BY_NAME.update("GreekandCoptic", GREEK_AND_COPTIC)
+    BLOCKS_BY_NAME.update("GREEK_AND_COPTIC", GREEK_AND_COPTIC)
     BLOCKS_BY_NAME.update("Cyrillic", CYRILLIC)
-    BLOCKS_BY_NAME.update("Cyrillic Supplement", CYRILLIC_SUPPLEMENTARY)
-    BLOCKS_BY_NAME.update("CyrillicSupplement", CYRILLIC_SUPPLEMENTARY)
-    BLOCKS_BY_NAME.update("CYRILLIC_SUPPLEMENTARY", CYRILLIC_SUPPLEMENTARY)
-    BLOCKS_BY_NAME.update("Cyrillic Supplementary", CYRILLIC_SUPPLEMENTARY)
-    BLOCKS_BY_NAME.update("CyrillicSupplementary", CYRILLIC_SUPPLEMENTARY)
+    BLOCKS_BY_NAME.update("CYRILLIC", CYRILLIC)
+    BLOCKS_BY_NAME.update("Cyrillic Supplement", CYRILLIC_SUPPLEMENT)
+    BLOCKS_BY_NAME.update("CyrillicSupplement", CYRILLIC_SUPPLEMENT)
+    BLOCKS_BY_NAME.update("CYRILLIC_SUPPLEMENT", CYRILLIC_SUPPLEMENT)
     BLOCKS_BY_NAME.update("Armenian", ARMENIAN)
+    BLOCKS_BY_NAME.update("ARMENIAN", ARMENIAN)
     BLOCKS_BY_NAME.update("Hebrew", HEBREW)
+    BLOCKS_BY_NAME.update("HEBREW", HEBREW)
     BLOCKS_BY_NAME.update("Arabic", ARABIC)
+    BLOCKS_BY_NAME.update("ARABIC", ARABIC)
     BLOCKS_BY_NAME.update("Syriac", SYRIAC)
+    BLOCKS_BY_NAME.update("SYRIAC", SYRIAC)
+    BLOCKS_BY_NAME.update("Arabic Supplement", ARABIC_SUPPLEMENT)
+    BLOCKS_BY_NAME.update("ArabicSupplement", ARABIC_SUPPLEMENT)
+    BLOCKS_BY_NAME.update("ARABIC_SUPPLEMENT", ARABIC_SUPPLEMENT)
     BLOCKS_BY_NAME.update("Thaana", THAANA)
+    BLOCKS_BY_NAME.update("THAANA", THAANA)
+    BLOCKS_BY_NAME.update("NKo", NKO)
+    BLOCKS_BY_NAME.update("NKO", NKO)
+    BLOCKS_BY_NAME.update("Samaritan", SAMARITAN)
+    BLOCKS_BY_NAME.update("SAMARITAN", SAMARITAN)
+    BLOCKS_BY_NAME.update("Mandaic", MANDAIC)
+    BLOCKS_BY_NAME.update("MANDAIC", MANDAIC)
+    BLOCKS_BY_NAME.update("Syriac Supplement", SYRIAC_SUPPLEMENT)
+    BLOCKS_BY_NAME.update("SyriacSupplement", SYRIAC_SUPPLEMENT)
+    BLOCKS_BY_NAME.update("SYRIAC_SUPPLEMENT", SYRIAC_SUPPLEMENT)
+    BLOCKS_BY_NAME.update("Arabic Extended-B", ARABIC_EXTENDED_B)
+    BLOCKS_BY_NAME.update("ArabicExtended-B", ARABIC_EXTENDED_B)
+    BLOCKS_BY_NAME.update("ARABIC_EXTENDED_B", ARABIC_EXTENDED_B)
+    BLOCKS_BY_NAME.update("Arabic Extended-A", ARABIC_EXTENDED_A)
+    BLOCKS_BY_NAME.update("ArabicExtended-A", ARABIC_EXTENDED_A)
+    BLOCKS_BY_NAME.update("ARABIC_EXTENDED_A", ARABIC_EXTENDED_A)
     BLOCKS_BY_NAME.update("Devanagari", DEVANAGARI)
+    BLOCKS_BY_NAME.update("DEVANAGARI", DEVANAGARI)
     BLOCKS_BY_NAME.update("Bengali", BENGALI)
+    BLOCKS_BY_NAME.update("BENGALI", BENGALI)
     BLOCKS_BY_NAME.update("Gurmukhi", GURMUKHI)
+    BLOCKS_BY_NAME.update("GURMUKHI", GURMUKHI)
     BLOCKS_BY_NAME.update("Gujarati", GUJARATI)
+    BLOCKS_BY_NAME.update("GUJARATI", GUJARATI)
     BLOCKS_BY_NAME.update("Oriya", ORIYA)
+    BLOCKS_BY_NAME.update("ORIYA", ORIYA)
     BLOCKS_BY_NAME.update("Tamil", TAMIL)
+    BLOCKS_BY_NAME.update("TAMIL", TAMIL)
     BLOCKS_BY_NAME.update("Telugu", TELUGU)
+    BLOCKS_BY_NAME.update("TELUGU", TELUGU)
     BLOCKS_BY_NAME.update("Kannada", KANNADA)
+    BLOCKS_BY_NAME.update("KANNADA", KANNADA)
     BLOCKS_BY_NAME.update("Malayalam", MALAYALAM)
+    BLOCKS_BY_NAME.update("MALAYALAM", MALAYALAM)
     BLOCKS_BY_NAME.update("Sinhala", SINHALA)
+    BLOCKS_BY_NAME.update("SINHALA", SINHALA)
     BLOCKS_BY_NAME.update("Thai", THAI)
+    BLOCKS_BY_NAME.update("THAI", THAI)
     BLOCKS_BY_NAME.update("Lao", LAO)
+    BLOCKS_BY_NAME.update("LAO", LAO)
     BLOCKS_BY_NAME.update("Tibetan", TIBETAN)
+    BLOCKS_BY_NAME.update("TIBETAN", TIBETAN)
     BLOCKS_BY_NAME.update("Myanmar", MYANMAR)
+    BLOCKS_BY_NAME.update("MYANMAR", MYANMAR)
     BLOCKS_BY_NAME.update("Georgian", GEORGIAN)
+    BLOCKS_BY_NAME.update("GEORGIAN", GEORGIAN)
     BLOCKS_BY_NAME.update("Hangul Jamo", HANGUL_JAMO)
     BLOCKS_BY_NAME.update("HangulJamo", HANGUL_JAMO)
     BLOCKS_BY_NAME.update("HANGUL_JAMO", HANGUL_JAMO)
     BLOCKS_BY_NAME.update("Ethiopic", ETHIOPIC)
+    BLOCKS_BY_NAME.update("ETHIOPIC", ETHIOPIC)
+    BLOCKS_BY_NAME.update("Ethiopic Supplement", ETHIOPIC_SUPPLEMENT)
+    BLOCKS_BY_NAME.update("EthiopicSupplement", ETHIOPIC_SUPPLEMENT)
+    BLOCKS_BY_NAME.update("ETHIOPIC_SUPPLEMENT", ETHIOPIC_SUPPLEMENT)
     BLOCKS_BY_NAME.update("Cherokee", CHEROKEE)
+    BLOCKS_BY_NAME.update("CHEROKEE", CHEROKEE)
     BLOCKS_BY_NAME.update(
       "Unified Canadian Aboriginal Syllabics",
       UNIFIED_CANADIAN_ABORIGINAL_SYLLABICS
@@ -2121,23 +2667,111 @@ object Character {
       UNIFIED_CANADIAN_ABORIGINAL_SYLLABICS
     )
     BLOCKS_BY_NAME.update("Ogham", OGHAM)
+    BLOCKS_BY_NAME.update("OGHAM", OGHAM)
     BLOCKS_BY_NAME.update("Runic", RUNIC)
+    BLOCKS_BY_NAME.update("RUNIC", RUNIC)
     BLOCKS_BY_NAME.update("Tagalog", TAGALOG)
+    BLOCKS_BY_NAME.update("TAGALOG", TAGALOG)
     BLOCKS_BY_NAME.update("Hanunoo", HANUNOO)
+    BLOCKS_BY_NAME.update("HANUNOO", HANUNOO)
     BLOCKS_BY_NAME.update("Buhid", BUHID)
+    BLOCKS_BY_NAME.update("BUHID", BUHID)
     BLOCKS_BY_NAME.update("Tagbanwa", TAGBANWA)
+    BLOCKS_BY_NAME.update("TAGBANWA", TAGBANWA)
     BLOCKS_BY_NAME.update("Khmer", KHMER)
+    BLOCKS_BY_NAME.update("KHMER", KHMER)
     BLOCKS_BY_NAME.update("Mongolian", MONGOLIAN)
+    BLOCKS_BY_NAME.update("MONGOLIAN", MONGOLIAN)
+    BLOCKS_BY_NAME.update(
+      "Unified Canadian Aboriginal Syllabics Extended",
+      UNIFIED_CANADIAN_ABORIGINAL_SYLLABICS_EXTENDED
+    )
+    BLOCKS_BY_NAME.update(
+      "UnifiedCanadianAboriginalSyllabicsExtended",
+      UNIFIED_CANADIAN_ABORIGINAL_SYLLABICS_EXTENDED
+    )
+    BLOCKS_BY_NAME.update(
+      "UNIFIED_CANADIAN_ABORIGINAL_SYLLABICS_EXTENDED",
+      UNIFIED_CANADIAN_ABORIGINAL_SYLLABICS_EXTENDED
+    )
     BLOCKS_BY_NAME.update("Limbu", LIMBU)
+    BLOCKS_BY_NAME.update("LIMBU", LIMBU)
     BLOCKS_BY_NAME.update("Tai Le", TAI_LE)
     BLOCKS_BY_NAME.update("TaiLe", TAI_LE)
     BLOCKS_BY_NAME.update("TAI_LE", TAI_LE)
+    BLOCKS_BY_NAME.update("New Tai Lue", NEW_TAI_LUE)
+    BLOCKS_BY_NAME.update("NewTaiLue", NEW_TAI_LUE)
+    BLOCKS_BY_NAME.update("NEW_TAI_LUE", NEW_TAI_LUE)
     BLOCKS_BY_NAME.update("Khmer Symbols", KHMER_SYMBOLS)
     BLOCKS_BY_NAME.update("KhmerSymbols", KHMER_SYMBOLS)
     BLOCKS_BY_NAME.update("KHMER_SYMBOLS", KHMER_SYMBOLS)
+    BLOCKS_BY_NAME.update("Buginese", BUGINESE)
+    BLOCKS_BY_NAME.update("BUGINESE", BUGINESE)
+    BLOCKS_BY_NAME.update("Tai Tham", TAI_THAM)
+    BLOCKS_BY_NAME.update("TaiTham", TAI_THAM)
+    BLOCKS_BY_NAME.update("TAI_THAM", TAI_THAM)
+    BLOCKS_BY_NAME.update(
+      "Combining Diacritical Marks Extended",
+      COMBINING_DIACRITICAL_MARKS_EXTENDED
+    )
+    BLOCKS_BY_NAME.update(
+      "CombiningDiacriticalMarksExtended",
+      COMBINING_DIACRITICAL_MARKS_EXTENDED
+    )
+    BLOCKS_BY_NAME.update(
+      "COMBINING_DIACRITICAL_MARKS_EXTENDED",
+      COMBINING_DIACRITICAL_MARKS_EXTENDED
+    )
+    BLOCKS_BY_NAME.update("Balinese", BALINESE)
+    BLOCKS_BY_NAME.update("BALINESE", BALINESE)
+    BLOCKS_BY_NAME.update("Sundanese", SUNDANESE)
+    BLOCKS_BY_NAME.update("SUNDANESE", SUNDANESE)
+    BLOCKS_BY_NAME.update("Batak", BATAK)
+    BLOCKS_BY_NAME.update("BATAK", BATAK)
+    BLOCKS_BY_NAME.update("Lepcha", LEPCHA)
+    BLOCKS_BY_NAME.update("LEPCHA", LEPCHA)
+    BLOCKS_BY_NAME.update("Ol Chiki", OL_CHIKI)
+    BLOCKS_BY_NAME.update("OlChiki", OL_CHIKI)
+    BLOCKS_BY_NAME.update("OL_CHIKI", OL_CHIKI)
+    BLOCKS_BY_NAME.update("Cyrillic Extended-C", CYRILLIC_EXTENDED_C)
+    BLOCKS_BY_NAME.update("CyrillicExtended-C", CYRILLIC_EXTENDED_C)
+    BLOCKS_BY_NAME.update("CYRILLIC_EXTENDED_C", CYRILLIC_EXTENDED_C)
+    BLOCKS_BY_NAME.update("Georgian Extended", GEORGIAN_EXTENDED)
+    BLOCKS_BY_NAME.update("GeorgianExtended", GEORGIAN_EXTENDED)
+    BLOCKS_BY_NAME.update("GEORGIAN_EXTENDED", GEORGIAN_EXTENDED)
+    BLOCKS_BY_NAME.update("Sundanese Supplement", SUNDANESE_SUPPLEMENT)
+    BLOCKS_BY_NAME.update("SundaneseSupplement", SUNDANESE_SUPPLEMENT)
+    BLOCKS_BY_NAME.update("SUNDANESE_SUPPLEMENT", SUNDANESE_SUPPLEMENT)
+    BLOCKS_BY_NAME.update("Vedic Extensions", VEDIC_EXTENSIONS)
+    BLOCKS_BY_NAME.update("VedicExtensions", VEDIC_EXTENSIONS)
+    BLOCKS_BY_NAME.update("VEDIC_EXTENSIONS", VEDIC_EXTENSIONS)
     BLOCKS_BY_NAME.update("Phonetic Extensions", PHONETIC_EXTENSIONS)
     BLOCKS_BY_NAME.update("PhoneticExtensions", PHONETIC_EXTENSIONS)
     BLOCKS_BY_NAME.update("PHONETIC_EXTENSIONS", PHONETIC_EXTENSIONS)
+    BLOCKS_BY_NAME.update(
+      "Phonetic Extensions Supplement",
+      PHONETIC_EXTENSIONS_SUPPLEMENT
+    )
+    BLOCKS_BY_NAME.update(
+      "PhoneticExtensionsSupplement",
+      PHONETIC_EXTENSIONS_SUPPLEMENT
+    )
+    BLOCKS_BY_NAME.update(
+      "PHONETIC_EXTENSIONS_SUPPLEMENT",
+      PHONETIC_EXTENSIONS_SUPPLEMENT
+    )
+    BLOCKS_BY_NAME.update(
+      "Combining Diacritical Marks Supplement",
+      COMBINING_DIACRITICAL_MARKS_SUPPLEMENT
+    )
+    BLOCKS_BY_NAME.update(
+      "CombiningDiacriticalMarksSupplement",
+      COMBINING_DIACRITICAL_MARKS_SUPPLEMENT
+    )
+    BLOCKS_BY_NAME.update(
+      "COMBINING_DIACRITICAL_MARKS_SUPPLEMENT",
+      COMBINING_DIACRITICAL_MARKS_SUPPLEMENT
+    )
     BLOCKS_BY_NAME.update(
       "Latin Extended Additional",
       LATIN_EXTENDED_ADDITIONAL
@@ -2170,23 +2804,15 @@ object Character {
     BLOCKS_BY_NAME.update("CURRENCY_SYMBOLS", CURRENCY_SYMBOLS)
     BLOCKS_BY_NAME.update(
       "Combining Diacritical Marks for Symbols",
-      COMBINING_MARKS_FOR_SYMBOLS
+      COMBINING_DIACRITICAL_MARKS_FOR_SYMBOLS
     )
     BLOCKS_BY_NAME.update(
       "CombiningDiacriticalMarksforSymbols",
-      COMBINING_MARKS_FOR_SYMBOLS
+      COMBINING_DIACRITICAL_MARKS_FOR_SYMBOLS
     )
     BLOCKS_BY_NAME.update(
-      "COMBINING_MARKS_FOR_SYMBOLS",
-      COMBINING_MARKS_FOR_SYMBOLS
-    )
-    BLOCKS_BY_NAME.update(
-      "Combining Marks for Symbols",
-      COMBINING_MARKS_FOR_SYMBOLS
-    )
-    BLOCKS_BY_NAME.update(
-      "CombiningMarksforSymbols",
-      COMBINING_MARKS_FOR_SYMBOLS
+      "COMBINING_DIACRITICAL_MARKS_FOR_SYMBOLS",
+      COMBINING_DIACRITICAL_MARKS_FOR_SYMBOLS
     )
     BLOCKS_BY_NAME.update("Letterlike Symbols", LETTERLIKE_SYMBOLS)
     BLOCKS_BY_NAME.update("LetterlikeSymbols", LETTERLIKE_SYMBOLS)
@@ -2195,6 +2821,7 @@ object Character {
     BLOCKS_BY_NAME.update("NumberForms", NUMBER_FORMS)
     BLOCKS_BY_NAME.update("NUMBER_FORMS", NUMBER_FORMS)
     BLOCKS_BY_NAME.update("Arrows", ARROWS)
+    BLOCKS_BY_NAME.update("ARROWS", ARROWS)
     BLOCKS_BY_NAME.update("Mathematical Operators", MATHEMATICAL_OPERATORS)
     BLOCKS_BY_NAME.update("MathematicalOperators", MATHEMATICAL_OPERATORS)
     BLOCKS_BY_NAME.update("MATHEMATICAL_OPERATORS", MATHEMATICAL_OPERATORS)
@@ -2232,6 +2859,7 @@ object Character {
     BLOCKS_BY_NAME.update("MiscellaneousSymbols", MISCELLANEOUS_SYMBOLS)
     BLOCKS_BY_NAME.update("MISCELLANEOUS_SYMBOLS", MISCELLANEOUS_SYMBOLS)
     BLOCKS_BY_NAME.update("Dingbats", DINGBATS)
+    BLOCKS_BY_NAME.update("DINGBATS", DINGBATS)
     BLOCKS_BY_NAME.update(
       "Miscellaneous Mathematical Symbols-A",
       MISCELLANEOUS_MATHEMATICAL_SYMBOLS_A
@@ -2289,6 +2917,27 @@ object Character {
       "MISCELLANEOUS_SYMBOLS_AND_ARROWS",
       MISCELLANEOUS_SYMBOLS_AND_ARROWS
     )
+    BLOCKS_BY_NAME.update("Glagolitic", GLAGOLITIC)
+    BLOCKS_BY_NAME.update("GLAGOLITIC", GLAGOLITIC)
+    BLOCKS_BY_NAME.update("Latin Extended-C", LATIN_EXTENDED_C)
+    BLOCKS_BY_NAME.update("LatinExtended-C", LATIN_EXTENDED_C)
+    BLOCKS_BY_NAME.update("LATIN_EXTENDED_C", LATIN_EXTENDED_C)
+    BLOCKS_BY_NAME.update("Coptic", COPTIC)
+    BLOCKS_BY_NAME.update("COPTIC", COPTIC)
+    BLOCKS_BY_NAME.update("Georgian Supplement", GEORGIAN_SUPPLEMENT)
+    BLOCKS_BY_NAME.update("GeorgianSupplement", GEORGIAN_SUPPLEMENT)
+    BLOCKS_BY_NAME.update("GEORGIAN_SUPPLEMENT", GEORGIAN_SUPPLEMENT)
+    BLOCKS_BY_NAME.update("Tifinagh", TIFINAGH)
+    BLOCKS_BY_NAME.update("TIFINAGH", TIFINAGH)
+    BLOCKS_BY_NAME.update("Ethiopic Extended", ETHIOPIC_EXTENDED)
+    BLOCKS_BY_NAME.update("EthiopicExtended", ETHIOPIC_EXTENDED)
+    BLOCKS_BY_NAME.update("ETHIOPIC_EXTENDED", ETHIOPIC_EXTENDED)
+    BLOCKS_BY_NAME.update("Cyrillic Extended-A", CYRILLIC_EXTENDED_A)
+    BLOCKS_BY_NAME.update("CyrillicExtended-A", CYRILLIC_EXTENDED_A)
+    BLOCKS_BY_NAME.update("CYRILLIC_EXTENDED_A", CYRILLIC_EXTENDED_A)
+    BLOCKS_BY_NAME.update("Supplemental Punctuation", SUPPLEMENTAL_PUNCTUATION)
+    BLOCKS_BY_NAME.update("SupplementalPunctuation", SUPPLEMENTAL_PUNCTUATION)
+    BLOCKS_BY_NAME.update("SUPPLEMENTAL_PUNCTUATION", SUPPLEMENTAL_PUNCTUATION)
     BLOCKS_BY_NAME.update("CJK Radicals Supplement", CJK_RADICALS_SUPPLEMENT)
     BLOCKS_BY_NAME.update("CJKRadicalsSupplement", CJK_RADICALS_SUPPLEMENT)
     BLOCKS_BY_NAME.update("CJK_RADICALS_SUPPLEMENT", CJK_RADICALS_SUPPLEMENT)
@@ -2320,8 +2969,11 @@ object Character {
       CJK_SYMBOLS_AND_PUNCTUATION
     )
     BLOCKS_BY_NAME.update("Hiragana", HIRAGANA)
+    BLOCKS_BY_NAME.update("HIRAGANA", HIRAGANA)
     BLOCKS_BY_NAME.update("Katakana", KATAKANA)
+    BLOCKS_BY_NAME.update("KATAKANA", KATAKANA)
     BLOCKS_BY_NAME.update("Bopomofo", BOPOMOFO)
+    BLOCKS_BY_NAME.update("BOPOMOFO", BOPOMOFO)
     BLOCKS_BY_NAME.update(
       "Hangul Compatibility Jamo",
       HANGUL_COMPATIBILITY_JAMO
@@ -2332,9 +2984,13 @@ object Character {
       HANGUL_COMPATIBILITY_JAMO
     )
     BLOCKS_BY_NAME.update("Kanbun", KANBUN)
+    BLOCKS_BY_NAME.update("KANBUN", KANBUN)
     BLOCKS_BY_NAME.update("Bopomofo Extended", BOPOMOFO_EXTENDED)
     BLOCKS_BY_NAME.update("BopomofoExtended", BOPOMOFO_EXTENDED)
     BLOCKS_BY_NAME.update("BOPOMOFO_EXTENDED", BOPOMOFO_EXTENDED)
+    BLOCKS_BY_NAME.update("CJK Strokes", CJK_STROKES)
+    BLOCKS_BY_NAME.update("CJKStrokes", CJK_STROKES)
+    BLOCKS_BY_NAME.update("CJK_STROKES", CJK_STROKES)
     BLOCKS_BY_NAME.update(
       "Katakana Phonetic Extensions",
       KATAKANA_PHONETIC_EXTENSIONS
@@ -2386,9 +3042,82 @@ object Character {
     BLOCKS_BY_NAME.update("Yi Radicals", YI_RADICALS)
     BLOCKS_BY_NAME.update("YiRadicals", YI_RADICALS)
     BLOCKS_BY_NAME.update("YI_RADICALS", YI_RADICALS)
+    BLOCKS_BY_NAME.update("Lisu", LISU)
+    BLOCKS_BY_NAME.update("LISU", LISU)
+    BLOCKS_BY_NAME.update("Vai", VAI)
+    BLOCKS_BY_NAME.update("VAI", VAI)
+    BLOCKS_BY_NAME.update("Cyrillic Extended-B", CYRILLIC_EXTENDED_B)
+    BLOCKS_BY_NAME.update("CyrillicExtended-B", CYRILLIC_EXTENDED_B)
+    BLOCKS_BY_NAME.update("CYRILLIC_EXTENDED_B", CYRILLIC_EXTENDED_B)
+    BLOCKS_BY_NAME.update("Bamum", BAMUM)
+    BLOCKS_BY_NAME.update("BAMUM", BAMUM)
+    BLOCKS_BY_NAME.update("Modifier Tone Letters", MODIFIER_TONE_LETTERS)
+    BLOCKS_BY_NAME.update("ModifierToneLetters", MODIFIER_TONE_LETTERS)
+    BLOCKS_BY_NAME.update("MODIFIER_TONE_LETTERS", MODIFIER_TONE_LETTERS)
+    BLOCKS_BY_NAME.update("Latin Extended-D", LATIN_EXTENDED_D)
+    BLOCKS_BY_NAME.update("LatinExtended-D", LATIN_EXTENDED_D)
+    BLOCKS_BY_NAME.update("LATIN_EXTENDED_D", LATIN_EXTENDED_D)
+    BLOCKS_BY_NAME.update("Syloti Nagri", SYLOTI_NAGRI)
+    BLOCKS_BY_NAME.update("SylotiNagri", SYLOTI_NAGRI)
+    BLOCKS_BY_NAME.update("SYLOTI_NAGRI", SYLOTI_NAGRI)
+    BLOCKS_BY_NAME.update(
+      "Common Indic Number Forms",
+      COMMON_INDIC_NUMBER_FORMS
+    )
+    BLOCKS_BY_NAME.update("CommonIndicNumberForms", COMMON_INDIC_NUMBER_FORMS)
+    BLOCKS_BY_NAME.update(
+      "COMMON_INDIC_NUMBER_FORMS",
+      COMMON_INDIC_NUMBER_FORMS
+    )
+    BLOCKS_BY_NAME.update("Phags-pa", PHAGS_PA)
+    BLOCKS_BY_NAME.update("PHAGS_PA", PHAGS_PA)
+    BLOCKS_BY_NAME.update("Saurashtra", SAURASHTRA)
+    BLOCKS_BY_NAME.update("SAURASHTRA", SAURASHTRA)
+    BLOCKS_BY_NAME.update("Devanagari Extended", DEVANAGARI_EXTENDED)
+    BLOCKS_BY_NAME.update("DevanagariExtended", DEVANAGARI_EXTENDED)
+    BLOCKS_BY_NAME.update("DEVANAGARI_EXTENDED", DEVANAGARI_EXTENDED)
+    BLOCKS_BY_NAME.update("Kayah Li", KAYAH_LI)
+    BLOCKS_BY_NAME.update("KayahLi", KAYAH_LI)
+    BLOCKS_BY_NAME.update("KAYAH_LI", KAYAH_LI)
+    BLOCKS_BY_NAME.update("Rejang", REJANG)
+    BLOCKS_BY_NAME.update("REJANG", REJANG)
+    BLOCKS_BY_NAME.update("Hangul Jamo Extended-A", HANGUL_JAMO_EXTENDED_A)
+    BLOCKS_BY_NAME.update("HangulJamoExtended-A", HANGUL_JAMO_EXTENDED_A)
+    BLOCKS_BY_NAME.update("HANGUL_JAMO_EXTENDED_A", HANGUL_JAMO_EXTENDED_A)
+    BLOCKS_BY_NAME.update("Javanese", JAVANESE)
+    BLOCKS_BY_NAME.update("JAVANESE", JAVANESE)
+    BLOCKS_BY_NAME.update("Myanmar Extended-B", MYANMAR_EXTENDED_B)
+    BLOCKS_BY_NAME.update("MyanmarExtended-B", MYANMAR_EXTENDED_B)
+    BLOCKS_BY_NAME.update("MYANMAR_EXTENDED_B", MYANMAR_EXTENDED_B)
+    BLOCKS_BY_NAME.update("Cham", CHAM)
+    BLOCKS_BY_NAME.update("CHAM", CHAM)
+    BLOCKS_BY_NAME.update("Myanmar Extended-A", MYANMAR_EXTENDED_A)
+    BLOCKS_BY_NAME.update("MyanmarExtended-A", MYANMAR_EXTENDED_A)
+    BLOCKS_BY_NAME.update("MYANMAR_EXTENDED_A", MYANMAR_EXTENDED_A)
+    BLOCKS_BY_NAME.update("Tai Viet", TAI_VIET)
+    BLOCKS_BY_NAME.update("TaiViet", TAI_VIET)
+    BLOCKS_BY_NAME.update("TAI_VIET", TAI_VIET)
+    BLOCKS_BY_NAME.update("Meetei Mayek Extensions", MEETEI_MAYEK_EXTENSIONS)
+    BLOCKS_BY_NAME.update("MeeteiMayekExtensions", MEETEI_MAYEK_EXTENSIONS)
+    BLOCKS_BY_NAME.update("MEETEI_MAYEK_EXTENSIONS", MEETEI_MAYEK_EXTENSIONS)
+    BLOCKS_BY_NAME.update("Ethiopic Extended-A", ETHIOPIC_EXTENDED_A)
+    BLOCKS_BY_NAME.update("EthiopicExtended-A", ETHIOPIC_EXTENDED_A)
+    BLOCKS_BY_NAME.update("ETHIOPIC_EXTENDED_A", ETHIOPIC_EXTENDED_A)
+    BLOCKS_BY_NAME.update("Latin Extended-E", LATIN_EXTENDED_E)
+    BLOCKS_BY_NAME.update("LatinExtended-E", LATIN_EXTENDED_E)
+    BLOCKS_BY_NAME.update("LATIN_EXTENDED_E", LATIN_EXTENDED_E)
+    BLOCKS_BY_NAME.update("Cherokee Supplement", CHEROKEE_SUPPLEMENT)
+    BLOCKS_BY_NAME.update("CherokeeSupplement", CHEROKEE_SUPPLEMENT)
+    BLOCKS_BY_NAME.update("CHEROKEE_SUPPLEMENT", CHEROKEE_SUPPLEMENT)
+    BLOCKS_BY_NAME.update("Meetei Mayek", MEETEI_MAYEK)
+    BLOCKS_BY_NAME.update("MeeteiMayek", MEETEI_MAYEK)
+    BLOCKS_BY_NAME.update("MEETEI_MAYEK", MEETEI_MAYEK)
     BLOCKS_BY_NAME.update("Hangul Syllables", HANGUL_SYLLABLES)
     BLOCKS_BY_NAME.update("HangulSyllables", HANGUL_SYLLABLES)
     BLOCKS_BY_NAME.update("HANGUL_SYLLABLES", HANGUL_SYLLABLES)
+    BLOCKS_BY_NAME.update("Hangul Jamo Extended-B", HANGUL_JAMO_EXTENDED_B)
+    BLOCKS_BY_NAME.update("HangulJamoExtended-B", HANGUL_JAMO_EXTENDED_B)
+    BLOCKS_BY_NAME.update("HANGUL_JAMO_EXTENDED_B", HANGUL_JAMO_EXTENDED_B)
     BLOCKS_BY_NAME.update("High Surrogates", HIGH_SURROGATES)
     BLOCKS_BY_NAME.update("HighSurrogates", HIGH_SURROGATES)
     BLOCKS_BY_NAME.update("HIGH_SURROGATES", HIGH_SURROGATES)
@@ -2449,6 +3178,9 @@ object Character {
     BLOCKS_BY_NAME.update("Variation Selectors", VARIATION_SELECTORS)
     BLOCKS_BY_NAME.update("VariationSelectors", VARIATION_SELECTORS)
     BLOCKS_BY_NAME.update("VARIATION_SELECTORS", VARIATION_SELECTORS)
+    BLOCKS_BY_NAME.update("Vertical Forms", VERTICAL_FORMS)
+    BLOCKS_BY_NAME.update("VerticalForms", VERTICAL_FORMS)
+    BLOCKS_BY_NAME.update("VERTICAL_FORMS", VERTICAL_FORMS)
     BLOCKS_BY_NAME.update("Combining Half Marks", COMBINING_HALF_MARKS)
     BLOCKS_BY_NAME.update("CombiningHalfMarks", COMBINING_HALF_MARKS)
     BLOCKS_BY_NAME.update("COMBINING_HALF_MARKS", COMBINING_HALF_MARKS)
@@ -2483,6 +3215,7 @@ object Character {
       HALFWIDTH_AND_FULLWIDTH_FORMS
     )
     BLOCKS_BY_NAME.update("Specials", SPECIALS)
+    BLOCKS_BY_NAME.update("SPECIALS", SPECIALS)
     BLOCKS_BY_NAME.update("Linear B Syllabary", LINEAR_B_SYLLABARY)
     BLOCKS_BY_NAME.update("LinearBSyllabary", LINEAR_B_SYLLABARY)
     BLOCKS_BY_NAME.update("LINEAR_B_SYLLABARY", LINEAR_B_SYLLABARY)
@@ -2492,17 +3225,331 @@ object Character {
     BLOCKS_BY_NAME.update("Aegean Numbers", AEGEAN_NUMBERS)
     BLOCKS_BY_NAME.update("AegeanNumbers", AEGEAN_NUMBERS)
     BLOCKS_BY_NAME.update("AEGEAN_NUMBERS", AEGEAN_NUMBERS)
+    BLOCKS_BY_NAME.update("Ancient Greek Numbers", ANCIENT_GREEK_NUMBERS)
+    BLOCKS_BY_NAME.update("AncientGreekNumbers", ANCIENT_GREEK_NUMBERS)
+    BLOCKS_BY_NAME.update("ANCIENT_GREEK_NUMBERS", ANCIENT_GREEK_NUMBERS)
+    BLOCKS_BY_NAME.update("Ancient Symbols", ANCIENT_SYMBOLS)
+    BLOCKS_BY_NAME.update("AncientSymbols", ANCIENT_SYMBOLS)
+    BLOCKS_BY_NAME.update("ANCIENT_SYMBOLS", ANCIENT_SYMBOLS)
+    BLOCKS_BY_NAME.update("Phaistos Disc", PHAISTOS_DISC)
+    BLOCKS_BY_NAME.update("PhaistosDisc", PHAISTOS_DISC)
+    BLOCKS_BY_NAME.update("PHAISTOS_DISC", PHAISTOS_DISC)
+    BLOCKS_BY_NAME.update("Lycian", LYCIAN)
+    BLOCKS_BY_NAME.update("LYCIAN", LYCIAN)
+    BLOCKS_BY_NAME.update("Carian", CARIAN)
+    BLOCKS_BY_NAME.update("CARIAN", CARIAN)
+    BLOCKS_BY_NAME.update("Coptic Epact Numbers", COPTIC_EPACT_NUMBERS)
+    BLOCKS_BY_NAME.update("CopticEpactNumbers", COPTIC_EPACT_NUMBERS)
+    BLOCKS_BY_NAME.update("COPTIC_EPACT_NUMBERS", COPTIC_EPACT_NUMBERS)
     BLOCKS_BY_NAME.update("Old Italic", OLD_ITALIC)
     BLOCKS_BY_NAME.update("OldItalic", OLD_ITALIC)
     BLOCKS_BY_NAME.update("OLD_ITALIC", OLD_ITALIC)
     BLOCKS_BY_NAME.update("Gothic", GOTHIC)
+    BLOCKS_BY_NAME.update("GOTHIC", GOTHIC)
+    BLOCKS_BY_NAME.update("Old Permic", OLD_PERMIC)
+    BLOCKS_BY_NAME.update("OldPermic", OLD_PERMIC)
+    BLOCKS_BY_NAME.update("OLD_PERMIC", OLD_PERMIC)
     BLOCKS_BY_NAME.update("Ugaritic", UGARITIC)
+    BLOCKS_BY_NAME.update("UGARITIC", UGARITIC)
+    BLOCKS_BY_NAME.update("Old Persian", OLD_PERSIAN)
+    BLOCKS_BY_NAME.update("OldPersian", OLD_PERSIAN)
+    BLOCKS_BY_NAME.update("OLD_PERSIAN", OLD_PERSIAN)
     BLOCKS_BY_NAME.update("Deseret", DESERET)
+    BLOCKS_BY_NAME.update("DESERET", DESERET)
     BLOCKS_BY_NAME.update("Shavian", SHAVIAN)
+    BLOCKS_BY_NAME.update("SHAVIAN", SHAVIAN)
     BLOCKS_BY_NAME.update("Osmanya", OSMANYA)
+    BLOCKS_BY_NAME.update("OSMANYA", OSMANYA)
+    BLOCKS_BY_NAME.update("Osage", OSAGE)
+    BLOCKS_BY_NAME.update("OSAGE", OSAGE)
+    BLOCKS_BY_NAME.update("Elbasan", ELBASAN)
+    BLOCKS_BY_NAME.update("ELBASAN", ELBASAN)
+    BLOCKS_BY_NAME.update("Caucasian Albanian", CAUCASIAN_ALBANIAN)
+    BLOCKS_BY_NAME.update("CaucasianAlbanian", CAUCASIAN_ALBANIAN)
+    BLOCKS_BY_NAME.update("CAUCASIAN_ALBANIAN", CAUCASIAN_ALBANIAN)
+    BLOCKS_BY_NAME.update("Vithkuqi", VITHKUQI)
+    BLOCKS_BY_NAME.update("VITHKUQI", VITHKUQI)
+    BLOCKS_BY_NAME.update("Linear A", LINEAR_A)
+    BLOCKS_BY_NAME.update("LinearA", LINEAR_A)
+    BLOCKS_BY_NAME.update("LINEAR_A", LINEAR_A)
+    BLOCKS_BY_NAME.update("Latin Extended-F", LATIN_EXTENDED_F)
+    BLOCKS_BY_NAME.update("LatinExtended-F", LATIN_EXTENDED_F)
+    BLOCKS_BY_NAME.update("LATIN_EXTENDED_F", LATIN_EXTENDED_F)
     BLOCKS_BY_NAME.update("Cypriot Syllabary", CYPRIOT_SYLLABARY)
     BLOCKS_BY_NAME.update("CypriotSyllabary", CYPRIOT_SYLLABARY)
     BLOCKS_BY_NAME.update("CYPRIOT_SYLLABARY", CYPRIOT_SYLLABARY)
+    BLOCKS_BY_NAME.update("Imperial Aramaic", IMPERIAL_ARAMAIC)
+    BLOCKS_BY_NAME.update("ImperialAramaic", IMPERIAL_ARAMAIC)
+    BLOCKS_BY_NAME.update("IMPERIAL_ARAMAIC", IMPERIAL_ARAMAIC)
+    BLOCKS_BY_NAME.update("Palmyrene", PALMYRENE)
+    BLOCKS_BY_NAME.update("PALMYRENE", PALMYRENE)
+    BLOCKS_BY_NAME.update("Nabataean", NABATAEAN)
+    BLOCKS_BY_NAME.update("NABATAEAN", NABATAEAN)
+    BLOCKS_BY_NAME.update("Hatran", HATRAN)
+    BLOCKS_BY_NAME.update("HATRAN", HATRAN)
+    BLOCKS_BY_NAME.update("Phoenician", PHOENICIAN)
+    BLOCKS_BY_NAME.update("PHOENICIAN", PHOENICIAN)
+    BLOCKS_BY_NAME.update("Lydian", LYDIAN)
+    BLOCKS_BY_NAME.update("LYDIAN", LYDIAN)
+    BLOCKS_BY_NAME.update("Meroitic Hieroglyphs", MEROITIC_HIEROGLYPHS)
+    BLOCKS_BY_NAME.update("MeroiticHieroglyphs", MEROITIC_HIEROGLYPHS)
+    BLOCKS_BY_NAME.update("MEROITIC_HIEROGLYPHS", MEROITIC_HIEROGLYPHS)
+    BLOCKS_BY_NAME.update("Meroitic Cursive", MEROITIC_CURSIVE)
+    BLOCKS_BY_NAME.update("MeroiticCursive", MEROITIC_CURSIVE)
+    BLOCKS_BY_NAME.update("MEROITIC_CURSIVE", MEROITIC_CURSIVE)
+    BLOCKS_BY_NAME.update("Kharoshthi", KHAROSHTHI)
+    BLOCKS_BY_NAME.update("KHAROSHTHI", KHAROSHTHI)
+    BLOCKS_BY_NAME.update("Old South Arabian", OLD_SOUTH_ARABIAN)
+    BLOCKS_BY_NAME.update("OldSouthArabian", OLD_SOUTH_ARABIAN)
+    BLOCKS_BY_NAME.update("OLD_SOUTH_ARABIAN", OLD_SOUTH_ARABIAN)
+    BLOCKS_BY_NAME.update("Old North Arabian", OLD_NORTH_ARABIAN)
+    BLOCKS_BY_NAME.update("OldNorthArabian", OLD_NORTH_ARABIAN)
+    BLOCKS_BY_NAME.update("OLD_NORTH_ARABIAN", OLD_NORTH_ARABIAN)
+    BLOCKS_BY_NAME.update("Manichaean", MANICHAEAN)
+    BLOCKS_BY_NAME.update("MANICHAEAN", MANICHAEAN)
+    BLOCKS_BY_NAME.update("Avestan", AVESTAN)
+    BLOCKS_BY_NAME.update("AVESTAN", AVESTAN)
+    BLOCKS_BY_NAME.update("Inscriptional Parthian", INSCRIPTIONAL_PARTHIAN)
+    BLOCKS_BY_NAME.update("InscriptionalParthian", INSCRIPTIONAL_PARTHIAN)
+    BLOCKS_BY_NAME.update("INSCRIPTIONAL_PARTHIAN", INSCRIPTIONAL_PARTHIAN)
+    BLOCKS_BY_NAME.update("Inscriptional Pahlavi", INSCRIPTIONAL_PAHLAVI)
+    BLOCKS_BY_NAME.update("InscriptionalPahlavi", INSCRIPTIONAL_PAHLAVI)
+    BLOCKS_BY_NAME.update("INSCRIPTIONAL_PAHLAVI", INSCRIPTIONAL_PAHLAVI)
+    BLOCKS_BY_NAME.update("Psalter Pahlavi", PSALTER_PAHLAVI)
+    BLOCKS_BY_NAME.update("PsalterPahlavi", PSALTER_PAHLAVI)
+    BLOCKS_BY_NAME.update("PSALTER_PAHLAVI", PSALTER_PAHLAVI)
+    BLOCKS_BY_NAME.update("Old Turkic", OLD_TURKIC)
+    BLOCKS_BY_NAME.update("OldTurkic", OLD_TURKIC)
+    BLOCKS_BY_NAME.update("OLD_TURKIC", OLD_TURKIC)
+    BLOCKS_BY_NAME.update("Old Hungarian", OLD_HUNGARIAN)
+    BLOCKS_BY_NAME.update("OldHungarian", OLD_HUNGARIAN)
+    BLOCKS_BY_NAME.update("OLD_HUNGARIAN", OLD_HUNGARIAN)
+    BLOCKS_BY_NAME.update("Hanifi Rohingya", HANIFI_ROHINGYA)
+    BLOCKS_BY_NAME.update("HanifiRohingya", HANIFI_ROHINGYA)
+    BLOCKS_BY_NAME.update("HANIFI_ROHINGYA", HANIFI_ROHINGYA)
+    BLOCKS_BY_NAME.update("Rumi Numeral Symbols", RUMI_NUMERAL_SYMBOLS)
+    BLOCKS_BY_NAME.update("RumiNumeralSymbols", RUMI_NUMERAL_SYMBOLS)
+    BLOCKS_BY_NAME.update("RUMI_NUMERAL_SYMBOLS", RUMI_NUMERAL_SYMBOLS)
+    BLOCKS_BY_NAME.update("Yezidi", YEZIDI)
+    BLOCKS_BY_NAME.update("YEZIDI", YEZIDI)
+    BLOCKS_BY_NAME.update("Arabic Extended-C", ARABIC_EXTENDED_C)
+    BLOCKS_BY_NAME.update("ArabicExtended-C", ARABIC_EXTENDED_C)
+    BLOCKS_BY_NAME.update("ARABIC_EXTENDED_C", ARABIC_EXTENDED_C)
+    BLOCKS_BY_NAME.update("Old Sogdian", OLD_SOGDIAN)
+    BLOCKS_BY_NAME.update("OldSogdian", OLD_SOGDIAN)
+    BLOCKS_BY_NAME.update("OLD_SOGDIAN", OLD_SOGDIAN)
+    BLOCKS_BY_NAME.update("Sogdian", SOGDIAN)
+    BLOCKS_BY_NAME.update("SOGDIAN", SOGDIAN)
+    BLOCKS_BY_NAME.update("Old Uyghur", OLD_UYGHUR)
+    BLOCKS_BY_NAME.update("OldUyghur", OLD_UYGHUR)
+    BLOCKS_BY_NAME.update("OLD_UYGHUR", OLD_UYGHUR)
+    BLOCKS_BY_NAME.update("Chorasmian", CHORASMIAN)
+    BLOCKS_BY_NAME.update("CHORASMIAN", CHORASMIAN)
+    BLOCKS_BY_NAME.update("Elymaic", ELYMAIC)
+    BLOCKS_BY_NAME.update("ELYMAIC", ELYMAIC)
+    BLOCKS_BY_NAME.update("Brahmi", BRAHMI)
+    BLOCKS_BY_NAME.update("BRAHMI", BRAHMI)
+    BLOCKS_BY_NAME.update("Kaithi", KAITHI)
+    BLOCKS_BY_NAME.update("KAITHI", KAITHI)
+    BLOCKS_BY_NAME.update("Sora Sompeng", SORA_SOMPENG)
+    BLOCKS_BY_NAME.update("SoraSompeng", SORA_SOMPENG)
+    BLOCKS_BY_NAME.update("SORA_SOMPENG", SORA_SOMPENG)
+    BLOCKS_BY_NAME.update("Chakma", CHAKMA)
+    BLOCKS_BY_NAME.update("CHAKMA", CHAKMA)
+    BLOCKS_BY_NAME.update("Mahajani", MAHAJANI)
+    BLOCKS_BY_NAME.update("MAHAJANI", MAHAJANI)
+    BLOCKS_BY_NAME.update("Sharada", SHARADA)
+    BLOCKS_BY_NAME.update("SHARADA", SHARADA)
+    BLOCKS_BY_NAME.update("Sinhala Archaic Numbers", SINHALA_ARCHAIC_NUMBERS)
+    BLOCKS_BY_NAME.update("SinhalaArchaicNumbers", SINHALA_ARCHAIC_NUMBERS)
+    BLOCKS_BY_NAME.update("SINHALA_ARCHAIC_NUMBERS", SINHALA_ARCHAIC_NUMBERS)
+    BLOCKS_BY_NAME.update("Khojki", KHOJKI)
+    BLOCKS_BY_NAME.update("KHOJKI", KHOJKI)
+    BLOCKS_BY_NAME.update("Multani", MULTANI)
+    BLOCKS_BY_NAME.update("MULTANI", MULTANI)
+    BLOCKS_BY_NAME.update("Khudawadi", KHUDAWADI)
+    BLOCKS_BY_NAME.update("KHUDAWADI", KHUDAWADI)
+    BLOCKS_BY_NAME.update("Grantha", GRANTHA)
+    BLOCKS_BY_NAME.update("GRANTHA", GRANTHA)
+    BLOCKS_BY_NAME.update("Newa", NEWA)
+    BLOCKS_BY_NAME.update("NEWA", NEWA)
+    BLOCKS_BY_NAME.update("Tirhuta", TIRHUTA)
+    BLOCKS_BY_NAME.update("TIRHUTA", TIRHUTA)
+    BLOCKS_BY_NAME.update("Siddham", SIDDHAM)
+    BLOCKS_BY_NAME.update("SIDDHAM", SIDDHAM)
+    BLOCKS_BY_NAME.update("Modi", MODI)
+    BLOCKS_BY_NAME.update("MODI", MODI)
+    BLOCKS_BY_NAME.update("Mongolian Supplement", MONGOLIAN_SUPPLEMENT)
+    BLOCKS_BY_NAME.update("MongolianSupplement", MONGOLIAN_SUPPLEMENT)
+    BLOCKS_BY_NAME.update("MONGOLIAN_SUPPLEMENT", MONGOLIAN_SUPPLEMENT)
+    BLOCKS_BY_NAME.update("Takri", TAKRI)
+    BLOCKS_BY_NAME.update("TAKRI", TAKRI)
+    BLOCKS_BY_NAME.update("Ahom", AHOM)
+    BLOCKS_BY_NAME.update("AHOM", AHOM)
+    BLOCKS_BY_NAME.update("Dogra", DOGRA)
+    BLOCKS_BY_NAME.update("DOGRA", DOGRA)
+    BLOCKS_BY_NAME.update("Warang Citi", WARANG_CITI)
+    BLOCKS_BY_NAME.update("WarangCiti", WARANG_CITI)
+    BLOCKS_BY_NAME.update("WARANG_CITI", WARANG_CITI)
+    BLOCKS_BY_NAME.update("Dives Akuru", DIVES_AKURU)
+    BLOCKS_BY_NAME.update("DivesAkuru", DIVES_AKURU)
+    BLOCKS_BY_NAME.update("DIVES_AKURU", DIVES_AKURU)
+    BLOCKS_BY_NAME.update("Nandinagari", NANDINAGARI)
+    BLOCKS_BY_NAME.update("NANDINAGARI", NANDINAGARI)
+    BLOCKS_BY_NAME.update("Zanabazar Square", ZANABAZAR_SQUARE)
+    BLOCKS_BY_NAME.update("ZanabazarSquare", ZANABAZAR_SQUARE)
+    BLOCKS_BY_NAME.update("ZANABAZAR_SQUARE", ZANABAZAR_SQUARE)
+    BLOCKS_BY_NAME.update("Soyombo", SOYOMBO)
+    BLOCKS_BY_NAME.update("SOYOMBO", SOYOMBO)
+    BLOCKS_BY_NAME.update(
+      "Unified Canadian Aboriginal Syllabics Extended-A",
+      UNIFIED_CANADIAN_ABORIGINAL_SYLLABICS_EXTENDED_A
+    )
+    BLOCKS_BY_NAME.update(
+      "UnifiedCanadianAboriginalSyllabicsExtended-A",
+      UNIFIED_CANADIAN_ABORIGINAL_SYLLABICS_EXTENDED_A
+    )
+    BLOCKS_BY_NAME.update(
+      "UNIFIED_CANADIAN_ABORIGINAL_SYLLABICS_EXTENDED_A",
+      UNIFIED_CANADIAN_ABORIGINAL_SYLLABICS_EXTENDED_A
+    )
+    BLOCKS_BY_NAME.update("Pau Cin Hau", PAU_CIN_HAU)
+    BLOCKS_BY_NAME.update("PauCinHau", PAU_CIN_HAU)
+    BLOCKS_BY_NAME.update("PAU_CIN_HAU", PAU_CIN_HAU)
+    BLOCKS_BY_NAME.update("Devanagari Extended-A", DEVANAGARI_EXTENDED_A)
+    BLOCKS_BY_NAME.update("DevanagariExtended-A", DEVANAGARI_EXTENDED_A)
+    BLOCKS_BY_NAME.update("DEVANAGARI_EXTENDED_A", DEVANAGARI_EXTENDED_A)
+    BLOCKS_BY_NAME.update("Bhaiksuki", BHAIKSUKI)
+    BLOCKS_BY_NAME.update("BHAIKSUKI", BHAIKSUKI)
+    BLOCKS_BY_NAME.update("Marchen", MARCHEN)
+    BLOCKS_BY_NAME.update("MARCHEN", MARCHEN)
+    BLOCKS_BY_NAME.update("Masaram Gondi", MASARAM_GONDI)
+    BLOCKS_BY_NAME.update("MasaramGondi", MASARAM_GONDI)
+    BLOCKS_BY_NAME.update("MASARAM_GONDI", MASARAM_GONDI)
+    BLOCKS_BY_NAME.update("Gunjala Gondi", GUNJALA_GONDI)
+    BLOCKS_BY_NAME.update("GunjalaGondi", GUNJALA_GONDI)
+    BLOCKS_BY_NAME.update("GUNJALA_GONDI", GUNJALA_GONDI)
+    BLOCKS_BY_NAME.update("Makasar", MAKASAR)
+    BLOCKS_BY_NAME.update("MAKASAR", MAKASAR)
+    BLOCKS_BY_NAME.update("Kawi", KAWI)
+    BLOCKS_BY_NAME.update("KAWI", KAWI)
+    BLOCKS_BY_NAME.update("Lisu Supplement", LISU_SUPPLEMENT)
+    BLOCKS_BY_NAME.update("LisuSupplement", LISU_SUPPLEMENT)
+    BLOCKS_BY_NAME.update("LISU_SUPPLEMENT", LISU_SUPPLEMENT)
+    BLOCKS_BY_NAME.update("Tamil Supplement", TAMIL_SUPPLEMENT)
+    BLOCKS_BY_NAME.update("TamilSupplement", TAMIL_SUPPLEMENT)
+    BLOCKS_BY_NAME.update("TAMIL_SUPPLEMENT", TAMIL_SUPPLEMENT)
+    BLOCKS_BY_NAME.update("Cuneiform", CUNEIFORM)
+    BLOCKS_BY_NAME.update("CUNEIFORM", CUNEIFORM)
+    BLOCKS_BY_NAME.update(
+      "Cuneiform Numbers and Punctuation",
+      CUNEIFORM_NUMBERS_AND_PUNCTUATION
+    )
+    BLOCKS_BY_NAME.update(
+      "CuneiformNumbersandPunctuation",
+      CUNEIFORM_NUMBERS_AND_PUNCTUATION
+    )
+    BLOCKS_BY_NAME.update(
+      "CUNEIFORM_NUMBERS_AND_PUNCTUATION",
+      CUNEIFORM_NUMBERS_AND_PUNCTUATION
+    )
+    BLOCKS_BY_NAME.update("Early Dynastic Cuneiform", EARLY_DYNASTIC_CUNEIFORM)
+    BLOCKS_BY_NAME.update("EarlyDynasticCuneiform", EARLY_DYNASTIC_CUNEIFORM)
+    BLOCKS_BY_NAME.update("EARLY_DYNASTIC_CUNEIFORM", EARLY_DYNASTIC_CUNEIFORM)
+    BLOCKS_BY_NAME.update("Cypro-Minoan", CYPRO_MINOAN)
+    BLOCKS_BY_NAME.update("CYPRO_MINOAN", CYPRO_MINOAN)
+    BLOCKS_BY_NAME.update("Egyptian Hieroglyphs", EGYPTIAN_HIEROGLYPHS)
+    BLOCKS_BY_NAME.update("EgyptianHieroglyphs", EGYPTIAN_HIEROGLYPHS)
+    BLOCKS_BY_NAME.update("EGYPTIAN_HIEROGLYPHS", EGYPTIAN_HIEROGLYPHS)
+    BLOCKS_BY_NAME.update(
+      "Egyptian Hieroglyph Format Controls",
+      EGYPTIAN_HIEROGLYPH_FORMAT_CONTROLS
+    )
+    BLOCKS_BY_NAME.update(
+      "EgyptianHieroglyphFormatControls",
+      EGYPTIAN_HIEROGLYPH_FORMAT_CONTROLS
+    )
+    BLOCKS_BY_NAME.update(
+      "EGYPTIAN_HIEROGLYPH_FORMAT_CONTROLS",
+      EGYPTIAN_HIEROGLYPH_FORMAT_CONTROLS
+    )
+    BLOCKS_BY_NAME.update("Anatolian Hieroglyphs", ANATOLIAN_HIEROGLYPHS)
+    BLOCKS_BY_NAME.update("AnatolianHieroglyphs", ANATOLIAN_HIEROGLYPHS)
+    BLOCKS_BY_NAME.update("ANATOLIAN_HIEROGLYPHS", ANATOLIAN_HIEROGLYPHS)
+    BLOCKS_BY_NAME.update("Bamum Supplement", BAMUM_SUPPLEMENT)
+    BLOCKS_BY_NAME.update("BamumSupplement", BAMUM_SUPPLEMENT)
+    BLOCKS_BY_NAME.update("BAMUM_SUPPLEMENT", BAMUM_SUPPLEMENT)
+    BLOCKS_BY_NAME.update("Mro", MRO)
+    BLOCKS_BY_NAME.update("MRO", MRO)
+    BLOCKS_BY_NAME.update("Tangsa", TANGSA)
+    BLOCKS_BY_NAME.update("TANGSA", TANGSA)
+    BLOCKS_BY_NAME.update("Bassa Vah", BASSA_VAH)
+    BLOCKS_BY_NAME.update("BassaVah", BASSA_VAH)
+    BLOCKS_BY_NAME.update("BASSA_VAH", BASSA_VAH)
+    BLOCKS_BY_NAME.update("Pahawh Hmong", PAHAWH_HMONG)
+    BLOCKS_BY_NAME.update("PahawhHmong", PAHAWH_HMONG)
+    BLOCKS_BY_NAME.update("PAHAWH_HMONG", PAHAWH_HMONG)
+    BLOCKS_BY_NAME.update("Medefaidrin", MEDEFAIDRIN)
+    BLOCKS_BY_NAME.update("MEDEFAIDRIN", MEDEFAIDRIN)
+    BLOCKS_BY_NAME.update("Miao", MIAO)
+    BLOCKS_BY_NAME.update("MIAO", MIAO)
+    BLOCKS_BY_NAME.update(
+      "Ideographic Symbols and Punctuation",
+      IDEOGRAPHIC_SYMBOLS_AND_PUNCTUATION
+    )
+    BLOCKS_BY_NAME.update(
+      "IdeographicSymbolsandPunctuation",
+      IDEOGRAPHIC_SYMBOLS_AND_PUNCTUATION
+    )
+    BLOCKS_BY_NAME.update(
+      "IDEOGRAPHIC_SYMBOLS_AND_PUNCTUATION",
+      IDEOGRAPHIC_SYMBOLS_AND_PUNCTUATION
+    )
+    BLOCKS_BY_NAME.update("Tangut", TANGUT)
+    BLOCKS_BY_NAME.update("TANGUT", TANGUT)
+    BLOCKS_BY_NAME.update("Tangut Components", TANGUT_COMPONENTS)
+    BLOCKS_BY_NAME.update("TangutComponents", TANGUT_COMPONENTS)
+    BLOCKS_BY_NAME.update("TANGUT_COMPONENTS", TANGUT_COMPONENTS)
+    BLOCKS_BY_NAME.update("Khitan Small Script", KHITAN_SMALL_SCRIPT)
+    BLOCKS_BY_NAME.update("KhitanSmallScript", KHITAN_SMALL_SCRIPT)
+    BLOCKS_BY_NAME.update("KHITAN_SMALL_SCRIPT", KHITAN_SMALL_SCRIPT)
+    BLOCKS_BY_NAME.update("Tangut Supplement", TANGUT_SUPPLEMENT)
+    BLOCKS_BY_NAME.update("TangutSupplement", TANGUT_SUPPLEMENT)
+    BLOCKS_BY_NAME.update("TANGUT_SUPPLEMENT", TANGUT_SUPPLEMENT)
+    BLOCKS_BY_NAME.update("Kana Extended-B", KANA_EXTENDED_B)
+    BLOCKS_BY_NAME.update("KanaExtended-B", KANA_EXTENDED_B)
+    BLOCKS_BY_NAME.update("KANA_EXTENDED_B", KANA_EXTENDED_B)
+    BLOCKS_BY_NAME.update("Kana Supplement", KANA_SUPPLEMENT)
+    BLOCKS_BY_NAME.update("KanaSupplement", KANA_SUPPLEMENT)
+    BLOCKS_BY_NAME.update("KANA_SUPPLEMENT", KANA_SUPPLEMENT)
+    BLOCKS_BY_NAME.update("Kana Extended-A", KANA_EXTENDED_A)
+    BLOCKS_BY_NAME.update("KanaExtended-A", KANA_EXTENDED_A)
+    BLOCKS_BY_NAME.update("KANA_EXTENDED_A", KANA_EXTENDED_A)
+    BLOCKS_BY_NAME.update("Small Kana Extension", SMALL_KANA_EXTENSION)
+    BLOCKS_BY_NAME.update("SmallKanaExtension", SMALL_KANA_EXTENSION)
+    BLOCKS_BY_NAME.update("SMALL_KANA_EXTENSION", SMALL_KANA_EXTENSION)
+    BLOCKS_BY_NAME.update("Nushu", NUSHU)
+    BLOCKS_BY_NAME.update("NUSHU", NUSHU)
+    BLOCKS_BY_NAME.update("Duployan", DUPLOYAN)
+    BLOCKS_BY_NAME.update("DUPLOYAN", DUPLOYAN)
+    BLOCKS_BY_NAME.update(
+      "Shorthand Format Controls",
+      SHORTHAND_FORMAT_CONTROLS
+    )
+    BLOCKS_BY_NAME.update("ShorthandFormatControls", SHORTHAND_FORMAT_CONTROLS)
+    BLOCKS_BY_NAME.update(
+      "SHORTHAND_FORMAT_CONTROLS",
+      SHORTHAND_FORMAT_CONTROLS
+    )
+    BLOCKS_BY_NAME.update(
+      "Znamenny Musical Notation",
+      ZNAMENNY_MUSICAL_NOTATION
+    )
+    BLOCKS_BY_NAME.update("ZnamennyMusicalNotation", ZNAMENNY_MUSICAL_NOTATION)
+    BLOCKS_BY_NAME.update(
+      "ZNAMENNY_MUSICAL_NOTATION",
+      ZNAMENNY_MUSICAL_NOTATION
+    )
     BLOCKS_BY_NAME.update(
       "Byzantine Musical Symbols",
       BYZANTINE_MUSICAL_SYMBOLS
@@ -2515,9 +3562,30 @@ object Character {
     BLOCKS_BY_NAME.update("Musical Symbols", MUSICAL_SYMBOLS)
     BLOCKS_BY_NAME.update("MusicalSymbols", MUSICAL_SYMBOLS)
     BLOCKS_BY_NAME.update("MUSICAL_SYMBOLS", MUSICAL_SYMBOLS)
+    BLOCKS_BY_NAME.update(
+      "Ancient Greek Musical Notation",
+      ANCIENT_GREEK_MUSICAL_NOTATION
+    )
+    BLOCKS_BY_NAME.update(
+      "AncientGreekMusicalNotation",
+      ANCIENT_GREEK_MUSICAL_NOTATION
+    )
+    BLOCKS_BY_NAME.update(
+      "ANCIENT_GREEK_MUSICAL_NOTATION",
+      ANCIENT_GREEK_MUSICAL_NOTATION
+    )
+    BLOCKS_BY_NAME.update("Kaktovik Numerals", KAKTOVIK_NUMERALS)
+    BLOCKS_BY_NAME.update("KaktovikNumerals", KAKTOVIK_NUMERALS)
+    BLOCKS_BY_NAME.update("KAKTOVIK_NUMERALS", KAKTOVIK_NUMERALS)
+    BLOCKS_BY_NAME.update("Mayan Numerals", MAYAN_NUMERALS)
+    BLOCKS_BY_NAME.update("MayanNumerals", MAYAN_NUMERALS)
+    BLOCKS_BY_NAME.update("MAYAN_NUMERALS", MAYAN_NUMERALS)
     BLOCKS_BY_NAME.update("Tai Xuan Jing Symbols", TAI_XUAN_JING_SYMBOLS)
     BLOCKS_BY_NAME.update("TaiXuanJingSymbols", TAI_XUAN_JING_SYMBOLS)
     BLOCKS_BY_NAME.update("TAI_XUAN_JING_SYMBOLS", TAI_XUAN_JING_SYMBOLS)
+    BLOCKS_BY_NAME.update("Counting Rod Numerals", COUNTING_ROD_NUMERALS)
+    BLOCKS_BY_NAME.update("CountingRodNumerals", COUNTING_ROD_NUMERALS)
+    BLOCKS_BY_NAME.update("COUNTING_ROD_NUMERALS", COUNTING_ROD_NUMERALS)
     BLOCKS_BY_NAME.update(
       "Mathematical Alphanumeric Symbols",
       MATHEMATICAL_ALPHANUMERIC_SYMBOLS
@@ -2529,6 +3597,167 @@ object Character {
     BLOCKS_BY_NAME.update(
       "MATHEMATICAL_ALPHANUMERIC_SYMBOLS",
       MATHEMATICAL_ALPHANUMERIC_SYMBOLS
+    )
+    BLOCKS_BY_NAME.update("Sutton SignWriting", SUTTON_SIGNWRITING)
+    BLOCKS_BY_NAME.update("SuttonSignWriting", SUTTON_SIGNWRITING)
+    BLOCKS_BY_NAME.update("SUTTON_SIGNWRITING", SUTTON_SIGNWRITING)
+    BLOCKS_BY_NAME.update("Latin Extended-G", LATIN_EXTENDED_G)
+    BLOCKS_BY_NAME.update("LatinExtended-G", LATIN_EXTENDED_G)
+    BLOCKS_BY_NAME.update("LATIN_EXTENDED_G", LATIN_EXTENDED_G)
+    BLOCKS_BY_NAME.update("Glagolitic Supplement", GLAGOLITIC_SUPPLEMENT)
+    BLOCKS_BY_NAME.update("GlagoliticSupplement", GLAGOLITIC_SUPPLEMENT)
+    BLOCKS_BY_NAME.update("GLAGOLITIC_SUPPLEMENT", GLAGOLITIC_SUPPLEMENT)
+    BLOCKS_BY_NAME.update("Cyrillic Extended-D", CYRILLIC_EXTENDED_D)
+    BLOCKS_BY_NAME.update("CyrillicExtended-D", CYRILLIC_EXTENDED_D)
+    BLOCKS_BY_NAME.update("CYRILLIC_EXTENDED_D", CYRILLIC_EXTENDED_D)
+    BLOCKS_BY_NAME.update("Nyiakeng Puachue Hmong", NYIAKENG_PUACHUE_HMONG)
+    BLOCKS_BY_NAME.update("NyiakengPuachueHmong", NYIAKENG_PUACHUE_HMONG)
+    BLOCKS_BY_NAME.update("NYIAKENG_PUACHUE_HMONG", NYIAKENG_PUACHUE_HMONG)
+    BLOCKS_BY_NAME.update("Toto", TOTO)
+    BLOCKS_BY_NAME.update("TOTO", TOTO)
+    BLOCKS_BY_NAME.update("Wancho", WANCHO)
+    BLOCKS_BY_NAME.update("WANCHO", WANCHO)
+    BLOCKS_BY_NAME.update("Nag Mundari", NAG_MUNDARI)
+    BLOCKS_BY_NAME.update("NagMundari", NAG_MUNDARI)
+    BLOCKS_BY_NAME.update("NAG_MUNDARI", NAG_MUNDARI)
+    BLOCKS_BY_NAME.update("Ethiopic Extended-B", ETHIOPIC_EXTENDED_B)
+    BLOCKS_BY_NAME.update("EthiopicExtended-B", ETHIOPIC_EXTENDED_B)
+    BLOCKS_BY_NAME.update("ETHIOPIC_EXTENDED_B", ETHIOPIC_EXTENDED_B)
+    BLOCKS_BY_NAME.update("Mende Kikakui", MENDE_KIKAKUI)
+    BLOCKS_BY_NAME.update("MendeKikakui", MENDE_KIKAKUI)
+    BLOCKS_BY_NAME.update("MENDE_KIKAKUI", MENDE_KIKAKUI)
+    BLOCKS_BY_NAME.update("Adlam", ADLAM)
+    BLOCKS_BY_NAME.update("ADLAM", ADLAM)
+    BLOCKS_BY_NAME.update("Indic Siyaq Numbers", INDIC_SIYAQ_NUMBERS)
+    BLOCKS_BY_NAME.update("IndicSiyaqNumbers", INDIC_SIYAQ_NUMBERS)
+    BLOCKS_BY_NAME.update("INDIC_SIYAQ_NUMBERS", INDIC_SIYAQ_NUMBERS)
+    BLOCKS_BY_NAME.update("Ottoman Siyaq Numbers", OTTOMAN_SIYAQ_NUMBERS)
+    BLOCKS_BY_NAME.update("OttomanSiyaqNumbers", OTTOMAN_SIYAQ_NUMBERS)
+    BLOCKS_BY_NAME.update("OTTOMAN_SIYAQ_NUMBERS", OTTOMAN_SIYAQ_NUMBERS)
+    BLOCKS_BY_NAME.update(
+      "Arabic Mathematical Alphabetic Symbols",
+      ARABIC_MATHEMATICAL_ALPHABETIC_SYMBOLS
+    )
+    BLOCKS_BY_NAME.update(
+      "ArabicMathematicalAlphabeticSymbols",
+      ARABIC_MATHEMATICAL_ALPHABETIC_SYMBOLS
+    )
+    BLOCKS_BY_NAME.update(
+      "ARABIC_MATHEMATICAL_ALPHABETIC_SYMBOLS",
+      ARABIC_MATHEMATICAL_ALPHABETIC_SYMBOLS
+    )
+    BLOCKS_BY_NAME.update("Mahjong Tiles", MAHJONG_TILES)
+    BLOCKS_BY_NAME.update("MahjongTiles", MAHJONG_TILES)
+    BLOCKS_BY_NAME.update("MAHJONG_TILES", MAHJONG_TILES)
+    BLOCKS_BY_NAME.update("Domino Tiles", DOMINO_TILES)
+    BLOCKS_BY_NAME.update("DominoTiles", DOMINO_TILES)
+    BLOCKS_BY_NAME.update("DOMINO_TILES", DOMINO_TILES)
+    BLOCKS_BY_NAME.update("Playing Cards", PLAYING_CARDS)
+    BLOCKS_BY_NAME.update("PlayingCards", PLAYING_CARDS)
+    BLOCKS_BY_NAME.update("PLAYING_CARDS", PLAYING_CARDS)
+    BLOCKS_BY_NAME.update(
+      "Enclosed Alphanumeric Supplement",
+      ENCLOSED_ALPHANUMERIC_SUPPLEMENT
+    )
+    BLOCKS_BY_NAME.update(
+      "EnclosedAlphanumericSupplement",
+      ENCLOSED_ALPHANUMERIC_SUPPLEMENT
+    )
+    BLOCKS_BY_NAME.update(
+      "ENCLOSED_ALPHANUMERIC_SUPPLEMENT",
+      ENCLOSED_ALPHANUMERIC_SUPPLEMENT
+    )
+    BLOCKS_BY_NAME.update(
+      "Enclosed Ideographic Supplement",
+      ENCLOSED_IDEOGRAPHIC_SUPPLEMENT
+    )
+    BLOCKS_BY_NAME.update(
+      "EnclosedIdeographicSupplement",
+      ENCLOSED_IDEOGRAPHIC_SUPPLEMENT
+    )
+    BLOCKS_BY_NAME.update(
+      "ENCLOSED_IDEOGRAPHIC_SUPPLEMENT",
+      ENCLOSED_IDEOGRAPHIC_SUPPLEMENT
+    )
+    BLOCKS_BY_NAME.update(
+      "Miscellaneous Symbols and Pictographs",
+      MISCELLANEOUS_SYMBOLS_AND_PICTOGRAPHS
+    )
+    BLOCKS_BY_NAME.update(
+      "MiscellaneousSymbolsandPictographs",
+      MISCELLANEOUS_SYMBOLS_AND_PICTOGRAPHS
+    )
+    BLOCKS_BY_NAME.update(
+      "MISCELLANEOUS_SYMBOLS_AND_PICTOGRAPHS",
+      MISCELLANEOUS_SYMBOLS_AND_PICTOGRAPHS
+    )
+    BLOCKS_BY_NAME.update("Emoticons", EMOTICONS)
+    BLOCKS_BY_NAME.update("EMOTICONS", EMOTICONS)
+    BLOCKS_BY_NAME.update("Ornamental Dingbats", ORNAMENTAL_DINGBATS)
+    BLOCKS_BY_NAME.update("OrnamentalDingbats", ORNAMENTAL_DINGBATS)
+    BLOCKS_BY_NAME.update("ORNAMENTAL_DINGBATS", ORNAMENTAL_DINGBATS)
+    BLOCKS_BY_NAME.update(
+      "Transport and Map Symbols",
+      TRANSPORT_AND_MAP_SYMBOLS
+    )
+    BLOCKS_BY_NAME.update("TransportandMapSymbols", TRANSPORT_AND_MAP_SYMBOLS)
+    BLOCKS_BY_NAME.update(
+      "TRANSPORT_AND_MAP_SYMBOLS",
+      TRANSPORT_AND_MAP_SYMBOLS
+    )
+    BLOCKS_BY_NAME.update("Alchemical Symbols", ALCHEMICAL_SYMBOLS)
+    BLOCKS_BY_NAME.update("AlchemicalSymbols", ALCHEMICAL_SYMBOLS)
+    BLOCKS_BY_NAME.update("ALCHEMICAL_SYMBOLS", ALCHEMICAL_SYMBOLS)
+    BLOCKS_BY_NAME.update(
+      "Geometric Shapes Extended",
+      GEOMETRIC_SHAPES_EXTENDED
+    )
+    BLOCKS_BY_NAME.update("GeometricShapesExtended", GEOMETRIC_SHAPES_EXTENDED)
+    BLOCKS_BY_NAME.update(
+      "GEOMETRIC_SHAPES_EXTENDED",
+      GEOMETRIC_SHAPES_EXTENDED
+    )
+    BLOCKS_BY_NAME.update("Supplemental Arrows-C", SUPPLEMENTAL_ARROWS_C)
+    BLOCKS_BY_NAME.update("SupplementalArrows-C", SUPPLEMENTAL_ARROWS_C)
+    BLOCKS_BY_NAME.update("SUPPLEMENTAL_ARROWS_C", SUPPLEMENTAL_ARROWS_C)
+    BLOCKS_BY_NAME.update(
+      "Supplemental Symbols and Pictographs",
+      SUPPLEMENTAL_SYMBOLS_AND_PICTOGRAPHS
+    )
+    BLOCKS_BY_NAME.update(
+      "SupplementalSymbolsandPictographs",
+      SUPPLEMENTAL_SYMBOLS_AND_PICTOGRAPHS
+    )
+    BLOCKS_BY_NAME.update(
+      "SUPPLEMENTAL_SYMBOLS_AND_PICTOGRAPHS",
+      SUPPLEMENTAL_SYMBOLS_AND_PICTOGRAPHS
+    )
+    BLOCKS_BY_NAME.update("Chess Symbols", CHESS_SYMBOLS)
+    BLOCKS_BY_NAME.update("ChessSymbols", CHESS_SYMBOLS)
+    BLOCKS_BY_NAME.update("CHESS_SYMBOLS", CHESS_SYMBOLS)
+    BLOCKS_BY_NAME.update(
+      "Symbols and Pictographs Extended-A",
+      SYMBOLS_AND_PICTOGRAPHS_EXTENDED_A
+    )
+    BLOCKS_BY_NAME.update(
+      "SymbolsandPictographsExtended-A",
+      SYMBOLS_AND_PICTOGRAPHS_EXTENDED_A
+    )
+    BLOCKS_BY_NAME.update(
+      "SYMBOLS_AND_PICTOGRAPHS_EXTENDED_A",
+      SYMBOLS_AND_PICTOGRAPHS_EXTENDED_A
+    )
+    BLOCKS_BY_NAME.update(
+      "Symbols for Legacy Computing",
+      SYMBOLS_FOR_LEGACY_COMPUTING
+    )
+    BLOCKS_BY_NAME.update(
+      "SymbolsforLegacyComputing",
+      SYMBOLS_FOR_LEGACY_COMPUTING
+    )
+    BLOCKS_BY_NAME.update(
+      "SYMBOLS_FOR_LEGACY_COMPUTING",
+      SYMBOLS_FOR_LEGACY_COMPUTING
     )
     BLOCKS_BY_NAME.update(
       "CJK Unified Ideographs Extension B",
@@ -2543,6 +3772,66 @@ object Character {
       CJK_UNIFIED_IDEOGRAPHS_EXTENSION_B
     )
     BLOCKS_BY_NAME.update(
+      "CJK Unified Ideographs Extension C",
+      CJK_UNIFIED_IDEOGRAPHS_EXTENSION_C
+    )
+    BLOCKS_BY_NAME.update(
+      "CJKUnifiedIdeographsExtensionC",
+      CJK_UNIFIED_IDEOGRAPHS_EXTENSION_C
+    )
+    BLOCKS_BY_NAME.update(
+      "CJK_UNIFIED_IDEOGRAPHS_EXTENSION_C",
+      CJK_UNIFIED_IDEOGRAPHS_EXTENSION_C
+    )
+    BLOCKS_BY_NAME.update(
+      "CJK Unified Ideographs Extension D",
+      CJK_UNIFIED_IDEOGRAPHS_EXTENSION_D
+    )
+    BLOCKS_BY_NAME.update(
+      "CJKUnifiedIdeographsExtensionD",
+      CJK_UNIFIED_IDEOGRAPHS_EXTENSION_D
+    )
+    BLOCKS_BY_NAME.update(
+      "CJK_UNIFIED_IDEOGRAPHS_EXTENSION_D",
+      CJK_UNIFIED_IDEOGRAPHS_EXTENSION_D
+    )
+    BLOCKS_BY_NAME.update(
+      "CJK Unified Ideographs Extension E",
+      CJK_UNIFIED_IDEOGRAPHS_EXTENSION_E
+    )
+    BLOCKS_BY_NAME.update(
+      "CJKUnifiedIdeographsExtensionE",
+      CJK_UNIFIED_IDEOGRAPHS_EXTENSION_E
+    )
+    BLOCKS_BY_NAME.update(
+      "CJK_UNIFIED_IDEOGRAPHS_EXTENSION_E",
+      CJK_UNIFIED_IDEOGRAPHS_EXTENSION_E
+    )
+    BLOCKS_BY_NAME.update(
+      "CJK Unified Ideographs Extension F",
+      CJK_UNIFIED_IDEOGRAPHS_EXTENSION_F
+    )
+    BLOCKS_BY_NAME.update(
+      "CJKUnifiedIdeographsExtensionF",
+      CJK_UNIFIED_IDEOGRAPHS_EXTENSION_F
+    )
+    BLOCKS_BY_NAME.update(
+      "CJK_UNIFIED_IDEOGRAPHS_EXTENSION_F",
+      CJK_UNIFIED_IDEOGRAPHS_EXTENSION_F
+    )
+    BLOCKS_BY_NAME.update(
+      "CJK Unified Ideographs Extension I",
+      CJK_UNIFIED_IDEOGRAPHS_EXTENSION_I
+    )
+    BLOCKS_BY_NAME.update(
+      "CJKUnifiedIdeographsExtensionI",
+      CJK_UNIFIED_IDEOGRAPHS_EXTENSION_I
+    )
+    BLOCKS_BY_NAME.update(
+      "CJK_UNIFIED_IDEOGRAPHS_EXTENSION_I",
+      CJK_UNIFIED_IDEOGRAPHS_EXTENSION_I
+    )
+    BLOCKS_BY_NAME.update(
       "CJK Compatibility Ideographs Supplement",
       CJK_COMPATIBILITY_IDEOGRAPHS_SUPPLEMENT
     )
@@ -2554,7 +3843,32 @@ object Character {
       "CJK_COMPATIBILITY_IDEOGRAPHS_SUPPLEMENT",
       CJK_COMPATIBILITY_IDEOGRAPHS_SUPPLEMENT
     )
+    BLOCKS_BY_NAME.update(
+      "CJK Unified Ideographs Extension G",
+      CJK_UNIFIED_IDEOGRAPHS_EXTENSION_G
+    )
+    BLOCKS_BY_NAME.update(
+      "CJKUnifiedIdeographsExtensionG",
+      CJK_UNIFIED_IDEOGRAPHS_EXTENSION_G
+    )
+    BLOCKS_BY_NAME.update(
+      "CJK_UNIFIED_IDEOGRAPHS_EXTENSION_G",
+      CJK_UNIFIED_IDEOGRAPHS_EXTENSION_G
+    )
+    BLOCKS_BY_NAME.update(
+      "CJK Unified Ideographs Extension H",
+      CJK_UNIFIED_IDEOGRAPHS_EXTENSION_H
+    )
+    BLOCKS_BY_NAME.update(
+      "CJKUnifiedIdeographsExtensionH",
+      CJK_UNIFIED_IDEOGRAPHS_EXTENSION_H
+    )
+    BLOCKS_BY_NAME.update(
+      "CJK_UNIFIED_IDEOGRAPHS_EXTENSION_H",
+      CJK_UNIFIED_IDEOGRAPHS_EXTENSION_H
+    )
     BLOCKS_BY_NAME.update("Tags", TAGS)
+    BLOCKS_BY_NAME.update("TAGS", TAGS)
     BLOCKS_BY_NAME.update(
       "Variation Selectors Supplement",
       VARIATION_SELECTORS_SUPPLEMENT
