@@ -43,4 +43,16 @@ class ManagementFactoryTest {
     )
   }
 
+  @Test def getOperatingSystemMXBean(): Unit = {
+    val bean = ManagementFactory.getOperatingSystemMXBean
+
+    assertEquals(bean.getArch(), System.getProperty("os.arch"))
+    assertEquals(bean.getName(), System.getProperty("os.name"))
+    assertEquals(bean.getVersion(), System.getProperty("os.version"))
+    assertEquals(
+      bean.getAvailableProcessors(),
+      Runtime.getRuntime().availableProcessors()
+    )
+  }
+
 }
