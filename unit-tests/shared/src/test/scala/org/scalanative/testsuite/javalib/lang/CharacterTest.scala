@@ -4,8 +4,10 @@ import java.lang._
 
 import org.junit.Test
 import org.junit.Assert._
+import org.junit.Assume._
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
+import org.scalanative.testsuite.utils.Platform.executingInJVM
 
 /** Test suite for [[java.lang.Character]]
  *
@@ -19,8 +21,14 @@ import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 class CharacterTest {
   import java.lang.Character._
 
+  // Note: catching the super class IndexOutOfBoundsException works
+  val assumeExMsg = "JVM ArrayIndex... vs StringIndexOutOfBoundsException"
+
   // codePointAt tests
+
   @Test def codePointAtInvalidValues(): Unit = {
+    assumeFalse(assumeExMsg, executingInJVM)
+
     val str1 = "<invalid values>"
     val arr1 = str1.toArray
 
@@ -189,6 +197,8 @@ class CharacterTest {
   // codePointBefore tests
 
   @Test def codePointBeforeInvalidValues(): Unit = {
+    assumeFalse(assumeExMsg, executingInJVM)
+
     val str1 = "<invalid values>"
     val arr1 = str1.toArray
 
@@ -298,6 +308,7 @@ class CharacterTest {
   }
 
   @Test def codePointBeforeSurrogatePair(): Unit = {
+    assumeFalse(assumeExMsg, executingInJVM)
     // Character.MIN_HIGH_SURROGATE followed by Character.MAX_LOW_SURROGATE
     val str1 = "Denali\uD800\uDFFF"
     val index = str1.length
@@ -446,6 +457,7 @@ class CharacterTest {
   }
 
   @Test def offsetByCodePointsInvalidValues(): Unit = {
+    assumeFalse(assumeExMsg, executingInJVM)
     val str1 = "<bad args>"
     val arr1 = str1.toArray
 
