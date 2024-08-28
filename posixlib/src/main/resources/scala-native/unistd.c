@@ -35,6 +35,11 @@
 #define _SC_TRACE_USER_EVENT_MAX 0
 #endif // __FreeBSD__ || __OpenBSD__ || __NetBSD__
 
+#if defined(__ANDROID__) && !defined(_CS_PATH)
+// Termux does not define _CS_PATH. We follow the same approach as BSD.
+#define _CS_PATH 0
+#endif
+
 long scalanative__posix_version() { return _POSIX_VERSION; }
 
 int scalanative__xopen_version() { return _XOPEN_VERSION; }
