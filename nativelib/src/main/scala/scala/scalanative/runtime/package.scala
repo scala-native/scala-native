@@ -11,6 +11,8 @@ import java.util.concurrent.locks.LockSupport
 
 package object runtime {
   def filename = ExecInfo.filename
+  def startTime: Long = ExecInfo.startTime
+  def uptime: Long = System.currentTimeMillis() - startTime
 
   /** Used as a stub right hand of intrinsified methods. */
   private[scalanative] def intrinsic: Nothing = throwUndefined()
@@ -73,6 +75,7 @@ package object runtime {
     }
 
     ExecInfo.filename = fromCString(argv(0))
+    ExecInfo.startTime = System.currentTimeMillis()
     args
   }
 

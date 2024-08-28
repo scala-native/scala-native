@@ -22,4 +22,5 @@ private[scalanative] object MainThreadShutdownContext {
 
 private object ExecInfo {
   var filename: String = null
+  var startTime: Long = 0L
 }
