@@ -18,6 +18,10 @@ details.
 [scala-java-time](https://github.com/cquiroz/scala-java-time) provides a native, JVM and JS implementation of
 the `java.time` packages
 
+The full timezone database required for `java.time` can be too large for some applications. The
+[sbt-tzdb](https://github.com/cquiroz/sbt-tzdb) `sbt` plugin can  build a custom version of tzdb, which has
+the minimal data your application needs; reducing the size of the application.
+
 ## `java.util.Locale`
 
 [scala-java-locales](https://github.com/cquiroz/scala-java-locales) provides a native, JVM and JS
