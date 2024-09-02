@@ -48,10 +48,12 @@ LLVM optimizers can remove some of the optimized out debug informations.
 For best experience run with disabled optimizations:
 
 ```scala
-nativeConfig ~= {
-  .withSourceLevelDebuggingConfig(_.enableAll) // enable generation of debug informations
+import scala.scalanative.build._
+
+nativeConfig ~= { c =>
+  c.withSourceLevelDebuggingConfig(_.enableAll) // enable generation of debug information
   .withOptimize(false)  // disable Scala Native optimizer
-  .withMode(scalanative.build.Mode.debug) // compile using LLVM without optimizations
+  .withMode(Mode.debug) // compile using LLVM without optimizations
 }
 ```
 
