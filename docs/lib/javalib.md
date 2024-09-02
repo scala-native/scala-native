@@ -1,11 +1,27 @@
 # Java Standard Library
 
-Scala Native supports a subset of the JDK core libraries reimplemented
+Scala Native includes a subset of the JDK core libraries reimplemented
 in Scala.
 
-## Supported classes
+Third-party libraries, like `scala-java-time` and `scala-java-locales`,
+provide more complete implementations for some JDK packages.
 
-For list of currently supported Java Standard Library types and methods refer to [scaladoc package](https://www.javadoc.io/doc/org.scala-native/javalib_native0.5_2.13/latest/index.html) or consult [javalib sources](https://github.com/scala-native/scala-native/tree/main/javalib/src/main/scala/java) for details.
+## Included JDK Implementation
+
+For list of currently supported Java Standard Library types and methods refer to [scaladoc
+package](https://www.javadoc.io/doc/org.scala-native/javalib_native0.5_2.13/latest/index.html) or consult
+[javalib sources](https://github.com/scala-native/scala-native/tree/main/javalib/src/main/scala/java) for
+details.
+
+## `java.time`
+
+[scala-java-time](https://github.com/cquiroz/scala-java-time) provides a native, JVM and JS implementation of
+the `java.time` packages
+
+## `java.util.Locale`
+
+[scala-java-locales](https://github.com/cquiroz/scala-java-locales) provides a native, JVM and JS
+implementation of `java.util.Locale`
 
 ## Regular expressions (java.util.regex)
 
