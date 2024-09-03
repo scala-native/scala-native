@@ -3,6 +3,9 @@
 In this section you can find some tips on how to profile your Scala
 Native binary in Linux.
 
+Scala Native binaries are regular executables. Tools that works with native executables will work with Scala
+Native executables. That includes the Linux `perf` performance analysis tool.
+
 ## Measuring execution time and memory
 
 -   With the `time` command you can measure execution time:
@@ -53,6 +56,19 @@ Exit status: 0
 A [flamegraph](http://www.brendangregg.com/flamegraphs.html) is a
 visualization of the most frequent code-paths of a program. You can use
 flamegraphs to see where your program spends most of its CPU time.
+
+### Use samply
+
+[samply](https://github.com/mstange/samply) is a command line CPU profiler which uses the Firefox profiler as
+its UI. Samply has support for de-mangling Scala Native symbols.
+
+### Use hotspot
+
+[hotspot](https://github.com/KDAB/hotspot) is a GUI for `perf` which provides a flamegraph view. As of this
+writing, hotspot does not de-mangle Scala Native symbols.
+
+### Using using `perf` and `FlameGraph`
+
 Follow these steps:
 
 -   You need to install the `perf` command if you haven't got it
