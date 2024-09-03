@@ -18,6 +18,10 @@ details.
 [scala-java-time](https://github.com/cquiroz/scala-java-time) provides a native, JVM and JS implementation of
 the `java.time` packages
 
+[sjavatime](https://github.com/ekrich/sjavatime) provides a native and JS implementation of the `java.time`
+API. While not yet as full features as `scala-java-time` this is useful if a minimal implementation is
+required.
+
 The full timezone database required for `java.time` can be too large for some applications. The
 [sbt-tzdb](https://github.com/cquiroz/sbt-tzdb) `sbt` plugin can  build a custom version of tzdb, which has
 the minimal data your application needs; reducing the size of the application.
