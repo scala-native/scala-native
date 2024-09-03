@@ -65,7 +65,7 @@ its UI. Samply has support for de-mangling Scala Native symbols.
 ### Use hotspot
 
 [hotspot](https://github.com/KDAB/hotspot) is a GUI for `perf` which provides a flamegraph view. As of this
-writing, hotspot does not de-mangle Scala native symbols.
+writing, hotspot does not de-mangle Scala Native symbols.
 
 ### Using using `perf` and `FlameGraph`
 
