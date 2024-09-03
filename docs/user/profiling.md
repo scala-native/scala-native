@@ -60,7 +60,7 @@ flamegraphs to see where your program spends most of its CPU time.
 ### Use samply
 
 [samply](https://github.com/mstange/samply) is a command line CPU profiler which uses the Firefox profiler as
-its UI. Samply has support for de-mangling Scala native symbols.
+its UI. Samply has support for de-mangling Scala Native symbols.
 
 ### Use hotspot
 
