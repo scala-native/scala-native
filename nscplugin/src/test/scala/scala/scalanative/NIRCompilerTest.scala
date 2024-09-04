@@ -786,7 +786,7 @@ class NIRCompilerTest {
     // Unable to compile lazy val in trait
     NIRCompiler(_.compile("""
       |trait Source { 
-      |  lazy val (lineStarts, charCount, lineCount) = ???
+      |  lazy val (lineStarts, charCount, lineCount) = (1, 2, 3)
       |}
       | 
       |class StringSource extends Source
