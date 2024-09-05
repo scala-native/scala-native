@@ -782,4 +782,14 @@ class NIRCompilerTest {
     )
   }
 
+  @Test def issue4044(): Unit = {
+    // Unable to compile lazy val in trait
+    NIRCompiler(_.compile("""
+      |trait Source { 
+      |  lazy val (lineStarts, charCount, lineCount) = (1, 2, 3)
+      |}
+      | 
+      |class StringSource extends Source
+      |""".stripMargin))
+  }
 }

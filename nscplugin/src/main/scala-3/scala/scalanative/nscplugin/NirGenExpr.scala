@@ -2650,7 +2650,7 @@ trait NirGenExpr(using Context) {
       val classInfo = target.tpe.finalResultType
       val classInfoSym = classInfo.typeSymbol.asClass
       def matchesName(f: SingleDenotation) =
-        f.name.mangled == termName(fieldNameId).mangled
+        f.name.mangledString == fieldNameId
       def isImmutableField(f: SymDenotation) = {
         // If `val` was defined in trait it would be internally mutable, but with stable accessors
         !f.is(Mutable) || classInfoSym.parentSyms.exists(s =>

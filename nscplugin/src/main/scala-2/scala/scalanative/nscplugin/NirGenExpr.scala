@@ -2541,7 +2541,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       val classInfo = target.tpe.finalResultType
       val classInfoSym = classInfo.typeSymbol.asClass
       def matchesName(f: Symbol) = {
-        f.nameString == TermName(fieldNameId).toString()
+        f.nameString == fieldNameId
       }
 
       val candidates =
