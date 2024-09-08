@@ -870,9 +870,9 @@ class ConcurrentLinkedDeque[E <: AnyRef]
    *  collection, added in traversal order of the collection's iterator.
    *
    *  @param c
-   *    the collection of elements to initially contain
-   *  @throws NullPointerException
-   *    if the specified collection or any of its elements are null
+   *    the collection of elements to initially contain throws
+   *    NullPointerException if the specified collection or any of its elements
+   *    are null
    */
 
   def this(c: util.Collection[_ <: E]) = {
@@ -920,21 +920,19 @@ class ConcurrentLinkedDeque[E <: AnyRef]
   }
 
   /** Inserts the specified element at the front of this deque. As the deque is
-   *  unbounded, this method will never throw {@link IllegalStateException}.
+   *  unbounded, this method will never throw IllegalStateException.
    *
-   *  @throws NullPointerException
-   *    if the specified element is null
+   *  throws NullPointerException if the specified element is null
    */
   override def addFirst(e: E): Unit =
     linkFirst(e)
 
   /** Inserts the specified element at the end of this deque. As the deque is
-   *  unbounded, this method will never throw {@link IllegalStateException}.
+   *  unbounded, this method will never throw IllegalStateException.
    *
-   *  <p>This method is equivalent to {@link # add}.
+   *  <p>This method is equivalent to add().
    *
-   *  @throws NullPointerException
-   *    if the specified element is null
+   *  throws NullPointerException if the specified element is null
    */
   override def addLast(e: E): Unit =
     linkLast(e)
@@ -943,9 +941,8 @@ class ConcurrentLinkedDeque[E <: AnyRef]
    *  unbounded, this method will never return {@code false}.
    *
    *  @return
-   *    {@code true} (as specified by {@link Deque# offerFirst})
-   *  @throws NullPointerException
-   *    if the specified element is null
+   *    {@code true} (as specified by {@link Deque# offerFirst}) throws
+   *    NullPointerException if the specified element is null
    */
   override def offerFirst(e: E): Boolean = {
     linkFirst(e)
@@ -955,12 +952,11 @@ class ConcurrentLinkedDeque[E <: AnyRef]
   /** Inserts the specified element at the end of this deque. As the deque is
    *  unbounded, this method will never return {@code false}.
    *
-   *  <p>This method is equivalent to {@link # add}.
+   *  <p>This method is equivalent to add().
    *
    *  @return
-   *    {@code true} (as specified by {@link Deque# offerLast})
-   *  @throws NullPointerException
-   *    if the specified element is null
+   *    {@code true} (as specified by {@link Deque# offerLast}) throws
+   *    NullPointerException if the specified element is null
    */
   override def offerLast(e: E): Boolean = {
     linkLast(e)
@@ -987,13 +983,11 @@ class ConcurrentLinkedDeque[E <: AnyRef]
     null.asInstanceOf[E]
   }
 
-  /** @throws NoSuchElementException
-   *    {@inheritDoc }
+  /** throws NoSuchElementException
    */
   override def getFirst(): E = screenNullResult(peekFirst())
 
-  /** @throws NoSuchElementException
-   *    {@inheritDoc }
+  /** throws NoSuchElementException
    */
   override def getLast(): E = screenNullResult(peekLast())
 
@@ -1030,13 +1024,11 @@ class ConcurrentLinkedDeque[E <: AnyRef]
     null.asInstanceOf[E]
   }
 
-  /** @throws NoSuchElementException
-   *    {@inheritDoc }
+  /** throws NoSuchElementException
    */
   override def removeFirst(): E = screenNullResult(pollFirst())
 
-  /** @throws NoSuchElementException
-   *    {@inheritDoc }
+  /** throws NoSuchElementException
    */
   override def removeLast(): E = screenNullResult(pollLast())
 
@@ -1044,21 +1036,19 @@ class ConcurrentLinkedDeque[E <: AnyRef]
    *  unbounded, this method will never return {@code false}.
    *
    *  @return
-   *    {@code true} (as specified by {@link Queue# offer})
-   *  @throws NullPointerException
-   *    if the specified element is null
+   *    {@code true} (as specified by {@link Queue# offer}) throws
+   *    NullPointerException if the specified element is null
    */
   // *** Queue and stack methods ***
   override def offer(e: E): Boolean = offerLast(e)
 
   /** Inserts the specified element at the tail of this deque. As the deque is
-   *  unbounded, this method will never throw {@link IllegalStateException} or
-   *  return {@code false}.
+   *  unbounded, this method will never throw IllegalStateException or return
+   *  {@code false}.
    *
    *  @return
-   *    {@code true} (as specified by {@link Collection# add})
-   *  @throws NullPointerException
-   *    if the specified element is null
+   *    {@code true} (as specified by {@link Collection# add}) throws
+   *    NullPointerException if the specified element is null
    */
   override def add(e: E): Boolean = offerLast(e)
 
@@ -1067,22 +1057,18 @@ class ConcurrentLinkedDeque[E <: AnyRef]
   override def peek(): E = peekFirst()
 
   /** @throws NoSuchElementException
-   *    {@inheritDoc }
    */
   override def remove(): E = removeFirst()
 
   /** @throws NoSuchElementException
-   *    {@inheritDoc }
    */
   override def pop(): E = removeFirst()
 
   /** @throws NoSuchElementException
-   *    {@inheritDoc }
    */
   override def element(): E = getFirst()
 
-  /** @throws NullPointerException
-   *    {@inheritDoc }
+  /** throws NullPointerException
    */
   override def push(e: E): Unit = addFirst(e)
 
@@ -1096,9 +1082,8 @@ class ConcurrentLinkedDeque[E <: AnyRef]
    *  @param o
    *    element to be removed from this deque, if present
    *  @return
-   *    {@code true} if the deque contained the specified element
-   *  @throws NullPointerException
-   *    if the specified element is null
+   *    {@code true} if the deque contained the specified element throws
+   *    NullPointerException if the specified element is null
    */
   override def removeFirstOccurrence(o: Any): Boolean = {
     Objects.requireNonNull(o)
@@ -1124,9 +1109,8 @@ class ConcurrentLinkedDeque[E <: AnyRef]
    *  @param o
    *    element to be removed from this deque, if present
    *  @return
-   *    {@code true} if the deque contained the specified element
-   *  @throws NullPointerException
-   *    if the specified element is null
+   *    {@code true} if the deque contained the specified element throws
+   *    NullPointerException if the specified element is null
    */
   override def removeLastOccurrence(o: Any): Boolean = {
     Objects.requireNonNull(o)
@@ -1212,15 +1196,13 @@ class ConcurrentLinkedDeque[E <: AnyRef]
    *  specified element (or equivalently, if this deque changed as a result of
    *  the call).
    *
-   *  <p>This method is equivalent to {@link # removeFirstOccurrence ( Object
-   *  )}.
+   *  <p>This method is equivalent to removeFirstOccurrence(Object)}.
    *
    *  @param o
    *    element to be removed from this deque, if present
    *  @return
-   *    {@code true} if the deque contained the specified element
-   *  @throws NullPointerException
-   *    if the specified element is null
+   *    {@code true} if the deque contained the specified element throws
+   *    NullPointerException if the specified element is null
    */
   override def remove(o: Any): Boolean = removeFirstOccurrence(o)
 
@@ -1232,11 +1214,9 @@ class ConcurrentLinkedDeque[E <: AnyRef]
    *  @param c
    *    the elements to be inserted into this deque
    *  @return
-   *    {@code true} if this deque changed as a result of the call
-   *  @throws NullPointerException
-   *    if the specified collection or any of its elements are null
-   *  @throws IllegalArgumentException
-   *    if the collection is this deque
+   *    {@code true} if this deque changed as a result of the call throws
+   *    NullPointerException if the specified collection or any of its elements
+   *    are null throws IllegalArgumentException if the collection is this deque
    */
   override def addAll(c: util.Collection[_ <: E]): Boolean = {
     if (c eq this)
@@ -1386,10 +1366,10 @@ class ConcurrentLinkedDeque[E <: AnyRef]
    *  array has more elements than this deque), the element in the array
    *  immediately following the end of the deque is set to {@code null}.
    *
-   *  <p>Like the {@link # toArray ( )} method, this method acts as bridge
-   *  between array-based and collection-based APIs. Further, this method allows
-   *  precise control over the runtime type of the output array, and may, under
-   *  certain circumstances, be used to save allocation costs.
+   *  <p>Like the toArray() method, this method acts as bridge between
+   *  array-based and collection-based APIs. Further, this method allows precise
+   *  control over the runtime type of the output array, and may, under certain
+   *  circumstances, be used to save allocation costs.
    *
    *  <p>Suppose {@code x} is a deque known to contain only strings. The
    *  following code can be used to dump the deque into a newly allocated array
@@ -1405,16 +1385,13 @@ class ConcurrentLinkedDeque[E <: AnyRef]
    *    is big enough; otherwise, a new array of the same runtime type is
    *    allocated for this purpose
    *  @return
-   *    an array containing all of the elements in this deque
-   *  @throws ArrayStoreException
-   *    if the runtime type of the specified array is not a supertype of the
-   *    runtime type of every element in this deque
-   *  @throws NullPointerException
-   *    if the specified array is null
+   *    an array containing all of the elements in this deque throws
+   *    ArrayStoreException if the runtime type of the specified array is not a
+   *    supertype of the runtime type of every element in this deque throws
+   *    NullPointerException if the specified array is null
    */
 
   override def toArray[T <: AnyRef](a: Array[T]): Array[T] = {
-//  override def toArray[T](a: Array[T]): Array[T] = {
     Objects.requireNonNull(a)
     toArrayInternal(a.asInstanceOf[Array[AnyRef]]).asInstanceOf[Array[T]]
   }
@@ -1530,17 +1507,15 @@ class ConcurrentLinkedDeque[E <: AnyRef]
     override private[concurrent] def nextNode(p: Node[E]): Node[E] = pred(p)
   }
 
-  /** Returns a {@link Spliterator} over the elements in this deque.
+  /** Returns a Spliterator over the elements in this deque.
    *
-   *  <p>The returned spliterator is <a
-   *  href="package-summary.html#Weakly"><i>weakly consistent</i></a>.
+   *  <p>The returned spliterator is <i>weakly consistent</i></a>.
    *
-   *  <p>The {@code Spliterator} reports {@link Spliterator# CONCURRENT}, {@link
-   *  Spliterator# ORDERED}, and {@link Spliterator# NONNULL}.
+   *  <p>The {@code Spliterator} reports Spliterator#CONCURRENT,
+   *  Spliterator#ORDERED, and Spliterator#NONNULL .
    *
-   *  @implNote
-   *    The {@code Spliterator} implements {@code trySplit} to permit limited
-   *    parallelism.
+   *  Implementation Note: The {@code Spliterator} implements {@code trySplit}
+   *  to permit limited parallelism.
    *  @return
    *    a {@code Spliterator} over the elements in this deque
    *  @since 1.8
