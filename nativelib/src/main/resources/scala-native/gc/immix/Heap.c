@@ -28,9 +28,7 @@ bool Heap_isGrowingPossible(Heap *heap, uint32_t incrementInBlocks) {
 }
 
 size_t Heap_getMemoryLimit() {
-    size_t memorySize = getFreeMemorySize();
-    if (memorySize == 0)
-        memorySize = getMemorySize();
+    size_t memorySize = getMemorySize();
     if ((uint64_t)memorySize > MAX_HEAP_SIZE) {
         return (size_t)MAX_HEAP_SIZE;
     } else {
