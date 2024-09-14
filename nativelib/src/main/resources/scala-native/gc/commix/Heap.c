@@ -167,6 +167,13 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
 
     // Init heap for small objects
     word_t *heapStart = Heap_mapAndAlign(maxHeapSize, BLOCK_TOTAL_SIZE);
+    if (!heapStart) {
+        fprintf(stderr,
+                "[Scala Native Commix GC] Failed to allocate heap space, size=%.2fMB. Consider setting "
+                "GC_MAXIMUM_HEAP_SIZE env variable to limit maximal heap size",
+                maxHeapSize / (1024.0 * 1024.0));
+        exit(1);
+    }
     heap->heapSize = minHeapSize;
     heap->heapStart = heapStart;
     heap->heapEnd = heapStart + minHeapSize / WORD_SIZE;
