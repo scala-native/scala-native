@@ -418,9 +418,9 @@ object Integer {
   }
 
   def toString(i: scala.Int): String = {
-    if (i == 0) {"0"}
-    else if (i == java.lang.Integer.MIN_VALUE) {"-2147483648"}
-    else if (i == java.lang.Integer.MAX_VALUE) {"2147483647"}
+    if (i == 0) { "0" }
+    else if (i == java.lang.Integer.MIN_VALUE) { "-2147483648" }
+    else if (i == java.lang.Integer.MAX_VALUE) { "2147483647" }
     else {
       val negative = i < 0
       val bufferSize = if (i < 1000 && i > -1000) 4 else 11
