@@ -17,13 +17,7 @@
 #include <assert.h>
 
 // Dummy GC that maps chunks of memory and allocates but never frees.
-#ifdef _WIN32
-// On Windows we need to commit memory in relatively small chunks - this way
-// process would not use too much resources.
 #define DEFAULT_CHUNK_SIZE "64M"
-#else
-#define DEFAULT_CHUNK_SIZE "1G"
-#endif
 
 #if defined(__has_feature)
 #if __has_feature(address_sanitizer)
@@ -51,7 +45,7 @@ size_t scalanative_GC_get_init_heapsize() {
 }
 
 size_t scalanative_GC_get_max_heapsize() {
-    return Parse_Env_Or_Default("GC_MAXIMUM_HEAP_SIZE", getFreeMemorySize());
+    return Parse_Env_Or_Default("GC_MAXIMUM_HEAP_SIZE", getMemorySize());
 }
 
 size_t scalanative_GC_get_used_heapsize() { return TOTAL_ALLOCATED; }
@@ -60,19 +54,25 @@ void Prealloc_Or_Default() {
 
     if (TO_NORMAL_MMAP == 1L) { // Check if we have prealloc env varible
                                 // or execute default mmap settings
-        size_t memorySize = getFreeMemorySize();
-        if (memorySize == 0)
-            memorySize = getMemorySize();
-        assert(memorySize > 0);
+        size_t memorySize = getMemorySize();
 
-        DEFAULT_CHUNK = // Default Maximum allocation Map 1GB
+#if defined(SCALANATIVE_MULTITHREADING_ENABLED)
+        // Every starting thread would want to allocate chunk of memory.
+        // We want to limit their size to prevent OOM errors.
+        DEFAULT_CHUNK =
+            Choose_IF(Parse_Env_Or_Default_String("GC_THREAD_HEAP_BLOCK_SIZE",
+                                                  DEFAULT_CHUNK_SIZE),
+                      Less_OR_Equal, memorySize);
+        // Preallocation not support in multithreading mode
+#else
+        DEFAULT_CHUNK =
             Choose_IF(Parse_Env_Or_Default_String("GC_MAXIMUM_HEAP_SIZE",
                                                   DEFAULT_CHUNK_SIZE),
                       Less_OR_Equal, memorySize);
-
         PREALLOC_CHUNK = // Preallocation
             Choose_IF(Parse_Env_Or_Default("GC_INITIAL_HEAP_SIZE", 0L),
                       Less_OR_Equal, DEFAULT_CHUNK);
+#endif
 
         if (PREALLOC_CHUNK == 0L) { // no prealloc settings.
             CHUNK = DEFAULT_CHUNK;
@@ -97,7 +97,16 @@ void scalanative_GC_init() {
     Prealloc_Or_Default();
     current = memoryMapPrealloc(CHUNK, DO_PREALLOC);
     if (current == NULL) {
-        exitWithOutOfMemory();
+        const float bytesToMB = 1024.0 * 1024.0;
+        fprintf(stderr,
+                "[Scala Native None GC] Failed to allocate or grow heap space, "
+                "requested size=%.2fMB, available memory=%.2fMB, already "
+                "allocated=%.2fMB, should preallocate=%s. Consider setting "
+                "GC_MAXIMUM_HEAP_SIZE env variable to limit maximal heap size",
+                CHUNK / bytesToMB, getFreeMemorySize() / bytesToMB,
+                TOTAL_ALLOCATED / bytesToMB,
+                DO_PREALLOC == 0 ? "false" : "true");
+        exit(1);
     }
     end = current + CHUNK;
 #ifdef _WIN32

@@ -18,8 +18,10 @@ go from 1 MB to the system memory maximum or up to about 512 GB. The
 size is in bytes, kilobytes(k or K), megabytes(m or M), or gigabytes(g
 or G). Examples: 1024k, 1M, or 1G etc.
 
--   GC_INITIAL_HEAP_SIZE changes the minimum heap size.
--   GC_MAXIMUM_HEAP_SIZE changes the maximum heap size.
+- GC_INITIAL_HEAP_SIZE changes the minimum heap size.
+- GC_MAXIMUM_HEAP_SIZE changes the maximum heap size.
+
+The `GC_INITIAL_HEAP_SIZE` and `GC_MAXIMUM_HEAP_SIZE` are ignored by None GC when multithreading is enabled. When using this pseudo-GC implementation `GC_THREAD_HEAP_BLOCK_SIZE` env variable can be set to control the granuality of allocted heap memory blocks for each of the threads (defaults to 64MB). This env variable is ignored in sigle-threaded execution.
 
 The plan is to add more GC settings in the future using the Boehm
 setting names where applicable.

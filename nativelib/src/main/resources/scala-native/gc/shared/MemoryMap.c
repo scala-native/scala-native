@@ -44,8 +44,11 @@ word_t *memoryMap(size_t memorySize) {
     // supports only 32-bit address space and is in most cases not recommended.
     return VirtualAlloc(NULL, memorySize, MEM_RESERVE, PAGE_NOACCESS);
 #else // Unix
-    return mmap(NULL, memorySize, HEAP_MEM_PROT, HEAP_MEM_FLAGS, HEAP_MEM_FD,
-                HEAP_MEM_FD_OFFSET);
+    word_t *addr = mmap(NULL, memorySize, HEAP_MEM_PROT, HEAP_MEM_FLAGS,
+                        HEAP_MEM_FD, HEAP_MEM_FD_OFFSET);
+    if (addr == MAP_FAILED)
+        return NULL;
+    return addr;
 #endif
 }
 
@@ -65,15 +68,18 @@ word_t *memoryMapPrealloc(size_t memorySize, size_t doPrealloc) {
     if (!doPrealloc) {
         return memoryMap(memorySize);
     }
-    word_t *res = mmap(NULL, memorySize, HEAP_MEM_PROT, HEAP_MEM_FLAGS_PREALLOC,
-                       HEAP_MEM_FD, HEAP_MEM_FD_OFFSET);
+    word_t *addr =
+        mmap(NULL, memorySize, HEAP_MEM_PROT, HEAP_MEM_FLAGS_PREALLOC,
+             HEAP_MEM_FD, HEAP_MEM_FD_OFFSET);
+    if (addr == MAP_FAILED)
+        return NULL;
 #ifndef __linux__
     // if we are not on linux the next best thing we can do is to mark the pages
     // as MADV_WILLNEED but only if doPrealloc is enabled.
-    madvise(res, memorySize, MADV_WILLNEED);
+    madvise(addr, memorySize, MADV_WILLNEED);
 #endif // __linux__
 
-    return res;
+    return addr;
 #endif // !_WIN32
 }
 
