@@ -56,8 +56,10 @@ void Prealloc_Or_Default() {
                                 // or execute default mmap settings
         size_t memorySize = getMemorySize();
 
-        DEFAULT_CHUNK = // Default Maximum allocation
-            Choose_IF(DEFAULT_CHUNK_SIZE, Less_OR_Equal, memorySize);
+        DEFAULT_CHUNK =
+            Choose_IF(Parse_Env_Or_Default_String("GC_MAXIMUM_HEAP_CHUNK_SIZE",
+                                                  DEFAULT_CHUNK_SIZE),
+                      Less_OR_Equal, memorySize);
 
         PREALLOC_CHUNK = // Preallocation
             Choose_IF(Parse_Env_Or_Default("GC_INITIAL_HEAP_SIZE", 0L),
@@ -165,8 +167,8 @@ int scalanative_GC_pthread_create(pthread_t *thread, pthread_attr_t *attr,
 #endif
 
 // ScalaNativeGC interface stubs. None GC does not need STW
-void scalanative_GC_set_mutator_thread_state(GC_MutatorThreadState unused){};
-void scalanative_GC_yield(){};
+void scalanative_GC_set_mutator_thread_state(GC_MutatorThreadState unused) {};
+void scalanative_GC_yield() {};
 void scalanative_GC_add_roots(void *addr_low, void *addr_high) {}
 void scalanative_GC_remove_roots(void *addr_low, void *addr_high) {}
 #endif

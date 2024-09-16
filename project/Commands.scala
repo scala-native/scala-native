@@ -31,7 +31,7 @@ object Commands {
       import scala.scalanative.build.GC
       val runs =
         for {
-          gc <- List(GC.immix, GC.commix, GC.boehm, GC.none)
+          gc <- List(GC.none, GC.immix, GC.commix, GC.boehm)
           (project, command) <- Map(
             sandbox -> "run",
             testInterface -> "test",
