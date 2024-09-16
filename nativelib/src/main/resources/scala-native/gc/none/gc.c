@@ -95,7 +95,16 @@ void scalanative_GC_init() {
     Prealloc_Or_Default();
     current = memoryMapPrealloc(CHUNK, DO_PREALLOC);
     if (current == NULL) {
-        exitWithOutOfMemory();
+        const float bytesToMB = 1024.0 * 1024.0;
+        fprintf(stderr,
+                "[Scala Native None GC] Failed to allocate or grow heap space, "
+                "requested size=%.2fMB, available memory=%.2fMB, already "
+                "allocated=%.2fMB, should preallocate=%s. Consider setting "
+                "GC_MAXIMUM_HEAP_SIZE env variable to limit maximal heap size",
+                CHUNK / bytesToMB, getFreeMemorySize() / bytesToMB,
+                TOTAL_ALLOCATED / bytesToMB,
+                DO_PREALLOC == 0 ? "false" : "true");
+        exit(1);
     }
     end = current + CHUNK;
 #ifdef _WIN32
