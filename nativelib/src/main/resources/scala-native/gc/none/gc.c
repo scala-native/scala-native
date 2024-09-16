@@ -17,13 +17,7 @@
 #include <assert.h>
 
 // Dummy GC that maps chunks of memory and allocates but never frees.
-#ifdef _WIN32
-// On Windows we need to commit memory in relatively small chunks - this way
-// process would not use too much resources.
 #define DEFAULT_CHUNK_SIZE "64M"
-#else
-#define DEFAULT_CHUNK_SIZE "1G"
-#endif
 
 #if defined(__has_feature)
 #if __has_feature(address_sanitizer)
@@ -61,12 +55,9 @@ void Prealloc_Or_Default() {
     if (TO_NORMAL_MMAP == 1L) { // Check if we have prealloc env varible
                                 // or execute default mmap settings
         size_t memorySize = getMemorySize();
-        assert(memorySize > 0);
 
-        DEFAULT_CHUNK = // Default Maximum allocation Map 1GB
-            Choose_IF(Parse_Env_Or_Default_String("GC_MAXIMUM_HEAP_SIZE",
-                                                  DEFAULT_CHUNK_SIZE),
-                      Less_OR_Equal, memorySize);
+        DEFAULT_CHUNK = // Default Maximum allocation
+            Choose_IF(DEFAULT_CHUNK_SIZE, Less_OR_Equal, memorySize);
 
         PREALLOC_CHUNK = // Preallocation
             Choose_IF(Parse_Env_Or_Default("GC_INITIAL_HEAP_SIZE", 0L),
