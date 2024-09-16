@@ -346,6 +346,7 @@ object ScalaNativePluginInternal {
     scalaNativeConfigSettings(true) ++
       Seq(
         mainClass := Some("scala.scalanative.testinterface.TestMain"),
+        nativeConfig ~= { _.withBuildTarget(build.BuildTarget.application) },
         loadedTestFrameworks := {
           val configName = configuration.value.name
 
