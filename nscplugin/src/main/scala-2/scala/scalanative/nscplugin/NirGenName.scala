@@ -92,7 +92,7 @@ trait NirGenName[G <: Global with Singleton] {
         nir.Sig.Scope.Private(owner)
       else nir.Sig.Scope.Public
 
-    val paramTypes = tpe.params.toSeq.map(p => genType(p.info))
+    val paramTypes = tpe.params.toSeq.map(p => toParamRefType(genType(p.info)))
 
     def isExtern = sym.isExtern
 
