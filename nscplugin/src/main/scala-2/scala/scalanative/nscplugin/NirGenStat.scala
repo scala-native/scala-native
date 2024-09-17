@@ -1043,7 +1043,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           val ty = genType(curClassSym.tpe)
           nir.Val.Local(namedId(fresh)("this"), ty)
         case Some(sym) =>
-          val ty = genType(sym.tpe)
+          val ty = toParamRefType(genType(sym.tpe))
           val name = genLocalName(sym)
           val param = nir.Val.Local(namedId(fresh)(name), ty)
           curMethodEnv.enter(sym, param)

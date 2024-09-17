@@ -134,6 +134,7 @@ trait NirGenType[G <: Global with Singleton] { self: NirGenPhase[G] =>
     case UnitClass        => nir.Type.Unit
     case BoxedUnitClass   => nir.Rt.BoxedUnit
     case NullClass        => genRefType(RuntimeNullClass)
+    case NothingClass     => genRefType(RuntimeNothingClass)
     case ArrayClass       => nir.Type.Array(genType(st.targs.head))
     case _ if st.isStruct => genStruct(st)
     case _ if deconstructValueTypes =>
@@ -144,6 +145,17 @@ trait NirGenType[G <: Global with Singleton] { self: NirGenPhase[G] =>
         nir.Type.unbox.getOrElse(nir.Type.normalize(ref), ref)
       }
     case _ => nir.Type.Ref(genTypeName(st.sym))
+  }
+
+  /** Adapts the possibly primitive NIR type to reference type required by
+   *  method parameters or result types Method param types should never contain
+   *  primitive null or nothing types. Instead, similary to JVM we should only
+   *  emit synthetic scala.runtime types
+   */
+  def toParamRefType(tpe: nir.Type): nir.Type = tpe match {
+    case nir.Type.Null    => nir.Rt.RuntimeNull
+    case nir.Type.Nothing => nir.Rt.RuntimeNothing
+    case ty               => ty
   }
 
   def genFixedSizeArray(st: SimpleType): nir.Type = {
@@ -262,7 +274,7 @@ trait NirGenType[G <: Global with Singleton] { self: NirGenPhase[G] =>
       params.map { p =>
         if (isExtern && wereRepeated(p.name)) nir.Type.Vararg
         else if (isExtern) genExternType(p.tpe)
-        else genType(p.tpe)
+        else toParamRefType(genType(p.tpe))
       }
     }
   }

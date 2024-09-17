@@ -703,13 +703,20 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       val sym = tree.symbol
       implicit val pos: nir.SourcePosition =
         tree.pos.orElse(fallbackSourcePosition)
-      if (curMethodInfo.mutableVars.contains(sym)) {
+      val value = if (curMethodInfo.mutableVars.contains(sym)) {
         buf.varload(curMethodEnv.resolve(sym), unwind)
       } else if (sym.isModule) {
         genModule(sym)
       } else {
         curMethodEnv.resolve(sym)
       }
+      if(value.ty == nir.Type.Nothing) {
+        // Short circuit the generated code for phantom value
+        // scala.runtime.Nothing$ extends Throwable so it's safe to throw
+        buf.raise(value, unwind)
+        buf.unreachable(unwind)
+      }
+      value
     }
 
     def genSelect(tree: Select): nir.Val = {
@@ -842,7 +849,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       // enclosing class `this` reference + capture symbols
       val captureSymsWithEnclThis = curClassSym.get +: captureSyms
 
-      val captureTypes = captureSymsWithEnclThis.map(sym => genType(sym.tpe))
+      val captureTypes = captureSymsWithEnclThis.map(sym => toParamRefType(genType(sym.tpe)))
       val captureNames =
         captureSymsWithEnclThis.zipWithIndex.map {
           case (sym, idx) =>
