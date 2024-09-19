@@ -607,7 +607,7 @@ private[codegen] abstract class AbstractCodeGen(
     bytes.foreach {
       case '\\' => str("\\\\")
       case c if c < 0x20 || c == '"' || c >= 0x7f =>
-        val hex = Integer.toHexString(c)
+        val hex = Integer.toHexString(c & 0xff)
         str {
           if (hex.length < 2) "\\0" + hex
           else "\\" + hex

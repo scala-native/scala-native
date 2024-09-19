@@ -136,4 +136,13 @@ class CStringTest {
       assertEquals(!(cstr1 + 5), 0)
     }
   }
+
+  @Test def cStringNonASCII(): Unit = {
+    // note: `fromCString` is needed to trigger compilation errors against malformed literals
+    fromCString(c"日本語")
+    fromCString(c"język polski")
+    fromCString(c"한국어")
+
+    fromCString(c"🚂🚀🚁🍔")
+  }
 }
