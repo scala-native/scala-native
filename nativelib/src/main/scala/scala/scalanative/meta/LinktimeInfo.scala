@@ -20,7 +20,9 @@ object LinktimeInfo {
   def isLinux: Boolean = target.os == "linux"
 
   @resolvedAtLinktime
-  def isMac: Boolean = target.vendor == "apple" && target.os == "darwin"
+  def isMac: Boolean =
+    target.vendor == "apple" &&
+      (target.os == "darwin" || target.os == "macosx")
 
   @resolvedAtLinktime
   def isFreeBSD: Boolean = target.os == "freebsd"
