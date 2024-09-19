@@ -28,14 +28,14 @@ object ScalaVersions {
     crossScalaVersions("3.2", 0 to 2),
     crossScalaVersions("3.3", 0 to 3),
     crossScalaVersions("3.4", 0 to 3),
-    crossScalaVersions("3.5", 0 to 0)
+    crossScalaVersions("3.5", 0 to 1)
   ).flatten.distinct
 
   // Tested in scheduled nightly CI to check compiler plugins
   // List maintains only upcoming releases, removed from the list after reaching stable status
   lazy val scala3RCVersions = List(
-    1.to(1).map(v => s"3.3.4-RC$v"),
-    1.to(2).map(v => s"3.5.1-RC$v")
+    1.to(4).map(v => s"3.3.4-RC$v"),
+    1.to(1).map(v => s"3.5.2-RC$v")
   ).flatten
 
   // Scala versions used for publishing libraries
