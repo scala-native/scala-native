@@ -21,7 +21,7 @@ object LinktimeInfo {
 
   @resolvedAtLinktime
   def isMac: Boolean =
-    (target.vendor == "apple" || target.vendor == "unknown") &&
+    target.vendor == "apple" &&
       (target.os == "darwin" || target.os == "macosx")
 
   @resolvedAtLinktime
