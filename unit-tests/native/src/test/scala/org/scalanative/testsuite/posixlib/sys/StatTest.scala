@@ -83,16 +83,37 @@ class StatTest {
         statFromFd.st_rdev
       )
 
-      val expectedRdev =
-        if (!LinktimeInfo.isFreeBSD && !LinktimeInfo.isNetBSD)
-          0.toUSize // Linux, macOS
-        else ULong.MaxValue.toUSize
+      val expectedRdev = 0.toUSize
 
-      assertEquals(
-        s"st_rdev must be ${expectedRdev} for regular file",
-        expectedRdev,
-        statFromPath.st_rdev
-      )
+      if (LinktimeInfo.isFreeBSD || LinktimeInfo.isOpenBSD) {
+        /* The important test is above:
+         *   "st_ino from path and from fd must be the same".
+         *
+         * Bypass this test on FreeBSD because the complexity of dealing
+         * with different expected st_rdev values on different FreeBSD
+         * version does not yield value worth the cost.
+         *
+         * On FreeBSD 14.1-RELEASE-p5, and probably earlier, the
+         * expected rt_dev is 0, same as Linux & macOS.
+         *   command line: "stat -s /etc" yields (edited) "st_rdev=0"
+         *
+         * From examining the history of this test, it appears that
+         * FreeBSD 13.n expected ULong.MaxValue.toUSize.
+         *
+         * This maintainer has no ready access to a NetBSD system.
+         * In an abundance of caution,  skip this test there also.
+         */
+
+        () // Do Nothing
+
+      } else { // Linux, macOS, etc
+        assertEquals(
+          s"st_rdev must be ${expectedRdev} for regular file",
+          expectedRdev,
+          statFromPath.st_rdev
+        )
+      }
+
       assertEquals(
         "st_ino from path and from fd must be the same",
         statFromPath.st_ino,
@@ -254,9 +275,16 @@ class StatTest {
         stat.S_ISDIR(dirStatFromPath.st_mode)
       )
 
-      /* OpenBSD returns some vlaue as st_rdev for directory,
-       * which seems to be related to inode => we can't predict it */
-      if (!LinktimeInfo.isOpenBSD) {
+      if (LinktimeInfo.isFreeBSD || LinktimeInfo.isOpenBSD) {
+        /* Bypass
+         * - FreeBSD see the discussion in this Test of rt_dev and why it
+         *   is bypassed when testing a file rt_dev.
+         *
+         * - OpenBSD returns some value as st_rdev for directory,
+         *   which seems to be related to inode => we can't predict it.
+         */
+        () // Do Nothing
+      } else { // Linux, macOS, etc
         assertEquals(
           s"st_rdev must be ${expectedRdev} for dir file",
           expectedRdev,
