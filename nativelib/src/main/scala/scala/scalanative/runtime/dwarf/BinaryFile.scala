@@ -78,6 +78,16 @@ private[runtime] class BinaryFile(file: File) {
       buf.toArray
     }
   }
+  def readWhile(predicate: Byte => Boolean): Array[Byte] = {
+    val buffer = new scala.collection.mutable.ArrayBuffer[Byte]()
+    var byte = readByte()
+    while (predicate(byte)) {
+      buffer += byte
+      byte = readByte()
+    }
+    buffer.toArray
+  }
+
   def readFully(ar: Array[Byte]) = ds.readFully(ar)
 
   def skipNBytes(n: Long): Unit = ds.skipBytes(n.toInt)
