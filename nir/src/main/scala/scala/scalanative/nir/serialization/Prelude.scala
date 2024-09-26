@@ -20,6 +20,8 @@ case class Prelude(
     sections = sections,
     hasEntryPoints = hasEntryPoints
   )
+
+  private[scalanative] val requiresParamTypeAdaption = revision < 11
 }
 
 object Prelude {

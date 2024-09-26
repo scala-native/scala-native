@@ -460,7 +460,7 @@ trait NirGenExpr(using Context) {
             else if (curMethodInfo.mutableVars.contains(sym))
               buf.varload(curMethodEnv.resolve(sym), unwind)
             else curMethodEnv.resolve(sym)
-          if value.ty == nir.Type.Nothing then
+          if nir.Type.isNothing(value.ty) then
             // Short circuit the generated code for phantom value
             // scala.runtime.Nothing$ extends Throwable so it's safe to throw
             buf.raise(value, unwind)
@@ -992,7 +992,7 @@ trait NirGenExpr(using Context) {
           case (_: nir.Type.PrimitiveKind, _: nir.Type.PrimitiveKind) =>
             genCoercion(value, fromty, toty)
           case _ if boxed.ty =?= boxty => boxed
-          case (_, nir.Type.Nothing) =>
+          case _ if nir.Type.isNothing(toty) =>
             val isNullL, notNullL = fresh()
             val isNull =
               buf.comp(nir.Comp.Ieq, boxed.ty, boxed, nir.Val.Null, unwind)
@@ -2051,8 +2051,8 @@ trait NirGenExpr(using Context) {
         nir.SourcePosition
     ): nir.Val =
       castConv(from, to)
-      .orElse(castConv(value.ty, to))
-      .fold(value)(buf.conv(_, to, value, unwind))
+        .orElse(castConv(value.ty, to))
+        .fold(value)(buf.conv(_, to, value, unwind))
 
     private def genCoercion(app: Apply, receiver: Tree, code: Int): nir.Val = {
       given nir.SourcePosition = app.span
@@ -2066,7 +2066,7 @@ trait NirGenExpr(using Context) {
         using nir.SourcePosition
     ): nir.Val = {
       if (fromty == toty) value
-      else if (fromty == nir.Type.Nothing || toty == nir.Type.Nothing) value
+      else if (nir.Type.isNothing(fromty) || nir.Type.isNothing(toty)) value
       else {
         val conv = (fromty, toty) match {
           case (nir.Type.Ptr, _: nir.Type.RefKind) => nir.Conv.Bitcast
@@ -2252,7 +2252,8 @@ trait NirGenExpr(using Context) {
         case ErasedValueType(valueClass, _) =>
           val boxedClass = valueClass.typeSymbol.asClass
           val unboxMethod = ValueClasses.valueClassUnbox(boxedClass)
-          val castedValue = buf.genCastOp(value.ty, genRefType(valueClass), value)
+          val castedValue =
+            buf.genCastOp(value.ty, genRefType(valueClass), value)
           buf.genApplyMethod(
             sym = unboxMethod,
             statically = false,
@@ -2263,7 +2264,11 @@ trait NirGenExpr(using Context) {
         case tpe =>
           val unboxed = buf.unboxValue(tpe, partial = true, value)
           if (unboxed == value) // no need to or cannot unbox, we should cast
-            buf.genCastOp(genRefType(tpeEnteringPosterasure), genRefType(tpe), value)
+            buf.genCastOp(
+              genRefType(tpeEnteringPosterasure),
+              genRefType(tpe),
+              value
+            )
           else unboxed
       }
     }
@@ -3164,7 +3169,7 @@ trait NirGenExpr(using Context) {
       }
       super.+=(inst)
       inst match {
-        case nir.Inst.Let(_, op, _) if op.resty == nir.Type.Nothing =>
+        case nir.Inst.Let(_, op, _) if nir.Type.isNothing(op.resty) =>
           unreachable(unwind)
           label(fresh())
         case _ => ()

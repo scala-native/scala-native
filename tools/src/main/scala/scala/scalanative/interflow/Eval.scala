@@ -61,7 +61,7 @@ private[interflow] trait Eval { self: Interflow =>
               case _ => ()
             }
           }
-          if (value.ty == nir.Type.Nothing) {
+          if (nir.Type.isNothing(value.ty)) {
             return nir.Inst.Unreachable(unwind)(inst.pos)
           } else {
             val ty = value match {

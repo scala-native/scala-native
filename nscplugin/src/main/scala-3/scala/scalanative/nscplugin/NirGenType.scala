@@ -225,9 +225,9 @@ trait NirGenType(using Context) {
   }
 
   /** Adapts the possibly primitive NIR type to reference type required by
-   *  method parameters or result types
-   *  Method param types should never contain primitive null or nothing types. 
-   *  Instead, similary to JVM we should only emit synthetic scala.runtime types
+   *  method parameters or result types Method param types should never contain
+   *  primitive null or nothing types. Instead, similary to JVM we should only
+   *  emit synthetic scala.runtime types
    */
   def toParamRefType(tpe: nir.Type): nir.Type = tpe match {
     case nir.Type.Null    => nir.Rt.RuntimeNull

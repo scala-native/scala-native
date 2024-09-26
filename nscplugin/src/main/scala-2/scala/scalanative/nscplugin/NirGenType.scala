@@ -260,7 +260,7 @@ trait NirGenType[G <: Global with Singleton] { self: NirGenPhase[G] =>
     val params = sym.tpe.params
     val isExtern = isExternHint || sym.isExtern
     if (!isExtern)
-      params.map { p => genType(p.tpe) }
+      params.map { p => toParamRefType(genType(p.tpe)) }
     else {
       val wereRepeated = exitingPhase(currentRun.typerPhase) {
         for {

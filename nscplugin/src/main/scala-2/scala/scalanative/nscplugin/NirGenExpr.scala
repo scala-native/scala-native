@@ -55,7 +55,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       }
       super.+=(inst)
       inst match {
-        case nir.Inst.Let(_, op, _) if op.resty == nir.Type.Nothing =>
+        case nir.Inst.Let(_, op, _) if nir.Type.isNothing(op.resty) =>
           unreachable(unwind)
           label(fresh())
         case _ =>
@@ -710,7 +710,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       } else {
         curMethodEnv.resolve(sym)
       }
-      if(value.ty == nir.Type.Nothing) {
+      if (nir.Type.isNothing(value.ty)) {
         // Short circuit the generated code for phantom value
         // scala.runtime.Nothing$ extends Throwable so it's safe to throw
         buf.raise(value, unwind)
@@ -849,15 +849,14 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       // enclosing class `this` reference + capture symbols
       val captureSymsWithEnclThis = curClassSym.get +: captureSyms
 
-      val captureTypes = captureSymsWithEnclThis.map(sym => toParamRefType(genType(sym.tpe)))
-      val captureNames =
+      val (captureTypes, captureNames) =
         captureSymsWithEnclThis.zipWithIndex.map {
           case (sym, idx) =>
             val name = anonName.member(nir.Sig.Field("capture" + idx))
-            val ty = genType(sym.tpe)
+            val ty = toParamRefType(genType(sym.tpe))
             statBuf += nir.Defn.Var(nir.Attrs.None, name, ty, nir.Val.Zero(ty))
-            name
-        }
+            (ty, name)
+        }.unzip
 
       // Generate an anonymous class constructor that initializes all the fields.
 
@@ -934,7 +933,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
                     case ErasedValueType(valueClazz, underlying) =>
                       val unboxMethod = valueClazz.derivedValueClassUnbox
                       val casted =
-                        buf.genCastOp(value.ty, genType(valueClazz), value)
+                        buf.genCastOp(value.ty, genRefType(valueClazz), value)
                       val unboxed = buf.genApplyMethod(
                         sym = unboxMethod,
                         statically = false,
@@ -944,13 +943,21 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
                       if (unboxMethod.tpe.resultType == underlying)
                         unboxed
                       else
-                        buf.genCastOp(unboxed.ty, genType(underlying), unboxed)
+                        buf.genCastOp(
+                          unboxed.ty,
+                          genRefType(underlying),
+                          unboxed
+                        )
 
                     case _ =>
                       val unboxed =
                         buf.unboxValue(sym.tpe, partial = true, value)
                       if (unboxed == value) // no need to or cannot unbox, we should cast
-                        buf.genCastOp(genType(sym.tpe), genType(arg.tpe), value)
+                        buf.genCastOp(
+                          genRefType(sym.tpe),
+                          genRefType(arg.tpe),
+                          value
+                        )
                       else unboxed
                   }
                 curMethodEnv.enter(sym, result)
@@ -1057,7 +1064,8 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         case tpe: ErasedValueType =>
           val valueClass = tpe.valueClazz
           val unboxMethod = treeInfo.ValueClass.valueUnbox(tpe)
-          val castedValue = buf.genCastOp(value.ty, genType(valueClass), value)
+          val castedValue =
+            buf.genCastOp(value.ty, genRefType(valueClass), value)
           buf.genApplyMethod(
             sym = unboxMethod,
             statically = false,
@@ -1068,7 +1076,11 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         case tpe =>
           val unboxed = buf.unboxValue(tpe, partial = true, value)
           if (unboxed == value) // no need to or cannot unbox, we should cast
-            buf.genCastOp(genType(tpeEnteringPosterasure), genType(tpe), value)
+            buf.genCastOp(
+              genRefType(tpeEnteringPosterasure),
+              genRefType(tpe),
+              value
+            )
           else unboxed
       }
     }
@@ -2374,7 +2386,9 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     def genCastOp(fromty: nir.Type, toty: nir.Type, value: nir.Val)(implicit
         pos: nir.SourcePosition
     ): nir.Val =
-      castConv(fromty, toty).fold(value)(buf.conv(_, toty, value, unwind))
+      castConv(fromty, toty)
+        .orElse(castConv(value.ty, toty))
+        .fold(value)(buf.conv(_, toty, value, unwind))
 
     private lazy val optimizedFunctions = {
       // Included functions should be pure, and should not not narrow the result type
@@ -2689,9 +2703,9 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     def genCoercion(value: nir.Val, fromty: nir.Type, toty: nir.Type)(implicit
         pos: nir.SourcePosition
     ): nir.Val = {
-      if (fromty == toty) {
-        value
-      } else {
+      if (fromty == toty) value
+      else if (nir.Type.isNothing(fromty) || nir.Type.isNothing(toty)) value
+      else {
         val conv = (fromty, toty) match {
           case (nir.Type.Ptr, _: nir.Type.RefKind) =>
             nir.Conv.Bitcast
@@ -2817,7 +2831,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             case (_: nir.Type.PrimitiveKind, _: nir.Type.PrimitiveKind) =>
               genCoercion(value, fromty, toty)
             case _ if boxed.ty =?= boxty => boxed
-            case (_, nir.Type.Nothing) =>
+            case _ if nir.Type.isNothing(toty) =>
               val runtimeNothing = genType(RuntimeNothingClass)
               val isNullL, notNullL = fresh()
               val isNull =

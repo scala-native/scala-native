@@ -345,7 +345,23 @@ final class BinaryDeserializer(buffer: ByteBuffer, nirSource: NIRSource) {
     }
   }
 
-  private def getSig(): Sig = new Sig(getString())
+  // NIR 6.10 compatibility
+  private def adaptParamType(ty: nir.Type) = ty match {
+    case nir.Type.Nothing => nir.Rt.RuntimeNothing
+    case nir.Type.Null    => nir.Rt.RuntimeNull
+    case ty               => ty
+  }
+
+  private def getSig(): Sig = {
+    val sig = new Sig(getString())
+    if (prelude.requiresParamTypeAdaption && (sig.isMethod || sig.isCtor)) {
+      sig.unmangled match {
+        case sig @ Sig.Method(_, tps, _) => sig.copy(types = tps.init.map(adaptParamType) :+ tps.last).mangled
+        case sig @ Sig.Ctor(tps)         => sig.copy(types = tps.map(adaptParamType)).mangled
+        case sig                         => sig
+      }
+    } else sig
+  }
 
   private def getLocal(): Local = Local(getLebUnsignedLong())
 
@@ -417,7 +433,15 @@ final class BinaryDeserializer(buffer: ByteBuffer, nirSource: NIRSource) {
       case T.DoubleType      => Type.Double
       case T.ArrayValueType  => Type.ArrayValue(getType(), getLebUnsignedInt())
       case T.StructValueType => Type.StructValue(getTypes())
-      case T.FunctionType    => Type.Function(getTypes(), getType())
+      case T.FunctionType =>
+        Type.Function(
+          args = {
+            val types = getTypes()
+            if (prelude.requiresParamTypeAdaption) types.map(adaptParamType)
+            else types
+          },
+          ret = getType()
+        )
 
       case T.NullType    => Type.Null
       case T.NothingType => Type.Nothing

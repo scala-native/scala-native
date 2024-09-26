@@ -233,6 +233,11 @@ object Type {
   def isUnsignedType(ty: Type): Boolean =
     unsigned.values.contains(normalize(ty))
 
+  def isNothing(ty: Type): Boolean =
+    ty == nir.Type.Nothing || normalize(ty) == nir.Rt.RuntimeNothing
+  def isNull(ty: Type): Boolean =
+    ty == nir.Type.Null || normalize(ty) == nir.Rt.RuntimeNull
+
   def normalize(ty: Type): Type = ty match {
     case ArrayValue(ty, n)          => ArrayValue(normalize(ty), n)
     case StructValue(tys)           => StructValue(tys.map(normalize))

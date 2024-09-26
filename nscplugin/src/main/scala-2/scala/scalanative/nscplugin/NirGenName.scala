@@ -140,7 +140,7 @@ trait NirGenName[G <: Global with Singleton] {
       else nir.Sig.Scope.PublicStatic
 
     val tpe = sym.tpe.widen
-    val paramTypes = tpe.params.toSeq.map(p => genType(p.info))
+    val paramTypes = tpe.params.toSeq.map(p => toParamRefType(genType(p.info)))
     val retType = genType(fromType(sym.info.resultType))
 
     val name = sym.name

@@ -22,7 +22,7 @@ object Versions {
    * new version of the toolchain.
    */
   final val compat: Int = 6 // a.k.a. MAJOR version
-  final val revision: Int = 10 // a.k.a. MINOR version
+  final val revision: Int = 11 // a.k.a. MINOR version
   case class Version(compat: Int, revision: Int)
 
   /* Current public release version of Scala Native. */

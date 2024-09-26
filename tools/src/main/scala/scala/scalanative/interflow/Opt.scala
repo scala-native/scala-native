@@ -87,7 +87,7 @@ private[interflow] trait Opt { self: Interflow =>
 
       // If any of the argument types is nothing, this method
       // is never going to be called, so we don't have to visit it.
-      if (args.exists(_.ty == nir.Type.Nothing)) {
+      if (args.exists(arg => nir.Type.isNothing(arg.ty))) {
         val insts = Seq(
           nir.Inst.Label(nir.Local(0), args),
           nir.Inst.Unreachable(nir.Next.None)
