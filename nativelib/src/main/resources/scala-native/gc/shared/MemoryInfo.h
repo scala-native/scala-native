@@ -119,9 +119,30 @@ size_t getFreeMemorySize() {
     GlobalMemoryStatusEx(&status);
     return (size_t)status.ullAvailPhys;
 
+#elif defined(__FreeBSD__)
+    /* FreeBSD uses a different paging model. It documents that it tries
+     * to keep the number of free pages low; basically zero plus a few
+     * guard pages intended for its own use.
+     *
+     * The concept of _SC_AVPHYS_PAGES makes little to no sense on FreeBSD
+     * so it does not have that sysconf parameter, causing a build failure
+     * without this #elif.
+     *
+     * An approximation of that parameter can be calculated from
+     * a detailed knowledge of FreeBSD practices, but those are subject to
+     * change.
+     *
+     * This function is currently used to provide values for informational
+     * messages, where the "remaining" is likely to be close to zero, in
+     * the Linux sense, already. Return the "close to zero" limit 0L.
+     * No sense in calculating a better approximation.
+     */
+
+    return 0L;
+
 #elif (defined(__unix__) || defined(__unix) || defined(unix) ||                \
        (defined(__APPLE__) && defined(__MACH__)) && defined(_SC_AVPHYS_PAGES))
-    /* UNIX variants. ------------------------------------------- */
+    /* UNIX variants; yes NetBSD, but not FreeBSD --------------------- */
     long pages = sysconf(_SC_AVPHYS_PAGES);
     long page_size = sysconf(_SC_PAGESIZE);
     if (pages == -1 || page_size == -1)
