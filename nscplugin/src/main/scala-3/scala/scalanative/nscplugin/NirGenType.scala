@@ -229,7 +229,7 @@ trait NirGenType(using Context) {
    *  primitive null or nothing types. Instead, similary to JVM we should only
    *  emit synthetic scala.runtime types
    */
-  def toParamRefType(tpe: nir.Type): nir.Type = tpe match {
+  def genParamOrReturnType(st: SimpleType): nir.Type = genType(st) match {
     case nir.Type.Null    => nir.Rt.RuntimeNull
     case nir.Type.Nothing => nir.Rt.RuntimeNothing
     case ty               => ty
@@ -349,7 +349,7 @@ trait NirGenType(using Context) {
       val retty =
         if (sym.isConstructor) nir.Type.Unit
         else if (isExtern) genExternType(resultType)
-        else genType(resultType)
+        else genParamOrReturnType(resultType)
       nir.Type.Function(selfty ++: paramtys, retty)
     }
 
@@ -388,7 +388,7 @@ trait NirGenType(using Context) {
       def isRepeated = repeatedParams.getOrElse(paramName, false)
       if (isExtern && isRepeated) nir.Type.Vararg
       else if (isExtern) genExternType(paramType)
-      else toParamRefType(genType(paramType))
+      else genParamOrReturnType(paramType)
     }
   }
 }

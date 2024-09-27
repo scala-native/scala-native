@@ -385,7 +385,7 @@ trait NirGenStat(using Context) {
     } yield param.symbol
     val argParams = argParamSyms.map { sym =>
       val tpe = sym.info.resultType
-      val ty = toParamRefType(genType(tpe))
+      val ty = genParamOrReturnType(tpe)
       val name = genLocalName(sym)
       val param = nir.Val.Local(fresh.namedId(genLocalName(sym)), ty)
       curMethodEnv.enter(sym, param)

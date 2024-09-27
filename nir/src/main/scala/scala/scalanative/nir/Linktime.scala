@@ -35,7 +35,9 @@ private[scalanative] object Linktime {
   // Takes Global for constant struct describing linktime property.
   // Replaced with resolved value at link-time.
   final val PropertyResolveFunctionName: Global.Member =
-    Linktime.member(Sig.Method("resolveProperty", Seq(Rt.String, Type.Nothing)))
+    Linktime.member(
+      Sig.Method("resolveProperty", Seq(Rt.String, Rt.RuntimeNothing))
+    )
 
   final def PropertyResolveFunctionTy(retty: Type): Type.Function =
     Type.Function(Seq(Rt.String), retty)

@@ -152,7 +152,7 @@ trait NirGenType[G <: Global with Singleton] { self: NirGenPhase[G] =>
    *  primitive null or nothing types. Instead, similary to JVM we should only
    *  emit synthetic scala.runtime types
    */
-  def toParamRefType(tpe: nir.Type): nir.Type = tpe match {
+  def genParamOrReturnType(st: SimpleType): nir.Type = genType(st) match {
     case nir.Type.Null    => nir.Rt.RuntimeNull
     case nir.Type.Nothing => nir.Rt.RuntimeNothing
     case ty               => ty
@@ -246,7 +246,7 @@ trait NirGenType[G <: Global with Singleton] { self: NirGenPhase[G] =>
       val retty =
         if (sym.isClassConstructor) nir.Type.Unit
         else if (isExtern) genExternType(sym.tpe.resultType)
-        else genType(sym.tpe.resultType)
+        else genParamOrReturnType(sym.tpe.resultType)
 
       nir.Type.Function(selfty ++: paramtys, retty)
     }
@@ -260,7 +260,7 @@ trait NirGenType[G <: Global with Singleton] { self: NirGenPhase[G] =>
     val params = sym.tpe.params
     val isExtern = isExternHint || sym.isExtern
     if (!isExtern)
-      params.map { p => toParamRefType(genType(p.tpe)) }
+      params.map { p => genParamOrReturnType(p.tpe) }
     else {
       val wereRepeated = exitingPhase(currentRun.typerPhase) {
         for {
@@ -274,7 +274,7 @@ trait NirGenType[G <: Global with Singleton] { self: NirGenPhase[G] =>
       params.map { p =>
         if (isExtern && wereRepeated(p.name)) nir.Type.Vararg
         else if (isExtern) genExternType(p.tpe)
-        else toParamRefType(genType(p.tpe))
+        else genParamOrReturnType(p.tpe)
       }
     }
   }

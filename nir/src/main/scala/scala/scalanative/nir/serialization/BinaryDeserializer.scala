@@ -354,9 +354,9 @@ final class BinaryDeserializer(buffer: ByteBuffer, nirSource: NIRSource) {
 
   private def getSig(): Sig = {
     val sig = new Sig(getString())
-    if (prelude.requiresParamTypeAdaption && (sig.isMethod || sig.isCtor)) {
+    if (prelude.requiresParamTypeOrReturnTypeAdaption && (sig.isMethod || sig.isCtor)) {
       sig.unmangled match {
-        case sig @ Sig.Method(_, tps, _) => sig.copy(types = tps.init.map(adaptParamType) :+ tps.last).mangled
+        case sig @ Sig.Method(_, tps, _) => sig.copy(types = tps.map(adaptParamType)).mangled
         case sig @ Sig.Ctor(tps)         => sig.copy(types = tps.map(adaptParamType)).mangled
         case sig                         => sig
       }
@@ -437,10 +437,10 @@ final class BinaryDeserializer(buffer: ByteBuffer, nirSource: NIRSource) {
         Type.Function(
           args = {
             val types = getTypes()
-            if (prelude.requiresParamTypeAdaption) types.map(adaptParamType)
+            if (prelude.requiresParamTypeOrReturnTypeAdaption) types.map(adaptParamType)
             else types
           },
-          ret = getType()
+          ret = adaptParamType(getType())
         )
 
       case T.NullType    => Type.Null

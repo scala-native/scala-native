@@ -257,12 +257,12 @@ trait NirGenExpr(using Context) {
       val captureTypesAndNames = {
         for
           (tree, idx) <- allCaptureValues.zipWithIndex
-          tpe = tree match {
-            case This(iden) => genType(fun.symbol.owner)
-            case _          => genType(tree.tpe)
-          }
+          tpe = genParamOrReturnType(tree match
+            case This(iden) => fun.symbol.owner
+            case _          => tree.tpe
+          )
           name = anonClassName.member(nir.Sig.Field(s"capture$idx"))
-        yield (toParamRefType(tpe), name)
+        yield (tpe, name)
       }
       val (captureTypes, captureNames) = captureTypesAndNames.unzip
 
@@ -992,7 +992,7 @@ trait NirGenExpr(using Context) {
           case (_: nir.Type.PrimitiveKind, _: nir.Type.PrimitiveKind) =>
             genCoercion(value, fromty, toty)
           case _ if boxed.ty =?= boxty => boxed
-          case _ if nir.Type.isNothing(toty) =>
+          case (_, nir.Type.NothingType(_)) =>
             val isNullL, notNullL = fresh()
             val isNull =
               buf.comp(nir.Comp.Ieq, boxed.ty, boxed, nir.Val.Null, unwind)
@@ -1005,7 +1005,12 @@ trait NirGenExpr(using Context) {
             buf.label(fresh())
             nir.Val.Zero(nir.Type.Nothing)
           case _ =>
-            val cast = buf.as(boxty, boxed, unwind)
+            val castTo = boxty match {
+              case nir.Type.Null    => nir.Rt.RuntimeNull
+              case nir.Type.Nothing => nir.Rt.RuntimeNothing
+              case _                => boxty
+            }
+            val cast = buf.as(castTo, boxed, unwind)
             unboxValue(tree.tpe, partial = true, cast)
         }
       else {
@@ -1584,10 +1589,10 @@ trait NirGenExpr(using Context) {
         case (ty1, ty2) if ty1 == ty2 =>
           ty1
 
-        case (nir.Type.Nothing, ty) =>
+        case (nir.Type.NothingType(_), ty) =>
           ty
 
-        case (ty, nir.Type.Nothing) =>
+        case (ty, nir.Type.NothingType(_)) =>
           ty
 
         case _ =>

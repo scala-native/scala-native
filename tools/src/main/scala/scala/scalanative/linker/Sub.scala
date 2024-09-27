@@ -41,7 +41,10 @@ object Sub {
         true
       case (nir.Type.NullType(_), (nir.Type.Ptr | _: nir.Type.RefKind)) =>
         true
-      case (nir.Type.NothingType(_), (_: nir.Type.ValueKind | _: nir.Type.RefKind)) =>
+      case (
+            nir.Type.NothingType(_),
+            (_: nir.Type.ValueKind | _: nir.Type.RefKind)
+          ) =>
         true
       case (_: nir.Type.RefKind, nir.Rt.Object) =>
         true

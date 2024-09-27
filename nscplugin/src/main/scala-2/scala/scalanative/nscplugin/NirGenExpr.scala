@@ -853,7 +853,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         captureSymsWithEnclThis.zipWithIndex.map {
           case (sym, idx) =>
             val name = anonName.member(nir.Sig.Field("capture" + idx))
-            val ty = toParamRefType(genType(sym.tpe))
+            val ty = genParamOrReturnType(sym.tpe)
             statBuf += nir.Defn.Var(nir.Attrs.None, name, ty, nir.Val.Zero(ty))
             (ty, name)
         }.unzip
@@ -1979,10 +1979,10 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       case (ty1, ty2) if ty1 == ty2 =>
         ty1
 
-      case (nir.Type.Nothing, ty) =>
+      case (nir.Type.NothingType(_), ty) =>
         ty
 
-      case (ty, nir.Type.Nothing) =>
+      case (ty, nir.Type.NothingType(_)) =>
         ty
 
       case _ =>
@@ -2831,7 +2831,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             case (_: nir.Type.PrimitiveKind, _: nir.Type.PrimitiveKind) =>
               genCoercion(value, fromty, toty)
             case _ if boxed.ty =?= boxty => boxed
-            case _ if nir.Type.isNothing(toty) =>
+            case (_, nir.Type.NothingType(_)) =>
               val runtimeNothing = genType(RuntimeNothingClass)
               val isNullL, notNullL = fresh()
               val isNull =
@@ -2845,7 +2845,12 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
               buf.label(fresh())
               nir.Val.Zero(nir.Type.Nothing)
             case _ =>
-              val cast = buf.as(boxty, boxed, unwind)
+              val castTo = boxty match {
+                case nir.Type.Null    => nir.Rt.RuntimeNull
+                case nir.Type.Nothing => nir.Rt.RuntimeNothing
+                case _                => boxty
+              }
+              val cast = buf.as(castTo, boxed, unwind)
               unboxValue(app.tpe, partial = true, cast)(app.pos)
           }
 

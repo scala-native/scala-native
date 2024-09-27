@@ -480,7 +480,7 @@ private[scalanative] object Lower {
         case nir.Type.Unit =>
           genOp(buf, fresh(), op)
           buf.let(n, nir.Op.Copy(unit), unwind)
-        case nir.Type.Nothing =>
+        case ty if nir.Type.isNothing(ty) =>
           genOp(buf, fresh(), op)
           genUnreachable(buf)
           buf.label(fresh(), Seq(nir.Val.Local(n, op.resty)))
@@ -1973,7 +1973,7 @@ private[scalanative] object Lower {
   val unit = nir.Val.Global(unitInstance, nir.Type.Ptr)
 
   val throwName = extern("scalanative_throw")
-  val throwSig = nir.Type.Function(Seq(nir.Type.Ptr), nir.Type.Nothing)
+  val throwSig = nir.Type.Function(Seq(nir.Type.Ptr), nir.Rt.RuntimeNothing)
   val throw_ = nir.Val.Global(throwName, nir.Type.Ptr)
 
   val arrayHeapAlloc = nir.Type.typeToArray.map {
@@ -2079,11 +2079,11 @@ private[scalanative] object Lower {
     )
 
   val throwDivisionByZeroTy =
-    nir.Type.Function(Seq(nir.Rt.Runtime), nir.Type.Nothing)
+    nir.Type.Function(Seq(nir.Rt.Runtime), nir.Rt.RuntimeNothing)
   val throwDivisionByZero =
     nir.Global.Member(
       nir.Rt.Runtime.name,
-      nir.Sig.Method("throwDivisionByZero", Seq(nir.Type.Nothing))
+      nir.Sig.Method("throwDivisionByZero", Seq(nir.Rt.RuntimeNothing))
     )
   val throwDivisionByZeroVal =
     nir.Val.Global(throwDivisionByZero, nir.Type.Ptr)
@@ -2091,35 +2091,35 @@ private[scalanative] object Lower {
   val throwClassCastTy =
     nir.Type.Function(
       Seq(nir.Rt.Runtime, nir.Type.Ptr, nir.Type.Ptr),
-      nir.Type.Nothing
+      nir.Rt.RuntimeNothing
     )
   val throwClassCast =
     nir.Global.Member(
       nir.Rt.Runtime.name,
       nir.Sig.Method(
         "throwClassCast",
-        Seq(nir.Type.Ptr, nir.Type.Ptr, nir.Type.Nothing)
+        Seq(nir.Type.Ptr, nir.Type.Ptr, nir.Rt.RuntimeNothing)
       )
     )
   val throwClassCastVal =
     nir.Val.Global(throwClassCast, nir.Type.Ptr)
 
   val throwNullPointerTy =
-    nir.Type.Function(Seq(nir.Rt.Runtime), nir.Type.Nothing)
+    nir.Type.Function(Seq(nir.Rt.Runtime), nir.Rt.RuntimeNothing)
   val throwNullPointer =
     nir.Global.Member(
       nir.Rt.Runtime.name,
-      nir.Sig.Method("throwNullPointer", Seq(nir.Type.Nothing))
+      nir.Sig.Method("throwNullPointer", Seq(nir.Rt.RuntimeNothing))
     )
   val throwNullPointerVal =
     nir.Val.Global(throwNullPointer, nir.Type.Ptr)
 
   val throwUndefinedTy =
-    nir.Type.Function(Seq(nir.Type.Ptr), nir.Type.Nothing)
+    nir.Type.Function(Seq(nir.Type.Ptr), nir.Rt.RuntimeNothing)
   val throwUndefined =
     nir.Global.Member(
       nir.Rt.Runtime.name,
-      nir.Sig.Method("throwUndefined", Seq(nir.Type.Nothing))
+      nir.Sig.Method("throwUndefined", Seq(nir.Rt.RuntimeNothing))
     )
   val throwUndefinedVal =
     nir.Val.Global(throwUndefined, nir.Type.Ptr)
@@ -2127,25 +2127,26 @@ private[scalanative] object Lower {
   val throwOutOfBoundsTy =
     nir.Type.Function(
       Seq(nir.Type.Ptr, nir.Type.Int, nir.Type.Int),
-      nir.Type.Nothing
+      nir.Rt.RuntimeNothing
     )
   val throwOutOfBounds =
     nir.Global.Member(
       nir.Rt.Runtime.name,
       nir.Sig.Method(
         "throwOutOfBounds",
-        Seq(nir.Type.Int, nir.Type.Int, nir.Type.Nothing)
+        Seq(nir.Type.Int, nir.Type.Int, nir.Rt.RuntimeNothing)
       )
     )
   val throwOutOfBoundsVal =
     nir.Val.Global(throwOutOfBounds, nir.Type.Ptr)
 
   val throwNoSuchMethodTy =
-    nir.Type.Function(Seq(nir.Type.Ptr, nir.Type.Ptr), nir.Type.Nothing)
+    nir.Type.Function(Seq(nir.Type.Ptr, nir.Type.Ptr), nir.Rt.RuntimeNothing)
   val throwNoSuchMethod =
     nir.Global.Member(
       nir.Rt.Runtime.name,
-      nir.Sig.Method("throwNoSuchMethod", Seq(nir.Rt.String, nir.Type.Nothing))
+      nir.Sig
+        .Method("throwNoSuchMethod", Seq(nir.Rt.String, nir.Rt.RuntimeNothing))
     )
   val throwNoSuchMethodVal =
     nir.Val.Global(throwNoSuchMethod, nir.Type.Ptr)
