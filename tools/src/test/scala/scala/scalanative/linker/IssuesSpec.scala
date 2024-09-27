@@ -174,4 +174,14 @@ class IssuesSpec extends LinkerSpec {
     }
   }
 
+  // https://github.com/scala-native/scala-native/issues/4039
+  @Test def issue4039(): Unit = checkNoLinkageErrors {
+    """
+    |object Test {
+    |  def main(args: Array[String]): Unit = {
+    |    Seq.empty[Nothing].forall(_ == Int.box(0))
+    |  }
+    |}
+    |"""
+  }
 }
