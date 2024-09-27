@@ -39,9 +39,9 @@ object Sub {
     (l, r) match {
       case (l, r) if l == r =>
         true
-      case (nir.Type.Null, (nir.Type.Ptr | _: nir.Type.RefKind)) =>
+      case (nir.Type.NullType(_), (nir.Type.Ptr | _: nir.Type.RefKind)) =>
         true
-      case (nir.Type.Nothing, (_: nir.Type.ValueKind | _: nir.Type.RefKind)) =>
+      case (nir.Type.NothingType(_), (_: nir.Type.ValueKind | _: nir.Type.RefKind)) =>
         true
       case (_: nir.Type.RefKind, nir.Rt.Object) =>
         true
@@ -80,17 +80,17 @@ object Sub {
     (lty, rty) match {
       case _ if lty == rty =>
         lty
-      case (ty, nir.Type.Nothing) =>
+      case (ty, nir.Type.NothingType(_)) =>
         ty
-      case (nir.Type.Nothing, ty) =>
+      case (nir.Type.NothingType(_), ty) =>
         ty
-      case (nir.Type.Ptr, nir.Type.Null) =>
+      case (nir.Type.Ptr, nir.Type.NullType(_)) =>
         nir.Type.Ptr
-      case (nir.Type.Null, nir.Type.Ptr) =>
+      case (nir.Type.NullType(_), nir.Type.Ptr) =>
         nir.Type.Ptr
-      case (refty: nir.Type.RefKind, nir.Type.Null) =>
+      case (refty: nir.Type.RefKind, nir.Type.NullType(_)) =>
         nir.Type.Ref(refty.className, refty.isExact, nullable = true)
-      case (nir.Type.Null, refty: nir.Type.RefKind) =>
+      case (nir.Type.NullType(_), refty: nir.Type.RefKind) =>
         nir.Type.Ref(refty.className, refty.isExact, nullable = true)
       case (lty: nir.Type.RefKind, rty: nir.Type.RefKind) =>
         val ScopeRef(linfo) = lty: @unchecked

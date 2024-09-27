@@ -233,10 +233,24 @@ object Type {
   def isUnsignedType(ty: Type): Boolean =
     unsigned.values.contains(normalize(ty))
 
-  def isNothing(ty: Type): Boolean =
-    ty == nir.Type.Nothing || normalize(ty) == nir.Rt.RuntimeNothing
-  def isNull(ty: Type): Boolean =
-    ty == nir.Type.Null || normalize(ty) == nir.Rt.RuntimeNull
+  object NothingType {
+    def unapply(v: nir.Type): Option[nir.Type] =
+      if (isNothing(v)) Some(v) else None
+  }
+  def isNothing(ty: Type): Boolean = ty match {
+    case nir.Type.Nothing         => true
+    case nir.Type.Ref(name, _, _) => name == nir.Rt.RuntimeNothing.name
+    case _                        => false
+  }
+  object NullType {
+    def unapply(v: nir.Type): Option[nir.Type] =
+      if (isNull(v)) Some(v) else None
+  }
+  def isNull(ty: Type): Boolean = ty match {
+    case nir.Type.Null            => true
+    case nir.Type.Ref(name, _, _) => name == nir.Rt.RuntimeNull.name
+    case _                        => false
+  }
 
   def normalize(ty: Type): Type = ty match {
     case ArrayValue(ty, n)          => ArrayValue(normalize(ty), n)
