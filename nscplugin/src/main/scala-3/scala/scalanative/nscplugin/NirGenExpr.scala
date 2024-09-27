@@ -448,19 +448,23 @@ trait NirGenExpr(using Context) {
     }
 
     def genIdent(tree: Ident): nir.Val =
-      desugarIdent(tree) match {
-        case Ident(_) =>
+      tree match {
+        case DesugaredSelect(_, _) =>
+          genSelect(DesugaredSelect.desugared)
+        case _ =>
           val sym = tree.symbol
           given nir.SourcePosition = tree.span
-          if (curMethodInfo.mutableVars.contains(sym))
-            buf.varload(curMethodEnv.resolve(sym), unwind)
-          else if (sym.is(Module))
-            genModule(sym)
-          else curMethodEnv.resolve(sym)
-        case desuagred: Select =>
-          genSelect(desuagred.withSpan(tree.span))
-        case tree =>
-          throw FatalError(s"Unsupported desugared ident tree: $tree")
+          val value =
+            if sym.is(Module) then genModule(sym)
+            else if (curMethodInfo.mutableVars.contains(sym))
+              buf.varload(curMethodEnv.resolve(sym), unwind)
+            else curMethodEnv.resolve(sym)
+          if nir.Type.isNothing(value.ty) then
+            // Short circuit the generated code for phantom value
+            // scala.runtime.Nothing$ extends Throwable so it's safe to throw
+            buf.raise(value, unwind)
+            buf.unreachable(unwind)
+          value
       }
 
     def genIf(tree: If): nir.Val = {
