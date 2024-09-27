@@ -155,8 +155,8 @@ private[runtime] object Backtrace {
       .flatMap { die =>
         if (die.is(DWARF.Tag.DW_TAG_subprogram)) {
           for {
-            line <- die.getLine
-            low <- die.getLowPC
+            line <- die.getLine()
+            low <- die.getLowPC()
             high <- die.getHighPC(low)
           } yield SubprogramDIE(low, high, line, filenameAt)
         } else if (die.is(DWARF.Tag.DW_TAG_compile_unit)) {
@@ -164,7 +164,7 @@ private[runtime] object Backtrace {
           // the DIEs after the Compile Unit DIE belongs to that compile unit (file in Scala)
           // TODO: Parse `.debug_line` section, and decode the filename using
           // `DW_AT_decl_file` attribute of the `subprogram` DIE.
-          filenameAt = die.getName
+          filenameAt = die.getName()
           None
         } else None
       }
@@ -217,7 +217,7 @@ private[runtime] object Backtrace {
         subprograms = subprograms,
         strings = dwarf._2,
         offset = offset,
-        format = MACHO_FORMAT
+        format = if (magic == MACHO_MAGIC) MACHO_FORMAT else ELF_FORMAT
       )
     }
 

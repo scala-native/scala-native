@@ -95,7 +95,8 @@ object StackTrace {
     // behavior is not defined for non-zero-terminated strings.
     name(nameMax - 1) = 0.toByte
     val position =
-      if (LinktimeInfo.isMac && LinktimeInfo.sourceLevelDebuging.generateFunctionSourcePositions)
+      if ((LinktimeInfo.isMac || LinktimeInfo.isLinux) &&
+          LinktimeInfo.sourceLevelDebuging.generateFunctionSourcePositions)
         Backtrace.decodePosition(ip.toLong)
       else Backtrace.Position.empty
     try StackTraceElement(name, position)

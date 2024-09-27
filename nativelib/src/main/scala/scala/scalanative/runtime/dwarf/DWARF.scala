@@ -2,7 +2,7 @@ package scala.scalanative.runtime.dwarf
 
 import java.nio.channels.Channels
 import scala.collection.immutable.IntMap
-import DWARF.Form.DW_FORM_strp
+import DWARF.Form.{DW_FORM_strp, DW_FORM_implicit_const}
 import java.nio.channels.FileChannel
 import scala.collection.mutable
 
@@ -13,12 +13,12 @@ private[runtime] object DWARF {
   import CommonParsers._
 
   case class DIE(
-      header: DWARF.Header,
+      header: DWARF.CUHeader,
       abbrevs: Vector[DWARF.Abbrev],
       units: Vector[DWARF.CompileUnit]
   )
 
-  case class Header(
+  case class CUHeader(
       version: Int,
       is64: Boolean,
       unit_length: Long,
@@ -28,12 +28,31 @@ private[runtime] object DWARF {
       unit_offset: Long,
       header_offset: Long
   )
-  object Header {
-    def parse(implicit bf: BinaryFile): Header = {
+  object CUHeader {
+
+    /** Parse compilation unit header
+     *
+     *  The CU Header differs between DWARF 4 and DWARF 5:
+     *
+     *  DWARF 4:
+     *    - Unit Length, Version, Debug Abbreviation Offset, Address Size.
+     *
+     *  DWARF 5:
+     *    - Unit Length, Version, Unit Type (new), Address Size, Debug
+     *      Abbreviation Offset, DWO ID (optional).
+     *
+     *  Key Difference: In DWARF 5, Address Size comes before Debug Abbreviation
+     *  Offset, and Unit Type is added. Optional DWO ID supports split DWARF.
+     */
+    def parse(implicit bf: BinaryFile): CUHeader = {
       val header_offset = bf.position()
+
+      // for 32-bit DWARF format
       val unit_length_s = uint32()
 
+      // for 64-bit DWARF format
       val (dwarf64, unit_length) = if (unit_length_s == -1) {
+        bf.seek(header_offset)
         (true, uint64())
       } else (false, unit_length_s.toLong)
 
@@ -45,25 +64,26 @@ private[runtime] object DWARF {
         s"Expected DWARF version 2-5, got $version instead"
       )
 
-      def read_ulong: Long =
+      def read_ulong(): Long =
         if (dwarf64) uint64() else uint32().toLong
 
       val (unit_type, address_size, debug_abbrev_offset): (UByte, UByte, Long) =
         if (version >= 5.toUInt) {
           (
-            uint8(),
-            uint8(),
-            uint64()
+            uint8(), // unit_type - new in DWARF Version 5
+            uint8(), // address_size - comes before debug_abbrev_offset in DWARF 5
+            read_ulong() // debug_abbrev_offset - 4-byte or 8-byte unsigned offset
           )
         } else {
-          val dao = read_ulong
+          // debug_abbrev_offset comes before address_size in DWARF 4
+          val debug_abbrev_offset = read_ulong()
           (
-            0.toUByte,
-            uint8(),
-            dao
+            0.toUByte, // unit_type field N/A in DWARF Version 4
+            uint8(), // address_size
+            debug_abbrev_offset
           )
         }
-      Header(
+      CUHeader(
         version = version.toInt,
         is64 = dwarf64,
         unit_length = unit_length,
@@ -88,6 +108,9 @@ private[runtime] object DWARF {
   object Abbrev {
     def parse(implicit ds: BinaryFile): Vector[Abbrev] = {
       def readAttribute: Option[Attr] = {
+        // > The series of attribute specifications ends with an
+        // > entry containing 0 for the name and 0 for the form.
+        // from 7.5.3 Abbreviations Tables (both DWARF 4 and 5)
         val at = read_unsigned_leb128()
         val form = read_unsigned_leb128()
         if (at == 0 && form == 0) None
@@ -96,12 +119,21 @@ private[runtime] object DWARF {
             Attr(
               Attribute.fromCode(at),
               Form.fromCodeUnsafe(form),
-              value = 0
+
+              // > The attribute form DW_FORM_implicit_const is another special case. For
+              // > attributes with this form, the attribute specification contains a third part, which is
+              // > a signed LEB128 number. The value of this number is used as the value of the
+              // > attribute, and no value is stored in the .debug_info section.
+              // 7.5.3 in DWARF 5
+              value =
+                if (form == DW_FORM_implicit_const.code) read_unsigned_leb128()
+                else 0
             )
           )
       }
       def readAbbrev: Option[Abbrev] = {
         val code = read_unsigned_leb128()
+        // code of zero marks the end of a sequence of DIEs for a particular CU
         if (code == 0) None
         else {
           val tag = read_unsigned_leb128()
@@ -109,11 +141,12 @@ private[runtime] object DWARF {
 
           val attrs = Vector.newBuilder[Attr]
 
+          // TODO: skip reading attributes when it's not `DW_TAG_subprogram`
+          // we're not interested in other DIEs in an addr2line context.
           var stop = false
 
           while (!stop) {
             val attr = readAttribute
-
             attr.foreach(attrs += _)
 
             stop = attr.isEmpty
@@ -140,12 +173,17 @@ private[runtime] object DWARF {
     def is(tag: DWARF.Tag): Boolean =
       abbrev.exists(_.tag == tag)
 
-    def getName: Option[UInt] = values.collectFirst {
-      case v if v._1.at == DWARF.Attribute.DW_AT_name =>
-        v._2.asInstanceOf[UInt]
+    def getName(): Option[UInt] = values.collectFirst {
+      // other Form is not yet supported, maybe it's better to read from .debug_line instead
+      case v
+          if v._1.at == DWARF.Attribute.DW_AT_name && v._1.form == DWARF.Form.DW_FORM_strp =>
+        v._2 match {
+          case x: Long => x.toUInt // u64
+          case x: UInt => x // u32
+        }
     }
 
-    def getLine: Option[Int] = values.collectFirst {
+    def getLine(): Option[Int] = values.collectFirst {
       case v if v._1.at == DWARF.Attribute.DW_AT_decl_line =>
         v._2 match {
           case x: UShort => x.toInt
@@ -154,8 +192,10 @@ private[runtime] object DWARF {
         }
     }
 
-    def getLowPC: Option[Long] = values.collectFirst {
-      case v if v._1.at == DWARF.Attribute.DW_AT_low_pc =>
+    // TODO: support other
+    def getLowPC(): Option[Long] = values.collectFirst {
+      case v
+          if v._1.at == DWARF.Attribute.DW_AT_low_pc && v._1.form == DWARF.Form.DW_FORM_addr =>
         v._2.asInstanceOf[Long]
     }
 
@@ -175,7 +215,7 @@ private[runtime] object DWARF {
           lowPC + value.toLong
         case v
             if v._1.at == DWARF.Attribute.DW_AT_high_pc &&
-              DWARF.Form.isAddressClass(v._1.form) =>
+              v._1.form == DWARF.Form.DW_FORM_addr =>
           v._2.asInstanceOf[Long]
       }
   }
@@ -226,8 +266,7 @@ private[runtime] object DWARF {
         debug_info: Section,
         debug_abbrev: Section
     )(implicit bf: BinaryFile) = {
-
-      val header = Header.parse(bf)
+      val header = CUHeader.parse(bf)
 
       val abbrevOffset = debug_abbrev.offset.toLong + header.debug_abbrev_offset
       val abbrev = abbrevCache.get(abbrevOffset) match {
@@ -248,7 +287,7 @@ private[runtime] object DWARF {
 
   def readUnits(
       offset: Long,
-      header: Header,
+      header: CUHeader,
       idx: IntMap[Abbrev]
   )(implicit ds: BinaryFile): Vector[CompileUnit] = {
 
@@ -266,7 +305,10 @@ private[runtime] object DWARF {
           units += CompileUnit(None, Map.empty)
         case s @ Some(abbrev) =>
           abbrev.attributes.foreach { attr =>
-            val value = AttributeValue.parse(header, attr.form)
+            // TODO: parse only interesting attributes
+            // TODO: Refactor the data structure: currently we have
+            //   almost unused value field in Attr (it's used only for `DW_FORM_implicit_const`)
+            val value = AttributeValue.parse(header, attr)
             attrs += (attr -> value)
           }
 
@@ -278,61 +320,75 @@ private[runtime] object DWARF {
   }
 
   object AttributeValue {
-    def parse(header: Header, form: Form)(implicit ds: BinaryFile): Any = {
+    def parse(header: CUHeader, attr: Attr)(implicit ds: BinaryFile): Any = {
+      attr.form match {
+        case Form.DW_FORM_implicit_const => attr.value
+        case _                           => parse(header, attr.form)
+      }
+    }
+    private def parse(header: CUHeader, form: Form)(implicit
+        ds: BinaryFile
+    ): Any = {
       import Form._
       form match {
-        case DW_FORM_strp =>
-          if (header.is64) uint64()
-          else uint32()
-        case DW_FORM_data1 =>
-          uint8()
-        case DW_FORM_data2 =>
-          uint16()
-        case DW_FORM_data4 =>
-          uint32()
+        case DW_FORM_strp  => if (header.is64) uint64() else uint32()
+        case DW_FORM_data1 => uint8()
+        case DW_FORM_data2 => uint16()
+        case DW_FORM_data4 => uint32()
         case DW_FORM_addr =>
-          if (header.address_size == 4)
-            uint32()
-          else if (header.address_size == 8)
-            uint64()
+          if (header.address_size == 4) uint32()
+          else if (header.address_size == 8) uint64()
           else
             throw new RuntimeException(
-              s"Uknown header size: ${header.address_size}"
+              s"Unknown header size: ${header.address_size}"
             )
-        case DW_FORM_flag =>
-          uint8() == 1
-        case DW_FORM_ref_addr =>
-          if (header.is64) uint64()
-          else uint32()
-        case DW_FORM_sec_offset =>
-          if (header.is64) uint64()
-          else uint32()
-        case DW_FORM_flag_present =>
-          true
-        case DW_FORM_udata =>
-          read_unsigned_leb128()
-        case DW_FORM_sdata =>
-          read_signed_leb128()
-        case DW_FORM_ref8 =>
-          header.header_offset + uint64()
-        case DW_FORM_ref4 =>
-          header.header_offset + uint32().toLong
-        case DW_FORM_ref2 =>
-          header.header_offset + uint16().toLong
-        case DW_FORM_ref1 =>
-          header.header_offset + uint8().toLong
-        case DW_FORM_exprloc =>
-          val len = read_unsigned_leb128()
-          ds.readNBytes(len)
-
-        case DW_FORM_block1 =>
-          val len = uint8()
-          ds.readNBytes(len.toInt)
-        case _ =>
-          throw new Exception(s"Unsupported form: $form")
-
+        case DW_FORM_flag         => uint8() == 1
+        case DW_FORM_ref_addr     => if (header.is64) uint64() else uint32()
+        case DW_FORM_sec_offset   => if (header.is64) uint64() else uint32()
+        case DW_FORM_flag_present => true
+        case DW_FORM_udata        => read_unsigned_leb128()
+        case DW_FORM_sdata        => read_signed_leb128()
+        case DW_FORM_ref8         => header.header_offset + uint64()
+        case DW_FORM_ref4         => header.header_offset + uint32().toLong
+        case DW_FORM_ref2         => header.header_offset + uint16().toLong
+        case DW_FORM_ref1         => header.header_offset + uint8().toLong
+        case DW_FORM_exprloc      => ds.readNBytes(read_unsigned_leb128())
+        case DW_FORM_block1       => ds.readNBytes(uint8().toInt)
+        case DW_FORM_block2       => ds.readNBytes(uint16().toInt)
+        case DW_FORM_block4       => ds.readNBytes(uint32().toInt)
+        case DW_FORM_data8        => uint64()
+        case DW_FORM_string =>
+          Iterator
+            .continually(ds.readByte())
+            .takeWhile(_ != 0)
+            .map(_.toChar)
+            .mkString
+        case DW_FORM_block => ds.readNBytes(read_unsigned_leb128())
+        case DW_FORM_ref_udata =>
+          header.header_offset + read_unsigned_leb128().toLong
+        case DW_FORM_indirect =>
+          parse(header, Form.fromCodeUnsafe(read_unsigned_leb128()))
+        case DW_FORM_ref_sig8  => uint64()
+        case DW_FORM_strx      => read_unsigned_leb128()
+        case DW_FORM_addrx     => read_unsigned_leb128()
+        case DW_FORM_ref_sup4  => uint32()
+        case DW_FORM_strp_sup  => if (header.is64) uint64() else uint32()
+        case DW_FORM_data16    => ds.readNBytes(16)
+        case DW_FORM_line_strp => if (header.is64) uint64() else uint32()
+        case DW_FORM_loclistx  => read_unsigned_leb128()
+        case DW_FORM_rnglistx  => read_unsigned_leb128()
+        case DW_FORM_ref_sup8  => uint64()
+        case DW_FORM_strx1     => uint8()
+        case DW_FORM_strx2     => uint16()
+        case DW_FORM_strx3     => (uint16() << 8) | uint8()
+        case DW_FORM_strx4     => uint32()
+        case DW_FORM_addrx1    => uint8()
+        case DW_FORM_addrx2    => uint16()
+        case DW_FORM_addrx3    => (uint16() << 8) | uint8()
+        case DW_FORM_addrx4    => uint32()
+        case DW_FORM_implicit_const =>
+          assert(false, "should be handled by parse(CUHeader, Attr)")
       }
-
     }
   }
 
@@ -509,6 +565,25 @@ private[runtime] object DWARF {
     case object DW_FORM_exprloc extends Form(0x18)
     case object DW_FORM_flag_present extends Form(0x19)
     case object DW_FORM_ref_sig8 extends Form(0x20)
+    // new in DWARF 5
+    case object DW_FORM_strx extends Form(0x1a)
+    case object DW_FORM_addrx extends Form(0x1b)
+    case object DW_FORM_ref_sup4 extends Form(0x1c)
+    case object DW_FORM_strp_sup extends Form(0x1d)
+    case object DW_FORM_data16 extends Form(0x1e)
+    case object DW_FORM_line_strp extends Form(0x1f)
+    case object DW_FORM_implicit_const extends Form(0x21)
+    case object DW_FORM_loclistx extends Form(0x22)
+    case object DW_FORM_rnglistx extends Form(0x23)
+    case object DW_FORM_ref_sup8 extends Form(0x24)
+    case object DW_FORM_strx1 extends Form(0x25)
+    case object DW_FORM_strx2 extends Form(0x26)
+    case object DW_FORM_strx3 extends Form(0x27)
+    case object DW_FORM_strx4 extends Form(0x28)
+    case object DW_FORM_addrx1 extends Form(0x29)
+    case object DW_FORM_addrx2 extends Form(0x2a)
+    case object DW_FORM_addrx3 extends Form(0x2b)
+    case object DW_FORM_addrx4 extends Form(0x2c)
 
     private final val codeMap: Map[Int, Form] = Seq(
       DW_FORM_addr,
@@ -535,28 +610,41 @@ private[runtime] object DWARF {
       DW_FORM_sec_offset,
       DW_FORM_exprloc,
       DW_FORM_flag_present,
-      DW_FORM_ref_sig8
+      DW_FORM_ref_sig8,
+      // new in DWARF 5
+      DW_FORM_strx,
+      DW_FORM_addrx,
+      DW_FORM_ref_sup4,
+      DW_FORM_strp_sup,
+      DW_FORM_data16,
+      DW_FORM_line_strp,
+      DW_FORM_implicit_const,
+      DW_FORM_loclistx,
+      DW_FORM_rnglistx,
+      DW_FORM_ref_sup8,
+      DW_FORM_strx1,
+      DW_FORM_strx2,
+      DW_FORM_strx3,
+      DW_FORM_strx4,
+      DW_FORM_addrx1,
+      DW_FORM_addrx2,
+      DW_FORM_addrx3,
+      DW_FORM_addrx4
     ).map(form => form.code -> form).toMap
 
     def fromCode(code: Int): Option[Form] = codeMap.get(code)
     def fromCodeUnsafe(code: Int): Form = codeMap.getOrElse(
       code,
-      throw new RuntimeException(s"Unknown DWARF abbrev code: $code")
+      throw new RuntimeException(s"Unknown DWARF abbrev form code: $code")
     )
 
     // DWARF v4 7.5.4 describes which form belongs to which classes
     def isConstantClass(form: Form): Boolean =
       form match {
         case DW_FORM_data2 | DW_FORM_data4 | DW_FORM_data8 | DW_FORM_sdata |
-            DW_FORM_udata =>
+            DW_FORM_udata | DW_FORM_data16 | DW_FORM_implicit_const =>
           true
         case _ => false
-      }
-
-    def isAddressClass(form: Form): Boolean =
-      form match {
-        case DW_FORM_addr => true
-        case _            => false
       }
 
   }
