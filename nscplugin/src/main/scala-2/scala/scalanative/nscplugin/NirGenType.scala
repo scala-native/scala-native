@@ -134,6 +134,7 @@ trait NirGenType[G <: Global with Singleton] { self: NirGenPhase[G] =>
     case UnitClass        => nir.Type.Unit
     case BoxedUnitClass   => nir.Rt.BoxedUnit
     case NullClass        => genRefType(RuntimeNullClass)
+    case NothingClass     => genRefType(RuntimeNothingClass)
     case ArrayClass       => nir.Type.Array(genType(st.targs.head))
     case _ if st.isStruct => genStruct(st)
     case _ if deconstructValueTypes =>
