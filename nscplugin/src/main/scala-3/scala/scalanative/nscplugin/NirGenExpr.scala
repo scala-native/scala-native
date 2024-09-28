@@ -450,7 +450,7 @@ trait NirGenExpr(using Context) {
     def genIdent(tree: Ident): nir.Val =
       tree match {
         case DesugaredSelect(_, _) =>
-          genSelect(DesugaredSelect.desugared)
+          genSelect(DesugaredSelect.desugared.withSpan(tree.span))
         case _ =>
           val sym = tree.symbol
           given nir.SourcePosition = tree.span
