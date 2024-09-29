@@ -8,11 +8,11 @@
 #include "Allocator.h"
 #include "Marker.h"
 #include "State.h"
-#include "immix_commix/utils/Time.h"
 #include "immix_commix/StackTrace.h"
 #include "Settings.h"
 #include "shared/MemoryInfo.h"
 #include "shared/MemoryMap.h"
+#include "shared/Time.h"
 #include <time.h>
 #include "WeakReferences.h"
 #include "immix_commix/Synchronizer.h"

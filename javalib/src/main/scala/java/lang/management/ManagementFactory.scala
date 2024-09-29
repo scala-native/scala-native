@@ -6,6 +6,7 @@ object ManagementFactory {
   private lazy val ThreadBean = ThreadMXBean()
   private lazy val OperatingSystemBean = OperatingSystemMXBean()
   private lazy val RuntimeBean = RuntimeMXBean()
+  private lazy val GarbageCollectorBean = GarbageCollectorMXBean()
 
   /** Returns the memory-specific bean.
    *
@@ -49,5 +50,27 @@ object ManagementFactory {
    *    }}}
    */
   def getRuntimeMXBean(): RuntimeMXBean = RuntimeBean
+
+  /** Returns a list of [[MemoryManagerMXBean]].
+   *
+   *  @example
+   *    {{{
+   *  val mmBean = ManagementFactory.getMemoryManagerMXBeans().get(0)
+   *  println(s"Memory manager: $${mmBean.getName()}")
+   *    }}}
+   */
+  def getMemoryManagerMXBeans(): java.util.List[MemoryManagerMXBean] =
+    java.util.Collections.singletonList(GarbageCollectorBean)
+
+  /** Returns a list of [[GarbageCollectorMXBean]].
+   *
+   *  @example
+   *    {{{
+   *  val gcBean = ManagementFactory.getGarbageCollectorMXBeans().get(0)
+   *  println(s"Total collection time (ms): $${gcBean.getCollectionTime()}")
+   *    }}}
+   */
+  def getGarbageCollectorMXBeans(): java.util.List[GarbageCollectorMXBean] =
+    java.util.Collections.singletonList(GarbageCollectorBean)
 
 }

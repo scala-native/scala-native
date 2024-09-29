@@ -68,6 +68,11 @@ object LinktimeInfo {
   )
   def runtimeVersion: String = resolved
 
+  @resolvedAtLinktime(
+    "scala.scalanative.meta.linktimeinfo.garbageCollector"
+  )
+  def garbageCollector: String = resolved
+
   object target {
     @resolvedAtLinktime("scala.scalanative.meta.linktimeinfo.target.arch")
     def arch: String = resolved

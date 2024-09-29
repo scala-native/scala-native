@@ -9,7 +9,7 @@
 #include "shared/GCTypes.h"
 #include <stdio.h>
 #include <inttypes.h>
-#include "immix_commix/utils/Time.h"
+#include "shared/Time.h"
 
 #ifdef ENABLE_GC_STATS
 const char *const Stats_eventNames[] = {

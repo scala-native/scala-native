@@ -39,6 +39,11 @@ size_t scalanative_GC_get_init_heapsize();
 size_t scalanative_GC_get_max_heapsize();
 size_t scalanative_GC_get_used_heapsize();
 
+// The total (accumulated) number of GC runs
+size_t scalanative_GC_stats_collection_total();
+// The total (accumulated) elapsed time in nanos of GC runs
+size_t scalanative_GC_stats_collection_duration_total();
+
 // Functions used to create a new thread supporting multithreading support in
 // the garbage collector. Would execute a proxy startup routine to register
 // newly created thread upon startup and unregister it from the GC upon

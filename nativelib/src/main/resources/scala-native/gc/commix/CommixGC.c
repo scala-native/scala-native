@@ -114,6 +114,14 @@ size_t scalanative_GC_get_max_heapsize() {
 
 size_t scalanative_GC_get_used_heapsize() { return Heap_getMemoryUsed(&heap); }
 
+size_t scalanative_GC_stats_collection_total() {
+    return heap.gcStats.collectionTotal;
+}
+
+size_t scalanative_GC_stats_collection_duration_total() {
+    return heap.gcStats.collectionDurationTotal_ns;
+}
+
 void scalanative_GC_add_roots(void *addr_low, void *addr_high) {
     AddressRange range = {addr_low, addr_high};
     GC_Roots_Add(customRoots, range);

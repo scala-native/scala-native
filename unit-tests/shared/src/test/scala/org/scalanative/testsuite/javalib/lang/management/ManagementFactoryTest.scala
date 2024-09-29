@@ -75,4 +75,16 @@ class ManagementFactoryTest {
     assertTrue(bean.getSystemProperties().size() > 0)
   }
 
+  @Test def getGarbageCollectorMXBeans(): Unit = {
+    val beans = ManagementFactory.getGarbageCollectorMXBeans
+
+    assert(beans.size() > 0)
+  }
+
+  @Test def getMemoryManagerMXBeans(): Unit = {
+    val beans = ManagementFactory.getMemoryManagerMXBeans
+
+    assert(beans.size() > 0)
+  }
+
 }

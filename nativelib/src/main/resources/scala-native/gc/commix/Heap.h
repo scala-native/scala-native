@@ -11,7 +11,7 @@
 #include <stdbool.h>
 #include "shared/ThreadUtil.h"
 #include <fcntl.h>
-#include "immix_commix/utils/Time.h"
+#include "shared/Time.h"
 
 typedef struct {
     word_t *blockMetaStart;
@@ -61,6 +61,15 @@ typedef struct {
         GreyList full;
         GreyList foundWeakRefs;
     } mark;
+    struct {
+        // The timestamp when the GC collection has started
+        size_t collectionStart_ns;
+
+        // The total (accumulated) number of GC runs
+        size_t collectionTotal;
+        // The total (accumulated) elapsed time in nanos of GC runs
+        size_t collectionDurationTotal_ns;
+    } gcStats;
     Bytemap *bytemap;
     Stats *stats;
     mutex_t lock;
