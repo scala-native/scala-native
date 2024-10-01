@@ -211,6 +211,7 @@ trait NirGenType(using Context) {
     else if (sym == defn.UnitClass) nir.Type.Unit
     else if (sym == defn.BoxedUnitClass) nir.Rt.BoxedUnit
     else if (sym == defn.NullClass) nir.Rt.RuntimeNull
+    else if (sym == defn.NothingClass) nir.Rt.RuntimeNothing
     else if (sym == defn.ArrayClass) nir.Type.Array(genType(targs.head))
     else if (sym.isStruct) genStruct(st)
     else if (deconstructValueTypes) {
