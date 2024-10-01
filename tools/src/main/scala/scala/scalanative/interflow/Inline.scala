@@ -62,8 +62,14 @@ private[interflow] trait Inline { self: Interflow =>
               if (noInline) logger("* has noinline attr")
               if (isRecursive) logger("* is recursive")
               if (isDenylisted) logger("* is denylisted")
-              if (calleeTooBig) logger(s"* callee is too big (${defn.insts.size} > $maxCalleeSize)")
-              if (callerTooBig) logger(s"* caller is too big (${mergeProcessor.currentSize()} > $maxCallerSize)")
+              if (calleeTooBig)
+                logger(
+                  s"* callee is too big (${defn.insts.size} > $maxCalleeSize)"
+                )
+              if (callerTooBig)
+                logger(
+                  s"* caller is too big (${mergeProcessor.currentSize()} > $maxCallerSize)"
+                )
               if (isExtern) logger("* is an extern method")
               if (inlineDepthLimitExceeded)
                 logger("* inline depth limit exceeded")
