@@ -289,7 +289,8 @@ private[scalanative] final class Check(implicit
       ty match {
         case _: nir.Type.ValueKind =>
           ok
-        case nir.Type.Ptr | nir.Type.Nothing | nir.Type.Null | nir.Type.Unit =>
+        case nir.Type.Ptr | nir.Type.Unit | nir.Type.NothingType(_) |
+            nir.Type.NullType(_) =>
           ok
         case ScopeRef(kind) =>
           kind match {
@@ -303,7 +304,8 @@ private[scalanative] final class Check(implicit
       ty match {
         case _: nir.Type.ValueKind =>
           ok
-        case nir.Type.Ptr | nir.Type.Nothing | nir.Type.Null | nir.Type.Unit =>
+        case nir.Type.Ptr | nir.Type.Unit | nir.Type.NothingType(_) |
+            nir.Type.NullType(_) =>
           ok
         case ScopeRef(kind) =>
           kind match {

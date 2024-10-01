@@ -211,6 +211,7 @@ trait NirGenType(using Context) {
     else if (sym == defn.UnitClass) nir.Type.Unit
     else if (sym == defn.BoxedUnitClass) nir.Rt.BoxedUnit
     else if (sym == defn.NullClass) nir.Rt.RuntimeNull
+    else if (sym == defn.NothingClass) nir.Rt.RuntimeNothing
     else if (sym == defn.ArrayClass) nir.Type.Array(genType(targs.head))
     else if (sym.isStruct) genStruct(st)
     else if (deconstructValueTypes) {
@@ -221,6 +222,17 @@ trait NirGenType(using Context) {
         nir.Type.unbox.getOrElse(nir.Type.normalize(ref), ref)
       }
     } else nir.Type.Ref(genTypeName(sym))
+  }
+
+  /** Adapts the possibly primitive NIR type to reference type required by
+   *  method parameters or result types Method param types should never contain
+   *  primitive null or nothing types. Instead, similary to JVM we should only
+   *  emit synthetic scala.runtime types
+   */
+  def genParamOrReturnType(st: SimpleType): nir.Type = genType(st) match {
+    case nir.Type.Null    => nir.Rt.RuntimeNull
+    case nir.Type.Nothing => nir.Rt.RuntimeNothing
+    case ty               => ty
   }
 
   def genTypeValue(st: SimpleType): nir.Val =
@@ -337,7 +349,7 @@ trait NirGenType(using Context) {
       val retty =
         if (sym.isConstructor) nir.Type.Unit
         else if (isExtern) genExternType(resultType)
-        else genType(resultType)
+        else genParamOrReturnType(resultType)
       nir.Type.Function(selfty ++: paramtys, retty)
     }
 
@@ -376,7 +388,7 @@ trait NirGenType(using Context) {
       def isRepeated = repeatedParams.getOrElse(paramName, false)
       if (isExtern && isRepeated) nir.Type.Vararg
       else if (isExtern) genExternType(paramType)
-      else genType(paramType)
+      else genParamOrReturnType(paramType)
     }
   }
 }

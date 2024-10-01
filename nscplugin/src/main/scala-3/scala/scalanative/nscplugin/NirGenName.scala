@@ -78,7 +78,7 @@ trait NirGenName(using Context) {
 
     def paramTypes = sym.info.paramInfoss.flatten
       .map(fromType)
-      .map(genType(_))
+      .map(genParamOrReturnType(_))
 
     if (sym == defn.`String_+`) genMethodName(defnNir.String_concat)
     else if (sym.isExtern) owner.member(genExternSigImpl(sym, id))
@@ -87,7 +87,7 @@ trait NirGenName(using Context) {
     else if (sym.name == nme.TRAIT_CONSTRUCTOR)
       owner.member(nir.Sig.Method(id, Seq(nir.Type.Unit), scope))
     else
-      val retType = genType(fromType(sym.info.resultType))
+      val retType = genParamOrReturnType(fromType(sym.info.resultType))
       owner.member(nir.Sig.Method(id, paramTypes :+ retType, scope))
   }
 
@@ -129,8 +129,8 @@ trait NirGenName(using Context) {
 
     val paramTypes = sym.info.paramInfoss.flatten
       .map(fromType)
-      .map(genType(_))
-    val retType = genType(fromType(sym.info.resultType))
+      .map(genParamOrReturnType)
+    val retType = genParamOrReturnType(fromType(sym.info.resultType))
 
     val sig = nir.Sig.Method(id, paramTypes :+ retType, scope)
     owner.member(sig)

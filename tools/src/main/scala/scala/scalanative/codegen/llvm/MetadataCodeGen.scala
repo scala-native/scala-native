@@ -85,8 +85,8 @@ private[codegen] trait MetadataCodeGen { self: AbstractCodeGen =>
     dbg("", v)
 
   private def canHaveDebugValue(ty: nir.Type) = ty match {
-    case nir.Type.Unit | nir.Type.Nothing => false
-    case _                                => true
+    case nir.Type.Unit | nir.Type.NothingType(_) => false
+    case _                                       => true
   }
 
   def dbgLocalValue(id: nir.Local, ty: nir.Type, argIdx: Option[Int] = None)(

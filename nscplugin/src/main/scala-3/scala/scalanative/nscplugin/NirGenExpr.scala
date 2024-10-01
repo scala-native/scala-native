@@ -151,10 +151,10 @@ trait NirGenExpr(using Context) {
       val Assign(lhsp, rhsp) = tree
       given nir.SourcePosition = tree.span
 
-      desugarTree(lhsp) match {
-        case sel @ Select(qualp, _) =>
+      lhsp match {
+        case DesugaredSelect(qualp, _) =>
           def rhs = genExpr(rhsp)
-          val sym = sel.symbol
+          val sym = lhsp.symbol
           val name = genFieldName(sym)
           if (sym.isExtern) {
             // Ignore intrinsic call to extern in class constructor
@@ -164,14 +164,14 @@ trait NirGenExpr(using Context) {
                 rhsp.symbol == defnNir.UnsafePackage_extern
             if (shouldIgnoreAssign) nir.Val.Unit
             else {
-              val externTy = genExternType(sel.tpe)
+              val externTy = genExternType(lhsp.tpe)
               genStoreExtern(externTy, sym, rhs)
             }
           } else {
             val qual =
               if (sym.isStaticMember) genModule(qualp.symbol)
               else genExpr(qualp)
-            val ty = genType(sel.tpe)
+            val ty = genType(lhsp.tpe)
             buf.fieldstore(ty, qual, name, rhs, unwind)
           }
 
@@ -257,10 +257,10 @@ trait NirGenExpr(using Context) {
       val captureTypesAndNames = {
         for
           (tree, idx) <- allCaptureValues.zipWithIndex
-          tpe = tree match {
-            case This(iden) => genType(fun.symbol.owner)
-            case _          => genType(tree.tpe)
-          }
+          tpe = genParamOrReturnType(tree match
+            case This(iden) => fun.symbol.owner
+            case _          => tree.tpe
+          )
           name = anonClassName.member(nir.Sig.Field(s"capture$idx"))
         yield (tpe, name)
       }
@@ -448,19 +448,24 @@ trait NirGenExpr(using Context) {
     }
 
     def genIdent(tree: Ident): nir.Val =
-      desugarIdent(tree) match {
-        case Ident(_) =>
+      tree match {
+        case DesugaredSelect(_, _) =>
+          genSelect(DesugaredSelect.desugared)
+        case _ =>
           val sym = tree.symbol
           given nir.SourcePosition = tree.span
-          if (curMethodInfo.mutableVars.contains(sym))
-            buf.varload(curMethodEnv.resolve(sym), unwind)
-          else if (sym.is(Module))
-            genModule(sym)
-          else curMethodEnv.resolve(sym)
-        case desuagred: Select =>
-          genSelect(desuagred.withSpan(tree.span))
-        case tree =>
-          throw FatalError(s"Unsupported desugared ident tree: $tree")
+          val value =
+            if (sym.is(Module))
+              genModule(sym)
+            else if (curMethodInfo.mutableVars.contains(sym))
+              buf.varload(curMethodEnv.resolve(sym), unwind)
+            else curMethodEnv.resolve(sym)
+          if nir.Type.isNothing(value.ty) then
+            // Short circuit the generated code for phantom value
+            // scala.runtime.Nothing$ extends Throwable so it's safe to throw
+            buf.raise(value, unwind)
+            buf.unreachable(unwind)
+          value
       }
 
     def genIf(tree: If): nir.Val = {
@@ -987,7 +992,7 @@ trait NirGenExpr(using Context) {
           case (_: nir.Type.PrimitiveKind, _: nir.Type.PrimitiveKind) =>
             genCoercion(value, fromty, toty)
           case _ if boxed.ty =?= boxty => boxed
-          case (_, nir.Type.Nothing) =>
+          case (_, nir.Type.NothingType(_)) =>
             val isNullL, notNullL = fresh()
             val isNull =
               buf.comp(nir.Comp.Ieq, boxed.ty, boxed, nir.Val.Null, unwind)
@@ -1000,7 +1005,12 @@ trait NirGenExpr(using Context) {
             buf.label(fresh())
             nir.Val.Zero(nir.Type.Nothing)
           case _ =>
-            val cast = buf.as(boxty, boxed, unwind)
+            val castTo = boxty match {
+              case nir.Type.Null    => nir.Rt.RuntimeNull
+              case nir.Type.Nothing => nir.Rt.RuntimeNothing
+              case _                => boxty
+            }
+            val cast = buf.as(castTo, boxed, unwind)
             unboxValue(tree.tpe, partial = true, cast)
         }
       else {
@@ -1101,8 +1111,7 @@ trait NirGenExpr(using Context) {
       import NirPrimitives._
       import dotty.tools.backend.ScalaPrimitivesOps._
       given nir.SourcePosition = app.span
-      val Apply(fun, args) = app
-      val Select(receiver, _) = desugarTree(fun): @unchecked
+      val Apply(fun @ DesugaredSelect(receiver, _), args) = app: @unchecked
 
       val sym = app.symbol
       val code = nirPrimitives.getPrimitive(app, receiver.tpe)
@@ -1181,8 +1190,10 @@ trait NirGenExpr(using Context) {
     }
 
     private def genApplyTypeApply(app: Apply): nir.Val = {
-      val Apply(tApply @ TypeApply(fun, targs), argsp) = app: @unchecked
-      val Select(receiverp, _) = desugarTree(fun): @unchecked
+      val Apply(
+        tApply @ TypeApply(fun @ DesugaredSelect(receiverp, _), targs),
+        argsp
+      ) = app: @unchecked
       given nir.SourcePosition = app.span
 
       val funSym = fun.symbol
@@ -1381,7 +1392,7 @@ trait NirGenExpr(using Context) {
             s"Too many arguments for primitive function: $app",
             app.sourcePos
           )
-          nir.Val.Null
+          nir.Val.Zero(retty)
       }
     }
 
@@ -1467,7 +1478,7 @@ trait NirGenExpr(using Context) {
                 s"Unknown floating point type binary operation code: $code",
                 right.sourcePos
               )
-              nir.Val.Null
+              nir.Val.Zero(retty)
           }
         case nir.Type.Bool | _: nir.Type.I =>
           code match {
@@ -1498,7 +1509,7 @@ trait NirGenExpr(using Context) {
                 s"Unknown integer type binary operation code: $code",
                 right.sourcePos
               )
-              nir.Val.Null
+              nir.Val.Zero(retty)
           }
         case _: nir.Type.RefKind =>
           def genEquals(ref: Boolean, negated: Boolean) = (left, right) match {
@@ -1521,7 +1532,7 @@ trait NirGenExpr(using Context) {
                 s"Unknown reference type binary operation code: $code",
                 right.sourcePos
               )
-              nir.Val.Null
+              nir.Val.Zero(retty)
           }
         case nir.Type.Ptr =>
           code match {
@@ -1533,7 +1544,7 @@ trait NirGenExpr(using Context) {
             s"Unknown binary operation type: $ty",
             right.sourcePos
           )
-          nir.Val.Null
+          nir.Val.Zero(retty)
       }
 
       genCoercion(binres, binres.ty, retty)(using right.span)
@@ -1578,10 +1589,10 @@ trait NirGenExpr(using Context) {
         case (ty1, ty2) if ty1 == ty2 =>
           ty1
 
-        case (nir.Type.Nothing, ty) =>
+        case (nir.Type.NothingType(_), ty) =>
           ty
 
-        case (ty, nir.Type.Nothing) =>
+        case (ty, nir.Type.NothingType(_)) =>
           ty
 
         case _ =>
@@ -2044,7 +2055,9 @@ trait NirGenExpr(using Context) {
     def genCastOp(from: nir.Type, to: nir.Type, value: nir.Val)(using
         nir.SourcePosition
     ): nir.Val =
-      castConv(from, to).fold(value)(buf.conv(_, to, value, unwind))
+      castConv(from, to)
+        .orElse(castConv(value.ty, to))
+        .fold(value)(buf.conv(_, to, value, unwind))
 
     private def genCoercion(app: Apply, receiver: Tree, code: Int): nir.Val = {
       given nir.SourcePosition = app.span
@@ -2058,7 +2071,7 @@ trait NirGenExpr(using Context) {
         using nir.SourcePosition
     ): nir.Val = {
       if (fromty == toty) value
-      else if (fromty == nir.Type.Nothing || toty == nir.Type.Nothing) value
+      else if (nir.Type.isNothing(fromty) || nir.Type.isNothing(toty)) value
       else {
         val conv = (fromty, toty) match {
           case (nir.Type.Ptr, _: nir.Type.RefKind) => nir.Conv.Bitcast
@@ -2244,7 +2257,8 @@ trait NirGenExpr(using Context) {
         case ErasedValueType(valueClass, _) =>
           val boxedClass = valueClass.typeSymbol.asClass
           val unboxMethod = ValueClasses.valueClassUnbox(boxedClass)
-          val castedValue = buf.genCastOp(value.ty, genType(valueClass), value)
+          val castedValue =
+            buf.genCastOp(value.ty, genRefType(valueClass), value)
           buf.genApplyMethod(
             sym = unboxMethod,
             statically = false,
@@ -2255,7 +2269,11 @@ trait NirGenExpr(using Context) {
         case tpe =>
           val unboxed = buf.unboxValue(tpe, partial = true, value)
           if (unboxed == value) // no need to or cannot unbox, we should cast
-            buf.genCastOp(genType(tpeEnteringPosterasure), genType(tpe), value)
+            buf.genCastOp(
+              genRefType(tpeEnteringPosterasure),
+              genRefType(tpe),
+              value
+            )
           else unboxed
       }
     }
@@ -3156,7 +3174,7 @@ trait NirGenExpr(using Context) {
       }
       super.+=(inst)
       inst match {
-        case nir.Inst.Let(_, op, _) if op.resty == nir.Type.Nothing =>
+        case nir.Inst.Let(_, op, _) if nir.Type.isNothing(op.resty) =>
           unreachable(unwind)
           label(fresh())
         case _ => ()

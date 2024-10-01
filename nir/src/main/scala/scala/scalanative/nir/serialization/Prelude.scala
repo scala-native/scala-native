@@ -20,6 +20,12 @@ case class Prelude(
     sections = sections,
     hasEntryPoints = hasEntryPoints
   )
+
+  /* Until Scala Native 0.5.6 we were incorrectly using nir.Type.Null | nir.Type.Nothing for method parameter and return types
+   * This lead to uncorrect handling of method dispatch on their instances.
+   * hese should be always emitted as scala.runtime.RuntimeNothing$ | scala.runtime.RuntimeNull$
+   */
+  private[scalanative] val requiresParamTypeOrReturnTypeAdaption = revision < 11
 }
 
 object Prelude {

@@ -768,7 +768,7 @@ private[codegen] abstract class AbstractCodeGen(
   ): Unit = {
     import sb._
     def isVoid(ty: nir.Type): Boolean =
-      ty == nir.Type.Unit || ty == nir.Type.Nothing
+      ty == nir.Type.Unit || nir.Type.isNothing(ty)
 
     val op = inst.op
     val id = inst.id

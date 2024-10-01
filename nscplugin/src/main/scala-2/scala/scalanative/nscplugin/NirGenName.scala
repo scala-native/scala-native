@@ -92,7 +92,7 @@ trait NirGenName[G <: Global with Singleton] {
         nir.Sig.Scope.Private(owner)
       else nir.Sig.Scope.Public
 
-    val paramTypes = tpe.params.toSeq.map(p => genType(p.info))
+    val paramTypes = tpe.params.toSeq.map(p => genParamOrReturnType(p.info))
 
     def isExtern = sym.isExtern
 
@@ -103,7 +103,7 @@ trait NirGenName[G <: Global with Singleton] {
     else if (sym.name == nme.CONSTRUCTOR)
       owner.member(nir.Sig.Ctor(paramTypes))
     else {
-      val retType = genType(tpe.resultType)
+      val retType = genParamOrReturnType(tpe.resultType)
       owner.member(nir.Sig.Method(id, paramTypes :+ retType, scope))
     }
   }
@@ -140,8 +140,8 @@ trait NirGenName[G <: Global with Singleton] {
       else nir.Sig.Scope.PublicStatic
 
     val tpe = sym.tpe.widen
-    val paramTypes = tpe.params.toSeq.map(p => genType(p.info))
-    val retType = genType(fromType(sym.info.resultType))
+    val paramTypes = tpe.params.toSeq.map(p => genParamOrReturnType(p.info))
+    val retType = genParamOrReturnType(fromType(sym.info.resultType))
 
     val name = sym.name
     val sig = nir.Sig.Method(id, paramTypes :+ retType, scope)
