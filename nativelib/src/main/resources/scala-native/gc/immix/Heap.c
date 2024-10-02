@@ -13,6 +13,7 @@
 #include "shared/MemoryInfo.h"
 #include "shared/MemoryMap.h"
 #include "shared/Time.h"
+#include "shared/jmx.h"
 #include <time.h>
 #include "WeakReferences.h"
 #include "immix_commix/Synchronizer.h"
@@ -178,9 +179,7 @@ void Heap_Collect(Heap *heap, Stack *stack) {
     printf("\nCollect\n");
     fflush(stdout);
 #endif
-    if (stats != NULL) {
-        start_ns = Time_current_nanos();
-    }
+    start_ns = Time_current_nanos();
     Marker_MarkRoots(heap, stack);
     if (stats != NULL) {
         nullify_start_ns = Time_current_nanos();
@@ -190,8 +189,9 @@ void Heap_Collect(Heap *heap, Stack *stack) {
         sweep_start_ns = Time_current_nanos();
     }
     Heap_Recycle(heap);
+    end_ns = Time_current_nanos();
+    jmx_stats_record_collection(start_ns, end_ns);
     if (stats != NULL) {
-        end_ns = Time_current_nanos();
         Stats_RecordCollection(stats, start_ns, nullify_start_ns,
                                sweep_start_ns, end_ns);
     }

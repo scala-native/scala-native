@@ -232,7 +232,6 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
 }
 
 void Heap_Collect(Heap *heap) {
-    heap->gcStats.collectionStart_ns = Time_current_nanos();
     MutatorThread *mutatorThread = currentMutatorThread;
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
     if (!Synchronizer_acquire())
@@ -254,6 +253,7 @@ void Heap_Collect(Heap *heap) {
                               GC_MutatorThreadState_Unmanaged);
     assert(Sweeper_IsSweepDone(heap));
 #endif
+    heap->gcCollectionStart_ns = Time_current_nanos();
     Stats *stats = Stats_OrNull(heap->stats);
     Stats_CollectionStarted(stats);
 #ifdef GC_ASSERTIONS

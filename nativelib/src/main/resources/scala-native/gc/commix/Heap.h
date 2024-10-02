@@ -27,6 +27,8 @@ typedef struct {
     uint32_t maxBlockCount;
     double maxMarkTimeRatio;
     double minFreeRatio;
+    // The timestamp when the GC collection has started
+    size_t gcCollectionStart_ns;
     struct {
         semaphore_t startWorkers;
         semaphore_t startMaster;
@@ -61,15 +63,6 @@ typedef struct {
         GreyList full;
         GreyList foundWeakRefs;
     } mark;
-    struct {
-        // The timestamp when the GC collection has started
-        size_t collectionStart_ns;
-
-        // The total (accumulated) number of GC runs
-        size_t collectionTotal;
-        // The total (accumulated) elapsed time in nanos of GC runs
-        size_t collectionDurationTotal_ns;
-    } gcStats;
     Bytemap *bytemap;
     Stats *stats;
     mutex_t lock;

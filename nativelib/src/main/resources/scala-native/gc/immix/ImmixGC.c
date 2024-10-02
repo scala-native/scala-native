@@ -11,17 +11,12 @@
 #include "WeakReferences.h"
 #include "Settings.h"
 #include "shared/Parsing.h"
-#include "shared/Time.h"
+#include "shared/jmx.h"
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
 #include "immix_commix/Synchronizer.h"
 #endif
 #include "MutatorThread.h"
 #include <stdatomic.h>
-
-// The total (accumulated) number of GC runs
-static size_t GC_STATS_COLLECTION_TOTAL = 0L;
-// The total (accumulated) elapsed time in nanos of GC runs
-static size_t GC_STATS_COLLECTION_DURATION_TOTAL = 0L;
 
 void scalanative_afterexit() { Stats_OnExit(heap.stats); }
 
@@ -80,14 +75,7 @@ INLINE void *scalanative_GC_alloc_array(Rtti *info, size_t length,
     return (void *)alloc;
 }
 
-INLINE void scalanative_GC_collect() {
-    size_t start_ns = Time_current_nanos();
-    Heap_Collect(&heap, &stack);
-    size_t end_ns = Time_current_nanos();
-
-    GC_STATS_COLLECTION_TOTAL++;
-    GC_STATS_COLLECTION_DURATION_TOTAL += (end_ns - start_ns);
-}
+INLINE void scalanative_GC_collect() { Heap_Collect(&heap, &stack); }
 
 INLINE void scalanative_GC_set_weak_references_collected_callback(
     WeakReferencesCollectedCallback callback) {
@@ -113,11 +101,11 @@ size_t scalanative_GC_get_max_heapsize() {
 size_t scalanative_GC_get_used_heapsize() { return Heap_getMemoryUsed(&heap); }
 
 size_t scalanative_GC_stats_collection_total() {
-    return GC_STATS_COLLECTION_TOTAL;
+    return jmx_stats_get_collection_total();
 }
 
 size_t scalanative_GC_stats_collection_duration_total() {
-    return GC_STATS_COLLECTION_DURATION_TOTAL;
+    return jmx_stats_get_collection_duration_total();
 }
 
 void scalanative_GC_add_roots(void *addr_low, void *addr_high) {
