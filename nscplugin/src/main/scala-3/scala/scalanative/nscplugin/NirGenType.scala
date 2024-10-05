@@ -101,54 +101,32 @@ trait NirGenType(using Context) {
         case _: ErasedValueType => false
         // t.typeSymbol may not be a ClassSymbol when it is an opaque type
         // https://github.com/scala-native/scala-native/issues/3700
-        case t if t.typeSymbol.isClass =>
-          t.typeSymbol.asClass.isPrimitiveValueClass
-        case _ => false
+        case t => t.typeSymbol.isPrimitiveValueClass
       }
     }
+    def isUnsignedType: Boolean =
+      tpe.typeSymbol.isClass && UnsignedTypes.contains(tpe.typeSymbol.asClass)
+
+    def isAnonymousStruct: Boolean =
+      defnNir.CStructClasses.contains(tpe.typeSymbol)
+
+    def isFixedSizeArray: Boolean = tpe.typeSymbol == defnNir.CArrayClass
   end extension
 
-  sealed case class SimpleType(
-      sym: Symbol,
-      targs: Seq[SimpleType] = Seq.empty
-  )
+  def genBoxType(tpe: Type): nir.Type =
+    val nirType = genType(tpe)
+    BoxTypesForPrimitive.getOrElse(nirType, genRefType(tpe))
 
-  given fromSymbol: Conversion[Symbol, SimpleType] = { sym =>
-    SimpleType(sym, sym.typeParams.map(fromSymbol))
-  }
-  given fromType: Conversion[Type, SimpleType] = {
-    def ObjectClassType = SimpleType(defn.ObjectClass, Nil)
-    _.widenDealias match {
-      case ThisType(tref) =>
-        if (tref == defn.ArrayType) ObjectClassType
-        else SimpleType(tref.symbol, Nil)
-      case JavaArrayType(elemTpe) =>
-        SimpleType(defn.ArrayClass, fromType(elemTpe) :: Nil)
-      case ConstantType(c)            => fromType(c.tpe)
-      case ClassInfo(_, sym, _, _, _) => fromSymbol(sym)
-      case t @ TypeRef(tpe, _)        =>
-        SimpleType(t.symbol, tpe.argTypes.map(fromType))
-      case AppliedType(tycon, args) =>
-        SimpleType(tycon.typeSymbol, args.map(fromType))
-      case t @ TermRef(_, _) => fromType(t.info.resultType)
-      case WildcardType      => ObjectClassType
-      case TypeBounds(_, _)  => ObjectClassType
-      case t                 => unsupported(s"unknown fromType($t)")
-    }
-  }
-
-  def genBoxType(st: SimpleType): nir.Type =
-    BoxTypesForSymbol.getOrElse(st.sym.asClass, genType(st))
-
-  private lazy val BoxTypesForSymbol = Map(
-    defn.CharClass -> genType(defn.BoxedCharClass),
-    defn.BooleanClass -> genType(defn.BoxedBooleanClass),
-    defn.ByteClass -> genType(defn.BoxedByteClass),
-    defn.ShortClass -> genType(defn.BoxedShortClass),
-    defn.IntClass -> genType(defn.BoxedIntClass),
-    defn.LongClass -> genType(defn.BoxedLongClass),
-    defn.FloatClass -> genType(defn.BoxedFloatClass),
-    defn.DoubleClass -> genType(defn.BoxedDoubleClass)
+  private lazy val BoxTypesForPrimitive = Map[nir.Type, nir.Type](
+    nir.Type.Char -> genRefType(defn.BoxedCharClass.info),
+    nir.Type.Bool -> genRefType(defn.BoxedBooleanClass.info),
+    nir.Type.Byte -> genRefType(defn.BoxedByteClass.info),
+    nir.Type.Short -> genRefType(defn.BoxedShortClass.info),
+    nir.Type.Int -> genRefType(defn.BoxedIntClass.info),
+    nir.Type.Long -> genRefType(defn.BoxedLongClass.info),
+    nir.Type.Float -> genRefType(defn.BoxedFloatClass.info),
+    nir.Type.Double -> genRefType(defn.BoxedDoubleClass.info),
+    nir.Type.Unit -> nir.Rt.BoxedUnit
   )
 
   lazy val jlStringBuilderAppendForSymbol = defnNir.jlStringBuilderAppendAlts
@@ -164,11 +142,11 @@ trait NirGenType(using Context) {
     )
     .toMap
 
-  def genExternType(st: SimpleType): nir.Type = {
-    if (st.sym.isCFuncPtrClass)
+  def genExternType(tpe: Type): nir.Type = {
+    if (tpe.widenDealias.typeSymbol.isCFuncPtrClass)
       nir.Type.Ptr
     else
-      genType(st) match {
+      genType(tpe) match {
         case refty: nir.Type.Ref if nir.Type.boxClasses.contains(refty.name) =>
           nir.Type.unbox(nir.Type.Ref(refty.name))
         case ty =>
@@ -176,16 +154,24 @@ trait NirGenType(using Context) {
       }
   }
 
-  @inline
-  def genType(
-      st: SimpleType,
+  inline def genType(
+      tpe: Type,
       deconstructValueTypes: Boolean = false
-  ): nir.Type = {
-    PrimitiveSymbolToNirTypes.getOrElse(
-      st.sym,
-      genRefType(st, deconstructValueTypes)
-    )
-  }
+  ): nir.Type = genNIRType { sym =>
+    PrimitiveSymbolToNirTypes
+      .get(sym)
+      .getOrElse {
+        if sym.isStruct then genStruct(tpe)
+        else if deconstructValueTypes then {
+          if sym.isAnonymousStruct then genAnonymousStruct(tpe)
+          else if sym.isFixedSizeArray then genFixedSizeArray(tpe)
+          else {
+            val ref = nir.Type.Ref(genTypeName(sym))
+            nir.Type.unbox.getOrElse(nir.Type.normalize(ref), ref)
+          }
+        } else nir.Type.Ref(genTypeName(sym))
+      }
+  }(tpe)
 
   private lazy val PrimitiveSymbolToNirTypes = Map[Symbol, nir.Type](
     defn.CharClass -> nir.Type.Char,
@@ -196,51 +182,70 @@ trait NirGenType(using Context) {
     defn.LongClass -> nir.Type.Long,
     defn.FloatClass -> nir.Type.Float,
     defn.DoubleClass -> nir.Type.Double,
+    defn.UnitClass -> nir.Type.Unit,
     defn.NullClass -> nir.Type.Null,
     defn.NothingClass -> nir.Type.Nothing,
     defnNir.RawPtrClass -> nir.Type.Ptr,
     defnNir.RawSizeClass -> nir.Type.Size
   )
 
-  def genRefType(
-      st: SimpleType,
-      deconstructValueTypes: Boolean = false
+  def genRefType(tpe: Type): nir.Type.RefKind =
+    genNIRType { sym =>
+      if sym.isPrimitiveValueClass then genBoxType(sym.info)
+      else if sym == defn.NothingClass then nir.Rt.RuntimeNothing
+      else if sym == defn.NullClass then nir.Rt.RuntimeNull
+      else nir.Type.Ref(genTypeName(sym))
+    }(tpe) match
+      case t: nir.Type.RefKind => t
+      case t => unsupported("Unexpected non ref kind type - $t")
+
+  private def genNIRType[T](toNIRType: Symbol => nir.Type)(
+      tpe: Type
   ): nir.Type = {
-    val SimpleType(sym, targs) = st
-    if (sym == defn.ObjectClass) nir.Rt.Object
-    else if (sym == defn.UnitClass) nir.Type.Unit
-    else if (sym == defn.BoxedUnitClass) nir.Rt.BoxedUnit
-    else if (sym == defn.NullClass) nir.Rt.RuntimeNull
-    else if (sym == defn.NothingClass) nir.Rt.RuntimeNothing
-    else if (sym == defn.ArrayClass) nir.Type.Array(genType(targs.head))
-    else if (sym.isStruct) genStruct(st)
-    else if (deconstructValueTypes) {
-      if (sym.isAnonymousStruct) genAnonymousStruct(st)
-      else if (sym.isFixedSizeArray) genFixedSizeArray(st)
-      else {
-        val ref = nir.Type.Ref(genTypeName(st.sym))
-        nir.Type.unbox.getOrElse(nir.Type.normalize(ref), ref)
-      }
-    } else nir.Type.Ref(genTypeName(sym))
+    inline def fromSymbol(sym: Symbol) =
+      if sym == defn.AnyClass || sym == defn.ObjectClass then nir.Rt.Object
+      else toNIRType(sym)
+    inline def recurse(t: Type) = genNIRType(toNIRType)(t)
+
+    tpe.widenDealias match {
+      // Array type such as Array[Int] (kept by erasure)
+      case JavaArrayType(el) => nir.Type.Array(genType(el))
+      case defn.ArrayOf(el)  => nir.Type.Array(genType(el))
+
+      case t: TypeRef =>
+        // See comment on nonClassTypeRefToBType in Scala JVM backend BCodeHelpers
+        if (!t.symbol.isClass) nir.Rt.Object
+        else fromSymbol(t.symbol)
+
+      case ClassInfo(_, sym, _, _, _) => fromSymbol(sym)
+
+      /* AnnotatedType should (probably) be eliminated by erasure. However we know it happens for
+       * meta-annotated annotations (@(ann @getter) val x = 0), so we don't emit a warning.
+       * The type in the AnnotationInfo is an AnnotatedTpe.
+       */
+      case AnnotatedType(t, _) => recurse(t)
+      case AppliedType(t, _)   => fromSymbol(t.typeSymbol)
+      case WildcardType        => nir.Rt.Object
+      case TypeBounds(_, hi)   => recurse(hi)
+    }
   }
 
-  def genTypeValue(st: SimpleType): nir.Val =
-    if (st.sym == defn.UnitClass)
-      genTypeValue(defnNir.RuntimePrimitive('U'))
-    else if (st.sym == defn.ArrayClass)
-      genTypeValue(defnNir.RuntimeArrayClass(genPrimCode(st.targs.head)))
-    else
-      genPrimCode(st) match {
-        case 'O'  => nir.Val.ClassOf(genTypeName(st.sym))
-        case code => genTypeValue(defnNir.RuntimePrimitive(code))
-      }
+  def genTypeValue(tpe: Type): nir.Val =
+    // FIXME: Backward compatibility for 0.5.x series - we're generating scala.scalanative.runtime.PrimitiveX types instead of proper ones
+    val refType =
+      defnNir.RuntimePrimitive
+        .get(tpe.typeSymbol)
+        .map(_.info)
+        .getOrElse(tpe)
+    nir.Val.ClassOf(genRefType(refType).className)
 
-  private def genAnonymousStruct(st: SimpleType): nir.Type = {
-    nir.Type.StructValue(st.targs.map(genType(_, deconstructValueTypes = true)))
-  }
+  private def genAnonymousStruct(tpe: Type): nir.Type =
+    nir.Type.StructValue(
+      tpe.argTypes
+        .map(genType(_, deconstructValueTypes = true))
+    )
 
-  private def genStruct(st: SimpleType): nir.Type = {
-    val symInfo = st.sym.info
+  private def genStruct(tpe: Type): nir.Type = {
     // In Scala 2 we used fields to create struct type, but this seems to be broken in Scala 3 -
     // when compiling original file (e.g. in nativelib) we do get correct list of fields,
     // however in the place of usage in other project (e.g. javalib) symbol info does contain only accessors,
@@ -251,7 +256,7 @@ trait NirGenType(using Context) {
     // receive output from native function returning Struct by value (only in LLVMIntriniscs)
     // we can leave it as it is in the current, simplified form using constructor arguments
     def ctorParams =
-      symInfo
+      tpe
         .member(nme.CONSTRUCTOR)
         .symbol
         .paramSymss
@@ -262,52 +267,37 @@ trait NirGenType(using Context) {
     nir.Type.StructValue(ctorParams)
   }
 
-  private def genFixedSizeArray(st: SimpleType): nir.Type = {
-    def parseDigit(st: SimpleType): Int = {
-      try defnNir.NatBaseClasses.indexOf(st.sym)
+  private def genFixedSizeArray(tpe: Type): nir.Type = {
+    def parseDigit(tpe: Type): Int = {
+      val sym = tpe.widenDealias.typeSymbol
+      try defnNir.NatBaseClasses.indexOf(sym)
       catch {
         case e: TypeError =>
           // Can happen when Nat class is not yet availble, etc. usages withing nativelib
-          st.sym.name.toSimpleName.toString match
+          sym.name.toSimpleName.toString match
             case s"Nat$$_${digit}" if digit.length == 1 =>
               digit.toIntOption.getOrElse(throw e)
             case _ => throw e
       }
     }
-    def natClassToInt(st: SimpleType): Int =
-      if (st.targs.isEmpty) parseDigit(st)
+    def natClassToInt(tpe: Type): Int =
+      if tpe.argTypes.isEmpty then parseDigit(tpe)
       else
-        st.targs.foldLeft(0) {
-          case (acc, st) => acc * 10 + parseDigit(st)
+        tpe.argTypes.foldLeft(0) {
+          case (acc, tpe) => acc * 10 + parseDigit(tpe)
         }
 
-    val SimpleType(_, Seq(elemType, size)) = st
-    val tpe = genType(elemType, deconstructValueTypes = true)
-    val elems = natClassToInt(size)
+    val List(elemType, size) = tpe.argTypes: @unchecked
     nir.Type
-      .ArrayValue(tpe, elems)
+      .ArrayValue(
+        genType(elemType, deconstructValueTypes = true),
+        natClassToInt(size)
+      )
       .ensuring(
         _.n >= 0,
-        s"fixed size array size needs to be positive integer, got $size"
+        s"fixed size array size needs to be positive integer, got ${size.show}"
       )
   }
-
-  def genArrayCode(st: SimpleType): Char =
-    genPrimCode(st.targs.head)
-
-  def genPrimCode(st: SimpleType): Char =
-    SymbolToPrimCode.getOrElse(st.sym, 'O')
-
-  private lazy val SymbolToPrimCode: Map[Symbol, Char] = Map(
-    defn.CharClass -> 'C',
-    defn.BooleanClass -> 'B',
-    defn.ByteClass -> 'Z',
-    defn.ShortClass -> 'S',
-    defn.IntClass -> 'I',
-    defn.LongClass -> 'L',
-    defn.FloatClass -> 'F',
-    defn.DoubleClass -> 'D'
-  )
 
   def genMethodSig(
       sym: Symbol,
@@ -332,7 +322,7 @@ trait NirGenType(using Context) {
       val owner = sym.owner
       val paramtys = genMethodSigParamsImpl(sym, isExtern)
       val selfty = Option.unless(statically || isExtern || sym.isStaticInNIR) {
-        genType(owner)
+        genType(owner.info.resultType)
       }
       val resultType = sym.info.resultType
       val retty =
