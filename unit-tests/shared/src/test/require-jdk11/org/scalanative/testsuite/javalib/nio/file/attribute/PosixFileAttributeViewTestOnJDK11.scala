@@ -14,7 +14,6 @@ import org.junit.BeforeClass
 
 import org.scalanative.testsuite.utils.Platform
 
-
 /* The code under test should work on Java 8 through latest (currently 23).
  * It is tested on JDK11 because that version introduces "Path.of()".
  * In some later JVM versions, "Paths.get()" becomes deprecated. No sense
