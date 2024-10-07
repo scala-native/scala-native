@@ -14,7 +14,8 @@
 #ifndef _WIN32
 #include <unistd.h>
 #endif
-#include "immix_commix/utils/Time.h"
+#include "shared/Time.h"
+#include "shared/jmx.h"
 
 /*
 If in OSX, sem_open cannot create a semaphore whose name is longer than
@@ -180,6 +181,9 @@ void Phase_SweepDone(Heap *heap, Stats *stats) {
         Stats_RecordTime(stats, end_ns);
         Stats_RecordEvent(stats, event_collection,
                           heap->stats->collection_start_ns, end_ns);
+
+        jmx_stats_record_collection(heap->gcCollectionStart_ns,
+                                    Time_current_nanos());
 
         heap->sweep.postSweepDone = true;
         atomic_thread_fence(memory_order_release);

@@ -17,6 +17,7 @@
 #include "WeakReferences.h"
 #include "Sweeper.h"
 #include "immix_commix/Synchronizer.h"
+#include "shared/jmx.h"
 
 #include "shared/Parsing.h"
 
@@ -113,6 +114,14 @@ size_t scalanative_GC_get_max_heapsize() {
 }
 
 size_t scalanative_GC_get_used_heapsize() { return Heap_getMemoryUsed(&heap); }
+
+size_t scalanative_GC_stats_collection_total() {
+    return jmx_stats_get_collection_total();
+}
+
+size_t scalanative_GC_stats_collection_duration_total() {
+    return jmx_stats_get_collection_duration_total();
+}
 
 void scalanative_GC_add_roots(void *addr_low, void *addr_high) {
     AddressRange range = {addr_low, addr_high};

@@ -43,6 +43,13 @@ object GC {
   @name("scalanative_GC_get_used_heapsize")
   def getUsedHeapSize(): CSize = extern
 
+  // The total (cumulative) number of GC runs
+  @name("scalanative_GC_stats_collection_total")
+  def getStatsCollectionTotal(): CSize = extern
+  // The total (cumulative) time in nanos spent on GC runs
+  @name("scalanative_GC_stats_collection_duration_total")
+  def getStatsCollectionDurationTotal(): CSize = extern
+
   /*  Multithreading awareness for GC Every implementation of GC supported in
    *  ScalaNative needs to register a given thread The main thread is
    *  automatically registered. Every additional thread needs to explicitly

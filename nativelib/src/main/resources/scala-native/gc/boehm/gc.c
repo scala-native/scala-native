@@ -9,6 +9,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include "shared/Parsing.h"
+#include "shared/Time.h"
+#include "shared/jmx.h"
 
 // At the moment we rely on the conservative
 // mode of Boehm GC as our garbage collector.
@@ -69,7 +71,20 @@ size_t scalanative_GC_get_used_heapsize() {
     return heap_sz - unmapped_bytes;
 }
 
-void scalanative_GC_collect() { GC_gcollect(); }
+size_t scalanative_GC_stats_collection_total() {
+    return jmx_stats_get_collection_total();
+}
+
+size_t scalanative_GC_stats_collection_duration_total() {
+    return jmx_stats_get_collection_duration_total();
+}
+
+void scalanative_GC_collect() {
+    size_t start_ns = Time_current_nanos();
+    GC_gcollect();
+    size_t end_ns = Time_current_nanos();
+    jmx_stats_record_collection(start_ns, end_ns);
+}
 
 void scalanative_GC_set_weak_references_collected_callback(
     WeakReferencesCollectedCallback callback) {}

@@ -1,4 +1,5 @@
-#if defined(SCALANATIVE_GC_IMMIX) || defined(SCALANATIVE_GC_COMMIX)
+#if defined(SCALANATIVE_GC_IMMIX) || defined(SCALANATIVE_GC_COMMIX) ||         \
+    defined(SCALANATIVE_GC_BOEHM)
 
 #include "Time.h"
 #include <time.h>
@@ -97,4 +98,5 @@ long long Time_current_nanos() {
     return nano_time;
 }
 
-#endif // defined(SCALANATIVE_GC_IMMIX) || defined(SCALANATIVE_GC_COMMIX)
+#endif // defined(SCALANATIVE_GC_IMMIX) || defined(SCALANATIVE_GC_COMMIX) ||
+       // defined(SCALANATIVE_GC_BOEHM)

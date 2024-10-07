@@ -11,7 +11,7 @@
 #include <stdbool.h>
 #include "shared/ThreadUtil.h"
 #include <fcntl.h>
-#include "immix_commix/utils/Time.h"
+#include "shared/Time.h"
 
 typedef struct {
     word_t *blockMetaStart;
@@ -27,6 +27,8 @@ typedef struct {
     uint32_t maxBlockCount;
     double maxMarkTimeRatio;
     double minFreeRatio;
+    // The timestamp when the GC collection has started
+    size_t gcCollectionStart_ns;
     struct {
         semaphore_t startWorkers;
         semaphore_t startMaster;

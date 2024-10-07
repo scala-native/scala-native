@@ -1,4 +1,4 @@
-#include "immix_commix/utils/Time.h"
+#include "shared/Time.h"
 #if defined(SCALANATIVE_GC_COMMIX)
 
 #include <stdlib.h>
@@ -253,6 +253,7 @@ void Heap_Collect(Heap *heap) {
                               GC_MutatorThreadState_Unmanaged);
     assert(Sweeper_IsSweepDone(heap));
 #endif
+    heap->gcCollectionStart_ns = Time_current_nanos();
     Stats *stats = Stats_OrNull(heap->stats);
     Stats_CollectionStarted(stats);
 #ifdef GC_ASSERTIONS

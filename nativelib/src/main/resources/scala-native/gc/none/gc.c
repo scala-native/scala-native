@@ -50,6 +50,10 @@ size_t scalanative_GC_get_max_heapsize() {
 
 size_t scalanative_GC_get_used_heapsize() { return TOTAL_ALLOCATED; }
 
+size_t scalanative_GC_stats_collection_total() { return -1L; }
+
+size_t scalanative_GC_stats_collection_duration_total() { return -1L; }
+
 void Prealloc_Or_Default() {
 
     if (TO_NORMAL_MMAP == 1L) { // Check if we have prealloc env varible
