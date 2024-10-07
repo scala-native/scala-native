@@ -85,7 +85,10 @@ final class PosixFileAttributeViewImpl(path: Path, options: Array[LinkOption])
       }
     }
 
-  override def readAttributes(): BasicFileAttributes = attributes
+//  override def readAttributes(): BasicFileAttributes = attributes
+//  override def readAttributes(): PosixFileAttributes = attributes
+
+  def readAttributes(): PosixFileAttributes = attributes
 
   private class PosixFileKey(deviceId: stat.dev_t, inodeNumber: stat.ino_t) {
 
