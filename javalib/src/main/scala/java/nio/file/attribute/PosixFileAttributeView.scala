@@ -6,6 +6,7 @@ trait PosixFileAttributeView
     extends BasicFileAttributeView
     with FileOwnerAttributeView {
   def name(): String
+  def readAttributes(): PosixFileAttributes
   def setGroup(group: GroupPrincipal): Unit
   def setPermissions(perms: Set[PosixFilePermission]): Unit
 }
