@@ -59,7 +59,7 @@ object ScalaVersions {
   //   1.10.0 Latest sbt version.
   //   1.10.1 Latest sbt version.
 
-  val sbt10Version: String = "1.10.1"
+  val sbt10Version: String = "1.10.2"
   val sbt10ScalaVersion: String = scala212
 
   val libCrossScalaVersions: Seq[String] =
