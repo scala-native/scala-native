@@ -11,11 +11,9 @@ private[runtime] object Endianness {
   case object BIG extends Endianness
 }
 
-import MachO._
-
 private[runtime] case class MachO private (
-    header: Header,
-    segments: List[Segment],
+    header: MachO.Header,
+    segments: List[MachO.Segment],
     uuid: List[UInt]
 ) {}
 
