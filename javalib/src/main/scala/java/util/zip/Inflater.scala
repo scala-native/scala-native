@@ -5,6 +5,7 @@ import scala.scalanative.unsafe._
 import scala.scalanative.libc._
 import scala.scalanative.ffi.zlib
 import scala.scalanative.ffi.zlibOps._
+import java.nio.charset.StandardCharsets
 
 // Ported from Apache Harmony
 
@@ -179,7 +180,12 @@ class Inflater(noHeader: Boolean) {
         val totalOut = stream.totalOut
         (totalOut - sout).toInt
       } else {
-        throw new DataFormatException(Inflater.zlibStatusToString(err))
+        throw new DataFormatException(
+          Inflater.zlibStatusToString(
+            err,
+            Option(stream.msg).map(cstr => fromCString(cstr, StandardCharsets.UTF_8)).filter(_.nonEmpty)
+          )
+        )
       }
     } else {
       val totalIn = stream.totalIn
@@ -210,7 +216,10 @@ private object Inflater {
     stream
   }
 
-  private[Inflater] def zlibStatusToString(status: Int): String = {
+  private[Inflater] def zlibStatusToString(
+      status: Int,
+      msg: Option[String]
+  ): String = {
     val errorName =
       if (status == zlib.Z_OK) " (Z_OK)"
       else if (status == zlib.Z_STREAM_END) " (Z_STREAM_END)"
@@ -222,7 +231,8 @@ private object Inflater {
       else if (status == zlib.Z_BUF_ERROR) " (Z_BUF_ERROR)"
       else if (status == zlib.Z_VERSION_ERROR) " (Z_VERSION_ERROR)"
       else ""
-    s"zlib status $status$errorName"
+    val fullMsg = msg.map(m => s" - $m").getOrElse("")
+    s"zlib status $status$errorName$fullMsg"
   }
 
 }
