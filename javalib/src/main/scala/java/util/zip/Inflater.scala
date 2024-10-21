@@ -183,7 +183,9 @@ class Inflater(noHeader: Boolean) {
         throw new DataFormatException(
           Inflater.zlibStatusToString(
             err,
-            Option(stream.msg).map(cstr => fromCString(cstr, StandardCharsets.UTF_8)).filter(_.nonEmpty)
+            Option(stream.msg)
+              .map(cstr => fromCString(cstr, StandardCharsets.UTF_8))
+              .filter(_.nonEmpty)
           )
         )
       }
