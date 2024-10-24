@@ -5,6 +5,7 @@ import scala.scalanative.unsafe._
 import scala.scalanative.libc._
 import scala.scalanative.ffi.zlib
 import scala.scalanative.ffi.zlibOps._
+import java.nio.charset.StandardCharsets
 
 // Ported from Apache Harmony
 
@@ -179,7 +180,14 @@ class Inflater(noHeader: Boolean) {
         val totalOut = stream.totalOut
         (totalOut - sout).toInt
       } else {
-        throw new DataFormatException(err.toString)
+        throw new DataFormatException(
+          Inflater.zlibStatusToString(
+            err,
+            Option(stream.msg)
+              .map(cstr => fromCString(cstr, StandardCharsets.UTF_8))
+              .filter(_.nonEmpty)
+          )
+        )
       }
     } else {
       val totalIn = stream.totalIn
@@ -209,4 +217,24 @@ private object Inflater {
     }
     stream
   }
+
+  private[Inflater] def zlibStatusToString(
+      status: Int,
+      msg: Option[String]
+  ): String = {
+    val errorName =
+      if (status == zlib.Z_OK) " (Z_OK)"
+      else if (status == zlib.Z_STREAM_END) " (Z_STREAM_END)"
+      else if (status == zlib.Z_NEED_DICT) " (Z_NEED_DICT)"
+      else if (status == zlib.Z_ERRNO) " (Z_ERRNO)"
+      else if (status == zlib.Z_STREAM_ERROR) " (Z_STREAM_ERROR)"
+      else if (status == zlib.Z_DATA_ERROR) " (Z_DATA_ERROR)"
+      else if (status == zlib.Z_MEM_ERROR) " (Z_MEM_ERROR)"
+      else if (status == zlib.Z_BUF_ERROR) " (Z_BUF_ERROR)"
+      else if (status == zlib.Z_VERSION_ERROR) " (Z_VERSION_ERROR)"
+      else ""
+    val fullMsg = msg.map(m => s" - $m").getOrElse("")
+    s"zlib status $status$errorName$fullMsg"
+  }
+
 }
