@@ -40,6 +40,7 @@ private[java] object WeakReferenceRegistry {
           current.enqueue()
           val handler = current.postGCHandler
           if (handler != null) {
+            current.postGCHandler = null
             try handler()
             catch {
               case NonFatal(err) =>
