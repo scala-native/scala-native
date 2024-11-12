@@ -53,17 +53,16 @@ class PostInlineNativeInterop extends PluginPhase with NativeInteropUtil {
           if defnNir.CFuncPtr_fromScalaFunction.contains(fun.symbol) =>
         val tys = tArgs.map(t => dealiasTypeMapper(t.tpe))
         lambda
-          .collectSubTrees {
+          .foreachSubTree {
             case tree @ Select(This(_), _)
                 if !tree.symbol.owner.isStaticOwner =>
-              tree
+              report.error(
+                s"CFuncPtr lambda can only refer to statically reachable symbols, but it's using ${tree.symbol.showLocated}",
+                tree.srcPos
+              )
+            case _ => ()
           }
-          .foreach { selfRef =>
-            report.error(
-              s"CFuncPtr lambda can only refer to statically reachable symbols, but it's using ${selfRef.symbol.showLocated}",
-              selfRef.srcPos
-            )
-          }
+
         app.withAttachment(NirDefinitions.NonErasedTypes, tys)
 
       case Apply(fun, args) if defnNir.CFuncPtr_apply.contains(fun.symbol) =>
