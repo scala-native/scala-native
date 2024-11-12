@@ -516,6 +516,34 @@ class NIRCompilerTest {
     )
   }
 
+  @Test def cFuncPtrWithLocalState2(): Unit = {
+    val err = assertThrows(
+      classOf[CompilationFailedException],
+      () => NIRCompiler(_.compile("""
+      |import scalanative.unsafe._
+      |
+      |object Test {
+      |  def main(args: Array[String]) = new Bug()
+      |}
+      |class Bug(){
+      |  def accessor: Int = data.##
+      |  var data: Option[String] = None
+      |  val nativeFunc = CFuncPtr1.fromScalaFunction{
+      |    (ptr: CString) =>
+      |      data = Some(fromCString(ptr))
+      |      println(s"native: $ptr - $accessor")
+      |  }
+      |}""".stripMargin))
+    )
+    assertTrue(
+      err
+        .getMessage()
+        .contains(
+          "CFuncPtr lambda can only refer to statically reachable symbols, but it's using"
+        )
+    )
+  }
+
   @Test def exportModuleMethod(): Unit = {
     try
       NIRCompiler(

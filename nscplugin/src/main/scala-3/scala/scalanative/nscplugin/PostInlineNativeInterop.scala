@@ -49,9 +49,20 @@ class PostInlineNativeInterop extends PluginPhase with NativeInteropUtil {
     // Attach exact type information to the AST to preserve the type information
     // during the type erase phase and refer to it in the NIR generation phase.
     tree match
-      case app @ Apply(TypeApply(fun, tArgs), _)
+      case app @ Apply(TypeApply(fun, tArgs), List(lambda))
           if defnNir.CFuncPtr_fromScalaFunction.contains(fun.symbol) =>
         val tys = tArgs.map(t => dealiasTypeMapper(t.tpe))
+        lambda
+          .collectSubTrees {
+            case tree @ Select(This(_), _)
+                if !tree.symbol.owner.isStaticOwner =>
+              tree
+          }
+          .foreach: selfRef =>
+            report.error(
+              s"CFuncPtr lambda can only refer to statically reachable symbols, but it's using ${selfRef.symbol.showLocated}",
+              selfRef.srcPos
+            )
         app.withAttachment(NirDefinitions.NonErasedTypes, tys)
 
       case Apply(fun, args) if defnNir.CFuncPtr_apply.contains(fun.symbol) =>
