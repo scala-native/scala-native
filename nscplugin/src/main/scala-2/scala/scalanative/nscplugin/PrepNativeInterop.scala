@@ -250,6 +250,22 @@ abstract class PrepNativeInterop[G <: Global with Singleton](
               widenDealiasType(tree.tpe.finalResultType)
           tree.updateAttachment(NonErasedTypes(paramTypes))
 
+        case Apply(fun, List(lambda))
+            if CFuncPtrFromFunctionMethods.contains(fun.symbol) =>
+          lambda
+            .collect {
+              case tree @ Select(This(_), _)
+                  if !tree.symbol.owner.isStaticOwner =>
+                tree
+            }
+            .foreach { selfRef =>
+              reporter.error(
+                selfRef.pos,
+                s"CFuncPtr lambda can only refer to statically reachable symbols, but it's using ${show(selfRef.symbol)}"
+              )
+            }
+          tree
+
         case _ =>
           super.transform(tree)
       }

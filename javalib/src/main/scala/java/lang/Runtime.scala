@@ -31,12 +31,6 @@ class Runtime private () {
     signal.signal(signal.SIGTERM, handleSignal(_))
   }
 
-  private def handleSignal(sig: CInt): Unit = {
-    Proxy.disableGracefullShutdown()
-    Runtime.getRuntime().runHooks()
-    exit(128 + sig)
-  }
-
   private def ensureCanModify(hook: Thread): Unit = if (shutdownStarted) {
     throw new IllegalStateException(
       s"Shutdown sequence started, cannot add/remove hook $hook"
@@ -171,6 +165,12 @@ private object ShutdownHookUncaughtExceptionHandler
 
 object Runtime extends Runtime() {
   def getRuntime(): Runtime = this
+
+  private def handleSignal(sig: CInt): Unit = {
+    Proxy.disableGracefullShutdown()
+    Runtime.getRuntime().runHooks()
+    exit(128 + sig)
+  }
 
   private implicit class ProcessBuilderOps(val pb: ProcessBuilder)
       extends AnyVal {

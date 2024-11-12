@@ -2982,7 +2982,12 @@ trait NirGenExpr(using Context) {
           if (funSym.isStaticInNIR)
             buf.genApplyStaticMethod(funSym, NoSymbol, argsp)
           else
-            val owner = buf.genModule(funSym.owner)
+            val owner =
+              if funSym.owner.companionModule.exists then
+                buf.genModule(funSym.owner)
+              else
+                // Safe becouse usage of This is guarded in NativeInterop
+                nir.Val.Null
             val selfp = ValTree(funTree)(owner)
             buf.genApplyMethod(funSym, statically = true, selfp, argsp)
 
