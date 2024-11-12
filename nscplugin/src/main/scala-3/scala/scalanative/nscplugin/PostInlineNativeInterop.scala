@@ -58,11 +58,12 @@ class PostInlineNativeInterop extends PluginPhase with NativeInteropUtil {
                 if !tree.symbol.owner.isStaticOwner =>
               tree
           }
-          .foreach: selfRef =>
+          .foreach { selfRef =>
             report.error(
               s"CFuncPtr lambda can only refer to statically reachable symbols, but it's using ${selfRef.symbol.showLocated}",
               selfRef.srcPos
             )
+          }
         app.withAttachment(NirDefinitions.NonErasedTypes, tys)
 
       case Apply(fun, args) if defnNir.CFuncPtr_apply.contains(fun.symbol) =>
