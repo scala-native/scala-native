@@ -29,7 +29,7 @@ object ScalaVersions {
     crossScalaVersions("3.3", 0 to 4), // LTS
     crossScalaVersions("3.4", 0 to 3),
     crossScalaVersions("3.5", 0 to 2),
-    crossScalaVersions("3.6", 1 to 1), // TODO: First official release would be 3.6.2
+    crossScalaVersions("3.6", 1 to 1) // First official release would be 3.6.2
   ).flatten.distinct
 
   // Tested in scheduled nightly CI to check compiler plugins
