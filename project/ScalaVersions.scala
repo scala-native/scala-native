@@ -34,7 +34,11 @@ object ScalaVersions {
 
   // Tested in scheduled nightly CI to check compiler plugins
   // List maintains only upcoming releases, removed from the list after reaching stable status
-  lazy val scala3RCVersions = Nil
+  lazy val scala3RCVersions = List(
+    // Hack to make Scala 3.5 the default version until Scala 2.13.16 is relased. (required by scripted tests)
+    // Also 3.6.1 is treated as 3.6.0-RC1 becouse of broken release. Scala 3.6.2 would be the first official release
+    "3.6.1"
+  )
 
   // Scala versions used for publishing libraries
   val scala212: String = crossScala212.last
