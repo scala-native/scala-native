@@ -364,7 +364,7 @@ object Spliterators {
       def hasNext(): Boolean = {
         if (cached.nonEmpty) true
         else {
-          spliterator.tryAdvance((e: Double) => (cached = Some(e)))
+          spliterator.tryAdvance{(e: Double) => cached = Some(e)}
           cached.nonEmpty
         }
       }
@@ -391,7 +391,7 @@ object Spliterators {
       def hasNext(): Boolean = {
         if (cached.nonEmpty) true
         else {
-          spliterator.tryAdvance((e: Int) => (cached = Some(e)))
+          spliterator.tryAdvance{(e: Int) => cached = Some(e)}
           cached.nonEmpty
         }
       }
@@ -418,7 +418,7 @@ object Spliterators {
       def hasNext(): Boolean = {
         if (cached.nonEmpty) true
         else {
-          spliterator.tryAdvance((e: Long) => (cached = Some(e)))
+          spliterator.tryAdvance{(e: Long) => cached = Some(e)}
           cached.nonEmpty
         }
       }
@@ -445,7 +445,7 @@ object Spliterators {
       def hasNext(): Boolean = {
         if (cached.nonEmpty) true
         else {
-          spliterator.tryAdvance((e: T) => (cached = Some(e)))
+          spliterator.tryAdvance{(e: T) => cached = Some(e)}
           cached.nonEmpty
         }
       }

@@ -26,17 +26,15 @@ object ScalaVersions {
     // windowslib fails to compile with 3.1.{0-1}
     crossScalaVersions("3.1", 2 to 3),
     crossScalaVersions("3.2", 0 to 2),
-    crossScalaVersions("3.3", 0 to 4),
+    crossScalaVersions("3.3", 0 to 4), // LTS
     crossScalaVersions("3.4", 0 to 3),
-    crossScalaVersions("3.5", 0 to 1)
+    crossScalaVersions("3.5", 0 to 2),
+    crossScalaVersions("3.6", 1 to 1), // TODO: First official release would be 3.6.2
   ).flatten.distinct
 
   // Tested in scheduled nightly CI to check compiler plugins
   // List maintains only upcoming releases, removed from the list after reaching stable status
-  lazy val scala3RCVersions = List(
-    // 1.to(1).map(v => s"3.3.5-RC$v"),
-    1.to(1).map(v => s"3.5.2-RC$v")
-  ).flatten
+  lazy val scala3RCVersions = Nil
 
   // Scala versions used for publishing libraries
   val scala212: String = crossScala212.last
