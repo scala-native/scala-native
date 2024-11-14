@@ -346,8 +346,16 @@ trait NirGenExpr(using Context) {
 
         val selfType = nir.Type.Ref(anonClassName)
         val methodName = anonClassName.member(funSig)
-        val paramTypes = selfType +: sigTypes
-        val paramSyms = funSym.paramSymss.flatten
+        val nirParamTypes = selfType +: sigTypes
+        val paramTypes = funSym.info.paramInfoss.flatten.drop(env.size)
+        assert(
+          sigTypes.size == paramTypes.size,
+          s"""Ammount of paramaters in NIR and AST differ: 
+            |NIR: ${sigTypes}
+            |AST: ${paramTypes}
+            |Env: ${env.map(_.tpe)}
+            |Sym: ${funSym.showFullName}""".stripMargin
+        )
 
         def genBody = {
           given fresh: nir.Fresh = nir.Fresh()
@@ -373,8 +381,8 @@ trait NirGenExpr(using Context) {
             // - values that can be unboxed, are unboxed
             // - otherwise, the value is cast to the appropriate type
             val paramVals =
-              for (param, sym) <- params.zip(paramSyms)
-              yield ensureUnboxed(param, sym.info.finalResultType)
+              for (param, tpe) <- params.zip(paramTypes)
+              yield ensureUnboxed(param, tpe)
 
             val captureVals =
               for (sym, (tpe, name)) <- captureSyms.zip(captureTypesAndNames)
@@ -417,7 +425,7 @@ trait NirGenExpr(using Context) {
         new nir.Defn.Define(
           nir.Attrs.None,
           methodName,
-          nir.Type.Function(paramTypes, retType),
+          nir.Type.Function(nirParamTypes, retType),
           genBody
         )
       }
