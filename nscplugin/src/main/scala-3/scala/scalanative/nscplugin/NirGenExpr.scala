@@ -350,7 +350,7 @@ trait NirGenExpr(using Context) {
         val paramTypes = funSym.info.paramInfoss.flatten.drop(env.size)
         assert(
           sigTypes.size == paramTypes.size,
-          s"""Ammount of paramaters in NIR and AST differ: 
+          s"""Amount of parameters in NIR and AST differ: 
             |NIR: ${sigTypes}
             |AST: ${paramTypes}
             |Env: ${env.map(_.tpe)}
