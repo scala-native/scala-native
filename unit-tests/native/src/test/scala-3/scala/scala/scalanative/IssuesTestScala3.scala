@@ -30,12 +30,6 @@ class IssuesTestScala3 {
     functions.test(buff, c"%d %d %d", -1, 1, 42)
     assertEquals("-1 1 42", fromCString(buff))
   }
-
-  @Test def i4082(): Unit = {
-    // Ensure links
-    def test[I[_], O[_]](f: [C] => (I[C], I[C] => O[C]) => O[C]): Unit = ()
-    assertEquals((), test[List, List]([C] => (input, cont) => List.empty))
-  }
 }
 
 object issue2485:

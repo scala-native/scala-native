@@ -482,22 +482,26 @@ object Settings {
     Test / unmanagedSourceDirectories ++= {
       val testsRootDir = baseDirectory.value.getParentFile.getParentFile
       val sharedTestDir = testsRootDir / "shared/src/test"
-      val scalaVersionDir = CrossVersion
+      val scalaVersions = CrossVersion
         .partialVersion(scalaVersion.value)
         .collect {
-          case (3, _)     => "scala3"
-          case (2, minor) => s"scala2.$minor"
+          case (3, minor) => "3" :: 0.to(minor.toInt).map("3." + _).toList
+          case (2, minor) => List("2", s"2.$minor")
         }
         .getOrElse(sys.error("Unsupported Scala version"))
       // Java 8 is reference so start at 9
-      (9 to (Global / javaVersion).value).flatMap { v =>
-        val jdkVersion = s"jdk$v"
-        Seq(
-          sharedTestDir / s"require-$jdkVersion",
-          sharedTestDir / s"require-$scalaVersionDir-$jdkVersion"
+      for {
+        jdkVersion <- 9 to (Global / javaVersion).value
+        requireJDK = s"jdk${jdkVersion}"
+        scalaVersion <- scalaVersions
+        requireScala = s"scala${scalaVersion}"
+        requireDir <- List(
+          sharedTestDir / s"require-$requireScala",
+          sharedTestDir / s"require-$requireJDK",
+          sharedTestDir / s"require-$requireScala-$requireJDK"
         )
-      }
-    },
+      } yield requireDir
+    }.distinct,
     Test / sourceGenerators += Def.task {
       val nio = file(
         "shared/src/test/scala/org/scalanative/testsuite/javalib/nio"
