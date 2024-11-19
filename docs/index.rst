@@ -15,12 +15,11 @@ runtime designed specifically for Scala. It features:
 
       type Vec = CStruct3[Double, Double, Double]
 
-      val vec = stackalloc[Vec]() // allocate c struct on stack
-
       def sum(vec: Ptr[Vec]): Double =
         return vec._1 + vec._2 + vec._3
 
       @main def main(): Unit =
+        val vec = stackalloc[Vec]() // allocate c struct on stack
         vec._1 = 10.0             // initialize fields
         vec._2 = 20.0
         vec._3 = 30.0
