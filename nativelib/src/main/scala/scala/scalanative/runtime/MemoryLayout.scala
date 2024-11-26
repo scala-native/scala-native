@@ -27,7 +27,9 @@ private[runtime] object MemoryLayout {
     @alwaysinline def IdOffset =
       if (isMultithreadingEnabled) LockWordOffset + PtrSize
       else PtrSize
-    @deprecated(since = "0.5.6") @alwaysinline def TraitIdOffset = -1
+
+    @deprecated("No longer used", since = "0.5.6") @alwaysinline
+    def TraitIdOffset = -1
     @alwaysinline def InterfacesCountOffset = IdOffset + IntSize
     @alwaysinline def InterfacesOffset = InterfacesCountOffset + IntSize
     @alwaysinline def NameOffset = InterfacesOffset + PtrSize
