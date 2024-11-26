@@ -143,7 +143,7 @@ class Impl0 extends Trait0 with Trait1 with Trait2 with Trait3 with Trait4 with 
   override def invoke62(): Int = 62
   override def invoke63(): Int = 63
 }
-object Impl0:
+object Impl0 {
   def test(): Unit = {
     val instance = new Impl0()
     val anyInstance: Any = instance
@@ -533,6 +533,7 @@ object Impl0:
     assertTrue("Trait63 isInstance", classOf[Trait63].isInstance(anyInstance))
     assertTrue("contains interface of Trait63", cls.getInterfaces().contains(classOf[Trait63]))
   }
+}
 
 class Impl1 extends Trait0 with Trait1 with Trait2 with Trait3 with Trait4 with Trait5 with Trait6 with Trait7 with Trait8 with Trait9 with Trait10 with Trait11 with Trait12 with Trait13 with Trait14 with Trait15 with Trait16 with Trait17 with Trait18 with Trait19 with Trait20 with Trait21 with Trait22 with Trait23 with Trait24 with Trait25 with Trait26 with Trait27 with Trait28 with Trait29 with Trait30 with Trait31 with Trait32 with Trait33 with Trait34 with Trait35 with Trait36 with Trait37 with Trait38 with Trait39 with Trait40 with Trait41 with Trait42 with Trait43 with Trait44 with Trait45 with Trait46 with Trait47 with Trait48 with Trait49 with Trait50 with Trait51 with Trait52 with Trait53 with Trait54 with Trait55 with Trait56 with Trait57 with Trait58 with Trait59 with Trait60 with Trait61 with Trait62 with Trait63 {
   override def invoke0(): Int = 1000
@@ -601,7 +602,7 @@ class Impl1 extends Trait0 with Trait1 with Trait2 with Trait3 with Trait4 with 
   override def invoke63(): Int = 1063
 }
 object Impl1 {
-  def test(): Unit =
+  def test(): Unit = {
     val instance = new Impl1()
     val anyInstance: Any = instance
     val cls = anyInstance.getClass()
@@ -989,4 +990,5 @@ object Impl1 {
     assertTrue("isAssignableFrom[Trait1]", classOf[Trait63].isAssignableFrom(cls))
     assertTrue("Trait63 isInstance", classOf[Trait63].isInstance(anyInstance))
     assertTrue("contains interface of Trait63", cls.getInterfaces().contains(classOf[Trait63]))
+  }
 }
