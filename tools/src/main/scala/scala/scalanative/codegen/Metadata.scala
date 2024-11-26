@@ -19,6 +19,7 @@ private[scalanative] class Metadata(
   val layouts = new CommonMemoryLayouts()
   val rtti = mutable.Map.empty[linker.Info, RuntimeTypeInformation]
   val vtable = mutable.Map.empty[linker.Class, VirtualTable]
+  val itable = mutable.Map.empty[linker.Class, ITable]
   val layout = mutable.Map.empty[linker.Class, FieldLayout]
   val dynmap = mutable.Map.empty[linker.Class, DynamicHashMap]
   val ids = mutable.Map.empty[linker.ScopeInfo, Int]
@@ -27,22 +28,15 @@ private[scalanative] class Metadata(
   val classes = initClassIdsAndRanges()
   val traits = initTraitIds()
   val moduleArray = new ModuleArray(this)
-  val dispatchTable = new TraitDispatchTable(this)
-  val hasTraitTables = new HasTraitTables(this)
 
-  initClassMetadata()
   initTraitMetadata()
+  initClassMetadata()
 
   def initTraitIds(): Seq[Trait] = {
-    val traits =
-      analysis.infos.valuesIterator
-        .collect { case info: Trait => info }
-        .toIndexedSeq
-        .sortBy(_.name.show)
-    traits.zipWithIndex.foreach {
-      case (node, id) =>
-        ids(node) = id
-    }
+    val traits = analysis.infos.valuesIterator.collect {
+      case info: Trait => info
+    }.toIndexedSeq
+    new TraitsUniverse(traits).assignIds(ids)
     traits
   }
 
@@ -96,6 +90,7 @@ private[scalanative] class Metadata(
       if (layouts.ClassRtti.usesDynMap) {
         dynmap(node) = new DynamicHashMap(node, proxies)
       }
+      itable(node) = ITable.build(node)
       rtti(node) = new RuntimeTypeInformation(node)
     }
   }

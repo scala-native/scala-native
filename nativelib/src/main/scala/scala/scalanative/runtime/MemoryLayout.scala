@@ -27,11 +27,17 @@ private[runtime] object MemoryLayout {
     @alwaysinline def IdOffset =
       if (isMultithreadingEnabled) LockWordOffset + PtrSize
       else PtrSize
-    @alwaysinline def TraitIdOffset = IdOffset + IntSize
-    @alwaysinline def NameOffset = TraitIdOffset + IntSize
-    @alwaysinline def SizeOffset = NameOffset + PtrSize
-    @alwaysinline def IdRangeEndOffset = SizeOffset + IntSize
-    @alwaysinline def ReferenceMapOffset = IdRangeEndOffset + IntSize
+    @deprecated(since = "0.5.6") @alwaysinline def TraitIdOffset = -1
+    @alwaysinline def InterfacesCountOffset = IdOffset + IntSize
+    @alwaysinline def InterfacesOffset = InterfacesCountOffset + IntSize
+    @alwaysinline def NameOffset = InterfacesOffset + PtrSize
+
+    @deprecated("Not a part of Rtti layout", since = "0.5.6") @alwaysinline
+    def SizeOffset = NameOffset + PtrSize
+    @deprecated("Not a part of Rtti layout", since = "0.5.6") @alwaysinline
+    def IdRangeEndOffset = SizeOffset + IntSize
+    @deprecated("Not a part of Rtti layout", since = "0.5.6") @alwaysinline
+    def ReferenceMapOffset = IdRangeEndOffset + IntSize
 
     @alwaysinline def size = NameOffset + PtrSize
   }

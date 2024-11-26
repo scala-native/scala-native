@@ -14,23 +14,27 @@ private[codegen] class RuntimeTypeInformation(info: ScopeInfo)(implicit
   val const: nir.Val.Global = nir.Val.Global(name, nir.Type.Ptr)
   val struct: nir.Type.StructValue = info match {
     case cls: Class =>
-      meta.layouts.ClassRtti.genLayout(
-        vtable = meta.vtable(cls).ty
-      )
+      meta.layouts.ClassRtti
+        .genLayout(vtable = meta.vtable(cls).ty)
     case _ => meta.layouts.Rtti.layout
   }
-  val value: nir.Val.StructValue = {
-    val typeId = nir.Val.Int(info match {
-      case _: Class => meta.ids(info)
-      case _: Trait => -(meta.ids(info) + 1)
-    })
+  lazy val value: nir.Val.StructValue = {
+    val typeId = nir.Val.Int(meta.ids(info))
     val typeStr = nir.Val.String(info.name.asInstanceOf[nir.Global.Top].id)
-    val traitId = nir.Val.Int(info match {
-      case info: Class => meta.dispatchTable.traitClassIds.getOrElse(info, -1)
-      case _           => -1
-    })
+    val traits = info.linearized
+      .collect { case cls: Trait if cls != info => cls }
+      .sortBy(meta.ids(_))
+    val interfacesCount = nir.Val.Int(traits.size)
+    val interfaces = nir.Val.Const(
+      nir.Val.ArrayValue(nir.Type.Ptr, traits.map(meta.rtti(_).const))
+    )
+
     val base = nir.Val.StructValue(
-      classConst :: meta.lockWordVals ::: typeId :: traitId :: typeStr :: Nil
+      classConst :: meta.lockWordVals :::
+        typeId ::
+        interfacesCount ::
+        interfaces ::
+        typeStr :: Nil
     )
     info match {
       case cls: Class =>
@@ -38,11 +42,24 @@ private[codegen] class RuntimeTypeInformation(info: ScopeInfo)(implicit
           if (!meta.layouts.ClassRtti.usesDynMap) Nil
           else List(meta.dynmap(cls).value)
         val range = meta.ranges(cls)
+        val itable = meta.itable(cls)
+        val itablesSize = {
+          // we want to have compile-time computed mask for fast selction
+          // negative size to mark requirement of using slow-path binary search
+          if (itable.useFastITables) (itable.size - 1).max(0)
+          else -itable.size
+        }
+        val superClass =
+          cls.parent.map(meta.rtti(_).const).getOrElse(nir.Val.Null)
         nir.Val.StructValue(
           base ::
-            nir.Val.Int(meta.layout(cls).size.toInt) ::
-            nir.Val.Int(range.last) ::
-            meta.layout(cls).referenceOffsetsValue ::
+            nir.Val.Int(meta.layout(cls).size.toInt) :: // size
+            nir.Val.Int(range.last) :: // idRangeUntil
+            meta.layout(cls).referenceOffsetsValue :: // refFieldOffsets
+            // Free slot for additional Int32 to be used in the future
+            nir.Val.Int(itablesSize) ::
+            itable.const ::
+            superClass ::
             dynmap :::
             meta.vtable(cls).value ::
             Nil

@@ -165,6 +165,32 @@ class ClassTest {
     assertTrue(classOf[java.lang.Runnable].isInterface)
   }
 
+  @Test def getInterfaces(): Unit = {
+    def hasInterfaces(cls: Class[_], expected: Set[Class[_]]) = {
+      val interfaces = cls.getInterfaces().toSet
+      val diff = interfaces.diff(expected)
+      assertTrue(
+        s"For ${cls}\nExpected: ${expected}\nGot:${interfaces}",
+        diff.isEmpty
+      )
+    }
+    hasInterfaces(classOf[A], Set(classOf[X]))
+    hasInterfaces(classOf[B], Set(classOf[X], classOf[Y]))
+    hasInterfaces(classOf[C], Set())
+    hasInterfaces(classOf[X], Set())
+    hasInterfaces(classOf[Y], Set(classOf[X]))
+  }
+
+  @Test def getSuperClass(): Unit = {
+    def checkSuperClassOf(cls: Class[_], expected: Class[_]) =
+      assertEquals(cls.toString(), expected, cls.getSuperclass())
+    checkSuperClassOf(classOf[A], classOf[AnyRef])
+    checkSuperClassOf(classOf[B], classOf[A])
+    checkSuperClassOf(classOf[C], classOf[AnyRef])
+    checkSuperClassOf(classOf[X], null)
+    checkSuperClassOf(classOf[Y], null)
+  }
+
   private def assertDiffClass(
       l: java.lang.Class[_],
       r: java.lang.Class[_]

@@ -471,11 +471,12 @@ private[codegen] trait MetadataCodeGen { self: AbstractCodeGen =>
         MemoryLayout(layout.tys).tys.zipWithIndex.map {
           case (MemoryLayout.PositionedType(ty, offset), idx) =>
             val name = idx match {
-              case RttiIdx      => "rtti"
-              case LockWordIdx  => "lock"
-              case ClassIdIdx   => "classId"
-              case TraitIdIdx   => "traitId"
-              case ClassNameIdx => "className"
+              case RttiIdx            => "rtti"
+              case LockWordIdx        => "lock"
+              case ClassIdIdx         => "classId"
+              case InterfacesCountIdx => "interfacesCount"
+              case InterfacesIdx      => "interfaces"
+              case ClassNameIdx       => "className"
             }
             val baseType = idx match {
               case ClassNameIdx => toMetadataType(nir.Rt.String)
