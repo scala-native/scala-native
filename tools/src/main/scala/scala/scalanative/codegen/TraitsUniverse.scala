@@ -5,19 +5,23 @@ import linker.Trait
 import scala.collection.mutable
 
 private[codegen] object TraitsUniverse {
-  final val ColorBits = 5
-  final val MaxColor = (1 << ColorBits) - 1
-  // We use 1 bit to signal that id is a trait
-  final val TraitMarker = 1 << 31
-  final val MaxTraitIdx = (~(TraitMarker | MaxColor)) >> ColorBits
-
   class TraitId private (val value: Int) extends AnyVal {
-    def color: Int = value & MaxColor
     def itablePosition(itableSize: Int): Int = value & (itableSize - 1)
   }
   object TraitId {
-    def assign(color: Int, index: Int): TraitId = {
-      val id = (index << ColorBits) | color | TraitMarker
+    // We use 1 bit to signal that id is a trait
+    final val TraitMarker = 1 << 31
+
+    class Context(maxColor: Int) {
+      // Maximal number of bits required to represent all colors
+      // Required for unique id assignment
+      final val ColorBits =
+        math.ceil(math.log(maxColor + 1) / math.log(2)).toInt
+      final val MaxColor = (1 << ColorBits) - 1
+      final val MaxTraitIdx = (~(TraitMarker | MaxColor)) >> ColorBits
+    }
+    def assign(color: Int, index: Int)(implicit ctx: Context): TraitId = {
+      val id = (index << ctx.ColorBits) | color | TraitMarker
       new TraitId(id)
     }
     def unsafe(value: Int): TraitId = new TraitId(value)
@@ -48,7 +52,7 @@ private[codegen] class TraitsUniverse(traits: Seq[Trait]) {
 
   // Graph coloring
   // Two traits can have the same color only if there is no class that implement both of them
-  val colors: Map[Trait, Int] = {
+  val (colors: Map[Trait, Int], maxColor: Int) = {
     val colors = mutable.Map.empty[Trait, Int]
     colors.sizeHint(traits)
     val minColor = 0
@@ -63,23 +67,27 @@ private[codegen] class TraitsUniverse(traits: Seq[Trait]) {
           maxColor
         }
     }
-    colors.toMap
+    (colors.toMap, maxColor)
   }
 
+  implicit val idsContext: TraitId.Context = new TraitId.Context(maxColor)
+
   // Assign unique id for each trait using the
-  def assignIds(ids: mutable.Map[linker.ScopeInfo, Int]): Unit = {
+  def assignIds(ids: mutable.Map[linker.ScopeInfo, Int]): TraitId.Context = {
     // Each class within assigned group has assignd unique id
     val colorIndexer = mutable.Map.empty[Int, Iterator[Int]]
     for (cls <- traits) {
       val color = colors(cls)
       val indexer = colorIndexer.getOrElseUpdate(color, Iterator.from(0))
       val idx = indexer.next()
-      assert(idx < MaxTraitIdx, "Exceeded maximal ammount of traits")
+      assert(
+        idx < idsContext.MaxTraitIdx,
+        s"Exceeds maximal ammount of traits, MaxTraitIdx=${idsContext.MaxTraitIdx}, ColorBits=${idsContext.ColorBits}"
+      )
       ids(cls) = TraitId.assign(color, idx).value
     }
+    idsContext
   }
-
-  adjacencyList.clear()
 
   private def addVertex(vertex: Trait): Unit =
     adjacencyList.getOrElseUpdate(vertex, mutable.Set.empty)

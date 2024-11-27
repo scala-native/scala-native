@@ -35,7 +35,7 @@ typedef struct StringObject StringObject;
 
 typedef struct ITableEntry {
     int32_t interfaceId;
-    void *vtable;
+    void **vtable;
 } ITableEntry;
 
 typedef struct Rtti {

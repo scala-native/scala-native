@@ -843,84 +843,51 @@ private[scalanative] object Lower {
       }
     }
 
-    def genFindITable(trt: Trait, buf: nir.InstructionBuilder)(rtti: nir.Val, itableFieldSelector: nir.Val, resultType: nir.Type, notFoundValue: nir.Val)(
-        implicit
+    // Fastpath lookup for itable entry calculated based on input traitId
+    // Returns a pointer to ITableEntry struct - {id: int, methods: void**}
+    def genItableFastLookup(trt: Trait, buf: nir.InstructionBuilder)(rtti: nir.Val, traitId: nir.Val.Int, itableSize: nir.Val)(implicit
         srcPosition: nir.SourcePosition,
         scopeId: nir.ScopeId
     ): nir.Val = {
       import buf._
-      val traitId = nir.Val.Int(meta.ids(trt))
-
-      val canUseFastPath = trt.implementors.forall(meta.itable(_).useFastITables)
-
-      val itableSizePtr = let(nir.Op.Elem(ClassRtti.layout, rtti, ClassRttiITableSizePath), unwind)
       val itablesPtr = let(nir.Op.Elem(ClassRtti.layout, rtti, ClassRttiItablesPath), unwind)
-      val itableSize = let(nir.Op.Load(nir.Type.Int, itableSizePtr), unwind)
       val itables = let(nir.Op.Load(nir.Type.Ptr, itablesPtr), unwind)
+      val itableIdx = let(nir.Op.Bin(nir.Bin.And, nir.Type.Int, traitId, itableSize), unwind)
+      let(nir.Op.Elem(nir.Type.StructValue(nir.Type.Int :: nir.Type.Ptr :: Nil), itables, Seq(itableIdx)), unwind)
+    }
 
-      def selectItable(itableIdx: nir.Val, subField: nir.Val) =
-        let(nir.Op.Elem(nir.Type.StructValue(nir.Type.Int :: nir.Type.Ptr :: Nil), itables, Seq(itableIdx, subField)), unwind)
+    type ITableLookupGenerator = (
+        nir.InstructionBuilder, // buf
+        nir.Val.Int, // traitId
+        nir.Val, // itableSize
+        nir.Local // toLabel
+    ) => nir.Val.Local
+    def genItableLookup(trt: Trait, buf: nir.InstructionBuilder, mayBeNotFound: Boolean)(resultLabel: Option[nir.Local], rtti: nir.Val, resultType: nir.Type)(
+        genFastPath: ITableLookupGenerator,
+        genSlowPath: ITableLookupGenerator
+    )(implicit
+        srcPosition: nir.SourcePosition,
+        scopeId: nir.ScopeId
+    ): nir.Val.Local = {
+      import buf._
+      val traitId = nir.Val.Int(meta.ids(trt))
+      val itableSizePtr = let(nir.Op.Elem(ClassRtti.layout, rtti, ClassRttiITableSizePath), unwind)
+      val itableSize = let(nir.Op.Load(nir.Type.Int, itableSizePtr), unwind)
 
-      def selectFastPath(): nir.Val = let(nir.Op.Bin(nir.Bin.And, nir.Type.Int, traitId, itableSize), unwind)
-      def fastPath(): nir.Val = {
-        // Quick selection using a hashing function of itable & size
-        val itableIdx = selectFastPath()
-        val itablePtr = selectItable(itableIdx, itableFieldSelector)
-        let(nir.Op.Load(resultType, itablePtr), unwind)
-      }
-      if (canUseFastPath) fastPath()
+      val canEmitOnlyFastPath = meta.canAlwaysUseFastITables || (!mayBeNotFound && meta.rtti(trt).canUseFastITables)
+      if (canEmitOnlyFastPath) genFastPath(buf, traitId, itableSize, resultLabel.getOrElse(fresh()))
       else {
-        // Slow path using binary search to find correct itable entry
+        val onFastPath, onSlowPath, merge = fresh()
+        val resultV = nir.Val.Local(resultLabel.getOrElse(fresh()), resultType)
+
         val useFastPath = let(nir.Op.Comp(nir.Comp.Sge, nir.Type.Int, itableSize, zero), unwind)
-        val onFastPath, onSlowPath, merge, resultId, resultIdxId = fresh()
-        val binarySearchStart, binarySearchNonEmpty, binarySearchFound, binarySearchNotFound = fresh()
-        val binarySearchCompareLower, binarySearchCompareHigher, binarySearchAdjustLow, binarySearchAdjustHigh = fresh()
-
-        val resultIdx = nir.Val.Local(resultIdxId, nir.Type.Int)
-        val resultV = nir.Val.Local(resultId, resultType)
-        val binSearchLowV, binSearchHighV = nir.Val.Local(fresh(), nir.Type.Int)
-
         branch(useFastPath, nir.Next.Label(onFastPath, Nil), nir.Next.Label(onSlowPath, Nil))
 
         label(onFastPath, Nil)
-        jump(binarySearchFound, selectFastPath() :: Nil)
+        jump(merge, genFastPath(buf, traitId, itableSize, fresh()) :: Nil)
 
         label(onSlowPath, Nil)
-        val negITableSize = let(nir.Op.Bin(nir.Bin.Imul, nir.Type.Int, itableSize, nir.Val.Int(-1)), unwind)
-        val adjustedITableSize = let(nir.Op.Bin(nir.Bin.Iadd, nir.Type.Int, negITableSize, nir.Val.Int(-1)), unwind)
-        jump(binarySearchStart, zero :: adjustedITableSize :: Nil)
-
-        label(binarySearchStart, binSearchLowV :: binSearchHighV :: Nil)
-        val isNonEmptyRange = let(nir.Op.Comp(nir.Comp.Sle, nir.Type.Int, binSearchLowV, binSearchHighV), unwind)
-        branch(isNonEmptyRange, nir.Next.Label(binarySearchNonEmpty, Nil), nir.Next.Label(binarySearchNotFound, Nil))
-
-        label(binarySearchNonEmpty, Nil)
-        val midIdx0 = let(nir.Op.Bin(nir.Bin.Iadd, nir.Type.Int, binSearchLowV, binSearchHighV), unwind)
-        val midIdx = let(nir.Op.Bin(nir.Bin.Sdiv, nir.Type.Int, midIdx0, nir.Val.Int(2)), unwind)
-        val midElemIdPtr = selectItable(midIdx, zero)
-        val midElemId = let(nir.Op.Load(nir.Type.Int, midElemIdPtr), unwind)
-        val isFound = let(nir.Op.Comp(nir.Comp.Ieq, nir.Type.Int, midElemId, traitId), unwind)
-        branch(isFound, nir.Next.Label(binarySearchFound, midIdx :: Nil), nir.Next.Label(binarySearchCompareLower, Nil))
-
-        label(binarySearchCompareLower, Nil)
-        val isLessThenTarget = let(nir.Op.Comp(nir.Comp.Slt, nir.Type.Int, midElemId, traitId), unwind)
-        branch(isLessThenTarget, nir.Next.Label(binarySearchAdjustLow, Nil), nir.Next.Label(binarySearchAdjustHigh, Nil))
-
-        label(binarySearchAdjustLow, Nil)
-        val nextLow = let(nir.Op.Bin(nir.Bin.Iadd, nir.Type.Int, midIdx, one), unwind)
-        jump(binarySearchStart, nextLow :: binSearchHighV :: Nil)
-
-        label(binarySearchAdjustHigh, Nil)
-        val nextHigh = let(nir.Op.Bin(nir.Bin.Iadd, nir.Type.Int, midIdx, nir.Val.Int(-1)), unwind)
-        jump(binarySearchStart, binSearchLowV :: nextHigh :: Nil)
-
-        label(binarySearchNotFound, Nil)
-        jump(merge, notFoundValue :: Nil)
-
-        label(binarySearchFound, resultIdx :: Nil)
-        val itablePtr = selectItable(resultIdx, itableFieldSelector)
-        val result = let(nir.Op.Load(resultType, itablePtr), unwind)
-        jump(merge, result :: Nil)
+        jump(merge, genSlowPath(buf, traitId, itableSize, fresh()) :: Nil)
 
         label(merge, resultV :: Nil)
         resultV
@@ -1034,11 +1001,26 @@ private[scalanative] object Lower {
       }
 
       def genTraitVirtualLookup(trt: Trait): Unit = {
+        val methodIdx = nir.Val.Int(
+          trt.methods
+            .indexOf(sig)
+            .ensuring(_ >= 0, s"Not found ${sig.show} entry in ${trt.name.id} methods")
+        )
         val rtti = let(nir.Op.Load(nir.Type.Ptr, obj), unwind)
-        val itable = genFindITable(trt, buf)(rtti, one, nir.Type.Ptr, nir.Val.Null) // null is unreachable
-        val methodIdx = trt.methods.indexOf(sig).ensuring(_ >= 0, s"Not found ${sig.show} entry in ${trt.name.id} methods")
-        val methodPtr = let(nir.Op.Elem(nir.Type.Ptr, itable, Seq(nir.Val.Int(methodIdx))), unwind)
-        let(n, nir.Op.Load(nir.Type.Ptr, methodPtr), unwind)
+        genItableLookup(trt, buf, mayBeNotFound = false)(Some(n), rtti, nir.Type.Ptr)(
+          genFastPath = (buf, traitId, itableSize, resultLabel) => {
+            val itablesPtr = let(nir.Op.Elem(ClassRtti.layout, rtti, ClassRttiItablesPath), unwind)
+            val itables = let(nir.Op.Load(nir.Type.Ptr, itablesPtr), unwind)
+            val itableIdx = let(nir.Op.Bin(nir.Bin.And, nir.Type.Int, traitId, itableSize), unwind)
+            val itablePtr = let(nir.Op.Elem(nir.Type.StructValue(nir.Type.Int :: nir.Type.Ptr :: Nil), itables, Seq(itableIdx, one)), unwind)
+            val itable = let(nir.Op.Load(nir.Type.Ptr, itablePtr), unwind)
+            val methodPtr = let(nir.Op.Elem(nir.Type.Ptr, itable, Seq(methodIdx)), unwind)
+            let(resultLabel, nir.Op.Load(nir.Type.Ptr, methodPtr), unwind)
+          },
+          genSlowPath = (buf, traitId, itableSize, _) => {
+            call(TraitDispatchSlowpathSig, TraitDispatchSlowpath, Seq(rtti, traitId, methodIdx), unwind)
+          }
+        )
       }
 
       def genMethodLookup(scope: ScopeInfo): Unit = {
@@ -1214,10 +1196,25 @@ private[scalanative] object Lower {
           let(nir.Op.Bin(nir.Bin.And, nir.Type.Bool, ge, le), unwind)
 
         case TraitRef(trt) =>
+          v.ty match {
+            case ClassRef(cls) =>
+            case _             =>
+          }
           val traitId = nir.Val.Int(meta.ids(trt))
           val rtti = let(nir.Op.Load(nir.Type.Ptr, obj), unwind)
-          val itableId = genFindITable(trt, buf)(rtti, zero, nir.Type.Int, nir.Val.Int(-1))
-          let(nir.Op.Comp(nir.Comp.Ieq, nir.Type.Int, traitId, itableId), unwind)
+          genItableLookup(trt, buf, mayBeNotFound = true)(None, rtti, nir.Type.Bool)(
+            genFastPath = (buf, traitId, itableSize, _) => {
+              val itablesPtr = let(nir.Op.Elem(ClassRtti.layout, rtti, ClassRttiItablesPath), unwind)
+              val itables = let(nir.Op.Load(nir.Type.Ptr, itablesPtr), unwind)
+              val itableIdx = let(nir.Op.Bin(nir.Bin.And, nir.Type.Int, traitId, itableSize), unwind)
+              val itableIdPtr = let(nir.Op.Elem(nir.Type.StructValue(nir.Type.Int :: nir.Type.Ptr :: Nil), itables, Seq(itableIdx, zero)), unwind)
+              val itableId = let(nir.Op.Load(nir.Type.Int, itableIdPtr), unwind)
+              let(nir.Op.Comp(nir.Comp.Ieq, nir.Type.Int, traitId, itableId), unwind)
+            },
+            genSlowPath = (buf, traitId, itableSize, _) => {
+              call(ClassHasTraitSlowpathSig, ClassHasTraitSlowpath, Seq(rtti, traitId), unwind)
+            }
+          )
 
         case _ =>
           util.unsupported(s"is[$ty] $obj")
@@ -2186,6 +2183,14 @@ private[scalanative] object Lower {
   val throwNoSuchMethodVal =
     nir.Val.Global(throwNoSuchMethod, nir.Type.Ptr)
 
+  val TraitDispatchSlowpathName = extern("__scalanative_trait_dispatch_slowpath")
+  val TraitDispatchSlowpathSig = nir.Type.Function(Seq(nir.Type.Ptr, nir.Type.Int, nir.Type.Int), nir.Type.Ptr)
+  val TraitDispatchSlowpath = nir.Val.Global(TraitDispatchSlowpathName, nir.Type.Ptr)
+
+  val ClassHasTraitSlowpathName = extern("__scalanative_class_has_trait_slowpath")
+  val ClassHasTraitSlowpathSig = nir.Type.Function(Seq(nir.Type.Ptr, nir.Type.Int), nir.Type.Bool)
+  val ClassHasTraitSlowpath = nir.Val.Global(ClassHasTraitSlowpathName, nir.Type.Ptr)
+
   val GC = nir.Global.Top("scala.scalanative.runtime.GC$")
   val GCYieldName =
     GC.member(nir.Sig.Extern("scalanative_GC_yield"))
@@ -2217,11 +2222,14 @@ private[scalanative] object Lower {
   val injects: Seq[nir.Defn] = {
     implicit val pos = nir.SourcePosition.NoPosition
     val buf = mutable.UnrolledBuffer.empty[nir.Defn]
-    buf += nir.Defn.Declare(nir.Attrs.None, allocSmallName, allocSig)
-    buf += nir.Defn.Declare(nir.Attrs.None, largeAllocName, allocSig)
-    buf += nir.Defn.Declare(nir.Attrs.None, dyndispatchName, dyndispatchSig)
-    buf += nir.Defn.Declare(nir.Attrs.None, throwName, throwSig)
-    buf += nir.Defn.Declare(nir.Attrs(isExtern = true), memsetName, memsetSig)
+    def externDecl(name: nir.Global.Member, signature: nir.Type.Function) = nir.Defn.Declare(nir.Attrs(isExtern = true), name, signature)
+    buf += externDecl(allocSmallName, allocSig)
+    buf += externDecl(largeAllocName, allocSig)
+    buf += externDecl(dyndispatchName, dyndispatchSig)
+    buf += externDecl(throwName, throwSig)
+    buf += externDecl(memsetName, memsetSig)
+    buf += externDecl(TraitDispatchSlowpathName, TraitDispatchSlowpathSig)
+    buf += externDecl(ClassHasTraitSlowpathName, ClassHasTraitSlowpathSig)
     buf.toSeq
   }
 

@@ -26,18 +26,21 @@ private[scalanative] class Metadata(
   val ranges = mutable.Map.empty[linker.Class, Range]
 
   val classes = initClassIdsAndRanges()
-  val traits = initTraitIds()
+  val (traits, traitIdsContext) = initTraitIds()
   val moduleArray = new ModuleArray(this)
 
   initTraitMetadata()
   initClassMetadata()
 
-  def initTraitIds(): Seq[Trait] = {
+  val canAlwaysUseFastITables = rtti.valuesIterator.forall(_.canUseFastITables)
+
+  def initTraitIds(): (Seq[Trait], TraitsUniverse.TraitId.Context) = {
     val traits = analysis.infos.valuesIterator.collect {
       case info: Trait => info
     }.toIndexedSeq
-    new TraitsUniverse(traits).assignIds(ids)
-    traits
+    val universe = new TraitsUniverse(traits)
+    val ctx = universe.assignIds(ids)
+    (traits, ctx)
   }
 
   def initClassIdsAndRanges(): Seq[Class] = {

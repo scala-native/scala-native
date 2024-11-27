@@ -186,12 +186,11 @@ private[runtime] object _Class {
     cls.asInstanceOf[_Class[A]]
 
   private def checkHasTrait(left: _Class[_], right: _Class[_]): Boolean = {
-    val size = left.interfacesCount
-    if (size == 0) return false
-    val interfaces = left.interfaces
-    val rightId = right.id
     var low = 0
     var high = left.interfacesCount
+    if (high == 0) return false
+    val interfaces = left.interfaces
+    val rightId = right.id
     while (low <= high) {
       val idx = (low + high) / 2
       val interfacePtr = Intrinsics.elemRawPtr(

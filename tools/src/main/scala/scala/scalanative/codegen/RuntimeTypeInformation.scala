@@ -68,6 +68,11 @@ private[codegen] class RuntimeTypeInformation(info: ScopeInfo)(implicit
         base
     }
   }
+
+  lazy val canUseFastITables: Boolean = info match {
+    case cls: Class => meta.itable(cls).useFastITables
+    case cls: Trait => cls.implementors.forall(meta.rtti(_).canUseFastITables)
+  }
 }
 
 private[codegen] object RuntimeTypeInformation {
