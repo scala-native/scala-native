@@ -187,8 +187,8 @@ private[runtime] object _Class {
 
   private def checkHasTrait(left: _Class[_], right: _Class[_]): Boolean = {
     var low = 0
-    var high = left.interfacesCount
-    if (high == 0) return false
+    var high = left.interfacesCount - 1
+    if (high == -1) return false
     val interfaces = left.interfaces
     val rightId = right.id
     while (low <= high) {
@@ -199,9 +199,10 @@ private[runtime] object _Class {
       )
       val interface =
         Intrinsics.loadObject(interfacePtr).asInstanceOf[_Class[_]]
-      if (interface.id == rightId) return true
-      if (interface.id < rightId) low = idx + 1
-      else if (interface.id > rightId) high = idx - 1
+      val interfaceId = interface.id
+      if (interfaceId == rightId) return true
+      if (interfaceId < rightId) low = idx + 1
+      else high = idx - 1
     }
     false
   }
