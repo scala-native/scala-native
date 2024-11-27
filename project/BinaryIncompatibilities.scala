@@ -43,7 +43,9 @@ object BinaryIncompatibilities {
     exclude[Problem]("scala.scalanative.build.Config*Impl*")
   )
 
-  final val NativeLib = Seq.empty
+  final val NativeLib = Seq(
+    exclude[MissingClassProblem]("scala.scalanative.runtime.rtti*")
+  )
   final val CLib: Filters = Nil
   final val PosixLib: Filters = Seq.empty
   final val WindowsLib: Filters = Nil
