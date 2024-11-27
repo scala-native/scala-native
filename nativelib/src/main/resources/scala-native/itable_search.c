@@ -1,7 +1,8 @@
 #include "gc/immix_commix/headers/ObjectHeader.h"
 #include <stdbool.h>
 
-void* __scalanative_trait_dispatch_slowpath(Rtti *rtti, int traitId, int methodIdx) {
+void *__scalanative_trait_dispatch_slowpath(Rtti *rtti, int traitId,
+                                            int methodIdx) {
     int low = 0;
     int high = -rtti->itableCount;
     // if (high == 0)

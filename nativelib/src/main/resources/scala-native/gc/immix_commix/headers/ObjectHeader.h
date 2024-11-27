@@ -50,7 +50,7 @@ typedef struct Rtti {
         struct BaseRtti *interfaces;
         StringObject *name;
     } rt;
-    // Fields defined only for instantinable types (classes)
+    // Fields defined only for instantiable types (classes)
     int32_t size;
     int32_t idRangeUntil;
     int32_t *refFieldOffsets; // Array of field offsets (in bytes) from object
