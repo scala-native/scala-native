@@ -10,8 +10,9 @@ private[codegen] case class ITable(
 }
 
 private[codegen] object ITable {
-  val availableITableSizes =
-    1.to(TraitsUniverse.ColorBits).map(math.pow(2, _).toInt)
+  val MaxColorBits = 6
+  val availableITableSizes = 0.to(MaxColorBits).map(1 << _)
+  val MaxColors = availableITableSizes.last
 
   val ITableEntry = nir.Type.StructValue(nir.Type.Int :: nir.Type.Ptr :: Nil)
   val emptyItable = nir.Val.StructValue(nir.Val.Int(0) :: nir.Val.Null :: Nil)
@@ -24,7 +25,7 @@ private[codegen] object ITable {
 
     val fastItableSize =
       if (implementedTraits.isEmpty) Some(0)
-      else if (implementedTraits.size > TraitsUniverse.MaxColor) None
+      else if (implementedTraits.size > MaxColors) None
       else
         availableITableSizes.find { size =>
           // Find a minimial size of itable at which there are no colisions based on trait ids

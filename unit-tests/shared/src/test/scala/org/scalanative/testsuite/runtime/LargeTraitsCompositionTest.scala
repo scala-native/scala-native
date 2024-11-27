@@ -12,7 +12,7 @@ class LargeTraitsCompositionTest {
 }
 
 // This test is designed to test correctness of Trait dispatch and identity checks when given class is too large to implement quick itables lookup
-// We define 64 traits (fast itable limit is 32) with at least 2 implementations to prevent static method invocation
+// We define 65 traits (fast itable limit is 64) with at least 2 implementations to prevent static method invocation
 trait Trait0 { def invoke0(): Int }
 trait Trait1 { def invoke1(): Int }
 trait Trait2 { def invoke2(): Int }
@@ -77,7 +77,8 @@ trait Trait60 { def invoke60(): Int }
 trait Trait61 { def invoke61(): Int }
 trait Trait62 { def invoke62(): Int }
 trait Trait63 { def invoke63(): Int }
-class Impl0 extends Trait0 with Trait1 with Trait2 with Trait3 with Trait4 with Trait5 with Trait6 with Trait7 with Trait8 with Trait9 with Trait10 with Trait11 with Trait12 with Trait13 with Trait14 with Trait15 with Trait16 with Trait17 with Trait18 with Trait19 with Trait20 with Trait21 with Trait22 with Trait23 with Trait24 with Trait25 with Trait26 with Trait27 with Trait28 with Trait29 with Trait30 with Trait31 with Trait32 with Trait33 with Trait34 with Trait35 with Trait36 with Trait37 with Trait38 with Trait39 with Trait40 with Trait41 with Trait42 with Trait43 with Trait44 with Trait45 with Trait46 with Trait47 with Trait48 with Trait49 with Trait50 with Trait51 with Trait52 with Trait53 with Trait54 with Trait55 with Trait56 with Trait57 with Trait58 with Trait59 with Trait60 with Trait61 with Trait62 with Trait63 {
+trait Trait64 { def invoke64(): Int } // 1 more then limit for fast itables
+class Impl0 extends Trait0 with Trait1 with Trait2 with Trait3 with Trait4 with Trait5 with Trait6 with Trait7 with Trait8 with Trait9 with Trait10 with Trait11 with Trait12 with Trait13 with Trait14 with Trait15 with Trait16 with Trait17 with Trait18 with Trait19 with Trait20 with Trait21 with Trait22 with Trait23 with Trait24 with Trait25 with Trait26 with Trait27 with Trait28 with Trait29 with Trait30 with Trait31 with Trait32 with Trait33 with Trait34 with Trait35 with Trait36 with Trait37 with Trait38 with Trait39 with Trait40 with Trait41 with Trait42 with Trait43 with Trait44 with Trait45 with Trait46 with Trait47 with Trait48 with Trait49 with Trait50 with Trait51 with Trait52 with Trait53 with Trait54 with Trait55 with Trait56 with Trait57 with Trait58 with Trait59 with Trait60 with Trait61 with Trait62 with Trait63 with Trait64 {
   override def invoke0(): Int = 0
   override def invoke1(): Int = 1
   override def invoke2(): Int = 2
@@ -142,6 +143,7 @@ class Impl0 extends Trait0 with Trait1 with Trait2 with Trait3 with Trait4 with 
   override def invoke61(): Int = 61
   override def invoke62(): Int = 62
   override def invoke63(): Int = 63
+  override def invoke64(): Int = 64
 }
 object Impl0 {
   def test(): Unit = {
@@ -532,10 +534,16 @@ object Impl0 {
     assertTrue("isAssignableFrom[Trait63]", classOf[Trait63].isAssignableFrom(cls))
     assertTrue("Trait63 isInstance", classOf[Trait63].isInstance(anyInstance))
     assertTrue("contains interface of Trait63", cls.getInterfaces().contains(classOf[Trait63]))
+
+    assertTrue("isInstanceOf[Trait64]", anyInstance.isInstanceOf[Trait64])
+    assertEquals("invoke[Trait64]", 64, anyInstance.asInstanceOf[Trait64].invoke64())
+    assertTrue("isAssignableFrom[Trait64]", classOf[Trait63].isAssignableFrom(cls))
+    assertTrue("Trait64 isInstance", classOf[Trait64].isInstance(anyInstance))
+    assertTrue("contains interface of Trait64", cls.getInterfaces().contains(classOf[Trait64]))
   }
 }
 
-class Impl1 extends Trait0 with Trait1 with Trait2 with Trait3 with Trait4 with Trait5 with Trait6 with Trait7 with Trait8 with Trait9 with Trait10 with Trait11 with Trait12 with Trait13 with Trait14 with Trait15 with Trait16 with Trait17 with Trait18 with Trait19 with Trait20 with Trait21 with Trait22 with Trait23 with Trait24 with Trait25 with Trait26 with Trait27 with Trait28 with Trait29 with Trait30 with Trait31 with Trait32 with Trait33 with Trait34 with Trait35 with Trait36 with Trait37 with Trait38 with Trait39 with Trait40 with Trait41 with Trait42 with Trait43 with Trait44 with Trait45 with Trait46 with Trait47 with Trait48 with Trait49 with Trait50 with Trait51 with Trait52 with Trait53 with Trait54 with Trait55 with Trait56 with Trait57 with Trait58 with Trait59 with Trait60 with Trait61 with Trait62 with Trait63 {
+class Impl1 extends Trait0 with Trait1 with Trait2 with Trait3 with Trait4 with Trait5 with Trait6 with Trait7 with Trait8 with Trait9 with Trait10 with Trait11 with Trait12 with Trait13 with Trait14 with Trait15 with Trait16 with Trait17 with Trait18 with Trait19 with Trait20 with Trait21 with Trait22 with Trait23 with Trait24 with Trait25 with Trait26 with Trait27 with Trait28 with Trait29 with Trait30 with Trait31 with Trait32 with Trait33 with Trait34 with Trait35 with Trait36 with Trait37 with Trait38 with Trait39 with Trait40 with Trait41 with Trait42 with Trait43 with Trait44 with Trait45 with Trait46 with Trait47 with Trait48 with Trait49 with Trait50 with Trait51 with Trait52 with Trait53 with Trait54 with Trait55 with Trait56 with Trait57 with Trait58 with Trait59 with Trait60 with Trait61 with Trait62 with Trait63 with Trait64 {
   override def invoke0(): Int = 1000
   override def invoke1(): Int = 1001
   override def invoke2(): Int = 1002
@@ -600,6 +608,7 @@ class Impl1 extends Trait0 with Trait1 with Trait2 with Trait3 with Trait4 with 
   override def invoke61(): Int = 1061
   override def invoke62(): Int = 1062
   override def invoke63(): Int = 1063
+  override def invoke64(): Int = 1064
 }
 object Impl1 {
   def test(): Unit = {
@@ -990,5 +999,11 @@ object Impl1 {
     assertTrue("isAssignableFrom[Trait1]", classOf[Trait63].isAssignableFrom(cls))
     assertTrue("Trait63 isInstance", classOf[Trait63].isInstance(anyInstance))
     assertTrue("contains interface of Trait63", cls.getInterfaces().contains(classOf[Trait63]))
+
+    assertTrue("isInstanceOf[Trait64]", anyInstance.isInstanceOf[Trait64])
+    assertEquals("invoke[Trait64]", 1064, anyInstance.asInstanceOf[Trait64].invoke64())
+    assertTrue("isAssignableFrom[Trait64]", classOf[Trait63].isAssignableFrom(cls))
+    assertTrue("Trait64 isInstance", classOf[Trait64].isInstance(anyInstance))
+    assertTrue("contains interface of Trait64", cls.getInterfaces().contains(classOf[Trait64]))
   }
 }
