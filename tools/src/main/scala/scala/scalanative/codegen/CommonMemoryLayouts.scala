@@ -22,7 +22,8 @@ private[codegen] class CommonMemoryLayouts(implicit meta: Metadata) {
         nir.Type.Ptr :: // ClassRtti
           meta.lockWordType.toList ::: // optional, multithreading only
           nir.Type.Int :: // ClassId
-          nir.Type.Int :: // Traitid
+          nir.Type.Int :: // InterfacesCount
+          nir.Type.Ptr :: // Interfaces
           nir.Type.Ptr :: // ClassName
           Nil
       ) {
@@ -31,8 +32,9 @@ private[codegen] class CommonMemoryLayouts(implicit meta: Metadata) {
     final val ClassIdIdx =
       if (meta.usesLockWords) LockWordIdx + 1
       else RttiIdx + 1
-    final val TraitIdIdx = ClassIdIdx + 1
-    final val ClassNameIdx = TraitIdIdx + 1
+    final val InterfacesCountIdx = ClassIdIdx + 1
+    final val InterfacesIdx = InterfacesCountIdx + 1
+    final val ClassNameIdx = InterfacesIdx + 1
   }
 
   // RTTI specific for classess, see class RuntimeTypeInformation
@@ -45,7 +47,12 @@ private[codegen] class CommonMemoryLayouts(implicit meta: Metadata) {
         nir.Type.Int :: // class size
         nir.Type.Int :: // id range
         nir.Type.Ptr :: // reference offsets
-        dynMapType.toList
+        // Free slot for additional Int32 to be used in the future
+        nir.Type.Int :: // itableSize
+        nir.Type.Ptr :: // itables
+        nir.Type.Ptr :: // superClass
+        dynMapType.toList :::
+        Nil
 
     override val layout =
       genLayout(vtable = nir.Type.ArrayValue(nir.Type.Ptr, 0))
@@ -59,10 +66,20 @@ private[codegen] class CommonMemoryLayouts(implicit meta: Metadata) {
     final val SizeIdx = RttiIdx + 1
     final val IdRangeIdx = SizeIdx + 1
     final val ReferenceOffsetsIdx = IdRangeIdx + 1
-    final val DynmapIdx =
-      if (usesDynMap) ReferenceOffsetsIdx + 1 else -1
-    final val VtableIdx =
-      (if (usesDynMap) DynmapIdx else ReferenceOffsetsIdx) + 1
+    final val ITableSizeIdx = ReferenceOffsetsIdx + 1
+    final val ItablesIdx = ITableSizeIdx + 1
+    final val SuperClassIdx = ItablesIdx + 1
+    final val DynmapIdx = if (usesDynMap) SuperClassIdx + 1 else -1
+    final val VtableIdx = if (usesDynMap) DynmapIdx + 1 else SuperClassIdx + 1
+  }
+
+  object ITable extends Layout() {
+    override val layout: nir.Type.StructValue = genLayout(itableSize = 0)
+    def genLayout(itableSize: Int) = nir.Type.StructValue(
+      nir.Type.Int // id
+        :: nir.Type.ArrayValue(nir.Type.Ptr, itableSize)
+        :: Nil
+    )
   }
 
   object ObjectHeader

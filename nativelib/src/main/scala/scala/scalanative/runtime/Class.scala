@@ -11,30 +11,31 @@ import scala.scalanative.runtime.resource.EmbeddedResourceHelper
 import java.io.InputStream
 import java.nio.file.Paths
 
-// These two methods are generated at link-time by the toolchain
-// using current closed-world knowledge of classes and traits in
-// the current application.
-@extern
-private[runtime] object rtti {
-  def __check_class_has_trait(classId: Int, traitId: Int): scala.Boolean =
-    extern
-  def __check_trait_has_trait(leftId: Int, rightId: Int): scala.Boolean =
-    extern
-}
-import rtti._
-
 // Emitted as java.lang.Class
 private[runtime] final class _Class[A] {
+  // Note: All fields are initialized at compile time. There are no _Class constructor calls
+
+  // var rtti: _Class[_Class[?]] = _ // implicitly
+  // var lockWord: Object | Long = _ // implicitly, optional
   var id: Int = _
-  var traitId: Int = _
+  var interfacesCount: Int = _ // can be used in the future
+  var interfaces: RawPtr = _
   var name: String = _
+
+  // Warning! Fields below are populated if !isInterface()
   var size: Int = _
   var idRangeUntil: Int = _
+  var refFieldOffsets: RawPtr = _ // Ptr[Int]
+  var itablesCount: Int = _ // actually size - 1 - stores ready to use mask
+  var itables: RawPtr = _ // Ptr[CArray[ITableEntry, up to 32]]
+  var superClass: Class[_ >: A] = _
+
+  type ITableEntry = CStruct2[Int, Ptr[_]] // {id: Int, vtable: void*}
 
   def cast(obj: Object): A =
     obj.asInstanceOf[A]
 
-  def getComponentType(): _Class[_] = {
+  def getComponentType(): _Class[_] = if (isArray()) {
     if (is(classOf[ObjectArray])) classOf[java.lang.Object] // hot path
     else if (is(classOf[ByteArray])) classOf[scala.Byte]
     else if (is(classOf[CharArray])) classOf[scala.Char]
@@ -46,12 +47,14 @@ private[runtime] final class _Class[A] {
     else if (is(classOf[ShortArray])) classOf[scala.Short]
     else if (is(classOf[BlobArray])) classOf[scala.Byte]
     else null // JVM compliance
-  }
+  } else null // JVM compliance
 
   def getName(): String = name
 
-  def getSimpleName(): String =
-    getName().split('.').last.split('$').last
+  def getSimpleName(): String = {
+    val lastDot = name.lastIndexOf('.'.toInt)
+    name.substring(lastDot + 1).split('$').last
+  }
 
   // Based on fixed ordering in scala.scalanative.codegen.Metadata.initClassIdsAndRanges
   def isInterface(): scala.Boolean = id < 0
@@ -70,26 +73,36 @@ private[runtime] final class _Class[A] {
   @alwaysinline private def is(cls: Class[_]): Boolean =
     this eq cls.asInstanceOf[_Class[A]]
 
-  private def is(left: _Class[_], right: _Class[_]): Boolean =
+  private def is(left: _Class[_], right: _Class[_]): Boolean = {
     // This replicates the logic of the compiler-generated instance check
     // that you would normally get if you do (obj: L).isInstanceOf[R],
     // where rtti for L and R are `left` and `right`.
-    if (!left.isInterface()) {
-      if (!right.isInterface()) {
-        val rightFrom = right.id
-        val rightTo = right.idRangeUntil
-        val leftId = left.id
-        leftId >= rightFrom && leftId <= rightTo
-      } else {
-        __check_class_has_trait(left.id, -right.id - 1)
-      }
+    if (left eq right) return true
+
+    if (left.isInterface()) {
+      // unlikely, only possible when operating on Class[_] instances
+      if (right.isInterface()) _Class.checkHasTrait(left, right)
+      else false
+    } else if (right.isInterface()) {
+      // likely - in most cases we check if class is class or class is trait
+      val size = left.itablesCount
+      if (size >= 0) {
+        // fast-path
+        val slot = right.id & size
+        val itablePtr = Intrinsics.elemRawPtr(
+          left.itables,
+          Intrinsics.castRawSizeToInt(Intrinsics.sizeOf[ITableEntry]) * slot
+        )
+        val itableId = Intrinsics.loadInt(itablePtr)
+        itableId == right.id
+      } else _Class.checkHasTrait(left, right)
     } else {
-      if (!right.isInterface()) {
-        false
-      } else {
-        __check_trait_has_trait(-left.id - 1, -right.id - 1)
-      }
+      val rightFrom = right.id
+      val rightTo = right.idRangeUntil
+      val leftId = left.id
+      leftId >= rightFrom && leftId <= rightTo
     }
+  }
 
   @inline override def equals(other: Any): scala.Boolean =
     other match {
@@ -106,12 +119,16 @@ private[runtime] final class _Class[A] {
     prefix + name
   }
 
-  // def getInterfaces(): Array[_Class[_]] =
-  //   ???
+  def getInterfaces(): scala.Array[Class[_]] = {
+    val array =
+      if (interfacesCount == 0) scala.Array.emptyObjectArray
+      else ObjectArray.snapshot(interfacesCount, interfaces)
+    array.asInstanceOf[scala.Array[Class[_]]]
+  }
+  def getSuperclass(): Class[_ >: A] =
+    if (isInterface()) null
+    else superClass
 
-  // In theory the following 2 methods could be implemented, based on idRangeUntil from RTTI if we would have some kind of mapping between class/trait id -> Class[_] or by modifing the CodeGen
-  // def getSuperclass(): Class[_ >: A] =
-  //   ???
   // def getField(name: String): Field =
   //   ???
 
@@ -167,6 +184,28 @@ private[runtime] object _Class {
       cls: Class[A]
   ): _Class[A] =
     cls.asInstanceOf[_Class[A]]
+
+  private def checkHasTrait(left: _Class[_], right: _Class[_]): Boolean = {
+    var low = 0
+    var high = left.interfacesCount - 1
+    if (high == -1) return false
+    val interfaces = left.interfaces
+    val rightId = right.id
+    while (low <= high) {
+      val idx = (low + high) / 2
+      val interfacePtr = Intrinsics.elemRawPtr(
+        interfaces,
+        Intrinsics.castRawSizeToInt(Intrinsics.sizeOf[Ptr[_]]) * idx
+      )
+      val interface =
+        Intrinsics.loadObject(interfacePtr).asInstanceOf[_Class[_]]
+      val interfaceId = interface.id
+      if (interfaceId == rightId) return true
+      if (interfaceId < rightId) low = idx + 1
+      else high = idx - 1
+    }
+    false
+  }
 
   // Could be implemented via intrinsic method resolved at compile time and generating nir.Val.ClassOf(name: String)
   // def forName(name: String): Class[_] = ???

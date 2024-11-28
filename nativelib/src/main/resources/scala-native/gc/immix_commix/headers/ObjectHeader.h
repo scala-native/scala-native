@@ -33,20 +33,31 @@ extern const int __boxed_ptr_id;
 
 typedef struct StringObject StringObject;
 
-typedef struct {
-    struct {
+typedef struct ITableEntry {
+    int32_t interfaceId;
+    void **vtable;
+} ITableEntry;
+
+typedef struct Rtti {
+    // Fields shared by all classes
+    struct BaseRtti {
         word_t *cls;
 #ifdef USES_LOCKWORD
         word_t *lockWord;
 #endif
         int32_t id;
-        int32_t tid;
+        int32_t interfacesCount;
+        struct BaseRtti *interfaces;
         StringObject *name;
     } rt;
+    // Fields defined only for instantiable types (classes)
     int32_t size;
     int32_t idRangeUntil;
     int32_t *refFieldOffsets; // Array of field offsets (in bytes) from object
                               // start, terminated with -1
+    int32_t itableCount;
+    ITableEntry *itable; // ITableEntry[itableCount]
+    struct Rtti *superclass;
 } Rtti;
 
 typedef word_t *Field_t;

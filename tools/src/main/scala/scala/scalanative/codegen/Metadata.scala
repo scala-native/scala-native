@@ -19,31 +19,28 @@ private[scalanative] class Metadata(
   val layouts = new CommonMemoryLayouts()
   val rtti = mutable.Map.empty[linker.Info, RuntimeTypeInformation]
   val vtable = mutable.Map.empty[linker.Class, VirtualTable]
+  val itable = mutable.Map.empty[linker.Class, ITable]
   val layout = mutable.Map.empty[linker.Class, FieldLayout]
   val dynmap = mutable.Map.empty[linker.Class, DynamicHashMap]
   val ids = mutable.Map.empty[linker.ScopeInfo, Int]
   val ranges = mutable.Map.empty[linker.Class, Range]
 
   val classes = initClassIdsAndRanges()
-  val traits = initTraitIds()
+  val (traits, traitIdsContext) = initTraitIds()
   val moduleArray = new ModuleArray(this)
-  val dispatchTable = new TraitDispatchTable(this)
-  val hasTraitTables = new HasTraitTables(this)
 
-  initClassMetadata()
   initTraitMetadata()
+  initClassMetadata()
 
-  def initTraitIds(): Seq[Trait] = {
-    val traits =
-      analysis.infos.valuesIterator
-        .collect { case info: Trait => info }
-        .toIndexedSeq
-        .sortBy(_.name.show)
-    traits.zipWithIndex.foreach {
-      case (node, id) =>
-        ids(node) = id
-    }
-    traits
+  val canAlwaysUseFastITables = rtti.valuesIterator.forall(_.canUseFastITables)
+
+  def initTraitIds(): (Seq[Trait], TraitsUniverse.TraitId.Context) = {
+    val traits = analysis.infos.valuesIterator.collect {
+      case info: Trait => info
+    }.toIndexedSeq
+    val universe = new TraitsUniverse(traits)
+    val ctx = universe.assignIds(ids)
+    (traits, ctx)
   }
 
   def initClassIdsAndRanges(): Seq[Class] = {
@@ -96,6 +93,7 @@ private[scalanative] class Metadata(
       if (layouts.ClassRtti.usesDynMap) {
         dynmap(node) = new DynamicHashMap(node, proxies)
       }
+      itable(node) = ITable.build(node)
       rtti(node) = new RuntimeTypeInformation(node)
     }
   }

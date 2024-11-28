@@ -1,3 +1,4 @@
+// scalafmt: {maxColumn = 160}
 package scala.scalanative
 package codegen
 
@@ -14,11 +15,10 @@ private[scalanative] object Lower {
   )(implicit meta: Metadata, logger: build.Logger): Seq[nir.Defn] =
     (new Impl).onDefns(defns)
 
-  private final class Impl(implicit meta: Metadata, logger: build.Logger)
-      extends nir.Transform {
+  private final class Impl(implicit meta: Metadata, logger: build.Logger) extends nir.Transform {
     import meta._
     import meta.config
-    import meta.layouts.{Rtti, ClassRtti, ArrayHeader}
+    import meta.layouts.{Rtti, ClassRtti, ArrayHeader, ITable}
 
     implicit val analysis: ReachabilityAnalysis.Result = meta.analysis
 
@@ -27,9 +27,10 @@ private[scalanative] object Lower {
     private val zero = nir.Val.Int(0)
     private val one = nir.Val.Int(1)
     val RttiClassIdPath = Seq(zero, nir.Val.Int(Rtti.ClassIdIdx))
-    val RttiTraitIdPath = Seq(zero, nir.Val.Int(Rtti.TraitIdIdx))
     val ClassRttiDynmapPath = Seq(zero, nir.Val.Int(ClassRtti.DynmapIdx))
     val ClassRttiVtablePath = Seq(zero, nir.Val.Int(ClassRtti.VtableIdx))
+    val ClassRttiITableSizePath = Seq(zero, nir.Val.Int(ClassRtti.ITableSizeIdx))
+    val ClassRttiItablesPath = Seq(zero, nir.Val.Int(ClassRtti.ItablesIdx))
     val ArrayHeaderLengthPath = Seq(zero, nir.Val.Int(ArrayHeader.LengthIdx))
 
     // Type of the bare runtime type information struct.
@@ -109,11 +110,9 @@ private[scalanative] object Lower {
       defns.foreach {
         case _: nir.Defn.Class | _: nir.Defn.Module | _: nir.Defn.Trait =>
           ()
-        case nir.Defn.Declare(attrs, MethodRef(_: Class | _: Trait, _), _)
-            if !attrs.isExtern =>
+        case nir.Defn.Declare(attrs, MethodRef(_: Class | _: Trait, _), _) if !attrs.isExtern =>
           ()
-        case nir.Defn.Var(attrs, FieldRef(_: Class, _), _, _)
-            if !attrs.isExtern =>
+        case nir.Defn.Var(attrs, FieldRef(_: Class, _), _, _) if !attrs.isExtern =>
           ()
         case defn =>
           buf += onDefn(defn)
@@ -253,8 +252,7 @@ private[scalanative] object Lower {
           implicit val pos: nir.SourcePosition = inst.pos
           // Generate GC yield points before backward jumps, eg. in loops
           next match {
-            case nir.Next.Label(target, _)
-                if labelPositions(target) < currentBlockPosition =>
+            case nir.Next.Label(target, _) if labelPositions(target) < currentBlockPosition =>
               genGCYieldpoint(buf)
             case _ => ()
           }
@@ -845,6 +843,57 @@ private[scalanative] object Lower {
       }
     }
 
+    // Fastpath lookup for itable entry calculated based on input traitId
+    // Returns a pointer to ITableEntry struct - {id: int, methods: void**}
+    def genItableFastLookup(trt: Trait, buf: nir.InstructionBuilder)(rtti: nir.Val, traitId: nir.Val.Int, itableSize: nir.Val)(implicit
+        srcPosition: nir.SourcePosition,
+        scopeId: nir.ScopeId
+    ): nir.Val = {
+      import buf._
+      val itablesPtr = let(nir.Op.Elem(ClassRtti.layout, rtti, ClassRttiItablesPath), unwind)
+      val itables = let(nir.Op.Load(nir.Type.Ptr, itablesPtr), unwind)
+      val itableIdx = let(nir.Op.Bin(nir.Bin.And, nir.Type.Int, traitId, itableSize), unwind)
+      let(nir.Op.Elem(nir.Type.StructValue(nir.Type.Int :: nir.Type.Ptr :: Nil), itables, Seq(itableIdx)), unwind)
+    }
+
+    type ITableLookupGenerator = (
+        nir.InstructionBuilder, // buf
+        nir.Val.Int, // traitId
+        nir.Val, // itableSize
+        nir.Local // toLabel
+    ) => nir.Val.Local
+    def genItableLookup(trt: Trait, buf: nir.InstructionBuilder, mayBeNotFound: Boolean)(resultLabel: Option[nir.Local], rtti: nir.Val, resultType: nir.Type)(
+        genFastPath: ITableLookupGenerator,
+        genSlowPath: ITableLookupGenerator
+    )(implicit
+        srcPosition: nir.SourcePosition,
+        scopeId: nir.ScopeId
+    ): nir.Val.Local = {
+      import buf._
+      val traitId = nir.Val.Int(meta.ids(trt))
+      val itableSizePtr = let(nir.Op.Elem(ClassRtti.layout, rtti, ClassRttiITableSizePath), unwind)
+      val itableSize = let(nir.Op.Load(nir.Type.Int, itableSizePtr), unwind)
+
+      val canEmitOnlyFastPath = meta.canAlwaysUseFastITables || (!mayBeNotFound && meta.rtti(trt).canUseFastITables)
+      if (canEmitOnlyFastPath) genFastPath(buf, traitId, itableSize, resultLabel.getOrElse(fresh()))
+      else {
+        val onFastPath, onSlowPath, merge = fresh()
+        val resultV = nir.Val.Local(resultLabel.getOrElse(fresh()), resultType)
+
+        val useFastPath = let(nir.Op.Comp(nir.Comp.Sge, nir.Type.Int, itableSize, zero), unwind)
+        branch(useFastPath, nir.Next.Label(onFastPath, Nil), nir.Next.Label(onSlowPath, Nil))
+
+        label(onFastPath, Nil)
+        jump(merge, genFastPath(buf, traitId, itableSize, fresh()) :: Nil)
+
+        label(onSlowPath, Nil)
+        jump(merge, genSlowPath(buf, traitId, itableSize, fresh()) :: Nil)
+
+        label(merge, resultV :: Nil)
+        resultV
+      }
+    }
+
     def genCallOp(
         buf: nir.InstructionBuilder,
         n: nir.Local,
@@ -871,8 +920,7 @@ private[scalanative] object Lower {
       )
 
       // Extern functions that don't block in strict mode
-      object isWellKnownNonBlockingExternFunction
-          extends Function1[nir.Sig, Boolean] {
+      object isWellKnownNonBlockingExternFunction extends Function1[nir.Sig, Boolean] {
         var nonBlocking = mutable.HashSet.empty[nir.Sig]
         nonBlocking ++= Seq(
           "scalanative_GC_alloc",
@@ -902,20 +950,18 @@ private[scalanative] object Lower {
         }
       }
       def shouldSwitchThreadState(name: nir.Global.Member) =
-        platform.isMultithreadingEnabled && analysis.infos.get(name).exists {
-          info =>
-            val attrs = info.attrs
-            attrs.isExtern && {
-              config.semanticsConfig.strictExternCallSemantics match {
-                case false => attrs.isBlocking
-                case _     => !isWellKnownNonBlockingExternFunction(name.sig)
-              }
+        platform.isMultithreadingEnabled && analysis.infos.get(name).exists { info =>
+          val attrs = info.attrs
+          attrs.isExtern && {
+            config.semanticsConfig.strictExternCallSemantics match {
+              case false => attrs.isBlocking
+              case _     => !isWellKnownNonBlockingExternFunction(name.sig)
             }
+          }
         }
 
       ptr match {
-        case nir.Val.Global(global: nir.Global.Member, _)
-            if shouldSwitchThreadState(global) =>
+        case nir.Val.Global(global: nir.Global.Member, _) if shouldSwitchThreadState(global) =>
           switchThreadState(managed = false)
           genCall()
           genGCYieldpoint(buf, genUnwind = false)
@@ -931,7 +977,6 @@ private[scalanative] object Lower {
         op: nir.Op.Method
     )(implicit srcPosition: nir.SourcePosition, scopeId: nir.ScopeId) = {
       import buf._
-
       val nir.Op.Method(v, sig) = op
       val obj = genVal(buf, v)
 
@@ -956,27 +1001,32 @@ private[scalanative] object Lower {
       }
 
       def genTraitVirtualLookup(trt: Trait): Unit = {
-        val sigid = dispatchTable.traitSigIds(sig)
-        val typeptr = let(nir.Op.Load(nir.Type.Ptr, obj), unwind)
-        val idptr =
-          let(nir.Op.Elem(Rtti.layout, typeptr, RttiTraitIdPath), unwind)
-        val id = let(nir.Op.Load(nir.Type.Int, idptr), unwind)
-        val rowptr = let(
-          nir.Op.Elem(
-            nir.Type.Ptr,
-            dispatchTable.dispatchVal,
-            Seq(nir.Val.Int(dispatchTable.dispatchOffset(sigid)))
-          ),
-          unwind
+        val methodIdx = nir.Val.Int(
+          trt.methods
+            .indexOf(sig)
+            .ensuring(_ >= 0, s"Not found ${sig.show} entry in ${trt.name.id} methods")
         )
-        val methptrptr =
-          let(nir.Op.Elem(nir.Type.Ptr, rowptr, Seq(id)), unwind)
-        let(n, nir.Op.Load(nir.Type.Ptr, methptrptr), unwind)
+        val rtti = let(nir.Op.Load(nir.Type.Ptr, obj), unwind)
+        genItableLookup(trt, buf, mayBeNotFound = false)(Some(n), rtti, nir.Type.Ptr)(
+          genFastPath = (buf, traitId, itableSize, resultLabel) => {
+            val itablesPtr = let(nir.Op.Elem(ClassRtti.layout, rtti, ClassRttiItablesPath), unwind)
+            val itables = let(nir.Op.Load(nir.Type.Ptr, itablesPtr), unwind)
+            val itableIdx = let(nir.Op.Bin(nir.Bin.And, nir.Type.Int, traitId, itableSize), unwind)
+            val itablePtr = let(nir.Op.Elem(nir.Type.StructValue(nir.Type.Int :: nir.Type.Ptr :: Nil), itables, Seq(itableIdx, one)), unwind)
+            val itable = let(nir.Op.Load(nir.Type.Ptr, itablePtr), unwind)
+            val methodPtr = let(nir.Op.Elem(nir.Type.Ptr, itable, Seq(methodIdx)), unwind)
+            let(resultLabel, nir.Op.Load(nir.Type.Ptr, methodPtr), unwind)
+          },
+          genSlowPath = (buf, traitId, itableSize, _) => {
+            call(TraitDispatchSlowpathSig, TraitDispatchSlowpath, Seq(rtti, traitId, methodIdx), unwind)
+          }
+        )
       }
 
       def genMethodLookup(scope: ScopeInfo): Unit = {
         scope.targets(sig).toSeq match {
           case Seq() =>
+            // logger.warn(s"Unable to call ${sig.show} on instance of ${scope.name.id} in ${srcPosition.show}. It would result in NullPointerException at runtime")
             let(n, nir.Op.Copy(nir.Val.Null), unwind)
           case Seq(impl) =>
             let(n, nir.Op.Copy(nir.Val.Global(impl, nir.Type.Ptr)), unwind)
@@ -1134,53 +1184,38 @@ private[scalanative] object Lower {
       ty match {
         case ClassRef(cls) if meta.ranges(cls).length == 1 =>
           val typeptr = let(nir.Op.Load(nir.Type.Ptr, obj), unwind)
-          let(
-            nir.Op.Comp(nir.Comp.Ieq, nir.Type.Ptr, typeptr, rtti(cls).const),
-            unwind
-          )
+          let(nir.Op.Comp(nir.Comp.Ieq, nir.Type.Ptr, typeptr, rtti(cls).const), unwind)
 
         case ClassRef(cls) =>
           val range = meta.ranges(cls)
           val typeptr = let(nir.Op.Load(nir.Type.Ptr, obj), unwind)
-          val idptr =
-            let(
-              nir.Op.Elem(Rtti.layout, typeptr, RttiClassIdPath),
-              unwind
-            )
+          val idptr = let(nir.Op.Elem(Rtti.layout, typeptr, RttiClassIdPath), unwind)
           val id = let(nir.Op.Load(nir.Type.Int, idptr), unwind)
-          val ge =
-            let(
-              nir.Op
-                .Comp(nir.Comp.Sle, nir.Type.Int, nir.Val.Int(range.start), id),
-              unwind
-            )
-          val le =
-            let(
-              nir.Op
-                .Comp(nir.Comp.Sle, nir.Type.Int, id, nir.Val.Int(range.end)),
-              unwind
-            )
+          val ge = let(nir.Op.Comp(nir.Comp.Sle, nir.Type.Int, nir.Val.Int(range.start), id), unwind)
+          val le = let(nir.Op.Comp(nir.Comp.Sle, nir.Type.Int, id, nir.Val.Int(range.end)), unwind)
           let(nir.Op.Bin(nir.Bin.And, nir.Type.Bool, ge, le), unwind)
 
         case TraitRef(trt) =>
-          val typeptr = let(nir.Op.Load(nir.Type.Ptr, obj), unwind)
-          val idptr =
-            let(
-              nir.Op.Elem(Rtti.layout, typeptr, RttiClassIdPath),
-              unwind
-            )
-          val id = let(nir.Op.Load(nir.Type.Int, idptr), unwind)
-          let(
-            nir.Op.Call(
-              Generate.ClassHasTraitSig,
-              nir.Val.Global(
-                Generate.ClassHasTraitName,
-                Generate.ClassHasTraitSig
-              ),
-              Seq(id, nir.Val.Int(meta.ids(trt)))
-            ),
-            unwind
+          v.ty match {
+            case ClassRef(cls) =>
+            case _             =>
+          }
+          val traitId = nir.Val.Int(meta.ids(trt))
+          val rtti = let(nir.Op.Load(nir.Type.Ptr, obj), unwind)
+          genItableLookup(trt, buf, mayBeNotFound = true)(None, rtti, nir.Type.Bool)(
+            genFastPath = (buf, traitId, itableSize, _) => {
+              val itablesPtr = let(nir.Op.Elem(ClassRtti.layout, rtti, ClassRttiItablesPath), unwind)
+              val itables = let(nir.Op.Load(nir.Type.Ptr, itablesPtr), unwind)
+              val itableIdx = let(nir.Op.Bin(nir.Bin.And, nir.Type.Int, traitId, itableSize), unwind)
+              val itableIdPtr = let(nir.Op.Elem(nir.Type.StructValue(nir.Type.Int :: nir.Type.Ptr :: Nil), itables, Seq(itableIdx, zero)), unwind)
+              val itableId = let(nir.Op.Load(nir.Type.Int, itableIdPtr), unwind)
+              let(nir.Op.Comp(nir.Comp.Ieq, nir.Type.Int, traitId, itableId), unwind)
+            },
+            genSlowPath = (buf, traitId, itableSize, _) => {
+              call(ClassHasTraitSlowpathSig, ClassHasTraitSlowpath, Seq(rtti, traitId), unwind)
+            }
           )
+
         case _ =>
           util.unsupported(s"is[$ty] $obj")
       }
@@ -1197,8 +1232,7 @@ private[scalanative] object Lower {
         case nir.Op.As(ty: nir.Type.RefKind, v) if v.ty == nir.Type.Null =>
           let(n, nir.Op.Copy(nir.Val.Null), unwind)
 
-        case nir.Op.As(ty: nir.Type.RefKind, obj)
-            if obj.ty.isInstanceOf[nir.Type.RefKind] =>
+        case nir.Op.As(ty: nir.Type.RefKind, obj) if obj.ty.isInstanceOf[nir.Type.RefKind] =>
           val v = genVal(buf, obj)
           val checkIfIsInstanceOfL, castL = fresh()
           val failL = classCastSlowPath.getOrElseUpdate(unwindHandler, fresh())
@@ -1360,8 +1394,7 @@ private[scalanative] object Lower {
               util.unreachable
           }
 
-          val isNaNL, checkLessThanMinL, lessThanMinL, checkLargerThanMaxL,
-              largerThanMaxL, inBoundsL, resultL = fresh()
+          val isNaNL, checkLessThanMinL, lessThanMinL, checkLargerThanMaxL, largerThanMaxL, inBoundsL, resultL = fresh()
 
           val isNaN = comp(nir.Comp.Fne, v.ty, v, v, unwind)
           branch(isNaN, nir.Next(isNaNL), nir.Next(checkLessThanMinL))
@@ -2150,6 +2183,14 @@ private[scalanative] object Lower {
   val throwNoSuchMethodVal =
     nir.Val.Global(throwNoSuchMethod, nir.Type.Ptr)
 
+  val TraitDispatchSlowpathName = extern("__scalanative_trait_dispatch_slowpath")
+  val TraitDispatchSlowpathSig = nir.Type.Function(Seq(nir.Type.Ptr, nir.Type.Int, nir.Type.Int), nir.Type.Ptr)
+  val TraitDispatchSlowpath = nir.Val.Global(TraitDispatchSlowpathName, nir.Type.Ptr)
+
+  val ClassHasTraitSlowpathName = extern("__scalanative_class_has_trait_slowpath")
+  val ClassHasTraitSlowpathSig = nir.Type.Function(Seq(nir.Type.Ptr, nir.Type.Int), nir.Type.Bool)
+  val ClassHasTraitSlowpath = nir.Val.Global(ClassHasTraitSlowpathName, nir.Type.Ptr)
+
   val GC = nir.Global.Top("scala.scalanative.runtime.GC$")
   val GCYieldName =
     GC.member(nir.Sig.Extern("scalanative_GC_yield"))
@@ -2181,11 +2222,14 @@ private[scalanative] object Lower {
   val injects: Seq[nir.Defn] = {
     implicit val pos = nir.SourcePosition.NoPosition
     val buf = mutable.UnrolledBuffer.empty[nir.Defn]
-    buf += nir.Defn.Declare(nir.Attrs.None, allocSmallName, allocSig)
-    buf += nir.Defn.Declare(nir.Attrs.None, largeAllocName, allocSig)
-    buf += nir.Defn.Declare(nir.Attrs.None, dyndispatchName, dyndispatchSig)
-    buf += nir.Defn.Declare(nir.Attrs.None, throwName, throwSig)
-    buf += nir.Defn.Declare(nir.Attrs(isExtern = true), memsetName, memsetSig)
+    def externDecl(name: nir.Global.Member, signature: nir.Type.Function) = nir.Defn.Declare(nir.Attrs(isExtern = true), name, signature)
+    buf += externDecl(allocSmallName, allocSig)
+    buf += externDecl(largeAllocName, allocSig)
+    buf += externDecl(dyndispatchName, dyndispatchSig)
+    buf += externDecl(throwName, throwSig)
+    buf += externDecl(memsetName, memsetSig)
+    buf += externDecl(TraitDispatchSlowpathName, TraitDispatchSlowpathSig)
+    buf += externDecl(ClassHasTraitSlowpathName, ClassHasTraitSlowpathSig)
     buf.toSeq
   }
 
@@ -2193,16 +2237,9 @@ private[scalanative] object Lower {
     val buf = mutable.UnrolledBuffer.empty[nir.Global]
     buf ++= nir.Rt.PrimitiveTypes
     buf += nir.Rt.ClassName
-    buf += nir.Rt.ClassIdName
-    buf += nir.Rt.ClassTraitIdName
-    buf += nir.Rt.ClassNameName
-    buf += nir.Rt.ClassSizeName
-    buf += nir.Rt.ClassIdRangeUntilName
+    buf ++= nir.Rt.jlClassFields
     buf += nir.Rt.StringName
-    buf += nir.Rt.StringValueName
-    buf += nir.Rt.StringOffsetName
-    buf += nir.Rt.StringCountName
-    buf += nir.Rt.StringCachedHashCodeName
+    buf ++= nir.Rt.jlStringFields
     buf += CharArrayName
     buf += BoxesRunTime
     buf += RuntimeBoxes

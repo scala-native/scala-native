@@ -17,12 +17,6 @@ private[codegen] object Generate {
   private implicit val scopeId: nir.ScopeId = nir.ScopeId.TopLevel
   import Impl._
 
-  val ClassHasTraitName = nir.Global.Member(rttiModule, nir.Sig.Extern("__check_class_has_trait"))
-  val ClassHasTraitSig = nir.Type.Function(Seq(nir.Type.Int, nir.Type.Int), nir.Type.Bool)
-
-  val TraitHasTraitName = nir.Global.Member(rttiModule, nir.Sig.Extern("__check_trait_has_trait"))
-  val TraitHasTraitSig = nir.Type.Function(Seq(nir.Type.Int, nir.Type.Int), nir.Type.Bool)
-
   def apply(entry: Option[nir.Global.Top], defns: Seq[nir.Defn])(implicit
       meta: Metadata
   ): Seq[nir.Defn] =
@@ -40,10 +34,7 @@ private[codegen] object Generate {
       genInjects()
       entry.fold(genLibraryInit())(genMain(_))
       genClassMetadata()
-      genClassHasTrait()
       genTraitMetadata()
-      genTraitHasTrait()
-      genTraitDispatchTables()
       genModuleAccessors()
       genModuleArray()
       genModuleArraySize()
@@ -55,12 +46,7 @@ private[codegen] object Generate {
     }
 
     def genDefnsExcludingGenerated(): Unit = {
-      defns.foreach { defn =>
-        if (defn.name != ClassHasTraitName
-            && defn.name != TraitHasTraitName) {
-          buf += defn
-        }
-      }
+      buf ++= defns
     }
 
     def genInjects(): Unit = {
@@ -74,118 +60,6 @@ private[codegen] object Generate {
         val pos = cls.position
         buf += nir.Defn.Var(nir.Attrs.None, rtti.name, rtti.struct, rtti.value)(pos)
       }
-    }
-
-    def genClassHasTrait(): Unit = {
-      genHasTrait(
-        ClassHasTraitName,
-        ClassHasTraitSig,
-        meta.hasTraitTables.classHasTraitTy,
-        meta.hasTraitTables.classHasTraitVal
-      )
-    }
-
-    def genTraitHasTrait(): Unit = {
-      genHasTrait(
-        TraitHasTraitName,
-        TraitHasTraitSig,
-        meta.hasTraitTables.traitHasTraitTy,
-        meta.hasTraitTables.traitHasTraitVal
-      )
-    }
-
-    // BitMatrix get adapted from the java.util.BitSet implementation.
-    // Equivalent to the following Scala code:
-    // def get_[class,trait]_has_trait(firstid: Int, secondid: Int): Boolean = {
-    //   val bitIndex = firstid * meta.traits.length + secondid
-    //   (table(bitIndex >> AddressBitsPerWord) & (1 << (bitIndex & RightBits))) != 0
-    // }
-    private def genHasTrait(
-        name: nir.Global.Member,
-        sig: nir.Type.Function,
-        tableTy: nir.Type,
-        tableVal: nir.Val
-    ): Unit = {
-      implicit val fresh = nir.Fresh()
-      val firstid, secondid = nir.Val.Local(fresh(), nir.Type.Int)
-      val row = nir.Val.Local(fresh(), nir.Type.Int)
-      val columns = nir.Val.Int(meta.traits.length)
-      val bitIndex = nir.Val.Local(fresh(), nir.Type.Int)
-      val arrayPos = nir.Val.Local(fresh(), nir.Type.Int)
-      val intptr = nir.Val.Local(fresh(), nir.Type.Ptr)
-      val int = nir.Val.Local(fresh(), nir.Type.Int)
-      val toShift = nir.Val.Local(fresh(), nir.Type.Int)
-      val mask = nir.Val.Local(fresh(), nir.Type.Int)
-      val and = nir.Val.Local(fresh(), nir.Type.Int)
-      val result = nir.Val.Local(fresh(), nir.Type.Bool)
-
-      def let(local: nir.Val.Local, op: nir.Op) = nir.Inst.Let(local.id, op, nir.Next.None)
-
-      buf += nir.Defn.Define(
-        nir.Attrs(inlineHint = nir.Attr.AlwaysInline),
-        name,
-        sig,
-        Seq(
-          nir.Inst.Label(fresh(), Seq(firstid, secondid)),
-          let(row, nir.Op.Bin(nir.Bin.Imul, nir.Type.Int, firstid, columns)),
-          let(bitIndex, nir.Op.Bin(nir.Bin.Iadd, nir.Type.Int, row, secondid)),
-          let(
-            arrayPos,
-            nir.Op.Bin(
-              nir.Bin.Ashr,
-              nir.Type.Int,
-              bitIndex,
-              nir.Val.Int(BitMatrix.AddressBitsPerWord)
-            )
-          ),
-          let(
-            intptr,
-            nir.Op.Elem(
-              tableTy,
-              tableVal,
-              Seq(nir.Val.Int(0), arrayPos)
-            )
-          ),
-          let(int, nir.Op.Load(nir.Type.Int, intptr)),
-          let(
-            toShift,
-            nir.Op.Bin(
-              nir.Bin.And,
-              nir.Type.Int,
-              bitIndex,
-              nir.Val.Int(BitMatrix.RightBits)
-            )
-          ),
-          let(
-            mask,
-            nir.Op.Bin(
-              nir.Bin.Shl,
-              nir.Type.Int,
-              nir.Val.Int(1),
-              toShift
-            )
-          ),
-          let(
-            and,
-            nir.Op.Bin(
-              nir.Bin.And,
-              nir.Type.Int,
-              int,
-              mask
-            )
-          ),
-          let(
-            result,
-            nir.Op.Comp(
-              nir.Comp.Ine,
-              nir.Type.Int,
-              and,
-              nir.Val.Int(0)
-            )
-          ),
-          nir.Inst.Ret(result)
-        )
-      )
     }
 
     def genTraitMetadata(): Unit = {
@@ -590,12 +464,6 @@ private[codegen] object Generate {
 
       buf += nir.Defn.Const(nir.Attrs.None, arrayIdsMinName, nir.Type.Int, nir.Val.Int(min))
       buf += nir.Defn.Const(nir.Attrs.None, arrayIdsMaxName, nir.Type.Int, nir.Val.Int(max))
-    }
-
-    def genTraitDispatchTables(): Unit = {
-      buf += meta.dispatchTable.dispatchDefn
-      buf += meta.hasTraitTables.classHasTraitDefn
-      buf += meta.hasTraitTables.traitHasTraitDefn
     }
 
     private def validateMainEntry(entry: nir.Global.Top): Unit = {

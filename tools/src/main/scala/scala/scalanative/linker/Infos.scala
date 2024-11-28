@@ -17,6 +17,8 @@ sealed abstract class ScopeInfo extends Info {
   val calls = mutable.Set.empty[nir.Sig]
   val responds = mutable.Map.empty[nir.Sig, nir.Global.Member]
 
+  def methods = calls.toSeq.filter(_.isVirtual)
+
   def isClass: Boolean = this.isInstanceOf[Class]
   def isTrait: Boolean = this.isInstanceOf[Trait]
   def is(info: ScopeInfo): Boolean
