@@ -299,7 +299,20 @@ private[scalanative] object Lower {
 
       buf ++= handlers
 
-      eliminateDeadCode(buf.toSeq.map(onInst))
+      val loweredInsts = buf.toSeq.map(onInst)
+      try eliminateDeadCode(loweredInsts)
+      catch {
+        case scala.util.control.NonFatal(error) =>
+          logger.synchronized {
+            logger.error(s"""Dead code elimnation failed: ${error.getMessage()}
+            |Original defn: 
+            |${currentDefn.get.show}
+            |Lowered instructions: 
+            |${loweredInsts.zipWithIndex.map { case (inst, idx) => s"${idx.toString().padTo(4, ' ')}| ${inst.show}" }.mkString("\n")}
+            |""".stripMargin)
+          }
+          throw error
+      }
     }
 
     override def onInst(inst: nir.Inst): nir.Inst = {
