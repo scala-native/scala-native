@@ -319,6 +319,7 @@ trait NirGenStat(using Context) {
                 lexicalScopes = scopes.toList
               )
             )
+ 
             Some(defn)
           }
       }
@@ -445,6 +446,9 @@ trait NirGenStat(using Context) {
       genEntry()
       genVars()
       genBody()
+      // if(dd.symbol.toString.contains("""get"""))
+      //   println(dd.show)
+      //   println(buf.toSeq.map(_.show).foreach(println))
       nir.ControlFlow.removeDeadBlocks(buf.toSeq)
     }
   }
