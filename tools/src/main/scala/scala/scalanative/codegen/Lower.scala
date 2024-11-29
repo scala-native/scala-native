@@ -170,12 +170,11 @@ private[scalanative] object Lower {
 
       buf += insts.head
 
-      def newUnwindHandler(
-          next: nir.Next
-      )(implicit pos: nir.SourcePosition): Option[nir.Local] =
+      var unwindHandlerCache = mutable.Map.empty[nir.Next, Option[nir.Local]]
+      def getUnwindHandler(next: nir.Next)(implicit pos: nir.SourcePosition): Option[nir.Local] = unwindHandlerCache.getOrElseUpdate(
+        next,
         next match {
-          case nir.Next.None =>
-            None
+          case nir.Next.None => None
           case nir.Next.Unwind(exc, next) =>
             val handler = fresh()
             handlers.label(handler, Seq(exc))
@@ -184,6 +183,7 @@ private[scalanative] object Lower {
           case _ =>
             util.unreachable
         }
+      )
 
       insts.foreach {
         case inst @ nir.Inst.Let(n, nir.Op.Var(ty), unwind) =>
@@ -202,14 +202,14 @@ private[scalanative] object Lower {
       genThisValueNullGuardIfUsed(
         currentDefn.get,
         buf,
-        () => newUnwindHandler(nir.Next.None)(insts.head.pos)
+        () => getUnwindHandler(nir.Next.None)(insts.head.pos)
       )
 
       implicit var lastScopeId: nir.ScopeId = nir.ScopeId.TopLevel
       insts.tail.foreach {
         case inst @ nir.Inst.Let(n, op, unwind) =>
           ScopedVar.scoped(
-            unwindHandler := newUnwindHandler(unwind)(inst.pos)
+            unwindHandler := getUnwindHandler(unwind)(inst.pos)
           ) {
             lastScopeId = inst.scopeId
             genLet(buf, n, op)(inst.pos, lastScopeId)
@@ -217,14 +217,14 @@ private[scalanative] object Lower {
 
         case inst @ nir.Inst.Throw(v, unwind) =>
           ScopedVar.scoped(
-            unwindHandler := newUnwindHandler(unwind)(inst.pos)
+            unwindHandler := getUnwindHandler(unwind)(inst.pos)
           ) {
             genThrow(buf, v)(inst.pos, lastScopeId)
           }
 
         case inst @ nir.Inst.Unreachable(unwind) =>
           ScopedVar.scoped(
-            unwindHandler := newUnwindHandler(unwind)(inst.pos)
+            unwindHandler := getUnwindHandler(unwind)(inst.pos)
           ) {
             genUnreachable(buf)(inst.pos)
           }
