@@ -670,6 +670,27 @@ class IssuesTest {
     }
   }
 
+  @Test def issue4087(): Unit = {
+    import java.util.ServiceLoader
+    class SomeClass
+    object SomeClass {
+      def get =
+        try ServiceLoader.load(classOf[SomeClass])
+        catch { case ex: Throwable => throw ex }
+        finally { () }
+    }
+    assertTrue(SomeClass.get.isInstanceOf[ServiceLoader[_]])
+  }
+
+  @Test def issue4087_original(): Unit = {
+    import java.util.ServiceLoader
+    class SomeClass
+    object SomeClass {
+      lazy val get = ServiceLoader.load(classOf[SomeClass])
+    }
+    assertTrue(SomeClass.get.isInstanceOf[ServiceLoader[_]])
+  }
+
   @Test def dottyIssue15402(): Unit = {
     trait Named {
       def name: String
