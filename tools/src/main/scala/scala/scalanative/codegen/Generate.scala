@@ -523,7 +523,10 @@ private[codegen] object Generate {
     val RuntimeExecuteUEHSig =
       nir.Type.Function(Seq(Runtime, JavaThreadUEHRef, JavaThreadRef, nir.Rt.Throwable), nir.Type.Unit)
     val RuntimeExecuteUEH = Runtime.name.member(
-      nir.Sig.Method("executeUncaughtExceptionHandler", Seq(JavaThreadUEHRef, JavaThreadRef, nir.Rt.Throwable, nir.Type.Unit))
+      nir.Sig.Method(
+        "executeUncaughtExceptionHandler",
+        Seq(JavaThreadUEHRef, JavaThreadRef, nir.Rt.Throwable, nir.Type.Unit)
+      )
     )
 
     val InitSig = nir.Type.Function(Seq.empty, nir.Type.Unit)

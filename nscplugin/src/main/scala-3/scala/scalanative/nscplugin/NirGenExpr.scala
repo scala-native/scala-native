@@ -851,7 +851,7 @@ trait NirGenExpr(using Context) {
       val handler, normaln, mergen = fresh()
       val excv = nir.Val.Local(fresh(), nir.Rt.Throwable)
       val mergev = nir.Val.Local(fresh(), retty)
-      
+
       // Nested code gen to separate out try/catch-related instructions.
       val nested = ExprBuffer()
       scoped(
