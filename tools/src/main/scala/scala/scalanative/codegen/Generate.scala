@@ -75,11 +75,11 @@ private[codegen] object Generate {
     private def withExceptionHandler(
         body: (() => nir.Next.Unwind) => Seq[nir.Inst]
     )(implicit fresh: nir.Fresh): Seq[nir.Inst] = {
-      val exc = nir.Val.Local(fresh(), Throwable)
+      val exc = nir.Val.Local(fresh(), nir.Rt.Throwable)
       val handler, thread, ueh, uehHandler = fresh()
 
       def unwind(): nir.Next.Unwind = {
-        val exc = nir.Val.Local(fresh(), nir.Rt.Object)
+        val exc = nir.Val.Local(fresh(), nir.Rt.Throwable)
         nir.Next.Unwind(exc, nir.Next.Label(handler, Seq(exc)))
       }
       body(unwind) ++ Seq(
@@ -504,9 +504,6 @@ private[codegen] object Generate {
     val MainName = extern("main")
     val MainSig = nir.Type.Function(Seq(nir.Type.Int, nir.Type.Ptr), nir.Type.Int)
 
-    val ThrowableName = nir.Global.Top("java.lang.Throwable")
-    val Throwable = nir.Type.Ref(ThrowableName)
-
     val JavaThread = nir.Global.Top("java.lang.Thread")
     val JavaThreadRef = nir.Type.Ref(JavaThread)
 
@@ -524,9 +521,12 @@ private[codegen] object Generate {
     )
 
     val RuntimeExecuteUEHSig =
-      nir.Type.Function(Seq(Runtime, JavaThreadUEHRef, JavaThreadRef, Throwable), nir.Type.Unit)
+      nir.Type.Function(Seq(Runtime, JavaThreadUEHRef, JavaThreadRef, nir.Rt.Throwable), nir.Type.Unit)
     val RuntimeExecuteUEH = Runtime.name.member(
-      nir.Sig.Method("executeUncaughtExceptionHandler", Seq(JavaThreadUEHRef, JavaThreadRef, Throwable, nir.Type.Unit))
+      nir.Sig.Method(
+        "executeUncaughtExceptionHandler",
+        Seq(JavaThreadUEHRef, JavaThreadRef, nir.Rt.Throwable, nir.Type.Unit)
+      )
     )
 
     val InitSig = nir.Type.Function(Seq.empty, nir.Type.Unit)

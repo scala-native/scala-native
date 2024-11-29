@@ -849,7 +849,7 @@ trait NirGenExpr(using Context) {
     ): nir.Val = {
       given nir.SourcePosition = expr.span
       val handler, normaln, mergen = fresh()
-      val excv = nir.Val.Local(fresh(), nir.Rt.Object)
+      val excv = nir.Val.Local(fresh(), nir.Rt.Throwable)
       val mergev = nir.Val.Local(fresh(), retty)
 
       // Nested code gen to separate out try/catch-related instructions.
@@ -2024,7 +2024,7 @@ trait NirGenExpr(using Context) {
       // dummy exception handler,
       // monitorExit call would be added to it in genTryFinally transformer
       locally {
-        val excv = nir.Val.Local(fresh(), nir.Rt.Object)
+        val excv = nir.Val.Local(fresh(), nir.Rt.Throwable)
         nested.label(handler, Seq(excv))
         nested.raise(excv, unwind)
         nested.jumpExcludeUnitValue(retty)(mergen, nir.Val.Zero(retty))

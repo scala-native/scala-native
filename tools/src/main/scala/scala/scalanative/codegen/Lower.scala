@@ -100,7 +100,7 @@ private[scalanative] object Lower {
 
     private def unwind: nir.Next =
       unwindHandler.get.fold[nir.Next](nir.Next.None) { handler =>
-        val exc = nir.Val.Local(fresh(), nir.Rt.Object)
+        val exc = nir.Val.Local(fresh(), nir.Rt.Throwable)
         nir.Next.Unwind(exc, nir.Next.Label(handler, Seq(exc)))
       }
 

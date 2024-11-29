@@ -58,7 +58,7 @@ abstract class NirGenPhase[G <: Global with Singleton](override val global: G)
 
   protected def unwind(implicit fresh: nir.Fresh): nir.Next =
     curUnwindHandler.get.fold[nir.Next](nir.Next.None) { handler =>
-      val exc = nir.Val.Local(fresh(), nir.Rt.Object)
+      val exc = nir.Val.Local(fresh(), nir.Rt.Throwable)
       nir.Next.Unwind(exc, nir.Next.Label(handler, Seq(exc)))
     }
 

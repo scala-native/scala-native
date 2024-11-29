@@ -441,7 +441,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       val excn = fresh()
       val normaln = fresh()
       val mergen = fresh()
-      val excv = nir.Val.Local(fresh(), nir.Rt.Object)
+      val excv = nir.Val.Local(fresh(), nir.Rt.Throwable)
       val mergev = nir.Val.Local(fresh(), retty)
 
       implicit val pos: nir.SourcePosition = expr.pos.orElse(enclosingPos)
@@ -2670,7 +2670,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       // dummy exception handler,
       // monitor$.exit() call would be added to it in genTryFinally transformer
       locally {
-        val excv = nir.Val.Local(fresh(), nir.Rt.Object)
+        val excv = nir.Val.Local(fresh(), nir.Rt.Throwable)
         nested.label(handler, Seq(excv))
         nested.raise(excv, unwind)
         nested.jumpExcludeUnitValue(retty)(mergen, nir.Val.Zero(retty))
