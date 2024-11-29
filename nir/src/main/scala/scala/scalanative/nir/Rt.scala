@@ -7,6 +7,7 @@ private[scalanative] object Rt {
   val Object = Ref(Global.Top("java.lang.Object"))
   val Class = Ref(Global.Top("java.lang.Class"))
   val String = Ref(Global.Top("java.lang.String"))
+  val Throwable = Ref(Global.Top("java.lang.Throwable"))
   val Runtime = Ref(Global.Top("scala.scalanative.runtime.package$"))
   val RuntimeNothing = Type.Ref(Global.Top("scala.runtime.Nothing$"))
   val RuntimeNull = Type.Ref(Global.Top("scala.runtime.Null$"))
