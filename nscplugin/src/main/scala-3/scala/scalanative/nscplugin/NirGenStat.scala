@@ -319,7 +319,7 @@ trait NirGenStat(using Context) {
                 lexicalScopes = scopes.toList
               )
             )
- 
+
             Some(defn)
           }
       }
