@@ -414,15 +414,15 @@ trait NirGenStat(using Context) {
         }
     }
 
-    def withOptSynchronized(bodyGen: ExprBuffer => nir.Val): nir.Val = {
-      if (!isSynchronized) bodyGen(buf)
+    def withOptSynchronized(body: Tree): nir.Val = {
+      if (!isSynchronized) buf.genExpr(body)
       else {
         val syncedIn = curMethodThis.getOrElse {
           unsupported(
             s"cannot generate `synchronized` for method ${curMethodSym.name}, curMethodThis was empty"
           )
         }
-        buf.genSynchronized(ValTree(dd)(syncedIn))(bodyGen)
+        buf.genSynchronized(ValTree(dd)(syncedIn), body)
       }
     }
     def genBody(): Unit = {
@@ -434,7 +434,7 @@ trait NirGenStat(using Context) {
         }
       else
         scoped(curMethodThis := thisParam, curMethodIsExtern := isExtern) {
-          buf.genReturn(withOptSynchronized(_.genExpr(bodyp)) match {
+          buf.genReturn(withOptSynchronized(bodyp) match {
             case nir.Val.Zero(_) =>
               nir.Val.Zero(genType(curMethodSym.get.info.resultType))
             case v => v
@@ -446,9 +446,6 @@ trait NirGenStat(using Context) {
       genEntry()
       genVars()
       genBody()
-      // if(dd.symbol.toString.contains("""get"""))
-      //   println(dd.show)
-      //   println(buf.toSeq.map(_.show).foreach(println))
       nir.ControlFlow.removeDeadBlocks(buf.toSeq)
     }
   }

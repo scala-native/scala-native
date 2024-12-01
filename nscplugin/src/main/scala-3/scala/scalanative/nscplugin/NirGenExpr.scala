@@ -837,203 +837,180 @@ trait NirGenExpr(using Context) {
     def genTry(tree: Try): nir.Val = tree match {
       case Try(expr, catches, finalizer) if catches.isEmpty && finalizer.isEmpty =>
         genExpr(expr)
-      case Try(expr, catches, finalizer) =>
-        val retty = genType(tree.tpe)
-        genTry(retty, expr, catches, finalizer)
-    }
 
-    private def genTry(
-        retty: nir.Type,
-        expr: Tree,
-        catches: List[Tree],
-        finallyp: Tree
-    ): nir.Val = {
-      given nir.SourcePosition = expr.span
-      val handler, normaln, mergen = fresh()
-      val excv = nir.Val.Local(fresh(), nir.Rt.Throwable)
-      val finalizers = Option.unless(finallyp.isEmpty)((fresh(), fresh()))
-      val mergev = nir.Val.Local(fresh(), retty)
-      case class PathHandler(
-          id: nir.Val.Int,
-          label: nir.Local,
-          isReturning: Boolean
-      )
-      val pathIds = Iterator.from(0)
-      val trampolines = collection.mutable.UnrolledBuffer.empty[PathHandler]
-      def registerTrampoline(isThrowing: Boolean) = {
-        val pathId = nir.Val.Int(pathIds.next())
-        val handler = PathHandler(pathId, fresh(), !isThrowing)
-        trampolines += handler
-        handler
-      }
+      case Try(expr, catches, finallyp) =>
+        given nir.SourcePosition = tree.span
+        scoped(
+          genTrySharedContext := Option(genTrySharedContext)
+            .filter(_.isInitialized)
+            .fold(new GenTrySharedContext(tree, buf, curMethodSig.get.ret))(_.get)
+        ) {
+          val sharedContext = genTrySharedContext.get
+          val retty = genType(tree.tpe)
+          val handler, normaln, mergen = fresh()
+          val excv = nir.Val.Local(fresh(), nir.Rt.Throwable)
+          val finalizer = Option.unless(finallyp.isEmpty)(fresh())
+          val mergev = nir.Val.Local(fresh(), retty)
 
-      def genBlockWithOptionalTrampoline(buf: ExprBuffer, expr: Tree) = finalizers match {
-        case None =>
-          val result = buf.genExpr(expr)
-          buf.jumpExcludeUnitValue(retty)(mergen, result)
-        case Some((returningFinalizer, rethrowingFinalizer)) =>
-          val nested = new ExprBuffer()
-          val result = nested.genExpr(expr)
-          val insts = nested.toSeq
+          def withStashedValue(stash: nir.Val, value: nir.Val)(continuation: => Unit): nir.Val =
+            buf.varstore(stash, value, nir.Next.None)
+            val _ = continuation
+            buf.varload(stash, nir.Next.None)
 
-          val labels = insts.collect { case nir.Inst.Label(n, _) => n }.toSet
-          def isInternal(cf: nir.Inst.Cf) = cf match {
-            case inst @ nir.Inst.Jump(n)              => labels.contains(n.id)
-            case inst @ nir.Inst.If(_, n1, n2)        => labels.contains(n1.id) && labels.contains(n2.id)
-            case inst @ nir.Inst.LinktimeIf(_, n, n2) => labels.contains(n.id) && labels.contains(n2.id)
-            case inst @ nir.Inst.Switch(_, n, ns)     => labels.contains(n.id) && ns.forall(n => labels.contains(n.id))
-            case inst @ nir.Inst.Throw(_, n)          => (n ne nir.Next.None) && labels.contains(n.id)
-            case _                                    => false
+          class TrampolineHandler(val id: nir.Val.Int, val returnLabel: nir.Local)
+          val trampolineIds = Iterator.from(0)
+          val trampolines = collection.mutable.UnrolledBuffer.empty[TrampolineHandler]
+
+          def insertFinalizerTrampoline(finalizerId: nir.Local) = {
+            val id = nir.Val.Int(trampolineIds.next())
+            val trampoline = TrampolineHandler(id, fresh())
+            trampolines += trampoline
+            buf.jump(finalizerId, Seq(trampoline.id))
+            buf.label(trampoline.returnLabel)
           }
-          
-          insts
-            .dropWhile(_.isInstanceOf[nir.Inst.Label]) // drop first label
-            .foreach {
-              // We don't touch control-flow within try/catch block.
-              case cf: nir.Inst.Cf if !isInternal(cf) =>
-                given nir.SourcePosition = cf.pos
-                val isThrowing = cf.isInstanceOf[nir.Inst.Throw]
-                val trampoline = registerTrampoline(isThrowing)
-                val finalizerId = if isThrowing then rethrowingFinalizer else returningFinalizer
-                buf.jump(finalizerId, Seq(trampoline.id))
-                buf.label(trampoline.label)
-                buf += cf
-              // case cf @ nir.Inst.Label(id, Nil) =>
-              //   buf.jump(nir.Next.Label(id, Nil)) 
-              //   buf += cf
-              case inst =>
-                buf += inst
-            }
-          // successfull path needs to visit finally block before continue
-          locally {
-            insts.lastOption.foreach {
-              case _: nir.Inst.Throw | _: nir.Inst.Unreachable =>
-                buf.jump(rethrowingFinalizer, Seq(nir.Val.Int(-1)))
 
-              case _ =>
-                val trampoline = registerTrampoline(false)
-                // println(s"--${trampoline.id} -> ${result}")
-                buf.jump(returningFinalizer, Seq(trampoline.id))
-                buf.label(trampoline.label)
-                buf.jumpExcludeUnitValue(retty)(mergen, result)
-            }
+          val noResult = nir.Type.isNothing(retty)
+          val resultVar = Option.unless(noResult || retty == nir.Type.Unit) {
+            buf.var_(retty, nir.Next.None)
           }
-      }
 
-      scoped(curUnwindHandler := Some(handler)) {
-        withFreshBlockScope(summon[nir.SourcePosition]) { _ =>
-          genBlockWithOptionalTrampoline(buf, expr)
-        }
-      }
+          def genBlockWithOptionalTrampoline(buf: ExprBuffer, expr: Tree, isHandler: Boolean) = finalizer match {
+            case None =>
+              val result = buf.genExpr(expr)
+              buf.jumpExcludeUnitValue(retty)(mergen, result)
+            case Some(finalizerId) =>
+              val nested = new ExprBuffer()
+              val result = nested.genExpr(expr)
+              val insts = nested.toSeq
 
-      withFreshBlockScope(summon[nir.SourcePosition]) { _ =>
-        var nextLandingPage, nextExceptionHandler: nir.Local = fresh()
-        buf.label(handler, Seq(excv))
-        buf.jump(nextLandingPage, Nil)
-        catches.foreach {
-          case cd @ CaseDef(pat, _, body) =>
-            val (excty, symopt) = pat match {
-              case Typed(Ident(nme.WILDCARD), tpt) => genType(tpt.tpe) -> None
-              case Ident(nme.WILDCARD)             => genType(defn.ThrowableClass.info.resultType) -> None
-              case Bind(_, _)                      => genType(pat.tpe) -> Some(pat.symbol)
-            }
-            withFreshBlockScope(body.span) { _ =>
-              val landingPage = nextLandingPage
-              val exceptionHandler = nextExceptionHandler
-              nextLandingPage = fresh()
-              nextExceptionHandler = fresh()
-              
-              buf.label(landingPage, Nil)
-              val cond = buf.is(excty, excv, unwind)(body.span, getScopeId)
-              buf.branch(cond, nir.Next.Label(exceptionHandler, Nil), nir.Next.Label(nextLandingPage, Nil))
-              buf.label(exceptionHandler, Nil)
-              symopt.foreach { sym =>
-                val cast = buf.as(excty, excv, unwind)(cd.span, getScopeId)
-                curMethodLocalNames.get.update(cast.id, genLocalName(sym))
-                curMethodEnv.enter(sym, cast)
+              val labels = insts.collect { case nir.Inst.Label(n, _) => n }.toSet
+              def isInternal(cf: nir.Inst.Cf) = cf match {
+                case inst @ nir.Inst.Jump(n)              => labels.contains(n.id)
+                case inst @ nir.Inst.If(_, n1, n2)        => labels.contains(n1.id) && labels.contains(n2.id)
+                case inst @ nir.Inst.LinktimeIf(_, n, n2) => labels.contains(n.id) && labels.contains(n2.id)
+                case inst @ nir.Inst.Switch(_, n, ns) => labels.contains(n.id) && ns.forall(n => labels.contains(n.id))
+                case inst @ nir.Inst.Throw(_, n)      => (n ne nir.Next.None) && labels.contains(n.id)
+                case _                                => false
               }
-              genBlockWithOptionalTrampoline(buf, body)
+
+              // Append from nested buffer and transform control flow if needed
+              // so that the finalizer is always reachable
+              insts
+                .dropWhile(_.isInstanceOf[nir.Inst.Label]) // drop first label, redundant
+                .foreach {
+                  case cf @ nir.Inst.Throw(value, _) if isHandler && !isInternal(cf) =>
+                    val stashed = withStashedValue(sharedContext.throwableVar, value) {
+                      insertFinalizerTrampoline(finalizerId)
+                    }
+                    buf += cf.copy(value = stashed)
+
+                  case cf @ nir.Inst.Ret(result) if !isInternal(cf) =>
+                    if result.isLiteral then
+                      insertFinalizerTrampoline(finalizerId)
+                      buf.ret(result)
+                    else
+                      val stashed = withStashedValue(sharedContext.earlyReturnedValueStash.get, result) {
+                        insertFinalizerTrampoline(finalizerId)
+                      }
+                      buf += cf.copy(value = stashed)
+
+                  case inst => buf += inst
+                }
+
+              // successfull path needs to visit finally block before continue
+              locally {
+                insts.lastOption match {
+                  case Some(_: nir.Inst.Throw | _: nir.Inst.Unreachable) =>
+                    buf.jump(finalizerId, Seq(nir.Val.Int(-1)))
+
+                  case _ =>
+                    resultVar match {
+                      case None =>
+                        insertFinalizerTrampoline(finalizerId)
+                        buf.jump(mergen, Nil)
+                      case Some(resultVar) =>
+                        val stashed = withStashedValue(resultVar, result) {
+                          insertFinalizerTrampoline(finalizerId)
+                        }
+                        buf.jumpExcludeUnitValue(retty)(mergen, stashed)
+                    }
+                }
+              }
+          }
+
+          scoped(curUnwindHandler := Some(handler)) {
+            withFreshBlockScope(summon[nir.SourcePosition]) { _ =>
+              genBlockWithOptionalTrampoline(buf, expr, isHandler = false)
             }
-        }
-
-        // uncought handler
-        buf.label(nextLandingPage, Nil)
-        finalizers.foreach { (_, rethrowingFinalizer) =>
-          val trampoline = registerTrampoline(isThrowing = true)
-          jump(rethrowingFinalizer, Seq(trampoline.id))
-          label(trampoline.label)
-        }
-        buf.raise(excv, unwind)
-      }
-
-      finalizers.foreach { (returningFinalizerLabel, rethrowingFinalizerLabel) =>
-        def genFinalizer(finalizerLabel: nir.Local, isReturning: Boolean) = {
-          val fromPath = nir.Val.Local(fresh(), nir.Type.Int)
-          val defaultPath = fresh()
-          buf.label(finalizerLabel, Seq(fromPath))
-          buf.genExpr(finallyp)
-          val backpaths = trampolines.toSeq.filter(_.isReturning == isReturning).map { v =>
-            nir.Next.Case(v.id, v.label)
           }
-          buf.switch(fromPath, nir.Next.Label(defaultPath, Nil), backpaths)
-          
-          buf.label(defaultPath, Nil)
-          buf.unreachable(nir.Next.None)
-        }
-        genFinalizer(returningFinalizerLabel, isReturning = true)
-        genFinalizer(rethrowingFinalizerLabel, isReturning = false)
-      }
-      
-      buf.labelExcludeUnitValue(mergen, mergev)
-    }
 
-    // private def genTryCatch(
-    //     retty: nir.Type,
-    //     exc: nir.Val,
-    //     mergen: nir.Local,
-    //     catches: List[Tree]
-    // )(using exprPos: nir.SourcePosition): nir.Val = {}
+          withFreshBlockScope(summon[nir.SourcePosition]) { _ =>
+            var nextLandingPage, nextExceptionHandler: nir.Local = fresh()
+            buf.label(handler, Seq(excv))
+            buf.jump(nextLandingPage, Nil)
+            catches.foreach {
+              case cd @ CaseDef(pat, _, body) =>
+                val (excty, symopt) = pat match {
+                  case Typed(Ident(nme.WILDCARD), tpt) => genType(tpt.tpe) -> None
+                  case Ident(nme.WILDCARD)             => genType(defn.ThrowableClass.info.resultType) -> None
+                  case Bind(_, _)                      => genType(pat.tpe) -> Some(pat.symbol)
+                }
+                withFreshBlockScope(body.span) { _ =>
+                  val landingPage = nextLandingPage
+                  val exceptionHandler = nextExceptionHandler
+                  nextLandingPage = fresh()
+                  nextExceptionHandler = fresh()
 
-    private def genTryFinally(
-        finallyp: Tree,
-        insts: Seq[nir.Inst]
-    ): Seq[nir.Inst] = {
-      val labels = insts.collect { case nir.Inst.Label(n, _) => n }.toSet
-      def isInternal(cf: nir.Inst.Cf) = cf match {
-        case inst @ nir.Inst.Jump(n) =>
-          labels.contains(n.id)
-        case inst @ nir.Inst.If(_, n1, n2) =>
-          labels.contains(n1.id) && labels.contains(n2.id)
-        case inst @ nir.Inst.LinktimeIf(_, n, n2) =>
-          labels.contains(n.id) && labels.contains(n2.id)
-        case inst @ nir.Inst.Switch(_, n, ns) =>
-          labels.contains(n.id) && ns.forall(n => labels.contains(n.id))
-        case inst @ nir.Inst.Throw(_, n) =>
-          (n ne nir.Next.None) && labels.contains(n.id)
-        case _ =>
-          false
-      }
+                  buf.label(landingPage, Nil)
+                  val cond = buf.is(excty, excv, unwind)(body.span, getScopeId)
+                  buf.branch(cond, nir.Next.Label(exceptionHandler, Nil), nir.Next.Label(nextLandingPage, Nil))
+                  buf.label(exceptionHandler, Nil)
+                  symopt.foreach { sym =>
+                    val cast = buf.as(excty, excv, unwind)(cd.span, getScopeId)
+                    curMethodLocalNames.get.update(cast.id, genLocalName(sym))
+                    curMethodEnv.enter(sym, cast)
+                  }
+                  genBlockWithOptionalTrampoline(buf, body, isHandler = true)
+                }
+            }
 
-      val finalies = new ExprBuffer
-      val transformed = insts.map {
-        case cf: nir.Inst.Cf if isInternal(cf) =>
-          // We don't touch control-flow within try/catch block.
-          cf
-        case cf: nir.Inst.Cf =>
-          // All control-flow edges that jump outside the try/catch block
-          // must first go through finally block if it's present. We generate
-          // a new copy of the finally handler for every edge.
-          val finallyn = fresh()
-          withFreshBlockScope(cf.pos) { _ =>
-            finalies.label(finallyn)(cf.pos)
-            finalies.genExpr(finallyp)
+            // uncought handler
+            buf.label(nextLandingPage, Nil)
+            finalizer match {
+              case Some(finalizerId) =>
+                val stashedExcv = withStashedValue(sharedContext.throwableVar, excv) {
+                  insertFinalizerTrampoline(finalizerId)
+                }
+                buf.raise(stashedExcv, unwind)
+              case None =>
+                buf.raise(excv, unwind)
+            }
           }
-          finalies += cf
-          // The original jump outside goes through finally block first.
-          nir.Inst.Jump(nir.Next(finallyn))(cf.pos)
-        case inst => inst
-      }
-      transformed ++ finalies.toSeq
+
+          finalizer.foreach { finalizerId =>
+            val fromPath = nir.Val.Local(fresh(), nir.Type.Int)
+            val defaultPath = fresh()
+            buf.label(finalizerId, Seq(fromPath))
+            buf.genExpr(finallyp)
+            val handlers = trampolines.toSeq.map { v =>
+              nir.Next.Case(v.id, v.returnLabel)
+            }
+            buf.switch(fromPath, nir.Next.Label(defaultPath, Nil), handlers)
+
+            buf.label(defaultPath, Nil)
+            buf.unreachable(nir.Next.None)
+          }
+
+          // Create the exit label 
+          // Either label with no inputs if try.expr is throwing
+          // or result of the try.expr or one of catch handler otherwise
+          if noResult then
+            buf.label(mergen)
+            buf.unreachable(nir.Next.None)
+            nir.Val.Unit
+          else 
+            buf.labelExcludeUnitValue(mergen, mergev)
+        }
     }
 
     def genTyped(tree: Typed): nir.Val = tree match {
@@ -2044,62 +2021,28 @@ trait NirGenExpr(using Context) {
       else genApplyStaticMethod(sym, receiver, Seq.empty)
     }
 
-    private def genSynchronized(receiverp: Tree, bodyp: Tree)(using
+    def genSynchronized(receiverp: Tree, bodyp: Tree)(using
         nir.SourcePosition
     ): nir.Val = {
-      genSynchronized(receiverp)(_.genExpr(bodyp))
-    }
-
-    def genSynchronized(
-        receiverp: Tree
-    )(bodyGen: ExprBuffer => nir.Val)(using nir.SourcePosition): nir.Val = {
-      // Here we wrap the synchronized call into the try-finally block
-      // to ensure that monitor would be released even in case of the exception
-      // or in case of non-local returns
-      val nested = new ExprBuffer()
-      val normaln = fresh()
-      val handler = fresh()
-      val mergen = fresh()
-
-      // scalanative.runtime.`package`.enterMonitor(receiver)
+      // wrap body into try-finally block that ensurs enter and exit of the monitor
       genApplyStaticMethod(
         defnNir.RuntimePackage_enterMonitor,
         defnNir.RuntimePackageClass,
         List(receiverp)
       )
-
-      // synchronized block
-      val retValue = scoped(curUnwindHandler := Some(handler)) {
-        nested.label(normaln)
-        bodyGen(nested)
-      }
-      val retty = retValue.ty
-      val mergev = nir.Val.Local(fresh(), retty)
-      nested.jumpExcludeUnitValue(retty)(mergen, retValue)
-
-      // dummy exception handler,
-      // monitorExit call would be added to it in genTryFinally transformer
-      locally {
-        val excv = nir.Val.Local(fresh(), nir.Rt.Throwable)
-        nested.label(handler, Seq(excv))
-        nested.raise(excv, unwind)
-        nested.jumpExcludeUnitValue(retty)(mergen, nir.Val.Zero(retty))
-      }
-
-      // Append try/catch instructions to the outher instruction buffer.
-      buf.jump(nir.Next(normaln))
-      buf ++= genTryFinally(
-        // scalanative.runtime.`package`.exitMonitor(receiver)
-        ContTree(receiverp)(
-          _.genApplyStaticMethod(
-            defnNir.RuntimePackage_exitMonitor,
-            defnNir.RuntimePackageClass,
-            List(receiverp)
+      genTry(
+        cpy.Try(bodyp)(
+          bodyp,
+          Nil,
+          ContTree(receiverp)(
+            _.genApplyStaticMethod(
+              defnNir.RuntimePackage_exitMonitor,
+              defnNir.RuntimePackageClass,
+              List(receiverp)
+            )
           )
-        ),
-        nested.toSeq
+        )
       )
-      buf.labelExcludeUnitValue(mergen, mergev)
     }
 
     private def genThrow(tree: Tree, args: List[Tree]): nir.Val = {
