@@ -155,7 +155,7 @@ private[scalanative] object ControlFlow {
     }
   }
 
-  def removeDeadBlocks(insts: Seq[Inst]): Seq[Inst] = try {
+  def removeDeadBlocks(insts: Seq[Inst]): Seq[Inst] = {
     val cfg = ControlFlow.Graph(insts)
     val buf = new nir.InstructionBuilder()(Fresh(insts))
 
@@ -165,9 +165,5 @@ private[scalanative] object ControlFlow {
     }
 
     buf.toSeq
-  } catch {
-    case ex: Throwable =>
-      insts.map(_.show).foreach(println)
-      throw ex
   }
 }

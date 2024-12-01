@@ -1001,15 +1001,14 @@ trait NirGenExpr(using Context) {
             buf.unreachable(nir.Next.None)
           }
 
-          // Create the exit label 
+          // Create the exit label
           // Either label with no inputs if try.expr is throwing
           // or result of the try.expr or one of catch handler otherwise
           if noResult then
             buf.label(mergen)
             buf.unreachable(nir.Next.None)
             nir.Val.Unit
-          else 
-            buf.labelExcludeUnitValue(mergen, mergev)
+          else buf.labelExcludeUnitValue(mergen, mergev)
         }
     }
 
@@ -3151,16 +3150,13 @@ trait NirGenExpr(using Context) {
   }
 
   sealed class FixupBuffer(using fresh: nir.Fresh) extends nir.InstructionBuilder {
-    protected var labeled = false
+    private var labeled = false
 
     override def +=(inst: nir.Inst): Unit = {
       given nir.SourcePosition = inst.pos
       inst match {
         case inst: nir.Inst.Label =>
           if (labeled) {
-            toSeq.map(_.show).foreach(println)
-            println("adding:" + inst.show)
-            // sys.error("")
             unreachable(unwind)
           }
           labeled = true
