@@ -770,7 +770,9 @@ private[linker] class Reach(
       reachVal(v)
       ty match {
         case ref: nir.Type.RefKind =>
-          classInfo(ref.className).foreach(reachAllocation)
+          classInfo(ref.className)
+          .filterNot(_.attrs.isAbstract)
+          .foreach(reachAllocation)
         case _ => ()
       }
     case nir.Op.Bin(bin, ty, lv, rv) =>
