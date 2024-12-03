@@ -11,6 +11,7 @@ import scala.scalanative.nir.Attr.Link
 import scala.concurrent._
 import scala.util.Failure
 import scala.util.Success
+import _root_.java.io.IOException
 
 /** Internal utilities to interact with LLVM command-line tools. */
 private[scalanative] object LLVM {
@@ -180,7 +181,7 @@ private[scalanative] object LLVM {
    *  which will throw an exception since the copy command uses
    *  REPLACE_EXISTING.
    *
-   *  Having a project or `baseName` named `native` conflict with the build.
+   *  Having a project or `baseName` named `native` conflicts with the build.
    */
   private def copyOutput(config: Config, buildPath: Path) = {
     val outPath = config.artifactPath
@@ -191,21 +192,14 @@ private[scalanative] object LLVM {
         case _: BuildTarget.Library => outPath
       }
     } catch {
-      case t: Throwable =>
-        val msg =
-          if (outPath.toFile().exists())
-            s"""Executable build module or `baseName` is named 'native'
-                |which conflicts with the compiler `workDir`.
-                |Please rename the build module or
-                |use `withBaseName` to rename the executable.
-                |Cause: ${t}""".stripMargin
-          else
-            s"""Unexpected exception:
-                |Build path: $buildPath
-                |Artifact: $outPath
-                |Cause: ${t}""".stripMargin
-
-        throw new BuildException(msg)
+      case ex: IOException if (outPath.toFile().exists()) =>
+        throw new BuildException(
+          s"""Executable build module or `baseName` is named 'native'
+              |which conflicts with the compiler `workDir`.
+              |Please rename the build module or
+              |use `withBaseName` to rename the executable.
+              |Cause: ${ex}""".stripMargin
+        )
     }
   }
 
