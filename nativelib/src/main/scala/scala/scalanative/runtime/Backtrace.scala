@@ -6,6 +6,7 @@ import scala.scalanative.runtime.dwarf.DWARF
 import scala.scalanative.runtime.dwarf.DWARF.DIE
 import scala.scalanative.runtime.dwarf.DWARF.CompileUnit
 
+import scala.scalanative.unsafe.CString
 import scala.scalanative.unsafe.Tag
 import scala.scalanative.unsafe.Zone
 import scala.scalanative.unsigned.UInt
@@ -35,7 +36,8 @@ private[runtime] object Backtrace {
       lowPC: Long,
       highPC: Long,
       line: Int,
-      filenameAt: Option[UInt]
+      filenameAt: Option[UInt],
+      linkageNameAt: Option[UInt]
   )
 
   private val MACHO_MAGIC = "cffaedfe"
@@ -44,9 +46,9 @@ private[runtime] object Backtrace {
   private val cache: AbstractMap[String, Option[DwarfInfo]] =
     if (isMultithreadingEnabled) new ConcurrentHashMap
     else new HashMap
-  case class Position(filename: String, line: Int)
+  case class Position(linkageName: CString, filename: String, line: Int)
   object Position {
-    final val empty = Position(null, 0)
+    final val empty = Position(null, null, 0)
   }
 
   def decodePosition(pc: Long): Position = {
@@ -80,10 +82,12 @@ private[runtime] object Backtrace {
     val address = pc - info.offset
     val position = for {
       subprogram <- search(info.subprograms, address)
-      at <- subprogram.filenameAt
+      filenameAt <- subprogram.filenameAt
+      linkageNameAt <- subprogram.linkageNameAt
     } yield {
-      val filename = info.strings.read(at)
-      Position(filename, subprogram.line + 1) // line number in DWARF is 0-based
+      val filename = info.strings.read(filenameAt)
+      val linkageName = info.strings.buf.asInstanceOf[ByteArray].at(linkageNameAt.toInt)
+      Position(linkageName, filename, subprogram.line + 1) // line number in DWARF is 0-based
     }
     position.getOrElse(Position.empty)
   }
@@ -137,7 +141,7 @@ private[runtime] object Backtrace {
             line <- die.getLine
             low <- die.getLowPC
             high <- die.getHighPC(low)
-          } yield SubprogramDIE(low, high, line, filenameAt)
+          } yield SubprogramDIE(low, high, line, filenameAt, die.getLinkageName)
         } else if (die.is(DWARF.Tag.DW_TAG_compile_unit)) {
           // Debug Information Entries (DIE) in DWARF has a tree structure, and
           // the DIEs after the Compile Unit DIE belongs to that compile unit (file in Scala)

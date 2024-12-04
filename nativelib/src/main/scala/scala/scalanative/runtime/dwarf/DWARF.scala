@@ -7,6 +7,7 @@ import java.nio.channels.FileChannel
 import scala.collection.mutable
 
 import scalanative.unsigned._
+import scalanative.unsafe._
 
 private[runtime] object DWARF {
   implicit val endi: Endianness = Endianness.LITTLE
@@ -144,6 +145,12 @@ private[runtime] object DWARF {
       case v if v._1.at == DWARF.Attribute.DW_AT_name =>
         v._2.asInstanceOf[UInt]
     }
+
+    def getLinkageName: Option[UInt] =
+      values.collectFirst {
+        case v if v._1.at == DWARF.Attribute.DW_AT_linkage_name =>
+          v._2.asInstanceOf[UInt]
+      }
 
     def getLine: Option[Int] = values.collectFirst {
       case v if v._1.at == DWARF.Attribute.DW_AT_decl_line =>
@@ -420,6 +427,7 @@ private[runtime] object DWARF {
     case object DW_AT_decl_line extends Attribute(0x3b)
     case object DW_AT_declaration extends Attribute(0x3c)
     case object DW_AT_ranges extends Attribute(0x55)
+    case object DW_AT_linkage_name extends Attribute(0x6e)
     case class Unknown(value: Int) extends Attribute(value)
 
     final private val codeMap = Seq(
@@ -464,7 +472,8 @@ private[runtime] object DWARF {
       DW_AT_decl_file,
       DW_AT_decl_line,
       DW_AT_declaration,
-      DW_AT_ranges
+      DW_AT_ranges,
+      DW_AT_linkage_name
     ).map(t => t.code -> t).toMap
 
     def fromCode(code: Int): Attribute =

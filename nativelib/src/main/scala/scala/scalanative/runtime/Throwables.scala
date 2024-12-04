@@ -79,25 +79,42 @@ object StackTrace {
       cursor: CVoidPtr,
       ip: CUnsignedLong
   ): StackTraceElement = {
-    val nameMax = 1024
-    val name = fromRawPtr[CChar](
-      calloc(
-        Intrinsics.castIntToRawSizeUnsigned(nameMax),
-        Intrinsics.sizeOf[CChar]
-      )
-    )
-    val offset = fromRawPtr[Long](Intrinsics.stackalloc[Long]())
+    val hasDebugInfo =
+      LinktimeInfo.isMac && LinktimeInfo.sourceLevelDebuging.generateFunctionSourcePositions
 
-    unwind.get_proc_name(cursor, name, nameMax.toUSize, offset)
-
-    // Make sure the name is definitely 0-terminated.
-    // Unmangler is going to use strlen on this name and it's
-    // behavior is not defined for non-zero-terminated strings.
-    name(nameMax - 1) = 0.toByte
     val position =
-      if (LinktimeInfo.isMac && LinktimeInfo.sourceLevelDebuging.generateFunctionSourcePositions)
-        Backtrace.decodePosition(ip.toLong)
+      if (hasDebugInfo) Backtrace.decodePosition(ip.toLong)
       else Backtrace.Position.empty
+
+    val name =
+      if (hasDebugInfo) {
+        val name =
+          fromRawPtr[CChar](ffi.malloc(ffi.strlen(position.linkageName) + 3.toUSize))
+
+        // mangled names in DWARF are not prefixed with `_S`
+        ffi.strcat(name, c"_S")
+        ffi.strcat(name, position.linkageName)
+
+        name
+      } else {
+        val nameMax = 1024
+        val name = fromRawPtr[CChar](
+          calloc(
+            Intrinsics.castIntToRawSizeUnsigned(nameMax),
+            Intrinsics.sizeOf[CChar]
+          )
+        )
+        val offset = fromRawPtr[Long](Intrinsics.stackalloc[Long]())
+
+        unwind.get_proc_name(cursor, name, nameMax.toUSize, offset)
+
+        // Make sure the name is definitely 0-terminated.
+        // Unmangler is going to use strlen on this name and it's
+        // behavior is not defined for non-zero-terminated strings.
+        name(nameMax - 1) = 0.toByte
+        name
+      }
+
     try StackTraceElement(name, position)
     finally free(name)
   }
