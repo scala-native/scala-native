@@ -89,7 +89,9 @@ object StackTrace {
     val name =
       if (hasDebugInfo) {
         val name =
-          fromRawPtr[CChar](ffi.malloc(ffi.strlen(position.linkageName) + 3.toUSize))
+          fromRawPtr[CChar](
+            ffi.malloc(ffi.strlen(position.linkageName) + 3.toUSize)
+          )
 
         // mangled names in DWARF are not prefixed with `_S`
         ffi.strcat(name, c"_S")

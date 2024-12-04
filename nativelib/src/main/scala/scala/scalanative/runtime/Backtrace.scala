@@ -86,8 +86,13 @@ private[runtime] object Backtrace {
       linkageNameAt <- subprogram.linkageNameAt
     } yield {
       val filename = info.strings.read(filenameAt)
-      val linkageName = info.strings.buf.asInstanceOf[ByteArray].at(linkageNameAt.toInt)
-      Position(linkageName, filename, subprogram.line + 1) // line number in DWARF is 0-based
+      val linkageName =
+        info.strings.buf.asInstanceOf[ByteArray].at(linkageNameAt.toInt)
+      Position(
+        linkageName,
+        filename,
+        subprogram.line + 1
+      ) // line number in DWARF is 0-based
     }
     position.getOrElse(Position.empty)
   }
