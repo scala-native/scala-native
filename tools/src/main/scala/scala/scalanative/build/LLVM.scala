@@ -11,6 +11,7 @@ import scala.scalanative.nir.Attr.Link
 import scala.concurrent._
 import scala.util.Failure
 import scala.util.Success
+import _root_.java.io.IOException
 
 /** Internal utilities to interact with LLVM command-line tools. */
 private[scalanative] object LLVM {
@@ -173,12 +174,32 @@ private[scalanative] object LLVM {
       case Success(_) =>
     }
 
+  /** This function allows a project to have multiple `main` files by copying
+   *  the one selected to the same parent directory as the `workDir` which is by
+   *  default named `native`. Since the directory is named `native`, having a
+   *  project named `native` will by default produce a executable named `native`
+   *  which will throw an exception since the copy command uses
+   *  REPLACE_EXISTING.
+   *
+   *  Having a project or `baseName` named `native` conflicts with the build.
+   */
   private def copyOutput(config: Config, buildPath: Path) = {
     val outPath = config.artifactPath
-    config.compilerConfig.buildTarget match {
-      case BuildTarget.Application =>
-        Files.copy(buildPath, outPath, StandardCopyOption.REPLACE_EXISTING)
-      case _: BuildTarget.Library => outPath
+    try {
+      config.compilerConfig.buildTarget match {
+        case BuildTarget.Application =>
+          Files.copy(buildPath, outPath, StandardCopyOption.REPLACE_EXISTING)
+        case _: BuildTarget.Library => outPath
+      }
+    } catch {
+      case ex: IOException if (outPath.toFile().exists()) =>
+        throw new BuildException(
+          s"""Executable build module or `baseName` is named 'native'
+              |which conflicts with the compiler `workDir`.
+              |Please rename the build module or
+              |use `withBaseName` to rename the executable.
+              |Cause: ${ex}""".stripMargin
+        )
     }
   }
 
