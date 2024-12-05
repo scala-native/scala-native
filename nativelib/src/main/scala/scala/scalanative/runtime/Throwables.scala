@@ -80,7 +80,7 @@ object StackTrace {
       ip: CUnsignedLong
   ): StackTraceElement = {
     val hasDebugInfo =
-      LinktimeInfo.isMac && LinktimeInfo.sourceLevelDebuging.generateFunctionSourcePositions
+      (LinktimeInfo.isMac || LinktimeInfo.isLinux) && LinktimeInfo.sourceLevelDebuging.generateFunctionSourcePositions
 
     val position =
       if (hasDebugInfo) Backtrace.decodePosition(ip.toLong)

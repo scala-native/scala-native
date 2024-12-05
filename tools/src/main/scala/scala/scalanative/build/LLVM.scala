@@ -90,9 +90,12 @@ private[scalanative] object LLVM {
     }
     // Always generate debug metadata on Windows, it's required for stack traces to work
     val debugFlags =
-      if (config.compilerConfig.sourceLevelDebuggingConfig.enabled || config.targetsWindows)
-        Seq("-g")
-      else Nil
+      if (config.compilerConfig.sourceLevelDebuggingConfig.enabled || config.targetsWindows) {
+        // newer LLVM uses DWARFv5 by default on Linux. We support only DWARF 4 for now
+        val forceDwarf4Opts =
+          if (config.targetsLinux) List("-gdwarf-4") else Nil
+        "-g" :: forceDwarf4Opts
+      } else Nil
 
     val flags: Seq[String] =
       buildTargetCompileOpts ++ flto ++ sanitizer ++ target ++
