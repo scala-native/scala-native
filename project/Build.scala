@@ -677,6 +677,13 @@ object Build {
       .withNativeCompilerPlugin
       .withJUnitPlugin
       .settings(noJavaReleaseSettings)
+      .settings(
+        nativeConfig ~= { c =>
+          c.withLinkingOptions(c.linkingOptions ++ Seq("-static"))
+            .withSourceLevelDebuggingConfig(_.enableAll)
+          // .withMode(Mode.releaseFast)
+        }
+      )
       .dependsOn(scalalib, javalib, testInterface % "test")
 
 // Testing infrastructure ------------------------------------------------
