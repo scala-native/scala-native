@@ -42,7 +42,7 @@ private[runtime] object DWARF {
 
       val version = uint16()
       assert(
-        version >= 2.toUInt && version <= 5.toUInt,
+        version >= 2.toUInt && version <= 4.toUInt,
         s"Expected DWARF version 2-5, got $version instead"
       )
 
@@ -142,7 +142,8 @@ private[runtime] object DWARF {
       abbrev.exists(_.tag == tag)
 
     def getName: Option[UInt] = values.collectFirst {
-      case v if v._1.at == DWARF.Attribute.DW_AT_name =>
+      case v
+          if v._1.at == DWARF.Attribute.DW_AT_linkage_name && v._1.form == DWARF.Form.DW_FORM_strp =>
         v._2.asInstanceOf[UInt]
     }
 
@@ -335,6 +336,16 @@ private[runtime] object DWARF {
         case DW_FORM_block1 =>
           val len = uint8()
           ds.readNBytes(len.toInt)
+        case DW_FORM_string =>
+          System.err.println("started reading string")
+          val result = Iterator
+            .continually(ds.readByte())
+            .takeWhile(_ != 0)
+            .map(_.toChar)
+            .mkString
+
+          System.err.println("finished reading string")
+          result
         case _ =>
           throw new Exception(s"Unsupported form: $form")
 
