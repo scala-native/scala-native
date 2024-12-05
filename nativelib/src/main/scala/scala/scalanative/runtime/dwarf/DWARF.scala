@@ -143,7 +143,7 @@ private[runtime] object DWARF {
 
     def getName: Option[UInt] = values.collectFirst {
       case v
-          if v._1.at == DWARF.Attribute.DW_AT_linkage_name && v._1.form == DWARF.Form.DW_FORM_strp =>
+          if v._1.at == DWARF.Attribute.DW_AT_name && v._1.form == DWARF.Form.DW_FORM_strp =>
         v._2.asInstanceOf[UInt]
     }
 
@@ -151,6 +151,12 @@ private[runtime] object DWARF {
       values.collectFirst {
         case v if v._1.at == DWARF.Attribute.DW_AT_linkage_name =>
           v._2.asInstanceOf[UInt]
+      }
+
+    def getDeclFile: Option[UByte] =
+      values.collectFirst {
+        case v if v._1.at == DWARF.Attribute.DW_AT_decl_file =>
+          v._2.asInstanceOf[UByte]
       }
 
     def getLine: Option[Int] = values.collectFirst {
@@ -337,15 +343,11 @@ private[runtime] object DWARF {
           val len = uint8()
           ds.readNBytes(len.toInt)
         case DW_FORM_string =>
-          System.err.println("started reading string")
-          val result = Iterator
+          Iterator
             .continually(ds.readByte())
             .takeWhile(_ != 0)
             .map(_.toChar)
             .mkString
-
-          System.err.println("finished reading string")
-          result
         case _ =>
           throw new Exception(s"Unsupported form: $form")
 

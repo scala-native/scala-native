@@ -162,23 +162,34 @@ private[runtime] object Backtrace {
 
   private def filterSubprograms(dies: Vector[CompileUnit]) = {
     var filenameAt: Option[UInt] = None
+    val builder = Vector.newBuilder[SubprogramDIE]
     dies
-      .flatMap { die =>
-        if (die.is(DWARF.Tag.DW_TAG_subprogram)) {
-          for {
-            line <- die.getLine
-            low <- die.getLowPC
-            high <- die.getHighPC(low)
-          } yield SubprogramDIE(low, high, line, filenameAt, die.getLinkageName)
-        } else if (die.is(DWARF.Tag.DW_TAG_compile_unit)) {
+      .foreach { die =>
+        if (die.is(DWARF.Tag.DW_TAG_compile_unit)) {
           // Debug Information Entries (DIE) in DWARF has a tree structure, and
           // the DIEs after the Compile Unit DIE belongs to that compile unit (file in Scala)
           // TODO: Parse `.debug_line` section, and decode the filename using
           // `DW_AT_decl_file` attribute of the `subprogram` DIE.
           filenameAt = die.getName
-          None
-        } else None
+        } else if (die.is(DWARF.Tag.DW_TAG_subprogram)) {
+          for {
+            line <- die.getLine
+            low <- die.getLowPC
+            high <- die.getHighPC(low)
+          } {
+            builder += SubprogramDIE(
+              low,
+              high,
+              line,
+              filenameAt,
+              die.getLinkageName
+            )
+          }
+        }
       }
+
+    builder
+      .result()
       .sortBy(_.lowPC)
       .toIndexedSeq
   }
@@ -228,7 +239,7 @@ private[runtime] object Backtrace {
           subprograms = subprograms,
           strings = dwarf._2,
           offset = offset,
-          format = Format.MACHO
+          format = if (magic == MACHO_MAGIC) Format.MACHO else Format.ELF
         )
       }
 
