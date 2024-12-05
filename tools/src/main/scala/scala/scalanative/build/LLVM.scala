@@ -233,9 +233,9 @@ private[scalanative] object LLVM {
         else if (config.compilerConfig.sourceLevelDebuggingConfig.enabled) {
           val noPieOpts =
             if (config.targetsLinux &&
-                !config.linkingOptions.contains("-static")) 
-                // position independent executables are not supported yet on Linux
-                List("-no-pie")
+                !config.linkingOptions.contains("-static"))
+              // position independent executables are not supported yet on Linux
+              List("-no-pie")
             else Nil
           noPieOpts ++ List(
             // newer LLVM uses DWARFv5 by default on Linux. We support only DWARF 4 for now
