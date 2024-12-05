@@ -40,30 +40,22 @@ private[runtime] object CommonParsers {
     }
   }
 
-  def uint64()(implicit endi: Endianness, stream: BinaryFile): Long =
+  def uint64()(implicit endi: Endianness, stream: BinaryFile): Long = {
+    val v = stream.readLong()
     endi match {
       case LITTLE =>
-        val b1 = stream.readUnsignedByte().toLong
-        val b2 = stream.readUnsignedByte().toLong
-        val b3 = stream.readUnsignedByte().toLong
-        val b4 = stream.readUnsignedByte().toLong
-        val b5 = stream.readUnsignedByte().toLong
-        val b6 = stream.readUnsignedByte().toLong
-        val b7 = stream.readUnsignedByte().toLong
-        val b8 = stream.readUnsignedByte().toLong
-
-        ((b1 & 0xff) |
-          (b2 & 0xff) << 8 |
-          (b3 & 0xff) << 16 |
-          (b4 & 0xff) << 24 |
-          (b5 & 0xff) << 32 |
-          (b6 & 0xff) << 40 |
-          (b7 & 0xff) << 48 |
-          (b8 & 0xff) << 56)
-
+        (v << 56) |
+          ((v & 0xff00L) << 40) |
+          ((v & 0xff0000L) << 24) |
+          ((v & 0xff000000L) << 8) |
+          ((v >> 8) & 0xff000000L) |
+          ((v >> 24) & 0xff0000L) |
+          ((v >> 40) & 0xff00L) |
+          (v >>> 56)
       case BIG =>
-        stream.readLong()
+        v
     }
+  }
 
   def skipBytes(n: Long)(implicit stream: BinaryFile): Unit =
     stream.skipNBytes(n)

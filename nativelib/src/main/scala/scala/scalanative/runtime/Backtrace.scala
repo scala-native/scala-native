@@ -127,11 +127,26 @@ private[runtime] object Backtrace {
   )(implicit bf: BinaryFile): Option[(Vector[DIE], DWARF.Strings)] = {
     val sections = elf.sectionHeaders
     val offset = sections(elf.header.sectionNamesEntryIndex.toInt).offset
+    var debug_info_opt = Option.empty[ELF.SectionHeader]
+    var debug_abbrev_opt = Option.empty[ELF.SectionHeader]
+    var debug_str_opt = Option.empty[ELF.SectionHeader]
+    var debug_line_opt = Option.empty[ELF.SectionHeader]
+
+    sections.foreach { section =>
+      section.getName(offset) match {
+        case ".debug_info"   => debug_info_opt = Some(section)
+        case ".debug_abbrev" => debug_abbrev_opt = Some(section)
+        case ".debug_str"    => debug_str_opt = Some(section)
+        case ".debug_line"   => debug_line_opt = Some(section)
+        case _               =>
+      }
+    }
+
     for {
-      debug_info <- sections.find(_.getName(offset) == ".debug_info")
-      debug_abbrev <- sections.find(_.getName(offset) == ".debug_abbrev")
-      debug_str <- sections.find(_.getName(offset) == ".debug_str")
-      debug_line <- sections.find(_.getName(offset) == ".debug_line")
+      debug_info <- debug_info_opt
+      debug_abbrev <- debug_abbrev_opt
+      debug_str <- debug_str_opt
+      debug_line <- debug_line_opt
     } yield {
       readDWARF(
         debug_info = DWARF.Section(debug_info.offset.toUInt, debug_info.size),
