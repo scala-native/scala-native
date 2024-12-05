@@ -87,27 +87,24 @@ object StackTrace {
       else Backtrace.Position.empty
 
     if (hasDebugInfo && position.linkageName != null) {
-      val name =
-        if (position.filename == "unknown" &&
-            ffi.strcmp(position.linkageName, c"M2__C4main") == 0) {
-          c"main"
-        } else {
-          val name: Ptr[CChar] = fromRawPtr(
-            Intrinsics.stackalloc[CChar](
-              toRawSize(
-                ffi.strlen(position.linkageName) + 3.toUSize
-              )
+      if (position.filename == "unknown" &&
+          ffi.strcmp(position.linkageName, c"M2__C4main") == 0) {
+        StackTraceElement(c"main", Backtrace.Position.empty)
+      } else {
+        val name: Ptr[CChar] = fromRawPtr(
+          Intrinsics.stackalloc[CChar](
+            toRawSize(
+              ffi.strlen(position.linkageName) + 3.toUSize
             )
           )
+        )
 
-          // mangled names in DWARF are not prefixed with `_S`
-          ffi.strcat(name, c"_S")
-          ffi.strcat(name, position.linkageName)
+        // mangled names in DWARF are not prefixed with `_S`
+        ffi.strcat(name, c"_S")
+        ffi.strcat(name, position.linkageName)
 
-          name
-        }
-
-      StackTraceElement(name, position)
+        StackTraceElement(name, position)
+      }
     } else {
       val nameMax = 1024
       val name = fromRawPtr[CChar](
