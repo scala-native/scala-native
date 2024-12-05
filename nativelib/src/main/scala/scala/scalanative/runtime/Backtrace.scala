@@ -5,6 +5,7 @@ import scala.scalanative.runtime.dwarf.MachO
 import scala.scalanative.runtime.dwarf.DWARF
 import scala.scalanative.runtime.dwarf.DWARF.DIE
 import scala.scalanative.runtime.dwarf.DWARF.CompileUnit
+import scala.scalanative.runtime.dwarf.ELF
 
 import scala.scalanative.unsafe.CString
 import scala.scalanative.unsafe.Tag
@@ -22,8 +23,10 @@ import java.util.AbstractMap
 
 private[runtime] object Backtrace {
   private sealed trait Format
-  private case object MACHO extends Format
-  private case object ELF extends Format
+  private object Format {
+    case object MACHO extends Format
+    case object ELF extends Format
+  }
   private case class DwarfInfo(
       subprograms: IndexedSeq[SubprogramDIE],
       strings: DWARF.Strings,
@@ -119,6 +122,26 @@ private[runtime] object Backtrace {
     binarySearch(0, length)
   }
 
+  private def processELF(
+      elf: ELF
+  )(implicit bf: BinaryFile): Option[(Vector[DIE], DWARF.Strings)] = {
+    val sections = elf.sectionHeaders
+    val offset = sections(elf.header.sectionNamesEntryIndex.toInt).offset
+    for {
+      debug_info <- sections.find(_.getName(offset) == ".debug_info")
+      debug_abbrev <- sections.find(_.getName(offset) == ".debug_abbrev")
+      debug_str <- sections.find(_.getName(offset) == ".debug_str")
+      debug_line <- sections.find(_.getName(offset) == ".debug_line")
+    } yield {
+      readDWARF(
+        debug_info = DWARF.Section(debug_info.offset.toUInt, debug_info.size),
+        debug_abbrev =
+          DWARF.Section(debug_abbrev.offset.toUInt, debug_abbrev.size),
+        debug_str = DWARF.Section(debug_str.offset.toUInt, debug_str.size)
+      )
+    }
+  }
+
   private def processMacho(
       macho: MachO
   )(implicit bf: BinaryFile): Option[(Vector[DIE], DWARF.Strings)] = {
@@ -168,9 +191,9 @@ private[runtime] object Backtrace {
     val head = bf.position()
     val magic = bf.readInt().toUInt.toHexString
     bf.seek(head)
-    if (magic == MACHO_MAGIC) {
-      val macho = MachO.parse(bf)
-      val dwarfOpt: Option[(Vector[DIE], DWARF.Strings)] =
+    val dwarfInfo: Option[(Vector[DIE], DWARF.Strings)] =
+      if (magic == MACHO_MAGIC) {
+        val macho = MachO.parse(bf)
         processMacho(macho).orElse {
           val basename = new File(filename).getName()
           // dsymutil `foo` will assemble the debug information into `foo.dSYM/Contents/Resources/DWARF/foo`.
@@ -188,9 +211,15 @@ private[runtime] object Backtrace {
             else None
           } else None
         }
+      } else if (magic == ELF_MAGIC) {
+        val elf = ELF.parse(bf)
+        processELF(elf)
+      } else { // COFF has various magic numbers
+        None
+      }
 
       for {
-        dwarf <- dwarfOpt
+        dwarf <- dwarfInfo
         dies = dwarf._1.flatMap(_.units)
         subprograms = filterSubprograms(dies)
         offset = vmoffset.get_vmoffset()
@@ -199,14 +228,9 @@ private[runtime] object Backtrace {
           subprograms = subprograms,
           strings = dwarf._2,
           offset = offset,
-          format = MACHO
+          format = Format.MACHO
         )
       }
-    } else if (magic == ELF_MAGIC) {
-      None
-    } else { // COFF has various magic numbers
-      None
-    }
 
   }
   def readDWARF(
