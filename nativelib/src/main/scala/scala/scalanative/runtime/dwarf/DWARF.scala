@@ -281,7 +281,12 @@ private[runtime] object DWARF {
         case s @ Some(abbrev) =>
           abbrev.attributes.foreach { attr =>
             val value = AttributeValue.parse(header, attr.form)
-            attrs += (attr -> value)
+            abbrev.tag match {
+              // avoid adding attributes we are not intested in
+              case DWARF.Tag.DW_TAG_subprogram | DWARF.Tag.DW_TAG_compile_unit =>
+                attrs += (attr -> value)
+              case _ =>
+            }
           }
 
           units += CompileUnit(s, attrs.result())

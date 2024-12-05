@@ -27,21 +27,18 @@ private[runtime] object CommonParsers {
         stream.readUnsignedShort()
     }
 
-  def uint32()(implicit endi: Endianness, stream: BinaryFile): UInt =
+  def uint32()(implicit endi: Endianness, stream: BinaryFile): UInt = {
+    val v = stream.readInt()
     endi match {
       case LITTLE =>
-        val b1 = stream.readUnsignedByte().toLong
-        val b2 = stream.readUnsignedByte().toLong
-        val b3 = stream.readUnsignedByte().toLong
-        val b4 = stream.readUnsignedByte().toLong
-
-        ((b1 & 0xff) |
-          (b2 & 0xff) << 8 |
-          (b3 & 0xff) << 16 |
-          (b4 & 0xff) << 24).toUInt
+        (v >>> 24 & 0xff |
+          v >>> 8 & 0xff00 |
+          v << 8 & 0xff0000 |
+          v << 24 & 0xff000000).toUInt
       case BIG =>
-        stream.readInt().toUInt
+        v.toUInt
     }
+  }
 
   def uint64()(implicit endi: Endianness, stream: BinaryFile): Long =
     endi match {
