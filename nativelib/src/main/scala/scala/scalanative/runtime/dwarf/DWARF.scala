@@ -235,8 +235,6 @@ private[runtime] object DWARF {
     val units = Vector.newBuilder[CompileUnit]
 
     while (!stop) {
-      val attrs = Map.newBuilder[Attr, Any]
-
       val code = read_unsigned_leb128()
       idx.get(code) match {
         case None =>
@@ -249,24 +247,26 @@ private[runtime] object DWARF {
           var highPC = Option.empty[Long]
           abbrev.attributes.foreach { attr =>
             if (attr.at == DWARF.Attribute.DW_AT_name && attr.form == DWARF.Form.DW_FORM_strp) {
-              val value = AttributeValue.parse(header, attr.form)
-              name = Some(value.asInstanceOf[UInt])
+              name = Some(uint32())
             } else if (attr.at == DWARF.Attribute.DW_AT_linkage_name) {
-              val value = AttributeValue.parse(header, attr.form)
-              linkageName = Some(value.asInstanceOf[UInt])
+              linkageName = Some(uint32())
             } else if (attr.at == DWARF.Attribute.DW_AT_decl_line) {
-              val value = AttributeValue.parse(header, attr.form)
-              line = Some(value match {
-                case x: UShort => x.toInt
-                case x: UByte  => x.toInt
-                case _         => 0
-              })
+              attr.form match {
+                case DWARF.Form.DW_FORM_data1 =>
+                  // skipping `.toUInt` adds boxing
+                  line = Some(uint8().toUInt.toInt)
+                case DWARF.Form.DW_FORM_data2 =>
+                  // skipping `.toUInt` adds boxing
+                  line = Some(uint16().toUInt.toInt)
+                case DWARF.Form.DW_FORM_data4 =>
+                  line = Some(uint32().toInt)
+                case other => line = Some(0)
+              }
             } else if (attr.at == DWARF.Attribute.DW_AT_low_pc) {
-              val value = AttributeValue.parse(header, attr.form)
-              lowPC = Some(value.asInstanceOf[Long])
+              lowPC = Some(uint64())
             } else if (attr.at == DWARF.Attribute.DW_AT_high_pc &&
                 DWARF.Form.isConstantClass(attr.form)) {
-              val value = AttributeValue.parse(header, attr.form)
+              val value = uint32()
               val lowPCValue = lowPC
                 .getOrElse(
                   throw new RuntimeException(
@@ -274,11 +274,10 @@ private[runtime] object DWARF {
                   )
                 )
 
-              highPC = Some(lowPCValue + value.asInstanceOf[UInt].toLong)
+              highPC = Some(lowPCValue + value.toLong)
             } else if (attr.at == DWARF.Attribute.DW_AT_high_pc &&
                 DWARF.Form.isAddressClass(attr.form)) {
-              val value = AttributeValue.parse(header, attr.form)
-              highPC = Some(value.asInstanceOf[Long])
+              highPC = Some(uint64())
             } else {
               AttributeValue.skip(header, attr.form)
             }
@@ -300,73 +299,10 @@ private[runtime] object DWARF {
 
   object AttributeValue {
 
-    // keep in sync with `skip`
-    def parse(header: Header, form: Form)(implicit ds: BinaryFile): Any = {
-      import Form._
-      form match {
-        case DW_FORM_strp =>
-          if (header.is64) uint64()
-          else uint32()
-        case DW_FORM_data1 =>
-          uint8()
-        case DW_FORM_data2 =>
-          uint16()
-        case DW_FORM_data4 =>
-          uint32()
-        case DW_FORM_addr =>
-          if (header.address_size == 4)
-            uint32()
-          else if (header.address_size == 8)
-            uint64()
-          else
-            throw new RuntimeException(
-              s"Uknown header size: ${header.address_size}"
-            )
-        case DW_FORM_flag =>
-          uint8() == 1
-        case DW_FORM_ref_addr =>
-          if (header.is64) uint64()
-          else uint32()
-        case DW_FORM_sec_offset =>
-          if (header.is64) uint64()
-          else uint32()
-        case DW_FORM_flag_present =>
-          true
-        case DW_FORM_udata =>
-          read_unsigned_leb128()
-        case DW_FORM_sdata =>
-          read_signed_leb128()
-        case DW_FORM_ref8 =>
-          header.header_offset + uint64()
-        case DW_FORM_ref4 =>
-          header.header_offset + uint32().toLong
-        case DW_FORM_ref2 =>
-          header.header_offset + uint16().toLong
-        case DW_FORM_ref1 =>
-          header.header_offset + uint8().toLong
-        case DW_FORM_exprloc =>
-          val len = read_unsigned_leb128()
-          ds.readNBytes(len)
-
-        case DW_FORM_block1 =>
-          val len = uint8()
-          ds.readNBytes(len.toInt)
-        case DW_FORM_string =>
-          Iterator
-            .continually(ds.readByte())
-            .takeWhile(_ != 0)
-            .map(_.toChar)
-            .mkString
-        case _ =>
-          throw new Exception(s"Unsupported form: $form")
-
-      }
-    }
-
     /** Consumes the attribute bytes. We don't want to pay the parsing price for
      *  values we are not interested in keep in sync with `parse`
      */
-    def skip(header: Header, form: Form)(implicit ds: BinaryFile): Any = {
+    def skip(header: Header, form: Form)(implicit ds: BinaryFile): Unit = {
       import Form._
       form match {
         case DW_FORM_strp =>
