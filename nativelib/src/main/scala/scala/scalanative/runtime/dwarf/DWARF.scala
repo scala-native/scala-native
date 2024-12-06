@@ -279,7 +279,14 @@ private[runtime] object DWARF {
             }
           }
 
-          units += CompileUnit(Some(abbrev.tag), name, linkageName, line, lowPC, highPC)
+          units += CompileUnit(
+            Some(abbrev.tag),
+            name,
+            linkageName,
+            line,
+            lowPC,
+            highPC
+          )
       }
 
     }
