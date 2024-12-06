@@ -95,6 +95,13 @@ class LinktimeConditionsSpec extends OptimizerSpec {
       Entry("secret.performance.multiplier", 9.99, nir.Val.Double(9.99))
     )
   }
+  val defaultEntriesWithExtraComingFromRuntime = defaultEntries ++ Seq(
+    Entry(
+      "scala.scalanative.meta.linktimeinfo.debugMetadata.generateFunctionSourcePositions",
+      false,
+      nir.Val.False
+    )
+  )
   val defaultProperties = defaultEntries.map(e => e.propertyName -> e.value)
 
   @Test def resolvesLinktimeValues(): Unit = {
@@ -105,7 +112,9 @@ class LinktimeConditionsSpec extends OptimizerSpec {
       def normalized(seq: Iterable[String]): Set[String] =
         seq.toSet.filterNot(isIgnoredLinktimeProperty)
       shouldContainAll(
-        normalized(defaultEntries.map(_.propertyName)),
+        normalized(
+          defaultEntriesWithExtraComingFromRuntime.map(_.propertyName)
+        ),
         normalized(result.resolvedVals.keys)
       )
     }
@@ -119,7 +128,9 @@ class LinktimeConditionsSpec extends OptimizerSpec {
       def normalized(elems: Map[String, nir.Val]): Map[String, nir.Val] =
         elems.filter { case (key, _) => !isIgnoredLinktimeProperty(key) }
       val expected =
-        defaultEntries.map { e => e.propertyName -> e.linktimeValue }
+        defaultEntriesWithExtraComingFromRuntime.map { e =>
+          e.propertyName -> e.linktimeValue
+        }
       shouldContainAll(
         normalized(expected.toMap),
         normalized(result.resolvedVals.toMap)
