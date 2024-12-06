@@ -244,7 +244,18 @@ private[codegen] trait MetadataCodeGen { self: AbstractCodeGen =>
         producer = Constants.PRODUCER,
         isOptimized = defn.attrs.opt == nir.Attr.DidOpt
       )
-      val linkageName = mangled(defn.name)
+      val linkageName = (defn.name: nir.Global) match {
+        case nir.Global.None =>
+          unsupported(defn.name)
+        case nir.Global.Member(_, sig) if sig.isExtern =>
+          val nir.Sig.Extern(id) = sig.unmangled: @unchecked
+          id
+        case _ =>
+          // We add an extra `_` to match the procedure names
+          // generated without debug informations.
+          // This makes demangling work regardless of the debug setting
+          "__S" + defn.name.mangle
+      }
       val ownerName = defn.name.owner.id
 
       // On Windows if there are no method symbols (LTO enabled) stack traces might return linkage names from found debug symbols

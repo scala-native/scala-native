@@ -87,7 +87,18 @@ object StackTrace {
       else Backtrace.Position.empty
 
     if (hasDebugInfo && position.linkageName != null) {
-      StackTraceElement(position.linkageName, position)
+      // linkageName has an extra "_" that we don't want in stack traces
+      def isScalaNativeMangledName =
+        position.linkageName(0) == '_'.toByte &&
+          position.linkageName(1) == '_'.toByte &&
+          position.linkageName(2) == 'S'.toByte
+      val name =
+        if (isScalaNativeMangledName)
+          // skip first `_`
+          position.linkageName + 1
+        else position.linkageName
+
+      StackTraceElement(name, position)
     } else {
       val nameMax = 1024
       val name = fromRawPtr[CChar](
