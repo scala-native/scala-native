@@ -21,15 +21,15 @@ class MinimalRequiredSymbolsTest extends LinkerSpec {
   def isScala2_12 = ScalaNativeBuildInfo.scalaVersion.startsWith("2.12")
 
   @Test def default(): Unit = checkMinimalRequiredSymbols()(expected =
-    if (isScala3) SymbolsCount(types = 650, members = 3000)
-    else if (isScala2_13) SymbolsCount(types = 600, members = 3000)
+    if (isScala3) SymbolsCount(types = 650, members = 2912)
+    else if (isScala2_13) SymbolsCount(types = 579, members = 2912)
     else SymbolsCount(types = 700, members = 4000)
   )
 
   @Test def debugMetadata(): Unit =
     checkMinimalRequiredSymbols(withDebugMetadata = true)(expected =
-      if (isScala3) SymbolsCount(types = 650, members = 3000)
-      else if (isScala2_13) SymbolsCount(types = 600, members = 3000)
+      if (isScala3) SymbolsCount(types = 650, members = 2912)
+      else if (isScala2_13) SymbolsCount(types = 579, members = 2912)
       else SymbolsCount(types = 700, members = 4000)
     )
 
@@ -58,8 +58,8 @@ class MinimalRequiredSymbolsTest extends LinkerSpec {
   @Test def multithreading(): Unit =
     checkMinimalRequiredSymbols(withMultithreading = true)(expected =
       if (isScala3) SymbolsCount(types = 1100, members = 6550)
-      else if (isScala2_13) SymbolsCount(types = 1050, members = 6650)
-      else SymbolsCount(types = 1050, members = 7050)
+      else if (isScala2_13) SymbolsCount(types = 1014, members = 6490)
+      else SymbolsCount(types = 1014, members = 7050)
     )
 
   private def checkMinimalRequiredSymbols(

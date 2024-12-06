@@ -42,7 +42,7 @@ private[runtime] object DWARF {
       val version = uint16()
       assert(
         version >= 2.toUInt && version <= 4.toUInt,
-        s"Expected DWARF version 2-5, got $version instead"
+        s"Expected DWARF version 2-4, got $version instead"
       )
 
       def read_ulong: Long =
