@@ -26,6 +26,11 @@ private[runtime] object Backtrace {
   private object Format {
     case object MACHO extends Format
     case object ELF extends Format
+
+    def fromMagic(magic: Int): Option[Format] = magic match {
+      case 0xcffaedfe => Some(MACHO)
+      case 0x7f454c46 => Some(ELF)
+    }
   }
   private case class DwarfInfo(
       subprograms: IndexedSeq[SubprogramDIE],
@@ -42,9 +47,6 @@ private[runtime] object Backtrace {
       filenameAt: Option[UInt],
       linkageNameAt: Option[UInt]
   )
-
-  private val MACHO_MAGIC = "cffaedfe"
-  private val ELF_MAGIC = "7f454c46"
 
   private val cache: AbstractMap[String, Option[DwarfInfo]] =
     if (isMultithreadingEnabled) new ConcurrentHashMap
@@ -216,47 +218,48 @@ private[runtime] object Backtrace {
   ): Option[DwarfInfo] = {
     implicit val bf: BinaryFile = new BinaryFile(new File(filename))
     val head = bf.position()
-    val magic = bf.readInt().toUInt.toHexString
+    val magic = bf.readInt()
+    val format = Format.fromMagic(magic)
     bf.seek(head)
     val dwarfInfo: Option[(Vector[DIE], DWARF.Strings)] =
-      if (magic == MACHO_MAGIC) {
-        val macho = MachO.parse(bf)
-        processMacho(macho).orElse {
-          val basename = new File(filename).getName()
-          // dsymutil `foo` will assemble the debug information into `foo.dSYM/Contents/Resources/DWARF/foo`.
-          // Coulnt't find the official source, but at least libbacktrace locate the dSYM file from this location.
-          // https://github.com/ianlancetaylor/libbacktrace/blob/cdb64b688dda93bbbacbc2b1ccf50ce9329d4748/macho.c#L908
-          val dSymPath =
-            s"$filename.dSYM/Contents/Resources/DWARF/${basename}"
-          if (new File(dSymPath).exists()) {
-            val dSYMBin: BinaryFile = new BinaryFile(
-              new File(dSymPath)
-            )
-            val dSYMMacho = MachO.parse(dSYMBin)
-            if (dSYMMacho.uuid == macho.uuid) // Validate the macho in dSYM has the same build uuid.
-              processMacho(dSYMMacho)(dSYMBin)
-            else None
-          } else None
-        }
-      } else if (magic == ELF_MAGIC) {
-        val elf = ELF.parse(bf)
-        processELF(elf)
-      } else { // COFF has various magic numbers
-        None
+      format.flatMap {
+        case Format.MACHO =>
+          val macho = MachO.parse(bf)
+          processMacho(macho).orElse {
+            val basename = new File(filename).getName()
+            // dsymutil `foo` will assemble the debug information into `foo.dSYM/Contents/Resources/DWARF/foo`.
+            // Coulnt't find the official source, but at least libbacktrace locate the dSYM file from this location.
+            // https://github.com/ianlancetaylor/libbacktrace/blob/cdb64b688dda93bbbacbc2b1ccf50ce9329d4748/macho.c#L908
+            val dSymPath =
+              s"$filename.dSYM/Contents/Resources/DWARF/${basename}"
+            if (new File(dSymPath).exists()) {
+              val dSYMBin: BinaryFile = new BinaryFile(
+                new File(dSymPath)
+              )
+              val dSYMMacho = MachO.parse(dSYMBin)
+              if (dSYMMacho.uuid == macho.uuid) // Validate the macho in dSYM has the same build uuid.
+                processMacho(dSYMMacho)(dSYMBin)
+              else None
+            } else None
+          }
+        case Format.ELF =>
+          val elf = ELF.parse(bf)
+          processELF(elf)
       }
 
-      for {
-        dwarf <- dwarfInfo
-        subprograms = filterSubprograms(dwarf._1)
-        offset = vmoffset.get_vmoffset()
-      } yield {
-        DwarfInfo(
-          subprograms = subprograms,
-          strings = dwarf._2,
-          offset = offset,
-          format = if (magic == MACHO_MAGIC) Format.MACHO else Format.ELF
-        )
-      }
+    for {
+      f <- format
+      dwarf <- dwarfInfo
+      subprograms = filterSubprograms(dwarf._1)
+      offset = vmoffset.get_vmoffset()
+    } yield {
+      DwarfInfo(
+        subprograms = subprograms,
+        strings = dwarf._2,
+        offset = offset,
+        format = f
+      )
+    }
   }
   def readDWARF(
       debug_info: DWARF.Section,
