@@ -15,7 +15,6 @@ private[runtime] object DWARF {
 
   case class DIE(
       header: DWARF.Header,
-      abbrevs: Vector[DWARF.Abbrev],
       units: Vector[DWARF.CompileUnit]
   )
 
@@ -87,8 +86,8 @@ private[runtime] object DWARF {
   case class Attr(at: Attribute, form: Form, value: Int)
 
   object Abbrev {
-    def parse(implicit ds: BinaryFile): Vector[Abbrev] = {
-      def readAttribute: Option[Attr] = {
+    def parse(implicit ds: BinaryFile): collection.Map[Int, Abbrev] = {
+      def readAttribute(): Option[Attr] = {
         val at = read_unsigned_leb128()
         val form = read_unsigned_leb128()
         if (at == 0 && form == 0) None
@@ -101,7 +100,7 @@ private[runtime] object DWARF {
             )
           )
       }
-      def readAbbrev: Option[Abbrev] = {
+      def readAbbrev(): Option[Abbrev] = {
         val code = read_unsigned_leb128()
         if (code == 0) None
         else {
@@ -113,7 +112,7 @@ private[runtime] object DWARF {
           var stop = false
 
           while (!stop) {
-            val attr = readAttribute
+            val attr = readAttribute()
 
             attr.foreach(attrs += _)
 
@@ -124,74 +123,38 @@ private[runtime] object DWARF {
         }
       }
 
-      val abbrevs = Vector.newBuilder[Abbrev]
+      val abbrevs = mutable.Map.empty[Int, Abbrev]
 
       var stop = false
       while (!stop) {
-        val abbrev = readAbbrev
-        abbrev.foreach(abbrevs += _)
+        val abbrev = readAbbrev()
+        abbrev.foreach(v => abbrevs(v.code) = v)
         stop = abbrev.isEmpty
       }
 
-      abbrevs.result()
+      abbrevs
     }
   }
 
-  case class CompileUnit(abbrev: Option[Abbrev], values: Map[Attr, Any]) {
-    def is(tag: DWARF.Tag): Boolean =
-      abbrev.exists(_.tag == tag)
-
-    def getName: Option[UInt] = values.collectFirst {
-      case v
-          if v._1.at == DWARF.Attribute.DW_AT_name && v._1.form == DWARF.Form.DW_FORM_strp =>
-        v._2.asInstanceOf[UInt]
-    }
-
-    def getLinkageName: Option[UInt] =
-      values.collectFirst {
-        case v if v._1.at == DWARF.Attribute.DW_AT_linkage_name =>
-          v._2.asInstanceOf[UInt]
-      }
-
-    def getDeclFile: Option[UByte] =
-      values.collectFirst {
-        case v if v._1.at == DWARF.Attribute.DW_AT_decl_file =>
-          v._2.asInstanceOf[UByte]
-      }
-
-    def getLine: Option[Int] = values.collectFirst {
-      case v if v._1.at == DWARF.Attribute.DW_AT_decl_line =>
-        v._2 match {
-          case x: UShort => x.toInt
-          case x: UByte  => x.toInt
-          case _         => 0
-        }
-    }
-
-    def getLowPC: Option[Long] = values.collectFirst {
-      case v if v._1.at == DWARF.Attribute.DW_AT_low_pc =>
-        v._2.asInstanceOf[Long]
-    }
-
-    def getHighPC(lowPC: Long): Option[Long] =
-      // As of DWARF v4, DW_AT_high_pc can be a constant that represents the offset from low_pc
-      // > If the value of the DW_AT_high_pc is of class address, it
-      // > is the relocated address of the first location past the last instruction associated with the entity; if
-      // > it is of class constant, the value is an unsigned integer offset which when added to the low PC
-      // > gives the address of the first location past the last instruction associated with the entity.
-      // "DWARF Debugging Information Format Version 4" - 2.17.2 Contiguous Address Range
-      // https://dwarfstd.org/doc/DWARF4.pdf
-      values.collectFirst {
-        case v
-            if v._1.at == DWARF.Attribute.DW_AT_high_pc &&
-              DWARF.Form.isConstantClass(v._1.form) =>
-          val value = v._2.asInstanceOf[UInt]
-          lowPC + value.toLong
-        case v
-            if v._1.at == DWARF.Attribute.DW_AT_high_pc &&
-              DWARF.Form.isAddressClass(v._1.form) =>
-          v._2.asInstanceOf[Long]
-      }
+  case class CompileUnit(
+      tag: Option[DWARF.Tag],
+      name: Option[UInt],
+      linkageName: Option[UInt],
+      line: Option[Int],
+      lowPC: Option[Long],
+      highPC: Option[Long]
+  ) {
+    def is(tag: Tag) = this.tag.contains(tag)
+  }
+  object CompileUnit {
+    final val empty = CompileUnit(
+      None,
+      None,
+      None,
+      None,
+      None,
+      None
+    )
   }
 
   case class Section(offset: UInt, size: Long)
@@ -235,7 +198,8 @@ private[runtime] object DWARF {
   }
 
   object DIE {
-    private val abbrevCache = mutable.Map.empty[Long, Vector[Abbrev]]
+    private val abbrevCache =
+      mutable.Map.empty[Long, collection.Map[Int, Abbrev]]
     def parse(
         debug_info: Section,
         debug_abbrev: Section
@@ -244,7 +208,7 @@ private[runtime] object DWARF {
       val header = Header.parse(bf)
 
       val abbrevOffset = debug_abbrev.offset.toLong + header.debug_abbrev_offset
-      val abbrev = abbrevCache.get(abbrevOffset) match {
+      val idx = abbrevCache.get(abbrevOffset) match {
         case Some(abbrev) => abbrev
         case None =>
           val pos = bf.position()
@@ -254,16 +218,15 @@ private[runtime] object DWARF {
           bf.seek(pos)
           abbrev
       }
-      val idx = IntMap(abbrev.map(a => a.code -> a): _*)
       val units = readUnits(header.unit_offset, header, idx)
-      DIE(header, abbrev, units)
+      DIE(header, units)
     }
   }
 
   def readUnits(
       offset: Long,
       header: Header,
-      idx: IntMap[Abbrev]
+      idx: collection.Map[Int, Abbrev]
   )(implicit ds: BinaryFile): Vector[CompileUnit] = {
 
     val end_offset = offset + header.unit_length
@@ -277,20 +240,46 @@ private[runtime] object DWARF {
       val code = read_unsigned_leb128()
       idx.get(code) match {
         case None =>
-          units += CompileUnit(None, Map.empty)
+          units += CompileUnit.empty
         case s @ Some(abbrev) =>
+          var name = Option.empty[UInt]
+          var linkageName = Option.empty[UInt]
+          var line = Option.empty[Int]
+          var lowPC = Option.empty[Long]
+          var highPC = Option.empty[Long]
           abbrev.attributes.foreach { attr =>
             val value = AttributeValue.parse(header, attr.form)
             abbrev.tag match {
               // avoid adding attributes we are not intested in
               case DWARF.Tag.DW_TAG_subprogram |
                   DWARF.Tag.DW_TAG_compile_unit =>
-                attrs += (attr -> value)
+                if (attr.at == DWARF.Attribute.DW_AT_name && attr.form == DWARF.Form.DW_FORM_strp)
+                  name = Some(value.asInstanceOf[UInt])
+                else if (attr.at == DWARF.Attribute.DW_AT_linkage_name)
+                  linkageName = Some(value.asInstanceOf[UInt])
+                else if (attr.at == DWARF.Attribute.DW_AT_decl_line)
+                  line = Some(value match {
+                    case x: UShort => x.toInt
+                    case x: UByte  => x.toInt
+                    case _         => 0
+                  })
+                else if (attr.at == DWARF.Attribute.DW_AT_low_pc)
+                  lowPC = Some(value.asInstanceOf[Long])
+                else if (attr.at == DWARF.Attribute.DW_AT_high_pc &&
+                    DWARF.Form.isConstantClass(attr.form)) {
+                  highPC = Some(
+                    lowPC.getOrElse(
+                      sys.error("expected lowPc to be defined")
+                    ) + value.asInstanceOf[UInt].toLong
+                  )
+                } else if (attr.at == DWARF.Attribute.DW_AT_high_pc && DWARF.Form
+                      .isAddressClass(attr.form))
+                  highPC = Some(value.asInstanceOf[Long])
               case _ =>
             }
           }
 
-          units += CompileUnit(s, attrs.result())
+          units += CompileUnit(Some(abbrev.tag), name, linkageName, line, lowPC, highPC)
       }
 
     }

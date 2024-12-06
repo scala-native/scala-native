@@ -185,19 +185,19 @@ private[runtime] object Backtrace {
           // the DIEs after the Compile Unit DIE belongs to that compile unit (file in Scala)
           // TODO: Parse `.debug_line` section, and decode the filename using
           // `DW_AT_decl_file` attribute of the `subprogram` DIE.
-          filenameAt = die.getName
+          filenameAt = die.name
         } else if (die.is(DWARF.Tag.DW_TAG_subprogram)) {
           for {
-            line <- die.getLine
-            low <- die.getLowPC
-            high <- die.getHighPC(low)
+            line <- die.line
+            low <- die.lowPC
+            high <- die.highPC
           } {
             builder += SubprogramDIE(
               low,
               high,
               line,
               filenameAt,
-              die.getLinkageName
+              die.linkageName
             )
           }
         }
