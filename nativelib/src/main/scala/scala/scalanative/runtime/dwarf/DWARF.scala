@@ -1,9 +1,5 @@
 package scala.scalanative.runtime.dwarf
 
-import java.nio.channels.Channels
-import scala.collection.immutable.IntMap
-import DWARF.Form.DW_FORM_strp
-import java.nio.channels.FileChannel
 import scala.collection.mutable
 
 import scalanative.unsigned._
