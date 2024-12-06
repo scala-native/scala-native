@@ -267,11 +267,14 @@ private[runtime] object DWARF {
                   lowPC = Some(value.asInstanceOf[Long])
                 else if (attr.at == DWARF.Attribute.DW_AT_high_pc &&
                     DWARF.Form.isConstantClass(attr.form)) {
-                  highPC = Some(
-                    lowPC.getOrElse(
-                      sys.error("expected lowPc to be defined")
-                    ) + value.asInstanceOf[UInt].toLong
-                  )
+                  val lowPCValue = lowPC
+                    .getOrElse(
+                      throw new RuntimeException(
+                        "BUG: expected lowPc to be defined"
+                      )
+                    )
+
+                  highPC = Some(lowPCValue + value.asInstanceOf[UInt].toLong)
                 } else if (attr.at == DWARF.Attribute.DW_AT_high_pc && DWARF.Form
                       .isAddressClass(attr.form))
                   highPC = Some(value.asInstanceOf[Long])
