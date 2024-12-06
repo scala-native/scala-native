@@ -75,18 +75,20 @@ object StackTrace {
     }
   }
 
+  @resolvedAtLinktime
+  private def hasDebugInfo: Boolean =
+    (LinktimeInfo.isMac || LinktimeInfo.isLinux) && LinktimeInfo.sourceLevelDebuging.generateFunctionSourcePositions
+
   private def makeStackTraceElement(
       cursor: CVoidPtr,
       ip: CUnsignedLong
   ): StackTraceElement = {
-    val hasDebugInfo =
-      (LinktimeInfo.isMac || LinktimeInfo.isLinux) && LinktimeInfo.sourceLevelDebuging.generateFunctionSourcePositions
 
     val position =
       if (hasDebugInfo) Backtrace.decodePosition(ip.toLong)
       else Backtrace.Position.empty
 
-    if (hasDebugInfo && position.linkageName != null) {
+    def withNameFromDWARF() = {
       // linkageName has an extra "_" that we don't want in stack traces
       def isScalaNativeMangledName =
         position.linkageName(0) == '_'.toByte &&
@@ -99,7 +101,9 @@ object StackTrace {
         else position.linkageName
 
       StackTraceElement(name, position)
-    } else {
+    }
+
+    def withNameFromUnwind() = {
       val nameMax = 1024
       val name = fromRawPtr[CChar](
         calloc(
@@ -120,6 +124,11 @@ object StackTrace {
         StackTraceElement(name, position)
       } finally free(name)
     }
+
+    if (hasDebugInfo) {
+      if (position.linkageName != null) withNameFromDWARF()
+      else withNameFromUnwind()
+    } else withNameFromUnwind()
   }
 
   /** Creates a stack trace element in given unwind context. Finding a name of

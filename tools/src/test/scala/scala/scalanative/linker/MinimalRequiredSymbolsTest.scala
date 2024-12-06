@@ -33,13 +33,13 @@ class MinimalRequiredSymbolsTest extends LinkerSpec {
       else SymbolsCount(types = 700, members = 4000)
     )
 
-  // Only MacOS uses DWARF metadata currently
+  // Only MacOS and Linux DWARF metadata currently
   @Test def debugMetadataMacOs(): Unit =
     checkMinimalRequiredSymbols(
       withDebugMetadata = true,
       withTargetTriple = "x86_64-apple-darwin22.6.0"
     )(expected =
-      if (isScala3) SymbolsCount(types = 1450, members = 10500)
+      if (isScala3) SymbolsCount(types = 1021, members = 6725)
       else if (isScala2_13) SymbolsCount(types = 1015, members = 7230)
       else SymbolsCount(types = 972, members = 6965)
     )
@@ -90,7 +90,7 @@ class MinimalRequiredSymbolsTest extends LinkerSpec {
           |""".stripMargin)
     } else {
       println(s"""
-          |Ammount of found symbols in norm, config=$mode:
+          |Amount of found symbols in norm, config=$mode:
           |Expected at most: ${expected}
           |Found:            ${found}
           |Diff:             ${found - expected}
