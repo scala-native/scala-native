@@ -29,7 +29,7 @@ private[runtime] object DWARF {
       header_offset: Long
   )
   object Header {
-    def parse(implicit bf: BinaryFile): Header = {
+    def parse()(implicit bf: BinaryFile): Header = {
       val header_offset = bf.position()
       val unit_length_s = uint32()
 
@@ -205,7 +205,7 @@ private[runtime] object DWARF {
         debug_abbrev: Section
     )(implicit bf: BinaryFile) = {
 
-      val header = Header.parse(bf)
+      val header = Header.parse()
 
       val abbrevOffset = debug_abbrev.offset.toLong + header.debug_abbrev_offset
       val idx = abbrevCache.get(abbrevOffset) match {
