@@ -269,7 +269,7 @@ private[codegen] trait MetadataCodeGen { self: AbstractCodeGen =>
       val (name, flags) = methodNameInfo(defn.name.sig.unmangled)
       DISubprogram(
         name = name,
-        linkageName = defn.name.mangle,
+        linkageName = linkageName,
         scope = unit,
         file = file,
         unit = unit,
