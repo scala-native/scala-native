@@ -40,8 +40,8 @@ class MinimalRequiredSymbolsTest extends LinkerSpec {
       withTargetTriple = "x86_64-apple-darwin22.6.0"
     )(expected =
       if (isScala3) SymbolsCount(types = 1450, members = 10500)
-      else if (isScala2_13) SymbolsCount(types = 1400, members = 11000)
-      else SymbolsCount(types = 1400, members = 11300)
+      else if (isScala2_13) SymbolsCount(types = 1015, members = 7230)
+      else SymbolsCount(types = 972, members = 6965)
     )
 
   @Test def multithreading(): Unit =
