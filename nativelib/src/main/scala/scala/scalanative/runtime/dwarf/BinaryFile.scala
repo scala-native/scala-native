@@ -31,19 +31,8 @@ private[runtime] class BinaryFile(file: File) {
     new SeekableBufferedInputStream(Channels.newInputStream(ch))
   private var ds = new DataInputStream(buf)
 
-  // Get the actual reading position,
-  // ch.position() should be forwarded because BufferedStream load bytes into buffer (the amount can be retrieved by buf.getCount)
-  // The starting position of BufferedStream is `ch.position() - buf.getCount`.
-  // The actual reading position is the starting point + buf.getPos (where buf.getPos returns the position in the buffer).
-  //
-  //        ---------------------
-  //       /   buf.getCount      \
-  // |----|--------------|-------|----------------|
-  //      \ buf.getPos  /|       |
-  //       ------------  |     ch.position()
-  //                     |
-  //            actual reading pos
-  def position(): Long = ch.position() - buf.getCount() + buf.getPos()
+  private var _position: Long = 0L
+  def position(): Long = _position
 
   def seek(pos: Long): Unit = {
     // `origin` is the starting point that BufferedStream loaded into its buffer (see: `position` method)
@@ -64,17 +53,35 @@ private[runtime] class BinaryFile(file: File) {
       buf = new SeekableBufferedInputStream(Channels.newInputStream(ch))
       ds = new DataInputStream(buf)
     }
+
+    _position = pos
   }
-  def readByte(): Byte = ds.readByte()
-  def readUnsignedByte(): UByte = ds.readByte().toUByte
-  def readUnsignedShort(): UShort = ds.readUnsignedShort().toUShort
-  def readLong(): Long = ds.readLong()
-  def readInt(): Int = ds.readInt()
+  def readByte(): Byte = {
+    _position += 1
+    ds.readByte()
+  }
+  def readUnsignedByte(): UByte = {
+    _position += 1
+    ds.readByte().toUByte
+  }
+  def readUnsignedShort(): UShort = {
+    _position += 2
+    ds.readUnsignedShort().toUShort
+  }
+  def readLong(): Long = {
+    _position += 8
+    ds.readLong()
+  }
+  def readInt(): Int = {
+    _position += 4
+    ds.readInt()
+  }
   def readNBytes(bytes: Int): Array[Byte] = {
     if (bytes <= 0) Array.empty
     else {
       val buf = ArrayBuffer.empty[Byte]
       (1 to bytes).foreach { _ => buf += ds.readByte() }
+      _position += bytes
       buf.toArray
     }
   }
@@ -85,11 +92,18 @@ private[runtime] class BinaryFile(file: File) {
     while (predicate(byte)) {
       buffer += byte
       byte = readByte()
+      _position += 1
     }
     buffer.toArray
   }
 
-  def readFully(ar: Array[Byte]) = ds.readFully(ar)
+  def readFully(ar: Array[Byte]) = {
+    _position += ar.length
+    ds.readFully(ar)
+  }
 
-  def skipNBytes(n: Long): Unit = ds.skipBytes(n.toInt)
+  def skipNBytes(n: Long): Unit = {
+    _position += n
+    ds.skipBytes(n.toInt)
+  }
 }
