@@ -30,6 +30,7 @@ private[runtime] object Backtrace {
     def fromMagic(magic: Int): Option[Format] = magic match {
       case 0xcffaedfe => Some(MACHO)
       case 0x7f454c46 => Some(ELF)
+      case _          => None
     }
   }
   private case class DwarfInfo(
