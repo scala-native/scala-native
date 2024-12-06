@@ -40,7 +40,7 @@ class MinimalRequiredSymbolsTest extends LinkerSpec {
       withTargetTriple = "x86_64-apple-darwin22.6.0"
     )(expected =
       if (isScala3) SymbolsCount(types = 1021, members = 6725)
-      else if (isScala2_13) SymbolsCount(types = 981, members = 6741)
+      else if (isScala2_13) SymbolsCount(types = 981, members = 6742)
       else SymbolsCount(types = 972, members = 6965)
     )
 
@@ -51,7 +51,7 @@ class MinimalRequiredSymbolsTest extends LinkerSpec {
       withTargetTriple = "x86_64-pc-linux-gnu"
     )(expected =
       if (isScala3) SymbolsCount(types = 1021, members = 6725)
-      else if (isScala2_13) SymbolsCount(types = 981, members = 6741)
+      else if (isScala2_13) SymbolsCount(types = 981, members = 6742)
       else SymbolsCount(types = 972, members = 6965)
     )
 
