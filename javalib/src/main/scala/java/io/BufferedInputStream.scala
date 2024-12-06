@@ -113,22 +113,16 @@ class BufferedInputStream(_in: InputStream, initialSize: Int)
     }
   }
 
-  // TODO: inefficient
   // per spec: if n is < 0 then no bytes are skipped and the return value is 0
-  override def skip(n: Long): Long =
-    if (n <= 0) 0
+  override def skip(n: Long): Long = {
+    val (buf, in) = ensureOpen()
+    if (n <= 0L) 0L
     else {
-      var actual = 0
-      var eos = false
-      while (!eos && actual < n) {
-        if (read() == -1) {
-          eos = true
-        } else {
-          actual += 1
-        }
+      synchronized {
+        skipUnsafe(requested = n, initialBuffer = buf, source = in)
       }
-      actual
     }
+  }
 
   // https://github.com/scala-native/scala-native/pull/1767#discussion_r423120768
   private def ensureOpen(): (Array[Byte], InputStream) = {
@@ -276,5 +270,46 @@ class BufferedInputStream(_in: InputStream, initialSize: Int)
     }
 
     bytesRead
+  }
+
+  private def skipUnsafe(
+      requested: Long,
+      initialBuffer: Array[Byte],
+      source: InputStream
+  ) = {
+    var sourceBuffer: Array[Byte] = initialBuffer
+    var remaining: Int = requested.toInt
+    var bytesSkipped: Long = 0L
+
+    while (remaining > 0) {
+      if (pos + remaining <= count) {
+        pos += remaining
+        bytesSkipped += remaining
+        remaining = 0
+      } else {
+        val available = count - pos
+
+        // fill source buffer from in stream
+        fillBuffer(sourceBuffer, source) match {
+          // end of source stream
+          case None =>
+            if (available == 0)
+              bytesSkipped = -1
+            else
+              bytesSkipped += available
+
+            remaining = 0
+
+          // source read into nextBuffer
+          case Some(nextBuffer) =>
+            sourceBuffer = nextBuffer
+            bytesSkipped += available
+
+            remaining -= available
+        }
+      }
+    }
+
+    bytesSkipped
   }
 }
