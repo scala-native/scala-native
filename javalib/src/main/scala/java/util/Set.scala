@@ -3,24 +3,18 @@ package java.util
 trait Set[E] extends Collection[E] {
 
   def add(obj: E): scala.Boolean
-
+  def addAll(coll: Collection[_ <: E]): scala.Boolean
   def clear(): Unit
   def contains(obj: Any): scala.Boolean
   def containsAll(c: Collection[_]): Boolean
+  def equals(obj: Any): scala.Boolean
+  def hashCode(): scala.Int
   def isEmpty(): scala.Boolean
   def iterator(): Iterator[E]
   def remove(obj: Any): scala.Boolean
   def removeAll(c: Collection[_]): Boolean
   def retainAll(c: Collection[_]): Boolean
   def size(): scala.Int
-
-  // TODO:
-  // def addAll(coll: Collection[_ <: E]): scala.Boolean
-  // def hashCode(): scala.Int
-  // def toArray(): Array[Any]
-  // def toArray[T](array: Array[T]): Array[T]
-  // def contains(coll: Collection[_]): scala.Boolean
-  // def equals(obj: Any): scala.Boolean
 
   override def spliterator(): Spliterator[E] = {
     Spliterators.spliterator[E](
@@ -30,6 +24,9 @@ trait Set[E] extends Collection[E] {
         Spliterator.DISTINCT
     )
   }
+
+  def toArray(): Array[AnyRef]
+  def toArray[T <: AnyRef](a: Array[T]): Array[T]
 
 }
 
