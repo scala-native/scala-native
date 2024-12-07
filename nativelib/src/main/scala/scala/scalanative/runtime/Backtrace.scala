@@ -149,7 +149,7 @@ private[runtime] object Backtrace {
     }
   }
 
-  private def filterSubprograms(dies: scala.Array[DIE]) = {
+  private def filterSubprograms(dies: scala.Array[DIE]): scala.Array[SubprogramDIE] = {
     var filenameAt: Option[UInt] = None
     val builder = scala.Array.newBuilder[SubprogramDIE]
     dies.foreach { die =>
