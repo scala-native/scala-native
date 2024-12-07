@@ -21,34 +21,45 @@ class MinimalRequiredSymbolsTest extends LinkerSpec {
   def isScala2_12 = ScalaNativeBuildInfo.scalaVersion.startsWith("2.12")
 
   @Test def default(): Unit = checkMinimalRequiredSymbols()(expected =
-    if (isScala3) SymbolsCount(types = 650, members = 3000)
-    else if (isScala2_13) SymbolsCount(types = 600, members = 3000)
+    if (isScala3) SymbolsCount(types = 650, members = 2912)
+    else if (isScala2_13) SymbolsCount(types = 579, members = 2912)
     else SymbolsCount(types = 700, members = 4000)
   )
 
   @Test def debugMetadata(): Unit =
     checkMinimalRequiredSymbols(withDebugMetadata = true)(expected =
-      if (isScala3) SymbolsCount(types = 650, members = 3000)
-      else if (isScala2_13) SymbolsCount(types = 600, members = 3000)
+      if (isScala3) SymbolsCount(types = 650, members = 2912)
+      else if (isScala2_13) SymbolsCount(types = 579, members = 2912)
       else SymbolsCount(types = 700, members = 4000)
     )
 
-  // Only MacOS uses DWARF metadata currently
+  // Only MacOS and Linux DWARF metadata currently
   @Test def debugMetadataMacOs(): Unit =
     checkMinimalRequiredSymbols(
       withDebugMetadata = true,
       withTargetTriple = "x86_64-apple-darwin22.6.0"
     )(expected =
-      if (isScala3) SymbolsCount(types = 1450, members = 10500)
-      else if (isScala2_13) SymbolsCount(types = 1400, members = 11000)
-      else SymbolsCount(types = 1400, members = 11300)
+      if (isScala3) SymbolsCount(types = 1021, members = 6725)
+      else if (isScala2_13) SymbolsCount(types = 981, members = 6742)
+      else SymbolsCount(types = 972, members = 6965)
+    )
+
+  // Only MacOS and Linux DWARF metadata currently
+  @Test def debugMetadataLinux(): Unit =
+    checkMinimalRequiredSymbols(
+      withDebugMetadata = true,
+      withTargetTriple = "x86_64-pc-linux-gnu"
+    )(expected =
+      if (isScala3) SymbolsCount(types = 1021, members = 6725)
+      else if (isScala2_13) SymbolsCount(types = 981, members = 6742)
+      else SymbolsCount(types = 972, members = 6965)
     )
 
   @Test def multithreading(): Unit =
     checkMinimalRequiredSymbols(withMultithreading = true)(expected =
       if (isScala3) SymbolsCount(types = 1100, members = 6550)
-      else if (isScala2_13) SymbolsCount(types = 1050, members = 6650)
-      else SymbolsCount(types = 1050, members = 7050)
+      else if (isScala2_13) SymbolsCount(types = 1014, members = 6490)
+      else SymbolsCount(types = 1014, members = 7050)
     )
 
   private def checkMinimalRequiredSymbols(
@@ -90,7 +101,7 @@ class MinimalRequiredSymbolsTest extends LinkerSpec {
           |""".stripMargin)
     } else {
       println(s"""
-          |Ammount of found symbols in norm, config=$mode:
+          |Amount of found symbols in norm, config=$mode:
           |Expected at most: ${expected}
           |Found:            ${found}
           |Diff:             ${found - expected}

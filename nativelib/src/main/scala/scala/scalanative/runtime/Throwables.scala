@@ -75,31 +75,60 @@ object StackTrace {
     }
   }
 
+  @resolvedAtLinktime
+  private def hasDebugInfo: Boolean =
+    (LinktimeInfo.isMac || LinktimeInfo.isLinux) && LinktimeInfo.sourceLevelDebuging.generateFunctionSourcePositions
+
   private def makeStackTraceElement(
       cursor: CVoidPtr,
       ip: CUnsignedLong
   ): StackTraceElement = {
-    val nameMax = 1024
-    val name = fromRawPtr[CChar](
-      calloc(
-        Intrinsics.castIntToRawSizeUnsigned(nameMax),
-        Intrinsics.sizeOf[CChar]
-      )
-    )
-    val offset = fromRawPtr[Long](Intrinsics.stackalloc[Long]())
 
-    unwind.get_proc_name(cursor, name, nameMax.toUSize, offset)
-
-    // Make sure the name is definitely 0-terminated.
-    // Unmangler is going to use strlen on this name and it's
-    // behavior is not defined for non-zero-terminated strings.
-    name(nameMax - 1) = 0.toByte
     val position =
-      if (LinktimeInfo.isMac && LinktimeInfo.sourceLevelDebuging.generateFunctionSourcePositions)
-        Backtrace.decodePosition(ip.toLong)
+      if (hasDebugInfo) Backtrace.decodePosition(ip.toLong)
       else Backtrace.Position.empty
-    try StackTraceElement(name, position)
-    finally free(name)
+
+    def withNameFromDWARF() = {
+      // linkageName has an extra "_" that we don't want in stack traces
+      def isScalaNativeMangledName =
+        position.linkageName(0) == '_'.toByte &&
+          position.linkageName(1) == '_'.toByte &&
+          position.linkageName(2) == 'S'.toByte
+      val name =
+        if (isScalaNativeMangledName)
+          // skip first `_`
+          position.linkageName + 1
+        else position.linkageName
+
+      StackTraceElement(name, position)
+    }
+
+    def withNameFromUnwind() = {
+      val nameMax = 1024
+      val name = fromRawPtr[CChar](
+        calloc(
+          Intrinsics.castIntToRawSizeUnsigned(nameMax),
+          Intrinsics.sizeOf[CChar]
+        )
+      )
+      try {
+        val offset = fromRawPtr[Long](Intrinsics.stackalloc[Long]())
+
+        unwind.get_proc_name(cursor, name, nameMax.toUSize, offset)
+
+        // Make sure the name is definitely 0-terminated.
+        // Unmangler is going to use strlen on this name and it's
+        // behavior is not defined for non-zero-terminated strings.
+        name(nameMax - 1) = 0.toByte
+
+        StackTraceElement(name, position)
+      } finally free(name)
+    }
+
+    if (hasDebugInfo) {
+      if (position.linkageName != null) withNameFromDWARF()
+      else withNameFromUnwind()
+    } else withNameFromUnwind()
   }
 
   /** Creates a stack trace element in given unwind context. Finding a name of
