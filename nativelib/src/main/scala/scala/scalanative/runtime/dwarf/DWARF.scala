@@ -11,7 +11,7 @@ private[runtime] object DWARF {
 
   case class DIE(
       header: DWARF.Header,
-      units: Vector[DWARF.CompileUnit]
+      units: scala.Array[DWARF.CompileUnit]
   )
 
   case class Header(
@@ -77,7 +77,7 @@ private[runtime] object DWARF {
       code: Int,
       tag: Tag,
       children: Boolean,
-      attributes: Vector[Attr]
+      attributes: scala.Array[Attr]
   )
   case class Attr(at: Attribute, form: Form, value: Int)
 
@@ -103,7 +103,7 @@ private[runtime] object DWARF {
           val tag = read_unsigned_leb128()
           val children = uint8() == 1
 
-          val attrs = Vector.newBuilder[Attr]
+          val attrs = scala.Array.newBuilder[Attr]
 
           var stop = false
 
@@ -181,11 +181,11 @@ private[runtime] object DWARF {
   def parse(
       debug_info: Section,
       debug_abbrev: Section
-  )(implicit bf: BinaryFile): Vector[DIE] = {
+  )(implicit bf: BinaryFile): scala.Array[DIE] = {
     bf.seek(debug_info.offset.toLong)
     val end_offset = debug_info.offset.toLong + debug_info.size
     def stop = bf.position() >= end_offset
-    val dies = Vector.newBuilder[DIE]
+    val dies = scala.Array.newBuilder[DIE]
     while (!stop) {
       val die = DIE.parse(debug_info, debug_abbrev)
       dies += die
@@ -223,12 +223,12 @@ private[runtime] object DWARF {
       offset: Long,
       header: Header,
       idx: collection.Map[Int, Abbrev]
-  )(implicit ds: BinaryFile): Vector[CompileUnit] = {
+  )(implicit ds: BinaryFile): scala.Array[CompileUnit] = {
 
     val end_offset = offset + header.unit_length
 
     def stop = ds.position() >= end_offset
-    val units = Vector.newBuilder[CompileUnit]
+    val units = scala.Array.newBuilder[CompileUnit]
 
     while (!stop) {
       val code = read_unsigned_leb128()

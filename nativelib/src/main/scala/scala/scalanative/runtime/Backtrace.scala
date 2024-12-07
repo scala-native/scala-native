@@ -53,7 +53,7 @@ private[runtime] object Backtrace {
       case Some(info) =>
         impl(pc, info)
       case null =>
-        processFile(filename, None) match {
+        processFile(filename) match {
           case None =>
             // there's no debug section, cache it so we don't parse the exec file any longer
             cache.put(filename, None)
@@ -116,7 +116,7 @@ private[runtime] object Backtrace {
 
   private def processELF(
       elf: ELF
-  )(implicit bf: BinaryFile): Option[(Vector[DIE], DWARF.Strings)] = {
+  )(implicit bf: BinaryFile): Option[(scala.Array[DIE], DWARF.Strings)] = {
     val sections = elf.sectionHeaders
     val offset = sections(elf.header.sectionNamesEntryIndex.toInt).offset
     var debug_info_opt = Option.empty[ELF.SectionHeader]
@@ -151,7 +151,7 @@ private[runtime] object Backtrace {
 
   private def processMacho(
       macho: MachO
-  )(implicit bf: BinaryFile): Option[(Vector[DIE], DWARF.Strings)] = {
+  )(implicit bf: BinaryFile): Option[(scala.Array[DIE], DWARF.Strings)] = {
     val sections = macho.segments.flatMap(_.sections)
     for {
       debug_info <- sections.find(_.sectname == "__debug_info")
@@ -167,9 +167,9 @@ private[runtime] object Backtrace {
     }
   }
 
-  private def filterSubprograms(dies: Vector[DIE]) = {
+  private def filterSubprograms(dies: scala.Array[DIE]) = {
     var filenameAt: Option[UInt] = None
-    val builder = Vector.newBuilder[SubprogramDIE]
+    val builder = scala.Array.newBuilder[SubprogramDIE]
     dies.foreach { die =>
       die.units.foreach { unit =>
         if (unit.is(DWARF.Tag.DW_TAG_compile_unit)) {
@@ -205,15 +205,12 @@ private[runtime] object Backtrace {
   private final val MACHO_MAGIC = 0xcffaedfe
   private final val ELF_MAGIC = 0x7f454c46
 
-  private def processFile(
-      filename: String,
-      matchUUID: Option[List[UInt]]
-  ): Option[DwarfInfo] = {
+  private def processFile(filename: String): Option[DwarfInfo] = {
     implicit val bf: BinaryFile = new BinaryFile(new File(filename))
     val head = bf.position()
     val magic = bf.readInt()
     bf.seek(head)
-    val dwarfInfo: Option[(Vector[DIE], DWARF.Strings)] =
+    val dwarfInfo: Option[(scala.Array[DIE], DWARF.Strings)] =
       if (LinktimeInfo.isMac) {
         if (magic == MACHO_MAGIC) {
           val macho = MachO.parse(bf)
