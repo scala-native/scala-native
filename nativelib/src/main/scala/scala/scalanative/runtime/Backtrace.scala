@@ -1,5 +1,7 @@
 package scala.scalanative.runtime
 
+import scala.scalanative.meta.LinktimeInfo
+
 import scala.scalanative.runtime.dwarf.BinaryFile
 import scala.scalanative.runtime.dwarf.MachO
 import scala.scalanative.runtime.dwarf.DWARF
@@ -17,28 +19,15 @@ import scala.annotation.tailrec
 
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
-import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
 import java.util.HashMap
 import java.util.AbstractMap
 
 private[runtime] object Backtrace {
-  private sealed trait Format
-  private object Format {
-    case object MACHO extends Format
-    case object ELF extends Format
-
-    def fromMagic(magic: Int): Option[Format] = magic match {
-      case 0xcffaedfe => Some(MACHO)
-      case 0x7f454c46 => Some(ELF)
-      case _          => None
-    }
-  }
   private case class DwarfInfo(
       subprograms: IndexedSeq[SubprogramDIE],
       strings: DWARF.Strings,
       /** ASLR offset (minus __PAGEZERO size for macho) */
-      offset: Long,
-      format: Format
+      offset: Long
   )
 
   private case class SubprogramDIE(
@@ -50,7 +39,7 @@ private[runtime] object Backtrace {
   )
 
   private val cache: AbstractMap[String, Option[DwarfInfo]] =
-    if (isMultithreadingEnabled) new ConcurrentHashMap
+    if (LinktimeInfo.isMultithreadingEnabled) new ConcurrentHashMap
     else new HashMap
   case class Position(linkageName: CString, filename: String, line: Int)
   object Position {
@@ -213,6 +202,9 @@ private[runtime] object Backtrace {
       .toIndexedSeq
   }
 
+  private final val MACHO_MAGIC = 0xcffaedfe
+  private final val ELF_MAGIC = 0x7f454c46
+
   private def processFile(
       filename: String,
       matchUUID: Option[List[UInt]]
@@ -220,11 +212,10 @@ private[runtime] object Backtrace {
     implicit val bf: BinaryFile = new BinaryFile(new File(filename))
     val head = bf.position()
     val magic = bf.readInt()
-    val format = Format.fromMagic(magic)
     bf.seek(head)
     val dwarfInfo: Option[(Vector[DIE], DWARF.Strings)] =
-      format.flatMap {
-        case Format.MACHO =>
+      if (LinktimeInfo.isMac) {
+        if (magic == MACHO_MAGIC) {
           val macho = MachO.parse(bf)
           processMacho(macho).orElse {
             val basename = new File(filename).getName()
@@ -243,13 +234,15 @@ private[runtime] object Backtrace {
               else None
             } else None
           }
-        case Format.ELF =>
+        } else None
+      } else {
+        if (magic == ELF_MAGIC) {
           val elf = ELF.parse(bf)
           processELF(elf)
+        } else None
       }
 
     for {
-      f <- format
       dwarf <- dwarfInfo
       subprograms = filterSubprograms(dwarf._1)
       offset = vmoffset.get_vmoffset()
@@ -257,8 +250,7 @@ private[runtime] object Backtrace {
       DwarfInfo(
         subprograms = subprograms,
         strings = dwarf._2,
-        offset = offset,
-        format = f
+        offset = offset
       )
     }
   }
