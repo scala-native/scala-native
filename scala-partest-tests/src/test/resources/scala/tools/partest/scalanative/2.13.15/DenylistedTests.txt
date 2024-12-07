@@ -15,6 +15,13 @@ pos/t6367.scala
 # Does not create tasty.jar
 neg/t12134
 
+# Checks phases order
+neg/t8755-regress-a
+neg/t8755
+neg/t8755b
+neg/t8755c
+neg/t7494-right-after-before
+
 # Not deterministic order of warnings
 neg/case-collision.scala 
 
@@ -29,6 +36,8 @@ run/t9200
 run/t8348
 run/noInlineUnknownIndy
 run/specialize-functional-interface
+run/t13007
+run/t13307b
 
 ## Uses testkit java files
 run/small-seq-apply.scala
@@ -845,6 +854,14 @@ run/t12062.scala
 
 
 # partest.DirectTest
+run/t7879.scala
+run/t7722.scala
+run/t12720.scala
+run/t12289.scala
+run/t12289b.scala
+run/t12289c.scala
+run/huge-string.scala
+run/annot-infix-tostr.scala
 run/t7324.scala
 run/repl-suspended-warnings.scala
 run/t1406.scala

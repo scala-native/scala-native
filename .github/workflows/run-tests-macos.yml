@@ -65,6 +65,8 @@ jobs:
           # Covered in basic test-runtime
           - scala: 3
             build-mode: debug
+          - lto: thin
+            build-mode: debug
         include:
           - scala: 3
             build-mode: release-size
