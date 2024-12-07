@@ -249,4 +249,18 @@ class ClassTest {
 
     assertDiffClass(cls1, cls2)
   }
+
+  @Test def classForName(): Unit = {
+    val cls1 = Class.forName("java.lang.String")
+    val cls2 = classOf[String]
+    val cls3 = Class.forName("java.lang.Double")
+
+    assertEqualClass(cls1, cls2)
+    assertDiffClass(cls1, cls3)
+
+    assertThrows(
+      classOf[ClassNotFoundException],
+      () => Class.forName("not.existing.class.name")
+    )
+  }
 }

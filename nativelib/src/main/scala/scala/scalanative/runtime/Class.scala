@@ -207,11 +207,23 @@ private[runtime] object _Class {
     false
   }
 
-  // Could be implemented via intrinsic method resolved at compile time and generating nir.Val.ClassOf(name: String)
-  // def forName(name: String): Class[_] = ???
-  // def forName(
-  //     name: String,
-  //     init: scala.Boolean,
-  //     loader: ClassLoader
-  // ): Class[_] = ???
+  def forName(name: String): Class[_] =
+    LinkedClassesRepository.byName
+      .get(name)
+      .getOrElse(throw new ClassNotFoundException(name))
+      .asInstanceOf[Class[_]]
+
+  def forName(
+      name: String,
+      init: scala.Boolean,
+      loader: ClassLoader
+  ): Class[_] = forName(name)
+}
+
+private object LinkedClassesRepository {
+  // Reachable only from `forName` method
+  @noinline private def loadAll: scala.Array[_Class[_]] = intrinsic
+  val byName: Map[String, _Class[_]] = loadAll.map { cls =>
+    cls.name -> cls
+  }.toMap
 }
