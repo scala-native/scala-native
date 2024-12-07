@@ -235,7 +235,7 @@ private[runtime] object DWARF {
       idx.get(code) match {
         case None =>
           units += CompileUnit.empty
-        case s @ Some(abbrev) =>
+        case Some(abbrev) =>
           var name = Option.empty[UInt]
           var linkageName = Option.empty[UInt]
           var line = Option.empty[Int]
