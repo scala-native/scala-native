@@ -16,16 +16,15 @@ private[runtime] object CommonParsers {
   def uint8()(implicit endi: Endianness, bf: BinaryFile): UByte =
     bf.readUnsignedByte()
 
-  def uint16()(implicit endi: Endianness, stream: BinaryFile): UShort =
+  def uint16()(implicit endi: Endianness, stream: BinaryFile): UShort = {
+    val v = stream.readUnsignedShort()
     endi match {
       case LITTLE =>
-        val b1 = stream.readByte()
-        val b2 = stream.readByte()
-
-        ((b1 & 0xff) | (b2 & 0xff) << 8).toShort.toUShort
+        ((v >>> 8) | ((v & 0xff.toUShort) << 8)).toUShort
       case BIG =>
-        stream.readUnsignedShort()
+        v
     }
+  }
 
   def uint32()(implicit endi: Endianness, stream: BinaryFile): UInt = {
     val v = stream.readInt()
