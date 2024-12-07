@@ -92,7 +92,7 @@ private[scalanative] object LLVM {
     val debugFlags =
       if (config.targetsWindows) List("-g")
       else if (config.compilerConfig.sourceLevelDebuggingConfig.enabled) {
-        // newer LLVM uses DWARFv5 by default on Linux. We support only DWARF 4 for now
+        // newer LLVM uses DWARFv5 by default on Linux. We support only DWARFv4 for now
         List("-gdwarf-4")
       } else Nil
 
