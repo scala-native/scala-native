@@ -33,6 +33,10 @@ runs:
           echo "binary-version=3" >> $GITHUB_ENV
           echo "project-version=3" >> $GITHUB_ENV
         fi
+        
+    - name: Install common dependencies
+      shell: bash
+      run: brew install sbt
     
     - name: Install dependencies
       shell: bash
