@@ -38,58 +38,40 @@ private[runtime] object Backtrace {
       linkageNameAt: Option[UInt]
   )
 
-  private val cache: AbstractMap[String, Option[DwarfInfo]] =
-    if (LinktimeInfo.isMultithreadingEnabled) new ConcurrentHashMap
-    else new HashMap
+  private val dwarfInfo: Option[DwarfInfo] = processFile()
+
   case class Position(linkageName: CString, filename: String, line: Int)
   object Position {
     final val empty = Position(null, null, 0)
   }
 
   def decodePosition(pc: Long): Position = {
-    cache.get(filename) match {
-      case None =>
-        Position.empty // cached, there's no debug section
+    dwarfInfo match {
       case Some(info) =>
-        impl(pc, info)
-      case null =>
-        processFile(filename) match {
-          case None =>
-            // there's no debug section, cache it so we don't parse the exec file any longer
-            cache.put(filename, None)
-            Position.empty
-          case file @ Some(info) =>
-            cache.put(filename, file)
-            impl(pc, info)
+        // The address (DW_AT_(low|high)_address) in debug information has the file offset (the offset in the executable + __PAGEZERO in macho).
+        // While the pc address retrieved from libunwind at runtime has the location of the memory into the virtual memory
+        // at runtime. which has a random offset (called ASLR offset or slide) that is different for every run because of
+        // Address Space Layout Randomization (ASLR) when the executable is built as PIE.
+        // Subtract the offset to match the pc address from libunwind (runtime) and address in debug info (compile/link time).
+        val address = pc - info.offset
+        val position = for {
+          subprogram <- search(info.subprograms, address)
+          filenameAt <- subprogram.filenameAt
+          linkageNameAt <- subprogram.linkageNameAt
+        } yield {
+          val filename = info.strings.read(filenameAt)
+          val linkageName =
+            info.strings.buf.asInstanceOf[ByteArray].at(linkageNameAt.toInt)
+          Position(
+            linkageName,
+            filename,
+            subprogram.line + 1
+          ) // line number in DWARF is 0-based
         }
+        position.getOrElse(Position.empty)
+      case None =>
+        Position.empty // there's no debug section
     }
-  }
-
-  private def impl(
-      pc: Long,
-      info: DwarfInfo
-  ): Position = {
-    // The address (DW_AT_(low|high)_address) in debug information has the file offset (the offset in the executable + __PAGEZERO in macho).
-    // While the pc address retrieved from libunwind at runtime has the location of the memory into the virtual memory
-    // at runtime. which has a random offset (called ASLR offset or slide) that is different for every run because of
-    // Address Space Layout Randomization (ASLR) when the executable is built as PIE.
-    // Subtract the offset to match the pc address from libunwind (runtime) and address in debug info (compile/link time).
-    val address = pc - info.offset
-    val position = for {
-      subprogram <- search(info.subprograms, address)
-      filenameAt <- subprogram.filenameAt
-      linkageNameAt <- subprogram.linkageNameAt
-    } yield {
-      val filename = info.strings.read(filenameAt)
-      val linkageName =
-        info.strings.buf.asInstanceOf[ByteArray].at(linkageNameAt.toInt)
-      Position(
-        linkageName,
-        filename,
-        subprogram.line + 1
-      ) // line number in DWARF is 0-based
-    }
-    position.getOrElse(Position.empty)
   }
 
   private def search(
@@ -204,8 +186,7 @@ private[runtime] object Backtrace {
   private final val MACHO_MAGIC = 0xcffaedfe
   private final val ELF_MAGIC = 0x7f454c46
 
-  private def processFile(filename: String): Option[DwarfInfo] = {
-    println(s"Start processing file. Thread ${Thread.currentThread().getId()}")
+  private def processFile(): Option[DwarfInfo] = {
     implicit val bf: BinaryFile = new BinaryFile(new File(filename))
     val head = bf.position()
     val magic = bf.readInt()
@@ -251,7 +232,8 @@ private[runtime] object Backtrace {
       )
     }
   }
-  def readDWARF(
+
+  private def readDWARF(
       debug_info: DWARF.Section,
       debug_abbrev: DWARF.Section,
       debug_str: DWARF.Section
