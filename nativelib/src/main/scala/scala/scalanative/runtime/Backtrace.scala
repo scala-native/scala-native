@@ -98,14 +98,12 @@ private[runtime] object Backtrace {
     var debug_info_opt = Option.empty[ELF.SectionHeader]
     var debug_abbrev_opt = Option.empty[ELF.SectionHeader]
     var debug_str_opt = Option.empty[ELF.SectionHeader]
-    var debug_line_opt = Option.empty[ELF.SectionHeader]
 
     sections.foreach { section =>
       section.getName(offset) match {
         case ".debug_info"   => debug_info_opt = Some(section)
         case ".debug_abbrev" => debug_abbrev_opt = Some(section)
         case ".debug_str"    => debug_str_opt = Some(section)
-        case ".debug_line"   => debug_line_opt = Some(section)
         case _               =>
       }
     }
@@ -114,7 +112,6 @@ private[runtime] object Backtrace {
       debug_info <- debug_info_opt
       debug_abbrev <- debug_abbrev_opt
       debug_str <- debug_str_opt
-      debug_line <- debug_line_opt
     } yield {
       readDWARF(
         debug_info = DWARF.Section(debug_info.offset.toUInt, debug_info.size),
@@ -133,7 +130,6 @@ private[runtime] object Backtrace {
     var debug_info_opt = Option.empty[MachO.Section]
     var debug_abbrev_opt = Option.empty[MachO.Section]
     var debug_str_opt = Option.empty[MachO.Section]
-    var debug_line_opt = Option.empty[MachO.Section]
 
     macho.segments.foreach { segment =>
       segment.sections.foreach { section =>
@@ -141,7 +137,6 @@ private[runtime] object Backtrace {
           case "__debug_info"   => debug_info_opt = Some(section)
           case "__debug_abbrev" => debug_abbrev_opt = Some(section)
           case "__debug_str"    => debug_str_opt = Some(section)
-          case "__debug_line"   => debug_line_opt = Some(section)
           case _                =>
         }
       }
@@ -151,7 +146,6 @@ private[runtime] object Backtrace {
       debug_info <- debug_info_opt
       debug_abbrev <- debug_abbrev_opt
       debug_str <- debug_str_opt
-      debug_line <- debug_line_opt
     } yield {
       readDWARF(
         debug_info = DWARF.Section(debug_info.offset, debug_info.size),
