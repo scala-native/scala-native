@@ -34,8 +34,8 @@ private[runtime] object Backtrace {
       lowPC: Long,
       highPC: Long,
       line: Int,
-      filenameAt: Option[UInt],
-      linkageNameAt: Option[UInt]
+      filenameOffsetOrMinusOne: Int,
+      linkageNameOffsetOrMinusOne: Int
   )
 
   private val dwarfInfo: Option[DwarfInfo] = processFile()
@@ -54,21 +54,26 @@ private[runtime] object Backtrace {
         // Address Space Layout Randomization (ASLR) when the executable is built as PIE.
         // Subtract the offset to match the pc address from libunwind (runtime) and address in debug info (compile/link time).
         val address = pc - info.offset
-        val position = for {
-          subprogram <- search(info.subprograms, address)
-          filenameAt <- subprogram.filenameAt
-          linkageNameAt <- subprogram.linkageNameAt
-        } yield {
-          val filename = info.strings.read(filenameAt)
-          val linkageName =
-            info.strings.buf.asInstanceOf[ByteArray].at(linkageNameAt.toInt)
-          Position(
-            linkageName,
-            filename,
-            subprogram.line + 1
-          ) // line number in DWARF is 0-based
+        search(info.subprograms, address) match {
+          case Some(subprogram) =>
+            if (subprogram.filenameOffsetOrMinusOne == -1 || subprogram.linkageNameOffsetOrMinusOne != -1) {
+              Position.empty
+            } else {
+              val filename =
+                info.strings.read(subprogram.filenameOffsetOrMinusOne)
+              val linkageName =
+                info.strings.buf
+                  .asInstanceOf[ByteArray]
+                  .at(subprogram.linkageNameOffsetOrMinusOne)
+              Position(
+                linkageName,
+                filename,
+                subprogram.line + 1
+              ) // line number in DWARF is 0-based
+            }
+          case None =>
+            Position.empty
         }
-        position.getOrElse(Position.empty)
       case None =>
         Position.empty // there's no debug section
     }
@@ -149,8 +154,10 @@ private[runtime] object Backtrace {
     }
   }
 
-  private def filterSubprograms(dies: scala.Array[DIE]): scala.Array[SubprogramDIE] = {
-    var filenameAt: Option[UInt] = None
+  private def filterSubprograms(
+      dies: scala.Array[DIE]
+  ): scala.Array[SubprogramDIE] = {
+    var filenameOffsetOrMinusOne = -1
     val builder = scala.Array.newBuilder[SubprogramDIE]
     dies.foreach { die =>
       die.units.foreach { unit =>
@@ -159,7 +166,7 @@ private[runtime] object Backtrace {
           // the DIEs after the Compile Unit DIE belongs to that compile unit (file in Scala)
           // TODO: Parse `.debug_line` section, and decode the filename using
           // `DW_AT_decl_file` attribute of the `subprogram` DIE.
-          filenameAt = unit.name
+          filenameOffsetOrMinusOne = unit.name.getOrElse(-1)
         } else if (unit.is(DWARF.Tag.DW_TAG_subprogram)) {
           for {
             line <- unit.line
@@ -170,8 +177,8 @@ private[runtime] object Backtrace {
               low,
               high,
               line,
-              filenameAt,
-              unit.linkageName
+              filenameOffsetOrMinusOne,
+              unit.linkageName.getOrElse(-1)
             )
           }
         }
