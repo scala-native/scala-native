@@ -134,8 +134,8 @@ private[runtime] object DWARF {
 
   case class CompileUnit(
       tag: Option[DWARF.Tag],
-      name: Option[Int],
-      linkageName: Option[Int],
+      name: Option[UInt],
+      linkageName: Option[UInt],
       line: Option[Int],
       lowPC: Option[Long],
       highPC: Option[Long]
@@ -155,10 +155,10 @@ private[runtime] object DWARF {
 
   case class Section(offset: UInt, size: Long)
   case class Strings(buf: Array[Byte]) {
-    def read(at: Int): String = {
+    def read(at: UInt): String = {
 
       // WARNING: lots of precision loss
-      assert(at < buf.length)
+      assert(at < buf.length.toUInt)
       val until = buf.indexWhere(_ == 0, at.toInt)
 
       new String(buf.slice(at.toInt, until))
@@ -235,16 +235,16 @@ private[runtime] object DWARF {
         case None =>
           units += CompileUnit.empty
         case Some(abbrev) =>
-          var name = Option.empty[Int]
-          var linkageName = Option.empty[Int]
+          var name = Option.empty[UInt]
+          var linkageName = Option.empty[UInt]
           var line = Option.empty[Int]
           var lowPC = Option.empty[Long]
           var highPC = Option.empty[Long]
           abbrev.attributes.foreach { attr =>
             if (attr.at == DWARF.Attribute.DW_AT_name && attr.form == DWARF.Form.DW_FORM_strp) {
-              name = Some(uint32().toInt)
+              name = Some(uint32())
             } else if (attr.at == DWARF.Attribute.DW_AT_linkage_name) {
-              linkageName = Some(uint32().toInt)
+              linkageName = Some(uint32())
             } else if (attr.at == DWARF.Attribute.DW_AT_decl_line) {
               attr.form match {
                 case DWARF.Form.DW_FORM_data1 =>
