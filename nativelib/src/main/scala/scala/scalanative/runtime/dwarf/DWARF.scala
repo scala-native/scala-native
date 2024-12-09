@@ -227,10 +227,9 @@ private[runtime] object DWARF {
 
     val end_offset = offset + header.unit_length
 
-    def stop = ds.position() >= end_offset
     val units = scala.Array.newBuilder[CompileUnit]
 
-    while (!stop) {
+    while (ds.position() < end_offset) {
       val code = read_unsigned_leb128()
       idx.get(code) match {
         case None =>
