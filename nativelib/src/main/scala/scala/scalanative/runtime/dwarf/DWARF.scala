@@ -14,6 +14,14 @@ private[runtime] object DWARF {
       units: scala.Array[DWARF.CompileUnit]
   )
 
+  case class SubprogramDIE(
+      lowPC: Long,
+      highPC: Long,
+      line: Int,
+      filenameAt: Option[UInt],
+      linkageNameAt: Option[UInt]
+  )
+
   case class Header(
       version: Int,
       is64: Boolean,
@@ -181,15 +189,40 @@ private[runtime] object DWARF {
   def parse(
       debug_info: Section,
       debug_abbrev: Section
-  )(implicit bf: BinaryFile): scala.Array[DIE] = {
+  )(implicit bf: BinaryFile): scala.Array[SubprogramDIE] = {
     bf.seek(debug_info.offset.toLong)
     val end_offset = debug_info.offset.toLong + debug_info.size
-    val dies = scala.Array.newBuilder[DIE]
+    val builder = scala.Array.newBuilder[SubprogramDIE]
+    var filenameAt: Option[UInt] = None
     while (bf.position() < end_offset) {
       val die = DIE.parse(debug_info, debug_abbrev)
-      dies += die
+
+      die.units.foreach { unit =>
+        if (unit.is(DWARF.Tag.DW_TAG_compile_unit)) {
+          // Debug Information Entries (DIE) in DWARF has a tree structure, and
+          // the DIEs after the Compile Unit DIE belongs to that compile unit (file in Scala)
+          // TODO: Parse `.debug_line` section, and decode the filename using
+          // `DW_AT_decl_file` attribute of the `subprogram` DIE.
+          filenameAt = unit.name
+        } else if (unit.is(DWARF.Tag.DW_TAG_subprogram)) {
+          for {
+            line <- unit.line
+            low <- unit.lowPC
+            high <- unit.highPC
+          } {
+            builder += SubprogramDIE(
+              low,
+              high,
+              line,
+              filenameAt,
+              unit.linkageName
+            )
+          }
+        }
+      }
     }
-    dies.result()
+
+    builder.result().sortBy(_.lowPC)
   }
 
   object DIE {

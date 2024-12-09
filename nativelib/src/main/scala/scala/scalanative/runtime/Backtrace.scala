@@ -24,18 +24,10 @@ import java.util.AbstractMap
 
 private[runtime] object Backtrace {
   private case class DwarfInfo(
-      subprograms: scala.Array[SubprogramDIE],
+      subprograms: scala.Array[DWARF.SubprogramDIE],
       strings: DWARF.Strings,
       /** ASLR offset (minus __PAGEZERO size for macho) */
       offset: Long
-  )
-
-  private case class SubprogramDIE(
-      lowPC: Long,
-      highPC: Long,
-      line: Int,
-      filenameAt: Option[UInt],
-      linkageNameAt: Option[UInt]
   )
 
   private val dwarfInfo: Option[DwarfInfo] = processFile()
@@ -75,12 +67,12 @@ private[runtime] object Backtrace {
   }
 
   private def search(
-      dies: scala.Array[SubprogramDIE],
+      dies: scala.Array[DWARF.SubprogramDIE],
       address: Long
-  ): Option[SubprogramDIE] = {
+  ): Option[DWARF.SubprogramDIE] = {
     val length = dies.length
     @tailrec
-    def binarySearch(from: Int, to: Int): Option[SubprogramDIE] = {
+    def binarySearch(from: Int, to: Int): Option[DWARF.SubprogramDIE] = {
       if (from < 0) binarySearch(0, to)
       else if (to > length) binarySearch(from, length)
       else if (to <= from) None
@@ -98,7 +90,9 @@ private[runtime] object Backtrace {
 
   private def processELF(
       elf: ELF
-  )(implicit bf: BinaryFile): Option[(scala.Array[DIE], DWARF.Strings)] = {
+  )(implicit
+      bf: BinaryFile
+  ): Option[(scala.Array[DWARF.SubprogramDIE], DWARF.Strings)] = {
     val sections = elf.sectionHeaders
     val offset = sections(elf.header.sectionNamesEntryIndex.toInt).offset
     var debug_info_opt = Option.empty[ELF.SectionHeader]
@@ -133,7 +127,9 @@ private[runtime] object Backtrace {
 
   private def processMacho(
       macho: MachO
-  )(implicit bf: BinaryFile): Option[(scala.Array[DIE], DWARF.Strings)] = {
+  )(implicit
+      bf: BinaryFile
+  ): Option[(scala.Array[DWARF.SubprogramDIE], DWARF.Strings)] = {
     val sections = macho.segments.flatMap(_.sections)
     for {
       debug_info <- sections.find(_.sectname == "__debug_info")
@@ -149,40 +145,6 @@ private[runtime] object Backtrace {
     }
   }
 
-  private def filterSubprograms(dies: scala.Array[DIE]): scala.Array[SubprogramDIE] = {
-    var filenameAt: Option[UInt] = None
-    val builder = scala.Array.newBuilder[SubprogramDIE]
-    dies.foreach { die =>
-      die.units.foreach { unit =>
-        if (unit.is(DWARF.Tag.DW_TAG_compile_unit)) {
-          // Debug Information Entries (DIE) in DWARF has a tree structure, and
-          // the DIEs after the Compile Unit DIE belongs to that compile unit (file in Scala)
-          // TODO: Parse `.debug_line` section, and decode the filename using
-          // `DW_AT_decl_file` attribute of the `subprogram` DIE.
-          filenameAt = unit.name
-        } else if (unit.is(DWARF.Tag.DW_TAG_subprogram)) {
-          for {
-            line <- unit.line
-            low <- unit.lowPC
-            high <- unit.highPC
-          } {
-            builder += SubprogramDIE(
-              low,
-              high,
-              line,
-              filenameAt,
-              unit.linkageName
-            )
-          }
-        }
-      }
-    }
-
-    builder
-      .result()
-      .sortBy(_.lowPC)
-  }
-
   private final val MACHO_MAGIC = 0xcffaedfe
   private final val ELF_MAGIC = 0x7f454c46
 
@@ -191,7 +153,7 @@ private[runtime] object Backtrace {
     val head = bf.position()
     val magic = bf.readInt()
     bf.seek(head)
-    val dwarfInfo: Option[(scala.Array[DIE], DWARF.Strings)] =
+    val dwarfInfo: Option[(scala.Array[DWARF.SubprogramDIE], DWARF.Strings)] =
       if (LinktimeInfo.isMac) {
         if (magic == MACHO_MAGIC) {
           val macho = MachO.parse(bf)
@@ -222,11 +184,10 @@ private[runtime] object Backtrace {
 
     for {
       dwarf <- dwarfInfo
-      subprograms = filterSubprograms(dwarf._1)
       offset = vmoffset.get_vmoffset()
     } yield {
       DwarfInfo(
-        subprograms = subprograms,
+        subprograms = dwarf._1,
         strings = dwarf._2,
         offset = offset
       )
