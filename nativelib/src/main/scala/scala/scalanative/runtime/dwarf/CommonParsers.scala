@@ -10,9 +10,10 @@ import scalanative.unsafe._
 import scalanative.unsigned._
 
 private[runtime] object CommonParsers {
-  val BYTE = 1
-  val INT = 4
-  val LONG = 8
+  final val BYTE = 1
+  final val SHORT = 2
+  final val INT = 4
+  final val LONG = 8
 
   def uint8()(implicit endi: Endianness, bf: BinaryFile): UByte =
     bf.readUnsignedByte()

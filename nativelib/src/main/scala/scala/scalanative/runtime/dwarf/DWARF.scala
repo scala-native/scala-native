@@ -341,44 +341,37 @@ private[runtime] object DWARF {
       import Form._
       form match {
         case DW_FORM_strp =>
-          if (header.is64) skipBytes(8)
-          else skipBytes(4)
+          if (header.is64) skipBytes(LONG)
+          else skipBytes(INT)
         case DW_FORM_data1 =>
-          skipBytes(1)
+          skipBytes(BYTE)
         case DW_FORM_data2 =>
-          skipBytes(2)
+          skipBytes(SHORT)
         case DW_FORM_data4 =>
-          skipBytes(4)
+          skipBytes(INT)
         case DW_FORM_addr =>
-          if (header.address_size == 4)
-            skipBytes(4)
-          else if (header.address_size == 8)
-            skipBytes(8)
-          else
-            throw new RuntimeException(
-              s"Uknown header size: ${header.address_size}"
-            )
+          skipBytes(header.address_size)
         case DW_FORM_flag =>
-          skipBytes(1)
+          skipBytes(BYTE)
         case DW_FORM_ref_addr =>
-          if (header.is64) skipBytes(8)
-          else skipBytes(4)
+          if (header.is64) skipBytes(LONG)
+          else skipBytes(INT)
         case DW_FORM_sec_offset =>
-          if (header.is64) skipBytes(4)
-          else skipBytes(4)
+          if (header.is64) skipBytes(LONG)
+          else skipBytes(INT)
         case DW_FORM_flag_present =>
         case DW_FORM_udata =>
           skip_leb128()
         case DW_FORM_sdata =>
           skip_leb128()
         case DW_FORM_ref8 =>
-          skipBytes(8)
+          skipBytes(LONG)
         case DW_FORM_ref4 =>
-          skipBytes(4)
+          skipBytes(INT)
         case DW_FORM_ref2 =>
-          skipBytes(2)
+          skipBytes(SHORT)
         case DW_FORM_ref1 =>
-          skipBytes(1)
+          skipBytes(BYTE)
         case DW_FORM_exprloc =>
           val len = read_unsigned_leb128()
           skipBytes(len)
