@@ -184,9 +184,8 @@ private[runtime] object DWARF {
   )(implicit bf: BinaryFile): scala.Array[DIE] = {
     bf.seek(debug_info.offset.toLong)
     val end_offset = debug_info.offset.toLong + debug_info.size
-    def stop = bf.position() >= end_offset
     val dies = scala.Array.newBuilder[DIE]
-    while (!stop) {
+    while (bf.position() < end_offset) {
       val die = DIE.parse(debug_info, debug_abbrev)
       dies += die
     }
