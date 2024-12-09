@@ -24,7 +24,7 @@ import java.util.AbstractMap
 
 private[runtime] object Backtrace {
   private case class DwarfInfo(
-      subprograms: IndexedSeq[SubprogramDIE],
+      subprograms: scala.Array[SubprogramDIE],
       strings: DWARF.Strings,
       /** ASLR offset (minus __PAGEZERO size for macho) */
       offset: Long
@@ -93,7 +93,7 @@ private[runtime] object Backtrace {
   }
 
   private def search(
-      dies: IndexedSeq[SubprogramDIE],
+      dies: scala.Array[SubprogramDIE],
       address: Long
   ): Option[SubprogramDIE] = {
     val length = dies.length
@@ -199,13 +199,13 @@ private[runtime] object Backtrace {
     builder
       .result()
       .sortBy(_.lowPC)
-      .toIndexedSeq
   }
 
   private final val MACHO_MAGIC = 0xcffaedfe
   private final val ELF_MAGIC = 0x7f454c46
 
   private def processFile(filename: String): Option[DwarfInfo] = {
+    println(s"Start processing file. Thread ${Thread.currentThread().getId()}")
     implicit val bf: BinaryFile = new BinaryFile(new File(filename))
     val head = bf.position()
     val magic = bf.readInt()
