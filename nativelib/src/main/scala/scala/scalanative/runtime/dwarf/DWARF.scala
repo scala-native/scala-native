@@ -168,9 +168,7 @@ private[runtime] object DWARF {
 
       // WARNING: lots of precision loss
       assert(at < buf.length.toUInt)
-      val until = buf.indexWhere(_ == 0, at.toInt)
-
-      new String(buf.slice(at.toInt, until))
+      fromCString(buf.at(at.toInt))
     }
   }
   object Strings {

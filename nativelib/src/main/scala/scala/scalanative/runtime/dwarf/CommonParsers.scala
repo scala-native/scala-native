@@ -1,12 +1,13 @@
 package scala.scalanative.runtime.dwarf
 
-import java.io.DataInputStream
 import Endianness.LITTLE
 import Endianness.BIG
+import java.io.DataInputStream
 import java.io.RandomAccessFile
 import java.nio.channels.Channels
-import scalanative.unsigned._
 import MachO._
+import scalanative.unsafe._
+import scalanative.unsigned._
 
 private[runtime] object CommonParsers {
   val BYTE = 1
@@ -60,6 +61,6 @@ private[runtime] object CommonParsers {
     stream.skipNBytes(n)
 
   def string(n: Int)(implicit stream: BinaryFile) =
-    new String(stream.readNBytes(n).takeWhile(_ != 0))
+    fromCString(stream.readNBytes(n).at(0))
 
 }
