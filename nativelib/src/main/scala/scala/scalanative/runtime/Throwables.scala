@@ -77,7 +77,9 @@ object StackTrace {
 
   @resolvedAtLinktime
   private def hasDebugInfo: Boolean =
-    (LinktimeInfo.isMac || LinktimeInfo.isLinux) && LinktimeInfo.sourceLevelDebuging.generateFunctionSourcePositions
+    (LinktimeInfo.isMac || LinktimeInfo.isLinux) &&
+      !LinktimeInfo.is32BitPlatform &&
+      LinktimeInfo.sourceLevelDebuging.generateFunctionSourcePositions
 
   private def makeStackTraceElement(
       cursor: CVoidPtr,
