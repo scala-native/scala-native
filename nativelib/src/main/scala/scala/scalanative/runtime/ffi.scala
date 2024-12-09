@@ -20,6 +20,7 @@ object ffi {
   def wcslen(str: CWideString): CSize = extern
   def strncpy(dest: CString, src: CString, count: RawSize): CString = extern
   def strcpy(dest: CString, src: CString): CString = extern
+  def strcmp(str1: CString, str2: CString): Int = extern
   def strcat(dest: CString, src: CString): CString = extern
   def memcpy(dst: CVoidPtr, src: CVoidPtr, count: CSize): RawPtr = extern
   def memcpy(dst: RawPtr, src: RawPtr, count: RawSize): RawPtr = extern

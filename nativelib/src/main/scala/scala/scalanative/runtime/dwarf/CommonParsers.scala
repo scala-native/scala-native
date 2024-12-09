@@ -1,77 +1,67 @@
 package scala.scalanative.runtime.dwarf
 
-import java.io.DataInputStream
 import Endianness.LITTLE
 import Endianness.BIG
+import java.io.DataInputStream
 import java.io.RandomAccessFile
 import java.nio.channels.Channels
-import scalanative.unsigned._
 import MachO._
+import scalanative.unsafe._
+import scalanative.unsigned._
 
 private[runtime] object CommonParsers {
-  val BYTE = 1
-  val INT = 4
-  val LONG = 8
+  final val BYTE = 1
+  final val SHORT = 2
+  final val INT = 4
+  final val LONG = 8
 
   def uint8()(implicit endi: Endianness, bf: BinaryFile): UByte =
     bf.readUnsignedByte()
 
-  def uint16()(implicit endi: Endianness, stream: BinaryFile): UShort =
+  def uint16()(implicit endi: Endianness, stream: BinaryFile): UShort = {
+    val v = stream.readUnsignedShort()
     endi match {
       case LITTLE =>
-        val b1 = stream.readByte()
-        val b2 = stream.readByte()
-
-        ((b1 & 0xff) | (b2 & 0xff) << 8).toShort.toUShort
+        ((v >>> 8) | ((v & 0xff.toUShort) << 8)).toUShort
       case BIG =>
-        stream.readUnsignedShort()
+        v
     }
+  }
 
-  def uint32()(implicit endi: Endianness, stream: BinaryFile): UInt =
+  def uint32()(implicit endi: Endianness, stream: BinaryFile): UInt = {
+    val v = stream.readInt()
     endi match {
       case LITTLE =>
-        val b1 = stream.readUnsignedByte().toLong
-        val b2 = stream.readUnsignedByte().toLong
-        val b3 = stream.readUnsignedByte().toLong
-        val b4 = stream.readUnsignedByte().toLong
-
-        ((b1 & 0xff) |
-          (b2 & 0xff) << 8 |
-          (b3 & 0xff) << 16 |
-          (b4 & 0xff) << 24).toUInt
+        (v >>> 24 & 0xff |
+          v >>> 8 & 0xff00 |
+          v << 8 & 0xff0000 |
+          v << 24 & 0xff000000).toUInt
       case BIG =>
-        stream.readInt().toUInt
+        v.toUInt
     }
+  }
 
-  def uint64()(implicit endi: Endianness, stream: BinaryFile): Long =
+  def uint64()(implicit endi: Endianness, stream: BinaryFile): Long = {
+    val v = stream.readLong()
     endi match {
       case LITTLE =>
-        val b1 = stream.readUnsignedByte().toLong
-        val b2 = stream.readUnsignedByte().toLong
-        val b3 = stream.readUnsignedByte().toLong
-        val b4 = stream.readUnsignedByte().toLong
-        val b5 = stream.readUnsignedByte().toLong
-        val b6 = stream.readUnsignedByte().toLong
-        val b7 = stream.readUnsignedByte().toLong
-        val b8 = stream.readUnsignedByte().toLong
-
-        ((b1 & 0xff) |
-          (b2 & 0xff) << 8 |
-          (b3 & 0xff) << 16 |
-          (b4 & 0xff) << 24 |
-          (b5 & 0xff) << 32 |
-          (b6 & 0xff) << 40 |
-          (b7 & 0xff) << 48 |
-          (b8 & 0xff) << 56)
-
+        (v << 56) |
+          ((v & 0xff00L) << 40) |
+          ((v & 0xff0000L) << 24) |
+          ((v & 0xff000000L) << 8) |
+          ((v >> 8) & 0xff000000L) |
+          ((v >> 24) & 0xff0000L) |
+          ((v >> 40) & 0xff00L) |
+          (v >>> 56)
       case BIG =>
-        stream.readLong()
+        v
     }
+  }
 
   def skipBytes(n: Long)(implicit stream: BinaryFile): Unit =
     stream.skipNBytes(n)
 
   def string(n: Int)(implicit stream: BinaryFile) =
-    new String(stream.readNBytes(n).takeWhile(_ != 0))
+    fromCString(stream.readNBytes(n).at(0))
 
 }
