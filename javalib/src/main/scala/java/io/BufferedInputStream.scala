@@ -42,7 +42,9 @@ class BufferedInputStream(_in: InputStream, initialSize: Int)
   protected var pos: Int = 0
 
   override def available(): Int = {
-    val (_, in) = ensureOpen()
+    val in = this.in
+    val buf = this.buf
+    ensureOpen(in, buf)
     synchronized {
       in.available() + count - pos
     }
@@ -74,7 +76,9 @@ class BufferedInputStream(_in: InputStream, initialSize: Int)
   // otherwise returns next byte of data
   // or throws IOException
   override def read(): Int = {
-    val (buf, in) = ensureOpen()
+    val in = this.in
+    val buf = this.buf
+    ensureOpen(in, buf)
     synchronized {
       if (pos < count) {
         val res = buf(pos).toInt & 0xff
@@ -93,7 +97,9 @@ class BufferedInputStream(_in: InputStream, initialSize: Int)
   }
 
   override def read(b: Array[Byte], off: Int, len: Int): Int = {
-    val (buf, in) = ensureOpen()
+    val in = this.in
+    val buf = this.buf
+    ensureOpen(in, buf)
 
     if (off < 0 || len < 0 || len > b.length - off)
       throw new IndexOutOfBoundsException
@@ -106,7 +112,10 @@ class BufferedInputStream(_in: InputStream, initialSize: Int)
   }
 
   override def reset(): Unit = {
-    ensureOpen()
+    val in = this.in
+    val buf = this.buf
+    ensureOpen(in, buf)
+
     synchronized {
       if (markpos == -1) throw new IOException("Mark invalid")
       pos = markpos
@@ -115,7 +124,10 @@ class BufferedInputStream(_in: InputStream, initialSize: Int)
 
   // per spec: if n is < 0 then no bytes are skipped and the return value is 0
   override def skip(n: Long): Long = {
-    val (buf, in) = ensureOpen()
+    val in = this.in
+    val buf = this.buf
+    ensureOpen(in, buf)
+
     if (n <= 0L) 0L
     else {
       synchronized {
@@ -125,16 +137,17 @@ class BufferedInputStream(_in: InputStream, initialSize: Int)
   }
 
   // https://github.com/scala-native/scala-native/pull/1767#discussion_r423120768
-  private def ensureOpen(): (Array[Byte], InputStream) = {
+  // to be called like this (to avoid allocating a Tuple2):
+  //   val in = this.in
+  //   val buf = this.buf
+  //   ensureOpen(in, buf)
+  private def ensureOpen(in: InputStream, buf: Array[Byte]): Unit = {
     /* First read `in` and `buf`, then `closed`. Since `closed` is the first thing
      *  that is set to `true` in `close()`, we know that if `closed` is false, the
      *  `in` and `buf` are non-null.
      */
-    val in = this.in
-    val buf = this.buf
     if (closed)
       throw new IOException("Operation on closed stream")
-    (buf, in)
   }
 
   /* Reads up to sourceBuffer.length bytes from the source input stream.
