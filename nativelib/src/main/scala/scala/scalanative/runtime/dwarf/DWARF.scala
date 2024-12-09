@@ -38,6 +38,7 @@ private[runtime] object DWARF {
       val unit_length_s = uint32()
 
       val (dwarf64, unit_length) = if (unit_length_s == -1) {
+        bf.seek(header_offset)
         (true, uint64())
       } else (false, unit_length_s.toLong)
 
@@ -45,11 +46,11 @@ private[runtime] object DWARF {
 
       val version = uint16()
       assert(
-        version >= 2.toUInt && version <= 4.toUInt,
-        s"Expected DWARF version 2-4, got $version instead"
+        version >= 2.toUShort && version <= 5.toUShort,
+        s"Expected DWARF version 2-5, got $version instead"
       )
 
-      def read_ulong: Long =
+      def read_ulong(): Long =
         if (dwarf64) uint64() else uint32().toLong
 
       val (unit_type, address_size, debug_abbrev_offset): (UByte, UByte, Long) =
@@ -57,10 +58,10 @@ private[runtime] object DWARF {
           (
             uint8(),
             uint8(),
-            uint64()
+            read_ulong()
           )
         } else {
-          val dao = read_ulong
+          val dao = read_ulong()
           (
             0.toUByte,
             uint8(),
@@ -195,28 +196,28 @@ private[runtime] object DWARF {
     val builder = scala.Array.newBuilder[SubprogramDIE]
     var filenameAt: Option[UInt] = None
     while (bf.position() < end_offset) {
-      val die = DIE.parse(debug_info, debug_abbrev)
-
-      die.units.foreach { unit =>
-        if (unit.is(DWARF.Tag.DW_TAG_compile_unit)) {
-          // Debug Information Entries (DIE) in DWARF has a tree structure, and
-          // the DIEs after the Compile Unit DIE belongs to that compile unit (file in Scala)
-          // TODO: Parse `.debug_line` section, and decode the filename using
-          // `DW_AT_decl_file` attribute of the `subprogram` DIE.
-          filenameAt = unit.name
-        } else if (unit.is(DWARF.Tag.DW_TAG_subprogram)) {
-          for {
-            line <- unit.line
-            low <- unit.lowPC
-            high <- unit.highPC
-          } {
-            builder += SubprogramDIE(
-              low,
-              high,
-              line,
-              filenameAt,
-              unit.linkageName
-            )
+      DIE.parse(debug_info, debug_abbrev).foreach { die =>
+        die.units.foreach { unit =>
+          if (unit.is(DWARF.Tag.DW_TAG_compile_unit)) {
+            // Debug Information Entries (DIE) in DWARF has a tree structure, and
+            // the DIEs after the Compile Unit DIE belongs to that compile unit (file in Scala)
+            // TODO: Parse `.debug_line` section, and decode the filename using
+            // `DW_AT_decl_file` attribute of the `subprogram` DIE.
+            filenameAt = unit.name
+          } else if (unit.is(DWARF.Tag.DW_TAG_subprogram)) {
+            for {
+              line <- unit.line
+              low <- unit.lowPC
+              high <- unit.highPC
+            } {
+              builder += SubprogramDIE(
+                low,
+                high,
+                line,
+                filenameAt,
+                unit.linkageName
+              )
+            }
           }
         }
       }
@@ -231,23 +232,32 @@ private[runtime] object DWARF {
     def parse(
         debug_info: Section,
         debug_abbrev: Section
-    )(implicit bf: BinaryFile) = {
+    )(implicit bf: BinaryFile): Option[DIE] = {
 
       val header = Header.parse()
 
-      val abbrevOffset = debug_abbrev.offset.toLong + header.debug_abbrev_offset
-      val idx = abbrevCache.get(abbrevOffset) match {
-        case Some(abbrev) => abbrev
-        case None =>
-          val pos = bf.position()
-          bf.seek(abbrevOffset)
-          val abbrev = Abbrev.parse(bf)
-          abbrevCache.put(abbrevOffset, abbrev)
-          bf.seek(pos)
-          abbrev
+      // only DWARF < 4 is fully supported
+      if (header.version <= 4) {
+        val abbrevOffset =
+          debug_abbrev.offset.toLong + header.debug_abbrev_offset
+        val idx = abbrevCache.get(abbrevOffset) match {
+          case Some(abbrev) => abbrev
+          case None =>
+            val pos = bf.position()
+            bf.seek(abbrevOffset)
+            val abbrev = Abbrev.parse(bf)
+            abbrevCache.put(abbrevOffset, abbrev)
+            bf.seek(pos)
+            abbrev
+        }
+        val units = readUnits(header.unit_offset, header, idx)
+        Some(DIE(header, units))
+      } else {
+        // skipping DWARF-v5 unit
+        bf.seek(header.unit_offset)
+        skipBytes(header.unit_length)
+        None
       }
-      val units = readUnits(header.unit_offset, header, idx)
-      DIE(header, units)
     }
   }
 
