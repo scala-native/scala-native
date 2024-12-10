@@ -11,6 +11,7 @@ import scala.scalanative.runtime.dwarf.ELF
 
 import scala.scalanative.unsafe.CString
 import scala.scalanative.unsafe.Tag
+import scala.scalanative.unsafe.UnsafeRichArray
 import scala.scalanative.unsafe.Zone
 import scala.scalanative.unsigned.UInt
 import scalanative.unsigned._
@@ -52,7 +53,6 @@ private[runtime] object Backtrace {
           val filename = info.strings.read(subprogram.filenameAt)
           val linkageName =
             info.strings.buf
-              .asInstanceOf[ByteArray]
               .at(subprogram.linkageNameAt.toInt)
           Position(
             linkageName,
