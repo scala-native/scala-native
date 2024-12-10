@@ -29,7 +29,7 @@ object ScalaVersions {
     crossScalaVersions("3.3", 0 to 4), // LTS
     crossScalaVersions("3.4", 0 to 3),
     crossScalaVersions("3.5", 0 to 2),
-    crossScalaVersions("3.6", 2 to 2) // 3.6.0 is broken, 3.6.1 is hotfix, both are abandoned
+    crossScalaVersions("3.6", 2 to 2) // 3.6.0 is broken, 3.6.1 is hotfix
   ).flatten.distinct
 
   // Tested in scheduled nightly CI to check compiler plugins
@@ -39,7 +39,7 @@ object ScalaVersions {
   // Scala versions used for publishing libraries
   val scala212: String = crossScala212.last
   val scala213: String = crossScala213.last
-  val scala3: String = "3.5.2" // TODO: update to 3.6.2 when 2.13.16 is out (required by scripted tests)
+  val scala3: String = "3.5.2" // TODO: update to 3.6.2 when 2.13.16 is out
 
   // The latest version of minimal Scala 3 minor version used to publish artifacts
   val scala3PublishVersion = "3.1.3"
