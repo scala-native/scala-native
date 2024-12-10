@@ -22,7 +22,6 @@ import scala.scalanative.windows.WinNlsApi._
 final class System private ()
 
 object System {
-  import SystemProperties.systemProperties
   import EnvVars.envVars
 
   def arraycopy(
@@ -56,19 +55,19 @@ object System {
   def err: PrintStream = Streams.err
   def err_=(v: PrintStream) = Streams.err = v
 
-  def getProperties(): Properties = systemProperties
+  def getProperties(): Properties = SystemProperties.getProperties()
 
   def clearProperty(key: String): String =
-    systemProperties.remove(key).asInstanceOf[String]
+    SystemProperties.remove(key).asInstanceOf[String]
 
   def getProperty(key: String): String =
-    systemProperties.getProperty(key)
+    SystemProperties.getProperty(key)
 
   def getProperty(key: String, default: String): String =
-    systemProperties.getProperty(key, default)
+    SystemProperties.getProperty(key, default)
 
   def setProperty(key: String, value: String): String =
-    systemProperties.setProperty(key, value).asInstanceOf[String]
+    SystemProperties.setProperty(key, value).asInstanceOf[String]
 
   def nanoTime(): scala.Long = time.scalanative_nano_time()
   def currentTimeMillis(): scala.Long = time.scalanative_current_time_millis()
@@ -108,6 +107,71 @@ private object SystemProperties {
     systemProperties0
   }
 
+  private final val CurrentDirectoryKey = "user.dir"
+  private lazy val currentDirectory =
+    getCurrentDirectory().foreach(
+      systemProperties.setProperty(CurrentDirectoryKey, _)
+    )
+
+  private final val UserHomeDirectoryKey = "user.home"
+  private lazy val userHomeDirectory =
+    getUserHomeDirectory().foreach(
+      systemProperties.setProperty(UserHomeDirectoryKey, _)
+    )
+
+  private final val UserCountryKey = "user.country"
+  private lazy val userCountry =
+    getUserCountry().foreach(systemProperties.setProperty(UserCountryKey, _))
+
+  private final val UserLanguageKey = "user.language"
+  private lazy val userLanguage =
+    getUserLanguage().foreach(systemProperties.setProperty(UserLanguageKey, _))
+
+  private final val UserNameKey = "user.name"
+  private lazy val userName =
+    getUserName().foreach(systemProperties.setProperty(UserNameKey, _))
+
+  def getProperties(): Properties = {
+    // initialize all properties
+    currentDirectory
+    userHomeDirectory
+    userCountry
+    userLanguage
+    userName
+
+    systemProperties
+  }
+
+  @inline private def initializeProperty(name: String) =
+    (name: @scala.annotation.switch) match {
+      case `CurrentDirectoryKey`  => currentDirectory
+      case `UserHomeDirectoryKey` => userHomeDirectory
+      case `UserCountryKey`       => userCountry
+      case `UserLanguageKey`      => userLanguage
+      case `UserNameKey`          => userName
+      case _                      =>
+    }
+
+  def getProperty(name: String) = {
+    initializeProperty(name)
+    systemProperties.getProperty(name)
+  }
+
+  def getProperty(name: String, default: String) = {
+    initializeProperty(name)
+    systemProperties.getProperty(name, default)
+  }
+
+  def setProperty(name: String, value: String) = {
+    initializeProperty(name)
+    systemProperties.setProperty(name, value)
+  }
+
+  def remove(name: String) = {
+    initializeProperty(name)
+    systemProperties.remove(name)
+  }
+
   private def loadProperties() = {
     val sysProps = new Properties()
     sysProps.setProperty("java.version", "1.8")
@@ -125,11 +189,6 @@ private object SystemProperties {
       "Java Platform API Specification"
     )
     sysProps.setProperty("line.separator", System.lineSeparator())
-    getCurrentDirectory().foreach(sysProps.setProperty("user.dir", _))
-    getUserHomeDirectory().foreach(sysProps.setProperty("user.home", _))
-    getUserCountry().foreach(sysProps.setProperty("user.country", _))
-    getUserLanguage().foreach(sysProps.setProperty("user.language", _))
-    getUserName().foreach(sysProps.setProperty("user.name", _))
 
     if (isWindows) {
       sysProps.setProperty("file.separator", "\\")
