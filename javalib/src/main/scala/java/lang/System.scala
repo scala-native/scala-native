@@ -99,7 +99,7 @@ private object SystemProperties {
   import System.{lineSeparator, getenv}
 
   private val systemProperties0 = loadProperties()
-  val systemProperties = {
+  private val systemProperties = {
     Platform.setOSProps { (key: CString, value: CString) =>
       systemProperties0.setProperty(fromCString(key), fromCString(value))
       ()
