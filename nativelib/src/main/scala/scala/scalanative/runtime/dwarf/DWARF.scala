@@ -203,7 +203,6 @@ private[runtime] object DWARF {
                   unit.linkageName
                 )
               }
-            case _ =>
           }
         }
       }
