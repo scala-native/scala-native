@@ -15,7 +15,7 @@ import scala.collection.mutable
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
 import scala.scalanative.meta.LinktimeInfo
-import scala.scalanative.runtime.ffi.{malloc, calloc, free}
+import scala.scalanative.runtime.ffi.{malloc, calloc, free, strncmp}
 
 import java.util.concurrent.ConcurrentHashMap
 import java.{util => ju}
@@ -93,9 +93,7 @@ object StackTrace {
     def withNameFromDWARF() = {
       // linkageName has an extra "_" that we don't want in stack traces
       def isScalaNativeMangledName =
-        position.linkageName(0) == '_'.toByte &&
-          position.linkageName(1) == '_'.toByte &&
-          position.linkageName(2) == 'S'.toByte
+        strncmp(position.linkageName, c"__SM", 4.toCSize) == 0
       val name =
         if (isScalaNativeMangledName)
           // skip first `_`
