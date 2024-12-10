@@ -143,7 +143,7 @@ private object SystemProperties {
   }
 
   @inline private def initializeProperty(name: String) =
-    (name: @scala.annotation.switch) match {
+    name match {
       case `CurrentDirectoryKey`  => currentDirectory
       case `UserHomeDirectoryKey` => userHomeDirectory
       case `UserCountryKey`       => userCountry
