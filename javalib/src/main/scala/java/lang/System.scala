@@ -108,67 +108,67 @@ private object SystemProperties {
   }
 
   private final val CurrentDirectoryKey = "user.dir"
-  private lazy val currentDirectory =
+  private lazy val initializeCurrentDirectory =
     getCurrentDirectory().foreach(
       systemProperties.setProperty(CurrentDirectoryKey, _)
     )
 
   private final val UserHomeDirectoryKey = "user.home"
-  private lazy val userHomeDirectory =
+  private lazy val initializeUserHomeDirectory =
     getUserHomeDirectory().foreach(
       systemProperties.setProperty(UserHomeDirectoryKey, _)
     )
 
   private final val UserCountryKey = "user.country"
-  private lazy val userCountry =
+  private lazy val initializeUserCountry =
     getUserCountry().foreach(systemProperties.setProperty(UserCountryKey, _))
 
   private final val UserLanguageKey = "user.language"
-  private lazy val userLanguage =
+  private lazy val initializeUserLanguage =
     getUserLanguage().foreach(systemProperties.setProperty(UserLanguageKey, _))
 
   private final val UserNameKey = "user.name"
-  private lazy val userName =
+  private lazy val initializeUserName =
     getUserName().foreach(systemProperties.setProperty(UserNameKey, _))
 
   def getProperties(): Properties = {
     // initialize all properties
-    currentDirectory
-    userHomeDirectory
-    userCountry
-    userLanguage
-    userName
+    initializeCurrentDirectory
+    initializeUserHomeDirectory
+    initializeUserCountry
+    initializeUserLanguage
+    initializeUserName
 
     systemProperties
   }
 
-  @inline private def initializeProperty(name: String) =
+  @inline private def maybeInititializeProperty(name: String) =
     name match {
-      case `CurrentDirectoryKey`  => currentDirectory
-      case `UserHomeDirectoryKey` => userHomeDirectory
-      case `UserCountryKey`       => userCountry
-      case `UserLanguageKey`      => userLanguage
-      case `UserNameKey`          => userName
+      case `CurrentDirectoryKey`  => initializeCurrentDirectory
+      case `UserHomeDirectoryKey` => initializeUserHomeDirectory
+      case `UserCountryKey`       => initializeUserCountry
+      case `UserLanguageKey`      => initializeUserLanguage
+      case `UserNameKey`          => initializeUserName
       case _                      =>
     }
 
   def getProperty(name: String) = {
-    initializeProperty(name)
+    maybeInititializeProperty(name)
     systemProperties.getProperty(name)
   }
 
   def getProperty(name: String, default: String) = {
-    initializeProperty(name)
+    maybeInititializeProperty(name)
     systemProperties.getProperty(name, default)
   }
 
   def setProperty(name: String, value: String) = {
-    initializeProperty(name)
+    maybeInititializeProperty(name)
     systemProperties.setProperty(name, value)
   }
 
   def remove(name: String) = {
-    initializeProperty(name)
+    maybeInititializeProperty(name)
     systemProperties.remove(name)
   }
 
