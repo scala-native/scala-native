@@ -6,7 +6,7 @@ import scala.scalanative.runtime.dwarf.BinaryFile
 import scala.scalanative.runtime.dwarf.MachO
 import scala.scalanative.runtime.dwarf.DWARF
 import scala.scalanative.runtime.dwarf.DWARF.DIE
-import scala.scalanative.runtime.dwarf.DWARF.CompileUnit
+import scala.scalanative.runtime.dwarf.DWARF.DIEUnit
 import scala.scalanative.runtime.dwarf.ELF
 
 import scala.scalanative.unsafe.CString
@@ -48,12 +48,12 @@ private[runtime] object Backtrace {
         val address = pc - info.offset
         val position = for {
           subprogram <- search(info.subprograms, address)
-          filenameAt <- subprogram.filenameAt
-          linkageNameAt <- subprogram.linkageNameAt
         } yield {
-          val filename = info.strings.read(filenameAt)
+          val filename = info.strings.read(subprogram.filenameAt)
           val linkageName =
-            info.strings.buf.asInstanceOf[ByteArray].at(linkageNameAt.toInt)
+            info.strings.buf
+              .asInstanceOf[ByteArray]
+              .at(subprogram.linkageNameAt.toInt)
           Position(
             linkageName,
             filename,

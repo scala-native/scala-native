@@ -11,15 +11,15 @@ private[runtime] object DWARF {
 
   case class DIE(
       header: DWARF.Header,
-      units: scala.Array[DWARF.CompileUnit]
+      units: scala.Array[DWARF.DIEUnit]
   )
 
   case class SubprogramDIE(
       lowPC: Long,
       highPC: Long,
       line: Int,
-      filenameAt: Option[UInt],
-      linkageNameAt: Option[UInt]
+      filenameAt: UInt,
+      linkageNameAt: UInt
   )
 
   case class Header(
@@ -141,14 +141,16 @@ private[runtime] object DWARF {
     }
   }
 
-  case class CompileUnit(
-      tag: DWARF.Tag,
-      name: Option[UInt],
-      linkageName: Option[UInt],
-      line: Option[Int],
-      lowPC: Option[Long],
-      highPC: Option[Long]
-  )
+  sealed trait DIEUnit
+  object DIEUnit {
+    case class Subprogram(
+        linkageName: UInt,
+        line: Int,
+        lowPC: Long,
+        highPC: Long
+    ) extends DIEUnit
+    case class CompileUnit(name: UInt) extends DIEUnit
+  }
 
   case class Section(offset: UInt, size: Long)
   case class Strings(buf: Array[Byte]) {
@@ -184,23 +186,19 @@ private[runtime] object DWARF {
     while (bf.position() < end_offset) {
       DIE.parse(debug_info, debug_abbrev).foreach { die =>
         die.units.foreach { unit =>
-          unit.tag match {
-            case DWARF.Tag.DW_TAG_compile_unit =>
+          unit match {
+            case unit: DIEUnit.CompileUnit =>
               // Debug Information Entries (DIE) in DWARF has a tree structure, and
               // the DIEs after the Compile Unit DIE belongs to that compile unit (file in Scala)
               // TODO: Parse `.debug_line` section, and decode the filename using
               // `DW_AT_decl_file` attribute of the `subprogram` DIE.
-              filenameAt = unit.name
-            case DWARF.Tag.DW_TAG_subprogram =>
-              for {
-                line <- unit.line
-                low <- unit.lowPC
-                high <- unit.highPC
-              } {
+              filenameAt = Some(unit.name)
+            case unit: DIEUnit.Subprogram =>
+              filenameAt.foreach { filenameAt =>
                 builder += SubprogramDIE(
-                  low,
-                  high,
-                  line,
+                  unit.lowPC,
+                  unit.highPC,
+                  unit.line,
                   filenameAt,
                   unit.linkageName
                 )
@@ -253,25 +251,39 @@ private[runtime] object DWARF {
       offset: Long,
       header: Header,
       idx: collection.Map[Int, Abbrev]
-  )(implicit ds: BinaryFile): scala.Array[CompileUnit] = {
+  )(implicit ds: BinaryFile): scala.Array[DIEUnit] = {
 
     val end_offset = offset + header.unit_length
 
-    val units = scala.Array.newBuilder[CompileUnit]
+    val units = scala.Array.newBuilder[DIEUnit]
 
     while (ds.position() < end_offset) {
       val code = read_unsigned_leb128()
       idx.get(code).foreach { abbrev =>
-        if (abbrev.tag == DWARF.Tag.DW_TAG_compile_unit || abbrev.tag == DWARF.Tag.DW_TAG_subprogram) {
+        if (abbrev.tag == DWARF.Tag.DW_TAG_compile_unit) {
           var name = Option.empty[UInt]
+          var i = 0
+          while (i < abbrev.attributes.length) {
+            val attr = abbrev.attributes(i)
+            if (attr.at == DWARF.Attribute.DW_AT_name && attr.form == DWARF.Form.DW_FORM_strp) {
+              name = Some(uint32())
+            } else {
+              AttributeValue.skip(header, attr.form)
+            }
+
+            i += 1
+          }
+
+          name.foreach(units += DIEUnit.CompileUnit(_))
+        } else if (abbrev.tag == DWARF.Tag.DW_TAG_subprogram) {
           var linkageName = Option.empty[UInt]
           var line = Option.empty[Int]
           var lowPC = Option.empty[Long]
           var highPC = Option.empty[Long]
-          abbrev.attributes.foreach { attr =>
-            if (attr.at == DWARF.Attribute.DW_AT_name && attr.form == DWARF.Form.DW_FORM_strp) {
-              name = Some(uint32())
-            } else if (attr.at == DWARF.Attribute.DW_AT_linkage_name) {
+          var i = 0
+          while (i < abbrev.attributes.length) {
+            val attr = abbrev.attributes(i)
+            if (attr.at == DWARF.Attribute.DW_AT_linkage_name) {
               linkageName = Some(uint32())
             } else if (attr.at == DWARF.Attribute.DW_AT_decl_line) {
               attr.form match {
@@ -304,19 +316,31 @@ private[runtime] object DWARF {
             } else {
               AttributeValue.skip(header, attr.form)
             }
+
+            i += 1
           }
 
-          units += CompileUnit(
-            abbrev.tag,
-            name,
-            linkageName,
-            line,
-            lowPC,
-            highPC
-          )
+          for {
+            linkageName <- linkageName
+            line <- line
+            lowPC <- lowPC
+            highPC <- highPC
+          } {
+            units += DIEUnit.Subprogram(
+              linkageName,
+              line,
+              lowPC,
+              highPC
+            )
+          }
         } else {
-          abbrev.attributes
-            .foreach(attr => AttributeValue.skip(header, attr.form))
+          var i = 0
+          while (i < abbrev.attributes.length) {
+            val attr = abbrev.attributes(i)
+            AttributeValue.skip(header, attr.form)
+
+            i += 1
+          }
         }
       }
 
