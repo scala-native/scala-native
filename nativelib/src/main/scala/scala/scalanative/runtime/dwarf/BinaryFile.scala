@@ -77,12 +77,12 @@ private[runtime] class BinaryFile(file: File) {
     ds.readInt()
   }
   def readNBytes(bytes: Int): Array[Byte] = {
-    if (bytes <= 0) Array.empty
+    if (bytes <= 0) Array.emptyByteArray
     else {
-      val buf = ArrayBuffer.empty[Byte]
-      (1 to bytes).foreach { _ => buf += ds.readByte() }
+      val arr = new Array[Byte](bytes)
+      ds.read(arr)
       _position += bytes
-      buf.toArray
+      arr
     }
   }
 
