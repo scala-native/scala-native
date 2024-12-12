@@ -1,12 +1,9 @@
 package scala.scalanative.runtime.dwarf
 
-import java.nio.channels.Channels
-import scala.collection.immutable.IntMap
-import DWARF.Form.DW_FORM_strp
-import java.nio.channels.FileChannel
 import scala.collection.mutable
 
 import scalanative.unsigned._
+import scalanative.unsafe._
 
 private[runtime] object DWARF {
   implicit val endi: Endianness = Endianness.LITTLE
@@ -14,8 +11,15 @@ private[runtime] object DWARF {
 
   case class DIE(
       header: DWARF.Header,
-      abbrevs: Vector[DWARF.Abbrev],
-      units: Vector[DWARF.CompileUnit]
+      units: scala.Array[DWARF.DIEUnit]
+  )
+
+  case class SubprogramDIE(
+      lowPC: Long,
+      highPC: Long,
+      line: Int,
+      filenameAt: UInt,
+      linkageNameAt: UInt
   )
 
   case class Header(
@@ -29,11 +33,12 @@ private[runtime] object DWARF {
       header_offset: Long
   )
   object Header {
-    def parse(implicit bf: BinaryFile): Header = {
+    def parse()(implicit bf: BinaryFile): Header = {
       val header_offset = bf.position()
       val unit_length_s = uint32()
 
       val (dwarf64, unit_length) = if (unit_length_s == -1) {
+        bf.seek(header_offset)
         (true, uint64())
       } else (false, unit_length_s.toLong)
 
@@ -41,11 +46,11 @@ private[runtime] object DWARF {
 
       val version = uint16()
       assert(
-        version >= 2.toUInt && version <= 5.toUInt,
+        version >= 2.toUShort && version <= 5.toUShort,
         s"Expected DWARF version 2-5, got $version instead"
       )
 
-      def read_ulong: Long =
+      def read_ulong(): Long =
         if (dwarf64) uint64() else uint32().toLong
 
       val (unit_type, address_size, debug_abbrev_offset): (UByte, UByte, Long) =
@@ -53,10 +58,10 @@ private[runtime] object DWARF {
           (
             uint8(),
             uint8(),
-            uint64()
+            read_ulong()
           )
         } else {
-          val dao = read_ulong
+          val dao = read_ulong()
           (
             0.toUByte,
             uint8(),
@@ -81,103 +86,70 @@ private[runtime] object DWARF {
       code: Int,
       tag: Tag,
       children: Boolean,
-      attributes: Vector[Attr]
+      attributes: scala.Array[Attr]
   )
   case class Attr(at: Attribute, form: Form, value: Int)
 
   object Abbrev {
-    def parse(implicit ds: BinaryFile): Vector[Abbrev] = {
-      def readAttribute: Option[Attr] = {
+    def parse(implicit ds: BinaryFile): collection.Map[Int, Abbrev] = {
+      def readAttribute(): Option[Attr] = {
         val at = read_unsigned_leb128()
         val form = read_unsigned_leb128()
         if (at == 0 && form == 0) None
         else
           Some(
             Attr(
-              Attribute.fromCode(at),
-              Form.fromCodeUnsafe(form),
+              at,
+              form,
               value = 0
             )
           )
       }
-      def readAbbrev: Option[Abbrev] = {
+      def readAbbrev(): Option[Abbrev] = {
         val code = read_unsigned_leb128()
         if (code == 0) None
         else {
           val tag = read_unsigned_leb128()
           val children = uint8() == 1
 
-          val attrs = Vector.newBuilder[Attr]
+          val attrs = scala.Array.newBuilder[Attr]
 
           var stop = false
 
           while (!stop) {
-            val attr = readAttribute
+            val attr = readAttribute()
 
             attr.foreach(attrs += _)
 
             stop = attr.isEmpty
           }
 
-          Some(Abbrev(code, Tag.fromCode(tag), children, attrs.result()))
+          Some(Abbrev(code, tag, children, attrs.result()))
         }
       }
 
-      val abbrevs = Vector.newBuilder[Abbrev]
+      val abbrevs = mutable.Map.empty[Int, Abbrev]
 
       var stop = false
       while (!stop) {
-        val abbrev = readAbbrev
-        abbrev.foreach(abbrevs += _)
+        val abbrev = readAbbrev()
+        abbrev.foreach(v => abbrevs(v.code) = v)
         stop = abbrev.isEmpty
       }
 
-      abbrevs.result()
+      abbrevs
     }
   }
 
-  case class CompileUnit(abbrev: Option[Abbrev], values: Map[Attr, Any]) {
-    def is(tag: DWARF.Tag): Boolean =
-      abbrev.exists(_.tag == tag)
-
-    def getName: Option[UInt] = values.collectFirst {
-      case v if v._1.at == DWARF.Attribute.DW_AT_name =>
-        v._2.asInstanceOf[UInt]
-    }
-
-    def getLine: Option[Int] = values.collectFirst {
-      case v if v._1.at == DWARF.Attribute.DW_AT_decl_line =>
-        v._2 match {
-          case x: UShort => x.toInt
-          case x: UByte  => x.toInt
-          case _         => 0
-        }
-    }
-
-    def getLowPC: Option[Long] = values.collectFirst {
-      case v if v._1.at == DWARF.Attribute.DW_AT_low_pc =>
-        v._2.asInstanceOf[Long]
-    }
-
-    def getHighPC(lowPC: Long): Option[Long] =
-      // As of DWARF v4, DW_AT_high_pc can be a constant that represents the offset from low_pc
-      // > If the value of the DW_AT_high_pc is of class address, it
-      // > is the relocated address of the first location past the last instruction associated with the entity; if
-      // > it is of class constant, the value is an unsigned integer offset which when added to the low PC
-      // > gives the address of the first location past the last instruction associated with the entity.
-      // "DWARF Debugging Information Format Version 4" - 2.17.2 Contiguous Address Range
-      // https://dwarfstd.org/doc/DWARF4.pdf
-      values.collectFirst {
-        case v
-            if v._1.at == DWARF.Attribute.DW_AT_high_pc &&
-              DWARF.Form.isConstantClass(v._1.form) =>
-          val value = v._2.asInstanceOf[UInt]
-          lowPC + value.toLong
-        case v
-            if v._1.at == DWARF.Attribute.DW_AT_high_pc &&
-              DWARF.Form.isAddressClass(v._1.form) =>
-          v._2.asInstanceOf[Long]
-      }
+  sealed trait DIEUnit
+  object DIEUnit {
+    case class Subprogram(
+        linkageName: UInt,
+        line: Int,
+        lowPC: Long,
+        highPC: Long
+    ) extends DIEUnit
+    case class CompileUnit(name: UInt) extends DIEUnit
   }
 
   case class Section(offset: UInt, size: Long)
@@ -186,9 +158,7 @@ private[runtime] object DWARF {
 
       // WARNING: lots of precision loss
       assert(at < buf.length.toUInt)
-      val until = buf.indexWhere(_ == 0, at.toInt)
-
-      new String(buf.slice(at.toInt, until))
+      fromCString(buf.at(at.toInt))
     }
   }
   object Strings {
@@ -208,69 +178,169 @@ private[runtime] object DWARF {
   def parse(
       debug_info: Section,
       debug_abbrev: Section
-  )(implicit bf: BinaryFile): Vector[DIE] = {
+  )(implicit bf: BinaryFile): scala.Array[SubprogramDIE] = {
     bf.seek(debug_info.offset.toLong)
     val end_offset = debug_info.offset.toLong + debug_info.size
-    def stop = bf.position() >= end_offset
-    val dies = Vector.newBuilder[DIE]
-    while (!stop) {
-      val die = DIE.parse(debug_info, debug_abbrev)
-      dies += die
+    val builder = scala.Array.newBuilder[SubprogramDIE]
+    var filenameAt: Option[UInt] = None
+    while (bf.position() < end_offset) {
+      DIE.parse(debug_info, debug_abbrev).foreach { die =>
+        die.units.foreach { unit =>
+          unit match {
+            case unit: DIEUnit.CompileUnit =>
+              // Debug Information Entries (DIE) in DWARF has a tree structure, and
+              // the DIEs after the Compile Unit DIE belongs to that compile unit (file in Scala)
+              // TODO: Parse `.debug_line` section, and decode the filename using
+              // `DW_AT_decl_file` attribute of the `subprogram` DIE.
+              filenameAt = Some(unit.name)
+            case unit: DIEUnit.Subprogram =>
+              filenameAt.foreach { filenameAt =>
+                builder += SubprogramDIE(
+                  unit.lowPC,
+                  unit.highPC,
+                  unit.line,
+                  filenameAt,
+                  unit.linkageName
+                )
+              }
+          }
+        }
+      }
     }
-    dies.result()
+
+    builder.result().sortBy(_.lowPC)
   }
 
   object DIE {
-    private val abbrevCache = mutable.Map.empty[Long, Vector[Abbrev]]
+    private val abbrevCache =
+      mutable.Map.empty[Long, collection.Map[Int, Abbrev]]
     def parse(
         debug_info: Section,
         debug_abbrev: Section
-    )(implicit bf: BinaryFile) = {
+    )(implicit bf: BinaryFile): Option[DIE] = {
 
-      val header = Header.parse(bf)
+      val header = Header.parse()
 
-      val abbrevOffset = debug_abbrev.offset.toLong + header.debug_abbrev_offset
-      val abbrev = abbrevCache.get(abbrevOffset) match {
-        case Some(abbrev) => abbrev
-        case None =>
-          val pos = bf.position()
-          bf.seek(abbrevOffset)
-          val abbrev = Abbrev.parse(bf)
-          abbrevCache.put(abbrevOffset, abbrev)
-          bf.seek(pos)
-          abbrev
+      // only DWARF < 4 is fully supported
+      if (header.version <= 4) {
+        val abbrevOffset =
+          debug_abbrev.offset.toLong + header.debug_abbrev_offset
+        val idx = abbrevCache.get(abbrevOffset) match {
+          case Some(abbrev) => abbrev
+          case None =>
+            val pos = bf.position()
+            bf.seek(abbrevOffset)
+            val abbrev = Abbrev.parse(bf)
+            abbrevCache.put(abbrevOffset, abbrev)
+            bf.seek(pos)
+            abbrev
+        }
+        val units = readUnits(header.unit_offset, header, idx)
+        Some(DIE(header, units))
+      } else {
+        // skipping DWARF-v5 unit
+        bf.seek(header.unit_offset)
+        skipBytes(header.unit_length)
+        None
       }
-      val idx = IntMap(abbrev.map(a => a.code -> a): _*)
-      val units = readUnits(header.unit_offset, header, idx)
-      DIE(header, abbrev, units)
     }
   }
 
   def readUnits(
       offset: Long,
       header: Header,
-      idx: IntMap[Abbrev]
-  )(implicit ds: BinaryFile): Vector[CompileUnit] = {
+      idx: collection.Map[Int, Abbrev]
+  )(implicit ds: BinaryFile): scala.Array[DIEUnit] = {
 
     val end_offset = offset + header.unit_length
 
-    def stop = ds.position() >= end_offset
-    val units = Vector.newBuilder[CompileUnit]
+    val units = scala.Array.newBuilder[DIEUnit]
 
-    while (!stop) {
-      val attrs = Map.newBuilder[Attr, Any]
-
+    while (ds.position() < end_offset) {
       val code = read_unsigned_leb128()
-      idx.get(code) match {
-        case None =>
-          units += CompileUnit(None, Map.empty)
-        case s @ Some(abbrev) =>
-          abbrev.attributes.foreach { attr =>
-            val value = AttributeValue.parse(header, attr.form)
-            attrs += (attr -> value)
+      idx.get(code).foreach { abbrev =>
+        if (abbrev.tag == DWARF.Tag.DW_TAG_compile_unit) {
+          var name = Option.empty[UInt]
+          var i = 0
+          while (i < abbrev.attributes.length) {
+            val attr = abbrev.attributes(i)
+            if (attr.at == DWARF.Attribute.DW_AT_name && attr.form == DWARF.Form.DW_FORM_strp) {
+              name = Some(uint32())
+            } else {
+              AttributeValue.skip(header, attr.form)
+            }
+
+            i += 1
           }
 
-          units += CompileUnit(s, attrs.result())
+          name.foreach(units += DIEUnit.CompileUnit(_))
+        } else if (abbrev.tag == DWARF.Tag.DW_TAG_subprogram) {
+          var linkageName = Option.empty[UInt]
+          var line = Option.empty[Int]
+          var lowPC = Option.empty[Long]
+          var highPC = Option.empty[Long]
+          var i = 0
+          while (i < abbrev.attributes.length) {
+            val attr = abbrev.attributes(i)
+            if (attr.at == DWARF.Attribute.DW_AT_linkage_name) {
+              linkageName = Some(uint32())
+            } else if (attr.at == DWARF.Attribute.DW_AT_decl_line) {
+              attr.form match {
+                case DWARF.Form.DW_FORM_data1 =>
+                  // skipping `.toUInt` adds boxing
+                  line = Some(uint8().toUInt.toInt)
+                case DWARF.Form.DW_FORM_data2 =>
+                  // skipping `.toUInt` adds boxing
+                  line = Some(uint16().toUInt.toInt)
+                case DWARF.Form.DW_FORM_data4 =>
+                  line = Some(uint32().toInt)
+                case other => line = Some(0)
+              }
+            } else if (attr.at == DWARF.Attribute.DW_AT_low_pc) {
+              lowPC = Some(uint64())
+            } else if (attr.at == DWARF.Attribute.DW_AT_high_pc &&
+                DWARF.Form.isConstantClass(attr.form)) {
+              val value = uint32()
+              val lowPCValue = lowPC
+                .getOrElse(
+                  throw new RuntimeException(
+                    "BUG: expected lowPc to be defined"
+                  )
+                )
+
+              highPC = Some(lowPCValue + value.toLong)
+            } else if (attr.at == DWARF.Attribute.DW_AT_high_pc &&
+                DWARF.Form.isAddressClass(attr.form)) {
+              highPC = Some(uint64())
+            } else {
+              AttributeValue.skip(header, attr.form)
+            }
+
+            i += 1
+          }
+
+          for {
+            linkageName <- linkageName
+            line <- line
+            lowPC <- lowPC
+            highPC <- highPC
+          } {
+            units += DIEUnit.Subprogram(
+              linkageName,
+              line,
+              lowPC,
+              highPC
+            )
+          }
+        } else {
+          var i = 0
+          while (i < abbrev.attributes.length) {
+            val attr = abbrev.attributes(i)
+            AttributeValue.skip(header, attr.form)
+
+            i += 1
+          }
+        }
       }
 
     }
@@ -278,62 +348,66 @@ private[runtime] object DWARF {
   }
 
   object AttributeValue {
-    def parse(header: Header, form: Form)(implicit ds: BinaryFile): Any = {
+
+    /** Consumes the attribute bytes. We don't want to pay the parsing price for
+     *  values we are not interested in keep in sync with `parse`
+     */
+    def skip(header: Header, form: Form)(implicit ds: BinaryFile): Unit = {
       import Form._
       form match {
         case DW_FORM_strp =>
-          if (header.is64) uint64()
-          else uint32()
+          if (header.is64) skipBytes(LONG)
+          else skipBytes(INT)
         case DW_FORM_data1 =>
-          uint8()
+          skipBytes(BYTE)
         case DW_FORM_data2 =>
-          uint16()
+          skipBytes(SHORT)
         case DW_FORM_data4 =>
-          uint32()
+          skipBytes(INT)
         case DW_FORM_addr =>
-          if (header.address_size == 4)
-            uint32()
-          else if (header.address_size == 8)
-            uint64()
-          else
-            throw new RuntimeException(
-              s"Uknown header size: ${header.address_size}"
-            )
+          skipBytes(header.address_size)
         case DW_FORM_flag =>
-          uint8() == 1
+          skipBytes(BYTE)
         case DW_FORM_ref_addr =>
-          if (header.is64) uint64()
-          else uint32()
+          if (header.is64) skipBytes(LONG)
+          else skipBytes(INT)
         case DW_FORM_sec_offset =>
-          if (header.is64) uint64()
-          else uint32()
+          if (header.is64) skipBytes(LONG)
+          else skipBytes(INT)
         case DW_FORM_flag_present =>
-          true
         case DW_FORM_udata =>
-          read_unsigned_leb128()
+          skip_leb128()
         case DW_FORM_sdata =>
-          read_signed_leb128()
+          skip_leb128()
         case DW_FORM_ref8 =>
-          header.header_offset + uint64()
+          skipBytes(LONG)
         case DW_FORM_ref4 =>
-          header.header_offset + uint32().toLong
+          skipBytes(INT)
         case DW_FORM_ref2 =>
-          header.header_offset + uint16().toLong
+          skipBytes(SHORT)
         case DW_FORM_ref1 =>
-          header.header_offset + uint8().toLong
+          skipBytes(BYTE)
         case DW_FORM_exprloc =>
           val len = read_unsigned_leb128()
-          ds.readNBytes(len)
+          skipBytes(len)
 
         case DW_FORM_block1 =>
           val len = uint8()
-          ds.readNBytes(len.toInt)
+          skipBytes(len.toLong)
+        case DW_FORM_string =>
+          while (ds.readByte() != 0) {}
         case _ =>
           throw new Exception(s"Unsupported form: $form")
-
       }
 
     }
+  }
+
+  def skip_leb128()(implicit ds: BinaryFile): Unit = {
+    while ({
+      val byte = ds.readByte()
+      (byte & 0x80.toByte) != 0
+    }) {}
   }
 
   def read_unsigned_leb128()(implicit ds: BinaryFile): Int = {
@@ -370,179 +444,82 @@ private[runtime] object DWARF {
     result
   }
 
-  sealed abstract class Attribute(val code: Int)
-      extends Product
-      with Serializable {
-    override def toString(): String =
-      s"[${getClass().getSimpleName().dropRight(1)}:0x${code.toHexString.reverse.padTo(2, '0').reverse}]"
-  }
-
+  type Attribute = Int
   object Attribute {
-    case object DW_AT_sibling extends Attribute(0x01)
-    case object DW_AT_location extends Attribute(0x02)
-    case object DW_AT_name extends Attribute(0x03)
-    case object DW_AT_ordering extends Attribute(0x09)
-    case object DW_AT_byte_size extends Attribute(0x0b)
-    case object DW_AT_bit_offset extends Attribute(0x0c)
-    case object DW_AT_bit_size extends Attribute(0x0d)
-    case object DW_AT_stmt_list extends Attribute(0x10)
-    case object DW_AT_low_pc extends Attribute(0x11)
-    case object DW_AT_high_pc extends Attribute(0x12)
-    case object DW_AT_language extends Attribute(0x13)
-    case object DW_AT_discr_value extends Attribute(0x15)
-    case object DW_AT_visibility extends Attribute(0x16)
-    case object DW_AT_import extends Attribute(0x17)
-    case object DW_AT_string_length extends Attribute(0x19)
-    case object DW_AT_common_reference extends Attribute(0x1a)
-    case object DW_AT_comp_dir extends Attribute(0x1b)
-    case object DW_AT_const_value extends Attribute(0x1c)
-    case object DW_AT_containing_type extends Attribute(0x1d)
-    case object DW_AT_default_value extends Attribute(0x1e)
-    case object DW_AT_inline extends Attribute(0x20)
-    case object DW_AT_is_optional extends Attribute(0x21)
-    case object DW_AT_lower_bound extends Attribute(0x22)
-    case object DW_AT_producer extends Attribute(0x25)
-    case object DW_AT_prototyped extends Attribute(0x27)
-    case object DW_AT_return_addr extends Attribute(0x2a)
-    case object DW_AT_start_scope extends Attribute(0x2c)
-    case object DW_AT_stride_size extends Attribute(0x2e)
-    case object DW_AT_upper_bound extends Attribute(0x2f)
-    case object DW_AT_abstract_origin extends Attribute(0x31)
-    case object DW_AT_accessibility extends Attribute(0x32)
-    case object DW_AT_address_class extends Attribute(0x33)
-    case object DW_AT_artificial extends Attribute(0x34)
-    case object DW_AT_base_types extends Attribute(0x35)
-    case object DW_AT_calling_convention extends Attribute(0x36)
-    case object DW_AT_count extends Attribute(0x37)
-    case object DW_AT_data_member_location extends Attribute(0x38)
-    case object DW_AT_decl_column extends Attribute(0x39)
-    case object DW_AT_decl_file extends Attribute(0x3a)
-    case object DW_AT_decl_line extends Attribute(0x3b)
-    case object DW_AT_declaration extends Attribute(0x3c)
-    case object DW_AT_ranges extends Attribute(0x55)
-    case class Unknown(value: Int) extends Attribute(value)
-
-    final private val codeMap = Seq(
-      DW_AT_sibling,
-      DW_AT_location,
-      DW_AT_name,
-      DW_AT_ordering,
-      DW_AT_byte_size,
-      DW_AT_bit_offset,
-      DW_AT_bit_size,
-      DW_AT_stmt_list,
-      DW_AT_low_pc,
-      DW_AT_high_pc,
-      DW_AT_language,
-      DW_AT_discr_value,
-      DW_AT_visibility,
-      DW_AT_import,
-      DW_AT_string_length,
-      DW_AT_common_reference,
-      DW_AT_comp_dir,
-      DW_AT_const_value,
-      DW_AT_containing_type,
-      DW_AT_default_value,
-      DW_AT_inline,
-      DW_AT_is_optional,
-      DW_AT_lower_bound,
-      DW_AT_producer,
-      DW_AT_prototyped,
-      DW_AT_return_addr,
-      DW_AT_start_scope,
-      DW_AT_stride_size,
-      DW_AT_upper_bound,
-      DW_AT_abstract_origin,
-      DW_AT_accessibility,
-      DW_AT_address_class,
-      DW_AT_artificial,
-      DW_AT_base_types,
-      DW_AT_calling_convention,
-      DW_AT_count,
-      DW_AT_data_member_location,
-      DW_AT_decl_column,
-      DW_AT_decl_file,
-      DW_AT_decl_line,
-      DW_AT_declaration,
-      DW_AT_ranges
-    ).map(t => t.code -> t).toMap
-
-    def fromCode(code: Int): Attribute =
-      codeMap.getOrElse(code, Unknown(code))
-    def fromCodeUnsafe(code: Int): Attribute = codeMap.getOrElse(
-      code,
-      throw new RuntimeException(s"Unknown DWARF attribute code: $code")
-    )
-  }
-
-  sealed abstract class Form(val code: Int) extends Product with Serializable {
-    override def toString(): String =
-      s"[${getClass().getSimpleName().dropRight(1)}:0x${code.toHexString.reverse.padTo(2, '0').reverse}]"
-
+    final val DW_AT_sibling = 0x01
+    final val DW_AT_location = 0x02
+    final val DW_AT_name = 0x03
+    final val DW_AT_ordering = 0x09
+    final val DW_AT_byte_size = 0x0b
+    final val DW_AT_bit_offset = 0x0c
+    final val DW_AT_bit_size = 0x0d
+    final val DW_AT_stmt_list = 0x10
+    final val DW_AT_low_pc = 0x11
+    final val DW_AT_high_pc = 0x12
+    final val DW_AT_language = 0x13
+    final val DW_AT_discr_value = 0x15
+    final val DW_AT_visibility = 0x16
+    final val DW_AT_import = 0x17
+    final val DW_AT_string_length = 0x19
+    final val DW_AT_common_reference = 0x1a
+    final val DW_AT_comp_dir = 0x1b
+    final val DW_AT_const_value = 0x1c
+    final val DW_AT_containing_type = 0x1d
+    final val DW_AT_default_value = 0x1e
+    final val DW_AT_inline = 0x20
+    final val DW_AT_is_optional = 0x21
+    final val DW_AT_lower_bound = 0x22
+    final val DW_AT_producer = 0x25
+    final val DW_AT_prototyped = 0x27
+    final val DW_AT_return_addr = 0x2a
+    final val DW_AT_start_scope = 0x2c
+    final val DW_AT_stride_size = 0x2e
+    final val DW_AT_upper_bound = 0x2f
+    final val DW_AT_abstract_origin = 0x31
+    final val DW_AT_accessibility = 0x32
+    final val DW_AT_address_class = 0x33
+    final val DW_AT_artificial = 0x34
+    final val DW_AT_base_types = 0x35
+    final val DW_AT_calling_convention = 0x36
+    final val DW_AT_count = 0x37
+    final val DW_AT_data_member_location = 0x38
+    final val DW_AT_decl_column = 0x39
+    final val DW_AT_decl_file = 0x3a
+    final val DW_AT_decl_line = 0x3b
+    final val DW_AT_declaration = 0x3c
+    final val DW_AT_ranges = 0x55
+    final val DW_AT_linkage_name = 0x6e
   }
 
   // DWARF v4 specification 7.5.4 describes
 
+  type Form = Int
   object Form {
-    case object DW_FORM_addr extends Form(0x01)
-    case object DW_FORM_block2 extends Form(0x03)
-    case object DW_FORM_block4 extends Form(0x04)
-    case object DW_FORM_data2 extends Form(0x05)
-    case object DW_FORM_data4 extends Form(0x06)
-    case object DW_FORM_data8 extends Form(0x07)
-    case object DW_FORM_string extends Form(0x08)
-    case object DW_FORM_block extends Form(0x09)
-    case object DW_FORM_block1 extends Form(0x0a)
-    case object DW_FORM_data1 extends Form(0x0b)
-    case object DW_FORM_flag extends Form(0x0c)
-    case object DW_FORM_sdata extends Form(0x0d)
-    case object DW_FORM_strp extends Form(0x0e)
-    case object DW_FORM_udata extends Form(0x0f)
-    case object DW_FORM_ref_addr extends Form(0x10)
-    case object DW_FORM_ref1 extends Form(0x11)
-    case object DW_FORM_ref2 extends Form(0x12)
-    case object DW_FORM_ref4 extends Form(0x13)
-    case object DW_FORM_ref8 extends Form(0x14)
-    case object DW_FORM_ref_udata extends Form(0x15)
-    case object DW_FORM_indirect extends Form(0x16)
-    case object DW_FORM_sec_offset extends Form(0x17)
-    case object DW_FORM_exprloc extends Form(0x18)
-    case object DW_FORM_flag_present extends Form(0x19)
-    case object DW_FORM_ref_sig8 extends Form(0x20)
-
-    private final val codeMap: Map[Int, Form] = Seq(
-      DW_FORM_addr,
-      DW_FORM_block2,
-      DW_FORM_block4,
-      DW_FORM_data2,
-      DW_FORM_data4,
-      DW_FORM_data8,
-      DW_FORM_string,
-      DW_FORM_block,
-      DW_FORM_block1,
-      DW_FORM_data1,
-      DW_FORM_flag,
-      DW_FORM_sdata,
-      DW_FORM_strp,
-      DW_FORM_udata,
-      DW_FORM_ref_addr,
-      DW_FORM_ref1,
-      DW_FORM_ref2,
-      DW_FORM_ref4,
-      DW_FORM_ref8,
-      DW_FORM_ref_udata,
-      DW_FORM_indirect,
-      DW_FORM_sec_offset,
-      DW_FORM_exprloc,
-      DW_FORM_flag_present,
-      DW_FORM_ref_sig8
-    ).map(form => form.code -> form).toMap
-
-    def fromCode(code: Int): Option[Form] = codeMap.get(code)
-    def fromCodeUnsafe(code: Int): Form = codeMap.getOrElse(
-      code,
-      throw new RuntimeException(s"Unknown DWARF abbrev code: $code")
-    )
+    final val DW_FORM_addr = 0x01
+    final val DW_FORM_block2 = 0x03
+    final val DW_FORM_block4 = 0x04
+    final val DW_FORM_data2 = 0x05
+    final val DW_FORM_data4 = 0x06
+    final val DW_FORM_data8 = 0x07
+    final val DW_FORM_string = 0x08
+    final val DW_FORM_block = 0x09
+    final val DW_FORM_block1 = 0x0a
+    final val DW_FORM_data1 = 0x0b
+    final val DW_FORM_flag = 0x0c
+    final val DW_FORM_sdata = 0x0d
+    final val DW_FORM_strp = 0x0e
+    final val DW_FORM_udata = 0x0f
+    final val DW_FORM_ref_addr = 0x10
+    final val DW_FORM_ref1 = 0x11
+    final val DW_FORM_ref2 = 0x12
+    final val DW_FORM_ref4 = 0x13
+    final val DW_FORM_ref8 = 0x14
+    final val DW_FORM_ref_udata = 0x15
+    final val DW_FORM_indirect = 0x16
+    final val DW_FORM_sec_offset = 0x17
+    final val DW_FORM_exprloc = 0x18
+    final val DW_FORM_flag_present = 0x19
+    final val DW_FORM_ref_sig8 = 0x20
 
     // DWARF v4 7.5.4 describes which form belongs to which classes
     def isConstantClass(form: Form): Boolean =
@@ -561,100 +538,49 @@ private[runtime] object DWARF {
 
   }
 
-  sealed abstract class Tag(val code: Int) {
-    override def toString(): String =
-      s"[${getClass().getSimpleName().dropRight(1)}:0x${code.toHexString.reverse.padTo(2, '0').reverse}]"
-  }
-
+  type Tag = Int
   object Tag {
-    case object DW_TAG_array_type extends Tag(0x01)
-    case object DW_TAG_class_type extends Tag(0x02)
-    case object DW_TAG_entry_point extends Tag(0x03)
-    case object DW_TAG_enumeration_type extends Tag(0x04)
-    case object DW_TAG_formal_parameter extends Tag(0x05)
-    case object DW_TAG_imported_declaration extends Tag(0x08)
-    case object DW_TAG_label extends Tag(0x0a)
-    case object DW_TAG_lexical_block extends Tag(0x0b)
-    case object DW_TAG_member extends Tag(0x0d)
-    case object DW_TAG_pointer_type extends Tag(0x0f)
-    case object DW_TAG_reference_type extends Tag(0x10)
-    case object DW_TAG_compile_unit extends Tag(0x11)
-    case object DW_TAG_string_type extends Tag(0x12)
-    case object DW_TAG_structure_type extends Tag(0x13)
-    case object DW_TAG_subroutine_type extends Tag(0x15)
-    case object DW_TAG_typedef extends Tag(0x16)
-    case object DW_TAG_union_type extends Tag(0x17)
-    case object DW_TAG_unspecified_parameters extends Tag(0x18)
-    case object DW_TAG_variant extends Tag(0x19)
-    case object DW_TAG_common_block extends Tag(0x1a)
-    case object DW_TAG_common_inclusion extends Tag(0x1b)
-    case object DW_TAG_inheritance extends Tag(0x1c)
-    case object DW_TAG_inlined_subroutine extends Tag(0x1d)
-    case object DW_TAG_module extends Tag(0x1e)
-    case object DW_TAG_ptr_to_member_type extends Tag(0x1f)
-    case object DW_TAG_set_type extends Tag(0x20)
-    case object DW_TAG_subrange_type extends Tag(0x21)
-    case object DW_TAG_with_stmt extends Tag(0x22)
-    case object DW_TAG_access_declaration extends Tag(0x23)
-    case object DW_TAG_base_type extends Tag(0x24)
-    case object DW_TAG_catch_block extends Tag(0x25)
-    case object DW_TAG_const_type extends Tag(0x26)
-    case object DW_TAG_constant extends Tag(0x27)
-    case object DW_TAG_enumerator extends Tag(0x28)
-    case object DW_TAG_file_type extends Tag(0x29)
-    case object DW_TAG_friend extends Tag(0x2a)
-    case object DW_TAG_namelist extends Tag(0x2b)
-    case object DW_TAG_namelist_item extends Tag(0x2c)
-    case object DW_TAG_packed_type extends Tag(0x2d)
-    case object DW_TAG_subprogram extends Tag(0x2e)
-    case object DW_TAG_template_type_param extends Tag(0x2f)
-    case class Unknown(value: Int) extends Tag(value)
-
-    private final val codeMap = Seq(
-      DW_TAG_array_type,
-      DW_TAG_class_type,
-      DW_TAG_entry_point,
-      DW_TAG_enumeration_type,
-      DW_TAG_formal_parameter,
-      DW_TAG_imported_declaration,
-      DW_TAG_label,
-      DW_TAG_lexical_block,
-      DW_TAG_member,
-      DW_TAG_pointer_type,
-      DW_TAG_reference_type,
-      DW_TAG_compile_unit,
-      DW_TAG_string_type,
-      DW_TAG_structure_type,
-      DW_TAG_subroutine_type,
-      DW_TAG_typedef,
-      DW_TAG_union_type,
-      DW_TAG_unspecified_parameters,
-      DW_TAG_variant,
-      DW_TAG_common_block,
-      DW_TAG_common_inclusion,
-      DW_TAG_inheritance,
-      DW_TAG_inlined_subroutine,
-      DW_TAG_module,
-      DW_TAG_ptr_to_member_type,
-      DW_TAG_set_type,
-      DW_TAG_subrange_type,
-      DW_TAG_with_stmt,
-      DW_TAG_access_declaration,
-      DW_TAG_base_type,
-      DW_TAG_catch_block,
-      DW_TAG_const_type,
-      DW_TAG_constant,
-      DW_TAG_enumerator,
-      DW_TAG_file_type,
-      DW_TAG_friend,
-      DW_TAG_namelist,
-      DW_TAG_namelist_item,
-      DW_TAG_packed_type,
-      DW_TAG_subprogram,
-      DW_TAG_template_type_param
-    ).map(t => t.code -> t).toMap
-
-    def fromCode(code: Int): Tag = codeMap.getOrElse(code, Unknown(code))
+    final val DW_TAG_array_type = 0x01
+    final val DW_TAG_class_type = 0x02
+    final val DW_TAG_entry_point = 0x03
+    final val DW_TAG_enumeration_type = 0x04
+    final val DW_TAG_formal_parameter = 0x05
+    final val DW_TAG_imported_declaration = 0x08
+    final val DW_TAG_label = 0x0a
+    final val DW_TAG_lexical_block = 0x0b
+    final val DW_TAG_member = 0x0d
+    final val DW_TAG_pointer_type = 0x0f
+    final val DW_TAG_reference_type = 0x10
+    final val DW_TAG_compile_unit = 0x11
+    final val DW_TAG_string_type = 0x12
+    final val DW_TAG_structure_type = 0x13
+    final val DW_TAG_subroutine_type = 0x15
+    final val DW_TAG_typedef = 0x16
+    final val DW_TAG_union_type = 0x17
+    final val DW_TAG_unspecified_parameters = 0x18
+    final val DW_TAG_variant = 0x19
+    final val DW_TAG_common_block = 0x1a
+    final val DW_TAG_common_inclusion = 0x1b
+    final val DW_TAG_inheritance = 0x1c
+    final val DW_TAG_inlined_subroutine = 0x1d
+    final val DW_TAG_module = 0x1e
+    final val DW_TAG_ptr_to_member_type = 0x1f
+    final val DW_TAG_set_type = 0x20
+    final val DW_TAG_subrange_type = 0x21
+    final val DW_TAG_with_stmt = 0x22
+    final val DW_TAG_access_declaration = 0x23
+    final val DW_TAG_base_type = 0x24
+    final val DW_TAG_catch_block = 0x25
+    final val DW_TAG_const_type = 0x26
+    final val DW_TAG_constant = 0x27
+    final val DW_TAG_enumerator = 0x28
+    final val DW_TAG_file_type = 0x29
+    final val DW_TAG_friend = 0x2a
+    final val DW_TAG_namelist = 0x2b
+    final val DW_TAG_namelist_item = 0x2c
+    final val DW_TAG_packed_type = 0x2d
+    final val DW_TAG_subprogram = 0x2e
+    final val DW_TAG_template_type_param = 0x2f
   }
 
   object Lines {

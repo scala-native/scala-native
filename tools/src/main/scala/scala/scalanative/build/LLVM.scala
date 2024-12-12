@@ -90,9 +90,11 @@ private[scalanative] object LLVM {
     }
     // Always generate debug metadata on Windows, it's required for stack traces to work
     val debugFlags =
-      if (config.compilerConfig.sourceLevelDebuggingConfig.enabled || config.targetsWindows)
-        Seq("-g")
-      else Nil
+      if (config.targetsWindows) List("-g")
+      else if (config.compilerConfig.sourceLevelDebuggingConfig.enabled) {
+        // newer LLVM uses DWARFv5 by default on Linux. We support only DWARFv4 for now
+        List("-gdwarf-4")
+      } else Nil
 
     val flags: Seq[String] =
       buildTargetCompileOpts ++ flto ++ sanitizer ++ target ++
@@ -227,9 +229,19 @@ private[scalanative] object LLVM {
 
     val flags = {
       val debugFlags =
-        if (config.compilerConfig.sourceLevelDebuggingConfig.enabled || config.targetsWindows)
-          Seq("-g")
-        else Nil
+        if (config.targetsWindows) List("-g")
+        else if (config.compilerConfig.sourceLevelDebuggingConfig.enabled) {
+          val noPieOpts =
+            if (config.targetsLinux &&
+                !config.linkingOptions.contains("-static"))
+              // position independent executables are not supported yet on Linux
+              List("-no-pie")
+            else Nil
+          noPieOpts ++ List(
+            // newer LLVM uses DWARFv5 by default on Linux. We support only DWARF 4 for now
+            "-gdwarf-4"
+          )
+        } else Nil
 
       val platformFlags =
         if (!config.targetsWindows) Nil
@@ -420,7 +432,12 @@ private[scalanative] object LLVM {
     }
 
   private def buildTargetLinkOpts(implicit config: Config): Seq[String] = {
-    val optRdynamic = if (config.targetsWindows) Nil else Seq("-rdynamic")
+    val optRdynamic =
+      if (config.targetsWindows) Nil
+      else {
+        if (config.linkingOptions.contains("-static")) Nil
+        else Seq("-rdynamic")
+      }
     config.compilerConfig.buildTarget match {
       case BuildTarget.Application =>
         optRdynamic

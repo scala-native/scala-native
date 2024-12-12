@@ -5,12 +5,6 @@ import Endianness.BIG
 import java.nio.channels.Channels
 import scalanative.unsigned._
 
-private[runtime] sealed trait Endianness extends Product with Serializable
-private[runtime] object Endianness {
-  case object LITTLE extends Endianness
-  case object BIG extends Endianness
-}
-
 import MachO._
 
 private[runtime] case class MachO private (

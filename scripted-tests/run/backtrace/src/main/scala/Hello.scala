@@ -1,4 +1,4 @@
-import scala.scalanative.meta.LinktimeInfo.isMac
+import scala.scalanative.meta.LinktimeInfo.{isLinux, isMac}
 
 object Hello {
   @noinline def main(args: Array[String]): Unit = f()
@@ -14,7 +14,7 @@ object Hello {
       elem.startsWith("Hello")
     }
     val expectedHello =
-      if (isMac) {
+      if (isLinux || isMac) {
         List(
           "Hello$.error(Hello.scala:11)",
           "Hello$.g(Hello.scala:9)",
