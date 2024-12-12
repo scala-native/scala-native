@@ -22,7 +22,6 @@ import scala.scalanative.windows.WinNlsApi._
 final class System private ()
 
 object System {
-  import SystemProperties.systemProperties
   import EnvVars.envVars
 
   def arraycopy(
@@ -56,19 +55,19 @@ object System {
   def err: PrintStream = Streams.err
   def err_=(v: PrintStream) = Streams.err = v
 
-  def getProperties(): Properties = systemProperties
+  def getProperties(): Properties = SystemProperties.getProperties()
 
   def clearProperty(key: String): String =
-    systemProperties.remove(key).asInstanceOf[String]
+    SystemProperties.remove(key).asInstanceOf[String]
 
   def getProperty(key: String): String =
-    systemProperties.getProperty(key)
+    SystemProperties.getProperty(key)
 
   def getProperty(key: String, default: String): String =
-    systemProperties.getProperty(key, default)
+    SystemProperties.getProperty(key, default)
 
   def setProperty(key: String, value: String): String =
-    systemProperties.setProperty(key, value).asInstanceOf[String]
+    SystemProperties.setProperty(key, value).asInstanceOf[String]
 
   def nanoTime(): scala.Long = time.scalanative_nano_time()
   def currentTimeMillis(): scala.Long = time.scalanative_current_time_millis()
@@ -100,12 +99,77 @@ private object SystemProperties {
   import System.{lineSeparator, getenv}
 
   private val systemProperties0 = loadProperties()
-  val systemProperties = {
+  private val systemProperties = {
     Platform.setOSProps { (key: CString, value: CString) =>
       systemProperties0.setProperty(fromCString(key), fromCString(value))
       ()
     }
     systemProperties0
+  }
+
+  private final val CurrentDirectoryKey = "user.dir"
+  private lazy val initializeCurrentDirectory =
+    getCurrentDirectory().foreach(
+      systemProperties.setProperty(CurrentDirectoryKey, _)
+    )
+
+  private final val UserHomeDirectoryKey = "user.home"
+  private lazy val initializeUserHomeDirectory =
+    getUserHomeDirectory().foreach(
+      systemProperties.setProperty(UserHomeDirectoryKey, _)
+    )
+
+  private final val UserCountryKey = "user.country"
+  private lazy val initializeUserCountry =
+    getUserCountry().foreach(systemProperties.setProperty(UserCountryKey, _))
+
+  private final val UserLanguageKey = "user.language"
+  private lazy val initializeUserLanguage =
+    getUserLanguage().foreach(systemProperties.setProperty(UserLanguageKey, _))
+
+  private final val UserNameKey = "user.name"
+  private lazy val initializeUserName =
+    getUserName().foreach(systemProperties.setProperty(UserNameKey, _))
+
+  def getProperties(): Properties = {
+    // initialize all properties
+    initializeCurrentDirectory
+    initializeUserHomeDirectory
+    initializeUserCountry
+    initializeUserLanguage
+    initializeUserName
+
+    systemProperties
+  }
+
+  @inline private def maybeInititializeProperty(name: String) =
+    name match {
+      case `CurrentDirectoryKey`  => initializeCurrentDirectory
+      case `UserHomeDirectoryKey` => initializeUserHomeDirectory
+      case `UserCountryKey`       => initializeUserCountry
+      case `UserLanguageKey`      => initializeUserLanguage
+      case `UserNameKey`          => initializeUserName
+      case _                      =>
+    }
+
+  def getProperty(name: String) = {
+    maybeInititializeProperty(name)
+    systemProperties.getProperty(name)
+  }
+
+  def getProperty(name: String, default: String) = {
+    maybeInititializeProperty(name)
+    systemProperties.getProperty(name, default)
+  }
+
+  def setProperty(name: String, value: String) = {
+    maybeInititializeProperty(name)
+    systemProperties.setProperty(name, value)
+  }
+
+  def remove(name: String) = {
+    maybeInititializeProperty(name)
+    systemProperties.remove(name)
   }
 
   private def loadProperties() = {
@@ -125,11 +189,6 @@ private object SystemProperties {
       "Java Platform API Specification"
     )
     sysProps.setProperty("line.separator", System.lineSeparator())
-    getCurrentDirectory().foreach(sysProps.setProperty("user.dir", _))
-    getUserHomeDirectory().foreach(sysProps.setProperty("user.home", _))
-    getUserCountry().foreach(sysProps.setProperty("user.country", _))
-    getUserLanguage().foreach(sysProps.setProperty("user.language", _))
-    getUserName().foreach(sysProps.setProperty("user.name", _))
 
     if (isWindows) {
       sysProps.setProperty("file.separator", "\\")
