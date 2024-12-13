@@ -120,9 +120,10 @@ private[net] object URIEncoderDecoder {
           i < s.length && s.charAt(i) == '%'
         }) ()
         result.append(out.toString(encoding))
+      } else {
+        result.append(c)
+        i += 1
       }
-      result.append(c)
-      i += 1
     }
     result.toString
   }
