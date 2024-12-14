@@ -50,13 +50,13 @@ private[runtime] object Backtrace {
         // Subtract the offset to match the pc address from libunwind (runtime) and address in debug info (compile/link time).
         val address = pc - info.offset
         val virtualAddress = if (LinktimeInfo.isLinux) {
-          if (info.isPositionIndependentBinary) PIE.absoluteAddress(address)
+          if (info.isPositionIndependentBinary) PIE.virtualAddress(address)
           else address
         } else {
           address
         }
         val position = for {
-          subprogram <- search(info.subprograms, address)
+          subprogram <- search(info.subprograms, virtualAddress)
         } yield {
           val filename = info.strings.read(subprogram.filenameAt)
           val linkageName =
