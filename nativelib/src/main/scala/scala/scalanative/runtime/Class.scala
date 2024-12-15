@@ -222,8 +222,8 @@ private[runtime] object _Class {
 
 private object LinkedClassesRepository {
   // Reachable only from `forName` method
-  @noinline private def loadAll: scala.Array[_Class[_]] = intrinsic
-  val byName: Map[String, _Class[_]] = loadAll.map { cls =>
+  @noinline private def loadAll(): scala.Array[_Class[_]] = intrinsic
+  val byName: Map[String, _Class[_]] = loadAll().map { cls =>
     cls.name -> cls
   }.toMap
 }
