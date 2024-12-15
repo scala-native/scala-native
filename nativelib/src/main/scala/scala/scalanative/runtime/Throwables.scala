@@ -15,7 +15,6 @@ import scala.collection.mutable
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
 import scala.scalanative.meta.LinktimeInfo
-import scala.scalanative.runtime.ffi
 
 object StackTrace {
   @noinline def currentStackTrace(): scala.Array[StackTraceElement] = {
@@ -163,11 +162,11 @@ object StackTrace {
     override protected def initialValue(): Context =
       new Context(mutable.LongMap.empty, ByteArray.alloc(Context.DataSize))
 
-    override protected def childValue(fromParent: Context): Context =
-      new Context(
-        mutable.LongMap.from(fromParent.cache),
-        ByteArray.alloc(Context.DataSize)
-      )
+    override def childValue(fromParent: Context): Context = {
+      val cache = mutable.LongMap.empty[StackTraceElement]
+      cache ++= fromParent.cache
+      new Context(cache, ByteArray.alloc(Context.DataSize))
+    }
   }
   private object Context {
     final val SymbolMaxLength = 512
