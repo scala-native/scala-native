@@ -934,10 +934,7 @@ class CountedCompleterTest extends JSR166Test {
 
   /** getPool of non-FJ task returns null
    */
-  @Ignore(
-    "Test-infrastructure limitation, all tests are executed in ForkJoinPool due to usage of Future in RPCCore"
-  )
-  @Test def testGetPool2(): Unit = {
+   @Test def testGetPool2(): Unit = {
     import ForkJoinTask._
     val a = new CheckedRecursiveAction() {
       override protected def realCompute(): Unit = { assertNull(getPool) }
@@ -959,9 +956,6 @@ class CountedCompleterTest extends JSR166Test {
 
   /** inForkJoinPool of non-FJ task returns false
    */
-  @Ignore(
-    "Test-infrastructure limitation, all tests are executed in ForkJoinPool due to usage of Future in RPCCore"
-  )
   @Test def testInForkJoinPool2(): Unit = {
     import ForkJoinTask._
     val a = new CheckedRecursiveAction() {
