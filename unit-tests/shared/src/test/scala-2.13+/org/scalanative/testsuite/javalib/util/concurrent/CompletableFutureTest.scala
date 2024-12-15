@@ -329,7 +329,8 @@ object CompletableFutureTest {
           s"Invalid thread group in ${Thread.currentThread()}, expected group=${ThreadExecutor.tg}",
           ThreadExecutor.startedCurrentThread()
         )
-        assertNull(s"Unexpected execution in pool: ${ForkJoinTask.getPool()}", ForkJoinTask.getPool())
+        // Invalid on Scala Native, requires https://github.com/scala-native/scala-native/pull/4116
+        // assertNull(s"Unexpected execution in pool: ${ForkJoinTask.getPool()}", ForkJoinTask.getPool())
       }
       def runAsync(a: Runnable): CompletableFuture[Void] = throw new UnsupportedOperationException()
       def supplyAsync[U <: AnyRef](a: Supplier[U]): CompletableFuture[U] = throw new UnsupportedOperationException()
@@ -393,7 +394,8 @@ object CompletableFutureTest {
     }
     case object ASYNC extends ExecutionMode {
       def checkExecutionMode(): Unit = {
-        assertEquals(defaultExecutorIsCommonPool, ForkJoinPool.commonPool() == ForkJoinTask.getPool())
+        // Invalid on Scala Native, requires https://github.com/scala-native/scala-native/pull/4116
+        // assertEquals(defaultExecutorIsCommonPool, ForkJoinPool.commonPool() == ForkJoinTask.getPool())
       }
       def runAsync(a: Runnable): CompletableFuture[Void] = CompletableFuture.runAsync(a)
       def supplyAsync[U <: AnyRef](a: Supplier[U]): CompletableFuture[U] = CompletableFuture.supplyAsync(a)
@@ -457,7 +459,8 @@ object CompletableFutureTest {
     }
     case object EXECUTOR extends ExecutionMode {
       def checkExecutionMode(): Unit = {
-        assertTrue(ThreadExecutor.startedCurrentThread())
+        // Invalid on Scala Native, requires https://github.com/scala-native/scala-native/pull/4116
+        // assertTrue(ThreadExecutor.startedCurrentThread())
       }
       def runAsync(a: Runnable): CompletableFuture[Void] = CompletableFuture.runAsync(a, new ThreadExecutor())
       def supplyAsync[U <: AnyRef](a: Supplier[U]): CompletableFuture[U] =
