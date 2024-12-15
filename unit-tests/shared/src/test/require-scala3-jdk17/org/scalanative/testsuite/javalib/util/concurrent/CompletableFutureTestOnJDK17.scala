@@ -969,9 +969,6 @@ class CompletableFutureTestOnJDK17 extends CompletableFutureTest {
    */
   @throws[Throwable]
   @Test def testAnyOfGarbageRetention(): Unit = {
-    lazy val checkOnce =
-      new RuntimeException().printStackTrace()
-    println(new RuntimeException().getStackTrace().size)
     for (v <- Array[Item](one, null)) {
       val n =
         if (expensiveTests) 100000
