@@ -198,7 +198,10 @@ object Math {
   @alwaysinline def hypot(a: scala.Double, b: scala.Double): scala.Double =
     cmath.hypot(a, b)
 
-  @alwaysinline def IEEEremainder(f1: scala.Double, f2: scala.Double): scala.Double =
+  @alwaysinline def IEEEremainder(
+      f1: scala.Double,
+      f2: scala.Double
+  ): scala.Double =
     cmath.remainder(f1, f2)
 
   @alwaysinline def incrementExact(a: scala.Int): scala.Int =
