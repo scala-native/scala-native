@@ -381,7 +381,7 @@ object CompletableFutureTest {
           a: Function[? >: T, U]
       ): CompletableFuture[U] = f.applyToEither(g, a)
     }
-    case object ASYNC extends ASYNC 
+    case object ASYNC extends ASYNC
     abstract class ASYNC extends ExecutionMode {
       def checkExecutionMode(): Unit = {
         // Invalid on Scala Native, requires https://github.com/scala-native/scala-native/pull/4116
@@ -519,7 +519,7 @@ object CompletableFutureTest {
   /** Demo utility method to join a CompletionStage */
   def join[T <: AnyRef](stage: CompletionStage[T]): T = toCompletableFuture(stage).join()
 
-   // For testing default implementations
+  // For testing default implementations
   // Only non-default interface methods defined.
   //     static <U> U.join()(CompletionStage<U> stage) {
   //         CompletableFuture<U> f = new CompletableFuture<>();
@@ -3345,7 +3345,7 @@ class CompletableFutureTest extends JSR166Test {
     }
   }
 
-   /** allOf(no component futures) returns a future completed normally with the value null
+  /** allOf(no component futures) returns a future completed normally with the value null
    */
   // other static methods
   @throws[Exception]
@@ -3607,7 +3607,7 @@ class CompletableFutureTest extends JSR166Test {
       () => CompletableFuture.anyOf(null.asInstanceOf[Array[CompletableFuture[_ <: AnyRef]]]: _*),
       () => CompletableFuture.anyOf(f, null),
       () => CompletableFuture.anyOf(null, f),
-      () => f.obtrudeException(null),
+      () => f.obtrudeException(null)
     )
     assertEquals(0, exec.count.get())
   }

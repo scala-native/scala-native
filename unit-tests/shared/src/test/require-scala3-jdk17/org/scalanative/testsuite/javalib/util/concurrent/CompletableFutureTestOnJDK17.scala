@@ -171,7 +171,6 @@ class CompletableFutureTestOnJDK17 extends CompletableFutureTest {
   import CompletableFutureTest.{ExecutionMode => _, _}
   import CompletableFutureTestOnJDK17._
 
-
   /** exceptionally action is not invoked() when source completes normally, and source result is propagated
    */
   @Test def testExceptionally_normalCompletion(): Unit = {
@@ -370,7 +369,7 @@ class CompletableFutureTestOnJDK17 extends CompletableFutureTest {
     val exec = new ThreadExecutor
     assertEachThrows(
       classOf[NullPointerException],
-         () => CompletableFuture.delayedExecutor(1L, SECONDS, null),
+      () => CompletableFuture.delayedExecutor(1L, SECONDS, null),
       () => CompletableFuture.delayedExecutor(1L, null, exec),
       () => CompletableFuture.delayedExecutor(1L, null),
       () => f.orTimeout(1L, null),
@@ -380,6 +379,7 @@ class CompletableFutureTestOnJDK17 extends CompletableFutureTest {
     )
     assertEquals(0, exec.count.get())
   }
+
   /** newIncompleteFuture returns an incomplete CompletableFuture
    */
   // jdk9
