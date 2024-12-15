@@ -40,6 +40,7 @@ private[testinterface] class NativeRPC(clientSocket: Socket)(implicit
     } else {
       val msg = Array.fill(msgLength)(inStream.readChar).mkString
       handleMessage(msg)
+      // We don't use asynchronous RPC calls in Native client, so we can skip helpComplete
       // We cannot control which ExecutionContext implementation is used by users
       // Run the queue execution context loop just to be sure we don't create deadlock
       concurrent.NativeExecutionContext.queueInternal.helpComplete()
