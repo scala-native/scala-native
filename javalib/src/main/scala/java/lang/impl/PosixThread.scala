@@ -33,26 +33,28 @@ private[java] class PosixThread(val thread: Thread, stackSize: Long)
   // index of currently used condition
   @volatile private var conditionIdx = ConditionUnset
 
-  // Init locks/conditions before starting the thread
-  checkStatus("mutex init") {
-    pthread_mutex_init(lock, mutexAttr)
-  }
-  checkStatus("relative time condition init") {
-    pthread_cond_init(
-      condition(ConditionRelativeIdx),
-      conditionRelativeCondAttr
-    )
-  }
-  checkStatus("absolute time condition init") {
-    pthread_cond_init(condition(ConditionAbsoluteIdx), null)
+  if (isMultithreadingEnabled) {
+    // Init locks/conditions before starting the thread
+    checkStatus("mutex init") {
+      pthread_mutex_init(lock, mutexAttr)
+    }
+    checkStatus("relative time condition init") {
+      pthread_cond_init(
+        condition(ConditionRelativeIdx),
+        conditionRelativeCondAttr
+      )
+    }
+    checkStatus("absolute time condition init") {
+      pthread_cond_init(condition(ConditionAbsoluteIdx), null)
+    }
   }
 
   private val handle: pthread_t =
-    if (!isMultithreadingEnabled)
+    if (isMainThread) 0.toUSize // main thread
+    else if (!isMultithreadingEnabled)
       throw new LinkageError(
         "Multithreading support disabled - cannot create new threads"
       )
-    else if (isMainThread) 0.toUSize // main thread
     else {
       val id = stackalloc[pthread_t]()
       val attrs = stackalloc[Byte](pthread_attr_t_size)
