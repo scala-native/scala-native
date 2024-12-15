@@ -66,6 +66,11 @@ class URLDecoderTest {
     // consecutive characters
     test("a%20%20c", "a  c")
 
+    test(
+      "weird%3D%26key=strange%25value&arrow=%E2%87%94",
+      "weird=&key=strange%value&arrow=⇔"
+    )
+
     // illegal codepoints
     illegalArgumentOrReplacement("a%b%c")
     illegalArgumentOrReplacement("%-1")
