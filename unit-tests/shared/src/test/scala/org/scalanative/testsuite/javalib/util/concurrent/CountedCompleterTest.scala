@@ -934,7 +934,7 @@ class CountedCompleterTest extends JSR166Test {
 
   /** getPool of non-FJ task returns null
    */
-   @Test def testGetPool2(): Unit = {
+  @Test def testGetPool2(): Unit = {
     import ForkJoinTask._
     val a = new CheckedRecursiveAction() {
       override protected def realCompute(): Unit = { assertNull(getPool) }
