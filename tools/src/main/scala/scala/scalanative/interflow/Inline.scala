@@ -53,7 +53,7 @@ private[interflow] trait Inline { self: Interflow =>
             alwaysInline || hintInline || isSmall || isCtor || hasVirtualArgs
         }
         lazy val shallNot =
-          noOpt || noInline || isRecursive || isDenylisted || calleeTooBig || callerTooBig || isExtern || hasUnwind || inlineDepthLimitExceeded
+          !alwaysInline && (noOpt || noInline || isRecursive || isDenylisted || calleeTooBig || callerTooBig || isExtern || hasUnwind || inlineDepthLimitExceeded)
         withLogger { logger =>
           if (shall) {
             if (shallNot) {
@@ -71,6 +71,7 @@ private[interflow] trait Inline { self: Interflow =>
                   s"* caller is too big (${mergeProcessor.currentSize()} > $maxCallerSize)"
                 )
               if (isExtern) logger("* is an extern method")
+              if (hasUnwind) logger("* has unwind")
               if (inlineDepthLimitExceeded)
                 logger("* inline depth limit exceeded")
             }

@@ -44,7 +44,7 @@ class Runtime private () {
     setupSignalHandler
   }
 
-  def removeShutdownHook(thread: Thread): Boolean = hooks.synchronized {
+  def removeShutdownHook(thread: Thread): scala.Boolean = hooks.synchronized {
     ensureCanModify(thread)
     hooks.remove(thread)
   }
