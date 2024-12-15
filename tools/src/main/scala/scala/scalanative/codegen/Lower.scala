@@ -549,7 +549,10 @@ private[scalanative] object Lower {
         case op: nir.Op.Conv =>
           genConvOp(buf, n, op)
         case op: nir.Op.Call =>
-          genCallOp(buf, n, op)
+          op match {
+            case IntrinsicCall(kind) => genIntrinsicCallOp(kind, buf, n, op)
+            case _                   => genCallOp(buf, n, op)
+          }
         case op: nir.Op.Comp =>
           genCompOp(buf, n, op)
         case op: nir.Op.Bin =>
@@ -905,6 +908,17 @@ private[scalanative] object Lower {
         label(merge, resultV :: Nil)
         resultV
       }
+    }
+
+    def genIntrinsicCallOp(
+        kind: IntrinsicCall,
+        buf: nir.InstructionBuilder,
+        n: nir.Local,
+        op: nir.Op.Call
+    )(implicit srcPosition: nir.SourcePosition, scopeId: nir.ScopeId): Unit = kind match {
+      case IntrinsicCall.LoadAllClassess =>
+        val allClasses = nir.Val.ArrayValue(nir.Rt.Class, meta.rtti.values.map(_.const).toSeq)
+        genArrayallocOp(buf, n, nir.Op.Arrayalloc(nir.Rt.Class, init = allClasses, None))
     }
 
     def genCallOp(
@@ -1919,6 +1933,20 @@ private[scalanative] object Lower {
           }
         }
       }
+    }
+  }
+
+  private sealed trait IntrinsicCall
+  private object IntrinsicCall {
+    object LoadAllClassess extends IntrinsicCall
+
+    def unapply(op: nir.Op.Call): Option[IntrinsicCall] = op.ptr match {
+      case nir.Val.Global(nir.Global.Member(owner, sig), _) =>
+        (owner.id, sig.unmangled) match {
+          case ("scala.scalanative.runtime.LinkedClassesRepository$", nir.Sig.Method("loadAll", _, _)) => Some(LoadAllClassess)
+          case _                                                                                       => None
+        }
+      case _ => None
     }
   }
 
