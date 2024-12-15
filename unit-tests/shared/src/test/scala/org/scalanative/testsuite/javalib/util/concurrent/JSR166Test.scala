@@ -1038,7 +1038,7 @@ object JSR166Test {
   // Epsilon is added for Scala Native Test environment.
   final val epsilon = 0.00001 // tolerance for Floating point comparisons.
 
-  final val expensiveTests = true
+  final val expensiveTests = sys.env.contains("CI")
 
   /** If true, also run tests that are not part of the official tck because they
    *  test unspecified implementation details.
@@ -1179,6 +1179,11 @@ object JSR166Test {
   final val m5 = Integer.valueOf(-5)
   final val m6 = Integer.valueOf(-6)
   final val m10 = Integer.valueOf(-10)
+
+  final val minusOne = itemFor(-1)
+
+  final val fortytwo = itemFor(42)
+  final val ninetynine = itemFor(99)
 
   def mustEqual(x: Item, y: Item): Unit = {
     if (x ne y) assertEquals(x.value, y.value)
