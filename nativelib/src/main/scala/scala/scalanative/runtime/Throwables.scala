@@ -1,13 +1,13 @@
+// scalafmt: { maxColumn = 120}
+
 package scala.scalanative
 package runtime
 
 import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
 
-/** An exception that is thrown whenever an undefined behavior happens in a
- *  checked mode.
+/** An exception that is thrown whenever an undefined behavior happens in a checked mode.
  */
-final class UndefinedBehaviorError(message: String)
-    extends java.lang.Error(message) {
+final class UndefinedBehaviorError(message: String) extends java.lang.Error(message) {
   def this() = this(null)
 }
 
@@ -15,35 +15,36 @@ import scala.collection.mutable
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
 import scala.scalanative.meta.LinktimeInfo
-import scala.scalanative.runtime.ffi.{malloc, calloc, free, strncmp}
-
-import java.util.concurrent.ConcurrentHashMap
-import java.{util => ju}
 
 object StackTrace {
-  private val cache: ju.AbstractMap[CUnsignedLong, StackTraceElement] =
-    if (isMultithreadingEnabled) new ConcurrentHashMap
-    else new ju.HashMap
-
   @noinline def currentStackTrace(): scala.Array[StackTraceElement] = {
     // Used to prevent filling stacktraces inside `currentStackTrace` which might lead to infinite loop
     val thread = NativeThread.currentNativeThread
     if (thread.isFillingStackTrace) scala.Array.empty
     else if (LinktimeInfo.asanEnabled) scala.Array.empty
     else {
-      val cursor = fromRawPtr(malloc(unwind.sizeOfCursor))
-      val context = fromRawPtr(malloc(unwind.sizeOfContext))
+      implicit val tlContext: Context = ThreadLocalContext.get()
+      val cursor = tlContext.unwindCursor
+      val context = tlContext.unwindContext
       try {
         thread.isFillingStackTrace = true
         val buffer = scala.Array.newBuilder[StackTraceElement]
-        val ip = fromRawPtr[CSize](Intrinsics.stackalloc[CSize]())
+        val ip = Intrinsics.stackalloc[RawSize]()
         var foundCurrentStackTrace = false
         var afterFillInStackTrace = false
         unwind.get_context(context)
         unwind.init_local(cursor, context)
         while (unwind.step(cursor) > 0) {
           unwind.get_reg(cursor, unwind.UNW_REG_IP, ip)
-          val elem = cachedStackTraceElement(cursor, !ip)
+          val addr = Intrinsics.castRawSizeToLongUnsigned(Intrinsics.loadRawSize(ip))
+          /* Creates a stack trace element in given unwind context. Finding a
+           *  name of the symbol for current function is expensive, so we cache
+           *  stack trace elements based on current instruction pointer.
+           */
+          val elem = tlContext.cache.getOrElseUpdate(
+            addr,
+            makeStackTraceElement(cursor, addr)
+          )
           buffer += elem
 
           // Look for intrinsic stack frames and remove them to not polute stack traces
@@ -69,8 +70,6 @@ object StackTrace {
         buffer.result()
       } finally {
         thread.isFillingStackTrace = false
-        free(cursor)
-        free(context)
       }
     }
   }
@@ -83,46 +82,42 @@ object StackTrace {
 
   private def makeStackTraceElement(
       cursor: CVoidPtr,
-      ip: CUnsignedLong
-  ): StackTraceElement = {
+      ip: Long
+  )(implicit tlContext: Context): StackTraceElement = {
 
     val position =
-      if (hasDebugInfo) Backtrace.decodePosition(ip.toLong)
+      if (hasDebugInfo) Backtrace.decodePosition(ip)
       else Backtrace.Position.empty
 
     def withNameFromDWARF() = {
       // linkageName has an extra "_" that we don't want in stack traces
       def isScalaNativeMangledName =
-        strncmp(position.linkageName, c"__SM", 4.toCSize) == 0
-      val name =
+        ffi.strncmp(position.linkageName, c"__SM", Intrinsics.castIntToRawSize(4)) == 0
+      val symbol =
         if (isScalaNativeMangledName)
           // skip first `_`
           position.linkageName + 1
         else position.linkageName
 
-      StackTraceElement(name, position)
+      parseStackTraceElement(symbol, position)
     }
 
     def withNameFromUnwind() = {
-      val nameMax = 1024
-      val name = fromRawPtr[CChar](
-        calloc(
-          Intrinsics.castIntToRawSizeUnsigned(nameMax),
-          Intrinsics.sizeOf[CChar]
-        )
+      import Context._
+      val symbol = tlContext.freshSymbolBuffer
+      val offset = Intrinsics.stackalloc[Long]()
+      unwind.get_proc_name(
+        cursor,
+        symbol,
+        Intrinsics.castIntToRawSize(SymbolMaxLength),
+        offset
       )
-      try {
-        val offset = fromRawPtr[Long](Intrinsics.stackalloc[Long]())
+      // Make sure the name is definitely 0-terminated.
+      // Unmangler is going to use strlen on this name and it's
+      // behavior is not defined for non-zero-terminated strings.
+      symbol(SymbolMaxLength - 1) = 0.toByte
 
-        unwind.get_proc_name(cursor, name, nameMax.toUSize, offset)
-
-        // Make sure the name is definitely 0-terminated.
-        // Unmangler is going to use strlen on this name and it's
-        // behavior is not defined for non-zero-terminated strings.
-        name(nameMax - 1) = 0.toByte
-
-        StackTraceElement(name, position)
-      } finally free(name)
+      parseStackTraceElement(symbol, position)
     }
 
     if (hasDebugInfo) {
@@ -131,35 +126,14 @@ object StackTrace {
     } else withNameFromUnwind()
   }
 
-  /** Creates a stack trace element in given unwind context. Finding a name of
-   *  the symbol for current function is expensive, so we cache stack trace
-   *  elements based on current instruction pointer.
-   */
-  private def cachedStackTraceElement(
-      cursor: CVoidPtr,
-      ip: CUnsignedLong
-  ): StackTraceElement =
-    cache.computeIfAbsent(ip, makeStackTraceElement(cursor, _))
-
-}
-
-private object StackTraceElement {
-  // ScalaNative specific
-  def apply(
+  private def parseStackTraceElement(
       sym: CString,
       position: Backtrace.Position
-  ): StackTraceElement = {
-    val className: Ptr[CChar] = fromRawPtr(
-      Intrinsics.stackalloc[CChar](Intrinsics.castIntToRawSizeUnsigned(512))
-    )
-    val methodName: Ptr[CChar] = fromRawPtr(
-      Intrinsics.stackalloc[CChar](Intrinsics.castIntToRawSizeUnsigned(256))
-    )
+  )(implicit tlContext: Context): StackTraceElement = {
+    val className: Ptr[CChar] = tlContext.freshClassNameBuffer
+    val methodName: Ptr[CChar] = tlContext.freshMethodNameBuffer
     val fileName: Ptr[CChar] =
-      if (LinktimeInfo.isWindows)
-        fromRawPtr(
-          Intrinsics.stackalloc[CChar](Intrinsics.castIntToRawSizeUnsigned(512))
-        )
+      if (LinktimeInfo.isWindows) tlContext.freshFileNameBuffer
       else null
     val lineOut: Ptr[Int] = fromRawPtr(Intrinsics.stackalloc[Int]())
     SymbolFormatter.asyncSafeFromSymbol(
@@ -182,5 +156,50 @@ private object StackTraceElement {
       filename,
       line
     )
+  }
+
+  private object ThreadLocalContext extends InheritableThreadLocal[Context] {
+    override protected def initialValue(): Context =
+      new Context(mutable.LongMap.empty, ByteArray.alloc(Context.DataSize))
+
+    override def childValue(fromParent: Context): Context = {
+      val cache = mutable.LongMap.empty[StackTraceElement]
+      cache ++= fromParent.cache
+      new Context(cache, ByteArray.alloc(Context.DataSize))
+    }
+  }
+  private object Context {
+    final val SymbolMaxLength = 512
+    final val ClassNameMaxLength = 256
+    final val MethodNameMaxLength = 256
+    final val FileNameMaxLength = 512
+
+    final val SymbolBufferOffset = 0
+    final val ClassNameBufferOffset = SymbolBufferOffset + SymbolMaxLength
+    final val MethodNameBufferOffset = ClassNameBufferOffset + ClassNameMaxLength
+    final val FileNameBufferOffset = MethodNameBufferOffset + MethodNameMaxLength
+    final val UnwindCursorOffset = FileNameBufferOffset + FileNameMaxLength
+    final val UnwindContextOffset = UnwindCursorOffset + unwind.sizeOfCursor
+    final val DataSize = UnwindContextOffset + unwind.sizeOfContext
+  }
+  private class Context(
+      val cache: mutable.LongMap[StackTraceElement],
+      val data: ByteArray
+  ) {
+    def freshAt(offset: Int, size: Int): Ptr[Byte] = {
+      ffi.memset(
+        data.atRawUnsafe(offset),
+        0,
+        Intrinsics.castIntToRawSizeUnsigned(size)
+      )
+      data.atUnsafe(offset)
+    }
+    import Context._
+    def freshSymbolBuffer = freshAt(SymbolBufferOffset, SymbolMaxLength)
+    def freshClassNameBuffer = freshAt(ClassNameBufferOffset, ClassNameMaxLength)
+    def freshMethodNameBuffer = freshAt(MethodNameBufferOffset, MethodNameMaxLength)
+    def freshFileNameBuffer = freshAt(FileNameBufferOffset, FileNameMaxLength)
+    def unwindCursor = data.atUnsafe(UnwindCursorOffset)
+    def unwindContext = data.atUnsafe(UnwindContextOffset)
   }
 }
