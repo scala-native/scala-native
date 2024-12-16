@@ -5,7 +5,9 @@ import scalanative.unsigned._
 private[runtime] case class ELF private (
     header: ELF.Header,
     sectionHeaders: Array[ELF.SectionHeader]
-) {}
+) {
+  def isPositionIndependentBinary: Boolean = header.fileType == 0x0003.toUShort
+}
 
 private[runtime] object ELF {
   import CommonParsers._

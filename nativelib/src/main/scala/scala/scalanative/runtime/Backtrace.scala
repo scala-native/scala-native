@@ -3,11 +3,12 @@ package scala.scalanative.runtime
 import scala.scalanative.meta.LinktimeInfo
 
 import scala.scalanative.runtime.dwarf.BinaryFile
-import scala.scalanative.runtime.dwarf.MachO
 import scala.scalanative.runtime.dwarf.DWARF
 import scala.scalanative.runtime.dwarf.DWARF.DIE
 import scala.scalanative.runtime.dwarf.DWARF.DIEUnit
 import scala.scalanative.runtime.dwarf.ELF
+import scala.scalanative.runtime.dwarf.MachO
+import scala.scalanative.runtime.dwarf.PIE
 
 import scala.scalanative.unsafe.CString
 import scala.scalanative.unsafe.Tag
@@ -28,7 +29,8 @@ private[runtime] object Backtrace {
       subprograms: scala.Array[DWARF.SubprogramDIE],
       strings: DWARF.Strings,
       /** ASLR offset (minus __PAGEZERO size for macho) */
-      offset: Long
+      offset: Long,
+      isPositionIndependentBinary: Boolean
   )
 
   private val dwarfInfo: Option[DwarfInfo] = processFile()
@@ -47,8 +49,14 @@ private[runtime] object Backtrace {
         // Address Space Layout Randomization (ASLR) when the executable is built as PIE.
         // Subtract the offset to match the pc address from libunwind (runtime) and address in debug info (compile/link time).
         val address = pc - info.offset
+        val virtualAddress = if (LinktimeInfo.isLinux) {
+          if (info.isPositionIndependentBinary) PIE.virtualAddress(address)
+          else address
+        } else {
+          address
+        }
         val position = for {
-          subprogram <- search(info.subprograms, address)
+          subprogram <- search(info.subprograms, virtualAddress)
         } yield {
           val filename = info.strings.read(subprogram.filenameAt)
           val linkageName =
@@ -126,7 +134,7 @@ private[runtime] object Backtrace {
       macho: MachO
   )(implicit
       bf: BinaryFile
-  ): Option[(scala.Array[DWARF.SubprogramDIE], DWARF.Strings)] = {
+  ): Option[(scala.Array[DWARF.SubprogramDIE], DWARF.Strings, Boolean)] = {
     var debug_info_opt = Option.empty[MachO.Section]
     var debug_abbrev_opt = Option.empty[MachO.Section]
     var debug_str_opt = Option.empty[MachO.Section]
@@ -146,13 +154,12 @@ private[runtime] object Backtrace {
       debug_info <- debug_info_opt
       debug_abbrev <- debug_abbrev_opt
       debug_str <- debug_str_opt
-    } yield {
-      readDWARF(
+      (dies, strings) = readDWARF(
         debug_info = DWARF.Section(debug_info.offset, debug_info.size),
         debug_abbrev = DWARF.Section(debug_abbrev.offset, debug_abbrev.size),
         debug_str = DWARF.Section(debug_str.offset, debug_str.size)
       )
-    }
+    } yield (dies, strings, false)
   }
 
   private final val MACHO_MAGIC = 0xcffaedfe
@@ -163,7 +170,8 @@ private[runtime] object Backtrace {
     val head = bf.position()
     val magic = bf.readInt()
     bf.seek(head)
-    val dwarfInfo: Option[(scala.Array[DWARF.SubprogramDIE], DWARF.Strings)] =
+    val dwarfInfo
+        : Option[(scala.Array[DWARF.SubprogramDIE], DWARF.Strings, Boolean)] =
       if (LinktimeInfo.isMac) {
         if (magic == MACHO_MAGIC) {
           val macho = MachO.parse(bf)
@@ -188,7 +196,10 @@ private[runtime] object Backtrace {
       } else {
         if (magic == ELF_MAGIC) {
           val elf = ELF.parse(bf)
-          processELF(elf)
+          processELF(elf).map {
+            case (dies, strings) =>
+              (dies, strings, elf.isPositionIndependentBinary)
+          }
         } else None
       }
 
@@ -199,7 +210,8 @@ private[runtime] object Backtrace {
       DwarfInfo(
         subprograms = dwarf._1,
         strings = dwarf._2,
-        offset = offset
+        offset = offset,
+        isPositionIndependentBinary = true
       )
     }
   }
