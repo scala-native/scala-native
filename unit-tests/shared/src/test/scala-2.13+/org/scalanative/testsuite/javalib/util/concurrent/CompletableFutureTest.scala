@@ -42,6 +42,7 @@ import java.util.ArrayList
 
 import org.junit._
 import org.junit.Assert._
+import org.scalanative.testsuite.utils.Platform
 
 object CompletableFutureTest {
   import JSR166Test._
@@ -990,7 +991,9 @@ class CompletableFutureTest extends JSR166Test {
     val f = new CompletableFuture[String]
     assertTrue(f.completeExceptionally(new IndexOutOfBoundsException))
     assertTrue(f.toString.matches(".*\\[.*Completed exceptionally.*\\]"))
-    if (testImplementationDetails) assertTrue(f.toString.startsWith(identityString(f) + "[Completed exceptionally: "))
+    if (testImplementationDetails)
+      if (!Platform.executingInJVMOnLowerThanJDK17)
+        assertTrue(f.toString.startsWith(identityString(f) + "[Completed exceptionally: "))
   }
 
   @Test def testToString_cancelled(): Unit = {
@@ -998,7 +1001,9 @@ class CompletableFutureTest extends JSR166Test {
       val f = new CompletableFuture[String]
       assertTrue(f.cancel(mayInterruptIfRunning))
       assertTrue(f.toString.matches(".*\\[.*Completed exceptionally.*\\]"))
-      if (testImplementationDetails) assertTrue(f.toString.startsWith(identityString(f) + "[Completed exceptionally: "))
+      if (testImplementationDetails)
+        if (!Platform.executingInJVMOnLowerThanJDK17)
+          assertTrue(f.toString.startsWith(identityString(f) + "[Completed exceptionally: "))
     }
   }
 
@@ -1147,7 +1152,7 @@ class CompletableFutureTest extends JSR166Test {
         if (createIncomplete) f.completeExceptionally(ex1)
         checkCompletedWithWrappedException(g, ex1)
         checkCompletedExceptionally(f, ex1)
-        if (testImplementationDetails) {
+        if (testImplementationDetails) if (!Platform.executingInJVMOnLowerThanJDK17) {
           assertEquals(1, ex1.getSuppressed().length)
           assertSame(ex2, ex1.getSuppressed()(0))
         }
