@@ -978,7 +978,7 @@ class CompletableFutureTestOnJDK17 extends CompletableFutureTest {
       for (i <- 0 until fs.length) {
         fs(i) = new CompletableFuture[Item]
       }
-      fs(fs.length - 1).complete { checkOnce; v }
+      fs(fs.length - 1).complete(v)
       for (i <- 0 until n) {
         checkCompletedNormally(CompletableFuture.anyOf(fs: _*), v)
       }

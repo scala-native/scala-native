@@ -330,22 +330,22 @@ object CompletableFutureTest {
       def runAsync(a: Runnable): CompletableFuture[Void] = throw new UnsupportedOperationException()
       def supplyAsync[U <: AnyRef](a: Supplier[U]): CompletableFuture[U] = throw new UnsupportedOperationException()
       def thenRun[T <: AnyRef](f: CompletableFuture[T], a: Runnable): CompletableFuture[Void] = f.thenRun(a)
-      def thenAccept[T <: AnyRef](f: CompletableFuture[T], a: Consumer[? >: T]): CompletableFuture[Void] =
+      def thenAccept[T <: AnyRef](f: CompletableFuture[T], a: Consumer[_ >: T]): CompletableFuture[Void] =
         f.thenAccept(a)
-      def thenApply[T <: AnyRef, U <: AnyRef](f: CompletableFuture[T], a: Function[? >: T, U]): CompletableFuture[U] =
+      def thenApply[T <: AnyRef, U <: AnyRef](f: CompletableFuture[T], a: Function[_ >: T, U]): CompletableFuture[U] =
         f.thenApply(a)
       def thenCompose[T <: AnyRef, U <: AnyRef](
           f: CompletableFuture[T],
-          a: Function[? >: T, ? <: CompletionStage[U]]
+          a: Function[_ >: T, _ <: CompletionStage[U]]
       ): CompletableFuture[U] = f.thenCompose(a)
       def handle[T <: AnyRef, U <: AnyRef](
           f: CompletableFuture[T],
-          a: BiFunction[? >: T, Throwable, ? <: U]
+          a: BiFunction[_ >: T, Throwable, _ <: U]
       ): CompletableFuture[U] =
         f.handle(a)
       def whenComplete[T <: AnyRef](
           f: CompletableFuture[T],
-          a: BiConsumer[? >: T, ? >: Throwable]
+          a: BiConsumer[_ >: T, _ >: Throwable]
       ): CompletableFuture[T] =
         f.whenComplete(a)
       def runAfterBoth[T <: AnyRef, U <: AnyRef](
@@ -356,29 +356,29 @@ object CompletableFutureTest {
         f.runAfterBoth(g, a)
       def thenAcceptBoth[T <: AnyRef, U <: AnyRef](
           f: CompletableFuture[T],
-          g: CompletionStage[? <: U],
-          a: BiConsumer[? >: T, ? >: U]
+          g: CompletionStage[_ <: U],
+          a: BiConsumer[_ >: T, _ >: U]
       ): CompletableFuture[Void] = f.thenAcceptBoth(g, a)
       def thenCombine[T <: AnyRef, U <: AnyRef, V <: AnyRef](
           f: CompletableFuture[T],
-          g: CompletionStage[? <: U],
-          a: BiFunction[? >: T, ? >: U, ? <: V]
+          g: CompletionStage[_ <: U],
+          a: BiFunction[_ >: T, _ >: U, _ <: V]
       ): CompletableFuture[V] = f.thenCombine(g, a)
       def runAfterEither[T <: AnyRef](
           f: CompletableFuture[T],
-          g: CompletionStage[?],
+          g: CompletionStage[_],
           a: Runnable
       ): CompletableFuture[Void] =
         f.runAfterEither(g, a)
       def acceptEither[T <: AnyRef](
           f: CompletableFuture[T],
-          g: CompletionStage[? <: T],
-          a: Consumer[? >: T]
+          g: CompletionStage[_ <: T],
+          a: Consumer[_ >: T]
       ): CompletableFuture[Void] = f.acceptEither(g, a)
       def applyToEither[T <: AnyRef, U <: AnyRef](
           f: CompletableFuture[T],
-          g: CompletionStage[? <: T],
-          a: Function[? >: T, U]
+          g: CompletionStage[_ <: T],
+          a: Function[_ >: T, U]
       ): CompletableFuture[U] = f.applyToEither(g, a)
     }
     case object ASYNC extends ASYNC
@@ -390,22 +390,22 @@ object CompletableFutureTest {
       def runAsync(a: Runnable): CompletableFuture[Void] = CompletableFuture.runAsync(a)
       def supplyAsync[U <: AnyRef](a: Supplier[U]): CompletableFuture[U] = CompletableFuture.supplyAsync(a)
       def thenRun[T <: AnyRef](f: CompletableFuture[T], a: Runnable): CompletableFuture[Void] = f.thenRunAsync(a)
-      def thenAccept[T <: AnyRef](f: CompletableFuture[T], a: Consumer[? >: T]): CompletableFuture[Void] =
+      def thenAccept[T <: AnyRef](f: CompletableFuture[T], a: Consumer[_ >: T]): CompletableFuture[Void] =
         f.thenAcceptAsync(a)
-      def thenApply[T <: AnyRef, U <: AnyRef](f: CompletableFuture[T], a: Function[? >: T, U]): CompletableFuture[U] =
+      def thenApply[T <: AnyRef, U <: AnyRef](f: CompletableFuture[T], a: Function[_ >: T, U]): CompletableFuture[U] =
         f.thenApplyAsync(a)
       def thenCompose[T <: AnyRef, U <: AnyRef](
           f: CompletableFuture[T],
-          a: Function[? >: T, ? <: CompletionStage[U]]
+          a: Function[_ >: T, _ <: CompletionStage[U]]
       ): CompletableFuture[U] = f.thenComposeAsync(a)
       def handle[T <: AnyRef, U <: AnyRef](
           f: CompletableFuture[T],
-          a: BiFunction[? >: T, Throwable, ? <: U]
+          a: BiFunction[_ >: T, Throwable, _ <: U]
       ): CompletableFuture[U] =
         f.handleAsync(a)
       def whenComplete[T <: AnyRef](
           f: CompletableFuture[T],
-          a: BiConsumer[? >: T, ? >: Throwable]
+          a: BiConsumer[_ >: T, _ >: Throwable]
       ): CompletableFuture[T] =
         f.whenCompleteAsync(a)
       def runAfterBoth[T <: AnyRef, U <: AnyRef](
@@ -416,29 +416,29 @@ object CompletableFutureTest {
         f.runAfterBothAsync(g, a)
       def thenAcceptBoth[T <: AnyRef, U <: AnyRef](
           f: CompletableFuture[T],
-          g: CompletionStage[? <: U],
-          a: BiConsumer[? >: T, ? >: U]
+          g: CompletionStage[_ <: U],
+          a: BiConsumer[_ >: T, _ >: U]
       ): CompletableFuture[Void] = f.thenAcceptBothAsync(g, a)
       def thenCombine[T <: AnyRef, U <: AnyRef, V <: AnyRef](
           f: CompletableFuture[T],
-          g: CompletionStage[? <: U],
-          a: BiFunction[? >: T, ? >: U, ? <: V]
+          g: CompletionStage[_ <: U],
+          a: BiFunction[_ >: T, _ >: U, _ <: V]
       ): CompletableFuture[V] = f.thenCombineAsync(g, a)
       def runAfterEither[T <: AnyRef](
           f: CompletableFuture[T],
-          g: CompletionStage[?],
+          g: CompletionStage[_],
           a: Runnable
       ): CompletableFuture[Void] =
         f.runAfterEitherAsync(g, a)
       def acceptEither[T <: AnyRef](
           f: CompletableFuture[T],
-          g: CompletionStage[? <: T],
-          a: Consumer[? >: T]
+          g: CompletionStage[_ <: T],
+          a: Consumer[_ >: T]
       ): CompletableFuture[Void] = f.acceptEitherAsync(g, a)
       def applyToEither[T <: AnyRef, U <: AnyRef](
           f: CompletableFuture[T],
-          g: CompletionStage[? <: T],
-          a: Function[? >: T, U]
+          g: CompletionStage[_ <: T],
+          a: Function[_ >: T, U]
       ): CompletableFuture[U] = f.applyToEitherAsync(g, a)
     }
     object EXECUTOR extends EXECUTOR
@@ -452,22 +452,22 @@ object CompletableFutureTest {
         CompletableFuture.supplyAsync(a, new ThreadExecutor())
       def thenRun[T <: AnyRef](f: CompletableFuture[T], a: Runnable): CompletableFuture[Void] =
         f.thenRunAsync(a, new ThreadExecutor())
-      def thenAccept[T <: AnyRef](f: CompletableFuture[T], a: Consumer[? >: T]): CompletableFuture[Void] =
+      def thenAccept[T <: AnyRef](f: CompletableFuture[T], a: Consumer[_ >: T]): CompletableFuture[Void] =
         f.thenAcceptAsync(a, new ThreadExecutor())
-      def thenApply[T <: AnyRef, U <: AnyRef](f: CompletableFuture[T], a: Function[? >: T, U]): CompletableFuture[U] =
+      def thenApply[T <: AnyRef, U <: AnyRef](f: CompletableFuture[T], a: Function[_ >: T, U]): CompletableFuture[U] =
         f.thenApplyAsync(a, new ThreadExecutor())
       def thenCompose[T <: AnyRef, U <: AnyRef](
           f: CompletableFuture[T],
-          a: Function[? >: T, ? <: CompletionStage[U]]
+          a: Function[_ >: T, _ <: CompletionStage[U]]
       ): CompletableFuture[U] = f.thenComposeAsync(a, new ThreadExecutor())
       def handle[T <: AnyRef, U <: AnyRef](
           f: CompletableFuture[T],
-          a: BiFunction[? >: T, Throwable, ? <: U]
+          a: BiFunction[_ >: T, Throwable, _ <: U]
       ): CompletableFuture[U] =
         f.handleAsync(a, new ThreadExecutor())
       def whenComplete[T <: AnyRef](
           f: CompletableFuture[T],
-          a: BiConsumer[? >: T, ? >: Throwable]
+          a: BiConsumer[_ >: T, _ >: Throwable]
       ): CompletableFuture[T] =
         f.whenCompleteAsync(a, new ThreadExecutor())
       def runAfterBoth[T <: AnyRef, U <: AnyRef](
@@ -478,29 +478,29 @@ object CompletableFutureTest {
         f.runAfterBothAsync(g, a, new ThreadExecutor())
       def thenAcceptBoth[T <: AnyRef, U <: AnyRef](
           f: CompletableFuture[T],
-          g: CompletionStage[? <: U],
-          a: BiConsumer[? >: T, ? >: U]
+          g: CompletionStage[_ <: U],
+          a: BiConsumer[_ >: T, _ >: U]
       ): CompletableFuture[Void] = f.thenAcceptBothAsync(g, a, new ThreadExecutor())
       def thenCombine[T <: AnyRef, U <: AnyRef, V <: AnyRef](
           f: CompletableFuture[T],
-          g: CompletionStage[? <: U],
-          a: BiFunction[? >: T, ? >: U, ? <: V]
+          g: CompletionStage[_ <: U],
+          a: BiFunction[_ >: T, _ >: U, _ <: V]
       ): CompletableFuture[V] = f.thenCombineAsync(g, a, new ThreadExecutor())
       def runAfterEither[T <: AnyRef](
           f: CompletableFuture[T],
-          g: CompletionStage[?],
+          g: CompletionStage[_],
           a: Runnable
       ): CompletableFuture[Void] =
         f.runAfterEitherAsync(g, a, new ThreadExecutor())
       def acceptEither[T <: AnyRef](
           f: CompletableFuture[T],
-          g: CompletionStage[? <: T],
-          a: Consumer[? >: T]
+          g: CompletionStage[_ <: T],
+          a: Consumer[_ >: T]
       ): CompletableFuture[Void] = f.acceptEitherAsync(g, a, new ThreadExecutor())
       def applyToEither[T <: AnyRef, U <: AnyRef](
           f: CompletableFuture[T],
-          g: CompletionStage[? <: T],
-          a: Function[? >: T, U]
+          g: CompletionStage[_ <: T],
+          a: Function[_ >: T, U]
       ): CompletableFuture[U] = f.applyToEitherAsync(g, a, new ThreadExecutor())
     }
   }
