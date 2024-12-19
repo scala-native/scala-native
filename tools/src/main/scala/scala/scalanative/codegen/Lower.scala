@@ -252,7 +252,7 @@ private[scalanative] object Lower {
           implicit val pos: nir.SourcePosition = inst.pos
           // Generate GC yield points before backward jumps, eg. in loops
           next match {
-            case nir.Next.Label(target, _) if labelPositions(target) < currentBlockPosition =>
+            case nir.Next.Label(target, _) if labelPositions(target) <= currentBlockPosition =>
               genGCYieldpoint(buf)
             case _ => ()
           }
