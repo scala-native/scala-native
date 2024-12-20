@@ -29,12 +29,12 @@ extern "C" {
 // it. +1 goes to the end of the struct since since it adds with the size of
 // _Unwind_Exception, then we cast to ExceptionWrapper and we do - 1 to
 // go back of sizeof ExceptionWrapper
-#define GetExceptionWrapper(unwind_exception)                                  \
-    ((struct ExceptionWrapper *)(unwind_exception + 1) - 1)
+#define GetExceptionWrapper(unwindException)                                  \
+    ((struct ExceptionWrapper *)(unwindException + 1) - 1)
 
 struct ExceptionWrapper {
     void *obj;
-    struct _Unwind_Exception unwind_exception;
+    struct _Unwind_Exception unwindException;
 };
 
 // Cleanup function for the exception
@@ -189,12 +189,12 @@ struct LSDA {
 };
 
 _Unwind_Reason_Code set_landing_pad(_Unwind_Context *context,
-                                    _Unwind_Exception *unwind_exception,
+                                    _Unwind_Exception *unwindException,
                                     uintptr_t landing_pad, uint8_t type_index) {
     int r0 = __builtin_eh_return_data_regno(0);
     int r1 = __builtin_eh_return_data_regno(1);
 
-    _Unwind_SetGR(context, r0, (uintptr_t)(unwind_exception));
+    _Unwind_SetGR(context, r0, (uintptr_t)(unwindException));
     _Unwind_SetGR(context, r1, (uintptr_t)(type_index));
 
     _Unwind_SetIP(context, landing_pad);
@@ -206,7 +206,7 @@ _Unwind_Reason_Code set_landing_pad(_Unwind_Context *context,
 _Unwind_Reason_Code
 scalanative_personality(int version, _Unwind_Action actions,
                         uint64_t exception_class,
-                        struct _Unwind_Exception *unwind_exception,
+                        struct _Unwind_Exception *unwindException,
                         struct _Unwind_Context *context) {
     LSDA header(context);
     bool have_cleanup = false;
@@ -221,17 +221,17 @@ scalanative_personality(int version, _Unwind_Action actions,
                 continue;
             }
             struct ExceptionWrapper *generic_exception =
-                GetExceptionWrapper(unwind_exception);
+                GetExceptionWrapper(unwindException);
             if (call_site->action == 0 && actions & _UA_CLEANUP_PHASE) {
                 // clean up block?
-                return set_landing_pad(context, unwind_exception,
+                return set_landing_pad(context, unwindException,
                                        func_start + call_site->landing_pad, 0);
             }
             for (Action *action = header.get_first_action(call_site); action;
                  action = header.get_next_action()) {
                 if (action->type_index == 0) {
                     if (actions & _UA_CLEANUP_PHASE) {
-                        set_landing_pad(context, unwind_exception,
+                        set_landing_pad(context, unwindException,
                                         func_start + call_site->landing_pad, 0);
                         have_cleanup = true;
                     }
@@ -239,7 +239,7 @@ scalanative_personality(int version, _Unwind_Action actions,
                     if (actions & _UA_SEARCH_PHASE) {
                         return _URC_HANDLER_FOUND;
                     } else if (actions & _UA_CLEANUP_PHASE) {
-                        return set_landing_pad(context, unwind_exception,
+                        return set_landing_pad(context, unwindException,
                                                func_start +
                                                    call_site->landing_pad,
                                                action->type_index);
@@ -264,27 +264,26 @@ void *scalanative_catch(_Unwind_Exception *unwindException) {
     return exception;
 }
 
-// Throw function to raise a ExceptionWrapper
 void scalanative_throw(void *obj) {
     // Allocate and initialize the exception object
     // TODO: We could add space inside java.lang.Throwable to store
     // _UnwindException so we don't need to malloc at all
-    struct ExceptionWrapper *exception =
+    struct ExceptionWrapper *exceptionWrapper =
         (struct ExceptionWrapper *)malloc(sizeof(struct ExceptionWrapper));
-    if (!exception) {
+    if (!exceptionWrapper) {
         perror("Failed to allocate memory for exception");
         abort();
     }
 
-    exception->unwind_exception.exception_cleanup = generic_exception_cleanup;
-    exception->obj = obj;
+    exceptionWrapper->unwindException.exception_cleanup = generic_exception_cleanup;
+    exceptionWrapper->obj = obj;
 
     _Unwind_Reason_Code code =
-        _Unwind_RaiseException(&exception->unwind_exception);
+        _Unwind_RaiseException(&exceptionWrapper->unwindException);
 
     if (code == _URC_END_OF_STACK) {
         printf("No handler found for exception. Exiting.\n");
-        generic_exception_cleanup(code, &exception->unwind_exception);
+        generic_exception_cleanup(code, &exceptionWrapper->unwindException);
         abort();
     } else {
         printf("Unhandled exception: _Unwind_RaiseException returned %d\n",
@@ -295,7 +294,7 @@ void scalanative_throw(void *obj) {
 
 _Unwind_Reason_Code __gxx_personality_v0(int, _Unwind_Action actions,
                                          uint64_t exceptionClass,
-                                         _Unwind_Exception *unwind_exception,
+                                         _Unwind_Exception *unwindException,
                                          _Unwind_Context *context) {
     printf("__gxx_personality_v0 Provided as a stub. Should never be called\n");
     abort();
