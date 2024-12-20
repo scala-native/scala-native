@@ -293,7 +293,8 @@ private[scalanative] object LLVM {
       finally pw.close()
     }
 
-    val compiler = if (config.targetsWindows) config.clangPP.abs else config.clang.abs
+    val compiler =
+      if (config.targetsWindows) config.clangPP.abs else config.clang.abs
 
     val command = Seq(compiler, s"@${configFile.getAbsolutePath()}")
     config.logger.running(command)
