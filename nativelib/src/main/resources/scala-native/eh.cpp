@@ -17,6 +17,10 @@ class ExceptionWrapper : public std::exception {
 };
 } // namespace scalanative
 
+extern "C" {
+void scalanative_throw(void *obj) { throw scalanative::ExceptionWrapper(obj); }
+}
+
 #else
 
 #include "unwind.h"
@@ -29,7 +33,7 @@ extern "C" {
 // it. +1 goes to the end of the struct since since it adds with the size of
 // _Unwind_Exception, then we cast to ExceptionWrapper and we do - 1 to
 // go back of sizeof ExceptionWrapper
-#define GetExceptionWrapper(unwindException)                                  \
+#define GetExceptionWrapper(unwindException)                                   \
     ((struct ExceptionWrapper *)(unwindException + 1) - 1)
 
 struct ExceptionWrapper {
@@ -275,7 +279,8 @@ void scalanative_throw(void *obj) {
         abort();
     }
 
-    exceptionWrapper->unwindException.exception_cleanup = generic_exception_cleanup;
+    exceptionWrapper->unwindException.exception_cleanup =
+        generic_exception_cleanup;
     exceptionWrapper->obj = obj;
 
     _Unwind_Reason_Code code =
