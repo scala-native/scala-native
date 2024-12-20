@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+extern "C" {
+
 // gets the GenericException from the _Unwind_Exception which is at the end of
 // it. +1 goes to the end of the struct since since it adds with the size of
 // _Unwind_Exception, then we cast to GenericException and we do - 1 to
@@ -9,7 +11,6 @@
 #define GetGenericException(unwind_exception)                                  \
     ((struct GenericException *)(unwind_exception + 1) - 1)
 
-extern "C" {
 // Define an exception object with a void * obj
 struct GenericException {
     void *obj;                                 // The exception payload (void *)
@@ -20,7 +21,6 @@ struct GenericException {
 void generic_exception_cleanup(_Unwind_Reason_Code code,
                                struct _Unwind_Exception *exception) {
     struct GenericException *generic_exception = GetGenericException(exception);
-    printf("Cleaning up exception with payload: %p\n", generic_exception->obj);
     free(generic_exception); // Free the allocated memory
 }
 
@@ -202,7 +202,6 @@ scalanative_personality(int version, _Unwind_Action actions,
             }
             struct GenericException *generic_exception =
                 GetGenericException(unwind_exception);
-            // printf("got GenericException\n");
             if (call_site->action == 0 && actions & _UA_CLEANUP_PHASE) {
                 // clean up block?
                 return set_landing_pad(context, unwind_exception,
@@ -211,9 +210,7 @@ scalanative_personality(int version, _Unwind_Action actions,
             for (Action *action = header.get_first_action(call_site); action;
                  action = header.get_next_action()) {
                 if (action->type_index == 0) {
-                    // clean up action
                     if (actions & _UA_CLEANUP_PHASE) {
-                        // printf("clean up action\n");
                         set_landing_pad(context, unwind_exception,
                                         func_start + call_site->landing_pad, 0);
                         have_cleanup = true;
@@ -262,7 +259,6 @@ void scalanative_throw(void *obj) {
     exception->unwind_exception.exception_cleanup = generic_exception_cleanup;
     exception->obj = obj;
 
-    // Raise the exception
     _Unwind_Reason_Code code =
         _Unwind_RaiseException(&exception->unwind_exception);
 
