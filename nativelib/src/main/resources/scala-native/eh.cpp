@@ -2,7 +2,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-// + 1 goes to the end of the struct since since it adds with the size of
+// gets the GenericException from the _Unwind_Exception which is at the end of
+// it. +1 goes to the end of the struct since since it adds with the size of
 // _Unwind_Exception, then we cast to GenericException and we do - 1 to
 // go back of sizeof GenericException
 #define GetGenericException(unwind_exception)                                  \
@@ -237,16 +238,20 @@ scalanative_personality(int version, _Unwind_Action actions,
     return _URC_CONTINUE_UNWIND;
 }
 
-void *scalanative_begin_catch(_Unwind_Exception *exception) {
-    printf("called scalanative_begin_catch\n");
-    return GetGenericException(exception)->obj;
-}
+void *scalanative_catch(_Unwind_Exception *unwindException) {
+    GenericException *genericException = GetGenericException(unwindException);
+    void *exception = genericException->obj;
 
-void scalanative_end_catch(void) { printf("called scalanative_end_catch\n"); }
+    free(genericException);
+
+    return exception;
+}
 
 // Throw function to raise a GenericException
 void scalanative_throw(void *obj) {
     // Allocate and initialize the exception object
+    // TODO: We could add space inside java.lang.Throwable to store
+    // _UnwindException so we don't need to malloc at all
     struct GenericException *exception =
         (struct GenericException *)malloc(sizeof(struct GenericException));
     if (!exception) {
@@ -254,11 +259,8 @@ void scalanative_throw(void *obj) {
         abort();
     }
 
-    // Initialize the base exception structure
-    // exception->unwind_exception.exception_class =
-    //     0x564F4944434C4153ULL; // "VOIDCLAS"
-    // exception->unwind_exception.exception_cleanup =
-    // generic_exception_cleanup; exception->obj = obj;
+    exception->unwind_exception.exception_cleanup = generic_exception_cleanup;
+    exception->obj = obj;
 
     // Raise the exception
     _Unwind_Reason_Code code =
