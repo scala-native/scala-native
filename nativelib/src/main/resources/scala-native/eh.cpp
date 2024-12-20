@@ -25,23 +25,22 @@ class ExceptionWrapper : public std::exception {
 
 extern "C" {
 
-// gets the GenericException from the _Unwind_Exception which is at the end of
+// gets the ExceptionWrapper from the _Unwind_Exception which is at the end of
 // it. +1 goes to the end of the struct since since it adds with the size of
-// _Unwind_Exception, then we cast to GenericException and we do - 1 to
-// go back of sizeof GenericException
-#define GetGenericException(unwind_exception)                                  \
-    ((struct GenericException *)(unwind_exception + 1) - 1)
+// _Unwind_Exception, then we cast to ExceptionWrapper and we do - 1 to
+// go back of sizeof ExceptionWrapper
+#define GetExceptionWrapper(unwind_exception)                                  \
+    ((struct ExceptionWrapper *)(unwind_exception + 1) - 1)
 
-// Define an exception object with a void * obj
-struct GenericException {
-    void *obj;                                 // The exception payload (void *)
-    struct _Unwind_Exception unwind_exception; // Base exception structure
+struct ExceptionWrapper {
+    void *obj;
+    struct _Unwind_Exception unwind_exception;
 };
 
 // Cleanup function for the exception
 void generic_exception_cleanup(_Unwind_Reason_Code code,
                                struct _Unwind_Exception *exception) {
-    struct GenericException *generic_exception = GetGenericException(exception);
+    struct ExceptionWrapper *generic_exception = GetExceptionWrapper(exception);
     free(generic_exception); // Free the allocated memory
 }
 
@@ -221,8 +220,8 @@ scalanative_personality(int version, _Unwind_Action actions,
             if (!call_site->valid_for_throw_ip(context)) {
                 continue;
             }
-            struct GenericException *generic_exception =
-                GetGenericException(unwind_exception);
+            struct ExceptionWrapper *generic_exception =
+                GetExceptionWrapper(unwind_exception);
             if (call_site->action == 0 && actions & _UA_CLEANUP_PHASE) {
                 // clean up block?
                 return set_landing_pad(context, unwind_exception,
@@ -257,21 +256,21 @@ scalanative_personality(int version, _Unwind_Action actions,
 }
 
 void *scalanative_catch(_Unwind_Exception *unwindException) {
-    GenericException *genericException = GetGenericException(unwindException);
-    void *exception = genericException->obj;
+    ExceptionWrapper *exceptionWrapper = GetExceptionWrapper(unwindException);
+    void *exception = exceptionWrapper->obj;
 
-    free(genericException);
+    free(exceptionWrapper);
 
     return exception;
 }
 
-// Throw function to raise a GenericException
+// Throw function to raise a ExceptionWrapper
 void scalanative_throw(void *obj) {
     // Allocate and initialize the exception object
     // TODO: We could add space inside java.lang.Throwable to store
     // _UnwindException so we don't need to malloc at all
-    struct GenericException *exception =
-        (struct GenericException *)malloc(sizeof(struct GenericException));
+    struct ExceptionWrapper *exception =
+        (struct ExceptionWrapper *)malloc(sizeof(struct ExceptionWrapper));
     if (!exception) {
         perror("Failed to allocate memory for exception");
         abort();
