@@ -11,12 +11,11 @@ private[codegen] class UnixCompat(codegen: AbstractCodeGen)
 
   import codegen.{pointerType => ptrT}
 
-  val ehWrapperTy = "@_ZTIPv"
   val excRecTy = s"{ $ptrT, i32 }"
   val scalaNativeCatch = "@scalanative_catch"
   val catchSig =
-    if (useOpaquePointers) s"$ptrT $ehWrapperTy"
-    else s"i8* $ehWrapperTy"
+    if (useOpaquePointers) s"$ptrT null"
+    else s"i8* null"
   val landingpad =
     s"landingpad $excRecTy catch $catchSig"
 
@@ -63,10 +62,8 @@ private[codegen] class UnixCompat(codegen: AbstractCodeGen)
 
   def genPrelude()(implicit builder: ShowBuilder): Unit = {
     import builder._
-    // line(s"declare i32 @llvm.eh.typeid.for($ptrT)")
     line(s"declare i32 $osPersonalityType(...)")
     line(s"declare $ptrT $scalaNativeCatch($ptrT)")
-    line(s"$ehWrapperTy = external constant ptr")
   }
 
 }
