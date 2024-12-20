@@ -44,8 +44,8 @@ struct ExceptionWrapper {
 // Cleanup function for the exception
 void generic_exception_cleanup(_Unwind_Reason_Code code,
                                struct _Unwind_Exception *exception) {
-    struct ExceptionWrapper *generic_exception = GetExceptionWrapper(exception);
-    free(generic_exception); // Free the allocated memory
+    struct ExceptionWrapper *exceptionWrapper = GetExceptionWrapper(exception);
+    free(exceptionWrapper); // Free the allocated memory
 }
 
 typedef const uint8_t *LSDA_ptr;
@@ -224,7 +224,7 @@ scalanative_personality(int version, _Unwind_Action actions,
             if (!call_site->valid_for_throw_ip(context)) {
                 continue;
             }
-            struct ExceptionWrapper *generic_exception =
+            struct ExceptionWrapper *exceptionWrapper =
                 GetExceptionWrapper(unwindException);
             if (call_site->action == 0 && actions & _UA_CLEANUP_PHASE) {
                 // clean up block?
