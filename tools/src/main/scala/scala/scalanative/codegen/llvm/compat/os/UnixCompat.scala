@@ -11,19 +11,20 @@ private[codegen] class UnixCompat(codegen: AbstractCodeGen)
 
   import codegen.{pointerType => ptrT}
 
-  val ehWrapperTy = "@_ZTIN11scalanative16ExceptionWrapperE"
+  val ehWrapperTy = "@_ZTIPv"
   val excRecTy = s"{ $ptrT, i32 }"
-  val beginCatch = "@__cxa_begin_catch"
-  val endCatch = "@__cxa_end_catch"
+  val beginCatch = "@scalanative_begin_catch"
+  // val beginCatch = "@__cxa_begin_catch"
+  val endCatch = "@scalanative_end_catch"
+  // val endCatch = "@__cxa_end_catch"
   val catchSig =
     if (useOpaquePointers) s"$ptrT $ehWrapperTy"
-    else s"i8* bitcast ({ i8*, i8*, i8* }* $ehWrapperTy to i8*)"
+    else s"i8* $ehWrapperTy"
   val landingpad =
     s"landingpad $excRecTy catch $catchSig"
-  val typeid =
-    s"call i32 @llvm.eh.typeid.for($catchSig)"
 
-  protected val osPersonalityType: String = "@__gxx_personality_v0"
+  // protected val osPersonalityType: String = "@__gxx_personality_v0"
+  protected val osPersonalityType: String = "@scalanative_personality"
 
   override def genBlockAlloca(block: nir.ControlFlow.Block)(implicit
       sb: ShowBuilder
@@ -42,10 +43,9 @@ private[codegen] class UnixCompat(codegen: AbstractCodeGen)
 
     val excpad = "_" + excname.id + ".landingpad"
     val excsucc = excpad + ".succ"
-    val excfail = excpad + ".fail"
 
     val exc = "%_" + excname.id
-    val rec, r0, r1, id, cmp = "%_" + fresh().id
+    val rec, r0, id = "%_" + fresh().id
     val w0, w1, w2 = "%_" + fresh().id
 
     def line(s: String) = { newline(); str(s) }
@@ -54,41 +54,31 @@ private[codegen] class UnixCompat(codegen: AbstractCodeGen)
     indent()
     line(s"$rec = $landingpad")
     line(s"$r0 = extractvalue $excRecTy $rec, 0")
-    line(s"$r1 = extractvalue $excRecTy $rec, 1")
-    line(s"$id = $typeid")
-    line(s"$cmp = icmp eq i32 $r1, $id")
-    line(s"br i1 $cmp, label %$excsucc, label %$excfail")
+    line(s"br label %$excsucc")
     unindent()
 
     line(s"$excsucc:")
     indent()
-    line(s"$w0 = call $ptrT $beginCatch($ptrT $r0)")
-    if (useOpaquePointers) {
-      line(s"$w2 = getelementptr ptr, ptr $w0, i32 1")
-      line(s"$exc = load ptr, ptr $w2")
-    } else {
-      line(s"$w1 = bitcast i8* $w0 to i8**")
-      line(s"$w2 = getelementptr i8*, i8** $w1, i32 1")
-      line(s"$exc = load i8*, i8** $w2")
-    }
+    line(s"$exc = call $ptrT $beginCatch($ptrT $r0)")
     line(s"call void $endCatch()")
-    str("br ")
+    line("br ")
     codegen.genNext(next)
     unindent()
 
-    line(s"$excfail:")
-    indent()
-    line(s"resume $excRecTy $rec")
-    unindent()
+    // line(s"$excfail:")
+    // indent()
+    // line(s"resume $excRecTy $rec")
+    // unindent()
   }
 
   def genPrelude()(implicit builder: ShowBuilder): Unit = {
     import builder._
-    line(s"declare i32 @llvm.eh.typeid.for($ptrT)")
+    // line(s"declare i32 @llvm.eh.typeid.for($ptrT)")
     line(s"declare i32 $osPersonalityType(...)")
     line(s"declare $ptrT $beginCatch($ptrT)")
     line(s"declare void $endCatch()")
-    line(s"$ehWrapperTy = external constant { $ptrT, $ptrT, $ptrT }")
+    line(s"$ehWrapperTy = external constant ptr")
+    // line(s"$ehWrapperTy = external constant { $ptrT, $ptrT, $ptrT }")
   }
 
 }
