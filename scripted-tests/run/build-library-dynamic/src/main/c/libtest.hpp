@@ -22,6 +22,6 @@ void sayHello(void);
 long add_longs(long l, long r);
 struct Foo *retStructPtr(void);
 void updateStruct(struct Foo *p);
-void fail();
+void handledException();
 void sn_runGC(void);
 }
