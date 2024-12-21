@@ -1,3 +1,5 @@
+#if defined(_WIN32)
+
 #include <exception>
 
 // Scala Native compiles Scala's exception in C++-compatible
@@ -18,3 +20,5 @@ class ExceptionWrapper : public std::exception {
 extern "C" {
 void scalanative_throw(void *obj) { throw scalanative::ExceptionWrapper(obj); }
 }
+
+#endif

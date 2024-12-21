@@ -35,28 +35,7 @@ int main() {
 
     sn_runGC();
 
-    // Catching exceptions thrown in Scala Native does not work in Linux
-    // As a rule, exceptions must not propagate module boundaries.
-#ifdef _WIN32
-    bool exceptionCaught = false;
-    try {
-        fail();
-    } catch (const std::exception &e) {
-        exceptionCaught = true;
-    }
-    assert(exceptionCaught);
-
-    // For some unknown reason on macOS our exception wrapper is not being
-    // caught. It works fine on Linux and Windows however.
-    // It's still possible to catch std::exception though
-    exceptionCaught = false;
-    try {
-        fail();
-    } catch (const scalanative::ExceptionWrapper &e) {
-        exceptionCaught = true;
-    }
-    assert(exceptionCaught);
-#endif
+    handledException();
 
     return 0;
 }

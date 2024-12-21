@@ -85,8 +85,14 @@ private[scalanative] object LLVM {
       multithreadingEnabled ++ allowTargetOverrrides
     }
     val exceptionsHandling = {
-      val opt = if (isCpp) List("-fcxx-exceptions") else Nil
-      List("-fexceptions", "-funwind-tables") ::: opt
+      val targetSpecific = if (config.targetsWindows) {
+        val opt = if (isCpp) List("-fcxx-exceptions") else Nil
+        List("-fexceptions", "-funwind-tables") ++ opt
+      } else {
+        if (isCpp) List("-fno-rtti", "-fno-exceptions", "-funwind-tables")
+        else Nil
+      }
+      targetSpecific
     }
     // Always generate debug metadata on Windows, it's required for stack traces to work
     val debugFlags =
@@ -221,7 +227,7 @@ private[scalanative] object LLVM {
         if (config.targetsWindows) Seq("dbghelp")
         else if (config.targetsOpenBSD || config.targetsNetBSD)
           Seq("pthread")
-        else Seq("pthread", "dl")
+        else Seq("pthread", "dl", "m")
       platformsLinks ++ srclinks ++ gclinks
     }.distinct
     config.logger.info(s"Linking with [${links.mkString(", ")}]")
@@ -287,7 +293,10 @@ private[scalanative] object LLVM {
       finally pw.close()
     }
 
-    val command = Seq(config.clangPP.abs, s"@${configFile.getAbsolutePath()}")
+    val compiler =
+      if (config.targetsWindows) config.clangPP.abs else config.clang.abs
+
+    val command = Seq(compiler, s"@${configFile.getAbsolutePath()}")
     config.logger.running(command)
     Process(command, config.workDir.toFile())
   }
