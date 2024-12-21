@@ -296,13 +296,5 @@ void scalanative_throw(void *obj) {
         abort();
     }
 }
-
-_Unwind_Reason_Code __gxx_personality_v0(int, _Unwind_Action actions,
-                                         uint64_t exceptionClass,
-                                         _Unwind_Exception *unwindException,
-                                         _Unwind_Context *context) {
-    printf("__gxx_personality_v0 Provided as a stub. Should never be called\n");
-    abort();
-}
 }
 #endif

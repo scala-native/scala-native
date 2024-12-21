@@ -89,7 +89,7 @@ private[scalanative] object LLVM {
         val opt = if (isCpp) List("-fcxx-exceptions") else Nil
         List("-fexceptions", "-funwind-tables") ++ opt
       } else {
-        if (isCpp) List("-fno-rtti")
+        if (isCpp) List("-fno-rtti", "-fno-exceptions", "-funwind-tables")
         else Nil
       }
       targetSpecific
