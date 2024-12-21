@@ -1,56 +1,33 @@
-#ifdef _WIN32
+#if defined(__unix__) || defined(__unix) || defined(unix) ||                   \
+    (defined(__APPLE__) && defined(__MACH__))
 
-#include <exception>
-
-// Scala Native compiles Scala's exception in C++-compatible
-// manner under the hood. Every exception thrown on the Scala
-// side is wrapped into ExceptionWrapper and only
-// ExceptionWrapper-based exceptions can be caught by
-// Scala code. We currently do not support catching arbitrary
-// C++ exceptions.
-
-namespace scalanative {
-class ExceptionWrapper : public std::exception {
-  public:
-    ExceptionWrapper(void *_obj) : obj(_obj) {}
-    void *obj;
-};
-} // namespace scalanative
-
-extern "C" {
-void scalanative_throw(void *obj) { throw scalanative::ExceptionWrapper(obj); }
-}
-
-#else
-
-#include "unwind.h"
 #include <stdlib.h>
 #include <stdio.h>
-
-extern "C" {
+#include <stdbool.h>
+#include "unwind.h"
 
 // gets the ExceptionWrapper from the _Unwind_Exception which is at the end of
 // it. +1 goes to the end of the struct since since it adds with the size of
 // _Unwind_Exception, then we cast to ExceptionWrapper and we do - 1 to
 // go back of sizeof ExceptionWrapper
 #define GetExceptionWrapper(unwindException)                                   \
-    ((struct ExceptionWrapper *)(unwindException + 1) - 1)
+    ((ExceptionWrapper *)(unwindException + 1) - 1)
 
-struct ExceptionWrapper {
+typedef struct ExceptionWrapper {
     void *obj;
-    struct _Unwind_Exception unwindException;
-};
+    _Unwind_Exception unwindException;
+} ExceptionWrapper;
 
 // Cleanup function for the exception
 void generic_exception_cleanup(_Unwind_Reason_Code code,
-                               struct _Unwind_Exception *exception) {
-    struct ExceptionWrapper *exceptionWrapper = GetExceptionWrapper(exception);
+                               _Unwind_Exception *exception) {
+    ExceptionWrapper *exceptionWrapper = GetExceptionWrapper(exception);
     free(exceptionWrapper); // Free the allocated memory
 }
 
 typedef const uint8_t *LSDA_ptr;
 
-uint64_t read_uleb_128(const uint8_t **data) {
+uint64_t read_uleb_128(LSDA_ptr *data) {
     uint64_t result = 0;
     int shift = 0;
     uint8_t byte = 0;
@@ -63,11 +40,11 @@ uint64_t read_uleb_128(const uint8_t **data) {
     return result;
 }
 
-int64_t read_sleb_128(const uint8_t **data) {
+uint64_t read_sleb_128(LSDA_ptr *data) {
     uint64_t result = 0;
     int shift = 0;
     uint8_t byte = 0;
-    auto p = *data;
+    const uint8_t *p = *data;
     do {
         byte = *p;
         p++;
@@ -75,85 +52,56 @@ int64_t read_sleb_128(const uint8_t **data) {
         shift += 7;
     } while (byte & 0b10000000);
     if ((byte & 0x40) && (shift < (sizeof(result) << 3))) {
-        result |= static_cast<uintptr_t>(~0) << shift;
+        result |= (uintptr_t)(~0) << shift;
     }
     return result;
 }
 
-struct LSDA_call_site_Header {
-    LSDA_call_site_Header(LSDA_ptr *lsda) {
-        LSDA_ptr read_ptr = *lsda;
-        encoding = read_ptr[0];
-        *lsda += 1;
-        length = read_uleb_128(lsda);
-    }
-
-    LSDA_call_site_Header() = default;
-
+typedef struct LSDA_call_site_Header {
     uint8_t encoding;
     uint64_t length;
-};
+} LSDA_call_site_Header;
 
-struct Action {
+void LSDA_call_site_Header_init(LSDA_call_site_Header *header, LSDA_ptr *lsda) {
+    LSDA_ptr read_ptr = *lsda;
+    header->encoding = read_ptr[0];
+    *lsda += 1;
+    header->length = read_uleb_128(lsda);
+}
+
+typedef struct Action {
     uint8_t type_index;
     int8_t next_offset;
     LSDA_ptr my_ptr;
-};
+} Action;
 
-struct LSDA_call_site {
-    explicit LSDA_call_site(LSDA_ptr *lsda) {
-        LSDA_ptr read_ptr = *lsda;
-        start = read_uleb_128(lsda);
-        len = read_uleb_128(lsda);
-        landing_pad = read_uleb_128(lsda);
-        action = read_uleb_128(lsda);
-    }
-
-    LSDA_call_site() = default;
-
-    bool has_landing_pad() const { return landing_pad; }
-
-    bool valid_for_throw_ip(_Unwind_Context *context) const {
-        uintptr_t func_start = _Unwind_GetRegionStart(context);
-        uintptr_t try_start = func_start + start;
-        uintptr_t try_end = try_start + len;
-        uintptr_t throw_ip = _Unwind_GetIP(context) - 1;
-        if (throw_ip > try_end || throw_ip < try_start) {
-            return false;
-        }
-        return true;
-    }
-
+typedef struct LSDA_call_site {
     uint64_t start;
     uint64_t len;
     uint64_t landing_pad;
     uint64_t action;
-};
+} LSDA_call_site;
 
-struct LSDA {
-    explicit LSDA(_Unwind_Context *context) {
-        lsda = (uint8_t *)_Unwind_GetLanguageSpecificData(context);
-        start_encoding = lsda[0];
-        type_encoding = lsda[1];
-        lsda += 2;
-        if (type_encoding != 0xff) { // TODO: think
-            type_table_offset = read_uleb_128(&lsda);
-        }
-        types_table_start = ((const int *)(lsda + type_table_offset));
-        call_site_header = LSDA_call_site_Header(&lsda);
-        call_site_table_end = lsda + call_site_header.length;
-        next_call_site_ptr = lsda;
-        action_table_start = call_site_table_end;
+void LSDA_call_site_init(LSDA_call_site *callSite, LSDA_ptr *lsda) {
+    callSite->start = read_uleb_128(lsda);
+    callSite->len = read_uleb_128(lsda);
+    callSite->landing_pad = read_uleb_128(lsda);
+    callSite->action = read_uleb_128(lsda);
+}
+
+bool LSDA_call_site_valid_for_throw_ip(const LSDA_call_site *callSite,
+                                       _Unwind_Context *context) {
+    uintptr_t func_start = _Unwind_GetRegionStart(context);
+    uintptr_t try_start = func_start + callSite->start;
+    uintptr_t try_end = try_start + callSite->len;
+    uintptr_t throw_ip = _Unwind_GetIP(context) - 1;
+    if (throw_ip > try_end || throw_ip < try_start) {
+        return false;
     }
+    return true;
+}
 
-    LSDA_call_site *get_next_call_site() {
-        if (next_call_site_ptr > call_site_table_end) {
-            return nullptr;
-        }
-        next_call_site = LSDA_call_site(&next_call_site_ptr);
-        return &next_call_site;
-    }
-
+typedef struct LSDA {
     uint8_t start_encoding;
     uint8_t type_encoding;
     uint64_t type_table_offset;
@@ -166,31 +114,56 @@ struct LSDA {
     LSDA_ptr action_table_start;
     Action current_action;
     const int *types_table_start;
+} LSDA;
 
-    Action *get_first_action(LSDA_call_site *call_site) {
-        if (call_site->action == 0) {
-            return nullptr;
-        }
-        LSDA_ptr raw_ptr = action_table_start + call_site->action - 1;
-        current_action.type_index = raw_ptr[0];
-        raw_ptr++;
-        current_action.next_offset = read_sleb_128(&raw_ptr);
-        current_action.my_ptr = raw_ptr;
-        return &current_action;
+void LSDA_init(LSDA *lsda, _Unwind_Context *context) {
+    lsda->lsda = (uint8_t *)_Unwind_GetLanguageSpecificData(context);
+    lsda->start_encoding = lsda->lsda[0];
+    lsda->type_encoding = lsda->lsda[1];
+    lsda->lsda += 2;
+    if (lsda->type_encoding != 0xff) {
+        lsda->type_table_offset = read_uleb_128(&lsda->lsda);
     }
+    lsda->types_table_start =
+        ((const int *)(lsda->lsda + lsda->type_table_offset));
+    LSDA_call_site_Header_init(&lsda->call_site_header, &lsda->lsda);
+    lsda->call_site_table_end = lsda->lsda + lsda->call_site_header.length;
+    lsda->next_call_site_ptr = lsda->lsda;
+    lsda->action_table_start = lsda->call_site_table_end;
+}
 
-    Action *get_next_action() {
-        if (current_action.next_offset == 0) {
-            return nullptr;
-        }
-        LSDA_ptr raw_ptr = current_action.my_ptr + current_action.next_offset;
-        current_action.type_index = raw_ptr[0];
-        raw_ptr++;
-        current_action.next_offset = read_sleb_128(&raw_ptr);
-        current_action.my_ptr = raw_ptr;
-        return &current_action;
+LSDA_call_site *LSDA_get_next_call_site(LSDA *lsda) {
+    if (lsda->next_call_site_ptr > lsda->call_site_table_end) {
+        return NULL;
     }
-};
+    LSDA_call_site_init(&lsda->next_call_site, &lsda->next_call_site_ptr);
+    return &lsda->next_call_site;
+}
+
+Action *LSDA_get_first_action(LSDA *lsda, LSDA_call_site *call_site) {
+    if (call_site->action == 0) {
+        return NULL;
+    }
+    LSDA_ptr raw_ptr = lsda->action_table_start + call_site->action - 1;
+    lsda->current_action.type_index = raw_ptr[0];
+    raw_ptr++;
+    lsda->current_action.next_offset = read_sleb_128(&raw_ptr);
+    lsda->current_action.my_ptr = raw_ptr;
+    return &lsda->current_action;
+}
+
+Action *LSDA_get_next_action(LSDA *lsda) {
+    if (lsda->current_action.next_offset == 0) {
+        return NULL;
+    }
+    LSDA_ptr raw_ptr =
+        lsda->current_action.my_ptr + lsda->current_action.next_offset;
+    lsda->current_action.type_index = raw_ptr[0];
+    raw_ptr++;
+    lsda->current_action.next_offset = read_sleb_128(&raw_ptr);
+    lsda->current_action.my_ptr = raw_ptr;
+    return &lsda->current_action;
+}
 
 _Unwind_Reason_Code set_landing_pad(_Unwind_Context *context,
                                     _Unwind_Exception *unwindException,
@@ -207,32 +180,32 @@ _Unwind_Reason_Code set_landing_pad(_Unwind_Context *context,
 }
 
 // A personality function to catch all exceptions
-_Unwind_Reason_Code
-scalanative_personality(int version, _Unwind_Action actions,
-                        uint64_t exception_class,
-                        struct _Unwind_Exception *unwindException,
-                        struct _Unwind_Context *context) {
-    LSDA header(context);
+_Unwind_Reason_Code scalanative_personality(int version, _Unwind_Action actions,
+                                            uint64_t exception_class,
+                                            _Unwind_Exception *unwindException,
+                                            _Unwind_Context *context) {
+    LSDA header;
+    LSDA_init(&header, context);
     bool have_cleanup = false;
 
     // Loop through each entry in the call_site table
-    for (LSDA_call_site *call_site = header.get_next_call_site(); call_site;
-         call_site = header.get_next_call_site()) {
+    for (LSDA_call_site *call_site = LSDA_get_next_call_site(&header);
+         call_site; call_site = LSDA_get_next_call_site(&header)) {
 
-        if (call_site->has_landing_pad()) {
+        if (call_site->landing_pad) {
             uintptr_t func_start = _Unwind_GetRegionStart(context);
-            if (!call_site->valid_for_throw_ip(context)) {
+            if (!LSDA_call_site_valid_for_throw_ip(call_site, context)) {
                 continue;
             }
-            struct ExceptionWrapper *exceptionWrapper =
+            ExceptionWrapper *exceptionWrapper =
                 GetExceptionWrapper(unwindException);
             if (call_site->action == 0 && actions & _UA_CLEANUP_PHASE) {
                 // clean up block?
                 return set_landing_pad(context, unwindException,
                                        func_start + call_site->landing_pad, 0);
             }
-            for (Action *action = header.get_first_action(call_site); action;
-                 action = header.get_next_action()) {
+            for (Action *action = LSDA_get_first_action(&header, call_site);
+                 action; action = LSDA_get_next_action(&header)) {
                 if (action->type_index == 0) {
                     if (actions & _UA_CLEANUP_PHASE) {
                         set_landing_pad(context, unwindException,
@@ -272,8 +245,8 @@ void scalanative_throw(void *obj) {
     // Allocate and initialize the exception object
     // TODO: We could add space inside java.lang.Throwable to store
     // _UnwindException so we don't need to malloc at all
-    struct ExceptionWrapper *exceptionWrapper =
-        (struct ExceptionWrapper *)malloc(sizeof(struct ExceptionWrapper));
+    ExceptionWrapper *exceptionWrapper =
+        (ExceptionWrapper *)malloc(sizeof(ExceptionWrapper));
     if (!exceptionWrapper) {
         perror("Failed to allocate memory for exception");
         abort();
@@ -295,6 +268,5 @@ void scalanative_throw(void *obj) {
                code);
         abort();
     }
-}
 }
 #endif
