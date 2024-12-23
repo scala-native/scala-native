@@ -215,7 +215,7 @@ object Build {
   /** Links the DWARF debug information found in the object files. */
   private def postProcess(config: Config, artifact: Path): Path =
     config.logger.time("Postprocessing") {
-      if (Platform.isMac && config.compilerConfig.sourceLevelDebuggingConfig.generateFunctionSourcePositions) {
+      if (config.targetsMac && config.compilerConfig.sourceLevelDebuggingConfig.generateFunctionSourcePositions) {
         LLVM.dsymutil(config, artifact)
       }
       artifact
