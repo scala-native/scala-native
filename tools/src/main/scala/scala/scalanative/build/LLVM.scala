@@ -231,7 +231,18 @@ private[scalanative] object LLVM {
       platformsLinks ++ srclinks ++ gclinks
     }.distinct
     config.logger.info(s"Linking with [${links.mkString(", ")}]")
-    val linkopts = config.linkingOptions ++ links.map("-l" + _)
+    // GNU ld and ld.lld support the --as-needed flag which avoids linking
+    // libraries (defined after the option) you don't use. LLVM intrinsics
+    // call libm which is not added by default. However, the math functions
+    // in libm as often inlined in release mode which makes it useless to
+    // link it. The Mac OS linker doesn't support the flag and libm is not
+    // in a separate library there, so we use it only in other UNIX targets
+    // (also Windows on msys and cgwin)
+    val asNeededLinkerFlags =
+      if (config.targetsWindows || config.targetsMac) Nil
+      else List("-Wl,--as-needed")
+    val linkopts =
+      asNeededLinkerFlags ++ config.linkingOptions ++ links.map("-l" + _)
 
     val flags = {
       val debugFlags =
