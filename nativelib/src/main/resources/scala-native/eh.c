@@ -1,5 +1,4 @@
-#if defined(__unix__) || defined(__unix) || defined(unix) ||                   \
-    (defined(__APPLE__) && defined(__MACH__))
+#ifndef SCALANATIVE_USING_CPP_EXCEPTIONS
 
 #include <stdlib.h>
 #include <stdio.h>

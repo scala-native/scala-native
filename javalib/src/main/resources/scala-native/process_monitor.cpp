@@ -1,3 +1,4 @@
+#if defined(SCALANATIVE_CPP_RUNTIME_ENABLED)
 // This mechanism is only used in POSIX compliant platforms.
 // On Windows other build in approach is used.
 #if defined(SCALANATIVE_COMPILE_ALWAYS) ||                                     \
@@ -158,4 +159,5 @@ void scalanative_process_monitor_init() {
 }
 
 #endif // Unix or Mac OS
-#endif // __SCALANATIVE_PROCESS_MONITOR
+#endif // __SCALANATIVE_JAVALIB_PROCESS_MONITOR
+#endif // SCALANATIVE_CPP_RUNTIME_ENABLED

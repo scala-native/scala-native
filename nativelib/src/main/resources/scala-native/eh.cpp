@@ -1,4 +1,4 @@
-#if defined(_WIN32)
+#if defined(SCALANATIVE_USING_CPP_EXCEPTIONS)
 
 #include <exception>
 

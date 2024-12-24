@@ -200,7 +200,7 @@ sealed trait Config {
   private[scalanative] def isCPPRuntimeEnabled: Boolean =
     targetsWindows || compilerConfig.useCPPRuntime
 
-  private[scalanative] def useCPPExceptions: Boolean =
+  private[scalanative] def usingCPPExceptions: Boolean =
     targetsWindows
 }
 
