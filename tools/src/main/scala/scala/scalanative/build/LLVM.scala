@@ -85,7 +85,7 @@ private[scalanative] object LLVM {
       multithreadingEnabled ++ allowTargetOverrrides
     }
     val exceptionsHandling = {
-      val targetSpecific = if (config.targetsWindows) {
+      val targetSpecific = if (config.useCPPExceptions) {
         val opt = if (isCpp) List("-fcxx-exceptions") else Nil
         List("-fexceptions", "-funwind-tables") ++ opt
       } else {
@@ -305,7 +305,7 @@ private[scalanative] object LLVM {
     }
 
     val compiler =
-      if (config.targetsWindows) config.clangPP.abs else config.clang.abs
+      if (config.isCPPRuntimeEnabled) config.clangPP.abs else config.clang.abs
 
     val command = Seq(compiler, s"@${configFile.getAbsolutePath()}")
     config.logger.running(command)

@@ -96,4 +96,7 @@ object LinktimeInfo {
     def generateFunctionSourcePositions: Boolean = resolved
 
   }
+
+  @resolvedAtLinktime("scala.scalanative.meta.linktimeinfo.usingCPPRuntime")
+  def usingCPPRuntime: Boolean = resolved
 }
