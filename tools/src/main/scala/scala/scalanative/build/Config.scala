@@ -196,6 +196,12 @@ sealed trait Config {
           .getOrElse(compilerConfig.mode.isInstanceOf[Mode.Release])
       case _ => false
     }
+
+  private[scalanative] def isCPPRuntimeEnabled: Boolean =
+    targetsWindows || compilerConfig.useCPPRuntime
+
+  private[scalanative] def usingCPPExceptions: Boolean =
+    targetsWindows
 }
 
 /** Factory to create [[#empty]] [[Config]] objects */

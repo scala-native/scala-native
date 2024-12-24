@@ -80,13 +80,27 @@ private[scalanative] object LLVM {
         if (config.compilerConfig.multithreadingSupport)
           Seq("-DSCALANATIVE_MULTITHREADING_ENABLED")
         else Nil
+      val cppRuntimeEnabled =
+        if (config.isCPPRuntimeEnabled)
+          Seq("-DSCALANATIVE_CPP_RUNTIME_ENABLED")
+        else Nil
+      val usingCPPExceptions =
+        if (config.usingCPPExceptions)
+          Seq("-DSCALANATIVE_USING_CPP_EXCEPTIONS")
+        else Nil
       val allowTargetOverrrides =
         config.compilerConfig.targetTriple.map(_ => s"-Wno-override-module")
-      multithreadingEnabled ++ allowTargetOverrrides
+      multithreadingEnabled ++ cppRuntimeEnabled ++ usingCPPExceptions ++ allowTargetOverrrides
     }
     val exceptionsHandling = {
-      val opt = if (isCpp) List("-fcxx-exceptions") else Nil
-      List("-fexceptions", "-funwind-tables") ::: opt
+      val targetSpecific = if (config.usingCPPExceptions) {
+        val opt = if (isCpp) List("-fcxx-exceptions") else Nil
+        List("-fexceptions", "-funwind-tables") ++ opt
+      } else {
+        if (isCpp) List("-fno-rtti", "-fno-exceptions", "-funwind-tables")
+        else Nil
+      }
+      targetSpecific
     }
     // Always generate debug metadata on Windows, it's required for stack traces to work
     val debugFlags =
@@ -221,11 +235,22 @@ private[scalanative] object LLVM {
         if (config.targetsWindows) Seq("dbghelp")
         else if (config.targetsOpenBSD || config.targetsNetBSD)
           Seq("pthread")
-        else Seq("pthread", "dl")
+        else Seq("pthread", "dl", "m")
       platformsLinks ++ srclinks ++ gclinks
     }.distinct
     config.logger.info(s"Linking with [${links.mkString(", ")}]")
-    val linkopts = config.linkingOptions ++ links.map("-l" + _)
+    // GNU ld and ld.lld support the --as-needed flag which avoids linking
+    // libraries (defined after the option) you don't use. LLVM intrinsics
+    // call libm which is not added by default. However, the math functions
+    // in libm as often inlined in release mode which makes it useless to
+    // link it. The Mac OS linker doesn't support the flag and libm is not
+    // in a separate library there, so we use it only in other UNIX targets
+    // (also Windows on msys and cgwin)
+    val asNeededLinkerFlags =
+      if (config.targetsWindows || config.targetsMac) Nil
+      else List("-Wl,--as-needed")
+    val linkopts =
+      asNeededLinkerFlags ++ config.linkingOptions ++ links.map("-l" + _)
 
     val flags = {
       val debugFlags =
@@ -287,7 +312,10 @@ private[scalanative] object LLVM {
       finally pw.close()
     }
 
-    val command = Seq(config.clangPP.abs, s"@${configFile.getAbsolutePath()}")
+    val compiler =
+      if (config.isCPPRuntimeEnabled) config.clangPP.abs else config.clang.abs
+
+    val command = Seq(compiler, s"@${configFile.getAbsolutePath()}")
     config.logger.running(command)
     Process(command, config.workDir.toFile())
   }

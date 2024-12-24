@@ -52,16 +52,20 @@ object RyuFloat {
 
   final val LOG10_2_DENOMINATOR = 10000000L
 
-  final val LOG10_2_NUMERATOR = (LOG10_2_DENOMINATOR * Math.log10(2)).toLong
+  private final val LOG10_2 = 0.3010299956639812
+
+  final val LOG10_2_NUMERATOR = (LOG10_2_DENOMINATOR * LOG10_2).toLong
 
   final val LOG10_5_DENOMINATOR = 10000000L
 
-  final val LOG10_5_NUMERATOR = (LOG10_5_DENOMINATOR * Math.log10(5)).toLong
+  private final val LOG10_5 = 0.6989700043360189
+
+  final val LOG10_5_NUMERATOR = (LOG10_5_DENOMINATOR * LOG10_5).toLong
 
   final val LOG2_5_DENOMINATOR = 10000000L
 
   final val LOG2_5_NUMERATOR =
-    (LOG2_5_DENOMINATOR * (Math.log(5) / Math.log(2))).toLong
+    (LOG2_5_DENOMINATOR * (LOG10_5 / LOG10_2)).toLong
 
   final val POW5_BITCOUNT = 61
 

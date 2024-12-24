@@ -47,8 +47,12 @@ object libtest {
   }
 
   @exported
-  def fail(): Unit = {
-    throw new RuntimeException("Exception from ScalaNative")
+  def handledException(): Unit = {
+    try {
+      throw new RuntimeException("Exception from ScalaNative")
+    } catch {
+      case _ =>
+    }
   }
 
   @exported
