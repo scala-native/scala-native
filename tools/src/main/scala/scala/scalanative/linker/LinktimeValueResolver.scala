@@ -23,7 +23,7 @@ private[linker] trait LinktimeValueResolver { self: Reach =>
       s"$linktimeInfo.debugMode" -> (conf.mode == Mode.debug),
       s"$linktimeInfo.releaseMode" -> (conf.mode == Mode.releaseFast || conf.mode == Mode.releaseFull || conf.mode == Mode.releaseSize),
       s"$linktimeInfo.isMultithreadingEnabled" -> conf.multithreadingSupport,
-      s"$linktimeInfo.usingCPPRuntime" -> conf.useCPPRuntime,
+      s"$linktimeInfo.isCPPRuntimeEnabled" -> config.isCPPRuntimeEnabled,
       s"$linktimeInfo.isWeakReferenceSupported" -> {
         conf.gc == GC.Immix ||
         conf.gc == GC.Commix

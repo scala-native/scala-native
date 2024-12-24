@@ -6,7 +6,7 @@ private[lang] abstract class UnixProcess extends GenericProcess {}
 
 object UnixProcess {
   def apply(builder: ProcessBuilder): Process = {
-    val useGen2 = if (!LinktimeInfo.usingCPPRuntime) {
+    val useGen2 = if (!LinktimeInfo.isCPPRuntimeEnabled) {
       true
     } else if (LinktimeInfo.is32BitPlatform) {
       false
