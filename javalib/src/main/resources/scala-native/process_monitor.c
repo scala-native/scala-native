@@ -54,21 +54,6 @@ static void add_finished_proc(int pid, int result) {
     finished_procs = new_proc;
 }
 
-static int remove_finished_proc(int pid) {
-    FinishedProc **curr = &finished_procs;
-    while (*curr) {
-        if ((*curr)->pid == pid) {
-            int result = (*curr)->result;
-            FinishedProc *to_free = *curr;
-            *curr = (*curr)->next;
-            free(to_free);
-            return result;
-        }
-        curr = &(*curr)->next;
-    }
-    return -1;
-}
-
 static Monitor *get_or_create_monitor(int pid, int *proc_res) {
     WaitingProc **curr = &waiting_procs;
     while (*curr) {
@@ -119,10 +104,13 @@ static void *wait_loop(void *arg) {
         if (pid != -1) {
             pthread_mutex_lock(&shared_mutex);
 
-            int last_result =
-                WIFEXITED(status)
-                    ? WEXITSTATUS(status)
-                    : (WIFSIGNALED(status) ? 0x80 + WTERMSIG(status) : status);
+            int last_result = status;
+
+            if (WIFEXITED(status)) {
+                last_result = WEXITSTATUS(status);
+            } else if (WIFSIGNALED(status)) {
+                last_result = 0x80 + WTERMSIG(status);
+            }
 
             WaitingProc **proc = &waiting_procs;
             while (*proc) {
@@ -145,7 +133,21 @@ static void *wait_loop(void *arg) {
     return NULL;
 }
 
-static int check_result(const int pid) { return remove_finished_proc(pid); }
+// The shared lock must be passed into this function for thread-safety.
+static int check_result(const int pid, pthread_mutex_t *lock) {
+    FinishedProc **curr = &finished_procs;
+    while (*curr) {
+        if ((*curr)->pid == pid) {
+            int result = (*curr)->result;
+            FinishedProc *to_free = *curr;
+            *curr = (*curr)->next;
+            free(to_free);
+            return result;
+        }
+        curr = &(*curr)->next;
+    }
+    return -1;
+}
 
 void scalanative_process_monitor_notify() { sem_post(active_procs); }
 
