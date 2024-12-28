@@ -1,0 +1,3 @@
+package java.nio.channels
+
+class AsynchronousCloseException extends ClosedChannelException
