@@ -153,7 +153,7 @@ void scalanative_process_monitor_notify() { sem_post(active_procs); }
 
 int scalanative_process_monitor_check_result(const int pid) {
     pthread_mutex_lock(&shared_mutex);
-    int res = check_result(pid);
+    int res = check_result(pid, &shared_mutex);
     pthread_mutex_unlock(&shared_mutex);
     return res;
 }
@@ -161,7 +161,7 @@ int scalanative_process_monitor_check_result(const int pid) {
 int scalanative_process_monitor_wait_for_pid(const int pid, struct timespec *ts,
                                              int *proc_res) {
     pthread_mutex_lock(&shared_mutex);
-    int result = check_result(pid);
+    int result = check_result(pid, &shared_mutex);
     if (result != -1) {
         *proc_res = result;
         pthread_mutex_unlock(&shared_mutex);
