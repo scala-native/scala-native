@@ -83,4 +83,130 @@ class InputStreamTestOnJDK11 {
     )
   }
 
+  @Test def nullInputStreamWhenOpen(): Unit = {
+    val streamIn = InputStream.nullInputStream()
+    val streamOut = new ByteArrayOutputStream()
+
+    val buffer = new Array[Byte](8)
+
+    assertEquals("available()", 0, streamIn.available())
+
+    assertEquals("markSupported()", false, streamIn.markSupported())
+
+    streamIn.mark(1) // should do nothing.
+
+    assertEquals("read()", -1, streamIn.read())
+
+    assertEquals("read(buffer)", -1, streamIn.read(buffer))
+
+    assertEquals(
+      "read(buffer, off, len)",
+      -1,
+      streamIn.read(buffer, 1, buffer.length - 2)
+    )
+
+    assertEquals("readAllBytes()", 0, streamIn.readAllBytes().length)
+
+    assertEquals(
+      "readNBytes(buffer, off, len)",
+      0,
+      streamIn.readNBytes(buffer, 2, buffer.length - 3)
+    )
+
+    assertEquals(
+      "readNBytes(len)",
+      0,
+      streamIn.readNBytes(buffer.length - 3).length
+    )
+
+    assertThrows(
+      "reset()",
+      classOf[IOException],
+      streamIn.reset()
+    )
+
+    assertEquals("skip(len)", 0L, streamIn.skip(buffer.length - 3))
+
+    assertEquals("transferTo(streamOut)", 0L, streamIn.transferTo(streamOut))
+    assertEquals("streamOut.length)", 0L, streamOut.size())
+
+    streamIn.close() // close of open stream should succeed
+  }
+
+  @Test def nullInputStreamWhenClosed(): Unit = {
+    val streamIn = InputStream.nullInputStream()
+    val streamOut = new ByteArrayOutputStream()
+
+    val buffer = new Array[Byte](8)
+
+    streamIn.close()
+
+    assertThrows(
+      "available()",
+      classOf[IOException],
+      streamIn.available()
+    )
+
+    assertEquals("markSupported()", false, streamIn.markSupported())
+
+    streamIn.mark(1) // should do nothing.
+
+    assertThrows(
+      "read()",
+      classOf[IOException],
+      streamIn.read()
+    )
+
+    assertThrows(
+      "read(buffer)",
+      classOf[IOException],
+      streamIn.read(buffer)
+    )
+
+    assertThrows(
+      "read(buffer, off, len)",
+      classOf[IOException],
+      streamIn.read(buffer, 1, buffer.length - 2)
+    )
+
+    assertThrows(
+      "readAllBytes()",
+      classOf[IOException],
+      streamIn.readAllBytes()
+    )
+
+    assertThrows(
+      "readNBytes(buffer, off, len)",
+      classOf[IOException],
+      streamIn.readNBytes(buffer, 2, buffer.length - 3)
+    )
+
+    assertThrows(
+      "readNBytes(len)",
+      classOf[IOException],
+      streamIn.readNBytes(buffer.length - 3).length
+    )
+
+    // reset() has same behavior, open or closed.
+    assertThrows(
+      "reset()",
+      classOf[IOException],
+      streamIn.reset()
+    )
+
+    assertThrows(
+      "skip(len)",
+      classOf[IOException],
+      streamIn.skip(buffer.length - 3)
+    )
+
+    assertThrows(
+      "transferTo(streamOut)",
+      classOf[IOException],
+      streamIn.transferTo(streamOut)
+    )
+
+    streamIn.close() // close of closed stream should succeed
+  }
+
 }
