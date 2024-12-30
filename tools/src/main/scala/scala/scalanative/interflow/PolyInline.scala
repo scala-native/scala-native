@@ -6,6 +6,42 @@ import scalanative.linker._
 
 private[interflow] trait PolyInline { self: Interflow =>
 
+  object PolyInlined {
+    def unapply(input: (nir.Val, Seq[nir.Val]))(implicit
+        state: State,
+        srcPosition: nir.SourcePosition,
+        scopeId: nir.ScopeId
+    ): Option[nir.Val] = {
+      val (value, eargs) = input
+      value match {
+        case DelayedRef(op: nir.Op.Method) =>
+          mode match {
+            case build.Mode.Debug =>
+              None
+
+            case _: build.Mode.Release =>
+              val targets = polyTargets(op)
+              val classCount = targets.map(_._1).size
+              val implCount = targets.map(_._2).distinct.size
+
+              val shallPolyInline =
+                if (mode == build.Mode.ReleaseFast || mode == build.Mode.ReleaseSize) {
+                  classCount <= 8 && implCount == 2
+                } else {
+                  classCount <= 16 && implCount >= 2 && implCount <= 4
+                }
+
+              if (shallPolyInline) {
+                Some(polyInline(op, targets, eargs))
+              } else {
+                None
+              }
+          }
+        case _ => None
+      }
+    }
+  }
+
   private def polyTargets(
       op: nir.Op.Method
   )(implicit state: State): Seq[(Class, nir.Global.Member)] = {
@@ -40,26 +76,11 @@ private[interflow] trait PolyInline { self: Interflow =>
     res
   }
 
-  def shallPolyInline(op: nir.Op.Method, args: Seq[nir.Val])(implicit
-      state: State,
-      analysis: ReachabilityAnalysis.Result
-  ): Boolean = mode match {
-    case build.Mode.Debug =>
-      false
-
-    case _: build.Mode.Release =>
-      val targets = polyTargets(op)
-      val classCount = targets.map(_._1).size
-      val implCount = targets.map(_._2).distinct.size
-
-      if (mode == build.Mode.ReleaseFast || mode == build.Mode.ReleaseSize) {
-        classCount <= 8 && implCount == 2
-      } else {
-        classCount <= 16 && implCount >= 2 && implCount <= 4
-      }
-  }
-
-  def polyInline(op: nir.Op.Method, args: Seq[nir.Val])(implicit
+  private def polyInline(
+      op: nir.Op.Method,
+      targets: Seq[(Class, nir.Global.Member)],
+      args: Seq[nir.Val]
+  )(implicit
       state: State,
       analysis: ReachabilityAnalysis.Result,
       srcPosition: nir.SourcePosition,
@@ -69,7 +90,6 @@ private[interflow] trait PolyInline { self: Interflow =>
 
     val obj = materialize(op.obj)
     val margs = args.map(materialize(_))
-    val targets = polyTargets(op)
     val classes = targets.map(_._1)
     val impls = targets.map(_._2).distinct
 
