@@ -97,8 +97,8 @@ private[interflow] trait PolyInline { self: Interflow =>
     val obj = materialize(op.obj)
     val margs = args.map(materialize(_))
 
-    val checkLabels = 1.until(targets.size).map(_ => fresh()).toIndexedSeq
-    val callLabels = 1.to(impls.size).map(_ => fresh()).toIndexedSeq
+    val checkLabels = IndexedSeq.fill(targets.size - 1)(fresh())
+    val callLabels = IndexedSeq.fill(impls.size)(fresh())
     val callLabelIndex =
       (0 until targets.size).map(i => impls.indexOf(targets(i)._2)).toIndexedSeq
     val mergeLabel = fresh()
