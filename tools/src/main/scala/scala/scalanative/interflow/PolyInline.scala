@@ -21,18 +21,22 @@ private[interflow] trait PolyInline { self: Interflow =>
 
             case _: build.Mode.Release =>
               val targets = polyTargets(op)
-              val classCount = targets.map(_._1).size
-              val implCount = targets.map(_._2).distinct.size
+              val classes = targets.map(_._1)
+              val classesCount = classes.size
+              val impls = targets.map(_._2).distinct
+              val implsCount = impls.size
 
               val shallPolyInline =
                 if (mode == build.Mode.ReleaseFast || mode == build.Mode.ReleaseSize) {
-                  classCount <= 8 && implCount == 2
+                  classesCount <= 8 && implsCount == 2
                 } else {
-                  classCount <= 16 && implCount >= 2 && implCount <= 4
+                  classesCount <= 16 && implsCount >= 2 && implsCount <= 4
                 }
 
               if (shallPolyInline) {
-                Some(polyInline(op, targets, eargs))
+                Some(
+                  polyInline(op, eargs.toIndexedSeq, targets, classes, impls)
+                )
               } else {
                 None
               }
@@ -44,7 +48,7 @@ private[interflow] trait PolyInline { self: Interflow =>
 
   private def polyTargets(
       op: nir.Op.Method
-  )(implicit state: State): Seq[(Class, nir.Global.Member)] = {
+  )(implicit state: State): IndexedSeq[(Class, nir.Global.Member)] = {
     val nir.Op.Method(obj, sig) = op
 
     val objty = obj match {
@@ -56,9 +60,9 @@ private[interflow] trait PolyInline { self: Interflow =>
 
     val res = objty match {
       case ExactClassRef(cls, _) =>
-        cls.resolve(sig).map(g => (cls, g)).toSeq
+        cls.resolve(sig).map(g => (cls, g)).toIndexedSeq
       case ClassRef(cls) if !sig.isVirtual =>
-        cls.resolve(sig).map(g => (cls, g)).toSeq
+        cls.resolve(sig).map(g => (cls, g)).toIndexedSeq
       case ScopeRef(scope) =>
         val targets = mutable.UnrolledBuffer.empty[(Class, nir.Global.Member)]
         scope.implementors.foreach { cls =>
@@ -66,9 +70,9 @@ private[interflow] trait PolyInline { self: Interflow =>
             cls.resolve(sig).foreach { g => targets += ((cls, g)) }
           }
         }
-        targets.toSeq
+        targets.toIndexedSeq
       case _ =>
-        Seq.empty
+        IndexedSeq.empty
     }
 
     // the only case when result won't be empty or one element seq is reading from `scop.implementors`
@@ -78,8 +82,10 @@ private[interflow] trait PolyInline { self: Interflow =>
 
   private def polyInline(
       op: nir.Op.Method,
-      targets: Seq[(Class, nir.Global.Member)],
-      args: Seq[nir.Val]
+      args: IndexedSeq[nir.Val],
+      targets: IndexedSeq[(Class, nir.Global.Member)],
+      classes: IndexedSeq[Class],
+      impls: IndexedSeq[nir.Global.Member]
   )(implicit
       state: State,
       analysis: ReachabilityAnalysis.Result,
@@ -90,64 +96,64 @@ private[interflow] trait PolyInline { self: Interflow =>
 
     val obj = materialize(op.obj)
     val margs = args.map(materialize(_))
-    val classes = targets.map(_._1)
-    val impls = targets.map(_._2).distinct
 
-    val checkLabels = (1 until targets.size).map(_ => fresh()).toSeq
-    val callLabels = (1 to impls.size).map(_ => fresh()).toSeq
+    val checkLabels = 1.until(targets.size).map(_ => fresh()).toIndexedSeq
+    val callLabels = 1.to(impls.size).map(_ => fresh()).toIndexedSeq
     val callLabelIndex =
-      (0 until targets.size).map(i => impls.indexOf(targets(i)._2))
+      (0 until targets.size).map(i => impls.indexOf(targets(i)._2)).toIndexedSeq
     val mergeLabel = fresh()
 
     val meth = emit.method(obj, nir.Rt.GetClassSig, nir.Next.None)
     val methty = nir.Type.Function(Seq(nir.Rt.Object), nir.Rt.Class)
     val objcls = emit.call(methty, meth, Seq(obj), nir.Next.None)
 
-    checkLabels.zipWithIndex.foreach {
-      case (checkLabel, idx) =>
-        if (idx > 0) {
-          emit.label(checkLabel)
-        }
-        val cls = classes(idx)
-        val isCls = emit.comp(
-          nir.Comp.Ieq,
-          nir.Rt.Class,
-          objcls,
-          nir.Val.Global(cls.name, nir.Rt.Class),
-          nir.Next.None
+    for (idx <- 0.until(checkLabels.length)) {
+      val checkLabel = checkLabels(idx)
+      if (idx > 0) {
+        emit.label(checkLabel)
+      }
+      val cls = classes(idx)
+      val isCls = emit.comp(
+        nir.Comp.Ieq,
+        nir.Rt.Class,
+        objcls,
+        nir.Val.Global(cls.name, nir.Rt.Class),
+        nir.Next.None
+      )
+      if (idx < targets.size - 2) {
+        emit.branch(
+          isCls,
+          nir.Next(callLabels(callLabelIndex(idx))),
+          nir.Next(checkLabels(idx + 1))
         )
-        if (idx < targets.size - 2) {
-          emit.branch(
-            isCls,
-            nir.Next(callLabels(callLabelIndex(idx))),
-            nir.Next(checkLabels(idx + 1))
-          )
-        } else {
-          emit.branch(
-            isCls,
-            nir.Next(callLabels(callLabelIndex(idx))),
-            nir.Next(callLabels(callLabelIndex(idx + 1)))
-          )
-        }
+      } else {
+        emit.branch(
+          isCls,
+          nir.Next(callLabels(callLabelIndex(idx))),
+          nir.Next(callLabels(callLabelIndex(idx + 1)))
+        )
+      }
     }
 
     val rettys = mutable.UnrolledBuffer.empty[nir.Type]
 
-    callLabels.zip(impls).foreach {
-      case (callLabel, m) =>
-        emit.label(callLabel, Seq.empty)
-        val ty = originalFunctionType(m)
-        val nir.Type.Function(argtys, retty) = ty
-        rettys += retty
+    for (i <- 0.until(callLabels.length)) {
+      val callLabel = callLabels(i)
+      val m = impls(i)
 
-        val cargs = margs.zip(argtys).map {
-          case (value, argty) =>
-            if (Sub.is(value.ty, argty)) value
-            else emit.conv(nir.Conv.Bitcast, argty, value, nir.Next.None)
-        }
-        val res =
-          emit.call(ty, nir.Val.Global(m, nir.Type.Ptr), cargs, nir.Next.None)
-        emit.jump(nir.Next.Label(mergeLabel, Seq(res)))
+      emit.label(callLabel, Seq.empty)
+      val ty = originalFunctionType(m)
+      val nir.Type.Function(argtys, retty) = ty
+      rettys += retty
+
+      val cargs = margs.zip(argtys).map {
+        case (value, argty) =>
+          if (Sub.is(value.ty, argty)) value
+          else emit.conv(nir.Conv.Bitcast, argty, value, nir.Next.None)
+      }
+      val res =
+        emit.call(ty, nir.Val.Global(m, nir.Type.Ptr), cargs, nir.Next.None)
+      emit.jump(nir.Next.Label(mergeLabel, Seq(res)))
     }
 
     val result = nir.Val.Local(fresh(), Sub.lub(rettys.toSeq, Some(op.resty)))
