@@ -6,7 +6,7 @@
 #include "unwind.h"
 
 // gets the ExceptionWrapper from the _Unwind_Exception which is at the end of
-// it. +1 goes to the end of the struct since since it adds with the size of
+// it. +1 goes to the end of the struct since it adds with the size of
 // _Unwind_Exception, then we cast to ExceptionWrapper and we do - 1 to
 // go back of sizeof ExceptionWrapper
 #define GetExceptionWrapper(unwindException)                                   \
