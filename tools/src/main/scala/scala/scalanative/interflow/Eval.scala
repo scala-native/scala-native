@@ -182,12 +182,12 @@ private[interflow] trait Eval { self: Interflow =>
             emit(nir.Op.Call(dsig, mtarget, margs))
           }
 
-          dtarget match {
-            case nir.Val.Global(name: nir.Global.Member, _)
+          (dtarget, eargs) match {
+            case (nir.Val.Global(name: nir.Global.Member, _), _)
                 if shallInline(name, eargs) =>
               `inline`(name, eargs)
-            case DelayedRef(op: nir.Op.Method) if shallPolyInline(op, eargs) =>
-              polyInline(op, eargs)
+            case PolyInlined(polyInlined) =>
+              polyInlined
             case _ =>
               fallback
           }

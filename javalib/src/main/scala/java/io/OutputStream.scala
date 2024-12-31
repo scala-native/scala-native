@@ -23,3 +23,34 @@ abstract class OutputStream extends Object with Closeable with Flushable {
 
   def close(): Unit = ()
 }
+
+/** Java 11
+ */
+object OutputStream {
+
+  /** Java 11
+   */
+  def nullOutputStream(): OutputStream = {
+    new OutputStream() {
+      private var closed = false
+
+      private def nullWrite(): Unit = {
+        if (closed)
+          throw new IOException("Stream closed")
+        // else silently do nothing
+      }
+
+      override def close(): Unit =
+        closed = true
+
+      override def write(b: Array[Byte]): Unit =
+        nullWrite()
+
+      override def write(b: Array[Byte], off: Int, len: Int): Unit =
+        nullWrite()
+
+      def write(b: Int): Unit =
+        nullWrite()
+    }
+  }
+}

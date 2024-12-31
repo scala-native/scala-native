@@ -1,6 +1,8 @@
 package java.io
 
 import java.{util => ju}
+import java.util.concurrent.ConcurrentLinkedDeque
+import java.util.Arrays
 
 abstract class InputStream extends Closeable {
   def read(): Int
@@ -34,43 +36,25 @@ abstract class InputStream extends Closeable {
     }
   }
 
-  // Allow obvious implementation of readAllBytes() to work on both Java 9 & 11
-  def readNBytesImpl(len: Int): Array[Byte] = {
-    if (len < 0)
-      throw new IllegalArgumentException("len < 0")
-
-    def readBytes(len: Int): ByteArrayOutputStream = {
-      val limit = Math.min(len, 1024)
-
-      val storage = new ByteArrayOutputStream(limit) // can grow itself
-      val buffer = new Array[Byte](limit)
-
-      var remaining = len
-
-      while (remaining > 0) {
-        val nRead = read(buffer, 0, limit)
-
-        if (nRead == -1) remaining = 0 // EOF
-        else {
-          storage.write(buffer, 0, nRead)
-          remaining -= nRead
-        }
-      }
-
-      storage
-    }
-
-    /* To stay within the documented 2 * len memory bound for this method,
-     * ensure that the temporary intermediate read buffer is out of scope
-     * and released before calling toByteArray().
-     */
-
-    readBytes(len).toByteArray()
-  }
-
   /** Java 9
    */
-  def readAllBytes(): Array[Byte] = readNBytesImpl(Integer.MAX_VALUE)
+  def readAllBytes(): Array[Byte] = {
+    /* Design Note:
+     *   readAllBytes() was introduced in Java 9 without any implementation
+     *   requirements. Java 11 added such a requirement:
+     *
+     *    Implementation Requirements:
+     *    This method invokes readNBytes(int) with a length of
+     *    Integer.MAX_VALUE.
+     *
+     *   The current JDK, 23, retains this requirement.
+     *
+     *   This requirement effects the way readNBytes(int) is implemented
+     *   because it implies buffered or "chunked" intermediate reads.
+     */
+
+    readNBytes(Integer.MAX_VALUE)
+  }
 
   /** Java 9
    */
@@ -105,9 +89,115 @@ abstract class InputStream extends Closeable {
     }
   }
 
+  /* Design Note:
+   * The 'streamChunkSize' "constant" must manually be kept in synch with
+   * the corresponding value in InputStreamTestOnJDK11.scala.
+   *
+   * The 4096 value is a guess at a sweet spot between memory used and
+   * number of I/Os when N is large. It is the page size on many systems.
+   * Experience and the passage of time may show that this number should be
+   * increased.
+   */
+
+  private final val streamChunkSize = 4096 // remember InputStreamTestOnJDK11
+
   /** Java 11
    */
-  def readNBytes(len: Int): Array[Byte] = readNBytesImpl(len)
+  def readNBytes(len: Int): Array[Byte] = {
+    /* Design Note:
+     *   See Design Note in method readAllBytes(). The constraint described
+     *   there leads directly to the possibility that 'len' might be
+     *   large (Integer.MAX_VALUE). This means that always blindly allocating
+     *   an Array[Byte](len) is not robust.
+     */
+
+    if (len < 0)
+      throw new IllegalArgumentException("len < 0")
+
+    def readSmallN(len: Int): Array[Byte] = {
+      /* Attempt to minimize the number of times the data is copied.
+       *
+       * When the caller has guessed correctly and len bytes are available,
+       * only one copy is needed.  When less than len bytes
+       * are available, a second is necessary.
+       *
+       * readLargeN() is likely to call readSmallN() with an exact match
+       * len argument one or more times for each call which triggers
+       * the second copy.
+       */
+
+      // caller has dispatched on argument, so OK to allocate size blindly.
+      val buffer = new Array[Byte](len)
+
+      var totalBytesRead = 0
+      var remaining = len
+
+      while (remaining > 0) {
+        val nRead = read(buffer, totalBytesRead, remaining)
+
+        if (nRead == -1) remaining = 0 // EOF
+        else {
+          remaining -= nRead
+          totalBytesRead += nRead
+        }
+      }
+
+      if (totalBytesRead == len)
+        buffer
+      else if (totalBytesRead < len)
+        Arrays.copyOfRange(buffer, 0, totalBytesRead)
+      else { // should never happen
+        throw new IOException(
+          s"total bytes read ${totalBytesRead} > len argument ${len}"
+        )
+      }
+    }
+
+    def readLargeN(len: Int): Array[Byte] = {
+      /* The byteStore is not expected to be accessed concurrently.
+       * ConcurrentedLinkedDeque is used here because the Scala Native JSR-166
+       * code is newer, more studied, and likely to execute faster
+       * than the SN LinkedListDequeue implementation. FUD, not measurement.
+       *
+       * Using a Deque rather than, say, a ByteArrayOutputStream may briefly
+       * exceed the JDK documented upper bound of (2 * len) for memory
+       * usage. Given that we are in large N territory here, it is highly
+       * likely to reduce the number of data copies.
+       */
+      val byteStore = new ConcurrentLinkedDeque[Array[Byte]]
+
+      var totalBytesRead = 0
+      var remaining = len
+
+      while (remaining > 0) {
+        val bufferSize = Math.min(remaining, streamChunkSize)
+        val buffer = readSmallN(bufferSize)
+
+        val nRead = buffer.size
+
+        if (nRead == 0) remaining = 0 /* EOF */
+        else {
+          remaining -= nRead
+          totalBytesRead += nRead
+          byteStore.addLast(buffer)
+        }
+      }
+
+      val result = new Array[Byte](totalBytesRead)
+
+      var resultPos = 0
+      byteStore.forEach(b => {
+        val n = b.size
+        System.arraycopy(b, 0, result, resultPos, n)
+        resultPos += n
+      })
+
+      result
+    }
+
+    if (len <= streamChunkSize) readSmallN(len)
+    else readLargeN(len)
+  }
 
   def skip(n: Long): Long = {
     var skipped = 0
@@ -122,7 +212,7 @@ abstract class InputStream extends Closeable {
   def mark(readlimit: Int): Unit = ()
 
   def reset(): Unit =
-    throw new IOException("Reset not supported")
+    throw new IOException("mark/reset not supported")
 
   def markSupported(): Boolean = false
 
@@ -145,5 +235,54 @@ abstract class InputStream extends Closeable {
     }
 
     nTransferred
+  }
+}
+
+/** Java 11
+ */
+object InputStream {
+
+  /** Java 11
+   */
+  def nullInputStream(): InputStream = {
+    new InputStream() {
+      private var closed = false
+
+      private def checkClosed(): Unit = {
+        if (closed)
+          throw new IOException("Stream closed")
+      }
+      private def nullRead(): Int = {
+        checkClosed()
+        -1
+      }
+
+      override def available(): Int = {
+        checkClosed()
+        0
+      }
+
+      override def close(): Unit =
+        closed = true
+
+      def read(): Int =
+        nullRead()
+
+      override def read(b: Array[Byte]): Int =
+        nullRead()
+
+      override def read(b: Array[Byte], off: Int, len: Int): Int =
+        nullRead()
+
+      override def readAllBytes(): Array[Byte] = {
+        checkClosed()
+        new Array[Byte](0)
+      }
+
+      override def readNBytes(buffer: Array[Byte], off: Int, len: Int): Int = {
+        checkClosed()
+        0
+      }
+    }
   }
 }

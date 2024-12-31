@@ -32,8 +32,8 @@ private[linker] trait LinktimeValueResolver { self: Reach =>
       s"$linktimeInfo.enabledSanitizer" -> conf.sanitizer
         .map(_.name)
         .getOrElse(""),
-      s"$linktimeInfo.isMsys" -> Platform.isMsys,
-      s"$linktimeInfo.isCygwin" -> Platform.isCygwin,
+      s"$linktimeInfo.isMsys" -> config.targetsMsys,
+      s"$linktimeInfo.isCygwin" -> config.targetsCygwin,
       s"$linktimeInfo.runtimeVersion" -> nir.Versions.current,
       s"$linktimeInfo.garbageCollector" -> conf.gc.name,
       s"$linktimeInfo.target.arch" -> triple.arch,
