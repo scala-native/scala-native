@@ -232,7 +232,8 @@ private[scalanative] object LLVM {
         else if (config.targetsOpenBSD || config.targetsNetBSD)
           Seq("pthread")
         else Seq("pthread", "dl", "m")
-      platformsLinks ++ srclinks ++ gclinks
+      val cppLinks = if (config.usingCPPExceptions) List("c++") else Nil
+      platformsLinks ++ cppLinks ++ srclinks ++ gclinks
     }.distinct
     config.logger.info(s"Linking with [${links.mkString(", ")}]")
     // GNU ld and ld.lld support the --as-needed flag which avoids linking
@@ -308,10 +309,7 @@ private[scalanative] object LLVM {
       finally pw.close()
     }
 
-    val compiler =
-      if (config.isCPPRuntimeEnabled) config.clangPP.abs else config.clang.abs
-
-    val command = Seq(compiler, s"@${configFile.getAbsolutePath()}")
+    val command = Seq(config.clang.abs, s"@${configFile.getAbsolutePath()}")
     config.logger.running(command)
     Process(command, config.workDir.toFile())
   }
