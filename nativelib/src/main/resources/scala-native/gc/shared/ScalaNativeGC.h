@@ -14,10 +14,12 @@
 typedef DWORD ThreadRoutineReturnType;
 #else
 #include <pthread.h>
+// define as nothing on non Windows
+#define WINAPI
 typedef void *ThreadRoutineReturnType;
 #endif
-
-typedef ThreadRoutineReturnType (*ThreadStartRoutine)(void *);
+// Requires WINAPI which is defined as __stdcall on Windows
+typedef ThreadRoutineReturnType(WINAPI *ThreadStartRoutine)(void *);
 typedef void *RoutineArgs;
 
 void scalanative_GC_init();
