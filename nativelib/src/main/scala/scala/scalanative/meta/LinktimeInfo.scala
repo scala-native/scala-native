@@ -97,4 +97,6 @@ object LinktimeInfo {
 
   }
 
+  @resolvedAtLinktime("scala.scalanative.meta.linktimeinfo.isCPPRuntimeEnabled")
+  def isCPPRuntimeEnabled: Boolean = resolved
 }
