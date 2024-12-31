@@ -212,7 +212,7 @@ abstract class InputStream extends Closeable {
   def mark(readlimit: Int): Unit = ()
 
   def reset(): Unit =
-    throw new IOException("Reset not supported")
+    throw new IOException("mark/reset not supported")
 
   def markSupported(): Boolean = false
 
@@ -235,5 +235,54 @@ abstract class InputStream extends Closeable {
     }
 
     nTransferred
+  }
+}
+
+/** Java 11
+ */
+object InputStream {
+
+  /** Java 11
+   */
+  def nullInputStream(): InputStream = {
+    new InputStream() {
+      private var closed = false
+
+      private def checkClosed(): Unit = {
+        if (closed)
+          throw new IOException("Stream closed")
+      }
+      private def nullRead(): Int = {
+        checkClosed()
+        -1
+      }
+
+      override def available(): Int = {
+        checkClosed()
+        0
+      }
+
+      override def close(): Unit =
+        closed = true
+
+      def read(): Int =
+        nullRead()
+
+      override def read(b: Array[Byte]): Int =
+        nullRead()
+
+      override def read(b: Array[Byte], off: Int, len: Int): Int =
+        nullRead()
+
+      override def readAllBytes(): Array[Byte] = {
+        checkClosed()
+        new Array[Byte](0)
+      }
+
+      override def readNBytes(buffer: Array[Byte], off: Int, len: Int): Int = {
+        checkClosed()
+        0
+      }
+    }
   }
 }
