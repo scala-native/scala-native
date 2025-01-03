@@ -826,8 +826,17 @@ private[linker] class Reach(
     case nir.Op.SizeOf(ty)      => reachType(ty)
     case nir.Op.AlignmentOf(ty) => reachType(ty)
     case nir.Op.Box(code, obj) =>
+      reachGlobal(codegen.Lower.BoxTo(code))
+      // Reaching unbox shouldn't be needed since this is a Box instruction.
+      // But sometimes we materialize unbox calls in stages after the initial
+      // discovery, and if we don't first visit them, we end up with errors like:
+      // Unknown method scala.scalanative.runtime.Boxes$.unboxToUByte(java.lang.Object): byte
+      // Since everything that is boxed needs to be eventually unboxed, we visit the relative
+      // unbox at every box.
+      reachGlobal(codegen.Lower.UnboxTo(code))
       reachVal(obj)
     case nir.Op.Unbox(code, obj) =>
+      reachGlobal(codegen.Lower.UnboxTo(code))
       reachVal(obj)
     case nir.Op.Var(ty) =>
       reachType(ty)
