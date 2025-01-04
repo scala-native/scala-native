@@ -179,4 +179,63 @@ private[interflow] trait Intrinsics { self: Interflow =>
     }
   }
 
+  object BoxesRunTimeCall {
+
+    /** The optimizer can remove redundant box/unbox calls, but only do if they
+     *  are nir.Op.Box and nir.Op.Unbox NIR definitions. This converts calls in
+     *  scala.runtime.BoxesRunTime into the equivalent NIR instructions.
+     */
+    def unapply(op: nir.Op)(implicit
+        state: State,
+        srcPosition: nir.SourcePosition,
+        scopeId: nir.ScopeId
+    ): Option[nir.Val] = {
+      op match {
+        case nir.Op.Call(
+              _,
+              nir.Val.Global(
+                nir.Global.Member(
+                  nir.Global.Top("scala.runtime.BoxesRunTime"),
+                  sig
+                ),
+                _
+              ),
+              args
+            ) =>
+          def box(tpe: String) =
+            eval(nir.Op.Box(nir.Type.Ref(nir.Global.Top(tpe)), args.head))
+          def unbox(tpe: String) =
+            eval(nir.Op.Unbox(nir.Type.Ref(nir.Global.Top(tpe)), args.head))
+
+          sig.unmangled match {
+            case nir.Sig.Method(name, _, _) =>
+              name match {
+                case "boxToBoolean"   => Some(box("java.lang.Boolean"))
+                case "boxToCharacter" => Some(box("java.lang.Character"))
+                case "boxToByte"      => Some(box("java.lang.Byte"))
+                case "boxToShort"     => Some(box("java.lang.Short"))
+                case "boxToInteger"   => Some(box("java.lang.Integer"))
+                case "boxToLong"      => Some(box("java.lang.Long"))
+                case "boxToFloat"     => Some(box("java.lang.Float"))
+                case "boxToDouble"    => Some(box("java.lang.Double"))
+
+                case "unboxToBoolean" => Some(unbox("java.lang.Boolean"))
+                case "unboxToChar"    => Some(unbox("java.lang.Character"))
+                case "unboxToByte"    => Some(unbox("java.lang.Byte"))
+                case "unboxToShort"   => Some(unbox("java.lang.Short"))
+                case "unboxToInt"     => Some(unbox("java.lang.Integer"))
+                case "unboxToLong"    => Some(unbox("java.lang.Long"))
+                case "unboxToFloat"   => Some(unbox("java.lang.Float"))
+                case "unboxToDouble"  => Some(unbox("java.lang.Double"))
+                case _                => None
+              }
+
+            case _ => None
+          }
+        case _ => None
+
+      }
+    }
+  }
+
 }
