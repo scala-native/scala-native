@@ -187,13 +187,6 @@ private[interflow] trait Intrinsics { self: Interflow =>
             // but java static methods on the class are also present
             // and we need to handle them.
             val isCompanionObject = className.last == '$'
-            def param = if (isCompanionObject) {
-              val Seq(_, param) = rawArgs
-              param
-            } else {
-              val Seq(param) = rawArgs
-              param
-            }
             val companionObjectName = if (isCompanionObject) {
               className
             } else {
@@ -202,11 +195,11 @@ private[interflow] trait Intrinsics { self: Interflow =>
 
             val boxIntrinsic = boxIntrinsicType
               .get((companionObjectName, methodName))
-              .map(tpe => eval(nir.Op.Box(tpe, param)))
+              .map(tpe => eval(nir.Op.Box(tpe, rawArgs.last)))
 
             val unboxIntrinsic = unboxIntrinsicType
               .get((companionObjectName, methodName))
-              .map(tpe => eval(nir.Op.Unbox(tpe, param)))
+              .map(tpe => eval(nir.Op.Unbox(tpe, rawArgs.last)))
 
             boxIntrinsic.orElse(unboxIntrinsic)
           case _ => None
