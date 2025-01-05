@@ -211,7 +211,6 @@ private[interflow] trait Intrinsics { self: Interflow =>
             boxIntrinsic.orElse(unboxIntrinsic)
           case _ => None
         }
-      case _ => None
     }
   }
 }
