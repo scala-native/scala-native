@@ -16,12 +16,12 @@ private[interflow] trait Intrinsics { self: Interflow =>
 
   private val boxIntrinsicType = Lower.BoxTo.collect {
     case (tpe, nir.Global.Member(nir.Global.Top(className), method)) =>
-      val nir.Sig.Method(methodName, _, _) = method.unmangled
+      val nir.Sig.Method(methodName, _, _) = method.unmangled: @unchecked
       ((className, methodName), tpe)
   }
   private val unboxIntrinsicType = Lower.UnboxTo.collect {
     case (tpe, nir.Global.Member(nir.Global.Top(className), method)) =>
-      val nir.Sig.Method(methodName, _, _) = method.unmangled
+      val nir.Sig.Method(methodName, _, _) = method.unmangled: @unchecked
       ((className, methodName), tpe)
   }
 
