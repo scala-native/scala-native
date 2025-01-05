@@ -39,8 +39,6 @@ private[interflow] trait Intrinsics { self: Interflow =>
       srcPosition: nir.SourcePosition,
       scopeId: nir.ScopeId
   ): Option[nir.Val] = {
-    val nir.Global.Member(owner, sig) = name
-
     def emit(args: Seq[nir.Val]) =
       state.emit(
         nir.Op.Call(
