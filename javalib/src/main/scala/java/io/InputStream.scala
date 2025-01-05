@@ -4,6 +4,8 @@ import java.{util => ju}
 import java.util.concurrent.ConcurrentLinkedDeque
 import java.util.Arrays
 
+import scala.annotation.tailrec
+
 abstract class InputStream extends Closeable {
   def read(): Int
 
@@ -200,9 +202,71 @@ abstract class InputStream extends Closeable {
   }
 
   def skip(n: Long): Long = {
-    var skipped = 0
-    while (skipped < n && read() != -1) skipped += 1
-    skipped
+    /* The skip() implementation in this base class must be fit-for-purpose
+     * but need not be highly optimized. It is likely to be overridden
+     * in subclasses.
+     *
+     * The optimization of following the JDK8 method description of
+     * using bulk read(buffer, off, len) _is_ worthwhile. It benefits classes
+     * which override that method, but not skip. This base class does not
+     * benefit.
+     */
+
+    val buffer = new Array[Byte](512) // guess at a sweet spot
+
+    @tailrec
+    def loop(m: Long, lastSkipped: Long): Long = {
+      if (m <= 0L) {
+        lastSkipped
+      } else {
+        val mMin = Math.min(m, buffer.length).toInt
+        val skipped = read(buffer, 0, mMin) // buffer contents are discarded
+        if (skipped < 0) {
+          lastSkipped
+        } else {
+          val totalSkipped = lastSkipped + skipped
+          loop(m - mMin, totalSkipped)
+        }
+      }
+    }
+
+    if (n <= 0) 0L
+    else loop(n, 0)
+  }
+
+  /** Java 12
+   */
+  def skipNBytes(n: Long): Unit = {
+
+    @tailrec
+    def skipNLoop(n: Long): Unit = {
+      if (n > 0L) {
+        val nSkipped = {
+          val s = skip(n)
+
+          if ((s < 0) || (s > n)) {
+            val msgSuffix =
+              if (s < 0) " < 0"
+              else s" > ${n}"
+
+            throw new IOException(
+              s"unexpected skip() result: ${s} ${msgSuffix}"
+            )
+          } else if (s != 0) {
+            s
+          } else {
+            if (read() == -1)
+              throw new EOFException() // JVM gives no/null message text here
+
+            s + 1
+          }
+        }
+
+        skipNLoop(n - nSkipped)
+      }
+    }
+
+    skipNLoop(n)
   }
 
   def available(): Int = 0

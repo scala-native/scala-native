@@ -108,16 +108,19 @@ class InflaterInputStream private (
     }
   }
 
+  /* Fix Issue 4071. Make only required minimal changes so as to
+   * not disturb the dead hand of the past.
+   */
+
   override def skip(nbytes: Long): Long = {
-    if (nbytes >= 0) {
-      if (buf == null) {
-        buf =
-          new Array[Byte](Math.min(nbytes, InflaterInputStream.BUF_SIZE).toInt)
-      }
+    if (nbytes >= 0L) {
+      val skipBuffer =
+        new Array[Byte](Math.min(nbytes, InflaterInputStream.BUF_SIZE).toInt)
+
       var count, rem: Long = 0L
       while (count < nbytes) {
         val x = read(
-          buf,
+          skipBuffer,
           0,
           if ({ rem = nbytes - count; rem > buf.length })
             buf.length
