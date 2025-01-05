@@ -28,6 +28,7 @@ object Attr {
   case object Stub extends Attr
   case class Extern(blocking: Boolean) extends Attr
   final case class Link(name: String) extends Attr
+  case object LinkCppRuntime extends Attr
   final case class Define(name: String) extends Attr
   case object Abstract extends Attr
   case object Volatile extends Attr
@@ -58,7 +59,8 @@ final case class Attrs(
     isLinktimeResolved: Boolean = false,
     isUsingIntrinsics: Boolean = false,
     links: Seq[Attr.Link] = Seq.empty,
-    preprocessorDefinitions: Seq[Attr.Define] = Seq.empty
+    preprocessorDefinitions: Seq[Attr.Define] = Seq.empty,
+    linkCppRuntime: Boolean = false
 ) {
   def finalWithSafePublish: Boolean = isFinal && isSafePublish
   def toSeq: Seq[Attr] = {
@@ -71,6 +73,7 @@ final case class Attrs(
     if (isExtern) out += Extern(isBlocking)
     if (isDyn) out += Dyn
     if (isStub) out += Stub
+    if (linkCppRuntime) out += LinkCppRuntime
     if (isAbstract) out += Abstract
     if (isVolatile) out += Volatile
     if (isFinal) out += Final
@@ -94,6 +97,7 @@ object Attrs {
     var isExtern = false
     var isDyn = false
     var isStub = false
+    var linkCppRuntime = false
     var isAbstract = false
     var isBlocking = false
     var isVolatile = false
@@ -115,6 +119,7 @@ object Attrs {
         isBlocking = blocking
       case Dyn                 => isDyn = true
       case Stub                => isStub = true
+      case LinkCppRuntime      => linkCppRuntime = true
       case link: Attr.Link     => links += link
       case define: Attr.Define => preprocessorDefinitions += define
       case Abstract            => isAbstract = true
@@ -142,7 +147,8 @@ object Attrs {
       isLinktimeResolved = isLinktimeResolved,
       isUsingIntrinsics = isUsingIntrinsics,
       links = links.result(),
-      preprocessorDefinitions = preprocessorDefinitions.result()
+      preprocessorDefinitions = preprocessorDefinitions.result(),
+      linkCppRuntime = linkCppRuntime
     )
   }
 }

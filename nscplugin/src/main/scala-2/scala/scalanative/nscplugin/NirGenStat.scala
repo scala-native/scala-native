@@ -159,6 +159,8 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         case ann if ann.symbol == LinkClass =>
           val Apply(_, Seq(Literal(Constant(name: String)))) = ann.tree
           nir.Attr.Link(name)
+        case ann if ann.symbol == LinkCppRuntimeClass =>
+          nir.Attr.LinkCppRuntime
         case ann if ann.symbol == DefineClass =>
           val Apply(_, Seq(Literal(Constant(name: String)))) = ann.tree
           nir.Attr.Define(name)
@@ -1015,6 +1017,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           case LinkClass =>
             requireLiteralStringAnnotation(ann)
               .foreach(attrs += nir.Attr.Link(_))
+          case LinkCppRuntimeClass => attrs += nir.Attr.LinkCppRuntime
           case DefineClass =>
             requireLiteralStringAnnotation(ann)
               .foreach(attrs += nir.Attr.Define(_))

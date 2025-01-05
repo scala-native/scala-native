@@ -22,6 +22,7 @@ private[linker] class Reach(
   val done = mutable.Map.empty[nir.Global, nir.Defn]
   var stack = List.empty[nir.Global]
   val links = mutable.Set.empty[nir.Attr.Link]
+  var linkCppRuntime = false
   val preprocessorDefinitions = mutable.Set.empty[nir.Attr.Define]
   val infos = mutable.Map.empty[nir.Global, Info]
   val from = mutable.Map.empty[nir.Global, ReferencedFrom]
@@ -79,6 +80,7 @@ private[linker] class Reach(
         infos = infos,
         entries = entries,
         links = links.toSeq,
+        linkCppRuntime = linkCppRuntime,
         preprocessorDefinitions = preprocessorDefinitions.toSeq,
         defns = defns.toSeq,
         dynsigs = dynsigs.toSeq,
@@ -668,6 +670,9 @@ private[linker] class Reach(
   def reachAttrs(attrs: nir.Attrs): Unit = {
     links ++= attrs.links
     preprocessorDefinitions ++= attrs.preprocessorDefinitions
+    if (attrs.linkCppRuntime) {
+      linkCppRuntime = true
+    }
   }
 
   def reachType(ty: nir.Type)(implicit srcPosition: nir.SourcePosition): Unit =

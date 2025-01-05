@@ -31,6 +31,7 @@ object Tags {
   final val UsesIntrinsicAttr = 1 + LinktimeResolvedAttr
   final val AlignAttr = 1 + UsesIntrinsicAttr
   final val DefineAttr = 1 + AlignAttr
+  final val LinkCppRuntimeAttr = 1 + DefineAttr
 
   // Binary ops
   final val IaddBin = 1

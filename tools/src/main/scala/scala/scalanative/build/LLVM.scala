@@ -220,6 +220,7 @@ private[scalanative] object LLVM {
       analysis: ReachabilityAnalysis.Result
   )(implicit config: Config) = {
     val workDir = config.workDir
+    val isCPPRuntimeRequired = config.usingCPPExceptions || analysis.linkCppRuntime
     val links = {
       val srclinks = analysis.links.map(_.name)
       val gclinks = config.gc.links
@@ -308,8 +309,7 @@ private[scalanative] object LLVM {
       finally pw.close()
     }
 
-    val compiler =
-      if (config.isCPPRuntimeEnabled) config.clangPP.abs else config.clang.abs
+    val compiler = if (isCPPRuntimeRequired) config.clangPP.abs else config.clang.abs
 
     val command = Seq(compiler, s"@${configFile.getAbsolutePath()}")
     config.logger.running(command)
