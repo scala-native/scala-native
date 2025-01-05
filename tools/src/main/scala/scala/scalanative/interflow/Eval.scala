@@ -150,7 +150,6 @@ private[interflow] trait Eval { self: Interflow =>
     def bailOut =
       throw BailOut("can't eval op: " + op.show)
     op match {
-      case BoxesRunTimeCall(value) => value
       case nir.Op.Call(sig, meth, args) =>
         val emeth = eval(meth)
 
@@ -195,8 +194,7 @@ private[interflow] trait Eval { self: Interflow =>
         }
 
         emeth match {
-          case nir.Val.Global(name: nir.Global.Member, _)
-              if intrinsics.contains(name) =>
+          case nir.Val.Global(name: nir.Global.Member, _) =>
             intrinsic(sig, name, args).getOrElse {
               nonIntrinsic
             }

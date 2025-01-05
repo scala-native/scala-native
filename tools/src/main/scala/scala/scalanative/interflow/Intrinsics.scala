@@ -14,27 +14,21 @@ private[interflow] trait Intrinsics { self: Interflow =>
   val arrayIntrinsics =
     arrayApplyIntrinsics ++ arrayUpdateIntrinsics + arrayLengthIntrinsic
 
-  val intrinsics = Set[nir.Global](
-    nir.Global.Member(nir.Global.Top("java.lang.Object"), nir.Rt.GetClassSig),
-    nir.Global.Member(nir.Global.Top("java.lang.Class"), nir.Rt.IsArraySig),
-    nir.Global
-      .Member(nir.Global.Top("java.lang.Class"), nir.Rt.IsAssignableFromSig),
-    nir.Global.Member(nir.Global.Top("java.lang.Class"), nir.Rt.GetNameSig),
-    nir.Global.Member(nir.Global.Top("java.lang.Integer$"), nir.Rt.BitCountSig),
-    nir.Global
-      .Member(nir.Global.Top("java.lang.Integer$"), nir.Rt.ReverseBytesSig),
-    nir.Global.Member(
-      nir.Global.Top("java.lang.Integer$"),
-      nir.Rt.NumberOfLeadingZerosSig
-    ),
-    nir.Global.Member(nir.Global.Top("java.lang.Math$"), nir.Rt.CosSig),
-    nir.Global.Member(nir.Global.Top("java.lang.Math$"), nir.Rt.SinSig),
-    nir.Global.Member(nir.Global.Top("java.lang.Math$"), nir.Rt.PowSig),
-    nir.Global.Member(nir.Global.Top("java.lang.Math$"), nir.Rt.MaxSig),
-    nir.Global.Member(nir.Global.Top("java.lang.Math$"), nir.Rt.SqrtSig),
-    nir.Global.Member(nir.Rt.Runtime.name, nir.Rt.FromRawPtrSig),
-    nir.Global.Member(nir.Rt.Runtime.name, nir.Rt.ToRawPtrSig)
-  ) ++ arrayIntrinsics
+  private val boxIntrinsicType = Lower.BoxTo.collect {
+    case (tpe, nir.Global.Member(nir.Global.Top(className), method)) =>
+      val nir.Sig.Method(methodName, _, _) = method.unmangled
+      ((className, methodName), tpe)
+  }
+  private val unboxIntrinsicType = Lower.UnboxTo.collect {
+    case (tpe, nir.Global.Member(nir.Global.Top(className), method)) =>
+      val nir.Sig.Method(methodName, _, _) = method.unmangled
+      ((className, methodName), tpe)
+  }
+
+  private val Object = nir.Global.Top("java.lang.Object")
+  private val Class = nir.Global.Top("java.lang.Class")
+  private val Integer = nir.Global.Top("java.lang.Integer$")
+  private val Math = nir.Global.Top("java.lang.Math$")
 
   def intrinsic(
       ty: nir.Type.Function,
@@ -45,11 +39,9 @@ private[interflow] trait Intrinsics { self: Interflow =>
       srcPosition: nir.SourcePosition,
       scopeId: nir.ScopeId
   ): Option[nir.Val] = {
-    val nir.Global.Member(_, sig) = name
+    val nir.Global.Member(owner, sig) = name
 
-    val args = rawArgs.map(eval)
-
-    def emit =
+    def emit(args: Seq[nir.Val]) =
       state.emit(
         nir.Op.Call(
           ty,
@@ -58,8 +50,9 @@ private[interflow] trait Intrinsics { self: Interflow =>
         )
       )
 
-    sig match {
-      case nir.Rt.GetClassSig =>
+    name match {
+      case nir.Global.Member(Class, nir.Rt.GetClassSig) =>
+        val args = rawArgs.map(eval)
         args match {
           case Seq(VirtualRef(_, cls, _)) =>
             Some(nir.Val.Global(cls.name, nir.Rt.Class))
@@ -72,12 +65,13 @@ private[interflow] trait Intrinsics { self: Interflow =>
               case refty: nir.Type.RefKind if refty.isExact =>
                 Some(nir.Val.Global(refty.className, nir.Rt.Class))
               case _ =>
-                Some(emit)
+                Some(emit(args))
             }
           case _ =>
-            Some(emit)
+            Some(emit(args))
         }
-      case nir.Rt.IsArraySig =>
+      case nir.Global.Member(Class, nir.Rt.IsArraySig) =>
+        val args = rawArgs.map(eval)
         args match {
           case Seq(nir.Val.Global(clsName: nir.Global.Top, ty))
               if ty == nir.Rt.Class =>
@@ -85,7 +79,8 @@ private[interflow] trait Intrinsics { self: Interflow =>
           case _ =>
             None
         }
-      case nir.Rt.IsAssignableFromSig =>
+      case nir.Global.Member(Class, nir.Rt.IsAssignableFromSig) =>
+        val args = rawArgs.map(eval)
         args match {
           case Seq(
                 nir.Val.Global(ScopeRef(linfo), lty),
@@ -95,7 +90,8 @@ private[interflow] trait Intrinsics { self: Interflow =>
           case _ =>
             None
         }
-      case nir.Rt.GetNameSig =>
+      case nir.Global.Member(Class, nir.Rt.GetNameSig) =>
+        val args = rawArgs.map(eval)
         args match {
           case Seq(nir.Val.Global(name: nir.Global.Top, ty))
               if ty == nir.Rt.Class =>
@@ -103,56 +99,64 @@ private[interflow] trait Intrinsics { self: Interflow =>
           case _ =>
             None
         }
-      case nir.Rt.BitCountSig =>
+      case nir.Global.Member(Integer, nir.Rt.BitCountSig) =>
+        val args = rawArgs.map(eval)
         args match {
           case Seq(_, nir.Val.Int(v)) =>
             Some(nir.Val.Int(java.lang.Integer.bitCount(v)))
           case _ =>
             None
         }
-      case nir.Rt.ReverseBytesSig =>
+      case nir.Global.Member(Integer, nir.Rt.ReverseBytesSig) =>
+        val args = rawArgs.map(eval)
         args match {
           case Seq(_, nir.Val.Int(v)) =>
             Some(nir.Val.Int(java.lang.Integer.reverseBytes(v)))
           case _ =>
             None
         }
-      case nir.Rt.NumberOfLeadingZerosSig =>
+      case nir.Global.Member(Integer, nir.Rt.NumberOfLeadingZerosSig) =>
+        val args = rawArgs.map(eval)
         args match {
           case Seq(_, nir.Val.Int(v)) =>
             Some(nir.Val.Int(java.lang.Integer.numberOfLeadingZeros(v)))
           case _ =>
             None
         }
-      case nir.Rt.CosSig =>
+      case nir.Global.Member(Math, nir.Rt.CosSig) =>
+        val args = rawArgs.map(eval)
         args match {
           case Seq(_, nir.Val.Double(v)) =>
             Some(nir.Val.Double(java.lang.Math.cos(v)))
           case _ =>
             None
         }
-      case nir.Rt.SinSig =>
+      case nir.Global.Member(Math, nir.Rt.SinSig) =>
+        val args = rawArgs.map(eval)
         args match {
           case Seq(_, nir.Val.Double(v)) =>
             Some(nir.Val.Double(java.lang.Math.sin(v)))
           case _ =>
             None
         }
-      case nir.Rt.PowSig =>
+      case nir.Global.Member(Math, nir.Rt.PowSig) =>
+        val args = rawArgs.map(eval)
         args match {
           case Seq(_, nir.Val.Double(v1), nir.Val.Double(v2)) =>
             Some(nir.Val.Double(java.lang.Math.pow(v1, v2)))
           case _ =>
             None
         }
-      case nir.Rt.SqrtSig =>
+      case nir.Global.Member(Math, nir.Rt.SqrtSig) =>
+        val args = rawArgs.map(eval)
         args match {
           case Seq(_, nir.Val.Double(v)) =>
             Some(nir.Val.Double(java.lang.Math.sqrt(v)))
           case _ =>
             None
         }
-      case nir.Rt.MaxSig =>
+      case nir.Global.Member(Math, nir.Rt.MaxSig) =>
+        val args = rawArgs.map(eval)
         args match {
           case Seq(_, nir.Val.Double(v1), nir.Val.Double(v2)) =>
             Some(nir.Val.Double(java.lang.Math.max(v1, v2)))
@@ -170,72 +174,44 @@ private[interflow] trait Intrinsics { self: Interflow =>
       case _ if name == arrayLengthIntrinsic =>
         val Seq(arr) = rawArgs
         Some(eval(nir.Op.Arraylength(arr)))
-      case nir.Rt.FromRawPtrSig =>
+      case nir.Global.Member(nir.Rt.Runtime.name, nir.Rt.FromRawPtrSig) =>
         val Seq(_, value) = rawArgs
         Some(eval(nir.Op.Box(nir.Rt.BoxedPtr, value)))
-      case nir.Rt.ToRawPtrSig =>
+      case nir.Global.Member(nir.Rt.Runtime.name, nir.Rt.ToRawPtrSig) =>
         val Seq(_, value) = rawArgs
         Some(eval(nir.Op.Unbox(nir.Rt.BoxedPtr, value)))
+      case nir.Global.Member(nir.Global.Top(className), method) =>
+        method.unmangled match {
+          case nir.Sig.Method(methodName, _, _) =>
+            // Lower.BoxTo and Lower.UnboxTo maps use the companion object name,
+            // but java static methods on the class are also present
+            // and we need to handle them.
+            val isCompanionObject = className.last == '$'
+            def param = if (isCompanionObject) {
+              val Seq(_, param) = rawArgs
+              param
+            } else {
+              val Seq(param) = rawArgs
+              param
+            }
+            val companionObjectName = if (isCompanionObject) {
+              className
+            } else {
+              className + '$'
+            }
+
+            val boxIntrinsic = boxIntrinsicType
+              .get((companionObjectName, methodName))
+              .map(tpe => eval(nir.Op.Box(tpe, param)))
+
+            val unboxIntrinsic = unboxIntrinsicType
+              .get((companionObjectName, methodName))
+              .map(tpe => eval(nir.Op.Unbox(tpe, param)))
+
+            boxIntrinsic.orElse(unboxIntrinsic)
+          case _ => None
+        }
+      case _ => None
     }
   }
-
-  object BoxesRunTimeCall {
-
-    /** The optimizer can remove redundant box/unbox calls, but only do if they
-     *  are nir.Op.Box and nir.Op.Unbox NIR definitions. This converts calls in
-     *  scala.runtime.BoxesRunTime into the equivalent NIR instructions.
-     */
-    def unapply(op: nir.Op)(implicit
-        state: State,
-        srcPosition: nir.SourcePosition,
-        scopeId: nir.ScopeId
-    ): Option[nir.Val] = {
-      op match {
-        case nir.Op.Call(
-              _,
-              nir.Val.Global(
-                nir.Global.Member(
-                  nir.Global.Top("scala.runtime.BoxesRunTime"),
-                  sig
-                ),
-                _
-              ),
-              args
-            ) =>
-          def box(tpe: String) =
-            eval(nir.Op.Box(nir.Type.Ref(nir.Global.Top(tpe)), args.head))
-          def unbox(tpe: String) =
-            eval(nir.Op.Unbox(nir.Type.Ref(nir.Global.Top(tpe)), args.head))
-
-          sig.unmangled match {
-            case nir.Sig.Method(name, _, _) =>
-              name match {
-                case "boxToBoolean"   => Some(box("java.lang.Boolean"))
-                case "boxToCharacter" => Some(box("java.lang.Character"))
-                case "boxToByte"      => Some(box("java.lang.Byte"))
-                case "boxToShort"     => Some(box("java.lang.Short"))
-                case "boxToInteger"   => Some(box("java.lang.Integer"))
-                case "boxToLong"      => Some(box("java.lang.Long"))
-                case "boxToFloat"     => Some(box("java.lang.Float"))
-                case "boxToDouble"    => Some(box("java.lang.Double"))
-
-                case "unboxToBoolean" => Some(unbox("java.lang.Boolean"))
-                case "unboxToChar"    => Some(unbox("java.lang.Character"))
-                case "unboxToByte"    => Some(unbox("java.lang.Byte"))
-                case "unboxToShort"   => Some(unbox("java.lang.Short"))
-                case "unboxToInt"     => Some(unbox("java.lang.Integer"))
-                case "unboxToLong"    => Some(unbox("java.lang.Long"))
-                case "unboxToFloat"   => Some(unbox("java.lang.Float"))
-                case "unboxToDouble"  => Some(unbox("java.lang.Double"))
-                case _                => None
-              }
-
-            case _ => None
-          }
-        case _ => None
-
-      }
-    }
-  }
-
 }
