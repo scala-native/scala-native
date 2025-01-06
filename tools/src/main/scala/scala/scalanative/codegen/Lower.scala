@@ -2263,7 +2263,7 @@ private[scalanative] object Lower {
   val injects: Seq[nir.Defn] = {
     implicit val pos = nir.SourcePosition.NoPosition
     val buf = mutable.UnrolledBuffer.empty[nir.Defn]
-    def externDecl(name: nir.Global.Member, signature: nir.Type.Function) = nir.Defn.Declare(nir.Attrs(isExtern = true), name, signature)
+    def externDecl(name: nir.Global.Member, signature: nir.Type.Function) = nir.Defn.Declare(nir.Attrs.None.withIsExtern(true), name, signature)
     buf += externDecl(allocSmallName, allocSig)
     buf += externDecl(largeAllocName, allocSig)
     buf += externDecl(dyndispatchName, dyndispatchSig)

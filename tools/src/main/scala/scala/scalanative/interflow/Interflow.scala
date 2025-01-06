@@ -201,7 +201,7 @@ object Interflow {
   }
 
   private[scalanative] object LLVMIntrinsics {
-    private val externAttrs = nir.Attrs(isExtern = true)
+    private val externAttrs = nir.Attrs.None.withIsExtern(true)
     private val LLVMI =
       nir.Global.Top("scala.scalanative.runtime.LLVMIntrinsics$")
     private def llvmIntrinsic(id: String) =

@@ -238,7 +238,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
     def genClassFields(cd: ClassDef): Unit = {
       val sym = cd.symbol
-      val attrs = nir.Attrs(isExtern = sym.isExternType)
+      val attrs = nir.Attrs.None.withIsExtern(sym.isExternType)
       val classAlign = getAlignmentAttr(sym)
 
       for (f <- sym.info.decls
@@ -314,7 +314,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       staticInitBody.foreach {
         case body if body.nonEmpty =>
           buf += new nir.Defn.Define(
-            nir.Attrs(),
+            nir.Attrs.None,
             name,
             nir.Type.Function(Seq.empty[nir.Type], nir.Type.Unit),
             body
@@ -350,7 +350,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         }
 
         reflInstBuffer += new nir.Defn.Define(
-          nir.Attrs(),
+          nir.Attrs.None,
           reflInstBuffer.name.member(nir.Sig.Ctor(Seq.empty)),
           nir.Type
             .Function(Seq(nir.Type.Ref(reflInstBuffer.name)), nir.Type.Unit),
@@ -410,7 +410,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           }
 
           reflInstBuffer += new nir.Defn.Define(
-            nir.Attrs(),
+            nir.Attrs.None,
             reflInstBuffer.name.member(applyMethodSig),
             nir.Type
               .Function(Seq(nir.Type.Ref(reflInstBuffer.name)), jlObjectRef),
@@ -425,7 +425,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         )
 
         reflInstBuffer += nir.Defn.Class(
-          nir.Attrs(),
+          nir.Attrs.None,
           reflInstBuffer.name,
           Some(srAbstractFunction0),
           Seq(serializable)
@@ -548,7 +548,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             }
 
             reflInstBuffer += new nir.Defn.Define(
-              nir.Attrs(),
+              nir.Attrs.None,
               reflInstBuffer.name.member(applyMethodSig),
               nir.Type.Function(
                 Seq(
@@ -568,7 +568,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           )
 
           reflInstBuffer += nir.Defn.Class(
-            nir.Attrs(),
+            nir.Attrs.None,
             reflInstBuffer.name,
             Some(srAbstractFunction1),
             Seq(serializable)
@@ -836,8 +836,9 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       }
 
       new nir.Defn.Define(
-        nir
-          .Attrs(inlineHint = nir.Attr.AlwaysInline, isLinktimeResolved = true),
+        nir.Attrs.None
+          .withInlineHint(nir.Attr.AlwaysInline)
+          .withIsLinktimeResolved(true),
         methodName,
         nir.Type.Function(Seq.empty, retty),
         buf.toSeq
@@ -1260,7 +1261,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       }
 
       new nir.Defn.Define(
-        attrs = nir.Attrs(inlineHint = nir.Attr.InlineHint),
+        attrs = nir.Attrs.None.withInlineHint(nir.Attr.InlineHint),
         name = forwarderName,
         ty = forwarderType,
         insts = curStatBuffer

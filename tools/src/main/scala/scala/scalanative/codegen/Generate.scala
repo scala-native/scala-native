@@ -144,7 +144,7 @@ private[codegen] object Generate {
       implicit val fresh: nir.Fresh = nir.Fresh()
 
       buf += nir.Defn.Define(
-        nir.Attrs(isExtern = true),
+        nir.Attrs.None.withIsExtern(true),
         LibraryInitName,
         LibraryInitSig,
         withExceptionHandler { unwindProvider =>
@@ -200,7 +200,7 @@ private[codegen] object Generate {
         nir.Type.Ptr
       )
       val LoadModuleDecl = nir.Defn.Declare(
-        nir.Attrs(isExtern = true),
+        nir.Attrs.None.withIsExtern(true),
         extern("__scalanative_loadModule"),
         LoadModuleSig
       )
@@ -321,7 +321,7 @@ private[codegen] object Generate {
             // Generate definition of module load function such as "module$G4load"
             // The callers will be generated while lowering "Op.Module", see "codegen/Lower.scala".
             val loadDefn = nir.Defn.Define(
-              nir.Attrs(inlineHint =
+              nir.Attrs.None.withInlineHint(
                 if (useSynchronizedAccessors) nir.Attr.MayInline
                 else nir.Attr.NoInline
               ),
