@@ -191,15 +191,14 @@ private[interflow] trait Intrinsics { self: Interflow =>
               className + '$'
             }
 
-            val boxIntrinsic = boxIntrinsicType
+            boxIntrinsicType
               .get((companionObjectName, methodName))
               .map(tpe => eval(nir.Op.Box(tpe, rawArgs.last)))
-
-            val unboxIntrinsic = unboxIntrinsicType
-              .get((companionObjectName, methodName))
-              .map(tpe => eval(nir.Op.Unbox(tpe, rawArgs.last)))
-
-            boxIntrinsic.orElse(unboxIntrinsic)
+              .orElse(
+                unboxIntrinsicType
+                  .get((companionObjectName, methodName))
+                  .map(tpe => eval(nir.Op.Unbox(tpe, rawArgs.last)))
+              )
           case _ => None
         }
     }
