@@ -315,7 +315,8 @@ private[scalanative] object LLVM {
     }
 
     val compiler =
-      if (isCppRuntimeRequired(config, analysis)) config.clangPP.abs else config.clang.abs
+      if (isCppRuntimeRequired(config, analysis)) config.clangPP.abs
+      else config.clang.abs
 
     val command = Seq(compiler, s"@${configFile.getAbsolutePath()}")
     config.logger.running(command)
