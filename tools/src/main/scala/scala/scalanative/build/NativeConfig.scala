@@ -137,11 +137,6 @@ sealed trait NativeConfig {
     }
   }
 
-  /** Shall enable the use of C++ runtime. Useful if you want to compile c++
-   *  code in your Scala Native application.
-   */
-  def useCPPRuntime: Boolean
-
   // update methods - order as properties above
 
   /** Create a new config with given path to clang. */
@@ -269,11 +264,6 @@ sealed trait NativeConfig {
 
   /** Modify a semantics configuration */
   def withSemanticsConfig(update: Mapping[SemanticsConfig]): NativeConfig
-
-  /** Create a new [[NativeConfig]] enabling/disabling the use of C++ runtime.
-   *  Useful if you want to compile c++ code in your Scala Native application.
-   */
-  def withUseCPPRuntime(value: Boolean): NativeConfig
 }
 
 object NativeConfig {
@@ -311,8 +301,7 @@ object NativeConfig {
       baseName = "",
       optimizerConfig = OptimizerConfig.empty,
       sourceLevelDebuggingConfig = SourceLevelDebuggingConfig.disabled,
-      semanticsConfig = SemanticsConfig.default,
-      useCPPRuntime = false
+      semanticsConfig = SemanticsConfig.default
     )
 
   private final case class Impl(
@@ -342,8 +331,7 @@ object NativeConfig {
       baseName: String,
       optimizerConfig: OptimizerConfig,
       sourceLevelDebuggingConfig: SourceLevelDebuggingConfig,
-      semanticsConfig: SemanticsConfig,
-      useCPPRuntime: Boolean
+      semanticsConfig: SemanticsConfig
   ) extends NativeConfig {
 
     def withClang(value: Path): NativeConfig =
@@ -457,9 +445,6 @@ object NativeConfig {
     override def withSemanticsConfig(
         update: Mapping[SemanticsConfig]
     ): NativeConfig = copy(semanticsConfig = update(semanticsConfig))
-
-    def withUseCPPRuntime(value: Boolean) =
-      copy(useCPPRuntime = value)
 
     override def toString: String = {
       def showSeq(it: Iterable[Any]) = it.mkString("[", ", ", "]")
