@@ -105,11 +105,11 @@ private[codegen] abstract class AbstractCodeGen(
         implicit val rootPos = defn.pos
         defn match {
           case defn @ nir.Defn.Var(attrs, _, _, _) =>
-            defn.copy(attrs.copy(isExtern = true))
+            defn.copy(attrs.withIsExtern(true))
           case defn @ nir.Defn.Const(attrs, _, ty, _) =>
-            defn.copy(attrs.copy(isExtern = true))
+            defn.copy(attrs.withIsExtern(true))
           case defn @ nir.Defn.Declare(attrs, _, _) =>
-            defn.copy(attrs.copy(isExtern = true))
+            defn.copy(attrs.withIsExtern(true))
           case defn @ nir.Defn.Define(attrs, name, ty, _, _) =>
             nir.Defn.Declare(attrs, name, ty)
           case _ =>

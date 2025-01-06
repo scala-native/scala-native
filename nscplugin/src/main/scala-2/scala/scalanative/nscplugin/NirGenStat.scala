@@ -252,16 +252,15 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         // Thats what JVM backend does
         // https://github.com/scala/scala/blob/fe724bcbbfdc4846e5520b9708628d994ae76798/src/compiler/scala/tools/nsc/backend/jvm/BTypesFromSymbols.scala#L760-L764
         val isFinal = !f.isMutable
-        val fieldAttrs = attrs.copy(
-          isVolatile = f.isVolatile,
-          isFinal = isFinal,
-          isSafePublish = isFinal && {
+        val fieldAttrs = attrs
+          .withIsVolatile(f.isVolatile)
+          .withIsFinal(isFinal)
+          .withIsSafePublish(isFinal && {
             scalaNativeOpts.forceStrictFinalFields ||
             f.hasAnnotation(SafePublishClass) ||
             f.owner.hasAnnotation(SafePublishClass)
-          },
-          align = getAlignmentAttr(f).orElse(classAlign)
-        )
+          })
+          .withAlign(getAlignmentAttr(f).orElse(classAlign))
 
         buf += nir.Defn.Var(fieldAttrs, name, ty, nir.Val.Zero(ty))(pos)
       }
@@ -720,10 +719,9 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
               val body = genMethodBody(dd, rhs, isExtern)
               val methodAttrs =
                 if (env.isUsingLinktimeResolvedValue || env.isUsingIntrinsics) {
-                  attrs.copy(
-                    isLinktimeResolved = env.isUsingLinktimeResolvedValue,
-                    isUsingIntrinsics = env.isUsingIntrinsics
-                  )
+                  attrs
+                    .withIsLinktimeResolved(env.isUsingLinktimeResolvedValue)
+                    .withIsUsingIntrinsics(env.isUsingIntrinsics)
                 } else attrs
               Some(
                 new nir.Defn.Define(
