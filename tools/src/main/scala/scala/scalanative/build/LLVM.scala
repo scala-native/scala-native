@@ -80,16 +80,16 @@ private[scalanative] object LLVM {
         if (config.compilerConfig.multithreadingSupport)
           Seq("-DSCALANATIVE_MULTITHREADING_ENABLED")
         else Nil
-      val usingCPPExceptions =
-        if (config.usingCPPExceptions)
+      val usingCppExceptions =
+        if (config.usingCppExceptions)
           Seq("-DSCALANATIVE_USING_CPP_EXCEPTIONS")
         else Nil
       val allowTargetOverrrides =
         config.compilerConfig.targetTriple.map(_ => s"-Wno-override-module")
-      multithreadingEnabled ++ usingCPPExceptions ++ allowTargetOverrrides
+      multithreadingEnabled ++ usingCppExceptions ++ allowTargetOverrrides
     }
     val exceptionsHandling = {
-      val targetSpecific = if (config.usingCPPExceptions) {
+      val targetSpecific = if (config.usingCppExceptions) {
         val opt = if (isCpp) List("-fcxx-exceptions") else Nil
         List("-fexceptions", "-funwind-tables") ++ opt
       } else {
@@ -220,7 +220,7 @@ private[scalanative] object LLVM {
       analysis: ReachabilityAnalysis.Result
   )(implicit config: Config) = {
     val workDir = config.workDir
-    val isCPPRuntimeRequired = config.usingCPPExceptions || analysis.linkCppRuntime
+    val isCPPRuntimeRequired = config.usingCppExceptions || analysis.linkCppRuntime
     val links = {
       val srclinks = analysis.links.map(_.name)
       val gclinks = config.gc.links

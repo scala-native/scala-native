@@ -197,7 +197,7 @@ sealed trait Config {
       case _ => false
     }
 
-  private[scalanative] def usingCPPExceptions: Boolean =
+  private[scalanative] def usingCppExceptions: Boolean =
     targetsWindows
 }
 
