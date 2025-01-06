@@ -37,10 +37,15 @@ private[scalanative] object LLVM {
    *  @return
    *    The paths of the `.o` files.
    */
-  def compile(config: Config, path: Path)(implicit
+  def compile(
+      config: Config,
+      analysis: ReachabilityAnalysis.Result,
+      path: Path
+  )(implicit
       ec: ExecutionContext
   ): Future[Path] = {
     implicit val _config: Config = config
+    implicit val _analysis: ReachabilityAnalysis.Result = analysis
 
     val inpath = path.abs
     val outpath = inpath + oExt
@@ -52,6 +57,7 @@ private[scalanative] object LLVM {
 
   private def compileFile(srcPath: Path, objPath: Path)(implicit
       config: Config,
+      analysis: ReachabilityAnalysis.Result,
       ec: ExecutionContext
   ): Future[Path] = Future {
     val inpath = srcPath.abs
@@ -89,7 +95,7 @@ private[scalanative] object LLVM {
       multithreadingEnabled ++ usingCppExceptions ++ allowTargetOverrrides
     }
     val exceptionsHandling = {
-      val targetSpecific = if (config.usingCppExceptions) {
+      val targetSpecific = if (isCppRuntimeRequired(config, analysis)) {
         val opt = if (isCpp) List("-fcxx-exceptions") else Nil
         List("-fexceptions", "-funwind-tables") ++ opt
       } else {
@@ -220,7 +226,6 @@ private[scalanative] object LLVM {
       analysis: ReachabilityAnalysis.Result
   )(implicit config: Config) = {
     val workDir = config.workDir
-    val isCPPRuntimeRequired = config.usingCppExceptions || analysis.linkCppRuntime
     val links = {
       val srclinks = analysis.links.map(_.name)
       val gclinks = config.gc.links
@@ -309,7 +314,8 @@ private[scalanative] object LLVM {
       finally pw.close()
     }
 
-    val compiler = if (isCPPRuntimeRequired) config.clangPP.abs else config.clang.abs
+    val compiler =
+      if (isCppRuntimeRequired(config, analysis)) config.clangPP.abs else config.clang.abs
 
     val command = Seq(compiler, s"@${configFile.getAbsolutePath()}")
     config.logger.running(command)
@@ -475,6 +481,11 @@ private[scalanative] object LLVM {
     if (str.exists(_.isWhitespace)) s""""$str""""
     else str
   }
+
+  private def isCppRuntimeRequired(
+      config: Config,
+      analysis: ReachabilityAnalysis.Result
+  ) = config.usingCppExceptions || analysis.linkCppRuntime
 
   lazy val msysExtras = Seq(
     "-D_WIN64",
