@@ -32,8 +32,10 @@ private[scalanative] object LLVM {
    *
    *  @param config
    *    The configuration of the toolchain.
-   *  @param paths
-   *    The directory paths containing native files to compile.
+   *  @param analysis
+   *    The output of the reachability analysis.
+   *  @param path
+   *    The directory path containing native files to compile.
    *  @return
    *    The paths of the `.o` files.
    */
