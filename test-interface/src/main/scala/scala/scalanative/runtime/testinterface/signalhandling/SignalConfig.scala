@@ -80,16 +80,17 @@ private[scalanative] object SignalConfig {
     unwind.init_local(cursor, context)
 
     while (unwind.step(cursor) > 0) {
-      val offset = stackalloc[Long]()
-      val pc = stackalloc[CSize]()
+      val offset = Intrinsics.stackalloc[Long]()
+      val pc = Intrinsics.stackalloc[RawSize]()
       unwind.get_reg(cursor, unwind.UNW_REG_IP, pc)
-      if (!pc == 0) return
+      val addr = Intrinsics.loadRawSize(pc)
+      if (Intrinsics.castRawSizeToInt(addr) == 0) return
       val symMax = 1024
       val sym: Ptr[CChar] = stackalloc[CChar](symMax)
       if (unwind.get_proc_name(
             cursor,
             sym,
-            sizeof[CChar] * symMax.toUInt,
+            Intrinsics.castIntToRawSizeUnsigned(sizeOf[CChar] * symMax),
             offset
           ) == 0) {
         sym(symMax - 1) = 0.toByte
