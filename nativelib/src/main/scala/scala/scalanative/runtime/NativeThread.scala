@@ -80,6 +80,10 @@ trait NativeThread {
 private object ThreadStackSize {
   final val Minimal = 64 * 1024
   final val JVMDefault = 1024 * 1024 // 1MB is JVM default
+
+  // Additional stack size to compenstate memory for internals
+  private def extraThreadStackSize: Long = NativeThread.StackOverflowGuards.size
+
   private val overrideDefaultThreadSize: Option[Long] = {
     System.getenv("SCALANATIVE_THREAD_SIZE") match {
       case null => None
@@ -101,7 +105,7 @@ private object ThreadStackSize {
   }
 
   def resolve(userDefinedStackSize: Long, osDefaultStackSize: Long): Int = {
-    val requiredSize = {
+    val requiredSize = extraThreadStackSize + {
       if (userDefinedStackSize > 0)
         Math.max(userDefinedStackSize, ThreadStackSize.Minimal)
       else
@@ -198,7 +202,15 @@ object NativeThread {
 
   private def threadEntryPoint(nativeThread: NativeThread): Unit = {
     import nativeThread.thread
+    val stackBottom = Intrinsics.stackalloc[Int]()
     TLS.assignCurrentThread(thread, nativeThread)
+    TLS.setupCurrentThreadInfo(
+      stackBottom = stackBottom,
+      stackSize = nativeThread.stackSize,
+      isMainThread = false
+    )
+    StackOverflowGuards.setup(isMainThread = false)
+
     nativeThread.state = State.Running
     atomic_thread_fence(memory_order_seq_cst)
     // Ensure Java Thread already assigned the Native Thread instance
@@ -222,8 +234,18 @@ object NativeThread {
       }
   }
 
+  @exported("scalanative_throwPendingStackOverflowError")
+  def throwPendingStackOverflowError(): Unit = {
+    val exception = new StackOverflowError()
+    exception.asInstanceOf[runtime.Throwable].onCatchHandler = (_: Throwable) =>
+      try NativeThread.StackOverflowGuards.reset()
+      catch { case ex: StackOverflowError => () }
+
+    throw exception
+  }
+
   @extern
-  private object TLS {
+  private[scalanative] object TLS {
     @name("scalanative_assignCurrentThread")
     def assignCurrentThread(
         thread: Thread,
@@ -235,5 +257,24 @@ object NativeThread {
 
     @name("scalanative_currentThread")
     def currentThread: Thread = extern
+
+    @name("scalanative_setupCurrentThreadInfo")
+    def setupCurrentThreadInfo(
+        stackBottom: RawPtr,
+        stackSize: Int, // ignored if main thread
+        isMainThread: Boolean
+    ): Unit = extern
   }
+
+  @extern private[runtime] object StackOverflowGuards {
+    @name("scalanative_stackOverflowGuardsSize")
+    def size: Int = extern
+
+    @name("scalanative_setupStackOverflowGuards")
+    def setup(isMainThread: Boolean): Unit = extern
+
+    @name("scalanative_resetStackOverflowGuards")
+    def reset(): Unit = extern
+  }
+
 }

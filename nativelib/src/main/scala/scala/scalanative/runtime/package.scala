@@ -57,12 +57,18 @@ package object runtime {
       argc: Int,
       rawargv: RawPtr
   ): scala.Array[String] = {
-    if (isMultithreadingEnabled) {
-      assert(
-        Thread.currentThread() != null,
-        "failed to initialize main thread"
-      )
-    }
+    NativeThread.TLS.setupCurrentThreadInfo(
+      stackBottom = rawargv,
+      isMainThread = true,
+      stackSize = -1 /* detect */
+    )
+    NativeThread.StackOverflowGuards.setup(isMainThread = true)
+
+    val mainThread = Thread.currentThread()
+    assert(
+      mainThread != null,
+      "failed to initialize main thread"
+    )
 
     val argv = fromRawPtr[CString](rawargv)
     val args = new scala.Array[String](argc - 1)
