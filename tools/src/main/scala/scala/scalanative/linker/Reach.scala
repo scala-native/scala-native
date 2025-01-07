@@ -60,10 +60,7 @@ private[linker] class Reach(
   loader.classesWithEntryPoints.foreach { clsName =>
     if (reachStaticConstructors)
       reachClinit(clsName)(nir.SourcePosition.NoPosition)
-    config.compilerConfig.buildTarget match {
-      case build.BuildTarget.Application => ()
-      case _                             => reachExported(clsName)
-    }
+    reachExported(clsName)
   }
 
   def result(): ReachabilityAnalysis = {
