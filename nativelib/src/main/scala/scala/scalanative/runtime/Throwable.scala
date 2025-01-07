@@ -1,10 +1,20 @@
 package scala.scalanative.runtime
 
 import scala.scalanative.unsafe._
+import scala.scalanative.meta.LinktimeInfo
 
+abstract class Throwable protected (writableStackTrace: scala.Boolean) {
   self: java.lang.Throwable =>
 
   protected var stackTrace: scala.Array[StackTraceElement] = _
+  private val exceptionWrapper: BlobArray =
+    if (Throwable.usingCxxExceptions) null // unused
+    else BlobArray.alloc(Throwable.ffi.sizeOfExceptionWrapper)
+
+  if (Throwable.usingCxxExceptions) {
+    // ExceptionWrapper { Throwable, _UnwindException }
+    Intrinsics.storeObject(exceptionWrapper.atRawUnsafe(0), this)
+  }
 
   if (writableStackTrace)
     fillInStackTrace()
@@ -29,4 +39,16 @@ import scala.scalanative.unsafe._
       this.stackTrace = stackTrace.clone()
     }
   }
+private object Throwable {
+  @resolvedAtLinktime
+  private def usingCxxExceptions: Boolean = LinktimeInfo.isWindows
+  
+  @extern private object ffi {
+    @name("scalanative_Throwable_sizeOfExceptionWrapperr")
+    def sizeOfExceptionWrapper: Int = extern
+  }
+
+  @exported("scalanative_Throwable_exceptionWrapper")
+  def exceptionWrapper(self: Throwable): RawPtr =
+    self.exceptionWrapper.atRawUnsafe(0)
 }

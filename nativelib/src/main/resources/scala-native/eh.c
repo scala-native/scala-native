@@ -12,16 +12,27 @@
 #define GetExceptionWrapper(unwindException)                                   \
     ((ExceptionWrapper *)(unwindException + 1) - 1)
 
+typedef void *Exception;
 typedef struct ExceptionWrapper {
-    void *obj;
+    Exception obj;
     _Unwind_Exception unwindException;
 } ExceptionWrapper;
+
+extern ExceptionWrapper *
+scalanative_Throwable_exceptionWrapper(Exception exception);
+
+size_t scalanative_Throwable_sizeOfExceptionWrapperr() {
+    return sizeof(ExceptionWrapper);
+}
+
+static void Exception_cleanup(Exception *self) {
+}
 
 // Cleanup function for the exception
 void generic_exception_cleanup(_Unwind_Reason_Code code,
                                _Unwind_Exception *exception) {
     ExceptionWrapper *exceptionWrapper = GetExceptionWrapper(exception);
-    free(exceptionWrapper); // Free the allocated memory
+    Exception_cleanup(exceptionWrapper->obj);
 }
 
 typedef const uint8_t *LSDA_ptr;
@@ -234,23 +245,13 @@ _Unwind_Reason_Code scalanative_personality(int version, _Unwind_Action actions,
 void *scalanative_catch(_Unwind_Exception *unwindException) {
     ExceptionWrapper *exceptionWrapper = GetExceptionWrapper(unwindException);
     void *exception = exceptionWrapper->obj;
-
-    free(exceptionWrapper);
-
+    Exception_cleanup(exception);
     return exception;
 }
 
 void scalanative_throw(void *obj) {
-    // Allocate and initialize the exception object
-    // TODO: We could add space inside java.lang.Throwable to store
-    // _UnwindException so we don't need to malloc at all
     ExceptionWrapper *exceptionWrapper =
-        (ExceptionWrapper *)malloc(sizeof(ExceptionWrapper));
-    if (!exceptionWrapper) {
-        perror("Failed to allocate memory for exception");
-        abort();
-    }
-
+        scalanative_Throwable_exceptionWrapper(obj);
     exceptionWrapper->unwindException.exception_cleanup =
         generic_exception_cleanup;
     exceptionWrapper->obj = obj;
@@ -259,13 +260,16 @@ void scalanative_throw(void *obj) {
         _Unwind_RaiseException(&exceptionWrapper->unwindException);
 
     if (code == _URC_END_OF_STACK) {
-        printf("No handler found for exception. Exiting.\n");
         generic_exception_cleanup(code, &exceptionWrapper->unwindException);
+        fprintf(stderr, "ScalaNative Fatal Error: Failed to throw exception, not found "
+               "a valid catch handler for exception when unwinding execution stack.\n");
         abort();
     } else {
         printf("Unhandled exception: _Unwind_RaiseException returned %d\n",
                code);
         abort();
     }
+    printf("Unhandled exception: _Unwind_RaiseException returned %d\n", code);
+    abort();
 }
 #endif
