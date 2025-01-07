@@ -11,18 +11,8 @@ private[interflow] trait Opt { self: Interflow =>
   def shallOpt(name: nir.Global.Member): Boolean = {
     val defn =
       getOriginal(originalName(name))
-    val noUnwind = defn.insts.forall {
-      case nir.Inst.Let(_, _, unwind) =>
-        unwind == nir.Next.None
-      case nir.Inst.Throw(_, unwind) =>
-        unwind == nir.Next.None
-      case nir.Inst.Unreachable(unwind) =>
-        unwind == nir.Next.None
-      case _ =>
-        true
-    }
 
-    defn.attrs.opt != nir.Attr.NoOpt && noUnwind
+    defn.attrs.opt != nir.Attr.NoOpt && !defn.hasUnwind
   }
 
   def opt(name: nir.Global.Member): nir.Defn.Define =
