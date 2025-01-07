@@ -337,7 +337,7 @@ final class Attrs private (
 }
 object Attrs {
   private val HashSeed =
-    scala.util.hashing.MurmurHash3.stringHash(classOf[Attrs].getName)
+    scala.util.hashing.MurmurHash3.stringHash("scala.scalanative.nir.Attrs")
 
   val None = new Attrs(
     inlineHint = MayInline,
