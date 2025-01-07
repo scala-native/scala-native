@@ -194,8 +194,7 @@ private[interflow] trait Eval { self: Interflow =>
         }
 
         emeth match {
-          case nir.Val.Global(name: nir.Global.Member, _)
-              if intrinsics.contains(name) =>
+          case nir.Val.Global(name: nir.Global.Member, _) =>
             intrinsic(sig, name, args).getOrElse {
               nonIntrinsic
             }
