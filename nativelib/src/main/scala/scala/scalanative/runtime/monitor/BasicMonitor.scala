@@ -175,4 +175,15 @@ private[runtime] final class BasicMonitor(val lockWordRef: RawPtr)
 
     objectMonitor
   }
+
+  def show: String =
+    if (lockWord.isInflated)
+      lockWord.getObjectMonitor.toString
+    else {
+      val lock = lockWord
+      val isLocked = !lock.isUnlocked
+      val recursion = lock.recursionCount
+      val threadId = Intrinsics.castRawPtrToLong(lock.threadId)
+      s"BasicMonitor(locked=$isLocked, recursion=$recursion, threadId=$threadId)"
+    }
 }

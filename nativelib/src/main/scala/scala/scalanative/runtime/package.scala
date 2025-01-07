@@ -36,7 +36,7 @@ package object runtime {
 
   /** Get monitor for given object. */
   @alwaysinline
-  def getMonitor(obj: _Object) = {
+  def getMonitor(obj: AnyRef) = {
     if (isMultithreadingEnabled)
       new BasicMonitor(
         elemRawPtr(
