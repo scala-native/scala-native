@@ -13,13 +13,23 @@ import scala.scalanative.windows.ProcessThreadsApiExt._
 import scala.scalanative.windows.SynchApi._
 import scala.scalanative.windows.SynchApiExt._
 import scala.scalanative.windows.WinBaseApi._
+import scala.scalanative.windows.SysInfoApi._
 import scala.annotation.tailrec
 import scala.annotation.switch
 
-private[java] class WindowsThread(val thread: Thread, stackSize: Long)
-    extends NativeThread {
+private[java] class WindowsThread(
+    val thread: Thread,
+    val userDefinedStackSize: scala.Long
+) extends NativeThread {
   import WindowsThread._
   import NativeThread._
+
+  override def companion: NativeThread.Companion = WindowsThread
+  override val stackSize: Int =
+    NativeThread.calculateStackSize(
+      userDefinedStackSize = userDefinedStackSize,
+      WindowsThread.defaultOSStackSize
+    )
 
   private val parkEvent: Handle = checkedHandle("create park event") {
     CreateEventW(
@@ -48,13 +58,9 @@ private[java] class WindowsThread(val thread: Thread, stackSize: Long)
       )
     } else
       checkedHandle("create thread") {
-        val effectiveStackSize =
-          if (stackSize > 0) stackSize
-          else 0 // System default (1MB)
-
         GC.CreateThread(
           threadAttributes = null,
-          stackSize = effectiveStackSize.toUSize,
+          stackSize = stackSize.toUSize,
           startRoutine = NativeThread.threadRoutine,
           routineArg = NativeThread.threadRoutineArgs(this),
           creationFlags = STACK_SIZE_PARAM_IS_A_RESERVATION, // Run immediately,
@@ -169,6 +175,16 @@ object WindowsThread extends NativeThread.Companion {
 
   @alwaysinline
   override def yieldThread(): Unit = SwitchToThread()
+
+  override lazy val defaultOSStackSize: Long = {
+    if (!isMultithreadingEnabled) 0L
+    else {
+      import scala.scalanative.windows.SysInfoApiOps.SystemInfoOps
+      val sysInfo = stackalloc[SystemInfo]()
+      GetSystemInfo(sysInfo)
+      sysInfo.allocationGranularity.toLong
+    }
+  }
 
   @alwaysinline private def NanosInMillisecond = 1000000
 

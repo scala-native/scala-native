@@ -40,4 +40,7 @@ object Platform {
 
   @name("scalanative_platform_is_msys")
   def isMsys(): Boolean = extern
+  
+  @name("scalanative_page_size")
+  def pageSize: Int = extern
 }
