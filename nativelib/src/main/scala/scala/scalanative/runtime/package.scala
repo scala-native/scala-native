@@ -8,6 +8,7 @@ import scalanative.runtime.monitor._
 import scalanative.runtime.ffi.stdatomic.{atomic_thread_fence, memory_order}
 import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
 import java.util.concurrent.locks.LockSupport
+import java.{lang => jl}
 
 package object runtime {
   def filename = ExecInfo.filename
@@ -117,11 +118,11 @@ package object runtime {
   private[scalanative] final def executeUncaughtExceptionHandler(
       handler: Thread.UncaughtExceptionHandler,
       thread: Thread,
-      throwable: Throwable
+      throwable: jl.Throwable
   ): Unit = {
     try handler.uncaughtException(thread, throwable)
     catch {
-      case ex: Throwable =>
+      case ex: jl.Throwable =>
         val threadName = "\"" + thread.getName() + "\""
         System.err.println(
           s"\nException: ${ex.getClass().getName()} thrown from the UncaughtExceptionHandler in thread ${threadName}"

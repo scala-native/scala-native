@@ -10,7 +10,7 @@ object Proxy {
   def executeUncaughtExceptionHandler(
       handler: Thread.UncaughtExceptionHandler,
       thread: Thread,
-      ex: Throwable
+      ex: java.lang.Throwable
   ): Unit = scala.scalanative.runtime.executeUncaughtExceptionHandler(
     handler = handler,
     thread = thread,
