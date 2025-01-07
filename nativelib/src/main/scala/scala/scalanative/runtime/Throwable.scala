@@ -2,11 +2,13 @@ package scala.scalanative.runtime
 
 import scala.scalanative.unsafe._
 import scala.scalanative.meta.LinktimeInfo
+import java.nio.charset.{Charset, StandardCharsets}
 
 abstract class Throwable protected (writableStackTrace: scala.Boolean) {
   self: java.lang.Throwable =>
 
   protected var stackTrace: scala.Array[StackTraceElement] = _
+  private[runtime] var onCatchHandler: CFuncPtr1[Throwable, Unit] = _
   private val exceptionWrapper: BlobArray =
     if (Throwable.usingCxxExceptions) null // unused
     else BlobArray.alloc(Throwable.ffi.sizeOfExceptionWrapper)
@@ -87,7 +89,7 @@ abstract class Throwable protected (writableStackTrace: scala.Boolean) {
       if (bytes.length == 0) c""
       else {
         val len = bytes.length
-        val rawSize = castIntToRawSizeUnsigned(len + 1)
+        val rawSize = Intrinsics.castIntToRawSizeUnsigned(len + 1)
         val cstr: CString = fromRawPtr(Intrinsics.stackalloc[CChar](rawSize))
         ffi.memcpy(toRawPtr(cstr), toRawPtr(bytes.at(0)), rawSize)
         cstr(len) = 0.toByte
@@ -100,7 +102,7 @@ abstract class Throwable protected (writableStackTrace: scala.Boolean) {
 private object Throwable {
   @resolvedAtLinktime
   private def usingCxxExceptions: Boolean = LinktimeInfo.isWindows
-  
+
   @extern private object ffi {
     @name("scalanative_Throwable_sizeOfExceptionWrapperr")
     def sizeOfExceptionWrapper: Int = extern
@@ -112,4 +114,8 @@ private object Throwable {
   @exported("scalanative_Throwable_exceptionWrapper")
   def exceptionWrapper(self: Throwable): RawPtr =
     self.exceptionWrapper.atRawUnsafe(0)
+  
+  @exported("scalanative_Throwable_onCatchHandler")
+  def onCatchHandler(self: Throwable): CFuncPtr1[Throwable, Unit] /* | Null*/ =
+    self.onCatchHandler
 }
