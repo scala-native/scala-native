@@ -205,6 +205,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, nirSource: NIRSource) {
     case T.FinalAttr       => Attr.Final
     case T.SafePublishAttr => Attr.SafePublish
 
+    case T.LinkCppRuntimeAttr   => Attr.LinkCppRuntime
     case T.LinktimeResolvedAttr => Attr.LinktimeResolved
     case T.UsesIntrinsicAttr    => Attr.UsesIntrinsic
     case T.AlignAttr            => Attr.Alignment(getLebSignedInt(), getOpt(getString()))

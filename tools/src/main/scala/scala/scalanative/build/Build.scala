@@ -146,7 +146,7 @@ object Build {
         .sequence {
           irGenerators.map(irGenerator =>
             irGenerator.flatMap(generatedIR =>
-              LLVM.compile(config, generatedIR)
+              LLVM.compile(config, analysis, generatedIR)
             )
           )
         }

@@ -245,6 +245,7 @@ object ReachabilityAnalysis {
       val infos: mutable.Map[nir.Global, Info],
       val entries: Seq[nir.Global],
       val links: Seq[nir.Attr.Link],
+      val linkCppRuntime: Boolean,
       val preprocessorDefinitions: Seq[nir.Attr.Define],
       val defns: Seq[nir.Defn],
       val dynsigs: Seq[nir.Sig],

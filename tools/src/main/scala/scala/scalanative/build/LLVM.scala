@@ -32,15 +32,22 @@ private[scalanative] object LLVM {
    *
    *  @param config
    *    The configuration of the toolchain.
-   *  @param paths
-   *    The directory paths containing native files to compile.
+   *  @param analysis
+   *    The output of the reachability analysis.
+   *  @param path
+   *    The directory path containing native files to compile.
    *  @return
    *    The paths of the `.o` files.
    */
-  def compile(config: Config, path: Path)(implicit
+  def compile(
+      config: Config,
+      analysis: ReachabilityAnalysis.Result,
+      path: Path
+  )(implicit
       ec: ExecutionContext
   ): Future[Path] = {
     implicit val _config: Config = config
+    implicit val _analysis: ReachabilityAnalysis.Result = analysis
 
     val inpath = path.abs
     val outpath = inpath + oExt
@@ -52,6 +59,7 @@ private[scalanative] object LLVM {
 
   private def compileFile(srcPath: Path, objPath: Path)(implicit
       config: Config,
+      analysis: ReachabilityAnalysis.Result,
       ec: ExecutionContext
   ): Future[Path] = Future {
     val inpath = srcPath.abs
@@ -80,13 +88,23 @@ private[scalanative] object LLVM {
         if (config.compilerConfig.multithreadingSupport)
           Seq("-DSCALANATIVE_MULTITHREADING_ENABLED")
         else Nil
+      val usingCppExceptions =
+        if (config.usingCppExceptions)
+          Seq("-DSCALANATIVE_USING_CPP_EXCEPTIONS")
+        else Nil
       val allowTargetOverrrides =
         config.compilerConfig.targetTriple.map(_ => s"-Wno-override-module")
-      multithreadingEnabled ++ allowTargetOverrrides
+      multithreadingEnabled ++ usingCppExceptions ++ allowTargetOverrrides
     }
     val exceptionsHandling = {
-      val opt = if (isCpp) List("-fcxx-exceptions") else Nil
-      List("-fexceptions", "-funwind-tables") ::: opt
+      val targetSpecific = if (isCppRuntimeRequired(config, analysis)) {
+        val opt = if (isCpp) List("-fcxx-exceptions") else Nil
+        List("-fexceptions", "-funwind-tables") ++ opt
+      } else {
+        if (isCpp) List("-fno-rtti", "-fno-exceptions", "-funwind-tables")
+        else Nil
+      }
+      targetSpecific
     }
     // Always generate debug metadata on Windows, it's required for stack traces to work
     val debugFlags =
@@ -221,11 +239,22 @@ private[scalanative] object LLVM {
         if (config.targetsWindows) Seq("dbghelp")
         else if (config.targetsOpenBSD || config.targetsNetBSD)
           Seq("pthread")
-        else Seq("pthread", "dl")
+        else Seq("pthread", "dl", "m")
       platformsLinks ++ srclinks ++ gclinks
     }.distinct
     config.logger.info(s"Linking with [${links.mkString(", ")}]")
-    val linkopts = config.linkingOptions ++ links.map("-l" + _)
+    // GNU ld and ld.lld support the --as-needed flag which avoids linking
+    // libraries (defined after the option) you don't use. LLVM intrinsics
+    // call libm which is not added by default. However, the math functions
+    // in libm as often inlined in release mode which makes it useless to
+    // link it. The Mac OS linker doesn't support the flag and libm is not
+    // in a separate library there, so we use it only in other UNIX targets
+    // (also Windows on msys and cgwin)
+    val asNeededLinkerFlags =
+      if (config.targetsWindows || config.targetsMac) Nil
+      else List("-Wl,--as-needed")
+    val linkopts =
+      asNeededLinkerFlags ++ config.linkingOptions ++ links.map("-l" + _)
 
     val flags = {
       val debugFlags =
@@ -287,7 +316,11 @@ private[scalanative] object LLVM {
       finally pw.close()
     }
 
-    val command = Seq(config.clangPP.abs, s"@${configFile.getAbsolutePath()}")
+    val compiler =
+      if (isCppRuntimeRequired(config, analysis)) config.clangPP.abs
+      else config.clang.abs
+
+    val command = Seq(compiler, s"@${configFile.getAbsolutePath()}")
     config.logger.running(command)
     Process(command, config.workDir.toFile())
   }
@@ -451,6 +484,11 @@ private[scalanative] object LLVM {
     if (str.exists(_.isWhitespace)) s""""$str""""
     else str
   }
+
+  private def isCppRuntimeRequired(
+      config: Config,
+      analysis: ReachabilityAnalysis.Result
+  ) = config.usingCppExceptions || analysis.linkCppRuntime
 
   lazy val msysExtras = Seq(
     "-D_WIN64",

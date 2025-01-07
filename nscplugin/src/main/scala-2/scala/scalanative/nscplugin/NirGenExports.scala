@@ -153,7 +153,8 @@ trait NirGenExports[G <: nsc.Global with Singleton] {
     ) = genExternMethodSig(member)
 
     val defn = nir.Defn.Define(
-      attrs = nir.Attrs(inlineHint = nir.Attr.NoInline, isExtern = true),
+      attrs =
+        nir.Attrs.None.withInlineHint(nir.Attr.NoInline).withIsExtern(true),
       name = externName,
       ty = exportedFunctionType,
       insts = curStatBuffer.withFreshExprBuffer { implicit buf: ExprBuffer =>

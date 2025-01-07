@@ -10,9 +10,10 @@ class MethodAttributesTest {
     compileAndLoad(
       "Test.scala" ->
         """
-          |import scala.scalanative.unsafe.{extern, link, define}
+          |import scala.scalanative.unsafe.{extern, link, define, linkCppRuntime}
           |@link("common-lib")
           |@define("common-define")
+          |@linkCppRuntime
           |@extern object Foo {
           |  @link("custom-lib") def withLink(): Int = extern
           |  @define("custom-define") def withDefine(): Int = extern
@@ -44,6 +45,14 @@ class MethodAttributesTest {
             expected,
             defn.attrs.preprocessorDefinitions.contains(value)
           )
+        def checkLinkCppRuntime(expected: Boolean) = {
+          val value = nir.Attr.LinkCppRuntime
+          assertEquals(
+            s"${defn.name} - $value",
+            expected,
+            defn.attrs.linkCppRuntime
+          )
+        }
 
         defn.name match {
           case Module =>
@@ -51,21 +60,25 @@ class MethodAttributesTest {
             checkLink(CustomLink, false)
             checkDefine(CommonDefine, true)
             checkDefine(CustomDefine, false)
+            checkLinkCppRuntime(true)
           case WithLinkMethod =>
             checkLink(CommonLink, false) // defined in module
             checkLink(CustomLink, true)
             checkDefine(CommonDefine, false) // defined in module
             checkDefine(CustomDefine, false)
+            checkLinkCppRuntime(false)
           case WithDefineMethod =>
             checkLink(CommonLink, false) // defined in module
             checkLink(CustomLink, false)
             checkDefine(CommonDefine, false) // defined in module
             checkDefine(CustomDefine, true)
+            checkLinkCppRuntime(false)
           case DefaultMethod =>
             checkLink(CommonLink, false) // defined in module
             checkLink(CustomLink, false)
             checkDefine(CommonDefine, false) // defined in module
             checkDefine(CustomDefine, false)
+            checkLinkCppRuntime(false)
           case _ => ()
         }
         expected.contains(defn.name)

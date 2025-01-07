@@ -47,7 +47,7 @@ private[interflow] trait Opt { self: Interflow =>
         } else debugInfo
         origdefn.copy(
           name = name,
-          attrs = origdefn.attrs.copy(opt = nir.Attr.DidOpt),
+          attrs = origdefn.attrs.withOpt(nir.Attr.DidOpt),
           ty = nir.Type.Function(argtys, retty),
           insts = insts,
           debugInfo = newDebugInfo

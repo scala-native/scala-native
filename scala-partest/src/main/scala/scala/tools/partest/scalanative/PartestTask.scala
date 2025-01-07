@@ -155,6 +155,7 @@ case class PartestTask(taskDef: TaskDef, args: Array[String]) extends Task {
       infos = mutable.Map.empty,
       entries = Nil,
       links = Defaults.links,
+      linkCppRuntime = false,
       preprocessorDefinitions = Nil,
       defns = Nil,
       dynsigs = Nil,

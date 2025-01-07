@@ -104,6 +104,8 @@ object Show {
         str("link(\"")
         str(escapeQuotes(name))
         str("\")")
+      case Attr.LinkCppRuntime =>
+        str("linkCppRuntime")
       case Attr.Define(name) =>
         str("define(\"")
         str(escapeQuotes(name))

@@ -46,7 +46,7 @@ private[scalanative] object NativeLib {
     val paths = findNativePaths(destPath)
     val projConfig = configureNativeLibrary(config, analysis, destPath)
     Future.sequence {
-      paths.map(LLVM.compile(projConfig, _))
+      paths.map(LLVM.compile(projConfig, analysis, _))
     }
   }
 

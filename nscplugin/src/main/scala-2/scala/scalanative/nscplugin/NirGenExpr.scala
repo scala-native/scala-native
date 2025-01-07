@@ -1522,7 +1522,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     def genFuncExternForwarder(funcName: nir.Global, treeSym: Symbol)(implicit
         pos: nir.SourcePosition
     ): nir.Defn = {
-      val attrs = nir.Attrs(isExtern = true)
+      val attrs = nir.Attrs.None.withIsExtern(true)
 
       val sig = genMethodSig(treeSym)
       val externSig = genExternMethodSig(treeSym)

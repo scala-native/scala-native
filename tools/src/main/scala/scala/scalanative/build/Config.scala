@@ -196,6 +196,9 @@ sealed trait Config {
           .getOrElse(compilerConfig.mode.isInstanceOf[Mode.Release])
       case _ => false
     }
+
+  private[scalanative] def usingCppExceptions: Boolean =
+    targetsWindows
 }
 
 /** Factory to create [[#empty]] [[Config]] objects */

@@ -79,6 +79,8 @@ trait NirGenStat(using Context) {
         val Apply(_, Seq(Literal(Constant(name: String)))) =
           ann.tree: @unchecked
         nir.Attr.Link(name)
+      case ann if ann.symbol == defnNir.LinkCppRuntimeClass =>
+        nir.Attr.LinkCppRuntime
       case ann if ann.symbol == defnNir.DefineClass =>
         val Apply(_, Seq(Literal(Constant(name: String)))) =
           ann.tree: @unchecked
@@ -304,10 +306,9 @@ trait NirGenStat(using Context) {
             val env = curMethodEnv.get
             val methodAttrs =
               if (env.isUsingLinktimeResolvedValue || env.isUsingIntrinsics)
-                attrs.copy(
-                  isLinktimeResolved = env.isUsingLinktimeResolvedValue,
-                  isUsingIntrinsics = env.isUsingIntrinsics
-                )
+                attrs
+                  .withIsLinktimeResolved(env.isUsingLinktimeResolvedValue)
+                  .withIsUsingIntrinsics(env.isUsingIntrinsics)
               else attrs
             val defn = nir.Defn.Define(
               methodAttrs,
@@ -357,6 +358,7 @@ trait NirGenStat(using Context) {
         case defnNir.LinkClass =>
           requireLiteralStringAnnotation(ann)
             .foreach(attrs += nir.Attr.Link(_))
+        case defnNir.LinkCppRuntimeClass => attrs += nir.Attr.LinkCppRuntime
         case defnNir.DefineClass =>
           requireLiteralStringAnnotation(ann)
             .foreach(attrs += nir.Attr.Define(_))

@@ -159,6 +159,8 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         case ann if ann.symbol == LinkClass =>
           val Apply(_, Seq(Literal(Constant(name: String)))) = ann.tree
           nir.Attr.Link(name)
+        case ann if ann.symbol == LinkCppRuntimeClass =>
+          nir.Attr.LinkCppRuntime
         case ann if ann.symbol == DefineClass =>
           val Apply(_, Seq(Literal(Constant(name: String)))) = ann.tree
           nir.Attr.Define(name)
@@ -236,7 +238,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
     def genClassFields(cd: ClassDef): Unit = {
       val sym = cd.symbol
-      val attrs = nir.Attrs(isExtern = sym.isExternType)
+      val attrs = nir.Attrs.None.withIsExtern(sym.isExternType)
       val classAlign = getAlignmentAttr(sym)
 
       for (f <- sym.info.decls
@@ -250,16 +252,15 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         // Thats what JVM backend does
         // https://github.com/scala/scala/blob/fe724bcbbfdc4846e5520b9708628d994ae76798/src/compiler/scala/tools/nsc/backend/jvm/BTypesFromSymbols.scala#L760-L764
         val isFinal = !f.isMutable
-        val fieldAttrs = attrs.copy(
-          isVolatile = f.isVolatile,
-          isFinal = isFinal,
-          isSafePublish = isFinal && {
+        val fieldAttrs = attrs
+          .withIsVolatile(f.isVolatile)
+          .withIsFinal(isFinal)
+          .withIsSafePublish(isFinal && {
             scalaNativeOpts.forceStrictFinalFields ||
             f.hasAnnotation(SafePublishClass) ||
             f.owner.hasAnnotation(SafePublishClass)
-          },
-          align = getAlignmentAttr(f).orElse(classAlign)
-        )
+          })
+          .withAlign(getAlignmentAttr(f).orElse(classAlign))
 
         buf += nir.Defn.Var(fieldAttrs, name, ty, nir.Val.Zero(ty))(pos)
       }
@@ -312,7 +313,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       staticInitBody.foreach {
         case body if body.nonEmpty =>
           buf += new nir.Defn.Define(
-            nir.Attrs(),
+            nir.Attrs.None,
             name,
             nir.Type.Function(Seq.empty[nir.Type], nir.Type.Unit),
             body
@@ -348,7 +349,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         }
 
         reflInstBuffer += new nir.Defn.Define(
-          nir.Attrs(),
+          nir.Attrs.None,
           reflInstBuffer.name.member(nir.Sig.Ctor(Seq.empty)),
           nir.Type
             .Function(Seq(nir.Type.Ref(reflInstBuffer.name)), nir.Type.Unit),
@@ -408,7 +409,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           }
 
           reflInstBuffer += new nir.Defn.Define(
-            nir.Attrs(),
+            nir.Attrs.None,
             reflInstBuffer.name.member(applyMethodSig),
             nir.Type
               .Function(Seq(nir.Type.Ref(reflInstBuffer.name)), jlObjectRef),
@@ -423,7 +424,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         )
 
         reflInstBuffer += nir.Defn.Class(
-          nir.Attrs(),
+          nir.Attrs.None,
           reflInstBuffer.name,
           Some(srAbstractFunction0),
           Seq(serializable)
@@ -546,7 +547,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             }
 
             reflInstBuffer += new nir.Defn.Define(
-              nir.Attrs(),
+              nir.Attrs.None,
               reflInstBuffer.name.member(applyMethodSig),
               nir.Type.Function(
                 Seq(
@@ -566,7 +567,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           )
 
           reflInstBuffer += nir.Defn.Class(
-            nir.Attrs(),
+            nir.Attrs.None,
             reflInstBuffer.name,
             Some(srAbstractFunction1),
             Seq(serializable)
@@ -718,10 +719,9 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
               val body = genMethodBody(dd, rhs, isExtern)
               val methodAttrs =
                 if (env.isUsingLinktimeResolvedValue || env.isUsingIntrinsics) {
-                  attrs.copy(
-                    isLinktimeResolved = env.isUsingLinktimeResolvedValue,
-                    isUsingIntrinsics = env.isUsingIntrinsics
-                  )
+                  attrs
+                    .withIsLinktimeResolved(env.isUsingLinktimeResolvedValue)
+                    .withIsUsingIntrinsics(env.isUsingIntrinsics)
                 } else attrs
               Some(
                 new nir.Defn.Define(
@@ -834,8 +834,9 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       }
 
       new nir.Defn.Define(
-        nir
-          .Attrs(inlineHint = nir.Attr.AlwaysInline, isLinktimeResolved = true),
+        nir.Attrs.None
+          .withInlineHint(nir.Attr.AlwaysInline)
+          .withIsLinktimeResolved(true),
         methodName,
         nir.Type.Function(Seq.empty, retty),
         buf.toSeq
@@ -1015,6 +1016,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           case LinkClass =>
             requireLiteralStringAnnotation(ann)
               .foreach(attrs += nir.Attr.Link(_))
+          case LinkCppRuntimeClass => attrs += nir.Attr.LinkCppRuntime
           case DefineClass =>
             requireLiteralStringAnnotation(ann)
               .foreach(attrs += nir.Attr.Define(_))
@@ -1257,7 +1259,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       }
 
       new nir.Defn.Define(
-        attrs = nir.Attrs(inlineHint = nir.Attr.InlineHint),
+        attrs = nir.Attrs.None.withInlineHint(nir.Attr.InlineHint),
         name = forwarderName,
         ty = forwarderType,
         insts = curStatBuffer

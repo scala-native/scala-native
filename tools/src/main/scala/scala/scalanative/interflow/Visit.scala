@@ -141,7 +141,7 @@ private[interflow] trait Visit { self: Interflow =>
           log(s"failed to expand ${name.show}: $msg")
           val baildefn =
             origdefn.copy(attrs =
-              origdefn.attrs.copy(opt = nir.Attr.BailOpt(msg))
+              origdefn.attrs.withOpt(nir.Attr.BailOpt(msg))
             )(
               origdefn.pos
             )
