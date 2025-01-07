@@ -18,6 +18,7 @@ typedef struct ExceptionWrapper {
     _Unwind_Exception unwindException;
 } ExceptionWrapper;
 
+extern void scalanative_Throwable_showStackTrace(Exception exception);
 extern ExceptionWrapper *
 scalanative_Throwable_exceptionWrapper(Exception exception);
 
@@ -263,13 +264,11 @@ void scalanative_throw(void *obj) {
         generic_exception_cleanup(code, &exceptionWrapper->unwindException);
         fprintf(stderr, "ScalaNative Fatal Error: Failed to throw exception, not found "
                "a valid catch handler for exception when unwinding execution stack.\n");
-        abort();
-    } else {
-        printf("Unhandled exception: _Unwind_RaiseException returned %d\n",
-               code);
+        scalanative_Throwable_showStackTrace(obj);
         abort();
     }
-    printf("Unhandled exception: _Unwind_RaiseException returned %d\n", code);
+    scalanative_Throwable_showStackTrace(obj);
+    fprintf(stderr, "Scala Native Fatal Error: Unhandled exception: _Unwind_RaiseException returned %d\n", code);
     abort();
 }
 #endif
