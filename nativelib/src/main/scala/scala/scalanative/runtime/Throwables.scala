@@ -8,4 +8,3 @@ package runtime
 final class UndefinedBehaviorError(message: String) extends java.lang.Error(message) {
   def this() = this(null)
 }
-

@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include "gc/shared/ThreadUtil.h"
 
 typedef void *JavaThread;
@@ -26,7 +27,7 @@ void scalanative_assignCurrentThread(JavaThread thread,
 JavaThread scalanative_currentThread();
 NativeThread scalanative_currentNativeThread();
 ThreadInfo *scalanative_currentThreadInfo();
-void scalanative_setupCurrentThreadInfo(void *stackBottom, uint stackSize,
+void scalanative_setupCurrentThreadInfo(void *stackBottom, uint32_t stackSize,
                                         bool isMainThread);
 
 void scalanative_checkThreadPendingExceptions();

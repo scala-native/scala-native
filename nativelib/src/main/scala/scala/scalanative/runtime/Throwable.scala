@@ -114,7 +114,7 @@ private object Throwable {
   @exported("scalanative_Throwable_exceptionWrapper")
   def exceptionWrapper(self: Throwable): RawPtr =
     self.exceptionWrapper.atRawUnsafe(0)
-  
+
   @exported("scalanative_Throwable_onCatchHandler")
   def onCatchHandler(self: Throwable): CFuncPtr1[Throwable, Unit] /* | Null*/ =
     self.onCatchHandler

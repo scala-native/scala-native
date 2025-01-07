@@ -8,12 +8,12 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <assert.h>
-#include <unistd.h>
 #include <string.h>
 #ifndef _WIN32
 #include <sys/resource.h>
 #include <sys/mman.h>
 #include <signal.h>
+#include <unistd.h>
 #endif
 
 #define StackGuardPages 2
@@ -141,7 +141,7 @@ static void scalanative_stackOverflowHandler(int sig, siginfo_t *info,
             previousSignalHandler->sa_handler != NULL) {
             void *handler = previousSignalHandler->sa_handler;
             if (handler != SIG_DFL && handler != SIG_IGN &&
-                handler != SIG_ERR && handler != SIG_HOLD &&
+                handler != SIG_ERR &&
                 handler != scalanative_stackOverflowHandler) {
                 if (previousSignalHandler->sa_flags & SA_SIGINFO) {
                     void (*sigInfoHandler)(int, siginfo_t *, void *) =

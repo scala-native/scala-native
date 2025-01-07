@@ -2,6 +2,7 @@
 #include "gc/shared/ThreadUtil.h"
 #include "stackOverflowGuards.h"
 #include <assert.h>
+#include <stdint.h>
 
 SN_ThreadLocal JavaThread currentThread = NULL;
 SN_ThreadLocal NativeThread currentNativeThread = NULL;
@@ -27,7 +28,7 @@ NativeThread scalanative_currentNativeThread() {
 }
 ThreadInfo *scalanative_currentThreadInfo() { return &currentThreadInfo; }
 
-void scalanative_setupCurrentThreadInfo(void *stackBottom, uint stackSize,
+void scalanative_setupCurrentThreadInfo(void *stackBottom, uint32_t stackSize,
                                         bool isMainThread) {
     size_t pageSize = resolvePageSize();
     // Assert stack grows downwards
