@@ -12,12 +12,13 @@
 #pragma comment(lib, "kernel32.lib")
 #include <windows.h>
 typedef DWORD ThreadRoutineReturnType;
+typedef ThreadRoutineReturnType(WINAPI *ThreadStartRoutine)(void *);
 #else
 #include <pthread.h>
 typedef void *ThreadRoutineReturnType;
+typedef ThreadRoutineReturnType (*ThreadStartRoutine)(void *);
 #endif
 
-typedef ThreadRoutineReturnType (*ThreadStartRoutine)(void *);
 typedef void *RoutineArgs;
 
 void scalanative_GC_init();
