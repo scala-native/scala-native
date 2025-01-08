@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include "immix_commix/StackTrace.h"
+#include "../platform/unwind.h"
 
 void StackTrace_PrintStackTrace() {
     void *cursor = malloc(scalanative_unwind_sizeof_cursor());
@@ -11,6 +12,8 @@ void StackTrace_PrintStackTrace() {
     scalanative_unwind_get_context(context);
     scalanative_unwind_init_local(cursor, context);
 
+    int frames = 0;
+    const int MaxFrames = 128;
     while (scalanative_unwind_step(cursor) > 0) {
         size_t offset, pc;
         scalanative_unwind_get_reg(cursor, scalanative_unw_reg_ip(), &pc);
@@ -19,11 +22,14 @@ void StackTrace_PrintStackTrace() {
         }
 
         char sym[256];
-        if (scalanative_unwind_get_proc_name(cursor, sym, sizeof(sym),
+        if (++frames < MaxFrames &&
+            scalanative_unwind_get_proc_name(cursor, sym, sizeof(sym),
                                              &offset) == 0) {
             printf("\tat %s\n", sym);
         }
     }
+    if (frames > MaxFrames)
+        printf("\t... and %d more\n", frames - MaxFrames);
     free(cursor);
     free(context);
 }
