@@ -1,8 +1,9 @@
 package scala.scalanative
 package posix
 
-import scalanative.unsafe.Nat._
-import scalanative.unsafe._
+import scala.scalanative.unsafe.Nat._
+import scala.scalanative.unsafe._
+import scala.scalanative.unsigned._
 
 import posix.sys.types.pid_t
 
@@ -12,9 +13,15 @@ object termios {
 
   // types
 
-  type tcflag_t = CLong
-  type cc_t = CChar
-  type speed_t = CLong
+  /** POSIX specifies that the types are unsigned. macOS defines them as below
+   *  but Linux defines the `tcflag_t` and `speed_t` as `unsigned int`. An
+   *  option would be a uint32_t since unsigned int is 32bit and 64bit on those
+   *  systems. Using the Linux size is sufficient for the flags but some magic
+   *  would be needed to align the `termios` struct.
+   */
+  type tcflag_t = CUnsignedInt
+  type cc_t = CUnsignedChar
+  type speed_t = CUnsignedInt
   type NCCS = Digit2[_2, _0]
   type c_cc = CArray[cc_t, NCCS]
 
