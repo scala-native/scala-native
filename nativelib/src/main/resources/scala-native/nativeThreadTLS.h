@@ -31,4 +31,7 @@ void scalanative_setupCurrentThreadInfo(void *stackBottom, uint32_t stackSize,
                                         bool isMainThread);
 
 void scalanative_checkThreadPendingExceptions();
+size_t scalanative_mainThreadMaxStackSize();
+bool scalanative_forceMainThreadStackGrowth();
+
 #endif

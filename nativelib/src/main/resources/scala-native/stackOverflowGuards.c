@@ -1,22 +1,23 @@
+#ifndef _WIN32
+#define _GNU_SOURCE 1 /* To pick up REG_RIP */
+#include <sys/resource.h>
+#include <sys/mman.h>
+#include <signal.h>
+#include <unistd.h>
+#include <ucontext.h>
+#endif
 #include "stackOverflowGuards.h"
 #include <stdio.h>
 #include <stdlib.h>
 
 #include "nativeThreadTLS.h"
 #include "gc/shared/ThreadUtil.h"
+#include "gc/immix_commix/StackTrace.h"
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <assert.h>
 #include <string.h>
-#ifndef _WIN32
-#include <sys/resource.h>
-#include <sys/mman.h>
-#include <signal.h>
-#include <unistd.h>
-#endif
-
-#define StackGuardPages 2
 
 static void protectPage(void *addr) {
 #ifdef _WIN32
@@ -66,8 +67,7 @@ static struct sigaction *resolvePreviousSignalHandler(int sig) {
     }
 }
 
-static void scalanative_stackOverflowHandler(int sig, siginfo_t *info,
-                                             void *context) {
+static void stackOverflowHandler(int sig, siginfo_t *info, void *context) {
     void *faultAddr = info->si_addr;
     ThreadInfo threadInfo = currentThreadInfo;
     struct sigaction *previousSignalHandler;
@@ -90,6 +90,18 @@ static void scalanative_stackOverflowHandler(int sig, siginfo_t *info,
          * trigger throwing function.
          */
         if (inStackPageBound(threadInfo.firstStackGuardPage, faultAddr)) {
+            if (threadInfo.isMainThread &&
+                threadInfo.stackSize < scalanative_mainThreadMaxStackSize()) {
+                // Main thread stack size was not fully mapped
+                // Try to let it grow and continue execution
+                unprotectPage(threadInfo.firstStackGuardPage);
+                unprotectPage(threadInfo.secondStackGuardPage);
+                if (scalanative_forceMainThreadStackGrowth()) {
+                    scalanative_setupStackOverflowGuards(true);
+                    return;
+                }
+            }
+            // Let the exception be thrown after polling
             currentThreadInfo.checkPendingExceptions = true;
             currentThreadInfo.pendingStackOverflowException = true;
             unprotectPage(currentThreadInfo.firstStackGuardPage);
@@ -102,37 +114,55 @@ static void scalanative_stackOverflowHandler(int sig, siginfo_t *info,
             unprotectPage(threadInfo.secondStackGuardPage);
             currentThreadInfo.checkPendingExceptions = true;
             currentThreadInfo.pendingStackOverflowException = true;
+            // All further logic is based on context
+            // Skip if it's not available
+            if (context == NULL)
+                return;
 #if defined(__APPLE__) && defined(__MACH__)
 #if defined(__x86_64__)
             ucontext_t *ctx = (ucontext_t *)context;
             ctx->uc_mcontext->__ss.__rip =
-                (uintptr_t)scalanative_throwPendingStackOverflowError;
+                (uintptr_t)scalanative_handlePendingStackOverflowError;
 #elif defined(__arm64__) || defined(__aarch64__)
             ucontext_t *ctx = (ucontext_t *)context;
             ctx->uc_mcontext->__ss.__lr = ctx->uc_mcontext->__ss.__pc;
             ctx->uc_mcontext->__ss.__pc =
-                (uintptr_t)scalanative_throwPendingStackOverflowError;
+                (uintptr_t)scalanative_handlePendingStackOverflowError;
 #endif // arm64
 #elif defined(__linux__)
 #if defined(__aarch64__)
             ucontext_t *ctx = (ucontext_t *)context;
             ctx->uc_mcontext.pc =
-                (uintptr_t)scalanative_throwPendingStackOverflowError;
-#elif defined(__x86_64__) || defined(__i386__)
+                (uintptr_t)scalanative_handlePendingStackOverflowError;
+#elif defined(__x86_64__)
+            ucontext_t *ctx = (ucontext_t *)context;
+            ctx->uc_mcontext.gregs[REG_RIP] =
+                (greg_t)scalanative_handlePendingStackOverflowError;
+#elif defined(__i386__)
             ucontext_t *ctx = (ucontext_t *)context;
             ctx->uc_mcontext.gregs[REG_EIP] =
-                (uintptr_t)scalanative_throwPendingStackOverflowError;
+                (greg_t)scalanative_handlePendingStackOverflowError;
 #endif
 #endif
             return;
-        } else if (faultAddr <= threadInfo.firstStackGuardPage &&
-                   faultAddr > (void *)(char *)threadInfo.stackTop -
-                                   2 * resolvePageSize()) {
+            // Check if address is close to the end stack memory region
+        } else if (isInRange(faultAddr, threadInfo.firstStackGuardPage,
+                             (void *)(char *)threadInfo.stackTop -
+                                 (resolvePageSize() + 64 * 1024))) {
             fprintf(stderr,
                     "ScalaNative :: Unrecoverable StackOverflow error in %s "
                     "thread, stack size = %zuKB\n",
                     threadInfo.isMainThread ? "main" : "user",
                     threadInfo.stackSize / 1024);
+            StackTrace_PrintStackTrace();
+            abort();
+        } else if (faultAddr == NULL) {
+            fprintf(stderr,
+                    "ScalaNative :: Unrecoverable NullPointerException in %s "
+                    "thread\n",
+                    threadInfo.isMainThread ? "main" : "user");
+            StackTrace_PrintStackTrace();
+            scalanative_handlePendingStackOverflowError();
             abort();
         }
     default:
@@ -141,8 +171,7 @@ static void scalanative_stackOverflowHandler(int sig, siginfo_t *info,
             previousSignalHandler->sa_handler != NULL) {
             void *handler = previousSignalHandler->sa_handler;
             if (handler != SIG_DFL && handler != SIG_IGN &&
-                handler != SIG_ERR &&
-                handler != scalanative_stackOverflowHandler) {
+                handler != SIG_ERR && handler != stackOverflowHandler) {
                 if (previousSignalHandler->sa_flags & SA_SIGINFO) {
                     void (*sigInfoHandler)(int, siginfo_t *, void *) =
                         (void (*)(int, siginfo_t *,
@@ -154,7 +183,8 @@ static void scalanative_stackOverflowHandler(int sig, siginfo_t *info,
             }
             return;
         } else {
-            fprintf(stderr, "ScalaNative :: Unhandled signal %d\n", sig);
+            fprintf(stderr, "ScalaNative :: Unhandled signal %d, si_addr=%p\n",
+                    sig, faultAddr);
             abort();
         }
     }
@@ -172,7 +202,7 @@ static void setupSignalHandlerAltstack() {
 }
 static void setupSignalHandler(int signal) {
     struct sigaction sa = {};
-    sa.sa_sigaction = scalanative_stackOverflowHandler;
+    sa.sa_sigaction = stackOverflowHandler;
     sa.sa_flags = SA_SIGINFO | SA_RESTART | SA_ONSTACK;
     sigemptyset(&sa.sa_mask);
     setupSignalHandlerAltstack();
@@ -186,7 +216,7 @@ static void setupSignalHandler(int signal) {
 // TODO: Windows upport
 
 size_t scalanative_stackOverflowGuardsSize() {
-    return 2 * StackGuardPages * resolvePageSize();
+    return 2 * stackGuardPages() * resolvePageSize();
 }
 
 void scalanative_setupStackOverflowGuards(bool isMainThread) {
@@ -197,10 +227,10 @@ void scalanative_setupStackOverflowGuards(bool isMainThread) {
 
     currentThreadInfo.secondStackGuardPage =
         (void *)((uintptr_t)currentThreadInfo.stackTop +
-                 pageSize * StackGuardPages);
+                 pageSize * stackGuardPages());
     currentThreadInfo.firstStackGuardPage =
         (void *)((uintptr_t)currentThreadInfo.secondStackGuardPage +
-                 pageSize * StackGuardPages);
+                 pageSize * stackGuardPages());
 
     assert(currentThreadInfo.secondStackGuardPage <
            currentThreadInfo.firstStackGuardPage);
@@ -212,22 +242,25 @@ void scalanative_setupStackOverflowGuards(bool isMainThread) {
 #if !defined(_WIN32)
     protectPage(currentThreadInfo.firstStackGuardPage);
     protectPage(currentThreadInfo.secondStackGuardPage);
-    if (isMainThread) {
+    static bool signalHandlerSet = false;
+    if (isMainThread && !signalHandlerSet) {
         setupSignalHandler(SIGSEGV);
-#if defined(SCALANATIVE_MULTITHREADING_ENABLED) &&                             \
-    (defined(__APPLE__) && defined(__MACH__))
+#if (defined(__APPLE__) && defined(__MACH__))
         setupSignalHandler(SIGBUS);
-#endif
-#endif
+#endif // Apple
+        signalHandlerSet = true;
     } else {
         setupSignalHandlerAltstack();
     }
+#endif // UNIX
 }
 
 void scalanative_resetStackOverflowGuards() {
     int dummy;
     void *stackTop = &dummy;
     ThreadInfo info = currentThreadInfo;
+    currentThreadInfo.pendingStackOverflowException = false;
+    currentThreadInfo.checkPendingExceptions = false;
     if (belowStackPageBounds(info.firstStackGuardPage, stackTop))
         return;
     protectPage(currentThreadInfo.firstStackGuardPage);

@@ -2,7 +2,16 @@
 #include "gc/shared/ThreadUtil.h"
 #include "stackOverflowGuards.h"
 #include <assert.h>
+#include <bits/pthreadtypes.h>
+#include <pthread.h>
 #include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#ifndef _WIN32
+#include <sys/resource.h>
+#endif
 
 SN_ThreadLocal JavaThread currentThread = NULL;
 SN_ThreadLocal NativeThread currentNativeThread = NULL;
@@ -28,38 +37,135 @@ NativeThread scalanative_currentNativeThread() {
 }
 ThreadInfo *scalanative_currentThreadInfo() { return &currentThreadInfo; }
 
-void scalanative_setupCurrentThreadInfo(void *stackBottom, uint32_t stackSize,
-                                        bool isMainThread) {
+size_t scalanative_mainThreadMaxStackSize() {
+    static size_t computed = -1;
+    if (computed == -1) {
+#ifdef _WIN32
+        MEMORY_BASIC_INFORMATION mbi;
+        VirtualQuery(&mbi, &mbi, sizeof(mbi));
+        computed = (size_t)mbi.RegionSize;
+#else
+        struct rlimit rl;
+        if (getrlimit(RLIMIT_STACK, &rl) == 0) {
+            computed = (size_t)rl.rlim_cur;
+        }
+#endif
+        if (computed <= 0) {
+            fprintf(stderr,
+                    "ScalaNative Fatal Error: Unable to resolve main thread "
+                    "max stack size");
+            abort();
+        }
+    }
+    return computed;
+}
+
+static bool approximateStackBounds(void *stackBottom, size_t stackSize,
+                                   ThreadInfo *threadInfo) {
     size_t pageSize = resolvePageSize();
-    // Assert stack grows downwards
-    int dummy;
-    assert((uintptr_t)&dummy < (uintptr_t)stackBottom);
 
     // Align stack bottom to page size
     currentThreadInfo.stackBottom =
         (void *)(((uintptr_t)stackBottom + pageSize - 1) & ~(pageSize - 1));
     assert((uintptr_t)currentThreadInfo.stackBottom >= (uintptr_t)stackBottom);
 
-    currentThreadInfo.isMainThread = isMainThread;
-    if (isMainThread) {
+    if (currentThreadInfo.isMainThread) {
         // Ignore stack size from param, calculate fresh one
-#ifdef _WIN32
-        MEMORY_BASIC_INFORMATION mbi;
-        VirtualQuery(&mbi, &mbi, sizeof(mbi));
-        currentThreadInfo.stackSize = (size_t)mbi.RegionSize;
-#else
-        struct rlimit rl;
-        if (getrlimit(RLIMIT_STACK, &rl) == 0) {
-            currentThreadInfo.stackSize = (size_t)rl.rlim_cur;
-        }
-#endif
+        currentThreadInfo.stackSize = scalanative_mainThreadMaxStackSize();
     } else {
         currentThreadInfo.stackSize = stackSize;
     }
     assert(currentThreadInfo.stackSize > 0);
+
     currentThreadInfo.stackTop =
         (void *)((uintptr_t)currentThreadInfo.stackBottom -
                  currentThreadInfo.stackSize);
+    return true;
+}
+
+bool scalanative_forceMainThreadStackGrowth() {
+    ThreadInfo *threadInfo = &currentThreadInfo;
+    assert(threadInfo->isMainThread);
+    // Main thread stack memory was not grown yet
+    // Force it to at least default JVM thread size (1MB) of max
+    // stack size
+    // We would grow it again when when stack guard is reached
+    size_t curStackSize = threadInfo->stackSize;
+    size_t maxStackSize = scalanative_mainThreadMaxStackSize();
+    if (curStackSize < maxStackSize) {
+#define InitialMainThreadStackSize (1024 * 1024) // 1MB
+        if (curStackSize < InitialMainThreadStackSize)
+            threadInfo->stackSize = InitialMainThreadStackSize;
+        else
+            threadInfo->stackSize += InitialMainThreadStackSize;
+        if (threadInfo->stackSize > maxStackSize)
+            threadInfo->stackSize = maxStackSize;
+
+        // Force growing of stack pointer and before updating thread info
+        void *newStackBottom =
+            (char *)(threadInfo->stackBottom) - threadInfo->stackSize;
+        volatile char *ptr = threadInfo->stackTop;
+        while ((void *)ptr > newStackBottom) {
+            *ptr = 0; // Write to the memory to force allocation
+            ptr -= scalanative_page_size();
+        }
+        threadInfo->stackTop = newStackBottom;
+
+        return true;
+#undef InitialMainThreadStackSize
+    }
+    return false;
+}
+
+static bool detectStackBounds(void *onStackPointer, ThreadInfo *threadInfo) {
+#if defined(__linux__)
+    FILE *maps = fopen("/proc/self/maps", "r");
+    if (!maps) {
+        return false;
+    }
+
+    char line[256];
+    while (fgets(line, sizeof(line), maps)) {
+        uintptr_t start, end;
+        if (sscanf(line, "%lx-%lx ", &start, &end) == 2) {
+            if ((void *)start <= onStackPointer &&
+                onStackPointer < (void *)end) {
+                threadInfo->stackTop = (void *)start;
+                threadInfo->stackBottom = (void *)end;
+                threadInfo->stackSize = end - start;
+                if (threadInfo->isMainThread) {
+                    // Main thread memory might not be fully available yet
+                    // Force growing stack size
+                    scalanative_forceMainThreadStackGrowth();
+                }
+                return true;
+            }
+        }
+    }
+    fclose(maps);
+#endif
+    return false;
+}
+
+void scalanative_setupCurrentThreadInfo(void *stackBottom, uint32_t stackSize,
+                                        bool isMainThread) {
+    // Assert stack grows downwards
+    int dummy;
+    assert((uintptr_t)&dummy < (uintptr_t)stackBottom);
+
+    currentThreadInfo.isMainThread = isMainThread;
+    if (!detectStackBounds(stackBottom, &currentThreadInfo)) {
+        if (!approximateStackBounds(stackBottom, stackSize,
+                                    &currentThreadInfo)) {
+            fprintf(stderr, "Scala Native Fatal Error: Failed to detect of "
+                            "approximate stack bounds of current thread");
+            abort();
+        }
+    };
+
+    assert(stackBottom < currentThreadInfo.stackBottom);
+    assert(stackBottom > currentThreadInfo.stackTop);
+    assert(currentThreadInfo.stackBottom > currentThreadInfo.stackTop);
 }
 
 void scalanative_checkThreadPendingExceptions() {
