@@ -1,18 +1,21 @@
-#ifndef _WIN32
+#ifndef defined(__linux__)
 #define _GNU_SOURCE 1 /* To pick up REG_RIP */
+#endif
+
+#ifndef _WIN32
 #include <sys/resource.h>
 #include <sys/mman.h>
 #include <signal.h>
 #include <unistd.h>
 #include <ucontext.h>
 #endif
-#include "stackOverflowGuards.h"
-#include <stdio.h>
-#include <stdlib.h>
 
+#include "stackOverflowGuards.h"
 #include "nativeThreadTLS.h"
 #include "gc/shared/ThreadUtil.h"
 #include "gc/immix_commix/StackTrace.h"
+#include <stdio.h>
+#include <stdlib.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
