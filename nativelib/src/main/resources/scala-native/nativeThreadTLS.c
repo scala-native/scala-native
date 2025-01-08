@@ -2,7 +2,6 @@
 #include "gc/shared/ThreadUtil.h"
 #include "stackOverflowGuards.h"
 #include <assert.h>
-#include <bits/pthreadtypes.h>
 #include <pthread.h>
 #include <stdint.h>
 #include <stdio.h>
