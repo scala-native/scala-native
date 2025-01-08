@@ -117,6 +117,7 @@ object Tag {
   }
 
   % for N in range(0, 10):
+  @deprecated("Use NatValue.Nat${N} instead", since = "0.5.7")
   object Nat${N} extends Tag[unsafe.Nat._${N}] with NatTag {
     @noinline def size: Int = throwUndefined()
     @noinline def alignment: Int = throwUndefined()
@@ -130,6 +131,7 @@ object Tag {
   %   JustNs  = "[" + ", ".join(Ns) + "]"
   %   TagNs   = ["Tag[{}]".format(n) for n in Ns]
   %   args    = ", ".join("_{}: {}".format(i + 1, T) for (i, T) in enumerate(TagNs))
+  @deprecated("Use NatValue instead", since = "0.5.7")
   final case class Digit${N}${BoundNs}(${args})
       extends Tag[unsafe.Nat.Digit${N}${JustNs}]
       with NatTag {
@@ -261,7 +263,8 @@ object Tag {
     ${name}
   % end
   % for N in range(0, 10):
-  @alwaysinline implicit def materializeNat${N}Tag: Tag[unsafe.Nat._${N}] =
+  @deprecated("Use NatValue instead", since = "0.5.7")
+  @alwaysinline def materializeNat${N}Tag: Tag[unsafe.Nat._${N}] =
     Nat${N}
   % end
   % for N in range(2, 10):
@@ -269,7 +272,8 @@ object Tag {
   %   BoundNs = "[" + ", ".join(N + " <: Nat.Base : Tag" for N in Ns) + "]"
   %   JustNs  = "[" + ", ".join(Ns) + "]"
   %   tags    = ", ".join("implicitly[Tag[{}]]".format(N) for N in Ns)
-  @alwaysinline implicit def materializeNatDigit${N}Tag${BoundNs}: Tag.Digit${N}${JustNs} =
+  @deprecated("Use NatValue instead", since = "0.5.7")
+  @alwaysinline def materializeNatDigit${N}Tag${BoundNs}: Tag.Digit${N}${JustNs} =
     Tag.Digit${N}(${tags})
   % end
   % for N in range(0, 23):
@@ -280,8 +284,24 @@ object Tag {
   @alwaysinline implicit def materializeCStruct${N}Tag${BoundTs}: Tag.CStruct${N}${JustTs} =
     Tag.CStruct${N}(${tags})
   % end
-  @alwaysinline implicit def materializeCArrayTag[T: Tag, N <: unsafe.Nat: Tag]: Tag.CArray[T, N] =
+  @deprecated("Use overload taking NatValue instead", since = "0.5.7")
+  @alwaysinline def materializeCArrayTag[T: Tag, N <: unsafe.Nat: Tag]: Tag.CArray[T, N] =
     Tag.CArray(implicitly[Tag[T]], implicitly[Tag[N]])
+  @alwaysinline implicit def materializeCArray[T: Tag, N <: unsafe.Nat: NatValue]: Tag[unsafe.CArray[T, N]] = new Tag[unsafe.CArray[T, N]] {
+    @alwaysinline def size: Int = implicitly[Tag[T]].size * implicitly[NatValue[N]].value
+    @alwaysinline def alignment: Int = implicitly[Tag[T]].alignment
+    @alwaysinline override def offset(idx: Int): Int = implicitly[Tag[T]].size * idx
+    @alwaysinline private[unsafe] override def load(rawptr: RawPtr): unsafe.CArray[T, N] = {
+      new unsafe.CArray[T, N](rawptr)
+    }
+    @alwaysinline private[unsafe] override def store(rawptr: RawPtr, value: unsafe.CArray[T, N]): Unit = {
+      val dst = rawptr
+      if (value != null) {
+        val src = value.rawptr
+        ffi.memcpy(dst, src, castIntToRawSizeUnsigned(size))
+      } else storeRawPtr(dst, null)
+    }
+  }
   % for N in range(0, 23):
   %   tps     = ", ".join(["T" + str(i)                for i in range(1, N+1)] + ["R"])
   %   tpsDecl = ", ".join(["T" + str(i) + ": Tag"      for i in range(1, N+1)] + ["R: Tag"])

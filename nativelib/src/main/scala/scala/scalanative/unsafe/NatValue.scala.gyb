@@ -1,0 +1,54 @@
+// format: off
+
+// BEWARE: This file is generated - direct edits will be lost.
+// Do not edit this it directly other than to remove
+// personally identifiable information in sourceLocation lines.
+// All direct edits to this file will be lost the next time it
+// is generated.
+//
+// See nativelib runtime/Arrays.scala.gyb for details.
+
+package scala.scalanative
+package unsafe
+
+import scalanative.annotation.alwaysinline
+
+private[unsafe] abstract class NatValue[T <: Nat] {
+  @alwaysinline def value: Int
+}
+
+private[unsafe] object NatValue {
+  abstract class NatBaseValue[T <: Nat.Base] extends NatValue[T] {
+    @alwaysinline def value: Int
+  }
+
+  % for N in range(0, 10):
+  object Nat${N} extends NatBaseValue[unsafe.Nat._${N}] {
+    @alwaysinline def value: Int = ${N}
+  }
+
+  % end
+
+  % for N in range(0, 10):
+  @alwaysinline implicit def materializeNat${N}NatBaseValue: NatBaseValue[unsafe.Nat._${N}] =
+    Nat${N}
+  % end
+
+  % for N in range(2, 10):
+  %   Ns      = ["N" + str(i) for i in range(1, N + 1)]
+  %   BoundNs = "[" + ", ".join(N + " <: Nat.Base : NatBaseValue" for N in Ns) + "]"
+  %   JustNs  = "[" + ", ".join(Ns) + "]"
+  %   nats    = ", ".join("implicitly[NatBaseValue[{}]]".format(N) for N in Ns)
+  @alwaysinline implicit def materializeNatDigit${N}NatValue${BoundNs}: NatValue[Nat.Digit${N}${JustNs}] =
+    new NatValue[Nat.Digit${N}${JustNs}] {
+      @alwaysinline def value: Int = {
+        % for i in range(1, N + 1):
+        % Base = "1" + "0" * (N-i) + " * " if i < N else ""
+        % Spaces = "" if i == 1 else "  "
+        % Plus = " +" if i < N else ""
+        ${Spaces}${Base}implicitly[NatBaseValue[N${i}]].value${Plus}
+        % end
+      }
+    }
+  % end
+}

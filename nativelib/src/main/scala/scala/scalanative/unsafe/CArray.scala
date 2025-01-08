@@ -37,6 +37,11 @@ final class CArray[T, N <: Nat] private[scalanative] (
     ptr(idx) = value
   }
 
+  @alwaysinline def length(implicit natValue: NatValue[N]): Int = {
+    natValue.value
+  }
+
+  @deprecated("Use overload which takes natValue: NatValue[N]", since = "0.5.7")
   @alwaysinline def length(implicit tag: Tag[N]): Int = {
     tag.asInstanceOf[Tag.NatTag].toInt
   }

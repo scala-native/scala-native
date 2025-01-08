@@ -207,66 +207,77 @@ object Tag {
     def toCSSize: CSSize = toInt.toCSSize
   }
 
+  @deprecated("Use NatValue.Nat0 instead", since = "0.5.7")
   object Nat0 extends Tag[unsafe.Nat._0] with NatTag {
     @noinline def size: Int = throwUndefined()
     @noinline def alignment: Int = throwUndefined()
     @alwaysinline def toInt: Int = 0
   }
 
+  @deprecated("Use NatValue.Nat1 instead", since = "0.5.7")
   object Nat1 extends Tag[unsafe.Nat._1] with NatTag {
     @noinline def size: Int = throwUndefined()
     @noinline def alignment: Int = throwUndefined()
     @alwaysinline def toInt: Int = 1
   }
 
+  @deprecated("Use NatValue.Nat2 instead", since = "0.5.7")
   object Nat2 extends Tag[unsafe.Nat._2] with NatTag {
     @noinline def size: Int = throwUndefined()
     @noinline def alignment: Int = throwUndefined()
     @alwaysinline def toInt: Int = 2
   }
 
+  @deprecated("Use NatValue.Nat3 instead", since = "0.5.7")
   object Nat3 extends Tag[unsafe.Nat._3] with NatTag {
     @noinline def size: Int = throwUndefined()
     @noinline def alignment: Int = throwUndefined()
     @alwaysinline def toInt: Int = 3
   }
 
+  @deprecated("Use NatValue.Nat4 instead", since = "0.5.7")
   object Nat4 extends Tag[unsafe.Nat._4] with NatTag {
     @noinline def size: Int = throwUndefined()
     @noinline def alignment: Int = throwUndefined()
     @alwaysinline def toInt: Int = 4
   }
 
+  @deprecated("Use NatValue.Nat5 instead", since = "0.5.7")
   object Nat5 extends Tag[unsafe.Nat._5] with NatTag {
     @noinline def size: Int = throwUndefined()
     @noinline def alignment: Int = throwUndefined()
     @alwaysinline def toInt: Int = 5
   }
 
+  @deprecated("Use NatValue.Nat6 instead", since = "0.5.7")
   object Nat6 extends Tag[unsafe.Nat._6] with NatTag {
     @noinline def size: Int = throwUndefined()
     @noinline def alignment: Int = throwUndefined()
     @alwaysinline def toInt: Int = 6
   }
 
+  @deprecated("Use NatValue.Nat7 instead", since = "0.5.7")
   object Nat7 extends Tag[unsafe.Nat._7] with NatTag {
     @noinline def size: Int = throwUndefined()
     @noinline def alignment: Int = throwUndefined()
     @alwaysinline def toInt: Int = 7
   }
 
+  @deprecated("Use NatValue.Nat8 instead", since = "0.5.7")
   object Nat8 extends Tag[unsafe.Nat._8] with NatTag {
     @noinline def size: Int = throwUndefined()
     @noinline def alignment: Int = throwUndefined()
     @alwaysinline def toInt: Int = 8
   }
 
+  @deprecated("Use NatValue.Nat9 instead", since = "0.5.7")
   object Nat9 extends Tag[unsafe.Nat._9] with NatTag {
     @noinline def size: Int = throwUndefined()
     @noinline def alignment: Int = throwUndefined()
     @alwaysinline def toInt: Int = 9
   }
 
+  @deprecated("Use NatValue instead", since = "0.5.7")
   final case class Digit2[N1 <: Nat.Base, N2 <: Nat.Base](_1: Tag[N1], _2: Tag[N2])
       extends Tag[unsafe.Nat.Digit2[N1, N2]]
       with NatTag {
@@ -280,6 +291,7 @@ object Tag {
     }
   }
 
+  @deprecated("Use NatValue instead", since = "0.5.7")
   final case class Digit3[N1 <: Nat.Base, N2 <: Nat.Base, N3 <: Nat.Base](_1: Tag[N1], _2: Tag[N2], _3: Tag[N3])
       extends Tag[unsafe.Nat.Digit3[N1, N2, N3]]
       with NatTag {
@@ -294,6 +306,7 @@ object Tag {
     }
   }
 
+  @deprecated("Use NatValue instead", since = "0.5.7")
   final case class Digit4[N1 <: Nat.Base, N2 <: Nat.Base, N3 <: Nat.Base, N4 <: Nat.Base](_1: Tag[N1], _2: Tag[N2], _3: Tag[N3], _4: Tag[N4])
       extends Tag[unsafe.Nat.Digit4[N1, N2, N3, N4]]
       with NatTag {
@@ -309,6 +322,7 @@ object Tag {
     }
   }
 
+  @deprecated("Use NatValue instead", since = "0.5.7")
   final case class Digit5[N1 <: Nat.Base, N2 <: Nat.Base, N3 <: Nat.Base, N4 <: Nat.Base, N5 <: Nat.Base](_1: Tag[N1], _2: Tag[N2], _3: Tag[N3], _4: Tag[N4], _5: Tag[N5])
       extends Tag[unsafe.Nat.Digit5[N1, N2, N3, N4, N5]]
       with NatTag {
@@ -325,6 +339,7 @@ object Tag {
     }
   }
 
+  @deprecated("Use NatValue instead", since = "0.5.7")
   final case class Digit6[N1 <: Nat.Base, N2 <: Nat.Base, N3 <: Nat.Base, N4 <: Nat.Base, N5 <: Nat.Base, N6 <: Nat.Base](_1: Tag[N1], _2: Tag[N2], _3: Tag[N3], _4: Tag[N4], _5: Tag[N5], _6: Tag[N6])
       extends Tag[unsafe.Nat.Digit6[N1, N2, N3, N4, N5, N6]]
       with NatTag {
@@ -342,6 +357,7 @@ object Tag {
     }
   }
 
+  @deprecated("Use NatValue instead", since = "0.5.7")
   final case class Digit7[N1 <: Nat.Base, N2 <: Nat.Base, N3 <: Nat.Base, N4 <: Nat.Base, N5 <: Nat.Base, N6 <: Nat.Base, N7 <: Nat.Base](_1: Tag[N1], _2: Tag[N2], _3: Tag[N3], _4: Tag[N4], _5: Tag[N5], _6: Tag[N6], _7: Tag[N7])
       extends Tag[unsafe.Nat.Digit7[N1, N2, N3, N4, N5, N6, N7]]
       with NatTag {
@@ -360,6 +376,7 @@ object Tag {
     }
   }
 
+  @deprecated("Use NatValue instead", since = "0.5.7")
   final case class Digit8[N1 <: Nat.Base, N2 <: Nat.Base, N3 <: Nat.Base, N4 <: Nat.Base, N5 <: Nat.Base, N6 <: Nat.Base, N7 <: Nat.Base, N8 <: Nat.Base](_1: Tag[N1], _2: Tag[N2], _3: Tag[N3], _4: Tag[N4], _5: Tag[N5], _6: Tag[N6], _7: Tag[N7], _8: Tag[N8])
       extends Tag[unsafe.Nat.Digit8[N1, N2, N3, N4, N5, N6, N7, N8]]
       with NatTag {
@@ -379,6 +396,7 @@ object Tag {
     }
   }
 
+  @deprecated("Use NatValue instead", since = "0.5.7")
   final case class Digit9[N1 <: Nat.Base, N2 <: Nat.Base, N3 <: Nat.Base, N4 <: Nat.Base, N5 <: Nat.Base, N6 <: Nat.Base, N7 <: Nat.Base, N8 <: Nat.Base, N9 <: Nat.Base](_1: Tag[N1], _2: Tag[N2], _3: Tag[N3], _4: Tag[N4], _5: Tag[N5], _6: Tag[N6], _7: Tag[N7], _8: Tag[N8], _9: Tag[N9])
       extends Tag[unsafe.Nat.Digit9[N1, N2, N3, N4, N5, N6, N7, N8, N9]]
       with NatTag {
@@ -4207,41 +4225,59 @@ object Tag {
     Float
   @alwaysinline implicit def materializeDoubleTag: Tag[scala.Double] =
     Double
-  @alwaysinline implicit def materializeNat0Tag: Tag[unsafe.Nat._0] =
+  @deprecated("Use NatValue instead", since = "0.5.7")
+  @alwaysinline def materializeNat0Tag: Tag[unsafe.Nat._0] =
     Nat0
-  @alwaysinline implicit def materializeNat1Tag: Tag[unsafe.Nat._1] =
+  @deprecated("Use NatValue instead", since = "0.5.7")
+  @alwaysinline def materializeNat1Tag: Tag[unsafe.Nat._1] =
     Nat1
-  @alwaysinline implicit def materializeNat2Tag: Tag[unsafe.Nat._2] =
+  @deprecated("Use NatValue instead", since = "0.5.7")
+  @alwaysinline def materializeNat2Tag: Tag[unsafe.Nat._2] =
     Nat2
-  @alwaysinline implicit def materializeNat3Tag: Tag[unsafe.Nat._3] =
+  @deprecated("Use NatValue instead", since = "0.5.7")
+  @alwaysinline def materializeNat3Tag: Tag[unsafe.Nat._3] =
     Nat3
-  @alwaysinline implicit def materializeNat4Tag: Tag[unsafe.Nat._4] =
+  @deprecated("Use NatValue instead", since = "0.5.7")
+  @alwaysinline def materializeNat4Tag: Tag[unsafe.Nat._4] =
     Nat4
-  @alwaysinline implicit def materializeNat5Tag: Tag[unsafe.Nat._5] =
+  @deprecated("Use NatValue instead", since = "0.5.7")
+  @alwaysinline def materializeNat5Tag: Tag[unsafe.Nat._5] =
     Nat5
-  @alwaysinline implicit def materializeNat6Tag: Tag[unsafe.Nat._6] =
+  @deprecated("Use NatValue instead", since = "0.5.7")
+  @alwaysinline def materializeNat6Tag: Tag[unsafe.Nat._6] =
     Nat6
-  @alwaysinline implicit def materializeNat7Tag: Tag[unsafe.Nat._7] =
+  @deprecated("Use NatValue instead", since = "0.5.7")
+  @alwaysinline def materializeNat7Tag: Tag[unsafe.Nat._7] =
     Nat7
-  @alwaysinline implicit def materializeNat8Tag: Tag[unsafe.Nat._8] =
+  @deprecated("Use NatValue instead", since = "0.5.7")
+  @alwaysinline def materializeNat8Tag: Tag[unsafe.Nat._8] =
     Nat8
-  @alwaysinline implicit def materializeNat9Tag: Tag[unsafe.Nat._9] =
+  @deprecated("Use NatValue instead", since = "0.5.7")
+  @alwaysinline def materializeNat9Tag: Tag[unsafe.Nat._9] =
     Nat9
-  @alwaysinline implicit def materializeNatDigit2Tag[N1 <: Nat.Base : Tag, N2 <: Nat.Base : Tag]: Tag.Digit2[N1, N2] =
+  @deprecated("Use NatValue instead", since = "0.5.7")
+  @alwaysinline def materializeNatDigit2Tag[N1 <: Nat.Base : Tag, N2 <: Nat.Base : Tag]: Tag.Digit2[N1, N2] =
     Tag.Digit2(implicitly[Tag[N1]], implicitly[Tag[N2]])
-  @alwaysinline implicit def materializeNatDigit3Tag[N1 <: Nat.Base : Tag, N2 <: Nat.Base : Tag, N3 <: Nat.Base : Tag]: Tag.Digit3[N1, N2, N3] =
+  @deprecated("Use NatValue instead", since = "0.5.7")
+  @alwaysinline def materializeNatDigit3Tag[N1 <: Nat.Base : Tag, N2 <: Nat.Base : Tag, N3 <: Nat.Base : Tag]: Tag.Digit3[N1, N2, N3] =
     Tag.Digit3(implicitly[Tag[N1]], implicitly[Tag[N2]], implicitly[Tag[N3]])
-  @alwaysinline implicit def materializeNatDigit4Tag[N1 <: Nat.Base : Tag, N2 <: Nat.Base : Tag, N3 <: Nat.Base : Tag, N4 <: Nat.Base : Tag]: Tag.Digit4[N1, N2, N3, N4] =
+  @deprecated("Use NatValue instead", since = "0.5.7")
+  @alwaysinline def materializeNatDigit4Tag[N1 <: Nat.Base : Tag, N2 <: Nat.Base : Tag, N3 <: Nat.Base : Tag, N4 <: Nat.Base : Tag]: Tag.Digit4[N1, N2, N3, N4] =
     Tag.Digit4(implicitly[Tag[N1]], implicitly[Tag[N2]], implicitly[Tag[N3]], implicitly[Tag[N4]])
-  @alwaysinline implicit def materializeNatDigit5Tag[N1 <: Nat.Base : Tag, N2 <: Nat.Base : Tag, N3 <: Nat.Base : Tag, N4 <: Nat.Base : Tag, N5 <: Nat.Base : Tag]: Tag.Digit5[N1, N2, N3, N4, N5] =
+  @deprecated("Use NatValue instead", since = "0.5.7")
+  @alwaysinline def materializeNatDigit5Tag[N1 <: Nat.Base : Tag, N2 <: Nat.Base : Tag, N3 <: Nat.Base : Tag, N4 <: Nat.Base : Tag, N5 <: Nat.Base : Tag]: Tag.Digit5[N1, N2, N3, N4, N5] =
     Tag.Digit5(implicitly[Tag[N1]], implicitly[Tag[N2]], implicitly[Tag[N3]], implicitly[Tag[N4]], implicitly[Tag[N5]])
-  @alwaysinline implicit def materializeNatDigit6Tag[N1 <: Nat.Base : Tag, N2 <: Nat.Base : Tag, N3 <: Nat.Base : Tag, N4 <: Nat.Base : Tag, N5 <: Nat.Base : Tag, N6 <: Nat.Base : Tag]: Tag.Digit6[N1, N2, N3, N4, N5, N6] =
+  @deprecated("Use NatValue instead", since = "0.5.7")
+  @alwaysinline def materializeNatDigit6Tag[N1 <: Nat.Base : Tag, N2 <: Nat.Base : Tag, N3 <: Nat.Base : Tag, N4 <: Nat.Base : Tag, N5 <: Nat.Base : Tag, N6 <: Nat.Base : Tag]: Tag.Digit6[N1, N2, N3, N4, N5, N6] =
     Tag.Digit6(implicitly[Tag[N1]], implicitly[Tag[N2]], implicitly[Tag[N3]], implicitly[Tag[N4]], implicitly[Tag[N5]], implicitly[Tag[N6]])
-  @alwaysinline implicit def materializeNatDigit7Tag[N1 <: Nat.Base : Tag, N2 <: Nat.Base : Tag, N3 <: Nat.Base : Tag, N4 <: Nat.Base : Tag, N5 <: Nat.Base : Tag, N6 <: Nat.Base : Tag, N7 <: Nat.Base : Tag]: Tag.Digit7[N1, N2, N3, N4, N5, N6, N7] =
+  @deprecated("Use NatValue instead", since = "0.5.7")
+  @alwaysinline def materializeNatDigit7Tag[N1 <: Nat.Base : Tag, N2 <: Nat.Base : Tag, N3 <: Nat.Base : Tag, N4 <: Nat.Base : Tag, N5 <: Nat.Base : Tag, N6 <: Nat.Base : Tag, N7 <: Nat.Base : Tag]: Tag.Digit7[N1, N2, N3, N4, N5, N6, N7] =
     Tag.Digit7(implicitly[Tag[N1]], implicitly[Tag[N2]], implicitly[Tag[N3]], implicitly[Tag[N4]], implicitly[Tag[N5]], implicitly[Tag[N6]], implicitly[Tag[N7]])
-  @alwaysinline implicit def materializeNatDigit8Tag[N1 <: Nat.Base : Tag, N2 <: Nat.Base : Tag, N3 <: Nat.Base : Tag, N4 <: Nat.Base : Tag, N5 <: Nat.Base : Tag, N6 <: Nat.Base : Tag, N7 <: Nat.Base : Tag, N8 <: Nat.Base : Tag]: Tag.Digit8[N1, N2, N3, N4, N5, N6, N7, N8] =
+  @deprecated("Use NatValue instead", since = "0.5.7")
+  @alwaysinline def materializeNatDigit8Tag[N1 <: Nat.Base : Tag, N2 <: Nat.Base : Tag, N3 <: Nat.Base : Tag, N4 <: Nat.Base : Tag, N5 <: Nat.Base : Tag, N6 <: Nat.Base : Tag, N7 <: Nat.Base : Tag, N8 <: Nat.Base : Tag]: Tag.Digit8[N1, N2, N3, N4, N5, N6, N7, N8] =
     Tag.Digit8(implicitly[Tag[N1]], implicitly[Tag[N2]], implicitly[Tag[N3]], implicitly[Tag[N4]], implicitly[Tag[N5]], implicitly[Tag[N6]], implicitly[Tag[N7]], implicitly[Tag[N8]])
-  @alwaysinline implicit def materializeNatDigit9Tag[N1 <: Nat.Base : Tag, N2 <: Nat.Base : Tag, N3 <: Nat.Base : Tag, N4 <: Nat.Base : Tag, N5 <: Nat.Base : Tag, N6 <: Nat.Base : Tag, N7 <: Nat.Base : Tag, N8 <: Nat.Base : Tag, N9 <: Nat.Base : Tag]: Tag.Digit9[N1, N2, N3, N4, N5, N6, N7, N8, N9] =
+  @deprecated("Use NatValue instead", since = "0.5.7")
+  @alwaysinline def materializeNatDigit9Tag[N1 <: Nat.Base : Tag, N2 <: Nat.Base : Tag, N3 <: Nat.Base : Tag, N4 <: Nat.Base : Tag, N5 <: Nat.Base : Tag, N6 <: Nat.Base : Tag, N7 <: Nat.Base : Tag, N8 <: Nat.Base : Tag, N9 <: Nat.Base : Tag]: Tag.Digit9[N1, N2, N3, N4, N5, N6, N7, N8, N9] =
     Tag.Digit9(implicitly[Tag[N1]], implicitly[Tag[N2]], implicitly[Tag[N3]], implicitly[Tag[N4]], implicitly[Tag[N5]], implicitly[Tag[N6]], implicitly[Tag[N7]], implicitly[Tag[N8]], implicitly[Tag[N9]])
   @alwaysinline implicit def materializeCStruct0Tag: Tag.CStruct0 =
     Tag.CStruct0()
@@ -4289,8 +4325,24 @@ object Tag {
     Tag.CStruct21(implicitly[Tag[T1]], implicitly[Tag[T2]], implicitly[Tag[T3]], implicitly[Tag[T4]], implicitly[Tag[T5]], implicitly[Tag[T6]], implicitly[Tag[T7]], implicitly[Tag[T8]], implicitly[Tag[T9]], implicitly[Tag[T10]], implicitly[Tag[T11]], implicitly[Tag[T12]], implicitly[Tag[T13]], implicitly[Tag[T14]], implicitly[Tag[T15]], implicitly[Tag[T16]], implicitly[Tag[T17]], implicitly[Tag[T18]], implicitly[Tag[T19]], implicitly[Tag[T20]], implicitly[Tag[T21]])
   @alwaysinline implicit def materializeCStruct22Tag[T1: Tag, T2: Tag, T3: Tag, T4: Tag, T5: Tag, T6: Tag, T7: Tag, T8: Tag, T9: Tag, T10: Tag, T11: Tag, T12: Tag, T13: Tag, T14: Tag, T15: Tag, T16: Tag, T17: Tag, T18: Tag, T19: Tag, T20: Tag, T21: Tag, T22: Tag]: Tag.CStruct22[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22] =
     Tag.CStruct22(implicitly[Tag[T1]], implicitly[Tag[T2]], implicitly[Tag[T3]], implicitly[Tag[T4]], implicitly[Tag[T5]], implicitly[Tag[T6]], implicitly[Tag[T7]], implicitly[Tag[T8]], implicitly[Tag[T9]], implicitly[Tag[T10]], implicitly[Tag[T11]], implicitly[Tag[T12]], implicitly[Tag[T13]], implicitly[Tag[T14]], implicitly[Tag[T15]], implicitly[Tag[T16]], implicitly[Tag[T17]], implicitly[Tag[T18]], implicitly[Tag[T19]], implicitly[Tag[T20]], implicitly[Tag[T21]], implicitly[Tag[T22]])
-  @alwaysinline implicit def materializeCArrayTag[T: Tag, N <: unsafe.Nat: Tag]: Tag.CArray[T, N] =
+  @deprecated("Use overload taking NatValue instead", since = "0.5.7")
+  @alwaysinline def materializeCArrayTag[T: Tag, N <: unsafe.Nat: Tag]: Tag.CArray[T, N] =
     Tag.CArray(implicitly[Tag[T]], implicitly[Tag[N]])
+  @alwaysinline implicit def materializeCArray[T: Tag, N <: unsafe.Nat: NatValue]: Tag[unsafe.CArray[T, N]] = new Tag[unsafe.CArray[T, N]] {
+    @alwaysinline def size: Int = implicitly[Tag[T]].size * implicitly[NatValue[N]].value
+    @alwaysinline def alignment: Int = implicitly[Tag[T]].alignment
+    @alwaysinline override def offset(idx: Int): Int = implicitly[Tag[T]].size * idx
+    @alwaysinline private[unsafe] override def load(rawptr: RawPtr): unsafe.CArray[T, N] = {
+      new unsafe.CArray[T, N](rawptr)
+    }
+    @alwaysinline private[unsafe] override def store(rawptr: RawPtr, value: unsafe.CArray[T, N]): Unit = {
+      val dst = rawptr
+      if (value != null) {
+        val src = value.rawptr
+        ffi.memcpy(dst, src, castIntToRawSizeUnsigned(size))
+      } else storeRawPtr(dst, null)
+    }
+  }
 
   @alwaysinline implicit def materializeCFuncPtr0[R: Tag]: CFuncPtrTag[unsafe.CFuncPtr0[R]] = {
     new CFuncPtrTag[unsafe.CFuncPtr0[R]] {
