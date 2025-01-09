@@ -2,6 +2,9 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #else // Unix
+#if defined(__APPLE__) && defined(__MACH__)
+#include <pthread.h>
+#endif
 #include <sys/resource.h>
 #endif
 
@@ -9,7 +12,6 @@
 #include "gc/shared/ThreadUtil.h"
 #include "stackOverflowGuards.h"
 #include <assert.h>
-#include <pthread.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -159,6 +161,15 @@ static bool detectStackBounds(void *onStackPointer, ThreadInfo *threadInfo) {
         }
     }
     fclose(maps);
+#elif (defined(__APPLE__) && defined(__MACH__)) &&                             \
+    defined(__MAC_OS_X_VERSION_MIN_REQUIRED) &&                                \
+    __MAC_OS_X_VERSION_MIN_REQUIRED >= 1040
+    pthread_t self = pthread_self();
+    currentThreadInfo.stackBottom = pthread_get_stackaddr_np(self);
+    currentThreadInfo.stackSize = pthread_get_stacksize_np(self);
+    currentThreadInfo.stackTop =
+        (char *)currentThreadInfo.stackBottom - currentThreadInfo.stackSize;
+    return true;
 #endif
     return false;
 }
