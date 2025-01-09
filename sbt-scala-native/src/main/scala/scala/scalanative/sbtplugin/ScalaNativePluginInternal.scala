@@ -1,7 +1,7 @@
 package scala.scalanative
 package sbtplugin
 
-import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.atomic._
 import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
 import sbt.Keys._
 import sbt._
@@ -25,6 +25,7 @@ import sjsonnew.BasicJsonProtocol._
 import java.nio.file.{Files, Path}
 import java.lang.Runtime
 import java.util.concurrent.Executors
+import java.util.concurrent.locks.ReentrantLock
 import sbt.librarymanagement.{
   DependencyResolution,
   UpdateConfiguration,
@@ -136,8 +137,6 @@ object ScalaNativePluginInternal {
       val prev: () => Unit = onComplete.value
       () => {
         prev()
-        sharedScope.close()
-        sharedScope = Scope.unsafe()
         testAdapters.getAndSet(Nil).foreach(_.close())
       }
     }
@@ -192,11 +191,12 @@ object ScalaNativePluginInternal {
         .withCompilerConfig(nativeConfig)
 
     interceptBuildException {
-      await(sbtLogger) { implicit ec: ExecutionContext =>
-        implicit def scope: Scope = sharedScope
-        Build
-          .buildCached(config)
-          .map(_.toFile())
+      SharedScope { implicit sharedScope: Scope =>
+        await(sbtLogger) { implicit ec: ExecutionContext =>
+          Build
+            .buildCached(config)
+            .map(_.toFile())
+        }
       }
     }
   }
@@ -402,7 +402,36 @@ object ScalaNativePluginInternal {
       inConfig(Compile)(scalaNativeCompileSettings) ++
       inConfig(Test)(scalaNativeTestSettings)
 
-  private var sharedScope = Scope.unsafe()
+  /* Provider of Scope that can be shared between different threads.
+   * Closed automatically when all concurrent users release their access  */
+  object SharedScope {
+    private val modificationLock = new ReentrantLock()
+    private var scope = Scope.unsafe()
+    private var counter = 0
+
+    def apply[T](use: Scope => T): T = {
+      try use(acquire())
+      finally release()
+    }
+
+    private def acquire(): Scope = {
+      modificationLock.lock()
+      try {
+        counter += 1
+        scope
+      } finally modificationLock.unlock()
+    }
+    private def release() = {
+      modificationLock.lock()
+      try {
+        counter -= 1
+        if (counter == 0) {
+          scope.close()
+          scope = Scope.unsafe()
+        }
+      } finally modificationLock.unlock()
+    }
+  }
   private val testAdapters = new AtomicReference[List[TestAdapter]](Nil)
 
   private def newTestAdapter(config: TestAdapter.Config): TestAdapter = {
