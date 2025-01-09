@@ -49,7 +49,7 @@ private[lang] object PipeIO {
 
     private var src: InputStream = is
 
-    // By convention, caller is synchronized on 'src'.
+    // By convention, caller is synchronized on 'this'.
     private def availableUnSync() = {
       src match {
         case fis: FileInputStream => availableFD()
@@ -57,13 +57,13 @@ private[lang] object PipeIO {
       }
     }
 
-    override def available(): Int = src.synchronized {
+    override def available(): Int = synchronized {
       try
         availableUnSync()
       finally process.checkResult()
     }
 
-    override def read(): Int = src.synchronized {
+    override def read(): Int = synchronized {
       try
         src.read()
       finally process.checkResult()
@@ -72,25 +72,39 @@ private[lang] object PipeIO {
     override def read(b: Array[Byte]): Int = this.read(b, 0, b.length)
 
     override def read(buf: Array[scala.Byte], offset: Int, len: Int): Int =
-      src.synchronized {
-        /* The read(buf, offset, len) within this method will always check
+      synchronized {
+        /* The read(buf, offset, len) used by this method will always check
          * arguments, so save a few cycles and do not do check here.
          */
+
+        printf(s"\n\nLeeT: PipeIO#read(b,o,l), len: ${len}\n\n")
 
         try {
           val avail = availableUnSync()
 
+          printf(s"\n\nLeeT: read(b,o,l), top avail: ${avail}\n\n")
+
           if (avail > 0) {
-            src.read(buf, offset, avail)
+            printf(s"\n\nLeeT: read(b,o,l), reading avail: ${avail}\n")
+            val n = src.read(buf, offset, avail)
+            printf(s"LeeT: read(b,o,l), read n: ${n}\n\n")
+            n
           } else {
             src match {
               case fis: FileInputStream =>
+                printf(
+                  s"\n\nLeeT: read(b,o,l), B4 1byte, FD.valid: ${is.getFD()}\n"
+                )
+                printf(s"LeeT: read(b,o,l), reading 1 byte\n")
                 val nRead = src.read(buf, offset, 1)
 
-                if (nRead == -1) -1
-                else {
+                if (nRead == -1) {
+                  printf(s"LeeT: read(b,o,l), 1 byte result: EOF\n\n")
+                  -1
+                } else {
                   val a = availableUnSync()
 
+                  printf(s"\n\nLeeT: read(b,o,l): after 1 byte a: ${a}\n\n")
                   if (a == 0) nRead
                   else {
                     val newOffset = offset + 1
@@ -98,9 +112,21 @@ private[lang] object PipeIO {
                     if (availableBuffer <= 0) nRead
                     else {
                       val nToRead = Math.min(availableBuffer, a)
+                      printf(
+                        s"\n\nLeeT: read(b,o,l): nToRead_1: ${nToRead}\n\n"
+                      )
+
                       val nr =
                         if (nToRead == 0) 0
-                        else src.read(buf, newOffset, nToRead)
+                        else {
+                          printf(
+                            s"\n\nLeeT: read(b,o,l): nToRead_2: ${nToRead}\n"
+                          )
+                          val r2 = src.read(buf, newOffset, nToRead)
+                          printf(s"LeeT: read(b,o,l): r2 : ${nToRead}\n\n")
+                          r2
+                        }
+
                       if (nr <= 0) nRead else nRead + nr
                     }
                   }
@@ -116,13 +142,15 @@ private[lang] object PipeIO {
     /* Switch horses, or at least InputStreams in media res.
      * See Design Note at top of file.
      */
-    override def drain(): Unit = src.synchronized {
+    override def drain(): Unit = synchronized {
+      val srcOnEntry = src
+      val avail = availableUnSync()
 
-      val newSrc = new ByteArrayInputStream(src.readNBytes(availableUnSync()))
+      if (avail > 0)
+        src = new ByteArrayInputStream(src.readNBytes(avail))
 
-      src.close() // release JVM FileDescriptor and, especially, its OS fd.
-
-      src = newSrc
+      // release JVM FileDescriptor and, especially, its OS fd.
+      srcOnEntry.close()
     }
 
     private def availableFD(): Int = {
