@@ -1,12 +1,11 @@
-#if defined(SCALANATIVE_GC_IMMIX) || defined(SCALANATIVE_GC_COMMIX)
-
+#ifndef SCALANATIVE_STACKTRACE_H
+#define SCALANATIVE_STACKTRACE_H
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
-#include "immix_commix/StackTrace.h"
-#include "../platform/unwind.h"
+#include "platform/unwind.h"
 
-void StackTrace_PrintStackTrace() {
+static void StackTrace_PrintStackTrace() {
     void *cursor = malloc(scalanative_unwind_sizeof_cursor());
     void *context = malloc(scalanative_unwind_sizeof_context());
     scalanative_unwind_get_context(context);
@@ -33,5 +32,4 @@ void StackTrace_PrintStackTrace() {
     free(cursor);
     free(context);
 }
-
 #endif

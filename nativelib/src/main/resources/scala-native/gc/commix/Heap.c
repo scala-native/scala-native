@@ -1,4 +1,3 @@
-#include "shared/Time.h"
 #if defined(SCALANATIVE_GC_COMMIX)
 
 #include <stdlib.h>
@@ -10,7 +9,8 @@
 #include "Marker.h"
 #include "State.h"
 #include "immix_commix/utils/MathUtils.h"
-#include "immix_commix/StackTrace.h"
+#include "../../StackTrace.h"
+#include "shared/Time.h"
 #include "Settings.h"
 #include "shared/MemoryInfo.h"
 #include "shared/MemoryMap.h"

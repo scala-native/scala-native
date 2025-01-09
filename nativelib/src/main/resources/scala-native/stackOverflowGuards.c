@@ -15,7 +15,7 @@
 #include "stackOverflowGuards.h"
 #include "nativeThreadTLS.h"
 #include "gc/shared/ThreadUtil.h"
-#include "gc/immix_commix/StackTrace.h"
+#include "StackTrace.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
