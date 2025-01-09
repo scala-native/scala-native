@@ -8,7 +8,7 @@
 #include "Allocator.h"
 #include "Marker.h"
 #include "State.h"
-#include "../../StackTrace.h"
+#include "StackTrace.h"
 #include "Settings.h"
 #include "shared/MemoryInfo.h"
 #include "shared/MemoryMap.h"

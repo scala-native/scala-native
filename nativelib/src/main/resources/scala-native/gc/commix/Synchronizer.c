@@ -36,7 +36,7 @@ static void Synchronizer_WaitForResumption(MutatorThread *selfThread);
 // internal flag, better for debuggin, but slower
 #ifdef SCALANATIVE_GC_USE_YIELDPOINT_TRAPS
 #include "shared/YieldPointTrap.h"
-#include "../../StackTrace.h"
+#include "StackTrace.h"
 #include <errno.h>
 #ifdef _WIN32
 #include <errhandlingapi.h>
