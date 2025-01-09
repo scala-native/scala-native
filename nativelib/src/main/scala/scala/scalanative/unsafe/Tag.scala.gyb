@@ -282,7 +282,7 @@ object Tag {
   @alwaysinline implicit def materializeCStruct${N}Tag${BoundTs}: Tag.CStruct${N}${JustTs} =
     Tag.CStruct${N}(${tags})
   % end
-  @deprecated("Use overload taking NatValue instead", since = "0.5.7")
+  @deprecated("Use materializeCArray instead", since = "0.5.7")
   @alwaysinline def materializeCArrayTag[T: Tag, N <: unsafe.Nat: Tag]: Tag.CArray[T, N] =
     Tag.CArray(implicitly[Tag[T]], implicitly[Tag[N]])
   @alwaysinline implicit def materializeCArray[T: Tag, N <: unsafe.Nat: NatValue]: Tag[unsafe.CArray[T, N]] = new Tag[unsafe.CArray[T, N]] {
