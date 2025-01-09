@@ -1,3 +1,10 @@
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#else // Unix
+#include <sys/resource.h>
+#endif
+
 #include "nativeThreadTLS.h"
 #include "gc/shared/ThreadUtil.h"
 #include "stackOverflowGuards.h"
@@ -7,10 +14,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#ifndef _WIN32
-#include <sys/resource.h>
-#endif
 
 SN_ThreadLocal JavaThread currentThread = NULL;
 SN_ThreadLocal NativeThread currentNativeThread = NULL;
@@ -103,11 +106,16 @@ bool scalanative_forceMainThreadStackGrowth() {
         // Force growing of stack pointer and before updating thread info
         void *newStackBottom =
             (char *)(threadInfo->stackBottom) - threadInfo->stackSize;
+#ifdef _WIN32
+        VirtualAlloc(threadInfo->stackTop, threadInfo->stackSize, MEM_COMMIT,
+                     PAGE_READWRITE);
+#else
         volatile char *ptr = threadInfo->stackTop;
         while ((void *)ptr > newStackBottom) {
             *ptr = 0; // Write to the memory to force allocation
             ptr -= scalanative_page_size();
         }
+#endif
         threadInfo->stackTop = newStackBottom;
 
         return true;
@@ -117,7 +125,16 @@ bool scalanative_forceMainThreadStackGrowth() {
 }
 
 static bool detectStackBounds(void *onStackPointer, ThreadInfo *threadInfo) {
-#if defined(__linux__)
+#ifdef _WIN32
+    MEMORY_BASIC_INFORMATION mbi;
+    VirtualQuery(onStackPointer, &mbi, sizeof(mbi));
+    threadInfo->stackTop = (void *)mbi.AllocationBase;
+    threadInfo->stackBottom =
+        (void *)((char *)mbi.AllocationBase + mbi.RegionSize);
+    threadInfo->stackSize = (size_t)((char *)threadInfo->stackBottom -
+                                     (char *)threadInfo->stackTop);
+    return true;
+#elif defined(__linux__)
     FILE *maps = fopen("/proc/self/maps", "r");
     if (!maps) {
         return false;

@@ -9,13 +9,6 @@ import org.scalanative.testsuite.utils.Platform
 
 import java.io.{PrintStream, File}
 
-object StackOverflowTest {
-  @BeforeClass def checkRuntime() = assumeFalse(
-    "StackOverflow handling not implemented for Windows",
-    Platform.isWindows
-  )
-}
-
 class StackOverflowTest {
   def stackoverflow(): Int = 1 + stackoverflow()
 
