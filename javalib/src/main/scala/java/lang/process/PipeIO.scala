@@ -95,39 +95,44 @@ private[lang] object PipeIO {
                 printf(
                   s"\n\nLeeT: read(b,o,l), B4 1byte, FD.valid: ${is.getFD()}\n"
                 )
-                printf(s"LeeT: read(b,o,l), reading 1 byte\n")
-                val nRead = src.read(buf, offset, 1)
 
-                if (nRead == -1) {
-                  printf(s"LeeT: read(b,o,l), 1 byte result: EOF\n\n")
-                  -1
-                } else {
-                  val a = availableUnSync()
+                if (!is.getFD().valid()) -1
+                else {
 
-                  printf(s"\n\nLeeT: read(b,o,l): after 1 byte a: ${a}\n\n")
-                  if (a == 0) nRead
-                  else {
-                    val newOffset = offset + 1
-                    val availableBuffer = buf.length - newOffset
-                    if (availableBuffer <= 0) nRead
+                  printf(s"LeeT: read(b,o,l), reading 1 byte\n")
+                  val nRead = src.read(buf, offset, 1)
+
+                  if (nRead == -1) {
+                    printf(s"LeeT: read(b,o,l), 1 byte result: EOF\n\n")
+                    -1
+                  } else {
+                    val a = availableUnSync()
+
+                    printf(s"\n\nLeeT: read(b,o,l): after 1 byte a: ${a}\n\n")
+                    if (a == 0) nRead
                     else {
-                      val nToRead = Math.min(availableBuffer, a)
-                      printf(
-                        s"\n\nLeeT: read(b,o,l): nToRead_1: ${nToRead}\n\n"
-                      )
+                      val newOffset = offset + 1
+                      val availableBuffer = buf.length - newOffset
+                      if (availableBuffer <= 0) nRead
+                      else {
+                        val nToRead = Math.min(availableBuffer, a)
+                        printf(
+                          s"\n\nLeeT: read(b,o,l): nToRead_1: ${nToRead}\n\n"
+                        )
 
-                      val nr =
-                        if (nToRead == 0) 0
-                        else {
-                          printf(
-                            s"\n\nLeeT: read(b,o,l): nToRead_2: ${nToRead}\n"
-                          )
-                          val r2 = src.read(buf, newOffset, nToRead)
-                          printf(s"LeeT: read(b,o,l): r2 : ${nToRead}\n\n")
-                          r2
-                        }
+                        val nr =
+                          if (nToRead == 0) 0
+                          else {
+                            printf(
+                              s"\n\nLeeT: read(b,o,l): nToRead_2: ${nToRead}\n"
+                            )
+                            val r2 = src.read(buf, newOffset, nToRead)
+                            printf(s"LeeT: read(b,o,l): r2 : ${nToRead}\n\n")
+                            r2
+                          }
 
-                      if (nr <= 0) nRead else nRead + nr
+                        if (nr <= 0) nRead else nRead + nr
+                      }
                     }
                   }
                 }
