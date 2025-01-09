@@ -76,10 +76,10 @@ package object runtime {
     val args = new scala.Array[String](argc - 1)
 
     // skip the executable name in argv(0)
-    var c = 1
-    while (c < argc) {
+    var c = 0
+    while (c < argc - 1) {
       // use the default Charset (UTF_8 atm)
-      args(c) = fromCString(argv(c))
+      args(c) = fromCString(argv(c + 1))
       c += 1
     }
 
