@@ -12,13 +12,15 @@ abstract class Throwable @noinline protected (
   protected var stackTrace: scala.Array[StackTraceElement] = _
   private[runtime] var onCatchHandler: CFuncPtr1[Throwable, Unit] = _
   private val exceptionWrapper: BlobArray =
-    if (Throwable.usingCxxExceptions) null // unused
-    else BlobArray.alloc(Throwable.ffi.sizeOfExceptionWrapper)
-
-  if (Throwable.usingCxxExceptions) {
-    // struct ExceptionWrapper { Throwable, _UnwindException }
-    Intrinsics.storeObject(exceptionWrapper.atRawUnsafe(0), this)
-  }
+    Throwable.ffi.sizeOfExceptionWrapper match {
+      case 0    => null
+      case size =>
+        // Not null only when we use custom exception handling without C++
+        // struct ExceptionWrapper { Throwable, _UnwindException }
+        val blob = BlobArray.alloc(size)
+        Intrinsics.storeObject(blob.atRawUnsafe(0), this)
+        blob
+    }
 
   if (writableStackTrace)
     fillInStackTrace()
@@ -106,7 +108,7 @@ private object Throwable {
   private def usingCxxExceptions: Boolean = LinktimeInfo.isWindows
 
   @extern private object ffi {
-    @name("scalanative_Throwable_sizeOfExceptionWrapperr")
+    @name("scalanative_Throwable_sizeOfExceptionWrapper")
     def sizeOfExceptionWrapper: Int = extern
   }
 

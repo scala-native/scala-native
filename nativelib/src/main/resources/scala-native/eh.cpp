@@ -9,16 +9,28 @@
 // Scala code. We currently do not support catching arbitrary
 // C++ exceptions.
 
+typedef void *Exception;
+typedef void (*OnCatchHandler)(Exception);
+extern "C" OnCatchHandler
+scalanative_Throwable_onCatchHandler(Exception exception);
+
 namespace scalanative {
 class ExceptionWrapper : public std::exception {
   public:
-    ExceptionWrapper(void *_obj) : obj(_obj) {}
-    void *obj;
+    ExceptionWrapper(Exception _obj) : obj(_obj) {}
+    ~ExceptionWrapper() {
+        OnCatchHandler handler = scalanative_Throwable_onCatchHandler(obj);
+        if (handler) {
+            handler(obj);
+        }
+    }
+    Exception obj;
 };
 } // namespace scalanative
 
 extern "C" {
 void scalanative_throw(void *obj) { throw scalanative::ExceptionWrapper(obj); }
+size_t scalanative_Throwable_sizeOfExceptionWrapper() { return 0; }
 }
 
 #endif

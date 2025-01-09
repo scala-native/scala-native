@@ -24,7 +24,7 @@ extern void scalanative_Throwable_showStackTrace(Exception exception);
 extern ExceptionWrapper *
 scalanative_Throwable_exceptionWrapper(Exception exception);
 
-size_t scalanative_Throwable_sizeOfExceptionWrapperr() {
+size_t scalanative_Throwable_sizeOfExceptionWrapper() {
     return sizeof(ExceptionWrapper);
 }
 
