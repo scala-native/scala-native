@@ -234,6 +234,7 @@ object NativeThread {
       }
   }
 
+  @noinline
   @exported("scalanative_throwPendingStackOverflowError")
   def throwPendingStackOverflowError(): Unit = {
     val exception = new StackOverflowError()

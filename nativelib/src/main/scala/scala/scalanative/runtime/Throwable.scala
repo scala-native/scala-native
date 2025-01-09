@@ -4,7 +4,9 @@ import scala.scalanative.unsafe._
 import scala.scalanative.meta.LinktimeInfo
 import java.nio.charset.{Charset, StandardCharsets}
 
-abstract class Throwable protected (writableStackTrace: scala.Boolean) {
+abstract class Throwable @noinline protected (
+    writableStackTrace: scala.Boolean
+) {
   self: java.lang.Throwable =>
 
   protected var stackTrace: scala.Array[StackTraceElement] = _
@@ -14,7 +16,7 @@ abstract class Throwable protected (writableStackTrace: scala.Boolean) {
     else BlobArray.alloc(Throwable.ffi.sizeOfExceptionWrapper)
 
   if (Throwable.usingCxxExceptions) {
-    // ExceptionWrapper { Throwable, _UnwindException }
+    // struct ExceptionWrapper { Throwable, _UnwindException }
     Intrinsics.storeObject(exceptionWrapper.atRawUnsafe(0), this)
   }
 

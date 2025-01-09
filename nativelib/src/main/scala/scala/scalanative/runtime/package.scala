@@ -65,19 +65,21 @@ package object runtime {
     NativeThread.StackOverflowGuards.setup(isMainThread = true)
 
     val mainThread = Thread.currentThread()
-    assert(
-      mainThread != null,
-      "failed to initialize main thread"
-    )
+    if (mainThread == null) {
+      ffi.printf(
+        c"Scala Native Fatal Error: failed to initialize main java.lang.Thread"
+      )
+      System.exit(1)
+    }
 
     val argv = fromRawPtr[CString](rawargv)
     val args = new scala.Array[String](argc - 1)
 
     // skip the executable name in argv(0)
-    var c = 0
-    while (c < argc - 1) {
+    var c = 1
+    while (c < argc) {
       // use the default Charset (UTF_8 atm)
-      args(c) = fromCString(argv(c + 1))
+      args(c) = fromCString(argv(c))
       c += 1
     }
 
