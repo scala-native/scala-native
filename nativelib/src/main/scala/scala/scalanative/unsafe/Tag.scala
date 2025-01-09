@@ -69,7 +69,6 @@ object Tag {
       storeObject(rawptr, value.asInstanceOf[Object])
   }
 
-
   object Unit extends Tag[scala.Unit] {
     @alwaysinline def size: Int = SizeOfPtr
     @alwaysinline def alignment: Int = SizeOfPtr
@@ -78,7 +77,6 @@ object Tag {
     @alwaysinline private[unsafe] override def store(rawptr: RawPtr, value: scala.Unit): Unit =
       storeObject(rawptr, value.asInstanceOf[Object])
   }
-
 
   object Boolean extends Tag[scala.Boolean] {
     @alwaysinline def size: Int = 1
@@ -89,7 +87,6 @@ object Tag {
       storeBoolean(rawptr, value)
   }
 
-
   object Char extends Tag[scala.Char] {
     @alwaysinline def size: Int = 2
     @alwaysinline def alignment: Int = 2
@@ -98,7 +95,6 @@ object Tag {
     @alwaysinline private[unsafe] override def store(rawptr: RawPtr, value: scala.Char): Unit =
       storeChar(rawptr, value)
   }
-
 
   object Byte extends Tag[scala.Byte] {
     @alwaysinline def size: Int = 1
@@ -109,7 +105,6 @@ object Tag {
       storeByte(rawptr, value)
   }
 
-
   object UByte extends Tag[unsigned.UByte] {
     @alwaysinline def size: Int = 1
     @alwaysinline def alignment: Int = 1
@@ -118,7 +113,6 @@ object Tag {
     @alwaysinline private[unsafe] override def store(rawptr: RawPtr, value: unsigned.UByte): Unit =
       storeByte(rawptr, value.toByte)
   }
-
 
   object Short extends Tag[scala.Short] {
     @alwaysinline def size: Int = 2
@@ -129,7 +123,6 @@ object Tag {
       storeShort(rawptr, value)
   }
 
-
   object UShort extends Tag[unsigned.UShort] {
     @alwaysinline def size: Int = 2
     @alwaysinline def alignment: Int = 2
@@ -138,7 +131,6 @@ object Tag {
     @alwaysinline private[unsafe] override def store(rawptr: RawPtr, value: unsigned.UShort): Unit =
       storeShort(rawptr, value.toShort)
   }
-
 
   object Int extends Tag[scala.Int] {
     @alwaysinline def size: Int = 4
@@ -149,7 +141,6 @@ object Tag {
       storeInt(rawptr, value)
   }
 
-
   object UInt extends Tag[unsigned.UInt] {
     @alwaysinline def size: Int = 4
     @alwaysinline def alignment: Int = 4
@@ -158,7 +149,6 @@ object Tag {
     @alwaysinline private[unsafe] override def store(rawptr: RawPtr, value: unsigned.UInt): Unit =
       storeInt(rawptr, value.toInt)
   }
-
 
   object Long extends Tag[scala.Long] {
     @alwaysinline def size: Int = 8
@@ -169,7 +159,6 @@ object Tag {
       storeLong(rawptr, value)
   }
 
-
   object ULong extends Tag[unsigned.ULong] {
     @alwaysinline def size: Int = 8
     @alwaysinline def alignment: Int = SizeOfPtr
@@ -178,7 +167,6 @@ object Tag {
     @alwaysinline private[unsafe] override def store(rawptr: RawPtr, value: unsigned.ULong): Unit =
       storeLong(rawptr, value.toLong)
   }
-
 
   object Float extends Tag[scala.Float] {
     @alwaysinline def size: Int = 4
@@ -189,7 +177,6 @@ object Tag {
       storeFloat(rawptr, value)
   }
 
-
   object Double extends Tag[scala.Double] {
     @alwaysinline def size: Int = 8
     @alwaysinline def alignment: Int = SizeOfPtr
@@ -199,7 +186,7 @@ object Tag {
       storeDouble(rawptr, value)
   }
 
-
+  @deprecated("Use NatValue instead", since = "0.5.7")
   private[scalanative] sealed trait NatTag {
     def toInt: Int
     def toUInt: UInt = toInt.toUInt
@@ -417,7 +404,7 @@ object Tag {
     }
   }
 
-
+  @deprecated("Use anonymous instance returned by materializeCArray instead", since = "0.5.7")
   final case class CArray[T, N <: unsafe.Nat](of: Tag[T], n: Tag[N])
       extends Tag[unsafe.CArray[T, N]]
   {
@@ -4125,7 +4112,6 @@ object Tag {
       } else storeRawPtr(dst, null)
     }
   }
-
 
   abstract class CFuncPtrTag[F <: unsafe.CFuncPtr] private[unsafe] ()
       extends Tag[F] {

@@ -83,7 +83,6 @@ object Tag {
   %          ('Float', 'scala.Float', '4', '4'),
   %          ('Double', 'scala.Double', '8', 'SizeOfPtr')]
   % for (name, T, size, align) in prims:
-
   object ${name} extends Tag[${T}] {
     @alwaysinline def size: Int = ${size}
     @alwaysinline def alignment: Int = ${align}
@@ -108,7 +107,7 @@ object Tag {
   }
 
   % end
-
+  @deprecated("Use NatValue instead", since = "0.5.7")
   private[scalanative] sealed trait NatTag {
     def toInt: Int
     def toUInt: UInt = toInt.toUInt
@@ -147,7 +146,7 @@ object Tag {
   }
 
   % end
-
+  @deprecated("Use anonymous instance returned by materializeCArray instead", since = "0.5.7")
   final case class CArray[T, N <: unsafe.Nat](of: Tag[T], n: Tag[N])
       extends Tag[unsafe.CArray[T, N]]
   {
@@ -224,7 +223,6 @@ object Tag {
   }
 
   % end
-
   abstract class CFuncPtrTag[F <: unsafe.CFuncPtr] private[unsafe] ()
       extends Tag[F] {
     /** Internal method used to cast Ptr[_] to CFuncPtr using its underlying RawPtr
