@@ -8,7 +8,7 @@ import scalanative.build
 case class ScalaNativePartestOptions private (
     testFilter: ScalaNativePartestOptions.TestFilter,
     nativeClasspath: Seq[Path],
-    precompiledLibrariesPaths: Seq[Path],
+    precompiledLibrariesPaths: Seq[Seq[Path]],
     parallelism: Option[Int],
     shouldPrecompileLibraries: Boolean,
     showDiff: Boolean,

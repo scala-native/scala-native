@@ -250,7 +250,7 @@ object Build {
    *  @return
    *    the paths to the compiled objects
    */
-  private[scalanative] def findAndCompileNativeLibraries(
+  private[scala] def findAndCompileNativeLibraries(
       config: Config,
       analysis: ReachabilityAnalysis.Result
   )(implicit ec: ExecutionContext): Future[Seq[CompilationOutputs]] = {

@@ -139,7 +139,7 @@ case class PartestTask(taskDef: TaskDef, args: Array[String]) extends Task {
   def precompileLibs(
       options: ScalaNativePartestOptions,
       forkedClasspath: Seq[java.nio.file.Path]
-  ): Seq[java.nio.file.Path] = {
+  ): Seq[Seq[java.nio.file.Path]] = {
     val config = Defaults.config
       .withBaseDir(Defaults.workDir())
       .withClassPath(options.nativeClasspath ++ forkedClasspath)
