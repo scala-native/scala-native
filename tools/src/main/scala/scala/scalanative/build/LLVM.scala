@@ -298,10 +298,22 @@ private[scalanative] object LLVM {
       buildTargetLinkOpts ++ flto ++ debugFlags ++ platformFlags ++ linkNameFlags ++ output ++ sanitizer ++ target
     }
     val paths = objectsPaths.map(_.abs)
+    val (lldStartOptions, lldEndOptions) =
+      if (config.linkingOptions.contains("-fuse-ld=lld")) {
+        // lld requires that object files are listed in the order
+        // they require each other. We don't do that so we wrap
+        // the files in --start-lib and --end-lib which consider
+        // them like they were in a .a library and links all symbols
+        // regardless of ordering
+        (List("-Wl,--start-lib"), List("-Wl,--end-lib"))
+      } else {
+        (Nil, Nil)
+      }
     // it's a fix for passing too many file paths to the clang compiler,
     // If too many packages are compiled and the platform is windows, windows
     // terminal doesn't support too many characters, which will cause an error.
-    val llvmLinkInfo = flags ++ paths ++ linkopts
+    val llvmLinkInfo =
+      flags ++ lldStartOptions ++ paths ++ lldEndOptions ++ linkopts
     val configFile = workDir.resolve("llvmLinkInfo").toFile
     locally {
       val pw = new PrintWriter(configFile)
