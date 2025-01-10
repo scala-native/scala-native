@@ -11,7 +11,8 @@ import scala.scalanative.nir.Attr.Link
 import scala.concurrent._
 import scala.util.Failure
 import scala.util.Success
-import _root_.java.io.IOException
+import java.io.IOException
+import scala.scalanative.build.Build.CompilationOutputs
 
 /** Internal utilities to interact with LLVM command-line tools. */
 private[scalanative] object LLVM {
@@ -142,29 +143,30 @@ private[scalanative] object LLVM {
    *    The configuration of the toolchain.
    *  @param linkerResult
    *    The results from the linker.
-   *  @param objectPaths
-   *    The paths to all the `.o` files.
+   *  @param groupedCompilationOutputs
+   *    A sequence of grouped paths of the compiled `.o` files. Each group might
+   *    can be treated as it's own library
    *  @return
    *    `outpath` The config.artifactPath
    */
   def link(
       config: Config,
       analysis: ReachabilityAnalysis.Result,
-      objectsPaths: Seq[Path]
+      groupedCompilationOutputs: Seq[CompilationOutputs]
   ): Path = {
     implicit val _config: Config = config
     val buildPath = config.buildPath
 
     // don't link if no changes
-    if (!needsLinking(objectsPaths, buildPath)) {
+    if (!needsLinking(groupedCompilationOutputs.flatten, buildPath)) {
       return copyOutput(config, buildPath)
     }
 
     val command = config.compilerConfig.buildTarget match {
       case BuildTarget.Application | BuildTarget.LibraryDynamic =>
-        prepareLinkCommand(objectsPaths, analysis)
+        prepareLinkCommand(groupedCompilationOutputs, analysis)
       case BuildTarget.LibraryStatic =>
-        prepareArchiveCommand(objectsPaths)
+        prepareArchiveCommand(groupedCompilationOutputs)
     }
     // link
     val result = command ! Logger.toProcessLogger(config.logger)
@@ -224,9 +226,10 @@ private[scalanative] object LLVM {
   }
 
   private def prepareLinkCommand(
-      objectsPaths: Seq[Path],
+      groupedCompilationOutputs: Seq[CompilationOutputs],
       analysis: ReachabilityAnalysis.Result
   )(implicit config: Config) = {
+    val objectsPaths = groupedCompilationOutputs.flatten
     val workDir = config.workDir
     val links = {
       val srclinks = analysis.links.map(_.name)
@@ -297,23 +300,29 @@ private[scalanative] object LLVM {
 
       buildTargetLinkOpts ++ flto ++ debugFlags ++ platformFlags ++ linkNameFlags ++ output ++ sanitizer ++ target
     }
-    val paths = objectsPaths.map(_.abs)
+
     // it's a fix for passing too many file paths to the clang compiler,
     // If too many packages are compiled and the platform is windows, windows
     // terminal doesn't support too many characters, which will cause an error.
-    val llvmLinkInfo = flags ++ paths ++ linkopts
     val configFile = workDir.resolve("llvmLinkInfo").toFile
     locally {
       val pw = new PrintWriter(configFile)
-      try
-        llvmLinkInfo.foreach {
-          // Paths containg whitespaces needs to be escaped, otherwise
-          // config file might be not interpretted correctly by the LLVM
-          // in windows system, the file separator doesn't work very well, so we
-          // replace it to linux file separator
-          str => pw.println(escapeWhitespaces(str.replace("\\", "/")))
+      // Paths containg whitespaces needs to be escaped, otherwise
+      // config file might be not interpretted correctly by the LLVM
+      // in windows system, the file separator doesn't work very well, so we
+      // replace it to linux file separator
+      def add(str: String) =
+        pw.println(escapeWhitespaces(str.replace("\\", "/")))
+      val usingLLD = flags.contains("-fuse-lld")
+      try {
+        flags.foreach(add)
+        groupedCompilationOutputs.foreach { objectPaths =>
+          if(usingLLD) add("-Wl,--start-lib")
+          objectPaths.foreach(path => add(path.abs))
+          if(usingLLD) add("-Wl,--end-lib")
         }
-      finally pw.close()
+        linkopts.foreach(add)
+      } finally pw.close()
     }
 
     val compiler =
@@ -326,8 +335,9 @@ private[scalanative] object LLVM {
   }
 
   private def prepareArchiveCommand(
-      objectPaths: Seq[Path]
+      groupedCompilationOutputs: Seq[CompilationOutputs]
   )(implicit config: Config) = {
+    val objectPaths = groupedCompilationOutputs.flatten
     val workDir = config.workDir
 
     val MRICompatibleAR =

@@ -127,7 +127,7 @@ object Build {
             .flatMap { irGenerators =>
               compile(config, linkerResult, irGenerators)
             }
-            .map(objects => link(config, linkerResult, objects))
+            .map(compilationOutputs => link(config, linkerResult, compilationOutputs))
             .map(artifact => postProcess(config, artifact))
         }
         .andThen { case Success(_) => dumpUserConfigHash(config) }
@@ -139,7 +139,7 @@ object Build {
       config: Config,
       analysis: ReachabilityAnalysis.Result,
       irGenerators: Seq[Future[Path]]
-  )(implicit ec: ExecutionContext): Future[Seq[Path]] =
+  )(implicit ec: ExecutionContext): Future[Seq[CompilationOutputs]] =
     config.logger.timeAsync("Compiling to native code") {
       // compile generated LLVM IR
       val compileGeneratedIR = Future
@@ -156,16 +156,17 @@ object Build {
        */
       val compileNativeLibs = findAndCompileNativeLibraries(config, analysis)
 
-      Future.reduceLeft(
-        immutable.Seq(compileGeneratedIR, compileNativeLibs)
-      )(_ ++ _)
+      for {
+        compiledIR <- compileGeneratedIR
+        compiledNativeLibs <- compileNativeLibs
+      } yield compiledIR +: compiledNativeLibs
     }
 
   /** Links the given object files using the system's linker. */
   private def link(
       config: Config,
       analysis: ReachabilityAnalysis.Result,
-      compiled: Seq[Path]
+      compiled: Seq[CompilationOutputs]
   ): Path = config.logger.time(
     s"Linking native code (${config.gc.name} gc, ${config.LTO.name} lto)"
   ) {
@@ -236,6 +237,8 @@ object Build {
     ).hashCode()
   }
 
+  private[scalanative] type CompilationOutputs = Seq[Path]
+
   /** Finds and compiles native libaries.
    *
    *  @param config
@@ -245,16 +248,15 @@ object Build {
    *  @return
    *    the paths to the compiled objects
    */
-  private[scala] def findAndCompileNativeLibraries(
+  private[scalanative] def findAndCompileNativeLibraries(
       config: Config,
       analysis: ReachabilityAnalysis.Result
-  )(implicit ec: ExecutionContext): Future[Seq[Path]] = {
+  )(implicit ec: ExecutionContext): Future[Seq[CompilationOutputs]] = {
     import NativeLib.{findNativeLibs, compileNativeLibrary}
     Future
       .traverse(findNativeLibs(config))(
         compileNativeLibrary(config, analysis, _)
       )
-      .map(_.flatten)
   }
 
   /** Creates a directory at `config.workDir` if one doesn't exist. */
