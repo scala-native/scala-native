@@ -127,7 +127,9 @@ object Build {
             .flatMap { irGenerators =>
               compile(config, linkerResult, irGenerators)
             }
-            .map(compilationOutputs => link(config, linkerResult, compilationOutputs))
+            .map(compilationOutputGroups =>
+              link(config, linkerResult, compilationOutputGroups)
+            )
             .map(artifact => postProcess(config, artifact))
         }
         .andThen { case Success(_) => dumpUserConfigHash(config) }

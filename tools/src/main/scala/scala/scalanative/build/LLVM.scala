@@ -317,9 +317,9 @@ private[scalanative] object LLVM {
       try {
         flags.foreach(add)
         groupedCompilationOutputs.foreach { objectPaths =>
-          if(usingLLD) add("-Wl,--start-lib")
+          if (usingLLD) add("-Wl,--start-lib")
           objectPaths.foreach(path => add(path.abs))
-          if(usingLLD) add("-Wl,--end-lib")
+          if (usingLLD) add("-Wl,--end-lib")
         }
         linkopts.foreach(add)
       } finally pw.close()
