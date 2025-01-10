@@ -374,12 +374,18 @@ private[codegen] trait MetadataCodeGen { self: AbstractCodeGen =>
       size = platform.sizeOfPtr.toDISize
     )
 
+  private lazy val BasicMonitorObjectType =
+    nir.Global.Top("scala.scalanative.runtime.monitor.BasicMonitor$")
+
   private def ObjectMonitorUnionType(implicit metaCtx: MetadataCodeGen.Context) =
     metaCtx.cachedByName[DICompositeType]("scala.scalanative.runtime.ObjectMonitorUnion") { name =>
+      implicit def analysis: ReachabilityAnalysis.Result = meta.analysis
+      val ClassRef(basicMonitorClass) = BasicMonitorObjectType: @unchecked
       DICompositeType(
         DWTag.Union,
         name = name,
         size = platform.sizeOfPtr.toDISize,
+        file = toDIFile(basicMonitorClass.position),
         flags = DIFlags(DIFlag.DIFlagArtificial)
       ).withDependentElements { headerRef =>
         Seq(
@@ -539,6 +545,7 @@ private[codegen] trait MetadataCodeGen { self: AbstractCodeGen =>
       case ty: nir.Type.ValueKind => DIBasicTypes(ty)
 
       case ArrayRef(componentCls, _) =>
+        val ClassRef(arrayClass) = nir.Rt.GenericArray: @unchecked
         val componentName = componentCls match {
           case ref: nir.Type.RefKind => ref.className.id
           case ty                    => ty.show
@@ -547,6 +554,7 @@ private[codegen] trait MetadataCodeGen { self: AbstractCodeGen =>
         DICompositeType(
           DWTag.Class,
           name = s"scala.Array[$componentName]",
+          file = toDIFile(arrayClass.position),
           identifier = ty.mangle,
           size = ArrayHeaderType.size,
           flags = DIFlags(
