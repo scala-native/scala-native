@@ -101,10 +101,10 @@ private[lang] object PipeIO {
               val nToRead = Math.min(len, avail)
               printf(s"\n\nLeeT: read(b,o,l), reading nToRead: ${nToRead}\n")
               val nRead = src.read(buf, offset, nToRead)
-              val extracted = Arrays.copyOfRange(buf, offset, nRead)
+              val extracted = Arrays.copyOfRange(buf, offset, offset + nRead)
               val result = new String(extracted, StandardCharsets.UTF_8).trim()
               printf(
-                s"LeeT: read(b,o,l), nRead: ${nRead} bytes: |${extracted}|\n\n"
+                s"LeeT: read(b,o,l), nRead: ${nRead} bytes: |${result}|\n\n"
               )
               nRead
             } else {
