@@ -69,37 +69,33 @@ private[lang] object PipeIO {
       finally process.checkResult()
     }
 
-    override def read(b: Array[Byte]): Int = this.read(b, 0, b.length)
+//    override def read(b: Array[Byte]): Int = this.read(b, 0, b.length)
 
     override def read(buf: Array[scala.Byte], offset: Int, len: Int): Int =
       synchronized {
-        /* The read(buf, offset, len) used by this method will always check
-         * arguments, so save a few cycles and do not do check here.
-         */
 
         printf(s"\n\nLeeT: PipeIO#read(b,o,l), len: ${len}\n\n")
 
-        try {
-          val avail = availableUnSync()
+        // FIXME - What does JVM use as the message here?
+        if (offset < 0 || len < 0 || len > buf.length - offset)
+          throw new IndexOutOfBoundsException
 
-          printf(s"\n\nLeeT: read(b,o,l), top avail: ${avail}\n\n")
+        if (len == 0) 0
+        else {
+          try {
+            val avail = availableUnSync()
 
-          if (avail > 0) {
-            printf(s"\n\nLeeT: read(b,o,l), reading avail: ${avail}\n")
-            val n = src.read(buf, offset, avail)
-            printf(s"LeeT: read(b,o,l), read n: ${n}\n\n")
-            n
-          } else {
-            src match {
-              case fis: FileInputStream =>
-                printf(
-                  s"\n\nLeeT: read(b,o,l), B4 1byte, FD.valid: ${is.getFD()}\n"
-                )
+            printf(s"\n\nLeeT: read(b,o,l), top avail: ${avail}\n\n")
 
-//                if (!is.getFD().valid()) -1
-                if (false) -1
-                else {
-
+            if (avail > 0) {
+              val nToRead = Math.min(len, avail)
+              printf(s"\n\nLeeT: read(b,o,l), reading nToRead: ${nToRead}\n")
+              val nRead = src.read(buf, offset, nToRead)
+              printf(s"LeeT: read(b,o,l), nRead: ${nRead}\n\n")
+              nRead
+            } else {
+              src match {
+                case fis: FileInputStream =>
                   printf(s"LeeT: read(b,o,l), reading 1 byte\n")
                   val nRead = src.read(buf, offset, 1)
 
@@ -107,45 +103,27 @@ private[lang] object PipeIO {
                     printf(s"LeeT: read(b,o,l), 1 byte result: EOF\n\n")
                     -1
                   } else {
-                    val a = availableUnSync()
 
-                    printf(s"\n\nLeeT: read(b,o,l): after 1 byte a: ${a}\n\n")
-                    if (a == 0) nRead
-                    else {
-                      val newOffset = offset + 1
-                      val availableBuffer = buf.length - newOffset
-                      if (availableBuffer <= 0) nRead
-                      else {
-                        val nToRead = Math.min(availableBuffer, a)
-                        printf(
-                          s"\n\nLeeT: read(b,o,l): nToRead_1: ${nToRead}\n\n"
-                        )
+                    val nToRead =
+                      Math.min(len - 1, availableUnSync()) // possibly zero
 
-                        val nr =
-                          if (nToRead == 0) 0
-                          else {
-                            printf(
-                              s"\n\nLeeT: read(b,o,l): nToRead_2: ${nToRead}\n"
-                            )
-                            val r2 = src.read(buf, newOffset, nToRead)
-                            printf(s"LeeT: read(b,o,l): r2 : ${nToRead}\n\n")
-                            r2
-                          }
+                    val nSecondRead =
+                      if (nToRead == 0) 0
+                      else src.read(buf, offset + 1, nToRead)
 
-                        if (nr <= 0) nRead else nRead + nr
-                      }
-                    }
+                    if (nSecondRead == -1) 1
+                    else nSecondRead + 1
                   }
-                }
 
-              case _ => -1 // EOF
-
+                case _ => -1 // EOF
+              }
             }
-          }
-        } finally process.checkResult()
+
+          } finally process.checkResult()
+        }
       }
 
-    /* Switch horses, or at least InputStreams in media res.
+    /* Switch horses, or at least InputStreams, "in media res".
      * See Design Note at top of file.
      */
     override def drain(): Unit = synchronized {
