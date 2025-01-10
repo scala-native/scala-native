@@ -47,6 +47,7 @@ private[lang] object PipeIO {
   class StreamImpl(val process: GenericProcess, is: FileInputStream)
       extends Stream {
 
+    private var drained = false
     private var src: InputStream = is
 
     // By convention, caller is synchronized on 'this'.
@@ -69,16 +70,25 @@ private[lang] object PipeIO {
       finally process.checkResult()
     }
 
-//    override def read(b: Array[Byte]): Int = this.read(b, 0, b.length)
+// Debug - Begin
+    import java.util.Arrays
+    import java.nio.charset.StandardCharsets
+// Debug - End
 
     override def read(buf: Array[scala.Byte], offset: Int, len: Int): Int =
       synchronized {
 
-        printf(s"\n\nLeeT: PipeIO#read(b,o,l), len: ${len}\n\n")
+        printf(
+          s"\n\nLeeT: PipeIO#read(b,o,l), len: ${len} drained: ${drained}\n\n"
+        )
 
-        // FIXME - What does JVM use as the message here?
-        if (offset < 0 || len < 0 || len > buf.length - offset)
-          throw new IndexOutOfBoundsException
+        if (offset < 0 || len < 0 || len > buf.length - offset) {
+          val prefix =
+            s"Range [${offset}, ${offset} + ${len})"
+          val suffix =
+            s" out of bounds for length ${buf.length}"
+          throw new IndexOutOfBoundsException(s"${prefix}${suffix}")
+        }
 
         if (len == 0) 0
         else {
@@ -91,7 +101,11 @@ private[lang] object PipeIO {
               val nToRead = Math.min(len, avail)
               printf(s"\n\nLeeT: read(b,o,l), reading nToRead: ${nToRead}\n")
               val nRead = src.read(buf, offset, nToRead)
-              printf(s"LeeT: read(b,o,l), nRead: ${nRead}\n\n")
+              val extracted = Arrays.copyOfRange(buf, offset, nRead)
+              val result = new String(extracted, StandardCharsets.UTF_8).trim()
+              printf(
+                s"LeeT: read(b,o,l), nRead: ${nRead} bytes: |${extracted}|\n\n"
+              )
               nRead
             } else {
               src match {
@@ -138,6 +152,7 @@ private[lang] object PipeIO {
       src.close()
 
       src = newSrc
+      drained = true
     }
 
     private def availableFD(): Int = {
