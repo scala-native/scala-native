@@ -1,3 +1,4 @@
+// format: off
 package build
 
 import com.typesafe.tools.mima.core._
@@ -47,7 +48,10 @@ object BinaryIncompatibilities {
     exclude[MissingClassProblem]("scala.scalanative.runtime.rtti*"),
     exclude[Problem]("scala.scalanative.runtime.Backtrace*"),
     exclude[Problem]("scala.scalanative.runtime.dwarf.DWARF*"),
-    exclude[Problem]("scala.scalanative.runtime.StackTraceElement*")
+    exclude[Problem]("scala.scalanative.runtime.StackTraceElement*"),
+    exclude[ReversedMissingMethodProblem]("scala.scalanative.runtime.NativeThread.companion"),
+    exclude[ReversedMissingMethodProblem]("scala.scalanative.runtime.NativeThread.stackSize"),
+    exclude[ReversedMissingMethodProblem]("scala.scalanative.runtime.NativeThread#Companion.defaultOSStackSize"),
   )
   final val CLib: Filters = Nil
   final val PosixLib: Filters = Seq.empty
