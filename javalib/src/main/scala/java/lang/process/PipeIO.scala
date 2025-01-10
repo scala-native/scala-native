@@ -96,7 +96,8 @@ private[lang] object PipeIO {
                   s"\n\nLeeT: read(b,o,l), B4 1byte, FD.valid: ${is.getFD()}\n"
                 )
 
-                if (!is.getFD().valid()) -1
+//                if (!is.getFD().valid()) -1
+                if (false) -1
                 else {
 
                   printf(s"LeeT: read(b,o,l), reading 1 byte\n")
@@ -148,14 +149,17 @@ private[lang] object PipeIO {
      * See Design Note at top of file.
      */
     override def drain(): Unit = synchronized {
-      val srcOnEntry = src
+
       val avail = availableUnSync()
 
-      if (avail > 0)
-        src = new ByteArrayInputStream(src.readNBytes(avail))
+      val newSrc =
+        if (avail <= 0) PipeIO.NullInput
+        else new ByteArrayInputStream(src.readNBytes(avail))
 
       // release JVM FileDescriptor and, especially, its OS fd.
-      srcOnEntry.close()
+      src.close()
+
+      src = newSrc
     }
 
     private def availableFD(): Int = {
