@@ -47,7 +47,6 @@ private[lang] object PipeIO {
   class StreamImpl(val process: GenericProcess, is: FileInputStream)
       extends Stream {
 
-    private var drained = false
     private var src: InputStream = is
 
     // By convention, caller is synchronized on 'this'.
@@ -70,17 +69,8 @@ private[lang] object PipeIO {
       finally process.checkResult()
     }
 
-// Debug - Begin
-    import java.util.Arrays
-    import java.nio.charset.StandardCharsets
-// Debug - End
-
     override def read(buf: Array[scala.Byte], offset: Int, len: Int): Int =
       synchronized {
-
-//        printf(
-//          s"\n\nLeeT: PipeIO#read(b,o,l), len: ${len} drained: ${drained}\n\n"
-//        )
 
         if (offset < 0 || len < 0 || len > buf.length - offset) {
           val prefix =
@@ -95,28 +85,16 @@ private[lang] object PipeIO {
           try {
             val avail = availableUnSync()
 
-            //          printf(s"\n\nLeeT: read(b,o,l), top avail: ${avail}\n\n")
-
             if (avail > 0) {
               val nToRead = Math.min(len, avail)
-//              printf(s"\n\nLeeT: read(b,o,l), reading nToRead: ${nToRead}\n")
-              val nRead = src.read(buf, offset, nToRead)
-//              val extracted = Arrays.copyOfRange(buf, offset, offset + nRead)
-//              val result = new String(extracted, StandardCharsets.UTF_8).trim()
-//              printf(
-//                s"LeeT: read(b,o,l), nRead: ${nRead} bytes: |${result}|\n\n"
-//              )
-              nRead
+              src.read(buf, offset, nToRead)
             } else {
               src match {
                 case fis: FileInputStream =>
-                  //                printf(s"LeeT: read(b,o,l), reading 1 byte\n")
                   val nRead = src.read(buf, offset, 1)
 
-                  if (nRead == -1) {
-                    //                printf(s"LeeT: read(b,o,l), 1 byte result: EOF\n\n")
-                    -1
-                  } else {
+                  if (nRead == -1) -1
+                  else {
 
                     val nToRead =
                       Math.min(len - 1, availableUnSync()) // possibly zero
@@ -132,7 +110,6 @@ private[lang] object PipeIO {
                 case _ => -1 // EOF
               }
             }
-
           } finally process.checkResult()
         }
       }
@@ -152,7 +129,6 @@ private[lang] object PipeIO {
       src.close()
 
       src = newSrc
-      drained = true
     }
 
     private def availableFD(): Int = {
