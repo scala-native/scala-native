@@ -17,6 +17,7 @@
 #endif
 #include "MutatorThread.h"
 #include <stdatomic.h>
+#include "nativeThreadTLS.h"
 
 void scalanative_afterexit() { Stats_OnExit(heap.stats); }
 
@@ -178,6 +179,7 @@ void scalanative_GC_yield() {
     if (atomic_load_explicit(&Synchronizer_stopThreads, memory_order_relaxed))
         Synchronizer_yield();
 #endif
+    scalanative_checkThreadPendingExceptions();
 }
 
 #endif
