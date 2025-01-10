@@ -101,7 +101,7 @@ private[java] object WeakReferenceRegistry {
     .daemon()
     .group(ThreadGroup.System)
     .name("GC-WeakReferenceHandler")
-    .start(() =>
+    .startInternal(() =>
       while (true) {
         handleCollectedReferences()
         LockSupport.park()

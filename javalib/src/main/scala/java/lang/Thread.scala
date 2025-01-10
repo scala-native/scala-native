@@ -402,7 +402,13 @@ object Thread {
     /** Creates a new Thread from the current state of the builder and schedules
      *  it to execute.
      */
-    def start(task: Runnable): Thread
+    def start(task: Runnable): Thread = startInternal(task)
+
+    /** Scala Native internal API Used to start thread without triggering usage
+     *  of system threads, allowing to the detection mechanism to disable
+     *  multihreading support
+     */
+    private[java] def startInternal(task: Runnable): Thread
 
     /** Sets the uncaught exception handler. */
     def uncaughtExceptionHandler(

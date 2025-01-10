@@ -187,10 +187,15 @@ object Build {
     locally { // disable unused mulithreading
       if (config.compilerConfig.multithreading.isEmpty) {
         // format: off
+        val jlRunnable = nir.Global.Top("java.lang.Runnable")
         val jlThread = nir.Global.Top("java.lang.Thread")
         val jlMainThread = nir.Global.Top("java.lang.Thread$MainThread$")
         val jlVirtualThread = nir.Global.Top("java.lang.VirtualThread")
-        val usesSystemThreads = analysis.infos.get(jlThread).collect{
+        val jlThreadBuildersOfPlatform = nir.Global.Top("java.lang.ThreadBuilders$PlatformThreadBuilder")
+        val jlThreadBuildersOfPlatformStart = jlThreadBuildersOfPlatform.member(nir.Sig.Method("start", Seq(jlRunnable, jlThread).map(nir.Type.Ref(_))))
+        val usesSystemThreads = 
+          analysis.infos.get(jlThreadBuildersOfPlatformStart).isDefined ||
+          analysis.infos.get(jlThread).collect{
           case cls: linker.Class =>
             cls.subclasses.size > 2 ||
             cls.subclasses.map(_.name).diff(Set(jlMainThread, jlVirtualThread)).nonEmpty || 
