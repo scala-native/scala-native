@@ -256,64 +256,81 @@ private[scalanative] object LLVM {
     val linkopts =
       asNeededLinkerFlags ++ config.linkingOptions ++ links.map("-l" + _)
 
-    val flags = {
-      val debugFlags =
-        if (config.targetsWindows) List("-g")
-        else if (config.compilerConfig.sourceLevelDebuggingConfig.enabled) {
-          List(
-            // newer LLVM uses DWARFv5 by default on Linux. We support only DWARF 4 for now
-            "-gdwarf-4"
-          )
-        } else Nil
+    val debugFlags =
+      if (config.targetsWindows) List("-g")
+      else if (config.compilerConfig.sourceLevelDebuggingConfig.enabled) {
+        List(
+          // newer LLVM uses DWARFv5 by default on Linux. We support only DWARF 4 for now
+          "-gdwarf-4"
+        )
+      } else Nil
 
-      val platformFlags =
-        if (!config.targetsWindows) Nil
-        else {
-          // https://github.com/scala-native/scala-native/issues/2372
-          // When using LTO make sure to use lld linker instead of default one
-          // LLD might find some duplicated symbols defined in both C and C++,
-          // runtime libraries (libUCRT, libCPMT), we ignore this warnings.
-          val ltoSupport = config.compilerConfig.lto match {
-            case LTO.None => Nil
-            case _        => Seq("-fuse-ld=lld", "-Wl,/force:multiple")
-          }
-          ltoSupport
+    val platformFlags =
+      if (!config.targetsWindows) Nil
+      else {
+        // https://github.com/scala-native/scala-native/issues/2372
+        // When using LTO make sure to use lld linker instead of default one
+        // LLD might find some duplicated symbols defined in both C and C++,
+        // runtime libraries (libUCRT, libCPMT), we ignore this warnings.
+        val ltoSupport = config.compilerConfig.lto match {
+          case LTO.None => Nil
+          case _        => Seq("-fuse-ld=lld", "-Wl,/force:multiple")
         }
+        ltoSupport
+      }
 
-      // This is to ensure that the load path of the resulting dynamic library
-      // only contains the library filename, instead of the full path
-      // (i.e. in the target folder of SBT build) - this would make the library
-      // non-portable
-      val linkNameFlags =
-        if (config.compilerConfig.buildTarget == BuildTarget.LibraryDynamic)
-          if (config.targetsLinux)
-            List(s"-Wl,-soname,${config.artifactName}")
-          else if (config.targetsMac)
-            List(s"-Wl,-install_name,${config.artifactName}")
-          else Nil
+    // This is to ensure that the load path of the resulting dynamic library
+    // only contains the library filename, instead of the full path
+    // (i.e. in the target folder of SBT build) - this would make the library
+    // non-portable
+    val linkNameFlags =
+      if (config.compilerConfig.buildTarget == BuildTarget.LibraryDynamic)
+        if (config.targetsLinux)
+          List(s"-Wl,-soname,${config.artifactName}")
+        else if (config.targetsMac)
+          List(s"-Wl,-install_name,${config.artifactName}")
         else Nil
+      else Nil
 
-      val output = Seq("-o", config.buildPath.abs)
+    val output = Seq("-o", config.buildPath.abs)
 
-      buildTargetLinkOpts ++ flto ++ debugFlags ++ platformFlags ++ linkNameFlags ++ output ++ sanitizer ++ target
-    }
-    val paths = objectsPaths.map(_.abs)
     // it's a fix for passing too many file paths to the clang compiler,
     // If too many packages are compiled and the platform is windows, windows
     // terminal doesn't support too many characters, which will cause an error.
-    val llvmLinkInfo = flags ++ paths ++ linkopts
     val configFile = workDir.resolve("llvmLinkInfo").toFile
     locally {
       val pw = new PrintWriter(configFile)
-      try
-        llvmLinkInfo.foreach {
-          // Paths containg whitespaces needs to be escaped, otherwise
-          // config file might be not interpretted correctly by the LLVM
-          // in windows system, the file separator doesn't work very well, so we
-          // replace it to linux file separator
-          str => pw.println(escapeWhitespaces(str.replace("\\", "/")))
-        }
-      finally pw.close()
+      def add(str: String) =
+        // Paths containg whitespaces needs to be escaped, otherwise
+        // config file might be not interpretted correctly by the LLVM
+        // in windows system, the file separator doesn't work very well, so we
+        // replace it to linux file separator
+        pw.println(escapeWhitespaces(str.replace("\\", "/")))
+
+      try {
+        buildTargetLinkOpts.foreach(add)
+        flto.foreach(add)
+        debugFlags.foreach(add)
+        platformFlags.foreach(add)
+        linkNameFlags.foreach(add)
+        output.foreach(add)
+        sanitizer.foreach(add)
+        target.foreach(add)
+
+        val useLdd = config.linkingOptions.contains("-fuse-ld=lld")
+
+        // lld requires that object files are listed in the order
+        // they require each other. We don't do that so we wrap
+        // the files in --start-lib and --end-lib which consider
+        // them like they were in a .a library and links all symbols
+        // regardless of ordering
+        if (useLdd) add("-Wl,--start-lib")
+        objectsPaths.foreach(p => add(p.abs))
+        if (useLdd) add("-Wl,--end-lib")
+
+        linkopts.foreach(add)
+
+      } finally pw.close()
     }
 
     val compiler =
