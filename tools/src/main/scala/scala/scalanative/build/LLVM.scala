@@ -256,7 +256,6 @@ private[scalanative] object LLVM {
     val linkopts =
       asNeededLinkerFlags ++ config.linkingOptions ++ links.map("-l" + _)
 
-    val flags = {
       val debugFlags =
         if (config.targetsWindows) List("-g")
         else if (config.compilerConfig.sourceLevelDebuggingConfig.enabled) {
@@ -295,38 +294,44 @@ private[scalanative] object LLVM {
 
       val output = Seq("-o", config.buildPath.abs)
 
-      buildTargetLinkOpts ++ flto ++ debugFlags ++ platformFlags ++ linkNameFlags ++ output ++ sanitizer ++ target
-    }
-    val paths = objectsPaths.map(_.abs)
-    val (lldStartOptions, lldEndOptions) =
-      if (config.linkingOptions.contains("-fuse-ld=lld")) {
-        // lld requires that object files are listed in the order
-        // they require each other. We don't do that so we wrap
-        // the files in --start-lib and --end-lib which consider
-        // them like they were in a .a library and links all symbols
-        // regardless of ordering
-        (List("-Wl,--start-lib"), List("-Wl,--end-lib"))
-      } else {
-        (Nil, Nil)
-      }
-    // it's a fix for passing too many file paths to the clang compiler,
-    // If too many packages are compiled and the platform is windows, windows
-    // terminal doesn't support too many characters, which will cause an error.
-    val llvmLinkInfo =
-      flags ++ lldStartOptions ++ paths ++ lldEndOptions ++ linkopts
-    val configFile = workDir.resolve("llvmLinkInfo").toFile
-    locally {
-      val pw = new PrintWriter(configFile)
-      try
-        llvmLinkInfo.foreach {
+      // it's a fix for passing too many file paths to the clang compiler,
+      // If too many packages are compiled and the platform is windows, windows
+      // terminal doesn't support too many characters, which will cause an error.
+      val configFile = workDir.resolve("llvmLinkInfo").toFile
+      locally {
+        val pw = new PrintWriter(configFile)
+        def add(str: String) =
           // Paths containg whitespaces needs to be escaped, otherwise
           // config file might be not interpretted correctly by the LLVM
           // in windows system, the file separator doesn't work very well, so we
           // replace it to linux file separator
-          str => pw.println(escapeWhitespaces(str.replace("\\", "/")))
-        }
-      finally pw.close()
-    }
+          pw.println(escapeWhitespaces(str.replace("\\", "/")))
+
+        try {
+          buildTargetLinkOpts.foreach(add)
+          flto.foreach(add)
+          debugFlags.foreach(add)
+          platformFlags.foreach(add)
+          linkNameFlags.foreach(add)
+          output.foreach(add)
+          sanitizer.foreach(add)
+          target.foreach(add)
+
+          val useLdd = config.linkingOptions.contains("-fuse-ld=lld")
+
+          // lld requires that object files are listed in the order
+          // they require each other. We don't do that so we wrap
+          // the files in --start-lib and --end-lib which consider
+          // them like they were in a .a library and links all symbols
+          // regardless of ordering
+          if (useLdd) add("-Wl,--start-lib")
+          objectsPaths.foreach(p => add(p.abs))
+          if (useLdd) add("-Wl,--end-lib")
+
+          linkopts.foreach(add)
+
+        } finally pw.close()
+      }
 
     val compiler =
       if (isCppRuntimeRequired(config, analysis)) config.clangPP.abs
