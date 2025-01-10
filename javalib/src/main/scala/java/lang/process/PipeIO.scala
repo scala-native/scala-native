@@ -78,9 +78,9 @@ private[lang] object PipeIO {
     override def read(buf: Array[scala.Byte], offset: Int, len: Int): Int =
       synchronized {
 
-        printf(
-          s"\n\nLeeT: PipeIO#read(b,o,l), len: ${len} drained: ${drained}\n\n"
-        )
+//        printf(
+//          s"\n\nLeeT: PipeIO#read(b,o,l), len: ${len} drained: ${drained}\n\n"
+//        )
 
         if (offset < 0 || len < 0 || len > buf.length - offset) {
           val prefix =
@@ -95,26 +95,26 @@ private[lang] object PipeIO {
           try {
             val avail = availableUnSync()
 
-            printf(s"\n\nLeeT: read(b,o,l), top avail: ${avail}\n\n")
+            //          printf(s"\n\nLeeT: read(b,o,l), top avail: ${avail}\n\n")
 
             if (avail > 0) {
               val nToRead = Math.min(len, avail)
-              printf(s"\n\nLeeT: read(b,o,l), reading nToRead: ${nToRead}\n")
+//              printf(s"\n\nLeeT: read(b,o,l), reading nToRead: ${nToRead}\n")
               val nRead = src.read(buf, offset, nToRead)
-              val extracted = Arrays.copyOfRange(buf, offset, offset + nRead)
-              val result = new String(extracted, StandardCharsets.UTF_8).trim()
-              printf(
-                s"LeeT: read(b,o,l), nRead: ${nRead} bytes: |${result}|\n\n"
-              )
+//              val extracted = Arrays.copyOfRange(buf, offset, offset + nRead)
+//              val result = new String(extracted, StandardCharsets.UTF_8).trim()
+//              printf(
+//                s"LeeT: read(b,o,l), nRead: ${nRead} bytes: |${result}|\n\n"
+//              )
               nRead
             } else {
               src match {
                 case fis: FileInputStream =>
-                  printf(s"LeeT: read(b,o,l), reading 1 byte\n")
+                  //                printf(s"LeeT: read(b,o,l), reading 1 byte\n")
                   val nRead = src.read(buf, offset, 1)
 
                   if (nRead == -1) {
-                    printf(s"LeeT: read(b,o,l), 1 byte result: EOF\n\n")
+                    //                printf(s"LeeT: read(b,o,l), 1 byte result: EOF\n\n")
                     -1
                   } else {
 
