@@ -17,9 +17,99 @@ import scala.scalanative.windows.NamedPipeApi.PeekNamedPipe
  */
 
 /* Design Note:
- *   Comment only change, no code change. Trying to provoke
- *   Windows intermittent failure in ProcessTest; take 3.
  *
+ *   Making the changes required to resolve Issue 4023 was hard;
+ *   describing the underlying logic of PipeIO.scala is even harder.
+ *   This note is, by some standards, brief. It offers clues and should
+ *   not be taken as a proper or sufficient complete design description.
+ *
+ *   You have the code, what more documentation could you possibly need?
+ *
+ *   Due respect for prior developers demands that one appreciate
+ *   "it made sense at the time". Still, one can recognize that the entire
+ *   Scala Native implementation of "java.lang.process" offers abundant
+ *   opportunities to for improvement and current opportunities.
+ *
+ *   - read(b, o, l) behavior: "de jure" and "de facto"
+ *
+ *     The Java 8, and subsequent, "InputStream#read(b, o, l)" documentation
+ *     says, in part: "An attempt is made to read as many as len bytes,
+ *     but a smaller number may be read."
+ *
+ *     - Prior to the changes to resolve Issue 4023, Scala Native PipeIO
+ *       followed the "as many as len bytes" clause, blocking until
+ *       either the len bytes had been read or an End of File or Exception
+ *       had been encountered. Compliant but not actual JVM practice.
+ *
+ *     - Issue 4023 requested that Scala Native PipeIO follow the actual
+ *       practice of many JVMs of following the "but a smaller number may
+ *       be read." clause. This code will now block until the first byte
+ *       becomes available, and then immediately return that byte and
+ *       any others which are available at that time. This may and will
+ *       result in "short" reads.
+ *
+ *       Yes, JVM actual behavior, with all its JVM versions and
+ *       implementations can only be modeled to an approximation.
+ *       The approximation to resolve Issue 4023 should be better than
+ *       the prior approximation.
+ *
+ *   - Unexpected use of synchronized methods
+ *
+ *     At first reading, the use of synchronized methods in this file
+ *     is unexpected if not astonishing.
+ *
+ *        - Even though the methods are synchronized, that internal detail
+ *          is not made public.
+ *
+ *          The JVM recommendation to use external synchronization if two or
+ *          more threads are doing reads or writes to the same pipe input or
+ *          output is still operative and essential.
+ *
+ *
+ *     Much of the complexity of PipeIO comes from the need to ensure
+ *     that operating system file descriptors (Unix fds, Windows handles)
+ *     are eventually closed in the parent process after the child process
+ *     exits.
+ *
+ *     When a child process exits, the operating system places an End-of-File
+ *     marker is placed in the child input, output, and error streams and
+ *     then closes() that end of the pipe.
+ *
+ *     It is up to the parent process to close the os fds at its end of
+ *     the pipe. When a pipe fd is closed, any data still in the os pipe
+ *     is lost.
+ *
+ *     PipeIO must take steps to keep the data in the pipe available to
+ *     its callers before closing its end of the os pipe.  It uses a
+ *     series of steps it calls "draining" to accomplish this. When
+ *     the parent becomes aware that the child process has exited, the
+ *     parent copies all bytes remaining at its input end of the os pipe
+ *     to a local buffer and and closes its os fd. That releases the resource
+ *     and keeps it from becoming unavailable until the parent process
+ *     exits.
+ *
+ *     To prevent data corruption, the "drain()" method in a thread must
+ *     wait until no thread is executing a read(*) method, and then
+ *     exclude all other thread PipeIO public operations until after it
+ *     has copied the in-flight os pipe data and switched the 'src' variable to
+ *     read from that saved data. This is accomplished by using
+ *     synchronized methods.
+ *
+ *     - UnixProcess* and WindowProcess check if the child process has exited
+ *       at different places in the code. This can have a major affect on
+ *       the timing of events, including the number of bytes available at
+ *       an I/O event.
+ *
+ *       - UnixProcess* checks in the public "waitfor(*)" method.
+ *         That method is usually called once by user of PipeIO.
+ *
+ *       - WindowsProcess checks in the private "checkResult()" method.
+ *         That method is usually called once per PipeIO public method call.
+ *         This means that it is called at least once per I/O.
+ *
+ *   - UnixProcessGen2 and WindowsProcess are well exercised.
+ *     UnixProcessGen1 is less well exercised and may retain
+ *     unfortunate timing interactions.
  */
 
 private[lang] final class PipeIO[T](
