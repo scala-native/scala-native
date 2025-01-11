@@ -19,7 +19,7 @@ package build
 object ScalaVersions {
   // Versions of Scala used for publishing compiler plugins
   val crossScala212 = crossScalaVersions("2.12", 14 to 20)
-  val crossScala213 = crossScalaVersions("2.13", 8 to 15)
+  val crossScala213 = crossScalaVersions("2.13", 8 to 16)
   val crossScala3 = List(
     extraCrossScalaVersion("3.").toList,
     scala3RCVersions,
@@ -39,7 +39,7 @@ object ScalaVersions {
   // Scala versions used for publishing libraries
   val scala212: String = crossScala212.last
   val scala213: String = crossScala213.last
-  val scala3: String = "3.5.2" // TODO: update to 3.6.2 when 2.13.16 is out
+  val scala3: String = crossScala3.last
 
   // The latest version of minimal Scala 3 minor version used to publish artifacts
   val scala3PublishVersion = "3.1.3"
