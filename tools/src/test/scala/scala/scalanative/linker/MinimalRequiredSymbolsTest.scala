@@ -50,7 +50,7 @@ class MinimalRequiredSymbolsTest extends LinkerSpec {
       withDebugMetadata = true,
       withTargetTriple = "x86_64-pc-linux-gnu"
     )(expected =
-      if (isScala3) SymbolsCount(types = 1065, members = 6895)
+      if (isScala3) SymbolsCount(types = 1066, members = 6900)
       else if (isScala2_13) SymbolsCount(types = 1026, members = 6975)
       else SymbolsCount(types = 1010, members = 7120)
     )
