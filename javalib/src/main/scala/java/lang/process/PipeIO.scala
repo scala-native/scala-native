@@ -22,13 +22,15 @@ import scala.scalanative.windows.NamedPipeApi.PeekNamedPipe
  *   describing the underlying logic of PipeIO.scala is even harder.
  *   This note is, by some standards, brief. It offers clues and should
  *   not be taken as a proper or sufficient complete design description.
- *
  *   You have the code, what more documentation could you possibly need?
+ *
+ *   May the clues provided save future maintainers time, effort, and
+ *   sheer pain.
  *
  *   Due respect for prior developers demands that one appreciate
  *   "it made sense at the time". Still, one can recognize that the entire
  *   Scala Native implementation of "java.lang.process" offers abundant
- *   opportunities to for improvement and current opportunities.
+ *   opportunities for improvement.
  *
  *   - read(b, o, l) behavior: "de jure" and "de facto"
  *
@@ -48,31 +50,33 @@ import scala.scalanative.windows.NamedPipeApi.PeekNamedPipe
  *       any others which are available at that time. This may and will
  *       result in "short" reads.
  *
- *       Yes, JVM actual behavior, with all its JVM versions and
- *       implementations can only be modeled to an approximation.
- *       The approximation to resolve Issue 4023 should be better than
- *       the prior approximation.
+ *       JVM actual behavior, with all its JVM versions and implementations
+ *       can only be modeled to an approximation. The approximation to resolve
+ *       Issue 4023 should be better than the prior approximation.
  *
  *   - Unexpected use of synchronized methods
  *
  *     At first reading, the use of synchronized methods in this file
  *     is unexpected if not astonishing.
  *
- *        - Even though the methods are synchronized, that internal detail
+ *        - NB: Even though the methods are synchronized, that internal detail
  *          is not made public.
  *
  *          The JVM recommendation to use external synchronization if two or
  *          more threads are doing reads or writes to the same pipe input or
  *          output is still operative and essential.
  *
- *
  *     Much of the complexity of PipeIO comes from the need to ensure
  *     that operating system file descriptors (Unix fds, Windows handles)
  *     are eventually closed in the parent process after the child process
- *     exits.
+ *     exits, even if the PipeIO user never explicitly calls close().
+ *
+ *       <Skipping lightly over an extended discussion of how much defensive
+ *        complexity should be added in order to be robust to bad caller
+ *        behavior.>
  *
  *     When a child process exits, the operating system places an End-of-File
- *     marker is placed in the child input, output, and error streams and
+ *     (EOF) marker is placed in the child output and error streams and
  *     then closes() that end of the pipe.
  *
  *     It is up to the parent process to close the os fds at its end of
