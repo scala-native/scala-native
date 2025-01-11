@@ -16,6 +16,12 @@ class StackOverflowTest {
     assertThrows(classOf[StackOverflowError], () => stackoverflow())
   }
 
+  // To enusre the stack overflow guards are correctly restored
+  @Test def catchStackOverflowErrorTwice(): Unit = {
+    assertThrows(classOf[StackOverflowError], () => stackoverflow())
+    assertThrows(classOf[StackOverflowError], () => stackoverflow())
+  }
+
   @Test def entersFinallyBlocks(): Unit = {
     var visited = false
 
