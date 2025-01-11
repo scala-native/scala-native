@@ -8,7 +8,8 @@ private[scalanative] case class PlatformInfo(
     is32Bit: Boolean,
     isMultithreadingEnabled: Boolean,
     useOpaquePointers: Boolean,
-    useGCYieldPointTraps: Boolean
+    useGCYieldPointTraps: Boolean,
+    useCxxExceptions: Boolean
 ) {
   val sizeOfPtr = if (is32Bit) 4 else 8
   val sizeOfPtrBits = sizeOfPtr * 8
@@ -21,6 +22,7 @@ private[scalanative] object PlatformInfo {
     isMultithreadingEnabled = config.compilerConfig.multithreadingSupport,
     useOpaquePointers =
       Discover.features.opaquePointers(config.compilerConfig).isAvailable,
-    useGCYieldPointTraps = config.useTrapBasedGCYieldPoints
+    useGCYieldPointTraps = config.useTrapBasedGCYieldPoints,
+    useCxxExceptions = config.usingCppExceptions
   )
 }

@@ -18,12 +18,6 @@ namespace scalanative {
 class ExceptionWrapper : public std::exception {
   public:
     ExceptionWrapper(Exception _obj) : obj(_obj) {}
-    ~ExceptionWrapper() {
-        OnCatchHandler handler = scalanative_Throwable_onCatchHandler(obj);
-        if (handler) {
-            handler(obj);
-        }
-    }
     Exception obj;
 };
 } // namespace scalanative
@@ -31,6 +25,12 @@ class ExceptionWrapper : public std::exception {
 extern "C" {
 void scalanative_throw(void *obj) { throw scalanative::ExceptionWrapper(obj); }
 size_t scalanative_Throwable_sizeOfExceptionWrapper() { return 0; }
+void scalanative_Exception_onCatch(Exception self) {
+    if (self) {
+        OnCatchHandler handler = scalanative_Throwable_onCatchHandler(self);
+        if (handler)
+            handler(self);
+    }
 }
-
+}
 #endif

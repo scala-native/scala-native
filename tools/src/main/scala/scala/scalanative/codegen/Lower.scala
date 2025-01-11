@@ -178,6 +178,9 @@ private[scalanative] object Lower {
           case nir.Next.Unwind(exc, next) =>
             val handler = fresh()
             handlers.label(handler, Seq(exc))
+            if(platform.useCxxExceptions){
+              handlers.call(ExceptionOnCatchSig, ExceptionOnCatch, Seq(exc), nir.Next.None)(pos, nir.ScopeId.TopLevel )
+            }
             handlers.jump(next)
             Some(handler)
           case _ =>
@@ -2260,6 +2263,10 @@ private[scalanative] object Lower {
   val RuntimeNull = nir.Type.Ref(nir.Global.Top("scala.runtime.Null$"))
   val RuntimeNothing = nir.Type.Ref(nir.Global.Top("scala.runtime.Nothing$"))
 
+  val ExceptionOnCatchName = extern("scalanative_Exception_onCatch")
+  lazy val ExceptionOnCatch = nir.Val.Global(ExceptionOnCatchName, nir.Type.Ptr)
+  lazy val ExceptionOnCatchSig = nir.Type.Function(nir.Rt.Throwable :: Nil, nir.Type.Unit)
+
   val injects: Seq[nir.Defn] = {
     implicit val pos = nir.SourcePosition.NoPosition
     val buf = mutable.UnrolledBuffer.empty[nir.Defn]
@@ -2269,6 +2276,7 @@ private[scalanative] object Lower {
     buf += externDecl(dyndispatchName, dyndispatchSig)
     buf += externDecl(throwName, throwSig)
     buf += externDecl(memsetName, memsetSig)
+    buf += externDecl(ExceptionOnCatchName, ExceptionOnCatchSig)
     buf += externDecl(TraitDispatchSlowpathName, TraitDispatchSlowpathSig)
     buf += externDecl(ClassHasTraitSlowpathName, ClassHasTraitSlowpathSig)
     buf.toSeq
