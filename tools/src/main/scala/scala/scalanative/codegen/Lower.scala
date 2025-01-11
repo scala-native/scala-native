@@ -178,8 +178,8 @@ private[scalanative] object Lower {
           case nir.Next.Unwind(exc, next) =>
             val handler = fresh()
             handlers.label(handler, Seq(exc))
-            if(platform.useCxxExceptions){
-              handlers.call(ExceptionOnCatchSig, ExceptionOnCatch, Seq(exc), nir.Next.None)(pos, nir.ScopeId.TopLevel )
+            if (platform.useCxxExceptions) {
+              handlers.call(ExceptionOnCatchSig, ExceptionOnCatch, Seq(exc), nir.Next.None)(pos, nir.ScopeId.TopLevel)
             }
             handlers.jump(next)
             Some(handler)
