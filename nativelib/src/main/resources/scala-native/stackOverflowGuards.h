@@ -18,7 +18,8 @@ static inline size_t resolvePageSize() { return scalanative_page_size(); }
 static inline size_t stackGuardPages() {
     static size_t computed = -1;
     if (computed == -1) {
-        computed = (16 * 1024 + resolvePageSize() - 1) / resolvePageSize();
+        computed = (64 * 1024 + resolvePageSize() - 1) / resolvePageSize();
+        printf("stack guard pages = %zu\n", computed);
     }
     return computed;
 }
@@ -33,7 +34,9 @@ static inline bool isInRange(void *addr, void *start, void *end) {
 }
 static inline bool inStackPageBound(void *pageAddr, void *addr) {
     void *upperBound = (char *)pageAddr + resolvePageSize() * stackGuardPages();
-    return isInRange(addr, pageAddr, upperBound);
+    bool res = isInRange(addr, pageAddr, upperBound);
+    printf("check if %p in range {%p - %p} = %d\n", addr, pageAddr, upperBound, res);
+    return res;
 }
 static inline bool belowStackPageBounds(void *pageAddr, void *addr) {
     void *upperBound = (char *)pageAddr + resolvePageSize() * stackGuardPages();

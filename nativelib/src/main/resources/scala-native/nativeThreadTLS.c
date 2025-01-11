@@ -22,11 +22,15 @@ SN_ThreadLocal NativeThread currentNativeThread = NULL;
 SN_ThreadLocal ThreadInfo currentThreadInfo = {.stackSize = 0,
                                                .stackTop = NULL,
                                                .stackBottom = NULL,
+                                               .isMainThread = false,
                                                .firstStackGuardPage = NULL,
+#ifndef _WIN32
                                                .secondStackGuardPage = NULL,
                                                .checkPendingExceptions = false,
                                                .pendingStackOverflowException =
-                                                   false};
+                                                   false
+#endif
+};
 
 void scalanative_assignCurrentThread(JavaThread thread,
                                      NativeThread nativeThread) {
@@ -128,14 +132,13 @@ bool scalanative_forceMainThreadStackGrowth() {
 
 static bool detectStackBounds(void *onStackPointer, ThreadInfo *threadInfo) {
 #ifdef _WIN32
-    MEMORY_BASIC_INFORMATION mbi;
-    VirtualQuery(onStackPointer, &mbi, sizeof(mbi));
-    threadInfo->stackTop = (void *)mbi.AllocationBase;
-    threadInfo->stackBottom =
-        (void *)((char *)mbi.AllocationBase + mbi.RegionSize);
+#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0602
+    GetCurrentThreadStackLimits((PULONG_PTR)&threadInfo->stackTop,
+                                (PULONG_PTR)&threadInfo->stackBottom);
     threadInfo->stackSize = (size_t)((char *)threadInfo->stackBottom -
                                      (char *)threadInfo->stackTop);
     return true;
+#endif
 #elif defined(__linux__)
     FILE *maps = fopen("/proc/self/maps", "r");
     if (!maps) {
@@ -196,10 +199,14 @@ void scalanative_setupCurrentThreadInfo(void *stackBottom, uint32_t stackSize,
 }
 
 void scalanative_checkThreadPendingExceptions() {
+#ifdef _WIN32
+// unused
+#else
     ThreadInfo info = currentThreadInfo;
     if (info.checkPendingExceptions) {
         if (info.pendingStackOverflowException) {
             scalanative_handlePendingStackOverflowError();
         }
     }
+#endif
 }

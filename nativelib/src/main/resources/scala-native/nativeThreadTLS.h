@@ -11,12 +11,14 @@ typedef void *NativeThread;
 
 typedef struct ThreadInfo {
     size_t stackSize;
-    void *stackTop;             // highest stack address
-    void *stackBottom;          // lowest stack address
+    void *stackTop;    // highest stack address
+    void *stackBottom; // lowest stack address
     void *firstStackGuardPage;  // register delayed StackOverflowError throw
+    #ifndef _WIN32
     void *secondStackGuardPage; // try throw immediately or abort
     bool checkPendingExceptions;
     bool pendingStackOverflowException;
+#endif
     bool isMainThread;
 } ThreadInfo;
 

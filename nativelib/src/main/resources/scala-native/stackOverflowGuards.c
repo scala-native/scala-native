@@ -1,6 +1,7 @@
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#include <malloc.h>
 #else // Unix
 #if defined(__linux__)
 #define _GNU_SOURCE 1 /* To pick up REG_RIP */
@@ -24,106 +25,49 @@
 #include <assert.h>
 #include <string.h>
 
-static void protectPage(void *addr) {
-#ifdef _WIN32
-    DWORD oldProtect;
-    if (!VirtualProtect(addr, resolvePageSize(), PAGE_NOACCESS, &oldProtect)) {
-        fprintf(stderr,
-                "ScalaNative Fatal Error :: StackOverflowHandler guard "
-                "protection failed. Error code: %lu\n",
-                GetLastError());
-        abort();
-    }
-#else
-    if (mprotect(addr, resolvePageSize(), PROT_NONE) == -1) {
-        perror("ScalaNative Fatal Error :: StackOverflowHandler guard "
-               "protection failed");
-        abort();
-    }
-#endif
-}
-static void unprotectPage(void *addr) {
-#ifdef _WIN32
-    DWORD oldProtect;
-    if (!VirtualProtect(addr, resolvePageSize(), PAGE_READWRITE, &oldProtect)) {
-        fprintf(stderr,
-                "ScalaNative Fatal Error :: StackOverflowHandler guard "
-                "unprotection failed. Error code: %lu\n",
-                GetLastError());
-        abort();
-    }
-#else
-    if (mprotect(addr, resolvePageSize(), PROT_READ | PROT_WRITE) == -1) {
-        perror("ScalaNative Fatal Error :: StackOverflowHandler guard "
-               "unprotection failed");
-        abort();
-    }
-#endif
-}
-
 extern void scalanative_throwPendingStackOverflowError();
 
-void scalanative_handlePendingStackOverflowError() {
-    currentThreadInfo.checkPendingExceptions = false;
-    scalanative_throwPendingStackOverflowError();
-    currentThreadInfo.checkPendingExceptions = true;
+size_t scalanative_stackOverflowGuardsSize() {
+    return 2 * stackGuardPages() * resolvePageSize();
 }
 
-static void setupStackOverflowHandlers(bool isMainThread);
+static void scalanative_setupStackOverflowGuards(bool isMainThread);
 #ifdef _WIN32
-LONG WINAPI stackOverflowHandler(PEXCEPTION_POINTERS exceptionInfo) {
-    if (exceptionInfo->ExceptionRecord->ExceptionCode ==
-        EXCEPTION_ACCESS_VIOLATION) {
-        void *faultAddr =
-            (void *)exceptionInfo->ExceptionRecord->ExceptionInformation[1];
-        ThreadInfo threadInfo = currentThreadInfo;
-
-        if (inStackPageBound(threadInfo.firstStackGuardPage, faultAddr)) {
-            unprotectPage(threadInfo.firstStackGuardPage);
-            currentThreadInfo.checkPendingExceptions = true;
-            currentThreadInfo.pendingStackOverflowException = true;
-            return EXCEPTION_CONTINUE_EXECUTION;
-        } else if (inStackPageBound(threadInfo.secondStackGuardPage,
-                                    faultAddr)) {
-            unprotectPage(threadInfo.secondStackGuardPage);
-            currentThreadInfo.checkPendingExceptions = true;
-            currentThreadInfo.pendingStackOverflowException = true;
-            // Modify the return address to handle stack overflow
-            CONTEXT *context = exceptionInfo->ContextRecord;
-#ifdef _M_X64
-            context->Rip = (DWORD64)scalanative_handlePendingStackOverflowError;
-#elif defined(_M_IX86)
-            context->Eip = (DWORD)scalanative_handlePendingStackOverflowError;
-#endif
-            return EXCEPTION_CONTINUE_EXECUTION;
-        } else if (isInRange(faultAddr, threadInfo.firstStackGuardPage,
-                             (void *)(char *)threadInfo.stackTop -
-                                 (resolvePageSize() + 64 * 1024))) {
-            fprintf(stderr,
-                    "ScalaNative :: Unrecoverable StackOverflow error in %s "
-                    "thread, stack size = %zuKB\n",
-                    threadInfo.isMainThread ? "main" : "user",
-                    threadInfo.stackSize / 1024);
-            StackTrace_PrintStackTrace();
-            abort();
-        } else if (faultAddr == NULL) {
-            fprintf(stderr,
-                    "ScalaNative :: Unrecoverable NullPointerException in %s "
-                    "thread\n",
-                    threadInfo.isMainThread ? "main" : "user");
-            StackTrace_PrintStackTrace();
-            abort();
-        }
+static LONG WINAPI stackOverflowHandler(PEXCEPTION_POINTERS ex) {
+    switch (ex->ExceptionRecord->ExceptionCode) {
+    case EXCEPTION_STACK_OVERFLOW:
+        scalanative_throwPendingStackOverflowError();
+        return EXCEPTION_CONTINUE_EXECUTION;
+    default:
+        return EXCEPTION_CONTINUE_SEARCH;
     }
-
     return EXCEPTION_CONTINUE_SEARCH;
 }
-static void setupStackOverflowHandlers(bool isMainThread) {
+static void scalanative_setupStackOverflowGuards(bool isMainThread) {
     static bool isHandlerConfigured = false;
     if (isMainThread && !isHandlerConfigured) {
-        AddVectoredExceptionHandler(1, stackOverflowHandler);
+        AddVectoredExceptionHandler(0, &stackOverflowHandler);
         isHandlerConfigured = true;
     }
+    ULONG stackOverflowStackSize = scalanative_stackOverflowGuardsSize();
+    currentThreadInfo.firstStackGuardPage =
+        (void *)((uintptr_t)currentThreadInfo.stackTop +
+                 stackOverflowStackSize);
+
+    if (!SetThreadStackGuarantee(&stackOverflowStackSize)) {
+        fprintf(stderr,
+               "Scala Native Error: Failed to set thread stack guarantee, "
+               "stack overflow detection might not work correctly\n");
+    }
+}
+
+void scalanative_resetStackOverflowGuards() {
+    int dummy;
+    void *stackTop = &dummy;
+    ThreadInfo info = currentThreadInfo;
+    if (belowStackPageBounds(info.firstStackGuardPage, stackTop))
+        return;
+    _resetstkoflw();
 }
 
 #else // Unix
@@ -141,6 +85,27 @@ static struct sigaction *resolvePreviousSignalHandler(int sig) {
                 sig);
         abort();
     }
+}
+
+static void protectPage(void *addr) {
+    if (mprotect(addr, resolvePageSize(), PROT_NONE) == -1) {
+        perror("ScalaNative Fatal Error :: StackOverflowHandler guard "
+               "protection failed");
+        abort();
+    }
+}
+static void unprotectPage(void *addr) {
+    if (mprotect(addr, resolvePageSize(), PROT_READ | PROT_WRITE) == -1) {
+        perror("ScalaNative Fatal Error :: StackOverflowHandler guard "
+               "unprotection failed");
+        abort();
+    }
+}
+
+void scalanative_handlePendingStackOverflowError() {
+    currentThreadInfo.checkPendingExceptions = false;
+    scalanative_throwPendingStackOverflowError();
+    currentThreadInfo.checkPendingExceptions = true;
 }
 
 static void stackOverflowHandler(int sig, siginfo_t *info, void *context) {
@@ -288,33 +253,12 @@ static void setupSignalHandler(int signal) {
     }
 }
 
-static void setupStackOverflowHandlers(bool isMainThread) {
-    static bool isHandlerConfigured = false;
-    if (isMainThread && isHandlerConfigured)
-        return;
-
-    if (isMainThread) {
-        setupSignalHandler(SIGSEGV);
-#if (defined(__APPLE__) && defined(__MACH__))
-        setupSignalHandler(SIGBUS);
-        isHandlerConfigured = true;
-#endif // Apple
-    } else {
-        setupSignalHandlerAltstack();
-    }
-}
-#endif // Unix
-
-size_t scalanative_stackOverflowGuardsSize() {
-    return 2 * stackGuardPages() * resolvePageSize();
-}
-
-void scalanative_setupStackOverflowGuards(bool isMainThread) {
-    size_t pageSize = resolvePageSize();
+static void scalanative_setupStackOverflowGuards(bool isMainThread) {
     assert(currentThreadInfo.stackSize > 0);
     assert(currentThreadInfo.stackTop != NULL);
     assert(currentThreadInfo.stackBottom != NULL);
 
+    size_t pageSize = resolvePageSize();
     currentThreadInfo.secondStackGuardPage =
         (void *)((uintptr_t)currentThreadInfo.stackTop +
                  pageSize * stackGuardPages());
@@ -330,7 +274,20 @@ void scalanative_setupStackOverflowGuards(bool isMainThread) {
 
     protectPage(currentThreadInfo.firstStackGuardPage);
     protectPage(currentThreadInfo.secondStackGuardPage);
-    setupStackOverflowHandlers(isMainThread);
+
+    static bool isHandlerConfigured = false;
+    if (isMainThread && isHandlerConfigured)
+        return;
+
+    if (isMainThread) {
+        setupSignalHandler(SIGSEGV);
+#if (defined(__APPLE__) && defined(__MACH__))
+        setupSignalHandler(SIGBUS);
+        isHandlerConfigured = true;
+#endif // Apple
+    } else {
+        setupSignalHandlerAltstack();
+    }
 }
 
 void scalanative_resetStackOverflowGuards() {
@@ -339,11 +296,12 @@ void scalanative_resetStackOverflowGuards() {
     ThreadInfo info = currentThreadInfo;
     currentThreadInfo.pendingStackOverflowException = false;
     currentThreadInfo.checkPendingExceptions = false;
-    if (belowStackPageBounds(info.firstStackGuardPage, stackTop))
-        return;
-    protectPage(currentThreadInfo.firstStackGuardPage);
 
     if (belowStackPageBounds(info.secondStackGuardPage, stackTop))
         return;
-    protectPage(currentThreadInfo.secondStackGuardPage);
+    protectPage(info.secondStackGuardPage);
+
+    if (belowStackPageBounds(info.firstStackGuardPage, stackTop))
+        return;
 }
+#endif // Unix
