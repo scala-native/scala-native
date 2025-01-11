@@ -31,7 +31,6 @@ size_t scalanative_stackOverflowGuardsSize() {
     return 2 * stackGuardPages() * resolvePageSize();
 }
 
-static void scalanative_setupStackOverflowGuards(bool isMainThread);
 #ifdef _WIN32
 static LONG WINAPI stackOverflowHandler(PEXCEPTION_POINTERS ex) {
     switch (ex->ExceptionRecord->ExceptionCode) {
@@ -43,7 +42,7 @@ static LONG WINAPI stackOverflowHandler(PEXCEPTION_POINTERS ex) {
     }
     return EXCEPTION_CONTINUE_SEARCH;
 }
-static void scalanative_setupStackOverflowGuards(bool isMainThread) {
+void scalanative_setupStackOverflowGuards(bool isMainThread) {
     static bool isHandlerConfigured = false;
     if (isMainThread && !isHandlerConfigured) {
         AddVectoredExceptionHandler(0, &stackOverflowHandler);
@@ -56,8 +55,8 @@ static void scalanative_setupStackOverflowGuards(bool isMainThread) {
 
     if (!SetThreadStackGuarantee(&stackOverflowStackSize)) {
         fprintf(stderr,
-               "Scala Native Error: Failed to set thread stack guarantee, "
-               "stack overflow detection might not work correctly\n");
+                "Scala Native Error: Failed to set thread stack guarantee, "
+                "stack overflow detection might not work correctly\n");
     }
 }
 
@@ -253,7 +252,7 @@ static void setupSignalHandler(int signal) {
     }
 }
 
-static void scalanative_setupStackOverflowGuards(bool isMainThread) {
+void scalanative_setupStackOverflowGuards(bool isMainThread) {
     assert(currentThreadInfo.stackSize > 0);
     assert(currentThreadInfo.stackTop != NULL);
     assert(currentThreadInfo.stackBottom != NULL);
