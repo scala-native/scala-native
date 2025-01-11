@@ -17,7 +17,10 @@ import scala.scalanative.windows.NamedPipeApi.PeekNamedPipe
  */
 
 /* Design Note:
- *   TBS
+ *   Comment only change, no code change. Trying to provoke
+ *   Windows intermittent failure in ProcessTest; take 2.
+ *
+ *
  */
 
 private[lang] final class PipeIO[T](
