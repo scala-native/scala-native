@@ -642,7 +642,7 @@ object Settings {
       "class|object OpenHashMap",
       "class Stream",
       "method retain in trait SetOps",
-      "object AnyRefMap in package mutable is deprecated"
+      "object AnyRefMap.*Use `scala.collection.mutable.HashMap` "
     ).map(msg => s"-Wconf:cat=deprecation&msg=$msg:s")
 
     def scala3Deprecations = Seq(
