@@ -26,6 +26,7 @@ private[linker] class Reach(
   val preprocessorDefinitions = mutable.Set.empty[nir.Attr.Define]
   val infos = mutable.Map.empty[nir.Global, Info]
   val from = mutable.Map.empty[nir.Global, ReferencedFrom]
+  val exports = mutable.UnrolledBuffer.empty[nir.Global]
 
   val dyncandidates = mutable.Map.empty[nir.Sig, mutable.Set[nir.Global.Member]]
   val dynsigs = mutable.Set.empty[nir.Sig]
@@ -78,7 +79,7 @@ private[linker] class Reach(
     if (unreachable.isEmpty && unsupported.isEmpty)
       new ReachabilityAnalysis.Result(
         infos = infos,
-        entries = entries,
+        entries = (entries ++ exports.toSeq).distinct,
         links = links.toSeq,
         linkCppRuntime = linkCppRuntime,
         preprocessorDefinitions = preprocessorDefinitions.toSeq,
@@ -303,8 +304,8 @@ private[linker] class Reach(
       defns <- loaded.get(cls.name)
       (name, defn) <- defns
     } if (isExported(defn)) {
-      println(s"reach exported $name")
       reachGlobal(name)(defn.pos)
+      exports += name
     }
   }
 

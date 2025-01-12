@@ -21,9 +21,6 @@ abstract class Throwable @noinline protected (
         Intrinsics.storeObject(blob.atRawUnsafe(0), this)
         blob
     }
-  /* There seems to be a bug that under release mode refering to exceptionWrapper.length
-   * only from exported function leads throwing NullPointerException */
-  private def exceptionWrapperPtr: RawPtr = exceptionWrapper.atRawUnsafe(0)
 
   if (writableStackTrace)
     fillInStackTrace()
@@ -120,7 +117,7 @@ private object Throwable {
 
   @exported("scalanative_Throwable_exceptionWrapper")
   def exceptionWrapper(self: Throwable): RawPtr =
-    self.exceptionWrapperPtr
+    self.exceptionWrapper.atRawUnsafe(0)
 
   @exported("scalanative_Throwable_onCatchHandler")
   def onCatchHandler(self: Throwable): CFuncPtr1[Throwable, Unit] /* | Null*/ =
