@@ -13,7 +13,7 @@ abstract class Throwable @noinline protected (
   private[runtime] var onCatchHandler: CFuncPtr1[Throwable, Unit] = _
   private val exceptionWrapper: BlobArray =
     Throwable.ffi.sizeOfExceptionWrapper match {
-      case 0    => null
+      case 0    => null // unused
       case size =>
         // Not null only when we use custom exception handling without C++
         // struct ExceptionWrapper { Throwable, _UnwindException }
@@ -21,6 +21,9 @@ abstract class Throwable @noinline protected (
         Intrinsics.storeObject(blob.atRawUnsafe(0), this)
         blob
     }
+  /* There seems to be a bug that under release mode refering to exceptionWrapper.length
+   * only from exported function leads throwing NullPointerException */
+  private def exceptionWrapperPtr: RawPtr = exceptionWrapper.atRawUnsafe(0)
 
   if (writableStackTrace)
     fillInStackTrace()
@@ -117,7 +120,7 @@ private object Throwable {
 
   @exported("scalanative_Throwable_exceptionWrapper")
   def exceptionWrapper(self: Throwable): RawPtr =
-    self.exceptionWrapper.atRawUnsafe(0)
+    self.exceptionWrapperPtr
 
   @exported("scalanative_Throwable_onCatchHandler")
   def onCatchHandler(self: Throwable): CFuncPtr1[Throwable, Unit] /* | Null*/ =
