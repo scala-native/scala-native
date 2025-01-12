@@ -60,7 +60,10 @@ private[linker] class Reach(
   loader.classesWithEntryPoints.foreach { clsName =>
     if (reachStaticConstructors)
       reachClinit(clsName)(nir.SourcePosition.NoPosition)
-    reachExported(clsName)
+    config.compilerConfig.buildTarget match {
+      case build.BuildTarget.Application => ()
+      case _                             => reachExported(clsName)
+    }
   }
 
   def result(): ReachabilityAnalysis = {
@@ -299,7 +302,10 @@ private[linker] class Reach(
       cls <- infos.get(name).collect { case info: ScopeInfo => info }
       defns <- loaded.get(cls.name)
       (name, defn) <- defns
-    } if (isExported(defn)) reachGlobal(name)(defn.pos)
+    } if (isExported(defn)) {
+      println(s"reach exported $name")
+      reachGlobal(name)(defn.pos)
+    }
   }
 
   def reachGlobal(
@@ -635,6 +641,7 @@ private[linker] class Reach(
     implicit val pos: nir.SourcePosition = defn.pos
     newInfo(new Trait(attrs, name, traits.flatMap(traitInfo)))
     reachAttrs(attrs)
+    reachExported(name)
   }
 
   def reachClass(defn: nir.Defn.Class): Unit = {
@@ -650,6 +657,7 @@ private[linker] class Reach(
       )
     )
     reachAttrs(attrs)
+    reachExported(name)
   }
 
   def reachModule(defn: nir.Defn.Module): Unit = {
@@ -665,6 +673,7 @@ private[linker] class Reach(
       )
     )
     reachAttrs(attrs)
+    reachExported(name)
   }
 
   def reachAttrs(attrs: nir.Attrs): Unit = {
