@@ -165,10 +165,18 @@ private[scalanative] object Lower {
     }
 
     override def onInsts(insts: Seq[nir.Inst]): Seq[nir.Inst] = {
+      val defn = currentDefn.get
       val buf = new nir.InstructionBuilder()(fresh)
       val handlers = new nir.InstructionBuilder()(fresh)
 
       buf += insts.head
+
+      // Add stack overflow guard test
+      // On Windows we use builtin mechanism for stack overflow detection
+      // On Unix, due to unreliable unwinding from signal handlers, we introduce polling at the begining of possibly recursive methods
+      if (!platform.targetsWindows && meta.analysis.references.isSelfRecursive(defn.name)) {
+        buf.call(CheckStackOverflowGuardsSig, CheckStackOverflowGuards, Nil, nir.Next.None)(defn.pos, nir.ScopeId.TopLevel)
+      }
 
       var unwindHandlerCache = mutable.Map.empty[nir.Next, Option[nir.Local]]
       def getUnwindHandler(next: nir.Next)(implicit pos: nir.SourcePosition): Option[nir.Local] = unwindHandlerCache.getOrElseUpdate(
@@ -2267,6 +2275,10 @@ private[scalanative] object Lower {
   lazy val ExceptionOnCatch = nir.Val.Global(ExceptionOnCatchName, nir.Type.Ptr)
   lazy val ExceptionOnCatchSig = nir.Type.Function(nir.Rt.Throwable :: Nil, nir.Type.Unit)
 
+  val CheckStackOverflowGuardsName = extern("scalanative_checkStackOverflowGuards")
+  val CheckStackOverflowGuards = nir.Val.Global(CheckStackOverflowGuardsName, nir.Type.Ptr)
+  val CheckStackOverflowGuardsSig = nir.Type.Function(Nil, nir.Type.Unit)
+
   val injects: Seq[nir.Defn] = {
     implicit val pos = nir.SourcePosition.NoPosition
     val buf = mutable.UnrolledBuffer.empty[nir.Defn]
@@ -2278,6 +2290,7 @@ private[scalanative] object Lower {
     buf += externDecl(memsetName, memsetSig)
     buf += externDecl(ExceptionOnCatchName, ExceptionOnCatchSig)
     buf += externDecl(TraitDispatchSlowpathName, TraitDispatchSlowpathSig)
+    buf += externDecl(CheckStackOverflowGuardsName, CheckStackOverflowGuardsSig)
     buf += externDecl(ClassHasTraitSlowpathName, ClassHasTraitSlowpathSig)
     buf.toSeq
   }

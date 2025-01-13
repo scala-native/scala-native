@@ -19,18 +19,7 @@
 
 SN_ThreadLocal JavaThread currentThread = NULL;
 SN_ThreadLocal NativeThread currentNativeThread = NULL;
-SN_ThreadLocal ThreadInfo currentThreadInfo = {.stackSize = 0,
-                                               .stackTop = NULL,
-                                               .stackBottom = NULL,
-                                               .isMainThread = false,
-                                               .firstStackGuardPage = NULL,
-#ifndef _WIN32
-                                               .secondStackGuardPage = NULL,
-                                               .checkPendingExceptions = false,
-                                               .pendingStackOverflowException =
-                                                   false
-#endif
-};
+SN_ThreadLocal ThreadInfo currentThreadInfo = {0};
 
 void scalanative_assignCurrentThread(JavaThread thread,
                                      NativeThread nativeThread) {
@@ -39,10 +28,7 @@ void scalanative_assignCurrentThread(JavaThread thread,
 }
 
 JavaThread scalanative_currentThread() { return currentThread; }
-NativeThread scalanative_currentNativeThread() {
-    scalanative_checkThreadPendingExceptions();
-    return currentNativeThread;
-}
+NativeThread scalanative_currentNativeThread() { return currentNativeThread; }
 ThreadInfo *scalanative_currentThreadInfo() { return &currentThreadInfo; }
 
 size_t scalanative_mainThreadMaxStackSize() {
@@ -196,17 +182,4 @@ void scalanative_setupCurrentThreadInfo(void *stackBottom, uint32_t stackSize,
     assert(stackBottom < currentThreadInfo.stackBottom);
     assert(stackBottom > currentThreadInfo.stackTop);
     assert(currentThreadInfo.stackBottom > currentThreadInfo.stackTop);
-}
-
-void scalanative_checkThreadPendingExceptions() {
-#ifdef _WIN32
-// unused
-#else
-    ThreadInfo info = currentThreadInfo;
-    if (info.checkPendingExceptions) {
-        if (info.pendingStackOverflowException) {
-            scalanative_handlePendingStackOverflowError();
-        }
-    }
-#endif
 }

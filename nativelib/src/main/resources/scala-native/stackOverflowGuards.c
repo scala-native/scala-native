@@ -25,10 +25,11 @@
 #include <assert.h>
 #include <string.h>
 
-extern void scalanative_throwPendingStackOverflowError();
+__attribute((noreturn)) extern void
+scalanative_throwPendingStackOverflowError();
 
 size_t scalanative_stackOverflowGuardsSize() {
-    return 2 * stackGuardPages() * resolvePageSize();
+    return stackGuardPages() * resolvePageSize();
 }
 
 #ifdef _WIN32
@@ -101,12 +102,6 @@ static void unprotectPage(void *addr) {
     }
 }
 
-void scalanative_handlePendingStackOverflowError() {
-    currentThreadInfo.checkPendingExceptions = false;
-    scalanative_throwPendingStackOverflowError();
-    currentThreadInfo.checkPendingExceptions = true;
-}
-
 static void stackOverflowHandler(int sig, siginfo_t *info, void *context) {
     void *faultAddr = info->si_addr;
     ThreadInfo threadInfo = currentThreadInfo;
@@ -117,78 +112,51 @@ static void stackOverflowHandler(int sig, siginfo_t *info, void *context) {
     case SIGBUS:
         /* We cannot throw exception directly from signal handler - libunwind
          * would not be able to locate catch handler.
-         * We can modify the context to create synthetic stack frame and
-         * continue execution in selected function but throwing exceptions would
-         * not be reliable - under -fomit-frame-pointer or non zero -O optimizer
-         * settings libunwind might not be able to construct correct function
-         * call chain thus failing to throw. In such case we would not be able
-         * to recover. Without frame pointers it needs to use alternative
-         * information like DWARF for which we cannot reliably create synthetic
-         * data. Becouse of that we introduce soft stack overflow limit - we
-         * continue execution and notify runtime to throw StackOverflowError.
-         * We're introducing checks in some well known locations that would
-         * trigger throwing function.
+         * In the past we've tried to workaround it with:
+         * 1. Creating synthetic stack frame by modify the ucontext_t passed to
+         * signal handler as `context` and continue execution in selected
+         * function but throwing exceptions would not be reliable - under
+         * -fomit-frame-pointer or non zero -O optimizer settings libunwind
+         * might not be able to construct correct function call chain thus
+         * failing to throw. In such case we would not be able to recover.
+         * Without frame pointers it was needed to use alternative information
+         * like DWARF for which we cannot reliably create synthetic data.
+         * 2. Using signal handler context to create a synthetic unw_context /
+         * unw_cursor. This was was stored in the thread local storage and used
+         * on deamand instead of resolved one at the moment of invocation. These
+         * allowed to successfully and mostly correctly collect stack trace
+         * outside the signal handler. Also with minimal modification it could
+         * have been used in a variant of _Unwind_RaiseException. Unfortunetly,
+         * even though solution allowed in most cases to correctly unwind the
+         * stack/execution on return it polutted the execution state (registers)
+         * with incorrect data. This lead to logic errors and undefined
+         * behaviours.
+         * Becouse of these we introduced soft stack overflow limit - we
+         * continue execution and notify runtime to throw StackOverflowError
+         * lazily. Based on closed world assumptions we identify functions that
+         * are recursive, only these would check if throwing StackOverflowError
+         * is needed when entering the function.
          */
-        if (inStackPageBound(threadInfo.firstStackGuardPage, faultAddr)) {
+        if (inStackPageBound(threadInfo.stackGuardPage, faultAddr)) {
             if (threadInfo.isMainThread &&
                 threadInfo.stackSize < scalanative_mainThreadMaxStackSize()) {
                 // Main thread stack size was not fully mapped
                 // Try to let it grow and continue execution
-                unprotectPage(threadInfo.firstStackGuardPage);
-                unprotectPage(threadInfo.secondStackGuardPage);
+                unprotectPage(threadInfo.stackGuardPage);
                 if (scalanative_forceMainThreadStackGrowth()) {
                     scalanative_setupStackOverflowGuards(true);
                     return;
                 }
             }
             // Let the exception be thrown after polling
-            currentThreadInfo.checkPendingExceptions = true;
             currentThreadInfo.pendingStackOverflowException = true;
-            unprotectPage(currentThreadInfo.firstStackGuardPage);
+            unprotectPage(currentThreadInfo.stackGuardPage);
             return;
-        } else if (inStackPageBound(threadInfo.secondStackGuardPage,
-                                    faultAddr)) {
-            // Try unsafely modify context to throw exception if given platform
-            // supports it or let it spin with hope of handling pending stack
-            // overflow exception
-            unprotectPage(threadInfo.secondStackGuardPage);
-            currentThreadInfo.checkPendingExceptions = true;
-            currentThreadInfo.pendingStackOverflowException = true;
-            // All further logic is based on context
-            // Skip if it's not available
-            if (context == NULL)
-                return;
-#if defined(__APPLE__) && defined(__MACH__)
-#if defined(__x86_64__)
-            ucontext_t *ctx = (ucontext_t *)context;
-            ctx->uc_mcontext->__ss.__rip =
-                (uintptr_t)scalanative_handlePendingStackOverflowError;
-#elif defined(__arm64__) || defined(__aarch64__)
-            ucontext_t *ctx = (ucontext_t *)context;
-            ctx->uc_mcontext->__ss.__lr = ctx->uc_mcontext->__ss.__pc;
-            ctx->uc_mcontext->__ss.__pc =
-                (uintptr_t)scalanative_handlePendingStackOverflowError;
-#endif // arm64
-#elif defined(__linux__)
-#if defined(__aarch64__)
-            ucontext_t *ctx = (ucontext_t *)context;
-            ctx->uc_mcontext.pc =
-                (uintptr_t)scalanative_handlePendingStackOverflowError;
-#elif defined(__x86_64__)
-            ucontext_t *ctx = (ucontext_t *)context;
-            ctx->uc_mcontext.gregs[REG_RIP] =
-                (greg_t)scalanative_handlePendingStackOverflowError;
-#elif defined(__i386__)
-            ucontext_t *ctx = (ucontext_t *)context;
-            ctx->uc_mcontext.gregs[REG_EIP] =
-                (greg_t)scalanative_handlePendingStackOverflowError;
-#endif
-#endif
-            return;
-            // Check if address is close to the end stack memory region
-        } else if (isInRange(faultAddr, threadInfo.firstStackGuardPage,
+        } else if (isInRange(faultAddr, threadInfo.stackGuardPage,
                              (void *)(char *)threadInfo.stackTop -
                                  (resolvePageSize() + 64 * 1024))) {
+            // Unrecoverable if stack overflow is detected somewhere above
+            // current stack top
             fprintf(stderr,
                     "ScalaNative :: Unrecoverable StackOverflow error in %s "
                     "thread, stack size = %zuKB\n",
@@ -212,10 +180,8 @@ static void stackOverflowHandler(int sig, siginfo_t *info, void *context) {
             if (handler != SIG_DFL && handler != SIG_IGN &&
                 handler != SIG_ERR && handler != stackOverflowHandler) {
                 if (previousSignalHandler->sa_flags & SA_SIGINFO) {
-                    void (*sigInfoHandler)(int, siginfo_t *, void *) =
-                        (void (*)(int, siginfo_t *,
-                                  void *))previousSignalHandler->sa_handler;
-                    return sigInfoHandler(sig, info, context);
+                    return previousSignalHandler->sa_sigaction(sig, info,
+                                                               context);
                 } else {
                     return previousSignalHandler->sa_handler(sig);
                 }
@@ -229,15 +195,18 @@ static void stackOverflowHandler(int sig, siginfo_t *info, void *context) {
     }
 }
 
-#define SIG_HANDLER_STACK_SIZE (32 * 1024)
+#define SIG_HANDLER_STACK_SIZE SIGSTKSZ
 static SN_ThreadLocal char *signalHandlerStack[SIG_HANDLER_STACK_SIZE] = {0};
 static void setupSignalHandlerAltstack() {
-    stack_t handler_stack;
+    stack_t handlerStack = {};
     size_t pageSize = resolvePageSize();
-    handler_stack.ss_size = SIG_HANDLER_STACK_SIZE;
-    handler_stack.ss_sp = &signalHandlerStack;
-    handler_stack.ss_flags = 0;
-    sigaltstack(&handler_stack, NULL);
+    handlerStack.ss_size = SIG_HANDLER_STACK_SIZE;
+    handlerStack.ss_sp = &signalHandlerStack;
+    handlerStack.ss_flags = 0;
+    if (sigaltstack(&handlerStack, NULL) == -1) {
+        perror("Scala Native Stack Overflow Handler failed to set alt stack");
+        abort();
+    }
 }
 static void setupSignalHandler(int signal) {
     struct sigaction sa = {};
@@ -257,22 +226,14 @@ void scalanative_setupStackOverflowGuards(bool isMainThread) {
     assert(currentThreadInfo.stackTop != NULL);
     assert(currentThreadInfo.stackBottom != NULL);
 
-    size_t pageSize = resolvePageSize();
-    currentThreadInfo.secondStackGuardPage =
+    currentThreadInfo.stackGuardPage =
         (void *)((uintptr_t)currentThreadInfo.stackTop +
-                 pageSize * stackGuardPages());
-    currentThreadInfo.firstStackGuardPage =
-        (void *)((uintptr_t)currentThreadInfo.secondStackGuardPage +
-                 pageSize * stackGuardPages());
+                 scalanative_stackOverflowGuardsSize());
 
-    assert(currentThreadInfo.secondStackGuardPage <
-           currentThreadInfo.firstStackGuardPage);
-    assert(currentThreadInfo.firstStackGuardPage > currentThreadInfo.stackTop);
-    assert(currentThreadInfo.firstStackGuardPage <
-           currentThreadInfo.stackBottom);
+    assert(currentThreadInfo.stackGuardPage > currentThreadInfo.stackTop);
+    assert(currentThreadInfo.stackGuardPage < currentThreadInfo.stackBottom);
 
-    protectPage(currentThreadInfo.firstStackGuardPage);
-    protectPage(currentThreadInfo.secondStackGuardPage);
+    protectPage(currentThreadInfo.stackGuardPage);
 
     static bool isHandlerConfigured = false;
     if (isMainThread && isHandlerConfigured)
@@ -291,16 +252,23 @@ void scalanative_setupStackOverflowGuards(bool isMainThread) {
 
 void scalanative_resetStackOverflowGuards() {
     int dummy;
-    void *stackTop = &dummy;
+    void *curStackTop = &dummy;
     ThreadInfo info = currentThreadInfo;
     currentThreadInfo.pendingStackOverflowException = false;
-    currentThreadInfo.checkPendingExceptions = false;
-
-    if (belowStackPageBounds(info.secondStackGuardPage, stackTop))
-        return;
-    protectPage(info.secondStackGuardPage);
-
-    if (belowStackPageBounds(info.firstStackGuardPage, stackTop))
-        return;
+    if (inStackPageBound(info.stackGuardPage, curStackTop))
+        return; // still unwinding
+    protectPage(info.stackGuardPage);
 }
+
 #endif // Unix
+
+void scalanative_checkStackOverflowGuards() {
+#ifdef _WIN32
+// unused
+#else
+    if (currentThreadInfo.pendingStackOverflowException) {
+        currentThreadInfo.pendingStackOverflowException = false;
+        scalanative_throwPendingStackOverflowError();
+    }
+#endif
+}

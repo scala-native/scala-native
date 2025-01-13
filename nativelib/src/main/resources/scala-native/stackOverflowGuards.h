@@ -15,7 +15,7 @@
 size_t scalanative_stackOverflowGuardsSize();
 void scalanative_setupStackOverflowGuards(bool isMainThread);
 void scalanative_resetStackOverflowGuards();
-void scalanative_handlePendingStackOverflowError();
+void scalanative_checkStackOverflowGuards();
 
 extern size_t scalanative_page_size();
 static inline size_t resolvePageSize() { return scalanative_page_size(); }
@@ -23,7 +23,7 @@ static inline size_t resolvePageSize() { return scalanative_page_size(); }
 static inline size_t stackGuardPages() {
     static size_t computed = -1;
     if (computed == -1) {
-        computed = (64 * 1024 + resolvePageSize() - 1) / resolvePageSize();
+        computed = (32 * 1024 + resolvePageSize() - 1) / resolvePageSize();
     }
     return computed;
 }
@@ -40,9 +40,4 @@ static inline bool inStackPageBound(void *pageAddr, void *addr) {
     void *upperBound = (char *)pageAddr + resolvePageSize() * stackGuardPages();
     return isInRange(addr, pageAddr, upperBound);
 }
-static inline bool belowStackPageBounds(void *pageAddr, void *addr) {
-    void *upperBound = (char *)pageAddr + resolvePageSize() * stackGuardPages();
-    return addr < upperBound;
-}
-
 #endif

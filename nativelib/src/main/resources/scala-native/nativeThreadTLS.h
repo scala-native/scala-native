@@ -11,12 +11,10 @@ typedef void *NativeThread;
 
 typedef struct ThreadInfo {
     size_t stackSize;
-    void *stackTop;            // highest stack address
-    void *stackBottom;         // lowest stack address
-    void *firstStackGuardPage; // register delayed StackOverflowError throw
+    void *stackTop;    // highest stack address
+    void *stackBottom; // lowest stack address
+    void *stackGuardPage;
 #ifndef _WIN32
-    void *secondStackGuardPage; // try throw immediately or abort
-    bool checkPendingExceptions;
     bool pendingStackOverflowException;
 #endif
     bool isMainThread;
@@ -32,7 +30,6 @@ ThreadInfo *scalanative_currentThreadInfo();
 void scalanative_setupCurrentThreadInfo(void *stackBottom, uint32_t stackSize,
                                         bool isMainThread);
 
-void scalanative_checkThreadPendingExceptions();
 size_t scalanative_mainThreadMaxStackSize();
 bool scalanative_forceMainThreadStackGrowth();
 

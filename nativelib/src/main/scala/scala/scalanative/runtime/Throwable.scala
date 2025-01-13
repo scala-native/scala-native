@@ -10,7 +10,7 @@ abstract class Throwable @noinline protected (
   self: java.lang.Throwable =>
 
   protected var stackTrace: scala.Array[StackTraceElement] = _
-  private[runtime] var onCatchHandler: CFuncPtr1[Throwable, Unit] = _
+  private[runtime] var onCatchHandler: CFuncPtr1[Throwable, Unit] = null
   private val exceptionWrapper: BlobArray =
     Throwable.ffi.sizeOfExceptionWrapper match {
       case 0    => null // unused

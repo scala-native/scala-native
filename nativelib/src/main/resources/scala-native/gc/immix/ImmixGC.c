@@ -179,7 +179,6 @@ void scalanative_GC_yield() {
     if (atomic_load_explicit(&Synchronizer_stopThreads, memory_order_relaxed))
         Synchronizer_yield();
 #endif
-    scalanative_checkThreadPendingExceptions();
 }
 
 #endif

@@ -248,14 +248,14 @@ _Unwind_Reason_Code scalanative_personality(int version, _Unwind_Action actions,
     return _URC_CONTINUE_UNWIND;
 }
 
-void *scalanative_catch(_Unwind_Exception *unwindException) {
+Exception scalanative_catch(_Unwind_Exception *unwindException) {
     ExceptionWrapper *exceptionWrapper = GetExceptionWrapper(unwindException);
-    void *exception = exceptionWrapper->obj;
+    Exception exception = exceptionWrapper->obj;
     Exception_cleanup(exception);
     return exception;
 }
 
-void scalanative_throw(void *obj) {
+__attribute__((noreturn)) void scalanative_throw(Exception obj) {
     ExceptionWrapper *exceptionWrapper =
         scalanative_Throwable_exceptionWrapper(obj);
     exceptionWrapper->unwindException.exception_cleanup =

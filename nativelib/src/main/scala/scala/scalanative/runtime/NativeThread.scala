@@ -241,7 +241,6 @@ object NativeThread {
     exception.asInstanceOf[runtime.Throwable].onCatchHandler = (_: Throwable) =>
       try NativeThread.StackOverflowGuards.reset()
       catch { case ex: StackOverflowError => () }
-
     throw exception
   }
 
