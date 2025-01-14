@@ -61,7 +61,8 @@ trait NirGenExports[G <: nsc.Global with Singleton] {
     !s.isMethod && s.isTerm && !s.isModule
 
   private def checkIsPublic(s: Symbol): Unit =
-    if (s.isPrivate) {
+    // allow package private
+    if (s.isPrivate || s.isProtected) {
       reporter.error(
         s.pos,
         "Exported members needs to be defined in public scope"
