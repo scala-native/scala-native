@@ -98,16 +98,11 @@ bool scalanative_forceMainThreadStackGrowth() {
         // Force growing of stack pointer and before updating thread info
         void *newStackBottom =
             (char *)(threadInfo->stackBottom) - threadInfo->stackSize;
-#ifdef _WIN32
-        VirtualAlloc(threadInfo->stackTop, threadInfo->stackSize, MEM_COMMIT,
-                     PAGE_READWRITE);
-#else
         volatile char *ptr = threadInfo->stackTop;
         while ((void *)ptr > newStackBottom) {
             *ptr = 0; // Write to the memory to force allocation
             ptr -= scalanative_page_size();
         }
-#endif
         threadInfo->stackTop = newStackBottom;
 
         return true;

@@ -2275,7 +2275,7 @@ private[scalanative] object Lower {
   lazy val ExceptionOnCatch = nir.Val.Global(ExceptionOnCatchName, nir.Type.Ptr)
   lazy val ExceptionOnCatchSig = nir.Type.Function(nir.Rt.Throwable :: Nil, nir.Type.Unit)
 
-  val CheckStackOverflowGuardsName = extern("scalanative_checkStackOverflowGuards")
+  val CheckStackOverflowGuardsName = extern("scalanative_StackOverflowGuards_check")
   val CheckStackOverflowGuards = nir.Val.Global(CheckStackOverflowGuardsName, nir.Type.Ptr)
   val CheckStackOverflowGuardsSig = nir.Type.Function(Nil, nir.Type.Unit)
 

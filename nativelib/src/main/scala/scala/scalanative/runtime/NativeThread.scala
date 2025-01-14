@@ -82,7 +82,7 @@ private object ThreadStackSize {
   final val JVMDefault = 1024 * 1024 // 1MB is JVM default
 
   // Additional stack size to compenstate memory for internals
-  private def extraThreadStackSize: Long = NativeThread.StackOverflowGuards.size
+  private def extraThreadStackSize: Long = StackOverflowGuards.size
 
   private val overrideDefaultThreadSize: Option[Long] = {
     System.getenv("SCALANATIVE_THREAD_SIZE") match {
@@ -232,18 +232,8 @@ object NativeThread {
         nativeThread.state = NativeThread.State.Terminated
         thread.notifyAll()
       }
+      StackOverflowGuards.close()
   }
-
-  @noinline
-  @exported("scalanative_throwPendingStackOverflowError")
-  def throwPendingStackOverflowError(): Unit = {
-    val exception = new StackOverflowError()
-    exception.asInstanceOf[runtime.Throwable].onCatchHandler = (_: Throwable) =>
-      try NativeThread.StackOverflowGuards.reset()
-      catch { case ex: StackOverflowError => () }
-    throw exception
-  }
-
   @extern
   private[scalanative] object TLS {
     @name("scalanative_assignCurrentThread")
@@ -264,17 +254,6 @@ object NativeThread {
         stackSize: Int, // ignored if main thread
         isMainThread: Boolean
     ): Unit = extern
-  }
-
-  @extern private[runtime] object StackOverflowGuards {
-    @name("scalanative_stackOverflowGuardsSize")
-    def size: Int = extern
-
-    @name("scalanative_setupStackOverflowGuards")
-    def setup(isMainThread: Boolean): Unit = extern
-
-    @name("scalanative_resetStackOverflowGuards")
-    def reset(): Unit = extern
   }
 
 }

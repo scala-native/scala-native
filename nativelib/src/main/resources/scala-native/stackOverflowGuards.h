@@ -12,10 +12,11 @@
 #include <unistd.h>
 #endif
 
-size_t scalanative_stackOverflowGuardsSize();
-void scalanative_setupStackOverflowGuards(bool isMainThread);
-void scalanative_resetStackOverflowGuards();
-void scalanative_checkStackOverflowGuards();
+size_t scalanative_StackOverflowGuards_size();
+void scalanative_StackOverflowGuards_setup(bool isMainThread);
+void scalanative_StackOverflowGuards_reset();
+void scalanative_StackOverflowGuards_close();
+void scalanative_StackOverflowGuards_check();
 
 extern size_t scalanative_page_size();
 static inline size_t resolvePageSize() { return scalanative_page_size(); }

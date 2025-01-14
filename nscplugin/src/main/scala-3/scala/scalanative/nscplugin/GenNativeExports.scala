@@ -75,7 +75,7 @@ trait GenNativeExports(using Context):
     isExtern
 
   private def checkIsPublic(s: Symbol): Unit =
-    if !s.isPublic then
+    if s.isPrivate then
       report.error(
         "Exported members needs to be defined in public scope",
         s.srcPos

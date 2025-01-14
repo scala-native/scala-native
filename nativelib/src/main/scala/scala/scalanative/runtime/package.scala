@@ -62,7 +62,7 @@ package object runtime {
       isMainThread = true,
       stackSize = -1 /* detect */
     )
-    NativeThread.StackOverflowGuards.setup(isMainThread = true)
+    StackOverflowGuards.setup(isMainThread = true)
 
     val mainThread = Thread.currentThread()
     if (mainThread == null) {
@@ -121,6 +121,7 @@ package object runtime {
       }
       shouldWaitForThreads || shouldRunQueuedTasks
     }) ()
+    StackOverflowGuards.close()
   }
 
   private[scalanative] final def executeUncaughtExceptionHandler(
@@ -213,4 +214,29 @@ package object runtime {
   @noinline
   private[scalanative] def throwNoSuchMethod(sig: String): Nothing =
     throw new NoSuchMethodException(sig)
+
+  @noinline
+  @exported("scalanative_throwStackOverflowError")
+  private[runtime] def throwPendingStackOverflowError(): Unit = {
+    val exception = new StackOverflowError()
+    exception.asInstanceOf[runtime.Throwable].onCatchHandler = (_: Throwable) =>
+      try StackOverflowGuards.reset()
+      catch { case ex: StackOverflowError => () }
+    throw exception
+  }
+
+  @extern private[runtime] object StackOverflowGuards {
+    @name("scalanative_StackOverflowGuards_size")
+    def size: Int = extern
+
+    @name("scalanative_StackOverflowGuards_setup")
+    def setup(isMainThread: Boolean): Unit = extern
+
+    @name("scalanative_StackOverflowGuards_reset")
+    def reset(): Unit = extern
+
+    @name("scalanative_StackOverflowGuards_close")
+    def close(): Unit = extern
+  }
+
 }
