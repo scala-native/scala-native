@@ -43,7 +43,9 @@ private[runtime] final class BasicMonitor(val lockWordRef: RawPtr)
     getObjectMonitor()._wait(timeout, nanos)
 
   @inline def enter(obj: Object): Unit = {
-    val thread = Thread.currentThread()
+    val thread = NativeThread.currentThread
+    if (thread == null) return // Not yet initialized
+
     val threadId = getThreadId(thread)
 
     if (!tryLock(threadId))
@@ -67,7 +69,9 @@ private[runtime] final class BasicMonitor(val lockWordRef: RawPtr)
   }
 
   @inline def exit(obj: Object): Unit = {
-    val thread = Thread.currentThread()
+    val thread = NativeThread.currentThread
+    if (thread == null) return // Not yet initialized
+
     val threadId = getThreadId(thread)
     val current = lockWord
     val lockedOnce = lockedWithThreadId(threadId)
