@@ -5,6 +5,10 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include "gc/shared/ThreadUtil.h"
+#ifndef _WIN32
+#include <sys/signal.h>
+#define SIG_HANDLER_STACK_SIZE MINSIGSTKSZ
+#endif
 
 typedef void *JavaThread;
 typedef void *NativeThread;
@@ -14,10 +18,11 @@ typedef struct ThreadInfo {
     void *stackTop;    // highest stack address
     void *stackBottom; // lowest stack address
     void *stackGuardPage;
+    bool isMainThread;
 #ifndef _WIN32
     bool pendingStackOverflowException;
+    char *signalHandlerStack[SIG_HANDLER_STACK_SIZE];
 #endif
-    bool isMainThread;
 } ThreadInfo;
 
 extern SN_ThreadLocal ThreadInfo currentThreadInfo;

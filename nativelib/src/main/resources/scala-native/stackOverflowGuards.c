@@ -195,13 +195,11 @@ static void stackOverflowHandler(int sig, siginfo_t *info, void *context) {
     }
 }
 
-#define SIG_HANDLER_STACK_SIZE SIGSTKSZ
-static SN_ThreadLocal char *signalHandlerStack[SIG_HANDLER_STACK_SIZE] = {0};
 static void setupSignalHandlerAltstack() {
     stack_t handlerStack = {};
     size_t pageSize = resolvePageSize();
     handlerStack.ss_size = SIG_HANDLER_STACK_SIZE;
-    handlerStack.ss_sp = &signalHandlerStack;
+    handlerStack.ss_sp = &currentThreadInfo.signalHandlerStack;
     handlerStack.ss_flags = 0;
     if (sigaltstack(&handlerStack, NULL) == -1) {
         perror("Scala Native Stack Overflow Handler failed to set alt stack");
