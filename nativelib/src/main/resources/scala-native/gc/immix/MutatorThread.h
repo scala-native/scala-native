@@ -6,6 +6,7 @@
 #include "immix_commix/RegistersCapture.h"
 #include <stdatomic.h>
 #include <stdbool.h>
+#include "nativeThreadTLS.h"
 
 typedef struct {
     _Atomic(GC_MutatorThreadState) state;
@@ -23,6 +24,9 @@ typedef struct {
 #endif // SCALANATIVE_GC_USE_YIELDPOINT_TRAPS
     Allocator allocator;
     LargeAllocator largeAllocator;
+#ifdef SCALANATIVE_THREAD_ALT_STACK
+    ThreadInfo *threadInfo;
+#endif
 } MutatorThread;
 
 typedef struct MutatorThreadNode {

@@ -7,6 +7,7 @@
 #include <stdatomic.h>
 #include <shared/ThreadUtil.h>
 #include "immix_commix/RegistersCapture.h"
+#include "nativeThreadTLS.h"
 
 typedef struct {
     _Atomic(GC_MutatorThreadState) state;
@@ -24,6 +25,9 @@ typedef struct {
     thread_t thread;
 #endif
 #endif // SCALANATIVE_GC_USE_YIELDPOINT_TRAPS
+#ifdef SCALANATIVE_THREAD_ALT_STACK
+    ThreadInfo *threadInfo;
+#endif
 } MutatorThread;
 
 typedef struct MutatorThreadNode {

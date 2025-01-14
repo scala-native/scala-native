@@ -9,6 +9,10 @@
 typedef void *JavaThread;
 typedef void *NativeThread;
 
+#ifndef _WIN32
+#define SCALANATIVE_THREAD_ALT_STACK
+#endif
+
 typedef struct ThreadInfo {
     size_t stackSize;
     void *stackTop;    // highest stack address
@@ -18,6 +22,7 @@ typedef struct ThreadInfo {
 #ifndef _WIN32
     bool pendingStackOverflowException;
     void *signalHandlerStack;
+    size_t signalHandlerStackSize;
 #endif
 } ThreadInfo;
 

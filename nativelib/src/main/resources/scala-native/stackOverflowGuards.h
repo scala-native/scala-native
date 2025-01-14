@@ -21,12 +21,9 @@ void scalanative_StackOverflowGuards_check();
 extern size_t scalanative_page_size();
 static inline size_t resolvePageSize() { return scalanative_page_size(); }
 
-static inline size_t stackGuardPages() {
-    static size_t computed = -1;
-    if (computed == -1) {
-        computed = (32 * 1024 + resolvePageSize() - 1) / resolvePageSize();
-    }
-    return computed;
+static inline size_t stackGuardPages() { return 1; }
+static inline void *lowestNonGuardedAddress(void *stackGuardAddress) {
+    return (char *)stackGuardAddress + stackGuardPages() * resolvePageSize();
 }
 
 static inline bool isInRange(void *addr, void *start, void *end) {

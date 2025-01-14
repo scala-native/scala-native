@@ -219,6 +219,8 @@ static void setupSignalHandlerAltstack() {
         perror("Scala Native Stack Overflow Handler failed to set alt stack");
         abort();
     }
+    currentThreadInfo.signalHandlerStack = handlerStack.ss_sp;
+    currentThreadInfo.signalHandlerStackSize = handlerStack.ss_size;
 }
 static void setupSignalHandler(int signal) {
     struct sigaction sa = {};

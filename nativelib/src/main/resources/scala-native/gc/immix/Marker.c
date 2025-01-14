@@ -12,6 +12,7 @@
 #include "shared/GCTypes.h"
 #include <stdatomic.h>
 #include "shared/ThreadUtil.h"
+#include "stackOverflowGuards.h"
 
 extern word_t *__modules;
 extern int __modules_size;
@@ -157,6 +158,24 @@ NO_SANITIZE void Marker_markProgramStack(MutatorThread *thread, Heap *heap,
         stackTop = (word_t **)atomic_load_explicit(&thread->stackTop,
                                                    memory_order_acquire);
     } while (stackTop == NULL);
+#ifdef SCALANATIVE_THREAD_ALT_STACK
+    // If signal handler is executing in alternative stack we need to mark the
+    // whole thread stack
+    if (((void *)stackTop < thread->threadInfo->stackTop ||
+         (void *)stackTop > thread->threadInfo->stackBottom) &&
+        thread->threadInfo->signalHandlerStack != NULL) {
+        // Area between thread-stackTop and stackGaurdPage might be guarded
+        stackTop = lowestNonGuardedAddress(thread->threadInfo->stackGuardPage);
+        // Marking alternative stack should not be needed, but tests showed that
+        // it might contain some pointer to managed object
+        word_t **signalHandlerStack = thread->threadInfo->signalHandlerStack;
+        Marker_markRange(
+            heap, stack, signalHandlerStack,
+            (word_t **)((char *)signalHandlerStack +
+                        thread->threadInfo->signalHandlerStackSize),
+            sizeof(word_t));
+    }
+#endif
     Marker_markRange(heap, stack, stackTop, stackBottom, sizeof(word_t));
 
     // Mark registers buffer
