@@ -2061,97 +2061,113 @@ private[scalanative] object Lower {
   val throwSig = nir.Type.Function(Seq(nir.Type.Ptr), nir.Type.Nothing)
   val throw_ = nir.Val.Global(throwName, nir.Type.Ptr)
 
-  val arrayHeapAlloc = nir.Type.typeToArray.map {
-    case (ty, arrname) =>
-      val nir.Global.Top(id) = arrname
-      val arrcls = nir.Type.Ref(arrname)
-      ty -> nir.Global.Member(
-        nir.Global.Top(id + "$"),
-        nir.Sig.Method("alloc", Seq(nir.Type.Int, arrcls))
-      )
-  }.toMap
-  val arrayHeapAllocSig = nir.Type.typeToArray.map {
-    case (ty, arrname) =>
-      val nir.Global.Top(id) = arrname
-      ty -> nir.Type.Function(
-        Seq(nir.Type.Ref(nir.Global.Top(id + "$")), nir.Type.Int),
-        nir.Type.Ref(arrname)
-      )
-  }.toMap
-  val arrayZoneAlloc = nir.Type.typeToArray.map {
-    case (ty, arrname) =>
-      val nir.Global.Top(id) = arrname
-      val arrcls = nir.Type.Ref(arrname)
-      ty -> nir.Global.Member(
-        nir.Global.Top(id + "$"),
-        nir.Sig.Method("alloc", Seq(nir.Type.Int, SafeZone, arrcls))
-      )
-  }.toMap
-  val arrayZoneAllocSig = nir.Type.typeToArray.map {
-    case (ty, arrname) =>
-      val nir.Global.Top(id) = arrname
-      ty -> nir.Type.Function(
-        Seq(nir.Type.Ref(nir.Global.Top(id + "$")), nir.Type.Int, SafeZone),
-        nir.Type.Ref(arrname)
-      )
-  }.toMap
-  val arraySnapshot = nir.Type.typeToArray.map {
-    case (ty, arrname) =>
-      val nir.Global.Top(id) = arrname
-      val arrcls = nir.Type.Ref(arrname)
-      ty -> nir.Global.Member(
-        nir.Global.Top(id + "$"),
-        nir.Sig.Method("snapshot", Seq(nir.Type.Int, nir.Type.Ptr, arrcls))
-      )
-  }.toMap
-  val arraySnapshotSig = nir.Type.typeToArray.map {
-    case (ty, arrname) =>
-      val nir.Global.Top(id) = arrname
-      ty -> nir.Type.Function(
-        Seq(nir.Type.Ref(nir.Global.Top(id + "$")), nir.Type.Int, nir.Type.Ptr),
-        nir.Type.Ref(arrname)
-      )
-  }.toMap
-  val arrayApplyGeneric = nir.Type.typeToArray.map {
-    case (ty, arrname) =>
-      ty -> nir.Global.Member(
-        arrname,
-        nir.Sig.Method("apply", Seq(nir.Type.Int, nir.Rt.Object))
-      )
+  def arrayHeapAllocOf(ty: nir.Type, arrayClassName: nir.Global.Top) = {
+    val arrcls = nir.Type.Ref(arrayClassName)
+    nir.Global.Member(
+      nir.Global.Top(arrayClassName.id + "$"),
+      nir.Sig.Method("alloc", Seq(nir.Type.Int, arrcls))
+    )
   }
-  val arrayApply = nir.Type.typeToArray.map {
-    case (ty, arrname) =>
-      ty -> nir.Global.Member(
-        arrname,
-        nir.Sig.Method("apply", Seq(nir.Type.Int, ty))
-      )
-  }.toMap
+  val arrayHeapAlloc = nir.Type.typeToArray.map { case (ty, arrCls) => ty -> arrayHeapAllocOf(ty, arrCls) }.toMap
+  val allArrayHeapAlloc = arrayHeapAlloc.values ++ Seq(arrayHeapAllocOf(nir.Type.Byte, nir.Rt.BlobArray.name))
+
+  def arrayHeapAllocSigOf(ty: nir.Type, arrayClassName: nir.Global.Top) = {
+    nir.Type.Function(
+      Seq(nir.Type.Ref(nir.Global.Top(arrayClassName.id + "$")), nir.Type.Int),
+      nir.Type.Ref(arrayClassName)
+    )
+  }
+  val arrayHeapAllocSig = nir.Type.typeToArray.map { case (ty, arrname) => ty -> arrayHeapAllocSigOf(ty, arrname) }.toMap
+
+  def arrayZoneAllocOf(ty: nir.Type, arrayClassName: nir.Global.Top) = {
+    val arrcls = nir.Type.Ref(arrayClassName)
+    nir.Global.Member(
+      nir.Global.Top(arrayClassName.id + "$"),
+      nir.Sig.Method("alloc", Seq(nir.Type.Int, SafeZone, arrcls))
+    )
+  }
+  val arrayZoneAlloc = nir.Type.typeToArray.map { case (ty, arrname) => ty -> arrayZoneAllocOf(ty, arrname) }.toMap
+  val allArrayZoneAlloc = arrayZoneAlloc.values ++ Seq(arrayZoneAllocOf(nir.Type.Byte, nir.Rt.BlobArray.name))
+
+  def arrayZoneAllocSigOf(ty: nir.Type, arrayClassName: nir.Global.Top) = {
+    nir.Type.Function(
+      Seq(nir.Type.Ref(nir.Global.Top(arrayClassName.id + "$")), nir.Type.Int, SafeZone),
+      nir.Type.Ref(arrayClassName)
+    )
+  }
+  val arrayZoneAllocSig = nir.Type.typeToArray.map { case (ty, arrname) => ty -> arrayZoneAllocSigOf(ty, arrname) }.toMap
+
+  def arraySnapshotOf(ty: nir.Type, arrayClassName: nir.Global.Top) = {
+    val arrcls = nir.Type.Ref(arrayClassName)
+    nir.Global.Member(
+      nir.Global.Top(arrayClassName.id + "$"),
+      nir.Sig.Method("snapshot", Seq(nir.Type.Int, nir.Type.Ptr, arrcls))
+    )
+  }
+  val arraySnapshot = nir.Type.typeToArray.map { case (ty, arrname) => ty -> arraySnapshotOf(ty, arrname) }.toMap
+  val allArraySnapshot = arraySnapshot.values ++ Seq(arraySnapshotOf(nir.Type.Byte, nir.Rt.BlobArray.name))
+
+  def arraySnapshotSigOf(ty: nir.Type, arrayClassName: nir.Global.Top) = {
+    nir.Type.Function(
+      Seq(nir.Type.Ref(nir.Global.Top(arrayClassName.id + "$")), nir.Type.Int, nir.Type.Ptr),
+      nir.Type.Ref(arrayClassName)
+    )
+  }
+  val arraySnapshotSig = nir.Type.typeToArray.map { case (ty, arrname) => ty -> arraySnapshotSigOf(ty, arrname) }.toMap
+
+  def arrayApplyGenericOf(ty: nir.Type, arrname: nir.Global.Top) = {
+    nir.Global.Member(
+      arrname,
+      nir.Sig.Method("apply", Seq(nir.Type.Int, nir.Rt.Object))
+    )
+  }
+  val arrayApplyGeneric = nir.Type.typeToArray.map { case (ty, arrname) => ty -> arrayApplyGenericOf(ty, arrname) }
+  val allArrayApplyGeneric = arrayApplyGeneric.values ++ Seq(arrayApplyGenericOf(nir.Type.Byte, nir.Rt.BlobArray.name))
+
+  def arrayApplyOf(ty: nir.Type, arrname: nir.Global.Top) = {
+    nir.Global.Member(
+      arrname,
+      nir.Sig.Method("apply", Seq(nir.Type.Int, ty))
+    )
+  }
+  val arrayApply = nir.Type.typeToArray.map { case (ty, arrname) => ty -> arrayApplyOf(ty, arrname) }.toMap
+  val allArrayApply = arrayApply.values ++ Seq(arrayApplyOf(nir.Type.Byte, nir.Rt.BlobArray.name))
+
+  def arrayApplySigOf(ty: nir.Type, arrname: nir.Global.Top) = {
+    nir.Type.Function(Seq(nir.Type.Ref(arrname), nir.Type.Int), ty)
+  }
+
   val arrayApplySig = nir.Type.typeToArray.map {
-    case (ty, arrname) =>
-      ty -> nir.Type.Function(Seq(nir.Type.Ref(arrname), nir.Type.Int), ty)
+    case (ty, arrname) => ty -> arrayApplySigOf(ty, arrname)
   }.toMap
-  val arrayUpdateGeneric = nir.Type.typeToArray.map {
-    case (ty, arrname) =>
-      ty -> nir.Global.Member(
-        arrname,
-        nir.Sig
-          .Method("update", Seq(nir.Type.Int, nir.Rt.Object, nir.Type.Unit))
-      )
+
+  def arrayUpdateGenericOf(ty: nir.Type, arrname: nir.Global.Top) = {
+    nir.Global.Member(
+      arrname,
+      nir.Sig.Method("update", Seq(nir.Type.Int, nir.Rt.Object, nir.Type.Unit))
+    )
   }
-  val arrayUpdate = nir.Type.typeToArray.map {
-    case (ty, arrname) =>
-      ty -> nir.Global.Member(
-        arrname,
-        nir.Sig.Method("update", Seq(nir.Type.Int, ty, nir.Type.Unit))
-      )
-  }.toMap
-  val arrayUpdateSig = nir.Type.typeToArray.map {
-    case (ty, arrname) =>
-      ty -> nir.Type.Function(
-        Seq(nir.Type.Ref(arrname), nir.Type.Int, ty),
-        nir.Type.Unit
-      )
-  }.toMap
+
+  val arrayUpdateGeneric = nir.Type.typeToArray.map { case (ty, arrname) => ty -> arrayUpdateGenericOf(ty, arrname) }
+  val allArrayUpdateGeneric = arrayUpdateGeneric.values ++ Seq(arrayUpdateGenericOf(nir.Type.Byte, nir.Rt.BlobArray.name))
+
+  def arrayUpdateOf(ty: nir.Type, arrname: nir.Global.Top) = {
+    nir.Global.Member(
+      arrname,
+      nir.Sig.Method("update", Seq(nir.Type.Int, ty, nir.Type.Unit))
+    )
+  }
+  val arrayUpdate = nir.Type.typeToArray.map { case (ty, arrname) => ty -> arrayUpdateOf(ty, arrname) }.toMap
+  val allArrayUpdate = arrayUpdate.values ++ Seq(arrayUpdateOf(nir.Type.Byte, nir.Rt.BlobArray.name))
+
+  def arrayUpdateSigOf(ty: nir.Type, arrname: nir.Global.Top) = {
+    nir.Type.Function(
+      Seq(nir.Type.Ref(arrname), nir.Type.Int, ty),
+      nir.Type.Unit
+    )
+  }
+  val arrayUpdateSig = nir.Type.typeToArray.map { case (ty, arrname) => ty -> arrayUpdateSigOf(ty, arrname) }.toMap
+
   val arrayLength =
     nir.Global.Member(
       nir.Global.Top("scala.scalanative.runtime.Array"),
@@ -2309,13 +2325,13 @@ private[scalanative] object Lower {
     buf ++= BoxTo.values
     buf ++= UnboxTo.values
     buf += arrayLength
-    buf ++= arrayHeapAlloc.values
-    buf ++= arrayZoneAlloc.values
-    buf ++= arraySnapshot.values
-    buf ++= arrayApplyGeneric.values
-    buf ++= arrayApply.values
-    buf ++= arrayUpdateGeneric.values
-    buf ++= arrayUpdate.values
+    buf ++= allArrayHeapAlloc
+    buf ++= allArrayZoneAlloc
+    buf ++= allArraySnapshot
+    buf ++= allArrayApplyGeneric
+    buf ++= allArrayApply
+    buf ++= allArrayUpdateGeneric
+    buf ++= allArrayUpdate
     buf += throwDivisionByZero
     buf += throwClassCast
     buf += throwNullPointer
