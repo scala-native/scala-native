@@ -445,6 +445,7 @@ unwind_phase2_forced(unw_context_t *uc, unw_cursor_t *cursor,
 
 
 /// Called by __cxa_throw.  Only returns if there is a fatal error.
+__attribute__((optnone)) // disable optimizer - under -O2 it constructs invalid assuming exception_object=NULL leading to SIGSEGV on write ot private fieldss
 _LIBUNWIND_EXPORT _Unwind_Reason_Code
 _Unwind_RaiseException(_Unwind_Exception *exception_object) {
   _LIBUNWIND_TRACE_API("_Unwind_RaiseException(ex_obj=%p)",

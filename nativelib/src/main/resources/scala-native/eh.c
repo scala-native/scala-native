@@ -261,9 +261,8 @@ __attribute__((noreturn)) void scalanative_throw(Exception obj) {
     exceptionWrapper->unwindException.exception_cleanup =
         generic_exception_cleanup;
     exceptionWrapper->obj = obj;
-
-    _Unwind_Reason_Code code =
-        _Unwind_RaiseException(&exceptionWrapper->unwindException);
+    _Unwind_Exception *unwindException = &exceptionWrapper->unwindException;
+    _Unwind_Reason_Code code = _Unwind_RaiseException(unwindException);
 
     if (code == _URC_END_OF_STACK) {
         generic_exception_cleanup(code, &exceptionWrapper->unwindException);
