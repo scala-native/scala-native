@@ -10,7 +10,9 @@ import org.scalanative.testsuite.utils.Platform
 import java.io.{PrintStream, File}
 
 class StackOverflowTest {
-  def stackoverflow(): Int = 1 + stackoverflow()
+  // Simple 1 + stackoverflow() would be optimized to be tail recursive(!?) by LLVM
+  def stackoverflow(): Int = stackoverflow() + stackoverflow()
+
 
   @Test def catchStackOverflowError(): Unit = {
     assertThrows(classOf[StackOverflowError], () => stackoverflow())
