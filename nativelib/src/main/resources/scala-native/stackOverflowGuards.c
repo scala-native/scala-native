@@ -15,7 +15,6 @@
 
 #include "stackOverflowGuards.h"
 #include "nativeThreadTLS.h"
-#include "gc/shared/ThreadUtil.h"
 #include "StackTrace.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -50,7 +49,7 @@ void scalanative_setupStackOverflowGuards(bool isMainThread) {
         isHandlerConfigured = true;
     }
     ULONG stackOverflowStackSize = scalanative_stackOverflowGuardsSize();
-    currentThreadInfo.firstStackGuardPage =
+    currentThreadInfo.stackGuardPage =
         (void *)((uintptr_t)currentThreadInfo.stackTop +
                  stackOverflowStackSize);
 
@@ -63,10 +62,10 @@ void scalanative_setupStackOverflowGuards(bool isMainThread) {
 
 void scalanative_resetStackOverflowGuards() {
     int dummy;
-    void *stackTop = &dummy;
+    void *curStackTop = &dummy;
     ThreadInfo info = currentThreadInfo;
-    if (belowStackPageBounds(info.firstStackGuardPage, stackTop))
-        return;
+    if (inStackPageBound(info.stackGuardPage, curStackTop))
+        return; // still unwinding
     _resetstkoflw();
 }
 
