@@ -169,11 +169,10 @@ private[lang] object PipeIO {
       synchronized {
 
         if (offset < 0 || len < 0 || len > buf.length - offset) {
-          val prefix =
-            s"Range [${offset}, ${offset} + ${len})"
-          val suffix =
-            s" out of bounds for length ${buf.length}"
-          throw new IndexOutOfBoundsException(s"${prefix}${suffix}")
+          val end = offset + len
+          throw new IndexOutOfBoundsException(
+            s"Range [$offset, $end) out of bounds for length ${buf.length}"
+          )
         }
 
         if (len == 0) 0
