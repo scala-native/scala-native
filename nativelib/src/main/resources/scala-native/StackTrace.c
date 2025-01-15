@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 #include "platform/unwind.h"
 #include "gc/shared/ThreadUtil.h"
 
@@ -34,6 +35,7 @@ void StackTrace_PrintStackTrace() {
             }
 
             char sym[256];
+            memset(&sym, 0, sizeof(sym));
             if (++frames < MaxFrames &&
                 scalanative_unwind_get_proc_name(cursor, sym, sizeof(sym),
                                                  &offset) == 0) {
