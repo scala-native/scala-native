@@ -21,7 +21,21 @@ void scalanative_StackOverflowGuards_check();
 extern size_t scalanative_page_size();
 static inline size_t resolvePageSize() { return scalanative_page_size(); }
 
-static inline size_t stackGuardPages() { return 1; }
+static inline size_t stackGuardPages() {
+    // On Windows that's area guaranteed to be available under StackOverflow
+    // detection It's need to be big enough to perform handling - collecting
+    // stack trace and throwing exception.
+    static size_t computed = -1;
+    if (computed == -1) {
+        computed = (32 * 1024 + resolvePageSize() - 1) / resolvePageSize();
+#ifndef _WIN32
+        // Additionally on Unix it needs to be big enough to allow program to
+        // reenter recursive function so we can handle it.
+        computed = computed * 3 / 2;
+#endif
+    }
+    return computed;
+}
 static inline void *lowestNonGuardedAddress(void *stackGuardAddress) {
     return (char *)stackGuardAddress + stackGuardPages() * resolvePageSize();
 }
