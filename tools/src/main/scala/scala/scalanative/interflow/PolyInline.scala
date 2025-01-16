@@ -34,10 +34,15 @@ private[interflow] trait PolyInline { self: Interflow =>
                 }
 
               if (shallPolyInline) {
-                Some(
-                  polyInline(op, eargs.toIndexedSeq, targets, classes, impls)
-                )
+                in(s"polyinline ${op.obj.ty.show} ${op.sig.show}") {
+                  Some(
+                    polyInline(op, eargs.toIndexedSeq, targets, classes, impls)
+                  )
+                }
               } else {
+                log(
+                  s"no reason to polyinline ${op.obj.ty.show} ${op.sig.show}}"
+                )
                 None
               }
           }
