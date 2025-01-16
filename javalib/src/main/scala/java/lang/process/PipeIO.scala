@@ -255,9 +255,11 @@ private[lang] object PipeIO {
 
   implicit val InputPipeIO: PipeIO[Stream] =
     new PipeIO(NullInput, (p, fd) => new StreamImpl(p, new FileInputStream(fd)))
-
   implicit val OutputPipeIO: PipeIO[OutputStream] =
-    new PipeIO(NullOutput, (_, fd) => new FileOutputStream(fd))
+    new PipeIO(
+      NullOutput,
+      (_, fd) => new BufferedOutputStream(new FileOutputStream(fd))
+    )
 
   private object NullInput extends Stream {
     @stub
