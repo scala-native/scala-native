@@ -54,7 +54,7 @@ private[interflow] trait Inline { self: Interflow =>
         }
         lazy val shallNot = {
           def hardLimits =
-            isRecursive | isDenylisted | noInline | isExtern
+            isRecursive || isDenylisted || noInline || isExtern
           def softLimits =
             calleeTooBig || callerTooBig || hasUnwind || inlineDepthLimitExceeded
 
