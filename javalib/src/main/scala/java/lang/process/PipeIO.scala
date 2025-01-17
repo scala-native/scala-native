@@ -220,7 +220,7 @@ private[lang] object PipeIO {
         if (avail <= 0) PipeIO.NullInput
         else new ByteArrayInputStream(src.readNBytes(avail))
 
-      // release JVM FileDescriptor and, especially, its OS fd. 
+      // release JVM FileDescriptor and, especially, its OS fd.
       src.close()
 
       src = newSrc
