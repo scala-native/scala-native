@@ -15,7 +15,7 @@ package object runtime {
   def uptime: Long = System.currentTimeMillis() - startTime
 
   /** Used as a stub right hand of intrinsified methods. */
-  private[scalanative] def intrinsic: Nothing = throwUndefined()
+  @noinline private[scalanative] def intrinsic: Nothing = throwUndefined()
 
   // Called statically by the compiler, do not modify!
   /** Enter monitor of given object. */

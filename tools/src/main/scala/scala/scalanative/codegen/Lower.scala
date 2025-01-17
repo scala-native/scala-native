@@ -1940,11 +1940,14 @@ private[scalanative] object Lower {
   private object IntrinsicCall {
     object LoadAllClassess extends IntrinsicCall
 
-    def unapply(op: nir.Op.Call): Option[IntrinsicCall] = op.ptr match {
+    def unapply(op: nir.Op.Call)(implicit logger: build.Logger, srcPos: nir.SourcePosition): Option[IntrinsicCall] = op.ptr match {
       case nir.Val.Global(nir.Global.Member(owner, sig), _) =>
         (owner.id, sig.unmangled) match {
           case ("scala.scalanative.runtime.LinkedClassesRepository$", nir.Sig.Method("loadAll", _, _)) => Some(LoadAllClassess)
-          case _                                                                                       => None
+          case (_, nir.Sig.Method("intrinsic", _, _)) if owner == nir.Rt.Runtime.name =>
+            logger.warn(s"Instrinsic method was not resolved by Scala Native, it would lead to runtime exception. Defined at ${srcPos.show}")
+            None
+          case _ => None
         }
       case _ => None
     }

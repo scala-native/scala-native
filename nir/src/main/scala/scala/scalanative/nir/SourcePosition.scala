@@ -33,7 +33,13 @@ final case class SourcePosition(
 
   /** One-based column number */
   def sourceColumn: Int = column + 1
-  def show: String = s"$source:$sourceLine:$sourceColumn"
+  def show: String = {
+    val source = this.source match {
+      case SourceFile.Virtual              => "<virtual>"
+      case SourceFile.Relative(pathString) => pathString
+    }
+    s"$source:$sourceLine:$sourceColumn"
+  }
 
   def isEmpty: Boolean = this eq SourcePosition.NoPosition
   def isDefined: Boolean = !isEmpty
