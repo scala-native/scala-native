@@ -19,7 +19,7 @@ class BigDecimalScalaNativeIssuesTest {
      */
 
     // Fully qualify to be certain that Java is used, not Scala extensions.
-    val jbd = jm.BigDecimal("1.199999988079071")
+    val jbd = new jm.BigDecimal("1.199999988079071")
     val f = jbd.floatValue()
 
     val hexString = jl.Float.floatToIntBits(f).toHexString
