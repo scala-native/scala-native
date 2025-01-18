@@ -85,7 +85,7 @@ private object ThreadStackSize {
   private def extraThreadStackSize: Long = StackOverflowGuards.size
 
   private val overrideDefaultThreadSize: Option[Long] = {
-    System.getenv("SCALANATIVE_THREAD_SIZE") match {
+    System.getenv("SCALANATIVE_THREAD_STACK_SIZE") match {
       case null => None
       case default =>
         val numberPart = default.takeWhile(_.isDigit)
