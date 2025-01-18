@@ -473,7 +473,7 @@ NO_SANITIZE void Marker_markProgramStack(MutatorThread *thread, Heap *heap,
     if (((void *)stackTop < thread->threadInfo->stackTop ||
          (void *)stackTop > thread->threadInfo->stackBottom) &&
         thread->threadInfo->signalHandlerStack != NULL) {
-        stackTop = lowestNonGuardedAddress(thread->threadInfo->stackGuardPage);
+        stackTop = threadStackScanableLimit(thread->threadInfo);
         // Marking alternative stack should not be needed, but tests showed that
         // it might contain some pointer to managed object
         Marker_markRange(heap, stats, outHolder, outWeakRefHolder,

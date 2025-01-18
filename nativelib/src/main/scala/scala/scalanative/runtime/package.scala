@@ -60,7 +60,7 @@ package object runtime {
     NativeThread.TLS.setupCurrentThreadInfo(
       stackBottom = rawargv,
       isMainThread = true,
-      stackSize = -1 /* detect */
+      stackSize = 0 /* detect */
     )
     StackOverflowGuards.setup(isMainThread = true)
 

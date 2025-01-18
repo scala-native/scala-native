@@ -2,11 +2,12 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #else // Unix
-#if defined(__APPLE__) && defined(__MACH__)
 #include <pthread.h>
-#endif
+#if defined(__linux__)
+#include <dlfcn.h>
+#endif // linux
 #include <sys/resource.h>
-#endif
+#endif // Unix
 
 #include "nativeThreadTLS.h"
 #include "gc/shared/ThreadUtil.h"
@@ -57,18 +58,13 @@ size_t scalanative_mainThreadMaxStackSize() {
 static bool approximateStackBounds(void *stackBottom, size_t stackSize,
                                    ThreadInfo *threadInfo) {
     size_t pageSize = resolvePageSize();
+    abort();
 
     // Align stack bottom to page size
-    currentThreadInfo.stackBottom =
-        (void *)(((uintptr_t)stackBottom + pageSize - 1) & ~(pageSize - 1));
+    currentThreadInfo.stackBottom = alignToNextPage(stackBottom);
     assert((uintptr_t)currentThreadInfo.stackBottom >= (uintptr_t)stackBottom);
 
-    if (currentThreadInfo.isMainThread) {
-        // Ignore stack size from param, calculate fresh one
-        currentThreadInfo.stackSize = scalanative_mainThreadMaxStackSize();
-    } else {
-        currentThreadInfo.stackSize = stackSize;
-    }
+    currentThreadInfo.stackSize = currentThreadInfo.maxStackSize;
     assert(currentThreadInfo.stackSize > 0);
 
     currentThreadInfo.stackTop =
@@ -77,41 +73,32 @@ static bool approximateStackBounds(void *stackBottom, size_t stackSize,
     return true;
 }
 
-bool scalanative_forceMainThreadStackGrowth() {
-    ThreadInfo *threadInfo = &currentThreadInfo;
-    assert(threadInfo->isMainThread);
-    // Main thread stack memory was not grown yet
-    // Force it to at least default JVM thread size (1MB) of max
-    // stack size
-    // We would grow it again when when stack guard is reached
-    size_t curStackSize = threadInfo->stackSize;
-    size_t maxStackSize = scalanative_mainThreadMaxStackSize();
-    if (curStackSize < maxStackSize) {
-#define InitialMainThreadStackSize (1024 * 1024) // 1MB
-        if (curStackSize < InitialMainThreadStackSize)
-            threadInfo->stackSize = InitialMainThreadStackSize;
-        else
-            threadInfo->stackSize += InitialMainThreadStackSize;
-        if (threadInfo->stackSize > maxStackSize)
-            threadInfo->stackSize = maxStackSize;
-
-        // Force growing of stack pointer and before updating thread info
-        void *newStackBottom =
-            (char *)(threadInfo->stackBottom) - threadInfo->stackSize;
-        volatile char *ptr = threadInfo->stackTop;
-        while ((void *)ptr > newStackBottom) {
-            *ptr = 0; // Write to the memory to force allocation
-            ptr -= scalanative_page_size();
+typedef int (*pthread_getattr_np_func)(pthread_t thread, pthread_attr_t *attr);
+static pthread_getattr_np_func get_pthread_getattr_np() {
+    static pthread_getattr_np_func fnHandle = NULL;
+    static bool computed = false;
+    if (!computed) {
+// fast-path
+#ifdef _GNU_SOURCE
+        fnHandle =
+            (pthread_getattr_np_func)dlsym(RTLD_DEFAULT, "pthread_getattr_np");
+#endif
+        // fallback
+        if (!fnHandle) {
+            void *libHandle = dlopen("libpthread.so.0", RTLD_NOW);
+            if (libHandle) {
+                // Get the address of pthread_getattr_np
+                fnHandle = (pthread_getattr_np_func)dlsym(libHandle,
+                                                          "pthread_getattr_np");
+                dlclose(libHandle);
+            }
         }
-        threadInfo->stackTop = newStackBottom;
-
-        return true;
-#undef InitialMainThreadStackSize
+        computed = true;
     }
-    return false;
+    return fnHandle;
 }
 
-static bool detectStackBounds(void *onStackPointer, ThreadInfo *threadInfo) {
+static bool detectStackBounds(void *onStackPointer) {
 #ifdef _WIN32
 #if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0602
     GetCurrentThreadStackLimits((PULONG_PTR)&threadInfo->stackTop,
@@ -121,25 +108,54 @@ static bool detectStackBounds(void *onStackPointer, ThreadInfo *threadInfo) {
     return true;
 #endif
 #elif defined(__linux__)
+    // GNU extension, might not be available
+    pthread_getattr_np_func pthread_getattr_np_ptr = get_pthread_getattr_np();
+    if (pthread_getattr_np_ptr) {
+        pthread_attr_t attr;
+        if (pthread_getattr_np_ptr(pthread_self(), &attr) != 0) {
+            goto fallback;
+        }
+        void *stackTop;
+        size_t size;
+        if (pthread_attr_getstack(&attr, &stackTop, &size) != 0) {
+            pthread_attr_destroy(&attr);
+            goto fallback;
+        }
+        pthread_attr_destroy(&attr);
+        void *stackBottom = (void *)((char *)stackTop + size);
+        if (!isInRange(onStackPointer, stackTop, stackBottom)) {
+            goto fallback;
+        }
+        currentThreadInfo.stackBottom = stackBottom;
+        currentThreadInfo.stackTop = alignToPageStart(onStackPointer);
+        size_t usedStackSize = stackBottom - currentThreadInfo.stackTop;
+        currentThreadInfo.stackSize = usedStackSize;
+        currentThreadInfo.maxStackSize = size;
+        currentThreadInfo.stackTop = alignToPageStart(onStackPointer);
+        return true;
+    }
+fallback:;
     FILE *maps = fopen("/proc/self/maps", "r");
     if (!maps) {
+        perror("ScalaNative TheadInfo init failed to open /proc/self/maps");
         return false;
     }
-
+    uintptr_t start, end;
     char line[256];
     while (fgets(line, sizeof(line), maps)) {
-        uintptr_t start, end;
         if (sscanf(line, "%lx-%lx ", &start, &end) == 2) {
-            if ((void *)start <= onStackPointer &&
-                onStackPointer < (void *)end) {
-                threadInfo->stackTop = (void *)start;
-                threadInfo->stackBottom = (void *)end;
-                threadInfo->stackSize = end - start;
-                if (threadInfo->isMainThread) {
-                    // Main thread memory might not be fully available yet
-                    // Force growing stack size
-                    scalanative_forceMainThreadStackGrowth();
-                }
+            if (isInRange(onStackPointer, (void *)start, (void *)end)) {
+                size_t size = end - start;
+                currentThreadInfo.stackBottom = (void *)end;
+                currentThreadInfo.stackTop = alignToPageStart(onStackPointer);
+                size_t usedStackSize =
+                    currentThreadInfo.stackBottom - currentThreadInfo.stackTop;
+                size_t maxStackSize = currentThreadInfo.maxStackSize;
+                currentThreadInfo.stackSize = (usedStackSize > maxStackSize)
+                                                  ? maxStackSize
+                                                  : usedStackSize;
+
+                fclose(maps);
                 return true;
             }
         }
@@ -158,14 +174,19 @@ static bool detectStackBounds(void *onStackPointer, ThreadInfo *threadInfo) {
     return false;
 }
 
-void scalanative_setupCurrentThreadInfo(void *stackBottom, uint32_t stackSize,
+void scalanative_setupCurrentThreadInfo(void *stackBottom, int32_t stackSize,
                                         bool isMainThread) {
     // Assert stack grows downwards
     int dummy;
     assert((uintptr_t)&dummy < (uintptr_t)stackBottom);
 
     currentThreadInfo.isMainThread = isMainThread;
-    if (!detectStackBounds(stackBottom, &currentThreadInfo)) {
+    currentThreadInfo.maxStackSize =
+        (isMainThread ? scalanative_mainThreadMaxStackSize() : stackSize) -
+        4 * resolvePageSize(); // reserve for stack guard that might be
+                               // introdueced by system. Also provide an
+                               // error tolarance for approximation
+    if (!detectStackBounds(stackBottom)) {
         if (!approximateStackBounds(stackBottom, stackSize,
                                     &currentThreadInfo)) {
             fprintf(stderr, "Scala Native Fatal Error: Failed to detect of "
@@ -175,6 +196,6 @@ void scalanative_setupCurrentThreadInfo(void *stackBottom, uint32_t stackSize,
     };
 
     assert(stackBottom < currentThreadInfo.stackBottom);
-    assert(stackBottom > currentThreadInfo.stackTop);
+    assert(stackBottom >= currentThreadInfo.stackTop);
     assert(currentThreadInfo.stackBottom > currentThreadInfo.stackTop);
 }

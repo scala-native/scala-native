@@ -165,7 +165,7 @@ NO_SANITIZE void Marker_markProgramStack(MutatorThread *thread, Heap *heap,
          (void *)stackTop > thread->threadInfo->stackBottom) &&
         thread->threadInfo->signalHandlerStack != NULL) {
         // Area between thread-stackTop and stackGaurdPage might be guarded
-        stackTop = lowestNonGuardedAddress(thread->threadInfo->stackGuardPage);
+        stackTop = threadStackScanableLimit(thread->threadInfo);
         // Marking alternative stack should not be needed, but tests showed that
         // it might contain some pointer to managed object
         word_t **signalHandlerStack = thread->threadInfo->signalHandlerStack;

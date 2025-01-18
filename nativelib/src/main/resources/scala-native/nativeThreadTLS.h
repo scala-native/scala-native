@@ -14,7 +14,12 @@ typedef void *NativeThread;
 #endif
 
 typedef struct ThreadInfo {
+    // Currently available stack size, might be less the maxStackSize if the
+    // memory was not yet commited
     size_t stackSize;
+    // Equals to either stackSize passed from Scala on ThreadInfo.init or detect
+    // system default soft limit for stack size for main thread
+    size_t maxStackSize;
     void *stackTop;    // highest stack address
     void *stackBottom; // lowest stack address
     void *stackGuardPage;
@@ -33,10 +38,9 @@ void scalanative_assignCurrentThread(JavaThread thread,
 JavaThread scalanative_currentThread();
 NativeThread scalanative_currentNativeThread();
 ThreadInfo *scalanative_currentThreadInfo();
-void scalanative_setupCurrentThreadInfo(void *stackBottom, uint32_t stackSize,
+void scalanative_setupCurrentThreadInfo(void *stackBottom, int32_t stackSize,
                                         bool isMainThread);
 
 size_t scalanative_mainThreadMaxStackSize();
-bool scalanative_forceMainThreadStackGrowth();
 
 #endif

@@ -1,8 +1,10 @@
 #ifndef SN_STACKOVERFLOW_GUARDS_H
 #define SN_STACKOVERFLOW_GUARDS_H
 
+#include "nativeThreadTLS.h"
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -21,6 +23,15 @@ void scalanative_StackOverflowGuards_check();
 extern size_t scalanative_page_size();
 static inline size_t resolvePageSize() { return scalanative_page_size(); }
 
+static inline void *alignToNextPage(void *addr) {
+    size_t pageSize = resolvePageSize();
+    return (void *)(((uintptr_t)addr + pageSize - 1) & ~(pageSize - 1));
+}
+static inline void *alignToPageStart(void *addr) {
+    size_t pageSize = resolvePageSize();
+    return (void *)(((uintptr_t)addr) & ~(pageSize - 1));
+}
+
 static inline size_t stackGuardPages() {
     // On Windows that's area guaranteed to be available under StackOverflow
     // detection It's need to be big enough to perform handling - collecting
@@ -36,8 +47,13 @@ static inline size_t stackGuardPages() {
     }
     return computed;
 }
-static inline void *lowestNonGuardedAddress(void *stackGuardAddress) {
-    return (char *)stackGuardAddress + stackGuardPages() * resolvePageSize();
+static inline void *threadStackScanableLimit(ThreadInfo *threadInfo) {
+    if (threadInfo == NULL)
+        return NULL;
+    void *ofStackGuard = (char *)threadInfo->stackGuardPage +
+                         stackGuardPages() * resolvePageSize();
+    void *ofStackTop = threadInfo->stackTop;
+    return (ofStackGuard > ofStackTop) ? ofStackGuard : ofStackTop;
 }
 
 static inline bool isInRange(void *addr, void *start, void *end) {
