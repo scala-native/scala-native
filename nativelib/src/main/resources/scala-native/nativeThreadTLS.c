@@ -125,7 +125,7 @@ static bool detectStackBounds(void *onStackPointer) {
             goto fallback;
         }
         size_t guardSize = 0;
-        pthread_attr_getguardsize(&attrs, &guardSize);
+        pthread_attr_getguardsize(&attr, &guardSize);
         pthread_attr_destroy(&attr);
         void *stackBottom = (void *)((char *)stackTop + size);
         if (!isInRange(onStackPointer, stackTop, stackBottom)) {
