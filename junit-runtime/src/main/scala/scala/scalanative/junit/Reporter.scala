@@ -173,9 +173,11 @@ private[junit] final class Reporter(
   private def logTrace(t: Throwable): Unit = {
     val trace = t.getStackTrace
       .dropWhile { p =>
-        p.getClassName() != null && {
-          p.getClassName().startsWith("java.lang.StackTrace") ||
-          p.getClassName().startsWith("java.lang.Throwable")
+        val clsName = p.getClassName()
+        clsName != null && {
+          clsName.startsWith("java.lang.Throwable") ||
+          clsName.startsWith("scala.scalanative.runtime.StackTrace") ||
+          clsName.startsWith("scala.scalanative.runtime.Throwable")
         }
       }
     val testFileName = {

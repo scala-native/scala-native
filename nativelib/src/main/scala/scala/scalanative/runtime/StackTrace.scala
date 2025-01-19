@@ -20,8 +20,6 @@ private[runtime] object StackTrace {
         thread.isFillingStackTrace = true
         val buffer = scala.Array.newBuilder[StackTraceElement]
         val ip = Intrinsics.stackalloc[RawSize]()
-        var foundCurrentStackTrace = false
-        var afterFillInStackTrace = false
         unwind.get_context(context)
         unwind.init_local(cursor, context)
         while (unwind.step(cursor) > 0) {
@@ -38,23 +36,13 @@ private[runtime] object StackTrace {
           )
           buffer += elem
 
-          // Look for intrinsic stack frames and remove them to not polute stack traces
-          if (!afterFillInStackTrace) {
-            if (!foundCurrentStackTrace) {
-              if (elem.getClassName == "scala.scalanative.runtime.StackTrace$" &&
-                  elem.getMethodName == "currentStackTrace") {
-                foundCurrentStackTrace = true
-                buffer.clear()
-              }
-            } else {
-              // Not guaranteed to be found, may be inlined.
-              // This branch would be visited exactly 1 time
-              if ((elem.getClassName == "java.lang.Throwable" || elem.getClassName == "scala.scalanative.runtime.Throwable") &&
-                  elem.getMethodName == "fillInStackTrace") {
-                buffer.clear()
-              }
-              afterFillInStackTrace = true
-            }
+          if (elem.getClassName.startsWith("scala.scalanative.runtime.")) {
+            val shouldClear =
+              (elem.getClassName == "scala.scalanative.runtime.StackTrace$" && elem.getMethodName == "currentStackTrace") ||
+                (elem.getClassName == "scala.scalanative.runtime.Throwable" && {
+                  elem.getMethodName == "fillInStackTrace" || elem.getMethodName == "<init>"
+                })
+            if (shouldClear) buffer.clear()
           }
         }
 
