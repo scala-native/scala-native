@@ -195,7 +195,7 @@ NO_SANITIZE int Marker_markRange(Heap *heap, Stats *stats,
     ubyte_t *alignedFrom = (ubyte_t *)((intptr_t)from & alignmentMask);
     ubyte_t *to = alignedFrom + (wordsLength + 1) * sizeof(word_t);
     ubyte_t *limit = (ubyte_t *)((uintptr_t)to & alignmentMask);
-    for (ubyte_t *current = alignedFrom; current <= limit; current += stride) {
+    for (ubyte_t *current = alignedFrom; current < limit; current += stride) {
         word_t *field = *(word_t **)current;
         if (Heap_IsWordInHeap(heap, field)) {
             Marker_markConservative(heap, stats, outHolder, outWeakRefHolder,
