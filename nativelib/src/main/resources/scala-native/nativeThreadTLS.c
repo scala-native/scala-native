@@ -124,6 +124,8 @@ static bool detectStackBounds(void *onStackPointer) {
             pthread_attr_destroy(&attr);
             goto fallback;
         }
+        size_t guardSize = 0;
+        pthread_attr_getguardsize(&attrs, &guardSize);
         pthread_attr_destroy(&attr);
         void *stackBottom = (void *)((char *)stackTop + size);
         if (!isInRange(onStackPointer, stackTop, stackBottom)) {
@@ -133,7 +135,10 @@ static bool detectStackBounds(void *onStackPointer) {
         currentThreadInfo.stackTop = alignToPageStart(onStackPointer);
         size_t usedStackSize = stackBottom - currentThreadInfo.stackTop;
         currentThreadInfo.stackSize = usedStackSize;
-        currentThreadInfo.maxStackSize = size;
+        currentThreadInfo.maxStackSize = size - guardSize;
+        if (currentThreadInfo.stackSize > currentThreadInfo.maxStackSize) {
+            currentThreadInfo.stackSize = currentThreadInfo.maxStackSize;
+        }
         currentThreadInfo.stackTop = alignToPageStart(onStackPointer);
         return true;
     }
@@ -167,11 +172,32 @@ fallback:;
 #elif (defined(__APPLE__) && defined(__MACH__)) &&                             \
     defined(__MAC_OS_X_VERSION_MIN_REQUIRED) &&                                \
     __MAC_OS_X_VERSION_MIN_REQUIRED >= 1040
+    // No way to get thread-specific guard size
+    // Use the default one
+    size_t guardSize = 0;
+    pthread_attr_t attrs;
+    pthread_attr_init(&attrs);
+    pthread_attr_getguardsize(&attrs, &guardSize);
+    pthread_attr_destroy(&attrs);
+
     pthread_t self = pthread_self();
-    currentThreadInfo.stackBottom = pthread_get_stackaddr_np(self);
-    currentThreadInfo.stackSize = pthread_get_stacksize_np(self);
-    currentThreadInfo.stackTop =
-        (char *)currentThreadInfo.stackBottom - currentThreadInfo.stackSize;
+    void *stackAddr = pthread_get_stackaddr_np(self);
+    size_t stackSize = pthread_get_stacksize_np(self);
+    currentThreadInfo.stackSize = stackSize - guardSize;
+
+    // pthread_get_stackaddr_np is not well documented, there are some mentions
+    // that in some versions of MacOS it was pointing to stackTop instead of
+    // stackBottom
+    if (stackAddr < onStackPointer) {
+        currentThreadInfo.stackBottom =
+            (char *)stackAddr + stackSize + guardSize;
+        currentThreadInfo.stackTop = (char *)stackAddr + guardSize;
+    } else {
+        currentThreadInfo.stackBottom = stackAddr;
+        currentThreadInfo.stackTop = (char *)stackAddr - stackSize + guardSize;
+    }
+    assert(isInRange(onStackPointer, currentThreadInfo.stackTop,
+                     currentThreadInfo.stackBottom));
     return true;
 #endif
     return false;
