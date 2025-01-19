@@ -225,7 +225,7 @@ object NativeThread {
         }
         if (handler != null)
           executeUncaughtExceptionHandler(handler, thread, ex)
-    } finally
+    } finally {
       thread.synchronized {
         try nativeThread.onTermination()
         catch { case ex: jl.Throwable => () }
@@ -233,6 +233,7 @@ object NativeThread {
         thread.notifyAll()
       }
       StackOverflowGuards.close()
+    }
   }
   @extern
   private[scalanative] object TLS {
