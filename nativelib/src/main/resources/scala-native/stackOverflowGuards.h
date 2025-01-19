@@ -50,6 +50,8 @@ static inline size_t stackGuardPages() {
 static inline void *threadStackScanableLimit(ThreadInfo *threadInfo) {
     if (threadInfo == NULL)
         return NULL;
+    if (threadInfo->stackGuardPage == NULL || threadInfo->stackTop == NULL)
+        return NULL;
     void *ofStackGuard = (char *)threadInfo->stackGuardPage +
                          stackGuardPages() * resolvePageSize();
     void *ofStackTop = threadInfo->stackTop;

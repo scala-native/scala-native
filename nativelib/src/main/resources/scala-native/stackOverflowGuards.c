@@ -149,17 +149,15 @@ static void setupStackOverflowGuards() {
 
 static void stackOverflowHandler(int sig, siginfo_t *info, void *context) {
     ThreadInfo threadInfo = currentThreadInfo;
-    struct sigaction *previousSignalHandler;
     bool threadInfoInitialized = threadInfo.stackSize != 0 &&
                                  threadInfo.stackBottom && threadInfo.stackTop;
-    void *faultAddr = info->si_addr;
-
     if (!threadInfoInitialized) {
         goto dispatchDefaultSignal;
     }
     switch (sig) {
     case SIGSEGV:
-    case SIGBUS:
+    case SIGBUS:;
+        void *faultAddr = info->si_addr;
         /* We cannot throw exception directly from signal handler - libunwind
          * would not be able to locate catch handler.
          * In the past we've tried to workaround it with:
@@ -220,7 +218,8 @@ static void stackOverflowHandler(int sig, siginfo_t *info, void *context) {
             exit(sig);
         }
     default:
-    dispatchDefaultSignal:
+    dispatchDefaultSignal:;
+        struct sigaction *previousSignalHandler;
         previousSignalHandler = resolvePreviousSignalHandler(sig);
         if (previousSignalHandler != NULL) {
             bool isSigAction = previousSignalHandler->sa_flags & SA_SIGINFO;
