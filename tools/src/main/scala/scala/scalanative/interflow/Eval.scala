@@ -429,7 +429,7 @@ private[interflow] trait Eval { self: Interflow =>
             value
           case ConvRef(
                 nir.Conv.Bitcast,
-                nir.Rt.Object,
+                _,
                 VirtualRef(_, cls, Array(value))
               ) if boxname == cls.name =>
             value
