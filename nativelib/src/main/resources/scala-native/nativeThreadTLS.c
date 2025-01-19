@@ -105,8 +105,9 @@ static bool detectStackBounds(void *onStackPointer) {
 #if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0602
     GetCurrentThreadStackLimits((PULONG_PTR)&currentThreadInfo.stackTop,
                                 (PULONG_PTR)&currentThreadInfo.stackBottom);
-    threadInfo->stackSize = (size_t)((char *)currentThreadInfo.stackBottom -
-                                     (char *)currentThreadInfo.stackTop);
+    currentThreadInfo.stackSize =
+        (size_t)((char *)currentThreadInfo.stackBottom -
+                 (char *)currentThreadInfo.stackTop);
     return true;
 #endif
 #elif defined(__linux__)
