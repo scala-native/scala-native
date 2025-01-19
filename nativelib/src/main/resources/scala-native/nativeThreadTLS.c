@@ -73,6 +73,7 @@ static bool approximateStackBounds(void *stackBottom, size_t stackSize,
     return true;
 }
 
+#if defined(__linux__)
 typedef int (*pthread_getattr_np_func)(pthread_t thread, pthread_attr_t *attr);
 static pthread_getattr_np_func get_pthread_getattr_np() {
     static pthread_getattr_np_func fnHandle = NULL;
@@ -97,14 +98,15 @@ static pthread_getattr_np_func get_pthread_getattr_np() {
     }
     return fnHandle;
 }
+#endif
 
 static bool detectStackBounds(void *onStackPointer) {
 #ifdef _WIN32
 #if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0602
-    GetCurrentThreadStackLimits((PULONG_PTR)&threadInfo->stackTop,
-                                (PULONG_PTR)&threadInfo->stackBottom);
-    threadInfo->stackSize = (size_t)((char *)threadInfo->stackBottom -
-                                     (char *)threadInfo->stackTop);
+    GetCurrentThreadStackLimits((PULONG_PTR)&currentThreadInfo.stackTop,
+                                (PULONG_PTR)&currentThreadInfo.stackBottom);
+    threadInfo->stackSize = (size_t)((char *)currentThreadInfo.stackBottom -
+                                     (char *)currentThreadInfo.stackTop);
     return true;
 #endif
 #elif defined(__linux__)
