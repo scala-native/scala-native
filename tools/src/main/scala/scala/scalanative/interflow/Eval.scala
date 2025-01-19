@@ -427,6 +427,12 @@ private[interflow] trait Eval { self: Interflow =>
         eval(value) match {
           case VirtualRef(_, cls, Array(value)) if boxname == cls.name =>
             value
+          case ConvRef(
+                nir.Conv.Bitcast,
+                _,
+                VirtualRef(_, cls, Array(value))
+              ) if boxname == cls.name =>
+            value
           case DelayedRef(nir.Op.Box(nir.Type.Ref(innername, _, _), innervalue))
               if innername == boxname =>
             innervalue
