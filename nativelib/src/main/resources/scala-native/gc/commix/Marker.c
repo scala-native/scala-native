@@ -193,7 +193,7 @@ NO_SANITIZE int Marker_markRange(Heap *heap, Stats *stats,
     int objectsTraced = 0;
     const intptr_t alignmentMask = ~(sizeof(word_t) - 1);
     ubyte_t *alignedFrom = (ubyte_t *)((intptr_t)from & alignmentMask);
-    ubyte_t *to = alignedFrom + wordsLength  * sizeof(word_t);
+    ubyte_t *to = alignedFrom + wordsLength * sizeof(word_t);
     ubyte_t *limit = (ubyte_t *)((uintptr_t)to & alignmentMask);
     for (ubyte_t *current = alignedFrom; current < limit; current += stride) {
         word_t *field = *(word_t **)current;
