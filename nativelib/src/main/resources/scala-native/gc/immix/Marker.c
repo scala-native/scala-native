@@ -161,6 +161,7 @@ NO_SANITIZE void Marker_markProgramStack(MutatorThread *thread, Heap *heap,
 #ifdef SCALANATIVE_THREAD_ALT_STACK
     // If signal handler is executing in alternative stack we need to mark the
     // whole thread stack
+    word_t **_stackTop = stackTop;
     if (!isInRange(stackTop, thread->threadInfo->stackTop,
                    thread->threadInfo->stackBottom)) {
         // Area between thread-stackTop and stackGaurdPage might be guarded
@@ -170,11 +171,16 @@ NO_SANITIZE void Marker_markProgramStack(MutatorThread *thread, Heap *heap,
                 ? stackScanLimit
                 : stackBottom - 64 * 1024; // not yet initialized, approximate
                                            // safe scanning limit
+        printf("Replaced stackTop %p with %p, scanLimit=%p\n", _stackTop,
+               stackTop, stackScanLimit);
         if (thread->threadInfo->signalHandlerStack != NULL) {
             // Marking alternative stack should not be needed, but tests showed
             // that it might contain some pointer to managed object
             word_t **signalHandlerStack =
                 thread->threadInfo->signalHandlerStack;
+            printf("mark alt stack: {%p %p}\n", signalHandlerStack,
+                   ((char *)signalHandlerStack +
+                    thread->threadInfo->signalHandlerStackSize));
             Marker_markRange(
                 heap, stack, signalHandlerStack,
                 (word_t **)((char *)signalHandlerStack +
@@ -183,7 +189,9 @@ NO_SANITIZE void Marker_markProgramStack(MutatorThread *thread, Heap *heap,
         }
     }
 #endif
+    printf("mark stack: {%p %p}\n", stackTop, stackBottom);
     Marker_markRange(heap, stack, stackTop, stackBottom, sizeof(word_t));
+    printf("marked\n");
 
     // Mark registers buffer
     size_t registerBufferStride =
