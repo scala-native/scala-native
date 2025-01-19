@@ -247,8 +247,9 @@ static void stackOverflowHandler(int sig, siginfo_t *info, void *context) {
 static void setupSignalHandlerAltstack() {
     stack_t handlerStack = {};
     size_t pageSize = resolvePageSize();
-    handlerStack.ss_size = SIG_HANDLER_STACK_SIZE;
-    handlerStack.ss_sp = malloc(SIG_HANDLER_STACK_SIZE);
+    handlerStack.ss_size =
+        (size_t)alignToPageStart((void *)SIG_HANDLER_STACK_SIZE);
+    handlerStack.ss_sp = malloc(handlerStack.ss_size);
     if (handlerStack.ss_sp == NULL) {
         perror("Scala Native: StackOverflowGuards failed to allocate alternate "
                "signal stack");
