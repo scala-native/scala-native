@@ -221,8 +221,13 @@ private[runtime] object _Class {
 }
 
 private object LinkedClassesRepository {
-  // Reachable only from `forName` method
-  @nooptimize private def loadAll(): scala.Array[_Class[_]] = intrinsic
+  /* Reachable only from `forName` method
+   * Needs to be non-optmized to not allowing optimizer to change it's result signature type to Nothing
+   * which is correct (it can only throw), but it's not going to be Nothing after Lowering phase
+   * Also prevent inlining so that we don't loose this method before Lowering
+   */
+  @nooptimize @noinline
+  private def loadAll(): scala.Array[_Class[_]] = intrinsic
   val byName: Map[String, _Class[_]] = loadAll().map { cls =>
     cls.name -> cls
   }.toMap

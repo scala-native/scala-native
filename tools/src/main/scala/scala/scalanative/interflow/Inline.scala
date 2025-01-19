@@ -52,8 +52,15 @@ private[interflow] trait Inline { self: Interflow =>
           case build.Mode.ReleaseFull =>
             alwaysInline || hintInline || isSmall || isCtor || hasVirtualArgs
         }
-        lazy val shallNot =
-          !alwaysInline && (noOpt || noInline || isRecursive || isDenylisted || calleeTooBig || callerTooBig || isExtern || hasUnwind || inlineDepthLimitExceeded)
+        lazy val shallNot = {
+          def hardLimits =
+            isRecursive || isDenylisted || noInline || isExtern
+          def softLimits =
+            calleeTooBig || callerTooBig || hasUnwind || inlineDepthLimitExceeded
+
+          if (alwaysInline) hardLimits
+          else hardLimits || softLimits
+        }
         withLogger { logger =>
           if (shall) {
             if (shallNot) {
