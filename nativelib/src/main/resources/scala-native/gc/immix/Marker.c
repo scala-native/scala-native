@@ -138,8 +138,10 @@ NO_SANITIZE static void Marker_markRange(Heap *heap, Stack *stack,
     // Align start address
     const intptr_t alignmentMask = ~(sizeof(word_t) - 1);
     ubyte_t *alignedFrom = (ubyte_t *)((intptr_t)from & alignmentMask);
-    // Align end address to be optionally 1 higher when unaligned
-    ubyte_t *alignedTo = (ubyte_t *)((intptr_t)(to + 1) & alignmentMask);
+    ubyte_t *alignedTo = (ubyte_t *)((intptr_t)to & alignmentMask);
+    if (alignedFrom >= alignedTo) {
+        return; // No range to scan
+    }
     for (ubyte_t *current = alignedFrom; current < alignedTo;
          current += stride) {
         word_t *addr = *(word_t **)current;
