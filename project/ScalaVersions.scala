@@ -29,12 +29,12 @@ object ScalaVersions {
     crossScalaVersions("3.3", 0 to 4), // LTS
     crossScalaVersions("3.4", 0 to 3),
     crossScalaVersions("3.5", 0 to 2),
-    crossScalaVersions("3.6", 2 to 2) // 3.6.0 is broken, 3.6.1 is hotfix
+    crossScalaVersions("3.6", 2 to 3) // 3.6.0 is broken, 3.6.1 is hotfix
   ).flatten.distinct
 
   // Tested in scheduled nightly CI to check compiler plugins
   // List maintains only upcoming releases, removed from the list after reaching stable status
-  lazy val scala3RCVersions = Nil
+  lazy val scala3RCVersions = List("3.3.5-RC3", "3.6.4-RC1")
 
   // Scala versions used for publishing libraries
   val scala212: String = crossScala212.last
