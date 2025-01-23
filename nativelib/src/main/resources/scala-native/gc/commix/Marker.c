@@ -12,6 +12,7 @@
 #include "GCThread.h"
 #include "shared/ThreadUtil.h"
 #include "SyncGreyLists.h"
+#include "stackOverflowGuards.h"
 
 extern word_t *__modules;
 extern int __modules_size;
@@ -192,9 +193,9 @@ NO_SANITIZE int Marker_markRange(Heap *heap, Stats *stats,
     int objectsTraced = 0;
     const intptr_t alignmentMask = ~(sizeof(word_t) - 1);
     ubyte_t *alignedFrom = (ubyte_t *)((intptr_t)from & alignmentMask);
-    ubyte_t *to = alignedFrom + (wordsLength + 1) * sizeof(word_t);
+    ubyte_t *to = alignedFrom + wordsLength * sizeof(word_t);
     ubyte_t *limit = (ubyte_t *)((uintptr_t)to & alignmentMask);
-    for (ubyte_t *current = alignedFrom; current <= limit; current += stride) {
+    for (ubyte_t *current = alignedFrom; current < limit; current += stride) {
         word_t *field = *(word_t **)current;
         if (Heap_IsWordInHeap(heap, field)) {
             Marker_markConservative(heap, stats, outHolder, outWeakRefHolder,
@@ -465,6 +466,32 @@ NO_SANITIZE void Marker_markProgramStack(MutatorThread *thread, Heap *heap,
         stackTop = (word_t **)atomic_load_explicit(&thread->stackTop,
                                                    memory_order_acquire);
     } while (stackTop == NULL);
+
+#ifdef SCALANATIVE_THREAD_ALT_STACK
+    // If signal handler is executing in alternative stack we need to mark the
+    // whole thread stack
+    if (!isInRange(stackTop, thread->threadInfo->stackTop,
+                   thread->threadInfo->stackBottom)) {
+        // Area between thread-stackTop and stackGaurdPage might be guarded
+        void *stackScanLimit = threadStackScanableLimit(thread->threadInfo);
+        stackTop =
+            (stackScanLimit != NULL)
+                ? stackScanLimit
+                : stackBottom - 64 * 1024; // not yet initialized, approximate
+                                           // safe scanning limit
+        if (thread->threadInfo->signalHandlerStack != NULL) {
+            // Marking alternative stack should not be needed, but tests showed
+            // that it might contain some pointer to managed object
+            word_t **signalHandlerStack =
+                thread->threadInfo->signalHandlerStack;
+            Marker_markRange(heap, stats, outHolder, outWeakRefHolder,
+                             thread->threadInfo->signalHandlerStack,
+                             thread->threadInfo->signalHandlerStackSize /
+                                 sizeof(word_t),
+                             sizeof(word_t));
+        }
+    }
+#endif
     word_t **rangeStart = stackTop < stackBottom ? stackTop : stackBottom;
     word_t **rangeEnd = stackTop < stackBottom ? stackBottom : stackTop;
     size_t rangeSize = rangeEnd - rangeStart;

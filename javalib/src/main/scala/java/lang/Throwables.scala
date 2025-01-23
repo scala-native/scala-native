@@ -1,13 +1,13 @@
 package java.lang
 
-import scala.scalanative.runtime.StackTrace
+import scala.scalanative.runtime.{Throwable => NativeThrowable}
 
 class Throwable protected (
     s: String,
     private var e: Throwable,
     enableSuppression: scala.Boolean,
     writableStackTrace: scala.Boolean
-) extends Object
+) extends NativeThrowable(writableStackTrace = writableStackTrace)
     with java.io.Serializable {
 
   def this(message: String, cause: Throwable) =
@@ -18,11 +18,6 @@ class Throwable protected (
   def this(s: String) = this(s, null)
 
   def this(e: Throwable) = this(if (e == null) null else e.toString, e)
-
-  private var stackTrace: Array[StackTraceElement] = _
-
-  if (writableStackTrace)
-    fillInStackTrace()
 
   // We use an Array rather than, say, a List, so that Throwable does not
   // depend on the Scala collections.
@@ -54,12 +49,8 @@ class Throwable protected (
     }
   }
 
-  def fillInStackTrace(): Throwable = {
-    // currentStackTrace should be handling exclusion in its own
-    // critical section, but does not. So do
-    if (writableStackTrace) this.synchronized {
-      this.stackTrace = StackTrace.currentStackTrace()
-    }
+  override def fillInStackTrace(): Throwable = {
+    super.fillInStackTrace()
     this
   }
 
@@ -194,18 +185,6 @@ class Throwable protected (
       parentIndex -= 1
     }
     duplicates
-  }
-
-  def setStackTrace(stackTrace: Array[StackTraceElement]): Unit = {
-    if (writableStackTrace) this.synchronized {
-      var i = 0
-      while (i < stackTrace.length) {
-        if (stackTrace(i) eq null)
-          throw new NullPointerException()
-        i += 1
-      }
-      this.stackTrace = stackTrace.clone()
-    }
   }
 
   override def toString(): String = {
@@ -462,7 +441,7 @@ class RuntimeException protected (
     e: Throwable,
     enabledSuppression: scala.Boolean,
     writableStackTrace: scala.Boolean
-) extends Exception(s, e) {
+) extends Exception(s, e, enabledSuppression, writableStackTrace) {
   def this(s: String, e: Throwable) = this(s, e, true, true)
   def this(e: Throwable) = this(if (e == null) null else e.toString, e)
   def this(s: String) = this(s, null)

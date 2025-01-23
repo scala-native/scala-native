@@ -75,6 +75,7 @@ private[scalanative] object Rt {
   ).map(name => Global.Top(s"scala.scalanative.runtime.Primitive$name"))
 
   val GenericArray = Ref(Global.Top("scala.scalanative.runtime.Array"))
+  val BlobArray = Ref(Global.Top("scala.scalanative.runtime.BlobArray"))
 
   val arrayAlloc: Map[Sig, Global.Top] = Seq(
     "BooleanArray",

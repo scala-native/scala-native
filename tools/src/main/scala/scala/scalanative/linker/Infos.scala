@@ -263,5 +263,53 @@ object ReachabilityAnalysis {
       infos(nir.Rt.StringCountName).asInstanceOf[Field]
     lazy val StringCachedHashCodeField = infos(nir.Rt.StringCachedHashCodeName)
       .asInstanceOf[Field]
+
+    private[scalanative] object references {
+      def isReachable(
+          symbol: nir.Global.Member,
+          from: nir.Global.Member
+      ): Boolean = {
+        val todo = mutable.Queue.empty[nir.Global.Member]
+        methodDirectSymbolRefs.get(from).foreach(todo ++= _.toList)
+        val visited = mutable.HashSet.empty[nir.Global.Member]
+        while (todo.nonEmpty) {
+          val next = todo.dequeue()
+          if (visited.add(next)) {
+            if (next == symbol) return true
+            methodDirectSymbolRefs.get(next).foreach(todo ++= _.toList)
+          }
+        }
+        false
+      }
+
+      def isSelfRecursive(symbol: nir.Global.Member): Boolean =
+        isReachable(symbol = symbol, from = symbol)
+
+      // Graph of direct references between symbols
+      lazy val methodDirectSymbolRefs
+          : Map[nir.Global.Member, Set[nir.Global.Member]] = {
+        val buf = collection.immutable.HashMap
+          .newBuilder[nir.Global.Member, Set[nir.Global.Member]]
+        buf.sizeHint(defns.size)
+
+        defns.foreach { defn =>
+          infos.get(defn.name).foreach {
+            case method: linker.Method =>
+              val symbols = mutable.Set.empty[nir.Global.Member]
+              new nir.Traverse {
+                override def onVal(value: nir.Val): Unit = value match {
+                  case nir.Val.Global(sym: nir.Global.Member, _) =>
+                    symbols += sym
+                  case _ => super.onVal(value)
+                }
+                // We should also check for Op.Method targets but it adds way too much complexity
+              }.onInsts(method.insts)
+              buf += ((method.name, symbols.toSet))
+            case _ => ()
+          }
+        }
+        buf.result()
+      }
+    }
   }
 }

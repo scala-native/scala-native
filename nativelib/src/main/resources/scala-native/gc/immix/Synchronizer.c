@@ -35,7 +35,7 @@ static void Synchronizer_WaitForResumption(MutatorThread *selfThread);
 // internal flag, better for debuggin, but slower
 #ifdef SCALANATIVE_GC_USE_YIELDPOINT_TRAPS
 #include "shared/YieldPointTrap.h"
-#include "immix_commix/StackTrace.h"
+#include "StackTrace.h"
 #include <errno.h>
 #ifdef _WIN32
 #include <errhandlingapi.h>
@@ -77,7 +77,7 @@ static LONG WINAPI SafepointTrapHandler(EXCEPTION_POINTERS *ex) {
 #define SAFEPOINT_TRAP_SIGNAL SIGSEGV
 #endif
 #define THREAD_WAKEUP_SIGNAL SIGCONT
-static struct sigaction defaultAction;
+static struct sigaction previousSignalHandler = {};
 static sigset_t threadWakupSignals;
 static void SafepointTrapHandler(int signal, siginfo_t *siginfo, void *uap) {
     int old_errno = errno;
@@ -85,14 +85,31 @@ static void SafepointTrapHandler(int signal, siginfo_t *siginfo, void *uap) {
         siginfo->si_addr == scalanative_GC_yieldpoint_trap) {
         Synchronizer_yield();
         errno = old_errno;
-    } else {
-        fprintf(stderr,
-                "Signal %d triggered when accessing memory at address %p, "
-                "code=%d\n",
-                signal, siginfo->si_addr, siginfo->si_code);
-        StackTrace_PrintStackTrace();
-        defaultAction.sa_handler(signal);
+        return;
     }
+
+    // Try call other handlers
+    if (previousSignalHandler.sa_handler != NULL) {
+        void *handler = previousSignalHandler.sa_handler;
+        if (handler != SIG_DFL && handler != SIG_IGN && handler != SIG_ERR &&
+            handler != SafepointTrapHandler) {
+            if (previousSignalHandler.sa_flags & SA_SIGINFO) {
+                void (*sigInfoHandler)(int, siginfo_t *, void *) = (void (*)(
+                    int, siginfo_t *, void *))previousSignalHandler.sa_handler;
+                return sigInfoHandler(signal, siginfo, uap);
+            } else {
+                return previousSignalHandler.sa_handler(signal);
+            }
+        }
+        return;
+    }
+
+    fprintf(stderr,
+            "ScalaNative :: Unhandled signal %d triggered when accessing "
+            "memory address %p, code=%d\n\n",
+            signal, siginfo->si_addr, siginfo->si_code);
+    StackTrace_PrintStackTrace();
+    abort();
 }
 #endif
 
@@ -111,7 +128,7 @@ static void SetupYieldPointTrapHandler() {
     sigemptyset(&sa.sa_mask);
     sa.sa_sigaction = &SafepointTrapHandler;
     sa.sa_flags = SA_SIGINFO | SA_RESTART;
-    if (sigaction(SAFEPOINT_TRAP_SIGNAL, &sa, &defaultAction) == -1) {
+    if (sigaction(SAFEPOINT_TRAP_SIGNAL, &sa, &previousSignalHandler) == -1) {
         perror("Error: cannot setup safepoint synchronization handler");
         exit(errno);
     }

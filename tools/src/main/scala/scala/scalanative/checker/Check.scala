@@ -21,6 +21,14 @@ private[scalanative] sealed abstract class NIRCheck(implicit
   def expect(expected: nir.Type, got: nir.Val): Unit =
     expect(expected, got.ty)
 
+  def expectOneOf(got: nir.Type)(candidates: nir.Type*): Unit = {
+    if (candidates.exists(ty => Sub.is(got, ty))) () // ok
+    else
+      error(
+        s"expected one of [${candidates.map(_.show).mkString(",")}], but got ${got.show}"
+      )
+  }
+
   def expect(expected: nir.Type, got: nir.Type): Unit =
     if (!Sub.is(got, expected)) {
       error(s"expected ${expected.show}, but got ${got.show}")
@@ -349,11 +357,17 @@ private[scalanative] final class Check(implicit
       zone.foreach(checkZone)
     case nir.Op.Arrayload(ty, arr, idx) =>
       val arrty = nir.Type.Ref(nir.Type.toArrayClass(ty))
-      expect(arrty, arr)
+      if (ty == nir.Type.Byte)
+        expectOneOf(arr.ty)(arrty, nir.Rt.BlobArray)
+      else
+        expect(arrty, arr)
       expect(nir.Type.Int, idx)
     case nir.Op.Arraystore(ty, arr, idx, value) =>
       val arrty = nir.Type.Ref(nir.Type.toArrayClass(ty))
-      expect(arrty, arr)
+      if (ty == nir.Type.Byte)
+        expectOneOf(arr.ty)(arrty, nir.Rt.BlobArray)
+      else
+        expect(arrty, arr)
       expect(nir.Type.Int, idx)
       expect(ty, value)
     case nir.Op.Arraylength(arr) =>

@@ -1,6 +1,8 @@
 package scala.scalanative
 package runtime
 
+import java.{lang => jl}
+
 import scala.scalanative.runtime.Intrinsics._
 import scala.scalanative.runtime.GC.{ThreadRoutineArg, ThreadStartRoutine}
 import scala.scalanative.annotation.alwaysinline
@@ -19,6 +21,9 @@ trait NativeThread {
   import NativeThread._
 
   val thread: Thread
+
+  def stackSize: Int
+  def companion: NativeThread.Companion
 
   private[runtime] var isFillingStackTrace: scala.Boolean = false
   @volatile private var _state: State = State.New
@@ -72,8 +77,59 @@ trait NativeThread {
   }
 }
 
+private object ThreadStackSize {
+  final val Minimal = 64 * 1024
+  final val JVMDefault = 1024 * 1024 // 1MB is JVM default
+
+  // Additional stack size to compenstate memory for internals
+  private def extraThreadStackSize: Long = StackOverflowGuards.size
+
+  private val overrideDefaultThreadSize: Option[Long] = {
+    System.getenv("SCALANATIVE_THREAD_STACK_SIZE") match {
+      case null => None
+      case default =>
+        val numberPart = default.takeWhile(_.isDigit)
+        val multiplier = default.stripPrefix(numberPart).toLowerCase() match {
+          case ""         => 1
+          case "k" | "kb" => 1024
+          case "m" | "mb" => 1024 * 1024
+          case other =>
+            System.err.println(
+              s"Invalid setting for SCALANATIVE_THREAD_SIZE env variable would be ignored: $other"
+            )
+            -1
+        }
+        if (multiplier > 0) Some(numberPart.toLong * multiplier)
+        else None
+    }
+  }
+
+  def resolve(userDefinedStackSize: Long, osDefaultStackSize: Long): Int = {
+    val requiredSize = extraThreadStackSize + {
+      if (userDefinedStackSize > 0)
+        Math.max(userDefinedStackSize, ThreadStackSize.Minimal)
+      else
+        overrideDefaultThreadSize.getOrElse {
+          Math.max(JVMDefault, osDefaultStackSize)
+        }
+    }
+    // stack size for thread might need to be page size aligned
+    val pageSize = Platform.pageSize
+    val pageAlignedSize =
+      if (requiredSize % pageSize == 0) requiredSize
+      else (requiredSize + pageSize - 1) / pageSize * pageSize
+    assert(pageAlignedSize <= Int.MaxValue, "Size of stack size > Int.MaxValue")
+    pageAlignedSize.toInt
+  }
+}
+
 object NativeThread {
   private def MainThreadId = 0L
+
+  def calculateStackSize(
+      userDefinedStackSize: Long,
+      osDefaultStackSize: Long
+  ): Int = ThreadStackSize.resolve(userDefinedStackSize, osDefaultStackSize)
 
   trait Companion {
     type Impl <: NativeThread
@@ -81,6 +137,7 @@ object NativeThread {
     def yieldThread(): Unit
     def currentNativeThread(): Impl = NativeThread.currentNativeThread
       .asInstanceOf[Impl]
+    def defaultOSStackSize: Long
   }
 
   sealed trait State
@@ -145,7 +202,15 @@ object NativeThread {
 
   private def threadEntryPoint(nativeThread: NativeThread): Unit = {
     import nativeThread.thread
+    val stackBottom = Intrinsics.stackalloc[Int]()
     TLS.assignCurrentThread(thread, nativeThread)
+    TLS.setupCurrentThreadInfo(
+      stackBottom = stackBottom,
+      stackSize = nativeThread.stackSize,
+      isMainThread = false
+    )
+    StackOverflowGuards.setup(isMainThread = false)
+
     nativeThread.state = State.Running
     atomic_thread_fence(memory_order_seq_cst)
     // Ensure Java Thread already assigned the Native Thread instance
@@ -153,24 +218,25 @@ object NativeThread {
     while (thread.getState() == Thread.State.NEW) onSpinWait()
     try thread.run()
     catch {
-      case ex: Throwable =>
+      case ex: jl.Throwable =>
         val handler = thread.getUncaughtExceptionHandler() match {
           case null    => Thread.getDefaultUncaughtExceptionHandler()
           case handler => handler
         }
         if (handler != null)
           executeUncaughtExceptionHandler(handler, thread, ex)
-    } finally
+    } finally {
       thread.synchronized {
         try nativeThread.onTermination()
-        catch { case ex: Throwable => () }
+        catch { case ex: jl.Throwable => () }
         nativeThread.state = NativeThread.State.Terminated
         thread.notifyAll()
       }
+      StackOverflowGuards.close()
+    }
   }
-
   @extern
-  private object TLS {
+  private[scalanative] object TLS {
     @name("scalanative_assignCurrentThread")
     def assignCurrentThread(
         thread: Thread,
@@ -182,5 +248,13 @@ object NativeThread {
 
     @name("scalanative_currentThread")
     def currentThread: Thread = extern
+
+    @name("scalanative_setupCurrentThreadInfo")
+    def setupCurrentThreadInfo(
+        stackBottom: RawPtr,
+        stackSize: Int, // ignored if main thread
+        isMainThread: Boolean
+    ): Unit = extern
   }
+
 }

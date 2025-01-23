@@ -30,6 +30,7 @@ object ffi {
   def memmove(dest: RawPtr, src: RawPtr, count: RawSize): RawPtr = extern
   def remove(fname: CString): CInt = extern
   def atexit(func: CFuncPtr0[Unit]): CInt = extern
+  @blocking def printf(format: CString, vargs: Any*): CInt = extern
 
   // Glue layer defined in libc
   @extern

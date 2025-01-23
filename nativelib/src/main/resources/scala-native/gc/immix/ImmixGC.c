@@ -17,6 +17,7 @@
 #endif
 #include "MutatorThread.h"
 #include <stdatomic.h>
+#include "nativeThreadTLS.h"
 
 void scalanative_afterexit() { Stats_OnExit(heap.stats); }
 

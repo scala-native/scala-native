@@ -8,6 +8,7 @@ import scalanative.runtime.monitor._
 import scalanative.runtime.ffi.stdatomic.{atomic_thread_fence, memory_order}
 import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
 import java.util.concurrent.locks.LockSupport
+import java.{lang => jl}
 
 package object runtime {
   def filename = ExecInfo.filename
@@ -56,11 +57,19 @@ package object runtime {
       argc: Int,
       rawargv: RawPtr
   ): scala.Array[String] = {
-    if (isMultithreadingEnabled) {
-      assert(
-        Thread.currentThread() != null,
-        "failed to initialize main thread"
+    NativeThread.TLS.setupCurrentThreadInfo(
+      stackBottom = rawargv,
+      isMainThread = true,
+      stackSize = 0 /* detect */
+    )
+    StackOverflowGuards.setup(isMainThread = true)
+
+    val mainThread = Thread.currentThread()
+    if (mainThread == null) {
+      ffi.printf(
+        c"Scala Native Fatal Error: failed to initialize main java.lang.Thread\n"
       )
+      System.exit(1)
     }
 
     val argv = fromRawPtr[CString](rawargv)
@@ -112,16 +121,17 @@ package object runtime {
       }
       shouldWaitForThreads || shouldRunQueuedTasks
     }) ()
+    StackOverflowGuards.close()
   }
 
   private[scalanative] final def executeUncaughtExceptionHandler(
       handler: Thread.UncaughtExceptionHandler,
       thread: Thread,
-      throwable: Throwable
+      throwable: jl.Throwable
   ): Unit = {
     try handler.uncaughtException(thread, throwable)
     catch {
-      case ex: Throwable =>
+      case ex: jl.Throwable =>
         val threadName = "\"" + thread.getName() + "\""
         System.err.println(
           s"\nException: ${ex.getClass().getName()} thrown from the UncaughtExceptionHandler in thread ${threadName}"
@@ -204,4 +214,29 @@ package object runtime {
   @noinline
   private[scalanative] def throwNoSuchMethod(sig: String): Nothing =
     throw new NoSuchMethodException(sig)
+
+  @noinline
+  @exported("scalanative_throwStackOverflowError")
+  private[runtime] def throwPendingStackOverflowError(): Unit = {
+    val exception = new StackOverflowError()
+    exception.asInstanceOf[runtime.Throwable].onCatchHandler = (_: Throwable) =>
+      try StackOverflowGuards.reset()
+      catch { case ex: StackOverflowError => () }
+    throw exception
+  }
+
+  @extern private[runtime] object StackOverflowGuards {
+    @name("scalanative_StackOverflowGuards_size")
+    def size: Int = extern
+
+    @name("scalanative_StackOverflowGuards_setup")
+    def setup(isMainThread: Boolean): Unit = extern
+
+    @name("scalanative_StackOverflowGuards_reset")
+    def reset(): Unit = extern
+
+    @name("scalanative_StackOverflowGuards_close")
+    def close(): Unit = extern
+  }
+
 }

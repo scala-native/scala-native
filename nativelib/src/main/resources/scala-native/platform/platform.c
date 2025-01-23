@@ -3,7 +3,9 @@
 #include <windows.h>
 #else
 #include <sys/utsname.h>
+#include <unistd.h>
 #endif
+#include <stdio.h>
 
 #include <stdlib.h>
 #include <stdbool.h>
@@ -162,3 +164,22 @@ void scalanative_set_os_props(void (*add_prop)(const char *, const char *)) {
 }
 
 size_t scalanative_wide_char_size() { return sizeof(wchar_t); }
+
+size_t scalanative_page_size() {
+    static size_t pageSize = -1;
+    if (pageSize == -1) {
+#ifdef _WIN32
+        SYSTEM_INFO sysInfo;
+        GetSystemInfo(&sysInfo);
+        pageSize = (size_t)sysInfo.dwPageSize;
+#else
+        pageSize = (size_t)sysconf(_SC_PAGE_SIZE);
+#endif
+        if (pageSize <= 0) {
+            fprintf(stderr, "ScalaNative Fatal Error :: Unable to determinate "
+                            "platform page size\n");
+            abort();
+        }
+    }
+    return pageSize;
+}

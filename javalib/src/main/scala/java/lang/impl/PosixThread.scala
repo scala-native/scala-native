@@ -22,10 +22,19 @@ import scala.scalanative.posix.unistd._
 import scala.scalanative.libc.stdatomic._
 import scala.scalanative.libc.stdatomic.memory_order.memory_order_seq_cst
 
-private[java] class PosixThread(val thread: Thread, stackSize: Long)
-    extends NativeThread {
+private[java] class PosixThread(
+    val thread: Thread,
+    userDefinedStackSize: scala.Long
+) extends NativeThread {
   import NativeThread._
   import PosixThread._
+
+  override def companion: NativeThread.Companion = PosixThread
+
+  override def stackSize: scala.Int = NativeThread.calculateStackSize(
+    userDefinedStackSize = userDefinedStackSize,
+    osDefaultStackSize = PosixThread.defaultOSStackSize
+  )
 
   private lazy val _state = new scala.Array[scala.Byte](StateSize)
   @volatile private[impl] var sleepInterruptEvent: CInt = UnsetEvent
@@ -67,10 +76,8 @@ private[java] class PosixThread(val thread: Thread, stackSize: Long)
         checkStatus("thread attrs - set detach") {
           pthread_attr_setdetachstate(attrs, PTHREAD_CREATE_DETACHED)
         }
-        if (stackSize > 0L) {
-          checkStatus("thread attrs - set stack size") {
-            pthread_attr_setstacksize(attrs, stackSize.toUInt)
-          }
+        checkStatus("thread attrs - set stack size") {
+          pthread_attr_setstacksize(attrs, stackSize.toUInt)
         }
         checkStatus("thread create") {
           GC.pthread_create(
@@ -408,6 +415,18 @@ private[lang] object PosixThread extends NativeThread.Companion {
     new PosixThread(thread, stackSize)
 
   @alwaysinline def yieldThread(): Unit = sched_yield()
+
+  override lazy val defaultOSStackSize: Long = {
+    if (!isMultithreadingEnabled) 0L
+    else {
+      val attrs = stackalloc[Byte](pthread_attr_t_size)
+        .asInstanceOf[Ptr[pthread_attr_t]]
+      pthread_attr_init(attrs)
+      val stackSize = stackalloc[CSize]()
+      pthread_attr_getstacksize(attrs, stackSize)
+      (!stackSize).toLong
+    }
+  }
 
   // PosixThread class state
   @alwaysinline private def LockOffset = 0

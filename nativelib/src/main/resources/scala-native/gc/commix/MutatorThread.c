@@ -13,7 +13,9 @@ void MutatorThread_init(Field_t *stackbottom) {
     MutatorThread *self = (MutatorThread *)malloc(sizeof(MutatorThread));
     memset(self, 0, sizeof(MutatorThread));
     currentMutatorThread = self;
-
+#ifdef SCALANATIVE_THREAD_ALT_STACK
+    self->threadInfo = &currentThreadInfo;
+#endif
     self->stackBottom = stackbottom;
 #ifdef SCALANATIVE_GC_USE_YIELDPOINT_TRAPS
 #ifdef _WIN32

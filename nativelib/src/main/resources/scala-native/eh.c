@@ -12,16 +12,33 @@
 #define GetExceptionWrapper(unwindException)                                   \
     ((ExceptionWrapper *)(unwindException + 1) - 1)
 
+typedef void *Exception;
+typedef void (*OnCatchHandler)(Exception);
 typedef struct ExceptionWrapper {
-    void *obj;
+    Exception obj;
     _Unwind_Exception unwindException;
 } ExceptionWrapper;
+
+extern OnCatchHandler scalanative_Throwable_onCatchHandler(Exception exception);
+extern void scalanative_Throwable_showStackTrace(Exception exception);
+extern ExceptionWrapper *
+scalanative_Throwable_exceptionWrapper(Exception exception);
+
+size_t scalanative_Throwable_sizeOfExceptionWrapper() {
+    return sizeof(ExceptionWrapper);
+}
+
+static void Exception_cleanup(Exception *self) {
+    OnCatchHandler handler = scalanative_Throwable_onCatchHandler(self);
+    if (handler)
+        handler(self);
+}
 
 // Cleanup function for the exception
 void generic_exception_cleanup(_Unwind_Reason_Code code,
                                _Unwind_Exception *exception) {
     ExceptionWrapper *exceptionWrapper = GetExceptionWrapper(exception);
-    free(exceptionWrapper); // Free the allocated memory
+    Exception_cleanup(exceptionWrapper->obj);
 }
 
 typedef const uint8_t *LSDA_ptr;
@@ -231,41 +248,36 @@ _Unwind_Reason_Code scalanative_personality(int version, _Unwind_Action actions,
     return _URC_CONTINUE_UNWIND;
 }
 
-void *scalanative_catch(_Unwind_Exception *unwindException) {
+Exception scalanative_catch(_Unwind_Exception *unwindException) {
     ExceptionWrapper *exceptionWrapper = GetExceptionWrapper(unwindException);
-    void *exception = exceptionWrapper->obj;
-
-    free(exceptionWrapper);
-
+    Exception exception = exceptionWrapper->obj;
+    Exception_cleanup(exception);
     return exception;
 }
 
-void scalanative_throw(void *obj) {
-    // Allocate and initialize the exception object
-    // TODO: We could add space inside java.lang.Throwable to store
-    // _UnwindException so we don't need to malloc at all
+__attribute__((noreturn)) void scalanative_throw(Exception obj) {
     ExceptionWrapper *exceptionWrapper =
-        (ExceptionWrapper *)malloc(sizeof(ExceptionWrapper));
-    if (!exceptionWrapper) {
-        perror("Failed to allocate memory for exception");
-        abort();
-    }
-
+        scalanative_Throwable_exceptionWrapper(obj);
     exceptionWrapper->unwindException.exception_cleanup =
         generic_exception_cleanup;
     exceptionWrapper->obj = obj;
-
-    _Unwind_Reason_Code code =
-        _Unwind_RaiseException(&exceptionWrapper->unwindException);
+    _Unwind_Exception *unwindException = &exceptionWrapper->unwindException;
+    _Unwind_Reason_Code code = _Unwind_RaiseException(unwindException);
 
     if (code == _URC_END_OF_STACK) {
-        printf("No handler found for exception. Exiting.\n");
         generic_exception_cleanup(code, &exceptionWrapper->unwindException);
-        abort();
-    } else {
-        printf("Unhandled exception: _Unwind_RaiseException returned %d\n",
-               code);
+        fprintf(stderr,
+                "ScalaNative Fatal Error: Failed to throw exception, not found "
+                "a valid catch handler for exception when unwinding execution "
+                "stack.\n");
+        scalanative_Throwable_showStackTrace(obj);
         abort();
     }
+    scalanative_Throwable_showStackTrace(obj);
+    fprintf(stderr,
+            "Scala Native Fatal Error: Unhandled exception: "
+            "_Unwind_RaiseException returned %d\n",
+            code);
+    abort();
 }
 #endif
