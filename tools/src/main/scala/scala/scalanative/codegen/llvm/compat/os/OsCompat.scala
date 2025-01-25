@@ -20,7 +20,10 @@ private[codegen] abstract class OsCompat(
   )(implicit
       fresh: nir.Fresh,
       pos: nir.SourcePosition,
-      sb: ShowBuilder
+      scopeId: nir.ScopeId,
+      sb: ShowBuilder,
+      metaCtx: MetadataCodeGen.Context,
+      scopes: MetadataCodeGen.DefnScopes
   ): Unit
   def genBlockAlloca(block: nir.ControlFlow.Block)(implicit
       sb: ShowBuilder

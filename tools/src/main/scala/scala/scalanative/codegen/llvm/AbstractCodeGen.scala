@@ -18,6 +18,7 @@ import scala.scalanative.codegen.{Metadata => CodeGenMetadata}
 import scala.language.implicitConversions
 import scala.scalanative.codegen.llvm.Metadata.conversions._
 import scala.scalanative.util.ScopedVar
+import MetadataCodeGen.DefnScopes
 
 private[codegen] abstract class AbstractCodeGen(
     env: Map[nir.Global, nir.Defn],
@@ -285,7 +286,7 @@ private[codegen] abstract class AbstractCodeGen(
     defn match {
       case _: nir.Defn.Declare => ()
       case defn: nir.Defn.Define =>
-        implicit lazy val defnScopes: DefnScopes = new DefnScopes(defn)
+        implicit lazy val defnScopes: DefnScopes = new DefnScopes(defn, this)
         insts.foreach {
           case nir.Inst.Let(n, nir.Op.Copy(v), _) => copies(n) = v
           case _                                  => ()
@@ -475,11 +476,11 @@ private[codegen] abstract class AbstractCodeGen(
       sb: ShowBuilder,
       debugInfo: DebugInfo,
       metaCtx: MetadataCodeGen.Context,
-      defnScoeps: this.DefnScopes
+      defnScoeps: MetadataCodeGen.DefnScopes
   ): Unit = {
     block.insts.foreach {
       case inst @ nir.Inst.Let(_, _, unwind: nir.Next.Unwind) =>
-        import inst.pos
+        import inst.{pos, scopeId}
         os.genLandingPad(unwind)
       case _ => ()
     }

@@ -56,7 +56,10 @@ private[codegen] class WindowsCompat(codegen: AbstractCodeGen)
   )(implicit
       fresh: nir.Fresh,
       pos: nir.SourcePosition,
-      sb: ShowBuilder
+      scopeId: nir.ScopeId,
+      sb: ShowBuilder,
+      metaCtx: MetadataCodeGen.Context,
+      scopes: MetadataCodeGen.DefnScopes
   ): Unit = {
     import codegen._
     import sb._
