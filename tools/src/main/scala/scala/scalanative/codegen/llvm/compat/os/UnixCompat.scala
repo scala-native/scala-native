@@ -60,7 +60,7 @@ private[codegen] class UnixCompat(codegen: AbstractCodeGen)
     indent()
 
     line(s"$exc = call $ptrT $scalaNativeCatch($ptrT $r0)")
-    codegen.dbg(",",codegen.toDILocation(pos, scopeId))
+    codegen.dbg(",", codegen.toDILocation(pos, scopeId))
     line("br ")
     codegen.genNext(next)
     unindent()
