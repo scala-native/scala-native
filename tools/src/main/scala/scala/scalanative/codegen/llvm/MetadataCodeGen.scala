@@ -231,90 +231,6 @@ private[codegen] trait MetadataCodeGen { self: AbstractCodeGen =>
     scope = defnScopes.toDIScope(scopeId)
   )
 
-  class DefnScopes(val defn: nir.Defn.Define)(implicit
-      metadataCtx: MetadataCodeGen.Context
-  ) {
-    private val scopes = mutable.Map.empty[nir.ScopeId, Metadata.Scope]
-
-    lazy val getDISubprogramScope = {
-      val pos = defn.pos
-      val file = toDIFile(pos)
-      val unit = DICompileUnit(
-        file = file,
-        producer = Constants.PRODUCER,
-        isOptimized = defn.attrs.opt == nir.Attr.DidOpt
-      )
-      val linkageName = (defn.name: nir.Global) match {
-        case nir.Global.None =>
-          unsupported(defn.name)
-        case nir.Global.Member(_, sig) if sig.isExtern =>
-          val nir.Sig.Extern(id) = sig.unmangled: @unchecked
-          id
-        case _ =>
-          // We add an extra `_` to match the procedure names
-          // generated without debug informations.
-          // This makes demangling work regardless of the debug setting
-          "__S" + defn.name.mangle
-      }
-      val ownerName = defn.name.owner.id
-
-      // On Windows if there are no method symbols (LTO enabled) stack traces might return linkage names from found debug symbols
-      // Use it to implement stacktraces
-      val useFQCName =
-        meta.buildConfig.targetsWindows &&
-          meta.config.lto != scalanative.build.LTO.None
-      def fqcn(methodName: String) = s"$ownerName.$methodName"
-      def maybeFQCName(methodName: String) = if (useFQCName) fqcn(methodName) else methodName
-      def methodNameInfo(sig: nir.Sig.Unmangled): (String, DIFlags) = sig match {
-        case nir.Sig.Extern(id) => id -> DIFlags()
-        case nir.Sig.Method(id, _, scope) =>
-          maybeFQCName(id) -> DIFlags(sigAccessibilityFlags(scope): _*)
-        case nir.Sig.Duplicate(of, _) => methodNameInfo(of.unmangled)
-        case nir.Sig.Clinit           => "<clinit>" -> DIFlags(DIFlag.DIFlagPrivate)
-        case nir.Sig.Generated(id)    => maybeFQCName(id) -> DIFlags(DIFlag.DIFlagArtificial)
-        case nir.Sig.Ctor(_)          => maybeFQCName("<init>") -> DIFlags()
-        case nir.Sig.Proxy(id, _)     => maybeFQCName(id) -> DIFlags()
-        case _: nir.Sig.Field         => util.unreachable
-      }
-      val nir.Type.Function(argtys, retty) = defn.ty: @unchecked
-      val (name, flags) = methodNameInfo(defn.name.sig.unmangled)
-      DISubprogram(
-        name = name,
-        linkageName = linkageName,
-        scope = unit,
-        file = file,
-        unit = unit,
-        line = pos.line.toDILine,
-        flags = flags,
-        tpe = DISubroutineType(
-          DITypes(
-            toFunctionMetadataType(retty),
-            argtys.map(toMetadataType(_))
-          )
-        )
-      )
-    }
-
-    def toDIScope(scopeId: nir.ScopeId): Scope =
-      scopes.getOrElseUpdate(
-        scopeId,
-        if (scopeId.isTopLevel) getDISubprogramScope
-        else toDILexicalBlock(scopeId)
-      )
-
-    def toDILexicalBlock(scopeId: nir.ScopeId): Metadata.DILexicalBlock = {
-      val scope = defn.debugInfo.lexicalScopeOf(scopeId)
-      val srcPosition = scope.srcPosition
-
-      Metadata.DILexicalBlock(
-        file = toDIFile(srcPosition),
-        scope = toDIScope(scope.parent),
-        line = srcPosition.line.toDILine,
-        column = srcPosition.column.toDIColumn
-      )
-    }
-  }
-
   private val DIBasicTypes: Map[nir.Type, Metadata.Type] = {
     import nir.Type._
     Seq(Byte, Char, Short, Int, Long, Size, Float, Double, Bool, Ptr).map { tpe =>
@@ -662,7 +578,7 @@ private[codegen] trait MetadataCodeGen { self: AbstractCodeGen =>
     }
   }
 
-  private def sigAccessibilityFlags(scope: nir.Sig.Scope): List[DIFlag] = scope match {
+  private[llvm] def sigAccessibilityFlags(scope: nir.Sig.Scope): List[DIFlag] = scope match {
     case nir.Sig.Scope.Public           => DIFlag.DIFlagPublic :: Nil
     case nir.Sig.Scope.PublicStatic     => DIFlag.DIFlagPublic :: DIFlag.DIFlagStaticMember :: Nil
     case _: nir.Sig.Scope.Private       => DIFlag.DIFlagPrivate :: Nil
@@ -688,6 +604,93 @@ private[codegen] object MetadataCodeGen {
       cachedByNameTypes.getOrElseUpdate(name, create(name)).asInstanceOf[T]
 
     val currentSubprogram = new ScopedVar[Metadata.DISubprogram]()
+  }
+
+  class DefnScopes(val defn: nir.Defn.Define, codeGen: AbstractCodeGen)(implicit
+      metadataCtx: MetadataCodeGen.Context
+  ) {
+    import codeGen._
+    import Metadata._
+
+    private val scopes = mutable.Map.empty[nir.ScopeId, Metadata.Scope]
+
+    lazy val getDISubprogramScope = {
+      val pos = defn.pos
+      val file = toDIFile(pos)
+      val unit = DICompileUnit(
+        file = file,
+        producer = Constants.PRODUCER,
+        isOptimized = defn.attrs.opt == nir.Attr.DidOpt
+      )
+      val linkageName = (defn.name: nir.Global) match {
+        case nir.Global.None =>
+          unsupported(defn.name)
+        case nir.Global.Member(_, sig) if sig.isExtern =>
+          val nir.Sig.Extern(id) = sig.unmangled: @unchecked
+          id
+        case _ =>
+          // We add an extra `_` to match the procedure names
+          // generated without debug informations.
+          // This makes demangling work regardless of the debug setting
+          "__S" + defn.name.mangle
+      }
+      val ownerName = defn.name.owner.id
+
+      // On Windows if there are no method symbols (LTO enabled) stack traces might return linkage names from found debug symbols
+      // Use it to implement stacktraces
+      val useFQCName =
+        meta.buildConfig.targetsWindows &&
+          meta.config.lto != scalanative.build.LTO.None
+      def fqcn(methodName: String) = s"$ownerName.$methodName"
+      def maybeFQCName(methodName: String) = if (useFQCName) fqcn(methodName) else methodName
+      def methodNameInfo(sig: nir.Sig.Unmangled): (String, DIFlags) = sig match {
+        case nir.Sig.Extern(id) => id -> DIFlags()
+        case nir.Sig.Method(id, _, scope) =>
+          maybeFQCName(id) -> DIFlags(sigAccessibilityFlags(scope): _*)
+        case nir.Sig.Duplicate(of, _) => methodNameInfo(of.unmangled)
+        case nir.Sig.Clinit           => "<clinit>" -> DIFlags(DIFlag.DIFlagPrivate)
+        case nir.Sig.Generated(id)    => maybeFQCName(id) -> DIFlags(DIFlag.DIFlagArtificial)
+        case nir.Sig.Ctor(_)          => maybeFQCName("<init>") -> DIFlags()
+        case nir.Sig.Proxy(id, _)     => maybeFQCName(id) -> DIFlags()
+        case _: nir.Sig.Field         => util.unreachable
+      }
+      val nir.Type.Function(argtys, retty) = defn.ty: @unchecked
+      val (name, flags) = methodNameInfo(defn.name.sig.unmangled)
+      DISubprogram(
+        name = name,
+        linkageName = linkageName,
+        scope = unit,
+        file = file,
+        unit = unit,
+        line = pos.line.toDILine,
+        flags = flags,
+        tpe = DISubroutineType(
+          DITypes(
+            toFunctionMetadataType(retty),
+            argtys.map(toMetadataType(_))
+          )
+        )
+      )
+    }
+
+    def toDIScope(scopeId: nir.ScopeId): Scope =
+      scopes.getOrElseUpdate(
+        scopeId,
+        if (scopeId.isTopLevel) getDISubprogramScope
+        else toDILexicalBlock(scopeId)
+      )
+
+    def toDILexicalBlock(scopeId: nir.ScopeId): Metadata.DILexicalBlock = {
+      val scope = defn.debugInfo.lexicalScopeOf(scopeId)
+      val srcPosition = scope.srcPosition
+
+      Metadata.DILexicalBlock(
+        file = toDIFile(srcPosition),
+        scope = toDIScope(scope.parent),
+        line = srcPosition.line.toDILine,
+        column = srcPosition.column.toDIColumn
+      )
+    }
   }
 
   implicit class MetadataIdWriter(val id: Metadata.Id) {

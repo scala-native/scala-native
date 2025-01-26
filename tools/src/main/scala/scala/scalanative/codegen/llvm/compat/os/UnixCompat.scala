@@ -5,6 +5,7 @@ package compat.os
 import scala.scalanative.codegen.llvm.AbstractCodeGen
 import scala.scalanative.nir.Defn.Define.DebugInfo
 import scala.scalanative.util.ShowBuilder
+import scala.scalanative.codegen.llvm.Metadata.DILocation
 
 private[codegen] class UnixCompat(codegen: AbstractCodeGen)
     extends OsCompat(codegen) {
@@ -31,7 +32,10 @@ private[codegen] class UnixCompat(codegen: AbstractCodeGen)
   )(implicit
       fresh: nir.Fresh,
       pos: nir.SourcePosition,
-      sb: ShowBuilder
+      scopeId: nir.ScopeId,
+      sb: ShowBuilder,
+      metaCtx: MetadataCodeGen.Context,
+      scopes: MetadataCodeGen.DefnScopes
   ): Unit = {
     import sb._
     val nir.Next.Unwind(nir.Val.Local(excname, _), next) = unwind
@@ -54,7 +58,9 @@ private[codegen] class UnixCompat(codegen: AbstractCodeGen)
 
     line(s"$excsucc:")
     indent()
+
     line(s"$exc = call $ptrT $scalaNativeCatch($ptrT $r0)")
+    codegen.dbg(",", codegen.toDILocation(pos, scopeId))
     line("br ")
     codegen.genNext(next)
     unindent()

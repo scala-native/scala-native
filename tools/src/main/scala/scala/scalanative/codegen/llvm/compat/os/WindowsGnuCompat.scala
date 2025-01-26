@@ -39,7 +39,10 @@ private[codegen] class WindowsGnuCompat(codegen: AbstractCodeGen)
   )(implicit
       fresh: nir.Fresh,
       pos: nir.SourcePosition,
-      sb: ShowBuilder
+      scopeId: nir.ScopeId,
+      sb: ShowBuilder,
+      metaCtx: MetadataCodeGen.Context,
+      scopes: MetadataCodeGen.DefnScopes
   ): Unit = {
     import sb._
     val nir.Next.Unwind(nir.Val.Local(excname, _), next) = unwind
