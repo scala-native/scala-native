@@ -2,7 +2,7 @@
  *
  * Scala Native changes:
  *
- *  - Re-ported from Scala.js to pick up changes there which fix Scala Native
+ *  - Re-ported from Scala.js to pick up changes which fix Scala Native
  *    Issue #4169, incorrect rounding in previous floatValue().
  *
  *    An additional benefit of this  re-alignment of the code bases
