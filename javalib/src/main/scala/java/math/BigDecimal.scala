@@ -5,11 +5,26 @@
  *  - Re-ported from Scala.js to pick up changes there which fix Scala Native
  *    Issue #4169, incorrect rounding in previous floatValue().
  *
- *    - Includes a small change in Scala.js divideToIntegralValue() to
- *      allow compilation. Both branches of 'val compRemDiv = {' need to
- *      return the same type, Int or Long. Otherwise the later
- *      'if (compRemDiv > 0)' comparison fails to compile because no '>'
- *      operator is available for '(Int | Long)'.
+ *    An additional benefit of this  re-alignment of the code bases
+ *    is that it also fixes a number of issues which have been fixed in
+ *    Scala.js but not yet been reported for Scala Native.
+ *
+ *    - Applied Scala Native PR 3446 to Scala.js commit 6041bad code.
+ *      This was the only significant Scala Native only change since
+ *      the code bases were last aligned in SN PR 2534, 2022-01-21.
+ *
+ *    - Made a small change to Scala.js divideToIntegralValue() to
+ *      allow compilation. See "Scala Native change" comment in that method.
+ */
+
+/* 2025-01-27
+ * The "libcore/+/master" URL in the A. Johnson note immediately below
+ * no longer works. Doing the obvious and replacing "master" by "main"
+ * also does not work.
+ *
+ * What works is (join the lines):
+ * https://android.googlesource.com/platform/libcore/+/f339392/luni/src/main
+ *   /java/java/math/BigDecimal.java
  */
 
 /*
@@ -328,7 +343,8 @@ object BigDecimal {
       new BigDecimal(0, Int.MinValue)
   }
 
-  protected def bitLength(sValue: Long): Int = {
+  // Scala Native PR #3446 2023-08-23 change
+  private def bitLength(sValue: Long): Int = {
     val smallValue = if (sValue < 0) ~sValue else sValue
     64 - java.lang.Long.numberOfLeadingZeros(smallValue)
   }
@@ -342,7 +358,6 @@ object BigDecimal {
     !charEqualTo(c, cs)
 
   private def charEqualTo(c: Char, cs: Array[Char]): Boolean = {
-    // scalastyle:off return
     val len = cs.length
     var i = 0
     while (i != len) {
@@ -351,7 +366,6 @@ object BigDecimal {
       i += 1
     }
     false
-    // scalastyle:on return
   }
 
   @inline
@@ -674,7 +688,6 @@ class BigDecimal() extends Number with Comparable[BigDecimal] {
   }
 
   def add(augend: BigDecimal, mc: MathContext): BigDecimal = {
-    // scalastyle:off return
     if (augend.isZero || this.isZero || mc.precision == 0) {
       add(augend).round(mc)
     } else {
@@ -705,7 +718,6 @@ class BigDecimal() extends Number with Comparable[BigDecimal] {
       val result = new BigDecimal(tempBI, larger._scale + 1)
       result.round(mc)
     }
-    // scalastyle:on return
   }
 
   def subtract(subtrahend: BigDecimal): BigDecimal = {
@@ -941,7 +953,7 @@ class BigDecimal() extends Number with Comparable[BigDecimal] {
 
     // In special cases it reduces the problem to call the dual method
     if (mc.precision == 0 || this.isZero || divisor.isZero)
-      return this.divide(divisor) // scalastyle:ignore
+      return this.divide(divisor)
 
     val diffScale: Long = _scale.toLong - divisor._scale
     val trailingZeros =
@@ -1048,7 +1060,6 @@ class BigDecimal() extends Number with Comparable[BigDecimal] {
       divisor: BigDecimal,
       mc: MathContext
   ): BigDecimal = {
-    // scalastyle:off return
     val mcPrecision = mc.precision
     val diffPrecision = this.precision() - divisor.precision()
     val lastPow = BigTenPows.length - 1
@@ -1139,7 +1150,6 @@ class BigDecimal() extends Number with Comparable[BigDecimal] {
       throw new ArithmeticException("Division impossible")
 
     new BigDecimal(strippedBI, safeLongToInt(finalScale))
-    // scalastyle:on return
   }
 
   def remainder(divisor: BigDecimal): BigDecimal =
