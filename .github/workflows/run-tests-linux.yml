@@ -245,7 +245,7 @@ jobs:
 
         # Make sure that Scala partest denylisted tests contain only valid test names
       - name: Setup Scala-cli
-        uses: VirtusLab/scala-cli-setup@v1.5
+        uses: VirtusLab/scala-cli-setup@v1.6
 
       - name: Check partest disabled tests list
         # No partests support for Scala 3
