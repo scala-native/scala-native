@@ -985,8 +985,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
               targetTree.symbol.tpe.resultType
             }
           buf.ret(
-            if (retType == res.ty && resTyEnteringPosterasure == sym.tpe.resultType)
-              res
+            if (retType == res.ty) res
             else
               ensureBoxed(res, resTyEnteringPosterasure, callTree.tpe)(
                 buf,
