@@ -1,11 +1,11 @@
-// Ported from Scala.js, revision c473689, dated 06.05.2021
+// Ported from Scala.js, revision 6041bad, dated 2024-12-16
+// Has small changes required by Scala Native test environment.
 
-// scalastyle:off line.size.limit
+// URL below may no longer work. See comment in SN BigDecimal.scala.
 /*
  * Ported by Alistair Johnson from
  * https://github.com/gwtproject/gwt/blob/master/user/test/com/google/gwt/emultest/java/math/BigDecimalScaleOperationsTest.java
  */
-// scalastyle:on line.size.limit
 
 package org.scalanative.testsuite.javalib.math
 
@@ -14,7 +14,7 @@ import java.math._
 import org.junit.Test
 import org.junit.Assert._
 
-@deprecated class BigDecimalScaleOperationsTest {
+class BigDecimalScaleOperationsTest {
 
   @Test def testScaleByPowerOfTen(): Unit = {
     val bd = BigDecimal.ONE.scaleByPowerOfTen(1)
@@ -278,5 +278,12 @@ import org.junit.Assert._
     val aNumber = new BigDecimal(new BigInteger(a), aScale)
     val prec = aNumber.precision()
     assertEquals(prec, 68)
+  }
+
+  @Test def testStripTrailingZeros(): Unit = {
+    assertEquals(
+      0,
+      java.math.BigDecimal.valueOf(0, 9).stripTrailingZeros().scale()
+    )
   }
 }
