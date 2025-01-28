@@ -697,6 +697,8 @@ run/repl-class-based-outer-pointers.scala
 run/repl-class-based-escaping-reads.scala
 
 # Using the Repl (scala.tools.partest.ReplTest)
+run/t13050.scala
+run/substSymRefinementOwner.scala
 run/t11991.scala
 run/t11915.scala
 run/t11899.scala
