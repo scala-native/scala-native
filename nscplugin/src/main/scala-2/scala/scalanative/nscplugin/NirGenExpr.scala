@@ -984,8 +984,17 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             enteringPhase(currentRun.posterasurePhase) {
               targetTree.symbol.tpe.resultType
             }
+          val shouldBox = retType != res.ty || {
+            resTyEnteringPosterasure match {
+              case ErasedValueType(_, tpe) => 
+                // If the underlying type is AnyRef it always needs to be boxed into value class
+                tpe != sym.tpe.resultType || tpe =:= ObjectTpe
+              case tpe =>
+                tpe != sym.tpe.resultType
+            }
+          }
           buf.ret(
-            if (retType == res.ty) res
+            if (!shouldBox) res
             else
               ensureBoxed(res, resTyEnteringPosterasure, callTree.tpe)(
                 buf,
