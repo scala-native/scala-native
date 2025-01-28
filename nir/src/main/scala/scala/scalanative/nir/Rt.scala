@@ -63,16 +63,18 @@ private[scalanative] object Rt {
   )
 
   val PrimitiveTypes: Seq[Global.Top] = Seq(
-    "Byte",
-    "Short",
-    "Int",
-    "Long",
-    "Char",
-    "Float",
-    "Double",
-    "Boolean",
-    "Unit"
-  ).map(name => Global.Top(s"scala.scalanative.runtime.Primitive$name"))
+    "scala.scalanative.runtime.PrimitiveByte",
+    "scala.scalanative.runtime.PrimitiveShort",
+    "scala.scalanative.runtime.PrimitiveInt",
+    "scala.scalanative.runtime.PrimitiveLong",
+    "scala.scalanative.runtime.PrimitiveChar",
+    "scala.scalanative.runtime.PrimitiveFloat",
+    "scala.scalanative.runtime.PrimitiveDouble",
+    "scala.scalanative.runtime.PrimitiveBoolean",
+    "scala.scalanative.runtime.PrimitiveUnit",
+    "scala.scalanative.runtime.RawSize",
+    "scala.scalanative.runtime.RawPtr"
+  ).map(nir.Global.Top(_))
 
   val GenericArray = Ref(Global.Top("scala.scalanative.runtime.Array"))
   val BlobArray = Ref(Global.Top("scala.scalanative.runtime.BlobArray"))

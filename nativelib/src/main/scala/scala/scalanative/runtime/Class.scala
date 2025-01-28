@@ -58,11 +58,12 @@ private[runtime] final class _Class[A] {
 
   // Based on fixed ordering in scala.scalanative.codegen.Metadata.initClassIdsAndRanges
   def isInterface(): scala.Boolean = id < 0
-  def isPrimitive(): scala.Boolean = id >= 0 && id <= 8
-  // id == 9 is java.lang.Object
-  // id == 10 runtime.Array
-  // ids 10-20 runtime.Array implementations
-  def isArray(): scala.Boolean = id >= 10 && id <= 20
+  // The exact ids would match order defined in nir.Rt.PrimitiveTypes
+  def isPrimitive(): scala.Boolean = id >= 0 && id <= 10
+  // id == 11 is java.lang.Object
+  // id == 12 runtime.Array
+  // ids 13-22 runtime.Array implementations
+  def isArray(): scala.Boolean = id >= 12 && id <= 22
 
   def isAssignableFrom(that: Class[_]): scala.Boolean =
     is(that.asInstanceOf[_Class[_]], this)
@@ -115,7 +116,10 @@ private[runtime] final class _Class[A] {
 
   override def toString = {
     val name = getName()
-    val prefix = if (isInterface()) "interface " else "class "
+    val prefix =
+      if (isPrimitive()) ""
+      else if (isInterface()) "interface "
+      else "class "
     prefix + name
   }
 

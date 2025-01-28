@@ -7,8 +7,55 @@ import scalanative.linker.{ScopeInfo, Class, Trait}
 private[codegen] class RuntimeTypeInformation(info: ScopeInfo)(implicit
     meta: Metadata
 ) {
+  import meta.platform
 
   import RuntimeTypeInformation._
+  private lazy val isPrimitiveType = {
+    val id = info.name.id
+    id.startsWith("scala.scalanative.runtime.Primitive") ||
+      id == "scala.scalanative.runtime.RawSize" ||
+      id == "scala.scalanative.runtime.RawPtr"
+  }
+
+  private def typeName = {
+    if (isPrimitiveType) info.name.id match {
+      case "scala.scalanative.runtime.PrimitiveByte"    => "byte"
+      case "scala.scalanative.runtime.PrimitiveShort"   => "short"
+      case "scala.scalanative.runtime.PrimitiveInt"     => "int"
+      case "scala.scalanative.runtime.PrimitiveLong"    => "long"
+      case "scala.scalanative.runtime.PrimitiveChar"    => "char"
+      case "scala.scalanative.runtime.PrimitiveFloat"   => "float"
+      case "scala.scalanative.runtime.PrimitiveDouble"  => "double"
+      case "scala.scalanative.runtime.PrimitiveBoolean" => "boolean"
+      case "scala.scalanative.runtime.PrimitiveUnit"    => "void"
+      case "scala.scalanative.runtime.RawSize"          => "size"
+      case "scala.scalanative.runtime.RawPtr"           => "pointer"
+    }
+    else info.name.id
+  }
+
+  private def typeSize = {
+    if (isPrimitiveType) info.name.id match {
+      case "scala.scalanative.runtime.PrimitiveByte"    => 1
+      case "scala.scalanative.runtime.PrimitiveShort"   => 2
+      case "scala.scalanative.runtime.PrimitiveInt"     => 4
+      case "scala.scalanative.runtime.PrimitiveLong"    => 8
+      case "scala.scalanative.runtime.PrimitiveChar"    => 4
+      case "scala.scalanative.runtime.PrimitiveFloat"   => 4
+      case "scala.scalanative.runtime.PrimitiveDouble"  => 8
+      case "scala.scalanative.runtime.PrimitiveBoolean" => 1
+      case "scala.scalanative.runtime.PrimitiveUnit"    => 8
+      case "scala.scalanative.runtime.RawSize" =>
+        MemoryLayout.sizeOf(nir.Type.Size).toInt
+      case "scala.scalanative.runtime.RawPtr" =>
+        MemoryLayout.sizeOf(nir.Type.Ptr).toInt
+    }
+    else
+      info match {
+        case cls: Class => meta.layout(cls).size.toInt
+        case _          => util.unreachable
+      }
+  }
 
   val name: nir.Global.Member = info.name.member(nir.Sig.Generated("type"))
   val const: nir.Val.Global = nir.Val.Global(name, nir.Type.Ptr)
@@ -20,7 +67,7 @@ private[codegen] class RuntimeTypeInformation(info: ScopeInfo)(implicit
   }
   lazy val value: nir.Val.StructValue = {
     val typeId = nir.Val.Int(meta.ids(info))
-    val typeStr = nir.Val.String(info.name.asInstanceOf[nir.Global.Top].id)
+    val typeStr = nir.Val.String(typeName)
     val traits = info.linearized
       .collect { case cls: Trait if cls != info => cls }
       .sortBy(meta.ids(_))
@@ -53,7 +100,7 @@ private[codegen] class RuntimeTypeInformation(info: ScopeInfo)(implicit
           cls.parent.map(meta.rtti(_).const).getOrElse(nir.Val.Null)
         nir.Val.StructValue(
           base ::
-            nir.Val.Int(meta.layout(cls).size.toInt) :: // size
+            nir.Val.Int(typeSize) :: // size
             nir.Val.Int(range.last) :: // idRangeUntil
             meta.layout(cls).referenceOffsetsValue :: // refFieldOffsets
             // Free slot for additional Int32 to be used in the future

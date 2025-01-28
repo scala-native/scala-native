@@ -154,10 +154,24 @@ class ClassTest {
   }
 
   @Test def testToString(): Unit = {
-    assertTrue(classOf[java.lang.Class[_]].toString == "class java.lang.Class")
-    assertTrue(
-      classOf[java.lang.Runnable].toString == "interface java.lang.Runnable"
+    assertEquals(
+      "class java.lang.Class",
+      classOf[java.lang.Class[_]].toString()
     )
+    assertEquals(
+      "interface java.lang.Runnable",
+      classOf[java.lang.Runnable].toString()
+    )
+    assertEquals("byte", classOf[scala.Byte].toString())
+    assertEquals("short", classOf[scala.Short].toString())
+    assertEquals("char", classOf[scala.Char].toString())
+    assertEquals("int", classOf[scala.Int].toString())
+    assertEquals("long", classOf[scala.Long].toString())
+    assertEquals("float", classOf[scala.Float].toString())
+    assertEquals("double", classOf[scala.Double].toString())
+    assertEquals("boolean", classOf[scala.Boolean].toString())
+    // assertEquals("size", classOf[scala.scalanative.runtime.RawSize].toString())
+    // assertEquals("pointer", classOf[scala.scalanative.runtime.RawPtr].toString())
   }
 
   @Test def isInterface(): Unit = {
