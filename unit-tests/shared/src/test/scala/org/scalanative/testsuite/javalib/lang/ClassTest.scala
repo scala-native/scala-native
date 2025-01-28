@@ -168,7 +168,7 @@ class ClassTest {
     assertEquals("int", classOf[scala.Int].toString())
     assertEquals("long", classOf[scala.Long].toString())
     assertEquals("float", classOf[scala.Float].toString())
-    assertEquals("float", classOf[scala.Double].toString())
+    assertEquals("double", classOf[scala.Double].toString())
     assertEquals("boolean", classOf[scala.Boolean].toString())
     // assertEquals("size", classOf[scala.scalanative.runtime.RawSize].toString())
     // assertEquals("pointer", classOf[scala.scalanative.runtime.RawPtr].toString())
