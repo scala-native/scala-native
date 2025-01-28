@@ -186,7 +186,10 @@ final class NirDefinitions()(using ctx: Context) {
     'D' -> requiredClass("scala.scalanative.runtime.PrimitiveDouble"),
     'U' -> requiredClass("scala.scalanative.runtime.PrimitiveUnit")
   )
-  @tu lazy val RuntimePrimitiveTypes: Set[Symbol] = RuntimePrimitive.values.toSet
+  @tu lazy val RuntimePrimitiveTypes: Set[Symbol] = RuntimePrimitive.values.toSet ++ Set(
+    RawPtrClass,
+    RawSizeClass
+  )
 
   @tu lazy val RuntimeArrayClass: Map[Char, Symbol] = Map(
     'B' -> requiredClass("scala.scalanative.runtime.BooleanArray"),
