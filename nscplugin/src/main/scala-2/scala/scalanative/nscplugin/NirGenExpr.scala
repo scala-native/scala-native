@@ -986,7 +986,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             }
           val shouldBox = retType != res.ty || {
             resTyEnteringPosterasure match {
-              case ErasedValueType(_, tpe) => 
+              case ErasedValueType(_, tpe) =>
                 // If the underlying type is AnyRef it always needs to be boxed into value class
                 tpe != sym.tpe.resultType || tpe =:= ObjectTpe
               case tpe =>
