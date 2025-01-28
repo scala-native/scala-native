@@ -49,7 +49,7 @@ private[scalanative] object Lower {
     private val unwindHandler = new util.ScopedVar[Option[nir.Local]]
     private val currentDefn = new util.ScopedVar[nir.Defn.Define]
     private val currentDefnGraph = new util.ScopedVar[Graph]
-    private implicit val intrinsicMethods = new util.ScopedVar[mutable.Map[nir.Local, IntrinsicCall]]
+    private implicit val intrinsicMethods: util.ScopedVar[mutable.Map[nir.Local, IntrinsicCall]] = new util.ScopedVar()
     private val blockInfo = mutable.Map.empty[Block, BlockInfo]
     private var currentBlock: Block = _
     private def getCurrentBlockInfo: BlockInfo = {
