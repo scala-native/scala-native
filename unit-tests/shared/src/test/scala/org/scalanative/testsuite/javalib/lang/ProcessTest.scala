@@ -206,7 +206,7 @@ class ProcessTest {
      * Scala Native does not implement junit "@Test(timeout)". That was
      * designed for situations just like this.
      *
-     * Let's see how this fairs in CI. Does it hang intermittently?
+     * Let's see how this fares in CI. Does it hang intermittently?
      * Should it be a manual development & maintains only test, ignored
      * in CI?
      */
@@ -440,27 +440,113 @@ class ProcessTest {
     )
   }
 
+  /* concurrentPipe() Design Note: Issue 4164
+   *
+   *   This evolution of concurrentPipe() is motivated by both experience
+   *   and analysis.
+   *
+   *   The presenting, experiential concern is that the this Test fails
+   *   intermittently when run by Continuous Integration on Windows.
+   *
+   *   Analysis:
+   *     In a concurrent world, there is no guarantee that the read Thread
+   *   will execute after the child process has written all its bytes and
+   *   those bytes are ready at the parent end of the pipe.
+   *
+   *     Many Tests in this file establish an order by waiting for the child
+   *   to exit before attempting to read. That is not realistic for
+   *   The Real World.
+   *
+   *     Here, the method "readNBytes()" is used to read its end of the pipe
+   *   in a more representative manner. If the child executes before the Thread,
+   *   the first read should succeed.
+   *
+   *     If the Thread reads before the child has written, End-of-File (EOF)will
+   *   be immediately returned.    We know, but the InputStream class does not,
+   *   that the underlying I/O stream is a pipe. The usual implementation
+   *   of pipe reads is that they do not block when the pipe is empty.
+   *   InputStream uses EOF/-1 to indicate both true EOF and zero byte
+   *   reads because of an empty pipe.
+   *
+   *     There is also no guarantee that a single write of N bytes by the child
+   *   will traverse the pipe and become an N byte read at the parent end of
+   *   the pipe. Here a count of the expected bytes is used to both consolidate
+   *   fragmented reads and avoid determining EOF.
+   */
+
   @Test def concurrentPipe(): Unit = {
+    /* Ensure that reading from process stdout does not lead to exceptions
+     * when thread terminates (was failing with Bad file descriptor in
+     * FileChannel.read)
+     */
     assumeNotCrossCompiling()
     assumeMultithreadingIsEnabled()
     assumeNot32Bit() // Flaky on x86
-    // Ensure that reading from process stdout does not lead to exceptions
-    // when thread terminates (was failing with Bad file descriptor in FileChannel.read)
+
     val iterations = 16
+
+    // See Design Note just before this Test.
+    val perIterationTimeout = 20 // seconds
+
+    /* Give a smidge more time to the worst case where each iteration succeeds
+     * just before timing out. Test might be executing on slow uniprocessor or
+     * low core multiprocessor. Be generous to avoid intermittent
+     * false failures. The full timeout should be infrequent and Heisenbugs
+     * are costly.
+     */
+    val totalTimeout = (iterations + 1) + perIterationTimeout // seconds
+
     val tasks = for (n <- 0 until iterations) yield Future {
       val proc = processForScript(Scripts.hello).start()
+      val expectedResponse = "hello"
+
       var done = false
+
+      def readNBytes(
+          src: InputStream,
+          nToRead: Int,
+          timeoutSeconds: Int
+      ): Array[Byte] = {
+        val buffer = new Array[Byte](nToRead)
+
+        var totalRead = 0
+        val maxSleepCount = timeoutSeconds
+        var sleepCount = 0
+
+        while ((totalRead < nToRead) && (sleepCount < maxSleepCount)) {
+          val nRead = src.read(buffer, totalRead, nToRead - totalRead)
+
+          if (nRead > 0) {
+            totalRead += nRead
+          } else {
+            sleepCount += 1
+            Thread.`yield`() // in case sleep() itself does not yield.
+            Thread.sleep(1 * 1000)
+          }
+        }
+
+        buffer
+      }
+
       val t = new Thread(() => {
         val src = proc.getInputStream()
-        val buffer = new Array[Byte](64)
-        while (src.read(buffer) != -1) ()
+
+        // All bytes in expectedResponse bytes are 1 byte in UTF-8.
+        val bytes =
+          readNBytes(src, expectedResponse.length(), perIterationTimeout)
         assertEquals(
           "concurrentPipe()",
-          s"hello",
-          new String(buffer, StandardCharsets.UTF_8).trim()
+          expectedResponse,
+          new String(bytes, StandardCharsets.UTF_8)
         )
         done = true
       })
+
+      /* Increase the chance of detecting concurrency issues.
+       * Start the thread _before_ waiting for process exit to increase the
+       * chance of reading from pipe while child is still active. The
+       * pipe code paths before and after child exit differ.
+       */
       t.start()
       assertEquals(0, proc.waitFor())
       t.join()
@@ -468,7 +554,7 @@ class ProcessTest {
     }
     assertTrue(
       Await
-        .result(Future.sequence(tasks), iterations.seconds)
+        .result(Future.sequence(tasks), totalTimeout.seconds)
         .forall(_ == true)
     )
   }
