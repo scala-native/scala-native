@@ -113,7 +113,8 @@ static bool tryGrowStack() {
 
         volatile char *cursor = currentThreadInfo.stackTop;
         while ((void *)cursor > newStackTop) {
-            *cursor = 0; // Write to the memory to force allocation
+            char value = *cursor;
+            *cursor = value; // Write to the memory to force allocation
             cursor -= resolvePageSize();
         }
         currentThreadInfo.stackSize = newSize;

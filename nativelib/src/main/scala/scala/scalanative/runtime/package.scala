@@ -58,7 +58,7 @@ package object runtime {
       rawargv: RawPtr
   ): scala.Array[String] = {
     NativeThread.TLS.setupCurrentThreadInfo(
-      stackBottom = rawargv,
+      stackBottom = Intrinsics.stackalloc[Byte](),
       isMainThread = true,
       stackSize = 0 /* detect */
     )
@@ -75,15 +75,13 @@ package object runtime {
     val argv = fromRawPtr[CString](rawargv)
     val args = new scala.Array[String](argc - 1)
 
-    // skip the executable name in argv(0)
+    ExecInfo.filename = fromCString(argv(0))
     var c = 0
     while (c < argc - 1) {
       // use the default Charset (UTF_8 atm)
       args(c) = fromCString(argv(c + 1))
       c += 1
     }
-
-    ExecInfo.filename = fromCString(argv(0))
     ExecInfo.startTime = System.currentTimeMillis()
     args
   }

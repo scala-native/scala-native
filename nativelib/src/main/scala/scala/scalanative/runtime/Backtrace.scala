@@ -166,7 +166,7 @@ private[runtime] object Backtrace {
   private final val ELF_MAGIC = 0x7f454c46
 
   private def processFile(): Option[DwarfInfo] = {
-    implicit val bf: BinaryFile = new BinaryFile(new File(filename))
+    implicit val bf: BinaryFile = new BinaryFile(new File(ExecInfo.filename))
     val head = bf.position()
     val magic = bf.readInt()
     bf.seek(head)
@@ -176,12 +176,12 @@ private[runtime] object Backtrace {
         if (magic == MACHO_MAGIC) {
           val macho = MachO.parse(bf)
           processMacho(macho).orElse {
-            val basename = new File(filename).getName()
+            val basename = new File(ExecInfo.filename).getName()
             // dsymutil `foo` will assemble the debug information into `foo.dSYM/Contents/Resources/DWARF/foo`.
             // Coulnt't find the official source, but at least libbacktrace locate the dSYM file from this location.
             // https://github.com/ianlancetaylor/libbacktrace/blob/cdb64b688dda93bbbacbc2b1ccf50ce9329d4748/macho.c#L908
             val dSymPath =
-              s"$filename.dSYM/Contents/Resources/DWARF/${basename}"
+              s"${ExecInfo.filename}.dSYM/Contents/Resources/DWARF/${basename}"
             if (new File(dSymPath).exists()) {
               val dSYMBin: BinaryFile = new BinaryFile(
                 new File(dSymPath)

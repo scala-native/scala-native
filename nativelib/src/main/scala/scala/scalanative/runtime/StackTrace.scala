@@ -22,7 +22,10 @@ private[runtime] object StackTrace {
         val ip = Intrinsics.stackalloc[RawSize]()
         unwind.get_context(context)
         unwind.init_local(cursor, context)
-        while (unwind.step(cursor) > 0) {
+        // JVM limit stack trace to 1024 entries
+        var frames = 0
+        while (unwind.step(cursor) > 0 && frames < 1024) {
+          frames += 1
           unwind.get_reg(cursor, unwind.UNW_REG_IP, ip)
           val addr =
             Intrinsics.castRawSizeToLongUnsigned(Intrinsics.loadRawSize(ip))
