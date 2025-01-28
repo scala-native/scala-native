@@ -724,6 +724,31 @@ class IssuesTest {
     }
     assertEquals(result, "b")
   }
+
+  // Based on Scala 2.13.16 fix in delambdafy https://github.com/scala/scala/pull/10831
+  @Test def partest_t13022(): Unit = {
+    import t13022.StringValue
+    trait Foo[A] {
+      def singleMethod(arg: A): StringValue
+    }
+
+    class R {
+      val foo1: Foo[Int] = new Foo[Int] {
+        override def singleMethod(arg: Int): StringValue = new StringValue(
+          arg.toString
+        )
+      }
+      val foo2: Foo[Int] = (arg: Int) => new StringValue(arg.toString)
+      val foo3 = (arg: Int) => new StringValue(arg.toString)
+
+      def run(): Unit = {
+        assertEquals("StringValue(1)", foo1.singleMethod(1).toString)
+        assertEquals("StringValue(1)", foo2.singleMethod(1).toString)
+        assertEquals("StringValue(1)", foo3(1).toString)
+      }
+    }
+    new R().run()
+  }
 }
 
 package issue1090 {
@@ -825,4 +850,8 @@ package object issue2552 {
 
 package object issue2712 {
   final class Refined[A](val value: A) extends AnyVal
+}
+
+object t13022 {
+  case class StringValue(value: String) extends AnyVal
 }
