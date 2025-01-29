@@ -440,7 +440,7 @@ class ProcessTest {
     )
   }
 
-  /* concurrentPipe() Design Note: Issue #4164
+  /* concurrentPipe() Design Note: Issue 4164
    *
    *   This evolution of concurrentPipe() is motivated by both experience
    *   and analysis.
