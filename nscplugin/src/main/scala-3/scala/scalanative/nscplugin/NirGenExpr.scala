@@ -39,6 +39,7 @@ import scala.scalanative.util.unreachable
 trait NirGenExpr(using Context) {
   self: NirCodeGen =>
   import positionsConversions.fromSpan
+  def nounwind = nir.Next.None
 
   sealed case class ValTree(value: nir.Val)(
       span: Span = NoSpan
@@ -172,13 +173,13 @@ trait NirGenExpr(using Context) {
               if (sym.isStaticMember) genModule(qualp.symbol)
               else genExpr(qualp)
             val ty = genType(lhsp.tpe)
-            buf.fieldstore(ty, qual, name, rhs, unwind)
+            buf.fieldstore(ty, qual, name, rhs, nounwind)
           }
 
         case id: Ident =>
           val rhs = genExpr(rhsp)
           val slot = curMethodEnv.resolve(id.symbol)
-          buf.varstore(slot, rhs, unwind)
+          buf.varstore(slot, rhs, nounwind)
       }
     }
 
@@ -386,7 +387,7 @@ trait NirGenExpr(using Context) {
 
             val captureVals =
               for (sym, (tpe, name)) <- captureSyms.zip(captureTypesAndNames)
-              yield buf.fieldload(tpe, self, name, unwind)
+              yield buf.fieldload(tpe, self, name, nounwind)
 
             val allVals =
               (captureVals ++ paramVals).toList.map(ValTree(_)(sym.span))
@@ -465,7 +466,7 @@ trait NirGenExpr(using Context) {
           val value =
             if sym.is(Module) then genModule(sym)
             else if (curMethodInfo.mutableVars.contains(sym))
-              buf.varload(curMethodEnv.resolve(sym), unwind)
+              buf.varload(curMethodEnv.resolve(sym), nounwind)
             else curMethodEnv.resolve(sym)
           if nir.Type.isNothing(value.ty) then
             // Short circuit the generated code for phantom value
@@ -792,7 +793,7 @@ trait NirGenExpr(using Context) {
       else if (owner.isStruct) {
         val index = owner.info.decls.filter(_.isField).toList.indexOf(sym)
         val qual = genExpr(qualp)
-        buf.extract(qual, Seq(index), unwind)
+        buf.extract(qual, Seq(index), nounwind)
       } else {
         val ty = genType(tree.tpe)
         val qual =
@@ -803,7 +804,7 @@ trait NirGenExpr(using Context) {
           val externTy = genExternType(tree.tpe)
           genLoadExtern(ty, externTy, tree.symbol)
         } else {
-          buf.fieldload(ty, qual, name, unwind)
+          buf.fieldload(ty, qual, name, nounwind)
         }
       }
     }
@@ -919,7 +920,7 @@ trait NirGenExpr(using Context) {
             buf.raise(exc, unwind)
             nir.Val.Unit
           case (excty, f, pos) +: rest =>
-            val cond = buf.is(excty, exc, unwind)(pos, getScopeId)
+            val cond = buf.is(excty, exc, nounwind)(pos, getScopeId)
             genIf(
               retty,
               ValTree(f)(cond),
@@ -993,7 +994,7 @@ trait NirGenExpr(using Context) {
       val value = genExpr(receiverp)
       lazy val boxed = boxValue(receiverp.tpe, value)(using receiverp.span)
 
-      if (funSym == defn.Any_isInstanceOf) buf.is(boxty, boxed, unwind)
+      if (funSym == defn.Any_isInstanceOf) buf.is(boxty, boxed, nounwind)
       else if (funSym == defn.Any_asInstanceOf)
         (fromty, toty) match {
           case (_: nir.Type.PrimitiveKind, _: nir.Type.PrimitiveKind) =>
@@ -1002,13 +1003,13 @@ trait NirGenExpr(using Context) {
           case (_, nir.Type.Nothing) =>
             val isNullL, notNullL = fresh()
             val isNull =
-              buf.comp(nir.Comp.Ieq, boxed.ty, boxed, nir.Val.Null, unwind)
+              buf.comp(nir.Comp.Ieq, boxed.ty, boxed, nir.Val.Null, nounwind)
             buf.branch(isNull, nir.Next(isNullL), nir.Next(notNullL))
             buf.label(isNullL)
             buf.raise(nir.Val.Null, unwind)
             buf.label(notNullL)
             buf.as(nir.Rt.RuntimeNothing, boxed, unwind)
-            buf.unreachable(unwind)
+            buf.unreachable(nounwind)
             buf.label(fresh())
             nir.Val.Zero(nir.Type.Nothing)
           case _ =>
@@ -1042,14 +1043,14 @@ trait NirGenExpr(using Context) {
         case nir.Val.Unit =>
           nir.Val.Unit
         case v =>
-          buf.let(fresh.namedId(name), nir.Op.Copy(v), unwind)
+          buf.let(fresh.namedId(name), nir.Op.Copy(v), nounwind)
       }
 
       if (vd.symbol.isExtern)
         checkExplicitReturnTypeAnnotation(vd, "extern field")
       if (isMutable)
         val slot = curMethodEnv.resolve(vd.symbol)
-        buf.varstore(slot, rhs, unwind)
+        buf.varstore(slot, rhs, nounwind)
       else
         curMethodEnv.enter(vd.symbol, rhs)
         nir.Val.Unit
@@ -1241,7 +1242,7 @@ trait NirGenExpr(using Context) {
       for ((arg, argp), idx) <- args.zip(argsp).zipWithIndex
       do
         given nir.SourcePosition = argp.span
-        res = buf.insert(res, arg, Seq(idx), unwind)
+        res = buf.insert(res, arg, Seq(idx), nounwind)
       res
     }
 
@@ -1305,7 +1306,7 @@ trait NirGenExpr(using Context) {
         if (isStaticCall) nir.Val.Global(name, nir.Type.Ptr)
         else
           val nir.Global.Member(_, sig) = name: @unchecked
-          buf.method(self, sig, unwind)
+          buf.method(self, sig, nounwind)
       val values =
         if isExtern then args
         else self +: args
@@ -1399,7 +1400,7 @@ trait NirGenExpr(using Context) {
     }
 
     private def negateBool(value: nir.Val)(using nir.SourcePosition): nir.Val =
-      buf.bin(nir.Bin.Xor, nir.Type.Bool, nir.Val.True, value, unwind)
+      buf.bin(nir.Bin.Xor, nir.Type.Bool, nir.Val.True, value, nounwind)
 
     private def genUnaryOp(code: Int, rightp: Tree, opty: nir.Type)(using
         nir.SourcePosition
@@ -1422,11 +1423,11 @@ trait NirGenExpr(using Context) {
       (opty, code) match {
         case (_: nir.Type.I | _: nir.Type.F, POS) => coerced
         case (_: nir.Type.I, NOT) =>
-          buf.bin(nir.Bin.Xor, tpe, numOfType(-1, tpe), coerced, unwind)
+          buf.bin(nir.Bin.Xor, tpe, numOfType(-1, tpe), coerced, nounwind)
         case (_: nir.Type.F, NEG) =>
-          buf.bin(nir.Bin.Fmul, tpe, numOfType(-1, tpe), coerced, unwind)
+          buf.bin(nir.Bin.Fmul, tpe, numOfType(-1, tpe), coerced, nounwind)
         case (_: nir.Type.I, NEG) =>
-          buf.bin(nir.Bin.Isub, tpe, numOfType(0, tpe), coerced, unwind)
+          buf.bin(nir.Bin.Isub, tpe, numOfType(0, tpe), coerced, nounwind)
         case (nir.Type.Bool, ZNOT) => negateBool(coerced)
         case _ =>
           report.error(s"Unknown unary operation code: $code", rightp.sourcePos)
@@ -1453,7 +1454,7 @@ trait NirGenExpr(using Context) {
         val leftcoerced = genCoercion(genExpr(left), lty, opty)(using left.span)
         val rightcoerced =
           genCoercion(genExpr(right), rty, opty)(using right.span)
-        buf.let(op(opty, leftcoerced, rightcoerced), unwind)(using
+        buf.let(op(opty, leftcoerced, rightcoerced), nounwind)(using
           left.span,
           getScopeId
         )
@@ -1614,7 +1615,7 @@ trait NirGenExpr(using Context) {
         val left = genExpr(leftp)
         val right = genExpr(rightp)
         val comp = if (negated) nir.Comp.Ine else nir.Comp.Ieq
-        buf.comp(comp, nir.Rt.Object, left, right, unwind)
+        buf.comp(comp, nir.Rt.Object, left, right, nounwind)
       } else genClassUniversalEquality(leftp, rightp, negated)
     }
 
@@ -1683,10 +1684,10 @@ trait NirGenExpr(using Context) {
       }
       else if (isNull(l)) {
         // null == expr -> expr eq null
-        buf.comp(comparator, nir.Rt.Object, genExpr(r), nir.Val.Null, unwind)
+        buf.comp(comparator, nir.Rt.Object, genExpr(r), nir.Val.Null, nounwind)
       } else if (isNull(r)) {
         // expr == null -> expr eq null
-        buf.comp(comparator, nir.Rt.Object, genExpr(l), nir.Val.Null, unwind)
+        buf.comp(comparator, nir.Rt.Object, genExpr(l), nir.Val.Null, nounwind)
       } else if (isNonNullExpr(l)) maybeNegate {
         // SI-7852 Avoid null check if L is statically non-null.
         genApplyMethod(
@@ -1704,13 +1705,19 @@ trait NirGenExpr(using Context) {
           val mergev = nir.Val.Local(fresh(), nir.Type.Bool)
           val left = genExpr(l)
           val isnull =
-            buf.comp(nir.Comp.Ieq, nir.Rt.Object, left, nir.Val.Null, unwind)
+            buf.comp(nir.Comp.Ieq, nir.Rt.Object, left, nir.Val.Null, nounwind)
           buf.branch(isnull, nir.Next(thenn), nir.Next(elsen))
           locally {
             buf.label(thenn)
             val right = genExpr(r)
             val thenv =
-              buf.comp(nir.Comp.Ieq, nir.Rt.Object, right, nir.Val.Null, unwind)
+              buf.comp(
+                nir.Comp.Ieq,
+                nir.Rt.Object,
+                right,
+                nir.Val.Null,
+                nounwind
+              )
             buf.jump(mergen, Seq(thenv))
           }
           locally {
@@ -1801,7 +1808,7 @@ trait NirGenExpr(using Context) {
                       val conv =
                         if (isUnsigned) nir.Conv.Zext
                         else nir.Conv.Sext
-                      buf.conv(conv, nir.Type.Int, arg, unwind)
+                      buf.conv(conv, nir.Type.Int, arg, nounwind)
 
                     case _ => arg
                   }
@@ -1838,7 +1845,7 @@ trait NirGenExpr(using Context) {
         val idx = genExpr(argsp(0))
         val value = genExpr(argsp(1))
         buf.arraystore(elemty, array, idx, value, unwind)
-      else buf.arraylength(array, unwind)
+      else buf.arraylength(array, nounwind)
     }
 
     private def genHashCode(argp: Tree)(using nir.SourcePosition): nir.Val =
@@ -2059,7 +2066,7 @@ trait NirGenExpr(using Context) {
     ): nir.Val =
       castConv(from, to)
         .orElse(castConv(value.ty, to))
-        .fold(value)(buf.conv(_, to, value, unwind))
+        .fold(value)(buf.conv(_, to, value, nounwind))
 
     private def genCoercion(app: Apply, receiver: Tree, code: Int): nir.Val = {
       given nir.SourcePosition = app.span
@@ -2106,7 +2113,7 @@ trait NirGenExpr(using Context) {
             )
             nir.Conv.Bitcast
         }
-        buf.conv(conv, toty, value, unwind)
+        buf.conv(conv, toty, value, nounwind)
       }
     }
 
@@ -2314,7 +2321,7 @@ trait NirGenExpr(using Context) {
         Option.when(ptrp.symbol.isVolatile)(
           nir.MemoryOrder.Acquire
         )
-      buf.load(ty, ptr, unwind, memoryOrder)
+      buf.load(ty, ptr, nounwind, memoryOrder)
     }
 
     private def genRawPtrStoreOp(app: Apply, code: Int): nir.Val = {
@@ -2340,7 +2347,7 @@ trait NirGenExpr(using Context) {
       val memoryOrder = Option.when(ptrp.symbol.isVolatile)(
         nir.MemoryOrder.Release
       )
-      buf.store(ty, ptr, value, unwind, memoryOrder)
+      buf.store(ty, ptr, value, nounwind, memoryOrder)
     }
 
     private def genRawPtrElemOp(app: Apply): nir.Val = {
@@ -2349,7 +2356,7 @@ trait NirGenExpr(using Context) {
 
       val ptr = genExpr(ptrp)
       val offset = genExpr(offsetp)
-      buf.elem(nir.Type.Byte, ptr, Seq(offset), unwind)
+      buf.elem(nir.Type.Byte, ptr, Seq(offset), nounwind)
     }
 
     private def genRawPtrCastOp(app: Apply): nir.Val = {
@@ -2378,7 +2385,7 @@ trait NirGenExpr(using Context) {
         case CAST_LONG_TO_RAWSIZE         => nir.Type.Size -> nir.Conv.SSizeCast
       }
 
-      buf.conv(conv, toty, rec, unwind)
+      buf.conv(conv, toty, rec, nounwind)
     }
 
     private def genUnsignedOp(app: Tree, code: Int): nir.Val = {
@@ -2398,13 +2405,13 @@ trait NirGenExpr(using Context) {
           val ty = genType(app.tpe)
           val arg = genExpr(argp)
 
-          buf.conv(nir.Conv.Zext, ty, arg, unwind)
+          buf.conv(nir.Conv.Zext, ty, arg, nounwind)
 
         case Apply(_, Seq(argp)) if castUnsignedToFloat =>
           val ty = genType(app.tpe)
           val arg = genExpr(argp)
 
-          buf.conv(nir.Conv.Uitofp, ty, arg, unwind)
+          buf.conv(nir.Conv.Uitofp, ty, arg, nounwind)
 
         case Apply(_, Seq(leftp, rightp)) =>
           val bin = code match {
@@ -2415,7 +2422,7 @@ trait NirGenExpr(using Context) {
           val left = genExpr(leftp)
           val right = genExpr(rightp)
 
-          buf.bin(bin, ty, left, right, unwind)
+          buf.bin(bin, ty, left, right, nounwind)
       }
     }
 
@@ -2578,7 +2585,7 @@ trait NirGenExpr(using Context) {
             }
 
           if (unboxed.ty == nir.Type.Size) unboxed
-          else buf.conv(nir.Conv.SSizeCast, nir.Type.Size, unboxed, unwind)
+          else buf.conv(nir.Conv.SSizeCast, nir.Type.Size, unboxed, nounwind)
       }
 
     def genStackalloc(app: Apply): nir.Val = {
@@ -2693,7 +2700,7 @@ trait NirGenExpr(using Context) {
                 s"Resolving pointer of immutable field ${fieldNameId} in ${owner.show} is not allowed"
               )
             }
-            buf.field(genExpr(target), genFieldName(f.symbol), unwind)
+            buf.field(genExpr(target), genFieldName(f.symbol), nounwind)
         }
         .getOrElse {
           report.error(
@@ -2705,9 +2712,9 @@ trait NirGenExpr(using Context) {
     }
 
     def genSizeOf(app: Apply): nir.Val =
-      genLayoutValueOf("sizeOf", buf.sizeOf(_, unwind))(app)
+      genLayoutValueOf("sizeOf", buf.sizeOf(_, nounwind))(app)
     def genAlignmentOf(app: Apply): nir.Val =
-      genLayoutValueOf("alignmentOf", buf.alignmentOf(_, unwind))(app)
+      genLayoutValueOf("alignmentOf", buf.alignmentOf(_, nounwind))(app)
 
     private def genLayoutValueOf(
         opType: => String,
@@ -2756,7 +2763,7 @@ trait NirGenExpr(using Context) {
       )
       fromExtern(
         ty,
-        buf.load(externTy, name, unwind, memoryOrder)
+        buf.load(externTy, name, nounwind, memoryOrder)
       )
     }
 
@@ -2770,7 +2777,7 @@ trait NirGenExpr(using Context) {
         nir.MemoryOrder.Release
       )
 
-      buf.store(externTy, name, externValue, unwind, memoryOrder)
+      buf.store(externTy, name, externValue, nounwind, memoryOrder)
     }
 
     def toExtern(expectedTy: nir.Type, value: nir.Val)(using
@@ -2848,7 +2855,7 @@ trait NirGenExpr(using Context) {
       val getRawPtrName = selfName
         .member(nir.Sig.Field("rawptr", nir.Sig.Scope.Private(selfName)))
 
-      val target = buf.fieldload(nir.Type.Ptr, self, getRawPtrName, unwind)
+      val target = buf.fieldload(nir.Type.Ptr, self, getRawPtrName, nounwind)
       val result = buf.call(funcSig, target, args, unwind)
       if (retType != unboxedRetType) buf.box(retType, result, unwind)
       else boxValue(paramTypes.last, result)
