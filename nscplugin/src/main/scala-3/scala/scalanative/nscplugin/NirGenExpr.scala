@@ -1450,24 +1450,33 @@ trait NirGenExpr(using Context) {
         else
           binaryOperationType(lty, rty)
       }
-      def genOp(op: (nir.Type, nir.Val, nir.Val) => nir.Op): nir.Val = {
+      def genOp(
+          op: (nir.Type, nir.Val, nir.Val) => nir.Op,
+          canThrow: Boolean = false
+      ): nir.Val = {
         val leftcoerced = genCoercion(genExpr(left), lty, opty)(using left.span)
         val rightcoerced =
           genCoercion(genExpr(right), rty, opty)(using right.span)
-        buf.let(op(opty, leftcoerced, rightcoerced), nounwind)(using
+        buf.let(
+          op(opty, leftcoerced, rightcoerced),
+          if (canThrow) unwind else nounwind
+        )(using
           left.span,
           getScopeId
         )
       }
 
       val binres = opty match {
+
         case _: nir.Type.F =>
           code match {
             case ADD => genOp(nir.Op.Bin(nir.Bin.Fadd, _, _, _))
             case SUB => genOp(nir.Op.Bin(nir.Bin.Fsub, _, _, _))
             case MUL => genOp(nir.Op.Bin(nir.Bin.Fmul, _, _, _))
-            case DIV => genOp(nir.Op.Bin(nir.Bin.Fdiv, _, _, _))
-            case MOD => genOp(nir.Op.Bin(nir.Bin.Frem, _, _, _))
+            case DIV =>
+              genOp(nir.Op.Bin(nir.Bin.Fdiv, _, _, _), canThrow = true)
+            case MOD =>
+              genOp(nir.Op.Bin(nir.Bin.Frem, _, _, _), canThrow = true)
 
             case EQ => genOp(nir.Op.Comp(nir.Comp.Feq, _, _, _))
             case NE => genOp(nir.Op.Comp(nir.Comp.Fne, _, _, _))
@@ -1488,8 +1497,10 @@ trait NirGenExpr(using Context) {
             case ADD => genOp(nir.Op.Bin(nir.Bin.Iadd, _, _, _))
             case SUB => genOp(nir.Op.Bin(nir.Bin.Isub, _, _, _))
             case MUL => genOp(nir.Op.Bin(nir.Bin.Imul, _, _, _))
-            case DIV => genOp(nir.Op.Bin(nir.Bin.Sdiv, _, _, _))
-            case MOD => genOp(nir.Op.Bin(nir.Bin.Srem, _, _, _))
+            case DIV =>
+              genOp(nir.Op.Bin(nir.Bin.Sdiv, _, _, _), canThrow = true)
+            case MOD =>
+              genOp(nir.Op.Bin(nir.Bin.Srem, _, _, _), canThrow = true)
 
             case OR  => genOp(nir.Op.Bin(nir.Bin.Or, _, _, _))
             case XOR => genOp(nir.Op.Bin(nir.Bin.Xor, _, _, _))
@@ -2422,7 +2433,7 @@ trait NirGenExpr(using Context) {
           val left = genExpr(leftp)
           val right = genExpr(rightp)
 
-          buf.bin(bin, ty, left, right, nounwind)
+          buf.bin(bin, ty, left, right, unwind)
       }
     }
 

@@ -100,7 +100,7 @@ private[scalanative] object Lower {
       mutable.Map.empty[Option[nir.Local], nir.Local]
 
     private def unwind: nir.Next =
-      unwindHandler.get.fold[nir.Next](nir.Next.None) { handler =>
+      unwindHandler.get.fold[nir.Next](nounwind) { handler =>
         val exc = nir.Val.Local(fresh(), nir.Rt.Throwable)
         nir.Next.Unwind(exc, nir.Next.Label(handler, Seq(exc)))
       }
@@ -176,7 +176,7 @@ private[scalanative] object Lower {
       // On Windows we use builtin mechanism for stack overflow detection
       // On Unix, due to unreliable unwinding from signal handlers, we introduce polling at the begining of possibly recursive methods
       if (!platform.targetsWindows && meta.analysis.references.isSelfRecursive(defn.name)) {
-        buf.call(CheckStackOverflowGuardsSig, CheckStackOverflowGuards, Nil, nir.Next.None)(defn.pos, nir.ScopeId.TopLevel)
+        buf.call(CheckStackOverflowGuardsSig, CheckStackOverflowGuards, Nil, nounwind)(defn.pos, nir.ScopeId.TopLevel)
       }
 
       var unwindHandlerCache = mutable.Map.empty[nir.Next, Option[nir.Local]]
@@ -188,7 +188,7 @@ private[scalanative] object Lower {
             val handler = fresh()
             handlers.label(handler, Seq(exc))
             if (platform.useCxxExceptions) {
-              handlers.call(ExceptionOnCatchSig, ExceptionOnCatch, Seq(exc), nir.Next.None)(pos, nir.ScopeId.TopLevel)
+              handlers.call(ExceptionOnCatchSig, ExceptionOnCatch, Seq(exc), nounwind)(pos, nir.ScopeId.TopLevel)
             }
             handlers.jump(next)
             Some(handler)
@@ -214,7 +214,7 @@ private[scalanative] object Lower {
       genThisValueNullGuardIfUsed(
         currentDefn.get,
         buf,
-        () => getUnwindHandler(nir.Next.None)(insts.head.pos)
+        () => getUnwindHandler(nounwind)(insts.head.pos)
       )
 
       implicit var lastScopeId: nir.ScopeId = nir.ScopeId.TopLevel
@@ -380,7 +380,7 @@ private[scalanative] object Lower {
               Seq(nir.Val.Null),
               unwind
             )
-            buf.unreachable(nir.Next.None)
+            buf.unreachable(nounwind)
           }
       }
     }
@@ -400,7 +400,7 @@ private[scalanative] object Lower {
               Seq(nir.Val.Null),
               unwind
             )
-            buf.unreachable(nir.Next.None)
+            buf.unreachable(nounwind)
           }
       }
     }
@@ -424,7 +424,7 @@ private[scalanative] object Lower {
               Seq(nir.Val.Null, fromty, toty),
               unwind
             )
-            buf.unreachable(nir.Next.None)
+            buf.unreachable(nounwind)
           }
       }
     }
@@ -444,7 +444,7 @@ private[scalanative] object Lower {
               Seq(nir.Val.Null),
               unwind
             )
-            buf.unreachable(nir.Next.None)
+            buf.unreachable(nounwind)
           }
       }
     }
@@ -467,7 +467,7 @@ private[scalanative] object Lower {
               Seq(nir.Val.Null, idx, len),
               unwind
             )
-            buf.unreachable(nir.Next.None)
+            buf.unreachable(nounwind)
           }
       }
     }
@@ -489,7 +489,7 @@ private[scalanative] object Lower {
               Seq(nir.Val.Null, sig),
               unwind
             )
-            buf.unreachable(nir.Next.None)
+            buf.unreachable(nounwind)
           }
       }
     }
@@ -517,7 +517,7 @@ private[scalanative] object Lower {
     )(implicit srcPosition: nir.SourcePosition, scopeId: nir.ScopeId) = {
       genGuardNotNull(buf, exc)
       genOp(buf, fresh(), nir.Op.Call(throwSig, throw_, Seq(exc)))
-      buf.unreachable(nir.Next.None)
+      buf.unreachable(nounwind)
     }
 
     def genUnreachable(
@@ -867,7 +867,7 @@ private[scalanative] object Lower {
     )(implicit srcPosition: nir.SourcePosition, scopeId: nir.ScopeId): Unit = {
       if (shouldGenerateGCYieldPoints(currentDefn.get)) {
         // Intrinsic method for LLVM codegen
-        buf.call(GCYieldSig, GCYield, Nil, nir.Next.None)
+        buf.call(GCYieldSig, GCYield, Nil, nounwind)
       }
     }
 
@@ -955,7 +955,7 @@ private[scalanative] object Lower {
         GCSetMutatorThreadStateSig,
         GCSetMutatorThreadState,
         Seq(nir.Val.Int(if (managed) 0 else 1)),
-        if (unwindHandler.isInitialized) unwind else nir.Next.None
+        if (unwindHandler.isInitialized) unwind else nounwind
       )
 
       // Extern functions that don't block in strict mode
@@ -1108,7 +1108,7 @@ private[scalanative] object Lower {
               .Call(throwNullPointerTy, throwNullPointerVal, Seq(nir.Val.Null)),
             unwind
           )
-          buf.unreachable(nir.Next.None)
+          buf.unreachable(nounwind)
 
         case ClassRef(cls) if staticMethodIn(cls) =>
           genStaticMethod(cls)
@@ -1673,7 +1673,7 @@ private[scalanative] object Lower {
           buf.let(
             n,
             nir.Op.Copy(nir.Val.Global(instance, nir.Type.Ptr)),
-            nir.Next.None
+            nounwind
           )
 
         case _ =>
