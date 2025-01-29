@@ -1706,9 +1706,21 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             case MUL =>
               genBinaryOp(nir.Op.Bin(nir.Bin.Fmul, _, _, _), left, right, opty)
             case DIV =>
-              genBinaryOp(nir.Op.Bin(nir.Bin.Fdiv, _, _, _), left, right, opty)
+              genBinaryOp(
+                nir.Op.Bin(nir.Bin.Fdiv, _, _, _),
+                left,
+                right,
+                opty,
+                canThrow = true
+              )
             case MOD =>
-              genBinaryOp(nir.Op.Bin(nir.Bin.Frem, _, _, _), left, right, opty)
+              genBinaryOp(
+                nir.Op.Bin(nir.Bin.Frem, _, _, _),
+                left,
+                right,
+                opty,
+                canThrow = true
+              )
 
             case EQ =>
               genBinaryOp(nir.Op.Comp(nir.Comp.Feq, _, _, _), left, right, opty)
@@ -1738,9 +1750,21 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             case MUL =>
               genBinaryOp(nir.Op.Bin(nir.Bin.Imul, _, _, _), left, right, opty)
             case DIV =>
-              genBinaryOp(nir.Op.Bin(nir.Bin.Sdiv, _, _, _), left, right, opty)
+              genBinaryOp(
+                nir.Op.Bin(nir.Bin.Sdiv, _, _, _),
+                left,
+                right,
+                opty,
+                canThrow = true
+              )
             case MOD =>
-              genBinaryOp(nir.Op.Bin(nir.Bin.Srem, _, _, _), left, right, opty)
+              genBinaryOp(
+                nir.Op.Bin(nir.Bin.Srem, _, _, _),
+                left,
+                right,
+                opty,
+                canThrow = true
+              )
 
             case OR =>
               genBinaryOp(nir.Op.Bin(nir.Bin.Or, _, _, _), left, right, opty)
@@ -1821,7 +1845,8 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         op: (nir.Type, nir.Val, nir.Val) => nir.Op,
         leftp: Tree,
         rightp: Tree,
-        opty: nir.Type
+        opty: nir.Type,
+        canThrow: Boolean = false
     )(implicit enclosingPos: nir.SourcePosition): nir.Val = {
       val leftPos: nir.SourcePosition = leftp.pos.orElse(enclosingPos)
       val leftty = genType(leftp.tpe)
@@ -1832,7 +1857,10 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       val right = genExpr(rightp)
       val rightcoerced = genCoercion(right, rightty, opty)
 
-      buf.let(op(opty, leftcoerced, rightcoerced), nounwind)
+      buf.let(
+        op(opty, leftcoerced, rightcoerced),
+        if (canThrow) unwind else nounwind
+      )
     }
 
     private def genClassEquality(
@@ -2565,7 +2593,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           val left = genExpr(leftp)
           val right = genExpr(rightp)
 
-          buf.bin(bin, ty, left, right, nounwind)
+          buf.bin(bin, ty, left, right, unwind)
       }
     }
 
