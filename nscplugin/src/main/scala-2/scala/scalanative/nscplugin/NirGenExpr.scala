@@ -745,7 +745,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           genLoadExtern(ty, externTy, tree.symbol)
         } else {
           val qual = genExpr(qualp)
-          buf.fieldload(ty, qual, name, nounwind)
+          buf.fieldload(ty, qual, name, unwind)
         }
       }
     }
@@ -774,7 +774,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           } else {
             val ty = genType(sym.tpe)
             val qual = genExpr(qualp)
-            buf.fieldstore(ty, qual, name, rhs, nounwind)
+            buf.fieldstore(ty, qual, name, rhs, unwind)
           }
 
         case id: Ident =>
@@ -875,10 +875,10 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         val superTy = nir.Type.Function(Seq(nir.Rt.Object), nir.Type.Unit)
         val superName = nir.Rt.Object.name.member(nir.Sig.Ctor(Seq.empty))
         val superCtor = nir.Val.Global(superName, nir.Type.Ptr)
-        buf.call(superTy, superCtor, Seq(self), nir.Next.None)
+        buf.call(superTy, superCtor, Seq(self), nounwind)
         captureNames.zip(captureFormals).foreach {
           case (name, capture) =>
-            buf.fieldstore(capture.ty, self, name, capture, nir.Next.None)
+            buf.fieldstore(capture.ty, self, name, capture, nounwind)
         }
         buf.ret(nir.Val.Unit)
         buf.toSeq
@@ -967,7 +967,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           captureSymsWithEnclThis.zip(captureNames).foreach {
             case (sym, name) =>
               val value =
-                buf.fieldload(genType(sym.tpe), self, name, nir.Next.None)
+                buf.fieldload(genType(sym.tpe), self, name, nounwind)
               curMethodEnv.enter(sym, value)
           }
 
@@ -2417,7 +2417,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       val getRawPtrName = selfName
         .member(nir.Sig.Field("rawptr", nir.Sig.Scope.Private(selfName)))
 
-      val target = buf.fieldload(nir.Type.Ptr, self, getRawPtrName, nounwind)
+      val target = buf.fieldload(nir.Type.Ptr, self, getRawPtrName, unwind)
       val result = buf.call(funcSig, target, args, unwind)
       if (retType != unboxedRetType)
         buf.box(retType, result, unwind)
@@ -2623,7 +2623,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         .collectFirst {
           case f if matchesName(f) && f.isVariable =>
             // Don't allow to get pointer to immutable field, as it might allow for mutation
-            buf.field(genExpr(target), genFieldName(f), nounwind)
+            buf.field(genExpr(target), genFieldName(f), unwind)
         }
         .getOrElse {
           reporter.error(

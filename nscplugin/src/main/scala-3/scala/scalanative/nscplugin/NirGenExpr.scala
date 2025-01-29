@@ -173,7 +173,7 @@ trait NirGenExpr(using Context) {
               if (sym.isStaticMember) genModule(qualp.symbol)
               else genExpr(qualp)
             val ty = genType(lhsp.tpe)
-            buf.fieldstore(ty, qual, name, rhs, nounwind)
+            buf.fieldstore(ty, qual, name, rhs, unwind)
           }
 
         case id: Ident =>
@@ -317,9 +317,9 @@ trait NirGenExpr(using Context) {
             val self = nir.Val.Local(fresh(), nir.Type.Ref(anonClassName))
             val captureFormals = captureTypes.map(nir.Val.Local(fresh(), _))
             buf.label(fresh(), self +: captureFormals)
-            buf.call(superTy, superCtor, Seq(self), nir.Next.None)
+            buf.call(superTy, superCtor, Seq(self), nounwind)
             captureNames.zip(captureFormals).foreach { (name, capture) =>
-              buf.fieldstore(capture.ty, self, name, capture, nir.Next.None)
+              buf.fieldstore(capture.ty, self, name, capture, nounwind)
             }
             buf.ret(nir.Val.Unit)
 
@@ -387,7 +387,7 @@ trait NirGenExpr(using Context) {
 
             val captureVals =
               for (sym, (tpe, name)) <- captureSyms.zip(captureTypesAndNames)
-              yield buf.fieldload(tpe, self, name, nounwind)
+              yield buf.fieldload(tpe, self, name, unwind)
 
             val allVals =
               (captureVals ++ paramVals).toList.map(ValTree(_)(sym.span))
@@ -804,7 +804,7 @@ trait NirGenExpr(using Context) {
           val externTy = genExternType(tree.tpe)
           genLoadExtern(ty, externTy, tree.symbol)
         } else {
-          buf.fieldload(ty, qual, name, nounwind)
+          buf.fieldload(ty, qual, name, unwind)
         }
       }
     }
@@ -1306,7 +1306,7 @@ trait NirGenExpr(using Context) {
         if (isStaticCall) nir.Val.Global(name, nir.Type.Ptr)
         else
           val nir.Global.Member(_, sig) = name: @unchecked
-          buf.method(self, sig, nounwind)
+          buf.method(self, sig, unwind)
       val values =
         if isExtern then args
         else self +: args
@@ -2711,7 +2711,7 @@ trait NirGenExpr(using Context) {
                 s"Resolving pointer of immutable field ${fieldNameId} in ${owner.show} is not allowed"
               )
             }
-            buf.field(genExpr(target), genFieldName(f.symbol), nounwind)
+            buf.field(genExpr(target), genFieldName(f.symbol), unwind)
         }
         .getOrElse {
           report.error(
@@ -2866,7 +2866,7 @@ trait NirGenExpr(using Context) {
       val getRawPtrName = selfName
         .member(nir.Sig.Field("rawptr", nir.Sig.Scope.Private(selfName)))
 
-      val target = buf.fieldload(nir.Type.Ptr, self, getRawPtrName, nounwind)
+      val target = buf.fieldload(nir.Type.Ptr, self, getRawPtrName, unwind)
       val result = buf.call(funcSig, target, args, unwind)
       if (retType != unboxedRetType) buf.box(retType, result, unwind)
       else boxValue(paramTypes.last, result)

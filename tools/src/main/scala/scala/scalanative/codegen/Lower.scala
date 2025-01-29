@@ -1501,7 +1501,7 @@ private[scalanative] object Lower {
           jump(resultL, Seq(imax))
 
           label(inBoundsL)
-          val inBoundsResult = let(op, unwind)
+          val inBoundsResult = let(op, nounwind)
           jump(resultL, Seq(inBoundsResult))
 
           label(resultL, Seq(nir.Val.Local(n, op.resty)))
