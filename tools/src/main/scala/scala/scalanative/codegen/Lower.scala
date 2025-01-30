@@ -180,23 +180,28 @@ private[scalanative] object Lower {
         buf.call(CheckStackOverflowGuardsSig, CheckStackOverflowGuards, Nil, nir.Next.None)(defn.pos, nir.ScopeId.TopLevel)
       }
 
-      var unwindHandlerCache = mutable.Map.empty[nir.Next, Option[nir.Local]]
-      def getUnwindHandler(next: nir.Next)(implicit pos: nir.SourcePosition): Option[nir.Local] = unwindHandlerCache.getOrElseUpdate(
-        next,
+      var unwindHandlerCache = mutable.Map.empty[nir.Local, Option[nir.Local]]
+      def getUnwindHandler(next: nir.Next)(implicit pos: nir.SourcePosition): Option[nir.Local] =
         next match {
           case nir.Next.None => None
-          case nir.Next.Unwind(exc, next) =>
-            val handler = fresh()
-            handlers.label(handler, Seq(exc))
-            if (platform.useCxxExceptions) {
-              handlers.call(ExceptionOnCatchSig, ExceptionOnCatch, Seq(exc), nir.Next.None)(pos, nir.ScopeId.TopLevel)
-            }
-            handlers.jump(next)
-            Some(handler)
           case _ =>
-            util.unreachable
+            unwindHandlerCache.getOrElseUpdate(
+              next.id,
+              next match {
+                case nir.Next.None => None
+                case nir.Next.Unwind(exc, next) =>
+                  val handler = fresh()
+                  handlers.label(handler, Seq(exc))
+                  if (platform.useCxxExceptions) {
+                    handlers.call(ExceptionOnCatchSig, ExceptionOnCatch, Seq(exc), nir.Next.None)(pos, nir.ScopeId.TopLevel)
+                  }
+                  handlers.jump(next)
+                  Some(handler)
+                case _ =>
+                  util.unreachable
+              }
+            )
         }
-      )
 
       insts.foreach {
         case inst @ nir.Inst.Let(n, nir.Op.Var(ty), unwind) =>
