@@ -41,8 +41,9 @@ private[monitor] class ObjectMonitor() {
    *  become successor thread.
    */
   @volatile private var enterQueue: WaiterNode = _
-  
-  override def toString(): String = s"ObjectMonitor(owner=$ownerThread),waiting=$waiting,recursion=$recursion)"
+
+  override def toString(): String =
+    s"ObjectMonitor(owner=$ownerThread),waiting=$waiting,recursion=$recursion)"
 
   /** Ring list of waiting threads. Access limited by the modification lock.
    *  Upon InEnterQueue the wait zone threads would enqueue to the queue, and
