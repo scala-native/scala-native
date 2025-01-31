@@ -3,7 +3,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
-#include "unwind.h"
+
+// Refer to embeded unwind.h to ensure _Unwind_GetIPInfo is defined
+#include "platform/posix/libunwind/unwind.h"
 
 // gets the ExceptionWrapper from the _Unwind_Exception which is at the end of
 // it. +1 goes to the end of the struct since it adds with the size of
@@ -92,7 +94,7 @@ enum {
     DW_EH_PE_sdata4 = 0x0B,
     DW_EH_PE_sdata8 = 0x0C,
     // DWARF Exception Header application
-    DW_EH_PE_pcrel = 0x10,
+    DW_EH_PE_iprel = 0x10,
     DW_EH_PE_textrel = 0x20,
     DW_EH_PE_datarel = 0x30,
     DW_EH_PE_funcrel = 0x40,
@@ -157,7 +159,7 @@ static uintptr_t readDWARFEncodedPointer(LSDA_ptr *data, uint8_t encoding) {
     case DW_EH_PE_absptr:
         // do nothing
         break;
-    case DW_EH_PE_pcrel:
+    case DW_EH_PE_iprel:
         result += (uintptr_t)(*data);
         break;
     case DW_EH_PE_textrel:
@@ -200,9 +202,13 @@ _Unwind_Reason_Code scalanative_personality(int version, _Unwind_Action actions,
     if (lsda == (uint8_t *)0)
         return _URC_CONTINUE_UNWIND;
 
-    uintptr_t pc = (uintptr_t)_Unwind_GetIP(context);
+    int ipBeforeInst = false;
+    uintptr_t ip = (uintptr_t)_Unwind_GetIPInfo(context, &ipBeforeInst);
+    // Normalize the position so we're always refering from callsite
+    if (!ipBeforeInst)
+        ip -= 1;
     uintptr_t funcStart = (uintptr_t)_Unwind_GetRegionStart(context);
-    uintptr_t pcOffset = pc - funcStart;
+    uintptr_t ipOffset = ip - funcStart;
 
     // Parse LSDA header.
     uint8_t lpStartEncoding = *lsda++;
@@ -216,7 +222,7 @@ _Unwind_Reason_Code scalanative_personality(int version, _Unwind_Action actions,
         ttype = readULEB128(&lsda);
     }
 
-    // Walk call-site table looking for range that includes current PC.
+    // Walk call-site table looking for range that includes current IP.
     uint8_t callSiteEncoding = *lsda++;
     size_t callSiteTableLength = readULEB128(&lsda);
     LSDA_ptr callSiteTableStart = lsda;
@@ -225,8 +231,8 @@ _Unwind_Reason_Code scalanative_personality(int version, _Unwind_Action actions,
 
 #ifdef DEBUG_PERSONALITY
     if (actions & _UA_CLEANUP_PHASE) {
-        printf("unwinding PC=%p\toffset=%zu\tfunctionStart=%p\t%s\n",
-               (void *)pc, pcOffset, (void *)funcStart,
+        printf("unwinding IP=%p\toffset=%zu\tfunctionStart=%p\t%s\n",
+               (void *)ip, ipOffset, (void *)funcStart,
                get_function_name(funcStart));
     }
 #endif
@@ -247,16 +253,16 @@ _Unwind_Reason_Code scalanative_personality(int version, _Unwind_Action actions,
         if (landingPad == 0)
             continue; // no landing pad for this entry
 
-        // Check if in callsite range or it PC is currently at beginning of next
+        // Check if in callsite range or it IP is currently at beginning of next
         // landing pad. The special case can happen after inlining by LTO
         // resulting in throw directly followed by catched
-        if (((start <= pcOffset) && (pcOffset <= (start + length)) ||
-             pcOffset == landingPad)) {
+        if (((start <= ipOffset) && (ipOffset < (start + length)) ||
+             (ipOffset + 1) == landingPad)) {
             // Found valid entry, decide next step
             if (actions & _UA_SEARCH_PHASE) {
                 return _URC_HANDLER_FOUND;
             } else {
-                // Found landing pad for the PC.
+                // Found landing pad for the IP.
                 // Set Instruction Pointer to so we re-enter function
                 // at landing pad. The landing pad is created by the compiler
                 // to take two parameters in registers.
