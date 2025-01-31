@@ -11,7 +11,7 @@ import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 class InputStreamReaderTest {
 
   /* Scala.js tests - Begin
-   * Ported from Scala.js commit: cbf86bb dated: 2020-10-23
+   * Ported from Scala.js commit: 11a5e4a dated: 2023-11-02
    */
 
   /* Scala.js tests - End
