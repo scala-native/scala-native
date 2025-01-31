@@ -738,20 +738,20 @@ class IssuesTest {
           try throw new RuntimeException()
           catch {
             case ex: java.io.IOException => // exception unrelated to throw one
-              fail("Should not be cought")
+              fail("Should not be caught")
           } finally {
             finallyCounter += 1
           }
         } finally {
           finallyCounter += 1
         }
-      } catch { case ex: java.lang.Throwable => cought = true }
+      } catch { case ex: java.lang.Throwable => caught = true }
     } finally {
       finallyCounter += 1
     }
     assertEquals("some finally block was skipped", 3, finallyCounter)
     assertEquals(tryCounter, finallyCounter)
-    assertTrue("exception not cought", cought)
+    assertTrue("exception not caught", caught)
   }
 
   // Based on Scala 2.13.16 fix in delambdafy https://github.com/scala/scala/pull/10831
