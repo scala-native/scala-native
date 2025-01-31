@@ -253,8 +253,7 @@ _Unwind_Reason_Code scalanative_personality(int version, _Unwind_Action actions,
         // Check if in callsite range or it IP is currently at beginning of next
         // landing pad. The special case can happen after inlining by LTO
         // resulting in throw directly followed by catched
-        if (((start <= ipOffset) && (ipOffset < (start + length)) ||
-             (ipOffset + 1) == landingPad)) {
+        if ((start <= ipOffset) && (ipOffset < (start + length))) {
             if (landingPad == 0)
                 return _URC_CONTINUE_UNWIND; // no landing pad for this entry
             if (actions & _UA_SEARCH_PHASE) {
