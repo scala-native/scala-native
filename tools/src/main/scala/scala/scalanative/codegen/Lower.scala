@@ -2350,8 +2350,6 @@ private[scalanative] object Lower {
     buf += BoxesRunTime
     buf += RuntimeBoxes
     buf += unitName
-    buf ++= BoxTo.values
-    buf ++= UnboxTo.values
     buf += arrayLength
     buf ++= allArrayHeapAlloc
     buf ++= allArrayZoneAlloc
