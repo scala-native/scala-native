@@ -728,7 +728,7 @@ class IssuesTest {
   @Test def issue4194(): Unit = {
     var tryCounter = 0
     var finallyCounter = 0
-    var cought = false
+    var caught = false
     try {
       tryCounter += 1
       try {
