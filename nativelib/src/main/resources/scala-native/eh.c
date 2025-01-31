@@ -1,4 +1,8 @@
 #ifndef SCALANATIVE_USING_CPP_EXCEPTIONS
+#ifdef DEBUG_PERSONALITY
+#define _GNU_SOURCE
+#include <dlfcn.h>
+#endif
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -17,6 +21,8 @@ typedef void *Exception;
 typedef void (*OnCatchHandler)(Exception);
 typedef struct ExceptionWrapper {
     Exception obj;
+    uintptr_t cachedLandingPad; // landingpad found in phase1 of unwinding
+    // Needs to be the last field of the struct! See GetExceptionWrapper
     _Unwind_Exception unwindException;
 } ExceptionWrapper;
 
@@ -180,8 +186,6 @@ static uintptr_t readDWARFEncodedPointer(LSDA_ptr *data, uint8_t encoding) {
 }
 
 #ifdef DEBUG_PERSONALITY
-#include <dlfcn.h>
-#include <unwind.h>
 static const char *get_function_name(uintptr_t address) {
     Dl_info info;
     if (dladdr((void *)address, &info)) {
@@ -191,11 +195,35 @@ static const char *get_function_name(uintptr_t address) {
 }
 #endif
 
+static void setLandingPad(_Unwind_Context *context,
+                          _Unwind_Exception *unwindException,
+                          uintptr_t landingPad) {
+    int r0 = __builtin_eh_return_data_regno(0);
+    int r1 = __builtin_eh_return_data_regno(1);
+    // Set Instruction Pointer to so we re-enter function
+    // at landing pad. The landing pad is created by the compiler
+    // to take two parameters in registers.
+    _Unwind_SetGR(context, r0, (uintptr_t)(unwindException));
+    _Unwind_SetGR(context, r1, (uintptr_t)(0));
+    _Unwind_SetIP(context, landingPad);
+}
+
 // A personality function to catch all exceptions
 _Unwind_Reason_Code scalanative_personality(int version, _Unwind_Action actions,
                                             uint64_t exception_class,
                                             _Unwind_Exception *unwindException,
                                             _Unwind_Context *context) {
+    // We cache the landingPad found in searchPhase and can use it directly in
+    // second phase.
+    ExceptionWrapper *exc = GetExceptionWrapper(unwindException);
+    if (actions == (_UA_CLEANUP_PHASE | _UA_HANDLER_FRAME)) {
+        if (exc->cachedLandingPad) {
+            setLandingPad(context, unwindException, exc->cachedLandingPad);
+            exc->cachedLandingPad = 0;
+            return _URC_INSTALL_CONTEXT;
+        }
+    }
+
     // There is nothing to do if there is no LSDA for this frame.
     LSDA_ptr lsda = (LSDA_ptr)_Unwind_GetLanguageSpecificData(context);
     if (lsda == (uint8_t *)0)
@@ -211,16 +239,14 @@ _Unwind_Reason_Code scalanative_personality(int version, _Unwind_Action actions,
 
     // Parse LSDA header.
     uint8_t lpStartEncoding = *lsda++;
-    uintptr_t lpStart = funcStart;
-    if (lpStartEncoding != DW_EH_PE_omit) {
-        lpStart = readDWARFEncodedPointer(&lsda, lpStartEncoding);
-    }
+    uintptr_t lpStart = (lpStartEncoding == DW_EH_PE_omit)
+                            ? funcStart
+                            : readDWARFEncodedPointer(&lsda, lpStartEncoding);
     uint8_t ttypeEncoding = *lsda++;
     size_t ttype = 0; // unused
     if (ttypeEncoding != DW_EH_PE_omit) {
         ttype = readULEB128(&lsda);
     }
-
     // Walk call-site table looking for range that includes current IP.
     uint8_t callSiteEncoding = *lsda++;
     size_t callSiteTableLength = readULEB128(&lsda);
@@ -228,11 +254,9 @@ _Unwind_Reason_Code scalanative_personality(int version, _Unwind_Action actions,
     LSDA_ptr callSiteTableEnd = callSiteTableStart + callSiteTableLength;
 
 #ifdef DEBUG_PERSONALITY
-    if (actions & _UA_CLEANUP_PHASE) {
-        printf("unwinding IP=%p\toffset=%zu\tfunctionStart=%p\t%s\n",
-               (void *)ip, ipOffset, (void *)funcStart,
-               get_function_name(funcStart));
-    }
+    printf("unwinding IP=%p\toffset=%zu\tfunctionStart=%p\tactions=%d\t%s\n",
+           (void *)ip, ipOffset, (void *)funcStart, actions,
+           get_function_name(funcStart));
 #endif
 
     LSDA_ptr cs = callSiteTableStart;
@@ -243,11 +267,9 @@ _Unwind_Reason_Code scalanative_personality(int version, _Unwind_Action actions,
         size_t action = readULEB128(&cs); // unused
 
 #ifdef DEBUG_PERSONALITY
-        if (actions & _UA_CLEANUP_PHASE) {
-            printf("\tcallsite: "
-                   "start=%lu\tlength=%zu\tlandingPad=%zu\taction=%zu\n",
-                   start, length, landingPad, action);
-        }
+        printf(
+            "\tcallsite: start=%lu\tlength=%zu\tlandingPad=%zu\taction=%zu\n",
+            start, length, landingPad, action);
 #endif
 
         // Check if in callsite range or it IP is currently at beginning of next
@@ -256,22 +278,21 @@ _Unwind_Reason_Code scalanative_personality(int version, _Unwind_Action actions,
         if ((start <= ipOffset) && (ipOffset < (start + length))) {
             if (landingPad == 0)
                 return _URC_CONTINUE_UNWIND; // no landing pad for this entry
-            if (actions & _UA_SEARCH_PHASE) {
-                return _URC_HANDLER_FOUND;
-            } else {
-                // Found landing pad for the IP.
-                // Set Instruction Pointer to so we re-enter function
-                // at landing pad. The landing pad is created by the compiler
-                // to take two parameters in registers.
-                _Unwind_SetGR(context, __builtin_eh_return_data_regno(0),
-                              (uintptr_t)unwindException);
-                _Unwind_SetGR(context, __builtin_eh_return_data_regno(1), 0);
-                _Unwind_SetIP(context, (lpStart + landingPad));
+
+            // Found landing pad for the IP.
+            uintptr_t landingPadAddr = lpStart + landingPad;
 #ifdef DEBUG_PERSONALITY
-                printf("\nunwinding to handler in %s at %p\n",
-                       get_function_name(funcStart),
-                       (void *)(funcStart + landingPad));
+            printf("\twould unwind to handler in %s at %p\n\n",
+                   get_function_name(funcStart), (void *)(landingPadAddr));
 #endif
+            if (actions & _UA_SEARCH_PHASE) {
+                // We've found the landing pad, cache it so we can skip
+                // unwinding in 2nd phase
+                exc->cachedLandingPad = landingPadAddr;
+                return _URC_HANDLER_FOUND;
+            } else if (actions & (_UA_CLEANUP_PHASE | _UA_HANDLER_FRAME)) {
+                setLandingPad(context, unwindException, landingPadAddr);
+                exc->cachedLandingPad = 0;
                 return _URC_INSTALL_CONTEXT;
             }
         }
