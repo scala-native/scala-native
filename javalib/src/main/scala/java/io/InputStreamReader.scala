@@ -120,22 +120,28 @@ class InputStreamReader(
       off: Int,
       len: Int
   ): Int = {
-    // Return outBuf to its full capacity
-    outBuf.limit(outBuf.capacity())
-    outBuf.position(0)
+    // Pre-condition: called only when outBuf.hasRemaining() == 0
 
     @tailrec // but not inline, this is not a common path
     def loopWithOutBuf(desiredOutBufSize: Int): Int = {
-      if (outBuf.capacity() < desiredOutBufSize)
+      if (outBuf.capacity() >= desiredOutBufSize) {
+        outBuf.clear() // Return outBuf to its full capacity & reuse
+      } else {
+        // probably first use of outBuf
         outBuf = CharBuffer.allocate(desiredOutBufSize)
+      }
+
       val charsRead = readImpl(outBuf)
-      if (charsRead == InputStreamReader.Overflow)
-        loopWithOutBuf(desiredOutBufSize * 2)
-      else
+
+      if (charsRead != InputStreamReader.Overflow) {
         charsRead
+      } else {
+        // Should never happen but be robust, multiply by 1.5 & try again.
+        loopWithOutBuf((desiredOutBufSize * 3) >> 1)
+      }
     }
 
-    val charsRead = loopWithOutBuf(2 * len)
+    val charsRead = loopWithOutBuf(len)
     assert(charsRead != 0) // can be -1, though
     outBuf.flip()
 
