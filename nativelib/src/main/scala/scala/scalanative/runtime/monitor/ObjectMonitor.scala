@@ -42,7 +42,7 @@ private[monitor] class ObjectMonitor() {
    */
   @volatile private var enterQueue: WaiterNode = _
 
-  override def toString(): String =
+  private[runtime] def show: String =
     s"ObjectMonitor(owner=$ownerThread),waiting=$waiting,recursion=$recursion)"
 
   /** Ring list of waiting threads. Access limited by the modification lock.
