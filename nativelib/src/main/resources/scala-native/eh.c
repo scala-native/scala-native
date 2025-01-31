@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
-
 // Refer to embeded unwind.h to ensure _Unwind_GetIPInfo is defined
 #include "platform/posix/libunwind/unwind.h"
 
@@ -212,7 +211,7 @@ _Unwind_Reason_Code scalanative_personality(int version, _Unwind_Action actions,
 
     // Parse LSDA header.
     uint8_t lpStartEncoding = *lsda++;
-    uintptr_t lpStart = 0; // unused
+    uintptr_t lpStart = funcStart;
     if (lpStartEncoding != DW_EH_PE_omit) {
         lpStart = readDWARFEncodedPointer(&lsda, lpStartEncoding);
     }
@@ -227,7 +226,6 @@ _Unwind_Reason_Code scalanative_personality(int version, _Unwind_Action actions,
     size_t callSiteTableLength = readULEB128(&lsda);
     LSDA_ptr callSiteTableStart = lsda;
     LSDA_ptr callSiteTableEnd = callSiteTableStart + callSiteTableLength;
-    LSDA_ptr cs = callSiteTableStart;
 
 #ifdef DEBUG_PERSONALITY
     if (actions & _UA_CLEANUP_PHASE) {
@@ -237,6 +235,7 @@ _Unwind_Reason_Code scalanative_personality(int version, _Unwind_Action actions,
     }
 #endif
 
+    LSDA_ptr cs = callSiteTableStart;
     while (cs < callSiteTableEnd) {
         uintptr_t start = readDWARFEncodedPointer(&cs, callSiteEncoding);
         size_t length = readDWARFEncodedPointer(&cs, callSiteEncoding);
@@ -250,15 +249,14 @@ _Unwind_Reason_Code scalanative_personality(int version, _Unwind_Action actions,
                    start, length, landingPad, action);
         }
 #endif
-        if (landingPad == 0)
-            continue; // no landing pad for this entry
 
         // Check if in callsite range or it IP is currently at beginning of next
         // landing pad. The special case can happen after inlining by LTO
         // resulting in throw directly followed by catched
         if (((start <= ipOffset) && (ipOffset < (start + length)) ||
              (ipOffset + 1) == landingPad)) {
-            // Found valid entry, decide next step
+            if (landingPad == 0)
+                return _URC_CONTINUE_UNWIND; // no landing pad for this entry
             if (actions & _UA_SEARCH_PHASE) {
                 return _URC_HANDLER_FOUND;
             } else {
@@ -269,7 +267,7 @@ _Unwind_Reason_Code scalanative_personality(int version, _Unwind_Action actions,
                 _Unwind_SetGR(context, __builtin_eh_return_data_regno(0),
                               (uintptr_t)unwindException);
                 _Unwind_SetGR(context, __builtin_eh_return_data_regno(1), 0);
-                _Unwind_SetIP(context, (funcStart + landingPad));
+                _Unwind_SetIP(context, (lpStart + landingPad));
 #ifdef DEBUG_PERSONALITY
                 printf("\nunwinding to handler in %s at %p\n",
                        get_function_name(funcStart),
