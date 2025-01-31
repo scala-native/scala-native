@@ -20,8 +20,7 @@ class InputStreamReader(
    *  Class invariant: contains bytes already read from `in` but not yet
    *  decoded.
    */
-  private var inBuf: ByteBuffer = ByteBuffer.allocate(4096)
-  inBuf.limit(0)
+  private var inBuf: ByteBuffer = ByteBuffer.allocate(4096).limit(0)
 
   /** Tells whether the end of the underlying input stream has been reached.
    *  Class invariant: if true, then `in.read()` has returned -1.
@@ -179,10 +178,13 @@ class InputStreamReader(
         // Flush
         if (decoder.flush(out).isOverflow()) {
           InputStreamReader.Overflow
+        } else if (out.position() != initPos) {
+          out.position() - initPos
         } else {
-          // Done
-          if (out.position() == initPos) -1
-          else out.position() - initPos
+          // End-of-File for now; prepare for any subsequent reads after EOF
+          endOfInput = false
+          decoder.reset()
+          -1
         }
       } else {
         // We need to read more from the underlying input stream
