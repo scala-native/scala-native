@@ -232,7 +232,7 @@ private[scalanative] object Lower {
           ScopedVar.scoped(
             unwindHandler := getUnwindHandler(unwind)(inst.pos)
           ) {
-            genThrow(buf, v)(inst.pos, lastScopeId)
+            genThrow(buf, v, unwind)(inst.pos, lastScopeId)
           }
 
         case inst @ nir.Inst.Unreachable(unwind) =>
@@ -514,11 +514,20 @@ private[scalanative] object Lower {
 
     def genThrow(
         buf: nir.InstructionBuilder,
-        exc: nir.Val
+        exc: nir.Val,
+        unwind: nir.Next
     )(implicit srcPosition: nir.SourcePosition, scopeId: nir.ScopeId) = {
       genGuardNotNull(buf, exc)
-      genOp(buf, fresh(), nir.Op.Call(throwSig, throw_, Seq(exc)))
-      buf.unreachable(nir.Next.None)
+      unwind match {
+        case nir.Next.Unwind(excVal, toLabel) =>
+          // We know exactly where the next exception handler is defined.
+          // Jump to the label and skip unwinding
+          buf.jump(toLabel.id, Seq(exc))
+        case _ =>
+          // Invoke scalanative_throw and let exception handling find the handler
+          genOp(buf, fresh(), nir.Op.Call(throwSig, throw_, Seq(exc)))
+          buf.unreachable(nir.Next.None)
+      }
     }
 
     def genUnreachable(
