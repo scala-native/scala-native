@@ -15,7 +15,7 @@ jobs:
   #It can be extended to test against different OS and Arch settings
   test:
     name: Test cross-compilation
-    if: "github.event_name == 'pull_request' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')"
+    if: github.event_name == 'pull_request' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')
     runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
