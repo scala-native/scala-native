@@ -13,7 +13,7 @@ concurrency:
 jobs:
   test-runtime:
     name: Test runtime
-    if: "github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')"
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')
     runs-on: macos-13
     env:
       ENABLE_EXPERIMENTAL_COMPILER: true
@@ -49,7 +49,7 @@ jobs:
 
   test-runtime-ext:
     name: Test runtime extension
-    if: "(github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native'"
+    if: ((github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native') || (github.event_name == 'pull_request' && !contains(github.event.pull_request.body, '[skip ci]') && contains(github.event.pull_request.body, '[test-extended]'))
     runs-on: macos-13
     needs: [test-runtime]
     env:
@@ -126,7 +126,7 @@ jobs:
 
   run-scripted-tests:
     name: Scripted tests
-    if: "github.event_name == 'pull_request' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')"
+    if: github.event_name == 'pull_request' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')
     runs-on: macos-13
     strategy:
       fail-fast: false
@@ -144,7 +144,7 @@ jobs:
           sbt "test-scripted ${{matrix.scala}}"
 
   test-llvm-versions:
-    if: "(github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native'"
+    if: ((github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native') || (github.event_name == 'pull_request' && !contains(github.event.pull_request.body, '[skip ci]') && contains(github.event.pull_request.body, '[test-extended]'))
     runs-on: macos-13
     strategy:
       fail-fast: false

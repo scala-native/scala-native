@@ -16,7 +16,7 @@ jobs:
   # Test tools, if any of them fails, further tests will not start.
   tests-tools:
     name: Compile & test tools
-    if: "github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')"
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')
     runs-on: ubuntu-22.04
     env:
       ENABLE_EXPERIMENTAL_COMPILER: true
@@ -36,7 +36,7 @@ jobs:
 
   tests-compile-scalaPublishVersion:
     name: Compile sources with the Scala 3 version used for publishing artifacts
-    if: "github.event_name == 'pull_request' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')"
+    if: github.event_name == 'pull_request' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v4
@@ -52,7 +52,7 @@ jobs:
     
   test-scala-cross-build:
     runs-on: ubuntu-22.04
-    if: "(github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native'"
+    if: ((github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native') || (github.event_name == 'pull_request' && !contains(github.event.pull_request.body, '[skip ci]') && contains(github.event.pull_request.body, '[test-extended]'))
     env:
       ENABLE_EXPERIMENTAL_COMPILER: true
     strategy:
@@ -71,7 +71,7 @@ jobs:
 
   test-runtime:
     name: Test runtime
-    if: "github.event_name == 'pull_request' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')"
+    if: github.event_name == 'pull_request' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')
     runs-on: ubuntu-22.04
     needs: tests-tools
     env:
@@ -96,7 +96,7 @@ jobs:
 
   test-runtime-ext:
     name: Test runtime extension
-    if: "(github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native'"
+    if: ((github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native') || (github.event_name == 'pull_request' && !contains(github.event.pull_request.body, '[skip ci]') && contains(github.event.pull_request.body, '[test-extended]'))
     runs-on: ubuntu-22.04
     needs: [tests-tools, test-runtime]
     env:
@@ -153,7 +153,7 @@ jobs:
   # Main difference is disabled optimization and fixed Immix GC
   test-runtime-no-opt:
     name: Test runtime no-opt
-    if: "(github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native'"
+    if: ((github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native') || (github.event_name == 'pull_request' && !contains(github.event.pull_request.body, '[skip ci]') && contains(github.event.pull_request.body, '[test-extended]'))
     runs-on: ubuntu-22.04
     needs: tests-tools
     env:
@@ -182,7 +182,7 @@ jobs:
   # Scripted tests take a long time to run, ~30 minutes, and should be limited and absolute minimum.
   test-scripted:
     name: Test scripted
-    if: "github.event_name == 'pull_request' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')"
+    if: github.event_name == 'pull_request' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')
     runs-on: ubuntu-22.04
     needs: tests-tools
     strategy:
@@ -205,7 +205,7 @@ jobs:
           sbt "test-scripted ${{matrix.scala}}"
 
   test-llvm-versions:
-    if: "(github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native'"
+    if: ((github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native') || (github.event_name == 'pull_request' && !contains(github.event.pull_request.body, '[skip ci]') && contains(github.event.pull_request.body, '[test-extended]'))
     runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
@@ -230,7 +230,7 @@ jobs:
         run: sbt "test-runtime ${{ matrix.scala }}"
 
   test-scala-partests:
-    if: "github.event_name == 'pull_request' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')"
+    if: ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native') || (github.event_name == 'pull_request' && !contains(github.event.pull_request.body, '[skip ci]') && contains(github.event.pull_request.body, '[test-partest]'))
     runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
@@ -263,14 +263,14 @@ jobs:
         # Running all partests would take ~2h for each Scala version, run only single test of each kind
         # to make sure that infrastructure works correctly.
       - name: Test partests infrastracture
-        if: "github.event_name == 'pull_request'"
+        if: github.event_name == 'pull_request'
         run: |
           sbt \
           "-J-Xmx3G" \
           "scalaPartestTests${{env.project-version}}/testOnly -- --showDiff neg/abstract.scala pos/abstract.scala run/Course-2002-01.scala"
       
       - name: Run all of partests
-        if: "github.event_name == 'schedule'"
+        if: ((github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native') || (github.event_name == 'pull_request' && !contains(github.event.pull_request.body, '[skip ci]') && contains(github.event.pull_request.body, '[test-partest]'))
         timeout-minutes: 300
         run: |
           sbt \
