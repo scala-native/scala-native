@@ -104,7 +104,7 @@ object ThreadBuilders {
 
     override def startInternal(task: Runnable): Thread = {
       val thread = unstarted(task)
-      thread.start()
+      thread.startInternal()
       thread
     }
 
@@ -133,7 +133,7 @@ object ThreadBuilders {
 
     override def startInternal(task: Runnable): Thread = {
       val thread = unstarted(task)
-      thread.start()
+      thread.startInternal()
       thread
     }
 
