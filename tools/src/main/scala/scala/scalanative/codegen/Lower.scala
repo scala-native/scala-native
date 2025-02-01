@@ -176,7 +176,7 @@ private[scalanative] object Lower {
       // Add stack overflow guard test
       // On Windows we use builtin mechanism for stack overflow detection
       // On Unix, due to unreliable unwinding from signal handlers, we introduce polling at the begining of possibly recursive methods
-      if (!platform.targetsWindows && meta.analysis.references.isSelfRecursive(defn.name)) {
+      if (shouldGenerateStackOverflowChecks(defn)) {
         buf.call(CheckStackOverflowGuardsSig, CheckStackOverflowGuards, Nil, nir.Next.None)(defn.pos, nir.ScopeId.TopLevel)
       }
 
@@ -827,6 +827,28 @@ private[scalanative] object Lower {
       val left = genVal(buf, l)
       val right = genVal(buf, r)
       buf.let(n, nir.Op.Comp(comp, ty, left, right), unwind)
+    }
+
+    private def shouldGenerateStackOverflowChecks(defn: nir.Defn.Define): Boolean = {
+      if (platform.targetsWindows) false
+      else if (!defn.name.sig.isMethod) false
+      else {
+        val owner = defn.name.top
+        val ownerName = defn.name.top.id
+        // Ignore list for methods that are performance critical
+        val shouldSkip =
+          owner == nir.Rt.Object.name ||
+            owner == nir.Rt.String.name ||
+            ownerName.startsWith("scala.scalanative.runtime.package") ||
+            ownerName.startsWith("scala.scalanative.runtime.monitor.") ||
+            ownerName.startsWith("scala.scalanative.unsafe.") ||
+            ownerName.startsWith("java.lang.") && {
+              ownerName == "java.lang.StringBuilder" ||
+              ownerName == "java.lang.AbstractStringBuilder" ||
+              ownerName == "java.lang.System$"
+            }
+        !shouldSkip && meta.analysis.references.isSelfRecursive(defn.name)
+      }
     }
 
     // Cached function

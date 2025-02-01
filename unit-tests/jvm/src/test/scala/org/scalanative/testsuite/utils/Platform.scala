@@ -4,6 +4,8 @@ import java.util.Locale
 // Ported from Scala.js
 
 object Platform {
+  class DummyAnnotation extends scala.annotation.StaticAnnotation()
+  type nooptimize = DummyAnnotation
 
   final val executingInJVM = true
 

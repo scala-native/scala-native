@@ -265,6 +265,31 @@ object ReachabilityAnalysis {
       .asInstanceOf[Field]
 
     private[scalanative] object references {
+      // Currently unused, useful for debugging
+      def pathBetween(
+          symbol: nir.Global.Member,
+          from: nir.Global.Member
+      ): Option[List[nir.Global.Member]] = {
+        val todo = mutable.Queue(List(from)) // Queue stores paths
+        val visited = mutable.HashSet.empty[nir.Global.Member]
+
+        while (todo.nonEmpty) {
+          val path = todo.dequeue()
+          val current = path.last
+
+          if (visited.add(current)) {
+            methodDirectSymbolRefs.get(current).foreach { neighbors =>
+              neighbors.foreach { neighbor =>
+                val newPath = path :+ neighbor
+                if (neighbor == symbol) return Some(newPath)
+                todo.enqueue(newPath)
+              }
+            }
+          }
+        }
+        None
+      }
+
       def isReachable(
           symbol: nir.Global.Member,
           from: nir.Global.Member
@@ -302,7 +327,15 @@ object ReachabilityAnalysis {
                     symbols += sym
                   case _ => super.onVal(value)
                 }
-                // We should also check for Op.Method targets but it adds way too much complexity
+                override def onOp(op: nir.Op): Unit = op match {
+                  case nir.Op.Method(v, sig) =>
+                    v.ty match {
+                      case owner: nir.Type.RefKind =>
+                        symbols += owner.className.member(sig)
+                      case _ => ()
+                    }
+                  case _ => super.onOp(op)
+                }
               }.onInsts(method.insts)
               buf += ((method.name, symbols.toSet))
             case _ => ()

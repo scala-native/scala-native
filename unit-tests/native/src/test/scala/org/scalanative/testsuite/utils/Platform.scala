@@ -7,6 +7,7 @@ import scala.scalanative.buildinfo.ScalaNativeBuildInfo
 import scala.scalanative.runtime
 
 object Platform {
+  type nooptimize = scala.scalanative.annotation.nooptimize
 
   def scalaVersion: String = ScalaNativeBuildInfo.scalaVersion
 
