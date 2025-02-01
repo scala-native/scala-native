@@ -47,8 +47,8 @@ private[scalanative] object Lower {
 
     private val fresh = new util.ScopedVar[nir.Fresh]
     private val unwindHandler = new util.ScopedVar[Option[nir.Local]]
-    private val currentDefn = new util.ScopedVar[nir.Defn.Define]
     private val currentDefnGraph = new util.ScopedVar[Graph]
+    private implicit val currentDefn: util.ScopedVar[nir.Defn.Define] = new util.ScopedVar()
     private implicit val intrinsicMethods: util.ScopedVar[mutable.Map[nir.Local, IntrinsicCall]] = new util.ScopedVar()
     private val blockInfo = mutable.Map.empty[Block, BlockInfo]
     private var currentBlock: Block = _
@@ -1961,11 +1961,18 @@ private[scalanative] object Lower {
   private object IntrinsicCall {
     object LoadAllClassess extends IntrinsicCall
 
-    private def resolveIntrinsicCall(owner: nir.Global.Top, sig: nir.Sig)(implicit logger: build.Logger, srcPos: nir.SourcePosition): Option[IntrinsicCall] = {
+    private def resolveIntrinsicCall(owner: nir.Global.Top, sig: nir.Sig)(implicit
+        logger: build.Logger,
+        srcPos: nir.SourcePosition,
+        currentDefn: util.ScopedVar[nir.Defn.Define]
+    ): Option[IntrinsicCall] = {
       (owner.id, sig.unmangled) match {
         case ("scala.scalanative.runtime.LinkedClassesRepository$", nir.Sig.Method("loadAll", _, _)) => Some(LoadAllClassess)
         case (_, nir.Sig.Method("intrinsic", _, _)) if owner == nir.Rt.Runtime.name =>
-          logger.warn(s"Instrinsic method was not resolved by Scala Native, it would lead to runtime exception. Defined at ${srcPos.show}")
+          val nir.Global.Member(owner, sig) = currentDefn.get.name
+          // Ingore intrinsic call form intrinsic methods. It was already handled
+          if (resolveIntrinsicCall(owner, sig).isEmpty)
+            logger.warn(s"Instrinsic method was not resolved by Scala Native, it would lead to runtime exception. Defined at ${srcPos.show}")
           None
         case _ => None
       }
@@ -1974,7 +1981,8 @@ private[scalanative] object Lower {
     def unapply(op: nir.Op.Call)(implicit
         logger: build.Logger,
         srcPos: nir.SourcePosition,
-        intrinsicMethods: util.ScopedVar[mutable.Map[nir.Local, IntrinsicCall]]
+        intrinsicMethods: util.ScopedVar[mutable.Map[nir.Local, IntrinsicCall]],
+        currentDefn: util.ScopedVar[nir.Defn.Define]
     ): Option[IntrinsicCall] = op.ptr match {
       case nir.Val.Global(nir.Global.Member(owner, sig), _)       => resolveIntrinsicCall(owner, sig)
       case nir.Val.Local(id, _) if intrinsicMethods.isInitialized => intrinsicMethods.get.get(id)
@@ -1982,7 +1990,9 @@ private[scalanative] object Lower {
     }
 
     // Required only in non-optimized builds
-    def unapply(op: nir.Op.Method)(implicit logger: build.Logger, srcPos: nir.SourcePosition): Option[IntrinsicCall] =
+    def unapply(
+        op: nir.Op.Method
+    )(implicit logger: build.Logger, srcPos: nir.SourcePosition, currentDefn: util.ScopedVar[nir.Defn.Define]): Option[IntrinsicCall] =
       op.obj.ty match {
         case owner: nir.Type.RefKind => resolveIntrinsicCall(owner.className, op.sig)
         case _                       => None
