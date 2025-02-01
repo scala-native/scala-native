@@ -266,6 +266,7 @@ object ReachabilityAnalysis {
 
     private[scalanative] object references {
       // Currently unused, useful for debugging
+      @scala.annotation.nowarn("msg=Non local returns are no longer supported")
       def pathBetween(
           symbol: nir.Global.Member,
           from: nir.Global.Member
