@@ -11,7 +11,9 @@ import java.io.{PrintStream, File}
 
 class StackOverflowTest {
   // Simple 1 + stackoverflow() would be optimized to be tail recursive(!?) by LLVM
-  def stackoverflow(): Int = stackoverflow() + stackoverflow()
+  @noinline()
+  @Platform.nooptimize
+  def stackoverflow(): Int = 1 + stackoverflow()
 
   @Test def catchStackOverflowError(): Unit = {
     assertThrows(classOf[StackOverflowError], () => stackoverflow())
@@ -40,6 +42,8 @@ class StackOverflowTest {
       new File(if (Platform.isWindows) "NUL" else "/dev/null")
     )
     // println uses synchronized blocks (recursively)
+    @noinline()
+    @Platform.nooptimize
     def stackoverflow(): Int = {
       devNull.println(".")
       1 + stackoverflow()
@@ -68,8 +72,10 @@ class StackOverflowTest {
     val devNull = new PrintStream(
       new File(if (Platform.isWindows) "NUL" else "/dev/null")
     )
-    // println uses synchronized blocks (recursively)
+    @noinline()
+    @Platform.nooptimize
     def stackoverflow(): Int = {
+      // println uses synchronized blocks (recursively)
       devNull.println(".")
       1 + stackoverflow()
     }
