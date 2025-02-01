@@ -341,10 +341,10 @@ object NativeConfig {
       copy(clangPP = value)
 
     def withLinkingOptions(update: Mapping[Seq[String]]): NativeConfig =
-      copy(linkingOptions = update(linkingOptions))
+      copy(linkingOptions = update(linkingOptions).map(_.trim()))
 
     def withCompileOptions(update: Mapping[Seq[String]]): NativeConfig =
-      copy(compileOptions = update(compileOptions))
+      copy(compileOptions = update(compileOptions).map(_.trim()))
 
     def withTargetTriple(value: Option[String]): NativeConfig = {
       val propertyName = "target.triple"
