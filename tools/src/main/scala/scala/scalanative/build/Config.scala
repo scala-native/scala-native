@@ -197,8 +197,14 @@ sealed trait Config {
       case _ => false
     }
 
-  private[scalanative] def usingCppExceptions: Boolean =
-    targetsWindows
+  private[scalanative] lazy val usingCppExceptions: Boolean =
+    targetsWindows || {
+      val disabled = compileOptions.contains("-fno-cxx-exceptions")
+      val enabled = compileOptions.contains("-fcxx-exceptions")
+      // New EH does not work good with LTO https://github.com/scala-native/scala-native/issues/4190
+      val enabledLTO = compilerConfig.lto != build.LTO.none
+      !disabled && (enabled || enabledLTO)
+    }
 }
 
 /** Factory to create [[#empty]] [[Config]] objects */
