@@ -67,7 +67,7 @@ class Runtime private () {
       val groupStart = idx
       val groupPriority = hooks(groupStart).getPriority()
       while (idx < limit && hooks(idx).getPriority() == groupPriority) {
-        hooks(idx).start()
+        hooks(idx).startInternal()
         idx += 1
       }
       for (i <- groupStart until limit) {

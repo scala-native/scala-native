@@ -248,7 +248,10 @@ class Thread private[lang] (
     if (task != null) task.run()
   }
 
-  def start(): Unit = synchronized {
+  def start(): Unit = startInternal()
+
+  // Internal variant that does not trigger explicit need to enable multithreading
+  def startInternal(): Unit = synchronized {
     if (!isMultithreadingEnabled) UnsupportedFeature.threads()
     if (isVirtual())
       throw new UnsupportedOperationException(

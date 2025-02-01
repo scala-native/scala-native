@@ -189,18 +189,12 @@ object Build {
         // format: off
         val jlRunnable = nir.Global.Top("java.lang.Runnable")
         val jlThread = nir.Global.Top("java.lang.Thread")
-        val jlMainThread = nir.Global.Top("java.lang.Thread$MainThread$")
-        val jlVirtualThread = nir.Global.Top("java.lang.VirtualThread")
         val jlThreadBuildersOfPlatform = nir.Global.Top("java.lang.ThreadBuilders$PlatformThreadBuilder")
         val jlThreadBuildersOfPlatformStart = jlThreadBuildersOfPlatform.member(nir.Sig.Method("start", Seq(jlRunnable, jlThread).map(nir.Type.Ref(_))))
+        val jlThreadStart = jlThread.member(nir.Sig.Method("start", Seq(nir.Type.Unit)))
         val usesSystemThreads = 
           analysis.infos.get(jlThreadBuildersOfPlatformStart).isDefined ||
-          analysis.infos.get(jlThread).collect{
-          case cls: linker.Class =>
-            cls.subclasses.size > 2 ||
-            cls.subclasses.map(_.name).diff(Set(jlMainThread, jlVirtualThread)).nonEmpty || 
-            cls.allocations > 4 // minimal number of allocations
-        }.getOrElse(false)
+          analysis.infos.get(jlThreadStart).isDefined
         // format: on
         if (!usesSystemThreads) {
           config.logger.info(
