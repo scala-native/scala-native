@@ -1,3 +1,5 @@
+// scalafmt: { maxColumn = 120}
+
 package scala.scalanative
 package nscplugin
 
@@ -833,148 +835,181 @@ trait NirGenExpr(using Context) {
     }
 
     def genTry(tree: Try): nir.Val = tree match {
-      case Try(expr, catches, finalizer)
-          if catches.isEmpty && finalizer.isEmpty =>
+      case Try(expr, catches, finalizer) if catches.isEmpty && finalizer.isEmpty =>
         genExpr(expr)
-      case Try(expr, catches, finalizer) =>
-        val retty = genType(tree.tpe)
-        genTry(retty, expr, catches, finalizer)
-    }
 
-    private def genTry(
-        retty: nir.Type,
-        expr: Tree,
-        catches: List[Tree],
-        finallyp: Tree
-    ): nir.Val = {
-      given nir.SourcePosition = expr.span
-      val handler, normaln, mergen = fresh()
-      val excv = nir.Val.Local(fresh(), nir.Rt.Throwable)
-      val mergev = nir.Val.Local(fresh(), retty)
+      case Try(expr, catches, finallyp) =>
+        given nir.SourcePosition = tree.span
+        scoped(
+          genTrySharedContext := Option(genTrySharedContext)
+            .filter(_.isInitialized)
+            .fold(new GenTrySharedContext(tree, buf, curMethodSig.get.ret))(_.get)
+        ) {
+          val sharedContext = genTrySharedContext.get
+          val retty = genType(tree.tpe)
+          val handler, normaln, mergen = fresh()
+          val excv = nir.Val.Local(fresh(), nir.Rt.Throwable)
+          val finalizer = Option.unless(finallyp.isEmpty)(fresh())
+          val mergev = nir.Val.Local(fresh(), retty)
 
-      // Nested code gen to separate out try/catch-related instructions.
-      val nested = ExprBuffer()
-      scoped(
-        curUnwindHandler := Some(handler)
-      ) {
-        withFreshBlockScope(summon[nir.SourcePosition]) { _ =>
-          nested.label(normaln)
-          val res = nested.genExpr(expr)
-          nested.jumpExcludeUnitValue(retty)(mergen, res)
-        }
-      }
-      withFreshBlockScope(summon[nir.SourcePosition]) { _ =>
-        nested.label(handler, Seq(excv))
-        val res = nested.genTryCatch(retty, excv, mergen, catches)
-        nested.jumpExcludeUnitValue(retty)(mergen, res)
-      }
+          def withStashedValue(stash: nir.Val, value: nir.Val)(continuation: => Unit): nir.Val =
+            buf.varstore(stash, value, nir.Next.None)
+            val _ = continuation
+            buf.varload(stash, nir.Next.None)
 
-      // Append finally to the try/catch instructions and merge them back.
-      val insts =
-        if (finallyp.isEmpty) nested.toSeq
-        else genTryFinally(finallyp, nested.toSeq)
+          class TrampolineHandler(val id: nir.Val.Int, val returnLabel: nir.Local)
+          val trampolineIds = Iterator.from(0)
+          val trampolines = collection.mutable.UnrolledBuffer.empty[TrampolineHandler]
 
-      // Append try/catch instructions to the outher instruction buffer.
-      buf.jump(nir.Next(normaln))
-      buf ++= insts
-      buf.labelExcludeUnitValue(mergen, mergev)
-    }
-
-    private def genTryCatch(
-        retty: nir.Type,
-        exc: nir.Val,
-        mergen: nir.Local,
-        catches: List[Tree]
-    )(using exprPos: nir.SourcePosition): nir.Val = {
-      val cases = catches.map {
-        case cd @ CaseDef(pat, _, body) =>
-          val (excty, symopt) = pat match {
-            case Typed(Ident(nme.WILDCARD), tpt) =>
-              genType(tpt.tpe) -> None
-            case Ident(nme.WILDCARD) =>
-              genType(defn.ThrowableClass.info.resultType) -> None
-            case Bind(_, _) =>
-              genType(pat.tpe) -> Some(pat.symbol)
+          def insertFinalizerTrampoline(finalizerId: nir.Local) = {
+            val id = nir.Val.Int(trampolineIds.next())
+            val trampoline = TrampolineHandler(id, fresh())
+            trampolines += trampoline
+            buf.jump(finalizerId, Seq(trampoline.id))
+            buf.label(trampoline.returnLabel)
           }
-          val f = ContTree(body) { (buf: ExprBuffer) =>
-            withFreshBlockScope(body.span) { _ =>
-              symopt.foreach { sym =>
-                val cast = buf.as(excty, exc, unwind)(cd.span, getScopeId)
-                curMethodLocalNames.get.update(cast.id, genLocalName(sym))
-                curMethodEnv.enter(sym, cast)
+
+          val noResult = nir.Type.isNothing(retty)
+          val resultVar = Option.unless(noResult || retty == nir.Type.Unit) {
+            buf.var_(retty, nir.Next.None)
+          }
+
+          def genBlockWithOptionalTrampoline(buf: ExprBuffer, expr: Tree, isHandler: Boolean) = finalizer match {
+            case None =>
+              val result = buf.genExpr(expr)
+              buf.jumpExcludeUnitValue(retty)(mergen, result)
+            case Some(finalizerId) =>
+              val nested = new ExprBuffer()
+              val result = nested.genExpr(expr)
+              val insts = nested.toSeq
+
+              val labels = insts.collect { case nir.Inst.Label(n, _) => n }.toSet
+              def isInternal(cf: nir.Inst.Cf) = cf match {
+                case inst @ nir.Inst.Jump(n)              => labels.contains(n.id)
+                case inst @ nir.Inst.If(_, n1, n2)        => labels.contains(n1.id) && labels.contains(n2.id)
+                case inst @ nir.Inst.LinktimeIf(_, n, n2) => labels.contains(n.id) && labels.contains(n2.id)
+                case inst @ nir.Inst.Switch(_, n, ns) => labels.contains(n.id) && ns.forall(n => labels.contains(n.id))
+                case inst @ nir.Inst.Throw(_, n)      => (n ne nir.Next.None) && labels.contains(n.id)
+                case _                                => false
               }
-              val res = genExpr(body)
-              buf.jumpExcludeUnitValue(retty)(mergen, res)
+
+              // Append from nested buffer and transform control flow if needed
+              // so that the finalizer is always reachable
+              insts
+                .dropWhile(_.isInstanceOf[nir.Inst.Label]) // drop first label, redundant
+                .foreach {
+                  case cf @ nir.Inst.Throw(value, _) if isHandler && !isInternal(cf) =>
+                    val stashed = withStashedValue(sharedContext.throwableVar, value) {
+                      insertFinalizerTrampoline(finalizerId)
+                    }
+                    buf += cf.copy(value = stashed)
+
+                  case cf @ nir.Inst.Ret(result) if !isInternal(cf) =>
+                    if result.isLiteral then
+                      insertFinalizerTrampoline(finalizerId)
+                      buf.ret(result)
+                    else
+                      val stashed = withStashedValue(sharedContext.earlyReturnedValueStash.get, result) {
+                        insertFinalizerTrampoline(finalizerId)
+                      }
+                      buf += cf.copy(value = stashed)
+
+                  case inst => buf += inst
+                }
+
+              // successfull path needs to visit finally block before continue
+              locally {
+                insts.lastOption match {
+                  case Some(_: nir.Inst.Throw | _: nir.Inst.Unreachable) =>
+                    buf.jump(finalizerId, Seq(nir.Val.Int(-1)))
+
+                  case _ =>
+                    resultVar match {
+                      case None =>
+                        insertFinalizerTrampoline(finalizerId)
+                        buf.jump(mergen, Nil)
+                      case Some(resultVar) =>
+                        val stashed = withStashedValue(resultVar, result) {
+                          insertFinalizerTrampoline(finalizerId)
+                        }
+                        buf.jumpExcludeUnitValue(retty)(mergen, stashed)
+                    }
+                }
+              }
+          }
+
+          scoped(curUnwindHandler := Some(handler)) {
+            withFreshBlockScope(summon[nir.SourcePosition]) { _ =>
+              genBlockWithOptionalTrampoline(buf, expr, isHandler = false)
             }
-            nir.Val.Unit
           }
-          (excty, f, exprPos)
-      }
 
-      def wrap(
-          cases: Seq[(nir.Type, ContTree, nir.SourcePosition)]
-      ): nir.Val =
-        cases match {
-          case Seq() =>
-            buf.raise(exc, unwind)
+          withFreshBlockScope(summon[nir.SourcePosition]) { _ =>
+            var nextLandingPage, nextExceptionHandler: nir.Local = fresh()
+            buf.label(handler, Seq(excv))
+            buf.jump(nextLandingPage, Nil)
+            catches.foreach {
+              case cd @ CaseDef(pat, _, body) =>
+                val (excty, symopt) = pat match {
+                  case Typed(Ident(nme.WILDCARD), tpt) => genType(tpt.tpe) -> None
+                  case Ident(nme.WILDCARD)             => genType(defn.ThrowableClass.info.resultType) -> None
+                  case Bind(_, _)                      => genType(pat.tpe) -> Some(pat.symbol)
+                }
+                withFreshBlockScope(body.span) { _ =>
+                  val landingPage = nextLandingPage
+                  val exceptionHandler = nextExceptionHandler
+                  nextLandingPage = fresh()
+                  nextExceptionHandler = fresh()
+
+                  buf.label(landingPage, Nil)
+                  val cond = buf.is(excty, excv, unwind)(body.span, getScopeId)
+                  buf.branch(cond, nir.Next.Label(exceptionHandler, Nil), nir.Next.Label(nextLandingPage, Nil))
+                  buf.label(exceptionHandler, Nil)
+                  symopt.foreach { sym =>
+                    val cast = buf.as(excty, excv, unwind)(cd.span, getScopeId)
+                    curMethodLocalNames.get.update(cast.id, genLocalName(sym))
+                    curMethodEnv.enter(sym, cast)
+                  }
+                  genBlockWithOptionalTrampoline(buf, body, isHandler = true)
+                }
+            }
+
+            // uncought handler
+            buf.label(nextLandingPage, Nil)
+            finalizer match {
+              case Some(finalizerId) =>
+                val stashedExcv = withStashedValue(sharedContext.throwableVar, excv) {
+                  insertFinalizerTrampoline(finalizerId)
+                }
+                buf.raise(stashedExcv, unwind)
+              case None =>
+                buf.raise(excv, unwind)
+            }
+          }
+
+          finalizer.foreach { finalizerId =>
+            val fromPath = nir.Val.Local(fresh(), nir.Type.Int)
+            val defaultPath = fresh()
+            buf.label(finalizerId, Seq(fromPath))
+            buf.genExpr(finallyp)
+            val handlers = trampolines.toSeq.map { v =>
+              nir.Next.Case(v.id, v.returnLabel)
+            }
+            buf.switch(fromPath, nir.Next.Label(defaultPath, Nil), handlers)
+
+            buf.label(defaultPath, Nil)
+            buf.unreachable(nir.Next.None)
+          }
+
+          // Create the exit label
+          // Either label with no inputs if try.expr is throwing
+          // or result of the try.expr or one of catch handler otherwise
+          if noResult then
+            buf.label(mergen)
+            buf.unreachable(nir.Next.None)
             nir.Val.Unit
-          case (excty, f, pos) +: rest =>
-            val cond = buf.is(excty, exc, unwind)(pos, getScopeId)
-            genIf(
-              retty,
-              ValTree(f)(cond),
-              f,
-              ContTree(f)(_ => wrap(rest))
-            )(using pos)
+          else buf.labelExcludeUnitValue(mergen, mergev)
         }
-
-      wrap(cases)
-    }
-
-    private def genTryFinally(
-        finallyp: Tree,
-        insts: Seq[nir.Inst]
-    ): Seq[nir.Inst] = {
-      val labels =
-        insts.collect {
-          case nir.Inst.Label(n, _) => n
-        }.toSet
-      def internal(cf: nir.Inst.Cf) = cf match {
-        case inst @ nir.Inst.Jump(n) =>
-          labels.contains(n.id)
-        case inst @ nir.Inst.If(_, n1, n2) =>
-          labels.contains(n1.id) && labels.contains(n2.id)
-        case inst @ nir.Inst.LinktimeIf(_, n, n2) =>
-          labels.contains(n.id) && labels.contains(n2.id)
-        case inst @ nir.Inst.Switch(_, n, ns) =>
-          labels.contains(n.id) && ns.forall(n => labels.contains(n.id))
-        case inst @ nir.Inst.Throw(_, n) =>
-          (n ne nir.Next.None) && labels.contains(n.id)
-        case _ =>
-          false
-      }
-
-      val finalies = new ExprBuffer
-      val transformed = insts.map {
-        case cf: nir.Inst.Cf if internal(cf) =>
-          // We don't touch control-flow within try/catch block.
-          cf
-        case cf: nir.Inst.Cf =>
-          // All control-flow edges that jump outside the try/catch block
-          // must first go through finally block if it's present. We generate
-          // a new copy of the finally handler for every edge.
-          val finallyn = fresh()
-          withFreshBlockScope(cf.pos) { _ =>
-            finalies.label(finallyn)(cf.pos)
-            finalies.genExpr(finallyp)
-          }
-          finalies += cf
-          // The original jump outside goes through finally block first.
-          nir.Inst.Jump(nir.Next(finallyn))(cf.pos)
-        case inst =>
-          inst
-      }
-      transformed ++ finalies.toSeq
     }
 
     def genTyped(tree: Typed): nir.Val = tree match {
@@ -1033,8 +1068,7 @@ trait NirGenExpr(using Context) {
           vd.rhs match {
             // When rhs is a block patch the scopeId of it's result to match the current scopeId
             // This allows us to reflect that ValDef is accessible in this scope
-            case _: Block | Typed(_: Block, _) | Try(_: Block, _, _) |
-                Try(Typed(_: Block, _), _, _) =>
+            case _: Block | Typed(_: Block, _) | Try(_: Block, _, _) | Try(Typed(_: Block, _), _, _) =>
               buf.updateLetInst(id)(i => i.copy()(i.pos, curScopeId.get))
             case _ => ()
           }
@@ -1276,8 +1310,7 @@ trait NirGenExpr(using Context) {
         argsp: Seq[Tree]
     )(using nir.SourcePosition): nir.Val = {
       if (sym.isExtern && sym.is(Accessor)) genApplyExternAccessor(sym, argsp)
-      else if (sym.isStaticInNIR && !sym.isExtern)
-        genApplyStaticMethod(sym, selfp.symbol, argsp)
+      else if (sym.isStaticInNIR && !sym.isExtern) genApplyStaticMethod(sym, selfp.symbol, argsp)
       else
         val self = genExpr(selfp)
         genApplyMethod(sym, statically, self, argsp)
@@ -1361,8 +1394,8 @@ trait NirGenExpr(using Context) {
       else genApplyBox(st, ValTree(value)())
     }
 
-    private def unboxValue(st: SimpleType, partial: Boolean, value: nir.Val)(
-        using nir.SourcePosition
+    private def unboxValue(st: SimpleType, partial: Boolean, value: nir.Val)(using
+        nir.SourcePosition
     ): nir.Val = {
       if (st.sym.isUnsignedType) {
         // Results of asInstanceOfs are partially unboxed, meaning
@@ -1416,7 +1449,7 @@ trait NirGenExpr(using Context) {
         case nir.Type.Float                 => nir.Val.Float(num.toFloat)
         case nir.Type.Double                => nir.Val.Double(num.toDouble)
         case nir.Type.Size                  => nir.Val.Size(num.toLong)
-        case _ => unsupported(s"num = $num, ty = ${ty.show}")
+        case _                              => unsupported(s"num = $num, ty = ${ty.show}")
       }
 
       (opty, code) match {
@@ -1618,8 +1651,8 @@ trait NirGenExpr(using Context) {
       } else genClassUniversalEquality(leftp, rightp, negated)
     }
 
-    private def genClassUniversalEquality(l: Tree, r: Tree, negated: Boolean)(
-        using nir.SourcePosition
+    private def genClassUniversalEquality(l: Tree, r: Tree, negated: Boolean)(using
+        nir.SourcePosition
     ): nir.Val = {
 
       /* True if the equality comparison is between values that require the use of the rich equality
@@ -1796,8 +1829,7 @@ trait NirGenExpr(using Context) {
                   val promotedArg = arg.ty match {
                     case nir.Type.Float =>
                       this.genCastOp(nir.Type.Float, nir.Type.Double, arg)
-                    case i: nir.Type.FixedSizeI
-                        if i.width < nir.Type.Int.width =>
+                    case i: nir.Type.FixedSizeI if i.width < nir.Type.Int.width =>
                       val conv =
                         if (isUnsigned) nir.Conv.Zext
                         else nir.Conv.Sext
@@ -1988,62 +2020,28 @@ trait NirGenExpr(using Context) {
       else genApplyStaticMethod(sym, receiver, Seq.empty)
     }
 
-    private def genSynchronized(receiverp: Tree, bodyp: Tree)(using
+    def genSynchronized(receiverp: Tree, bodyp: Tree)(using
         nir.SourcePosition
     ): nir.Val = {
-      genSynchronized(receiverp)(_.genExpr(bodyp))
-    }
-
-    def genSynchronized(
-        receiverp: Tree
-    )(bodyGen: ExprBuffer => nir.Val)(using nir.SourcePosition): nir.Val = {
-      // Here we wrap the synchronized call into the try-finally block
-      // to ensure that monitor would be released even in case of the exception
-      // or in case of non-local returns
-      val nested = new ExprBuffer()
-      val normaln = fresh()
-      val handler = fresh()
-      val mergen = fresh()
-
-      // scalanative.runtime.`package`.enterMonitor(receiver)
+      // wrap body into try-finally block that ensurs enter and exit of the monitor
       genApplyStaticMethod(
         defnNir.RuntimePackage_enterMonitor,
         defnNir.RuntimePackageClass,
         List(receiverp)
       )
-
-      // synchronized block
-      val retValue = scoped(curUnwindHandler := Some(handler)) {
-        nested.label(normaln)
-        bodyGen(nested)
-      }
-      val retty = retValue.ty
-      val mergev = nir.Val.Local(fresh(), retty)
-      nested.jumpExcludeUnitValue(retty)(mergen, retValue)
-
-      // dummy exception handler,
-      // monitorExit call would be added to it in genTryFinally transformer
-      locally {
-        val excv = nir.Val.Local(fresh(), nir.Rt.Throwable)
-        nested.label(handler, Seq(excv))
-        nested.raise(excv, unwind)
-        nested.jumpExcludeUnitValue(retty)(mergen, nir.Val.Zero(retty))
-      }
-
-      // Append try/catch instructions to the outher instruction buffer.
-      buf.jump(nir.Next(normaln))
-      buf ++= genTryFinally(
-        // scalanative.runtime.`package`.exitMonitor(receiver)
-        ContTree(receiverp)(
-          _.genApplyStaticMethod(
-            defnNir.RuntimePackage_exitMonitor,
-            defnNir.RuntimePackageClass,
-            List(receiverp)
+      genTry(
+        cpy.Try(bodyp)(
+          bodyp,
+          Nil,
+          ContTree(receiverp)(
+            _.genApplyStaticMethod(
+              defnNir.RuntimePackage_exitMonitor,
+              defnNir.RuntimePackageClass,
+              List(receiverp)
+            )
           )
-        ),
-        nested.toSeq
+        )
       )
-      buf.labelExcludeUnitValue(mergen, mergev)
     }
 
     private def genThrow(tree: Tree, args: List[Tree]): nir.Val = {
@@ -2069,8 +2067,8 @@ trait NirGenExpr(using Context) {
       genCoercion(rec, fromty, toty)
     }
 
-    private def genCoercion(value: nir.Val, fromty: nir.Type, toty: nir.Type)(
-        using nir.SourcePosition
+    private def genCoercion(value: nir.Val, fromty: nir.Type, toty: nir.Type)(using
+        nir.SourcePosition
     ): nir.Val = {
       if (fromty == toty) value
       else if (fromty == nir.Type.Nothing || toty == nir.Type.Nothing) value
@@ -2187,20 +2185,18 @@ trait NirGenExpr(using Context) {
         case _ if fromty == toty               => None
         case (nir.Type.Float, nir.Type.Double) => Some(nir.Conv.Fpext)
         case (nir.Type.Double, nir.Type.Float) => Some(nir.Conv.Fptrunc)
-        case _ => unsupported(s"cast from $fromty to $toty")
+        case _                                 => unsupported(s"cast from $fromty to $toty")
       }
 
     /** Boxes a value of the given type before `elimErasedValueType`.
      *
-     *  This should be used when sending values to a LLVM context, which is
-     *  erased/boxed at the NIR level, although it is not erased at the
-     *  dotty/JVM level.
+     *  This should be used when sending values to a LLVM context, which is erased/boxed at the NIR level, although it
+     *  is not erased at the dotty/JVM level.
      *
      *  @param value
      *    Value to be boxed if needed.
      *  @param tpeEnteringElimErasedValueType
-     *    The type of `value` as it was entering the `elimErasedValueType`
-     *    phase.
+     *    The type of `value` as it was entering the `elimErasedValueType` phase.
      */
     private def ensureBoxed(
         value: nir.Val,
@@ -2230,18 +2226,15 @@ trait NirGenExpr(using Context) {
       }
     }
 
-    /** Unboxes a value typed as Any to the given type before
-     *  `elimErasedValueType`.
+    /** Unboxes a value typed as Any to the given type before `elimErasedValueType`.
      *
-     *  This should be used when receiving values from a LLVM context, which is
-     *  erased/boxed at the NIR level, although it is not erased at the
-     *  dotty/JVM level.
+     *  This should be used when receiving values from a LLVM context, which is erased/boxed at the NIR level, although
+     *  it is not erased at the dotty/JVM level.
      *
      *  @param value
      *    Tree to be extracted.
      *  @param tpeEnteringElimErasedValueType
-     *    The type of `value` as it was entering the `elimErasedValueType`
-     *    phase.
+     *    The type of `value` as it was entering the `elimErasedValueType` phase.
      */
     private def ensureUnboxed(
         value: nir.Val,
@@ -2566,8 +2559,7 @@ trait NirGenExpr(using Context) {
           val size = genExpr(sizep)
           val sizeTy = nir.Type.normalize(size.ty)
           val unboxed =
-            if nir.Type.unbox.contains(sizeTy) then
-              buf.unbox(sizeTy, size, unwind)
+            if nir.Type.unbox.contains(sizeTy) then buf.unbox(sizeTy, size, unwind)
             else if nir.Type.box.contains(sizeTy) then size
             else {
               report.error(
@@ -2798,9 +2790,8 @@ trait NirGenExpr(using Context) {
           value
       }
 
-    /** Generates direct call to function ptr with optional unboxing arguments
-     *  and boxing result Apply.args can contain different number of arguments
-     *  depending on usage, however they are passed in constant order:
+    /** Generates direct call to function ptr with optional unboxing arguments and boxing result Apply.args can contain
+     *  different number of arguments depending on usage, however they are passed in constant order:
      *    - 0..N args
      *    - return type evidence
      */
@@ -2987,12 +2978,10 @@ trait NirGenExpr(using Context) {
         }
 
         val res =
-          if (funSym.isStaticInNIR)
-            buf.genApplyStaticMethod(funSym, NoSymbol, argsp)
+          if (funSym.isStaticInNIR) buf.genApplyStaticMethod(funSym, NoSymbol, argsp)
           else
             val owner =
-              if funSym.owner.companionModule.exists then
-                buf.genModule(funSym.owner)
+              if funSym.owner.companionModule.exists then buf.genModule(funSym.owner)
               else
                 // Safe becouse usage of This is guarded in NativeInterop
                 nir.Val.Null
@@ -3020,8 +3009,7 @@ trait NirGenExpr(using Context) {
       }
 
       def unapply(tree: Apply): Option[Tree] = tree match {
-        case Apply(wrapArray_?, List(wrapped))
-            if isWrapArray(wrapArray_?.symbol) =>
+        case Apply(wrapArray_?, List(wrapped)) if isWrapArray(wrapArray_?.symbol) =>
           Some(wrapped)
         case _ =>
           None
@@ -3139,8 +3127,8 @@ trait NirGenExpr(using Context) {
       )
     }
 
-    private def labelExcludeUnitValue(label: nir.Local, value: nir.Val.Local)(
-        using nir.SourcePosition
+    private def labelExcludeUnitValue(label: nir.Local, value: nir.Val.Local)(using
+        nir.SourcePosition
     ): nir.Val =
       value.ty match
         case nir.Type.Unit =>
@@ -3161,8 +3149,7 @@ trait NirGenExpr(using Context) {
 
   }
 
-  sealed class FixupBuffer(using fresh: nir.Fresh)
-      extends nir.InstructionBuilder {
+  sealed class FixupBuffer(using fresh: nir.Fresh) extends nir.InstructionBuilder {
     private var labeled = false
 
     override def +=(inst: nir.Inst): Unit = {

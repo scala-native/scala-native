@@ -8,6 +8,7 @@ import scala.scalanative.util.Scope
 import scala.scalanative.linker.compileAndLoad
 import scala.scalanative.api.CompilationFailedException
 import scala.scalanative.NIRCompiler
+import scala.scalanative.buildinfo.ScalaNativeBuildInfo._
 
 class MethodCallTest {
 
@@ -143,8 +144,12 @@ class MethodCallTest {
           // - first for successfull path before reutrning value
           // - second for erronous path before throwing exception
           // synchronised call is emitted as try-finally block
+          // Does not apply to Scala 3 compiler plugin where to have a proper try-finally implementation without duplicates
           assertEquals(2, monitorEnters)
-          assertEquals(4, monitorExits)
+          assertEquals(
+            if (scalaVersion.startsWith("2.")) 4 else 2,
+            monitorExits
+          )
         }
     }
   }
