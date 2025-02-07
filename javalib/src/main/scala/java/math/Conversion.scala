@@ -1,3 +1,49 @@
+/* Ported from Scala.js commit:  ??? dated: ???
+ *   As prior SN code contained the change,
+ *   commit was probably 3851c2d dated: 2020-06-18
+ *
+ * Scala Native changes:
+ *
+ * 2025-02-07 SN Issue 4176
+ *    - Removed dead code method 'bigInteger2Double(BigInteger): Double'
+ *      This aligns the start of SN Issue 4176 changes to:
+ *        Scala.js commit: f3765f9  dated: 2022-09-06
+ *
+ *    - Modified code to use java.lang.StringBuilder rather than
+ *      Scala String concatenation (string_1 + string_2). Former tends
+ *      to be less expensive on Scala Native.
+ *
+ *      The original Google .java code used StringBuilder. The port to Scala.js
+ *      introduced the concatenation.
+ *
+ *      Design Note:
+ *
+ *      Changing to use StringBuilder yields a  noticeable runtime improvement
+ *      even though the algorithm from the Scala.js code does not favor
+ *      StringBuilder. Changing this file to use a better algorithm from
+ *      the literature is left an exercise for the Gentle Reader.
+ *
+ *      The Scala.js algorithm from the Scala.js code likes to insert
+ *      characters at the beginning of strings. The idiom is wide spread.
+ *
+ *      In order to do an insert(), StringBuilder internals must move all
+ *      existing characters to the right, which is much more expensive than
+ *      an append().
+ *
+ *      The Google .java code appears to have used an Array to build up
+ *      the String in a more efficient manner.
+ *
+ *      A characteristic usage pessimistic case is where the digits of
+ *      the resultant String are converted. The Scala.CSS, and current
+ *      Scala Native, algorithm starts started with the low order digits.
+ *      Higher order digits are inserted _before_ the digits converted to
+ *      date.
+ *
+ */
+
+/* TL;DR -- This URL is no longer working. See discussion at top
+ * of BigDecimal.scala.
+ */
 /*
  * Ported by Alistair Johnson from
  * https://android.googlesource.com/platform/libcore/+/master/luni/src/main/java/java/math/Conversion.java
@@ -22,6 +68,9 @@
  */
 
 package java.math
+
+import java.{lang => jl}
+import jl.Character
 
 import scala.annotation.tailrec
 
@@ -56,6 +105,13 @@ private[math] object Conversion {
     729000000, 887503681, 1073741824, 1291467969, 1544804416, 1838265625,
     60466176)
 
+  private def stripLeadingZeros(sb: jl.StringBuilder): jl.StringBuilder = {
+    val leadingZeroCount = sb.chars().takeWhile(_ == '0').count()
+    if (leadingZeroCount > 0L)
+      sb.delete(0, leadingZeroCount.toInt)
+    sb
+  }
+
   /** @see BigInteger#toString(int) */
   def bigInteger2String(bi: BigInteger, radix: Int): String = {
     val sign = bi.sign
@@ -80,7 +136,9 @@ private[math] object Conversion {
       val addForSign = if (sign < 0) 1 else 0
       val biAbsLen = bi.abs().bitLength()
       val resLenInChars = (biAbsLen / bitsForRadixDigit + addForSign).toInt + 1
-      var result: String = ""
+
+      val result = new jl.StringBuilder(128) // a generous, growable guess
+
       var currentChar = resLenInChars
       var resDigit: Int = 0
 
@@ -101,8 +159,7 @@ private[math] object Conversion {
           @tailrec
           def innerLoop(): Unit = {
             currentChar -= 1
-            result =
-              Character.forDigit(resDigit % radix, radix).toString + result
+            result.insert(0, jl.Character.forDigit(resDigit % radix, radix))
             resDigit /= radix
             if (resDigit != 0 && currentChar != 0)
               innerLoop()
@@ -113,7 +170,7 @@ private[math] object Conversion {
           var i: Int = 0
           while (i < delta && currentChar > 0) {
             currentChar -= 1
-            result = "0" + result
+            result.insert(0, '0')
             i += 1
           }
           i = tempLen - 1
@@ -132,16 +189,19 @@ private[math] object Conversion {
           while (j < 8 && currentChar > 0) {
             resDigit = digits(i) >> (j << 2) & 0xf
             currentChar -= 1
-            result =
-              java.lang.Character.forDigit(resDigit, 16).toString + result
+            result.insert(0, jl.Character.forDigit(resDigit, 16))
             j += 1
           }
         }
       }
-      // strip leading zero's
-      result = result.dropWhile(_ == '0')
-      if (sign == -1) "-" + result
-      else result
+
+      if (result.charAt(0) == '0')
+        stripLeadingZeros(result) // 1 found, so pay cost of counting rest.
+
+      if (sign < 0)
+        result.insert(0, '-')
+
+      result.toString()
     }
   }
 
@@ -170,7 +230,7 @@ private[math] object Conversion {
       // +1 - one char for sign if needed.
       // +7 - For "special case 2" (see below) we have 7 free chars for inserting necessary scaled digits.
       resLengthInChars = numberLength * 10 + 1 + 7
-      var result: String = ""
+      val result = new jl.StringBuilder(resLengthInChars)
 
       // a free latest character may be used for "special case 1" (see below)
       currentChar = resLengthInChars
@@ -182,7 +242,7 @@ private[math] object Conversion {
             val prev = v
             v /= 10
             currentChar -= 1
-            result = (prev - v * 10).toString + result
+            result.insert(0, (prev - v * 10))
             v != 0
           }) ()
         } else {
@@ -191,7 +251,7 @@ private[math] object Conversion {
             val prev = v
             v /= 10
             currentChar -= 1
-            result = (prev - v * 10).toString + result
+            result.insert(0, (prev - v * 10))
             v != 0
           }) ()
         }
@@ -221,7 +281,7 @@ private[math] object Conversion {
           @tailrec
           def innerLoop(): Unit = {
             currentChar -= 1
-            result = (resDigit % 10).toString + result
+            result.insert(0, (resDigit % 10))
             resDigit /= 10
             if (resDigit != 0 && currentChar != 0)
               innerLoop()
@@ -233,7 +293,7 @@ private[math] object Conversion {
           var i = 0
           while ((i < delta) && (currentChar > 0)) {
             currentChar -= 1
-            result = "0" + result
+            result.insert(0, '0')
             i += 1
           }
           var j = tempLen - 1
@@ -245,10 +305,15 @@ private[math] object Conversion {
         }
 
         loop()
-        result = result.dropWhile(_ == '0')
+
+        if (result.charAt(0) == '0')
+          stripLeadingZeros(result) // 1 found, so pay cost of counting rest.
       }
-      if (sign < 0) "-" + result
-      else result
+
+      if (sign < 0)
+        result.insert(0, '-')
+
+      result.toString()
     }
   }
 
@@ -268,8 +333,13 @@ private[math] object Conversion {
             if (scale == Int.MinValue) "2147483648"
             else java.lang.Integer.toString(-scale)
 
-          val result = if (scale < 0) "0E+" else "0E"
-          result + scaleVal
+          val result = new jl.StringBuilder(128) // a generous, growable guess
+
+          result.append("0E")
+          if (scale < 0)
+            result.append('+')
+          result.append(scaleVal)
+          result.toString()
       }
     } else {
       // one 32-bit unsigned value may contains 10 decimal digits
@@ -278,7 +348,9 @@ private[math] object Conversion {
       // +7 - For "special case 2" (see below) we have 7 free chars for inserting necessary scaled digits.
       val resLengthInChars = 18
       val negNumber = value < 0
-      var result = ""
+
+      val result = new jl.StringBuilder(128) // a generous, growable guess
+
       //  Allocated [resLengthInChars+1] characters.
       // a free latest character may be used for "special case 1" (see below)
       var currentChar = resLengthInChars
@@ -288,7 +360,7 @@ private[math] object Conversion {
         val prev = v
         v /= 10
         currentChar -= 1
-        result = (prev - v * 10).toString + result
+        result.insert(0, (prev - v * 10))
         v != 0
       }) ()
 
@@ -298,28 +370,27 @@ private[math] object Conversion {
         val index = exponent.toInt + 1
         if (index > 0) {
           // special case 1
-          result = result.substring(0, index) + "." + result.substring(index)
+          result.insert(index, '.')
         } else {
           // special case 2
           for (j <- 0 until -index) {
-            result = "0" + result
+            result.insert(0, '0')
           }
-          result = "0." + result
+          result.insert(0, "0.")
         }
       } else if (scale != 0) {
-        val exponentStr =
-          if (exponent > 0) "E+" + exponent
-          else "E" + exponent
+        if (resLengthInChars - currentChar > 1)
+          result.insert(1, '.')
 
-        result =
-          if (resLengthInChars - currentChar > 1)
-            result.substring(0, 1) + "." + result.substring(1) + exponentStr
-          else
-            result + exponentStr
+        val exponentPrefix = if (exponent > 0) "E+" else "E"
+
+        result.append(exponentPrefix).append(exponent)
       }
 
-      if (negNumber) "-" + result
-      else result
+      if (negNumber)
+        result.insert(0, '-')
+
+      result.toString()
     }
   }
 
@@ -339,37 +410,4 @@ private[math] object Conversion {
     (rem << 32) | (quot & 0xffffffffL)
   }
 
-  def bigInteger2Double(bi: BigInteger): Double = {
-    if (bi.numberLength < 2 ||
-        ((bi.numberLength == 2) && (bi.digits(1) > 0))) {
-      bi.longValue().toDouble
-    } else if (bi.numberLength > 32) {
-      if (bi.sign > 0) Double.PositiveInfinity
-      else Double.NegativeInfinity
-    } else {
-      val bitLen = bi.abs().bitLength()
-      var exponent: Long = bitLen - 1
-      val delta = bitLen - 54
-      val lVal = bi.abs().shiftRight(delta).longValue()
-      var mantissa = lVal & 0x1fffffffffffffL
-
-      if (exponent == 1023 && mantissa == 0x1fffffffffffffL) {
-        if (bi.sign > 0) Double.PositiveInfinity
-        else Double.NegativeInfinity
-      } else if (exponent == 1023 && mantissa == 0x1ffffffffffffeL) {
-        if (bi.sign > 0) Double.MaxValue
-        else -Double.MaxValue
-      } else {
-        val droppedBits = BitLevel.nonZeroDroppedBits(delta, bi.digits)
-        if (((mantissa & 1) == 1) && (((mantissa & 2) == 2) || droppedBits))
-          mantissa += 2
-
-        mantissa >>= 1
-        val resSign = if (bi.sign < 0) 0x8000000000000000L else 0
-        exponent = ((1023 + exponent) << 52) & 0x7ff0000000000000L
-        val result = resSign | exponent | mantissa
-        java.lang.Double.longBitsToDouble(result)
-      }
-    }
-  }
 }

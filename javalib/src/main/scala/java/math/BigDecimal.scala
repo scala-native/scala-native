@@ -15,6 +15,18 @@
  *
  *    - Made a small change to Scala.js divideToIntegralValue() to
  *      allow compilation. See "Scala Native change" comment in that method.
+ *
+ * 2025-02-07 SN Issue 4176
+ *    - Modified code to use java.lang.StringBuilder rather than
+ *      Scala String concatenation (string_1 + string_2). Former tends
+ *      to be less expensive on Scala Native.
+ *
+ *      The original Google .java code used StringBuilder. The port to Scala.js
+ *      introduced the concatenation.
+ *
+ *    - See top of Conversion.scala for a discussion of how the algorithm
+ *      from the Scala.js code does not favor StringBuilder performance.
+ *      Even with that impediment, the StringBuilder code performs better.
  */
 
 /* 2025-01-27
@@ -54,9 +66,9 @@ package java.math
 
 import scala.annotation.tailrec
 
+import java.{lang => jl}
 import java.lang.{Double => JDouble}
 import java.util.Arrays
-import java.util.ScalaOps._
 
 object BigDecimal {
 
@@ -366,30 +378,6 @@ object BigDecimal {
       i += 1
     }
     false
-  }
-
-  @inline
-  private def insertString(s: String, pos: Int, s2: String): String =
-    s.substring(0, pos) + s2 + s.substring(pos)
-
-  @inline
-  private def insertString(
-      s: String,
-      pos: Int,
-      s2: String,
-      s2Start: Int,
-      s2Len: Int
-  ): String = {
-    insertString(s, pos, s2.substring(s2Start, s2Start + s2Len))
-  }
-
-  private implicit class StringOps(private val s: String) extends AnyVal {
-    @inline
-    def insert(pos: Int, s2: String): String = insertString(s, pos, s2)
-
-    @inline
-    def insert(pos: Int, s2: String, s2Start: Int, s2Len: Int): String =
-      insertString(s, pos, s2, s2Start, s2Len)
   }
 
   @inline
@@ -1439,58 +1427,60 @@ class BigDecimal() extends Number with Comparable[BigDecimal] {
       _toStringImage = Conversion.toDecimalScaledString(_smallValue, _scale)
       _toStringImage
     } else {
-      val intString: String = getUnscaledValue.toString
+      val sb = new jl.StringBuilder(getUnscaledValue.toString())
+
       if (_scale == 0) {
-        intString
+        sb.toString()
       } else {
         val begin = if (getUnscaledValue.signum() < 0) 2 else 1
-        val end = intString.length
+        val end = sb.length()
         val exponent: Long = -_scale.toLong + end - begin
         val result =
           if (_scale > 0 && exponent >= -6) {
             if (exponent >= 0) {
-              intString.insert(end - _scale, ".")
+              sb.insert(end - _scale, '.')
             } else {
-              intString
-                .insert(begin - 1, "0.")
+              sb.insert(begin - 1, "0.")
                 .insert(begin + 1, CharZeros, 0, -exponent.toInt - 1)
             }
           } else {
-            val r0 =
-              if (end - begin >= 1) intString.insert(begin, ".")
-              else intString
-            val r1 = r0 + "E"
-            val r2 = if (exponent > 0) r1 + "+" else r1
-            r2 + java.lang.Long.toString(exponent)
+            if (end - begin >= 1)
+              sb.insert(begin, '.')
+            sb.append('E')
+            if (exponent > 0)
+              sb.append('+')
+            sb.append(exponent)
           }
-        _toStringImage = result
+
+        _toStringImage = result.toString()
         _toStringImage
       }
     }
   }
 
   def toEngineeringString(): String = {
-    val intString = getUnscaledValue.toString
+    val sb = new jl.StringBuilder(getUnscaledValue.toString())
+
     if (_scale == 0) {
-      intString
+      sb.toString()
     } else {
       val begin = if (getUnscaledValue.signum() < 0) 2 else 1
-      var end = intString.length
+      var end = sb.length()
       val exponent0: Long = -_scale.toLong + end - begin
 
       val result = {
         if ((_scale > 0) && (exponent0 >= -6)) {
           if (exponent0 >= 0) {
-            intString.insert(end - _scale, ".")
+            sb.insert(end - _scale, '.')
           } else {
-            intString
-              .insert(begin - 1, "0.")
+            sb.insert(begin - 1, "0.")
               .insert(begin + 1, CharZeros, 0, -exponent0.toInt - 1)
           }
         } else {
           val delta = end - begin
           val rem = (exponent0 % 3).toInt
-          var res = intString
+          val res = sb
+
           val (e, b) = {
             if (rem != 0) {
               val (rem1, exp, beg) = {
@@ -1504,7 +1494,7 @@ class BigDecimal() extends Number with Comparable[BigDecimal] {
               }
               if (delta < 3) {
                 for (i <- 0 until rem1 - delta) {
-                  res += "0"
+                  sb.append('0')
                   end += 1
                 }
               }
@@ -1514,56 +1504,65 @@ class BigDecimal() extends Number with Comparable[BigDecimal] {
             }
           }
           if (end - b >= 1)
-            res = res.insert(b, ".")
+            res.insert(b, '.')
           if (e != 0) {
-            res += "E"
+            res.append('E')
             if (e > 0)
-              res += "+"
-            res += java.lang.Long.toString(e)
+              res.append('+')
+            res.append(e)
           }
           res
         }
       }
-      result
+      result.toString()
     }
   }
 
   def toPlainString(): String = {
-    val intStr = getUnscaledValue.toString
+    val sb = new jl.StringBuilder(getUnscaledValue.toString())
+
     if (_scale == 0 || (isZero && _scale < 0)) {
-      intStr
+      sb.toString()
     } else {
       val begin = if (signum() < 0) 1 else 0
       var delta = _scale
-      // We take space for all digits, plus a possible decimal point, plus 'scale'
-      var result = if (begin == 1) "-" else ""
+      // Take space for all digits, plus a possible decimal point, plus 'scale'
+      val result = new jl.StringBuilder(128) // a generous, growable guess
+
+      if (begin == 1)
+        result.append('-')
 
       if (_scale > 0) {
-        delta -= intStr.length - begin
+        delta -= sb.length() - begin
         if (delta >= 0) {
-          result += "0."
+          result.append("0.")
           // To append zeros after the decimal point
           while (delta > CharZerosLength) {
-            result += CharZeros
+            result.append(CharZeros)
             delta -= CharZerosLength
           }
-          result += CharZeros.substring(0, delta) + intStr.substring(begin)
+          result
+            .append(CharZeros.substring(0, delta))
+            .append(sb.substring(begin))
         } else {
           delta = begin - delta
-          result += intStr.substring(begin, delta) + "." + intStr.substring(
-            delta
-          )
+
+          result
+            .append(CharZeros.substring(begin, delta))
+            .append('.')
+            .append(sb.substring(delta))
         }
       } else { // (scale <= 0)
-        result += intStr.substring(begin)
+        result.append(sb.substring(begin))
+
         // To append trailing zeros
         while (delta < -CharZerosLength) {
-          result += CharZeros
+          result.append(CharZeros)
           delta += CharZerosLength
         }
-        result += CharZeros.substring(0, -delta)
+        result.append(CharZeros.substring(0, -delta))
       }
-      result
+      result.toString()
     }
   }
 
@@ -1631,8 +1630,11 @@ class BigDecimal() extends Number with Comparable[BigDecimal] {
   @noinline override def doubleValue(): Double =
     java.lang.Double.parseDouble(toStringForFloatingPointValue())
 
-  @inline private def toStringForFloatingPointValue(): String =
-    s"${unscaledValue()}e${-scale()}"
+  private def toStringForFloatingPointValue(): String =
+    new jl.StringBuilder(unscaledValue().toString())
+      .append('e')
+      .append(-scale())
+      .toString()
 
   def ulp(): BigDecimal = valueOf(1, _scale)
 
