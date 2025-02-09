@@ -45,7 +45,7 @@ private[runtime] final class BasicMonitor(val lockWordRef: RawPtr)
     getObjectMonitor()._wait(timeout, nanos)
 
   @inline def enter(obj: Object): Unit = {
-    val thread = NativeThread.currentThread
+    val thread = Thread.currentThread()
     if (thread == null) return // Not yet initialized
 
     val threadId = getThreadId(thread)
@@ -71,7 +71,7 @@ private[runtime] final class BasicMonitor(val lockWordRef: RawPtr)
   }
 
   @inline def exit(obj: Object): Unit = {
-    val thread = NativeThread.currentThread
+    val thread = Thread.currentThread()
     if (thread == null) return // Not yet initialized
 
     val threadId = getThreadId(thread)
@@ -139,13 +139,15 @@ private[runtime] final class BasicMonitor(val lockWordRef: RawPtr)
       def MaxSleepNanos = 128000
       if (!tryLock(threadId) && !lockWord.isInflated) {
         if (yields > 8) {
-          NativeThread.currentNativeThread.sleepNanos(backoffNanos)
+          Thread.sleep(0, backoffNanos)
+          // NativeThread.currentNativeThread.sleepNanos(backoffNanos)
           waitForOwnership(
             yields,
             backoffNanos = (backoffNanos * 3 / 2).min(MaxSleepNanos)
           )
         } else {
-          NativeThread.onSpinWait()
+          Thread.`yield`()
+          // NativeThread.onSpinWait()
           waitForOwnership(yields + 1, backoffNanos)
         }
       }
