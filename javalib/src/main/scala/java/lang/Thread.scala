@@ -575,13 +575,11 @@ object Thread {
   @alwaysinline def currentThread(): Thread =
     NativeThread.currentThread match {
       case null => MainThread
-      case carrier: VirtualThreadCarrier =>
-        carrier.mountedThread match {
-          case null    => carrier
-          case mounted => mounted
-        }
       case thread => thread
     }
+    
+  @alwaysinline private[java] def currentPlatformThread: Thread = 
+    NativeThread.currentNativeThread.thread
 
   def dumpStack(): Unit = new Throwable().printStackTrace()
 

@@ -2,6 +2,8 @@ import org.junit.Test
 import org.junit.Assert._
 import java.util.concurrent.locks.LockSupport
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.atomic.AtomicInteger
 
 class VirtualThreadTest {
   @Test def sleep(): Unit = {
@@ -40,8 +42,11 @@ class VirtualThreadTest {
       .ofVirtual()
       .start(() => LockSupport.parkUntil(deadline))
     vThread.join()
-    
-    assert(System.currentTimeMillis() >= deadline, "Thread did not sleep properly")
+
+    assert(
+      System.currentTimeMillis() >= deadline,
+      "Thread did not sleep properly"
+    )
   }
 
   @Test def parking(): Unit = {
@@ -55,4 +60,40 @@ class VirtualThreadTest {
     vThread.join(100)
     assert(vThread.getState() == Thread.State.TERMINATED)
   }
+
+  @Test
+  def virtualThreadsShouldCorrectlyHandleObjectMonitors(): Unit = {
+    class SharedCounter {
+      private var count = new AtomicInteger(0)
+      def increment(): Unit = synchronized {
+        count.getAndIncrement()
+      }
+      def getCount: Int = synchronized {
+        count.get()
+      }
+    }
+    val numThreads = 10
+    val iterations = 1000
+
+    val counter = new SharedCounter()
+    val latch = new CountDownLatch(numThreads)
+
+    for (_ <- 0 until numThreads) {
+      Thread
+        .ofVirtual()
+        .start { () =>
+          try for (_ <- 0 until iterations) counter.increment()
+          finally latch.countDown()
+        }
+    }
+
+    latch.await()
+
+    assertEquals(
+      "Incorrect final count. Possible monitor issue.",
+      numThreads * iterations,
+      counter.getCount
+    )
+  }
+
 }
