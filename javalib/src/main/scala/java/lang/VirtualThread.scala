@@ -14,6 +14,7 @@ import java.lang.VirtualThread.DefaultScheduler
 import scala.annotation.tailrec
 import java.util.concurrent.locks.LockSupport
 import java.util.concurrent.Future
+import scala.scalanative.runtime.NativeThread
 
 final private[lang] class VirtualThread(
     name: String,
@@ -69,19 +70,7 @@ final private[lang] class VirtualThread(
     if (!compareAndSetState(State.New, State.Started))
       throw new IllegalThreadStateException("Already started")
 
-    // setThreadContainer
-    // container onStat
-    // inheritExtentLocalBindings
     try submitRunContinuation()
-    // Thread.currentThread() match {
-    //   case vtc: VirtualThreadCarrier if scheduler eq DefaultScheduler =>
-    //     try vtc.getPool().externalSubmit(ForkJoinTask.adapt(executeContinuation))
-    //     catch { case rejected: RejectedExecutionException =>
-    //       // submitFailed(rejected)
-    //       throw rejected
-    //     }
-    //   case _ => submitRunContinuation(scheduler, false)
-    // }
     catch {
       case ex: Exception =>
         afterDone()
@@ -151,7 +140,6 @@ final private[lang] class VirtualThread(
     val startTime = System.nanoTime()
     state = State.TimedParking
     Continuations.suspend[Unit] { resumeContinuation =>
-      unmount()
       resumeExecution = resumeContinuation
       timeoutTask = VirtualThread.schedule(() => unpark(), nanos, TimeUnit.NANOSECONDS)
       state = State.TimedParked
@@ -171,7 +159,6 @@ final private[lang] class VirtualThread(
 
     state = State.Parking
     Continuations.suspend[Unit] { resumeContinuation =>
-      unmount()
       resumeExecution = resumeContinuation
       state = State.Parked
 
@@ -200,7 +187,8 @@ final private[lang] class VirtualThread(
     }
 
   private def mount(): Unit = {
-    val carrier = Thread.currentThread().asInstanceOf[VirtualThreadCarrier]
+    assert(NativeThread.currentThread.isInstanceOf[VirtualThreadCarrier], s"${NativeThread.currentThread} is not VThreadCarrier")
+    val carrier = Thread.currentPlatformThread
     this.carrierThread = carrier
 
     // sync up carrier thread interrupt status if needed
@@ -214,14 +202,12 @@ final private[lang] class VirtualThread(
       }
       // }
     }
-    carrier.mountedThread = this
+    NativeThread.setCurrentThread(this)
   }
 
   private def unmount(): Unit = {
-    // assert !Thread.holdsLock(interruptLock);
-
     val carrier = this.carrierThread.asInstanceOf[VirtualThreadCarrier]
-    carrier.mountedThread = null
+    NativeThread.setCurrentThread(carrier)
 
     // break connection to carrier thread, synchronized with interrupt
     interruptLock.synchronized {
@@ -276,15 +262,8 @@ final private[lang] class VirtualThread(
     assert(Thread.currentThread() eq this)
     state = State.Yielding
     Continuations.suspend[Unit] { resumeContinuation =>
-      unmount()
       resumeExecution = resumeContinuation
       state = State.Runnable
-      // Thread.currentThread() match {
-      //   case vtc: VirtualThreadCarrier if vtc.getQueuedTaskCount() == 0 =>
-      //      externalSubmitRunContinuation(vtc.getPool())
-      //     ???
-      //   case _ =>
-      // }
       submitRunContinuation(lazilly = true)
     }(using boundary)
   }
@@ -460,7 +439,7 @@ object VirtualThread {
           task => {
             val t = new Thread(task)
             t.setName("VirtualThread-unparker")
-            t.setDaemon(false)
+            t.setDaemon(true)
             t
           }
         )
