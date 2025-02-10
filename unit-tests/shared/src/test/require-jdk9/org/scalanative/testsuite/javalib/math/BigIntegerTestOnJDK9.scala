@@ -10,6 +10,13 @@ import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 class BigIntegerTestOnJDK9 {
 
+  @Test def testFieldTWO(): Unit = {
+    val twoS = "2"
+    val twoI = 2
+    assertEquals(twoS, BigInteger.TWO.toString)
+    assertEquals(twoI, BigInteger.TWO.intValueExact())
+  }
+
   @Test def ctorArrayBytePosTwosComplement(): Unit = {
     val eBytesSignum = Array[Byte](0, 0, 0, 27, -15, 65, 39, 0, 0, 0)
     val eBytes = Array[Byte](27, -15, 65, 39)
