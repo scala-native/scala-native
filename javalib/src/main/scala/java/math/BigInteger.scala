@@ -57,7 +57,8 @@ object BigInteger {
 
   final val ONE = new BigInteger(1, 1)
 
-  // Since: 9
+  /** @since 9
+   */
   final val TWO = new BigInteger(1, 2)
 
   final val TEN = new BigInteger(1, 10)
