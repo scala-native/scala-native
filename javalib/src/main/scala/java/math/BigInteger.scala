@@ -1,3 +1,12 @@
+/* Ported from Scala.js commit:  ??? dated: ???
+ *
+ * Scala Native changes:
+ *
+ * 2025-02-10
+ *    - May be possible earlier changes, check Repository history.
+ *    - Added Java 9 BigInteger.TWO.
+ */
+
 /*
  * Ported by Alistair Johnson from
  * https://github.com/gwtproject/gwt/blob/master/user/super/com/google/gwt/emul/java/math/BigInteger.java
