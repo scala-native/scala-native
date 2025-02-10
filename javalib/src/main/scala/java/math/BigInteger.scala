@@ -48,6 +48,9 @@ object BigInteger {
 
   final val ONE = new BigInteger(1, 1)
 
+  // Since: 9
+  final val TWO = new BigInteger(1, 2)
+
   final val TEN = new BigInteger(1, 10)
 
   final val ZERO = new BigInteger(0, 0)
@@ -67,7 +70,7 @@ object BigInteger {
   private final val SMALL_VALUES = Array(
     ZERO,
     ONE,
-    new BigInteger(1, 2),
+    TWO,
     new BigInteger(1, 3),
     new BigInteger(1, 4),
     new BigInteger(1, 5),

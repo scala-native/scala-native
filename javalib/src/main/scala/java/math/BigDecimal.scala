@@ -76,6 +76,9 @@ object BigDecimal {
 
   final val ONE = new BigDecimal(1, 0)
 
+  // Since: 19
+  final val TWO = new BigDecimal(2, 0)
+
   final val TEN = new BigDecimal(10, 0)
 
   final val ROUND_UP = 0
