@@ -27,6 +27,9 @@
  *    - See top of Conversion.scala for a discussion of how the algorithm
  *      from the Scala.js code does not favor StringBuilder performance.
  *      Even with that impediment, the StringBuilder code performs better.
+ *
+ * 2025-02-10
+ *    - Added Java 19 BigDecimal.TWO
  */
 
 /* 2025-01-27
@@ -75,6 +78,10 @@ object BigDecimal {
   final val ZERO = new BigDecimal(0, 0)
 
   final val ONE = new BigDecimal(1, 0)
+
+  /** @since 19
+   */
+  final val TWO = new BigDecimal(2, 0)
 
   final val TEN = new BigDecimal(10, 0)
 
