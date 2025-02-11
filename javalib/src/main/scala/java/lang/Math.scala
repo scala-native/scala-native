@@ -174,8 +174,8 @@ object Math {
     else rem + b
   }
 
-  @alwaysinline def floorMod(a: scala.Long, b: scala.Int): scala.Long =
-    floorMod(a, b.toLong)
+  @alwaysinline def floorMod(a: scala.Long, b: scala.Int): scala.Int =
+    floorMod(a, b.toLong).toInt
 
   @alwaysinline def fma(
       a: scala.Float,
