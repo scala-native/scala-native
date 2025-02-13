@@ -222,7 +222,7 @@ class ThreadGroup(
         Thread.getDefaultUncaughtExceptionHandler() match {
           case null =>
             val threadName = "\"" + thread.getName() + "\""
-            System.err.print(s"Exception in thread $threadName")
+            System.err.print(s"Exception in thread $threadName ")
             throwable.printStackTrace(System.err)
           case handler =>
             Proxy.executeUncaughtExceptionHandler(handler, thread, throwable)
