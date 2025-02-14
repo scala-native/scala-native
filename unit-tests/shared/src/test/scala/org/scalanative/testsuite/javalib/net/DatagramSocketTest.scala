@@ -430,10 +430,38 @@ class DatagramSocketTest {
 
           val result =
             new DatagramPacket(Array.ofDim[Byte](bytes.length), bytes.length)
-          ds2.receive(result)
+          try {
+            ds2.receive(result)
 
-          val receivedData = new String(result.getData())
-          assertEquals("Received incorrect data", data, receivedData)
+            val receivedData = new String(result.getData())
+            assertEquals("Received incorrect data", data, receivedData)
+          } catch {
+            /* DatagramSockets use UDP transport, which is "send-and-pray".
+             *
+             * This Test is designed for the Scala Native Continuous
+             * Integration environment, where it passes.
+             *
+             * In other environments a timeout may be due to a number
+             * of causes. Some, not all, possibilities. It might be:
+             *
+             *   - Today is not the day for answered prayers.
+             *
+             *   - Today is just a slow day, packets would have been received
+             *     if the timeout was longer.
+             *
+             *   - This Test is validly detecting lost packets, say send
+             *     and receive addresses not matching up.
+             *
+             *   - A defect in this Test, attempting to send or receive
+             *     on an interface where wither or both are disabled.
+             *
+             *   - A firewall or other intermediate is routing the
+             *     sent packages to a black hole sink, so they never
+             *     arrive.
+             */
+            case ex: SocketTimeoutException =>
+              fail("receive timed out, check network & firewall configuration")
+          }
         } finally {
           ds1.close()
           ds2.close()
