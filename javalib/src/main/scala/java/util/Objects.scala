@@ -85,7 +85,6 @@ object Objects {
     if (obj == null) throw new NullPointerException(messageSupplier.get())
     else obj
 
-  // since JDK9
   /** Checks if subrange <fromIndex, {fromIndex+size}) is withing the bounds of
    *  range <0, length)
    *
@@ -93,6 +92,8 @@ object Objects {
    *    fromIndex argument
    *  @throws java.lang.IndexOutOfBoundsException
    *    if not in subrange
+   *
+   *  @since JDK9
    */
   def checkFromIndexSize(fromIndex: Int, size: Int, length: Int): Int = {
     if ((length | fromIndex | size) < 0 || size > length - fromIndex) {
@@ -103,7 +104,7 @@ object Objects {
     fromIndex
   }
 
-  // since JDK16
+  /** @since JDK16 */
   def checkFromIndexSize(fromIndex: Long, size: Long, length: Long): Long = {
     if ((length | fromIndex | size) < 0L || size > length - fromIndex) {
       throw new IndexOutOfBoundsException(
@@ -113,7 +114,7 @@ object Objects {
     fromIndex
   }
 
-  /** since JDK9 */
+  /** @since JDK9 */
   def checkFromToIndex(fromIndex: Int, toIndex: Int, length: Int): Int = {
     if ((fromIndex < 0) || (fromIndex > toIndex) || (toIndex > length)) {
       throw new IndexOutOfBoundsException(
@@ -124,7 +125,7 @@ object Objects {
     fromIndex
   }
 
-  /** since JDK16 */
+  /** @since JDK16 */
   def checkFromToIndex(fromIndex: Long, toIndex: Long, length: Long): Long = {
     if ((fromIndex < 0L) || (fromIndex > toIndex) || (toIndex > length)) {
       throw new IndexOutOfBoundsException(
@@ -135,7 +136,7 @@ object Objects {
     fromIndex
   }
 
-  /** since JDK9 */
+  /** @since JDK9 */
   def checkIndex(index: Int, length: Int): Int = {
     if ((index < 0) || (index >= length)) {
       throw new IndexOutOfBoundsException(
@@ -146,7 +147,7 @@ object Objects {
     index
   }
 
-  /** since JDK16 */
+  /** @since JDK16 */
   def checkIndex(index: Long, length: Long): Long = {
     if ((index < 0L) || (index >= length)) {
       throw new IndexOutOfBoundsException(
@@ -157,13 +158,13 @@ object Objects {
     index
   }
 
-  /** since JDK9 */
+  /** @since JDK9 */
   def requireNonNullElse[T](obj: T, defaultObj: T): T = {
     if (obj != null) obj
     else Objects.requireNonNull[T](defaultObj, "defaultObj")
   }
 
-  /** since JDK9 */
+  /** @since JDK9 */
   def requireNonNullElseGet[T](obj: T, supplier: Supplier[_ <: T]): T = {
     if (obj != null) obj
     else {
@@ -172,7 +173,7 @@ object Objects {
     }
   }
 
-  /** since JDK19 */
+  /** @since JDK19 */
   def toIdentityString(o: Object): String = {
     Objects.requireNonNull(o)
 
