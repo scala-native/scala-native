@@ -395,6 +395,26 @@ class DatagramSocketTest {
   }
 
   @Test def sendReceiveBroadcast(): Unit = {
+    /* Issue 4221
+     *   This Test should be run only in environments where:
+     *   1) It is responsible to broadcast packets to every node on net.
+     *   2) The network configuration, possible firewalls, and routers
+     *      allow broadcasting.
+     *
+     *   This is true in the Scala Native Continuous Integration environment
+     *   but may not be in more general work environments.
+     *
+     *   Network developers will need to bypass this check and run the
+     *   test manually.
+     */
+    assumeTrue(
+      "Advanced and/or CI-only test",
+      ju.Optional
+        .ofNullable(System.getenv("GITHUB_ACTIONS"))
+        .orElse("false")
+        .equalsIgnoreCase("true")
+    )
+
     // NetworkInterface.getNetworkInterfaces is not implemented in Windows
     assumeFalse("Not implemented in Windows", Platform.isWindows)
     assumeNotRoot()
