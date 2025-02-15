@@ -227,7 +227,8 @@ class SocketTest {
     try {
       assertThrows(
         classOf[SocketTimeoutException],
-        s.connect(new InetSocketAddress("123.123.123.123", 12341), 100)
+        // Use a document-only Internet address and very short timeout.
+        s.connect(new InetSocketAddress("203.0.113.1", 12341), 2)
       )
     } finally {
       s.close()
