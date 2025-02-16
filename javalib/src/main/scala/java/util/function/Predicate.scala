@@ -36,4 +36,11 @@ object Predicate {
         ju.Objects.equals(targetRef, t)
     }
   }
+
+  def not[T](target: Predicate[_ >: T]): Predicate[T] = {
+    new Predicate[T] {
+      def test(t: T): Boolean =
+        !target.test(t)
+    }
+  }
 }
