@@ -532,34 +532,38 @@ final class _String()
 
   def length(): Int = count
 
-  private class _StringLineReader(src: Array[Char]) {
+  private class _StringLineReader(
+      src: Array[Char],
+      srcOffset: Int,
+      srcCount: Int
+  ) {
     /* See also similar code in java.io.BufferedReader
      * Strings are immutable, so the content of the array should not
      * change while it is being traversed by this class.
      */
 
-    var nextOrigin = 0
-    val srcLen = src.length
+    var nextOrigin = srcOffset
+    val srcEnd = srcOffset + srcCount
 
     def readLine(): _String = {
-      if (nextOrigin >= srcLen) {
+      if (nextOrigin >= srcEnd) {
         null
       } else {
         val origin = nextOrigin
         var cursor = origin
 
-        while ((cursor < srcLen) &&
+        while ((cursor < srcEnd) &&
             ((src(cursor) != '\n') && src(cursor) != '\r')) {
           cursor += 1
         }
 
         val nChars = cursor - origin
 
-        if (cursor < srcLen) {
+        if (cursor < srcEnd) {
           if (src(cursor) == '\r')
             cursor += 1
 
-          if ((cursor < srcLen) && src(cursor) == '\n')
+          if ((cursor < srcEnd) && src(cursor) == '\n')
             cursor += 1
         }
 
@@ -582,7 +586,7 @@ final class _String()
      * to pursue faster execution and fewer allocations.
      */
 
-    val lineSrc = new _StringLineReader(value)
+    val lineSrc = new _StringLineReader(value, offset, count)
 
     // "this.count" - high guess for maximum possible lines not an exact number
     val spliter =
