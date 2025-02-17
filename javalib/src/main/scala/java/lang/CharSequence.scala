@@ -121,3 +121,45 @@ trait CharSequence {
   def subSequence(start: scala.Int, end: scala.Int): CharSequence
   def toString(): String
 }
+
+object CharSequence {
+
+  /** Since JDK 11 */
+
+  def compare(cs1: CharSequence, cs2: CharSequence): Int = {
+    /* If both arguments have a fast charAt() method, such as
+     * String, this implementation works for small, large, and huge
+     * CharSequences.
+     *
+     * If one or both of the arguments have a slow, say
+     * "re-start from beginning of sequence" charAt(), then this algorithm
+     * will get progressively slower as the compared sequences get larger.
+     *
+     * That is, it is an instance of what has been called the
+     * "Shlemiel the painter" algorithm.
+     *
+     * URL:
+     *   https://www.joelonsoftware.com/2001/12/11/back-to-basics/
+     *
+     * An implementation using IntStreams from chars() does not solve
+     * this problem because such a stream uses charAt() internally.
+     * That approach also has higher startup & execution costs.
+     */
+
+    val cs1Len = cs1.length()
+    val cs2Len = cs2.length()
+    val prefixLen = Math.min(cs1Len, cs2Len)
+
+    var balance = 0
+    var k = 0
+
+    while ((k < prefixLen) && (balance == 0)) {
+      balance = cs1.charAt(k) - cs2.charAt(k)
+      k += 1
+    }
+
+    if (balance != 0) balance
+    else cs1Len - cs2Len
+  }
+
+}
