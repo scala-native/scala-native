@@ -1993,6 +1993,7 @@ private[scalanative] object Lower {
     object LoadAllClassess extends IntrinsicCall
 
     private def resolveIntrinsicCall(owner: nir.Global.Top, sig: nir.Sig)(implicit
+        metadata: Metadata,
         logger: build.Logger,
         srcPos: nir.SourcePosition,
         currentDefn: util.ScopedVar[nir.Defn.Define]
@@ -2000,23 +2001,20 @@ private[scalanative] object Lower {
       (owner.id, sig.unmangled) match {
         case ("scala.scalanative.runtime.LinkedClassesRepository$", nir.Sig.Method("loadAll", _, _)) => Some(LoadAllClassess)
         case (_, nir.Sig.Method("intrinsic", _, _)) if owner == nir.Rt.Runtime.name =>
-          val nir.Global.Member(owner, sig) = currentDefn.get.name
+          val symbol @ nir.Global.Member(owner, sig) = currentDefn.get.name
+          // Reflective proxies might make the intrinsic method reachable, but they're unlikely to be called
+          def isMaybeReflectiveProxy = metadata.analysis.dynimpls.contains(symbol)
           // Ingore intrinsic call form intrinsic methods. It was already handled
-          if (resolveIntrinsicCall(owner, sig).isEmpty && !intrinsicMethodWarningExclusion(owner, sig))
+          if (!isMaybeReflectiveProxy && resolveIntrinsicCall(owner, sig).isEmpty) {
             logger.warn(s"Instrinsic method was not resolved by Scala Native, it would lead to runtime exception. Defined at ${srcPos.show}")
+          }
           None
         case _ => None
       }
     }
 
-    private def intrinsicMethodWarningExclusion(owner: nir.Global.Top, sig: nir.Sig): Boolean = sig.unmangled match {
-      // Can be loaded reflective proxies, but should never be called.
-      // Excluded becouse it uses a common name
-      case nir.Sig.Method("apply", _, _) => owner.id.startsWith("scala.scalanative.unsafe.CFuncPtr")
-      case _                             => false
-    }
-
     def unapply(op: nir.Op.Call)(implicit
+        metadata: Metadata,
         logger: build.Logger,
         srcPos: nir.SourcePosition,
         intrinsicMethods: util.ScopedVar[mutable.Map[nir.Local, IntrinsicCall]],
@@ -2030,7 +2028,7 @@ private[scalanative] object Lower {
     // Required only in non-optimized builds
     def unapply(
         op: nir.Op.Method
-    )(implicit logger: build.Logger, srcPos: nir.SourcePosition, currentDefn: util.ScopedVar[nir.Defn.Define]): Option[IntrinsicCall] =
+    )(implicit metadata: Metadata, logger: build.Logger, srcPos: nir.SourcePosition, currentDefn: util.ScopedVar[nir.Defn.Define]): Option[IntrinsicCall] =
       op.obj.ty match {
         case owner: nir.Type.RefKind => resolveIntrinsicCall(owner.className, op.sig)
         case _                       => None
