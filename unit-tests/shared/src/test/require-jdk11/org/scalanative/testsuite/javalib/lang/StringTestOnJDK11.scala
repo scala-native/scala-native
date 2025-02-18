@@ -1,10 +1,15 @@
 // Ported from Scala.js, commit: c8ddba0 dated: 2021-12-04
+// For Scala Native additions & changes, check GitHub history
+
 package org.scalanative.testsuite.javalib.lang
 
 import org.junit.Test
 import org.junit.Assert._
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
+
+import java.{util => ju}
+import java.util.{stream => jus}
 
 class StringTestOnJDK11 {
   @Test def repeat(): Unit = {
@@ -139,4 +144,49 @@ class StringTestOnJDK11 {
     assertTrue(" \t\n\r\f\u001C\u001D\u001E\u001F".isBlank())
     assertTrue((" " * 1000).isBlank())
   }
+
+  @Test def lines(): Unit = {
+    /* Emma Lazarus  - The New Colossus
+     * This version is in the public domain.
+     * URL: https://www.nps.gov/stli/learn/historyculture/colossus.htm
+     */
+
+    val poemByLine = ju.List.of(
+      "",
+      "\"Keep, ancient lands, your storied pomp!\" cries she",
+      "With silent lips. \"Give me your tired, your poor,",
+      "Your huddled masses yearning to breathe free,",
+      "The wretched refuse of your teeming shore.",
+      "Send these, the homeless, tempest-tost to me,",
+      "I lift my lamp beside the golden door!\"",
+      ""
+    )
+
+    ju.List
+      .of(
+        ("\n", "LF"),
+        ("\r", "CR"),
+        ("\r\n", "CRLF")
+      )
+      .forEach { (pair) =>
+        {
+          val separator = pair._1
+          val ident = pair._2
+
+          val poem = poemByLine
+            .stream()
+            .collect(jus.Collectors.joining(separator, "", separator))
+
+          val nExpectedLines = poemByLine.size
+          assertEquals(s"count ${ident}", nExpectedLines, poem.lines().count())
+
+          val poemAfter = poem
+            .lines()
+            .collect(jus.Collectors.joining(separator, "", separator))
+
+          assertEquals(s"contents ${ident}", poem, poemAfter)
+        }
+      }
+  }
+
 }
