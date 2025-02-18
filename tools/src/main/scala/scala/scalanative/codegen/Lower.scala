@@ -2002,11 +2002,18 @@ private[scalanative] object Lower {
         case (_, nir.Sig.Method("intrinsic", _, _)) if owner == nir.Rt.Runtime.name =>
           val nir.Global.Member(owner, sig) = currentDefn.get.name
           // Ingore intrinsic call form intrinsic methods. It was already handled
-          if (resolveIntrinsicCall(owner, sig).isEmpty)
+          if (resolveIntrinsicCall(owner, sig).isEmpty && !intrinsicMethodWarningExclusion(owner, sig))
             logger.warn(s"Instrinsic method was not resolved by Scala Native, it would lead to runtime exception. Defined at ${srcPos.show}")
           None
         case _ => None
       }
+    }
+
+    private def intrinsicMethodWarningExclusion(owner: nir.Global.Top, sig: nir.Sig): Boolean = sig.unmangled match {
+      // Can be loaded reflective proxies, but should never be called.
+      // Excluded becouse it uses a common name
+      case nir.Sig.Method("apply", _, _) => owner.id.startsWith("scala.scalanative.unsafe.CFuncPtr")
+      case _                             => false
     }
 
     def unapply(op: nir.Op.Call)(implicit
