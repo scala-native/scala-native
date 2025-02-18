@@ -118,7 +118,8 @@ trait CharSequence {
 
   def charAt(index: scala.Int): scala.Char
 
-  /** @Since JDK 15 */
+  /** @since JDK 15 */
+
   def isEmpty(): scala.Boolean = length() == 0
 
   def length(): scala.Int
@@ -129,7 +130,7 @@ trait CharSequence {
 
 object CharSequence {
 
-  /** @Since JDK 11 */
+  /** @since JDK 11 */
 
   def compare(cs1: CharSequence, cs2: CharSequence): Int = {
     /* If both arguments have a fast charAt() method, such as

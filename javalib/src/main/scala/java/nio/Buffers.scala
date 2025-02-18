@@ -48,7 +48,9 @@ abstract class ByteBuffer private[nio] (
   private[nio] def this(_capacity: Int, address: unsafe.CVoidPtr) = this(_capacity, null: Array[Byte], -1, address)
 
   def slice(): ByteBuffer
-  /** Since JDK 13 */
+
+  /** @since JDK 13 */
+
   def slice(index: Int, length: Int): ByteBuffer
 
   def duplicate(): ByteBuffer
@@ -394,7 +396,9 @@ abstract class CharBuffer private[nio] (
   private[nio] def this(_capacity: Int, address: unsafe.CVoidPtr) = this(_capacity, null: Array[Char], -1, address)
 
   def slice(): CharBuffer
-  /** Since JDK 13 */
+
+  /** @since JDK 13 */
+
   def slice(index: Int, length: Int): CharBuffer
 
   def duplicate(): CharBuffer
@@ -626,7 +630,9 @@ abstract class ShortBuffer private[nio] (
   private[nio] def this(_capacity: Int, address: unsafe.CVoidPtr) = this(_capacity, null: Array[Short], -1, address)
 
   def slice(): ShortBuffer
-  /** Since JDK 13 */
+
+  /** @since JDK 13 */
+
   def slice(index: Int, length: Int): ShortBuffer
 
   def duplicate(): ShortBuffer
@@ -808,7 +814,9 @@ abstract class IntBuffer private[nio] (
   private[nio] def this(_capacity: Int, address: unsafe.CVoidPtr) = this(_capacity, null: Array[Int], -1, address)
 
   def slice(): IntBuffer
-  /** Since JDK 13 */
+
+  /** @since JDK 13 */
+
   def slice(index: Int, length: Int): IntBuffer
 
   def duplicate(): IntBuffer
@@ -990,7 +998,9 @@ abstract class LongBuffer private[nio] (
   private[nio] def this(_capacity: Int, address: unsafe.CVoidPtr) = this(_capacity, null: Array[Long], -1, address)
 
   def slice(): LongBuffer
-  /** Since JDK 13 */
+
+  /** @since JDK 13 */
+
   def slice(index: Int, length: Int): LongBuffer
 
   def duplicate(): LongBuffer
@@ -1172,7 +1182,9 @@ abstract class FloatBuffer private[nio] (
   private[nio] def this(_capacity: Int, address: unsafe.CVoidPtr) = this(_capacity, null: Array[Float], -1, address)
 
   def slice(): FloatBuffer
-  /** Since JDK 13 */
+
+  /** @since JDK 13 */
+
   def slice(index: Int, length: Int): FloatBuffer
 
   def duplicate(): FloatBuffer
@@ -1354,7 +1366,9 @@ abstract class DoubleBuffer private[nio] (
   private[nio] def this(_capacity: Int, address: unsafe.CVoidPtr) = this(_capacity, null: Array[Double], -1, address)
 
   def slice(): DoubleBuffer
-  /** Since JDK 13 */
+
+  /** @since JDK 13 */
+
   def slice(index: Int, length: Int): DoubleBuffer
 
   def duplicate(): DoubleBuffer
