@@ -77,7 +77,7 @@ abstract class ${T}Buffer private[nio] (
   private[nio] def this(_capacity: Int, address: unsafe.CVoidPtr) = this(_capacity, null: Array[${T}], -1, address)
 
   def slice(): ${T}Buffer
-  // Since JDK 13
+  /** Since JDK 13 */
   def slice(index: Int, length: Int): ${T}Buffer
 
   def duplicate(): ${T}Buffer
@@ -184,8 +184,10 @@ abstract class ${T}Buffer private[nio] (
 
   def isDirect(): Boolean
 
+% if T == 'Char':
   // Since JDK 15
-  final def isEmpty(): Boolean = remaining() == 0
+  override final def isEmpty(): Boolean = remaining() == 0
+% end
 
   // toString(): String inherited from Buffer
 

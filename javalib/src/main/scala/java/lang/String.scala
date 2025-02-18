@@ -458,6 +458,8 @@ final class _String()
   // See https://github.com/scala-native/scala-native/issues/486
   def intern(): _String = this
 
+  override def isEmpty(): scala.Boolean = count == 0
+
   def lastIndexOf(c: Int): Int =
     lastIndexOf(c, count - 1)
 
@@ -605,8 +607,6 @@ final class _String()
 
     jus.StreamSupport.stream(spliter, parallel = false)
   }
-
-  def isEmpty(): scala.Boolean = 0 == count
 
   def regionMatches(
       thisStart: Int,
