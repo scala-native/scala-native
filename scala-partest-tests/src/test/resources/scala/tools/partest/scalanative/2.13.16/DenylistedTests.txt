@@ -854,6 +854,8 @@ run/t12062.scala
 
 
 # partest.DirectTest
+run/substSymRefinementOwner.scala
+run/t13050.scala
 run/t7879.scala
 run/t7722.scala
 run/t12720.scala
@@ -1125,3 +1127,12 @@ run/t9697.scala
 run/t10290.scala
 
 
+# Checks compiler phases
+neg/macro-bundle-need-qualifier.scala
+neg/t11952b.scala
+neg/t12494.scala
+neg/t6446-additional.scala
+neg/t6446-list.scala
+neg/t6446-missing.scala
+neg/t6446-show-phases.scala
+neg/t7494-no-options.scala
