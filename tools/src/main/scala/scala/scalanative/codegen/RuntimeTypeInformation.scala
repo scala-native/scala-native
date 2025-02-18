@@ -10,7 +10,9 @@ private[codegen] class RuntimeTypeInformation(info: ScopeInfo)(implicit
   import meta.platform
 
   import RuntimeTypeInformation._
-  private lazy val isPrimitiveType = {
+  private def isScalaNativeRuntimeType =
+    info.name.id.startsWith("scala.scalanative.runtime.")
+  private def isPrimitiveType = isScalaNativeRuntimeType && {
     val id = info.name.id
     id.startsWith("scala.scalanative.runtime.Primitive") ||
       id == "scala.scalanative.runtime.RawSize" ||
@@ -18,7 +20,7 @@ private[codegen] class RuntimeTypeInformation(info: ScopeInfo)(implicit
   }
 
   private def typeName = {
-    if (isPrimitiveType) info.name.id match {
+    if (isScalaNativeRuntimeType) info.name.id match {
       case "scala.scalanative.runtime.PrimitiveByte"    => "byte"
       case "scala.scalanative.runtime.PrimitiveShort"   => "short"
       case "scala.scalanative.runtime.PrimitiveInt"     => "int"
@@ -30,6 +32,8 @@ private[codegen] class RuntimeTypeInformation(info: ScopeInfo)(implicit
       case "scala.scalanative.runtime.PrimitiveUnit"    => "void"
       case "scala.scalanative.runtime.RawSize"          => "size"
       case "scala.scalanative.runtime.RawPtr"           => "pointer"
+      case "scala.scalanative.runtime.BoxedUnit$" => "scala.runtime.BoxedUnit"
+      case name                                   => name
     }
     else info.name.id
   }
