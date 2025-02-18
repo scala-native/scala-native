@@ -2,10 +2,14 @@
  * Ported from Scala.js
  *   commit SHA1: 558e8a0
  *   dated: 2020-10-20
+ *
+ * Contains additions for Scala Native. See GitHub history.
+ * Current to JDK 23.
  */
 
 package java.util
 
+import java.{lang => jl}
 import java.util.function.Supplier
 
 object Objects {
@@ -81,7 +85,6 @@ object Objects {
     if (obj == null) throw new NullPointerException(messageSupplier.get())
     else obj
 
-  // since JDK9
   /** Checks if subrange <fromIndex, {fromIndex+size}) is withing the bounds of
    *  range <0, length)
    *
@@ -89,23 +92,95 @@ object Objects {
    *    fromIndex argument
    *  @throws java.lang.IndexOutOfBoundsException
    *    if not in subrange
+   *
+   *  @since JDK
+   *    9
    */
   def checkFromIndexSize(fromIndex: Int, size: Int, length: Int): Int = {
     if ((length | fromIndex | size) < 0 || size > length - fromIndex) {
       throw new IndexOutOfBoundsException(
-        s"Range [$fromIndex, $fromIndex + $size] out of bounds for length $length"
+        s"Range [$fromIndex, $fromIndex + $size) out of bounds for length $length"
       )
     }
     fromIndex
   }
 
-  // since JDK16
+  /** @since JDK 16 */
   def checkFromIndexSize(fromIndex: Long, size: Long, length: Long): Long = {
     if ((length | fromIndex | size) < 0L || size > length - fromIndex) {
       throw new IndexOutOfBoundsException(
-        s"Range [$fromIndex, $fromIndex + $size] out of bounds for length $length"
+        s"Range [$fromIndex, $fromIndex + $size) out of bounds for length $length"
       )
     }
     fromIndex
+  }
+
+  /** @since JDK 9 */
+  def checkFromToIndex(fromIndex: Int, toIndex: Int, length: Int): Int = {
+    if ((fromIndex < 0) || (fromIndex > toIndex) || (toIndex > length)) {
+      throw new IndexOutOfBoundsException(
+        s"Range [$fromIndex, $toIndex) out of bounds for length $length"
+      )
+    }
+
+    fromIndex
+  }
+
+  /** @since JDK 16 */
+  def checkFromToIndex(fromIndex: Long, toIndex: Long, length: Long): Long = {
+    if ((fromIndex < 0L) || (fromIndex > toIndex) || (toIndex > length)) {
+      throw new IndexOutOfBoundsException(
+        s"Range [$fromIndex, $toIndex) out of bounds for length $length"
+      )
+    }
+
+    fromIndex
+  }
+
+  /** @since JDK 9 */
+  def checkIndex(index: Int, length: Int): Int = {
+    if ((index < 0) || (index >= length)) {
+      throw new IndexOutOfBoundsException(
+        s"Index $index out of bounds for length $length"
+      )
+    }
+
+    index
+  }
+
+  /** @since JDK 16 */
+  def checkIndex(index: Long, length: Long): Long = {
+    if ((index < 0L) || (index >= length)) {
+      throw new IndexOutOfBoundsException(
+        s"Index $index out of bounds for length $length"
+      )
+    }
+
+    index
+  }
+
+  /** @since JDK 9 */
+  def requireNonNullElse[T](obj: T, defaultObj: T): T = {
+    if (obj != null) obj
+    else Objects.requireNonNull[T](defaultObj, "defaultObj")
+  }
+
+  /** @since JDK 9 */
+  def requireNonNullElseGet[T](obj: T, supplier: Supplier[_ <: T]): T = {
+    if (obj != null) obj
+    else {
+      Objects.requireNonNull(supplier, "supplier")
+      Objects.requireNonNull(supplier.get(), "supplier.get()")
+    }
+  }
+
+  /** @since JDK 19 */
+  def toIdentityString(o: Object): String = {
+    Objects.requireNonNull(o)
+
+    new jl.StringBuilder(o.getClass().getName())
+      .append('@')
+      .append(Integer.toHexString(System.identityHashCode(o)))
+      .toString()
   }
 }
