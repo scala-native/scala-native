@@ -1076,3 +1076,11 @@ run/t10277b.scala
 
 run/t12380
 run/t7448.scala
+
+# Checks compiler phases
+neg/t11952b.scala
+neg/t6446-additional.scala
+neg/t6446-list.scala
+neg/t6446-missing.scala
+neg/t6446-show-phases.scala
+neg/t7494-no-options.scala

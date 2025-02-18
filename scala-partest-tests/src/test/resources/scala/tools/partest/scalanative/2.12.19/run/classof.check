@@ -1,13 +1,13 @@
 Value types:
-class scala.scalanative.runtime.PrimitiveUnit
-class scala.scalanative.runtime.PrimitiveBoolean
-class scala.scalanative.runtime.PrimitiveByte
-class scala.scalanative.runtime.PrimitiveShort
-class scala.scalanative.runtime.PrimitiveChar
-class scala.scalanative.runtime.PrimitiveInt
-class scala.scalanative.runtime.PrimitiveLong
-class scala.scalanative.runtime.PrimitiveFloat
-class scala.scalanative.runtime.PrimitiveDouble
+void
+boolean
+byte
+short
+char
+int
+long
+float
+double
 Class types
 class SomeClass
 class scala.collection.immutable.List
