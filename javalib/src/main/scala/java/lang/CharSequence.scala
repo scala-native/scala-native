@@ -116,15 +116,21 @@ trait CharSequence {
     StreamSupport.intStream(spl, parallel = false)
   }
 
-  def length(): scala.Int
   def charAt(index: scala.Int): scala.Char
+
+  /** @since JDK 15 */
+
+  def isEmpty(): scala.Boolean = length() == 0
+
+  def length(): scala.Int
+
   def subSequence(start: scala.Int, end: scala.Int): CharSequence
   def toString(): String
 }
 
 object CharSequence {
 
-  /** Since JDK 11 */
+  /** @since JDK 11 */
 
   def compare(cs1: CharSequence, cs2: CharSequence): Int = {
     /* If both arguments have a fast charAt() method, such as
