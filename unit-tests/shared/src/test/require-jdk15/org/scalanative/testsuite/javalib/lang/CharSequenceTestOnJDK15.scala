@@ -1,5 +1,6 @@
 package org.scalanative.testsuite.javalib.lang
 
+import java.{lang => jl}
 import java.nio.CharBuffer
 
 import org.junit.Test
@@ -45,7 +46,7 @@ class CharSequenceTestOnJDK15 {
 
   @Test def isEmptyStringBuilder(): Unit = {
     // check method inherited from CharSequence
-    val sb = new StringBuilder(64)
+    val sb = new jl.StringBuilder(64)
 
     assertTrue("empty StringBuilder", sb.isEmpty())
 
