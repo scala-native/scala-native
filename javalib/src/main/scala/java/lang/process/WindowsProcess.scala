@@ -33,7 +33,7 @@ private[lang] class WindowsProcess private (
     outHandle: FileDescriptor,
     errHandle: FileDescriptor
 ) extends GenericProcess {
-  private val pid = GetProcessId(handle)
+  private val winPid = GetProcessId(handle)
   private var cachedExitValue: Option[scala.Int] = None
 
   override def destroy(): Unit = if (isAlive()) {
@@ -49,7 +49,7 @@ private[lang] class WindowsProcess private (
     checkExitValue
       .getOrElse(
         throw new IllegalThreadStateException(
-          s"Process $pid has not exited yet"
+          s"Process $winPid has not exited yet"
         )
       )
   }
@@ -63,7 +63,7 @@ private[lang] class WindowsProcess private (
   override def isAlive(): scala.Boolean = checkExitValue.isEmpty
 
   override def toString = {
-    s"Process[pid=$pid, exitValue=${checkExitValue.getOrElse("\"not exited\"")}"
+    s"Process[pid=$winPid, exitValue=${checkExitValue.getOrElse("\"not exited\"")}"
   }
 
   override def waitFor(): scala.Int = synchronized {
