@@ -1,9 +1,10 @@
+// Ported from Scala.js, commit: 7d7a621, dated 2022-03-07
+// See SN Repository git history for Scala Native additions.
+
 package java.io
 
-// Ported from Scala.js, commit: 7d7a621, dated 2022-03-07
-// 2023-02-01 implemented Java 10 transferTo() method
-
 import java.nio.CharBuffer
+import java.util.Objects
 
 import scala.annotation.tailrec
 
@@ -18,6 +19,8 @@ abstract class Reader() extends Readable with Closeable {
   }
 
   def read(target: CharBuffer): Int = {
+    Objects.requireNonNull(target, "target") // JVM uses helpful null msg
+
     if (!target.hasRemaining()) 0
     else if (target.hasArray()) {
       val charsRead = read(
@@ -99,5 +102,50 @@ abstract class Reader() extends Readable with Closeable {
     }
 
     loop(0)
+  }
+}
+
+object Reader {
+
+  /** @since JDK 11 */
+  def nullReader(): Reader = {
+    new Reader() {
+      private var closed = false
+
+      private def ensureOpen(): Unit = {
+        if (closed)
+          throw new IOException("Stream closed")
+      }
+
+      def close(): Unit =
+        closed = true
+
+      def read(cbuf: Array[Char], off: Int, len: Int): Int = {
+        Objects.requireNonNull(
+          cbuf,
+          "Cannot read the array length because \"cbuf\" is null"
+        )
+        Objects.checkFromIndexSize(off, len, cbuf.length)
+
+        ensureOpen()
+
+        if (len == 0) 0 else -1 // zero is JVM corner case.
+      }
+
+      override def ready(): Boolean = {
+        ensureOpen()
+        super.ready()
+      }
+
+      override def skip(n: Long): Long = {
+        ensureOpen()
+        super.skip(n)
+      }
+
+      override def transferTo(out: Writer): Long = {
+        ensureOpen()
+        super.transferTo(out)
+      }
+    }
   }
 }
