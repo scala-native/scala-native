@@ -394,7 +394,9 @@ class IllegalThreadStateException(s: String)
 }
 
 class IndexOutOfBoundsException(s: String) extends RuntimeException(s) {
-  def this() = this(null)
+  def this(index: scala.Long) = this(s"Index out of range: ${index}") // JDK 16
+  def this(index: Int) = this(index.toLong) // JDK 9
+  def this() = this(null.asInstanceOf[String])
 }
 
 class InstantiationException(s: String)
