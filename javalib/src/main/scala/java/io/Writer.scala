@@ -69,7 +69,7 @@ object Writer {
       def flush(): Unit =
         ensureOpen()
 
-      def write(cbuf: Array[Char], off: Int, len: Int): Unit =
+      def write(cbuf: Array[Char], off: Int, len: Int): Unit = {
         Objects.requireNonNull(
           cbuf,
           "Cannot read the array length because \"cbuf\" is null"
@@ -77,6 +77,7 @@ object Writer {
         Objects.checkFromIndexSize(off, len, cbuf.length)
 
         ensureOpen()
+      }
     }
   }
 }
