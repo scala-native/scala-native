@@ -1,6 +1,9 @@
+// Ported from Scala.js, commit: 7d7a621, dated 2022-03-07
+// See SN Repository git history for Scala Native additions.
+
 package java.io
 
-// Ported from Scala.js, commit: 7d7a621, dated 2022-03-07
+import java.util.Objects
 
 abstract class Writer() extends Appendable with Closeable with Flushable {
   protected var lock: Object = this
@@ -46,4 +49,34 @@ abstract class Writer() extends Appendable with Closeable with Flushable {
 
   def close(): Unit
 
+}
+
+object Writer {
+
+  /** @since JDK 11 */
+  def nullWriter(): Writer = {
+    new Writer() {
+      private var closed = false
+
+      private def ensureOpen(): Unit = {
+        if (closed)
+          throw new IOException("Stream closed")
+      }
+
+      def close(): Unit =
+        closed = true
+
+      def flush(): Unit =
+        ensureOpen()
+
+      def write(cbuf: Array[Char], off: Int, len: Int): Unit =
+        Objects.requireNonNull(
+          cbuf,
+          "Cannot read the array length because \"cbuf\" is null"
+        )
+        Objects.checkFromIndexSize(off, len, cbuf.length)
+
+        ensureOpen()
+    }
+  }
 }
