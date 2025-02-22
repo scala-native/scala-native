@@ -86,11 +86,14 @@ class ProcessTestOnJDK9 {
       }
       assertTrue(
         s"command: ${info.command()}",
-        info.command().get().contains("ping")
+        // On Windows every binary is wrapped in cmd invocation
+        Seq("ping", "cmd").exists(info.command().get().contains(_))
       )
+      // On windows first argument would be ping
+      val expectedArgs = Seq("-c", "2", "-i", "10", "127.0.0.1")
       assertEquals(
-        Seq("-c", "2", "-i", "10", "127.0.0.1"),
-        info.arguments().get().toSeq
+        expectedArgs,
+        info.arguments().get().toSeq.takeRight(expectedArgs.size)
       )
       assertTrue(
         s"command line (cmd): ${info.commandLine()}",
