@@ -12,7 +12,7 @@ abstract class GenericProcess() extends java.lang.Process {
   private lazy val handle = new GenericProcess.Handle(this)
 
   private[lang] def checkResult(): CInt
-  protected def processInfo: GenericProcess.Info
+  private[process] def processInfo: GenericProcess.Info
 
   override def toHandle(): ProcessHandle = handle
 
@@ -70,10 +70,10 @@ private object GenericProcess {
       val cmd = builder.command()
       val cmdAsArray = cmd.toArray(new Array[String](cmd.size()))
       val command =
-        if (cmd.isEmpty()) Optional.empty()
+        if (cmd.isEmpty()) Optional.empty[String]()
         else Optional.of(cmdAsArray.head)
       val args =
-        if (cmd.isEmpty()) Optional.empty()
+        if (cmd.isEmpty()) Optional.empty[Array[String]]()
         else Optional.of(cmdAsArray.tail)
       new Info(pid = pid, cmd = command, args = args)
     }
@@ -85,10 +85,13 @@ private object GenericProcess {
   ) extends ProcessHandle.Info {
     override def command(): Optional[String] = cmd
     override def arguments(): Optional[Array[String]] = args
-    override def commandLine(): Optional[String] = for {
-      cmd <- command()
-      args <- arguments()
-    } yield s"$cmd ${args.mkString(" ")}"
+    override def commandLine(): Optional[String] =
+      // For comprehension variant does not compile on Scala 2.12
+      command().flatMap[String] { cmd =>
+        arguments().map[String] { args =>
+          s"$cmd ${args.mkString(" ")}"
+        }
+      }
 
     override def user(): Optional[String] =
       Optional.ofNullable(System.getProperty("user.name"))
@@ -137,25 +140,24 @@ private object GenericProcess {
       .daemon(true)
       .group(ThreadGroup.System)
       .name("ScalaNative-ProcessTerminationWatcher")
-      .startInternal(() =>
+      .startInternal { () =>
         lock.lock()
         try {
           while (true) try {
             while (watchedProcesses.isEmpty()) {
               hasProcessesToWatch.await()
             }
-            watchedProcesses.forEach {
-              case (completion, handle) =>
-                if (completion.isCancelled())
-                  watchedProcesses.remove(completion)
-                else if (!handle.isAlive() ||
-                    handle.process.waitFor(25, TimeUnit.MILLISECONDS)) {
-                  completion.complete(handle)
-                  watchedProcesses.remove(completion)
-                }
+            watchedProcesses.forEach { (completion, handle) =>
+              if (completion.isCancelled())
+                watchedProcesses.remove(completion)
+              else if (!handle.isAlive() ||
+                  handle.process.waitFor(25, TimeUnit.MILLISECONDS)) {
+                completion.complete(handle)
+                watchedProcesses.remove(completion)
+              }
             }
           } catch { case scala.util.control.NonFatal(_) => () }
         } finally lock.unlock()
-      )
+      }
   }
 }

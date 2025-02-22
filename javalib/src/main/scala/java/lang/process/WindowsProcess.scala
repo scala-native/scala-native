@@ -35,7 +35,7 @@ private[lang] class WindowsProcess private (
 ) extends GenericProcess {
   private val winPid = GetProcessId(handle)
 
-  override val processInfo =
+  override private[process] val processInfo =
     GenericProcess.Info.create(builder, pid = winPid.toLong)
 
   private var cachedExitValue: Option[scala.Int] = None
