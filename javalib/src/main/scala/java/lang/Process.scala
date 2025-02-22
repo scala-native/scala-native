@@ -4,6 +4,7 @@ import java.io.{InputStream, OutputStream}
 import java.util.Optional
 import java.util.concurrent.TimeUnit
 import java.util.stream.Stream
+import java.util.concurrent.CompletableFuture
 
 abstract class Process {
 
@@ -33,10 +34,8 @@ abstract class Process {
 
   def isAlive(): scala.Boolean
 
-  // Since: JDK 9
-  // Not yet implemented - a good candidate for one of Herakles' 12 labors.
-  // import java.util.concurrent.CompletableFuture
-  // def onExit(): CompletableFuture[ProcessHandle]
+  /** @since JDK 9 */
+  def onExit(): CompletableFuture[Process]
 
   /** @since JDK 9 */
   def pid(): scala.Long =
