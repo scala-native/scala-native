@@ -23,7 +23,8 @@ private[lang] class UnixProcessGen1 private (
     outfds: Ptr[CInt],
     errfds: Ptr[CInt]
 ) extends UnixProcess() {
-  override val processInfo = GenericProcess.Info.create(builder, pid = pid.toLong)
+  override val processInfo =
+    GenericProcess.Info.create(builder, pid = pid.toLong)
 
   override def destroy(): Unit = kill(pid, sig.SIGTERM)
 

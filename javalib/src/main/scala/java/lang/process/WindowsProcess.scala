@@ -34,8 +34,9 @@ private[lang] class WindowsProcess private (
     errHandle: FileDescriptor
 ) extends GenericProcess {
   private val winPid = GetProcessId(handle)
-  
-  override val processInfo = GenericProcess.Info.create(builder, pid = winPid.toLong)
+
+  override val processInfo =
+    GenericProcess.Info.create(builder, pid = winPid.toLong)
 
   private var cachedExitValue: Option[scala.Int] = None
 
