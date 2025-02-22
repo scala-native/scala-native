@@ -75,6 +75,15 @@ class ProcessTestOnJDK9 {
     val proc = processForDestruction()
     try {
       val info = proc.toHandle().info()
+      if (executingInJVM) {
+        // Might be empty sometimes on JVM but needs to be defined in SN runtime
+        assumeTrue(s"no command on JVM - $info", info.command().isPresent())
+        assumeTrue(s"no args on JVM - $info", info.arguments().isPresent())
+        assumeTrue(
+          s"no commandLine on JVM - $info",
+          info.commandLine().isPresent()
+        )
+      }
       assertTrue(
         s"command: ${info.command()}",
         info.command().get().contains("ping")
