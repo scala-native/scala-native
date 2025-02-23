@@ -291,7 +291,7 @@ final private[lang] class VirtualThread(
     }
   }
 
-  def tryYield(): Unit = {
+  private[lang] def tryYield(): Unit = {
     assert(Thread.currentThread() eq this)
     state = State.Yielding
     Continuations.suspend[Unit] { resumeContinuation =>
@@ -302,7 +302,7 @@ final private[lang] class VirtualThread(
     state = State.Running
   }
 
-  def afterDone(): Unit = {
+  private def afterDone(): Unit = {
     state = State.Terminated
     termination match {
       case termination: CountDownLatch =>
@@ -323,7 +323,7 @@ final private[lang] class VirtualThread(
     }
   }
 
-  def joinNanos(nanos: scala.Long): scala.Boolean = {
+  private[lang] def joinNanos(nanos: scala.Long): scala.Boolean = {
     if (state == State.Terminated)
       return true
 
@@ -470,6 +470,47 @@ object VirtualThread {
   }
 }
 
-private class VirtualThreadCarrier(scheduler: ForkJoinPool) extends ForkJoinWorkerThread(scheduler) {
+
+// Non public
+class VirtualThreadCarrier(scheduler: ForkJoinPool) extends ForkJoinWorkerThread(scheduler) {
+  import VirtualThreadCarrier.*
+
   var mountedThread: VirtualThread = _
+  
+  private var compensation: CompensationState = CompensationState.NotCompensating
+  private var compensationValue: scala.Long = 0L
+  
+  def startBlocking(): scala.Boolean = {
+    compensation match
+      case CompensationState.NotCompensating =>
+        try {
+          compensation = CompensationState.InProgress
+          compensationValue = getPool().startCompensating()
+          compensation = CompensationState.Compensating
+          true
+        } catch {
+          case ex: Throwable =>
+            compensation = CompensationState.NotCompensating
+            throw ex
+        }
+      case CompensationState.InProgress =>
+        throw new IllegalStateException("Recursive blocking in VirtualThreadCarrier")
+      case CompensationState.Compensating => false
+  }
+  def stopBlocking(): Unit = compensation match {
+    case CompensationState.Compensating =>
+      getPool().finishCompensating(compensationValue)
+      compensation = CompensationState.NotCompensating
+      compensationValue = 0
+    case _ => ()
+  }
+}
+
+object VirtualThreadCarrier {
+  opaque type CompensationState = Int
+  object CompensationState {
+    final val NotCompensating: CompensationState = 0
+    final val InProgress: CompensationState = 1
+    final val Compensating: CompensationState = 2
+  }
 }

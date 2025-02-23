@@ -28,6 +28,7 @@ class Thread private[lang] (
   private[lang] final val interruptLock = new Object()
 
   @volatile protected var interruptedState = false
+  // Argument of blocker set by LockSupport.park* methods
   @volatile private[java] var parkBlocker: Object = _
 
   private var unhandledExceptionHandler: Thread.UncaughtExceptionHandler = _
@@ -298,7 +299,7 @@ class Thread private[lang] (
       case vthread: VirtualThread =>
         if (isAlive()) {
           val nanos = TimeUnit.MILLISECONDS.toNanos(millis)
-          vthread.joinNanos(nanos);
+          vthread.joinNanos(nanos)
         }
 
       case _ if millis == 0 && nanos == 0 =>
@@ -387,7 +388,10 @@ class Thread private[lang] (
           case _ =>
             var millis =
               TimeUnit.MILLISECONDS.convert(nanos, TimeUnit.NANOSECONDS)
-            if (nanos > NANOSECONDS.convert(millis, TimeUnit.MILLISECONDS))
+            if (nanos > TimeUnit.NANOSECONDS.convert(
+                  millis,
+                  TimeUnit.MILLISECONDS
+                ))
               millis += 1
             join(millis)
             isTerminated()
