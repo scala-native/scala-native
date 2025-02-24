@@ -61,7 +61,11 @@ private object GenericProcess {
         this.process.pid().compareTo(handle.process.pid())
       case _ => -1
     }
-
+    override def equals(that: Any): Boolean = that match {
+      case other: ProcessHandle => this.compareTo(other) == 0
+      case _ => false
+    }
+    override def hashCode(): Int = 31 * this.pid().##
     override def toString(): String = process.pid().toString() // JVM compliance
   }
 
