@@ -27,6 +27,8 @@ private object GenericProcess {
   // Represents ProcessHandle for process started by Scala Native runtime
   // Cannot be used with processes started by other programs
   class Handle(val process: GenericProcess) extends ProcessHandle {
+    private val createdAt = System.nanoTime()
+
     override def parent(): Optional[ProcessHandle] = Optional.empty()
 
     // We don't track transitive children
@@ -58,14 +60,18 @@ private object GenericProcess {
 
     override def compareTo(other: ProcessHandle): Int = other match {
       case handle: GenericProcess.Handle =>
-        this.process.pid().compareTo(handle.process.pid())
+        this.process.pid().compareTo(handle.process.pid()) match {
+          case 0     => this.createdAt.compareTo(handle.createdAt)
+          case value => value
+        }
       case _ => -1
     }
     override def equals(that: Any): Boolean = that match {
       case other: ProcessHandle => this.compareTo(other) == 0
       case _                    => false
     }
-    override def hashCode(): Int = 31 * this.pid().##
+    override def hashCode(): Int =
+      ((31 * this.pid().##) * 31) + this.createdAt.##
     override def toString(): String = process.pid().toString() // JVM compliance
   }
 
