@@ -161,11 +161,12 @@ private object GenericProcess {
             watchedProcesses.forEach { (completion, handle) =>
               if (completion.isCancelled())
                 watchedProcesses.remove(completion)
-              else if (handle.process.waitFor(25, TimeUnit.MILLISECONDS)) {
+              else if (handle.process.waitFor(1, TimeUnit.MILLISECONDS)) {
                 completion.complete(handle)
                 watchedProcesses.remove(completion)
               }
             }
+            Thread.sleep(100 /*ms*/ )
           } catch { case scala.util.control.NonFatal(_) => () }
         } finally lock.unlock()
       }
