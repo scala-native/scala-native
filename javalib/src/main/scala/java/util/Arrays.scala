@@ -1,17 +1,20 @@
 // Ported from Scala.js commit: ba618ed dated: 2020-10-05
-
-/*
- Arrays.spliterator() methods added for Scala Native.
- Arrays.stream() methods added for Scala Native.
- Arrays.setAll*() methods added for Scala Native.
- Arrays.parallel*() methods added for Scala Native.
- */
+//
+// Contains Scala Native specific updates subsequent to original port.
+// See Scala Native git repository history.
 
 package java.util
 
 import scala.annotation.tailrec
 
 import scala.reflect.ClassTag
+
+import scala.scalanative.unsafe._
+import scala.scalanative.unsigned._
+
+import scala.scalanative.libc.string
+
+import java.{lang => jl}
 
 import java.util.function._
 import java.{util => ju}
@@ -1438,6 +1441,86 @@ object Arrays {
     )
 
     StreamSupport.stream(spliter, parallel = false)
+  }
+
+  // Similar in concept to Objects.checkFromIndex() but different Exceptions.
+  private def validateFromToIndex(
+      fromIndex: Int,
+      toIndex: Int,
+      length: Int
+  ): Int = {
+
+    if (fromIndex > toIndex)
+      throw new IllegalArgumentException(
+        s"fromIndex(${fromIndex}) > toIndex(${toIndex})"
+      )
+
+    if ((fromIndex < 0) || (fromIndex > toIndex) || (toIndex > length)) {
+      throw new ArrayIndexOutOfBoundsException(
+        s"Range [$fromIndex, $toIndex) out of bounds for length $length"
+      )
+    }
+
+    fromIndex
+  }
+
+// mismatch()
+
+  /** @since JDK 9 */
+  def mismatch(a: Array[Byte], b: Array[Byte]): Int =
+    mismatch(a, 0, a.length, b, 0, b.length)
+
+  /** @since JDK 9 */
+  def mismatch(
+      a: Array[Byte],
+      aFromIndex: Int,
+      aToIndex: Int,
+      b: Array[Byte],
+      bFromIndex: Int,
+      bToIndex: Int
+  ): Int = {
+    Objects.requireNonNull(a)
+    Arrays.validateFromToIndex(aFromIndex, aToIndex, a.length)
+
+    Objects.requireNonNull(b)
+    Arrays.validateFromToIndex(bFromIndex, bToIndex, b.length)
+
+    val aRangeLen = aToIndex - aFromIndex
+    val bRangeLen = bToIndex - bFromIndex
+    val matchLen = Math.min(aRangeLen, bRangeLen)
+
+    val matchPos =
+      string.memcmp(
+        a.at(aFromIndex),
+        b.at(bFromIndex),
+        matchLen.toCSize
+      )
+
+    if (matchPos == 0) {
+      if (aRangeLen == bRangeLen) -1
+      else matchLen
+    } else {
+      /* This branch is optimized for small Arrays.
+       *
+       * For large & huge Arrays, a future evolution could recursively
+       * use memcmp() on each half of Arrays over a certain size (8K?) and
+       * fallback to the while() once the String range was small enough.
+       * Similar to the idea of quicksort() falling back to insertion sort.
+       */
+
+      val abOffset = bFromIndex - aFromIndex
+
+      var j = aFromIndex // relative to first Array argument
+      var foundAt = -1
+
+      while ((j < (aFromIndex + matchLen)) && (foundAt < 0)) {
+        // Byte.compare() will be inlined by SN compiler, so no call overhead
+        if (jl.Byte.compare(a(j), b(j + abOffset)) == 0) j += 1
+        else foundAt = j - aFromIndex
+      }
+
+      foundAt
+    }
   }
 
 }
