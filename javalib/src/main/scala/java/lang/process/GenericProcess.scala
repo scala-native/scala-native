@@ -34,8 +34,9 @@ private object GenericProcess {
     // We don't track transitive children
     override def children(): ju.stream.Stream[ProcessHandle] =
       ju.stream.Stream.empty()
-    override def descendants(): ju.stream.Stream[ProcessHandle] = children()
-
+    override def descendants(): ju.stream.Stream[ProcessHandle] =
+      ju.stream.Stream.empty()
+    
     override def destroy(): Boolean = {
       if (isAlive()) process.destroy()
       true // all implementations are always successful
