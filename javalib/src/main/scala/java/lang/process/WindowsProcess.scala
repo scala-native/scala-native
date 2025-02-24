@@ -71,7 +71,8 @@ private[lang] class WindowsProcess private (
   }
 
   override def waitFor(): scala.Int = synchronized {
-    WaitForSingleObject(handle, Constants.Infinite)
+    if (isAlive())
+      WaitForSingleObject(handle, Constants.Infinite)
     exitValue()
   }
 

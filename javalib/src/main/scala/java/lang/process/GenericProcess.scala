@@ -63,7 +63,7 @@ private object GenericProcess {
     }
     override def equals(that: Any): Boolean = that match {
       case other: ProcessHandle => this.compareTo(other) == 0
-      case _ => false
+      case _                    => false
     }
     override def hashCode(): Int = 31 * this.pid().##
     override def toString(): String = process.pid().toString() // JVM compliance
@@ -154,8 +154,7 @@ private object GenericProcess {
             watchedProcesses.forEach { (completion, handle) =>
               if (completion.isCancelled())
                 watchedProcesses.remove(completion)
-              else if (!handle.isAlive() ||
-                  handle.process.waitFor(25, TimeUnit.MILLISECONDS)) {
+              else if (handle.process.waitFor(25, TimeUnit.MILLISECONDS)) {
                 completion.complete(handle)
                 watchedProcesses.remove(completion)
               }
