@@ -1264,10 +1264,12 @@ object ConcurrentHashMap {
       else
         new KeySpliterator[K, V](
           tab,
-          baseSize,
-          { baseLimit = h; h },
-          f,
-          { est >>>= 1; est }
+          baseSize, {
+            baseLimit = h; h
+          },
+          f, {
+            est >>>= 1; est
+          }
         )
     }
 
@@ -1307,10 +1309,12 @@ object ConcurrentHashMap {
       else
         new ValueSpliterator[K, V](
           tab,
-          baseSize,
-          { baseLimit = h; baseLimit },
-          f,
-          { est >>>= 1; est }
+          baseSize, {
+            baseLimit = h; baseLimit
+          },
+          f, {
+            est >>>= 1; est
+          }
         )
     }
 
@@ -1351,10 +1355,12 @@ object ConcurrentHashMap {
       else
         new EntrySpliterator[K, V](
           tab,
-          baseSize,
-          { baseLimit = h; h },
-          f,
-          { est >>>= 1; est },
+          baseSize, {
+            baseLimit = h; h
+          },
+          f, {
+            est >>>= 1; est
+          },
           map
         )
     }
@@ -5096,8 +5102,9 @@ class ConcurrentHashMap[K <: AnyRef, V <: AnyRef]()
                 var rs: Array[CounterCell] = null
                 var m = 0
                 var j = 0
-                if ({ rs = counterCells; rs } != null && { m = rs.length; m } > 0 && rs({ j = (m - 1) & h; j }
-                ) == null) {
+                if ({ rs = counterCells; rs } != null && {
+                  m = rs.length; m
+                } > 0 && rs({ j = (m - 1) & h; j }) == null) {
                   rs(j) = r
                   created = true
                 }

@@ -35,18 +35,19 @@ object ExternTest {
   }
 
   // workaround for CI
-  def runTest(): Unit = Zone.acquire { implicit z: Zone =>
-    import scalanative.libc.string
-    val bufsize = 10.toUInt
-    val buf1: Ptr[Byte] = stackalloc[Byte](bufsize)
-    val buf2: Ptr[Byte] = stackalloc[Byte](bufsize)
+  def runTest(): Unit = Zone.acquire {
+    implicit z: Zone =>
+      import scalanative.libc.string
+      val bufsize = 10.toUInt
+      val buf1: Ptr[Byte] = stackalloc[Byte](bufsize)
+      val buf2: Ptr[Byte] = stackalloc[Byte](bufsize)
 
-    val arg1 = c"hello"
-    Ext1.vsnprintf(buf1, bufsize, c"%s", toCVarArgList(arg1))
-    assertEquals("case 1", 0, string.strcmp(buf1, arg1))
+      val arg1 = c"hello"
+      Ext1.vsnprintf(buf1, bufsize, c"%s", toCVarArgList(arg1))
+      assertEquals("case 1", 0, string.strcmp(buf1, arg1))
 
-    Ext2.p(buf2, bufsize, c"%d", toCVarArgList(1))
-    assertEquals("case 2", 0, string.strcmp(buf2, c"1"))
+      Ext2.p(buf2, bufsize, c"%d", toCVarArgList(1))
+      assertEquals("case 2", 0, string.strcmp(buf2, c"1"))
   }
 }
 

@@ -19,8 +19,8 @@ import scala.scalanative.meta.LinktimeInfo.is32BitPlatform
 
 import scalanative.unsigned._
 
-final class Size(private[scalanative] val rawSize: RawSize) 
-  extends scala.math.ScalaNumber 
+final class Size(private[scalanative] val rawSize: RawSize)
+  extends scala.math.ScalaNumber
   with Comparable[Size] {
   @inline def toByte: Byte   = castRawSizeToInt(rawSize).toByte
   @inline def toChar: Char   = castRawSizeToInt(rawSize).toChar
@@ -44,7 +44,7 @@ final class Size(private[scalanative] val rawSize: RawSize)
   @inline override protected def isWhole(): Boolean = true
   @inline override def underlying: Size = this // don't expose rawSize
 
-  @inline final override def compareTo(x: Size): Int = 
+  @inline final override def compareTo(x: Size): Int =
     if(is32BitPlatform) java.lang.Integer.compare(toInt, x.toInt)
     else java.lang.Long.compare(toLong, x.toLong)
 
@@ -399,11 +399,11 @@ final class Size(private[scalanative] val rawSize: RawSize)
 }
 
 object Size {
-  @inline implicit def byteToSize(x: Byte): Size = 
+  @inline implicit def byteToSize(x: Byte): Size =
     Size.valueOf(castIntToRawSize(x))
-  @inline implicit def shortToSize(x: Short): Size = 
+  @inline implicit def shortToSize(x: Short): Size =
     Size.valueOf(castIntToRawSize(x))
-  @inline implicit def intToSize(x: Int): Size = 
+  @inline implicit def intToSize(x: Int): Size =
     Size.valueOf(castIntToRawSize(x))
 
   @inline def valueOf(rawSize: RawSize): Size = {
