@@ -1,6 +1,8 @@
 package java.nio.file
 
 import java.io._
+
+import java.{lang => jl}
 import java.lang.Iterable
 
 import java.nio.charset.{Charset, StandardCharsets}
@@ -649,6 +651,53 @@ object Files {
       posixList(dir, dirString) // see comment re: args at top of that method
     else {
       Arrays.stream[Path](FileHelpers.list(dirString, (n, _) => dir.resolve(n)))
+    }
+  }
+
+  private def mismatchCore(is1: InputStream, is2: InputStream): Long = {
+    // A guess, trade off memory use vs speed, many machine page sizes are 4K.
+    val bufMaxSize = 4 * 1024 // buf1 & buf1 use 8K total
+    val buf1 = new Array[Byte](bufMaxSize)
+    val buf2 = new Array[Byte](bufMaxSize)
+
+    var mismatchedAt = jl.Long.MIN_VALUE // not _, as that is a valid value 0
+    var runningTotal = 0L // cumulative count of bytes read & matched to date
+
+    var done = false
+
+    while (!done) {
+      val nReadBuf1 = is1.readNBytes(buf1, 0, bufMaxSize)
+      val nReadBuf2 = is2.readNBytes(buf2, 0, Math.max(1, nReadBuf1))
+
+      if ((nReadBuf1 == 0) && (nReadBuf2 == 0)) { // both EOF
+        mismatchedAt = -1
+        done = true
+      } else {
+        val mmPos = Arrays.mismatch(buf1, 0, nReadBuf1, buf2, 0, nReadBuf2)
+
+        if (mmPos < 0) {
+          runningTotal += nReadBuf1 // no mismatch, continue looping
+        } else {
+          mismatchedAt = runningTotal + mmPos
+          done = true
+        }
+      }
+    }
+
+    mismatchedAt
+  }
+
+  def mismatch(path: Path, path2: Path): Long = {
+    if (path.equals(path2)) -1
+    else {
+      val is1 = Files.newInputStream(path, Array.empty)
+      try {
+        val is2 = Files.newInputStream(path2, Array.empty)
+        try {
+          mismatchCore(is1, is2)
+        } finally
+          is2.close()
+      } finally is1.close()
     }
   }
 
