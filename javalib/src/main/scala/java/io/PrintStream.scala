@@ -5,32 +5,12 @@ import java.util.Formatter
 import java.util.Objects
 
 class PrintStream(
-    private val _out: OutputStream,
-    private val autoFlush: Boolean,
-    private val _charset: Charset
+    _out: OutputStream,
+    autoFlush: Boolean,
+    _charset: Charset
 ) extends FilterOutputStream(_out)
     with Appendable
     with Closeable {
-
-  /* The way we handle charsets here is a bit tricky, because we want to
-   * minimize the area of reachability for normal programs.
-   *
-   * First, if nobody uses the constructor taking an explicit encoding, we
-   * don't want to reach Charset.forName(), which pulls in all of the
-   * implemented charsets.
-   *
-   * Second, most programs will reach PrintStream only because of
-   * java.lang.System.{out,err}, which are subclasses of PrintStream that do
-   * not actually need to encode anything: they override all of PrintStream's
-   * methods to bypass the encoding altogether, and hence don't even need
-   * the default charset.
-   *
-   * This is why we have:
-   * * A private constructor taking the Charset directly, instead of its name.
-   * * Which is allowed to be `null`, which stands for the default charset.
-   * * The default charset is only loaded lazily in the initializer of the
-   *   encoder field.
-   */
 
   def this(out: OutputStream) =
     this(out, false, null: Charset)
@@ -49,10 +29,6 @@ class PrintStream(
           throw new java.io.UnsupportedEncodingException(encoding)
       }
     )
-
-  /** @since JDK 10 */
-//  def this(out: OutputStream, autoFlush: Boolean, charset: Charset) =
-//    this(out, autoFlush, charset)
 
   def this(file: File) =
     this(new BufferedOutputStream(new FileOutputStream(file)))
