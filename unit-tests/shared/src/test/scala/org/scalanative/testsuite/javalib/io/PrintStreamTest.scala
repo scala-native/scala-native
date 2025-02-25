@@ -1,31 +1,41 @@
 package org.scalanative.testsuite.javalib.io
 
-import java.io._
+import java.io.{File, PrintStream}
+import java.nio.charset.StandardCharsets
 
 import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
-import org.scalanative.testsuite.utils.Platform.isWindows
+import org.scalanative.testsuite.utils.Platform
 
 class PrintStreamTest {
 
+  final val secondComing = """
+               |""The darkness drops again; but now I know
+               """
+
+  // Do not use /dev/null on Windows. It leads to FileNotFoundException
+  final val devNull = if (Platform.isWindows) "NUL" else "/dev/null"
+
+  final val bytesUTF_8 = secondComing.getBytes(StandardCharsets.UTF_8)
+
   @Test def printStreamOutputStreamStringWithUnsupportedEncoding(): Unit = {
-    // Make sure to not use /dev/null on Windows leading to FileNotFoundException
-    // On JVM charset check happens before file exists checks
-    val devNull = if (isWindows) "NUL" else "/dev/null"
     assertThrows(
       classOf[java.io.UnsupportedEncodingException],
       new PrintStream(new File(devNull), "unsupported encoding")
     )
   }
 
-  // The careful reader would expect to see tests for the constructors
-  // PrintStream(String, String) and PrintStream(String, String) here.
-  //
-  // See the comments in PrintStream.scala for a discussion about
-  // the those constructors.
-  //
-  // They are minimally implemented and will not link, so they can not
-  // be tested here.
+  @Test def constructorString(): Unit = {
+    val ps = new PrintStream(devNull)
+    // check only that created ps is healthy enough so no Exception is thown
+    ps.write(bytesUTF_8)
+  }
 
+  @Test def constructorStringString(): Unit = {
+    val ps = new PrintStream(devNull, "UTF_16LE")
+
+    // check only that created ps is healthy enough so no Exception is thown
+    ps.write(bytesUTF_8)
+  }
 }
