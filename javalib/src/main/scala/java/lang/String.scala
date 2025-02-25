@@ -1603,7 +1603,7 @@ for (cp <- 0 to Character.MAX_CODE_POINT) {
   }
 
   /** @since Java 12 */
-  def transform[R](f: java.util.function.Function[? >: String, ? <: R]): R =
+  def transform[R](f: java.util.function.Function[_ >: String, _ <: R]): R =
     f.apply(thisString)
 }
 
