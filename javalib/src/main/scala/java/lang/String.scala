@@ -301,6 +301,18 @@ final class _String()
     }
   }
 
+  /** @since Java 12 */
+  def formatted(args: Array[AnyRef]): String = {
+    /* Delegating to the companion static method costs a call but
+     * preserves a Single Point of Truth and ensures identical output.
+     *
+     * Attention!: Using "String.format", no leading underbar, will
+     * use the wrong entry point and bring woe.
+     */
+
+    _String.format(this, args) // Must use underbarString.format()
+  }
+
   def getBytes(): Array[scala.Byte] = {
     val buffer =
       Charset.defaultCharset().encode(CharBuffer.wrap(value, offset, count))
@@ -577,7 +589,6 @@ final class _String()
   }
 
   /** @since JDK 11 */
-
   def lines(): jus.Stream[_String] = {
     /* Library methods are supposed to be reasonably fast.
      * The obvious implementation, which works, is
