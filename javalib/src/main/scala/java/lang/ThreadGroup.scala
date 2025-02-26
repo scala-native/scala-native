@@ -77,7 +77,7 @@ class ThreadGroup(
   def isDestroyed(): scala.Boolean = false
 
   def activeCount(): Int = {
-    NativeThread.Registry.aliveThreads
+    NativeThread.Registry.aliveThreadsIterator
       .count { nativeThread =>
         val group = nativeThread.thread.getThreadGroup()
         this.parentOf(group)
@@ -109,7 +109,7 @@ class ThreadGroup(
     if (out == null) throw new NullPointerException()
     if (out.length == 0) 0
     else {
-      val aliveThreads = NativeThread.Registry.aliveThreads.toArray
+      val aliveThreads = NativeThread.Registry.aliveThreadsIterator.toArray
       @tailrec def loop(idx: Int, included: Int): Int =
         if (idx == aliveThreads.length || included == out.length) included
         else {
@@ -153,7 +153,7 @@ class ThreadGroup(
   }
 
   final def interrupt(): Unit = {
-    for (nativeThread <- NativeThread.Registry.aliveThreads) {
+    for (nativeThread <- NativeThread.Registry.aliveThreadsIterator) {
       val thread = nativeThread.thread
       val group = thread.getThreadGroup()
       if (this.parentOf(group)) thread.interrupt()
@@ -162,7 +162,7 @@ class ThreadGroup(
 
   def list(): Unit = {
     val groupThreads = new HashMap[ThreadGroup, List[Thread]]
-    for (nativeThread <- NativeThread.Registry.aliveThreads) {
+    for (nativeThread <- NativeThread.Registry.aliveThreadsIterator) {
       val thread = nativeThread.thread
       val group = thread.getThreadGroup()
       if (this.parentOf(group)) {

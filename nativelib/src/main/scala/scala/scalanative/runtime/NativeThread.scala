@@ -185,10 +185,14 @@ object NativeThread {
     def getById(id: Long): Option[NativeThread] =
       Option(_aliveThreads.get(id))
 
+    def aliveThreadsCount: Int = {
+      _aliveThreads.size
+    }
+
     @nowarn
-    def aliveThreads: Iterable[NativeThread] = {
+    def aliveThreadsIterator: Iterator[NativeThread] = {
       import scala.collection.JavaConverters._
-      _aliveThreads.values.asScala
+      _aliveThreads.values.iterator.asScala
     }
   }
 
