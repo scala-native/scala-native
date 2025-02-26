@@ -4,33 +4,13 @@ import java.nio.charset.{Charset, UnsupportedCharsetException}
 import java.util.Formatter
 import java.util.Objects
 
-class PrintStream private (
+class PrintStream(
     _out: OutputStream,
     autoFlush: Boolean,
-    charset: Charset
+    _charset: Charset
 ) extends FilterOutputStream(_out)
     with Appendable
     with Closeable {
-
-  /* The way we handle charsets here is a bit tricky, because we want to
-   * minimize the area of reachability for normal programs.
-   *
-   * First, if nobody uses the constructor taking an explicit encoding, we
-   * don't want to reach Charset.forName(), which pulls in all of the
-   * implemented charsets.
-   *
-   * Second, most programs will reach PrintStream only because of
-   * java.lang.System.{out,err}, which are subclasses of PrintStream that do
-   * not actually need to encode anything: they override all of PrintStream's
-   * methods to bypass the encoding altogether, and hence don't even need
-   * the default charset.
-   *
-   * This is why we have:
-   * * A private constructor taking the Charset directly, instead of its name.
-   * * Which is allowed to be `null`, which stands for the default charset.
-   * * The default charset is only loaded lazily in the initializer of the
-   *   encoder field.
-   */
 
   def this(out: OutputStream) =
     this(out, false, null: Charset)
@@ -50,32 +30,30 @@ class PrintStream private (
       }
     )
 
-  /* The following constructors, although implemented, will not link, since
-   * File, FileOutputStream and BufferedOutputStream are not implemented.
-   * They're here just in case a third-party library on the classpath
-   * implements those.
-   */
-
-  /* Cravenly pass the possibly null, possibly unsupported charSet String
-   * through to whatever third-party software satisfies the link.
-   * Let it deal with converting UnsupportedCharsetException to
-   * UnsupportedEncodingException. Since the code will not link, there
-   * is no good way to test that conversion for these two items.
-   */
-
   def this(file: File) =
     this(new BufferedOutputStream(new FileOutputStream(file)))
+
   def this(file: File, csn: String) =
     this(new BufferedOutputStream(new FileOutputStream(file)), false, csn)
+
+  /** @since JDK 10 */
+  def this(file: File, charset: Charset) =
+    this(new BufferedOutputStream(new FileOutputStream(file)), false, charset)
+
   def this(fileName: String) =
     this(new File(fileName))
+
   def this(fileName: String, csn: String) =
     this(new File(fileName), csn)
 
+  /** @since JDK 10 */
+  def this(fileName: String, charset: Charset) =
+    this(new File(fileName), charset)
+
   private lazy val encoder = {
     val c =
-      if (charset == null) Charset.defaultCharset()
-      else charset
+      if (_charset == null) Charset.defaultCharset()
+      else _charset
     /* We pass `this` as the output stream for the encoding writer so that
      * we can apply auto-flushing. Note that this will flush() more often
      * than required by the spec. It appears to be consistent with how the
@@ -249,4 +227,13 @@ class PrintStream private (
     if (closed) setError()
     else trapIOExceptions(body)
   }
+
+  /** @since JDK 18 */
+  def charset(): Charset =
+    this._charset
+
+  /** @since JDK 14 */
+  def writeBytes(buf: Array[Byte]): Unit =
+    this.write(buf, 0, buf.length)
+
 }
