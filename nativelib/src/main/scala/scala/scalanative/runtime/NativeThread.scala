@@ -194,6 +194,12 @@ object NativeThread {
       import scala.collection.JavaConverters._
       _aliveThreads.values.iterator.asScala
     }
+
+    @nowarn
+    def aliveThreads: Iterable[NativeThread] = {
+      import scala.collection.JavaConverters._
+      _aliveThreads.values.asScala
+    }
   }
 
   def threadRoutine: ThreadStartRoutine = CFuncPtr1.fromScalaFunction {
