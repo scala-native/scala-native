@@ -106,10 +106,10 @@ jobs:
           SCALANATIVE_OPTIMIZE: true
           SCALANATIVE_TEST_PREFETCH_DEBUG_INFO: 1
           TEST_COMMAND: >
-            set sandbox.forBinaryVersion("${{env.binary-version}}")/${{env.set-native-config}};
-            set tests.forBinaryVersion("${{env.binary-version}}")/${{env.set-native-config}};
-            set junitTestOutputsNative.forBinaryVersion("${{env.binary-version}}")/${{env.set-native-config}};
-            set scalaPartestJunitTests.forBinaryVersion("${{env.binary-version}}")/${{env.set-native-config}};
+            set sandbox.forBinaryVersion("${{ matrix.scala }}")/${{env.set-native-config}};
+            set tests.forBinaryVersion("${{ matrix.scala }}")/${{env.set-native-config}};
+            set junitTestOutputsNative.forBinaryVersion("${{ matrix.scala }}")/${{env.set-native-config}};
+            set scalaPartestJunitTests.forBinaryVersion("${{ matrix.scala }}")/${{env.set-native-config}};
 
             show tests${{env.project-version}}/nativeConfig;
 

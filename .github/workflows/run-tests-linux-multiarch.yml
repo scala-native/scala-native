@@ -82,11 +82,11 @@ jobs:
       - name: Test GC + infra
         env:
           TEST_COMMAND: >
-            set sandbox.forBinaryVersion("${{env.binary-version}}")/${{env.set-native-config}};
-            set testInterface.forBinaryVersion("${{env.binary-version}}")/${{env.set-native-config}};
-            set junitTestOutputsNative.forBinaryVersion("${{env.binary-version}}")/${{env.set-native-config}};
+            set sandbox.forBinaryVersion("${{ matrix.scala }}")/${{env.set-native-config}};
+            set testInterface.forBinaryVersion("${{ matrix.scala }}")/${{env.set-native-config}};
+            set junitTestOutputsNative.forBinaryVersion("${{ matrix.scala }}")/${{env.set-native-config}};
             clean;
-            test-gc ${{env.binary-version}}
+            test-gc ${{ matrix.scala }}
         uses: nick-fields/retry@v3
         with:
           timeout_minutes: 90
@@ -102,8 +102,8 @@ jobs:
           SCALANATIVE_TEST_DEBUG_SIGNALS: 1
           SCALANATIVE_TEST_PREFETCH_DEBUG_INFO: 1
           TEST_COMMAND: >
-            set tests.forBinaryVersion("${{env.binary-version}}")/${{env.set-native-config}};
-            set scalaPartestJunitTests.forBinaryVersion("${{env.binary-version}}")/${{env.set-native-config}};
+            set tests.forBinaryVersion("${{ matrix.scala }}")/${{env.set-native-config}};
+            set scalaPartestJunitTests.forBinaryVersion("${{ matrix.scala }}")/${{env.set-native-config}};
             
             testsJVM${{env.project-version}}/test;
             tests${{env.project-version}}/clean;

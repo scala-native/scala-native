@@ -37,10 +37,14 @@ jobs:
           MAVEN_PASSWORD: "${{ secrets.SONATYPE_PASSWORD }}"
           PGP_PASSPHRASE: "${{ secrets.PGP_PASSWORD }}"
         run: >
+          binaryVersion=$(echo "${{ inputs.scala-version }}" | awk -F. '{print $1"."$2}')
+          if [[ ${binaryVersion} == 3.* ]]; then
+            binaryVersion=3
+          fi
           sbt '
-            set crossScalaVersions += "${{ inputs.scala-version }}";
-            set nscPlugin.forBinaryVersion("${{ env.binary-version }}")/crossScalaVersions += "${{ inputs.scala-version }}";
-            set junitPlugin.forBinaryVersion("${{ env.binary-version }}")/crossScalaVersions += "${{ inputs.scala-version }}";
+            set crossScalaVersions += "${binaryVersion}";
+            set nscPlugin.forBinaryVersion("${binaryVersion}")/crossScalaVersions += "${{ inputs.scala-version }}";
+            set junitPlugin.forBinaryVersion("${binaryVersion}")/crossScalaVersions += "${{ inputs.scala-version }}";
             ++${{ inputs.scala-version }} -v; 
             nscplugin${{ env.project-version }}/test;
             nscplugin${{ env.project-version }}/publishSigned;
@@ -69,5 +73,5 @@ jobs:
         run: >
           sbt '
             ++${{ inputs.scala-version }} -v; 
-            test-runtime ${{ env.binary-version }};
+            test-runtime ${binaryVersion};
           '
