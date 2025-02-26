@@ -73,5 +73,5 @@ jobs:
         run: >
           sbt '
             ++${{ inputs.scala-version }} -v; 
-            test-runtime ${binaryVersion};
+            test-runtime ${{ inputs.scala-version }};
           '
