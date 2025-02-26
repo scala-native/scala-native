@@ -23,7 +23,7 @@ runs:
       run: |
         version=${{ inputs.scala-version }}
         if [[ $version == 2.* ]]; then
-          echo "project-version=${binaryVersion/./_}" >> $GITHUB_ENV
+          echo "project-version=${version/./_}" >> $GITHUB_ENV
         elif [[ $version == "3-next" ]]; then
           echo "project-version=3_next" >> $GITHUB_ENV
         else 
