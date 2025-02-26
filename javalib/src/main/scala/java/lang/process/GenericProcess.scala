@@ -161,7 +161,7 @@ private object GenericProcess {
             watchedProcesses.forEach { (completion, handle) =>
               if (completion.isCancelled())
                 watchedProcesses.remove(completion)
-              else if (handle.process.waitFor(1, TimeUnit.MILLISECONDS)) {
+              else if (handle.process.waitFor(5, TimeUnit.MILLISECONDS)) {
                 completion.complete(handle)
                 watchedProcesses.remove(completion)
               }
