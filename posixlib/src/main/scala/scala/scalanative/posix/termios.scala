@@ -3,6 +3,7 @@ package posix
 
 import scalanative.unsafe._
 import scalanative.unsafe.Nat._
+import scalanative.unsigned._
 import posix.sys.types.pid_t
 
 @extern
@@ -11,9 +12,12 @@ object termios {
 
   // types
 
-  type tcflag_t = CLong
-  type cc_t = CChar
-  type speed_t = CLong
+  /** POSIX specifies that the types are unsigned. macOS defines them as below
+   *  but Linux defines the `tcflag_t` and `speed_t` as `unsigned int`.
+   */
+  type tcflag_t = CUnsignedLong
+  type cc_t = CUnsignedChar
+  type speed_t = CUnsignedLong
   type NCCS = Digit2[_2, _0]
   type c_cc = CArray[cc_t, NCCS]
 
