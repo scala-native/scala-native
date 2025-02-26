@@ -45,6 +45,8 @@ private[lang] class UnixProcessGen2 private (
     outfds: Ptr[CInt],
     errfds: Ptr[CInt]
 ) extends UnixProcess() {
+  override private[process] val processInfo =
+    GenericProcess.Info.create(builder, pid = pid.toLong)
 
   private var _exitValue: Option[Int] = None
 

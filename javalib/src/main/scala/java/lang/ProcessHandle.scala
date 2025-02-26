@@ -6,7 +6,7 @@ import java.util.Optional
 import java.util.concurrent.CompletableFuture
 import java.util.stream.Stream
 
-trait ProcessHandle {
+trait ProcessHandle extends Comparable[ProcessHandle] {
 
   def children(): Stream[ProcessHandle]
 
@@ -17,10 +17,6 @@ trait ProcessHandle {
   def destroy(): scala.Boolean
 
   def destroyForcibly(): scala.Boolean
-
-  override def equals(other: Any): scala.Boolean
-
-  override def hashCode(): scala.Int
 
   def info(): ProcessHandle.Info =
     throw new UnsupportedOperationException("ProcessHandle.info()")
@@ -40,7 +36,7 @@ trait ProcessHandle {
 object ProcessHandle {
 
   trait Info {
-    def arguments(): Optional[String]
+    def arguments(): Optional[Array[String]]
 
     def command(): Optional[String]
 

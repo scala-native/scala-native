@@ -34,6 +34,10 @@ private[lang] class WindowsProcess private (
     errHandle: FileDescriptor
 ) extends GenericProcess {
   private val winPid = GetProcessId(handle)
+
+  override private[process] val processInfo =
+    GenericProcess.Info.create(builder, pid = winPid.toLong)
+
   private var cachedExitValue: Option[scala.Int] = None
 
   override def destroy(): Unit = if (isAlive()) {
@@ -67,7 +71,8 @@ private[lang] class WindowsProcess private (
   }
 
   override def waitFor(): scala.Int = synchronized {
-    WaitForSingleObject(handle, Constants.Infinite)
+    if (isAlive())
+      WaitForSingleObject(handle, Constants.Infinite)
     exitValue()
   }
 
