@@ -56,4 +56,4 @@ runs:
         path: |
           ~/.cache/coursier
           ~/.sbt/boot
-        key: ${{ runner.os }}-deps-${{ input.scala-version }}-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('**/build.properties') }}
+        key: ${{ runner.os }}-deps-${{ inputs.scala-version }}-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('**/build.properties') }}

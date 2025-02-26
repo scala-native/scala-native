@@ -38,8 +38,8 @@ jobs:
           PGP_PASSPHRASE: "${{ secrets.PGP_PASSWORD }}"
         run: >
           binaryVersion=$(echo "${{ inputs.scala-version }}" | awk -F. '{print $1"."$2}');
-          if [[ ${binaryVersion} == 3.* ]] then
-            binaryVersion=3
+          if [[ ${binaryVersion} == 3.* ]]; then
+            binaryVersion=3;
           fi;
           sbt '
             set crossScalaVersions += "${binaryVersion}";
