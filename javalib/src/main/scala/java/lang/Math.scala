@@ -22,8 +22,24 @@ object Math {
   @alwaysinline def abs(a: scala.Int): scala.Int =
     if (a < 0) -a else a
 
+  /** @since JDK 15 */
+  @inline def absExact(a: scala.Int): scala.Int =
+    if (a != Integer.MIN_VALUE) abs(a)
+    else
+      throw new ArithmeticException(
+        "Overflow to represent absolute value of Integer.MIN_VALUE"
+      )
+
   @alwaysinline def abs(a: scala.Long): scala.Long =
     if (a < 0) -a else a
+
+  /** @since JDK 15 */
+  @inline def absExact(a: scala.Long): scala.Long =
+    if (a != Long.MIN_VALUE) abs(a)
+    else
+      throw new ArithmeticException(
+        "Overflow to represent absolute value of Long.MIN_VALUE"
+      )
 
   @alwaysinline def acos(a: scala.Double): scala.Double =
     cmath.acos(a)
