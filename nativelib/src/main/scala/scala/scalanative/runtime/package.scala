@@ -95,11 +95,12 @@ package object runtime {
       shutdownThread = Thread.currentThread()
       atomic_thread_fence(memory_order.memory_order_seq_cst)
     }
-    def pollNonDaemonThreads = NativeThread.Registry.aliveThreadsIterator.exists { aliveThread =>
+    def pollNonDaemonThreads =
+      NativeThread.Registry.aliveThreadsIterator.exists { aliveThread =>
         val thread = aliveThread.thread
         (thread ne shutdownThread) &&
-        !thread.isDaemon() &&
-        thread.isAlive()
+          !thread.isDaemon() &&
+          thread.isAlive()
       }
 
     def queue = concurrent.NativeExecutionContext.queueInternal

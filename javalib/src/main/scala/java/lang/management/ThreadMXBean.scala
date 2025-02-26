@@ -150,7 +150,9 @@ object ThreadMXBean {
         maxDepth: Int
     ): Array[ThreadInfo] = {
       checkMaxDepth(maxDepth)
-      NativeThread.Registry.aliveThreadsIterator.map(thread => ThreadInfo(thread)).toArray
+      NativeThread.Registry.aliveThreadsIterator
+        .map(thread => ThreadInfo(thread))
+        .toArray
     }
 
     @inline private def checkThreadId(id: Long): Unit =
