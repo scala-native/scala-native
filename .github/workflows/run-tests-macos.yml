@@ -150,7 +150,7 @@ jobs:
       fail-fast: false
       matrix:
         scala: [3]
-        llvm: [14, 16, latest] # Last 3 stable versions. 15 is tested by default,  latest version == 17
+        llvm: [14, 15, 16, 17, 18, latest] # Last 3 stable versions. 15 is tested by default,  latest version == 17
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/macos-setup-env

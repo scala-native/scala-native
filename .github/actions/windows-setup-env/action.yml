@@ -9,7 +9,7 @@ inputs:
     default: "8"
   llvm-version:
     description: "LLVM version to use"
-    default: "17.0.6"
+    default: "18.1.6"
 outputs:
   vcpkg-dir:
     description: "Directory containing installed libraries"
