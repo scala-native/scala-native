@@ -120,7 +120,7 @@ object ThreadMXBean {
       val builder = Array.newBuilder[Long]
       builder.sizeHint(NativeThread.Registry.aliveThreadsCount)
       NativeThread.Registry.aliveThreadsIterator.scalaOps.foreach(
-        nativeThread => builder += nativeThread.thread.getId
+        nativeThread => builder += nativeThread.thread.getId()
       )
       builder.result()
     }
