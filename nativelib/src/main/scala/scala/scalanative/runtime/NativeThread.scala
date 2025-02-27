@@ -190,9 +190,8 @@ object NativeThread {
     }
 
     @nowarn
-    def aliveThreadsIterator: Iterator[NativeThread] = {
-      import scala.collection.JavaConverters._
-      _aliveThreads.values.iterator.asScala
+    def aliveThreadsIterator: java.util.Iterator[NativeThread] = {
+      _aliveThreads.values.iterator
     }
 
     @nowarn
