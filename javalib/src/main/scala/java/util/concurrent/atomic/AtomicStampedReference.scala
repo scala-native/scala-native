@@ -50,7 +50,7 @@ class AtomicStampedReference[V <: AnyRef] private (
   def getStamp(): Int = valueRef.load().stamp
 
   /** Returns the current values of both the reference and the stamp. Typical
-   *  usage is {@code int[1] holder; ref = v.get(holder); }.
+   *  usage is {@code int[1] holder; ref = v.get(holder);}.
    *
    *  @param stampHolder
    *    an array of size of at least one. On return, {@code stampHolder[0]} will

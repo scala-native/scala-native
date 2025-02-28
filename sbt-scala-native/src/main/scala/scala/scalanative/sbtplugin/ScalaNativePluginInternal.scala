@@ -191,9 +191,9 @@ object ScalaNativePluginInternal {
         .withCompilerConfig(nativeConfig)
 
     interceptBuildException {
-      SharedScope { implicit sharedScope: Scope =>
-        await(sbtLogger) { implicit ec: ExecutionContext =>
-          Build
+      SharedScope {
+        implicit sharedScope: Scope => await(sbtLogger) {
+          implicit ec: ExecutionContext => Build
             .buildCached(config)
             .map(_.toFile())
         }
