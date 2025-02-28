@@ -1,4 +1,6 @@
 // Ported from Scala.js, revision c8ddba0 dated 4 Dec 2021
+// For Scala Native additions & changes, check GitHub history.
+
 package org.scalanative.testsuite.javalib.lang
 
 import org.junit.Test
@@ -223,6 +225,23 @@ class StringTestOnJDK15 {
     assertEquals("abcd\\", """abcd\\""".translateEscapes())
     assertEquals("\\abcd\\", """\\abcd\\""".translateEscapes())
     assertEquals("\\\\\\", """\\\\\\""".translateEscapes())
+  }
+
+  /* "formatted" test adapted from "format" test
+   *  Scala.js, commit: e10803c, dated: 2024-09-16
+   */
+  @Test def formatted(): Unit = {
+    assertEquals("5", "%d".formatted(new Integer(5)))
+    assertEquals("00005", "%05d".formatted(new Integer(5)))
+    assertEquals("0x005", "%0#5x".formatted(new Integer(5)))
+    assertEquals("  0x5", "%#5x".formatted(new Integer(5)))
+    assertEquals("  0X5", "%#5X".formatted(new Integer(5)))
+    assertEquals("  -10", "%5d".formatted(new Integer(-10)))
+    assertEquals("-0010", "%05d".formatted(new Integer(-10)))
+    assertEquals("fffffffd", "%x".formatted(new Integer(-3)))
+
+    // See note in String.scala about SN & JVM "fc" vs Scala.js "fffffffc"
+    assertEquals("fc", "%x".formatted(new java.lang.Byte(-4.toByte)))
   }
 
 }
