@@ -419,12 +419,12 @@ final class _String()
   /* By convention, caller has validated arguments.
    * See also notes above & in method indexOfImpl(str, fromIndex, toIndex).
    */
-  private def indexOfImpl(ch: Int, fromIndex: Int, toIndex: Int): Int = {
-    var start = fromIndex
+  private def indexOfImpl(ch: Int, beginIndex: Int, endIndex: Int): Int = {
+    var start = beginIndex
 
     if (ch >= 0 && ch <= Character.MAX_VALUE) {
       var i = offset + start
-      while (i < offset + toIndex) {
+      while (i < offset + endIndex) {
         if (value(i) == ch)
           return i - offset
 
@@ -432,7 +432,7 @@ final class _String()
       }
     } else if (ch > Character.MAX_VALUE && ch <= Character.MAX_CODE_POINT) {
       var i = start
-      while (i < toIndex) {
+      while (i < endIndex) {
         val codePoint = codePointAt(i)
         if (codePoint == ch) {
           return i
@@ -455,9 +455,9 @@ final class _String()
   }
 
   /** @since Java 21 */
-  def indexOf(ch: Int, fromIndex: Int, toIndex: Int): Int = {
-    validateFromToIndex(fromIndex, toIndex, count)
-    indexOfImpl(ch, fromIndex, toIndex)
+  def indexOf(ch: Int, beginIndex: Int, endIndex: Int): Int = {
+    validateFromToIndex(beginIndex, endIndex, count)
+    indexOfImpl(ch, beginIndex, endIndex)
   }
 
   /* Development Notes:
