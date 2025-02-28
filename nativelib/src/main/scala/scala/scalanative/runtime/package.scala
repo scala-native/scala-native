@@ -95,16 +95,21 @@ package object runtime {
       shutdownThread = Thread.currentThread()
       atomic_thread_fence(memory_order.memory_order_seq_cst)
     }
-    def pollNonDaemonThreads = NativeThread.Registry.aliveThreads.iterator
-      .map(_.thread)
-      .filter { thread =>
-        (thread ne shutdownThread) && !thread.isDaemon() &&
-        thread.isAlive()
+    def pollNonDaemonThreads = {
+      val it = NativeThread.Registry.aliveThreadsIterator
+      var exists = false
+      while (!exists && it.hasNext()) {
+        val thread = it.next().thread
+        exists = (thread ne shutdownThread) &&
+          !thread.isDaemon() &&
+          thread.isAlive()
       }
+      exists
+    }
 
     def queue = concurrent.NativeExecutionContext.queueInternal
     def shouldWaitForThreads =
-      if (isMultithreadingEnabled) gracefully && pollNonDaemonThreads.hasNext
+      if (isMultithreadingEnabled) gracefully && pollNonDaemonThreads
       else false
     def shouldRunQueuedTasks = gracefully && queue.nonEmpty
 

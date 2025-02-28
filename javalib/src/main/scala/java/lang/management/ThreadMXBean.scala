@@ -1,5 +1,7 @@
 package java.lang.management
 
+import java.util.ScalaOps._
+
 import scala.scalanative.runtime.NativeThread
 
 trait ThreadMXBean {
@@ -107,14 +109,21 @@ object ThreadMXBean {
 
   private class Impl extends ThreadMXBean {
     def getThreadCount(): Int =
-      aliveThreads.size
+      NativeThread.Registry.aliveThreadsCount
 
     def getDaemonThreadCount(): Int =
-      aliveThreads.count(_.thread.isDaemon())
+      NativeThread.Registry.aliveThreadsIterator.scalaOps
+        .count(_.thread.isDaemon())
 
     @annotation.nowarn // Thread.getId is deprecated since JDK 19
-    def getAllThreadIds(): Array[Long] =
-      aliveThreads.map(_.thread.getId()).toArray
+    def getAllThreadIds(): Array[Long] = {
+      val builder = Array.newBuilder[Long]
+      builder.sizeHint(NativeThread.Registry.aliveThreadsCount)
+      NativeThread.Registry.aliveThreadsIterator.scalaOps.foreach(
+        nativeThread => builder += nativeThread.thread.getId()
+      )
+      builder.result()
+    }
 
     def getThreadInfo(id: Long): ThreadInfo =
       getThreadInfo(id, 0)
@@ -150,11 +159,13 @@ object ThreadMXBean {
         maxDepth: Int
     ): Array[ThreadInfo] = {
       checkMaxDepth(maxDepth)
-      aliveThreads.map(thread => ThreadInfo(thread)).toArray
+      val builder = Array.newBuilder[ThreadInfo]
+      builder.sizeHint(NativeThread.Registry.aliveThreadsCount)
+      NativeThread.Registry.aliveThreadsIterator.scalaOps.foreach(
+        nativeThread => builder += ThreadInfo(nativeThread)
+      )
+      builder.result()
     }
-
-    @inline private def aliveThreads: Iterable[NativeThread] =
-      NativeThread.Registry.aliveThreads
 
     @inline private def checkThreadId(id: Long): Unit =
       require(id > 0, s"Invalid thread ID parameter: $id")
