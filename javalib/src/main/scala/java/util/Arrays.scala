@@ -1464,6 +1464,60 @@ object Arrays {
     fromIndex
   }
 
+// compare() JDK9
+
+  // Validate args in one place
+  private def compareImpl(
+      a: Array[Byte],
+      aFromIndex: Int,
+      aToIndex: Int,
+      b: Array[Byte],
+      bFromIndex: Int,
+      bToIndex: Int
+  ): Int = {
+    Objects.requireNonNull(a)
+    Arrays.validateFromToIndex(aFromIndex, aToIndex, a.length)
+
+    Objects.requireNonNull(b)
+    Arrays.validateFromToIndex(bFromIndex, bToIndex, b.length)
+
+    val i = Arrays.mismatch(a, aFromIndex, aToIndex, b, bFromIndex, bToIndex)
+
+    if ((i >= 0) && (i < Math.min(
+          aToIndex - aFromIndex,
+          bToIndex - bFromIndex
+        )))
+      jl.Byte.compare(a(aFromIndex + i), b(bFromIndex + i))
+    else
+      (aToIndex - aFromIndex) - (bToIndex - bFromIndex)
+  }
+
+  /** @since JDK 9 */
+  def compare(
+      a: Array[Byte],
+      aFromIndex: Int,
+      aToIndex: Int,
+      b: Array[Byte],
+      bFromIndex: Int,
+      bToIndex: Int
+  ): Int = {
+    compareImpl(a, aFromIndex, aToIndex, b, bFromIndex, bToIndex)
+  }
+
+// equals() JDK9
+
+  /** @since JDK 9 */
+  def equals(
+      a: Array[Byte],
+      aFromIndex: Int,
+      aToIndex: Int,
+      b: Array[Byte],
+      bFromIndex: Int,
+      bToIndex: Int
+  ): scala.Boolean = {
+    compareImpl(a, aFromIndex, aToIndex, b, bFromIndex, bToIndex) == 0
+  }
+
 // mismatch()
 
   /** @since JDK 9 */
