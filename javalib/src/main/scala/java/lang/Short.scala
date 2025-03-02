@@ -185,6 +185,9 @@ object Short {
   @inline def compare(x: scala.Short, y: scala.Short): scala.Int =
     x - y
 
+  @inline def compareUnsigned(x: scala.Short, y: scala.Short): scala.Int =
+    Integer.compareUnsigned(x, y)
+
   @inline def decode(nm: String): Short = {
     val i = Integer.decode(nm).intValue()
     val r = i.toShort
