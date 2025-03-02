@@ -186,6 +186,9 @@ object Byte {
   @inline def compare(x: scala.Byte, y: scala.Byte): scala.Int =
     x - y
 
+  @inline def compareUnsigned(x: scala.Byte, y: scala.Byte): scala.Int =
+    Integer.compareUnsigned(x, y)
+
   @inline def decode(nm: String): Byte = {
     val i = Integer.decode(nm).intValue()
     val b = i.toByte
