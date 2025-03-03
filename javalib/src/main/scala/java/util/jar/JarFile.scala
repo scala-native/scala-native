@@ -125,7 +125,7 @@ class JarFile(file: File, verify: Boolean, mode: Int)
     val in = super.getInputStream(ze)
     if (in == null) {
       null
-    } else if (/*verifier == null || */ ze.getSize() == -1) {
+    } else if ( /* verifier == null || */ ze.getSize() == -1) {
       in
     } else {
       in
