@@ -248,7 +248,7 @@ class ArrayDeque[E](
   }
 
   /** Subtracts j from i, mod modulus. Index i must be logically ahead of index
-   *  j. Precondition: 0 <= i < modulus, 0 <= j < modulus.
+   *  j as follows. Precondition: 0 <= i < modulus, 0 <= j < modulus.
    *  @return
    *    the "circular distance" from j to i; corner case i == j is disambiguated
    *    to "empty", returning 0.
