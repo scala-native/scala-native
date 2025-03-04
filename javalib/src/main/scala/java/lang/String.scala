@@ -400,71 +400,142 @@ final class _String()
     }
   }
 
-  def indexOf(c: Int, _start: Int): Int = {
-    var start = _start
-    if (start < count) {
-      if (start < 0) {
-        start = 0
+  // Transform any Objects.checkFromIndex() OOB Exception; use common msg.
+  private def validateFromToIndex(
+      fromIndex: Int,
+      toIndex: Int,
+      length: Int
+  ): Int = {
+    try {
+      Objects.checkFromToIndex(fromIndex, toIndex, length)
+    } catch {
+      case exc: IndexOutOfBoundsException =>
+        throw new StringIndexOutOfBoundsException(exc.getMessage())
+    }
+
+    fromIndex
+  }
+
+  /* By convention, caller has validated arguments.
+   * See also notes above & in method indexOfImpl(str, fromIndex, toIndex).
+   */
+  private def indexOfImpl(ch: Int, beginIndex: Int, endIndex: Int): Int = {
+    var start = beginIndex
+
+    if (ch >= 0 && ch <= Character.MAX_VALUE) {
+      var i = offset + start
+      while (i < offset + endIndex) {
+        if (value(i) == ch)
+          return i - offset
+
+        i += 1
       }
-      if (c >= 0 && c <= Character.MAX_VALUE) {
-        var i = offset + start
-        while (i < offset + count) {
-          if (value(i) == c) {
-            return i - offset
-          }
+    } else if (ch > Character.MAX_VALUE && ch <= Character.MAX_CODE_POINT) {
+      var i = start
+      while (i < endIndex) {
+        val codePoint = codePointAt(i)
+        if (codePoint == ch) {
+          return i
+        } else if (codePoint >= Character.MIN_SUPPLEMENTARY_CODE_POINT) {
           i += 1
         }
-      } else if (c > Character.MAX_VALUE && c <= Character.MAX_CODE_POINT) {
-        var i = start
-        while (i < count) {
-          val codePoint = codePointAt(i)
-          if (codePoint == c) {
-            return i
-          } else if (codePoint >= Character.MIN_SUPPLEMENTARY_CODE_POINT) {
-            i += 1
-          }
-          i += 1
-        }
+        i += 1
       }
     }
+
     -1
   }
 
-  def indexOf(c: Int): Int =
-    indexOf(c, 0)
+  def indexOf(ch: Int): Int =
+    indexOfImpl(ch, 0, count)
 
-  def indexOf(string: _String): Int =
-    indexOf(string, 0)
+  def indexOf(ch: Int, fromIndex: Int): Int = {
+    // per JVM, clamp fromIndex; do not throw when arg negative or too large.
+    indexOfImpl(ch, Math.clamp(fromIndex, 0, count), count)
+  }
 
-  def indexOf(subString: _String, _start: Int): Int = {
-    var start = _start
-    if (start < 0) {
-      start = 0
-    }
-    val subCount = subString.count
-    if (subCount > 0) {
-      if (subCount + start > count) {
-        return -1
-      }
-      val target = subString.value
-      val subOffset = subString.offset
-      val firstChar = target(subOffset)
-      val end = subOffset + subCount
-      while (true) {
-        val i = indexOf(firstChar, start)
-        if (i == -1 || subCount + i > count) {
-          return -1
+  /** @since Java 21 */
+  def indexOf(ch: Int, beginIndex: Int, endIndex: Int): Int = {
+    validateFromToIndex(beginIndex, endIndex, count)
+    indexOfImpl(ch, beginIndex, endIndex)
+  }
+
+  /* Development Notes:
+   *
+   * 1) This method uses he "naive" algorithm, which was state of the art
+   *    circa 1974.  It's performance is probably acceptable when the
+   *    "haystack is short-to-moderate and "the "needle" is tiny
+   *    (10 characters?) . Probably faster than regex in that case.
+   *
+   *    The algorithm is known to get drastically slower with increasing
+   *    needle size.
+   *
+   *    Over the past half century, an extensive literature on the this
+   *    specific topic of sub-string matching has evolved.
+   *    A number of contemporary algorithms use the full Unicode alphabet
+   *    and have better performance for moderate to huge data.  Even the
+   *    venerable, but proven, Boyer-Moore algorithm would be faster.
+   *
+   * 2) When Arrays.mismatch(Array[Char]) becomes available, consider
+   *    re-writing this section to use that method.  That way, resource
+   *    can be spent on optimizing common code rather than N duplicates,
+   *    each with their own essential quirks & time honored bugs.
+   */
+
+  // By convention, caller has validated arguments.
+  private def indexOfImpl(str: _String, beginIndex: Int, endIndex: Int): Int = {
+    val thatCount = str.count
+
+    if (thatCount == 0) {
+      beginIndex
+    } else if (thatCount + beginIndex > endIndex) {
+      -1 // also catches if 'this' is a zero length null _String, a.k.a ""
+    } else {
+      val needle = str.value
+      val needleOffset = str.offset
+      val needleFirstChar = needle(needleOffset)
+      val needleEnd = needleOffset + thatCount
+
+      var foundAt = -1 // not found until shown otherwise
+
+      var done = false
+      var cursor = beginIndex
+
+      while ((!done) && (cursor < endIndex)) {
+        val i = indexOfImpl(needleFirstChar, cursor, endIndex)
+
+        if ((i == -1) || (thatCount + i > endIndex)) {
+          done = true
+        } else {
+          var o1 = offset + i
+          var o2 = needleOffset
+          while (({ o2 += 1; o2 } < needleEnd) &&
+              (value({ o1 += 1; o1 }) == needle(o2))) ()
+          if (o2 < needleEnd) {
+            cursor = i + 1 // no match
+          } else {
+            foundAt = i
+            done = true
+          }
         }
-        var o1 = offset + i
-        var o2 = subOffset
-        while ({ o2 += 1; o2 } < end && value({ o1 += 1; o1 }) == target(o2)) ()
-        if (o2 == end) {
-          return i
-        }
-        start = i + 1
       }
+
+      foundAt
     }
-    if (start < count) start else count
+  }
+
+  def indexOf(str: _String): Int =
+    indexOfImpl(str, 0, count)
+
+  def indexOf(str: String, fromIndex: Int): Int = {
+    // per JVM, clamp fromIndex; do not throw when arg negative or too large.
+    indexOfImpl(str, Math.clamp(fromIndex, 0, count), count)
+  }
+
+  /** @since Java 21 */
+  def indexOf(str: _String, beginIndex: Int, endIndex: Int): Int = {
+    validateFromToIndex(beginIndex, endIndex, count)
+    indexOfImpl(str, beginIndex, endIndex)
   }
 
   // See https://github.com/scala-native/scala-native/issues/486
