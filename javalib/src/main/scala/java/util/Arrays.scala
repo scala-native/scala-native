@@ -1445,7 +1445,8 @@ object Arrays {
 
 // JDK 9 ----------------------------------------------------------------
 
-  private def compareNullsFirst[T <: Comparable[_ >: T]](o1: T, o2: T): Int = {
+  private def compareNullsFirst[T <: Comparable[T]](o1: T, o2: T): Int = {
+    // Scala 3 def compareNullsFirst[T <: Comparable[_ >: T]](o1: T, o2: T): Int
     /* The JDK 23 documentation for JDK 9 methods which do not directly
      * take a Comparator argment, such as compare(a, b) and
      * compare(a, Int, Int, b, Int, Int), describe the comparison as
@@ -1478,7 +1479,7 @@ object Arrays {
   /* Objects.compare(a, b, cmp) requires a lot of complexity to provide
    * the specified or implied JDK 9 behavior where this method is used.
    */
-  private def objectsCompareZeroOrMinus1[T](a: T, b: T): Int =
+  private def objectsCompareZeroOrMinus1[T <: AnyRef](a: T, b: T): Int =
     if (Objects.equals(a, b)) 0 else -1
 
   // Similar in concept to Objects.checkFromIndex() but different Exceptions.
@@ -1637,13 +1638,30 @@ object Arrays {
   }
 
   /** @since JDK 9 */
+  def compare[T <: Comparable[T]]( // Scala 2.12, 2.13
+      // Scala 3 see below
+      a: Array[Comparable[_]], // Scala 3 Array[T]
+      b: Array[Comparable[_]] // Scala 3 Array[T]
+  ): Int = {
+    val cmp = Arrays.compareNullsFirst[T] _ // see comments in method
+    compareImpl(
+      a,
+      b,
+      (a: Comparable[_], b: Comparable[_]) =>
+        cmp(a.asInstanceOf[T], b.asInstanceOf[T])
+    )
+  }
+
+  /* // Scala 3
+  /** @since JDK 9 */
   def compare[T <: Comparable[_ >: T]](
       a: Array[T],
       b: Array[T]
   ): Int = {
-    val cmp = Arrays.compareNullsFirst[T] // see comments in method
-    compareImpl(a, b, (a, b) => cmp(a, b))
+    val cmp = Arrays.compareNullsFirst[T] _ // see comments in method
+    compareImpl(a, b, (a: T, b: T) => cmp(a, b))
   }
+   */
 
   /** @since JDK 9 */
   def compare[T <: AnyRef](
@@ -1652,19 +1670,27 @@ object Arrays {
       cmp: Comparator[_ >: T]
   ): Int = {
     Objects.requireNonNull(cmp, "cmp")
-    compareImpl(a, b, cmp.compare)
+
+    // compareImpl(a, b, cmp.compare) // Scala 3
+    compareImpl[AnyRef](
+      a.asInstanceOf[Array[AnyRef]],
+      b.asInstanceOf[Array[AnyRef]],
+      (a: AnyRef, b: AnyRef) =>
+        cmp.compare(a.asInstanceOf[T], b.asInstanceOf[T])
+    )
   }
 
   /** @since JDK 9 */
-  def compare[T <: Comparable[_ >: T]](
-      a: Array[T],
+  def compare[T <: Comparable[T]](
+      // Scala 3  def compare[T <: Comparable[_ >: T]](
+      a: Array[Comparable[_]],
       aFromIndex: Int,
       aToIndex: Int,
-      b: Array[T],
+      b: Array[Comparable[_]],
       bFromIndex: Int,
       bToIndex: Int
   ): Int = {
-    val cmp = Arrays.compareNullsFirst[T] // see comments in method
+    val cmp = Arrays.compareNullsFirst[T] _ // see comments in method
 
     compareImpl(
       a,
@@ -1673,9 +1699,35 @@ object Arrays {
       b,
       bFromIndex,
       bToIndex,
-      (a, b) => cmp(a, b)
+      (a: Comparable[_], b: Comparable[_]) =>
+        cmp(a.asInstanceOf[T], b.asInstanceOf[T])
     )
   }
+
+  /*
+  /** @since JDK 9 */
+  def compare[T <: Comparable[T]](
+      // Scala 3  def compare[T <: Comparable[_ >: T]](
+      a: Array[T],
+      aFromIndex: Int,
+      aToIndex: Int,
+      b: Array[T],
+      bFromIndex: Int,
+      bToIndex: Int
+  ): Int = {
+    val cmp = Arrays.compareNullsFirst[T] _ // see comments in method
+
+    compareImpl(
+      a,
+      aFromIndex,
+      aToIndex,
+      b,
+      bFromIndex,
+      bToIndex,
+      (a: T, b: T) => cmp(a, b)
+    )
+  }
+   */
 
   /** @since JDK 9 */
   def compare[T <: AnyRef](
@@ -1690,13 +1742,16 @@ object Arrays {
     Objects.requireNonNull(cmp, "cmp")
 
     compareImpl(
-      a,
+      // a, // Scala 3
+      a.asInstanceOf[Array[Any]],
       aFromIndex,
       aToIndex,
-      b,
+      // b, // Scala 3
+      b.asInstanceOf[Array[Any]],
       bFromIndex,
       bToIndex,
-      cmp.compare
+      // cmp.compare // Scala 3
+      (a: Any, b: Any) => cmp.compare(a.asInstanceOf[T], b.asInstanceOf[T])
     )
   }
 
@@ -1728,10 +1783,12 @@ object Arrays {
       b: Array[T],
       cmp: Comparator[_ >: T]
   ): scala.Boolean = {
-    compareImpl(
-      a,
-      b,
-      cmp.compare
+    // compareImpl(a, b, cmp.compare) == 0 // Scala 3
+    compareImpl[AnyRef](
+      a.asInstanceOf[Array[AnyRef]],
+      b.asInstanceOf[Array[AnyRef]],
+      (a: AnyRef, b: AnyRef) =>
+        cmp.compare(a.asInstanceOf[T], b.asInstanceOf[T])
     ) == 0
   }
 
@@ -1751,7 +1808,8 @@ object Arrays {
       b,
       bFromIndex,
       bToIndex,
-      objectsCompareZeroOrMinus1 // a minor contortion to morph Boolean to Int
+      // objectsCompareZeroOrMinus1 // Scala 3
+      (a: T, b: T) => objectsCompareZeroOrMinus1(a, b)
     ) == 0
   }
 
@@ -1766,13 +1824,16 @@ object Arrays {
       cmp: Comparator[_ >: T]
   ): scala.Boolean = {
     compareImpl(
-      a,
+      // a, // Scala 3
+      a.asInstanceOf[Array[Any]],
       aFromIndex,
       aToIndex,
-      b,
+      // b, // Scala 3
+      b.asInstanceOf[Array[Any]],
       bFromIndex,
       bToIndex,
-      cmp.compare
+      // cmp.compare // Scala 3
+      (a: Any, b: Any) => cmp.compare(a.asInstanceOf[T], b.asInstanceOf[T])
     ) == 0
   }
 
@@ -1789,7 +1850,8 @@ object Arrays {
   ): Int = {
 
     def noArrayLengthMsg(stem: String): String = {
-      s"Cannot read the array length because \"${stem}\" is null"
+      // Many Scala 2.1[2-3].n version do not understand or allow "\"".
+      s""""Cannot read the array length because \"${stem}\" is null"""
     }
 
     Objects.requireNonNull(a, noArrayLengthMsg("a"))
@@ -1838,7 +1900,8 @@ object Arrays {
       b,
       0,
       b.length,
-      objectsCompareZeroOrMinus1
+      // objectsCompareZeroOrMinus1 // Scala 3
+      (a: Object, b: Object) => objectsCompareZeroOrMinus1(a, b)
     )
 
   /** @since JDK 9 */
@@ -1868,13 +1931,16 @@ object Arrays {
       cmp: Comparator[_ >: T]
   ): Int = {
     mismatchImpl(
-      a,
+      // a, // Scala 3
+      a.asInstanceOf[Array[Any]],
       0,
       a.length,
-      b,
+      // b, // Scala 3
+      b.asInstanceOf[Array[Any]],
       0,
       b.length,
-      cmp.compare
+      // cmp.compare // Scala 3
+      (a: Any, b: Any) => cmp.compare(a.asInstanceOf[T], b.asInstanceOf[T])
     )
   }
 
@@ -1894,16 +1960,17 @@ object Arrays {
       b,
       bFromIndex,
       bToIndex,
-      objectsCompareZeroOrMinus1
+      // objectsCompareZeroOrMinus1 // Scala 3
+      (a: T, b: T) => objectsCompareZeroOrMinus1(a, b)
     )
   }
 
   /** @since JDK 9 */
   def mismatch[T <: AnyRef](
-      a: Array[T],
+      a: Array[AnyRef], // Scala 3: a: Array[T]
       aFromIndex: Int,
       aToIndex: Int,
-      b: Array[T],
+      b: Array[AnyRef], // Scala 3: b: Array[T]
       bFromIndex: Int,
       bToIndex: Int,
       cmp: Comparator[_ >: T]
@@ -1917,7 +1984,9 @@ object Arrays {
       b,
       bFromIndex,
       bToIndex,
-      cmp.compare
+      // cmp.compare // Scala 3
+      (a: AnyRef, b: AnyRef) =>
+        cmp.compare(a.asInstanceOf[T], b.asInstanceOf[T])
     )
   }
 
