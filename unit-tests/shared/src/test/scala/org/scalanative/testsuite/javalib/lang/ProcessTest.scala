@@ -535,7 +535,7 @@ class ProcessTest {
         val bytes =
           readNBytes(src, expectedResponse.length(), perIterationTimeout)
         assertEquals(
-          "concurrentPipe()",
+          "concurrentPipe() thread failed",
           expectedResponse,
           new String(bytes, StandardCharsets.UTF_8)
         )
@@ -548,15 +548,37 @@ class ProcessTest {
        * pipe code paths before and after child exit differ.
        */
       t.start()
-      assertEquals(0, proc.waitFor())
+
+      val pwfTimeout = perIterationTimeout
+      val procWaitForStatus = proc.waitFor(pwfTimeout, TimeUnit.SECONDS)
+
+      /* ??? If these assertions fail, will the message ever make it all the
+       * way back to the Test runner and be reported? Perhaps.
+       */
+
+      assertTrue(
+        s"child.waitFor exceeded timeout seconds: ${pwfTimeout}",
+        procWaitForStatus
+      )
+
+      assertEquals("child exit value", 0, proc.exitValue())
+
       t.join()
       done
     }
-    assertTrue(
-      Await
-        .result(Future.sequence(tasks), totalTimeout.seconds)
-        .forall(_ == true)
-    )
+
+    var threadFailed = false
+
+    val awaitSuccess = Await
+      .result(Future.sequence(tasks), totalTimeout.seconds)
+      .forall((r: Boolean) => {
+        if (r) true else { threadFailed = true; false }
+      })
+
+    if (!awaitSuccess) { // Disambiguate the error cases
+      assertFalse("executed thread failed", threadFailed)
+      fail(s"Await failed with totalTimeout seconds: ${totalTimeout}")
+    }
   }
 
   @Test def redirectOutputAccess() = {
