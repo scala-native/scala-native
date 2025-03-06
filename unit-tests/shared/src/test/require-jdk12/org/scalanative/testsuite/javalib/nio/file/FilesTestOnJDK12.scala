@@ -2,6 +2,7 @@ package org.scalanative.testsuite
 package javalib.nio.file
 
 import java.{util => ju}
+import java.util.function.Consumer
 import java.util.{stream => jus}
 
 import java.io.ByteArrayInputStream
@@ -50,6 +51,23 @@ class FilesTestOnJDK12 {
 
     val dataD = ju.Arrays.copyOf(dataA, commonLength + 5)
 
+    /* Scala 2.12 & Scala 2.13 require Consumer[]. A lambda is idiomatic
+     * on Scala 3 but Consumer[] is accepted. Using Consumer[] allows to
+     * support all three version.
+     */
+
+    class CheckedCopier() extends Consumer[(Array[Byte], Path)] {
+      def accept(packet: (Array[Byte], Path)): Unit = {
+        val data = packet._1
+        val path = packet._2
+        val bais = new ByteArrayInputStream(data)
+        val n = Files.copy(bais, path)
+        assertEquals("copy ${path.toString}", data.length, n)
+      }
+    }
+
+    val checkedCopier = new CheckedCopier
+
     jus.Stream
       .of(
         (dataA, pathA),
@@ -57,11 +75,7 @@ class FilesTestOnJDK12 {
         (dataC, pathC),
         (dataD, pathD)
       )
-      .forEach((data, path) => {
-        val bais = new ByteArrayInputStream(data)
-        val n = Files.copy(bais, path)
-        assertEquals("copy ${path.toString}", data.length, n)
-      })
+      .forEach(checkedCopier)
 
     assertEquals("A == B", -1, Files.mismatch(pathA, pathB))
     assertEquals("A != C", dataCMismatchAt, Files.mismatch(pathA, pathC))
