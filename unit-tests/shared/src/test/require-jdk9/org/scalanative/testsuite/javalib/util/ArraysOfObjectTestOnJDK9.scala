@@ -8,6 +8,17 @@ import org.junit.Assert._
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
+/* These Tests are written so that they compile on Scala 2.12.latest,
+ * 3.13.latest, and Scala 3.
+ *
+ * Tests often provide a good example of how to call and use a method in
+ * other code.
+ *
+ * In many cases, code examples intended strictly for Scala 3 can be more
+ * idiomatic if the type parameter is omitted; e.g mismatch() not
+ * mismatch[T]().
+ */
+
 class ArraysOfObjectTestOnJDK9 {
 
   private class Datum(var field_1: Int, var field_2: Int)
@@ -38,7 +49,7 @@ class ArraysOfObjectTestOnJDK9 {
     }
 
     override def hashCode(): Int =
-      Objects.hash(field_1)
+      Integer.hashCode(field_1)
 
     def compareTo(that: Datum): Int =
       if (that == null) 1 // nulls always less than a realized instance.
@@ -98,7 +109,7 @@ class ArraysOfObjectTestOnJDK9 {
     assertEquals(
       s"element content equality: lenA == LenB, A == B",
       0,
-      Arrays.compare(arrA, arrB)
+      Arrays.compare[Datum](arrA, arrB)
     )
 
     val changeBAt = srcSize - 1
@@ -106,19 +117,19 @@ class ArraysOfObjectTestOnJDK9 {
 
     assertTrue(
       s"element content equality: lenA == LenB, A < B",
-      Arrays.compare(arrA, arrB) < 0
+      Arrays.compare[Datum](arrA, arrB) < 0
     )
 
     arrB(changeBAt).field_1 = jl.Integer.MIN_VALUE
 
     assertTrue(
       s"element content equality: lenA == LenB, A > B",
-      Arrays.compare(arrA, arrB) > 0
+      Arrays.compare[Datum](arrA, arrB) > 0
     )
 
     assertTrue(
       s"element content equality: lenA < LenB, A == B",
-      Arrays.compare(
+      Arrays.compare[Datum](
         Arrays.copyOfRange[Datum](arrA, 0, changeBAt - 1),
         arrB
       ) < 0
@@ -126,7 +137,7 @@ class ArraysOfObjectTestOnJDK9 {
 
     assertTrue(
       s"element content equality: lenA < LenB, A == B",
-      Arrays.compare(
+      Arrays.compare[Datum](
         arrA,
         Arrays.copyOfRange[Datum](arrA, 0, changeBAt - 2)
       ) > 0
@@ -156,12 +167,12 @@ class ArraysOfObjectTestOnJDK9 {
     assertEquals(
       s"element content equality: lenA == LenB, A == B",
       0,
-      Arrays.compare(arrA, copyOfA, comparatorOfDatumField_2)
+      Arrays.compare[Datum](arrA, copyOfA, comparatorOfDatumField_2)
     )
 
     assertTrue(
       s"element content equality: lenA == LenB, A > B",
-      Arrays.compare(arrA, arrB, comparatorOfDatumField_2) > 0
+      Arrays.compare[Datum](arrA, arrB, comparatorOfDatumField_2) > 0
     )
 
     val changeBAt = srcSize - 1
@@ -169,12 +180,12 @@ class ArraysOfObjectTestOnJDK9 {
 
     assertTrue(
       s"element content equality: lenA == LenB, A < B",
-      Arrays.compare(arrA, arrB, comparatorOfDatumField_2) > 0
+      Arrays.compare[Datum](arrA, arrB, comparatorOfDatumField_2) > 0
     )
 
     assertTrue(
       s"element content equality: lenA < LenB, A == B",
-      Arrays.compare(
+      Arrays.compare[Datum](
         Arrays.copyOfRange[Datum](copyOfA, 0, changeBAt - 1),
         copyOfA,
         comparatorOfDatumField_2
@@ -183,7 +194,7 @@ class ArraysOfObjectTestOnJDK9 {
 
     assertTrue(
       s"element content equality: lenA > LenB, A == B",
-      Arrays.compare(
+      Arrays.compare[Datum](
         copyOfA,
         Arrays.copyOfRange[Datum](copyOfA, 0, changeBAt - 2),
         comparatorOfDatumField_2
@@ -241,7 +252,7 @@ class ArraysOfObjectTestOnJDK9 {
     // same ranges do not match
     assertTrue(
       s"a[${t1FromIdx}, ${t1ToIdx}) != b[${t1FromIdx}, ${t1ToIdx})",
-      Arrays.compare(
+      Arrays.compare[Datum](
         arrA,
         t1FromIdx,
         t1ToIdx,
@@ -254,7 +265,7 @@ class ArraysOfObjectTestOnJDK9 {
     // different ranges match
     assertTrue(
       s"a[${t1FromIdx}, ${t1ToIdx}) == b[${t2FromIdx}, ${t2ToIdx})",
-      Arrays.compare(
+      Arrays.compare[Datum](
         arrA,
         t1FromIdx,
         t1ToIdx,
@@ -271,7 +282,7 @@ class ArraysOfObjectTestOnJDK9 {
     // ranges which used to  no longer do when field_1 in one has changed.
     assertTrue(
       s"a[${t1FromIdx}, ${t1ToIdx}) != b[${t2FromIdx}, ${t2ToIdx}), field_1",
-      Arrays.compare(
+      Arrays.compare[Datum](
         arrA,
         t1FromIdx,
         t1ToIdx,
@@ -287,7 +298,7 @@ class ArraysOfObjectTestOnJDK9 {
 
     assertTrue(
       "common prefix but a.length < b.length",
-      Arrays.compare(
+      Arrays.compare[Datum](
         arrA,
         t1FromIdx,
         t3ToIdx,
@@ -299,7 +310,7 @@ class ArraysOfObjectTestOnJDK9 {
 
     assertTrue(
       "common prefix but a.length > b.length",
-      Arrays.compare(
+      Arrays.compare[Datum](
         arrA,
         t1FromIdx,
         t1ToIdx,
@@ -360,7 +371,7 @@ class ArraysOfObjectTestOnJDK9 {
     assertThrows(
       "null comparator arg",
       classOf[NullPointerException],
-      Arrays.compare(
+      Arrays.compare[Datum](
         arrA,
         t1FromIdx,
         t1ToIdx,
@@ -374,7 +385,7 @@ class ArraysOfObjectTestOnJDK9 {
     // same ranges do not match
     assertTrue(
       s"a[${t1FromIdx}, ${t1ToIdx}) != b[${t1FromIdx}, ${t1ToIdx})",
-      Arrays.compare(
+      Arrays.compare[Datum](
         arrA,
         t1FromIdx,
         t1ToIdx,
@@ -388,7 +399,7 @@ class ArraysOfObjectTestOnJDK9 {
     // different ranges match
     assertTrue(
       s"a[${t1FromIdx}, ${t1ToIdx}) == b[${t2FromIdx}, ${t2ToIdx})",
-      Arrays.compare(
+      Arrays.compare[Datum](
         arrA,
         t1FromIdx,
         t1ToIdx,
@@ -406,7 +417,7 @@ class ArraysOfObjectTestOnJDK9 {
     // ranges which used to  no longer do when field_1 in one has changed.
     assertTrue(
       s"a[${t1FromIdx}, ${t1ToIdx}) != b[${t2FromIdx}, ${t2ToIdx}), field_1",
-      Arrays.compare(
+      Arrays.compare[Datum](
         arrA,
         t1FromIdx,
         t1ToIdx,
@@ -424,7 +435,7 @@ class ArraysOfObjectTestOnJDK9 {
     // ranges which no longer match on field_1 still match on field_2
     assertTrue(
       s"a[${t1FromIdx}, ${t1ToIdx}) != b[${t2FromIdx}, ${t2ToIdx}, field_2)",
-      Arrays.compare(
+      Arrays.compare[Datum](
         arrA,
         t1FromIdx,
         t1ToIdx,
@@ -442,7 +453,7 @@ class ArraysOfObjectTestOnJDK9 {
     // ranges which used to match on field_2 no longer do after element changed
     assertTrue(
       s"a[${t1FromIdx}, ${t1ToIdx}) != b[${t2FromIdx}, ${t2ToIdx}, field_2)",
-      Arrays.compare(
+      Arrays.compare[Datum](
         arrA,
         t1FromIdx,
         t1ToIdx,
@@ -459,7 +470,7 @@ class ArraysOfObjectTestOnJDK9 {
 
     assertTrue(
       "common prefix but a.length < b.length",
-      Arrays.compare(
+      Arrays.compare[Datum](
         arrA,
         t1FromIdx,
         t3ToIdx,
@@ -472,7 +483,7 @@ class ArraysOfObjectTestOnJDK9 {
 
     assertTrue(
       "common prefix but a.length > b.length",
-      Arrays.compare(
+      Arrays.compare[Datum](
         arrA,
         t1FromIdx,
         t1ToIdx,
@@ -500,34 +511,34 @@ class ArraysOfObjectTestOnJDK9 {
     assertThrows(
       "null comparator arg",
       classOf[NullPointerException],
-      Arrays.equals(arrA, arrB, null)
+      Arrays.equals[Datum](arrA, arrB, null)
     )
 
     assertTrue(
       s"null == null",
-      Arrays.equals(null, null, comparatorOfDatumField_2)
+      Arrays.equals[Datum](null, null, comparatorOfDatumField_2)
     )
 
     assertFalse(
       s"null == b",
-      Arrays.equals(null, arrB, comparatorOfDatumField_2)
+      Arrays.equals[Datum](null, arrB, comparatorOfDatumField_2)
     )
 
     assertFalse(
       s"a == null",
-      Arrays.equals(arrA, null, comparatorOfDatumField_2)
+      Arrays.equals[Datum](arrA, null, comparatorOfDatumField_2)
     )
 
     // equals on field_1
     assertTrue(
       s"element content equality: lenA == LenB, field_1",
-      Arrays.equals(arrA, arrB, comparatorOfDatumField_1)
+      Arrays.equals[Datum](arrA, arrB, comparatorOfDatumField_1)
     )
 
     // but not equals on field_2
     assertFalse(
       s"elements content equality: lenA == LenB, field_2",
-      Arrays.equals(arrA, arrB, comparatorOfDatumField_2)
+      Arrays.equals[Datum](arrA, arrB, comparatorOfDatumField_2)
     )
   }
 
@@ -700,7 +711,7 @@ class ArraysOfObjectTestOnJDK9 {
     assertThrows(
       "null comparator arg",
       classOf[NullPointerException],
-      Arrays.equals(
+      Arrays.equals[Datum](
         arrA,
         t1FromIdx,
         t1ToIdx,
@@ -714,7 +725,7 @@ class ArraysOfObjectTestOnJDK9 {
     // same ranges do not match
     assertFalse(
       s"a[${t1FromIdx}, ${t1ToIdx}) != b[${t1FromIdx}, ${t1ToIdx})",
-      Arrays.equals(
+      Arrays.equals[Datum](
         arrA,
         t1FromIdx,
         t1ToIdx,
@@ -728,7 +739,7 @@ class ArraysOfObjectTestOnJDK9 {
     // different ranges match
     assertTrue(
       s"a[${t1FromIdx}, ${t1ToIdx}) == b[${t2FromIdx}, ${t2ToIdx})",
-      Arrays.equals(
+      Arrays.equals[Datum](
         arrA,
         t1FromIdx,
         t1ToIdx,
@@ -746,7 +757,7 @@ class ArraysOfObjectTestOnJDK9 {
     // ranges which used to  no longer do when field_1 in one has changed.
     assertFalse(
       s"a[${t1FromIdx}, ${t1ToIdx}) != b[${t2FromIdx}, ${t2ToIdx}), field_1",
-      Arrays.equals(
+      Arrays.equals[Datum](
         arrA,
         t1FromIdx,
         t1ToIdx,
@@ -764,7 +775,7 @@ class ArraysOfObjectTestOnJDK9 {
     // ranges which no longer match on field_1 still match on field_2
     assertTrue(
       s"a[${t1FromIdx}, ${t1ToIdx}) != b[${t2FromIdx}, ${t2ToIdx}, field_2)",
-      Arrays.equals(
+      Arrays.equals[Datum](
         arrA,
         t1FromIdx,
         t1ToIdx,
@@ -782,7 +793,7 @@ class ArraysOfObjectTestOnJDK9 {
     // ranges which used to match on field_2 no longer do after element changed
     assertFalse(
       s"a[${t1FromIdx}, ${t1ToIdx}) != b[${t2FromIdx}, ${t2ToIdx}, field_2)",
-      Arrays.equals(
+      Arrays.equals[Datum](
         arrA,
         t1FromIdx,
         t1ToIdx,
@@ -799,7 +810,7 @@ class ArraysOfObjectTestOnJDK9 {
 
     assertFalse(
       "common prefix but a.length < b.length",
-      Arrays.equals(
+      Arrays.equals[Datum](
         arrA,
         t1FromIdx,
         t3ToIdx,
@@ -812,7 +823,7 @@ class ArraysOfObjectTestOnJDK9 {
 
     assertFalse(
       "common prefix but a.length > b.length",
-      Arrays.equals(
+      Arrays.equals[Datum](
         arrA,
         t1FromIdx,
         t1ToIdx,
@@ -909,7 +920,7 @@ class ArraysOfObjectTestOnJDK9 {
     assertThrows(
       "null comparator arg",
       classOf[NullPointerException],
-      Arrays.mismatch(
+      Arrays.mismatch[Datum](
         arrA,
         copyOfA,
         null
@@ -919,7 +930,7 @@ class ArraysOfObjectTestOnJDK9 {
     assertEquals(
       s"mismatch(A, copyOfA)",
       -1,
-      Arrays.mismatch(
+      Arrays.mismatch[Datum](
         arrA,
         copyOfA,
         comparatorOfDatumField_2
@@ -932,7 +943,7 @@ class ArraysOfObjectTestOnJDK9 {
     assertEquals(
       s"mismatch(A, B)",
       expectMismatchAtAIdx,
-      Arrays.mismatch(
+      Arrays.mismatch[Datum](
         arrA,
         arrB,
         comparatorOfDatumField_2
@@ -946,7 +957,7 @@ class ArraysOfObjectTestOnJDK9 {
     assertEquals(
       s"mismatch length, A < sliceOfA",
       truncatedSrcSize,
-      Arrays.mismatch(
+      Arrays.mismatch[Datum](
         sliceOfA,
         arrA,
         comparatorOfDatumField_2
@@ -956,7 +967,7 @@ class ArraysOfObjectTestOnJDK9 {
     assertEquals(
       s"mismatch length, A > sliceOfA",
       truncatedSrcSize,
-      Arrays.mismatch(
+      Arrays.mismatch[Datum](
         arrA,
         sliceOfA,
         comparatorOfDatumField_2
@@ -1138,7 +1149,7 @@ class ArraysOfObjectTestOnJDK9 {
     assertThrows(
       "null comparator arg",
       classOf[NullPointerException],
-      Arrays.mismatch(
+      Arrays.mismatch[Datum](
         arrA,
         t1FromIdx,
         t1ToIdx,
@@ -1153,7 +1164,7 @@ class ArraysOfObjectTestOnJDK9 {
     assertEquals(
       s"a[${t1FromIdx}, ${t1ToIdx}) == b[${t1FromIdx}, ${t1ToIdx})",
       0,
-      Arrays.mismatch(
+      Arrays.mismatch[Datum](
         arrA,
         t1FromIdx,
         t1ToIdx,
@@ -1168,7 +1179,7 @@ class ArraysOfObjectTestOnJDK9 {
     assertEquals(
       s"a[${t1FromIdx}, ${t1ToIdx}) == b[${t2FromIdx}, ${t2ToIdx})",
       -1, // No mismatch found
-      Arrays.mismatch(
+      Arrays.mismatch[Datum](
         arrA,
         t1FromIdx,
         t1ToIdx,
@@ -1187,7 +1198,7 @@ class ArraysOfObjectTestOnJDK9 {
     assertEquals(
       s"a[${t1FromIdx}, ${t1ToIdx}) != b[${t2FromIdx}, ${t2ToIdx})",
       expectedMismatchAtAIdx,
-      Arrays.mismatch(
+      Arrays.mismatch[Datum](
         arrA,
         t1FromIdx,
         t1ToIdx,
@@ -1205,7 +1216,7 @@ class ArraysOfObjectTestOnJDK9 {
     assertEquals(
       s"a[${t1FromIdx}, ${t1ToIdx}) != b[${t2FromIdx}, ${t2ToIdx})",
       -1, // No mismatch found
-      Arrays.mismatch(
+      Arrays.mismatch[Datum](
         arrA,
         t1FromIdx,
         t1ToIdx,
@@ -1224,7 +1235,7 @@ class ArraysOfObjectTestOnJDK9 {
     assertEquals(
       s"a[${t1FromIdx}, ${t1ToIdx}) != b[${t2FromIdx}, ${t2ToIdx}, field_2)",
       expectedMismatchAtAIdxF2,
-      Arrays.mismatch(
+      Arrays.mismatch[Datum](
         arrA,
         t1FromIdx,
         t1ToIdx,
@@ -1242,7 +1253,7 @@ class ArraysOfObjectTestOnJDK9 {
     assertEquals(
       "common prefix but a.length < b.length",
       expectedShortMismatchAtIdx,
-      Arrays.mismatch(
+      Arrays.mismatch[Datum](
         arrA,
         t1FromIdx,
         t3ToIdx,
@@ -1256,7 +1267,7 @@ class ArraysOfObjectTestOnJDK9 {
     assertEquals(
       "common prefix but a.length > b.length",
       expectedShortMismatchAtIdx,
-      Arrays.mismatch(
+      Arrays.mismatch[Datum](
         arrA,
         t1FromIdx,
         t1ToIdx,
