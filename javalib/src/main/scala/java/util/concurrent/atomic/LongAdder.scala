@@ -40,11 +40,9 @@ class LongAdder() extends Striped64 with Serializable {
     if ({ cs = cells; cs != null } || !casBase({ b = base; b }, b + x)) {
       val index = getProbe()
       var uncontended = true
-      if (cs == null || { m = cells.length - 1; m < 0 } || {
-            c = cells(index & m); c == null
-          } || {
-            uncontended = c.cas({ v = c.value; v }, v + x); !uncontended
-          }) {
+      if (cs == null || { m = cells.length - 1; m < 0 } ||
+          { c = cells(index & m); c == null } ||
+          { uncontended = c.cas({ v = c.value; v }, v + x); !uncontended }) {
         longAccumulate(x, null, uncontended, index)
       }
     }
