@@ -1280,3 +1280,9 @@ class ArraysOfObjectTestOnJDK9 {
   }
 
 }
+
+class KnownFailingTestOnJDK9 {
+  @Test def probeCI(): Unit = {
+    fail("Does CI execute a second class in a file?")
+  }
+}
