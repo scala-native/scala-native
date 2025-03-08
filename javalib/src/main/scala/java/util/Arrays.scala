@@ -1443,6 +1443,45 @@ object Arrays {
     StreamSupport.stream(spliter, parallel = false)
   }
 
+// JDK 9 ----------------------------------------------------------------
+
+  private def compareNullsFirst[T <: Comparable[T]](o1: T, o2: T): Int = {
+    // Scala 3 def compareNullsFirst[T <: Comparable[_ >: T]](o1: T, o2: T): Int
+    /* The JDK 23 documentation for JDK 9 methods which do not directly
+     * take a Comparator argment, such as compare(a, b) and
+     * compare(a, Int, Int, b, Int, Int), describe the comparison as
+     * """
+     * |as if by:
+     * |
+     * |  Comparator.nullsFirst(Comparator.<T>naturalOrder()).
+     * |        compare(a[i], b[i])
+     * """
+     *
+     * Scala Native javalib provides each of those static methods
+     * but getting the composition to work with the types used by
+     * the compare() methods above proved more difficult than time &
+     * skill allowed.
+     *
+     * There is probably at least one Scala idiomatic way to implement this
+     * method. For now, this implementation suits the need and has the
+     * benefit of existing.
+     *
+     * NB: The naturalOrder() at top of this file does not handle nulls, first,
+     *     last, or anywhere.
+     */
+    if (o1 == null && o2 == null) 0
+    else if (o1 == null) -1
+    else if (o2 == null) 1
+    else
+      o1.compareTo(o2)
+  }
+
+  /* Objects.compare(a, b, cmp) requires a lot of complexity to provide
+   * the specified or implied JDK 9 behavior where this method is used.
+   */
+  private def objectsCompareZeroOrMinus1[T <: AnyRef](a: T, b: T): Int =
+    if (Objects.equals(a, b)) 0 else -1
+
   // Similar in concept to Objects.checkFromIndex() but different Exceptions.
   private def validateFromToIndex(
       fromIndex: Int,
@@ -1464,11 +1503,406 @@ object Arrays {
     fromIndex
   }
 
-// mismatch()
+// compare() JDK 9
+
+  /* Stray slightly from the strict JVM compatability here.
+   * The content of the message is not documented, but in practice, on
+   * JVM 23, it is a très helpful empty message "".
+   * A useful message helps debug who is actually throwing NPEs & why.
+   */
+
+  private final val cmpIsNullMsg = "cmp must not be null"
+
+  /* Validate args here, in one place, rather than usual practice of in caller.
+   * Pass cmp by name so that Integer.compare() & such get inlined.
+   * The specific required validation steps vary by number of arguments.
+   */
+
+  private def compareImpl[T](
+      a: Array[T],
+      b: Array[T],
+      cmp: => ju.function.BiFunction[T, T, Int]
+  ): Int = {
+    // JVM checks cmp first, before checking for null Array args.
+    Objects.requireNonNull(cmp, cmpIsNullMsg)
+
+    if (a == null) {
+      if (b == null) 0 else -1
+    } else if (b == null) {
+      1
+    } else {
+      compareImplCore[T](a, 0, a.length, b, 0, b.length, cmp)
+    }
+  }
+
+  private def compareImpl[T](
+      a: Array[T],
+      aFromIndex: Int,
+      aToIndex: Int,
+      b: Array[T],
+      bFromIndex: Int,
+      bToIndex: Int,
+      cmp: => ju.function.BiFunction[T, T, Int]
+  ): Int = {
+    // JVM checks cmp first, before checking for null Array args.
+    Objects.requireNonNull(cmp, cmpIsNullMsg)
+
+    Objects.requireNonNull(a)
+    Arrays.validateFromToIndex(aFromIndex, aToIndex, a.length)
+
+    Objects.requireNonNull(b)
+    Arrays.validateFromToIndex(bFromIndex, bToIndex, b.length)
+
+    compareImplCore[T](
+      a,
+      aFromIndex,
+      aToIndex,
+      b,
+      bFromIndex,
+      bToIndex,
+      cmp
+    )
+  }
+
+  // By construction & contract, caller has validated arguments
+  private def compareImplCore[T](
+      a: Array[T],
+      aFromIndex: Int,
+      aToIndex: Int,
+      b: Array[T],
+      bFromIndex: Int,
+      bToIndex: Int,
+      cmp: => ju.function.BiFunction[T, T, Int]
+  ): Int = {
+    val i =
+      Arrays.mismatchImpl(a, aFromIndex, aToIndex, b, bFromIndex, bToIndex, cmp)
+
+    if ((i >= 0) && (i < Math.min(
+          aToIndex - aFromIndex,
+          bToIndex - bFromIndex
+        ))) {
+      cmp(a(aFromIndex + i), b(bFromIndex + i))
+    } else {
+      (aToIndex - aFromIndex) - (bToIndex - bFromIndex)
+    }
+  }
+
+  /** @since JDK 9 */
+  def compare(a: Array[Byte], b: Array[Byte]): Int = {
+    compareImpl(a, b, jl.Byte.compare)
+  }
+
+  /** @since JDK 9 */
+  def compare(
+      a: Array[Byte],
+      aFromIndex: Int,
+      aToIndex: Int,
+      b: Array[Byte],
+      bFromIndex: Int,
+      bToIndex: Int
+  ): Int = {
+    compareImpl(
+      a,
+      aFromIndex,
+      aToIndex,
+      b,
+      bFromIndex,
+      bToIndex,
+      jl.Byte.compare
+    )
+  }
+
+  /** @since JDK 9 */
+  def compareUnsigned(a: Array[Byte], b: Array[Byte]): Int = {
+    compareImpl(a, b, jl.Byte.compareUnsigned)
+  }
+
+  /** @since JDK 9 */
+  def compareUnsigned(
+      a: Array[Byte],
+      aFromIndex: Int,
+      aToIndex: Int,
+      b: Array[Byte],
+      bFromIndex: Int,
+      bToIndex: Int
+  ): Int = {
+    compareImpl(
+      a,
+      aFromIndex,
+      aToIndex,
+      b,
+      bFromIndex,
+      bToIndex,
+      jl.Byte.compareUnsigned
+    )
+  }
+
+  /** @since JDK 9 */
+  def compare[T <: Comparable[T]]( // Scala 2.12, 2.13
+      // Scala 3 see below
+      a: Array[Comparable[_]], // Scala 3 Array[T]
+      b: Array[Comparable[_]] // Scala 3 Array[T]
+  ): Int = {
+    val cmp = Arrays.compareNullsFirst[T] _ // see comments in method
+    compareImpl(
+      a,
+      b,
+      (a: Comparable[_], b: Comparable[_]) =>
+        cmp(a.asInstanceOf[T], b.asInstanceOf[T])
+    )
+  }
+
+  /* // Scala 3
+  /** @since JDK 9 */
+  def compare[T <: Comparable[_ >: T]](
+      a: Array[T],
+      b: Array[T]
+  ): Int = {
+    val cmp = Arrays.compareNullsFirst[T] _ // see comments in method
+    compareImpl(a, b, (a: T, b: T) => cmp(a, b))
+  }
+   */
+
+  /** @since JDK 9 */
+  def compare[T <: AnyRef](
+      a: Array[T],
+      b: Array[T],
+      cmp: Comparator[_ >: T]
+  ): Int = {
+    Objects.requireNonNull(cmp, "cmp")
+
+    // compareImpl(a, b, cmp.compare) // Scala 3
+    compareImpl[AnyRef](
+      a.asInstanceOf[Array[AnyRef]],
+      b.asInstanceOf[Array[AnyRef]],
+      (a: AnyRef, b: AnyRef) =>
+        cmp.compare(a.asInstanceOf[T], b.asInstanceOf[T])
+    )
+  }
+
+  /** @since JDK 9 */
+  def compare[T <: Comparable[T]](
+      // Scala 3  def compare[T <: Comparable[_ >: T]](
+      a: Array[Comparable[_]],
+      aFromIndex: Int,
+      aToIndex: Int,
+      b: Array[Comparable[_]],
+      bFromIndex: Int,
+      bToIndex: Int
+  ): Int = {
+    val cmp = Arrays.compareNullsFirst[T] _ // see comments in method
+
+    compareImpl(
+      a,
+      aFromIndex,
+      aToIndex,
+      b,
+      bFromIndex,
+      bToIndex,
+      (a: Comparable[_], b: Comparable[_]) =>
+        cmp(a.asInstanceOf[T], b.asInstanceOf[T])
+    )
+  }
+
+  /*
+  /** @since JDK 9 */
+  def compare[T <: Comparable[T]](
+      // Scala 3  def compare[T <: Comparable[_ >: T]](
+      a: Array[T],
+      aFromIndex: Int,
+      aToIndex: Int,
+      b: Array[T],
+      bFromIndex: Int,
+      bToIndex: Int
+  ): Int = {
+    val cmp = Arrays.compareNullsFirst[T] _ // see comments in method
+
+    compareImpl(
+      a,
+      aFromIndex,
+      aToIndex,
+      b,
+      bFromIndex,
+      bToIndex,
+      (a: T, b: T) => cmp(a, b)
+    )
+  }
+   */
+
+  /** @since JDK 9 */
+  def compare[T <: AnyRef](
+      a: Array[T],
+      aFromIndex: Int,
+      aToIndex: Int,
+      b: Array[T],
+      bFromIndex: Int,
+      bToIndex: Int,
+      cmp: Comparator[_ >: T]
+  ): Int = {
+    Objects.requireNonNull(cmp, "cmp")
+
+    compareImpl(
+      // a, // Scala 3
+      a.asInstanceOf[Array[Any]],
+      aFromIndex,
+      aToIndex,
+      // b, // Scala 3
+      b.asInstanceOf[Array[Any]],
+      bFromIndex,
+      bToIndex,
+      // cmp.compare // Scala 3
+      (a: Any, b: Any) => cmp.compare(a.asInstanceOf[T], b.asInstanceOf[T])
+    )
+  }
+
+// equals() JDK 9
+
+  /** @since JDK 9 */
+  def equals(
+      a: Array[Byte],
+      aFromIndex: Int,
+      aToIndex: Int,
+      b: Array[Byte],
+      bFromIndex: Int,
+      bToIndex: Int
+  ): scala.Boolean = {
+    compareImpl(
+      a,
+      aFromIndex,
+      aToIndex,
+      b,
+      bFromIndex,
+      bToIndex,
+      jl.Byte.compare
+    ) == 0
+  }
+
+  /** @since JDK 9 */
+  def equals[T <: AnyRef](
+      a: Array[T],
+      b: Array[T],
+      cmp: Comparator[_ >: T]
+  ): scala.Boolean = {
+    // compareImpl(a, b, cmp.compare) == 0 // Scala 3
+    compareImpl[AnyRef](
+      a.asInstanceOf[Array[AnyRef]],
+      b.asInstanceOf[Array[AnyRef]],
+      (a: AnyRef, b: AnyRef) =>
+        cmp.compare(a.asInstanceOf[T], b.asInstanceOf[T])
+    ) == 0
+  }
+
+  /** @since JDK 9 */
+  def equals[T <: AnyRef](
+      a: Array[T],
+      aFromIndex: Int,
+      aToIndex: Int,
+      b: Array[T],
+      bFromIndex: Int,
+      bToIndex: Int
+  ): scala.Boolean = {
+    compareImpl(
+      a,
+      aFromIndex,
+      aToIndex,
+      b,
+      bFromIndex,
+      bToIndex,
+      // objectsCompareZeroOrMinus1 // Scala 3
+      (a: T, b: T) => objectsCompareZeroOrMinus1(a, b)
+    ) == 0
+  }
+
+  /** @since JDK 9 */
+  def equals[T <: AnyRef](
+      a: Array[T],
+      aFromIndex: Int,
+      aToIndex: Int,
+      b: Array[T],
+      bFromIndex: Int,
+      bToIndex: Int,
+      cmp: Comparator[_ >: T]
+  ): scala.Boolean = {
+    compareImpl(
+      // a, // Scala 3
+      a.asInstanceOf[Array[Any]],
+      aFromIndex,
+      aToIndex,
+      // b, // Scala 3
+      b.asInstanceOf[Array[Any]],
+      bFromIndex,
+      bToIndex,
+      // cmp.compare // Scala 3
+      (a: Any, b: Any) => cmp.compare(a.asInstanceOf[T], b.asInstanceOf[T])
+    ) == 0
+  }
+
+// mismatch() JDK 9
+
+  private def mismatchImpl[T](
+      a: Array[T],
+      aFromIndex: Int,
+      aToIndex: Int,
+      b: Array[T],
+      bFromIndex: Int,
+      bToIndex: Int,
+      cmp: => ju.function.BiFunction[T, T, Int]
+  ): Int = {
+
+    def noArrayLengthMsg(stem: String): String = {
+      // Many Scala 2.1[2-3].n version do not understand or allow "\"".
+      s""""Cannot read the array length because \"${stem}\" is null"""
+    }
+
+    Objects.requireNonNull(a, noArrayLengthMsg("a"))
+    Arrays.validateFromToIndex(aFromIndex, aToIndex, a.length)
+
+    Objects.requireNonNull(a, noArrayLengthMsg("b"))
+    Arrays.validateFromToIndex(bFromIndex, bToIndex, b.length)
+
+    val aRangeLen = aToIndex - aFromIndex
+    val bRangeLen = bToIndex - bFromIndex
+    val matchLen = Math.min(aRangeLen, bRangeLen)
+
+    val abOffset = bFromIndex - aFromIndex
+
+    var j = aFromIndex // relative to first Array argument
+    var mismatchedAt = -1
+
+    while ((j < (aFromIndex + matchLen)) && (mismatchedAt < 0)) {
+      if (cmp(a(j), b(j + abOffset)) == 0) j += 1
+      else mismatchedAt = j - aFromIndex
+    }
+
+    if (mismatchedAt > -1) mismatchedAt
+    else if (aRangeLen == bRangeLen) -1
+    else Math.min(aRangeLen, bRangeLen)
+  }
 
   /** @since JDK 9 */
   def mismatch(a: Array[Byte], b: Array[Byte]): Int =
-    mismatch(a, 0, a.length, b, 0, b.length)
+    mismatchImpl(
+      a,
+      0,
+      a.length,
+      b,
+      0,
+      b.length,
+      jl.Byte.compare
+    )
+
+  /** @since JDK 9 */
+  def mismatch(a: Array[Object], b: Array[Object]): Int =
+    mismatchImpl(
+      a,
+      0,
+      a.length,
+      b,
+      0,
+      b.length,
+      // objectsCompareZeroOrMinus1 // Scala 3
+      (a: Object, b: Object) => objectsCompareZeroOrMinus1(a, b)
+    )
 
   /** @since JDK 9 */
   def mismatch(
@@ -1479,48 +1913,81 @@ object Arrays {
       bFromIndex: Int,
       bToIndex: Int
   ): Int = {
-    Objects.requireNonNull(a)
-    Arrays.validateFromToIndex(aFromIndex, aToIndex, a.length)
+    mismatchImpl(
+      a,
+      aFromIndex,
+      aToIndex,
+      b,
+      bFromIndex,
+      bToIndex,
+      jl.Byte.compare
+    )
+  }
 
-    Objects.requireNonNull(b)
-    Arrays.validateFromToIndex(bFromIndex, bToIndex, b.length)
+  /** @since JDK 9 */
+  def mismatch[T <: AnyRef](
+      a: Array[T],
+      b: Array[T],
+      cmp: Comparator[_ >: T]
+  ): Int = {
+    mismatchImpl(
+      // a, // Scala 3
+      a.asInstanceOf[Array[Any]],
+      0,
+      a.length,
+      // b, // Scala 3
+      b.asInstanceOf[Array[Any]],
+      0,
+      b.length,
+      // cmp.compare // Scala 3
+      (a: Any, b: Any) => cmp.compare(a.asInstanceOf[T], b.asInstanceOf[T])
+    )
+  }
 
-    val aRangeLen = aToIndex - aFromIndex
-    val bRangeLen = bToIndex - bFromIndex
-    val matchLen = Math.min(aRangeLen, bRangeLen)
+  /** @since JDK 9 */
+  def mismatch[T <: AnyRef](
+      a: Array[T],
+      aFromIndex: Int,
+      aToIndex: Int,
+      b: Array[T],
+      bFromIndex: Int,
+      bToIndex: Int
+  ): Int = {
+    mismatchImpl(
+      a,
+      aFromIndex,
+      aToIndex,
+      b,
+      bFromIndex,
+      bToIndex,
+      // objectsCompareZeroOrMinus1 // Scala 3
+      (a: T, b: T) => objectsCompareZeroOrMinus1(a, b)
+    )
+  }
 
-    val matchPos =
-      string.memcmp(
-        a.at(aFromIndex),
-        b.at(bFromIndex),
-        matchLen.toCSize
-      )
+  /** @since JDK 9 */
+  def mismatch[T <: AnyRef](
+      a: Array[AnyRef], // Scala 3: a: Array[T]
+      aFromIndex: Int,
+      aToIndex: Int,
+      b: Array[AnyRef], // Scala 3: b: Array[T]
+      bFromIndex: Int,
+      bToIndex: Int,
+      cmp: Comparator[_ >: T]
+  ): Int = {
+    Objects.requireNonNull(cmp, "cmp")
 
-    if (matchPos == 0) {
-      if (aRangeLen == bRangeLen) -1
-      else matchLen
-    } else {
-      /* This branch is optimized for small Arrays.
-       *
-       * For large & huge Arrays, a future evolution could recursively
-       * use memcmp() on each half of Arrays over a certain size (8K?) and
-       * fallback to the while() once the String range was small enough.
-       * Similar to the idea of quicksort() falling back to insertion sort.
-       */
-
-      val abOffset = bFromIndex - aFromIndex
-
-      var j = aFromIndex // relative to first Array argument
-      var foundAt = -1
-
-      while ((j < (aFromIndex + matchLen)) && (foundAt < 0)) {
-        // Byte.compare() will be inlined by SN compiler, so no call overhead
-        if (jl.Byte.compare(a(j), b(j + abOffset)) == 0) j += 1
-        else foundAt = j - aFromIndex
-      }
-
-      foundAt
-    }
+    mismatchImpl(
+      a,
+      aFromIndex,
+      aToIndex,
+      b,
+      bFromIndex,
+      bToIndex,
+      // cmp.compare // Scala 3
+      (a: AnyRef, b: AnyRef) =>
+        cmp.compare(a.asInstanceOf[T], b.asInstanceOf[T])
+    )
   }
 
 }
