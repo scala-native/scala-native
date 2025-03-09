@@ -145,6 +145,16 @@ class RE2 private {
   def match_(s: CharSequence): Boolean =
     doExecute(MachineInput.fromUTF16(s), 0, UNANCHORED, 0) != null
 
+  def match_(
+      input: CharSequence,
+      start: Int,
+      end: Int,
+      anchor: Int,
+      group: Array[Int],
+      ngroup: Int
+  ): Boolean =
+    match_(input, start, 0, end, anchor, group, ngroup)
+
   // Matches the regular expression against input starting at position start
   // and ending at position end, with the given anchoring.
   // Records the submatch boundaries in group, which is [start, end) pairs
@@ -153,7 +163,8 @@ class RE2 private {
   // submatch boundaries.
   //
   // @param input the input byte array
-  // @param start the beginning position in the input
+  // @param pos the position in the input to start the search
+  // @param beg the start position in the input
   // @param end the end position in the input
   // @param anchor the anchoring flag (UNANCHORED, ANCHOR_START, ANCHOR_BOTH)
   // @param group the array to fill with submatch positions
@@ -161,19 +172,20 @@ class RE2 private {
   // @return true if a match was found
   def match_(
       input: CharSequence,
-      start: Int,
+      pos: Int,
+      beg: Int,
       end: Int,
       anchor: Int,
       group: Array[Int],
       ngroup: Int
   ): Boolean = {
-    if (start > end) {
+    if (pos > end || pos < beg) {
       return false
     }
 
     val groupMatch = doExecute(
-      MachineInput.fromUTF16(input, 0, end),
-      start,
+      MachineInput.fromUTF16(input, beg, end),
+      pos - beg,
       anchor,
       2 * ngroup
     )
