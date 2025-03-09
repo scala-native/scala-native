@@ -39,7 +39,7 @@ class NirCodeGen(val settings: GenNIR.Settings)(using ctx: Context)
   protected val curClassFresh = new util.ScopedVar[nir.Fresh]
 
   protected val curMethodSym = new util.ScopedVar[Symbol]
-  protected val curMethodSig = new util.ScopedVar[nir.Type]
+  protected val curMethodSig = new util.ScopedVar[nir.Type.Function]
   protected val curMethodInfo = new util.ScopedVar[CollectMethodInfo]
   protected val curMethodEnv = new util.ScopedVar[MethodEnv]
   protected val curMethodLabels = new util.ScopedVar[MethodLabelsEnv]
@@ -53,6 +53,7 @@ class NirCodeGen(val settings: GenNIR.Settings)(using ctx: Context)
     new util.ScopedVar[mutable.Set[DebugInfo.LexicalScope]]
   protected val curFreshScope = new util.ScopedVar[nir.Fresh]
   protected val curScopeId = new util.ScopedVar[nir.ScopeId]
+  protected val genTrySharedContext = new util.ScopedVar[GenTrySharedContext]
   implicit protected def getScopeId: nir.ScopeId = {
     val res = curScopeId.get
     assert(res.id >= nir.ScopeId.TopLevel.id)
@@ -232,6 +233,29 @@ class NirCodeGen(val settings: GenNIR.Settings)(using ctx: Context)
       traverse(tree)
       this
     }
+  }
+
+  protected class GenTrySharedContext(
+      tree: Try,
+      buf: ExprBuffer,
+      curMethodReturnType: nir.Type
+  )(using nir.SourcePosition) {
+    val mayEarlyReturnValue = curMethodReturnType match {
+      case nir.Type.Unit | nir.Type.Nothing => false
+      case _                                => true
+    }
+    val earlyReturnedValueStash = Option.when {
+      // Don't search in finalizer for custom Tree types
+      // Generic TreeAcumulator cannot handle them
+      // These are only used for synthetic try-finally generated for synchronized block
+      val searchInTree = tree.finalizer match
+        case _: ContTree | _: ValTree => tree.expr
+        case _                        => tree
+      searchInTree.existsSubTree(_.isInstanceOf[Return]) && mayEarlyReturnValue
+    } {
+      buf.var_(curMethodReturnType, nir.Next.None)
+    }
+    val throwableVar = buf.var_(nir.Rt.Throwable, nir.Next.None)
   }
 
 end NirCodeGen
