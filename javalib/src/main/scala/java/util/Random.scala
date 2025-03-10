@@ -2,6 +2,7 @@ package java.util
 
 import java.{lang => jl}
 import java.util.function.{DoubleConsumer, IntConsumer, LongConsumer}
+import java.util.random.RandomGenerator
 import java.util.stream.StreamSupport
 import java.util.stream.{DoubleStream, IntStream, LongStream}
 
@@ -10,7 +11,10 @@ import scala.annotation.tailrec
 /** Ported from Apache Harmony and described by Donald E. Knuth in The Art of
  *  Computer Programming, Volume 2: Seminumerical Algorithms, section 3.2.1.
  */
-class Random(seed_in: Long) extends AnyRef with java.io.Serializable {
+class Random(seed_in: Long)
+    extends AnyRef
+    with RandomGenerator
+    with java.io.Serializable {
 
   private var seed: Long = calcSeed(seed_in)
 
@@ -41,9 +45,9 @@ class Random(seed_in: Long) extends AnyRef with java.io.Serializable {
 
   def nextBoolean(): Boolean = next(1) != 0
 
-  def nextInt(): Int = next(32)
+  override def nextInt(): Int = next(32)
 
-  def nextInt(n: Int): Int = {
+  override def nextInt(n: Int): Int = {
     if (n <= 0)
       throw new IllegalArgumentException("n must be positive")
 
