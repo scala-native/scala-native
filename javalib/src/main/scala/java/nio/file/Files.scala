@@ -129,6 +129,7 @@ object Files {
           newAttrView.setHidden(attrs.isHidden())
           newAttrView.setReadOnly(attrs.isReadOnly())
           newAttrView.setSystem(attrs.isSystem())
+        case _ => ??? // ignore
       }
       newAttrView.setTimes(
         attrs.lastModifiedTime(),

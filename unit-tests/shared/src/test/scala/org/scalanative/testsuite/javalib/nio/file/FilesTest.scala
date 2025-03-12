@@ -363,6 +363,7 @@ class FilesTest {
           )
         case (attr: DosFileAttributes, copyAttrs: DosFileAttributes) =>
           assertEquals("isHidden", attr.isHidden(), copyAttrs.isHidden())
+        case _ => ??? // unreachable
       }
     }
   }
