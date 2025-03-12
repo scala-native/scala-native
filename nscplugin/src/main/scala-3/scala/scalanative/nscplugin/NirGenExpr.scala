@@ -307,7 +307,7 @@ trait NirGenExpr(using Context) {
             curScopeId := nir.ScopeId.TopLevel
           ) {
             val fresh = nir.Fresh()
-            val buf = new nir.InstructionBuilder()(fresh)
+            val buf = new nir.InstructionBuilder()(using fresh)
 
             val superTy = nir.Type.Function(Seq(nir.Rt.Object), nir.Type.Unit)
             val superName = nir.Rt.Object.name.member(nir.Sig.Ctor(Seq.empty))
@@ -899,7 +899,7 @@ trait NirGenExpr(using Context) {
           val f = ContTree(body) { (buf: ExprBuffer) =>
             withFreshBlockScope(body.span) { _ =>
               symopt.foreach { sym =>
-                val cast = buf.as(excty, exc, unwind)(cd.span, getScopeId)
+                val cast = buf.as(excty, exc, unwind)(using cd.span, getScopeId)
                 curMethodLocalNames.get.update(cast.id, genLocalName(sym))
                 curMethodEnv.enter(sym, cast)
               }
@@ -919,7 +919,7 @@ trait NirGenExpr(using Context) {
             buf.raise(exc, unwind)
             nir.Val.Unit
           case (excty, f, pos) +: rest =>
-            val cond = buf.is(excty, exc, unwind)(pos, getScopeId)
+            val cond = buf.is(excty, exc, unwind)(using pos, getScopeId)
             genIf(
               retty,
               ValTree(f)(cond),
@@ -965,12 +965,12 @@ trait NirGenExpr(using Context) {
           // a new copy of the finally handler for every edge.
           val finallyn = fresh()
           withFreshBlockScope(cf.pos) { _ =>
-            finalies.label(finallyn)(cf.pos)
+            finalies.label(finallyn)(using cf.pos)
             finalies.genExpr(finallyp)
           }
           finalies += cf
           // The original jump outside goes through finally block first.
-          nir.Inst.Jump(nir.Next(finallyn))(cf.pos)
+          nir.Inst.Jump(nir.Next(finallyn))(using cf.pos)
         case inst =>
           inst
       }
@@ -1035,7 +1035,7 @@ trait NirGenExpr(using Context) {
             // This allows us to reflect that ValDef is accessible in this scope
             case _: Block | Typed(_: Block, _) | Try(_: Block, _, _) |
                 Try(Typed(_: Block, _), _, _) =>
-              buf.updateLetInst(id)(i => i.copy()(i.pos, curScopeId.get))
+              buf.updateLetInst(id)(i => i.copy()(using i.pos, curScopeId.get))
             case _ => ()
           }
           v
@@ -2934,7 +2934,7 @@ trait NirGenExpr(using Context) {
         funTree: Closure,
         evidences: List[SimpleType]
     )(using nir.SourcePosition): nir.Defn = {
-      val attrs = nir.Attrs(isExtern = true)
+      val attrs = nir.Attrs.None.withIsExtern(true)
 
       // In case if passed function is adapted closure it's param types
       // would be erased, in such case we would recover original types

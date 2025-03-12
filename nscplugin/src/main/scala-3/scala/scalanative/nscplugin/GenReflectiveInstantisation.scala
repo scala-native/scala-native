@@ -83,7 +83,7 @@ trait GenReflectiveInstantisation(using Context) {
       .filter(_.nonEmpty)
       .foreach { body =>
         generatedDefns += new nir.Defn.Define(
-          nir.Attrs(),
+          nir.Attrs.None,
           name,
           nir.Type.Function(Seq.empty[nir.Type], nir.Type.Unit),
           body
@@ -174,14 +174,14 @@ trait GenReflectiveInstantisation(using Context) {
           nir.Val
             .Global(superClass.member(nir.Sig.Ctor(Seq.empty)), nir.Type.Ptr),
           Seq(thisArg),
-          unwind(curFresh)
+          unwind(using curFresh)
         )
         buf.ret(nir.Val.Unit)
         buf.toSeq
       }
 
       reflInstBuffer += new nir.Defn.Define(
-        nir.Attrs(),
+        nir.Attrs.None,
         reflInstBuffer.name.member(nir.Sig.Ctor(Seq.empty)),
         nir.Type
           .Function(Seq(nir.Type.Ref(reflInstBuffer.name)), nir.Type.Unit),
@@ -196,12 +196,12 @@ trait GenReflectiveInstantisation(using Context) {
       argTypes: Seq[nir.Type],
       args: Seq[nir.Val]
   )(using pos: nir.SourcePosition, buf: ExprBuffer): nir.Val = {
-    val alloc = buf.classalloc(name, unwind(curFresh))
+    val alloc = buf.classalloc(name, unwind(using curFresh))
     buf.call(
       nir.Type.Function(nir.Type.Ref(name) +: argTypes, nir.Type.Unit),
       nir.Val.Global(name.member(nir.Sig.Ctor(argTypes)), nir.Type.Ptr),
       alloc +: args,
-      unwind(curFresh)
+      unwind(using curFresh)
     )
     alloc
   }
@@ -229,13 +229,13 @@ trait GenReflectiveInstantisation(using Context) {
         val module =
           if (enclosingClass.exists && !enclosingClass.is(ModuleClass))
             nir.Val.Null
-          else buf.module(fqSymName, unwind(curFresh))
+          else buf.module(fqSymName, unwind(using curFresh))
         buf.ret(module)
         buf.toSeq
       }
 
       reflInstBuffer += new nir.Defn.Define(
-        nir.Attrs(),
+        nir.Attrs.None,
         reflInstBuffer.name.member(applyMethodSig),
         nir.Type
           .Function(Seq(nir.Type.Ref(reflInstBuffer.name)), nir.Rt.Object),
@@ -247,7 +247,7 @@ trait GenReflectiveInstantisation(using Context) {
     genConstructor(nirSymbols.AbstractFunction0Name)
 
     reflInstBuffer += nir.Defn.Class(
-      nir.Attrs(),
+      nir.Attrs.None,
       reflInstBuffer.name,
       Some(nirSymbols.AbstractFunction0Name),
       Seq(nirSymbols.SerializableName)
@@ -283,7 +283,7 @@ trait GenReflectiveInstantisation(using Context) {
     val ctorsInfo = buf.arrayalloc(
       nir.Type.Array(nirSymbols.Tuple2Ref),
       nir.Val.Int(ctors.length),
-      unwind(curFresh)
+      unwind(using curFresh)
     )
 
     // For each (public) constructor C, generate a lambda responsible for
@@ -317,13 +317,13 @@ trait GenReflectiveInstantisation(using Context) {
                   nir.Rt.Object,
                   argsArg,
                   nir.Val.Int(argIdx),
-                  unwind(curFresh)
+                  unwind(using curFresh)
                 )
               // If the expected argument type can be boxed (i.e. is a primitive
               // type), then we need to unbox it before passing it to C.
               nir.Type.box.get(arg) match {
-                case Some(bt) => buf.unbox(bt, elem, unwind(curFresh))
-                case None     => buf.as(arg, elem, unwind(curFresh))
+                case Some(bt) => buf.unbox(bt, elem, unwind(using curFresh))
+                case None     => buf.as(arg, elem, unwind(using curFresh))
               }
             }
 
@@ -356,7 +356,7 @@ trait GenReflectiveInstantisation(using Context) {
       genConstructor(nirSymbols.AbstractFunction1Name)
 
       reflInstBuffer += nir.Defn.Class(
-        nir.Attrs(),
+        nir.Attrs.None,
         reflInstBuffer.name,
         Some(nirSymbols.AbstractFunction1Name),
         Seq(nirSymbols.SerializableName)
@@ -372,7 +372,7 @@ trait GenReflectiveInstantisation(using Context) {
       val rtClasses = buf.arrayalloc(
         nir.Rt.Class,
         nir.Val.Int(ctorSig.args.tail.length),
-        unwind(curFresh)
+        unwind(using curFresh)
       )
       for ((arg, argIdx) <- ctorSig.args.tail.zipWithIndex) {
         // Store the runtime class in the array.
@@ -381,7 +381,7 @@ trait GenReflectiveInstantisation(using Context) {
           rtClasses,
           nir.Val.Int(argIdx),
           nir.Val.ClassOf(nir.Type.typeToName(arg)),
-          unwind(curFresh)
+          unwind(using curFresh)
         )
       }
 
@@ -393,7 +393,7 @@ trait GenReflectiveInstantisation(using Context) {
         ctorsInfo,
         nir.Val.Int(ctorIdx),
         to,
-        unwind(curFresh)
+        unwind(using curFresh)
       )
     }
     ctorsInfo
