@@ -159,7 +159,9 @@ trait GenNativeExports(using Context):
     ) = genExternMethodSig(member)
 
     val defn = new nir.Defn.Define(
-      attrs = nir.Attrs(inlineHint = nir.Attr.NoInline, isExtern = true),
+      attrs = nir.Attrs.None
+        .withInlineHint(nir.Attr.NoInline)
+        .withIsExtern(true),
       name = externName,
       ty = exportedFunctionType,
       insts = withFreshExprBuffer { buf ?=>

@@ -194,17 +194,16 @@ trait NirGenStat(using Context) {
       // That what JVM backend does
       // https://github.com/lampepfl/dotty/blob/786ad3ff248cca39e2da80c3a15b27b38eec2ff6/compiler/src/dotty/tools/backend/jvm/BTypesFromSymbols.scala#L340-L347
       val isFinal = !f.is(Mutable)
-      val attrs = nir.Attrs(
-        isExtern = isExtern,
-        isVolatile = f.isVolatile,
-        isFinal = isFinal,
-        isSafePublish = isFinal && {
+      val attrs = nir.Attrs.None
+        .withIsExtern(isExtern)
+        .withIsVolatile(f.isVolatile)
+        .withIsFinal(isFinal)
+        .withIsSafePublish(isFinal && {
           settings.forceStrictFinalFields ||
           f.hasAnnotation(defnNir.SafePublishClass) ||
           f.owner.hasAnnotation(defnNir.SafePublishClass)
-        },
-        align = getAlignmentAttr(f).orElse(classAlignment)
-      )
+        })
+        .withAlign(getAlignmentAttr(f).orElse(classAlignment))
       val ty = genType(f.info.resultType)
       val fieldName @ nir.Global.Member(owner, sig) = genFieldName(
         f
@@ -216,7 +215,7 @@ trait NirGenStat(using Context) {
         // this is its API for other units. This is necessary for singleton
         // enum values, which are backed by static fields.
         generatedDefns += new nir.Defn.Define(
-          attrs = nir.Attrs(inlineHint = nir.Attr.InlineHint),
+          attrs = nir.Attrs.None.withInlineHint(nir.Attr.InlineHint),
           name = genStaticMemberName(f, classSym),
           ty = nir.Type.Function(Nil, ty),
           insts = withFreshExprBuffer { buf ?=>
@@ -410,7 +409,8 @@ trait NirGenStat(using Context) {
         .foreach { sym =>
           val ty = genType(sym.info)
           val name = genLocalName(sym)
-          val slot = buf.let(fresh.namedId(name), nir.Op.Var(ty), unwind(fresh))
+          val slot =
+            buf.let(fresh.namedId(name), nir.Op.Var(ty), unwind(using fresh))
           curMethodEnv.enter(sym, slot)
         }
     }
@@ -576,7 +576,9 @@ trait NirGenStat(using Context) {
     }
 
     new nir.Defn.Define(
-      nir.Attrs(inlineHint = nir.Attr.AlwaysInline, isLinktimeResolved = true),
+      nir.Attrs.None
+        .withInlineHint(nir.Attr.AlwaysInline)
+        .withIsLinktimeResolved(true),
       methodName,
       nir.Type.Function(Seq.empty, retty),
       buf.toSeq
@@ -834,7 +836,7 @@ trait NirGenStat(using Context) {
       }
 
       new nir.Defn.Define(
-        attrs = nir.Attrs(inlineHint = nir.Attr.InlineHint),
+        attrs = nir.Attrs.None.withInlineHint(nir.Attr.InlineHint),
         name = forwarderName,
         ty = forwarderType,
         insts = withFreshExprBuffer { buf ?=>
