@@ -1374,9 +1374,8 @@ class ForkJoinPool private (
     } else if ({ terminated = (runState & TERMINATED) != 0; !terminated }) {
       tryTerminate(false, false) // reduce transient blocking
       val lock = registrationLock
-      if (lock != null && {
-            terminated = (runState & TERMINATED) != 0; !terminated
-          }) {
+      if (lock != null &&
+          { terminated = (runState & TERMINATED) != 0; !terminated }) {
         lock.lock()
         try {
           val cond = termination match {
@@ -1386,9 +1385,8 @@ class ForkJoinPool private (
               cond
             case cond => cond
           }
-          while ({
-            terminated = (runState & TERMINATED) != 0; !terminated
-          } && nanos > 0L) {
+          while ({ terminated = (runState & TERMINATED) != 0; !terminated } &&
+              nanos > 0L) {
             nanos = cond.awaitNanos(nanos)
           }
         } finally lock.unlock()

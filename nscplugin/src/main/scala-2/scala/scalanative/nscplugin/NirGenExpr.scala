@@ -1270,8 +1270,8 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
                 !elemtpt.tpe.typeSymbol.isPrimitiveValueClass /* can happen via specialization.*/ =>
         
           classTagEvidence.attachments.get[analyzer.MacroExpansionAttachment] match {
-            case Some(att) 
-            if att.expandee.symbol.name == nme.materializeClassTag && 
+            case Some(att)
+            if att.expandee.symbol.name == nme.materializeClassTag &&
                tree.isInstanceOf[ApplyToImplicitArgs] =>
                  genArrayValue(arrValue)
             case _ =>
@@ -1293,20 +1293,20 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           }
 
         case Apply(appMeth @ Select(appMethQual, _), elem0 :: WrapArray(rest @ ArrayValue(elemtpt, elems)) :: Nil)
-            if appMeth.symbol == ArrayModule_apply(elemtpt.tpe) && 
+            if appMeth.symbol == ArrayModule_apply(elemtpt.tpe) &&
                treeInfo.isQualifierSafeToElide(appMethQual) =>
           genArrayValue(elemtpt, elem0 +: elems)
 
         // See scala/bug#12201, should be rewrite as Primitive Array.
         // Match Array
-        case Apply(appMeth @ Select(appMethQual, _), WrapArray(arrValue: ArrayValue) :: _ :: Nil) 
-        if appMeth.symbol == ArrayModule_genericApply && 
+        case Apply(appMeth @ Select(appMethQual, _), WrapArray(arrValue: ArrayValue) :: _ :: Nil)
+        if appMeth.symbol == ArrayModule_genericApply &&
            treeInfo.isQualifierSafeToElide(appMethQual) =>
           genArrayValue(arrValue)
 
         case Apply(appMeth @ Select(appMethQual, _), elem :: (nil: RefTree) :: Nil)
-        if nil.symbol == NilModule && appMeth.symbol == ArrayModule_apply(elem.tpe.widen) && 
-           treeInfo.isExprSafeToInline(nil) && 
+        if nil.symbol == NilModule && appMeth.symbol == ArrayModule_apply(elem.tpe.widen) &&
+           treeInfo.isExprSafeToInline(nil) &&
            treeInfo.isQualifierSafeToElide(appMethQual) =>
           genArrayValue(TypeTree(elem.tpe.widen), elem :: Nil)
         

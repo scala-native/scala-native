@@ -6,6 +6,13 @@
 //
 // See nativelib runtime/Arrays.scala.gyb for details.
 
+/* scalafmt: {
+     binPack.defnSite = always
+     binPack.callSite = always
+     newlines.configStyle.fallBack.prefer = false
+   }
+ */
+
 package scala.runtime.function
 
 import scala.runtime.BoxedUnit
