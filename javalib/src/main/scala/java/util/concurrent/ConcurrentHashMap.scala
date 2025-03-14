@@ -4793,7 +4793,7 @@ class ConcurrentHashMap[K <: AnyRef, V <: AnyRef]()
       var m = 0
       var uncontended = true
       if (cs == null || { m = cs.length - 1; m < 0 } || { c = cs(ThreadLocalRandom.getProbe() & m); c == null } ||
-          { uncontended = c.CELLVALUE.compareExchangeStrong({ v = c.value; v }, v + x) ! uncontended }) {
+          { uncontended = c.CELLVALUE.compareExchangeStrong({ v = c.value; v }, v + x); !uncontended }) {
         fullAddCount(x, uncontended)
         return
       }
