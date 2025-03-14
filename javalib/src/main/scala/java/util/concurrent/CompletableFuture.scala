@@ -456,9 +456,8 @@ object CompletableFuture {
       var r: AnyRef = null
       var s: AnyRef = null
       var f: BiFunction[_ >: T, _ >: U, _ <: V] = null
-      if ({ a = src; a == null } || { r = a.result; r == null } || { b = snd; b == null } || {
-            s = b.result; s == null
-          } || { d = dep; d == null } || { f = fn; f == null } ||
+      if ({ a = src; a == null } || { r = a.result; r == null } || { b = snd; b == null } ||
+          { s = b.result; s == null } || { d = dep; d == null } || { f = fn; f == null } ||
           !d.biApply[T, U](r, s, f, if (mode > 0) null else this)) return null
       src = null; snd = null; dep = null; fn = null
 
@@ -480,9 +479,8 @@ object CompletableFuture {
       var r: AnyRef = null
       var s: AnyRef = null
       var f: BiConsumer[_ >: T, _ >: U] = null
-      if ({ a = src; a == null } || { r = a.result; r == null } || { b = snd; b == null } || {
-            s = b.result; s == null
-          } || { d = dep; d == null } || { f = fn; f == null } ||
+      if ({ a = src; a == null } || { r = a.result; r == null } || { b = snd; b == null } ||
+          { s = b.result; s == null } || { d = dep; d == null } || { f = fn; f == null } ||
           !(d.biAccept[T, U](r, s, f, if (mode > 0) null else this)))
         return null
 
@@ -505,9 +503,9 @@ object CompletableFuture {
       var r: AnyRef = null
       var s: AnyRef = null
       var f: Runnable = null
-      if ({ a = src; a == null } || { r = a.result; r == null } || { b = snd; b == null } || {
-            s = b.result; s == null
-          } || { d = dep; d == null } || { f = fn; f == null } || !(d.biRun(r, s, f, if (mode > 0) null else this)))
+      if ({ a = src; a == null } || { r = a.result; r == null } || { b = snd; b == null } ||
+          { s = b.result; s == null } || { d = dep; d == null } || { f = fn; f == null } ||
+          !(d.biRun(r, s, f, if (mode > 0) null else this)))
         return null
 
       src = null; snd = null; dep = null; fn = null
@@ -529,13 +527,10 @@ object CompletableFuture {
       var s: AnyRef = null
       var z: AnyRef = null
       var x: Throwable = null
-      if ({ a = src; a == null } || { r = a.result; r == null } || { b = snd; b == null } || {
-            s = b.result; s == null
-          } || { d = dep; d == null }) return null
+      if ({ a = src; a == null } || { r = a.result; r == null } || { b = snd; b == null } ||
+          { s = b.result; s == null } || { d = dep; d == null }) return null
       if (d.result == null)
-        if (r.isInstanceOf[AltResult] && {
-              z = r; x = z.asInstanceOf[AltResult].ex; x != null
-            } ||
+        if (r.isInstanceOf[AltResult] && { z = r; x = z.asInstanceOf[AltResult].ex; x != null } ||
             (s.isInstanceOf[AltResult] && { z = s; x = z.asInstanceOf[AltResult].ex; x != null }))
           d.completeThrowable(x, z)
         else d.completeNull()
@@ -597,12 +592,8 @@ object CompletableFuture {
       var r: AnyRef = null
       var x: Throwable = null
       var f: Function[_ >: T, _ <: V] = null
-      if ({ a = src; a == null } || {
-            b = snd; b == null
-          } ||
-          ({ r = a.result; r == null } && { r = b.result; r == null }) || { d = dep; d == null } || {
-            f = fn; f == null
-          })
+      if ({ a = src; a == null } || { b = snd; b == null } || ({ r = a.result; r == null } &&
+          { r = b.result; r == null }) || { d = dep; d == null } || { f = fn; f == null })
         return null
 
       if (d.result == null) try {
@@ -638,9 +629,8 @@ object CompletableFuture {
       var r: AnyRef = null
       var x: Throwable = null
       var f: Consumer[_ >: T] = null
-      if ({ a = src; a == null } || { b = snd; b == null } || ({ r = a.result; r == null } && {
-            r = b.result; r == null
-          }) || { d = dep; d == null } || { f = fn; f == null }) return null
+      if ({ a = src; a == null } || { b = snd; b == null } || ({ r = a.result; r == null } &&
+          { r = b.result; r == null }) || { d = dep; d == null } || { f = fn; f == null }) return null
 
       if (d.result == null) try {
         if (mode <= 0 && !(claim())) return null
@@ -676,9 +666,8 @@ object CompletableFuture {
       var r: AnyRef = null
       var x: Throwable = null
       var f: Runnable = null
-      if ({ a = src; a == null } || { b = snd; b == null } || ({ r = a.result; r == null } && {
-            r = b.result; r == null
-          }) || { d = dep; d == null } || { f = fn; f == null }) return null
+      if ({ a = src; a == null } || { b = snd; b == null } || ({ r = a.result; r == null } &&
+          { r = b.result; r == null }) || { d = dep; d == null } || { f = fn; f == null }) return null
 
       if (d.result == null)
         try
