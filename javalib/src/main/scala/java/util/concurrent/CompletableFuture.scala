@@ -272,7 +272,7 @@ object CompletableFuture {
       var r: AnyRef = null
       var f: BiConsumer[_ >: T, _ >: Throwable] = null
       if ({ a = src; a == null } || { r = a.result; r == null } || { d = dep; d == null } || { f = fn; f == null }
-      || !d.uniWhenComplete(r, f, if (mode > 0) null else this)) return null
+          || !d.uniWhenComplete(r, f, if (mode > 0) null else this)) return null
 
       src = null; dep = null; fn = null
       d.postFire(a, mode)
@@ -291,7 +291,7 @@ object CompletableFuture {
       var r: AnyRef = null
       var f: BiFunction[_ >: T, Throwable, _ <: V] = null
       if ({ a = src; a == null } || { r = a.result; r == null } || { d = dep; d == null } || { f = fn; f == null }
-      || !d.uniHandle[T](r, f, if (mode > 0) null else this)) return null
+          || !d.uniHandle[T](r, f, if (mode > 0) null else this)) return null
 
       src = null; dep = null; fn = null
       d.postFire(a, mode)
@@ -310,7 +310,7 @@ object CompletableFuture {
       var r: AnyRef = null
       var f: Function[_ >: Throwable, _ <: T] = null
       if ({ a = src; a == null } || { r = a.result; r == null } || { d = dep; d == null } || { f = fn; f == null }
-      || !(d.uniExceptionally(r, f, if (mode > 0) null else this))) return null
+          || !(d.uniExceptionally(r, f, if (mode > 0) null else this))) return null
 
       src = null; dep = null; fn = null
       d.postFire(a, mode)
@@ -457,9 +457,9 @@ object CompletableFuture {
       var s: AnyRef = null
       var f: BiFunction[_ >: T, _ >: U, _ <: V] = null
       if ({ a = src; a == null } || { r = a.result; r == null } || { b = snd; b == null } || {
-        s = b.result; s == null
-      } || { d = dep; d == null } || { f = fn; f == null } ||
-      !d.biApply[T, U](r, s, f, if (mode > 0) null else this)) return null
+            s = b.result; s == null
+          } || { d = dep; d == null } || { f = fn; f == null } ||
+          !d.biApply[T, U](r, s, f, if (mode > 0) null else this)) return null
       src = null; snd = null; dep = null; fn = null
 
       return d.postFire(a, b, mode)
@@ -481,9 +481,9 @@ object CompletableFuture {
       var s: AnyRef = null
       var f: BiConsumer[_ >: T, _ >: U] = null
       if ({ a = src; a == null } || { r = a.result; r == null } || { b = snd; b == null } || {
-        s = b.result; s == null
-      } || { d = dep; d == null } || { f = fn; f == null } ||
-      !(d.biAccept[T, U](r, s, f, if (mode > 0) null else this)))
+            s = b.result; s == null
+          } || { d = dep; d == null } || { f = fn; f == null } ||
+          !(d.biAccept[T, U](r, s, f, if (mode > 0) null else this)))
         return null
 
       src = null; snd = null; dep = null; fn = null
@@ -506,8 +506,8 @@ object CompletableFuture {
       var s: AnyRef = null
       var f: Runnable = null
       if ({ a = src; a == null } || { r = a.result; r == null } || { b = snd; b == null } || {
-        s = b.result; s == null
-      } || { d = dep; d == null } || { f = fn; f == null } || !(d.biRun(r, s, f, if (mode > 0) null else this)))
+            s = b.result; s == null
+          } || { d = dep; d == null } || { f = fn; f == null } || !(d.biRun(r, s, f, if (mode > 0) null else this)))
         return null
 
       src = null; snd = null; dep = null; fn = null
@@ -530,8 +530,8 @@ object CompletableFuture {
       var z: AnyRef = null
       var x: Throwable = null
       if ({ a = src; a == null } || { r = a.result; r == null } || { b = snd; b == null } || {
-        s = b.result; s == null
-      } || { d = dep; d == null }) return null
+            s = b.result; s == null
+          } || { d = dep; d == null }) return null
       if (d.result == null)
         if (r.isInstanceOf[AltResult] && {
               z = r; x = z.asInstanceOf[AltResult].ex; x != null
@@ -562,17 +562,17 @@ object CompletableFuture {
       var x: Throwable = null
       val mid: Int = (lo + hi) >>> 1
       if ({
-        a =
-          if (lo == mid) cfs(lo)
-          else andTree(cfs, lo, mid);
-        a == null
-      } || {
-        b =
-          if (lo == hi) a
-          else if ((hi == mid + 1)) cfs(hi)
-          else andTree(cfs, mid + 1, hi);
-        b == null
-      }) throw new NullPointerException
+            a =
+              if (lo == mid) cfs(lo)
+              else andTree(cfs, lo, mid);
+            a == null
+          } || {
+            b =
+              if (lo == hi) a
+              else if ((hi == mid + 1)) cfs(hi)
+              else andTree(cfs, mid + 1, hi);
+            b == null
+          }) throw new NullPointerException
       if ({ r = a.result; r == null } || { s = b.result; s == null })
         a.bipush(b, new BiRelay(d, a, b))
       else if ((r.isInstanceOf[AltResult] && { z = r; x = z.asInstanceOf[AltResult].ex; x != null }) ||
@@ -598,9 +598,11 @@ object CompletableFuture {
       var x: Throwable = null
       var f: Function[_ >: T, _ <: V] = null
       if ({ a = src; a == null } || {
-        b = snd; b == null
-      } ||
-      ({ r = a.result; r == null } && { r = b.result; r == null }) || { d = dep; d == null } || { f = fn; f == null })
+            b = snd; b == null
+          } ||
+          ({ r = a.result; r == null } && { r = b.result; r == null }) || { d = dep; d == null } || {
+            f = fn; f == null
+          })
         return null
 
       if (d.result == null) try {
@@ -637,8 +639,8 @@ object CompletableFuture {
       var x: Throwable = null
       var f: Consumer[_ >: T] = null
       if ({ a = src; a == null } || { b = snd; b == null } || ({ r = a.result; r == null } && {
-        r = b.result; r == null
-      }) || { d = dep; d == null } || { f = fn; f == null }) return null
+            r = b.result; r == null
+          }) || { d = dep; d == null } || { f = fn; f == null }) return null
 
       if (d.result == null) try {
         if (mode <= 0 && !(claim())) return null
@@ -675,8 +677,8 @@ object CompletableFuture {
       var x: Throwable = null
       var f: Runnable = null
       if ({ a = src; a == null } || { b = snd; b == null } || ({ r = a.result; r == null } && {
-        r = b.result; r == null
-      }) || { d = dep; d == null } || { f = fn; f == null }) return null
+            r = b.result; r == null
+          }) || { d = dep; d == null } || { f = fn; f == null }) return null
 
       if (d.result == null)
         try

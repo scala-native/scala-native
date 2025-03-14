@@ -195,8 +195,17 @@ object Set {
   }
 
   // Since: Java 9
-  def of[E](e1: E, e2: E, e3: E, e4: E, e5: E, e6: E, e7: E, e8: E, e9: E)
-      : Set[E] = {
+  def of[E](
+      e1: E,
+      e2: E,
+      e3: E,
+      e4: E,
+      e5: E,
+      e6: E,
+      e7: E,
+      e8: E,
+      e9: E
+  ): Set[E] = {
     val setSize = 9
 
     val underlying = HashSet.newHashSet[E](setSize)

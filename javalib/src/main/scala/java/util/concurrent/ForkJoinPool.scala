@@ -1387,8 +1387,8 @@ class ForkJoinPool private (
             case cond => cond
           }
           while ({
-            terminated = (runState & TERMINATED) != 0; !terminated
-          } && nanos > 0L) {
+                terminated = (runState & TERMINATED) != 0; !terminated
+              } && nanos > 0L) {
             nanos = cond.awaitNanos(nanos)
           }
         } finally lock.unlock()

@@ -203,7 +203,7 @@ object BooleanArray {
       throw new NegativeArraySizeException
     }
     val arrcls  = classOf[BooleanArray]
-    val arr = GC.alloc_array(arrcls, length, 1) 
+    val arr = GC.alloc_array(arrcls, length, 1)
     val array = castRawPtrToObject(arr).asInstanceOf[BooleanArray]
     array
   }
@@ -274,7 +274,7 @@ object CharArray {
       throw new NegativeArraySizeException
     }
     val arrcls  = classOf[CharArray]
-    val arr = GC.alloc_array(arrcls, length, 2) 
+    val arr = GC.alloc_array(arrcls, length, 2)
     val array = castRawPtrToObject(arr).asInstanceOf[CharArray]
     array
   }
@@ -345,7 +345,7 @@ object ByteArray {
       throw new NegativeArraySizeException
     }
     val arrcls  = classOf[ByteArray]
-    val arr = GC.alloc_array(arrcls, length, 1) 
+    val arr = GC.alloc_array(arrcls, length, 1)
     val array = castRawPtrToObject(arr).asInstanceOf[ByteArray]
     array
   }
@@ -416,7 +416,7 @@ object ShortArray {
       throw new NegativeArraySizeException
     }
     val arrcls  = classOf[ShortArray]
-    val arr = GC.alloc_array(arrcls, length, 2) 
+    val arr = GC.alloc_array(arrcls, length, 2)
     val array = castRawPtrToObject(arr).asInstanceOf[ShortArray]
     array
   }
@@ -487,7 +487,7 @@ object IntArray {
       throw new NegativeArraySizeException
     }
     val arrcls  = classOf[IntArray]
-    val arr = GC.alloc_array(arrcls, length, 4) 
+    val arr = GC.alloc_array(arrcls, length, 4)
     val array = castRawPtrToObject(arr).asInstanceOf[IntArray]
     array
   }
@@ -558,7 +558,7 @@ object LongArray {
       throw new NegativeArraySizeException
     }
     val arrcls  = classOf[LongArray]
-    val arr = GC.alloc_array(arrcls, length, 8) 
+    val arr = GC.alloc_array(arrcls, length, 8)
     val array = castRawPtrToObject(arr).asInstanceOf[LongArray]
     array
   }
@@ -629,7 +629,7 @@ object FloatArray {
       throw new NegativeArraySizeException
     }
     val arrcls  = classOf[FloatArray]
-    val arr = GC.alloc_array(arrcls, length, 4) 
+    val arr = GC.alloc_array(arrcls, length, 4)
     val array = castRawPtrToObject(arr).asInstanceOf[FloatArray]
     array
   }
@@ -700,7 +700,7 @@ object DoubleArray {
       throw new NegativeArraySizeException
     }
     val arrcls  = classOf[DoubleArray]
-    val arr = GC.alloc_array(arrcls, length, 8) 
+    val arr = GC.alloc_array(arrcls, length, 8)
     val array = castRawPtrToObject(arr).asInstanceOf[DoubleArray]
     array
   }
@@ -771,7 +771,7 @@ object ObjectArray {
       throw new NegativeArraySizeException
     }
     val arrcls  = classOf[ObjectArray]
-    val arr = GC.alloc_array(arrcls, length, castRawSizeToInt(Intrinsics.sizeOf[RawPtr])) 
+    val arr = GC.alloc_array(arrcls, length, castRawSizeToInt(Intrinsics.sizeOf[RawPtr]))
     val array = castRawPtrToObject(arr).asInstanceOf[ObjectArray]
     array
   }
@@ -863,7 +863,7 @@ object BlobArray {
       throw new NegativeArraySizeException
     }
     val arrcls  = classOf[BlobArray]
-    val arr = GC.alloc_array(arrcls, length, 1) 
+    val arr = GC.alloc_array(arrcls, length, 1)
     val array = castRawPtrToObject(arr).asInstanceOf[BlobArray]
     array.setScannableLimitUnsafe(length)
     array

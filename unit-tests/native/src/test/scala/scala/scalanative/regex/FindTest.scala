@@ -455,7 +455,8 @@ class FindTest {
     for (test <- FIND_TESTS) {
       val result =
         RE2.compile(test.pat).findAllUTF8Submatch(test.textUTF8, -1)
-      if (test.matches.length == 0 && result == null) {} else {
+      if (test.matches.length == 0 && result == null) {}
+      else {
         if (test.matches.length == 0 && result != null) {
           fail("expected no match; got one: %s".format(test))
         } else if (test.matches.length > 0 && result == null) {
@@ -480,7 +481,8 @@ class FindTest {
     for (test <- FIND_TESTS) {
       val result =
         RE2.compile(test.pat).findAllSubmatch(test.text, -(1))
-      if (test.matches.length == 0 && result == null) {} else {
+      if (test.matches.length == 0 && result == null) {}
+      else {
         if (test.matches.length == 0 && result != null) {
           fail("expected no match; got one: %s".format(test))
         } else if (test.matches.length > 0 && result == null) {

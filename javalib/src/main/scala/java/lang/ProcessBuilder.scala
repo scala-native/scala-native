@@ -154,7 +154,9 @@ object ProcessBuilder {
       override def file(): File = redirectFile
 
       override def toString =
-        s"Redirect.$tpe${if (redirectFile != null) s": ${redirectFile}" else ""}"
+        s"Redirect.$tpe${
+            if (redirectFile != null) s": ${redirectFile}" else ""
+          }"
     }
 
     val INHERIT: Redirect = new RedirectImpl(Type.INHERIT, null)

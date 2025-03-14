@@ -978,7 +978,7 @@ object ConcurrentHashMap {
         return true
       }
       if ({ r = root; r } == null || r.right == null || // too small
-      { rl = r.left; rl } == null || rl.left == null) return true
+          { rl = r.left; rl } == null || rl.left == null) return true
       lockRoot()
       try {
         var replacement: TreeNode[K, V] = null
@@ -3898,10 +3898,10 @@ class ConcurrentHashMap[K <: AnyRef, V <: AnyRef]()
             var p: Node[K, V] = null
             binCount = 2
             if ({
-              p = f
-                .asInstanceOf[TreeBin[K, V]]
-                .putTreeVal(hash, key, value); p
-            } != null) {
+                  p = f
+                    .asInstanceOf[TreeBin[K, V]]
+                    .putTreeVal(hash, key, value); p
+                } != null) {
               oldVal = p.`val`
               if (!onlyIfAbsent) p.`val` = value
             }
@@ -4122,8 +4122,8 @@ class ConcurrentHashMap[K <: AnyRef, V <: AnyRef]()
           var mv: AnyRef = null
           var v: AnyRef = null
           if ({ mk = e.getKey().asInstanceOf[AnyRef]; mk == null } || {
-            mv = e.getValue().asInstanceOf[AnyRef]; mv == null
-          } || { v = get(mk); v } == null || ((mv ne v) && !(mv.equals(v)))) {
+                mv = e.getValue().asInstanceOf[AnyRef]; mv == null
+              } || { v = get(mk); v } == null || ((mv ne v) && !(mv.equals(v)))) {
             return false
           }
         }
@@ -4792,7 +4792,7 @@ class ConcurrentHashMap[K <: AnyRef, V <: AnyRef]()
     var b = 0L
     var s = 0L
     if ({ cs = counterCells; cs } != null || !this.BASECOUNT
-      .compareExchangeStrong({ b = baseCount; b }, { s = b + x; s })) {
+          .compareExchangeStrong({ b = baseCount; b }, { s = b + x; s })) {
       var c: CounterCell = null
       var v = 0L
       var m = 0
@@ -5096,8 +5096,9 @@ class ConcurrentHashMap[K <: AnyRef, V <: AnyRef]()
                 var rs: Array[CounterCell] = null
                 var m = 0
                 var j = 0
-                if ({ rs = counterCells; rs } != null && { m = rs.length; m } > 0 && rs({ j = (m - 1) & h; j }
-                ) == null) {
+                if ({ rs = counterCells; rs } != null && {
+                      m = rs.length; m
+                    } > 0 && rs({ j = (m - 1) & h; j }) == null) {
                   rs(j) = r
                   created = true
                 }

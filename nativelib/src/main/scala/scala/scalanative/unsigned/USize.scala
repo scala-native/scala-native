@@ -44,7 +44,7 @@ final class USize(private[scalanative] val rawSize: RawSize) extends scala.math.
   @inline override protected def isWhole(): Boolean = true
   @inline override def underlying: USize = this // don't expose rawSize
 
-  @inline final override def compareTo(x: USize): Int = 
+  @inline final override def compareTo(x: USize): Int =
     if(is32BitPlatform) java.lang.Integer.compareUnsigned(toInt, x.toInt)
     else java.lang.Long.compareUnsigned(toLong, x.toLong)
 
