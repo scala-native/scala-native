@@ -272,7 +272,7 @@ object CompletableFuture {
       var r: AnyRef = null
       var f: BiConsumer[_ >: T, _ >: Throwable] = null
       if ({ a = src; a == null } || { r = a.result; r == null } || { d = dep; d == null } ||
-          { f = fn; f == null } || !d.uniWhenComplete(r, f, if (mode > 0) null else this)) return nullÏ
+          { f = fn; f == null } || !d.uniWhenComplete(r, f, if (mode > 0) null else this)) return null
 
       src = null; dep = null; fn = null
       d.postFire(a, mode)
