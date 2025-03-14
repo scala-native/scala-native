@@ -1,3 +1,10 @@
+/* scalafmt: {
+     binPack.defnSite = always
+     binPack.callSite = always
+     newlines.configStyle.fallBack.prefer = false
+   }
+ */
+
 package java.util
 
 trait Set[E] extends Collection[E] {
@@ -196,15 +203,7 @@ object Set {
 
   // Since: Java 9
   def of[E](
-      e1: E,
-      e2: E,
-      e3: E,
-      e4: E,
-      e5: E,
-      e6: E,
-      e7: E,
-      e8: E,
-      e9: E
+      e1: E, e2: E, e3: E, e4: E, e5: E, e6: E, e7: E, e8: E, e9: E
   ): Set[E] = {
     val setSize = 9
 
@@ -224,16 +223,7 @@ object Set {
 
   // Since: Java 9
   def of[E](
-      e1: E,
-      e2: E,
-      e3: E,
-      e4: E,
-      e5: E,
-      e6: E,
-      e7: E,
-      e8: E,
-      e9: E,
-      e10: E
+      e1: E, e2: E, e3: E, e4: E, e5: E, e6: E, e7: E, e8: E, e9: E, e10: E
   ): Set[E] = {
     val setSize = 10
 
