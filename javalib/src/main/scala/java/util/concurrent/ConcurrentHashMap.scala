@@ -5086,8 +5086,7 @@ class ConcurrentHashMap[K <: AnyRef, V <: AnyRef]()
                 var rs: Array[CounterCell] = null
                 var m = 0
                 var j = 0
-                if ({ rs = counterCells; rs } != null &&
-                    { m = rs.length; m } > 0 &&
+                if ({ rs = counterCells; rs } != null && { m = rs.length; m } > 0 &&
                     rs({ j = (m - 1) & h; j }) == null) {
                   rs(j) = r
                   created = true

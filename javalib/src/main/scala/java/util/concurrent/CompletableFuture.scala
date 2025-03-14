@@ -271,8 +271,8 @@ object CompletableFuture {
       var a: CompletableFuture[T] = null
       var r: AnyRef = null
       var f: BiConsumer[_ >: T, _ >: Throwable] = null
-      if ({ a = src; a == null } || { r = a.result; r == null } || { d = dep; d == null } || { f = fn; f == null }
-          || !d.uniWhenComplete(r, f, if (mode > 0) null else this)) return null
+      if ({ a = src; a == null } || { r = a.result; r == null } || { d = dep; d == null } ||
+          { f = fn; f == null } || !d.uniWhenComplete(r, f, if (mode > 0) null else this)) return nullÏ
 
       src = null; dep = null; fn = null
       d.postFire(a, mode)
@@ -290,8 +290,8 @@ object CompletableFuture {
       var a: CompletableFuture[T] = null
       var r: AnyRef = null
       var f: BiFunction[_ >: T, Throwable, _ <: V] = null
-      if ({ a = src; a == null } || { r = a.result; r == null } || { d = dep; d == null } || { f = fn; f == null }
-          || !d.uniHandle[T](r, f, if (mode > 0) null else this)) return null
+      if ({ a = src; a == null } || { r = a.result; r == null } || { d = dep; d == null } ||
+          { f = fn; f == null } || !d.uniHandle[T](r, f, if (mode > 0) null else this)) return null
 
       src = null; dep = null; fn = null
       d.postFire(a, mode)
@@ -309,8 +309,8 @@ object CompletableFuture {
       var a: CompletableFuture[T] = null
       var r: AnyRef = null
       var f: Function[_ >: Throwable, _ <: T] = null
-      if ({ a = src; a == null } || { r = a.result; r == null } || { d = dep; d == null } || { f = fn; f == null }
-          || !(d.uniExceptionally(r, f, if (mode > 0) null else this))) return null
+      if ({ a = src; a == null } || { r = a.result; r == null } || { d = dep; d == null } ||
+          { f = fn; f == null } || !(d.uniExceptionally(r, f, if (mode > 0) null else this))) return null
 
       src = null; dep = null; fn = null
       d.postFire(a, mode)
