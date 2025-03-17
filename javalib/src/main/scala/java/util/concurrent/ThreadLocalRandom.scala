@@ -4,10 +4,15 @@
  * http://creativecommons.org/publicdomain/zero/1.0/
  */
 
+/* See SN Repository git history for Scala Native additions.
+ * The Java 17 JEP356 work to extend RandomGenerator caused many changes.
+ */
+
 package java.util.concurrent
 
 import java.util._
 import java.util.function._
+import java.util.random.RandomSupport
 import java.util.stream._
 import java.util.concurrent.atomic._
 import scala.scalanative.annotation.safePublish
@@ -68,12 +73,8 @@ object ThreadLocalRandom {
 
     override def estimateSize(): Long = fence - index
 
-    override def characteristics(): Int = {
-      Spliterator.SIZED |
-        Spliterator.SUBSIZED |
-        Spliterator.NONNULL |
-        Spliterator.IMMUTABLE
-    }
+    override def characteristics(): Int =
+      RandomSupport.randomStreamCharacteristics
 
     override def tryAdvance(consumer: IntConsumer): Boolean = {
       if (consumer == null)
@@ -288,7 +289,8 @@ class ThreadLocalRandom private () extends Random {
   }
   final private[concurrent] def nextSeed(): Long = {
     val t = Thread.currentThread()
-    t.threadLocalRandomSeed += ThreadLocalRandom.GAMMA // read and update per-thread seed
+    t.threadLocalRandomSeed +=
+      ThreadLocalRandom.GAMMA // read and update per-thread seed
     t.threadLocalRandomSeed
   }
 
@@ -356,296 +358,5 @@ class ThreadLocalRandom private () extends Random {
 
   override def nextInt(): Int = ThreadLocalRandom.mix32(nextSeed())
 
-  override def nextInt(bound: Int): Int = {
-    if (bound <= 0)
-      throw new IllegalArgumentException(ThreadLocalRandom.BAD_BOUND)
-    var r = ThreadLocalRandom.mix32(nextSeed())
-    val m = bound - 1
-    if ((bound & m) == 0) // power of two
-      r &= m
-    else { // reject over-represented candidates
-      var u = r >>> 1
-      while ({
-        r = u % bound
-        (u + m - r) < 0
-      }) {
-        u = ThreadLocalRandom.mix32(nextSeed()) >>> 1
-      }
-    }
-    assert(r < bound, s"r:$r < bound: $bound")
-    r
-  }
-
-  def nextInt(origin: Int, bound: Int): Int = {
-    if (origin >= bound)
-      throw new IllegalArgumentException(ThreadLocalRandom.BAD_RANGE)
-    internalNextInt(origin, bound)
-  }
-
   override def nextLong(): Long = ThreadLocalRandom.mix64(nextSeed())
-
-  def nextLong(bound: Long): Long = {
-    if (bound <= 0)
-      throw new IllegalArgumentException(ThreadLocalRandom.BAD_BOUND)
-    var r = ThreadLocalRandom.mix64(nextSeed())
-    val m = bound - 1
-    if ((bound & m) == 0L) r &= m
-    else {
-      var u: Long = r >>> 1
-      r = u % bound
-      while ({
-        r = u % bound
-        (u + m - r) < 0L
-      })
-        u = ThreadLocalRandom.mix64(nextSeed()) >>> 1
-    }
-    r
-  }
-
-  def nextLong(origin: Long, bound: Long): Long = {
-    if (origin >= bound)
-      throw new IllegalArgumentException(ThreadLocalRandom.BAD_RANGE)
-    internalNextLong(origin, bound)
-  }
-
-  override def nextDouble(): Double =
-    (ThreadLocalRandom.mix64(nextSeed()) >>> 11) * ThreadLocalRandom.DOUBLE_UNIT
-
-  def nextDouble(bound: Double): Double = {
-    if (!(bound > 0.0))
-      throw new IllegalArgumentException(ThreadLocalRandom.BAD_BOUND)
-    val result =
-      (ThreadLocalRandom.mix64(
-        nextSeed()
-      ) >>> 11) * ThreadLocalRandom.DOUBLE_UNIT * bound
-    if (result < bound) result
-    else
-      java.lang.Double
-        .longBitsToDouble(java.lang.Double.doubleToLongBits(bound) - 1)
-  }
-
-  def nextDouble(origin: Double, bound: Double): Double = {
-    if (!(origin < bound))
-      throw new IllegalArgumentException(ThreadLocalRandom.BAD_RANGE)
-    internalNextDouble()(origin, bound)
-  }
-
-  override def nextBoolean(): Boolean = ThreadLocalRandom.mix32(nextSeed()) < 0
-
-  override def nextFloat(): Float =
-    (ThreadLocalRandom.mix32(nextSeed()) >>> 8) * ThreadLocalRandom.FLOAT_UNIT
-  override def nextGaussian()
-      : Double = { // Use nextLocalGaussian instead of nextGaussian field
-    val d =
-      ThreadLocalRandom.nextLocalGaussian.get().asInstanceOf[java.lang.Double]
-    if (d != null) {
-      ThreadLocalRandom.nextLocalGaussian.set(null.asInstanceOf[Double])
-      return d.doubleValue()
-    }
-    var v1 = .0
-    var v2 = .0
-    var s = .0
-    while ({
-      v1 = 2 * nextDouble() - 1 // between -1 and 1
-
-      v2 = 2 * nextDouble() - 1
-      s = v1 * v1 + v2 * v2
-      s >= 1 || s == 0
-    }) ()
-
-    val multiplier = Math.sqrt(-2 * Math.log(s) / s)
-    ThreadLocalRandom.nextLocalGaussian.set(
-      java.lang.Double.valueOf(v2 * multiplier).doubleValue()
-    )
-    v1 * multiplier
-  }
-
-  override def ints(streamSize: Long): IntStream = {
-    if (streamSize < 0L)
-      throw new IllegalArgumentException(ThreadLocalRandom.BAD_SIZE)
-    StreamSupport.intStream(
-      new ThreadLocalRandom.RandomIntsSpliterator(
-        0L,
-        streamSize,
-        Integer.MAX_VALUE,
-        0
-      ),
-      false
-    )
-  }
-
-  override def ints(): IntStream =
-    StreamSupport.intStream(
-      new ThreadLocalRandom.RandomIntsSpliterator(
-        0L,
-        java.lang.Long.MAX_VALUE,
-        Integer.MAX_VALUE,
-        0
-      ),
-      false
-    )
-
-  override def ints(
-      streamSize: Long,
-      randomNumberOrigin: Int,
-      randomNumberBound: Int
-  ): IntStream = {
-    if (streamSize < 0L)
-      throw new IllegalArgumentException(ThreadLocalRandom.BAD_SIZE)
-    if (randomNumberOrigin >= randomNumberBound)
-      throw new IllegalArgumentException(ThreadLocalRandom.BAD_RANGE)
-    StreamSupport.intStream(
-      new ThreadLocalRandom.RandomIntsSpliterator(
-        0L,
-        streamSize,
-        randomNumberOrigin,
-        randomNumberBound
-      ),
-      false
-    )
-  }
-
-  override def ints(
-      randomNumberOrigin: Int,
-      randomNumberBound: Int
-  ): IntStream = {
-    if (randomNumberOrigin >= randomNumberBound)
-      throw new IllegalArgumentException(ThreadLocalRandom.BAD_RANGE)
-    StreamSupport.intStream(
-      new ThreadLocalRandom.RandomIntsSpliterator(
-        0L,
-        java.lang.Long.MAX_VALUE,
-        randomNumberOrigin,
-        randomNumberBound
-      ),
-      false
-    )
-  }
-
-  override def longs(streamSize: Long): LongStream = {
-    if (streamSize < 0L)
-      throw new IllegalArgumentException(ThreadLocalRandom.BAD_SIZE)
-    StreamSupport.longStream(
-      new ThreadLocalRandom.RandomLongsSpliterator(
-        0L,
-        streamSize,
-        java.lang.Long.MAX_VALUE,
-        0L
-      ),
-      false
-    )
-  }
-
-  override def longs(): LongStream =
-    StreamSupport.longStream(
-      new ThreadLocalRandom.RandomLongsSpliterator(
-        0L,
-        java.lang.Long.MAX_VALUE,
-        java.lang.Long.MAX_VALUE,
-        0L
-      ),
-      false
-    )
-
-  override def longs(
-      streamSize: Long,
-      randomNumberOrigin: Long,
-      randomNumberBound: Long
-  ): LongStream = {
-    if (streamSize < 0L)
-      throw new IllegalArgumentException(ThreadLocalRandom.BAD_SIZE)
-    if (randomNumberOrigin >= randomNumberBound)
-      throw new IllegalArgumentException(ThreadLocalRandom.BAD_RANGE)
-    StreamSupport.longStream(
-      new ThreadLocalRandom.RandomLongsSpliterator(
-        0L,
-        streamSize,
-        randomNumberOrigin,
-        randomNumberBound
-      ),
-      false
-    )
-  }
-
-  override def longs(
-      randomNumberOrigin: Long,
-      randomNumberBound: Long
-  ): LongStream = {
-    if (randomNumberOrigin >= randomNumberBound)
-      throw new IllegalArgumentException(ThreadLocalRandom.BAD_RANGE)
-    StreamSupport.longStream(
-      new ThreadLocalRandom.RandomLongsSpliterator(
-        0L,
-        java.lang.Long.MAX_VALUE,
-        randomNumberOrigin,
-        randomNumberBound
-      ),
-      false
-    )
-  }
-
-  override def doubles(streamSize: Long): DoubleStream = {
-    if (streamSize < 0L)
-      throw new IllegalArgumentException(ThreadLocalRandom.BAD_SIZE)
-    StreamSupport.doubleStream(
-      new ThreadLocalRandom.RandomDoublesSpliterator(
-        0L,
-        streamSize,
-        java.lang.Double.MAX_VALUE,
-        0.0
-      ),
-      false
-    )
-  }
-
-  override def doubles(): DoubleStream =
-    StreamSupport.doubleStream(
-      new ThreadLocalRandom.RandomDoublesSpliterator(
-        0L,
-        java.lang.Long.MAX_VALUE,
-        java.lang.Double.MAX_VALUE,
-        0.0
-      ),
-      false
-    )
-
-  override def doubles(
-      streamSize: Long,
-      randomNumberOrigin: Double,
-      randomNumberBound: Double
-  ): DoubleStream = {
-    if (streamSize < 0L)
-      throw new IllegalArgumentException(ThreadLocalRandom.BAD_SIZE)
-
-    if (!(randomNumberOrigin < randomNumberBound))
-      throw new IllegalArgumentException(ThreadLocalRandom.BAD_RANGE)
-
-    StreamSupport.doubleStream(
-      new ThreadLocalRandom.RandomDoublesSpliterator(
-        0L,
-        streamSize,
-        randomNumberOrigin,
-        randomNumberBound
-      ),
-      false
-    )
-  }
-
-  override def doubles(
-      randomNumberOrigin: Double,
-      randomNumberBound: Double
-  ): DoubleStream = {
-    if (!(randomNumberOrigin < randomNumberBound))
-      throw new IllegalArgumentException(ThreadLocalRandom.BAD_RANGE)
-    StreamSupport.doubleStream(
-      new ThreadLocalRandom.RandomDoublesSpliterator(
-        0L,
-        java.lang.Long.MAX_VALUE,
-        randomNumberOrigin,
-        randomNumberBound
-      ),
-      false
-    )
-  }
-
 }
