@@ -8,7 +8,7 @@ package org.scalanative.testsuite.javalib.util.random
 /* Attempting to exactly match comparable JVM values is not feasible for
  * this algorithm because JVM does not specify either the value of the
  * internal additive parameter or any transformations to a supplied seed.
- * 
+ *
  * Test that Scala Native link find method symbols, executes them,
  * that stream characteristics match the JVM, and that possible repeated
  * invocations return different values.
@@ -744,7 +744,7 @@ class JEP356_L32X64MixRandomTestOnJDK17 {
 
     /* Check for the obvious case of a development stub returning a fixed value
      * or short cycle of fixed values.
-     * 
+     *
      *  Test only nextLong() since it is the abstract method which gets
      *  implemented in each RNG and upon which everything else is built.
      */

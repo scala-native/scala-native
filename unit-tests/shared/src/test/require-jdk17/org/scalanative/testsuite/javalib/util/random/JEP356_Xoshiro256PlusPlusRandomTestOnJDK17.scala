@@ -732,7 +732,7 @@ class JEP356_Xoshiro256PlusPlusRandomTestOnJDK17 {
 
     /* Check for the obvious case of a development stub returning a fixed value
      * or short cycle of fixed values.
-     * 
+     *
      *  Test only nextLong() since it is the abstract method which gets
      *  implemented in each RNG and upon which everything else is built.
      */
