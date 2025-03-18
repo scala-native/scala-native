@@ -151,9 +151,9 @@ fallback:;
     uintptr_t start, end;
     char line[256];
 #ifdef __ILP32__
-    char format = "%x-%x ";
+    char *format = "%x-%x ";
 #else
-    char format = "%lx-%lx ";
+    char *format = "%lx-%lx ";
 #endif
 
     while (fgets(line, sizeof(line), maps)) {
