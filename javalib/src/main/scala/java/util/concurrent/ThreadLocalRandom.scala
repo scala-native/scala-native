@@ -24,7 +24,9 @@ import java.util.function._
 import java.util.random.RandomSupport
 import java.util.stream._
 import java.util.concurrent.atomic._
+
 import scala.scalanative.annotation.safePublish
+import scala.scalanative.meta.LinktimeInfo
 
 @SerialVersionUID(-5851777807851030925L)
 object ThreadLocalRandom {
@@ -359,6 +361,30 @@ class ThreadLocalRandom private () extends Random {
   }
 
   override def nextInt(): Int = ThreadLocalRandom.mix32(nextSeed())
+
+  /* Without the override the pre-JEP356 ThreadLocalRandom Test fails in
+   * CI 32 bit "Test cross-compilation (linux-x86, 2.13)". It appears that
+   * the "next" Double is exactly 1.7976931348623157E308 which is _outside_
+   * the exclusive bound of (Scala) Double.MaxValue. Oops!
+   *
+   * The 64 bit "Test cross-compilation (linux-arm64, 2.13)" succeeds.
+   * It may be that the "exactly on the exclusion barrier" value is never
+   * getting generated.
+   *
+   * Try using the historical values on 32-bit systems otherwise use the
+   * RandomGenerator method. This introduces an architectural difference
+   * _within_ ThreadLocalRandom, but maintains consistency _across_ 64-bit
+   * systems. The latter alternative should prove to be be less astonishing
+   * as 32-bit systems fade away.
+   */
+  override def nextDouble(): Double = {
+    if (!LinktimeInfo.is32BitPlatform) {
+      super.nextDouble()
+    } else {
+      (ThreadLocalRandom.mix64(nextSeed()) >>> 11) *
+        ThreadLocalRandom.DOUBLE_UNIT
+    }
+  }
 
   override def nextLong(): Long = ThreadLocalRandom.mix64(nextSeed())
 }
