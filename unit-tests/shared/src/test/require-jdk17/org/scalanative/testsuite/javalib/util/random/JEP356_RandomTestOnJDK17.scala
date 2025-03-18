@@ -14,6 +14,7 @@ import org.junit.Test
 import org.junit.Assert._
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
+import org.scalanative.testsuite.utils.Platform
 
 import java.{lang => jl}
 
@@ -49,21 +50,33 @@ class JEP356_RandomTestOnJDK17 {
   }
 
   @Test def create_Constructor_ByteSeed(): Unit = {
-    /* Does the constructor link, execute without Exception, and
-     * return a useable method?
-     *
-     * Since the Random class has no public constructor
-     * with an Array[Byte] seed, this is a test if RandomGeneratorFactory can
-     * silently fall back to using the zero arg constructor.
+    /* The Random class has no public ByteSeed constructor. The specified
+     * behavior changed in JDK 23.  Scala Native always uses the JDK behavior.
      */
 
     val seedSize = 8 // 1 * sizeof[Long]
     val byteSeed = new Array[Byte](seedSize)
 
-    assertThrows(
-      classOf[UnsupportedOperationException],
-      factory.create(byteSeed)
-    )
+    if (Platform.executingInJVMWithJDKIn(23 to Integer.MAX_VALUE)) {
+      assertThrows(
+        classOf[UnsupportedOperationException],
+        factory.create(byteSeed)
+      )
+    } else {
+      /* JDK 17 thru 22, inclusive, explicitly specify silently fall back to
+       * using the zero arg constructor.
+       */
+      val rng = factory.create()
+
+      val upperBoundExclusive = 26
+
+      val result = rng.nextInt(upperBoundExclusive)
+
+      assertTrue(
+        s"result ${result} is not in range [0, ${upperBoundExclusive})",
+        (result >= 0) && (result < upperBoundExclusive)
+      )
+    }
   }
 
   /* Methods specified in trait RandomGenerator
@@ -568,7 +581,7 @@ class JEP356_RandomTestOnJDK17 {
   @Test def nextDouble_Bound(): Unit = {
     val rng = factory.create(-129358683L)
 
-    val bound = Math.TAU
+    val bound = Math.PI
     val nTries = 30
 
     for (j <- 1 to nTries) {

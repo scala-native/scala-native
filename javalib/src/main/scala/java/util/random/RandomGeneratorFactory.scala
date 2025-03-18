@@ -123,6 +123,14 @@ private[util] object JuRandomFactory
   override def create(): T =
     new ju.Random()
 
+  /* java.util.Random has no public seed Array[Byte] constructor.
+   * The specified behavior changed in JDK 23. JDK [17, 22] specified
+   * silently falling back to using the zero argument constructor.
+   * JDK 23 specifies throwing this Exception.
+   *
+   * Scala Native JuRandomFactory & SplittableRandomFactory alway follows the
+   * safer JDK 23 specification.
+   */
   override def create(seed: Array[scala.Byte]): T =
     throw new UnsupportedOperationException(
       RandomGenFSupport.unsupportedArrayByteSeedMsg(name())
@@ -169,6 +177,9 @@ private[util] object SplittableRandomFactory
   override def create(): T =
     new ju.SplittableRandom()
 
+  /* java.util.Splittable Random has no public seed Array[Byte] constructor.
+   * See comments above corresponding method in JuRandomFactory.
+   */
   override def create(seed: Array[scala.Byte]): T =
     throw new UnsupportedOperationException(
       RandomGenFSupport.unsupportedArrayByteSeedMsg(name())

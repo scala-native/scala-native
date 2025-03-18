@@ -10,7 +10,7 @@ import org.junit.Assert._
 import org.junit.Assume._
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
-import org.scalanative.testsuite.utils.Platform._
+import org.scalanative.testsuite.utils.Platform
 
 import java.util.HashSet
 import java.util.List
@@ -41,7 +41,7 @@ class JEP356_RandomGeneratorFactoryTestOnJDK17 {
 
     assumeFalse(
       s"SN has only ${expectedAlgNames.size()} of the 13 JVM algorithms",
-      executingInJVM
+      Platform.executingInJVM
     )
 
     val expectedCount = expectedAlgNames.size()

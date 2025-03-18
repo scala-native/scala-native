@@ -560,7 +560,7 @@ class JEP356_Xoroshiro128PlusPlusRandomTestOnJDK17 {
   @Test def nextDouble_Bound(): Unit = {
     val rng = factory.create(-129358683L)
 
-    val bound = Math.TAU
+    val bound = Math.PI
     val nTries = 30
 
     for (j <- 1 to nTries) {
