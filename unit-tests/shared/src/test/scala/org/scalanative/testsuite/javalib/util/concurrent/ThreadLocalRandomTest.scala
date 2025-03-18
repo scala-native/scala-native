@@ -912,7 +912,7 @@ class ThreadLocalRandomTest extends JSR166Test {
 
     val next = tlr.nextDouble(least, bound)
     assertTrue(
-      s"least: ${least} bound: ${bound}",
+      s"least: ${least} bound: ${bound} next: ${next}",
       (next >= least) && (next < bound)
     )
   }
