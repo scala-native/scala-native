@@ -214,7 +214,7 @@ trait RandomGenerator {
      * https://docs.oracle.com/javase/8/docs/api/java/util/Random.html#doubles-double-double-
      */
     if (value < bound) value
-    else Math.nextDown(value)
+    else Math.nextDown(bound)
   }
 
   def nextDouble(): scala.Double = {
@@ -266,7 +266,7 @@ trait RandomGenerator {
      * https://docs.oracle.com/javase/8/docs/api/java/util/Random.html#doubles-double-double-
      */
     if (value < bound) value
-    else Math.nextDown(value)
+    else Math.nextDown(bound)
   }
 
   def nextInt(): Int = {
