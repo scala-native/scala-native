@@ -911,14 +911,20 @@ class ThreadLocalRandomTest extends JSR166Test {
     val bound = max(b1, b2)
 
     val next = tlr.nextDouble(least, bound)
-    assertTrue((next >= least) && (next < bound))
+    assertTrue(
+      s"least: ${least} bound: ${bound}",
+      (next >= least) && (next < bound)
+    )
   }
 
   @Test def nextDoubleDoubleDouble(): Unit = {
     implicit val tlr = ThreadLocalRandom.current()
 
-    if (!executingInJVM) {
-      // This test fails with JDK 17 due to failed bounds check
+    // Ported from: Scala.js commit: 7ae4a05 dated 2024-11-16
+    if (!executingInJVMWithJDKIn(17 to 18)) {
+      /* For some reason, JDK 17-18 throw an IllegalArgumentException for
+       * this one. Older and more recent versions of the JDK succeed.
+       */
       checkDoubleBounds(Double.MinValue, Double.MaxValue)
     }
     checkDoubleBounds(Double.MinValue, 0L)
@@ -1025,14 +1031,17 @@ class ThreadLocalRandomTest extends JSR166Test {
     checkDoubleBounds(0.5533138714786693, 0.5329471271772576)
 
     assertThrows(
+      s"expected IllegalArgumentException: 2.0, 1.0",
       classOf[IllegalArgumentException],
       () => tlr.nextDouble(2.0, 1.0)
     )
     assertThrows(
+      s"expected IllegalArgumentException: 1.0, 1.0",
       classOf[IllegalArgumentException],
       () => tlr.nextDouble(1.0, 1.0)
     )
     assertThrows(
+      s"expected IllegalArgumentException: 0.0, 0.0",
       classOf[IllegalArgumentException],
       () => tlr.nextDouble(0.0, 0.0)
     )

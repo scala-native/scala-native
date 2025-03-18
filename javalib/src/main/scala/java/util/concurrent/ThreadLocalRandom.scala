@@ -6,6 +6,15 @@
 
 /* See SN Repository git history for Scala Native additions.
  * The Java 17 JEP356 work to extend RandomGenerator caused many changes.
+ *
+ * Devo note:
+ *   A bold developer, with too much time on their hands, could follow the
+ *   Scala.js PR #5142 example and eliminate almost all of this file,
+ *   letting transitive inheritance from Random to RandomGenerator
+ *   do most of the work.
+ *
+ *   This first JEP 356 Evolution uses overrides to preserve historical
+ *   behavior.
  */
 
 package java.util.concurrent
@@ -127,12 +136,8 @@ object ThreadLocalRandom {
     }
 
     override def estimateSize(): Long = fence - index
-    override def characteristics(): Int = {
-      Spliterator.SIZED |
-        Spliterator.SUBSIZED |
-        Spliterator.NONNULL |
-        Spliterator.IMMUTABLE
-    }
+    override def characteristics(): Int =
+      RandomSupport.randomStreamCharacteristics
 
     override def tryAdvance(consumer: LongConsumer): Boolean = {
       if (consumer == null)
@@ -183,12 +188,9 @@ object ThreadLocalRandom {
       }
     }
     override def estimateSize(): Long = fence - index
-    override def characteristics(): Int = {
-      Spliterator.SIZED |
-        Spliterator.SUBSIZED |
-        Spliterator.NONNULL |
-        Spliterator.IMMUTABLE
-    }
+    override def characteristics(): Int =
+      RandomSupport.randomStreamCharacteristics
+
     override def tryAdvance(consumer: DoubleConsumer): Boolean = {
       if (consumer == null)
         throw new NullPointerException
