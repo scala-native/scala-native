@@ -21,6 +21,13 @@ object Platform {
   final val executingInJVMOnLowerThanJDK17 = jdkVersion < 17
   final val executingInJVMOnJDK17 = jdkVersion == 17
 
+  // current usage, adapted from: Scala.js commit: b38201c dated: 2025-02-06
+  def executingInJVMOnLowerThanJDK(version: Int): Boolean =
+    jdkVersion < version
+
+  def executingInJVMWithJDKIn(range: Range): Boolean =
+    range.contains(jdkVersion)
+
   private lazy val jdkVersion = {
     val v = System.getProperty("java.version")
     if (v.startsWith("1.")) Integer.parseInt(v.drop(2).takeWhile(_.isDigit))
