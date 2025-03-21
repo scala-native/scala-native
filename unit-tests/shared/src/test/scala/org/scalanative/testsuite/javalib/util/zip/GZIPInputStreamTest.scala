@@ -54,7 +54,7 @@ class GZIPInputStreamTest {
      * bytes have been read and just before the read which sets eos.
      * This shows that the read() is calculating the crc correctly
      * not leaving it zero.
-     * 
+     *
      * Another test could be written to show that the calculated crc is
      * actually being used to detect errors.  An exercise for the
      * reader.
