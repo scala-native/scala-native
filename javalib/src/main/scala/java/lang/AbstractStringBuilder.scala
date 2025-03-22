@@ -1,9 +1,14 @@
 // Contains parts ported from Android Luni
 package java.lang
 
-import java.util.Arrays
+import java.util.{Arrays, Objects}
+
+import scala.scalanative.libc
 
 import scala.scalanative.runtime.ieee754tostring.ryu._
+
+import scala.scalanative.unsafe.Size.intToSize
+import scala.scalanative.unsafe.UnsafeRichArray
 
 /* Design Note:
  * The public methods indexOf(string) and lastIndexOf(string) and their
@@ -206,6 +211,19 @@ protected abstract class AbstractStringBuilder private (unit: Unit) {
     return value(index)
   }
 
+  protected def compareTo0(another: AbstractStringBuilder): Int = {
+    Objects.requireNonNull(another, "another")
+    if (this.count != another.count) {
+      this.count - another.count
+    } else {
+      libc.string.memcmp(
+        this.value.at(0),
+        another.value.at(0),
+        (this.count * 2).toCSize
+      )
+    }
+  }
+
   protected final def delete0(start: scala.Int, _end: scala.Int): Unit = {
     var end = _end
     if (start >= 0) {
@@ -364,6 +382,36 @@ protected abstract class AbstractStringBuilder private (unit: Unit) {
     System.arraycopy(value, index, newData, index + size, count - index)
     value = newData
     shared = false
+  }
+
+  protected def repeat0(codePoint: Int, n: Int): Unit = {
+    if (!Character.isValidCodePoint(codePoint)) {
+      val hexString = Integer.toHexString(codePoint).toUpperCase()
+      throw new IllegalArgumentException(
+        s"Not a valid Unicode code point: 0x${hexString}"
+      )
+    }
+
+    if (n < 0)
+      throw new IllegalArgumentException(s"count is negative: ${count}")
+
+    val cpChars = Character.toChars(codePoint)
+    val cpCharsLength = cpChars.length
+    ensureCapacity(count + (cpCharsLength * n))
+
+    for (j <- 0 until n)
+      append0(cpChars)
+  }
+
+  protected def repeat0(cs: CharSequence, n: Int): Unit = {
+    if (n < 0)
+      throw new IllegalArgumentException(s"count is negative: ${count}")
+
+    val csLength = cs.length()
+    ensureCapacity(count + (csLength * n))
+
+    for (j <- 0 until n)
+      append0(cs, 0, csLength)
   }
 
   protected final def replace0(
