@@ -19,11 +19,17 @@ object Platform {
 
   final val hasCompliantArrayIndexOutOfBounds = true
 
+  // historical usage, kept to avoid cascading changes.
   final val executingInJVMOnJDK8OrLower = false
   final val executingInJVMOnLowerThenJDK11 = false
   final val executingInJVMOnLowerThanJDK15 = false
   final val executingInJVMOnLowerThanJDK17 = false
   final val executingInJVMOnJDK17 = false
+
+  // current usage, adapted from: Scala.js commit: b38201c dated: 2025-02-06
+  def executingInJVMOnLowerThanJDK(version: Int): Boolean = false
+
+  def executingInJVMWithJDKIn(range: Range): Boolean = false
 
   final val hasCompliantAsInstanceOfs = true
 
