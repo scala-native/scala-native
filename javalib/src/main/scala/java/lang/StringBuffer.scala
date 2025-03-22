@@ -7,8 +7,9 @@ import AbstractStringBuilder.INITIAL_CAPACITY
 final class StringBuffer
     extends AbstractStringBuilder
     with Appendable
-    with Serializable
-    with CharSequence {
+    with CharSequence
+    with Comparable[StringBuffer]
+    with Serializable {
 
   def this(capacity: scala.Int) = {
     this()
@@ -144,6 +145,10 @@ final class StringBuffer
       super.codePointCount(beginIndex, endIndex)
     }
 
+  def compareTo(another: StringBuffer): Int = synchronized {
+    compareTo0(another)
+  }
+
   def delete(start: scala.Int, end: scala.Int): StringBuffer =
     synchronized {
       delete0(start, end)
@@ -253,9 +258,18 @@ final class StringBuffer
       return super.offsetByCodePoints(index, codePointOffset)
     }
 
+  def repeat(codePoint: Int, count: Int): StringBuffer = {
+    repeat0(codePoint, count)
+    this
+  }
+
+  def repeat(cs: CharSequence, count: Int): StringBuffer = synchronized {
+    repeat0(cs, count)
+    this
+  }
+
   def replace(start: scala.Int, end: scala.Int, string: String): StringBuffer =
     synchronized {
-
       replace0(start, end, string)
       return this
     }
