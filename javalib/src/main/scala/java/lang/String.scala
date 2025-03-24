@@ -202,18 +202,12 @@ final class _String()
 
     val cmp =
       if (memcmpCount == 0) 0
-      else {
-        val data1 =
-          value
-            .at(offset)
-            .asInstanceOf[Ptr[scala.Byte]]
-        val data2 =
-          anotherString.value
-            .at(anotherString.offset)
-            .asInstanceOf[Ptr[scala.Byte]]
-
-        memcmp(data1, data2, memcmpCount.toUInt)
-      }
+      else
+        memcmp(
+          value.at(offset),
+          anotherString.value.at(anotherString.offset),
+          memcmpCount.toCSize
+        )
 
     if (cmp == 0) thisCount - thatCount
     else cmp
