@@ -21,6 +21,9 @@ class StringBuilderTestOnJDK11 {
     val shortenedA = "abcDe"
     val bldrC = StringBuilder(shortenedA)
 
+    val shortenedAndChangedA = "abcde"
+    val bldrD = StringBuilder(shortenedAndChangedA)
+
     assertThrows(
       "null argument",
       classOf[NullPointerException],
@@ -43,5 +46,7 @@ class StringBuilderTestOnJDK11 {
 
     assertTrue("A > C", bldrA.compareTo(bldrC) > 0)
     assertTrue("B > C", bldrB.compareTo(bldrC) > 0) // transitive
+
+    assertTrue("D shorter but greater than A", bldrD.compareTo(bldrA) > 0)
   }
 }
