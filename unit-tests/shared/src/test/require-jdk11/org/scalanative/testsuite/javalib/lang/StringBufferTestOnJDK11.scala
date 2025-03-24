@@ -12,14 +12,17 @@ class StringBufferTestOnJDK11 {
   @Test def compareTo(): Unit = {
 
     val dataA = "abcDef"
-    val bufrA = new StringBuilder(dataA)
-    val bufrAClone = new StringBuilder(dataA)
+    val bufrA = new StringBuffer(dataA)
+    val bufrAClone = new StringBuffer(dataA)
 
     val alteredA = "abcdef"
-    val bufrB = StringBuilder(alteredA)
+    val bufrB = StringBuffer(alteredA)
 
     val shortenedA = "abcDe"
-    val bufrC = StringBuilder(shortenedA)
+    val bufrC = StringBuffer(shortenedA)
+
+    val shortenedAndChangedA = "abcde"
+    val bufrD = StringBuffer(shortenedAndChangedA)
 
     assertThrows(
       classOf[NullPointerException],
@@ -42,5 +45,7 @@ class StringBufferTestOnJDK11 {
 
     assertTrue("A > C", bufrA.compareTo(bufrC) > 0)
     assertTrue("B > C", bufrB.compareTo(bufrC) > 0) // transitive
+
+    assertTrue("D shorter but greater than A", bufrD.compareTo(bufrA) > 0)
   }
 }

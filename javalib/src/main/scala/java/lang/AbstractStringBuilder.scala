@@ -212,16 +212,27 @@ protected abstract class AbstractStringBuilder private (unit: Unit) {
   }
 
   protected def compareTo0(another: AbstractStringBuilder): Int = {
-    Objects.requireNonNull(another, "another")
-    if (this.count != another.count) {
-      this.count - another.count
-    } else {
-      libc.string.memcmp(
-        this.value.at(0),
-        another.value.at(0),
-        (this.count * 2).toCSize
-      )
-    }
+    Objects.requireNonNull(
+      another,
+      """Cannot read field "value" because "another" is null"""
+    )
+
+    val thisCount = this.count
+    val thatCount = another.count
+
+    val memcmpCount = Math.min(thisCount, thatCount) * 2 // Bytes
+
+    val cmp =
+      if (memcmpCount == 0) 0
+      else
+        libc.string.memcmp(
+          value.at(0),
+          another.value.at(0),
+          memcmpCount.toCSize
+        )
+
+    if (cmp == 0) thisCount - thatCount
+    else cmp
   }
 
   protected final def delete0(start: scala.Int, _end: scala.Int): Unit = {
