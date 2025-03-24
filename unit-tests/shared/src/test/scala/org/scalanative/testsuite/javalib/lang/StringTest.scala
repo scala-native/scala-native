@@ -154,10 +154,11 @@ class StringTest {
   }
 
   @Test def compareTo(): Unit = {
-    assertTrue("test".compareTo("utest") < 0)
-    assertTrue("test".compareTo("test") == 0)
-    assertTrue("test".compareTo("stest") > 0)
-    assertTrue("test".compareTo("tess") > 0)
+    assertTrue("== 0", "test".compareTo("test") == 0)
+    assertTrue("< 0", "test".compareTo("utest") < 0)
+    assertTrue("AB prefix equal with A shorter", "test".compareTo("testX") < 0)
+    assertTrue("A > B", "test".compareTo("tess") > 0)
+    assertTrue("A shorter but greater than B", "test".compareTo("stest") > 0)
   }
 
   @Test def compareToIgnoreCase(): Unit = {

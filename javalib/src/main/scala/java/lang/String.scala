@@ -189,22 +189,34 @@ final class _String()
   private def toUpperCase(ch: Char): Char =
     Character.toUpperCase(ch)
 
-  def compareTo(string: _String): Int = {
-    var o1 = offset
-    var o2 = string.offset
-    val end =
-      if (count < string.count) offset + count
-      else offset + string.count
-    val target = string.value
-    while (o1 < end) {
-      val result = value(o1) - target(o2)
-      o1 += 1
-      o2 += 1
-      if (result != 0) {
-        return result
+  def compareTo(anotherString: _String): Int = {
+    Objects.requireNonNull(
+      anotherString,
+      """Cannot read field "value" because "anotherString" is null"""
+    )
+
+    val thisCount = this.count
+    val thatCount = anotherString.count
+
+    val memcmpCount = Math.min(thisCount, thatCount) * 2 // Bytes
+
+    val cmp =
+      if (memcmpCount == 0) 0
+      else {
+        val data1 =
+          value
+            .at(offset)
+            .asInstanceOf[Ptr[scala.Byte]]
+        val data2 =
+          anotherString.value
+            .at(anotherString.offset)
+            .asInstanceOf[Ptr[scala.Byte]]
+
+        memcmp(data1, data2, memcmpCount.toUInt)
       }
-    }
-    count - string.count
+
+    if (cmp == 0) thisCount - thatCount
+    else cmp
   }
 
   def compareToIgnoreCase(string: _String): Int = {
