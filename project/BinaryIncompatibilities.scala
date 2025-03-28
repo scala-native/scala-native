@@ -54,7 +54,9 @@ object BinaryIncompatibilities {
     exclude[ReversedMissingMethodProblem]("scala.scalanative.runtime.NativeThread#Companion.defaultOSStackSize"),
   )
   final val CLib: Filters = Nil
-  final val PosixLib: Filters = Seq.empty
+  final val PosixLib: Filters = Seq(
+    exclude[Problem]("scala.scalanative.posix.termios*")
+  )
   final val WindowsLib: Filters = Nil
 
   final val TestRunner: Filters = Nil
