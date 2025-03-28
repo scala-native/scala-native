@@ -39,10 +39,44 @@ class GZIPInputStreamTest {
     var outBuf = new Array[Byte](100)
     var result = 0
     val inGZIP = new TestGZIPInputStream(new ByteArrayInputStream(gInput))
+
+    /* It appears that JDK 23 changed so that the crc is reset to 0
+     * after eos (end of string) is detected.  Previous JDKs maintained the
+     * crc value in this case.
+     *
+     * The JDK 23 (and 24) Release Notes and the Web in general is silent
+     * about this change.
+     *
+     * Scala Native preserves the traditional behavior, even on JDK >= 23.
+     */
+
+    /* On all platforms & versions, verify the crc after all expected
+     * bytes have been read and just before the read which sets eos.
+     * This shows that the read() is calculating the crc correctly
+     * not leaving it zero.
+     *
+     * Another test could be written to show that the calculated crc is
+     * actually being used to detect errors.  An exercise for the
+     * reader.
+     */
+
     while (!inGZIP.endofInput()) {
-      result += inGZIP.read(outBuf, result, outBuf.length - result)
+      val nRead = inGZIP.read(outBuf, result, outBuf.length - result)
+      if (nRead > -1) {
+        result += nRead
+        if (result > orgBuf.length) {
+          fail(
+            s"read too many bytes, expected: ${orgBuf.length}, read ${result}"
+          )
+        } else if (result == orgBuf.length) {
+          assertEquals(
+            "checksum",
+            2074883667L /* 0x7BAC3653L */,
+            inGZIP.getChecksum().getValue()
+          )
+        } // else read more
+      }
     }
-    assertTrue(inGZIP.getChecksum().getValue() == 2074883667L)
 
     var i = 0
     while (i < orgBuf.length) {
@@ -121,22 +155,37 @@ class GZIPInputStreamTest {
       }
     }
 
-    result = -10
-    result = in.read(null, 100, 1)
-    result = in.read(outBuf, -100, 1)
-    result = in.read(outBuf, -1, 1)
+    /* Stream is at eos at this point, so some argument combinations which
+     * would throw exceptions earlier in the stream no longer do.
+     */
+
+    assertEquals("No NPE", -1, in.read(null, 100, 1))
+
+    assertEquals(
+      "No IndexOutOfBoundsException, negative origin",
+      -1,
+      in.read(outBuf, -100, 1)
+    )
+
+    assertEquals(
+      "No IndexOutOfBoundsException, negative length",
+      -1,
+      in.read(outBuf, 100, -2)
+    )
+
+    assertEquals(
+      "No IndexOutOfBoundsException, negative length",
+      -1,
+      in.read(outBuf, 1, 2 * outBuf.length)
+    )
   }
 
   @Test def close(): Unit = {
     val outBuf = new Array[Byte](100)
     var result = 0
     val inGZIP = new TestGZIPInputStream(new ByteArrayInputStream(gInput))
-    while (!inGZIP.endofInput()) {
-      result += inGZIP.read(outBuf, result, outBuf.length - result)
-    }
-    assertTrue(inGZIP.getChecksum().getValue() == 2074883667L)
-    inGZIP.close()
 
+    inGZIP.close()
     assertThrows(classOf[IOException], inGZIP.read())
   }
 
