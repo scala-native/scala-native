@@ -7,13 +7,45 @@ import org.junit.Assert._
 import org.junit.AfterClass
 import org.junit.Ignore
 
+import scala.scalanative.junit.utils.AssumesHelper._
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
-import org.scalanative.testsuite.utils.Platform.executingInJVM
+import org.scalanative.testsuite.utils.Platform
 
 import java.{lang => jl}
 
 import java.util.Arrays
 import java.util.zip._
+
+/* Note: JDK 23 non-compliance
+ *
+ * JDK 23 introduced stricter argument checking for ZipEntry(name: String),
+ * setComment(comment: String), & setExtra(extra: Array[Byte]). It makes a
+ * best effort attempt to ensure, from the JDK 24 ZipEntry doc for setExtra():
+ *   "IllegalArgumentException - if the combined length of the specified
+ *    extra field data, the entry name, the entry comment, and the
+ *    CEN Header size exceeds 65,535 bytes."
+ *
+ * Currently, Scala Native javalib is hard coded to run as JDK 8 so the
+ * implementation follows the JDK 8 rules and do not comply with JDK >= 23.
+ * Scala Native will silently truncate sizes as it is writing to ZIP outputs
+ * so as to write ZIP files which comply ZIP APPNOTE.txt.
+ *
+ * The non-compliance here is only in not reporting various combinations
+ * of unusually large sizes.
+ *
+ * 1) When time comes to look at this non-compliance, there are some
+ *    subtleties, a.k.a pain points, about determining byte counts for the
+ *    various UTF-16 fields at points in the code where the output charset
+ *    is not known. A precisely perverse UTF-16 String can convert to
+ *    approximately 1.5 times its size as UTF-8 bytes.
+ *
+ * 2) It appears that the ZipEntry(name: String) constructor reserves
+ *    space for the size of the CEN Header. The size of a CEN Header
+ *    varies by ZIP file. The JDK 24 doc makes no mention of how the
+ *    CEN Header size is made known to the ZIPEntry constructor.
+ *    Experimentation appears to indicate that space is reserved for the
+ *    46 bytes of the fixed portion of the CEN Header.
+ */
 
 object ZipEntryTest {
   import ZipBytes.{getZipFile, zipFile}
@@ -40,18 +72,10 @@ object ZipEntryTest {
 class ZipEntryTest {
   import ZipEntryTest._
 
-  /* Use a 'def' rather than a 'val' because two tests each append a char
-   * to the StringBuilder returned.
-   *
-   * It is unclear if these tests are ever run in parallel.  If they were
-   * un-synchronized access to a 'val' might show intermittent errors.
-   * A person with some time could probably develop a synchronized 'val'
-   * and save some allocation and setting of memory.  An optimization for
-   * a future devo. java.util.zip has bigger problems today.
-   */
-  private def jumboZipNameSB(): jl.StringBuilder = {
-    //  Also the maximum comment length.
-    val maxZipNameLen = 0xffff // decimal 65535.
+  private final val maxZipNameLen = 0xffff // decimal 65535.
+
+  private val jumboZipNameSB: jl.StringBuilder = {
+    // Must run on Java 8, which has no j.l.StringBuilder.repeat()
 
     // 0xFFFF has 4 prime factors, decimal 3, 5, 17, 257
     val maxChunk = 3 * 5 * 257 // 3855, approx 4K, yielding 17 loops iterations
@@ -59,29 +83,35 @@ class ZipEntryTest {
     Arrays.fill(chunk, 'a')
 
     // Allocate +1 to allow testing going over the max, without reallocation.
-    val s = new jl.StringBuilder(maxZipNameLen + 1)
+    val sb = new jl.StringBuilder(maxZipNameLen + 1)
 
     for (j <- 1 to maxZipNameLen / maxChunk)
-      s.append(chunk)
+      sb.append(chunk)
 
-    assertEquals("jumboZipName length", maxZipNameLen, s.length())
+    assertEquals("jumboZipName length", maxZipNameLen, sb.length())
+    sb.append("Z")
 
-    s
+    sb
   }
+
+  private final val atMax = jumboZipNameSB.substring(0, maxZipNameLen)
+  private final val overMax = jumboZipNameSB.toString()
 
   @Test def constructorString(): Unit = {
     assertThrows(classOf[NullPointerException], zfile.getEntry(null))
 
-    val atMax = jumboZipNameSB()
+    // See JDK 23+ strict argument checking note at top of file.
+    if (Platform.executingInJVMWithJDKIn(23 to 9999)) {
+      assumeNotJVMCompliant()
+    } else {
+      val ze = new ZipEntry(atMax)
+      assertNotNull("string == 0xFFFF", ze)
 
-    val ze = new ZipEntry(atMax.toString())
-    assertNotNull("string == 0xFFFF", ze)
-
-    val overMax = atMax.append('a')
-    assertThrows(
-      classOf[IllegalArgumentException],
-      new ZipEntry(overMax.toString())
-    )
+      assertThrows(
+        classOf[IllegalArgumentException],
+        new ZipEntry(overMax)
+      )
+    }
   }
 
   @Test def constructorZipEntry(): Unit = {
@@ -169,24 +199,27 @@ class ZipEntryTest {
   }
 
   @Test def setCommentString(): Unit = {
-    val ze = zfile.getEntry("File1.txt")
-    ze.setComment("Set comment using api")
-    assertTrue(ze.getComment() == "Set comment using api")
-    assertEquals("getComment", "Set comment using api", ze.getComment())
+    // See JDK 23+ strict argument checking note at top of file.
+    if (Platform.executingInJVMWithJDKIn(23 to 9999)) {
+      assumeNotJVMCompliant()
+    } else {
+      val ze = zfile.getEntry("File1.txt")
+      ze.setComment("Set comment using api")
+      assertTrue(ze.getComment() == "Set comment using api")
+      assertEquals("getComment", "Set comment using api", ze.getComment())
 
-    ze.setComment(null)
-    assertNull("setComment(null)", ze.getComment())
+      ze.setComment(null)
+      assertNull("setComment(null)", ze.getComment())
 
-    val atMax = jumboZipNameSB()
-    ze.setComment(atMax.toString())
+      ze.setComment(atMax)
 
-    // From Java API docs:
-    // ZIP entry comments have maximum length of 0xffff. If the length of the
-    // specified comment string is greater than 0xFFFF bytes after encoding,
-    // only the first 0xFFFF bytes are output to the ZIP file entry.
+      // From Java API docs:
+      // ZIP entry comments have maximum length of 0xffff. If the length of the
+      // specified comment string is greater than 0xFFFF bytes after encoding,
+      // only the first 0xFFFF bytes are output to the ZIP file entry.
 
-    val overMax = atMax.append('a')
-    ze.setComment(overMax.toString()) // Should silently truncate, not throw().
+      ze.setComment(overMax) // Should silently truncate, not throw().
+    }
   }
 
   @Test def setCompressedSizeLong(): Unit = {
@@ -221,40 +254,45 @@ class ZipEntryTest {
   }
 
   @Test def setExtraArrayByte(): Unit = {
-    val ze = zfile.getEntry("File1.txt")
-    ze.setExtra("Test setting extra information".getBytes())
-    assertTrue(
-      new String(
-        ze.getExtra(),
-        0,
-        ze.getExtra().length
-      ) == "Test setting extra information"
-    )
+    // See JDK 23+ strict argument checking note at top of file.
+    if (Platform.executingInJVMWithJDKIn(23 to 9999)) {
+      assumeNotJVMCompliant()
+    } else {
+      val ze = zfile.getEntry("File1.txt")
+      ze.setExtra("Test setting extra information".getBytes())
+      assertTrue(
+        new String(
+          ze.getExtra(),
+          0,
+          ze.getExtra().length
+        ) == "Test setting extra information"
+      )
 
-    val ze2 = new ZipEntry("test.tst")
-    var ba = new Array[Byte](0xffff)
-    ze2.setExtra(ba)
-    assertTrue(ze2.getExtra() == ba)
+      val ze2 = new ZipEntry("test.tst")
+      var ba = new Array[Byte](0xffff)
+      ze2.setExtra(ba)
+      assertTrue(ze2.getExtra() == ba)
 
-    assertThrows(
-      classOf[IllegalArgumentException], {
-        ba = new Array[Byte](0xffff + 1)
-        ze2.setExtra(ba)
-      }
-    )
+      assertThrows(
+        classOf[IllegalArgumentException], {
+          ba = new Array[Byte](0xffff + 1)
+          ze2.setExtra(ba)
+        }
+      )
 
-    val zeInput = new ZipEntry("InputZip")
-    val extraB = Array[Byte]('a', 'b', 'd', 'e')
-    zeInput.setExtra(extraB)
-    assertTrue(extraB == zeInput.getExtra())
-    assertTrue(extraB(3) == zeInput.getExtra()(3))
-    assertTrue(extraB.length == zeInput.getExtra().length)
+      val zeInput = new ZipEntry("InputZip")
+      val extraB = Array[Byte]('a', 'b', 'd', 'e')
+      zeInput.setExtra(extraB)
+      assertTrue(extraB == zeInput.getExtra())
+      assertTrue(extraB(3) == zeInput.getExtra()(3))
+      assertTrue(extraB.length == zeInput.getExtra().length)
 
-    val zeOutput = new ZipEntry(zeInput)
-    assertTrue(zeInput.getExtra()(3) == zeOutput.getExtra()(3))
-    assertTrue(zeInput.getExtra().length == zeOutput.getExtra().length)
-    assertTrue(extraB(3) == zeOutput.getExtra()(3))
-    assertTrue(extraB.length == zeOutput.getExtra().length)
+      val zeOutput = new ZipEntry(zeInput)
+      assertTrue(zeInput.getExtra()(3) == zeOutput.getExtra()(3))
+      assertTrue(zeInput.getExtra().length == zeOutput.getExtra().length)
+      assertTrue(extraB(3) == zeOutput.getExtra()(3))
+      assertTrue(extraB.length == zeOutput.getExtra().length)
+    }
   }
 
   @Test def setMethodInt(): Unit = {
@@ -282,7 +320,7 @@ class ZipEntryTest {
 
     assertThrows(classOf[IllegalArgumentException], ze.setSize(-25))
 
-    if (!executingInJVM) {
+    if (!Platform.executingInJVM) {
       // Cannot determine whether ZIP64 support is supported on Windows
       // From Java API: throws IllegalArgumentException if:
       // * the specified size is less than 0
