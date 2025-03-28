@@ -1,20 +1,10 @@
 // Ported from Scala.js, revision c473689, dated 3 May 2021
-
-/*
- * Scala.js (https://www.scala-js.org/)
- *
- * Copyright EPFL.
- *
- * Licensed under Apache License 2.0
- * (https://www.apache.org/licenses/LICENSE-2.0).
- *
- * See the NOTICE file distributed with this work for
- * additional information regarding copyright ownership.
- */
+// See SN Repository git history for Scala Native additions.
 
 package java.util
 
-import java.util.random.RandomGenerator
+import java.util.random.{AbstractSplittableRandomGenerator, RandomGenerator}
+import java.util.random.SplittableRandomFactory
 
 /*
  * This is a clean room implementation derived from the original paper
@@ -85,12 +75,15 @@ private object SplittableRandom {
 }
 
 final class SplittableRandom private (private var seed: Long, gamma: Long)
-    extends RandomGenerator {
+    extends RandomGenerator
+    with AbstractSplittableRandomGenerator {
   import SplittableRandom._
 
-  def this(seed: Long) = {
+  override def isDeprecated(): Boolean =
+    SplittableRandomFactory.isDeprecated()
+
+  def this(seed: Long) =
     this(seed, SplittableRandom.GoldenGamma)
-  }
 
   private def this(ll: (Long, Long)) = this(ll._1, ll._2)
 
@@ -105,39 +98,24 @@ final class SplittableRandom private (private var seed: Long, gamma: Long)
     })
   }
 
-  def split(): SplittableRandom =
-    new SplittableRandom(mix64(nextSeed()), mixGamma(nextSeed()))
-
   private def nextSeed(): Long = {
     seed += gamma
     seed
   }
 
-  def nextInt(): Int = mix32(nextSeed())
-
-  // def nextInt(bound: Int): Int
-
-  // def nextInt(origin: Int, bound: Int): Int
+  /* The JVM 17 & 23 documentation clearly indicate that this method is
+   * inherited from RandomGenerator and not overridden.
+   * Without the override, long standing pre-JDK17 Tests fail.
+   * Override to maintain traditional behavior.
+   *
+   * Scala.js PR 5142 discovered this glitch also. See discussion in that
+   * Repository, in the PR and in the code of its SplittableRandom.scala.
+   */
+  override def nextInt(): Int = mix32(nextSeed())
 
   def nextLong(): Long = mix64(nextSeed())
 
-  // def nextLong(bound: Long): Long
-
-  // def nextLong(origin: Long, bound: Long): Long
-
-  def nextDouble(): Double =
-    (nextLong() >>> 11).toDouble * DoubleULP
-
-  // def nextDouble(bound: Double): Double
-
-  // def nextDouble(origin: Double, bound: Double): Double
-
-  /* When nextInt() is uniformly distributed, this implementation is
-   * correct precisely "by chance."
-   * There is the same number of elements in the semi-closed interval
-   * [-Integer.MIN_VALUE, 0) and the closed interval [0, Integer.MAX_VALUE].
-   * Refer to the JDK method description: "Test sign bit".
-   */
-  def nextBoolean(): Boolean = nextInt() < 0
+  def split(): SplittableRandom =
+    new SplittableRandom(mix64(nextSeed()), mixGamma(nextSeed()))
 
 }
