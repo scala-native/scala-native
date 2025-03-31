@@ -236,21 +236,23 @@ package object runtime {
       moduleSlot: unsafe.Ptr[AnyRef],
       cls: Class[_]
   ): AnyRef = cls.synchronized {
-    try {
-      ctor(moduleInstance)
+    @alwaysinline def saveResult(instanceOrError: AnyRef): Unit =
       ffi.stdatomic.atomic_store_intptr(
         moduleSlot.rawptr,
-        Intrinsics.castObjectToRawPtr(moduleInstance),
+        Intrinsics.castObjectToRawPtr(instanceOrError),
         ffi.stdatomic.memory_order.memory_order_release
       )
+    try {
+      ctor(moduleInstance)
+      saveResult(moduleInstance)
       moduleInstance
     } catch {
       case error: jl.Throwable =>
-        ffi.stdatomic.atomic_store_intptr(
-          moduleSlot.rawptr,
-          Intrinsics.castObjectToRawPtr(new ExceptionInInitializerError(error)),
-          ffi.stdatomic.memory_order.memory_order_release
+        val ex = new ExceptionInInitializerError(
+          s"Exception ${error} [in thread \"${Thread.currentThread().getName()}\"]"
         )
+        ex.setStackTrace(error.getStackTrace())
+        saveResult(ex)
         throw error
     }
   }
@@ -268,7 +270,9 @@ package object runtime {
     else
       loaded match {
         case ex: ExceptionInInitializerError =>
-          throw new NoClassDefFoundError(cls.getName()).initCause(ex)
+          throw new NoClassDefFoundError(
+            s"Could not initialize class ${cls.getName()}"
+          ).initCause(ex)
         case _ =>
           throw new NoClassDefFoundError(cls.getName()).initCause(
             new IllegalStateException(
