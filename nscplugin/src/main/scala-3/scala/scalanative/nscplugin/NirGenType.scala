@@ -341,7 +341,7 @@ trait NirGenType(using Context) {
         else genType(resultType)
       nir.Type.Function(selfty ++: paramtys, retty)
     }
-    
+
     cachedMethodSig.getOrElseUpdate((sym, isExtern, statically), resolve())
   }
 
