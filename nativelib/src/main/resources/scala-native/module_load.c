@@ -59,25 +59,24 @@ typedef struct InitializationContext {
     ModuleRef instance;
 } InitializationContext;
 
+extern ModuleRef scalanative_initializeModule(ModuleCtor ctor, ModuleRef instance,
+                                         ModuleSlot slot, void *classInfo);
+extern ModuleRef scalanative_awaitForInitialization(ModuleSlot slot,
+                                                    void *classInfo);
+
 inline static ModuleRef waitForInitialization(ModuleSlot slot,
                                               void *classInfo) {
     int spin = 0;
     ModuleRef module = atomic_load_explicit(slot, memory_order_acquire);
     assert(module != NULL);
-    while (*module != classInfo) {
+    if (*module != classInfo) {
         InitializationContext *ctx = (InitializationContext *)module;
         // Usage of module in it's constructor, return unitializied instance
         if (isThreadEqual(ctx->initThreadId, getThreadId())) {
             return ctx->instance;
         }
-        if (spin++ < 32)
-            thread_yield();
-        else
-            sleep_ms(1);
-        scalanative_GC_yield();
-        module = atomic_load_explicit(slot, memory_order_acquire);
     }
-    return module;
+    return scalanative_awaitForInitialization(slot, classInfo);
 }
 
 ModuleRef __scalanative_loadModule(ModuleSlot slot, void *classInfo,
@@ -91,9 +90,8 @@ ModuleRef __scalanative_loadModule(ModuleSlot slot, void *classInfo,
             ModuleRef instance = scalanative_GC_alloc(classInfo, size);
             ctx.initThreadId = getThreadId();
             ctx.instance = instance;
-            ctor(instance);
-            atomic_store_explicit(slot, instance, memory_order_release);
-            return instance;
+            return scalanative_initializeModule(ctor, instance, slot,
+                                                classInfo);
         } else {
             return waitForInitialization(slot, classInfo);
         }

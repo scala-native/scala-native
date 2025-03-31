@@ -228,6 +228,56 @@ package object runtime {
     throw exception
   }
 
+  @noinline
+  @exported("scalanative_initializeModule")
+  private[runtime] def initializeModule(
+      ctor: unsafe.CFuncPtr1[AnyRef, Unit],
+      moduleInstance: AnyRef,
+      moduleSlot: unsafe.Ptr[AnyRef],
+      cls: Class[_]
+  ): AnyRef = cls.synchronized {
+    try {
+      ctor(moduleInstance)
+      ffi.stdatomic.atomic_store_intptr(
+        moduleSlot.rawptr,
+        Intrinsics.castObjectToRawPtr(moduleInstance),
+        ffi.stdatomic.memory_order.memory_order_release
+      )
+      moduleInstance
+    } catch {
+      case error: jl.Throwable =>
+        ffi.stdatomic.atomic_store_intptr(
+          moduleSlot.rawptr,
+          Intrinsics.castObjectToRawPtr(new ExceptionInInitializerError(error)),
+          ffi.stdatomic.memory_order.memory_order_release
+        )
+        throw error
+    }
+  }
+
+  @noinline
+  @exported("scalanative_awaitForInitialization")
+  private[runtime] def waitForModuleInitialization(
+      moduleSlot: unsafe.Ptr[AnyRef],
+      cls: Class[_]
+  ): AnyRef = cls.synchronized {
+
+    val loaded = !moduleSlot
+    if (loaded.getClass() eq cls)
+      loaded // happy-path
+    else
+      loaded match {
+        case ex: ExceptionInInitializerError =>
+          throw new NoClassDefFoundError(cls.getName()).initCause(ex)
+        case _ =>
+          throw new NoClassDefFoundError(cls.getName()).initCause(
+            new IllegalStateException(
+              "Failed to load module initialized by other thread"
+            )
+          )
+      }
+  }
+
   @extern private[runtime] object StackOverflowGuards {
     @name("scalanative_StackOverflowGuards_size")
     def size: Int = extern
