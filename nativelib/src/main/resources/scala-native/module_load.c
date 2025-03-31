@@ -59,8 +59,9 @@ typedef struct InitializationContext {
     ModuleRef instance;
 } InitializationContext;
 
-extern ModuleRef scalanative_initializeModule(ModuleCtor ctor, ModuleRef instance,
-                                         ModuleSlot slot, void *classInfo);
+extern ModuleRef scalanative_initializeModule(ModuleCtor ctor,
+                                              ModuleRef instance,
+                                              ModuleSlot slot, void *classInfo);
 extern ModuleRef scalanative_awaitForInitialization(ModuleSlot slot,
                                                     void *classInfo);
 
