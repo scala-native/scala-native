@@ -331,7 +331,7 @@ trait NirGenType(using Context) {
 
       val owner = sym.owner
       val paramtys = genMethodSigParamsImpl(sym, isExtern)
-      val selfty = Option.unless(statically | isExtern || sym.isStaticInNIR) {
+      val selfty = Option.unless(statically || isExtern || sym.isStaticInNIR) {
         genType(owner)
       }
       val resultType = sym.info.resultType
@@ -341,11 +341,11 @@ trait NirGenType(using Context) {
         else genType(resultType)
       nir.Type.Function(selfty ++: paramtys, retty)
     }
-
-    cachedMethodSig.getOrElseUpdate((sym, isExtern), resolve())
+    
+    cachedMethodSig.getOrElseUpdate((sym, isExtern, statically), resolve())
   }
 
-  private def genMethodSigParamsImpl(
+  def genMethodSigParamsImpl(
       sym: Symbol,
       isExternHint: Boolean
   )(using Context): Seq[nir.Type] = {

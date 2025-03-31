@@ -33,7 +33,7 @@ class NirCodeGen(val settings: GenNIR.Settings)(using ctx: Context)
     settings.positionRelativizationPaths
   )
   protected val cachedMethodSig =
-    collection.mutable.Map.empty[(Symbol, Boolean), nir.Type.Function]
+    collection.mutable.Map.empty[(Symbol, Boolean, Boolean), nir.Type.Function]
 
   protected val curClassSym = new util.ScopedVar[ClassSymbol]
   protected val curClassFresh = new util.ScopedVar[nir.Fresh]

@@ -230,7 +230,7 @@ trait NirGenType[G <: Global with Singleton] { self: NirGenPhase[G] =>
       val owner = sym.owner
       val paramtys = genMethodSigParamsImpl(sym, isExtern)
       val selfty =
-        if (statically | isExtern || sym.isStaticInNIR) None
+        if (statically || isExtern || sym.isStaticInNIR) None
         else Some(genType(owner.tpe))
       val retty =
         if (sym.isClassConstructor) nir.Type.Unit
@@ -239,7 +239,7 @@ trait NirGenType[G <: Global with Singleton] { self: NirGenPhase[G] =>
 
       nir.Type.Function(selfty ++: paramtys, retty)
     }
-    cachedMethodSig.getOrElseUpdate((sym, isExtern), resolve())
+    cachedMethodSig.getOrElseUpdate((sym, isExtern, statically), resolve())
   }
 
   private def genMethodSigParamsImpl(
