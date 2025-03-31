@@ -121,12 +121,12 @@ class Throwable protected (
     printStackTrace(System.err)
 
   def printStackTrace(ps: java.io.PrintStream): Unit =
-    printStackTrace(ps.println(_: String))
+    printStackTrace(ps.println(_: String), ps)
 
   def printStackTrace(pw: java.io.PrintWriter): Unit =
-    printStackTrace(pw.println(_: String))
+    printStackTrace(pw.println(_: String), pw)
 
-  private def printStackTrace(println: String => Unit): Unit = {
+  private def printStackTrace(println: String => Unit, lock: AnyRef): Unit = lock.synchronized{
     val trace = getStackTrace()
 
     // Print current stack trace
