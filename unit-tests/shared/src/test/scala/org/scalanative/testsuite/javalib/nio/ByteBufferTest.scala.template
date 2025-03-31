@@ -10,6 +10,7 @@ import org.junit.Test
 import org.junit.Assert._
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
+import org.scalanative.testsuite.utils.Platform
 
 abstract class ByteBufferTest extends BaseBufferTest {
   type Factory = BufferFactory.ByteBufferFactory
@@ -1467,7 +1468,15 @@ abstract class ByteBufferTest extends BaseBufferTest {
         )) {
       val buf = allocBuffer(capacity)
       def getAlignmentOffset() = buf.alignmentOffset(capacity, unitSize)
-      if (buf.isDirect() || unitSize <= 8) {
+
+      /* Test the JDK >= 23 behavior of allowing only byte alignment for
+       * non-direct buffers.
+       *
+       * When "alignmentOffset(capacity, unitSize)" was introduced in
+       * JDK 9, it allowed the unitSizes now tested only for direct buffers.
+       */
+      val maxSize = if (Platform.executingInJVMOnLowerThanJDK(23)) 8 else 1 
+      if (buf.isDirect() || (unitSize <= maxSize)) {
         val alignment = getAlignmentOffset()
         assertTrue(s"$input", alignment >= 0 && alignment < unitSize)
       } else {
@@ -1490,7 +1499,15 @@ abstract class ByteBufferTest extends BaseBufferTest {
         )) {
       val buf = withContent(capacity, elemRange(1, capacity): _*)
       def getAlignmentSlice() = buf.alignedSlice(unitSize)
-      if (buf.isDirect() || unitSize <= 8) {
+
+      /* Test the JDK >= 23 behavior of allowing only byte alignment for
+       * non-direct buffers.
+       *
+       * When "alignedSlice(unitSize)" was introduced in
+       * JDK 9, it allowed the unitSizes now tested only for direct buffers.
+       */
+      val maxSize = if (Platform.executingInJVMOnLowerThanJDK(23)) 8 else 1 
+      if (buf.isDirect() || (unitSize <= maxSize)) {
         val alignBuf = getAlignmentSlice()
         assertEquals(0, alignBuf.limit() % unitSize)
         assertEquals(0, alignBuf.capacity() % unitSize)
