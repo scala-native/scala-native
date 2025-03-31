@@ -1851,3 +1851,44 @@ the Scala Native license.
 # License notice for LLVM
 
 Scala Native's `tools/` contains parts that are derived from the [LLVM Project](https://llvm.org/). Those parts are either marked with `// ported from LLVM` and/or include the full copyright preamble in the source code file. The original code was licensed under Apache License Version v2.0 with LLVM Exceptions.
+
+# License notice for JDK 17 Java Enhancement Proposal (JEP) 356 implementation
+
+As described in the file `RandomGenerator.scala`, most of the JEP 356 work
+is covered by the Apache 2.0 license. This includes work ported from Scala.js
+and original work for Scala Native.
+
+Sections of the work carry alternate permissive licenses:
+```
+  - David Blackman and Sebastiano Vigna, 2019
+ 
+      https://prng.di.unimi.it/xoshiro256plusplus.c and similar studied
+ 
+     The authors state in the code:
+	 
+       To the extent possible under law, the author has dedicated all
+       copyright and related and neighboring rights to this software to the
+       public domain worldwide.
+ 
+       Permission to use, copy, modify, and/or distribute this software for
+       any purpose with or without fee is hereby granted.
+ 
+       THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL
+       WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED
+       WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
+       AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL
+       DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA
+       OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
+       TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+       PERFORMANCE OF THIS SOFTWARE.
+ 
+  - Guy L. Steele Jr. and Sebastiano Vigna. LXM: Better splittable
+    pseudorandom number generators (and almost as fast). Proc. ACM Program.
+    Lang., 5(OOPSLA):1−31, 2021.
+ 
+      "This work is licensed under a Creative Commons Attribution 4.0
+       international license © 2021 Copyright held by the owner/author(s)."
+ 
+       The terms of that license requires this notice that the code
+       from that paper has been altered by being translated to Scala.
+```

@@ -150,8 +150,14 @@ fallback:;
     }
     uintptr_t start, end;
     char line[256];
+#ifdef __ILP32__
+    char *format = "%x-%x ";
+#else
+    char *format = "%lx-%lx ";
+#endif
+
     while (fgets(line, sizeof(line), maps)) {
-        if (sscanf(line, "%lx-%lx ", &start, &end) == 2) {
+        if (sscanf(line, format, &start, &end) == 2) {
             if (isInRange(onStackPointer, (void *)start, (void *)end)) {
                 size_t size = end - start;
                 currentThreadInfo.stackBottom = (void *)end;
