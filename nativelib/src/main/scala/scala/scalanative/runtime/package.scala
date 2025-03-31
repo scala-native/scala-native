@@ -248,8 +248,9 @@ package object runtime {
       moduleInstance
     } catch {
       case error: jl.Throwable =>
+        val threadName = Thread.currentThread().getName()
         val ex = new ExceptionInInitializerError(
-          s"Exception ${error} [in thread \"${Thread.currentThread().getName()}\"]"
+          s"""Exception ${error} [in thread "$threadName"]"""
         )
         ex.setStackTrace(error.getStackTrace())
         saveResult(ex)

@@ -126,46 +126,47 @@ class Throwable protected (
   def printStackTrace(pw: java.io.PrintWriter): Unit =
     printStackTrace(pw.println(_: String), pw)
 
-  private def printStackTrace(println: String => Unit, lock: AnyRef): Unit = lock.synchronized{
-    val trace = getStackTrace()
+  private def printStackTrace(println: String => Unit, lock: AnyRef): Unit =
+    lock.synchronized {
+      val trace = getStackTrace()
 
-    // Print current stack trace
-    println(toString)
-    if (trace.nonEmpty) {
-      var i = 0
-      while (i < trace.length) {
-        println("\tat " + trace(i))
-        i += 1
-      }
-    } else {
-      println("")
-    }
-
-    // Print causes
-    var parentStack = trace
-    var throwable = getCause()
-    while (throwable != null) {
-      println("Caused by: " + throwable)
-
-      val currentStack = throwable.getStackTrace()
-      if (currentStack.nonEmpty) {
-        val duplicates = countDuplicates(currentStack, parentStack)
+      // Print current stack trace
+      println(toString)
+      if (trace.nonEmpty) {
         var i = 0
-        while (i < currentStack.length - duplicates) {
-          println("\tat " + currentStack(i))
+        while (i < trace.length) {
+          println("\tat " + trace(i))
           i += 1
-        }
-        if (duplicates > 0) {
-          println("\t... " + duplicates + " more")
         }
       } else {
         println("")
       }
 
-      parentStack = currentStack
-      throwable = throwable.getCause()
+      // Print causes
+      var parentStack = trace
+      var throwable = getCause()
+      while (throwable != null) {
+        println("Caused by: " + throwable)
+
+        val currentStack = throwable.getStackTrace()
+        if (currentStack.nonEmpty) {
+          val duplicates = countDuplicates(currentStack, parentStack)
+          var i = 0
+          while (i < currentStack.length - duplicates) {
+            println("\tat " + currentStack(i))
+            i += 1
+          }
+          if (duplicates > 0) {
+            println("\t... " + duplicates + " more")
+          }
+        } else {
+          println("")
+        }
+
+        parentStack = currentStack
+        throwable = throwable.getCause()
+      }
     }
-  }
 
   private def countDuplicates(
       currentStack: Array[StackTraceElement],
