@@ -21,9 +21,7 @@ import Spliterator._
  *  Future evolutions should, over time, remove these limitations:
  *
  *    - spliterators specified by Java as late-binding may not be late-binding.
- *
  *    - spliterators never check for concurrent modification.
- *
  *    - A number of spliterator methods have JVM descriptions of what happens
  *      after iteration starts and one of certain methods, say, trySplit() is
  *      called. This implementation may not follow the JVM description. Even in

@@ -158,7 +158,7 @@ object MyScalaNativePlugin extends AutoPlugin {
     inConfig(Compile) {
       nativeLinkProfiling := nativeLinkProfilingImpl
         .tag(NativeTags.Link)
-        .evaluated,
+        .evaluated
     }
   )
 }

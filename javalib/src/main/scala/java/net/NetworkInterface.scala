@@ -574,7 +574,7 @@ object NetworkInterface {
     implicit z =>
       // toInt truncation OK, since index will never be larger than MAX_INT
       if_nametoindex(toCString(ifName)).toInt
-        // Return 0 on error. Do not give errno error message.
+      // Return 0 on error. Do not give errno error message.
   }
 
   private def unixImplGetHardwareAddress(ifName: String): Array[Byte] = {

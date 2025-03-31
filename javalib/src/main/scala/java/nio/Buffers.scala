@@ -32,7 +32,7 @@ abstract class ByteBuffer private[nio] (
     private[nio] val _offset: Int,
     _address: unsafe.CVoidPtr,
 ) extends Buffer(_capacity, _address)
-    with Comparable[ByteBuffer] 
+    with Comparable[ByteBuffer]
   {
   private[nio] type ElementType = Byte
   private[nio] type BufferType = ByteBuffer
@@ -75,11 +75,11 @@ abstract class ByteBuffer private[nio] (
   
   // Since: JDK 13
   def get(index: Int, dst: Array[Byte], offset: Int, length: Int): ByteBuffer = GenBuffer[ByteBuffer](this).generic_get(index, dst, offset, length)
-  def get(index: Int, dst: Array[Byte]): ByteBuffer = get(index, dst, 0, dst.length) 
+  def get(index: Int, dst: Array[Byte]): ByteBuffer = get(index, dst, 0, dst.length)
 
   // Since: JDK13
   def put(index: Int, src: Array[Byte], offset: Int, length: Int): ByteBuffer = GenBuffer[ByteBuffer](this).generic_put(index, src, offset, length)
-  def put(index: Int, src: Array[Byte]): ByteBuffer = put(index, src, 0, src.length)  
+  def put(index: Int, src: Array[Byte]): ByteBuffer = put(index, src, 0, src.length)
 
   @noinline
   def get(dst: Array[Byte], offset: Int, length: Int): ByteBuffer =
@@ -205,7 +205,7 @@ abstract class ByteBuffer private[nio] (
   def putChar(index: Int, value: Char): ByteBuffer = {
     ensureNotReadOnly()
     storeChar(validateIndex(index, 2), value)
-  }  
+  }
   @alwaysinline private def loadChar(index: Int): Char = {
     val value = Intrinsics.loadChar(Intrinsics.elemRawPtr(_rawAddress, index))
     val maybeReversed = if (isBigEndian) java.lang.Character.reverseBytes(value) else value
@@ -226,7 +226,7 @@ abstract class ByteBuffer private[nio] (
   def putShort(index: Int, value: Short): ByteBuffer = {
     ensureNotReadOnly()
     storeShort(validateIndex(index, 2), value)
-  }  
+  }
   @alwaysinline private def loadShort(index: Int): Short = {
     val value = Intrinsics.loadShort(Intrinsics.elemRawPtr(_rawAddress, index))
     val maybeReversed = if (isBigEndian) java.lang.Short.reverseBytes(value) else value
@@ -247,7 +247,7 @@ abstract class ByteBuffer private[nio] (
   def putInt(index: Int, value: Int): ByteBuffer = {
     ensureNotReadOnly()
     storeInt(validateIndex(index, 4), value)
-  }  
+  }
   @alwaysinline private def loadInt(index: Int): Int = {
     val value = Intrinsics.loadInt(Intrinsics.elemRawPtr(_rawAddress, index))
     val maybeReversed = if (isBigEndian) java.lang.Integer.reverseBytes(value) else value
@@ -268,7 +268,7 @@ abstract class ByteBuffer private[nio] (
   def putLong(index: Int, value: Long): ByteBuffer = {
     ensureNotReadOnly()
     storeLong(validateIndex(index, 8), value)
-  }  
+  }
   @alwaysinline private def loadLong(index: Int): Long = {
     val value = Intrinsics.loadLong(Intrinsics.elemRawPtr(_rawAddress, index))
     val maybeReversed = if (isBigEndian) java.lang.Long.reverseBytes(value) else value
@@ -289,7 +289,7 @@ abstract class ByteBuffer private[nio] (
   def putFloat(index: Int, value: Float): ByteBuffer = {
     ensureNotReadOnly()
     storeFloat(validateIndex(index, 4), value)
-  }  
+  }
   @alwaysinline private def loadFloat(index: Int): Float = {
     val value = Intrinsics.loadInt(Intrinsics.elemRawPtr(_rawAddress, index))
     val maybeReversed = if (isBigEndian) java.lang.Integer.reverseBytes(value) else value
@@ -311,7 +311,7 @@ abstract class ByteBuffer private[nio] (
   def putDouble(index: Int, value: Double): ByteBuffer = {
     ensureNotReadOnly()
     storeDouble(validateIndex(index, 8), value)
-  }  
+  }
   @alwaysinline private def loadDouble(index: Int): Double = {
     val value = Intrinsics.loadLong(Intrinsics.elemRawPtr(_rawAddress, index))
     val maybeReversed = if (isBigEndian) java.lang.Long.reverseBytes(value) else value
@@ -378,7 +378,7 @@ abstract class CharBuffer private[nio] (
     private[nio] val _offset: Int,
     _address: unsafe.CVoidPtr,
 ) extends Buffer(_capacity, _address)
-    with Comparable[CharBuffer] 
+    with Comparable[CharBuffer]
     with CharSequence
     with Appendable
     with Readable
@@ -423,11 +423,11 @@ abstract class CharBuffer private[nio] (
   
   // Since: JDK 13
   def get(index: Int, dst: Array[Char], offset: Int, length: Int): CharBuffer = GenBuffer[CharBuffer](this).generic_get(index, dst, offset, length)
-  def get(index: Int, dst: Array[Char]): CharBuffer = get(index, dst, 0, dst.length) 
+  def get(index: Int, dst: Array[Char]): CharBuffer = get(index, dst, 0, dst.length)
 
   // Since: JDK13
   def put(index: Int, src: Array[Char], offset: Int, length: Int): CharBuffer = GenBuffer[CharBuffer](this).generic_put(index, src, offset, length)
-  def put(index: Int, src: Array[Char]): CharBuffer = put(index, src, 0, src.length)  
+  def put(index: Int, src: Array[Char]): CharBuffer = put(index, src, 0, src.length)
 
   @noinline
   def get(dst: Array[Char], offset: Int, length: Int): CharBuffer =
@@ -615,7 +615,7 @@ abstract class ShortBuffer private[nio] (
     private[nio] val _offset: Int,
     _address: unsafe.CVoidPtr,
 ) extends Buffer(_capacity, _address)
-    with Comparable[ShortBuffer] 
+    with Comparable[ShortBuffer]
   {
   private[nio] type ElementType = Short
   private[nio] type BufferType = ShortBuffer
@@ -657,11 +657,11 @@ abstract class ShortBuffer private[nio] (
   
   // Since: JDK 13
   def get(index: Int, dst: Array[Short], offset: Int, length: Int): ShortBuffer = GenBuffer[ShortBuffer](this).generic_get(index, dst, offset, length)
-  def get(index: Int, dst: Array[Short]): ShortBuffer = get(index, dst, 0, dst.length) 
+  def get(index: Int, dst: Array[Short]): ShortBuffer = get(index, dst, 0, dst.length)
 
   // Since: JDK13
   def put(index: Int, src: Array[Short], offset: Int, length: Int): ShortBuffer = GenBuffer[ShortBuffer](this).generic_put(index, src, offset, length)
-  def put(index: Int, src: Array[Short]): ShortBuffer = put(index, src, 0, src.length)  
+  def put(index: Int, src: Array[Short]): ShortBuffer = put(index, src, 0, src.length)
 
   @noinline
   def get(dst: Array[Short], offset: Int, length: Int): ShortBuffer =
@@ -799,7 +799,7 @@ abstract class IntBuffer private[nio] (
     private[nio] val _offset: Int,
     _address: unsafe.CVoidPtr,
 ) extends Buffer(_capacity, _address)
-    with Comparable[IntBuffer] 
+    with Comparable[IntBuffer]
   {
   private[nio] type ElementType = Int
   private[nio] type BufferType = IntBuffer
@@ -841,11 +841,11 @@ abstract class IntBuffer private[nio] (
   
   // Since: JDK 13
   def get(index: Int, dst: Array[Int], offset: Int, length: Int): IntBuffer = GenBuffer[IntBuffer](this).generic_get(index, dst, offset, length)
-  def get(index: Int, dst: Array[Int]): IntBuffer = get(index, dst, 0, dst.length) 
+  def get(index: Int, dst: Array[Int]): IntBuffer = get(index, dst, 0, dst.length)
 
   // Since: JDK13
   def put(index: Int, src: Array[Int], offset: Int, length: Int): IntBuffer = GenBuffer[IntBuffer](this).generic_put(index, src, offset, length)
-  def put(index: Int, src: Array[Int]): IntBuffer = put(index, src, 0, src.length)  
+  def put(index: Int, src: Array[Int]): IntBuffer = put(index, src, 0, src.length)
 
   @noinline
   def get(dst: Array[Int], offset: Int, length: Int): IntBuffer =
@@ -983,7 +983,7 @@ abstract class LongBuffer private[nio] (
     private[nio] val _offset: Int,
     _address: unsafe.CVoidPtr,
 ) extends Buffer(_capacity, _address)
-    with Comparable[LongBuffer] 
+    with Comparable[LongBuffer]
   {
   private[nio] type ElementType = Long
   private[nio] type BufferType = LongBuffer
@@ -1025,11 +1025,11 @@ abstract class LongBuffer private[nio] (
   
   // Since: JDK 13
   def get(index: Int, dst: Array[Long], offset: Int, length: Int): LongBuffer = GenBuffer[LongBuffer](this).generic_get(index, dst, offset, length)
-  def get(index: Int, dst: Array[Long]): LongBuffer = get(index, dst, 0, dst.length) 
+  def get(index: Int, dst: Array[Long]): LongBuffer = get(index, dst, 0, dst.length)
 
   // Since: JDK13
   def put(index: Int, src: Array[Long], offset: Int, length: Int): LongBuffer = GenBuffer[LongBuffer](this).generic_put(index, src, offset, length)
-  def put(index: Int, src: Array[Long]): LongBuffer = put(index, src, 0, src.length)  
+  def put(index: Int, src: Array[Long]): LongBuffer = put(index, src, 0, src.length)
 
   @noinline
   def get(dst: Array[Long], offset: Int, length: Int): LongBuffer =
@@ -1167,7 +1167,7 @@ abstract class FloatBuffer private[nio] (
     private[nio] val _offset: Int,
     _address: unsafe.CVoidPtr,
 ) extends Buffer(_capacity, _address)
-    with Comparable[FloatBuffer] 
+    with Comparable[FloatBuffer]
   {
   private[nio] type ElementType = Float
   private[nio] type BufferType = FloatBuffer
@@ -1209,11 +1209,11 @@ abstract class FloatBuffer private[nio] (
   
   // Since: JDK 13
   def get(index: Int, dst: Array[Float], offset: Int, length: Int): FloatBuffer = GenBuffer[FloatBuffer](this).generic_get(index, dst, offset, length)
-  def get(index: Int, dst: Array[Float]): FloatBuffer = get(index, dst, 0, dst.length) 
+  def get(index: Int, dst: Array[Float]): FloatBuffer = get(index, dst, 0, dst.length)
 
   // Since: JDK13
   def put(index: Int, src: Array[Float], offset: Int, length: Int): FloatBuffer = GenBuffer[FloatBuffer](this).generic_put(index, src, offset, length)
-  def put(index: Int, src: Array[Float]): FloatBuffer = put(index, src, 0, src.length)  
+  def put(index: Int, src: Array[Float]): FloatBuffer = put(index, src, 0, src.length)
 
   @noinline
   def get(dst: Array[Float], offset: Int, length: Int): FloatBuffer =
@@ -1351,7 +1351,7 @@ abstract class DoubleBuffer private[nio] (
     private[nio] val _offset: Int,
     _address: unsafe.CVoidPtr,
 ) extends Buffer(_capacity, _address)
-    with Comparable[DoubleBuffer] 
+    with Comparable[DoubleBuffer]
   {
   private[nio] type ElementType = Double
   private[nio] type BufferType = DoubleBuffer
@@ -1393,11 +1393,11 @@ abstract class DoubleBuffer private[nio] (
   
   // Since: JDK 13
   def get(index: Int, dst: Array[Double], offset: Int, length: Int): DoubleBuffer = GenBuffer[DoubleBuffer](this).generic_get(index, dst, offset, length)
-  def get(index: Int, dst: Array[Double]): DoubleBuffer = get(index, dst, 0, dst.length) 
+  def get(index: Int, dst: Array[Double]): DoubleBuffer = get(index, dst, 0, dst.length)
 
   // Since: JDK13
   def put(index: Int, src: Array[Double], offset: Int, length: Int): DoubleBuffer = GenBuffer[DoubleBuffer](this).generic_put(index, src, offset, length)
-  def put(index: Int, src: Array[Double]): DoubleBuffer = put(index, src, 0, src.length)  
+  def put(index: Int, src: Array[Double]): DoubleBuffer = put(index, src, 0, src.length)
 
   @noinline
   def get(dst: Array[Double], offset: Int, length: Int): DoubleBuffer =

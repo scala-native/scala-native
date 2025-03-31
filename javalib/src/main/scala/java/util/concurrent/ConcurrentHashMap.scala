@@ -543,8 +543,8 @@ object ConcurrentHashMap {
           else if (({ pk = p.key; pk } eq k) || (pk != null && k.equals(pk))) return p
           else if (pl == null) p = pr
           else if (pr == null) p = pl
-          else if ((kc != null || { kc = comparableClassFor(k); kc } != null)
-              && { dir = compareComparables(kc, k, pk); dir } != 0)
+          else if ((kc != null || { kc = comparableClassFor(k); kc } != null) &&
+              { dir = compareComparables(kc, k, pk); dir } != 0)
             p = if (dir < 0) pl else pr
           else if ({ q = pr.findTreeNode(h, k, kc); q } != null) return q
           else p = pl
@@ -824,9 +824,8 @@ object ConcurrentHashMap {
             val pk = p.key
             if ({ ph = p.hash; ph } > h) dir = -1
             else if (ph < h) dir = 1
-            else if (kc == null && ({ kc = comparableClassFor(k); kc } == null) || ({
-                  dir = compareComparables(kc, k, pk); dir
-                }) == 0)
+            else if (kc == null && ({ kc = comparableClassFor(k); kc } == null) ||
+                ({ dir = compareComparables(kc, k, pk); dir }) == 0)
               dir = TreeBin.tieBreakOrder(k, pk)
             val xp = p
             p =
@@ -893,9 +892,8 @@ object ConcurrentHashMap {
                 else r.findTreeNode(h, k, null)
             finally {
               var w: Thread = null
-              if (this.LOCKSTATE.fetchAdd(-TreeBin.READER) == (TreeBin.READER | TreeBin.WAITER) && {
-                    w = waiter; w
-                  } != null) LockSupport.unpark(w)
+              if (this.LOCKSTATE.fetchAdd(-TreeBin.READER) == (TreeBin.READER | TreeBin.WAITER) &&
+                  { w = waiter; w } != null) LockSupport.unpark(w)
             }
             return p
           }
@@ -923,16 +921,14 @@ object ConcurrentHashMap {
         } else if ({ ph = p.hash; ph } > h) dir = -1
         else if (ph < h) dir = 1
         else if (({ pk = p.key; pk } eq k) || (pk != null && k.equals(pk))) return p
-        else if ((kc == null && { kc = comparableClassFor(k); kc } == null) || {
-              dir = compareComparables(kc, k, pk); dir
-            } == 0) {
+        else if ((kc == null && { kc = comparableClassFor(k); kc } == null) ||
+            { dir = compareComparables(kc, k, pk); dir } == 0) {
           if (!searched) {
             var q: TreeNode[K, V] = null
             var ch: TreeNode[K, V] = null
             searched = true
-            if (({ ch = p.left; ch } != null && { q = ch.findTreeNode(h, k, kc); q } != null) || ({
-                  ch = p.right; ch
-                } != null && { q = ch.findTreeNode(h, k, kc); q } != null)) return q
+            if (({ ch = p.left; ch } != null && { q = ch.findTreeNode(h, k, kc); q } != null) ||
+                ({ ch = p.right; ch } != null && { q = ch.findTreeNode(h, k, kc); q } != null)) return q
           }
           dir = TreeBin.tieBreakOrder(k, pk)
         }
@@ -978,7 +974,7 @@ object ConcurrentHashMap {
         return true
       }
       if ({ r = root; r } == null || r.right == null || // too small
-      { rl = r.left; rl } == null || rl.left == null) return true
+          { rl = r.left; rl } == null || rl.left == null) return true
       lockRoot()
       try {
         var replacement: TreeNode[K, V] = null
@@ -1071,8 +1067,8 @@ object ConcurrentHashMap {
         var n = 0 // must use locals in checks
 
         if (e != null) return { _next = e; _next }
-        if (baseIndex >= baseLimit || { t = tab; t } == null || { n = t.length; n } <= { i = index; i }
-            || i < 0) return { _next = null; _next }
+        if (baseIndex >= baseLimit || { t = tab; t } == null ||
+            { n = t.length; n } <= { i = index; i } || i < 0) return { _next = null; _next }
         var continue = false
         if ({ e = tabAt(t, i); e } != null && e.hash < 0)
           if (e.isInstanceOf[ForwardingNode[_, _]]) {
@@ -1834,9 +1830,8 @@ object ConcurrentHashMap {
           else e = null
         if (!continue) {
           if (stack != null) recoverState(n)
-          else if ({ index = i + baseSize; index } >= n) index = {
-            baseIndex += 1; baseIndex
-          }
+          else if ({ index = i + baseSize; index } >= n)
+            index = { baseIndex += 1; baseIndex }
         }
       }
       null // unreachable
@@ -3898,10 +3893,10 @@ class ConcurrentHashMap[K <: AnyRef, V <: AnyRef]()
             var p: Node[K, V] = null
             binCount = 2
             if ({
-              p = f
-                .asInstanceOf[TreeBin[K, V]]
-                .putTreeVal(hash, key, value); p
-            } != null) {
+                  p = f
+                    .asInstanceOf[TreeBin[K, V]]
+                    .putTreeVal(hash, key, value); p
+                } != null) {
               oldVal = p.`val`
               if (!onlyIfAbsent) p.`val` = value
             }
@@ -4121,9 +4116,9 @@ class ConcurrentHashMap[K <: AnyRef, V <: AnyRef]()
           var mk: AnyRef = null
           var mv: AnyRef = null
           var v: AnyRef = null
-          if ({ mk = e.getKey().asInstanceOf[AnyRef]; mk == null } || {
-            mv = e.getValue().asInstanceOf[AnyRef]; mv == null
-          } || { v = get(mk); v } == null || ((mv ne v) && !(mv.equals(v)))) {
+          if ({ mk = e.getKey().asInstanceOf[AnyRef]; mk == null } ||
+              { mv = e.getValue().asInstanceOf[AnyRef]; mv == null } ||
+              { v = get(mk); v } == null || ((mv ne v) && !(mv.equals(v)))) {
             return false
           }
         }
@@ -4792,18 +4787,13 @@ class ConcurrentHashMap[K <: AnyRef, V <: AnyRef]()
     var b = 0L
     var s = 0L
     if ({ cs = counterCells; cs } != null || !this.BASECOUNT
-      .compareExchangeStrong({ b = baseCount; b }, { s = b + x; s })) {
+          .compareExchangeStrong({ b = baseCount; b }, { s = b + x; s })) {
       var c: CounterCell = null
       var v = 0L
       var m = 0
       var uncontended = true
-      if (cs == null || { m = cs.length - 1; m < 0 } || { c = cs(ThreadLocalRandom.getProbe() & m); c == null } || {
-            uncontended = c.CELLVALUE.compareExchangeStrong(
-              { v = c.value; v },
-              v + x
-            )
-            !uncontended
-          }) {
+      if (cs == null || { m = cs.length - 1; m < 0 } || { c = cs(ThreadLocalRandom.getProbe() & m); c == null } ||
+          { uncontended = c.CELLVALUE.compareExchangeStrong({ v = c.value; v }, v + x); !uncontended }) {
         fullAddCount(x, uncontended)
         return
       }
@@ -5096,8 +5086,8 @@ class ConcurrentHashMap[K <: AnyRef, V <: AnyRef]()
                 var rs: Array[CounterCell] = null
                 var m = 0
                 var j = 0
-                if ({ rs = counterCells; rs } != null && { m = rs.length; m } > 0 && rs({ j = (m - 1) & h; j }
-                ) == null) {
+                if ({ rs = counterCells; rs } != null && { m = rs.length; m } > 0 &&
+                    rs({ j = (m - 1) & h; j }) == null) {
                   rs(j) = r
                   created = true
                 }

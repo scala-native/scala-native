@@ -50,7 +50,7 @@ class AtomicMarkableReference[V <: AnyRef](
   def isMarked(): Boolean = valueRef.load().mark
 
   /** Returns the current values of both the reference and the mark. Typical
-   *  usage is {@code boolean[1] holder; ref = v.get(holder); }.
+   *  usage is {@code boolean[1] holder; ref = v.get(holder);}.
    *
    *  @param markHolder
    *    an array of size of at least one. On return, {@code markHolder[0]} will

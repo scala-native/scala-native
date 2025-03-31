@@ -99,11 +99,11 @@ class PrepNativeInterop extends PluginPhase with NativeInteropUtil {
   private def finalExportTarget(sym: Symbol): Symbol = {
     var current = sym
     while exportTargets
-          .get(current)
-          .match
-            case Some(target) if target ne NoSymbol =>
-              current = target; true // continue search
-            case _ => false // final target found
+      .get(current)
+      .match
+        case Some(target) if target ne NoSymbol =>
+          current = target; true // continue search
+        case _ => false // final target found
     do ()
     current
   }

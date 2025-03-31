@@ -192,7 +192,7 @@ object Build {
         val jlThreadBuildersOfPlatform = nir.Global.Top("java.lang.ThreadBuilders$PlatformThreadBuilder")
         val jlThreadBuildersOfPlatformStart = jlThreadBuildersOfPlatform.member(nir.Sig.Method("start", Seq(jlRunnable, jlThread).map(nir.Type.Ref(_))))
         val jlThreadStart = jlThread.member(nir.Sig.Method("start", Seq(nir.Type.Unit)))
-        val usesSystemThreads = 
+        val usesSystemThreads =
           analysis.infos.get(jlThreadBuildersOfPlatformStart).isDefined ||
           analysis.infos.get(jlThreadStart).isDefined
         // format: on

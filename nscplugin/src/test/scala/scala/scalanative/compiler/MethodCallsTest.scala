@@ -113,14 +113,14 @@ class MethodCallTest {
               case Val.Global(Global.Member(RuntimePackage, EnterMonitorSig), _) => Some(false)
               case Val.Global(Global.Member(RuntimePackageCls, EnterMonitorStaticSig), _) => Some(true)
               case _ => None
-            } 
+            }
           }
           object MonitorExit{
             def unapply(v: Val): Option[Boolean] = v match {
               case Val.Global(Global.Member(RuntimePackage, ExitMonitorSig), _) => Some(false)
               case Val.Global(Global.Member(RuntimePackageCls, ExitMonitorStaticSig), _) => Some(true)
               case _ => None
-            } 
+            }
           }
           // format: on
           var monitorEnters, monitorExits = 0
