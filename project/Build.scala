@@ -458,6 +458,11 @@ object Build {
       )
       .withNativeCompilerPlugin
       .mapBinaryVersions(_ => _.dependsOn(javalibintf % Provided))
+      .mapBinaryVersions {
+        // issue with Zinc does not detect changes
+        case "2.13" => _.settings(recompileAllOrNothingSettings)
+        case _      => identity
+      }
 
   lazy val clib = MultiScalaProject("clib")
     .enablePlugins(MyScalaNativePlugin)

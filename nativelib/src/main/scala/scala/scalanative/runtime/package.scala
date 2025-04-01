@@ -228,6 +228,78 @@ package object runtime {
     throw exception
   }
 
+  @noinline
+  @exported("scalanative_initializeModule")
+  private[runtime] def initializeModule(
+      ctor: unsafe.CFuncPtr1[AnyRef, Unit],
+      moduleInstance: AnyRef,
+      moduleSlot: unsafe.Ptr[AnyRef],
+      cls: Class[_]
+  ): AnyRef = cls.synchronized {
+    @alwaysinline def saveResult(instanceOrError: AnyRef): Unit =
+      ffi.stdatomic.atomic_store_intptr(
+        moduleSlot.rawptr,
+        Intrinsics.castObjectToRawPtr(instanceOrError),
+        ffi.stdatomic.memory_order.memory_order_release
+      )
+    try {
+      ctor(moduleInstance)
+      saveResult(moduleInstance)
+      moduleInstance
+    } catch {
+      case error: jl.Throwable =>
+        val threadName = Thread.currentThread().getName()
+        val ex = new ExceptionInInitializerError(
+          s"""Exception ${error} [in thread "$threadName"]"""
+        )
+        ex.setStackTrace(error.getStackTrace())
+        saveResult(ex)
+        throw error
+    }
+  }
+
+  @noinline
+  @exported("scalanative_awaitForInitialization")
+  private[runtime] def waitForModuleInitialization(
+      moduleSlot: unsafe.Ptr[AnyRef],
+      cls: Class[_]
+  ): AnyRef = cls.synchronized {
+    var spins = 32
+    while (spins > 0) {
+      // The slot can contain one of the 3 values:
+      // - Fully initialized object of type `cls`
+      // - ExceptionInInitializerError object set by exception cought when executing constructor
+      // - Stackallocated initialization context created by the owner thread during initialization
+      val moduleRef = ffi.stdatomic.atomic_load_intptr(
+        moduleSlot.rawptr,
+        ffi.stdatomic.memory_order.memory_order_acquire
+      )
+      // Assumes Class[?] is always 1st filed in the object header
+      val rtti = Intrinsics.loadObject(moduleRef)
+      if (rtti eq cls)
+        return Intrinsics.castRawPtrToObject(moduleRef) // happy-path
+
+      if (rtti eq classOf[ExceptionInInitializerError]) {
+        val ex: ExceptionInInitializerError = Intrinsics
+          .castRawPtrToObject(moduleRef)
+          .asInstanceOf[ExceptionInInitializerError]
+        throw new NoClassDefFoundError(
+          s"Could not initialize class ${cls.getName()}"
+        ).initCause(ex)
+      }
+
+      // Not yet initialized
+      cls.wait(1)
+      spins -= 1
+    }
+    throw new NoClassDefFoundError(cls.getName())
+      .initCause(
+        new IllegalStateException(
+          "Failed to load module initialized by other thread"
+        )
+      )
+  }
+
   @extern private[runtime] object StackOverflowGuards {
     @name("scalanative_StackOverflowGuards_size")
     def size: Int = extern

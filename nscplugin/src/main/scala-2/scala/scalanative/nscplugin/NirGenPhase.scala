@@ -44,7 +44,7 @@ abstract class NirGenPhase[G <: Global with Singleton](override val global: G)
   protected val curUnwindHandler = new util.ScopedVar[Option[nir.Local]]
   protected val curStatBuffer = new util.ScopedVar[StatBuffer]
   protected val cachedMethodSig =
-    collection.mutable.Map.empty[(Symbol, Boolean), nir.Type.Function]
+    collection.mutable.Map.empty[(Symbol, Boolean, Boolean), nir.Type.Function]
 
   protected var curScopes =
     new util.ScopedVar[mutable.Set[DebugInfo.LexicalScope]]
