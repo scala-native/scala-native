@@ -1140,7 +1140,8 @@ private[util] object RandomSupport {
 
     val buffer = new Array[Long](nLongs)
 
-    if (LinktimeInfo.isWindows) {
+    // No getentropy() in Linux used in Scala Native CI on 32 bit platforms.
+    if (LinktimeInfo.isWindows || LinktimeInfo.is32BitPlatform) {
       getEntropyTlr(buffer)
     } else { // Linux, macOs. Should work but is untested on *BSD.
       val err =
