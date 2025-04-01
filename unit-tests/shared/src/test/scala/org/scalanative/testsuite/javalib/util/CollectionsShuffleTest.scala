@@ -21,7 +21,7 @@ class CollectionsShuffleTest {
 
   // Ease visual debug by starting with an obviously ordered list.
   val referenceCopy = Collections.unmodifiableList(
-    Arrays.asList( // atlantic storm names, 2026
+    Arrays.asList( // Atlantic storm names, 2026
         "Arthur", "Bertha", "Cristobal", "Dolly", "Edouard",
         "Fay", "Gonzalo", "Hanna", "Isaias", "Josephine",
         "Kyle", "Leah", "Marco", "Nana", "Omar",
