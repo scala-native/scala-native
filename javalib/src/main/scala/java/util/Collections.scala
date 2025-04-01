@@ -148,63 +148,18 @@ object Collections {
   }
 
   def shuffle(list: List[_]): Unit =
-    shuffle(list, new Random)
+    shuffleImpl(list, RandomGenerator.getDefault())
 
-  def shuffle(list: List[_], rndg: RandomGenerator): Unit = {
-    /* This implementation is coyote ugly but avoids breaking binary
-     * compatibility in the Scala Native 0.5.n series.
-     *
-     * When Scala Native 0.6.n opens for changes, Random can be changed
-     * to follow the Java 17 class hierarchy where it extends the
-     * RandomGenerator interface.
-     *
-     * The the shuffleImpl() declaration can be changed to something like:
-     *   private def shuffleImpl[T, R <: RandomGenerator](
-     *      list: List[T], rng: R): Unit = {
-     *
-     * It probably makes sense to remove the "@inline" from shuffleImple().
-     * the method is large enough that one would hope that the compiler
-     * ignores the hint anyway.
-     *
-     * Lastly, the use of Random() can be removed here. Easy Peasy.
-     */
-    val rnd = new Random { // implement just enough for shuffleImpl().
-      override def nextInt(): Int =
-        (rndg.nextLong() >> 32).toInt
-
-      override def nextInt(bound: Int): Int = {
-        // Algorithm adapted from java.util.concurrent.ThreadLocalRandom.
-        if (bound <= 0)
-          throw new IllegalArgumentException("bound must be positive")
-
-        var r = nextInt()
-        val m = bound - 1
-
-        if ((bound & m) == 0) { // power of two
-          r &= m
-        } else { // reject over-represented candidates
-          var u = r >>> 1
-          while ({
-            r = u % bound
-            (u + m - r) < 0
-          }) {
-            u = nextInt() >>> 1
-          }
-        }
-
-        r
-      }
-    }
-
-    shuffle(list, rnd)
-  }
-
-  @noinline
   def shuffle(list: List[_], rnd: Random): Unit =
     shuffleImpl(list, rnd)
 
-  @inline
-  private def shuffleImpl[T](list: List[T], rnd: Random): Unit = {
+  def shuffle(list: List[_], rng: RandomGenerator): Unit =
+    shuffleImpl(list, rng)
+
+  private def shuffleImpl[T, R <: RandomGenerator](
+      list: List[T],
+      rng: R
+  ): Unit = {
     def shuffleInPlace(list: List[T] with RandomAccess): Unit = {
       @inline
       def swap(i1: Int, i2: Int): Unit = {
@@ -215,7 +170,7 @@ object Collections {
 
       var n = list.size()
       while (n > 1) {
-        val k = rnd.nextInt(n)
+        val k = rng.nextInt(n)
         swap(n - 1, k)
         n -= 1
       }
