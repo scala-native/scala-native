@@ -264,23 +264,40 @@ package object runtime {
       moduleSlot: unsafe.Ptr[AnyRef],
       cls: Class[_]
   ): AnyRef = cls.synchronized {
+    var spins = 32
+    while (spins > 0) {
+      // The slot can contain one of the 3 values:
+      // - Fully initialized object of type `cls`
+      // - ExceptionInInitializerError object set by exception cought when executing constructor
+      // - Stackallocated initialization context created by the owner thread during initialization
+      val moduleRef = ffi.stdatomic.atomic_load_intptr(
+        moduleSlot.rawptr,
+        ffi.stdatomic.memory_order.memory_order_acquire
+      )
+      // Assumes Class[?] is always 1st filed in the object header
+      val rtti = Intrinsics.loadObject(moduleRef)
+      if (rtti eq cls)
+        return Intrinsics.castRawPtrToObject(moduleRef) // happy-path
 
-    val loaded = !moduleSlot
-    if (loaded.getClass() eq cls)
-      loaded // happy-path
-    else
-      loaded match {
-        case ex: ExceptionInInitializerError =>
-          throw new NoClassDefFoundError(
-            s"Could not initialize class ${cls.getName()}"
-          ).initCause(ex)
-        case _ =>
-          throw new NoClassDefFoundError(cls.getName()).initCause(
-            new IllegalStateException(
-              "Failed to load module initialized by other thread"
-            )
-          )
+      if (rtti eq classOf[ExceptionInInitializerError]) {
+        val ex: ExceptionInInitializerError = Intrinsics
+          .castRawPtrToObject(moduleRef)
+          .asInstanceOf[ExceptionInInitializerError]
+        throw new NoClassDefFoundError(
+          s"Could not initialize class ${cls.getName()}"
+        ).initCause(ex)
       }
+
+      // Not yet initialized
+      cls.wait(1)
+      spins -= 1
+    }
+    throw new NoClassDefFoundError(cls.getName())
+      .initCause(
+        new IllegalStateException(
+          "Failed to load module initialized by other thread"
+        )
+      )
   }
 
   @extern private[runtime] object StackOverflowGuards {

@@ -55,8 +55,8 @@ typedef _Atomic(void **) ModuleRef;
 typedef ModuleRef *ModuleSlot;
 typedef void (*ModuleCtor)(ModuleRef);
 typedef struct InitializationContext {
-    thread_id initThreadId;
     ModuleRef instance;
+    thread_id initThreadId;
 } InitializationContext;
 
 extern ModuleRef scalanative_initializeModule(ModuleCtor ctor,
@@ -67,7 +67,6 @@ extern ModuleRef scalanative_awaitForInitialization(ModuleSlot slot,
 
 inline static ModuleRef waitForInitialization(ModuleSlot slot,
                                               void *classInfo) {
-    int spin = 0;
     ModuleRef module = atomic_load_explicit(slot, memory_order_acquire);
     assert(module != NULL);
     if (*module != classInfo) {
