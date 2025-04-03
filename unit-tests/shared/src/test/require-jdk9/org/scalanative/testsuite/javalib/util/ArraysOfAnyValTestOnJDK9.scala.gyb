@@ -1091,32 +1091,33 @@ class ArraysOfDoubleCornerCasesTestOnJDK9 {
      * It is kept in the hope that one day the SN bug will be fixed and
      * the Test enabled. Then it can shine.
      */
-    if (Platform.executingInJVM)
+    if (Platform.executingInJVM) {
       assertFalse(
         "arrA.equals(arrB), 6 Arg",
         Arrays.equals(arrA, 0, arrA.length, arrB, 0, arrB.length)
       )
 
-    /* Use the 2 argument overload to cross check the JDK 9 six argument
-     * implementation and the historical method: results should be the same.
-     *
-     * Expand coverage to Scala Native once its 2 argument overload is
-     * corrected.
-     */
+      /* Use the 2 argument overload to cross check the JDK 9 six argument
+       * implementation and the historical method: results should be the same.
+       *
+       * Expand coverage to Scala Native once its 2 argument overload is
+       * corrected.
+       */
 
-    if (Platform.executingInJVM)
-      assertFalse("a.equals(b), 2 arg", Arrays.equals(arrA, arrB))
+      if (Platform.executingInJVM)
+        assertFalse("a.equals(b), 2 arg", Arrays.equals(arrA, arrB))
 
-    assertTrue(
-      "a > b",
-      Arrays.compare(arrA, 0, arrA.length, arrB, 0, arrB.length) > 0
-    )
+      assertTrue(
+        "a > b",
+        Arrays.compare(arrA, 0, arrA.length, arrB, 0, arrB.length) > 0
+      )
 
-    assertEquals(
-      "mismatch position,",
-      changeAt,
-      Arrays.mismatch(arrA, 0, arrA.length, arrB, 0, arrB.length)
-    )
+      assertEquals(
+        "mismatch position,",
+        changeAt,
+        Arrays.mismatch(arrA, 0, arrA.length, arrB, 0, arrB.length)
+      )
+    }
   }
 
   @Test def exerciseDoubleJavaNaNs: Unit = {
@@ -1298,32 +1299,33 @@ class ArraysOfFloatCornerCasesTestOnJDK9 {
      * See full discussion above equivalent block in
      * class ArraysOfDoubleCornerCasesTestOnJDK9.
      */
-    if (Platform.executingInJVM)
+    if (Platform.executingInJVM) {
       assertFalse(
 	"arrA.equals(arrB), 6 Arg",
 	Arrays.equals(arrA, 0, arrA.length, arrB, 0, arrB.length)
-    )
+      )
 
-    /* Use the 2 argument overload to cross check the JDK 9 six argument
-     * implementation and the historical method: results should be the same.
-     *
-     * Expand coverage to Scala Native once its 2 argument overload is
-     * corrected.
-     */
+      /* Use the 2 argument overload to cross check the JDK 9 six argument
+       * implementation and the historical method: results should be the same.
+       *
+       * Expand coverage to Scala Native once its 2 argument overload is
+       * corrected.
+       */
 
-    if (Platform.executingInJVM)
-      assertFalse("a.equals(b), 2 arg", Arrays.equals(arrA, arrB))
+      if (Platform.executingInJVM)
+        assertFalse("a.equals(b), 2 arg", Arrays.equals(arrA, arrB))
 
-    assertTrue(
-      "a > b",
-      Arrays.compare(arrA, 0, arrA.length, arrB, 0, arrB.length) > 0
-    )
+      assertTrue(
+        "a > b",
+        Arrays.compare(arrA, 0, arrA.length, arrB, 0, arrB.length) > 0
+      )
 
-    assertEquals(
-      "mismatch position,",
-      changeAt,
-      Arrays.mismatch(arrA, 0, arrA.length, arrB, 0, arrB.length)
-    )
+      assertEquals(
+        "mismatch position,",
+        changeAt,
+        Arrays.mismatch(arrA, 0, arrA.length, arrB, 0, arrB.length)
+      )
+    }
   }
 
   @Test def exerciseFloatJavaNaNs: Unit = {
