@@ -8,17 +8,17 @@ package org.scalanative.testsuite.javalib.util
 /* The name of this file is ArraysOfAnyValTestOnJDK9.scala. That
  * correspond ArraysOfObjectTestOnJDK9.scala, since Objects are AnyRefs.
  *
- * That name and the practice in ArraysOfObjectTestOnJDK9.scala would lead
+   * That name and the practice in ArraysOfObjectTestOnJDK9.scala would lead
  * one to believe that an 'ArraysOfAnyValTestOnJDK9' exists but it does not.
  * One must run tests by type, say 'ArraysOfByteTestOnJDK9'.
  *
- * Having all of the 'ArrayOf<type>TestOnJDK9' classes in one file
+   * Having all of the 'ArrayOf<type>TestOnJDK9' classes in one file
  * greatly simplifies the .gyb file.
  *
- * Having separate classes, by type, avoids having one unwieldy, humongous
+   * Having separate classes, by type, avoids having one unwieldy, humongous
  * 'ArraysOfAnyValTestOnJDK9' class.
  *
- * Scala Native 'testsuite' does not allow a Suite of Test classes under
+   * Scala Native 'testsuite' does not allow a Suite of Test classes under
  * one enclosing class. Room for improvement.
  */
 
@@ -4891,9 +4891,6 @@ class ArraysOfCharCornerCasesTestOnJDK9 {
 class ArraysOfDoubleCornerCasesTestOnJDK9 {
   /* The exerciseDouble* tests check that the JDK behavior for compareTo is
    * being followed, not IEEE 754 specification.
-   *
-   * Similar tests could, and someday should, be written to exercise Float,
-   * which shares similar Java definitions.
    */
 
   @Test def exerciseDoubleNegativeZero: Unit = {
@@ -4919,9 +4916,9 @@ class ArraysOfDoubleCornerCasesTestOnJDK9 {
     // Increase confidence that we are using a true negative zero at Array pos
     assertEquals(
       "have true negative zero",
-      1.0 / arrB(changeAt),
       jl.Double.NEGATIVE_INFINITY,
-      -0.0
+      1.0d / arrB(changeAt),
+      -0.0d
     )
 
     assertTrue(
@@ -5050,6 +5047,208 @@ class ArraysOfDoubleCornerCasesTestOnJDK9 {
     assertEquals("payloadNaN_1", arrA(changeAt), jl.Double.NaN, 0.0)
 
     assertEquals("payloadNaN_2", arrB(changeAt), jl.Double.NaN, 0.0)
+
+    assertFalse(
+      "a(changeAt) == b(changeAt)",
+      arrA(changeAt) == arrB(changeAt)
+    )
+
+    // Java equals() specifies true for NaN. IEEE 754 would be false, as above.
+    assertTrue(
+      "a(changeAt).equals(b(changeAt))",
+      arrA(changeAt).equals(arrB(changeAt))
+    )
+
+    assertTrue(
+      "a(changeAt).compareTo(b(changeAt)) == 0",
+      arrA(changeAt).compareTo(arrB(changeAt)) == 0
+    )
+
+    assertTrue(
+      "a.equals(b), 6 Arg",
+      Arrays.equals(arrA, 0, arrA.length, arrB, 0, arrB.length)
+    )
+
+    /* Use the 2 argument overload to cross check the JDK 9 six argument
+     * implementation and the historical method: results should be the same.
+     */
+
+    if (Platform.executingInJVM)
+      assertTrue("a.equals(b), 2 Arg", Arrays.equals(arrA, arrB))
+
+    assertEquals(
+      "a.compareTo(b)",
+      0,
+      Arrays.compare(arrA, 0, arrA.length, arrB, 0, arrB.length)
+    )
+
+    assertEquals(
+      "mismatch position,",
+      -1,
+      Arrays.mismatch(arrA, 0, arrA.length, arrB, 0, arrB.length)
+    )
+  }
+}
+
+class ArraysOfFloatCornerCasesTestOnJDK9 {
+  /* The exerciseFloat* tests check that the JDK behavior for compareTo is
+   * being followed, not IEEE 754 specification.
+   */
+
+  @Test def exerciseFloatNegativeZero: Unit = {
+    /* See Scala Native Issues #3982 & #3986 re SN bugs with -0.0.
+     *
+     * Also there is a bug in the SN JDK8 implementation of
+     * Arrays.equals(a, b) for Double and probably also for Float.
+     */
+
+    val srcSize = 16
+
+    val arrA = new Array[scala.Float](srcSize)
+    val arrB = new Array[scala.Float](srcSize)
+
+    // convoluted initialization works around suspected SN bugs
+    val negativeZero: scala.Float = jl.Float.intBitsToFloat(0x80000000)
+
+    val changeAt = 11
+    val changeTo = negativeZero
+
+    arrB(changeAt) = changeTo
+
+    // Increase confidence that we are using a true negative zero at Array pos
+    assertEquals(
+      "have true negative zero",
+      jl.Float.NEGATIVE_INFINITY,
+      1.0f / arrB(changeAt),
+      -0.0f
+    )
+
+    assertTrue(
+      "a(changeAt) == b(changeAt)",
+      arrA(changeAt) == arrB(changeAt)
+    )
+
+    assertFalse(
+      "a(changeAt).equals(b(changeAt))",
+      arrA(changeAt).equals(arrB(changeAt))
+    )
+
+    assertTrue(
+      "a(changeAt).compareTo(b(changeAt)) > 0",
+      arrA(changeAt).compareTo(arrB(changeAt)) > 0
+    )
+
+    assertFalse(
+      "a.equals(b), 6 Arg",
+      Arrays.equals(arrA, 0, arrA.length, arrB, 0, arrB.length)
+    )
+
+    /* Use the 2 argument overload to cross check the JDK 9 six argument
+     * implementation and the historical method: results should be the same.
+     *
+     * Expand coverage to Scala Native once its 2 argument overload is
+     * corrected.
+     */
+
+    if (Platform.executingInJVM)
+      assertFalse("a.equals(b), 2 arg", Arrays.equals(arrA, arrB))
+
+    assertTrue(
+      "a > b",
+      Arrays.compare(arrA, 0, arrA.length, arrB, 0, arrB.length) > 0
+    )
+
+    assertEquals(
+      "mismatch position,",
+      changeAt,
+      Arrays.mismatch(arrA, 0, arrA.length, arrB, 0, arrB.length)
+    )
+  }
+
+  @Test def exerciseFloatJavaNaNs: Unit = {
+    val srcSize = 16
+
+    // The simplest IEEE 754 NaN
+    val javaNaN = jl.Float.NaN
+
+    val changeAt = 10
+    val changeTo = javaNaN
+    val arrA = new Array[scala.Float](srcSize)
+
+    arrA(changeAt) = changeTo
+
+    val arrB = Arrays.copyOf(arrA, srcSize)
+
+    assertEquals(
+      "have java NaN",
+      arrB(changeAt),
+      jl.Float.NaN,
+      0.0f
+    )
+
+    assertFalse("a(changeAt) == b(changeAt)", arrA(changeAt) == arrB(changeAt))
+
+    // Java equals() specifies true for NaN. IEEE 754 would be false, as above.
+    assertTrue(
+      "a(changeAt).equals(b(changeAt))",
+      arrA(changeAt).equals(arrB(changeAt))
+    )
+
+    assertTrue(
+      "a(changeAt).compareTo(b(changeAt)) == 0",
+      arrA(changeAt).compareTo(arrB(changeAt)) == 0
+    )
+
+    assertTrue(
+      "a.equals(b), 6 Arg",
+      Arrays.equals(arrA, 0, arrA.length, arrB, 0, arrB.length)
+    )
+
+    /* Use the 2 argument overload to cross check the JDK 9 six argument
+     * implementation and the historical method: results should be the same.
+     */
+
+    if (Platform.executingInJVM)
+      assertTrue("a.equals(b), 2 Arg", Arrays.equals(arrA, arrB))
+
+    assertEquals(
+      "a.compareTo(b)",
+      0,
+      Arrays.compare(arrA, 0, arrA.length, arrB, 0, arrB.length)
+    )
+
+    assertEquals(
+      "mismatch position,",
+      -1,
+      Arrays.mismatch(arrA, 0, arrA.length, arrB, 0, arrB.length)
+    )
+  }
+
+  @Test def exerciseFloatPayloadNaNs: Unit = {
+    /* Ensure that the implementation is either not doing bitwise testing
+     * of IEEE 754 values or is doing it in a sufficiently clever way.
+     */
+
+    val srcSize = 15
+
+    val javaNaNRawIntBits = 0x7fc00000
+
+    // 0xF and 0xF0 are arbitrary valid values, to make bit patterns differ.
+    val payloadNaN_1 = jl.Float.intBitsToFloat(javaNaNRawIntBits | 0xf)
+
+    val payloadNaN_2 = jl.Float.intBitsToFloat(javaNaNRawIntBits | 0xf0)
+
+    val arrA = new Array[scala.Float](srcSize)
+    val arrB = new Array[scala.Float](srcSize)
+
+    val changeAt = 9
+
+    arrA(changeAt) = payloadNaN_1
+    arrB(changeAt) = payloadNaN_2
+
+    assertEquals("payloadNaN_1", arrA(changeAt), jl.Float.NaN, 0.0f)
+
+    assertEquals("payloadNaN_2", arrB(changeAt), jl.Float.NaN, 0.0f)
 
     assertFalse(
       "a(changeAt) == b(changeAt)",

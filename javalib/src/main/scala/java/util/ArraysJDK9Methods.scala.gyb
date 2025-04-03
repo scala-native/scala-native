@@ -18,16 +18,16 @@
 
 %{
 
-   variants = [
-     # scala.T,  javaType,    hasUnsignedName
-     ('Boolean', 'Boolean',   False,	       0), # neither Signed nor Unsigned
-     ('Byte',    'Byte',      True,  	       1),
-     ('Char',    'Character', False, 	       2),
-     ('Double',  'Double',    False, 	       0), # No IEEE 754 bit-for-bit equals
-     ('Float',   'Float',     False, 	       0), # ditto; +/- zerod & NaN payloads
-     ('Int',     'Integer',   True,  	       4),
-     ('Long',    'Long',      True,  	       8),
-     ('Short',   'Short',     True,  	       2),
+   variants = [ # Only AnyVals
+     # scala.T,   javaType,      hasUnsignedName
+     ('Boolean', 'jl.Boolean',   False), # neither Signed nor Unsigned
+     ('Byte',    'jl.Byte',      True),
+     ('Char',    'jl.Character', False),
+     ('Double',  'jl.Double',    False),
+     ('Float',   'jl.Float',     False),
+     ('Int',     'jl.Integer',   True),
+     ('Long',    'jl.Long',      True),
+     ('Short',   'jl.Short',     True)
    ]
 }%
 
@@ -42,6 +42,9 @@
   /* Developer: for a better code style, move these imports to top of
    * Arrays.scala and rationalize with its existing imports.
    */
+
+  import scala.scalanative.annotation.alwaysinline
+
   import scala.scalanative.libc
   import scala.scalanative.unsafe.Size // Required by Scala 2.12 for toSize()
 
@@ -52,6 +55,12 @@
    */
 
   private final val cmpIsNullMsg = "cmp must not be null"
+
+  // Soft attempt at matching JVM message. Java 24 uses this.
+  private def noArrayLengthMsg(stem: String): String = {
+    // Many Scala 2.1[2-3].n version do not understand or allow "\"".
+    s""""Cannot read the array length because \"$${stem}\" is null"""
+  }
 
   // Similar in concept to Objects.checkFromIndex() but different Exceptions.
   private def validateFromToIndex(
@@ -145,10 +154,10 @@
     // JVM checks cmp first, before checking for null Array args.
     Objects.requireNonNull(cmp, cmpIsNullMsg)
 
-    Objects.requireNonNull(a)
+    Objects.requireNonNull(a, noArrayLengthMsg("a"))
     Arrays.validateFromToIndex(aFromIndex, aToIndex, a.length)
 
-    Objects.requireNonNull(b)
+    Objects.requireNonNull(a, noArrayLengthMsg("b"))
     Arrays.validateFromToIndex(bFromIndex, bToIndex, b.length)
 
     compareImplCore[T](
@@ -191,40 +200,6 @@
       aToIndex: Int,
       b: Array[T],
       bFromIndex: Int,
-      bToIndex: Int
-  ): Boolean = {
-    Objects.requireNonNull(a)
-    Arrays.validateFromToIndex(aFromIndex, aToIndex, a.length)
-
-    Objects.requireNonNull(b)
-    Arrays.validateFromToIndex(bFromIndex, bToIndex, b.length)
-
-    val aCount = aToIndex - aFromIndex
-    val bCount = bToIndex - bFromIndex
-
-    if (aCount != bCount) false
-    else if (aCount == 0) true
-    else {
-      var matched = true
-      var j = 0
-      
-      // To get documented Java Double & Float -0.0 behavior, do not use !=.
-      while ((j < aCount) && matched){
-        if (!a(aFromIndex + j).equals(b(bFromIndex + j)))
-          matched = false
-        j += 1
-      }
-
-      matched
-    }
-  }
-
-  private def equalsImpl[T](
-      a: Array[T],
-      aFromIndex: Int,
-      aToIndex: Int,
-      b: Array[T],
-      bFromIndex: Int,
       bToIndex: Int,
       stride: Int
   ): Boolean = {
@@ -249,6 +224,19 @@
     }
   }
 
+  @alwaysinline
+  private def mismatchImpl[T](
+      a: Array[T],
+      b: Array[T],
+      cmp: => ju.function.BiFunction[T, T, Int]
+  ): Int = {
+    Objects.requireNonNull(a, noArrayLengthMsg("a"))
+    Objects.requireNonNull(a, noArrayLengthMsg("b"))
+
+    mismatchImplCore(a, 0, a.length, b, 0, b.length, cmp)
+  }
+
+  @alwaysinline
   private def mismatchImpl[T](
       a: Array[T],
       aFromIndex: Int,
@@ -258,18 +246,25 @@
       bToIndex: Int,
       cmp: => ju.function.BiFunction[T, T, Int]
   ): Int = {
-
-    def noArrayLengthMsg(stem: String): String = {
-      // Many Scala 2.1[2-3].n version do not understand or allow "\"".
-      s""""Cannot read the array length because \"$${stem}\" is null"""
-    }
-
     Objects.requireNonNull(a, noArrayLengthMsg("a"))
     Arrays.validateFromToIndex(aFromIndex, aToIndex, a.length)
 
     Objects.requireNonNull(a, noArrayLengthMsg("b"))
     Arrays.validateFromToIndex(bFromIndex, bToIndex, b.length)
 
+    mismatchImplCore(a, aFromIndex, aToIndex, b, bFromIndex, bToIndex, cmp)
+  }
+
+  @alwaysinline
+  private def mismatchImplCore[T](
+      a: Array[T],
+      aFromIndex: Int,
+      aToIndex: Int,
+      b: Array[T],
+      bFromIndex: Int,
+      bToIndex: Int,
+      cmp: => ju.function.BiFunction[T, T, Int]
+  ): Int = {
     val aRangeLen = aToIndex - aFromIndex
     val bRangeLen = bToIndex - bFromIndex
     val matchLen = Math.min(aRangeLen, bRangeLen)
@@ -289,11 +284,11 @@
     else Math.min(aRangeLen, bRangeLen)
   }
 
-% for (T, javaType, hasUnsignedName, stride) in variants:
+% for (T, javaType, hasUnsignedName) in variants:
 
   /** @since JDK 9 */
   def compare(a: Array[scala.${T}], b: Array[scala.${T}]): Int =
-    compareImpl(a, b, jl.${javaType}.compare)
+    compareImpl(a, b, ${javaType}.compare)
 
   /** @since JDK 9 */
   def compare(
@@ -311,13 +306,13 @@
       b,
       bFromIndex,
       bToIndex,
-      jl.${javaType}.compare
+      ${javaType}.compare
     )
 
  % if hasUnsignedName:
   /** @since JDK 9 */
   def compareUnsigned(a: Array[scala.${T}], b: Array[scala.${T}]): Int =
-    compareImpl(a, b, jl.${javaType}.compareUnsigned)
+    compareImpl(a, b, ${javaType}.compareUnsigned)
 
   /** @since JDK 9 */
   def compareUnsigned(
@@ -335,11 +330,11 @@
       b,
       bFromIndex,
       bToIndex,
-      jl.${javaType}.compareUnsigned
+      ${javaType}.compareUnsigned
     )
  % end ## hasUnsignedName
 
- % if T == 'Char' or hasUnsignedName:
+ % if T == 'Char' or hasUnsignedName: # Char and whole number primitives
   def equals(
       a: Array[scala.${T}],
       aFromIndex: Int,
@@ -355,11 +350,11 @@
       b,
       bFromIndex,
       bToIndex,
-      ${stride}
+      ${javaType}.BYTES
     )
   }
 
- % else:
+ % else: # Boolean, Double, Float
   def equals(
       a: Array[scala.${T}],
       aFromIndex: Int,
@@ -368,30 +363,38 @@
       bFromIndex: Int,
       bToIndex: Int
   ): scala.Boolean = {
-    equalsImpl(
-      a,
-      aFromIndex,
-      aToIndex,
-      b,
-      bFromIndex,
-      bToIndex
-    )
+    Objects.requireNonNull(a)
+    Arrays.validateFromToIndex(aFromIndex, aToIndex, a.length)
+
+    Objects.requireNonNull(b)
+    Arrays.validateFromToIndex(bFromIndex, bToIndex, b.length)
+
+    val aCount = aToIndex - aFromIndex
+    val bCount = bToIndex - bFromIndex
+
+    if (aCount != bCount) false
+    else if (aCount == 0) true
+    else {
+      Arrays.mismatchImplCore(
+        a,
+        aFromIndex,
+        aToIndex,
+        b,
+        bFromIndex,
+        bToIndex,
+        jl.${T}.compare
+      ) == -1
+    } 
   }
  % end ## not use memcmp
 
   /** @since JDK 9 */
+  @noinline
   def mismatch(a: Array[scala.${T}], b: Array[scala.${T}]): Int =
-    mismatchImpl(
-      a,
-      0,
-      a.length,
-      b,
-      0,
-      b.length,
-      jl.${javaType}.compare
-    )
+    mismatchImpl(a, b, ${javaType}.compare)
 
   /** @since JDK 9 */
+  @noinline
   def mismatch(
       a: Array[scala.${T}],
       aFromIndex: Int,
@@ -407,7 +410,7 @@
       b,
       bFromIndex,
       bToIndex,
-      jl.${javaType}.compare
+      ${javaType}.compare
     )
 % end ## for variants loop
 
@@ -565,11 +568,7 @@
   ): Int =
     mismatchImpl(
       a.asInstanceOf[Array[Any]],
-      0,
-      a.length,
       b.asInstanceOf[Array[Any]],
-      0,
-      b.length,
       (a: Any, b: Any) => cmp.compare(a.asInstanceOf[T], b.asInstanceOf[T])
     )
 
