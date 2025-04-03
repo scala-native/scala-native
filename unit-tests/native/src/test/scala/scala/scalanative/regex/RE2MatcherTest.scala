@@ -246,13 +246,15 @@ class RE2MatcherTest {
       override def match_(
           input: CharSequence,
           start: Int,
+          b: Int,
           e: Int,
           anchor: Int,
           group: Array[Int],
           ngroup: Int
       ): Boolean = {
-        assertTrue(end == e)
-        super.match_(input, start, e, anchor, group, ngroup)
+        assertEquals(0, b)
+        assertEquals(end, e)
+        super.match_(input, start, b, e, anchor, group, ngroup)
       }
     }
     val pat = new Pattern(pattern, 0, re)
