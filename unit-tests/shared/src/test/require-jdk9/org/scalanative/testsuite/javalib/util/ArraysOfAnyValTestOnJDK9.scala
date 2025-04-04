@@ -58,7 +58,7 @@ class ArraysOfBooleanTestOnJDK9 {
     arrB(changeAt) = changeTo
 
     assertTrue(
-      s"a > b",
+      s"arrA > arrB",
       Arrays.compare(arrA, arrB) > 0
     )
   }
@@ -182,7 +182,7 @@ class ArraysOfBooleanTestOnJDK9 {
     val t3ToIdx = t1ToIdx - 3 // arbitrary slot
 
     assertTrue(
-      "common prefix but a.length < b.length, return former",
+      "common prefix but arrA.length < arrB.length, return former",
       Arrays.compare(
         arrA,
         t1FromIdx,
@@ -194,7 +194,7 @@ class ArraysOfBooleanTestOnJDK9 {
     )
 
     assertTrue(
-      "common prefix but a.length > b.length, return later",
+      "common prefix but arrA.length > arrB.length, return later",
       Arrays.compare(
         arrA,
         t1FromIdx,
@@ -290,7 +290,7 @@ class ArraysOfBooleanTestOnJDK9 {
 
     // same ranges do not match
     assertFalse(
-      s"a[${t1FromIdx}, ${t1ToIdx}) == b[${t1FromIdx}, ${t1ToIdx})",
+      s"a[${t1FromIdx}, ${t1ToIdx}) != b[${t1FromIdx}, ${t1ToIdx})",
       Arrays.equals(arrA, t1FromIdx, t1ToIdx, arrB, t1FromIdx, t1ToIdx)
     )
 
@@ -320,7 +320,7 @@ class ArraysOfBooleanTestOnJDK9 {
     val t3ToIdx = t1ToIdx - 3 // arbitrary slot
 
     assertFalse(
-      "common prefix but a.length < b.length",
+      "common prefix but arrA.length < arrB.length",
       Arrays.equals(
         arrA,
         t1FromIdx,
@@ -332,7 +332,7 @@ class ArraysOfBooleanTestOnJDK9 {
     )
 
     assertFalse(
-      "common prefix but a.length > b.length",
+      "common prefix but arrA.length > arrB.length",
       Arrays.equals(
         arrA,
         t1FromIdx,
@@ -399,13 +399,13 @@ class ArraysOfBooleanTestOnJDK9 {
     )
 
     assertEquals(
-      "common prefix but a.length < b.length",
+      "common prefix but arrA.length < arrB.length",
       expectedShortSize,
       Arrays.mismatch(arrAShort, arrA)
     )
 
     assertEquals(
-      "common prefix but a.length > b.length",
+      "common prefix but arrA.length > arrB.length",
       expectedShortSize,
       Arrays.mismatch(arrAShort, arrA)
     )
@@ -495,14 +495,14 @@ class ArraysOfBooleanTestOnJDK9 {
 
     // same ranges do not match
     assertEquals(
-      s"a[${t1FromIdx}, ${t1ToIdx}) == b[${t1FromIdx}, ${t1ToIdx})",
+      s"arrA[${t1FromIdx}, ${t1ToIdx}) == arrB[${t1FromIdx}, ${t1ToIdx})",
       0,
       Arrays.mismatch(arrA, t1FromIdx, t1ToIdx, arrB, t1FromIdx, t1ToIdx)
     )
 
     // different ranges match
     assertEquals(
-      s"a[${t1FromIdx}, ${t1ToIdx}) == b[${t2FromIdx}, ${t2ToIdx})",
+      s"arrA[${t1FromIdx}, ${t1ToIdx}) == arrB[${t2FromIdx}, ${t2ToIdx})",
       -1, // No mismatch found
       Arrays.mismatch(arrA, t1FromIdx, t1ToIdx, arrB, t2FromIdx, t2ToIdx)
     )
@@ -531,7 +531,7 @@ class ArraysOfBooleanTestOnJDK9 {
     val expectedShortMismatchAtIdx = t3ToIdx - t1FromIdx
 
     assertEquals(
-      "common prefix but a.length < b.length",
+      "common prefix but arrA.length < arrB.length",
       expectedShortMismatchAtIdx,
       Arrays.mismatch(
         arrA,
@@ -544,7 +544,7 @@ class ArraysOfBooleanTestOnJDK9 {
     )
 
     assertEquals(
-      "common prefix but a.length > b.length",
+      "common prefix but arrA.length > arrB.length",
       expectedShortMismatchAtIdx,
       Arrays.mismatch(
         arrA,
@@ -583,7 +583,7 @@ class ArraysOfByteTestOnJDK9 {
     arrB(changeAt) = changeTo
 
     assertTrue(
-      s"a > b",
+      s"arrA > arrB",
       Arrays.compare(arrA, arrB) > 0
     )
   }
@@ -705,7 +705,7 @@ class ArraysOfByteTestOnJDK9 {
     val t3ToIdx = t1ToIdx - 3 // arbitrary slot
 
     assertTrue(
-      "common prefix but a.length < b.length, return former",
+      "common prefix but arrA.length < arrB.length, return former",
       Arrays.compare(
         arrA,
         t1FromIdx,
@@ -717,7 +717,7 @@ class ArraysOfByteTestOnJDK9 {
     )
 
     assertTrue(
-      "common prefix but a.length > b.length, return later",
+      "common prefix but arrA.length > arrB.length, return later",
       Arrays.compare(
         arrA,
         t1FromIdx,
@@ -751,7 +751,7 @@ class ArraysOfByteTestOnJDK9 {
     arrB(changeAt) = changeTo
 
     assertTrue(
-      s"a < b",
+      s"arrA < arrB",
       Arrays.compareUnsigned(arrA, arrB) < 0
     )
   }
@@ -810,7 +810,7 @@ class ArraysOfByteTestOnJDK9 {
 
     // Test that signed & unsigned comparison results differ.
     assertTrue(
-      s"signed: a[${t1FromIdx}, ${t1ToIdx}) < b[${t2FromIdx}, ${t2ToIdx})",
+      s"signed: a[${t1FromIdx}, ${t1ToIdx}) > b[${t2FromIdx}, ${t2ToIdx})",
       Arrays.compare(arrA, t1FromIdx, t1ToIdx, arrB, t2FromIdx, t2ToIdx) > 0
     )
 
@@ -830,7 +830,7 @@ class ArraysOfByteTestOnJDK9 {
     val t3ToIdx = t1ToIdx - 3 // arbitrary slot
 
     assertTrue(
-      "common prefix but a.length < b.length, return former",
+      "common prefix but arrA.length < arrB.length, return former",
       Arrays.compareUnsigned(
         arrA,
         t1FromIdx,
@@ -842,7 +842,7 @@ class ArraysOfByteTestOnJDK9 {
     )
 
     assertTrue(
-      "common prefix but a.length > b.length, return later",
+      "common prefix but arrA.length > arrB.length, return later",
       Arrays.compareUnsigned(
         arrA,
         t1FromIdx,
@@ -936,7 +936,7 @@ class ArraysOfByteTestOnJDK9 {
 
     // same ranges do not match
     assertFalse(
-      s"a[${t1FromIdx}, ${t1ToIdx}) == b[${t1FromIdx}, ${t1ToIdx})",
+      s"a[${t1FromIdx}, ${t1ToIdx}) != b[${t1FromIdx}, ${t1ToIdx})",
       Arrays.equals(arrA, t1FromIdx, t1ToIdx, arrB, t1FromIdx, t1ToIdx)
     )
 
@@ -966,7 +966,7 @@ class ArraysOfByteTestOnJDK9 {
     val t3ToIdx = t1ToIdx - 3 // arbitrary slot
 
     assertFalse(
-      "common prefix but a.length < b.length",
+      "common prefix but arrA.length < arrB.length",
       Arrays.equals(
         arrA,
         t1FromIdx,
@@ -978,7 +978,7 @@ class ArraysOfByteTestOnJDK9 {
     )
 
     assertFalse(
-      "common prefix but a.length > b.length",
+      "common prefix but arrA.length > arrB.length",
       Arrays.equals(
         arrA,
         t1FromIdx,
@@ -1045,13 +1045,13 @@ class ArraysOfByteTestOnJDK9 {
     )
 
     assertEquals(
-      "common prefix but a.length < b.length",
+      "common prefix but arrA.length < arrB.length",
       expectedShortSize,
       Arrays.mismatch(arrAShort, arrA)
     )
 
     assertEquals(
-      "common prefix but a.length > b.length",
+      "common prefix but arrA.length > arrB.length",
       expectedShortSize,
       Arrays.mismatch(arrAShort, arrA)
     )
@@ -1139,14 +1139,14 @@ class ArraysOfByteTestOnJDK9 {
 
     // same ranges do not match
     assertEquals(
-      s"a[${t1FromIdx}, ${t1ToIdx}) == b[${t1FromIdx}, ${t1ToIdx})",
+      s"arrA[${t1FromIdx}, ${t1ToIdx}) == arrB[${t1FromIdx}, ${t1ToIdx})",
       0,
       Arrays.mismatch(arrA, t1FromIdx, t1ToIdx, arrB, t1FromIdx, t1ToIdx)
     )
 
     // different ranges match
     assertEquals(
-      s"a[${t1FromIdx}, ${t1ToIdx}) == b[${t2FromIdx}, ${t2ToIdx})",
+      s"arrA[${t1FromIdx}, ${t1ToIdx}) == arrB[${t2FromIdx}, ${t2ToIdx})",
       -1, // No mismatch found
       Arrays.mismatch(arrA, t1FromIdx, t1ToIdx, arrB, t2FromIdx, t2ToIdx)
     )
@@ -1175,7 +1175,7 @@ class ArraysOfByteTestOnJDK9 {
     val expectedShortMismatchAtIdx = t3ToIdx - t1FromIdx
 
     assertEquals(
-      "common prefix but a.length < b.length",
+      "common prefix but arrA.length < arrB.length",
       expectedShortMismatchAtIdx,
       Arrays.mismatch(
         arrA,
@@ -1188,7 +1188,7 @@ class ArraysOfByteTestOnJDK9 {
     )
 
     assertEquals(
-      "common prefix but a.length > b.length",
+      "common prefix but arrA.length > arrB.length",
       expectedShortMismatchAtIdx,
       Arrays.mismatch(
         arrA,
@@ -1227,7 +1227,7 @@ class ArraysOfCharTestOnJDK9 {
     arrB(changeAt) = changeTo
 
     assertTrue(
-      s"a > b",
+      s"arrA > arrB",
       Arrays.compare(arrA, arrB) > 0
     )
   }
@@ -1349,7 +1349,7 @@ class ArraysOfCharTestOnJDK9 {
     val t3ToIdx = t1ToIdx - 3 // arbitrary slot
 
     assertTrue(
-      "common prefix but a.length < b.length, return former",
+      "common prefix but arrA.length < arrB.length, return former",
       Arrays.compare(
         arrA,
         t1FromIdx,
@@ -1361,7 +1361,7 @@ class ArraysOfCharTestOnJDK9 {
     )
 
     assertTrue(
-      "common prefix but a.length > b.length, return later",
+      "common prefix but arrA.length > arrB.length, return later",
       Arrays.compare(
         arrA,
         t1FromIdx,
@@ -1455,7 +1455,7 @@ class ArraysOfCharTestOnJDK9 {
 
     // same ranges do not match
     assertFalse(
-      s"a[${t1FromIdx}, ${t1ToIdx}) == b[${t1FromIdx}, ${t1ToIdx})",
+      s"a[${t1FromIdx}, ${t1ToIdx}) != b[${t1FromIdx}, ${t1ToIdx})",
       Arrays.equals(arrA, t1FromIdx, t1ToIdx, arrB, t1FromIdx, t1ToIdx)
     )
 
@@ -1485,7 +1485,7 @@ class ArraysOfCharTestOnJDK9 {
     val t3ToIdx = t1ToIdx - 3 // arbitrary slot
 
     assertFalse(
-      "common prefix but a.length < b.length",
+      "common prefix but arrA.length < arrB.length",
       Arrays.equals(
         arrA,
         t1FromIdx,
@@ -1497,7 +1497,7 @@ class ArraysOfCharTestOnJDK9 {
     )
 
     assertFalse(
-      "common prefix but a.length > b.length",
+      "common prefix but arrA.length > arrB.length",
       Arrays.equals(
         arrA,
         t1FromIdx,
@@ -1564,13 +1564,13 @@ class ArraysOfCharTestOnJDK9 {
     )
 
     assertEquals(
-      "common prefix but a.length < b.length",
+      "common prefix but arrA.length < arrB.length",
       expectedShortSize,
       Arrays.mismatch(arrAShort, arrA)
     )
 
     assertEquals(
-      "common prefix but a.length > b.length",
+      "common prefix but arrA.length > arrB.length",
       expectedShortSize,
       Arrays.mismatch(arrAShort, arrA)
     )
@@ -1658,14 +1658,14 @@ class ArraysOfCharTestOnJDK9 {
 
     // same ranges do not match
     assertEquals(
-      s"a[${t1FromIdx}, ${t1ToIdx}) == b[${t1FromIdx}, ${t1ToIdx})",
+      s"arrA[${t1FromIdx}, ${t1ToIdx}) == arrB[${t1FromIdx}, ${t1ToIdx})",
       0,
       Arrays.mismatch(arrA, t1FromIdx, t1ToIdx, arrB, t1FromIdx, t1ToIdx)
     )
 
     // different ranges match
     assertEquals(
-      s"a[${t1FromIdx}, ${t1ToIdx}) == b[${t2FromIdx}, ${t2ToIdx})",
+      s"arrA[${t1FromIdx}, ${t1ToIdx}) == arrB[${t2FromIdx}, ${t2ToIdx})",
       -1, // No mismatch found
       Arrays.mismatch(arrA, t1FromIdx, t1ToIdx, arrB, t2FromIdx, t2ToIdx)
     )
@@ -1694,7 +1694,7 @@ class ArraysOfCharTestOnJDK9 {
     val expectedShortMismatchAtIdx = t3ToIdx - t1FromIdx
 
     assertEquals(
-      "common prefix but a.length < b.length",
+      "common prefix but arrA.length < arrB.length",
       expectedShortMismatchAtIdx,
       Arrays.mismatch(
         arrA,
@@ -1707,7 +1707,7 @@ class ArraysOfCharTestOnJDK9 {
     )
 
     assertEquals(
-      "common prefix but a.length > b.length",
+      "common prefix but arrA.length > arrB.length",
       expectedShortMismatchAtIdx,
       Arrays.mismatch(
         arrA,
@@ -1746,7 +1746,7 @@ class ArraysOfDoubleTestOnJDK9 {
     arrB(changeAt) = changeTo
 
     assertTrue(
-      s"a > b",
+      s"arrA > arrB",
       Arrays.compare(arrA, arrB) > 0
     )
   }
@@ -1869,7 +1869,7 @@ class ArraysOfDoubleTestOnJDK9 {
     val t3ToIdx = t1ToIdx - 3 // arbitrary slot
 
     assertTrue(
-      "common prefix but a.length < b.length, return former",
+      "common prefix but arrA.length < arrB.length, return former",
       Arrays.compare(
         arrA,
         t1FromIdx,
@@ -1881,7 +1881,7 @@ class ArraysOfDoubleTestOnJDK9 {
     )
 
     assertTrue(
-      "common prefix but a.length > b.length, return later",
+      "common prefix but arrA.length > arrB.length, return later",
       Arrays.compare(
         arrA,
         t1FromIdx,
@@ -1976,7 +1976,7 @@ class ArraysOfDoubleTestOnJDK9 {
 
     // same ranges do not match
     assertFalse(
-      s"a[${t1FromIdx}, ${t1ToIdx}) == b[${t1FromIdx}, ${t1ToIdx})",
+      s"a[${t1FromIdx}, ${t1ToIdx}) != b[${t1FromIdx}, ${t1ToIdx})",
       Arrays.equals(arrA, t1FromIdx, t1ToIdx, arrB, t1FromIdx, t1ToIdx)
     )
 
@@ -2006,7 +2006,7 @@ class ArraysOfDoubleTestOnJDK9 {
     val t3ToIdx = t1ToIdx - 3 // arbitrary slot
 
     assertFalse(
-      "common prefix but a.length < b.length",
+      "common prefix but arrA.length < arrB.length",
       Arrays.equals(
         arrA,
         t1FromIdx,
@@ -2018,7 +2018,7 @@ class ArraysOfDoubleTestOnJDK9 {
     )
 
     assertFalse(
-      "common prefix but a.length > b.length",
+      "common prefix but arrA.length > arrB.length",
       Arrays.equals(
         arrA,
         t1FromIdx,
@@ -2085,13 +2085,13 @@ class ArraysOfDoubleTestOnJDK9 {
     )
 
     assertEquals(
-      "common prefix but a.length < b.length",
+      "common prefix but arrA.length < arrB.length",
       expectedShortSize,
       Arrays.mismatch(arrAShort, arrA)
     )
 
     assertEquals(
-      "common prefix but a.length > b.length",
+      "common prefix but arrA.length > arrB.length",
       expectedShortSize,
       Arrays.mismatch(arrAShort, arrA)
     )
@@ -2180,14 +2180,14 @@ class ArraysOfDoubleTestOnJDK9 {
 
     // same ranges do not match
     assertEquals(
-      s"a[${t1FromIdx}, ${t1ToIdx}) == b[${t1FromIdx}, ${t1ToIdx})",
+      s"arrA[${t1FromIdx}, ${t1ToIdx}) == arrB[${t1FromIdx}, ${t1ToIdx})",
       0,
       Arrays.mismatch(arrA, t1FromIdx, t1ToIdx, arrB, t1FromIdx, t1ToIdx)
     )
 
     // different ranges match
     assertEquals(
-      s"a[${t1FromIdx}, ${t1ToIdx}) == b[${t2FromIdx}, ${t2ToIdx})",
+      s"arrA[${t1FromIdx}, ${t1ToIdx}) == arrB[${t2FromIdx}, ${t2ToIdx})",
       -1, // No mismatch found
       Arrays.mismatch(arrA, t1FromIdx, t1ToIdx, arrB, t2FromIdx, t2ToIdx)
     )
@@ -2216,7 +2216,7 @@ class ArraysOfDoubleTestOnJDK9 {
     val expectedShortMismatchAtIdx = t3ToIdx - t1FromIdx
 
     assertEquals(
-      "common prefix but a.length < b.length",
+      "common prefix but arrA.length < arrB.length",
       expectedShortMismatchAtIdx,
       Arrays.mismatch(
         arrA,
@@ -2229,7 +2229,7 @@ class ArraysOfDoubleTestOnJDK9 {
     )
 
     assertEquals(
-      "common prefix but a.length > b.length",
+      "common prefix but arrA.length > arrB.length",
       expectedShortMismatchAtIdx,
       Arrays.mismatch(
         arrA,
@@ -2268,7 +2268,7 @@ class ArraysOfFloatTestOnJDK9 {
     arrB(changeAt) = changeTo
 
     assertTrue(
-      s"a > b",
+      s"arrA > arrB",
       Arrays.compare(arrA, arrB) > 0
     )
   }
@@ -2391,7 +2391,7 @@ class ArraysOfFloatTestOnJDK9 {
     val t3ToIdx = t1ToIdx - 3 // arbitrary slot
 
     assertTrue(
-      "common prefix but a.length < b.length, return former",
+      "common prefix but arrA.length < arrB.length, return former",
       Arrays.compare(
         arrA,
         t1FromIdx,
@@ -2403,7 +2403,7 @@ class ArraysOfFloatTestOnJDK9 {
     )
 
     assertTrue(
-      "common prefix but a.length > b.length, return later",
+      "common prefix but arrA.length > arrB.length, return later",
       Arrays.compare(
         arrA,
         t1FromIdx,
@@ -2498,7 +2498,7 @@ class ArraysOfFloatTestOnJDK9 {
 
     // same ranges do not match
     assertFalse(
-      s"a[${t1FromIdx}, ${t1ToIdx}) == b[${t1FromIdx}, ${t1ToIdx})",
+      s"a[${t1FromIdx}, ${t1ToIdx}) != b[${t1FromIdx}, ${t1ToIdx})",
       Arrays.equals(arrA, t1FromIdx, t1ToIdx, arrB, t1FromIdx, t1ToIdx)
     )
 
@@ -2528,7 +2528,7 @@ class ArraysOfFloatTestOnJDK9 {
     val t3ToIdx = t1ToIdx - 3 // arbitrary slot
 
     assertFalse(
-      "common prefix but a.length < b.length",
+      "common prefix but arrA.length < arrB.length",
       Arrays.equals(
         arrA,
         t1FromIdx,
@@ -2540,7 +2540,7 @@ class ArraysOfFloatTestOnJDK9 {
     )
 
     assertFalse(
-      "common prefix but a.length > b.length",
+      "common prefix but arrA.length > arrB.length",
       Arrays.equals(
         arrA,
         t1FromIdx,
@@ -2607,13 +2607,13 @@ class ArraysOfFloatTestOnJDK9 {
     )
 
     assertEquals(
-      "common prefix but a.length < b.length",
+      "common prefix but arrA.length < arrB.length",
       expectedShortSize,
       Arrays.mismatch(arrAShort, arrA)
     )
 
     assertEquals(
-      "common prefix but a.length > b.length",
+      "common prefix but arrA.length > arrB.length",
       expectedShortSize,
       Arrays.mismatch(arrAShort, arrA)
     )
@@ -2702,14 +2702,14 @@ class ArraysOfFloatTestOnJDK9 {
 
     // same ranges do not match
     assertEquals(
-      s"a[${t1FromIdx}, ${t1ToIdx}) == b[${t1FromIdx}, ${t1ToIdx})",
+      s"arrA[${t1FromIdx}, ${t1ToIdx}) == arrB[${t1FromIdx}, ${t1ToIdx})",
       0,
       Arrays.mismatch(arrA, t1FromIdx, t1ToIdx, arrB, t1FromIdx, t1ToIdx)
     )
 
     // different ranges match
     assertEquals(
-      s"a[${t1FromIdx}, ${t1ToIdx}) == b[${t2FromIdx}, ${t2ToIdx})",
+      s"arrA[${t1FromIdx}, ${t1ToIdx}) == arrB[${t2FromIdx}, ${t2ToIdx})",
       -1, // No mismatch found
       Arrays.mismatch(arrA, t1FromIdx, t1ToIdx, arrB, t2FromIdx, t2ToIdx)
     )
@@ -2738,7 +2738,7 @@ class ArraysOfFloatTestOnJDK9 {
     val expectedShortMismatchAtIdx = t3ToIdx - t1FromIdx
 
     assertEquals(
-      "common prefix but a.length < b.length",
+      "common prefix but arrA.length < arrB.length",
       expectedShortMismatchAtIdx,
       Arrays.mismatch(
         arrA,
@@ -2751,7 +2751,7 @@ class ArraysOfFloatTestOnJDK9 {
     )
 
     assertEquals(
-      "common prefix but a.length > b.length",
+      "common prefix but arrA.length > arrB.length",
       expectedShortMismatchAtIdx,
       Arrays.mismatch(
         arrA,
@@ -2790,7 +2790,7 @@ class ArraysOfIntTestOnJDK9 {
     arrB(changeAt) = changeTo
 
     assertTrue(
-      s"a > b",
+      s"arrA > arrB",
       Arrays.compare(arrA, arrB) > 0
     )
   }
@@ -2912,7 +2912,7 @@ class ArraysOfIntTestOnJDK9 {
     val t3ToIdx = t1ToIdx - 3 // arbitrary slot
 
     assertTrue(
-      "common prefix but a.length < b.length, return former",
+      "common prefix but arrA.length < arrB.length, return former",
       Arrays.compare(
         arrA,
         t1FromIdx,
@@ -2924,7 +2924,7 @@ class ArraysOfIntTestOnJDK9 {
     )
 
     assertTrue(
-      "common prefix but a.length > b.length, return later",
+      "common prefix but arrA.length > arrB.length, return later",
       Arrays.compare(
         arrA,
         t1FromIdx,
@@ -2958,7 +2958,7 @@ class ArraysOfIntTestOnJDK9 {
     arrB(changeAt) = changeTo
 
     assertTrue(
-      s"a < b",
+      s"arrA < arrB",
       Arrays.compareUnsigned(arrA, arrB) < 0
     )
   }
@@ -3017,7 +3017,7 @@ class ArraysOfIntTestOnJDK9 {
 
     // Test that signed & unsigned comparison results differ.
     assertTrue(
-      s"signed: a[${t1FromIdx}, ${t1ToIdx}) < b[${t2FromIdx}, ${t2ToIdx})",
+      s"signed: a[${t1FromIdx}, ${t1ToIdx}) > b[${t2FromIdx}, ${t2ToIdx})",
       Arrays.compare(arrA, t1FromIdx, t1ToIdx, arrB, t2FromIdx, t2ToIdx) > 0
     )
 
@@ -3037,7 +3037,7 @@ class ArraysOfIntTestOnJDK9 {
     val t3ToIdx = t1ToIdx - 3 // arbitrary slot
 
     assertTrue(
-      "common prefix but a.length < b.length, return former",
+      "common prefix but arrA.length < arrB.length, return former",
       Arrays.compareUnsigned(
         arrA,
         t1FromIdx,
@@ -3049,7 +3049,7 @@ class ArraysOfIntTestOnJDK9 {
     )
 
     assertTrue(
-      "common prefix but a.length > b.length, return later",
+      "common prefix but arrA.length > arrB.length, return later",
       Arrays.compareUnsigned(
         arrA,
         t1FromIdx,
@@ -3143,7 +3143,7 @@ class ArraysOfIntTestOnJDK9 {
 
     // same ranges do not match
     assertFalse(
-      s"a[${t1FromIdx}, ${t1ToIdx}) == b[${t1FromIdx}, ${t1ToIdx})",
+      s"a[${t1FromIdx}, ${t1ToIdx}) != b[${t1FromIdx}, ${t1ToIdx})",
       Arrays.equals(arrA, t1FromIdx, t1ToIdx, arrB, t1FromIdx, t1ToIdx)
     )
 
@@ -3173,7 +3173,7 @@ class ArraysOfIntTestOnJDK9 {
     val t3ToIdx = t1ToIdx - 3 // arbitrary slot
 
     assertFalse(
-      "common prefix but a.length < b.length",
+      "common prefix but arrA.length < arrB.length",
       Arrays.equals(
         arrA,
         t1FromIdx,
@@ -3185,7 +3185,7 @@ class ArraysOfIntTestOnJDK9 {
     )
 
     assertFalse(
-      "common prefix but a.length > b.length",
+      "common prefix but arrA.length > arrB.length",
       Arrays.equals(
         arrA,
         t1FromIdx,
@@ -3252,13 +3252,13 @@ class ArraysOfIntTestOnJDK9 {
     )
 
     assertEquals(
-      "common prefix but a.length < b.length",
+      "common prefix but arrA.length < arrB.length",
       expectedShortSize,
       Arrays.mismatch(arrAShort, arrA)
     )
 
     assertEquals(
-      "common prefix but a.length > b.length",
+      "common prefix but arrA.length > arrB.length",
       expectedShortSize,
       Arrays.mismatch(arrAShort, arrA)
     )
@@ -3346,14 +3346,14 @@ class ArraysOfIntTestOnJDK9 {
 
     // same ranges do not match
     assertEquals(
-      s"a[${t1FromIdx}, ${t1ToIdx}) == b[${t1FromIdx}, ${t1ToIdx})",
+      s"arrA[${t1FromIdx}, ${t1ToIdx}) == arrB[${t1FromIdx}, ${t1ToIdx})",
       0,
       Arrays.mismatch(arrA, t1FromIdx, t1ToIdx, arrB, t1FromIdx, t1ToIdx)
     )
 
     // different ranges match
     assertEquals(
-      s"a[${t1FromIdx}, ${t1ToIdx}) == b[${t2FromIdx}, ${t2ToIdx})",
+      s"arrA[${t1FromIdx}, ${t1ToIdx}) == arrB[${t2FromIdx}, ${t2ToIdx})",
       -1, // No mismatch found
       Arrays.mismatch(arrA, t1FromIdx, t1ToIdx, arrB, t2FromIdx, t2ToIdx)
     )
@@ -3382,7 +3382,7 @@ class ArraysOfIntTestOnJDK9 {
     val expectedShortMismatchAtIdx = t3ToIdx - t1FromIdx
 
     assertEquals(
-      "common prefix but a.length < b.length",
+      "common prefix but arrA.length < arrB.length",
       expectedShortMismatchAtIdx,
       Arrays.mismatch(
         arrA,
@@ -3395,7 +3395,7 @@ class ArraysOfIntTestOnJDK9 {
     )
 
     assertEquals(
-      "common prefix but a.length > b.length",
+      "common prefix but arrA.length > arrB.length",
       expectedShortMismatchAtIdx,
       Arrays.mismatch(
         arrA,
@@ -3434,7 +3434,7 @@ class ArraysOfLongTestOnJDK9 {
     arrB(changeAt) = changeTo
 
     assertTrue(
-      s"a > b",
+      s"arrA > arrB",
       Arrays.compare(arrA, arrB) > 0
     )
   }
@@ -3556,7 +3556,7 @@ class ArraysOfLongTestOnJDK9 {
     val t3ToIdx = t1ToIdx - 3 // arbitrary slot
 
     assertTrue(
-      "common prefix but a.length < b.length, return former",
+      "common prefix but arrA.length < arrB.length, return former",
       Arrays.compare(
         arrA,
         t1FromIdx,
@@ -3568,7 +3568,7 @@ class ArraysOfLongTestOnJDK9 {
     )
 
     assertTrue(
-      "common prefix but a.length > b.length, return later",
+      "common prefix but arrA.length > arrB.length, return later",
       Arrays.compare(
         arrA,
         t1FromIdx,
@@ -3602,7 +3602,7 @@ class ArraysOfLongTestOnJDK9 {
     arrB(changeAt) = changeTo
 
     assertTrue(
-      s"a < b",
+      s"arrA < arrB",
       Arrays.compareUnsigned(arrA, arrB) < 0
     )
   }
@@ -3661,7 +3661,7 @@ class ArraysOfLongTestOnJDK9 {
 
     // Test that signed & unsigned comparison results differ.
     assertTrue(
-      s"signed: a[${t1FromIdx}, ${t1ToIdx}) < b[${t2FromIdx}, ${t2ToIdx})",
+      s"signed: a[${t1FromIdx}, ${t1ToIdx}) > b[${t2FromIdx}, ${t2ToIdx})",
       Arrays.compare(arrA, t1FromIdx, t1ToIdx, arrB, t2FromIdx, t2ToIdx) > 0
     )
 
@@ -3681,7 +3681,7 @@ class ArraysOfLongTestOnJDK9 {
     val t3ToIdx = t1ToIdx - 3 // arbitrary slot
 
     assertTrue(
-      "common prefix but a.length < b.length, return former",
+      "common prefix but arrA.length < arrB.length, return former",
       Arrays.compareUnsigned(
         arrA,
         t1FromIdx,
@@ -3693,7 +3693,7 @@ class ArraysOfLongTestOnJDK9 {
     )
 
     assertTrue(
-      "common prefix but a.length > b.length, return later",
+      "common prefix but arrA.length > arrB.length, return later",
       Arrays.compareUnsigned(
         arrA,
         t1FromIdx,
@@ -3787,7 +3787,7 @@ class ArraysOfLongTestOnJDK9 {
 
     // same ranges do not match
     assertFalse(
-      s"a[${t1FromIdx}, ${t1ToIdx}) == b[${t1FromIdx}, ${t1ToIdx})",
+      s"a[${t1FromIdx}, ${t1ToIdx}) != b[${t1FromIdx}, ${t1ToIdx})",
       Arrays.equals(arrA, t1FromIdx, t1ToIdx, arrB, t1FromIdx, t1ToIdx)
     )
 
@@ -3817,7 +3817,7 @@ class ArraysOfLongTestOnJDK9 {
     val t3ToIdx = t1ToIdx - 3 // arbitrary slot
 
     assertFalse(
-      "common prefix but a.length < b.length",
+      "common prefix but arrA.length < arrB.length",
       Arrays.equals(
         arrA,
         t1FromIdx,
@@ -3829,7 +3829,7 @@ class ArraysOfLongTestOnJDK9 {
     )
 
     assertFalse(
-      "common prefix but a.length > b.length",
+      "common prefix but arrA.length > arrB.length",
       Arrays.equals(
         arrA,
         t1FromIdx,
@@ -3896,13 +3896,13 @@ class ArraysOfLongTestOnJDK9 {
     )
 
     assertEquals(
-      "common prefix but a.length < b.length",
+      "common prefix but arrA.length < arrB.length",
       expectedShortSize,
       Arrays.mismatch(arrAShort, arrA)
     )
 
     assertEquals(
-      "common prefix but a.length > b.length",
+      "common prefix but arrA.length > arrB.length",
       expectedShortSize,
       Arrays.mismatch(arrAShort, arrA)
     )
@@ -3990,14 +3990,14 @@ class ArraysOfLongTestOnJDK9 {
 
     // same ranges do not match
     assertEquals(
-      s"a[${t1FromIdx}, ${t1ToIdx}) == b[${t1FromIdx}, ${t1ToIdx})",
+      s"arrA[${t1FromIdx}, ${t1ToIdx}) == arrB[${t1FromIdx}, ${t1ToIdx})",
       0,
       Arrays.mismatch(arrA, t1FromIdx, t1ToIdx, arrB, t1FromIdx, t1ToIdx)
     )
 
     // different ranges match
     assertEquals(
-      s"a[${t1FromIdx}, ${t1ToIdx}) == b[${t2FromIdx}, ${t2ToIdx})",
+      s"arrA[${t1FromIdx}, ${t1ToIdx}) == arrB[${t2FromIdx}, ${t2ToIdx})",
       -1, // No mismatch found
       Arrays.mismatch(arrA, t1FromIdx, t1ToIdx, arrB, t2FromIdx, t2ToIdx)
     )
@@ -4026,7 +4026,7 @@ class ArraysOfLongTestOnJDK9 {
     val expectedShortMismatchAtIdx = t3ToIdx - t1FromIdx
 
     assertEquals(
-      "common prefix but a.length < b.length",
+      "common prefix but arrA.length < arrB.length",
       expectedShortMismatchAtIdx,
       Arrays.mismatch(
         arrA,
@@ -4039,7 +4039,7 @@ class ArraysOfLongTestOnJDK9 {
     )
 
     assertEquals(
-      "common prefix but a.length > b.length",
+      "common prefix but arrA.length > arrB.length",
       expectedShortMismatchAtIdx,
       Arrays.mismatch(
         arrA,
@@ -4078,7 +4078,7 @@ class ArraysOfShortTestOnJDK9 {
     arrB(changeAt) = changeTo
 
     assertTrue(
-      s"a > b",
+      s"arrA > arrB",
       Arrays.compare(arrA, arrB) > 0
     )
   }
@@ -4200,7 +4200,7 @@ class ArraysOfShortTestOnJDK9 {
     val t3ToIdx = t1ToIdx - 3 // arbitrary slot
 
     assertTrue(
-      "common prefix but a.length < b.length, return former",
+      "common prefix but arrA.length < arrB.length, return former",
       Arrays.compare(
         arrA,
         t1FromIdx,
@@ -4212,7 +4212,7 @@ class ArraysOfShortTestOnJDK9 {
     )
 
     assertTrue(
-      "common prefix but a.length > b.length, return later",
+      "common prefix but arrA.length > arrB.length, return later",
       Arrays.compare(
         arrA,
         t1FromIdx,
@@ -4246,7 +4246,7 @@ class ArraysOfShortTestOnJDK9 {
     arrB(changeAt) = changeTo
 
     assertTrue(
-      s"a < b",
+      s"arrA < arrB",
       Arrays.compareUnsigned(arrA, arrB) < 0
     )
   }
@@ -4305,7 +4305,7 @@ class ArraysOfShortTestOnJDK9 {
 
     // Test that signed & unsigned comparison results differ.
     assertTrue(
-      s"signed: a[${t1FromIdx}, ${t1ToIdx}) < b[${t2FromIdx}, ${t2ToIdx})",
+      s"signed: a[${t1FromIdx}, ${t1ToIdx}) > b[${t2FromIdx}, ${t2ToIdx})",
       Arrays.compare(arrA, t1FromIdx, t1ToIdx, arrB, t2FromIdx, t2ToIdx) > 0
     )
 
@@ -4325,7 +4325,7 @@ class ArraysOfShortTestOnJDK9 {
     val t3ToIdx = t1ToIdx - 3 // arbitrary slot
 
     assertTrue(
-      "common prefix but a.length < b.length, return former",
+      "common prefix but arrA.length < arrB.length, return former",
       Arrays.compareUnsigned(
         arrA,
         t1FromIdx,
@@ -4337,7 +4337,7 @@ class ArraysOfShortTestOnJDK9 {
     )
 
     assertTrue(
-      "common prefix but a.length > b.length, return later",
+      "common prefix but arrA.length > arrB.length, return later",
       Arrays.compareUnsigned(
         arrA,
         t1FromIdx,
@@ -4431,7 +4431,7 @@ class ArraysOfShortTestOnJDK9 {
 
     // same ranges do not match
     assertFalse(
-      s"a[${t1FromIdx}, ${t1ToIdx}) == b[${t1FromIdx}, ${t1ToIdx})",
+      s"a[${t1FromIdx}, ${t1ToIdx}) != b[${t1FromIdx}, ${t1ToIdx})",
       Arrays.equals(arrA, t1FromIdx, t1ToIdx, arrB, t1FromIdx, t1ToIdx)
     )
 
@@ -4461,7 +4461,7 @@ class ArraysOfShortTestOnJDK9 {
     val t3ToIdx = t1ToIdx - 3 // arbitrary slot
 
     assertFalse(
-      "common prefix but a.length < b.length",
+      "common prefix but arrA.length < arrB.length",
       Arrays.equals(
         arrA,
         t1FromIdx,
@@ -4473,7 +4473,7 @@ class ArraysOfShortTestOnJDK9 {
     )
 
     assertFalse(
-      "common prefix but a.length > b.length",
+      "common prefix but arrA.length > arrB.length",
       Arrays.equals(
         arrA,
         t1FromIdx,
@@ -4540,13 +4540,13 @@ class ArraysOfShortTestOnJDK9 {
     )
 
     assertEquals(
-      "common prefix but a.length < b.length",
+      "common prefix but arrA.length < arrB.length",
       expectedShortSize,
       Arrays.mismatch(arrAShort, arrA)
     )
 
     assertEquals(
-      "common prefix but a.length > b.length",
+      "common prefix but arrA.length > arrB.length",
       expectedShortSize,
       Arrays.mismatch(arrAShort, arrA)
     )
@@ -4634,14 +4634,14 @@ class ArraysOfShortTestOnJDK9 {
 
     // same ranges do not match
     assertEquals(
-      s"a[${t1FromIdx}, ${t1ToIdx}) == b[${t1FromIdx}, ${t1ToIdx})",
+      s"arrA[${t1FromIdx}, ${t1ToIdx}) == arrB[${t1FromIdx}, ${t1ToIdx})",
       0,
       Arrays.mismatch(arrA, t1FromIdx, t1ToIdx, arrB, t1FromIdx, t1ToIdx)
     )
 
     // different ranges match
     assertEquals(
-      s"a[${t1FromIdx}, ${t1ToIdx}) == b[${t2FromIdx}, ${t2ToIdx})",
+      s"arrA[${t1FromIdx}, ${t1ToIdx}) == arrB[${t2FromIdx}, ${t2ToIdx})",
       -1, // No mismatch found
       Arrays.mismatch(arrA, t1FromIdx, t1ToIdx, arrB, t2FromIdx, t2ToIdx)
     )
@@ -4670,7 +4670,7 @@ class ArraysOfShortTestOnJDK9 {
     val expectedShortMismatchAtIdx = t3ToIdx - t1FromIdx
 
     assertEquals(
-      "common prefix but a.length < b.length",
+      "common prefix but arrA.length < arrB.length",
       expectedShortMismatchAtIdx,
       Arrays.mismatch(
         arrA,
@@ -4683,7 +4683,7 @@ class ArraysOfShortTestOnJDK9 {
     )
 
     assertEquals(
-      "common prefix but a.length > b.length",
+      "common prefix but arrA.length > arrB.length",
       expectedShortMismatchAtIdx,
       Arrays.mismatch(
         arrA,
@@ -4728,7 +4728,7 @@ class ArraysOfCharCornerCasesTestOnJDK9 {
 
     val arrB = Arrays.copyOf(arrA, srcSize)
 
-    assertFalse("a.eq(b)", arrA.eq(arrB))
+    assertFalse("!arrA.eq(b)", arrA.eq(arrB))
 
     assertEquals(
       "a.equals(b)",
@@ -4741,12 +4741,12 @@ class ArraysOfCharCornerCasesTestOnJDK9 {
     arrB(changeAt) = '\u0100'
 
     assertTrue(
-      "a < b",
+      "arrA < arrB",
       Arrays.compare(arrA, 0, arrA.length, arrB, 0, arrB.length) < 0
     )
 
     assertFalse(
-      "a != b",
+      "arrA != arrB",
       Arrays.equals(arrA, 0, arrA.length, arrB, 0, arrB.length)
     )
 
@@ -4805,18 +4805,18 @@ class ArraysOfCharCornerCasesTestOnJDK9 {
 
     val arrB = Arrays.copyOf(arrA, srcSize)
 
-    assertFalse("!a.eq(b)", arrA.eq(arrB))
-    assertTrue("a == b", Arrays.compare(arrA, arrB) == 0)
+    assertFalse("!arrA.eq(arrB)", arrA.eq(arrB))
+    assertTrue("arrA == arrB", Arrays.compare(arrA, arrB) == 0)
 
     arrB(changeAt) = 'Δ' // something Greek and not capital gamma
 
     assertTrue(
-      "a < b",
+      "arrA < arrB",
       Arrays.compare(arrA, 0, arrA.length, arrB, 0, arrB.length) < 0
     )
 
     assertFalse(
-      "a != b",
+      "arrA != arrB",
       Arrays.equals(arrA, 0, arrA.length, arrB, 0, arrB.length)
     )
 
@@ -4842,7 +4842,7 @@ class ArraysOfCharCornerCasesTestOnJDK9 {
     Character.toChars(0x1f648, arrB, changeAt) // See-no-evil monkey emoji
 
     assertTrue(
-      "a < b",
+      "arrA < arrB",
       Arrays.compare(arrA, 0, arrA.length, arrB, 0, arrB.length) < 0
     )
 
@@ -4871,7 +4871,7 @@ class ArraysOfCharCornerCasesTestOnJDK9 {
     Character.toChars(0x1f648, arrB, changeAt) // See-no-evil monkey emoji
 
     assertTrue(
-      "a > b",
+      "arrA > arrB",
       Arrays.compare(arrA, 0, arrA.length, arrB, 0, arrB.length) > 0
     )
 
@@ -4922,17 +4922,17 @@ class ArraysOfDoubleCornerCasesTestOnJDK9 {
     )
 
     assertTrue(
-      "a(changeAt) == b(changeAt)",
+      "arrA(changeAt) == arrB(changeAt)",
       arrA(changeAt) == arrB(changeAt)
     )
 
     assertFalse(
-      "a(changeAt).equals(b(changeAt))",
+      "!arrA(changeAt).equals(arrB(changeAt))",
       arrA(changeAt).equals(arrB(changeAt))
     )
 
     assertTrue(
-      "a(changeAt).compareTo(b(changeAt)) > 0",
+      "arrA(changeAt).compareTo(arrB(changeAt)) > 0",
       arrA(changeAt).compareTo(arrB(changeAt)) > 0
     )
 
@@ -4950,7 +4950,7 @@ class ArraysOfDoubleCornerCasesTestOnJDK9 {
      */
     if (Platform.executingInJVM) {
       assertFalse(
-        "arrA.equals(arrB), 6 Arg",
+        "!arrA.equals(arrB), 6 Arg",
         Arrays.equals(arrA, 0, arrA.length, arrB, 0, arrB.length)
       )
 
@@ -4962,10 +4962,10 @@ class ArraysOfDoubleCornerCasesTestOnJDK9 {
        */
 
       if (Platform.executingInJVM)
-        assertFalse("a.equals(b), 2 arg", Arrays.equals(arrA, arrB))
+        assertFalse("!arrA.equals(arrBb), 2 arg", Arrays.equals(arrA, arrB))
 
       assertTrue(
-        "a > b",
+        "arrA > arrB",
         Arrays.compare(arrA, 0, arrA.length, arrB, 0, arrB.length) > 0
       )
 
@@ -4998,16 +4998,19 @@ class ArraysOfDoubleCornerCasesTestOnJDK9 {
       0.0
     )
 
-    assertFalse("a(changeAt) == b(changeAt)", arrA(changeAt) == arrB(changeAt))
+    assertFalse(
+      "arrA(changeAt) != arrB(changeAt)",
+      arrA(changeAt) == arrB(changeAt)
+    )
 
     // Java equals() specifies true for NaN. IEEE 754 would be false, as above.
     assertTrue(
-      "a(changeAt).equals(b(changeAt))",
+      "arrA(changeAt).equals(arrB(changeAt))",
       arrA(changeAt).equals(arrB(changeAt))
     )
 
     assertTrue(
-      "a(changeAt).compareTo(b(changeAt)) == 0",
+      "arrA(changeAt).compareTo(arrB(changeAt)) == 0",
       arrA(changeAt).compareTo(arrB(changeAt)) == 0
     )
 
@@ -5021,10 +5024,10 @@ class ArraysOfDoubleCornerCasesTestOnJDK9 {
      */
 
     if (Platform.executingInJVM)
-      assertTrue("a.equals(b), 2 Arg", Arrays.equals(arrA, arrB))
+      assertTrue("arrA.equals(arrB), 2 Arg", Arrays.equals(arrA, arrB))
 
     assertEquals(
-      "a.compareTo(b)",
+      "arrA.compareTo(arrB)",
       0,
       Arrays.compare(arrA, 0, arrA.length, arrB, 0, arrB.length)
     )
@@ -5063,18 +5066,18 @@ class ArraysOfDoubleCornerCasesTestOnJDK9 {
     assertEquals("payloadNaN_2", arrB(changeAt), jl.Double.NaN, 0.0)
 
     assertFalse(
-      "a(changeAt) == b(changeAt)",
+      "arrA(changeAt) != arrB(changeAt)",
       arrA(changeAt) == arrB(changeAt)
     )
 
     // Java equals() specifies true for NaN. IEEE 754 would be false, as above.
     assertTrue(
-      "a(changeAt).equals(b(changeAt))",
+      "arrA(changeAt).equals(arrB(changeAt))",
       arrA(changeAt).equals(arrB(changeAt))
     )
 
     assertTrue(
-      "a(changeAt).compareTo(b(changeAt)) == 0",
+      "arrA(changeAt).compareTo(arrB(changeAt)) == 0",
       arrA(changeAt).compareTo(arrB(changeAt)) == 0
     )
 
@@ -5088,7 +5091,7 @@ class ArraysOfDoubleCornerCasesTestOnJDK9 {
      */
 
     if (Platform.executingInJVM)
-      assertTrue("a.equals(b), 2 Arg", Arrays.equals(arrA, arrB))
+      assertTrue("arrA.equals(arrB), 2 Arg", Arrays.equals(arrA, arrB))
 
     assertEquals(
       "a.compareTo(b)",
@@ -5138,17 +5141,17 @@ class ArraysOfFloatCornerCasesTestOnJDK9 {
     )
 
     assertTrue(
-      "a(changeAt) == b(changeAt)",
+      "arrA(changeAt) == arrB(changeAt)",
       arrA(changeAt) == arrB(changeAt)
     )
 
     assertFalse(
-      "a(changeAt).equals(b(changeAt))",
+      "!arrA(changeAt).equals(arrB(changeAt))",
       arrA(changeAt).equals(arrB(changeAt))
     )
 
     assertTrue(
-      "a(changeAt).compareTo(b(changeAt)) > 0",
+      "arrA(changeAt).compareTo(arrB(changeAt)) > 0",
       arrA(changeAt).compareTo(arrB(changeAt)) > 0
     )
 
@@ -5158,7 +5161,7 @@ class ArraysOfFloatCornerCasesTestOnJDK9 {
      */
     if (Platform.executingInJVM) {
       assertFalse(
-        "arrA.equals(arrB), 6 Arg",
+        "!arrA.equals(arrB), 6 Arg",
         Arrays.equals(arrA, 0, arrA.length, arrB, 0, arrB.length)
       )
 
@@ -5170,10 +5173,10 @@ class ArraysOfFloatCornerCasesTestOnJDK9 {
        */
 
       if (Platform.executingInJVM)
-        assertFalse("a.equals(b), 2 arg", Arrays.equals(arrA, arrB))
+        assertFalse("!arrA.equals(arrB), 2 arg", Arrays.equals(arrA, arrB))
 
       assertTrue(
-        "a > b",
+        "arrA > arrB",
         Arrays.compare(arrA, 0, arrA.length, arrB, 0, arrB.length) > 0
       )
 
@@ -5206,16 +5209,19 @@ class ArraysOfFloatCornerCasesTestOnJDK9 {
       0.0f
     )
 
-    assertFalse("a(changeAt) == b(changeAt)", arrA(changeAt) == arrB(changeAt))
+    assertFalse(
+      "arrA(changeAt) != arrB(changeAt)",
+      arrA(changeAt) == arrB(changeAt)
+    )
 
     // Java equals() specifies true for NaN. IEEE 754 would be false, as above.
     assertTrue(
-      "a(changeAt).equals(b(changeAt))",
+      "arrA(changeAt).equals(arrB(changeAt))",
       arrA(changeAt).equals(arrB(changeAt))
     )
 
     assertTrue(
-      "a(changeAt).compareTo(b(changeAt)) == 0",
+      "arrA(changeAt).compareTo(arrB(changeAt)) == 0",
       arrA(changeAt).compareTo(arrB(changeAt)) == 0
     )
 
@@ -5236,7 +5242,7 @@ class ArraysOfFloatCornerCasesTestOnJDK9 {
      */
 
     if (Platform.executingInJVM)
-      assertTrue("a.equals(b), 2 Arg", Arrays.equals(arrA, arrB))
+      assertTrue("arrA.equals(arrB), 2 Arg", Arrays.equals(arrA, arrB))
 
     assertEquals(
       "a.compareTo(b)",
@@ -5278,18 +5284,18 @@ class ArraysOfFloatCornerCasesTestOnJDK9 {
     assertEquals("payloadNaN_2", arrB(changeAt), jl.Float.NaN, 0.0f)
 
     assertFalse(
-      "a(changeAt) == b(changeAt)",
+      "arrA(changeAt) != arrB(changeAt)",
       arrA(changeAt) == arrB(changeAt)
     )
 
     // Java equals() specifies true for NaN. IEEE 754 would be false, as above.
     assertTrue(
-      "a(changeAt).equals(b(changeAt))",
+      "arrA(changeAt).equals(arrB(changeAt))",
       arrA(changeAt).equals(arrB(changeAt))
     )
 
     assertTrue(
-      "a(changeAt).compareTo(b(changeAt)) == 0",
+      "arrA(changeAt).compareTo(arrB(changeAt)) == 0",
       arrA(changeAt).compareTo(arrB(changeAt)) == 0
     )
 
@@ -5303,10 +5309,10 @@ class ArraysOfFloatCornerCasesTestOnJDK9 {
      */
 
     if (Platform.executingInJVM)
-      assertTrue("a.equals(b), 2 Arg", Arrays.equals(arrA, arrB))
+      assertTrue("arrA.equals(arrB), 2 Arg", Arrays.equals(arrA, arrB))
 
     assertEquals(
-      "a.compareTo(b)",
+      "arrA.compareTo(arrB)",
       0,
       Arrays.compare(arrA, 0, arrA.length, arrB, 0, arrB.length)
     )

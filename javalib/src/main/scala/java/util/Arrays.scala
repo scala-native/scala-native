@@ -1716,14 +1716,23 @@ object Arrays {
     if (aCount != bCount) false
     else if (aCount == 0) true
     else {
-      Arrays.mismatchImplCore(
+      /* Devos: Performance trade-off here.
+       * Call mismatch() rather than inline mismatchImplCore() to reduce
+       * code size. The latter, which is not small, would get inlined
+       * three time; once each for Boolean, Double, & Float.
+       *
+       * Take the hit of arguments being checked twice.
+       *
+       * See if experience & measurement show that this is a critical
+       * section and should be inlined.
+       */
+      Arrays.mismatch(
         a,
         aFromIndex,
         aToIndex,
         b,
         bFromIndex,
-        bToIndex,
-        jl.Boolean.compare
+        bToIndex
       ) == -1
     }
   }
@@ -1953,14 +1962,23 @@ object Arrays {
     if (aCount != bCount) false
     else if (aCount == 0) true
     else {
-      Arrays.mismatchImplCore(
+      /* Devos: Performance trade-off here.
+       * Call mismatch() rather than inline mismatchImplCore() to reduce
+       * code size. The latter, which is not small, would get inlined
+       * three time; once each for Boolean, Double, & Float.
+       *
+       * Take the hit of arguments being checked twice.
+       *
+       * See if experience & measurement show that this is a critical
+       * section and should be inlined.
+       */
+      Arrays.mismatch(
         a,
         aFromIndex,
         aToIndex,
         b,
         bFromIndex,
-        bToIndex,
-        jl.Double.compare
+        bToIndex
       ) == -1
     }
   }
@@ -2033,14 +2051,23 @@ object Arrays {
     if (aCount != bCount) false
     else if (aCount == 0) true
     else {
-      Arrays.mismatchImplCore(
+      /* Devos: Performance trade-off here.
+       * Call mismatch() rather than inline mismatchImplCore() to reduce
+       * code size. The latter, which is not small, would get inlined
+       * three time; once each for Boolean, Double, & Float.
+       *
+       * Take the hit of arguments being checked twice.
+       *
+       * See if experience & measurement show that this is a critical
+       * section and should be inlined.
+       */
+      Arrays.mismatch(
         a,
         aFromIndex,
         aToIndex,
         b,
         bFromIndex,
-        bToIndex,
-        jl.Float.compare
+        bToIndex
       ) == -1
     }
   }
@@ -2541,4 +2568,5 @@ object Arrays {
         cmp.compare(a.asInstanceOf[T], b.asInstanceOf[T])
     )
   }
+
 }
