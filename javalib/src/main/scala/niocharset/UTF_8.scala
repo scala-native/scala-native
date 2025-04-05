@@ -69,12 +69,12 @@ private[niocharset] object UTF_8
 
   private class Decoder extends CharsetDecoder(UTF_8, 1.0f, 1.0f) {
     def decodeLoop(in: ByteBuffer, out: CharBuffer): CoderResult = {
-      val inArray = Option.when(in.hasArray())(in.array()).orNull
+      val inArray = if (in.hasArray()) in.array() else null
       val inOffset = if (in.hasArray()) in.arrayOffset() else 0
       val inStart = in.position() + inOffset
       val inEnd = in.limit() + inOffset
 
-      val outArray = Option.when(out.hasArray())(out.array()).orNull
+      val outArray = if (out.hasArray()) out.array() else null
       val outOffset = if (out.hasArray()) out.arrayOffset() else 0
       val outStart = out.position() + outOffset
       val outEnd = out.limit() + outOffset
