@@ -1,26 +1,28 @@
 package org.scalanative.testsuite.javalib.util
 
-/* This code is manually generated from ArraysOfAnyValTestOnJDK9.scala.gyb.
- * Any edits here and not in the .gyb may be lost the next time this file is
+/* This code is generated from ArraysOfAnyValTestOnJDK9.scala.gyb.
+ * Any edits here and not in the .gyb will be lost when this file is next
  * generated.
  */
 
-/* The name of this file is ArraysOfAnyValTestOnJDK9.scala. That
+/* The name of this file is ArraysOfAnyValTestOnJDK9.scala. The
  * correspond ArraysOfObjectTestOnJDK9.scala, since Objects are AnyRefs.
  *
-   * That name and the practice in ArraysOfObjectTestOnJDK9.scala would lead
+ * That name and the practice in ArraysOfObjectTestOnJDK9.scala would lead
  * one to believe that an 'ArraysOfAnyValTestOnJDK9' exists but it does not.
  * One must run tests by type, say 'ArraysOfByteTestOnJDK9'.
  *
-   * Having all of the 'ArrayOf<type>TestOnJDK9' classes in one file
+ * Having all of the 'ArrayOf<type>TestOnJDK9' classes in one file
  * greatly simplifies the .gyb file.
  *
-   * Having separate classes, by type, avoids having one unwieldy, humongous
+ * Having separate classes, by type, avoids having one unwieldy, humongous
  * 'ArraysOfAnyValTestOnJDK9' class.
  *
-   * Scala Native 'testsuite' does not allow a Suite of Test classes under
+ * Scala Native 'testsuite' does not allow a Suite of Test classes under
  * one enclosing class. Room for improvement.
  */
+
+// format: off
 
 import java.{lang => jl}
 import java.{util => ju}
@@ -33,14 +35,14 @@ import org.junit.Test
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform
 
+
 class ArraysOfBooleanTestOnJDK9 {
 
   @Test def compare_Boolean_2Arg(): Unit = {
     val srcSize = 16
 
     val changeAt = 3
-    val changeTo =
-      false
+    val changeTo = false
 
     val arrA = new Array[scala.Boolean](srcSize)
     for (idx <- 0 until srcSize)
@@ -134,8 +136,7 @@ class ArraysOfBooleanTestOnJDK9 {
     val t2ToIdx = t1ToIdx + t1Shift
 
     val changeBAt = t2FromIdx + 2 // an arbitrary site
-    val changeTo =
-      false
+    val changeTo = false
 
     val arrB = new Array[scala.Boolean](srcSize)
     for (idx <- t2FromIdx until srcSize) // fill extra length to entice bugs
@@ -144,7 +145,7 @@ class ArraysOfBooleanTestOnJDK9 {
     assertArrayEquals(
       s"array range contents",
       Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
-      Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx)
+      Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx),
     )
 
     arrB(t1FromIdx) = !arrA(t1FromIdx) // force a mismatch at the low end
@@ -168,9 +169,8 @@ class ArraysOfBooleanTestOnJDK9 {
     assertFalse(
       s"changed array range contents",
       Arrays.equals(
-        Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
-        Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx)
-      )
+	Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
+	Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx))
     )
 
     // ranges which used to match no longer do when content in one has changed.
@@ -184,27 +184,26 @@ class ArraysOfBooleanTestOnJDK9 {
     assertTrue(
       "common prefix but arrA.length < arrB.length, return former",
       Arrays.compare(
-        arrA,
-        t1FromIdx,
-        t3ToIdx,
-        arrA,
-        t1FromIdx,
-        t1ToIdx
-      ) < 0
+	arrA,
+	t1FromIdx,
+	t3ToIdx,
+	arrA,
+	t1FromIdx,
+	t1ToIdx) < 0
     )
 
     assertTrue(
       "common prefix but arrA.length > arrB.length, return later",
       Arrays.compare(
-        arrA,
-        t1FromIdx,
-        t1ToIdx,
-        arrA,
-        t1FromIdx,
-        t3ToIdx
-      ) > 0
+	arrA,
+	t1FromIdx,
+	t1ToIdx,
+	arrA,
+	t1FromIdx,
+	t3ToIdx) > 0
     )
   }
+
 
   @Test def equals_Boolean_6Arg_InvalidArgs(): Unit = {
     val srcSize = 64
@@ -306,9 +305,8 @@ class ArraysOfBooleanTestOnJDK9 {
     assertFalse(
       s"changed array range contents",
       Arrays.equals(
-        Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
-        Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx)
-      )
+	Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
+	Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx))
     )
 
     // ranges which used to match no longer do when content in one has changed.
@@ -322,25 +320,23 @@ class ArraysOfBooleanTestOnJDK9 {
     assertFalse(
       "common prefix but arrA.length < arrB.length",
       Arrays.equals(
-        arrA,
-        t1FromIdx,
-        t3ToIdx,
-        arrA,
-        t1FromIdx,
-        t1ToIdx
-      )
+	arrA,
+	t1FromIdx,
+	t3ToIdx,
+	arrA,
+	t1FromIdx,
+	t1ToIdx)
     )
 
     assertFalse(
       "common prefix but arrA.length > arrB.length",
       Arrays.equals(
-        arrA,
-        t1FromIdx,
-        t1ToIdx,
-        arrA,
-        t1FromIdx,
-        t3ToIdx
-      )
+	arrA,
+	t1FromIdx,
+	t1ToIdx,
+	arrA,
+	t1FromIdx,
+	t3ToIdx)
     )
   }
 
@@ -514,9 +510,8 @@ class ArraysOfBooleanTestOnJDK9 {
     assertFalse(
       s"changed array range contents",
       Arrays.equals(
-        Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
-        Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx)
-      )
+	Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
+	Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx))
     )
 
     // ranges which used to match no longer do when content in one has changed.
@@ -534,26 +529,24 @@ class ArraysOfBooleanTestOnJDK9 {
       "common prefix but arrA.length < arrB.length",
       expectedShortMismatchAtIdx,
       Arrays.mismatch(
-        arrA,
-        t1FromIdx,
-        t3ToIdx,
-        arrA,
-        t1FromIdx,
-        t1ToIdx
-      )
+	arrA,
+	t1FromIdx,
+	t3ToIdx,
+	arrA,
+	t1FromIdx,
+	t1ToIdx)
     )
 
     assertEquals(
       "common prefix but arrA.length > arrB.length",
       expectedShortMismatchAtIdx,
       Arrays.mismatch(
-        arrA,
-        t1FromIdx,
-        t1ToIdx,
-        arrA,
-        t1FromIdx,
-        t3ToIdx
-      )
+	arrA,
+	t1FromIdx,
+	t1ToIdx,
+	arrA,
+	t1FromIdx,
+	t3ToIdx)
     )
   }
 }
@@ -564,8 +557,7 @@ class ArraysOfByteTestOnJDK9 {
     val srcSize = 16
 
     val changeAt = 3
-    val changeTo =
-      jl.Byte.MIN_VALUE
+    val changeTo = jl.Byte.MIN_VALUE
 
     val arrA = new Array[scala.Byte](srcSize)
     for (idx <- 0 until srcSize)
@@ -659,8 +651,7 @@ class ArraysOfByteTestOnJDK9 {
     val t2ToIdx = t1ToIdx + t1Shift
 
     val changeBAt = t2FromIdx + 2 // an arbitrary site
-    val changeTo =
-      jl.Byte.MIN_VALUE
+    val changeTo = jl.Byte.MIN_VALUE
 
     val arrB = new Array[scala.Byte](srcSize)
     for (idx <- t2FromIdx until srcSize) // fill extra length to entice bugs
@@ -669,8 +660,9 @@ class ArraysOfByteTestOnJDK9 {
     assertArrayEquals(
       s"array range contents",
       Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
-      Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx)
+      Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx),
     )
+
 
     // same ranges do not match
     assertNotEquals(
@@ -691,9 +683,8 @@ class ArraysOfByteTestOnJDK9 {
     assertFalse(
       s"changed array range contents",
       Arrays.equals(
-        Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
-        Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx)
-      )
+	Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
+	Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx))
     )
 
     // ranges which used to match no longer do when content in one has changed.
@@ -707,25 +698,23 @@ class ArraysOfByteTestOnJDK9 {
     assertTrue(
       "common prefix but arrA.length < arrB.length, return former",
       Arrays.compare(
-        arrA,
-        t1FromIdx,
-        t3ToIdx,
-        arrA,
-        t1FromIdx,
-        t1ToIdx
-      ) < 0
+	arrA,
+	t1FromIdx,
+	t3ToIdx,
+	arrA,
+	t1FromIdx,
+	t1ToIdx) < 0
     )
 
     assertTrue(
       "common prefix but arrA.length > arrB.length, return later",
       Arrays.compare(
-        arrA,
-        t1FromIdx,
-        t1ToIdx,
-        arrA,
-        t1FromIdx,
-        t3ToIdx
-      ) > 0
+	arrA,
+	t1FromIdx,
+	t1ToIdx,
+	arrA,
+	t1FromIdx,
+	t3ToIdx) > 0
     )
   }
 
@@ -803,9 +792,8 @@ class ArraysOfByteTestOnJDK9 {
     assertFalse(
       s"changed array range contents",
       Arrays.equals(
-        Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
-        Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx)
-      )
+	Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
+	Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx))
     )
 
     // Test that signed & unsigned comparison results differ.
@@ -817,13 +805,12 @@ class ArraysOfByteTestOnJDK9 {
     assertTrue(
       s"unsigned: a[${t1FromIdx}, ${t1ToIdx}) < b[${t2FromIdx}, ${t2ToIdx})",
       Arrays.compareUnsigned(
-        arrA,
-        t1FromIdx,
-        t1ToIdx,
-        arrB,
-        t2FromIdx,
-        t2ToIdx
-      ) < 0
+	arrA,
+	t1FromIdx,
+	t1ToIdx,
+	arrB,
+	t2FromIdx,
+	t2ToIdx) < 0
     )
 
     // ranges which used to match no longer do when content in one has changed.
@@ -832,25 +819,23 @@ class ArraysOfByteTestOnJDK9 {
     assertTrue(
       "common prefix but arrA.length < arrB.length, return former",
       Arrays.compareUnsigned(
-        arrA,
-        t1FromIdx,
-        t3ToIdx,
-        arrA,
-        t1FromIdx,
-        t1ToIdx
-      ) < 0
+	arrA,
+	t1FromIdx,
+	t3ToIdx,
+	arrA,
+	t1FromIdx,
+	t1ToIdx) < 0
     )
 
     assertTrue(
       "common prefix but arrA.length > arrB.length, return later",
       Arrays.compareUnsigned(
-        arrA,
-        t1FromIdx,
-        t1ToIdx,
-        arrA,
-        t1FromIdx,
-        t3ToIdx
-      ) > 0
+	arrA,
+	t1FromIdx,
+	t1ToIdx,
+	arrA,
+	t1FromIdx,
+	t3ToIdx) > 0
     )
   }
 
@@ -934,6 +919,7 @@ class ArraysOfByteTestOnJDK9 {
       Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx)
     )
 
+
     // same ranges do not match
     assertFalse(
       s"a[${t1FromIdx}, ${t1ToIdx}) != b[${t1FromIdx}, ${t1ToIdx})",
@@ -952,9 +938,8 @@ class ArraysOfByteTestOnJDK9 {
     assertFalse(
       s"changed array range contents",
       Arrays.equals(
-        Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
-        Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx)
-      )
+	Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
+	Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx))
     )
 
     // ranges which used to match no longer do when content in one has changed.
@@ -968,25 +953,23 @@ class ArraysOfByteTestOnJDK9 {
     assertFalse(
       "common prefix but arrA.length < arrB.length",
       Arrays.equals(
-        arrA,
-        t1FromIdx,
-        t3ToIdx,
-        arrA,
-        t1FromIdx,
-        t1ToIdx
-      )
+	arrA,
+	t1FromIdx,
+	t3ToIdx,
+	arrA,
+	t1FromIdx,
+	t1ToIdx)
     )
 
     assertFalse(
       "common prefix but arrA.length > arrB.length",
       Arrays.equals(
-        arrA,
-        t1FromIdx,
-        t1ToIdx,
-        arrA,
-        t1FromIdx,
-        t3ToIdx
-      )
+	arrA,
+	t1FromIdx,
+	t1ToIdx,
+	arrA,
+	t1FromIdx,
+	t3ToIdx)
     )
   }
 
@@ -1137,6 +1120,7 @@ class ArraysOfByteTestOnJDK9 {
       Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx)
     )
 
+
     // same ranges do not match
     assertEquals(
       s"arrA[${t1FromIdx}, ${t1ToIdx}) == arrB[${t1FromIdx}, ${t1ToIdx})",
@@ -1158,9 +1142,8 @@ class ArraysOfByteTestOnJDK9 {
     assertFalse(
       s"changed array range contents",
       Arrays.equals(
-        Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
-        Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx)
-      )
+	Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
+	Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx))
     )
 
     // ranges which used to match no longer do when content in one has changed.
@@ -1178,26 +1161,24 @@ class ArraysOfByteTestOnJDK9 {
       "common prefix but arrA.length < arrB.length",
       expectedShortMismatchAtIdx,
       Arrays.mismatch(
-        arrA,
-        t1FromIdx,
-        t3ToIdx,
-        arrA,
-        t1FromIdx,
-        t1ToIdx
-      )
+	arrA,
+	t1FromIdx,
+	t3ToIdx,
+	arrA,
+	t1FromIdx,
+	t1ToIdx)
     )
 
     assertEquals(
       "common prefix but arrA.length > arrB.length",
       expectedShortMismatchAtIdx,
       Arrays.mismatch(
-        arrA,
-        t1FromIdx,
-        t1ToIdx,
-        arrA,
-        t1FromIdx,
-        t3ToIdx
-      )
+	arrA,
+	t1FromIdx,
+	t1ToIdx,
+	arrA,
+	t1FromIdx,
+	t3ToIdx)
     )
   }
 }
@@ -1208,8 +1189,7 @@ class ArraysOfCharTestOnJDK9 {
     val srcSize = 16
 
     val changeAt = 3
-    val changeTo =
-      jl.Character.MIN_VALUE
+    val changeTo = jl.Character.MIN_VALUE
 
     val arrA = new Array[scala.Char](srcSize)
     for (idx <- 0 until srcSize)
@@ -1303,8 +1283,7 @@ class ArraysOfCharTestOnJDK9 {
     val t2ToIdx = t1ToIdx + t1Shift
 
     val changeBAt = t2FromIdx + 2 // an arbitrary site
-    val changeTo =
-      jl.Character.MIN_VALUE
+    val changeTo = jl.Character.MIN_VALUE
 
     val arrB = new Array[scala.Char](srcSize)
     for (idx <- t2FromIdx until srcSize) // fill extra length to entice bugs
@@ -1313,8 +1292,9 @@ class ArraysOfCharTestOnJDK9 {
     assertArrayEquals(
       s"array range contents",
       Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
-      Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx)
+      Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx),
     )
+
 
     // same ranges do not match
     assertNotEquals(
@@ -1335,9 +1315,8 @@ class ArraysOfCharTestOnJDK9 {
     assertFalse(
       s"changed array range contents",
       Arrays.equals(
-        Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
-        Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx)
-      )
+	Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
+	Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx))
     )
 
     // ranges which used to match no longer do when content in one has changed.
@@ -1351,27 +1330,26 @@ class ArraysOfCharTestOnJDK9 {
     assertTrue(
       "common prefix but arrA.length < arrB.length, return former",
       Arrays.compare(
-        arrA,
-        t1FromIdx,
-        t3ToIdx,
-        arrA,
-        t1FromIdx,
-        t1ToIdx
-      ) < 0
+	arrA,
+	t1FromIdx,
+	t3ToIdx,
+	arrA,
+	t1FromIdx,
+	t1ToIdx) < 0
     )
 
     assertTrue(
       "common prefix but arrA.length > arrB.length, return later",
       Arrays.compare(
-        arrA,
-        t1FromIdx,
-        t1ToIdx,
-        arrA,
-        t1FromIdx,
-        t3ToIdx
-      ) > 0
+	arrA,
+	t1FromIdx,
+	t1ToIdx,
+	arrA,
+	t1FromIdx,
+	t3ToIdx) > 0
     )
   }
+
 
   @Test def equals_Char_6Arg_InvalidArgs(): Unit = {
     val srcSize = 64
@@ -1453,6 +1431,7 @@ class ArraysOfCharTestOnJDK9 {
       Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx)
     )
 
+
     // same ranges do not match
     assertFalse(
       s"a[${t1FromIdx}, ${t1ToIdx}) != b[${t1FromIdx}, ${t1ToIdx})",
@@ -1471,9 +1450,8 @@ class ArraysOfCharTestOnJDK9 {
     assertFalse(
       s"changed array range contents",
       Arrays.equals(
-        Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
-        Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx)
-      )
+	Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
+	Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx))
     )
 
     // ranges which used to match no longer do when content in one has changed.
@@ -1487,25 +1465,23 @@ class ArraysOfCharTestOnJDK9 {
     assertFalse(
       "common prefix but arrA.length < arrB.length",
       Arrays.equals(
-        arrA,
-        t1FromIdx,
-        t3ToIdx,
-        arrA,
-        t1FromIdx,
-        t1ToIdx
-      )
+	arrA,
+	t1FromIdx,
+	t3ToIdx,
+	arrA,
+	t1FromIdx,
+	t1ToIdx)
     )
 
     assertFalse(
       "common prefix but arrA.length > arrB.length",
       Arrays.equals(
-        arrA,
-        t1FromIdx,
-        t1ToIdx,
-        arrA,
-        t1FromIdx,
-        t3ToIdx
-      )
+	arrA,
+	t1FromIdx,
+	t1ToIdx,
+	arrA,
+	t1FromIdx,
+	t3ToIdx)
     )
   }
 
@@ -1656,6 +1632,7 @@ class ArraysOfCharTestOnJDK9 {
       Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx)
     )
 
+
     // same ranges do not match
     assertEquals(
       s"arrA[${t1FromIdx}, ${t1ToIdx}) == arrB[${t1FromIdx}, ${t1ToIdx})",
@@ -1677,9 +1654,8 @@ class ArraysOfCharTestOnJDK9 {
     assertFalse(
       s"changed array range contents",
       Arrays.equals(
-        Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
-        Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx)
-      )
+	Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
+	Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx))
     )
 
     // ranges which used to match no longer do when content in one has changed.
@@ -1697,26 +1673,24 @@ class ArraysOfCharTestOnJDK9 {
       "common prefix but arrA.length < arrB.length",
       expectedShortMismatchAtIdx,
       Arrays.mismatch(
-        arrA,
-        t1FromIdx,
-        t3ToIdx,
-        arrA,
-        t1FromIdx,
-        t1ToIdx
-      )
+	arrA,
+	t1FromIdx,
+	t3ToIdx,
+	arrA,
+	t1FromIdx,
+	t1ToIdx)
     )
 
     assertEquals(
       "common prefix but arrA.length > arrB.length",
       expectedShortMismatchAtIdx,
       Arrays.mismatch(
-        arrA,
-        t1FromIdx,
-        t1ToIdx,
-        arrA,
-        t1FromIdx,
-        t3ToIdx
-      )
+	arrA,
+	t1FromIdx,
+	t1ToIdx,
+	arrA,
+	t1FromIdx,
+	t3ToIdx)
     )
   }
 }
@@ -1727,8 +1701,7 @@ class ArraysOfDoubleTestOnJDK9 {
     val srcSize = 16
 
     val changeAt = 3
-    val changeTo =
-      jl.Double.MIN_VALUE
+    val changeTo = jl.Double.MIN_VALUE
 
     val arrA = new Array[scala.Double](srcSize)
     for (idx <- 0 until srcSize)
@@ -1822,8 +1795,7 @@ class ArraysOfDoubleTestOnJDK9 {
     val t2ToIdx = t1ToIdx + t1Shift
 
     val changeBAt = t2FromIdx + 2 // an arbitrary site
-    val changeTo =
-      jl.Double.MIN_VALUE
+    val changeTo = jl.Double.MIN_VALUE
 
     val arrB = new Array[scala.Double](srcSize)
     for (idx <- t2FromIdx until srcSize) // fill extra length to entice bugs
@@ -1833,8 +1805,9 @@ class ArraysOfDoubleTestOnJDK9 {
       s"array range contents",
       Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
       Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx),
-      -0.0d
+      -0.0D
     )
+
 
     // same ranges do not match
     assertNotEquals(
@@ -1855,9 +1828,8 @@ class ArraysOfDoubleTestOnJDK9 {
     assertFalse(
       s"changed array range contents",
       Arrays.equals(
-        Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
-        Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx)
-      )
+	Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
+	Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx))
     )
 
     // ranges which used to match no longer do when content in one has changed.
@@ -1871,27 +1843,26 @@ class ArraysOfDoubleTestOnJDK9 {
     assertTrue(
       "common prefix but arrA.length < arrB.length, return former",
       Arrays.compare(
-        arrA,
-        t1FromIdx,
-        t3ToIdx,
-        arrA,
-        t1FromIdx,
-        t1ToIdx
-      ) < 0
+	arrA,
+	t1FromIdx,
+	t3ToIdx,
+	arrA,
+	t1FromIdx,
+	t1ToIdx) < 0
     )
 
     assertTrue(
       "common prefix but arrA.length > arrB.length, return later",
       Arrays.compare(
-        arrA,
-        t1FromIdx,
-        t1ToIdx,
-        arrA,
-        t1FromIdx,
-        t3ToIdx
-      ) > 0
+	arrA,
+	t1FromIdx,
+	t1ToIdx,
+	arrA,
+	t1FromIdx,
+	t3ToIdx) > 0
     )
   }
+
 
   @Test def equals_Double_6Arg_InvalidArgs(): Unit = {
     val srcSize = 64
@@ -1970,9 +1941,10 @@ class ArraysOfDoubleTestOnJDK9 {
     assertArrayEquals(
       s"array range contents",
       Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
-      Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx),
-      -0.0d
+      Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx)
+     , -0.0D
     )
+
 
     // same ranges do not match
     assertFalse(
@@ -1992,9 +1964,8 @@ class ArraysOfDoubleTestOnJDK9 {
     assertFalse(
       s"changed array range contents",
       Arrays.equals(
-        Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
-        Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx)
-      )
+	Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
+	Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx))
     )
 
     // ranges which used to match no longer do when content in one has changed.
@@ -2008,25 +1979,23 @@ class ArraysOfDoubleTestOnJDK9 {
     assertFalse(
       "common prefix but arrA.length < arrB.length",
       Arrays.equals(
-        arrA,
-        t1FromIdx,
-        t3ToIdx,
-        arrA,
-        t1FromIdx,
-        t1ToIdx
-      )
+	arrA,
+	t1FromIdx,
+	t3ToIdx,
+	arrA,
+	t1FromIdx,
+	t1ToIdx)
     )
 
     assertFalse(
       "common prefix but arrA.length > arrB.length",
       Arrays.equals(
-        arrA,
-        t1FromIdx,
-        t1ToIdx,
-        arrA,
-        t1FromIdx,
-        t3ToIdx
-      )
+	arrA,
+	t1FromIdx,
+	t1ToIdx,
+	arrA,
+	t1FromIdx,
+	t3ToIdx)
     )
   }
 
@@ -2174,9 +2143,10 @@ class ArraysOfDoubleTestOnJDK9 {
     assertArrayEquals(
       s"array range contents",
       Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
-      Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx),
-      -0.0d
+      Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx)
+     , -0.0D
     )
+
 
     // same ranges do not match
     assertEquals(
@@ -2199,9 +2169,8 @@ class ArraysOfDoubleTestOnJDK9 {
     assertFalse(
       s"changed array range contents",
       Arrays.equals(
-        Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
-        Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx)
-      )
+	Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
+	Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx))
     )
 
     // ranges which used to match no longer do when content in one has changed.
@@ -2219,26 +2188,24 @@ class ArraysOfDoubleTestOnJDK9 {
       "common prefix but arrA.length < arrB.length",
       expectedShortMismatchAtIdx,
       Arrays.mismatch(
-        arrA,
-        t1FromIdx,
-        t3ToIdx,
-        arrA,
-        t1FromIdx,
-        t1ToIdx
-      )
+	arrA,
+	t1FromIdx,
+	t3ToIdx,
+	arrA,
+	t1FromIdx,
+	t1ToIdx)
     )
 
     assertEquals(
       "common prefix but arrA.length > arrB.length",
       expectedShortMismatchAtIdx,
       Arrays.mismatch(
-        arrA,
-        t1FromIdx,
-        t1ToIdx,
-        arrA,
-        t1FromIdx,
-        t3ToIdx
-      )
+	arrA,
+	t1FromIdx,
+	t1ToIdx,
+	arrA,
+	t1FromIdx,
+	t3ToIdx)
     )
   }
 }
@@ -2249,8 +2216,7 @@ class ArraysOfFloatTestOnJDK9 {
     val srcSize = 16
 
     val changeAt = 3
-    val changeTo =
-      jl.Float.MIN_VALUE
+    val changeTo = jl.Float.MIN_VALUE
 
     val arrA = new Array[scala.Float](srcSize)
     for (idx <- 0 until srcSize)
@@ -2344,8 +2310,7 @@ class ArraysOfFloatTestOnJDK9 {
     val t2ToIdx = t1ToIdx + t1Shift
 
     val changeBAt = t2FromIdx + 2 // an arbitrary site
-    val changeTo =
-      jl.Float.MIN_VALUE
+    val changeTo = jl.Float.MIN_VALUE
 
     val arrB = new Array[scala.Float](srcSize)
     for (idx <- t2FromIdx until srcSize) // fill extra length to entice bugs
@@ -2355,8 +2320,9 @@ class ArraysOfFloatTestOnJDK9 {
       s"array range contents",
       Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
       Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx),
-      -0.0f
+      -0.0F
     )
+
 
     // same ranges do not match
     assertNotEquals(
@@ -2377,9 +2343,8 @@ class ArraysOfFloatTestOnJDK9 {
     assertFalse(
       s"changed array range contents",
       Arrays.equals(
-        Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
-        Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx)
-      )
+	Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
+	Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx))
     )
 
     // ranges which used to match no longer do when content in one has changed.
@@ -2393,27 +2358,26 @@ class ArraysOfFloatTestOnJDK9 {
     assertTrue(
       "common prefix but arrA.length < arrB.length, return former",
       Arrays.compare(
-        arrA,
-        t1FromIdx,
-        t3ToIdx,
-        arrA,
-        t1FromIdx,
-        t1ToIdx
-      ) < 0
+	arrA,
+	t1FromIdx,
+	t3ToIdx,
+	arrA,
+	t1FromIdx,
+	t1ToIdx) < 0
     )
 
     assertTrue(
       "common prefix but arrA.length > arrB.length, return later",
       Arrays.compare(
-        arrA,
-        t1FromIdx,
-        t1ToIdx,
-        arrA,
-        t1FromIdx,
-        t3ToIdx
-      ) > 0
+	arrA,
+	t1FromIdx,
+	t1ToIdx,
+	arrA,
+	t1FromIdx,
+	t3ToIdx) > 0
     )
   }
+
 
   @Test def equals_Float_6Arg_InvalidArgs(): Unit = {
     val srcSize = 64
@@ -2492,9 +2456,10 @@ class ArraysOfFloatTestOnJDK9 {
     assertArrayEquals(
       s"array range contents",
       Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
-      Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx),
-      -0.0f
+      Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx)
+     , -0.0F
     )
+
 
     // same ranges do not match
     assertFalse(
@@ -2514,9 +2479,8 @@ class ArraysOfFloatTestOnJDK9 {
     assertFalse(
       s"changed array range contents",
       Arrays.equals(
-        Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
-        Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx)
-      )
+	Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
+	Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx))
     )
 
     // ranges which used to match no longer do when content in one has changed.
@@ -2530,25 +2494,23 @@ class ArraysOfFloatTestOnJDK9 {
     assertFalse(
       "common prefix but arrA.length < arrB.length",
       Arrays.equals(
-        arrA,
-        t1FromIdx,
-        t3ToIdx,
-        arrA,
-        t1FromIdx,
-        t1ToIdx
-      )
+	arrA,
+	t1FromIdx,
+	t3ToIdx,
+	arrA,
+	t1FromIdx,
+	t1ToIdx)
     )
 
     assertFalse(
       "common prefix but arrA.length > arrB.length",
       Arrays.equals(
-        arrA,
-        t1FromIdx,
-        t1ToIdx,
-        arrA,
-        t1FromIdx,
-        t3ToIdx
-      )
+	arrA,
+	t1FromIdx,
+	t1ToIdx,
+	arrA,
+	t1FromIdx,
+	t3ToIdx)
     )
   }
 
@@ -2696,9 +2658,10 @@ class ArraysOfFloatTestOnJDK9 {
     assertArrayEquals(
       s"array range contents",
       Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
-      Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx),
-      -0.0f
+      Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx)
+     , -0.0F
     )
+
 
     // same ranges do not match
     assertEquals(
@@ -2721,9 +2684,8 @@ class ArraysOfFloatTestOnJDK9 {
     assertFalse(
       s"changed array range contents",
       Arrays.equals(
-        Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
-        Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx)
-      )
+	Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
+	Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx))
     )
 
     // ranges which used to match no longer do when content in one has changed.
@@ -2741,26 +2703,24 @@ class ArraysOfFloatTestOnJDK9 {
       "common prefix but arrA.length < arrB.length",
       expectedShortMismatchAtIdx,
       Arrays.mismatch(
-        arrA,
-        t1FromIdx,
-        t3ToIdx,
-        arrA,
-        t1FromIdx,
-        t1ToIdx
-      )
+	arrA,
+	t1FromIdx,
+	t3ToIdx,
+	arrA,
+	t1FromIdx,
+	t1ToIdx)
     )
 
     assertEquals(
       "common prefix but arrA.length > arrB.length",
       expectedShortMismatchAtIdx,
       Arrays.mismatch(
-        arrA,
-        t1FromIdx,
-        t1ToIdx,
-        arrA,
-        t1FromIdx,
-        t3ToIdx
-      )
+	arrA,
+	t1FromIdx,
+	t1ToIdx,
+	arrA,
+	t1FromIdx,
+	t3ToIdx)
     )
   }
 }
@@ -2771,8 +2731,7 @@ class ArraysOfIntTestOnJDK9 {
     val srcSize = 16
 
     val changeAt = 3
-    val changeTo =
-      jl.Integer.MIN_VALUE
+    val changeTo = jl.Integer.MIN_VALUE
 
     val arrA = new Array[scala.Int](srcSize)
     for (idx <- 0 until srcSize)
@@ -2866,8 +2825,7 @@ class ArraysOfIntTestOnJDK9 {
     val t2ToIdx = t1ToIdx + t1Shift
 
     val changeBAt = t2FromIdx + 2 // an arbitrary site
-    val changeTo =
-      jl.Integer.MIN_VALUE
+    val changeTo = jl.Integer.MIN_VALUE
 
     val arrB = new Array[scala.Int](srcSize)
     for (idx <- t2FromIdx until srcSize) // fill extra length to entice bugs
@@ -2876,8 +2834,9 @@ class ArraysOfIntTestOnJDK9 {
     assertArrayEquals(
       s"array range contents",
       Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
-      Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx)
+      Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx),
     )
+
 
     // same ranges do not match
     assertNotEquals(
@@ -2898,9 +2857,8 @@ class ArraysOfIntTestOnJDK9 {
     assertFalse(
       s"changed array range contents",
       Arrays.equals(
-        Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
-        Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx)
-      )
+	Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
+	Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx))
     )
 
     // ranges which used to match no longer do when content in one has changed.
@@ -2914,25 +2872,23 @@ class ArraysOfIntTestOnJDK9 {
     assertTrue(
       "common prefix but arrA.length < arrB.length, return former",
       Arrays.compare(
-        arrA,
-        t1FromIdx,
-        t3ToIdx,
-        arrA,
-        t1FromIdx,
-        t1ToIdx
-      ) < 0
+	arrA,
+	t1FromIdx,
+	t3ToIdx,
+	arrA,
+	t1FromIdx,
+	t1ToIdx) < 0
     )
 
     assertTrue(
       "common prefix but arrA.length > arrB.length, return later",
       Arrays.compare(
-        arrA,
-        t1FromIdx,
-        t1ToIdx,
-        arrA,
-        t1FromIdx,
-        t3ToIdx
-      ) > 0
+	arrA,
+	t1FromIdx,
+	t1ToIdx,
+	arrA,
+	t1FromIdx,
+	t3ToIdx) > 0
     )
   }
 
@@ -3010,9 +2966,8 @@ class ArraysOfIntTestOnJDK9 {
     assertFalse(
       s"changed array range contents",
       Arrays.equals(
-        Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
-        Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx)
-      )
+	Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
+	Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx))
     )
 
     // Test that signed & unsigned comparison results differ.
@@ -3024,13 +2979,12 @@ class ArraysOfIntTestOnJDK9 {
     assertTrue(
       s"unsigned: a[${t1FromIdx}, ${t1ToIdx}) < b[${t2FromIdx}, ${t2ToIdx})",
       Arrays.compareUnsigned(
-        arrA,
-        t1FromIdx,
-        t1ToIdx,
-        arrB,
-        t2FromIdx,
-        t2ToIdx
-      ) < 0
+	arrA,
+	t1FromIdx,
+	t1ToIdx,
+	arrB,
+	t2FromIdx,
+	t2ToIdx) < 0
     )
 
     // ranges which used to match no longer do when content in one has changed.
@@ -3039,25 +2993,23 @@ class ArraysOfIntTestOnJDK9 {
     assertTrue(
       "common prefix but arrA.length < arrB.length, return former",
       Arrays.compareUnsigned(
-        arrA,
-        t1FromIdx,
-        t3ToIdx,
-        arrA,
-        t1FromIdx,
-        t1ToIdx
-      ) < 0
+	arrA,
+	t1FromIdx,
+	t3ToIdx,
+	arrA,
+	t1FromIdx,
+	t1ToIdx) < 0
     )
 
     assertTrue(
       "common prefix but arrA.length > arrB.length, return later",
       Arrays.compareUnsigned(
-        arrA,
-        t1FromIdx,
-        t1ToIdx,
-        arrA,
-        t1FromIdx,
-        t3ToIdx
-      ) > 0
+	arrA,
+	t1FromIdx,
+	t1ToIdx,
+	arrA,
+	t1FromIdx,
+	t3ToIdx) > 0
     )
   }
 
@@ -3141,6 +3093,7 @@ class ArraysOfIntTestOnJDK9 {
       Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx)
     )
 
+
     // same ranges do not match
     assertFalse(
       s"a[${t1FromIdx}, ${t1ToIdx}) != b[${t1FromIdx}, ${t1ToIdx})",
@@ -3159,9 +3112,8 @@ class ArraysOfIntTestOnJDK9 {
     assertFalse(
       s"changed array range contents",
       Arrays.equals(
-        Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
-        Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx)
-      )
+	Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
+	Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx))
     )
 
     // ranges which used to match no longer do when content in one has changed.
@@ -3175,25 +3127,23 @@ class ArraysOfIntTestOnJDK9 {
     assertFalse(
       "common prefix but arrA.length < arrB.length",
       Arrays.equals(
-        arrA,
-        t1FromIdx,
-        t3ToIdx,
-        arrA,
-        t1FromIdx,
-        t1ToIdx
-      )
+	arrA,
+	t1FromIdx,
+	t3ToIdx,
+	arrA,
+	t1FromIdx,
+	t1ToIdx)
     )
 
     assertFalse(
       "common prefix but arrA.length > arrB.length",
       Arrays.equals(
-        arrA,
-        t1FromIdx,
-        t1ToIdx,
-        arrA,
-        t1FromIdx,
-        t3ToIdx
-      )
+	arrA,
+	t1FromIdx,
+	t1ToIdx,
+	arrA,
+	t1FromIdx,
+	t3ToIdx)
     )
   }
 
@@ -3344,6 +3294,7 @@ class ArraysOfIntTestOnJDK9 {
       Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx)
     )
 
+
     // same ranges do not match
     assertEquals(
       s"arrA[${t1FromIdx}, ${t1ToIdx}) == arrB[${t1FromIdx}, ${t1ToIdx})",
@@ -3365,9 +3316,8 @@ class ArraysOfIntTestOnJDK9 {
     assertFalse(
       s"changed array range contents",
       Arrays.equals(
-        Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
-        Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx)
-      )
+	Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
+	Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx))
     )
 
     // ranges which used to match no longer do when content in one has changed.
@@ -3385,26 +3335,24 @@ class ArraysOfIntTestOnJDK9 {
       "common prefix but arrA.length < arrB.length",
       expectedShortMismatchAtIdx,
       Arrays.mismatch(
-        arrA,
-        t1FromIdx,
-        t3ToIdx,
-        arrA,
-        t1FromIdx,
-        t1ToIdx
-      )
+	arrA,
+	t1FromIdx,
+	t3ToIdx,
+	arrA,
+	t1FromIdx,
+	t1ToIdx)
     )
 
     assertEquals(
       "common prefix but arrA.length > arrB.length",
       expectedShortMismatchAtIdx,
       Arrays.mismatch(
-        arrA,
-        t1FromIdx,
-        t1ToIdx,
-        arrA,
-        t1FromIdx,
-        t3ToIdx
-      )
+	arrA,
+	t1FromIdx,
+	t1ToIdx,
+	arrA,
+	t1FromIdx,
+	t3ToIdx)
     )
   }
 }
@@ -3415,8 +3363,7 @@ class ArraysOfLongTestOnJDK9 {
     val srcSize = 16
 
     val changeAt = 3
-    val changeTo =
-      jl.Long.MIN_VALUE
+    val changeTo = jl.Long.MIN_VALUE
 
     val arrA = new Array[scala.Long](srcSize)
     for (idx <- 0 until srcSize)
@@ -3510,8 +3457,7 @@ class ArraysOfLongTestOnJDK9 {
     val t2ToIdx = t1ToIdx + t1Shift
 
     val changeBAt = t2FromIdx + 2 // an arbitrary site
-    val changeTo =
-      jl.Long.MIN_VALUE
+    val changeTo = jl.Long.MIN_VALUE
 
     val arrB = new Array[scala.Long](srcSize)
     for (idx <- t2FromIdx until srcSize) // fill extra length to entice bugs
@@ -3520,8 +3466,9 @@ class ArraysOfLongTestOnJDK9 {
     assertArrayEquals(
       s"array range contents",
       Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
-      Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx)
+      Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx),
     )
+
 
     // same ranges do not match
     assertNotEquals(
@@ -3542,9 +3489,8 @@ class ArraysOfLongTestOnJDK9 {
     assertFalse(
       s"changed array range contents",
       Arrays.equals(
-        Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
-        Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx)
-      )
+	Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
+	Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx))
     )
 
     // ranges which used to match no longer do when content in one has changed.
@@ -3558,25 +3504,23 @@ class ArraysOfLongTestOnJDK9 {
     assertTrue(
       "common prefix but arrA.length < arrB.length, return former",
       Arrays.compare(
-        arrA,
-        t1FromIdx,
-        t3ToIdx,
-        arrA,
-        t1FromIdx,
-        t1ToIdx
-      ) < 0
+	arrA,
+	t1FromIdx,
+	t3ToIdx,
+	arrA,
+	t1FromIdx,
+	t1ToIdx) < 0
     )
 
     assertTrue(
       "common prefix but arrA.length > arrB.length, return later",
       Arrays.compare(
-        arrA,
-        t1FromIdx,
-        t1ToIdx,
-        arrA,
-        t1FromIdx,
-        t3ToIdx
-      ) > 0
+	arrA,
+	t1FromIdx,
+	t1ToIdx,
+	arrA,
+	t1FromIdx,
+	t3ToIdx) > 0
     )
   }
 
@@ -3654,9 +3598,8 @@ class ArraysOfLongTestOnJDK9 {
     assertFalse(
       s"changed array range contents",
       Arrays.equals(
-        Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
-        Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx)
-      )
+	Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
+	Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx))
     )
 
     // Test that signed & unsigned comparison results differ.
@@ -3668,13 +3611,12 @@ class ArraysOfLongTestOnJDK9 {
     assertTrue(
       s"unsigned: a[${t1FromIdx}, ${t1ToIdx}) < b[${t2FromIdx}, ${t2ToIdx})",
       Arrays.compareUnsigned(
-        arrA,
-        t1FromIdx,
-        t1ToIdx,
-        arrB,
-        t2FromIdx,
-        t2ToIdx
-      ) < 0
+	arrA,
+	t1FromIdx,
+	t1ToIdx,
+	arrB,
+	t2FromIdx,
+	t2ToIdx) < 0
     )
 
     // ranges which used to match no longer do when content in one has changed.
@@ -3683,25 +3625,23 @@ class ArraysOfLongTestOnJDK9 {
     assertTrue(
       "common prefix but arrA.length < arrB.length, return former",
       Arrays.compareUnsigned(
-        arrA,
-        t1FromIdx,
-        t3ToIdx,
-        arrA,
-        t1FromIdx,
-        t1ToIdx
-      ) < 0
+	arrA,
+	t1FromIdx,
+	t3ToIdx,
+	arrA,
+	t1FromIdx,
+	t1ToIdx) < 0
     )
 
     assertTrue(
       "common prefix but arrA.length > arrB.length, return later",
       Arrays.compareUnsigned(
-        arrA,
-        t1FromIdx,
-        t1ToIdx,
-        arrA,
-        t1FromIdx,
-        t3ToIdx
-      ) > 0
+	arrA,
+	t1FromIdx,
+	t1ToIdx,
+	arrA,
+	t1FromIdx,
+	t3ToIdx) > 0
     )
   }
 
@@ -3785,6 +3725,7 @@ class ArraysOfLongTestOnJDK9 {
       Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx)
     )
 
+
     // same ranges do not match
     assertFalse(
       s"a[${t1FromIdx}, ${t1ToIdx}) != b[${t1FromIdx}, ${t1ToIdx})",
@@ -3803,9 +3744,8 @@ class ArraysOfLongTestOnJDK9 {
     assertFalse(
       s"changed array range contents",
       Arrays.equals(
-        Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
-        Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx)
-      )
+	Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
+	Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx))
     )
 
     // ranges which used to match no longer do when content in one has changed.
@@ -3819,25 +3759,23 @@ class ArraysOfLongTestOnJDK9 {
     assertFalse(
       "common prefix but arrA.length < arrB.length",
       Arrays.equals(
-        arrA,
-        t1FromIdx,
-        t3ToIdx,
-        arrA,
-        t1FromIdx,
-        t1ToIdx
-      )
+	arrA,
+	t1FromIdx,
+	t3ToIdx,
+	arrA,
+	t1FromIdx,
+	t1ToIdx)
     )
 
     assertFalse(
       "common prefix but arrA.length > arrB.length",
       Arrays.equals(
-        arrA,
-        t1FromIdx,
-        t1ToIdx,
-        arrA,
-        t1FromIdx,
-        t3ToIdx
-      )
+	arrA,
+	t1FromIdx,
+	t1ToIdx,
+	arrA,
+	t1FromIdx,
+	t3ToIdx)
     )
   }
 
@@ -3988,6 +3926,7 @@ class ArraysOfLongTestOnJDK9 {
       Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx)
     )
 
+
     // same ranges do not match
     assertEquals(
       s"arrA[${t1FromIdx}, ${t1ToIdx}) == arrB[${t1FromIdx}, ${t1ToIdx})",
@@ -4009,9 +3948,8 @@ class ArraysOfLongTestOnJDK9 {
     assertFalse(
       s"changed array range contents",
       Arrays.equals(
-        Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
-        Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx)
-      )
+	Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
+	Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx))
     )
 
     // ranges which used to match no longer do when content in one has changed.
@@ -4029,26 +3967,24 @@ class ArraysOfLongTestOnJDK9 {
       "common prefix but arrA.length < arrB.length",
       expectedShortMismatchAtIdx,
       Arrays.mismatch(
-        arrA,
-        t1FromIdx,
-        t3ToIdx,
-        arrA,
-        t1FromIdx,
-        t1ToIdx
-      )
+	arrA,
+	t1FromIdx,
+	t3ToIdx,
+	arrA,
+	t1FromIdx,
+	t1ToIdx)
     )
 
     assertEquals(
       "common prefix but arrA.length > arrB.length",
       expectedShortMismatchAtIdx,
       Arrays.mismatch(
-        arrA,
-        t1FromIdx,
-        t1ToIdx,
-        arrA,
-        t1FromIdx,
-        t3ToIdx
-      )
+	arrA,
+	t1FromIdx,
+	t1ToIdx,
+	arrA,
+	t1FromIdx,
+	t3ToIdx)
     )
   }
 }
@@ -4059,8 +3995,7 @@ class ArraysOfShortTestOnJDK9 {
     val srcSize = 16
 
     val changeAt = 3
-    val changeTo =
-      jl.Short.MIN_VALUE
+    val changeTo = jl.Short.MIN_VALUE
 
     val arrA = new Array[scala.Short](srcSize)
     for (idx <- 0 until srcSize)
@@ -4154,8 +4089,7 @@ class ArraysOfShortTestOnJDK9 {
     val t2ToIdx = t1ToIdx + t1Shift
 
     val changeBAt = t2FromIdx + 2 // an arbitrary site
-    val changeTo =
-      jl.Short.MIN_VALUE
+    val changeTo = jl.Short.MIN_VALUE
 
     val arrB = new Array[scala.Short](srcSize)
     for (idx <- t2FromIdx until srcSize) // fill extra length to entice bugs
@@ -4164,8 +4098,9 @@ class ArraysOfShortTestOnJDK9 {
     assertArrayEquals(
       s"array range contents",
       Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
-      Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx)
+      Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx),
     )
+
 
     // same ranges do not match
     assertNotEquals(
@@ -4186,9 +4121,8 @@ class ArraysOfShortTestOnJDK9 {
     assertFalse(
       s"changed array range contents",
       Arrays.equals(
-        Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
-        Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx)
-      )
+	Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
+	Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx))
     )
 
     // ranges which used to match no longer do when content in one has changed.
@@ -4202,25 +4136,23 @@ class ArraysOfShortTestOnJDK9 {
     assertTrue(
       "common prefix but arrA.length < arrB.length, return former",
       Arrays.compare(
-        arrA,
-        t1FromIdx,
-        t3ToIdx,
-        arrA,
-        t1FromIdx,
-        t1ToIdx
-      ) < 0
+	arrA,
+	t1FromIdx,
+	t3ToIdx,
+	arrA,
+	t1FromIdx,
+	t1ToIdx) < 0
     )
 
     assertTrue(
       "common prefix but arrA.length > arrB.length, return later",
       Arrays.compare(
-        arrA,
-        t1FromIdx,
-        t1ToIdx,
-        arrA,
-        t1FromIdx,
-        t3ToIdx
-      ) > 0
+	arrA,
+	t1FromIdx,
+	t1ToIdx,
+	arrA,
+	t1FromIdx,
+	t3ToIdx) > 0
     )
   }
 
@@ -4298,9 +4230,8 @@ class ArraysOfShortTestOnJDK9 {
     assertFalse(
       s"changed array range contents",
       Arrays.equals(
-        Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
-        Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx)
-      )
+	Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
+	Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx))
     )
 
     // Test that signed & unsigned comparison results differ.
@@ -4312,13 +4243,12 @@ class ArraysOfShortTestOnJDK9 {
     assertTrue(
       s"unsigned: a[${t1FromIdx}, ${t1ToIdx}) < b[${t2FromIdx}, ${t2ToIdx})",
       Arrays.compareUnsigned(
-        arrA,
-        t1FromIdx,
-        t1ToIdx,
-        arrB,
-        t2FromIdx,
-        t2ToIdx
-      ) < 0
+	arrA,
+	t1FromIdx,
+	t1ToIdx,
+	arrB,
+	t2FromIdx,
+	t2ToIdx) < 0
     )
 
     // ranges which used to match no longer do when content in one has changed.
@@ -4327,25 +4257,23 @@ class ArraysOfShortTestOnJDK9 {
     assertTrue(
       "common prefix but arrA.length < arrB.length, return former",
       Arrays.compareUnsigned(
-        arrA,
-        t1FromIdx,
-        t3ToIdx,
-        arrA,
-        t1FromIdx,
-        t1ToIdx
-      ) < 0
+	arrA,
+	t1FromIdx,
+	t3ToIdx,
+	arrA,
+	t1FromIdx,
+	t1ToIdx) < 0
     )
 
     assertTrue(
       "common prefix but arrA.length > arrB.length, return later",
       Arrays.compareUnsigned(
-        arrA,
-        t1FromIdx,
-        t1ToIdx,
-        arrA,
-        t1FromIdx,
-        t3ToIdx
-      ) > 0
+	arrA,
+	t1FromIdx,
+	t1ToIdx,
+	arrA,
+	t1FromIdx,
+	t3ToIdx) > 0
     )
   }
 
@@ -4429,6 +4357,7 @@ class ArraysOfShortTestOnJDK9 {
       Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx)
     )
 
+
     // same ranges do not match
     assertFalse(
       s"a[${t1FromIdx}, ${t1ToIdx}) != b[${t1FromIdx}, ${t1ToIdx})",
@@ -4447,9 +4376,8 @@ class ArraysOfShortTestOnJDK9 {
     assertFalse(
       s"changed array range contents",
       Arrays.equals(
-        Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
-        Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx)
-      )
+	Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
+	Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx))
     )
 
     // ranges which used to match no longer do when content in one has changed.
@@ -4463,25 +4391,23 @@ class ArraysOfShortTestOnJDK9 {
     assertFalse(
       "common prefix but arrA.length < arrB.length",
       Arrays.equals(
-        arrA,
-        t1FromIdx,
-        t3ToIdx,
-        arrA,
-        t1FromIdx,
-        t1ToIdx
-      )
+	arrA,
+	t1FromIdx,
+	t3ToIdx,
+	arrA,
+	t1FromIdx,
+	t1ToIdx)
     )
 
     assertFalse(
       "common prefix but arrA.length > arrB.length",
       Arrays.equals(
-        arrA,
-        t1FromIdx,
-        t1ToIdx,
-        arrA,
-        t1FromIdx,
-        t3ToIdx
-      )
+	arrA,
+	t1FromIdx,
+	t1ToIdx,
+	arrA,
+	t1FromIdx,
+	t3ToIdx)
     )
   }
 
@@ -4632,6 +4558,7 @@ class ArraysOfShortTestOnJDK9 {
       Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx)
     )
 
+
     // same ranges do not match
     assertEquals(
       s"arrA[${t1FromIdx}, ${t1ToIdx}) == arrB[${t1FromIdx}, ${t1ToIdx})",
@@ -4653,9 +4580,8 @@ class ArraysOfShortTestOnJDK9 {
     assertFalse(
       s"changed array range contents",
       Arrays.equals(
-        Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
-        Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx)
-      )
+	Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
+	Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx))
     )
 
     // ranges which used to match no longer do when content in one has changed.
@@ -4673,26 +4599,24 @@ class ArraysOfShortTestOnJDK9 {
       "common prefix but arrA.length < arrB.length",
       expectedShortMismatchAtIdx,
       Arrays.mismatch(
-        arrA,
-        t1FromIdx,
-        t3ToIdx,
-        arrA,
-        t1FromIdx,
-        t1ToIdx
-      )
+	arrA,
+	t1FromIdx,
+	t3ToIdx,
+	arrA,
+	t1FromIdx,
+	t1ToIdx)
     )
 
     assertEquals(
       "common prefix but arrA.length > arrB.length",
       expectedShortMismatchAtIdx,
       Arrays.mismatch(
-        arrA,
-        t1FromIdx,
-        t1ToIdx,
-        arrA,
-        t1FromIdx,
-        t3ToIdx
-      )
+	arrA,
+	t1FromIdx,
+	t1ToIdx,
+	arrA,
+	t1FromIdx,
+	t3ToIdx)
     )
   }
 }
@@ -4765,7 +4689,6 @@ class ArraysOfCharCornerCasesTestOnJDK9 {
     val seed = 20250329 // An arbitrary value
     val rng = new ju.Random(seed)
 
-// format: off
     /* 0x0370 to 0x03FF is the Unicode "Greek and Coptic" block
      * Some of the codepoints in the block are reserved and do not
      * display well when debugging. Otherwise, throw a broad assortment
@@ -4773,11 +4696,9 @@ class ArraysOfCharCornerCasesTestOnJDK9 {
      * implementation under test.
      */
     val reservedCodePoints = ju.List.of(
-        0x0378, 0x0379,
-        0x0380, 0x0381, 0x0382, 0x0383, 0x038b, 0x038d,
-        0x03a2
-      )
-// format: on
+	0x0378, 0x0379,
+	0x0380, 0x0381, 0x0382, 0x0383, 0x038b, 0x038d,
+	0x03a2)
 
     rng
       .ints(0x0370, 0x03ff)
@@ -4890,11 +4811,11 @@ class ArraysOfCharCornerCasesTestOnJDK9 {
 
 class ArraysOfDoubleCornerCasesTestOnJDK9 {
   /* The exerciseDouble* tests check that the JDK behavior for compareTo is
-   * being followed, not IEEE 754 specification.
+   * being followed, not the IEEE 754 specification.
    */
 
   @Test def exerciseDoubleNegativeZero: Unit = {
-    /* See Scala Native Issues #3982 & #3986 re SN bugs with -0.0.
+    /* See Scala Native Issues #4281, #3982 & #3986 re SN bugs with -0.0.
      *
      * Also there is a bug in the SN JDK8 implementation of
      * Arrays.equals(a, b) for Double and probably also for Float.
@@ -4937,10 +4858,10 @@ class ArraysOfDoubleCornerCasesTestOnJDK9 {
     )
 
     /* Scala Native Issue #3986 prevents this block from passing on SN.
-     * 
+     *
      * The Test passes manually when built with Debug mode. It fails
      * with ReleaseFast. ReleaseFull is failing to build at all.
-     * 
+     *
      * It is difficult to use LinktimeInfo.debugMode in a Test which
      * must also run on the JVM.
      *
@@ -4950,9 +4871,8 @@ class ArraysOfDoubleCornerCasesTestOnJDK9 {
      */
     if (Platform.executingInJVM) {
       assertFalse(
-        "!arrA.equals(arrB), 6 Arg",
-        Arrays.equals(arrA, 0, arrA.length, arrB, 0, arrB.length)
-      )
+	"!arrA.equals(arrB), 6 Arg",
+	Arrays.equals(arrA, 0, arrA.length, arrB, 0, arrB.length))
 
       /* Use the 2 argument overload to cross check the JDK 9 six argument
        * implementation and the historical method: results should be the same.
@@ -4965,15 +4885,13 @@ class ArraysOfDoubleCornerCasesTestOnJDK9 {
         assertFalse("!arrA.equals(arrBb), 2 arg", Arrays.equals(arrA, arrB))
 
       assertTrue(
-        "arrA > arrB",
-        Arrays.compare(arrA, 0, arrA.length, arrB, 0, arrB.length) > 0
-      )
+	"arrA > arrB",
+	Arrays.compare(arrA, 0, arrA.length, arrB, 0, arrB.length) > 0)
 
       assertEquals(
-        "mismatch position,",
-        changeAt,
-        Arrays.mismatch(arrA, 0, arrA.length, arrB, 0, arrB.length)
-      )
+	"mismatch position,",
+	changeAt,
+	Arrays.mismatch(arrA, 0, arrA.length, arrB, 0, arrB.length))
     }
   }
 
@@ -5029,14 +4947,12 @@ class ArraysOfDoubleCornerCasesTestOnJDK9 {
     assertEquals(
       "arrA.compareTo(arrB)",
       0,
-      Arrays.compare(arrA, 0, arrA.length, arrB, 0, arrB.length)
-    )
+      Arrays.compare(arrA, 0, arrA.length, arrB, 0, arrB.length))
 
     assertEquals(
       "mismatch position,",
       -1,
-      Arrays.mismatch(arrA, 0, arrA.length, arrB, 0, arrB.length)
-    )
+      Arrays.mismatch(arrA, 0, arrA.length, arrB, 0, arrB.length))
   }
 
   @Test def exerciseDoublePayloadNaNs: Unit = {
@@ -5161,9 +5077,8 @@ class ArraysOfFloatCornerCasesTestOnJDK9 {
      */
     if (Platform.executingInJVM) {
       assertFalse(
-        "!arrA.equals(arrB), 6 Arg",
-        Arrays.equals(arrA, 0, arrA.length, arrB, 0, arrB.length)
-      )
+	"!arrA.equals(arrB), 6 Arg",
+	Arrays.equals(arrA, 0, arrA.length, arrB, 0, arrB.length))
 
       /* Use the 2 argument overload to cross check the JDK 9 six argument
        * implementation and the historical method: results should be the same.
@@ -5176,15 +5091,13 @@ class ArraysOfFloatCornerCasesTestOnJDK9 {
         assertFalse("!arrA.equals(arrB), 2 arg", Arrays.equals(arrA, arrB))
 
       assertTrue(
-        "arrA > arrB",
-        Arrays.compare(arrA, 0, arrA.length, arrB, 0, arrB.length) > 0
-      )
+	"arrA > arrB",
+	Arrays.compare(arrA, 0, arrA.length, arrB, 0, arrB.length) > 0)
 
       assertEquals(
-        "mismatch position,",
-        changeAt,
-        Arrays.mismatch(arrA, 0, arrA.length, arrB, 0, arrB.length)
-      )
+	"mismatch position,",
+	changeAt,
+	Arrays.mismatch(arrA, 0, arrA.length, arrB, 0, arrB.length))
     }
   }
 
@@ -5228,14 +5141,13 @@ class ArraysOfFloatCornerCasesTestOnJDK9 {
     /* Scala Native Issue #3986 prevents this from running on Scala Native.
      * The Test passes manually when built with Debug mode. It fails
      * with ReleaseFast. ReleaseFull is failing to build at all.
-     * 
+     *
      * It is difficult to use LinktimeInfo.debugMode in a Test which
      * must also run on the JVM.
      */
     assertTrue(
       "arrA.equals(arrB), 6 Arg",
-      Arrays.equals(arrA, 0, arrA.length, arrB, 0, arrB.length)
-    )
+      Arrays.equals(arrA, 0, arrA.length, arrB, 0, arrB.length))
 
     /* Use the 2 argument overload to cross check the JDK 9 six argument
      * implementation and the historical method: results should be the same.

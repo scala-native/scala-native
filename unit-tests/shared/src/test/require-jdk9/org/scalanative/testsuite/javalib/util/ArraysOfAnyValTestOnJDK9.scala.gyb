@@ -10,11 +10,6 @@ package org.scalanative.testsuite.javalib.util
 ##     ${thisDirectory}/ArraysOfAnyValTestOnJDK9.scala.gyb \
 ##     --line-directive '' \
 ##     -o ${thisDirectory}/ArraysOfAnyValTestOnJDK9.scala
-##
-## Then manually run scripts/scalafmt on the output file.
-## The generated code is formatted but not to the exact standard used by CI.
-## Allowing such slight format differences, which scalafmt will easily
-## touch-up, makes this file much simpler.
 }%
 %{
    ## Use strict, exact floating point comparisons.
@@ -23,39 +18,41 @@ package org.scalanative.testsuite.javalib.util
    epsilon = -0.0
 
    variants = [
-     # scala.T,  javaType,    hasUnsignedName
+     # scala.T,	 javaType,    hasUnsignedName
      ('Boolean', 'Boolean',   False),
-     ('Byte',    'Byte',      True),
-     ('Char',    'Character', False),
-     ('Double',  'Double',    False),
-     ('Float',   'Float',     False),
-     ('Int',     'Integer',   True),
-     ('Long',    'Long',      True),
-     ('Short',   'Short',     True)
+     ('Byte',	 'Byte',      True),
+     ('Char',	 'Character', False),
+     ('Double',	 'Double',    False),
+     ('Float',	 'Float',     False),
+     ('Int',	 'Integer',   True),
+     ('Long',	 'Long',      True),
+     ('Short',	 'Short',     True)
    ]
 }%
 
-  /* This code is manually generated from ArraysOfAnyValTestOnJDK9.scala.gyb.
-   * Any edits here and not in the .gyb may be lost the next time this file is
-   * generated.
-   */
+/* This code is generated from ArraysOfAnyValTestOnJDK9.scala.gyb.
+ * Any edits here and not in the .gyb will be lost when this file is next
+ * generated.
+ */
 
-  /* The name of this file is ArraysOfAnyValTestOnJDK9.scala. That
-   * correspond ArraysOfObjectTestOnJDK9.scala, since Objects are AnyRefs.
-   *
-   * That name and the practice in ArraysOfObjectTestOnJDK9.scala would lead
-   * one to believe that an 'ArraysOfAnyValTestOnJDK9' exists but it does not.
-   * One must run tests by type, say 'ArraysOfByteTestOnJDK9'.
-   *
-   * Having all of the 'ArrayOf<type>TestOnJDK9' classes in one file
-   * greatly simplifies the .gyb file.
-   *
-   * Having separate classes, by type, avoids having one unwieldy, humongous
-   * 'ArraysOfAnyValTestOnJDK9' class.
-   *
-   * Scala Native 'testsuite' does not allow a Suite of Test classes under
-   * one enclosing class. Room for improvement.
-   */
+/* The name of this file is ArraysOfAnyValTestOnJDK9.scala. The
+ * correspond ArraysOfObjectTestOnJDK9.scala, since Objects are AnyRefs.
+ *
+ * That name and the practice in ArraysOfObjectTestOnJDK9.scala would lead
+ * one to believe that an 'ArraysOfAnyValTestOnJDK9' exists but it does not.
+ * One must run tests by type, say 'ArraysOfByteTestOnJDK9'.
+ *
+ * Having all of the 'ArrayOf<type>TestOnJDK9' classes in one file
+ * greatly simplifies the .gyb file.
+ *
+ * Having separate classes, by type, avoids having one unwieldy, humongous
+ * 'ArraysOfAnyValTestOnJDK9' class.
+ *
+ * Scala Native 'testsuite' does not allow a Suite of Test classes under
+ * one enclosing class. Room for improvement.
+ */
+
+// format: off
 
 import java.{lang => jl}
 import java.{util => ju}
@@ -76,20 +73,18 @@ class ArraysOf${T}TestOnJDK9 {
     val srcSize = 16
 
     val changeAt = 3
-    val changeTo =
 % if T == 'Boolean':
-      false
+    val changeTo = false
 % else:
-      jl.${javaType}.MIN_VALUE
+    val changeTo = jl.${javaType}.MIN_VALUE
 % end
 
     val arrA = new Array[scala.${T}](srcSize)
     for (idx <- 0 until srcSize)
-     arrA(idx) = 
 % if T == 'Boolean':
-       true
+      arrA(idx) = true
 % else:
-       (idx + 1).to${T}
+      arrA(idx) = (idx + 1).to${T}
 % end
 
     val arrA2 = Arrays.copyOf(arrA, srcSize)
@@ -169,11 +164,10 @@ class ArraysOf${T}TestOnJDK9 {
 
     val arrA = new Array[scala.${T}](srcSize)
     for (idx <- 0 until srcSize)
-      arrA(idx) = 
 % if T == 'Boolean':
-        true
+      arrA(idx) = true
 % else:
-        (idx + 1).to${T}
+      arrA(idx) = (idx + 1).to${T}
 % end
 
     val t1Shift = 20
@@ -185,31 +179,29 @@ class ArraysOf${T}TestOnJDK9 {
     val t2ToIdx = t1ToIdx + t1Shift
 
     val changeBAt = t2FromIdx + 2 // an arbitrary site
-    val changeTo =
 % if T == 'Boolean':
-      false
+    val changeTo = false
 % else:
-      jl.${javaType}.MIN_VALUE
+    val changeTo = jl.${javaType}.MIN_VALUE
 % end
 
     val arrB = new Array[scala.${T}](srcSize)
     for (idx <- t2FromIdx until srcSize) // fill extra length to entice bugs
-      arrB(idx) = 
 % if T == 'Boolean':
-        true
+      arrB(idx) = true
 % else:
-        (idx - t1Shift + 1).to${T}
+      arrB(idx) = (idx - t1Shift + 1).to${T}
 % end
 
     assertArrayEquals(
       s"array range contents",
       Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
-      Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx)
+      Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx),
 % if T == 'Double':
-     , ${epsilon}D
+      ${epsilon}D
 % end
 % if T == 'Float':
-     , ${epsilon}F
+      ${epsilon}F
 % end
     )
 
@@ -236,9 +228,8 @@ class ArraysOf${T}TestOnJDK9 {
     assertFalse(
       s"changed array range contents",
       Arrays.equals(
-        Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
-        Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx)
-      )
+	Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
+	Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx))
     )
 
     // ranges which used to match no longer do when content in one has changed.
@@ -252,25 +243,23 @@ class ArraysOf${T}TestOnJDK9 {
     assertTrue(
       "common prefix but arrA.length < arrB.length, return former",
       Arrays.compare(
-        arrA,
-        t1FromIdx,
-        t3ToIdx,
-        arrA,
-        t1FromIdx,
-        t1ToIdx
-      ) < 0
+	arrA,
+	t1FromIdx,
+	t3ToIdx,
+	arrA,
+	t1FromIdx,
+	t1ToIdx) < 0
     )
 
     assertTrue(
       "common prefix but arrA.length > arrB.length, return later",
       Arrays.compare(
-        arrA,
-        t1FromIdx,
-        t1ToIdx,
-        arrA,
-        t1FromIdx,
-        t3ToIdx
-      ) > 0
+	arrA,
+	t1FromIdx,
+	t1ToIdx,
+	arrA,
+	t1FromIdx,
+	t3ToIdx) > 0
     )
   }
 
@@ -283,11 +272,10 @@ class ArraysOf${T}TestOnJDK9 {
 
     val arrA = new Array[scala.${T}](srcSize)
     for (idx <- 0 until srcSize)
-      arrA(idx) = 
 % if T == 'Boolean':
-        false
+      arrA(idx) = false
 % else:
-        (idx + 1).to${T}
+      arrA(idx) = (idx + 1).to${T}
 % end
 
     val arrA2 = Arrays.copyOf(arrA, srcSize)
@@ -312,11 +300,10 @@ class ArraysOf${T}TestOnJDK9 {
 
     val arrA = new Array[scala.${T}](srcSize)
     for (idx <- 0 until srcSize)
-      arrA(idx) = 
 % if T == 'Boolean':
-        false
+      arrA(idx) = false
 % else:
-        (idx + 1).to${T}
+      arrA(idx) = (idx + 1).to${T}
 % end
 
     val t1Shift = 20
@@ -328,15 +315,14 @@ class ArraysOf${T}TestOnJDK9 {
     val t2ToIdx = t1ToIdx + t1Shift
 
     val changeBAt = t2FromIdx + 4 // an arbitrary site
-    val changeTo = jl.${javaType}.MIN_VALUE 
+    val changeTo = jl.${javaType}.MIN_VALUE
 
     val arrB = new Array[scala.${T}](srcSize)
     for (idx <- t2FromIdx until srcSize) // fill extra length to entice bugs
-      arrB(idx) = 
 % if T == 'Boolean':
-        false
+      arrB(idx) = false
 % else:
-        (idx - t1Shift + 1).to${T}
+      arrB(idx) = (idx - t1Shift + 1).to${T}
 % end
 
     assertArrayEquals(
@@ -364,9 +350,8 @@ class ArraysOf${T}TestOnJDK9 {
     assertFalse(
       s"changed array range contents",
       Arrays.equals(
-        Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
-        Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx)
-      )
+	Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
+	Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx))
     )
 
     // Test that signed & unsigned comparison results differ.
@@ -378,13 +363,12 @@ class ArraysOf${T}TestOnJDK9 {
     assertTrue(
       s"unsigned: a[$${t1FromIdx}, $${t1ToIdx}) < b[$${t2FromIdx}, $${t2ToIdx})",
       Arrays.compareUnsigned(
-        arrA,
-        t1FromIdx,
-        t1ToIdx,
-        arrB,
-        t2FromIdx,
-        t2ToIdx
-      ) < 0
+	arrA,
+	t1FromIdx,
+	t1ToIdx,
+	arrB,
+	t2FromIdx,
+	t2ToIdx) < 0
     )
 
     // ranges which used to match no longer do when content in one has changed.
@@ -393,25 +377,23 @@ class ArraysOf${T}TestOnJDK9 {
     assertTrue(
       "common prefix but arrA.length < arrB.length, return former",
       Arrays.compareUnsigned(
-        arrA,
-        t1FromIdx,
-        t3ToIdx,
-        arrA,
-        t1FromIdx,
-        t1ToIdx
-      ) < 0
+	arrA,
+	t1FromIdx,
+	t3ToIdx,
+	arrA,
+	t1FromIdx,
+	t1ToIdx) < 0
     )
 
     assertTrue(
       "common prefix but arrA.length > arrB.length, return later",
       Arrays.compareUnsigned(
-        arrA,
-        t1FromIdx,
-        t1ToIdx,
-        arrA,
-        t1FromIdx,
-        t3ToIdx
-      ) > 0
+	arrA,
+	t1FromIdx,
+	t1ToIdx,
+	arrA,
+	t1FromIdx,
+	t3ToIdx) > 0
     )
   }
 % end
@@ -476,11 +458,10 @@ class ArraysOf${T}TestOnJDK9 {
 
     val arrA = new Array[scala.${T}](srcSize)
     for (idx <- 0 until srcSize)
-      arrA(idx) = 
 % if T == 'Boolean':
-        false
+      arrA(idx) = false
 % else:
-        (idx + 1).to${T}
+      arrA(idx) = (idx + 1).to${T}
 % end
 
     val t1Shift = 20
@@ -493,11 +474,10 @@ class ArraysOf${T}TestOnJDK9 {
 
     val arrB = new Array[scala.${T}](srcSize)
     for (idx <- t2FromIdx until srcSize) // fill extra length to entice bugs
-      arrB(idx) = 
 % if T == 'Boolean':
-        false
+      arrB(idx) = false
 % else:
-        (idx - t1Shift + 1).to${T}
+      arrB(idx) = (idx - t1Shift + 1).to${T}
 % end
 
     assertArrayEquals(
@@ -529,19 +509,17 @@ class ArraysOf${T}TestOnJDK9 {
     )
 
     val changeBAt = t2FromIdx + 2 // an arbitrary site
-    arrB(changeBAt) =
 % if T == 'Boolean':
-      true
+    arrB(changeBAt) = true
 % else:
-      5.to${T}
+    arrB(changeBAt) = 5.to${T}
 % end
 
     assertFalse(
       s"changed array range contents",
       Arrays.equals(
-        Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
-        Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx)
-      )
+	Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
+	Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx))
     )
 
     // ranges which used to match no longer do when content in one has changed.
@@ -555,25 +533,23 @@ class ArraysOf${T}TestOnJDK9 {
     assertFalse(
       "common prefix but arrA.length < arrB.length",
       Arrays.equals(
-        arrA,
-        t1FromIdx,
-        t3ToIdx,
-        arrA,
-        t1FromIdx,
-        t1ToIdx
-      )
+	arrA,
+	t1FromIdx,
+	t3ToIdx,
+	arrA,
+	t1FromIdx,
+	t1ToIdx)
     )
 
     assertFalse(
       "common prefix but arrA.length > arrB.length",
       Arrays.equals(
-        arrA,
-        t1FromIdx,
-        t1ToIdx,
-        arrA,
-        t1FromIdx,
-        t3ToIdx
-      )
+	arrA,
+	t1FromIdx,
+	t1ToIdx,
+	arrA,
+	t1FromIdx,
+	t3ToIdx)
     )
   }
 
@@ -601,47 +577,42 @@ class ArraysOf${T}TestOnJDK9 {
 
     val arrA = new Array[scala.${T}](srcSize)
     for (idx <- 0 until srcSize)
-      arrA(idx) = 
 % if T == 'Boolean':
-        false
+      arrA(idx) = false
 % else:
-        (idx + 1).to${T}
+      arrA(idx) = (idx + 1).to${T}
 % end
 
     val arrAPrime = new Array[scala.${T}](srcSize)
     for (idx <- 0 until srcSize)
-      arrAPrime(idx) = 
 % if T == 'Boolean':
-        false
+      arrAPrime(idx) = false
 % else:
-        (idx + 1).to${T}
+      arrAPrime(idx) = (idx + 1).to${T}
 % end
 
     val expectedShortSize = srcSize >> 2
     val arrAShort = new Array[scala.${T}](expectedShortSize)
     for (idx <- 0 until expectedShortSize)
-      arrAShort(idx) = 
 % if T == 'Boolean':
-        false
+      arrAShort(idx) = false
 % else:
-        (idx + 1).to${T}
+      arrAShort(idx) = (idx + 1).to${T}
 % end
 
     val arrB = new Array[scala.${T}](srcSize)
     for (idx <- 0 until srcSize)
-      arrB(idx) = 
 % if T == 'Boolean':
-        false
+      arrB(idx) = false
 % else:
-        (idx + 1).to${T}
+      arrB(idx) = (idx + 1).to${T}
 % end
 
     val mismatchAt = 33 // 33 is just somewhere in the middle
-    arrB(mismatchAt) =
 % if T == 'Boolean':
-     true
+    arrB(mismatchAt) = true
 % else:
-     255.to${T}
+    arrB(mismatchAt) = 255.to${T}
 % end
 
     assertEquals(
@@ -729,11 +700,10 @@ class ArraysOf${T}TestOnJDK9 {
 
     val arrA = new Array[scala.${T}](srcSize)
     for (idx <- 0 until srcSize)
-      arrA(idx) = 
 % if T == 'Boolean':
-        false
+      arrA(idx) = false
 % else:
-        (idx + 1).to${T}
+      arrA(idx) = (idx + 1).to${T}
 % end
 
     val t1Shift = 20
@@ -746,11 +716,10 @@ class ArraysOf${T}TestOnJDK9 {
 
     val arrB = new Array[scala.${T}](srcSize)
     for (idx <- t2FromIdx until srcSize) // fill extra length to entice bugs
-      arrB(idx) =
 % if T == 'Boolean':
-        false
+      arrB(idx) = false
 % else:
-        (idx - t1Shift + 1).to${T}
+      arrB(idx) = (idx - t1Shift + 1).to${T}
 % end
 
     assertArrayEquals(
@@ -785,19 +754,17 @@ class ArraysOf${T}TestOnJDK9 {
 
     val expectedMismatchAtAIdx = 2
     val changeBAt = t2FromIdx + expectedMismatchAtAIdx
-    arrB(changeBAt) =
 % if T == 'Boolean':
-     true
+    arrB(changeBAt) = true
 % else:
-     5.to${T}
+    arrB(changeBAt) = 5.to${T}
 % end
 
     assertFalse(
       s"changed array range contents",
       Arrays.equals(
-        Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
-        Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx)
-      )
+	Arrays.copyOfRange(arrA, t1FromIdx, t1ToIdx),
+	Arrays.copyOfRange(arrB, t2FromIdx, t2ToIdx))
     )
 
     // ranges which used to match no longer do when content in one has changed.
@@ -815,26 +782,24 @@ class ArraysOf${T}TestOnJDK9 {
       "common prefix but arrA.length < arrB.length",
       expectedShortMismatchAtIdx,
       Arrays.mismatch(
-        arrA,
-        t1FromIdx,
-        t3ToIdx,
-        arrA,
-        t1FromIdx,
-        t1ToIdx
-      )
+	arrA,
+	t1FromIdx,
+	t3ToIdx,
+	arrA,
+	t1FromIdx,
+	t1ToIdx)
     )
 
     assertEquals(
       "common prefix but arrA.length > arrB.length",
       expectedShortMismatchAtIdx,
       Arrays.mismatch(
-        arrA,
-        t1FromIdx,
-        t1ToIdx,
-        arrA,
-        t1FromIdx,
-        t3ToIdx
-      )
+	arrA,
+	t1FromIdx,
+	t1ToIdx,
+	arrA,
+	t1FromIdx,
+	t3ToIdx)
     )
   }
 }
@@ -908,7 +873,6 @@ class ArraysOfCharCornerCasesTestOnJDK9 {
     val seed = 20250329 // An arbitrary value
     val rng = new ju.Random(seed)
 
-// format: off
     /* 0x0370 to 0x03FF is the Unicode "Greek and Coptic" block
      * Some of the codepoints in the block are reserved and do not
      * display well when debugging. Otherwise, throw a broad assortment
@@ -916,11 +880,9 @@ class ArraysOfCharCornerCasesTestOnJDK9 {
      * implementation under test.
      */
     val reservedCodePoints = ju.List.of(
-        0x0378, 0x0379,
-        0x0380, 0x0381, 0x0382, 0x0383, 0x038b, 0x038d,
-        0x03a2
-      )
-// format: on
+	0x0378, 0x0379,
+	0x0380, 0x0381, 0x0382, 0x0383, 0x038b, 0x038d,
+	0x03a2)
 
     rng
       .ints(0x0370, 0x03ff)
@@ -1033,11 +995,11 @@ class ArraysOfCharCornerCasesTestOnJDK9 {
 
 class ArraysOfDoubleCornerCasesTestOnJDK9 {
   /* The exerciseDouble* tests check that the JDK behavior for compareTo is
-   * being followed, not IEEE 754 specification.
+   * being followed, not the IEEE 754 specification.
    */
 
   @Test def exerciseDoubleNegativeZero: Unit = {
-    /* See Scala Native Issues #3982 & #3986 re SN bugs with -0.0.
+    /* See Scala Native Issues #4281, #3982 & #3986 re SN bugs with -0.0.
      *
      * Also there is a bug in the SN JDK8 implementation of
      * Arrays.equals(a, b) for Double and probably also for Float.
@@ -1080,10 +1042,10 @@ class ArraysOfDoubleCornerCasesTestOnJDK9 {
     )
 
     /* Scala Native Issue #3986 prevents this block from passing on SN.
-     * 
+     *
      * The Test passes manually when built with Debug mode. It fails
      * with ReleaseFast. ReleaseFull is failing to build at all.
-     * 
+     *
      * It is difficult to use LinktimeInfo.debugMode in a Test which
      * must also run on the JVM.
      *
@@ -1093,9 +1055,8 @@ class ArraysOfDoubleCornerCasesTestOnJDK9 {
      */
     if (Platform.executingInJVM) {
       assertFalse(
-        "!arrA.equals(arrB), 6 Arg",
-        Arrays.equals(arrA, 0, arrA.length, arrB, 0, arrB.length)
-      )
+	"!arrA.equals(arrB), 6 Arg",
+	Arrays.equals(arrA, 0, arrA.length, arrB, 0, arrB.length))
 
       /* Use the 2 argument overload to cross check the JDK 9 six argument
        * implementation and the historical method: results should be the same.
@@ -1108,15 +1069,13 @@ class ArraysOfDoubleCornerCasesTestOnJDK9 {
         assertFalse("!arrA.equals(arrBb), 2 arg", Arrays.equals(arrA, arrB))
 
       assertTrue(
-        "arrA > arrB",
-        Arrays.compare(arrA, 0, arrA.length, arrB, 0, arrB.length) > 0
-      )
+	"arrA > arrB",
+	Arrays.compare(arrA, 0, arrA.length, arrB, 0, arrB.length) > 0)
 
       assertEquals(
-        "mismatch position,",
-        changeAt,
-        Arrays.mismatch(arrA, 0, arrA.length, arrB, 0, arrB.length)
-      )
+	"mismatch position,",
+	changeAt,
+	Arrays.mismatch(arrA, 0, arrA.length, arrB, 0, arrB.length))
     }
   }
 
@@ -1141,8 +1100,9 @@ class ArraysOfDoubleCornerCasesTestOnJDK9 {
       0.0
     )
 
-    assertFalse("arrA(changeAt) != arrB(changeAt)",
-                arrA(changeAt) == arrB(changeAt)
+    assertFalse(
+      "arrA(changeAt) != arrB(changeAt)",
+      arrA(changeAt) == arrB(changeAt)
     )
 
     // Java equals() specifies true for NaN. IEEE 754 would be false, as above.
@@ -1171,14 +1131,12 @@ class ArraysOfDoubleCornerCasesTestOnJDK9 {
     assertEquals(
       "arrA.compareTo(arrB)",
       0,
-      Arrays.compare(arrA, 0, arrA.length, arrB, 0, arrB.length)
-    )
+      Arrays.compare(arrA, 0, arrA.length, arrB, 0, arrB.length))
 
     assertEquals(
       "mismatch position,",
       -1,
-      Arrays.mismatch(arrA, 0, arrA.length, arrB, 0, arrB.length)
-    )
+      Arrays.mismatch(arrA, 0, arrA.length, arrB, 0, arrB.length))
   }
 
   @Test def exerciseDoublePayloadNaNs: Unit = {
@@ -1303,9 +1261,8 @@ class ArraysOfFloatCornerCasesTestOnJDK9 {
      */
     if (Platform.executingInJVM) {
       assertFalse(
-        "!arrA.equals(arrB), 6 Arg",
-        Arrays.equals(arrA, 0, arrA.length, arrB, 0, arrB.length)
-      )
+	"!arrA.equals(arrB), 6 Arg",
+	Arrays.equals(arrA, 0, arrA.length, arrB, 0, arrB.length))
 
       /* Use the 2 argument overload to cross check the JDK 9 six argument
        * implementation and the historical method: results should be the same.
@@ -1318,15 +1275,13 @@ class ArraysOfFloatCornerCasesTestOnJDK9 {
         assertFalse("!arrA.equals(arrB), 2 arg", Arrays.equals(arrA, arrB))
 
       assertTrue(
-        "arrA > arrB",
-        Arrays.compare(arrA, 0, arrA.length, arrB, 0, arrB.length) > 0
-      )
+	"arrA > arrB",
+	Arrays.compare(arrA, 0, arrA.length, arrB, 0, arrB.length) > 0)
 
       assertEquals(
-        "mismatch position,",
-        changeAt,
-        Arrays.mismatch(arrA, 0, arrA.length, arrB, 0, arrB.length)
-      )
+	"mismatch position,",
+	changeAt,
+	Arrays.mismatch(arrA, 0, arrA.length, arrB, 0, arrB.length))
     }
   }
 
@@ -1351,8 +1306,9 @@ class ArraysOfFloatCornerCasesTestOnJDK9 {
       0.0f
     )
 
-    assertFalse("arrA(changeAt) != arrB(changeAt)",
-                arrA(changeAt) == arrB(changeAt)
+    assertFalse(
+      "arrA(changeAt) != arrB(changeAt)",
+      arrA(changeAt) == arrB(changeAt)
     )
 
     // Java equals() specifies true for NaN. IEEE 754 would be false, as above.
@@ -1369,14 +1325,13 @@ class ArraysOfFloatCornerCasesTestOnJDK9 {
     /* Scala Native Issue #3986 prevents this from running on Scala Native.
      * The Test passes manually when built with Debug mode. It fails
      * with ReleaseFast. ReleaseFull is failing to build at all.
-     * 
+     *
      * It is difficult to use LinktimeInfo.debugMode in a Test which
      * must also run on the JVM.
      */
     assertTrue(
       "arrA.equals(arrB), 6 Arg",
-      Arrays.equals(arrA, 0, arrA.length, arrB, 0, arrB.length)
-    )
+      Arrays.equals(arrA, 0, arrA.length, arrB, 0, arrB.length))
 
     /* Use the 2 argument overload to cross check the JDK 9 six argument
      * implementation and the historical method: results should be the same.
@@ -1406,7 +1361,7 @@ class ArraysOfFloatCornerCasesTestOnJDK9 {
     val srcSize = 15
 
     val javaNaNRawIntBits = 0x7fc00000
-    
+
     // 0xF and 0xF0 are arbitrary valid values, to make bit patterns differ.
     val payloadNaN_1 = jl.Float.intBitsToFloat(javaNaNRawIntBits | 0xf)
 

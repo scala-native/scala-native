@@ -1,29 +1,3 @@
-%{
-## ArraysJDK9Methods.scala.gyb
-##
-##
-## To generate this file's output manually, execute the python script
-## 'scripts/gyb.py' under the project root. For example, from the project root:
-##
-##   scripts/gyb.py \
-##     javalib/src/main/scala/java/util/ArraysJDK9Methods.scala.gyb \
-##     --line-directive '' \
-##     -o  javalib/src/main/scala/java/util/ArraysJDK9Methods.scala.template
-}%
-%{
-
-   variants = [ # Only AnyVals
-     # scala.T,   javaType,      hasUnsignedName
-     ('Boolean', 'jl.Boolean',   False), # neither Signed nor Unsigned
-     ('Byte',    'jl.Byte',      True),
-     ('Char',    'jl.Character', False),
-     ('Double',  'jl.Double',    False),
-     ('Float',   'jl.Float',     False),
-     ('Int',     'jl.Integer',   True),
-     ('Long',    'jl.Long',      True),
-     ('Short',   'jl.Short',     True)
-   ]
-}%
 package java.util
 
 /* This code is generated from ArraysJDK9Methods.scala.gyb.
@@ -56,7 +30,7 @@ private[util] trait ArraysJDK9Methods { self: Arrays.type =>
   // Soft attempt at matching JVM message. Java 24 uses this.
   private def noArrayLengthMsg(stem: String): String = {
     // Many Scala 2.1[2-3].n version do not understand or allow "\"".
-    s""""Cannot read the array length because \"$${stem}\" is null"""
+    s""""Cannot read the array length because \"${stem}\" is null"""
   }
 
   // Similar in concept to Objects.checkFromIndex() but different Exceptions.
@@ -68,12 +42,12 @@ private[util] trait ArraysJDK9Methods { self: Arrays.type =>
 
     if (fromIndex > toIndex)
       throw new IllegalArgumentException(
-        s"fromIndex($$fromIndex) > toIndex($$toIndex)"
+        s"fromIndex($fromIndex) > toIndex($toIndex)"
       )
 
     if ((fromIndex < 0) || (fromIndex > toIndex) || (toIndex > length)) {
       throw new ArrayIndexOutOfBoundsException(
-        s"Range [$$fromIndex, $$toIndex) out of bounds for length $$length"
+        s"Range [$fromIndex, $toIndex) out of bounds for length $length"
       )
     }
 
@@ -280,18 +254,17 @@ private[util] trait ArraysJDK9Methods { self: Arrays.type =>
     else Math.min(aRangeLen, bRangeLen)
   }
 
-% for (T, javaType, hasUnsignedName) in variants:
 
   /** @since JDK 9 */
-  def compare(a: Array[scala.${T}], b: Array[scala.${T}]): Int =
-    compareImpl(a, b, ${javaType}.compare)
+  def compare(a: Array[scala.Boolean], b: Array[scala.Boolean]): Int =
+    compareImpl(a, b, jl.Boolean.compare)
 
   /** @since JDK 9 */
   def compare(
-      a: Array[scala.${T}],
+      a: Array[scala.Boolean],
       aFromIndex: Int,
       aToIndex: Int,
-      b: Array[scala.${T}],
+      b: Array[scala.Boolean],
       bFromIndex: Int,
       bToIndex: Int
   ): Int =
@@ -302,60 +275,15 @@ private[util] trait ArraysJDK9Methods { self: Arrays.type =>
       b,
       bFromIndex,
       bToIndex,
-      ${javaType}.compare
+      jl.Boolean.compare
     )
 
- % if hasUnsignedName:
-  /** @since JDK 9 */
-  def compareUnsigned(a: Array[scala.${T}], b: Array[scala.${T}]): Int =
-    compareImpl(a, b, ${javaType}.compareUnsigned)
 
-  /** @since JDK 9 */
-  def compareUnsigned(
-      a: Array[scala.${T}],
-      aFromIndex: Int,
-      aToIndex: Int,
-      b: Array[scala.${T}],
-      bFromIndex: Int,
-      bToIndex: Int
-  ): Int =
-    compareImpl(
-      a,
-      aFromIndex,
-      aToIndex,
-      b,
-      bFromIndex,
-      bToIndex,
-      ${javaType}.compareUnsigned
-    )
- % end ## hasUnsignedName
-
- % if T == 'Char' or hasUnsignedName: # Char and whole number primitives
   def equals(
-      a: Array[scala.${T}],
+      a: Array[scala.Boolean],
       aFromIndex: Int,
       aToIndex: Int,
-      b: Array[scala.${T}],
-      bFromIndex: Int,
-      bToIndex: Int
-  ): scala.Boolean = {
-    equalsImpl(
-      a,
-      aFromIndex,
-      aToIndex,
-      b,
-      bFromIndex,
-      bToIndex,
-      ${javaType}.BYTES
-    )
-  }
-
- % else: # Boolean, Double, Float
-  def equals(
-      a: Array[scala.${T}],
-      aFromIndex: Int,
-      aToIndex: Int,
-      b: Array[scala.${T}],
+      b: Array[scala.Boolean],
       bFromIndex: Int,
       bToIndex: Int
   ): scala.Boolean = {
@@ -391,20 +319,19 @@ private[util] trait ArraysJDK9Methods { self: Arrays.type =>
       ) == -1
     }
   }
- % end ## not use memcmp
 
   /** @since JDK 9 */
   @noinline
-  def mismatch(a: Array[scala.${T}], b: Array[scala.${T}]): Int =
-    mismatchImpl(a, b, ${javaType}.compare)
+  def mismatch(a: Array[scala.Boolean], b: Array[scala.Boolean]): Int =
+    mismatchImpl(a, b, jl.Boolean.compare)
 
   /** @since JDK 9 */
   @noinline
   def mismatch(
-      a: Array[scala.${T}],
+      a: Array[scala.Boolean],
       aFromIndex: Int,
       aToIndex: Int,
-      b: Array[scala.${T}],
+      b: Array[scala.Boolean],
       bFromIndex: Int,
       bToIndex: Int
   ): Int =
@@ -415,9 +342,621 @@ private[util] trait ArraysJDK9Methods { self: Arrays.type =>
       b,
       bFromIndex,
       bToIndex,
-      ${javaType}.compare
+      jl.Boolean.compare
     )
-% end ## for variants loop
+
+  /** @since JDK 9 */
+  def compare(a: Array[scala.Byte], b: Array[scala.Byte]): Int =
+    compareImpl(a, b, jl.Byte.compare)
+
+  /** @since JDK 9 */
+  def compare(
+      a: Array[scala.Byte],
+      aFromIndex: Int,
+      aToIndex: Int,
+      b: Array[scala.Byte],
+      bFromIndex: Int,
+      bToIndex: Int
+  ): Int =
+    compareImpl(
+      a,
+      aFromIndex,
+      aToIndex,
+      b,
+      bFromIndex,
+      bToIndex,
+      jl.Byte.compare
+    )
+
+  /** @since JDK 9 */
+  def compareUnsigned(a: Array[scala.Byte], b: Array[scala.Byte]): Int =
+    compareImpl(a, b, jl.Byte.compareUnsigned)
+
+  /** @since JDK 9 */
+  def compareUnsigned(
+      a: Array[scala.Byte],
+      aFromIndex: Int,
+      aToIndex: Int,
+      b: Array[scala.Byte],
+      bFromIndex: Int,
+      bToIndex: Int
+  ): Int =
+    compareImpl(
+      a,
+      aFromIndex,
+      aToIndex,
+      b,
+      bFromIndex,
+      bToIndex,
+      jl.Byte.compareUnsigned
+    )
+
+  def equals(
+      a: Array[scala.Byte],
+      aFromIndex: Int,
+      aToIndex: Int,
+      b: Array[scala.Byte],
+      bFromIndex: Int,
+      bToIndex: Int
+  ): scala.Boolean = {
+    equalsImpl(
+      a,
+      aFromIndex,
+      aToIndex,
+      b,
+      bFromIndex,
+      bToIndex,
+      jl.Byte.BYTES
+    )
+  }
+
+
+  /** @since JDK 9 */
+  @noinline
+  def mismatch(a: Array[scala.Byte], b: Array[scala.Byte]): Int =
+    mismatchImpl(a, b, jl.Byte.compare)
+
+  /** @since JDK 9 */
+  @noinline
+  def mismatch(
+      a: Array[scala.Byte],
+      aFromIndex: Int,
+      aToIndex: Int,
+      b: Array[scala.Byte],
+      bFromIndex: Int,
+      bToIndex: Int
+  ): Int =
+    mismatchImpl(
+      a,
+      aFromIndex,
+      aToIndex,
+      b,
+      bFromIndex,
+      bToIndex,
+      jl.Byte.compare
+    )
+
+  /** @since JDK 9 */
+  def compare(a: Array[scala.Char], b: Array[scala.Char]): Int =
+    compareImpl(a, b, jl.Character.compare)
+
+  /** @since JDK 9 */
+  def compare(
+      a: Array[scala.Char],
+      aFromIndex: Int,
+      aToIndex: Int,
+      b: Array[scala.Char],
+      bFromIndex: Int,
+      bToIndex: Int
+  ): Int =
+    compareImpl(
+      a,
+      aFromIndex,
+      aToIndex,
+      b,
+      bFromIndex,
+      bToIndex,
+      jl.Character.compare
+    )
+
+
+  def equals(
+      a: Array[scala.Char],
+      aFromIndex: Int,
+      aToIndex: Int,
+      b: Array[scala.Char],
+      bFromIndex: Int,
+      bToIndex: Int
+  ): scala.Boolean = {
+    equalsImpl(
+      a,
+      aFromIndex,
+      aToIndex,
+      b,
+      bFromIndex,
+      bToIndex,
+      jl.Character.BYTES
+    )
+  }
+
+
+  /** @since JDK 9 */
+  @noinline
+  def mismatch(a: Array[scala.Char], b: Array[scala.Char]): Int =
+    mismatchImpl(a, b, jl.Character.compare)
+
+  /** @since JDK 9 */
+  @noinline
+  def mismatch(
+      a: Array[scala.Char],
+      aFromIndex: Int,
+      aToIndex: Int,
+      b: Array[scala.Char],
+      bFromIndex: Int,
+      bToIndex: Int
+  ): Int =
+    mismatchImpl(
+      a,
+      aFromIndex,
+      aToIndex,
+      b,
+      bFromIndex,
+      bToIndex,
+      jl.Character.compare
+    )
+
+  /** @since JDK 9 */
+  def compare(a: Array[scala.Double], b: Array[scala.Double]): Int =
+    compareImpl(a, b, jl.Double.compare)
+
+  /** @since JDK 9 */
+  def compare(
+      a: Array[scala.Double],
+      aFromIndex: Int,
+      aToIndex: Int,
+      b: Array[scala.Double],
+      bFromIndex: Int,
+      bToIndex: Int
+  ): Int =
+    compareImpl(
+      a,
+      aFromIndex,
+      aToIndex,
+      b,
+      bFromIndex,
+      bToIndex,
+      jl.Double.compare
+    )
+
+
+  def equals(
+      a: Array[scala.Double],
+      aFromIndex: Int,
+      aToIndex: Int,
+      b: Array[scala.Double],
+      bFromIndex: Int,
+      bToIndex: Int
+  ): scala.Boolean = {
+    Objects.requireNonNull(a)
+    validateFromToIndex(aFromIndex, aToIndex, a.length)
+
+    Objects.requireNonNull(b)
+    validateFromToIndex(bFromIndex, bToIndex, b.length)
+
+    val aCount = aToIndex - aFromIndex
+    val bCount = bToIndex - bFromIndex
+
+    if (aCount != bCount) false
+    else if (aCount == 0) true
+    else {
+      /* Devos: Performance trade-off here.
+       * Call mismatch() rather than inline mismatchImplCore() to reduce
+       * code size. The latter, which is not small, would get inlined
+       * three time; once each for Boolean, Double, & Float.
+       *
+       * Take the hit of arguments being checked twice.
+       *
+       * See if experience & measurement show that this is a critical
+       * section and should be inlined.
+       */
+      Arrays.mismatch(
+        a,
+        aFromIndex,
+        aToIndex,
+        b,
+        bFromIndex,
+        bToIndex
+      ) == -1
+    }
+  }
+
+  /** @since JDK 9 */
+  @noinline
+  def mismatch(a: Array[scala.Double], b: Array[scala.Double]): Int =
+    mismatchImpl(a, b, jl.Double.compare)
+
+  /** @since JDK 9 */
+  @noinline
+  def mismatch(
+      a: Array[scala.Double],
+      aFromIndex: Int,
+      aToIndex: Int,
+      b: Array[scala.Double],
+      bFromIndex: Int,
+      bToIndex: Int
+  ): Int =
+    mismatchImpl(
+      a,
+      aFromIndex,
+      aToIndex,
+      b,
+      bFromIndex,
+      bToIndex,
+      jl.Double.compare
+    )
+
+  /** @since JDK 9 */
+  def compare(a: Array[scala.Float], b: Array[scala.Float]): Int =
+    compareImpl(a, b, jl.Float.compare)
+
+  /** @since JDK 9 */
+  def compare(
+      a: Array[scala.Float],
+      aFromIndex: Int,
+      aToIndex: Int,
+      b: Array[scala.Float],
+      bFromIndex: Int,
+      bToIndex: Int
+  ): Int =
+    compareImpl(
+      a,
+      aFromIndex,
+      aToIndex,
+      b,
+      bFromIndex,
+      bToIndex,
+      jl.Float.compare
+    )
+
+
+  def equals(
+      a: Array[scala.Float],
+      aFromIndex: Int,
+      aToIndex: Int,
+      b: Array[scala.Float],
+      bFromIndex: Int,
+      bToIndex: Int
+  ): scala.Boolean = {
+    Objects.requireNonNull(a)
+    validateFromToIndex(aFromIndex, aToIndex, a.length)
+
+    Objects.requireNonNull(b)
+    validateFromToIndex(bFromIndex, bToIndex, b.length)
+
+    val aCount = aToIndex - aFromIndex
+    val bCount = bToIndex - bFromIndex
+
+    if (aCount != bCount) false
+    else if (aCount == 0) true
+    else {
+      /* Devos: Performance trade-off here.
+       * Call mismatch() rather than inline mismatchImplCore() to reduce
+       * code size. The latter, which is not small, would get inlined
+       * three time; once each for Boolean, Double, & Float.
+       *
+       * Take the hit of arguments being checked twice.
+       *
+       * See if experience & measurement show that this is a critical
+       * section and should be inlined.
+       */
+      Arrays.mismatch(
+        a,
+        aFromIndex,
+        aToIndex,
+        b,
+        bFromIndex,
+        bToIndex
+      ) == -1
+    }
+  }
+
+  /** @since JDK 9 */
+  @noinline
+  def mismatch(a: Array[scala.Float], b: Array[scala.Float]): Int =
+    mismatchImpl(a, b, jl.Float.compare)
+
+  /** @since JDK 9 */
+  @noinline
+  def mismatch(
+      a: Array[scala.Float],
+      aFromIndex: Int,
+      aToIndex: Int,
+      b: Array[scala.Float],
+      bFromIndex: Int,
+      bToIndex: Int
+  ): Int =
+    mismatchImpl(
+      a,
+      aFromIndex,
+      aToIndex,
+      b,
+      bFromIndex,
+      bToIndex,
+      jl.Float.compare
+    )
+
+  /** @since JDK 9 */
+  def compare(a: Array[scala.Int], b: Array[scala.Int]): Int =
+    compareImpl(a, b, jl.Integer.compare)
+
+  /** @since JDK 9 */
+  def compare(
+      a: Array[scala.Int],
+      aFromIndex: Int,
+      aToIndex: Int,
+      b: Array[scala.Int],
+      bFromIndex: Int,
+      bToIndex: Int
+  ): Int =
+    compareImpl(
+      a,
+      aFromIndex,
+      aToIndex,
+      b,
+      bFromIndex,
+      bToIndex,
+      jl.Integer.compare
+    )
+
+  /** @since JDK 9 */
+  def compareUnsigned(a: Array[scala.Int], b: Array[scala.Int]): Int =
+    compareImpl(a, b, jl.Integer.compareUnsigned)
+
+  /** @since JDK 9 */
+  def compareUnsigned(
+      a: Array[scala.Int],
+      aFromIndex: Int,
+      aToIndex: Int,
+      b: Array[scala.Int],
+      bFromIndex: Int,
+      bToIndex: Int
+  ): Int =
+    compareImpl(
+      a,
+      aFromIndex,
+      aToIndex,
+      b,
+      bFromIndex,
+      bToIndex,
+      jl.Integer.compareUnsigned
+    )
+
+  def equals(
+      a: Array[scala.Int],
+      aFromIndex: Int,
+      aToIndex: Int,
+      b: Array[scala.Int],
+      bFromIndex: Int,
+      bToIndex: Int
+  ): scala.Boolean = {
+    equalsImpl(
+      a,
+      aFromIndex,
+      aToIndex,
+      b,
+      bFromIndex,
+      bToIndex,
+      jl.Integer.BYTES
+    )
+  }
+
+
+  /** @since JDK 9 */
+  @noinline
+  def mismatch(a: Array[scala.Int], b: Array[scala.Int]): Int =
+    mismatchImpl(a, b, jl.Integer.compare)
+
+  /** @since JDK 9 */
+  @noinline
+  def mismatch(
+      a: Array[scala.Int],
+      aFromIndex: Int,
+      aToIndex: Int,
+      b: Array[scala.Int],
+      bFromIndex: Int,
+      bToIndex: Int
+  ): Int =
+    mismatchImpl(
+      a,
+      aFromIndex,
+      aToIndex,
+      b,
+      bFromIndex,
+      bToIndex,
+      jl.Integer.compare
+    )
+
+  /** @since JDK 9 */
+  def compare(a: Array[scala.Long], b: Array[scala.Long]): Int =
+    compareImpl(a, b, jl.Long.compare)
+
+  /** @since JDK 9 */
+  def compare(
+      a: Array[scala.Long],
+      aFromIndex: Int,
+      aToIndex: Int,
+      b: Array[scala.Long],
+      bFromIndex: Int,
+      bToIndex: Int
+  ): Int =
+    compareImpl(
+      a,
+      aFromIndex,
+      aToIndex,
+      b,
+      bFromIndex,
+      bToIndex,
+      jl.Long.compare
+    )
+
+  /** @since JDK 9 */
+  def compareUnsigned(a: Array[scala.Long], b: Array[scala.Long]): Int =
+    compareImpl(a, b, jl.Long.compareUnsigned)
+
+  /** @since JDK 9 */
+  def compareUnsigned(
+      a: Array[scala.Long],
+      aFromIndex: Int,
+      aToIndex: Int,
+      b: Array[scala.Long],
+      bFromIndex: Int,
+      bToIndex: Int
+  ): Int =
+    compareImpl(
+      a,
+      aFromIndex,
+      aToIndex,
+      b,
+      bFromIndex,
+      bToIndex,
+      jl.Long.compareUnsigned
+    )
+
+  def equals(
+      a: Array[scala.Long],
+      aFromIndex: Int,
+      aToIndex: Int,
+      b: Array[scala.Long],
+      bFromIndex: Int,
+      bToIndex: Int
+  ): scala.Boolean = {
+    equalsImpl(
+      a,
+      aFromIndex,
+      aToIndex,
+      b,
+      bFromIndex,
+      bToIndex,
+      jl.Long.BYTES
+    )
+  }
+
+
+  /** @since JDK 9 */
+  @noinline
+  def mismatch(a: Array[scala.Long], b: Array[scala.Long]): Int =
+    mismatchImpl(a, b, jl.Long.compare)
+
+  /** @since JDK 9 */
+  @noinline
+  def mismatch(
+      a: Array[scala.Long],
+      aFromIndex: Int,
+      aToIndex: Int,
+      b: Array[scala.Long],
+      bFromIndex: Int,
+      bToIndex: Int
+  ): Int =
+    mismatchImpl(
+      a,
+      aFromIndex,
+      aToIndex,
+      b,
+      bFromIndex,
+      bToIndex,
+      jl.Long.compare
+    )
+
+  /** @since JDK 9 */
+  def compare(a: Array[scala.Short], b: Array[scala.Short]): Int =
+    compareImpl(a, b, jl.Short.compare)
+
+  /** @since JDK 9 */
+  def compare(
+      a: Array[scala.Short],
+      aFromIndex: Int,
+      aToIndex: Int,
+      b: Array[scala.Short],
+      bFromIndex: Int,
+      bToIndex: Int
+  ): Int =
+    compareImpl(
+      a,
+      aFromIndex,
+      aToIndex,
+      b,
+      bFromIndex,
+      bToIndex,
+      jl.Short.compare
+    )
+
+  /** @since JDK 9 */
+  def compareUnsigned(a: Array[scala.Short], b: Array[scala.Short]): Int =
+    compareImpl(a, b, jl.Short.compareUnsigned)
+
+  /** @since JDK 9 */
+  def compareUnsigned(
+      a: Array[scala.Short],
+      aFromIndex: Int,
+      aToIndex: Int,
+      b: Array[scala.Short],
+      bFromIndex: Int,
+      bToIndex: Int
+  ): Int =
+    compareImpl(
+      a,
+      aFromIndex,
+      aToIndex,
+      b,
+      bFromIndex,
+      bToIndex,
+      jl.Short.compareUnsigned
+    )
+
+  def equals(
+      a: Array[scala.Short],
+      aFromIndex: Int,
+      aToIndex: Int,
+      b: Array[scala.Short],
+      bFromIndex: Int,
+      bToIndex: Int
+  ): scala.Boolean = {
+    equalsImpl(
+      a,
+      aFromIndex,
+      aToIndex,
+      b,
+      bFromIndex,
+      bToIndex,
+      jl.Short.BYTES
+    )
+  }
+
+
+  /** @since JDK 9 */
+  @noinline
+  def mismatch(a: Array[scala.Short], b: Array[scala.Short]): Int =
+    mismatchImpl(a, b, jl.Short.compare)
+
+  /** @since JDK 9 */
+  @noinline
+  def mismatch(
+      a: Array[scala.Short],
+      aFromIndex: Int,
+      aToIndex: Int,
+      b: Array[scala.Short],
+      bFromIndex: Int,
+      bToIndex: Int
+  ): Int =
+    mismatchImpl(
+      a,
+      aFromIndex,
+      aToIndex,
+      b,
+      bFromIndex,
+      bToIndex,
+      jl.Short.compare
+    )
 
   /** @since JDK 9 */
   def compare[T <: Comparable[T]]( // Scala 2.12, 2.13
@@ -621,6 +1160,3 @@ private[util] trait ArraysJDK9Methods { self: Arrays.type =>
     )
   }
 }
-%{
-## End of file
-}%
