@@ -2,7 +2,8 @@ package java.lang
 
 import java.io._
 import java.nio.charset.StandardCharsets
-import java.util.{Collections, HashMap, Map, Properties, WindowsHelperMethods}
+import java.{util => ju}
+import java.util.WindowsHelperMethods
 import scala.scalanative.posix.pwdOps._
 import scala.scalanative.posix.{pwd, unistd}
 import scala.scalanative.meta.LinktimeInfo.isWindows
@@ -55,7 +56,7 @@ object System {
   def err: PrintStream = Streams.err
   def err_=(v: PrintStream) = Streams.err = v
 
-  def getProperties(): Properties = SystemProperties.getProperties()
+  def getProperties(): ju.Properties = SystemProperties.getProperties()
 
   def clearProperty(key: String): String =
     SystemProperties.remove(key).asInstanceOf[String]
@@ -72,7 +73,7 @@ object System {
   def nanoTime(): scala.Long = time.scalanative_nano_time()
   def currentTimeMillis(): scala.Long = time.scalanative_current_time_millis()
 
-  def getenv(): Map[String, String] = envVars
+  def getenv(): ju.Map[String, String] = envVars
   def getenv(key: String): String = envVars.get(key.toUpperCase())
 
   def setIn(in: InputStream): Unit =
@@ -88,17 +89,29 @@ object System {
 
   // Logger interface
   def getLogger(name: String): Logger = {
-    java.util.Objects.requireNonNull(name)
-    new impl.SimpleLogger(name)
+    ju.Objects.requireNonNull(name)
+    LoggerFinder
+      .getLoggerFinder()
+      .getLogger(
+        name,
+        ClassLoader.getSystemClassLoader().getUnnamedModule()
+      )
   }
-  def getLogger(name: String, bundle: java.util.ResourceBundle): Logger =
-    getLogger(name)
-
+  def getLogger(name: String, bundle: java.util.ResourceBundle): Logger = {
+    ju.Objects.requireNonNull(name)
+    ju.Objects.requireNonNull(bundle)
+    LoggerFinder
+      .getLoggerFinder()
+      .getLocalizedLogger(
+        name,
+        bundle,
+        ClassLoader.getSystemClassLoader().getUnnamedModule()
+      )
+  }
   trait Logger {
     def getName(): String
     def isLoggable(level: Logger.Level): scala.Boolean
 
-    // Core methods that need implementation
     def log(
         level: Logger.Level,
         bundle: java.util.ResourceBundle,
@@ -112,7 +125,6 @@ object System {
         thrown: Throwable
     ): Unit
 
-    // Default methods with implementations
     def log(level: Logger.Level, obj: Object): Unit = if (isLoggable(level)) {
       log(level, if (obj == null) "null" else obj.toString())
     }
@@ -185,6 +197,79 @@ object System {
       }
     }
   }
+
+  abstract class LoggerFinder {
+    def getLogger(name: String, module: Module): Logger
+
+    def getLocalizedLogger(
+        name: String,
+        bundle: ju.ResourceBundle,
+        module: Module
+    ): Logger = {
+      ju.Objects.requireNonNull(name)
+      ju.Objects.requireNonNull(module)
+
+      val logger = getLogger(name, module)
+      // Return a wrapper logger that handles localization
+      new Logger {
+        def getName(): String = logger.getName()
+
+        def isLoggable(level: Logger.Level): scala.Boolean =
+          logger.isLoggable(level)
+
+        override def log(level: Logger.Level, msg: String): Unit =
+          logger.log(level, bundle, msg, null: Array[Object])
+
+        override def log(
+            level: Logger.Level,
+            msg: String,
+            thrown: Throwable
+        ): Unit =
+          logger.log(level, bundle, msg, thrown)
+
+        override def log(
+            level: Logger.Level,
+            format: String,
+            params: Array[Object]
+        ): Unit =
+          logger.log(level, bundle, format, params)
+
+        override def log(
+            level: Logger.Level,
+            bundle: ju.ResourceBundle,
+            format: String,
+            params: Array[Object]
+        ): Unit =
+          logger.log(level, bundle, format, params)
+
+        override def log(
+            level: Logger.Level,
+            bundle: ju.ResourceBundle,
+            msg: String,
+            thrown: Throwable
+        ): Unit =
+          logger.log(level, bundle, msg, thrown)
+      }
+    }
+  }
+
+  object LoggerFinder {
+    // Default LoggerFinder implementation
+    private class DefaultLoggerFinder extends LoggerFinder {
+      override def getLogger(name: String, module: Module): Logger = {
+        ju.Objects.requireNonNull(name)
+        ju.Objects.requireNonNull(module)
+        new impl.SimpleLogger(name)
+      }
+    }
+
+    private lazy val loggerFinder = ju.ServiceLoader
+      .load(classOf[LoggerFinder])
+      .findFirst()
+      .orElse(new DefaultLoggerFinder())
+
+    def getLoggerFinder(): LoggerFinder = loggerFinder
+  }
 }
 
 // Extract mutable fields to custom object allowing to skip allocations of unused features
@@ -231,7 +316,7 @@ private object SystemProperties {
   private lazy val initializeUserName =
     getUserName().foreach(systemProperties.setProperty(UserNameKey, _))
 
-  def getProperties(): Properties = {
+  def getProperties(): ju.Properties = {
     // initialize all properties
     initializeCurrentDirectory
     initializeUserHomeDirectory
@@ -273,7 +358,7 @@ private object SystemProperties {
   }
 
   private def loadProperties() = {
-    val sysProps = new Properties()
+    val sysProps = new ju.Properties()
     sysProps.setProperty("java.version", "1.8")
     sysProps.setProperty("java.vm.specification.version", "1.8")
     sysProps.setProperty("java.vm.specification.vendor", "Oracle Corporation")
@@ -402,9 +487,9 @@ private object SystemProperties {
 }
 
 private object EnvVars {
-  val envVars: Map[String, String] = {
+  val envVars: ju.Map[String, String] = {
     def getEnvsUnix() = {
-      val map = new HashMap[String, String]()
+      val map = new ju.HashMap[String, String]()
       val ptr: Ptr[CString] = unistd.environ
       var i = 0
       while (ptr(i) != null) {
@@ -421,8 +506,8 @@ private object EnvVars {
       map
     }
 
-    def getEnvsWindows(): Map[String, String] = {
-      val envsMap = new HashMap[String, String]()
+    def getEnvsWindows(): ju.Map[String, String] = {
+      val envsMap = new ju.HashMap[String, String]()
       val envBlockHead = GetEnvironmentStringsW()
 
       var blockPtr = envBlockHead
@@ -444,7 +529,7 @@ private object EnvVars {
       envsMap
     }
 
-    Collections.unmodifiableMap {
+    ju.Collections.unmodifiableMap {
       if (isWindows) getEnvsWindows()
       else getEnvsUnix()
     }
