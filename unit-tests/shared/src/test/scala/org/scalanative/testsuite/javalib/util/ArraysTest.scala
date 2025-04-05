@@ -1,6 +1,7 @@
-// Ported from Scala.js commit: ba618ed dated: 2020-10-05
-//
-// Additional Tests added for methods implemented only in Scala Native.
+/* Ported from Scala.js commit: ba618ed dated: 2020-10-05
+ * 
+ *  Additional Tests added for Scala Native.
+ */
 
 package org.scalanative.testsuite.javalib.util
 
@@ -13,6 +14,7 @@ import org.junit.Test
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform._
 
+import java.{lang => jl}
 import java.util.{Arrays, Comparator}
 
 import scala.reflect.ClassTag
@@ -1343,7 +1345,53 @@ class ArraysTest {
 
 // Tests added for Scala Native.
 
-  final val epsilon = 0.0000001 // tolerance for Floating point comparisons.
+  final val epsilon = 0.0000000 // tolerance for Floating point comparisons.
+
+  @Test def equals_Doubles_NegativeZero(): Unit = {
+    val arrA = Array[scala.Double](1)
+    arrA(0) = 0.0
+
+    val arrB = Array[scala.Double](1)
+
+    // convoluted initialization works around SN Issues: #4285, #3986, #3952
+    val negativeZero = jl.Double.longBitsToDouble(0x8000000000000000L)
+    arrB(0) = negativeZero
+
+    assertFalse("arrA !equals arrB", Arrays.equals(arrA, arrB))
+  }
+
+  @Test def equals_Doubles_NaN(): Unit = {
+    val arrA = Array[scala.Double](1)
+    arrA(0) = jl.Double.NaN
+
+    val arrB = Array[scala.Double](1)
+    arrB(0) = jl.Double.NaN
+
+    assertTrue("arrA equals arrB", Arrays.equals(arrA, arrB))
+  }
+
+  @Test def equals_Floats_NegativeZero(): Unit = {
+    val arrA = Array[scala.Float](1)
+    arrA(0) = 0.0f
+
+    val arrB = Array[scala.Float](1)
+
+    // convoluted initialization works around SN Issues: #4285, #3986, #3952
+    val negativeZero: scala.Float = jl.Float.intBitsToFloat(0x80000000)
+    arrB(0) = negativeZero
+
+    assertFalse("arrA !equals arrB", Arrays.equals(arrA, arrB))
+  }
+
+  @Test def equals_Floats_NaN(): Unit = {
+    val arrA = Array[scala.Float](1)
+    arrA(0) = jl.Float.NaN
+
+    val arrB = Array[scala.Float](1)
+    arrB(0) = jl.Float.NaN
+
+    assertTrue("arrA equals arrB", Arrays.equals(arrA, arrB))
+  }
 
   private def testParallelSort[T: ClassTag](
       elem: Int => T,
@@ -1749,5 +1797,4 @@ class ArraysTest {
       arr(srcSize - 1)
     )
   }
-
 }

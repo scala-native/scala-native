@@ -1061,12 +1061,12 @@ class ArraysOfDoubleCornerCasesTestOnJDK9 {
       /* Use the 2 argument overload to cross check the JDK 9 six argument
        * implementation and the historical method: results should be the same.
        *
-       * Expand coverage to Scala Native once its 2 argument overload is
-       * corrected.
+       * On Scala Native, this is basically a loopback or API test.
+       * It is a good & useful check on JVM, where the details of the
+       * implemtation are not know to SN devos..
        */
 
-      if (Platform.executingInJVM)
-        assertFalse("!arrA.equals(arrBb), 2 arg", Arrays.equals(arrA, arrB))
+      assertFalse("!arrA.equals(arrBb), 2 arg", Arrays.equals(arrA, arrB))
 
       assertTrue(
 	"arrA > arrB",
@@ -1125,8 +1125,7 @@ class ArraysOfDoubleCornerCasesTestOnJDK9 {
      * implementation and the historical method: results should be the same.
      */
 
-    if (Platform.executingInJVM)
-      assertTrue("arrA.equals(arrB), 2 Arg", Arrays.equals(arrA, arrB))
+    assertTrue("arrA.equals(arrB), 2 Arg", Arrays.equals(arrA, arrB))
 
     assertEquals(
       "arrA.compareTo(arrB)",
