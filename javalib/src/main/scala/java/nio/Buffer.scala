@@ -31,7 +31,7 @@ abstract class Buffer private[nio] (
   final def position(): Int = _position
 
   def position(newPosition: Int): Buffer = {
-    if (newPosition < 0 || newPosition > _limit)
+    if (newPosition < 0 || newPosition > limit())
       throw new IllegalArgumentException
     _position = newPosition
     if (_mark > newPosition)
@@ -85,9 +85,9 @@ abstract class Buffer private[nio] (
     this
   }
 
-  @inline final def remaining(): Int = _limit - _position
+  @inline final def remaining(): Int = limit() - position()
 
-  @inline final def hasRemaining(): Boolean = _position != _limit
+  @inline final def hasRemaining(): Boolean = position() != limit()
 
   def isReadOnly(): Boolean
 
@@ -184,7 +184,7 @@ abstract class Buffer private[nio] (
 
   @inline private[nio] def getPosAndAdvanceRead(): Int = {
     val p = _position
-    if (p >= _limit) throwBufferUnderflow(p)
+    if (p >= limit()) throwBufferUnderflow(p)
     _position = p + 1
     p
   }
@@ -192,14 +192,14 @@ abstract class Buffer private[nio] (
   @inline private[nio] def getPosAndAdvanceRead(length: Int): Int = {
     val p = _position
     val newPos = p + length
-    if (newPos > _limit) throwBufferUnderflow(newPos)
+    if (newPos > limit()) throwBufferUnderflow(newPos)
     _position = newPos
     p
   }
 
   @inline private[nio] def getPosAndAdvanceWrite(): Int = {
     val p = _position
-    if (p >= _limit) throwBufferOverflow(p)
+    if (p >= limit()) throwBufferOverflow(p)
     _position = p + 1
     p
   }
@@ -207,33 +207,30 @@ abstract class Buffer private[nio] (
   @inline private[nio] def getPosAndAdvanceWrite(length: Int): Int = {
     val p = _position
     val newPos = p + length
-    if (newPos > _limit) throwBufferOverflow(newPos)
+    if (newPos > limit()) throwBufferOverflow(newPos)
     _position = newPos
     p
   }
 
   @inline private[nio] def validateIndex(index: Int): Int = {
-    if (index < 0 || index >= _limit) throwOutOfBounds(index)
+    if (index < 0 || index >= limit()) throwOutOfBounds(index)
     else index
   }
 
   @inline private[nio] def validateIndex(index: Int, length: Int): Int = {
     if (index < 0) throwOutOfBounds(index)
-    else if (index + length > _limit) throwOutOfBounds(index + length)
+    else if (index + length > limit()) throwOutOfBounds(index + length)
     else index
   }
 
-  @noinline
   private def throwOutOfBounds(index: Int): Nothing =
     throw new IndexOutOfBoundsException(
       s"Index $index out of bounds for length ${limit()}"
     )
-  @noinline
   private def throwBufferUnderflow(index: Int): Nothing =
     throw new BufferUnderflowException(
       s"Access at index $index underflows buffer of length ${limit()}"
     )
-  @noinline
   private def throwBufferOverflow(index: Int): Nothing =
     throw new BufferOverflowException(
       s"Access at index $index overflows buffer of length ${limit()}"
