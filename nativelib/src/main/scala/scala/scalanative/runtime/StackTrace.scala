@@ -30,7 +30,7 @@ private[runtime] object StackTrace {
     }
       .dropWhile { elem =>
         elem.getClassName.startsWith("scala.scalanative.runtime.") ||
-        elem.getClassName.contains(".Iterator")
+        elem.getClassName.contains("scala.collection.")
       }
   }
 
