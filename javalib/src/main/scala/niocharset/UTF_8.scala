@@ -69,116 +69,6 @@ private[niocharset] object UTF_8
 
   private class Decoder extends CharsetDecoder(UTF_8, 1.0f, 1.0f) {
     def decodeLoop(in: ByteBuffer, out: CharBuffer): CoderResult = {
-      if (in.hasArray() && out.hasArray())
-        decodeLoopArray(in, out)
-      else
-        decodeLoopNoArray(in, out)
-    }
-
-    private def decodeLoopArray(
-        in: ByteBuffer,
-        out: CharBuffer
-    ): CoderResult = {
-      val inArray = in.array()
-      val inOffset = in.arrayOffset()
-      val inStart = in.position() + inOffset
-      val inEnd = in.limit() + inOffset
-
-      val outArray = out.array()
-      val outOffset = out.arrayOffset()
-      val outStart = out.position() + outOffset
-      val outEnd = out.limit() + outOffset
-
-      @inline
-      @tailrec
-      def loop(inPos: Int, outPos: Int): CoderResult = {
-        @inline
-        def finalize(result: CoderResult): CoderResult = {
-          in.position(inPos - inOffset)
-          out.position(outPos - outOffset)
-          result
-        }
-
-        if (inPos == inEnd) {
-          finalize(CoderResult.UNDERFLOW)
-        } else {
-          val leading = inArray(inPos).toInt
-          if (leading >= 0) {
-            // US-ASCII repertoire
-            if (outPos == outEnd) {
-              finalize(CoderResult.OVERFLOW)
-            } else {
-              outArray(outPos) = leading.toChar
-              loop(inPos + 1, outPos + 1)
-            }
-          } else {
-            // Multi-byte
-            val length = lengthByLeading(leading & 0x7f)
-            if (length == -1) {
-              finalize(CoderResult.malformedForLength(1))
-            } else {
-              val decoded = {
-                if (inPos + 1 >= inEnd) {
-                  DecodedMultiByte(CoderResult.UNDERFLOW)
-                } else {
-                  val b2 = inArray(inPos + 1)
-                  if (isInvalidNextByte(b2)) {
-                    DecodedMultiByte(CoderResult.malformedForLength(1))
-                  } else if (length == 2) {
-                    decode2(leading, b2)
-                  } else if (inPos + 2 >= inEnd) {
-                    DecodedMultiByte(CoderResult.UNDERFLOW)
-                  } else {
-                    val b3 = inArray(inPos + 2)
-                    if (isInvalidNextByte(b3)) {
-                      DecodedMultiByte(CoderResult.malformedForLength(2))
-                    } else if (length == 3) {
-                      decode3(leading, b2, b3)
-                    } else if (inPos + 3 >= inEnd) {
-                      DecodedMultiByte(CoderResult.UNDERFLOW)
-                    } else {
-                      val b4 = inArray(inPos + 3)
-                      if (isInvalidNextByte(b4))
-                        DecodedMultiByte(CoderResult.malformedForLength(3))
-                      else
-                        decode4(leading, b2, b3, b4)
-                    }
-                  }
-                }
-              }
-
-              if (decoded.failure != null) {
-                finalize(decoded.failure)
-              } else if (decoded.low == 0) {
-                // not a surrogate pair
-                if (outPos == outEnd)
-                  finalize(CoderResult.OVERFLOW)
-                else {
-                  outArray(outPos) = decoded.high
-                  loop(inPos + length, outPos + 1)
-                }
-              } else {
-                // a surrogate pair
-                if (outPos + 2 > outEnd)
-                  finalize(CoderResult.OVERFLOW)
-                else {
-                  outArray(outPos) = decoded.high
-                  outArray(outPos + 1) = decoded.low
-                  loop(inPos + length, outPos + 2)
-                }
-              }
-            }
-          }
-        }
-      }
-
-      loop(inStart, outStart)
-    }
-
-    private def decodeLoopNoArray(
-        in: ByteBuffer,
-        out: CharBuffer
-    ): CoderResult = {
       val inArray = Option.when(in.hasArray())(in.array()).orNull
       val inOffset = if (in.hasArray()) in.arrayOffset() else 0
       val inStart = in.position() + inOffset
@@ -216,7 +106,7 @@ private[niocharset] object UTF_8
               else {
                 out.put(outPos, leading.toChar)
               }
-              loop(inPos + 1, outPos +1)
+              loop(inPos + 1, outPos + 1)
             }
           } else {
             // Multi-byte
