@@ -210,32 +210,32 @@ private[niocharset] object UTF_8
               fail(CoderResult.malformedForLength(1))
             } else {
               val decoded = {
-                if (in.hasRemaining()) {
+                if (!in.hasRemaining()) {
+                  DecodedMultiByte(CoderResult.UNDERFLOW)
+                } else {
                   val b2 = in.get()
                   if (isInvalidNextByte(b2)) {
                     DecodedMultiByte(CoderResult.malformedForLength(1))
                   } else if (length == 2) {
                     decode2(leading, b2)
-                  } else if (in.hasRemaining()) {
+                  } else if (!in.hasRemaining()) {
+                    DecodedMultiByte(CoderResult.UNDERFLOW)
+                  } else {
                     val b3 = in.get()
                     if (isInvalidNextByte(b3)) {
                       DecodedMultiByte(CoderResult.malformedForLength(2))
                     } else if (length == 3) {
                       decode3(leading, b2, b3)
-                    } else if (in.hasRemaining()) {
+                    } else if (!in.hasRemaining()) {
+                      DecodedMultiByte(CoderResult.UNDERFLOW)
+                    } else {
                       val b4 = in.get()
                       if (isInvalidNextByte(b4))
                         DecodedMultiByte(CoderResult.malformedForLength(3))
                       else
                         decode4(leading, b2, b3, b4)
-                    } else {
-                      DecodedMultiByte(CoderResult.UNDERFLOW)
                     }
-                  } else {
-                    DecodedMultiByte(CoderResult.UNDERFLOW)
                   }
-                } else {
-                  DecodedMultiByte(CoderResult.UNDERFLOW)
                 }
               }
 
@@ -325,8 +325,9 @@ private[niocharset] object UTF_8
 
   private class Encoder extends CharsetEncoder(UTF_8, 1.1f, 3.0f) {
     def encodeLoop(in: CharBuffer, out: ByteBuffer): CoderResult = {
-      if (in.hasArray() && out.hasArray())
+      if (in.hasArray() && out.hasArray()) {
         encodeLoopArray(in, out)
+      }
       else
         encodeLoopNoArray(in, out)
     }
