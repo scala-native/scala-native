@@ -16,13 +16,13 @@ class StringBuilderTestOnJDK11 {
     val bldrAClone = new StringBuilder(dataA)
 
     val alteredA = "abcdef"
-    val bldrB = StringBuilder(alteredA)
+    val bldrB = new StringBuilder(alteredA)
 
     val shortenedA = "abcDe"
-    val bldrC = StringBuilder(shortenedA)
+    val bldrC = new StringBuilder(shortenedA)
 
     val shortenedAndChangedA = "abcde"
-    val bldrD = StringBuilder(shortenedAndChangedA)
+    val bldrD = new StringBuilder(shortenedAndChangedA)
 
     assertThrows(
       "null argument",

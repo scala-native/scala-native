@@ -16,13 +16,13 @@ class StringBufferTestOnJDK11 {
     val bufrAClone = new StringBuffer(dataA)
 
     val alteredA = "abcdef"
-    val bufrB = StringBuffer(alteredA)
+    val bufrB = new StringBuffer(alteredA)
 
     val shortenedA = "abcDe"
-    val bufrC = StringBuffer(shortenedA)
+    val bufrC = new StringBuffer(shortenedA)
 
     val shortenedAndChangedA = "abcde"
-    val bufrD = StringBuffer(shortenedAndChangedA)
+    val bufrD = new StringBuffer(shortenedAndChangedA)
 
     assertThrows(
       classOf[NullPointerException],

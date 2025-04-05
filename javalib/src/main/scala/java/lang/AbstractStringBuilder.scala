@@ -33,7 +33,7 @@ import scala.scalanative.unsafe.UnsafeRichArray
 protected abstract class AbstractStringBuilder private (unit: Unit) {
   import AbstractStringBuilder._
 
-  protected var value: Array[Char] = _
+  protected var value: Array[scala.Char] = _
   protected var count: scala.Int = _
   protected var shared: scala.Boolean = _
 
@@ -85,7 +85,7 @@ protected abstract class AbstractStringBuilder private (unit: Unit) {
     count += 1
   }
 
-  protected final def append0(chars: Array[Char]): Unit = {
+  protected final def append0(chars: Array[scala.Char]): Unit = {
     val newSize = count + chars.length
     if (newSize > value.length) {
       enlargeBuffer(newSize)
@@ -95,7 +95,7 @@ protected abstract class AbstractStringBuilder private (unit: Unit) {
   }
 
   protected final def append0(
-      chars: Array[Char],
+      chars: Array[scala.Char],
       offset: scala.Int,
       length: scala.Int
   ): Unit = {
@@ -211,28 +211,13 @@ protected abstract class AbstractStringBuilder private (unit: Unit) {
     return value(index)
   }
 
-  protected def compareTo0(another: AbstractStringBuilder): Int = {
+  protected def compareTo0(that: AbstractStringBuilder): Int = {
     Objects.requireNonNull(
-      another,
+      that,
       """Cannot read field "value" because "another" is null"""
     )
 
-    val thisCount = this.count
-    val thatCount = another.count
-
-    val memcmpCount = Math.min(thisCount, thatCount) * 2 // Bytes
-
-    val cmp =
-      if (memcmpCount == 0) 0
-      else
-        libc.string.memcmp(
-          value.at(0),
-          another.value.at(0),
-          memcmpCount.toCSize
-        )
-
-    if (cmp == 0) thisCount - thatCount
-    else cmp
+    Arrays.compare(value, 0, this.count, that.value, 0, that.count)
   }
 
   protected final def delete0(start: scala.Int, _end: scala.Int): Unit = {
@@ -293,7 +278,7 @@ protected abstract class AbstractStringBuilder private (unit: Unit) {
   def getChars(
       start: scala.Int,
       end: scala.Int,
-      dest: Array[Char],
+      dest: Array[scala.Char],
       destStart: scala.Int
   ): Unit = {
     if (start > count || end > count || start > end) {
@@ -302,7 +287,10 @@ protected abstract class AbstractStringBuilder private (unit: Unit) {
     System.arraycopy(value, start, dest, destStart, end - start)
   }
 
-  protected final def insert0(index: scala.Int, chars: Array[Char]): Unit = {
+  protected final def insert0(
+      index: scala.Int,
+      chars: Array[scala.Char]
+  ): Unit = {
     if (0 > index || index > count) {
       throw new StringIndexOutOfBoundsException(index)
     }
@@ -315,7 +303,7 @@ protected abstract class AbstractStringBuilder private (unit: Unit) {
 
   protected final def insert0(
       index: scala.Int,
-      chars: Array[Char],
+      chars: Array[scala.Char],
       start: scala.Int,
       length: scala.Int
   ): Unit = {
