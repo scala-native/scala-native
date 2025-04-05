@@ -7,6 +7,33 @@ import scala.scalanative.unsigned._
 import scala.scalanative.meta.LinktimeInfo
 
 private[runtime] object StackTrace {
+  @noinline def stackTraceIterator(): Iterator[StackTraceElement] = {
+    new Iterator[StackTraceElement] {
+      val tlContext = ThreadLocalContext.get()
+      implicit val localContext: Context = tlContext
+      val cursor = tlContext.unwindCursor
+      val context = tlContext.unwindContext
+      val ip = tlContext.ip
+      unwind.get_context(context)
+      unwind.init_local(cursor, context)
+
+      override def hasNext: Boolean = unwind.step(cursor) > 0
+      override def next(): StackTraceElement = {
+        unwind.get_reg(cursor, unwind.UNW_REG_IP, ip)
+        val addr =
+          Intrinsics.castRawSizeToLongUnsigned(Intrinsics.loadRawSize(ip))
+        tlContext.cache.getOrElseUpdate(
+          addr,
+          makeStackTraceElement(cursor, addr)
+        )
+      }
+    }
+      .dropWhile { elem =>
+        elem.getClassName.startsWith("scala.scalanative.runtime.") ||
+        elem.getClassName.contains("scala.collection.")
+      }
+  }
+
   @noinline def currentStackTrace(): scala.Array[StackTraceElement] = {
     // Used to prevent filling stacktraces inside `currentStackTrace` which might lead to infinite loop
     val thread = NativeThread.currentNativeThread
@@ -16,10 +43,10 @@ private[runtime] object StackTrace {
       implicit val tlContext: Context = ThreadLocalContext.get()
       val cursor = tlContext.unwindCursor
       val context = tlContext.unwindContext
+      val ip = tlContext.ip
       try {
         thread.isFillingStackTrace = true
         val buffer = scala.Array.newBuilder[StackTraceElement]
-        val ip = Intrinsics.stackalloc[RawSize]()
         unwind.get_context(context)
         unwind.init_local(cursor, context)
         // JVM limit stack trace to 1024 entries
@@ -168,7 +195,8 @@ private[runtime] object StackTrace {
       MethodNameBufferOffset + MethodNameMaxLength
     final val UnwindCursorOffset = FileNameBufferOffset + FileNameMaxLength
     final val UnwindContextOffset = UnwindCursorOffset + unwind.sizeOfCursor
-    final val DataSize = UnwindContextOffset + unwind.sizeOfContext
+    final val IPOffset = UnwindContextOffset + unwind.sizeOfContext
+    final val DataSize = IPOffset + 8
   }
   private class Context(
       val cache: mutable.LongMap[StackTraceElement],
@@ -191,5 +219,6 @@ private[runtime] object StackTrace {
     def freshFileNameBuffer = freshAt(FileNameBufferOffset, FileNameMaxLength)
     def unwindCursor = data.atUnsafe(UnwindCursorOffset)
     def unwindContext = data.atUnsafe(UnwindContextOffset)
+    def ip = data.atUnsafe(IPOffset).rawptr
   }
 }

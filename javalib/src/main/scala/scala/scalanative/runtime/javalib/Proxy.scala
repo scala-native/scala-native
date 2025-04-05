@@ -31,4 +31,6 @@ object Proxy {
   def stealWork(timeout: FiniteDuration): Unit =
     concurrent.NativeExecutionContext.queueInternal.stealWork(timeout)
 
+  def stackTraceIterator(): Iterator[StackTraceElement] =
+    StackTrace.stackTraceIterator()
 }
