@@ -9,6 +9,11 @@ unsafe=scala/scalanative/unsafe
 unsigned=scala/scalanative/unsigned
 runtime=scala/scalanative/runtime
 javaNIO=javalib/src/main/scala/java/nio/
+javaUtil=javalib/src/main/scala/java/util
+
+sharedTest=unit-tests/shared/src/test
+
+javalibTestJDK9=${sharedTest}/require-jdk9/org/scalanative/testsuite/javalib
 
 function gyb() {
   file=$1
@@ -45,5 +50,9 @@ gyb $javaNIO/HeapByteBufferViews.scala.gyb
 gyb $javaNIO/MappedByteBufferViews.scala.gyb
 gyb $javaNIO/PointerByteBufferViews.scala.gyb
 
+gyb $javaUtil/ArraysJDK9Methods.scala.gyb
+
 gyb unit-tests/native/src/test/scala/org/scalanative/testsuite/niobuffer/ByteBufferViewsNativeTests.scala.gyb
 gyb unit-tests/shared/src/test/scala/org/scalanative/testsuite/javalib/nio/BufferAdapter.scala.template.gyb
+
+gyb ${javalibTestJDK9}/util/ArraysOfAnyValTestOnJDK9.scala.gyb

@@ -119,12 +119,12 @@ class MathIEEE754NegativeZeroSundryTest {
 
   /* The methods in this class all pass on JVM (8, 22). They also pass
    * CI when release-mode is Mode.Debug or in a private Clang 18 development
-   * environments with either Mode.Debug or Mode.ReleaseFast.
+   * environments with either Mode.Debug or Mode.ReleaseFull.
    *
    * They fail in the CI environment when built with Mode.ReleseFast.
    * The 11 JVM compliance tests and two multi-arch tests build in this manner.
    *
-   * This problem is being actively investigated.
+   * This problem is being actively investigated. Scala Native Issue #3986.
    *
    * For now, run only on the JVM. Keep Tests available for manually running
    * on Scala Native.
