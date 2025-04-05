@@ -85,6 +85,106 @@ object System {
     this.err = err
 
   def gc(): Unit = Proxy.GC_collect()
+
+  // Logger interface
+  def getLogger(name: String): Logger = {
+    java.util.Objects.requireNonNull(name)
+    new impl.SimpleLogger(name)
+  }
+  def getLogger(name: String, bundle: java.util.ResourceBundle): Logger =
+    getLogger(name)
+
+  trait Logger {
+    def getName(): String
+    def isLoggable(level: Logger.Level): scala.Boolean
+
+    // Core methods that need implementation
+    def log(
+        level: Logger.Level,
+        bundle: java.util.ResourceBundle,
+        format: String,
+        params: scala.Array[Object]
+    ): Unit
+    def log(
+        level: Logger.Level,
+        bundle: java.util.ResourceBundle,
+        msg: String,
+        thrown: Throwable
+    ): Unit
+
+    // Default methods with implementations
+    def log(level: Logger.Level, obj: Object): Unit = if (isLoggable(level)) {
+      log(level, if (obj == null) "null" else obj.toString())
+    }
+
+    def log(level: Logger.Level, msg: String): Unit = if (isLoggable(level)) {
+      log(level, null: java.util.ResourceBundle, msg, null: Throwable)
+    }
+
+    def log(
+        level: Logger.Level,
+        format: String,
+        params: scala.Array[Object]
+    ): Unit =
+      if (isLoggable(level)) {
+        log(level, null: java.util.ResourceBundle, format, params)
+      }
+
+    def log(level: Logger.Level, msg: String, thrown: Throwable): Unit =
+      if (isLoggable(level)) {
+        log(level, null: java.util.ResourceBundle, msg, thrown)
+      }
+
+    def log(
+        level: Logger.Level,
+        msgSupplier: java.util.function.Supplier[String]
+    ): Unit = if (isLoggable(level)) {
+      log(
+        level,
+        null: java.util.ResourceBundle,
+        msgSupplier.get(),
+        null: Throwable
+      )
+    }
+
+    def log(
+        level: Logger.Level,
+        msgSupplier: java.util.function.Supplier[String],
+        thrown: Throwable
+    ): Unit = if (isLoggable(level)) {
+      log(level, null: java.util.ResourceBundle, msgSupplier.get(), thrown)
+    }
+  }
+
+  object Logger {
+    final class Level private (name: String, ordinal: Int, severity: Int)
+        extends java.lang._Enum[Level](name, ordinal) {
+      def getName(): String = name
+      def getSeverity(): Int = severity
+    }
+
+    object Level {
+      val ALL: Level = new Level("ALL", 0, Int.MinValue)
+      val TRACE: Level = new Level("TRACE", 1, 400)
+      val DEBUG: Level = new Level("DEBUG", 2, 500)
+      val INFO: Level = new Level("INFO", 3, 800)
+      val WARNING: Level = new Level("WARNING", 4, 900)
+      val ERROR: Level = new Level("ERROR", 5, 1000)
+      val OFF: Level = new Level("OFF", 6, Int.MaxValue)
+
+      private val values_ = Array(ALL, TRACE, DEBUG, INFO, WARNING, ERROR, OFF)
+      def values(): Array[Level] = values_.clone()
+      def valueOf(name: String): Level = {
+        values_
+          .find(_.name() == name)
+          .getOrElse(
+            throw new IllegalArgumentException(
+              s"No enum constant java.lang.System.Logger.Level.$name"
+            )
+          )
+      }
+    }
+  }
 }
 
 // Extract mutable fields to custom object allowing to skip allocations of unused features
