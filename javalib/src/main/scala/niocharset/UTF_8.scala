@@ -102,8 +102,7 @@ private[niocharset] object UTF_8
             } else {
               if (outArray != null) {
                 outArray(outPos) = leading.toChar
-              }
-              else {
+              } else {
                 out.put(outPos, leading.toChar)
               }
               loop(inPos + 1, outPos + 1)
@@ -159,8 +158,7 @@ private[niocharset] object UTF_8
                 else {
                   if (outArray != null) {
                     outArray(outPos) = decoded.high
-                  }
-                  else {
+                  } else {
                     out.put(outPos, decoded.high)
                   }
                   loop(inPos + length, outPos + 1)
@@ -173,8 +171,7 @@ private[niocharset] object UTF_8
                   if (outArray != null) {
                     outArray(outPos) = decoded.high
                     outArray(outPos + 1) = decoded.low
-                  }
-                  else {
+                  } else {
                     out.put(outPos, decoded.high)
                     out.put(outPos + 1, decoded.low)
                   }
@@ -249,8 +246,7 @@ private[niocharset] object UTF_8
     def encodeLoop(in: CharBuffer, out: ByteBuffer): CoderResult = {
       if (in.hasArray() && out.hasArray()) {
         encodeLoopArray(in, out)
-      }
-      else
+      } else
         encodeLoopNoArray(in, out)
     }
 
