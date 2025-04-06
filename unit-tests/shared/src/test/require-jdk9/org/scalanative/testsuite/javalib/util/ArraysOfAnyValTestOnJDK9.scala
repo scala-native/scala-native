@@ -4828,7 +4828,7 @@ class ArraysOfDoubleCornerCasesTestOnJDK9 {
 
     // convoluted initialization works around suspected SN bugs
     val negativeZero =
-      jl.Double.longBitsToDouble(0x8000000000000000L).doubleValue()
+      jl.Double.longBitsToDouble(0x8000000000000000L)
 
     val changeAt = 10
     val changeTo = negativeZero
@@ -4966,11 +4966,8 @@ class ArraysOfDoubleCornerCasesTestOnJDK9 {
     val javaNaNRawLongBits = 0x7ff8000000000000L
 
     // 0xF and 0xF0 are arbitrary valid values, to make bit patterns differ.
-    val payloadNaN_1 =
-      jl.Double.longBitsToDouble(javaNaNRawLongBits | 0xf).doubleValue()
-
-    val payloadNaN_2 =
-      jl.Double.longBitsToDouble(javaNaNRawLongBits | 0xf0).doubleValue()
+    val payloadNaN_1 = jl.Double.longBitsToDouble(javaNaNRawLongBits | 0xf)
+    val payloadNaN_2 = jl.Double.longBitsToDouble(javaNaNRawLongBits | 0xf0)
 
     val arrA = new Array[scala.Double](srcSize)
     val arrB = new Array[scala.Double](srcSize)
@@ -5045,7 +5042,7 @@ class ArraysOfFloatCornerCasesTestOnJDK9 {
 
     // convoluted initialization works around suspected SN bugs
     val negativeZero: scala.Float =
-      jl.Float.intBitsToFloat(0x80000000).floatValue()
+      jl.Float.intBitsToFloat(0x80000000)
 
     val changeAt = 11
     val changeTo = negativeZero
@@ -5183,11 +5180,9 @@ class ArraysOfFloatCornerCasesTestOnJDK9 {
     val javaNaNRawIntBits = 0x7fc00000
 
     // 0xF and 0xF0 are arbitrary valid values, to make bit patterns differ.
-    val payloadNaN_1 =
-      jl.Float.intBitsToFloat(javaNaNRawIntBits | 0xf).floatValue()
+    val payloadNaN_1 = jl.Float.intBitsToFloat(javaNaNRawIntBits | 0xf)
 
-    val payloadNaN_2 =
-      jl.Float.intBitsToFloat(javaNaNRawIntBits | 0xf0).floatValue()
+    val payloadNaN_2 = jl.Float.intBitsToFloat(javaNaNRawIntBits | 0xf0)
 
     val arrA = new Array[scala.Float](srcSize)
     val arrB = new Array[scala.Float](srcSize)

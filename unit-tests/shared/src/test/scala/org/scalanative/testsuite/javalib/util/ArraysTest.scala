@@ -1356,8 +1356,7 @@ class ArraysTest {
     /* Convoluted initialization works around SN Issues #4285 & #3952
      * but not #3986.
      */
-    val negativeZero =
-      jl.Double.longBitsToDouble(0x8000000000000000L).doubleValue()
+    val negativeZero = jl.Double.longBitsToDouble(0x8000000000000000L)
 
     arrB(0) = negativeZero
 
@@ -1386,8 +1385,7 @@ class ArraysTest {
     /* Convoluted initialization works around SN Issues #4285 & #3952
      * but not #3986.
      */
-    val negativeZero: scala.Float =
-      jl.Float.intBitsToFloat(0x80000000).floatValue()
+    val negativeZero: scala.Float = jl.Float.intBitsToFloat(0x80000000)
 
     arrB(0) = negativeZero
 
