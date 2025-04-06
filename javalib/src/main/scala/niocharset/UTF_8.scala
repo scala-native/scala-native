@@ -84,8 +84,8 @@ private[niocharset] object UTF_8
       def loop(inPos: Int, outPos: Int): CoderResult = {
         @inline
         def finalize(result: CoderResult): CoderResult = {
-          in.position(inPos)
-          out.position(outPos)
+          in.position(inPos - inOffset)
+          out.position(outPos - outOffset)
           result
         }
 
@@ -165,7 +165,7 @@ private[niocharset] object UTF_8
                 }
               } else {
                 // a surrogate pair
-                if (out.remaining() < 2)
+                if (outPos + 2 > outEnd)
                   finalize(CoderResult.OVERFLOW)
                 else {
                   if (outArray != null) {
