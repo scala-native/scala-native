@@ -24,10 +24,17 @@ class CoderResult private (kind: Int, _length: Int) {
   }
 
   def throwException(): Unit = (kind: @switch) match {
-    case Overflow   => throw new BufferOverflowException()
     case Underflow  => throw new BufferUnderflowException()
+    case Overflow   => throw new BufferOverflowException()
     case Malformed  => throw new MalformedInputException(_length)
     case Unmappable => throw new UnmappableCharacterException(_length)
+  }
+
+  override def toString(): String = (kind: @switch) match {
+    case Underflow  => "UNDERFLOW"
+    case Overflow   => "OVERFLOW"
+    case Malformed  => s"MALFORMED[${_length}]"
+    case Unmappable => s"UNMAPPABLE[${_length}]"
   }
 }
 
