@@ -69,23 +69,13 @@ private[niocharset] object UTF_8
 
   private class Decoder extends CharsetDecoder(UTF_8, 1.0f, 1.0f) {
     def decodeLoop(in: ByteBuffer, out: CharBuffer): CoderResult = {
-      if (in.hasArray() && out.hasArray())
-        decodeLoopArray(in, out)
-      else
-        decodeLoopNoArray(in, out)
-    }
-
-    private def decodeLoopArray(
-        in: ByteBuffer,
-        out: CharBuffer
-    ): CoderResult = {
-      val inArray = in.array()
-      val inOffset = in.arrayOffset()
+      val inArray = if (in.hasArray()) in.array() else null
+      val inOffset = if (in.hasArray()) in.arrayOffset() else 0
       val inStart = in.position() + inOffset
       val inEnd = in.limit() + inOffset
 
-      val outArray = out.array()
-      val outOffset = out.arrayOffset()
+      val outArray = if (out.hasArray()) out.array() else null
+      val outOffset = if (out.hasArray()) out.arrayOffset() else 0
       val outStart = out.position() + outOffset
       val outEnd = out.limit() + outOffset
 
@@ -102,13 +92,19 @@ private[niocharset] object UTF_8
         if (inPos == inEnd) {
           finalize(CoderResult.UNDERFLOW)
         } else {
-          val leading = inArray(inPos).toInt
+          val leading =
+            if (inArray != null) inArray(inPos).toInt
+            else in.get(inPos).toInt
           if (leading >= 0) {
             // US-ASCII repertoire
             if (outPos == outEnd) {
               finalize(CoderResult.OVERFLOW)
             } else {
-              outArray(outPos) = leading.toChar
+              if (outArray != null) {
+                outArray(outPos) = leading.toChar
+              } else {
+                out.put(outPos, leading.toChar)
+              }
               loop(inPos + 1, outPos + 1)
             }
           } else {
@@ -121,7 +117,9 @@ private[niocharset] object UTF_8
                 if (inPos + 1 >= inEnd) {
                   DecodedMultiByte(CoderResult.UNDERFLOW)
                 } else {
-                  val b2 = inArray(inPos + 1)
+                  val b2 =
+                    if (inArray != null) inArray(inPos + 1)
+                    else in.get(inPos + 1)
                   if (isInvalidNextByte(b2)) {
                     DecodedMultiByte(CoderResult.malformedForLength(1))
                   } else if (length == 2) {
@@ -129,7 +127,9 @@ private[niocharset] object UTF_8
                   } else if (inPos + 2 >= inEnd) {
                     DecodedMultiByte(CoderResult.UNDERFLOW)
                   } else {
-                    val b3 = inArray(inPos + 2)
+                    val b3 =
+                      if (inArray != null) inArray(inPos + 2)
+                      else in.get(inPos + 2)
                     if (isInvalidNextByte(b3)) {
                       DecodedMultiByte(CoderResult.malformedForLength(2))
                     } else if (length == 3) {
@@ -137,7 +137,9 @@ private[niocharset] object UTF_8
                     } else if (inPos + 3 >= inEnd) {
                       DecodedMultiByte(CoderResult.UNDERFLOW)
                     } else {
-                      val b4 = inArray(inPos + 3)
+                      val b4 =
+                        if (inArray != null) inArray(inPos + 3)
+                        else in.get(inPos + 3)
                       if (isInvalidNextByte(b4))
                         DecodedMultiByte(CoderResult.malformedForLength(3))
                       else
@@ -154,7 +156,11 @@ private[niocharset] object UTF_8
                 if (outPos == outEnd)
                   finalize(CoderResult.OVERFLOW)
                 else {
-                  outArray(outPos) = decoded.high
+                  if (outArray != null) {
+                    outArray(outPos) = decoded.high
+                  } else {
+                    out.put(outPos, decoded.high)
+                  }
                   loop(inPos + length, outPos + 1)
                 }
               } else {
@@ -162,8 +168,13 @@ private[niocharset] object UTF_8
                 if (outPos + 2 > outEnd)
                   finalize(CoderResult.OVERFLOW)
                 else {
-                  outArray(outPos) = decoded.high
-                  outArray(outPos + 1) = decoded.low
+                  if (outArray != null) {
+                    outArray(outPos) = decoded.high
+                    outArray(outPos + 1) = decoded.low
+                  } else {
+                    out.put(outPos, decoded.high)
+                    out.put(outPos + 1, decoded.low)
+                  }
                   loop(inPos + length, outPos + 2)
                 }
               }
@@ -173,98 +184,6 @@ private[niocharset] object UTF_8
       }
 
       loop(inStart, outStart)
-    }
-
-    private def decodeLoopNoArray(
-        in: ByteBuffer,
-        out: CharBuffer
-    ): CoderResult = {
-      @inline
-      @tailrec
-      def loop(): CoderResult = {
-        // Mark the input position so that we can reset on multi-byte failure
-        val startPosition = in.position()
-
-        @inline
-        def fail(result: CoderResult): CoderResult = {
-          in.position(startPosition)
-          result
-        }
-
-        if (!in.hasRemaining()) {
-          CoderResult.UNDERFLOW
-        } else {
-          val leading = in.get().toInt
-          if (leading >= 0) {
-            // US-ASCII repertoire
-            if (!out.hasRemaining()) {
-              fail(CoderResult.OVERFLOW)
-            } else {
-              out.put(leading.toChar)
-              loop()
-            }
-          } else {
-            // Multi-byte
-            val length = lengthByLeading(leading & 0x7f)
-            if (length == -1) {
-              fail(CoderResult.malformedForLength(1))
-            } else {
-              val decoded = {
-                if (in.hasRemaining()) {
-                  val b2 = in.get()
-                  if (isInvalidNextByte(b2)) {
-                    DecodedMultiByte(CoderResult.malformedForLength(1))
-                  } else if (length == 2) {
-                    decode2(leading, b2)
-                  } else if (in.hasRemaining()) {
-                    val b3 = in.get()
-                    if (isInvalidNextByte(b3)) {
-                      DecodedMultiByte(CoderResult.malformedForLength(2))
-                    } else if (length == 3) {
-                      decode3(leading, b2, b3)
-                    } else if (in.hasRemaining()) {
-                      val b4 = in.get()
-                      if (isInvalidNextByte(b4))
-                        DecodedMultiByte(CoderResult.malformedForLength(3))
-                      else
-                        decode4(leading, b2, b3, b4)
-                    } else {
-                      DecodedMultiByte(CoderResult.UNDERFLOW)
-                    }
-                  } else {
-                    DecodedMultiByte(CoderResult.UNDERFLOW)
-                  }
-                } else {
-                  DecodedMultiByte(CoderResult.UNDERFLOW)
-                }
-              }
-
-              if (decoded.failure != null) {
-                fail(decoded.failure)
-              } else if (decoded.low == 0) {
-                // not a surrogate pair
-                if (!out.hasRemaining())
-                  fail(CoderResult.OVERFLOW)
-                else {
-                  out.put(decoded.high)
-                  loop()
-                }
-              } else {
-                // a surrogate pair
-                if (out.remaining() < 2)
-                  fail(CoderResult.OVERFLOW)
-                else {
-                  out.put(decoded.high)
-                  out.put(decoded.low)
-                  loop()
-                }
-              }
-            }
-          }
-        }
-      }
-
-      loop()
     }
 
     @inline private def isInvalidNextByte(b: Int): Boolean =
@@ -325,9 +244,9 @@ private[niocharset] object UTF_8
 
   private class Encoder extends CharsetEncoder(UTF_8, 1.1f, 3.0f) {
     def encodeLoop(in: CharBuffer, out: ByteBuffer): CoderResult = {
-      if (in.hasArray() && out.hasArray())
+      if (in.hasArray() && out.hasArray()) {
         encodeLoopArray(in, out)
-      else
+      } else
         encodeLoopNoArray(in, out)
     }
 
