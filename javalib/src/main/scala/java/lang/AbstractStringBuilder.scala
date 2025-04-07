@@ -1,9 +1,14 @@
 // Contains parts ported from Android Luni
 package java.lang
 
-import java.util.Arrays
+import java.util.{Arrays, Objects}
+
+import scala.scalanative.libc
 
 import scala.scalanative.runtime.ieee754tostring.ryu._
+
+import scala.scalanative.unsafe.Size.intToSize
+import scala.scalanative.unsafe.UnsafeRichArray
 
 /* Design Note:
  * The public methods indexOf(string) and lastIndexOf(string) and their
@@ -28,7 +33,7 @@ import scala.scalanative.runtime.ieee754tostring.ryu._
 protected abstract class AbstractStringBuilder private (unit: Unit) {
   import AbstractStringBuilder._
 
-  protected var value: Array[Char] = _
+  protected var value: Array[scala.Char] = _
   protected var count: scala.Int = _
   protected var shared: scala.Boolean = _
 
@@ -80,7 +85,7 @@ protected abstract class AbstractStringBuilder private (unit: Unit) {
     count += 1
   }
 
-  protected final def append0(chars: Array[Char]): Unit = {
+  protected final def append0(chars: Array[scala.Char]): Unit = {
     val newSize = count + chars.length
     if (newSize > value.length) {
       enlargeBuffer(newSize)
@@ -90,7 +95,7 @@ protected abstract class AbstractStringBuilder private (unit: Unit) {
   }
 
   protected final def append0(
-      chars: Array[Char],
+      chars: Array[scala.Char],
       offset: scala.Int,
       length: scala.Int
   ): Unit = {
@@ -206,6 +211,15 @@ protected abstract class AbstractStringBuilder private (unit: Unit) {
     return value(index)
   }
 
+  protected def compareTo0(that: AbstractStringBuilder): Int = {
+    Objects.requireNonNull(
+      that,
+      """Cannot read field "value" because "another" is null"""
+    )
+
+    Arrays.compare(value, 0, this.count, that.value, 0, that.count)
+  }
+
   protected final def delete0(start: scala.Int, _end: scala.Int): Unit = {
     var end = _end
     if (start >= 0) {
@@ -264,7 +278,7 @@ protected abstract class AbstractStringBuilder private (unit: Unit) {
   def getChars(
       start: scala.Int,
       end: scala.Int,
-      dest: Array[Char],
+      dest: Array[scala.Char],
       destStart: scala.Int
   ): Unit = {
     if (start > count || end > count || start > end) {
@@ -273,7 +287,10 @@ protected abstract class AbstractStringBuilder private (unit: Unit) {
     System.arraycopy(value, start, dest, destStart, end - start)
   }
 
-  protected final def insert0(index: scala.Int, chars: Array[Char]): Unit = {
+  protected final def insert0(
+      index: scala.Int,
+      chars: Array[scala.Char]
+  ): Unit = {
     if (0 > index || index > count) {
       throw new StringIndexOutOfBoundsException(index)
     }
@@ -286,7 +303,7 @@ protected abstract class AbstractStringBuilder private (unit: Unit) {
 
   protected final def insert0(
       index: scala.Int,
-      chars: Array[Char],
+      chars: Array[scala.Char],
       start: scala.Int,
       length: scala.Int
   ): Unit = {
@@ -364,6 +381,36 @@ protected abstract class AbstractStringBuilder private (unit: Unit) {
     System.arraycopy(value, index, newData, index + size, count - index)
     value = newData
     shared = false
+  }
+
+  protected def repeat0(codePoint: Int, n: Int): Unit = {
+    if (!Character.isValidCodePoint(codePoint)) {
+      val hexString = Integer.toHexString(codePoint).toUpperCase()
+      throw new IllegalArgumentException(
+        s"Not a valid Unicode code point: 0x${hexString}"
+      )
+    }
+
+    if (n < 0)
+      throw new IllegalArgumentException(s"count is negative: ${count}")
+
+    val cpChars = Character.toChars(codePoint)
+    val cpCharsLength = cpChars.length
+    ensureCapacity(count + (cpCharsLength * n))
+
+    for (j <- 0 until n)
+      append0(cpChars)
+  }
+
+  protected def repeat0(cs: CharSequence, n: Int): Unit = {
+    if (n < 0)
+      throw new IllegalArgumentException(s"count is negative: ${count}")
+
+    val csLength = cs.length()
+    ensureCapacity(count + (csLength * n))
+
+    for (j <- 0 until n)
+      append0(cs, 0, csLength)
   }
 
   protected final def replace0(
