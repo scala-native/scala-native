@@ -6,6 +6,7 @@ final class StringBuilder
     extends AbstractStringBuilder
     with Appendable
     with CharSequence
+    with Comparable[StringBuilder]
     with Serializable {
   def this(capacity: Int) = {
     this()
@@ -113,6 +114,9 @@ final class StringBuilder
     this
   }
 
+  def compareTo(another: StringBuilder): Int =
+    compareTo0(another)
+
   def delete(start: scala.Int, end: scala.Int): StringBuilder = {
     delete0(start, end)
     this
@@ -190,6 +194,16 @@ final class StringBuilder
       end: scala.Int
   ): StringBuilder = {
     insert0(offset, seq, start, end)
+    this
+  }
+
+  def repeat(codePoint: Int, count: Int): StringBuilder = {
+    repeat0(codePoint, count)
+    this
+  }
+
+  def repeat(cs: CharSequence, count: Int): StringBuilder = {
+    repeat0(cs, count)
     this
   }
 
