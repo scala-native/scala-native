@@ -9,6 +9,7 @@
 package niocharset
 
 import scala.annotation.tailrec
+import scala.scalanative.unsafe.UnsafeRichArray
 
 import java.nio._
 import java.nio.charset._
@@ -47,7 +48,10 @@ private[niocharset] abstract class ISO_8859_1_And_US_ASCII_Common protected (
         val overflow = outRemaining < inRemaining
         val rem = if (overflow) outRemaining else inRemaining
 
-        val inPtr = if (in.hasPointer()) in.pointer() else null
+        val inPtr =
+          if (in.hasPointer()) in.pointer()
+          else if (in.hasArray()) in.array().at(in.arrayOffset())
+          else null
         val inStart = in.position()
         val inEnd = inStart + rem
 

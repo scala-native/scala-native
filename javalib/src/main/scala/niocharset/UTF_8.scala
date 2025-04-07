@@ -9,6 +9,7 @@
 package niocharset
 
 import scala.annotation.tailrec
+import scala.scalanative.unsafe.UnsafeRichArray
 
 import java.nio._
 import java.nio.charset._
@@ -69,7 +70,10 @@ private[niocharset] object UTF_8
 
   private class Decoder extends CharsetDecoder(UTF_8, 1.0f, 1.0f) {
     def decodeLoop(in: ByteBuffer, out: CharBuffer): CoderResult = {
-      val inPtr = if (in.hasPointer()) in.pointer() else null
+      val inPtr =
+        if (in.hasPointer()) in.pointer()
+        else if (in.hasArray()) in.array().at(in.arrayOffset())
+        else null
       val inStart = in.position()
       val inEnd = in.limit()
 
