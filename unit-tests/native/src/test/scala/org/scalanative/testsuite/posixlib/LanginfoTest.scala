@@ -21,6 +21,8 @@ import scala.scalanative.posix.locale.{setlocale, LC_ALL}
 import scala.scalanative.posix.stdlib
 import scala.scalanative.posix.string
 
+import java.{util => ju}
+
 object LanginfoTest {
   private var savedLocale: Option[CString] = None
 
@@ -86,6 +88,20 @@ class LanginfoTest {
       s"${item.name}",
       item.expected,
       fromCString(nl_langinfo(item.code))
+    )
+  }
+
+  case class LanginfoHasAlternatives(
+      name: String,
+      code: nl_item,
+      alternatives: ju.List[String]
+  )
+
+  def verifyAlternatives(item: LanginfoHasAlternatives): Unit = {
+    val nl_info = fromCString(nl_langinfo(item.code))
+    assertTrue(
+      s"${item.name} alternatives: ${item.alternatives}, got: '${nl_info}'",
+      item.alternatives.contains(nl_info)
     )
   }
 
@@ -185,10 +201,24 @@ class LanginfoTest {
       } else if (isMac) {
         Array(
           LanginfoItem("D_T_FMT", D_T_FMT, "%a %b %e %X %Y"),
-          LanginfoItem("T_FMT", T_FMT, "%H:%M:%S"),
-          LanginfoItem("YESEXPR", YESEXPR, "^[yYsS].*"),
-          LanginfoItem("NOEXPR", NOEXPR, "^[nN].*")
+          LanginfoItem("T_FMT", T_FMT, "%H:%M:%S")
         ).foreach(verify(_))
+
+        /* Sometime around macOS 15.4 or early April, 2025 the
+         * longer alternative came into use. To be robust, accept either form.
+         */
+        Array(
+          LanginfoHasAlternatives(
+            "YESEXPR",
+            YESEXPR,
+            ju.Arrays.asList("^[yYsS].*", "^(([yY]([eE][sS])?)|([yY]))")
+          ),
+          LanginfoHasAlternatives(
+            "NOEXPR",
+            NOEXPR,
+            ju.Arrays.asList("^[nN].*", "^(([nN]([oO])?)|([nN]))")
+          )
+        ).foreach(verifyAlternatives(_))
       }
     }
   }
