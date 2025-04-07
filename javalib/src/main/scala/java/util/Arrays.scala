@@ -535,11 +535,25 @@ object Arrays extends ArraysJDK9Methods {
   @noinline def equals(a: Array[Boolean], b: Array[Boolean]): Boolean =
     equalsImpl(a, b)
 
-  @noinline def equals(a: Array[Double], b: Array[Double]): Boolean =
-    equalsImpl(a, b)
+  @noinline def equals(
+      a: Array[scala.Double],
+      b: Array[scala.Double]
+  ): Boolean = {
+    if (a eq b) true
+    else if (a == null || b == null) false
+    else
+      equals(a, 0, a.length, b, 0, b.length)
+  }
 
-  @noinline def equals(a: Array[Float], b: Array[Float]): Boolean =
-    equalsImpl(a, b)
+  @noinline def equals(
+      a: Array[scala.Float],
+      b: Array[scala.Float]
+  ): Boolean = {
+    if (a eq b) true
+    else if (a == null || b == null) false
+    else
+      equals(a, 0, a.length, b, 0, b.length)
+  }
 
   @noinline def equals(a: Array[AnyRef], b: Array[AnyRef]): Boolean =
     equalsImpl(a, b)
