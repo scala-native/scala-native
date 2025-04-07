@@ -172,6 +172,15 @@ final class _String()
     sb.getChars(0, count, value, 0)
   }
 
+  // Extended API
+  def this(data: ByteBuffer, encoding: Charset) = {
+    this()
+    offset = 0
+    val charBuffer = encoding.decode(data)
+    value = charBuffer.array()
+    count = charBuffer.length()
+  }
+
   def charAt(index: Int): Char = {
     if (0 <= index && index < count) {
       value(offset + index)
