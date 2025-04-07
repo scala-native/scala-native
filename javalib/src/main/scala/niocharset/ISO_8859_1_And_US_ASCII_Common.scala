@@ -47,50 +47,37 @@ private[niocharset] abstract class ISO_8859_1_And_US_ASCII_Common protected (
         val overflow = outRemaining < inRemaining
         val rem = if (overflow) outRemaining else inRemaining
 
-        if (in.hasArray() && out.hasArray()) {
-          val inArr = in.array()
-          val inOffset = in.arrayOffset()
-          val inStart = in.position() + inOffset
-          val inEnd = inStart + rem
+        val inPtr = if (in.hasPointer()) in.pointer() else null
+        val inStart = in.position()
+        val inEnd = inStart + rem
 
-          val outArr = out.array()
-          val outOffset = out.arrayOffset()
-          val outStart = out.position() + outOffset
+        val outArray = if (out.hasArray()) out.array() else null
+        val outOffset = if (out.hasArray()) out.arrayOffset() else 0
+        val outStart = out.position() + outOffset
 
-          var inPos = inStart
-          var outPos = outStart
-          while (inPos != inEnd) {
-            val c = inArr(inPos).toInt & 0xff
+        var inPos = inStart
+        var outPos = outStart
+        while (inPos != inEnd) {
+          val c = inPtr(inPos).toInt & 0xff
 
-            if (c > maxValue) {
-              // Can only happen in US_ASCII
-              in.position(inPos - inOffset)
-              out.position(outPos - outOffset)
-              return CoderResult.malformedForLength(1)
-            }
-
-            outArr(outPos) = c.toChar
-            inPos += 1
-            outPos += 1
+          if (c > maxValue) {
+            // Can only happen in US_ASCII
+            in.position(inPos)
+            out.position(outPos - outOffset)
+            return CoderResult.malformedForLength(1)
           }
 
-          in.position(inPos - inOffset)
-          out.position(outPos - outOffset)
-        } else {
-          var i = 0
-          while (i != rem) {
-            val c = in.get().toInt & 0xff
-
-            if (c > maxValue) {
-              // Can only happen in US_ASCII
-              in.position(in.position() - 1)
-              return CoderResult.malformedForLength(1)
-            }
-
-            out.put(c.toChar)
-            i += 1
+          if (outArray != null) {
+            outArray(outPos) = c.toChar
+          } else {
+            out.put(outPos, c.toChar)
           }
+          inPos += 1
+          outPos += 1
         }
+
+        in.position(inPos)
+        out.position(outPos - outOffset)
 
         if (overflow) CoderResult.OVERFLOW
         else CoderResult.UNDERFLOW
