@@ -79,7 +79,7 @@ class SystemLoggerTestOnJDK9 {
         Logger.Level.ERROR,
         "Value: %s, Number: %d",
         "test",
-        42
+        Integer.valueOf(42)
       )
     }
   }
@@ -134,7 +134,7 @@ class SystemLoggerTestOnJDK9 {
         bundle,
         "format.key",
         "value",
-        123
+        Integer.valueOf(123)
       )
       logger.log(Logger.Level.WARNING, bundle, "missing.key", null: Throwable)
     }
