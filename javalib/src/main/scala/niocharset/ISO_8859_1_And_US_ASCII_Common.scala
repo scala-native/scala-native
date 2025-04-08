@@ -50,7 +50,8 @@ private[niocharset] abstract class ISO_8859_1_And_US_ASCII_Common protected (
 
         val inPtr =
           if (in.hasPointer()) in.pointer()
-          else if (in.hasArray()) in.array().at(in.arrayOffset())
+          else if (in.hasArray() && in.arrayOffset() < in.array().size)
+            in.array().at(in.arrayOffset())
           else null
         val inStart = in.position()
         val inEnd = inStart + rem

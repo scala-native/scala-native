@@ -72,7 +72,8 @@ private[niocharset] object UTF_8
     def decodeLoop(in: ByteBuffer, out: CharBuffer): CoderResult = {
       val inPtr =
         if (in.hasPointer()) in.pointer()
-        else if (in.hasArray()) in.array().at(in.arrayOffset())
+        else if (in.hasArray() && in.arrayOffset() < in.array().size)
+          in.array().at(in.arrayOffset())
         else null
       val inStart = in.position()
       val inEnd = in.limit()
