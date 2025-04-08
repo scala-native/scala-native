@@ -63,7 +63,9 @@ private[niocharset] abstract class ISO_8859_1_And_US_ASCII_Common protected (
         var inPos = inStart
         var outPos = outStart
         while (inPos != inEnd) {
-          val c = inPtr(inPos).toInt & 0xff
+          val c =
+            if (inPtr != null) inPtr(inPos).toInt & 0xff
+            else in.get(inPos).toInt & 0xff
 
           if (c > maxValue) {
             // Can only happen in US_ASCII
