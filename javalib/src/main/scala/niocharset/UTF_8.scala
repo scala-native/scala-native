@@ -9,6 +9,7 @@
 package niocharset
 
 import scala.annotation.tailrec
+import scala.scalanative.unsafe.UnsafeRichArray
 
 import java.nio._
 import java.nio.charset._
@@ -69,10 +70,13 @@ private[niocharset] object UTF_8
 
   private class Decoder extends CharsetDecoder(UTF_8, 1.0f, 1.0f) {
     def decodeLoop(in: ByteBuffer, out: CharBuffer): CoderResult = {
-      val inArray = if (in.hasArray()) in.array() else null
-      val inOffset = if (in.hasArray()) in.arrayOffset() else 0
-      val inStart = in.position() + inOffset
-      val inEnd = in.limit() + inOffset
+      val inPtr =
+        if (in.hasPointer()) in.pointer()
+        else if (in.hasArray() && in.arrayOffset() < in.array().size)
+          in.array().at(in.arrayOffset())
+        else null
+      val inStart = in.position()
+      val inEnd = in.limit()
 
       val outArray = if (out.hasArray()) out.array() else null
       val outOffset = if (out.hasArray()) out.arrayOffset() else 0
@@ -84,7 +88,7 @@ private[niocharset] object UTF_8
       def loop(inPos: Int, outPos: Int): CoderResult = {
         @inline
         def finalize(result: CoderResult): CoderResult = {
-          in.position(inPos - inOffset)
+          in.position(inPos)
           out.position(outPos - outOffset)
           result
         }
@@ -93,7 +97,7 @@ private[niocharset] object UTF_8
           finalize(CoderResult.UNDERFLOW)
         } else {
           val leading =
-            if (inArray != null) inArray(inPos).toInt
+            if (inPtr != null) inPtr(inPos).toInt
             else in.get(inPos).toInt
           if (leading >= 0) {
             // US-ASCII repertoire
@@ -118,7 +122,7 @@ private[niocharset] object UTF_8
                   DecodedMultiByte(CoderResult.UNDERFLOW)
                 } else {
                   val b2 =
-                    if (inArray != null) inArray(inPos + 1)
+                    if (inPtr != null) inPtr(inPos + 1)
                     else in.get(inPos + 1)
                   if (isInvalidNextByte(b2)) {
                     DecodedMultiByte(CoderResult.malformedForLength(1))
@@ -128,7 +132,7 @@ private[niocharset] object UTF_8
                     DecodedMultiByte(CoderResult.UNDERFLOW)
                   } else {
                     val b3 =
-                      if (inArray != null) inArray(inPos + 2)
+                      if (inPtr != null) inPtr(inPos + 2)
                       else in.get(inPos + 2)
                     if (isInvalidNextByte(b3)) {
                       DecodedMultiByte(CoderResult.malformedForLength(2))
@@ -138,7 +142,7 @@ private[niocharset] object UTF_8
                       DecodedMultiByte(CoderResult.UNDERFLOW)
                     } else {
                       val b4 =
-                        if (inArray != null) inArray(inPos + 3)
+                        if (inPtr != null) inPtr(inPos + 3)
                         else in.get(inPos + 3)
                       if (isInvalidNextByte(b4))
                         DecodedMultiByte(CoderResult.malformedForLength(3))

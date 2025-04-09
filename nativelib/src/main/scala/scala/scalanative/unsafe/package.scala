@@ -6,6 +6,7 @@ import scalanative.runtime.{Platform, fromRawPtr, intrinsic, ffi}
 import scalanative.runtime.Intrinsics._
 import scalanative.unsigned._
 import scala.scalanative.meta.LinktimeInfo
+import scala.scalanative.memory.PointerBuffer
 
 package object unsafe extends unsafe.UnsafePackageCompat {
 
@@ -161,11 +162,11 @@ package object unsafe extends unsafe.UnsafePackageCompat {
       val len = ffi.strlen(cstr)
       val intLen = len.toInt
       if (intLen > 0) {
-        val bytes = new Array[Byte](intLen)
-
-        ffi.memcpy(bytes.at(0), cstr, len)
-
-        new String(bytes, charset)
+        val inputBuffer = PointerBuffer.wrap(cstr, intLen)
+        javalibintf.String.fromByteBuffer(
+          inputBuffer,
+          charset
+        )
       } else ""
     }
   }
