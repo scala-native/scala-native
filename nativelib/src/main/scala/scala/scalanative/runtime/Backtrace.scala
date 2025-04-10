@@ -211,7 +211,7 @@ private[runtime] object Backtrace {
         subprograms = dwarf._1,
         strings = dwarf._2,
         offset = offset,
-        isPositionIndependentBinary = dwarf._3,
+        isPositionIndependentBinary = dwarf._3
       )
     }
   }
