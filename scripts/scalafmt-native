@@ -13,8 +13,6 @@ if [ ! -f $SCALACLI ]; then
   curl https://raw.githubusercontent.com/VirtusLab/scala-cli/refs/heads/main/scala-cli.sh > $SCALACLI
   chmod +x $SCALACLI
 fi
-echo $HERE
-echo $SCALAFMT
 
 if [[ "$CHECK_MODIFIED_ONLY" == "1" ]]; then
   git diff --name-only main | \
