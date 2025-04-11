@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+
+# No Windows support - a script could be created using the dedicated launcher scala-cli.bat
+
+set -e
+
+HERE="`dirname $0`"
+VERSION=$(sed -nre "s#[[:space:]]*version[^0-9]+([0-9.]+)#\1#p" $HERE/../.scalafmt.conf)
+SCALACLI="$HERE/.scala-cli-$VERSION"
+SCALAFMT="$SCALACLI fmt --scalafmt-version $VERSION"
+CHECK_MODIFIED_ONLY=${CHECK_MODIFIED_ONLY:-false}
+
+# Location of scalafmt binary
+# macOS $HOME/Library/Caches/Coursier/v1
+# Linux $HOME/.cache/coursier/v1
+# Plus the following path: /https/github.com/VirtusLab/scalafmt-native-image
+# A scalafmt version change forces a new scala-cli download which should in turn update scalafmt
+if [ ! -f $SCALACLI ]; then
+  curl https://raw.githubusercontent.com/VirtusLab/scala-cli/refs/heads/main/scala-cli.sh > $SCALACLI
+  chmod +x $SCALACLI
+fi
+
+if [[ "$CHECK_MODIFIED_ONLY" == "1" ]]; then
+  git diff --name-only main | \
+    grep -E '.*\.scala$' |
+    xargs "$SCALAFMT"
+else 
+  $SCALAFMT "$@"
+fi

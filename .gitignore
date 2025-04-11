@@ -7,6 +7,7 @@ _build/
 .idea
 scripts/.coursier
 scripts/.scalafmt*
+scripts/.scala-cli*
 sbt-crossproject/
 local.sbt
 .ammonite/
