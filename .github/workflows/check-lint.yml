@@ -6,6 +6,8 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
+      - uses: coursier/cache-action@v6
+      - uses: VirtusLab/scala-cli-setup@v1.7.1
       - run: ./scripts/check-lint.sh
         env:
           CLANG_FORMAT_PATH: "/usr/bin/clang-format-14"
