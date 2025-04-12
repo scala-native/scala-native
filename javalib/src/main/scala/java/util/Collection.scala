@@ -1,9 +1,12 @@
-// Ported from Scala.js commit: f122aa5 dated: 2019-07-03
-// Additional Spliterator code implemented for Scala Native
-// Additional Stream code implemented for Scala Native
+/* Ported from Scala.js commit: f122aa5 dated: 2019-07-03
+ * Additional Spliterator code implemented for Scala Native
+ * Additional Stream code implemented for Scala Native
+ * JDK 11 toArray(IntFunction) default method implemented for Scala Native
+ */
+
 package java.util
 
-import java.util.function.Predicate
+import java.util.function.{IntFunction, Predicate}
 import java.util.stream.{Stream, StreamSupport}
 
 trait Collection[E] extends java.lang.Iterable[E] {
@@ -12,6 +15,10 @@ trait Collection[E] extends java.lang.Iterable[E] {
   def contains(o: Any): Boolean
   def iterator(): Iterator[E]
   def toArray(): Array[AnyRef]
+
+  def toArray[T <: AnyRef](generator: IntFunction[Array[T]]): Array[T] =
+    toArray(generator(0))
+
   def toArray[T <: AnyRef](a: Array[T]): Array[T]
   def add(e: E): Boolean
   def remove(o: Any): Boolean
