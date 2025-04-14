@@ -754,6 +754,35 @@ class IssuesTest {
     assertTrue("exception not caught", caught)
   }
 
+  @Test def issue4308(): Unit = {
+    val a = 3
+    val b = 3
+    val c = 3
+    val d = 3
+    // Init
+    val data = Array.ofDim[String](a, b, c, d)
+    for
+      i <- 0 until a
+      a = data(i)
+      j <- 0 until b
+      b = a(j)
+      k <- 0 until c
+      c = b(k)
+      l <- 0 until d
+    do c(l) = s"$i | $j | $k | $l"
+
+    // Check
+    for
+      i <- 0 until a
+      a = data(i)
+      j <- 0 until b
+      b = a(j)
+      k <- 0 until c
+      c = b(k)
+      l <- 0 until d
+    do assertEquals(s"$i | $j | $k | $l", c(l))
+  }
+
   // Based on Scala 2.13.16 fix in delambdafy https://github.com/scala/scala/pull/10831
   @Test def partest_t13022(): Unit = {
     import t13022.StringValue
