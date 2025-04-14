@@ -7,22 +7,17 @@ object Array {
   def newInstance(componentType: Class[_], length: Int): AnyRef = {
     val ty = componentType
 
-    if (ty == classOf[scala.Boolean]) {
-      new scala.Array[scala.Boolean](length)
-    } else if (ty == classOf[scala.Char]) {
-      new scala.Array[scala.Char](length)
-    } else if (ty == classOf[scala.Byte]) {
-      new scala.Array[scala.Byte](length)
-    } else if (ty == classOf[scala.Short]) {
-      new scala.Array[scala.Short](length)
-    } else if (ty == classOf[scala.Int]) {
-      new scala.Array[scala.Int](length)
-    } else if (ty == classOf[scala.Long]) {
-      new scala.Array[scala.Long](length)
-    } else if (ty == classOf[scala.Float]) {
-      new scala.Array[scala.Float](length)
-    } else if (ty == classOf[scala.Double]) {
-      new scala.Array[scala.Double](length)
+    if (ty.isPrimitive()) {
+      if (ty == classOf[scala.Boolean]) new scala.Array[scala.Boolean](length)
+      else if (ty == classOf[scala.Char]) new scala.Array[scala.Char](length)
+      else if (ty == classOf[scala.Byte]) new scala.Array[scala.Byte](length)
+      else if (ty == classOf[scala.Short]) new scala.Array[scala.Short](length)
+      else if (ty == classOf[scala.Int]) new scala.Array[scala.Int](length)
+      else if (ty == classOf[scala.Long]) new scala.Array[scala.Long](length)
+      else if (ty == classOf[scala.Float]) new scala.Array[scala.Float](length)
+      else if (ty == classOf[scala.Double])
+        new scala.Array[scala.Double](length)
+      else new scala.Array[Object](length)
     } else {
       new scala.Array[Object](length)
     }
