@@ -761,7 +761,7 @@ class IssuesTest {
     val d = 3
     // Init
     val data = Array.ofDim[String](a, b, c, d)
-    for
+    for {
       i <- 0 until a
       a = data(i)
       j <- 0 until b
@@ -769,10 +769,12 @@ class IssuesTest {
       k <- 0 until c
       c = b(k)
       l <- 0 until d
-    do c(l) = s"$i | $j | $k | $l"
+    } {
+      c(l) = s"$i | $j | $k | $l"
+    }
 
     // Check
-    for
+    for {
       i <- 0 until a
       a = data(i)
       j <- 0 until b
@@ -780,7 +782,9 @@ class IssuesTest {
       k <- 0 until c
       c = b(k)
       l <- 0 until d
-    do assertEquals(s"$i | $j | $k | $l", c(l))
+    } {
+      assertEquals(s"$i | $j | $k | $l", c(l))
+    }
   }
 
   // Based on Scala 2.13.16 fix in delambdafy https://github.com/scala/scala/pull/10831
