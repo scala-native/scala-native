@@ -90,18 +90,16 @@ static struct sigaction *resolvePreviousSignalHandler(int sig) {
 static void protectStackGuardPage() {
     if (mprotect(currentThreadInfo.stackGuardPage, resolvePageSize(),
                  PROT_NONE) == -1) {
-        perror("ScalaNative Fatal Error: "
-               "StackOverflowHandler guard "
-               "protection failed");
+        perror(SN_FATAL_ERROR_MSG("StackOverflowHandler guard "
+                                  "protection failed"));
         exit(EXIT_FAILURE);
     }
 }
 static void unprotectStackGuardPage() {
     if (mprotect(currentThreadInfo.stackGuardPage, resolvePageSize(),
                  PROT_READ | PROT_WRITE) == -1) {
-        perror("ScalaNative Fatal Error: "
-               "StackOverflowHandler guard "
-               "unprotection failed");
+        perror(SN_FATAL_ERROR_MSG("StackOverflowHandler guard "
+                                  "unprotection failed"));
         exit(EXIT_FAILURE);
     }
 }
@@ -256,13 +254,13 @@ static void setupSignalHandlerAltstack() {
         (size_t)alignToPageStart((void *)SIG_HANDLER_STACK_SIZE);
     handlerStack.ss_sp = malloc(handlerStack.ss_size);
     if (handlerStack.ss_sp == NULL) {
-        perror("ScalaNative: StackOverflowGuards failed to allocate alternate "
-               "signal stack");
+        perror(SN_ERROR_MSG("StackOverflowGuards failed to allocate alternate "
+                            "signal stack"));
         exit(EXIT_FAILURE);
     }
     handlerStack.ss_flags = 0;
     if (sigaltstack(&handlerStack, NULL) == -1) {
-        perror("ScalaNative: StackOverflowHandler failed to set alt stack");
+        perror(SN_ERROR_MSG("StackOverflowHandler failed to set alt stack"));
         exit(EXIT_FAILURE);
     }
     currentThreadInfo.signalHandlerStack = handlerStack.ss_sp;
@@ -274,12 +272,12 @@ static void setupSignalHandler(int signal) {
     sa.sa_flags = SA_SIGINFO | SA_RESTART | SA_ONSTACK;
     sigemptyset(&sa.sa_mask);
     if (sigaddset(&sa.sa_mask, signal) == -1) {
-        perror("ScalaNative: StackOverflowHandler failed to set signal mask");
+        perror(SN_ERROR_MSG("StackOverflowHandler failed to set signal mask"));
         exit(EXIT_FAILURE);
     }
     if (sigaction(signal, &sa, resolvePreviousSignalHandler(signal)) == -1) {
-        perror("ScalaNative: StackOverflowHandler failed to set signal "
-               "handler");
+        perror(SN_ERROR_MSG("StackOverflowHandler failed to set signal "
+                            "handler"));
 
         exit(EXIT_FAILURE);
     }
