@@ -88,15 +88,17 @@ static struct sigaction *resolvePreviousSignalHandler(int sig) {
 static void protectStackGuardPage() {
     if (mprotect(currentThreadInfo.stackGuardPage, resolvePageSize(),
                  PROT_NONE) == -1) {
-        perror("ScalaNative Fatal Error :: StackOverflowHandler guard "
-               "protection failed");
+        perror ("ScalaNative Fatal Error: "
+                "StackOverflowHandler guard "
+                "protection failed");
         exit(EXIT_FAILURE);
     }
 }
 static void unprotectStackGuardPage() {
     if (mprotect(currentThreadInfo.stackGuardPage, resolvePageSize(),
                  PROT_READ | PROT_WRITE) == -1) {
-        perror("ScalaNative Fatal Error :: StackOverflowHandler guard "
+        perror("ScalaNative Fatal Error: "
+               "StackOverflowHandler guard "
                "unprotection failed");
         exit(EXIT_FAILURE);
     }
@@ -258,7 +260,7 @@ static void setupSignalHandlerAltstack() {
     }
     handlerStack.ss_flags = 0;
     if (sigaltstack(&handlerStack, NULL) == -1) {
-        perror("ScalaNative Stack Overflow Handler failed to set alt stack");
+        perror("ScalaNative: Stack Overflow Handler failed to set alt stack");
         exit(EXIT_FAILURE);
     }
     currentThreadInfo.signalHandlerStack = handlerStack.ss_sp;
@@ -270,12 +272,11 @@ static void setupSignalHandler(int signal) {
     sa.sa_flags = SA_SIGINFO | SA_RESTART | SA_ONSTACK;
     sigemptyset(&sa.sa_mask);
     if (sigaddset(&sa.sa_mask, signal) == -1) {
-        perror(
-            "ScalaNative :: StackOverflowHandler failed to set signal mask");
+        perror("ScalaNative: StackOverflowHandler failed to set signal mask");
         exit(EXIT_FAILURE);
     }
     if (sigaction(signal, &sa, resolvePreviousSignalHandler(signal)) == -1) {
-        perror("ScalaNative :: StackOverflowHandler failed to set signal "
+        perror("ScalaNative: StackOverflowHandler failed to set signal "
                "handler");
 
         exit(EXIT_FAILURE);
