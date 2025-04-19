@@ -171,6 +171,30 @@ package object unsafe extends unsafe.UnsafePackageCompat {
     }
   }
 
+  /** Convert a CString to a String using given charset and length (in bytes).
+   *
+   *  If the value of length is larger than the underlying data, this method has
+   *  undefined behavior.
+   */
+  def fromCStringSlice(
+      cstr: CString,
+      length: CSize,
+      charset: Charset = Charset.defaultCharset()
+  ): String = {
+    if (cstr == null) {
+      null
+    } else {
+      val intLen = length.toInt
+      if (intLen > 0) {
+        val inputBuffer = PointerBuffer.wrap(cstr, intLen)
+        javalibintf.String.fromByteBuffer(
+          inputBuffer,
+          charset
+        )
+      } else ""
+    }
+  }
+
   /** Convert a java.lang.String to a CString using default charset and given
    *  allocator.
    */
