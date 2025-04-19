@@ -82,8 +82,7 @@ static struct sigaction *resolvePreviousSignalHandler(int sig) {
         fprintf(stderr,
                 "%s StackOverflowHandler does not define handler "
                 "for %d signal\n",
-                snErrorPrefix,
-                sig);
+                snErrorPrefix, sig);
         exit(sig);
     }
 }
@@ -91,9 +90,9 @@ static struct sigaction *resolvePreviousSignalHandler(int sig) {
 static void protectStackGuardPage() {
     if (mprotect(currentThreadInfo.stackGuardPage, resolvePageSize(),
                  PROT_NONE) == -1) {
-        perror ("ScalaNative Fatal Error: "
-                "StackOverflowHandler guard "
-                "protection failed");
+        perror("ScalaNative Fatal Error: "
+               "StackOverflowHandler guard "
+               "protection failed");
         exit(EXIT_FAILURE);
     }
 }
@@ -142,8 +141,7 @@ static void setupStackOverflowGuards() {
         if (tryGrowStack()) {
             return setupStackOverflowGuards();
         } else {
-            fprintf(stderr,
-                    "%s Cannot setup StackOverflowGuards handler\n",
+            fprintf(stderr, "%s Cannot setup StackOverflowGuards handler\n",
                     snErrorPrefix);
             exit(EXIT_FAILURE);
         }
@@ -212,8 +210,7 @@ static void stackOverflowHandler(int sig, siginfo_t *info, void *context) {
             fprintf(stderr,
                     "%s Unrecoverable StackOverflow error in %s "
                     "thread, stack size = %zuKB\n",
-                    snErrorPrefix,
-                    threadInfo.isMainThread ? "main" : "user",
+                    snErrorPrefix, threadInfo.isMainThread ? "main" : "user",
                     threadInfo.stackSize / 1024);
             StackTrace_PrintStackTrace();
             exit(sig);
@@ -221,8 +218,7 @@ static void stackOverflowHandler(int sig, siginfo_t *info, void *context) {
             fprintf(stderr,
                     "%s Unrecoverable NullPointerException in %s "
                     "thread\n",
-                    snErrorPrefix,
-                    threadInfo.isMainThread ? "main" : "user");
+                    snErrorPrefix, threadInfo.isMainThread ? "main" : "user");
             StackTrace_PrintStackTrace();
             exit(sig);
         }
@@ -245,11 +241,8 @@ static void stackOverflowHandler(int sig, siginfo_t *info, void *context) {
                 }
             }
         }
-        fprintf(stderr,
-                "%s Unhandled signal %d, si_addr=%p\n",
-                snErrorPrefix,
-                sig,
-                faultAddr);
+        fprintf(stderr, "%s Unhandled signal %d, si_addr=%p\n", snErrorPrefix,
+                sig, faultAddr);
         StackTrace_PrintStackTrace();
         exit(sig);
     }

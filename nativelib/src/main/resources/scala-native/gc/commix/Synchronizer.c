@@ -109,8 +109,7 @@ static void SafepointTrapHandler(int signal, siginfo_t *siginfo, void *uap) {
     fprintf(stderr,
             "%s Unhandled signal %d triggered when accessing "
             "memory address %p, code=%d\n\n",
-            snErrorPrefix,
-            signal, siginfo->si_addr, siginfo->si_code);
+            snErrorPrefix, signal, siginfo->si_addr, siginfo->si_code);
     StackTrace_PrintStackTrace();
     abort();
 }

@@ -177,9 +177,10 @@ size_t scalanative_page_size() {
         pageSize = (size_t)sysconf(_SC_PAGE_SIZE);
 #endif
         if (pageSize <= 0) {
-            fprintf(stderr, "%s Unable to determine "
-                            "platform page size\n",
-                            snFatalErrorPrefix);
+            fprintf(stderr,
+                    "%s Unable to determine "
+                    "platform page size\n",
+                    snFatalErrorPrefix);
             abort();
         }
     }

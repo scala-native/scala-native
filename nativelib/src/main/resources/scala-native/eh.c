@@ -279,8 +279,7 @@ __attribute__((noreturn)) void scalanative_throw(Exception obj) {
     fprintf(stderr,
             "%s Unhandled exception: "
             "_Unwind_RaiseException returned %d\n",
-            snFatalErrorPrefix,
-            code);
+            snFatalErrorPrefix, code);
     abort();
 }
 #endif

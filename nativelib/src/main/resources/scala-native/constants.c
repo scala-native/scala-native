@@ -1,2 +1,2 @@
-char* snErrorPrefix = "ScalaNative:";
-char* snFatalErrorPrefix = "ScalaNative Fatal Error:";
+char *snErrorPrefix = "ScalaNative:";
+char *snFatalErrorPrefix = "ScalaNative Fatal Error:";

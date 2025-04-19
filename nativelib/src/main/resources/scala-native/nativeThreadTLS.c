@@ -226,9 +226,10 @@ void scalanative_setupCurrentThreadInfo(void *stackBottom, int32_t stackSize,
     if (!detectStackBounds(stackBottom)) {
         if (!approximateStackBounds(stackBottom, stackSize,
                                     &currentThreadInfo)) {
-            fprintf(stderr, "%s Failed to detect of "
-                            "approximate stack bounds of current thread",
-                            snFatalErrorPrefix);
+            fprintf(stderr,
+                    "%s Failed to detect of "
+                    "approximate stack bounds of current thread",
+                    snFatalErrorPrefix);
             abort();
         }
     };
