@@ -5,11 +5,12 @@
 #include <sys/utsname.h>
 #include <unistd.h>
 #endif
-#include <stdio.h>
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
+#include "../constants.h"
 
 #ifdef __APPLE__
 #include <sys/sysctl.h>
@@ -176,8 +177,9 @@ size_t scalanative_page_size() {
         pageSize = (size_t)sysconf(_SC_PAGE_SIZE);
 #endif
         if (pageSize <= 0) {
-            fprintf(stderr, "ScalaNative Fatal Error :: Unable to determinate "
-                            "platform page size\n");
+            fprintf(stderr, "%s Unable to determine "
+                            "platform page size\n",
+                            snFatalErrorPrefix);
             abort();
         }
     }

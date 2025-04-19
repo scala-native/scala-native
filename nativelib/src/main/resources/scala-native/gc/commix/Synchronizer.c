@@ -1,6 +1,7 @@
 #if defined(SCALANATIVE_MULTITHREADING_ENABLED) &&                             \
     defined(SCALANATIVE_GC_COMMIX)
 
+#include "../constants.h"
 #include "immix_commix/Synchronizer.h"
 #include "shared/ScalaNativeGC.h"
 #include <stdio.h>
@@ -106,8 +107,9 @@ static void SafepointTrapHandler(int signal, siginfo_t *siginfo, void *uap) {
     }
 
     fprintf(stderr,
-            "ScalaNative :: Unhandled signal %d triggered when accessing "
+            "%s Unhandled signal %d triggered when accessing "
             "memory address %p, code=%d\n\n",
+            snErrorPrefix,
             signal, siginfo->si_addr, siginfo->si_code);
     StackTrace_PrintStackTrace();
     abort();

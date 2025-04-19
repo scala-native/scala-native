@@ -13,6 +13,7 @@
 #include <unistd.h>
 #endif
 
+#include "constants.h"
 #include "stackOverflowGuards.h"
 #include "nativeThreadTLS.h"
 #include "StackTrace.h"
@@ -54,8 +55,9 @@ void scalanative_StackOverflowGuards_setup(bool isMainThread) {
 
     if (!SetThreadStackGuarantee(&stackOverflowStackSize)) {
         fprintf(stderr,
-                "ScalaNative Error: Failed to set thread stack guarantee, "
-                "stack overflow detection might not work correctly\n");
+                "%s Failed to set thread stack guarantee, "
+                "stack overflow detection might not work correctly\n",
+                snFatalErrorPrefix);
     }
 }
 
@@ -78,8 +80,9 @@ static struct sigaction *resolvePreviousSignalHandler(int sig) {
         return &previousSignalHandlers[1];
     default:
         fprintf(stderr,
-                "ScalaNative :: StackOverflowHandler does not define handler "
+                "%s StackOverflowHandler does not define handler "
                 "for %d signal\n",
+                snErrorPrefix,
                 sig);
         exit(sig);
     }
@@ -140,7 +143,8 @@ static void setupStackOverflowGuards() {
             return setupStackOverflowGuards();
         } else {
             fprintf(stderr,
-                    "ScalaNative: Canot setup StackOverflowGuards handeler\n");
+                    "%s Cannot setup StackOverflowGuards handler\n",
+                    snErrorPrefix);
             exit(EXIT_FAILURE);
         }
     }
@@ -206,16 +210,18 @@ static void stackOverflowHandler(int sig, siginfo_t *info, void *context) {
             // Unrecoverable if stack overflow is detected somewhere above
             // current stack top
             fprintf(stderr,
-                    "ScalaNative :: Unrecoverable StackOverflow error in %s "
+                    "%s Unrecoverable StackOverflow error in %s "
                     "thread, stack size = %zuKB\n",
+                    snErrorPrefix,
                     threadInfo.isMainThread ? "main" : "user",
                     threadInfo.stackSize / 1024);
             StackTrace_PrintStackTrace();
             exit(sig);
         } else if (faultAddr == NULL) {
             fprintf(stderr,
-                    "ScalaNative :: Unrecoverable NullPointerException in %s "
+                    "%s Unrecoverable NullPointerException in %s "
                     "thread\n",
+                    snErrorPrefix,
                     threadInfo.isMainThread ? "main" : "user");
             StackTrace_PrintStackTrace();
             exit(sig);
@@ -239,7 +245,10 @@ static void stackOverflowHandler(int sig, siginfo_t *info, void *context) {
                 }
             }
         }
-        fprintf(stderr, "ScalaNative :: Unhandled signal %d, si_addr=%p\n", sig,
+        fprintf(stderr,
+                "%s Unhandled signal %d, si_addr=%p\n",
+                snErrorPrefix,
+                sig,
                 faultAddr);
         StackTrace_PrintStackTrace();
         exit(sig);

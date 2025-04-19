@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include "constants.h"
 #include "unwind.h"
 
 // gets the ExceptionWrapper from the _Unwind_Exception which is at the end of
@@ -267,16 +268,18 @@ __attribute__((noreturn)) void scalanative_throw(Exception obj) {
     if (code == _URC_END_OF_STACK) {
         generic_exception_cleanup(code, &exceptionWrapper->unwindException);
         fprintf(stderr,
-                "ScalaNative Fatal Error: Failed to throw exception, not found "
+                "%s Failed to throw exception, not found "
                 "a valid catch handler for exception when unwinding execution "
-                "stack.\n");
+                "stack.\n",
+                snFatalErrorPrefix);
         scalanative_Throwable_showStackTrace(obj);
         abort();
     }
     scalanative_Throwable_showStackTrace(obj);
     fprintf(stderr,
-            "ScalaNative Fatal Error: Unhandled exception: "
+            "%s Unhandled exception: "
             "_Unwind_RaiseException returned %d\n",
+            snFatalErrorPrefix,
             code);
     abort();
 }
