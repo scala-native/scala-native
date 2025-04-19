@@ -275,7 +275,7 @@ __attribute__((noreturn)) void scalanative_throw(Exception obj) {
     }
     scalanative_Throwable_showStackTrace(obj);
     fprintf(stderr,
-            "Scala Native Fatal Error: Unhandled exception: "
+            "ScalaNative Fatal Error: Unhandled exception: "
             "_Unwind_RaiseException returned %d\n",
             code);
     abort();

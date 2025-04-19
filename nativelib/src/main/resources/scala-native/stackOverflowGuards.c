@@ -54,7 +54,7 @@ void scalanative_StackOverflowGuards_setup(bool isMainThread) {
 
     if (!SetThreadStackGuarantee(&stackOverflowStackSize)) {
         fprintf(stderr,
-                "Scala Native Error: Failed to set thread stack guarantee, "
+                "ScalaNative Error: Failed to set thread stack guarantee, "
                 "stack overflow detection might not work correctly\n");
     }
 }
@@ -252,13 +252,13 @@ static void setupSignalHandlerAltstack() {
         (size_t)alignToPageStart((void *)SIG_HANDLER_STACK_SIZE);
     handlerStack.ss_sp = malloc(handlerStack.ss_size);
     if (handlerStack.ss_sp == NULL) {
-        perror("Scala Native: StackOverflowGuards failed to allocate alternate "
+        perror("ScalaNative: StackOverflowGuards failed to allocate alternate "
                "signal stack");
         exit(EXIT_FAILURE);
     }
     handlerStack.ss_flags = 0;
     if (sigaltstack(&handlerStack, NULL) == -1) {
-        perror("Scala Native Stack Overflow Handler failed to set alt stack");
+        perror("ScalaNative Stack Overflow Handler failed to set alt stack");
         exit(EXIT_FAILURE);
     }
     currentThreadInfo.signalHandlerStack = handlerStack.ss_sp;
@@ -271,11 +271,11 @@ static void setupSignalHandler(int signal) {
     sigemptyset(&sa.sa_mask);
     if (sigaddset(&sa.sa_mask, signal) == -1) {
         perror(
-            "Scala Native :: StackOverflowHandler failed to set signal mask");
+            "ScalaNative :: StackOverflowHandler failed to set signal mask");
         exit(EXIT_FAILURE);
     }
     if (sigaction(signal, &sa, resolvePreviousSignalHandler(signal)) == -1) {
-        perror("Scala Native :: StackOverflowHandler failed to set signal "
+        perror("ScalaNative :: StackOverflowHandler failed to set signal "
                "handler");
 
         exit(EXIT_FAILURE);

@@ -224,7 +224,7 @@ void scalanative_setupCurrentThreadInfo(void *stackBottom, int32_t stackSize,
     if (!detectStackBounds(stackBottom)) {
         if (!approximateStackBounds(stackBottom, stackSize,
                                     &currentThreadInfo)) {
-            fprintf(stderr, "Scala Native Fatal Error: Failed to detect of "
+            fprintf(stderr, "ScalaNative Fatal Error: Failed to detect of "
                             "approximate stack bounds of current thread");
             abort();
         }
