@@ -1,2 +1,4 @@
-char *snErrorPrefix = "ScalaNative:";
-char *snFatalErrorPrefix = "ScalaNative Fatal Error:";
+#include "constants.h"
+
+const char *const snErrorPrefix = "ScalaNative:";
+const char *const snFatalErrorPrefix = "ScalaNative Fatal Error:";
