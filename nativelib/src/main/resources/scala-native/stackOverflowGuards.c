@@ -269,7 +269,7 @@ static void setupSignalHandlerAltstack() {
     }
     handlerStack.ss_flags = 0;
     if (sigaltstack(&handlerStack, NULL) == -1) {
-        perror("ScalaNative: Stack Overflow Handler failed to set alt stack");
+        perror("ScalaNative: StackOverflowHandler failed to set alt stack");
         exit(EXIT_FAILURE);
     }
     currentThreadInfo.signalHandlerStack = handlerStack.ss_sp;
