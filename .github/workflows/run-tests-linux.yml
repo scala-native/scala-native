@@ -37,7 +37,7 @@ jobs:
   tests-compile-scalaPublishVersion:
     name: Compile sources with the Scala 3 version used for publishing artifacts
     if: github.event_name == 'pull_request' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/linux-setup-env
