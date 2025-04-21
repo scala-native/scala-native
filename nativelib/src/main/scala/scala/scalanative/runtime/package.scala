@@ -67,7 +67,8 @@ package object runtime {
     val mainThread = Thread.currentThread()
     if (mainThread == null) {
       ffi.printf(
-        c"ScalaNative Fatal Error: failed to initialize main java.lang.Thread\n"
+        c"%s failed to initialize main java.lang.Thread\n",
+        Constants.snFatalErrorPrefix
       )
       System.exit(1)
     }
