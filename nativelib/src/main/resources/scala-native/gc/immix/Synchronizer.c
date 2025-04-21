@@ -1,6 +1,6 @@
 #if defined(SCALANATIVE_MULTITHREADING_ENABLED) && defined(SCALANATIVE_GC_IMMIX)
 
-#include "../constants.h"
+#include "constants.h"
 #include "immix_commix/Synchronizer.h"
 #include "shared/ScalaNativeGC.h"
 #include <stdio.h>
