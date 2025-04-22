@@ -156,7 +156,7 @@ class Thread private[lang] (
    *    the dummy classloader
    */
   def getContextClassLoader(): ClassLoader =
-    ClassLoader.getPlatformClassLoader()
+    ClassLoader.getSystemClassLoader()
 
   // def setContextClassLoader(classLoader: ClassLoader): Unit = ()
 

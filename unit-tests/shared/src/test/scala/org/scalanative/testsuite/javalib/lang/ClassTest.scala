@@ -279,7 +279,7 @@ class ClassTest {
   }
 
   @Test def getClassLoader(): Unit = {
-    val cl = this.getClass().getClassLoader()
+    val cl = getClass().getClassLoader()
     assertTrue(cl != null)
   }
 }
