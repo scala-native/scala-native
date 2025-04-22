@@ -8,6 +8,8 @@ class ClassLoader protected (parent: ClassLoader) {
 }
 
 object ClassLoader {
+
+  /** @since JDK 9 */
   def getPlatformClassLoader(): ClassLoader = NativeClassLoader
   def getSystemClassLoader(): ClassLoader = NativeClassLoader
 
