@@ -7,7 +7,7 @@ import org.junit.Assert._
 
 class ClassLoaderTest {
 
-    @Test def getPlatformClassLoader(): Unit = {
+  @Test def getPlatformClassLoader(): Unit = {
     val cl = ClassLoader.getPlatformClassLoader()
     assertTrue(cl != null)
   }
