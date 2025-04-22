@@ -9,6 +9,7 @@ import scala.scalanative.runtime.{Array => RuntimeArray, _}
 import scala.scalanative.runtime.resource.EmbeddedResourceInputStream
 import scala.scalanative.runtime.resource.EmbeddedResourceHelper
 import java.io.InputStream
+import java.lang.ClassLoader
 import java.nio.file.Paths
 
 // Emitted as java.lang.Class
@@ -136,9 +137,14 @@ private[runtime] final class _Class[A] {
   // def getField(name: String): Field =
   //   ???
 
-  // def getClassLoader(): java.lang.ClassLoader = ???
-  // def getConstructor(args: Array[_Class[_]]): java.lang.reflect.Constructor[_] =
-  //   ???
+  /** We only have one dummy classloader for JVM compatibility as used to get
+   *  resources on Scala Native.
+   *  @return
+   *    the dummy classloader
+   */
+  def getClassLoader(): java.lang.ClassLoader =
+    ClassLoader.getSystemClassLoader()
+
   // def getConstructors(): Array[Object] = ???
   // def getDeclaredFields(): Array[Field] = ???
   // def getMethod(

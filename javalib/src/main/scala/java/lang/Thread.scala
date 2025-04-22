@@ -149,7 +149,15 @@ class Thread private[lang] (
     this(group, target, name, 0)
 
   // accessors
-  // def getContextClassLoader(): ClassLoader = null
+
+  /** We only have one dummy classloader for JVM compatibility as used to get
+   *  resources on Scala Native.
+   *  @return
+   *    the dummy classloader
+   */
+  def getContextClassLoader(): ClassLoader =
+    ClassLoader.getPlatformClassLoader()
+
   // def setContextClassLoader(classLoader: ClassLoader): Unit = ()
 
   @deprecated(
