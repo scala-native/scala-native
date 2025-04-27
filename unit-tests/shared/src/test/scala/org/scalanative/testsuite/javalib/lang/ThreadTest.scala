@@ -130,4 +130,9 @@ class ThreadTest {
     assertSame(defaultHandler, Thread.getDefaultUncaughtExceptionHandler())
   }
 
+  @Test def getContextClassLoader(): Unit = {
+    val cl = Thread.currentThread().getContextClassLoader()
+    assertTrue(cl != null)
+  }
+
 }

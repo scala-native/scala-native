@@ -277,4 +277,9 @@ class ClassTest {
       () => Class.forName("not.existing.class.name")
     )
   }
+
+  @Test def getClassLoader(): Unit = {
+    val cl = getClass().getClassLoader()
+    assertTrue(cl != null)
+  }
 }
