@@ -13,7 +13,7 @@
 #include <unistd.h>
 #endif
 
-#include "constants.h"
+#include "string_constants.h"
 #include "stackOverflowGuards.h"
 #include "nativeThreadTLS.h"
 #include "StackTrace.h"

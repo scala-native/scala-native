@@ -10,7 +10,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
-#include "../constants.h"
+#include "string_constants.h"
 
 #ifdef __APPLE__
 #include <sys/sysctl.h>

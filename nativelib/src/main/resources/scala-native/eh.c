@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
-#include "constants.h"
+#include "string_constants.h"
 #include "unwind.h"
 
 // gets the ExceptionWrapper from the _Unwind_Exception which is at the end of

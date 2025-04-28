@@ -4,7 +4,7 @@ package runtime
 import scalanative.unsafe._
 
 @extern
-object Constants {
+object StringConstants {
   def snErrorPrefix: CString = extern
   def snFatalErrorPrefix: CString = extern
 }

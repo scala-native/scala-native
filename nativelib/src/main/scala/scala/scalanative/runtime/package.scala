@@ -68,7 +68,7 @@ package object runtime {
     if (mainThread == null) {
       ffi.printf(
         c"%s failed to initialize main java.lang.Thread\n",
-        Constants.snFatalErrorPrefix
+        StringConstants.snFatalErrorPrefix
       )
       System.exit(1)
     }

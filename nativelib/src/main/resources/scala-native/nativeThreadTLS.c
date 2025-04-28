@@ -9,7 +9,7 @@
 #include <sys/resource.h>
 #endif // Unix
 
-#include "constants.h"
+#include "string_constants.h"
 #include "nativeThreadTLS.h"
 #include "gc/shared/ThreadUtil.h"
 #include "stackOverflowGuards.h"
