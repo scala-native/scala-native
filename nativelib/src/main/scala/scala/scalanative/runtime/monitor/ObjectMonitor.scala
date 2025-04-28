@@ -42,6 +42,9 @@ private[monitor] class ObjectMonitor() {
    */
   @volatile private var enterQueue: WaiterNode = _
 
+  private[runtime] def show: String =
+    s"ObjectMonitor(owner=$ownerThread),waiting=$waiting,recursion=$recursion)"
+
   /** Ring list of waiting threads. Access limited by the modification lock.
    *  Upon InEnterQueue the wait zone threads would enqueue to the queue, and
    *  would remove themself upon exiting the zone. Threads would be notified

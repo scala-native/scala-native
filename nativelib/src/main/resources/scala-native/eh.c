@@ -1,9 +1,14 @@
 #ifndef SCALANATIVE_USING_CPP_EXCEPTIONS
+#ifdef DEBUG_PERSONALITY
+#define _GNU_SOURCE
+#include <dlfcn.h>
+#endif
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
-#include "unwind.h"
+// Refer to embeded unwind.h to ensure _Unwind_GetIPInfo is defined
+#include "platform/posix/libunwind/unwind.h"
 
 // gets the ExceptionWrapper from the _Unwind_Exception which is at the end of
 // it. +1 goes to the end of the struct since it adds with the size of
@@ -16,6 +21,8 @@ typedef void *Exception;
 typedef void (*OnCatchHandler)(Exception);
 typedef struct ExceptionWrapper {
     Exception obj;
+    uintptr_t cachedLandingPad; // landingpad found in phase1 of unwinding
+    // Needs to be the last field of the struct! See GetExceptionWrapper
     _Unwind_Exception unwindException;
 } ExceptionWrapper;
 
@@ -43,156 +50,162 @@ void generic_exception_cleanup(_Unwind_Reason_Code code,
 
 typedef const uint8_t *LSDA_ptr;
 
-uint64_t read_uleb_128(LSDA_ptr *data) {
-    uint64_t result = 0;
-    int shift = 0;
-    uint8_t byte = 0;
-    do {
-        byte = **data;
-        (*data)++;
-        result |= (byte & 0b1111111) << shift;
-        shift += 7;
-    } while (byte & 0b10000000);
-    return result;
-}
-
-uint64_t read_sleb_128(LSDA_ptr *data) {
-    uint64_t result = 0;
-    int shift = 0;
-    uint8_t byte = 0;
+// Read a ULEB128 encoded value and advance pointer
+static size_t readULEB128(LSDA_ptr *data) {
+    size_t result = 0;
+    size_t shift = 0;
+    unsigned char byte;
     const uint8_t *p = *data;
     do {
-        byte = *p;
-        p++;
-        result |= (byte & 0b1111111) << shift;
+        byte = *p++;
+        result |= (byte & 0x7f) << shift;
         shift += 7;
-    } while (byte & 0b10000000);
-    if ((byte & 0x40) && (shift < (sizeof(result) << 3))) {
-        result |= (uintptr_t)(~0) << shift;
-    }
+    } while (byte & 0x80);
+    *data = p;
     return result;
 }
 
-typedef struct LSDA_call_site_Header {
-    uint8_t encoding;
-    uint64_t length;
-} LSDA_call_site_Header;
+// Read a SLEB128 encoded value and advance pointer
+static ssize_t readSLEB128(LSDA_ptr *data) {
+    ssize_t result = 0;
+    size_t shift = 0;
+    unsigned char byte;
+    const uint8_t *p = *data;
+    do {
+        byte = *p++;
+        result |= (byte & 0x7f) << shift;
+        shift += 7;
+    } while (byte & 0x80);
 
-void LSDA_call_site_Header_init(LSDA_call_site_Header *header, LSDA_ptr *lsda) {
-    LSDA_ptr read_ptr = *lsda;
-    header->encoding = read_ptr[0];
-    *lsda += 1;
-    header->length = read_uleb_128(lsda);
-}
-
-typedef struct Action {
-    uint8_t type_index;
-    int8_t next_offset;
-    LSDA_ptr my_ptr;
-} Action;
-
-typedef struct LSDA_call_site {
-    uint64_t start;
-    uint64_t len;
-    uint64_t landing_pad;
-    uint64_t action;
-} LSDA_call_site;
-
-void LSDA_call_site_init(LSDA_call_site *callSite, LSDA_ptr *lsda) {
-    callSite->start = read_uleb_128(lsda);
-    callSite->len = read_uleb_128(lsda);
-    callSite->landing_pad = read_uleb_128(lsda);
-    callSite->action = read_uleb_128(lsda);
-}
-
-bool LSDA_call_site_valid_for_throw_ip(const LSDA_call_site *callSite,
-                                       _Unwind_Context *context) {
-    uintptr_t func_start = _Unwind_GetRegionStart(context);
-    uintptr_t try_start = func_start + callSite->start;
-    uintptr_t try_end = try_start + callSite->len;
-    uintptr_t throw_ip = _Unwind_GetIP(context) - 1;
-    if (throw_ip > try_end || throw_ip < try_start) {
-        return false;
+    // Sign extension if the value is negative
+    if ((byte & 0x40) && shift < (sizeof(ssize_t) * 8)) {
+        result |= -(1LL << shift);
     }
-    return true;
+    *data = p;
+    return result;
 }
 
-typedef struct LSDA {
-    uint8_t start_encoding;
-    uint8_t type_encoding;
-    uint64_t type_table_offset;
+// DWARF Exception Header Encoding docummented at
+// https://refspecs.linuxbase.org/LSB_5.0.0/LSB-Core-generic/LSB-Core-generic/dwarfext.html
+enum {
+    // DWARF Exception Header value format
+    DW_EH_PE_absptr = 0x00,
+    DW_EH_PE_uleb128 = 0x01,
+    DW_EH_PE_udata2 = 0x02,
+    DW_EH_PE_udata4 = 0x03,
+    DW_EH_PE_udata8 = 0x04,
+    DW_EH_PE_sleb128 = 0x09,
+    DW_EH_PE_sdata2 = 0x0A,
+    DW_EH_PE_sdata4 = 0x0B,
+    DW_EH_PE_sdata8 = 0x0C,
+    // DWARF Exception Header application
+    DW_EH_PE_iprel = 0x10,
+    DW_EH_PE_textrel = 0x20,
+    DW_EH_PE_datarel = 0x30,
+    DW_EH_PE_funcrel = 0x40,
+    DW_EH_PE_aligned = 0x50,
+    // special
+    DW_EH_PE_indirect = 0x80, // gcc extension
+    DW_EH_PE_omit = 0xff,     // no data follows
+};
 
-    LSDA_ptr lsda;
-    LSDA_ptr call_site_table_end;
-    LSDA_call_site next_call_site;
-    LSDA_ptr next_call_site_ptr;
-    LSDA_call_site_Header call_site_header;
-    LSDA_ptr action_table_start;
-    Action current_action;
-    const int *types_table_start;
-} LSDA;
+// read a pointer encoded value and advance pointer
+static uintptr_t readDWARFEncodedPointer(LSDA_ptr *data, uint8_t encoding) {
+    const uint8_t *p = *data;
+    uintptr_t result = 0;
 
-void LSDA_init(LSDA *lsda, _Unwind_Context *context) {
-    lsda->lsda = (uint8_t *)_Unwind_GetLanguageSpecificData(context);
-    lsda->start_encoding = lsda->lsda[0];
-    lsda->type_encoding = lsda->lsda[1];
-    lsda->lsda += 2;
-    if (lsda->type_encoding != 0xff) {
-        lsda->type_table_offset = read_uleb_128(&lsda->lsda);
+    if (encoding == DW_EH_PE_omit)
+        return 0;
+
+    // first get value
+    switch (encoding & 0x0F) {
+    case DW_EH_PE_absptr:
+        result = *((const uintptr_t *)p);
+        p += sizeof(uintptr_t);
+        break;
+    case DW_EH_PE_uleb128:
+        result = readULEB128(&p);
+        break;
+    case DW_EH_PE_udata2:
+        result = *((const uint16_t *)p);
+        p += sizeof(uint16_t);
+        break;
+    case DW_EH_PE_udata4:
+        result = *((const uint32_t *)p);
+        p += sizeof(uint32_t);
+        break;
+    case DW_EH_PE_udata8:
+        result = *((const uint64_t *)p);
+        p += sizeof(uint64_t);
+        break;
+    case DW_EH_PE_sdata2:
+        result = *((const int16_t *)p);
+        p += sizeof(int16_t);
+        break;
+    case DW_EH_PE_sdata4:
+        result = *((const int32_t *)p);
+        p += sizeof(int32_t);
+        break;
+    case DW_EH_PE_sdata8:
+        result = *((const int64_t *)p);
+        p += sizeof(int64_t);
+        break;
+    case DW_EH_PE_sleb128:
+        result = readSLEB128(&p);
+        break;
+    default:
+        // not supported
+        abort();
+        break;
     }
-    lsda->types_table_start =
-        ((const int *)(lsda->lsda + lsda->type_table_offset));
-    LSDA_call_site_Header_init(&lsda->call_site_header, &lsda->lsda);
-    lsda->call_site_table_end = lsda->lsda + lsda->call_site_header.length;
-    lsda->next_call_site_ptr = lsda->lsda;
-    lsda->action_table_start = lsda->call_site_table_end;
-}
 
-LSDA_call_site *LSDA_get_next_call_site(LSDA *lsda) {
-    if (lsda->next_call_site_ptr > lsda->call_site_table_end) {
-        return NULL;
+    // then add relative offset
+    switch (encoding & 0x70) {
+    case DW_EH_PE_absptr:
+        // do nothing
+        break;
+    case DW_EH_PE_iprel:
+        result += (uintptr_t)(*data);
+        break;
+    case DW_EH_PE_textrel:
+    case DW_EH_PE_datarel:
+    case DW_EH_PE_funcrel:
+    case DW_EH_PE_aligned:
+    default:
+        abort(); // not supported
+        break;
     }
-    LSDA_call_site_init(&lsda->next_call_site, &lsda->next_call_site_ptr);
-    return &lsda->next_call_site;
-}
 
-Action *LSDA_get_first_action(LSDA *lsda, LSDA_call_site *call_site) {
-    if (call_site->action == 0) {
-        return NULL;
+    // then apply indirection
+    if (encoding & DW_EH_PE_indirect) {
+        result = *((const uintptr_t *)result);
     }
-    LSDA_ptr raw_ptr = lsda->action_table_start + call_site->action - 1;
-    lsda->current_action.type_index = raw_ptr[0];
-    raw_ptr++;
-    lsda->current_action.next_offset = read_sleb_128(&raw_ptr);
-    lsda->current_action.my_ptr = raw_ptr;
-    return &lsda->current_action;
+
+    *data = p;
+    return result;
 }
 
-Action *LSDA_get_next_action(LSDA *lsda) {
-    if (lsda->current_action.next_offset == 0) {
-        return NULL;
+#ifdef DEBUG_PERSONALITY
+static const char *get_function_name(uintptr_t address) {
+    Dl_info info;
+    if (dladdr((void *)address, &info)) {
+        return info.dli_sname;
     }
-    LSDA_ptr raw_ptr =
-        lsda->current_action.my_ptr + lsda->current_action.next_offset;
-    lsda->current_action.type_index = raw_ptr[0];
-    raw_ptr++;
-    lsda->current_action.next_offset = read_sleb_128(&raw_ptr);
-    lsda->current_action.my_ptr = raw_ptr;
-    return &lsda->current_action;
+    return NULL; // Return nullptr if the symbol is not found
 }
+#endif
 
-_Unwind_Reason_Code set_landing_pad(_Unwind_Context *context,
-                                    _Unwind_Exception *unwindException,
-                                    uintptr_t landing_pad, uint8_t type_index) {
+static void setLandingPad(_Unwind_Context *context,
+                          _Unwind_Exception *unwindException,
+                          uintptr_t landingPad) {
     int r0 = __builtin_eh_return_data_regno(0);
     int r1 = __builtin_eh_return_data_regno(1);
-
+    // Set Instruction Pointer to so we re-enter function
+    // at landing pad. The landing pad is created by the compiler
+    // to take two parameters in registers.
     _Unwind_SetGR(context, r0, (uintptr_t)(unwindException));
-    _Unwind_SetGR(context, r1, (uintptr_t)(type_index));
-
-    _Unwind_SetIP(context, landing_pad);
-
-    return _URC_INSTALL_CONTEXT;
+    _Unwind_SetGR(context, r1, (uintptr_t)(0));
+    _Unwind_SetIP(context, landingPad);
 }
 
 // A personality function to catch all exceptions
@@ -200,51 +213,91 @@ _Unwind_Reason_Code scalanative_personality(int version, _Unwind_Action actions,
                                             uint64_t exception_class,
                                             _Unwind_Exception *unwindException,
                                             _Unwind_Context *context) {
-    LSDA header;
-    LSDA_init(&header, context);
-    bool have_cleanup = false;
-
-    // Loop through each entry in the call_site table
-    for (LSDA_call_site *call_site = LSDA_get_next_call_site(&header);
-         call_site; call_site = LSDA_get_next_call_site(&header)) {
-
-        if (call_site->landing_pad) {
-            uintptr_t func_start = _Unwind_GetRegionStart(context);
-            if (!LSDA_call_site_valid_for_throw_ip(call_site, context)) {
-                continue;
-            }
-            ExceptionWrapper *exceptionWrapper =
-                GetExceptionWrapper(unwindException);
-            if (call_site->action == 0 && actions & _UA_CLEANUP_PHASE) {
-                // clean up block?
-                return set_landing_pad(context, unwindException,
-                                       func_start + call_site->landing_pad, 0);
-            }
-            for (Action *action = LSDA_get_first_action(&header, call_site);
-                 action; action = LSDA_get_next_action(&header)) {
-                if (action->type_index == 0) {
-                    if (actions & _UA_CLEANUP_PHASE) {
-                        set_landing_pad(context, unwindException,
-                                        func_start + call_site->landing_pad, 0);
-                        have_cleanup = true;
-                    }
-                } else {
-                    if (actions & _UA_SEARCH_PHASE) {
-                        return _URC_HANDLER_FOUND;
-                    } else if (actions & _UA_CLEANUP_PHASE) {
-                        return set_landing_pad(context, unwindException,
-                                               func_start +
-                                                   call_site->landing_pad,
-                                               action->type_index);
-                    }
-                }
-            }
+    // We cache the landingPad found in searchPhase and can use it directly in
+    // second phase.
+    ExceptionWrapper *exc = GetExceptionWrapper(unwindException);
+    if (actions == (_UA_CLEANUP_PHASE | _UA_HANDLER_FRAME)) {
+        if (exc->cachedLandingPad) {
+            setLandingPad(context, unwindException, exc->cachedLandingPad);
+            exc->cachedLandingPad = 0;
+            return _URC_INSTALL_CONTEXT;
         }
     }
 
-    if ((actions & _UA_CLEANUP_PHASE) && have_cleanup) {
-        return _URC_INSTALL_CONTEXT;
+    // There is nothing to do if there is no LSDA for this frame.
+    LSDA_ptr lsda = (LSDA_ptr)_Unwind_GetLanguageSpecificData(context);
+    if (lsda == (uint8_t *)0)
+        return _URC_CONTINUE_UNWIND;
+
+    int ipBeforeInst = false;
+    uintptr_t ip = (uintptr_t)_Unwind_GetIPInfo(context, &ipBeforeInst);
+    // Normalize the position so we're always refering from callsite
+    if (!ipBeforeInst)
+        ip -= 1;
+    uintptr_t funcStart = (uintptr_t)_Unwind_GetRegionStart(context);
+    uintptr_t ipOffset = ip - funcStart;
+
+    // Parse LSDA header.
+    uint8_t lpStartEncoding = *lsda++;
+    uintptr_t lpStart = (lpStartEncoding == DW_EH_PE_omit)
+                            ? funcStart
+                            : readDWARFEncodedPointer(&lsda, lpStartEncoding);
+    uint8_t ttypeEncoding = *lsda++;
+    size_t ttype = 0; // unused
+    if (ttypeEncoding != DW_EH_PE_omit) {
+        ttype = readULEB128(&lsda);
     }
+    // Walk call-site table looking for range that includes current IP.
+    uint8_t callSiteEncoding = *lsda++;
+    size_t callSiteTableLength = readULEB128(&lsda);
+    LSDA_ptr callSiteTableStart = lsda;
+    LSDA_ptr callSiteTableEnd = callSiteTableStart + callSiteTableLength;
+
+#ifdef DEBUG_PERSONALITY
+    printf("unwinding IP=%p\toffset=%zu\tfunctionStart=%p\tactions=%d\t%s\n",
+           (void *)ip, ipOffset, (void *)funcStart, actions,
+           get_function_name(funcStart));
+#endif
+
+    LSDA_ptr cs = callSiteTableStart;
+    while (cs < callSiteTableEnd) {
+        uintptr_t start = readDWARFEncodedPointer(&cs, callSiteEncoding);
+        size_t length = readDWARFEncodedPointer(&cs, callSiteEncoding);
+        size_t landingPad = readDWARFEncodedPointer(&cs, callSiteEncoding);
+        size_t action = readULEB128(&cs); // unused
+
+#ifdef DEBUG_PERSONALITY
+        printf(
+            "\tcallsite: start=%lu\tlength=%zu\tlandingPad=%zu\taction=%zu\n",
+            start, length, landingPad, action);
+#endif
+
+        // Check if in callsite range or it IP is currently at beginning of next
+        // landing pad. The special case can happen after inlining by LTO
+        // resulting in throw directly followed by catched
+        if ((start <= ipOffset) && (ipOffset < (start + length))) {
+            if (landingPad == 0)
+                return _URC_CONTINUE_UNWIND; // no landing pad for this entry
+
+            // Found landing pad for the IP.
+            uintptr_t landingPadAddr = lpStart + landingPad;
+#ifdef DEBUG_PERSONALITY
+            printf("\twould unwind to handler in %s at %p\n\n",
+                   get_function_name(funcStart), (void *)(landingPadAddr));
+#endif
+            if (actions & _UA_SEARCH_PHASE) {
+                // We've found the landing pad, cache it so we can skip
+                // unwinding in 2nd phase
+                exc->cachedLandingPad = landingPadAddr;
+                return _URC_HANDLER_FOUND;
+            } else if (actions & (_UA_CLEANUP_PHASE | _UA_HANDLER_FRAME)) {
+                setLandingPad(context, unwindException, landingPadAddr);
+                exc->cachedLandingPad = 0;
+                return _URC_INSTALL_CONTEXT;
+            }
+        }
+    }
+    // No landing pad found, continue unwinding.
     return _URC_CONTINUE_UNWIND;
 }
 

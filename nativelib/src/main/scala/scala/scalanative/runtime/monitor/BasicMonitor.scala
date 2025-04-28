@@ -182,7 +182,7 @@ private[runtime] final class BasicMonitor(val lockWordRef: RawPtr)
 
   def show: String =
     if (lockWord.isInflated)
-      lockWord.getObjectMonitor.toString
+      lockWord.getObjectMonitor.show
     else {
       val lock = lockWord
       val isLocked = !lock.isUnlocked
