@@ -51,3 +51,5 @@ bin/
 
 # macOS
 .DS_Store
+.devenv
+.direnv

@@ -25,7 +25,7 @@ object MyScalaNativePlugin extends AutoPlugin {
 
   final val enableExperimentalCompiler = {
     val ExperimentalCompilerEnv = "ENABLE_EXPERIMENTAL_COMPILER"
-    val enabled = env.contains(ExperimentalCompilerEnv)
+    val enabled = env.get(ExperimentalCompilerEnv).exists(_ != "false")
     println(
       if (enabled)
         s"Found `$ExperimentalCompilerEnv` env var: enabled sub-projects using Scala experimental version ${ScalaVersions.scala3Nightly}, using suffix `3_next`."
