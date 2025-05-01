@@ -145,6 +145,9 @@ object ScalaNativePluginInternal {
   private def await[T](
       log: sbt.Logger
   )(body: ExecutionContext => Future[T]): T = {
+    // Fatal errors, eg. StackOverflowErrors are not propagated by Futures
+    // Use a helper promise to get notified about the underlying problem
+    val promise = Promise[T]()
     val executor =
       Executors.newFixedThreadPool(
         Runtime.getRuntime().availableProcessors(),
@@ -153,6 +156,7 @@ object ScalaNativePluginInternal {
           val defaultExceptionHandler = thread.getUncaughtExceptionHandler()
           thread.setUncaughtExceptionHandler {
             (thread: Thread, ex: Throwable) =>
+              promise.tryFailure(ex)
               ex match {
                 case _: InterruptedException => log.trace(ex)
                 case _ => defaultExceptionHandler.uncaughtException(thread, ex)
@@ -161,9 +165,12 @@ object ScalaNativePluginInternal {
           thread
         }
       )
-    val ec = ExecutionContext.fromExecutor(executor, log.trace(_))
-    try Await.result(body(ec), Duration.Inf)
-    catch { case ex: Exception => executor.shutdownNow(); throw ex }
+    implicit val ec: ExecutionContext =
+      ExecutionContext.fromExecutor(executor, log.trace(_))
+
+    // Schedue the task and record completion
+    body(ec).onComplete(promise.complete)
+    try Await.result(promise.future, Duration.Inf)
     finally executor.shutdown()
   }
 

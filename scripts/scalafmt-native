@@ -21,9 +21,7 @@ if [ ! -f $SCALACLI ]; then
 fi
 
 if [[ "$CHECK_MODIFIED_ONLY" == "1" ]]; then
-  git diff --name-only main | \
-    grep -E '.*\.scala$' |
-    xargs "$SCALAFMT"
+  $SCALAFMT --check
 else 
   $SCALAFMT "$@"
 fi

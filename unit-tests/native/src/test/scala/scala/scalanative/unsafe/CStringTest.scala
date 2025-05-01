@@ -85,6 +85,28 @@ class CStringTest {
     assertTrue(szTo.charAt(3) == '4')
   }
 
+  @Test def fromCStringSliceNullReturnsNull(): Unit = {
+    assertNull(fromCStringSlice(null, 0.toUSize))
+  }
+
+  @Test def testFromCStringSlice(): Unit = {
+    val cstrFrom = c"1234"
+    val sameSize = fromCStringSlice(cstrFrom, 4.toUSize)
+
+    assertTrue(sameSize.size == 4)
+    assertTrue(sameSize.charAt(0) == '1')
+    assertTrue(sameSize.charAt(1) == '2')
+    assertTrue(sameSize.charAt(2) == '3')
+    assertTrue(sameSize.charAt(3) == '4')
+
+    val smaller = fromCStringSlice(cstrFrom, 3.toUSize)
+
+    assertTrue(smaller.size == 3)
+    assertTrue(smaller.charAt(0) == '1')
+    assertTrue(smaller.charAt(1) == '2')
+    assertTrue(smaller.charAt(2) == '3')
+  }
+
   @Test def toCStringNullReturnsNullIssue1796(): Unit = {
     Zone.acquire { implicit z => assertNull(toCString(null)) }
   }

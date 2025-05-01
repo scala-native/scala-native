@@ -7,22 +7,17 @@ object Array {
   def newInstance(componentType: Class[_], length: Int): AnyRef = {
     val ty = componentType
 
-    if (ty == classOf[scala.Boolean]) {
-      new scala.Array[scala.Boolean](length)
-    } else if (ty == classOf[scala.Char]) {
-      new scala.Array[scala.Char](length)
-    } else if (ty == classOf[scala.Byte]) {
-      new scala.Array[scala.Byte](length)
-    } else if (ty == classOf[scala.Short]) {
-      new scala.Array[scala.Short](length)
-    } else if (ty == classOf[scala.Int]) {
-      new scala.Array[scala.Int](length)
-    } else if (ty == classOf[scala.Long]) {
-      new scala.Array[scala.Long](length)
-    } else if (ty == classOf[scala.Float]) {
-      new scala.Array[scala.Float](length)
-    } else if (ty == classOf[scala.Double]) {
-      new scala.Array[scala.Double](length)
+    if (ty.isPrimitive()) {
+      if (ty == classOf[scala.Boolean]) new scala.Array[scala.Boolean](length)
+      else if (ty == classOf[scala.Char]) new scala.Array[scala.Char](length)
+      else if (ty == classOf[scala.Byte]) new scala.Array[scala.Byte](length)
+      else if (ty == classOf[scala.Short]) new scala.Array[scala.Short](length)
+      else if (ty == classOf[scala.Int]) new scala.Array[scala.Int](length)
+      else if (ty == classOf[scala.Long]) new scala.Array[scala.Long](length)
+      else if (ty == classOf[scala.Float]) new scala.Array[scala.Float](length)
+      else if (ty == classOf[scala.Double])
+        new scala.Array[scala.Double](length)
+      else new scala.Array[Object](length)
     } else {
       new scala.Array[Object](length)
     }
@@ -38,30 +33,28 @@ object Array {
     if (dimensions.length == 0 || dimensions.length > 255)
       throw new IllegalArgumentException()
 
-    @tailrec def fill(
-        idx: Int,
-        prevDimension: NativeArray[_]
-    ): NativeArray[_] = {
-      if (idx < 0) prevDimension
-      else {
-        val length = dimensions(idx)
-        if (length < 0) throw new NegativeArraySizeException()
+    // Recursively build nested arrays
+    def fill(idx: Int): NativeArray[_] = {
+      val length = dimensions(idx)
+      if (length < 0) throw new NegativeArraySizeException()
 
-        // In Scala Native Array[Array[<PrimitiveType>]] and it's higher dimensions are always represented as ObjectArray
+      if (idx == dimensions.length - 1) {
+        // Create base array
+        newInstance(componentType, length)
+          .asInstanceOf[NativeArray[_]]
+      } else {
+        // Create subarrays recursively
         val arr = ObjectArray.alloc(length)
-        arr.update(0, prevDimension)
-        var i = 1
-        while (i != length) {
-          arr.update(i, prevDimension.clone())
+        var i = 0
+        while (i < length) {
+          arr.update(i, fill(idx + 1))
           i += 1
         }
-        fill(idx - 1, arr)
+        arr
       }
     }
 
-    val lastDimension = newInstance(componentType, dimensions.last)
-    if (dimensions.length == 1) lastDimension
-    else fill(dimensions.length - 2, lastDimension.asInstanceOf[NativeArray[_]])
+    fill(0)
   }
 
   def getLength(array: AnyRef): Int = array match {
