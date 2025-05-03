@@ -81,7 +81,7 @@ class ArrayList[E] private (
   override def lastIndexOf(o: Any): Int = inner.lastIndexOf(o)
 
   // shallow-copy
-  override def clone(): AnyRef = new ArrayList(inner, _size)
+  override def clone(): AnyRef = new ArrayList(inner.clone(), _size)
 
   override def toArray(): Array[AnyRef] =
     inner.slice(0, _size).map(_.asInstanceOf[AnyRef])

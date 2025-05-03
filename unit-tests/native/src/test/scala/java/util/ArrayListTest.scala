@@ -158,6 +158,14 @@ class ArrayListTest {
     assertTrue(al1 == al2)
   }
 
+  @Test def cloneNoSharedState(): Unit = {
+    val al1 = new ArrayList[Int](1)
+    val al2 = al1.clone().asInstanceOf[ArrayList[Int]]
+    al1.add(0)
+    al2.add(1)
+    assertTrue(al1.get(0) == 0)
+  }
+
   @Test def toArray(): Unit = {
     val al1 = new ArrayList[Int](Seq(1, 2, 3, 2).toJavaList)
     assertTrue(
