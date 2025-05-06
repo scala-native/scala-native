@@ -209,7 +209,7 @@ class LexicalScopesTest extends OptimizerSpec {
           Seq("a", "myTmp"),
           namedLets(defn).values
         )
-        // a and b can move moved to seperate scopes in transofrmation, but shall still have common parent
+        // a and b can move moved to separate scopes in transformation, but shall still have common parent
         val a = scopeOf("a")
         assertEquals("a-parent", a.id, nir.ScopeId.TopLevel)
 
