@@ -1,5 +1,5 @@
 name: "Unix tests env setup"
-description: "Used to setup Unix tests environemt"
+description: "Used to setup Unix tests environment"
 inputs:
   scala-version:
     description: "Scala version used in the tests"

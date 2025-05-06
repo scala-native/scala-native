@@ -115,7 +115,7 @@ object Build {
       linkNIRForEntries
         .flatMap { linkerResult =>
           val (updatedConfig, needsToReload) =
-            postRechabilityAnalysisConfigUpdate(config, linkerResult)
+            postReachabilityAnalysisConfigUpdate(config, linkerResult)
           config = updatedConfig
           if (needsToReload) linkNIRForEntries
           else Future.successful(linkerResult)
@@ -175,7 +175,7 @@ object Build {
   /** Based on reachability analysis check if config can be tuned for better
    *  performance
    */
-  private def postRechabilityAnalysisConfigUpdate(
+  private def postReachabilityAnalysisConfigUpdate(
       config: Config,
       analysis: ReachabilityAnalysis.Result
   ): (Config, Boolean) = {

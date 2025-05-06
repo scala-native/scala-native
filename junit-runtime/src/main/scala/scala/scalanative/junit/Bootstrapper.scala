@@ -41,7 +41,7 @@ final class TestMetadata(
     val annotation: org.junit.Test
 )
 
-/** Scala Native interal JUnit test class metadata
+/** Scala Native internal JUnit test class metadata
  *
  *  This class is public due to implementation details. Only the junit compiler
  *  plugin may create instances of it.

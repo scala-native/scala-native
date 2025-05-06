@@ -75,12 +75,12 @@ object Build {
       val optNoCrossProjects = noCrossProjects.filter(_ =>
         includeNoCrossProjects && binVersion == "2.12"
       )
-      val dependenices =
+      val dependencies =
         optNoCrossProjects ++ projects.map(_.forBinaryVersion(binVersion))
       val prev = key.value
       Def
         .task { prev }
-        .dependsOn(dependenices.map(_ / key): _*)
+        .dependsOn(dependencies.map(_ / key): _*)
     }.value
   }
 
@@ -124,7 +124,7 @@ object Build {
     )
     .mapBinaryVersions {
       // Scaladoc for Scala 2.12 does not handle literal constants correctly
-      // It does not allow integer contstant < 255 to be passed as arugment of function taking byte
+      // It does not allow integer constant < 255 to be passed as arugment of function taking byte
       case "2.12" => _.settings(disabledDocsSettings)
       case _      => identity
     }
@@ -447,7 +447,7 @@ object Build {
       )
       .dependsOn(toolsJVM.v2_12, testRunner.v2_12)
 
-// Native moduels ------------------------------------------------
+// Native modules ------------------------------------------------
   lazy val nativelib =
     MultiScalaProject("nativelib")
       .enablePlugins(MyScalaNativePlugin)
