@@ -45,7 +45,7 @@ private[junit] final class Reporter(
 
   def reportIgnored(method: Option[String]): Unit = {
     logTestInfo(_.info, method, "ignored")
-    emitEvent(method, Status.Ignored)
+    emitEvent(method, Status.Ignored, 0, None)
   }
 
   def reportTestStarted(method: String): Unit =
@@ -67,7 +67,7 @@ private[junit] final class Reporter(
     )
 
     if (succeeded)
-      emitEvent(Some(method), Status.Success)
+      emitEvent(Some(method), Status.Success, timeInSeconds, None)
   }
 
   def reportErrors(
@@ -83,7 +83,7 @@ private[junit] final class Reporter(
 
     if (errors.nonEmpty) {
       emit(errors.head)
-      emitEvent(method, Status.Failure)
+      emitEvent(method, Status.Failure, timeInSeconds, Some(errors.head))
       errors.tail.foreach(emit)
     }
   }
@@ -100,7 +100,7 @@ private[junit] final class Reporter(
       e,
       timeInSeconds
     )
-    emitEvent(method, Status.Skipped)
+    emitEvent(method, Status.Skipped, timeInSeconds, Some(e))
   }
 
   private def logTestInfo(
@@ -153,12 +153,23 @@ private[junit] final class Reporter(
     prefix + Ansi.c(name, color)
   }
 
-  private def emitEvent(method: Option[String], status: Status): Unit = {
+  private def emitEvent(
+      method: Option[String],
+      status: Status,
+      timeInSeconds: Double,
+      throwable: Option[Throwable]
+  ): Unit = {
     val testName = method.fold(taskDef.fullyQualifiedName())(method =>
       taskDef.fullyQualifiedName() + "." + settings.decodeName(method)
     )
     val selector = new TestSelector(testName)
-    eventHandler.handle(new JUnitEvent(taskDef, status, selector))
+    val optionalThrowable: OptionalThrowable = new OptionalThrowable(
+      throwable.orNull
+    )
+    val duration: Long = (timeInSeconds * 1000).toLong
+    eventHandler.handle(
+      new JUnitEvent(taskDef, status, selector, optionalThrowable, duration)
+    )
   }
 
   def log(level: Reporter.Level, s: String): Unit = {
