@@ -1,5 +1,5 @@
 name: "Windows test env setup"
-description: "Used to setup Windows tests environemt"
+description: "Used to setup Windows tests environment"
 inputs:
   scala-version:
     description: "Scala version used in the tests"

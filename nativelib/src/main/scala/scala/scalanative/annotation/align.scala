@@ -17,12 +17,12 @@ final class align(size: Int, group: String)
 
   // JVM  Contended compat
 
-  /** Dynamic, platform specific alignment. Can be used as replecement JVM
+  /** Dynamic, platform specific alignment. Can be used as replacement JVM
    *  \@Contended
    */
   def this(group: String) = this(contendedPaddingWidth, group)
 
-  /** Dynamic, platform specific alignment. Can be used as replecement JVM
+  /** Dynamic, platform specific alignment. Can be used as replacement JVM
    *  \@Contended
    */
   def this() = this(contendedPaddingWidth, "")
