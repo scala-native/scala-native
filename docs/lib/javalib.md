@@ -174,7 +174,7 @@ Reasoning for the lack of `getResource()` and `getResources()`:
 
 In Scala Native, the outputted file that can be run is a binary, unlike
 JVM's classfiles and jars. For that reason, if `getResources()` URI
-methods would be implemented, a new URI format using a seperate
+methods would be implemented, a new URI format using a separate
 FileSystem would have to be added (e.g. instead of obtaining
 `jar:file:path.ext` you would obtain `embedded:path.ext`). As this still
 would provide a meaningful inconsistency between JVM's javalib API and

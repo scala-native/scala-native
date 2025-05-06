@@ -97,7 +97,7 @@ object CodeGen {
         }
 
       // Incremental compilation code generation
-      def seperateIncrementally(): IRGenerators = {
+      def separateIncrementally(): IRGenerators = {
         val ctx = new IncrementalCodeGenContext(config)
         ctx.collectFromPreviousState()
 
@@ -154,7 +154,7 @@ object CodeGen {
 
       val llvmIRGenerators =
         if (config.compilerConfig.useIncrementalCompilation)
-          seperateIncrementally()
+          separateIncrementally()
         else separate()
       llvmIRGenerators ++ maybeBuildInfoGenerator
     }

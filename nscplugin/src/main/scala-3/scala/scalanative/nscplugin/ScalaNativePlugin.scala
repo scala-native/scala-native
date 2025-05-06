@@ -27,7 +27,7 @@ class ScalaNativePlugin extends StandardPlugin:
       |     Change the source file positions in generated outputs based on list of provided paths.
       |     It would strip the prefix of the source file if it matches given path.
       |     Non-absolute paths would be ignored.
-      |     Multiple paths should be seperated by a single semicolon ';' character. 
+      |     Multiple paths should be separated by a single semicolon ';' character.
       |     If none of the patches matches path would be relative to -sourcepath if defined or -sourceroot otherwise.
       """.stripMargin)
 

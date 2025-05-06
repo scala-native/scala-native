@@ -44,11 +44,11 @@ class WindowsPath private[windows] (
       case (PathType.DriveRelative, Some(root)) => root
       case _                                    => ""
     }
-    drivePrefix + segments.mkString(seperator)
+    drivePrefix + segments.mkString(separator)
   }
 
   @alwaysinline
-  final private def seperator: String = fs.getSeparator()
+  final private def separator: String = fs.getSeparator()
 
   override def getFileSystem(): FileSystem = fs
 
@@ -146,7 +146,7 @@ class WindowsPath private[windows] (
         case winPath: WindowsPath =>
           new WindowsPath(pathType, root, segments ++ winPath.segments)
         case _ =>
-          WindowsPathParser(path.toString + seperator + other.toString)
+          WindowsPathParser(path.toString + separator + other.toString)
       }
   }
 
@@ -292,8 +292,8 @@ private[windows] object WindowsPath {
       }
       .reverse
 
-    path.root.fold(components.mkString(path.seperator)) {
-      components.mkString(_, path.seperator, "")
+    path.root.fold(components.mkString(path.separator)) {
+      components.mkString(_, path.separator, "")
     }
   }
 

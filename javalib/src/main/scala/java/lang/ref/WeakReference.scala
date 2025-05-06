@@ -10,7 +10,7 @@ class WeakReference[T](
     queue: ReferenceQueue[T]
 ) extends Reference[T](null.asInstanceOf[T]) {
   // Since compiler generates _gc_modified_referent and referent
-  // (of the Reference class) as two seperate fields and GC only
+  // (of the Reference class) as two separate fields and GC only
   // controls _gc_modified_ referent field, we pass null to the
   // superclass to avoid adding additional control to the GC.
   // This should not be a problem as all Reference class methods were

@@ -197,8 +197,8 @@ class PropertiesTest {
       props.list(ps)
       ps.close()
       assertEquals(
-        withUnixLineSeperators(out.toString.trim),
-        withUnixLineSeperators(result.trim)
+        withUnixLineSeparators(out.toString.trim),
+        withUnixLineSeparators(result.trim)
       )
     }
 
@@ -365,14 +365,14 @@ class PropertiesTest {
     assertAll(expected = prop1, actual = prop2)
     // Avoid variable Date output which is last line in comment
     // Matches JVM output
-    val commentsWithoutDate = withUnixLineSeperators("""|#A Header
+    val commentsWithoutDate = withUnixLineSeparators("""|#A Header
          |#Line2
          |#Line3
          |#Line4
          |!AfterExclaim
          |#AfterPound
          |#Wow!""".stripMargin)
-    val out = withUnixLineSeperators(out1.toString())
+    val out = withUnixLineSeparators(out1.toString())
     assertTrue(s"starts with, got: '$out'", out.startsWith(commentsWithoutDate))
   }
 
@@ -509,7 +509,7 @@ class PropertiesTest {
     """.stripMargin
   }
 
-  def withUnixLineSeperators(str: String): String = {
+  def withUnixLineSeparators(str: String): String = {
     if (str != null && isWindows) {
       str.replaceAll(System.lineSeparator(), "\n")
     } else str

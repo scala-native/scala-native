@@ -115,27 +115,27 @@ object SymbolFormatter {
           true
         } else false
       } else {
-        val lineSeperator = strrchr(location, ':')
+        val lineSeparator = strrchr(location, ':')
         val fileName = strrchr(location, '\\')
         val fileOffset = 2 // ':('
-        if (lineSeperator != null) {
+        if (lineSeparator != null) {
           // skip ':(', take until line number ':num)'
           if (fileName != null) {
             strncpy(
               fileNameOut,
               fileName + 1,
-              toRawSize(strlen(fileName) - strlen(lineSeperator) - 1.toUSize)
+              toRawSize(strlen(fileName) - strlen(lineSeparator) - 1.toUSize)
             )
           } else {
             strncpy(
               fileNameOut,
               location + fileOffset,
               toRawSize(
-                strlen(location) - strlen(lineSeperator) - fileOffset.toUSize
+                strlen(location) - strlen(lineSeparator) - fileOffset.toUSize
               )
             )
           }
-          pos = (lineSeperator - sym).toInt + 1
+          pos = (lineSeparator - sym).toInt + 1
           !lineOut = readNumber()
         } else if (fileName != null) strcpy(fileNameOut, fileName + 1)
         else strcpy(fileNameOut, location + fileOffset)
