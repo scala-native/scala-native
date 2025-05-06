@@ -1,5 +1,5 @@
 ldTest run scala.scalanative.junit.IgnoreTest started
 liTest scala.scalanative.junit.IgnoreTest.onlyTest ignored
-e4scala.scalanative.junit.IgnoreTest.onlyTest
+e4scala.scalanative.junit.IgnoreTest.onlyTest::::true
 ldTest run scala.scalanative.junit.IgnoreTest finished: 0 failed, 1 ignored, 0 total, <TIME>
 d

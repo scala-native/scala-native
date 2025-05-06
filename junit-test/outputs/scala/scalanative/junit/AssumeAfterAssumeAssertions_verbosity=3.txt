@@ -2,7 +2,7 @@ li[34mTest run [0mscala.scalanative.junit.[33mAssumeAfterAssume[0m[34m star
 liTest scala.scalanative.junit.[33mAssumeAfterAssume[0m.[36massumeFail[0m started
 leTest scala.scalanative.junit.[33mAssumeAfterAssume[0m.[31massumeFail[0m failed: org.junit.[31mTestCouldNotBeSkippedException[0m: Test could not be skipped due to other failures, took <TIME>
 leCaused by: org.junit.AssumptionViolatedException: This assume should not pass
-e2scala.scalanative.junit.AssumeAfterAssume.assumeFail
+e2scala.scalanative.junit.AssumeAfterAssume.assumeFail::org.junit.TestCouldNotBeSkippedException: Test could not be skipped due to other failures::true
 leTest scala.scalanative.junit.[33mAssumeAfterAssume[0m.[31massumeFail[0m failed: org.junit.[31mTestCouldNotBeSkippedException[0m: Test could not be skipped due to other failures, took <TIME>
 leCaused by: org.junit.AssumptionViolatedException: This assume should not pass
 liTest scala.scalanative.junit.[33mAssumeAfterAssume[0m.[36massumeFail[0m finished, took <TIME>

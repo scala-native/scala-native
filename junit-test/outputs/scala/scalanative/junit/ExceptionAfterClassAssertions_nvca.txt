@@ -1,11 +1,11 @@
 liTest run scala.scalanative.junit.ExceptionAfterClass started
 liTest scala.scalanative.junit.ExceptionAfterClass.test1 started
 ldTest scala.scalanative.junit.ExceptionAfterClass.test1 finished, took <TIME>
-e0scala.scalanative.junit.ExceptionAfterClass.test1
+e0scala.scalanative.junit.ExceptionAfterClass.test1::::true
 liTest scala.scalanative.junit.ExceptionAfterClass.test2 started
 ldTest scala.scalanative.junit.ExceptionAfterClass.test2 finished, took <TIME>
-e0scala.scalanative.junit.ExceptionAfterClass.test2
+e0scala.scalanative.junit.ExceptionAfterClass.test2::::true
 leTest scala.scalanative.junit.ExceptionAfterClass failed: foo, took <TIME>
-e2scala.scalanative.junit.ExceptionAfterClass
+e2scala.scalanative.junit.ExceptionAfterClass::java.lang.IllegalArgumentException: foo::true
 liTest run scala.scalanative.junit.ExceptionAfterClass finished: 1 failed, 0 ignored, 2 total, <TIME>
 d

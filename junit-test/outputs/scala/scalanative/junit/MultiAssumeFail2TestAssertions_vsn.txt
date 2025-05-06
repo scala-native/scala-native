@@ -1,22 +1,22 @@
 liTest run scala.scalanative.junit.MultiAssumeFail2Test started
 liTest scala.scalanative.junit.MultiAssumeFail2Test.multiTest1 started
 lwTest assumption in test scala.scalanative.junit.MultiAssumeFail2Test.multiTest1 failed: org.junit.AssumptionViolatedException: This assume should not pass, took <TIME>
-e3scala.scalanative.junit.MultiAssumeFail2Test.multiTest1
+e3scala.scalanative.junit.MultiAssumeFail2Test.multiTest1::org.junit.AssumptionViolatedException: This assume should not pass::true
 ldTest scala.scalanative.junit.MultiAssumeFail2Test.multiTest1 finished, took <TIME>
-e0scala.scalanative.junit.MultiAssumeFail2Test.multiTest1
+e0scala.scalanative.junit.MultiAssumeFail2Test.multiTest1::::true
 liTest scala.scalanative.junit.MultiAssumeFail2Test.multiTest2 started
 ldTest scala.scalanative.junit.MultiAssumeFail2Test.multiTest2 finished, took <TIME>
-e0scala.scalanative.junit.MultiAssumeFail2Test.multiTest2
+e0scala.scalanative.junit.MultiAssumeFail2Test.multiTest2::::true
 liTest scala.scalanative.junit.MultiAssumeFail2Test.multiTest3 started
 ldTest scala.scalanative.junit.MultiAssumeFail2Test.multiTest3 finished, took <TIME>
-e0scala.scalanative.junit.MultiAssumeFail2Test.multiTest3
+e0scala.scalanative.junit.MultiAssumeFail2Test.multiTest3::::true
 liTest scala.scalanative.junit.MultiAssumeFail2Test.multiTest4 started
 lwTest assumption in test scala.scalanative.junit.MultiAssumeFail2Test.multiTest4 failed: org.junit.AssumptionViolatedException: This assume should not pass, took <TIME>
-e3scala.scalanative.junit.MultiAssumeFail2Test.multiTest4
+e3scala.scalanative.junit.MultiAssumeFail2Test.multiTest4::org.junit.AssumptionViolatedException: This assume should not pass::true
 ldTest scala.scalanative.junit.MultiAssumeFail2Test.multiTest4 finished, took <TIME>
-e0scala.scalanative.junit.MultiAssumeFail2Test.multiTest4
+e0scala.scalanative.junit.MultiAssumeFail2Test.multiTest4::::true
 liTest scala.scalanative.junit.MultiAssumeFail2Test.multiTest5 started
 ldTest scala.scalanative.junit.MultiAssumeFail2Test.multiTest5 finished, took <TIME>
-e0scala.scalanative.junit.MultiAssumeFail2Test.multiTest5
+e0scala.scalanative.junit.MultiAssumeFail2Test.multiTest5::::true
 liTest run scala.scalanative.junit.MultiAssumeFail2Test finished: 0 failed, 0 ignored, 5 total, <TIME>
 d

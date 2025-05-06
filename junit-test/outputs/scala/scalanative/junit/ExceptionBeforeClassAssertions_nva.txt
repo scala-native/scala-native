@@ -1,5 +1,5 @@
 liTest run scala.scalanative.junit.ExceptionBeforeClass started
 leTest scala.scalanative.junit.ExceptionBeforeClass failed: java.lang.IllegalArgumentException: foo, took <TIME>
-e2scala.scalanative.junit.ExceptionBeforeClass
+e2scala.scalanative.junit.ExceptionBeforeClass::java.lang.IllegalArgumentException: foo::true
 liTest run scala.scalanative.junit.ExceptionBeforeClass finished: 1 failed, 0 ignored, 0 total, <TIME>
 d
