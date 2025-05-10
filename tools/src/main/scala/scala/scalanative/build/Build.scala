@@ -10,7 +10,9 @@ import java.nio.file.FileVisitOption
 import java.nio.file.StandardOpenOption
 import java.util.Optional
 import java.nio.file.attribute.FileTime
+import java.util.concurrent.Executors
 import scala.concurrent._
+import scala.concurrent.duration.Duration
 import scala.util.{Success, Properties}
 import scala.collection.immutable
 import ScalaNative._
@@ -51,6 +53,30 @@ object Build {
           )
       }
     }
+  }
+
+  /** Run the complete Scala Native pipeline, LLVM optimizer and system linker,
+   *  producing a native binary in the end, same as `build` method.
+   *
+   *  This method skips the whole build and link process if the input hasn't
+   *  changed from the previous build, and the previous build artifact is
+   *  available at Config#artifactPath.
+   *
+   *  This method would block infinitly long for the result of
+   *  `Build.buildCached` executed using dedicated ExecutionContext
+   *
+   *  @param config
+   *    The configuration of the toolchain.
+   *  @return
+   *    [[Config#artifactPath]], the path to the resulting native binary.
+   */
+  @throws(classOf[InterruptedException])
+  @throws(classOf[BuildException])
+  @throws(classOf[linker.LinkingException])
+  def buildCachedAwait(config: Config)(implicit scope: Scope): Path = {
+    await { implicit ec: ExecutionContext =>
+      Build.buildCached(config)
+    }(logTrace = config.logger.trace(_))
   }
 
   /** Run the complete Scala Native pipeline, LLVM optimizer and system linker,
@@ -298,4 +324,33 @@ object Build {
       content = config.compilerConfig.##.toString()
     )
 
+  private def await[T](
+      task: ExecutionContext => Future[T]
+  )(logTrace: Throwable => Unit): T = {
+    // Fatal errors, eg. StackOverflowErrors are not propagated by Futures
+    // Use a helper promise to get notified about the underlying problem
+    val promise = Promise[T]()
+    val executor = Executors.newFixedThreadPool(
+      Runtime.getRuntime().availableProcessors(),
+      (task: Runnable) => {
+        val thread = Executors.defaultThreadFactory().newThread(task)
+        val defaultExceptionHandler = thread.getUncaughtExceptionHandler()
+        thread.setUncaughtExceptionHandler { (thread: Thread, ex: Throwable) =>
+          promise.tryFailure(ex)
+          ex match {
+            case _: InterruptedException => logTrace(ex)
+            case _ => defaultExceptionHandler.uncaughtException(thread, ex)
+          }
+        }
+        thread
+      }
+    )
+    implicit val ec: ExecutionContext =
+      ExecutionContext.fromExecutor(executor, logTrace(_))
+
+    // Schedue the task and record completion
+    task(ec).onComplete(promise.complete)
+    try Await.result(promise.future, Duration.Inf)
+    finally executor.shutdown()
+  }
 }
