@@ -588,13 +588,12 @@ private[scalanative] object Lower {
         case nir.Op.Var(_) =>
           () // Already emmited
         case nir.Op.Varload(nir.Val.Local(slot, nir.Type.Var(ty))) =>
-          buf.let(n, nir.Op.Load(ty, nir.Val.Local(slot, nir.Type.Ptr)), unwind)
+          genLoadOp(buf, n, nir.Op.Load(ty, nir.Val.Local(slot, nir.Type.Ptr)))
         case nir.Op.Varstore(nir.Val.Local(slot, nir.Type.Var(ty)), value) =>
-          buf.let(
+          genStoreOp(
+            buf,
             n,
-            nir.Op
-              .Store(ty, nir.Val.Local(slot, nir.Type.Ptr), genVal(buf, value)),
-            unwind
+            nir.Op.Store(ty, nir.Val.Local(slot, nir.Type.Ptr), genVal(buf, value))
           )
         case op: nir.Op.Arrayalloc =>
           genArrayallocOp(buf, n, op)
@@ -1813,7 +1812,7 @@ private[scalanative] object Lower {
 
       val arrTy = arrayMemoryLayout(ty)
       val elemPtr = buf.elem(arrTy, arr, arrayValuePath(idx), unwind)
-      buf.let(n, nir.Op.Load(ty, elemPtr, Some(nir.MemoryOrder.Unordered)), unwind)
+      genLoadOp(buf, n, nir.Op.Load(ty, elemPtr, Some(nir.MemoryOrder.Unordered)))
     }
 
     def genArraystoreOp(
@@ -1847,7 +1846,7 @@ private[scalanative] object Lower {
       genGuardNotNull(buf, arr)
       val lenPtr =
         buf.elem(ArrayHeader.layout, arr, ArrayHeaderLengthPath, unwind)
-      buf.let(n, nir.Op.Load(nir.Type.Int, lenPtr, Some(nir.MemoryOrder.Unordered)), unwind)
+      genLoadOp(buf, n, nir.Op.Load(nir.Type.Int, lenPtr, Some(nir.MemoryOrder.Unordered)))
     }
 
     def genStackallocOp(
