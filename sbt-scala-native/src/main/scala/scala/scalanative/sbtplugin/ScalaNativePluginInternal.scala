@@ -54,53 +54,53 @@ object ScalaNativePluginInternal {
   val baseBuildConfig =
     settingKey[build.Config]("Base configuration for nativeLink commands")
 
-    lazy val scalaNativeDependencySettings: Seq[Setting[_]] = {
-      val organization = "org.scala-native"
-      val nativeStandardLibraries =
-        Seq("nativelib", "clib", "posixlib", "windowslib", "javalib", "auxlib")
+  lazy val scalaNativeDependencySettings: Seq[Setting[_]] = {
+    val organization = "org.scala-native"
+    val nativeStandardLibraries =
+      Seq("nativelib", "clib", "posixlib", "windowslib", "javalib", "auxlib")
 
-      Seq(
-        libraryDependencies ++= Seq(
-          organization %%% "test-interface" % nativeVersion % Test
-        ),
-        libraryDependencies += CrossVersion
-          .partialVersion(scalaVersion.value)
-          .fold(throw new RuntimeException("Unsupported Scala Version")) {
-            case (2, _) =>
-              organization %%% "scalalib" % scalalibVersion(
-                scalaVersion.value,
-                nativeVersion
-              )
-            case (3, _) =>
-              organization %%% "scala3lib" % scalalibVersion(
-                scalaVersion.value,
-                nativeVersion
-              )
-          },
-        libraryDependencies ++= nativeStandardLibraries.map(
-          organization %%% _ % nativeVersion
-        ),
-        excludeDependencies ++= {
-          // Exclude cross published version dependencies leading to conflicts in Scala 3 vs 2.13
-          // When using Scala 3 exclude Scala 2.13 standard native libraries,
-          // when using Scala 2.13 exclude Scala 3 standard native libraries
-          // Use full name, Maven style published artifacts cannot use artifact/cross version for exclusion rules
-          nativeStandardLibraries.map { lib =>
-            val scalaBinVersion =
-              if (scalaVersion.value.startsWith("3.")) "2.13"
-              else "3"
-            ExclusionRule()
-              .withOrganization(organization)
-              .withName(
-                s"${lib}_native${ScalaNativeCrossVersion.currentBinaryVersion}_${scalaBinVersion}"
-              )
-          }
+    Seq(
+      libraryDependencies ++= Seq(
+        organization %%% "test-interface" % nativeVersion % Test
+      ),
+      libraryDependencies += CrossVersion
+        .partialVersion(scalaVersion.value)
+        .fold(throw new RuntimeException("Unsupported Scala Version")) {
+          case (2, _) =>
+            organization %%% "scalalib" % scalalibVersion(
+              scalaVersion.value,
+              nativeVersion
+            )
+          case (3, _) =>
+            organization %%% "scala3lib" % scalalibVersion(
+              scalaVersion.value,
+              nativeVersion
+            )
         },
-        addCompilerPlugin(
-          organization % "nscplugin" % nativeVersion cross CrossVersion.full
-        )
+      libraryDependencies ++= nativeStandardLibraries.map(
+        organization %%% _ % nativeVersion
+      ),
+      excludeDependencies ++= {
+        // Exclude cross published version dependencies leading to conflicts in Scala 3 vs 2.13
+        // When using Scala 3 exclude Scala 2.13 standard native libraries,
+        // when using Scala 2.13 exclude Scala 3 standard native libraries
+        // Use full name, Maven style published artifacts cannot use artifact/cross version for exclusion rules
+        nativeStandardLibraries.map { lib =>
+          val scalaBinVersion =
+            if (scalaVersion.value.startsWith("3.")) "2.13"
+            else "3"
+          ExclusionRule()
+            .withOrganization(organization)
+            .withName(
+              s"${lib}_native${ScalaNativeCrossVersion.currentBinaryVersion}_${scalaBinVersion}"
+            )
+        }
+      },
+      addCompilerPlugin(
+        organization % "nscplugin" % nativeVersion cross CrossVersion.full
       )
-    }
+    )
+  }
 
   lazy val scalaNativeBaseSettings: Seq[Setting[_]] = Seq(
     crossVersion := ScalaNativeCrossVersion.binary,
