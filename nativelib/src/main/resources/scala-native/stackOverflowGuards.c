@@ -13,6 +13,7 @@
 #include <unistd.h>
 #endif
 
+#include "string_constants.h"
 #include "stackOverflowGuards.h"
 #include "nativeThreadTLS.h"
 #include "StackTrace.h"
@@ -54,8 +55,9 @@ void scalanative_StackOverflowGuards_setup(bool isMainThread) {
 
     if (!SetThreadStackGuarantee(&stackOverflowStackSize)) {
         fprintf(stderr,
-                "Scala Native Error: Failed to set thread stack guarantee, "
-                "stack overflow detection might not work correctly\n");
+                "%s Failed to set thread stack guarantee, "
+                "stack overflow detection might not work correctly\n",
+                snFatalErrorPrefix);
     }
 }
 
@@ -78,9 +80,9 @@ static struct sigaction *resolvePreviousSignalHandler(int sig) {
         return &previousSignalHandlers[1];
     default:
         fprintf(stderr,
-                "ScalaNative :: StackOverflowHandler does not define handler "
+                "%s StackOverflowHandler does not define handler "
                 "for %d signal\n",
-                sig);
+                snErrorPrefix, sig);
         exit(sig);
     }
 }
@@ -88,16 +90,16 @@ static struct sigaction *resolvePreviousSignalHandler(int sig) {
 static void protectStackGuardPage() {
     if (mprotect(currentThreadInfo.stackGuardPage, resolvePageSize(),
                  PROT_NONE) == -1) {
-        perror("ScalaNative Fatal Error :: StackOverflowHandler guard "
-               "protection failed");
+        perror(SN_FATAL_ERROR_MSG("StackOverflowHandler guard "
+                                  "protection failed"));
         exit(EXIT_FAILURE);
     }
 }
 static void unprotectStackGuardPage() {
     if (mprotect(currentThreadInfo.stackGuardPage, resolvePageSize(),
                  PROT_READ | PROT_WRITE) == -1) {
-        perror("ScalaNative Fatal Error :: StackOverflowHandler guard "
-               "unprotection failed");
+        perror(SN_FATAL_ERROR_MSG("StackOverflowHandler guard "
+                                  "unprotection failed"));
         exit(EXIT_FAILURE);
     }
 }
@@ -137,8 +139,8 @@ static void setupStackOverflowGuards() {
         if (tryGrowStack()) {
             return setupStackOverflowGuards();
         } else {
-            fprintf(stderr,
-                    "ScalaNative: Canot setup StackOverflowGuards handeler\n");
+            fprintf(stderr, "%s Cannot setup StackOverflowGuards handler\n",
+                    snErrorPrefix);
             exit(EXIT_FAILURE);
         }
     }
@@ -204,17 +206,17 @@ static void stackOverflowHandler(int sig, siginfo_t *info, void *context) {
             // Unrecoverable if stack overflow is detected somewhere above
             // current stack top
             fprintf(stderr,
-                    "ScalaNative :: Unrecoverable StackOverflow error in %s "
+                    "%s Unrecoverable StackOverflow error in %s "
                     "thread, stack size = %zuKB\n",
-                    threadInfo.isMainThread ? "main" : "user",
+                    snErrorPrefix, threadInfo.isMainThread ? "main" : "user",
                     threadInfo.stackSize / 1024);
             StackTrace_PrintStackTrace();
             exit(sig);
         } else if (faultAddr == NULL) {
             fprintf(stderr,
-                    "ScalaNative :: Unrecoverable NullPointerException in %s "
+                    "%s Unrecoverable NullPointerException in %s "
                     "thread\n",
-                    threadInfo.isMainThread ? "main" : "user");
+                    snErrorPrefix, threadInfo.isMainThread ? "main" : "user");
             StackTrace_PrintStackTrace();
             exit(sig);
         }
@@ -237,8 +239,8 @@ static void stackOverflowHandler(int sig, siginfo_t *info, void *context) {
                 }
             }
         }
-        fprintf(stderr, "ScalaNative :: Unhandled signal %d, si_addr=%p\n", sig,
-                faultAddr);
+        fprintf(stderr, "%s Unhandled signal %d, si_addr=%p\n", snErrorPrefix,
+                sig, faultAddr);
         StackTrace_PrintStackTrace();
         exit(sig);
     }
@@ -252,13 +254,13 @@ static void setupSignalHandlerAltstack() {
         (size_t)alignToPageStart((void *)SIG_HANDLER_STACK_SIZE);
     handlerStack.ss_sp = malloc(handlerStack.ss_size);
     if (handlerStack.ss_sp == NULL) {
-        perror("Scala Native: StackOverflowGuards failed to allocate alternate "
-               "signal stack");
+        perror(SN_ERROR_MSG("StackOverflowGuards failed to allocate alternate "
+                            "signal stack"));
         exit(EXIT_FAILURE);
     }
     handlerStack.ss_flags = 0;
     if (sigaltstack(&handlerStack, NULL) == -1) {
-        perror("Scala Native Stack Overflow Handler failed to set alt stack");
+        perror(SN_ERROR_MSG("StackOverflowHandler failed to set alt stack"));
         exit(EXIT_FAILURE);
     }
     currentThreadInfo.signalHandlerStack = handlerStack.ss_sp;
@@ -270,13 +272,12 @@ static void setupSignalHandler(int signal) {
     sa.sa_flags = SA_SIGINFO | SA_RESTART | SA_ONSTACK;
     sigemptyset(&sa.sa_mask);
     if (sigaddset(&sa.sa_mask, signal) == -1) {
-        perror(
-            "Scala Native :: StackOverflowHandler failed to set signal mask");
+        perror(SN_ERROR_MSG("StackOverflowHandler failed to set signal mask"));
         exit(EXIT_FAILURE);
     }
     if (sigaction(signal, &sa, resolvePreviousSignalHandler(signal)) == -1) {
-        perror("Scala Native :: StackOverflowHandler failed to set signal "
-               "handler");
+        perror(SN_ERROR_MSG("StackOverflowHandler failed to set signal "
+                            "handler"));
 
         exit(EXIT_FAILURE);
     }

@@ -9,6 +9,7 @@
 #include <sys/resource.h>
 #endif // Unix
 
+#include "string_constants.h"
 #include "nativeThreadTLS.h"
 #include "gc/shared/ThreadUtil.h"
 #include "stackOverflowGuards.h"
@@ -47,8 +48,9 @@ size_t scalanative_mainThreadMaxStackSize() {
 #endif
         if (computed <= 0) {
             fprintf(stderr,
-                    "ScalaNative Fatal Error: Unable to resolve main thread "
-                    "max stack size");
+                    "%s Unable to resolve main thread "
+                    "max stack size",
+                    snFatalErrorPrefix);
             abort();
         }
     }
@@ -224,8 +226,10 @@ void scalanative_setupCurrentThreadInfo(void *stackBottom, int32_t stackSize,
     if (!detectStackBounds(stackBottom)) {
         if (!approximateStackBounds(stackBottom, stackSize,
                                     &currentThreadInfo)) {
-            fprintf(stderr, "Scala Native Fatal Error: Failed to detect of "
-                            "approximate stack bounds of current thread");
+            fprintf(stderr,
+                    "%s Failed to detect of "
+                    "approximate stack bounds of current thread",
+                    snFatalErrorPrefix);
             abort();
         }
     };
