@@ -40,6 +40,7 @@ sealed abstract class Array[T]
 
   /** Number of elements of the array. */
   @inline def length: Int = {
+    // Mostly unused, typically Array.length is emitted as nir.Op.ArrayLength op
     val rawptr = castObjectToRawPtr(this)
     val lenptr = elemRawPtr(rawptr, MemoryLayout.Array.LengthOffset)
     loadInt(lenptr)

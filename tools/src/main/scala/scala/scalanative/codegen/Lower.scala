@@ -1813,7 +1813,7 @@ private[scalanative] object Lower {
 
       val arrTy = arrayMemoryLayout(ty)
       val elemPtr = buf.elem(arrTy, arr, arrayValuePath(idx), unwind)
-      buf.let(n, nir.Op.Load(ty, elemPtr), unwind)
+      buf.let(n, nir.Op.Load(ty, elemPtr, Some(nir.MemoryOrder.Unordered)), unwind)
     }
 
     def genArraystoreOp(
@@ -1830,7 +1830,7 @@ private[scalanative] object Lower {
 
       val arrTy = arrayMemoryLayout(ty)
       val elemPtr = buf.elem(arrTy, arr, arrayValuePath(idx), unwind)
-      genStoreOp(buf, n, nir.Op.Store(ty, elemPtr, value))
+      genStoreOp(buf, n, nir.Op.Store(ty, elemPtr, value, Some(nir.MemoryOrder.Unordered)))
     }
 
     def genArraylengthOp(
@@ -1847,7 +1847,7 @@ private[scalanative] object Lower {
       genGuardNotNull(buf, arr)
       val lenPtr =
         buf.elem(ArrayHeader.layout, arr, ArrayHeaderLengthPath, unwind)
-      buf.let(n, nir.Op.Load(nir.Type.Int, lenPtr), unwind)
+      buf.let(n, nir.Op.Load(nir.Type.Int, lenPtr, Some(nir.MemoryOrder.Unordered)), unwind)
     }
 
     def genStackallocOp(
