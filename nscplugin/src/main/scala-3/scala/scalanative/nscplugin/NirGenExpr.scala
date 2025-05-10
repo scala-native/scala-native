@@ -2310,7 +2310,7 @@ trait NirGenExpr(using Context) {
         case LOAD_RAW_SIZE => nir.Type.Size
         case LOAD_OBJECT   => nir.Rt.Object
       }
-      val memoryOrder = Some(
+      val memoryOrder = Option.unless(ty == nir.Type.Bool)(
         if ptrp.symbol.isVolatile then nir.MemoryOrder.Acquire
         else nir.MemoryOrder.Unordered
       )
@@ -2337,7 +2337,7 @@ trait NirGenExpr(using Context) {
         case STORE_RAW_SIZE => nir.Type.Size
         case STORE_OBJECT   => nir.Rt.Object
       }
-      val memoryOrder = Some(
+      val memoryOrder = Option.unless(ty == nir.Type.Bool)(
         if ptrp.symbol.isVolatile then nir.MemoryOrder.Release
         else nir.MemoryOrder.Unordered
       )
