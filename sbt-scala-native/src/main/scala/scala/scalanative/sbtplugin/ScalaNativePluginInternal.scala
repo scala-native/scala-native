@@ -24,7 +24,6 @@ import scala.scalanative.build.Platform
 import sjsonnew.BasicJsonProtocol._
 import java.nio.file.{Files, Path}
 import java.lang.Runtime
-import java.util.concurrent.Executors
 import java.util.concurrent.locks.ReentrantLock
 import sbt.librarymanagement.{
   DependencyResolution,
@@ -142,38 +141,6 @@ object ScalaNativePluginInternal {
     }
   )
 
-  private def await[T](
-      log: sbt.Logger
-  )(body: ExecutionContext => Future[T]): T = {
-    // Fatal errors, eg. StackOverflowErrors are not propagated by Futures
-    // Use a helper promise to get notified about the underlying problem
-    val promise = Promise[T]()
-    val executor =
-      Executors.newFixedThreadPool(
-        Runtime.getRuntime().availableProcessors(),
-        (task: Runnable) => {
-          val thread = Executors.defaultThreadFactory().newThread(task)
-          val defaultExceptionHandler = thread.getUncaughtExceptionHandler()
-          thread.setUncaughtExceptionHandler {
-            (thread: Thread, ex: Throwable) =>
-              promise.tryFailure(ex)
-              ex match {
-                case _: InterruptedException => log.trace(ex)
-                case _ => defaultExceptionHandler.uncaughtException(thread, ex)
-              }
-          }
-          thread
-        }
-      )
-    implicit val ec: ExecutionContext =
-      ExecutionContext.fromExecutor(executor, log.trace(_))
-
-    // Schedue the task and record completion
-    body(ec).onComplete(promise.complete)
-    try Await.result(promise.future, Duration.Inf)
-    finally executor.shutdown()
-  }
-
   private def nativeLinkImpl(
       nativeConfig: NativeConfig,
       sbtLogger: sbt.Logger,
@@ -199,11 +166,9 @@ object ScalaNativePluginInternal {
 
     interceptBuildException {
       SharedScope { implicit sharedScope: Scope =>
-        await(sbtLogger) { implicit ec: ExecutionContext =>
-          Build
-            .buildCached(config)
-            .map(_.toFile())
-        }
+        Build
+          .buildCachedAwait(config)
+          .toFile()
       }
     }
   }
