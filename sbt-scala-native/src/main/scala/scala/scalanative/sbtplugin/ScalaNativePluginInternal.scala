@@ -243,6 +243,13 @@ object ScalaNativePluginInternal {
       }
       .tag(NativeTags.Link)
       .value,
+    nativeLink / artifactPath := build.Config.empty
+      .withBaseDir(crossTarget.value.toPath())
+      .withModuleName(moduleName.value)
+      .withCompilerConfig(nativeConfig.value)
+      .withTestConfig(testConfig)
+      .artifactPath
+      .toFile,
     nativeLink := Def
       .task {
         val sbtLogger = streams.value.log
