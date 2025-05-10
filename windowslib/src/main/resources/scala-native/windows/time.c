@@ -1,12 +1,12 @@
 // Windows specific copy of posixlib/time.h
 // Uses *_s variants of methods instead of *_r
 #if defined(_WIN32)
+#define _CRT_SECURE_NO_WARNINGS
 #include <string.h>
 #include <time.h>
 #include <errno.h>
 
 #if defined(_MSC_VER)
-#define _CRT_SECURE_NO_WARNINGS
 #define daylight _daylight
 #define timezone _timezone
 #define tzname _tzname
