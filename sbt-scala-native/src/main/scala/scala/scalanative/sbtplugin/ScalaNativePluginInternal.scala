@@ -51,8 +51,9 @@ object ScalaNativePluginInternal {
   val nativeWarnOldJVM =
     taskKey[Unit]("Warn if JVM 7 or older is used.")
 
-  val baseBuildConfig =
-    settingKey[build.Config]("Base configuration for nativeLink commands")
+  val baseBuildConfig = settingKey[build.Config](
+    "Base configuration for nativeLink commands calcullated base on setting keys. Internal, not visible to users"
+  )
 
   lazy val scalaNativeDependencySettings: Seq[Setting[_]] = {
     val organization = "org.scala-native"
