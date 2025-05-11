@@ -47,32 +47,35 @@ private[runtime] object StackTrace {
       try {
         thread.isFillingStackTrace = true
         val buffer = scala.Array.newBuilder[StackTraceElement]
-        unwind.get_context(context)
-        unwind.init_local(cursor, context)
+        if (unwind.get_context(context) < 0)
+          return scala.Array.empty
+        if (unwind.init_local(cursor, context) < 0)
+          return scala.Array.empty
         // JVM limit stack trace to 1024 entries
         var frames = 0
         while (unwind.step(cursor) > 0 && frames < 1024) {
           frames += 1
-          unwind.get_reg(cursor, unwind.UNW_REG_IP, ip)
-          val addr =
-            Intrinsics.castRawSizeToLongUnsigned(Intrinsics.loadRawSize(ip))
-          /* Creates a stack trace element in given unwind context. Finding a
-           *  name of the symbol for current function is expensive, so we cache
-           *  stack trace elements based on current instruction pointer.
-           */
-          val elem = tlContext.cache.getOrElseUpdate(
-            addr,
-            makeStackTraceElement(cursor, addr)
-          )
-          buffer += elem
+          if (unwind.get_reg(cursor, unwind.UNW_REG_IP, ip) == 0) {
+            val addr =
+              Intrinsics.castRawSizeToLongUnsigned(Intrinsics.loadRawSize(ip))
+            /* Creates a stack trace element in given unwind context. Finding a
+             *  name of the symbol for current function is expensive, so we cache
+             *  stack trace elements based on current instruction pointer.
+             */
+            val elem = tlContext.cache.getOrElseUpdate(
+              addr,
+              makeStackTraceElement(cursor, addr)
+            )
+            buffer += elem
 
-          if (elem.getClassName.startsWith("scala.scalanative.runtime.")) {
-            val shouldClear =
-              (elem.getClassName == "scala.scalanative.runtime.StackTrace$" && elem.getMethodName == "currentStackTrace") ||
-                (elem.getClassName == "scala.scalanative.runtime.Throwable" && {
-                  elem.getMethodName == "fillInStackTrace" || elem.getMethodName == "<init>"
-                })
-            if (shouldClear) buffer.clear()
+            if (elem.getClassName.startsWith("scala.scalanative.runtime.")) {
+              val shouldClear =
+                (elem.getClassName == "scala.scalanative.runtime.StackTrace$" && elem.getMethodName == "currentStackTrace") ||
+                  (elem.getClassName == "scala.scalanative.runtime.Throwable" && {
+                    elem.getMethodName == "fillInStackTrace" || elem.getMethodName == "<init>"
+                  })
+              if (shouldClear) buffer.clear()
+            }
           }
         }
 
