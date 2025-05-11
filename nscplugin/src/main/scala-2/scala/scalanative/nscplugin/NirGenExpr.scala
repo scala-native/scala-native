@@ -2240,9 +2240,10 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         case LOAD_RAW_SIZE => nir.Type.Size
         case LOAD_OBJECT   => nir.Rt.Object
       }
-      val memoryOrder =
-        if (!ptrp.symbol.isVolatile) None
-        else Some(nir.MemoryOrder.Acquire)
+      val memoryOrder = Some(
+        if (ptrp.symbol.isVolatile) nir.MemoryOrder.Acquire
+        else nir.MemoryOrder.Unordered
+      )
       buf.load(ty, ptr, unwind, memoryOrder)
     }
 
@@ -2266,9 +2267,10 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         case STORE_RAW_SIZE => nir.Type.Size
         case STORE_OBJECT   => nir.Rt.Object
       }
-      val memoryOrder =
-        if (!ptrp.symbol.isVolatile) None
-        else Some(nir.MemoryOrder.Release)
+      val memoryOrder = Some(
+        if (ptrp.symbol.isVolatile) nir.MemoryOrder.Release
+        else nir.MemoryOrder.Unordered
+      )
       buf.store(ty, ptr, value, unwind, memoryOrder)
     }
 
