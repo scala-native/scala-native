@@ -2,12 +2,38 @@
 // Uses *_s variants of methods instead of *_r
 #if defined(_WIN32)
 #define _CRT_SECURE_NO_WARNINGS
+#include <string.h>
+#include <time.h>
+#include <errno.h>
+
+#if defined(_MSC_VER)
 #define daylight _daylight
 #define timezone _timezone
 #define tzname _tzname
+void tzset() { _tzset(); }
+#else
+// — Non-MSVC Windows (MinGW, Cygwin, TDM-GCC, Clang-mingw, etc.) —
+// these CRTs already offer:
+//    asctime(), asctime_r(), gmtime_r(), localtime_r(), tzset()
+// so we just alias the “secure” names to the POSIX names
+// and provide asctime_s() if needed.
+#ifndef gmtime_s
+#define gmtime_s(dst, clk) gmtime_r((clk), (dst))
+#endif
 
-#include <string.h>
-#include <time.h>
+#ifndef localtime_s
+#define localtime_s(dst, clk) localtime_r((clk), (dst))
+#endif
+
+static errno_t asctime_s(char *buf, size_t size, const struct tm *tm) {
+    char *s = asctime(tm);
+    size_t len = strlen(s) + 1;
+    if (len > size)
+        return ERANGE;
+    memcpy(buf, s, len);
+    return 0;
+}
+#endif
 
 struct scalanative_tm {
     int tm_sec;
@@ -37,6 +63,7 @@ static void scalanative_tm_init(struct scalanative_tm *scala_tm,
 }
 
 static void tm_init(struct tm *tm, struct scalanative_tm *scala_tm) {
+    *tm = (struct tm){0}; // zero everything to avoid garbage
     tm->tm_sec = scala_tm->tm_sec;
     tm->tm_min = scala_tm->tm_min;
     tm->tm_hour = scala_tm->tm_hour;
@@ -118,12 +145,6 @@ size_t scalanative_strftime(char *buf, size_t maxsize, const char *format,
 }
 
 char **scalanative_tzname() { return tzname; }
-
-long scalanative_timezone() { return _timezone; }
-
-int scalanative_daylight() { return _daylight; }
-
-// Windows compat
-void tzset() { return _tzset(); }
-
+long scalanative_timezone() { return timezone; }
+int scalanative_daylight() { return daylight; }
 #endif // defined(_WIN32)
