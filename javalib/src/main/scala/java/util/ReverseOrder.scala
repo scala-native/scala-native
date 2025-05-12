@@ -542,11 +542,11 @@ private[util] class ReverseOrderSortedSetView[E](underlying: SortedSet[E])
   override def add(e: E): Boolean =
     underlying.add(e)
 
-  def comparator(): java.util.Comparator[? >: E] = {
+  def comparator(): java.util.Comparator[_ >: E] = {
     val ulCmp = underlying.comparator()
 
     // explicit type required by at least Scala 2.12.20, Scala 3 does not need.
-    val cmp: ju.Comparator[? >: E] =
+    val cmp: ju.Comparator[_ >: E] =
       if (ulCmp != null) ulCmp
       else NaturalComparator
 
