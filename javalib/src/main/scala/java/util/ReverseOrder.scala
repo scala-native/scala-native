@@ -146,7 +146,7 @@ private[util] trait ReverseOrderListViewTrait[E] extends AbstractList[E] {
     underlying.size() > sizeAtEntry
   }
 
-  override def addAll(index: Int, c: java.util.Collection[? <: E]): Boolean = {
+  override def addAll(index: Int, c: java.util.Collection[_ <: E]): Boolean = {
     val startSize = this.size()
     val colIterator = c.iterator()
 
@@ -161,7 +161,7 @@ private[util] trait ReverseOrderListViewTrait[E] extends AbstractList[E] {
     this.size() > startSize
   }
 
-  override def addAll(c: java.util.Collection[? <: E]): Boolean =
+  override def addAll(c: java.util.Collection[_ <: E]): Boolean =
     this.addAll(size(), c)
 
   override def addFirst(e: E): Unit =
@@ -176,7 +176,7 @@ private[util] trait ReverseOrderListViewTrait[E] extends AbstractList[E] {
   override def contains(o: Any): Boolean =
     underlying.contains(o)
 
-  override def containsAll(c: java.util.Collection[?]): Boolean =
+  override def containsAll(c: java.util.Collection[_]): Boolean =
     underlying.containsAll(c)
 
   override def get(index: Int): E =
@@ -237,7 +237,7 @@ private[util] trait ReverseOrderListViewTrait[E] extends AbstractList[E] {
     removed
   }
 
-  override def removeAll(c: java.util.Collection[?]): Boolean =
+  override def removeAll(c: java.util.Collection[_]): Boolean =
     underlying.removeAll(c)
 
   override def removeFirst(): E = {
@@ -257,7 +257,7 @@ private[util] trait ReverseOrderListViewTrait[E] extends AbstractList[E] {
   override def replaceAll(operator: UnaryOperator[E]): Unit =
     underlying.replaceAll(operator)
 
-  override def retainAll(c: java.util.Collection[?]): Boolean =
+  override def retainAll(c: java.util.Collection[_]): Boolean =
     underlying.retainAll(c)
 
   override def set(index: Int, element: E): E =
