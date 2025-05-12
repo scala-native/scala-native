@@ -1,7 +1,8 @@
-// Ported from Scala.js commit: 2253950 dated: 2022-10-02
-//
-// Contains Scala Native specific updates subsequent to original port.
-// See Scala Native git repository history.
+/* Ported from Scala.js commit: 2253950 dated: 2022-10-02
+ * 
+ * Contains Scala Native specific updates subsequent to original port.
+ * See Scala Native git repository history.
+ */
 
 /*
  * Scala.js (https://www.scala-js.org/)
@@ -69,6 +70,10 @@ object Collections {
         throw new NoSuchElementException
     }
   }
+
+  /** Since: JDK 1.6 */
+  def asLifoQueue[T](deque: Deque[T]): Queue[T] =
+    new LifoQueue[T](deque)
 
   // Differs from original type definition, original: [T <: jl.Comparable[_ >: T]]
   def sort[T <: jl._Comparable[T]](list: List[T]): Unit =
@@ -410,12 +415,6 @@ object Collections {
   def unmodifiableCollection[T](c: Collection[_ <: T]): Collection[T] =
     new UnmodifiableCollection[T, Collection[T]](c.asInstanceOf[Collection[T]])
 
-  def unmodifiableSet[T](a: Set[_ <: T]): Set[T] =
-    new UnmodifiableSet[T, Set[T]](a.asInstanceOf[Set[T]])
-
-  def unmodifiableSortedSet[T](s: SortedSet[T]): SortedSet[T] =
-    new UnmodifiableSortedSet[T](s)
-
   def unmodifiableList[T](list: List[_ <: T]): List[T] = {
     list match {
       case _: RandomAccess =>
@@ -428,8 +427,36 @@ object Collections {
   def unmodifiableMap[K, V](m: Map[_ <: K, _ <: V]): Map[K, V] =
     new UnmodifiableMap[K, V, Map[K, V]](m.asInstanceOf[Map[K, V]])
 
+  // Scala Native Issue 4317
+  /** Since JDK 8 */
+  // def unmodifiableNavigableMap[K, V](m: Map[_ <: K, _ <: V]): Map[K, V]
+  /** Since JDK 8 */
+  // def unmodifiableNavigableSet[T](a: NavigableSet[_ <: T]): NavigableSet[T]
+
+  /** Since JDK 21 */
+  def unmodifiableSequencedCollection[T](
+      c: SequencedCollection[_ <: T]
+  ): SequencedCollection[T] =
+    new UnmodifiableSequencedCollection[T, SequencedCollection[T]](
+      c.asInstanceOf[SequencedCollection[T]]
+    )
+
+  /** Since JDK 21 */
+  //  def unmodifiableSequencedMap[K, V](m: Map[_ <: K, _ <: V]):
+  //      SequencedMap[K, V]
+
+  /** Since JDK 21 */
+  def unmodifiableSequencedSet[T](a: SequencedSet[_ <: T]): SequencedSet[T] =
+    new UnmodifiableSequencedSet[T](a.asInstanceOf[SequencedSet[T]])
+
+  def unmodifiableSet[T](a: Set[_ <: T]): Set[T] =
+    new UnmodifiableSet[T, Set[T]](a.asInstanceOf[Set[T]])
+
   def unmodifiableSortedMap[K, V](m: SortedMap[K, _ <: V]): SortedMap[K, V] =
     new UnmodifiableSortedMap[K, V](m.asInstanceOf[SortedMap[K, V]])
+
+  def unmodifiableSortedSet[T](s: SortedSet[T]): SortedSet[T] =
+    new UnmodifiableSortedSet[T](s)
 
   def synchronizedCollection[T](c: Collection[T]): Collection[T] = {
     new WrappedCollection[T, Collection[T]] {
@@ -628,6 +655,10 @@ object Collections {
     }
     added
   }
+
+  /** Since JDK 21 */
+  // def newSequencedSetFromMap[E](map: SequencedMap[E, java.lang.Boolean]
+  // ): SequencedSet[E] = // SequencedMap is Not-Yet-Implemented
 
   def newSetFromMap[E](map: Map[E, java.lang.Boolean]): Set[E] = {
     if (!map.isEmpty())
@@ -927,6 +958,32 @@ object Collections {
     }
   }
 
+  private class UnmodifiableSequencedCollection[E, Coll <: SequencedCollection[
+    E
+  ]](inner: Coll)
+      extends AbstractCollection[E]
+      with SequencedCollection[E] {
+
+    override def iterator(): java.util.Iterator[E] =
+      new UnmodifiableIterator[E, Iterator[E]](inner.iterator())
+
+    /* JVM fails early for several methods, even if underlying would not
+     * have been modified. Follow suite.
+     */
+
+    override def remove(o: Any): Boolean =
+      throw new UnsupportedOperationException
+
+    override def removeAll(c: Collection[_]): Boolean =
+      throw new UnsupportedOperationException
+
+    def reversed(): SequencedCollection[E] =
+      new ReverseOrderUnmodifiableSequencedCollectionView[E](inner)
+
+    def size(): Int =
+      inner.size()
+  }
+
   private class UnmodifiableSet[E, Coll <: Set[E]](inner: Coll)
       extends UnmodifiableCollection[E, Coll](inner)
       with WrappedSet[E, Coll]
@@ -934,6 +991,29 @@ object Collections {
   private class ImmutableSet[E](inner: Set[E])
       extends UnmodifiableSet[E, Set[E]](inner) {
     override protected val eagerThrow: Boolean = false
+  }
+
+  private class UnmodifiableSequencedSet[E](inner: SequencedSet[E])
+      extends AbstractSet[E]
+      with SequencedSet[E] {
+
+    def iterator(): java.util.Iterator[E] =
+      new UnmodifiableIterator[E, Iterator[E]](inner.iterator())
+
+    /* JVM fails early for several methods, even if underlying would not
+     * have been modified. Follow suite.
+     */
+
+    override def remove(o: Any): Boolean =
+      throw new UnsupportedOperationException
+
+    override def removeAll(c: Collection[_]): Boolean =
+      throw new UnsupportedOperationException
+
+    def reversed(): java.util.SequencedSet[E] =
+      new ReverseOrderUnmodifiableSequencedSetView[E](inner)
+
+    def size(): Int = inner.size()
   }
 
   private class UnmodifiableSortedSet[E](inner: SortedSet[E])
@@ -1228,5 +1308,36 @@ object Collections {
 
     def add(e: Any): Unit =
       throw new UnsupportedOperationException
+  }
+
+  private class LifoQueue[E](inner: Deque[E])
+      extends AbstractCollection[E]
+      with Queue[E] {
+
+    override def add(e: E): Boolean = {
+      inner.addFirst(e)
+      true
+    }
+
+    override def element(): E =
+      inner.peekFirst()
+
+    def iterator(): Iterator[E] =
+      inner.iterator()
+
+    override def offer(e: E): Boolean =
+      inner.offerFirst(e)
+
+    override def peek(): E =
+      inner.peekFirst()
+
+    override def poll(): E =
+      inner.pollFirst()
+
+    override def remove(): E =
+      inner.removeFirst()
+
+    def size(): Int =
+      inner.size()
   }
 }

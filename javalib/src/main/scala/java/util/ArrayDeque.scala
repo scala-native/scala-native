@@ -288,7 +288,7 @@ class ArrayDeque[E](
    *  @throws java.lang.NullPointerException
    *    if the specified element is null
    */
-  def addFirst(e: E): Unit = {
+  override def addFirst(e: E): Unit = {
     if (e == null)
       throw new NullPointerException()
     val es = elements
@@ -307,7 +307,7 @@ class ArrayDeque[E](
    *  @throws java.lang.NullPointerException
    *    if the specified element is null
    */
-  def addLast(e: E): Unit = {
+  override def addLast(e: E): Unit = {
     if (e == null)
       throw new NullPointerException()
     val es = elements
@@ -370,7 +370,7 @@ class ArrayDeque[E](
   }
 
   /** @throws NoSuchElementException */
-  def removeFirst(): E = {
+  override def removeFirst(): E = {
     val e = pollFirst()
     if (e == null)
       throw new NoSuchElementException()
@@ -378,7 +378,7 @@ class ArrayDeque[E](
   }
 
   /** @throws NoSuchElementException */
-  def removeLast(): E = {
+  override def removeLast(): E = {
     val e = pollLast()
     if (e == null)
       throw new NoSuchElementException()
@@ -408,7 +408,7 @@ class ArrayDeque[E](
   }
 
   /** @throws NoSuchElementException */
-  def getFirst(): E = {
+  override def getFirst(): E = {
     val e = elementAt(elements, head)
     if (e == null)
       throw new NoSuchElementException()
@@ -416,7 +416,7 @@ class ArrayDeque[E](
   }
 
   /** @throws NoSuchElementException */
-  def getLast(): E = {
+  override def getLast(): E = {
     val es = elements
     val e = elementAt(es, dec(tail, es.length))
     if (e == null)
