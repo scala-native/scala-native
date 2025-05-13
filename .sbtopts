@@ -24,29 +24,9 @@
 # The arguably more useful "-J-XX:GCTimeRatio" is not passed by the
 # scala-sbt.org runner.
 
-# -J-Xmx5G
-# -J-Xms1G
+-J-Xmx5G
+-J-Xms1G
 # -J-Xms1G is the upper bound supplied by scala-sbt.org runner, lower may work.
-
-# 2022-07-17 LeeT experiments to reduce GC
-# -J-Xmx10G
-# -J-Xms2G
-
-# 2023-01-25 LeeT experiments to reduce GC - bump up by 2G
-#                 Build seems to be using only parts of 4 available hw nodes.
--J-Xmx12G
-# -J-Xms4G
-## 2023-02-11 11:23 -0500 LeeT Experiment with 6G, can I reduce number of
-##                             __long__ Stop-the-World GC pauses?
-#-J-Xms6G
-
--J-XX:+UseG1GC
-# 2023-02-11 LeeT After several trials, ZGC seems to do a __lot__ of
-#                 very noticable, paralyzing, and just plain scary
-#		  Stop-the-World (Gnome Treminals & all, I mean ALL)
-#                 GC pauses, especially when building SN Tests for the
-#		  first time.
-# -J-XX:+UseZGC
 
 # Compilation on Scala 2.11 in Release mode might require larger
 # thread stack size while performing optimizations. (#2156)
