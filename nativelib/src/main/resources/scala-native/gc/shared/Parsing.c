@@ -7,6 +7,10 @@
 #include <windows.h>
 #endif
 
+// Helpers for compile time memory
+#define VAL_STR(x) STR(x)
+#define STR(x) #x
+
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -50,8 +54,38 @@ size_t Parse_Size_Or_Default(const char *str, size_t defaultSizeInBytes) {
     return defaultSizeInBytes;
 }
 
+const char *get_defined_or_env(const char *envName) {
+    const char *defined = NULL;
+    if (strcmp(envName, "GC_INITIAL_HEAP_SIZE") == 0) {
+#if defined(GC_INITIAL_HEAP_SIZE)
+        defined = VAL_STR(GC_INITIAL_HEAP_SIZE);
+#else
+        defined = NULL;
+#endif
+    } else if (strcmp(envName, "GC_MAXIMUM_HEAP_SIZE") == 0) {
+#if defined(GC_MAXIMUM_HEAP_SIZE)
+        defined = VAL_STR(GC_MAXIMUM_HEAP_SIZE);
+#else
+        defined = NULL;
+#endif
+    } else if (strcmp(envName, "GC_THREAD_HEAP_BLOCK_SIZE") == 0) {
+#if defined(GC_THREAD_HEAP_BLOCK_SIZE)
+        defined = VAL_STR(GC_THREAD_HEAP_BLOCK_SIZE);
+#else
+        defined = NULL;
+#endif
+    }
+
+    const char *env = getenv(envName);
+    if (env != NULL)
+        return env; // override
+    else
+        return defined;
+}
+
 size_t Parse_Env_Or_Default(const char *envName, size_t defaultSizeInBytes) {
-    return Parse_Size_Or_Default(getenv(envName), defaultSizeInBytes);
+    return Parse_Size_Or_Default(get_defined_or_env(envName),
+                                 defaultSizeInBytes);
 }
 
 size_t Parse_Env_Or_Default_String(const char *envName,
@@ -60,7 +94,8 @@ size_t Parse_Env_Or_Default_String(const char *envName,
         return Parse_Size_Or_Default(defaultSizeString, 0L);
     else
         return Parse_Size_Or_Default(
-            getenv(envName), Parse_Size_Or_Default(defaultSizeString, 0L));
+            get_defined_or_env(envName),
+            Parse_Size_Or_Default(defaultSizeString, 0L));
 }
 
 size_t Choose_IF(size_t left, qualifier qualifier, size_t right) {
