@@ -3,7 +3,7 @@
 #if defined(_WIN32)
 // No Windows support. These are dummies for linking.
 int getifaddrs(void *dummy) { return -1; };
-void freeifaddrs(void *dummy) {};
+void freeifaddrs(void *dummy){};
 #else
 #include <ifaddrs.h>
 #include <stddef.h>
