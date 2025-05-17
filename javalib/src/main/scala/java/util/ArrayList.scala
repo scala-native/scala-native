@@ -53,7 +53,7 @@ class ArrayList[E] private (
 
   def this() = this(10)
 
-  // by default, doubles the capacity. this mimicks C++ <vector> compiled by clang++-4.0.0
+  // by default, doubles the capacity. this mimics C++ <vector> compiled by clang++-4.0.0
   private def expand(): Unit = expand(inner.length * 2 max 1)
 
   private def expand(newCapacity: Int): Unit = {
@@ -86,21 +86,23 @@ class ArrayList[E] private (
   override def toArray(): Array[AnyRef] =
     inner.slice(0, _size).map(_.asInstanceOf[AnyRef])
 
-  override def toArray[T <: AnyRef](a: Array[T]): Array[T] =
-    if (a == null)
-      throw new NullPointerException
-    else if (a.length < size())
+  override def toArray[T <: AnyRef](a: Array[T]): Array[T] = {
+    Objects.requireNonNull(a, "a")
+
+    if (a.length < size())
       toArray().asInstanceOf[Array[T]]
     else {
       // TODO: this copy should result in ArrayStoreException when not T >: E
       // need to detect type mismatch at runtime. related: #858
       inner.asInstanceOf[Array[T]].copyToArray(a, 0, size())
-      // fill the rest of the elements in a by null as explained in JDK Javadoc
-      for (i <- size() until a.length) {
-        a(i) = null.asInstanceOf[T]
-      }
+
+      // fill only the first slot, if any, with a null - see JDK javadoc
+      if (size() < a.length)
+        a(size()) = null.asInstanceOf[T]
+
       a
     }
+  }
 
   def get(index: Int): E = {
     checkIndexInBounds(index)

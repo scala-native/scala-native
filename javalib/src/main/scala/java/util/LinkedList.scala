@@ -26,21 +26,21 @@ class LinkedList[E]()
    */
   private var _size: Long = 0
 
-  def getFirst(): E = {
+  override def getFirst(): E = {
     if (isEmpty())
       throw new NoSuchElementException()
     else
       peekFirst()
   }
 
-  def getLast(): E = {
+  override def getLast(): E = {
     if (isEmpty())
       throw new NoSuchElementException()
     else
       peekLast()
   }
 
-  def removeFirst(): E = {
+  override def removeFirst(): E = {
     if (isEmpty())
       throw new NoSuchElementException()
 
@@ -56,7 +56,7 @@ class LinkedList[E]()
     oldHead.value
   }
 
-  def removeLast(): E = {
+  override def removeLast(): E = {
     if (isEmpty())
       throw new NoSuchElementException()
 
@@ -72,7 +72,7 @@ class LinkedList[E]()
     oldLast.value
   }
 
-  def addFirst(e: E): Unit = {
+  override def addFirst(e: E): Unit = {
     val oldHead = head
 
     head = new Node(e, next = oldHead)
@@ -85,7 +85,7 @@ class LinkedList[E]()
       last = head
   }
 
-  def addLast(e: E): Unit = {
+  override def addLast(e: E): Unit = {
     val oldLast = last
 
     last = new Node(e, prev = oldLast)
@@ -396,6 +396,8 @@ class LinkedList[E]()
     )
   }
 
+  override def reversed(): LinkedList[E] =
+    new ReverseOrderLinkedListView(this)
 }
 
 object LinkedList {

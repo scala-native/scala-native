@@ -1,12 +1,16 @@
-// Ported from Scala.js commit: ad7d82f dated: 2020-10-05
-//
-// Post Java 8 Static methods on List added for Scala Native
+/* Ported from Scala.js commit: ad7d82f dated: 2020-10-05
+ * 
+ * Post Java 8 Static methods on List added for Scala Native
+ */
 
 /* Some of the strange coding style, especially of specifying type
  * parameters explicitly and not using lambdas is due to the need to
  * support Scala versions from 2.12.19 through 3.N.
  */
 
+/* scalafmt directive keeps List.of methods with many arguments from becoming
+ * unreadable and just plain ugly by expanding to multiple, say 10, lines.
+ */
 /* scalafmt: {
      binPack.defnSite = always
      binPack.callSite = always
@@ -19,11 +23,65 @@ package java.util
 import java.util.function.UnaryOperator
 
 trait List[E] extends SequencedCollection[E] {
+
+  def add(index: Int, element: E): Unit
+
+  def addAll(index: Int, c: Collection[_ <: E]): Boolean
+
+  override def addFirst(e: E): Unit = add(0, e)
+
+  override def addLast(e: E): Unit = add(e)
+
+  def get(index: Int): E
+
+  override def getFirst(): E = {
+    if (this.isEmpty())
+      throw new NoSuchElementException()
+    else
+      get(0)
+  }
+
+  override def getLast(): E = {
+    if (this.isEmpty())
+      throw new NoSuchElementException()
+    else
+      get(size() - 1)
+  }
+
+  def indexOf(o: Any): Int
+
+  def lastIndexOf(o: Any): Int
+
+  def listIterator(): ListIterator[E]
+
+  def listIterator(index: Int): ListIterator[E]
+
+  def remove(index: Int): E
+
+  override def removeFirst(): E = {
+    if (this.isEmpty())
+      throw new NoSuchElementException()
+    else
+      remove(0)
+  }
+
+  override def removeLast(): E = {
+    if (this.isEmpty())
+      throw new NoSuchElementException()
+    else
+      remove(size() - 1)
+  }
+
   def replaceAll(operator: UnaryOperator[E]): Unit = {
     val iter = listIterator()
     while (iter.hasNext())
       iter.set(operator.apply(iter.next()))
   }
+
+  def reversed(): List[E] =
+    new ReverseOrderListView(this)
+
+  def set(index: Int, element: E): E
 
   def sort(c: Comparator[_ >: E]): Unit = {
     val arrayBuf = toArray()
@@ -48,16 +106,8 @@ trait List[E] extends SequencedCollection[E] {
     }
   }
 
-  def get(index: Int): E
-  def set(index: Int, element: E): E
-  def add(index: Int, element: E): Unit
-  def remove(index: Int): E
-  def indexOf(o: Any): Int
-  def lastIndexOf(o: Any): Int
-  def listIterator(): ListIterator[E]
-  def listIterator(index: Int): ListIterator[E]
   def subList(fromIndex: Int, toIndex: Int): List[E]
-  def addAll(index: Int, c: Collection[_ <: E]): Boolean
+
 }
 
 object List {
