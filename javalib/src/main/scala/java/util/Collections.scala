@@ -427,7 +427,7 @@ object Collections {
   def unmodifiableMap[K, V](m: Map[_ <: K, _ <: V]): Map[K, V] =
     new UnmodifiableMap[K, V, Map[K, V]](m.asInstanceOf[Map[K, V]])
 
-  // Scala Native Issue 4317
+  // Scala Native  Issue 4317
   /** Since JDK 8 */
   // def unmodifiableNavigableMap[K, V](m: Map[_ <: K, _ <: V]): Map[K, V]
   /** Since JDK 8 */
