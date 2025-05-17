@@ -442,10 +442,6 @@ object Collections {
     )
 
   /** Since JDK 21 */
-  //  def unmodifiableSequencedMap[K, V](m: Map[_ <: K, _ <: V]):
-  //      SequencedMap[K, V]
-
-  /** Since JDK 21 */
   def unmodifiableSequencedSet[T](a: SequencedSet[_ <: T]): SequencedSet[T] =
     new UnmodifiableSequencedSet[T](a.asInstanceOf[SequencedSet[T]])
 
