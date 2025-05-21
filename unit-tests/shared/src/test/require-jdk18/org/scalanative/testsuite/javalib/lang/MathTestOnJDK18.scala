@@ -1,4 +1,4 @@
-/* Ported from Scala.js commit: 7569c24 dated: 2025-05-20 
+/* Ported from Scala.js commit: 7569c24 dated: 2025-05-20
  * 
  * For reasons internal to Scala.js practice, the Scala.js file was
  * named MathTestOnJDK21.
@@ -45,7 +45,11 @@ class MathTestOnJDK18 {
           .longValue()
       }
 
-      assertEquals(s"round $round, x = $x, y = $y", expected, Math.unsignedMultiplyHigh(x, y))
+      assertEquals(
+        s"round $round, x = $x, y = $y",
+        expected,
+        Math.unsignedMultiplyHigh(x, y)
+      )
     }
   }
 
