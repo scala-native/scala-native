@@ -55,6 +55,9 @@ size_t Parse_Size_Or_Default(const char *str, size_t defaultSizeInBytes) {
 }
 
 const char *get_defined_or_env(const char *envName) {
+    if (envName == NULL)
+        return NULL;
+
     const char *defined = NULL;
     if (strcmp(envName, "GC_INITIAL_HEAP_SIZE") == 0) {
 #if defined(GC_INITIAL_HEAP_SIZE)
@@ -84,18 +87,21 @@ const char *get_defined_or_env(const char *envName) {
 }
 
 size_t Parse_Env_Or_Default(const char *envName, size_t defaultSizeInBytes) {
-    return Parse_Size_Or_Default(get_defined_or_env(envName),
-                                 defaultSizeInBytes);
+    const char *res = get_defined_or_env(envName);
+#ifdef DEBUG_PRINT
+    printf("%s=%s\n", envName, res);
+    fflush(stdout);
+#endif
+    return Parse_Size_Or_Default(res, defaultSizeInBytes);
 }
 
 size_t Parse_Env_Or_Default_String(const char *envName,
                                    const char *defaultSizeString) {
+    size_t defaultSizeInBytes = Parse_Size_Or_Default(defaultSizeString, 0L);
     if (envName == NULL)
-        return Parse_Size_Or_Default(defaultSizeString, 0L);
+        return defaultSizeInBytes;
     else
-        return Parse_Size_Or_Default(
-            get_defined_or_env(envName),
-            Parse_Size_Or_Default(defaultSizeString, 0L));
+        return Parse_Env_Or_Default(envName, defaultSizeInBytes);
 }
 
 size_t Choose_IF(size_t left, qualifier qualifier, size_t right) {
