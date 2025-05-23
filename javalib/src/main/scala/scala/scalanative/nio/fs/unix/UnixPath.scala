@@ -244,6 +244,7 @@ class UnixPath(private val fs: UnixFileSystem, rawPath: String) extends Path {
 }
 
 private object UnixPath {
+
   def normalized(path: UnixPath): String = {
     if (path.path.length < 2) return path.path
     val absolute = path.path.startsWith("/")
@@ -254,6 +255,7 @@ private object UnixPath {
           case (acc, "..") =>
             if (acc.isEmpty && absolute) Nil
             else if (acc.isEmpty) List("..")
+            else if (acc.last == "..") acc :+ ".."
             else acc.tail
           case (acc, ".") => acc
           case (acc, "")  => acc

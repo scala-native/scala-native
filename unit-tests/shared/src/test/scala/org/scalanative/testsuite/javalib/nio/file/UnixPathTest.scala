@@ -20,6 +20,7 @@ object UnixPathTest {
 }
 
 class UnixPathTest {
+
   @Test def pathGetNameCount(): Unit = {
     assertTrue(Paths.get("/").getNameCount == 0)
     assertTrue(Paths.get("///").getNameCount == 0)
@@ -174,6 +175,23 @@ class UnixPathTest {
     assertTrue(Paths.get("foo/bar/.").normalize.toString == "foo/bar")
     assertTrue(Paths.get("../foo/bar/.").normalize.toString == "../foo/bar")
     assertTrue(Paths.get("../foo//bar/.").normalize.toString == "../foo/bar")
+
+    // SN Issue #4341, as reported
+    val i4341FileName = "bar.jsonnet"
+    val i4341Path_1 = "../../${i4341FileName}"
+    assertEquals(
+      "i4341_Path_1",
+      i4341Path_1,
+      Paths.get(i4341Path_1).normalize.toString
+    )
+
+    // SN Issue #4341, logical ripple
+    val i4341Path_2 = s"a/b/../../${i4341FileName}"
+    assertEquals(
+      "i4341_Path_2",
+      i4341FileName,
+      Paths.get(i4341Path_2).normalize.toString
+    )
   }
 
   @Test def pathStartsWith(): Unit = {
