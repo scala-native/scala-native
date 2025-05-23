@@ -738,7 +738,7 @@ object Build {
         scalalib,
         javalib,
         testInterfaceSbtDefs,
-        junitRuntime,
+        junitRuntime % "test",
         junitAsyncNative % "test"
       )
 
