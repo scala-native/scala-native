@@ -313,22 +313,52 @@ object Math {
     else overflow.value
   }
 
-  @alwaysinline def multiplyHigh(a: scala.Long, b: scala.Long): scala.Long = {
-    /* Algorithm from Hacker's Delight, "8–2. Multiply high signed."
-     * Here, `a` is replaced with `u`, and `b` with `v`, and reassignment of
-     * variables with suffix `p`. Unsigned ints correspond to shifting with
-     * `>>>` and performing the `& 0xffffffffL` operations.
+  /* If benchmarking shows that  multiplyHigh() and/or unsignedMultiply()
+   * is a hotspot, one could explore using C23, _BitInt. That or its
+   * experimental predecessor is available in LLVM 18 or later.
+   * It would be a bakeoff to see whose optimizer is better. My money
+   * would be on LLVM, but data tells.
+   */
+
+  @alwaysinline def multiplyHigh(x: scala.Long, y: scala.Long): scala.Long = {
+    /* Ported from Scala.js commit: 7569c24 dated: 2025-05-20
+     * Prior, believed correct, code replaced so that multiplyHigh() and
+     * unsignedMultiplyHigh() comments & implementation correspond.
      */
-    val u0 = a & 0xffffffffL
-    val u1 = a >> 32
-    val v0 = b & 0xffffffffL
-    val v1 = b >> 32
-    val w0 = u0 * v0
-    val t = u1 * v0 + (w0 >>> 32)
-    val w1 = t & 0xffffffffL
-    val w2 = t >> 32
-    val w1p = u0 * v1 + w1
-    u1 * v1 + w2 + (w1p >> 32)
+
+    /* Hacker's Delight, Section 8-2, Figure 8-2,
+     * where we have "inlined" all the variables used only once to help our
+     * optimizer perform simplifications.
+     */
+
+    val x0 = x & 0xffffffffL
+    val x1 = x >> 32
+    val y0 = y & 0xffffffffL
+    val y1 = y >> 32
+
+    val t = x1 * y0 + ((x0 * y0) >>> 32)
+    x1 * y1 + (t >> 32) + (((t & 0xffffffffL) + x0 * y1) >> 32)
+  }
+
+  /** Since: Java 18 */
+  @alwaysinline def unsignedMultiplyHigh(
+      x: scala.Long,
+      y: scala.Long
+  ): scala.Long = {
+    // Ported from Scala.js commit: 7569c24 dated: 2025-05-20
+    /* Hacker's Delight, Section 8-2:
+     * > For an unsigned version, simply change all the int declarations to
+     * > unsigned.
+     * In Scala, that means changing all the >> into >>>.
+     */
+
+    val x0 = x & 0xffffffffL
+    val x1 = x >>> 32
+    val y0 = y & 0xffffffffL
+    val y1 = y >>> 32
+
+    val t = x1 * y0 + ((x0 * y0) >>> 32)
+    x1 * y1 + (t >>> 32) + (((t & 0xffffffffL) + x0 * y1) >>> 32)
   }
 
   @alwaysinline def multiplyExact(a: scala.Long, b: scala.Int): scala.Long =
