@@ -59,10 +59,11 @@ const char *get_defined_or_env(const char *envName) {
         return NULL;
 
     const char *env = getenv(envName);
+    // override with env var
     if (env != NULL)
-        return env; // override with env var
+        return env;
 
-    // check for compile time values
+    // check for defined, compile time values
 
 #if defined(GC_INITIAL_HEAP_SIZE)
     if (strcmp(envName, "GC_INITIAL_HEAP_SIZE") == 0) {
