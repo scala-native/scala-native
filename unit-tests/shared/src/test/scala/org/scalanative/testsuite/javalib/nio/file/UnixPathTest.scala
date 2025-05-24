@@ -180,9 +180,9 @@ class UnixPathTest {
     // SN Issue #4341, as reported & logically related
 
     case class testPoint(rawPath: String, expected: String)
-
     val i4341FileName = "bar.jsonnet"
-    val i4341TestPoints = ju.List.of(
+
+    val i4341TestPoints = ju.Arrays.asList(
       testPoint(s"../../${i4341FileName}", s"../../${i4341FileName}"),
       testPoint(s"a/b/../../${i4341FileName}", s"${i4341FileName}"),
       testPoint(s"/a/./../${i4341FileName}", s"/${i4341FileName}")
