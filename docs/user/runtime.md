@@ -1,15 +1,10 @@
 # Runtime / Garbage Collector Settings
 
-Scala Native comes with some ability to change the runtime
-characteristics.
+Scala Native comes with some ability to change the runtime characteristics.
 
 ## Garbage Collector (GC) Settings
 
-Scala Native supports the [Boehm-Demers-Weiser Garbage
-Collector](https://www.hboehm.info/gc/). The environment variables
-defined in Boehm are planned to be shared by all the Garbage Collectors
-supported in Scala Native so they are consistent. The variables
-supported are listed below for each GC.
+Scala Native supports the [Boehm-Demers-Weiser Garbage Collector](https://www.hboehm.info/gc/). The environment variables defined in Boehm are shared as much as possible by all the Garbage Collectors supported in Scala Native so they are consistent and easier to use. Refer to the Boehm section below for the list. The variables supported are listed below for each GC.
 
 ## All Garbage Collectors
 
@@ -76,7 +71,7 @@ available for Boehm and Commix.
 -   GC_NPROCS
 
 The following document shows all the variables available for Boehm:
-[README](https://github.com/ivmai/bdwgc/blob/master/docs/README.environment).
+[environment.md](https://github.com/ivmai/bdwgc/blob/master/docs/environment.md).
 
 ## None GC
 

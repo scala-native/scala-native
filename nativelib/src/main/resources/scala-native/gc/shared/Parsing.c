@@ -7,7 +7,7 @@
 #include <windows.h>
 #endif
 
-// Helpers for compile time memory
+// Idiomatic 'stringify' macros for compile time memory
 #define VAL_STR(x) STR(x)
 #define STR(x) #x
 
@@ -60,9 +60,9 @@ const char *get_defined_or_env(const char *envName) {
 
     const char *env = getenv(envName);
     if (env != NULL)
-        return env; // override with env var
+        return env; // environment overrides compile time
 
-// check for defined, compile time values
+// check for compile time defined values
 #if defined(GC_INITIAL_HEAP_SIZE)
     if (strcmp(envName, "GC_INITIAL_HEAP_SIZE") == 0) {
         return VAL_STR(GC_INITIAL_HEAP_SIZE);
