@@ -60,27 +60,29 @@ const char *get_defined_or_env(const char *envName) {
 
     const char *env = getenv(envName);
     if (env != NULL)
-        return env; // override
+        return env; // override with env var
 
-#if defined(GC_INITIAL_HEAP_SIZE)       
+    // check for compile time values
+
+#if defined(GC_INITIAL_HEAP_SIZE)
     if (strcmp(envName, "GC_INITIAL_HEAP_SIZE") == 0) {
-       return VAL_STR(GC_INITIAL_HEAP_SIZE);
-     }
-#endif
-
-#if defined(GC_MAXIMUM_HEAP_SIZE)
-     if (strcmp(envName, "GC_MAXIMUM_HEAP_SIZE") == 0) {
-        return VAL_STR(GC_MAXIMUM_HEAP_SIZE);
-     }
-#endif
-    
-#if defined(GC_THREAD_HEAP_BLOCK_SIZE)
-    if (strcmp(envName, "GC_THREAD_HEAP_BLOCK_SIZE") == 0) {
-       return VAL_STR(GC_THREAD_HEAP_BLOCK_SIZE);
+        return VAL_STR(GC_INITIAL_HEAP_SIZE);
     }
 #endif
 
-    return NULL; // no either compiltime or runtime value
+#if defined(GC_MAXIMUM_HEAP_SIZE)
+    if (strcmp(envName, "GC_MAXIMUM_HEAP_SIZE") == 0) {
+        return VAL_STR(GC_MAXIMUM_HEAP_SIZE);
+    }
+#endif
+
+#if defined(GC_THREAD_HEAP_BLOCK_SIZE)
+    if (strcmp(envName, "GC_THREAD_HEAP_BLOCK_SIZE") == 0) {
+        return VAL_STR(GC_THREAD_HEAP_BLOCK_SIZE);
+    }
+#endif
+
+    return NULL; // no compile time or runtime value
 }
 
 size_t Parse_Env_Or_Default(const char *envName, size_t defaultSizeInBytes) {
