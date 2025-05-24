@@ -1,6 +1,7 @@
 package org.scalanative.testsuite.javalib.nio.file
 
 import java.nio.file._
+import java.{util => ju}
 
 import org.junit.{Test, BeforeClass}
 import org.junit.Assert._
@@ -176,21 +177,23 @@ class UnixPathTest {
     assertTrue(Paths.get("../foo/bar/.").normalize.toString == "../foo/bar")
     assertTrue(Paths.get("../foo//bar/.").normalize.toString == "../foo/bar")
 
-    // SN Issue #4341, as reported
+    // SN Issue #4341, as reported & logically related
+
+    case class testPoint(rawPath: String, expected: String)
+
     val i4341FileName = "bar.jsonnet"
-    val i4341Path_1 = "../../${i4341FileName}"
-    assertEquals(
-      "i4341_Path_1",
-      i4341Path_1,
-      Paths.get(i4341Path_1).normalize.toString
+    val i4341TestPoints = ju.List.of(
+      testPoint(s"../../${i4341FileName}", s"../../${i4341FileName}"),
+      testPoint(s"a/b/../../${i4341FileName}", s"${i4341FileName}"),
+      testPoint(s"/a/./../${i4341FileName}", s"/${i4341FileName}")
     )
 
-    // SN Issue #4341, logical ripple
-    val i4341Path_2 = s"a/b/../../${i4341FileName}"
-    assertEquals(
-      "i4341_Path_2",
-      i4341FileName,
-      Paths.get(i4341Path_2).normalize.toString
+    i4341TestPoints.forEach(t =>
+      assertEquals(
+        "i4341",
+        t.expected,
+        Paths.get(t.rawPath).normalize.toString()
+      )
     )
   }
 
