@@ -1,8 +1,18 @@
 /* A devenv based developer shell. Choices:
  *
  * - sets the JDK to JDK 21
+ * - sets the environment variables for:
+ *    - no experimental compiler
+ *    - debug mode
+ *    - optimizer on
+ *    - immix GC
+ *    - no LTO
  *
- * See also: https://devenv.sh/reference/
+ * This is a nix flake that describes how to set up a developer environment for
+ * scala-native. This uses packages from `nixpkgs`. The specific versions of those
+ * packages is defined by `flake.lock`.
+ *
+ * See also: 
  */
 {
   inputs = {

@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# if using nix flakes then `nix develop` in the project directory will
+# enter a dev environment shell.
 
 HERE="`dirname $0`"
 

@@ -12,5 +12,6 @@ Contributor's Guide
   compiler
   nir
   mangling
+  build-setup
   ides
   appendices
