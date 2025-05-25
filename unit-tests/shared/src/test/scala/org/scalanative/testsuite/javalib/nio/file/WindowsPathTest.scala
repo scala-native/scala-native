@@ -1,6 +1,7 @@
 package org.scalanative.testsuite.javalib.nio.file
 
 import java.nio.file._
+import java.{util => ju}
 
 import org.junit.{Test, BeforeClass}
 import org.junit.Assert._
@@ -258,6 +259,26 @@ class WindowsPathTest {
     assertEquals("foo\\bar", Paths.get("foo/bar/.").normalize.toString)
     assertEquals("..\\foo\\bar", Paths.get("../foo/bar/.").normalize.toString)
     assertEquals("..\\foo\\bar", Paths.get("../foo//bar/.").normalize.toString)
+
+    // SN Issue #4341, as reported & logically related
+
+    case class testPoint(rawPath: String, expected: String)
+    val i4341FileName = "bar.jsonnet"
+
+    // The 'expected' JVM path is the same for both WindowsPath & UnixPath.
+    val i4341TestPoints = ju.Arrays.asList(
+      testPoint(s"..\\..\\${i4341FileName}", s"../../${i4341FileName}"),
+      testPoint(s"a\\b\\..\\..\\${i4341FileName}", s"${i4341FileName}"),
+      testPoint(s"\\a\\.\\..\\${i4341FileName}", s"/${i4341FileName}")
+    )
+
+    i4341TestPoints.forEach(t =>
+      assertEquals(
+        "i4341",
+        t.expected,
+        Paths.get(t.rawPath).normalize.toString()
+      )
+    )
   }
 
   @Test def pathStartsWith(): Unit = {
