@@ -179,9 +179,10 @@ class UnixPathTest {
 
     // SN Issue #4341, as reported & logically related
 
-    case class testPoint(rawPath: String, expected: String)
+    case class testPoint(javaPath: String, unixPath: String)
     val i4341FileName = "bar.jsonnet"
 
+    // The JVM path is the same for both WindowsPath & UnixPath.
     val i4341TestPoints = ju.Arrays.asList(
       testPoint(s"../../${i4341FileName}", s"../../${i4341FileName}"),
       testPoint(s"a/b/../../${i4341FileName}", s"${i4341FileName}"),
@@ -191,8 +192,8 @@ class UnixPathTest {
     i4341TestPoints.forEach(t =>
       assertEquals(
         "i4341",
-        t.expected,
-        Paths.get(t.rawPath).normalize.toString()
+        t.unixPath,
+        Paths.get(t.javaPath).normalize.toString()
       )
     )
   }
