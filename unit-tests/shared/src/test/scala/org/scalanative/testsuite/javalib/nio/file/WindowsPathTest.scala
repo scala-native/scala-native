@@ -269,7 +269,7 @@ class WindowsPathTest {
     val i4341TestPoints = ju.Arrays.asList(
       testPoint(s"../../${i4341FileName}", raw"..\..\${i4341FileName}"),
       testPoint(s"a/b/../../${i4341FileName}", i4341FileName),
-      testPoint(s"/a/./../${i4341FileName}", i4341FileName)
+      testPoint(s"/a/./../${i4341FileName}", raw"\${i4341FileName}")
     )
 
     i4341TestPoints.forEach(t =>
