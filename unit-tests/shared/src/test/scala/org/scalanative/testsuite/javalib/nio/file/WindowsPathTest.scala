@@ -267,9 +267,9 @@ class WindowsPathTest {
 
     // The 'expected' JVM path is the same for both WindowsPath & UnixPath.
     val i4341TestPoints = ju.Arrays.asList(
-      testPoint(s"..\\..\\${i4341FileName}", s"../../${i4341FileName}"),
-      testPoint(s"a\\b\\..\\..\\${i4341FileName}", s"${i4341FileName}"),
-      testPoint(s"\\a\\.\\..\\${i4341FileName}", s"/${i4341FileName}")
+      testPoint(raw"..\\..\\${i4341FileName}", s"../../${i4341FileName}"),
+      testPoint(raw"a\\b\\..\\..\\${i4341FileName}", s"${i4341FileName}"),
+      testPoint(raw"\\a\\.\\..\\${i4341FileName}", s"/${i4341FileName}")
     )
 
     i4341TestPoints.forEach(t =>
