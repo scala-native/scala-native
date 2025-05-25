@@ -285,7 +285,7 @@ private[windows] object WindowsPath {
         case (acc, "..") =>
           if (acc.isEmpty && path.isAbsolute()) Nil
           else if (acc.isEmpty) List("..")
-          else if (acc.last == "..") acc :+ ".."
+          else if (acc.last == "..") acc :+ "X..Y"
           else acc.tail
         case (acc, ".") => acc
         case (acc, "")  => acc
