@@ -38,6 +38,27 @@ import scalanative.posix.time.timespec
 import scalanative.posix.timeOps.timespecOps
 import scalanative.posix.unistd
 
+/* A number of UnixProcessGen2 methods are synchronized where one
+ * would not expect such.  java.lang.Process was introduced in JDK 1.
+ * Even the most recent JDK 24 documentation of the class says nothing
+ * about the class being thread-safe. That means that one must treat
+ * it as concurrent access requiring external synchronization.
+ *
+ * So much for "de jure". "De facto" applications such as Li Hayoi's os-lib
+ * test cases, seem to work better, meaning succeed where they also succeed on
+ * JVM, when these methods are synchronized.
+ *
+ * Tracking down what os-lib is doing is a Work In Progress. After much
+ * time invested, it is still unclear if this is os-lib not providing
+ * external synchronization or if it a set of bugs in this implementation.
+ * In either case, try to match JVM success, albeit at the price of
+ * 'synchronized'
+ * 
+ * When the problem is better understood and shown to be a problem here,
+ * it may mean that the current 'synchronized' needs to be replaced
+ * by something more runtime efficient, such as AtomicInteger.
+ */
+
 private[lang] class UnixProcessGen2 private (
     pid: CInt,
     builder: ProcessBuilder,
@@ -77,8 +98,9 @@ private[lang] class UnixProcessGen2 private (
 
   override def getOutputStream(): OutputStream = _outputStream
 
-  override def isAlive(): scala.Boolean =
+  override def isAlive(): scala.Boolean = synchronized {
     _exitValue.isEmpty && waitpidImpl(pid, options = WNOHANG) == 0
+  }
 
   override def toString = { // Match JVM output
     val ev = _exitValue.fold("not exited")(_.toString())
@@ -168,9 +190,16 @@ private[lang] class UnixProcessGen2 private (
     val waitStatus = waitpid(pid, wstatus, options)
 
     if (waitStatus == -1) {
-      if (errno == EINTR) throw new InterruptedException()
-      val msg = s"waitpid failed: ${fromCString(strerror(errno))}"
-      throw new IOException(msg)
+      if (errno == EINTR) {
+        throw new InterruptedException()
+      } else if (errno == ECHILD) {
+        if (_exitValue.isEmpty)
+          _exitValue = Some(1)
+        // else someone else already reaped the process; be idempotent.
+      } else {
+        val msg = s"waitpid failed: ${fromCString(strerror(errno))}"
+        throw new IOException(msg)
+      }
     } else if (waitStatus > 0) {
       // Cache exitStatus as long as we already have it in hand.
       val decoded =
