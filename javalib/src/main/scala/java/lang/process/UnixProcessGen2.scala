@@ -82,7 +82,7 @@ private[lang] class UnixProcessGen2 private (
     if (_exitValue.isDefined) { // previous waitFor() discovered _exitValue
       _exitValue.head
     } else { // have to find out for ourselves.
-      val waitStatus = waitpidImpl(pid, options = WNOHANG)
+      val waitStatus = waitpidImplNoECHILD(pid, options = WNOHANG)
 
       if (waitStatus == 0) {
         throw new IllegalThreadStateException()
@@ -99,7 +99,7 @@ private[lang] class UnixProcessGen2 private (
   override def getOutputStream(): OutputStream = _outputStream
 
   override def isAlive(): scala.Boolean = synchronized {
-    _exitValue.isEmpty && waitpidImpl(pid, options = WNOHANG) == 0
+    _exitValue.isEmpty && waitpidImplNoECHILD(pid, options = WNOHANG) == 0
   }
 
   override def toString = { // Match JVM output
@@ -184,7 +184,7 @@ private[lang] class UnixProcessGen2 private (
       builder.redirectInput()
     )
 
-  private def waitpidImpl(pid: pid_t, options: Int): Int = {
+  private def waitpidImplNoECHILD(pid: pid_t, options: Int): Int = {
     val wstatus = stackalloc[Int]()
 
     val waitStatus = waitpid(pid, wstatus, options)
@@ -193,9 +193,12 @@ private[lang] class UnixProcessGen2 private (
       if (errno == EINTR) {
         throw new InterruptedException()
       } else if (errno == ECHILD) {
+        /* See extensive discussion in SN Issue #4208 and identical
+         * closely related #4348.
+         */
+        // If not empty someone else already reaped the process; be idempotent.
         if (_exitValue.isEmpty)
           _exitValue = Some(1)
-        // else someone else already reaped the process; be idempotent.
       } else {
         val msg = s"waitpid failed: ${fromCString(strerror(errno))}"
         throw new IOException(msg)
@@ -233,7 +236,7 @@ private[lang] class UnixProcessGen2 private (
      *  just reported as having exited is a fussy busy-wait timing loop.
      */
 
-    waitpidImpl(pid, options = 0)
+    waitpidImplNoECHILD(pid, options = 0)
     _exitValue.getOrElse(1) // 1 == EXIT_FAILURE, unknown cause
   }
 
