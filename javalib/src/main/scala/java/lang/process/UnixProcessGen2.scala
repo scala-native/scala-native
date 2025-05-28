@@ -194,7 +194,7 @@ private[lang] class UnixProcessGen2 private (
         throw new InterruptedException()
       } else if (errno == ECHILD) {
         /* See extensive discussion in SN Issue #4208 and identical
-         * closely related #4348.
+         * closely related #4208.
          */
         // If not empty someone else already reaped the process; be idempotent.
         if (_exitValue.isEmpty)
