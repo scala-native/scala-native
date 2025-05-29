@@ -44,7 +44,7 @@ import scalanative.posix.unistd
  * about the class being thread-safe. That means that one must treat
  * it as concurrent access requiring external synchronization.
  *
- * So much for "de jure". "De facto" applications such as Li Hayoi's os-lib
+ * So much for "de jure". "De facto" applications such as Li Haoyi's os-lib
  * test cases, seem to work better, meaning succeed where they also succeed on
  * JVM, when these methods are synchronized.
  *
@@ -53,10 +53,20 @@ import scalanative.posix.unistd
  * external synchronization or if it a set of bugs in this implementation.
  * In either case, try to match JVM success, albeit at the price of
  * 'synchronized'
+ *
+ * Best current guess/hypothesis is that applications are using an
+ * unsynchronized 'isAlive()', to poll or watch "watch" if another process
+ * in a 'waitFor()' has completed.
  * 
  * When the problem is better understood and shown to be a problem here,
  * it may mean that the current 'synchronized' needs to be replaced
  * by something more runtime efficient, such as AtomicInteger.
+ *
+ * Another, possibly better,  alternative might be to give up caching
+ * _exitValue all together. That may have a lower amortized runtime cost even
+ * though it makes the 'isAlive()' case where the exit value has already been
+ * determined more expensive.
+ * Are there other reasons other methods are synchronized?  Tread lightly here.
  */
 
 private[lang] class UnixProcessGen2 private (
