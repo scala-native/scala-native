@@ -310,7 +310,7 @@ class ProcessTest {
        */
 
       assertTrue(
-        s"Second waitFor after procees exit should be robust.)",
+        s"Second waitFor after process exit should be robust.)",
         proc.waitFor(timeout, TimeUnit.SECONDS)
       )
 

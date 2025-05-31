@@ -38,6 +38,37 @@ import scalanative.posix.time.timespec
 import scalanative.posix.timeOps.timespecOps
 import scalanative.posix.unistd
 
+/* A number of UnixProcessGen2 methods are synchronized where one
+ * would not expect such.  java.lang.Process was introduced in JDK 1.
+ * Even the most recent JDK 24 documentation of the class says nothing
+ * about the class being thread-safe. That means that one must treat
+ * it as concurrent access requiring external synchronization.
+ *
+ * So much for "de jure". "De facto" applications such as Li Haoyi's os-lib
+ * test cases, seem to work better, meaning succeed where they also succeed on
+ * JVM, when these methods are synchronized.
+ *
+ * Tracking down what os-lib is doing is a Work In Progress. After much
+ * time invested, it is still unclear if this is os-lib not providing
+ * external synchronization or if it a set of bugs in this implementation.
+ * In either case, try to match JVM success, albeit at the price of
+ * 'synchronized'
+ *
+ * Best current guess/hypothesis is that applications are using an
+ * unsynchronized 'isAlive()', to poll or watch "watch" if another process
+ * in a 'waitFor()' has completed.
+ * 
+ * When the problem is better understood and shown to be a problem here,
+ * it may mean that the current 'synchronized' needs to be replaced
+ * by something more runtime efficient, such as AtomicInteger.
+ *
+ * Another, possibly better,  alternative might be to give up caching
+ * _exitValue all together. That may have a lower amortized runtime cost even
+ * though it makes the 'isAlive()' case where the exit value has already been
+ * determined more expensive.
+ * Are there other reasons other methods are synchronized?  Tread lightly here.
+ */
+
 private[lang] class UnixProcessGen2 private (
     pid: CInt,
     builder: ProcessBuilder,
@@ -61,7 +92,7 @@ private[lang] class UnixProcessGen2 private (
     if (_exitValue.isDefined) { // previous waitFor() discovered _exitValue
       _exitValue.head
     } else { // have to find out for ourselves.
-      val waitStatus = waitpidImpl(pid, options = WNOHANG)
+      val waitStatus = waitpidImplNoECHILD(pid, options = WNOHANG)
 
       if (waitStatus == 0) {
         throw new IllegalThreadStateException()
@@ -77,8 +108,9 @@ private[lang] class UnixProcessGen2 private (
 
   override def getOutputStream(): OutputStream = _outputStream
 
-  override def isAlive(): scala.Boolean =
-    _exitValue.isEmpty && waitpidImpl(pid, options = WNOHANG) == 0
+  override def isAlive(): scala.Boolean = synchronized {
+    _exitValue.isEmpty && waitpidImplNoECHILD(pid, options = WNOHANG) == 0
+  }
 
   override def toString = { // Match JVM output
     val ev = _exitValue.fold("not exited")(_.toString())
@@ -162,15 +194,25 @@ private[lang] class UnixProcessGen2 private (
       builder.redirectInput()
     )
 
-  private def waitpidImpl(pid: pid_t, options: Int): Int = {
+  private def waitpidImplNoECHILD(pid: pid_t, options: Int): Int = {
     val wstatus = stackalloc[Int]()
 
     val waitStatus = waitpid(pid, wstatus, options)
 
     if (waitStatus == -1) {
-      if (errno == EINTR) throw new InterruptedException()
-      val msg = s"waitpid failed: ${fromCString(strerror(errno))}"
-      throw new IOException(msg)
+      if (errno == EINTR) {
+        throw new InterruptedException()
+      } else if (errno == ECHILD) {
+        /* See extensive discussion in SN Issue #4208 and identical
+         * closely related #4208.
+         */
+        // If not empty someone else already reaped the process; be idempotent.
+        if (_exitValue.isEmpty)
+          _exitValue = Some(1)
+      } else {
+        val msg = s"waitpid failed: ${fromCString(strerror(errno))}"
+        throw new IOException(msg)
+      }
     } else if (waitStatus > 0) {
       // Cache exitStatus as long as we already have it in hand.
       val decoded =
@@ -204,7 +246,7 @@ private[lang] class UnixProcessGen2 private (
      *  just reported as having exited is a fussy busy-wait timing loop.
      */
 
-    waitpidImpl(pid, options = 0)
+    waitpidImplNoECHILD(pid, options = 0)
     _exitValue.getOrElse(1) // 1 == EXIT_FAILURE, unknown cause
   }
 
