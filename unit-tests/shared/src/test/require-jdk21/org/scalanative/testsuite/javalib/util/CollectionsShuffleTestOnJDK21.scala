@@ -18,7 +18,7 @@ class CollectionsShuffleTestOnJDK21 {
 
 // format: off
 
-  // Ease visual debug by starting with an obviously ordered list.
+  // Ease visual verification by starting with an obviously ordered list.
   val referenceCopy = Collections.unmodifiableList(
     Arrays.asList( // Atlantic storm names, 2025
       "Andrea", "Barry", "Chantal", "Dexter", "Erin",
