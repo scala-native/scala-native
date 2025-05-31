@@ -7,6 +7,10 @@
 #include <windows.h>
 #endif
 
+// Idiomatic 'stringify' macros for compile time memory
+#define VAL_STR(x) STR(x)
+#define STR(x) #x
+
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -50,17 +54,52 @@ size_t Parse_Size_Or_Default(const char *str, size_t defaultSizeInBytes) {
     return defaultSizeInBytes;
 }
 
+const char *get_defined_or_env(const char *envName) {
+    if (envName == NULL)
+        return NULL;
+
+    const char *env = getenv(envName);
+    if (env != NULL)
+        return env; // environment overrides compile time
+
+// check for compile time defined values
+#if defined(GC_INITIAL_HEAP_SIZE)
+    if (strcmp(envName, "GC_INITIAL_HEAP_SIZE") == 0) {
+        return VAL_STR(GC_INITIAL_HEAP_SIZE);
+    }
+#endif
+
+#if defined(GC_MAXIMUM_HEAP_SIZE)
+    if (strcmp(envName, "GC_MAXIMUM_HEAP_SIZE") == 0) {
+        return VAL_STR(GC_MAXIMUM_HEAP_SIZE);
+    }
+#endif
+
+#if defined(GC_THREAD_HEAP_BLOCK_SIZE)
+    if (strcmp(envName, "GC_THREAD_HEAP_BLOCK_SIZE") == 0) {
+        return VAL_STR(GC_THREAD_HEAP_BLOCK_SIZE);
+    }
+#endif
+
+    return NULL; // no compile time or runtime value
+}
+
 size_t Parse_Env_Or_Default(const char *envName, size_t defaultSizeInBytes) {
-    return Parse_Size_Or_Default(getenv(envName), defaultSizeInBytes);
+    const char *res = get_defined_or_env(envName);
+#ifdef DEBUG_PRINT
+    printf("%s=%s\n", envName, res);
+    fflush(stdout);
+#endif
+    return Parse_Size_Or_Default(res, defaultSizeInBytes);
 }
 
 size_t Parse_Env_Or_Default_String(const char *envName,
                                    const char *defaultSizeString) {
+    size_t defaultSizeInBytes = Parse_Size_Or_Default(defaultSizeString, 0L);
     if (envName == NULL)
-        return Parse_Size_Or_Default(defaultSizeString, 0L);
+        return defaultSizeInBytes;
     else
-        return Parse_Size_Or_Default(
-            getenv(envName), Parse_Size_Or_Default(defaultSizeString, 0L));
+        return Parse_Env_Or_Default(envName, defaultSizeInBytes);
 }
 
 size_t Choose_IF(size_t left, qualifier qualifier, size_t right) {
