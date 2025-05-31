@@ -3,6 +3,7 @@ package java.lang.process
 import java.io.{File, IOException, InputStream, OutputStream}
 import java.io.FileDescriptor
 
+import java.{lang => jl}
 import java.lang.ProcessBuilder.Redirect
 
 import java.lang.process.BsdOsSpecific._
@@ -15,6 +16,8 @@ import java.{util => ju}
 import ju.concurrent.TimeUnit
 import ju.ArrayList
 import ju.ScalaOps._
+
+import java.util.{concurrent => juc}
 
 import scala.annotation.tailrec
 
@@ -38,35 +41,25 @@ import scalanative.posix.time.timespec
 import scalanative.posix.timeOps.timespecOps
 import scalanative.posix.unistd
 
-/* A number of UnixProcessGen2 methods are synchronized where one
- * would not expect such.  java.lang.Process was introduced in JDK 1.
+/* Design Note:
+ * 
+ * the java.lang.Process class was introduced in JDK 1.
  * Even the most recent JDK 24 documentation of the class says nothing
  * about the class being thread-safe. That means that one must treat
  * it as concurrent access requiring external synchronization.
  *
  * So much for "de jure". "De facto" applications such as Li Haoyi's os-lib
- * test cases, seem to work better, meaning succeed where they also succeed on
- * JVM, when these methods are synchronized.
+ * test cases, seem to work better, meaning succeed, where they also succeed on
+ * JVM, when these methods are internally synchronized.
  *
- * Tracking down what os-lib is doing is a Work In Progress. After much
- * time invested, it is still unclear if this is os-lib not providing
- * external synchronization or if it a set of bugs in this implementation.
- * In either case, try to match JVM success, albeit at the price of
- * 'synchronized'
- *
- * Best current guess/hypothesis is that applications are using an
+ * Best current guess/hypothesis is that such applications are using an
  * unsynchronized 'isAlive()', to poll or watch "watch" if another process
  * in a 'waitFor()' has completed.
  * 
- * When the problem is better understood and shown to be a problem here,
- * it may mean that the current 'synchronized' needs to be replaced
- * by something more runtime efficient, such as AtomicInteger.
- *
- * Another, possibly better,  alternative might be to give up caching
- * _exitValue all together. That may have a lower amortized runtime cost even
- * though it makes the 'isAlive()' case where the exit value has already been
- * determined more expensive.
- * Are there other reasons other methods are synchronized?  Tread lightly here.
+ * This code now uses a shared Java AtomicInteger in many places for greater
+ * concurrency than the previous "synchronized{}" blocks.
+ * 
+ * This is a developing story, stay tuned.
  */
 
 private[lang] class UnixProcessGen2 private (
@@ -76,10 +69,32 @@ private[lang] class UnixProcessGen2 private (
     outfds: Ptr[CInt],
     errfds: Ptr[CInt]
 ) extends UnixProcess() {
+
+  private class CachedExitValue() {
+    final val EXIT_VALUE_UNKNOWN = jl.Integer.MIN_VALUE
+
+    // Non-negative values indicate exit status is known to be that value.
+    val cached = new juc.atomic.AtomicInteger(EXIT_VALUE_UNKNOWN)
+
+    def get(): scala.Int =
+      cached.get()
+
+    def getOrDefault(default: scala.Int): scala.Int = {
+      val cev = get()
+      if (cev >= 0) cev
+      else default
+    }
+
+    def setOnce(known: scala.Int): Unit = {
+      // Save only the value first presented. Be idempotent.
+      cached.compareAndExchangeRelease(EXIT_VALUE_UNKNOWN, known)
+    }
+  }
+
+  private val cachedExitValue = new CachedExitValue()
+
   override private[process] val processInfo =
     GenericProcess.Info.create(builder, pid = pid.toLong)
-
-  private var _exitValue: Option[Int] = None
 
   override def destroy(): Unit = kill(pid, SIGTERM)
 
@@ -88,17 +103,17 @@ private[lang] class UnixProcessGen2 private (
     this
   }
 
-  override def exitValue(): scala.Int = synchronized {
-    if (_exitValue.isDefined) { // previous waitFor() discovered _exitValue
-      _exitValue.head
-    } else { // have to find out for ourselves.
+  override def exitValue(): scala.Int = {
+    val cev = cachedExitValue.getOrDefault(-1)
+
+    if (cev >= 0) cev // use cachedExitValue discovered by previous waitFor()
+    else { // have to find out for ourselves.
       val waitStatus = waitpidImplNoECHILD(pid, options = WNOHANG)
 
-      if (waitStatus == 0) {
+      if (waitStatus == 0)
         throw new IllegalThreadStateException()
-      } else {
-        _exitValue.getOrElse(1) // 1 should never happen
-      }
+      else
+        cachedExitValue.getOrDefault(1) // default 1 should never happen
     }
   }
 
@@ -108,58 +123,67 @@ private[lang] class UnixProcessGen2 private (
 
   override def getOutputStream(): OutputStream = _outputStream
 
-  override def isAlive(): scala.Boolean = synchronized {
-    _exitValue.isEmpty && waitpidImplNoECHILD(pid, options = WNOHANG) == 0
+  override def isAlive(): scala.Boolean = {
+    if (cachedExitValue.get() >= 0) false
+    else waitpidImplNoECHILD(pid, options = WNOHANG) == 0
   }
 
   override def toString = { // Match JVM output
-    val ev = _exitValue.fold("not exited")(_.toString())
-    s"Process[pid=${pid}, exitValue=${ev}]"
+    val cev = cachedExitValue.getOrDefault(-1)
+
+    if (cev >= 0) s"Process[pid=${pid}, exitValue=${cev}]"
+    else "not exited"
   }
 
-  override def waitFor(): scala.Int = synchronized {
+  override def waitFor(): scala.Int = {
     // wait until process exits or forever, whichever comes first.
-    try
-      _exitValue // avoid wait-after-wait complexity
-        .orElse(osWaitForImpl(None))
-        .getOrElse(1) // 1 == EXIT_FAILURE, unknown cause
-    catch {
-      case _: InterruptedException if !Thread.currentThread().isInterrupted() =>
-        waitFor()
+    var done = false
+
+    while (!done) {
+      try {
+        osWaitForImpl(None)
+        done = true
+      } catch {
+        case _: InterruptedException
+            if !Thread.currentThread().isInterrupted() => // loop again
+      }
     }
+
+    cachedExitValue.getOrDefault(1) // default 1 should never happen
   }
 
   override def waitFor(
       timeoutArg: scala.Long,
       unit: TimeUnit
   ): scala.Boolean = {
-    // Java allows negative timeouts. Simplify timeout math; treat them as 0.
-    val timeout = Math.max(timeoutArg, 0L)
+    val cev = cachedExitValue.getOrDefault(-1)
 
-    val deadline = System.nanoTime() + unit.toNanos(timeout)
-    synchronized {
-      // avoid wait-after-wait complexity
-      _exitValue // avoid wait-after-wait complexity
-        .orElse {
-          // wait until process exits or times out.
-          val ts = stackalloc[timespec]()
-          fillTimespec(timeout, unit, ts)
-          def waitWithRepeat(): Option[Int] = {
-            try osWaitForImpl(Some(ts))
-            catch {
-              case _: InterruptedException
-                  if !Thread.currentThread().isInterrupted() =>
-                deadline - System.nanoTime() match {
-                  case remaining if remaining < 0 => None
-                  case remainingNanos =>
-                    fillTimespec(remainingNanos, TimeUnit.NANOSECONDS, ts)
-                    waitWithRepeat()
-                }
+    if (cev >= 0) true
+    else {
+      // Java allows negative timeouts. Simplify timeout math; treat as 0.
+      val timeout = Math.max(timeoutArg, 0L)
+
+      val deadline = System.nanoTime() + unit.toNanos(timeout)
+      // wait until process exits or times out.
+      val ts = stackalloc[timespec]()
+      fillTimespec(timeout, unit, ts)
+      def waitWithRepeat(): Unit = {
+        try osWaitForImpl(Some(ts))
+        catch {
+          case _: InterruptedException
+              if !Thread.currentThread().isInterrupted() =>
+            deadline - System.nanoTime() match {
+              case remaining if remaining < 0 => None
+              case remainingNanos =>
+                fillTimespec(remainingNanos, TimeUnit.NANOSECONDS, ts)
+                waitWithRepeat()
             }
-          }
-          waitWithRepeat()
-        }.isDefined
+        }
+      }
+      waitWithRepeat()
     }
+
+    cachedExitValue.get() >= 0
   }
 
   private[lang] def checkResult(): CInt = {
@@ -206,9 +230,9 @@ private[lang] class UnixProcessGen2 private (
         /* See extensive discussion in SN Issue #4208 and identical
          * closely related #4208.
          */
-        // If not empty someone else already reaped the process; be idempotent.
-        if (_exitValue.isEmpty)
-          _exitValue = Some(1)
+
+        // OK if no exchange, someone else already reaped the process.
+        cachedExitValue.setOnce(1)
       } else {
         val msg = s"waitpid failed: ${fromCString(strerror(errno))}"
         throw new IOException(msg)
@@ -223,13 +247,14 @@ private[lang] class UnixProcessGen2 private (
           // https://tldp.org/LDP/abs/html/exitcodes.html
         }
 
-      _exitValue = Some(decoded)
+      // OK if no exchange, someone else already reaped the process.
+      cachedExitValue.setOnce(decoded)
     }
 
     waitStatus
   }
 
-  private def askZombiesForTheirExitStatus(): Int = {
+  private def askZombiesForTheirExitStatus(): Unit = {
     /* This method is simple, but the __long__ explanation it requires
      * belongs in one place, not in each of its callers.
      *
@@ -247,7 +272,7 @@ private[lang] class UnixProcessGen2 private (
      */
 
     waitpidImplNoECHILD(pid, options = 0)
-    _exitValue.getOrElse(1) // 1 == EXIT_FAILURE, unknown cause
+    cachedExitValue.setOnce(1)
   }
 
   private def closeProcessStreams(): Unit = synchronized {
@@ -328,27 +353,28 @@ private[lang] class UnixProcessGen2 private (
       }
 
       unit.toNanos(timeout % modulus).toSize
-
     }
   }
 
-  // Returns: Some(exitCode) if process has exited, None if timeout.
-  private def osWaitForImpl(timeout: Option[Ptr[timespec]]): Option[Int] = {
-    // caller should have returned before here if _exitValue.isDefined == true
-    if (LinktimeInfo.isLinux) {
+  private def osWaitForImpl(timeout: Option[Ptr[timespec]]): Unit = {
+    // caller should have returned before here if cachedExitValue is known.
+    if (cachedExitValue.get() >= 0) {
+      // Another waitFor() has reaped exitValue; nothing to do here.
+    } else if (LinktimeInfo.isLinux) {
       linuxWaitForImpl(timeout)
     } else if (LinktimeInfo.isMac || LinktimeInfo.isFreeBSD) {
       bsdWaitForImpl(timeout)
     } else {
-      // Should never get here. Earlier dispatch should have called UnixProcessGen1.
+      /* Should never get here. Earlier dispatch should have called
+       * UnixProcessGen1.
+       */
       throw new IOException("unsuported Platform")
     }
   }
 
   /* Linux - ppoll()
-   *     Returns: Some(exitCode) if process has exited, None if timeout.
    */
-  private def linuxWaitForImpl(timeout: Option[Ptr[timespec]]): Option[Int] = {
+  private def linuxWaitForImpl(timeout: Option[Ptr[timespec]]): Unit = {
     // epoll() is not used in this method since only one fd is involved.
 
     // close-on-exec is automatically set on the pidFd.
@@ -379,19 +405,18 @@ private[lang] class UnixProcessGen2 private (
     } else if (ppollStatus == 0) {
       None
     } else {
-      /* Minimize potential blocking wait in waitpid() by doing some necessary work
-       * before asking for an exit status rather than after.
+      /* Minimize potential blocking wait in waitpid() by doing some
+       * necessary work before asking for an exit status rather than after.
        * This gives the pid process time to exit fully.
        */
       closeProcessStreams()
-      Some(askZombiesForTheirExitStatus())
+      askZombiesForTheirExitStatus()
     }
   }
 
   /* macOS & FreeBSD -- kevent
-   *     Returns: Some(exitCode) if process has exited, None if timeout.
    */
-  private def bsdWaitForImpl(timeout: Option[Ptr[timespec]]): Option[Int] = {
+  private def bsdWaitForImpl(timeout: Option[Ptr[timespec]]): Unit = {
 
     /* Design Note:
      *     This first implementation creates a kqueue() on each & every
@@ -454,15 +479,15 @@ private[lang] class UnixProcessGen2 private (
     } else if (status == 0) {
       None
     } else {
-      /* Minimize potential blocking wait in waitpid() by doing some necessary work
-       * before asking for an exit status rather than after.
+      /* Minimize potential blocking wait in waitpid() by doing some
+       * necessary work before asking for an exit status rather than after.
        * This gives the pid process time to exit fully.
        *
        * macOS may have a millisecond or more delay between kevent
        * reporting a process as having exited and waitpid() seeing it.
        */
       closeProcessStreams()
-      Some(askZombiesForTheirExitStatus())
+      askZombiesForTheirExitStatus()
     }
   }
 }
