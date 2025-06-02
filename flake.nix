@@ -1,8 +1,14 @@
-/* A devenv based developer shell. Choices:
+/* This provides a devenv based developer shell. Choices:
  *
  * - sets the JDK to JDK 21
+ * - sets the environment variables for:
+ *    - no experimental compiler
+ *    - debug mode
+ *    - optimizer on
+ *    - immix GC
+ *    - no LTO
  *
- * See also: https://devenv.sh/reference/
+ * See also: docs/contrib/build-setup.md
  */
 {
   inputs = {

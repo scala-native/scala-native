@@ -8,6 +8,8 @@ Document built:
 -   LLVM/Clang 15 or newer
 -   sbt
 
+See [here for details on the build environment setup](./build-setup.md).
+
 ## Project Structure Overview
 
 See [build](./build.md)
