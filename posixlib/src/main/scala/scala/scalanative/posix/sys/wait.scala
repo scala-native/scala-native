@@ -108,7 +108,7 @@ object wait {
   def waitid(
       idtype: idtype_t,
       id: id_t,
-      status: Ptr[CInt],
+      status: Ptr[siginfo_t],
       options: CInt
   ): CInt = extern
 
