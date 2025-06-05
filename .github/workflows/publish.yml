@@ -47,8 +47,8 @@ jobs:
 
       - name: Publish release
         env:
-          MAVEN_USER: "${{ secrets.SONATYPE_USER }}"
-          MAVEN_PASSWORD: "${{ secrets.SONATYPE_PASSWORD }}"
+          SONATYPE_USER: "${{ secrets.SONATYPE_USER }}"
+          SONATYPE_PASSWORD: "${{ secrets.SONATYPE_PASSWORD }}"
           PGP_PASSPHRASE: "${{ secrets.PGP_PASSWORD }}"
         run: sbt "-v" "-J-Xmx7G" "-J-XX:+UseG1GC" "publish-release-for-version ${{ matrix.scala }}"
 
