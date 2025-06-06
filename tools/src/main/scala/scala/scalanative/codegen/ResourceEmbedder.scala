@@ -40,8 +40,12 @@ private[scalanative] object ResourceEmbedder {
         "/scala-native/**",
         "/LICENSE",
         "/NOTICE",
+        "/BUILD",
         "/rootdoc.txt",
-        "/META-INF/**"
+        "/META-INF/**",
+        "/**.class",
+        "/**.nir",
+        "/**.tasty"
       ).map(toGlob)
 
     val includePatterns =
@@ -69,7 +73,7 @@ private[scalanative] object ResourceEmbedder {
       includeMatchers
         .find(_.matcher.matches(path))
         .map(_.pattern)
-        .fold(Option(IgnoreReason(notInIncludePatterns))) { includePattern =>
+        .map { includePattern =>
           excludeMatchers
             .find(_.matcher.matches(path))
             .map(_.pattern)
@@ -80,10 +84,23 @@ private[scalanative] object ResourceEmbedder {
               )
             )
         }
+        .getOrElse {
+          Some(
+            IgnoreReason(
+              notInIncludePatterns,
+              shouldLog = !(isSourceFile(path) || excludeMatchers
+                .find(_.matcher.matches(path))
+                .exists(matcher =>
+                  internalExclusionPatterns.contains(matcher.pattern)
+                ))
+            )
+          )
+        }
 
     val foundFiles =
       if (config.compilerConfig.embedResources) {
-        classpath.flatMap { classpath =>
+        var ignoredFiles = 0
+        val selectedFiles = classpath.flatMap { classpath =>
           val virtualDir = VirtualDirectory.real(classpath)
           def makeMatcher(pattern: String) =
             Matcher(
@@ -107,8 +124,10 @@ private[scalanative] object ResourceEmbedder {
 
               applyPathMatchers(path) match {
                 case Some(IgnoreReason(reason, shouldLog)) =>
-                  if (shouldLog)
-                    config.logger.info(s"Did not embed: $pathName - $reason")
+                  if (shouldLog) {
+                    config.logger.debug(s"Did not embed: $pathName - $reason")
+                    ignoredFiles += 1
+                  }
                   None
                 case None =>
                   if (isSourceFile((path))) None
@@ -117,6 +136,12 @@ private[scalanative] object ResourceEmbedder {
               }
             }
         }
+        if (ignoredFiles > 0) {
+          config.logger.info(
+            s"Did not embed $ignoredFiles resource files. Run build again with debug logging level enabled to see details."
+          )
+        }
+        selectedFiles
       } else Seq.empty
 
     def filterEqualPathNames(

@@ -782,7 +782,7 @@ object Settings {
           .retrieve(
             "org.scala-lang" % libraryName % scalaVersion.value classifier "sources",
             scalaModuleInfo = None,
-            retrieveDirectory = IO.temporaryDirectory,
+            retrieveDirectory = cacheDir,
             log = s.log
           )
           .map(_.find(_.name.endsWith(s"$libraryName-$version-sources.jar")))
