@@ -124,7 +124,7 @@ private[scalanative] object ResourceEmbedder {
               applyPathMatchers(path) match {
                 case Some(IgnoreReason(reason, shouldLog)) =>
                   if (shouldLog)
-                    config.logger.info(s"Did not embed: $pathName - $reason")
+                    config.logger.debug(s"Did not embed: $pathName - $reason")
                   None
                 case None =>
                   if (isSourceFile((path))) None
