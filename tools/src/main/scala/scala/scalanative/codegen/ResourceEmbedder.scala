@@ -88,18 +88,19 @@ private[scalanative] object ResourceEmbedder {
           Some(
             IgnoreReason(
               notInIncludePatterns,
-              shouldLog = !excludeMatchers
+              shouldLog = !(isSourceFile(path) || excludeMatchers
                 .find(_.matcher.matches(path))
                 .exists(matcher =>
                   internalExclusionPatterns.contains(matcher.pattern)
-                )
+                ))
             )
           )
         }
 
     val foundFiles =
       if (config.compilerConfig.embedResources) {
-        classpath.flatMap { classpath =>
+        var ignoredFiles = 0
+        val selectedFiles = classpath.flatMap { classpath =>
           val virtualDir = VirtualDirectory.real(classpath)
           def makeMatcher(pattern: String) =
             Matcher(
@@ -123,8 +124,10 @@ private[scalanative] object ResourceEmbedder {
 
               applyPathMatchers(path) match {
                 case Some(IgnoreReason(reason, shouldLog)) =>
-                  if (shouldLog)
+                  if (shouldLog) {
                     config.logger.debug(s"Did not embed: $pathName - $reason")
+                    ignoredFiles += 1
+                  }
                   None
                 case None =>
                   if (isSourceFile((path))) None
@@ -133,6 +136,12 @@ private[scalanative] object ResourceEmbedder {
               }
             }
         }
+        if (ignoredFiles > 0) {
+          config.logger.info(
+            s"Did not embed $ignoredFiles resource files. Run build again with debug logging level enabled to see details."
+          )
+        }
+        selectedFiles
       } else Seq.empty
 
     def filterEqualPathNames(
