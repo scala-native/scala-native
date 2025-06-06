@@ -33,8 +33,8 @@ jobs:
       - name: Publish release 0.4.x
         if: ${{ startsWith(inputs.scala-native-version, 'v0.4.') }}
         env:
-          MAVEN_USER: "${{ secrets.SONATYPE_USER }}"
-          MAVEN_PASSWORD: "${{ secrets.SONATYPE_PASSWORD }}"
+          SONATYPE_USER: "${{ secrets.SONATYPE_USER }}"
+          SONATYPE_PASSWORD: "${{ secrets.SONATYPE_PASSWORD }}"
           PGP_PASSPHRASE: "${{ secrets.PGP_PASSWORD }}"
         run: >
           binaryVersion=$(echo "${{ inputs.scala-version }}" | awk -F. '{print $1"."$2}');
@@ -54,8 +54,8 @@ jobs:
       - name: Publish release 0.5.x
         if: ${{ startsWith(inputs.scala-native-version, 'v0.5.') }}
         env:
-          MAVEN_USER: "${{ secrets.SONATYPE_USER }}"
-          MAVEN_PASSWORD: "${{ secrets.SONATYPE_PASSWORD }}"
+          SONATYPE_USER: "${{ secrets.SONATYPE_USER }}"
+          SONATYPE_PASSWORD: "${{ secrets.SONATYPE_PASSWORD }}"
           PGP_PASSPHRASE: "${{ secrets.PGP_PASSWORD }}"
           EXTRA_CROSS_SCALA_VERSION: "${{ inputs.scala-version }}"
         run: >
@@ -63,7 +63,8 @@ jobs:
             ++${{ inputs.scala-version }} -v; 
             nscplugin${{ env.project-version }}/publishSigned;
             junitPlugin${{ env.project-version }}/publishSigned;
-            scalalib${{ env.project-version }}/publishSigned
+            scalalib${{ env.project-version }}/publishSigned;
+            sonaUpload;
           '
 
       - name: Test runtime

@@ -286,19 +286,18 @@ object Settings {
     publishMavenStyle := true,
     pomIncludeRepository := (_ => false),
     publishTo := {
-      val nexus = "https://oss.sonatype.org/"
-      if (isSnapshot.value)
-        Some("snapshots" at nexus + "content/repositories/snapshots")
-      else
-        Some("releases" at nexus + "service/local/staging/deploy/maven2")
+      val centralSnapshots =
+        "https://central.sonatype.com/repository/maven-snapshots/"
+      if (isSnapshot.value) Some("central-snapshots" at centralSnapshots)
+      else localStaging.value
     },
     credentials ++= {
       for {
-        user <- sys.env.get("MAVEN_USER")
-        password <- sys.env.get("MAVEN_PASSWORD")
+        user <- sys.env.get("SONATYPE_USER")
+        password <- sys.env.get("SONATYPE_PASSWORD")
       } yield Credentials(
         realm = "Sonatype Nexus Repository Manager",
-        host = "oss.sonatype.org",
+        host = "central.sonatype.com",
         userName = user,
         passwd = password
       )

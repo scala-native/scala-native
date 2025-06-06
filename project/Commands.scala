@@ -209,7 +209,11 @@ object Commands {
           }
         val crossPublish = ScalaVersions
         val commandsToExecute =
-          "clean" :: publishBaseVersion :: publishCrossVersions
+          "clean" ::
+            publishBaseVersion ::
+            publishCrossVersions :::
+            "sonaUpload" ::
+            Nil
 
         println(
           s"Publish for Scala $binVersion would execute following commands:"
