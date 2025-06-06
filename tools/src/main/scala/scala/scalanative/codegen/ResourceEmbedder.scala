@@ -40,8 +40,12 @@ private[scalanative] object ResourceEmbedder {
         "/scala-native/**",
         "/LICENSE",
         "/NOTICE",
+        "/BUILD",
         "/rootdoc.txt",
-        "/META-INF/**"
+        "/META-INF/**",
+        "/**.class",
+        "/**.nir",
+        "/**.tasty"
       ).map(toGlob)
 
     val includePatterns =
@@ -69,7 +73,7 @@ private[scalanative] object ResourceEmbedder {
       includeMatchers
         .find(_.matcher.matches(path))
         .map(_.pattern)
-        .fold(Option(IgnoreReason(notInIncludePatterns))) { includePattern =>
+        .map { includePattern =>
           excludeMatchers
             .find(_.matcher.matches(path))
             .map(_.pattern)
@@ -79,6 +83,18 @@ private[scalanative] object ResourceEmbedder {
                 shouldLog = !internalExclusionPatterns.contains(excludePattern)
               )
             )
+        }
+        .getOrElse {
+          Some(
+            IgnoreReason(
+              notInIncludePatterns,
+              shouldLog = !excludeMatchers
+                .find(_.matcher.matches(path))
+                .exists(matcher =>
+                  internalExclusionPatterns.contains(matcher.pattern)
+                )
+            )
+          )
         }
 
     val foundFiles =
