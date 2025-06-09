@@ -5,6 +5,7 @@ import Keys._
 import Build._
 import com.typesafe.tools.mima.plugin.MimaPlugin.autoImport._
 import ScriptedPlugin.autoImport._
+import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport.nativeVersion
 
 object Commands {
   lazy val values = Seq(
@@ -207,13 +208,14 @@ object Commands {
               .map(project => s"${project.id}/$publishCommand")
               .mkString(s"++ $crossVersion; all ", " ", "")
           }
+        val isSnapshot = nativeVersion.endsWith("-SNAPSHOT")
+        val release = if (isSnapshot) Nil else ("sonaUpload" :: Nil)
         val crossPublish = ScalaVersions
         val commandsToExecute =
           "clean" ::
             publishBaseVersion ::
             publishCrossVersions :::
-            "sonaUpload" ::
-            Nil
+            release
 
         println(
           s"Publish for Scala $binVersion would execute following commands:"
