@@ -47,9 +47,7 @@ final class Matcher private (private var _pattern: Pattern) {
     // Amortized _groupCount is likely to be small, say 1, 2, or n < 5, so
     // calling out to memset() is unlikely to be worth the overhead.
 
-    for (i <- 0 until _groups.length) {
-      _groups(i) = -1
-    }
+    _groups.indices.foreach(_groups(_) = -1)
   }
 
   private def createGroups(nGroups: Int): Array[Int] = {
@@ -89,7 +87,7 @@ final class Matcher private (private var _pattern: Pattern) {
     this(pattern)
     _inputSequence = input
     _inputLength = input.length()
-    _regionEnd = _inputSequence.length
+    _regionEnd = _inputLength
   }
 
   // Returns the {@code Pattern} associated with this {@code Matcher}.
@@ -415,7 +413,7 @@ final class Matcher private (private var _pattern: Pattern) {
   // Helper: return substring for [start, end).
   def substring(start: Int, end: Int): String =
     // This is fast for both StringBuilder and String.
-    _inputSequence.subSequence(start, end).toString()
+    _inputSequence.subSequence(start, end).toString
 
   // Helper for Pattern: return input length.
   def inputLength(): Int =
