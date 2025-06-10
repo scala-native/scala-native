@@ -102,13 +102,17 @@ final class Matcher private (private var _pattern: Pattern) {
   //
   // @return the {@code Matcher} itself, for chained method calls
   def reset(): Matcher = {
+    reset(0, _inputLength)
+  }
+
+  private def reset(regionStart: Int, regionEnd: Int): Matcher = {
     _appendPos = 0
     _hasMatch = false
     _hasGroups = false
     _lastMatchStart = 0
     _lastMatchEnd = 0
-    _regionStart = 0
-    _regionEnd = _inputSequence.length
+    _regionStart = regionStart
+    _regionEnd = regionEnd
     this
   }
 
@@ -124,7 +128,6 @@ final class Matcher private (private var _pattern: Pattern) {
     _inputSequence = input
     _inputLength = input.length()
     reset()
-    this
   }
 
   // Returns the start position of the most recent match.
@@ -225,9 +228,7 @@ final class Matcher private (private var _pattern: Pattern) {
       throw new IndexOutOfBoundsException("start > end")
     }
 
-    _regionStart = start
-    _regionEnd = end
-    this
+    reset(start, end)
   }
 
   def regionEnd(): Int = _regionEnd
