@@ -338,7 +338,11 @@ class MatcherTest {
     val mR = p.matcher(text.substring(2, text.length - 2))
 
     // first line
-    // TODO: missing!
+    assertTrue(mr.find())
+    assertEquals(
+      (2, 7, 2, 2, 2, 4),
+      (mr.start(), mr.end(), mr.start(1), mr.end(1), mr.start(2), mr.end(2))
+    )
 
     // first line
     assertTrue(mR.find())
