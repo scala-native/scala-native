@@ -17,10 +17,7 @@
 
 #include <intrin.h>
 
-scalanative_javalib_multiplyhigh
-
-    int64_t
-    scalanative_javalib_multiply_high(int64_t x, int64_t y) {
+int64_t scalanative_javalib_multiply_high(int64_t x, int64_t y) {
     return __mulh(x, y);
 }
 
