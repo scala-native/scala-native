@@ -216,7 +216,6 @@ object Tags {
   final val SizeVal = 1 + LinktimeConditionVal
   final val Int128Val = 1 + SizeVal
 
-
   // Synchronization info
   final val Unordered = 1
   final val MonotonicOrder = 1 + Unordered
