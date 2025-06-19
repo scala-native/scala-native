@@ -188,6 +188,7 @@ object Tags {
   final val ArrayType = 1 + UnitType
   final val RefType = 1 + ArrayType
   final val SizeType = 1 + RefType
+  final val Int128Type = 1 + SizeType
 
   // Values
   final val TrueVal = 1
@@ -213,6 +214,8 @@ object Tags {
   final val ClassOfVal = 1 + VirtualVal
   final val LinktimeConditionVal = 1 + ClassOfVal
   final val SizeVal = 1 + LinktimeConditionVal
+  final val Int128Val = 1 + SizeVal
+
 
   // Synchronization info
   final val Unordered = 1

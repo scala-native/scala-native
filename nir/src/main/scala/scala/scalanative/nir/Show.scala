@@ -517,6 +517,9 @@ object Show {
       case Val.Long(value) =>
         str("long ")
         str(value)
+      case value: Val.Int128 =>
+        str("int128 ")
+        str(value.bigIntValue)
       case Val.Float(value) =>
         str("float ")
         str(value)
@@ -650,6 +653,7 @@ object Show {
       case Type.Byte   => str("byte")
       case Type.Short  => str("short")
       case Type.Int    => str("int")
+      case Type.Int128 => str("int128")
       case Type.Long   => str("long")
       case Type.Float  => str("float")
       case Type.Double => str("double")

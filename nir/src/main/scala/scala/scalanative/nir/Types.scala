@@ -98,6 +98,9 @@ object Type {
   /** The type of a 64-bit signed integer. */
   case object Long extends FixedSizeI(64, signed = true)
 
+  /** The type of a 128-bit signed integer. */
+  case object Int128 extends FixedSizeI(128, signed = true)
+
   /** The type of a 32-bit IEEE 754 single-precision float. */
   case object Float extends F(32)
 

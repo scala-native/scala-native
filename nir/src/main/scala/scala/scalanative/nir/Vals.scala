@@ -27,6 +27,8 @@ sealed abstract class Val {
       Type.Int
     case Val.Long(_) =>
       Type.Long
+    case Val.Int128(_, _) =>
+      Type.Int128
     case Val.Float(_) =>
       Type.Float
     case Val.Double(_) =>
@@ -267,6 +269,17 @@ object Val {
 
   /** A 64-bit signed two’s complement integer. */
   final case class Long(value: scala.Long) extends Val
+
+  /** A 128-bit signed two’s complement integer, encoded as two 64‑bit words.
+   *  Not emmited by compiler!
+   */
+  final case class Int128(hi: scala.Long, lo: scala.Long) extends Val {
+    def bigIntValue: math.BigInt = {
+      val hiPart = math.BigInt(hi) << 64
+      val loPart = math.BigInt(lo & 0xFFFFffffFFFFffffL)
+      hiPart | loPart
+    }
+  }
 
   /** A 32-bit IEEE 754 single-precision float. */
   final case class Float(value: scala.Float) extends Val {

@@ -516,8 +516,7 @@ private[codegen] abstract class AbstractCodeGen(
         str(" (")
         rep(args, sep = ", ")(genType)
         str(")")
-      case ty =>
-        unsupported(ty)
+      case nir.Type.Virtual | nir.Type.Var(_) => unsupported(ty)
     }
   }
 
@@ -567,6 +566,7 @@ private[codegen] abstract class AbstractCodeGen(
       case nir.Val.Short(v)  => str(v)
       case nir.Val.Int(v)    => str(v)
       case nir.Val.Long(v)   => str(v)
+      case v: nir.Val.Int128 => str(v.bigIntValue)
       case nir.Val.Float(v)  => genFloatHex(v)
       case nir.Val.Double(v) => genDoubleHex(v)
       case nir.Val.StructValue(vs) =>
@@ -594,7 +594,7 @@ private[codegen] abstract class AbstractCodeGen(
           genGlobal(n)
           str(" to i8*)")
         }
-      case _ =>
+      case _: nir.Val.Global | _: nir.Val.Const | _: nir.Val.String | _: nir.Val.Virtual | _: nir.Val.ClassOf => 
         unsupported(v)
     }
   }
