@@ -962,6 +962,23 @@ private[scalanative] object Lower {
       case IntrinsicCall.LoadAllClassess =>
         val allClasses = nir.Val.ArrayValue(nir.Rt.Class, meta.rtti.values.map(_.const).toSeq)
         genArrayallocOp(buf, n, nir.Op.Arrayalloc(nir.Rt.Class, init = allClasses, None))
+
+      case IntrinsicCall.MultiplyHigh | IntrinsicCall.UnsignedMultiplyHigh =>
+        val isSigned = kind == IntrinsicCall.MultiplyHigh
+        val i64to128Conv = if (isSigned) nir.Conv.Sext else nir.Conv.Zext
+
+        val (lhs, rhs) = op.args match {
+          case Seq(lhs, rhs)    => (lhs, rhs)
+          case Seq(_, lhs, rhs) => (lhs, rhs)
+          case _                => unsupported(s"Unexpected signature of Intrinsics.(unsigned)multiplyHigh: $op")
+        }
+        val l128 = buf.conv(i64to128Conv, nir.Type.Int128, lhs, nir.Next.None)
+        val r128 = buf.conv(i64to128Conv, nir.Type.Int128, rhs, nir.Next.None)
+        val res128 = buf.bin(nir.Bin.Imul, nir.Type.Int128, l128, r128, nir.Next.None)
+
+        val highBitsShift = if (isSigned) nir.Bin.Ashr else nir.Bin.Lshr
+        val high64 = buf.bin(highBitsShift, nir.Type.Int128, res128, nir.Val.Int(64), nir.Next.None)
+        buf.let(n, nir.Op.Conv(nir.Conv.Trunc, nir.Type.Long, high64), nir.Next.None)
     }
 
     def genCallOp(
@@ -1990,6 +2007,8 @@ private[scalanative] object Lower {
   private sealed trait IntrinsicCall
   private object IntrinsicCall {
     object LoadAllClassess extends IntrinsicCall
+    object MultiplyHigh extends IntrinsicCall
+    object UnsignedMultiplyHigh extends IntrinsicCall
 
     private def resolveIntrinsicCall(owner: nir.Global.Top, sig: nir.Sig)(implicit
         metadata: Metadata,
@@ -1999,6 +2018,9 @@ private[scalanative] object Lower {
     ): Option[IntrinsicCall] = {
       (owner.id, sig.unmangled) match {
         case ("scala.scalanative.runtime.LinkedClassesRepository$", nir.Sig.Method("loadAll", _, _)) => Some(LoadAllClassess)
+        case ("scala.scalanative.runtime.Intrinsics$", nir.Sig.Method("multiplyHigh", _, _))         => Some(MultiplyHigh)
+        case ("scala.scalanative.runtime.Intrinsics$", nir.Sig.Method("unsignedMultiplyHigh", _, _)) => Some(UnsignedMultiplyHigh)
+
         case (_, nir.Sig.Method("intrinsic", _, _)) if owner == nir.Rt.Runtime.name =>
           val symbol @ nir.Global.Member(owner, sig) = currentDefn.get.name
           // Reflective proxies might make the intrinsic method reachable, but they're unlikely to be called

@@ -194,4 +194,7 @@ object Intrinsics {
   def unsignedOf(value: Int): UInt = intrinsic
   def unsignedOf(value: Long): ULong = intrinsic
   def unsignedOf(value: RawSize): USize = intrinsic
+
+  def multiplyHigh(x: scala.Long, y: scala.Long): scala.Long = intrinsic
+  def unsignedMultiplyHigh(x: scala.Long, y: scala.Long): scala.Long = intrinsic
 }
