@@ -608,7 +608,7 @@ object Settings {
     exportJars := true,
     scalacOptions --= Seq("-deprecation", "-Xfatal-warnings"),
     scalacOptions ++= ignoredScalaDeprecations(scalaVersion.value),
-    disableMimaSettings,
+    disableMimaSettings
   )
 
   lazy val sbtPluginSettings = Def.settings(

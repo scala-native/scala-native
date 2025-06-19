@@ -594,7 +594,8 @@ private[codegen] abstract class AbstractCodeGen(
           genGlobal(n)
           str(" to i8*)")
         }
-      case _: nir.Val.Global | _: nir.Val.Const | _: nir.Val.String | _: nir.Val.Virtual | _: nir.Val.ClassOf => 
+      case _: nir.Val.Global | _: nir.Val.Const | _: nir.Val.String |
+          _: nir.Val.Virtual | _: nir.Val.ClassOf =>
         unsupported(v)
     }
   }

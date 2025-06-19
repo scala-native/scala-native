@@ -276,7 +276,7 @@ object Val {
   final case class Int128(hi: scala.Long, lo: scala.Long) extends Val {
     def bigIntValue: math.BigInt = {
       val hiPart = math.BigInt(hi) << 64
-      val loPart = math.BigInt(lo & 0xFFFFffffFFFFffffL)
+      val loPart = math.BigInt(lo & 0xffffffffffffffffL)
       hiPart | loPart
     }
   }
