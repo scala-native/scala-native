@@ -102,6 +102,7 @@ final class NirDefinitions()(using ctx: Context) {
   @tu lazy val RuntimeSafeZoneAllocator_allocate = optional(RuntimeSafeZoneAllocatorModule.requiredMethod("allocate"))
 
   // Runtime intriniscs
+  @tu lazy val IntrinsicMarker = RuntimePackageClass.requiredMethod("intrinsic")
   @tu lazy val IntrinsicsModule = requiredModule("scala.scalanative.runtime.Intrinsics")
   @tu lazy val IntrinsicsInternalModule = requiredModule("scala.scalanative.runtime.Intrinsics.internal")
   @tu lazy val Intrinsics_divUInt = IntrinsicsModule.requiredMethod("divUInt")

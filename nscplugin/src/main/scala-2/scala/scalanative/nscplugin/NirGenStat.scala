@@ -684,7 +684,8 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         val owner = curClassSym.get
         // implicit class is erased to method at this point
         val isExtern = sym.isExtern
-        val attrs = genMethodAttrs(sym, isExtern)
+        val isIntrinsic = dd.rhs.symbol == nirDefinitions.IntrinsicMarker
+        val attrs = genMethodAttrs(sym, isExtern, isIntrinsic)
         val name = genMethodName(sym)
         val sig = genMethodSig(sym)
 
@@ -984,7 +985,8 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     }
     private def genMethodAttrs(
         sym: Symbol,
-        isExtern: Boolean
+        isExtern: Boolean,
+        isIntrinsic: Boolean
     ): nir.Attrs = {
       val attrs = Seq.newBuilder[nir.Attr]
 
@@ -1022,6 +1024,11 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
               .foreach(attrs += nir.Attr.Define(_))
           case _ => ()
         }
+      }
+      if (isIntrinsic) {
+        // Overrides previous attrs
+        attrs += nir.Attr.NoOpt
+        attrs += nir.Attr.NoInline
       }
       nir.Attrs.fromSeq(attrs.result())
     }
