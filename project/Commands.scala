@@ -86,7 +86,7 @@ object Commands {
         .map(_.forBinaryVersion(version).id)
         .map(id => s"$id/test")
       tests :::
-        List("test-mima") :::
+        List(s"test-mima $version") :::
         state
   }
 
