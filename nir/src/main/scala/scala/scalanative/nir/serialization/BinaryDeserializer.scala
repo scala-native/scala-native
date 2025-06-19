@@ -428,6 +428,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, nirSource: NIRSource) {
       case T.ArrayType   => Type.Array(getType(), getBool())
       case T.RefType     => Type.Ref(getGlobal().narrow[nir.Global.Top], getBool(), getBool())
       case T.SizeType    => Type.Size
+      case T.Int128Type  => Type.Int128
     }
   }
 
@@ -457,6 +458,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, nirSource: NIRSource) {
       case T.VirtualVal => Val.Virtual(getLebUnsignedLong())
       case T.ClassOfVal => Val.ClassOf(getGlobal().narrow[Global.Top])
       case T.SizeVal    => Val.Size(getLebUnsignedLong())
+      case T.Int128Val  => Val.Int128(getLebSignedLong(), getLebUnsignedLong())
     }
   }
 
