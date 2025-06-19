@@ -276,8 +276,9 @@ trait NirGenStat(using Context) {
       val owner = curClassSym.get
 
       val isExtern = sym.isExtern
+      val isIntrinsic = dd.rhs.symbol == defnNir.IntrinsicMarker
 
-      val attrs = genMethodAttrs(sym, isExtern)
+      val attrs = genMethodAttrs(sym, isExtern, isIntrinsic)
       val name = genMethodName(sym)
       val sig = genMethodSig(sym)
 
@@ -327,7 +328,8 @@ trait NirGenStat(using Context) {
 
   private def genMethodAttrs(
       sym: Symbol,
-      isExtern: Boolean
+      isExtern: Boolean,
+      isIntrinsic: Boolean
   ): nir.Attrs = {
     val attrs = Seq.newBuilder[nir.Attr]
 
@@ -363,6 +365,11 @@ trait NirGenStat(using Context) {
             .foreach(attrs += nir.Attr.Define(_))
         case _ => ()
       }
+    }
+    if isIntrinsic then {
+      // Overrides previouslly set
+      attrs += nir.Attr.NoOpt
+      attrs += nir.Attr.NoInline
     }
     nir.Attrs.fromSeq(attrs.result())
   }

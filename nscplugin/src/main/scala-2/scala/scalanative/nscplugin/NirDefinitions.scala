@@ -139,6 +139,7 @@ trait NirDefinitions {
     lazy val RuntimeModule = getRequiredModule(
       "scala.scalanative.runtime.package"
     )
+    lazy val IntrinsicMarker = getMember(RuntimePackage, TermName("intrinsic"))
     lazy val IntrinsicsModule = getRequiredModule(
       "scala.scalanative.runtime.Intrinsics"
     )
