@@ -1,5 +1,12 @@
 # Environment setup
 
+Following documentation uses [sbt](https://www.scala-sbt.org/) build tool.
+Other build tools that support Scala Native are:
+- [scala-cli](https://scala-cli.virtuslab.org/install/#scala-native)
+- [Mill](https://mill-build.org/mill/scalalib/native-examples.html)
+- [Gradle](https://gradle.org) with [Scala Native / Scala.js plugin](https://github.com/dubinsky/scalajs-gradle)
+
+
 Scala Native has the following build dependencies:
 
 -   Java 8 or newer
