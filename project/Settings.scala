@@ -213,6 +213,9 @@ object Settings {
         }
     }
   )
+  lazy val disableMimaSettings = Seq(
+    mimaPreviousArtifacts := Set.empty
+  )
 
   // Publishing
   lazy val basePublishSettings: Seq[Setting[_]] = Seq(
@@ -604,7 +607,8 @@ object Settings {
     mavenPublishSettings,
     exportJars := true,
     scalacOptions --= Seq("-deprecation", "-Xfatal-warnings"),
-    scalacOptions ++= ignoredScalaDeprecations(scalaVersion.value)
+    scalacOptions ++= ignoredScalaDeprecations(scalaVersion.value),
+    disableMimaSettings,
   )
 
   lazy val sbtPluginSettings = Def.settings(

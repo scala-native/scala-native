@@ -16,16 +16,13 @@ object BinaryIncompatibilities {
     )
   )
   final val Nir: Filters = Seq(
-    exclude[DirectMissingMethodProblem]("scala.scalanative.nir.Rt.*")
-  )
-
-  final val NscPlugin = Seq(
     exclude[DirectMissingMethodProblem]("scala.scalanative.nir.Rt.*"),
-    exclude[IncompatibleMethTypeProblem](
-      "scala.scalanative.nscplugin.NirCompat*"
-    )
+    // Conversion case-class -> class
+    exclude[DirectMissingMethodProblem]("scala.scalanative.nir.Attrs._*"),
+    exclude[DirectMissingMethodProblem]("scala.scalanative.nir.Attrs.fromProduct"),
+    exclude[IncompatibleResultTypeProblem]("scala.scalanative.nir.Attrs.unapply"),
+    exclude[MissingTypesProblem]("scala.scalanative.nir.Attrs$"),
   )
-  final val JUnitPlugin: Filters = Nil
 
   final val Tools: Filters = Seq(
     exclude[Problem]("scala.scalanative.codegen.*"),
@@ -52,6 +49,8 @@ object BinaryIncompatibilities {
     exclude[ReversedMissingMethodProblem]("scala.scalanative.runtime.NativeThread.companion"),
     exclude[ReversedMissingMethodProblem]("scala.scalanative.runtime.NativeThread.stackSize"),
     exclude[ReversedMissingMethodProblem]("scala.scalanative.runtime.NativeThread#Companion.defaultOSStackSize"),
+    exclude[Problem]("scala.scalanative.runtime._Class.*"),
+    exclude[Problem]("scala.scalanative.runtime.unwind.*"),
   )
   final val CLib: Filters = Nil
   final val PosixLib: Filters = Seq.empty
@@ -65,7 +64,6 @@ object BinaryIncompatibilities {
   val moduleFilters = Map(
     "util" -> Util,
     "nir" -> Nir,
-    "nscplugin" -> NscPlugin,
     "tools" -> Tools,
     "clib" -> CLib,
     "posixlib" -> PosixLib,
@@ -74,7 +72,6 @@ object BinaryIncompatibilities {
     "test-runner" -> TestRunner,
     "test-interface" -> TestInterface,
     "test-interface-sbt-defs" -> TestInterfaceSbtDefs,
-    "junit-plugin" -> JUnitPlugin,
     "junit-runtime" -> JUnitRuntime
   )
 }
