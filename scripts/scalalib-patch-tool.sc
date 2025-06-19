@@ -141,7 +141,7 @@ def main(
             "--whitespace=fix",
             "--recount",
             patchPath
-          ) call (cwd = sourcesDir)
+          ).call(cwd = sourcesDir)
           os.move(sourcePath, overridePath, replaceExisting = true)
           os.move(sourceCopyPath, sourcePath)
           println(s"Recreated $overridePath")
