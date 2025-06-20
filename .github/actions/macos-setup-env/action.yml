@@ -43,6 +43,7 @@ runs:
       shell: bash
       if: ${{ inputs.llvm-version != '' }}
       run: |
+        brew install lld
         if [[ "${{ inputs.llvm-version }}" == "latest" ]]; then 
           brew install llvm
         else 
