@@ -293,7 +293,7 @@ abstract class InputStream extends Closeable {
       val nRead = readNBytes(buffer, 0, limit)
       if (nRead == 0) done = true // EOF
       else {
-        out.write(buffer, 0, nRead)
+        out.write(buffer, 0, nRead) // short write safe; write will throw
         nTransferred += nRead
       }
     }
