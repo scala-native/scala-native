@@ -429,7 +429,7 @@ private[java] final class FileChannelImpl(
         } else {
           buf.flip()
 
-          /* Using absolute write at position takes math but avoids
+          /* Using absolute write-at-position takes math but avoids
            * set, save, and then restore of position. That overload
            * does all that work already.
            */
@@ -494,10 +494,6 @@ private[java] final class FileChannelImpl(
         } else {
           buf.flip()
 
-          /* Using write with position costs math but avoids
-           * set, save, and then restore of position. That overload
-           * does all that work already.
-           */
           val nWritten = target.write(buf)
           buf.compact()
 
