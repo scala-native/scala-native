@@ -387,6 +387,9 @@ private[java] final class FileChannelImpl(
    * They differ just enough in how they must handle the position of
    * the 'this' FileChannel that such a common implementation exceeds the
    * day is left for the reader.
+   *
+   * Useful example:
+   *   URL: https://www.happycoders.eu/java/filechannel-memory-mapped-io-locks/
    */
 
   override def transferFrom(
@@ -429,15 +432,19 @@ private[java] final class FileChannelImpl(
           /* Using absolute write at position takes math but avoids
            * set, save, and then restore of position. That overload
            * does all that work already.
-           *
-           * Since 'this' is known to be a FileChannel, write(buf, position)
-           * is available for use.
            */
           val nWritten = this.write(buf, _position + totalWritten)
-          buf.clear()
+          buf.compact()
 
           totalWritten = totalWritten + nWritten
         }
+
+      }
+
+      buf.flip()
+      while (buf.hasRemaining()) {
+        val nDrained = this.write(buf, _position + totalWritten)
+        totalWritten += nDrained
       }
 
       totalWritten
@@ -490,15 +497,18 @@ private[java] final class FileChannelImpl(
           /* Using write with position costs math but avoids
            * set, save, and then restore of position. That overload
            * does all that work already.
-           *
-           * Since 'this' is known to be a FileChannel, write(buf, position)
-           * is available for use.
            */
           val nWritten = target.write(buf)
-          buf.clear()
+          buf.compact()
 
           totalWritten = totalWritten + nWritten
         }
+      }
+
+      buf.flip()
+      while (buf.hasRemaining()) {
+        val nDrained = target.write(buf)
+        totalWritten += nDrained
       }
 
       position(savedPosition)
