@@ -62,15 +62,11 @@ object Files {
       if (Files.exists(target, noFollowOpts) && !replaceExisting) {
         throw new FileAlreadyExistsException(target.toAbsolutePath().toString())
       } else if (Files.isRegularFile(target, noFollowOpts)) {
-        /* Deleting and replacing a non-writable file is more expensive
-         * at runtime but also more certain than adding write permission
-         * to existing (unix-speak) inode and truncating.
-         * 
-         * JVM succeeds with an existing file user "--x" but hard to tell
-         * if it deletes inode or truncates existing.
+        /* Deleting and recreating a file in order to replace it is expensive
+         * but also more certain than adjusting permissions when umask
+         * is unknowable.
          */
-        if (!Files.isWritable(target))
-          Files.delete(target)
+        Files.delete(target)
       } else if (Files.isDirectory(target, noFollowOpts)) {
         if (!target.toFile().list().isEmpty)
           throw new DirectoryNotEmptyException(
