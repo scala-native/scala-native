@@ -1,17 +1,16 @@
 package org.scalanative.testsuite.javalib.nio.file
 
-import java.util.EnumSet
-
-import java.nio.file._
-import java.nio.ByteBuffer
 import java.io._
+
+import java.nio.ByteBuffer
+import java.nio.file._
 import java.nio.file.attribute._
+import java.nio.file.attribute.PosixFilePermission._
+import java.nio.file.StandardCopyOption._
 
 import java.util.{Arrays, TreeSet, Collections}
+import java.util.EnumSet
 import java.util.function.{BiPredicate, IntFunction}
-
-import PosixFilePermission._
-import StandardCopyOption._
 
 import org.junit.Test
 import org.junit.Assert._
@@ -24,7 +23,14 @@ import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import scala.scalanative.junit.utils.CollectionConverters._
 import scala.scalanative.junit.utils.AssumesHelper.assumeNotJVMCompliant
 import org.scalanative.testsuite.utils.Platform.{isWindows, executingInJVM}
+
 import java.nio.charset.StandardCharsets
+import java.nio.file.attribute.PosixFilePermissions
+
+/* See also FilesCopyTest.scala. It provides additional Tests for
+ * Files.copy(), including some advanced Tests for use by developer
+ * and maintainers.
+ */
 
 class FilesTest {
   import FilesTest._
@@ -2437,20 +2443,48 @@ class FilesTest {
 }
 
 object FilesTest {
-  def makeTemporaryDir(): File = {
-    val file = File.createTempFile("test", ".tmp")
-    assertTrue("delete()", file.delete())
-    assertTrue("mkdir()", file.mkdir())
-    file
+
+  // Paths are more useful than io.File for java.nio.file.Files* methods.
+  def makeTemporaryDirPath(): Path = {
+
+    val prefix = "scala-native-testsuite_javalib-FilesTest"
+
+    /* The duplication of createTempDirectory is regrettable but
+     * necessary.  This code must run on Scala 2 & Scala 3. Scala 3
+     * does not use the Scala 2 ': _*' varargs splice syntax.  It
+     * is permitted in Scala 3.mumble, deprecated in 3.mumble.RealSoonNow,
+     * to be removed in 3.mumble.Future.
+     */
+    if (executingInJVM) {
+      Files.createTempDirectory(prefix)
+    } else if (isWindows) {
+      Files.createTempDirectory(prefix)
+    } else {
+      /* JVM 24 zulu umask 000
+       * creates temporary directories with permissions
+       * drwx------, so umasks with more restrictive group
+       * and other bits on would do the same.
+       * 
+       * Be explicit with permissions, at least until Scala Native
+       * createTemporaryDirectory(), Issue #4381, is fixed.
+       */
+      val permissions =
+        PosixFilePermissions.fromString("rwx------");
+      val permissionsAttr =
+        PosixFilePermissions.asFileAttribute(permissions)
+      Files.createTempDirectory(prefix, permissionsAttr)
+    }
   }
 
-  def withTemporaryDirectory(fn: File => Unit): Unit = {
+  // name use historically and widely in this file.
+  def makeTemporaryDir(): File =
+    makeTemporaryDirPath().toFile()
+
+  def withTemporaryDirectory(fn: File => Unit): Unit =
     fn(makeTemporaryDir())
-  }
 
-  def withTemporaryDirectoryPath(fn: Path => Unit): Unit = {
-    fn(makeTemporaryDir().toPath)
-  }
+  def withTemporaryDirectoryPath(fn: Path => Unit): Unit =
+    fn(makeTemporaryDirPath())
 }
 
 class Iterable[T](elems: Array[T]) extends java.lang.Iterable[T] {
