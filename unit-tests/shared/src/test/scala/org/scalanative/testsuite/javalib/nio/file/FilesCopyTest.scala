@@ -7,18 +7,17 @@ package org.scalanative.testsuite.javalib.nio.file
  * It aims to improve the SN 0.5.8 situation but does _not_ give complete
  * test coverage of the three Files.copy() methods.  It provides a place
  * for Tests as more extensive coverage is added.
+ * 
+ * It is hard to set or read the process environment umask in CI.
+ * Several advanced Tests are provided and marked @Ignore. These
+ * are intended to be run manually for development and maintenance
+ * where the process umask can be set manually before running the
+ * test environment.
  */
 
 /* General requirement for Continuous Integration (CI) environment:
  *   umask in the execution environment is of the form 0xx. That is, no
  *   user bits are masked off.
- */
-
-/* It is hard to set or read the process environment umask in CI.
- * Several advanced Tests are provided and marked @Ignore. These
- * are intended to be run manually for development and maintenance
- * where the process umask can be set manually before running the
- * test environment.
  */
 
 import java.io.ByteArrayInputStream
