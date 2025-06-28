@@ -415,36 +415,36 @@ private[java] final class FileChannelImpl(
 
       val buf = ByteBuffer.allocate(bufSize)
 
+      /* The writing is known to be sequential, reduce wasted seek()ing
+       * by using relative I/O with save/restore of original position
+       * rather than attractive but expensive absolute I/O plus math.
+       */
+      val savedPosition = position()
+      if (savedPosition != _position)
+        position(_position)
+
       var totalWritten = 0L
-      var done = false
 
-      while ((!done) && (totalWritten < count)) {
-        val nRemaining = count - totalWritten
-        if ((nRemaining) < bufSize)
-          buf.limit(nRemaining.toInt) // Enable next partial buffer short read
+      try {
+        var done = false
 
-        val nRead = src.read(buf)
-        if (nRead == -1) { // How should repeating/looping 0 reads be handled?
-          done = true
-        } else {
-          buf.flip()
+        while ((!done) && (totalWritten < count)) {
+          // Bounding the limit is key to not reading/writing too many bytes.
+          val nRemaining = count - totalWritten
+          if ((nRemaining) < bufSize)
+            buf.limit(nRemaining.toInt) // Enable next partial buffer short read
 
-          /* Using absolute write-at-position takes math but avoids
-           * set, save, and then restore of position. That overload
-           * does all that work already.
-           */
-          val nWritten = this.write(buf, _position + totalWritten)
-          buf.compact()
-
-          totalWritten = totalWritten + nWritten
+          val nRead = src.read(buf)
+          if (nRead == -1) {
+            done = true
+          } else {
+            buf.flip()
+            totalWritten += this.write(buf)
+            buf.compact()
+          }
         }
-
-      }
-
-      buf.flip()
-      while (buf.hasRemaining()) {
-        val nDrained = this.write(buf, _position + totalWritten)
-        totalWritten += nDrained
+      } finally {
+        position(savedPosition)
       }
 
       totalWritten
@@ -469,10 +469,6 @@ private[java] final class FileChannelImpl(
     } else {
       ensureOpen()
 
-      val savedPosition = position()
-      if (_position != savedPosition)
-        position(_position)
-
       val maxBufSize = 8 * 1024 // value used by JVM
       val bufSize =
         if (count > Integer.MAX_VALUE) maxBufSize
@@ -480,34 +476,39 @@ private[java] final class FileChannelImpl(
 
       val buf = ByteBuffer.allocate(bufSize)
 
+      /* The reading is known to be sequential, reduce wasted seek()ing
+       * by using relative I/O with save/restore of original position
+       * rather than attractive but expensive absolute I/O plus math.
+       */
+      val savedPosition = position()
+      if (savedPosition != _position)
+        position(_position)
+
       var totalWritten = 0L
-      var done = false
 
-      while ((!done) && (totalWritten < count)) {
-        val nRemaining = count - totalWritten
-        if (nRemaining < bufSize)
-          buf.limit(nRemaining.toInt) // Enable next partial buffer short read
+      try {
 
-        val nRead = this.read(buf)
-        if (nRead == -1) { // How should repeating/looping 0 reads be handled?
-          done = true
-        } else {
-          buf.flip()
+        var done = false
 
-          val nWritten = target.write(buf)
-          buf.compact()
+        while ((!done) && (totalWritten < count)) {
+          // Bounding the limit is key to not reading/writing too many bytes.
+          val nRemaining = count - totalWritten
+          if (nRemaining < bufSize)
+            buf.limit(nRemaining.toInt) // Enable next partial buffer short read
 
-          totalWritten = totalWritten + nWritten
+          val nRead = this.read(buf)
+
+          if (nRead == -1) {
+            done = true
+          } else {
+            buf.flip()
+            totalWritten += totalWritten + target.write(buf)
+            buf.compact()
+          }
         }
+      } finally {
+        position(savedPosition)
       }
-
-      buf.flip()
-      while (buf.hasRemaining()) {
-        val nDrained = target.write(buf)
-        totalWritten += nDrained
-      }
-
-      position(savedPosition)
 
       totalWritten
     }
