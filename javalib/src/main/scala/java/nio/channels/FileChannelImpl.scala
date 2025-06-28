@@ -387,9 +387,6 @@ private[java] final class FileChannelImpl(
    * They differ just enough in how they must handle the position of
    * the 'this' FileChannel that such a common implementation exceeds the
    * day is left for the reader.
-   *
-   * Useful example:
-   *   URL: https://www.happycoders.eu/java/filechannel-memory-mapped-io-locks/
    */
 
   override def transferFrom(
@@ -432,15 +429,15 @@ private[java] final class FileChannelImpl(
           // Bounding the limit is key to not reading/writing too many bytes.
           val nRemaining = count - totalWritten
           if ((nRemaining) < bufSize)
-            buf.limit(nRemaining.toInt) // Enable next partial buffer short read
+            buf.limit(nRemaining.toInt) // Enable next partial buf short read
 
-          val nRead = src.read(buf)
-          if (nRead == -1) {
+          if (src.read(buf) == -1) {
             done = true
           } else {
             buf.flip()
-            totalWritten += this.write(buf)
-            buf.compact()
+            while (buf.hasRemaining())
+              totalWritten += this.write(buf)
+            buf.flip()
           }
         }
       } finally {
@@ -494,16 +491,15 @@ private[java] final class FileChannelImpl(
           // Bounding the limit is key to not reading/writing too many bytes.
           val nRemaining = count - totalWritten
           if (nRemaining < bufSize)
-            buf.limit(nRemaining.toInt) // Enable next partial buffer short read
+            buf.limit(nRemaining.toInt) // Enable next partial buf short read
 
-          val nRead = this.read(buf)
-
-          if (nRead == -1) {
+          if (this.read(buf) == -1) {
             done = true
           } else {
             buf.flip()
-            totalWritten += totalWritten + target.write(buf)
-            buf.compact()
+            while (buf.hasRemaining())
+              totalWritten += totalWritten + target.write(buf)
+            buf.flip()
           }
         }
       } finally {
