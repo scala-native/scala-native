@@ -6,15 +6,16 @@ import java.{lang => jl}
 import java.lang.Iterable
 
 import java.nio.charset.{Charset, StandardCharsets}
-import java.nio.channels.SeekableByteChannel
+import java.nio.channels.{FileChannel, SeekableByteChannel}
+
 import java.nio.file.attribute._
+import java.nio.file.attribute.PosixFilePermission._
+
 import java.nio.file.StandardCopyOption.{COPY_ATTRIBUTES, REPLACE_EXISTING}
 
 import java.util._
 import java.util.function.{BiPredicate, Consumer, Supplier}
-
 import java.util.stream.{Stream, StreamSupport}
-import java.util.{Spliterator, Spliterators}
 
 import scalanative.unsigned._
 import scalanative.unsafe._
@@ -22,7 +23,10 @@ import scalanative.libc._
 
 import scalanative.posix.dirent._
 import scalanative.posix.direntOps._
-import scalanative.posix.errno.{errno, EEXIST, ENOENT, ENOTEMPTY}
+
+import scalanative.posix.errno.errno // avoid libc conflict in import errno._
+import scalanative.posix.errno._
+
 import scalanative.posix.{fcntl, limits, unistd}
 import scalanative.posix.sys.stat
 
@@ -52,31 +56,44 @@ object Files {
         true
       else throw new UnsupportedOperationException()
 
-    val targetFile = target.toFile()
-    val targetExists = targetFile.exists()
+    val noFollowOpts = Array(LinkOption.NOFOLLOW_LINKS)
 
-    val out =
-      if (!targetExists || (targetFile.isFile() && replaceExisting)) {
-        new FileOutputStream(targetFile, append = false)
-      } else if (targetFile.isDirectory() &&
-          targetFile.list().isEmpty &&
-          replaceExisting) {
-        if (!targetFile.delete()) throw new IOException()
-        new FileOutputStream(targetFile, append = false)
-      } else if (targetFile.isDirectory() &&
-          !targetFile.list().isEmpty &&
-          replaceExisting) {
-        throw new DirectoryNotEmptyException(targetFile.getAbsolutePath())
-      } else {
-        throw new FileAlreadyExistsException(targetFile.getAbsolutePath())
+    val out = {
+      if (Files.exists(target, noFollowOpts) && !replaceExisting) {
+        throw new FileAlreadyExistsException(target.toAbsolutePath().toString())
+      } else if (Files.isRegularFile(target, noFollowOpts)) {
+        /* Deleting and recreating a file in order to replace it is expensive
+         * but also more certain than adjusting permissions when umask
+         * is unknowable.
+         */
+        Files.delete(target)
+      } else if (Files.isDirectory(target, noFollowOpts)) {
+        if (!target.toFile().list().isEmpty)
+          throw new DirectoryNotEmptyException(
+            target.toAbsolutePath().toString()
+          )
+        else
+          Files.delete(target)
+      } else if (Files.isSymbolicLink(target)) {
+        Files.delete(target)
       }
 
+      Files.newOutputStream(target, Array.empty)
+    }
+
     try {
-      val copyResult = copy(in, out)
-      // Make sure that created file has correct permissions
-      if (!targetExists) {
-        targetFile.setReadable(true, ownerOnly = false)
-        targetFile.setWritable(true, ownerOnly = true)
+      val copyResult = in.transferTo(out)
+      if (isWindows) {
+        // This block is unnecessary on unix. Is this really necessary on
+        // Windows?
+        // Make sure that created file has correct permissions
+        val targetFile = target.toFile()
+        val targetExists = targetFile.exists()
+
+        if (!targetExists) {
+          targetFile.setReadable(true, ownerOnly = false)
+          targetFile.setWritable(true, ownerOnly = true)
+        }
       }
       copyResult
     } finally out.close()
@@ -84,7 +101,253 @@ object Files {
 
   def copy(source: Path, out: OutputStream): Long = {
     val in = newInputStream(source, Array.empty)
-    copy(in, out)
+    try {
+      in.transferTo(out)
+    } finally in.close()
+  }
+
+  /* Precondition:
+   *   - an ancestor caller has ensured that cTarget is neither a directory
+   *     nor a symbolic link. Let fcntl.open() determine how other non-regular
+   *     existing files are handled.
+   */
+
+  private def unixCopyFile(
+      source: Path,
+      target: Path,
+      copyOptions: Array[CopyOption],
+      permissions: Set[PosixFilePermission]
+  ): Unit = {
+    if (isWindows)
+      throw new IOException("Unix specific method; should never get here")
+    else
+      Zone.acquire { implicit z =>
+
+        /* Requirement:
+         * 
+         *   Files.copy(Path, Path, Options) on the JVM ensures that, on
+         *   success, the PosixPermissions of the source, limited by the
+         *   process umask, have been copied to the target.
+         *   This is similar to bash & zsh behavior.
+         *
+         *   Using the usual 022 umask, copying a source file with permissions
+         *   r-xrwxrwx results in a target file with permissions
+         *   r-xr-xr-x.
+         */
+
+        /* Design Notes:
+         * 
+         *   - Use POSIX I/O to handle the corner case where a file exists but
+         *     the user does not have write access: r--x------ & kin.
+         * 
+         *     JVM handles this case, Scala Native must also.
+         * 
+         *     Most of Scala Native javalib Files.scala, File_Helpers.scala,
+         *     java.nio.*, and java.io.* use a non-atomic sequence of steps:
+         *     create the file, then set indicated attributes. Any subsequent
+         *     write to the file fails because the file permissions have been
+         *     set user no-write.
+         * 
+         *     POSIX fcntl.open() is defined so that it can open and create
+         *     a new file for write if the indicated directory permissions
+         *     allow. Code can use the fd returned to write to the file as long
+         *     as that fd is open. The mode argument to open() is applied
+         *     only to future accesses.
+         *
+         *   - This method is optimized for success paths. That is
+         *     condition checking is delegated to the operating system
+         *     under the expectation that in most cases the operation will
+         *     succeed.
+         * 
+         *   - Some, but probably not all, rare and somewhat astonishing corner
+         *     conditions exist when the REPLACE_EXISTING option is present:
+         * 
+         *     - Any kind of IOException, including but not limited to:
+         *           - source file can not be read
+         *       Action: target file is deleted.
+         * 
+         *     - target file exists but does not have write permission,
+         *       e.g. r-xr-xr-x.
+         *       Action: copy proceeds but inode number changes.
+         *
+         *   - This method follows the practice from early Scala Native
+         *     development days of modifying files in-place.  This
+         *     leaves a pretty wide window for misadventure, particularly
+         *     if more that one thread or process is accessing the file.
+         * 
+         *     Many contemporary applications create a temporary intermediate
+         *     file, copy the source contents to the temporary,
+         *     set permissions on the temporary, and then, finally, if the
+         *     replace conditions still hold, rename the temporary to the
+         *     provided target path. A second application will never
+         *     see an incompletely copied target file.
+         *
+         *     The major difficulty with that approach is reliably creating
+         *     a file with a temporary name. The obvious library calls
+         *     each have their own drawbacks. A "create-until-success" loop
+         *     also has its own pain points: more than an afternoon's work.
+         * 
+         *     Oh, give me a good ship, a fair wind, and a few clever
+         *     secondary school students!
+         */
+
+        def permissionsToUnixModeType(
+            perms: Set[PosixFilePermission]
+        ): UInt = {
+          var mode = 0.toUInt
+
+          if (perms.contains(OWNER_READ))
+            mode |= stat.S_IRUSR
+
+          if (perms.contains(OWNER_WRITE))
+            mode |= stat.S_IWUSR
+
+          if (perms.contains(OWNER_EXECUTE))
+            mode |= stat.S_IXUSR
+
+          if (perms.contains(GROUP_READ))
+            mode |= stat.S_IRGRP
+
+          if (perms.contains(GROUP_WRITE))
+            mode |= stat.S_IWGRP
+
+          if (perms.contains(GROUP_EXECUTE))
+            mode |= stat.S_IXGRP
+
+          if (perms.contains(OTHERS_READ))
+            mode |= stat.S_IROTH
+
+          if (perms.contains(OTHERS_WRITE))
+            mode |= stat.S_IWOTH
+
+          if (perms.contains(OTHERS_EXECUTE))
+            mode |= stat.S_IXOTH
+
+          mode
+        }
+
+        def openTarget(
+            cTarget: CString,
+            replaceExisting: Boolean,
+            cPerms: UInt
+        ): Int = {
+          val cOpenExtraFlags =
+            if (replaceExisting) fcntl.O_TRUNC
+            else fcntl.O_EXCL
+
+          val createFd = fcntl.open(
+            cTarget,
+            fcntl.O_WRONLY | fcntl.O_CREAT | cOpenExtraFlags,
+            cPerms
+          )
+
+          if (createFd != -1) {
+            createFd
+          } else if (replaceExisting && (errno == EACCES)) {
+            /* Handle what should be an vanishingly rare but possible
+             * corner case where cTarget exists but is not user writable;
+             * r-xr-xr-x, --xr-xr-x, and kin. O_TRUNC will fail in those cases.
+             * 
+             * unlink() is a directory operation. If the permissions on that
+             * directory permit, the operation should succeed.
+             * 
+             * Of course, if two or more threads/processes are accessing the
+             * same file without explicit synchronization, there are always
+             * timing issues, since the file unlink & subsequent creation
+             * are not atomic.
+             */
+            unistd.unlink(cTarget) // Handle error later.
+            openTarget(cTarget, replaceExisting = false, cPerms)
+          } else {
+            val msg = fromCString(string.strerror(errno))
+            throw new IOException(
+              s"error opening target path '${cTarget}': ${msg}"
+            )
+          }
+        }
+
+        def transferTo(inFd: Int, outFd: Int): Unit = {
+          /* If measurement and/or experience shows this method to be a
+           * performance bottleneck, a future Evolution could explore
+           * calling methods operating systems have developed just for this
+           * purpose. Linux has 'copy_file_range()' while macOS has
+           * 'copyfile()'. The picture on FreeBSD is more complicated.
+           */
+
+          val limit = 8192 // a guess of appropriate size, 2 * usual page size
+          val buffer = new Array[Byte](limit).at(0)
+
+          errno = 0 // clearing is probably redundant but be defensive
+
+          var doneRead = false
+
+          while (!doneRead) {
+            val nRead = unistd.read(inFd, buffer, limit.toCSize)
+
+            if (nRead < 0) {
+              val msg = fromCString(string.strerror(errno))
+              throw new IOException(
+                s"error reading copy source file: ${msg}"
+              )
+            } else if (nRead == 0) {
+              doneRead = true // EOF
+            } else {
+              // Be robust to partial writes.
+              var nRemaining = nRead
+              while ((nRemaining > 0) && errno == 0) {
+                val nWritten = unistd.write(outFd, buffer, nRemaining.toCSize)
+                if (nWritten < 0) {
+                  val msg = fromCString(string.strerror(errno))
+                  throw new IOException(
+                    s"error writing copy target file: ${msg}"
+                  )
+                }
+                nRemaining -= nWritten
+              }
+            }
+          }
+        }
+
+        val absSource = source.toAbsolutePath().toString()
+        val cSource = toCString(absSource)
+
+        val absTarget = target.toAbsolutePath().toString()
+        val cTarget = toCString(absTarget)
+
+        val cPerms = permissionsToUnixModeType(permissions)
+
+        errno = 0
+
+        /* Hold the 'source' read-lock the shortest amount of time.
+         * Do the potentially time consuming open of 'target' first.
+         *
+         * Other Java I/O options probably do not make sense for uxix I/O.
+         * Time & experience will tell.
+         */
+        val outFd =
+          openTarget(cTarget, copyOptions.contains(REPLACE_EXISTING), cPerms)
+
+        try {
+          val inFd = fcntl.open(cSource, fcntl.O_RDONLY, 0.toUInt)
+
+          if (inFd == -1) {
+            val msg = fromCString(string.strerror(errno))
+            throw new IOException(
+              s"error opening source path '${absSource}': ${msg}"
+            )
+          }
+
+          try
+            transferTo(inFd, outFd)
+          finally
+            unistd.close(inFd)
+
+        } catch {
+          case _: IOException => unistd.unlink(cTarget) // leave no garbage
+        } finally {
+          unistd.close(outFd)
+        }
+      }
   }
 
   def copy(source: Path, target: Path, options: Array[CopyOption]): Path = {
@@ -104,12 +367,24 @@ object Files {
       createSymbolicLink(target, readSymbolicLink(source), Array.empty)
     } else if (isDirectory(source, Array.empty)) {
       createDirectory(target, Array.empty)
-    } else {
+    } else if (!isWindows) {
+      // Scala Native Issue #4382
+      // Devos, ensure preconditions described at top of method endure.
+      unixCopyFile(
+        source,
+        target,
+        options,
+        attrs.asInstanceOf[PosixFileAttributes].permissions()
+      )
+    } else { // Windows
       val in = newInputStream(source, Array.empty)
       try copy(in, target, options.filter(_ == REPLACE_EXISTING))
       finally in.close()
     }
 
+    /* Bug Alert! The following block appears to not copy Access Control Lists.
+     * See Scala Native Issue #4381.
+     */
     if (options.contains(COPY_ATTRIBUTES)) {
       val attrViewCls =
         if (isWindows) classOf[DosFileAttributeView]
@@ -139,9 +414,6 @@ object Files {
     }
     target
   }
-
-  private def copy(in: InputStream, out: OutputStream): Long =
-    in.transferTo(out)
 
   def createDirectories(dir: Path, attrs: Array[FileAttribute[_]]): Path =
     if (exists(dir, Array.empty) && !isDirectory(dir, Array.empty))
