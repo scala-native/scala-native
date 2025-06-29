@@ -2,11 +2,14 @@
 package java.nio
 
 // Ported from Scala.js
+// Also has JDK 11 & 16 Additions for Scala Native
 import scala.scalanative.unsafe
 import scala.scalanative.unsafe.UnsafeRichArray
 import scala.scalanative.runtime.{fromRawPtr, toRawPtr}
 import scala.scalanative.runtime.Intrinsics
 import scala.scalanative.annotation.alwaysinline
+
+import java.{util => ju}
 
 %{
    variants = [
@@ -25,7 +28,7 @@ object ${T}Buffer {
 
   def allocate(capacity: Int): ${T}Buffer = wrap(new Array[${T}](capacity))
 
-% if T == 'Byte': 
+% if T == 'Byte':
   def allocateDirect(capacity: Int): ${T}Buffer = allocate(capacity)
 % end
 
@@ -54,7 +57,7 @@ abstract class ${T}Buffer private[nio] (
     private[nio] val _offset: Int,
     _address: unsafe.CVoidPtr,
 ) extends Buffer(_capacity, _address)
-    with Comparable[${T}Buffer] 
+    with Comparable[${T}Buffer]
 % if T == 'Char':
     with CharSequence
     with Appendable
@@ -68,8 +71,51 @@ abstract class ${T}Buffer private[nio] (
   private[nio] var _isBigEndian: Boolean = true
 % end
 
-  // TODO: JDK11
-  // def mismatch(that: ${T}Buffer): Int  = ???
+  /** @since JDK 11 */
+  def mismatch(that: ${T}Buffer): Int  = {
+    /* Circa SN 0.5.8 and well before, all Scala Native nio.Buffers,
+     * both direct and non-direct, have backing arrays.
+     * When a buffer is ReadOnly, that array is not accessible so one must
+     * compare the long, slow way.
+     */
+
+    if (this.hasArray() && that.hasArray()) {
+      ju.Arrays.mismatch(
+        this.array(),
+        this.position(),
+        this.limit(),
+        that.array(),
+        that.position(),
+        that.limit()
+      )
+    } else {
+      val thisStart = this.position()
+      val thisRemaining = this.remaining()
+
+      val thatStart = that.position()
+      val thatRemaining = that.remaining()
+
+      val shortestLength = Math.min(thisRemaining, thatRemaining)
+
+      var mismatchedAt = -1
+
+      try {
+        var j = 0
+        while((j < shortestLength) && (mismatchedAt < 0)) {
+          if (this.get() != that.get())
+            mismatchedAt = j
+          j += 1
+        }
+      } finally {
+        this.position(thisStart)
+        that.position(thatStart)
+      }
+
+      if (mismatchedAt > -1) mismatchedAt
+      else if (thisRemaining == thatRemaining) -1
+      else shortestLength
+    }
+  }
 
   private def genBuffer = GenBuffer[${T}Buffer](this)
 
@@ -101,14 +147,14 @@ abstract class ${T}Buffer private[nio] (
     store(validateIndex(index), elem)
     this
   }
-  
+
   // Since: JDK 13
   def get(index: Int, dst: Array[${T}], offset: Int, length: Int): ${T}Buffer = GenBuffer[${T}Buffer](this).generic_get(index, dst, offset, length)
-  def get(index: Int, dst: Array[${T}]): ${T}Buffer = get(index, dst, 0, dst.length) 
+  def get(index: Int, dst: Array[${T}]): ${T}Buffer = get(index, dst, 0, dst.length)
 
   // Since: JDK13
   def put(index: Int, src: Array[${T}], offset: Int, length: Int): ${T}Buffer = GenBuffer[${T}Buffer](this).generic_put(index, src, offset, length)
-  def put(index: Int, src: Array[${T}]): ${T}Buffer = put(index, src, 0, src.length)  
+  def put(index: Int, src: Array[${T}]): ${T}Buffer = put(index, src, 0, src.length)
 
   @noinline
   def get(dst: Array[${T}], offset: Int, length: Int): ${T}Buffer =
@@ -122,7 +168,7 @@ abstract class ${T}Buffer private[nio] (
     genBuffer.generic_put(src)
     // Since: JDK16
   def put(index: Int, src: ${T}Buffer, offset: Int, length: Int) = GenBuffer[${T}Buffer](this).generic_put(index, src, offset, length)
-    
+
   @noinline
   def put(src: Array[${T}], offset: Int, length: Int): ${T}Buffer =
     genBuffer.generic_put(src, offset, length)
@@ -136,7 +182,7 @@ abstract class ${T}Buffer private[nio] (
 
   final def put(src: String): CharBuffer =
     put(src, 0, src.length)
-% end 
+% end
 
   @inline final def hasArray(): Boolean =
     genBuffer.generic_hasArray()
@@ -237,7 +283,7 @@ abstract class ${T}Buffer private[nio] (
   }
 %else:
   def order(): ByteOrder
-%end 
+%end
 
 %if T == 'Byte':
 %for (E, unused, Size, JavaType) in variants:
@@ -252,7 +298,7 @@ abstract class ${T}Buffer private[nio] (
   def put${E}(index: Int, value: ${E}): ByteBuffer = {
     ensureNotReadOnly()
     store${E}(validateIndex(index, ${Size}), value)
-  }  
+  }
   @alwaysinline private def load${E}(index: Int): ${E} = {
 %if E == 'Float':
     val value = Intrinsics.loadInt(Intrinsics.elemRawPtr(_rawAddress, index))

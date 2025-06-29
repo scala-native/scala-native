@@ -2,11 +2,14 @@
 package java.nio
 
 // Ported from Scala.js
+// Also has JDK 11 & 16 Additions for Scala Native
 import scala.scalanative.unsafe
 import scala.scalanative.unsafe.UnsafeRichArray
 import scala.scalanative.runtime.{fromRawPtr, toRawPtr}
 import scala.scalanative.runtime.Intrinsics
 import scala.scalanative.annotation.alwaysinline
+
+import java.{util => ju}
 
 object ByteBuffer {
   private final val HashSeed = -547316498 // "java.nio.ByteBuffer".##
@@ -39,8 +42,51 @@ abstract class ByteBuffer private[nio] (
 
   private[nio] var _isBigEndian: Boolean = true
 
-  // TODO: JDK11
-  // def mismatch(that: ByteBuffer): Int  = ???
+  /** @since JDK 11 */
+  def mismatch(that: ByteBuffer): Int  = {
+    /* Circa SN 0.5.8 and well before, all Scala Native nio.Buffers,
+     * both direct and non-direct, have backing arrays.
+     * When a buffer is ReadOnly, that array is not accessible so one must
+     * compare the long, slow way.
+     */
+
+    if (this.hasArray() && that.hasArray()) {
+      ju.Arrays.mismatch(
+        this.array(),
+        this.position(),
+        this.limit(),
+        that.array(),
+        that.position(),
+        that.limit()
+      )
+    } else {
+      val thisStart = this.position()
+      val thisRemaining = this.remaining()
+
+      val thatStart = that.position()
+      val thatRemaining = that.remaining()
+
+      val shortestLength = Math.min(thisRemaining, thatRemaining)
+
+      var mismatchedAt = -1
+
+      try {
+        var j = 0
+        while((j < shortestLength) && (mismatchedAt < 0)) {
+          if (this.get() != that.get())
+            mismatchedAt = j
+          j += 1
+        }
+      } finally {
+        this.position(thisStart)
+        that.position(thatStart)
+      }
+
+      if (mismatchedAt > -1) mismatchedAt
+      else if (thisRemaining == thatRemaining) -1
+      else shortestLength
+    }
+  }
 
   private def genBuffer = GenBuffer[ByteBuffer](this)
 
@@ -72,7 +118,7 @@ abstract class ByteBuffer private[nio] (
     store(validateIndex(index), elem)
     this
   }
-  
+
   // Since: JDK 13
   def get(index: Int, dst: Array[Byte], offset: Int, length: Int): ByteBuffer = GenBuffer[ByteBuffer](this).generic_get(index, dst, offset, length)
   def get(index: Int, dst: Array[Byte]): ByteBuffer = get(index, dst, 0, dst.length)
@@ -93,7 +139,7 @@ abstract class ByteBuffer private[nio] (
     genBuffer.generic_put(src)
     // Since: JDK16
   def put(index: Int, src: ByteBuffer, offset: Int, length: Int) = GenBuffer[ByteBuffer](this).generic_put(index, src, offset, length)
-    
+
   @noinline
   def put(src: Array[Byte], offset: Int, length: Int): ByteBuffer =
     genBuffer.generic_put(src, offset, length)
@@ -387,8 +433,51 @@ abstract class CharBuffer private[nio] (
   private[nio] type BufferType = CharBuffer
 
 
-  // TODO: JDK11
-  // def mismatch(that: CharBuffer): Int  = ???
+  /** @since JDK 11 */
+  def mismatch(that: CharBuffer): Int  = {
+    /* Circa SN 0.5.8 and well before, all Scala Native nio.Buffers,
+     * both direct and non-direct, have backing arrays.
+     * When a buffer is ReadOnly, that array is not accessible so one must
+     * compare the long, slow way.
+     */
+
+    if (this.hasArray() && that.hasArray()) {
+      ju.Arrays.mismatch(
+        this.array(),
+        this.position(),
+        this.limit(),
+        that.array(),
+        that.position(),
+        that.limit()
+      )
+    } else {
+      val thisStart = this.position()
+      val thisRemaining = this.remaining()
+
+      val thatStart = that.position()
+      val thatRemaining = that.remaining()
+
+      val shortestLength = Math.min(thisRemaining, thatRemaining)
+
+      var mismatchedAt = -1
+
+      try {
+        var j = 0
+        while((j < shortestLength) && (mismatchedAt < 0)) {
+          if (this.get() != that.get())
+            mismatchedAt = j
+          j += 1
+        }
+      } finally {
+        this.position(thisStart)
+        that.position(thatStart)
+      }
+
+      if (mismatchedAt > -1) mismatchedAt
+      else if (thisRemaining == thatRemaining) -1
+      else shortestLength
+    }
+  }
 
   private def genBuffer = GenBuffer[CharBuffer](this)
 
@@ -420,7 +509,7 @@ abstract class CharBuffer private[nio] (
     store(validateIndex(index), elem)
     this
   }
-  
+
   // Since: JDK 13
   def get(index: Int, dst: Array[Char], offset: Int, length: Int): CharBuffer = GenBuffer[CharBuffer](this).generic_get(index, dst, offset, length)
   def get(index: Int, dst: Array[Char]): CharBuffer = get(index, dst, 0, dst.length)
@@ -441,7 +530,7 @@ abstract class CharBuffer private[nio] (
     genBuffer.generic_put(src)
     // Since: JDK16
   def put(index: Int, src: CharBuffer, offset: Int, length: Int) = GenBuffer[CharBuffer](this).generic_put(index, src, offset, length)
-    
+
   @noinline
   def put(src: Array[Char], offset: Int, length: Int): CharBuffer =
     genBuffer.generic_put(src, offset, length)
@@ -621,8 +710,51 @@ abstract class ShortBuffer private[nio] (
   private[nio] type BufferType = ShortBuffer
 
 
-  // TODO: JDK11
-  // def mismatch(that: ShortBuffer): Int  = ???
+  /** @since JDK 11 */
+  def mismatch(that: ShortBuffer): Int  = {
+    /* Circa SN 0.5.8 and well before, all Scala Native nio.Buffers,
+     * both direct and non-direct, have backing arrays.
+     * When a buffer is ReadOnly, that array is not accessible so one must
+     * compare the long, slow way.
+     */
+
+    if (this.hasArray() && that.hasArray()) {
+      ju.Arrays.mismatch(
+        this.array(),
+        this.position(),
+        this.limit(),
+        that.array(),
+        that.position(),
+        that.limit()
+      )
+    } else {
+      val thisStart = this.position()
+      val thisRemaining = this.remaining()
+
+      val thatStart = that.position()
+      val thatRemaining = that.remaining()
+
+      val shortestLength = Math.min(thisRemaining, thatRemaining)
+
+      var mismatchedAt = -1
+
+      try {
+        var j = 0
+        while((j < shortestLength) && (mismatchedAt < 0)) {
+          if (this.get() != that.get())
+            mismatchedAt = j
+          j += 1
+        }
+      } finally {
+        this.position(thisStart)
+        that.position(thatStart)
+      }
+
+      if (mismatchedAt > -1) mismatchedAt
+      else if (thisRemaining == thatRemaining) -1
+      else shortestLength
+    }
+  }
 
   private def genBuffer = GenBuffer[ShortBuffer](this)
 
@@ -654,7 +786,7 @@ abstract class ShortBuffer private[nio] (
     store(validateIndex(index), elem)
     this
   }
-  
+
   // Since: JDK 13
   def get(index: Int, dst: Array[Short], offset: Int, length: Int): ShortBuffer = GenBuffer[ShortBuffer](this).generic_get(index, dst, offset, length)
   def get(index: Int, dst: Array[Short]): ShortBuffer = get(index, dst, 0, dst.length)
@@ -675,7 +807,7 @@ abstract class ShortBuffer private[nio] (
     genBuffer.generic_put(src)
     // Since: JDK16
   def put(index: Int, src: ShortBuffer, offset: Int, length: Int) = GenBuffer[ShortBuffer](this).generic_put(index, src, offset, length)
-    
+
   @noinline
   def put(src: Array[Short], offset: Int, length: Int): ShortBuffer =
     genBuffer.generic_put(src, offset, length)
@@ -805,8 +937,51 @@ abstract class IntBuffer private[nio] (
   private[nio] type BufferType = IntBuffer
 
 
-  // TODO: JDK11
-  // def mismatch(that: IntBuffer): Int  = ???
+  /** @since JDK 11 */
+  def mismatch(that: IntBuffer): Int  = {
+    /* Circa SN 0.5.8 and well before, all Scala Native nio.Buffers,
+     * both direct and non-direct, have backing arrays.
+     * When a buffer is ReadOnly, that array is not accessible so one must
+     * compare the long, slow way.
+     */
+
+    if (this.hasArray() && that.hasArray()) {
+      ju.Arrays.mismatch(
+        this.array(),
+        this.position(),
+        this.limit(),
+        that.array(),
+        that.position(),
+        that.limit()
+      )
+    } else {
+      val thisStart = this.position()
+      val thisRemaining = this.remaining()
+
+      val thatStart = that.position()
+      val thatRemaining = that.remaining()
+
+      val shortestLength = Math.min(thisRemaining, thatRemaining)
+
+      var mismatchedAt = -1
+
+      try {
+        var j = 0
+        while((j < shortestLength) && (mismatchedAt < 0)) {
+          if (this.get() != that.get())
+            mismatchedAt = j
+          j += 1
+        }
+      } finally {
+        this.position(thisStart)
+        that.position(thatStart)
+      }
+
+      if (mismatchedAt > -1) mismatchedAt
+      else if (thisRemaining == thatRemaining) -1
+      else shortestLength
+    }
+  }
 
   private def genBuffer = GenBuffer[IntBuffer](this)
 
@@ -838,7 +1013,7 @@ abstract class IntBuffer private[nio] (
     store(validateIndex(index), elem)
     this
   }
-  
+
   // Since: JDK 13
   def get(index: Int, dst: Array[Int], offset: Int, length: Int): IntBuffer = GenBuffer[IntBuffer](this).generic_get(index, dst, offset, length)
   def get(index: Int, dst: Array[Int]): IntBuffer = get(index, dst, 0, dst.length)
@@ -859,7 +1034,7 @@ abstract class IntBuffer private[nio] (
     genBuffer.generic_put(src)
     // Since: JDK16
   def put(index: Int, src: IntBuffer, offset: Int, length: Int) = GenBuffer[IntBuffer](this).generic_put(index, src, offset, length)
-    
+
   @noinline
   def put(src: Array[Int], offset: Int, length: Int): IntBuffer =
     genBuffer.generic_put(src, offset, length)
@@ -989,8 +1164,51 @@ abstract class LongBuffer private[nio] (
   private[nio] type BufferType = LongBuffer
 
 
-  // TODO: JDK11
-  // def mismatch(that: LongBuffer): Int  = ???
+  /** @since JDK 11 */
+  def mismatch(that: LongBuffer): Int  = {
+    /* Circa SN 0.5.8 and well before, all Scala Native nio.Buffers,
+     * both direct and non-direct, have backing arrays.
+     * When a buffer is ReadOnly, that array is not accessible so one must
+     * compare the long, slow way.
+     */
+
+    if (this.hasArray() && that.hasArray()) {
+      ju.Arrays.mismatch(
+        this.array(),
+        this.position(),
+        this.limit(),
+        that.array(),
+        that.position(),
+        that.limit()
+      )
+    } else {
+      val thisStart = this.position()
+      val thisRemaining = this.remaining()
+
+      val thatStart = that.position()
+      val thatRemaining = that.remaining()
+
+      val shortestLength = Math.min(thisRemaining, thatRemaining)
+
+      var mismatchedAt = -1
+
+      try {
+        var j = 0
+        while((j < shortestLength) && (mismatchedAt < 0)) {
+          if (this.get() != that.get())
+            mismatchedAt = j
+          j += 1
+        }
+      } finally {
+        this.position(thisStart)
+        that.position(thatStart)
+      }
+
+      if (mismatchedAt > -1) mismatchedAt
+      else if (thisRemaining == thatRemaining) -1
+      else shortestLength
+    }
+  }
 
   private def genBuffer = GenBuffer[LongBuffer](this)
 
@@ -1022,7 +1240,7 @@ abstract class LongBuffer private[nio] (
     store(validateIndex(index), elem)
     this
   }
-  
+
   // Since: JDK 13
   def get(index: Int, dst: Array[Long], offset: Int, length: Int): LongBuffer = GenBuffer[LongBuffer](this).generic_get(index, dst, offset, length)
   def get(index: Int, dst: Array[Long]): LongBuffer = get(index, dst, 0, dst.length)
@@ -1043,7 +1261,7 @@ abstract class LongBuffer private[nio] (
     genBuffer.generic_put(src)
     // Since: JDK16
   def put(index: Int, src: LongBuffer, offset: Int, length: Int) = GenBuffer[LongBuffer](this).generic_put(index, src, offset, length)
-    
+
   @noinline
   def put(src: Array[Long], offset: Int, length: Int): LongBuffer =
     genBuffer.generic_put(src, offset, length)
@@ -1173,8 +1391,51 @@ abstract class FloatBuffer private[nio] (
   private[nio] type BufferType = FloatBuffer
 
 
-  // TODO: JDK11
-  // def mismatch(that: FloatBuffer): Int  = ???
+  /** @since JDK 11 */
+  def mismatch(that: FloatBuffer): Int  = {
+    /* Circa SN 0.5.8 and well before, all Scala Native nio.Buffers,
+     * both direct and non-direct, have backing arrays.
+     * When a buffer is ReadOnly, that array is not accessible so one must
+     * compare the long, slow way.
+     */
+
+    if (this.hasArray() && that.hasArray()) {
+      ju.Arrays.mismatch(
+        this.array(),
+        this.position(),
+        this.limit(),
+        that.array(),
+        that.position(),
+        that.limit()
+      )
+    } else {
+      val thisStart = this.position()
+      val thisRemaining = this.remaining()
+
+      val thatStart = that.position()
+      val thatRemaining = that.remaining()
+
+      val shortestLength = Math.min(thisRemaining, thatRemaining)
+
+      var mismatchedAt = -1
+
+      try {
+        var j = 0
+        while((j < shortestLength) && (mismatchedAt < 0)) {
+          if (this.get() != that.get())
+            mismatchedAt = j
+          j += 1
+        }
+      } finally {
+        this.position(thisStart)
+        that.position(thatStart)
+      }
+
+      if (mismatchedAt > -1) mismatchedAt
+      else if (thisRemaining == thatRemaining) -1
+      else shortestLength
+    }
+  }
 
   private def genBuffer = GenBuffer[FloatBuffer](this)
 
@@ -1206,7 +1467,7 @@ abstract class FloatBuffer private[nio] (
     store(validateIndex(index), elem)
     this
   }
-  
+
   // Since: JDK 13
   def get(index: Int, dst: Array[Float], offset: Int, length: Int): FloatBuffer = GenBuffer[FloatBuffer](this).generic_get(index, dst, offset, length)
   def get(index: Int, dst: Array[Float]): FloatBuffer = get(index, dst, 0, dst.length)
@@ -1227,7 +1488,7 @@ abstract class FloatBuffer private[nio] (
     genBuffer.generic_put(src)
     // Since: JDK16
   def put(index: Int, src: FloatBuffer, offset: Int, length: Int) = GenBuffer[FloatBuffer](this).generic_put(index, src, offset, length)
-    
+
   @noinline
   def put(src: Array[Float], offset: Int, length: Int): FloatBuffer =
     genBuffer.generic_put(src, offset, length)
@@ -1357,8 +1618,51 @@ abstract class DoubleBuffer private[nio] (
   private[nio] type BufferType = DoubleBuffer
 
 
-  // TODO: JDK11
-  // def mismatch(that: DoubleBuffer): Int  = ???
+  /** @since JDK 11 */
+  def mismatch(that: DoubleBuffer): Int  = {
+    /* Circa SN 0.5.8 and well before, all Scala Native nio.Buffers,
+     * both direct and non-direct, have backing arrays.
+     * When a buffer is ReadOnly, that array is not accessible so one must
+     * compare the long, slow way.
+     */
+
+    if (this.hasArray() && that.hasArray()) {
+      ju.Arrays.mismatch(
+        this.array(),
+        this.position(),
+        this.limit(),
+        that.array(),
+        that.position(),
+        that.limit()
+      )
+    } else {
+      val thisStart = this.position()
+      val thisRemaining = this.remaining()
+
+      val thatStart = that.position()
+      val thatRemaining = that.remaining()
+
+      val shortestLength = Math.min(thisRemaining, thatRemaining)
+
+      var mismatchedAt = -1
+
+      try {
+        var j = 0
+        while((j < shortestLength) && (mismatchedAt < 0)) {
+          if (this.get() != that.get())
+            mismatchedAt = j
+          j += 1
+        }
+      } finally {
+        this.position(thisStart)
+        that.position(thatStart)
+      }
+
+      if (mismatchedAt > -1) mismatchedAt
+      else if (thisRemaining == thatRemaining) -1
+      else shortestLength
+    }
+  }
 
   private def genBuffer = GenBuffer[DoubleBuffer](this)
 
@@ -1390,7 +1694,7 @@ abstract class DoubleBuffer private[nio] (
     store(validateIndex(index), elem)
     this
   }
-  
+
   // Since: JDK 13
   def get(index: Int, dst: Array[Double], offset: Int, length: Int): DoubleBuffer = GenBuffer[DoubleBuffer](this).generic_get(index, dst, offset, length)
   def get(index: Int, dst: Array[Double]): DoubleBuffer = get(index, dst, 0, dst.length)
@@ -1411,7 +1715,7 @@ abstract class DoubleBuffer private[nio] (
     genBuffer.generic_put(src)
     // Since: JDK16
   def put(index: Int, src: DoubleBuffer, offset: Int, length: Int) = GenBuffer[DoubleBuffer](this).generic_put(index, src, offset, length)
-    
+
   @noinline
   def put(src: Array[Double], offset: Int, length: Int): DoubleBuffer =
     genBuffer.generic_put(src, offset, length)

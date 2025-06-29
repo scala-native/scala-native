@@ -1,0 +1,293 @@
+package org.scalanative.testsuite.javalib.nio.file
+
+%{
+## BuffersMismatchTestOnJDK11.scala.gyb
+##
+##
+## To generate this file's output manually, execute the python script
+## 'scripts/gyb.py' under the project root. For example, from the project root:
+##
+##   scripts/gyb.py \
+##     ${thisDirectory}/BuffersMismatchTestOnJDK11.scala.gyb \
+##     --line-directive '' \
+##     -o ${thisDirectory}/BuffersMismatchTestOnJDK11.scala
+}%
+/* This code is generated from BuffersMismatchTestOnJDK11.scala.gyb.
+ * Any edits here and not in the .gyb will be lost when this file is next
+ * generated.
+ */
+
+%{
+   variants = [
+     # scala.T,	 lowercase.T
+     ('Char',	 'char'),
+     ('Double',	 'double'),
+     ('Float',	 'float'),
+     ('Int',	 'integer'),
+     ('Long',	 'long'),
+     ('Short',	 'short')
+   ]
+}%
+
+// format: off
+
+import java.nio.ByteOrder
+
+import java.nio.ByteBuffer
+% for (T, lowercaseT) in variants:
+import java.nio.${T}Buffer
+% end ## for variants
+
+import java.{util => ju}
+
+import org.junit.Test
+import org.junit.Assert._
+import org.junit.Ignore
+
+import org.scalanative.testsuite.utils.AssertThrows.assertThrows
+
+class BuffersMismatchTestOnJDK11 {
+
+  private val fullData =
+    ju.List.of('-', '|', 'a', 'b', 'c', 'd', 'e', '|', '-', '$')
+
+  private val matchData =
+    ju.List.of('a', 'b', 'c', 'd', 'e')
+
+  @Test def byteBuffersMismatchBE(): Unit = {
+
+    val byteBufA = ByteBuffer.allocate(matchData.size())
+    matchData.forEach(e => byteBufA.put(e.toByte))
+    byteBufA.flip()
+
+    /* Try to trip things up and expose bugs.
+     * Skew byteBufferB so that its position is not zero and it has both
+     *	a matching range and some characters in the buffer after that range.
+     */
+    val byteBufB = ByteBuffer.allocate(fullData.size())
+    fullData.forEach(e => byteBufB.put(e.toByte))
+
+    val startPositionByteBufB = 2
+    val endLimitByteBufB = byteBufB.limit() - 3
+    byteBufB
+      .flip()
+      .position(startPositionByteBufB)
+      .limit(endLimitByteBufB)
+
+    val byteBufC = ByteBuffer.allocate(matchData.size() + 1)
+    matchData.forEach(e => byteBufC.put(e.toByte))
+    byteBufC.put('M'.toByte)
+    byteBufC.flip()
+
+    assertEquals("bufA should match bufB", -1, byteBufA.mismatch(byteBufB))
+
+    assertEquals("byteBufA position should not move", 0, byteBufA.position())
+    assertEquals(
+      "byteBufB position should not move",
+      startPositionByteBufB,
+      byteBufB.position()
+    )
+
+    val changeAt = 3
+    byteBufB.put(startPositionByteBufB + changeAt, 'z'.toByte)
+
+    assertEquals(
+      "bufA should mismatch bufB",
+      changeAt,
+      byteBufA.mismatch(byteBufB)
+    )
+
+    assertEquals(
+      "bufA < bufC",
+      matchData.size(),
+      byteBufA.mismatch(byteBufC)
+    )
+
+    assertEquals(
+      "bufC < bufB",
+      matchData.size(),
+      byteBufC.mismatch(byteBufA)
+    )
+  }
+
+  @Test def byteBuffersMismatchLE(): Unit = {
+
+    val byteBufA = ByteBuffer
+      .allocate(matchData.size())
+      .order(ByteOrder.LITTLE_ENDIAN)
+    matchData.forEach(e => byteBufA.put(e.toByte))
+    byteBufA.flip()
+
+    /* Try to trip things up and expose bugs.
+     * Skew byteBufferB so that its position is not zero and it has both
+     *	a matching range and some characters in the buffer after that range.
+     */
+    val byteBufB = ByteBuffer
+      .allocate(fullData.size())
+      .order(ByteOrder.LITTLE_ENDIAN)
+    fullData.forEach(e => byteBufB.put(e.toByte))
+
+    val startPositionByteBufB = 2
+    val endLimitByteBufB = byteBufB.limit() - 3
+    byteBufB
+      .flip()
+      .position(startPositionByteBufB)
+      .limit(endLimitByteBufB)
+
+    val byteBufC = ByteBuffer
+      .allocate(matchData.size() + 1)
+      .order(ByteOrder.LITTLE_ENDIAN)
+    matchData.forEach(e => byteBufC.put(e.toByte))
+    byteBufC.put('M'.toByte)
+    byteBufC.flip()
+
+    assertEquals("bufA should match bufB", -1, byteBufA.mismatch(byteBufB))
+
+    assertEquals("byteBufA position should not move", 0, byteBufA.position())
+    assertEquals(
+      "byteBufB position should not move",
+      startPositionByteBufB,
+      byteBufB.position()
+    )
+
+    val changeAt = 3
+    byteBufB.put(startPositionByteBufB + changeAt, 'z'.toByte)
+
+    assertEquals(
+      "bufA should mismatch bufB",
+      changeAt,
+      byteBufA.mismatch(byteBufB)
+    )
+
+    assertEquals(
+      "bufA < bufC",
+      matchData.size(),
+      byteBufA.mismatch(byteBufC)
+    )
+
+    assertEquals(
+      "bufC < bufB",
+      matchData.size(),
+      byteBufC.mismatch(byteBufA)
+    )
+  }
+
+  @Test def byteBuffersMismatchReadOnly(): Unit = {
+
+    val byteBufA = {
+      val bb = ByteBuffer.allocate(matchData.size())
+      matchData.forEach(e => bb.put(e.toByte))
+      bb.asReadOnlyBuffer()
+    }
+
+    byteBufA.flip()
+
+    val byteBufB = {
+      val bb = ByteBuffer.allocate(matchData.size())
+      matchData.forEach(e => bb.put(e.toByte))
+      bb.asReadOnlyBuffer()
+    }
+
+    byteBufB.flip()
+
+    val mismatchAt = 3
+
+    val byteBufC = {
+      val bb = ByteBuffer.allocate(matchData.size())
+      matchData.forEach(e => bb.put(e.toByte))
+      bb.put(mismatchAt, 'z'.toByte).asReadOnlyBuffer()
+    }
+
+    byteBufC.flip()
+
+    val byteBufD = {
+      val bb = ByteBuffer.allocate(matchData.size() + 1)
+      matchData.forEach(e => bb.put(e.toByte))
+      bb.put('M'.toByte).asReadOnlyBuffer()
+    }
+
+    byteBufD.flip()
+
+    assertEquals("bufA should match bufB", -1, byteBufA.mismatch(byteBufB))
+
+    assertEquals("byteBufA position should not move", 0, byteBufA.position())
+    assertEquals("byteBufB position should not move", 0, byteBufB.position())
+
+    assertEquals(
+      "bufA should mismatch bufC",
+      mismatchAt,
+      byteBufA.mismatch(byteBufC)
+    )
+
+    assertEquals(
+      "bufA < bufD",
+      matchData.size(),
+      byteBufA.mismatch(byteBufD)
+    )
+
+    assertEquals(
+      "bufD < bufA",
+      matchData.size(),
+      byteBufD.mismatch(byteBufA)
+    )
+  }
+
+% for (T, lowercaseT) in variants:
+
+  @Test def ${T}BuffersMismatchNativeOrder(): Unit = {
+
+    val ${lowercaseT}BufA = ${T}Buffer.allocate(matchData.size())
+    matchData.forEach(e => ${lowercaseT}BufA.put(e.to${T}))
+    ${lowercaseT}BufA.flip()
+
+    val ${lowercaseT}BufB = ${T}Buffer.allocate(matchData.size())
+    matchData.forEach(e => ${lowercaseT}BufB.put(e.to${T}))
+    ${lowercaseT}BufB.flip()
+
+    val ${lowercaseT}BufC = ${T}Buffer.allocate(matchData.size() + 1)
+    matchData.forEach(e => ${lowercaseT}BufC.put(e.to${T}))
+    ${lowercaseT}BufC.put('M'.to${T})
+    ${lowercaseT}BufC.flip()
+
+    assertEquals("bufA should match bufB",
+                 -1,
+                 ${lowercaseT}BufA.mismatch(${lowercaseT}BufB))
+
+    assertEquals("${lowercaseT}BufA position should not move",
+                 0,
+                 ${lowercaseT}BufA.position())
+    assertEquals("${lowercaseT}BufB position should not move",
+                 0,
+                 ${lowercaseT}BufB.position())
+
+    val changeAt = 4
+    ${lowercaseT}BufB.put(changeAt, 'z'.to${T})
+
+    assertEquals(
+      "bufA should mismatch bufB",
+      changeAt,
+      ${lowercaseT}BufA.mismatch(${lowercaseT}BufB)
+    )
+
+    assertEquals(
+      "bufA should mismatch bufB",
+      changeAt,
+      ${lowercaseT}BufA.mismatch(${lowercaseT}BufB)
+    )
+
+    assertEquals(
+      "bufA < bufC",
+      matchData.size(),
+      ${lowercaseT}BufA.mismatch(${lowercaseT}BufC)
+    )
+
+    assertEquals(
+      "bufC < bufB",
+      matchData.size(),
+      ${lowercaseT}BufC.mismatch(${lowercaseT}BufA)
+    )
+  }
+
+% end ## for variants
+
+}
