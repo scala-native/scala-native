@@ -8,12 +8,13 @@ scalaNext=scala-next
 unsafe=scala/scalanative/unsafe
 unsigned=scala/scalanative/unsigned
 runtime=scala/scalanative/runtime
-javaNIO=javalib/src/main/scala/java/nio/
+javaNIO=javalib/src/main/scala/java/nio
 javaUtil=javalib/src/main/scala/java/util
 
 sharedTest=unit-tests/shared/src/test
 
 javalibTestJDK9=${sharedTest}/require-jdk9/org/scalanative/testsuite/javalib
+javalibTestJDK11=${sharedTest}/require-jdk11/org/scalanative/testsuite/javalib
 
 function gyb() {
   file=$1
@@ -56,3 +57,4 @@ gyb unit-tests/native/src/test/scala/org/scalanative/testsuite/niobuffer/ByteBuf
 gyb unit-tests/shared/src/test/scala/org/scalanative/testsuite/javalib/nio/BufferAdapter.scala.template.gyb
 
 gyb ${javalibTestJDK9}/util/ArraysOfAnyValTestOnJDK9.scala.gyb
+gyb ${javalibTestJDK11}/nio/BuffersMismatchTestOnJDK11.scala.gyb
