@@ -173,12 +173,6 @@ class StringTest {
     assertTrue(!("SEst".equalsIgnoreCase("TEss")))
   }
 
-  @Test def regionMatches(): Unit = {
-    assertTrue("This is a test".regionMatches(10, "test", 0, 4))
-    assertTrue(!("This is a test".regionMatches(10, "TEST", 0, 4)))
-    assertTrue("This is a test".regionMatches(0, "This", 0, 4))
-  }
-
   @Test def replaceChar(): Unit = {
     assertTrue("test".replace('t', 'p').equals("pesp"))
     assertTrue("Test".replace('t', 'p').equals("Tesp"))
@@ -1061,6 +1055,100 @@ class StringTest {
       expected,
       joined
     )
+  }
+
+  // Ported from Scala.js commit: 37df9c2ea dated: 2025-06-30
+  @Test def startsWith(): Unit = {
+    assertTrue("Scala.js".startsWith("Scala"))
+    assertTrue("Scala.js".startsWith("Scala.js"))
+    assertFalse("Scala.js".startsWith("scala"))
+    assertTrue("ananas".startsWith("an"))
+
+    assertThrows(classOf[NullPointerException], "ananas".startsWith(null))
+  }
+
+  // Ported from Scala.js commit: 37df9c2ea dated: 2025-06-30
+  @Test def startsWithOffset(): Unit = {
+    assertTrue("Scala.js".startsWith("ala", 2))
+    assertTrue("Scala.js".startsWith("Scal", 0))
+
+    assertTrue("Scala.js".startsWith("", 3))
+    assertTrue("Scala.js".startsWith("", 0))
+    assertTrue("Scala.js".startsWith("", 8))
+
+    assertFalse("Scala.js".startsWith("ala", 0))
+    assertFalse("Scala.js".startsWith("Scal", 2))
+
+    assertFalse("Scala.js".startsWith("Sc", -1))
+    assertFalse("Scala.js".startsWith(".js", 10))
+    assertFalse("Scala.js".startsWith("", -1))
+    assertFalse("Scala.js".startsWith("", 9))
+
+    assertThrows(classOf[NullPointerException], "Scala.js".startsWith(null, 2))
+  }
+
+  // Ported from Scala.js commit: 37df9c2ea dated: 2025-06-30
+  // scalafmt: { maxColumn = 100 }
+  @Test def regionMatches(): Unit = {
+    // original Scala Native tests
+    assertTrue("This is a test".regionMatches(10, "test", 0, 4))
+    assertTrue(!("This is a test".regionMatches(10, "TEST", 0, 4)))
+    assertTrue("This is a test".regionMatches(0, "This", 0, 4))
+
+    /* Ported from
+     * https://github.com/gwtproject/gwt/blob/master/user/test/com/google/gwt/emultest/java/lang/StringTest.java
+     */
+    val test = "abcdef"
+
+    assertTrue(test.regionMatches(1, "bcd", 0, 3))
+    assertTrue(test.regionMatches(1, "bcdx", 0, 3))
+    assertFalse(test.regionMatches(1, "bcdx", 0, 4))
+    assertFalse(test.regionMatches(1, "bcdx", 1, 3))
+    assertTrue(test.regionMatches(true, 0, "XAbCd", 1, 4))
+    assertTrue(test.regionMatches(true, 1, "BcD", 0, 3))
+    assertTrue(test.regionMatches(true, 1, "bCdx", 0, 3))
+    assertFalse(test.regionMatches(true, 1, "bCdx", 0, 4))
+    assertFalse(test.regionMatches(true, 1, "bCdx", 1, 3))
+    assertTrue(test.regionMatches(true, 0, "xaBcd", 1, 4))
+
+    val testU = test.toUpperCase()
+    assertTrue(testU.regionMatches(true, 0, "XAbCd", 1, 4))
+    assertTrue(testU.regionMatches(true, 1, "BcD", 0, 3))
+    assertTrue(testU.regionMatches(true, 1, "bCdx", 0, 3))
+    assertFalse(testU.regionMatches(true, 1, "bCdx", 0, 4))
+    assertFalse(testU.regionMatches(true, 1, "bCdx", 1, 3))
+    assertTrue(testU.regionMatches(true, 0, "xaBcd", 1, 4))
+
+    /* If len is negative, you must return true in some cases. See
+     * http://docs.oracle.com/javase/8/docs/api/java/lang/String.html#regionMatches-boolean-int-java.lang.String-int-int-
+     */
+
+    // four cases that are false, irrelevant of sign of len nor the value of the other string
+    assertFalse(test.regionMatches(-1, test, 0, -4))
+    assertFalse(test.regionMatches(0, test, -1, -4))
+    assertFalse(test.regionMatches(100, test, 0, -4))
+    assertFalse(test.regionMatches(0, test, 100, -4))
+
+    // offset + len > length
+    assertFalse(test.regionMatches(3, "defg", 0, 4)) // on receiver string
+    assertFalse(test.regionMatches(3, "abcde", 3, 3)) // on other string
+    assertFalse(test.regionMatches(Int.MaxValue, "ab", 0, 1)) // #4878 overflow, large toffset
+    assertFalse(test.regionMatches(0, "ab", Int.MaxValue, 1)) // #4878 overflow, large ooffset
+    assertFalse(test.regionMatches(1, "ab", 1, Int.MaxValue)) // #4878 overflow, large len
+    assertFalse(test.regionMatches(true, 3, "defg", 0, 4)) // on receiver string
+    assertFalse(test.regionMatches(true, 3, "abcde", 3, 3)) // on other string
+    assertFalse(test.regionMatches(true, Int.MaxValue, "ab", 0, 1)) // #4878 overflow, large toffset
+    assertFalse(test.regionMatches(true, 0, "ab", Int.MaxValue, 1)) // #4878 overflow, large ooffset
+    assertFalse(test.regionMatches(true, 1, "ab", 1, Int.MaxValue)) // #4878 overflow, large len
+
+    // the strange cases that are true
+    assertTrue(test.regionMatches(0, test, 0, -4))
+    assertTrue(test.regionMatches(1, "bcdx", 0, -4))
+    assertTrue(test.regionMatches(1, "bcdx", 1, -3))
+    assertTrue(test.regionMatches(true, 1, "bCdx", 0, -4))
+    assertTrue(test.regionMatches(true, 1, "bCdx", 1, -3))
+    assertTrue(testU.regionMatches(true, 1, "bCdx", 0, -4))
+    assertTrue(testU.regionMatches(true, 1, "bCdx", 1, -3))
   }
 
 }
