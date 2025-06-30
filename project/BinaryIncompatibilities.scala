@@ -53,7 +53,9 @@ object BinaryIncompatibilities {
     exclude[Problem]("scala.scalanative.runtime.unwind.*"),
   )
   final val CLib: Filters = Nil
-  final val PosixLib: Filters = Seq.empty
+  final val PosixLib: Filters = Seq(
+    exclude[Problem]("scala.scalanative.posix.termios*")
+  )
   final val WindowsLib: Filters = Nil
 
   final val TestRunner: Filters = Nil
