@@ -189,9 +189,6 @@ final class _String()
     }
   }
 
-  private def compareValue(ch: Char): Char =
-    Character.toLowerCase(Character.toUpperCase(ch))
-
   private def toLowerCase(ch: Char): Char =
     Character.toLowerCase(ch)
 
@@ -216,23 +213,19 @@ final class _String()
     count - string.count
   }
 
-  def compareToIgnoreCase(string: _String): Int = {
+  def compareToIgnoreCase(str: _String): Int = {
     var o1 = offset
-    var o2 = string.offset
-    val end =
-      if (count < string.count) offset + count
-      else offset + string.count
+    var o2 = str.offset
+    val end = Math.min(offset + count, offset + str.count)
     while (o1 < end) {
-      val c1: Char = compareValue(value(o1))
-      val c2: Char = compareValue(string.value(o2))
+      val cmp = caseFold(this.charAt(o1)) - caseFold(str.charAt(o2))
+      if (cmp != 0) {
+        return cmp
+      }
       o1 += 1
       o2 += 1
-      val result: Int = c1 - c2
-      if (result != 0) {
-        return result
-      }
     }
-    count - string.count
+    count - str.count
   }
 
   def concat(string: _String): _String = {
@@ -288,27 +281,33 @@ final class _String()
       false
   }
 
-  def equalsIgnoreCase(string: _String): scala.Boolean = {
-    if (string == this) {
-      true
-    } else if (string == null || count != string.count) {
+  // Ported from Scala.js commit: 37df9c2ea dated: 2025-06-30
+  @inline
+  def equalsIgnoreCase(anotherString: String): scala.Boolean = {
+    val len = length()
+    if (anotherString == null || anotherString.length() != len) {
       false
     } else {
-      var o1 = offset
-      var o2 = string.offset
-      while (o1 < offset + count) {
-        val c1 = value(o1)
-        val c2 = string.value(o2)
-        o1 += 1
-        o2 += 1
-        if (c1 != c2 && toUpperCase(c1) != toUpperCase(c2) &&
-            toLowerCase(c1) != toLowerCase(c2)) {
+      var i = 0
+      while (i != len) {
+        if (caseFold(this.charAt(i)) != caseFold(anotherString.charAt(i)))
           return false
-        }
+        i += 1
       }
       true
     }
   }
+
+  /** Performs case folding of a single character for use by `equalsIgnoreCase`
+   *  and `compareToIgnoreCase`.
+   *
+   *  This implementation respects the specification of those two methods,
+   *  although that behavior does not generally conform to Unicode Case Folding.
+   *
+   *  Ported from Scala.js commit: 37df9c2ea dated: 2025-06-30
+   */
+  @inline private def caseFold(c: Char): Char =
+    Character.toLowerCase(Character.toUpperCase(c))
 
   /** @since Java 12 */
   def formatted(args: Array[AnyRef]): String = {
@@ -624,7 +623,7 @@ final class _String()
     }
   }
 
-  def length(): Int = count
+  @inline def length(): Int = count
 
   private class _StringLineReader(
       src: Array[Char],
@@ -699,72 +698,38 @@ final class _String()
     jus.StreamSupport.stream(spliter, parallel = false)
   }
 
+  /* Both regionMatches ported from
+   * https://github.com/gwtproject/gwt/blob/master/user/super/com/google/gwt/emul/java/lang/String.java
+   */
   def regionMatches(
-      thisStart: Int,
-      string: _String,
-      start: Int,
-      length: Int
+      ignoreCase: scala.Boolean,
+      toffset: Int,
+      other: _String,
+      ooffset: Int,
+      len: Int
   ): scala.Boolean = {
-    if (string.count - start < length || start < 0) {
+    if (other == null) {
+      throw new NullPointerException()
+    } else if (toffset < 0 || ooffset < 0 || len > this.length() - toffset ||
+        len > other.length() - ooffset) {
       false
-    } else if (thisStart < 0 || count - thisStart < length) {
-      false
-    } else if (length <= 0) {
+    } else if (len <= 0) {
       true
     } else {
-      val o1 = offset + thisStart
-      val o2 = string.offset + start
-
-      var i = 0
-      while (i < length) {
-        if (value(o1 + i) != string.value(o2 + i)) {
-          return false
-        }
-        i += 1
-      }
-
-      true
+      val left = this.substring(toffset, toffset + len)
+      val right = other.substring(ooffset, ooffset + len)
+      if (ignoreCase) left.equalsIgnoreCase(right) else left == right
     }
   }
 
+  @inline
   def regionMatches(
-      ignoreCase: scala.Boolean,
-      _thisStart: Int,
-      string: _String,
-      _start: Int,
-      length: Int
+      toffset: Int,
+      other: _String,
+      ooffset: Int,
+      len: Int
   ): scala.Boolean = {
-    var thisStart = _thisStart
-    var start = _start
-    if (!ignoreCase) {
-      regionMatches(thisStart, string, start, length)
-    } else if (string != null) {
-      if (thisStart < 0 || length > count - thisStart) {
-        false
-      } else if (start < 0 || length > string.count - start) {
-        false
-      } else {
-        thisStart += offset
-        start += string.offset
-        val end = thisStart + length
-        val target = string.value
-
-        while (thisStart < end) {
-          val c1 = value(thisStart)
-          val c2 = target(start)
-          thisStart += 1
-          start += 1
-          if (c1 != c2 && toUpperCase(c1) != toUpperCase(c2) &&
-              toLowerCase(c1) != toLowerCase(c2)) {
-            return false
-          }
-        }
-
-        true
-      }
-    } else {
-      throw new NullPointerException()
-    }
+    regionMatches(false, toffset, other, ooffset, len)
   }
 
   def repeat(count: Int): String = {
