@@ -7,7 +7,7 @@ import scala.scalanative.posix.sys.types
 /** POSIX string.h for Scala
  *
  *  The Open Group Base Specifications
- *  [[https://pubs.opengroup.org/onlinepubs/9699919799 Issue 7, 2018]] edition.
+ *  [[https://pubs.opengroup.org/onlinepubs/9799919799 Issue 8, 2024]] edition.
  *
  *  A method with a CX comment indicates it is a POSIX extension to the ISO/IEEE
  *  C standard.
@@ -15,6 +15,7 @@ import scala.scalanative.posix.sys.types
  *  A method with an XSI comment indicates it is defined in extended POSIX
  *  X/Open System Interfaces, not base POSIX.
  */
+
 @extern object string extends string
 
 @extern trait string extends libc.string {
@@ -31,16 +32,22 @@ import scala.scalanative.posix.sys.types
   def memccpy(dest: CVoidPtr, src: CVoidPtr, c: CInt, n: size_t): CVoidPtr =
     extern
 
+  /** CX - The Open Group Base Specifications Issue 8 */
+  def memmem(
+      haystack: CVoidPtr,
+      haystacklen: CInt,
+      needle: CVoidPtr,
+      needlelen: CInt
+  ): CVoidPtr = extern
+
   /** CX */
   def stpcpy(dest: CString, src: CString): CVoidPtr = extern
 
   /** CX */
   def stpncpy(dest: CString, src: CString, n: size_t): CVoidPtr = extern
 
-  def stroll(s1: CString, s2: CString): CInt = extern
-
   /** CX */
-  def stroll_l(s1: CString, s2: CString, locale: locale_t): CInt = extern
+  def strcoll_l(s1: CString, s2: CString, locale: locale_t): CInt = extern
 
   /** CX */
   def strdup(s: CString): CString = extern
@@ -51,7 +58,11 @@ import scala.scalanative.posix.sys.types
   /** CX */
   def strerror_r(errnum: CInt, buf: CString, buflen: size_t): CInt = extern
 
-  def strcpy(dest: CString, src: CString, n: size_t): CString = extern
+  /** CX - The Open Group Base Specifications Issue 8 */
+  def strlcat(dst: CString, src: CString, dstsize: size_t): CInt = extern
+
+  /** CX - The Open Group Base Specifications Issue 8 */
+  def strlcpy(dst: CString, src: CString, dstsize: size_t): CInt = extern
 
   /** CX */
   def strndup(s: CString, n: size_t): CString = extern
