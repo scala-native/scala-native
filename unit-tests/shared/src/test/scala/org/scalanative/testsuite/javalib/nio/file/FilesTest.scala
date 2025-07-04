@@ -2179,6 +2179,27 @@ class FilesTest {
     }
   }
 
+  // Issue I4384, Part1
+  @Test def filesReadAllBytesEmptyFile(): Unit = {
+    /* Analysis of the reproducer code for the first reported defect
+     * in SN Issue 4348  shows that the root cause is that the
+     * file corresponding to the given path is empty and not that
+     * particularly that it is a special file.
+     * The unix path below uses '/dev/null' from the Issue to keep this
+     * test close to the reported issue.
+     */
+
+    val emptyDeviceName =
+      if (!isWindows) "/dev/null"
+      else "NUL"
+
+    val emptyPath = Paths.get(emptyDeviceName)
+
+    val bytesRead = Files.readAllBytes(emptyPath)
+
+    assertEquals("bytes read", 0, bytesRead.size)
+  }
+
   @Test def filesReadAllBytesReadsAllBytes(): Unit = {
     withTemporaryDirectory { dirFile =>
       val dir = dirFile.toPath()

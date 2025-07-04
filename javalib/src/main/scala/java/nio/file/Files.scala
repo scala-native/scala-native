@@ -1128,52 +1128,60 @@ object Files {
     if (!pathSize.isValidInt) {
       throw new OutOfMemoryError("Required array size too large")
     }
-    val len = pathSize.toInt
-    val bytes = scala.scalanative.runtime.ByteArray.alloc(len)
 
-    if (isWindows) {
-      val bytesRead = stackalloc[DWord]()
-
-      withFileOpen(
-        path.toString,
-        access = FILE_GENERIC_READ,
-        shareMode = FILE_SHARE_READ
-      ) { handle =>
-        if (!FileApi.ReadFile(
-              handle,
-              bytes.at(0),
-              pathSize.toUInt,
-              bytesRead,
-              null
-            )) {
-          throw WindowsException.onPath(path.toString())
-        }
-      }
+    if (pathSize == 0L) { // SN Issue #I4384, part 1.
+      Array.empty[Byte]
     } else {
-      errno = 0
-      val pathCString = toCString(path.toString)
-      val fd = fcntl.open(pathCString, fcntl.O_RDONLY, 0.toUInt)
+      val len = pathSize.toInt
+      val bytes = scala.scalanative.runtime.ByteArray.alloc(len)
 
-      if (fd == -1) {
-        val msg = fromCString(string.strerror(errno))
-        throw new IOException(s"error opening path '${path}': ${msg}")
-      }
+      if (isWindows) {
+        val bytesRead = stackalloc[DWord]()
 
-      try {
-        var offset = 0
-        var read = 0
-        while ({
-          read = unistd.read(fd, bytes.at(offset), (len - offset).toUInt);
-          read != -1 && (offset + read) < len
-        }) {
-          offset += read
+        withFileOpen(
+          path.toString,
+          access = FILE_GENERIC_READ,
+          shareMode = FILE_SHARE_READ
+        ) { handle =>
+          if (!FileApi.ReadFile(
+                handle,
+                bytes.at(0),
+                pathSize.toUInt,
+                bytesRead,
+                null
+              )) {
+            throw WindowsException.onPath(path.toString())
+          }
         }
-        if (read == -1) throw UnixException(path.toString, errno)
-      } finally {
-        unistd.close(fd)
+      } else {
+        errno = 0
+        val pathCString = toCString(path.toString)
+        val fd = fcntl.open(pathCString, fcntl.O_RDONLY, 0.toUInt)
+
+        if (fd == -1) {
+          val msg = fromCString(string.strerror(errno))
+          throw new IOException(s"error opening path '${path}': ${msg}")
+        }
+
+        try {
+          var offset = 0
+          var read = 0
+          while ({
+            read = unistd.read(fd, bytes.at(offset), (len - offset).toUInt);
+            read != -1 && (offset + read) < len
+          }) {
+            offset += read
+          }
+
+          if (read == -1)
+            throw UnixException(path.toString, errno)
+        } finally {
+          unistd.close(fd)
+        }
       }
+
+      bytes.asInstanceOf[Array[Byte]]
     }
-    bytes.asInstanceOf[Array[Byte]]
   }
 
   def readAllLines(path: Path): List[String] =
