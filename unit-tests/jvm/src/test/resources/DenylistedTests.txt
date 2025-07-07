@@ -6,7 +6,6 @@ org/scalanative/testsuite/javalib/lang/CharacterTest.scala
 org/scalanative/testsuite/javalib/lang/IntegerTest.scala
 org/scalanative/testsuite/javalib/lang/ShortTest.scala
 org/scalanative/testsuite/javalib/lang/LongTest.scala
-org/scalanative/testsuite/javalib/lang/StringTest.scala
 
 org/scalanative/testsuite/javalib/net/ServerSocketTest.scala
 

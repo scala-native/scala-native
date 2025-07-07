@@ -9,6 +9,7 @@ import org.junit.Test
 import org.junit.Assert._
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
+import org.scalanative.testsuite.utils.Platform.executingInJVM
 
 class StringTest {
 
@@ -101,12 +102,12 @@ class StringTest {
     val data = "of human events"
 
     assertThrows(
-      classOf[java.lang.StringIndexOutOfBoundsException],
+      classOf[java.lang.IndexOutOfBoundsException],
       data.codePointBefore(-1)
     )
 
     assertThrows(
-      classOf[java.lang.StringIndexOutOfBoundsException],
+      classOf[java.lang.IndexOutOfBoundsException],
       // Careful here, +1 is valid +2 is not
       data.codePointBefore(data.length + 2)
     )
@@ -117,12 +118,12 @@ class StringTest {
     val data = "it becomes necessary"
 
     assertThrows(
-      classOf[java.lang.StringIndexOutOfBoundsException],
+      classOf[java.lang.IndexOutOfBoundsException],
       data.codePointCount(-1, data.length)
     )
 
     assertThrows(
-      classOf[java.lang.StringIndexOutOfBoundsException],
+      classOf[java.lang.IndexOutOfBoundsException],
       data.codePointCount(0, data.length + 1)
     )
   }
@@ -645,7 +646,9 @@ class StringTest {
      */
     assertEquals("\u0345σ", "\u0345Σ".toLowerCase())
     assertEquals("\u03B1\u0345ς", "\u0391\u0345Σ".toLowerCase())
-    assertEquals("\u03B1\u0345ς\u0345", "\u0391\u0345Σ\u0345".toLowerCase())
+    if (!executingInJVM)
+      assertEquals("\u03B1\u0345ς\u0345", "\u0391\u0345Σ\u0345".toLowerCase())
+
     assertEquals(
       "\u03B1\u0345σ\u0345\u03B1",
       "\u0391\u0345Σ\u0345\u0391".toLowerCase()
