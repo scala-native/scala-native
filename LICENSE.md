@@ -1892,3 +1892,8 @@ Sections of the work carry alternate permissive licenses:
        The terms of that license requires this notice that the code
        from that paper has been altered by being translated to Scala.
 ```
+
+# License notice for Android Open Source Project  memmem() implementation.
+
+As required by the license, the full text of the license is included
+in the file `scalanative_memmem.c`.

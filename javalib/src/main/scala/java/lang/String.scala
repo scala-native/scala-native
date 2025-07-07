@@ -425,7 +425,9 @@ final class _String()
   }
 
   /* By convention, caller has validated arguments.
-   * See also notes above & in method indexOfImpl(str, fromIndex, toIndex).
+   * See also notes above indexOfImpl(str, fromIndex, toIndex).
+   *
+   * This is a good candidate for someday using memmem() or memchr().
    */
   private def indexOfImpl(ch: Int, beginIndex: Int, endIndex: Int): Int = {
     var start = beginIndex
@@ -468,67 +470,40 @@ final class _String()
     indexOfImpl(ch, beginIndex, endIndex)
   }
 
-  /* Development Notes:
-   *
-   * 1) This method uses he "naive" algorithm, which was state of the art
-   *    circa 1974.  It's performance is probably acceptable when the
-   *    "haystack is short-to-moderate and "the "needle" is tiny
-   *    (10 characters?) . Probably faster than regex in that case.
-   *
-   *    The algorithm is known to get drastically slower with increasing
-   *    needle size.
-   *
-   *    Over the past half century, an extensive literature on the this
-   *    specific topic of sub-string matching has evolved.
-   *    A number of contemporary algorithms use the full Unicode alphabet
-   *    and have better performance for moderate to huge data.  Even the
-   *    venerable, but proven, Boyer-Moore algorithm would be faster.
-   *
-   * 2) When Arrays.mismatch(Array[Char]) becomes available, consider
-   *    re-writing this section to use that method.  That way, resource
-   *    can be spent on optimizing common code rather than N duplicates,
-   *    each with their own essential quirks & time honored bugs.
+  /* By convention, caller has validated index arguments so that slice
+   * (endIndex - beginIndex) <= this.count.
    */
-
-  // By convention, caller has validated arguments.
   private def indexOfImpl(str: _String, beginIndex: Int, endIndex: Int): Int = {
     val thatCount = str.count
+    val haystackCharCount = (endIndex - beginIndex)
 
     if (thatCount == 0) {
       beginIndex
-    } else if (thatCount + beginIndex > endIndex) {
-      -1 // also catches if 'this' is a zero length null _String, a.k.a ""
+    } else if (beginIndex + thatCount > endIndex) {
+      // (needleLen > haystack slice length) || slice is 0 length, a.k.a ""
+      -1
     } else {
-      val needle = str.value
-      val needleOffset = str.offset
-      val needleFirstChar = needle(needleOffset)
-      val needleEnd = needleOffset + thatCount
 
-      var foundAt = -1 // not found until shown otherwise
+      val haystackStartPtr =
+        this.value.at(offset + beginIndex).asInstanceOf[Ptr[Byte]]
 
-      var done = false
-      var cursor = beginIndex
+      val foundAt = MemmemImpl
+        .memmem(
+          haystackStartPtr,
+          (endIndex - beginIndex) * 2,
+          str.value.at(str.offset),
+          str.count * 2
+        )
+        .asInstanceOf[Ptr[Byte]]
 
-      while ((!done) && (cursor < endIndex)) {
-        val i = indexOfImpl(needleFirstChar, cursor, endIndex)
+      if (foundAt == null) -1
+      else {
+        val offsetCharCount =
+          ((foundAt.toLong - haystackStartPtr.toLong) >> 1).toInt
 
-        if ((i == -1) || (thatCount + i > endIndex)) {
-          done = true
-        } else {
-          var o1 = offset + i
-          var o2 = needleOffset
-          while (({ o2 += 1; o2 } < needleEnd) &&
-              (value({ o1 += 1; o1 }) == needle(o2))) ()
-          if (o2 < needleEnd) {
-            cursor = i + 1 // no match
-          } else {
-            foundAt = i
-            done = true
-          }
-        }
+        // Make relative to public start of 'this': (this.value + offset)
+        beginIndex + offsetCharCount
       }
-
-      foundAt
     }
   }
 
