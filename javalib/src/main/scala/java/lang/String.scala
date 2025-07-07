@@ -474,36 +474,54 @@ final class _String()
    * (endIndex - beginIndex) <= this.count.
    */
   private def indexOfImpl(str: _String, beginIndex: Int, endIndex: Int): Int = {
-    val thatCount = str.count
-    val haystackCharCount = (endIndex - beginIndex)
+    val needleLen = str.count
 
-    if (thatCount == 0) {
+    if (needleLen == 0) {
       beginIndex
-    } else if (beginIndex + thatCount > endIndex) {
-      // (needleLen > haystack slice length) || slice is 0 length, a.k.a ""
+    } else if ((beginIndex + needleLen) > endIndex) {
+      /* needleLen is now known to be >= 1.
+       * If needle is longer than haystack slice, it will never match.
+       * Also filter 'this' slice being a zero length empty _String, a.k.a ""
+       */
       -1
     } else {
-
       val haystackStartPtr =
         this.value.at(offset + beginIndex).asInstanceOf[Ptr[Byte]]
 
-      val foundAt = MemmemImpl
-        .memmem(
-          haystackStartPtr,
-          (endIndex - beginIndex) * 2,
-          str.value.at(str.offset),
-          str.count * 2
-        )
-        .asInstanceOf[Ptr[Byte]]
+      val haystackEndPtr =
+        haystackStartPtr + ((endIndex - beginIndex) * 2) // First excluded byte
 
-      if (foundAt == null) -1
-      else {
-        val offsetCharCount =
-          ((foundAt.toLong - haystackStartPtr.toLong) >> 1).toInt
+      var result = -1
 
-        // Make relative to public start of 'this': (this.value + offset)
-        beginIndex + offsetCharCount
+      var cursor = haystackStartPtr
+
+      while (cursor.toLong < haystackEndPtr.toLong) {
+        val nHaystackBytesRemaining = (haystackEndPtr - cursor).toInt
+
+        val foundAt = MemmemImpl
+          .memmem(
+            cursor,
+            nHaystackBytesRemaining,
+            str.value.at(str.offset),
+            str.count * 2
+          )
+          .asInstanceOf[Ptr[Byte]]
+
+        if (foundAt == null) {
+          cursor = haystackEndPtr
+        } else if ((foundAt.toInt & 0x1) == 1) { // found on odd bit boundary
+          cursor = foundAt + 1 // skip to next 16 bit Character boundary
+        } else { // found on even bit boundary
+          cursor = haystackEndPtr
+          val foundOffsetCharCount =
+            ((foundAt.toLong - haystackStartPtr.toLong) >> 1).toInt
+
+          // Make relative to public start of 'this': (this.value + offset)
+          result = beginIndex + foundOffsetCharCount
+        }
       }
+
+      result
     }
   }
 
