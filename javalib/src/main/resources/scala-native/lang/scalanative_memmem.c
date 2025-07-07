@@ -1,38 +1,13 @@
-#if 1 // FIXME - 2025-07-06 07:39 -0400
-// #if true || defined(SCALANATIVE_COMPILE_ALWAYS) ||
-// defined(__SCALANATIVE_POSIX_STDIO)
-#include <string.h>
-
-#include <stdio.h> // FIXME
-
-// To force known presence of memcmp(), define on compilation command.
-#if !(defined(__SCALANATIVE_HAVE_OS_MEMMEM))
-#if defined(__unix__) || defined(__unix) || defined(unix)
-#define __SCALANATIVE_HAVE_OS_MEMMEM 1 // Should allow FreeBSD & NetBSD
-#elif (defined(__APPLE__) && defined(__MACH__))
-#// define __SCALANATIVE_HAVE_OS_MEMMEM 1 // FIXME
-#define __SCALANATIVE_HAVE_OS_MEMMEM 1 // FIXME
-#endif
-#endif // !(defined(__SCALANATIVE_HAVE_OS_MEMMEM)
-
-#if (defined(__SCALANATIVE_HAVE_OS_MEMMEM))
-void *scalanative_memmem(const void *haystack, size_t n, const void *needle, si\
-ze_t m) {
-  /* // Use output here carefully; it breaks ProcessInheritTest.
-    printf("\n\n"); // FIXME
-    printf("\n\n>>> Using libc memmem\n\n"); // FIXME
-    printf("\n\n"); // FIXME
-  */
-    return memmem(haystack, n, needle, m);
-}
-
-#else  // Windows & unknown/unproven operating systems.
+#if defined(SCALANATIVE_COMPILE_ALWAYS) || defined(__SCALANATIVE_JAVALIB_MEMMEM)
 
 /* URL: https://android.googlesource.com/
  *        platform/bionic/+/ics-mr0/libc/string/memmem.c
  *
- * Modified slightly for Scala Native. Can not rely upon compiler having
- * __builtin_expect() in the application build environment.
+ * Modified slightly for Scala Native. At least:
+ *
+ *   - Use Open Group Issue 8 memmem() if available.
+ *
+ *   - Do not rely upon application build compiler having __builtin_expect().
  */
 
 /*
@@ -68,9 +43,16 @@ ze_t m) {
  * http://www-igm.univ-mlv.fr/~lecroq/string/
  */
 
+#include <string.h>
+
 void *scalanative_memmem(const void *haystack, size_t n, const void *needle,
                          size_t m) {
-  //    printf("\n\n>>> Using Android memmem\n\n"); // FIXME
+
+#if (_POSIX_VERSION >= 202405L) // Open Group Base Specifications Issue 8
+
+    return memmem(haystack, n, needle, m);
+
+#else // Windows & other "not Issue 8" operating systems.
 
     if (m > n || !m || !n)
         return NULL;
@@ -97,7 +79,8 @@ void *scalanative_memmem(const void *haystack, size_t n, const void *needle,
         return memchr(haystack, ((unsigned char *)needle)[0], n);
     }
     return NULL;
+
+#endif // Windows & other "not Issue 8" operating systems.
 }
-#endif // !defined(__SCALANATIVE_HAVE_OS_MEMMEM)
 
 #endif
