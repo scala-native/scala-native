@@ -826,7 +826,10 @@ class IssuesTest {
           prefix: XString,
           offset: Int,
           count: Int
-      ) = true
+      ) = {
+        assert(count > 0) // ensure prefix.count would not be removed
+        prefix == null
+      }
     }
     // Ensure links in release mode
     assertThrows(
