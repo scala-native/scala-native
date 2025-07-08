@@ -811,6 +811,29 @@ class IssuesTest {
     }
     new R().run()
   }
+
+  @Test def issue4387(): Unit = {
+    class XString {
+      private var count: Int = 0
+      def startsWith(prefix: XString, start: Int): scala.Boolean =
+        regionMatches(start, prefix, 0, prefix.count)
+
+      def startsWith(prefix: XString): scala.Boolean =
+        startsWith(prefix, 0)
+
+      @noinline def regionMatches(
+          start: Int,
+          prefix: XString,
+          offset: Int,
+          count: Int
+      ) = true
+    }
+    // Ensure links in release mode
+    assertThrows(
+      classOf[NullPointerException],
+      () => new XString().startsWith(null)
+    )
+  }
 }
 
 package issue1090 {
