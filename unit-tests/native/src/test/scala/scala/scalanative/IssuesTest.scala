@@ -834,7 +834,7 @@ class IssuesTest {
     // Ensure links in release mode
     assertThrows(
       classOf[NullPointerException],
-      () => new XString().startsWith(null)
+      new XString().startsWith(null)
     )
   }
 }
