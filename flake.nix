@@ -50,7 +50,10 @@
                   stdenv = pkgs.llvmPackages.stdenv;
 
                   languages = {
-                    scala.enable = true;
+                    scala = {
+                      enable = true;
+                      sbt.enable = true;
+                    };
                     c.enable = true;
                     java.enable = true;
                   };
