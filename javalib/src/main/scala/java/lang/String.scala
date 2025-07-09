@@ -185,7 +185,9 @@ final class _String()
     if (0 <= index && index < count) {
       value(offset + index)
     } else {
-      throw new StringIndexOutOfBoundsException()
+      throw new StringIndexOutOfBoundsException(
+        s"String index out of range: $index"
+      )
     }
   }
 

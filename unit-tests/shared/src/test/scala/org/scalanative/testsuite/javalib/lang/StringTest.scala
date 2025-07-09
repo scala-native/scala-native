@@ -197,9 +197,18 @@ class StringTest {
   @Test def equalsIgnoreCase(): Unit = {
     assertTrue("test".equalsIgnoreCase("TEST"))
     assertTrue("TEst".equalsIgnoreCase("teST"))
-    assertTrue(!("SEst".equalsIgnoreCase("TEss")))
+    assertFalse("SEst".equalsIgnoreCase("TEss"))
 
     // Scala Native substring based tests
+    assertTrue("test".equalsIgnoreCase("NativeTEST".substring(6)))
+    assertTrue("TEst".equalsIgnoreCase("NativeteST".substring(6)))
+    assertFalse("SEst".equalsIgnoreCase("NativeTEss".substring(6)))
+    assertTrue("NativeTEST".substring(6).equalsIgnoreCase("test"))
+    assertTrue("NativeteST".substring(6).equalsIgnoreCase("TEst"))
+    assertFalse("NativeTEss".substring(6).equalsIgnoreCase("SEst"))
+    assertTrue("NativeTESTaaa".substring(6, 10).equalsIgnoreCase("test"))
+    assertTrue("NativeteSTaaa".substring(6, 10).equalsIgnoreCase("TEst"))
+    assertFalse("NativeTEssaaa".substring(6, 10).equalsIgnoreCase("SEst"))
 
     // Ported from Scala.js commit: 37df9c2ea dated: 2025-06-30
     assertTrue("Scala.JS".equalsIgnoreCase("Scala.js"))
@@ -1050,6 +1059,51 @@ class StringTest {
       'f',
       str.charAt(0)
     )
+  }
+
+  // Ported from Scala.js commit: 37df9c2ea dated: 2025-06-30
+  @Test def charAt(): Unit = {
+    @noinline def testNoInline(expected: Char, s: String, i: Int): Unit =
+      assertEquals(expected, s.charAt(i))
+
+    @inline def test(expected: Char, s: String, i: Int): Unit = {
+      testNoInline(expected, s, i)
+      assertEquals(expected, s.charAt(i))
+    }
+
+    test('S', "Scala.js", 0)
+    test('.', "Scala.js", 5)
+    test('s', "Scala.js", 7)
+    test('o', "foo", 1)
+
+    // Scala Native added
+    test('a', "Scala.js".substring(4), 0)
+    test('.', "Scala.js".substring(3), 2)
+    test('s', "Scala.js".substring(5, 8), 2)
+  }
+
+  // Ported from Scala.js commit: 37df9c2ea dated: 2025-06-30
+  @Test def charAtIndexOutOfBounds(): Unit = {
+
+    def test(s: String, i: Int): Unit = {
+      val e =
+        assertThrows(classOf[StringIndexOutOfBoundsException], s.charAt(i))
+      assertTrue(e.getMessage(), e.getMessage().contains(i.toString()))
+    }
+
+    test("foo", -1)
+    test("foo", -10000)
+    test("foo", Int.MinValue)
+    test("foo", 3)
+    test("foo", 10000)
+    test("foo", Int.MaxValue)
+
+    test("", -1)
+    test("", 0)
+    test("", 1)
+
+    // Test non-constant-folding
+    assertThrows(classOf[StringIndexOutOfBoundsException], "foo".charAt(4))
   }
 
   /* selected Static methods
