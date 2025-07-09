@@ -479,6 +479,7 @@ private[scalanative] final class Check(implicit
   ): Unit = {
 
     obj.ty match {
+      case nir.Type.Null => ok
       case ScopeRef(scope) =>
         scope.implementors.foreach { cls =>
           val field = cls.fields.collectFirst {
