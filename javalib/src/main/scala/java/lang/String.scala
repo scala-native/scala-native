@@ -214,16 +214,14 @@ final class _String()
   }
 
   def compareToIgnoreCase(str: _String): Int = {
-    var o1 = offset
-    var o2 = str.offset
-    val end = Math.min(offset + count, offset + str.count)
-    while (o1 < end) {
-      val cmp = caseFold(this.charAt(o1)) - caseFold(str.charAt(o2))
+    val end = Math.min(count, str.count)
+    var i = 0
+    while (i < end) {
+      val cmp = caseFold(this.charAt(i)) - caseFold(str.charAt(i))
       if (cmp != 0) {
         return cmp
       }
-      o1 += 1
-      o2 += 1
+      i += 1
     }
     count - str.count
   }

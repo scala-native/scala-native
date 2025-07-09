@@ -166,12 +166,58 @@ class StringTest {
     assertTrue("test".compareToIgnoreCase("Test") == 0)
     assertTrue("Test".compareToIgnoreCase("stest") > 0)
     assertTrue("tesT".compareToIgnoreCase("teSs") > 0)
+
+    // Scala Native substring based tests
+    assertTrue("test".compareToIgnoreCase("NativeUtest".substring(6)) < 0)
+    assertTrue("test".compareToIgnoreCase("NativeUtest".substring(6, 10)) < 0)
+    assertTrue("NativeUTest".substring(6).compareToIgnoreCase("test") > 0)
+    assertTrue("NativetesT".substring(6).compareToIgnoreCase("teSs") > 0)
+    assertTrue("test".compareToIgnoreCase("NativeTest".substring(6)) == 0)
+    assertTrue("NativeTest".substring(6).compareToIgnoreCase("test") == 0)
+
+    // Ported from Scala.js commit: 37df9c2ea dated: 2025-06-30
+    assertEquals(0, "Scala.JS".compareToIgnoreCase("Scala.js"))
+    assertEquals(3, "Scala.JS".compareToIgnoreCase("scala"))
+    assertEquals(0, "åløb".compareToIgnoreCase("ÅLØB"))
+    assertEquals(-9, "Java".compareToIgnoreCase("Scala"))
+
+    // Case folding that changes the string length are not supported,
+    // therefore ligatures are not equal to their expansion.
+    // U+FB00 LATIN SMALL LIGATURE FF
+    assertEquals(64154, "Eﬀet".compareToIgnoreCase("effEt"))
+    assertEquals(64154, "Eﬀet".compareToIgnoreCase("eFFEt"))
+
+    // "ı" and 'i' are considered equal, as well as their uppercase variants
+    assertEquals(
+      0,
+      "ıiIİ ıiIİ ıiIİ ıiIİ".compareToIgnoreCase("ıııı iiii IIII İİİİ")
+    )
   }
 
   @Test def equalsIgnoreCase(): Unit = {
     assertTrue("test".equalsIgnoreCase("TEST"))
     assertTrue("TEst".equalsIgnoreCase("teST"))
     assertTrue(!("SEst".equalsIgnoreCase("TEss")))
+
+    // Scala Native substring based tests
+
+    // Ported from Scala.js commit: 37df9c2ea dated: 2025-06-30
+    assertTrue("Scala.JS".equalsIgnoreCase("Scala.js"))
+    assertTrue("åløb".equalsIgnoreCase("ÅLØb"))
+    assertFalse("Scala.js".equalsIgnoreCase("Java"))
+    assertFalse("Scala.js".equalsIgnoreCase(null))
+
+    // Case folding that changes the string length are not supported,
+    // therefore ligatures are not equal to their expansion.
+    // U+FB00 LATIN SMALL LIGATURE FF
+    assertFalse("Eﬀet".equalsIgnoreCase("effEt"))
+    assertFalse("Eﬀet".equalsIgnoreCase("eFFEt"))
+
+    // "ı" and 'i' are considered equal, as well as their uppercase variants
+    assertTrue("ıiIİ ıiIİ ıiIİ ıiIİ".equalsIgnoreCase("ıııı iiii IIII İİİİ"))
+
+    // null is a valid input
+    assertFalse("foo".equalsIgnoreCase(null))
   }
 
   @Test def replaceChar(): Unit = {
