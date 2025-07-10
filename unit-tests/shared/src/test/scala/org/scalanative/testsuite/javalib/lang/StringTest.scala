@@ -9,6 +9,7 @@ import org.junit.Test
 import org.junit.Assert._
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
+import org.scalanative.testsuite.utils.Platform.executingInJVM
 
 class StringTest {
 
@@ -101,12 +102,12 @@ class StringTest {
     val data = "of human events"
 
     assertThrows(
-      classOf[java.lang.StringIndexOutOfBoundsException],
+      classOf[java.lang.IndexOutOfBoundsException],
       data.codePointBefore(-1)
     )
 
     assertThrows(
-      classOf[java.lang.StringIndexOutOfBoundsException],
+      classOf[java.lang.IndexOutOfBoundsException],
       // Careful here, +1 is valid +2 is not
       data.codePointBefore(data.length + 2)
     )
@@ -117,12 +118,12 @@ class StringTest {
     val data = "it becomes necessary"
 
     assertThrows(
-      classOf[java.lang.StringIndexOutOfBoundsException],
+      classOf[java.lang.IndexOutOfBoundsException],
       data.codePointCount(-1, data.length)
     )
 
     assertThrows(
-      classOf[java.lang.StringIndexOutOfBoundsException],
+      classOf[java.lang.IndexOutOfBoundsException],
       data.codePointCount(0, data.length + 1)
     )
   }
@@ -165,18 +166,67 @@ class StringTest {
     assertTrue("test".compareToIgnoreCase("Test") == 0)
     assertTrue("Test".compareToIgnoreCase("stest") > 0)
     assertTrue("tesT".compareToIgnoreCase("teSs") > 0)
+
+    // Scala Native substring based tests
+    assertTrue("test".compareToIgnoreCase("NativeUtest".substring(6)) < 0)
+    assertTrue("test".compareToIgnoreCase("NativeUtest".substring(6, 10)) < 0)
+    assertTrue("NativeUTest".substring(6).compareToIgnoreCase("test") > 0)
+    assertTrue("NativetesT".substring(6).compareToIgnoreCase("teSs") > 0)
+    assertTrue("test".compareToIgnoreCase("NativeTest".substring(6)) == 0)
+    assertTrue("NativeTest".substring(6).compareToIgnoreCase("test") == 0)
+
+    // Ported from Scala.js commit: 37df9c2ea dated: 2025-06-30
+    assertEquals(0, "Scala.JS".compareToIgnoreCase("Scala.js"))
+    assertEquals(3, "Scala.JS".compareToIgnoreCase("scala"))
+    assertEquals(0, "åløb".compareToIgnoreCase("ÅLØB"))
+    assertEquals(-9, "Java".compareToIgnoreCase("Scala"))
+
+    // Case folding that changes the string length are not supported,
+    // therefore ligatures are not equal to their expansion.
+    // U+FB00 LATIN SMALL LIGATURE FF
+    assertEquals(64154, "Eﬀet".compareToIgnoreCase("effEt"))
+    assertEquals(64154, "Eﬀet".compareToIgnoreCase("eFFEt"))
+
+    // "ı" and 'i' are considered equal, as well as their uppercase variants
+    assertEquals(
+      0,
+      "ıiIİ ıiIİ ıiIİ ıiIİ".compareToIgnoreCase("ıııı iiii IIII İİİİ")
+    )
   }
 
   @Test def equalsIgnoreCase(): Unit = {
     assertTrue("test".equalsIgnoreCase("TEST"))
     assertTrue("TEst".equalsIgnoreCase("teST"))
-    assertTrue(!("SEst".equalsIgnoreCase("TEss")))
-  }
+    assertFalse("SEst".equalsIgnoreCase("TEss"))
 
-  @Test def regionMatches(): Unit = {
-    assertTrue("This is a test".regionMatches(10, "test", 0, 4))
-    assertTrue(!("This is a test".regionMatches(10, "TEST", 0, 4)))
-    assertTrue("This is a test".regionMatches(0, "This", 0, 4))
+    // Scala Native substring based tests
+    assertTrue("test".equalsIgnoreCase("NativeTEST".substring(6)))
+    assertTrue("TEst".equalsIgnoreCase("NativeteST".substring(6)))
+    assertFalse("SEst".equalsIgnoreCase("NativeTEss".substring(6)))
+    assertTrue("NativeTEST".substring(6).equalsIgnoreCase("test"))
+    assertTrue("NativeteST".substring(6).equalsIgnoreCase("TEst"))
+    assertFalse("NativeTEss".substring(6).equalsIgnoreCase("SEst"))
+    assertTrue("NativeTESTaaa".substring(6, 10).equalsIgnoreCase("test"))
+    assertTrue("NativeteSTaaa".substring(6, 10).equalsIgnoreCase("TEst"))
+    assertFalse("NativeTEssaaa".substring(6, 10).equalsIgnoreCase("SEst"))
+
+    // Ported from Scala.js commit: 37df9c2ea dated: 2025-06-30
+    assertTrue("Scala.JS".equalsIgnoreCase("Scala.js"))
+    assertTrue("åløb".equalsIgnoreCase("ÅLØb"))
+    assertFalse("Scala.js".equalsIgnoreCase("Java"))
+    assertFalse("Scala.js".equalsIgnoreCase(null))
+
+    // Case folding that changes the string length are not supported,
+    // therefore ligatures are not equal to their expansion.
+    // U+FB00 LATIN SMALL LIGATURE FF
+    assertFalse("Eﬀet".equalsIgnoreCase("effEt"))
+    assertFalse("Eﬀet".equalsIgnoreCase("eFFEt"))
+
+    // "ı" and 'i' are considered equal, as well as their uppercase variants
+    assertTrue("ıiIİ ıiIİ ıiIİ ıiIİ".equalsIgnoreCase("ıııı iiii IIII İİİİ"))
+
+    // null is a valid input
+    assertFalse("foo".equalsIgnoreCase(null))
   }
 
   @Test def replaceChar(): Unit = {
@@ -651,7 +701,9 @@ class StringTest {
      */
     assertEquals("\u0345σ", "\u0345Σ".toLowerCase())
     assertEquals("\u03B1\u0345ς", "\u0391\u0345Σ".toLowerCase())
-    assertEquals("\u03B1\u0345ς\u0345", "\u0391\u0345Σ\u0345".toLowerCase())
+    if (!executingInJVM)
+      assertEquals("\u03B1\u0345ς\u0345", "\u0391\u0345Σ\u0345".toLowerCase())
+
     assertEquals(
       "\u03B1\u0345σ\u0345\u03B1",
       "\u0391\u0345Σ\u0345\u0391".toLowerCase()
@@ -1009,6 +1061,51 @@ class StringTest {
     )
   }
 
+  // Ported from Scala.js commit: 37df9c2ea dated: 2025-06-30
+  @Test def charAt(): Unit = {
+    @noinline def testNoInline(expected: Char, s: String, i: Int): Unit =
+      assertEquals(expected, s.charAt(i))
+
+    @inline def test(expected: Char, s: String, i: Int): Unit = {
+      testNoInline(expected, s, i)
+      assertEquals(expected, s.charAt(i))
+    }
+
+    test('S', "Scala.js", 0)
+    test('.', "Scala.js", 5)
+    test('s', "Scala.js", 7)
+    test('o', "foo", 1)
+
+    // Scala Native added
+    test('a', "Scala.js".substring(4), 0)
+    test('.', "Scala.js".substring(3), 2)
+    test('s', "Scala.js".substring(5, 8), 2)
+  }
+
+  // Ported from Scala.js commit: 37df9c2ea dated: 2025-06-30
+  @Test def charAtIndexOutOfBounds(): Unit = {
+
+    def test(s: String, i: Int): Unit = {
+      val e =
+        assertThrows(classOf[StringIndexOutOfBoundsException], s.charAt(i))
+      assertTrue(e.getMessage(), e.getMessage().contains(i.toString()))
+    }
+
+    test("foo", -1)
+    test("foo", -10000)
+    test("foo", Int.MinValue)
+    test("foo", 3)
+    test("foo", 10000)
+    test("foo", Int.MaxValue)
+
+    test("", -1)
+    test("", 0)
+    test("", 1)
+
+    // Test non-constant-folding
+    assertThrows(classOf[StringIndexOutOfBoundsException], "foo".charAt(4))
+  }
+
   /* selected Static methods
    */
 
@@ -1061,6 +1158,100 @@ class StringTest {
       expected,
       joined
     )
+  }
+
+  // Ported from Scala.js commit: 37df9c2ea dated: 2025-06-30
+  @Test def startsWith(): Unit = {
+    assertTrue("Scala.js".startsWith("Scala"))
+    assertTrue("Scala.js".startsWith("Scala.js"))
+    assertFalse("Scala.js".startsWith("scala"))
+    assertTrue("ananas".startsWith("an"))
+
+    assertThrows(classOf[NullPointerException], "ananas".startsWith(null))
+  }
+
+  // Ported from Scala.js commit: 37df9c2ea dated: 2025-06-30
+  @Test def startsWithOffset(): Unit = {
+    assertTrue("Scala.js".startsWith("ala", 2))
+    assertTrue("Scala.js".startsWith("Scal", 0))
+
+    assertTrue("Scala.js".startsWith("", 3))
+    assertTrue("Scala.js".startsWith("", 0))
+    assertTrue("Scala.js".startsWith("", 8))
+
+    assertFalse("Scala.js".startsWith("ala", 0))
+    assertFalse("Scala.js".startsWith("Scal", 2))
+
+    assertFalse("Scala.js".startsWith("Sc", -1))
+    assertFalse("Scala.js".startsWith(".js", 10))
+    assertFalse("Scala.js".startsWith("", -1))
+    assertFalse("Scala.js".startsWith("", 9))
+
+    assertThrows(classOf[NullPointerException], "Scala.js".startsWith(null, 2))
+  }
+
+  // Ported from Scala.js commit: 37df9c2ea dated: 2025-06-30
+  // scalafmt: { maxColumn = 100 }
+  @Test def regionMatches(): Unit = {
+    // original Scala Native tests
+    assertTrue("This is a test".regionMatches(10, "test", 0, 4))
+    assertTrue(!("This is a test".regionMatches(10, "TEST", 0, 4)))
+    assertTrue("This is a test".regionMatches(0, "This", 0, 4))
+
+    /* Ported from
+     * https://github.com/gwtproject/gwt/blob/master/user/test/com/google/gwt/emultest/java/lang/StringTest.java
+     */
+    val test = "abcdef"
+
+    assertTrue(test.regionMatches(1, "bcd", 0, 3))
+    assertTrue(test.regionMatches(1, "bcdx", 0, 3))
+    assertFalse(test.regionMatches(1, "bcdx", 0, 4))
+    assertFalse(test.regionMatches(1, "bcdx", 1, 3))
+    assertTrue(test.regionMatches(true, 0, "XAbCd", 1, 4))
+    assertTrue(test.regionMatches(true, 1, "BcD", 0, 3))
+    assertTrue(test.regionMatches(true, 1, "bCdx", 0, 3))
+    assertFalse(test.regionMatches(true, 1, "bCdx", 0, 4))
+    assertFalse(test.regionMatches(true, 1, "bCdx", 1, 3))
+    assertTrue(test.regionMatches(true, 0, "xaBcd", 1, 4))
+
+    val testU = test.toUpperCase()
+    assertTrue(testU.regionMatches(true, 0, "XAbCd", 1, 4))
+    assertTrue(testU.regionMatches(true, 1, "BcD", 0, 3))
+    assertTrue(testU.regionMatches(true, 1, "bCdx", 0, 3))
+    assertFalse(testU.regionMatches(true, 1, "bCdx", 0, 4))
+    assertFalse(testU.regionMatches(true, 1, "bCdx", 1, 3))
+    assertTrue(testU.regionMatches(true, 0, "xaBcd", 1, 4))
+
+    /* If len is negative, you must return true in some cases. See
+     * http://docs.oracle.com/javase/8/docs/api/java/lang/String.html#regionMatches-boolean-int-java.lang.String-int-int-
+     */
+
+    // four cases that are false, irrelevant of sign of len nor the value of the other string
+    assertFalse(test.regionMatches(-1, test, 0, -4))
+    assertFalse(test.regionMatches(0, test, -1, -4))
+    assertFalse(test.regionMatches(100, test, 0, -4))
+    assertFalse(test.regionMatches(0, test, 100, -4))
+
+    // offset + len > length
+    assertFalse(test.regionMatches(3, "defg", 0, 4)) // on receiver string
+    assertFalse(test.regionMatches(3, "abcde", 3, 3)) // on other string
+    assertFalse(test.regionMatches(Int.MaxValue, "ab", 0, 1)) // #4878 overflow, large toffset
+    assertFalse(test.regionMatches(0, "ab", Int.MaxValue, 1)) // #4878 overflow, large ooffset
+    assertFalse(test.regionMatches(1, "ab", 1, Int.MaxValue)) // #4878 overflow, large len
+    assertFalse(test.regionMatches(true, 3, "defg", 0, 4)) // on receiver string
+    assertFalse(test.regionMatches(true, 3, "abcde", 3, 3)) // on other string
+    assertFalse(test.regionMatches(true, Int.MaxValue, "ab", 0, 1)) // #4878 overflow, large toffset
+    assertFalse(test.regionMatches(true, 0, "ab", Int.MaxValue, 1)) // #4878 overflow, large ooffset
+    assertFalse(test.regionMatches(true, 1, "ab", 1, Int.MaxValue)) // #4878 overflow, large len
+
+    // the strange cases that are true
+    assertTrue(test.regionMatches(0, test, 0, -4))
+    assertTrue(test.regionMatches(1, "bcdx", 0, -4))
+    assertTrue(test.regionMatches(1, "bcdx", 1, -3))
+    assertTrue(test.regionMatches(true, 1, "bCdx", 0, -4))
+    assertTrue(test.regionMatches(true, 1, "bCdx", 1, -3))
+    assertTrue(testU.regionMatches(true, 1, "bCdx", 0, -4))
+    assertTrue(testU.regionMatches(true, 1, "bCdx", 1, -3))
   }
 
 }
