@@ -424,12 +424,16 @@ final class _String()
     fromIndex
   }
 
-  /* By convention, caller has validated arguments.
-   * See also notes above indexOfImpl(str, fromIndex, toIndex).
-   *
-   * This is a good candidate for someday using memmem() or memchr().
+  /* Preconditions:
+   *   By convention, caller has validated arguments, but strangely.
+   *   beginIndex is usually guaranteed to be within 'this' but there is no
+   *   such guarantee here.
+   * 
+   *   For details, see note above indexOfImpl(str, fromIndex, toIndex).
    */
   private def indexOfImpl(ch: Int, beginIndex: Int, endIndex: Int): Int = {
+    // This is a good candidate for someday using memchr().
+
     var start = beginIndex
 
     if (ch >= 0 && ch <= Character.MAX_VALUE) {
@@ -470,18 +474,30 @@ final class _String()
     indexOfImpl(ch, beginIndex, endIndex)
   }
 
-  /* By convention, caller has validated index arguments so that slice
-   * (endIndex - beginIndex) <= this.count.
+  /* Preconditions:
+   *   By convention, caller has validated index arguments so that:
+   *     - beginIndex >= 0
+   *     - beginIndex <= endIndex
+   *     - endIndex <= this.count
+   *
+   *   Beware & handle an empty 'this' or an empty slice range!
+   *   beginIndex is usually guaranteed to be a valid index for this.value
+   *   but there is no such guarantee here.
+   * 
+   *   Especially note that when (this.count == 0) indexOf(str, 0, 0)
+   *   fulfills the preconditions but 'this(beginIndex)' will throw.
    */
   private def indexOfImpl(str: _String, beginIndex: Int, endIndex: Int): Int = {
     val needleLen = str.count
 
     if (needleLen == 0) {
       beginIndex
-    } else if ((beginIndex + needleLen) > endIndex) {
+    } else if (needleLen > (endIndex - beginIndex)) {
       /* needleLen is now known to be >= 1.
        * If needle is longer than haystack slice, it will never match.
-       * Also filter 'this' slice being a zero length empty _String, a.k.a ""
+       * Given prior precondition checking, this also filters out either
+       * or both of 'this' or the slice being a zero length empty _String,
+       * a.k.a "".
        */
       -1
     } else {
