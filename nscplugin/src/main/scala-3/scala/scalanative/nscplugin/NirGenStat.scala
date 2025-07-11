@@ -401,8 +401,11 @@ trait NirGenStat(using Context) {
     }
     val thisParam = Option.unless(isStatic) {
       nir.Val.Local(
-        fresh.namedId("this"),
-        genType(curClassSym.get)
+        fresh.namedId("this"), {
+          val clsSymbol = curClassSym.get
+          if clsSymbol.isStruct then genType(clsSymbol.info)
+          else genRefType(clsSymbol.info)
+        }
       )
     }
     val params = thisParam.toList ::: argParams

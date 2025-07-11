@@ -10,7 +10,6 @@ trait NirGenExports[G <: nsc.Global with Singleton] {
   import definitions._
   import nirAddons._
   import nirDefinitions._
-  import SimpleType._
 
   case class ExportedSymbol(symbol: Symbol, defn: nir.Defn.Define)
 
