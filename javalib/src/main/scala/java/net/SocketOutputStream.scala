@@ -3,7 +3,7 @@ package java.net
 import java.io.OutputStream
 
 // Ported from Apache Harmony
-private[net] class SocketOutputStream(socket: AbstractPlainSocketImpl)
+private[net] class SocketOutputStream(socket: PlainSocketImpl)
     extends OutputStream {
 
   override def close(): Unit = {
