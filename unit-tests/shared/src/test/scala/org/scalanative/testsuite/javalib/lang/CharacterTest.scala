@@ -2,25 +2,33 @@ package org.scalanative.testsuite.javalib.lang
 
 import java.lang._
 
+import org.junit.Test
+import org.junit.Assert._
+import org.junit.Assume._
+
+import org.scalanative.testsuite.utils.AssertThrows.assertThrows
+import org.scalanative.testsuite.utils.Platform.executingInJVM
+
 /** Test suite for [[java.lang.Character]]
  *
- *  To be consistent the implementations should be based on Unicode 7.0.
+ *  To be consistent the implementations should be based on Unicode.
  *  @see
- *    [[http://www.unicode.org/Public/7.0.0 Unicode 7.0]]
+ *    [[http://www.unicode.org/Public/15.1.0 Unicode 15.1.0]]
  *
  *  Overall code point range U+0000 - U+D7FF and U+E000 - U+10FFF. Surrogate
  *  code points are in the gap and U+FFFF is the max value for [[scala.Char]].
  */
-import org.junit.Test
-import org.junit.Assert._
-
-import org.scalanative.testsuite.utils.AssertThrows.assertThrows
-
 class CharacterTest {
   import java.lang.Character._
 
+  // Note: catching the super class IndexOutOfBoundsException works
+  val assumeExMsg = "JVM ArrayIndex... vs StringIndexOutOfBoundsException"
+
   // codePointAt tests
+
   @Test def codePointAtInvalidValues(): Unit = {
+    assumeFalse(assumeExMsg, executingInJVM)
+
     val str1 = "<invalid values>"
     val arr1 = str1.toArray
 
@@ -189,6 +197,8 @@ class CharacterTest {
   // codePointBefore tests
 
   @Test def codePointBeforeInvalidValues(): Unit = {
+    assumeFalse(assumeExMsg, executingInJVM)
+
     val str1 = "<invalid values>"
     val arr1 = str1.toArray
 
@@ -298,6 +308,7 @@ class CharacterTest {
   }
 
   @Test def codePointBeforeSurrogatePair(): Unit = {
+    assumeFalse(assumeExMsg, executingInJVM)
     // Character.MIN_HIGH_SURROGATE followed by Character.MAX_LOW_SURROGATE
     val str1 = "Denali\uD800\uDFFF"
     val index = str1.length
@@ -446,6 +457,7 @@ class CharacterTest {
   }
 
   @Test def offsetByCodePointsInvalidValues(): Unit = {
+    assumeFalse(assumeExMsg, executingInJVM)
     val str1 = "<bad args>"
     val arr1 = str1.toArray
 
