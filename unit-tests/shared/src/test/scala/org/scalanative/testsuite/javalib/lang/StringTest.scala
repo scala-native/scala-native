@@ -2,6 +2,8 @@ package org.scalanative.testsuite.javalib.lang
 
 import java.lang._
 
+import java.nio.CharBuffer
+import java.nio.charset.{Charset, StandardCharsets}
 import java.nio.charset.{Charset, StandardCharsets}
 
 import org.junit.Ignore
@@ -1254,4 +1256,76 @@ class StringTest {
     assertTrue(testU.regionMatches(true, 1, "bCdx", 1, -3))
   }
 
+  // Appears to be no equivalent test in Scala.js as of this creation date.
+  @Test def contentEqualsStringBuffer(): Unit = {
+    val data = "Between the devil and the deep blue sea"
+
+    val sbuf = new StringBuffer(data)
+    assertTrue("sb.1", data.contentEquals(sbuf))
+
+    sbuf.delete(12, 17) // delete "devil"
+    assertFalse("sb.2", data.contentEquals(sbuf))
+  }
+
+  // Appears to be no equivalent test in Scala.js as of this creation date.
+  @Test def contentEqualsCharSequence(): Unit = {
+    val data = "and no tar ready"
+
+    // CharSequence: CharBuffer
+    val cb = CharBuffer.allocate(data.length + 1)
+    cb.put(data)
+    val endOfDataMark = cb.position()
+
+    cb.flip()
+
+    val cbString = cb.toString()
+
+    assertEquals("cb.1", data, cbString)
+
+    assertTrue("cb.2", data.contentEquals(cb))
+
+    // It ought not to be this hard to append here, but that appears to be so.
+    cb.position(endOfDataMark) // advance to original position
+    cb.limit(endOfDataMark + 1) // make room for next put()
+
+    cb.append('!')
+
+    cb.position(0)
+
+    assertFalse("cb.3", data.contentEquals(cb))
+
+    // CharSequence: String
+    assertTrue("str.1", data.contentEquals(data)) // self == self
+
+    // CharSequence: StringBuilder
+    val sbldr = new StringBuilder(data)
+    assertTrue("sbldr.1", data.contentEquals(sbldr.toString()))
+
+    sbldr.delete(4, 6)
+    assertFalse("sbldr.2", data.contentEquals(sbldr.toString()))
+
+    // CharSequence: String
+    assertTrue("sbldr.3", data.contentEquals(data)) // self == self
+
+    // but not substring "ready"
+    assertFalse("sbldr.4", data.contentEquals(data.substring(11, data.length)))
+  }
+
+  // Ported from Scala.js commit: e10803c   dated: 2024-09-16
+  @Test def contains(): Unit = {
+    assertTrue("Scala.js".contains("Scala"))
+    assertTrue("Scala.js".contains("Scala.js"))
+    assertTrue("ananas".contains("na"))
+    assertFalse("Scala.js".contains("scala"))
+
+    // Scala Native additions
+
+    // empty strings
+    assertTrue("c.1", "".contains(""))
+    assertTrue("c.2", "Scala Native".contains(""))
+    assertFalse("c.3", "".contains("scala"))
+
+    // needle > haystack
+    assertFalse("c.4", "Scala Native".contains("Scala NativeN"))
+  }
 }
