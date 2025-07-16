@@ -56,9 +56,9 @@ object ScalaVersions {
   //   1.9.4 fixes (Common Vulnerabilities and Exposures) CVE-2022-46751
   //   1.9.7 fixes sbt IO.unzip vulnerability described in sbt release notes.
   //   1.10.7 Latest sbt version, 1.10.2 had bug, see comment in SN Issue #4126
-  //   1.11.2 Latest sbt version
+  //   1.11.3 Latest sbt version
 
-  val sbt10Version: String = "1.11.2"
+  val sbt10Version: String = "1.11.3"
   val sbt10ScalaVersion: String = scala212
 
   val libCrossScalaVersions: Seq[String] =
