@@ -671,7 +671,7 @@ final class _String()
 
         nextOrigin = cursor
 
-        _String.valueOf(src, origin, nChars)
+        new _String(src, origin, nChars)
       }
     }
   }
@@ -1352,25 +1352,11 @@ for (cp <- 0 to Character.MAX_CODE_POINT) {
     }
   }
 
-  def contentEquals(sb: StringBuffer): scala.Boolean = {
-    val size = sb.length()
-    if (count != size) {
-      false
-    } else {
-      regionMatches(0, new _String(0, size, sb.getValue()), 0, size)
-    }
-  }
+  def contentEquals(sb: StringBuffer): scala.Boolean =
+    this.equals(sb.toString())
 
-  def contentEquals(cs: CharSequence): scala.Boolean = {
-    val len = cs.length()
-    if (len != count) {
-      false
-    } else if (len == 0 && count == 0) {
-      true
-    } else {
-      regionMatches(0, _String.valueOf(cs.toString), 0, len)
-    }
-  }
+  def contentEquals(cs: CharSequence): scala.Boolean =
+    this.equals(cs.toString())
 
   def matches(expr: _String): scala.Boolean =
     Pattern.matches(expr, this)
@@ -1463,7 +1449,7 @@ for (cp <- 0 to Character.MAX_CODE_POINT) {
     }
 
   def contains(cs: CharSequence): scala.Boolean =
-    indexOf(_String.valueOf(cs.toString)) >= 0
+    indexOf(cs.toString) >= 0
 
   def offsetByCodePoints(index: Int, codePointOffset: Int): Int = {
     val s = index + offset
