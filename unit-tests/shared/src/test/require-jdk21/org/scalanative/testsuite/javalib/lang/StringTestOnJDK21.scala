@@ -51,7 +51,7 @@ class StringTestOnJDK21 {
   @Test def IndexOf_String_BeginIndexEndIndex_CheckArgs(): Unit = {
     val needle = "needle"
 
-    // No Exception in this special case of zero range, strarting at index 0
+    // No Exception in this special case of zero range, starting at index 0
     assertEquals("length 0, start & end 0", 0, "".indexOf("", 0, 0))
 
     assertThrows(
@@ -79,6 +79,10 @@ class StringTestOnJDK21 {
     assertEquals("a1_3", 4, haystack_1.indexOf(needle_1, 0, 10))
     assertEquals("a1_4", -1, haystack_1.indexOf(needle_1, 5, 10))
     assertEquals("a1_5", 20, haystack_1.indexOf(needle_1, 5, 26))
+
+    // Do not find byte 'n' == 0x63 on an odd byte boundary
+    val haystack_1a = "straw-\u6E00eedle-more_hay-needle-straw"
+    assertEquals("a1a_1", 22, haystack_1a.indexOf(needle_1, 4, 29))
 
     // Use non-ANSI character, change length to exercise different indices.
     val needle_2 = "ne€dle"
