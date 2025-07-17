@@ -7,6 +7,8 @@
 .
 # defines to allow analysis of code
 -DSCALANATIVE_COMPILE_ALWAYS
+-DSCALANATIVE_MULTITHREADING_ENABLED
 # for optional zlib
--DSCALANATIVE_LINK_Z
+# Note: does not align with descriptor which would be SCALANATIVE_LINK_Z
+-D__SCALANATIVE_JAVALIB_Z
 
