@@ -1,0 +1,11 @@
+# clib setup
+# macOS arm
+-I
+/opt/homebrew/include
+# project
+-I
+.
+
+# defines to allow analysis of code
+-DSCALANATIVE_COMPILE_ALWAYS
+-DSCALANATIVE_MULTITHREADING_ENABLED

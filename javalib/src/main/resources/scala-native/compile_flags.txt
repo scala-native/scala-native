@@ -1,0 +1,12 @@
+# javalib setup
+# macOS arm
+-I
+/opt/homebrew/include
+# project
+-I
+.
+# defines to allow analysis of code
+-DSCALANATIVE_COMPILE_ALWAYS
+# for optional zlib
+-DSCALANATIVE_LINK_Z
+
