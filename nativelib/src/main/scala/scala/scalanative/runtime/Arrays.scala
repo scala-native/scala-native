@@ -117,6 +117,9 @@ object Array {
     }
   }
 
+  @deprecated(
+     "Incorrect results, will be removed. Use `java.util.Arrays` instead",
+     "0.5.9")
   def compare(left: AnyRef,
               leftPos: Int,
               right: AnyRef,
@@ -137,6 +140,9 @@ object Array {
     }
   }
 
+  @deprecated(
+     "Incorrect results, will be removed. Use `java.util.Arrays` instead",
+     "0.5.9")
   def compare(left: Array[_],
               leftPos: Int,
               right: Array[_],
@@ -145,7 +151,7 @@ object Array {
     if (left == null || right == null) {
       throw new NullPointerException()
     } else if (left.getClass != right.getClass) {
-      throw new ArrayStoreException("Invalid array copy.")
+      throw new ArrayStoreException("Invalid array comparison.")
     } else if (len < 0) {
       throw new ArrayIndexOutOfBoundsException("length is negative")
     } else if (leftPos < 0 || leftPos + len > left.length) {
