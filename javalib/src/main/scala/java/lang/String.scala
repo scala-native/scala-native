@@ -246,7 +246,7 @@ final class _String()
   }
 
   def endsWith(suffix: _String): scala.Boolean =
-    regionMatches(count - suffix.count, suffix, 0, suffix.count)
+    regionMatches(false, count - suffix.count, suffix, 0, suffix.count)
 
   override def equals(obj: Any): scala.Boolean = obj match {
     case s: _String =>
@@ -707,8 +707,12 @@ final class _String()
     jus.StreamSupport.stream(spliter, parallel = false)
   }
 
-  /* Both regionMatches ported from
-   * https://github.com/gwtproject/gwt/blob/master/user/super/com/google/gwt/emul/java/lang/String.java
+  /* Both regionMatches ported from:
+   *   https://github.com/gwtproject/gwt/blob/master/
+   *     user/super/com/google/gwt/emul/java/lang/String.java
+   *
+   * regionMatches(ignoreCase) modified to take advantage of Scala Native
+   * capabilities.
    */
   def regionMatches(
       ignoreCase: scala.Boolean,
@@ -724,10 +728,26 @@ final class _String()
       false
     } else if (len <= 0) {
       true
-    } else {
+    } else if (ignoreCase) {
       val left = this.substring(toffset, toffset + len)
       val right = other.substring(ooffset, ooffset + len)
-      if (ignoreCase) left.equalsIgnoreCase(right) else left == right
+      left.equalsIgnoreCase(right)
+    } else {
+      /* Avoid actually instantiating substrings.
+       *
+       * This is logically a six argument ju.Arrays.equals(). Open code here
+       * to skip the latter checking arguments that have already been checked.
+       */
+
+      val data1 = this.value
+        .at(this.offset + toffset)
+        .asInstanceOf[Ptr[scala.Byte]]
+
+      val data2 = other.value
+        .at(other.offset + ooffset)
+        .asInstanceOf[Ptr[scala.Byte]]
+
+      memcmp(data1, data2, (len * 2).toUInt) == 0
     }
   }
 
@@ -830,10 +850,10 @@ final class _String()
   }
 
   def startsWith(prefix: _String, start: Int): scala.Boolean =
-    regionMatches(start, prefix, 0, prefix.count)
+    regionMatches(false, start, prefix, 0, prefix.count)
 
   def startsWith(prefix: _String): scala.Boolean =
-    startsWith(prefix, 0)
+    regionMatches(false, 0, prefix, 0, prefix.count)
 
   def substring(start: Int): _String =
     if (start == 0) {
