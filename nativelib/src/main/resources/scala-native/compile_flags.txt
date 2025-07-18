@@ -1,0 +1,24 @@
+# nativelib
+# macOS arm
+-I
+/opt/homebrew/include
+# gc
+-I
+gc/
+# project
+-I
+.
+# defines for the garbage collectors which are used for GC selection
+-DSCALANATIVE_GC_BOEHM
+-DSCALANATIVE_GC_IMMIX
+-DSCALANATIVE_GC_COMMIX
+-DSCALANATIVE_GC_NONE
+-DSCALANATIVE_GC_EXPERIMENTAL
+# other defines
+-DSCALANATIVE_COMPILE_ALWAYS
+-DSCALANATIVE_MULTITHREADING_ENABLED
+# debug defines
+-DENABLE_GC_STATS
+-DENABLE_GC_STATS_SYNC
+-DDEBUG_PRINT
+-DDEBUG_ASSERT
