@@ -561,7 +561,32 @@ object Files {
     )
     if (temp.delete() && temp.mkdir()) {
       val tempPath = temp.toPath()
-      setAttributes(tempPath, attrs)
+
+      if (!isWindows) {
+        /* A better fix would be to have a unix path which uses
+         * 'mkdtemp()' rather than 'File.mkdir()'. The former gives a
+         * close to an atomic
+         * generate_temporary_name-create_directory_with_restricted_protections
+         * sequence.  Unfortunately, it requires more time than the day
+         * provides.
+         */
+
+        /* FIXUP unix protections to match JVM practice and security.
+         * Take the bet that only rarely will atters be non-empty and
+         * even more rarely will permissions be set there,
+         * cause, the permissions to be set twice.
+         */
+        val jvmCreateTempDirDefaultPermissions =
+          PosixFilePermissions.fromString("rwx------")
+        Files.setPosixFilePermissions(
+          tempPath,
+          jvmCreateTempDirDefaultPermissions
+        )
+      }
+
+      if (attrs.length > 0)
+        setAttributes(tempPath, attrs)
+
       tempPath
     } else {
       throw new IOException()
