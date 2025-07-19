@@ -647,6 +647,87 @@ class FilesTest {
     }
   }
 
+  // Issue 4381, part 1
+  @Test def filesCreateTempDirectoryDefaultsToJvmPosixPermissions(): Unit = {
+    assumeFalse("Not testing Posix permissions on Windows", isWindows)
+
+    withTemporaryDirectoryPath { dirPath =>
+      val tmpDirName = "expectPosixPermissions_OwnerRWX_GroupOtherNone_"
+      val tmpDirPath = Files.createTempDirectory(dirPath, tmpDirName)
+
+      val tmpDirFile = tmpDirPath.toFile()
+
+      assertTrue(
+        "empty directory",
+        tmpDirFile.exists() &&
+          tmpDirFile.isDirectory() &&
+          tmpDirFile.list().isEmpty
+      )
+
+      // JVM default, by implemention, not specification
+      val expectedPermissions = "rwx------"
+
+      val actualPermissions =
+        PosixFilePermissions.toString(Files.getPosixFilePermissions(tmpDirPath))
+
+      assertEquals(
+        "POSIX permissions",
+        expectedPermissions,
+        actualPermissions
+      )
+
+      cleanupWorkArea(dirPath, tmpDirPath)
+    }
+  }
+
+  // Issue 4381, part 2
+  @Test def filesCreateTempDirectoryUsesSpecifiedPosixPermissions(): Unit = {
+    assumeFalse("Not testing Posix permissions on Windows", isWindows)
+
+    withTemporaryDirectoryPath { dirPath =>
+      val tmpDirName = "specifiedPosixPermissions_OwnerRX_GroupOtherNone_"
+
+      /* The usual umask values of 022 and 077 will mask off Group and Other
+       * bits, so change one of the User bits.
+       * Still, there are some rare umask value which can break this test,
+       * say 122.
+       */
+      val expectedPermissions = "r-x------"
+
+      val createWithPermissionsAttr =
+        PosixFilePermissions.asFileAttribute(
+          PosixFilePermissions.fromString(expectedPermissions)
+        )
+
+      val tmpDirPath =
+        Files.createTempDirectory(
+          dirPath,
+          tmpDirName,
+          createWithPermissionsAttr
+        )
+
+      val tmpDirFile = tmpDirPath.toFile()
+
+      assertTrue(
+        "empty directory",
+        tmpDirFile.exists() &&
+          tmpDirFile.isDirectory() &&
+          tmpDirFile.list().isEmpty
+      )
+
+      val actualPermissions =
+        PosixFilePermissions.toString(Files.getPosixFilePermissions(tmpDirPath))
+
+      assertEquals(
+        "POSIX permissions",
+        expectedPermissions,
+        actualPermissions
+      )
+
+      cleanupWorkArea(dirPath, tmpDirPath)
+    }
+  }
+
   @Test def filesCreateTempFileWorksWithNullPrefix(): Unit = {
     val file = Files.createTempFile(null, "txt")
     try {
@@ -1227,7 +1308,7 @@ class FilesTest {
       val expectedPath = d1
       assertEquals("content", expectedPath, result(0).asInstanceOf[Path])
 
-      // Delete files only on succcess, otherwise leave detritus for debug.
+      // Delete files only on succcess, otherwise leave detritus for study.
       Files.delete(d1)
       Files.delete(dir)
     }
@@ -1282,7 +1363,7 @@ class FilesTest {
       assertEquals("content_1", d1f1, paths(1))
       assertEquals("content_2", d2, paths(2))
 
-      // Delete files only on succcess, otherwise leave detritus for debug.
+      // Delete files only on succcess, otherwise leave detritus for study.
       Files.delete(d2f2) // Delete in opposite order of creation
       Files.delete(d2f1)
       Files.delete(d2)
@@ -1332,7 +1413,7 @@ class FilesTest {
 
       assertEquals("visitor", d1, visitor.dequeue())
 
-      // Delete files only on succcess, otherwise leave detritus for debug.
+      // Delete files only on succcess, otherwise leave detritus for study.
       Files.delete(d1)
       Files.delete(dir)
     }
@@ -1393,7 +1474,7 @@ class FilesTest {
       assertEquals("first path", d1f1, sortedPaths.first())
       assertEquals("second path", d2, sortedPaths.last())
 
-      // Delete files only on succcess, otherwise leave detritus for debug.
+      // Delete files only on succcess, otherwise leave detritus for study.
       Files.delete(d2f2) // Delete in opposite order of creation
       Files.delete(d2f1)
       Files.delete(d2)
@@ -2465,36 +2546,25 @@ class FilesTest {
 
 object FilesTest {
 
+  def cleanupWorkArea(dirPath: Path, paths: Path*): Unit = {
+    /* If execution reaches here, Tests have been successful so there is no
+     * need to preserve created directory & files for analysis.
+     */
+
+    val donePermissions = PosixFilePermissions.fromString("rwx------")
+    // Assume dirPath has appropriate ownership & user write protection.
+    for (path <- paths) {
+      Files.setPosixFilePermissions(path, donePermissions)
+      Files.deleteIfExists(path)
+    }
+
+    Files.deleteIfExists(dirPath)
+  }
+
   // Paths are more useful than io.File for java.nio.file.Files* methods.
   def makeTemporaryDirPath(): Path = {
-
     val prefix = "scala-native-testsuite_javalib-FilesTest"
-
-    /* The duplication of createTempDirectory is regrettable but
-     * necessary.  This code must run on Scala 2 & Scala 3. Scala 3
-     * does not use the Scala 2 ': _*' varargs splice syntax.  It
-     * is permitted in Scala 3.mumble, deprecated in 3.mumble.RealSoonNow,
-     * to be removed in 3.mumble.Future.
-     */
-    if (executingInJVM) {
-      Files.createTempDirectory(prefix)
-    } else if (isWindows) {
-      Files.createTempDirectory(prefix)
-    } else {
-      /* JVM 24 zulu umask 000
-       * creates temporary directories with permissions
-       * drwx------, so umasks with more restrictive group
-       * and other bits on would do the same.
-       * 
-       * Be explicit with permissions, at least until Scala Native
-       * createTemporaryDirectory(), Issue #4381, is fixed.
-       */
-      val permissions =
-        PosixFilePermissions.fromString("rwx------");
-      val permissionsAttr =
-        PosixFilePermissions.asFileAttribute(permissions)
-      Files.createTempDirectory(prefix, permissionsAttr)
-    }
+    Files.createTempDirectory(prefix)
   }
 
   // name use historically and widely in this file.
