@@ -602,7 +602,12 @@ class FilesTest {
     }
   }
 
-  private val tempFile = "^a?\\d+\\.?(?:[a-z]*)$".r
+  /* If you live a Good Life, you will never have to parse this regex by hand.
+   * On unix-like, expect six alphanumeric characters after the numeric ident.
+   * On JVM & SN Windows expect zero.
+   */
+  private val tempFile =
+    "^a?\\d+([a-zA-Z0-9]{0}|[a-zA-Z0-9]{6})\\.?(?:[a-z]*)$".r
 
   @Test def filesCreateTempDirectoryWorksWithNullPrefix(): Unit = {
     val dir = Files.createTempDirectory(null)

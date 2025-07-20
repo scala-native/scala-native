@@ -546,50 +546,36 @@ object Files {
     }
   }
 
-  private def createTempDirectory(
-      dir: File,
+  private def createTempDirectoryImpl(
+      dir: Path,
       prefix: String,
       attrs: Array[FileAttribute[_]]
   ): Path = {
-    val p = if (prefix == null) "" else prefix
-    val temp = FileHelpers.createTempFile(
-      p,
-      "",
-      dir,
-      minLength = false,
-      throwOnError = true
-    )
-    if (temp.delete() && temp.mkdir()) {
-      val tempPath = temp.toPath()
 
-      if (!isWindows) {
-        /* A better fix would be to have a unix path which uses
-         * 'mkdtemp()' rather than 'File.mkdir()'. The former gives a
-         * close to an atomic
-         * generate_temporary_name-create_directory_with_restricted_protections
-         * sequence.  Unfortunately, it requires more time than the day
-         * provides.
-         */
-
-        /* FIXUP unix protections to match JVM practice and security.
-         * Take the bet that only rarely will atters be non-empty and
-         * even more rarely will permissions be set there,
-         * cause, the permissions to be set twice.
-         */
-        val jvmCreateTempDirDefaultPermissions =
-          PosixFilePermissions.fromString("rwx------")
-        Files.setPosixFilePermissions(
-          tempPath,
-          jvmCreateTempDirDefaultPermissions
-        )
-      }
+    if (!isWindows) {
+      val tempDirPath = FileHelpers.createTempDirectoryUnixImpl(dir, prefix)
 
       if (attrs.length > 0)
-        setAttributes(tempPath, attrs)
+        setAttributes(tempDirPath, attrs)
 
-      tempPath
+      tempDirPath
+
     } else {
-      throw new IOException()
+      val p = if (prefix == null) "" else prefix
+      val temp = FileHelpers.createTempFile(
+        p,
+        "",
+        dir.toFile(),
+        minLength = false,
+        throwOnError = true
+      )
+      if (temp.delete() && temp.mkdir()) {
+        val tempPath = temp.toPath()
+        setAttributes(tempPath, attrs)
+        tempPath
+      } else {
+        throw new IOException()
+      }
     }
   }
 
@@ -598,13 +584,15 @@ object Files {
       prefix: String,
       attrs: Array[FileAttribute[_]]
   ): Path =
-    createTempDirectory(dir.toFile(), prefix, attrs)
+    createTempDirectoryImpl(dir, prefix, attrs)
 
   def createTempDirectory(
       prefix: String,
       attrs: Array[FileAttribute[_]]
-  ): Path =
-    createTempDirectory(null: File, prefix, attrs)
+  ): Path = {
+    val dirPath = Path.of(FileHelpers.tempDir, Array.empty)
+    createTempDirectoryImpl(dirPath, prefix, attrs)
+  }
 
   private def createTempFile(
       dir: File,
