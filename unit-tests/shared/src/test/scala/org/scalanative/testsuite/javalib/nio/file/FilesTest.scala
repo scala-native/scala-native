@@ -605,9 +605,16 @@ class FilesTest {
   /* If you live a Good Life, you will never have to parse this regex by hand.
    * On unix-like, expect six alphanumeric characters after the numeric ident.
    * On JVM & SN Windows expect zero.
+   *
+   * Java uses simple ASCII for alphabetic '\a', numeric '\d', and
+   * alphanumeric '\w'.
+   *
+   * Underscores and other symbols are not expected by this regex.
+   * It will reject prefixes such as 'a_b' & suffices such '.tmp_1'. Such are
+   * left as an exercise for the person introducing the breaking change.
    */
-  private val tempFile =
-    "^a?\\d+([a-zA-Z0-9]{0}|[a-zA-Z0-9]{6})\\.?(?:[a-z]*)$".r
+
+  private val tempFile = "^a?\\d{1,19}\\w{0,6}\\.?\\w*$".r
 
   @Test def filesCreateTempDirectoryWorksWithNullPrefix(): Unit = {
     val dir = Files.createTempDirectory(null)
