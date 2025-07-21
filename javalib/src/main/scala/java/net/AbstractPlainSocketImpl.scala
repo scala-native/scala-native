@@ -487,7 +487,7 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
 
     val len = {
       optID match {
-        case SocketOptions.SO_LINGER => sizeof[socket.linger]
+        case SocketOptions.SO_LINGER  => sizeof[socket.linger]
         case SocketOptions.SO_TIMEOUT =>
           if (isWindows) sizeof[DWord]
           else sizeof[timeval]

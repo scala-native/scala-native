@@ -148,7 +148,7 @@ class ArrayList[E] private (
 
   override def remove(o: Any): Boolean =
     inner.indexOf(o) match {
-      case -1 => false
+      case -1  => false
       case idx =>
         remove(idx)
         true

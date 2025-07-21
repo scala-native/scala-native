@@ -58,7 +58,7 @@ object CompletableFuture {
   @throws[InterruptedException]
   @throws[ExecutionException]
   private def reportGet(r: AnyRef): AnyRef = r match {
-    case null => throw new InterruptedException // by convention below, null means interrupted
+    case null         => throw new InterruptedException // by convention below, null means interrupted
     case r: AltResult =>
       r.ex match {
         case null                      => null

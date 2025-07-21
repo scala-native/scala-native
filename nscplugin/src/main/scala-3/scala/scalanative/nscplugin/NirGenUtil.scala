@@ -103,7 +103,7 @@ trait NirGenUtil(using Context) { self: NirCodeGen =>
     override def unapply(s: tpd.Tree): this.type = {
       s match {
         case t: tpd.Select => desugared = t
-        case t: Ident =>
+        case t: Ident      =>
           cachedDesugarIdent(t) match {
             case Some(t) => desugared = t
             case None    => desugared = null

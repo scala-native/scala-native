@@ -212,7 +212,7 @@ class ForkJoinTask8Test extends JSR166Test {
       shouldThrow()
     } catch {
       case success: TimeoutException =>
-      case fail: Throwable =>
+      case fail: Throwable           =>
         threadUnexpectedException(fail)
     }
   }

@@ -54,7 +54,7 @@ final case class MultiScalaProject private (
       deps.foldLeft(this) {
         case (project, dependency) =>
           val Scope = dependency.configuration match {
-            case None => Compile
+            case None    => Compile
             case Some(v) =>
               val Scope = config(v)
               Scope

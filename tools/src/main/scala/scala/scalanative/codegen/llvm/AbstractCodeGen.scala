@@ -284,7 +284,7 @@ private[codegen] abstract class AbstractCodeGen(
     }
 
     defn match {
-      case _: nir.Defn.Declare => ()
+      case _: nir.Defn.Declare   => ()
       case defn: nir.Defn.Define =>
         implicit lazy val defnScopes: DefnScopes = new DefnScopes(defn, this)
         insts.foreach {
@@ -410,7 +410,7 @@ private[codegen] abstract class AbstractCodeGen(
     if (!block.isEntry) {
       params.foreach {
         case (nir.Val.Local(_, nir.Type.Unit), n) => () // skip
-        case (nir.Val.Local(id, ty), n) =>
+        case (nir.Val.Local(id, ty), n)           =>
           newline()
           str("%")
           genLocal(id)
@@ -496,11 +496,11 @@ private[codegen] abstract class AbstractCodeGen(
         str(pointerType)
       case nir.Type.Bool          => str("i1")
       case i: nir.Type.FixedSizeI => str("i"); str(i.width)
-      case nir.Type.Size =>
+      case nir.Type.Size          =>
         str("i")
         str(platform.sizeOfPtrBits)
-      case nir.Type.Float  => str("float")
-      case nir.Type.Double => str("double")
+      case nir.Type.Float             => str("float")
+      case nir.Type.Double            => str("double")
       case nir.Type.ArrayValue(ty, n) =>
         str("[")
         str(n)
@@ -558,17 +558,17 @@ private[codegen] abstract class AbstractCodeGen(
       case nir.Val.Unit     => str("void")
       case nir.Val.Zero(ty) => str("zeroinitializer")
       case nir.Val.Byte(v)  => str(v)
-      case nir.Val.Size(v) =>
+      case nir.Val.Size(v)  =>
         if (!platform.is32Bit) str(v)
         else if (v.toInt == v) str(v.toInt)
         else unsupported("Emitting size values that exceed the platform bounds")
-      case nir.Val.Char(v)   => str(v.toInt)
-      case nir.Val.Short(v)  => str(v)
-      case nir.Val.Int(v)    => str(v)
-      case nir.Val.Long(v)   => str(v)
-      case v: nir.Val.Int128 => str(v.bigIntValue)
-      case nir.Val.Float(v)  => genFloatHex(v)
-      case nir.Val.Double(v) => genDoubleHex(v)
+      case nir.Val.Char(v)         => str(v.toInt)
+      case nir.Val.Short(v)        => str(v)
+      case nir.Val.Int(v)          => str(v)
+      case nir.Val.Long(v)         => str(v)
+      case v: nir.Val.Int128       => str(v.bigIntValue)
+      case nir.Val.Float(v)        => genFloatHex(v)
+      case nir.Val.Double(v)       => genDoubleHex(v)
       case nir.Val.StructValue(vs) =>
         str("{ ")
         rep(vs, sep = ", ")(genVal)
@@ -607,7 +607,7 @@ private[codegen] abstract class AbstractCodeGen(
 
     str("c\"")
     bytes.foreach {
-      case '\\' => str("\\\\")
+      case '\\'                                   => str("\\\\")
       case c if c < 0x20 || c == '"' || c >= 0x7f =>
         val hex = Integer.toHexString(c & 0xff)
         str {

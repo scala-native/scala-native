@@ -106,10 +106,10 @@ private[linker] trait LinktimeValueResolver { self: Reach =>
     }
 
     def isRuntimeOnly(inst: nir.Inst): Boolean = inst match {
-      case nir.Inst.Label(_, _)             => false
-      case nir.Inst.LinktimeIf(_, _, _)     => false
-      case nir.Inst.Jump(_: nir.Next.Label) => false
-      case nir.Inst.Ret(_)                  => false
+      case nir.Inst.Label(_, _)               => false
+      case nir.Inst.LinktimeIf(_, _, _)       => false
+      case nir.Inst.Jump(_: nir.Next.Label)   => false
+      case nir.Inst.Ret(_)                    => false
       case nir.Inst.Let(_, op, nir.Next.None) =>
         op match {
           case nir.Op.Call(_, nir.Val.Global(name, _), _) =>
@@ -212,7 +212,7 @@ private[linker] trait LinktimeValueResolver { self: Reach =>
             comparison match {
               case nir.Comp.Ieq | nir.Comp.Feq => resolved == condition
               case nir.Comp.Ine | nir.Comp.Fne => resolved != condition
-              case _ =>
+              case _                           =>
                 throw new LinkingException(
                   s"Unsupported link-time comparison $comparison between types ${condVal.ty} and ${resolvedValue.nirValue.ty}"
                 )
@@ -321,7 +321,7 @@ private[linker] object LinktimeValueResolver {
         case v: Float  => ComparableVal(v, nir.Val.Float(v))
         case v: Double => ComparableVal(v, nir.Val.Double(v))
         case v: String => ComparableVal(v, nir.Val.String(v))
-        case other =>
+        case other     =>
           throw new LinkingException(
             s"Unsupported value for link-time resolving: $other"
           )
@@ -341,7 +341,7 @@ private[linker] object LinktimeValueResolver {
         case nir.Val.Float(value)  => ComparableVal(value, v)
         case nir.Val.Double(value) => ComparableVal(value, v)
         case nir.Val.Null          => ComparableVal(null, v)
-        case other =>
+        case other                 =>
           throw new LinkingException(
             s"Unsupported NIR value for link-time resolving: $other"
           )

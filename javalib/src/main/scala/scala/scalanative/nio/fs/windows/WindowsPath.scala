@@ -166,7 +166,7 @@ class WindowsPath private[windows] (
     val otherType = other match {
       case null           => throw new NullPointerException()
       case p: WindowsPath => p.pathType
-      case _ =>
+      case _              =>
         throw new IllegalArgumentException("'other' is different Path class")
     }
     if (pathType != otherType) {

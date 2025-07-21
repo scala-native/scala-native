@@ -126,7 +126,7 @@ trait NirGenType(using Context) {
         SimpleType(defn.ArrayClass, fromType(elemTpe) :: Nil)
       case ConstantType(c)            => fromType(c.tpe)
       case ClassInfo(_, sym, _, _, _) => fromSymbol(sym)
-      case t @ TypeRef(tpe, _) =>
+      case t @ TypeRef(tpe, _)        =>
         SimpleType(t.symbol, tpe.argTypes.map(fromType))
       case AppliedType(tycon, args) =>
         SimpleType(tycon.typeSymbol, args.map(fromType))

@@ -497,7 +497,7 @@ abstract class AbstractQueuedLongSynchronizer protected ()
     def loop(p: Node, acc: Int): Int = {
       p match {
         case null => acc
-        case p =>
+        case p    =>
           val n =
             if (p.waiter != null) acc + 1
             else acc

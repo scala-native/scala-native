@@ -176,7 +176,7 @@ private[scalanative] object MemoryLayout {
 
     // fields should be already ordered by group names
     @tailrec def loop(fields: List[Field]): Unit = fields match {
-      case Nil => ()
+      case Nil           => ()
       case field :: tail =>
         val alignInfo = field.attrs.align
         val groupName = alignInfo.flatMap(_.group)

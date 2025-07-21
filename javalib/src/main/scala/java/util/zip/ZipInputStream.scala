@@ -105,7 +105,7 @@ class ZipInputStream(_in: InputStream, charset: Charset)
     if (failure != null) {
       failure match {
         case _: IOException | _: RuntimeException => throw failure
-        case e =>
+        case e                                    =>
           val error = new AssertionError()
           error.initCause(failure)
           throw error

@@ -78,7 +78,7 @@ private[scalanative] object TargetTriple {
       case "m68k"                                     => m68k
       case "msp430"                                   => msp430
       case "mips" | "mipseb" | "mipsallegrex" | "mipsisa32r6" | "mipsr6" => mips
-      case "mipsel" | "mipsallegrexel" | "mipsisa32r6el" | "mipsr6el" =>
+      case "mipsel" | "mipsallegrexel" | "mipsisa32r6el" | "mipsr6el"    =>
         mipsel
       case "mips64" | "mips64eb" | "mipsn32" | "mipsisa64r6" | "mips64r6" |
           "mipsn32r6" =>

@@ -351,7 +351,7 @@ object Collections {
       }
 
       list match {
-        case _: RandomAccess => exchangeRotation()
+        case _: RandomAccess    => exchangeRotation()
         case _ if listSize < 16 =>
           exchangeRotation() // TODO benchmark and set proper limit
         case _ => splitReverseRotation()

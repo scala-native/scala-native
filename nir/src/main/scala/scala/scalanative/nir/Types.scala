@@ -307,7 +307,7 @@ object Type {
     case Array(tpe, _)      => toArrayClass(tpe)
     case ArrayValue(tpe, _) => toArrayClass(tpe)
     case Function(args, _)  => Global.Top(s"scala.Function${args.length}")
-    case _ =>
+    case _                  =>
       throw new Exception(s"typeToName: unexpected type ${tpe.show}")
   }
 

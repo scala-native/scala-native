@@ -193,8 +193,8 @@ private[interflow] object MergePostProcessor {
         val visited = mutable.Set.empty[MergeBlock]
         def loop(queue: List[(MergeBlock, BlocksCycle)]): Option[BlocksCycle] =
           queue match {
-            case Nil               => None
-            case (`to`, path) :: _ => Some(path)
+            case Nil                     => None
+            case (`to`, path) :: _       => Some(path)
             case (current, path) :: tail =>
               if (visited.contains(current)) loop(tail)
               else {

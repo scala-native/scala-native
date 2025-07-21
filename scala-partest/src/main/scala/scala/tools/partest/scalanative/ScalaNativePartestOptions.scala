@@ -111,16 +111,16 @@ object ScalaNativePartestOptions {
     }
 
     for (arg <- args) arg match {
-      case Switch("denylisted")       => setFilter(DenylistedTests)
-      case Switch("allowlisted")      => setFilter(AllowlistedTests)
-      case Switch("showDiff")         => showDiff = true
-      case Switch("noOptimize")       => optimize = false
-      case Switch("noPrecompileLibs") => precompileLibs = false
+      case Switch("denylisted")           => setFilter(DenylistedTests)
+      case Switch("allowlisted")          => setFilter(AllowlistedTests)
+      case Switch("showDiff")             => showDiff = true
+      case Switch("noOptimize")           => optimize = false
+      case Switch("noPrecompileLibs")     => precompileLibs = false
       case Argument("parallelism", value) =>
         parallelism = util.Try(Integer.parseInt(value)).filter(_ > 0).toOption
-      case Argument("mode", value) => mode = build.Mode(value)
-      case Argument("gc", value)   => gc = build.GC(value)
-      case Argument("lto", value)  => lto = build.LTO(value)
+      case Argument("mode", value)                => mode = build.Mode(value)
+      case Argument("gc", value)                  => gc = build.GC(value)
+      case Argument("lto", value)                 => lto = build.LTO(value)
       case Argument("nativeClasspath", classpath) =>
         classpath
           .split(java.io.File.pathSeparatorChar)

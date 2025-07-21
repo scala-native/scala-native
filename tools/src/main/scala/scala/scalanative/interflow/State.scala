@@ -508,7 +508,7 @@ private[interflow] final class State(val blockId: nir.Local)(
         nir.Op.Copy(escapedVal(v))
       case op: nir.Op.SizeOf      => op
       case op: nir.Op.AlignmentOf => op
-      case nir.Op.Box(ty, v) =>
+      case nir.Op.Box(ty, v)      =>
         nir.Op.Box(ty, escapedVal(v))
       case nir.Op.Unbox(ty, v) =>
         nir.Op.Unbox(ty, escapedVal(v))

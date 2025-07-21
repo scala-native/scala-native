@@ -29,19 +29,19 @@ object StringUtils {
     @tailrec def loop(from: Int): ArrayBuilder[Byte] = {
 
       str.indexOf('\\', from) match {
-        case -1 => append(str.substring(from))
+        case -1  => append(str.substring(from))
         case idx =>
           append(str.substring(from, idx))
           if (idx >= len) throw new InvalidEscapeException(str, from)
           str(idx + 1) match {
-            case 'b'  => b += '\b'; loop(idx + 2)
-            case 't'  => b += '\t'; loop(idx + 2)
-            case 'n'  => b += '\n'; loop(idx + 2)
-            case 'f'  => b += '\f'; loop(idx + 2)
-            case 'r'  => b += '\r'; loop(idx + 2)
-            case '"'  => b += '\"'; loop(idx + 2)
-            case '\'' => b += '\''; loop(idx + 2)
-            case '\\' => b += '\\'; loop(idx + 2)
+            case 'b'                       => b += '\b'; loop(idx + 2)
+            case 't'                       => b += '\t'; loop(idx + 2)
+            case 'n'                       => b += '\n'; loop(idx + 2)
+            case 'f'                       => b += '\f'; loop(idx + 2)
+            case 'r'                       => b += '\r'; loop(idx + 2)
+            case '"'                       => b += '\"'; loop(idx + 2)
+            case '\''                      => b += '\''; loop(idx + 2)
+            case '\\'                      => b += '\\'; loop(idx + 2)
             case o if '0' <= o && o <= '7' =>
               throw new InvalidEscapeException(str, idx)
             case 'x' =>

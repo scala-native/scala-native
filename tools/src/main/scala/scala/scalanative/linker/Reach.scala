@@ -840,7 +840,7 @@ private[linker] class Reach(
       reachVal(v)
     case nir.Op.SizeOf(ty)      => reachType(ty)
     case nir.Op.AlignmentOf(ty) => reachType(ty)
-    case nir.Op.Box(code, obj) =>
+    case nir.Op.Box(code, obj)  =>
       reachVal(obj)
     case nir.Op.Unbox(code, obj) =>
       reachVal(obj)

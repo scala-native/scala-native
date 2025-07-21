@@ -361,7 +361,7 @@ object SocketHelpers {
   private lazy val useLoopbackIPv6: Boolean = {
     getPreferIPv6Addresses() match {
       case Some(useIPv6) => useIPv6
-      case None =>
+      case None          =>
         try {
           // "system" case relies on local nameserver having "localhost" defined.
           InetAddress.getByName("localhost").isInstanceOf[Inet6Address]

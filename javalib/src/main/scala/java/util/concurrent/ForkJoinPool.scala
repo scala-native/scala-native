@@ -937,12 +937,12 @@ class ForkJoinPool private (
       for (i <- 0 until n) {
         qs((r + i) & (n - 1)) match {
           case null => ()
-          case q =>
+          case q    =>
             val thread = q.owner
             if ((thread ne current) && q.access != STOP) {
               while (q.poll(null) match {
                     case null => false
-                    case t =>
+                    case t    =>
                       ForkJoinTask.cancelIgnoringExceptions(t)
                       true
                   }) ()
@@ -1177,7 +1177,7 @@ class ForkJoinPool private (
     while (!break && it.hasNext()) {
       it.next() match {
         case null => throw new NullPointerException()
-        case c =>
+        case c    =>
           val f = new InvokeAnyTask[T](root, c)
           fs.add(f)
           poolSubmit(true, f)
@@ -1208,7 +1208,7 @@ class ForkJoinPool private (
     while (it.hasNext()) {
       it.next() match {
         case null => throw new NullPointerException()
-        case c =>
+        case c    =>
           val f = new InvokeAnyTask(root, c)
           fs.add(f)
           poolSubmit(true, f)
@@ -1293,7 +1293,7 @@ class ForkJoinPool private (
       val t = pollScan(false)
       t match {
         case null => false
-        case t =>
+        case t    =>
           c.add(t)
           true
       }
@@ -2115,7 +2115,7 @@ object ForkJoinPool {
       val stat = super.cancel(false)
       if (mayInterruptIfRunning) runner match {
         case null => ()
-        case t =>
+        case t    =>
           try t.interrupt()
           catch { case ignore: Throwable => () }
       }

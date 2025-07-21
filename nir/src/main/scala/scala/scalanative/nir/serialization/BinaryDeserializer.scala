@@ -63,7 +63,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, nirSource: NIRSource) {
       val offset = getLebSignedInt()
       global match {
         case Global.None => false
-        case _ =>
+        case _           =>
           entries(global) = offset
           true
       }
@@ -250,7 +250,7 @@ final class BinaryDeserializer(buffer: ByteBuffer, nirSource: NIRSource) {
       case T.SwitchInst      => Inst.Switch(getVal(), getNext(), getNexts())
       case T.ThrowInst       => Inst.Throw(getVal(), getNext())
       case T.UnreachableInst => Inst.Unreachable(getNext())
-      case T.LinktimeIfInst =>
+      case T.LinktimeIfInst  =>
         Inst.LinktimeIf(getLinktimeCondition(), getNext(), getNext())
     }
   }
@@ -312,8 +312,8 @@ final class BinaryDeserializer(buffer: ByteBuffer, nirSource: NIRSource) {
     val attrs = getAttrs()
     implicit val position: nir.SourcePosition = getPosition()
     (tag: @switch) match {
-      case T.VarDefn   => Defn.Var(attrs, name.narrow[nir.Global.Member], getType(), getVal())
-      case T.ConstDefn => Defn.Const(attrs, name.narrow[nir.Global.Member], getType(), getVal())
+      case T.VarDefn     => Defn.Var(attrs, name.narrow[nir.Global.Member], getType(), getVal())
+      case T.ConstDefn   => Defn.Const(attrs, name.narrow[nir.Global.Member], getType(), getVal())
       case T.DeclareDefn =>
         Defn.Declare(attrs, name.narrow[nir.Global.Member], getType().narrow[Type.Function])
       case T.DefineDefn =>

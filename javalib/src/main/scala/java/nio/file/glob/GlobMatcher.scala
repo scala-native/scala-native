@@ -17,12 +17,12 @@ class GlobMatcher(glob: GlobNode, inputPath: String) {
         previous: GlobNode
     ): List[GlobNode] =
       node match {
-        case EndNode      => Nil
-        case StartNode(_) => Nil
+        case EndNode                              => Nil
+        case StartNode(_)                         => Nil
         case TransitionNode(globSpec, next, _, _) =>
           globSpec match {
             case Separator if inputChar == '/' => List(node)
-            case Asterisk if inputChar != '/' =>
+            case Asterisk if inputChar != '/'  =>
               List(node, previous) ++
                 next.flatMap(reachableStates(inputChar, _, node))
             case Asterisk if inputChar == '/' =>
@@ -34,7 +34,7 @@ class GlobMatcher(glob: GlobNode, inputPath: String) {
             case GlobChar(char) if char == inputChar              => List(node)
             case Bracket(set) if set.contains(inputChar)          => List(node)
             case NegationBracket(set) if !set.contains(inputChar) => List(node)
-            case Groups(_) =>
+            case Groups(_)                                        =>
               next.flatMap(reachableStates(inputChar, _, node))
             case _ => Nil
           }
@@ -42,8 +42,8 @@ class GlobMatcher(glob: GlobNode, inputPath: String) {
 
     def isEndReachable(node: GlobNode): Boolean =
       node match {
-        case StartNode(nextNode) => isEndReachable(nextNode)
-        case EndNode             => true
+        case StartNode(nextNode)                  => isEndReachable(nextNode)
+        case EndNode                              => true
         case TransitionNode(globSpec, next, _, _) =>
           globSpec match {
             case Asterisk | DoubleAsterisk | Groups(_) =>
@@ -63,7 +63,7 @@ class GlobMatcher(glob: GlobNode, inputPath: String) {
       if (inputIdx < input.length()) {
         val inputChar = input.charAt(inputIdx)
         val newStates = states.flatMap {
-          case EndNode => Nil
+          case EndNode                      => Nil
           case node @ (StartNode(nextNode)) =>
             reachableStates(inputChar, nextNode, node)
           case node @ (TransitionNode(_, next, _, _)) =>

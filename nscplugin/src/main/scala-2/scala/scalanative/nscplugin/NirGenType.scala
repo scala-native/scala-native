@@ -73,7 +73,7 @@ trait NirGenType[G <: Global with Singleton] { self: NirGenPhase[G] =>
           abort("ClassInfoType to ArrayClass!")
         case ClassInfoType(_, _, sym) => SimpleType(sym, Seq.empty)
         case t: AnnotatedType         => fromType(t.underlying)
-        case t: ExistentialType =>
+        case t: ExistentialType       =>
           fromType(t.underlying).copy(targs = List(ObjectClassType))
         case tpe: ErasedValueType => SimpleType(tpe.valueClazz, Seq.empty)
       }
@@ -130,13 +130,13 @@ trait NirGenType[G <: Global with Singleton] { self: NirGenPhase[G] =>
       st: SimpleType,
       deconstructValueTypes: Boolean = false
   ): nir.Type = st.sym match {
-    case ObjectClass      => nir.Rt.Object
-    case UnitClass        => nir.Type.Unit
-    case BoxedUnitClass   => nir.Rt.BoxedUnit
-    case NullClass        => genRefType(RuntimeNullClass)
-    case NothingClass     => genRefType(RuntimeNothingClass)
-    case ArrayClass       => nir.Type.Array(genType(st.targs.head))
-    case _ if st.isStruct => genStruct(st)
+    case ObjectClass                => nir.Rt.Object
+    case UnitClass                  => nir.Type.Unit
+    case BoxedUnitClass             => nir.Rt.BoxedUnit
+    case NullClass                  => genRefType(RuntimeNullClass)
+    case NothingClass               => genRefType(RuntimeNothingClass)
+    case ArrayClass                 => nir.Type.Array(genType(st.targs.head))
+    case _ if st.isStruct           => genStruct(st)
     case _ if deconstructValueTypes =>
       if (st.isAnonymousStruct) genAnonymousStruct(st)
       else if (st.isFixedSizeArray) genFixedSizeArray(st)

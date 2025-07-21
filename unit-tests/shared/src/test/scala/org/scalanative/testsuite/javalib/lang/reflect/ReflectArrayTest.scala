@@ -179,7 +179,7 @@ class ReflectArrayTest {
     def check(dimensions: List[Int], array: Array[_]): Unit = {
       assertTrue(array.getClass.isArray)
       dimensions match {
-        case Nil => ()
+        case Nil            => ()
         case current :: Nil =>
           assertEquals(expectedClazz, array.getClass)
           for (i <- 0 until array.length) {

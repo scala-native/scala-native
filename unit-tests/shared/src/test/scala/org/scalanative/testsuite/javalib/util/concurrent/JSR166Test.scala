@@ -685,7 +685,7 @@ abstract class JSR166Test {
       try super.await(LONGER_DELAY_MS, MILLISECONDS)
       catch {
         case _: TimeoutException => throw new AssertionError("timed out")
-        case fail: Exception =>
+        case fail: Exception     =>
           throw new AssertionError("Unexpected exception: " + fail, fail)
       }
     }

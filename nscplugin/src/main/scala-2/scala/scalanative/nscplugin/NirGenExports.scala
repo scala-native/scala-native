@@ -92,7 +92,7 @@ trait NirGenExports[G <: nsc.Global with Singleton] {
     if (isField(member)) {
       checkAccessorAnnotation(member)
       member.getAnnotation(ExportAccessorsClass) match {
-        case None => Nil
+        case None             => Nil
         case Some(annotation) =>
           def accessorExternSig(prefix: String) = {
             val nir.Sig.Extern(id) = genExternSig(member)

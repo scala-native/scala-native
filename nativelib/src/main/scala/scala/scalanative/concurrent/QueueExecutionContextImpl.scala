@@ -78,7 +78,7 @@ private[concurrent] class QueueExecutionContextImpl()
     while (nonEmpty) stealWork(Int.MaxValue)
 
   private def doStealWork(): Unit = computeQueue.dequeue() match {
-    case null => ()
+    case null     => ()
     case runnable =>
       try runnable.run()
       catch { case t: Throwable => reportFailure(t) }

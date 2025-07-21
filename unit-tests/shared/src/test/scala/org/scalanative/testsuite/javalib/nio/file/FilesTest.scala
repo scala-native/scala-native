@@ -1544,7 +1544,7 @@ class FilesTest {
        */
 
       skippingVisitor.lastOption() match {
-        case None => fail("Unexpected empty visited list")
+        case None    => fail("Unexpected empty visited list")
         case Some(v) =>
           assertEquals(s"path '${v}' was not skipped", f2, v)
       }
