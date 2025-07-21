@@ -19,6 +19,12 @@ sealed trait NativeConfig {
   /** The compilation options passed to LLVM. */
   def compileOptions: Seq[String]
 
+  /** The compiler C version -std=XXX */
+  def compileStdC: Option[String]
+
+  /** The compiler C++ version -std=XXX */
+  def compileStdCpp: Option[String]
+
   /** Optional target triple that defines current OS, ABI and CPU architecture.
    */
   def targetTriple: Option[String]
@@ -159,6 +165,12 @@ sealed trait NativeConfig {
   /** Create a new config with updated compilation options. */
   def withCompileOptions(update: Mapping[Seq[String]]): NativeConfig
 
+  /** Create a new config with custom C std. */
+  def withCompileStdC(value: String): NativeConfig
+
+  /** Create a new config with custom C++ std. */
+  def withCompileStdCpp(value: String): NativeConfig
+
   /** Create a new config given a target triple. */
   def withTargetTriple(value: Option[String]): NativeConfig
 
@@ -279,6 +291,8 @@ object NativeConfig {
       clangPP = Paths.get(""),
       linkingOptions = Seq.empty,
       compileOptions = Seq.empty,
+      compileStdC = None,
+      compileStdCpp = None,
       targetTriple = None,
       gc = GC.default,
       lto = LTO.default,
@@ -309,6 +323,8 @@ object NativeConfig {
       clangPP: Path,
       linkingOptions: Seq[String],
       compileOptions: Seq[String],
+      compileStdC: Option[String],
+      compileStdCpp: Option[String],
       targetTriple: Option[String],
       gc: GC,
       lto: LTO,
@@ -345,6 +361,12 @@ object NativeConfig {
 
     def withCompileOptions(update: Mapping[Seq[String]]): NativeConfig =
       copy(compileOptions = update(compileOptions).map(_.trim()))
+
+    def withCompileStdC(value: String): NativeConfig =
+      copy(compileStdC = Some(value))
+
+    def withCompileStdCpp(value: String): NativeConfig =
+      copy(compileStdCpp = Some(value))
 
     def withTargetTriple(value: Option[String]): NativeConfig = {
       val propertyName = "target.triple"
@@ -473,6 +495,8 @@ object NativeConfig {
         | - clangPP:                 $clangPP
         | - linkingOptions:          ${showSeq(linkingOptions)}
         | - compileOptions:          ${showSeq(compileOptions)}
+        | - compileStdC:             $compileStdC
+        | - compileStdCpp:           $compileStdCpp
         | - targetTriple:            $targetTriple
         | - GC:                      $gc
         | - LTO:                     $lto
