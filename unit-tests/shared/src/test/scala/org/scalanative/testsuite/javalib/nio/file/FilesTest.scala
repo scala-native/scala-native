@@ -603,23 +603,31 @@ class FilesTest {
   }
 
   /* If you live a Good Life, you will never have to parse this regex by hand.
-   * On unix-like, expect six alphanumeric characters after the numeric ident.
-   * On JVM & SN Windows expect zero.
    *
-   * Java uses simple ASCII for alphabetic '\a', numeric '\d', and
-   * alphanumeric '\w'.
+   * Java uses simple ASCII for numeric '\d', and alphanumeric '\w'.
+   * 
+   * The parse goes:
+   *   - an optional single character 'a'
+   *   - 1 to 19 digit characters
+   *   - zero to 6 alphanumeric characters
+   *   - one optional period, a.k.a full stop
+   *   - zero or many alphanumeric characters.
    *
-   * Underscores and other symbols are not expected by this regex.
-   * It will reject prefixes such as 'a_b' & suffices such '.tmp_1'. Such are
-   * left as an exercise for the person introducing the breaking change.
+   * snake_case, kebab-case, and other symbols are not expected by this regex.
+   * Those are left as an exercise for the person introducing the breaking
+   * change.
    */
 
-  private val tempFile = "^a?\\d{1,19}\\w{0,6}\\.?\\w*$".r
+  // Triple quotes means no need to double backslash, easier to read.
+  private val tempFileRegex = """^a?\d{1,19}\w{0,6}\.?\w*$""".r
 
   @Test def filesCreateTempDirectoryWorksWithNullPrefix(): Unit = {
     val dir = Files.createTempDirectory(null)
     try {
-      assertTrue("a1", tempFile.findFirstIn(dir.getFileName.toString).isDefined)
+      assertTrue(
+        "a1",
+        tempFileRegex.findFirstIn(dir.getFileName.toString).isDefined
+      )
       assertTrue("a2", Files.exists(dir))
       assertTrue("a3", Files.isDirectory(dir))
     } finally Files.delete(dir)
@@ -628,7 +636,10 @@ class FilesTest {
   @Test def filesCreateTempDirectoryWorksWithShortPrefix(): Unit = {
     val dir = Files.createTempDirectory("a")
     try {
-      assertTrue("a1", tempFile.findFirstIn(dir.getFileName.toString).isDefined)
+      assertTrue(
+        "a1",
+        tempFileRegex.findFirstIn(dir.getFileName.toString).isDefined
+      )
       assertTrue("a2", Files.exists(dir))
       assertTrue("a3", Files.isDirectory(dir))
     } finally Files.delete(dir)
@@ -745,7 +756,7 @@ class FilesTest {
     try {
       assertTrue(
         "a1",
-        tempFile.findFirstIn(file.getFileName.toString).isDefined
+        tempFileRegex.findFirstIn(file.getFileName.toString).isDefined
       )
       assertTrue("a2", Files.exists(file))
       assertTrue("a3", Files.isRegularFile(file))
@@ -757,7 +768,7 @@ class FilesTest {
     try {
       assertTrue(
         "a1",
-        tempFile.findFirstIn(file.getFileName.toString).isDefined
+        tempFileRegex.findFirstIn(file.getFileName.toString).isDefined
       )
       assertTrue("a2", Files.exists(file))
       assertTrue("a3", Files.isRegularFile(file))
