@@ -265,7 +265,7 @@ object JUnitTest {
     def deserialize(line: String): Output = line.toList match {
       case 'l' :: level :: msg => Log(level, msg.mkString(""))
       case 'd' :: msg          => Done(msg.mkString(""))
-      case 'e' :: s :: tail =>
+      case 'e' :: s :: tail    =>
         val status = Status.values
         val rest: Array[String] = tail.mkString("").split(separator, -1)
         val testName: String = rest(0)
@@ -282,8 +282,8 @@ object JUnitTest {
     }
 
     def serialize(o: Output): String = o match {
-      case Log(level, msg) => "l" + level + msg
-      case Done(msg)       => "d" + msg
+      case Log(level, msg)   => "l" + level + msg
+      case Done(msg)         => "d" + msg
       case Event(s, n, t, d) =>
         "e" + s.ordinal + n + separator + t.getOrElse("") + separator + d
     }

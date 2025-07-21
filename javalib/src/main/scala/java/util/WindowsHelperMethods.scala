@@ -75,7 +75,7 @@ object WindowsHelperMethods {
         )) {
       GetLastError() match {
         case ErrorCodes.ERROR_INSUFFICIENT_BUFFER => ()
-        case errCode =>
+        case errCode                              =>
           throw WindowsException(
             s"Cannot determinate size for token informaiton $informationClass",
             errCode

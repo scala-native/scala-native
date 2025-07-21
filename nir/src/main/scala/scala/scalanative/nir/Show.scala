@@ -116,7 +116,7 @@ object Show {
         str("volatile")
       case Attr.Final =>
         str("final")
-      case Attr.SafePublish => str("safe-publish")
+      case Attr.SafePublish      => str("safe-publish")
       case Attr.LinktimeResolved =>
         str("linktime")
       case Attr.Alignment(size, group) =>
@@ -674,11 +674,11 @@ object Show {
         rep(tys, sep = ", ")(onType)
         str("}")
 
-      case Type.Null    => str("null")
-      case Type.Nothing => str("nothing")
-      case Type.Virtual => str("virtual")
-      case Type.Var(ty) => str("var["); onType(ty); str("]")
-      case Type.Unit    => str("unit")
+      case Type.Null                => str("null")
+      case Type.Nothing             => str("nothing")
+      case Type.Virtual             => str("virtual")
+      case Type.Var(ty)             => str("var["); onType(ty); str("]")
+      case Type.Unit                => str("unit")
       case Type.Array(ty, nullable) =>
         if (!nullable) {
           str("?")

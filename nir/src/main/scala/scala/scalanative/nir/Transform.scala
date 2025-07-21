@@ -102,7 +102,7 @@ trait Transform {
       Op.Copy(onVal(v))
     case Op.SizeOf(ty)      => Op.SizeOf(onType(ty))
     case Op.AlignmentOf(ty) => Op.AlignmentOf(onType(ty))
-    case Op.Box(code, obj) =>
+    case Op.Box(code, obj)  =>
       Op.Box(code, onVal(obj))
     case Op.Unbox(code, obj) =>
       Op.Unbox(code, onVal(obj))
@@ -123,8 +123,8 @@ trait Transform {
   }
 
   def onVal(value: Val): Val = value match {
-    case Val.Zero(ty)            => Val.Zero(onType(ty))
-    case Val.StructValue(values) => Val.StructValue(values.map(onVal))
+    case Val.Zero(ty)               => Val.Zero(onType(ty))
+    case Val.StructValue(values)    => Val.StructValue(values.map(onVal))
     case Val.ArrayValue(ty, values) =>
       Val.ArrayValue(onType(ty), values.map(onVal))
     case v @ Val.Local(_, ty) => v.copy(valty = onType(ty))

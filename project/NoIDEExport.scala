@@ -23,7 +23,7 @@ object NoIDEExport {
   /** Settings to prevent the project from being exported to IDEs. */
   lazy val noIDEExportSettings: Seq[Setting[_]] = {
     bloopGenerateKey match {
-      case None => Nil
+      case None      => Nil
       case Some(key) =>
         Seq(
           Compile / key := None,

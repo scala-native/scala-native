@@ -34,7 +34,7 @@ trait Future[V] {
         try return get()
         catch {
           case _: InterruptedException => interrupted = true
-          case _: ExecutionException =>
+          case _: ExecutionException   =>
             throw new IllegalStateException("Task completed with exception")
           case _: CancellationException =>
             throw new IllegalStateException("Task was cancelled")

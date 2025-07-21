@@ -183,7 +183,7 @@ object Runtime extends Runtime() {
         case a =>
           envp.foreach {
             case null =>
-            case a =>
+            case a    =>
               a.split("=") match {
                 case Array(k, v) => env.put(k, v)
                 case _           =>

@@ -778,7 +778,7 @@ object ForkJoinTask {
       val status = super.cancel(false)
       if (mayInterruptIfRunning) runner match {
         case null => ()
-        case t =>
+        case t    =>
           try t.interrupt()
           catch { case _: Throwable => () }
       }

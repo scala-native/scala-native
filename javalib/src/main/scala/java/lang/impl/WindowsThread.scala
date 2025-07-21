@@ -94,7 +94,7 @@ private[java] class WindowsThread(
       case 6 | 7 => THREAD_PRIORITY_ABOVE_NORMAL
       case 8 | 9 => THREAD_PRIORITY_HIGHEST
       case 10    => THREAD_PRIORITY_TIME_CRITICAL
-      case _ =>
+      case _     =>
         throw new IllegalArgumentException("Not a valid java thread priority")
     }
 

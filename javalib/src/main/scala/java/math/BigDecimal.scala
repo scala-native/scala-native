@@ -316,13 +316,13 @@ object BigDecimal {
     val sigFraction = java.lang.Integer.signum(fraction)
     // the carry after rounding
     roundingMode match {
-      case UP        => sigFraction
-      case DOWN      => 0
-      case CEILING   => Math.max(sigFraction, 0)
-      case FLOOR     => Math.min(sigFraction, 0)
-      case HALF_UP   => if (absFraction >= 5) sigFraction else 0
-      case HALF_DOWN => if (absFraction > 5) sigFraction else 0
-      case HALF_EVEN => if (absFraction + parityBit > 5) sigFraction else 0
+      case UP          => sigFraction
+      case DOWN        => 0
+      case CEILING     => Math.max(sigFraction, 0)
+      case FLOOR       => Math.min(sigFraction, 0)
+      case HALF_UP     => if (absFraction >= 5) sigFraction else 0
+      case HALF_DOWN   => if (absFraction > 5) sigFraction else 0
+      case HALF_EVEN   => if (absFraction + parityBit > 5) sigFraction else 0
       case UNNECESSARY =>
         if (fraction == 0) 0
         else throw new ArithmeticException("Rounding necessary")

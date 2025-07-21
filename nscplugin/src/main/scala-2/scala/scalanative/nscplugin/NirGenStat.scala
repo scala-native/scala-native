@@ -942,7 +942,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         sym.isSetter && sym.owner.tpe <:< classSym.tpe
 
       rhs match {
-        case Block(Nil, _) => () // empty mixin constructor
+        case Block(Nil, _)   => () // empty mixin constructor
         case Block(inits, _) =>
           val externs = collection.mutable.Set.empty[Symbol]
           inits.foreach {
@@ -1000,7 +1000,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       ): Option[String] =
         annotation.tree match {
           case Apply(_, Seq(Literal(Constant(name: String)))) => Some(name)
-          case tree =>
+          case tree                                           =>
             reporter.error(
               tree.pos,
               s"Invalid usage of ${annotation.symbol}, expected literal constant string argument, got ${tree}"
@@ -1015,11 +1015,11 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           case NoOptimizeClass   => attrs += nir.Attr.NoOpt
           case NoSpecializeClass => attrs += nir.Attr.NoSpecialize
           case StubClass         => attrs += nir.Attr.Stub
-          case LinkClass =>
+          case LinkClass         =>
             requireLiteralStringAnnotation(ann)
               .foreach(attrs += nir.Attr.Link(_))
           case LinkCppRuntimeClass => attrs += nir.Attr.LinkCppRuntime
-          case DefineClass =>
+          case DefineClass         =>
             requireLiteralStringAnnotation(ann)
               .foreach(attrs += nir.Attr.Define(_))
           case _ => ()

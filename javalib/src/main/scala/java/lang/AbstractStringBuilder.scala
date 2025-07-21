@@ -186,7 +186,7 @@ protected abstract class AbstractStringBuilder private (unit: Unit) {
       enlargeBuffer(newCount)
 
     chars0 match {
-      case str: String => str.getChars(start, end, value, count)
+      case str: String                => str.getChars(start, end, value, count)
       case asb: AbstractStringBuilder =>
         System.arraycopy(asb.value, start, value, count, length)
       case _ =>

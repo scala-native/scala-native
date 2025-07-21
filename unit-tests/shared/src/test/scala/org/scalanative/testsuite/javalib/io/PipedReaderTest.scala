@@ -44,7 +44,7 @@ class PipedReaderTest {
         Thread.sleep(10000)
       } catch {
         case _: InterruptedException => ()
-        case e: Exception =>
+        case e: Exception            =>
           println("Exception occurred: " + e.toString)
       }
     }

@@ -185,7 +185,7 @@ class ThreadGroup(
       if (indent.isEmpty()) " " * 4
       else indent * 2
     map.get(this) match {
-      case null => ()
+      case null    => ()
       case threads =>
         threads.forEach { thread =>
           out.print(newIndent)
@@ -261,7 +261,7 @@ class ThreadGroup(
     var i = 0
     while (i < subgroups) {
       weekSubgroups(i).get() match {
-        case null => removeGroupAtIndex(i)
+        case null  => removeGroupAtIndex(i)
         case group =>
           snapshot.add(group)
           i += 1

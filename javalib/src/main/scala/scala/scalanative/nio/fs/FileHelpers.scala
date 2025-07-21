@@ -152,7 +152,7 @@ object FileHelpers {
           HandleApi.CloseHandle(handle)
           GetLastError() match {
             case ErrorCodes.ERROR_FILE_EXISTS => false
-            case errCode =>
+            case errCode                      =>
               if (handle != INVALID_HANDLE_VALUE) true
               else if (throwOnError)
                 throw WindowsException(

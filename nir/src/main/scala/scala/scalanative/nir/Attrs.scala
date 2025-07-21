@@ -382,7 +382,7 @@ object Attrs {
       case attr: Inline     => inline = attr
       case attr: Specialize => specialize = attr
       case attr: Opt        => opt = attr
-      case attr: Alignment =>
+      case attr: Alignment  =>
         align = Some(attr)
       case Extern(blocking) =>
         isExtern = true

@@ -77,7 +77,7 @@ private[scalanative] sealed abstract class NIRCheck(implicit
       }
 
     obj.ty match {
-      case nir.Type.Null => ok
+      case nir.Type.Null                   => ok
       case ScopeRef(info) if sig.isVirtual =>
         info.implementors.foreach(checkCallable)
       case ClassRef(info) =>
@@ -220,7 +220,7 @@ private[scalanative] final class Check(implicit
       checkCompOp(comp, ty, l, r)
     case nir.Op.Conv(conv, ty, value) =>
       checkConvOp(conv, ty, value)
-    case nir.Op.Fence(_) => ok
+    case nir.Op.Fence(_)               => ok
     case nir.Op.Classalloc(name, zone) =>
       analysis.infos
         .get(name)
@@ -246,8 +246,8 @@ private[scalanative] final class Check(implicit
       checkFieldOp(ty, obj, name, None)
     case nir.Op.Fieldstore(ty, obj, name, value) =>
       checkFieldOp(ty, obj, name, Some(value))
-    case op: nir.Op.Field  => checkFieldOp(op)
-    case op: nir.Op.Method => checkMethodOp(op)
+    case op: nir.Op.Field           => checkFieldOp(op)
+    case op: nir.Op.Method          => checkMethodOp(op)
     case nir.Op.Dynmethod(obj, sig) =>
       expect(nir.Rt.Object, obj)
       sig match {
@@ -479,7 +479,7 @@ private[scalanative] final class Check(implicit
   ): Unit = {
 
     obj.ty match {
-      case nir.Type.Null => ok
+      case nir.Type.Null   => ok
       case ScopeRef(scope) =>
         scope.implementors.foreach { cls =>
           val field = cls.fields.collectFirst {
@@ -553,7 +553,7 @@ private[scalanative] final class Check(implicit
         (value.ty, ty) match {
           case (lty: nir.Type.FixedSizeI, nir.Type.Size) => ok
           case (nir.Type.Size, rty: nir.Type.FixedSizeI) => ok
-          case _ =>
+          case _                                         =>
             error(
               s"can't cast size from ${value.ty.show} to ${ty.show}"
             )

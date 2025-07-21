@@ -432,7 +432,7 @@ private[codegen] trait MetadataCodeGen { self: AbstractCodeGen =>
     import nir.Type._
     implicit def analysis: ReachabilityAnalysis.Result = metaCtx.codeGen.meta.analysis
     ty match {
-      case nir.Type.Unit => toMetadataType(nir.Rt.BoxedUnit)
+      case nir.Type.Unit    => toMetadataType(nir.Rt.BoxedUnit)
       case StructValue(tys) =>
         new DICompositeType(
           tag = DWTag.Structure,
@@ -644,7 +644,7 @@ private[codegen] object MetadataCodeGen {
       def fqcn(methodName: String) = s"$ownerName.$methodName"
       def maybeFQCName(methodName: String) = if (useFQCName) fqcn(methodName) else methodName
       def methodNameInfo(sig: nir.Sig.Unmangled): (String, DIFlags) = sig match {
-        case nir.Sig.Extern(id) => id -> DIFlags()
+        case nir.Sig.Extern(id)           => id -> DIFlags()
         case nir.Sig.Method(id, _, scope) =>
           maybeFQCName(id) -> DIFlags(sigAccessibilityFlags(scope): _*)
         case nir.Sig.Duplicate(of, _) => methodNameInfo(of.unmangled)
@@ -734,7 +734,7 @@ private[codegen] object MetadataCodeGen {
         case _                      => ()
       }
       v match {
-        case v: Metadata.Tuple => v.values.foreach(tryIntern)
+        case v: Metadata.Tuple           => v.values.foreach(tryIntern)
         case v: Metadata.SpecializedNode =>
           v.productIterator.foreach(tryIntern)
         case _: Metadata.DIExpressions => ()

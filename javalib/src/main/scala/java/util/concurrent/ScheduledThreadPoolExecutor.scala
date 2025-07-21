@@ -111,7 +111,7 @@ object ScheduledThreadPoolExecutor {
     }
 
     private def indexOf(x: Any): Int = x match {
-      case null => -1
+      case null                                                  => -1
       case t: ScheduledThreadPoolExecutor#ScheduledFutureTask[_] =>
         val i = t.heapIndex
         // Sanity check; x could conceivably be a

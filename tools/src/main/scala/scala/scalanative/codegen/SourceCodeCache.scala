@@ -189,7 +189,7 @@ private[codegen] class SourceCodeCache(config: build.Config) {
       else {
         def subpathFrom(pivotSubpath: String): Option[Path] =
           pathElements.lastIndexOf(pivotSubpath) match {
-            case -1 => None
+            case -1  => None
             case idx =>
               Some(
                 jarPath

@@ -254,7 +254,7 @@ private[interflow] trait Eval { self: Interflow =>
         nir.Val.Virtual(state.allocClass(cls, zonePtr))
       case nir.Op.Fieldload(ty, rawObj, name @ FieldRef(cls, fld)) =>
         eval(rawObj) match {
-          case VirtualRef(_, _, values) => values(fld.index)
+          case VirtualRef(_, _, values)   => values(fld.index)
           case DelayedRef(op: nir.Op.Box) =>
             val name = op.ty.asInstanceOf[nir.Type.RefKind].className
             eval(nir.Op.Unbox(nir.Type.Ref(name), rawObj))
@@ -839,7 +839,7 @@ private[interflow] trait Eval { self: Interflow =>
     def bailOut =
       throw BailOut(s"can't eval conv op: $conv[${ty.show}] ${value.show}")
     conv match {
-      case _ if ty == value.ty => value
+      case _ if ty == value.ty                     => value
       case nir.Conv.SSizeCast | nir.Conv.ZSizeCast =>
         def size(ty: nir.Type) = ty match {
           case nir.Type.Size =>

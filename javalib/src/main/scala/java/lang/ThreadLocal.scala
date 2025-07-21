@@ -370,7 +370,7 @@ class ThreadLocal[T <: AnyRef]() {
     val values = this.values(currentThread) match {
       case Unsupported => return initialValue()
       case null        => initializeValues(currentThread)
-      case values =>
+      case values      =>
         assert(values != null)
         val table = values.table
         val index = hash & values.mask

@@ -65,7 +65,7 @@ private[scalanative] object Lower {
         visited: mutable.Set[Block] = mutable.Set.empty
     ): Option[BlockInfo] = blockInfo.get(current) match {
       case Some(info) if predicate(info) => Some(info)
-      case _ =>
+      case _                             =>
         if (visited.add(current))
           current.pred.iterator
             .map(findNonRecursive(_, predicate, visited))
@@ -184,7 +184,7 @@ private[scalanative] object Lower {
       def getUnwindHandler(next: nir.Next)(implicit pos: nir.SourcePosition): Option[nir.Local] = unwindHandlerCache.getOrElseUpdate(
         next,
         next match {
-          case nir.Next.None => None
+          case nir.Next.None              => None
           case nir.Next.Unwind(exc, next) =>
             val handler = fresh()
             handlers.label(handler, Seq(exc))
@@ -684,7 +684,7 @@ private[scalanative] object Lower {
       val nir.Op.Fieldload(ty, obj, name) = op
       val field = name match {
         case FieldRef(_, field) => field
-        case _ =>
+        case _                  =>
           throw new LinkingException(s"Metadata for field '$name' not found")
       }
 
@@ -712,7 +712,7 @@ private[scalanative] object Lower {
       val nir.Op.Fieldstore(ty, obj, name, value) = op
       val field = name match {
         case FieldRef(_, field) => field
-        case _ =>
+        case _                  =>
           throw new LinkingException(s"Metadata for field '$name' not found")
       }
 
@@ -1884,7 +1884,7 @@ private[scalanative] object Lower {
           val elemSize = MemoryLayout.sizeOf(ty)
           val size = sizeV match {
             case nir.Val.Size(v) => nir.Val.Size(v * elemSize)
-            case _ =>
+            case _               =>
               val asSize = sizeV.ty match {
                 case i: nir.Type.FixedSizeI =>
                   if (i.width == platform.sizeOfPtrBits) sizeV

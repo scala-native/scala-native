@@ -16,7 +16,7 @@ object Test {
   }
 
   def checkException(thread: Task, ex: Throwable) = ex match {
-    case _: Boom => // ok
+    case _: Boom                  => // ok
     case ex: NoClassDefFoundError =>
       ex.getCause() match {
         case _: ExceptionInInitializerError => // ok

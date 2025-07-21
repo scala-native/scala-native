@@ -43,7 +43,7 @@ abstract class ResourceBundle {
   def getString(key: String): String = {
     getObject(key) match {
       case s: String => s
-      case obj =>
+      case obj       =>
         throw new ClassCastException(
           s"'$key' in bundle ${this.getClass.getName} is not a string but ${obj.getClass.getName}"
         )
@@ -53,7 +53,7 @@ abstract class ResourceBundle {
   def getStringArray(key: String): Array[String] = {
     getObject(key) match {
       case arr: Array[String] => arr
-      case obj =>
+      case obj                =>
         throw new ClassCastException(
           s"'$key' in bundle ${this.getClass.getName} is not a string array but ${obj.getClass.getName}"
         )

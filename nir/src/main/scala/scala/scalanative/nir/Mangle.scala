@@ -88,18 +88,18 @@ object Mangle {
     }
 
     def mangleType(ty: Type): Unit = ty match {
-      case Type.Vararg => str("v")
-      case Type.Ptr    => str("R_")
-      case Type.Bool   => str("z")
-      case Type.Char   => str("c")
+      case Type.Vararg        => str("v")
+      case Type.Ptr           => str("R_")
+      case Type.Bool          => str("z")
+      case Type.Char          => str("c")
       case i: Type.FixedSizeI =>
         mangleFixedSizeIntegerType(i)
-      case Type.Size    => str("w")
-      case Type.Float   => str("f")
-      case Type.Double  => str("d")
-      case Type.Null    => str("l")
-      case Type.Nothing => str("n")
-      case Type.Unit    => str("u")
+      case Type.Size              => str("w")
+      case Type.Float             => str("f")
+      case Type.Double            => str("d")
+      case Type.Null              => str("l")
+      case Type.Nothing           => str("n")
+      case Type.Unit              => str("u")
       case Type.ArrayValue(ty, n) =>
         str("A")
         mangleType(ty)

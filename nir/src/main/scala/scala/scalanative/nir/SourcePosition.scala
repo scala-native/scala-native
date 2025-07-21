@@ -54,12 +54,12 @@ object SourcePosition {
 
 sealed trait SourceFile {
   def filename: Option[String] = this match {
-    case SourceFile.Virtual => None
+    case SourceFile.Virtual          => None
     case source: SourceFile.Relative =>
       Option(source.path.getFileName()).map(_.toString())
   }
   def directory: Option[String] = this match {
-    case SourceFile.Virtual => None
+    case SourceFile.Virtual          => None
     case source: SourceFile.Relative =>
       Option(source.path.getParent()).map(_.toString())
   }

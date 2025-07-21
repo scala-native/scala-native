@@ -139,7 +139,7 @@ final class BinarySerializer(channel: WritableByteChannel) {
       case Type.StructValue(tys)        => putTag(T.StructValueType); putTypes(tys)
       case Type.Vararg                  => putTag(T.VarargType)
       case Type.Var(ty)                 => putTag(T.VarType); putType(ty)
-      case Type.Virtual =>
+      case Type.Virtual                 =>
         nonSerializable("Type.Virtual")
       // putTag(T.VirtualType)
       case Type.Int128 =>
@@ -178,7 +178,7 @@ final class BinarySerializer(channel: WritableByteChannel) {
       case Val.Zero(ty)           => putTag(T.ZeroVal); putType(ty)
       case Val.ArrayValue(ty, vs) => putTag(T.ArrayValueVal); putType(ty); putVals(vs)
       case Val.StructValue(vs)    => putTag(T.StructValueVal); putVals(vs)
-      case Val.Virtual(v) =>
+      case Val.Virtual(v)         =>
         nonSerializable("Val.Virtual")
       // putTag(T.VirtualVal); putLebUnsignedLong(v)
       case Val.Int128(hi, lo) =>
@@ -216,8 +216,8 @@ final class BinarySerializer(channel: WritableByteChannel) {
       case Attr.Final              => putTag(T.FinalAttr)
       case Attr.SafePublish        => putTag(T.SafePublishAttr)
 
-      case Attr.LinktimeResolved => putTag(T.LinktimeResolvedAttr)
-      case Attr.UsesIntrinsic    => putTag(T.UsesIntrinsicAttr)
+      case Attr.LinktimeResolved       => putTag(T.LinktimeResolvedAttr)
+      case Attr.UsesIntrinsic          => putTag(T.UsesIntrinsicAttr)
       case Attr.Alignment(size, group) =>
         putTag(T.AlignAttr)
         putLebSignedInt(size)

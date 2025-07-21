@@ -68,7 +68,7 @@ object Array {
     case array: Array[scala.Long]    => array.length
     case array: Array[scala.Float]   => array.length
     case array: Array[scala.Double]  => array.length
-    case _ =>
+    case _                           =>
       throw new IllegalArgumentException("argument type mismatch")
   }
 
@@ -82,32 +82,32 @@ object Array {
     case array: Array[scala.Long]   => java.lang.Long.valueOf(array(index))
     case array: Array[scala.Float]  => java.lang.Float.valueOf(array(index))
     case array: Array[scala.Double] => java.lang.Double.valueOf(array(index))
-    case _ =>
+    case _                          =>
       throw new IllegalArgumentException("argument type mismatch")
   }
 
   def getBoolean(array: AnyRef, index: Int): Boolean = array match {
     case array: Array[scala.Boolean] => array(index)
-    case _ =>
+    case _                           =>
       throw new IllegalArgumentException("argument type mismatch")
   }
 
   def getChar(array: AnyRef, index: Int): Char = array match {
     case array: Array[scala.Char] => array(index)
-    case _ =>
+    case _                        =>
       throw new IllegalArgumentException("argument type mismatch")
   }
 
   def getByte(array: AnyRef, index: Int): Byte = array match {
     case array: Array[scala.Byte] => array(index)
-    case _ =>
+    case _                        =>
       throw new IllegalArgumentException("argument type mismatch")
   }
 
   def getShort(array: AnyRef, index: Int): Short = array match {
     case array: Array[scala.Short] => array(index)
     case array: Array[scala.Byte]  => array(index)
-    case _ =>
+    case _                         =>
       throw new IllegalArgumentException("argument type mismatch")
   }
 
@@ -116,7 +116,7 @@ object Array {
     case array: Array[scala.Char]  => array(index)
     case array: Array[scala.Byte]  => array(index)
     case array: Array[scala.Short] => array(index)
-    case _ =>
+    case _                         =>
       throw new IllegalArgumentException("argument type mismatch")
   }
 
@@ -126,7 +126,7 @@ object Array {
     case array: Array[scala.Byte]  => array(index)
     case array: Array[scala.Short] => array(index)
     case array: Array[scala.Int]   => array(index)
-    case _ =>
+    case _                         =>
       throw new IllegalArgumentException("argument type mismatch")
   }
 
@@ -137,7 +137,7 @@ object Array {
     case array: Array[scala.Short] => array(index)
     case array: Array[scala.Int]   => array(index).toFloat
     case array: Array[scala.Long]  => array(index).toFloat
-    case _ =>
+    case _                         =>
       throw new IllegalArgumentException("argument type mismatch")
   }
 
@@ -149,13 +149,13 @@ object Array {
     case array: Array[scala.Int]    => array(index)
     case array: Array[scala.Long]   => array(index).toDouble
     case array: Array[scala.Float]  => array(index)
-    case _ =>
+    case _                          =>
       throw new IllegalArgumentException("argument type mismatch")
   }
 
   def set(array: AnyRef, index: Int, value: AnyRef): Unit = array match {
     case array: Array[Object] => array(index) = value
-    case _ =>
+    case _                    =>
       (value: Any) match {
         case value: scala.Boolean => setBoolean(array, index, value)
         case value: scala.Char    => setChar(array, index, value)
@@ -165,7 +165,7 @@ object Array {
         case value: scala.Long    => setLong(array, index, value)
         case value: scala.Float   => setFloat(array, index, value)
         case value: scala.Double  => setDouble(array, index, value)
-        case _ =>
+        case _                    =>
           throw new IllegalArgumentException("argument type mismatch")
       }
   }
@@ -173,7 +173,7 @@ object Array {
   def setBoolean(array: AnyRef, index: Int, value: Boolean): Unit =
     array match {
       case array: Array[scala.Boolean] => array(index) = value
-      case _ =>
+      case _                           =>
         throw new IllegalArgumentException("argument type mismatch")
     }
 
@@ -183,7 +183,7 @@ object Array {
     case array: Array[scala.Long]   => array(index) = value
     case array: Array[scala.Float]  => array(index) = value
     case array: Array[scala.Double] => array(index) = value
-    case _ =>
+    case _                          =>
       throw new IllegalArgumentException("argument type mismatch")
   }
 
@@ -194,7 +194,7 @@ object Array {
     case array: Array[scala.Long]   => array(index) = value
     case array: Array[scala.Float]  => array(index) = value
     case array: Array[scala.Double] => array(index) = value
-    case _ =>
+    case _                          =>
       throw new IllegalArgumentException("argument type mismatch")
   }
 
@@ -204,7 +204,7 @@ object Array {
     case array: Array[scala.Long]   => array(index) = value
     case array: Array[scala.Float]  => array(index) = value
     case array: Array[scala.Double] => array(index) = value
-    case _ =>
+    case _                          =>
       throw new IllegalArgumentException("argument type mismatch")
   }
 
@@ -213,7 +213,7 @@ object Array {
     case array: Array[scala.Long]   => array(index) = value
     case array: Array[scala.Float]  => array(index) = value.toFloat
     case array: Array[scala.Double] => array(index) = value
-    case _ =>
+    case _                          =>
       throw new IllegalArgumentException("argument type mismatch")
   }
 
@@ -221,20 +221,20 @@ object Array {
     case array: Array[scala.Long]   => array(index) = value
     case array: Array[scala.Float]  => array(index) = value.toFloat
     case array: Array[scala.Double] => array(index) = value.toDouble
-    case _ =>
+    case _                          =>
       throw new IllegalArgumentException("argument type mismatch")
   }
 
   def setFloat(array: AnyRef, index: Int, value: Float): Unit = array match {
     case array: Array[scala.Float]  => array(index) = value
     case array: Array[scala.Double] => array(index) = value
-    case _ =>
+    case _                          =>
       throw new IllegalArgumentException("argument type mismatch")
   }
 
   def setDouble(array: AnyRef, index: Int, value: Double): Unit = array match {
     case array: Array[scala.Double] => array(index) = value
-    case _ =>
+    case _                          =>
       throw new IllegalArgumentException("argument type mismatch")
   }
 }

@@ -403,7 +403,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
           allowInvalidHandle = true
         ) {
           case INVALID_HANDLE_VALUE => 0L
-          case handle =>
+          case handle               =>
             val lastModified = stackalloc[WinFileTime]()
             GetFileTime(
               handle,
@@ -440,7 +440,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
   ): Boolean = Zone.acquire { implicit z =>
     GetFileAttributesW(toCWideStringUTF16LE(properPath)) match {
       case INVALID_FILE_ATTRIBUTES => false // File does not exist
-      case attrsSet =>
+      case attrsSet                =>
         if (checkIsNotSet)
           (attrsSet & flags) != flags
         else
@@ -460,7 +460,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
             allowInvalidHandle = true
           ) {
             case INVALID_HANDLE_VALUE => false
-            case handle =>
+            case handle               =>
               val lastModified = stackalloc[WinFileTime]()
               !lastModified =
                 MinWinBaseApiOps.FileTimeOps.fromUnixEpochMillis(time)
@@ -518,7 +518,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
         allowInvalidHandle = true
       ) {
         case INVALID_HANDLE_VALUE => 0L
-        case handle =>
+        case handle               =>
           val size = stackalloc[windows.LargeInteger]()
           if (GetFileSizeEx(handle, size)) (!size).toLong
           else 0L

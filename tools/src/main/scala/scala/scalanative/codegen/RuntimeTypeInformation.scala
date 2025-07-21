@@ -49,7 +49,7 @@ private[codegen] class RuntimeTypeInformation(info: ScopeInfo)(implicit
       case "scala.scalanative.runtime.PrimitiveDouble"  => 8
       case "scala.scalanative.runtime.PrimitiveBoolean" => 1
       case "scala.scalanative.runtime.PrimitiveUnit"    => 8
-      case "scala.scalanative.runtime.RawSize" =>
+      case "scala.scalanative.runtime.RawSize"          =>
         MemoryLayout.sizeOf(nir.Type.Size).toInt
       case "scala.scalanative.runtime.RawPtr" =>
         MemoryLayout.sizeOf(nir.Type.Ptr).toInt

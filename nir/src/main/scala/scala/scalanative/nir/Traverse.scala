@@ -33,8 +33,8 @@ trait Traverse {
       case Inst.Let(n, op, unwind) =>
         onOp(op)
         onNext(unwind)
-      case Inst.Ret(v)     => onVal(v)
-      case Inst.Jump(next) => onNext(next)
+      case Inst.Ret(v)              => onVal(v)
+      case Inst.Jump(next)          => onNext(next)
       case Inst.If(v, thenp, elsep) =>
         onVal(v)
         onNext(thenp)
@@ -115,7 +115,7 @@ trait Traverse {
       onVal(v)
     case Op.SizeOf(ty)      => onType(ty)
     case Op.AlignmentOf(ty) => onType(ty)
-    case Op.Box(code, obj) =>
+    case Op.Box(code, obj)  =>
       onVal(obj)
     case Op.Unbox(code, obj) =>
       onVal(obj)
@@ -146,8 +146,8 @@ trait Traverse {
   }
 
   def onVal(value: Val): Unit = value match {
-    case Val.Zero(ty)            => onType(ty)
-    case Val.StructValue(values) => values.foreach(onVal)
+    case Val.Zero(ty)               => onType(ty)
+    case Val.StructValue(values)    => values.foreach(onVal)
     case Val.ArrayValue(ty, values) =>
       onType(ty)
       values.foreach(onVal)
@@ -174,7 +174,7 @@ trait Traverse {
   }
 
   def onNext(next: Next): Unit = next match {
-    case Next.None => ()
+    case Next.None       => ()
     case Next.Case(v, n) =>
       onVal(v)
       onNext(n)

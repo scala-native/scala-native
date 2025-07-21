@@ -227,7 +227,7 @@ private[runtime] object DWARF {
           debug_abbrev.offset.toLong + header.debug_abbrev_offset
         val idx = abbrevCache.get(abbrevOffset) match {
           case Some(abbrev) => abbrev
-          case None =>
+          case None         =>
             val pos = bf.position()
             bf.seek(abbrevOffset)
             val abbrev = Abbrev.parse(bf)
@@ -375,7 +375,7 @@ private[runtime] object DWARF {
           if (header.is64) skipBytes(LONG)
           else skipBytes(INT)
         case DW_FORM_flag_present =>
-        case DW_FORM_udata =>
+        case DW_FORM_udata        =>
           skip_leb128()
         case DW_FORM_sdata =>
           skip_leb128()
