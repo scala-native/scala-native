@@ -16,6 +16,12 @@ import _root_.java.io.IOException
 /** Internal utilities to interact with LLVM command-line tools. */
 private[scalanative] object LLVM {
 
+  // C++14 or newer standard is needed to compile code using Windows API
+  // shipped with Windows 10 / Server 2016+ (we do not plan supporting older versions)
+  val defaultWinCpp = "c++14"
+  val defaultCpp = "c++11"
+  val defaultC = "gnu11"
+
   /** Object file extension: ".o" */
   val oExt = ".o"
 
@@ -71,12 +77,8 @@ private[scalanative] object LLVM {
     val compiler = if (isCpp) config.clangPP.abs else config.clang.abs
     val stdflag = {
       if (isLl) llvmIrFeatures
-      else if (isCpp) {
-        // C++14 or newer standard is needed to compile code using Windows API
-        // shipped with Windows 10 / Server 2016+ (we do not plan supporting older versions)
-        if (config.targetsWindows) Seq("-std=c++14")
-        else Seq("-std=c++11")
-      } else Seq("-std=gnu11")
+      else if (isCpp) Seq(stdCpp)
+      else Seq(stdC)
     }
     val platformFlags = {
       if (config.targetsMsys) msysExtras
@@ -455,6 +457,22 @@ private[scalanative] object LLVM {
       case Mode.ReleaseSize => "-Oz"
       case Mode.ReleaseFull => "-O3"
     }
+
+  private def stdCpp(implicit config: Config): String = {
+    val std = config.compilerConfig.compileStdCpp match {
+      case None => if (config.targetsWindows) defaultWinCpp else defaultCpp
+      case Some(userStd) => userStd
+    }
+    s"-std=$std"
+  }
+
+  private def stdC(implicit config: Config): String = {
+    val std = config.compilerConfig.compileStdC match {
+      case None          => defaultC
+      case Some(userStd) => userStd
+    }
+    s"-std=$std"
+  }
 
   private def llvmIrFeatures(implicit config: Config): Seq[String] = {
     implicit def nativeConfig: NativeConfig = config.compilerConfig
