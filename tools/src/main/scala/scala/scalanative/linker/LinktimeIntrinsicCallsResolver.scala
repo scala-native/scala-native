@@ -65,7 +65,7 @@ private[scala] object LinktimeIntrinsicCallsResolver {
           case (cls: Val.ClassOf) :: _ => Some(cls)
           // Special case for usage within javalib
           case _ :: (cls: Val.ClassOf) :: _ => Some(cls)
-          case _ =>
+          case _                            =>
             logger.error(s"Found unsupported variant of ${name.show} function, arguments: ${args.map(_.show)}")
             None
         }

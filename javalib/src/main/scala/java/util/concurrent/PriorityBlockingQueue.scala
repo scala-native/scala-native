@@ -212,7 +212,7 @@ class PriorityBlockingQueue[E <: AnyRef] private (
 
     this.curSize = this.queue.length
     val heapify = c match {
-      case s: SortedSet[_] => false
+      case s: SortedSet[_]             => false
       case p: PriorityBlockingQueue[_] =>
         p.getClass() != classOf[PriorityBlockingQueue[_]]
       case _ => true

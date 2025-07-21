@@ -86,7 +86,7 @@ class ForkJoinPool19Test extends JSR166Test {
         shouldThrow()
       } catch {
         case success: InterruptedException =>
-        case fail: Throwable =>
+        case fail: Throwable               =>
           threadUnexpectedException(fail)
       }
       Thread.currentThread.interrupt()
@@ -95,7 +95,7 @@ class ForkJoinPool19Test extends JSR166Test {
         shouldThrow()
       } catch {
         case success: InterruptedException =>
-        case fail: Throwable =>
+        case fail: Throwable               =>
           threadUnexpectedException(fail)
       }
     }
@@ -104,7 +104,7 @@ class ForkJoinPool19Test extends JSR166Test {
       shouldThrow()
     } catch {
       case success: TimeoutException =>
-      case fail: Throwable =>
+      case fail: Throwable           =>
         threadUnexpectedException(fail)
     }
   }
@@ -153,7 +153,7 @@ class ForkJoinPool19Test extends JSR166Test {
       shouldThrow()
     } catch {
       case success: CancellationException =>
-      case fail: Throwable =>
+      case fail: Throwable                =>
         threadUnexpectedException(fail)
     }
     try {

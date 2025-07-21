@@ -86,14 +86,14 @@ private object ThreadStackSize {
 
   private val overrideDefaultThreadSize: Option[Long] = {
     System.getenv("SCALANATIVE_THREAD_STACK_SIZE") match {
-      case null => None
+      case null    => None
       case default =>
         val numberPart = default.takeWhile(_.isDigit)
         val multiplier = default.stripPrefix(numberPart).toLowerCase() match {
           case ""         => 1
           case "k" | "kb" => 1024
           case "m" | "mb" => 1024 * 1024
-          case other =>
+          case other      =>
             System.err.println(
               s"Invalid setting for SCALANATIVE_THREAD_SIZE env variable would be ignored: $other"
             )

@@ -28,7 +28,7 @@ object WindowsException {
       case ERROR_FILE_NOT_FOUND | ERROR_PATH_NOT_FOUND =>
         new NoSuchFileException(file)
       case ERROR_ALREADY_EXISTS => new FileAlreadyExistsException(file)
-      case e =>
+      case e                    =>
         new IOException(s"$file - ${errorMessage(winError)} ($winError)")
     }
   }

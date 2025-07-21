@@ -242,7 +242,7 @@ private[scalanative] object ScalaNative {
           else Check.quick(analysis)
         }
         .map {
-          case Nil => analysis
+          case Nil    => analysis
           case errors =>
             showErrors(
               log =

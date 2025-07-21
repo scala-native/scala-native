@@ -174,7 +174,7 @@ private[lang] class UnixProcessGen2 private (
               if !Thread.currentThread().isInterrupted() =>
             deadline - System.nanoTime() match {
               case remaining if remaining < 0 => None
-              case remainingNanos =>
+              case remainingNanos             =>
                 fillTimespec(remainingNanos, TimeUnit.NANOSECONDS, ts)
                 waitWithRepeat()
             }
@@ -822,7 +822,7 @@ object UnixProcessGen2 {
     import fcntl.{open => _, _}
     redirect.`type`() match {
       case ProcessBuilder.Redirect.Type.INHERIT =>
-      case ProcessBuilder.Redirect.Type.PIPE =>
+      case ProcessBuilder.Redirect.Type.PIPE    =>
         if (unistd.dup2(childFd, procFd) == -1) {
           throw new IOException(
             s"Couldn't duplicate pipe file descriptor $errno"

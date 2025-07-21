@@ -86,7 +86,7 @@ private[lang] class WindowsProcess private (
           unit.toMillis(timeout).toUInt
         ) match {
           case WAIT_TIMEOUT => false
-          case WAIT_FAILED =>
+          case WAIT_FAILED  =>
             throw WindowsException("Failed to wait on proces handle")
           case _ => true
         }
@@ -116,7 +116,7 @@ private[lang] class WindowsProcess private (
         else {
           (!exitCode) match {
             case STILL_ACTIVE => -1
-            case code =>
+            case code         =>
               _inputStream.drain()
               _errorStream.drain()
               _outputStream.close()

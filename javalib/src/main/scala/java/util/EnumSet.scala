@@ -41,7 +41,7 @@ object EnumSet {
 
   def copyOf[E <: Enum[E]](c: Collection[E]): EnumSet[E] = c match {
     case c: EnumSet[E] => copyOf(c)
-    case c =>
+    case c             =>
       if (c.isEmpty()) throw new IllegalArgumentException("Collection is empty")
       val i = c.iterator()
       val set = EnumSet.of(i.next())

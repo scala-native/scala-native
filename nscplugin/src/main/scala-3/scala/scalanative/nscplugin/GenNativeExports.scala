@@ -110,7 +110,7 @@ trait GenNativeExports(using Context):
     else
       checkAccessorAnnotation(member)
       member.getAnnotation(defnNir.ExportAccessorsClass) match {
-        case None => Nil
+        case None             => Nil
         case Some(annotation) =>
           def accessorExternSig(prefix: String) =
             val nir.Sig.Extern(id) = genExternSig(member)

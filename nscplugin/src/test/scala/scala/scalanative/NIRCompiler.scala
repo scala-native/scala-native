@@ -41,7 +41,7 @@ object NIRCompiler {
       classLoader.loadClass("scala.scalanative.NIRCompiler")
     clazz.getDeclaredConstructor().newInstance() match {
       case compiler: api.NIRCompiler => compiler
-      case other =>
+      case other                     =>
         throw new ReflectiveOperationException(
           "Expected an object of type `scala.scalanative.NIRCompiler`, " +
             s"but found `${other.getClass.getName}`."
@@ -62,7 +62,7 @@ object NIRCompiler {
     val constructor = clazz.getConstructor(classOf[Path])
     constructor.newInstance(outDir) match {
       case compiler: api.NIRCompiler => compiler
-      case other =>
+      case other                     =>
         throw new ReflectiveOperationException(
           "Expected an object of type `scala.scalanative.NIRCompiler`, but " +
             s"found `${other.getClass.getName}`."

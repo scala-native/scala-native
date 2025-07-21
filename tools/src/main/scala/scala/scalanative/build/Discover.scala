@@ -124,7 +124,7 @@ object Discover {
 
     val (versionString, targetString) = processLines match {
       case version :: target :: _ => (version, target)
-      case _ =>
+      case _                      =>
         throw new BuildException(
           s"""Problem running '$cmdString'. Please check clang setup.
               |Refer to ($docSetup)""".stripMargin

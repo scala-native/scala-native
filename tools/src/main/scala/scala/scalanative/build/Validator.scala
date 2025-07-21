@@ -58,7 +58,7 @@ private[build] object Validator {
       )
 
     issues.result() match {
-      case Nil => config
+      case Nil    => config
       case issues =>
         throw new BuildException(
           (s"Found ${issues.size} issue within provided confguration: " :: issues)

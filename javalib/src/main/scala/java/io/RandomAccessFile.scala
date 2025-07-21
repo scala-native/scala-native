@@ -268,7 +268,7 @@ private object RandomAccessFile {
     def windowsFileDescriptor() = Zone.acquire { implicit z =>
       import windows.winnt.AccessRights._
       val (access, dispostion) = _flags match {
-        case "r" => FILE_GENERIC_READ -> OPEN_EXISTING
+        case "r"                  => FILE_GENERIC_READ -> OPEN_EXISTING
         case "rw" | "rws" | "rwd" =>
           (FILE_GENERIC_READ | FILE_GENERIC_WRITE).toUInt -> OPEN_ALWAYS
         case _ => invalidFlags()

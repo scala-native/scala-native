@@ -341,7 +341,7 @@ trait NirGenStat(using Context) {
     def requireLiteralStringAnnotation(annotation: Annotation): Option[String] =
       annotation.tree match {
         case Apply(_, Seq(Literal(Constant(name: String)))) => Some(name)
-        case tree =>
+        case tree                                           =>
           report.error(
             s"Invalid usage of ${annotation.symbol.show}, expected literal constant string argument, got ${tree}",
             tree.srcPos
@@ -356,11 +356,11 @@ trait NirGenStat(using Context) {
         case defnNir.NoOptimizeClass   => attrs += nir.Attr.NoOpt
         case defnNir.NoSpecializeClass => attrs += nir.Attr.NoSpecialize
         case defnNir.StubClass         => attrs += nir.Attr.Stub
-        case defnNir.LinkClass =>
+        case defnNir.LinkClass         =>
           requireLiteralStringAnnotation(ann)
             .foreach(attrs += nir.Attr.Link(_))
         case defnNir.LinkCppRuntimeClass => attrs += nir.Attr.LinkCppRuntime
-        case defnNir.DefineClass =>
+        case defnNir.DefineClass         =>
           requireLiteralStringAnnotation(ann)
             .foreach(attrs += nir.Attr.Define(_))
         case _ => ()

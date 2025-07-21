@@ -97,7 +97,7 @@ class FutureTask[V <: AnyRef](private var callable: Callable[V])
 
   override def resultNow(): V = state() match {
     case Future.State.SUCCESS => outcome.asInstanceOf[V]
-    case Future.State.FAILED =>
+    case Future.State.FAILED  =>
       throw new IllegalStateException("Task completed with exception");
     case Future.State.CANCELLED =>
       throw new IllegalStateException("Task was cancelled");
@@ -107,7 +107,7 @@ class FutureTask[V <: AnyRef](private var callable: Callable[V])
   override def exceptionNow(): Throwable = state() match {
     case Future.State.SUCCESS =>
       throw new IllegalStateException("Task completed with a result")
-    case Future.State.FAILED => outcome.asInstanceOf[Throwable]
+    case Future.State.FAILED    => outcome.asInstanceOf[Throwable]
     case Future.State.CANCELLED =>
       throw new IllegalStateException("Task was cancelled");
     case _ => throw new IllegalStateException("Task has not completed");
@@ -323,7 +323,7 @@ class FutureTask[V <: AnyRef](private var callable: Callable[V])
       case NORMAL      => "[Completed normally]"
       case EXCEPTIONAL => "[Completed exceptionally: " + outcome + "]"
       case CANCELLED | INTERRUPTED | INTERRUPTING => "[Cancelled]"
-      case _ =>
+      case _                                      =>
         val callable = this.callable
         if (callable == null) "[Not completed]"
         else "[Not completed, task = " + callable + "]"

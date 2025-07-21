@@ -998,7 +998,7 @@ object Build {
             val upstreamDir = (scalaPartest / fetchScalaSource).value
             CrossVersion.partialVersion(scalaVersion.value) match {
               case Some((2, 12)) => Seq.empty[File]
-              case _ =>
+              case _             =>
                 Seq(
                   upstreamDir / "src/testkit/scala/tools/testkit/AssertUtil.scala"
                 )

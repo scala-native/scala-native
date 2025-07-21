@@ -214,7 +214,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           }
           v
         case nir.Val.Unit => nir.Val.Unit
-        case v =>
+        case v            =>
           if (isMutable) v
           else buf.let(namedId(fresh)(name), nir.Op.Copy(v), unwind)
       }
@@ -1375,7 +1375,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         case HASH                   => genHashCode(args.head)
         case CFUNCPTR_APPLY         => genCFuncPtrApply(app, code)
         case CFUNCPTR_FROM_FUNCTION => genCFuncFromScalaFunction(app)
-        case SYNCHRONIZED =>
+        case SYNCHRONIZED           =>
           val Apply(Select(receiverp, _), List(argp)) = app
           genSynchronized(receiverp, argp)(app.pos)
         case STACKALLOC              => genStackalloc(app)
@@ -1385,7 +1385,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         case CQUOTE                  => genCQuoteOp(app)
         case BOXED_UNIT              => nir.Val.Unit
         case USES_LINKTIME_INTRINSIC => genLinktimeIntrinsicApply(app)
-        case code =>
+        case code                    =>
           if (isArithmeticOp(code) || isLogicalOp(code) || isComparisonOp(code))
             genSimpleOp(app, receiver :: args, code)
           else if (isArrayOp(code) || code == ARRAY_CLONE) genArrayOp(app, code)
@@ -1421,7 +1421,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
               JavaUtilServiceLoaderLoadInstalled == sym =>
           args.head match {
             case Literal(c: Constant) => () // ok
-            case _ =>
+            case _                    =>
               reporter.error(
                 app.pos,
                 s"Limitation of ScalaNative runtime: first argument of ${sym} needs to be literal constant of class type, use `classOf[T]` instead."
@@ -1458,7 +1458,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           case nme.GE => intOrFloatComparison(Sge, Fge)
           case nme.LT => intOrFloatComparison(Slt, Flt)
           case nme.LE => intOrFloatComparison(Sle, Fle)
-          case nme =>
+          case nme    =>
             globalError(condp.pos, s"Unsupported condition '$nme'");
             nir.Comp.Ine
         }
@@ -1515,7 +1515,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
               }
               Some(ComplexCondition(bin, c1, c2)(condp.pos))
             case (None, None) => None
-            case _ =>
+            case _            =>
               globalError(
                 condp.pos,
                 "Mixing link-time and runtime conditions is not allowed"
@@ -2104,7 +2104,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             .toList
           // Estimate capacity needed for the string builder
           val approxBuilderSize = concatArguments.view.map {
-            case Literal(Constant(s: String)) => s.length
+            case Literal(Constant(s: String))                  => s.length
             case Literal(c @ Constant(_)) if c.isNonUnitAnyVal =>
               String.valueOf(c).length
             case _ => 0
@@ -2333,7 +2333,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         case _ if fromty == toty               => None
         case (nir.Type.Float, nir.Type.Double) => Some(nir.Conv.Fpext)
         case (nir.Type.Double, nir.Type.Float) => Some(nir.Conv.Fptrunc)
-        case _ =>
+        case _                                 =>
           unsupported(s"cast from $fromty to $toty")
       }
 
@@ -2841,7 +2841,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             case (_: nir.Type.PrimitiveKind, _: nir.Type.PrimitiveKind) =>
               genCoercion(value, fromty, toty)
             case _ if boxed.ty =?= boxty => boxed
-            case (_, nir.Type.Nothing) =>
+            case (_, nir.Type.Nothing)   =>
               val runtimeNothing = genType(RuntimeNothingClass)
               val isNullL, notNullL = fresh()
               val isNull =
@@ -3089,7 +3089,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           case (value @ nir.Val.Null, Some(unboxedType)) =>
             externType match {
               case nir.Type.Ptr | _: nir.Type.RefKind => value
-              case _ =>
+              case _                                  =>
                 reporter.warning(
                   argp.pos,
                   s"Passing null as argument of type ${paramTpe} to the extern method is unsafe. " +
@@ -3138,7 +3138,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
                 }
               // Scala 2.13 only
               case Select(_, name) if name == defn.NilModule.name => ()
-              case _ =>
+              case _                                              =>
                 reporter.error(
                   argp.pos,
                   "Unable to extract vararg arguments, varargs to extern methods must be passed directly to the applied function"

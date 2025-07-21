@@ -28,7 +28,7 @@ object CountDownLatch {
     override protected def tryReleaseShared(releases: Int): Boolean = { // Decrement count; signal when transition to zero
       @tailrec
       def loop(): Boolean = getState() match {
-        case 0 => false
+        case 0     => false
         case state =>
           val nextState = state - 1
           if (compareAndSetState(state, nextState)) {

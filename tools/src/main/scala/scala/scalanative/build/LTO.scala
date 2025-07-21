@@ -53,7 +53,7 @@ object LTO {
     case "none" => None
     case "thin" => Thin
     case "full" => Full
-    case value =>
+    case value  =>
       throw new IllegalArgumentException(s"Unknown LTO: '$value'")
   }
 }

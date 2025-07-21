@@ -171,7 +171,7 @@ class ForkJoinPool8Test extends JSR166Test {
         shouldThrow()
       } catch {
         case success: InterruptedException =>
-        case fail: Throwable =>
+        case fail: Throwable               =>
           threadUnexpectedException(fail)
       }
     }
@@ -180,7 +180,7 @@ class ForkJoinPool8Test extends JSR166Test {
       shouldThrow()
     } catch {
       case success: TimeoutException =>
-      case fail: Throwable =>
+      case fail: Throwable           =>
         threadUnexpectedException(fail)
     }
   }
@@ -216,7 +216,7 @@ class ForkJoinPool8Test extends JSR166Test {
       shouldThrow()
     } catch {
       case success: CancellationException =>
-      case fail: Throwable =>
+      case fail: Throwable                =>
         threadUnexpectedException(fail)
     }
     try {
@@ -224,7 +224,7 @@ class ForkJoinPool8Test extends JSR166Test {
       shouldThrow()
     } catch {
       case success: CancellationException =>
-      case fail: Throwable =>
+      case fail: Throwable                =>
         threadUnexpectedException(fail)
     }
     try {
@@ -232,7 +232,7 @@ class ForkJoinPool8Test extends JSR166Test {
       shouldThrow()
     } catch {
       case success: CancellationException =>
-      case fail: Throwable =>
+      case fail: Throwable                =>
         threadUnexpectedException(fail)
     }
   }

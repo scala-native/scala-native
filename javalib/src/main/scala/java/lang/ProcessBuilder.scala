@@ -41,7 +41,7 @@ final class ProcessBuilder(private var _command: List[String]) {
 
   def redirectError(destination: Redirect): ProcessBuilder = destination match {
     case null => set { _redirectOutput = Redirect.PIPE }
-    case d =>
+    case d    =>
       d.`type`() match {
         case Redirect.Type.READ =>
           throw new IllegalArgumentException(
@@ -54,7 +54,7 @@ final class ProcessBuilder(private var _command: List[String]) {
 
   def redirectInput(source: Redirect): ProcessBuilder = source match {
     case null => set { _redirectInput = Redirect.PIPE }
-    case s =>
+    case s    =>
       s.`type`() match {
         case Redirect.Type.WRITE | Redirect.Type.APPEND =>
           throw new IllegalArgumentException(s"$s cannot be used for input.")
@@ -66,7 +66,7 @@ final class ProcessBuilder(private var _command: List[String]) {
   def redirectOutput(destination: Redirect): ProcessBuilder =
     destination match {
       case null => set { _redirectOutput = Redirect.PIPE }
-      case s =>
+      case s    =>
         s.`type`() match {
           case Redirect.Type.READ =>
             throw new IllegalArgumentException(
@@ -192,7 +192,7 @@ object ProcessBuilder {
         if (name == null) throw new NullPointerException()
         _values.toSeq.find(_.name() == name) match {
           case Some(t) => t
-          case None =>
+          case None    =>
             throw new IllegalArgumentException(
               s"$name is not a valid Type name"
             )

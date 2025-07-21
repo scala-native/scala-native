@@ -64,7 +64,7 @@ trait NirGenExpr(using Context) {
         case EmptyTree      => nir.Val.Unit
         case ValTree(value) => value
         case ContTree(f)    => f(this)
-        case tree: Apply =>
+        case tree: Apply    =>
           val updatedTree = lazyValsAdapter.transformApply(tree)
           genApply(updatedTree)
         case tree: Assign         => genAssign(tree)
@@ -84,7 +84,7 @@ trait NirGenExpr(using Context) {
         case tree: TypeApply      => genTypeApply(tree)
         case tree: ValDef         => genValDef(tree)
         case tree: WhileDo        => genWhileDo(tree)
-        case _ =>
+        case _                    =>
           throw FatalError(
             s"""Unexpected tree in genExpr: `${tree}`
              raw=$tree
@@ -114,7 +114,7 @@ trait NirGenExpr(using Context) {
         case _ if sym == defnNir.UnsafePackage_extern =>
           fail(s"extern can be used only from non-inlined extern methods")
 
-        case _: TypeApply => genApplyTypeApply(app)
+        case _: TypeApply           => genApplyTypeApply(app)
         case Select(Super(_, _), _) =>
           genApplyMethod(
             sym,
@@ -578,8 +578,8 @@ trait NirGenExpr(using Context) {
     private def genLiteralValue(lit: Literal): nir.Val = {
       val value = lit.const
       value.tag match {
-        case UnitTag => nir.Val.Unit
-        case NullTag => nir.Val.Null
+        case UnitTag    => nir.Val.Unit
+        case NullTag    => nir.Val.Null
         case BooleanTag =>
           if (value.booleanValue) nir.Val.True else nir.Val.False
         case ByteTag   => nir.Val.Byte(value.intValue.toByte)
@@ -999,7 +999,7 @@ trait NirGenExpr(using Context) {
           case (_: nir.Type.PrimitiveKind, _: nir.Type.PrimitiveKind) =>
             genCoercion(value, fromty, toty)
           case _ if boxed.ty =?= boxty => boxed
-          case (_, nir.Type.Nothing) =>
+          case (_, nir.Type.Nothing)   =>
             val isNullL, notNullL = fresh()
             val isNull =
               buf.comp(nir.Comp.Ieq, boxed.ty, boxed, nir.Val.Null, unwind)
@@ -1120,25 +1120,25 @@ trait NirGenExpr(using Context) {
       def arg = args.head
 
       (code: @switch) match {
-        case THROW                  => genThrow(app, args)
-        case CONCAT                 => genStringConcat(app)
-        case HASH                   => genHashCode(arg)
-        case BOXED_UNIT             => nir.Val.Unit
-        case SYNCHRONIZED           => genSynchronized(receiver, arg)
-        case CFUNCPTR_APPLY         => genCFuncPtrApply(app)
-        case CFUNCPTR_FROM_FUNCTION => genCFuncFromScalaFunction(app)
-        case STACKALLOC             => genStackalloc(app)
-        case SAFEZONE_ALLOC         => genSafeZoneAlloc(app)
-        case CQUOTE                 => genCQuoteOp(app)
-        case CLASS_FIELD_RAWPTR     => genClassFieldRawPtr(app)
-        case SIZE_OF                => genSizeOf(app)
-        case ALIGNMENT_OF           => genAlignmentOf(app)
+        case THROW                        => genThrow(app, args)
+        case CONCAT                       => genStringConcat(app)
+        case HASH                         => genHashCode(arg)
+        case BOXED_UNIT                   => nir.Val.Unit
+        case SYNCHRONIZED                 => genSynchronized(receiver, arg)
+        case CFUNCPTR_APPLY               => genCFuncPtrApply(app)
+        case CFUNCPTR_FROM_FUNCTION       => genCFuncFromScalaFunction(app)
+        case STACKALLOC                   => genStackalloc(app)
+        case SAFEZONE_ALLOC               => genSafeZoneAlloc(app)
+        case CQUOTE                       => genCQuoteOp(app)
+        case CLASS_FIELD_RAWPTR           => genClassFieldRawPtr(app)
+        case SIZE_OF                      => genSizeOf(app)
+        case ALIGNMENT_OF                 => genAlignmentOf(app)
         case REFLECT_SELECTABLE_SELECTDYN =>
           genReflectiveCall(app, isSelectDynamic = true)
         case REFLECT_SELECTABLE_APPLYDYN =>
           genReflectiveCall(app, isSelectDynamic = false)
         case USES_LINKTIME_INTRINSIC => genLinktimeIntrinsicApply(app)
-        case _ =>
+        case _                       =>
           if (isArithmeticOp(code) || isLogicalOp(code) || isComparisonOp(code))
             genSimpleOp(app, receiver :: args, code)
           else if (isArrayOp(code) || code == ARRAY_CLONE) genArrayOp(app, code)
@@ -1174,7 +1174,7 @@ trait NirGenExpr(using Context) {
               JavaUtilServiceLoaderLoadInstalled == sym =>
           args.head match {
             case Literal(c: Constant) => () // ok
-            case _ =>
+            case _                    =>
               report.error(
                 s"Limitation of ScalaNative runtime: first argument of ${sym.show} needs to be literal constant of class type, use `classOf[T]` instead.",
                 app.srcPos
@@ -1389,7 +1389,7 @@ trait NirGenExpr(using Context) {
       args match {
         case List(right)       => genUnaryOp(code, right, retty)
         case List(left, right) => genBinaryOp(code, left, right, retty)
-        case _ =>
+        case _                 =>
           report.error(
             s"Too many arguments for primitive function: $app",
             app.sourcePos
@@ -1421,14 +1421,14 @@ trait NirGenExpr(using Context) {
 
       (opty, code) match {
         case (_: nir.Type.I | _: nir.Type.F, POS) => coerced
-        case (_: nir.Type.I, NOT) =>
+        case (_: nir.Type.I, NOT)                 =>
           buf.bin(nir.Bin.Xor, tpe, numOfType(-1, tpe), coerced, unwind)
         case (_: nir.Type.F, NEG) =>
           buf.bin(nir.Bin.Fmul, tpe, numOfType(-1, tpe), coerced, unwind)
         case (_: nir.Type.I, NEG) =>
           buf.bin(nir.Bin.Isub, tpe, numOfType(0, tpe), coerced, unwind)
         case (nir.Type.Bool, ZNOT) => negateBool(coerced)
-        case _ =>
+        case _                     =>
           report.error(s"Unknown unary operation code: $code", rightp.sourcePos)
           nir.Val.Null
       }
@@ -1506,7 +1506,7 @@ trait NirGenExpr(using Context) {
 
             case ZOR  => genIf(retty, left, Literal(Constant(true)), right)
             case ZAND => genIf(retty, left, right, Literal(Constant(false)))
-            case _ =>
+            case _    =>
               report.error(
                 s"Unknown integer type binary operation code: $code",
                 right.sourcePos
@@ -1529,7 +1529,7 @@ trait NirGenExpr(using Context) {
             case NE => genEquals(ref = false, negated = true)
             case ID => genEquals(ref = true, negated = false)
             case NI => genEquals(ref = true, negated = true)
-            case _ =>
+            case _  =>
               report.error(
                 s"Unknown reference type binary operation code: $code",
                 right.sourcePos
@@ -1947,7 +1947,7 @@ trait NirGenExpr(using Context) {
             .toList
           // Estimate capacity needed for the string builder
           val approxBuilderSize = concatArguments.view.map {
-            case Literal(Constant(s: String)) => s.length
+            case Literal(Constant(s: String))              => s.length
             case Literal(c: Constant) if c.isNonUnitAnyVal =>
               String.valueOf(c).length
             case _ => 0
@@ -2100,7 +2100,7 @@ trait NirGenExpr(using Context) {
             nir.Conv.Fptoui
           case (nir.Type.Double, nir.Type.Float) => nir.Conv.Fptrunc
           case (nir.Type.Float, nir.Type.Double) => nir.Conv.Fpext
-          case _ =>
+          case _                                 =>
             report.error(
               s"Unsupported coercion types: from $fromty to $toty"
             )
@@ -2441,7 +2441,7 @@ trait NirGenExpr(using Context) {
           case nme.GE => intOrFloatComparison(Sge, Fge)
           case nme.LT => intOrFloatComparison(Slt, Flt)
           case nme.LE => intOrFloatComparison(Sle, Fle)
-          case nme =>
+          case nme    =>
             report.error(s"Unsupported condition '$nme'", condp.sourcePos)
             nir.Comp.Ine
         }
@@ -2520,7 +2520,7 @@ trait NirGenExpr(using Context) {
               given nir.SourcePosition = condp.span
               Some(ComplexCondition(bin, c1, c2))
             case (None, None) => None
-            case _ =>
+            case _            =>
               report.error(
                 "Mixing link-time and runtime conditions is not allowed",
                 condp.sourcePos
@@ -2612,7 +2612,7 @@ trait NirGenExpr(using Context) {
       tree match {
         case Apply(Select(New(_), nme.CONSTRUCTOR), _)          =>
         case Apply(fun, _) if fun.symbol == defn.newArrayMethod =>
-        case _ =>
+        case _                                                  =>
           report.error(
             s"Unexpected tree in scala.scalanative.runtime.SafeZoneAllocator.allocate: `${tree}`",
             tree.srcPos
@@ -2874,8 +2874,8 @@ trait NirGenExpr(using Context) {
 
       @tailrec
       def resolveFunction(tree: Tree): nir.Val = tree match {
-        case Typed(expr, _) => resolveFunction(expr)
-        case Block(_, expr) => resolveFunction(expr)
+        case Typed(expr, _)               => resolveFunction(expr)
+        case Block(_, expr)               => resolveFunction(expr)
         case fn @ Closure(env, target, _) =>
           if env.nonEmpty then
             report.error(
@@ -3046,7 +3046,7 @@ trait NirGenExpr(using Context) {
       // Extract the method name as a String
       val methodNameStr = args.head match {
         case Literal(Constants.Constant(name: String)) => name
-        case _ =>
+        case _                                         =>
           report.error(
             "The method name given to Selectable.selectDynamic or Selectable.applyDynamic " +
               "must be a literal string. " +
