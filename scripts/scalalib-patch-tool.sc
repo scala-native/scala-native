@@ -1,4 +1,4 @@
-//> using dep "io.github.java-diff-utils:java-diff-utils:4.12"
+//> using dep "io.github.java-diff-utils:java-diff-utils:4.16"
 //> using dep "com.lihaoyi::os-lib:0.9.1"
 //> using dep "com.lihaoyi::mainargs:0.4.0"
 
