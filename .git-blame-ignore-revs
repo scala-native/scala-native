@@ -10,3 +10,6 @@ e8cbc084d65364d8c179e18d591daace7b31b968
 #syntax updates
 563f0efae95feebc22c96c288f1e5eeb488d162f
 8d2076b3c5ffc77410028e430ebd5e203da77de2
+
+# Scala Steward: Reformat with scalafmt 3.9.8
+f8ab571bd965e3141c8f20c18d36132f69e8905e
