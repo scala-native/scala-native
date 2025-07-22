@@ -258,7 +258,7 @@ trait NirGenExpr(using Context) {
         for
           (tree, idx) <- allCaptureValues.zipWithIndex
           tpe = tree match {
-            case This(iden) => genType(fun.symbol.owner)
+            case This(iden) => genType(fun.symbol.owner.info)
             case _          => genType(tree.tpe)
           }
           name = anonClassName.member(nir.Sig.Field(s"capture$idx"))
@@ -479,7 +479,7 @@ trait NirGenExpr(using Context) {
       given nir.SourcePosition = tree.span
       val If(cond, thenp, elsep) = tree
       def isUnitType(tpe: Type) =
-        tpe =:= defn.UnitType || defn.isBoxedUnitClass(tpe.sym)
+        tpe =:= defn.UnitType || defn.isBoxedUnitClass(tpe.typeSymbol)
       val retty =
         if (isUnitType(thenp.tpe) || isUnitType(elsep.tpe)) nir.Type.Unit
         else genType(tree.tpe)
@@ -829,7 +829,7 @@ trait NirGenExpr(using Context) {
           s"Cannot resolve `this` instance for ${tree}",
           tree.sourcePos
         )
-        nir.Val.Zero(genType(currentClass))
+        nir.Val.Zero(genType(currentClass.info))
     }
 
     def genTry(tree: Try): nir.Val = tree match {
@@ -1083,19 +1083,19 @@ trait NirGenExpr(using Context) {
       locally {
         given nir.SourcePosition = wd.span.endPos
         buf.label(exitLabel, Seq.empty)
-        if (cond == EmptyTree) nir.Val.Zero(genType(defn.NothingClass))
+        if (cond == EmptyTree) nir.Val.Zero(genRefType(defn.NothingType))
         else nir.Val.Unit
       }
     }
 
-    private def genApplyBox(st: SimpleType, argp: Tree)(using
+    private def genApplyBox(tpe: Type, argp: Tree)(using
         nir.SourcePosition
     ): nir.Val = {
       val value = genExpr(argp)
-      buf.box(genBoxType(st), value, unwind)
+      buf.box(genBoxType(tpe), value, unwind)
     }
 
-    private def genApplyUnbox(st: SimpleType, argp: Tree)(using
+    private def genApplyUnbox(tpe: Type, argp: Tree)(using
         nir.SourcePosition
     ): nir.Val = {
       val value = genExpr(argp)
@@ -1105,7 +1105,7 @@ trait NirGenExpr(using Context) {
           // purpose Scala compiler.
           value
         case _ =>
-          buf.unbox(genBoxType(st), value, unwind)
+          buf.unbox(genBoxType(tpe), value, unwind)
       }
     }
 
@@ -1210,31 +1210,27 @@ trait NirGenExpr(using Context) {
       val Apply(fun @ Select(New(tpt), nme.CONSTRUCTOR), args) = app: @unchecked
       given nir.SourcePosition = app.span
 
-      fromType(tpt.tpe) match {
-        case st if st.sym.isStruct =>
-          genApplyNewStruct(st, args)
+      val tpe = tpt.typeOpt
+      val sym = tpe.typeSymbol
+      if sym.isStruct then genApplyNewStruct(tpe, args)
+      else if tpe.typeParams.isEmpty then {
+        val ctor = fun.symbol
+        assert(
+          ctor.isClassConstructor,
+          "'new' call to non-constructor: " + ctor.name
+        )
+        genApplyNew(
+          clssym = sym,
+          ctorsym = ctor,
+          args = args,
+          zone = app.getAttachment(SafeZoneInstance)
+        )
+      } else unsupported(s"unexpected new: $sym with targs ${tpe}")
 
-        case SimpleType(cls, Seq()) =>
-          val ctor = fun.symbol
-          assert(
-            ctor.isClassConstructor,
-            "'new' call to non-constructor: " + ctor.name
-          )
-
-          genApplyNew(
-            cls,
-            ctor,
-            args,
-            zone = app.getAttachment(SafeZoneInstance)
-          )
-
-        case SimpleType(sym, targs) =>
-          unsupported(s"unexpected new: $sym with targs $targs")
-      }
     }
 
-    private def genApplyNewStruct(st: SimpleType, argsp: Seq[Tree]): nir.Val = {
-      val ty = genType(st)
+    private def genApplyNewStruct(tpe: Type, argsp: Seq[Tree]): nir.Val = {
+      val ty = genType(tpe)
       val args = genSimpleArgs(argsp)
       var res: nir.Val = nir.Val.Zero(ty)
 
@@ -1348,34 +1344,36 @@ trait NirGenExpr(using Context) {
     }
 
     // Utils
-    private def boxValue(st: SimpleType, value: nir.Val)(using
+    private def boxValue(tpe: Type, value: nir.Val)(using
         nir.SourcePosition
     ): nir.Val = {
-      if (st.sym.isUnsignedType)
+      if (tpe.isUnsignedType)
         genApplyModuleMethod(
           defnNir.RuntimeBoxesModule,
-          defnNir.BoxUnsignedMethod(st.sym),
+          defnNir.BoxUnsignedMethod(tpe.typeSymbol),
           Seq(ValTree(value)())
         )
-      else if (genPrimCode(st) == 'O') value
-      else genApplyBox(st, ValTree(value)())
+      else if tpe =:= defn.UnitType then value
+      else if tpe.isPrimitiveValueType then genApplyBox(tpe, ValTree(value)())
+      else value
     }
 
-    private def unboxValue(st: SimpleType, partial: Boolean, value: nir.Val)(
-        using nir.SourcePosition
+    private def unboxValue(tpe: Type, partial: Boolean, value: nir.Val)(using
+        nir.SourcePosition
     ): nir.Val = {
-      if (st.sym.isUnsignedType) {
+      if (tpe.isUnsignedType) {
         // Results of asInstanceOfs are partially unboxed, meaning
         // that non-standard value types remain to be boxed.
         if (partial) value
         else
           genApplyModuleMethod(
             defnNir.RuntimeBoxesModule,
-            defnNir.UnboxUnsignedMethod(st.sym),
+            defnNir.UnboxUnsignedMethod(tpe.typeSymbol),
             Seq(ValTree(value)())
           )
-      } else if (genPrimCode(st) == 'O') value
-      else genApplyUnbox(st, ValTree(value)())
+      } else if tpe =:= defn.UnitType then value
+      else if tpe.isPrimitiveValueType then genApplyUnbox(tpe, ValTree(value)())
+      else value
     }
 
     private def genSimpleOp(
@@ -1591,10 +1589,10 @@ trait NirGenExpr(using Context) {
         case (ty1, ty2) if ty1 == ty2 =>
           ty1
 
-        case (nir.Type.Nothing, ty) =>
+        case (nir.Type.NothingType(_), ty) =>
           ty
 
-        case (ty, nir.Type.Nothing) =>
+        case (ty, nir.Type.NothingType(_)) =>
           ty
 
         case _ =>
@@ -1825,13 +1823,8 @@ trait NirGenExpr(using Context) {
       val nir.Type.Array(elemty, _) = genType(arrayp.tpe): @unchecked
       given nir.SourcePosition = app.span
 
-      def elemcode = genArrayCode(arrayp.tpe)
       val array = genExpr(arrayp)
-
-      if (code == ARRAY_CLONE)
-        val method = defnNir.RuntimeArray_clone(elemcode)
-        genApplyMethod(method, statically = true, array, argsp)
-      else if (isArrayGet(code))
+      if (isArrayGet(code))
         val idx = genExpr(argsp(0))
         buf.arrayload(elemty, array, idx, unwind)
       else if (isArraySet(code))
@@ -1873,9 +1866,9 @@ trait NirGenExpr(using Context) {
       val argType =
         if (tpe <:< defn.StringType) nir.Rt.String
         else if (tpe <:< defnNir.jlStringBufferType)
-          genType(defnNir.jlStringBufferRef)
+          genType(defnNir.jlStringBufferType)
         else if (tpe <:< defnNir.jlCharSequenceType)
-          genType(defnNir.jlCharSequenceRef)
+          genType(defnNir.jlCharSequenceType)
         // Don't match for `Array(Char)`, even though StringBuilder has such an overload:
         // `"a" + Array('b')` should NOT be "ab", but "a[C@...".
         else if (tpe <:< defn.ObjectType) nir.Rt.Object
@@ -2840,7 +2833,7 @@ trait NirGenExpr(using Context) {
             /* buf.unboxValue does not handle Ref( Ptr | CArray | ... ) unboxing
              * That's why we're doing it directly */
             if (nir.Type.unbox.isDefinedAt(tpe)) buf.unbox(tpe, obj, unwind)
-            else buf.unboxValue(fromType(ty), partial = false, obj)
+            else buf.unboxValue(ty, partial = false, obj)
         }
       val argTypes = args.map(_.ty)
       val funcSig = nir.Type.Function(argTypes, unboxedRetType)
@@ -2860,15 +2853,14 @@ trait NirGenExpr(using Context) {
 
     private def genCFuncFromScalaFunction(app: Apply): nir.Val = {
       given pos: nir.SourcePosition = app.span
-      val paramTypes = app.getAttachment(NirDefinitions.NonErasedTypes) match
-        case None =>
+      val paramTypes =
+        app.getAttachment(NirDefinitions.NonErasedTypes).getOrElse {
           report.error(
             s"Failed to generate exact NIR types for $app, something is wrong with scala-native internals.",
             app.srcPos
           )
           Nil
-        case Some(paramTys) =>
-          paramTys.map(fromType)
+        }
 
       val fn :: _ = app.args: @unchecked
 
@@ -2910,7 +2902,7 @@ trait NirGenExpr(using Context) {
       }
 
       val fnRef = resolveFunction(fn)
-      val className = genTypeName(app.tpe.sym)
+      val className = genTypeName(app.tpe.typeSymbol)
 
       val ctorTy = nir.Type.Function(
         Seq(nir.Type.Ref(className), nir.Type.Ptr),
@@ -2933,7 +2925,7 @@ trait NirGenExpr(using Context) {
         funcName: nir.Global,
         funSym: Symbol,
         funTree: Closure,
-        evidences: List[SimpleType]
+        evidences: List[Type]
     )(using nir.SourcePosition): nir.Defn = {
       val attrs = nir.Attrs.None.withIsExtern(true)
 

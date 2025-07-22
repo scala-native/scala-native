@@ -274,16 +274,24 @@ trait NirDefinitions {
     )
     lazy val ResolvedMethod = getMember(NativeModule, TermName("resolved"))
 
-    lazy val RuntimePrimitive: Map[Char, Symbol] = Map(
-      'B' -> getRequiredClass("scala.scalanative.runtime.PrimitiveBoolean"),
-      'C' -> getRequiredClass("scala.scalanative.runtime.PrimitiveChar"),
-      'Z' -> getRequiredClass("scala.scalanative.runtime.PrimitiveByte"),
-      'S' -> getRequiredClass("scala.scalanative.runtime.PrimitiveShort"),
-      'I' -> getRequiredClass("scala.scalanative.runtime.PrimitiveInt"),
-      'L' -> getRequiredClass("scala.scalanative.runtime.PrimitiveLong"),
-      'F' -> getRequiredClass("scala.scalanative.runtime.PrimitiveFloat"),
-      'D' -> getRequiredClass("scala.scalanative.runtime.PrimitiveDouble"),
-      'U' -> getRequiredClass("scala.scalanative.runtime.PrimitiveUnit")
+    lazy val RuntimePrimitive: Map[Symbol, Symbol] = Map(
+      BooleanClass -> getRequiredClass(
+        "scala.scalanative.runtime.PrimitiveBoolean"
+      ),
+      CharClass -> getRequiredClass("scala.scalanative.runtime.PrimitiveChar"),
+      ByteClass -> getRequiredClass("scala.scalanative.runtime.PrimitiveByte"),
+      ShortClass -> getRequiredClass(
+        "scala.scalanative.runtime.PrimitiveShort"
+      ),
+      IntClass -> getRequiredClass("scala.scalanative.runtime.PrimitiveInt"),
+      LongClass -> getRequiredClass("scala.scalanative.runtime.PrimitiveLong"),
+      FloatClass -> getRequiredClass(
+        "scala.scalanative.runtime.PrimitiveFloat"
+      ),
+      DoubleClass -> getRequiredClass(
+        "scala.scalanative.runtime.PrimitiveDouble"
+      ),
+      UnitClass -> getRequiredClass("scala.scalanative.runtime.PrimitiveUnit")
     )
     lazy val RuntimePrimitiveTypes: Set[Symbol] =
       RuntimePrimitive.values.toSet ++ Set(
@@ -291,38 +299,29 @@ trait NirDefinitions {
         RawSizeClass
       )
 
-    lazy val RuntimeArrayClass: Map[Char, Symbol] = Map(
-      'B' -> getRequiredClass("scala.scalanative.runtime.BooleanArray"),
-      'C' -> getRequiredClass("scala.scalanative.runtime.CharArray"),
-      'Z' -> getRequiredClass("scala.scalanative.runtime.ByteArray"),
-      'S' -> getRequiredClass("scala.scalanative.runtime.ShortArray"),
-      'I' -> getRequiredClass("scala.scalanative.runtime.IntArray"),
-      'L' -> getRequiredClass("scala.scalanative.runtime.LongArray"),
-      'F' -> getRequiredClass("scala.scalanative.runtime.FloatArray"),
-      'D' -> getRequiredClass("scala.scalanative.runtime.DoubleArray"),
-      'O' -> getRequiredClass("scala.scalanative.runtime.ObjectArray")
-    )
+    // Used only by Scala 2.12
+    def RuntimeArrayClass(nirTpe: nir.Type): Symbol = nirTpe match {
+      case nir.Type.Bool =>
+        getRequiredClass("scala.scalanative.runtime.BooleanArray")
+      case nir.Type.Char =>
+        getRequiredClass("scala.scalanative.runtime.CharArray")
+      case nir.Type.Byte =>
+        getRequiredClass("scala.scalanative.runtime.ByteArray")
+      case nir.Type.Short =>
+        getRequiredClass("scala.scalanative.runtime.ShortArray")
+      case nir.Type.Int =>
+        getRequiredClass("scala.scalanative.runtime.IntArray")
+      case nir.Type.Long =>
+        getRequiredClass("scala.scalanative.runtime.LongArray")
+      case nir.Type.Float =>
+        getRequiredClass("scala.scalanative.runtime.FloatArray")
+      case nir.Type.Double =>
+        getRequiredClass("scala.scalanative.runtime.DoubleArray")
+      case _ => getRequiredClass("scala.scalanative.runtime.ObjectArray")
+    }
 
-    private def mapValue[K, V1, V2](fn: V1 => V2)(in: (K, V1)): (K, V2) =
-      (in._1, fn(in._2))
-
-    lazy val RuntimeArrayModule: Map[Char, Symbol] =
-      RuntimeArrayClass.map(mapValue(_.companion))
-
-    lazy val RuntimeArrayAllocMethod: Map[Char, Symbol] =
-      RuntimeArrayModule.map(mapValue(getMember(_, TermName("alloc"))))
-
-    lazy val RuntimeArrayApplyMethod: Map[Char, Symbol] =
-      RuntimeArrayClass.map(mapValue(getMember(_, TermName("apply"))))
-
-    lazy val RuntimeArrayUpdateMethod: Map[Char, Symbol] =
-      RuntimeArrayClass.map(mapValue(getMember(_, TermName("update"))))
-
-    lazy val RuntimeArrayLengthMethod: Map[Char, Symbol] =
-      RuntimeArrayClass.map(mapValue(getMember(_, TermName("length"))))
-
-    lazy val RuntimeArrayCloneMethod: Map[Char, Symbol] =
-      RuntimeArrayClass.map(mapValue(getMember(_, TermName("clone"))))
+    def RuntimeArrayCloneMethod(elemType: nir.Type): Symbol =
+      getMember(RuntimeArrayClass(elemType), TermName("clone"))
 
     lazy val RuntimeBoxesModule = getRequiredModule(
       "scala.scalanative.runtime.Boxes"
