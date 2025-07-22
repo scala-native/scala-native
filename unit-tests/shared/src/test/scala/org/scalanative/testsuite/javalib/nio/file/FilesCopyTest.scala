@@ -59,21 +59,6 @@ object FilesCopyTest {
 class FilesCopyTest {
   import FilesTest._
 
-  private def cleanupWorkArea(dirPath: Path, paths: Path*): Unit = {
-    /* If execution reaches here, Tests have been successful so there is no
-     * need to preserve created directory & files for analysis.
-     */
-
-    val donePermissions = PosixFilePermissions.fromString("rwx------")
-    // Assume dirPath has appropriate ownership & user write protection.
-    for (path <- paths) {
-      Files.setPosixFilePermissions(path, donePermissions)
-      Files.deleteIfExists(path)
-    }
-
-    Files.deleteIfExists(dirPath)
-  }
-
   private def createOsFile(
       path: Path,
       permissions: String,
@@ -223,6 +208,9 @@ class FilesCopyTest {
        * and GROUP_WRITE, so do not test those bits.
        * All *_EXECUTE bits and OTHERS_WRITE should definitely
        * be off/clear.
+       *
+       * umask 000 will cause this test to fail, but such a mask is
+       * not used in CI and rare in the wild. Usually it is 022 or 077.
        */
 
       assertFalse(
