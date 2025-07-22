@@ -14,7 +14,9 @@ private[build] final case class Descriptor(
     gcProject: Boolean,
     links: List[String],
     defines: List[String],
-    includes: List[String]
+    includes: List[String],
+    stdC: Option[String],
+    stdCpp: Option[String]
 )
 
 private[build] object Descriptor {
@@ -31,7 +33,9 @@ private[build] object Descriptor {
         props.getProperty("project.gcProject", "false").toBoolean,
         parseStrings("nir.link.names", props),
         parseStrings("preprocessor.defines", props),
-        parseStrings("compile.include.paths", props)
+        parseStrings("compile.include.paths", props),
+        Option(props.getProperty("compile.std.c")),
+        Option(props.getProperty("compile.std.cpp"))
       )
     } finally {
       if (reader != null) {

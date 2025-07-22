@@ -20,7 +20,7 @@ private[scalanative] object LLVM {
   // shipped with Windows 10 / Server 2016+ (we do not plan supporting older versions)
   val defaultWinCpp = "c++14"
   val defaultCpp = "c++11"
-  val defaultC = "gnu11" // "c11"
+  val defaultC = "c11"
 
   /** Object file extension: ".o" */
   val oExt = ".o"
