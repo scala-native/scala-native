@@ -17,7 +17,7 @@ object Deps {
   }.headOption.getOrElse(throw new RuntimeException("Unknown Scala versions"))
   def ScalaReflect(version: String) = "org.scala-lang" % "scala-reflect" % version
 
-  lazy val SbtPlatformDeps  = "org.portable-scala" % "sbt-platform-deps" % "1.0.1"
+  lazy val SbtPlatformDeps  = "org.portable-scala" % "sbt-platform-deps" % "1.0.2"
   lazy val SbtTestInterface = "org.scala-sbt"      % "test-interface"    % "1.0"
   lazy val JUnitInterface   = "com.github.sbt"     % "junit-interface"   % "0.13.3"
   lazy val JUnit            = "junit"              % "junit"             % "4.13.2"
