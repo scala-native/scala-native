@@ -1,5 +1,5 @@
 //> using scala "3"
-//> using lib "com.lihaoyi::os-lib:0.9.1"
+//> using lib "com.lihaoyi::os-lib:0.9.3"
 
 import java.io.File
 import os._
