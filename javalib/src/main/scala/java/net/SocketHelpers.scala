@@ -127,6 +127,12 @@ object SocketHelpers {
   private[net] def getTrafficClassSocketOption(): Int =
     trafficClassSocketOption
 
+  private lazy val multicastTtlSocketOption: Int =
+    if (getUseIPv4Stack()) ip.IP_MULTICAST_TTL else ip6.IPV6_MULTICAST_HOPS
+
+  private[net] def getMulticastTtlSocketOption(): Int =
+    trafficClassSocketOption
+
   // Return text translation of getaddrinfo (gai) error code.
   private[net] def getGaiErrorMessage(gaiErrorCode: CInt): String = {
     if (isWindows) {
@@ -330,7 +336,7 @@ object SocketHelpers {
     }
   }
 
-  private[net] def sockaddrStorageToInetSocketAddress(
+  private[java] def sockaddrStorageToInetSocketAddress(
       sockAddr: Ptr[sockaddr]
   ): InetSocketAddress = {
     val addr = sockaddrToInetAddress(sockAddr, "")
@@ -504,4 +510,20 @@ private[net] object ip6 {
   implicit class ip6Extension(self: ip6.type) {
     def IPV6_MULTICAST_HOPS: CInt = in.IPV6_MULTICAST_HOPS
   }
+}
+
+@extern
+private[net] object async {
+
+  // only in Linux and FreeBSD, but not macOS
+  @name("scalanative_async_sock_nonblock")
+  def SOCK_NONBLOCK: CInt = extern
+
+  // only on Linux and FreeBSD, but not macOS
+  @name("scalanative_async_msg_nosignal")
+  def MSG_NOSIGNAL: CInt = extern
+
+  // only on macOS and some BSDs (?)
+  @name("scalanative_async_so_nosigpipe")
+  def SO_NOSIGPIPE: CInt = extern
 }

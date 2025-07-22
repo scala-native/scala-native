@@ -30,13 +30,13 @@ class Socket protected (
     startup(addr, port)
 
   def this() =
-    this(AbstractPlainSocketImpl(), null, -1, null, 0, true, false)
+    this(PlainSocketImpl(), null, -1, null, 0, true, false)
 
   protected[net] def this(impl: SocketImpl) =
     this(impl, null, -1, null, 0, true, false)
 
   def this(address: InetAddress, port: Int) =
-    this(AbstractPlainSocketImpl(), address, port, null, 0, true, true)
+    this(PlainSocketImpl(), address, port, null, 0, true, true)
 
   def this(
       address: InetAddress,
@@ -45,7 +45,7 @@ class Socket protected (
       localPort: Int
   ) =
     this(
-      AbstractPlainSocketImpl(),
+      PlainSocketImpl(),
       address,
       port,
       localAddr,
@@ -56,7 +56,7 @@ class Socket protected (
 
   def this(host: String, port: Int) =
     this(
-      AbstractPlainSocketImpl(),
+      PlainSocketImpl(),
       InetAddress.getByName(host),
       port,
       null,
@@ -67,7 +67,7 @@ class Socket protected (
 
   def this(host: String, port: Int, localAddr: InetAddress, localPort: Int) =
     this(
-      AbstractPlainSocketImpl(),
+      PlainSocketImpl(),
       InetAddress.getByName(host),
       port,
       localAddr,
@@ -77,11 +77,11 @@ class Socket protected (
     )
 
   def this(host: InetAddress, port: Int, stream: Boolean) =
-    this(AbstractPlainSocketImpl(), host, port, null, 0, stream, true)
+    this(PlainSocketImpl(), host, port, null, 0, stream, true)
 
   def this(host: String, port: Int, stream: Boolean) =
     this(
-      AbstractPlainSocketImpl(),
+      PlainSocketImpl(),
       InetAddress.getByName(host),
       port,
       null,

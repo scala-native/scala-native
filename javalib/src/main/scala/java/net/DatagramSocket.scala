@@ -28,7 +28,7 @@ class DatagramSocket protected (
 
   def this() =
     this(
-      AbstractPlainDatagramSocketImpl(),
+      PlainDatagramSocketImpl(),
       0,
       SocketHelpers.getWildcardAddress(),
       true
@@ -38,7 +38,7 @@ class DatagramSocket protected (
 
   def this(bindaddr: SocketAddress) = {
     this(
-      AbstractPlainDatagramSocketImpl(),
+      PlainDatagramSocketImpl(),
       0,
       SocketHelpers.getWildcardAddress(),
       false
@@ -50,14 +50,14 @@ class DatagramSocket protected (
 
   def this(port: Int) =
     this(
-      AbstractPlainDatagramSocketImpl(),
+      PlainDatagramSocketImpl(),
       port,
       SocketHelpers.getWildcardAddress(),
       true
     )
 
   def this(port: Int, laddr: InetAddress) =
-    this(AbstractPlainDatagramSocketImpl(), port, laddr, true)
+    this(PlainDatagramSocketImpl(), port, laddr, true)
 
   private def create(): Unit = {
     impl.create()
@@ -107,7 +107,7 @@ class DatagramSocket protected (
 
     impl.bind(insAddr.getPort, insAddr.getAddress)
     this.localAddr = insAddr.getAddress
-    this.localPort = impl.localport
+    this.localPort = impl.getLocalPort()
     bound = true
   }
 

@@ -8,8 +8,7 @@ abstract class AbstractInterruptibleChannel protected ()
 
   private var closed: Boolean = false
 
-  protected final def begin(): Unit =
-    ()
+  protected final def begin(): Unit = ()
 
   final def close(): Unit =
     if (!closed) {
