@@ -36,16 +36,16 @@ class StringTestOnJDK21 {
     assertEquals("a1_3", -1, afoobar.indexOf('a', 1, 5))
     assertEquals("a1_4", 5, afoobar.indexOf('a', 1, 6))
 
-    val umlautAFoobar = "fubår" // check non-ANSI
-    assertEquals("a2_1", -1, umlautAFoobar.indexOf('a', 0, 0))
-    assertEquals("a2_2", -1, umlautAFoobar.indexOf('a', 0, 5))
-    assertEquals("a2_3", -1, umlautAFoobar.indexOf('a', 1, 4))
-    assertEquals("a2_44", -1, umlautAFoobar.indexOf('a', 1, 5))
+    val ringAboveAFoobar = "fubår" // check non-ANSI
+    assertEquals("a2_1", -1, ringAboveAFoobar.indexOf('a', 0, 0))
+    assertEquals("a2_2", -1, ringAboveAFoobar.indexOf('a', 0, 5))
+    assertEquals("a2_3", -1, ringAboveAFoobar.indexOf('a', 1, 4))
+    assertEquals("a2_44", -1, ringAboveAFoobar.indexOf('a', 1, 5))
 
-    assertEquals("a3_1", -1, umlautAFoobar.indexOf('å', 0, 0))
-    assertEquals("a3_2", 3, umlautAFoobar.indexOf('å', 0, 5))
-    assertEquals("a3_3", 3, umlautAFoobar.indexOf('å', 1, 4))
-    assertEquals("a3_4", -1, umlautAFoobar.indexOf('å', 4, 5))
+    assertEquals("a3_1", -1, ringAboveAFoobar.indexOf('å', 0, 0))
+    assertEquals("a3_2", 3, ringAboveAFoobar.indexOf('å', 0, 5))
+    assertEquals("a3_3", 3, ringAboveAFoobar.indexOf('å', 1, 4))
+    assertEquals("a3_4", -1, ringAboveAFoobar.indexOf('å', 4, 5))
   }
 
   @Test def IndexOf_String_BeginIndexEndIndex_CheckArgs(): Unit = {
