@@ -52,37 +52,18 @@ development using C and C++.
     extensions from Microsoft if desired for highlighting and other
     features.
 
-A `compile_flags.txt` is needed to get the best setup to
-work on `nativelib` and the Garbage Collectors. Since we use
+A `compile_flags.txt` is included for Scala Native contributors to get the best
+setup to work on `nativelib` and the Garbage Collectors. We use
 conditional compilation for garbage collection selection and the code is
-in a `gc` directory we need an include for the header
-relative paths and defines for the different garbage collectors we have
-in the project. `clangd` works well as a default but only
-has defines for your platform and can only work out of the box for
-certain simple setups which is probably fine for most other projects.
-The following is an example file that should be put in the
-`nativelib/src/main/resources/scala-native` directory.
-Change the first include path for your platform.
+in a `gc` directory so we need an include for the headers
+relative paths. Defines are also added for the different garbage collectors we have
+in the project. Compile flags are added for `clib`, `javalib`, and `posixlib` to
+assist with these projects as well.
 
-``` text
-# GC setup
-# Boehm header include path on mac arm
--I
-/opt/homebrew/include
-# GC include path to allow relative paths from gc as the root path
--I
-gc/
-# Defines for the garbage collectors which are used for GC selection
--DSCALANATIVE_GC_BOEHM
--DSCALANATIVE_GC_IMMIX
--DSCALANATIVE_GC_COMMIX
--DSCALANATIVE_GC_NONE
--DSCALANATIVE_GC_EXPERIMENTAL
-# Other defines to allow analysis of code
--DSCALANATIVE_MULTITHREADING_ENABLED
--DGC_ENABLE_STATS
--DGC_ENABLE_STATS_SYNC
--DDEBUG_PRINT
--DDEBUG_ASSERT
-# end GC
-```
+`clangd` works well but only has certain defines for your platform for
+example. Thus `clangd` can work out of the box for simple setups which is
+probably fine for most projects that just need `C` glue code for Windows, Linux or macOS.
+
+If you have native code included in your own project, you can copy one of these
+files that are located in the `src/main/resources/scala-native` directory of the
+projects listed above. Then you can modify the configuration as needed.
