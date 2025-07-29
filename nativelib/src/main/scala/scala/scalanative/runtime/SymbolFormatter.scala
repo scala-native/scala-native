@@ -24,7 +24,7 @@ object SymbolFormatter {
     methodNameOut(0) = 0.toByte
 
     def readSymbol(): Boolean = {
-      // On Windows symbol names are different then on Unix platforms.
+      // On Windows symbol names are different than on Unix platforms.
       // Due to differences in implementation between WinDbg and libUnwind used
       // on each platform, symbols on Windows do not contain '_' prefix.
       // When debug metadata is generated and there is no symbols (LTO) then

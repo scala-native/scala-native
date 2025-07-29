@@ -89,7 +89,7 @@ object ApiTestUtils {
     )
   }
 
-  /** This takes a regex and it's compile time flags, a string that is expected
+  /** This takes a regex and its compile time flags, a string that is expected
    *  to match the regex and a string that is not expected to match the regex.
    *
    *  We don't check for JDK compatibility here, since the flags are not in a
@@ -189,7 +189,7 @@ object ApiTestUtils {
       count == m.groupCount()
     )
 
-    // JDK -- SN j.u.regex calls into scalanative.regex, so somethin
+    // JDK -- SN j.u.regex calls into scalanative.regex, so something
     // rotten on false.
     val pj = java.util.regex.Pattern.compile(pattern)
     val mj = pj.matcher("x")

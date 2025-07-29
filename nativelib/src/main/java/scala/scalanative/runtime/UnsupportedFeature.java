@@ -2,7 +2,7 @@ package scala.scalanative.runtime;
 
 /**
  * Mock methods used to detect at linktime usage of unsupported features. Use
- * with caution and always use guarded with linktime-reasolved conditions. Eg.
+ * with caution and always use guarded with linktime-reasolved conditions. E.g.
  * 
  * <pre>
  * {@code

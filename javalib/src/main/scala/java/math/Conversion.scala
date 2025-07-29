@@ -24,7 +24,7 @@
  *      the literature is left an exercise for the Gentle Reader.
  *
  *      The Scala.js algorithm from the Scala.js code likes to insert
- *      characters at the beginning of strings. The idiom is wide spread.
+ *      characters at the beginning of strings. The idiom is widespread.
  *
  *      In order to do an insert(), StringBuilder internals must move all
  *      existing characters to the right, which is much more expensive than
@@ -35,7 +35,7 @@
  *
  *      A characteristic usage pessimistic case is where the digits of
  *      the resultant String are converted. The Scala.CSS, and current
- *      Scala Native, algorithm starts started with the low order digits.
+ *      Scala Native, algorithm starts with the low order digits.
  *      Higher order digits are inserted _before_ the digits converted to
  *      date.
  *
@@ -225,7 +225,7 @@ private[math] object Conversion {
     if (sign == 0) {
       "0"
     } else {
-      // one 32-bit unsigned value may contains 10 decimal digits
+      // one 32-bit unsigned value may contain 10 decimal digits
       // Explanation why +1+7:
       // +1 - one char for sign if needed.
       // +7 - For "special case 2" (see below) we have 7 free chars for inserting necessary scaled digits.
@@ -342,7 +342,7 @@ private[math] object Conversion {
           result.toString()
       }
     } else {
-      // one 32-bit unsigned value may contains 10 decimal digits
+      // one 32-bit unsigned value may contain 10 decimal digits
       // Explanation why 10+1+7:
       // +1 - one char for sign if needed.
       // +7 - For "special case 2" (see below) we have 7 free chars for inserting necessary scaled digits.
@@ -401,7 +401,7 @@ private[math] object Conversion {
     } else {
       /*
        * Make the dividend positive shifting it right by 1 bit then get
-       * the quotient an remainder and correct them properly
+       * the quotient and remainder and correct them properly
        */
       val aPos: Long = a >>> 1
       val bPos: Long = 1000000000L >>> 1

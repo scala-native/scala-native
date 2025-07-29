@@ -242,11 +242,11 @@ trait NirGenType(using Context) {
   private def genStruct(st: SimpleType): nir.Type = {
     val symInfo = st.sym.info
     // In Scala 2 we used fields to create struct type, but this seems to be broken in Scala 3 -
-    // when compiling original file (eg. in nativelib) we do get correct list of fields,
-    // however in the place of usage in other project (eg. javalib) symbol info does contain only accessors,
+    // when compiling original file (e.g. in nativelib) we do get correct list of fields,
+    // however in the place of usage in other project (e.g. javalib) symbol info does contain only accessors,
     // but no information about fields.
-    // .class fiele do contain information about fields, so probablly TASTy (which is used)
-    // in compilation in dependent projects does not contains this information
+    // .class field do contain information about fields, so probably TASTy (which is used)
+    // in compilation in dependent projects does not contain this information
     // Since structs in the current form are a legacy feature, and are used only to
     // receive output from native function returning Struct by value (only in LLVMIntriniscs)
     // we can leave it as it is in the current, simplified form using constructor arguments

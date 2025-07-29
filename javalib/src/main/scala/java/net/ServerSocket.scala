@@ -101,7 +101,7 @@ class ServerSocket(
      * InetAddress as IPv4 (0.0.0.0).
      *   "LocalSocketAddress: |0.0.0.0/0.0.0.0:8090|"
      *
-     * This section, and SocketHelpers.getWildcardAddressForBind()
+     * This section and SocketHelpers.getWildcardAddressForBind()
      * will need to be revisited for robust FreeBSD support.
      * See also notes in getWildcardAddressForBind().
      */

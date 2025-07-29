@@ -8,7 +8,7 @@ import scala.scalanative.unsafe._, Nat._
 private[scalanative] object DirentTypes {
   type _256 = Digit3[_2, _5, _6] // see comment above 'type dirent' below.
 
-  type DIR = CStruct0 // An opaque structure from os. Deconstruct a your peril.
+  type DIR = CStruct0 // An opaque structure from os. Deconstruct at your peril.
 
   /* Use "glue" is here because Direct call through to the operating
    * system is beyond the scope of time available. Linux, FreeBSD and,
@@ -24,7 +24,7 @@ private[scalanative] object DirentTypes {
    *
    * Guarantees of the allocated size of that CString are stated but
    * unreliable.  Some operating systems do not specify NAME_MAX.
-   * Some specify it as 255 but can return a string longer that that.
+   * Some specify it as 255 but can return a string longer than that.
    * macOS specifies 255 UTF-8 characters. Since each UTF-8 character
    * can be up to, currently, 5 bytes long, the total size can
    * exceed the _256 here.

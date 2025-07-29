@@ -51,7 +51,7 @@ object ConcurrentHashMap {
    * placeholders while establishing values in computeIfAbsent and
    * related methods.  The types TreeBin, ForwardingNode, and
    * ReservationNode do not hold normal user keys, values, or
-   * hashes, and are readily distinguishable during search etc
+   * hashes, and are readily distinguishable during search etc.
    * because they have negative hash fields and null key and value
    * fields. (These special nodes are either uncommon or transient,
    * so the impact of carrying around some unused fields is
@@ -126,9 +126,9 @@ object ConcurrentHashMap {
    * O(log N).  Each search step in a TreeBin is at least twice as
    * slow as in a regular list, but given that N cannot exceed
    * (1<<64) (before running out of addresses) this bounds search
-   * steps, lock hold times, etc, to reasonable constants (roughly
+   * steps, lock hold times, etc., to reasonable constants (roughly
    * 100 nodes inspected per operation worst case) so long as keys
-   * are Comparable (which is very common -- String, Long, etc).
+   * are Comparable (which is very common -- String, Long, etc.).
    * TreeBin nodes (TreeNodes) also maintain the same "next"
    * traversal pointers as regular nodes, so can be traversed in
    * iterators in the same way.

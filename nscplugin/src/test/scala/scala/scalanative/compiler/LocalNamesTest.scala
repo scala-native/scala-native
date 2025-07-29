@@ -365,7 +365,7 @@ class LocalNamesTest {
   //     findDefinition(defns)
   //       .foreach { defn =>
   //         val lets = namedLets(defn).values
-  //         // Ensure each of vals n and x has it's own let
+  //         // Ensure each of vals n and x has its own let
   //         val expectedLets = Seq("n", "x")
   //         assertContainsAll("lets defined", expectedLets, lets)
   //         val expectedVals = expectedLets

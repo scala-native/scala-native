@@ -135,7 +135,7 @@ object mystdio {
 }
 ```
 
-The limitation of `...` interop requires that it's
+The limitation of `...` interop requires that its
 arguments needs to passed directly to variadic arguments function or
 arguments need to be inlined. This is required to obtain enough
 information on how arguments show be passed in regards to C ABI. Passing
@@ -177,7 +177,7 @@ name of field.
 `int ScalaNativeInit(void);` function is special exported
 function that needs to be called before invoking any code defined in
 Scala Native. It returns `0` on successful initialization
-and non-zero value in the otherwise.
+and non-zero value otherwise.
 
 For dynamic libraries a constructor
 would be generated to invoke `ScalaNativeInit` function
@@ -457,8 +457,8 @@ stdio.printf(msg)
 ```
 
 It does not allow any octal values or escape characters not supported by
-Scala compiler, like `\a` or `\?`, but also unicode escapes. It is
-possible to use C-style hex values up to value 0xFF, eg.
+Scala compiler, like `\a` or `\?`, but also Unicode escapes. It is
+possible to use C-style hex values up to value 0xFF, e.g.
 `c"Hello \x61\x62\x63"`
 
 Additionally, we also expose two helper functions `unsafe.fromCString`

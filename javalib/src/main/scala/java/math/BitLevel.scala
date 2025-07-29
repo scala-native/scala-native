@@ -372,7 +372,7 @@ private[math] object BitLevel {
    *  @param count
    *    the number of bits to be shifted
    *  @return
-   *    dropped bit's are all zero (i.e. remaider is zero)
+   *    dropped bits are all zero (i.e. remainder is zero)
    */
   def shiftRight(
       result: Array[Int],
@@ -407,8 +407,7 @@ private[math] object BitLevel {
 
   /** Performs a fast bit testing for positive numbers.
    *
-   *  The bit to to be tested must be in the range {@code [0,
-   *  val.bitLength()-1]}
+   *  The bit to be tested must be in the range {@code [0, val.bitLength()-1]}
    */
   def testBit(bi: BigInteger, n: Int): Boolean =
     (bi.digits(n >> 5) & (1 << (n & 31))) != 0

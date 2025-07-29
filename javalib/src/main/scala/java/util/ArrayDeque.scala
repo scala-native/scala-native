@@ -691,7 +691,7 @@ class ArrayDeque[E](
 
   /** Returns an iterator over the elements in this deque. The elements will be
    *  ordered from first (head) to last (tail). This is the same order that
-   *  elements would be dequeued (via successive calls to remove or popped (via
+   *  elements would be dequeued (via successive calls to remove) or popped (via
    *  successive calls to {@link #pop}).
    *
    *  @return

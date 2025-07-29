@@ -9,7 +9,7 @@ package build
  *
  *   This means that Continuous Integration (CI) is run using
  *   the highest patch version. Scala Native may or may not build from
- *   from scratch when using lower patch versions.
+ *   scratch when using lower patch versions.
  *
  *   This information can save time and frustration when preparing
  *   contributions for submission: Build privately using highest,

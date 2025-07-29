@@ -461,7 +461,7 @@ object Settings {
         scalaVersionDirectories(sharedTestsDir, "scala", scalaVersion.value)
           .++(extraSharedDirectories)
           .flatMap(allScalaFromDir(_))
-      // Denylist contains relative paths from inside of scala version directory (scala, scala-2, etc)
+      // Denylist contains relative paths from inside of scala version directory (scala, scala-2, etc.)
       // List content of all scala directories when checking denylist coherency
       val allScalaSources = sharedTestsDir
         .listFiles()

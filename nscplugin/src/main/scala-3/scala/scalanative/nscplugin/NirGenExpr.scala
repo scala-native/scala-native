@@ -662,7 +662,7 @@ trait NirGenExpr(using Context) {
       def genIfsChain(): nir.Val = {
         /* Default label needs to be generated before any others and then added to
          * current MethodEnv. It's label might be referenced in any of them in
-         * case of match with guards, eg.:
+         * case of match with guards, e.g.:
          *
          * "Hello, World!" match {
          *  case "Hello" if cond1 => "foo"
@@ -1031,7 +1031,7 @@ trait NirGenExpr(using Context) {
           if !(localNames.contains(id) || isMutable)
           then localNames.update(id, name)
           vd.rhs match {
-            // When rhs is a block patch the scopeId of it's result to match the current scopeId
+            // When rhs is a block patch the scopeId of its result to match the current scopeId
             // This allows us to reflect that ValDef is accessible in this scope
             case _: Block | Typed(_: Block, _) | Try(_: Block, _, _) |
                 Try(Typed(_: Block, _), _, _) =>
@@ -2533,7 +2533,7 @@ trait NirGenExpr(using Context) {
     }
 
     private lazy val optimizedFunctions = {
-      // Included functions should be pure, and should not not narrow the result type
+      // Included functions should be pure, and should not narrow the result type
       Set[Symbol](
         defnNir.Intrinsics_castIntToRawSize,
         defnNir.Intrinsics_castIntToRawSizeUnsigned,
@@ -2937,7 +2937,7 @@ trait NirGenExpr(using Context) {
     )(using nir.SourcePosition): nir.Defn = {
       val attrs = nir.Attrs.None.withIsExtern(true)
 
-      // In case if passed function is adapted closure it's param types
+      // In case if passed function is adapted closure its param types
       // would be erased, in such case we would recover original types
       // using evidence types (materialized unsafe.Tags)
       val isAdapted = funSym.name.mangledString.contains("$adapted$")
@@ -2977,7 +2977,7 @@ trait NirGenExpr(using Context) {
         val boxedParams = origTypes.zip(params).map(buf.fromExtern(_, _))
         val argsp = boxedParams.map(ValTree(funTree)(_))
 
-        // Check number of arguments that would be be used in a call to the function,
+        // Check number of arguments that would be used in a call to the function,
         // it should be equal to the quantity of implicit evidences (without return type evidence)
         // and arguments passed via closure env.
         if (argsp.size != evidences.length - 1 + funTree.env.size) {
@@ -3121,7 +3121,7 @@ trait NirGenExpr(using Context) {
         unwind
       )
       // Proxies operate only on boxed types, however formal param types and name of the method
-      // might contain primitive types. With current imlementation of proxies we workaround it
+      // might contain primitive types. With current implementation of proxies we work around it
       // by always using boxed types in function calls
       val boxedFormalParamTypeRefs = formalParamTypeRefs.map {
         case ty: nir.Type.PrimitiveKind =>

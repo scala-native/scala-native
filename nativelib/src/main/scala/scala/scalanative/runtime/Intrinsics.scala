@@ -150,7 +150,7 @@ object Intrinsics {
   /** Intrinsified cast that reinterprets raw pointer as an int. */
   def castRawPtrToInt(rawptr: RawPtr): Int = intrinsic
 
-  /** Intrinsified cast that reinterprets raw pointer as an long. */
+  /** Intrinsified cast that reinterprets raw pointer as a long. */
   def castRawPtrToLong(rawptr: RawPtr): Long = intrinsic
 
   /** Intrinsified cast that reinterprets int as a raw pointer. */

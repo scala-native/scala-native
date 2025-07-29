@@ -6,7 +6,7 @@ import java.util.function.IntConsumer
 
 trait CharSequence {
 
-  /* sub classes, particularly those with fast access to an internal array,
+  /* subclasses, particularly those with fast access to an internal array,
    * should override the default implementations of chars() and
    * codePoints() to avoid the cost of the frequent charAt(index) calls
    * below.

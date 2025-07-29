@@ -28,7 +28,7 @@ object inet {
    * because Scala Native supports only passing structures by reference,
    * not value.
    *
-   * It is hard to obtain a in_addr structure without a pointer being
+   * It is hard to obtain an in_addr structure without a pointer being
    * involved.  If a Ptr[in_addr] is not immediately available, a
    * Ptr[sockaddr_in] or Ptr[sockaddr_in6] may be.  In that case, try
    * ptr.at3, for sockaddr_in or ptr.at1 for sockaddr_in6 (

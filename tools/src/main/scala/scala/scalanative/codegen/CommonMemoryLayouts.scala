@@ -37,7 +37,7 @@ private[codegen] class CommonMemoryLayouts(implicit meta: Metadata) {
     final val ClassNameIdx = InterfacesIdx + 1
   }
 
-  // RTTI specific for classess, see class RuntimeTypeInformation
+  // RTTI specific for classes, see class RuntimeTypeInformation
   object ClassRtti extends Layout() {
     val usesDynMap = meta.analysis.dynsigs.nonEmpty
     private val dynMapType = if (usesDynMap) Some(DynamicHashMap.ty) else None

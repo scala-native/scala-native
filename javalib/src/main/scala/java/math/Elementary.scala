@@ -259,7 +259,7 @@ private[math] object Elementary {
 
   /** Performs: {@code op1 += addend}.
    *
-   *  The number must to have place to hold a possible carry.
+   *  The number must have place to hold a possible carry.
    */
   def inplaceAdd(op1: BigInteger, addend: Int): Unit = {
     val carry = inplaceAdd(op1.digits, op1.numberLength, addend)

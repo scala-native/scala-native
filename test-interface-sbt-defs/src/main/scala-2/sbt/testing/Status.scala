@@ -2,12 +2,12 @@ package sbt.testing
 
 /** Represents the status of running a test.
  *
- *  Test frameworks can decided which of these to use and what they mean, but in
+ *  Test frameworks can decide which of these to use and what they mean, but in
  *  general, the intended meanings are:
  *
  *    - Success - a test succeeded
  *    - Error - an "error" occurred during a test
- *    - Failure - an "failure" during a test
+ *    - Failure - a "failure" during a test
  *    - Skipped - a test was skipped for any reason
  *    - Ignored - a test was ignored, <em>i.e.</em>, temporarily disabled with
  *      the intention of fixing it later

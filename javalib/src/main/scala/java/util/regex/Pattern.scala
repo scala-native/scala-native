@@ -66,7 +66,7 @@ object Pattern {
     // left when execution reaches this point.
     //
     // The constants for these three definitely differ between j.u.regex
-    // and snRegex and must be be translated.
+    // and snRegex and must be translated.
 
     val optionTranslations = Array[(Int, Int)](
       (CASE_INSENSITIVE, snRegex.Pattern.CASE_INSENSITIVE),

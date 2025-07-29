@@ -175,7 +175,7 @@ class ArrayList[E] private (
   }
 
   override def clear(): Unit = {
-    // fill the content of inner by null so that the elements can be garbage collected
+    // fill the content of inner with null so that the elements can be garbage collected
     for (i <- (0 until _size)) {
       inner(i) = null
     }

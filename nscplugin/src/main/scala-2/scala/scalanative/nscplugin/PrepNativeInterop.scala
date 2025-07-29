@@ -56,7 +56,7 @@ abstract class PrepNativeInterop[G <: Global with Singleton](
     /** Nicer syntax for `allEnclosingOwners is kind`. */
     private def anyEnclosingOwner: OwnerKind = allEnclosingOwners
 
-    /** Nicer syntax for `allEnclosingOwners isnt kind`. */
+    /** Nicer syntax for `allEnclosingOwners isn't kind`. */
     private object noEnclosingOwner {
       @inline def is(kind: OwnerKind): Boolean =
         allEnclosingOwners isnt kind

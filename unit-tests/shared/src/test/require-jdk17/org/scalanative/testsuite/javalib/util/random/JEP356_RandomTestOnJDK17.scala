@@ -34,7 +34,7 @@ class JEP356_RandomTestOnJDK17 {
 
   @Test def create_Constructor_ZeroArg(): Unit = {
     /* Does the constructor link, execute without Exception, and
-     * return a useable method?
+     * return a usable method?
      */
 
     val rng = factory.create()
@@ -63,7 +63,7 @@ class JEP356_RandomTestOnJDK17 {
         factory.create(byteSeed)
       )
     } else {
-      /* JDK 17 thru 22, inclusive, explicitly specify silently fall back to
+      /* JDK 17 through 22, inclusive, explicitly specify silently fall back to
        * using the zero arg constructor.
        */
       val rng = factory.create()

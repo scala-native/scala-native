@@ -64,7 +64,7 @@ def main(
   assert(os.exists(overridesDirPath), "Overrides dir does not exists")
 
   cmd match {
-    // Create patches based on fetched Scala sources and it's overrideds
+    // Create patches based on fetched Scala sources and its overrideds
     case CreatePatches =>
       sourcesExistsOrFetch(scalaVersion, sourcesDir)
 

@@ -66,7 +66,7 @@ sealed trait SourceFile {
 }
 object SourceFile {
 
-  /** An abstract file without location, eg. in-memory source or generated */
+  /** An abstract file without location, e.g. in-memory source or generated */
   case object Virtual extends SourceFile
 
   /** Relative path to source file based on the workspace path. Used for

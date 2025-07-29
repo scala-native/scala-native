@@ -205,7 +205,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           if (localNames.contains(id) || isMutable) ()
           else localNames.update(id, name)
           vd.rhs match {
-            // When rhs is a block patch the scopeId of it's result to match the current scopeId
+            // When rhs is a block patch the scopeId of its result to match the current scopeId
             // This allows us to reflect that ValDef is accessible in this scope
             case _: Block | Typed(_: Block, _) | Try(_: Block, _, _) |
                 Try(Typed(_: Block, _), _, _) =>
@@ -339,7 +339,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       def genIfsChain(): nir.Val = {
         /* Default label needs to be generated before any others and then added to
          * current MethodEnv. It's label might be referenced in any of them in
-         * case of match with guards, eg.:
+         * case of match with guards, e.g.:
          *
          * "Hello, World!" match {
          *  case "Hello" if cond1 => "foo"

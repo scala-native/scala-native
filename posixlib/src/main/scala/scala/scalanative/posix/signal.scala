@@ -215,7 +215,7 @@ import scala.scalanative.unsafe._
   def SIGSTKSZ: CInt = extern
 
   // A machine-specific representation of the saved context
-  // mac OS type mcontext_t = Ptr[__darwin_mcontext64]
+  // macOS type mcontext_t = Ptr[__darwin_mcontext64]
   // __darwin_mcontext64 -> _STRUCT_MCONTEXT64 -> typedef _STRUCT_MCONTEXT64	*mcontext_t;
   type mcontext_t = CVoidPtr
 

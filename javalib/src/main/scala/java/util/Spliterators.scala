@@ -10,9 +10,9 @@ import Spliterator._
  *
  *  It is most empathically __NOT__ intended for production use.
  *
- *  The limitations of the this implementation may not be as strong as they
- *  appear at first blush. Many/most classes which extend Spliterator (no s)
- *  supply more competent and efficient implementations.
+ *  The limitations of this implementation may not be as strong as they appear
+ *  at first blush. Many/most classes which extend Spliterator (no s) supply
+ *  more competent and efficient implementations.
  *
  *  The implementation of methods on Spliterators are, to current knowledge,
  *  robust. Many of these methods return spliterators. Those spliterators have
@@ -44,7 +44,7 @@ import Spliterator._
  *      need to be reduced.
  *
  *      For example, an individual development-only Test
- *      in SpliteratorsTrySplitTest showed an an un-optimized Scala Native
+ *      in SpliteratorsTrySplitTest showed an un-optimized Scala Native
  *      executable having results matching the same Test on JVM but taking
  *      approximately 50% longer (a minute or so), possibly due to swapping
  *      caused by higher memory usage.

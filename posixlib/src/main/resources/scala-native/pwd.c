@@ -6,7 +6,7 @@
 #include "types.h"
 
 // We don't use the "standard" types such as `dev_t` for instance
-// because these have different sizes on eg. Linux and OSX. We use the
+// because these have different sizes on e.g. Linux and OSX. We use the
 // smallest type that can hold all the possible values for the different
 // systems.
 

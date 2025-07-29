@@ -44,7 +44,7 @@ class JEP356_L64X128MixRandomTestOnJDK17 {
 
   @Test def create_Constructor_ZeroArg(): Unit = {
     /* Does the constructor link, execute without Exception, and
-     * return a useable method?
+     * return a usable method?
      */
 
     val rng = factory.create()
@@ -917,7 +917,7 @@ class JEP356_L64X128MixRandomTestOnJDK17 {
 
   @Test def splits(): Unit = {
     /* The Stream returned by splits() is supposed to be infinite.
-     * Since it might take awhile to examine the entire stream, only
+     * Since it might take a while to examine the entire stream, only
      * the first few elements are tested here.
      */
 

@@ -887,7 +887,7 @@ object Character {
   // charType: contains the type of the carater in the range ends
   // note that charTypeIndices.length + 1 = charType.length and that the
   // range 0 to 255 is not included because it is contained in charTypesFirst256
-  // They where generated with the following script:
+  // They were generated with the following script:
   //
   //  val indicesAndTypes = (256 to Character.MAX_CODE_POINT)
   //    .map(i => (i, Character.getType(i)))
@@ -1557,7 +1557,7 @@ object Character {
   }
 
   /* Indices defining ranges of case-ignorable characters defined in Unicode reference chapter 3.13.
-   * They are only used in String special casing method, eg. String.toLowerCase
+   * They are only used in String special casing method, e.g. String.toLowerCase
    *
    * Definition of case-ignorable character form Unicode [reference document](https://www.unicode.org/versions/Unicode13.0.0/ch03.pdf#G33992):
    * A character C is defined to be case-ignorable if C has the value MidLetter (ML),
@@ -1645,7 +1645,7 @@ object Character {
   }
 
   /* Indices defining ranges of case-ignorable characters defined in Unicode reference chapter 3.13.
-   * They are only used in String special casing method, eg. String.toLowerCase.
+   * They are only used in String special casing method, e.g. String.toLowerCase.
    * Indices were generated based on [DerivedCodeProperties.txt](https://www.unicode.org/Public/13.0.0/ucd/DerivedCoreProperties.txt)
    *
    * Definition of cased character from Unicode [reference document](https://www.unicode.org/versions/Unicode13.0.0/ch03.pdf#G33992):

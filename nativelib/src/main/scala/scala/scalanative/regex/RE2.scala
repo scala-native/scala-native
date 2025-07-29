@@ -214,7 +214,7 @@ class RE2 private {
     replaceAllFunc(src, 1) { orig => repl }
 
   // Returns a copy of {@code src} in which at most {@code maxReplaces} matches
-  // for this regexp have been replaced by the return value of of function
+  // for this regexp have been replaced by the return value of function
   // {@code repl} (whose first argument is the matched string). No support is
   // provided for expressions (e.g. {@code \1} or {@code $1}) in the
   // replacement string.
@@ -358,7 +358,7 @@ class RE2 private {
   // otherwise it is a UTF-16 encoded java.lang.String return values
   // are adjusted as appropriate.
   //
-  // If 'Submatch' is present, the return value is an list identifying
+  // If 'Submatch' is present, the return value is a list identifying
   // the successive submatches of the expression.  Submatches are
   // matches of parenthesized subexpressions within the regular
   // expression, numbered from left to right in order of opening
@@ -462,7 +462,7 @@ class RE2 private {
 
   // Returns an array holding the index pairs identifying the leftmost
   // match of this regular expression in {@code b} and the matches, if
-  // any, of its subexpressions, as defined by the the <a
+  // any, of its subexpressions, as defined by the <a
   // href='#submatch'>Submatch</a> and <a href='#index'>Index</a>
   // descriptions above.
   //

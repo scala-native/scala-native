@@ -526,8 +526,8 @@ private[interflow] object MergeProcessor {
 
   /* To mitigate risk of duplicated ids each merge block uses a dedicated
    *  namespace. Translation to the new namespace is performed by multiplicating
-   *  id by value of MergeBlockOffset. This adds a restiction for maximal number
-   *  of instructions within a function to no larger then value of MergeBlockOffset.
+   *  id by value of MergeBlockOffset. This adds a restriction for maximal number
+   *  of instructions within a function to no larger than value of MergeBlockOffset.
    */
   private val MergeBlockOffset = 1000000L
 

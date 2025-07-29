@@ -71,7 +71,7 @@ inline static ModuleRef waitForInitialization(ModuleSlot slot,
     assert(module != NULL);
     if (*module != classInfo) {
         InitializationContext *ctx = (InitializationContext *)module;
-        // Usage of module in it's constructor, return unitializied instance
+        // Usage of module in its constructor, return unitializied instance
         if (isThreadEqual(ctx->initThreadId, getThreadId())) {
             return ctx->instance;
         }

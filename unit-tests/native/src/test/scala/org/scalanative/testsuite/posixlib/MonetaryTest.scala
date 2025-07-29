@@ -8,7 +8,7 @@ import org.junit.BeforeClass
 import scala.scalanative.meta.LinktimeInfo._
 
 /* Using both LinktimeInfo & runtime.Platform looks strange.
- * It is a workaround to let this test run whilst I a suspected bug
+ * It is a workaround to let this test run whilst a suspected bug
  * in LinktimeInfo is tracked down.
  */
 import scalanative.runtime.Platform

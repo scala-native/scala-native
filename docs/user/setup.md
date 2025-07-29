@@ -119,7 +119,7 @@ installation of FreeBSD.
 pkg install boehm-gc # optional
 ```
 
-*Note 3:* Using the boehm GC with multi-threaded binaries doesn\'t work
+*Note 3:* Using the boehm GC with multi-threaded binaries doesn't work
 out-of-the-box yet.
 
 **OpenBSD 7.5 and later**
@@ -151,7 +151,7 @@ nix-shell scala-native.nix -A clangEnv
 **Windows**
 
 Corporate environments and Windows policies can affect the method used
-to setup your environment. The following procedure involves downloading
+to set up your environment. The following procedure involves downloading
 installers and running the installers using Powershell (Administrative)
 to avoid some of these issues. If you have full access to your machine
 then you can install using your favorite method.

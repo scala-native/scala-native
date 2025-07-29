@@ -577,8 +577,8 @@ object ErrorCodes {
   final val ERROR_FILE_TOO_LARGE = 0xdf.toUInt
 
   /** Access Denied. Before opening files in this location, you must first add
-   *  the web site to your trusted sites list, browse to the web site, and
-   *  select the option to login automatically.
+   *  the website to your trusted sites list, browse to the website, andselect
+   *  the option to login automatically.
    */
   final val ERROR_FORMS_AUTH_REQUIRED = 0xe0.toUInt
 

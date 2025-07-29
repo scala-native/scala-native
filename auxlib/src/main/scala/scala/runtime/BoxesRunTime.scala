@@ -112,7 +112,7 @@ object BoxesRunTime {
   @inline def unboxToDouble(o: java.lang.Object): scala.Double =
     if (o == null) 0 else o.asInstanceOf[java.lang.Double].doubleValue
 
-  // Comparsion
+  // Comparison
   @inline def equals(x: java.lang.Object, y: java.lang.Object): Boolean = {
     if (x eq y) true
     else equals2(x, y)

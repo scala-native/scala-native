@@ -630,7 +630,7 @@ private[codegen] object MetadataCodeGen {
           id
         case _ =>
           // We add an extra `_` to match the procedure names
-          // generated without debug informations.
+          // generated without debug information.
           // This makes demangling work regardless of the debug setting
           "__S" + defn.name.mangle
       }

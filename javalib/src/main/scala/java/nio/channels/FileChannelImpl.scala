@@ -178,7 +178,7 @@ private[java] final class FileChannelImpl(
 
     /* JVM requires the "size" argument to be a long, but throws
      * an exception if that long is greater than Integer.MAX_VALUE.
-     * toInt() would cause such a large value to rollover to a negative value.
+     * toInt() would cause such a large value to roll over to a negative value.
      *
      * Call to MappedByteBufferImpl() below truncates its third argument
      * to an Int, knowing this guard is in place.
@@ -641,7 +641,7 @@ private[java] final class FileChannelImpl(
     nWritten
   }
 
-  // since all of java package can call this, be stricter with argument checks.
+  // since all of Java packages can call this, be stricter with argument checks.
   private[java] def write(
       buffer: Array[Byte],
       offset: Int,
@@ -717,7 +717,7 @@ private[java] final class FileChannelImpl(
    * "Current position" when file has been opened for APPEND is
    * a logical place, End of File (EOF), not an absolute number.
    * When APPEND mode changes the position it reports as "current" to the
-   * new EOF rather than stashed position, according to JVM is is not
+   * new EOF rather than stashed position, according to JVM it is not
    * really changing the "current position".
    */
   override def write(src: ByteBuffer, pos: Long): Int = {
@@ -744,9 +744,9 @@ private[java] final class FileChannelImpl(
   /* The Scala Native implementation of FileInputStream#available delegates
    * to this method. This method now implements "available()" as described in
    * the Java description of FileInputStream#available. So the delegator
-   * now matches the its JDK description and behavior (Issue 3333).
+   * now matches its JDK description and behavior (Issue 3333).
    *
-   * There are a couple of fine points to this implemention which might
+   * There are a couple of fine points to this implementation which might
    * be helpful to know:
    *    1) There is no requirement that this method itself not block.
    *       Indeed, depending upon what, if anything, is in the underlying

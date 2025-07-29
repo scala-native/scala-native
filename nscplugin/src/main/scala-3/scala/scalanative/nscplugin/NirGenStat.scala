@@ -756,8 +756,8 @@ trait NirGenStat(using Context) {
    *        to true, or
    *      - the symbol was originally at the package level
    *
-   *  Other than the the fact that we also consider interfaces, this performs
-   *  the same tests as the JVM back-end.
+   *  Other than the fact that we also consider interfaces, this performs the
+   *  same tests as the JVM back-end.
    */
   private def isCandidateForForwarders(sym: Symbol): Boolean = {
     !ctx.settings.XnoForwarders.value && sym.isStatic && {

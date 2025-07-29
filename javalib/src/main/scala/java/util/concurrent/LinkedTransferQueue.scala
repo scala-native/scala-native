@@ -70,7 +70,7 @@ import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
    * status. While there are other possible variants, we implement
    * this here as: for a data-mode node, matching entails CASing an
    * "item" field from a non-null data value to null upon match, and
-   * vice-versa for request nodes, CASing from null to a data
+   * vice versa for request nodes, CASing from null to a data
    * value. (Note that the linearization properties of this style of
    * queue are easy to verify -- elements are made available by
    * linking, and unavailable by matching.) Compared to plain M&S

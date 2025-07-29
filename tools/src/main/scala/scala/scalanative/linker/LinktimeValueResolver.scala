@@ -207,7 +207,7 @@ private[linker] trait LinktimeValueResolver { self: Reach =>
 
             comparsionFn(resolved.value, condition.value)
 
-          // In case if we cannot get common Ordering that can be used, eg.: comparison with Null
+          // In case if we cannot get common Ordering that can be used, e.g.: comparison with Null
           case (ComparableVal(condition, _), ComparableVal(resolved, _)) =>
             comparison match {
               case nir.Comp.Ieq | nir.Comp.Feq => resolved == condition

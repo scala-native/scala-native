@@ -114,12 +114,12 @@ abstract class NirGenPhase[G <: Global with Singleton](override val global: G)
         val regularDefns = statBuffer.toSeq.toList
 
         /* #4148 Add generated static forwarder classes, except those that
-         * would collide with regular classes on case insensitive file
+         * would collide with regular classes on case-insensitive file
          * systems.
          */
 
         /* I could not find any reference anywhere about what locale is used
-         * by case insensitive file systems to compare case-insensitively.
+         * by case-insensitive file systems to compare case-insensitively.
          * In doubt, force the English locale, which is probably going to do
          * the right thing in virtually all cases (especially if users stick
          * to ASCII class names), and it has the merit of being deterministic,

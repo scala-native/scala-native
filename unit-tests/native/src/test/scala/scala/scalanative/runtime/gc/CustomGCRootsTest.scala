@@ -18,7 +18,7 @@ class CustomGCRootsTest {
       : Unit = {
     case class Node(var v: Int, var next: Node)
     val sizeOfNode = sizeof[Node]
-    // It should be take at least 12 bytes on 32bit, or 20 bytes on 64bit arch
+    // It should be at least 12 bytes on 32bit, or 20 bytes on 64bit arch
     assert(sizeOfNode.toInt > 8)
     val zone = new CustomGCRootsTest.Zone(10.toUSize * sizeOfNode)
 
@@ -41,8 +41,8 @@ class CustomGCRootsTest {
           val local2 = new Node(43, next = local)
           val local3 = new Node(44, next = local2)
           /* Bug workaround:
-           * Objects not allocted using the `new` operator, and though not executing their constructor might be assumed to never use their accessors
-           * Becouse of that if accessors are never used the underlying field might be treated as unreachable. This would further lead to not including it in the final
+           * Objects not allocated using the `new` operator, and though not executing their constructor might be assumed to never use their accessors
+           * Because of that if accessors are never used the underlying field might be treated as unreachable. This would further lead to not including it in the final
            * memory layout of the class.
            * Make sure to use at least accessors of all the fields at least once for memory allocated on the heap using `new` operator
            */
@@ -60,7 +60,7 @@ class CustomGCRootsTest {
 
       // Allocate additional objects to move cursor away from the last object pointing to memory on the heap
       Seq.fill(8)(allocNode())
-      // Sanity check - make sure the zone cannot allocate more memory then the amount passed in it's ctor
+      // Sanity check - make sure the zone cannot allocate more memory than the amount passed in its ctor
       org.junit.Assert.assertThrows(
         classOf[OutOfMemoryError],
         () => allocNode()
@@ -69,7 +69,7 @@ class CustomGCRootsTest {
       x
     }
 
-    // head is the object allocated in the zone, its childs can point to memory allocated using GC on the heap
+    // head is the object allocated in the zone, its children can point to memory allocated using GC on the heap
     try {
       val head = allocNodes()
       assertNotSame(head, head.next)

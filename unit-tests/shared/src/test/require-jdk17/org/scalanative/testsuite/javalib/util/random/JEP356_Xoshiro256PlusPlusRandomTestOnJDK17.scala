@@ -40,7 +40,7 @@ class JEP356_Xoshiro256PlusPlusRandomTestOnJDK17 {
 
   @Test def create_Constructor_ZeroArg(): Unit = {
     /* Does the constructor link, execute without Exception, and
-     * return a useable method?
+     * return a usable method?
      */
 
     val rng = factory.create()

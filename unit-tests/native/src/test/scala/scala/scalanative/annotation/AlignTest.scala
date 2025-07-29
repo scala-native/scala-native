@@ -96,7 +96,7 @@ class AlignTest {
       expected.toList,
       fieldPointers
         .map(_.toLong - basePointer.toLong)
-        .ensuring(_.forall(_ >= 0), "negative calucated offset")
+        .ensuring(_.forall(_ >= 0), "negative calculated offset")
         .toList
     )
   }

@@ -198,7 +198,7 @@ object SocketHelpers {
 
       val dst = sa6.sin6_addr.toPtr.s6_addr
 
-      // By contract, the leading bytes are already zero already.
+      // By contract, the leading bytes are already zero.
       val FF = 255.toUByte
       dst(10) = FF // set the IPv4mappedIPv6 indicator bytes
       dst(11) = FF

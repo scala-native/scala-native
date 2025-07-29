@@ -327,7 +327,7 @@ object Build {
   private def await[T](
       task: ExecutionContext => Future[T]
   )(logTrace: Throwable => Unit): T = {
-    // Fatal errors, eg. StackOverflowErrors are not propagated by Futures
+    // Fatal errors, e.g. StackOverflowErrors are not propagated by Futures
     // Use a helper promise to get notified about the underlying problem
     val promise = Promise[T]()
     val executor = Executors.newFixedThreadPool(
@@ -348,7 +348,7 @@ object Build {
     implicit val ec: ExecutionContext =
       ExecutionContext.fromExecutor(executor, logTrace(_))
 
-    // Schedue the task and record completion
+    // Schedule the task and record completion
     task(ec).onComplete(promise.complete)
     try Await.result(promise.future, Duration.Inf)
     finally executor.shutdown()

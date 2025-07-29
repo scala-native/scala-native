@@ -57,7 +57,7 @@ class CArrayOpsTest {
     type Array4Byte = CArray[Byte, _4]
     type Array2D = CArray[Array4Byte, _4]
 
-    // In the folloing we just want to check in NullPointerException is not being thrown
+    // In the following we just want to check in NullPointerException is not being thrown
     val simpleArray = stackalloc[Array4Byte]()
     assertNotNull("Can assign null to Ptr[CArray]", !simpleArray = null)
 

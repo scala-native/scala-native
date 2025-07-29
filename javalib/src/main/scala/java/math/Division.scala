@@ -277,7 +277,7 @@ private[math] object Division {
       } else {
         /*
          * make the dividend positive shifting it right by 1 bit then get the
-         * quotient an remainder and correct them properly
+         * quotient and remainder and correct them properly
          */
         val aPos: Long = temp >>> 1
         val bPos: Long = divisor >>> 1
@@ -328,7 +328,7 @@ private[math] object Division {
     } else {
       /*
        * Make the dividend positive shifting it right by 1 bit then get the
-       * quotient an remainder and correct them properly
+       * quotient and remainder and correct them properly
        */
       val aPos: Long = a >>> 1
       val bPos: Long = b >>> 1
@@ -865,7 +865,7 @@ private[math] object Division {
     val baseMod2toN = base.copy()
     /*
      * If 'base' is odd then it's coprime with 2^j and phi(2^j) = 2^(j-1); so we
-     * can reduce reduce the exponent (mod 2^(j-1)).
+     * can reduce the exponent (mod 2^(j-1)).
      */
     if (base.testBit(0))
       inplaceModPow2(e, j - 1)

@@ -324,7 +324,7 @@ class LocalNamesTest extends OptimizerSpec {
     |  }
     |}""".stripMargin)
   ) {
-    // TODO: How to effectively distinguish inlined `temp2` in `result` and `result2`? Maybe concatation of owner strings, eg. `result.temp2`
+    // TODO: How to effectively distinguish inlined `temp2` in `result` and `result2`? Maybe concatenation of owner strings, e.g. `result.temp2`
     // %3000007 <result> = imul[int] %17000001 <temp2> : int, %7000001 <argInt> : int
     // %3000008 <result2> = imul[int] %24000001 <temp2> : int, %7000001 <argInt> : int
 

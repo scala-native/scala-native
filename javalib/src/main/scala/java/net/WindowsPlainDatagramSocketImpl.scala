@@ -18,7 +18,7 @@ private[net] class WindowsPlainDatagramSocketImpl
     val socket = WSASocketW(
       addressFamily = unixSocket.AF_INET,
       socketType = unixSocket.SOCK_DGRAM,
-      protocol = 0, // choosed by provider
+      protocol = 0, // chosen by provider
       protocolInfo = null,
       group = 0.toUInt,
       flags = WSA_FLAG_OVERLAPPED

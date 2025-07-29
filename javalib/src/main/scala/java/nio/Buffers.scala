@@ -237,7 +237,7 @@ abstract class ByteBuffer private[nio] (
   final def alignmentOffset(index: Int, unitSize: Int): Int = {
     require(index >= 0, "Index less then zero: " + index)
     require(unitSize >= 1 && (unitSize & (unitSize - 1)) == 0, "Unit size not a power of two: " + unitSize)
-    if(unitSize > 8 && !isDirect()) throw new UnsupportedOperationException("Unit size unsupported for non-direct dufferes: " + unitSize)
+    if(unitSize > 8 && !isDirect()) throw new UnsupportedOperationException("Unit size unsupported for non-direct buffers: " + unitSize)
     ((this.address.toLong + index) & (unitSize -1)).toInt
   }
 

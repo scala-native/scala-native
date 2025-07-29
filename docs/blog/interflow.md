@@ -2,7 +2,7 @@
 
 June 16, 2018.
 
-This post provides a sneak peak at Interflow, an upcoming optimizer for Scala Native. For more details, see [our publication preprint](https://github.com/densh/talks/blob/master/2018-06-16-interflow-preprint-v1.pdf).
+This post provides a sneak peek at Interflow, an upcoming optimizer for Scala Native. For more details, see [our publication preprint](https://github.com/densh/talks/blob/master/2018-06-16-interflow-preprint-v1.pdf).
 
 ## The Interflow Optimizer
 
@@ -44,7 +44,7 @@ Additionally, we also compare our performance results with Graal Native Image (1
 
 ![](throughput-native-image.png)
 
-Both Scala Native 0.3.7 (geomean 0.49x) and Native Image 1.0-RC1 (geomean 0.47x) without PGO fail to achieve performance comparable to the a warmed-up JIT compiler. Native Image's implementation of PGO obtains impressive speedups, but it is still behind JDK8 (geomean 0.73x).
+Both Scala Native 0.3.7 (geomean 0.49x) and Native Image 1.0-RC1 (geomean 0.47x) without PGO fail to achieve performance comparable to a warmed-up JIT compiler. Native Image's implementation of PGO obtains impressive speedups, but it is still behind JDK8 (geomean 0.73x).
 
 On the other hand, Interflow (geomean 0.89x) outperforms Graal Native Image statically. With the addition of PGO, Interflow gets quite close to the throughput of a fully warmed JIT compiler (geomean 0.96x).
 
@@ -52,4 +52,4 @@ Interestingly enough, with Interflow, profile-guided optimizations are not stric
 
 ## Conclusion
 
-This post provides a sneak peak at Interflow, an upcoming optimizer for Scala Native. Additionally, we're also going to provide support for profile-guided optimization as an opt-in feature for users who want to obtain absolute best peak performance for Scala Native compiled code. Interflow and PGO are currently in development. Stay tuned for updates on general availability on [twitter.com/scala_native](https://twitter.com/scala_native).
+This post provides a sneak peek at Interflow, an upcoming optimizer for Scala Native. Additionally, we're also going to provide support for profile-guided optimization as an opt-in feature for users who want to obtain absolute best peak performance for Scala Native compiled code. Interflow and PGO are currently in development. Stay tuned for updates on general availability on [twitter.com/scala_native](https://twitter.com/scala_native).

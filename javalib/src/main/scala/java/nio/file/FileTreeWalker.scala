@@ -67,7 +67,7 @@ private class WalkFileAttrRetriever(
     visitor: FileVisitor[_ >: Path]
 ) {
 
-  /* This class concentrates mind bending intricacy. The goal is to
+  /* This class concentrates mind-bending intricacy. The goal is to
    * not do a double fetch of attributes for 'start', given that JVM
    * looks up its attributes _before_ first use.
    *

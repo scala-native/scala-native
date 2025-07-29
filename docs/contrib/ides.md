@@ -25,13 +25,13 @@ sbt plugins or Scala 2 specific sources.
         link against). Not excluding it makes IDEA think that the Scala
         library comes from it, which results into highlighting errors.
     -   `nscplugin`: We need to add what SBT calls
-        `unmanagedSourceDirectories` as dependencies. Go go Project
+        `unmanagedSourceDirectories` as dependencies. Go to Project
         Structure -> Modules -> `nscplugin` -> Dependencies and click
         the + icon. Select "JARs or Directories" and navigate to the
         `nir` directory at the root of the Scala Native project. Repeat
         for the `util` directory.
     -   `native-build`: We need to add the `sbt-scala-native` module as
-        a dependency. Go go Project Structure -> Modules ->
+        a dependency. Go to Project Structure -> Modules ->
         `native-build` -> Dependencies and click the + icon. Select
         "Module Dependency" and select the `sbt-scala-native` module.
 
