@@ -177,7 +177,7 @@ name of field.
 `int ScalaNativeInit(void);` function is special exported
 function that needs to be called before invoking any code defined in
 Scala Native. It returns `0` on successful initialization
-and non-zero value otherwise.
+and a non-zero value otherwise.
 
 For dynamic libraries a constructor
 would be generated to invoke `ScalaNativeInit` function

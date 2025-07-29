@@ -57,7 +57,7 @@ private[zip] object ZipByteConversions {
    *      may be available.
    *
    *      Scala Native currently (2024-03) uses Unicode version 13.0.
-   *      Unicode 15.1 was released on September, 2023.
+   *      Unicode 15.1 was released in September, 2023.
    *
    *      In theory, attempting to convert codepoints defined after
    *      Unicode 13.0 should throw an Exception. How strict is the
