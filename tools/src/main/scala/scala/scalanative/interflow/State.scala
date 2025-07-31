@@ -115,9 +115,9 @@ private[interflow] final class State(val blockId: nir.Local)(
     import instance.{srcPosition, scopeId}
 
     val value = emit(op, idempotent)
-    // there might cases when virtualName for given addres might be assigned to two different instances
-    // It can happend when we deal with partially-evaluated instances, eg. arrayalloc + arraystore
-    // Don't emit local names for ops returing unit value
+    // there might be cases when virtualName for given address might be assigned to two different instances
+    // It can happen when we deal with partially-evaluated instances, e.g. arrayalloc + arraystore
+    // Don't emit local names for ops returning unit value
     if (preserveDebugInfo && op.resty != nir.Type.Unit) {
       virtualNames.get(addr).foreach { name =>
         this.localNames += value.id -> name

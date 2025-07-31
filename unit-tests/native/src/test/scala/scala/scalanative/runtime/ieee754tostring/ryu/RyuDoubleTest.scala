@@ -31,7 +31,7 @@
 //
 // This is a semantic rather than textual port of the RYU GitHub
 // file DoubleToString.java. The java and scalanative testing environments
-// differ too much for a cost effective textual port.
+// differ too much for a cost-effective textual port.
 //
 // There is always the issue of lumpers & splitters. DoubleSuite.scala
 // already exists and covers methods in addition to Double.toString.
@@ -126,7 +126,7 @@ class RyuDoubleTest {
 
     /// Comment from original RYU source.
     // This number naively requires 65 bit for the intermediate results if we
-    // reduce the lookup table by half. This checks that we don't loose any
+    // reduce the lookup table by half. This checks that we don't lose any
     // information in that case.
     assertD2sEquals("1.8531501765868567E21", 1.8531501765868567e21)
 

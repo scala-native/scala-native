@@ -162,7 +162,7 @@ Native sides of test interface.
 
 Scalalib project does not introduce any new classes but provides
 overrides for the existing Scala standard library. Some of these
-overrides exist to improve the performance of Scala Native, eg. by
+overrides exist to improve the performance of Scala Native, e.g. by
 explicit inlining of some methods. When running
 `scalalib/compile` it will automatically use existing
 `*.scala` files defined in `overrides`
@@ -190,7 +190,7 @@ e.g. `scala-cli scripts/scalalib-patch-tool.sc -- recreate 2.13.10`
 
 Each of these commands is applied to all files defined in the overrides
 directory. By default override directory is selected based on the used
-scala version, if it\'s not the present script will try to use directory
+scala version, if it's not the present script will try to use directory
 with corresponding Scala binary version, or it would try to use Scala
 epoch version or `overrides` directory. If none of these
 directories exists it will fail. It is also possible to define

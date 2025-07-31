@@ -58,11 +58,11 @@ object Build {
     testMultiScalaProjects.flatMap(_.componentProjects) ::: testNoCrossProject
   lazy val allProjects = publishedProjects ::: testProjects
 
-  private def setDepenency[T](key: TaskKey[T], projects: Seq[Project]) = {
+  private def setDependency[T](key: TaskKey[T], projects: Seq[Project]) = {
     key := key.dependsOn(projects.map(_ / key): _*).value
   }
 
-  private def setDepenencyForCurrentBinVersion[T](
+  private def setDependencyForCurrentBinVersion[T](
       key: TaskKey[T],
       projects: Seq[MultiScalaProject],
       includeNoCrossProjects: Boolean = true
@@ -94,13 +94,13 @@ object Build {
         commonSettings,
         noPublishSettings,
         disabledTestsSettings,
-        setDepenency(clean, allProjects),
+        setDependency(clean, allProjects),
         mavenPublishSettings,
         Seq(Compile / compile, Test / compile).map(
-          setDepenencyForCurrentBinVersion(_, allMultiScalaProjects)
+          setDependencyForCurrentBinVersion(_, allMultiScalaProjects)
         ),
         Seq(publish, publishSigned, publishLocal, Compile / doc).map(
-          setDepenencyForCurrentBinVersion(_, publishedMultiScalaProjects)
+          setDependencyForCurrentBinVersion(_, publishedMultiScalaProjects)
         )
       )
 
@@ -381,7 +381,7 @@ object Build {
         scriptedDependencies := {
           import java.nio.file.{Files, StandardCopyOption}
           // Synchronize SocketHelpers used in java-net-socket test
-          // Each scripted test creates it's own environment in tmp directory
+          // Each scripted test creates its own environment in tmp directory
           // which does not allow us to define external sources in script build
           Files.copy(
             ((javalib.v2_12 / Compile / scalaSource).value / "java/net/SocketHelpers.scala").toPath,
@@ -438,7 +438,7 @@ object Build {
 
               publishLocalVersion(ver)
                 .dependsOn(
-                  // Scala 3 needs 2.13 deps for it's cross version compat tests
+                  // Scala 3 needs 2.13 deps for its cross version compat tests
                   if (ver.startsWith("3")) publishLocalVersion("2.13")
                   else Def.task(())
                 )

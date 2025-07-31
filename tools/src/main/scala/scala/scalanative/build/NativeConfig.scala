@@ -238,7 +238,7 @@ sealed trait NativeConfig {
   /** Create a new [[NativeConfig]] with updated resource exclude patterns. */
   def withResourceExcludePatterns(value: Seq[String]): NativeConfig
 
-  /** Create a new [[NativeConfig]] with a updated list of service providers
+  /** Create a new [[NativeConfig]] with an updated list of service providers
    *  allowed in the final binary
    */
   def withServiceProviders(
@@ -251,7 +251,7 @@ sealed trait NativeConfig {
    */
   def withBaseName(value: String): NativeConfig
 
-  /** Create a optimization configuration */
+  /** Create an optimization configuration */
   final def withOptimizerConfig(value: OptimizerConfig): NativeConfig =
     withOptimizerConfig(_ => value)
 

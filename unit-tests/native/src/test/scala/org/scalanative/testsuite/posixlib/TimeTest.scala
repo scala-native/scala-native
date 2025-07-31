@@ -86,7 +86,7 @@ class TimeTest {
       val haveCI =
         java.lang.Boolean.parseBoolean(System.getenv("GITHUB_ACTIONS"))
 
-      // Test has proven to fragile to run outside known environments.
+      // Test has proven too fragile to run outside known environments.
       assumeTrue(
         "Tested only by GitHub continuous integration or developer bypass.",
         haveCI
@@ -95,7 +95,7 @@ class TimeTest {
       /* unix epoch is defined as 0 seconds UTC (Universal Time).
        * 'timezone' is defined in Posix as seconds WEST of UTC. Yes WEST.
        * At 'epoch + timezone seconds' it will be 0 seconds local time.
-       * That local time should display as the expected "Thu Jan etc".
+       * That local time should display as the expected "Thu Jan etc.".
        *
        * The logic here is the inverse of what one would expect. This
        * is to avoid having to deal with daylight saving issues. We
@@ -295,7 +295,7 @@ class TimeTest {
     if (!isWindows) {
       Zone.acquire { implicit z =>
         // The purpose of this test is to check that time.scala method
-        // declaration had an "@name" annotation, so that structure
+        // declaration had a "@name" annotation, so that structure
         // copy-in/copy-out happened? Failure case is if 36 byte
         // Scala Native tm got passed as-is to C strptime on a BSD/glibc
         // or macOS system; see the tm_gmtoff & tm_zone handling below.
@@ -499,7 +499,7 @@ class TimeTest {
      * Normally, the two times would be withing microseconds of each other,
      * well less than a second. Leap seconds, double leap seconds can add
      * a second or more, slow machines, etc.
-     * 5 is a generous guess. Lets see if time proves it a good trade off.
+     * 5 is a generous guess. Let's see if time proves it a good trade off.
      * The basic idea is to detect wildly wrong results from the unit under
      * test, not to stress either race conditions or developers.
      */
@@ -530,7 +530,7 @@ class TimeTest {
       /* Full sleep should have happened.
        * Hard to test/verify. Nanosecond delays,
        * even rounded up to clock granularity, are exceedingly small
-       * compared to background of OS & hardware, especialy VM, noise.
+       * compared to background of OS & hardware, especially VM, noise.
        */
     } else if (result == EINTR) {
       // EINTR means sleep was interrupted, clock_nanosleep() executed.

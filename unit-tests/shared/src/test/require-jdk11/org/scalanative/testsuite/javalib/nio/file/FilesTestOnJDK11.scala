@@ -22,7 +22,7 @@ class FilesTestOnJDK11 {
 
   /* Design Notes:
    *
-   * 1) This set of Tests is designed to clean up after itself. That is
+   * 1) This set of Tests is designed to clean up after itself. That is,
    *    delete all directories and files created.  For debugging one
    *    can comment-out the Files.delete() in the afterClass() static method.
    *
@@ -258,7 +258,7 @@ class FilesTestOnJDK11 {
    * of leaving a large otherwise useless file lying around.
    *
    * The SN standard is to use "/* */" for multiline comments, as is done here.
-   * If someone if offended by the @Ignore, they could convert the contents
+   * If someone is offended by the @Ignore, they could convert the contents
    * below to "//" line comments then enclose the region in a "/* */" pair.
    */
   @Ignore
@@ -420,7 +420,7 @@ object FilesTestOnJDK11 {
     try {
       // Delete Files; start with deepest & work upwards to beginning of walk.
       stream.forEach(stack.addFirst(_)) // push() Path
-      stack.forEach(Files.delete(_)) // pop() a Path then delete it's File.
+      stack.forEach(Files.delete(_)) // pop() a Path then delete its File.
     } finally {
       stream.close()
     }

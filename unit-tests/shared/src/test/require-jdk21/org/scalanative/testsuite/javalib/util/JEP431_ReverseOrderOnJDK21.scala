@@ -1959,7 +1959,7 @@ trait JEP431_ReverseOrderNavigableSetTestTraitOnJDK21
     )
 
     /* reversedSubSet.pollFirst() & reversedSubSet.pollLast() may be
-     * untested at this point, do no rely upon them; be explicit & declarative.
+     * untested at this point, do not rely upon them; be explicit & declarative.
      */
 
     val subSetFirst = revFromElement
@@ -2464,7 +2464,7 @@ trait JEP431_ReverseOrderSortedSetTestTraitOnJDK21
     )
   }
 
-  /* SortedSet has a different sense of "first & ""last", than SequencedSet
+  /* SortedSet has a different sense of "first" & "last" than SequencedSet
    * so Tests inherited from the latter must be overridden.
    */
   @Test override def removeFirst(): Unit = {

@@ -12,7 +12,7 @@ class PrintStreamTestOnJDK18 {
 
   @Test def charset(): Unit = {
     val outStream = OutputStream.nullOutputStream()
-    val expectedCharset = StandardCharsets.UTF_16LE // pick an usual one.
+    val expectedCharset = StandardCharsets.UTF_16LE // pick a usual one.
     val ps = new PrintStream(outStream, false, expectedCharset)
 
     assertEquals(

@@ -13,7 +13,7 @@ import java.util.function._
  *
  * In this file "Double" types should be qualified to ease tracing the code
  * and prevent confusion & defects.
- *   * jl.Double indicates an Java Object qua Scala AnyRef is desired.
+ *   * jl.Double indicates a Java Object qua Scala AnyRef is desired.
  *   * scala.Double indicates a Java "double" primitive is desired.
  *     Someday, the generated code should be examined to ensure that
  *     unboxed primitives are actually being used.

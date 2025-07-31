@@ -31,7 +31,7 @@ object Deps {
     case (3, _) => "org.scala-lang" % "scala-partest" % ScalaVersions.scala213 :: Nil
 
   }
-  lazy val TestRunner = List(SbtTestInterface, JUnitInterface, JUnit)
+  lazy val TestRunner = List(SbtTestInterface, JUnitInterface % "test", JUnit % "test")
   lazy val JUnitJvm   = List(JUnitInterface % "test", JUnit % "test")
   private def scalaVersionsDependendent(
       scalaVersion: String

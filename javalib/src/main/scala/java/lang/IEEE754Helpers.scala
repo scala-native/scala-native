@@ -98,7 +98,7 @@ private[java] object IEEE754Helpers {
       val bytesLen = nChars
       val nSeen = !end - cStr
 
-      // If we used less bytes than in our input, there is a risk that the input contains invalid characters.
+      // If we used fewer bytes than in our input, there is a risk that the input contains invalid characters.
       // We should thus verify if the input contains only valid characters.
       // See: https://github.com/scala-native/scala-native/issues/2903
       if (nSeen != bytesLen) {

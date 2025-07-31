@@ -59,7 +59,7 @@ class InetAddress protected (ipAddress: Array[Byte], originalHost: String)
        * Scala Native has historically used a looser sense of
        * comparing only address bytes and letting hostname differ.
        *
-       * This is analogous to the difference between a case sensitive and
+       * This is analogous to the difference between a case-sensitive and
        * insensitive test of strings. Each has its use case.
        *
        * Currently the looser comparison of InetAddress instances must be done
@@ -698,7 +698,7 @@ object InetAddress {
      * if the host resolves as numeric.  If the host resolves to non-numeric
      * then the InetAddress is created using that String.
      *
-     * There is not good way to test after a single omnibus lookup to tell
+     * There is no good way to test after a single omnibus lookup to tell
      * if the host resolved as numeric or non-numeric.  inet_pton() for
      * IPv4 addresses requires full dotted decimal: ddd.ddd.ddd.ddd.
      * ScalaJVM parses and passes some more obscure but valid IPv4 addresses.
@@ -739,7 +739,7 @@ object InetAddress {
          *   has been found by searching the 4 combinations of the 2x2 matrix:
          *   IPv4/IPv6 by TCP/UDP.
          *
-         *   Java 8 does not throw in this situation, it appears to fallback
+         *   Java 8 does not throw in this situation, it appears to fall back
          *   to creating an InetAddress using the hostname and the IPv4
          *   loopback address 127.0.0.1.  Be robust and do the same here.
          */

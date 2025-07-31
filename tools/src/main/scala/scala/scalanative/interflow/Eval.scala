@@ -35,7 +35,7 @@ private[interflow] trait Eval { self: Interflow =>
 
     pc += 1
 
-    // Implicit scopeId required for materialization of insts other then Inst.Let
+    // Implicit scopeId required for materialization of insts other than Inst.Let
     implicit var lastScopeId = scopeMapping(nir.ScopeId.TopLevel)
     while (true) {
       val inst = insts(pc)
@@ -297,9 +297,9 @@ private[interflow] trait Eval { self: Interflow =>
       case nir.Op.Method(rawObj, sig) =>
         val obj = eval(rawObj)
         val objty = {
-          /* If method is not virtual (eg. constructor) we need to ensure that
+          /* If method is not virtual (e.g. constructor) we need to ensure that
            * we would fetch for expected type targets (rawObj) instead of real (evaluated) type
-           * It might result in calling wrong method and lead to infinite loops, eg. issue #1909
+           * It might result in calling wrong method and lead to infinite loops, e.g. issue #1909
            */
           val realType = obj match {
             case InstanceRef(ty) => ty

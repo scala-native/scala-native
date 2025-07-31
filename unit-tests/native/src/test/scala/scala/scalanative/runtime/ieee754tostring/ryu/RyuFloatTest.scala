@@ -31,7 +31,7 @@
 //
 // This is a semantic rather than textual port of the RYU GitHub
 // file FloatToString.java. The java and scalanative testing environments
-// differ too much for a cost effective textual port.
+// differ too much for a cost-effective textual port.
 //
 // There is always the issue of lumpers & splitters. FloatSuite.scala
 // already exists and covers methods in addition to Float.toString.

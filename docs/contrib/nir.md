@@ -7,7 +7,7 @@ efficiently compile modern languages like Scala.
 
 ## Introduction
 
-Lets have a look at the textual form of NIR generated for a simple Scala
+Let's have a look at the textual form of NIR generated for a simple Scala
 module:
 
 ``` scala

@@ -173,7 +173,7 @@ object Files {
          *   - This method follows the practice from early Scala Native
          *     development days of modifying files in-place.  This
          *     leaves a pretty wide window for misadventure, particularly
-         *     if more that one thread or process is accessing the file.
+         *     if more than one thread or process is accessing the file.
          * 
          *     Many contemporary applications create a temporary intermediate
          *     file, copy the source contents to the temporary,
@@ -244,7 +244,7 @@ object Files {
           if (createFd != -1) {
             createFd
           } else if (replaceExisting && (errno == EACCES)) {
-            /* Handle what should be an vanishingly rare but possible
+            /* Handle what should be a vanishingly rare but possible
              * corner case where cTarget exists but is not user writable;
              * r-xr-xr-x, --xr-xr-x, and kin. O_TRUNC will fail in those cases.
              * 
@@ -319,7 +319,7 @@ object Files {
         errno = 0
 
         /* Hold the 'source' read-lock the shortest amount of time.
-         * Do the potentially time consuming open of 'target' first.
+         * Do the potentially time-consuming open of 'target' first.
          *
          * Other Java I/O options probably do not make sense for uxix I/O.
          * Time & experience will tell.
@@ -1266,7 +1266,7 @@ object Files {
   def readString(path: Path, cs: Charset): String = {
     val reader = newBufferedReader(path, cs)
     try {
-      // Guess an cost-effective amortized size.
+      // Guess a cost-effective amortized size.
       val writer = new StringWriter(2 * 1024)
       reader.transferTo(writer)
       writer.toString()

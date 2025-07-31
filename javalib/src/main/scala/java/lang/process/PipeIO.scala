@@ -88,7 +88,7 @@ import scala.scalanative.windows.NamedPipeApi.PeekNamedPipe
  *     series of steps it calls "draining" to accomplish this. When
  *     the parent becomes aware that the child process has exited, the
  *     parent copies all bytes remaining at its input end of the os pipe
- *     to a local buffer and and closes its os fd. That releases the resource
+ *     to a local buffer and closes its os fd. That releases the resource
  *     and keeps it from becoming unavailable until the parent process
  *     exits.
  *
@@ -100,7 +100,7 @@ import scala.scalanative.windows.NamedPipeApi.PeekNamedPipe
  *     synchronized methods.
  *
  *     - UnixProcess* and WindowProcess check if the child process has exited
- *       at different places in the code. This can have a major affect on
+ *       at different places in the code. This can have a major effect on
  *       the timing of events, including the number of bytes available at
  *       an I/O event.
  *

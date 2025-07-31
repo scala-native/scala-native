@@ -160,8 +160,8 @@ Scala Native supports three distinct linking modes:
 5.  **release-full.** (introduced in 0.4.0)
 
     Optimized for best runtime performance, even if hurts compilation
-    time and code size. This modes includes a number of more aggresive
-    optimizations such type-driven method duplication and more aggresive
+    time and code size. This mode includes a number of more aggressive
+    optimizations such type-driven method duplication and more aggressive
     inliner. Similar to clang's `-O3` with addition of link-time
     optimization over the whole application code.
 
@@ -182,7 +182,7 @@ Scala Native supports three distinct linking modes:
 3.  **boehm.** (default through 0.3.7)
 
     Conservative generational garbage collector. More information is
-    available at the [Github project "ivmai/bdgc" page](https://github.com/ivmai/bdwgc).
+    available at the [GitHub project "ivmai/bdgc" page](https://github.com/ivmai/bdwgc).
 
 4.  **none.** (experimental, introduced in 0.2)
 

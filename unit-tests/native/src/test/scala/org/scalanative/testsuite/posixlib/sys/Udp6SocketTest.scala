@@ -161,7 +161,7 @@ class Udp6SocketTest {
       checkIoResult(nBytesRecvd, "recvfrom_2")
       assertEquals("recvfrom_2 length", nBytesSent, nBytesRecvd)
 
-      // Did packet came from where we expected, and not from Mars?
+      // Did packet come from where we expected, and not from Mars?
 
       val expectedAddr = out6Addr.asInstanceOf[Ptr[sockaddr_in6]]
 

@@ -129,7 +129,7 @@ object FilesTestOnJDK12 {
     try {
       // Delete Files; start with deepest & work upwards to beginning of walk.
       stream.forEach(stack.addFirst(_)) // push() Path
-      stack.forEach(Files.delete(_)) // pop() a Path then delete it's File.
+      stack.forEach(Files.delete(_)) // pop() a Path then delete its File.
     } finally {
       stream.close()
     }

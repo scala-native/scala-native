@@ -29,7 +29,7 @@ class StdlibTest {
    * declarations. That is, the ones which keep me awake at night, wondering
    * if they will blow up on the first person who goes to use them.
    *
-   * Also gives end users a working example of how to setup and use these
+   * Also gives end users a working example of how to set up and use these
    * methods.
    */
 

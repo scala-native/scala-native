@@ -34,7 +34,7 @@ import macOsIfDl._
  *   2) The Unix implementation often splits into a Linux path and a
  *      macOS/BSD path.  The former uses ioctl() calls and lets the
  *      operating system search for the named interface.  Such a kernel
- *      search should be marginally faster and less error prone than
+ *      search should be marginally faster and less error-prone than
  *      the user land search of getifaddrs() results done on the
  *      macOS/BSD path.
  *
@@ -978,9 +978,9 @@ private object macOsIf {
    *
    * struct if_data {
    *   // generic interface information
-   *   u_char          ifi_type;       // ethernet, tokenring, etc
+   *   u_char          ifi_type;       // ethernet, tokenring, etc.
    *   u_char          ifi_typelen;    // Length of frame type id
-   *   u_char          ifi_physical;   // e.g., AUI, Thinnet, 10base-T, etc
+   *   u_char          ifi_physical;   // e.g., AUI, Thinnet, 10base-T, etc.
    *   u_char          ifi_addrlen;    // media address length
    *   u_char          ifi_hdrlen;     // media header length
    *   u_char          ifi_recvquota;  // polling quota for receive intrs

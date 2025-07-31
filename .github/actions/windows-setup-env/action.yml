@@ -22,7 +22,7 @@ runs:
         distribution: "zulu"
         java-version: ${{inputs.java-version}}
     # We need to set proper Pagefile limits in advance.
-    # Github actions default page file size is quite small,
+    # GitHub actions default page file size is quite small,
     # it's not enough to run all tests, especially when using None GC.
     # We've observed that on Unix memory management is less strict,
     # you can reserve more memory than it's physically possible.

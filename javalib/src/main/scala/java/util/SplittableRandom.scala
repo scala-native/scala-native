@@ -105,7 +105,7 @@ final class SplittableRandom private (private var seed: Long, gamma: Long)
 
   /* The JVM 17 & 23 documentation clearly indicate that this method is
    * inherited from RandomGenerator and not overridden.
-   * Without the override, long standing pre-JDK17 Tests fail.
+   * Without the override, long-standing pre-JDK17 Tests fail.
    * Override to maintain traditional behavior.
    *
    * Scala.js PR 5142 discovered this glitch also. See discussion in that

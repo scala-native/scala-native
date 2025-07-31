@@ -27,9 +27,9 @@ class CharClass(
   // prefix of |r| that is defined.  Even.
   private var len: Int = r.length
 
-  // Size the initial allocaton to reduce the number of doublings & copies
-  // yet still be provident with memory.
-  // 16 bytes is a best guess. See commit mesage for details on its derivation.
+  // Size the initial allocation to reduce the number of doublings & copies
+  // yet still be provided with memory.
+  // 16 bytes is the best guess. See commit message for details on its derivation.
 
   // Constructs an empty CharClass.
   def this() = {

@@ -38,7 +38,7 @@ Formatting C and C++ code uses `clang-format` which requires
 LLVM library dependencies. For `clang-format` we use any
 version greater than `10` as most developers use a newer
 version of LLVM and `clang`. In order to make this easier we
-have a environment variable, `CLANG_FORMAT_PATH` which can
+have an environment variable, `CLANG_FORMAT_PATH` which can
 be set to a compatible version. Another option is to make sure the
 correct version of `clang-format` is available in your path.
 Refer to [setup](../user/setup.md) for the minimum version
@@ -171,7 +171,7 @@ be merged into the distribution, and need not even be reviewed.
 ## Documentation
 
 All code contributed to the user-facing standard library (the
-`nativelib/` directory) should come accompanied with
+`nativelib/` directory) should come accompanied by
 documentation. Pull requests containing undocumented code will not be
 accepted.
 

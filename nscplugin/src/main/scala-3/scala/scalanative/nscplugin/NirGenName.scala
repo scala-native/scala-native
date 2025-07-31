@@ -155,8 +155,8 @@ trait NirGenName(using Context) {
           else scalanative.util.unreachable
 
         /*
-         * Double quoted identifiers are not allowed in CLang.
-         * We're replacing them with unicode to allow distinction between x / `x` and `"x"`.
+         * Double-quoted identifiers are not allowed in CLang.
+         * We're replacing them with Unicode to allow distinction between x / `x` and `"x"`.
          * It follows Scala JVM naming convention.
          */
         id.replace("\"", "$u0022")

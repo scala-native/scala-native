@@ -35,7 +35,7 @@ class LinkedHashSet[E]
    *   relocated if necessary so that it is first in encounter order."
    *
    * The reason for the minimal is that the current SN implementation
-   * relies on scala.collection.mutable. There has been a long standing
+   * relies on scala.collection.mutable. There has been a long-standing
    * effort in javalib to remove possibly circular scala collection
    * dependencies.
    *

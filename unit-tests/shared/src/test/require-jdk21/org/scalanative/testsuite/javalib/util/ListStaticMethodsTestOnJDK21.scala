@@ -210,7 +210,7 @@ class ListStaticMethodsTestOnJDK21 {
 
   @Test def of_VarArgs_SmallN(): Unit = {
     /* Does a varargs with less than 10 elements conflict with the overloads
-     * which specify one thru 10 args explicitly?  Can I break things before
+     * which specify one through 10 args explicitly?  Can I break things before
      * users do?
      */
 
@@ -231,7 +231,7 @@ class ListStaticMethodsTestOnJDK21 {
   @Test def of_VarArgs_LargeN(): Unit = {
 
     /* Does a varargs with more than 10 elements conflict with the overloads
-     * which specify one thru 10 args explicitly?  Can I break things before
+     * which specify one through 10 args explicitly?  Can I break things before
      * users do?
      */
 

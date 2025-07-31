@@ -4711,7 +4711,7 @@ class ArraysOfCharCornerCasesTestOnJDK9 {
 
   @Test def exerciseGreekCharacters: Unit = {
     /* Reviewer JD557 recommended exercising Non-Latin-1 characters
-     * to strengthen coverage. A suggeston well worth implementing.
+     * to strengthen coverage. A suggestion well worth implementing.
      *
      * People familiar with other Non-Latin-1 character sets are
      * encouraged to add additional Tests for that set.

@@ -63,7 +63,7 @@ object ThreadPoolExecutor {
 
 class ThreadPoolExecutor(
     /** Core pool size is the minimum number of workers to keep alive (and not
-     *  allow to time out etc) unless allowCoreThreadTimeOut is set, in which
+     *  allow to time out etc.) unless allowCoreThreadTimeOut is set, in which
      *  case the minimum is zero.
      *
      *  Since the worker count is actually stored in COUNT_BITS bits, the

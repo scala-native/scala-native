@@ -85,7 +85,7 @@ object CodeGen {
           .getOrElse(EmptyPath)
 
       // Partition into multiple LLVM IR files proportional to number
-      // of available processesors. This prevents LLVM from optimizing
+      // of available processors. This prevents LLVM from optimizing
       // across IR module boundary unless LTO is turned on.
       def separate(): IRGenerators =
         partitionBy(assembly, procs)(outputFileId).toSeq.map {

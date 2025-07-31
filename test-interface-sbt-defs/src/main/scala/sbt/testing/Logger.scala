@@ -21,7 +21,7 @@ trait Logger {
    */
   def error(msg: String): Unit
 
-  /** Provide an warning message.
+  /** Provide a warning message.
    *
    *  @param msg
    *    the warning message

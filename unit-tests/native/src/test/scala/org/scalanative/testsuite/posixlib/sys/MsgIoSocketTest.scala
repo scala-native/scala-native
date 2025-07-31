@@ -186,7 +186,7 @@ class MsgIoSocketTest {
           inMsgHdr.msg_namelen
         )
 
-        // Did packet came from where we expected, and not from Mars?
+        // Did packet come from where we expected, and not from Mars?
         assertEquals(
           "unexpected remote address",
           dstAddr.asInstanceOf[Ptr[sockaddr_in]].sin_addr.s_addr,

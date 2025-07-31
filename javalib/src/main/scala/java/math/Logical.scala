@@ -282,7 +282,7 @@ private[math] object Logical {
       val resLength = Math.min(positive.numberLength, negative.numberLength)
       val resDigits = new Array[Int](resLength)
 
-      // Always start from first non zero of positive
+      // Always start from first non-zero of positive
       var i = iPos
       while (i < iNeg) {
         resDigits(i) = positive.digits(i)
@@ -547,7 +547,7 @@ private[math] object Logical {
       val resDigits = new Array[Int](resLength)
       var i = 0
       if (iNeg < iPos) {
-        // We know for sure that this will be the first non zero digit in the result
+        // We know for sure that this will be the first non-zero digit in the result
         i = iNeg
         while (i < iPos) {
           resDigits(i) = negative.digits(i)

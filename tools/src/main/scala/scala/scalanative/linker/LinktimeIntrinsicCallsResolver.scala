@@ -295,7 +295,7 @@ private[linker] trait LinktimeIntrinsicCallsResolver { self: Reach =>
       unwind = let.unwind
     )
 
-    // Create instance of ServiceLoader and call it's constructor
+    // Create instance of ServiceLoader and call its constructor
     val alloc = let.copy(op = Op.Classalloc(ServiceLoader, None))
     buf += alloc
     buf.call(

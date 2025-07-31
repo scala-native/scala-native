@@ -129,7 +129,7 @@ private[runtime] object StackTrace {
         offset
       )
       // Make sure the name is definitely 0-terminated.
-      // Unmangler is going to use strlen on this name and it's
+      // Unmangler is going to use strlen on this name and its
       // behavior is not defined for non-zero-terminated strings.
       symbol(SymbolMaxLength - 1) = 0.toByte
 

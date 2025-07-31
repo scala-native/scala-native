@@ -31,7 +31,7 @@ private object IntrinsicsTest {
       override def toString(): String = s"{$a}"
     }
 
-    // Make sure each type and it's fields are reachable to prevent elimination of unused fields
+    // Make sure each type and its fields are reachable to prevent elimination of unused fields
     def init() =
       Seq(new A(), new B(), new C(), new C2(), new D(), new E(), E, new F())
         .map(_.toString())

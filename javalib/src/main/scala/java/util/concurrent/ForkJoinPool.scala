@@ -911,7 +911,7 @@ class ForkJoinPool private (
     val rs = runState
     if (rs >= 0) { // set SHUTDOWN and/or STOP
       if ((config & ISCOMMON) != 0)
-        return false // cannot shutdown
+        return false // cannot shut down
       if (!now) {
         if ((rs & SHUTDOWN) == 0) {
           if (!enable)

@@ -22,7 +22,7 @@ class FEnvTest {
 
   @Test def raiseCheckClearException(): Unit = {
     if (LinktimeInfo.isWindows) {
-      // Avoid link time error --`fe_raiseexcept` does not exists-- because it is not supported on Windows.
+      // Avoid link time error --`fe_raiseexcept` does not exist -- because it is not supported on Windows.
     } else {
 
       def assertContainsFlags(expected: CInt, actual: CInt): Unit = {

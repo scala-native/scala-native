@@ -32,7 +32,7 @@ class AdaptLazyVals(defnNir: NirDefinitions) {
     bitmapFieldNames.clear()
   }
 
-  // Collect informations about offset fields
+  // Collect information about offset fields
   def prepareForTypeDef(td: TypeDef)(using Context): Unit = {
     val sym = td.symbol
     val hasLazyFields = sym.denot.info.fields

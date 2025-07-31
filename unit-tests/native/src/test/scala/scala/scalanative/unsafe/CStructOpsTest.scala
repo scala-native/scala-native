@@ -56,7 +56,7 @@ class CStructOpsTest {
     type IntStruct = CStruct1[Int]
     type BigStruct = CStruct2[Ptr[IntStruct], IntStruct]
 
-    // In the folloing we just want to check in NullPointerException is not being thrown
+    // In the following we just want to check in NullPointerException is not being thrown
     val simpleStruct = stackalloc[IntStruct]()
     assertNotNull("Can assign null to Ptr[CStruct]", !simpleStruct = null)
 

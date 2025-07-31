@@ -68,7 +68,7 @@ abstract class AbstractList[E] protected ()
   def listIterator(index: Int): ListIterator[E] = {
     checkIndexOnBounds(index)
     // By default we use RandomAccessListIterator because we only have access to
-    // the get(index) operation in the API. Subclasses override this if needs
+    // the get(index) operation in the API. Subclasses override this if needed
     // using their knowledge of the structure instead.
     new RandomAccessListIterator(self, index, 0, size())
   }
@@ -103,7 +103,7 @@ abstract class AbstractList[E] protected ()
         new AbstractListView(self, fromIndex, toIndex) { selfView =>
           override def listIterator(index: Int): ListIterator[E] = {
             checkIndexOnBounds(index)
-            // Iterator that accesses the original list using it's iterator
+            // Iterator that accesses the original list using its iterator
             new BackedUpListIterator(
               list.listIterator(fromIndex + index),
               fromIndex,

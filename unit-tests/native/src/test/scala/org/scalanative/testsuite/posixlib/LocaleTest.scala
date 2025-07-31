@@ -132,7 +132,7 @@ class LocaleTest {
         fromCString(currentLconv.thousands_sep)
       )
 
-      /* Skip grouping testing on FreeBSD. There is some long standing
+      /* Skip grouping testing on FreeBSD. There is some long-standing
        * discussion that FreeBSD does not use POSIX compliant values.
        * Do not test for an exact value that is known to be buggy.
        * The is to reduce them maintenance headache & cost if that

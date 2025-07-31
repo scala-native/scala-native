@@ -7,9 +7,9 @@ package object nir {
 
   /** A map from SSA identifier to its name in program sources.
    *
-   *  Local variables get lowered to an static assignment that is assigned to a
+   *  Local variables get lowered to a static assignment that is assigned to a
    *  unique identifier in the context of its definition. Instances of this type
-   *  are used to maintain the correspondance between an SSA ID and its
+   *  are used to maintain the correspondence between an SSA ID and its
    *  corresponding name in program sources.
    */
   type LocalNames = Map[Local, LocalName]

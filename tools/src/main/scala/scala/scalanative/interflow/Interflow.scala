@@ -44,7 +44,7 @@ private[scalanative] class Interflow(val config: build.Config)(implicit
     new ScopedVar[mutable.UnrolledBuffer[DebugInfo.LexicalScope]]
   )
 
-  // Not thread-safe, each thread shall contain it's own stack
+  // Not thread-safe, each thread shall contain its own stack
   protected class SymbolsStack {
     private var state: List[nir.Global.Member] = Nil
     private var cachedSize = 0

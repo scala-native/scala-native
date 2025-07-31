@@ -1005,7 +1005,7 @@ private[codegen] abstract class AbstractCodeGen(
 
     val nir.Op.Call(ty, pointee, args) = call
     pointee match {
-      // Lower emits a alloc function with exact result type of the class instead of a raw pointer
+      // Lower emits an alloc function with exact result type of the class instead of a raw pointer
       // It's probablatic to emit when not using opaque pointers. Retry with simplified signature
       case Lower.alloc | Lower.largeAlloc
           if !useOpaquePointers && ty != Lower.allocSig =>

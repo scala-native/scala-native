@@ -7,11 +7,11 @@ import scala.annotation.meta.field
  *  initializing and reading final fields.
  *
  *  The compiler would ensure that final field would be reachable in fully
- *  innitialized state by other reads, by introducing synchronization primitives
- *  on each it's access. Applies only to type immutable field mebers (`val`s)
+ *  initialized state by other reads, by introducing synchronization primitives
+ *  on each access. Applies only to type immutable field members (`val`s)
  *
- *  Can be used either on single field or whole type if all of it's fields
- *  should be safetly published.
+ *  Can be used either on single field or whole type if all of its fields should
+ *  be safely published.
  */
 @field
 final class safePublish extends scala.annotation.StaticAnnotation

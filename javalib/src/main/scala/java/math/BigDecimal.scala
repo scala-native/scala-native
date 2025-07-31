@@ -943,7 +943,7 @@ class BigDecimal() extends Number with Comparable[BigDecimal] {
   }
 
   def divide(divisor: BigDecimal, mc: MathContext): BigDecimal = {
-    // Calculating how many zeros must be append to 'dividend'
+    // Calculating how many zeros must be appended to 'dividend'
     // to obtain a  quotient with at least 'mc.precision()' digits
 
     // In special cases it reduces the problem to call the dual method
@@ -1061,7 +1061,7 @@ class BigDecimal() extends Number with Comparable[BigDecimal] {
     val diffScale = this._scale.toLong - divisor._scale
     val quotPrecision = diffPrecision - diffScale + 1
 
-    // In special cases it call the dual method
+    // In special cases it calls the dual method
     if (mcPrecision == 0 || this.isZero || divisor.isZero)
       return this.divideToIntegralValue(divisor)
 

@@ -178,7 +178,7 @@ object Commands {
     projectFullVersionCommand("publish-local-dev") {
       case (version, state) =>
         List(
-          // Sbt plugin and it's dependencies
+          // Sbt plugin and its dependencies
           s"++${ScalaVersions.scala212} publishLocal",
           // Artifact for current version
           s"++${version} publishLocal"

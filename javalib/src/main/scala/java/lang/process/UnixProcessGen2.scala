@@ -349,7 +349,7 @@ private[lang] class UnixProcessGen2 private (
           1000L * 1000
         case _ if (unit == TimeUnit.NANOSECONDS) =>
           1000L * 1000 * 1000
-        case _ => 1L // For all i: Int, (i % 1) == 0, which propagates thru.
+        case _ => 1L // For all i: Int, (i % 1) == 0, which propagates through.
       }
 
       unit.toNanos(timeout % modulus).toSize
@@ -436,7 +436,7 @@ private[lang] class UnixProcessGen2 private (
       )
     }
 
-    /* Some Scala non-idiomatic slight of hand is going on here to
+    /* Some Scala non-idiomatic sleight of hand is going on here to
      * ease implementation. Scala 3 has union types, but other versions
      * do not.  "struct kevent" and "struct kevent64_s" overlay exactly in
      * the fields of interest here. In C and Scala 3 they could be a union.
@@ -503,7 +503,7 @@ object UnixProcessGen2 {
      * POXIX 2023 should allow changing the working directory.
      *
      * Checking for ".", which callers tend to specify, is an optimization
-     * to elide changing directory to the what is already the working
+     * to elide changing directory to what is already the working
      * directory.
      */
 

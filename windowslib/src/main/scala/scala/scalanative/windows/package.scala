@@ -10,7 +10,7 @@ package object windows {
   /* Actually large integers are union types with size of 64-bits
    * When the compiler does not support large integer types it allows to store
    * low and high parts of number in its structure fields. In all other cases
-   * its recommended to use its QuadPart field directly.
+   * it is recommended to use its QuadPart field directly.
    */
   type LargeInteger = Long
   type ULargeInteger = ULong

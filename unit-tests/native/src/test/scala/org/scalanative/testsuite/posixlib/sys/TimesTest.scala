@@ -60,7 +60,7 @@ class TimesTest {
        *
        * Continuous Integration (CI) experience has shown that in
        * unknown situations either or both tms_utime & tms_stime can be zero,
-       * even in the middle of what appears to be a long running process.
+       * even in the middle of what appears to be a long-running process.
        * This appears to be something the operating systems, plural, are
        * doing, rather than a misunderstanding of times(), a broken SN
        * implementation, or a blatantly bad test here. Subtly bad
@@ -77,7 +77,7 @@ class TimesTest {
        * As experience is gained or the cause of the zeros is better
        * understood, this test should be updated.
        *
-       * In the mean time, do not inject intermittent failures into
+       * In the meantime, do not inject intermittent failures into
        * the CI builds. They annoy the residents.
        */
 

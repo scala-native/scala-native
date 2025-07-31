@@ -10,7 +10,7 @@ import scala.scalanative.runtime.ffi.stdatomic.memory_order._
 import scala.scalanative.unsafe.{stackalloc => _, sizeOf => _, _}
 import java.util.concurrent.locks.LockSupport
 
-/** Heavy weight monitor created only upon detection of access from multiple
+/** Heavy-weight monitor created only upon detection of access from multiple
  *  threads is inflated in ObjectMonitor
  */
 private[monitor] class ObjectMonitor() {
@@ -44,7 +44,7 @@ private[monitor] class ObjectMonitor() {
 
   /** Ring list of waiting threads. Access limited by the modification lock.
    *  Upon InEnterQueue the wait zone threads would enqueue to the queue, and
-   *  would remove themself upon exiting the zone. Threads would be notified
+   *  would remove themselves upon exiting the zone. Threads would be notified
    *  sequentially based on their order in the queue. Nodes from waitQueue can
    *  be detached and moved to the enterQueue
    */
@@ -94,7 +94,7 @@ private[monitor] class ObjectMonitor() {
 
   // enter slow-path
   private def enterMonitor(currentThread: Thread): Unit = {
-    // Enqueue the node the node to the arriveQueue using CAS
+    // Enqueue the node to the arriveQueue using CAS
     val node = new WaiterNode(currentThread, WaiterNode.InArriveQueue)
     while ({
       val next = arriveQueue

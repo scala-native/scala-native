@@ -13,7 +13,7 @@ private[testinterface] class ProcessRunner(
 ) extends AutoCloseable {
 
   private val process = {
-    // Optional emualator config used internally for testing non amd64 architectures
+    // Optional emulator config used internally for testing non amd64 architectures
     val emulatorOpts: List[String] = sys.env
       .get("CROSSCOMPILING_EMULATOR")
       .map(_.split(" ").toList)

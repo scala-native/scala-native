@@ -118,7 +118,7 @@ enablePlugins(ScalaNativePlugin)
 
 ## Locally build docs
 
-1.  First time building the docs. This command will setup & build the
+1.  First time building the docs. This command will set up & build the
     docs.
 
 ``` text
@@ -157,4 +157,4 @@ To configure the native build in this project, you can edit
 -   [compiler](./compiler.md)
 -   [nir](./nir.md)
 -   [name mangling](./mangling.md)
--   How to setup IDEs [ides](./ides.md)
+-   How to set up IDEs [ides](./ides.md)

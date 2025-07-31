@@ -197,8 +197,8 @@ private[scalanative] object LLVM {
   /** This function allows a project to have multiple `main` files by copying
    *  the one selected to the same parent directory as the `workDir` which is by
    *  default named `native`. Since the directory is named `native`, having a
-   *  project named `native` will by default produce a executable named `native`
-   *  which will throw an exception since the copy command uses
+   *  project named `native` will by default produce an executable named
+   *  `native` which will throw an exception since the copy command uses
    *  REPLACE_EXISTING.
    *
    *  Having a project or `baseName` named `native` conflicts with the build.
@@ -271,7 +271,7 @@ private[scalanative] object LLVM {
         // https://github.com/scala-native/scala-native/issues/2372
         // When using LTO make sure to use lld linker instead of default one
         // LLD might find some duplicated symbols defined in both C and C++,
-        // runtime libraries (libUCRT, libCPMT), we ignore this warnings.
+        // runtime libraries (libUCRT, libCPMT), we ignore these warnings.
         val ltoSupport = config.compilerConfig.lto match {
           case LTO.None => Nil
           case _        => Seq("-fuse-ld=lld", "-Wl,/force:multiple")
@@ -394,7 +394,7 @@ private[scalanative] object LLVM {
   }
 
   /** Checks the input timestamp to see if the file needs compiling. The call to
-   *  lastModified will return 0 for a non existent output file but that makes
+   *  lastModified will return 0 for a non-existent output file but that makes
    *  the timestamp always less forcing a recompile.
    *
    *  @param in
@@ -421,7 +421,7 @@ private[scalanative] object LLVM {
    *  @param out
    *    the executable
    *  @return
-   *    true if it need linking
+   *    true if it needs linking
    */
   @inline private def needsLinking(in: Seq[Path], out: Path): Boolean = {
     val inmax = in.map(_.toFile().lastModified()).max

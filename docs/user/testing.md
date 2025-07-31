@@ -41,10 +41,10 @@ testOnly MyTest.superComplicatedTest
 
 ## Source level debugging
 
-Scala Native provides initial support for generating source level debug informations, which can be used to map code executed in the debugger to the original sources or to represent local variables.
+Scala Native provides initial support for generating source level debug information, which can be used to map code executed in the debugger to the original sources or to represent local variables.
 When executing on MacOS it also allows to obtain approximated source code lines in the exception stack traces.
 Be aware that both Scala Native optimizer and
-LLVM optimizers can remove some of the optimized out debug informations.
+LLVM optimizers can remove some of the optimized out debug information.
 For best experience run with disabled optimizations:
 
 ```scala
@@ -57,7 +57,7 @@ nativeConfig ~= { c =>
 }
 ```
 
-When using LLDB based debugger you can use our [custom formatter](https://github.com/scala-native/scala-native/blob/main/ScalaNativeLLDBFormatter.py) which would provide more user friendly information about Scala types, e.g. representation of Arrays and Strings.
+When using LLDB based debugger you can use our [custom formatter](https://github.com/scala-native/scala-native/blob/main/ScalaNativeLLDBFormatter.py) which would provide more user-friendly information about Scala types, e.g. representation of Arrays and Strings.
 
 ### Testing with debug metadata
 Debug builds with enabled debug metadata allows to produce stack traces containing source positions, however, to obtain them runtime needs to parse the produced debug metadata. This operation is performed when generating stack traces for the first time and can take more than 1 second. This behavior can influence tests expecting to finish within some fixed amount of time.

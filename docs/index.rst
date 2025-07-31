@@ -76,7 +76,7 @@ Community
   Ask it on `Stack Overflow with tag scala-native <https://stackoverflow.com/questions/tagged/scala-native>`_.
 
 * Found a bug or want to propose a new feature?
-  Open `an issue on Github <https://github.com/scala-native/scala-native/issues>`_.
+  Open `an issue on GitHub <https://github.com/scala-native/scala-native/issues>`_.
 
 Documentation
 -------------

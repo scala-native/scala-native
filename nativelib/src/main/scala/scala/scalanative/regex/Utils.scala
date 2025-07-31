@@ -163,7 +163,7 @@ object Utils {
     return -1
   }
 
-  // isWordRune reports whether r is consider a ``word character''
+  // isWordRune reports whether r is considered a ``word character''
   // during the evaluation of the \b and \B zero-width assertions.
   // These assertions are ASCII-only: the word characters are [A-Za-z0-9_].
   def isWordRune(r: Int): Boolean =

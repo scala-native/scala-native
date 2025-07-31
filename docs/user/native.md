@@ -128,9 +128,9 @@ published library can avoid the error described above. Use the following
 procedure to implement this feature.
 
 1. Add the following content to your new `scala-native.properties` file
-desdribed above. For the purposes of this example assume the library is
-`z`. Note that if your library has more that one library you can add a
-comma delimited list of libraries. If desired, the comments are not
+described above. For the purposes of this example assume the library is
+`z`. Note that if your library has more than one library you can add a
+comma-delimited list of libraries. If desired, the comments are not
 needed.
 
 ``` properties
