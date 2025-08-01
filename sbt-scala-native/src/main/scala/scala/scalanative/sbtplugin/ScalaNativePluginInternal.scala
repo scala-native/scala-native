@@ -51,53 +51,57 @@ object ScalaNativePluginInternal {
   val nativeWarnOldJVM =
     taskKey[Unit]("Warn if JVM 7 or older is used.")
 
-    lazy val scalaNativeDependencySettings: Seq[Setting[_]] = {
-      val organization = "org.scala-native"
-      val nativeStandardLibraries =
-        Seq("nativelib", "clib", "posixlib", "windowslib", "javalib", "auxlib")
+  val baseBuildConfig = settingKey[build.Config](
+    "Base configuration for nativeLink commands calcullated base on setting keys. Internal, not visible to users"
+  )
 
-      Seq(
-        libraryDependencies ++= Seq(
-          organization %%% "test-interface" % nativeVersion % Test
-        ),
-        libraryDependencies += CrossVersion
-          .partialVersion(scalaVersion.value)
-          .fold(throw new RuntimeException("Unsupported Scala Version")) {
-            case (2, _) =>
-              organization %%% "scalalib" % scalalibVersion(
-                scalaVersion.value,
-                nativeVersion
-              )
-            case (3, _) =>
-              organization %%% "scala3lib" % scalalibVersion(
-                scalaVersion.value,
-                nativeVersion
-              )
-          },
-        libraryDependencies ++= nativeStandardLibraries.map(
-          organization %%% _ % nativeVersion
-        ),
-        excludeDependencies ++= {
-          // Exclude cross published version dependencies leading to conflicts in Scala 3 vs 2.13
-          // When using Scala 3 exclude Scala 2.13 standard native libraries,
-          // when using Scala 2.13 exclude Scala 3 standard native libraries
-          // Use full name, Maven style published artifacts cannot use artifact/cross version for exclusion rules
-          nativeStandardLibraries.map { lib =>
-            val scalaBinVersion =
-              if (scalaVersion.value.startsWith("3.")) "2.13"
-              else "3"
-            ExclusionRule()
-              .withOrganization(organization)
-              .withName(
-                s"${lib}_native${ScalaNativeCrossVersion.currentBinaryVersion}_${scalaBinVersion}"
-              )
-          }
+  lazy val scalaNativeDependencySettings: Seq[Setting[_]] = {
+    val organization = "org.scala-native"
+    val nativeStandardLibraries =
+      Seq("nativelib", "clib", "posixlib", "windowslib", "javalib", "auxlib")
+
+    Seq(
+      libraryDependencies ++= Seq(
+        organization %%% "test-interface" % nativeVersion % Test
+      ),
+      libraryDependencies += CrossVersion
+        .partialVersion(scalaVersion.value)
+        .fold(throw new RuntimeException("Unsupported Scala Version")) {
+          case (2, _) =>
+            organization %%% "scalalib" % scalalibVersion(
+              scalaVersion.value,
+              nativeVersion
+            )
+          case (3, _) =>
+            organization %%% "scala3lib" % scalalibVersion(
+              scalaVersion.value,
+              nativeVersion
+            )
         },
-        addCompilerPlugin(
-          organization % "nscplugin" % nativeVersion cross CrossVersion.full
-        )
+      libraryDependencies ++= nativeStandardLibraries.map(
+        organization %%% _ % nativeVersion
+      ),
+      excludeDependencies ++= {
+        // Exclude cross published version dependencies leading to conflicts in Scala 3 vs 2.13
+        // When using Scala 3 exclude Scala 2.13 standard native libraries,
+        // when using Scala 2.13 exclude Scala 3 standard native libraries
+        // Use full name, Maven style published artifacts cannot use artifact/cross version for exclusion rules
+        nativeStandardLibraries.map { lib =>
+          val scalaBinVersion =
+            if (scalaVersion.value.startsWith("3.")) "2.13"
+            else "3"
+          ExclusionRule()
+            .withOrganization(organization)
+            .withName(
+              s"${lib}_native${ScalaNativeCrossVersion.currentBinaryVersion}_${scalaBinVersion}"
+            )
+        }
+      },
+      addCompilerPlugin(
+        organization % "nscplugin" % nativeVersion cross CrossVersion.full
       )
-    }
+    )
+  }
 
   lazy val scalaNativeBaseSettings: Seq[Setting[_]] = Seq(
     crossVersion := ScalaNativeCrossVersion.binary,
@@ -142,28 +146,25 @@ object ScalaNativePluginInternal {
   )
 
   private def nativeLinkImpl(
-      nativeConfig: NativeConfig,
-      sbtLogger: sbt.Logger,
-      baseDir: Path,
-      moduleName: String,
+      baseConfig: build.Config,
       mainClass: Option[String],
-      testConfig: Boolean,
-      classpath: Seq[Path],
-      sourcesClassPath: Seq[Path],
-      nativeLogger: build.Logger
+      classpath: Classpath,
+      nativeLogger: build.Logger,
+      dependencyResolution: DependencyResolution,
+      externalClassPath: Classpath
   ) = {
-
-    val config =
-      build.Config.empty
-        .withLogger(nativeLogger)
-        .withClassPath(classpath)
-        .withSourcesClassPath(sourcesClassPath)
-        .withBaseDir(baseDir)
-        .withModuleName(moduleName)
-        .withMainClass(mainClass)
-        .withTestConfig(testConfig)
-        .withCompilerConfig(nativeConfig)
-
+    val config = baseConfig
+      .withMainClass(mainClass)
+      .withLogger(nativeLogger)
+      .withClassPath(classpath.map(_.data.toPath))
+      .withSourcesClassPath(
+        resolveSourcesClassPath(
+          baseConfig.compilerConfig.sourceLevelDebuggingConfig.enabled,
+          dependencyResolution,
+          externalClassPath,
+          nativeLogger
+        )
+      )
     interceptBuildException {
       SharedScope { implicit sharedScope: Scope =>
         Build
@@ -181,134 +182,116 @@ object ScalaNativePluginInternal {
    *  for test and app configurations. The total with 3 Scala versions equals 6
    *  times per project.
    */
-  def scalaNativeConfigSettings(testConfig: Boolean): Seq[Setting[_]] = Seq(
-    scalacOptions ++= {
-      if (isGeneratingForIDE) None
-      else
-        Some(
-          s"-P:scalanative:positionRelativizationPaths:${sourceDirectories.value.map(_.getAbsolutePath()).mkString(";")}"
-        )
-    },
-    nativeLinkReleaseFull := Def
-      .task {
-        val sbtLogger = streams.value.log
-        val nativeLogger = sbtLogger.toLogger
-        val classpath = fullClasspath.value.map(_.data.toPath)
-        val userConfig = nativeConfig.value
-        val sourcesClassPath = resolveSourcesClassPath(
-          userConfig,
-          dependencyResolution.value,
-          externalDependencyClasspath.value,
-          sbtLogger
-        )
+  def scalaNativeConfigSettings(testConfig: Boolean): Seq[Setting[_]] = {
+    def releaseFullConfig(config: build.Config) = config
+      .withCompilerConfig(_.withMode(Mode.releaseFull))
+      .withModuleName(config.moduleName + "-release-full")
 
-        nativeLinkImpl(
-          nativeConfig = userConfig.withMode(Mode.releaseFull),
-          classpath = classpath,
-          sourcesClassPath = sourcesClassPath,
-          sbtLogger = sbtLogger,
-          nativeLogger = nativeLogger,
-          mainClass = selectMainClass.value,
-          baseDir = crossTarget.value.toPath(),
-          testConfig = testConfig,
-          moduleName = moduleName.value + "-release-full"
+    def releaseFastConfig(config: build.Config) = config
+      .withCompilerConfig(_.withMode(Mode.releaseFast))
+      .withModuleName(config.moduleName + "-release-fast")
+
+    Seq(
+      scalacOptions ++= {
+        if (isGeneratingForIDE) None
+        else
+          Some(
+            s"-P:scalanative:positionRelativizationPaths:${sourceDirectories.value.map(_.getAbsolutePath()).mkString(";")}"
+          )
+      },
+      // Base build config is populate using settings, it should be enought to calculate artifactPath
+      baseBuildConfig := build.Config.empty
+        .withBaseDir(crossTarget.value.toPath())
+        .withModuleName(moduleName.value)
+        .withCompilerConfig(nativeConfig.value)
+        .withTestConfig(testConfig),
+      // native-link
+      nativeLink / artifactPath := baseBuildConfig.value.artifactPath.toFile,
+      nativeLink := Def
+        .task {
+          nativeLinkImpl(
+            baseConfig = baseBuildConfig.value,
+            mainClass = selectMainClass.value,
+            nativeLogger = streams.value.log.toLogger,
+            classpath = fullClasspath.value,
+            externalClassPath = externalDependencyClasspath.value,
+            dependencyResolution = dependencyResolution.value
+          )
+        }
+        .tag(NativeTags.Link)
+        .value,
+      // release-full aliases
+      nativeLinkReleaseFull / artifactPath :=
+        releaseFullConfig(baseBuildConfig.value).artifactPath.toFile(),
+      nativeLinkReleaseFull := Def
+        .task {
+          nativeLinkImpl(
+            baseConfig = releaseFullConfig(baseBuildConfig.value),
+            mainClass = selectMainClass.value,
+            nativeLogger = streams.value.log.toLogger,
+            classpath = fullClasspath.value,
+            externalClassPath = externalDependencyClasspath.value,
+            dependencyResolution = dependencyResolution.value
+          )
+        }
+        .tag(NativeTags.Link)
+        .value,
+      // release-fast aliases
+      nativeLinkReleaseFast / artifactPath :=
+        releaseFastConfig(baseBuildConfig.value).artifactPath.toFile(),
+      nativeLinkReleaseFast := Def
+        .task {
+          nativeLinkImpl(
+            baseConfig = releaseFastConfig(baseBuildConfig.value),
+            mainClass = selectMainClass.value,
+            nativeLogger = streams.value.log.toLogger,
+            classpath = fullClasspath.value,
+            externalClassPath = externalDependencyClasspath.value,
+            dependencyResolution = dependencyResolution.value
+          )
+        }
+        .tag(NativeTags.Link)
+        .value,
+      console := console
+        .dependsOn(Def.task {
+          streams.value.log.warn(
+            "Scala REPL doesn't work with Scala Native. You " +
+              "are running a JVM REPL. Native things won't work."
+          )
+        })
+        .value,
+      run := {
+        val env = (run / envVars).value.toSeq
+        val logger = streams.value.log
+        val binary = nativeLink.value.getAbsolutePath
+        val args = spaceDelimited("<arg>").parsed
+
+        logger.running(binary +: args)
+
+        val exitCode = {
+          // It seems that previously used Scala Process has some bug leading
+          // to possible ignoring of inherited IO and termination of wrapper
+          // thread with an exception. We use java.lang ProcessBuilder instead
+          val proc = new ProcessBuilder()
+            .command((Seq(binary) ++ args): _*)
+            .inheritIO()
+          env.foreach((proc.environment().put(_, _)).tupled)
+          proc.start().waitFor()
+        }
+
+        val message =
+          if (exitCode == 0) None
+          else Some("Nonzero exit code: " + exitCode)
+
+        message.foreach(sys.error)
+      },
+      runMain := {
+        throw new MessageOnlyException(
+          "`runMain` is not supported in Scala Native"
         )
       }
-      .tag(NativeTags.Link)
-      .value,
-    nativeLinkReleaseFast := Def
-      .task {
-        val sbtLogger = streams.value.log
-        val nativeLogger = sbtLogger.toLogger
-        val classpath = fullClasspath.value.map(_.data.toPath)
-        val userConfig = nativeConfig.value
-        val sourcesClassPath = resolveSourcesClassPath(
-          userConfig,
-          dependencyResolution.value,
-          externalDependencyClasspath.value,
-          sbtLogger
-        )
-
-        nativeLinkImpl(
-          nativeConfig = userConfig.withMode(Mode.releaseFast),
-          classpath = classpath,
-          sourcesClassPath = sourcesClassPath,
-          sbtLogger = sbtLogger,
-          nativeLogger = nativeLogger,
-          mainClass = selectMainClass.value,
-          baseDir = crossTarget.value.toPath(),
-          testConfig = testConfig,
-          moduleName = moduleName.value + "-release-fast"
-        )
-      }
-      .tag(NativeTags.Link)
-      .value,
-    nativeLink := Def
-      .task {
-        val sbtLogger = streams.value.log
-        val nativeLogger = sbtLogger.toLogger
-        val classpath = fullClasspath.value.map(_.data.toPath)
-        val userConfig = nativeConfig.value
-        val sourcesClassPath = resolveSourcesClassPath(
-          userConfig,
-          dependencyResolution.value,
-          externalDependencyClasspath.value,
-          sbtLogger
-        )
-
-        nativeLinkImpl(
-          nativeConfig = userConfig,
-          classpath = classpath,
-          sourcesClassPath = sourcesClassPath,
-          sbtLogger = sbtLogger,
-          nativeLogger = nativeLogger,
-          mainClass = selectMainClass.value,
-          baseDir = crossTarget.value.toPath(),
-          testConfig = testConfig,
-          moduleName = moduleName.value
-        )
-      }
-      .tag(NativeTags.Link)
-      .value,
-    console := console
-      .dependsOn(Def.task {
-        streams.value.log.warn(
-          "Scala REPL doesn't work with Scala Native. You " +
-            "are running a JVM REPL. Native things won't work."
-        )
-      })
-      .value,
-    run := {
-      val env = (run / envVars).value.toSeq
-      val logger = streams.value.log
-      val binary = nativeLink.value.getAbsolutePath
-      val args = spaceDelimited("<arg>").parsed
-
-      logger.running(binary +: args)
-
-      val exitCode = {
-        // It seems that previously used Scala Process has some bug leading
-        // to possible ignoring of inherited IO and termination of wrapper
-        // thread with an exception. We use java.lang ProcessBuilder instead
-        val proc = new ProcessBuilder()
-          .command((Seq(binary) ++ args): _*)
-          .inheritIO()
-        env.foreach((proc.environment().put(_, _)).tupled)
-        proc.start().waitFor()
-      }
-
-      val message =
-        if (exitCode == 0) None
-        else Some("Nonzero exit code: " + exitCode)
-
-      message.foreach(sys.error)
-    },
-    runMain := {
-      throw new MessageOnlyException(
-        "`runMain` is not supported in Scala Native"
-      )
-    }
-  )
+    )
+  }
 
   lazy val scalaNativeCompileSettings: Seq[Setting[_]] = {
     scalaNativeConfigSettings(false)
@@ -430,12 +413,12 @@ object ScalaNativePluginInternal {
   }
 
   private def resolveSourcesClassPath(
-      userConfig: NativeConfig,
+      debugEnabled: Boolean,
       dependencyResolution: DependencyResolution,
       externalClassPath: Classpath,
-      log: util.Logger
+      log: build.Logger
   ): Seq[Path] = {
-    if (!userConfig.sourceLevelDebuggingConfig.enabled) Nil
+    if (!debugEnabled) Nil
     else
       externalClassPath.par
         .flatMap { classpath =>
