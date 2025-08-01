@@ -72,11 +72,17 @@ private[scalanative] object LLVM {
     val stdflag = {
       if (isLl) llvmIrFeatures
       else if (isCpp) {
-        // C++14 or newer standard is needed to compile code using Windows API
-        // shipped with Windows 10 / Server 2016+ (we do not plan supporting older versions)
-        if (config.targetsWindows) Seq("-std=c++14")
-        else Seq("-std=c++11")
-      } else Seq("-std=gnu11")
+        val std = config.compilerConfig.cppStandard.getOrElse {
+          // C++14 or newer standard is needed to compile code using Windows API
+          // shipped with Windows 10 / Server 2016+ (we do not plan supporting older versions)
+          if (config.targetsWindows) "c++14"
+          else "c++11"
+        }
+        Seq(s"-std=$std")
+      } else {
+        val std = config.compilerConfig.cStandard.getOrElse("gnu11")
+        Seq(s"-std=$std")
+      }
     }
     val platformFlags = {
       if (config.targetsMsys) msysExtras

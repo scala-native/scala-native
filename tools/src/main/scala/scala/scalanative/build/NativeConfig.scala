@@ -23,6 +23,14 @@ sealed trait NativeConfig {
    */
   def targetTriple: Option[String]
 
+  /** Optional string that defines the C standard to use.
+   */
+  def cStandard: Option[String]
+
+  /** Optional string that defines the C++ standard to use.
+   */
+  def cppStandard: Option[String]
+
   /** The garbage collector to use. */
   def gc: GC
 
@@ -172,6 +180,20 @@ sealed trait NativeConfig {
    */
   def withTargetTriple(value: String): NativeConfig
 
+  /** Create a new config given a C standard. */
+  def withCStandard(value: Option[String]): NativeConfig
+
+  /** Create a new config given a C standard. */
+  def withCStandard(value: String): NativeConfig =
+    withCStandard(Some(value))
+
+  /** Create a new config given a C++ standard. */
+  def withCppStandard(value: Option[String]): NativeConfig
+
+  /** Create a new config given a C++ standard. */
+  def withCppStandard(value: String): NativeConfig =
+    withCppStandard(Some(value))
+
   /** Create a new config with given garbage collector. */
   def withGC(value: GC): NativeConfig
 
@@ -280,6 +302,8 @@ object NativeConfig {
       linkingOptions = Seq.empty,
       compileOptions = Seq.empty,
       targetTriple = None,
+      cStandard = None,
+      cppStandard = None,
       gc = GC.default,
       lto = LTO.default,
       mode = Mode.default,
@@ -310,6 +334,8 @@ object NativeConfig {
       linkingOptions: Seq[String],
       compileOptions: Seq[String],
       targetTriple: Option[String],
+      cStandard: Option[String],
+      cppStandard: Option[String],
       gc: GC,
       lto: LTO,
       mode: Mode,
@@ -358,6 +384,12 @@ object NativeConfig {
     def withTargetTriple(value: String): NativeConfig = {
       withTargetTriple(Some(value))
     }
+
+    def withCStandard(value: Option[String]): NativeConfig =
+      copy(cStandard = value)
+
+    def withCppStandard(value: Option[String]): NativeConfig =
+      copy(cppStandard = value)
 
     def withBuildTarget(target: BuildTarget): NativeConfig =
       copy(buildTarget = target)
