@@ -23,9 +23,6 @@ bin/
 .externalToolBuilders/
 .cache*
 
-# scala-cli
-**/.scala-build
-
 # metals
 **/.bloop/
 /.metals/
@@ -45,9 +42,6 @@ bin/
 
 # Virtual env generated dependencies, for generating docs
 .venv
-
-# Configuration for clangd
-**/compile_flags.txt
 
 # macOS
 .DS_Store
