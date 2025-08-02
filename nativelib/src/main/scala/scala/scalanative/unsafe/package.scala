@@ -210,10 +210,10 @@ package object unsafe extends unsafe.UnsafePackageCompat {
       val bytes = str.getBytes(charset)
       if (bytes.length > 0) {
         val len = bytes.length
-        val rawSize = castIntToRawSizeUnsigned(len + 1)
-        val size = unsignedOf(rawSize)
+        val size = unsignedOf(castIntToRawSizeUnsigned(len))
+        val sizePlus1 = unsignedOf(castIntToRawSizeUnsigned(len + 1))
 
-        val cstr = z.alloc(size)
+        val cstr = z.alloc(sizePlus1)
         ffi.memcpy(cstr, bytes.at(0), size)
         cstr(len) = 0.toByte
 
