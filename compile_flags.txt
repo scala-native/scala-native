@@ -1,0 +1,49 @@
+# simple setup for clangd
+
+# macOS arm
+-I/opt/homebrew/include
+
+# general flags used by native compiler
+# should we have -Wall, -Wconversion for safety?
+-Wno-override-module
+
+# nativelib setup
+-Inativelib/src/main/resources/scala-native
+-Inativelib/src/main/resources/scala-native/gc/
+-DSCALANATIVE_MULTITHREADING_ENABLED
+-DSCALANATIVE_DYLIB
+# uncomment as needed for CPP exceptions
+#-DSCALANATIVE_USING_CPP_EXCEPTIONS
+
+# special delim experimental code
+-D__SCALANATIVE_DELIMCC
+
+# libunwind
+-Inativelib/src/main/resources/scala-native/platform/posix/libunwind
+-DNDEBUG
+
+# defines for the garbage collectors which are used for GC selection
+-DSCALANATIVE_GC_BOEHM
+-DSCALANATIVE_GC_IMMIX
+-DSCALANATIVE_GC_COMMIX
+-DSCALANATIVE_GC_NONE
+-DSCALANATIVE_GC_EXPERIMENTAL
+
+# gc debug defines
+-DENABLE_GC_STATS
+-DDEBUG_PRINT
+
+# javalib setup
+-Ijavalib/src/main/resources/scala-native
+
+# Note: optional zlib - descriptor convention would be SCALANATIVE_LINK_Z
+-D__SCALANATIVE_JAVALIB_Z
+
+# posix and clib
+-DSCALANATIVE_COMPILE_ALWAYS
+
+# posixlib setup
+-Iposixlib/src/main/resources/scala-native
+
+# clib setup
+-Iclib/src/main/resources/scala-native
