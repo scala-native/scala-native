@@ -1,5 +1,6 @@
-#if defined(SCALANATIVE_COMPILE_ALWAYS) ||                                     \
-    defined(__SCALANATIVE_JAVALIB_SYS_LINUX_SCHED_H) && defined(__linux__)
+#if (defined(SCALANATIVE_COMPILE_ALWAYS) ||                                    \
+     defined(__SCALANATIVE_JAVALIB_SYS_LINUX_SCHED_H)) &&                      \
+    defined(__linux__)
 
 /* Define _GNU_SOURCE to make the CPU_* macros available.
  * This file is already GNU Linux specific, so adding more GNU does not
