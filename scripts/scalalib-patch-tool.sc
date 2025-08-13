@@ -1,5 +1,5 @@
 //> using dep "io.github.java-diff-utils:java-diff-utils:4.16"
-//> using dep "com.lihaoyi::os-lib:0.11.4"
+//> using dep "com.lihaoyi::os-lib:0.11.5"
 //> using dep "com.lihaoyi::mainargs:0.7.6"
 
 import com.github.difflib.{DiffUtils, UnifiedDiffUtils}
