@@ -1,5 +1,5 @@
 // Based on Ammonite script created by Tomasz Godzik in scalameta/metals https://github.com/scalameta/metals/commits/main/bin/merged_prs.sc
-//> using dep org.kohsuke:github-api:1.327
+//> using dep org.kohsuke:github-api:1.329
 //> using toolkit latest
 
 import scala.collection.mutable.ListBuffer
