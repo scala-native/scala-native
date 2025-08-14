@@ -96,22 +96,40 @@ private[scalanative] object NativeLib {
           nativeCodePath = nativeCodePath
         )
 
-        def withStdCOpt(nativeConfig: NativeConfig): NativeConfig =
-          descriptor.stdC match {
-            case None        => nativeConfig
-            case Some(value) => nativeConfig.withCompileStdC(value)
+        def withCOptions(nativeConfig: NativeConfig): NativeConfig =
+          descriptor.cOptions match {
+            case Seq()    => nativeConfig
+            case descOpts =>
+              descOpts.exists(s => s.startsWith(LLVM.stdPrefix)) match {
+                case false => nativeConfig.withCOptions(c => c ++ descOpts)
+                case true  => {
+                  val filtOpts = nativeConfig.cOptions.filterNot(e =>
+                    e.startsWith(LLVM.stdPrefix)
+                  )
+                  nativeConfig.withCOptions(filtOpts ++ descOpts)
+                }
+              }
           }
 
-        def withStdCppOpt(nativeConfig: NativeConfig): NativeConfig =
-          descriptor.stdCpp match {
-            case None        => nativeConfig
-            case Some(value) => nativeConfig.withCompileStdCpp(value)
+        def withCppOptions(nativeConfig: NativeConfig): NativeConfig =
+          descriptor.cppOptions match {
+            case Seq()    => nativeConfig
+            case descOpts =>
+              descOpts.exists(s => s.startsWith(LLVM.stdPrefix)) match {
+                case false => nativeConfig.withCppOptions(c => c ++ descOpts)
+                case true  => {
+                  val filtOpts = nativeConfig.cppOptions.filterNot(e =>
+                    e.startsWith(LLVM.stdPrefix)
+                  )
+                  nativeConfig.withCppOptions(filtOpts ++ descOpts)
+                }
+              }
           }
 
         config
           .withCompilerConfig(_.withCompileOptions(_ ++ projectSettings))
-          .withCompilerConfig(withStdCOpt _)
-          .withCompilerConfig(withStdCppOpt _)
+          .withCompilerConfig(withCOptions _)
+          .withCompilerConfig(withCppOptions _)
       }
     }
 

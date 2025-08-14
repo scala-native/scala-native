@@ -18,9 +18,10 @@ private[scalanative] object LLVM {
 
   // C++14 or newer standard is needed to compile code using Windows API
   // shipped with Windows 10 / Server 2016+ (we do not plan supporting older versions)
-  val defaultWinCpp = "c++14"
-  val defaultCpp = "c++11"
-  val defaultC = "c11"
+  val stdPrefix = "-std="
+  val defaultWinCppStd = s"${stdPrefix}c++14"
+  val defaultCppStd = s"${stdPrefix}c++11"
+  val defaultCStd = s"${stdPrefix}c11"
 
   /** Object file extension: ".o" */
   val oExt = ".o"
@@ -75,10 +76,10 @@ private[scalanative] object LLVM {
     val workDir = config.workDir
 
     val compiler = if (isCpp) config.clangPP.abs else config.clang.abs
-    val stdflag = {
+    val langOptions = {
       if (isLl) llvmIrFeatures
-      else if (isCpp) Seq(stdCpp)
-      else Seq(stdC)
+      else if (isCpp) cppOptions
+      else cOptions
     }
     val platformFlags = {
       if (config.targetsMsys) msysExtras
@@ -98,6 +99,7 @@ private[scalanative] object LLVM {
         config.compilerConfig.targetTriple.map(_ => s"-Wno-override-module")
       multithreadingEnabled ++ usingCppExceptions ++ allowTargetOverrrides
     }
+    // this will change
     val exceptionsHandling = {
       val targetSpecific = if (isCppRuntimeRequired(config, analysis)) {
         val opt = if (isCpp) List("-fcxx-exceptions") else Nil
@@ -118,7 +120,7 @@ private[scalanative] object LLVM {
 
     val flags: Seq[String] =
       buildTargetCompileOpts ++ flto ++ sanitizer ++ target ++
-        stdflag ++ platformFlags ++ debugFlags ++ exceptionsHandling ++
+        langOptions ++ platformFlags ++ debugFlags ++ exceptionsHandling ++
         configFlags ++ Seq("-fvisibility=hidden", opt) ++
         Seq("-fomit-frame-pointer") ++
         config.compileOptions
@@ -458,21 +460,25 @@ private[scalanative] object LLVM {
       case Mode.ReleaseFull => "-O3"
     }
 
-  private def stdCpp(implicit config: Config): String = {
-    val std = config.compilerConfig.compileStdCpp match {
-      case None => if (config.targetsWindows) defaultWinCpp else defaultCpp
-      case Some(userStd) => userStd
+  private def cppOptions(implicit config: Config): Seq[String] = {
+    val cppStd =
+      if (config.targetsWindows) defaultWinCppStd else defaultCppStd
+    config.compilerConfig.cppOptions match {
+      case Seq() =>
+        Seq(cppStd)
+      case opts =>
+        if (opts.exists(s => s.startsWith(stdPrefix))) opts
+        else cppStd +: opts
     }
-    s"-std=$std"
   }
 
-  private def stdC(implicit config: Config): String = {
-    val std = config.compilerConfig.compileStdC match {
-      case None          => defaultC
-      case Some(userStd) => userStd
+  private def cOptions(implicit config: Config): Seq[String] =
+    config.compilerConfig.cOptions match {
+      case Seq() => Seq(defaultCStd)
+      case opts  =>
+        if (opts.exists(s => s.startsWith(stdPrefix))) opts
+        else defaultCStd +: opts
     }
-    s"-std=$std"
-  }
 
   private def llvmIrFeatures(implicit config: Config): Seq[String] = {
     implicit def nativeConfig: NativeConfig = config.compilerConfig
