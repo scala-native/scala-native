@@ -24,7 +24,7 @@ jobs:
         # Scala 2.13 only for increased tests coverage (Scala2 partests) while keeping total number of jobs low
         scala: [2.13]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: ${{matrix.scala}}
