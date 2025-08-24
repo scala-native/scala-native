@@ -1016,6 +1016,26 @@ class FilesTest {
     }
   }
 
+  // Issue #4432
+  @Test def filesListMatchJvmExceptions(): Unit = {
+    withTemporaryDirectory { dirFile =>
+      val dir = dirFile.toPath()
+      val file = dir.resolve("fileNotDir")
+      Files.createFile(file)
+
+      assertTrue("a1", Files.exists(file) && Files.isRegularFile(file))
+
+      try {
+        assertThrows(
+          classOf[NotDirectoryException],
+          Files.list(file) // it's a file, not a directory
+        )
+      } finally {
+        Files.delete(file)
+      }
+    }
+  }
+
   @Test def filesReadSymbolicLinkCanReadValidSymbolicLink(): Unit = {
     assumeShouldTestSymlinks()
 
