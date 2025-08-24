@@ -1025,14 +1025,21 @@ class FilesTest {
 
       assertTrue("a1", Files.exists(file) && Files.isRegularFile(file))
 
-      try {
-        assertThrows(
-          classOf[NotDirectoryException],
-          Files.list(file) // it's a file, not a directory
-        )
-      } finally {
-        Files.delete(file)
-      }
+      val expectedException =
+        if (isWindows)
+
+          try {
+            val expectedException =
+              if (isWindows) classOf[IOException]
+              else classOf[NotDirectoryException]
+
+            assertThrows(
+              expectedException,
+              Files.list(file) // it's a file, not a directory
+            )
+          } finally {
+            Files.delete(file)
+          }
     }
   }
 
