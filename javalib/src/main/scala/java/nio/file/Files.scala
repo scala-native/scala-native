@@ -824,7 +824,7 @@ object Files {
 
       private var posixDirClosed = true
 
-      private lazy val posixDir: Ptr[DIR] = Zone.acquire { implicit z =>
+      private val posixDir: Ptr[DIR] = Zone.acquire { implicit z =>
         val ptr = opendir(toCString(dirString))
         if (ptr == null)
           throw new UncheckedIOException(PosixException(dirString, errno))
@@ -856,40 +856,41 @@ object Files {
           override def trySplit(): Spliterator[T] = null
 
           def tryAdvance(action: Consumer[_ >: T]): Boolean = {
-            /* Reduce execution cost by relying upon readdir() to detect
-             * a closed directory rather than checking posixDirclosed.
-             */
+            if (posixDirClosed) false // Issue #4431
+            else {
+              val entry = { errno = 0; readdir(posixDir) }
 
-            val entry = { errno = 0; readdir(posixDir) }
+              if (entry == null) {
+                if (errno != 0) {
+                  throw new UncheckedIOException(
+                    PosixException(dirString, errno)
+                  )
+                } else { // End of OS directory stream
+                  closeImpl()
+                  false
+                }
+              } else {
+                /* Consume "." and "..", Java does not want to see them.
+                 *
+                 * Those two entries are usually the first two, but that
+                 * is not guaranteed. There are obscure scenarios where
+                 * at least '.' can come later.
+                 *
+                 * This is conceptually a 'stream.filter()' operation but
+                 * with less overhead.
+                 */
 
-            if (entry == null) {
-              if (errno != 0) {
-                throw new UncheckedIOException(PosixException(dirString, errno))
-              } else { // End of OS directory stream
-                closeImpl()
-                false
+                val entryName = entry.d_name // A CString, so byte comparisons
+
+                if (entryName(0) != dot)
+                  appendToStream(entryName, action)
+                else if (entryName(1) == nul)
+                  tryAdvance(action) // past "."
+                else if ((entryName(1) == dot) && (entryName(2) == nul))
+                  tryAdvance(action) // past ".."
+                else
+                  appendToStream(entryName, action) // ".git" or such
               }
-            } else {
-              /* Consume "." and "..", Java does not want to see them.
-               *
-               * Those two entries are usually the first two, but that
-               * is not guaranteed. There are obscure scenarios where
-               * at least '.' can come later.
-               *
-               * This is conceptually a 'stream.filter()' operation but
-               * with less overhead.
-               */
-
-              val entryName = entry.d_name // A CString, so byte comparisons
-
-              if (entryName(0) != dot)
-                appendToStream(entryName, action)
-              else if (entryName(1) == nul)
-                tryAdvance(action) // past "."
-              else if ((entryName(1) == dot) && (entryName(2) == nul))
-                tryAdvance(action) // past ".."
-              else
-                appendToStream(entryName, action) // ".git" or such
             }
           }
         }

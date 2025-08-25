@@ -990,6 +990,32 @@ class FilesTest {
     }
   }
 
+  // Issue #4431
+  @Test def filesListHasNextOnExhaustedIterator(): Unit = {
+    withTemporaryDirectory { dirFile =>
+      val dir = dirFile.toPath()
+
+      for (j <- 1 to 3) {
+        val f = dir.resolve(s"file${j}")
+        Files.createFile(f)
+        assertTrue(s"a${j}", Files.exists(f) && Files.isRegularFile(f))
+      }
+
+      val fileStream = Files.list(dir)
+
+      try {
+        val files = new java.util.HashSet[Path]()
+        val iter = fileStream.iterator()
+
+        while (iter.hasNext())
+          files.add(iter.next())
+
+        assertFalse("hasNext on exhausted iterater", iter.hasNext())
+
+      } finally fileStream.close()
+    }
+  }
+
   @Test def filesReadSymbolicLinkCanReadValidSymbolicLink(): Unit = {
     assumeShouldTestSymlinks()
 
