@@ -20,9 +20,9 @@ package java.util.concurrent.atomic;
 import java.{lang => jl}
 
 /** One or more variables that together maintain an initially zero
- *  {@code double} sum. When updates (method {@link #add}) are contended across
+ *  {@code double} sum. When updates (method {@code add}) are contended across
  *  threads, the set of variables may grow dynamically to reduce contention.
- *  Method {@link #sum} (or, equivalently {@link #doubleValue}) returns the
+ *  Method {@code sum} (or, equivalently {@code doubleValue}) returns the
  *  current total combined across the variables maintaining the sum. The order
  *  of accumulation within or across threads is not guaranteed. Thus, this class
  *  may not be applicable if numerical stability is required, especially when
@@ -32,7 +32,7 @@ import java.{lang => jl}
  *  update a common value that is used for purposes such as summary statistics
  *  that are frequently updated but less frequently read.
  *
- *  <p>This class extends {@link Number}, but does <em>not</em> define methods
+ *  <p>This class extends {@code Number}, but does <em>not</em> define methods
  *  such as {@code equals}, {@code hashCode} and {@code compareTo} because
  *  instances are expected to be mutated, and so are not useful as collection
  *  keys.
@@ -126,11 +126,13 @@ class DoubleAdder() extends Striped64 {
     }
   }
 
-  /** Equivalent in effect to {@link #sum} followed by {@link #reset}. This
-   *  method may apply for example during quiescent points between multithreaded
-   *  computations. If there are updates concurrent with this method, the
-   *  returned value is <em>not</em> guaranteed to be the final value occurring
-   *  before the reset.
+  /** Equivalent in effect to {@code sum} followed by {@code reset}. This method
+   *  may apply for example during quiescent points between multithreaded
+   *  computations.
+   *
+   *  If there are updates concurrent with this method, the computations. If
+   *  there are updates concurrent with this method, the returned value is
+   *  <em>not</em> guaranteed to be the final value occurring before the reset.
    *
    *  @return
    *    the sum
@@ -147,14 +149,14 @@ class DoubleAdder() extends Striped64 {
     sum
   }
 
-  /** Returns the String representation of the {@link #sum}.
+  /** Returns the String representation of the {@code sum}.
    *  @return
-   *    the String representation of the {@link #sum}
+   *    the String representation of the {@code sum}
    */
 
   override def toString: String = sum.toString()
 
-  /** Equivalent to {@link #sum}.
+  /** Equivalent to {@code sum}.
    *
    *  @return
    *    the sum
@@ -162,19 +164,19 @@ class DoubleAdder() extends Striped64 {
 
   override def doubleValue(): Double = sum.toDouble
 
-  /** Returns the {@link #sum} as a {@code long} after a narrowing primitive
+  /** Returns the {@code sum} as a {@code long} after a narrowing primitive
    *  conversion.
    */
 
   def longValue(): Long = sum.toLong
 
-  /** Returns the {@link #sum} as an {@code int} after a narrowing primitive
+  /** Returns the {@code sum} as an {@code int} after a narrowing primitive
    *  conversion.
    */
 
   override def intValue(): Int = sum.toInt
 
-  /** Returns the {@link #sum} as a {@code float} after a narrowing primitive
+  /** Returns the {@code sum} as a {@code float} after a narrowing primitive
    *  conversion.
    */
 
