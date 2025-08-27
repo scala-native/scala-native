@@ -78,8 +78,8 @@ private[scalanative] object LLVM {
     val compiler = if (isCpp) config.clangPP.abs else config.clang.abs
     val langOptions = {
       if (isLl) llvmIrFeatures
-      else if (isCpp) cppOptions
-      else cOptions
+      else if (isCpp) cppOptions(analysis)
+      else cOptions(analysis)
     }
     val platformFlags = {
       if (config.targetsMsys) msysExtras
@@ -99,17 +99,6 @@ private[scalanative] object LLVM {
         config.compilerConfig.targetTriple.map(_ => s"-Wno-override-module")
       multithreadingEnabled ++ usingCppExceptions ++ allowTargetOverrrides
     }
-    // this will change
-    val exceptionsHandling = {
-      val targetSpecific = if (isCppRuntimeRequired(config, analysis)) {
-        val opt = if (isCpp) List("-fcxx-exceptions") else Nil
-        List("-fexceptions", "-funwind-tables") ++ opt
-      } else {
-        if (isCpp) List("-fno-rtti", "-fno-exceptions", "-funwind-tables")
-        else Nil
-      }
-      targetSpecific
-    }
     // Always generate debug metadata on Windows, it's required for stack traces to work
     val debugFlags =
       if (config.targetsWindows) List("-g")
@@ -120,7 +109,7 @@ private[scalanative] object LLVM {
 
     val flags: Seq[String] =
       buildTargetCompileOpts ++ flto ++ sanitizer ++ target ++
-        langOptions ++ platformFlags ++ debugFlags ++ exceptionsHandling ++
+        langOptions ++ platformFlags ++ debugFlags ++
         configFlags ++ Seq("-fvisibility=hidden", opt) ++
         Seq("-fomit-frame-pointer") ++
         config.compileOptions
@@ -460,25 +449,44 @@ private[scalanative] object LLVM {
       case Mode.ReleaseFull => "-O3"
     }
 
-  private def cppOptions(implicit config: Config): Seq[String] = {
-    val cppStd =
+  private def cppOptions(
+      analysis: ReachabilityAnalysis.Result
+  )(implicit config: Config): Seq[String] = {
+    val defaultStd =
       if (config.targetsWindows) defaultWinCppStd else defaultCppStd
-    config.compilerConfig.cppOptions match {
+    val options = config.compilerConfig.cppOptions match {
       case Seq() =>
-        Seq(cppStd)
+        Seq(defaultStd)
       case opts =>
         if (opts.exists(s => s.startsWith(stdPrefix))) opts
-        else cppStd +: opts
+        else defaultStd +: opts
     }
+    // this will change
+    val exceptionsHandling =
+      if (isCppRuntimeRequired(config, analysis)) { // checks for -fcxx-exceptions
+        List("-fexceptions", "-funwind-tables")
+      } else
+        List("-fno-rtti", "-fno-exceptions", "-funwind-tables")
+
+    options ++ exceptionsHandling
   }
 
-  private def cOptions(implicit config: Config): Seq[String] =
-    config.compilerConfig.cOptions match {
+  private def cOptions(
+      analysis: ReachabilityAnalysis.Result
+  )(implicit config: Config): Seq[String] = {
+    val options = config.compilerConfig.cOptions match {
       case Seq() => Seq(defaultCStd)
       case opts  =>
         if (opts.exists(s => s.startsWith(stdPrefix))) opts
         else defaultCStd +: opts
     }
+    val exceptionHandling =
+      if (isCppRuntimeRequired(config, analysis))
+        List("-fexceptions", "-funwind-tables")
+      else Nil
+
+    options ++ exceptionHandling
+  }
 
   private def llvmIrFeatures(implicit config: Config): Seq[String] = {
     implicit def nativeConfig: NativeConfig = config.compilerConfig

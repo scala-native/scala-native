@@ -3,14 +3,14 @@ package scala.scalanative.build
 /** An object describing configuration of the Scala Native semantics. */
 sealed trait SemanticsConfig {
 //format: off
-  /** Controls behaviour of final fields and their complaince with the Java Memory Model. 
+  /** Controls behaviour of final fields and their compliance with the Java Memory Model.
    *  The outputs of the program would depend on compliance level:
    *  - [[JVMMemoryModelCompliance.Strict]] all final fields are synchronized - ensures safe publication,but it might lead to runtime performance overhead.
    *  - [[JVMMemoryModelCompliance.None]] final fields are never synchronized - no runtime overhead when accessing final fields, but it might lead to unexpected state in highly concurrent programs.
    *  - [[JVMMemoryModelCompliance.Relaxed]] (default) only fields marked with scala.scalanative.annotation.safePublish are synchronized.
    */
   def finalFields: JVMMemoryModelCompliance
-  /** Sets the behaviour of final fields and their complaince with the Java Memory Model
+  /** Sets the behaviour of final fields and their compliance with the Java Memory Model
    *   The outputs of the program would depend on compliance level:
    *  - [[JVMMemoryModelCompliance.Strict]] all final fields are synchronized - ensures safe publication,but it might lead to runtime performance overhead.
    *  - [[JVMMemoryModelCompliance.None]] final fields are never synchronized - no runtime overhead when accessing final fields, but it might lead to unexpected state in highly concurrent programs.

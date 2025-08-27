@@ -121,6 +121,7 @@ Set C and C++ only options using the folowing in `sbt`:
 ```scala
 // Example setting standard flags
 // Other C or C++ flags can be added to the `Seq`
+// To enable C++ exceptions, add `"-fcxx-exceptions"` to `cppOptions`
 nativeConfig ~= {
   _.withCOptions(Seq("-std=c17"))
   .withCppOptions(Seq("-std=c++17"))

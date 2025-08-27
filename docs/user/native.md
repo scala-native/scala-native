@@ -197,9 +197,10 @@ and C++ exception handling settings. Each compilation unit (sub-project) or
 library is compiled using settings provided by the end user and also provided
 in the deployment descriptor included in the project. For example, if you
 include C++ code that uses exceptions and provide that setting, you should
-handle all internal exceptions within the boundaries of that code. A user
-could decide to compile their Scala Native project without using C++ exceptions
-and the program could crash.
+handle all internal exceptions within the boundaries of that code. The default
+for the Scala Native build is compiling without using C++ exceptions so
+the program could crash if the module is expecting the user to handle C++
+exceptions.
 
 *Clang command-line options tend to allow the last one specified takes effect,
 overriding any previous conflicting options.*
