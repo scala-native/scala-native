@@ -15,7 +15,7 @@
  * http://creativecommons.org/publicdomain/zero/1.0/
  */
 
-package java.util.concurrent.atomic;
+package java.util.concurrent.atomic
 
 import java.{lang => jl}
 
@@ -120,7 +120,7 @@ class DoubleAdder() extends Striped64 {
   def reset(): Unit = {
     val cs = cells
 
-    base = 0L; // relies on fact that double 0 must have same rep as long
+    base = 0L // relies on fact that double 0 must have same rep as long
     if (cs != null) for (c <- cs) {
       if (c != null) c.reset()
     }
@@ -140,11 +140,11 @@ class DoubleAdder() extends Striped64 {
 
   def sumThenReset: Double = {
     val cs = cells
-    var sum = jl.Double.longBitsToDouble(getAndSetBase(0L));
+    var sum = jl.Double.longBitsToDouble(getAndSetBase(0L))
 
     if (cs != null) for (c <- cs) {
       if (c != null)
-        sum += jl.Double.longBitsToDouble(c.getAndSet(0L));
+        sum += jl.Double.longBitsToDouble(c.getAndSet(0L))
     }
     sum
   }
