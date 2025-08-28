@@ -827,7 +827,7 @@ object Files {
       private val posixDir: Ptr[DIR] = Zone.acquire { implicit z =>
         val ptr = opendir(toCString(dirString))
         if (ptr == null)
-          throw new UncheckedIOException(PosixException(dirString, errno))
+          throw PosixException(dirString, errno)
 
         posixDirClosed = false
         ptr
@@ -862,9 +862,7 @@ object Files {
 
               if (entry == null) {
                 if (errno != 0) {
-                  throw new UncheckedIOException(
-                    PosixException(dirString, errno)
-                  )
+                  throw PosixException(dirString, errno)
                 } else { // End of OS directory stream
                   closeImpl()
                   false
@@ -905,7 +903,7 @@ object Files {
         if (!posixDirClosed) {
           val err = closedir(posixDir)
           if (err != 0)
-            throw new UncheckedIOException(PosixException(dirString, errno))
+            throw PosixException(dirString, errno)
 
           posixDirClosed = true
         }
