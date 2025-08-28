@@ -1,4 +1,4 @@
---- 3.3.7-RC1/scala/runtime/LazyVals.scala
+--- 3.3.5-RC3/scala/runtime/LazyVals.scala
 +++ overrides-3.3/scala/runtime/LazyVals.scala
 @@ -4,44 +4,14 @@
  
@@ -71,14 +71,14 @@
 -      println(s"CAS($t, $offset, $e, $v, $ord)")
 -    val mask = ~(LAZY_VAL_MASK << ord * BITS_PER_LAZY_VAL)
 -    val n = (e & mask) | (v.toLong << (ord * BITS_PER_LAZY_VAL))
--    unsafe.compareAndSwapLong(t, offset, e, n): @nowarn("cat=deprecation")
+-    unsafe.compareAndSwapLong(t, offset, e, n)
 +    unexpectedUsage()
    }
  
    def objCAS(t: Object, offset: Long, exp: Object, n: Object): Boolean = {
 -    if (debug)
 -      println(s"objCAS($t, $exp, $n)")
--    unsafe.compareAndSwapObject(t, offset, exp, n): @nowarn("cat=deprecation")
+-    unsafe.compareAndSwapObject(t, offset, exp, n)
 +    unexpectedUsage()
    }
  
@@ -126,7 +126,7 @@
    def get(t: Object, off: Long): Long = {
 -    if (debug)
 -      println(s"get($t, $off)")
--    unsafe.getLongVolatile(t, off): @nowarn("cat=deprecation")
+-    unsafe.getLongVolatile(t, off)
 +    unexpectedUsage()
    }
  
