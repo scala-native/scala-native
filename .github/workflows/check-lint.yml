@@ -5,7 +5,7 @@ jobs:
   check-lint:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - run: ./scripts/check-lint.sh
         env:
           CLANG_FORMAT_PATH: "/usr/bin/clang-format-14"
