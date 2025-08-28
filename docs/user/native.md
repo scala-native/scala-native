@@ -81,9 +81,9 @@ so it is transparent to the library user.
 Using a library that contains native code can be used in combination
 with the feature above that allows native code in your application.
 
-## EXPERIMENTAL: Deployment Descriptor for passing settings to the compiler
+## Deployment Descriptor for passing settings to the compiler
 
-These are **experimental** features that were added because they are
+These are features that were added because they are
 used internally by Scala Native to simplify the build and organize the
 native code with their respective projects. These features allow a
 library developer that has native code included with their project to
@@ -189,6 +189,30 @@ needed on the Windows platform.
 # path to vendored libunwind a base gc path
 compile.include.paths = platform/posix/libunwind, gc
 ```
+
+## Add C and C++ compiler specific settings
+
+You may add specific platform independent settings such as compiler standards
+and C++ exception handling settings. Each compilation unit (sub-project) or
+library is compiled using settings provided by the end user and also provided
+in the deployment descriptor included in the project. For example, if you
+include C++ code that uses exceptions and provide that setting, you should
+handle all internal exceptions within the boundaries of that code. The default
+for the Scala Native build is compiling without using C++ exceptions so
+the program could crash if the module is expecting the user to handle C++
+exceptions.
+
+*Clang command-line options tend to allow the last one specified takes effect,
+overriding any previous conflicting options.*
+
+``` properties
+# C options
+compile.c.options = -std=c17
+compile.cpp.options = -std=c++17, -fcxx-exceptions
+```
+
+
+
 
 ## Add unique identity to your library for debugging
 
