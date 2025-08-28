@@ -204,75 +204,76 @@ private[atomic] abstract class Striped64 private[atomic] () extends Number {
   ): Unit = {
     var index = _index
     var wasUncontended = _wasUncontended
+
     if (index == 0) {
-      ThreadLocalRandom.current()
-      index = Striped64.getProbe()
+      ThreadLocalRandom.current() // force initialization
+      index = getProbe()
       wasUncontended = true
     }
-    var continue1 = true
-    var continue2 = true
     var collide = false
-    while (continue1) {
-      var cs: Array[Striped64.Cell] = null
-      var c: Striped64.Cell = null
-      var n = 0
-      var v = 0L
-      if ({ cs = cells; n = cs.length; cs != null && n > 0 }) {
-        if ({ c = cs((n - 1) & index); c == null }) {
+
+    while (true) {
+      var cs: Array[Cell] = null
+      var c: Cell = null
+      var n: Int = 0
+      var v: Long = 0
+
+      if (cells != null && { n = cells.length; n > 0 }) {
+        c = cells((n - 1) & index)
+        if (c == null) {
+          var continue = false
           if (cellsBusy == 0) {
-            val r = new Striped64.Cell(doubleToRawLongBits(x))
+            val r = new Cell(doubleToRawLongBits(x))
             if (cellsBusy == 0 && casCellsBusy()) {
               try {
-                var rs: Array[Striped64.Cell] = null
-                var m = 0
-                var j = 0
-                if ({
-                  rs = cells; m = rs.length; j = (m - 1) & index;
-                  rs != null && m > 0 && rs(j) == null
-                }) {
+                var rs: Array[Cell] = null
+                var m: Int = 0
+                var j: Int = 0
+                rs = cells
+                if (rs != null && { m = rs.length; m > 0 } &&
+                    rs({ j = (m - 1) & index; j }) == null) {
                   rs(j) = r
-                  continue1 = false
-                  continue2 = false
+                  return
                 }
-              } finally cellsBusy = 0
-              continue2 = false
+              } finally {
+                cellsBusy = 0
+              }
+              continue = true
             }
           }
-          if (continue2 == true)
-            collide = false
-        } else if (!wasUncontended) wasUncontended = true
-        else if (c.cas({ v = c.value; v }, Striped64._apply(fn, v, x))) {
-          continue1 = false
-          continue2 = false
-        } else if (n >= Striped64.NCPU || (cells != cs)) collide = false
+          if (!continue) collide = false
+        } else if (!wasUncontended) { // CAS already known to fail
+          wasUncontended = true // Continue after rehash
+        } else if (c.cas({ v = c.value; v }, Striped64._apply(fn, v, x)))
+          return
+        else if (n >= NCPU || cells != cs)
+          collide = false // At max size or stale
         else if (!collide) collide = true
         else if (cellsBusy == 0 && casCellsBusy()) {
           try {
-            if (cells == cs)
+            if (cells == cs) { // Expand table unless stale
               cells = Arrays.copyOf(cs, n << 1)
+            }
           } finally {
             cellsBusy = 0
           }
           collide = false
-          continue2 = false
+          return
         }
-        if (continue2 == true)
-          index = Striped64.advanceProbe(index)
-      } else if (cellsBusy == 0 && cells == cs && casCellsBusy())
-        try {
+        index = advanceProbe(index)
+      } else if (cellsBusy == 0 && cells == cs && casCellsBusy()) {
+        try { // Initialize table
           if (cells == cs) {
-            val rs = new Array[Striped64.Cell](2)
-            rs(index & 1) = new Striped64.Cell(doubleToRawLongBits(x))
+            val rs = new Array[Cell](2)
+            rs(index & 1) = new Cell(doubleToLongBits(x))
             cells = rs
-            continue1 = false
+            return
           }
-        } finally {
-          cellsBusy = 0
-        }
-      else if (casBase({ v = base; v }, Striped64._apply(fn, v, x))) {
-        continue1 = false
-        continue2 = false
-      }
+        } finally cellsBusy = 0
+      } else if (casBase( // Fall back on using base
+            { v = base; v },
+            Striped64._apply(fn, v, x)
+          )) return
     }
   }
 }
