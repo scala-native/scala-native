@@ -415,13 +415,13 @@ class TimeTest {
     /* In Issue 4454, localTime() would crash upon return.
      *
      * assertion is to force optimizer to use the return value of localTime().
-     * 1756526400 approximately equals the date 2025-08-30 00:00:00 -0400.
-     * That date is before this test was written, so this test will,
-     * given correct & expected gmtime_r() & mktime(), be executed after then.
+     * 1756526400 approximately equals the date 2025-08-30 04:00:00 UTC/GMT.
+     * Arguments supplied to localTime() are after that (by about 90 minutes).
+     * Useful URL: https://www.unixtimestamp.com/
      */
 
     val expected = 1756526400L
-    val got = localTime(3, 2, 1)
+    val got = localTime(5, 30, 15)
     assertTrue(s"expected: ${expected} < got, ${got} seconds", expected < got)
   }
 
