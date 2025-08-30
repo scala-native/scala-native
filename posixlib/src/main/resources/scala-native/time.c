@@ -106,23 +106,17 @@ _Static_assert(offsetof(struct scalanative_tm, tm_zone) ==
  * and they can not be used here in economic time due to include file Hell!;
  *
  * Hack a "best effort" test on overall size and trust/hope in the
- * field order defined in the header file above.
+ * field order and sizes defined in the header file above.
  *
  * An SN unit test should detect bogus values in at least tm_offset.
  * May this hack's lifetime not exceed mine.
  */
 
-// Magic numbers 44 & 56 are fragile Forbidden Knowledge, bound to break.
+// Magic numbers 56 is fragile Forbidden Knowledge, bound to break.
 
 #if defined(__LP64__)
-#define MAGIC_NUMBER 56
-#elif defined(__LP32__)
-#define MAGIC_NUMBER 44
-#else
-#define MAGIC_NUMBER 0 // Memory mode unknown, force compilation failure
-#endif
-_Static_assert(sizeof(struct tm) == MAGIC_NUMBER, "Unexpected size: struct tm");
-#undef MAGIC_NUMBER
+_Static_assert(sizeof(struct tm) == 56, "Unexpected size: struct tm");
+// size is probably 44 on 32 bit machines. OK, since SN struct tm is larger.
 #endif
 
 // struct timespec

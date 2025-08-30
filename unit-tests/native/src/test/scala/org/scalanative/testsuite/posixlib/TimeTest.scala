@@ -420,7 +420,10 @@ class TimeTest {
      * That date is before this test was written, so this test will,
      * given correct & expected gmtime_r() & mktime(), be executed after then.
      */
-    assertTrue("a1", 1756526400L < localTime(3, 2, 1))
+
+    val expected = 1756526400L
+    val got = localTime(3, 2, 1)
+    assertTrue("expected: ${expected} < got, ${got} seconds", expected < got)
   }
 
   // Issue 4454, Posix Issue 8 increased size of 'struct tm'
