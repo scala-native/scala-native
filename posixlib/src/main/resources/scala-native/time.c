@@ -118,6 +118,7 @@ _Static_assert(offsetof(struct scalanative_tm, tm_zone) ==
 _Static_assert(sizeof(struct tm) == 56, "Unexpected size: struct tm");
 // size is probably 44 on 32 bit machines. OK, since SN struct tm is larger.
 #endif
+#endif
 
 // struct timespec
 _Static_assert(sizeof(struct scalanative_timespec) == sizeof(struct timespec),

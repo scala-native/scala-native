@@ -400,7 +400,6 @@ class TimeTest {
   // Issue 4454, Posix Issue 8 increased size of 'struct tm'
   @Test def structTmSize(): Unit = if (!isWindows) {
     def localTime(hours: Int, minutes: Int, seconds: Int): Long = {
-      // Obsolete comment from issue: allocates 36B instead of required 56B
       val out = stackalloc[time.tm]()
       val timePtr = stackalloc[time.time_t]()
       !timePtr = time.time(null)
@@ -428,40 +427,43 @@ class TimeTest {
 
   // Issue 4454, Posix Issue 8 increased size of 'struct tm'
   @Test def posixIssue8FieldsArePlausible(): Unit = if (!isWindows) {
-    val out = stackalloc[time.tm]()
-    val timePtr = stackalloc[time.time_t]()
-    !timePtr = time.time(null)
-    val localTime: Ptr[time.tm] = time.localtime_r(timePtr, out)
+    if (!is32BitPlatform) {
+      // 32 bit platforms probably do not have fields under test.
+      val out = stackalloc[time.tm]()
+      val timePtr = stackalloc[time.time_t]()
+      !timePtr = time.time(null)
+      val localTime: Ptr[time.tm] = time.localtime_r(timePtr, out)
 
-    /* CI can check if values returned by OS are reasonable.
-     * 
-     * Developers should manually & visually check for values being
-     * correct for the timezone in which the test is being run.
-     */
+      /* CI can check if values returned by OS are reasonable.
+       * 
+       * Developers should manually & visually check for values being
+       * correct for the timezone in which the test is being run.
+       */
 
-    // Theoretical range is +/- 86_400 seconds. Range in practice differs
+      // Theoretical range is +/- 86_400 seconds. Range in practice differs
 
-    val gmtoffValue = localTime.tm_gmtoff
-    val gmtoffLowBound = -43200
-    val gmtoffHighBound = 50400
-    val gmtoffRange = "(${gmtoffLowBound}, ${gmtoffHighBound})"
+      val gmtoffValue = localTime.tm_gmtoff
+      val gmtoffLowBound = -43200
+      val gmtoffHighBound = 50400
+      val gmtoffRange = "(${gmtoffLowBound}, ${gmtoffHighBound})"
 
-    val gmtoffMsg =
-      s"local tm_gmtoff expected in range: ${gmtoffRange} got: ${gmtoffValue}"
+      val gmtoffMsg =
+        s"local tm_gmtoff expected in range: ${gmtoffRange} got: ${gmtoffValue}"
 
-    if (gmtoffValue < 0)
-      assertTrue(gmtoffMsg, gmtoffValue >= gmtoffLowBound)
-    else
-      assertTrue(gmtoffMsg, gmtoffValue <= gmtoffHighBound)
+      if (gmtoffValue < 0)
+        assertTrue(gmtoffMsg, gmtoffValue >= gmtoffLowBound)
+      else
+        assertTrue(gmtoffMsg, gmtoffValue <= gmtoffHighBound)
 
-    // Developers: uncomment to check against value expected for your timezone
-    // fail(s"visual check of tm_gmtoff ${gmtoffValue}")
+      // Developers: uncomment to check against value expected for your timezone
+      // fail(s"visual check of tm_gmtoff ${gmtoffValue}")
 
-    val zoneValue = localTime.tm_zone
+      val zoneValue = localTime.tm_zone
 
-    assertNotNull("tm_zone", zoneValue) // check null vs. "", expect latter
+      assertNotNull("tm_zone", zoneValue) // check null vs. "", expect latter
 
-    // Developers: uncomment to check against value expected for your timezone
-    // fail(s"visual check of tm_zone '${fromCString(zoneValue)}'")
+      // Developers: uncomment to check against value expected for your timezone
+      // fail(s"visual check of tm_zone '${fromCString(zoneValue)}'")
+    }
   }
 }
