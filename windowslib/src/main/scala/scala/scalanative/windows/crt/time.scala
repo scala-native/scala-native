@@ -12,7 +12,20 @@ object time {
   type clock_t = CLong
   type time_t = CLong
   type uid_t = CUnsignedInt
-  type tm = CStruct9[CInt, CInt, CInt, CInt, CInt, CInt, CInt, CInt, CInt]
+
+// format: off
+
+  // Keep in sync with scalanative/posix/time.scala
+  type tm = CStruct11[
+    CInt, CInt, CInt,
+    CInt, CInt, CInt,
+    CInt, CInt, CInt,
+    CLongLong,
+    CString
+  ]
+
+// format: on
+
   type errno_t = CInt
 
   def asctime(time_ptr: Ptr[tm]): CString = extern
