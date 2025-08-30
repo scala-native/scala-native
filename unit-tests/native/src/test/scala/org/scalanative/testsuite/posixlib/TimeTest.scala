@@ -422,7 +422,7 @@ class TimeTest {
 
     val expected = 1756526400L
     val got = localTime(3, 2, 1)
-    assertTrue("expected: ${expected} < got, ${got} seconds", expected < got)
+    assertTrue(s"expected: ${expected} < got, ${got} seconds", expected < got)
   }
 
   // Issue 4454, Posix Issue 8 increased size of 'struct tm'
