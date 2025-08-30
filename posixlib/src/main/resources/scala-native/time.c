@@ -112,10 +112,17 @@ _Static_assert(offsetof(struct scalanative_tm, tm_zone) ==
  * May this hack's lifetime not exceed mine.
  */
 
-// Magic number 56 is fragile Forbidden Knowledge, bound to break.
+// Magic numbers 44 & 56 are fragile Forbidden Knowledge, bound to break.
 
-_Static_assert(sizeof(struct tm) == 56, "Unexpected size: struct tm");
-
+#if defined(__LP64__)
+#define MAGIC_NUMBER 56
+#elif defined(__LP32__)
+#define MAGIC_NUMBER 44
+#else
+#define MAGIC_NUMBER 0 // Memory mode unknown, force compilation failure
+#endif
+_Static_assert(sizeof(struct tm) == MAGIC_NUMBER, "Unexpected size: struct tm");
+#undef MAGIC_NUMBER
 #endif
 
 // struct timespec

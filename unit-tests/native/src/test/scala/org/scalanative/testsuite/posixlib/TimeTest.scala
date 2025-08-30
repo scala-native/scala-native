@@ -439,8 +439,8 @@ class TimeTest {
     // Theoretical range is +/- 86_400 seconds. Range in practice differs
 
     val gmtoffValue = localTime.tm_gmtoff
-    val gmtoffLowBound = -43_200
-    val gmtoffHighBound = 50_400
+    val gmtoffLowBound = -43200
+    val gmtoffHighBound = 50400
     val gmtoffRange = "(${gmtoffLowBound}, ${gmtoffHighBound})"
 
     val gmtoffMsg =
