@@ -87,8 +87,16 @@ _Static_assert(offsetof(struct scalanative_tm, tm_isdst) ==
                    offsetof(struct tm, tm_isdst),
                "offset mismatch: tm.tm_isdst");
 
-#if !defined(__linux__)
+#if defined(__FreeBSD__)
+// timeOps in time.scala fixes up the FreeBSD reversed fields.
+_Static_assert(offsetof(struct scalanative_tm, tm_zone) ==
+                   offsetof(struct tm, tm_gmtoff),
+               "offset mismatch: tm.tm_gmtoff");
 
+_Static_assert(offsetof(struct scalanative_tm, tm_offset) ==
+                   offsetof(struct tm, tm_zone),
+               "offset mismatch: tm.tm_zone");
+#elif !defined(__linux__)
 _Static_assert(offsetof(struct scalanative_tm, tm_gmtoff) ==
                    offsetof(struct tm, tm_gmtoff),
                "offset mismatch: tm.tm_gmtoff");
@@ -96,8 +104,7 @@ _Static_assert(offsetof(struct scalanative_tm, tm_gmtoff) ==
 _Static_assert(offsetof(struct scalanative_tm, tm_zone) ==
                    offsetof(struct tm, tm_zone),
                "offset mismatch: tm.tm_zone");
-
-#else
+#else // Linux
 /* Clang 20 on Linux fails to compile because its 'offsetof()' construct
  * can not find tm_offset & tm_zone.
  *
