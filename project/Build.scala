@@ -129,7 +129,9 @@ object Build {
       case "2.12" => _.settings(disabledDocsSettings)
       case _      => identity
     }
-    .mapBinaryVersions(_ => _.dependsOn(testingCompilerInterface % "test"))
+    .settings(
+      Test / unmanagedSourceDirectories ++= (testingCompilerInterface / Compile / unmanagedSourceDirectories).value
+    )
     .dependsOnSource(nirJVM)
     .dependsOnSource(utilJVM)
     .zippedSettings(Seq("testingCompiler", "nativelib")) {
