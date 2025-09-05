@@ -25,6 +25,8 @@ struct scalanative_tm {
     int tm_wday;
     int tm_yday;
     int tm_isdst;
+    long tm_gmtoff;      // Open Group Issue 8, 2024
+    const char *tm_zone; // Open Group Issue 8, 2024
 };
 
 struct scalanative_timespec {
@@ -44,7 +46,9 @@ struct scalanative_itimerspec {
 #else
 
 // struct tm
-_Static_assert(sizeof(struct scalanative_tm) <= sizeof(struct tm),
+
+// Use "greater than or equals"; untested 32 bit struct tm might be smaller.
+_Static_assert(sizeof(struct scalanative_tm) >= sizeof(struct tm),
                "Unexpected size: struct tm");
 
 _Static_assert(offsetof(struct scalanative_tm, tm_sec) ==
@@ -83,6 +87,46 @@ _Static_assert(offsetof(struct scalanative_tm, tm_isdst) ==
                    offsetof(struct tm, tm_isdst),
                "offset mismatch: tm.tm_isdst");
 
+#if defined(__FreeBSD__)
+// timeOps in time.scala fixes up the FreeBSD reversed fields.
+_Static_assert(offsetof(struct scalanative_tm, tm_zone) ==
+                   offsetof(struct tm, tm_gmtoff),
+               "offset mismatch: tm.tm_gmtoff");
+
+_Static_assert(offsetof(struct scalanative_tm, tm_offset) ==
+                   offsetof(struct tm, tm_zone),
+               "offset mismatch: tm.tm_zone");
+#elif !defined(__linux__)
+_Static_assert(offsetof(struct scalanative_tm, tm_gmtoff) ==
+                   offsetof(struct tm, tm_gmtoff),
+               "offset mismatch: tm.tm_gmtoff");
+
+_Static_assert(offsetof(struct scalanative_tm, tm_zone) ==
+                   offsetof(struct tm, tm_zone),
+               "offset mismatch: tm.tm_zone");
+#else // Linux
+/* Clang 20 on Linux fails to compile because its 'offsetof()' construct
+ * can not find tm_offset & tm_zone.
+ *
+ * Linux /usr/include/x86_64-linux-gnu/bits/types/struct_tm.h publish
+ * those fields if __USE_MISC is defined.  So the OS has the fields
+ * and they can not be used here in economic time due to include file Hell!;
+ *
+ * Hack a "best effort" test on overall size and trust/hope in the
+ * field order and sizes defined in the header file above.
+ *
+ * An SN unit test should detect bogus values in at least tm_offset.
+ * May this hack's lifetime not exceed mine.
+ */
+
+// Magic numbers 56 is fragile Forbidden Knowledge, bound to break.
+
+#if defined(__LP64__)
+_Static_assert(sizeof(struct tm) == 56, "Unexpected size: struct tm");
+// size is probably 44 on 32 bit machines. OK, since SN struct tm is larger.
+#endif
+#endif
+
 // struct timespec
 _Static_assert(sizeof(struct scalanative_timespec) == sizeof(struct timespec),
                "Unexpected size: struct timespec");
@@ -112,19 +156,6 @@ _Static_assert(offsetof(struct scalanative_itimerspec, it_value) ==
 #endif
 #endif // __STDC_VERSION__
 
-static void scalanative_tm_init(struct scalanative_tm *scala_tm,
-                                struct tm *tm) {
-    scala_tm->tm_sec = tm->tm_sec;
-    scala_tm->tm_min = tm->tm_min;
-    scala_tm->tm_hour = tm->tm_hour;
-    scala_tm->tm_mday = tm->tm_mday;
-    scala_tm->tm_mon = tm->tm_mon;
-    scala_tm->tm_year = tm->tm_year;
-    scala_tm->tm_wday = tm->tm_wday;
-    scala_tm->tm_yday = tm->tm_yday;
-    scala_tm->tm_isdst = tm->tm_isdst;
-}
-
 int scalanative_clock_nanosleep(clockid_t clockid, int flags,
                                 struct timespec *request,
                                 struct timespec *remain) {
@@ -134,84 +165,6 @@ int scalanative_clock_nanosleep(clockid_t clockid, int flags,
     errno = ENOTSUP; // No clock_nanosleep() on Apple or OpenBSD.
     return ENOTSUP;
 #endif
-}
-
-size_t scalanative_strftime(char *buf, size_t maxsize, const char *format,
-                            struct scalanative_tm *scala_tm) {
-
-    /* The operating system struct tm can be larger than
-     * the scalanative tm.  On 64 bit GNU or _BSD_SOURCE Linux this
-     * usually is true and beyond easy control.
-     *
-     * The C designated initializer idiom will clear any fields not explicitly
-     * named, such as tm_zone and anything beyond the end of scalanative tm.
-     *
-     * strftime() in Scala Native release mode is particularly sensitive
-     * to garbage beyond the end of the scalanative tm.
-     */
-    struct tm tm = {.tm_sec = scala_tm->tm_sec,
-                    .tm_min = scala_tm->tm_min,
-                    .tm_hour = scala_tm->tm_hour,
-                    .tm_mday = scala_tm->tm_mday,
-                    .tm_mon = scala_tm->tm_mon,
-                    .tm_year = scala_tm->tm_year,
-                    .tm_wday = scala_tm->tm_wday,
-                    .tm_yday = scala_tm->tm_yday,
-                    .tm_isdst = scala_tm->tm_isdst};
-
-    return strftime(buf, maxsize, format, &tm);
-}
-
-// XSI
-char *scalanative_strptime(const char *s, const char *format,
-                           struct scalanative_tm *scala_tm) {
-    /* Note Well:
-     *
-     * Reference: "The Open Group Base Specifications Issue 7, 2018 edition".
-     * A long comment for a deceptively complicated standard and implementation
-     * thereof.
-     *
-     * 1) Hazard Alert! Booby trap ahead.
-     *
-     *    Only the fields in the "scalanative_tm" argument with explicit
-     *    conversion specifiers in the format argument are reliably
-     *    and portably set. Other fields may or may not be written.
-     *
-     *    The "APPLICATION USAGE" section of the specification says
-     *    that the contents of a second call to this method with the
-     *    same "struct tm" are unspecified (implementation dependent).
-     *    The "struct tm" may be updated (leaving some fields untouched)
-     *    or completely overwritten. If the structure is overwritten,
-     *    the value used to overwrite fields not in the format is
-     *    also specified.
-     *
-     *    The implies, but does not state, that the value of fields
-     *    not in the format may stay the same or change.
-     *
-     *    There is no specifier for the is_dst field. The non-binding example
-     *    describes that field as not set by strptime(). This supports, but
-     *    does not specify, the idea that fields not in the format are
-     *    untouched. Caveat Utilitor (user beware)!
-     *
-     *
-     * 2) This implementation is slightly nonconforming, but useful,
-     *    in that the format argument is passed directly to the underlying
-     *    libc. This means that conversions specifiers such as "%Z"
-     *    supported by Posix strftime(), glibc, and macOS will will not
-     *    be reported as parse errors at this level.
-     */
-
-    /* tm and the copy back to scala_tm are needed because strptime()
-     * could and does write beyond the end of a scala_tm.
-     * Initialize all of tm to zero. What strptime() does with fields not in
-     * the format may be implementation dependent.
-     */
-
-    struct tm tm = {0};
-
-    char *result = strptime(s, format, &tm);
-    scalanative_tm_init(scala_tm, &tm);
-    return result;
 }
 
 char **scalanative_tzname() { return tzname; }

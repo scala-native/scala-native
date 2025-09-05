@@ -5,6 +5,8 @@ import scala.scalanative.unsafe._
 import scala.scalanative.posix.sys.types, types._
 import scala.scalanative.posix.signal.sigevent
 
+import scalanative.meta.LinktimeInfo.isFreeBSD
+
 // XSI comment before method indicates it is defined in
 // extended POSIX X/Open System Interfaces, not base POSIX.
 
@@ -39,7 +41,9 @@ trait time extends libc.time {
     CLong // tv_nsec
   ]
 
-  type tm = CStruct9[
+  // Open Group Issue 8, 2024 definition
+  // Keep in sync with posix/time.scala
+  type tm = CStruct11[
     CInt, // tm_sec
     CInt, // tm_min
     CInt, // tm_hour
@@ -48,7 +52,9 @@ trait time extends libc.time {
     CInt, // tm_year
     CInt, // tm_wday
     CInt, // tm_yday
-    CInt // tm_isdst
+    CInt, // tm_isdst
+    CLongLong, // tm_gmtoff  // Open Group Issue 8, 2024, "seconds EAST of UTC"
+    CString // tm_zone // Open Group Issue 8, 2024, "Timezone abbreviation"
   ]
 
   // See separate timer object below for itimerspec type and timer_*() methods.
@@ -103,7 +109,7 @@ trait time extends libc.time {
       remaining: Ptr[timespec]
   ): CInt = extern
 
-  @name("scalanative_strftime")
+//  @name("scalanative_strftime")
   def strftime(
       str: Ptr[CChar],
       count: CSize,
@@ -112,7 +118,7 @@ trait time extends libc.time {
   ): CSize = extern
 
   // XSI
-  @name("scalanative_strptime")
+//  @name("scalanative_strptime")
   def strptime(str: Ptr[CChar], format: CString, time: Ptr[tm]): CString =
     extern
 
@@ -175,6 +181,17 @@ object timeOps {
     def tm_wday: CInt = ptr._7
     def tm_yday: CInt = ptr._8
     def tm_isdst: CInt = ptr._9
+
+    def tm_gmtoff: CLongLong = if (!isFreeBSD)
+      ptr._10
+    else
+      ptr._11.asInstanceOf[CLongLong]
+
+    def tm_zone: CString = if (!isFreeBSD)
+      ptr._11
+    else
+      ptr._10.asInstanceOf[CString]
+
     def tm_sec_=(v: CInt): Unit = ptr._1 = v
     def tm_min_=(v: CInt): Unit = ptr._2 = v
     def tm_hour_=(v: CInt): Unit = ptr._3 = v
@@ -184,6 +201,16 @@ object timeOps {
     def tm_wday_=(v: CInt): Unit = ptr._7 = v
     def tm_yday_=(v: CInt): Unit = ptr._8 = v
     def tm_isdst_=(v: CInt): Unit = ptr._9 = v
+
+    def tm_gmtoff_=(v: CLongLong): Unit = if (!isFreeBSD)
+      ptr._10 = v
+    else
+      ptr._11 = v.asInstanceOf[CString]
+
+    def tm_zone_=(v: CString): Unit = if (!isFreeBSD)
+      ptr._11 = v
+    else
+      ptr._10 = v.asInstanceOf[CLongLong]
   }
 }
 
