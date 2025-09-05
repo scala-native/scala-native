@@ -19,10 +19,14 @@ sealed trait NativeConfig {
   /** The compilation options passed to LLVM. */
   def compileOptions: Seq[String]
 
-  /** C only options including -std=XXX */
+  /** The compilation options used when compiling .c files combined with
+   *  'compileOptions' used on all sources.
+   */
   def cOptions: Seq[String]
 
-  /** C++ only options including -std=XXX */
+  /** The compilation options used when compiling .cpp files combined with
+   *  'compileOptions' used on all sources.
+   */
   def cppOptions: Seq[String]
 
   /** Optional target triple that defines current OS, ABI and CPU architecture.
@@ -503,8 +507,8 @@ object NativeConfig {
         | - clangPP:                 $clangPP
         | - linkingOptions:          ${showSeq(linkingOptions)}
         | - compileOptions:          ${showSeq(compileOptions)}
-        | - cOptions:                $cOptions
-        | - cppOptions:              $cppOptions
+        | - cOptions:                ${showSeq(cOptions)}
+        | - cppOptions:              ${showSeq(cppOptions)}
         | - targetTriple:            $targetTriple
         | - GC:                      $gc
         | - LTO:                     $lto

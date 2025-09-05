@@ -18,10 +18,9 @@ private[scalanative] object LLVM {
 
   // C++14 or newer standard is needed to compile code using Windows API
   // shipped with Windows 10 / Server 2016+ (we do not plan supporting older versions)
-  val stdPrefix = "-std="
-  val defaultWinCppStd = s"${stdPrefix}c++14"
-  val defaultCppStd = s"${stdPrefix}c++11"
-  val defaultCStd = s"${stdPrefix}c11"
+  val defaultWinCppStd = "-std=c++14"
+  val defaultCppStd = "-std=c++11"
+  val defaultCStd = "-std=c11"
 
   /** Object file extension: ".o" */
   val oExt = ".o"
@@ -449,17 +448,19 @@ private[scalanative] object LLVM {
       case Mode.ReleaseFull => "-O3"
     }
 
+  private def isStdFlag(option: String): Boolean =
+    option.startsWith("-std=") || option.startsWith("--std=")
+
   private def cppOptions(
       analysis: ReachabilityAnalysis.Result
   )(implicit config: Config): Seq[String] = {
+    val options = config.compilerConfig.cppOptions
     val defaultStd =
       if (config.targetsWindows) defaultWinCppStd else defaultCppStd
-    val options = config.compilerConfig.cppOptions match {
-      case Seq() =>
-        Seq(defaultStd)
-      case opts =>
-        if (opts.exists(s => s.startsWith(stdPrefix))) opts
-        else defaultStd +: opts
+    val languageStandard = {
+      val hasStdFlag = options.exists(isStdFlag)
+      if (!hasStdFlag) List(defaultStd)
+      else Nil
     }
     // this will change
     val exceptionsHandling =
@@ -468,24 +469,26 @@ private[scalanative] object LLVM {
       } else
         List("-fno-rtti", "-fno-exceptions", "-funwind-tables")
 
-    options ++ exceptionsHandling
+    languageStandard ++ options ++ exceptionsHandling
   }
 
   private def cOptions(
       analysis: ReachabilityAnalysis.Result
   )(implicit config: Config): Seq[String] = {
-    val options = config.compilerConfig.cOptions match {
-      case Seq() => Seq(defaultCStd)
-      case opts  =>
-        if (opts.exists(s => s.startsWith(stdPrefix))) opts
-        else defaultCStd +: opts
+
+    val options = config.compilerConfig.cOptions
+
+    val languageStandard = {
+      val hasStdFlag = options.exists(isStdFlag)
+      if (!hasStdFlag) List(defaultCStd)
+      else Nil
     }
     val exceptionHandling =
       if (isCppRuntimeRequired(config, analysis))
         List("-fexceptions", "-funwind-tables")
       else Nil
 
-    options ++ exceptionHandling
+    languageStandard ++ options ++ exceptionHandling
   }
 
   private def llvmIrFeatures(implicit config: Config): Seq[String] = {

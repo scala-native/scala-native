@@ -96,40 +96,10 @@ private[scalanative] object NativeLib {
           nativeCodePath = nativeCodePath
         )
 
-        def withCOptions(nativeConfig: NativeConfig): NativeConfig =
-          descriptor.cOptions match {
-            case Seq()    => nativeConfig
-            case descOpts =>
-              descOpts.exists(s => s.startsWith(LLVM.stdPrefix)) match {
-                case false => nativeConfig.withCOptions(c => c ++ descOpts)
-                case true  => {
-                  val filtOpts = nativeConfig.cOptions.filterNot(e =>
-                    e.startsWith(LLVM.stdPrefix)
-                  )
-                  nativeConfig.withCOptions(filtOpts ++ descOpts)
-                }
-              }
-          }
-
-        def withCppOptions(nativeConfig: NativeConfig): NativeConfig =
-          descriptor.cppOptions match {
-            case Seq()    => nativeConfig
-            case descOpts =>
-              descOpts.exists(s => s.startsWith(LLVM.stdPrefix)) match {
-                case false => nativeConfig.withCppOptions(c => c ++ descOpts)
-                case true  => {
-                  val filtOpts = nativeConfig.cppOptions.filterNot(e =>
-                    e.startsWith(LLVM.stdPrefix)
-                  )
-                  nativeConfig.withCppOptions(filtOpts ++ descOpts)
-                }
-              }
-          }
-
         config
           .withCompilerConfig(_.withCompileOptions(_ ++ projectSettings))
-          .withCompilerConfig(withCOptions _)
-          .withCompilerConfig(withCppOptions _)
+          .withCompilerConfig(_.withCOptions(_ ++ descriptor.cOptions))
+          .withCompilerConfig(_.withCppOptions(_ ++ descriptor.cppOptions))
       }
     }
 
