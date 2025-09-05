@@ -112,6 +112,24 @@ nativeConfig ~= { c =>
  */
 ```
 
+Certain settings such as standard settings and exception settings only apply to
+C files and C++ files respectively. Refer to the
+[Clang Command Guide](https://clang.llvm.org/docs/CommandGuide/clang.html).
+
+Set C and C++ only options using the folowing in `sbt`:
+
+```scala
+// Example setting standard flags
+// Other C or C++ flags can be added to the `Seq`
+// To enable C++ exceptions, add `"-fcxx-exceptions"` to `cppOptions`
+nativeConfig ~= {
+  _.withCOptions(Seq("-std=c17"))
+  .withCppOptions(Seq("-std=c++17"))
+}
+```
+Note: These apply to all library units where the library has not specified
+settings. See [Native Code in your Application or Library](native.md)
+
 | Since  | Name                    | Type            | Description                                                                   |
 |--------|-------------------------|-----------------|-------------------------------------------------------------------------------|
 | 0.1    | `compile`               | `Analysis`      | Compile Scala code to NIR                                                     |

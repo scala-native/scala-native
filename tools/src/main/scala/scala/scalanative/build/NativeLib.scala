@@ -76,7 +76,7 @@ private[scalanative] object NativeLib {
       config.withCompilerConfig(_.withCompileOptions(_ ++ preprocessorFlags))
     }
 
-    // Apply dependency specific configuratin based on descriptor if found
+    // Apply dependency specific configuration based on descriptor if found
     def withProjectDescriptor(config: Config): Config = {
       findDescriptor(nativeCodePath).fold(config) { filepath =>
         val descriptor = Descriptor.load(filepath) match {
@@ -95,7 +95,11 @@ private[scalanative] object NativeLib {
           analysis = analysis,
           nativeCodePath = nativeCodePath
         )
-        config.withCompilerConfig(_.withCompileOptions(_ ++ projectSettings))
+
+        config
+          .withCompilerConfig(_.withCompileOptions(_ ++ projectSettings))
+          .withCompilerConfig(_.withCOptions(_ ++ descriptor.cOptions))
+          .withCompilerConfig(_.withCppOptions(_ ++ descriptor.cppOptions))
       }
     }
 

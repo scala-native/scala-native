@@ -19,6 +19,16 @@ sealed trait NativeConfig {
   /** The compilation options passed to LLVM. */
   def compileOptions: Seq[String]
 
+  /** The compilation options used when compiling .c files combined with
+   *  'compileOptions' used on all sources.
+   */
+  def cOptions: Seq[String]
+
+  /** The compilation options used when compiling .cpp files combined with
+   *  'compileOptions' used on all sources.
+   */
+  def cppOptions: Seq[String]
+
   /** Optional target triple that defines current OS, ABI and CPU architecture.
    */
   def targetTriple: Option[String]
@@ -159,6 +169,20 @@ sealed trait NativeConfig {
   /** Create a new config with updated compilation options. */
   def withCompileOptions(update: Mapping[Seq[String]]): NativeConfig
 
+  /** Create a new config with given C only options */
+  final def withCOptions(value: Seq[String]): NativeConfig =
+    withCOptions(_ => value)
+
+  /** Create a new config with updated C only options */
+  def withCOptions(update: Mapping[Seq[String]]): NativeConfig
+
+  /** Create a new config with given C++ only options */
+  final def withCppOptions(value: Seq[String]): NativeConfig =
+    withCppOptions(_ => value)
+
+  /** Create a new config with updated C++ only options */
+  def withCppOptions(update: Mapping[Seq[String]]): NativeConfig
+
   /** Create a new config given a target triple. */
   def withTargetTriple(value: Option[String]): NativeConfig
 
@@ -279,6 +303,8 @@ object NativeConfig {
       clangPP = Paths.get(""),
       linkingOptions = Seq.empty,
       compileOptions = Seq.empty,
+      cOptions = Seq.empty,
+      cppOptions = Seq.empty,
       targetTriple = None,
       gc = GC.default,
       lto = LTO.default,
@@ -309,6 +335,8 @@ object NativeConfig {
       clangPP: Path,
       linkingOptions: Seq[String],
       compileOptions: Seq[String],
+      cOptions: Seq[String],
+      cppOptions: Seq[String],
       targetTriple: Option[String],
       gc: GC,
       lto: LTO,
@@ -345,6 +373,12 @@ object NativeConfig {
 
     def withCompileOptions(update: Mapping[Seq[String]]): NativeConfig =
       copy(compileOptions = update(compileOptions).map(_.trim()))
+
+    def withCOptions(update: Mapping[Seq[String]]): NativeConfig =
+      copy(cOptions = update(cOptions).map(_.trim()))
+
+    def withCppOptions(update: Mapping[Seq[String]]): NativeConfig =
+      copy(cppOptions = update(cppOptions).map(_.trim()))
 
     def withTargetTriple(value: Option[String]): NativeConfig = {
       val propertyName = "target.triple"
@@ -473,6 +507,8 @@ object NativeConfig {
         | - clangPP:                 $clangPP
         | - linkingOptions:          ${showSeq(linkingOptions)}
         | - compileOptions:          ${showSeq(compileOptions)}
+        | - cOptions:                ${showSeq(cOptions)}
+        | - cppOptions:              ${showSeq(cppOptions)}
         | - targetTriple:            $targetTriple
         | - GC:                      $gc
         | - LTO:                     $lto

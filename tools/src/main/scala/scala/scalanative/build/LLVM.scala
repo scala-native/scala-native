@@ -16,6 +16,12 @@ import _root_.java.io.IOException
 /** Internal utilities to interact with LLVM command-line tools. */
 private[scalanative] object LLVM {
 
+  // C++14 or newer standard is needed to compile code using Windows API
+  // shipped with Windows 10 / Server 2016+ (we do not plan supporting older versions)
+  val defaultWinCppStd = "-std=c++14"
+  val defaultCppStd = "-std=c++11"
+  val defaultCStd = "-std=c11"
+
   /** Object file extension: ".o" */
   val oExt = ".o"
 
@@ -69,14 +75,10 @@ private[scalanative] object LLVM {
     val workDir = config.workDir
 
     val compiler = if (isCpp) config.clangPP.abs else config.clang.abs
-    val stdflag = {
+    val langOptions = {
       if (isLl) llvmIrFeatures
-      else if (isCpp) {
-        // C++14 or newer standard is needed to compile code using Windows API
-        // shipped with Windows 10 / Server 2016+ (we do not plan supporting older versions)
-        if (config.targetsWindows) Seq("-std=c++14")
-        else Seq("-std=c++11")
-      } else Seq("-std=gnu11")
+      else if (isCpp) cppOptions(analysis)
+      else cOptions(analysis)
     }
     val platformFlags = {
       if (config.targetsMsys) msysExtras
@@ -96,16 +98,6 @@ private[scalanative] object LLVM {
         config.compilerConfig.targetTriple.map(_ => s"-Wno-override-module")
       multithreadingEnabled ++ usingCppExceptions ++ allowTargetOverrrides
     }
-    val exceptionsHandling = {
-      val targetSpecific = if (isCppRuntimeRequired(config, analysis)) {
-        val opt = if (isCpp) List("-fcxx-exceptions") else Nil
-        List("-fexceptions", "-funwind-tables") ++ opt
-      } else {
-        if (isCpp) List("-fno-rtti", "-fno-exceptions", "-funwind-tables")
-        else Nil
-      }
-      targetSpecific
-    }
     // Always generate debug metadata on Windows, it's required for stack traces to work
     val debugFlags =
       if (config.targetsWindows) List("-g")
@@ -116,7 +108,7 @@ private[scalanative] object LLVM {
 
     val flags: Seq[String] =
       buildTargetCompileOpts ++ flto ++ sanitizer ++ target ++
-        stdflag ++ platformFlags ++ debugFlags ++ exceptionsHandling ++
+        langOptions ++ platformFlags ++ debugFlags ++
         configFlags ++ Seq("-fvisibility=hidden", opt) ++
         Seq("-fomit-frame-pointer") ++
         config.compileOptions
@@ -455,6 +447,49 @@ private[scalanative] object LLVM {
       case Mode.ReleaseSize => "-Oz"
       case Mode.ReleaseFull => "-O3"
     }
+
+  private def isStdFlag(option: String): Boolean =
+    option.startsWith("-std=") || option.startsWith("--std=")
+
+  private def cppOptions(
+      analysis: ReachabilityAnalysis.Result
+  )(implicit config: Config): Seq[String] = {
+    val options = config.compilerConfig.cppOptions
+    val defaultStd =
+      if (config.targetsWindows) defaultWinCppStd else defaultCppStd
+    val languageStandard = {
+      val hasStdFlag = options.exists(isStdFlag)
+      if (!hasStdFlag) List(defaultStd)
+      else Nil
+    }
+    // this will change
+    val exceptionsHandling =
+      if (isCppRuntimeRequired(config, analysis)) { // checks for -fcxx-exceptions
+        List("-fexceptions", "-funwind-tables")
+      } else
+        List("-fno-rtti", "-fno-exceptions", "-funwind-tables")
+
+    languageStandard ++ options ++ exceptionsHandling
+  }
+
+  private def cOptions(
+      analysis: ReachabilityAnalysis.Result
+  )(implicit config: Config): Seq[String] = {
+
+    val options = config.compilerConfig.cOptions
+
+    val languageStandard = {
+      val hasStdFlag = options.exists(isStdFlag)
+      if (!hasStdFlag) List(defaultCStd)
+      else Nil
+    }
+    val exceptionHandling =
+      if (isCppRuntimeRequired(config, analysis))
+        List("-fexceptions", "-funwind-tables")
+      else Nil
+
+    languageStandard ++ options ++ exceptionHandling
+  }
 
   private def llvmIrFeatures(implicit config: Config): Seq[String] = {
     implicit def nativeConfig: NativeConfig = config.compilerConfig
