@@ -53,12 +53,12 @@ class DraftScalaProcessTest {
     assertEquals("process exited", "Lorem ipsum", response)
   }
 
-  // @Ignore
+  // @Ignore // Coal face
   @Test def testScalaString_2(): Unit = {
     /* Get a small change closer to the Issue reproducer.
      */
 
-    /* Second pass results, using SN 0.5.9-SNAPSHOT:
+    /* Nth pass results, using SN 0.5.9-SNAPSHOT:
      * 
      *   + ???
      */
@@ -69,15 +69,27 @@ class DraftScalaProcessTest {
      * hung.
      */
 
-    /* Be careful when running manually more than once.  Before second
-     * and subsequent manual runs, one needs to manually delete prior
-     * created .git directories such as, say, ./unit-tests/jvm/.3/.git
-     * Otherwise one gets: warning: re-init: ignored --initial-branch=main
-     * Those fail the assertion and leave one hunting for where the
-     * prior .git was created. They can be quite hard to find & eliminate.
+    assertTrue(
+      s"process response: <${response}>",
+      response.startsWith("Initialized empty Git repository in") ||
+        response.startsWith("Reinitialized existing Git repository in")
+    )
+  }
+
+  @Ignore
+  @Test def testScalaString_3(): Unit = {
+    /* Get a small change closer to the Issue reproducer.
+     */
+
+    /* Nth pass results, using SN 0.5.9-SNAPSHOT:
      * 
-     * This could be handled in a production test. For now I want to
-     * stay as close as I can to the original Issue.
+     *   + ???
+     */
+
+    val response = Seq("git", "init", "-b", "main").!!
+
+    /* If execution gets to assertion, then process has exited, not
+     * hung.
      */
 
     assertTrue(
@@ -87,8 +99,8 @@ class DraftScalaProcessTest {
     )
   }
 
-  //  @Ignore // Appears to fail on Windows
-  @Test def testScalaString_3(): Unit = {
+  @Ignore // Appears to fail on Windows
+  @Test def testScalaString_4(): Unit = {
     /* Start using Scala Process() overload, first with String
      */
 
@@ -103,17 +115,6 @@ class DraftScalaProcessTest {
      * hung.
      */
 
-    /* Be careful when running manually more than once.  Before second
-     * and subsequent manual runs, one needs to manually delete prior
-     * created .git directories such as, say, ./unit-tests/jvm/.3/.git
-     * Otherwise one gets: warning: re-init: ignored --initial-branch=main
-     * Those fail the assertion and leave one hunting for where the
-     * prior .git was created. They can be quite hard to find & eliminate.
-     * 
-     * This could be handled in a production test. For now I want to
-     * stay as close as I can to the original Issue.
-     */
-
     assertTrue(
       s"process response: <${response}>",
       response.startsWith("Initialized empty Git repository in") ||
@@ -122,7 +123,7 @@ class DraftScalaProcessTest {
   }
 
   @Ignore // Appears to hang on Windows SN (only)
-  @Test def testScalaString_4(): Unit = {
+  @Test def testScalaString_5(): Unit = {
     /* Get a small change closer to the Issue reproducer.
      */
 
@@ -153,7 +154,7 @@ class DraftScalaProcessTest {
   }
 
   @Ignore // Un- tested, basic Process(argv, cmd) hangs, do not advance
-  @Test def testScalaString_5(): Unit = {
+  @Test def testScalaString_6(): Unit = {
     /* Add in a logger
      */
 
