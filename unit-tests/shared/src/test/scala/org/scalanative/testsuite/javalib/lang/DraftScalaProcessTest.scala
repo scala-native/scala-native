@@ -53,7 +53,7 @@ class DraftScalaProcessTest {
     assertEquals("process exited", "Lorem ipsum", response)
   }
 
-  @Ignore
+  // @Ignore
   @Test def testScalaString_2(): Unit = {
     /* Get a small change closer to the Issue reproducer.
      */
@@ -87,7 +87,7 @@ class DraftScalaProcessTest {
     )
   }
 
-  //  @Ignore // Coal face
+  //  @Ignore // Appears to fail on Windows
   @Test def testScalaString_3(): Unit = {
     /* Start using Scala Process() overload, first with String
      */
