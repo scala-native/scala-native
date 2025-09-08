@@ -16,6 +16,8 @@ import org.junit.Ignore
 
 // import org.scalanative.testsuite.utils.Platform
 
+import java.io.File
+
 import scala.sys.process // specify the process class & its methods we want.
 import scala.sys.process._
 
@@ -50,6 +52,7 @@ class DraftScalaProcessTest {
     assertEquals("process exited", "Lorem ipsum", response)
   }
 
+  @Ignore
   @Test def testScalaString_2(): Unit = {
     /* Get a small change closer to the Issue reproducer.
      */
@@ -70,15 +73,49 @@ class DraftScalaProcessTest {
      * created .git directories such as, say, ./unit-tests/jvm/.3/.git
      * Otherwise one gets: warning: re-init: ignored --initial-branch=main
      * Those fail the assertion and leave one hunting for where the
-     * prior .git was created.
+     * prior .git was created. They can be quite hard to find & eliminate.
      * 
      * This could be handled in a production test. For now I want to
      * stay as close as I can to the original Issue.
      */
 
     assertTrue(
-      "process response",
-      response.startsWith("Initialized empty Git repository in")
+      s"process response: <${response}>",
+      response.startsWith("Initialized empty Git repository in") ||
+        response.startsWith("Reinitialized existing Git repository in")
     )
   }
+
+  @Test def testScalaString_3(): Unit = {
+    /* Get a small change closer to the Issue reproducer.
+     */
+
+    /* Third pass results, using SN 0.5.9-SNAPSHOT:
+     * 
+     *   + Appears to work,
+     * 
+     *     Runs after the first may see a non-fatal warning from Git:
+     *       warning: re-init: ignored --initial-branch=main
+     *     That is OK.
+     */
+
+    val argv = Seq("git", "init", "-b", "main")
+    val cwd: Option[File] = None
+
+    val response = sys.process.Process(argv, None).!!
+
+    /* If execution gets to assertion, then process has exited, not
+     * hung.
+     *
+     * If execution gets past assertion, then proceess has done expected
+     * work, then exited.
+     */
+
+    assertTrue(
+      "process response",
+      response.startsWith("Initialized empty Git repository in") ||
+        response.startsWith("Reinitialized existing Git repository in")
+    )
+  }
+
 }
