@@ -37,7 +37,9 @@ class DraftScalaProcessTest {
     // Jitter the name to ease running the Test manually more than once.
     // Hack around lack of usable java.util.UUID on Scala Native,
     val rng = new ju.Random()
-    val suffix = rng.nextLong(0, jl.Long.MAX_VALUE).toString
+
+    // Use only methods available in Java 8, nothing from RandomGenerator.
+    val suffix = jl.Math.abs(rng.nextLong()).toString
     val dirName = s"WindowsProcessDebug_${suffix}"
 
     // 'mkdir' takes no input and gives no output.
