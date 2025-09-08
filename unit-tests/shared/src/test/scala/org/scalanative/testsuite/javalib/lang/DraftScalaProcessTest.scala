@@ -20,6 +20,7 @@ import java.io.File
 
 import scala.sys.process // specify the process class & its methods we want.
 import scala.sys.process._
+import scala.sys.process.ProcessLogger._
 
 class DraftScalaProcessTest {
 
@@ -86,11 +87,77 @@ class DraftScalaProcessTest {
     )
   }
 
+  //  @Ignore // Coal face
   @Test def testScalaString_3(): Unit = {
+    /* Start using Scala Process() overload, first with String
+     */
+
+    /* Nth pass results, using SN 0.5.9-SNAPSHOT:
+     * 
+     *   + ???
+     */
+
+    val response = sys.process.Process("git init -b main").!!
+
+    /* If execution gets to assertion, then process has exited, not
+     * hung.
+     */
+
+    /* Be careful when running manually more than once.  Before second
+     * and subsequent manual runs, one needs to manually delete prior
+     * created .git directories such as, say, ./unit-tests/jvm/.3/.git
+     * Otherwise one gets: warning: re-init: ignored --initial-branch=main
+     * Those fail the assertion and leave one hunting for where the
+     * prior .git was created. They can be quite hard to find & eliminate.
+     * 
+     * This could be handled in a production test. For now I want to
+     * stay as close as I can to the original Issue.
+     */
+
+    assertTrue(
+      s"process response: <${response}>",
+      response.startsWith("Initialized empty Git repository in") ||
+        response.startsWith("Reinitialized existing Git repository in")
+    )
+  }
+
+  @Ignore // Appears to hang on Windows SN (only)
+  @Test def testScalaString_4(): Unit = {
     /* Get a small change closer to the Issue reproducer.
      */
 
-    /* Third pass results, using SN 0.5.9-SNAPSHOT:
+    /* Nth pass results, using SN 0.5.9-SNAPSHOT:
+     * 
+     *   + Appears to hang on Windows SN (only)
+     *      ???
+
+     */
+
+    val argv = Seq("git", "init", "-b", "main")
+    val cwd: Option[File] = None
+
+    val response = sys.process.Process(argv, None).!!
+
+    /* If execution gets to assertion, then process has exited, not
+     * hung.
+     *
+     * If execution gets past assertion, then process has done expected
+     * work, then exited.
+     */
+
+    assertTrue(
+      s"process response: <${response}>",
+      response.startsWith("Initialized empty Git repository in") ||
+        response.startsWith("Reinitialized existing Git repository in")
+    )
+  }
+
+  @Ignore // Un- tested, basic Process(argv, cmd) hangs, do not advance
+  @Test def testScalaString_5(): Unit = {
+    /* Add in a logger
+     */
+
+    /* Nth pass results, using SN 0.5.9-SNAPSHOT:
      * 
      *   + Appears to work,
      * 
@@ -102,17 +169,20 @@ class DraftScalaProcessTest {
     val argv = Seq("git", "init", "-b", "main")
     val cwd: Option[File] = None
 
-    val response = sys.process.Process(argv, None).!!
+    val logger =
+      ProcessLogger(_ => (), x => System.err.append("\n> ").append(s"$x\n\n"))
+
+    val response = sys.process.Process(argv, None).!!(logger)
 
     /* If execution gets to assertion, then process has exited, not
      * hung.
      *
-     * If execution gets past assertion, then proceess has done expected
+     * If execution gets past assertion, then process has done expected
      * work, then exited.
      */
 
     assertTrue(
-      "process response",
+      s"process logger response): <${response}>",
       response.startsWith("Initialized empty Git repository in") ||
         response.startsWith("Reinitialized existing Git repository in")
     )
