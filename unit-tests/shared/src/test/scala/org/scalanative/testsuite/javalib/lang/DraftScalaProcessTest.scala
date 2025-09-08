@@ -26,7 +26,7 @@ class DraftScalaProcessTest {
 
   // @Ignore  // Coal face
   @Test def testScalaString_0(): Unit = {
-    // Avoid doing IO; see if process exits cleanly
+    // Avoid doing IO; see if process exits cleanly.
 
     /* Try to factor out parent/child pipe I/O handling
      * I/O goes to shared stdout, not write end of pipe.
