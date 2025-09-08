@@ -25,6 +25,29 @@ import scala.sys.process.ProcessLogger._
 class DraftScalaProcessTest {
 
   // @Ignore  // Coal face
+  @Test def testScalaString_0(): Unit = {
+    // Avoid doing IO; see if process exits cleanly
+
+    /* Try to factor out parent/child pipe I/O handling
+     * I/O goes to shared stdout, not write end of pipe.
+     */
+
+    // 'mkdir' takes no input and gives no output.
+    // ToDo: need to make more robust to being run more than once.
+    //       Perhaps by adding a Random suffix. Lets see what time
+    //       waiting for CI runs brings.
+
+    val proc = "mkdir WindowsProcessDebug".run(connectInput = false)
+
+    Thread.sleep(1000 * 20) // seconds, be generous to avoid flakey failures
+
+    if (proc.isAlive()) {
+      proc.destroy()
+      fail("process should have exited but is alive")
+    }
+  }
+
+  @Ignore // Fails on Windows
   @Test def testScalaString_1(): Unit = {
     /* A simplified version of the reproducer in the base Issue.
      *
