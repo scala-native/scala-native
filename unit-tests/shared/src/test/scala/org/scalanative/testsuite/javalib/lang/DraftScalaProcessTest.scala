@@ -17,6 +17,7 @@ import org.junit.Ignore
 // import org.scalanative.testsuite.utils.Platform
 
 import java.io.File
+import java.util.UUID
 
 import scala.sys.process // specify the process class & its methods we want.
 import scala.sys.process._
@@ -26,18 +27,20 @@ class DraftScalaProcessTest {
 
   // @Ignore  // Coal face
   @Test def testScalaString_0(): Unit = {
-    // Avoid doing IO; see if process exits cleanly.
-
-    /* Try to factor out parent/child pipe I/O handling
+    /* Avoid doing IO; see if process exits cleanly.
+     * 
+     * Try to factor out parent/child pipe I/O handling
      * I/O goes to shared stdout, not write end of pipe.
      */
 
-    // 'mkdir' takes no input and gives no output.
-    // ToDo: need to make more robust to being run more than once.
-    //       Perhaps by adding a Random suffix. Lets see what time
-    //       waiting for CI runs brings.
+    // Jitter the name to ease running the Test manually more than once.
+    val uuid = UUID.randomUUID().toString()
+    val dirName = s"WindowsProcessDebug_${uuid}"
 
-    val proc = "mkdir WindowsProcessDebug".run(connectInput = false)
+    // 'mkdir' takes no input and gives no output.
+    val commandString = s"mkdir ${dirName}"
+
+    val proc = commandString.run(connectInput = false)
 
     Thread.sleep(1000 * 20) // seconds, be generous to avoid flakey failures
 
