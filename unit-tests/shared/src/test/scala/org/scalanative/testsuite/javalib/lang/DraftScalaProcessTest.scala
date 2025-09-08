@@ -24,7 +24,7 @@ import scala.sys.process.ProcessLogger._
 
 class DraftScalaProcessTest {
 
-  @Ignore
+  // @Ignore  // Coal face
   @Test def testScalaString_1(): Unit = {
     /* A simplified version of the reproducer in the base Issue.
      *
@@ -36,24 +36,18 @@ class DraftScalaProcessTest {
      *   - ProcessLogger
      */
 
-    /* First pass results, using SN 0.5.9-SNAPSHOT:
-     * 
-     *   + the same string works for Linux, macOS, & Windows on
-     *     both JDK & Scala Native
-     * 
-     *   + The assert is reached on {Linux, macOS, & Windows} x {JDK, SN}
-     *     No apparent hang in this basic step.
-     */
-
     val response = "git --version".!!
 
-    /* If execution gets to assertion, then process has exited, not
-     * hung. An apparent failure here is really a success.
+    /* If execution gets past assertion, then process has done expected
+     * work, then exited.
      */
-    assertEquals("process exited", "Lorem ipsum", response)
+    assertTrue(
+      s"process response: <${response}>",
+      response.startsWith("git version ")
+    )
   }
 
-  // @Ignore // Coal face
+  @Ignore
   @Test def testScalaString_2(): Unit = {
     /* Get a small change closer to the Issue reproducer.
      */
