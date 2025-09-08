@@ -17,7 +17,8 @@ import org.junit.Ignore
 // import org.scalanative.testsuite.utils.Platform
 
 import java.io.File
-import java.util.UUID
+import java.{lang => jl}
+import java.{util => ju}
 
 import scala.sys.process // specify the process class & its methods we want.
 import scala.sys.process._
@@ -34,8 +35,10 @@ class DraftScalaProcessTest {
      */
 
     // Jitter the name to ease running the Test manually more than once.
-    val uuid = UUID.randomUUID().toString()
-    val dirName = s"WindowsProcessDebug_${uuid}"
+    // Hack around lack of usable java.util.UUID on Scala Native,
+    val rng = new ju.Random()
+    val suffix = rng.nextLong(0, jl.Long.MAX_VALUE).toString
+    val dirName = s"WindowsProcessDebug_${suffix}"
 
     // 'mkdir' takes no input and gives no output.
     val commandString = s"mkdir ${dirName}"
