@@ -26,7 +26,18 @@ import scala.sys.process.ProcessLogger._
 
 class DraftScalaProcessTest {
 
-  // @Ignore  // Coal face
+  lazy val rng = new ju.SplittableRandom()
+
+  def makeRandomDirName(): String = {
+    // Jitter the name to ease running the Test manually more than once.
+    // Hack around lack of usable java.util.UUID on Scala Native,
+
+    val suffix = rng.nextLong(0L, jl.Long.MAX_VALUE).toString
+
+    s"WindowsProcessDebug_${suffix}"
+  }
+
+  @Ignore // Passes, JVM & SN
   @Test def testScalaString_0(): Unit = {
     /* Avoid doing IO; see if process exits cleanly.
      * 
@@ -34,13 +45,7 @@ class DraftScalaProcessTest {
      * I/O goes to shared stdout, not write end of pipe.
      */
 
-    // Jitter the name to ease running the Test manually more than once.
-    // Hack around lack of usable java.util.UUID on Scala Native,
-    val rng = new ju.Random()
-
-    // Use only methods available in Java 8, nothing from RandomGenerator.
-    val suffix = jl.Math.abs(rng.nextLong()).toString
-    val dirName = s"WindowsProcessDebug_${suffix}"
+    val dirName = makeRandomDirName()
 
     // 'mkdir' takes no input and gives no output.
     val commandString = s"mkdir ${dirName}"
@@ -53,6 +58,41 @@ class DraftScalaProcessTest {
       proc.destroy()
       fail("process should have exited but is alive")
     }
+  }
+
+  // @Ignore  // Coal face
+  @Test def testScalaString_0_A(): Unit = {
+    /* Avoid doing IO; see if process exits cleanly.
+     * 
+     * Try to factor out parent/child pipe I/O handling
+     * I/O goes to shared stdout, not write end of pipe.
+     */
+
+    val dirName = makeRandomDirName()
+
+    // 'mkdir' takes no input and gives no output.
+    val commandString = s"mkdir ${dirName}"
+
+    // 'mkdir' takes no input and gives no output.
+    //  Use .!! to connect parent/child I/Os but never read or write on them
+
+    val proc = sys.process.Process(commandString)
+
+    // Lee: Careful lazyLines is Scala 2.13 & 3 only.
+    //      Will fail to compile in CI for Scala 2.12, but the other
+    //      cases are may tell me something.
+
+    // Will throw Exception if process exits with error code.
+    val response = proc.lazyLines
+
+    var count = 0
+
+    response.foreach(x => {
+      assertEquals("foreach", "nevermore", x) // Fail if any substantial I/O
+      count += 1
+    })
+
+    fail("Expected case: Make it evident that process exited")
   }
 
   @Ignore // Fails on Windows
