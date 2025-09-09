@@ -14,7 +14,7 @@ import org.junit.Test
 import org.junit.Assert._
 import org.junit.Ignore
 
-// import org.scalanative.testsuite.utils.Platform
+import org.scalanative.testsuite.utils.Platform
 
 import java.io.File
 import java.{lang => jl}
@@ -85,14 +85,20 @@ class DraftScalaProcessTest {
     // Will throw Exception if process exits with error code.
     val response = proc.lazyLines
 
-    var count = 0
-
     response.foreach(x => {
       assertEquals("foreach", "nevermore", x) // Fail if any substantial I/O
-      count += 1
     })
 
-    fail("Expected case: Make it evident that process exited")
+    /* Contorted DEBUG logic ahead. Focus attention on Windows SN case.
+     * If the process is exiting correctly, it should always get to the
+     * fail(), that is overall Success. If process hangs, then a
+     * successful Windows CI run is really failure.
+     */
+    if (!Platform.executingInJVM)
+      if (Platform.isWindows) {
+        // Sometimes Success is best revealed by Failure.
+        fail("Expected case: Make it evident that Windows process exited")
+      }
   }
 
   @Ignore // Fails on Windows
