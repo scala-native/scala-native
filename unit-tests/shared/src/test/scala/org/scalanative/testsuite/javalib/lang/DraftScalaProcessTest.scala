@@ -60,7 +60,7 @@ class DraftScalaProcessTest {
     }
   }
 
-  // @Ignore  // Coal face
+  @Ignore
   @Test def testScalaString_0_A(): Unit = {
     /* Avoid doing IO; see if process exits cleanly.
      * 
@@ -98,6 +98,44 @@ class DraftScalaProcessTest {
       if (Platform.isWindows) {
         // Sometimes Success is best revealed by Failure.
         fail("Expected case: Make it evident that Windows process exited")
+      }
+  }
+
+  // @Ignore  // Coal face
+  @Test def testScalaString_0_B(): Unit = {
+    /* Do one line of I/O using lazyList; see if process exits cleanly.
+     */
+
+    val commandString = "git init -b main"
+
+    val proc = sys.process.Process(commandString)
+
+    // Lee: Careful lazyLines is Scala 2.13 & 3 only.
+    //      Will fail to compile in CI for Scala 2.12, but the other
+    //      cases are may tell me something.
+
+    // Will throw Exception if process exits with error code.
+    val response = proc.lazyLines
+
+    response
+      .take(1)
+      .foreach(x => {
+        assertTrue(
+          s"foreach: '${x}'",
+          (x.startsWith("Initialized empty Git repository in") ||
+            x.startsWith("Reinitialized existing Git repository in"))
+        )
+      })
+
+    /* Contorted DEBUG logic ahead. Focus attention on Windows SN case.
+     * If the process is exiting correctly, it should always get to the
+     * fail(), that is overall Success. If process hangs, then a
+     * successful Windows CI run is really failure.
+     */
+    if (!Platform.executingInJVM)
+      if (Platform.isWindows) {
+        // Sometimes Success is best revealed by Failure.
+        fail("Expected case 0_B: Make it evident that Windows process exited")
       }
   }
 
