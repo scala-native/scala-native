@@ -60,13 +60,15 @@ class DraftScalaProcessTest {
     }
   }
 
+  /* // FIXME -- Bypass lazyLines and use lineStream - Begin
+   //   To see is Scala 2.12 lineStream works.
   @Ignore
   @Test def testScalaString_0_A(): Unit = {
     /* Avoid doing IO; see if process exits cleanly.
-     * 
-     * Try to factor out parent/child pipe I/O handling
-     * I/O goes to shared stdout, not write end of pipe.
-     */
+   * 
+   * Try to factor out parent/child pipe I/O handling
+   * I/O goes to shared stdout, not write end of pipe.
+   */
 
     val dirName = makeRandomDirName()
 
@@ -90,10 +92,10 @@ class DraftScalaProcessTest {
     })
 
     /* Contorted DEBUG logic ahead. Focus attention on Windows SN case.
-     * If the process is exiting correctly, it should always get to the
-     * fail(), that is overall Success. If process hangs, then a
-     * successful Windows CI run is really failure.
-     */
+   * If the process is exiting correctly, it should always get to the
+   * fail(), that is overall Success. If process hangs, then a
+   * successful Windows CI run is really failure.
+   */
     if (!Platform.executingInJVM)
       if (Platform.isWindows) {
         // Sometimes Success is best revealed by Failure.
@@ -104,7 +106,7 @@ class DraftScalaProcessTest {
   @Ignore
   @Test def testScalaString_0_B(): Unit = {
     /* Do one line of I/O using lazyList; see if process exits cleanly.
-     */
+   */
 
     val commandString = "git init -b main"
 
@@ -128,10 +130,10 @@ class DraftScalaProcessTest {
       })
 
     /* Contorted DEBUG logic ahead. Focus attention on Windows SN case.
-     * If the process is exiting correctly, it should always get to the
-     * fail(), that is overall Success. If process hangs, then a
-     * successful Windows CI run is really failure.
-     */
+   * If the process is exiting correctly, it should always get to the
+   * fail(), that is overall Success. If process hangs, then a
+   * successful Windows CI run is really failure.
+   */
     if (!Platform.executingInJVM)
       if (Platform.isWindows) {
         // Sometimes Success is best revealed by Failure.
@@ -142,8 +144,8 @@ class DraftScalaProcessTest {
   @Ignore // Appears to pass on Windows Scala 3 & 2.13
   @Test def testScalaString_0_C(): Unit = {
     /* This is testScalaString_2() with a stronger test for process exit.
-     * Do results match?
-     */
+   * Do results match?
+   */
 
     val commandString = "git init -b main"
 
@@ -158,10 +160,10 @@ class DraftScalaProcessTest {
     )
 
     /* Contorted DEBUG logic ahead. Focus attention on Windows SN case.
-     * If the process is exiting correctly, it should always get to the
-     * fail(), that is overall Success. If process hangs, then a
-     * successful Windows CI run is really failure.
-     */
+   * If the process is exiting correctly, it should always get to the
+   * fail(), that is overall Success. If process hangs, then a
+   * successful Windows CI run is really failure.
+   */
     if (!Platform.executingInJVM)
       if (Platform.isWindows) {
         // Sometimes Success is best revealed by Failure.
@@ -172,11 +174,11 @@ class DraftScalaProcessTest {
   @Ignore // Appears to pass on Windows Scala 3 & 2.13
   @Test def testScalaString_0_D(): Unit = {
     /* This is testScalaString_0_B modified to use
-     * a Process class overload which is closer to the Issue reproducer.
-     * The method of starting & reading from the resultant ProcessBuilder
-     * is modified to be what worked in testScalaString_0_A.
-     * Do things continue to work?
-     */
+   * a Process class overload which is closer to the Issue reproducer.
+   * The method of starting & reading from the resultant ProcessBuilder
+   * is modified to be what worked in testScalaString_0_A.
+   * Do things continue to work?
+   */
 
     val argv = Seq("git", "init", "-b", "main")
     val cwd: Option[File] = None
@@ -201,16 +203,18 @@ class DraftScalaProcessTest {
       })
 
     /* Contorted DEBUG logic ahead. Focus attention on Windows SN case.
-     * If the process is exiting correctly, it should always get to the
-     * fail(), that is overall Success. If process hangs, then a
-     * successful Windows CI run is really failure.
-     */
+   * If the process is exiting correctly, it should always get to the
+   * fail(), that is overall Success. If process hangs, then a
+   * successful Windows CI run is really failure.
+   */
     if (!Platform.executingInJVM)
       if (Platform.isWindows) {
         // Sometimes Success is best revealed by Failure.
         fail("Expected case 0_D: Make it evident that Windows process exited")
       }
   }
+
+   */ // FIXME -- Bypass lazyLines and use lineStream - End
 
   // @Ignore  // Coal face
   @Test def testScalaString_0_E(): Unit = {
@@ -224,10 +228,6 @@ class DraftScalaProcessTest {
     val cwd: Option[File] = None
 
     val proc = sys.process.Process(argv, None)
-
-    // Lee: Careful lazyLines is Scala 2.13 & 3 only.
-    //      Will fail to compile in CI for Scala 2.12, but the other
-    //      cases are may tell me something.
 
     // Will throw Exception if process exits with error code.
     val response = proc.lineStream
