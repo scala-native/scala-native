@@ -267,9 +267,9 @@ class DraftJavaProcessTest {
     }
   }
 
-  // @Ignore
+  @Ignore
   @Test def testJavaString_C_2(): Unit = {
-    /* This is testJavaString_C_2 with the Thread.sleep() commented out.
+    /* This is testJavaString_C_1 with the Thread.sleep() commented out.
      * Mixup the timing.
      */
 
@@ -313,6 +313,61 @@ class DraftJavaProcessTest {
         // Sometimes Success is best revealed by Failure.
         fail("Expected case C_2: Make it evident that Windows process exited")
       }
+
+    if (proc.isAlive()) {
+      proc.destroy()
+      fail("process should have exited but is alive")
+    }
+  }
+
+  // @Ignore
+  @Test def testJavaString_C_3(): Unit = {
+    /* This is testJavaString_C_2 with the Thread.sleep() moved
+     * after the I/O. Those routines should block until the
+     * expected data is ready, read it, pass the assertion, and
+     * continue to the sleep(). That is, the test should not
+     * block/hang in the I/O.
+     *
+     * The sleep() gives plenty of time for the child process to
+     * exit before being checked for isAlive().
+     *
+     * That is the theory any way.
+     */
+
+    // No List.of() in Java 8, so initialize the traditional hard way.
+    val cmd = new ju.ArrayList[String]()
+    cmd.add("git")
+    cmd.add("init")
+    cmd.add("-b")
+    cmd.add("main")
+
+    val proc = new jl.ProcessBuilder(cmd).start()
+
+    // ToDo - make sure these eventually get closed,
+    //   probably with a Try/finally which closes br
+    //   Leave hanging for now to see if underling layers, especially
+    //   process pipe InputStream report EOF.
+    val is = proc.getInputStream()
+
+    val bldr = new jl.StringBuilder()
+    val processor = MockScalaBasicIO.processFully(s => bldr.append(s))
+
+    processor(is)
+
+    val response = bldr.toString()
+
+    assertTrue(
+      s"process response: <${response}>",
+      response.startsWith("Initialized empty Git repository in") ||
+        response.startsWith("Reinitialized existing Git repository in")
+    )
+
+    // On Windows, the wall clock time between the  when a process
+    // closes its write pipe (EOF) and the time it actually exits
+    // and proc.isAlive() becomes "false" seems to be longer than one
+    // would expect.
+    //
+    Thread.sleep(1000 * 20) // seconds, be generous to avoid flakey failures
 
     if (proc.isAlive()) {
       proc.destroy()
