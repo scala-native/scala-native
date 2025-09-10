@@ -18,6 +18,7 @@ import org.scalanative.testsuite.utils.Platform
 
 // import java.io.File
 import java.{lang => jl}
+import java.{io => ji}
 import java.{util => ju}
 
 // import scala.sys.process // specify the process class & its methods we want.
@@ -37,8 +38,8 @@ class DraftJavaProcessTest {
     s"WindowsProcessDebug_SNjavalib_${suffix}"
   }
 
-  // @Ignore
-  @Test def testJavaString_1(): Unit = {
+  @Ignore // Passes JVM & SN
+  @Test def testJavaString_A_1(): Unit = {
     /* Avoid doing IO; see if process exits cleanly.
      * 
      * Try to factor out parent/child pipe I/O handling
@@ -49,7 +50,8 @@ class DraftJavaProcessTest {
 
     // 'mkdir' takes no input and gives no output.
 
-    val cmd = new ju.ArrayList[String](2)
+    // No List.of() in Java 8, so initialize the traditional hard way.
+    val cmd = new ju.ArrayList[String]()
     cmd.add("mkdir")
     cmd.add(s"${dirName}")
 
@@ -62,4 +64,56 @@ class DraftJavaProcessTest {
       fail("process should have exited but is alive")
     }
   }
+
+  // @Ignore
+  @Test def testJavaString_B_1(): Unit = {
+    /* ???
+     */
+
+    // No List.of() in Java 8, so initialize the traditional hard way.
+    val cmd = new ju.ArrayList[String]()
+    cmd.add("git")
+    cmd.add("init")
+    cmd.add("-b")
+    cmd.add("main")
+
+    val proc = new jl.ProcessBuilder(cmd).start()
+
+    Thread.sleep(1000 * 10) // seconds, be generous to avoid flakey failures
+
+    val is = proc.getInputStream()
+    val isr = new ji.InputStreamReader(is)
+
+    val cbufLen = 256
+    val cbuf = new Array[Char](cbufLen)
+
+    val nIsrRead = isr.read(cbuf, 0, cbufLen)
+
+    assertTrue("nIsrRead: ${nIsrRead}", nIsrRead > 0)
+
+    val response = String.valueOf(ju.Arrays.copyOfRange(cbuf, 0, nIsrRead))
+
+    assertTrue(
+      s"process response: <${response}>",
+      response.startsWith("Initialized empty Git repository in") ||
+        response.startsWith("Reinitialized existing Git repository in")
+    )
+
+    /* Contorted DEBUG logic ahead. Focus attention on Windows SN case.
+     * If the process is exiting correctly, it should always get to the
+     * fail(), that is overall Success. If process hangs, then a
+     * successful Windows CI run is really failure.
+     */
+    if (!Platform.executingInJVM)
+      if (Platform.isWindows) {
+        // Sometimes Success is best revealed by Failure.
+        fail("Expected case B_1: Make it evident that Windows process exited")
+      }
+
+    if (proc.isAlive()) {
+      proc.destroy()
+      fail("process should have exited but is alive")
+    }
+  }
+
 }
