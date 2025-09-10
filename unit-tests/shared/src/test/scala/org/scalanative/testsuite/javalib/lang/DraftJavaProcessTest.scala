@@ -87,17 +87,21 @@ class DraftJavaProcessTest {
     val cbufLen = 256
     val cbuf = new Array[Char](cbufLen)
 
-    val nIsrRead = isr.read(cbuf, 0, cbufLen)
+    val nIsrRead_1 = isr.read(cbuf, 0, cbufLen)
 
-    assertTrue("nIsrRead: ${nIsrRead}", nIsrRead > 0)
+    assertTrue("nIsrRead: ${nIsrRead_1}", nIsrRead_1 > 0)
 
-    val response = String.valueOf(ju.Arrays.copyOfRange(cbuf, 0, nIsrRead))
+    val response = String.valueOf(ju.Arrays.copyOfRange(cbuf, 0, nIsrRead_1))
 
     assertTrue(
       s"process response: <${response}>",
       response.startsWith("Initialized empty Git repository in") ||
         response.startsWith("Reinitialized existing Git repository in")
     )
+
+    val nIsrRead_2 = isr.read(cbuf, 0, cbufLen)
+
+    assertEquals("nIsrReadEof:", -1, nIsrRead_2)
 
     /* Contorted DEBUG logic ahead. Focus attention on Windows SN case.
      * If the process is exiting correctly, it should always get to the
