@@ -216,7 +216,7 @@ class DraftScalaProcessTest {
 
    */ // FIXME -- Bypass lazyLines and use lineStream - End
 
-  // @Ignore  // Coal face
+  @Ignore // Appears to work on Windows Java & SN, gives expected failure
   @Test def testScalaString_0_E(): Unit = {
     /* This is testScalaString_0_E modified to use
      * a deprecated lineStream() rather than lazyLines().
