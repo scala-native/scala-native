@@ -120,4 +120,64 @@ class DraftJavaProcessTest {
     }
   }
 
+  // @Ignore
+  @Test def testJavaString_B_2(): Unit = {
+    /* ???
+     */
+
+    // No List.of() in Java 8, so initialize the traditional hard way.
+    val cmd = new ju.ArrayList[String]()
+    cmd.add("git")
+    cmd.add("init")
+    cmd.add("-b")
+    cmd.add("main")
+
+    val proc = new jl.ProcessBuilder(cmd).start()
+
+    Thread.sleep(1000 * 10) // seconds, be generous to avoid flakey failures
+
+    // ToDo - make sure these eventually get closed,
+    //   probably with a Try/finally which closes br
+    //   Leave hanging for now to see if underling layers, especially
+    //   process pipe InputStream report EOF.
+    val is = proc.getInputStream()
+    val isr = new ji.InputStreamReader(is)
+    val br = new ji.BufferedReader(isr)
+
+    val cbufLen = 256
+    val cbuf = new Array[Char](cbufLen)
+
+    val nBrRead_1 = br.read(cbuf, 0, cbufLen)
+
+    assertTrue("nIsrRead: ${nBrRead_1}", nBrRead_1 > 0)
+
+    val response = String.valueOf(ju.Arrays.copyOfRange(cbuf, 0, nBrRead_1))
+
+    assertTrue(
+      s"process response: <${response}>",
+      response.startsWith("Initialized empty Git repository in") ||
+        response.startsWith("Reinitialized existing Git repository in")
+    )
+
+    val nBrRead_2 = br.read(cbuf, 0, cbufLen)
+
+    assertEquals("nBrReadEof:", -1, nBrRead_2)
+
+    /* Contorted DEBUG logic ahead. Focus attention on Windows SN case.
+     * If the process is exiting correctly, it should always get to the
+     * fail(), that is overall Success. If process hangs, then a
+     * successful Windows CI run is really failure.
+     */
+    if (!Platform.executingInJVM)
+      if (Platform.isWindows) {
+        // Sometimes Success is best revealed by Failure.
+        fail("Expected case B_2: Make it evident that Windows process exited")
+      }
+
+    if (proc.isAlive()) {
+      proc.destroy()
+      fail("process should have exited but is alive")
+    }
+  }
+
 }
