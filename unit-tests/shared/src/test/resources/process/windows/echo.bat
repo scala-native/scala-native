@@ -1,4 +1,4 @@
-@echo off
+@echo on
 setlocal DisableDelayedExpansion
 
 for /F "tokens=*" %%a in ('findstr /n $') do (
@@ -10,6 +10,7 @@ for /F "tokens=*" %%a in ('findstr /n $') do (
   )
   echo(!line!
   endlocal
+  exit
 )
 
 

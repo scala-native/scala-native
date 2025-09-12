@@ -71,8 +71,9 @@ object ProcessUtils {
     // takes that three orders of magnitude longer, it must be reported.
 
     // Debug
-    val tmo = if (isWindows) 60
-              else 10
+    val tmo =
+      if (isWindows) 60
+      else 10
     val tmUnit = TimeUnit.SECONDS
 
     assertTrue(
