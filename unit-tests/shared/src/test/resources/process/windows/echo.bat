@@ -6,7 +6,7 @@ for /F "tokens=*" %%a in ('findstr /n $') do (
   setlocal EnableDelayedExpansion
   set "line=!line:*:=!"
   if /i "!line:~0,4!" equ "quit" (
-    exit /B 0
+    exit & REM close enveloping 'cmd' with exit value 0
   )
   echo(!line!
   endlocal

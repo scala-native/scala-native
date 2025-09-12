@@ -102,10 +102,7 @@ class ProcessTest {
       proc.getOutputStream.write(s"hello$EOL".getBytes)
       proc.getOutputStream.write(s"quit$EOL".getBytes)
       proc.getOutputStream.flush()
-      if (isWindows) {
-        // Currently used batch script needs output stream to be closed
-        proc.getOutputStream.close()
-      }
+
       assertProcessExitOrTimeout(proc)
       assertEquals("", readInputStream(proc.getErrorStream()))
       val out = Source.fromFile(file.toString).getLines().mkString
