@@ -10,7 +10,7 @@ for /F "tokens=*" %%a in ('findstr /n $') do (
   )
   echo(!line!
   endlocal
-  exit
 )
+exit
 
 
