@@ -1,4 +1,4 @@
-@echo on
+@echo off
 setlocal DisableDelayedExpansion
 
 for /F "tokens=*" %%a in ('findstr /n $') do (
