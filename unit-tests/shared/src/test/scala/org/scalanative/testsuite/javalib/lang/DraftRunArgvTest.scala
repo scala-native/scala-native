@@ -16,6 +16,8 @@ import java.{lang => jl}
 import java.{util => ju}
 import java.nio.file.Path
 
+import org.scalanative.testsuite.utils.Platform
+
 class DraftRunArgvTest {
 
   // Signature of Scalafmt original.
@@ -23,12 +25,22 @@ class DraftRunArgvTest {
 
     // Work around Scala 2.12 & 2.13 differences in conversion method names.
     val javaCmd = new ju.ArrayList[String](cmd.length)
-    cmd.foreach(c => javaCmd.add(c))
 
-    val proc = new jl.ProcessBuilder(javaCmd)
+    cmd.foreach(c =>
+      javaCmd.add(
+        // Change to PlatformCompat for scalafmt usage. here and in import.
+        if (!Platform.isWindows) c
+        else c
+      )
+    )
+
+    val pb = new jl.ProcessBuilder(javaCmd)
       // To match 2024-01-01 exactly remove/comment_out, See Note 1 below.
       .redirectErrorStream(true) // merge child stderr into stdout
-      .start()
+
+    cwd.map(wd => pb.directory(wd.toFile))
+
+    val proc = pb.start()
 
     val is = proc.getInputStream()
 
