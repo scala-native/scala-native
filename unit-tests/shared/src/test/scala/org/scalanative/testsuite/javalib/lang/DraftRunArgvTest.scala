@@ -35,7 +35,7 @@ class DraftRunArgvTest {
     )
 
     val pb = new jl.ProcessBuilder(javaCmd)
-      // To match 2024-01-01 exactly remove/comment_out, See Note 1 below.
+      // To match 2025-01-01 exactly remove/comment_out, See Note 1 below.
       .redirectErrorStream(true) // merge child stderr into stdout
 
     cwd.map(wd => pb.directory(wd.toFile))
@@ -57,15 +57,15 @@ class DraftRunArgvTest {
     Success(bldr.toString())
 
     /* Note 1:
-     *   Scalafmt 2024-01-01 code effectively discards any stderr coming from
+     *   Scalafmt 2025-01-01 code effectively discards any stderr coming from
      *   the child process. Long analysis about "effectively discards"
      *   available.
      * 
      *   redirectErrorStream(true) merges the child's stderr & stdout, which
-     *   is probably what one wants but differs from the 2024-01-01 behavior.
+     *   is probably what one wants but differs from the 2025-01-01 behavior.
      *
      *   Java 9 introduces a Redirect.DISCARD, which would match the
-     *   2024-01-01 behavior. I believe that Scalafmt supports a minimal
+     *   2025-01-01 behavior. I believe that Scalafmt supports a minimal
      *   Java version of 8 and that Redirect is not implemented in
      *   Scala Native.
      *
