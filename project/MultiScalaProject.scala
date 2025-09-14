@@ -26,7 +26,8 @@ final case class MultiScalaProject private (
   lazy val v3Next: Project = project("3-next")
     .settings(
       Settings.experimentalScalaSources,
-      Settings.noPublishSettings
+      Settings.noPublishSettings,
+      resolvers += Resolver.scalaNightlyRepository,
     )
 
   override def componentProjects: Seq[Project] = Seq(v2_12, v2_13, v3) ++ {

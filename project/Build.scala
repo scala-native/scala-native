@@ -1,3 +1,4 @@
+// scalafmt: { maxColumn = 120}
 package build
 
 import sbt._
@@ -32,7 +33,7 @@ object Build {
     nir, util, tools,
     nirJVM, utilJVM, toolsJVM,
     nativelib, clib, posixlib, windowslib,
-    auxlib, javalib, scalalib,
+    auxlib, javalib, scalalib, scala3lib,
     testInterface, testInterfaceSbtDefs, testRunner,
     junitRuntime
   )
@@ -72,9 +73,7 @@ object Build {
       // There are 2 not cross build projects:
       // sbt-plugin which needs to build with 2.12
       // javalib-intf which contains only Java code and can be compiled with any version
-      val optNoCrossProjects = noCrossProjects.filter(_ =>
-        includeNoCrossProjects && binVersion == "2.12"
-      )
+      val optNoCrossProjects = noCrossProjects.filter(_ => includeNoCrossProjects && binVersion == "2.12")
       val dependencies =
         optNoCrossProjects ++ projects.map(_.forBinaryVersion(binVersion))
       val prev = key.value
@@ -545,7 +544,8 @@ object Build {
       .mapBinaryVersions {
         case version @ ("2.12" | "2.13") =>
           _.settings(
-            commonScalalibSettings("scala-library"),
+            scalaStdLibraryName := "scala-library",
+            commonScalalibSettings,
             scalacOptions ++= Seq(
               "-deprecation:false",
               "-language:postfixOps",
@@ -569,25 +569,72 @@ object Build {
           )
         case version @ ("3" | "3-next") =>
           _.settings(
-            name := "scala3lib",
-            commonScalalibSettings("scala3-library_3"),
+            scalaStdLibraryName := {
+              if (usesSelfContainedStdlib(scalaVersion.value)) "scala-library"
+              else "scala3-library_3"
+            },
+            commonScalalibSettings,
             scalacOptions ++= Seq(
-              "-language:implicitConversions"
+              "-language:implicitConversions",
+              "-Wconf:any:silent"
             ),
-            libraryDependencies += ("org.scala-native" %%% "scalalib" % scalalibVersion(
-              ScalaVersions.scala213,
-              nativeVersion
-            ))
-              .excludeAll(ExclusionRule("org.scala-native"))
-              .cross(CrossVersion.for3Use2_13),
-            update := {
-              update.dependsOn {
-                Def.taskDyn(scalalib.v2_13 / Compile / publishLocal)
-              }.value
+            scalacOptions ++= {
+              if (!usesSelfContainedStdlib(scalaVersion.value)) Nil
+              else
+                Seq(
+                  "-Yno-stdlib-patches"
+                )
             }
           )
       }
       .dependsOn(auxlib)
+
+  lazy val scala3lib: MultiScalaProject =
+    MultiScalaProject("scala3lib")
+      .enablePlugins(MyScalaNativePlugin)
+      .settings(
+        publishSettings(Some(VersionScheme.BreakOnMajor)),
+        disabledDocsSettings,
+        scalacOptions --= ignoredScalaDeprecations(scalaVersion.value),
+        NIROnlySettings
+      )
+      .withNativeCompilerPlugin
+      .mapBinaryVersions {
+        case version @ ("2.12" | "2.13") =>
+          _.settings(
+            noPublishSettings
+          )
+
+        case version @ ("3" | "3-next") =>
+          _.settings(
+            scalaStdLibraryName := "scala3-library_3",
+            commonScalalibSettings,
+            scalacOptions ++= Seq(
+              "-language:implicitConversions"
+            ),
+            libraryDependencies ++= {
+              if (usesSelfContainedStdlib(scalaVersion.value))
+                Seq.empty[ModuleID]
+              else {
+                val stdlibVersion = scalalibVersion(ScalaVersions.scala213, nativeVersion)
+                Seq(
+                  ("org.scala-native" %%% "scalalib" % stdlibVersion)
+                    .excludeAll(ExclusionRule("org.scala-native"))
+                    .cross(CrossVersion.for3Use2_13)
+                )
+              }
+            },
+            update := {
+              if (usesSelfContainedStdlib(scalaVersion.value))
+                update.value
+              else
+                update.dependsOn {
+                  Def.taskDyn(scalalib.v2_13 / Compile / publishLocal)
+                }.value
+            }
+          )
+      }
+      .dependsOn(scalalib)
 
   // Tests ------------------------------------------------
   lazy val tests = MultiScalaProject("tests", file("unit-tests") / "native")
@@ -1044,8 +1091,7 @@ object Build {
       testInterface % "test"
     )
 
-  implicit class MultiProjectOps(val project: MultiScalaProject)
-      extends AnyVal {
+  implicit class MultiProjectOps(val project: MultiScalaProject) extends AnyVal {
 
     /** Uses the Scala Native compiler plugin. */
     def withNativeCompilerPlugin: MultiScalaProject = {
