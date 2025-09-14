@@ -49,7 +49,7 @@ object SafeZone {
   }
 
   /* Allocates an object in the implicit zone. The expression of obj must be an instance creation expression. */
-  inline def alloc[T <: AnyRef](inline obj: T)(using inline sz: SafeZone^): T^{sz} = allocate(sz, obj)
+  inline def alloc[T <: AnyRef](inline obj: T)(using sz: SafeZone^): T^{sz} = allocate(sz, obj)
 
   /** Summon the implicit zone. */
   transparent inline def zone(using sz: SafeZone^): SafeZone^{sz} = sz

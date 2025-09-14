@@ -720,8 +720,16 @@ object Settings {
     val dirs = verList.map(base / dirStr(_)).filter(_.exists)
     dirs.toSeq // most specific shadow less specific
   }
-
-  def commonScalalibSettings(libraryName: String): Seq[Setting[_]] = {
+  
+  def usesSelfContainedStdlib(scalaVersion: String): Boolean =
+    CrossVersion.partialVersion(scalaVersion) match {
+      // Scala 3.8+ uses self-contained stdlib, previously it was using Scala 2.13 stdlib
+      case Some((3, minor)) => minor >= 8
+      case _                => true // all Scala 2 stdlibs are self-contained
+    }
+  val scalaStdLibraryName = settingKey[String]("Scala standard library name") 
+  
+  def commonScalalibSettings: Seq[Setting[_]] = {
     Def.settings(
       version := scalalibVersion(scalaVersion.value, nativeVersion),
       mavenPublishSettings,
@@ -736,7 +744,7 @@ object Settings {
       // By intent, the Scala Native code below is as identical as feasible.
       // Scala Native build.sbt uses a slightly different baseDirectory
       // than Scala.js. See commented starting with "SN Port:" below.
-      libraryDependencies += "org.scala-lang" % libraryName % scalaVersion.value,
+      libraryDependencies += "org.scala-lang" % scalaStdLibraryName.value % scalaVersion.value,
       fetchScalaSource / artifactPath :=
         baseDirectory.value.getParentFile / "target" / "scalaSources" / scalaVersion.value,
       // Create nir.SourceFile relative to Scala sources dir instead of root dir
@@ -784,17 +792,17 @@ object Settings {
         }
         lazy val scalaLibSourcesJar = lm
           .retrieve(
-            "org.scala-lang" % libraryName % scalaVersion.value classifier "sources",
+            "org.scala-lang" % scalaStdLibraryName.value % version classifier "sources",
             scalaModuleInfo = None,
             retrieveDirectory = cacheDir,
             log = s.log
           )
-          .map(_.find(_.name.endsWith(s"$libraryName-$version-sources.jar")))
+          .map(_.find(_.name.endsWith(s"${scalaStdLibraryName.value}-$version-sources.jar")))
           .toOption
           .flatten
           .getOrElse {
             throw new Exception(
-              s"Could not fetch $libraryName sources for version $version"
+              s"Could not fetch ${scalaStdLibraryName.value} sources for version $version"
             )
           }
 
@@ -901,17 +909,29 @@ object Settings {
             try {
               import scala.sys.process._
               copy(scalaSourcePath, scalaSourceCopyPath)
+              var hasErrors = false
               Process(
                 command = Seq(
                   "git",
                   "apply",
+                  "-C1",
+                  "--reject",
                   "--whitespace=fix",
                   "--recount",
+                  "--ignore-space-change",
                   sourcePath.toAbsolutePath().toString()
                 ),
                 cwd = scalaSrcDir
-              ) !! s.log
-
+              ).!!(ProcessLogger(
+                stdout => (),
+                stderr => {
+                  if (stderr.contains("error")) {
+                    hasErrors = true
+                  }
+                  if (hasErrors) s.log.warn(stderr)
+                  else s.log.debug(stderr)
+                }
+              ))
               copy(scalaSourcePath, outputFile)
               Some(outputFile)
             } catch {
