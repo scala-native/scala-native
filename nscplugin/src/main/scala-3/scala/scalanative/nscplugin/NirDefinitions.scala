@@ -176,46 +176,21 @@ final class NirDefinitions()(using ctx: Context) {
       .ensuring(_.size == 5)
 
   // Runtime types
-  @tu lazy val RuntimePrimitive: Map[Char, Symbol] = Map(
-    'B' -> requiredClass("scala.scalanative.runtime.PrimitiveBoolean"),
-    'C' -> requiredClass("scala.scalanative.runtime.PrimitiveChar"),
-    'Z' -> requiredClass("scala.scalanative.runtime.PrimitiveByte"),
-    'S' -> requiredClass("scala.scalanative.runtime.PrimitiveShort"),
-    'I' -> requiredClass("scala.scalanative.runtime.PrimitiveInt"),
-    'L' -> requiredClass("scala.scalanative.runtime.PrimitiveLong"),
-    'F' -> requiredClass("scala.scalanative.runtime.PrimitiveFloat"),
-    'D' -> requiredClass("scala.scalanative.runtime.PrimitiveDouble"),
-    'U' -> requiredClass("scala.scalanative.runtime.PrimitiveUnit")
+  @tu lazy val RuntimePrimitive: Map[Symbol, Symbol] = Map(
+    defn.BooleanClass -> requiredClass("scala.scalanative.runtime.PrimitiveBoolean"),
+    defn.CharClass -> requiredClass("scala.scalanative.runtime.PrimitiveChar"),
+    defn.ByteClass -> requiredClass("scala.scalanative.runtime.PrimitiveByte"),
+    defn.ShortClass -> requiredClass("scala.scalanative.runtime.PrimitiveShort"),
+    defn.IntClass -> requiredClass("scala.scalanative.runtime.PrimitiveInt"),
+    defn.LongClass -> requiredClass("scala.scalanative.runtime.PrimitiveLong"),
+    defn.FloatClass -> requiredClass("scala.scalanative.runtime.PrimitiveFloat"),
+    defn.DoubleClass -> requiredClass("scala.scalanative.runtime.PrimitiveDouble"),
+    defn.UnitClass -> requiredClass("scala.scalanative.runtime.PrimitiveUnit")
   )
   @tu lazy val RuntimePrimitiveTypes: Set[Symbol] = RuntimePrimitive.values.toSet ++ Set(
     RawPtrClass,
     RawSizeClass
   )
-
-  @tu lazy val RuntimeArrayClass: Map[Char, Symbol] = Map(
-    'B' -> requiredClass("scala.scalanative.runtime.BooleanArray"),
-    'C' -> requiredClass("scala.scalanative.runtime.CharArray"),
-    'Z' -> requiredClass("scala.scalanative.runtime.ByteArray"),
-    'S' -> requiredClass("scala.scalanative.runtime.ShortArray"),
-    'I' -> requiredClass("scala.scalanative.runtime.IntArray"),
-    'L' -> requiredClass("scala.scalanative.runtime.LongArray"),
-    'F' -> requiredClass("scala.scalanative.runtime.FloatArray"),
-    'D' -> requiredClass("scala.scalanative.runtime.DoubleArray"),
-    'O' -> requiredClass("scala.scalanative.runtime.ObjectArray")
-  )
-
-  private def mapValues[K, V1, V2](in: Map[K, V1])(fn: V1 => V2): Map[K, V2] =
-    in.map { (key, value) =>
-      (key, fn(value))
-    }
-
-  // Runtime array
-  @tu lazy val RuntimeArrayModule = mapValues(RuntimeArrayClass)(_.companionModule)
-  @tu lazy val RuntimeArray_alloc = mapValues(RuntimeArrayModule)(_.requiredMethod("alloc"))
-  @tu lazy val RuntimeArray_apply = mapValues(RuntimeArrayClass)(_.requiredMethod("apply"))
-  @tu lazy val RuntimeArray_update = mapValues(RuntimeArrayClass)(_.requiredMethod("update"))
-  @tu lazy val RuntimeArray_length = mapValues(RuntimeArrayClass)(_.requiredMethod("length"))
-  @tu lazy val RuntimeArray_clone = mapValues(RuntimeArrayClass)(_.requiredMethod("clone"))
 
   // Scala Native runtime boxes
   @tu lazy val RuntimeBoxesModule = requiredModule("scala.scalanative.runtime.Boxes")
@@ -232,29 +207,6 @@ final class NirDefinitions()(using ctx: Context) {
     UIntClass -> RuntimeBoxesModule.requiredMethod("unboxToUInt"),
     ULongClass -> RuntimeBoxesModule.requiredMethod("unboxToULong"),
     USizeClass -> RuntimeBoxesModule.requiredMethod("unboxToUSize")
-  )
-
-  // Scala boxes
-  @tu lazy val BoxMethod = Map[Char, Symbol](
-    'B' -> defn.BoxesRunTimeModule.requiredMethod("boxToBoolean"),
-    'C' -> defn.BoxesRunTimeModule.requiredMethod("boxToCharacter"),
-    'Z' -> defn.BoxesRunTimeModule.requiredMethod("boxToByte"),
-    'S' -> defn.BoxesRunTimeModule.requiredMethod("boxToShort"),
-    'I' -> defn.BoxesRunTimeModule.requiredMethod("boxToInteger"),
-    'L' -> defn.BoxesRunTimeModule.requiredMethod("boxToLong"),
-    'F' -> defn.BoxesRunTimeModule.requiredMethod("boxToFloat"),
-    'D' -> defn.BoxesRunTimeModule.requiredMethod("boxToDouble")
-  )
-
-  @tu lazy val UnboxMethod = Map[Char, Symbol](
-    'B' -> defn.BoxesRunTimeModule.requiredMethod("unboxToBoolean"),
-    'C' -> defn.BoxesRunTimeModule.requiredMethod("unboxToChar"),
-    'Z' -> defn.BoxesRunTimeModule.requiredMethod("unboxToByte"),
-    'S' -> defn.BoxesRunTimeModule.requiredMethod("unboxToShort"),
-    'I' -> defn.BoxesRunTimeModule.requiredMethod("unboxToInt"),
-    'L' -> defn.BoxesRunTimeModule.requiredMethod("unboxToLong"),
-    'F' -> defn.BoxesRunTimeModule.requiredMethod("unboxToFloat"),
-    'D' -> defn.BoxesRunTimeModule.requiredMethod("unboxToDouble")
   )
 
   // Scala Native reflect

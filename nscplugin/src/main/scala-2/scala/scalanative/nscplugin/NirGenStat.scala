@@ -15,7 +15,6 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
   import definitions._
   import nirAddons._
   import nirDefinitions._
-  import SimpleType.{fromType, fromSymbol}
 
   val reflectiveInstantiationInfo =
     mutable.UnrolledBuffer.empty[ReflectiveInstantiationBuffer]
