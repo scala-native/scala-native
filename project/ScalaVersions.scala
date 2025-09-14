@@ -46,8 +46,8 @@ object ScalaVersions {
   val scala3PublishVersion = "3.1.3"
   val scala213PublishVersion = crossScala213.head
 
-  // List of nightly version can be found here: https://repo1.maven.org/maven2/org/scala-lang/scala3-compiler_3/
-  val scala3Nightly = "3.4.0-RC1-bin-20240114-bfabc31-NIGHTLY"
+  // List of nightly version can be found here: https://repo.scala-lang.org/ui/native/maven-nightlies/org/scala-lang/scala3-compiler_3
+  val scala3Nightly = "3.8.0-RC1-bin-20250924-e8ae44e-NIGHTLY"
 
   // minimum version rationale:
   //   1.5 is required for Scala 3 and
@@ -61,8 +61,12 @@ object ScalaVersions {
   val sbt10Version: String = "1.11.3"
   val sbt10ScalaVersion: String = scala212
 
-  val libCrossScalaVersions: Seq[String] =
-    crossScala212 ++ crossScala213 ++ crossScala3 ++ Seq(scala3Nightly)
+  val libCrossScalaVersions: Seq[String] = Seq(
+    crossScala212,
+    crossScala213,
+    crossScala3,
+    Seq(scala3Nightly)
+  ).flatten.distinct
 
   private def extraCrossScalaVersion(binVersionPrefix: String) = sys.env
     .get("EXTRA_CROSS_SCALA_VERSION")

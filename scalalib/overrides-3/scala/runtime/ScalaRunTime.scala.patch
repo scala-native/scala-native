@@ -1,0 +1,120 @@
+--- 3.8.0-RC1-bin-20250914-afbb66b-NIGHTLY/scala/runtime/ScalaRunTime.scala
++++ overrides-3/scala/runtime/ScalaRunTime.scala
+@@ -54,53 +54,38 @@
+     classTag[T].runtimeClass.asInstanceOf[jClass[T]]
+ 
+   /** Retrieve generic array element */
+-  def array_apply(xs: AnyRef, idx: Int): Any = {
+-    (xs: @unchecked) match {
+-      case x: Array[AnyRef]  => x(idx).asInstanceOf[Any]
+-      case x: Array[Int]     => x(idx).asInstanceOf[Any]
+-      case x: Array[Double]  => x(idx).asInstanceOf[Any]
+-      case x: Array[Long]    => x(idx).asInstanceOf[Any]
+-      case x: Array[Float]   => x(idx).asInstanceOf[Any]
+-      case x: Array[Char]    => x(idx).asInstanceOf[Any]
+-      case x: Array[Byte]    => x(idx).asInstanceOf[Any]
+-      case x: Array[Short]   => x(idx).asInstanceOf[Any]
+-      case x: Array[Boolean] => x(idx).asInstanceOf[Any]
+-      case null => throw new NullPointerException
++  @inline def array_apply(xs: AnyRef, idx: Int): Any = {
++    if (xs == null) {
++      throw new NullPointerException
++    } else {
++      xs.asInstanceOf[scala.scalanative.runtime.Array[Any]].apply(idx)
+     }
+   }
+ 
+   /** update generic array element */
+-  def array_update(xs: AnyRef, idx: Int, value: Any): Unit = {
+-    (xs: @unchecked) match {
+-      case x: Array[AnyRef]  => x(idx) = value.asInstanceOf[AnyRef]
+-      case x: Array[Int]     => x(idx) = value.asInstanceOf[Int]
+-      case x: Array[Double]  => x(idx) = value.asInstanceOf[Double]
+-      case x: Array[Long]    => x(idx) = value.asInstanceOf[Long]
+-      case x: Array[Float]   => x(idx) = value.asInstanceOf[Float]
+-      case x: Array[Char]    => x(idx) = value.asInstanceOf[Char]
+-      case x: Array[Byte]    => x(idx) = value.asInstanceOf[Byte]
+-      case x: Array[Short]   => x(idx) = value.asInstanceOf[Short]
+-      case x: Array[Boolean] => x(idx) = value.asInstanceOf[Boolean]
+-      case null => throw new NullPointerException
++  @inline def array_update(xs: AnyRef, idx: Int, value: Any): Unit = {
++    if (xs == null) {
++      throw new NullPointerException
++    } else {
++      xs.asInstanceOf[scala.scalanative.runtime.Array[Any]].update(idx, value)
+     }
+   }
+ 
+   /** Get generic array length */
+-  @inline def array_length(xs: AnyRef): Int = java.lang.reflect.Array.getLength(xs)
++  def array_length(xs: AnyRef): Int = {
++    if (xs == null) {
++      throw new NullPointerException
++    } else {
++      xs.asInstanceOf[scala.scalanative.runtime.Array[Any]].length
++    }
++  }
+ 
+-  // TODO: bytecode Object.clone() will in fact work here and avoids
+-  // the type switch. See Array_clone comment in BCodeBodyBuilder.
+-  def array_clone(xs: AnyRef): AnyRef = (xs: @unchecked) match {
+-    case x: Array[AnyRef]  => x.clone()
+-    case x: Array[Int]     => x.clone()
+-    case x: Array[Double]  => x.clone()
+-    case x: Array[Long]    => x.clone()
+-    case x: Array[Float]   => x.clone()
+-    case x: Array[Char]    => x.clone()
+-    case x: Array[Byte]    => x.clone()
+-    case x: Array[Short]   => x.clone()
+-    case x: Array[Boolean] => x.clone()
+-    case null => throw new NullPointerException
++  def array_clone(xs: AnyRef): AnyRef = {
++    if (xs == null) {
++      throw new NullPointerException
++    } else {
++      xs.asInstanceOf[scala.scalanative.runtime.Array[Any]].clone()
++    }
+   }
+ 
+   /** Convert an array to an object array.
+@@ -192,9 +177,9 @@
+    */
+   def stringOf(arg: Any): String = stringOf(arg, scala.Int.MaxValue)
+   def stringOf(arg: Any, maxElements: Int): String = {
+-    def packageOf(x: AnyRef) = x.getClass.getPackage match {
+-      case null   => ""
+-      case p      => p.getName
++    def packageOf(x: AnyRef) = {
++      val name = x.getClass().getName()
++      name.substring(0, name.lastIndexOf("."))
+     }
+     def isScalaClass(x: AnyRef)         = packageOf(x) startsWith "scala."
+     def isScalaCompilerClass(x: AnyRef) = packageOf(x) startsWith "scala.tools.nsc."
+@@ -202,18 +187,6 @@
+     // includes specialized subclasses and future proofed against hypothetical TupleN (for N > 22)
+     def isTuple(x: Any) = x != null && x.getClass.getName.startsWith("scala.Tuple")
+ 
+-    // We use reflection because the scala.xml package might not be available
+-    def isSubClassOf(potentialSubClass: Class[_], ofClass: String) =
+-      try {
+-        val classLoader = potentialSubClass.getClassLoader
+-        val clazz = Class.forName(ofClass, /*initialize =*/ false, classLoader)
+-        clazz.isAssignableFrom(potentialSubClass)
+-      } catch {
+-        case cnfe: ClassNotFoundException => false
+-      }
+-    def isXmlNode(potentialSubClass: Class[_])     = isSubClassOf(potentialSubClass, "scala.xml.Node")
+-    def isXmlMetaData(potentialSubClass: Class[_]) = isSubClassOf(potentialSubClass, "scala.xml.MetaData")
+-
+     // When doing our own iteration is dangerous
+     def useOwnToString(x: Any) = x match {
+       // Range/NumericRange have a custom toString to avoid walking a gazillion elements
+@@ -229,7 +202,7 @@
+       // Don't want to a) traverse infinity or b) be overly helpful with peoples' custom
+       // collections which may have useful toString methods - ticket #3710
+       // or c) print AbstractFiles which are somehow also Iterable[AbstractFile]s.
+-      case x: Iterable[_] => (!x.isInstanceOf[StrictOptimizedIterableOps[_, AnyConstr, _]]) || !isScalaClass(x) || isScalaCompilerClass(x) || isXmlNode(x.getClass) || isXmlMetaData(x.getClass)
++      case x: Iterable[_] => (!x.isInstanceOf[StrictOptimizedIterableOps[_, AnyConstr, _]]) || !isScalaClass(x) || isScalaCompilerClass(x)
+       // Otherwise, nothing could possibly go wrong
+       case _ => false
+     }

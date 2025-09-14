@@ -21,6 +21,7 @@ lazy val javalibintf              = Build.javalibintf
 lazy val javalibExtDummies        = Build.javalibExtDummies
 lazy val auxlib                   = Build.auxlib
 lazy val scalalib                 = Build.scalalib
+lazy val scala3lib                = Build.scala3lib
 lazy val testingCompilerInterface = Build.testingCompilerInterface
 lazy val testingCompiler          = Build.testingCompiler
 lazy val testInterface            = Build.testInterface

@@ -54,6 +54,7 @@ private[scalanative] object Allowlist {
   val pure = {
     val out = mutable.Set.empty[nir.Global]
     out += nir.Global.Top("scala.Predef$")
+    out += nir.Global.Top("scala.package$")
     out += nir.Global.Top("scala.runtime.BoxesRunTime$")
     out += nir.Global.Top("scala.scalanative.runtime.Boxes$")
     out += nir.Global.Top("scala.scalanative.runtime.package$")
