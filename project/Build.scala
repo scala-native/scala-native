@@ -594,7 +594,76 @@ object Build {
                 Seq(
                   "-Yno-stdlib-patches"
                 )
-            }
+            },
+            Compile / packageBin / mappings := Def.taskDyn {
+              val currentMappings = (Compile / packageBin / mappings).value
+              Def.task {
+                if (!usesSelfContainedStdlib(scalaVersion.value)) currentMappings
+                else {
+                  // Scala 3 does not emit specialized classes, it's solved by copying them from Scala 2.13 jar
+                  // We need to do the same to ensure binary compatibility of Scala Native scalalib
+                  val newMappings = (scalalib.v2_13 / Compile / packageBin / mappings).value
+
+                  // Keep in sync with Scala 3 compiler logic
+                  // https://github.com/scala/scala3/blob/eb1bb7350a99208d9ced9863a996850316d583f7/project/ScalaLibraryPlugin.scala#L116
+                  val overridenFiles = Set(
+                    "scala/Tuple1.nir",
+                    "scala/Tuple2.nir",
+                    "scala/collection/DoubleStepper.nir",
+                    "scala/collection/IntStepper.nir",
+                    "scala/collection/LongStepper.nir",
+                    "scala/collection/immutable/DoubleVectorStepper.nir",
+                    "scala/collection/immutable/IntVectorStepper.nir",
+                    "scala/collection/immutable/LongVectorStepper.nir",
+                    "scala/jdk/DoubleAccumulator.nir",
+                    "scala/jdk/IntAccumulator.nir",
+                    "scala/jdk/LongAccumulator.nir",
+                    "scala/jdk/FunctionWrappers$FromJavaDoubleBinaryOperator.nir",
+                    "scala/jdk/FunctionWrappers$FromJavaBooleanSupplier.nir",
+                    "scala/jdk/FunctionWrappers$FromJavaDoubleConsumer.nir",
+                    "scala/jdk/FunctionWrappers$FromJavaDoublePredicate.nir",
+                    "scala/jdk/FunctionWrappers$FromJavaDoubleSupplier.nir",
+                    "scala/jdk/FunctionWrappers$FromJavaDoubleToIntFunction.nir",
+                    "scala/jdk/FunctionWrappers$FromJavaDoubleToLongFunction.nir",
+                    "scala/jdk/FunctionWrappers$FromJavaIntBinaryOperator.nir",
+                    "scala/jdk/FunctionWrappers$FromJavaDoubleUnaryOperator.nir",
+                    "scala/jdk/FunctionWrappers$FromJavaIntPredicate.nir",
+                    "scala/jdk/FunctionWrappers$FromJavaIntConsumer.nir",
+                    "scala/jdk/FunctionWrappers$FromJavaIntSupplier.nir",
+                    "scala/jdk/FunctionWrappers$FromJavaIntToDoubleFunction.nir",
+                    "scala/jdk/FunctionWrappers$FromJavaIntToLongFunction.nir",
+                    "scala/jdk/FunctionWrappers$FromJavaIntUnaryOperator.nir",
+                    "scala/jdk/FunctionWrappers$FromJavaLongBinaryOperator.nir",
+                    "scala/jdk/FunctionWrappers$FromJavaLongConsumer.nir",
+                    "scala/jdk/FunctionWrappers$FromJavaLongPredicate.nir",
+                    "scala/jdk/FunctionWrappers$FromJavaLongSupplier.nir",
+                    "scala/jdk/FunctionWrappers$FromJavaLongToDoubleFunction.nir",
+                    "scala/jdk/FunctionWrappers$FromJavaLongToIntFunction.nir",
+                    "scala/jdk/FunctionWrappers$FromJavaLongUnaryOperator.nir",
+                    "scala/collection/ArrayOps$ReverseIterator.nir",
+                    "scala/runtime/NonLocalReturnControl.nir",
+                    "scala/util/Sorting.nir",
+                    "scala/util/Sorting$.nir" // Contains @specialized annotation
+                  )
+
+                  val mappingOverrides = newMappings.collect {
+                    case mapping @ (_, path) if overridenFiles.contains(path) => path -> mapping
+                  }.toMap
+                  assert(
+                    mappingOverrides.keySet == overridenFiles,
+                    s"Some specialized files are missing: ${overridenFiles -- mappingOverrides.keySet}"
+                  )
+                  val currentPaths = currentMappings.map(_._2).toSet
+                  val scala213ExtraFiles = newMappings.filter {
+                    case (file, path) => !currentPaths.contains(path)
+                  }
+                  val maybeReplacedScala3Files = currentMappings.map {
+                    case mapping @ (_, path) => mappingOverrides.getOrElse(path, mapping)
+                  }
+                  maybeReplacedScala3Files ++ scala213ExtraFiles
+                }
+              }
+            }.value
           )
       }
       .dependsOn(auxlib)
@@ -643,7 +712,8 @@ object Build {
               }
             }.value
           )
-      }.dependsOn(auxlib)
+      }
+      .dependsOn(auxlib)
 
   // Tests ------------------------------------------------
   lazy val tests = MultiScalaProject("tests", file("unit-tests") / "native")
