@@ -87,7 +87,8 @@ object Settings {
     javaReleaseSettings,
     mimaSettings,
     docsSettings,
-    scalacOptions ++= ignoredScalaDeprecations(scalaVersion.value)
+    scalacOptions ++= ignoredScalaDeprecations(scalaVersion.value),
+    resolvers += Resolver.scalaNightlyRepository,
   )
 
   val javacSourceFlags = Seq("-source", "1.8")
@@ -727,9 +728,11 @@ object Settings {
       case Some((3, minor)) => minor >= 8
       case _                => true // all Scala 2 stdlibs are self-contained
     }
-  val scalaStdLibraryName = settingKey[String]("Scala standard library name") 
   
-  def commonScalalibSettings: Seq[Setting[_]] = {
+  def commonScalalibSettings(
+      scalaStdLibraryName: String,
+      shouldAddDependencyForVersion: String => Boolean = {_ => true}
+    ): Seq[Setting[_]] = {
     Def.settings(
       version := scalalibVersion(scalaVersion.value, nativeVersion),
       mavenPublishSettings,
@@ -744,7 +747,10 @@ object Settings {
       // By intent, the Scala Native code below is as identical as feasible.
       // Scala Native build.sbt uses a slightly different baseDirectory
       // than Scala.js. See commented starting with "SN Port:" below.
-      libraryDependencies += "org.scala-lang" % scalaStdLibraryName.value % scalaVersion.value,
+      libraryDependencies ++= {
+        if(shouldAddDependencyForVersion(scalaVersion.value)) Some("org.scala-lang" % scalaStdLibraryName % scalaVersion.value) 
+        else None
+      },
       fetchScalaSource / artifactPath :=
         baseDirectory.value.getParentFile / "target" / "scalaSources" / scalaVersion.value,
       // Create nir.SourceFile relative to Scala sources dir instead of root dir
@@ -792,17 +798,17 @@ object Settings {
         }
         lazy val scalaLibSourcesJar = lm
           .retrieve(
-            "org.scala-lang" % scalaStdLibraryName.value % version classifier "sources",
+            "org.scala-lang" % scalaStdLibraryName % version classifier "sources",
             scalaModuleInfo = None,
             retrieveDirectory = cacheDir,
             log = s.log
           )
-          .map(_.find(_.name.endsWith(s"${scalaStdLibraryName.value}-$version-sources.jar")))
+          .map(_.find(_.name.endsWith(s"${scalaStdLibraryName}-$version-sources.jar")))
           .toOption
           .flatten
           .getOrElse {
             throw new Exception(
-              s"Could not fetch ${scalaStdLibraryName.value} sources for version $version"
+              s"Could not fetch ${scalaStdLibraryName} sources for version $version"
             )
           }
 
@@ -821,7 +827,7 @@ object Settings {
         trgDir
       },
       Compile / unmanagedSourceDirectories := scalaVersionDirectories(
-        baseDirectory.value.getParentFile(),
+        (ThisBuild / baseDirectory).value / "scalalib",
         "overrides",
         scalaVersion.value
       ),
@@ -893,6 +899,10 @@ object Settings {
 
           def tryApplyPatch(sourceName: String): Option[File] = {
             val scalaSourcePath = scalaSrcDir / sourceName
+            if (!scalaSourcePath.exists()){
+               s.log.warn(s"Not found matching source file $sourceName for patch in Scala ${scalaVersion.value} sources, skipped")
+              return None
+            }
             val scalaSourceCopyPath = scalaSrcDir / (sourceName + ".copy")
             val outputFile = crossTarget.value / "patched" / sourceName
             val outputDir = outputFile.getParentFile
