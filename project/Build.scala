@@ -52,7 +52,7 @@ object Build {
   lazy val allMultiScalaProjects =
     publishedMultiScalaProjects ::: testMultiScalaProjects
   lazy val crossPublishedMultiScalaProjects =
-    scalalib :: compilerPlugins
+    scalalib :: scala3lib :: compilerPlugins
   lazy val publishedProjects =
     noCrossProjects ::: publishedMultiScalaProjects.flatMap(_.componentProjects)
   lazy val testProjects =
@@ -256,6 +256,11 @@ object Build {
     Test / parallelExecution := false
   )
 
+  private val scalalibProjectSelect: Map[String, Map[String, String]] = Map(
+    "3" -> Map("scalalib" -> "scala3lib"),
+    "3-next" -> Map("scalalib" -> "scala3lib")
+  )
+
   lazy val tools = MultiScalaProject("tools", file("tools/native"))
     .enablePlugins(BuildInfoPlugin, MyScalaNativePlugin)
     .withJUnitPlugin
@@ -274,7 +279,10 @@ object Build {
     )
     .dependsOn(nir, util)
     .dependsOn(testInterface % "test", junitRuntime % "test")
-    .zippedSettings(Seq("nscplugin", "javalib", "scalalib")) {
+    .zippedSettings(
+      Seq("nscplugin", "javalib", "scalalib"),
+      versionsProjectReplacement = scalalibProjectSelect
+    ) {
       case Seq(nscPlugin, javalib, scalalib) =>
         toolsBuildInfoSettings(nscPlugin, javalib, scalalib)
     }
@@ -289,7 +297,7 @@ object Build {
         // Running tests in parallel results in `FileSystemAlreadyExistsException`
         Test / parallelExecution := false
       )
-      .zippedSettings(Seq("nscplugin", "javalib", "scalalib")) {
+      .zippedSettings(Seq("nscplugin", "javalib", "scalalib"), versionsProjectReplacement = scalalibProjectSelect) {
         case Seq(nscPlugin, javalib, scalalib) =>
           toolsBuildInfoSettings(nscPlugin, javalib, scalalib)
       }
@@ -425,6 +433,7 @@ object Build {
                     javalib.forBinaryVersion(ver) / publishLocal,
                     auxlib.forBinaryVersion(ver) / publishLocal,
                     scalalib.forBinaryVersion(ver) / publishLocal,
+                    scala3lib.forBinaryVersion(ver) / publishLocal,
                     // Testing infrastructure
                     testInterfaceSbtDefs.forBinaryVersion(ver) / publishLocal,
                     testInterface.forBinaryVersion(ver) / publishLocal,
@@ -538,14 +547,16 @@ object Build {
         publishSettings(Some(VersionScheme.BreakOnMajor)),
         disabledDocsSettings,
         scalacOptions --= ignoredScalaDeprecations(scalaVersion.value),
-        NIROnlySettings
+        NIROnlySettings,
+        commonScalalibSettings(
+          "scala-library",
+          shouldAddDependencyForVersion = usesSelfContainedStdlib(_)
+        )
       )
       .withNativeCompilerPlugin
       .mapBinaryVersions {
         case version @ ("2.12" | "2.13") =>
           _.settings(
-            scalaStdLibraryName := "scala-library",
-            commonScalalibSettings,
             scalacOptions ++= Seq(
               "-deprecation:false",
               "-language:postfixOps",
@@ -569,11 +580,10 @@ object Build {
           )
         case version @ ("3" | "3-next") =>
           _.settings(
-            scalaStdLibraryName := {
-              if (usesSelfContainedStdlib(scalaVersion.value)) "scala-library"
-              else "scala3-library_3"
+            Compile / sources := {
+              if (usesSelfContainedStdlib(scalaVersion.value)) (Compile / sources).value
+              else Seq.empty[File]
             },
-            commonScalalibSettings,
             scalacOptions ++= Seq(
               "-language:implicitConversions",
               "-Wconf:any:silent"
@@ -607,34 +617,33 @@ object Build {
 
         case version @ ("3" | "3-next") =>
           _.settings(
-            scalaStdLibraryName := "scala3-library_3",
-            commonScalalibSettings,
+            commonScalalibSettings("scala3-library_3"),
             scalacOptions ++= Seq(
               "-language:implicitConversions"
             ),
-            libraryDependencies ++= {
-              if (usesSelfContainedStdlib(scalaVersion.value))
-                Seq.empty[ModuleID]
-              else {
-                val stdlibVersion = scalalibVersion(ScalaVersions.scala213, nativeVersion)
-                Seq(
-                  ("org.scala-native" %%% "scalalib" % stdlibVersion)
-                    .excludeAll(ExclusionRule("org.scala-native"))
-                    .cross(CrossVersion.for3Use2_13)
-                )
+            Compile / sources := {
+              if (usesSelfContainedStdlib(scalaVersion.value)) Seq.empty[File]
+              else (Compile / sources).value
+            },
+            libraryDependencies += {
+              if (usesSelfContainedStdlib(scalaVersion.value)) {
+                "org.scala-native" %%% "scalalib" % scalalibVersion(scalaVersion.value, nativeVersion)
+              } else {
+                ("org.scala-native" %%% "scalalib" % scalalibVersion(ScalaVersions.scala213, nativeVersion))
+                  .excludeAll(ExclusionRule("org.scala-native"))
+                  .cross(CrossVersion.for3Use2_13)
               }
             },
-            update := {
-              if (usesSelfContainedStdlib(scalaVersion.value))
-                update.value
-              else
-                update.dependsOn {
-                  Def.taskDyn(scalalib.v2_13 / Compile / publishLocal)
-                }.value
-            }
+            update := update.dependsOn {
+              Def.taskDyn {
+                if (usesSelfContainedStdlib(scalaVersion.value))
+                  scalalib.forBinaryVersion(version) / Compile / publishLocal
+                else
+                  scalalib.v2_13 / Compile / publishLocal
+              }
+            }.value
           )
-      }
-      .dependsOn(scalalib)
+      }.dependsOn(auxlib)
 
   // Tests ------------------------------------------------
   lazy val tests = MultiScalaProject("tests", file("unit-tests") / "native")
@@ -673,7 +682,6 @@ object Build {
     .withNativeCompilerPlugin
     .withJUnitPlugin
     .dependsOn(
-      scalalib,
       testInterface,
       junitRuntime
     )
@@ -732,7 +740,8 @@ object Build {
       .withNativeCompilerPlugin
       .withJUnitPlugin
       .settings(noJavaReleaseSettings)
-      .dependsOn(scalalib, javalib, testInterface % "test")
+      .dependsOn(javalib, testInterface % "test", scala3lib)
+      .withScalaStandardLibrary
 
 // Testing infrastructure ------------------------------------------------
   lazy val testingCompilerInterface =
@@ -784,8 +793,8 @@ object Build {
       )
       .withNativeCompilerPlugin
       .withJUnitPlugin
+      .withScalaStandardLibrary
       .dependsOn(
-        scalalib,
         javalib,
         testInterfaceSbtDefs,
         junitRuntime % "test",
@@ -798,7 +807,7 @@ object Build {
       .settings(publishSettings(Some(VersionScheme.BreakOnMajor)))
       .settings(docsSettings)
       .withNativeCompilerPlugin
-      .dependsOn(scalalib)
+      .withScalaStandardLibrary
 
   lazy val testRunner =
     MultiScalaProject("testRunner", file("test-runner"))
@@ -847,7 +856,8 @@ object Build {
         Compile / publishArtifact := false
       )
       .withNativeCompilerPlugin
-      .dependsOn(scalalib, javalib)
+      .withScalaStandardLibrary
+      .dependsOn(javalib)
 
   lazy val junitAsyncJVM =
     MultiScalaProject("junitAsyncJVM", file("junit-async/jvm"))
@@ -937,7 +947,8 @@ object Build {
         }
       )
       .zippedSettings(
-        Seq("scalaPartest", "auxlib", "scalalib", "scalaPartestRuntime")
+        Seq("scalaPartest", "auxlib", "scalalib", "scalaPartestRuntime"),
+        versionsProjectReplacement = scalalibProjectSelect
       ) {
         case Seq(scalaPartest, auxlib, scalalib, scalaPartestRuntime) =>
           Def.settings(
@@ -1092,6 +1103,12 @@ object Build {
     )
 
   implicit class MultiProjectOps(val project: MultiScalaProject) extends AnyVal {
+    def withScalaStandardLibrary: MultiScalaProject = {
+      project.mapBinaryVersions {
+        case v @ ("2.12" | "2.13") => _.dependsOn(scalalib.forBinaryVersion(v))
+        case v @ ("3" | "3-next")  => _.dependsOn(scala3lib.forBinaryVersion(v))
+      }
+    }
 
     /** Uses the Scala Native compiler plugin. */
     def withNativeCompilerPlugin: MultiScalaProject = {
