@@ -6,7 +6,7 @@ private[process] object GenericProcessWatcher {
   // Identity map, no valid concurrent structure
   private val watchedProcesses = new ConcurrentHashMap[
     CompletableFuture[ProcessHandle],
-    GenericProcess.Handle
+    GenericProcessHandle
   ]()
 
   private val lock = new locks.ReentrantLock()
@@ -14,7 +14,7 @@ private[process] object GenericProcessWatcher {
 
   def watchForTermination(
       completion: CompletableFuture[ProcessHandle],
-      handle: GenericProcess.Handle
+      handle: GenericProcessHandle
   ): Unit = {
     watchedProcesses.put(completion, handle)
     assert(
