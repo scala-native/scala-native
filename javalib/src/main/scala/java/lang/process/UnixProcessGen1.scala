@@ -1,6 +1,5 @@
 package java.lang.process
 
-import java.lang.ProcessBuilder.Redirect
 import java.io.{File, IOException, InputStream, OutputStream}
 import java.io.FileDescriptor
 import java.util.concurrent.TimeUnit
@@ -152,7 +151,9 @@ object UnixProcessGen1 {
   private def waitForPid(pid: Int, ts: Ptr[timespec], res: Ptr[CInt]): CInt =
     ProcessMonitor.waitForPid(pid, ts, res)
 
-  def apply(builder: ProcessBuilder): Process = Zone.acquire { implicit z =>
+  def apply(
+      builder: ProcessBuilder
+  ): GenericProcess = Zone.acquire { implicit z =>
     val infds: Ptr[CInt] = stackalloc[CInt](2)
     val outfds: Ptr[CInt] = stackalloc[CInt](2)
     val errfds =
@@ -193,7 +194,7 @@ object UnixProcessGen1 {
         )
         setupChildFDS(
           !(errfds + 1),
-          if (builder.redirectErrorStream()) Redirect.PIPE
+          if (builder.redirectErrorStream()) ProcessBuilder.Redirect.PIPE
           else builder.redirectError(),
           unistd.STDERR_FILENO
         )

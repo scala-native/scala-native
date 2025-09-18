@@ -4,7 +4,6 @@ import java.io.{File, IOException, InputStream, OutputStream}
 import java.io.FileDescriptor
 
 import java.{lang => jl}
-import java.lang.ProcessBuilder.Redirect
 
 import java.lang.process.BsdOsSpecific._
 import java.lang.process.BsdOsSpecific.Extern.{kevent, kqueue}
@@ -489,7 +488,9 @@ private[lang] class UnixProcessGen2 private (
 
 object UnixProcessGen2 {
 
-  def apply(builder: ProcessBuilder): Process = Zone.acquire { implicit z =>
+  def apply(
+      builder: ProcessBuilder
+  ): GenericProcess = Zone.acquire { implicit z =>
     /* If builder.directory is not null, it specifies a new working
      * directory for the process (chdir()).
      *
@@ -510,7 +511,9 @@ object UnixProcessGen2 {
     }
   }
 
-  private def forkChild(builder: ProcessBuilder)(implicit z: Zone): Process = {
+  private def forkChild(
+      builder: ProcessBuilder
+  )(implicit z: Zone): GenericProcess = {
     val infds: Ptr[CInt] = stackalloc[CInt](2)
     val outfds: Ptr[CInt] = stackalloc[CInt](2)
     val errfds =
@@ -553,7 +556,7 @@ object UnixProcessGen2 {
         )
         setupChildFDS(
           !(errfds + 1),
-          if (builder.redirectErrorStream()) Redirect.PIPE
+          if (builder.redirectErrorStream()) ProcessBuilder.Redirect.PIPE
           else builder.redirectError(),
           unistd.STDERR_FILENO
         )
@@ -599,7 +602,9 @@ object UnixProcessGen2 {
     }
   }
 
-  private def spawnChild(builder: ProcessBuilder)(implicit z: Zone): Process = {
+  private def spawnChild(
+      builder: ProcessBuilder
+  )(implicit z: Zone): GenericProcess = {
     val cmd = builder.command()
     if (cmd.get(0).indexOf('/') >= 0) {
       spawnCommand(builder, cmd, attempt = 1)
@@ -612,7 +617,7 @@ object UnixProcessGen2 {
       builder: ProcessBuilder,
       localCmd: ju.List[String],
       attempt: Int
-  )(implicit z: Zone): Process = {
+  )(implicit z: Zone): GenericProcess = {
     val pidPtr = stackalloc[pid_t]()
 
     val infds: Ptr[CInt] = stackalloc[CInt](2)
@@ -678,7 +683,7 @@ object UnixProcessGen2 {
         setupSpawnFDS(
           fileActions,
           !(errfds + 1),
-          if (builder.redirectErrorStream()) Redirect.PIPE
+          if (builder.redirectErrorStream()) ProcessBuilder.Redirect.PIPE
           else builder.redirectError(),
           unistd.STDERR_FILENO
         )
@@ -743,10 +748,10 @@ object UnixProcessGen2 {
 
   private def spawnFollowPath(
       builder: ProcessBuilder
-  )(implicit z: Zone): Process = {
+  )(implicit z: Zone): GenericProcess = {
 
     @tailrec
-    def walkPath(iter: UnixPathIterator): Process = {
+    def walkPath(iter: UnixPathIterator): GenericProcess = {
       val cmd = builder.command()
       val cmd0 = cmd.get(0)
 

@@ -133,7 +133,9 @@ object WindowsProcess {
   private final val readEnd = 0
   private final val writeEnd = 1
 
-  def apply(builder: ProcessBuilder): Process = Zone.acquire { implicit z =>
+  def apply(
+      builder: ProcessBuilder
+  ): GenericProcess = Zone.acquire { implicit z =>
     val (inRead, inWrite) =
       createPipeOrThrow(
         builder.redirectInput(),

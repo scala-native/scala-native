@@ -23,7 +23,7 @@ abstract class GenericProcess() extends java.lang.Process {
   override def info(): ProcessHandle.Info = processInfo
 }
 
-private object GenericProcess {
+private[lang] object GenericProcess {
   // Represents ProcessHandle for process started by Scala Native runtime
   // Cannot be used with processes started by other programs
   class Handle(val process: GenericProcess) extends ProcessHandle {
@@ -75,5 +75,8 @@ private object GenericProcess {
       ((31 * this.pid().##) * 31) + this.createdAt.##
     override def toString(): String = process.pid().toString() // JVM compliance
   }
+
+  def apply(pb: ProcessBuilder): GenericProcess =
+    if (LinktimeInfo.isWindows) WindowsProcess(pb) else UnixProcess(pb)
 
 }

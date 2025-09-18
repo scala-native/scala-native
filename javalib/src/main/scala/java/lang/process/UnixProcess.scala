@@ -10,7 +10,7 @@ private[lang] abstract class UnixProcess extends GenericProcess {
 }
 
 object UnixProcess {
-  def apply(builder: ProcessBuilder): Process = {
+  def apply(pb: ProcessBuilder): GenericProcess = {
     val useGen2 = if (LinktimeInfo.is32BitPlatform) {
       false
     } else if (LinktimeInfo.isLinux) {
@@ -22,7 +22,6 @@ object UnixProcess {
       false
     }
 
-    if (useGen2) UnixProcessGen2(builder)
-    else UnixProcessGen1(builder)
+    if (useGen2) UnixProcessGen2(pb) else UnixProcessGen1(pb)
   }
 }
