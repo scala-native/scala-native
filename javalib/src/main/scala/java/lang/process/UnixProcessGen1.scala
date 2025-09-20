@@ -17,19 +17,19 @@ import time._
 import sys.time._
 
 private[lang] class UnixProcessGen1 private (
-    pid: CInt,
+    _pid: CInt,
     builder: ProcessBuilder,
     infds: Ptr[CInt],
     outfds: Ptr[CInt],
     errfds: Ptr[CInt]
 ) extends UnixProcess() {
   override private[process] val processInfo =
-    GenericProcess.Info.create(builder, pid = pid.toLong)
+    GenericProcess.Info.create(builder, pid = _pid.toLong)
 
-  override def destroy(): Unit = kill(pid, sig.SIGTERM)
+  override def destroy(): Unit = kill(_pid, sig.SIGTERM)
 
   override def destroyForcibly(): Process = {
-    kill(pid, SIGKILL)
+    kill(_pid, SIGKILL)
     this
   }
 
@@ -37,7 +37,7 @@ private[lang] class UnixProcessGen1 private (
     checkResult() match {
       case -1 =>
         throw new IllegalThreadStateException(
-          s"Process $pid has not exited yet"
+          s"Process ${_pid} has not exited yet"
         )
       case v => v
     }
@@ -51,7 +51,7 @@ private[lang] class UnixProcessGen1 private (
 
   override def isAlive(): scala.Boolean = checkResult() == -1
 
-  override def toString = s"UnixProcess($pid)"
+  override def toString = s"UnixProcess(${_pid})"
 
   override def waitFor(): scala.Int = synchronized {
     checkResult() match {
@@ -115,7 +115,7 @@ private[lang] class UnixProcessGen1 private (
 
   private var _exitValue = -1
   private[lang] def checkResult(): CInt = {
-    if (_exitValue == -1) setExitValue(UnixProcessGen1.checkResult(pid))
+    if (_exitValue == -1) setExitValue(UnixProcessGen1.checkResult(_pid))
     _exitValue
   }
   private def setExitValue(value: CInt): Unit = {
@@ -129,7 +129,7 @@ private[lang] class UnixProcessGen1 private (
   private def waitFor(ts: Ptr[timespec]): Int = {
     val res = stackalloc[CInt]()
     !res = -1
-    val result = UnixProcessGen1.waitForPid(pid, ts, res)
+    val result = UnixProcessGen1.waitForPid(_pid, ts, res)
     setExitValue(!res)
     result
   }

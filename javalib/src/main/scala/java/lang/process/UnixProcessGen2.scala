@@ -63,7 +63,7 @@ import scalanative.posix.unistd
  */
 
 private[lang] class UnixProcessGen2 private (
-    pid: CInt,
+    _pid: CInt,
     builder: ProcessBuilder,
     infds: Ptr[CInt],
     outfds: Ptr[CInt],
@@ -94,12 +94,12 @@ private[lang] class UnixProcessGen2 private (
   private val cachedExitValue = new CachedExitValue()
 
   override private[process] val processInfo =
-    GenericProcess.Info.create(builder, pid = pid.toLong)
+    GenericProcess.Info.create(builder, pid = _pid.toLong)
 
-  override def destroy(): Unit = kill(pid, SIGTERM)
+  override def destroy(): Unit = kill(_pid, SIGTERM)
 
   override def destroyForcibly(): Process = {
-    kill(pid, SIGKILL)
+    kill(_pid, SIGKILL)
     this
   }
 
@@ -108,7 +108,7 @@ private[lang] class UnixProcessGen2 private (
 
     if (cev >= 0) cev // use cachedExitValue discovered by previous waitFor()
     else { // have to find out for ourselves.
-      val waitStatus = waitpidImplNoECHILD(pid, options = WNOHANG)
+      val waitStatus = waitpidImplNoECHILD(_pid, options = WNOHANG)
 
       if (waitStatus == 0)
         throw new IllegalThreadStateException()
@@ -125,13 +125,13 @@ private[lang] class UnixProcessGen2 private (
 
   override def isAlive(): scala.Boolean = {
     if (cachedExitValue.get() >= 0) false
-    else waitpidImplNoECHILD(pid, options = WNOHANG) == 0
+    else waitpidImplNoECHILD(_pid, options = WNOHANG) == 0
   }
 
   override def toString = { // Match JVM output
     val cev = cachedExitValue.getOrDefault(-1)
 
-    if (cev >= 0) s"Process[pid=${pid}, exitValue=${cev}]"
+    if (cev >= 0) s"Process[pid=${_pid}, exitValue=$cev]"
     else "not exited"
   }
 
@@ -271,7 +271,7 @@ private[lang] class UnixProcessGen2 private (
      *  just reported as having exited is a fussy busy-wait timing loop.
      */
 
-    waitpidImplNoECHILD(pid, options = 0)
+    waitpidImplNoECHILD(_pid, options = 0)
     cachedExitValue.setOnce(1)
   }
 
@@ -378,7 +378,7 @@ private[lang] class UnixProcessGen2 private (
     // epoll() is not used in this method since only one fd is involved.
 
     // close-on-exec is automatically set on the pidFd.
-    val pidFd = pidfd_open(pid, 0.toUInt)
+    val pidFd = pidfd_open(_pid, 0.toUInt)
 
     if (pidFd == -1) {
       val msg = s"pidfd_open failed: ${fromCString(strerror(errno))}"
@@ -400,7 +400,7 @@ private[lang] class UnixProcessGen2 private (
       // handled in the caller
       if (errno == EINTR) throw new InterruptedException()
       throw new IOException(
-        s"waitFor pid=${pid}, ppoll failed: ${fromCString(strerror(errno))}"
+        s"waitFor pid=${_pid}, ppoll failed: ${fromCString(strerror(errno))}"
       )
     } else if (ppollStatus == 0) {
       None
@@ -432,7 +432,7 @@ private[lang] class UnixProcessGen2 private (
     if (kq == -1) {
       if (errno == EINTR) throw new InterruptedException()
       throw new IOException(
-        s"waitFor pid=${pid} kqueue failed: ${fromCString(strerror(errno))}"
+        s"waitFor pid=${_pid} kqueue failed: ${fromCString(strerror(errno))}"
       )
     }
 
@@ -452,7 +452,7 @@ private[lang] class UnixProcessGen2 private (
      * delivery.
      */
 
-    childExitEvent._1 = pid.toUSize
+    childExitEvent._1 = _pid.toUSize
     childExitEvent._2 = EVFILT_PROC.toShort
     childExitEvent._3 = (EV_ADD | EV_DISPATCH).toUShort
     childExitEvent._4 = (NOTE_EXIT | NOTE_EXITSTATUS).toUInt
@@ -474,7 +474,7 @@ private[lang] class UnixProcessGen2 private (
     if (status < 0) {
       if (errno == EINTR) throw new InterruptedException()
       throw new IOException(
-        s"wait pid=${pid}, kevent failed: ${fromCString(strerror(errno))}"
+        s"wait pid=${_pid}, kevent failed: ${fromCString(strerror(errno))}"
       )
     } else if (status == 0) {
       None
