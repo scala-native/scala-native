@@ -27,6 +27,8 @@ private[process] class GenericProcessInfo(
     cmdOpt: Optional[String],
     argsOpt: Optional[Array[String]]
 ) extends ProcessHandle.Info {
+  val createdAt: Long = System.nanoTime()
+
   override def command(): Optional[String] = cmdOpt
   override def arguments(): Optional[Array[String]] = argsOpt
   override def commandLine(): Optional[String] =
@@ -41,7 +43,8 @@ private[process] class GenericProcessInfo(
     Optional.ofNullable(System.getProperty("user.name"))
 
   // Instant not implemented
-  override def startInstant(): Optional[Instant] = Optional.empty()
+  override def startInstant(): Optional[Instant] =
+    Optional.of(Instant.ofEpochMilli(createdAt / 1000))
   override def totalCpuDuration(): Optional[Duration] = Optional.empty()
 
   override def toString: String = {

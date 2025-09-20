@@ -127,8 +127,6 @@ private[process] abstract class GenericProcessHandle extends ProcessHandle {
   ): CompletableFuture[A] =
     completion.handle(fn)
 
-  private val createdAt = System.nanoTime()
-
   override def parent(): Optional[ProcessHandle] = Optional.empty()
 
   // We don't track transitive children
@@ -151,11 +149,10 @@ private[process] abstract class GenericProcessHandle extends ProcessHandle {
   override def info(): ProcessHandle.Info = processInfo
 
   override def compareTo(other: ProcessHandle): Int = other match {
-    case handle: GenericProcessHandle =>
-      pid().compareTo(handle.pid()) match {
-        case 0     => this.createdAt.compareTo(handle.createdAt)
-        case value => value
-      }
+    case other: GenericProcessHandle =>
+      val res = pid().compareTo(other.pid())
+      if (res != 0) res
+      else processInfo.createdAt.compareTo(other.processInfo.createdAt)
     case _ => -1
   }
   override def equals(that: Any): Boolean = that match {
@@ -163,7 +160,7 @@ private[process] abstract class GenericProcessHandle extends ProcessHandle {
     case _                    => false
   }
   override def hashCode(): Int =
-    ((31 * this.pid().##) * 31) + this.createdAt.##
+    ((31 * this.pid().##) * 31) + processInfo.createdAt.##
   override def toString: String =
     s"Process[pid=${pid()}, exitValue=${getCachedExitCode.getOrElse("\"not exited\"")}"
 }
