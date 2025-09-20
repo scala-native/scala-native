@@ -8,8 +8,15 @@ import org.junit.Test
 import org.junit.Assert._
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
+import org.scalanative.testsuite.utils.Platform
 
 class InflaterTest {
+
+  val classOfIllegalStateException =
+    if (Platform.executingInJVMWithJDKIn(25 to Integer.MAX_VALUE))
+      classOf[IllegalStateException]
+    else
+      classOf[NullPointerException] // Scala Native is JDK 8
 
   @Test def inflaterSetInputDoesNotThrowAnException(): Unit = {
     val inflater = new Inflater()
@@ -348,7 +355,7 @@ class InflaterTest {
     inflater.end()
 
     assertThrows(
-      classOf[NullPointerException],
+      classOfIllegalStateException,
       inflater.inflate(outPutInf, offSet, 1)
     )
   }
@@ -689,7 +696,7 @@ class InflaterTest {
     )
     infl1.end()
     assertThrows(
-      classOf[NullPointerException],
+      classOfIllegalStateException,
       infl1.setDictionary(dictionary2.getBytes())
     )
   }
@@ -702,14 +709,14 @@ class InflaterTest {
     inflate.setInput(byteArray)
     inflate.end()
 
-    assertThrows(classOf[NullPointerException], inflate.getAdler())
+    assertThrows(classOfIllegalStateException, inflate.getAdler())
 
-    assertThrows(classOf[NullPointerException], inflate.getBytesRead())
+    assertThrows(classOfIllegalStateException, inflate.getBytesRead())
 
-    assertThrows(classOf[NullPointerException], inflate.getBytesWritten())
+    assertThrows(classOfIllegalStateException, inflate.getBytesWritten())
 
-    assertThrows(classOf[NullPointerException], inflate.getTotalIn())
+    assertThrows(classOfIllegalStateException, inflate.getTotalIn())
 
-    assertThrows(classOf[NullPointerException], inflate.getTotalOut())
+    assertThrows(classOfIllegalStateException, inflate.getTotalOut())
   }
 }
