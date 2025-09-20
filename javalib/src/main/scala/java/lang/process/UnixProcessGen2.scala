@@ -70,6 +70,24 @@ private[lang] class UnixProcessGen2 private (
     errfds: Ptr[CInt]
 ) extends UnixProcess() {
 
+  /* Usage note:
+   *   The pid argument is immutable and not obviously a pointer.
+   *   It is the operating system (os) identifier for an process on that
+   *   operating system.
+   *
+   *   This constructor assumes that caller passes a pid which the os
+   *   considers valid at that time.
+   * 
+   *   On unix-like operating systems, forms of the wait() system call
+   *   can invalidate the process associated with that pid.
+   *   Linux seems to be particularly quick to mark a 'reaped' child process
+   *   as invalid.
+   *
+   *   The situation is similar to passing an immutable pointer to an
+   *   Object, where the fields of that object are mutable.  In a
+   *   multi-thread environment, things can change underneath you.
+   */
+
   private class CachedExitValue() {
     final val EXIT_VALUE_UNKNOWN = jl.Integer.MIN_VALUE
 
@@ -91,6 +109,10 @@ private[lang] class UnixProcessGen2 private (
     }
   }
 
+  /* Atomic but not safe by itself for multi-thread mutual exclusion.
+   * A detect_child_exit(ppoll/kevent)/wait()/set_cachedExitValue sequence
+   * is not atomic and races if given the chance.
+   */
   private val cachedExitValue = new CachedExitValue()
 
   override private[process] val processInfo =
@@ -226,16 +248,31 @@ private[lang] class UnixProcessGen2 private (
     if (waitStatus == -1) {
       if (errno == EINTR) {
         throw new InterruptedException()
-      } else if (errno == ECHILD) {
+      } else if (errno != ESRCH) {
+        val msg = s"waitpid failed: ${fromCString(strerror(errno))}"
+        throw new IOException(msg)
+      } else {
+        // ESRCH "no such process"
         /* See extensive discussion in SN Issue #4208 and identical
          * closely related #4208.
          */
 
-        // OK if no exchange, someone else already reaped the process.
-        cachedExitValue.setOnce(1)
-      } else {
-        val msg = s"waitpid failed: ${fromCString(strerror(errno))}"
-        throw new IOException(msg)
+        /* Try something hopefully more robust than SN Issue #4208
+         * change. A longish comment to explain code which is not there.
+         *
+         * Work on os-lib has shown that it tends do Process.waitFor(),
+         * and/or its timeout variant, calls using the same Process instance in
+         * two or more threads.  JVM 8 and later appear to allow this.
+         * 
+         * Resign oneself to the reality that jl.Process gets used in the wild
+         * under the assumption that it is thread-safe and expect that
+         * de-facto specification to work with Scala Native.
+         * 
+         * Do Nothing here because some code, probably other waitFor(),
+         * has already reaped the os process. Note that isAlive() can
+         * call waitpidImplNoECHILD() so the "other" may not be
+         * trivially evident in os-lib or other caller code.
+         */
       }
     } else if (waitStatus > 0) {
       // Cache exitStatus as long as we already have it in hand.
@@ -250,6 +287,7 @@ private[lang] class UnixProcessGen2 private (
       // OK if no exchange, someone else already reaped the process.
       cachedExitValue.setOnce(decoded)
     }
+    // else waitStatus == 0, WNOHANG & no child status available, do nothing
 
     waitStatus
   }
@@ -381,36 +419,53 @@ private[lang] class UnixProcessGen2 private (
     val pidFd = pidfd_open(pid, 0.toUInt)
 
     if (pidFd == -1) {
-      val msg = s"pidfd_open failed: ${fromCString(strerror(errno))}"
-      throw new IOException(msg)
-    }
-
-    val fds = stackalloc[struct_pollfd](1)
-    (fds + 0).fd = pidFd
-    (fds + 0).events = (pollEvents.POLLIN | pollEvents.POLLRDNORM).toShort
-
-    val tmo = timeout.getOrElse(null)
-
-    // 'null' sigmask will retain all current signals.
-    val ppollStatus = ppoll(fds, 1.toUSize, tmo, null);
-
-    unistd.close(pidFd) // ensure fd does not leak away.
-
-    if (ppollStatus < 0) {
-      // handled in the caller
-      if (errno == EINTR) throw new InterruptedException()
-      throw new IOException(
-        s"waitFor pid=${pid}, ppoll failed: ${fromCString(strerror(errno))}"
-      )
-    } else if (ppollStatus == 0) {
-      None
-    } else {
-      /* Minimize potential blocking wait in waitpid() by doing some
-       * necessary work before asking for an exit status rather than after.
-       * This gives the pid process time to exit fully.
+      /* Attempt to be robust to a multi-thread race condition.
+       * The "detect child exit", "waitFor(pid)", "set exitValue"
+       * sequence is not atomic.
+       * 
+       * When the errno is ESRCH, a waitFor() variant or isAlive()
+       * in another thread may have already reaped the pid, thereby
+       * invalidating it.  Here is looking at you os-lib.
+       * 
+       * That putative thread should set the cachedExitValue as the thread
+       * continues after its waitFor().
+       *
+       * Linux seems to be particularly rapid in invalidating the os pid,
+       * causing ESRCH here.
        */
-      closeProcessStreams()
-      askZombiesForTheirExitStatus()
+
+      if (errno != ESRCH) {
+        val msg = s"pidfd_open failed: ${fromCString(strerror(errno))}"
+        throw new IOException(msg)
+      }
+    } else {
+      val fds = stackalloc[struct_pollfd](1)
+      (fds + 0).fd = pidFd
+      (fds + 0).events = (pollEvents.POLLIN | pollEvents.POLLRDNORM).toShort
+
+      val tmo = timeout.getOrElse(null)
+
+      // 'null' sigmask will retain all current signals.
+      val ppollStatus = ppoll(fds, 1.toUSize, tmo, null);
+
+      unistd.close(pidFd) // ensure fd does not leak away.
+
+      if (ppollStatus < 0) {
+        // handled in the caller
+        if (errno == EINTR) throw new InterruptedException()
+        throw new IOException(
+          s"waitFor pid=${pid}, ppoll failed: ${fromCString(strerror(errno))}"
+        )
+      } else if (ppollStatus == 0) {
+        None
+      } else {
+        /* Minimize potential blocking wait in waitpid() by doing some
+         * necessary work before asking for an exit status rather than after.
+         * This gives the pid process time to exit fully.
+         */
+        closeProcessStreams()
+        askZombiesForTheirExitStatus()
+      }
     }
   }
 
