@@ -18,8 +18,7 @@ trait ProcessHandle extends Comparable[ProcessHandle] {
 
   def destroyForcibly(): scala.Boolean
 
-  def info(): ProcessHandle.Info =
-    throw new UnsupportedOperationException("ProcessHandle.info()")
+  def info(): ProcessHandle.Info
 
   def isAlive(): scala.Boolean
 
@@ -27,10 +26,10 @@ trait ProcessHandle extends Comparable[ProcessHandle] {
 
   def parent(): Optional[ProcessHandle]
 
-  def pid(): scala.Long =
-    throw new UnsupportedOperationException("ProcessHandle.pid()")
+  def pid(): scala.Long
 
   def supportsNormalTermination(): scala.Boolean
+
 }
 
 object ProcessHandle {
