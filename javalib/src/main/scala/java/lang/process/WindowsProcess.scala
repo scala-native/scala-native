@@ -3,7 +3,7 @@ package java.lang.process
 // Required only for cross-compilation with Scala 2
 import scala.language.existentials
 
-import java.io.{FileDescriptor, InputStream, OutputStream}
+import java.io.FileDescriptor
 import java.lang.ProcessBuilder._
 
 import java.util.ArrayList
@@ -29,9 +29,9 @@ import winnt.AccessRights._
 private[process] class WindowsProcess private (
     handle: Handle,
     override protected val builder: ProcessBuilder,
-    inHandle: FileDescriptor,
-    outHandle: FileDescriptor,
-    errHandle: FileDescriptor
+    override protected val fdIn: FileDescriptor,
+    override protected val fdOut: FileDescriptor,
+    override protected val fdErr: FileDescriptor
 ) extends GenericProcess {
   private val _pid = GetProcessId(handle)
 
@@ -56,12 +56,6 @@ private[process] class WindowsProcess private (
         )
       )
   }
-
-  override def getErrorStream(): InputStream = _errorStream
-
-  override def getInputStream(): InputStream = _inputStream
-
-  override def getOutputStream(): OutputStream = _outputStream
 
   override def isAlive(): scala.Boolean = checkExitValue.isEmpty
 
@@ -94,13 +88,6 @@ private[process] class WindowsProcess private (
         (hasValidTimeout && hasFinished)
     }
 
-  private val _inputStream =
-    PipeIO[PipeIO.Stream](this, outHandle, builder.redirectOutput())
-  private val _errorStream =
-    PipeIO[PipeIO.Stream](this, errHandle, builder.redirectError())
-  private val _outputStream =
-    PipeIO[OutputStream](this, inHandle, builder.redirectInput())
-
   private def checkExitValue: Option[scala.Int] = {
     checkResult()
     cachedExitValue
@@ -115,9 +102,7 @@ private[process] class WindowsProcess private (
           (!exitCode) match {
             case STILL_ACTIVE => -1
             case code         =>
-              _inputStream.drain()
-              _errorStream.drain()
-              _outputStream.close()
+              closeProcessStreams()
               CloseHandle(handle)
               cachedExitValue = Some(code.toInt)
               code.toInt

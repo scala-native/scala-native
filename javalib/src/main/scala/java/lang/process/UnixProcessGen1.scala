@@ -1,7 +1,6 @@
 package java.lang.process
 
-import java.io.{File, IOException, InputStream, OutputStream}
-import java.io.FileDescriptor
+import java.io.{File, IOException}
 import java.util.concurrent.TimeUnit
 import java.util.ScalaOps._
 import java.util.ArrayList
@@ -18,9 +17,9 @@ import sys.time._
 private[process] class UnixProcessGen1 private (
     override protected val _pid: CInt,
     override protected val builder: ProcessBuilder,
-    infds: Ptr[CInt],
-    outfds: Ptr[CInt],
-    errfds: Ptr[CInt]
+    override protected val infds: Ptr[CInt],
+    override protected val outfds: Ptr[CInt],
+    override protected val errfds: Ptr[CInt]
 ) extends UnixProcess() {
   override def destroy(): Unit = kill(_pid, sig.SIGTERM)
 
@@ -38,12 +37,6 @@ private[process] class UnixProcessGen1 private (
       case v => v
     }
   }
-
-  override def getErrorStream(): InputStream = _errorStream
-
-  override def getInputStream(): InputStream = _inputStream
-
-  override def getOutputStream(): OutputStream = _outputStream
 
   override def isAlive(): scala.Boolean = checkResult() == -1
 
@@ -90,25 +83,6 @@ private[process] class UnixProcessGen1 private (
     res
   }
 
-  private val _inputStream =
-    PipeIO[PipeIO.Stream](
-      this,
-      new FileDescriptor(!outfds),
-      builder.redirectOutput()
-    )
-  private val _errorStream =
-    PipeIO[PipeIO.Stream](
-      this,
-      new FileDescriptor(!errfds),
-      builder.redirectError()
-    )
-  private val _outputStream =
-    PipeIO[OutputStream](
-      this,
-      new FileDescriptor(!(infds + 1)),
-      builder.redirectInput()
-    )
-
   private var _exitValue = -1
   def checkResult(): CInt = {
     if (_exitValue == -1) setExitValue(UnixProcessGen1.checkResult(_pid))
@@ -117,9 +91,7 @@ private[process] class UnixProcessGen1 private (
   private def setExitValue(value: CInt): Unit = {
     if (_exitValue == -1 && value != -1) {
       _exitValue = value
-      _inputStream.drain()
-      _errorStream.drain()
-      _outputStream.close()
+      closeProcessStreams()
     }
   }
   private def waitFor(ts: Ptr[timespec]): Int = {

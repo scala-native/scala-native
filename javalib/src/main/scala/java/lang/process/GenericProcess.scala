@@ -3,17 +3,32 @@ package java.lang.process
 import scala.scalanative.unsafe._
 import scala.scalanative.meta.LinktimeInfo
 
+import java.io.{FileDescriptor, InputStream, OutputStream}
 import java.util.Optional
 import java.util.concurrent.CompletableFuture
 import java.util.stream.Stream
 
 private[process] abstract class GenericProcess() extends Process {
   protected val builder: ProcessBuilder
+  protected def fdIn: FileDescriptor
+  protected def fdOut: FileDescriptor
+  protected def fdErr: FileDescriptor
 
   private val processInfo = GenericProcessInfo(builder)
   private lazy val handle = new GenericProcessHandle(this)
 
   def checkResult(): CInt
+
+  private val outputStream =
+    PipeIO[OutputStream](this, fdIn, builder.redirectInput())
+  private val inputStream =
+    PipeIO[PipeIO.Stream](this, fdOut, builder.redirectOutput())
+  private val errorStream =
+    PipeIO[PipeIO.Stream](this, fdErr, builder.redirectError())
+
+  override def getInputStream(): InputStream = inputStream
+  override def getErrorStream(): InputStream = errorStream
+  override def getOutputStream(): OutputStream = outputStream
 
   override def toHandle(): ProcessHandle = handle
 
@@ -21,6 +36,14 @@ private[process] abstract class GenericProcess() extends Process {
     toHandle().onExit().thenApply(_ => this)
 
   override def info(): ProcessHandle.Info = processInfo
+
+  def closeProcessStreams(): GenericProcess = {
+    outputStream.close()
+    inputStream.drain()
+    errorStream.drain()
+    this
+  }
+
 }
 
 // Represents ProcessHandle for process started by Scala Native runtime

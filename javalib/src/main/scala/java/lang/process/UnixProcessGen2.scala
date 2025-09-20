@@ -1,7 +1,6 @@
 package java.lang.process
 
-import java.io.{File, IOException, InputStream, OutputStream}
-import java.io.FileDescriptor
+import java.io.{File, IOException}
 
 import java.{lang => jl}
 
@@ -62,9 +61,9 @@ import scalanative.posix.unistd
 private[process] class UnixProcessGen2 private (
     override protected val _pid: CInt,
     override protected val builder: ProcessBuilder,
-    infds: Ptr[CInt],
-    outfds: Ptr[CInt],
-    errfds: Ptr[CInt]
+    override protected val infds: Ptr[CInt],
+    override protected val outfds: Ptr[CInt],
+    override protected val errfds: Ptr[CInt]
 ) extends UnixProcess() {
 
   private class CachedExitValue() {
@@ -110,12 +109,6 @@ private[process] class UnixProcessGen2 private (
         cachedExitValue.getOrDefault(1) // default 1 should never happen
     }
   }
-
-  override def getErrorStream(): InputStream = _errorStream
-
-  override def getInputStream(): InputStream = _inputStream
-
-  override def getOutputStream(): OutputStream = _outputStream
 
   override def isAlive(): scala.Boolean = {
     if (cachedExitValue.get() >= 0) false
@@ -191,27 +184,6 @@ private[process] class UnixProcessGen2 private (
     0 // Sole caller, PipeIO, never checks value. Just no-op & match signature.
   }
 
-  private val _inputStream =
-    PipeIO[PipeIO.Stream](
-      this,
-      new FileDescriptor(!outfds),
-      builder.redirectOutput()
-    )
-
-  private val _errorStream =
-    PipeIO[PipeIO.Stream](
-      this,
-      new FileDescriptor(!errfds),
-      builder.redirectError()
-    )
-
-  private val _outputStream =
-    PipeIO[OutputStream](
-      this,
-      new FileDescriptor(!(infds + 1)),
-      builder.redirectInput()
-    )
-
   private def waitpidImplNoECHILD(pid: pid_t, options: Int): Int = {
     val wstatus = stackalloc[Int]()
 
@@ -267,13 +239,6 @@ private[process] class UnixProcessGen2 private (
 
     waitpidImplNoECHILD(_pid, options = 0)
     cachedExitValue.setOnce(1)
-  }
-
-  private def closeProcessStreams(): Unit = synchronized {
-    // drain() on a stream will close() it.
-    _inputStream.drain()
-    _errorStream.drain()
-    _outputStream.close()
   }
 
   // corral handling timevalue conversion details, fill ts.
