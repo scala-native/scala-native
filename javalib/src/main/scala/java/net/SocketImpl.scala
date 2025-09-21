@@ -29,6 +29,7 @@ abstract class SocketImpl extends SocketOptions {
   // protected[net] def setPerformancePreferences(connectionTime: Int, latency: Int, bandwith: Int): Unit
   protected[net] def shutdownInput(): Unit
   protected[net] def shutdownOutput(): Unit
+  protected[net] def shutdownBoth(): Unit
   // protected[net] def supportsUrgentData: Boolean
 
   override def toString: String =
