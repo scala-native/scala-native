@@ -248,30 +248,56 @@ private[lang] class UnixProcessGen2 private (
     if (waitStatus == -1) {
       if (errno == EINTR) {
         throw new InterruptedException()
-      } else if (errno != ESRCH) {
+      } else if ((errno != ECHILD) && (errno != ESRCH)) {
         val msg = s"waitpid failed: ${fromCString(strerror(errno))}"
         throw new IOException(msg)
       } else {
-        // ESRCH "no such process"
-        /* See extensive discussion in SN Issue #4208 and identical
-         * closely related #4208.
+        /* Do nothing, but a considered "nothing".
+         * See extensive discussion in SN Issue #4208
+         *
+          * TL;DR
+         *  Some code, probably other waitFor(), has already reaped the os
+         *  process. Note that isAlive() can call waitpidImplNoECHILD()
+         *  so the "other" may not be trivially evident in os-lib or
+         * other caller code.
          */
 
-        /* Try something hopefully more robust than SN Issue #4208
-         * change. A longish comment to explain code which is not there.
+        /* Multi-threaded code can introduce some complexities,
+         * especially since the sequence
+         * "detect child exit"/"reap child exit status"/"set cachedExitValue"
+         * is not atomic. Serializing on that sequence would be horrendous
+         * for performance. Let the os do most of the mutual exclusion
+         * work for the pid but be aware that other threads may be active
+         * in that same section of code.
          *
-         * Work on os-lib has shown that it tends do Process.waitFor(),
-         * and/or its timeout variant, calls using the same Process instance in
-         * two or more threads.  JVM 8 and later appear to allow this.
+         * Li Haoyi's "os-lib" "SubprocessTests.scala" is particularly good
+         * at challenging implementation assumptions.
          * 
-         * Resign oneself to the reality that jl.Process gets used in the wild
-         * under the assumption that it is thread-safe and expect that
-         * de-facto specification to work with Scala Native.
+         * + ECHILD, errno decimal 10, strerror(ECHILD) returns
+         *   "No child processes".
+         *   https://man7.org/linux/man-pages/man3/wait.3p.html
+         *   says that it means: "The calling process has no existing
+         *   unwaited-for child processes."
          * 
-         * Do Nothing here because some code, probably other waitFor(),
-         * has already reaped the os process. Note that isAlive() can
-         * call waitpidImplNoECHILD() so the "other" may not be
-         * trivially evident in os-lib or other caller code.
+         *   This indicates the os pid is is still accessible but that
+         *   its exit value is not. Some other process has probably
+         *   won the race to retrieve the exit value and will eventually
+         *   set the cachedExitValue. Another thread calling "isAlive()"
+         *   before then may get to here and get ECHILD
+         * 
+         * + ESRCH, errno decimal 3, strerror(ESRCH) returns
+         *   "no such process".
+         *
+         *   This indicates that the os pid presented is not valid. It may
+         *   have been at one point, but is no longer.
+         * 
+         *   Linux seems to be quicker to return this errno value.
+         * 
+         *   The logic here is a stronger version of ECHILD above.
+         *   Some thread has harvested the os process exit value and may
+         *   not have yet set the cachedExitValue.
+         *
+         * Have we gotten complicated enough yet?
          */
       }
     } else if (waitStatus > 0) {
