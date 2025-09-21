@@ -135,7 +135,15 @@ private[lang] class UnixProcessGen2 private (
       if (waitStatus == 0)
         throw new IllegalThreadStateException()
       else
-        cachedExitValue.getOrDefault(1) // default 1 should never happen
+        /* default of 0 is a hack for multi-thread code whilst the
+         * entire isAlive()/exitValue()/waitFor() implementation is
+         * re-designed to be robust.
+         *  // default 1
+         * The default of 0 should never happen for single threaded code.
+         * It is a polite but useful fiction for multi-threaded code,
+         * such as os-lib.
+         */
+        cachedExitValue.getOrDefault(0)
     }
   }
 
