@@ -350,7 +350,7 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
           else if (how == SHUT_WR) "output"
           else "input and output"
         throw new SocketException(
-          s"Error while shutting down socket's $side. Errno: $errno"
+          s"Error while shutting down socket's $side: ${fromCString(strerror(errno))}"
         )
     }
   }
