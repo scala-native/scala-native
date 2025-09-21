@@ -1,7 +1,7 @@
 package java.lang
 
 import java.io.File
-import java.util.{Arrays, List, Map}
+import java.util.{ArrayList, Arrays, List, Map}
 
 import ProcessBuilder.Redirect
 
@@ -19,6 +19,12 @@ final class ProcessBuilder(private var _command: List[String]) {
   }
 
   def environment(): Map[String, String] = _environment
+
+  private[lang] def getEnvironmentAsList(): List[String] = {
+    val list = new ArrayList[String]
+    environment().forEach { (k, v) => list.add(s"$k=$v") }
+    list
+  }
 
   def directory(): File = _directory
 

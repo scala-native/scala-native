@@ -391,16 +391,7 @@ private[process] object UnixProcessGen2 {
     val binaries = binaryPaths(builder.environment(), cmd.get(0))
     val dir = builder.directory()
     val argv = nullTerminate(cmd)
-    val envp = nullTerminate {
-      val list = new ArrayList[String]
-      builder
-        .environment()
-        .entrySet()
-        .iterator()
-        .scalaOps
-        .foreach(e => list.add(s"${e.getKey()}=${e.getValue()}"))
-      list
-    }
+    val envp = nullTerminate(builder.getEnvironmentAsList())
 
     unistd.fork() match {
       case -1 =>
@@ -495,16 +486,7 @@ private[process] object UnixProcessGen2 {
 
     val exec = localCmd.get(0)
     val argv = nullTerminate(localCmd)
-    val envp = nullTerminate {
-      val list = new ArrayList[String]
-      builder
-        .environment()
-        .entrySet()
-        .iterator()
-        .scalaOps
-        .foreach(e => list.add(s"${e.getKey()}=${e.getValue()}"))
-      list
-    }
+    val envp = nullTerminate(builder.getEnvironmentAsList())
 
     /* Maintainers:
      *     There is a performance optimization in the walkPath() method
