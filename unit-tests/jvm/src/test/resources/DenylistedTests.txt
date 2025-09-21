@@ -7,8 +7,6 @@ org/scalanative/testsuite/javalib/lang/IntegerTest.scala
 org/scalanative/testsuite/javalib/lang/ShortTest.scala
 org/scalanative/testsuite/javalib/lang/LongTest.scala
 
-org/scalanative/testsuite/javalib/net/ServerSocketTest.scala
-
 org/scalanative/testsuite/javalib/util/DefaultFormatterTest.scala
 org/scalanative/testsuite/javalib/util/FormatterTest.scala
 org/scalanative/testsuite/javalib/util/Base64Test.scala
