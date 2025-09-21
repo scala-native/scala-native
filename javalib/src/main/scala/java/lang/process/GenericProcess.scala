@@ -7,13 +7,13 @@ import java.{util => ju}
 import ju.Optional
 import ju.concurrent.CompletableFuture
 
-abstract class GenericProcess() extends java.lang.Process {
+private[process] abstract class GenericProcess() extends Process {
   protected val builder: ProcessBuilder
 
   private val processInfo = GenericProcessInfo(builder)
   private lazy val handle = new GenericProcess.Handle(this)
 
-  private[lang] def checkResult(): CInt
+  def checkResult(): CInt
 
   override def toHandle(): ProcessHandle = handle
 

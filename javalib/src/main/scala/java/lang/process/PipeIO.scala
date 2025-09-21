@@ -116,12 +116,12 @@ import scala.scalanative.windows.NamedPipeApi.PeekNamedPipe
  *     unfortunate timing interactions.
  */
 
-private[lang] final class PipeIO[T](
+private[process] final class PipeIO[T](
     val nullStream: T,
     val fdStream: (GenericProcess, FileDescriptor) => T
 )
 
-private[lang] object PipeIO {
+private[process] object PipeIO {
   def apply[T](
       process: GenericProcess,
       childFd: => FileDescriptor,

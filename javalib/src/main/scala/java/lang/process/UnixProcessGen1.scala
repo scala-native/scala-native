@@ -15,7 +15,7 @@ import signal.{kill, SIGKILL}
 import time._
 import sys.time._
 
-private[lang] class UnixProcessGen1 private (
+private[process] class UnixProcessGen1 private (
     override protected val _pid: CInt,
     override protected val builder: ProcessBuilder,
     infds: Ptr[CInt],
@@ -110,7 +110,7 @@ private[lang] class UnixProcessGen1 private (
     )
 
   private var _exitValue = -1
-  private[lang] def checkResult(): CInt = {
+  def checkResult(): CInt = {
     if (_exitValue == -1) setExitValue(UnixProcessGen1.checkResult(_pid))
     _exitValue
   }
@@ -131,7 +131,7 @@ private[lang] class UnixProcessGen1 private (
   }
 }
 
-object UnixProcessGen1 {
+private[process] object UnixProcessGen1 {
   @link("pthread")
   @extern
   @define("__SCALANATIVE_JAVALIB_PROCESS_MONITOR")

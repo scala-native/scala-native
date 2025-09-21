@@ -26,7 +26,7 @@ import WinBaseApi._
 import WinBaseApiOps._
 import winnt.AccessRights._
 
-private[lang] class WindowsProcess private (
+private[process] class WindowsProcess private (
     handle: Handle,
     override protected val builder: ProcessBuilder,
     inHandle: FileDescriptor,
@@ -107,7 +107,7 @@ private[lang] class WindowsProcess private (
     cachedExitValue
   }
 
-  private[lang] def checkResult(): CInt = {
+  def checkResult(): CInt = {
     cachedExitValue
       .getOrElse {
         val exitCode: Ptr[DWord] = stackalloc[DWord]()
@@ -128,7 +128,7 @@ private[lang] class WindowsProcess private (
   }
 }
 
-object WindowsProcess {
+private[process] object WindowsProcess {
   type PipeHandles = CArray[Handle, Nat._2]
   private final val readEnd = 0
   private final val writeEnd = 1

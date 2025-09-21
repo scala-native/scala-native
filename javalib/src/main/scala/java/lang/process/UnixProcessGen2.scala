@@ -59,7 +59,7 @@ import scalanative.posix.unistd
  * This is a developing story, stay tuned.
  */
 
-private[lang] class UnixProcessGen2 private (
+private[process] class UnixProcessGen2 private (
     override protected val _pid: CInt,
     override protected val builder: ProcessBuilder,
     infds: Ptr[CInt],
@@ -180,7 +180,7 @@ private[lang] class UnixProcessGen2 private (
     cachedExitValue.get() >= 0
   }
 
-  private[lang] def checkResult(): CInt = {
+  def checkResult(): CInt = {
     /* checkResult() is a no-op on UnixProcessGen2 but can not be easily deleted.
      * PipeIO.scala calls it and neither knows nor cares if it is calling into
      * a UnixProcessGen1 or UnixProcessGen2.
@@ -486,7 +486,7 @@ private[lang] class UnixProcessGen2 private (
   }
 }
 
-object UnixProcessGen2 {
+private[process] object UnixProcessGen2 {
 
   def apply(
       builder: ProcessBuilder
