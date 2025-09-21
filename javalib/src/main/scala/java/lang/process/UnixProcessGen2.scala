@@ -68,24 +68,27 @@ private[process] class UnixProcessHandleGen2(pidFd: CInt)(
       unit: TimeUnit
   ): Boolean = {
     // Java allows negative timeouts. Simplify timeout math; treat as 0.
-    val timeout = Math.max(timeoutArg, 0L)
+    val timeoutNanos = Math.max(0, unit.toNanos(timeoutArg))
+    val deadline = System.nanoTime() + timeoutNanos
 
-    val deadline = System.nanoTime() + unit.toNanos(timeout)
     // wait until process exits or times out.
     val ts = stackalloc[timespec]()
-    fillTimespec(timeout, unit, ts)
+    val nanosPerSecond = 1000000000L
+
     @tailrec
-    def waitWithRepeat(): Boolean = {
+    def waitWithRepeat(timeoutNanos: Long): Boolean = {
+      val seconds = Math.floorDiv(timeoutNanos, nanosPerSecond)
+      ts.tv_sec = seconds.toSize
+      ts.tv_nsec = (timeoutNanos - nanosPerSecond * seconds).toSize
+
       val ok = osWaitForImpl(Some(ts))
       hasExited || !ok && {
         val remainingNanos = deadline - System.nanoTime()
-        remainingNanos >= 0 && {
-          fillTimespec(remainingNanos, TimeUnit.NANOSECONDS, ts)
-          waitWithRepeat()
-        }
+        remainingNanos >= 0 && waitWithRepeat(remainingNanos)
       }
     }
-    waitWithRepeat()
+
+    waitWithRepeat(timeoutNanos)
   }
 
   private def askZombiesForTheirExitStatus(): Unit = {
@@ -107,80 +110,6 @@ private[process] class UnixProcessHandleGen2(pidFd: CInt)(
 
     val ec = UnixProcess.waitpidNoECHILD(_pid, options = 0)
     setCachedExitCode(ec.getOrElse(1))
-  }
-
-  // corral handling timevalue conversion details, fill ts.
-  private def fillTimespec(
-      timeout: scala.Long,
-      unit: TimeUnit,
-      ts: Ptr[timespec]
-  ): Unit = {
-    // Precondition: caller has ensured that timeout >= 0.
-
-    /* The longest representation the C structure will accommodate is
-     * java.lang.Long.MAX_VALUE seconds and 999,999 nanos.
-     *
-     * Certain combinations of the timeout & unit arguments and specified
-     * conversion will result in saturation and Java returning
-     * java.lang.Long.MAX_VALUE.
-     *
-     * The math below will only accommodate java.lang.Long.MAX_VALUE seconds
-     * and 0 nanos. Perhaps during that time a better solution will be found.
-     */
-
-    /* Arguments 'timeout: scala.Long' and 'unit: TimeUnit' allow a greater
-     * range of values than the underlying operating data structure:
-     * C struct timespec. 'timespec' allows only java.lang.Long.MAX_VALUE
-     * seconds and 999,999,999 nanos. Note the restriction on the range
-     * of nanoseconds.
-     *
-     * TimeUnits of TimeUnit.SECOND or larger will always have zero
-     * nanoseconds. Some combinations of timeout and unit will
-     * saturate (overflow) the timspec.tv_sec field.
-     * Consider: java.lang.Long.MAX_VALUE and TimeUnit.DAYS.
-     *
-     * TimeUnits smaller than TimeUnit.SECOND may have  effective
-     * tv nanoseconds. Consider: 1999 and TimeUnit.MILLISECONDS.
-     * The operating system(s) require the timespec to be normalized.
-     * That is, the tv_nsec field must be between 0 and 999,999,999.
-     * That is, represent less than a second, full seconds go into the
-     * tv_sec field.
-     *
-     * The math below is more complicated that the 'usual' algorithm
-     * one might expect because it accounts for saturation and normalization.
-     * NOT:
-     *  tv.tv_nsec =
-     *      (unit.toNanos(timeout) - TimeUnit.SECONDS.toNanos(seconds)).toSize
-     */
-
-    ts.tv_sec = unit.toSeconds(timeout).toSize
-
-    /* To the devo or reviewer reading the code down the line and asking
-     * "These are known compile time constants, why not use 1_000 and such?".
-     *
-     * SN currently supports Scala 2.12, which does not allow underscores
-     * in numeric literals: 1_000. Scala versions 2.13 and above do.
-     * The complier should optimize the math of the constants at compile time
-     * but the code looks strange.
-     *
-     * If there is a reason to touch this code once Scala 2.12 is no longer
-     * supported, the literals with underbars expected by contemporary
-     * eyes can be introduced.
-     */
-
-    ts.tv_nsec = {
-      val modulus = unit match {
-        case _ if (unit == TimeUnit.MILLISECONDS) =>
-          1000L
-        case _ if (unit == TimeUnit.MICROSECONDS) =>
-          1000L * 1000
-        case _ if (unit == TimeUnit.NANOSECONDS) =>
-          1000L * 1000 * 1000
-        case _ => 1L // For all i: Int, (i % 1) == 0, which propagates through.
-      }
-
-      unit.toNanos(timeout % modulus).toSize
-    }
   }
 
   private def osWaitForImpl(timeout: Option[Ptr[timespec]]): Boolean = try {
