@@ -129,7 +129,8 @@ private[process] object PipeIO {
   )(implicit ioStream: PipeIO[T]): T = {
     redirect.`type`() match {
       case ProcessBuilder.Redirect.Type.PIPE =>
-        ioStream.fdStream(process, childFd)
+        val fd = childFd // could specify INVALID if PIPE is not needed
+        if (fd.valid()) ioStream.fdStream(process, fd) else ioStream.nullStream
       case _ =>
         ioStream.nullStream
     }

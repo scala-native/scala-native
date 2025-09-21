@@ -97,8 +97,7 @@ private[process] class WindowsProcess private (
   private val _inputStream =
     PipeIO[PipeIO.Stream](this, outHandle, builder.redirectOutput())
   private val _errorStream =
-    if (builder.redirectErrorStream()) PipeIO.InputPipeIO.nullStream
-    else PipeIO[PipeIO.Stream](this, errHandle, builder.redirectError())
+    PipeIO[PipeIO.Stream](this, errHandle, builder.redirectError())
   private val _outputStream =
     PipeIO[OutputStream](this, inHandle, builder.redirectInput())
 
@@ -151,7 +150,7 @@ private[process] object WindowsProcess {
         "Couldn't create std output pipe."
       )
     val (errRead, errWrite) = {
-      if (builder.redirectErrorStream()) (outRead, outWrite)
+      if (builder.redirectErrorStream()) (INVALID_HANDLE_VALUE, outWrite)
       else
         createPipeOrThrow(
           builder.redirectError(),
