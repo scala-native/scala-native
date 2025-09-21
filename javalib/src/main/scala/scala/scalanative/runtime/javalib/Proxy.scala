@@ -33,4 +33,5 @@ object Proxy {
 
   def stackTraceIterator(): Iterator[StackTraceElement] =
     StackTrace.stackTraceIterator()
+
 }

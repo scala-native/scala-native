@@ -99,7 +99,7 @@ private[process] object WindowsProcess {
 
     val cmd = builder.command()
     val dir = toCWideStringUTF16LE(builder.directory().getAbsolutePath())
-    val argv = toCWideStringUTF16LE(cmd.scalaOps.mkString("", " ", ""))
+    val argv = toCWideStringUTF16LE(WindowsUtils.argvToCommand(cmd.iterator()))
     val envp = nullTerminatedBlock {
       val list = new ArrayList[String]
       builder
