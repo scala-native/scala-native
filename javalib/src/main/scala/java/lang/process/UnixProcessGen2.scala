@@ -8,8 +8,6 @@ import java.lang.ProcessBuilder.Redirect
 
 import java.lang.process.BsdOsSpecific._
 import java.lang.process.BsdOsSpecific.Extern.{kevent, kqueue}
-
-import java.lang.process.LinuxOsSpecific._
 import java.lang.process.LinuxOsSpecific.Extern.{pidfd_open, ppoll}
 
 import java.{util => ju}
@@ -63,8 +61,8 @@ import scalanative.posix.unistd
  */
 
 private[lang] class UnixProcessGen2 private (
-    _pid: CInt,
-    builder: ProcessBuilder,
+    override protected val _pid: CInt,
+    override protected val builder: ProcessBuilder,
     infds: Ptr[CInt],
     outfds: Ptr[CInt],
     errfds: Ptr[CInt]
@@ -92,9 +90,6 @@ private[lang] class UnixProcessGen2 private (
   }
 
   private val cachedExitValue = new CachedExitValue()
-
-  override private[process] val processInfo =
-    GenericProcess.Info.create(builder, pid = _pid.toLong)
 
   override def destroy(): Unit = kill(_pid, SIGTERM)
 

@@ -3,16 +3,17 @@ package java.lang.process
 import scala.scalanative.unsafe._
 import scala.scalanative.meta.LinktimeInfo
 
-import java.time.{Duration, Instant}
 import java.{util => ju}
-import ju.{Optional, Arrays}
+import ju.Optional
 import ju.concurrent.CompletableFuture
 
 abstract class GenericProcess() extends java.lang.Process {
+  protected val builder: ProcessBuilder
+
+  private val processInfo = GenericProcessInfo(builder)
   private lazy val handle = new GenericProcess.Handle(this)
 
   private[lang] def checkResult(): CInt
-  private[process] def processInfo: GenericProcess.Info
 
   override def toHandle(): ProcessHandle = handle
 
@@ -20,7 +21,6 @@ abstract class GenericProcess() extends java.lang.Process {
     toHandle().onExit().thenApply(_ => this)
 
   override def info(): ProcessHandle.Info = processInfo
-  override def pid(): scala.Long = processInfo.pid
 }
 
 private object GenericProcess {
@@ -74,50 +74,6 @@ private object GenericProcess {
     override def hashCode(): Int =
       ((31 * this.pid().##) * 31) + this.createdAt.##
     override def toString(): String = process.pid().toString() // JVM compliance
-  }
-
-  object Info {
-    def create(builder: ProcessBuilder, pid: scala.Long): Info = {
-      val cmd = builder.command()
-      val cmdAsArray = cmd.toArray(new Array[String](cmd.size()))
-      val command =
-        if (cmd.isEmpty()) Optional.empty[String]()
-        else Optional.of(cmdAsArray.head)
-      val args =
-        if (cmd.isEmpty()) Optional.empty[Array[String]]()
-        else Optional.of(cmdAsArray.tail)
-      new Info(pid = pid, cmd = command, args = args)
-    }
-  }
-  class Info(
-      val pid: scala.Long,
-      cmd: Optional[String],
-      args: Optional[Array[String]]
-  ) extends ProcessHandle.Info {
-    override def command(): Optional[String] = cmd
-    override def arguments(): Optional[Array[String]] = args
-    override def commandLine(): Optional[String] =
-      // For comprehension variant does not compile on Scala 2.12
-      command().flatMap[String] { cmd =>
-        arguments().map[String] { args =>
-          s"$cmd ${args.mkString(" ")}"
-        }
-      }
-
-    override def user(): Optional[String] =
-      Optional.ofNullable(System.getProperty("user.name"))
-
-    // Instant not implemented
-    override def startInstant(): Optional[Instant] = Optional.empty()
-    override def totalCpuDuration(): Optional[Duration] = Optional.empty()
-
-    override def toString(): String = {
-      val args = this
-        .arguments()
-        .orElseGet(() => Array[String]())
-        .asInstanceOf[Array[AnyRef]]
-      s"[user: ${user()}, cmd: ${{ command() }}, args: ${Arrays.toString(args)}"
-    }
   }
 
 }

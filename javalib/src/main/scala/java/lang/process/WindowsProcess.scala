@@ -27,16 +27,15 @@ import WinBaseApiOps._
 import winnt.AccessRights._
 
 private[lang] class WindowsProcess private (
-    val handle: Handle,
-    builder: ProcessBuilder,
+    handle: Handle,
+    override protected val builder: ProcessBuilder,
     inHandle: FileDescriptor,
     outHandle: FileDescriptor,
     errHandle: FileDescriptor
 ) extends GenericProcess {
   private val _pid = GetProcessId(handle)
 
-  override private[process] val processInfo =
-    GenericProcess.Info.create(builder, pid = _pid.toLong)
+  override final def pid(): Long = _pid.toLong
 
   private var cachedExitValue: Option[scala.Int] = None
 

@@ -17,15 +17,12 @@ import time._
 import sys.time._
 
 private[lang] class UnixProcessGen1 private (
-    _pid: CInt,
-    builder: ProcessBuilder,
+    override protected val _pid: CInt,
+    override protected val builder: ProcessBuilder,
     infds: Ptr[CInt],
     outfds: Ptr[CInt],
     errfds: Ptr[CInt]
 ) extends UnixProcess() {
-  override private[process] val processInfo =
-    GenericProcess.Info.create(builder, pid = _pid.toLong)
-
   override def destroy(): Unit = kill(_pid, sig.SIGTERM)
 
   override def destroyForcibly(): Process = {

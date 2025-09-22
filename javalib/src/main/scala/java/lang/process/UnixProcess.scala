@@ -1,8 +1,13 @@
 package java.lang.process
 
 import scala.scalanative.meta.LinktimeInfo
+import scala.scalanative.unsafe.CInt
 
-private[lang] abstract class UnixProcess extends GenericProcess {}
+private[lang] abstract class UnixProcess extends GenericProcess {
+  protected val _pid: CInt
+
+  override final def pid(): Long = _pid.toLong
+}
 
 object UnixProcess {
   def apply(builder: ProcessBuilder): Process = {
