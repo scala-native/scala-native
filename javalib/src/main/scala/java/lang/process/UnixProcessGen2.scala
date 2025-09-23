@@ -340,18 +340,22 @@ private[process] class UnixProcessGen2 private (
     val pidFd = pidfd_open(_pid, 0.toUInt)
 
     if (pidFd == -1) {
-      val msg = s"pidfd_open failed: ${fromCString(strerror(errno))}"
-      throw new IOException(msg)
+      if (errno == EINTR) throw new InterruptedException()
+      else if (errno == ECHILD || errno == ESRCH || errno == EINVAL)
+        cachedExitValue.setOnce(1)
+      else
+        throw new IOException(
+          s"pidfd_open(${_pid}) failed: ${fromCString(strerror(errno))}"
+        )
+      return
     }
 
     val fds = stackalloc[struct_pollfd](1)
     (fds + 0).fd = pidFd
     (fds + 0).events = (pollEvents.POLLIN | pollEvents.POLLRDNORM).toShort
 
-    val tmo = timeout.getOrElse(null)
-
     // 'null' sigmask will retain all current signals.
-    val ppollStatus = ppoll(fds, 1.toUSize, tmo, null);
+    val ppollStatus = ppoll(fds, 1.toUSize, timeout.orNull, null)
 
     unistd.close(pidFd) // ensure fd does not leak away.
 
@@ -361,9 +365,7 @@ private[process] class UnixProcessGen2 private (
       throw new IOException(
         s"waitFor pid=${_pid}, ppoll failed: ${fromCString(strerror(errno))}"
       )
-    } else if (ppollStatus == 0) {
-      None
-    } else {
+    } else if (ppollStatus > 0) {
       /* Minimize potential blocking wait in waitpid() by doing some
        * necessary work before asking for an exit status rather than after.
        * This gives the pid process time to exit fully.
@@ -416,8 +418,6 @@ private[process] class UnixProcessGen2 private (
     childExitEvent._3 = (EV_ADD | EV_DISPATCH).toUShort
     childExitEvent._4 = (NOTE_EXIT | NOTE_EXITSTATUS).toUInt
 
-    val tmo = timeout.getOrElse(null)
-
     val status =
       kevent(
         kq,
@@ -425,7 +425,7 @@ private[process] class UnixProcessGen2 private (
         1,
         eventResult.asInstanceOf[Ptr[kevent]],
         1,
-        tmo
+        timeout.orNull
       )
 
     unistd.close(kq) // Do not leak kq.
@@ -435,9 +435,7 @@ private[process] class UnixProcessGen2 private (
       throw new IOException(
         s"wait pid=${_pid}, kevent failed: ${fromCString(strerror(errno))}"
       )
-    } else if (status == 0) {
-      None
-    } else {
+    } else if (status > 0) {
       /* Minimize potential blocking wait in waitpid() by doing some
        * necessary work before asking for an exit status rather than after.
        * This gives the pid process time to exit fully.
