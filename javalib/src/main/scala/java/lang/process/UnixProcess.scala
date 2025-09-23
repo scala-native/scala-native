@@ -15,6 +15,8 @@ private[process] abstract class UnixProcess extends GenericProcess {
   override protected def fdErr = new FileDescriptor(!errfds, readOnly = true)
 
   override final def pid(): Long = _pid.toLong
+
+  override final protected def close(): Unit = {}
 }
 
 private[process] object UnixProcess {

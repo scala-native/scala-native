@@ -2,8 +2,6 @@ package java.lang.process
 
 import java.io.{File, IOException}
 
-import java.{lang => jl}
-
 import java.lang.process.BsdOsSpecific._
 import java.lang.process.BsdOsSpecific.Extern.{kevent, kqueue}
 import java.lang.process.LinuxOsSpecific.Extern.{pidfd_open, ppoll}
@@ -12,8 +10,6 @@ import java.{util => ju}
 import ju.concurrent.TimeUnit
 import ju.ArrayList
 import ju.ScalaOps._
-
-import java.util.{concurrent => juc}
 
 import scala.annotation.tailrec
 
@@ -66,29 +62,6 @@ private[process] class UnixProcessGen2 private (
     override protected val errfds: Ptr[CInt]
 ) extends UnixProcess() {
 
-  private class CachedExitValue() {
-    final val EXIT_VALUE_UNKNOWN = jl.Integer.MIN_VALUE
-
-    // Non-negative values indicate exit status is known to be that value.
-    val cached = new juc.atomic.AtomicInteger(EXIT_VALUE_UNKNOWN)
-
-    def get(): scala.Int =
-      cached.get()
-
-    def getOrDefault(default: scala.Int): scala.Int = {
-      val cev = get()
-      if (cev >= 0) cev
-      else default
-    }
-
-    def setOnce(known: scala.Int): Unit = {
-      // Save only the value first presented. Be idempotent.
-      cached.compareAndExchangeRelease(EXIT_VALUE_UNKNOWN, known)
-    }
-  }
-
-  private val cachedExitValue = new CachedExitValue()
-
   override def destroy(): Unit = kill(_pid, SIGTERM)
 
   override def destroyForcibly(): Process = {
@@ -96,37 +69,14 @@ private[process] class UnixProcessGen2 private (
     this
   }
 
-  override def exitValue(): scala.Int = {
-    val cev = cachedExitValue.getOrDefault(-1)
-
-    if (cev >= 0) cev // use cachedExitValue discovered by previous waitFor()
-    else { // have to find out for ourselves.
-      val waitStatus = waitpidImplNoECHILD(_pid, options = WNOHANG)
-
-      if (waitStatus == 0)
-        throw new IllegalThreadStateException()
-      else
-        cachedExitValue.getOrDefault(1) // default 1 should never happen
-    }
-  }
-
-  override def isAlive(): scala.Boolean = {
-    if (cachedExitValue.get() >= 0) false
-    else waitpidImplNoECHILD(_pid, options = WNOHANG) == 0
-  }
-
-  override def toString = { // Match JVM output
-    val cev = cachedExitValue.getOrDefault(-1)
-
-    if (cev >= 0) s"Process[pid=${_pid}, exitValue=$cev]"
-    else "not exited"
-  }
+  override protected def getExitCodeImpl: Option[Int] =
+    waitpidImplNoECHILD(_pid, options = WNOHANG)
 
   override def waitFor(): scala.Int = {
     // wait until process exits or forever, whichever comes first.
     var done = false
 
-    while (!done) {
+    while (!done && !hasExited) {
       try {
         osWaitForImpl(None)
         done = true
@@ -136,17 +86,11 @@ private[process] class UnixProcessGen2 private (
       }
     }
 
-    cachedExitValue.getOrDefault(1) // default 1 should never happen
+    exitValue()
   }
 
-  override def waitFor(
-      timeoutArg: scala.Long,
-      unit: TimeUnit
-  ): scala.Boolean = {
-    val cev = cachedExitValue.getOrDefault(-1)
-
-    if (cev >= 0) true
-    else {
+  override def waitFor(timeoutArg: Long, unit: TimeUnit): Boolean =
+    hasExited || {
       // Java allows negative timeouts. Simplify timeout math; treat as 0.
       val timeout = Math.max(timeoutArg, 0L)
 
@@ -168,23 +112,11 @@ private[process] class UnixProcessGen2 private (
         }
       }
       waitWithRepeat()
+
+      hasExited
     }
 
-    cachedExitValue.get() >= 0
-  }
-
-  def checkResult(): CInt = {
-    /* checkResult() is a no-op on UnixProcessGen2 but can not be easily deleted.
-     * PipeIO.scala calls it and neither knows nor cares if it is calling into
-     * a UnixProcessGen1 or UnixProcessGen2.
-     * When/if UnixProcessGen1 is no longer in the mix, this method and its callers
-     * in PipeIO can be deleted to save a few machine cycles.
-     */
-
-    0 // Sole caller, PipeIO, never checks value. Just no-op & match signature.
-  }
-
-  private def waitpidImplNoECHILD(pid: pid_t, options: Int): Int = {
+  private def waitpidImplNoECHILD(pid: pid_t, options: Int): Option[Int] = {
     val wstatus = stackalloc[Int]()
 
     val waitStatus = waitpid(pid, wstatus, options)
@@ -198,7 +130,7 @@ private[process] class UnixProcessGen2 private (
          */
 
         // OK if no exchange, someone else already reaped the process.
-        cachedExitValue.setOnce(1)
+        Some(1)
       } else {
         val msg = s"waitpid failed: ${fromCString(strerror(errno))}"
         throw new IOException(msg)
@@ -214,10 +146,8 @@ private[process] class UnixProcessGen2 private (
         }
 
       // OK if no exchange, someone else already reaped the process.
-      cachedExitValue.setOnce(decoded)
-    }
-
-    waitStatus
+      Some(decoded)
+    } else None
   }
 
   private def askZombiesForTheirExitStatus(): Unit = {
@@ -237,8 +167,8 @@ private[process] class UnixProcessGen2 private (
      *  just reported as having exited is a fussy busy-wait timing loop.
      */
 
-    waitpidImplNoECHILD(_pid, options = 0)
-    cachedExitValue.setOnce(1)
+    val ec = waitpidImplNoECHILD(_pid, options = 0)
+    setCachedExitCode(ec.getOrElse(1))
   }
 
   // corral handling timevalue conversion details, fill ts.
@@ -315,9 +245,10 @@ private[process] class UnixProcessGen2 private (
     }
   }
 
-  private def osWaitForImpl(timeout: Option[Ptr[timespec]]): Unit = {
-    // caller should have returned before here if cachedExitValue is known.
-    if (cachedExitValue.get() >= 0) {
+  private def osWaitForImpl(
+      timeout: Option[Ptr[timespec]]
+  ): Unit = synchronized {
+    if (hasExited) {
       // Another waitFor() has reaped exitValue; nothing to do here.
     } else if (LinktimeInfo.isLinux) {
       linuxWaitForImpl(timeout)
@@ -342,7 +273,7 @@ private[process] class UnixProcessGen2 private (
     if (pidFd == -1) {
       if (errno == EINTR) throw new InterruptedException()
       else if (errno == ECHILD || errno == ESRCH || errno == EINVAL)
-        cachedExitValue.setOnce(1)
+        setCachedExitCode(1)
       else
         throw new IOException(
           s"pidfd_open(${_pid}) failed: ${fromCString(strerror(errno))}"
@@ -366,11 +297,6 @@ private[process] class UnixProcessGen2 private (
         s"waitFor pid=${_pid}, ppoll failed: ${fromCString(strerror(errno))}"
       )
     } else if (ppollStatus > 0) {
-      /* Minimize potential blocking wait in waitpid() by doing some
-       * necessary work before asking for an exit status rather than after.
-       * This gives the pid process time to exit fully.
-       */
-      closeProcessStreams()
       askZombiesForTheirExitStatus()
     }
   }
@@ -436,14 +362,6 @@ private[process] class UnixProcessGen2 private (
         s"wait pid=${_pid}, kevent failed: ${fromCString(strerror(errno))}"
       )
     } else if (status > 0) {
-      /* Minimize potential blocking wait in waitpid() by doing some
-       * necessary work before asking for an exit status rather than after.
-       * This gives the pid process time to exit fully.
-       *
-       * macOS may have a millisecond or more delay between kevent
-       * reporting a process as having exited and waitpid() seeing it.
-       */
-      closeProcessStreams()
       askZombiesForTheirExitStatus()
     }
   }

@@ -1,11 +1,11 @@
 package java.lang.process
 
-import scala.scalanative.unsafe._
 import scala.scalanative.meta.LinktimeInfo
 
 import java.io.{FileDescriptor, InputStream, OutputStream}
 import java.util.Optional
 import java.util.concurrent.CompletableFuture
+import java.util.function
 import java.util.stream.Stream
 
 private[process] abstract class GenericProcess() extends Process {
@@ -16,8 +16,6 @@ private[process] abstract class GenericProcess() extends Process {
 
   private val processInfo = GenericProcessInfo(builder)
   private lazy val handle = new GenericProcessHandle(this)
-
-  def checkResult(): CInt
 
   private val outputStream =
     PipeIO[OutputStream](this, fdIn, builder.redirectInput())
@@ -30,10 +28,16 @@ private[process] abstract class GenericProcess() extends Process {
   override def getErrorStream(): InputStream = errorStream
   override def getOutputStream(): OutputStream = outputStream
 
+  override def exitValue(): Int = getCachedExitCode.getOrElse {
+    throw new IllegalThreadStateException(
+      s"Process ${pid()} has not exited yet"
+    )
+  }
+
   override def toHandle(): ProcessHandle = handle
 
   override def onExit(): CompletableFuture[Process] =
-    toHandle().onExit().thenApply(_ => this)
+    onExitApply(_ => this: Process)
 
   override def info(): ProcessHandle.Info = processInfo
 
@@ -43,6 +47,47 @@ private[process] abstract class GenericProcess() extends Process {
     errorStream.drain()
     this
   }
+
+  protected def close(): Unit
+  protected def getExitCodeImpl: Option[Int]
+
+  private val completion = new CompletableFuture[java.lang.Integer]()
+  onExitHandleSync((_, _) => closeProcessStreams())
+
+  override final def isAlive(): Boolean = !hasExited
+
+  final def checkIfExited(): Boolean =
+    hasExited || checkAndSetExitCode() || hasExited
+
+  final def hasExited: Boolean = completion.isDone()
+
+  final def getCachedExitCode: Option[Int] = {
+    if (!completion.isDone()) None
+    else if (completion.isCompletedExceptionally()) Some(-1)
+    else {
+      val res = completion.getNow(null)
+      Some(if (res == null) -1 else res.intValue())
+    }
+  }
+
+  protected final def setCachedExitCode(value: Int): Boolean = {
+    val ok = completion.complete(value)
+    if (ok) close()
+    ok
+  }
+
+  protected final def checkAndSetExitCode(): Boolean =
+    synchronized(getExitCodeImpl.exists(setCachedExitCode))
+
+  def onExitApply[A <: AnyRef](
+      fn: function.Function[java.lang.Integer, A]
+  ): CompletableFuture[A] =
+    completion.thenApplyAsync(fn)
+
+  def onExitHandleSync[A <: AnyRef](
+      fn: function.BiFunction[java.lang.Integer, Throwable, A]
+  ): CompletableFuture[A] =
+    completion.handle(fn)
 
 }
 
@@ -69,12 +114,8 @@ private[process] class GenericProcessHandle(val process: GenericProcess)
   override def supportsNormalTermination(): Boolean =
     process.supportsNormalTermination()
 
-  override def onExit(): CompletableFuture[ProcessHandle] = {
-    val completion = new CompletableFuture[ProcessHandle]()
-    if (LinktimeInfo.isMultithreadingEnabled)
-      GenericProcessWatcher.watchForTermination(completion, this)
-    completion
-  }
+  override def onExit(): CompletableFuture[ProcessHandle] =
+    process.onExitApply(_ => this: ProcessHandle)
 
   override def pid(): scala.Long = process.pid()
   override def isAlive(): Boolean = process.isAlive()
@@ -99,7 +140,12 @@ private[process] class GenericProcessHandle(val process: GenericProcess)
 
 private[lang] object GenericProcess {
 
-  def apply(pb: ProcessBuilder): GenericProcess =
-    if (LinktimeInfo.isWindows) WindowsProcess(pb) else UnixProcess(pb)
+  def apply(pb: ProcessBuilder): GenericProcess = {
+    val process =
+      if (LinktimeInfo.isWindows) WindowsProcess(pb) else UnixProcess(pb)
+    if (LinktimeInfo.isMultithreadingEnabled)
+      GenericProcessWatcher.watchForTermination(process)
+    process
+  }
 
 }

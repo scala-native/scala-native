@@ -157,13 +157,13 @@ private[process] object PipeIO {
     override def available(): Int = synchronized {
       try
         availableUnSync()
-      finally process.checkResult()
+      finally process.checkIfExited()
     }
 
     override def read(): Int = synchronized {
       try
         src.read()
-      finally process.checkResult()
+      finally process.checkIfExited()
     }
 
     override def read(buf: Array[scala.Byte], offset: Int, len: Int): Int =
@@ -206,7 +206,7 @@ private[process] object PipeIO {
                 case _ => -1 // EOF
               }
             }
-          } finally process.checkResult()
+          } finally process.checkIfExited()
         }
       }
 

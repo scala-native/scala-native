@@ -3,20 +3,13 @@ package java.lang.process
 import java.util.concurrent._
 
 private[process] object GenericProcessWatcher {
-  // Identity map, no valid concurrent structure
-  private val watchedProcesses = new ConcurrentHashMap[
-    CompletableFuture[ProcessHandle],
-    GenericProcessHandle
-  ]()
+  private val watchedProcesses = ConcurrentHashMap.newKeySet[GenericProcess]
 
   private val lock = new locks.ReentrantLock()
   private val hasProcessesToWatch = lock.newCondition()
 
-  def watchForTermination(
-      completion: CompletableFuture[ProcessHandle],
-      handle: GenericProcessHandle
-  ): Unit = {
-    watchedProcesses.put(completion, handle)
+  def watchForTermination(handle: GenericProcess): Unit = {
+    watchedProcesses.add(handle)
     assert(
       watcherThread.isAlive(),
       "Process termination watch thread is terminated"
@@ -37,16 +30,11 @@ private[process] object GenericProcessWatcher {
       lock.lock()
       try {
         while (true) try {
-          while (watchedProcesses.isEmpty()) {
+          while (watchedProcesses.isEmpty())
             hasProcessesToWatch.await()
-          }
-          watchedProcesses.forEach { (completion, ref) =>
-            if (completion.isCancelled())
-              watchedProcesses.remove(completion)
-            else if (ref.process.waitFor(5, TimeUnit.MILLISECONDS)) {
-              completion.complete(ref)
-              watchedProcesses.remove(completion)
-            }
+          watchedProcesses.forEach { ref =>
+            if (ref.waitFor(5, TimeUnit.MILLISECONDS))
+              watchedProcesses.remove(ref)
           }
           Thread.sleep(100 /*ms*/ )
         } catch { case scala.util.control.NonFatal(_) => () }

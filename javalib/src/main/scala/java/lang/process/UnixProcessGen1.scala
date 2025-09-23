@@ -28,70 +28,42 @@ private[process] class UnixProcessGen1 private (
     this
   }
 
-  override def exitValue(): scala.Int = synchronized {
-    checkResult() match {
-      case -1 =>
-        throw new IllegalThreadStateException(
-          s"Process ${_pid} has not exited yet"
-        )
-      case v => v
-    }
-  }
-
-  override def isAlive(): scala.Boolean = checkResult() == -1
-
   override def toString = s"UnixProcess(${_pid})"
 
-  override def waitFor(): scala.Int = synchronized {
-    checkResult() match {
-      case -1 =>
-        osWaitForImpl(null)
-        _exitValue
-      case v => v
-    }
+  override def waitFor(): Int = {
+    hasExited || osWaitForImpl(null)
+    exitValue()
   }
 
   override def waitFor(timeout: scala.Long, unit: TimeUnit): scala.Boolean =
-    synchronized {
-      checkResult() match {
-        case -1 =>
-          val ts = stackalloc[timespec]()
-          val tv = stackalloc[timeval]()
-          UnixProcessGen1.throwOnError(
-            gettimeofday(tv, null),
-            "Failed to set time of day."
-          )
-          val nsec =
-            unit.toNanos(timeout) + TimeUnit.MICROSECONDS.toNanos(tv._2.toLong)
-          val sec = TimeUnit.NANOSECONDS.toSeconds(nsec)
-          ts._1 = tv._1 + sec.toSize
-          ts._2 =
-            (if (sec > 0) nsec - TimeUnit.SECONDS.toNanos(sec) else nsec).toSize
-          osWaitForImpl(ts)
-        case _ => true
-      }
+    hasExited || {
+      val ts = stackalloc[timespec]()
+      val tv = stackalloc[timeval]()
+      UnixProcessGen1.throwOnError(
+        gettimeofday(tv, null),
+        "Failed to set time of day."
+      )
+      val nsec =
+        unit.toNanos(timeout) + TimeUnit.MICROSECONDS.toNanos(tv._2.toLong)
+      val sec = TimeUnit.NANOSECONDS.toSeconds(nsec)
+      ts._1 = tv._1 + sec.toSize
+      ts._2 =
+        (if (sec > 0) nsec - TimeUnit.SECONDS.toNanos(sec) else nsec).toSize
+      osWaitForImpl(ts)
     }
 
-  private var _exitValue = -1
-  def checkResult(): CInt = {
-    if (_exitValue == -1)
-      setExitValue(UnixProcessGen1.ProcessMonitor.checkResult(_pid))
-    _exitValue
-  }
-  private def setExitValue(value: CInt): Unit = {
-    if (_exitValue == -1 && value != -1) {
-      _exitValue = value
-      closeProcessStreams()
-    }
+  override protected def getExitCodeImpl: Option[Int] = {
+    val res = UnixProcessGen1.ProcessMonitor.checkResult(_pid)
+    if (res == -1) None else Some(res)
   }
 
-  private def osWaitForImpl(ts: Ptr[timespec]): Boolean = {
+  private def osWaitForImpl(ts: Ptr[timespec]): Boolean = synchronized {
     val exitCode = stackalloc[CInt]()
     while (true) {
       !exitCode = -1
       val res = UnixProcessGen1.ProcessMonitor.waitForPid(_pid, ts, exitCode)
       if (res == 0) {
-        setExitValue(!exitCode)
+        setCachedExitCode(!exitCode)
         return true
       } else if (res == e.ETIMEDOUT) return false
     }

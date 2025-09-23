@@ -21,7 +21,6 @@ import ProcessThreadsApiExt._
 import ProcessThreadsApiOps._
 import FileApiExt._
 import NamedPipeApi._
-import SynchApi._
 import WinBaseApi._
 import WinBaseApiOps._
 import winnt.AccessRights._
@@ -37,8 +36,6 @@ private[process] class WindowsProcess private (
 
   override final def pid(): Long = _pid.toLong
 
-  private var cachedExitValue: Option[scala.Int] = None
-
   override def destroy(): Unit = if (isAlive()) {
     TerminateProcess(handle, 1.toUInt)
   }
@@ -48,67 +45,37 @@ private[process] class WindowsProcess private (
     this
   }
 
-  override def exitValue(): scala.Int = synchronized {
-    checkExitValue
-      .getOrElse(
-        throw new IllegalThreadStateException(
-          s"Process ${_pid} has not exited yet"
-        )
-      )
-  }
-
-  override def isAlive(): scala.Boolean = checkExitValue.isEmpty
-
-  override def toString = {
-    s"Process[pid=${_pid}, exitValue=${checkExitValue.getOrElse("\"not exited\"")}"
-  }
+  override def close(): Unit = CloseHandle(handle)
 
   override def waitFor(): scala.Int = synchronized {
     if (isAlive())
-      WaitForSingleObject(handle, Constants.Infinite)
+      osWaitForImpl(Constants.Infinite)
     exitValue()
   }
 
   override def waitFor(timeout: scala.Long, unit: TimeUnit): scala.Boolean =
     synchronized {
-      import SynchApiExt._
       def hasValidTimeout = timeout > 0L
-      def hasFinished =
-        WaitForSingleObject(
-          handle,
-          unit.toMillis(timeout).toUInt
-        ) match {
-          case WAIT_TIMEOUT => false
-          case WAIT_FAILED  =>
-            throw WindowsException("Failed to wait on proces handle")
-          case _ => true
-        }
+      def hasFinished = osWaitForImpl(unit.toMillis(timeout).toUInt)
 
       !isAlive() ||
         (hasValidTimeout && hasFinished)
     }
 
-  private def checkExitValue: Option[scala.Int] = {
-    checkResult()
-    cachedExitValue
-  }
+  private def osWaitForImpl(timeoutMillis: DWord): Boolean =
+    SynchApi.WaitForSingleObject(handle, timeoutMillis) match {
+      case SynchApiExt.WAIT_TIMEOUT => false
+      case SynchApiExt.WAIT_FAILED  =>
+        throw WindowsException("Failed to wait on process handle")
+      case _ => checkAndSetExitCode(); true
+    }
 
-  def checkResult(): CInt = {
-    cachedExitValue
-      .getOrElse {
-        val exitCode: Ptr[DWord] = stackalloc[DWord]()
-        if (!GetExitCodeProcess(handle, exitCode)) -1
-        else {
-          (!exitCode) match {
-            case STILL_ACTIVE => -1
-            case code         =>
-              closeProcessStreams()
-              CloseHandle(handle)
-              cachedExitValue = Some(code.toInt)
-              code.toInt
-          }
-        }
-      }
+  override protected def getExitCodeImpl: Option[Int] = {
+    val exitCode: Ptr[DWord] = stackalloc[DWord]()
+    if (ProcessThreadsApi.GetExitCodeProcess(handle, exitCode)) {
+      val code = !exitCode
+      if (code != ProcessThreadsApiExt.STILL_ACTIVE) Some(code.toInt) else None
+    } else None
   }
 }
 
