@@ -45,11 +45,12 @@ private[process] class UnixProcessGen1 private (
   override def waitFor(): scala.Int = synchronized {
     checkResult() match {
       case -1 =>
-        waitImpl(() => waitFor(null))
+        osWaitForImpl(null)
         _exitValue
       case v => v
     }
   }
+
   override def waitFor(timeout: scala.Long, unit: TimeUnit): scala.Boolean =
     synchronized {
       checkResult() match {
@@ -66,26 +67,15 @@ private[process] class UnixProcessGen1 private (
           ts._1 = tv._1 + sec.toSize
           ts._2 =
             (if (sec > 0) nsec - TimeUnit.SECONDS.toNanos(sec) else nsec).toSize
-          waitImpl(() => waitFor(ts)) == 0
+          osWaitForImpl(ts)
         case _ => true
       }
     }
 
-  @inline private def waitImpl(f: () => Int): Int = {
-    var res = 1
-    while ({
-      res = f()
-      res match {
-        case 0   => _exitValue == -1
-        case res => res != e.ETIMEDOUT
-      }
-    }) ()
-    res
-  }
-
   private var _exitValue = -1
   def checkResult(): CInt = {
-    if (_exitValue == -1) setExitValue(UnixProcessGen1.checkResult(_pid))
+    if (_exitValue == -1)
+      setExitValue(UnixProcessGen1.ProcessMonitor.checkResult(_pid))
     _exitValue
   }
   private def setExitValue(value: CInt): Unit = {
@@ -94,12 +84,18 @@ private[process] class UnixProcessGen1 private (
       closeProcessStreams()
     }
   }
-  private def waitFor(ts: Ptr[timespec]): Int = {
-    val res = stackalloc[CInt]()
-    !res = -1
-    val result = UnixProcessGen1.waitForPid(_pid, ts, res)
-    setExitValue(!res)
-    result
+
+  private def osWaitForImpl(ts: Ptr[timespec]): Boolean = {
+    val exitCode = stackalloc[CInt]()
+    while (true) {
+      !exitCode = -1
+      val res = UnixProcessGen1.ProcessMonitor.waitForPid(_pid, ts, exitCode)
+      if (res == 0) {
+        setExitValue(!exitCode)
+        return true
+      } else if (res == e.ETIMEDOUT) return false
+    }
+    false
   }
 }
 
@@ -118,10 +114,6 @@ private[process] object UnixProcessGen1 {
     def waitForPid(pid: Int, ts: Ptr[timespec], res: Ptr[CInt]): CInt = extern
   }
   ProcessMonitor.init()
-
-  private def checkResult(pid: Int): CInt = ProcessMonitor.checkResult(pid)
-  private def waitForPid(pid: Int, ts: Ptr[timespec], res: Ptr[CInt]): CInt =
-    ProcessMonitor.waitForPid(pid, ts, res)
 
   def apply(
       builder: ProcessBuilder
