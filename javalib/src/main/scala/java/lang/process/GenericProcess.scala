@@ -1,174 +1,178 @@
 package java.lang.process
 
-import scala.scalanative.unsafe._
 import scala.scalanative.meta.LinktimeInfo
 
-import java.time.{Duration, Instant}
-import java.{util => ju}
-import ju.{Optional, Arrays}
-import ju.concurrent.{CompletableFuture, ConcurrentHashMap, TimeUnit}
+import java.io.{FileDescriptor, InputStream, OutputStream}
+import java.util.Optional
+import java.util.concurrent.{CompletableFuture, TimeUnit}
+import java.util.function
+import java.util.stream.Stream
 
-abstract class GenericProcess() extends java.lang.Process {
-  private lazy val handle = new GenericProcess.Handle(this)
+private[process] abstract class GenericProcess(val handle: GenericProcessHandle)
+    extends Process {
+  protected def fdIn: FileDescriptor
+  protected def fdOut: FileDescriptor
+  protected def fdErr: FileDescriptor
 
-  private[lang] def checkResult(): CInt
-  private[process] def processInfo: GenericProcess.Info
+  handle.onExitHandleSync((_, _) => closeProcessStreams())
+
+  private val outputStream =
+    PipeIO[OutputStream](handle, fdIn, handle.builder.redirectInput())
+  private val inputStream =
+    PipeIO[PipeIO.Stream](handle, fdOut, handle.builder.redirectOutput())
+  private val errorStream =
+    PipeIO[PipeIO.Stream](handle, fdErr, handle.builder.redirectError())
+
+  override def getInputStream(): InputStream = inputStream
+  override def getErrorStream(): InputStream = errorStream
+  override def getOutputStream(): OutputStream = outputStream
+
+  override def exitValue(): Int = handle.getCachedExitCode.getOrElse {
+    throw new IllegalThreadStateException(
+      s"Process ${pid()} has not exited yet"
+    )
+  }
 
   override def toHandle(): ProcessHandle = handle
 
   override def onExit(): CompletableFuture[Process] =
-    toHandle().onExit().thenApply(_ => this)
+    handle.onExitApply(_ => this: Process)
 
-  override def info(): ProcessHandle.Info = processInfo
-  override def pid(): scala.Long = processInfo.pid
+  override def info(): ProcessHandle.Info = handle.info()
+
+  def closeProcessStreams(): GenericProcess = {
+    outputStream.close()
+    inputStream.drain()
+    errorStream.drain()
+    this
+  }
+
+  override final def pid(): Long = handle.pid()
+  override final def children(): Stream[ProcessHandle] = handle.children()
+  override final def descendants(): Stream[ProcessHandle] = handle.descendants()
+
+  override final def isAlive(): Boolean = handle.isAlive()
+  override final def supportsNormalTermination(): Boolean =
+    handle.supportsNormalTermination()
+
+  override final def destroy(): Unit = handle.destroy()
+  override final def destroyForcibly(): Process = {
+    handle.destroyForcibly()
+    this
+  }
+
+  override final def waitFor(): Int = {
+    handle.waitFor()
+    handle.getCachedExitCode.getOrElse(-1)
+  }
+
+  override final def waitFor(timeout: scala.Long, unit: TimeUnit): Boolean =
+    handle.waitFor(timeout, unit)
+
+  override def equals(that: Any): Boolean = that match {
+    case other: GenericProcess => handle.compareTo(other.handle) == 0
+    case _                     => false
+  }
+  override def hashCode(): Int = handle.hashCode()
+  override def toString: String = handle.toString
+
 }
 
-private object GenericProcess {
-  // Represents ProcessHandle for process started by Scala Native runtime
-  // Cannot be used with processes started by other programs
-  class Handle(val process: GenericProcess) extends ProcessHandle {
-    private val createdAt = System.nanoTime()
+// Represents ProcessHandle for process started by Scala Native runtime
+// Cannot be used with processes started by other programs
+private[process] abstract class GenericProcessHandle extends ProcessHandle {
+  protected def close(): Unit
+  protected def getExitCodeImpl: Option[Int]
+  protected def destroyImpl(force: Boolean): Boolean
+  protected def waitForImpl(): Boolean
+  protected def waitForImpl(timeout: scala.Long, unit: TimeUnit): Boolean
 
-    override def parent(): Optional[ProcessHandle] = Optional.empty()
+  val builder: ProcessBuilder
 
-    // We don't track transitive children
-    override def children(): ju.stream.Stream[ProcessHandle] =
-      ju.stream.Stream.empty()
-    override def descendants(): ju.stream.Stream[ProcessHandle] =
-      ju.stream.Stream.empty()
+  private val processInfo: GenericProcessInfo = GenericProcessInfo(builder)
+  private val completion = new CompletableFuture[java.lang.Integer]()
 
-    override def destroy(): Boolean = {
-      if (isAlive()) process.destroy()
-      true // all implementations are always successful
-    }
-    override def destroyForcibly(): Boolean = {
-      if (isAlive()) process.destroyForcibly()
-      true // all implementations are always successful
-    }
-    override def supportsNormalTermination(): Boolean =
-      process.supportsNormalTermination()
+  override final def isAlive(): Boolean = !hasExited
 
-    override def onExit(): CompletableFuture[ProcessHandle] = {
-      val completion = new CompletableFuture[ProcessHandle]()
-      if (LinktimeInfo.isMultithreadingEnabled)
-        GenericProcess.ProcessWatcher.watchForTermination(completion, this)
-      completion
-    }
+  final def checkIfExited(): Boolean =
+    hasExited || checkAndSetExitCode() || hasExited
 
-    override def pid(): scala.Long = process.pid()
-    override def isAlive(): Boolean = process.isAlive()
-    override def info(): ProcessHandle.Info = process.info()
+  final def hasExited: Boolean = completion.isDone()
 
-    override def compareTo(other: ProcessHandle): Int = other match {
-      case handle: GenericProcess.Handle =>
-        this.process.pid().compareTo(handle.process.pid()) match {
-          case 0     => this.createdAt.compareTo(handle.createdAt)
-          case value => value
-        }
-      case _ => -1
-    }
-    override def equals(that: Any): Boolean = that match {
-      case other: ProcessHandle => this.compareTo(other) == 0
-      case _                    => false
-    }
-    override def hashCode(): Int =
-      ((31 * this.pid().##) * 31) + this.createdAt.##
-    override def toString(): String = process.pid().toString() // JVM compliance
-  }
-
-  object Info {
-    def create(builder: ProcessBuilder, pid: scala.Long): Info = {
-      val cmd = builder.command()
-      val cmdAsArray = cmd.toArray(new Array[String](cmd.size()))
-      val command =
-        if (cmd.isEmpty()) Optional.empty[String]()
-        else Optional.of(cmdAsArray.head)
-      val args =
-        if (cmd.isEmpty()) Optional.empty[Array[String]]()
-        else Optional.of(cmdAsArray.tail)
-      new Info(pid = pid, cmd = command, args = args)
-    }
-  }
-  class Info(
-      val pid: scala.Long,
-      cmd: Optional[String],
-      args: Optional[Array[String]]
-  ) extends ProcessHandle.Info {
-    override def command(): Optional[String] = cmd
-    override def arguments(): Optional[Array[String]] = args
-    override def commandLine(): Optional[String] =
-      // For comprehension variant does not compile on Scala 2.12
-      command().flatMap[String] { cmd =>
-        arguments().map[String] { args =>
-          s"$cmd ${args.mkString(" ")}"
-        }
-      }
-
-    override def user(): Optional[String] =
-      Optional.ofNullable(System.getProperty("user.name"))
-
-    // Instant not implemented
-    override def startInstant(): Optional[Instant] = Optional.empty()
-    override def totalCpuDuration(): Optional[Duration] = Optional.empty()
-
-    override def toString(): String = {
-      val args = this
-        .arguments()
-        .orElseGet(() => Array[String]())
-        .asInstanceOf[Array[AnyRef]]
-      s"[user: ${user()}, cmd: ${{ command() }}, args: ${Arrays.toString(args)}"
+  final def getCachedExitCode: Option[Int] = {
+    if (!completion.isDone()) None
+    else if (completion.isCompletedExceptionally()) Some(-1)
+    else {
+      val res = completion.getNow(null)
+      Some(if (res == null) -1 else res.intValue())
     }
   }
 
-  object ProcessWatcher {
-    // Identity map, no valid concurrent structure
-    val watchedProcesses =
-      new ConcurrentHashMap[CompletableFuture[
-        ProcessHandle
-      ], GenericProcess.Handle]()
-
-    private val lock = new ju.concurrent.locks.ReentrantLock()
-    private val hasProcessesToWatch = lock.newCondition()
-
-    def watchForTermination(
-        completion: CompletableFuture[ProcessHandle],
-        handle: GenericProcess.Handle
-    ): Unit = {
-      watchedProcesses.put(completion, handle)
-      assert(
-        watcherThread.isAlive(),
-        "Process termination watch thread is terminated"
-      )
-      // If we cannot lock it means that watcher thread is already executing, no need to wake it up
-      if (lock.tryLock()) {
-        try hasProcessesToWatch.signal()
-        finally lock.unlock()
-      }
-    }
-
-    lazy val watcherThread: Thread = Thread
-      .ofPlatform()
-      .daemon(true)
-      .group(ThreadGroup.System)
-      .name("ScalaNative-ProcessTerminationWatcher")
-      .startInternal { () =>
-        lock.lock()
-        try {
-          while (true) try {
-            while (watchedProcesses.isEmpty()) {
-              hasProcessesToWatch.await()
-            }
-            watchedProcesses.forEach { (completion, handle) =>
-              if (completion.isCancelled())
-                watchedProcesses.remove(completion)
-              else if (handle.process.waitFor(5, TimeUnit.MILLISECONDS)) {
-                completion.complete(handle)
-                watchedProcesses.remove(completion)
-              }
-            }
-            Thread.sleep(100 /*ms*/ )
-          } catch { case scala.util.control.NonFatal(_) => () }
-        } finally lock.unlock()
-      }
+  protected final def setCachedExitCode(value: Int): Boolean = {
+    val ok = completion.complete(value)
+    if (ok) close()
+    ok
   }
+
+  protected final def checkAndSetExitCode(): Boolean =
+    synchronized(getExitCodeImpl.exists(setCachedExitCode))
+
+  def onExitApply[A <: AnyRef](
+      fn: function.Function[java.lang.Integer, A]
+  ): CompletableFuture[A] =
+    completion.thenApplyAsync(fn)
+
+  def onExitHandleSync[A <: AnyRef](
+      fn: function.BiFunction[java.lang.Integer, Throwable, A]
+  ): CompletableFuture[A] =
+    completion.handle(fn)
+
+  override def parent(): Optional[ProcessHandle] = Optional.empty()
+
+  // We don't track transitive children
+  override def children(): Stream[ProcessHandle] = Stream.empty()
+  override def descendants(): Stream[ProcessHandle] = Stream.empty()
+
+  override final def destroy(): Boolean = destroy(force = false)
+  override final def destroyForcibly(): Boolean = destroy(force = true)
+  @inline private def destroy(force: Boolean) =
+    hasExited || destroyImpl(force = force)
+
+  private def waitForWith(check: => Boolean) = hasExited || check && hasExited
+  def waitFor(): Boolean = waitForWith(synchronized(waitForImpl()))
+  def waitFor(timeout: scala.Long, unit: TimeUnit): Boolean =
+    waitForWith(timeout > 0L && synchronized(waitForImpl(timeout, unit)))
+
+  override def onExit(): CompletableFuture[ProcessHandle] =
+    onExitApply(_ => this: ProcessHandle)
+
+  override def info(): ProcessHandle.Info = processInfo
+
+  override def compareTo(other: ProcessHandle): Int = other match {
+    case other: GenericProcessHandle =>
+      val res = pid().compareTo(other.pid())
+      if (res != 0) res
+      else processInfo.createdAt.compareTo(other.processInfo.createdAt)
+    case _ => -1
+  }
+  override def equals(that: Any): Boolean = that match {
+    case other: ProcessHandle => this.compareTo(other) == 0
+    case _                    => false
+  }
+  override def hashCode(): Int =
+    ((31 * this.pid().##) * 31) + processInfo.createdAt.##
+  override def toString: String =
+    s"Process[pid=${pid()}, exitValue=${getCachedExitCode.getOrElse("\"not exited\"")}"
+}
+
+private[lang] object GenericProcess {
+
+  def apply(pb: ProcessBuilder): GenericProcess = {
+    val process =
+      if (LinktimeInfo.isWindows) WindowsProcess(pb) else UnixProcess(pb)
+    if (LinktimeInfo.isMultithreadingEnabled)
+      GenericProcessWatcher.watchForTermination(process)
+    process
+  }
+
 }

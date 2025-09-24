@@ -116,31 +116,32 @@ import scala.scalanative.windows.NamedPipeApi.PeekNamedPipe
  *     unfortunate timing interactions.
  */
 
-private[lang] final class PipeIO[T](
+private[process] final class PipeIO[T](
     val nullStream: T,
-    val fdStream: (GenericProcess, FileDescriptor) => T
+    val fdStream: (GenericProcessHandle, FileDescriptor) => T
 )
 
-private[lang] object PipeIO {
+private[process] object PipeIO {
   def apply[T](
-      process: GenericProcess,
+      process: GenericProcessHandle,
       childFd: => FileDescriptor,
       redirect: ProcessBuilder.Redirect
   )(implicit ioStream: PipeIO[T]): T = {
     redirect.`type`() match {
       case ProcessBuilder.Redirect.Type.PIPE =>
-        ioStream.fdStream(process, childFd)
+        val fd = childFd // could specify INVALID if PIPE is not needed
+        if (fd.valid()) ioStream.fdStream(process, fd) else ioStream.nullStream
       case _ =>
         ioStream.nullStream
     }
   }
 
   trait Stream extends InputStream {
-    def process: GenericProcess
+    def process: GenericProcessHandle
     def drain(): Unit = {}
   }
 
-  class StreamImpl(val process: GenericProcess, is: FileInputStream)
+  class StreamImpl(val process: GenericProcessHandle, is: FileInputStream)
       extends Stream {
 
     private var src: InputStream = is
@@ -153,31 +154,27 @@ private[lang] object PipeIO {
       }
     }
 
-    override def available(): Int = synchronized {
-      try
-        availableUnSync()
-      finally process.checkResult()
-    }
+    override def available(): Int =
+      try synchronized(availableUnSync())
+      finally process.checkIfExited()
 
-    override def read(): Int = synchronized {
-      try
-        src.read()
-      finally process.checkResult()
-    }
+    override def read(): Int =
+      try synchronized(src.read())
+      finally process.checkIfExited()
 
-    override def read(buf: Array[scala.Byte], offset: Int, len: Int): Int =
-      synchronized {
+    override def read(buf: Array[scala.Byte], offset: Int, len: Int): Int = {
 
-        if (offset < 0 || len < 0 || len > buf.length - offset) {
-          val end = offset + len
-          throw new IndexOutOfBoundsException(
-            s"Range [$offset, $end) out of bounds for length ${buf.length}"
-          )
-        }
+      if (offset < 0 || len < 0 || len > buf.length - offset) {
+        val end = offset + len
+        throw new IndexOutOfBoundsException(
+          s"Range [$offset, $end) out of bounds for length ${buf.length}"
+        )
+      }
 
-        if (len == 0) 0
-        else {
-          try {
+      if (len == 0) 0
+      else {
+        try {
+          synchronized {
             val avail = availableUnSync()
 
             if (avail > 0) {
@@ -205,9 +202,10 @@ private[lang] object PipeIO {
                 case _ => -1 // EOF
               }
             }
-          } finally process.checkResult()
-        }
+          }
+        } finally process.checkIfExited()
       }
+    }
 
     /* Switch horses, or at least InputStreams, "in media res".
      * See Design Note at top of file.
@@ -261,7 +259,7 @@ private[lang] object PipeIO {
 
   private object NullInput extends Stream {
     @stub
-    override def process: GenericProcess = ???
+    override def process: GenericProcessHandle = ???
     override def available(): Int = 0
     override def close(): Unit = {}
     override def read(): Int = 0

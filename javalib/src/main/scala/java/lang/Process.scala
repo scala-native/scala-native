@@ -1,7 +1,6 @@
 package java.lang
 
 import java.io.{InputStream, OutputStream}
-import java.util.Optional
 import java.util.concurrent.TimeUnit
 import java.util.stream.Stream
 import java.util.concurrent.CompletableFuture
@@ -54,4 +53,5 @@ abstract class Process {
   def waitFor(): Int
 
   def waitFor(timeout: scala.Long, unit: TimeUnit): scala.Boolean
+
 }

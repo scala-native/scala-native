@@ -1,12 +1,10 @@
 package java.lang
 
-import java.util.{ArrayList, List}
+import java.util.List
 import java.util.Map
-import java.io.{File, IOException}
+import java.io.File
 import java.util.Arrays
 import ProcessBuilder.Redirect
-// import java.lang.process._
-import scala.scalanative.meta.LinktimeInfo.isWindows
 
 final class ProcessBuilder(private var _command: List[String]) {
   def this(command: Array[String]) = {
@@ -103,8 +101,7 @@ final class ProcessBuilder(private var _command: List[String]) {
   def start(): Process = {
     if (_command.isEmpty()) throw new IndexOutOfBoundsException()
     if (_command.contains(null)) throw new NullPointerException()
-    if (isWindows) process.WindowsProcess(this)
-    else process.UnixProcess(this)
+    process.GenericProcess(this)
   }
 
   @inline private def set(f: => Unit): ProcessBuilder = {

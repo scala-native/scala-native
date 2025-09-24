@@ -1,145 +1,64 @@
 package java.lang.process
 
-import java.lang.ProcessBuilder.Redirect
-import java.io.{File, IOException, InputStream, OutputStream}
-import java.io.FileDescriptor
+import java.io.{File, IOException}
 import java.util.concurrent.TimeUnit
 import java.util.ScalaOps._
 import java.util.ArrayList
 
 import scala.scalanative.unsigned._
 import scala.scalanative.unsafe._
-import scala.scalanative.libc.{errno => err, signal => sig}
-import err.errno
-import scala.scalanative.posix.{fcntl, signal, sys, time, unistd, errno => e}
-import signal.{kill, SIGKILL}
+import scala.scalanative.libc.errno.errno
+import scala.scalanative.posix.{fcntl, sys, time, unistd, errno => e}
 import time._
 import sys.time._
 
-private[lang] class UnixProcessGen1 private (
-    pid: CInt,
-    builder: ProcessBuilder,
-    infds: Ptr[CInt],
-    outfds: Ptr[CInt],
-    errfds: Ptr[CInt]
-) extends UnixProcess() {
-  override private[process] val processInfo =
-    GenericProcess.Info.create(builder, pid = pid.toLong)
+private[process] class UnixProcessHandleGen1(
+    override protected val _pid: CInt,
+    override val builder: ProcessBuilder
+) extends UnixProcessHandle {
 
-  override def destroy(): Unit = kill(pid, sig.SIGTERM)
+  override protected def waitForImpl(): Boolean =
+    osWaitForImpl(null)
 
-  override def destroyForcibly(): Process = {
-    kill(pid, SIGKILL)
-    this
-  }
-
-  override def exitValue(): scala.Int = synchronized {
-    checkResult() match {
-      case -1 =>
-        throw new IllegalThreadStateException(
-          s"Process $pid has not exited yet"
-        )
-      case v => v
-    }
-  }
-
-  override def getErrorStream(): InputStream = _errorStream
-
-  override def getInputStream(): InputStream = _inputStream
-
-  override def getOutputStream(): OutputStream = _outputStream
-
-  override def isAlive(): scala.Boolean = checkResult() == -1
-
-  override def toString = s"UnixProcess($pid)"
-
-  override def waitFor(): scala.Int = synchronized {
-    checkResult() match {
-      case -1 =>
-        waitImpl(() => waitFor(null))
-        _exitValue
-      case v => v
-    }
-  }
-  override def waitFor(timeout: scala.Long, unit: TimeUnit): scala.Boolean =
-    synchronized {
-      checkResult() match {
-        case -1 =>
-          val ts = stackalloc[timespec]()
-          val tv = stackalloc[timeval]()
-          UnixProcessGen1.throwOnError(
-            gettimeofday(tv, null),
-            "Failed to set time of day."
-          )
-          val nsec =
-            unit.toNanos(timeout) + TimeUnit.MICROSECONDS.toNanos(tv._2.toLong)
-          val sec = TimeUnit.NANOSECONDS.toSeconds(nsec)
-          ts._1 = tv._1 + sec.toSize
-          ts._2 =
-            (if (sec > 0) nsec - TimeUnit.SECONDS.toNanos(sec) else nsec).toSize
-          waitImpl(() => waitFor(ts)) == 0
-        case _ => true
-      }
-    }
-
-  @inline private def waitImpl(f: () => Int): Int = {
-    var res = 1
-    while ({
-      res = f()
-      res match {
-        case 0   => _exitValue == -1
-        case res => res != e.ETIMEDOUT
-      }
-    }) ()
-    res
-  }
-
-  private val _inputStream =
-    PipeIO[PipeIO.Stream](
-      this,
-      new FileDescriptor(!outfds),
-      builder.redirectOutput()
+  override protected def waitForImpl(timeout: Long, unit: TimeUnit): Boolean = {
+    val ts = stackalloc[timespec]()
+    val tv = stackalloc[timeval]()
+    UnixProcessGen1.throwOnError(
+      gettimeofday(tv, null),
+      "Failed to set time of day."
     )
-  private val _errorStream =
-    PipeIO[PipeIO.Stream](
-      this,
-      new FileDescriptor(!errfds),
-      builder.redirectError()
-    )
-  private val _outputStream =
-    PipeIO[OutputStream](
-      this,
-      new FileDescriptor(!(infds + 1)),
-      builder.redirectInput()
-    )
+    val nsec =
+      unit.toNanos(timeout) + TimeUnit.MICROSECONDS.toNanos(tv._2.toLong)
+    val sec = TimeUnit.NANOSECONDS.toSeconds(nsec)
+    ts._1 = tv._1 + sec.toSize
+    ts._2 = (if (sec > 0) nsec - TimeUnit.SECONDS.toNanos(sec) else nsec).toSize
+    osWaitForImpl(ts)
+  }
 
-  private var _exitValue = -1
-  private[lang] def checkResult(): CInt = {
-    if (_exitValue == -1) setExitValue(UnixProcessGen1.checkResult(pid))
-    _exitValue
+  override protected def getExitCodeImpl: Option[Int] = {
+    val res = UnixProcessGen1.ProcessMonitor.checkResult(_pid)
+    if (res == -1) None else Some(res)
   }
-  private def setExitValue(value: CInt): Unit = {
-    if (_exitValue == -1 && value != -1) {
-      _exitValue = value
-      _inputStream.drain()
-      _errorStream.drain()
-      _outputStream.close()
+
+  private def osWaitForImpl(ts: Ptr[timespec]): Boolean = {
+    val exitCode = stackalloc[CInt]()
+    while (true) {
+      !exitCode = -1
+      val res = UnixProcessGen1.ProcessMonitor.waitForPid(_pid, ts, exitCode)
+      if (res == 0) {
+        setCachedExitCode(!exitCode)
+        return true
+      } else if (res == e.ETIMEDOUT) return false
     }
-  }
-  private def waitFor(ts: Ptr[timespec]): Int = {
-    val res = stackalloc[CInt]()
-    !res = -1
-    val result = UnixProcessGen1.waitForPid(pid, ts, res)
-    setExitValue(!res)
-    result
+    false
   }
 }
 
-object UnixProcessGen1 {
+private[process] object UnixProcessGen1 {
   @link("pthread")
   @extern
   @define("__SCALANATIVE_JAVALIB_PROCESS_MONITOR")
-  private object ProcessMonitor {
+  object ProcessMonitor {
     @name("scalanative_process_monitor_notify")
     def notifyMonitor(): Unit = extern
     @name("scalanative_process_monitor_check_result")
@@ -151,11 +70,22 @@ object UnixProcessGen1 {
   }
   ProcessMonitor.init()
 
-  private def checkResult(pid: Int): CInt = ProcessMonitor.checkResult(pid)
-  private def waitForPid(pid: Int, ts: Ptr[timespec], res: Ptr[CInt]): CInt =
-    ProcessMonitor.waitForPid(pid, ts, res)
+  def apply(
+      pid: CInt,
+      builder: ProcessBuilder,
+      infds: Ptr[CInt],
+      outfds: Ptr[CInt],
+      errfds: Ptr[CInt]
+  ): GenericProcess = UnixProcess(
+    new UnixProcessHandleGen1(pid, builder),
+    infds,
+    outfds,
+    errfds
+  )
 
-  def apply(builder: ProcessBuilder): Process = Zone.acquire { implicit z =>
+  def apply(
+      builder: ProcessBuilder
+  ): GenericProcess = Zone.acquire { implicit z =>
     val infds: Ptr[CInt] = stackalloc[CInt](2)
     val outfds: Ptr[CInt] = stackalloc[CInt](2)
     val errfds =
@@ -196,7 +126,7 @@ object UnixProcessGen1 {
         )
         setupChildFDS(
           !(errfds + 1),
-          if (builder.redirectErrorStream()) Redirect.PIPE
+          if (builder.redirectErrorStream()) ProcessBuilder.Redirect.PIPE
           else builder.redirectError(),
           unistd.STDERR_FILENO
         )
@@ -250,12 +180,12 @@ object UnixProcessGen1 {
 
         childFds.forEach { fd => unistd.close(fd) }
 
-        new UnixProcessGen1(pid, builder, infds, outfds, errfds)
+        apply(pid, builder, infds, outfds, errfds)
     }
   }
 
   @inline
-  private def throwOnError(rc: CInt, msg: => String): CInt = {
+  def throwOnError(rc: CInt, msg: => String): CInt = {
     if (rc != 0) {
       throw new IOException(s"$msg Error code: $rc, Error number: $errno")
     } else {

@@ -114,7 +114,7 @@ class ProcessTestOnJDK9 {
     val proc = processForDestruction()
     val handle = proc.toHandle()
 
-    assertTrue(handle.destroy())
+    assertTrue("destroy()", handle.destroy())
 
     // Throws on timeout
     assertFalse(
@@ -122,6 +122,7 @@ class ProcessTestOnJDK9 {
       handle.onExit().get(500, TimeUnit.MILLISECONDS).isAlive()
     )
     assertEquals(
+      "exitValue",
       // SIGTERM, use unix signal 'excess 128' convention on non-Windows.
       if (isWindows) 1 else 0x80 + 15,
       proc.exitValue
@@ -132,7 +133,7 @@ class ProcessTestOnJDK9 {
     val proc = processForDestruction()
     val handle = proc.toHandle()
 
-    assertTrue(handle.destroyForcibly())
+    assertTrue("destroyForcibly()", handle.destroyForcibly())
 
     // Throws on timeout
     assertFalse(
@@ -140,6 +141,7 @@ class ProcessTestOnJDK9 {
       handle.onExit().get(500, TimeUnit.MILLISECONDS).isAlive()
     )
     assertEquals(
+      "exitValue",
       // SIGKILL, use unix signal 'excess 128' convention on non-Windows.
       if (isWindows) 1 else 0x80 + 9,
       proc.exitValue
