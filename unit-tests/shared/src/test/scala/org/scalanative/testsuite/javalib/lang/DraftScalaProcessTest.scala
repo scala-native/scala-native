@@ -1,6 +1,6 @@
 package org.scalanative.testsuite.javalib.lang
 
-/* This is a DEBUGGING DRAFT Test for  SN Issue #4357.
+/* This is a DEBUGGING DRAFT Test for  SN Issue #4357
  * That issue discusses Scala sys.process.Process hangs on Windows.
  *
  * I suspect that I will end up debugging javalib Process, so I am
