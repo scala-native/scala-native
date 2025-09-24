@@ -7,57 +7,40 @@ import java.util.ArrayList
 
 import scala.scalanative.unsigned._
 import scala.scalanative.unsafe._
-import scala.scalanative.libc.{errno => err, signal => sig}
-import err.errno
-import scala.scalanative.posix.{fcntl, signal, sys, time, unistd, errno => e}
-import signal.{kill, SIGKILL}
+import scala.scalanative.libc.errno.errno
+import scala.scalanative.posix.{fcntl, sys, time, unistd, errno => e}
 import time._
 import sys.time._
 
-private[process] class UnixProcessGen1 private (
+private[process] class UnixProcessHandleGen1(
     override protected val _pid: CInt,
-    override protected val builder: ProcessBuilder,
-    override protected val infds: Ptr[CInt],
-    override protected val outfds: Ptr[CInt],
-    override protected val errfds: Ptr[CInt]
-) extends UnixProcess() {
-  override def destroy(): Unit = kill(_pid, sig.SIGTERM)
+    override val builder: ProcessBuilder
+) extends UnixProcessHandle {
 
-  override def destroyForcibly(): Process = {
-    kill(_pid, SIGKILL)
-    this
+  override protected def waitForImpl(): Boolean =
+    osWaitForImpl(null)
+
+  override protected def waitForImpl(timeout: Long, unit: TimeUnit): Boolean = {
+    val ts = stackalloc[timespec]()
+    val tv = stackalloc[timeval]()
+    UnixProcessGen1.throwOnError(
+      gettimeofday(tv, null),
+      "Failed to set time of day."
+    )
+    val nsec =
+      unit.toNanos(timeout) + TimeUnit.MICROSECONDS.toNanos(tv._2.toLong)
+    val sec = TimeUnit.NANOSECONDS.toSeconds(nsec)
+    ts._1 = tv._1 + sec.toSize
+    ts._2 = (if (sec > 0) nsec - TimeUnit.SECONDS.toNanos(sec) else nsec).toSize
+    osWaitForImpl(ts)
   }
-
-  override def toString = s"UnixProcess(${_pid})"
-
-  override def waitFor(): Int = {
-    hasExited || osWaitForImpl(null)
-    exitValue()
-  }
-
-  override def waitFor(timeout: scala.Long, unit: TimeUnit): scala.Boolean =
-    hasExited || {
-      val ts = stackalloc[timespec]()
-      val tv = stackalloc[timeval]()
-      UnixProcessGen1.throwOnError(
-        gettimeofday(tv, null),
-        "Failed to set time of day."
-      )
-      val nsec =
-        unit.toNanos(timeout) + TimeUnit.MICROSECONDS.toNanos(tv._2.toLong)
-      val sec = TimeUnit.NANOSECONDS.toSeconds(nsec)
-      ts._1 = tv._1 + sec.toSize
-      ts._2 =
-        (if (sec > 0) nsec - TimeUnit.SECONDS.toNanos(sec) else nsec).toSize
-      osWaitForImpl(ts)
-    }
 
   override protected def getExitCodeImpl: Option[Int] = {
     val res = UnixProcessGen1.ProcessMonitor.checkResult(_pid)
     if (res == -1) None else Some(res)
   }
 
-  private def osWaitForImpl(ts: Ptr[timespec]): Boolean = synchronized {
+  private def osWaitForImpl(ts: Ptr[timespec]): Boolean = {
     val exitCode = stackalloc[CInt]()
     while (true) {
       !exitCode = -1
@@ -75,7 +58,7 @@ private[process] object UnixProcessGen1 {
   @link("pthread")
   @extern
   @define("__SCALANATIVE_JAVALIB_PROCESS_MONITOR")
-  private object ProcessMonitor {
+  object ProcessMonitor {
     @name("scalanative_process_monitor_notify")
     def notifyMonitor(): Unit = extern
     @name("scalanative_process_monitor_check_result")
@@ -86,6 +69,19 @@ private[process] object UnixProcessGen1 {
     def waitForPid(pid: Int, ts: Ptr[timespec], res: Ptr[CInt]): CInt = extern
   }
   ProcessMonitor.init()
+
+  def apply(
+      pid: CInt,
+      builder: ProcessBuilder,
+      infds: Ptr[CInt],
+      outfds: Ptr[CInt],
+      errfds: Ptr[CInt]
+  ): GenericProcess = UnixProcess(
+    new UnixProcessHandleGen1(pid, builder),
+    infds,
+    outfds,
+    errfds
+  )
 
   def apply(
       builder: ProcessBuilder
@@ -184,12 +180,12 @@ private[process] object UnixProcessGen1 {
 
         childFds.forEach { fd => unistd.close(fd) }
 
-        new UnixProcessGen1(pid, builder, infds, outfds, errfds)
+        apply(pid, builder, infds, outfds, errfds)
     }
   }
 
   @inline
-  private def throwOnError(rc: CInt, msg: => String): CInt = {
+  def throwOnError(rc: CInt, msg: => String): CInt = {
     if (rc != 0) {
       throw new IOException(s"$msg Error code: $rc, Error number: $errno")
     } else {

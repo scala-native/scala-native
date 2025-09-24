@@ -118,12 +118,12 @@ import scala.scalanative.windows.NamedPipeApi.PeekNamedPipe
 
 private[process] final class PipeIO[T](
     val nullStream: T,
-    val fdStream: (GenericProcess, FileDescriptor) => T
+    val fdStream: (GenericProcessHandle, FileDescriptor) => T
 )
 
 private[process] object PipeIO {
   def apply[T](
-      process: GenericProcess,
+      process: GenericProcessHandle,
       childFd: => FileDescriptor,
       redirect: ProcessBuilder.Redirect
   )(implicit ioStream: PipeIO[T]): T = {
@@ -137,11 +137,11 @@ private[process] object PipeIO {
   }
 
   trait Stream extends InputStream {
-    def process: GenericProcess
+    def process: GenericProcessHandle
     def drain(): Unit = {}
   }
 
-  class StreamImpl(val process: GenericProcess, is: FileInputStream)
+  class StreamImpl(val process: GenericProcessHandle, is: FileInputStream)
       extends Stream {
 
     private var src: InputStream = is
@@ -262,7 +262,7 @@ private[process] object PipeIO {
 
   private object NullInput extends Stream {
     @stub
-    override def process: GenericProcess = ???
+    override def process: GenericProcessHandle = ???
     override def available(): Int = 0
     override def close(): Unit = {}
     override def read(): Int = 0

@@ -25,42 +25,26 @@ import WinBaseApi._
 import WinBaseApiOps._
 import winnt.AccessRights._
 
-private[process] class WindowsProcess private (
+private[process] class WindowsProcessHandle(
     handle: Handle,
-    override protected val builder: ProcessBuilder,
-    override protected val fdIn: FileDescriptor,
-    override protected val fdOut: FileDescriptor,
-    override protected val fdErr: FileDescriptor
-) extends GenericProcess {
-  private val _pid = GetProcessId(handle)
+    override val builder: ProcessBuilder
+) extends GenericProcessHandle {
+  private val _pid = ProcessThreadsApi.GetProcessId(handle)
 
   override final def pid(): Long = _pid.toLong
 
-  override def destroy(): Unit = if (isAlive()) {
-    TerminateProcess(handle, 1.toUInt)
-  }
+  override def supportsNormalTermination(): Boolean = false
 
-  override def destroyForcibly(): Process = {
-    destroy()
-    this
-  }
+  override protected def destroyImpl(force: Boolean): Boolean =
+    ProcessThreadsApi.TerminateProcess(handle, 1.toUInt)
 
-  override def close(): Unit = CloseHandle(handle)
+  override protected def close(): Unit = CloseHandle(handle)
 
-  override def waitFor(): scala.Int = synchronized {
-    if (isAlive())
-      osWaitForImpl(Constants.Infinite)
-    exitValue()
-  }
+  override protected def waitForImpl(): Boolean =
+    osWaitForImpl(Constants.Infinite)
 
-  override def waitFor(timeout: scala.Long, unit: TimeUnit): scala.Boolean =
-    synchronized {
-      def hasValidTimeout = timeout > 0L
-      def hasFinished = osWaitForImpl(unit.toMillis(timeout).toUInt)
-
-      !isAlive() ||
-        (hasValidTimeout && hasFinished)
-    }
+  override protected def waitForImpl(timeout: Long, unit: TimeUnit): Boolean =
+    osWaitForImpl(unit.toMillis(timeout).toUInt)
 
   private def osWaitForImpl(timeoutMillis: DWord): Boolean =
     SynchApi.WaitForSingleObject(handle, timeoutMillis) match {
@@ -77,6 +61,7 @@ private[process] class WindowsProcess private (
       if (code != ProcessThreadsApiExt.STILL_ACTIVE) Some(code.toInt) else None
     } else None
   }
+
 }
 
 private[process] object WindowsProcess {
@@ -160,13 +145,15 @@ private[process] object WindowsProcess {
       CloseHandle(errWrite)
       CloseHandle(processInfo.thread)
 
-      new WindowsProcess(
-        processInfo.process,
-        builder,
-        toFileDescriptor(inWrite, readOnly = false),
-        toFileDescriptor(outRead, readOnly = true),
-        toFileDescriptor(errRead, readOnly = true)
-      )
+      val handle = new WindowsProcessHandle(processInfo.process, builder)
+      new GenericProcess(handle) {
+        override protected def fdIn =
+          toFileDescriptor(inWrite, readOnly = false)
+        override protected def fdOut =
+          toFileDescriptor(outRead, readOnly = true)
+        override protected def fdErr =
+          toFileDescriptor(errRead, readOnly = true)
+      }
     } else {
       throw WindowsException(s"Failed to create process for command: $cmd")
     }

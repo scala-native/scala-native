@@ -23,8 +23,6 @@ import scalanative.posix.fcntl
 import scalanative.posix.poll._
 import scalanative.posix.pollOps._
 import scalanative.posix.pollEvents
-
-import scalanative.posix.signal.{kill, SIGKILL, SIGTERM}
 import scalanative.posix.spawn._
 import scalanative.posix.string.strerror
 import scalanative.posix.sys.wait._
@@ -54,67 +52,44 @@ import scalanative.posix.unistd
  * This is a developing story, stay tuned.
  */
 
-private[process] class UnixProcessGen2 private (
+private[process] class UnixProcessHandleGen2(
     override protected val _pid: CInt,
-    override protected val builder: ProcessBuilder,
-    override protected val infds: Ptr[CInt],
-    override protected val outfds: Ptr[CInt],
-    override protected val errfds: Ptr[CInt]
-) extends UnixProcess() {
-
-  override def destroy(): Unit = kill(_pid, SIGTERM)
-
-  override def destroyForcibly(): Process = {
-    kill(_pid, SIGKILL)
-    this
-  }
+    override val builder: ProcessBuilder
+) extends UnixProcessHandle {
 
   override protected def getExitCodeImpl: Option[Int] =
     waitpidImplNoECHILD(_pid, options = WNOHANG)
 
-  override def waitFor(): scala.Int = {
+  override protected def waitForImpl(): Boolean = {
     // wait until process exits or forever, whichever comes first.
-    var done = false
-
-    while (!done && !hasExited) {
-      try {
-        osWaitForImpl(None)
-        done = true
-      } catch {
-        case _: InterruptedException
-            if !Thread.currentThread().isInterrupted() => // loop again
-      }
-    }
-
-    exitValue()
+    while (!osWaitForImpl(None) && !hasExited) {}
+    true
   }
 
-  override def waitFor(timeoutArg: Long, unit: TimeUnit): Boolean =
-    hasExited || {
-      // Java allows negative timeouts. Simplify timeout math; treat as 0.
-      val timeout = Math.max(timeoutArg, 0L)
+  override protected def waitForImpl(
+      timeoutArg: Long,
+      unit: TimeUnit
+  ): Boolean = {
+    // Java allows negative timeouts. Simplify timeout math; treat as 0.
+    val timeout = Math.max(timeoutArg, 0L)
 
-      val deadline = System.nanoTime() + unit.toNanos(timeout)
-      // wait until process exits or times out.
-      val ts = stackalloc[timespec]()
-      fillTimespec(timeout, unit, ts)
-      def waitWithRepeat(): Unit = {
-        try osWaitForImpl(Some(ts))
-        catch {
-          case _: InterruptedException
-              if !Thread.currentThread().isInterrupted() =>
-            deadline - System.nanoTime() match {
-              case remaining if remaining < 0 => None
-              case remainingNanos             =>
-                fillTimespec(remainingNanos, TimeUnit.NANOSECONDS, ts)
-                waitWithRepeat()
-            }
+    val deadline = System.nanoTime() + unit.toNanos(timeout)
+    // wait until process exits or times out.
+    val ts = stackalloc[timespec]()
+    fillTimespec(timeout, unit, ts)
+    @tailrec
+    def waitWithRepeat(): Boolean = {
+      val ok = osWaitForImpl(Some(ts))
+      hasExited || !ok && {
+        val remainingNanos = deadline - System.nanoTime()
+        remainingNanos >= 0 && {
+          fillTimespec(remainingNanos, TimeUnit.NANOSECONDS, ts)
+          waitWithRepeat()
         }
       }
-      waitWithRepeat()
-
-      hasExited
     }
+    waitWithRepeat()
+  }
 
   private def waitpidImplNoECHILD(pid: pid_t, options: Int): Option[Int] = {
     val wstatus = stackalloc[Int]()
@@ -245,9 +220,8 @@ private[process] class UnixProcessGen2 private (
     }
   }
 
-  private def osWaitForImpl(
-      timeout: Option[Ptr[timespec]]
-  ): Unit = synchronized {
+  private def osWaitForImpl(timeout: Option[Ptr[timespec]]): Boolean = try {
+    // caller should have returned before here if cachedExitValue is known.
     if (hasExited) {
       // Another waitFor() has reaped exitValue; nothing to do here.
     } else if (LinktimeInfo.isLinux) {
@@ -260,6 +234,10 @@ private[process] class UnixProcessGen2 private (
        */
       throw new IOException("unsuported Platform")
     }
+    true
+  } catch {
+    case _: InterruptedException if !Thread.currentThread().isInterrupted() =>
+      false
   }
 
   /* Linux - ppoll()
@@ -368,6 +346,19 @@ private[process] class UnixProcessGen2 private (
 }
 
 private[process] object UnixProcessGen2 {
+
+  def apply(
+      pid: CInt,
+      builder: ProcessBuilder,
+      infds: Ptr[CInt],
+      outfds: Ptr[CInt],
+      errfds: Ptr[CInt]
+  ): GenericProcess = UnixProcess(
+    new UnixProcessHandleGen2(pid, builder),
+    infds,
+    outfds,
+    errfds
+  )
 
   def apply(
       builder: ProcessBuilder
@@ -479,7 +470,7 @@ private[process] object UnixProcessGen2 {
 
         childFds.forEach { fd => unistd.close(fd) }
 
-        new UnixProcessGen2(pid, builder, infds, outfds, errfds)
+        apply(pid, builder, infds, outfds, errfds)
     }
   }
 
@@ -597,7 +588,7 @@ private[process] object UnixProcessGen2 {
         )
 
         if (status == 0) {
-          new UnixProcessGen2(!pidPtr, builder, infds, outfds, errfds)
+          apply(!pidPtr, builder, infds, outfds, errfds)
         } else if (!(status == ENOEXEC) && (attempt == 1)) {
           val msg = fromCString(strerror(status))
           throw new IOException(s"Unable to posix_spawn process: ${msg}")

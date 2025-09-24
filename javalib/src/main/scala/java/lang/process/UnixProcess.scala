@@ -1,25 +1,34 @@
 package java.lang.process
 
 import java.io.FileDescriptor
+import scala.scalanative.libc.{signal => sig}
 import scala.scalanative.meta.LinktimeInfo
+import scala.scalanative.posix.signal
 import scala.scalanative.unsafe.{CInt, Ptr}
 
-private[process] abstract class UnixProcess extends GenericProcess {
+private[process] abstract class UnixProcessHandle extends GenericProcessHandle {
   protected val _pid: CInt
-  protected val infds: Ptr[CInt]
-  protected val outfds: Ptr[CInt]
-  protected val errfds: Ptr[CInt]
-
-  override protected def fdIn = new FileDescriptor(!(infds + 1))
-  override protected def fdOut = new FileDescriptor(!outfds, readOnly = true)
-  override protected def fdErr = new FileDescriptor(!errfds, readOnly = true)
 
   override final def pid(): Long = _pid.toLong
+  override final def supportsNormalTermination(): Boolean = true
 
   override final protected def close(): Unit = {}
+  override final protected def destroyImpl(force: Boolean): Boolean =
+    signal.kill(_pid, if (force) signal.SIGKILL else sig.SIGTERM) == 0
 }
 
 private[process] object UnixProcess {
+  def apply(
+      handle: UnixProcessHandle,
+      infds: Ptr[CInt],
+      outfds: Ptr[CInt],
+      errfds: Ptr[CInt]
+  ): GenericProcess = new GenericProcess(handle) {
+    override protected def fdIn = new FileDescriptor(!(infds + 1))
+    override protected def fdOut = new FileDescriptor(!outfds, readOnly = true)
+    override protected def fdErr = new FileDescriptor(!errfds, readOnly = true)
+  }
+
   def apply(pb: ProcessBuilder): GenericProcess = {
     val useGen2 = if (LinktimeInfo.is32BitPlatform) {
       false

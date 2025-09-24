@@ -4,31 +4,30 @@ import scala.scalanative.meta.LinktimeInfo
 
 import java.io.{FileDescriptor, InputStream, OutputStream}
 import java.util.Optional
-import java.util.concurrent.CompletableFuture
+import java.util.concurrent.{CompletableFuture, TimeUnit}
 import java.util.function
 import java.util.stream.Stream
 
-private[process] abstract class GenericProcess() extends Process {
-  protected val builder: ProcessBuilder
+private[process] abstract class GenericProcess(val handle: GenericProcessHandle)
+    extends Process {
   protected def fdIn: FileDescriptor
   protected def fdOut: FileDescriptor
   protected def fdErr: FileDescriptor
 
-  private val processInfo = GenericProcessInfo(builder)
-  private lazy val handle = new GenericProcessHandle(this)
+  handle.onExitHandleSync((_, _) => closeProcessStreams())
 
   private val outputStream =
-    PipeIO[OutputStream](this, fdIn, builder.redirectInput())
+    PipeIO[OutputStream](handle, fdIn, handle.builder.redirectInput())
   private val inputStream =
-    PipeIO[PipeIO.Stream](this, fdOut, builder.redirectOutput())
+    PipeIO[PipeIO.Stream](handle, fdOut, handle.builder.redirectOutput())
   private val errorStream =
-    PipeIO[PipeIO.Stream](this, fdErr, builder.redirectError())
+    PipeIO[PipeIO.Stream](handle, fdErr, handle.builder.redirectError())
 
   override def getInputStream(): InputStream = inputStream
   override def getErrorStream(): InputStream = errorStream
   override def getOutputStream(): OutputStream = outputStream
 
-  override def exitValue(): Int = getCachedExitCode.getOrElse {
+  override def exitValue(): Int = handle.getCachedExitCode.getOrElse {
     throw new IllegalThreadStateException(
       s"Process ${pid()} has not exited yet"
     )
@@ -37,9 +36,9 @@ private[process] abstract class GenericProcess() extends Process {
   override def toHandle(): ProcessHandle = handle
 
   override def onExit(): CompletableFuture[Process] =
-    onExitApply(_ => this: Process)
+    handle.onExitApply(_ => this: Process)
 
-  override def info(): ProcessHandle.Info = processInfo
+  override def info(): ProcessHandle.Info = handle.info()
 
   def closeProcessStreams(): GenericProcess = {
     outputStream.close()
@@ -48,11 +47,50 @@ private[process] abstract class GenericProcess() extends Process {
     this
   }
 
+  override final def pid(): Long = handle.pid()
+  override final def children(): Stream[ProcessHandle] = handle.children()
+  override final def descendants(): Stream[ProcessHandle] = handle.descendants()
+
+  override final def isAlive(): Boolean = handle.isAlive()
+  override final def supportsNormalTermination(): Boolean =
+    handle.supportsNormalTermination()
+
+  override final def destroy(): Unit = handle.destroy()
+  override final def destroyForcibly(): Process = {
+    handle.destroyForcibly()
+    this
+  }
+
+  override final def waitFor(): Int = {
+    handle.waitFor()
+    handle.getCachedExitCode.getOrElse(-1)
+  }
+
+  override final def waitFor(timeout: scala.Long, unit: TimeUnit): Boolean =
+    handle.waitFor(timeout, unit)
+
+  override def equals(that: Any): Boolean = that match {
+    case other: GenericProcess => handle.compareTo(other.handle) == 0
+    case _                     => false
+  }
+  override def hashCode(): Int = handle.hashCode()
+  override def toString: String = handle.toString
+
+}
+
+// Represents ProcessHandle for process started by Scala Native runtime
+// Cannot be used with processes started by other programs
+private[process] abstract class GenericProcessHandle extends ProcessHandle {
   protected def close(): Unit
   protected def getExitCodeImpl: Option[Int]
+  protected def destroyImpl(force: Boolean): Boolean
+  protected def waitForImpl(): Boolean
+  protected def waitForImpl(timeout: scala.Long, unit: TimeUnit): Boolean
 
+  val builder: ProcessBuilder
+
+  private val processInfo: GenericProcessInfo = GenericProcessInfo(builder)
   private val completion = new CompletableFuture[java.lang.Integer]()
-  onExitHandleSync((_, _) => closeProcessStreams())
 
   override final def isAlive(): Boolean = !hasExited
 
@@ -89,12 +127,6 @@ private[process] abstract class GenericProcess() extends Process {
   ): CompletableFuture[A] =
     completion.handle(fn)
 
-}
-
-// Represents ProcessHandle for process started by Scala Native runtime
-// Cannot be used with processes started by other programs
-private[process] class GenericProcessHandle(val process: GenericProcess)
-    extends ProcessHandle {
   private val createdAt = System.nanoTime()
 
   override def parent(): Optional[ProcessHandle] = Optional.empty()
@@ -103,27 +135,24 @@ private[process] class GenericProcessHandle(val process: GenericProcess)
   override def children(): Stream[ProcessHandle] = Stream.empty()
   override def descendants(): Stream[ProcessHandle] = Stream.empty()
 
-  override def destroy(): Boolean = {
-    if (isAlive()) process.destroy()
-    true // all implementations are always successful
-  }
-  override def destroyForcibly(): Boolean = {
-    if (isAlive()) process.destroyForcibly()
-    true // all implementations are always successful
-  }
-  override def supportsNormalTermination(): Boolean =
-    process.supportsNormalTermination()
+  override final def destroy(): Boolean = destroy(force = false)
+  override final def destroyForcibly(): Boolean = destroy(force = true)
+  @inline private def destroy(force: Boolean) =
+    hasExited || destroyImpl(force = force)
+
+  private def waitForWith(check: => Boolean) = hasExited || check && hasExited
+  def waitFor(): Boolean = waitForWith(synchronized(waitForImpl()))
+  def waitFor(timeout: scala.Long, unit: TimeUnit): Boolean =
+    waitForWith(timeout > 0L && synchronized(waitForImpl(timeout, unit)))
 
   override def onExit(): CompletableFuture[ProcessHandle] =
-    process.onExitApply(_ => this: ProcessHandle)
+    onExitApply(_ => this: ProcessHandle)
 
-  override def pid(): scala.Long = process.pid()
-  override def isAlive(): Boolean = process.isAlive()
-  override def info(): ProcessHandle.Info = process.info()
+  override def info(): ProcessHandle.Info = processInfo
 
   override def compareTo(other: ProcessHandle): Int = other match {
     case handle: GenericProcessHandle =>
-      this.process.pid().compareTo(handle.process.pid()) match {
+      pid().compareTo(handle.pid()) match {
         case 0     => this.createdAt.compareTo(handle.createdAt)
         case value => value
       }
@@ -135,7 +164,8 @@ private[process] class GenericProcessHandle(val process: GenericProcess)
   }
   override def hashCode(): Int =
     ((31 * this.pid().##) * 31) + this.createdAt.##
-  override def toString(): String = process.pid().toString() // JVM compliance
+  override def toString: String =
+    s"Process[pid=${pid()}, exitValue=${getCachedExitCode.getOrElse("\"not exited\"")}"
 }
 
 private[lang] object GenericProcess {
