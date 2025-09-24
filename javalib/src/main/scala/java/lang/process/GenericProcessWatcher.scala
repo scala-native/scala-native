@@ -33,7 +33,7 @@ private[process] object GenericProcessWatcher {
           while (watchedProcesses.isEmpty())
             hasProcessesToWatch.await()
           watchedProcesses.forEach { ref =>
-            if (ref.waitFor(5, TimeUnit.MILLISECONDS))
+            if (ref.handle.checkIfExited())
               watchedProcesses.remove(ref)
           }
           Thread.sleep(100 /*ms*/ )
