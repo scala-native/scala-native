@@ -24,6 +24,7 @@ import java.io.{FileDescriptor, IOException, OutputStream, InputStream}
 import scala.scalanative.windows._
 import scala.scalanative.windows.WinSocketApi._
 import scala.scalanative.windows.WinSocketApiExt._
+import scala.scalanative.posix.sys.socket.{SHUT_RDWR, SHUT_WR, SHUT_RD}
 
 private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
   import AbstractPlainSocketImpl._
@@ -283,8 +284,21 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
 
   override def close(): Unit = {
     if (!isClosed) {
-      if (isWindows) WinSocketApi.closeSocket(fd.handle)
-      else unistd.close(fd.fd)
+      if (isWindows) {
+        WinSocketApi.closeSocket(fd.handle)
+      } else {
+        /* The OS fd at this point may be quiescent or in use by another thread in a blocking syscall.
+         * Shutting it down is a best-effort attempt to interrupt such operations and signal closure.
+         * We intentionally ignore the return value of `shutdown()` since the fd's exact state is unknown
+         * and success/failure is not actionable here.
+         */
+        try {
+          shutdownBoth()
+        } catch {
+          case _: SocketException => ()
+        }
+        unistd.close(fd.fd)
+      }
       fd = InvalidSocketDescriptor
       isClosed = true
     }
@@ -310,19 +324,34 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
     new SocketInputStream(this)
   }
 
-  override def shutdownOutput(): Unit = {
-    socket.shutdown(fd.fd, 1) match {
-      case 0 => shutOutput = true
-      case _ =>
-        throw new SocketException("Error while shutting down socket's output")
-    }
+  override def shutdownOutput(): Unit = shutdown(SHUT_WR) {
+    shutOutput = true
   }
 
-  override def shutdownInput(): Unit = {
-    socket.shutdown(fd.fd, 0) match {
-      case 0 => shutInput = true
+  override def shutdownInput(): Unit = shutdown(SHUT_RD) {
+    shutInput = true
+  }
+
+  override def shutdownBoth(): Unit = shutdown(SHUT_RDWR) {
+    shutInput = true
+    shutOutput = true
+  }
+
+  private def shutdown(how: CInt)(onSuccess: => Unit): Unit = {
+    require(
+      how == SHUT_RD || how == SHUT_WR || how == SHUT_RDWR,
+      s"Invalid shutdown mode $how. Allowed: SHUT_RD, SHUT_WR, SHUT_RDWR."
+    )
+    socket.shutdown(fd.fd, how) match {
+      case 0 => onSuccess
       case _ =>
-        throw new SocketException("Error while shutting down socket's input")
+        val side =
+          if (how == SHUT_RD) "input"
+          else if (how == SHUT_WR) "output"
+          else "input and output"
+        throw new SocketException(
+          s"Error while shutting down socket's $side: ${fromCString(strerror(errno))}"
+        )
     }
   }
 

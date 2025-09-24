@@ -1,6 +1,11 @@
 package org.scalanative.testsuite.javalib.net
 
 import java.net._
+import java.util.concurrent.TimeUnit
+
+import scala.annotation.tailrec
+import scala.concurrent.{Await, Future}
+import scala.concurrent.duration.DurationInt
 
 import org.junit.Test
 import org.junit.Assert._
@@ -74,6 +79,23 @@ class ServerSocketTest {
     s.close
     assertThrows(classOf[SocketException], s.accept)
     // socket already closed, all paths.
+  }
+
+  @Test def closeWithActiveAccept(): Unit = {
+    import scala.concurrent.ExecutionContext.Implicits.global
+    val server = new ServerSocket(0)
+    val serverThread = Future {
+      // Accept will block until the server is closed. At that point it should throw SocketException.
+      server.accept()
+    }
+    Thread.sleep(1000) // Give future plenty of time to get to accept()
+    if (serverThread.isCompleted)
+      fail("Server thread exited early: expected it to be blocked in accept()")
+    server.close()
+    assertThrows(
+      classOf[java.net.SocketException],
+      Await.result(serverThread, 10.seconds)
+    )
   }
 
   @Test def soTimeout(): Unit = {
