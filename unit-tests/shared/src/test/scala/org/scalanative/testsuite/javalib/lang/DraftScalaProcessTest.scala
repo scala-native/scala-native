@@ -28,8 +28,11 @@ class DraftScalaProcessTest {
 
     val response = "git init -b main".!!
 
-    /* If execution gets to assertion, then process has exited, not
+    /* If execution gets to assertion, then child process has exited, not
      * hung.
+     *
+     * If execution gets past assertion, then child process has done expected
+     * work, before exiting.
      */
 
     assertTrue(
@@ -48,11 +51,11 @@ class DraftScalaProcessTest {
 
     val response = sys.process.Process(argv, None).!!
 
-    /* If execution gets to assertion, then process has exited, not
+    /* If execution gets to assertion, then child process has exited, not
      * hung.
      *
      * If execution gets past assertion, then process has done expected
-     * work, then exited.
+     * work, before exiting.
      */
 
     assertTrue(
@@ -66,9 +69,11 @@ class DraftScalaProcessTest {
     /* The Issue original reproducer
      */
 
+    /* 2025-09-24 12:16 -0400 Enable this Test on Windows, simpler Tests work.
     // Basic Process(argv, cmd) hangs on Windows,
     // do not test there until basic Process .!! works.
-    assumeFalse("Not tested in Windows", Platform.isWindows)
+    // assumeFalse("Not tested in Windows", Platform.isWindows)
+     */
 
     val argv = Seq("git", "init", "-b", "main")
     val cwd: Option[File] = None
@@ -78,11 +83,11 @@ class DraftScalaProcessTest {
 
     val response = sys.process.Process(argv, None).!!(logger)
 
-    /* If execution gets to assertion, then process has exited, not
+    /* If execution gets to assertion, then child process has exited, not
      * hung.
      *
-     * If execution gets past assertion, then process has done expected
-     * work, then exited.
+     * If execution gets past assertion, then child process has done expected
+     * work, before exiting.
      */
 
     assertTrue(
