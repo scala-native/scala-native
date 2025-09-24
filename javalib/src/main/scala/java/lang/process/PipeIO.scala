@@ -154,31 +154,27 @@ private[process] object PipeIO {
       }
     }
 
-    override def available(): Int = synchronized {
-      try
-        availableUnSync()
+    override def available(): Int =
+      try synchronized(availableUnSync())
       finally process.checkIfExited()
-    }
 
-    override def read(): Int = synchronized {
-      try
-        src.read()
+    override def read(): Int =
+      try synchronized(src.read())
       finally process.checkIfExited()
-    }
 
-    override def read(buf: Array[scala.Byte], offset: Int, len: Int): Int =
-      synchronized {
+    override def read(buf: Array[scala.Byte], offset: Int, len: Int): Int = {
 
-        if (offset < 0 || len < 0 || len > buf.length - offset) {
-          val end = offset + len
-          throw new IndexOutOfBoundsException(
-            s"Range [$offset, $end) out of bounds for length ${buf.length}"
-          )
-        }
+      if (offset < 0 || len < 0 || len > buf.length - offset) {
+        val end = offset + len
+        throw new IndexOutOfBoundsException(
+          s"Range [$offset, $end) out of bounds for length ${buf.length}"
+        )
+      }
 
-        if (len == 0) 0
-        else {
-          try {
+      if (len == 0) 0
+      else {
+        try {
+          synchronized {
             val avail = availableUnSync()
 
             if (avail > 0) {
@@ -206,9 +202,10 @@ private[process] object PipeIO {
                 case _ => -1 // EOF
               }
             }
-          } finally process.checkIfExited()
-        }
+          }
+        } finally process.checkIfExited()
       }
+    }
 
     /* Switch horses, or at least InputStreams, "in media res".
      * See Design Note at top of file.
