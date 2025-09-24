@@ -95,7 +95,7 @@ object Math {
       min: scala.Float,
       max: scala.Float
   ): scala.Float = {
-    // JVM checks arguments before checking value.isNaN()
+    // JVM checks arguments before checking value.isNaN().
 
     if (min.isNaN())
       throw new IllegalArgumentException("min is NaN")
