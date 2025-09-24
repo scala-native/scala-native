@@ -39,6 +39,8 @@ RUN git clone https://github.com/ivmai/bdwgc /tmp/bdwgc \
 SHELL ["/bin/bash", "-c"]
 RUN useradd -ms /bin/bash scala-native
 WORKDIR /home/scala-native/scala-native
+# Fix Git "dubious ownership" error for mounted repo
+RUN git config --global --add safe.directory /home/scala-native/scala-native
 
 RUN curl -s "https://get.sdkman.io" | bash  \
   && . "$HOME/.sdkman/bin/sdkman-init.sh" \
@@ -49,6 +51,7 @@ ENV LC_ALL="C.UTF-8"
 ENV LANG="C.UTF-8"
 ENV PATH=/usr/lib/llvm-$LLVM_VERSION/bin:~/.sdkman/candidates/java/current/bin:~/.sdkman/candidates/sbt/current/bin:${PATH}
 ENV ENABLE_EXPERIMENTAL_COMPILER=true
+ENV GITHUB_WORKSPACE=/home/scala-native/scala-native
 
 # For some reasons the x86 builds cannot find built dependencies 
 RUN dpkg --add-architecture i386 && \
