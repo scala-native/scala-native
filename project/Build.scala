@@ -810,7 +810,7 @@ object Build {
       .withNativeCompilerPlugin
       .withJUnitPlugin
       .settings(noJavaReleaseSettings)
-      .dependsOn(javalib, testInterface % "test", scala3lib)
+      .dependsOn(javalib, testInterface % "test", junitRuntime % "test")
       .withScalaStandardLibrary
 
 // Testing infrastructure ------------------------------------------------
