@@ -13,14 +13,15 @@ concurrency:
 jobs:
   test-runtime:
     name: Test runtime
-    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')
-    runs-on: windows-2022
+    runs-on: windows-${{ matrix.win }}
     env:
-      ENABLE_EXPERIMENTAL_COMPILER: true
+      ENABLE_EXPERIMENTAL_COMPILER: ${{ matrix.exp }}
     strategy:
       fail-fast: false
       matrix:
+        win: [2022, 2025]
         scala: [2.12, 2.13, 3]
+        exp: [ true, false ]
     steps:
       # Disable autocrlf setting, otherwise scalalib patches might not be possible to apply
       - name: Setup git config
@@ -30,31 +31,6 @@ jobs:
         id: setup
         with:
           scala-version: ${{matrix.scala}}
-      
-      - name: Test GC
-        timeout-minutes: 30
-        env:
-          SCALANATIVE_INCLUDE_DIRS: ${{steps.setup.outputs.vcpkg-dir}}\include
-          SCALANATIVE_LIB_DIRS: ${{steps.setup.outputs.vcpkg-dir}}\lib
-        run: sbt "test-gc ${{ matrix.scala }}"
-
-      # None GC takes too much memory on Windows to execute partest JUnit tests
-      # leading to spurious failures in the CI. Perform subset of tests instead
-      # Execution with enabled multithreading increases memory usage, run only minimal tests
-      - name: Test runtime None GC
-        if: matrix.gc == 'none'
-        timeout-minutes: 45
-        run: >
-          set SCALANATIVE_GC=${{matrix.gc}}&
-          set SCALANATIVE_INCLUDE_DIRS=${{steps.setup.outputs.vcpkg-dir}}\include&
-          set SCALANATIVE_LIB_DIRS=${{steps.setup.outputs.vcpkg-dir}}\lib&
-          set SCALANATIVE_TEST_PREFETCH_DEBUG_INFO=1&
-          set SCALANATIVE &
-          sbt 
-          sandbox${{env.project-version}}/run
-          testsExt${{env.project-version}}/test
-          "scalaPartestTests${{env.project-version}}/testOnly -- --showDiff neg/abstract.scala pos/abstract.scala run/Course-2002-01.scala"
-        shell: cmd
 
       - name: Test runtime
         if: matrix.gc != 'none'
@@ -70,13 +46,20 @@ jobs:
           "scalaPartestTests${{env.project-version}}/testOnly -- --showDiff neg/abstract.scala pos/abstract.scala run/Course-2002-01.scala"
         shell: cmd
 
+      - name: Test GC
+        timeout-minutes: 30
+        env:
+          SCALANATIVE_INCLUDE_DIRS: ${{steps.setup.outputs.vcpkg-dir}}\include
+          SCALANATIVE_LIB_DIRS: ${{steps.setup.outputs.vcpkg-dir}}\lib
+        run: sbt "test-gc ${{ matrix.scala }}"
+
   run-scripted-tests:
     name: Scripted tests
-    if: github.event_name == 'pull_request' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')
-    runs-on: windows-2022
+    runs-on: windows-${{ matrix.win }}
     strategy:
       fail-fast: false
       matrix:
+        win: [2022, 2025]
         scala: [3]
     steps:
       # Disable autocrlf setting, otherwise scalalib patches might not be possible to apply
@@ -93,15 +76,16 @@ jobs:
 
   test-runtime-ext:
     name: Test runtime extension
-    if: ((github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native') || (github.event_name == 'pull_request' && !contains(github.event.pull_request.body, '[skip ci]') && contains(github.event.pull_request.body, '[test-extended]'))
-    runs-on: windows-2022
+    runs-on: windows-${{ matrix.win }}
     env:
-      ENABLE_EXPERIMENTAL_COMPILER: true
+      ENABLE_EXPERIMENTAL_COMPILER: ${{ matrix.exp }}
     needs: [test-runtime]
     strategy:
       fail-fast: false
       matrix:
+        win: [2022, 2025]
         scala: [2.13, 3]
+        exp: [ true, false ]
         build-mode: [debug, release-fast]
         lto: [none, thin]
         gc: [boehm, immix, commix]
@@ -149,11 +133,11 @@ jobs:
         shell: cmd
 
   test-llvm-versions:
-    runs-on: windows-2022
-    if: ((github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native') || (github.event_name == 'pull_request' && !contains(github.event.pull_request.body, '[skip ci]') && contains(github.event.pull_request.body, '[test-extended]'))
+    runs-on: windows-${{ matrix.win }}
     strategy:
       fail-fast: false
       matrix:
+        win: [2022, 2025]
         scala: [3]
         llvm: ["19.1.7", "20.1.4"] # Last 2 stable versions, LLVM 10 is minimal version able to compile current Windows SDK
     steps:

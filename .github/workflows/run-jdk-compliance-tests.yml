@@ -43,10 +43,11 @@ jobs:
 
   tests-windows-jdk-compliance:
     name: Test Windows JDK compliance
-    runs-on: windows-2022
+    runs-on: windows-${{ matrix.win }}
     strategy:
       fail-fast: false
       matrix:
+        win: [2022, 2025]
         scala: [3]
         java: [25]
     steps:
