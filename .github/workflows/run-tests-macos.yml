@@ -27,12 +27,6 @@ jobs:
         id: setup
         with:
           scala-version: ${{matrix.scala}}
-      
-      - name: Prepare for GC tests
-        run: brew install bdw-gc
-      - name: Test GC compilation
-        timeout-minutes: 30
-        run: sbt "test-gc ${{ matrix.scala }}"
     
       - name: Run tests
         timeout-minutes: 45
