@@ -30,7 +30,7 @@ object ScalaVersions {
     crossScalaVersions("3.4", 0 to 3),
     crossScalaVersions("3.5", 0 to 2),
     crossScalaVersions("3.6", 2 to 4), // 3.6.0 is broken, 3.6.1 is hotfix
-    crossScalaVersions("3.7", 0 to 3),
+    crossScalaVersions("3.7", 0 to 3)
   ).flatten.distinct
 
   // Tested in scheduled nightly CI to check compiler plugins
@@ -62,7 +62,9 @@ object ScalaVersions {
   val sbt10ScalaVersion: String = scala212
 
   val libCrossScalaVersions: Seq[String] =
-    (crossScala212 ++ crossScala213 ++ crossScala3 ++ Seq(scala3Nightly)).distinct
+    (crossScala212 ++ crossScala213 ++ crossScala3 ++ Seq(
+      scala3Nightly
+    )).distinct
 
   private def extraCrossScalaVersion(binVersionPrefix: String) = sys.env
     .get("EXTRA_CROSS_SCALA_VERSION")

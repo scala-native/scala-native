@@ -88,7 +88,7 @@ object Settings {
     mimaSettings,
     docsSettings,
     scalacOptions ++= ignoredScalaDeprecations(scalaVersion.value),
-    resolvers += Resolver.scalaNightlyRepository,
+    resolvers += Resolver.scalaNightlyRepository
   )
 
   val javacSourceFlags = Seq("-source", "1.8")
@@ -721,18 +721,18 @@ object Settings {
     val dirs = verList.map(base / dirStr(_)).filter(_.exists)
     dirs.toSeq // most specific shadow less specific
   }
-  
+
   def usesSelfContainedStdlib(scalaVersion: String): Boolean =
     CrossVersion.partialVersion(scalaVersion) match {
       // Scala 3.8+ uses self-contained stdlib, previously it was using Scala 2.13 stdlib
       case Some((3, minor)) => minor >= 8
       case _                => true // all Scala 2 stdlibs are self-contained
     }
-  
+
   def commonScalalibSettings(
       scalaStdLibraryName: String,
-      shouldAddDependencyForVersion: String => Boolean = {_ => true}
-    ): Seq[Setting[_]] = {
+      shouldAddDependencyForVersion: String => Boolean = { _ => true }
+  ): Seq[Setting[_]] = {
     Def.settings(
       version := scalalibVersion(scalaVersion.value, nativeVersion),
       mavenPublishSettings,
@@ -748,7 +748,8 @@ object Settings {
       // Scala Native build.sbt uses a slightly different baseDirectory
       // than Scala.js. See commented starting with "SN Port:" below.
       libraryDependencies ++= {
-        if(shouldAddDependencyForVersion(scalaVersion.value)) Some("org.scala-lang" % scalaStdLibraryName % scalaVersion.value) 
+        if (shouldAddDependencyForVersion(scalaVersion.value))
+          Some("org.scala-lang" % scalaStdLibraryName % scalaVersion.value)
         else None
       },
       fetchScalaSource / artifactPath :=
@@ -803,7 +804,11 @@ object Settings {
             retrieveDirectory = cacheDir,
             log = s.log
           )
-          .map(_.find(_.name.endsWith(s"${scalaStdLibraryName}-$version-sources.jar")))
+          .map(
+            _.find(
+              _.name.endsWith(s"${scalaStdLibraryName}-$version-sources.jar")
+            )
+          )
           .toOption
           .flatten
           .getOrElse {
@@ -899,8 +904,10 @@ object Settings {
 
           def tryApplyPatch(sourceName: String): Option[File] = {
             val scalaSourcePath = scalaSrcDir / sourceName
-            if (!scalaSourcePath.exists()){
-               s.log.warn(s"Not found matching source file $sourceName for patch in Scala ${scalaVersion.value} sources, skipped")
+            if (!scalaSourcePath.exists()) {
+              s.log.warn(
+                s"Not found matching source file $sourceName for patch in Scala ${scalaVersion.value} sources, skipped"
+              )
               return None
             }
             val scalaSourceCopyPath = scalaSrcDir / (sourceName + ".copy")
@@ -932,16 +939,18 @@ object Settings {
                   sourcePath.toAbsolutePath().toString()
                 ),
                 cwd = scalaSrcDir
-              ).!!(ProcessLogger(
-                stdout => (),
-                stderr => {
-                  if (stderr.contains("error")) {
-                    hasErrors = true
+              ).!!(
+                ProcessLogger(
+                  stdout => (),
+                  stderr => {
+                    if (stderr.contains("error")) {
+                      hasErrors = true
+                    }
+                    if (hasErrors) s.log.warn(stderr)
+                    else s.log.debug(stderr)
                   }
-                  if (hasErrors) s.log.warn(stderr)
-                  else s.log.debug(stderr)
-                }
-              ))
+                )
+              )
               copy(scalaSourcePath, outputFile)
               Some(outputFile)
             } catch {
