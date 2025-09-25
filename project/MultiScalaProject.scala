@@ -27,7 +27,7 @@ final case class MultiScalaProject private (
     .settings(
       Settings.experimentalScalaSources,
       publish / skip := true,
-      publishLocal / skip := false,
+      publishLocal / skip := false
     )
 
   override def componentProjects: Seq[Project] = Seq(v2_12, v2_13, v3) ++ {
@@ -112,9 +112,9 @@ final case class MultiScalaProject private (
     } yield {
       val replacements = versionsProjectReplacement.getOrElse(v, Map.empty)
       val lps = projectNames
-      .map(name => replacements.getOrElse(name, name))
-      .map(projectID(_, v))
-      .map(LocalProject(_))
+        .map(name => replacements.getOrElse(name, name))
+        .map(projectID(_, v))
+        .map(LocalProject(_))
       v -> p.settings(ss(lps))
     }
     copy(projects = ps)
