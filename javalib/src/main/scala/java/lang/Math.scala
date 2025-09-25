@@ -95,7 +95,7 @@ object Math {
       min: scala.Float,
       max: scala.Float
   ): scala.Float = {
-    // JVM checks arguments before checking value.isNaN()
+    // JVM checks arguments before checking value.isNaN().
 
     if (min.isNaN())
       throw new IllegalArgumentException("min is NaN")
@@ -307,26 +307,20 @@ object Math {
     else overflow.value
   }
 
-  @inline def multiplyExact(a: scala.Long, b: scala.Long): scala.Long = {
+  @alwaysinline def multiplyExact(a: scala.Long, b: scala.Int): scala.Long =
+    multiplyExact(a, b.toLong)
+
+  @alwaysinline def multiplyExact(a: scala.Long, b: scala.Long): scala.Long = {
     val overflow = `llvm.smul.with.overflow.i64`(a, b)
     if (overflow.flag) throw new ArithmeticException("Long overflow")
     else overflow.value
   }
 
-  @alwaysinline def multiplyHigh(x: scala.Long, y: scala.Long): scala.Long =
-    scalanative.runtime.Intrinsics.multiplyHigh(x, y)
-
-  /** Since: Java 18 */
-  @alwaysinline def unsignedMultiplyHigh(
-      x: scala.Long,
-      y: scala.Long
-  ): scala.Long = scalanative.runtime.Intrinsics.unsignedMultiplyHigh(x, y)
-
-  @alwaysinline def multiplyExact(a: scala.Long, b: scala.Int): scala.Long =
-    multiplyExact(a, b.toLong)
-
   @alwaysinline def multiplyFull(a: scala.Int, b: scala.Int): scala.Long =
     a.toLong * b.toLong
+
+  @alwaysinline def multiplyHigh(x: scala.Long, y: scala.Long): scala.Long =
+    scalanative.runtime.Intrinsics.multiplyHigh(x, y)
 
   @alwaysinline def negateExact(a: scala.Int): scala.Int =
     subtractExact(0, a)
@@ -388,6 +382,71 @@ object Math {
 
   @alwaysinline def pow(a: scala.Double, b: scala.Double): scala.Double =
     `llvm.pow.f64`(a, b)
+
+  /* powExact Family Algorithm Note:
+   *
+   *   The algorithm used in powExact() and unsignedPowExact() variants
+   *   is the "Exponentiation_by_squaring" basic iterative algorithm
+   *   as described at URL:
+   *     https://en.wikipedia.org/wiki/Exponentiation_by_squaring
+   *
+   *   One web reference mentions the algorithm as extensively discussed in
+   *   Donald Knuth's "The Art of Computer Programming".
+   *
+   *   The algorithm is O(log n), where n is the exponent. It is better
+   *   than the O(n) naive algorithm but probably leaves room for improvement
+   *   by future math keen developers.
+   */
+
+  /** Since: Java 25 */
+  def powExact(a: scala.Int, b: scala.Int): scala.Int = {
+    if (b < 0)
+      throw new ArithmeticException("negative exponent")
+
+    if (b == 0) 1
+    else {
+      // See "powExact Family Algorithm Note" above powExact(int, int) method.
+      var x = a
+      var y = 1
+      var n = b
+
+      while (n > 1) {
+        if ((n & 1) == 1) {
+          y = Math.multiplyExact(x, y)
+          n -= 1
+        }
+        x = Math.multiplyExact(x, x)
+        n >>>= 1
+      }
+
+      x * y
+    }
+  }
+
+  /** Since: Java 25 */
+  def powExact(a: scala.Long, b: Int): scala.Long = {
+    if (b < 0)
+      throw new ArithmeticException("negative exponent")
+
+    if (b == 0) 1
+    else {
+      // See "powExact Family Algorithm Note" above powExact(int, int) method.
+      var x = a
+      var y = 1L
+      var n = b
+
+      while (n > 1) {
+        if ((n & 1) == 1) {
+          y = Math.multiplyExact(x, y)
+          n -= 1
+        }
+        x = Math.multiplyExact(x, x)
+        n >>>= 1
+      }
+
+      x * y
+    }
+  }
 
   @alwaysinline def random(): scala.Double =
     MathRand.rand.nextDouble()
@@ -502,6 +561,86 @@ object Math {
     } else {
       val d = abs(a)
       cmath.nextafter(d, scala.Double.MaxValue) - d
+    }
+  }
+
+  /** Since: Java 25 */
+  @inline def unsignedMultiplyExact(a: scala.Int, b: scala.Int): scala.Int = {
+    val overflow = `llvm.umul.with.overflow.i32`(a, b)
+    if (overflow.flag) throw new ArithmeticException("Integer overflow")
+    else overflow.value
+  }
+
+  /** Since: Java 25 */
+  @alwaysinline def unsignedMultiplyExact(
+      a: scala.Long,
+      b: scala.Int
+  ): scala.Long =
+    unsignedMultiplyExact(a, b & 0xffffffffL) // b as Long, no sign extension
+
+  /** Since: Java 25 */
+  @alwaysinline def unsignedMultiplyExact(
+      a: scala.Long,
+      b: scala.Long
+  ): scala.Long = {
+    val overflow = `llvm.umul.with.overflow.i64`(a, b)
+    if (overflow.flag) throw new ArithmeticException("Long overflow")
+    else overflow.value
+  }
+
+  /** Since: Java 18 */
+  @alwaysinline def unsignedMultiplyHigh(
+      x: scala.Long,
+      y: scala.Long
+  ): scala.Long = scalanative.runtime.Intrinsics.unsignedMultiplyHigh(x, y)
+
+  /** Since: Java 25 */
+  def unsignedPowExact(a: scala.Int, b: scala.Int): scala.Int = {
+    if (b < 0)
+      throw new ArithmeticException("negative exponent")
+
+    if (b == 0) 1
+    else {
+      // See "powExact Family Algorithm Note" above powExact(int, int) method.
+      var x = a
+      var y = 1
+      var n = b
+
+      while (n > 1) {
+        if ((n & 1) == 1) {
+          y = Math.unsignedMultiplyExact(x, y)
+          n -= 1
+        }
+        x = Math.unsignedMultiplyExact(x, x)
+        n >>>= 1
+      }
+
+      x * y
+    }
+  }
+
+  /** Since: Java 25 */
+  def unsignedPowExact(a: scala.Long, b: Int): scala.Long = {
+    if (b < 0)
+      throw new ArithmeticException("negative exponent")
+
+    if (b == 0) 1
+    else {
+      // See "powExact Family Algorithm Note" above powExact(int, int) method.
+      var x = a
+      var y = 1L
+      var n = b
+
+      while (n > 1) {
+        if ((n & 1) == 1) {
+          y = Math.unsignedMultiplyExact(x, y)
+          n -= 1
+        }
+        x = Math.unsignedMultiplyExact(x, x)
+        n >>>= 1
+      }
+
+      x * y
     }
   }
 }
