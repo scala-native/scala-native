@@ -3,9 +3,13 @@ package org.scalanative.testsuite.utils
 import java.util.Locale
 // Ported from Scala.js
 
+import scala.scalanative.buildinfo.ScalaNativeBuildInfo
+
 object Platform {
   class DummyAnnotation extends scala.annotation.StaticAnnotation()
   type nooptimize = DummyAnnotation
+
+  def scalaVersion: String = ScalaNativeBuildInfo.scalaVersion
 
   final val executingInJVM = true
 

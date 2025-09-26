@@ -1,0 +1,61 @@
+--- 3.8.0-RC1-bin-20250914-afbb66b-NIGHTLY/scala/Enumeration.scala
++++ overrides-3/scala/Enumeration.scala
+@@ -94,7 +94,7 @@
+ 
+   /* Note that `readResolve` cannot be private, since otherwise
+      the JVM does not invoke it when deserializing subclasses. */
+-  protected def readResolve(): AnyRef = thisenum.getClass.getField(MODULE_INSTANCE_NAME).get(null)
++  protected def readResolve(): AnyRef = ???
+ 
+   /** The name of this enumeration.
+    */
+@@ -189,38 +189,6 @@
+    */
+   protected final def Value(i: Int, name: String): Value = new Val(i, name)
+ 
+-  private def populateNameMap(): Unit = {
+-    @tailrec def getFields(clazz: Class[_], acc: Array[JField]): Array[JField] = {
+-      if (clazz == null)
+-        acc
+-      else
+-        getFields(clazz.getSuperclass, if (clazz.getDeclaredFields.isEmpty) acc else acc ++ clazz.getDeclaredFields)
+-    }
+-    val fields = getFields(getClass.getSuperclass, getClass.getDeclaredFields)
+-    def isValDef(m: JMethod): Boolean = fields exists (fd => fd.getName == m.getName && fd.getType == m.getReturnType)
+-
+-    // The list of possible Value methods: 0-args which return a conforming type
+-    val methods: Array[JMethod] = getClass.getMethods filter (m => m.getParameterTypes.isEmpty &&
+-                                                                   classOf[Value].isAssignableFrom(m.getReturnType) &&
+-                                                                   m.getDeclaringClass != classOf[Enumeration] &&
+-                                                                   isValDef(m))
+-    methods foreach { m =>
+-      val name = m.getName
+-      // invoke method to obtain actual `Value` instance
+-      val value = m.invoke(this).asInstanceOf[Value]
+-      // verify that outer points to the correct Enumeration: ticket #3616.
+-      if (value.outerEnum eq thisenum) {
+-        val id: Int = value.id
+-        nmap += ((id, name))
+-      }
+-    }
+-  }
+-
+-  /* Obtains the name for the value with id `i`. If no name is cached
+-   * in `nmap`, it populates `nmap` using reflection.
+-   */
+-  private def nameOf(i: Int): String = synchronized { nmap.getOrElse(i, { populateNameMap() ; nmap(i) }) }
+-
+   /** The type of the enumerated values. */
+   @SerialVersionUID(7091335633555234129L)
+   abstract class Value extends Ordered[Value] with Serializable {
+@@ -262,8 +230,8 @@
+     def id: Int = i
+     override def toString(): String =
+       if (name != null) name
+-      else try thisenum.nameOf(i)
+-      catch { case _: NoSuchElementException => "<Invalid enum: no field for #" + i + ">" }
++      // Scala Native specific
++      else s"<Unknown name for enum field #$i of class ${getClass}>"
+ 
+     protected def readResolve(): AnyRef = {
+       val enumeration = thisenum.readResolve().asInstanceOf[Enumeration]

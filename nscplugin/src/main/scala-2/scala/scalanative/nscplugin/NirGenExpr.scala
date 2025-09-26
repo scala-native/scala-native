@@ -1327,7 +1327,12 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             genApplyUnbox(app.tpe, args.head)
           } else {
             val Select(receiverp, _) = fun
-            genApplyMethod(fun.symbol, statically = false, receiverp, args)
+            genApplyMethod(
+              fun.symbol,
+              statically = sym.isClassConstructor,
+              receiverp,
+              args
+            )
           }
       }
     }
