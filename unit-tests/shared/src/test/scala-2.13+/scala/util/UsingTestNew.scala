@@ -801,7 +801,7 @@ object UsingTestNew {
         .take(3)
         .map(_.takeWhile(_.isDigit)) // becouse of versions like "3.4.0-RC1"
         .map(_.toInt) match {
-        case Array(2, 13, patch) => patch >= 16
+        case Array(2, 13, patch) => patch >= 17
         case Array(3, major, _)  => major >= 8
         case _                   => false
       }
