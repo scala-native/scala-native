@@ -793,17 +793,24 @@ class UsingTestNew {
 @deprecated("ThreadDeath is deprecated on JDK 20", "")
 object UsingTestNew {
 
-  // Implementation has changed in Scala 2.13.17, backported to 3.8.0
-  def hasCompliantScalaVersion =
-    org.scalanative.testsuite.utils.Platform.scalaVersion
-      .split('.')
-      .take(3)
-      .map(_.takeWhile(_.isDigit)) // becouse of versions like "3.4.0-RC1"
-      .map(_.toInt) match {
-      case Array(2, 13, patch) => patch >= 17
-      case Array(3, major, _)  => major >= 8
-      case _                   => false
-    }
+  @BeforeClass def checkRuntime(): Unit = {
+    // Implementation has changed in Scala 2.13.17, backported to 3.8.0
+    def hasCompliantScalaVersion =
+      org.scalanative.testsuite.utils.Platform.scalaVersion
+        .split('.')
+        .take(3)
+        .map(_.takeWhile(_.isDigit)) // becouse of versions like "3.4.0-RC1"
+        .map(_.toInt) match {
+        case Array(2, 13, patch) => patch >= 16
+        case Array(3, major, _)  => major >= 8
+        case _                   => false
+      }
+
+    Assume.assumeTrue(
+      "Skipping UsingTest because the Scala version is not compliant",
+      hasCompliantScalaVersion
+    )
+  }
 
   final class ClosingVMError(message: String)
       extends VirtualMachineError(message)
