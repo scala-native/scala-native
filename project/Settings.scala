@@ -125,11 +125,17 @@ object Settings {
       javacOptions ++= {
         val jdkVersion = targetJDKVersion(scalaVersion.value)
         if (canUseRelease(scalaVersion.value)) Nil
-        else List(s"-source:${targetJDKVersionString(jdkVersion)}")
+        else List(s"-source", targetJDKVersionString(jdkVersion))
       },
       // Remove -source flags from tests to allow for multi-jdk version compliance tests
       Test / scalacOptions ~= { _.filterNot(isScalacJDKTargetOption) },
-      Test / javacOptions ~= { _.filterNot(isJavacJDKTargetOption) }
+      Test / javacOptions ~= {
+        _.filterNot { opt =>
+          isJavacJDKTargetOption(opt) ||
+          // free-standing argument to -source
+          opt == targetJDKVersionString(jdkVersion)
+        }
+      }
     )
   }
 
@@ -137,7 +143,7 @@ object Settings {
     Seq("-target:", "-Xtarget", "-release:").exists(scalacOption.startsWith)
   }
   def isJavacJDKTargetOption(javacOption: String) = {
-    Seq("-source:", "-target:").exists(javacOption.startsWith)
+    Seq("-source", "-target").exists(javacOption.startsWith)
   }
 
   def noJavaReleaseSettings = Def.settings(
