@@ -205,7 +205,7 @@ object Build {
       toolSettings,
       withSharedCrossPlatformSources
     )
-    .dependsOn(scalalib)
+    .withScalaStandardLibrary
 
   lazy val utilJVM =
     MultiScalaProject(id = "utilJVM", name = "util", file("util/jvm"))
