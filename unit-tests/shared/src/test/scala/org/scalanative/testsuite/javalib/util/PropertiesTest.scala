@@ -514,4 +514,25 @@ class PropertiesTest {
       str.replaceAll(System.lineSeparator(), "\n")
     } else str
   }
+
+  @Test def testSubclass(): Unit = {
+    val props = new PropertiesSubclass()
+    props.addInfo("Foo", "Bar")
+    props.addInfo("Bar", "Baz")
+
+    assertEquals(2, props.entrySet().size)
+    props.remove("Foo")
+    assertEquals(1, props.entrySet().size)
+    props.clear()
+    assertEquals(0, props.entrySet().size)
+  }
+}
+
+class PropertiesSubclass extends Properties() {
+  // Before #3580 all this methods would fail on JDK-9+ to link due to missing Properties non-overriden methods
+  def addInfo(key: String, value: String) = super.put(key, value)
+  override def entrySet(): ju.Set[ju.Map.Entry[AnyRef, AnyRef]] =
+    Collections.unmodifiableSet(super.entrySet)
+  override def clear(): Unit = super.clear()
+  override def remove(key: AnyRef): AnyRef = super.remove(key)
 }
