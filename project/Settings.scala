@@ -81,7 +81,8 @@ object Settings {
       "-unchecked",
       "-feature",
       "-Xfatal-warnings",
-      "-encoding:utf8"
+      "-encoding",
+      "utf8"
     ),
     javaReleaseSettings,
     mimaSettings,
