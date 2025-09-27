@@ -16,11 +16,14 @@ object ScalaNativeJUnitPlugin extends AutoPlugin {
      * it to both `compile` and `test`.
      */
     ivyConfigurations += ScalaNativeTestPlugin,
-    libraryDependencies ++= Seq(
-      "org.scala-native" %%% "junit-runtime" % nativeVersion % Test,
-      ("org.scala-native" % "junit-plugin" % nativeVersion % ScalaNativeTestPlugin)
-        .cross(CrossVersion.full)
-    ),
+    libraryDependencies ++= {
+      val ver = nativeVersion
+      val org = nativeOrgName
+      Seq(
+        org %%% "junit-runtime" % ver % Test,
+        org % "junit-plugin" % ver % ScalaNativeTestPlugin cross CrossVersion.full
+      )
+    },
     Test / scalacOptions ++= {
       val report = update.value
       val jars = report.select(configurationFilter(ScalaNativeTestPlugin.name))
