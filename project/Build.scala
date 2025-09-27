@@ -104,6 +104,20 @@ object Build {
         )
       )
 
+  lazy val buildInfoProject = (project in file("build-info"))
+    .enablePlugins(BuildInfoPlugin)
+    .settings(
+      buildInfoSettings,
+      // Important: we don't actually publish this
+      publish / skip := true
+    )
+
+  Compile / unmanagedSourceDirectories +=
+    (Compile / sourceManaged).in(buildInfoProject).value
+  Compile / compile := (Compile / compile)
+    .dependsOn((Compile / compile).in(buildInfoProject))
+    .value
+
   // Compiler plugins
   lazy val nscPlugin: MultiScalaProject = MultiScalaProject(
     "nscplugin",

@@ -6,7 +6,6 @@ package sbtplugin
 import sbt._
 
 object ScalaNativeCrossVersion {
-  val currentBinaryVersion = nir.Versions.currentBinaryVersion
 
   private[this] def crossVersionAddPlatformPart(
       cross: CrossVersion,
@@ -25,13 +24,13 @@ object ScalaNativeCrossVersion {
     }
   }
 
-  def scalaNativeMapped(cross: CrossVersion): CrossVersion =
-    crossVersionAddPlatformPart(
-      cross,
-      "native" + nir.Versions.currentBinaryVersion
-    )
+  def scalaNativeSuffix(version: String): String =
+    "native" + nir.Versions.binaryVersion(version)
 
-  val binary: CrossVersion = scalaNativeMapped(CrossVersion.binary)
+  def scalaNativeMapped(cross: CrossVersion, version: String): CrossVersion =
+    crossVersionAddPlatformPart(cross, scalaNativeSuffix(version))
 
-  val full: CrossVersion = scalaNativeMapped(CrossVersion.full)
+  def binary(version: String): CrossVersion =
+    scalaNativeMapped(CrossVersion.binary, version)
+
 }

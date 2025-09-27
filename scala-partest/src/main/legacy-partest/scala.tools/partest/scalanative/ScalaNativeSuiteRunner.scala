@@ -18,10 +18,8 @@ trait ScalaNativeSuiteRunner extends SuiteRunner {
   // Stuff we provide
 
   override def banner: String = {
-    import scala.scalanative.nir.Versions.{current => currentVersion}
-
     super.banner.trim + s"""
-    |Scala Native version is: $currentVersion
+    |Scala Native version is: ${scala.scalanative.buildinfo.ScalaNativeBuildInfo.version}
     |${options.show}
     """.stripMargin
   }

@@ -215,7 +215,8 @@ object CodeGen {
               new ShowBuilder.FileShowBuilder(writer)
             )
 
-          val snVersion = scala.scalanative.nir.Versions.current
+          val snVersion =
+            scala.scalanative.buildinfo.ScalaNativeBuildInfo.version
           val compilerInfo = s"Scala Native v$snVersion"
           val buildInfo = buildInfos
             .map { case (key, value) => s"$key: $value" }
