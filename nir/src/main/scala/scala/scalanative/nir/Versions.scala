@@ -30,9 +30,7 @@ object Versions {
   final val currentBinaryVersion: String = binaryVersion(current)
 
   private object FullVersion {
-    final val FullVersionRE = """^(\d+)\.(\d+)\.(\d+)(-.*)?$""".r
-
-    private def preRelease(s: String) = Option(s).map(_.stripPrefix("-"))
+    final val FullVersionRE = """^(\d+)\.(\d+)\.(\d+)([-+].*)?$""".r
 
     def unapply(version: String): Option[(Int, Int, Int, Option[String])] = {
       version match {
@@ -42,7 +40,7 @@ object Versions {
               major.toInt,
               minor.toInt,
               patch.toInt,
-              preRelease(preReleaseString)
+              Option(preReleaseString)
             )
           )
         case _ => None
@@ -50,11 +48,12 @@ object Versions {
     }
   }
 
-  private[nir] def binaryVersion(full: String): String = full match {
+  private[scalanative] def binaryVersion(full: String): String = full match {
     case FullVersion(0, minor, 0, Some(suffix)) => full
     case FullVersion(0, minor, _, _)            => s"0.$minor"
-    case FullVersion(major, 0, 0, Some(suffix)) => s"$major.0-$suffix"
+    case FullVersion(major, 0, 0, Some(suffix)) => s"$major.0$suffix"
     case FullVersion(major, _, _, _)            => major.toString
+    case _                                      => full
   }
 
 }
