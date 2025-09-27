@@ -109,10 +109,8 @@ object Build {
     "nscplugin",
     file("nscplugin"),
     additionalIDEScalaVersions = List("2.13")
-  )
-    .enablePlugins(BuildInfoPlugin) // for testing
+  ).withBuildInfo
     .settings(
-      buildInfoSettings,
       compilerPluginSettings,
       scalacOptions ++= scalaVersionsDependendent(scalaVersion.value)(
         Seq.empty[String]
@@ -200,12 +198,11 @@ object Build {
 
   // NIR compiler
   lazy val util = MultiScalaProject("util", file("util/native"))
-    .enablePlugins(MyScalaNativePlugin)
-    .withNativeCompilerPlugin
     .settings(
       toolSettings,
       withSharedCrossPlatformSources
     )
+    .withNativeCompilerPlugin
     .dependsOn(scalalib)
 
   lazy val utilJVM =
@@ -215,54 +212,38 @@ object Build {
         withSharedCrossPlatformSources
       )
 
-  lazy val nir =
-    MultiScalaProject(
-      "nir",
-      file("nir/native")
-    ).withNativeCompilerPlugin.withJUnitPlugin
-      .settings(
-        toolSettings,
-        withSharedCrossPlatformSources
-      )
-      .mapBinaryVersions {
-        // Scaladoc for Scala 2.12 is not compliant with normal compiler (see nscPlugin)
-        case "2.12" => _.settings(disabledDocsSettings)
-        case _      => identity
-      }
-      .enablePlugins(MyScalaNativePlugin)
-      .dependsOn(util)
-      .dependsOn(testInterface % "test", junitRuntime % "test")
+  lazy val nir = MultiScalaProject("nir", file("nir/native"))
+    .settings(
+      toolSettings,
+      withSharedCrossPlatformSources
+    )
+    .mapBinaryVersions {
+      // Scaladoc for Scala 2.12 is not compliant with normal compiler (see nscPlugin)
+      case "2.12" => _.settings(disabledDocsSettings)
+      case _      => identity
+    }
+    .withNativeCompilerPlugin
+    .withJUnitPlugin
+    .dependsOn(util)
+    .dependsOn(testInterface % "test", junitRuntime % "test")
 
-  lazy val nirJVM =
-    MultiScalaProject(id = "nirJVM", name = "nir", file("nir/jvm"))
-      .settings(
-        toolSettings,
-        withSharedCrossPlatformSources
-      )
-      .settings(
-        libraryDependencies ++= Deps.JUnitJvm
-      )
-      .mapBinaryVersions {
-        // Scaladoc for Scala 2.12 is not compliant with normal compiler (see nscPlugin)
-        case "2.12" => _.settings(disabledDocsSettings)
-        case _      => identity
-      }
-      .dependsOn(utilJVM)
-
-  private val commonToolsSettings = Def.settings(
-    toolSettings,
-    withSharedCrossPlatformSources,
-    buildInfoSettings,
-    // Running tests in parallel results in `FileSystemAlreadyExistsException`
-    Test / parallelExecution := false
-  )
+  lazy val nirJVM = MultiScalaProject("nirJVM", "nir", file("nir/jvm"))
+    .settings(
+      toolSettings,
+      withSharedCrossPlatformSources
+    )
+    .settings(
+      libraryDependencies ++= Deps.JUnitJvm
+    )
+    .mapBinaryVersions {
+      // Scaladoc for Scala 2.12 is not compliant with normal compiler (see nscPlugin)
+      case "2.12" => _.settings(disabledDocsSettings)
+      case _      => identity
+    }
+    .dependsOn(utilJVM)
 
   lazy val tools = MultiScalaProject("tools", file("tools/native"))
-    .enablePlugins(BuildInfoPlugin, MyScalaNativePlugin)
-    .withJUnitPlugin
-    .withNativeCompilerPlugin
     .settings(
-      commonToolsSettings,
       // Multiple check warnings due to usage of self-types
       nativeConfig ~= { _.withCheckFatalWarnings(false) },
       // One of the biggest blockers is lack of ZipFileSystemProvider required to operate on JARs
@@ -273,6 +254,9 @@ object Build {
         )
       }
     )
+    .withJUnitPlugin
+    .withNativeCompilerPlugin
+    .withCommonTools
     .dependsOn(nir, util)
     .dependsOn(testInterface % "test", junitRuntime % "test")
     .zippedSettings(Seq("nscplugin", "javalib", "scalalib")) {
@@ -282,14 +266,11 @@ object Build {
 
   lazy val toolsJVM =
     MultiScalaProject(id = "toolsJVM", name = "tools", file("tools/jvm"))
-      .enablePlugins(BuildInfoPlugin)
       .settings(
-        commonToolsSettings,
         libraryDependencies ++= Deps.JUnitJvm,
-        Test / fork := true,
-        // Running tests in parallel results in `FileSystemAlreadyExistsException`
-        Test / parallelExecution := false
+        Test / fork := true
       )
+      .withCommonTools
       .zippedSettings(Seq("nscplugin", "javalib", "scalalib")) {
         case Seq(nscPlugin, javalib, scalalib) =>
           toolsBuildInfoSettings(nscPlugin, javalib, scalalib)
@@ -453,7 +434,6 @@ object Build {
 // Native modules ------------------------------------------------
   lazy val nativelib =
     MultiScalaProject("nativelib")
-      .enablePlugins(MyScalaNativePlugin)
       .settings(
         publishSettings(Some(VersionScheme.BreakOnMajor)),
         docsSettings,
@@ -468,27 +448,23 @@ object Build {
       }
 
   lazy val clib = MultiScalaProject("clib")
-    .enablePlugins(MyScalaNativePlugin)
     .settings(publishSettings(Some(VersionScheme.BreakOnMajor)))
     .dependsOn(nativelib)
     .withNativeCompilerPlugin
 
   lazy val posixlib = MultiScalaProject("posixlib")
-    .enablePlugins(MyScalaNativePlugin)
     .settings(publishSettings(Some(VersionScheme.BreakOnMajor)))
     .dependsOn(nativelib, clib)
     .withNativeCompilerPlugin
 
   lazy val windowslib =
     MultiScalaProject("windowslib")
-      .enablePlugins(MyScalaNativePlugin)
       .settings(publishSettings(Some(VersionScheme.BreakOnMajor)))
       .dependsOn(nativelib, clib)
       .withNativeCompilerPlugin
 
 // Language standard libraries ------------------------------------------------
   lazy val javalib = MultiScalaProject("javalib")
-    .enablePlugins(MyScalaNativePlugin)
     .settings(
       publishSettings(Some(VersionScheme.BreakOnMajor)),
       commonJavalibSettings
@@ -516,13 +492,11 @@ object Build {
 
   lazy val javalibExtDummies =
     MultiScalaProject("javalibExtDummies", file("javalib-ext-dummies"))
-      .enablePlugins(MyScalaNativePlugin)
       .settings(noPublishSettings, commonJavalibSettings, disabledDocsSettings)
       .dependsOn(nativelib)
       .withNativeCompilerPlugin
 
   lazy val auxlib = MultiScalaProject("auxlib")
-    .enablePlugins(MyScalaNativePlugin)
     .settings(
       publishSettings(Some(VersionScheme.BreakOnMajor)),
       NIROnlySettings,
@@ -534,7 +508,6 @@ object Build {
 
   lazy val scalalib: MultiScalaProject =
     MultiScalaProject("scalalib")
-      .enablePlugins(MyScalaNativePlugin)
       .settings(
         publishSettings(Some(VersionScheme.BreakOnMajor)),
         disabledDocsSettings,
@@ -591,9 +564,7 @@ object Build {
 
   // Tests ------------------------------------------------
   lazy val tests = MultiScalaProject("tests", file("unit-tests") / "native")
-    .enablePlugins(MyScalaNativePlugin, BuildInfoPlugin)
     .settings(
-      buildInfoSettings,
       noPublishSettings,
       testsCommonSettings,
       sharedTestSource(withDenylist = false),
@@ -623,6 +594,7 @@ object Build {
         }
       }
     )
+    .withBuildInfo
     .withNativeCompilerPlugin
     .withJUnitPlugin
     .dependsOn(
@@ -648,7 +620,6 @@ object Build {
 
   lazy val testsExt =
     MultiScalaProject("testsExt", file("unit-tests-ext/native"))
-      .enablePlugins(MyScalaNativePlugin)
       .settings(noPublishSettings)
       .settings(
         // Setting only used to ensure that compiler does not crash when reporting deprecated options
@@ -681,10 +652,9 @@ object Build {
 
   lazy val sandbox =
     MultiScalaProject("sandbox", file("sandbox"))
-      .enablePlugins(MyScalaNativePlugin)
-      .withNativeCompilerPlugin
-      .withJUnitPlugin
       .settings(noJavaReleaseSettings)
+      .withJUnitPlugin
+      .withNativeCompilerPlugin
       .dependsOn(scalalib, javalib, testInterface % "test")
 
 // Testing infrastructure ------------------------------------------------
@@ -730,7 +700,6 @@ object Build {
 
   lazy val testInterface =
     MultiScalaProject("testInterface", file("test-interface"))
-      .enablePlugins(MyScalaNativePlugin)
       .settings(
         publishSettings(Some(VersionScheme.BreakOnPatch)),
         testInterfaceCommonSourcesSettings
@@ -747,7 +716,6 @@ object Build {
 
   lazy val testInterfaceSbtDefs =
     MultiScalaProject("testInterfaceSbtDefs", file("test-interface-sbt-defs"))
-      .enablePlugins(MyScalaNativePlugin)
       .settings(publishSettings(Some(VersionScheme.BreakOnMajor)))
       .settings(docsSettings)
       .withNativeCompilerPlugin
@@ -765,7 +733,6 @@ object Build {
 // JUnit modules ------------------------------------------------
   lazy val junitRuntime =
     MultiScalaProject("junitRuntime", file("junit-runtime"))
-      .enablePlugins(MyScalaNativePlugin)
       .settings(publishSettings(Some(VersionScheme.BreakOnMajor)))
       .withNativeCompilerPlugin
       .dependsOn(testInterfaceSbtDefs)
@@ -775,7 +742,6 @@ object Build {
       "junitTestOutputsNative",
       file("junit-test/output-native")
     )
-      .enablePlugins(MyScalaNativePlugin)
       .settings(commonJUnitTestOutputsSettings)
       .withNativeCompilerPlugin
       .withJUnitPlugin
@@ -795,7 +761,6 @@ object Build {
 
   lazy val junitAsyncNative =
     MultiScalaProject("junitAsyncNative", file("junit-async/native"))
-      .enablePlugins(MyScalaNativePlugin)
       .settings(
         Compile / publishArtifact := false
       )
@@ -931,7 +896,6 @@ object Build {
 
   lazy val scalaPartestRuntime =
     MultiScalaProject("scalaPartestRuntime", file("scala-partest-runtime"))
-      .enablePlugins(MyScalaNativePlugin)
       .settings(noPublishSettings)
       .zippedSettings(Seq("scalaPartest", "junitRuntime")) {
         case Seq(scalaPartest, junitRuntime) =>
@@ -971,7 +935,7 @@ object Build {
   lazy val scalaPartestJunitTests = MultiScalaProject(
     "scalaPartestJunitTests",
     file("scala-partest-junit-tests")
-  ).enablePlugins(MyScalaNativePlugin)
+  )
     .settings(
       noPublishSettings,
       noIDEExportSettings,
@@ -1051,7 +1015,7 @@ object Build {
     def withNativeCompilerPlugin: MultiScalaProject = {
       if (isGeneratingForIDE) project
       else project.dependsOn(nscPlugin % "plugin")
-    }
+    }.enablePlugins(MyScalaNativePlugin)
 
     def withJUnitPlugin: MultiScalaProject = {
       if (isGeneratingForIDE) project
@@ -1078,5 +1042,24 @@ object Build {
             (dependency / Compile / unmanagedSourceDirectories).value
         }
     }
+
+    def withBuildInfo: MultiScalaProject =
+      project
+        .settings(
+          buildInfoJVMSettings,
+          buildInfoKeys += "nativeScalaVersion" -> scalaVersion.value
+        )
+        .enablePlugins(BuildInfoPlugin)
+
+    def withCommonTools: MultiScalaProject =
+      project
+        .settings(
+          toolSettings,
+          withSharedCrossPlatformSources,
+          // Running tests in parallel results in `FileSystemAlreadyExistsException`
+          Test / parallelExecution := false
+        )
+        .withBuildInfo
+
   }
 }
