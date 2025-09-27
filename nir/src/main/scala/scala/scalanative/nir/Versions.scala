@@ -26,8 +26,10 @@ object Versions {
   case class Version(compat: Int, revision: Int)
 
   /* Current public release version of Scala Native. */
-  final val current: String = "0.5.9-SNAPSHOT"
+  final val current: String =
+    scala.scalanative.buildinfo.ScalaNativeBuildInfo.version
   final val currentBinaryVersion: String = binaryVersion(current)
+  // Check instead: buildinfo.ScalaNativeBuildInfo.version
 
   private object FullVersion {
     final val FullVersionRE = """^(\d+)\.(\d+)\.(\d+)(-.*)?$""".r
@@ -50,7 +52,7 @@ object Versions {
     }
   }
 
-  private[nir] def binaryVersion(full: String): String = full match {
+  def binaryVersion(full: String): String = full match {
     case FullVersion(0, minor, 0, Some(suffix)) => full
     case FullVersion(0, minor, _, _)            => s"0.$minor"
     case FullVersion(major, 0, 0, Some(suffix)) => s"$major.0-$suffix"

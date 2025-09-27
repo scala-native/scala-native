@@ -11,6 +11,7 @@ import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
 
 import sbtbuildinfo.BuildInfoPlugin.autoImport._
 import ScriptedPlugin.autoImport._
+import sbtdynver.DynVerPlugin.autoImport._
 import com.jsuereth.sbtpgp.PgpKeys
 
 import scala.collection.mutable
@@ -33,8 +34,23 @@ object Settings {
       "Defaults to what sbt is running with."
   )
 
+  private def versionFmt(out: sbtdynver.GitDescribeOutput): String = {
+    val tagVersion = out.ref.dropPrefix
+    if (out.isCleanAfterTag && out.dirtySuffix.value.isEmpty) tagVersion
+    else {
+      val sb = new StringBuilder(tagVersion)
+      if (!out.isCleanAfterTag)
+        sb.append(out.commitSuffix.mkString("+", "-", ""))
+      sb.append(out.dirtySuffix.value)
+      sb.append("-SNAPSHOT")
+      sb.toString()
+    }
+  }
+
   // JDK version we are running with
   lazy val thisBuildSettings = Def.settings(
+    version := dynverGitDescribeOutput.value
+      .mkVersion(versionFmt, version.value),
     Global / javaVersion := {
       val fullVersion = System.getProperty("java.version")
       val v = fullVersion.stripPrefix("1.").takeWhile(_.isDigit).toInt
@@ -75,7 +91,6 @@ object Settings {
   lazy val commonSettings = Def.settings(
     organization := "org.scala-native",
     name := projectName(thisProject.value.id),
-    version := nativeVersion,
     scalacOptions ++= Seq(
       "-deprecation",
       "-unchecked",

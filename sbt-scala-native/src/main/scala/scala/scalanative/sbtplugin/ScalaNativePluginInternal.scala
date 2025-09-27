@@ -89,7 +89,7 @@ object ScalaNativePluginInternal {
             ExclusionRule()
               .withOrganization(organization)
               .withName(
-                s"${lib}_native${ScalaNativeCrossVersion.currentBinaryVersion}_${scalaBinVersion}"
+                s"${lib}_${ScalaNativeCrossVersion.scalaNativeSuffix(version.value)}_${scalaBinVersion}"
               )
           }
         },
@@ -100,8 +100,8 @@ object ScalaNativePluginInternal {
     }
 
   lazy val scalaNativeBaseSettings: Seq[Setting[_]] = Seq(
-    crossVersion := ScalaNativeCrossVersion.binary,
-    platformDepsCrossVersion := ScalaNativeCrossVersion.binary
+    crossVersion := ScalaNativeCrossVersion.binary(version.value),
+    platformDepsCrossVersion := ScalaNativeCrossVersion.binary(version.value)
   )
 
   /** Called by overridden method in plugin

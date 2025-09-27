@@ -2,6 +2,7 @@ import build.Build
 
 // scalafmt: { align.preset = most}
 lazy val scalaNative              = Build.root
+lazy val buildInfoProject         = Build.buildInfoProject
 lazy val nscPlugin                = Build.nscPlugin
 lazy val junitPlugin              = Build.junitPlugin
 lazy val sbtScalaNative           = Build.sbtScalaNative

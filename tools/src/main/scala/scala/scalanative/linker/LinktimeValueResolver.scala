@@ -33,7 +33,7 @@ private[linker] trait LinktimeValueResolver { self: Reach =>
         .getOrElse(""),
       s"$linktimeInfo.isMsys" -> config.targetsMsys,
       s"$linktimeInfo.isCygwin" -> config.targetsCygwin,
-      s"$linktimeInfo.runtimeVersion" -> nir.Versions.current,
+      s"$linktimeInfo.runtimeVersion" -> scala.scalanative.buildinfo.ScalaNativeBuildInfo.version,
       s"$linktimeInfo.garbageCollector" -> conf.gc.name,
       s"$linktimeInfo.target.arch" -> triple.arch,
       s"$linktimeInfo.target.vendor" -> triple.vendor,
