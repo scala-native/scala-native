@@ -634,7 +634,7 @@ object Thread {
 
   // Counter used to generate thread's ID, 0 resevered for main
   sealed abstract class Numbering {
-    final protected var cursor = 1L
+    protected final var cursor = 1L
     @inline def cursorRef = new AtomicLongLong(
       fromRawPtr(classFieldRawPtr(this, "cursor"))
     )

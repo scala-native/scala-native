@@ -19,7 +19,7 @@ import scala.scalanative.runtime.LongArray
 
 @SerialVersionUID(-2308431214976778248L)
 class AtomicLongArray extends Serializable {
-  final private var array: Array[Long] = null
+  private final var array: Array[Long] = null
 
   @alwaysinline
   private[concurrent] def nativeArray: LongArray = array.asInstanceOf[LongArray]

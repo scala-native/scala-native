@@ -18,7 +18,7 @@ import scala.scalanative.runtime.IntArray
 
 @SerialVersionUID(2862133569453604235L)
 class AtomicIntegerArray extends Serializable {
-  final private var array: Array[Int] = null
+  private final var array: Array[Int] = null
 
   @alwaysinline
   private[concurrent] def nativeArray: IntArray = array.asInstanceOf[IntArray]

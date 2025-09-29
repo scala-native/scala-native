@@ -54,7 +54,7 @@ import scala.scalanative.annotation.safePublish
 @SerialVersionUID(-3223113410248163686L)
 object SynchronousQueue {
 
-  abstract private[concurrent] class Transferer[E] {
+  private[concurrent] abstract class Transferer[E] {
 
     private[concurrent] def transfer(e: E, timed: Boolean, nanos: Long): E
   }
@@ -72,7 +72,7 @@ object SynchronousQueue {
     private[concurrent] def isFulfilling(m: Int): Boolean =
       (m & FULFILLING) != 0
 
-    final private[concurrent] class SNode private[concurrent] (
+    private[concurrent] final class SNode private[concurrent] (
         var item: Any // data; or null for REQUESTs
     ) extends ForkJoinPool.ManagedBlocker {
 
@@ -139,7 +139,7 @@ object SynchronousQueue {
     }
   }
 
-  final private[concurrent] class TransferStack[E]
+  private[concurrent] final class TransferStack[E]
       extends SynchronousQueue.Transferer[E] {
     import TransferStack._
 
@@ -307,7 +307,7 @@ object SynchronousQueue {
 
   private[concurrent] object TransferQueue {
 
-    final private[concurrent] class QNode private[concurrent] (
+    private[concurrent] final class QNode private[concurrent] (
         @volatile var item: Object, // CAS'ed to or from null
         val isData: Boolean
     ) extends ForkJoinPool.ManagedBlocker {
@@ -354,7 +354,7 @@ object SynchronousQueue {
       }
     }
   }
-  final private[concurrent] class TransferQueue[
+  private[concurrent] final class TransferQueue[
       E <: AnyRef
   ] private[concurrent] ()
       extends SynchronousQueue.Transferer[E] {

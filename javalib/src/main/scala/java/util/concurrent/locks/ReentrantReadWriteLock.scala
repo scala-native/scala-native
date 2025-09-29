@@ -38,7 +38,7 @@ object ReentrantReadWriteLock {
       )
   }
 
-  abstract private[locks] class Sync() extends AbstractQueuedSynchronizer {
+  private[locks] abstract class Sync() extends AbstractQueuedSynchronizer {
 
     private var readHolds = new Sync.ThreadLocalHoldCounter
 
@@ -58,7 +58,7 @@ object ReentrantReadWriteLock {
      * both read and write holds that are all released during a
      * condition wait and re-established in tryAcquire.
      */
-    override final protected def tryRelease(releases: Int): Boolean = {
+    override protected final def tryRelease(releases: Int): Boolean = {
       if (!(isHeldExclusively())) throw new IllegalMonitorStateException
       val nextc: Int = getState() - releases
       val free: Boolean = Sync.exclusiveCount(nextc) == 0
@@ -67,7 +67,7 @@ object ReentrantReadWriteLock {
       free
     }
 
-    override final protected def tryAcquire(acquires: Int): Boolean = {
+    override protected final def tryAcquire(acquires: Int): Boolean = {
       /*
        * Walkthrough:
        * 1. If read count nonzero or write count nonzero
@@ -97,7 +97,7 @@ object ReentrantReadWriteLock {
       true
     }
 
-    override final protected def tryReleaseShared(
+    override protected final def tryReleaseShared(
         unused: Int
     ): Boolean = {
       val current: Thread = Thread.currentThread()
@@ -130,7 +130,7 @@ object ReentrantReadWriteLock {
       false // unreachable
     }
 
-    override final protected def tryAcquireShared(unused: Int): Int = {
+    override protected final def tryAcquireShared(unused: Int): Int = {
       /*
        * Walkthrough:
        * 1. If write lock held by another thread, fail.
@@ -176,7 +176,7 @@ object ReentrantReadWriteLock {
       fullTryAcquireShared(current)
     }
 
-    final private[locks] def fullTryAcquireShared(current: Thread): Int = {
+    private[locks] final def fullTryAcquireShared(current: Thread): Int = {
       /*
        * This code is in part redundant with that in
        * tryAcquireShared but is simpler overall by not
@@ -230,7 +230,7 @@ object ReentrantReadWriteLock {
       -1 // unreachable
     }
 
-    final private[locks] def tryWriteLock: Boolean = {
+    private[locks] final def tryWriteLock: Boolean = {
       val current: Thread = Thread.currentThread()
       val c: Int = getState()
       if (c != 0) {
@@ -247,7 +247,7 @@ object ReentrantReadWriteLock {
       }
     }
 
-    final private[locks] def tryReadLock: Boolean = {
+    private[locks] final def tryReadLock: Boolean = {
       val current: Thread = Thread.currentThread()
 
       while (true) {
@@ -281,32 +281,32 @@ object ReentrantReadWriteLock {
       false // unreachable
     }
 
-    override final protected[ReentrantReadWriteLock] def isHeldExclusively()
+    override protected[ReentrantReadWriteLock] final def isHeldExclusively()
         : Boolean = {
       // While we must in general read state before owner,
       // we don't need to do so to check if current thread is owner
       getExclusiveOwnerThread() eq Thread.currentThread()
     }
 
-    final private[locks] def newCondition: ConditionObject = new ConditionObject
+    private[locks] final def newCondition: ConditionObject = new ConditionObject
 
-    final private[locks] def getOwner: Thread = {
+    private[locks] final def getOwner: Thread = {
       // Must read state before owner to ensure memory consistency
       if (Sync.exclusiveCount(getState()) == 0) null
       else getExclusiveOwnerThread()
     }
 
-    final private[locks] def getReadLockCount: Int =
+    private[locks] final def getReadLockCount: Int =
       Sync.sharedCount(getState())
 
-    final private[locks] def isWriteLocked: Boolean =
+    private[locks] final def isWriteLocked: Boolean =
       Sync.exclusiveCount(getState()) != 0
 
-    final private[locks] def getWriteHoldCount: Int =
+    private[locks] final def getWriteHoldCount: Int =
       if (isHeldExclusively()) Sync.exclusiveCount(getState())
       else 0
 
-    final private[locks] def getReadHoldCount: Int = {
+    private[locks] final def getReadHoldCount: Int = {
       if (getReadLockCount == 0) return 0
       val current: Thread = Thread.currentThread()
       if (firstReader eq current) return firstReaderHoldCount
@@ -319,10 +319,10 @@ object ReentrantReadWriteLock {
       count
     }
 
-    final private[locks] def getCount: Int = getState()
+    private[locks] final def getCount: Int = getState()
   }
 
-  final private[locks] class NonfairSync extends ReentrantReadWriteLock.Sync {
+  private[locks] final class NonfairSync extends ReentrantReadWriteLock.Sync {
     override final def writerShouldBlock: Boolean =
       false // writers can always barge
     override final def readerShouldBlock: Boolean = {
@@ -337,13 +337,13 @@ object ReentrantReadWriteLock {
     }
   }
 
-  final private[locks] class FairSync extends ReentrantReadWriteLock.Sync {
+  private[locks] final class FairSync extends ReentrantReadWriteLock.Sync {
     override final def writerShouldBlock: Boolean = hasQueuedPredecessors()
     override final def readerShouldBlock: Boolean = hasQueuedPredecessors()
   }
 
   class ReadLock private (
-      @safePublish final private val sync: ReentrantReadWriteLock.Sync
+      @safePublish private final val sync: ReentrantReadWriteLock.Sync
   ) extends Lock
       with Serializable {
     protected[ReentrantReadWriteLock] def this(lock: ReentrantReadWriteLock) =
@@ -371,7 +371,7 @@ object ReentrantReadWriteLock {
     }
   }
 
-  class WriteLock private (final private val sync: ReentrantReadWriteLock.Sync)
+  class WriteLock private (private final val sync: ReentrantReadWriteLock.Sync)
       extends Lock
       with Serializable {
     protected[ReentrantReadWriteLock] def this(lock: ReentrantReadWriteLock) =
@@ -411,15 +411,15 @@ class ReentrantReadWriteLock(val fair: Boolean)
     with Serializable {
   def this() = this(false)
 
-  final private[locks] val sync: ReentrantReadWriteLock.Sync =
+  private[locks] final val sync: ReentrantReadWriteLock.Sync =
     if (fair) new ReentrantReadWriteLock.FairSync
     else new ReentrantReadWriteLock.NonfairSync
 
   @safePublish
-  final private val readerLock = new ReentrantReadWriteLock.ReadLock(this)
+  private final val readerLock = new ReentrantReadWriteLock.ReadLock(this)
 
   @safePublish
-  final private val writerLock = new ReentrantReadWriteLock.WriteLock(this)
+  private final val writerLock = new ReentrantReadWriteLock.WriteLock(this)
 
   override def writeLock(): ReentrantReadWriteLock.WriteLock = this.writerLock
   override def readLock(): ReentrantReadWriteLock.ReadLock = this.readerLock

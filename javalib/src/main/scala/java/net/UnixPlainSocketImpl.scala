@@ -34,7 +34,7 @@ private[net] class UnixPlainSocketImpl extends AbstractPlainSocketImpl {
     fd = new FileDescriptor(sock)
   }
 
-  final protected def tryPollOnConnect(timeout: Int): Unit = {
+  protected final def tryPollOnConnect(timeout: Int): Unit = {
     val hasTimeout = timeout > 0
     val deadline = if (hasTimeout) System.currentTimeMillis() + timeout else 0L
     val nAlloc = 1.toUInt

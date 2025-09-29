@@ -454,12 +454,12 @@ abstract class ForkJoinTask[V]() extends Future[V] with Serializable {
 object ForkJoinTask {
 
   @safePublish
-  final private[concurrent] class Aux(
+  private[concurrent] final class Aux(
       val thread: Thread,
       val ex: Throwable // null if a waiter
   ) {
     var next: Aux = _ // accessed only via memory-acquire chains
-    final private def nextAtomic =
+    private final def nextAtomic =
       new AtomicRef[Aux](fromRawPtr(Intrinsics.classFieldRawPtr(this, "next")))
     final def casNext(c: Aux, v: Aux) = nextAtomic.compareExchangeStrong(c, v)
   }
@@ -669,7 +669,7 @@ object ForkJoinTask {
     }
 
   @SerialVersionUID(5232453952276885070L)
-  final private[concurrent] class AdaptedRunnable[T] private[concurrent] (
+  private[concurrent] final class AdaptedRunnable[T] private[concurrent] (
       @safePublish val runnable: Runnable,
       var result: T
   ) // OK to set this even before completion
@@ -688,7 +688,7 @@ object ForkJoinTask {
   }
 
   @SerialVersionUID(5232453952276885070L)
-  final private[concurrent] class AdaptedRunnableAction private[concurrent] (
+  private[concurrent] final class AdaptedRunnableAction private[concurrent] (
       @safePublish val runnable: Runnable
   ) extends ForkJoinTask[Void]
       with RunnableFuture[Void] {
@@ -705,7 +705,7 @@ object ForkJoinTask {
   }
 
   @SerialVersionUID(5232453952276885070L)
-  final private[concurrent] class RunnableExecuteAction private[concurrent] (
+  private[concurrent] final class RunnableExecuteAction private[concurrent] (
       @safePublish val runnable: Runnable
   ) extends ForkJoinTask[Void] {
     if (runnable == null) throw new NullPointerException
@@ -730,7 +730,7 @@ object ForkJoinTask {
   }
 
   @SerialVersionUID(2838392045355241008L)
-  final private[concurrent] class AdaptedCallable[T] private[concurrent] (
+  private[concurrent] final class AdaptedCallable[T] private[concurrent] (
       @safePublish val callable: Callable[T]
   ) extends ForkJoinTask[T]
       with RunnableFuture[T] {
@@ -750,7 +750,7 @@ object ForkJoinTask {
       super.toString + "[Wrapped task = " + callable + "]"
   }
   @SerialVersionUID(2838392045355241008L)
-  final private[concurrent] class AdaptedInterruptibleCallable[T](
+  private[concurrent] final class AdaptedInterruptibleCallable[T](
       @safePublish val callable: Callable[T]
   ) extends ForkJoinTask[T]
       with RunnableFuture[T] {

@@ -135,7 +135,7 @@ class ThreadPoolExecutor(
    *  seeing that it is empty, we see that workerCount is 0 (which sometimes
    *  entails a recheck -- see below).
    */
-  final private val ctl: AtomicInteger = new AtomicInteger(ctlOf(RUNNING, 0))
+  private final val ctl: AtomicInteger = new AtomicInteger(ctlOf(RUNNING, 0))
 
   private def compareAndIncrementWorkerCount(expect: Int): Boolean =
     ctl.compareAndSet(expect, expect + 1)
@@ -146,13 +146,13 @@ class ThreadPoolExecutor(
   private def decrementWorkerCount(): Unit = ctl.addAndGet(-(1))
 
   @safePublish
-  final private val mainLock: ReentrantLock = new ReentrantLock
+  private final val mainLock: ReentrantLock = new ReentrantLock
 
   @safePublish
-  final private val workers: util.HashSet[Worker] = new util.HashSet[Worker]
+  private final val workers: util.HashSet[Worker] = new util.HashSet[Worker]
 
   @safePublish
-  final private val termination: Condition = mainLock.newCondition()
+  private final val termination: Condition = mainLock.newCondition()
 
   private var largestPoolSize: Int = 0
 
@@ -162,14 +162,14 @@ class ThreadPoolExecutor(
   private var allowCoreThreadTimeOut: Boolean = false
 
   @SerialVersionUID(6138294804551838833L)
-  final private[concurrent] class Worker private[concurrent] (
+  private[concurrent] final class Worker private[concurrent] (
       var firstTask: Runnable
   ) extends AbstractQueuedSynchronizer
       with Runnable {
     setState(-1) // inhibit interrupts until runWorker
 
     @safePublish
-    final private[concurrent] val thread: Thread =
+    private[concurrent] final val thread: Thread =
       getThreadFactory().newThread(this)
 
     @volatile private[concurrent] var completedTasks: Long = 0L
@@ -219,7 +219,7 @@ class ThreadPoolExecutor(
     else advanceRunState(targetState)
   }
 
-  final private[concurrent] def tryTerminate(): Unit = {
+  private[concurrent] final def tryTerminate(): Unit = {
     while (true) {
       val c: Int = ctl.get()
       if (isRunning(c) ||
@@ -269,7 +269,7 @@ class ThreadPoolExecutor(
 
   private def interruptIdleWorkers(): Unit = interruptIdleWorkers(false)
 
-  final private[concurrent] def reject(command: Runnable): Unit =
+  private[concurrent] final def reject(command: Runnable): Unit =
     handler.rejectedExecution(command, this)
 
   private[concurrent] def onShutdown(): Unit = {}
@@ -412,7 +412,7 @@ class ThreadPoolExecutor(
     null // unreachable
   }
 
-  final private[concurrent] def runWorker(
+  private[concurrent] final def runWorker(
       w: ThreadPoolExecutor#Worker
   ): Unit = {
     val wt: Thread = Thread.currentThread()

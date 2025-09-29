@@ -89,7 +89,7 @@ final class UShort private[scalanative] (
    */
   @inline final def >>(x: Long): UInt = toUInt >> x
 
-  @inline final override def compareTo(x: UShort): Int =
+  @inline override final def compareTo(x: UShort): Int =
     (underlyingValue & 0xffff) - (x.underlyingValue & 0xffff)
 
   /** Returns `true` if this value is equal to x, `false` otherwise. */
@@ -278,7 +278,7 @@ final class UShort private[scalanative] (
   /** Returns the remainder of the division of this value by `x`. */
   @inline final def %(x: ULong): ULong = this.toULong % x
 
-  @inline final override def toString(): String = toInt.toString()
+  @inline override final def toString(): String = toInt.toString()
 
   @inline override def hashCode(): Int = underlyingValue.##
 

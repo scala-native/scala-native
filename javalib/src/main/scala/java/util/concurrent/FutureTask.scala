@@ -20,7 +20,7 @@ object FutureTask {
   private final val INTERRUPTING = 5
   private final val INTERRUPTED = 6
 
-  final private[concurrent] class WaitNode(@volatile var thread: Thread) {
+  private[concurrent] final class WaitNode(@volatile var thread: Thread) {
     @volatile var next: WaitNode = _
     def this() = this(Thread.currentThread())
   }

@@ -505,7 +505,7 @@ class CountedCompleterTest extends JSR166Test {
   ) extends CheckedCC(parent, 1) {
     @volatile var rnumber = 0
 
-    override final protected def realCompute(): Unit = {
+    override protected final def realCompute(): Unit = {
       var f = this
       var n = number
       while (n >= 2) {
@@ -543,7 +543,7 @@ class CountedCompleterTest extends JSR166Test {
   abstract class FailingCCF(parent: CountedCompleter[Any], var number: Int)
       extends CheckedCC(parent, 1) {
     val rnumber = 0
-    override final protected def realCompute(): Unit = {
+    override protected final def realCompute(): Unit = {
       var f = this
       var n = number
       while ({ n >= 2 }) {

@@ -221,7 +221,7 @@ object BufferFactory {
   trait ReadOnlyBufferFactory extends BufferFactory {
     override val createsReadOnly = true
 
-    abstract override def allocBuffer(capacity: Int): BufferType =
+    override abstract def allocBuffer(capacity: Int): BufferType =
       super.allocBuffer(capacity).asReadOnlyBuffer()
 
     override def allocBuffer(pos: Int, limit: Int, capacity: Int): BufferType =
@@ -237,7 +237,7 @@ object BufferFactory {
   }
 
   trait SlicedBufferFactory extends BufferFactory {
-    abstract override def allocBuffer(capacity: Int): BufferType = {
+    override abstract def allocBuffer(capacity: Int): BufferType = {
       if (capacity < 0)
         throw new IllegalArgumentException
       val buf = super.allocBuffer(capacity + 25)

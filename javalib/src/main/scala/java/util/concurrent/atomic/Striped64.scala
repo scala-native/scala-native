@@ -24,7 +24,7 @@ import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
 @SuppressWarnings(Array("serial"))
 private[atomic] object Striped64 {
   type Contended = scala.scalanative.annotation.align
-  @Contended final private[atomic] class Cell private[atomic] (
+  @Contended private[atomic] final class Cell private[atomic] (
       @volatile private[atomic] var value: Long
   ) {
 
@@ -32,20 +32,20 @@ private[atomic] object Striped64 {
       fromRawPtr(Intrinsics.classFieldRawPtr(this, "value"))
     )
 
-    final private[atomic] def cas(cmp: Long, `val`: Long) =
+    private[atomic] final def cas(cmp: Long, `val`: Long) =
       valueAtomic().compareExchangeWeak(
         cmp,
         `val`,
         memory_order.memory_order_release
       )
 
-    final private[atomic] def reset(): Unit =
+    private[atomic] final def reset(): Unit =
       valueAtomic().store(0L, memory_order.memory_order_seq_cst)
 
-    final private[atomic] def reset(identity: Long): Unit =
+    private[atomic] final def reset(identity: Long): Unit =
       valueAtomic().store(identity, memory_order.memory_order_seq_cst)
 
-    final private[atomic] def getAndSet(`val`: Long) =
+    private[atomic] final def getAndSet(`val`: Long) =
       valueAtomic().exchange(`val`).asInstanceOf[Long]
   }
 
@@ -100,20 +100,20 @@ private[atomic] abstract class Striped64 private[atomic] () extends Number {
     fromRawPtr(Intrinsics.classFieldRawPtr(this, "cellsBusy"))
   )
 
-  final private[atomic] def casBase(cmp: Long, `val`: Long) =
+  private[atomic] final def casBase(cmp: Long, `val`: Long) =
     baseAtomic().compareExchangeWeak(
       cmp,
       `val`,
       memory_order.memory_order_release
     )
 
-  final private[atomic] def getAndSetBase(`val`: Long) =
+  private[atomic] final def getAndSetBase(`val`: Long) =
     baseAtomic().exchange(`val`)
 
-  final private[atomic] def casCellsBusy() =
+  private[atomic] final def casCellsBusy() =
     cellsBusyAtomic().compareExchangeWeak(0, 1)
 
-  final private[atomic] def longAccumulate(
+  private[atomic] final def longAccumulate(
       x: Long,
       fn: LongBinaryOperator,
       _wasUncontended: Boolean,
@@ -196,7 +196,7 @@ private[atomic] abstract class Striped64 private[atomic] () extends Number {
     }
   }
 
-  final private[atomic] def doubleAccumulate(
+  private[atomic] final def doubleAccumulate(
       x: Double,
       fn: DoubleBinaryOperator,
       _wasUncontended: Boolean,

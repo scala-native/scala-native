@@ -2,7 +2,7 @@ package java.lang
 
 import scala.scalanative.runtime.UnsupportedFeature
 
-final private[lang] class VirtualThread(
+private[lang] final class VirtualThread(
     name: String,
     characteristics: Int,
     task: Runnable

@@ -50,7 +50,7 @@ abstract class NirGenPhase[G <: Global with Singleton](override val global: G)
     new util.ScopedVar[mutable.Set[DebugInfo.LexicalScope]]
   protected val curFreshScope = new util.ScopedVar[nir.Fresh]
   protected val curScopeId = new util.ScopedVar[nir.ScopeId]
-  implicit protected def getScopeId: nir.ScopeId = curScopeId.get
+  protected implicit def getScopeId: nir.ScopeId = curScopeId.get
   protected def initFreshScope(rhs: Tree) = nir.Fresh(rhs match {
     case _: Block => -1L // Conpensate the top-level block
     case _        => 0L

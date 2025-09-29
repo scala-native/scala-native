@@ -412,7 +412,7 @@ object ScalaNativePluginInternal {
   }
 
   @tailrec
-  final private def registerResource[T <: AnyRef](
+  private final def registerResource[T <: AnyRef](
       l: AtomicReference[List[T]],
       r: T
   ): r.type = {

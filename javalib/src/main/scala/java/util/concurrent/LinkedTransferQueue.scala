@@ -713,9 +713,9 @@ import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
 
     advance(null)
 
-    final override def hasNext(): Boolean = nextNode != null
+    override final def hasNext(): Boolean = nextNode != null
 
-    final override def next() = {
+    override final def next() = {
       var p = nextNode
       if (p == null)
         throw new NoSuchElementException()

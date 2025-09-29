@@ -422,7 +422,7 @@ class ThreadLocal[T <: AnyRef]() {
   }
 
   /** Weak reference to this thread local instance. */
-  final private val reference = new WeakReference[ThreadLocal[T]](this)
+  private final val reference = new WeakReference[ThreadLocal[T]](this)
 
   /** Internal hash. We deliberately don't bother with #hashCode(). Hashes must
    *  be even. This ensures that the result of (hash & (table.length - 1))
@@ -431,7 +431,7 @@ class ThreadLocal[T <: AnyRef]() {
    *  We increment by Doug Lea's Magic Number(TM) (*2 since keys are in every
    *  other bucket) to help prevent clustering.
    */
-  final private val hash =
+  private final val hash =
     if (isMultithreadingEnabled)
       ThreadLocal.hashCounterAtomic.getAndAdd(0x61c88647 << 1)
     else

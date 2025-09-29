@@ -128,7 +128,7 @@ class ThreadLocalRandom extends Random {
     super.setSeed(seed)
   }
 
-  final private def nextSeed(): Long = {
+  private final def nextSeed(): Long = {
     val t = Thread.currentThread()
     t.threadLocalRandomSeed +=
       ThreadLocalRandom.GAMMA // read and update per-thread seed

@@ -36,19 +36,19 @@ class LinkedBlockingQueue[E <: AnyRef](
   private var last = head
 
   @safePublish
-  final private val count = new AtomicInteger()
+  private final val count = new AtomicInteger()
 
   @safePublish
-  final private val takeLock = new ReentrantLock()
+  private final val takeLock = new ReentrantLock()
 
   @safePublish
-  final private val notEmpty: Condition = takeLock.newCondition()
+  private final val notEmpty: Condition = takeLock.newCondition()
 
   @safePublish
-  final private val putLock = new ReentrantLock()
+  private final val putLock = new ReentrantLock()
 
   @safePublish
-  final private val notFull = putLock.newCondition()
+  private final val notFull = putLock.newCondition()
 
   private def signalNotEmpty(): Unit = {
     val takeLock = this.takeLock
@@ -508,7 +508,7 @@ class LinkedBlockingQueue[E <: AnyRef](
     private[concurrent] val MAX_BATCH = 1 << 25 // max batch array size;
 
   }
-  final private[concurrent] class LBQSpliterator private[concurrent] ()
+  private[concurrent] final class LBQSpliterator private[concurrent] ()
       extends Spliterator[E] {
     private[concurrent] var current: Node[E] = _
     private[concurrent] var batch = 0 // batch size for splits

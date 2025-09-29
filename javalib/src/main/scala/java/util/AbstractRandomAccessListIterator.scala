@@ -1,6 +1,6 @@
 package java.util
 
-abstract private[util] class AbstractRandomAccessListIterator[E](
+private[util] abstract class AbstractRandomAccessListIterator[E](
     private var i: Int,
     start: Int,
     protected var end: Int

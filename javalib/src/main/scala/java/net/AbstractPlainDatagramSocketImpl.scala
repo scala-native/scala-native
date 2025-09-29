@@ -51,7 +51,7 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
   override def getDatagramSocket(): DatagramSocket =
     socket
 
-  final protected var isClosed: Boolean =
+  protected final var isClosed: Boolean =
     fd == InvalidSocketDescriptor
 
   private def throwIfClosed(methodName: String): Unit = {

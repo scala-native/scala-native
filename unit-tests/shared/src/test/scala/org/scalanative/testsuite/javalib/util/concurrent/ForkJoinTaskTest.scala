@@ -49,7 +49,7 @@ object ForkJoinTaskTest {
     private var parent: BinaryAsyncAction = _
     private var sibling: BinaryAsyncAction = _
     override final def getRawResult(): Void = null
-    override final protected def setRawResult(mustBeNull: Void): Unit = {}
+    override protected final def setRawResult(mustBeNull: Void): Unit = {}
     final def linkSubtasks(
         x: BinaryAsyncAction,
         y: BinaryAsyncAction
@@ -123,17 +123,17 @@ object ForkJoinTaskTest {
       sibling = null
       super.reinitialize()
     }
-    final protected def getControlState: Int = controlState
-    final protected def compareAndSetControlState(
+    protected final def getControlState: Int = controlState
+    protected final def compareAndSetControlState(
         expect: Int,
         update: Int
     ): Boolean = atomicControlState.compareAndSet(expect, update)
-    final protected def setControlState(value: Int): Unit =
+    protected final def setControlState(value: Int): Unit =
       atomicControlState.set(value)
-    final protected def incrementControlState(): Unit = {
+    protected final def incrementControlState(): Unit = {
       BinaryAsyncAction.controlStateUpdater.incrementAndGet(this)
     }
-    final protected def decrementControlState(): Unit = {
+    protected final def decrementControlState(): Unit = {
       BinaryAsyncAction.controlStateUpdater.decrementAndGet(this)
     }
   }

@@ -2,7 +2,7 @@ package java.nio
 
 abstract class MappedByteBuffer private[nio] (
     _capacity: Int,
-    private[nio] override val _mappedData: MappedByteBufferData,
+    override private[nio] val _mappedData: MappedByteBufferData,
     _offset: Int,
     initialPosition: Int,
     initialLimit: Int,

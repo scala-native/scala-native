@@ -158,10 +158,10 @@ class PriorityBlockingQueue[E <: AnyRef] private (
   private var curSize = 0
 
   @safePublish
-  final private val lock = new ReentrantLock
+  private final val lock = new ReentrantLock
 
   @safePublish
-  final private val notEmpty: Condition = lock.newCondition()
+  private final val notEmpty: Condition = lock.newCondition()
 
   @volatile private var allocationSpinLock = 0
 
@@ -499,7 +499,7 @@ class PriorityBlockingQueue[E <: AnyRef] private (
 
   override def iterator() = new Itr(toArray())
 
-  final private[concurrent] class Itr private[concurrent] (
+  private[concurrent] final class Itr private[concurrent] (
       val array: Array[AnyRef] // Array of all elements
   ) extends util.Iterator[E] {
     private[concurrent] var cursor = 0 // index of next element to return
@@ -538,7 +538,7 @@ class PriorityBlockingQueue[E <: AnyRef] private (
 
   /** Immutable snapshot spliterator that binds to elements "late".
    */
-  final private[concurrent] class PBQSpliterator private[concurrent] (
+  private[concurrent] final class PBQSpliterator private[concurrent] (
       array: Array[AnyRef],
       var index: Int,
       var fence: Int

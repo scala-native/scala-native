@@ -31,7 +31,7 @@ trait SafeZone {
   /** Allocates an object in this zone. The expression of obj must be an
    *  instance creation expression.
    */
-  infix inline def alloc[T <: AnyRef](inline obj: T): T^{this} =
+  inline infix def alloc[T <: AnyRef](inline obj: T): T^{this} =
     allocate(this, obj)
 
   /** Frees allocations. This zone is not reusable once closed. */

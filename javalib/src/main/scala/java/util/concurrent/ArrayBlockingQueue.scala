@@ -75,13 +75,13 @@ class ArrayBlockingQueue[E <: AnyRef](val capacity: Int, val fair: Boolean)
   private[concurrent] var itrs: Itrs = _
 
   @safePublish
-  final private[concurrent] val lock: ReentrantLock = new ReentrantLock(fair)
+  private[concurrent] final val lock: ReentrantLock = new ReentrantLock(fair)
 
-  final private val notEmpty: Condition = lock.newCondition()
+  private final val notEmpty: Condition = lock.newCondition()
 
-  final private val notFull: Condition = lock.newCondition()
+  private final val notFull: Condition = lock.newCondition()
 
-  final private[concurrent] def itemAt(i: Int) = items(i).asInstanceOf[E]
+  private[concurrent] final def itemAt(i: Int) = items(i).asInstanceOf[E]
 
   private def enqueue(e: E): Unit = {
     // assert lock.isHeldByCurrentThread();

@@ -163,7 +163,7 @@ object Executors {
     new Executors.PrivilegedCallableUsingCurrentClassLoader[T](callable)
   }
 
-  final private class RunnableAdapter[T](
+  private final class RunnableAdapter[T](
       @safePublish val task: Runnable,
       @safePublish val result: T
   ) extends Callable[T] {
@@ -176,7 +176,7 @@ object Executors {
     }
   }
 
-  final private class PrivilegedCallable[T](
+  private final class PrivilegedCallable[T](
       @safePublish val task: Callable[T]
   ) extends Callable[T] {
     @throws[Exception]
@@ -187,7 +187,7 @@ object Executors {
     }
   }
 
-  final private class PrivilegedCallableUsingCurrentClassLoader[T](
+  private final class PrivilegedCallableUsingCurrentClassLoader[T](
       @safePublish val task: Callable[T]
   ) extends Callable[T] {
 
@@ -204,11 +204,11 @@ object Executors {
   }
   private class DefaultThreadFactory() extends ThreadFactory {
     // Originally SecurityManager threadGroup was tried first
-    final private val group: ThreadGroup =
+    private final val group: ThreadGroup =
       Thread.currentThread().getThreadGroup()
 
-    final private val threadNumber: AtomicInteger = new AtomicInteger(1)
-    final private var namePrefix: String =
+    private final val threadNumber: AtomicInteger = new AtomicInteger(1)
+    private final var namePrefix: String =
       "pool-" + DefaultThreadFactory.poolNumber.getAndIncrement() + "-thread-"
 
     override def newThread(r: Runnable): Thread = {

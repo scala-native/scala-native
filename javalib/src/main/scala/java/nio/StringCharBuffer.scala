@@ -88,11 +88,11 @@ private[nio] final class StringCharBuffer private (
   // Internal API
 
   @inline
-  private[nio] override def load(index: Int): Char =
+  override private[nio] def load(index: Int): Char =
     _csq.charAt(_csqOffset + index)
 
   @inline
-  private[nio] override def store(index: Int, elem: Char): Unit =
+  override private[nio] def store(index: Int, elem: Char): Unit =
     throw new ReadOnlyBufferException
 
   @inline
