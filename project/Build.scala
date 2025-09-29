@@ -213,28 +213,22 @@ object Build {
       )
 
   lazy val nir = MultiScalaProject("nir", file("nir/native"))
-    .settings(
-      toolSettings,
-      withSharedCrossPlatformSources
-    )
     .mapBinaryVersions {
       // Scaladoc for Scala 2.12 is not compliant with normal compiler (see nscPlugin)
       case "2.12" => _.settings(disabledDocsSettings)
       case _      => identity
     }
     .withNativeCompilerPlugin
+    .withCommonTools
     .withJUnitPlugin
     .dependsOn(util)
     .dependsOn(testInterface % "test", junitRuntime % "test")
 
   lazy val nirJVM = MultiScalaProject("nirJVM", "nir", file("nir/jvm"))
     .settings(
-      toolSettings,
-      withSharedCrossPlatformSources
-    )
-    .settings(
       libraryDependencies ++= Deps.JUnitJvm
     )
+    .withCommonTools
     .mapBinaryVersions {
       // Scaladoc for Scala 2.12 is not compliant with normal compiler (see nscPlugin)
       case "2.12" => _.settings(disabledDocsSettings)

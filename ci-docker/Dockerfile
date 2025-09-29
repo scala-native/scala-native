@@ -40,6 +40,8 @@ SHELL ["/bin/bash", "-c"]
 RUN useradd -ms /bin/bash scala-native
 WORKDIR /home/scala-native/scala-native
 
+RUN git config --global --add safe.directory '/home/scala-native/scala-native'
+
 RUN curl -s "https://get.sdkman.io" | bash  \
   && . "$HOME/.sdkman/bin/sdkman-init.sh" \
   && sdk install sbt 1.10.1 \ 

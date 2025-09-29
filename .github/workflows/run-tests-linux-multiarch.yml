@@ -25,6 +25,9 @@ jobs:
         scala: [2.13]
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          fetch-tags: true
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: ${{matrix.scala}}

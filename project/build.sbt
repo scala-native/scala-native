@@ -1,6 +1,7 @@
 Compile / unmanagedSourceDirectories ++= {
   val root = baseDirectory.value.getParentFile
 
+  val res = Seq.newBuilder[sbt.File]
   Seq(
     "util",
     "nir",
@@ -8,12 +9,14 @@ Compile / unmanagedSourceDirectories ++= {
     "sbt-scala-native",
     "test-interface-common",
     "test-runner"
-  ).flatMap { dir =>
-    Seq(
-      root / s"$dir/src/main/scala",
-      root / s"$dir/jvm/src/main/scala"
-    )
+  ).foreach { dir =>
+    res += root / s"$dir/src/main/scala"
+    res += root / s"$dir/jvm/src/main/scala"
   }
+
+  res += root / "build-info/src" // contains generated bootstrap version
+
+  res.result()
 }
 
 addSbtPlugin("org.portable-scala" % "sbt-platform-deps" % "1.0.2")

@@ -49,6 +49,9 @@ jobs:
     if: needs.load_tag.outputs.skip == 'false' # repository check is done in load_tag
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          fetch-tags: true
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: "2.13" #Unused, any version can be placed here
@@ -67,6 +70,9 @@ jobs:
         scala: ["2.12", "2.13", "3"]
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          fetch-tags: true
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: ${{ matrix.scala }} #Unused, any version can be placed here
