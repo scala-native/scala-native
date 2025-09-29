@@ -4,14 +4,10 @@ package java.util.jar
 
 import java.security.CodeSigner
 import java.security.cert.{
-  Certificate,
-  CertificateException,
-  CertificateFactory,
-  X509Certificate
+  Certificate, CertificateException, CertificateFactory, X509Certificate
 }
-import java.util.zip.{ZipConstants, ZipEntry}
 import java.util.ArrayList
-
+import java.util.zip.{ZipConstants, ZipEntry}
 import javax.security.auth.x500.X500Principal
 
 class JarEntry(private val ze: ZipEntry) extends ZipEntry(ze) {

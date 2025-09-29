@@ -1,20 +1,15 @@
 package org.scalanative.testsuite.javalib.util
 
-import java.util._
-
-// Ported from Scala.js
-
 import java.io.{
-  ByteArrayInputStream,
-  ByteArrayOutputStream,
-  IOException,
-  InputStream
+  ByteArrayInputStream, ByteArrayOutputStream, IOException, InputStream
 }
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets.ISO_8859_1
 import java.util.Base64.Decoder
-import org.junit.Test
+import java.util._
+
 import org.junit.Assert._
+import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 

@@ -5,9 +5,9 @@ package org.hamcrest
 
 import java.{util => ju}
 
-import org.hamcrest.internal.{ArrayIterator, SelfDescribingValueIterator}
-
 import scala.annotation.tailrec
+
+import org.hamcrest.internal.{ArrayIterator, SelfDescribingValueIterator}
 
 abstract class BaseDescription extends Description {
   override def appendText(text: String): Description = {

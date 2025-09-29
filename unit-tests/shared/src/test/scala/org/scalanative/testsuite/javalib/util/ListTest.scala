@@ -2,14 +2,13 @@
 
 package org.scalanative.testsuite.javalib.util
 
-import org.junit.Test
-import org.junit.Assert._
-
-import java.{lang => jl}
-import java.{util => ju}
 import java.util.function.UnaryOperator
+import java.{lang => jl, util => ju}
 
 import scala.reflect.ClassTag
+
+import org.junit.Assert._
+import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.CollectionsTestBase

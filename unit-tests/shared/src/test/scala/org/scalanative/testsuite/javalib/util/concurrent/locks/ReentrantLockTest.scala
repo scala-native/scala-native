@@ -8,26 +8,25 @@
 package org.scalanative.testsuite.javalib.util.concurrent
 package locks
 
+import java.util
+import java.util.Date
+import java.util.concurrent.TimeUnit._
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.locks.{Condition, ReentrantLock}
+import java.util.concurrent.{
+  CountDownLatch, CyclicBarrier, ThreadLocalRandom, TimeUnit
+}
+
 import org.junit.Assert._
 import org.junit.Assume._
-import org.junit.{Test, Ignore}
+import org.junit.{Ignore, Test}
+
 import org.scalanative.testsuite.javalib.util.concurrent.JSR166Test
-import JSR166Test._
-import ReentrantLockTest.AwaitMethod
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform
 
-import java.util.concurrent.locks.{ReentrantLock, Condition}
-import java.util.concurrent.{
-  CountDownLatch,
-  CyclicBarrier,
-  ThreadLocalRandom,
-  TimeUnit
-}
-import java.util.concurrent.TimeUnit._
-import java.util.concurrent.atomic.AtomicBoolean
-import java.util.Date
-import java.util
+import JSR166Test._
+import ReentrantLockTest.AwaitMethod
 
 object ReentrantLockTest {
 

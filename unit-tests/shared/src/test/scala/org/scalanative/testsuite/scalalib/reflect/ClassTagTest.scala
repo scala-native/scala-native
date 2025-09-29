@@ -2,8 +2,8 @@ package org.scalanative.testsuite.scalalib.reflect
 
 import scala.reflect.ClassTag
 
-import org.junit._
 import org.junit.Assert._
+import org.junit._
 
 class ClassTagTest {
 

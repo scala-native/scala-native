@@ -2,17 +2,17 @@ package org.scalanative.testsuite.javalib.lang
 
 import java.io._
 import java.nio.file.Files
-
 import java.util.concurrent.TimeUnit
-import scala.scalanative.unsigned._
-import scala.scalanative.unsafe._
-import scala.scalanative.posix.{fcntl, unistd}
-import scala.scalanative.meta.LinktimeInfo.isWindows
 
 import scala.io.Source
 
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
+
+import scala.scalanative.meta.LinktimeInfo.isWindows
+import scala.scalanative.posix.{fcntl, unistd}
+import scala.scalanative.unsafe._
+import scala.scalanative.unsigned._
 
 class ProcessInheritTest {
   import ProcessUtils._

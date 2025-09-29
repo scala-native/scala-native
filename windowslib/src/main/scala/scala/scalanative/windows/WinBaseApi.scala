@@ -2,8 +2,9 @@ package scala.scalanative.windows
 
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
-import HandleApi.Handle
 import scala.scalanative.windows.winnt._
+
+import HandleApi.Handle
 
 @link("advapi32")
 @extern()

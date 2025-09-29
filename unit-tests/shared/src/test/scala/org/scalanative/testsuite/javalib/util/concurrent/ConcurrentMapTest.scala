@@ -4,9 +4,9 @@ package org.scalanative.testsuite.javalib.util.concurrent
 
 import java.{util => ju}
 
-import org.scalanative.testsuite.javalib.util.MapFactory
-
 import scala.reflect.ClassTag
+
+import org.scalanative.testsuite.javalib.util.MapFactory
 
 trait ConcurrentMapFactory extends MapFactory {
   def empty[K: ClassTag, V: ClassTag]: ju.concurrent.ConcurrentMap[K, V]

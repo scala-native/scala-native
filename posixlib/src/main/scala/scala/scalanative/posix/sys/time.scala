@@ -2,8 +2,8 @@ package scala.scalanative
 package posix
 package sys
 
-import scalanative.unsafe._
 import scalanative.posix.sys.types.{suseconds_t, time_t}
+import scalanative.unsafe._
 
 @extern
 object time {

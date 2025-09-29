@@ -6,28 +6,25 @@ package java.net
  *   https://github.com/armanbilge/epollcat (and other repositories).
  */
 
-import scala.scalanative.unsafe._
-import scala.scalanative.unsigned._
+import java.io.IOException
+import java.{util => ju}
 
 import scala.annotation.tailrec
 
-import java.io.IOException
-
-import java.{util => ju}
-
+import scala.scalanative.meta.LinktimeInfo.{isLinux, isMac}
 import scala.scalanative.posix.arpa.inet._
 import scala.scalanative.posix.errno.errno
-import scala.scalanative.posix.netinet.in._
-import scala.scalanative.posix.netinet.inOps._
 import scala.scalanative.posix.netdb._
 import scala.scalanative.posix.netdbOps._
+import scala.scalanative.posix.netinet.in._
+import scala.scalanative.posix.netinet.inOps._
 import scala.scalanative.posix.string.{memcpy, strerror}
 import scala.scalanative.posix.sys.socket._
 import scala.scalanative.posix.sys.socketOps._
-import scala.scalanative.posix.time.{time_t, time, difftime}
+import scala.scalanative.posix.time.{difftime, time, time_t}
 import scala.scalanative.posix.unistd
-
-import scala.scalanative.meta.LinktimeInfo.{isLinux, isMac}
+import scala.scalanative.unsafe._
+import scala.scalanative.unsigned._
 
 /* Design note:
  *    Much of java.net, both in JVM and Scala Native defines or assumes

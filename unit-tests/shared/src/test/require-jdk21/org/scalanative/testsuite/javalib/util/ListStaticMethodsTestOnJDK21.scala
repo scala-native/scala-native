@@ -1,11 +1,11 @@
 package org.scalanative.testsuite.javalib.util
 
-import org.junit.Test
+import java.{util => ju}
+
 import org.junit.Assert._
+import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
-
-import java.{util => ju}
 
 /* The List.of static methods were introduced in Java 9.
  * The List.copyOf static method was introduced in Java 10.

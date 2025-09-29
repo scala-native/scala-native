@@ -1,7 +1,9 @@
 package scala.scalanative.testinterface
 
 import java.io.File
+
 import scala.concurrent.{Future, Promise}
+
 import scala.scalanative.build.Logger
 
 private[testinterface] class ProcessRunner(

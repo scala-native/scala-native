@@ -2,8 +2,8 @@
 
 package org.scalanative.testsuite.javalib.util
 
-import java.{util => ju}
 import java.util.Map.Entry
+import java.{util => ju}
 
 final class TrivialImmutableMap[K, V] private (contents: List[Entry[K, V]])
     extends ju.AbstractMap[K, V] {

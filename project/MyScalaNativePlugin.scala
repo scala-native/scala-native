@@ -1,17 +1,17 @@
 package build
 
-import sbt._
 import sbt.Keys._
+import sbt._
 
-import scala.scalanative.sbtplugin.Utilities._
+import scala.sys.env
+
 import scala.scalanative.sbtplugin.ScalaNativePlugin
 import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport._
-import scala.sys.env
-import complete.DefaultParsers._
+import scala.scalanative.sbtplugin.Utilities._
 
-import one.profiler.AsyncProfilerLoader
-import one.profiler.AsyncProfiler
 import build.OutputType._
+import complete.DefaultParsers._
+import one.profiler.{AsyncProfiler, AsyncProfilerLoader}
 
 object MyScalaNativePlugin extends AutoPlugin {
   override def requires: Plugins = ScalaNativePlugin

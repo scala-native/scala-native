@@ -2,6 +2,7 @@
 //> using lib "com.lihaoyi::os-lib:0.11.5"
 
 import java.io.File
+
 import os._
 
 val partestSourcesDirs = pwd / "scala-partest" / "fetchedSources"

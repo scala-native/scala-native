@@ -6,17 +6,18 @@
 
 package java.util.concurrent
 
-import java.util.{AbstractQueue, Collection, Iterator, Spliterator, function}
-import java.util.{Arrays, Objects, Spliterators}
-import java.util.{NoSuchElementException}
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.locks.LockSupport
+import java.util.{
+  AbstractQueue, Arrays, Collection, Iterator, NoSuchElementException, Objects,
+  Spliterator, Spliterators, function
+}
+
 import scala.scalanative.libc.stdatomic.AtomicRef
 import scala.scalanative.libc.stdatomic.memory_order.{
-  memory_order_relaxed,
-  memory_order_release
+  memory_order_relaxed, memory_order_release
 }
-import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
+import scala.scalanative.runtime.{Intrinsics, fromRawPtr}
 
 @SerialVersionUID(-3223113410248163686L) class LinkedTransferQueue[E <: AnyRef]
     extends AbstractQueue[E]

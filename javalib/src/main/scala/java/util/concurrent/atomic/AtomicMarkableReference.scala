@@ -9,7 +9,7 @@ package java.util.concurrent.atomic
 import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.libc.stdatomic.AtomicRef
 import scala.scalanative.libc.stdatomic.memory_order._
-import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
+import scala.scalanative.runtime.{Intrinsics, fromRawPtr}
 
 object AtomicMarkableReference {
   private[concurrent] case class MarkableReference[T <: AnyRef](

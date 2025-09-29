@@ -3,15 +3,16 @@ package nscplugin
 
 import dotty.tools.dotc.ast.tpd
 import dotty.tools.dotc.ast.tpd._
-import dotty.tools.dotc.core
-import core.Contexts._
-import core.Types._
-import scala.scalanative.util.ScopedVar
+import dotty.tools.dotc.{core, report}
 import scala.collection.mutable
-import core.Names.Name
-import dotty.tools.dotc.report
-import scala.scalanative.nir
 import scala.compiletime.uninitialized
+
+import scala.scalanative.nir
+import scala.scalanative.util.ScopedVar
+
+import core.Contexts._
+import core.Names.Name
+import core.Types._
 
 trait NirGenUtil(using Context) { self: NirCodeGen =>
 

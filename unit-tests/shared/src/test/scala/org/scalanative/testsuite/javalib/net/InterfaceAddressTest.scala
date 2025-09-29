@@ -1,15 +1,14 @@
 package org.scalanative.testsuite.javalib.net
 
 import java.net._
+import java.util.function.Consumer
 
-import org.junit.Test
 import org.junit.Assert._
 import org.junit.Assume._
+import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform
-
-import java.util.function.Consumer
 
 /* Design Notes:
  *    1) As the underlying implementation is Unix only, so are these Tests.

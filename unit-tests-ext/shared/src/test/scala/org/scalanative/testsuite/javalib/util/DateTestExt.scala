@@ -1,9 +1,9 @@
 // Ported from Scala.js, commit: 54648372, dated: 2020-09-24
 package org.scalanative.testsuite.javalib.util
 
+import java.time.Instant
 import java.util._
 
-import java.time.Instant
 import org.junit.Assert._
 import org.junit.Test
 

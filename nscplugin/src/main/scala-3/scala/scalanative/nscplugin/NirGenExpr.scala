@@ -1,40 +1,35 @@
 package scala.scalanative
 package nscplugin
 
-import scala.language.implicitConversions
-import scala.annotation.{tailrec, switch}
-
-import dotty.tools.dotc.ast
-import ast.tpd._
-import dotty.tools.backend.ScalaPrimitivesOps._
-import dotty.tools.dotc.core
-import core.Contexts._
-import core.Symbols._
-import core.Names._
-import core.Types._
-import core.Constants._
-import core.StdNames._
-import core.Flags._
-import core.Denotations._
-import core.SymDenotations._
-import core.TypeErasure.ErasedValueType
-import core._
 import dotty.tools.FatalError
-import dotty.tools.dotc.report
-import dotty.tools.dotc.transform
-import dotty.tools.dotc.util.Spans.*
-import transform.{ValueClasses, Erasure}
+import dotty.tools.backend.ScalaPrimitivesOps._
 import dotty.tools.backend.jvm.DottyBackendInterface.symExtensions
-import scala.scalanative.nscplugin.CompilerCompat.SymUtilsCompat.*
-
-import scala.scalanative.nir.Defn.Define.DebugInfo
-import scala.scalanative.util.ScopedVar.scoped
-import scala.scalanative.util.unsupported
-import scala.scalanative.util.StringUtils
 import dotty.tools.dotc.ast.desugar
 import dotty.tools.dotc.util.Property
+import dotty.tools.dotc.util.Spans.*
+import dotty.tools.dotc.{ast, core, report, transform}
+import scala.annotation.{switch, tailrec}
+import scala.language.implicitConversions
+
+import scala.scalanative.nir.Defn.Define.DebugInfo
+import scala.scalanative.nscplugin.CompilerCompat.SymUtilsCompat.*
 import scala.scalanative.nscplugin.NirDefinitions.NonErasedType
-import scala.scalanative.util.unreachable
+import scala.scalanative.util.ScopedVar.scoped
+import scala.scalanative.util.{StringUtils, unreachable, unsupported}
+
+import ast.tpd._
+import core.Constants._
+import core.Contexts._
+import core.Denotations._
+import core.Flags._
+import core.Names._
+import core.StdNames._
+import core.SymDenotations._
+import core.Symbols._
+import core.TypeErasure.ErasedValueType
+import core.Types._
+import core._
+import transform.{Erasure, ValueClasses}
 
 trait NirGenExpr(using Context) {
   self: NirCodeGen =>

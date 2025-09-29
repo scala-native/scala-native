@@ -1,9 +1,9 @@
 package scala.scalanative
 
-import nir.Global
-
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
+
+import nir.Global
 
 class FrameworkTest extends codegen.CodeGenSpec {
 

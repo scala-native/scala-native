@@ -1,8 +1,9 @@
 package scala.scalanative.runtime
 
-import scala.scalanative.unsafe._
-import scala.scalanative.meta.LinktimeInfo
 import java.nio.charset.{Charset, StandardCharsets}
+
+import scala.scalanative.meta.LinktimeInfo
+import scala.scalanative.unsafe._
 
 abstract class Throwable @noinline protected (
     writableStackTrace: scala.Boolean

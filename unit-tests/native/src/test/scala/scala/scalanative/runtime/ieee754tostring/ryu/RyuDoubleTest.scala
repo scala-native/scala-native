@@ -51,8 +51,8 @@ package scala.scalanative
 package runtime
 package ieee754tostring.ryu
 
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 
 class RyuDoubleTest {
 

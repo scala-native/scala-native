@@ -1,10 +1,11 @@
 package scala.scalanative.linker
 
 import scala.collection.mutable
+
+import scala.scalanative.build.Logger
+import scala.scalanative.build.NativeConfig.{ServiceName, ServiceProviderName}
 import scala.scalanative.nir._
 import scala.scalanative.util.unsupported
-import scala.scalanative.build.NativeConfig.{ServiceName, ServiceProviderName}
-import scala.scalanative.build.Logger
 
 private[scala] object LinktimeIntrinsicCallsResolver {
   // scalafmt: { maxColumn = 120}
@@ -173,6 +174,7 @@ private[scala] object LinktimeIntrinsicCallsResolver {
 
 private[linker] trait LinktimeIntrinsicCallsResolver { self: Reach =>
   import self._
+
   import LinktimeIntrinsicCallsResolver._
 
   private val foundServices = mutable.Map.empty[ServiceName, mutable.Map[ServiceProviderName, FoundServiceProvider]]

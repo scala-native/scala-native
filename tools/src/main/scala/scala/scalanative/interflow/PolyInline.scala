@@ -2,6 +2,7 @@ package scala.scalanative
 package interflow
 
 import scala.collection.mutable
+
 import scalanative.linker._
 
 private[interflow] trait PolyInline { self: Interflow =>

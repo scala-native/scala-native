@@ -1,21 +1,19 @@
 package scala.scalanative
 package regex
 
-import java.io.InputStreamReader
-import java.io.File
-import java.io.FileInputStream
-import java.{util => ju}
+import java.io.{File, FileInputStream, InputStreamReader}
 import java.util.regex.PatternSyntaxException
 import java.util.zip.GZIPInputStream
 import java.util.{Arrays, Collections}
+import java.{util => ju}
 
-import scala.util.control.NonFatal
 import scala.util.control.Breaks._
-import scala.scalanative.runtime.Platform.isWindows
+import scala.util.control.NonFatal
 
-import org.junit.Ignore
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.{Ignore, Test}
+
+import scala.scalanative.runtime.Platform.isWindows
 
 // TestRE2 tests this package's regexp API against test cases
 // considered during (C++) RE2's exhaustive tests, which run all possible

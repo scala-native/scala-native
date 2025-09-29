@@ -3,6 +3,7 @@ package scala.scalanative.windows
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
 import scala.scalanative.windows.WinBaseApi._
+
 import HandleApi.Handle
 
 @extern

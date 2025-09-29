@@ -1,18 +1,17 @@
 package org.scalanative.testsuite.posixlib
 package sys
 
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 
-import scalanative.runtime.Platform
 import scalanative.meta.LinktimeInfo.isWindows
-import scalanative.unsafe.{CInt, Ptr, Zone, alloc}
-import scalanative.unsigned._
-
 import scalanative.posix.errno._
 import scalanative.posix.sys.resource._
 import scalanative.posix.sys.resourceOps._
 import scalanative.posix.sys.timeOps._
+import scalanative.runtime.Platform
+import scalanative.unsafe.{CInt, Ptr, Zone, alloc}
+import scalanative.unsigned._
 
 // Design notes:
 //

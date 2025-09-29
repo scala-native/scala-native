@@ -1,8 +1,8 @@
 package scala.scalanative
 package posix
 
-import scalanative.unsafe._
 import scalanative.posix.sys.types.gid_t
+import scalanative.unsafe._
 
 @extern
 @define("__SCALANATIVE_POSIX_GRP")

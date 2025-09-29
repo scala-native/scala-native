@@ -1,20 +1,20 @@
 package scala.scalanative
 
-import org.junit.Test
+import java.util.concurrent.{Executors, ThreadFactory, TimeUnit}
+
+import scala.annotation.nowarn
+import scala.language.higherKinds
+
 import org.junit.Assert._
 import org.junit.Assume._
+import org.junit.Test
+
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
-import scalanative.unsigned._
-import scalanative.unsafe._
-import scala.annotation.nowarn
 import scala.scalanative.annotation.alwaysinline
-
-import scala.language.higherKinds
 import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
-import java.util.concurrent.ThreadFactory
-import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
+import scalanative.unsafe._
+import scalanative.unsigned._
 
 class IssuesTest {
 

@@ -1,16 +1,15 @@
 package scala.scalanative
 package regex
 
+import scala.collection.mutable
 import scala.util.Random
 
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 import TestUtils._
-
-import scala.collection.mutable
 
 class NamedGroupTest {
 

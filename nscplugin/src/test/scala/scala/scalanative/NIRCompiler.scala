@@ -1,8 +1,8 @@
 package scala.scalanative
 
-import java.nio.file.{Files, Path}
 import java.io.{File, PrintWriter}
 import java.net.URLClassLoader
+import java.nio.file.{Files, Path}
 
 object NIRCompiler {
 

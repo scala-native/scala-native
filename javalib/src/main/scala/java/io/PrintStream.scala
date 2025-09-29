@@ -1,8 +1,7 @@
 package java.io
 
 import java.nio.charset.{Charset, UnsupportedCharsetException}
-import java.util.Formatter
-import java.util.Objects
+import java.util.{Formatter, Objects}
 
 class PrintStream(
     _out: OutputStream,

@@ -2,11 +2,10 @@ package scala.scalanative
 package posix
 package sys
 
+import scalanative.meta.LinktimeInfo._
 import scalanative.runtime.Platform
-
 import scalanative.unsafe._
 import scalanative.unsigned._
-import scalanative.meta.LinktimeInfo._
 
 /** socket.h for Scala
  *  @see
@@ -391,8 +390,8 @@ object socket {
 /** Allow using C names to access socket structure fields.
  */
 object socketOps {
-  import socket._
   import posix.inttypes.uint8_t
+  import socket._
 
   // Also used by posixlib netinet/in.scala
   @resolvedAtLinktime

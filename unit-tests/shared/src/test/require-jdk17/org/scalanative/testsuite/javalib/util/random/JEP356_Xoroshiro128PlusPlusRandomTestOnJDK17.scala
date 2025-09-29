@@ -10,16 +10,14 @@ package org.scalanative.testsuite.javalib.util.random
  * Credit & thanks to https://www.random.org/ for the latter.
  */
 
-import org.junit.Test
-import org.junit.Assert._
-
-import org.scalanative.testsuite.utils.AssertThrows.assertThrows
-
+import java.util.random.{RandomGenerator, RandomGeneratorFactory}
+import java.util.{Arrays, Spliterator}
 import java.{lang => jl}
 
-import java.util.{Arrays, Spliterator}
+import org.junit.Assert._
+import org.junit.Test
 
-import java.util.random.{RandomGenerator, RandomGeneratorFactory}
+import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 class JEP356_Xoroshiro128PlusPlusRandomTestOnJDK17 {
   final val algorithmName = "Xoroshiro128PlusPlus"

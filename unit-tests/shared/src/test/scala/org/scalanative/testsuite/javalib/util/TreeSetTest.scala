@@ -13,20 +13,18 @@
 
 package org.scalanative.testsuite.javalib.util
 
-import org.junit.Assert._
+import java.{util => ju}
 
-import org.junit.Test
+import scala.reflect.ClassTag
+
 import org.junit.Assert._
 import org.junit.Assume._
+import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform._
 
-import java.{util => ju}
-import ju.TreeSet
-import ju.Comparator
-
-import scala.reflect.ClassTag
+import ju.{Comparator, TreeSet}
 
 class TreeSetComparatorTest {
 

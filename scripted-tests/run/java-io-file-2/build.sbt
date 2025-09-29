@@ -1,6 +1,7 @@
+import java.nio.file.{Files => NioFiles}
+
 import Files._
 import Utils._
-import java.nio.file.{Files => NioFiles}
 
 enablePlugins(ScalaNativePlugin)
 

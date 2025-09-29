@@ -13,11 +13,11 @@
 
 package org.scalanative.testsuite.javalib.util
 
-import org.junit.Assert._
-import org.junit.Test
-
 import java.util.Optional
 import java.util.function._
+
+import org.junit.Assert._
+import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 

@@ -1,28 +1,26 @@
 package java.lang.impl
 
+import scala.annotation.{switch, tailrec}
+
 import scala.scalanative.annotation._
+import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
+import scala.scalanative.runtime._
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
-
-import scala.scalanative.runtime._
-import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
-
 import scala.scalanative.windows.HandleApi._
 import scala.scalanative.windows.ProcessThreadsApi._
 import scala.scalanative.windows.ProcessThreadsApiExt._
 import scala.scalanative.windows.SynchApi._
 import scala.scalanative.windows.SynchApiExt._
-import scala.scalanative.windows.WinBaseApi._
 import scala.scalanative.windows.SysInfoApi._
-import scala.annotation.tailrec
-import scala.annotation.switch
+import scala.scalanative.windows.WinBaseApi._
 
 private[java] class WindowsThread(
     val thread: Thread,
     val userDefinedStackSize: scala.Long
 ) extends NativeThread {
-  import WindowsThread._
   import NativeThread._
+  import WindowsThread._
 
   override def companion: NativeThread.Companion = WindowsThread
   override val stackSize: Int =

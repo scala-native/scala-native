@@ -1,8 +1,8 @@
 package scala.scalanative.posix
 
-import scala.scalanative.unsafe._
-import scala.scalanative.posix.time.timespec
 import scala.scalanative.posix.sys.types.pid_t
+import scala.scalanative.posix.time.timespec
+import scala.scalanative.unsafe._
 
 @extern
 @define("__SCALANATIVE_POSIX_SCHED")

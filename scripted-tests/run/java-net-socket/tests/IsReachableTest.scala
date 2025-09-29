@@ -1,6 +1,6 @@
 package java.net
 
-import java.nio.file.{Paths, Files}
+import java.nio.file.{Files, Paths}
 
 object IsReachableTest {
 

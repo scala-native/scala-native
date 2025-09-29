@@ -2,11 +2,10 @@ package scala.scalanative
 package posix
 package netinet
 
+import scalanative.posix.inttypes._
+import scalanative.posix.sys.{socket, socketOps}
 import scalanative.unsafe._
 import scalanative.unsigned._
-import scalanative.posix.inttypes._
-import scalanative.posix.sys.socket
-import scalanative.posix.sys.socketOps
 
 @extern
 @define("__SCALANATIVE_POSIX_NETINET_IN")
@@ -140,6 +139,7 @@ object in {
 
 object inOps {
   import in._
+
   import socketOps.useSinXLen
 
   implicit class sockaddr_inOps(val ptr: Ptr[sockaddr_in]) extends AnyVal {

@@ -2,8 +2,9 @@ package scala.scalanative
 package interflow
 
 import scala.collection.mutable
-import scalanative.util.unreachable
+
 import scalanative.linker.Ref
+import scalanative.util.unreachable
 
 object UseDef {
 

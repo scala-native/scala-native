@@ -7,16 +7,15 @@
 package java.util.concurrent
 
 import java.io.Serializable
-import java.util._
-import java.util.RandomAccess
-import java.util.concurrent.locks.LockSupport
 import java.lang.invoke.VarHandle
-
-import scala.scalanative.libc.stdatomic._
-import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
-import scala.scalanative.annotation.{alwaysinline, safePublish}
+import java.util._
+import java.util.concurrent.locks.LockSupport
 
 import scala.annotation.tailrec
+
+import scala.scalanative.annotation.{alwaysinline, safePublish}
+import scala.scalanative.libc.stdatomic._
+import scala.scalanative.runtime.{Intrinsics, fromRawPtr}
 
 abstract class ForkJoinTask[V]() extends Future[V] with Serializable {
   import ForkJoinTask._

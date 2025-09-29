@@ -1,13 +1,9 @@
 package java.util.stream
 
 import java.lang.StringBuilder
-
 import java.util._
-
-import java.util.concurrent.{ConcurrentMap, ConcurrentHashMap}
-
+import java.util.concurrent.{ConcurrentHashMap, ConcurrentMap}
 import java.util.function._
-
 import java.util.stream.Collector.Characteristics
 
 /* Design Notes:

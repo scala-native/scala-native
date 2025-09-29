@@ -1,11 +1,11 @@
 package scala.scalanative
 package linker
 
-import scala.scalanative.LinkerSpec
-
-import org.junit.Test
 import org.junit.Assert._
-import scala.scalanative.build.{NativeConfig, Config}
+import org.junit.Test
+
+import scala.scalanative.LinkerSpec
+import scala.scalanative.build.{Config, NativeConfig}
 import scala.scalanative.buildinfo.ScalaNativeBuildInfo
 
 /** Tests minimal number of NIR symbols required when linking minimal

@@ -1,20 +1,16 @@
 package org.scalanative.testsuite.posixlib
 
-import org.junit.Test
+import java.nio.file.{Files, Path, Paths}
+
 import org.junit.Assert._
 import org.junit.Assume._
-import org.junit.{BeforeClass, AfterClass}
+import org.junit.{AfterClass, BeforeClass, Test}
 
-import scala.scalanative.meta.LinktimeInfo.{isWindows, isNetBSD}
-
-import java.nio.file.{Path, Paths}
-import java.nio.file.Files
-
-import scala.scalanative.unsafe._
-import scala.scalanative.unsigned._
-
+import scala.scalanative.meta.LinktimeInfo.{isNetBSD, isWindows}
 import scala.scalanative.posix.glob._
 import scala.scalanative.posix.globOps._
+import scala.scalanative.unsafe._
+import scala.scalanative.unsigned._
 
 object GlobTest {
   private var orgDir: Path = _

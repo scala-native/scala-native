@@ -1,10 +1,10 @@
 package org.scalanative.testsuite.javalib.lang
 
-import java.{lang => jl}
 import java.util.Objects
+import java.{lang => jl}
 
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 

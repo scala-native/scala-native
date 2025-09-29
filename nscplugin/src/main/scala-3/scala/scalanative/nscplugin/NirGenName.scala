@@ -1,16 +1,18 @@
 package scala.scalanative
 package nscplugin
 
+import dotty.tools.backend.jvm.DottyBackendInterface.symExtensions
 import dotty.tools.dotc.ast.tpd._
 import dotty.tools.dotc.core
-import core.Contexts._
-import core.Symbols._
-import core.Flags._
-import core.StdNames._
+import scala.language.implicitConversions
+
 import scala.scalanative.nscplugin.CompilerCompat.SymUtilsCompat.*
 import scalanative.util.unreachable
-import scala.language.implicitConversions
-import dotty.tools.backend.jvm.DottyBackendInterface.symExtensions
+
+import core.Contexts._
+import core.Flags._
+import core.StdNames._
+import core.Symbols._
 
 trait NirGenName(using Context) {
   self: NirCodeGen =>

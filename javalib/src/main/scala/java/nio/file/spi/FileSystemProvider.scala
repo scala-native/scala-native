@@ -1,29 +1,20 @@
 package java.nio.file
 package spi
 
-import java.util.{LinkedList, List, Map, Set}
-import java.util.concurrent.ExecutorService
-
-import java.net.URI
-
 import java.io.{InputStream, OutputStream}
-import java.nio.file.attribute.{
-  BasicFileAttributes,
-  FileAttribute,
-  FileAttributeView
-}
+import java.net.URI
 import java.nio.channels.{
-  AsynchronousFileChannel,
-  Channels,
-  FileChannel,
-  SeekableByteChannel
+  AsynchronousFileChannel, Channels, FileChannel, SeekableByteChannel
 }
-
-import scala.scalanative.nio.fs.unix.UnixFileSystemProvider
-import scala.scalanative.nio.fs.windows.WindowsFileSystemProvider
+import java.nio.file.attribute.{
+  BasicFileAttributes, FileAttribute, FileAttributeView
+}
+import java.util.concurrent.ExecutorService
+import java.util.{LinkedList, List, Map, ServiceLoader, Set}
 
 import scala.scalanative.meta.LinktimeInfo.isWindows
-import java.util.ServiceLoader
+import scala.scalanative.nio.fs.unix.UnixFileSystemProvider
+import scala.scalanative.nio.fs.windows.WindowsFileSystemProvider
 
 abstract class FileSystemProvider protected () {
 

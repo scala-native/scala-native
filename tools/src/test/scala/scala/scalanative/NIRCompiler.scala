@@ -1,11 +1,11 @@
 package scala.scalanative
 
-import java.nio.file.{Files, Path}
 import java.io.{File, PrintWriter}
-import scala.scalanative.buildinfo.ScalaNativeBuildInfo
 import java.lang.ProcessBuilder
 import java.nio.charset.StandardCharsets
-import java.nio.file.StandardCopyOption
+import java.nio.file.{Files, Path, StandardCopyOption}
+
+import scala.scalanative.buildinfo.ScalaNativeBuildInfo
 
 object NIRCompiler {
 

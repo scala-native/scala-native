@@ -1,26 +1,20 @@
 package scala.scalanative.nio.fs.windows
 
-import java.lang.Iterable
-import java.lang.StringBuilder
-import java.{lang => jl}
+import java.lang.{Iterable, StringBuilder}
 import java.nio.charset.StandardCharsets
-import java.nio.file.{
-  FileStore,
-  FileSystem,
-  Path,
-  Paths,
-  PathMatcher,
-  PathMatcherImpl,
-  WatchService
-}
 import java.nio.file.attribute.UserPrincipalLookupService
+import java.nio.file.{
+  FileStore, FileSystem, Path, PathMatcher, PathMatcherImpl, Paths, WatchService
+}
 import java.util.{LinkedList, Set}
+import java.{lang => jl}
+
+import scala.annotation.tailrec
 
 import scalanative.annotation.stub
 import scalanative.unsafe._
 import scalanative.unsigned._
 import scalanative.windows.FileApi._
-import scala.annotation.tailrec
 
 class WindowsFileSystem(fsProvider: WindowsFileSystemProvider)
     extends FileSystem {

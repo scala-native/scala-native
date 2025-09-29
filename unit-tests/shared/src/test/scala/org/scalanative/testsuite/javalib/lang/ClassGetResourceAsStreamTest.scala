@@ -1,12 +1,11 @@
 package org.scalanative.testsuite.javalib.lang
 
+import java.io.{BufferedReader, FileInputStream, InputStreamReader}
+import java.nio.charset.StandardCharsets
+
 import org.junit.Assert._
 import org.junit.Assume._
 import org.junit.Test
-
-import java.nio.charset.StandardCharsets
-import java.io.{BufferedReader, InputStreamReader}
-import java.io.FileInputStream
 
 import org.scalanative.testsuite.utils.Platform
 

@@ -1,5 +1,6 @@
-import java.util.concurrent.locks.ReentrantLock
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.locks.ReentrantLock
+
 import scala.scalanative.concurrent.NativeExecutionContext
 
 object Test {

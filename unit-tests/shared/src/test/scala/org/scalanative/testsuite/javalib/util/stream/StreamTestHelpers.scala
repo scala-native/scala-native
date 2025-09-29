@@ -1,8 +1,8 @@
 package org.scalanative.testsuite.javalib.util.stream
 
-import org.junit.Assume._
-
 import java.util.Spliterator
+
+import org.junit.Assume._
 
 object StreamTestHelpers {
 

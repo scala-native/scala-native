@@ -3,8 +3,9 @@ package junit
 
 // Ported from Scala.js
 
-import org.junit._
 import sbt.testing._
+
+import org.junit._
 
 private[junit] final class Reporter(
     eventHandler: EventHandler,

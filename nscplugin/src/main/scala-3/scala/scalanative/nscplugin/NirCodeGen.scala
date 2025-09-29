@@ -1,21 +1,20 @@
 package scala.scalanative
 package nscplugin
 
+import java.nio.channels.Channels
+
+import dotty.tools.dotc.ast.Trees._
+import dotty.tools.dotc.ast.tpd
+import dotty.tools.dotc.{CompilationUnit, core, report}
+import scala.collection.mutable
+import scala.language.implicitConversions
+
 import scala.scalanative.util
 import scalanative.nir.Defn.Define.DebugInfo
 import scalanative.nir.serialization.serializeBinary
 
-import dotty.tools.dotc.{CompilationUnit, report}
-import dotty.tools.dotc.ast.tpd
-import dotty.tools.dotc.ast.Trees._
-import dotty.tools.dotc.core
 import core.Contexts._
 import core.Symbols._
-
-import java.nio.channels.Channels
-
-import scala.collection.mutable
-import scala.language.implicitConversions
 
 class NirCodeGen(val settings: GenNIR.Settings)(using ctx: Context)
     extends NirGenStat

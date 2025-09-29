@@ -2,10 +2,8 @@ package org.scalanative.testsuite.javalib.nio
 
 import java.nio._
 
-// Ported from Scala.js
-
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 
 import scala.scalanative.memory.PointerBuffer
 import scala.scalanative.memory.PointerBufferOps._

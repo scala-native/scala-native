@@ -1,9 +1,11 @@
 package scala.scalanative.windows
 
 import scala.language.implicitConversions
+
 import scala.scalanative.unsafe.{Word => _, _}
 import scala.scalanative.unsigned._
 import scala.scalanative.windows.HandleApi.Handle
+
 import MinWinBaseApi._
 import WinBaseApi.SecurityAttributes
 
@@ -297,11 +299,13 @@ object FileApiExt {
 }
 
 object FileApiOps {
+  import scala.scalanative.libc.wchar.wcscpy
+  import scalanative.libc.string.strcpy
+
+  import util.Conversion._
+
   import FileApi._
   import MinWinBaseApiOps._
-  import util.Conversion._
-  import scalanative.libc.string.strcpy
-  import scala.scalanative.libc.wchar.wcscpy
 
   abstract class Win32FileDataOps[C: Tag](ref: Ptr[Win32FindData[C]]) {
     def fileAttributes: DWord = ref._1

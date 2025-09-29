@@ -1,8 +1,8 @@
 package java.lang
 
-import java.util.{Spliterator, Spliterators}
-import java.util.stream.{IntStream, StreamSupport}
 import java.util.function.IntConsumer
+import java.util.stream.{IntStream, StreamSupport}
+import java.util.{Spliterator, Spliterators}
 
 trait CharSequence {
 

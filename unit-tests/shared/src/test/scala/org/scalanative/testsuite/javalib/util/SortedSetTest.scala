@@ -13,12 +13,12 @@
 
 package org.scalanative.testsuite.javalib.util
 
-import org.junit.Test
-import org.junit.Assert._
-
 import java.{util => ju}
 
 import scala.reflect.ClassTag
+
+import org.junit.Assert._
+import org.junit.Test
 
 trait SortedSetTest extends SetTest {
 

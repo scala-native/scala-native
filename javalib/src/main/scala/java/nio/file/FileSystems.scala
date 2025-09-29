@@ -1,13 +1,12 @@
 package java.nio.file
 
-import java.nio.file.spi.FileSystemProvider
-
 import java.net.URI
+import java.nio.file.spi.FileSystemProvider
 import java.util.{HashMap, Map}
 
+import scala.scalanative.meta.LinktimeInfo.isWindows
 import scala.scalanative.nio.fs.unix.UnixFileSystemProvider
 import scala.scalanative.nio.fs.windows.WindowsFileSystemProvider
-import scala.scalanative.meta.LinktimeInfo.isWindows
 
 object FileSystems {
   private lazy val fs = {

@@ -1,13 +1,14 @@
 package java.lang
 package impl
 
-import System.Logger
-import scalanative.posix.time._
-import scalanative.windows.crt.{time => winTime}
-import scalanative.unsafe._
-import scalanative.unsigned._
 import scala.scalanative.meta.LinktimeInfo.isWindows
 import scala.scalanative.runtime.javalib.Proxy
+import scalanative.posix.time._
+import scalanative.unsafe._
+import scalanative.unsigned._
+import scalanative.windows.crt.{time => winTime}
+
+import System.Logger
 
 // Simple default logger implementation
 private[lang] class SimpleLogger(name: String) extends Logger {

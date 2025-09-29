@@ -3,12 +3,10 @@ package java.lang.process
 import java.io._
 
 import scala.scalanative.annotation.stub
-import scala.scalanative.posix.sys.ioctl._
 import scala.scalanative.meta.LinktimeInfo.isWindows
-
+import scala.scalanative.posix.sys.ioctl._
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
-
 import scala.scalanative.windows.DWord
 import scala.scalanative.windows.NamedPipeApi.PeekNamedPipe
 

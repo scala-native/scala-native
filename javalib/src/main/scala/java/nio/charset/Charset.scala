@@ -1,10 +1,10 @@
 package java.nio.charset
 
-import scala.collection.mutable
-import java.util.{Collections, HashSet, Arrays}
-import java.nio.{ByteBuffer, CharBuffer}
 import java.nio.charset.spi.CharsetProvider
-import java.util.ServiceLoader
+import java.nio.{ByteBuffer, CharBuffer}
+import java.util.{Arrays, Collections, HashSet, ServiceLoader}
+
+import scala.collection.mutable
 
 abstract class Charset protected (
     canonicalName: String,

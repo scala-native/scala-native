@@ -1,29 +1,30 @@
 package java.lang.process
 
-// Required only for cross-compilation with Scala 2
-import scala.language.existentials
-
 import java.io.FileDescriptor
 import java.lang.ProcessBuilder._
-
+import java.nio.file.WindowsException
 import java.util.ArrayList
 import java.util.ScalaOps._
 import java.util.concurrent.TimeUnit
-import java.nio.file.WindowsException
+
+// Required only for cross-compilation with Scala 2
+import scala.language.existentials
+
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
 import scala.scalanative.windows._
 
+import winnt.AccessRights._
+
+import FileApiExt._
 import HandleApi._
 import HandleApiExt._
+import NamedPipeApi._
 import ProcessThreadsApi._
 import ProcessThreadsApiExt._
 import ProcessThreadsApiOps._
-import FileApiExt._
-import NamedPipeApi._
 import WinBaseApi._
 import WinBaseApiOps._
-import winnt.AccessRights._
 
 private[process] class WindowsProcessHandle(
     handle: Handle,

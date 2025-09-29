@@ -1,15 +1,11 @@
 package scala.scalanative
 package unsigned
 
-import scalanative.runtime.Intrinsics.{
-  divULong,
-  remULong,
-  ulongToFloat,
-  ulongToDouble,
-  castLongToRawSize,
-  unsignedOf
-}
 import java.lang.{Long => JLong}
+
+import scalanative.runtime.Intrinsics.{
+  castLongToRawSize, divULong, remULong, ulongToDouble, ulongToFloat, unsignedOf
+}
 
 /** `ULong`, a 64-bit unsigned integer. */
 final class ULong private[scalanative] (

@@ -8,8 +8,7 @@
 
 package java.util.concurrent
 
-import java.util.NavigableMap
-import java.util.NavigableSet
+import java.util.{NavigableMap, NavigableSet}
 
 trait ConcurrentNavigableMap[K, V]
     extends ConcurrentMap[K, V]

@@ -1,10 +1,10 @@
 package scala.scalanative.unsigned
 
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 
-import scala.scalanative.unsafe._
 import scala.scalanative.meta.LinktimeInfo.is32BitPlatform
+import scala.scalanative.unsafe._
 
 class USizeTest {
   @Test def bitwiseInverse: Unit = {

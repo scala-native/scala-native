@@ -5,17 +5,17 @@ package org.scalanative.testsuite.javalib.util.concurrent
 import java.util.concurrent.ConcurrentSkipListSet
 import java.{util => ju}
 
+import scala.reflect.ClassTag
+
 import org.junit.Assert._
 import org.junit.Assume._
 import org.junit.Test
 
-import org.scalanative.testsuite.javalib.util.NavigableSetFactory
-import org.scalanative.testsuite.javalib.util.TrivialImmutableCollection
-
+import org.scalanative.testsuite.javalib.util.{
+  NavigableSetFactory, TrivialImmutableCollection
+}
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform._
-
-import scala.reflect.ClassTag
 
 // TODO extends AbstractSetTest with NavigableSetTest
 class ConcurrentSkipListSetTest {

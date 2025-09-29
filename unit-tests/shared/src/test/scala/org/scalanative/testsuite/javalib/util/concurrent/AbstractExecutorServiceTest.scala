@@ -7,14 +7,14 @@
  */
 package org.scalanative.testsuite.javalib.util.concurrent
 
-import org.junit.Assert._
-import org.junit.Test
-
 import java.util
 import java.util.concurrent.TimeUnit.MILLISECONDS
-import java.util.{ArrayList, Collection, Collections, List}
 import java.util.concurrent._
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.{ArrayList, Collection, Collections, List}
+
+import org.junit.Assert._
+import org.junit.Test
 
 object AbstractExecutorServiceTest {
 

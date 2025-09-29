@@ -2,11 +2,9 @@ package org.scalanative.testsuite.javalib.nio
 
 import java.nio._
 
-// Ported from Scala.js
-
-import org.junit.Test
 import org.junit.Assert._
 import org.junit.Assume._
+import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform._

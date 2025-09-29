@@ -1,15 +1,15 @@
 package scala.scalanative
 package compiler
 
-import org.junit.Test
-import org.junit.Assert._
-
 import scala.collection.mutable
+import scala.reflect.ClassTag
+
+import org.junit.Assert._
+import org.junit.Test
 
 import scala.scalanative.api.CompilationFailedException
-import scala.scalanative.linker.compileAndLoad
 import scala.scalanative.buildinfo.ScalaNativeBuildInfo._
-import scala.reflect.ClassTag
+import scala.scalanative.linker.compileAndLoad
 import scala.scalanative.nir.Defn.Define.DebugInfo.LexicalScope
 
 class LexicalScopesTest {

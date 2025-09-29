@@ -2,13 +2,15 @@ package scala.scalanative.junit.utils
 
 // Ported from Scala.js
 
-import org.junit.Assert.fail
-import org.junit.Test
 import sbt.testing._
 
 import scala.annotation.tailrec
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent._
+
+import org.junit.Assert.fail
+import org.junit.Test
+
 import scala.scalanative.junit.async._
 
 abstract class JUnitTest {

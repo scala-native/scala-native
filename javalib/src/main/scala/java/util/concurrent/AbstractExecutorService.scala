@@ -6,9 +6,9 @@
 
 package java.util.concurrent
 
-import java.util
-import java.lang
 import java.util.concurrent.TimeUnit._
+import java.{lang, util}
+
 import scala.annotation.tailrec
 
 abstract class AbstractExecutorService() extends ExecutorService {

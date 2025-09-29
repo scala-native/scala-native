@@ -1,14 +1,14 @@
 package java.nio.channels
 
+import java.io.{FileDescriptor, IOException}
+
+import scala.scalanative.libc.stdio
 import scala.scalanative.meta.LinktimeInfo.isWindows
 import scala.scalanative.posix.fcntl._
 import scala.scalanative.posix.fcntlOps._
-import scala.scalanative.libc.stdio
-import scalanative.unsafe._
-import java.io.IOException
-import java.io.FileDescriptor
-import scala.scalanative.windows.FileApi
 import scala.scalanative.unsigned._
+import scala.scalanative.windows.FileApi
+import scalanative.unsafe._
 
 // Works only between system processes. No thread support.
 // Although in JVM locks are held on behalf the entire Java

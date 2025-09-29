@@ -1,6 +1,6 @@
 package java.net
 
-import java.io.{InputStream, OutputStream, IOException, Closeable}
+import java.io.{Closeable, IOException, InputStream, OutputStream}
 
 class Socket protected (
     private[net] val impl: SocketImpl,

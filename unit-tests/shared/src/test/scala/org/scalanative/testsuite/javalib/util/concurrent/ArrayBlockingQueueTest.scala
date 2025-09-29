@@ -7,13 +7,14 @@
  */
 package org.scalanative.testsuite.javalib.util.concurrent
 
-import org.junit.Assert._
-import org.junit.{Test, Ignore}
-
-import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util
 import java.util._
+import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util.concurrent._
+
+import org.junit.Assert._
+import org.junit.{Ignore, Test}
+
 import JSR166Test._
 
 class ArrayBlockingQueueFairTest extends BlockingQueueTest {

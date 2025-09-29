@@ -1,10 +1,10 @@
 package scala.scalanative.meta
 
+import org.junit.Assert._
+import org.junit.Test
+
 import scala.scalanative.buildinfo.ScalaNativeBuildInfo
 import scala.scalanative.runtime.Platform
-
-import org.junit.Test
-import org.junit.Assert._
 
 class LinktimeInfoTest {
 

@@ -1,16 +1,14 @@
 package java.nio.file.attribute
 
-import scalanative.unsigned._
-import scalanative.unsafe._
-
-import scalanative.posix._
-
-// Import posix name errno as variable, not class or type.
-import scala.scalanative.posix.{errno => posixErrno}, posixErrno.errno
-
-import scalanative.posix.sys.stat
-
 import scala.scalanative.nio.fs.unix.UnixException
+// Import posix name errno as variable, not class or type.
+import scala.scalanative.posix.{errno => posixErrno}
+import scalanative.posix._
+import scalanative.posix.sys.stat
+import scalanative.unsafe._
+import scalanative.unsigned._
+
+import posixErrno.errno
 
 final case class PosixUserPrincipal(uid: stat.uid_t)(name: Option[String])
     extends UserPrincipal {

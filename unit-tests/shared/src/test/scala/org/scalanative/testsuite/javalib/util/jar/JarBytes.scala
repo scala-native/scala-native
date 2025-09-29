@@ -1,8 +1,7 @@
 package org.scalanative.testsuite.javalib.util.jar
 
-import java.util.jar._
-
 import java.nio.file.Files
+import java.util.jar._
 
 // This object contains the bytes of all the files that are
 // used in Harmony's test suite.

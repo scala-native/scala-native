@@ -19,9 +19,10 @@
 package java.lang
 
 import java.lang.ref.{Reference, WeakReference}
+import java.util.Objects
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.function.Supplier
-import java.util.Objects
+
 import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
 
 object ThreadLocal {

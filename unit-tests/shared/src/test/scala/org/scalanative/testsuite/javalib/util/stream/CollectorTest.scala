@@ -1,10 +1,10 @@
 package org.scalanative.testsuite.javalib.util.stream
 
-import java.util.stream._
 import java.util.stream.Collector.Characteristics
+import java.util.stream._
 
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 

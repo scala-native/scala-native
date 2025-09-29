@@ -1,8 +1,8 @@
 package scala.scalanative.junit
 
 import org.junit.Assert._
-import org.junit.function.ThrowingRunnable
 import org.junit.Test
+import org.junit.function.ThrowingRunnable
 
 import scala.scalanative.junit.utils.JUnitTest
 

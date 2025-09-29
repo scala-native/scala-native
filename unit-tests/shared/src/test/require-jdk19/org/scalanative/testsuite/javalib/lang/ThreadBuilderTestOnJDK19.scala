@@ -1,13 +1,11 @@
 package org.scalanative.testsuite.javalib.lang
 
 import java.util.concurrent._
-import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.atomic.{AtomicBoolean, AtomicReference}
 import java.util.concurrent.locks.LockSupport
 
-import org.junit._
 import org.junit.Assert._
-import org.junit.{Ignore, BeforeClass}
+import org.junit._
 
 import scala.scalanative.junit.utils.AssumesHelper
 

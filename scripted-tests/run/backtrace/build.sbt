@@ -1,5 +1,7 @@
-import scala.sys.process.Process
 import java.util.Locale
+
+import scala.sys.process.Process
+
 import scala.scalanative.build._
 
 enablePlugins(ScalaNativePlugin)

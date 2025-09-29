@@ -62,8 +62,9 @@ object locale extends libc.locale {
 }
 
 object localeOps {
-  import locale.lconv
   import scalanative.libc.localeOpsImpl
+
+  import locale.lconv
 
   implicit class lconvOps(val ptr: Ptr[lconv]) extends AnyVal {
     def decimal_point: CString = localeOpsImpl.decimal_point(ptr)

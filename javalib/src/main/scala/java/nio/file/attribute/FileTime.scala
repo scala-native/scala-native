@@ -1,7 +1,7 @@
 package java.nio.file.attribute
 
-import java.util.concurrent.TimeUnit
 import java.time.Instant
+import java.util.concurrent.TimeUnit
 
 final class FileTime private (
     private val epochDays: Long,

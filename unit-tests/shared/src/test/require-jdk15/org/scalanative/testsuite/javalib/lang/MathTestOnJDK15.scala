@@ -1,11 +1,11 @@
 package org.scalanative.testsuite.javalib.lang
 
+import java.{lang => jl}
+
 import org.junit.Assert._
 import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
-
-import java.{lang => jl}
 
 class MathTestOnJDK15 {
 

@@ -1,13 +1,14 @@
 package scala.scalanative.nscplugin
 
 import dotty.tools.dotc.core
-import core.Symbols._
-import core.Symbols.{toClassDenot, toDenot}
+import dotty.tools.dotc.util.Property.StickyKey
+import scala.annotation.{threadUnsafe => tu}
+
 import core.Contexts._
 import core.Names._
+import core.Symbols._
 import core.Types._
-import scala.annotation.{threadUnsafe => tu}
-import dotty.tools.dotc.util.Property.StickyKey
+
 import NirGenUtil.ContextCached
 
 object NirDefinitions {

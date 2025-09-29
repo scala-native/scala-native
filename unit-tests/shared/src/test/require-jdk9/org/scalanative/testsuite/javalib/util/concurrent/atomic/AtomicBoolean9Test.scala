@@ -9,8 +9,8 @@ package atomic
 
 import java.util.concurrent.atomic.AtomicBoolean
 
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 
 class AtomicBoolean9Test extends JSR166Test {
 

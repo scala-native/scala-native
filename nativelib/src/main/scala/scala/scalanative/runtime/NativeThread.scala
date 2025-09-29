@@ -1,21 +1,20 @@
 package scala.scalanative
 package runtime
 
-import java.{lang => jl}
+import java.util.concurrent.ConcurrentHashMap
+import java.{lang => jl, util => ju}
 
-import scala.scalanative.runtime.Intrinsics._
-import scala.scalanative.runtime.GC.{ThreadRoutineArg, ThreadStartRoutine}
+import scala.annotation.nowarn
+import scala.concurrent.duration._
+
 import scala.scalanative.annotation.alwaysinline
-import scala.scalanative.unsafe._
+import scala.scalanative.concurrent.NativeExecutionContext
 import scala.scalanative.meta.LinktimeInfo.{isMultithreadingEnabled, isWindows}
+import scala.scalanative.runtime.GC.{ThreadRoutineArg, ThreadStartRoutine}
+import scala.scalanative.runtime.Intrinsics._
 import scala.scalanative.runtime.ffi.stdatomic.atomic_thread_fence
 import scala.scalanative.runtime.ffi.stdatomic.memory_order._
-import scala.annotation.nowarn
-
-import java.util.concurrent.ConcurrentHashMap
-import java.{util => ju}
-import scala.scalanative.concurrent.NativeExecutionContext
-import scala.concurrent.duration._
+import scala.scalanative.unsafe._
 
 trait NativeThread {
   import NativeThread._

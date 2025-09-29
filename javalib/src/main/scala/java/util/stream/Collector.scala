@@ -1,7 +1,7 @@
 package java.util.stream
 
-import java.util.{Collections, HashSet, Set}
 import java.util.function._
+import java.util.{Collections, HashSet, Set}
 
 trait Collector[T, A, R] {
 

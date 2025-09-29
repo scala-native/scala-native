@@ -1,18 +1,15 @@
 package org.scalanative.testsuite.javalib.util.zip
 
-import org.junit.Test
+import java.io.{BufferedOutputStream, FileOutputStream, IOException}
+import java.nio.file.{Files, Paths}
+import java.util.Arrays
+import java.util.zip.{ZipEntry, ZipFile, ZipOutputStream}
+
 import org.junit.Assert._
-import org.junit.BeforeClass
-import org.junit.Ignore
+import org.junit.{BeforeClass, Ignore, Test}
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform
-
-import java.io.{BufferedOutputStream, IOException, FileOutputStream}
-import java.nio.file.{Files, Paths}
-import java.util.Arrays
-
-import java.util.zip.{ZipEntry, ZipFile, ZipOutputStream}
 
 /* Do not disturb the peace of Tests written when the  Harmony code
  * was ported to Scala Native.

@@ -1,11 +1,11 @@
 package scala.scalanative
 package optimizer
 
+import org.junit.Assert._
+import org.junit._
+
 import scala.scalanative.OptimizerSpec
 import scala.scalanative.interflow.Interflow.LLVMIntrinsics._
-
-import org.junit._
-import org.junit.Assert._
 
 class StackallocStateRestoreTest extends OptimizerSpec {
 

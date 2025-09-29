@@ -8,13 +8,13 @@
  */
 package org.scalanative.testsuite.javalib.util.concurrent
 
-import org.junit._
-import org.junit.Assert._
-
-import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util
 import java.util._
+import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util.concurrent._
+
+import org.junit.Assert._
+import org.junit._
 
 /** Contains "contract" tests applicable to all BlockingQueue implementations.
  */

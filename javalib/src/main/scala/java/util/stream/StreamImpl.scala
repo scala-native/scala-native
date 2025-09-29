@@ -1,9 +1,9 @@
 package java.util.stream
 
-import java.{util => ju}
 import java.util._
 import java.util.function._
 import java.util.stream.Collector._
+import java.{util => ju}
 
 private[stream] class StreamImpl[T](
     val pipeline: ArrayDeque[StreamImpl[T]]

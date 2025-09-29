@@ -1,8 +1,9 @@
 package scala.scalanative.junit.plugin
 
 import dotty.tools.dotc
-import dotc.plugins._
+
 import dotc.core.Contexts._
+import dotc.plugins._
 
 /** The Scala Native JUnit plugin replaces reflection based test lookup.
  *

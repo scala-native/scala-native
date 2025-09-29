@@ -1,26 +1,24 @@
 package java.lang.impl
 
 import scala.annotation._
+
 import scala.scalanative.annotation._
-
-import scala.scalanative.unsafe._
-import scala.scalanative.unsigned._
-import scala.scalanative.runtime._
-import scala.scalanative.runtime.Intrinsics.{elemRawPtr, classFieldRawPtr}
-import scala.scalanative.runtime.GC
+import scala.scalanative.libc.stdatomic._
+import scala.scalanative.libc.stdatomic.memory_order.memory_order_seq_cst
 import scala.scalanative.meta.LinktimeInfo._
-
+import scala.scalanative.posix.errno._
+import scala.scalanative.posix.poll._
+import scala.scalanative.posix.pthread._
+import scala.scalanative.posix.sched._
+import scala.scalanative.posix.schedOps._
 import scala.scalanative.posix.sys.types._
 import scala.scalanative.posix.time._
 import scala.scalanative.posix.timeOps._
-import scala.scalanative.posix.sched._
-import scala.scalanative.posix.schedOps._
-import scala.scalanative.posix.pthread._
-import scala.scalanative.posix.errno._
-import scala.scalanative.posix.poll._
 import scala.scalanative.posix.unistd._
-import scala.scalanative.libc.stdatomic._
-import scala.scalanative.libc.stdatomic.memory_order.memory_order_seq_cst
+import scala.scalanative.runtime.Intrinsics.{classFieldRawPtr, elemRawPtr}
+import scala.scalanative.runtime._
+import scala.scalanative.unsafe._
+import scala.scalanative.unsigned._
 
 private[java] class PosixThread(
     val thread: Thread,

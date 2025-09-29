@@ -3,8 +3,8 @@ package java.util.jar
 // Ported from Apache Harmony
 
 import java.io.IOException
-import java.nio.{ByteBuffer, CharBuffer}
 import java.nio.charset.{CoderResult, StandardCharsets}
+import java.nio.{ByteBuffer, CharBuffer}
 import java.util.Map
 
 class InitManifest private[jar] (

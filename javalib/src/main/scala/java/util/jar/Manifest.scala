@@ -3,8 +3,8 @@ package java.util.jar
 // Ported from Apache Harmony
 
 import java.io.{ByteArrayOutputStream, IOException, InputStream, OutputStream}
-import java.nio.{ByteBuffer, CharBuffer}
 import java.nio.charset.{CharsetEncoder, CoderResult, StandardCharsets}
+import java.nio.{ByteBuffer, CharBuffer}
 import java.util.{HashMap, Map}
 
 class Manifest() extends Cloneable {

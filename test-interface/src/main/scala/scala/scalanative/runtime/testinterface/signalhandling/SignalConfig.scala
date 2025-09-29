@@ -1,16 +1,15 @@
 package scala.scalanative.runtime
 package testinterface.signalhandling
 
-import scala.scalanative.meta.LinktimeInfo._
-import scala.scalanative.libc.stdlib._
 import scala.scalanative.libc.signal._
+import scala.scalanative.libc.stdlib._
 import scala.scalanative.libc.string._
+import scala.scalanative.meta.LinktimeInfo._
 import scala.scalanative.posix.unistd._
-import scala.scalanative.runtime.unwind
+import scala.scalanative.runtime.{SymbolFormatter, unwind}
 import scala.scalanative.unsafe._
-import scalanative.unsigned._
 import scala.scalanative.windows._
-import scala.scalanative.runtime.SymbolFormatter
+import scalanative.unsigned._
 
 private[scalanative] object SignalConfig {
 

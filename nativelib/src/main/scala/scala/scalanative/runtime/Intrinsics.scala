@@ -1,8 +1,8 @@
 package scala.scalanative
 package runtime
 
-import scalanative.unsafe._
 import scala.scalanative.unsigned._
+import scalanative.unsafe._
 
 object Intrinsics {
   private[runtime] object internal {

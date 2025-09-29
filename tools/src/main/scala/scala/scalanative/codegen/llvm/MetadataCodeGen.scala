@@ -2,33 +2,25 @@ package scala.scalanative
 package codegen
 package llvm
 
-import scala.scalanative.nir.Defn.Define.DebugInfo
-import scala.scalanative.util.ShowBuilder
 import scala.collection.mutable
-import scala.scalanative.util.unsupported
-
 import scala.language.implicitConversions
-import scala.scalanative.codegen.llvm.MetadataCodeGen.Writer.Specialized
-import scala.scalanative.util.unreachable
-import scala.scalanative.linker.{
-  ClassRef,
-  ArrayRef,
-  FieldRef,
-  ScopeRef,
-  TraitRef,
-  Method
-}
-import scala.scalanative.linker.ReachabilityAnalysis
-import scala.scalanative.util.ScopedVar
+
 import scala.scalanative.codegen.llvm.Metadata.conversions.optionWrapper
+import scala.scalanative.codegen.llvm.MetadataCodeGen.Writer.Specialized
+import scala.scalanative.linker.{
+  ArrayRef, ClassRef, FieldRef, Method, ReachabilityAnalysis, ScopeRef, TraitRef
+}
+import scala.scalanative.nir.Defn.Define.DebugInfo
 import scala.scalanative.nir.SourceFile.Relative
+import scala.scalanative.util.{ScopedVar, ShowBuilder, unreachable, unsupported}
 
 // scalafmt: { maxColumn = 100}
 private[codegen] trait MetadataCodeGen { self: AbstractCodeGen =>
-  import MetadataCodeGen._
-  import Metadata._
-  import Writer._
   import self.meta.platform
+
+  import Metadata._
+  import MetadataCodeGen._
+  import Writer._
 
   final val generateDebugMetadata = self.meta.config.sourceLevelDebuggingConfig.enabled
   final val generateLocalVariables =
@@ -609,8 +601,8 @@ private[codegen] object MetadataCodeGen {
   class DefnScopes(val defn: nir.Defn.Define, codeGen: AbstractCodeGen)(implicit
       metadataCtx: MetadataCodeGen.Context
   ) {
-    import codeGen._
     import Metadata._
+    import codeGen._
 
     private val scopes = mutable.Map.empty[nir.ScopeId, Metadata.Scope]
 

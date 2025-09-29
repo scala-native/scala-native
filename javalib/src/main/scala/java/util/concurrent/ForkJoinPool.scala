@@ -10,18 +10,17 @@ package java.util.concurrent
 import java.lang.Thread.UncaughtExceptionHandler
 import java.lang.invoke.VarHandle
 import java.util.concurrent.ForkJoinPool.WorkQueue.getAndClearSlot
-import java.util.{ArrayList, Collection, Collections, List, concurrent}
-import java.util.function.Predicate
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.locks.LockSupport
-import java.util.concurrent.locks.ReentrantLock
-import java.util.concurrent.locks.Condition
-import scala.scalanative.annotation._
-import scala.scalanative.unsafe._
-import scala.scalanative.libc.stdatomic.{AtomicInt, AtomicLongLong, AtomicRef}
-import scala.scalanative.runtime.{fromRawPtr, Intrinsics, ObjectArray}
+import java.util.concurrent.locks.{Condition, LockSupport, ReentrantLock}
+import java.util.function.Predicate
+import java.util.{ArrayList, Collection, Collections, List, concurrent}
 
+import scala.scalanative.annotation._
 import scala.scalanative.libc.stdatomic.memory_order._
+import scala.scalanative.libc.stdatomic.{AtomicInt, AtomicLongLong, AtomicRef}
+import scala.scalanative.runtime.{Intrinsics, ObjectArray, fromRawPtr}
+import scala.scalanative.unsafe._
+
 import ForkJoinPool._
 
 class ForkJoinPool private (

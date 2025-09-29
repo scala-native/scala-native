@@ -1,25 +1,22 @@
 package org.scalanative.testsuite.javalib.net
 
 import java.io.IOException
-import java.net.BindException
-import java.net.DatagramPacket
-import java.net.DatagramSocket
-import java.net.InetAddress
-import java.net.InetSocketAddress
-import java.net.NetworkInterface
-import java.net.SocketAddress
-import java.net.SocketException
-import java.net.SocketTimeoutException
-import java.net.UnknownHostException
+import java.net.{
+  BindException, DatagramPacket, DatagramSocket, InetAddress, InetSocketAddress,
+  NetworkInterface, SocketAddress, SocketException, SocketTimeoutException,
+  UnknownHostException
+}
 import java.{util => ju}
 
-import org.junit.Test
+import scala.collection.JavaConverters._
+
 import org.junit.Assert._
 import org.junit.Assume._
+import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform
-import scala.collection.JavaConverters._
+
 import scala.scalanative.junit.utils.AssumesHelper._
 
 class DatagramSocketTest {

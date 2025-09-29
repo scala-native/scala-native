@@ -1,21 +1,21 @@
 package scala.scalanative.nio.fs.windows
 
-import java.util.{HashMap => JHashMap}
-import java.util.concurrent.TimeUnit
-import java.nio.file.{LinkOption, Path}
-import java.nio.file.attribute._
 import java.lang.{Boolean => JBoolean}
-import scalanative.unsigned._
-import scalanative.unsafe._
-import scala.scalanative.windows._
-import scala.scalanative.windows.MinWinBaseApi.{FileTime => WinFileTime, _}
-import scala.scalanative.windows.MinWinBaseApiOps.FileTimeOps._
+import java.nio.file.attribute._
+import java.nio.file.{LinkOption, Path, WindowsException}
+import java.util.WindowsHelperMethods._
+import java.util.concurrent.TimeUnit
+import java.util.{HashMap => JHashMap}
+
 import scala.scalanative.windows.FileApi._
 import scala.scalanative.windows.FileApiExt._
 import scala.scalanative.windows.FileApiOps._
+import scala.scalanative.windows.MinWinBaseApi.{FileTime => WinFileTime, _}
+import scala.scalanative.windows.MinWinBaseApiOps.FileTimeOps._
+import scala.scalanative.windows._
 import scala.scalanative.windows.winnt.AccessRights._
-import java.nio.file.WindowsException
-import java.util.WindowsHelperMethods._
+import scalanative.unsafe._
+import scalanative.unsigned._
 
 final class WindowsDosFileAttributeView(path: Path, options: Array[LinkOption])
     extends DosFileAttributeView {

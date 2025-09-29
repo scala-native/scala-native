@@ -2,13 +2,14 @@ package scala.scalanative.junit.utils
 
 // Ported from Scala.js
 
-import java.nio.file.{Files, Paths}
+import sbt.testing._
+
 import java.nio.charset.StandardCharsets.UTF_8
+import java.nio.file.{Files, Paths}
 import java.util.LinkedList
 
-import sbt.testing._
-import scala.concurrent._
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent._
 
 object JUnitTestPlatformImpl {
 

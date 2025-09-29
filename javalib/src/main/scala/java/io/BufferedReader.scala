@@ -1,9 +1,9 @@
 package java.io
 
-import java.{lang => jl}
 import java.util.Spliterators
 import java.util.function.Consumer
 import java.util.stream.{Stream, StreamSupport}
+import java.{lang => jl}
 
 class BufferedReader(in: Reader, sz: Int) extends Reader {
 

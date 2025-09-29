@@ -1,16 +1,15 @@
 package java.lang
 
 import java.io.File
-import java.util.{Set => juSet}
-import java.util.Comparator
-import scala.scalanative.libc.signal
-import scala.scalanative.libc.stdlib
+import java.util.{Comparator, Set => juSet}
+
+import scala.scalanative.libc.{signal, stdlib}
+import scala.scalanative.meta.LinktimeInfo
 import scala.scalanative.posix.unistd._
+import scala.scalanative.runtime.javalib.Proxy
+import scala.scalanative.unsafe._
 import scala.scalanative.windows.SysInfoApi._
 import scala.scalanative.windows.SysInfoApiOps._
-import scala.scalanative.unsafe._
-import scala.scalanative.meta.LinktimeInfo
-import scala.scalanative.runtime.javalib.Proxy
 
 class Runtime private () {
   import Runtime._

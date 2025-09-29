@@ -2,14 +2,11 @@ package scala.scalanative
 package codegen
 
 import scala.collection.mutable
-import scala.scalanative.linker.{
-  Class,
-  Field,
-  ScopeInfo,
-  Unavailable,
-  ReachabilityAnalysis
-}
+
 import scala.scalanative.build.Logger
+import scala.scalanative.linker.{
+  Class, Field, ReachabilityAnalysis, ScopeInfo, Unavailable
+}
 
 // scalafmt: { maxColumn = 120}
 private[codegen] object Generate {

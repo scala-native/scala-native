@@ -1,13 +1,10 @@
 package java.util.random
 
-import java.{lang => jl}
-
-import java.util.{Spliterator, Spliterators}
 import java.util.Spliterators._
-
 import java.util.function._
-
 import java.util.stream._
+import java.util.{Spliterator, Spliterators}
+import java.{lang => jl}
 
 /* This apparent duplication & proliferation of RandomGenerator stream
  * methods springs from fact that the characteristics for the Streams

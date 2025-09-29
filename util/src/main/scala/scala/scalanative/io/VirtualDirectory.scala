@@ -4,9 +4,10 @@ package io
 import java.io.Writer
 import java.net.URI
 import java.nio.ByteBuffer
-import java.nio.file._
 import java.nio.channels._
+import java.nio.file._
 import java.util.HashMap
+
 import scalanative.util.{Scope, acquire, defer}
 
 sealed trait VirtualDirectory {

@@ -67,11 +67,11 @@
 
 package java.math
 
-import scala.annotation.tailrec
-
-import java.{lang => jl}
 import java.lang.{Double => JDouble}
 import java.util.Arrays
+import java.{lang => jl}
+
+import scala.annotation.tailrec
 
 object BigDecimal {
 

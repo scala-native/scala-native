@@ -3,6 +3,7 @@
 package scala.tools.partest.scalanative
 
 import java.io.File
+
 import scala.tools.partest.nest.{PathSettings, SuiteRunner}
 import scala.tools.partest.{TestState, timed}
 

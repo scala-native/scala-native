@@ -7,12 +7,11 @@ import java.util.Arrays
 import java.util.regex._
 
 import scala.concurrent._
-import scala.util.Failure
-import scala.util.Success
+import scala.util.{Failure, Success}
 
-import scalanative.build.IO.RichPath
 import scala.scalanative.linker.ReachabilityAnalysis
 import scala.scalanative.nir.Attr
+import scalanative.build.IO.RichPath
 
 /** Original jar or dir path and generated dir path for native code */
 private[scalanative] case class NativeLib(src: Path, dest: Path)

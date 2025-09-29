@@ -1,9 +1,7 @@
 package java.nio.file
 
-import java.io.{IOException, FileNotFoundException, UncheckedIOException}
-
+import java.io.{FileNotFoundException, IOException, UncheckedIOException}
 import java.nio.file.attribute.BasicFileAttributes
-
 import java.util._
 import java.util.function.{BiPredicate, Consumer}
 import java.util.stream.{Stream, StreamSupport}

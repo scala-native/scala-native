@@ -1,43 +1,28 @@
 package java.nio.channels
 
-import java.nio.{ByteBuffer, MappedByteBuffer, MappedByteBufferImpl}
+import java.io.{File, FileDescriptor, IOException}
 import java.nio.channels.FileChannel.MapMode
-import java.nio.file.Files
-import java.nio.file.WindowsException
-
-import scala.scalanative.nio.fs.unix.UnixException
-
-import java.io.FileDescriptor
-import java.io.File
-import java.io.IOException
-
+import java.nio.file.{Files, WindowsException}
+import java.nio.{ByteBuffer, MappedByteBuffer, MappedByteBufferImpl}
 import java.util.Objects
 
+import scala.scalanative.libc.errno.errno
 import scala.scalanative.meta.LinktimeInfo.isWindows
-
-import scala.scalanative.unsafe._
-
+import scala.scalanative.nio.fs.unix.UnixException
 import scala.scalanative.posix.fcntl._
 import scala.scalanative.posix.fcntlOps._
-import scala.scalanative.posix.string
-
 import scala.scalanative.posix.sys.stat
 import scala.scalanative.posix.sys.statOps._
-
-import scala.scalanative.posix.unistd
-
+import scala.scalanative.posix.{string, unistd}
+import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
 import scala.scalanative.windows
-import scalanative.libc.stdio
-import scala.scalanative.libc.errno.errno
-
-import scala.scalanative.windows.ErrorHandlingApi
 import scala.scalanative.windows.FileApi._
 import scala.scalanative.windows.FileApiExt._
-import scala.scalanative.windows.ErrorCodes
 import scala.scalanative.windows.MinWinBaseApi._
 import scala.scalanative.windows.MinWinBaseApiOps._
 import scala.scalanative.windows._
+import scalanative.libc.stdio
 
 private[java] final class FileChannelImpl(
     fd: FileDescriptor,

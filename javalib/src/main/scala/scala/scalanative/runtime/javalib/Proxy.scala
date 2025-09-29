@@ -2,8 +2,9 @@ package scala.scalanative
 package runtime
 package javalib
 
-import scala.scalanative.annotation.alwaysinline
 import scala.concurrent.duration.FiniteDuration
+
+import scala.scalanative.annotation.alwaysinline
 
 object Proxy {
   @alwaysinline

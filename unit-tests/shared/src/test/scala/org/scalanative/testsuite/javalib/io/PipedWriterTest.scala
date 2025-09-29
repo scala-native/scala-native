@@ -17,8 +17,9 @@
 package org.scalanative.testsuite.javalib.io
 
 import java.io._
-import org.junit._
+
 import org.junit.Assert._
+import org.junit._
 
 object PipedWriterTest {
   @BeforeClass def checkRuntime(): Unit =

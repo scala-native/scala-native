@@ -1,17 +1,15 @@
 package org.scalanative.testsuite.posixlib
 
-import org.junit.Test
 import org.junit.Assert._
 import org.junit.Assume._
-import org.junit.BeforeClass
+import org.junit.{BeforeClass, Test}
 
-import scala.scalanative.unsafe._
-import scala.scalanative.unsigned._
-
-import scala.scalanative.posix.stdlib
+import org.scalanative.testsuite.utils.Platform
 
 import scala.scalanative.meta.LinktimeInfo
-import org.scalanative.testsuite.utils.Platform
+import scala.scalanative.posix.stdlib
+import scala.scalanative.unsafe._
+import scala.scalanative.unsigned._
 
 object StdlibTest {
 

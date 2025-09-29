@@ -1,13 +1,12 @@
 package scala.scalanative
 package libc
 
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 
-import scalanative.unsafe._
 import scalanative.libc._
-import scalanative.runtime.Platform
-import scalanative.runtime.PlatformExt
+import scalanative.runtime.{Platform, PlatformExt}
+import scalanative.unsafe._
 
 class TGMathTest {
 

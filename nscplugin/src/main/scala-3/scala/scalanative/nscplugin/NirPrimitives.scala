@@ -1,17 +1,18 @@
 package scala.scalanative.nscplugin
 
-import scala.collection.mutable
 import dotty.tools.backend.jvm.DottyPrimitives
 import dotty.tools.dotc.ast.tpd._
-import dotty.tools.dotc.util.ReadOnlyMap
 import dotty.tools.dotc.core._
-import Names.TermName
-import StdNames._
-import Types._
-import Contexts._
-import Symbols._
-import Names._
+import dotty.tools.dotc.util.ReadOnlyMap
+import scala.collection.mutable
+
 import scala.scalanative.nscplugin.NirPrimitives
+
+import Contexts._
+import Names._
+import StdNames._
+import Symbols._
+import Types._
 
 object NirPrimitives {
   final val FirstNirPrimitiveCode = 300

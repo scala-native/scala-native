@@ -2,29 +2,31 @@
 package build
 
 import sbt._
-import Keys._
+
+import java.io.File.pathSeparator
 
 import scala.language.implicitConversions
 
-import java.io.File.pathSeparator
-import sbtbuildinfo.BuildInfoPlugin
-
-import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
-import pl.project13.scala.sbt.JmhPlugin
-import sbtbuildinfo._
-import sbtbuildinfo.BuildInfoKeys._
-import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport._
 import com.jsuereth.sbtpgp.PgpKeys.publishSigned
+import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
+
 import scala.scalanative.build._
+import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport._
+
+import pl.project13.scala.sbt.JmhPlugin
+import sbtbuildinfo.BuildInfoKeys._
+import sbtbuildinfo._
+
+import Keys._
 
 object Build {
-  import ScriptedPlugin.autoImport._
-  import JmhPlugin.JmhKeys._
-  import ScalaVersions._
-  import Settings._
   import Deps._
+  import JmhPlugin.JmhKeys._
+  import MyScalaNativePlugin.{ideScalaVersion, isGeneratingForIDE}
   import NoIDEExport.noIDEExportSettings
-  import MyScalaNativePlugin.{isGeneratingForIDE, ideScalaVersion}
+  import ScalaVersions._
+  import ScriptedPlugin.autoImport._
+  import Settings._
 
 // format: off
   lazy val compilerPlugins: List[MultiScalaProject] =  List(nscPlugin, junitPlugin)

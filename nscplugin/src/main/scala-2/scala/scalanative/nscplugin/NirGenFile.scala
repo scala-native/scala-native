@@ -2,10 +2,11 @@ package scala.scalanative
 package nscplugin
 
 import java.io.FileOutputStream
+import java.nio.channels.Channels
 import java.nio.file.{Path, Paths}
+
 import scala.tools.nsc.Global
 import scala.tools.nsc.io.AbstractFile
-import java.nio.channels.Channels
 
 trait NirGenFile[G <: Global with Singleton] { self: NirGenPhase[G] =>
   import global._

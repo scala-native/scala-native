@@ -1,13 +1,13 @@
 package scala.scalanative.nscplugin
 
-import dotty.tools._
-import dotty.tools.dotc._
-import dotty.tools.dotc.plugins._
-import dotty.tools.dotc.core._
-import dotty.tools.dotc.core.Contexts._
-
 import java.net.URI
 import java.nio.file.Path
+
+import dotty.tools._
+import dotty.tools.dotc._
+import dotty.tools.dotc.core.Contexts._
+import dotty.tools.dotc.core._
+import dotty.tools.dotc.plugins._
 
 class GenNIR(settings: GenNIR.Settings) extends PluginPhase {
   val phaseName = GenNIR.name

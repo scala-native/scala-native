@@ -1,28 +1,17 @@
 package scala.scalanative.runtime
 
-import scala.scalanative.meta.LinktimeInfo
-
-import scala.scalanative.runtime.dwarf.BinaryFile
-import scala.scalanative.runtime.dwarf.DWARF
-import scala.scalanative.runtime.dwarf.DWARF.DIE
-import scala.scalanative.runtime.dwarf.DWARF.DIEUnit
-import scala.scalanative.runtime.dwarf.ELF
-import scala.scalanative.runtime.dwarf.MachO
-import scala.scalanative.runtime.dwarf.PIE
-
-import scala.scalanative.unsafe.CString
-import scala.scalanative.unsafe.Tag
-import scala.scalanative.unsafe.UnsafeRichArray
-import scala.scalanative.unsafe.Zone
-import scala.scalanative.unsigned.UInt
-import scalanative.unsigned._
+import java.io.File
+import java.util.concurrent.ConcurrentHashMap
+import java.util.{AbstractMap, HashMap}
 
 import scala.annotation.tailrec
 
-import java.io.File
-import java.util.concurrent.ConcurrentHashMap
-import java.util.HashMap
-import java.util.AbstractMap
+import scala.scalanative.meta.LinktimeInfo
+import scala.scalanative.runtime.dwarf.DWARF.{DIE, DIEUnit}
+import scala.scalanative.runtime.dwarf.{BinaryFile, DWARF, ELF, MachO, PIE}
+import scala.scalanative.unsafe.{CString, Tag, UnsafeRichArray, Zone}
+import scala.scalanative.unsigned.UInt
+import scalanative.unsigned._
 
 private[runtime] object Backtrace {
   private case class DwarfInfo(

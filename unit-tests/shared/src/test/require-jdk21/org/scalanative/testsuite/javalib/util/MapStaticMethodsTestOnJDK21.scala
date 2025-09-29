@@ -1,13 +1,12 @@
 package org.scalanative.testsuite.javalib.util
 
-import org.junit.Test
-import org.junit.Assert._
-
-import org.scalanative.testsuite.utils.AssertThrows.assertThrows
-
+import java.util.{HashMap, Map}
 import java.{util => ju}
 
-import java.util.{Map, HashMap}
+import org.junit.Assert._
+import org.junit.Test
+
+import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 /* The Map.of static methods were introduced in Java 9.
  * The Map.copyOf static method was introduced in Java 10.

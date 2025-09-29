@@ -2,6 +2,7 @@ package scala.scalanative
 package linker
 
 import scala.collection.mutable
+
 import scalanative.util.unreachable
 
 /** Our subtyping can be described by a following diagram:

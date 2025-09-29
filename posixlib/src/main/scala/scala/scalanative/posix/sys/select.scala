@@ -2,8 +2,8 @@ package scala.scalanative
 package posix
 package sys
 
-import scalanative.unsafe._
 import scalanative.unsafe.Nat._
+import scalanative.unsafe._
 
 /** POSIX select.h for Scala
  *

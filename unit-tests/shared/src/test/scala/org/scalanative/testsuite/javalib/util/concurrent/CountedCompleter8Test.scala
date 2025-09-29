@@ -11,8 +11,8 @@ import java.util.concurrent._
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.function._
 
-import org.junit._
 import org.junit.Assert._
+import org.junit._
 
 object CountedCompleter8Test {
 

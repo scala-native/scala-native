@@ -42,9 +42,8 @@
  */
 package java.math
 
-import java.util.Arrays
-import java.util.Random
 import java.util.ScalaOps._
+import java.util.{Arrays, Random}
 
 /** Provides primality probabilistic methods. */
 private[math] object Primality {

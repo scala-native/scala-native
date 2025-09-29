@@ -1,17 +1,18 @@
 package scala.scalanative
 package linker
 
-import scala.scalanative.checker.Check
-import scala.scalanative.LinkerSpec
-
-import org.junit.Test
-import org.junit.Assert._
-
-import scala.concurrent._
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration._
-import scala.scalanative.optimizer.assertContainsAll
 import java.sql.Time
+
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent._
+import scala.concurrent.duration._
+
+import org.junit.Assert._
+import org.junit.Test
+
+import scala.scalanative.LinkerSpec
+import scala.scalanative.checker.Check
+import scala.scalanative.optimizer.assertContainsAll
 
 class MissingSymbolsTest extends LinkerSpec {
 

@@ -2,18 +2,8 @@ package org.scalanative.testsuite.javalib.net
 
 import java.net._
 
-/* Written against the documentation of URLEncoder
- *
- * https://docs.oracle.com/javase/8/docs/api/index.html?java/net/URLEncoder.html
- *
- * See also specification of HTML 4.01 and RFC 1738
- *
- * https://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.1
- * http://www.ietf.org/rfc/rfc1738.txt
- */
-
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 

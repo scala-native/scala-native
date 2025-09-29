@@ -1,14 +1,15 @@
 package org.scalanative.testsuite.javalib.lang
 
-import java.lang._
-
-import java.util.concurrent.TimeUnit
 import java.io.File
+import java.lang._
+import java.util.concurrent.TimeUnit
 
-import org.junit.Test
 import org.junit.Assert._
 import org.junit.Assume._
+import org.junit.Test
+
 import org.scalanative.testsuite.utils.Platform._
+
 import scala.scalanative.junit.utils.AssumesHelper._
 
 class RuntimeTest {

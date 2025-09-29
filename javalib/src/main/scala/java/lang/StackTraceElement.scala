@@ -1,11 +1,10 @@
 package java.lang
 
+import scala.scalanative.meta.LinktimeInfo.isWindows
+import scala.scalanative.runtime.{Backtrace, SymbolFormatter}
+import scala.scalanative.unsafe._
 import scalanative.unsafe.{CString, fromCString}
 import scalanative.unsigned._
-import scala.scalanative.unsafe._
-import scala.scalanative.runtime.SymbolFormatter
-import scala.scalanative.runtime.Backtrace
-import scala.scalanative.meta.LinktimeInfo.isWindows
 
 final class StackTraceElement(
     val getClassName: String,

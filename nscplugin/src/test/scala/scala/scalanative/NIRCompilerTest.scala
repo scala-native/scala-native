@@ -2,12 +2,12 @@ package scala.scalanative
 
 import java.nio.file.Files
 
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 
 import scala.scalanative.api.CompilationFailedException
-import scala.scalanative.linker.compileAndLoad
 import scala.scalanative.buildinfo.ScalaNativeBuildInfo._
+import scala.scalanative.linker.compileAndLoad
 
 class NIRCompilerTest {
 

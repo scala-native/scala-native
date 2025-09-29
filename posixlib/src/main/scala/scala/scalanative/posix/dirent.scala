@@ -1,9 +1,10 @@
 package scala.scalanative
 package posix
 
+import scala.scalanative.unsafe._
 import scalanative.posix.sys.types.ino_t
 
-import scala.scalanative.unsafe._, Nat._
+import Nat._
 
 private[scalanative] object DirentTypes {
   type _256 = Digit3[_2, _5, _6] // see comment above 'type dirent' below.

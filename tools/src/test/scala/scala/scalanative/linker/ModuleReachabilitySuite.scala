@@ -1,8 +1,8 @@
 package scala.scalanative
 package linker
 
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 
 class ModuleReachabilitySuite extends ReachabilitySuite {
 

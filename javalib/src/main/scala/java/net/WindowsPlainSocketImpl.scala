@@ -1,11 +1,13 @@
 package java.net
 
 import java.io.{FileDescriptor, IOException}
+
+import scala.annotation.tailrec
+
 import scala.scalanative.posix.sys.{socket => unixSocket}
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
 import scala.scalanative.windows._
-import scala.annotation.tailrec
 
 private[net] class WindowsPlainSocketImpl extends AbstractPlainSocketImpl {
   import WinSocketApi._

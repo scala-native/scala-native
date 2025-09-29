@@ -2,6 +2,7 @@ package scala.scalanative.windows
 
 import scala.scalanative.unsafe.{Word => _, _}
 import scalanative.unsigned._
+
 import HandleApi.Handle
 import MinWinBaseApi.FileTimeStruct
 import WinBaseApi.SecurityAttributes

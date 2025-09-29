@@ -1,6 +1,7 @@
 package scala.scalanative.windows
 
 import scala.scalanative.unsafe._
+
 import HandleApi.Handle
 import WinBaseApi.SecurityAttributes
 

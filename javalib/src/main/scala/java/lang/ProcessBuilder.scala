@@ -1,9 +1,8 @@
 package java.lang
 
-import java.util.List
-import java.util.Map
 import java.io.File
-import java.util.Arrays
+import java.util.{Arrays, List, Map}
+
 import ProcessBuilder.Redirect
 
 final class ProcessBuilder(private var _command: List[String]) {

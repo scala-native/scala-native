@@ -2,10 +2,9 @@ package org.scalanative.testsuite.javalib.net
 
 import java.net._
 
-import org.junit.Test
 import org.junit.Assert._
 import org.junit.Assume._
-import org.junit.BeforeClass
+import org.junit.{BeforeClass, Test}
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform

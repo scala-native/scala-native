@@ -3,7 +3,9 @@
 package java.util
 
 import java.util.function.{BiConsumer, BiFunction, Function}
+
 import scala.scalanative.annotation.alwaysinline
+
 import ScalaOps._
 
 trait Map[K, V] {

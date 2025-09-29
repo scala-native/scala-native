@@ -1,9 +1,10 @@
 package scala.scalanative
 package interflow
 
-import scala.scalanative.nir.Defn.Define.DebugInfo
-import scala.scalanative.linker._
 import scala.collection.mutable
+
+import scala.scalanative.linker._
+import scala.scalanative.nir.Defn.Define.DebugInfo
 import scala.scalanative.util.ScopedVar.scopedPushIf
 
 private[interflow] trait Opt { self: Interflow =>

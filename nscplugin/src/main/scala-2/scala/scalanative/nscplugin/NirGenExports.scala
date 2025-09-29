@@ -8,6 +8,7 @@ trait NirGenExports[G <: nsc.Global with Singleton] {
   self: NirGenPhase[G] with NirGenType[G] =>
   import global._
   import global.definitions._
+
   import nirAddons._
   import nirDefinitions._
 

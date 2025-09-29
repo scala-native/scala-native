@@ -1,7 +1,7 @@
 package scala.issues
 
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 
 class Scala3IssuesTest:
 

@@ -1,9 +1,11 @@
 package org.scalanative.testsuite.javalib.lang
 
-import org.junit.Test
-import org.junit.Assert._
-import org.scalanative.testsuite.utils.Platform._
 import java.nio.file.Paths
+
+import org.junit.Assert._
+import org.junit.Test
+
+import org.scalanative.testsuite.utils.Platform._
 
 class SystemTest {
   @Test def systemNanoTimeIsMonotonicallyIncreasing(): Unit = {

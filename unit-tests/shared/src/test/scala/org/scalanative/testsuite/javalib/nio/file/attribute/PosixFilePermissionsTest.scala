@@ -2,10 +2,12 @@ package org.scalanative.testsuite.javalib.nio.file.attribute
 
 import java.nio.file.attribute._
 
-import PosixFilePermission._
-import scala.scalanative.junit.utils.CollectionConverters._
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
+
+import scala.scalanative.junit.utils.CollectionConverters._
+
+import PosixFilePermission._
 
 class PosixFilePermissionsTest {
 

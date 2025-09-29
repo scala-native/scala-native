@@ -13,10 +13,11 @@
 
 package scala.util
 
-import org.junit.{Test, Assume, BeforeClass}
-import org.junit.Assert._
 import scala.reflect.ClassTag
 import scala.runtime.NonLocalReturnControl
+
+import org.junit.Assert._
+import org.junit.{Assume, BeforeClass, Test}
 
 @deprecated(
   "Uses type UsingInterruption=ThreadDeath which is deprecated",

@@ -2,8 +2,8 @@ package org.scalanative.testsuite.javalib.nio.file
 
 import java.nio.file._
 
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 
 class FileSystemExceptionTest {
 

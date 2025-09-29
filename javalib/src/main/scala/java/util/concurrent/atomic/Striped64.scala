@@ -8,18 +8,16 @@
 package java.util.concurrent.atomic
 
 import java.lang.Double._
-import java.util.Arrays;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.function.DoubleBinaryOperator;
-import java.util.function.LongBinaryOperator;
+import java.util.Arrays
+import java.util.concurrent.ThreadLocalRandom
+import java.util.function.{DoubleBinaryOperator, LongBinaryOperator}
+
 import scala.scalanative.annotation._
-import scala.scalanative.unsafe._
 import scala.scalanative.libc.stdatomic.{
-  AtomicInt,
-  AtomicLongLong,
-  memory_order
+  AtomicInt, AtomicLongLong, memory_order
 }
-import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
+import scala.scalanative.runtime.{Intrinsics, fromRawPtr}
+import scala.scalanative.unsafe._
 
 @SuppressWarnings(Array("serial"))
 private[atomic] object Striped64 {

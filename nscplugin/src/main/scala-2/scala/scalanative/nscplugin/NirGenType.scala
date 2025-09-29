@@ -6,6 +6,7 @@ import scala.tools.nsc.Global
 trait NirGenType[G <: Global with Singleton] { self: NirGenPhase[G] =>
   import global._
   import global.definitions._
+
   import nirAddons._
   import nirDefinitions._
 

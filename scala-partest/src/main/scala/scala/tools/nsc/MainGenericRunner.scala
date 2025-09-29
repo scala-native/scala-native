@@ -7,14 +7,16 @@ package scala.tools.nsc
 import java.nio.file._
 import java.util.function.BinaryOperator
 import java.util.{Comparator, function}
+
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent._
+import scala.concurrent.duration._
+import scala.tools.nsc.GenericRunnerCommand._
+import scala.tools.nsc.Properties.{copyrightString, versionString}
+import scala.tools.partest.scalanative.Defaults
+
 import scala.scalanative.build._
 import scala.scalanative.util.Scope
-import scala.tools.nsc.GenericRunnerCommand._
-import scala.tools.partest.scalanative.Defaults
-import scala.tools.nsc.Properties.{copyrightString, versionString}
-import scala.concurrent._
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration._
 
 class MainGenericRunner {
   private def errorFn(str: String) = Defaults.errorFn(str)

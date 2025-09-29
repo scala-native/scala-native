@@ -9,8 +9,9 @@ package org.scalanative.testsuite.javalib.util.concurrent
 package atomic
 
 import java.util.concurrent.atomic.AtomicBoolean
-import org.junit.{Test, Ignore}
+
 import org.junit.Assert._
+import org.junit.{Ignore, Test}
 
 class AtomicBooleanTest extends JSR166Test {
   import JSR166Test._

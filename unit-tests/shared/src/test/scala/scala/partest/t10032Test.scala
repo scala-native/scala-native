@@ -1,8 +1,8 @@
 package scala
 package partest
 
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 
 class t10032Test {
   var effects = List.empty[String]

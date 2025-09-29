@@ -19,19 +19,14 @@ package org.scalanative.testsuite.javalib.util.random
  * Credit & thanks to https://www.random.org/ for the latter.
  */
 
-import org.junit.Test
-import org.junit.Assert._
-import org.junit.Ignore
-
-import org.scalanative.testsuite.utils.AssertThrows.assertThrows
-
+import java.util.random.{RandomGenerator, RandomGeneratorFactory}
+import java.util.{Arrays, Spliterator}
 import java.{lang => jl}
 
-import java.util.Arrays
-import java.util.Spliterator
+import org.junit.Assert._
+import org.junit.{Ignore, Test}
 
-import java.util.random.RandomGenerator
-import java.util.random.RandomGeneratorFactory
+import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 class JEP356_L32X64MixRandomTestOnJDK17 {
 

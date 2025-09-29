@@ -3,6 +3,7 @@ package scala.scalanative.testinterface
 // Ported from Scala.js
 
 import sbt.testing._
+
 import scala.scalanative.testinterface.common.JVMEndpoints._
 import scala.scalanative.testinterface.common.NativeEndpoints._
 import scala.scalanative.testinterface.common._

@@ -1,7 +1,7 @@
 package java.io
 
-import java.util.Formatter
 import java.nio.charset.Charset
+import java.util.Formatter
 
 class PrintWriter(protected[io] var out: Writer, autoFlush: Boolean)
     extends Writer {

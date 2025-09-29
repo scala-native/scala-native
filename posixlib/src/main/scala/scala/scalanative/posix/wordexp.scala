@@ -1,10 +1,9 @@
 package scala.scalanative
 package posix
 
-import scalanative.unsafe._
-import scalanative.unsafe.Nat._
-
 import scalanative.posix.sys.types.size_t
+import scalanative.unsafe.Nat._
+import scalanative.unsafe._
 
 /** POSIX wordexp.h for Scala
  *

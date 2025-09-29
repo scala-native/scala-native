@@ -3,10 +3,11 @@ package scala.scalanative
 package codegen
 
 import scala.collection.mutable
-import scalanative.util.{ScopedVar, unsupported}
-import scalanative.linker._
+
 import scalanative.interflow.UseDef.eliminateDeadCode
-import scalanative.nir.ControlFlow.{Graph, Block}
+import scalanative.linker._
+import scalanative.nir.ControlFlow.{Block, Graph}
+import scalanative.util.{ScopedVar, unsupported}
 
 private[scalanative] object Lower {
 
@@ -17,8 +18,7 @@ private[scalanative] object Lower {
 
   private final class Impl(implicit meta: Metadata, logger: build.Logger) extends nir.Transform {
     import meta._
-    import meta.config
-    import meta.layouts.{Rtti, ClassRtti, ArrayHeader, ITable}
+    import meta.layouts.{ArrayHeader, ClassRtti, ITable, Rtti}
 
     implicit val analysis: ReachabilityAnalysis.Result = meta.analysis
 

@@ -1,6 +1,7 @@
 package scala.scalanative.junit
 
 import org.junit._
+
 import scala.scalanative.junit.utils.JUnitTest
 
 @Ignore("ignore reason")

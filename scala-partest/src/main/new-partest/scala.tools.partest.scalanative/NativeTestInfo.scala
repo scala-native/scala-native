@@ -2,6 +2,7 @@ package scala.tools.partest.scalanative
 
 import java.io.File
 import java.nio.file.Files
+
 import scala.tools.partest.FileOps
 import scala.tools.partest.nest.TestInfo
 

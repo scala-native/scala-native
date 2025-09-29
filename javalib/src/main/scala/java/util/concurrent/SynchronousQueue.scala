@@ -9,10 +9,11 @@ package java.util.concurrent
 import java.util
 import java.util._
 import java.util.concurrent.locks._
+
+import scala.scalanative.annotation.safePublish
 import scala.scalanative.libc.stdatomic.AtomicRef
 import scala.scalanative.libc.stdatomic.memory_order._
-import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
-import scala.scalanative.annotation.safePublish
+import scala.scalanative.runtime.{Intrinsics, fromRawPtr}
 
 /** A {@linkplain BlockingQueue blocking queue} in which each insert operation
  *  must wait for a corresponding remove operation by another thread, and vice

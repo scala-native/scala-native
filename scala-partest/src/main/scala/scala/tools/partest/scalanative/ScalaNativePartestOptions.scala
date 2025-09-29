@@ -1,8 +1,9 @@
 // Ported from Scala.js commit: 060c3397 dated: 2021-02-09
 
 package scala.tools.partest.scalanative
-import java.nio.file.{Path, Paths}
 import java.io.File.pathSeparator
+import java.nio.file.{Path, Paths}
+
 import scalanative.build
 
 case class ScalaNativePartestOptions private (

@@ -6,16 +6,18 @@
 
 package org.scalanative.testsuite.javalib.util.concurrent
 
-import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util
+import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util.concurrent._
 
-import org.junit._
-import org.junit.Assert._
-import scala.scalanative.junit.utils.AssumesHelper
-import JSR166Test._
-
 import scala.util.control.Breaks._
+
+import org.junit.Assert._
+import org.junit._
+
+import scala.scalanative.junit.utils.AssumesHelper
+
+import JSR166Test._
 
 object ForkJoinTask8Test {
   /*

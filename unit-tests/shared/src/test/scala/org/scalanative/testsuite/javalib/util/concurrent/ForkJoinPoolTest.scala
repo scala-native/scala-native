@@ -7,13 +7,14 @@
 package org.scalanative.testsuite.javalib.util.concurrent
 
 import java.util._
-import java.util.concurrent._
 import java.util.concurrent.TimeUnit._
+import java.util.concurrent._
 import java.util.concurrent.atomic._
 import java.util.concurrent.locks._
 
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
+
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 object ForkJoinPoolTest {
@@ -103,8 +104,8 @@ object ForkJoinPoolTest {
 }
 
 class ForkJoinPoolTest extends JSR166Test {
-  import JSR166Test._
   import ForkJoinPoolTest._
+  import JSR166Test._
   /*
    * Testing coverage notes:
    *

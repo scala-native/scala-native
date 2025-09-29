@@ -1,7 +1,7 @@
 package org.scalanatvie.testsuite.scala.scalanative
 
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 
 class IssuesTestScala3_4 {
   @Test def i4082(): Unit = {

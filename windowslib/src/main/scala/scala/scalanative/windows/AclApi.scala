@@ -5,9 +5,10 @@ import scala.scalanative.unsigned._
 
 @extern()
 object AclApi {
+  import accctrl._
+
   import SecurityBaseApi._
   import WinBaseApi._
-  import accctrl._
 
   type SecurityObjectType = CInt
 

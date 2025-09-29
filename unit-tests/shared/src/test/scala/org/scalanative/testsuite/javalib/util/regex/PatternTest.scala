@@ -3,18 +3,18 @@ package org.scalanative.testsuite.javalib.util.regex
 
 import java.util._
 import java.util.regex._
-
 import java.util.stream.{Stream => jStream}
 
 import scala.collection.immutable.List
-import org.junit.Ignore
-import org.junit.Test
+
 import org.junit.Assert._
 import org.junit.Assume._
+import org.junit.{Ignore, Test}
 
-import scala.scalanative.junit.utils.CollectionConverters._
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform._
+
+import scala.scalanative.junit.utils.CollectionConverters._
 
 /* assumeFalse executingInJVM should either be fixed or moved to a Scala Native
  * re2 specific test

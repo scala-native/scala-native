@@ -4,12 +4,10 @@ package atomic
 
 import java.util._
 import java.util.concurrent.atomic._
-
 import java.util.function.UnaryOperator
 
-import org.junit.Ignore
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.{Ignore, Test}
 
 @Ignore
 class AtomicReferenceTest {

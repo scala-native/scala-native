@@ -16,16 +16,14 @@ package org.scalanative.testsuite.javalib.util.random
 
 // Credit & thanks to https://www.random.org/ for the arbitrary seeds.
 
-import org.junit.Test
-import org.junit.Assert._
-
-import org.scalanative.testsuite.utils.AssertThrows.assertThrows
-
+import java.util.concurrent.ThreadLocalRandom
+import java.util.{Arrays, Spliterator}
 import java.{lang => jl}
 
-import java.util.{Arrays, Spliterator}
+import org.junit.Assert._
+import org.junit.Test
 
-import java.util.concurrent.ThreadLocalRandom
+import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 /* "seeds" are arbitrary values, not crafted.
  * Some were taken from SplittablerandomTest.scala and others created ab ovo.

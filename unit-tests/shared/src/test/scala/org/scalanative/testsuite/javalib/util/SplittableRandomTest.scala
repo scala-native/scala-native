@@ -14,10 +14,10 @@
 
 package org.scalanative.testsuite.javalib.util
 
+import java.util.SplittableRandom
+
 import org.junit.Assert._
 import org.junit.Test
-
-import java.util.SplittableRandom
 
 class SplittableRandomTest {
 

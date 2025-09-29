@@ -1,8 +1,8 @@
 package java.util.zip
 
-import scala.scalanative.unsigned._
-import scala.scalanative.unsafe._
 import scala.scalanative.ffi.zlib
+import scala.scalanative.unsafe._
+import scala.scalanative.unsigned._
 
 // Ported from Apache Harmony
 

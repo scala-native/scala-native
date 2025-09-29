@@ -1,7 +1,8 @@
 package java.lang.reflect
 
-import scalanative.runtime.{Array => _, _}
 import scala.annotation.tailrec
+
+import scalanative.runtime.{Array => _, _}
 
 object Array {
   def newInstance(componentType: Class[_], length: Int): AnyRef = {

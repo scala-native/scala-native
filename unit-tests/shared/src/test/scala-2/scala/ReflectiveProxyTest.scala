@@ -2,12 +2,12 @@ package scala
 
 // Ported from ScalaJS
 
-import org.junit.Test
+import scala.language.reflectiveCalls
+
 import org.junit.Assert._
+import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
-
-import scala.language.reflectiveCalls
 
 class AnyValWithAnyRefPrimitiveMethods(val x: Int) extends AnyVal {
   def eq(that: AnyRef): Boolean = (x + 1) == that

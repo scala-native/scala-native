@@ -3,6 +3,7 @@ package java.util
 import java.{util => ju}
 
 import scala.collection.mutable
+
 import ScalaOps._
 
 class Hashtable[K, V] private (inner: mutable.HashMap[Box[Any], V])

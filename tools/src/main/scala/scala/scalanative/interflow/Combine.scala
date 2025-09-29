@@ -2,8 +2,10 @@ package scala.scalanative
 package interflow
 
 import java.{lang => jl}
+
 import scalanative.linker._
-import scalanative.util.{unreachable, And}
+import scalanative.util.{And, unreachable}
+
 import nir.Bin.{And => Iand, _}
 import nir.Comp._
 import nir.Conv._

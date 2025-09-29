@@ -1,9 +1,10 @@
 package scala.scalanative
 package nir
 
-import scala.util.hashing.MurmurHash3
-import util.unreachable
 import scala.annotation.nowarn
+import scala.util.hashing.MurmurHash3
+
+import util.unreachable
 
 sealed abstract class Op {
   self: Product =>

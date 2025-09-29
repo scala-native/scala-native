@@ -1,10 +1,11 @@
 package java.nio
 
-import scala.scalanative.runtime.ByteArray
-import scala.scalanative.unsigned._
-import scala.scalanative.unsafe._
-import scala.scalanative.libc.string
 import java.util.Objects
+
+import scala.scalanative.libc.string
+import scala.scalanative.runtime.ByteArray
+import scala.scalanative.unsafe._
+import scala.scalanative.unsigned._
 
 // Based on the code ported from Scala.js,
 // see GenHeapBuffer.scala

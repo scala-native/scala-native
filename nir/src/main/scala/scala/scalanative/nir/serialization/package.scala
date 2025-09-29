@@ -3,8 +3,9 @@ package nir
 
 import java.io.OutputStream
 import java.nio._
-import java.nio.file.Path
 import java.nio.channels.WritableByteChannel
+import java.nio.file.Path
+
 import scala.scalanative.io.VirtualDirectory
 
 package object serialization {

@@ -5,8 +5,9 @@ import scala.reflect.internal.Flags
 import scala.tools.nsc._
 
 trait NirCompat[G <: Global with Singleton] { self: NirPhase[G] =>
-  import NirCompat.infiniteLoop
   import global._
+
+  import NirCompat.infiniteLoop
 
   /* SAMFunction was introduced in 2.12 for LMF-capable SAM types.
    * DottyEnumSingleton was introduced in 2.13.6 to identify Scala 3 `enum` singleton cases.

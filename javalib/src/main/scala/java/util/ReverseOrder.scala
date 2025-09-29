@@ -1,9 +1,7 @@
 package java.util
 
-import java.{lang => jl}
-
-import java.{util => ju}
 import java.util.function.UnaryOperator
+import java.{lang => jl, util => ju}
 
 // ReverseOrderDequeView ------------------------------------------------
 

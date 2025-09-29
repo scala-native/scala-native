@@ -4,14 +4,14 @@
 
 package org.scalanative.testsuite.javalib.util
 
-import org.junit.Test
-import org.junit.Assert._
-
-import org.scalanative.testsuite.utils.AssertThrows.assertThrows
-
-import java.{util => ju, lang => jl}
+import java.{lang => jl, util => ju}
 
 import scala.reflect.ClassTag
+
+import org.junit.Assert._
+import org.junit.Test
+
+import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 import Utils._
 

@@ -1,8 +1,7 @@
 package java.util
 
-import java.{lang => jl}
-
 import java.util.function._
+import java.{lang => jl}
 
 import Spliterator._
 

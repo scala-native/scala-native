@@ -2,10 +2,10 @@
 package org.scalanative.testsuite.javalib.lang
 
 import java.lang._
+import java.util.Locale
 
 import org.junit.Assert._
 import org.junit.Test
-import java.util.Locale
 
 /** Additional tests for java.lang.String that require `java.util.Locale`. */
 @deprecated

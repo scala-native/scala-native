@@ -10,16 +10,17 @@ package org.scalanative.testsuite.javalib.util.concurrent
 package locks
 
 import java.util._
+import java.util.concurrent.TimeUnit._
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.locks.AbstractQueuedSynchronizer
-import java.util.concurrent.TimeUnit._
 
-import org.junit._
+import scala.util.control.Breaks
+
 import org.junit.Assert._
 import org.junit.Assume._
+import org.junit._
 
 import org.scalanative.testsuite.utils.Platform
-import scala.util.control.Breaks
 
 class AbstractQueuedSynchronizerTest extends JSR166Test {
   import JSR166Test._

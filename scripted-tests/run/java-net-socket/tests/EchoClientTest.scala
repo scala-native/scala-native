@@ -1,6 +1,6 @@
-import java.net.{Socket, InetSocketAddress}
-import java.io.{PrintWriter, BufferedReader, InputStreamReader}
-import java.nio.file.{Paths, Files}
+import java.io.{BufferedReader, InputStreamReader, PrintWriter}
+import java.net.{InetSocketAddress, Socket}
+import java.nio.file.{Files, Paths}
 
 object EchoClientTest {
 

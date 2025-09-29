@@ -9,8 +9,8 @@ package atomic
 
 import java.util.concurrent.atomic.AtomicReference
 
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 
 class AtomicReference9Test extends JSR166Test {
   import JSR166Test._

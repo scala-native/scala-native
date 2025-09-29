@@ -1,18 +1,15 @@
 package java.nio
 
+import java.io.IOException
+import java.lang.ref.{WeakReference, WeakReferenceRegistry}
+import java.nio.channels.FileChannel.MapMode
+
 import scala.scalanative.meta.LinktimeInfo.isWindows
-
 import scala.scalanative.posix.sys.mman._
-
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
-
-import java.lang.ref.{WeakReference, WeakReferenceRegistry}
-
 import scala.scalanative.windows.HandleApi._
 import scala.scalanative.windows.MemoryApi._
-import java.nio.channels.FileChannel.MapMode
-import java.io.IOException
 
 // Finalization object used to unmap file after GC.
 private class MappedByteBufferFinalizer(

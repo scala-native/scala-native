@@ -1,6 +1,7 @@
 package scala.scalanative.runtime
 
 import scala.collection.mutable
+
 import scala.scalanative.unsafe.{Zone, toCString}
 
 object DeleteOnExit {

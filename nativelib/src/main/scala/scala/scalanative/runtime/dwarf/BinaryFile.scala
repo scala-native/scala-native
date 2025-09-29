@@ -1,16 +1,16 @@
 package scala.scalanative.runtime.dwarf
 
-import java.io.DataInputStream
-import Endianness.LITTLE
-import Endianness.BIG
-import java.io.RandomAccessFile
+import java.io.{
+  BufferedInputStream, DataInputStream, File, InputStream, RandomAccessFile
+}
 import java.nio.channels.Channels
-import scalanative.unsigned._
-import MachO._
+
 import scala.collection.mutable.ArrayBuffer
-import java.io.File
-import java.io.BufferedInputStream
-import java.io.InputStream
+
+import scalanative.unsigned._
+
+import Endianness.{BIG, LITTLE}
+import MachO._
 
 private[runtime] class SeekableBufferedInputStream(
     in: InputStream,

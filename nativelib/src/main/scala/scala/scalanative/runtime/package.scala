@@ -1,14 +1,15 @@
 package scala.scalanative
 
-import scalanative.annotation.alwaysinline
-import scalanative.unsafe._
-import scalanative.unsigned.USize
-import scalanative.runtime.Intrinsics._
-import scalanative.runtime.monitor._
-import scalanative.runtime.ffi.stdatomic.{atomic_thread_fence, memory_order}
-import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
 import java.util.concurrent.locks.LockSupport
 import java.{lang => jl}
+
+import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
+import scalanative.annotation.alwaysinline
+import scalanative.runtime.Intrinsics._
+import scalanative.runtime.ffi.stdatomic.{atomic_thread_fence, memory_order}
+import scalanative.runtime.monitor._
+import scalanative.unsafe._
+import scalanative.unsigned.USize
 
 package object runtime {
   def filename = ExecInfo.filename

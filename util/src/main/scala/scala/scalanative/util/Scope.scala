@@ -3,6 +3,7 @@ package util
 
 import java.util.concurrent.atomic.AtomicReference
 import java.util.function.UnaryOperator
+
 import scala.annotation.implicitNotFound
 
 /** Scoped implicit lifetime.

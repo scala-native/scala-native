@@ -1,12 +1,14 @@
 package org.scalanative.testsuite.javalib.lang
 
-import java.lang._
 import java.io.InputStream
+import java.lang._
 import java.nio.file.Paths
 import java.util.concurrent.TimeUnit
+
 import scala.io.Source
 
 import org.junit.Assert._
+
 import org.scalanative.testsuite.utils.Platform._
 
 object ProcessUtils {

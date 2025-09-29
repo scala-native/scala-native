@@ -1,13 +1,13 @@
 package scala.scalanative.runtime
 
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
+
+import scala.scalanative.meta.LinktimeInfo.{
+  is32BitPlatform, isContinuationsSupported
+}
 
 import Continuations._
-import scala.scalanative.meta.LinktimeInfo.{
-  isContinuationsSupported,
-  is32BitPlatform
-}
 
 class ContinuationsTest:
   @Test def canBoundaryNoSuspend() =

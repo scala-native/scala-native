@@ -1,12 +1,10 @@
 package java.util
 
 import java.io._
-import java.{lang => jl}
-import java.{util => ju}
 import java.nio.charset.StandardCharsets
+import java.{lang => jl, util => ju}
 
-import scala.annotation.switch
-import scala.annotation.tailrec
+import scala.annotation.{switch, tailrec}
 
 import ScalaOps._
 

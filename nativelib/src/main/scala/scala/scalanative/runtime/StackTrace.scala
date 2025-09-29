@@ -1,11 +1,13 @@
 package scala.scalanative.runtime
 
-import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
+import java.util.Arrays
+
 import scala.collection.mutable
+
+import scala.scalanative.meta.LinktimeInfo
+import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
-import scala.scalanative.meta.LinktimeInfo
-import java.util.Arrays
 
 private[runtime] object StackTrace {
   @noinline def stackTraceIterator(): Iterator[StackTraceElement] = {

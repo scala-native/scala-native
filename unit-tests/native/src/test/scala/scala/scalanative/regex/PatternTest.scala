@@ -3,9 +3,8 @@ package regex
 
 import java.util.regex.PatternSyntaxException
 
-import org.junit.Ignore
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.{Ignore, Test}
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 

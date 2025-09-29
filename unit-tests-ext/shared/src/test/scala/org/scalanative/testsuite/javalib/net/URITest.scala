@@ -2,10 +2,11 @@ package org.scalanative.testsuite.javalib.net
 
 import java.net._
 
-import org.junit.Test
-import org.junit.Assert._
-
 import scala.annotation.nowarn
+
+import org.junit.Assert._
+import org.junit.Test
+
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 class URITest {

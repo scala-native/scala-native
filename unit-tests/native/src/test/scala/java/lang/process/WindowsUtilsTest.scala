@@ -1,9 +1,8 @@
 package java.lang.process
 
-import org.junit.Test
 import org.junit.Assert._
 import org.junit.Assume._
-import org.junit.Ignore
+import org.junit.{Ignore, Test}
 
 import scala.scalanative.JavaConverters._
 

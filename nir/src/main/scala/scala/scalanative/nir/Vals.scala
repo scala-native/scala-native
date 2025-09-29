@@ -1,8 +1,8 @@
 package scala.scalanative
 package nir
 
-import java.lang.Float.floatToRawIntBits
 import java.lang.Double.doubleToRawLongBits
+import java.lang.Float.floatToRawIntBits
 
 /** A NIR value. */
 sealed abstract class Val {

@@ -1,8 +1,9 @@
 package scala.scalanative.windows
 
+import java.nio.charset.StandardCharsets
+
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
-import java.nio.charset.StandardCharsets
 
 @extern()
 object ErrorHandlingApi {

@@ -1,8 +1,9 @@
 package scala.scalanative
 package codegen
 
-import linker.Trait
 import scala.collection.mutable
+
+import linker.Trait
 
 private[codegen] object TraitsUniverse {
   class TraitId private (val value: Int) extends AnyVal {

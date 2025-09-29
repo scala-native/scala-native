@@ -51,6 +51,7 @@
 package java.math
 
 import java.util.Random
+
 import scala.annotation.tailrec
 
 object BigInteger {

@@ -2,22 +2,15 @@ package scala.scalanative
 package build
 
 import java.io.IOException
+import java.nio.file.attribute.{BasicFileAttributes, DosFileAttributes}
 import java.nio.file.{
-  AccessDeniedException,
-  Files,
-  FileSystems,
-  FileVisitOption,
-  FileVisitResult,
-  Path,
-  Paths,
-  SimpleFileVisitor,
-  StandardCopyOption
+  AccessDeniedException, FileSystems, FileVisitOption, FileVisitResult, Files,
+  Path, Paths, SimpleFileVisitor, StandardCopyOption
 }
-import java.nio.file.attribute.BasicFileAttributes
+import java.security.{DigestInputStream, MessageDigest}
 import java.util.EnumSet
 import java.util.zip.{ZipEntry, ZipInputStream}
-import java.security.{DigestInputStream, MessageDigest}
-import java.nio.file.attribute.DosFileAttributes
+
 import scala.util.control.NonFatal
 
 /** Internal I/O utilities. */

@@ -2,9 +2,9 @@ package scala.scalanative
 package unsafe
 
 import scala.annotation.implicitNotFound
+
 import scala.scalanative.runtime.Intrinsics.{
-  unsignedOf,
-  castIntToRawSizeUnsigned
+  castIntToRawSizeUnsigned, unsignedOf
 }
 import scala.scalanative.unsigned._
 

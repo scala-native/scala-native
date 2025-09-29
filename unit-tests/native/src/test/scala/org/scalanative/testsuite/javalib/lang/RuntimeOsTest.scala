@@ -1,19 +1,16 @@
 package org.scalanative.testsuite.javalib.lang
 
-import java.lang._
-
-import java.util.concurrent.TimeUnit
 import java.io.File
+import java.lang._
+import java.util.concurrent.TimeUnit
 
-import org.junit.Test
 import org.junit.Assert._
 import org.junit.Assume._
+import org.junit.Test
 
 import scala.scalanative.junit.utils.AssumesHelper._
-
 import scala.scalanative.meta.LinktimeInfo
-
-import scala.scalanative.posix.unistd.{sysconf, _SC_NPROCESSORS_CONF}
+import scala.scalanative.posix.unistd.{_SC_NPROCESSORS_CONF, sysconf}
 
 class RuntimeOsTest {
 

@@ -7,6 +7,7 @@
 package java.util.concurrent
 
 import java.util.concurrent.locks.ReentrantLock
+
 import scala.scalanative.annotation.safePublish
 
 object CyclicBarrier {

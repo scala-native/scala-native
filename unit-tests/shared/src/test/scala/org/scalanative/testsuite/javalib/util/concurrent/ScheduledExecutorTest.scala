@@ -7,18 +7,17 @@
  */
 package org.scalanative.testsuite.javalib.util.concurrent
 
-import java.util.concurrent.TimeUnit._
 import java.util
 import java.util._
-import java.util.Collections
+import java.util.concurrent.TimeUnit._
 import java.util.concurrent._
 import java.util.concurrent.atomic._
 import java.util.stream.Stream
 
-import org.junit.{Test, Ignore}
 import org.junit.Assert._
 import org.junit.Assume._
 import org.junit.function.ThrowingRunnable
+import org.junit.{Ignore, Test}
 
 import org.scalanative.testsuite.utils.Platform
 

@@ -3,8 +3,8 @@ package org.scalanative.testsuite.javalib.time
 
 import java.time._
 
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 

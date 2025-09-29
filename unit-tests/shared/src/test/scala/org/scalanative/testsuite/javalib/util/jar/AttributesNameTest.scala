@@ -3,6 +3,7 @@ package org.scalanative.testsuite.javalib.util.jar
 // Ported from Apache Harmony
 
 import java.util.jar._
+
 import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows

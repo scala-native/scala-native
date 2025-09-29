@@ -1,8 +1,8 @@
 package java.io
 
-import java.{util => ju}
-import java.util.concurrent.ConcurrentLinkedDeque
 import java.util.Arrays
+import java.util.concurrent.ConcurrentLinkedDeque
+import java.{util => ju}
 
 import scala.annotation.tailrec
 

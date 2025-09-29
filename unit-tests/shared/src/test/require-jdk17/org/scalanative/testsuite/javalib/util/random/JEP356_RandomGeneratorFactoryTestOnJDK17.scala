@@ -5,20 +5,16 @@ package org.scalanative.testsuite.javalib.util.random
  * Introduced in Java 17.
  */
 
-import org.junit.Test
+import java.util.random.{RandomGenerator, RandomGeneratorFactory}
+import java.util.stream.Collectors
+import java.util.{HashSet, List}
+
 import org.junit.Assert._
 import org.junit.Assume._
+import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform
-
-import java.util.HashSet
-import java.util.List
-
-import java.util.random.RandomGenerator
-import java.util.random.RandomGeneratorFactory
-
-import java.util.stream.Collectors
 
 class JEP356_RandomGeneratorFactoryTestOnJDK17 {
 

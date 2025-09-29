@@ -1,17 +1,16 @@
 package org.scalanative.testsuite.javalib.nio.channels
 
-import org.junit.Test
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
+import java.nio.channels.{Channels, ClosedChannelException}
+import java.nio.charset.StandardCharsets
+import java.nio.{ByteBuffer, CharBuffer}
+
 import org.junit.Assert._
 import org.junit.Assume._
+import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform
-
-import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
-import java.nio.{ByteBuffer, CharBuffer}
-import java.nio.charset.StandardCharsets
-
-import java.nio.channels.{Channels, ClosedChannelException}
 
 class ChannelsTest {
   @Test def newChannelInputStreamReads(): Unit = {

@@ -1,9 +1,9 @@
 package java.nio.file
 
-import java.lang.Iterable
-import java.util.Iterator
 import java.io.File
+import java.lang.Iterable
 import java.net.URI
+import java.util.Iterator
 
 trait Path extends Comparable[Path] with Iterable[Path] with Watchable {
 

@@ -1,20 +1,16 @@
 package org.scalanative.testsuite.posixlib
 
-import org.junit.Test
 import org.junit.Assert._
 import org.junit.Assume._
-import org.junit.{BeforeClass, AfterClass}
+import org.junit.{AfterClass, BeforeClass, Test}
 
 import scala.scalanative.meta.LinktimeInfo
-
-import scala.scalanative.unsafe._
-import scala.scalanative.unsigned._
-
 import scala.scalanative.posix.errno.errno
 import scala.scalanative.posix.locale._
 import scala.scalanative.posix.localeOps._
-import scala.scalanative.posix.stdlib
-import scala.scalanative.posix.string
+import scala.scalanative.posix.{stdlib, string}
+import scala.scalanative.unsafe._
+import scala.scalanative.unsigned._
 
 object LocaleTest {
   var savedLocale: Option[CString] = None

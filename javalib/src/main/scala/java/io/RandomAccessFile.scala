@@ -1,17 +1,16 @@
 package java.io
 
+import java.nio.channels.{FileChannel, FileChannelImpl}
 import java.{lang => jl}
-import java.nio.channels.{FileChannelImpl, FileChannel}
 
-import scalanative.unsafe.{Zone, toCString, toCWideStringUTF16LE}
-
+import scala.scalanative.windows
+import scalanative.meta.LinktimeInfo.isWindows
 import scalanative.posix.fcntl
 import scalanative.posix.sys.stat
-import scalanative.meta.LinktimeInfo.isWindows
-import scala.scalanative.windows
-import windows._
+import scalanative.unsafe.{Zone, toCString, toCWideStringUTF16LE}
+
 import windows.FileApiExt._
-import windows.HandleApiExt
+import windows._
 
 class RandomAccessFile private (
     file: File,

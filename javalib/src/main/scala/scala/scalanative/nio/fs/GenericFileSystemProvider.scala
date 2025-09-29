@@ -1,14 +1,15 @@
 package scala.scalanative.nio.fs
 
-import scala.scalanative.unsigned._
-import scala.collection.immutable.{Map => SMap}
-
+import java.net.URI
 import java.nio.channels.FileChannel
 import java.nio.file._
 import java.nio.file.attribute._
 import java.nio.file.spi.FileSystemProvider
-import java.net.URI
 import java.util.{Map, Set}
+
+import scala.collection.immutable.{Map => SMap}
+
+import scala.scalanative.unsigned._
 
 abstract class GenericFileSystemProvider extends FileSystemProvider {
   type AttributeViewClass = Class[_ <: FileAttributeView]

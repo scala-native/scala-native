@@ -1,11 +1,12 @@
 package scala.scalanative
 package posix
 
-import scala.scalanative.unsafe._
-import scala.scalanative.posix.sys.types, types._
 import scala.scalanative.posix.signal.sigevent
-
+import scala.scalanative.posix.sys.types
+import scala.scalanative.unsafe._
 import scalanative.meta.LinktimeInfo.isFreeBSD
+
+import types._
 
 // XSI comment before method indicates it is defined in
 // extended POSIX X/Open System Interfaces, not base POSIX.

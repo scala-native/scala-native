@@ -3,18 +3,11 @@ package java.util.zip
 // Ported from Apache Harmony. Extensively changed for Scala Native.
 
 import java.io.{
-  BufferedInputStream,
-  Closeable,
-  File,
-  InputStream,
-  RandomAccessFile
+  BufferedInputStream, Closeable, File, InputStream, RandomAccessFile
 }
-
 import java.nio.charset.{Charset, StandardCharsets}
-
+import java.util.{Enumeration, stream => jus}
 import java.{util => ju}
-import java.util.Enumeration
-import java.util.{stream => jus}
 
 class ZipFile(file: File, mode: Int, charset: Charset) extends Closeable {
   def this(file: File, mode: Int) = this(file, mode, StandardCharsets.UTF_8)

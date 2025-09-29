@@ -1,8 +1,9 @@
 package scala.scalanative
 package util
 
-import language.implicitConversions
 import scala.annotation.nowarn
+
+import language.implicitConversions
 
 class ScopedVar[A] {
   import ScopedVar.Assignment

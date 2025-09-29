@@ -2,10 +2,10 @@
 
 package org.scalanative.testsuite.javalib.math
 
-import java.math.{BigInteger, BigDecimal}
+import java.math.{BigDecimal, BigInteger}
 
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 
 class BigDecimalToStringTest {
 

@@ -2,8 +2,8 @@ package org.scalanative.testsuite.javalib.lang
 
 import java.nio.CharBuffer
 
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 

@@ -4,8 +4,8 @@ package org.scalanative.testsuite.javalib.util.concurrent
 
 import java.util.concurrent.Flow
 
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 
 class FlowTest {
   import FlowTest._

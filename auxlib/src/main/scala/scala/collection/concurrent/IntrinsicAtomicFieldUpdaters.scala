@@ -1,14 +1,13 @@
 package scala.collection.concurrent
 
 import java.util.concurrent.atomic.{
-  AtomicIntegerFieldUpdater,
-  AtomicReferenceFieldUpdater
+  AtomicIntegerFieldUpdater, AtomicReferenceFieldUpdater
 }
 
+import scala.scalanative.annotation.alwaysinline
+import scala.scalanative.libc.stdatomic.{AtomicInt, AtomicRef, memory_order}
 import scala.scalanative.runtime.Intrinsics.classFieldRawPtr
 import scala.scalanative.runtime.{RawPtr, fromRawPtr}
-import scala.scalanative.annotation.alwaysinline
-import scala.scalanative.libc.stdatomic.{AtomicRef, AtomicInt, memory_order}
 import scala.scalanative.unsafe.Ptr
 
 private[concurrent] class IntrinsicAtomicReferenceFieldUpdater[

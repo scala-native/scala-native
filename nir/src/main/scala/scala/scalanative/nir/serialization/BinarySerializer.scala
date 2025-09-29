@@ -2,11 +2,13 @@ package scala.scalanative
 package nir
 package serialization
 
+import java.io.{ByteArrayOutputStream, DataOutputStream, OutputStream}
 import java.nio.ByteBuffer
-import java.nio.channels.{WritableByteChannel, Channels}
-import java.io.{DataOutputStream, ByteArrayOutputStream, OutputStream}
-import scala.collection.mutable
+import java.nio.channels.{Channels, WritableByteChannel}
 import java.nio.charset.StandardCharsets
+
+import scala.collection.mutable
+
 import serialization.{Tags => T}
 
 // scalafmt: { maxColumn = 120}

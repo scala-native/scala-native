@@ -1,15 +1,13 @@
 package org.scalanative.testsuite.posixlib
 package sys
 
-import scala.scalanative.unsafe._
-import scala.scalanative.unsigned.UnsignedRichInt
-
-import scala.scalanative.posix.sys.wait._
+import org.junit.Assert._
+import org.junit.Test
 
 import scala.scalanative.meta.LinktimeInfo.isWindows
-
-import org.junit.Test
-import org.junit.Assert._
+import scala.scalanative.posix.sys.wait._
+import scala.scalanative.unsafe._
+import scala.scalanative.unsigned.UnsignedRichInt
 
 /* Design Note:
  *     By their definition, these "wait" methods block the current thread.

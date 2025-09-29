@@ -1,9 +1,8 @@
 package scala.scalanative.runtime.resource
 
-import scala.scalanative.runtime.ffi
-import scala.scalanative.unsigned._
-import scala.scalanative.runtime.{ByteArray, Intrinsics}
+import scala.scalanative.runtime.{ByteArray, Intrinsics, ffi}
 import scala.scalanative.unsafe.Ptr
+import scala.scalanative.unsigned._
 
 private[runtime] object EmbeddedResourceHelper {
 

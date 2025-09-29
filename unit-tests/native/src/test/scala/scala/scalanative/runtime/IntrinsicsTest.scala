@@ -1,12 +1,13 @@
 package scala.scalanative.runtime
 
-import org.junit.Test
-import org.junit.Assert
-import org.junit.Assert._
-import scala.scalanative.meta.LinktimeInfo._
 import scala.language.implicitConversions
-import scala.scalanative.unsigned._
+
+import org.junit.Assert._
+import org.junit.{Assert, Test}
+
+import scala.scalanative.meta.LinktimeInfo._
 import scala.scalanative.unsafe._
+import scala.scalanative.unsigned._
 
 private object IntrinsicsTest {
   object sizeOfClassTypes {

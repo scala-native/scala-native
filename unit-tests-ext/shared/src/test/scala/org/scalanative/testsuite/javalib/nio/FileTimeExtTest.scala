@@ -1,11 +1,11 @@
 package org.scalanative.testsuite.javalib.nio.file.attribute
 
 import java.nio.file.attribute._
-
 import java.time.Instant
 import java.util.concurrent.TimeUnit
-import org.junit.Test
+
 import org.junit.Assert._
+import org.junit.Test
 
 class FileTimeExtTest {
   private val timestampNanos = 1582230020123456789L

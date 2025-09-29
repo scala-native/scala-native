@@ -10,10 +10,11 @@ package org.scalanative.testsuite.javalib.lang
 
 import java.lang._
 
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 
 import org.scalanative.testsuite.utils.Platform._
+
 import scala.scalanative.junit.utils.AssumesHelper._
 
 class ThreadTest {

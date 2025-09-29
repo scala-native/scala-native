@@ -1,13 +1,15 @@
 package scala.scalanative.nscplugin
 
-import dotty.tools.dotc.core._
-import Contexts._
-
-import dotty.tools.dotc.util.{SourceFile, SourcePosition}
-import dotty.tools.dotc.util.Spans.Span
-import scalanative.nir
-import scala.compiletime.uninitialized
 import java.nio.file.{Path, Paths}
+
+import dotty.tools.dotc.core._
+import dotty.tools.dotc.util.Spans.Span
+import dotty.tools.dotc.util.{SourceFile, SourcePosition}
+import scala.compiletime.uninitialized
+
+import scalanative.nir
+
+import Contexts._
 
 class NirPositions(positionRelativizationPaths: Seq[Path])(using Context) {
   given fromSourcePosition: Conversion[SourcePosition, nir.SourcePosition] = {

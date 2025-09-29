@@ -13,14 +13,13 @@
 
 package org.scalanative.testsuite.javalib.util
 
+import java.util.{Comparator, PriorityQueue}
+
 import scala.reflect.ClassTag
 
-import org.junit.Test
 import org.junit.Assert._
 import org.junit.Assume._
-
-import java.util.PriorityQueue
-import java.util.Comparator
+import org.junit.Test
 
 import org.scalanative.testsuite.utils.Platform.executingInJVM
 

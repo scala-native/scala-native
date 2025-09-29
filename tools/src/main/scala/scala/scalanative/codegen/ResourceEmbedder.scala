@@ -1,23 +1,21 @@
 package scala.scalanative
 package codegen
 
-import java.io.File
-import java.io.IOException
+import java.io.{File, IOException}
 import java.nio.ByteBuffer
-import java.nio.file.FileVisitResult
 import java.nio.file.FileVisitResult._
-import java.nio.file.Files
 import java.nio.file.Files._
-import java.nio.file.Path
-import java.nio.file.Paths
-import java.nio.file.SimpleFileVisitor
 import java.nio.file.attribute.BasicFileAttributes
-import java.nio.file.FileSystems
-import java.nio.file.PathMatcher
+import java.nio.file.{
+  FileSystems, FileVisitResult, Files, Path, PathMatcher, Paths,
+  SimpleFileVisitor
+}
 import java.util.EnumSet
+
 import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
+
 import scala.scalanative.build.Config
 import scala.scalanative.io.VirtualDirectory
 import scala.scalanative.util.Scope

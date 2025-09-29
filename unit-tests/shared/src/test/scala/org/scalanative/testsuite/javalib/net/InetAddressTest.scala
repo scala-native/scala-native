@@ -2,16 +2,11 @@ package org.scalanative.testsuite.javalib.net
 
 import java.net._
 
-/* Originally ported from Apache Harmony.
- * Extensively modified for Scala Native. Additional test cases added.
- */
-
-import org.junit.Test
 import org.junit.Assert._
 import org.junit.Assume._
+import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
-
 import org.scalanative.testsuite.utils.Platform
 
 class InetAddressTest {

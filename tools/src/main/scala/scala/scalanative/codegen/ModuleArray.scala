@@ -2,6 +2,7 @@ package scala.scalanative
 package codegen
 
 import scala.collection.mutable
+
 import scalanative.linker.Class
 
 private[codegen] class ModuleArray(meta: Metadata) {

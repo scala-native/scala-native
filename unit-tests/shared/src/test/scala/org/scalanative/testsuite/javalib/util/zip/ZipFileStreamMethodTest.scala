@@ -1,14 +1,12 @@
 package org.scalanative.testsuite.javalib.util.zip
 
-import org.junit.Test
-import org.junit.Assert._
-import org.junit.BeforeClass
-
 import java.io.FileOutputStream
 import java.nio.file.Files
 import java.util.Arrays
-
 import java.util.zip.{ZipEntry, ZipFile, ZipOutputStream}
+
+import org.junit.Assert._
+import org.junit.{BeforeClass, Test}
 
 object ZipFileStreamMethodTest {
 

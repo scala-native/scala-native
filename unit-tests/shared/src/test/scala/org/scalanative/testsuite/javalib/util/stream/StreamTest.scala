@@ -1,20 +1,15 @@
 package org.scalanative.testsuite.javalib.util.stream
 
-import java.{lang => jl}
-import java.{util => ju}
 import java.util._
-
-import java.util.concurrent.{CountDownLatch, TimeUnit}
 import java.util.concurrent.CountDownLatch._
-
+import java.util.concurrent.{CountDownLatch, TimeUnit}
 import java.util.function._
-
-import java.util.{stream => jus}
 import java.util.stream._
+import java.util.{stream => jus}
+import java.{lang => jl, util => ju}
 
-import org.junit.Test
 import org.junit.Assert._
-import org.junit.Ignore
+import org.junit.{Ignore, Test}
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 

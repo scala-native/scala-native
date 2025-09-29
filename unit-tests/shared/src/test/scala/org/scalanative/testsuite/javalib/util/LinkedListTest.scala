@@ -6,13 +6,12 @@
 
 package org.scalanative.testsuite.javalib.util
 
-import org.junit.Test
-import org.junit.Assert._
-
-import java.util.LinkedList
-import java.util.Spliterator
+import java.util.{LinkedList, Spliterator}
 
 import scala.reflect.ClassTag
+
+import org.junit.Assert._
+import org.junit.Test
 
 class LinkedListTest extends AbstractListTest {
 

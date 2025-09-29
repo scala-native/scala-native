@@ -70,9 +70,10 @@
 package java.math
 
 import java.{lang => jl}
-import jl.Character
 
 import scala.annotation.tailrec
+
+import jl.Character
 
 /** Provides {@link BigInteger} base conversions.
  *

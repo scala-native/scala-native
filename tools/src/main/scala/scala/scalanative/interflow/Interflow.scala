@@ -1,13 +1,15 @@
 package scala.scalanative
 package interflow
 
-import scala.collection.mutable
-import scala.scalanative.codegen.PlatformInfo
-import scala.scalanative.nir.Defn.Define.DebugInfo
-import scala.scalanative.linker._
-import scala.scalanative.util.ScopedVar
 import java.util.function.Supplier
+
+import scala.collection.mutable
 import scala.concurrent._
+
+import scala.scalanative.codegen.PlatformInfo
+import scala.scalanative.linker._
+import scala.scalanative.nir.Defn.Define.DebugInfo
+import scala.scalanative.util.ScopedVar
 
 private[scalanative] class Interflow(val config: build.Config)(implicit
     val analysis: ReachabilityAnalysis.Result

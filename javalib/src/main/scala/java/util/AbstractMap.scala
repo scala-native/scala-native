@@ -15,8 +15,9 @@
 
 package java.util
 
-import scala.annotation.tailrec
 import java.{lang => jl}
+
+import scala.annotation.tailrec
 
 import ScalaOps._
 

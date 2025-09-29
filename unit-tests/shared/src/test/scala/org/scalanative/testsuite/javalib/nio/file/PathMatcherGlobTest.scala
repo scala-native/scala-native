@@ -2,12 +2,11 @@ package org.scalanative.testsuite
 package javalib.nio.file
 
 import java.nio.file._
+import java.util.regex.PatternSyntaxException
 
-import org.junit.Test
 import org.junit.Assert._
 import org.junit.Assume._
-
-import java.util.regex.PatternSyntaxException
+import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform.isWindows

@@ -20,31 +20,23 @@ package org.scalanative.testsuite.javalib.nio.file
  *   user bits are masked off.
  */
 
-import java.io.ByteArrayInputStream
-import java.io.{BufferedInputStream, BufferedOutputStream}
-import java.io.{DataInputStream, DataOutputStream}
-
-import java.nio.charset.StandardCharsets
-
-import java.nio.file.{Files, Path, StandardCopyOption}
-
-import java.nio.file.attribute.{
-  PosixFileAttributes,
-  PosixFilePermission,
-  PosixFilePermissions
+import java.io.{
+  BufferedInputStream, BufferedOutputStream, ByteArrayInputStream,
+  DataInputStream, DataOutputStream
 }
-
+import java.nio.charset.StandardCharsets
+import java.nio.file.attribute.{
+  PosixFileAttributes, PosixFilePermission, PosixFilePermissions
+}
+import java.nio.file.{Files, Path, StandardCopyOption}
 import java.util.SplittableRandom
 
-import org.junit.Test
 import org.junit.Assert._
 import org.junit.Assume._
-import org.junit.BeforeClass
-import org.junit.Ignore
-
-import org.scalanative.testsuite.utils.Platform
+import org.junit.{BeforeClass, Ignore, Test}
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
+import org.scalanative.testsuite.utils.Platform
 
 object FilesCopyTest {
   @BeforeClass

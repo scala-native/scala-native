@@ -7,6 +7,7 @@ trait NirDefinitions {
   val global: Global
   import global._
   import global.definitions._
+
   import rootMirror._
 
   object nirDefinitions {

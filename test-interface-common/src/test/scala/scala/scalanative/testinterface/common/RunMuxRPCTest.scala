@@ -3,10 +3,12 @@ package scala.scalanative.testinterface.common
 // Ported from Scala.js
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import org.junit.Test
-import org.junit.Assert._
-import scala.scalanative.junit.async._
 import scala.concurrent._
+
+import org.junit.Assert._
+import org.junit.Test
+
+import scala.scalanative.junit.async._
 
 class RunMuxRPCTest {
   import RPCCoreTest._

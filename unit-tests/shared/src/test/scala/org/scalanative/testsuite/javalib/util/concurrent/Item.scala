@@ -5,8 +5,8 @@
  */
 package org.scalanative.testsuite.javalib.util.concurrent
 
-import java.util.Comparator
 import java.io.Serializable
+import java.util.Comparator
 
 /** A simple element class for collections etc
  */

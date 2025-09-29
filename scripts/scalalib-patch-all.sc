@@ -1,5 +1,8 @@
-import $ivy.`com.lihaoyi::ammonite-ops:2.3.8`, ammonite.ops._, mainargs._
+import ammonite.ops._
+import mainargs._
+
 import $file.`scalalib-patch-tool`
+import $ivy.`com.lihaoyi::ammonite-ops:2.3.8`
 
 val crossScala212 = List("2.12.13", "2.12.14", "2.12.15")
 val crossScala213 = List("2.13.4", "2.13.5", "2.13.6", "2.13.7")

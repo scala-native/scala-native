@@ -1,33 +1,26 @@
 package org.scalanative.testsuite.posixlib
 package sys
 
-import scalanative.unsafe._
-import scalanative.unsigned._
+import org.junit.Assert._
+import org.junit.Assume._
+import org.junit.{BeforeClass, Test}
 
+import org.scalanative.testsuite.posixlib.sys.SocketTestHelpers._
+import org.scalanative.testsuite.utils.Platform
+
+import scala.scalanative.windows.ErrorHandlingApi._
+import scala.scalanative.windows.WinSocketApi._
+import scala.scalanative.windows.WinSocketApiExt._
+import scala.scalanative.windows._
 import scalanative.libc.string.memcmp
-
+import scalanative.meta.LinktimeInfo.isWindows
 import scalanative.posix.arpa.inet._
 import scalanative.posix.errno.errno
 import scalanative.posix.netinet.in._
 import scalanative.posix.netinet.inOps._
 import scalanative.posix.sys.socket._
-
-import org.scalanative.testsuite.posixlib.sys.SocketTestHelpers._
-
-import scalanative.meta.LinktimeInfo.isWindows
-
-import scala.scalanative.windows._
-import scala.scalanative.windows.WinSocketApi._
-import scala.scalanative.windows.WinSocketApiExt._
-import scala.scalanative.windows.WinSocketApiOps
-import scala.scalanative.windows.ErrorHandlingApi._
-
-import org.scalanative.testsuite.utils.Platform
-
-import org.junit.Test
-import org.junit.Assert._
-import org.junit.Assume._
-import org.junit.BeforeClass
+import scalanative.unsafe._
+import scalanative.unsigned._
 
 object Udp6SocketTest {
 

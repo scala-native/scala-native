@@ -2,8 +2,6 @@ package org.scalanative.testsuite.javalib.nio
 
 import java.nio._
 
-// Ported from Scala.js
-
 import BufferFactory.CharBufferFactory
 import ByteBufferFactories._
 

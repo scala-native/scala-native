@@ -1,9 +1,9 @@
 package scala.scalanative
 package interflow
 
-import scalanative.codegen.Lower
-
 import java.util.Arrays
+
+import scalanative.codegen.Lower
 import scalanative.linker._
 
 private[interflow] trait Intrinsics { self: Interflow =>

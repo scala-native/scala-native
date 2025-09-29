@@ -1,10 +1,12 @@
 package build
 
 import sbt._
-import Keys._
-import Def.SettingsDefinition
+
 import scala.language.implicitConversions
-import MyScalaNativePlugin.{ideScalaVersion, enableExperimentalCompiler}
+
+import Def.SettingsDefinition
+import Keys._
+import MyScalaNativePlugin.{enableExperimentalCompiler, ideScalaVersion}
 
 final case class MultiScalaProject private (
     val name: String,

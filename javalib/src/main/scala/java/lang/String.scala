@@ -1,23 +1,23 @@
 package java.lang
 
-import scalanative.unsafe._
-import scalanative.unsigned._
-import scalanative.libc.string.memcmp
-
-import java.{lang => jl}
-import java.lang.constant.{Constable, ConstantDesc}
 import java.io.Serializable
+import java.lang.constant.{Constable, ConstantDesc}
 import java.nio._
 import java.nio.charset._
-import java.util._
-import java.util.Objects
 import java.util.ScalaOps._
+import java.util._
 import java.util.function.Consumer
 import java.util.regex._
 import java.util.{stream => jus}
+import java.{lang => jl}
 
 import scala.annotation.{switch, tailrec}
-import _String.{string2_string, _string2string}
+
+import scalanative.libc.string.memcmp
+import scalanative.unsafe._
+import scalanative.unsigned._
+
+import _String.{_string2string, string2_string}
 
 final class _String()
     extends Serializable

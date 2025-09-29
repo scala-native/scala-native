@@ -2,10 +2,11 @@ package scala.scalanative.junit
 
 // Ported from Scala.js
 
-import org.junit.Test
-
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+
+import org.junit.Test
+
 import scala.scalanative.junit.async._
 import scala.scalanative.junit.utils._
 

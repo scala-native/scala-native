@@ -2,10 +2,10 @@
 
 package scala.reflect
 
-import org.junit.Test
-import org.junit.Assert._
-
 import scala.reflect.Selectable.reflectiveSelectable
+
+import org.junit.Assert._
+import org.junit.Test
 
 trait Foo1 { val a: Int }
 trait Foo2 { def a: Int }

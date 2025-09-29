@@ -20,25 +20,20 @@ package java.util.concurrent
  * but hard to follow.
  */
 
-import java.io.Serializable
-import java.{lang => jl}
-import java.util
+import java.io.{ObjectInputStream, ObjectOutputStream, Serializable}
 import java.util._
-import java.util.NoSuchElementException
-import java.util.Spliterator
 import java.util.concurrent.atomic.AtomicReference
-import java.util.concurrent.locks.LockSupport
-import java.util.concurrent.locks.ReentrantLock
+import java.util.concurrent.locks.{LockSupport, ReentrantLock}
 import java.util.function._
 import java.util.stream.Stream
-import java.io.{ObjectInputStream, ObjectOutputStream}
+import java.{lang => jl, util}
 
 import scala.scalanative.annotation.{align => Contended, safePublish}
-import scala.scalanative.unsafe._
-import scala.scalanative.runtime.Intrinsics.classFieldRawPtr
-import scala.scalanative.runtime.fromRawPtr
 import scala.scalanative.libc.stdatomic._
 import scala.scalanative.libc.stdatomic.memory_order._
+import scala.scalanative.runtime.Intrinsics.classFieldRawPtr
+import scala.scalanative.runtime.fromRawPtr
+import scala.scalanative.unsafe._
 
 // scalafmt: { maxColumn = 120}
 

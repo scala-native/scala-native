@@ -68,8 +68,8 @@ object RuntimeMXBean {
     new Impl
 
   private class Impl extends RuntimeMXBean {
-    import scala.scalanative.unsafe._
     import scala.scalanative.posix._
+    import scala.scalanative.unsafe._
     import scala.scalanative.unsigned._
 
     def getPid(): Long =

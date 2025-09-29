@@ -2,7 +2,6 @@ package scala.scalanative
 package posix
 
 import scala.scalanative.unsafe._
-
 import scalanative.posix.sys.types.size_t
 
 /** POSIX stdlib.h for Scala

@@ -1,7 +1,6 @@
 package java.lang
 
 import java.time.{Duration, Instant}
-
 import java.util.Optional
 import java.util.concurrent.CompletableFuture
 import java.util.stream.Stream

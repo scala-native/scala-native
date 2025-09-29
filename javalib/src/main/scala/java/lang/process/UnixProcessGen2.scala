@@ -1,35 +1,29 @@
 package java.lang.process
 
 import java.io.{File, IOException}
-
-import java.lang.process.BsdOsSpecific._
 import java.lang.process.BsdOsSpecific.Extern.{kevent, kqueue}
+import java.lang.process.BsdOsSpecific._
 import java.lang.process.LinuxOsSpecific.Extern.{pidfd_open, ppoll}
-
 import java.{util => ju}
-import ju.concurrent.TimeUnit
-import ju.ArrayList
-import ju.ScalaOps._
 
 import scala.annotation.tailrec
 
 import scalanative.meta.LinktimeInfo
-
-import scalanative.unsafe._
-import scalanative.unsigned._
 import scalanative.posix.errno._
-import scalanative.posix.fcntl
-
 import scalanative.posix.poll._
 import scalanative.posix.pollOps._
-import scalanative.posix.pollEvents
 import scalanative.posix.spawn._
 import scalanative.posix.string.strerror
 import scalanative.posix.sys.wait._
-
 import scalanative.posix.time.timespec
 import scalanative.posix.timeOps.timespecOps
-import scalanative.posix.unistd
+import scalanative.posix.{fcntl, pollEvents, unistd}
+import scalanative.unsafe._
+import scalanative.unsigned._
+
+import ju.ArrayList
+import ju.ScalaOps._
+import ju.concurrent.TimeUnit
 
 /* Design Note:
  * 

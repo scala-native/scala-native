@@ -1,8 +1,8 @@
 package scala.scalanative.runtime
 
-import scala.scalanative.runtime.Intrinsics._
 import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.meta.LinktimeInfo.{is32BitPlatform => is32bit}
+import scala.scalanative.runtime.Intrinsics._
 
 package object monitor {
 

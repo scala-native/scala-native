@@ -4,8 +4,8 @@ package org.scalanative.testsuite.javalib.util
 
 import java.util.UUID
 
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 
 /** Additional tests for `java.util.UUID` that require
  *  `java.security.SecureRandom`.

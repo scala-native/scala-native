@@ -1,8 +1,9 @@
 package scala
 
 import scala.annotation.static
-import org.junit.Test
+
 import org.junit.Assert._
+import org.junit.Test
 
 private class Foo
 private object Foo {

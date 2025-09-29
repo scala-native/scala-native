@@ -1,28 +1,21 @@
 package org.scalanative.testsuite.javalib.nio.channels
 
-import org.junit.Test
+import java.io.{File, FileInputStream, FileOutputStream, RandomAccessFile}
+import java.nio.ByteBuffer
+import java.nio.channels._
+import java.nio.file.{
+  AccessDeniedException, Files, Path, Paths, StandardOpenOption
+}
+import java.{lang => jl}
+
 import org.junit.Assert._
 import org.junit.Assume._
-import org.junit.BeforeClass
-import org.junit.Ignore
+import org.junit.{BeforeClass, Ignore, Test}
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform
+
 import scala.scalanative.junit.utils.AssumesHelper._
-
-import java.{lang => jl}
-
-import java.io.File
-import java.io.{FileInputStream, FileOutputStream}
-import java.io.RandomAccessFile
-
-import java.nio.ByteBuffer
-
-import java.nio.channels._
-
-import java.nio.file.AccessDeniedException
-import java.nio.file.{Files, StandardOpenOption}
-import java.nio.file.{Path, Paths}
 
 object FileChannelTest {
 

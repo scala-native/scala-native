@@ -1,13 +1,12 @@
 package java.lang
 
-import scalanative.libc
-
-import scalanative.runtime.ieee754tostring.ryu.{RyuRoundingMode, RyuDouble}
-import scalanative.runtime.Intrinsics
-
 import java.lang.IEEE754Helpers.parseIEEE754
 import java.lang.constant.{Constable, ConstantDesc}
 import java.{lang => jl}
+
+import scalanative.libc
+import scalanative.runtime.Intrinsics
+import scalanative.runtime.ieee754tostring.ryu.{RyuDouble, RyuRoundingMode}
 
 final class Double(val _value: scala.Double)
     extends Number

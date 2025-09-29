@@ -1,26 +1,16 @@
 package org.scalanative.testsuite.javalib.util
 
+import java.io.{
+  BufferedOutputStream, ByteArrayOutputStream, File, FileNotFoundException,
+  FileOutputStream, Flushable, IOException, OutputStream, PrintStream,
+  UnsupportedEncodingException
+}
+import java.lang.StringBuilder
+import java.nio.charset.Charset
 import java.util._
 
-// Extracted from port of Apache Harmony tests.
-// All actual formatting tests are in core `DefaultFormatterTest` and `FormatterExtTest`
-
-import java.io.BufferedOutputStream
-import java.io.ByteArrayOutputStream
-import java.io.File
-import java.io.FileNotFoundException
-import java.io.FileOutputStream
-import java.io.Flushable
-import java.io.IOException
-import java.io.OutputStream
-import java.io.PrintStream
-import java.io.UnsupportedEncodingException
-import java.nio.charset.Charset
-import java.lang.StringBuilder
-import org.junit.Test
-import org.junit.Before
-import org.junit.After
 import org.junit.Assert._
+import org.junit.{After, Before, Test}
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 

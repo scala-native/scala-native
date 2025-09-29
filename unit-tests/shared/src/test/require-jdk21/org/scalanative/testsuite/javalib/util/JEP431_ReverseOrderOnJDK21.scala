@@ -1,14 +1,13 @@
 package org.scalanative.testsuite.javalib.util
 
-import org.junit.Test
+import java.{lang => jl, util => ju}
+
 import org.junit.Assert._
 import org.junit.Assume._
+import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform
-
-import java.{lang => jl}
-import java.{util => ju}
 
 /* Guiding principle:
  *   If it is not tested somehow it is, by definition, broken.

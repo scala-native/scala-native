@@ -5,8 +5,7 @@ package scala.scalanative.junit.plugin
 import scala.annotation.tailrec
 import scala.tools.nsc._
 import scala.tools.nsc.plugins.{
-  Plugin => NscPlugin,
-  PluginComponent => NscPluginComponent
+  Plugin => NscPlugin, PluginComponent => NscPluginComponent
 }
 
 /** The Scala Native JUnit plugin replaces reflection based test lookup.
@@ -35,6 +34,7 @@ class ScalaNativeJUnitPlugin(val global: Global) extends NscPlugin {
     val global: Global = ScalaNativeJUnitPlugin.this.global
     import global._
     import global.definitions._
+
     import rootMirror.getRequiredClass
 
     val phaseName: String = "scalanative-junitBootstrappers"

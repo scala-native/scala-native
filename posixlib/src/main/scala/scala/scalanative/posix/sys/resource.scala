@@ -94,7 +94,7 @@ object resource {
 
 object resourceOps {
 
-  import resource.{rlimit, rlim_t, rusage, timeval}
+  import resource.{rlim_t, rlimit, rusage, timeval}
 
   implicit class rlimitOps(val ptr: Ptr[rlimit]) extends AnyVal {
     def rlim_cur: rlim_t = ptr._1

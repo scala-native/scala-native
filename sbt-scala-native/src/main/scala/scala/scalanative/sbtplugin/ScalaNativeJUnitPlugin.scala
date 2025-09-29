@@ -1,8 +1,10 @@
 package scala.scalanative.sbtplugin
 
-import sbt._
 import sbt.Keys._
+import sbt._
+
 import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
+
 import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport._
 
 object ScalaNativeJUnitPlugin extends AutoPlugin {

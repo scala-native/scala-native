@@ -1,8 +1,9 @@
 package java.lang
 
+import java.lang.constant.Constable
+
 import scalanative.runtime.Intrinsics.{shortToUInt, shortToULong}
 import scalanative.runtime.LLVMIntrinsics
-import java.lang.constant.Constable
 
 final class Short(val _value: scala.Short)
     extends Number

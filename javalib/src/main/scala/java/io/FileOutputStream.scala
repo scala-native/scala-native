@@ -1,5 +1,7 @@
 package java.io
 
+import java.nio.channels.{FileChannel, FileChannelImpl}
+
 import scala.scalanative.libc._
 import scala.scalanative.meta.LinktimeInfo.isWindows
 import scala.scalanative.unsafe._
@@ -8,7 +10,6 @@ import scala.scalanative.windows.FileApi._
 import scala.scalanative.windows.FileApiExt._
 import scala.scalanative.windows.HandleApiExt._
 import scala.scalanative.windows.winnt.AccessRights._
-import java.nio.channels.{FileChannelImpl, FileChannel}
 
 class FileOutputStream(fd: FileDescriptor, file: Option[File])
     extends OutputStream {

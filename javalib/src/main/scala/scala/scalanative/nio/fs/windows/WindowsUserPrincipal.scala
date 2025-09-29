@@ -1,18 +1,20 @@
 package scala.scalanative.nio.fs.windows
 
 import java.nio.charset.StandardCharsets
+import java.nio.file.WindowsException
 import java.nio.file.attribute._
+
 import scalanative.unsafe._
 import scalanative.unsigned._
 import scalanative.windows._
-import java.nio.file.WindowsException
 
 sealed trait WindowsUserPrincipal extends UserPrincipal
 
 object WindowsUserPrincipal {
+  import winnt.SidNameUse
+
   import SecurityBaseApi._
   import WinBaseApi._
-  import winnt.SidNameUse
 
   case class User(sidString: String, accountName: String, sidType: SidNameUse)
       extends WindowsUserPrincipal {

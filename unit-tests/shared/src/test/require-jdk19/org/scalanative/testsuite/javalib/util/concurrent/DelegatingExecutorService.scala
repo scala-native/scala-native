@@ -1,7 +1,7 @@
 package org.scalanative.testsuite.javalib.util.concurrent
 
 import java.util.concurrent._
-import java.util.{List, Collection, LinkedList}
+import java.util.{Collection, LinkedList, List}
 
 class DelegatingExecutorService(delegate: ExecutorService)
     extends ExecutorService {

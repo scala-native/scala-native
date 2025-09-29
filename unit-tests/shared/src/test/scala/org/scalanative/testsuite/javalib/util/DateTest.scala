@@ -2,9 +2,10 @@ package org.scalanative.testsuite.javalib.util
 
 import java.util._
 
-import org.junit.Test
 import org.junit.Assert._
 import org.junit.Assume._
+import org.junit.Test
+
 import org.scalanative.testsuite.utils.Platform._
 
 class DateTest {

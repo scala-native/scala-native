@@ -1,6 +1,7 @@
 package java.util
 
 import scala.annotation.tailrec
+
 import ScalaOps._
 
 abstract class AbstractSet[E] protected ()

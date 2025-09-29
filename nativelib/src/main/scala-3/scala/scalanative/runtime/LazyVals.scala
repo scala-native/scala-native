@@ -1,12 +1,13 @@
 package scala.scalanative.runtime
 
-import scala.scalanative.annotation._
 import scala.runtime.LazyVals.{BITS_PER_LAZY_VAL, STATE}
+
+import scala.scalanative.annotation._
+import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
+import scala.scalanative.runtime.Intrinsics._
 import scala.scalanative.runtime.ffi._
 import scala.scalanative.runtime.ffi.stdatomic._
 import scala.scalanative.runtime.ffi.stdatomic.memory_order._
-import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
-import scala.scalanative.runtime.Intrinsics._
 
 // Factored out LazyVals immutable state, allowing to treat LazyVals as constant module,
 // alowing to skip loading of the module on each call to its methods

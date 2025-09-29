@@ -1,11 +1,11 @@
 package scala.scalanative.linker
 
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 
-import scalanative.nir.{Sig, Type, Global, Rt}
 import scala.scalanative.LinkerSpec
 import scala.scalanative.linker.LinktimeIntrinsicCallsResolver.ServiceProviderStatus
+import scalanative.nir.{Global, Rt, Sig, Type}
 
 class ServiceLoaderReachabilityTest extends LinkerSpec {
   val simpleServicesSources = Map(

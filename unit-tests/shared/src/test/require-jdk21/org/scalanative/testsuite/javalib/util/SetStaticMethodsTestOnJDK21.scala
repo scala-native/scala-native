@@ -1,12 +1,12 @@
 package org.scalanative.testsuite.javalib.util
 
-import org.junit.Test
+import java.util.{ArrayList, HashSet}
+import java.{util => ju}
+
 import org.junit.Assert._
+import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
-
-import java.{util => ju}
-import java.util.{ArrayList, HashSet}
 
 /* The Set.of static methods were introduced in Java 9.
  * The Set.copyOf static method was introduced in Java 10.

@@ -1,29 +1,27 @@
 package scala.scalanative
 package nscplugin
 
-import scala.language.implicitConversions
-
+import dotty.tools.FatalError
 import dotty.tools.dotc.ast.tpd
 import dotty.tools.dotc.ast.tpd._
-import dotty.tools.dotc.core
-import core.Contexts._
-import core.Symbols._
-import core.Constants._
-import core.StdNames._
-import core.Flags._
-import core.Phases._
-import scala.scalanative.nscplugin.CompilerCompat.SymUtilsCompat._
-
+import dotty.tools.dotc.core.Annotations.Annotation
+import dotty.tools.dotc.core.NameKinds
+import dotty.tools.dotc.{core, report}
 import scala.collection.mutable
+import scala.language.implicitConversions
+
 import scala.scalanative.nir.Defn.Define.DebugInfo
 import scala.scalanative.nir.Defn.Define.DebugInfo._
-import scala.scalanative.util.ScopedVar
+import scala.scalanative.nscplugin.CompilerCompat.SymUtilsCompat._
 import scala.scalanative.util.ScopedVar.{scoped, toValue}
-import scala.scalanative.util.unsupported
-import dotty.tools.FatalError
-import dotty.tools.dotc.report
-import dotty.tools.dotc.core.NameKinds
-import dotty.tools.dotc.core.Annotations.Annotation
+import scala.scalanative.util.{ScopedVar, unsupported}
+
+import core.Constants._
+import core.Contexts._
+import core.Flags._
+import core.Phases._
+import core.StdNames._
+import core.Symbols._
 
 trait NirGenStat(using Context) {
   self: NirCodeGen =>

@@ -1,24 +1,23 @@
 package java.lang
 
-import java.lang.impl._
 import java.lang.Thread._
-import java.util.concurrent.locks.LockSupport
-import java.util.concurrent.ThreadFactory
+import java.lang.impl._
 import java.time.Duration
+import java.util.concurrent.ThreadFactory
+import java.util.concurrent.locks.LockSupport
 
-import scala.scalanative.meta.LinktimeInfo.{isWindows, isMultithreadingEnabled}
+import scala.concurrent.duration._
 
 import scala.scalanative.annotation.alwaysinline
-import scala.scalanative.runtime.Intrinsics._
-import scala.scalanative.runtime.{fromRawPtr, NativeThread}
-import scala.scalanative.runtime.NativeThread.{State => _, _}
-import scala.scalanative.runtime.NativeThread.State._
-import scala.scalanative.libc.stdatomic.{AtomicLongLong, atomic_thread_fence}
-import scala.scalanative.libc.stdatomic.memory_order._
-import scala.scalanative.runtime.UnsupportedFeature
-import scala.scalanative.runtime.javalib.Proxy
-import scala.concurrent.duration._
 import scala.scalanative.concurrent.NativeExecutionContext
+import scala.scalanative.libc.stdatomic.memory_order._
+import scala.scalanative.libc.stdatomic.{AtomicLongLong, atomic_thread_fence}
+import scala.scalanative.meta.LinktimeInfo.{isMultithreadingEnabled, isWindows}
+import scala.scalanative.runtime.Intrinsics._
+import scala.scalanative.runtime.NativeThread.State._
+import scala.scalanative.runtime.NativeThread.{State => _, _}
+import scala.scalanative.runtime.javalib.Proxy
+import scala.scalanative.runtime.{NativeThread, UnsupportedFeature, fromRawPtr}
 
 class Thread private[lang] (
     @volatile private var name: String,

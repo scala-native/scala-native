@@ -3,8 +3,8 @@
 package java.util
 
 import java.lang.Cloneable
+import java.util.function.{BiFunction, Function}
 import java.util.{RedBlackTree => RB}
-import java.util.function.{Function, BiFunction}
 
 class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit
     comp: Comparator[_ >: K]

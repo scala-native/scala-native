@@ -1,9 +1,8 @@
 package scala.scalanative
 package posix
 
+import scalanative.posix.sys.types.{size_t, ssize_t}
 import scalanative.unsafe._
-
-import scalanative.posix.sys.types.{ssize_t, size_t}
 
 /** POSIX monetary.h for Scala
  *

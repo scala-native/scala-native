@@ -7,18 +7,19 @@
  */
 package org.scalanative.testsuite.javalib.util.concurrent
 
-import org.junit.Assert._
-import org.junit.Assume._
-import org.junit.{Test, Ignore}
-import org.scalanative.testsuite.utils.Platform
-import JSR166Test._
-
-import java.util.concurrent.TimeUnit._
 import java.util
 import java.util._
+import java.util.concurrent.TimeUnit._
 import java.util.concurrent._
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.FutureTask
+
+import org.junit.Assert._
+import org.junit.Assume._
+import org.junit.{Ignore, Test}
+
+import org.scalanative.testsuite.utils.Platform
+
+import JSR166Test._
 
 object FutureTaskTest {
 

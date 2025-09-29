@@ -2,9 +2,7 @@
 
 package java.util.zip
 
-import java.io.FilterOutputStream
-import java.io.IOException
-import java.io.OutputStream
+import java.io.{FilterOutputStream, IOException, OutputStream}
 
 class InflaterOutputStream private (
     out: OutputStream,
