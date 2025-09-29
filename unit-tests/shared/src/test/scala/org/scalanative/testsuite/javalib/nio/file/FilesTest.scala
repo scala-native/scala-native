@@ -1752,7 +1752,6 @@ class FilesTest {
     assumeShouldTestSymlinks()
 
     withTemporaryDirectoryPath { dirPath =>
-
       val ancestorDir = dirPath.resolve("ancestor")
 
       Files.createDirectories(ancestorDir)
