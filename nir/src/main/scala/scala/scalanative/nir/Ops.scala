@@ -3,10 +3,11 @@ package nir
 
 import scala.util.hashing.MurmurHash3
 import util.unreachable
+import scala.annotation.nowarn
 
 sealed abstract class Op {
   self: Product =>
-  override lazy val hashCode = MurmurHash3.productHash(self)
+  override lazy val hashCode = MurmurHash3.productHash(self): @nowarn
 
   final def resty: Type = this match {
     case Op.Call(Type.Function(_, ret), _, _) => ret

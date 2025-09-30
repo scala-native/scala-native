@@ -13,9 +13,8 @@
 
 package scala.util
 
-import org.junit.Test
+import org.junit.{Test, Assume, BeforeClass}
 import org.junit.Assert._
-
 import scala.reflect.ClassTag
 import scala.runtime.NonLocalReturnControl
 
@@ -23,8 +22,9 @@ import scala.runtime.NonLocalReturnControl
   "Uses type UsingInterruption=ThreadDeath which is deprecated",
   since = "JDK 19"
 )
-class UsingTest {
-  import UsingTest._
+class UsingTestOld {
+
+  import UsingTestOld._
 
   /* `Using.resource` exception preference */
 
@@ -865,7 +865,29 @@ class UsingTest {
   }
 }
 
-object UsingTest {
+object UsingTestOld {
+  @BeforeClass def checkRuntime(): Unit = {
+    import org.scalanative.testsuite.utils.Platform
+    // Implementation has changed in Scala 2.13.17, backported to 3.8.0
+    // scalalib_3 is built against scalalib_2.13 using the last Scala version
+    // instead of the one defined in natural scala3_library_3 dependenies
+    def hasCompliantScalaVersion =
+      Platform.scalaVersion
+        .split('.')
+        .take(3)
+        .map(_.takeWhile(_.isDigit)) // becouse of versions like "3.4.0-RC1"
+        .map(_.toInt) match {
+        case Array(2, 13, patch) => patch <= 16
+        case Array(3, major, _)  => major <= 7 && Platform.executingInJVM
+        case _                   => false
+      }
+
+    Assume.assumeTrue(
+      s"Skipping UsingTestOld because the Scala version is not compliant: ${Platform.scalaVersion}",
+      hasCompliantScalaVersion
+    )
+  }
+
   final class ClosingVMError(message: String)
       extends VirtualMachineError(message)
   final class UsingVMError(message: String) extends VirtualMachineError(message)
