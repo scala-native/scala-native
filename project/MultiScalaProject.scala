@@ -4,7 +4,7 @@ import sbt._
 import Keys._
 import Def.SettingsDefinition
 import scala.language.implicitConversions
-import MyScalaNativePlugin.{ideScalaVersion, enableExperimentalCompiler}
+import scala.scalanative.build.MyScalaNativePlugin
 
 final case class MultiScalaProject private (
     val name: String,
@@ -30,7 +30,7 @@ final case class MultiScalaProject private (
     )
 
   override def componentProjects: Seq[Project] = Seq(v2_12, v2_13, v3) ++ {
-    if (enableExperimentalCompiler) Some(v3Next) else None
+    if (MyScalaNativePlugin.enableExperimentalCompiler) Some(v3Next) else None
   }
 
   def mapBinaryVersions(
@@ -195,7 +195,8 @@ object MultiScalaProject {
     val projects = for {
       (major, minors) <- scalaCrossVersions
     } yield {
-      val ideScalaVersions = additionalIDEScalaVersions :+ ideScalaVersion
+      val ideScalaVersions =
+        additionalIDEScalaVersions :+ MyScalaNativePlugin.ideScalaVersion
       val noIDEExportSettings =
         if (ideScalaVersions.contains(major)) Nil
         else NoIDEExport.noIDEExportSettings

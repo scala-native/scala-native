@@ -14,7 +14,7 @@ import ScriptedPlugin.autoImport._
 import com.jsuereth.sbtpgp.PgpKeys
 
 import scala.collection.mutable
-import MyScalaNativePlugin.isGeneratingForIDE
+import scala.scalanative.build.MyScalaNativePlugin.isGeneratingForIDE
 
 import java.io.File
 import java.util.Locale

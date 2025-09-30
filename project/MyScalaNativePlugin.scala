@@ -1,10 +1,10 @@
+package scala.scalanative
 package build
 
 import sbt._
 import sbt.Keys._
 
 import scala.scalanative.sbtplugin.Utilities._
-import scala.scalanative.sbtplugin.ScalaNativePlugin
 import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport._
 import scala.sys.env
 import complete.DefaultParsers._
@@ -12,9 +12,10 @@ import complete.DefaultParsers._
 import one.profiler.AsyncProfilerLoader
 import one.profiler.AsyncProfiler
 import build.OutputType._
+import _root_.build.ScalaVersions
 
 object MyScalaNativePlugin extends AutoPlugin {
-  override def requires: Plugins = ScalaNativePlugin
+  override def requires: Plugins = sbtplugin.ScalaNativePlugin
 
   lazy val nativeLinkProfiling =
     inputKey[File]("Running nativeLink with AsyncProfiler.")
