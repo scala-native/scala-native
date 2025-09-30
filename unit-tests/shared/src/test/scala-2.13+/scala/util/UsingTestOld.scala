@@ -867,20 +867,23 @@ class UsingTestOld {
 
 object UsingTestOld {
   @BeforeClass def checkRuntime(): Unit = {
+    import org.scalanative.testsuite.utils.Platform
     // Implementation has changed in Scala 2.13.17, backported to 3.8.0
+    // scalalib_3 is built against scalalib_2.13 using the last Scala version
+    // instead of the one defined in natural scala3_library_3 dependenies
     def hasCompliantScalaVersion =
-      org.scalanative.testsuite.utils.Platform.scalaVersion
+      Platform.scalaVersion
         .split('.')
         .take(3)
         .map(_.takeWhile(_.isDigit)) // becouse of versions like "3.4.0-RC1"
         .map(_.toInt) match {
         case Array(2, 13, patch) => patch <= 16
-        case Array(3, major, _)  => major <= 7
+        case Array(3, major, _)  => major <= 7 && Platform.executingInJVM
         case _                   => false
       }
 
     Assume.assumeTrue(
-      "Skipping UsingTest because the Scala version is not compliant",
+      s"Skipping UsingTestOld because the Scala version is not compliant: ${Platform.scalaVersion}",
       hasCompliantScalaVersion
     )
   }
