@@ -22,7 +22,6 @@ jobs:
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: ${{ inputs.scala-version }}
-          java-version: 8
 
       - name: Setup PGP Key
         run: |

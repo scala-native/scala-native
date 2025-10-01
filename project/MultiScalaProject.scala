@@ -26,7 +26,8 @@ final case class MultiScalaProject private (
   lazy val v3Next: Project = project("3-next")
     .settings(
       Settings.experimentalScalaSources,
-      Settings.noPublishSettings
+      publish / skip := true,
+      publishLocal / skip := false
     )
 
   override def componentProjects: Seq[Project] = Seq(v2_12, v2_13, v3) ++ {
@@ -103,12 +104,17 @@ final case class MultiScalaProject private (
    *  suffix for that version.
    */
   def zippedSettings(
-      projectNames: Seq[String]
+      projectNames: Seq[String],
+      versionsProjectReplacement: Map[String, Map[String, String]] = Map.empty
   )(ss: Seq[LocalProject] => SettingsDefinition): MultiScalaProject = {
     val ps = for {
       (v, p) <- projects
     } yield {
-      val lps = projectNames.map(pn => LocalProject(projectID(pn, v)))
+      val replacements = versionsProjectReplacement.getOrElse(v, Map.empty)
+      val lps = projectNames
+        .map(name => replacements.getOrElse(name, name))
+        .map(projectID(_, v))
+        .map(LocalProject(_))
       v -> p.settings(ss(lps))
     }
     copy(projects = ps)
