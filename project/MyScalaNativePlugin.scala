@@ -142,8 +142,9 @@ object MyScalaNativePlugin extends AutoPlugin {
     /* Remove libraryDependencies on ourselves; we use .dependsOn() instead
      * inside this build.
      */
-    libraryDependencies ~= { libDeps =>
-      libDeps.filterNot(_.organization == "org.scala-native")
+    libraryDependencies := {
+      val org = (ThisBuild / organization).value
+      libraryDependencies.value.filterNot(_.organization == org)
     },
     nativeConfig ~= { nc =>
       nc.withCheck(true)
