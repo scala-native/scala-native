@@ -327,12 +327,6 @@ object Settings {
     )
   )
 
-  lazy val buildInfoSettings = Def.settings(
-    buildInfoJVMSettings,
-    buildInfoKeys +=
-      "nativeScalaVersion" -> scalaVersion.value
-  )
-
   // Tests
   lazy val testsCommonSettings = Def.settings(
     scalacOptions -= "-deprecation",
