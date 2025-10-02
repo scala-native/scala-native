@@ -34,7 +34,7 @@ object ScalaNativePlugin extends AutoPlugin {
     }
 
     val nativeConfig =
-      taskKey[build.NativeConfig](
+      settingKey[build.NativeConfig](
         "User configuration for the native build, NativeConfig"
       )
 
