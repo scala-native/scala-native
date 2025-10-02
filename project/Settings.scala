@@ -9,6 +9,8 @@ import com.jsuereth.sbtpgp.PgpKeys.publishSigned
 import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport._
 import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
 
+// Hack warning: special object mimicking build-info plugin outputs, defined in project/ScalaNativeBuildInfo
+import scala.scalanative.buildinfo.ScalaNativeBuildInfo
 import sbtbuildinfo.BuildInfoPlugin.autoImport._
 import ScriptedPlugin.autoImport._
 import com.jsuereth.sbtpgp.PgpKeys
@@ -36,7 +38,7 @@ object Settings {
   // JDK version we are running with
   lazy val thisBuildSettings = Def.settings(
     organization := "org.scala-native",
-    version := nativeVersion,
+    version := ScalaNativeBuildInfo.version,
     Global / javaVersion := {
       val fullVersion = System.getProperty("java.version")
       val v = fullVersion.stripPrefix("1.").takeWhile(_.isDigit).toInt
