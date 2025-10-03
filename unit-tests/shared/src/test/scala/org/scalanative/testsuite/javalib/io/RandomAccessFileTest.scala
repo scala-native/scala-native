@@ -153,6 +153,10 @@ class RandomAccessFileTest {
         new RandomAccessFile(roFile, "rw")
       )
     } finally {
+      assertTrue(
+        "Could not set file read-write before delete()",
+        roFile.setWritable(true) // Windows requires writable
+      )
       assertTrue("Could not delete read-only temporary file", roFile.delete())
     }
   }
