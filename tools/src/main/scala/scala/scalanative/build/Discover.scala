@@ -65,7 +65,7 @@ object Discover {
   def compileOptions(): Seq[String] = {
     val includes = {
       val llvmIncludeDir =
-        Try(Process(s"$llvmConfigCLI --includedir").lineStream_!.toSeq)
+        Try(Process(s"$llvmConfigCLI --includedir").lineStream_!.toList)
           .getOrElse(Seq.empty)
       // dirs: standard, macports, brew M1 arm
       val includeDirs =
@@ -83,7 +83,15 @@ object Discover {
 
       (includeDirs ++ llvmIncludeDir).map(s => s"-I$s")
     }
-    includes :+ "-Qunused-arguments"
+
+    val platformOptions =
+      if (Platform.isWindows) {
+        Console.err.println("OS USED: " + Platform.osUsed)
+        if (Platform.osUsed == "windows 11") Seq("-gdwarf-4")
+        else Seq.empty
+      } else Seq.empty
+
+    includes ++ platformOptions :+ "-Qunused-arguments"
   }
 
   /** Find default options passed to the system's native linker. */
