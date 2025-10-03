@@ -16,10 +16,11 @@ class ExceptionTest {
     val pw = new java.io.PrintWriter(sw)
     (new Exception).printStackTrace(pw)
     val trace = sw.toString
-    assertTrue(trace.startsWith("java.lang.Exception"))
+    assertTrue(trace, trace.startsWith("java.lang.Exception"))
 
     assumeSupportsStackTraces()
     assertTrue(
+      trace,
       trace.contains(
         "\tat org.scalanative.testsuite.javalib.lang.ExceptionTest"
       )
