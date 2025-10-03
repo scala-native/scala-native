@@ -29,6 +29,8 @@ jobs:
 
       - name: Test runtime
         shell: cmd
+        env:
+          SBT_OPTS: "-Xmx2G -Xss4M"
         run: >
           set SCALANATIVE_INCLUDE_DIRS=${{steps.setup.outputs.vcpkg-dir}}\include&
           set SCALANATIVE_LIB_DIRS=${{steps.setup.outputs.vcpkg-dir}}\lib&
