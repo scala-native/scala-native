@@ -13,36 +13,37 @@ object StackTraceElementTest {
   def checkRuntime() = {
     AssumesHelper.assumeSupportsStackTraces()
   }
+
+  private val stePrefix =
+    "org.scalanative.testsuite.javalib.lang.StackTraceDummy"
+
+  def getHeadStackTraceElement(exc: Exception): StackTraceElement = {
+    val ste = exc.getStackTrace.head
+    assertEquals(stePrefix, ste.getClassName.substring(0, stePrefix.length))
+    ste
+  }
 }
 
 class StackTraceDummy1 @noinline() {
   @noinline def dummy1: StackTraceElement =
-    (new Exception).getStackTrace.head
+    StackTraceElementTest.getHeadStackTraceElement(new Exception)
 
   @noinline def _dummy2: StackTraceElement =
-    (new Exception).getStackTrace.head
-
-  @noinline def dummies: List[StackTraceElement] =
-    (new Exception).getStackTrace.toList
+    StackTraceElementTest.getHeadStackTraceElement(new Exception)
 }
 
 class StackTraceDummy3_:: @noinline() {
   @noinline def dummy3: StackTraceElement =
-    (new Exception).getStackTrace.head
+    StackTraceElementTest.getHeadStackTraceElement(new Exception)
 }
 
 class StackTraceDummy4 @noinline() {
   val dummy4: StackTraceElement =
-    (new Exception).getStackTrace.head
+    StackTraceElementTest.getHeadStackTraceElement(new Exception)
 }
 
 class StackTraceElementTest {
-  def dummy1 = {
-    val dummy = (new StackTraceDummy1).dummy1
-    val dummyStr = dummy.toString
-    assertTrue(dummyStr, dummyStr.contains("StackTraceDummy"))
-    dummy
-  }
+  def dummy1 = (new StackTraceDummy1).dummy1
   def dummy2 = (new StackTraceDummy1)._dummy2
   def dummy3 = (new StackTraceDummy3_::).dummy3
   def dummy4 = (new StackTraceDummy4).dummy4
@@ -71,11 +72,4 @@ class StackTraceElementTest {
     assertFalse(dummy3.isNativeMethod)
     assertFalse(dummy4.isNativeMethod)
   }
-
-  @Test def checkTrace(): Unit = {
-    val dummies = (new StackTraceDummy1).dummies
-    assertEquals(dummies.map(_.getClassName).mkString(","), "")
-    assertEquals(dummies.map(_.getMethodName).mkString(","), "")
-  }
-
 }
