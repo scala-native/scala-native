@@ -56,7 +56,7 @@ jobs:
           "scalaPartestTests${{env.project-version}}/testOnly -- --showDiff neg/abstract.scala pos/abstract.scala run/Course-2002-01.scala"
         shell: cmd
 
-      - name: Test runtime
+      - name: Test runtime (compile)
         if: matrix.gc != 'none'
         timeout-minutes: 45
         run: >
@@ -65,8 +65,36 @@ jobs:
           set SCALANATIVE_LIB_DIRS=${{steps.setup.outputs.vcpkg-dir}}\lib&
           set SCALANATIVE_TEST_PREFETCH_DEBUG_INFO=1&
           set SCALANATIVE &
+          sbt compile
+        shell: cmd
+
+      - name: Test runtime (test-runtime)
+        if: matrix.gc != 'none'
+        timeout-minutes: 45
+        env:
+          SBT_OPTS: "-Xmx2G -Xss4M"
+        run: >
+          set SCALANATIVE_GC=${{matrix.gc}}&
+          set SCALANATIVE_INCLUDE_DIRS=${{steps.setup.outputs.vcpkg-dir}}\include&
+          set SCALANATIVE_LIB_DIRS=${{steps.setup.outputs.vcpkg-dir}}\lib&
+          set SCALANATIVE_TEST_PREFETCH_DEBUG_INFO=1&
+          set SCALANATIVE &
           sbt
           "test-runtime ${{matrix.scala}} -- -oDF"
+        shell: cmd
+
+      - name: Test runtime (scalaPartestTests)
+        if: matrix.gc != 'none'
+        timeout-minutes: 45
+        env:
+          SBT_OPTS: "-Xmx2G -Xss4M"
+        run: >
+          set SCALANATIVE_GC=${{matrix.gc}}&
+          set SCALANATIVE_INCLUDE_DIRS=${{steps.setup.outputs.vcpkg-dir}}\include&
+          set SCALANATIVE_LIB_DIRS=${{steps.setup.outputs.vcpkg-dir}}\lib&
+          set SCALANATIVE_TEST_PREFETCH_DEBUG_INFO=1&
+          set SCALANATIVE &
+          sbt
           "scalaPartestTests${{env.project-version}}/testOnly -- -oDF --showDiff neg/abstract.scala pos/abstract.scala run/Course-2002-01.scala"
         shell: cmd
 
