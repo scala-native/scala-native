@@ -66,8 +66,8 @@ jobs:
           set SCALANATIVE_TEST_PREFETCH_DEBUG_INFO=1&
           set SCALANATIVE &
           sbt
-          "test-runtime ${{matrix.scala}}"
-          "scalaPartestTests${{env.project-version}}/testOnly -- --showDiff neg/abstract.scala pos/abstract.scala run/Course-2002-01.scala"
+          "test-runtime ${{matrix.scala}} -- -oDF"
+          "scalaPartestTests${{env.project-version}}/testOnly -- -oDF --showDiff neg/abstract.scala pos/abstract.scala run/Course-2002-01.scala"
         shell: cmd
 
   run-scripted-tests:
