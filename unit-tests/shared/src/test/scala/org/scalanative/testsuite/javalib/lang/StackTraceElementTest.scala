@@ -19,7 +19,7 @@ object StackTraceElementTest {
 
   def getHeadStackTraceElement(exc: Exception): StackTraceElement = {
     val ste = exc.getStackTrace.head
-    assertEquals(stePrefix, ste.getClassName.substring(0, stePrefix.length))
+    assertEquals(stePrefix, ste.getClassName.take(stePrefix.length))
     ste
   }
 }
