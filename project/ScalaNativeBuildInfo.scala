@@ -20,7 +20,7 @@ object ScalaNativeBuildInfo {
   // The next version to be released
   private val baseVersion = "0.5.9"
 
-  // Calcuation of the version to use based on CI / env state
+  // Calculation of the version to use based on CI / env state
   val version = envOrNone("GITHUB_REF_TYPE") match {
     case Some("tag") =>
       // sanity check
