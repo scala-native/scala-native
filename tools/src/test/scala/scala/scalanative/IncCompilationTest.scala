@@ -9,7 +9,6 @@ import scala.scalanative.build.{Config, NativeConfig, _}
 import scala.scalanative.util.Scope
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Await, duration}
-import scala.scalanative.buildinfo.ScalaNativeBuildInfo
 
 // The test is used for incremental compilation
 
@@ -103,7 +102,7 @@ class IncCompilationTest extends codegen.CodeGenSpec {
 
   private def makeClasspath(outDir: Path)(implicit in: Scope) = {
     val parts: Array[Path] =
-      ScalaNativeBuildInfo.nativeRuntimeClasspath
+      buildinfo.ScalaNativeBuildInfo.nativeRuntimeClasspath
         .split(File.pathSeparator)
         .map(Paths.get(_))
 
