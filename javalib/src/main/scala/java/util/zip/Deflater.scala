@@ -7,7 +7,8 @@ import scala.scalanative.ffi.zlib
 import scala.scalanative.ffi.zlibOps._
 
 // Ported from Apache Harmony
-class Deflater(private var compressLevel: Int, noHeader: Boolean) {
+class Deflater(private var compressLevel: Int, noHeader: Boolean)
+    extends AutoCloseable {
 
   def this(compressLevel: Int) = this(compressLevel, noHeader = false)
   def this() = this(Deflater.DEFAULT_COMPRESSION)
@@ -202,6 +203,7 @@ class Deflater(private var compressLevel: Int, noHeader: Boolean) {
       stream.totalOut.toLong
     }
 
+  override def close(): Unit = end()
 }
 
 object Deflater {
