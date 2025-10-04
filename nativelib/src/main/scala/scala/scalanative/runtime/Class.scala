@@ -229,6 +229,7 @@ private[runtime] object _Class {
       loader: ClassLoader
   ): Class[_] = forName(name)
 
+  /** @since JDK 22 */
   def forPrimitiveName(primitiveName: String): Class[_] =
     primitiveName match {
       case "boolean" => java.lang.Boolean.TYPE
