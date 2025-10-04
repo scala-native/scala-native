@@ -646,7 +646,7 @@ object Build {
       )
       .withNativeCompilerPlugin
       .mapBinaryVersions {
-        case version @ ("2.12" | "2.13") =>
+        case ("2.12" | "2.13") =>
           _.settings(
             noPublishSettings
           )
@@ -662,7 +662,7 @@ object Build {
               else (Compile / sources).value
             },
             libraryDependencies += {
-              val nativeVersion = Keys.version.value
+              val nativeVersion = (ThisBuild / Keys.version).value
               if (usesSelfContainedStdlib(scalaVersion.value)) {
                 organization.value %%% "scalalib" % scalalibVersion(scalaVersion.value, nativeVersion)
               } else {

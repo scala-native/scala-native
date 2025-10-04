@@ -761,10 +761,7 @@ object Settings {
       shouldAddDependencyForVersion: String => Boolean = { _ => true }
   ): Seq[Setting[_]] = {
     Def.settings(
-      version := scalalibVersion(
-        scalaVersion.value,
-        (ThisBuild / version).value
-      ),
+      version := scalalibVersion(scalaVersion.value, version.value),
       mavenPublishSettings,
       disabledDocsSettings,
       recompileAllOrNothingSettings,
