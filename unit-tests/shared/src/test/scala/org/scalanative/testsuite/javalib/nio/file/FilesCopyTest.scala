@@ -117,7 +117,6 @@ class FilesCopyTest {
 
   @Test def copyStreamPathOptions_PosixPermissions_NoReplace(): Unit = {
     withTemporaryDirectoryPath { dirPath =>
-
       val posixBitsOn = "r-x------"
 
       /*  group & other bits depend on umask, which is unknown &
@@ -177,7 +176,6 @@ class FilesCopyTest {
 
   @Test def copyStreamPathOptions_PosixPermissions_Replace(): Unit = {
     withTemporaryDirectoryPath { dirPath =>
-
       val posixBitsOn = "r-x------"
       val differentBitsOn = "--xrwx---" // test also that x gets cleared.
 
@@ -245,7 +243,6 @@ class FilesCopyTest {
      */
 
     withTemporaryDirectoryPath { dirPath =>
-
       val posixBitsOn = "r-x------"
 
       // Expect 'from' and 'to' permissions to be same, no other bits change
@@ -275,7 +272,6 @@ class FilesCopyTest {
 
   @Test def copyPathPathOptions_PosixPermissions_NoCopyAttr_Replace(): Unit = {
     withTemporaryDirectoryPath { dirPath =>
-
       val posixBitsOn = "r-x------"
 
       // Expect 'from' and 'to' permissions to be same, no other bits change
@@ -307,7 +303,6 @@ class FilesCopyTest {
 
   @Test def copyPathPathOptions_PosixPermissions_CopyAttr(): Unit = {
     withTemporaryDirectoryPath { dirPath =>
-
       val posixBitsOn = "r-x------"
 
       /* Files.copy(Path, Path)  and Files.copy(Path, Path, COPY_ATTRIBUTES)
@@ -359,7 +354,6 @@ class FilesCopyTest {
      */
 
     withTemporaryDirectoryPath { dirPath =>
-
       val posixBitsOn = "r-xrwxr-x"
 
       // bits set in umask have been cleared in toUserPerms
@@ -405,7 +399,6 @@ class FilesCopyTest {
      */
 
     withTemporaryDirectoryPath { dirPath =>
-
       val posixBitsOn = "r-xrwxr-x"
       val differentBitsOn = "r-xrwx---"
 
@@ -469,7 +462,6 @@ class FilesCopyTest {
      */
 
     withTemporaryDirectoryPath { dirPath =>
-
       val posixBitsOn = "r-xr-xr-x"
 
       // bits set in umask have been cleared in toUserPerms

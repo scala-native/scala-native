@@ -50,7 +50,7 @@ private[scalanative] object ResourceEmbedder {
 
     val includePatterns =
       config.compilerConfig.resourceIncludePatterns.map(toGlob)
-      // explicitly enabled pattern overwrites exclude pattern
+    // explicitly enabled pattern overwrites exclude pattern
     val excludePatterns = {
       (config.compilerConfig.resourceExcludePatterns).map(toGlob) ++
         internalExclusionPatterns
