@@ -228,6 +228,21 @@ private[runtime] object _Class {
       init: scala.Boolean,
       loader: ClassLoader
   ): Class[_] = forName(name)
+
+  def forPrimitiveName(primitiveName: String): Class[_] =
+    primitiveName match {
+      case "boolean" => java.lang.Boolean.TYPE
+      case "byte"    => java.lang.Byte.TYPE
+      case "char"    => java.lang.Character.TYPE
+      case "double"  => java.lang.Double.TYPE
+      case "float"   => java.lang.Float.TYPE
+      case "int"     => java.lang.Integer.TYPE
+      case "long"    => java.lang.Long.TYPE
+      case "short"   => java.lang.Short.TYPE
+      case "void"    => java.lang.Void.TYPE
+      case null      => throw new NullPointerException()
+      case _         => null
+    }
 }
 
 private object LinkedClassesRepository {
