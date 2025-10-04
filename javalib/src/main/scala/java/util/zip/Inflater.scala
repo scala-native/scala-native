@@ -197,6 +197,7 @@ class Inflater(noHeader: Boolean) extends AutoCloseable {
     }
   }
 
+  /** @since JDK 25 */
   override def close(): Unit = end()
 }
 

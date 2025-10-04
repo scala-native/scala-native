@@ -203,6 +203,7 @@ class Deflater(private var compressLevel: Int, noHeader: Boolean)
       stream.totalOut.toLong
     }
 
+  /** @since JDK 25 */
   override def close(): Unit = end()
 }
 
