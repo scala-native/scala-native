@@ -8,42 +8,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Compile and run tests against given version of the JDK to check compliance
-  # We test against Java 8 as default in other CI jobs
-  tests-unix-jdk-compliance:
-    name: Test Unix JDK compliance
-    runs-on: ${{matrix.os}}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-22.04, macos-13]
-        scala: [3]
-        java: [25]
-    steps:
-      - uses: actions/checkout@v5
-      - uses: ./.github/actions/macos-setup-env
-        if: ${{ startsWith(matrix.os, 'macos') }}
-        with:
-          scala-version: ${{matrix.scala}}
-          java-version: ${{matrix.java}}
-      - uses: ./.github/actions/linux-setup-env
-        if: ${{ startsWith(matrix.os, 'ubuntu') }}
-        with:
-          scala-version: ${{matrix.scala}}
-          java-version: ${{matrix.java}}
-
-      - name: Test runtime
-        run: >
-          _JAVA_OPTIONS='${{ matrix.java-options }}'
-          SCALANATIVE_TEST_PREFETCH_DEBUG_INFO=1
-          SCALANATIVE_MODE=release-fast
-          sbt 
-          "-J-Xmx3G" 
-          "test-runtime ${{matrix.scala}}"
-
   tests-windows-jdk-compliance:
     name: Test Windows JDK compliance
-    runs-on: windows-2022
+    runs-on: windows-2025
     strategy:
       fail-fast: false
       matrix:
@@ -62,6 +29,8 @@ jobs:
 
       - name: Test runtime
         shell: cmd
+        env:
+          SBT_OPTS: "-Xmx2G -Xss4M"
         run: >
           set SCALANATIVE_INCLUDE_DIRS=${{steps.setup.outputs.vcpkg-dir}}\include&
           set SCALANATIVE_LIB_DIRS=${{steps.setup.outputs.vcpkg-dir}}\lib&

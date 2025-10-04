@@ -6,7 +6,7 @@ import java.util.Locale
 private[scala] object Platform {
   final val isJVM = true
 
-  private lazy val osUsed =
+  private[scalanative] lazy val osUsed =
     System.getProperty("os.name", "unknown").toLowerCase(Locale.ROOT)
 
   /** Test for the platform type

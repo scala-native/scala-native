@@ -1,7 +1,6 @@
 name: Run tests Linux multiarch
 on:
   workflow_call:
-  pull_request:
   schedule:
     # Every day at 2 AM UTC
     - cron: "0 2 * * *"

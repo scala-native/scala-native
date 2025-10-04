@@ -13,32 +13,33 @@ object StackTraceElementTest {
   def checkRuntime() = {
     AssumesHelper.assumeSupportsStackTraces()
   }
+
+  private val stePrefix =
+    "org.scalanative.testsuite.javalib.lang.StackTraceDummy"
+
+  def getHeadStackTraceElement(exc: Exception): StackTraceElement = {
+    val ste = exc.getStackTrace.head
+    assertEquals(stePrefix, ste.getClassName.take(stePrefix.length))
+    ste
+  }
 }
 
 class StackTraceDummy1 @noinline() {
   @noinline def dummy1: StackTraceElement =
-    (new Exception).getStackTrace
-      .filter(_.toString.contains("StackTraceDummy"))
-      .head
+    StackTraceElementTest.getHeadStackTraceElement(new Exception)
 
   @noinline def _dummy2: StackTraceElement =
-    (new Exception).getStackTrace
-      .filter(_.toString.contains("StackTraceDummy"))
-      .head
+    StackTraceElementTest.getHeadStackTraceElement(new Exception)
 }
 
 class StackTraceDummy3_:: @noinline() {
   @noinline def dummy3: StackTraceElement =
-    (new Exception).getStackTrace
-      .filter(_.toString.contains("StackTraceDummy"))
-      .head
+    StackTraceElementTest.getHeadStackTraceElement(new Exception)
 }
 
 class StackTraceDummy4 @noinline() {
   val dummy4: StackTraceElement =
-    (new Exception).getStackTrace
-      .filter(_.toString.contains("StackTraceDummy"))
-      .head
+    StackTraceElementTest.getHeadStackTraceElement(new Exception)
 }
 
 class StackTraceElementTest {

@@ -8,7 +8,6 @@ import org.junit.Assume._
 
 import scala.scalanative.meta.LinktimeInfo.isWeakReferenceSupported
 import scala.scalanative.annotation.nooptimize
-import scala.scalanative.buildinfo.ScalaNativeBuildInfo
 
 import scala.scalanative.runtime.GC
 import org.scalanative.testsuite.utils.Platform

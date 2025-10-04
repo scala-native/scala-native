@@ -7,6 +7,7 @@ import _root_.sbt.testing._
 import java.io.File
 import java.net.URLClassLoader
 import java.util.concurrent.TimeUnit
+import scala.scalanative.buildinfo.ScalaNativeBuildInfo
 import scala.tools.partest.nest._
 import scala.tools.partest.sbt.SBTRunner
 
@@ -50,10 +51,8 @@ class ScalaNativeSBTRunner(
   // Stuff we provide
 
   override def banner: String = {
-    import scala.scalanative.nir.Versions.{current => currentVersion}
-
     super.banner.trim + s"""
-   |Scala Native version is: $currentVersion
+   |Scala Native version is: ${ScalaNativeBuildInfo.version}
    |${options.show}
    |""".stripMargin
   }

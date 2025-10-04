@@ -5,10 +5,6 @@ import java.io.File
 import java.nio.file.{Files, Path, Paths}
 import scalanative.build.{Config, NativeConfig, Logger, ScalaNative, Discover}
 import scalanative.util.Scope
-import scala.concurrent._
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration._
-import scala.scalanative.buildinfo.ScalaNativeBuildInfo
 import scala.scalanative.linker.ReachabilityAnalysis
 
 import org.junit.Assert.fail
@@ -69,7 +65,7 @@ abstract class LinkerSpec {
 
   private def makeClasspath(outDir: Path)(implicit in: Scope) = {
     val parts: Array[Path] =
-      ScalaNativeBuildInfo.nativeRuntimeClasspath
+      buildinfo.ScalaNativeBuildInfo.nativeRuntimeClasspath
         .split(File.pathSeparator)
         .map(Paths.get(_))
 

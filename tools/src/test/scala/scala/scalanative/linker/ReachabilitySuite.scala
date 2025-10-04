@@ -7,11 +7,7 @@ import org.junit.Assert._
 import java.io.File
 import java.nio.file.{Files, Path, Paths}
 import scalanative.util.Scope
-import scalanative.build.{ScalaNative, Logger, Discover}
-import scala.concurrent._
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration._
-import scala.scalanative.buildinfo.ScalaNativeBuildInfo
+import scalanative.build.{Logger, Discover}
 
 trait ReachabilitySuite {
 
@@ -92,7 +88,7 @@ trait ReachabilitySuite {
 
   private def makeClasspath(outDir: Path)(implicit in: Scope) = {
     val parts: Array[Path] =
-      ScalaNativeBuildInfo.nativeRuntimeClasspath
+      buildinfo.ScalaNativeBuildInfo.nativeRuntimeClasspath
         .split(File.pathSeparator)
         .map(Paths.get(_))
 

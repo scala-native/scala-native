@@ -1,8 +1,6 @@
 package scala.scalanative
 package nir
 
-import scala.scalanative.buildinfo.ScalaNativeBuildInfo
-
 object Versions {
   /* NIR magic number */
   final val magic: Int = 0x2e4e4952 // '.NIR' in hex
@@ -28,7 +26,7 @@ object Versions {
   case class Version(compat: Int, revision: Int)
 
   /* Current public release version of Scala Native. */
-  final val current: String = ScalaNativeBuildInfo.version
+  final val current: String = buildinfo.ScalaNativeBuildInfo.version
   final val currentBinaryVersion: String = binaryVersion(current)
 
   private object FullVersion {
