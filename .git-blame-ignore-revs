@@ -1,15 +1,24 @@
-#scalafmt
+# scalafmt 3.7.14
 8456ecd6e3700f0c9b81616ae04ac80c4f4173dc
+
+# Upgrade to scalafmt 3.0.0-RC6
 cf6d1a4de1e1a9386fc437119158dc7384b9a58e
+
+# Harmonize NIR imports and qualification
+7a22db3de2742b02c6f642f7bb690fcbb055479d
+
+# Replace usage of deprecated `private[this]` with `private`
+4e7a21d831e19cdf9b9e810df08b171227440ec7
+# Replace deprectated `protected[this]` with `protected`
+23ecf283e426a118274595b9ce0ba46a82d10ee2
+# Fix more deprecations in all modules
+0fad84d58ea2db0422f50af6d357f980b8170911
+
+# rename nir.Position to nir.SourcePosition
+3ebbdc711dc5f58a9904e206918101fb7d95541d
+
+# scalafmt 3.9.4
 e8cbc084d65364d8c179e18d591daace7b31b968
 
-#renames / imports
-7a22db3de2742b02c6f642f7bb690fcbb055479d
-9529edb30b4c60e9531e0dca8a215d70f0ea2ac1
-
-#syntax updates
-563f0efae95feebc22c96c288f1e5eeb488d162f
-8d2076b3c5ffc77410028e430ebd5e203da77de2
-
 # Scala Steward: Reformat with scalafmt 3.9.8
-f8ab571bd965e3141c8f20c18d36132f69e8905e
+905811dbb8047c6404bbc0a78deaa61f8b5db884
