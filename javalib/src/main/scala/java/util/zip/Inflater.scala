@@ -9,7 +9,7 @@ import java.nio.charset.StandardCharsets
 
 // Ported from Apache Harmony
 
-class Inflater(noHeader: Boolean) {
+class Inflater(noHeader: Boolean) extends AutoCloseable {
 
   private var isFinished: Boolean = false
 
@@ -197,6 +197,8 @@ class Inflater(noHeader: Boolean) {
     }
   }
 
+  /** @since JDK 25 */
+  override def close(): Unit = end()
 }
 
 private object Inflater {
