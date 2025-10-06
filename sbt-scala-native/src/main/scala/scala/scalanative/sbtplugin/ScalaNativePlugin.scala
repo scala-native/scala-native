@@ -11,7 +11,7 @@ object ScalaNativePlugin extends AutoPlugin {
     val ScalaNativeCrossVersion = sbtplugin.ScalaNativeCrossVersion
 
     private[sbtplugin] val nativeOrgName = "org.scala-native"
-    val nativeVersion = nir.Versions.current
+    val nativeVersion = buildinfo.ScalaNativeBuildInfo.version
 
     def scalalibVersion(scalaVersion: String, nativeVersion: String): String =
       s"$scalaVersion+$nativeVersion"

@@ -215,15 +215,14 @@ object CodeGen {
               new ShowBuilder.FileShowBuilder(writer)
             )
 
-          val snVersion = scala.scalanative.nir.Versions.current
-          val compilerInfo = s"Scala Native v$snVersion"
+          val version = buildinfo.ScalaNativeBuildInfo.version
           val buildInfo = buildInfos
             .map { case (key, value) => s"$key: $value" }
-            .mkString(", ")
+            .mkString(s"Scala Native v$version(", ", ", ")")
 
           import Metadata.conversions.{tuple, stringToStr}
           // From lld.llvm.org doc: readelf --string-dump .comment <output-file>
-          dbg("llvm.ident")(tuple(s"$compilerInfo ($buildInfo)"))
+          dbg("llvm.ident")(tuple(buildInfo))
         }
       }
       override def sourceCodeCache: SourceCodeCache =

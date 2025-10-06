@@ -14,7 +14,7 @@ jobs:
   test-runtime:
     name: Test runtime
     if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')
-    runs-on: windows-2022
+    runs-on: windows-2025
     env:
       ENABLE_EXPERIMENTAL_COMPILER: true
     strategy:
@@ -56,7 +56,7 @@ jobs:
           "scalaPartestTests${{env.project-version}}/testOnly -- --showDiff neg/abstract.scala pos/abstract.scala run/Course-2002-01.scala"
         shell: cmd
 
-      - name: Test runtime
+      - name: Test runtime (compile)
         if: matrix.gc != 'none'
         timeout-minutes: 45
         run: >
@@ -65,15 +65,43 @@ jobs:
           set SCALANATIVE_LIB_DIRS=${{steps.setup.outputs.vcpkg-dir}}\lib&
           set SCALANATIVE_TEST_PREFETCH_DEBUG_INFO=1&
           set SCALANATIVE &
+          sbt compile
+        shell: cmd
+
+      - name: Test runtime (test-runtime)
+        if: matrix.gc != 'none'
+        timeout-minutes: 45
+        env:
+          SBT_OPTS: "-Xmx2G -Xss4M"
+        run: >
+          set SCALANATIVE_GC=${{matrix.gc}}&
+          set SCALANATIVE_INCLUDE_DIRS=${{steps.setup.outputs.vcpkg-dir}}\include&
+          set SCALANATIVE_LIB_DIRS=${{steps.setup.outputs.vcpkg-dir}}\lib&
+          set SCALANATIVE_TEST_PREFETCH_DEBUG_INFO=1&
+          set SCALANATIVE &
           sbt
-          "test-runtime ${{matrix.scala}}"
-          "scalaPartestTests${{env.project-version}}/testOnly -- --showDiff neg/abstract.scala pos/abstract.scala run/Course-2002-01.scala"
+          "test-runtime ${{matrix.scala}} -- -oDF"
+        shell: cmd
+
+      - name: Test runtime (scalaPartestTests)
+        if: matrix.gc != 'none'
+        timeout-minutes: 45
+        env:
+          SBT_OPTS: "-Xmx2G -Xss4M"
+        run: >
+          set SCALANATIVE_GC=${{matrix.gc}}&
+          set SCALANATIVE_INCLUDE_DIRS=${{steps.setup.outputs.vcpkg-dir}}\include&
+          set SCALANATIVE_LIB_DIRS=${{steps.setup.outputs.vcpkg-dir}}\lib&
+          set SCALANATIVE_TEST_PREFETCH_DEBUG_INFO=1&
+          set SCALANATIVE &
+          sbt
+          "scalaPartestTests${{env.project-version}}/testOnly -- -oDF --showDiff neg/abstract.scala pos/abstract.scala run/Course-2002-01.scala"
         shell: cmd
 
   run-scripted-tests:
     name: Scripted tests
     if: github.event_name == 'pull_request' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')
-    runs-on: windows-2022
+    runs-on: windows-2025
     strategy:
       fail-fast: false
       matrix:
@@ -94,7 +122,7 @@ jobs:
   test-runtime-ext:
     name: Test runtime extension
     if: ((github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native') || (github.event_name == 'pull_request' && !contains(github.event.pull_request.body, '[skip ci]') && contains(github.event.pull_request.body, '[test-extended]'))
-    runs-on: windows-2022
+    runs-on: windows-2025
     env:
       ENABLE_EXPERIMENTAL_COMPILER: true
     needs: [test-runtime]
@@ -149,7 +177,7 @@ jobs:
         shell: cmd
 
   test-llvm-versions:
-    runs-on: windows-2022
+    runs-on: windows-2025
     if: ((github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native') || (github.event_name == 'pull_request' && !contains(github.event.pull_request.body, '[skip ci]') && contains(github.event.pull_request.body, '[test-extended]'))
     strategy:
       fail-fast: false
