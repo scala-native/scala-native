@@ -9,7 +9,7 @@ concurrency:
 
 jobs:
   # Compile and run tests against given version of the JDK to check compliance
-  # We test against Java 8 as default in other CI jobs
+  # We test against Java 17 as default in other CI jobs
   tests-unix-jdk-compliance:
     name: Test Unix JDK compliance
     runs-on: ${{matrix.os}}
