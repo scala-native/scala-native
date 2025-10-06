@@ -29,7 +29,6 @@ jobs:
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: ${{matrix.scala}}
-          java-version: 8
 
       - name: Test tools
         run: sbt "test-tools ${{ matrix.scala }}; toolsBenchmarks${{env.project-version}}/Jmh/compile"
@@ -43,7 +42,6 @@ jobs:
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: 3
-          java-version: 8
 
       - name: Compile everything
         # Publish 2.13.latest artifacts locally first, these are required by scalalib3
@@ -64,7 +62,6 @@ jobs:
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: ${{matrix.scala}}
-          java-version: 8
 
       - name: Test cross compilation of compiler plugins
         run: sbt "+nscplugin${{ env.project-version }}/test; +junitPlugin${{ env.project-version }}/compile; +scalalib${{ env.project-version }}/compile"
@@ -218,7 +215,6 @@ jobs:
         with:
           scala-version: ${{matrix.scala}}
           llvm-version: ${{ matrix.llvm }}
-          java-version: 8
 
       - name: Run tests
         timeout-minutes: 45
@@ -241,7 +237,6 @@ jobs:
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: ${{matrix.scala}}
-          java-version: 11
 
         # Make sure that Scala partest denylisted tests contain only valid test names
       - name: Setup Scala-cli
@@ -258,7 +253,6 @@ jobs:
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: ${{matrix.scala}}
-          java-version: 11
 
         # Running all partests would take ~2h for each Scala version, run only single test of each kind
         # to make sure that infrastructure works correctly.

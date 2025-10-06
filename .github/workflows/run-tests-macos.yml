@@ -158,7 +158,6 @@ jobs:
         with:
           scala-version: ${{matrix.scala}}
           llvm-version: ${{ matrix.llvm }}
-          java-version: 8
 
       - name: Run tests
         timeout-minutes: 45

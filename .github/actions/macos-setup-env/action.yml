@@ -6,7 +6,7 @@ inputs:
     required: true
   java-version:
     description: "Java version to use in tests"
-    default: "8"
+    default: "17"
   llvm-version:
     description: "Custom version of LLVM to use"
   gc: 
