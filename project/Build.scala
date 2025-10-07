@@ -1137,8 +1137,8 @@ object Build {
         // The generic _.dependsOn(scalalib.forBinaryVersion(v)) for some reason fails on the CI Linux runtime tests
         case "2.12"   => _.dependsOn(scalalib.v2_12)
         case "2.13"   => _.dependsOn(scalalib.v2_13)
-        case "3"      => _.dependsOn(scalalib.v3)
-        case "3-next" => _.dependsOn(scalalib.v3Next)
+        case "3"      => _.dependsOn(scala3lib.v3)
+        case "3-next" => _.dependsOn(scala3lib.v3Next)
       }
     }
 
