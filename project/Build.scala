@@ -772,7 +772,10 @@ object Build {
 
   lazy val sandbox =
     MultiScalaProject("sandbox", file("sandbox"))
-      .settings(noJavaReleaseSettings)
+      .settings(
+        noJavaReleaseSettings(Compile),
+        noJavaReleaseSettings(Test),
+      )
       .withJUnitPlugin
       .withNativeCompilerPlugin
       .withScalaStandardLibrary

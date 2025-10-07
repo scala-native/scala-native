@@ -129,34 +129,25 @@ object Settings {
         if (canUseRelease(scalaVersion.value)) Nil
         else List(s"-source", targetJDKVersionString(jdkVersion))
       },
-      // Remove -source flags from tests to allow for multi-jdk version compliance tests
-      Test / scalacOptions ~= { _.filterNot(isScalacJDKTargetOption) },
-      Test / javacOptions := {
-        val prev = javacOptions.value
-        val targetVersion =
-          targetJDKVersionString(targetJDKVersion(scalaVersion.value))
-        prev.filterNot { opt =>
-          isJavacJDKTargetOption(opt) || opt == targetVersion
-        }
-      }
+      noJavaReleaseSettings(Test)
     )
   }
 
-  def isScalacJDKTargetOption(scalacOption: String) = {
-    Seq("-target:", "-Xtarget", "-release:").exists(scalacOption.startsWith)
-  }
-  def isJavacJDKTargetOption(javacOption: String) = {
-    Seq("-source", "-target").exists(javacOption.startsWith)
-  }
+  def isScalacJDKTargetOption(scalacOption: String) = {}
 
-  def noJavaReleaseSettings = Def.settings(
-    scalacOptions ~= { _.filterNot(isScalacJDKTargetOption) },
-    javacOptions := {
+  def noJavaReleaseSettings(scope: Configuration) = Def.settings(
+    scope / scalacOptions ~= {
+      _.filterNot { opt =>
+        Seq("-target", "-Xtarget", "-release").exists(opt.contains)
+      }
+    },
+    scope / javacOptions := {
       val prev = javacOptions.value
       val targetVersion =
         targetJDKVersionString(targetJDKVersion(scalaVersion.value))
       prev.filterNot { opt =>
-        isJavacJDKTargetOption(opt) || opt == targetVersion
+        opt == targetVersion ||
+        Seq("-source", "-target").exists(opt.contains)
       }
     }
   )
@@ -717,7 +708,7 @@ object Settings {
   )
   lazy val commonJavalibSettings = Def.settings(
     recompileAllOrNothingSettings,
-    noJavaReleaseSettings, // we don't emit classfiles
+    noJavaReleaseSettings(Compile), // we don't emit classfiles
     Compile / scalacOptions ++= scalaNativeCompilerOptions(
       "genStaticForwardersForNonTopLevelObjects"
     ),
