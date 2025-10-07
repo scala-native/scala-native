@@ -10,6 +10,7 @@ abstract class Throwable @noinline protected (
   self: java.lang.Throwable =>
 
   protected var stackTrace: scala.Array[StackTraceElement] = _
+  private var rawStackTrace: scala.Array[Long] = _
   private[runtime] var onCatchHandler: CFuncPtr1[Throwable, Unit] = null
   private val exceptionWrapper: BlobArray =
     Throwable.ffi.sizeOfExceptionWrapper match {
@@ -29,7 +30,7 @@ abstract class Throwable @noinline protected (
     // currentStackTrace should be handling exclusion in its own
     // critical section, but does not. So do
     if (writableStackTrace) this.synchronized {
-      this.stackTrace = StackTrace.currentStackTrace()
+      this.rawStackTrace = StackTrace.currentRawStackTrace()
     }
     this
   }
@@ -46,9 +47,35 @@ abstract class Throwable @noinline protected (
     }
   }
 
+  def getStackTrace(): scala.Array[StackTraceElement] = {
+    // Be robust! Test this.stackTrace against null rather than relying upon
+    // the value of writableStackTrace.
+    //
+    // subclass scala.util.control.NoStackTrace overrides fillInStackTrace()
+    // so that it never touches this.stackTrace. This creates the situation
+    // where writeableStackTrace is true and this.stackTrace is null.
+    //
+    // If scala code creates this situation, then by the Gell-Mann principle
+    // user code in the wild is bound to do so.
+    //
+    // If stackTrace is null, no profit to calling fillInStackTrace().
+    // If writableStackTrace is true, then fillInStackTrace has already
+    // been called in the constructor. If the stack is not writable, then
+    // it can not be filled in.
+    if (stackTrace != null) stackTrace.clone()
+    else if (rawStackTrace != null) this.synchronized {
+      if (stackTrace == null) {
+        stackTrace = StackTrace.materializeStackTrace(rawStackTrace)
+        rawStackTrace = null
+      }
+      stackTrace.clone()
+    }
+    else new scala.Array[StackTraceElement](0) // as specified by Java 8.
+  }
+
   // Variation of Throwable.printStackTrace that prints using printf (System.out requires synchronization)
   def showStackTrace(): Unit = {
-    val stacktrace = this.stackTrace
+    val stacktrace = this.getStackTrace()
 
     usingCString(this.toString()) {
       ffi.printf(c"%s\n", _)
