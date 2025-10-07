@@ -774,7 +774,7 @@ object Build {
     MultiScalaProject("sandbox", file("sandbox"))
       .settings(
         noJavaReleaseSettings(Compile),
-        noJavaReleaseSettings(Test),
+        noJavaReleaseSettings(Test)
       )
       .withJUnitPlugin
       .withNativeCompilerPlugin
@@ -1137,11 +1137,8 @@ object Build {
   implicit class MultiProjectOps(val project: MultiScalaProject) extends AnyVal {
     def withScalaStandardLibrary: MultiScalaProject = {
       project.mapBinaryVersions {
-        // The generic _.dependsOn(scalalib.forBinaryVersion(v)) for some reason fails on the CI Linux runtime tests
-        case "2.12"   => _.dependsOn(scalalib.v2_12)
-        case "2.13"   => _.dependsOn(scalalib.v2_13)
-        case "3"      => _.dependsOn(scala3lib.v3)
-        case "3-next" => _.dependsOn(scala3lib.v3Next)
+        case v @ ("2.12" | "2.13") => _.dependsOn(scalalib.forBinaryVersion(v))
+        case v @ ("3" | "3-next")  => _.dependsOn(scala3lib.forBinaryVersion(v))
       }
     }
 
