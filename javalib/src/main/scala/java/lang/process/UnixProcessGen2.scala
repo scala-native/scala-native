@@ -33,23 +33,17 @@ import scalanative.posix.unistd
 
 /* Design Note:
  * 
- * the java.lang.Process class was introduced in JDK 1.
- * Even the most recent JDK 24 documentation of the class says nothing
- * about the class being thread-safe. That means that one must treat
- * it as concurrent access requiring external synchronization.
- *
- * So much for "de jure". "De facto" applications such as Li Haoyi's os-lib
- * test cases, seem to work better, meaning succeed, where they also succeed on
- * JVM, when these methods are internally synchronized.
- *
- * Best current guess/hypothesis is that such applications are using an
- * unsynchronized 'isAlive()', to poll or watch "watch" if another process
- * in a 'waitFor()' has completed.
+ * This implementation is actively "Under Heavy Construction".
+ * If you are thinking of making changes, please co-ordinate in
+ * SN Issue #4508 or elsewhere. Thank you.
  * 
- * This code now uses a shared Java AtomicInteger in many places for greater
- * concurrency than the previous "synchronized{}" blocks.
- * 
- * This is a developing story, stay tuned.
+ * The comments in this file, especially block or design comments
+ * have become out of sync with the implementation are almost certainly
+ * a waste of time.
+ *
+ * If you attempt to trace code paths and say "this does not make sense",
+ * "this can not be", "this is not thread-safe", or "this is neither
+ * efficient nor a short code path" you are probably right.
  */
 
 private[process] class UnixProcessHandleGen2(
@@ -61,7 +55,9 @@ private[process] class UnixProcessHandleGen2(
     waitpidImplNoECHILD(_pid, options = WNOHANG)
 
   override protected def waitForImpl(): Boolean = {
-    // wait until process exits or forever, whichever comes first.
+    /* wait until process exits, is interrupted in OS wait,  or forever,
+     * whichever comes first.
+     */
     while (!osWaitForImpl(None) && !hasExited) {}
     true
   }
