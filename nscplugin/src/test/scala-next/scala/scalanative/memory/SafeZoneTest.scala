@@ -17,7 +17,7 @@ class SafeZoneTest {
     }
   }
 
-  @Test def referenceNonEscapedObject(): Unit =  nativeCompilation(
+  @Test def referenceNonEscapedObject(): Unit = nativeCompilation(
     """
       |import scala.language.experimental.captureChecking
       |import scala.scalanative.memory.SafeZone
@@ -37,8 +37,9 @@ class SafeZoneTest {
   )
 
   @Test def referenceEscapedObject(): Unit = {
-    val err = assertThrows(classOf[CompilationFailedException], () => 
-      NIRCompiler(_.compile("""
+    val err = assertThrows(
+      classOf[CompilationFailedException],
+      () => NIRCompiler(_.compile("""
         |import scala.language.experimental.captureChecking
         |import scala.scalanative.memory.SafeZone
         |import scala.scalanative.runtime.SafeZoneAllocator.allocate
@@ -56,8 +57,10 @@ class SafeZoneTest {
     )
     assertTrue(
       "Got:" + err.getMessage,
-     err.getMessage.contains("local reference sz1 leaks into outer capture set of type parameter T of method apply")
-     )
+      err.getMessage.contains(
+        "local reference sz1 leaks into outer capture set of type parameter T of method apply"
+      )
+    )
   }
 
   @Test def typeCheckCapturedZone(): Unit = nativeCompilation(
@@ -86,8 +89,9 @@ class SafeZoneTest {
   )
 
   @Test def typeCheckNotCaptured(): Unit = {
-    val err = assertThrows(classOf[CompilationFailedException], () => 
-      NIRCompiler(_.compile("""
+    val err = assertThrows(
+      classOf[CompilationFailedException],
+      () => NIRCompiler(_.compile("""
         |import scala.language.experimental.captureChecking
         |import scala.scalanative.memory.SafeZone
         |import scala.scalanative.runtime.SafeZoneAllocator.allocate
@@ -107,6 +111,8 @@ class SafeZoneTest {
         |
         |""".stripMargin))
     )
-    assertTrue(err.getMessage().contains("Found:    B{val a: A^{aInHeap}}^{aInHeap, sz}"))
+    assertTrue(
+      err.getMessage().contains("Found:    B{val a: A^{aInHeap}}^{aInHeap, sz}")
+    )
   }
 }
