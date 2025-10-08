@@ -19,7 +19,7 @@ trait Zone {
   def alloc(size: Int): Ptr[Byte] =
     alloc(unsignedOf(castIntToRawSizeUnsigned(size)))
 
-    /** Allocates memory of given size. */
+  /** Allocates memory of given size. */
   def alloc(size: UInt): Ptr[Byte] =
     alloc(size.toUSize)
 

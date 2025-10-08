@@ -929,8 +929,8 @@ class StreamTest {
     // JVM 8 expects 0x11 (decimal 17), JVM >= 17 expects 0x4051 (Dec 16465)
     val expectedSAllLimitedCharacteristics =
       Spliterator.ORDERED | Spliterator.DISTINCT // 0x11
-      // Drop SIZED, SUBSIZED, CONCURRENT, IMMUTABLE, & NONNULL.
-      // SORTED was not there to drop.
+    // Drop SIZED, SUBSIZED, CONCURRENT, IMMUTABLE, & NONNULL.
+    // SORTED was not there to drop.
 
     assertEquals(
       "Unexpected characteristics for all characteristics stream",

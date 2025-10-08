@@ -33,7 +33,7 @@ object ClassPath {
   private[scalanative] def apply(directory: VirtualDirectory): ClassPath =
     new Impl(directory, Logger.nullLogger)
 
-    /** Create classpath based on the virtual directory. */
+  /** Create classpath based on the virtual directory. */
   private[scalanative] def apply(
       directory: VirtualDirectory,
       log: Logger
