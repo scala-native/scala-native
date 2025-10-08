@@ -1,6 +1,6 @@
---- 3.6.0-RC1-bin-20240815-99f431e-NIGHTLY/scala/reflect/Selectable.scala
+--- 3.8.0-RC1-bin-20250914-afbb66b-NIGHTLY/scala/reflect/Selectable.scala
 +++ overrides-3/scala/reflect/Selectable.scala
-@@ -16,16 +16,17 @@
+@@ -18,16 +18,17 @@
     */
    protected def selectedValue: Any = this
  
@@ -25,7 +25,7 @@
  
    // The Scala.js codegen relies on this method being final for correctness
    /** Select method and apply to arguments.
-@@ -34,10 +35,7 @@
+@@ -36,10 +37,7 @@
     *  @param args       The arguments to pass to the selected method
     */
    final def applyDynamic(name: String, paramTypes: Class[?]*)(args: Any*): Any =

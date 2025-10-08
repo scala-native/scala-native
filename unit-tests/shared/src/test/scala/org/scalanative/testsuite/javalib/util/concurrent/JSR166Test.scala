@@ -1038,7 +1038,9 @@ object JSR166Test {
   // Epsilon is added for Scala Native Test environment.
   final val epsilon = 0.00001 // tolerance for Floating point comparisons.
 
-  final val expensiveTests = sys.env.contains("CI")
+  // TODO: Temporary disabled due to large memory usage
+  // Restore after implementing generational GC
+  final val expensiveTests = false // sys.env.contains("CI")
 
   /** If true, also run tests that are not part of the official tck because they
    *  test unspecified implementation details.

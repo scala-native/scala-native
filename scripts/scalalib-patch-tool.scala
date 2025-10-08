@@ -14,11 +14,15 @@ val ignoredFiles = {
   Set[RelPath]()
 }
 
+@scala.main
+def patchTool(args: String*) =
+  ParserForMethods(this).runOrThrow(args.toSeq, allowPositional = true)
+
 @main(doc = """Helper tool created for working with scalalib overrides / patches.
-     Accepts one of following commands:
-     - create   - Create diffs of Scala sources based on version in $overridesDir and fetched Scala sources
-     - recreate - Create override files based on created diffs and fetched Scala sources
-     - prune    - Remove override files having associated .patch file""")
+    Accepts one of following commands:
+    - create   - Create diffs of Scala sources based on version in $overridesDir and fetched Scala sources
+    - recreate - Create override files based on created diffs and fetched Scala sources
+    - prune    - Remove override files having associated .patch file""")
 def main(
     @arg(doc = "Command to run [create, recreate, prune]")
     cmd: Command,
@@ -53,13 +57,13 @@ def main(
     }
 
   println(s"""
-       |Attempting to $cmd with config:
-       |Scala version: $scalaVersion
-       |Overrides dir: $overridesDirPath
-       |Sources dir:   $sourcesDir
-       |Denylisted: 
-       | - ${ignoredFiles.mkString("\n - ")}
-       |""".stripMargin)
+      |Attempting to $cmd with config:
+      |Scala version: $scalaVersion
+      |Overrides dir: $overridesDirPath
+      |Sources dir:   $sourcesDir
+      |Denylisted: 
+      | - ${ignoredFiles.mkString("\n - ")}
+      |""".stripMargin)
 
   assert(os.exists(overridesDirPath), "Overrides dir does not exists")
 
@@ -179,16 +183,15 @@ case object CreatePatches extends Command
 case object PruneOverrides extends Command
 case object RecreateOverrides extends Command
 
-implicit object CommandReader
-    extends TokensReader[Command](
-      "command",
-      {
-        case Seq("create")   => Right(CreatePatches)
-        case Seq("prune")    => Right(PruneOverrides)
-        case Seq("recreate") => Right(RecreateOverrides)
-        case _               => Left("Expected one of create, prune, recreate")
-      }
-    )
+given TokensReader[Command] = new TokensReader.Simple[Command] {
+  override val shortName = "command"
+  override def read(args: Seq[String]) = args match {
+    case Seq("create")   => Right(CreatePatches)
+    case Seq("prune")    => Right(PruneOverrides)
+    case Seq("recreate") => Right(RecreateOverrides)
+    case _               => Left("Expected one of create, prune, recreate")
+  }
+}
 
 def fileToLines(path: os.Path) = {
   val list = new java.util.LinkedList[String]()
@@ -211,5 +214,3 @@ def sourcesExistsOrFetch(scalaVersion: String, sourcesDir: os.Path)(implicit
   }
   assert(os.exists(sourcesDir), s"Sources at $sourcesDir missing")
 }
-
-ParserForMethods(this).runOrThrow(args, allowPositional = true)
