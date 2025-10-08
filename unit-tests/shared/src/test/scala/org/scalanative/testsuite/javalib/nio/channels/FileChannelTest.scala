@@ -472,7 +472,7 @@ class FileChannelTest {
       assertTrue(
         s"unexpected content '${content}'",
         (content == "heworld!") // write at absolute position happened
-          || (content == "hello, world!") // write happed at EOF.
+        || (content == "hello, world!") // write happed at EOF.
       )
     }
   }
