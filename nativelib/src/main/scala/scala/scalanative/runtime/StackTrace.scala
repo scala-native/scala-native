@@ -120,7 +120,6 @@ private[runtime] object StackTrace {
     }
   }
 
-  @deprecated("Use lazy currentRawStackTrace and materialize it when needed")
   @noinline def currentStackTrace(): scala.Array[StackTraceElement] = {
     materializeStackTrace(currentRawStackTrace())
   }
