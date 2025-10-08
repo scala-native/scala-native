@@ -30,7 +30,7 @@ abstract class Throwable @noinline protected (
     // currentStackTrace should be handling exclusion in its own
     // critical section, but does not. So do
     if (writableStackTrace) this.synchronized {
-      if (LinktimeInfo.isWindows) {
+      if (LinktimeInfo.isWindows || LinktimeInfo.is32BitPlatform) {
         // Getting stack traces does not work well for collecting traces lazilly
         this.stackTrace = StackTrace.currentStackTrace()
       } else {
