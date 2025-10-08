@@ -38,86 +38,94 @@ private[runtime] object StackTrace {
   private[runtime] type InstructionPointer = Long
   @noinline private[runtime] def currentRawStackTrace()
       : scala.Array[InstructionPointer] = {
+    def emptyStackTrace = scala.Array.emptyLongArray
+
     val thread = NativeThread.currentNativeThread
-    if (thread.isFillingStackTrace) scala.Array.emptyLongArray
-    else if (LinktimeInfo.asanEnabled) scala.Array.emptyLongArray
-    else {
-      implicit val tlContext: Context = ThreadLocalContext.get()
-      val cursor = tlContext.unwindCursor
-      val context = tlContext.unwindContext
-      val ip = tlContext.ip
-      try {
-        thread.isFillingStackTrace = true
-        if (unwind.get_context(context) < 0)
-          return scala.Array.emptyLongArray
-        if (unwind.init_local(cursor, context) < 0)
-          return scala.Array.emptyLongArray
+    if (thread.isFillingStackTrace)
+      return emptyStackTrace
 
-        val buffer = scala.Array.newBuilder[Long]
-        buffer.sizeHint(32) // at least
+    if (LinktimeInfo.asanEnabled)
+      return emptyStackTrace
 
-        // JVM limit stack trace to 1024 entries
-        var frames = 0
-        while (unwind.step(cursor) > 0 && frames < 1024) {
-          frames += 1
-          if (unwind.get_reg(cursor, unwind.UNW_REG_IP, ip) == 0) {
-            buffer += Intrinsics.castRawSizeToLongUnsigned(
-              Intrinsics.loadRawSize(ip)
-            )
-          }
+    implicit val tlContext: Context = ThreadLocalContext.get()
+    val context = tlContext.unwindContext
+    if (unwind.get_context(context) < 0)
+      return emptyStackTrace
+
+    val cursor = tlContext.unwindCursor
+    if (unwind.init_local(cursor, context) < 0)
+      return emptyStackTrace
+    val ip = tlContext.ip
+    try {
+      thread.isFillingStackTrace = true
+
+      val buffer = scala.Array.newBuilder[Long]
+      buffer.sizeHint(32) // at least
+
+      // JVM limit stack trace to 1024 entries
+      var frames = 0
+      while (unwind.step(cursor) > 0 && frames < 1024) {
+        frames += 1
+        if (unwind.get_reg(cursor, unwind.UNW_REG_IP, ip) == 0) {
+          buffer += Intrinsics.castRawSizeToLongUnsigned(
+            Intrinsics.loadRawSize(ip)
+          )
         }
-        buffer.result()
-      } finally {
-        thread.isFillingStackTrace = false
       }
+      buffer.result()
+    } finally {
+      thread.isFillingStackTrace = false
     }
+
   }
   private[runtime] def materializeStackTrace(
       raw: scala.Array[Long]
   ): scala.Array[StackTraceElement] = {
-    if (raw.isEmpty) return scala.Array.empty
-    else {
-      implicit val tlContext: Context = ThreadLocalContext.get()
-      val cursor = tlContext.unwindCursor
-      val context = tlContext.unwindContext
-      if (unwind.get_context(context) < 0)
-        return scala.Array.empty
-      if (unwind.init_local(cursor, context) < 0)
-        return scala.Array.empty
+    def emptyStackTrace = scala.Array.emptyObjectArray
+      .asInstanceOf[scala.Array[StackTraceElement]]
+    if (raw.isEmpty)
+      return emptyStackTrace
 
-      val buffer = new scala.Array[StackTraceElement](raw.length)
-      var ipIdx = 0
-      var bufIdx = 0
-      while (ipIdx < raw.length) {
-        val addr = raw(ipIdx)
-        /* Creates a stack trace element in given unwind context. Finding a
-         *  name of the symbol for current function is expensive, so we cache
-         *  stack trace elements based on current instruction pointer.
-         */
-        val elem = tlContext.cache.getOrElseUpdate(
-          addr,
-          makeStackTraceElement(cursor, addr)
-        )
-        buffer(bufIdx) = elem
-        bufIdx += 1
+    implicit val tlContext: Context = ThreadLocalContext.get()
+    val context = tlContext.unwindContext
+    if (unwind.get_context(context) < 0)
+      return emptyStackTrace
 
-        // Stack trace cleanup
+    val cursor = tlContext.unwindCursor
+    if (unwind.init_local(cursor, context) < 0)
+      return emptyStackTrace
+
+    val buffer = scala.Array.newBuilder[StackTraceElement]
+    buffer.sizeHint(raw.length)
+
+    var ipIdx = 0
+    while (ipIdx < raw.length) {
+      val addr = raw(ipIdx)
+
+      /* Creates a stack trace element in given unwind context. Finding a
+       *  name of the symbol for current function is expensive, so we cache
+       *  stack trace elements based on current instruction pointer.
+       */
+      val elem = tlContext.cache.getOrElseUpdate(
+        addr,
+        makeStackTraceElement(cursor, addr)
+      )
+      buffer += elem
+
+      // Stack trace cleanup
+      if (ipIdx < 4) {
         if (elem.getClassName.startsWith("scala.scalanative.runtime.")) {
           val shouldClear =
             (elem.getClassName == "scala.scalanative.runtime.Throwable" && {
               elem.getMethodName == "fillInStackTrace" || elem.getMethodName == "<init>"
             })
-          if (shouldClear) {
-            0.until(bufIdx).foreach(buffer(_) = null)
-            bufIdx = 0
-          }
+          if (shouldClear) buffer.clear()
         }
-        ipIdx += 1
       }
-
-      if (bufIdx != ipIdx) Arrays.copyOf(buffer, bufIdx)
-      else buffer
+      ipIdx += 1
     }
+
+    buffer.result()
   }
 
   @noinline def currentStackTrace(): scala.Array[StackTraceElement] = {
