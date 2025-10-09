@@ -29,18 +29,18 @@ Scala) can be enabled by annotating fields or the whole class with
 behaviour can be also enabled on whole project scope by providing a
 Scala compiler plugin options
 `-Pscalanative:forceStrictFinalFields`. Semantics of final
-fields can be also overriden at linktime using
+fields can be also overridden at linktime using
 `NativeConfig.semanticsConfig` - it can be configured to
 override default relaxed memory model, allowing to replace it with
-strict JMM semantics or disable synchronization entierely.
+strict JMM semantics or disable synchronization entirely.
 
 Scala Native ensures that all class field operations would be executed
 atomically, but does not impose any synchronization or happens-before
 guarantee.
 
- When executing extern functions Garbage Collector needs to be notified about the internal state of the calling thread. This notification is required to correctly track reachable objects and skip waiting for threads executing unmanged code - these may block (e.g. waiting on socket connection) for long time leading to deadlocks during GC.
+ When executing extern functions Garbage Collector needs to be notified about the internal state of the calling thread. This notification is required to correctly track reachable objects and skip waiting for threads executing unmanaged code - these may block (e.g. waiting on socket connection) for long time leading to deadlocks during GC.
  By default only calls to methods annotated with `@scala.scalanative.unsafe.blocking` would notify the GC - it allows to reduce overhead of extern method calls, but might lead to deadlocks or longer GC pauses when waiting for unannotated blocking function call.
- This behaviour can be changed by enabling `NativeConfig.strictExternCallSemantics`. Under this mode every invocation of foreign function would notify the GC about the thread state which guarantess no deadlocks introduced by waiting for threads executing foreign code, but might reduce overall performance.
+ This behaviour can be changed by enabling `NativeConfig.strictExternCallSemantics`. Under this mode every invocation of foreign function would notify the GC about the thread state which guarantees no deadlocks introduced by waiting for threads executing foreign code, but might reduce overall performance.
 
 
 ## Finalization
