@@ -14,4 +14,4 @@ User's Guide
   testing
   profiling
   runtime
-
+  release-types

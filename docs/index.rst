@@ -2,8 +2,11 @@
 Scala Native
 ============
 
+
 +----------------------+------------------------+
-| Latest release       | Version                |
+| Releases [1]_                                 |
++======================+========================+
+| Type                 | Version                |
 +----------------------+------------------------+
 | Stable               | |last_stable_release|  |
 +----------------------+------------------------+
@@ -103,5 +106,7 @@ and the development process behind the project.
   blog/index
   changelog/index
   faq
+
+.. [1] See :ref:`release-types`
 
 Document built at : |today|

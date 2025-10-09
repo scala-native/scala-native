@@ -132,4 +132,4 @@ export GC_MAXIMUM_HEAP_SIZE=1m;
 GC_MAXIMUM_HEAP_SIZE should be at least GC_INITIAL_HEAP_SIZE
 ```
 
-Continue to [lib](../lib/communitylib.md)
+Continue to [release types](./release-types.md).
