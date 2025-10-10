@@ -1,6 +1,6 @@
---- 2.13.10/scala/collection/concurrent/TrieMap.scala
-+++ overrides-2.13/scala/collection/concurrent/TrieMap.scala
-@@ -23,6 +23,8 @@
+--- 3.8.0-RC1-bin-20251004-9f70200-NIGHTLY/scala/collection/concurrent/TrieMap.scala
++++ overrides-3/scala/collection/concurrent/TrieMap.scala
+@@ -26,6 +26,8 @@
  import scala.collection.mutable.GrowableBuilder
  import scala.util.Try
  import scala.util.hashing.Hashing
@@ -9,7 +9,7 @@
  
  private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen, equiv: Equiv[K]) extends INodeBase[K, V](g) {
    import INodeBase._
-@@ -705,7 +707,7 @@
+@@ -706,7 +708,7 @@
  
    def this(hashf: Hashing[K], ef: Equiv[K]) = this(
      INode.newRootNode(ef),
@@ -18,7 +18,7 @@
      hashf,
      ef
    )
-@@ -731,8 +733,7 @@
+@@ -732,8 +734,7 @@
  
    private def readObject(in: java.io.ObjectInputStream): Unit = {
      root = INode.newRootNode(equality)
@@ -28,7 +28,7 @@
      hashingobj = in.readObject().asInstanceOf[Hashing[K]]
      equalityobj = in.readObject().asInstanceOf[Equiv[K]]
  
-@@ -1040,7 +1041,27 @@
+@@ -1041,7 +1042,27 @@
  
  @SerialVersionUID(3L)
  object TrieMap extends MapFactory[TrieMap] {
@@ -55,8 +55,8 @@
 +
    def empty[K, V]: TrieMap[K, V] = new TrieMap[K, V]
  
-   def from[K, V](it: IterableOnce[(K, V)]): TrieMap[K, V] = new TrieMap[K, V]() ++= it
-@@ -1048,7 +1069,7 @@
+   def from[K, V](it: IterableOnce[(K, V)]^): TrieMap[K, V] = new TrieMap[K, V]() ++= it
+@@ -1049,7 +1070,7 @@
    def newBuilder[K, V]: mutable.GrowableBuilder[(K, V), TrieMap[K, V]] = new GrowableBuilder(empty[K, V])
  
    @transient
