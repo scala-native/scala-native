@@ -38,7 +38,9 @@ def main(
 
   implicit val wd: os.Path = pwd
 
-  val sourcesDir = pwd / "scalalib" / "target" / "scalaSources" / scalaVersion
+  val sourcesDir = pwd / scalalibProject(scalaVersion) /
+    "target" / "scalaSources" / scalaVersion
+
   val overridesDirPath: os.Path =
     overridesDir.map(os.Path(_)).getOrElse {
       {
@@ -199,6 +201,14 @@ def fileToLines(path: os.Path) = {
   list
 }
 
+def scalalibProject(scalaVersion: String): String = scalaVersion
+  .split('.')
+  .take(2)
+  .map(_.toInt) match {
+  case Array(3, minor) if minor <= 7 => "scala3lib"
+  case _                             => "scalalib"
+}
+
 def sourcesExistsOrFetch(scalaVersion: String, sourcesDir: os.Path)(implicit
     wd: os.Path
 ) = {
@@ -209,8 +219,12 @@ def sourcesExistsOrFetch(scalaVersion: String, sourcesDir: os.Path)(implicit
       case s"2.13.${patch}"       => "2_13"
       case s"3.${minor}.${patch}" => "3"
     }
-    os.proc("sbt", s"++ $scalaVersion", s"scalalib${suffix}/fetchScalaSource")
-      .call()
+    val project =
+      os.proc(
+        "sbt",
+        s"++ $scalaVersion",
+        s"${scalalibProject(scalaVersion)}${suffix}/fetchScalaSource"
+      ).call()
   }
   assert(os.exists(sourcesDir), s"Sources at $sourcesDir missing")
 }
