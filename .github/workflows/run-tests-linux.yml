@@ -50,7 +50,6 @@ jobs:
     
   test-scala-cross-build:
     runs-on: ubuntu-22.04
-    if: ((github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native') || (github.event_name == 'pull_request' && !contains(github.event.pull_request.body, '[skip ci]') && contains(github.event.pull_request.body, '[test-extended]'))
     env:
       ENABLE_EXPERIMENTAL_COMPILER: true
     strategy:
@@ -63,8 +62,9 @@ jobs:
         with:
           scala-version: ${{matrix.scala}}
 
-      - name: Test cross compilation of compiler plugins
-        run: sbt "+nscplugin${{ env.project-version }}/test; +junitPlugin${{ env.project-version }}/compile; +scalalib${{ env.project-version }}/compile"
+      # scalalib/Test/compile would force building both compiler plugins as well
+      - name: Test cross compilation of compiler plugins and stdlib
+        run: sbt "+${{ startsWith(matrix.scala, '3') && 'scala3lib' || 'scalalib' }}${{ env.project-version }}/Test/compile"
 
   test-runtime:
     name: Test runtime

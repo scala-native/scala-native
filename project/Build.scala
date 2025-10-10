@@ -521,6 +521,7 @@ object Build {
         )
       )
       .withNativeCompilerPlugin
+      .withJUnitPlugin // no actual tests, used only in the CI
       .mapBinaryVersions {
         case "2.12" | "2.13" =>
           _.settings(
@@ -637,14 +638,14 @@ object Build {
 
   lazy val scala3lib: MultiScalaProject =
     MultiScalaProject("scala3lib")
-      .enablePlugins(MyScalaNativePlugin)
+      .withNativeCompilerPlugin
+      .withJUnitPlugin // no actual tests, used only in the CI
       .settings(
         publishSettings(Some(VersionScheme.BreakOnMajor)),
         disabledDocsSettings,
         scalacOptions --= ignoredScalaDeprecations(scalaVersion.value),
         NIROnlySettings
       )
-      .withNativeCompilerPlugin
       .mapBinaryVersions {
         case ("2.12" | "2.13") =>
           _.settings(
