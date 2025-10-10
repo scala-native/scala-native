@@ -949,11 +949,9 @@ object Settings {
                 command = Seq(
                   "git",
                   "apply",
-                  "-C1",
                   "--reject",
                   "--whitespace=fix",
                   "--recount",
-                  "--ignore-space-change",
                   sourcePath.toAbsolutePath().toString()
                 ),
                 cwd = scalaSrcDir
