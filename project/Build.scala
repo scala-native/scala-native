@@ -637,9 +637,7 @@ object Build {
       .dependsOn(auxlib)
 
   lazy val scala3lib: MultiScalaProject =
-    MultiScalaProject("scala3lib")
-      .withNativeCompilerPlugin
-      .withJUnitPlugin // no actual tests, used only in the CI
+    MultiScalaProject("scala3lib").withNativeCompilerPlugin.withJUnitPlugin // no actual tests, used only in the CI
       .settings(
         publishSettings(Some(VersionScheme.BreakOnMajor)),
         disabledDocsSettings,
