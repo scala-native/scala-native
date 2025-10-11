@@ -12,10 +12,12 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - uses: actions/setup-java@v4
+    - uses: coursier/cache-action@v6
+    - uses: coursier/setup-action@v1
       with:
-        distribution: "zulu"
-        java-version: ${{inputs.java-version}}
+        jvm: ${{inputs.java-version}}
+        apps: sbt
+
     - name: Calculate binary version
       shell: bash
       run: |

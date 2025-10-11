@@ -14,10 +14,12 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - uses: actions/setup-java@v4
+    - uses: coursier/cache-action@v6
+    - uses: coursier/setup-action@v1
       with:
-        distribution: "zulu"
-        java-version: ${{inputs.java-version}}
+        jvm: ${{inputs.java-version}}
+        apps: sbt
+
     - name: Calculate binary version
       shell: bash
       run: |
@@ -29,10 +31,6 @@ runs:
         else 
           echo "project-version=3" >> $GITHUB_ENV
         fi
-        
-    - name: Install common dependencies
-      shell: bash
-      run: brew install sbt
     
     - name: Install dependencies
       shell: bash
