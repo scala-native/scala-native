@@ -116,6 +116,7 @@ jobs:
 
           curl https://api.github.com/repos/${{ matrix.repo }}/dispatches \
             -H "Accept: application/vnd.github.everest-preview+json" \
+            -H "Authorization: token ${{ secrets.DISPATCH_TOKEN }}" \
             --data "$(jq -n \
               --arg version "${publishedVersion}" \
               '{
