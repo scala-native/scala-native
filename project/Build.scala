@@ -108,7 +108,7 @@ object Build {
     "nscplugin",
     file("nscplugin"),
     additionalIDEScalaVersions = List("2.13")
-  ).withBuildInfo
+  ).withBuildInfo(Test)
     .settings(
       compilerPluginSettings,
       scalacOptions ++= scalaVersionsDependendent(scalaVersion.value)(
@@ -219,6 +219,7 @@ object Build {
     }
     .withNativeCompilerPlugin
     .withCommonTools
+    .withBuildInfo(Compile, Some("scala.scalanative.nir"))
     .withJUnitPlugin
     .dependsOn(util)
     .dependsOn(testInterface % "test", junitRuntime % "test")
@@ -228,6 +229,7 @@ object Build {
       libraryDependencies ++= Deps.JUnitJvm
     )
     .withCommonTools
+    .withBuildInfo(Compile, Some("scala.scalanative.nir"))
     .mapBinaryVersions {
       // Scaladoc for Scala 2.12 is not compliant with normal compiler (see nscPlugin)
       case "2.12" => _.settings(disabledDocsSettings)
@@ -255,6 +257,7 @@ object Build {
     .withJUnitPlugin
     .withNativeCompilerPlugin
     .withCommonTools
+    .withBuildInfo(Test)
     .dependsOn(nir, util)
     .dependsOn(testInterface % "test", junitRuntime % "test")
     .zippedSettings(
@@ -272,6 +275,7 @@ object Build {
         Test / fork := true
       )
       .withCommonTools
+      .withBuildInfo(Test)
       .zippedSettings(Seq("nscplugin", "javalib", "scalalib"), versionsProjectReplacement = scalalibProjectSelect) {
         case Seq(nscPlugin, javalib, scalalib) =>
           toolsBuildInfoSettings(nscPlugin, javalib, scalalib)
@@ -714,7 +718,7 @@ object Build {
         }
       }
     )
-    .withBuildInfo
+    .withBuildInfo(Test)
     .withNativeCompilerPlugin
     .withJUnitPlugin
     .dependsOn(
@@ -724,9 +728,8 @@ object Build {
 
   lazy val testsJVM =
     MultiScalaProject("testsJVM", file("unit-tests/jvm"))
-      .enablePlugins(BuildInfoPlugin)
+      .withBuildInfo(Test)
       .settings(
-        buildInfoJVMSettings,
         noPublishSettings,
         testsCommonSettings,
         sharedTestSource(withDenylist = true),
@@ -1168,18 +1171,35 @@ object Build {
         project.dependsOn(dependency)
       else
         project.zippedSettings(dependency) { dependency =>
-          Compile / unmanagedSourceDirectories ++=
-            (dependency / Compile / unmanagedSourceDirectories).value
+          Def.settings(
+            Compile / unmanagedSourceDirectories ++= (dependency / Compile / unmanagedSourceDirectories).value,
+            Compile / managedSources ++= (dependency / Compile / managedSources).value
+          )
         }
     }
 
-    def withBuildInfo: MultiScalaProject =
+    def withBuildInfo(configuration: Configuration, buildInfoPkg: Option[String] = None): MultiScalaProject =
       project
-        .settings(
-          buildInfoJVMSettings,
-          buildInfoKeys += "nativeScalaVersion" -> scalaVersion.value
-        )
         .enablePlugins(BuildInfoPlugin)
+        .settings(
+          buildInfoPackage := buildInfoPkg.getOrElse("scala.scalanative.buildinfo"),
+          buildInfoObject := "ScalaNativeBuildInfo",
+          buildInfoKeys := Seq[BuildInfoKey](version, scalaVersion)
+        )
+        .settings(
+          configuration match {
+            case Compile =>
+              require(buildInfoPkg.isDefined, "BuildInfo for published modules requires explicit buildInfoPackage")
+              Def.settings(
+                buildInfoOptions += BuildInfoOption.PackagePrivate
+              )
+            case Test =>
+              Def.settings(
+                (Test / managedSources) ++= (Compile / buildInfo).value,
+                (Compile / managedSources) --= (Compile / buildInfo).value
+              )
+          }
+        )
 
     def withCommonTools: MultiScalaProject =
       project
@@ -1189,7 +1209,6 @@ object Build {
           // Running tests in parallel results in `FileSystemAlreadyExistsException`
           Test / parallelExecution := false
         )
-        .withBuildInfo
 
   }
 }
