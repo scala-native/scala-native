@@ -38,7 +38,9 @@ object BinaryIncompatibilities {
       "scala.scalanative.build.NativeConfig*"
     ),
     exclude[ReversedMissingMethodProblem]("scala.scalanative.build.Config*"),
-    exclude[Problem]("scala.scalanative.build.Config*Impl*")
+    exclude[Problem]("scala.scalanative.build.Config*Impl*"),
+    // Should have never been public in the first place - contains local classpaths
+    exclude[MissingClassProblem]("scala.scalanative.buildinfo.ScalaNativeBuildInfo*"),
   )
 
   final val NativeLib = Seq(
