@@ -111,8 +111,16 @@ jobs:
     steps:
       - name: Dispatch to workflows of dependant projects
         run: |
-            curl -H "Accept: application/vnd.github.everest-preview+json" \
-            -H "Authorization: token ${{ secrets.DISPATCH_TOKEN }}" \
-            --request POST \
-            --data '{"event_type": "nightly-published", "client_payload": {} }' \
-            https://api.github.com/repos/${{ matrix.repo }}/dispatches
+          publishedVersion=$(sbt -no-colors "print version" | tail -n 1)
+          echo "This build version: ${publishedVersion}"
+
+          curl https://api.github.com/repos/${{ matrix.repo }}/dispatches \
+            -H "Accept: application/vnd.github.everest-preview+json" \
+            --data "$(jq -n \
+              --arg version "${publishedVersion}" \
+              '{
+                event_type: "nightly-published",
+                client_payload: {
+                  version: $version
+                }
+              }')"
