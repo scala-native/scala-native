@@ -111,6 +111,9 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Dispatch to workflows of dependant projects
+      - uses: ./.github/actions/linux-setup-env
+        with:
+          scala-version: "3" # unused
         run: |
           publishedVersion=$(sbt -no-colors "print version" | tail -n 1)
           echo "This build version: ${publishedVersion}"
