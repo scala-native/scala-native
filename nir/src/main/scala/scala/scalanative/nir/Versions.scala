@@ -1,8 +1,6 @@
 package scala.scalanative
 package nir
 
-import scala.scalanative.buildinfo.ScalaNativeBuildInfo
-
 object Versions {
   /* NIR magic number */
   final val magic: Int = 0x2e4e4952 // '.NIR' in hex

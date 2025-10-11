@@ -1,5 +1,4 @@
 package scala.scalanative
-package buildinfo
 
 import scala.sys.process.*
 

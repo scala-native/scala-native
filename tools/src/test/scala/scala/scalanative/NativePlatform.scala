@@ -1,7 +1,8 @@
 package scala.scalanative
 
-import scala.scalanative.buildinfo.ScalaNativeBuildInfo._
+import scala.scalanative.buildinfo.ScalaNativeBuildInfo
 
 private[scalanative] object NativePlatform {
-  def erasesEmptyTraitConstructor: Boolean = nativeScalaVersion.startsWith("3.")
+  def erasesEmptyTraitConstructor: Boolean =
+    ScalaNativeBuildInfo.scalaVersion.startsWith("3.")
 }

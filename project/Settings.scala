@@ -10,7 +10,7 @@ import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport._
 import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
 
 // Hack warning: special object mimicking build-info plugin outputs, defined in project/ScalaNativeBuildInfo
-import scala.scalanative.buildinfo.ScalaNativeBuildInfo
+import scala.scalanative.ScalaNativeBuildInfo
 import sbtbuildinfo.BuildInfoPlugin.autoImport._
 import ScriptedPlugin.autoImport._
 import com.jsuereth.sbtpgp.PgpKeys
@@ -339,17 +339,6 @@ object Settings {
     publish := {},
     publishLocal := {},
     publish / skip := true
-  )
-
-  // Build Info
-  lazy val buildInfoJVMSettings = Def.settings(
-    buildInfoPackage := "scala.scalanative.buildinfo",
-    buildInfoObject := "ScalaNativeBuildInfo",
-    buildInfoKeys := Seq[BuildInfoKey](
-      version,
-      sbtVersion,
-      scalaVersion
-    )
   )
 
   // Tests
