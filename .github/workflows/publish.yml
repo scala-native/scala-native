@@ -87,6 +87,7 @@ jobs:
     name: Save SHA as last published tag
     runs-on: ubuntu-22.04
     needs: [publish]
+    if: github.event_name != 'workflow_dispatch' || github.ref_name == 'main'
     steps:
       - uses: actions/checkout@v5
 
