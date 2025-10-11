@@ -110,10 +110,11 @@ jobs:
         repo: ['scala-native/scala-native-cli']
     timeout-minutes: 5
     steps:
-      - name: Dispatch to workflows of dependant projects
+      - uses: actions/checkout@v5
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: "3" # unused
+      - name: Dispatch to workflows of dependant projects
         run: |
           publishedVersion=$(sbt -no-colors "print version" | tail -n 1)
           echo "This build version: ${publishedVersion}"
