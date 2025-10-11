@@ -60,29 +60,7 @@ class Throwable protected (
 
   def getMessage(): String = s
 
-  def getStackTrace(): Array[StackTraceElement] = {
-    // Be robust! Test this.stackTrace against null rather than relying upon
-    // the value of writableStackTrace.
-    //
-    // subclass scala.util.control.NoStackTrace overrides fillInStackTrace()
-    // so that it never touches this.stackTrace. This creates the situation
-    // where writeableStackTrace is true and this.stackTrace is null.
-    //
-    // If scala code creates this situation, then by the Gell-Mann principle
-    // user code in the wild is bound to do so.
-    //
-    // If stackTrace is null, no profit to calling fillInStackTrace().
-    // If writableStackTrace is true, then fillInStackTrace has already
-    // been called in the constructor. If the stack is not writable, then
-    // it can not be filled in.
-
-    if (stackTrace eq null) {
-      new Array[StackTraceElement](0) // as specified by Java 8.
-    } else {
-      // stackTrace is read-only at this point, no synchronized necessary.
-      stackTrace.clone
-    }
-  }
+  override def getStackTrace(): Array[StackTraceElement] = super.getStackTrace()
 
   final def getSuppressed(): Array[Throwable] = {
     this.synchronized { // workaround SN Issue #1091
