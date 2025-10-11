@@ -87,6 +87,7 @@ jobs:
     name: Save SHA as last published tag
     runs-on: ubuntu-22.04
     needs: [publish]
+    if: github.event_name != 'workflow_dispatch' || github.ref_name == 'main'
     steps:
       - uses: actions/checkout@v5
 
@@ -103,16 +104,29 @@ jobs:
     name: Dispatch trigger builds for dependant projects
     runs-on: ubuntu-latest
     needs: [publish]
-    if: github.event_name == 'schedule'
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     strategy:
       matrix:
         repo: ['scala-native/scala-native-cli']
     timeout-minutes: 5
     steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/linux-setup-env
+        with:
+          scala-version: "3" # unused
       - name: Dispatch to workflows of dependant projects
         run: |
-            curl -H "Accept: application/vnd.github.everest-preview+json" \
+          publishedVersion=$(sbt -no-colors "print version" | tail -n 1)
+          echo "This build version: ${publishedVersion}"
+
+          curl https://api.github.com/repos/${{ matrix.repo }}/dispatches \
+            -H "Accept: application/vnd.github.everest-preview+json" \
             -H "Authorization: token ${{ secrets.DISPATCH_TOKEN }}" \
-            --request POST \
-            --data '{"event_type": "nightly-published", "client_payload": {} }' \
-            https://api.github.com/repos/${{ matrix.repo }}/dispatches
+            --data "$(jq -n \
+              --arg version "${publishedVersion}" \
+              '{
+                event_type: "nightly-published",
+                client_payload: {
+                  version: $version
+                }
+              }')"
