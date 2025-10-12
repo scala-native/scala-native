@@ -63,13 +63,21 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: ["2.12", "2.13", "3"]
+        # Older Scala compiler version don't support -release flag, leading to java.lang.NoSuchMethodError: java.nio.ByteBuffer.position(I)Ljava/nio/ByteBuffer in nir.serialization.Prelude$
+        # Make sure to use JDK 8 to keep binary compatibility
+        include:
+        - scala: "2.12"
+          java: 8
+        - scala: "2.13"
+          java: 8
+        - scala: "3"
+          java: 17
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: ${{ matrix.scala }} #Unused, any version can be placed here
-
+          java-version: ${{ matrix.java }}
       - name: Setup PGP Key
         run: |
           echo -n "$PGP_SECRET" | base64 --decode | gpg --batch --import
