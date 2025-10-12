@@ -17,7 +17,7 @@ import scala.util.Properties.envOrNone
 // It defines only values referenced and required to bootstrap build
 object ScalaNativeBuildInfo {
   // The next version to be released
-  private val baseVersion = "0.5.9"
+  private val baseVersion = "0.5.10"
 
   // Calculation of the version to use based on CI / env state
   val version = envOrNone("GITHUB_REF_TYPE") match {
