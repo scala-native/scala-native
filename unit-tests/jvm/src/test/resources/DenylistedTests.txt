@@ -2,7 +2,6 @@
 # In most cases, both javalib implementation 
 # and tests need to be changed
 
-org/scalanative/testsuite/javalib/lang/CharacterTest.scala
 org/scalanative/testsuite/javalib/lang/IntegerTest.scala
 org/scalanative/testsuite/javalib/lang/ShortTest.scala
 org/scalanative/testsuite/javalib/lang/LongTest.scala
