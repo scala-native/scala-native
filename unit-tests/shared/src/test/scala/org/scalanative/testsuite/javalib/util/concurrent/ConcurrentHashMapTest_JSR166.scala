@@ -23,6 +23,8 @@ import org.junit.Assume._
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform
 
+import scala.scalanative.buildinfo.ScalaNativeBuildInfo
+
 import java.{lang => jl}
 import java.{util => ju}
 import java.util.ArrayList
@@ -44,6 +46,8 @@ import scala.annotation.tailrec
 
 object ConcurrentHashMapTest_JSR166 {
   import JSR166Test._
+
+  private val isScala3 = ScalaNativeBuildInfo.scalaVersion.startsWith("3.")
 
   /** Returns a new map from Items 1-5 to Strings "A"-"E".
    */
@@ -172,6 +176,12 @@ class ConcurrentHashMapTest_JSR166 extends JSR166Test {
    *  found.
    */
   @Test def testComparableFamily(): Unit = {
+
+    assumeTrue(
+      "Skipped on Scala 2.n due to SN Issue #4482",
+      isScala3 || Platform.executingInJVM
+    )
+
     val size = 500; // makes measured test run time -> 60ms
 
     val m = new juc.ConcurrentHashMap[BI, Boolean]()
@@ -210,12 +220,15 @@ class ConcurrentHashMapTest_JSR166 extends JSR166Test {
       assertNull("bis", m.putIfAbsent(bis, true))
       assertTrue("key(bis)", m.containsKey(bis))
       if (m.putIfAbsent(bss, true) == null.asInstanceOf[Boolean])
-        assertTrue(m.containsKey(bss))
-      assertTrue(m.containsKey(bis))
+        assertTrue("containsKey(bss)", m.containsKey(bss))
+      assertTrue("containsKey(bis)", m.containsKey(bis))
     }
 
     for (j <- 0 until size) {
-      assertTrue(m.containsKey(Collections.singletonList(new BI(j))))
+      assertTrue(
+        "containsKey(singletonList)",
+        m.containsKey(Collections.singletonList(new BI(j)))
+      )
     }
   }
 
@@ -223,6 +236,12 @@ class ConcurrentHashMapTest_JSR166 extends JSR166Test {
    *  generic type parameters based on Comparable can be inserted and found.
    */
   @Test def testGenericComparable2(): Unit = {
+
+    assumeTrue(
+      "Skipped on Scala 2.n due to SN Issue #4482",
+      isScala3 || Platform.executingInJVM
+    )
+
     val size = 500 // makes measured test run time -> 60ms
 
     val m = new ConcurrentHashMap[Object, Boolean]()
@@ -240,6 +259,12 @@ class ConcurrentHashMapTest_JSR166 extends JSR166Test {
    *  inserted and found.
    */
   @Test def testMixedComparable2(): Unit = {
+
+    assumeTrue(
+      "Skipped on Scala 2.n due to SN Issue #4482",
+      isScala3 || Platform.executingInJVM
+    )
+
     val size = 1200 // makes measured test run time -> 35ms
 
     val map = new ConcurrentHashMap[Object, Object]()
@@ -256,7 +281,7 @@ class ConcurrentHashMapTest_JSR166 extends JSR166Test {
           new ComparableCollidingObject(Integer.toString(j))
       }
 
-      assertNull(map.put(x, x))
+      assertNull("put(x, x)", map.put(x, x))
     }
 
     var count = 0
