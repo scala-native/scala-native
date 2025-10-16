@@ -19,6 +19,7 @@ package org.scalanative.testsuite.javalib.util.concurrent
 import org.junit.Test
 import org.junit.Assert._
 import org.junit.Assume._
+import org.junit.BeforeClass
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform
@@ -46,6 +47,17 @@ import scala.annotation.tailrec
 
 object ConcurrentHashMapTest_JSR166 {
   import JSR166Test._
+
+  @BeforeClass def disableJvmJava8(): Unit = {
+    /* Some version of JDK greater than 8 and less than 17 may
+     * work but have not been tested.
+     */
+    assumeTrue(
+      "Fails (deadlocks) running on JVM using Java 8",
+      Platform.executingInJVMWithJDKIn(17 to 99) ||
+        Platform.executingInScalaNative
+    )
+  }
 
   private val isScala3 = ScalaNativeBuildInfo.scalaVersion.startsWith("3.")
 
