@@ -104,7 +104,6 @@ trait GenReflectiveInstantisation(using Context) {
       ReflectiveInstantiationBuffer(fqSymId)
 
     withFreshExprBuffer { buf ?=>
-
       buf.label(curFresh(), Seq.empty)
       val loadModuleFunArg = genModuleLoader(fqSymName)
       buf.genApplyModuleMethod(

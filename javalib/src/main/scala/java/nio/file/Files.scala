@@ -122,7 +122,6 @@ object Files {
       throw new IOException("Unix specific method; should never get here")
     else
       Zone.acquire { implicit z =>
-
         /* Requirement:
          * 
          *   Files.copy(Path, Path, Options) on the JVM ensures that, on

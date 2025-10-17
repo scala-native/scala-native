@@ -315,7 +315,6 @@ class StackallocStateRestoreTest extends OptimizerSpec {
     ) {
       case (_, result) =>
         findEntry(result.defns).foreach { defn =>
-
           val stackallocId = defn.insts.collectFirst {
             case nir.Inst.Let(id, nir.Op.Stackalloc(_, _), _) => id
           }
