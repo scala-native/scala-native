@@ -8,8 +8,6 @@ import scala.language.implicitConversions
 import scala.scalanative.unsigned._
 import scala.scalanative.unsafe._
 
-
-
 class StackTraceTest {
 
   @Test
