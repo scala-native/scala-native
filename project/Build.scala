@@ -706,6 +706,7 @@ object Build {
               )
             )
           )
+          .withSourceLevelDebuggingConfig(_.enableAll.generateFunctionSourcePositions(false))
       },
       Test / unmanagedSourceDirectories ++= {
         val base = (Test / sourceDirectory).value
