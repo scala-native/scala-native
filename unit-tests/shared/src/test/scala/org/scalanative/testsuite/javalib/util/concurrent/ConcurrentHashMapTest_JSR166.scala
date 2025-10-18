@@ -59,8 +59,6 @@ object ConcurrentHashMapTest_JSR166 {
     )
   }
 
-  private val isScala3 = ScalaNativeBuildInfo.scalaVersion.startsWith("3.")
-
   /** Returns a new map from Items 1-5 to Strings "A"-"E".
    */
   private def map5(): ConcurrentHashMap[Integer, String] = {
@@ -188,12 +186,6 @@ class ConcurrentHashMapTest_JSR166 extends JSR166Test {
    *  found.
    */
   @Test def testComparableFamily(): Unit = {
-
-    assumeTrue(
-      "Skipped on Scala 2.n due to SN Issue #4482",
-      isScala3 || Platform.executingInJVM
-    )
-
     val size = 500; // makes measured test run time -> 60ms
 
     val m = new juc.ConcurrentHashMap[BI, Boolean]()
@@ -248,12 +240,6 @@ class ConcurrentHashMapTest_JSR166 extends JSR166Test {
    *  generic type parameters based on Comparable can be inserted and found.
    */
   @Test def testGenericComparable2(): Unit = {
-
-    assumeTrue(
-      "Skipped on Scala 2.n due to SN Issue #4482",
-      isScala3 || Platform.executingInJVM
-    )
-
     val size = 500 // makes measured test run time -> 60ms
 
     val m = new ConcurrentHashMap[Object, Boolean]()
@@ -271,12 +257,6 @@ class ConcurrentHashMapTest_JSR166 extends JSR166Test {
    *  inserted and found.
    */
   @Test def testMixedComparable2(): Unit = {
-
-    assumeTrue(
-      "Skipped on Scala 2.n due to SN Issue #4482",
-      isScala3 || Platform.executingInJVM
-    )
-
     val size = 1200 // makes measured test run time -> 35ms
 
     val map = new ConcurrentHashMap[Object, Object]()

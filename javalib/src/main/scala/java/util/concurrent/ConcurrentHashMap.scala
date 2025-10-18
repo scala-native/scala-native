@@ -791,7 +791,7 @@ object ConcurrentHashMap {
 
   final private[concurrent] class TreeBin[K <: AnyRef, V <: AnyRef] private[concurrent] (
       @volatile private[concurrent] var first: TreeNode[K, V]
-  ) extends Node[K, V](TREEBIN, null.asInstanceOf[K], null.asInstanceOf) {
+  ) extends Node[K, V](TREEBIN, null.asInstanceOf[K], null.asInstanceOf[V]) {
     @volatile private[concurrent] var waiter: Thread = _
     @volatile private[concurrent] var lockState = 0
 
