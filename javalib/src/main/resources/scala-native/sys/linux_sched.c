@@ -4,11 +4,14 @@
 
 /* Define _GNU_SOURCE to make the CPU_* macros available.
  * This file is already GNU Linux specific, so adding more GNU does not
- * add impurity. What is a bit of GNU amoung friends?
+ * add impurity. What is a bit of GNU among friends?
  *
  * Those macros greatly ease this implementation.
  */
-#define _GNU_SOURCE
+#if !defined(_GNU_SOURCE)
+#define _GNU_SOURCE 1
+#endif
+
 #include <sched.h>
 
 int scalanative_sched_cpuset_cardinality() {
