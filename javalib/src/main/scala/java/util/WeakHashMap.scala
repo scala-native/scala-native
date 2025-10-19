@@ -128,15 +128,15 @@ class WeakHashMap[K, V] protected (inner: mutable.Map[Box[K], V])
 
     protected def getNextForm(key: Box[K]): E
 
-    final override def next(): E = {
+    override final def next(): E = {
       lastKey = Some(innerIterator.next())
       getNextForm(lastKey.get)
     }
 
-    final override def hasNext(): Boolean =
+    override final def hasNext(): Boolean =
       innerIterator.hasNext
 
-    final override def remove(): Unit = {
+    override final def remove(): Unit = {
       lastKey match {
         case Some(key) =>
           inner.remove(key)

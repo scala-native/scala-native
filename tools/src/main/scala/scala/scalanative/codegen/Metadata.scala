@@ -10,7 +10,7 @@ private[scalanative] class Metadata(
     proxies: Seq[nir.Defn]
 )(implicit val platform: PlatformInfo) {
   def config: build.NativeConfig = buildConfig.compilerConfig
-  implicit private def self: Metadata = this
+  private implicit def self: Metadata = this
 
   final val usesLockWords = platform.isMultithreadingEnabled
   val lockWordType = if (usesLockWords) Some(nir.Type.Ptr) else None

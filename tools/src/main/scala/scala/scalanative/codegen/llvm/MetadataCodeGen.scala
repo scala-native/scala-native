@@ -722,7 +722,7 @@ private[codegen] object MetadataCodeGen {
     def getOrAssignId(v: T)(implicit ctx: Context): Metadata.Id =
       asssignedId(v).getOrElse(assignId(v))
 
-    final private[MetadataCodeGen] def cache(v: T)(implicit ctx: Context): ctx.WriterCache[T] =
+    private[MetadataCodeGen] final def cache(v: T)(implicit ctx: Context): ctx.WriterCache[T] =
       ctx.writersCache
         .getOrElseUpdate(v.getClass(), mutable.Map.empty)
         .asInstanceOf[ctx.WriterCache[T]]
@@ -766,7 +766,7 @@ private[codegen] object MetadataCodeGen {
 
   trait Dispatch[T <: Metadata.Node] extends InternedWriter[T] {
     import Writer.MetadataInternedWriterOps
-    final override def writeMetadata(v: T, ctx: Context): Unit = delegate(v).writeMetadata(v, ctx)
+    override final def writeMetadata(v: T, ctx: Context): Unit = delegate(v).writeMetadata(v, ctx)
 
     private def delegate(v: T): InternedWriter[T] = dispatch(v).asInstanceOf[InternedWriter[T]]
 

@@ -49,7 +49,7 @@ object ForkJoinTask8Test {
     @volatile private var parent: BinaryAsyncAction = _
     @volatile private var sibling: BinaryAsyncAction = _
     override final def getRawResult: Void = null
-    override final protected def setRawResult(mustBeNull: Void): Unit = {}
+    override protected final def setRawResult(mustBeNull: Void): Unit = {}
     final def linkSubtasks(
         x: BinaryAsyncAction,
         y: BinaryAsyncAction

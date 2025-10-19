@@ -99,7 +99,7 @@ final class UInt private[scalanative] (
    */
   @inline final def >>(x: Long): UInt = unsignedOf(underlyingValue >> x.toInt)
 
-  @inline final override def compareTo(x: UInt): Int =
+  @inline override final def compareTo(x: UInt): Int =
     JInteger.compareUnsigned(underlyingValue, x.underlyingValue)
 
   /** Returns `true` if this value is equal to x, `false` otherwise. */
@@ -300,7 +300,7 @@ final class UInt private[scalanative] (
   /** Returns the remainder of the division of this value by `x`. */
   @inline final def %(x: ULong): ULong = this.toULong % x
 
-  @inline final override def toString(): String =
+  @inline override final def toString(): String =
     JInteger.toUnsignedString(underlyingValue)
 
   @inline override def hashCode(): Int = underlyingValue.##

@@ -51,7 +51,7 @@ private[scalanative] sealed abstract class NIRCheck(implicit
 
   def checkMethod(meth: Method): Unit
 
-  final protected def checkFieldOp(op: nir.Op.Field): Unit = {
+  protected final def checkFieldOp(op: nir.Op.Field): Unit = {
     val nir.Op.Field(obj, name) = op
     obj.ty match {
       case ScopeRef(scope) =>
@@ -63,7 +63,7 @@ private[scalanative] sealed abstract class NIRCheck(implicit
     }
   }
 
-  final protected def checkMethodOp(op: nir.Op.Method): Unit = {
+  protected final def checkMethodOp(op: nir.Op.Method): Unit = {
     val nir.Op.Method(obj, sig) = op
     expect(nir.Rt.Object, obj)
     sig match {

@@ -431,7 +431,7 @@ object ConcurrentHashMap {
     )
 
   /* ---------------- Special Nodes -------------- */
-  final private[concurrent] class ForwardingNode[K <: AnyRef, V <: AnyRef] private[concurrent] (
+  private[concurrent] final class ForwardingNode[K <: AnyRef, V <: AnyRef] private[concurrent] (
       private[concurrent] val nextTable: Array[Node[K, V]]
   ) extends Node[K, V](MOVED, null.asInstanceOf[K], null.asInstanceOf[V]) {
     override private[concurrent] def find(h: Int, k: AnyRef): Node[K, V] = {
@@ -464,7 +464,7 @@ object ConcurrentHashMap {
     }
   }
 
-  final private[concurrent] class ReservationNode[K <: AnyRef, V <: AnyRef] private[concurrent]
+  private[concurrent] final class ReservationNode[K <: AnyRef, V <: AnyRef] private[concurrent]
       extends Node[K, V](RESERVED, null.asInstanceOf[K], null.asInstanceOf[V]) {
     override private[concurrent] def find(
         h: Int,
@@ -478,7 +478,7 @@ object ConcurrentHashMap {
 
   /* ---------------- Counter support -------------- */
   @Contended
-  final private[concurrent] class CounterCell private[concurrent] (
+  private[concurrent] final class CounterCell private[concurrent] (
       @volatile private[concurrent] var value: Long
   ) {
     @inline def CELLVALUE = fromRawPtr[scala.Long](classFieldRawPtr(this, "value")).atomic
@@ -500,7 +500,7 @@ object ConcurrentHashMap {
   }
 
   /* ---------------- TreeNodes -------------- */
-  final private[concurrent] class TreeNode[K <: AnyRef, V <: AnyRef] private[concurrent] (
+  private[concurrent] final class TreeNode[K <: AnyRef, V <: AnyRef] private[concurrent] (
       hash: Int,
       key: K,
       `val`: V,
@@ -516,7 +516,7 @@ object ConcurrentHashMap {
     override private[concurrent] def find(h: Int, k: AnyRef) =
       findTreeNode(h, k, null)
 
-    final private[concurrent] def findTreeNode(
+    private[concurrent] final def findTreeNode(
         h: Int,
         k: AnyRef,
         _kc: Class[_]
@@ -789,7 +789,7 @@ object ConcurrentHashMap {
 
   }
 
-  final private[concurrent] class TreeBin[K <: AnyRef, V <: AnyRef] private[concurrent] (
+  private[concurrent] final class TreeBin[K <: AnyRef, V <: AnyRef] private[concurrent] (
       @volatile private[concurrent] var first: TreeNode[K, V]
   ) extends Node[K, V](TREEBIN, null.asInstanceOf[K], null.asInstanceOf[V]) {
     @volatile private[concurrent] var waiter: Thread = _
@@ -843,16 +843,16 @@ object ConcurrentHashMap {
       r
     }
 
-    final private def lockRoot(): Unit = {
+    private final def lockRoot(): Unit = {
       if (!this.LOCKSTATE.compareExchangeStrong(0, TreeBin.WRITER))
         contendedLock() // offload to separate method
     }
 
-    final private def unlockRoot(): Unit = {
+    private final def unlockRoot(): Unit = {
       lockState = 0
     }
 
-    final private def contendedLock(): Unit = {
+    private final def contendedLock(): Unit = {
       var waiting = false
       var s = 0
       while (true)
@@ -867,7 +867,7 @@ object ConcurrentHashMap {
             } else if (waiting) LockSupport.park(this)
     }
 
-    override final private[concurrent] def find(
+    override private[concurrent] final def find(
         h: Int,
         k: AnyRef
     ): Node[K, V] = {
@@ -899,7 +899,7 @@ object ConcurrentHashMap {
       null
     }
 
-    final private[concurrent] def putTreeVal(
+    private[concurrent] final def putTreeVal(
         h: Int,
         k: K,
         v: V
@@ -957,7 +957,7 @@ object ConcurrentHashMap {
       null
     }
 
-    final private[concurrent] def removeTreeNode(
+    private[concurrent] final def removeTreeNode(
         p: TreeNode[K, V]
     ): Boolean = {
       val next = p.next.asInstanceOf[TreeNode[K, V]]
@@ -1038,7 +1038,7 @@ object ConcurrentHashMap {
   }
 
   /* ----------------Table Traversal -------------- */
-  final private[concurrent] class TableStack[K <: AnyRef, V <: AnyRef] {
+  private[concurrent] final class TableStack[K <: AnyRef, V <: AnyRef] {
     private[concurrent] var length = 0
     private[concurrent] var index = 0
     private[concurrent] var tab: Array[Node[K, V]] = _
@@ -1057,7 +1057,7 @@ object ConcurrentHashMap {
     private[concurrent] var stack: TableStack[K, V] = _
     private[concurrent] var spare: TableStack[K, V] = _ // to save/restore on ForwardingNodes
 
-    final private[concurrent] def advance(): Node[K, V] = {
+    private[concurrent] final def advance(): Node[K, V] = {
       var e: Node[K, V] = null
       if ({ e = _next; e } != null) e = e.next
 
@@ -1144,7 +1144,7 @@ object ConcurrentHashMap {
     final def hasNext(): Boolean = _next != null
     final def hasMoreElements(): Boolean = _next != null
 
-    final override def remove(): Unit = {
+    override final def remove(): Unit = {
       var p: Node[K, V] = null
       if ({ p = lastReturned; p } == null) throw new IllegalStateException
       lastReturned = null
@@ -1152,7 +1152,7 @@ object ConcurrentHashMap {
     }
   }
 
-  final private[concurrent] class KeyIterator[K <: AnyRef, V <: AnyRef] private[concurrent] (
+  private[concurrent] final class KeyIterator[K <: AnyRef, V <: AnyRef] private[concurrent] (
       tab: Array[Node[K, V]],
       size: Int,
       index: Int,
@@ -1172,7 +1172,7 @@ object ConcurrentHashMap {
     override final def nextElement(): K = next()
   }
 
-  final private[concurrent] class ValueIterator[K <: AnyRef, V <: AnyRef] private[concurrent] (
+  private[concurrent] final class ValueIterator[K <: AnyRef, V <: AnyRef] private[concurrent] (
       tab: Array[Node[K, V]],
       size: Int,
       index: Int,
@@ -1192,7 +1192,7 @@ object ConcurrentHashMap {
     override final def nextElement(): V = next()
   }
 
-  final private[concurrent] class EntryIterator[K <: AnyRef, V <: AnyRef] private[concurrent] (
+  private[concurrent] final class EntryIterator[K <: AnyRef, V <: AnyRef] private[concurrent] (
       tab: Array[Node[K, V]],
       size: Int,
       index: Int,
@@ -1210,7 +1210,7 @@ object ConcurrentHashMap {
     }
   }
 
-  final private[concurrent] class MapEntry[K <: AnyRef, V <: AnyRef] private[concurrent] (
+  private[concurrent] final class MapEntry[K <: AnyRef, V <: AnyRef] private[concurrent] (
       private[concurrent] val key: K // non-null
       ,
       private[concurrent] var `val`: V // non-null
@@ -1247,7 +1247,7 @@ object ConcurrentHashMap {
     }
   }
 
-  final private[concurrent] class KeySpliterator[K <: AnyRef, V <: AnyRef] private[concurrent] (
+  private[concurrent] final class KeySpliterator[K <: AnyRef, V <: AnyRef] private[concurrent] (
       tab: Array[Node[K, V]],
       size: Int,
       index: Int,
@@ -1291,7 +1291,7 @@ object ConcurrentHashMap {
       Spliterator.DISTINCT | Spliterator.CONCURRENT | Spliterator.NONNULL
   }
 
-  final private[concurrent] class ValueSpliterator[K <: AnyRef, V <: AnyRef] private[concurrent] (
+  private[concurrent] final class ValueSpliterator[K <: AnyRef, V <: AnyRef] private[concurrent] (
       tab: Array[Node[K, V]],
       size: Int,
       index: Int,
@@ -1335,7 +1335,7 @@ object ConcurrentHashMap {
       Spliterator.CONCURRENT | Spliterator.NONNULL
   }
 
-  final private[concurrent] class EntrySpliterator[K <: AnyRef, V <: AnyRef] private[concurrent] (
+  private[concurrent] final class EntrySpliterator[K <: AnyRef, V <: AnyRef] private[concurrent] (
       tab: Array[Node[K, V]],
       size: Int,
       index: Int,
@@ -1391,7 +1391,7 @@ object ConcurrentHashMap {
   }
 
   @SerialVersionUID(7249069246763182397L)
-  abstract private[concurrent] class CollectionView[K <: AnyRef, V <: AnyRef, E <: AnyRef] private[concurrent] (
+  private[concurrent] abstract class CollectionView[K <: AnyRef, V <: AnyRef, E <: AnyRef] private[concurrent] (
       private[concurrent] val map: ConcurrentHashMap[K, V]
   ) extends Collection[E]
       with Serializable {
@@ -1609,7 +1609,7 @@ object ConcurrentHashMap {
   }
 
   @SerialVersionUID(2249069246763182397L)
-  final private[concurrent] class ValuesView[K <: AnyRef, V <: AnyRef] private[concurrent] (
+  private[concurrent] final class ValuesView[K <: AnyRef, V <: AnyRef] private[concurrent] (
       map: ConcurrentHashMap[K, V]
   ) extends CollectionView[K, V, V](map)
       with Collection[V]
@@ -1683,7 +1683,7 @@ object ConcurrentHashMap {
   }
 
   @SerialVersionUID(2249069246763182397L)
-  final private[concurrent] class EntrySetView[K <: AnyRef, V <: AnyRef] private[concurrent] (
+  private[concurrent] final class EntrySetView[K <: AnyRef, V <: AnyRef] private[concurrent] (
       map: ConcurrentHashMap[K, V]
   ) extends CollectionView[K, V, util.Map.Entry[K, V]](map)
       with Set[util.Map.Entry[K, V]]
@@ -1788,7 +1788,7 @@ object ConcurrentHashMap {
   }
 
 // -------------------------------------------------------
-  abstract private[concurrent] class BulkTask[K <: AnyRef, V <: AnyRef, R] private[concurrent] (
+  private[concurrent] abstract class BulkTask[K <: AnyRef, V <: AnyRef, R] private[concurrent] (
       par: BulkTask[K, V, _],
       private[concurrent] var batch: Int, // split control
       i: Int,
@@ -1802,7 +1802,7 @@ object ConcurrentHashMap {
     private[concurrent] var index = i
     private[concurrent] var baseIndex = i
     private[concurrent] var baseLimit = 0
-    final private[concurrent] var baseSize = 0
+    private[concurrent] final var baseSize = 0
 
     if (t == null) {
       this.baseSize = 0
@@ -1815,7 +1815,7 @@ object ConcurrentHashMap {
       this.baseSize = par.baseSize
     }
 
-    final private[concurrent] def advance(): Node[K, V] = {
+    private[concurrent] final def advance(): Node[K, V] = {
       var e: Node[K, V] = null
       if ({ e = next; e } != null) e = e.next
 
@@ -1889,7 +1889,7 @@ object ConcurrentHashMap {
    * that we've already null-checked task arguments, so we force
    * simplest hoisted bypass to help avoid convoluted traps.
    */
-  final private[concurrent] class ForEachKeyTask[K <: AnyRef, V <: AnyRef] private[concurrent] (
+  private[concurrent] final class ForEachKeyTask[K <: AnyRef, V <: AnyRef] private[concurrent] (
       p: BulkTask[K, V, _],
       b: Int,
       i: Int,
@@ -1921,7 +1921,7 @@ object ConcurrentHashMap {
     }
   }
 
-  final private[concurrent] class ForEachValueTask[K <: AnyRef, V <: AnyRef] private[concurrent] (
+  private[concurrent] final class ForEachValueTask[K <: AnyRef, V <: AnyRef] private[concurrent] (
       p: BulkTask[K, V, _],
       b: Int,
       i: Int,
@@ -1953,7 +1953,7 @@ object ConcurrentHashMap {
     }
   }
 
-  final private[concurrent] class ForEachEntryTask[K <: AnyRef, V <: AnyRef] private[concurrent] (
+  private[concurrent] final class ForEachEntryTask[K <: AnyRef, V <: AnyRef] private[concurrent] (
       p: BulkTask[K, V, _],
       b: Int,
       i: Int,
@@ -1985,7 +1985,7 @@ object ConcurrentHashMap {
     }
   }
 
-  final private[concurrent] class ForEachMappingTask[
+  private[concurrent] final class ForEachMappingTask[
       K <: AnyRef,
       V <: AnyRef
   ] private[concurrent] (
@@ -2020,7 +2020,7 @@ object ConcurrentHashMap {
     }
   }
 
-  final private[concurrent] class ForEachTransformedKeyTask[
+  private[concurrent] final class ForEachTransformedKeyTask[
       K <: AnyRef,
       V <: AnyRef,
       U <: AnyRef
@@ -2062,7 +2062,7 @@ object ConcurrentHashMap {
     }
   }
 
-  final private[concurrent] class ForEachTransformedValueTask[
+  private[concurrent] final class ForEachTransformedValueTask[
       K <: AnyRef,
       V <: AnyRef,
       U <: AnyRef
@@ -2104,7 +2104,7 @@ object ConcurrentHashMap {
     }
   }
 
-  final private[concurrent] class ForEachTransformedEntryTask[
+  private[concurrent] final class ForEachTransformedEntryTask[
       K <: AnyRef,
       V <: AnyRef,
       U <: AnyRef
@@ -2149,7 +2149,7 @@ object ConcurrentHashMap {
     }
   }
 
-  final private[concurrent] class ForEachTransformedMappingTask[
+  private[concurrent] final class ForEachTransformedMappingTask[
       K <: AnyRef,
       V <: AnyRef,
       U <: AnyRef
@@ -2191,7 +2191,7 @@ object ConcurrentHashMap {
     }
   }
 
-  final private[concurrent] class SearchKeysTask[
+  private[concurrent] final class SearchKeysTask[
       K <: AnyRef,
       V <: AnyRef,
       U <: AnyRef
@@ -2246,7 +2246,7 @@ object ConcurrentHashMap {
     }
   }
 
-  final private[concurrent] class SearchValuesTask[
+  private[concurrent] final class SearchValuesTask[
       K <: AnyRef,
       V <: AnyRef,
       U <: AnyRef
@@ -2301,7 +2301,7 @@ object ConcurrentHashMap {
     }
   }
 
-  final private[concurrent] class SearchEntriesTask[
+  private[concurrent] final class SearchEntriesTask[
       K <: AnyRef,
       V <: AnyRef,
       U <: AnyRef
@@ -2359,7 +2359,7 @@ object ConcurrentHashMap {
     }
   }
 
-  final private[concurrent] class SearchMappingsTask[
+  private[concurrent] final class SearchMappingsTask[
       K <: AnyRef,
       V <: AnyRef,
       U <: AnyRef
@@ -2418,7 +2418,7 @@ object ConcurrentHashMap {
     }
   }
 
-  final private[concurrent] class ReduceKeysTask[K <: AnyRef, V <: AnyRef] private[concurrent] (
+  private[concurrent] final class ReduceKeysTask[K <: AnyRef, V <: AnyRef] private[concurrent] (
       p: BulkTask[K, V, _],
       b: Int,
       i: Int,
@@ -2483,7 +2483,7 @@ object ConcurrentHashMap {
     }
   }
 
-  final private[concurrent] class ReduceValuesTask[K <: AnyRef, V <: AnyRef] private[concurrent] (
+  private[concurrent] final class ReduceValuesTask[K <: AnyRef, V <: AnyRef] private[concurrent] (
       p: BulkTask[K, V, _],
       b: Int,
       i: Int,
@@ -2551,7 +2551,7 @@ object ConcurrentHashMap {
     }
   }
 
-  final private[concurrent] class ReduceEntriesTask[
+  private[concurrent] final class ReduceEntriesTask[
       K <: AnyRef,
       V <: AnyRef
   ] private[concurrent] (
@@ -2628,7 +2628,7 @@ object ConcurrentHashMap {
     }
   }
 
-  final private[concurrent] class MapReduceKeysTask[
+  private[concurrent] final class MapReduceKeysTask[
       K <: AnyRef,
       V <: AnyRef,
       U <: AnyRef
@@ -2705,7 +2705,7 @@ object ConcurrentHashMap {
     }
   }
 
-  final private[concurrent] class MapReduceValuesTask[
+  private[concurrent] final class MapReduceValuesTask[
       K <: AnyRef,
       V <: AnyRef,
       U <: AnyRef
@@ -2782,7 +2782,7 @@ object ConcurrentHashMap {
     }
   }
 
-  final private[concurrent] class MapReduceEntriesTask[
+  private[concurrent] final class MapReduceEntriesTask[
       K <: AnyRef,
       V <: AnyRef,
       U <: AnyRef
@@ -2862,7 +2862,7 @@ object ConcurrentHashMap {
     }
   }
 
-  final private[concurrent] class MapReduceMappingsTask[
+  private[concurrent] final class MapReduceMappingsTask[
       K <: AnyRef,
       V <: AnyRef,
       U <: AnyRef
@@ -2939,7 +2939,7 @@ object ConcurrentHashMap {
     }
   }
 
-  final private[concurrent] class MapReduceKeysToDoubleTask[
+  private[concurrent] final class MapReduceKeysToDoubleTask[
       K <: AnyRef,
       V <: AnyRef
   ] private[concurrent] (
@@ -3006,7 +3006,7 @@ object ConcurrentHashMap {
     }
   }
 
-  final private[concurrent] class MapReduceValuesToDoubleTask[
+  private[concurrent] final class MapReduceValuesToDoubleTask[
       K <: AnyRef,
       V <: AnyRef
   ] private[concurrent] (
@@ -3073,7 +3073,7 @@ object ConcurrentHashMap {
     }
   }
 
-  final private[concurrent] class MapReduceEntriesToDoubleTask[
+  private[concurrent] final class MapReduceEntriesToDoubleTask[
       K <: AnyRef,
       V <: AnyRef
   ] private[concurrent] (
@@ -3142,7 +3142,7 @@ object ConcurrentHashMap {
     }
   }
 
-  final private[concurrent] class MapReduceMappingsToDoubleTask[
+  private[concurrent] final class MapReduceMappingsToDoubleTask[
       K <: AnyRef,
       V <: AnyRef
   ] private[concurrent] (
@@ -3209,7 +3209,7 @@ object ConcurrentHashMap {
     }
   }
 
-  final private[concurrent] class MapReduceKeysToLongTask[
+  private[concurrent] final class MapReduceKeysToLongTask[
       K <: AnyRef,
       V <: AnyRef
   ] private[concurrent] (
@@ -3276,7 +3276,7 @@ object ConcurrentHashMap {
     }
   }
 
-  final private[concurrent] class MapReduceValuesToLongTask[
+  private[concurrent] final class MapReduceValuesToLongTask[
       K <: AnyRef,
       V <: AnyRef
   ] private[concurrent] (
@@ -3343,7 +3343,7 @@ object ConcurrentHashMap {
     }
   }
 
-  final private[concurrent] class MapReduceEntriesToLongTask[
+  private[concurrent] final class MapReduceEntriesToLongTask[
       K <: AnyRef,
       V <: AnyRef
   ] private[concurrent] (
@@ -3410,7 +3410,7 @@ object ConcurrentHashMap {
     }
   }
 
-  final private[concurrent] class MapReduceMappingsToLongTask[
+  private[concurrent] final class MapReduceMappingsToLongTask[
       K <: AnyRef,
       V <: AnyRef
   ] private[concurrent] (
@@ -3477,7 +3477,7 @@ object ConcurrentHashMap {
     }
   }
 
-  final private[concurrent] class MapReduceKeysToIntTask[
+  private[concurrent] final class MapReduceKeysToIntTask[
       K <: AnyRef,
       V <: AnyRef
   ] private[concurrent] (
@@ -3544,7 +3544,7 @@ object ConcurrentHashMap {
     }
   }
 
-  final private[concurrent] class MapReduceValuesToIntTask[
+  private[concurrent] final class MapReduceValuesToIntTask[
       K <: AnyRef,
       V <: AnyRef
   ] private[concurrent] (
@@ -3611,7 +3611,7 @@ object ConcurrentHashMap {
     }
   }
 
-  final private[concurrent] class MapReduceEntriesToIntTask[
+  private[concurrent] final class MapReduceEntriesToIntTask[
       K <: AnyRef,
       V <: AnyRef
   ] private[concurrent] (
@@ -3675,7 +3675,7 @@ object ConcurrentHashMap {
     }
   }
 
-  final private[concurrent] class MapReduceMappingsToIntTask[
+  private[concurrent] final class MapReduceMappingsToIntTask[
       K <: AnyRef,
       V <: AnyRef
   ] private[concurrent] (
@@ -3870,7 +3870,7 @@ class ConcurrentHashMap[K <: AnyRef, V <: AnyRef]()
 
   override def put(key: K, value: V): V = putVal(key, value, false)
 
-  final private[concurrent] def putVal(
+  private[concurrent] final def putVal(
       key: K,
       value: V,
       onlyIfAbsent: Boolean
@@ -3956,7 +3956,7 @@ class ConcurrentHashMap[K <: AnyRef, V <: AnyRef]()
 
   override def remove(key: Any): V = replaceNode(key.asInstanceOf[AnyRef], null.asInstanceOf[V], null.asInstanceOf[V])
 
-  final private[concurrent] def replaceNode(
+  private[concurrent] final def replaceNode(
       key: AnyRef,
       value: V,
       cv: AnyRef
@@ -4795,7 +4795,7 @@ class ConcurrentHashMap[K <: AnyRef, V <: AnyRef]()
     new KeySetView[K, V](this, mappedValue)
   }
 
-  final private def initTable() = {
+  private final def initTable() = {
     var tab: Array[Node[K, V]] = null
     var sc = 0
     var break = false
@@ -4821,7 +4821,7 @@ class ConcurrentHashMap[K <: AnyRef, V <: AnyRef]()
     tab
   }
 
-  final private def addCount(x: Long, check: Int): Unit = {
+  private final def addCount(x: Long, check: Int): Unit = {
     var cs: Array[CounterCell] = null
     var b = 0L
     var s = 0L
@@ -4862,7 +4862,7 @@ class ConcurrentHashMap[K <: AnyRef, V <: AnyRef]()
     }
   }
 
-  final private[concurrent] def helpTransfer(
+  private[concurrent] final def helpTransfer(
       tab: Array[Node[K, V]],
       f: Node[K, V]
   ): Array[Node[K, V]] = {
@@ -4887,7 +4887,7 @@ class ConcurrentHashMap[K <: AnyRef, V <: AnyRef]()
     table
   }
 
-  final private def tryPresize(size: Int): Unit = {
+  private final def tryPresize(size: Int): Unit = {
     val c =
       if (size >= (MAXIMUM_CAPACITY >>> 1))
         MAXIMUM_CAPACITY
@@ -4918,7 +4918,7 @@ class ConcurrentHashMap[K <: AnyRef, V <: AnyRef]()
     }
   }
 
-  final private def transfer(
+  private final def transfer(
       tab: Array[Node[K, V]],
       _nextTab: Array[Node[K, V]]
   ): Unit = {
@@ -5095,7 +5095,7 @@ class ConcurrentHashMap[K <: AnyRef, V <: AnyRef]()
     }
   }
 
-  final private[concurrent] def sumCount = {
+  private[concurrent] final def sumCount = {
     val cs = counterCells
     var sum = baseCount
     if (cs != null) for (c <- cs) {
@@ -5105,7 +5105,7 @@ class ConcurrentHashMap[K <: AnyRef, V <: AnyRef]()
   }
 
   // See LongAdder version for explanation
-  final private def fullAddCount(x: Long, _wasUncontended: Boolean): Unit = {
+  private final def fullAddCount(x: Long, _wasUncontended: Boolean): Unit = {
     var h = 0
     var wasUncontended = _wasUncontended
     if ({ h = ThreadLocalRandom.getProbe(); h } == 0) {
@@ -5181,7 +5181,7 @@ class ConcurrentHashMap[K <: AnyRef, V <: AnyRef]()
   }
 
   /* ---------------- Conversion from/to TreeBins -------------- */
-  final private def treeifyBin(
+  private final def treeifyBin(
       tab: Array[Node[K, V]],
       index: Int
   ): Unit = {
@@ -5220,7 +5220,7 @@ class ConcurrentHashMap[K <: AnyRef, V <: AnyRef]()
   }
 
   // Parallel bulk operations
-  final private[concurrent] def batchFor(b: Long): Int = {
+  private[concurrent] final def batchFor(b: Long): Int = {
     var n = 0L
     if (b == java.lang.Long.MAX_VALUE || { n = sumCount; n <= 1L } || n < b)
       return 0

@@ -14,9 +14,9 @@ import scala.scalanative.annotation.safePublish
 object ReentrantLock {
 
   @SerialVersionUID(-5179523762034025860L)
-  abstract private[locks] class Sync extends AbstractQueuedSynchronizer {
+  private[locks] abstract class Sync extends AbstractQueuedSynchronizer {
 
-    final private[locks] def tryLock(): Boolean = {
+    private[locks] final def tryLock(): Boolean = {
       val current = Thread.currentThread()
       var c = getState()
       if (c == 0) {
@@ -37,23 +37,23 @@ object ReentrantLock {
 
     private[locks] def initialTryLock(): Boolean
 
-    final private[locks] def lock(): Unit = {
+    private[locks] final def lock(): Unit = {
       if (!initialTryLock()) acquire(1)
     }
 
     @throws[InterruptedException]
-    final private[locks] def lockInterruptibly(): Unit = {
+    private[locks] final def lockInterruptibly(): Unit = {
       if (Thread.interrupted()) throw new InterruptedException
       if (!initialTryLock()) acquireInterruptibly(1)
     }
 
     @throws[InterruptedException]
-    final private[locks] def tryLockNanos(nanos: Long) = {
+    private[locks] final def tryLockNanos(nanos: Long) = {
       if (Thread.interrupted()) throw new InterruptedException
       initialTryLock() || tryAcquireNanos(1, nanos)
     }
 
-    override final protected def tryRelease(releases: Int): Boolean = {
+    override protected final def tryRelease(releases: Int): Boolean = {
       val c = getState() - releases
       if (getExclusiveOwnerThread() ne Thread.currentThread())
         throw new IllegalMonitorStateException
@@ -63,24 +63,24 @@ object ReentrantLock {
       free
     }
 
-    override final protected[ReentrantLock] def isHeldExclusively(): Boolean = {
+    override protected[ReentrantLock] final def isHeldExclusively(): Boolean = {
       // While we must in general read state before owner,
       // we don't need to do so to check if current thread is owner
       getExclusiveOwnerThread() eq Thread.currentThread()
     }
 
-    final private[locks] def newCondition() = new ConditionObject()
-    final private[locks] def getOwner() = {
+    private[locks] final def newCondition() = new ConditionObject()
+    private[locks] final def getOwner() = {
       if (getState() == 0) null
       else getExclusiveOwnerThread()
     }
 
-    final private[locks] def getHoldCount() = {
+    private[locks] final def getHoldCount() = {
       if (isHeldExclusively()) getState()
       else 0
     }
 
-    final private[locks] def isLocked() = getState() != 0
+    private[locks] final def isLocked() = getState() != 0
 
     //
     // @throws[java.io.IOException]
@@ -92,8 +92,8 @@ object ReentrantLock {
   }
 
   @SerialVersionUID(7316153563782823691L)
-  final private[locks] class NonfairSync extends ReentrantLock.Sync {
-    override final private[locks] def initialTryLock() = {
+  private[locks] final class NonfairSync extends ReentrantLock.Sync {
+    override private[locks] final def initialTryLock() = {
       val current = Thread.currentThread()
       if (compareAndSetState(0, 1)) { // first attempt is unguarded
         setExclusiveOwnerThread(current)
@@ -106,7 +106,7 @@ object ReentrantLock {
       } else false
     }
 
-    override final protected def tryAcquire(acquires: Int): Boolean = {
+    override protected final def tryAcquire(acquires: Int): Boolean = {
       if (getState() == 0 && compareAndSetState(0, acquires)) {
         setExclusiveOwnerThread(Thread.currentThread())
         true
@@ -115,9 +115,9 @@ object ReentrantLock {
   }
 
   @SerialVersionUID(-3000897897090466540L)
-  final private[locks] class FairSync extends ReentrantLock.Sync {
+  private[locks] final class FairSync extends ReentrantLock.Sync {
 
-    override final private[locks] def initialTryLock(): Boolean = {
+    override private[locks] final def initialTryLock(): Boolean = {
       val current = Thread.currentThread()
       var c = getState()
       if (c == 0) {
@@ -133,7 +133,7 @@ object ReentrantLock {
       false
     }
 
-    override final protected def tryAcquire(acquires: Int): Boolean = {
+    override protected final def tryAcquire(acquires: Int): Boolean = {
       if (getState() == 0 &&
           !hasQueuedPredecessors() &&
           compareAndSetState(0, acquires)) {

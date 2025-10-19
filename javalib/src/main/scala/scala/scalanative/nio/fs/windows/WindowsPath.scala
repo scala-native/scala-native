@@ -48,7 +48,7 @@ class WindowsPath private[windows] (
   }
 
   @alwaysinline
-  final private def separator: String = fs.getSeparator()
+  private final def separator: String = fs.getSeparator()
 
   override def getFileSystem(): FileSystem = fs
 

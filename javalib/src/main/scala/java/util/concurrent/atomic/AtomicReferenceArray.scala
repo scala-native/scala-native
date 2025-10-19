@@ -18,7 +18,7 @@ import java.util.function.{BinaryOperator, UnaryOperator}
 
 class AtomicReferenceArray[E <: AnyRef] extends Serializable {
 
-  final private var array: Array[E] = null
+  private final var array: Array[E] = null
 
   @alwaysinline
   private[concurrent] def nativeArray: ObjectArray =

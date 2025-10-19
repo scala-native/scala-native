@@ -2,7 +2,7 @@ package java
 
 package object util {
 
-  implicit private[util] class CompareNullablesOps(val self: Any)
+  private[util] implicit class CompareNullablesOps(val self: Any)
       extends AnyVal {
     @inline
     def ===(that: Any): Boolean = Objects.equals(self, that)

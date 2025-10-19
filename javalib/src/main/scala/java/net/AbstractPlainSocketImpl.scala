@@ -45,7 +45,7 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
 
   override def getInetAddress: InetAddress = address
   override def getFileDescriptor: FileDescriptor = fd
-  final protected var isClosed: Boolean =
+  protected final var isClosed: Boolean =
     fd == InvalidSocketDescriptor
 
   private def throwIfClosed(methodName: String): Unit = {

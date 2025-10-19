@@ -53,7 +53,7 @@ class NirCodeGen(val settings: GenNIR.Settings)(using ctx: Context)
     new util.ScopedVar[mutable.Set[DebugInfo.LexicalScope]]
   protected val curFreshScope = new util.ScopedVar[nir.Fresh]
   protected val curScopeId = new util.ScopedVar[nir.ScopeId]
-  implicit protected def getScopeId: nir.ScopeId = {
+  protected implicit def getScopeId: nir.ScopeId = {
     val res = curScopeId.get
     assert(res.id >= nir.ScopeId.TopLevel.id)
     res

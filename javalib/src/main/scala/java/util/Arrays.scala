@@ -19,7 +19,7 @@ import java.util.stream.StreamSupport
 
 object Arrays extends ArraysJDK9Methods {
   @inline
-  private final implicit def naturalOrdering[T <: AnyRef]: Ordering[T] = {
+  private implicit final def naturalOrdering[T <: AnyRef]: Ordering[T] = {
     new Ordering[T] {
       def compare(x: T, y: T): Int = x.asInstanceOf[_Comparable[T]].compareTo(y)
     }

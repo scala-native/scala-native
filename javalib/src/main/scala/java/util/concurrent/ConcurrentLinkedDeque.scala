@@ -94,7 +94,7 @@ object ConcurrentLinkedDeque {
   private val NEXT_TERMINATOR: Node[AnyRef] = new Node[AnyRef](null)
   NEXT_TERMINATOR.prev = NEXT_TERMINATOR
 
-  final private[concurrent] class Node[E <: AnyRef] private[concurrent] {
+  private[concurrent] final class Node[E <: AnyRef] private[concurrent] {
     // default constructor for NEXT_TERMINATOR, PREV_TERMINATOR
     @volatile private[concurrent] var prev: Node[E] = null
     @volatile private[concurrent] var item: E = null.asInstanceOf[E]
@@ -158,7 +158,7 @@ object ConcurrentLinkedDeque {
     private[concurrent] val MAX_BATCH = 1 << 25 // max batch array size;
   }
 
-  final private[concurrent] class CLDSpliterator[
+  private[concurrent] final class CLDSpliterator[
       E <: AnyRef
   ] private[concurrent] (
       private[concurrent]
@@ -586,7 +586,7 @@ class ConcurrentLinkedDeque[E <: AnyRef]
    *  eliminate slack, only that head will point to a node that was active while
    *  this method was running.
    */
-  final private def updateHead(): Unit = {
+  private final def updateHead(): Unit = {
     // Either head already points to an active node, or we keep
     // trying to cas it to the first node until it does.
 
@@ -614,7 +614,7 @@ class ConcurrentLinkedDeque[E <: AnyRef]
     }
   }
 
-  final private def updateTail(): Unit = {
+  private final def updateTail(): Unit = {
     // Either tail already points to an active node, or we keep
     // trying to cas it to the last node until it does.
 
@@ -772,7 +772,7 @@ class ConcurrentLinkedDeque[E <: AnyRef]
    *  self, which will only be true if traversing with a stale pointer that is
    *  now off the list.
    */
-  final private[concurrent] def succ(p: Node[E]) = {
+  private[concurrent] final def succ(p: Node[E]) = {
     // TODO: should we skip deleted nodes here?
     val q = p.next
     if (p eq q) first
@@ -783,7 +783,7 @@ class ConcurrentLinkedDeque[E <: AnyRef]
    *  to self, which will only be true if traversing with a stale pointer that
    *  is now off the list.
    */
-  final private[concurrent] def pred(p: Node[E]): Node[E] = {
+  private[concurrent] final def pred(p: Node[E]): Node[E] = {
     val q = p.prev
     if (p eq q) last
     else q
@@ -1422,7 +1422,7 @@ class ConcurrentLinkedDeque[E <: AnyRef]
   override def descendingIterator(): Iterator[E] =
     new DescendingItr
 
-  abstract private class AbstractItr() extends Iterator[E] {
+  private abstract class AbstractItr() extends Iterator[E] {
 
     /** Next node to return item for.
      */

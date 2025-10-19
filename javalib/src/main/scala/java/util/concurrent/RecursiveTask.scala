@@ -15,9 +15,9 @@ abstract class RecursiveTask[V]() extends ForkJoinTask[V] {
 
   protected def compute(): V
   override final def getRawResult(): V = result
-  override final protected def setRawResult(value: V): Unit = result = value
+  override protected final def setRawResult(value: V): Unit = result = value
 
-  override final protected def exec(): Boolean = {
+  override protected final def exec(): Boolean = {
     result = compute()
     true
   }

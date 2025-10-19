@@ -21,7 +21,7 @@ package sbt.testing
  *      many tests directly contained in the suite whose class was reported as
  *      <code>fullyQualifiedName</code> in the <code>Event</code>
  */
-abstract sealed class Selector
+sealed abstract class Selector
 
 /** Indicates an event was about the entire suite whose class had the fully
  *  qualified name specified as the <code>fullyQualifiedName</code> attribute

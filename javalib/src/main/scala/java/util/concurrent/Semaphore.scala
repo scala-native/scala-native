@@ -16,12 +16,12 @@ object Semaphore {
    *  permits. Subclassed into fair and nonfair versions.
    */
   @SerialVersionUID(1192457210091910933L)
-  abstract private[concurrent] class Sync private[concurrent] (val permits: Int)
+  private[concurrent] abstract class Sync private[concurrent] (val permits: Int)
       extends AbstractQueuedSynchronizer {
     setState(permits)
-    final private[concurrent] def getPermits(): Int = getState()
+    private[concurrent] final def getPermits(): Int = getState()
     @tailrec
-    final private[concurrent] def nonfairTryAcquireShared(
+    private[concurrent] final def nonfairTryAcquireShared(
         acquires: Int
     ): Int = {
       val available: Int = getState()
@@ -31,7 +31,7 @@ object Semaphore {
     }
 
     @tailrec
-    override final protected def tryReleaseShared(releases: Int): Boolean = {
+    override protected final def tryReleaseShared(releases: Int): Boolean = {
       val current: Int = getState()
       val next: Int = current + releases
       if (next < current) { // overflow
@@ -42,7 +42,7 @@ object Semaphore {
     }
 
     @tailrec
-    final private[concurrent] def reducePermits(reductions: Int): Unit = {
+    private[concurrent] final def reducePermits(reductions: Int): Unit = {
       val current: Int = getState()
       val next: Int = current - reductions
       if (next > current) { // underflow
@@ -53,7 +53,7 @@ object Semaphore {
     }
 
     @tailrec
-    final private[concurrent] def drainPermits(): Int = {
+    private[concurrent] final def drainPermits(): Int = {
       val current: Int = getState()
       if (current == 0 || compareAndSetState(current, 0)) current
       else drainPermits()
@@ -63,7 +63,7 @@ object Semaphore {
   /** NonFair version
    */
   @SerialVersionUID(-2694183684443567898L)
-  final private[concurrent] class NonfairSync private[concurrent] (
+  private[concurrent] final class NonfairSync private[concurrent] (
       override val permits: Int
   ) extends Semaphore.Sync(permits) {
     override protected def tryAcquireShared(acquires: Int): Int =
@@ -73,7 +73,7 @@ object Semaphore {
   /** Fair version
    */
   @SerialVersionUID(2014338818796000944L)
-  final private[concurrent] class FairSync private[concurrent] (
+  private[concurrent] final class FairSync private[concurrent] (
       override val permits: Int
   ) extends Semaphore.Sync(permits) {
     override protected def tryAcquireShared(acquires: Int): Int = {

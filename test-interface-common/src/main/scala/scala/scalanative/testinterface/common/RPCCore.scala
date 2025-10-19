@@ -41,7 +41,7 @@ private[testinterface] abstract class RPCCore()(implicit ec: ExecutionContext) {
     new java.util.concurrent.ConcurrentHashMap[OpCode, BoundEndpoint]
 
   /** Subclass should call this whenever a new message arrives */
-  final protected def handleMessage(msg: String): Unit = {
+  protected final def handleMessage(msg: String): Unit = {
     Serializer.withInputStream(msg) { in =>
       val opCode = in.readByte()
 

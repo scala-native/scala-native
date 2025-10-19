@@ -32,10 +32,10 @@ object FutureTaskTest {
 
   sealed trait PublicFutureTask { self: FutureTask[AnyRef] =>
     val runCounter: AtomicInteger
-    final protected val doneCounter = new AtomicInteger(0)
-    final protected val runAndResetCounter = new AtomicInteger(0)
-    final protected val setCounter = new AtomicInteger(0)
-    final protected val setExceptionCounter = new AtomicInteger(0)
+    protected final val doneCounter = new AtomicInteger(0)
+    protected final val runAndResetCounter = new AtomicInteger(0)
+    protected final val setCounter = new AtomicInteger(0)
+    protected final val setExceptionCounter = new AtomicInteger(0)
     def runCount(): Int = this.runCounter.get()
     def doneCount(): Int = this.doneCounter.get()
     def runAndResetCount(): Int = runAndResetCounter.get()

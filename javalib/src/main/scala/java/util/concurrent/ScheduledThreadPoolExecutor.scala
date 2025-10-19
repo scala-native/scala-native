@@ -38,7 +38,7 @@ object ScheduledThreadPoolExecutor {
       new Array[RunnableScheduledFuture[AnyRef]](
         DelayedWorkQueue.INITIAL_CAPACITY
       )
-    final private val lock = new ReentrantLock
+    private final val lock = new ReentrantLock
     private var _size = 0
 
     /** Thread designated to wait for the task at the head of the queue. This
@@ -56,7 +56,7 @@ object ScheduledThreadPoolExecutor {
      */
     private var leader: Thread = null
 
-    final private val available = lock.newCondition()
+    private final val available = lock.newCondition()
 
     private def siftUp(_k: Int, key: RunnableScheduledFuture[AnyRef]): Unit = {
       var k = _k

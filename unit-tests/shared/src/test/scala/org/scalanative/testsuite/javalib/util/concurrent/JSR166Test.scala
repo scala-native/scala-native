@@ -481,7 +481,7 @@ abstract class JSR166Test {
   abstract class ThreadShouldThrow[T](val exceptionClass: Class[T])
       extends Thread {
     protected def realRun(): Unit
-    final override def run(): Unit = {
+    override final def run(): Unit = {
       try {
         realRun()
         threadShouldThrow(exceptionClass.getSimpleName())
@@ -660,7 +660,7 @@ abstract class JSR166Test {
    */
   abstract class CheckedRecursiveTask[T] extends RecursiveTask[T] {
     protected def realCompute(): T
-    override final protected def compute(): T = {
+    override protected final def compute(): T = {
       try {
         return realCompute()
       } catch {

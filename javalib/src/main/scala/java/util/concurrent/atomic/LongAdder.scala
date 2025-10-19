@@ -16,7 +16,7 @@ object LongAdder {
   // without unnecessary parent class info.
   @SerialVersionUID(7249069246863182397L)
   private class SerializationProxy(a: LongAdder) extends Serializable {
-    final private var value = a.sum
+    private final var value = a.sum
 
     private def readResolve = {
       val a = new LongAdder

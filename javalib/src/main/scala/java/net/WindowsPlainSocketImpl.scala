@@ -31,7 +31,7 @@ private[net] class WindowsPlainSocketImpl extends AbstractPlainSocketImpl {
     )
   }
 
-  final protected def tryPollOnConnect(timeout: Int): Unit = {
+  protected final def tryPollOnConnect(timeout: Int): Unit = {
     val hasTimeout = timeout > 0
     val deadline = if (hasTimeout) System.currentTimeMillis() + timeout else 0L
     val nAlloc = 1.toUInt

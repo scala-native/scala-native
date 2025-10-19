@@ -777,7 +777,7 @@ class ArrayDeque[E](
   private class DescendingIterator
       extends DeqIterator(dec(tail, elements.length)) {
 
-    final override def next(): E = {
+    override final def next(): E = {
       if (remaining <= 0)
         throw new NoSuchElementException()
       val es = elements
@@ -793,7 +793,7 @@ class ArrayDeque[E](
         cursor = inc(cursor, elements.length)
     }
 
-    final override def forEachRemaining(action: Consumer[_ >: E]): Unit = {
+    override final def forEachRemaining(action: Consumer[_ >: E]): Unit = {
       Objects.requireNonNull(action)
       val r = remaining
       if (r <= 0)

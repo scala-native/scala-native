@@ -42,7 +42,7 @@ class LinkedHashMap[K, V](
   private def asMyNode(node: HashMap.Node[K, V]): Node[K, V] =
     node.asInstanceOf[Node[K, V]]
 
-  private[util] override def newNode(
+  override private[util] def newNode(
       key: K,
       hash: Int,
       value: V,
@@ -52,7 +52,7 @@ class LinkedHashMap[K, V](
     new Node(key, hash, value, previous, next, null, null)
   }
 
-  private[util] override def nodeWasAccessed(node: HashMap.Node[K, V]): Unit = {
+  override private[util] def nodeWasAccessed(node: HashMap.Node[K, V]): Unit = {
     if (accessOrder) {
       val myNode = asMyNode(node)
       if (myNode.younger ne null) {
@@ -62,13 +62,13 @@ class LinkedHashMap[K, V](
     }
   }
 
-  private[util] override def nodeWasAdded(node: HashMap.Node[K, V]): Unit = {
+  override private[util] def nodeWasAdded(node: HashMap.Node[K, V]): Unit = {
     appendToOrderedList(asMyNode(node))
     if (removeEldestEntry(eldest))
       removeNode(eldest)
   }
 
-  private[util] override def nodeWasRemoved(node: HashMap.Node[K, V]): Unit =
+  override private[util] def nodeWasRemoved(node: HashMap.Node[K, V]): Unit =
     removeFromOrderedList(asMyNode(node))
 
   private def appendToOrderedList(node: Node[K, V]): Unit = {
@@ -116,13 +116,13 @@ class LinkedHashMap[K, V](
     }
   }
 
-  private[util] override def nodeIterator(): ju.Iterator[HashMap.Node[K, V]] =
+  override private[util] def nodeIterator(): ju.Iterator[HashMap.Node[K, V]] =
     new NodeIterator
 
-  private[util] override def keyIterator(): ju.Iterator[K] =
+  override private[util] def keyIterator(): ju.Iterator[K] =
     new KeyIterator
 
-  private[util] override def valueIterator(): ju.Iterator[V] =
+  override private[util] def valueIterator(): ju.Iterator[V] =
     new ValueIterator
 
   private final class NodeIterator
