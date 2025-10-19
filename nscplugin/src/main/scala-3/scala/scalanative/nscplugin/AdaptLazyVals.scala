@@ -219,8 +219,9 @@ class AdaptLazyVals(defnNir: NirDefinitions) {
     final val VarHandleCASName = termName("compareAndSet")
     @tu lazy val VarHandleCAS: Option[TermSymbol] =
       scala.util
-        .Try:
+        .Try {
           requiredClass(termName("java.lang.invoke.VarHandle"))
+        }
         .toOption
         .map(_.requiredMethod(VarHandleCASName))
   }
