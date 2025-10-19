@@ -11,5 +11,6 @@ scripts/clangfmt --test
 ##
 ## --check will quit after first format failure.
 
-scripts/scalafmt-native --check
-
+scripts/scalafmt --check
+# Native hangs...
+# scripts/scalafmt-native --check
