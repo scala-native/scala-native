@@ -1,4 +1,4 @@
---- 3.8.0-RC1-bin-20250914-afbb66b-NIGHTLY/scala/Array.scala
+--- 3.8.0-RC1-bin-20251017-96aff06-NIGHTLY/scala/Array.scala
 +++ overrides-3/scala/Array.scala
 @@ -35,7 +35,7 @@
   *  where the array objects `a`, `b` and `c` have respectively the values
@@ -39,3 +39,12 @@
      case original: Array[AnyRef]     => java.util.Arrays.copyOf(original, newLength)
      case original: Array[Int]        => java.util.Arrays.copyOf(original, newLength)
      case original: Array[Double]     => java.util.Arrays.copyOf(original, newLength)
+@@ -152,7 +165,7 @@
+     *
+     * @see `java.util.Arrays#copyOf`
+     */
+-  def copyAs[A](original: Array[_], newLength: Int)(implicit ct: ClassTag[A]): Array[A] = {
++  def copyAs[A](original: Array[?], newLength: Int)(implicit ct: ClassTag[A]): Array[A] = {
+     val runtimeClass = ct.runtimeClass
+     if (runtimeClass == Void.TYPE) newUnitArray(newLength).asInstanceOf[Array[A]]
+     else {

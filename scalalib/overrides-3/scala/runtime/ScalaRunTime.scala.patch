@@ -1,4 +1,4 @@
---- 3.8.0-RC1-bin-20250914-afbb66b-NIGHTLY/scala/runtime/ScalaRunTime.scala
+--- 3.8.0-RC1-bin-20251017-96aff06-NIGHTLY/scala/runtime/ScalaRunTime.scala
 +++ overrides-3/scala/runtime/ScalaRunTime.scala
 @@ -54,53 +54,38 @@
      classTag[T].runtimeClass.asInstanceOf[jClass[T]]
@@ -47,7 +47,7 @@
  
    /** Get generic array length */
 -  @inline def array_length(xs: AnyRef): Int = java.lang.reflect.Array.getLength(xs)
-+  def array_length(xs: AnyRef): Int = {
++  @inline def array_length(xs: AnyRef): Int = {
 +    if (xs == null) {
 +      throw new NullPointerException
 +    } else {
@@ -114,7 +114,7 @@
        // collections which may have useful toString methods - ticket #3710
        // or c) print AbstractFiles which are somehow also Iterable[AbstractFile]s.
 -      case x: Iterable[_] => (!x.isInstanceOf[StrictOptimizedIterableOps[_, AnyConstr, _]]) || !isScalaClass(x) || isScalaCompilerClass(x) || isXmlNode(x.getClass) || isXmlMetaData(x.getClass)
-+      case x: Iterable[_] => (!x.isInstanceOf[StrictOptimizedIterableOps[_, AnyConstr, _]]) || !isScalaClass(x) || isScalaCompilerClass(x)
++      case x: Iterable[_] => (!x.isInstanceOf[StrictOptimizedIterableOps[_, AnyConstr, _]]) || !isScalaClass(x) || isScalaCompilerClass(x) // || isXmlNode(x.getClass) || isXmlMetaData(x.getClass)
        // Otherwise, nothing could possibly go wrong
        case _ => false
      }
