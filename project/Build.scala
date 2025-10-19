@@ -564,7 +564,8 @@ object Build {
               if (!usesSelfContainedStdlib(scalaVersion.value)) Nil
               else
                 Seq(
-                  "-Yno-stdlib-patches"
+                  "-Yno-stdlib-patches",
+                  "-Yexplicit-nulls"
                 )
             },
             Compile / packageBin / mappings := Def.taskDyn {

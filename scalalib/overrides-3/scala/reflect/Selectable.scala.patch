@@ -1,4 +1,4 @@
---- 3.8.0-RC1-bin-20250914-afbb66b-NIGHTLY/scala/reflect/Selectable.scala
+--- 3.8.0-RC1-bin-20251017-96aff06-NIGHTLY/scala/reflect/Selectable.scala
 +++ overrides-3/scala/reflect/Selectable.scala
 @@ -18,16 +18,17 @@
     */

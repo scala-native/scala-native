@@ -1,4 +1,4 @@
---- 3.8.0-RC1-bin-20250914-afbb66b-NIGHTLY/scala/runtime/LazyVals.scala
+--- 3.8.0-RC1-bin-20251017-96aff06-NIGHTLY/scala/runtime/LazyVals.scala
 +++ overrides-3/scala/runtime/LazyVals.scala
 @@ -5,44 +5,14 @@
  
