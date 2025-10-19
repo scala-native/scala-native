@@ -117,25 +117,25 @@ object MyScalaNativePlugin extends AutoPlugin {
         None
       }
 
-      val module = moduleName.value
-      val out =
-        (crossTarget.value / s"$module-profile.${outputType.extension}").toString
-      profilerOpt match {
-        case Some(profiler) =>
-          Def.task {
-            logger.info(
-              s"[async-profiler] starting profiler with commands: start,$commands"
-            )
-            profiler.execute(s"start,$commands")
-            nativeLink.value
-          } andFinally {
-            logger.info(s"[async-profiler] stop profiler, output to ${out}")
-            profiler.execute("stop")
-            profiler.execute(s"${outputType.name},file=${out}")
-          }
-        case None =>
-          nativeLink
-      }
+    val module = moduleName.value
+    val out =
+      (crossTarget.value / s"$module-profile.${outputType.extension}").toString
+    profilerOpt match {
+      case Some(profiler) =>
+        Def.task {
+          logger.info(
+            s"[async-profiler] starting profiler with commands: start,$commands"
+          )
+          profiler.execute(s"start,$commands")
+          nativeLink.value
+        } andFinally {
+          logger.info(s"[async-profiler] stop profiler, output to ${out}")
+          profiler.execute("stop")
+          profiler.execute(s"${outputType.name},file=${out}")
+        }
+      case None =>
+        nativeLink
+    }
   }
 
   override def projectSettings: Seq[Setting[_]] = Def.settings(

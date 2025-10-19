@@ -866,9 +866,9 @@ object Settings {
         def listFilesInOrder(patterns: Glob*) =
           patterns.flatMap(fileTree.list(_))
 
-          /* Exclude files coming from Scala's `library-aux` directory, as they are not
-           * meant to be compiled. They are part of the source jar since Scala 2.13.14.
-           */
+        /* Exclude files coming from Scala's `library-aux` directory, as they are not
+         * meant to be compiled. They are part of the source jar since Scala 2.13.14.
+         */
         val ignoredSourceFiles = Set(
           "Any.scala",
           "AnyRef.scala",
