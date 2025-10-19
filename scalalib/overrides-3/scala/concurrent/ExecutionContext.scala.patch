@@ -1,4 +1,4 @@
---- 3.8.0-RC1-bin-20251004-9f70200-NIGHTLY/scala/concurrent/ExecutionContext.scala
+--- 3.8.0-RC1-bin-20251017-96aff06-NIGHTLY/scala/concurrent/ExecutionContext.scala
 +++ overrides-3/scala/concurrent/ExecutionContext.scala
 @@ -15,6 +15,7 @@
  import scala.language.`2.13`
@@ -12,9 +12,9 @@
     *
     * @return the global [[ExecutionContext]]
     */
--  final lazy val global: ExecutionContextExecutor = impl.ExecutionContextImpl.fromExecutor(null: Executor)
+-  final lazy val global: ExecutionContextExecutor = impl.ExecutionContextImpl.fromExecutor(null: Executor | Null)
 +  final lazy val global: ExecutionContextExecutor = {
-+    if(isMultithreadingEnabled) impl.ExecutionContextImpl.fromExecutor(null: Executor)
++    if(isMultithreadingEnabled) impl.ExecutionContextImpl.fromExecutor(null: Executor | Null)
 +    else scala.scalanative.concurrent.NativeExecutionContext.queue
 +  }
  

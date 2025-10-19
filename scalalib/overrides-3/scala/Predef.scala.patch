@@ -1,6 +1,6 @@
---- 3.8.0-RC1-bin-20250914-afbb66b-NIGHTLY/scala/Predef.scala
+--- 3.8.0-RC1-bin-20251017-96aff06-NIGHTLY/scala/Predef.scala
 +++ overrides-3/scala/Predef.scala
-@@ -168,8 +168,8 @@
+@@ -169,8 +169,8 @@
    type Class[T]      = java.lang.Class[T]
  
    // miscellaneous -----------------------------------------------------
@@ -11,7 +11,7 @@
  
    /**  @group aliases */
    type Function[-A, +B] = Function1[A, B]
-@@ -179,9 +179,9 @@
+@@ -180,9 +180,9 @@
    /**  @group aliases */
    type Set[A]     = immutable.Set[A]
    /**  @group aliases */
@@ -23,7 +23,7 @@
  
    /**
     * Allows destructuring tuples with the same syntax as constructing them.
-@@ -195,7 +195,7 @@
+@@ -196,7 +196,7 @@
     * }}}
     * @group aliases
     */
@@ -32,7 +32,7 @@
  
    // Manifest types, companions, and incantations for summoning
    // TODO undeprecated until Scala reflection becomes non-experimental
-@@ -207,10 +207,10 @@
+@@ -208,10 +208,10 @@
    type Manifest[T]      = scala.reflect.Manifest[T]
    // TODO undeprecated until Scala reflection becomes non-experimental
    // @deprecated("use `scala.reflect.ClassTag` (to capture erasures) or scala.reflect.runtime.universe.TypeTag (to capture types) or both instead", "2.10.0")
