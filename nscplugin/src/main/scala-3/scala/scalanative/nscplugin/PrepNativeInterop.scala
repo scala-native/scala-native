@@ -13,6 +13,7 @@ import core.Types._
 import core.StdNames._
 import core.Constants.Constant
 import core.Flags._
+import dotty.tools.dotc.config.*
 import NirGenUtil.ContextCached
 
 /** This phase does:
@@ -143,6 +144,11 @@ class PrepNativeInterop extends PluginPhase with NativeInteropUtil {
     def get(using Context): EnumerationsContext = cached.get
   }
   private class EnumerationsContext(using Context) {
+    private val compilerUsesExplicitNulls = ScalaVersion.current match {
+      // bug in 3.8.0-RC1 nightlies, no version property set
+      case AnyScalaVersion => true
+      case version => version >= SpecificScalaVersion(3, 8, 0, ScalaBuild.Final)
+    }
     abstract class ScalaEnumFctExtractors(
         owner: ClassSymbol,
         methodName: TermName
@@ -158,10 +164,15 @@ class PrepNativeInterop extends PluginPhase with NativeInteropUtil {
         res
       }
 
+      private val ValueNameType =
+        if compilerUsesExplicitNulls then
+          OrType(defn.StringType, defn.NullType, soft = false)
+        else defn.StringType
+
       private val noArgDef = resolve()(_)
-      private val nameArgDef = resolve(defn.StringType)(_)
+      private val nameArgDef = resolve(ValueNameType)(_)
       private val intArgDef = resolve(defn.IntType)(_)
-      private val fullMethDef = resolve(defn.IntType, defn.StringType)(_)
+      private val fullMethDef = resolve(defn.IntType, ValueNameType)(_)
 
       val NoArg = noArgDef(owner)
       def noArg(owner: ClassSymbol) = noArgDef(owner)

@@ -1,6 +1,7 @@
 package scala.scalanative.nscplugin
 
 import dotty.tools.dotc.core.NameKinds
+import dotty.tools.dotc.core.NameKinds.SuffixNameKind
 
 object CompilerCompat {
 
@@ -17,13 +18,13 @@ object CompilerCompat {
 
   // NamesKinds.LazyVarHandleName, introduced in 3.8.0
   private object LazyValHandleNameCompatDef:
-    val LazyVarHandleName = NameKinds.SuffixNameKind(-1, "", "")
+    val LazyVarHandleName = null.asInstanceOf[SuffixNameKind]
   private object LazyValHandleNameCompatSelect:
     import LazyValHandleNameCompatDef.*
     object Inner {
       // provides access to NameKind.LazyVarHandleName in 3.8.0 or uses dummy definition otherwise
       import NameKinds.*
-      val LazyValHandleNameCompat = LazyVarHandleName
+      val LazyValHandleNameCompat = Option(LazyVarHandleName)
     }
   val LazyValHandleNameCompat =
     LazyValHandleNameCompatSelect.Inner.LazyValHandleNameCompat

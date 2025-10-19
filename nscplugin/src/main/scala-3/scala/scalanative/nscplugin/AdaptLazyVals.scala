@@ -32,7 +32,7 @@ class AdaptLazyVals(defnNir: NirDefinitions) {
     name.startsWith(nme.LAZY_FIELD_OFFSET.toString)
 
   private def isLazyFieldHandle(name: Name) =
-    name.is(CompilerCompat.LazyValHandleNameCompat)
+    CompilerCompat.LazyValHandleNameCompat.exists(name.is(_))
 
   private def isLazyFieldStore(name: Name) =
     if compilerUsesVarHandles then isLazyFieldHandle(name)
@@ -219,8 +219,9 @@ class AdaptLazyVals(defnNir: NirDefinitions) {
     final val VarHandleCASName = termName("compareAndSet")
     @tu lazy val VarHandleCAS: Option[TermSymbol] =
       scala.util
-        .Try:
+        .Try {
           requiredClass(termName("java.lang.invoke.VarHandle"))
+        }
         .toOption
         .map(_.requiredMethod(VarHandleCASName))
   }
