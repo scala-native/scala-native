@@ -3926,7 +3926,8 @@ class ConcurrentHashMap[K <: AnyRef, V <: AnyRef]()
             if ({
                   p = f
                     .asInstanceOf[TreeBin[K, V]]
-                    .putTreeVal(hash, key, value); p
+                    .putTreeVal(hash, key, value);
+                  p
                 } != null) {
               oldVal = p.`val`
               if (!onlyIfAbsent) p.`val` = value
