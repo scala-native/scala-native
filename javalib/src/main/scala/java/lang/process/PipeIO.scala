@@ -152,8 +152,25 @@ private[process] object PipeIO {
     override def available(): Int =
       synchronized(availableUnSync())
 
+    private def switchToNullInput(): Unit = {
+      src.close()
+      src = NullInput
+    }
+
+    private def readOne(): Int = {
+      val res = src.read()
+      if (res == -1) switchToNullInput()
+      res
+    }
+
+    private def readSome(buf: Array[scala.Byte], offset: Int, len: Int): Int = {
+      val res = src.read(buf, offset, len)
+      if (res < 0) switchToNullInput()
+      res
+    }
+
     override def read(): Int =
-      synchronized(src.read())
+      if (src eq NullInput) -1 else synchronized(readOne())
 
     override def read(buf: Array[scala.Byte], offset: Int, len: Int): Int = {
 
@@ -165,17 +182,18 @@ private[process] object PipeIO {
       }
 
       if (len == 0) 0
+      else if (src eq NullInput) -1
       else
         synchronized {
           val avail = availableUnSync()
 
           if (avail > 0) {
             val nToRead = Math.min(len, avail)
-            src.read(buf, offset, nToRead)
+            readSome(buf, offset, nToRead)
           } else {
             src match {
               case fis: FileInputStream =>
-                val nRead = src.read(buf, offset, 1)
+                val nRead = readSome(buf, offset, 1)
 
                 if (nRead == -1) -1
                 else {
@@ -185,13 +203,15 @@ private[process] object PipeIO {
 
                   val nSecondRead =
                     if (nToRead == 0) 0
-                    else src.read(buf, offset + 1, nToRead)
+                    else readSome(buf, offset + 1, nToRead)
 
                   if (nSecondRead == -1) 1
                   else nSecondRead + 1
                 }
 
-              case _ => -1 // EOF
+              case _ =>
+                switchToNullInput()
+                -1 // EOF
             }
           }
         }
