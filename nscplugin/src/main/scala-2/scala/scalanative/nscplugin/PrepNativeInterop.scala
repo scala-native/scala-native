@@ -18,7 +18,7 @@ abstract class PrepNativeInterop[G <: Global with Singleton](
   import PrepNativeInterop._
 
   import global._
-  import definitions._
+  import global.definitions._
   import nirAddons.nirDefinitions._
 
   val phaseName: String = "scalanative-prepareInterop"

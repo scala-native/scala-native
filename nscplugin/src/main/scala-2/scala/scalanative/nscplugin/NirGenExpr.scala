@@ -10,7 +10,7 @@ import scalanative.nscplugin.NirPrimitives._
 
 trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
   import global.{definitions => defn, _}
-  import defn._
+  import global.definitions._
   import treeInfo.{hasSynthCaseSymbol, StripCast}
   import nirAddons._
   import nirDefinitions._

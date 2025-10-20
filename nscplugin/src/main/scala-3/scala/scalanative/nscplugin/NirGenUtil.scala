@@ -2,13 +2,13 @@ package scala.scalanative
 package nscplugin
 
 import dotty.tools.dotc.ast.tpd
-import tpd._
+import dotty.tools.dotc.ast.tpd._
 import dotty.tools.dotc.core
 import core.Contexts._
 import core.Types._
 import scala.scalanative.util.ScopedVar
 import scala.collection.mutable
-import dotty.tools.dotc.core.Names.Name
+import core.Names.Name
 import dotty.tools.dotc.report
 import scala.scalanative.nir
 import scala.compiletime.uninitialized

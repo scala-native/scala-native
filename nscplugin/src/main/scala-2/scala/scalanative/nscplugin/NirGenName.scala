@@ -7,7 +7,7 @@ import scalanative.util.unreachable
 trait NirGenName[G <: Global with Singleton] {
   self: NirGenPhase[G] =>
 
-  import global.{Name => _, _}, definitions._
+  import global.{Name => _, _}, global.definitions._
   import nirAddons.nirDefinitions._
 
   def genAnonName(owner: Symbol, anon: Symbol) =

@@ -4,7 +4,6 @@ package nscplugin
 import scala.collection.mutable
 import scala.reflect.internal.Flags._
 import scala.scalanative.nir.Defn.Define.DebugInfo
-import scala.tools.nsc.Properties
 import scala.scalanative.util.unsupported
 import scala.scalanative.util.ScopedVar.scoped
 import scala.tools.nsc
@@ -12,7 +11,7 @@ import scala.tools.nsc
 trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
   import global._
-  import definitions._
+  import global.definitions._
   import nirAddons._
   import nirDefinitions._
 

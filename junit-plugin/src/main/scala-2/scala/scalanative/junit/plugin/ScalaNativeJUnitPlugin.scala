@@ -34,7 +34,7 @@ class ScalaNativeJUnitPlugin(val global: Global) extends NscPlugin {
 
     val global: Global = ScalaNativeJUnitPlugin.this.global
     import global._
-    import definitions._
+    import global.definitions._
     import rootMirror.getRequiredClass
 
     val phaseName: String = "scalanative-junitBootstrappers"

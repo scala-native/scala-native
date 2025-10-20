@@ -91,7 +91,7 @@ abstract class NirPrimitives {
   val nirAddons: ThisNirGlobalAddons
 
   import global._
-  import definitions._
+  import global.definitions._
   import rootMirror._
   import scalaPrimitives._
   import nirAddons._

@@ -1,13 +1,8 @@
 package scala.scalanative.nscplugin
 
 import dotty.tools._
-import dotc._
-import dotc.ast.tpd._
-import core.Contexts._
-import core.Names._
-import core.Symbols._
-import core.StdNames._
-import core.Constants.{Constant, ClazzTag}
+import dotty.tools.dotc._
+import dotty.tools.dotc.ast.tpd._
 import scala.annotation.{threadUnsafe => tu}
 import dotty.tools.dotc.config.*
 
@@ -20,6 +15,13 @@ import dotty.tools.dotc.config.*
 // be inlined and evaluated at compile time, however modified AST contains Scala Native
 // specific calls to Intrinsic methods. This would lead to throwing exception while compiling.
 class AdaptLazyVals(defnNir: NirDefinitions) {
+
+  import core.Contexts._
+  import core.Names._
+  import core.Symbols._
+  import core.StdNames._
+  import core.Constants.{Constant, ClazzTag}
+
   def defn(using Context) = LazyValsDefns.get
 
   private val compilerUsesVarHandles = ScalaVersion.current match {

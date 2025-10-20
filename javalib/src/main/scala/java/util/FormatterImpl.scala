@@ -26,7 +26,7 @@ private[util] abstract class FormatterImpl protected (
   self: Formatter =>
   import FormatterImpl._
 
-  import Flags._
+  import FormatterImpl.Flags._
 
   if (dest == null) {
     dest = new JStringBuilder()

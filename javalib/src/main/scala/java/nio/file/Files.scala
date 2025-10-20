@@ -19,7 +19,7 @@ import java.util.stream.{Stream, StreamSupport}
 
 import scalanative.unsigned._
 import scalanative.unsafe._
-import scalanative.libc._
+import scalanative.libc.{errno => _, _}
 
 import scalanative.posix.dirent._
 import scalanative.posix.direntOps._

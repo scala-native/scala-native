@@ -2,17 +2,9 @@ package scala.scalanative.nscplugin
 
 import dotty.tools.dotc.plugins.PluginPhase
 import dotty.tools._
-import dotc._
-import dotc.ast.tpd._
+import dotty.tools.dotc._
+import dotty.tools.dotc.ast.tpd._
 import scala.scalanative.nscplugin.CompilerCompat.SymUtilsCompat.setter
-import core.Contexts._
-import core.Definitions
-import core.Names._
-import core.Symbols._
-import core.Types._
-import core.Flags._
-import core.StdNames._
-import core.Constants.Constant
 import NirGenUtil.ContextCached
 import dotty.tools.dotc.transform.SeqLiterals
 
@@ -24,6 +16,16 @@ object PostInlineNativeInterop {
 }
 
 class PostInlineNativeInterop extends PluginPhase with NativeInteropUtil {
+
+  import core.Contexts._
+  import core.Definitions
+  import core.Names._
+  import core.Symbols._
+  import core.Types._
+  import core.Flags._
+  import core.StdNames._
+  import core.Constants.Constant
+
   override val runsAfter = Set(transform.Inlining.name, PrepNativeInterop.name)
   override val runsBefore = Set(transform.FirstTransform.name)
   val phaseName = PostInlineNativeInterop.name

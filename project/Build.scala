@@ -11,15 +11,15 @@ import sbtbuildinfo.BuildInfoPlugin
 
 import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
 import pl.project13.scala.sbt.JmhPlugin
-import JmhPlugin.JmhKeys._
 import sbtbuildinfo._
 import sbtbuildinfo.BuildInfoKeys._
 import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport._
 import com.jsuereth.sbtpgp.PgpKeys.publishSigned
 import scala.scalanative.build._
-import ScriptedPlugin.autoImport._
 
 object Build {
+  import ScriptedPlugin.autoImport._
+  import JmhPlugin.JmhKeys._
   import ScalaVersions._
   import Settings._
   import Deps._
