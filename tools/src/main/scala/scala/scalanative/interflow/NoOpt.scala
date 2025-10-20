@@ -1,7 +1,7 @@
 package scala.scalanative
 package interflow
 
-import scalanative.linker._
+import scalanative.linker.*
 
 private[interflow] trait NoOpt { self: Interflow =>
 

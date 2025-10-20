@@ -10,7 +10,7 @@ private[nio] object GenBuffer {
 }
 
 private[nio] final class GenBuffer[B <: Buffer](val self: B) extends AnyVal {
-  import self._
+  import self.*
 
   @inline
   def generic_get(): ElementType =
@@ -164,7 +164,7 @@ private[nio] final class GenBuffer[B <: Buffer](val self: B) extends AnyVal {
 
   @inline
   def generic_hashCode(hashSeed: Int): Int = {
-    import scala.util.hashing.MurmurHash3._
+    import scala.util.hashing.MurmurHash3.*
     val start = position()
     val end = limit()
     var h = hashSeed

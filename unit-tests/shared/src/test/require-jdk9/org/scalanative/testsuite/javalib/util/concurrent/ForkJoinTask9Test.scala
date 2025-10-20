@@ -7,14 +7,14 @@
 package org.scalanative.testsuite.javalib.util.concurrent
 
 import java.util
-import java.util.concurrent._
+import java.util.concurrent.*
 
-import org.junit._
-import org.junit.Assert._
+import org.junit.*
+import org.junit.Assert.*
 
 class ForkJoinTask9Test extends JSR166Test {
-  import JSR166Test._
-  import ForkJoinTask8Test._
+  import JSR166Test.*
+  import ForkJoinTask8Test.*
 
   /** pollSubmission returns unexecuted submitted task, if present */
   @Test def testPollSubmission(): Unit = {

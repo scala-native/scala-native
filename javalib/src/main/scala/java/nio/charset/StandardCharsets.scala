@@ -3,7 +3,7 @@ package java.nio.charset
 final class StandardCharsets private ()
 
 object StandardCharsets {
-  import niocharset.{StandardCharsets => SC}
+  import niocharset.StandardCharsets as SC
 
   def ISO_8859_1: Charset = SC.ISO_8859_1
   def US_ASCII: Charset = SC.US_ASCII

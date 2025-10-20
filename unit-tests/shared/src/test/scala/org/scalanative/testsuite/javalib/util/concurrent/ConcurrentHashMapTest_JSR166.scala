@@ -17,8 +17,8 @@
 package org.scalanative.testsuite.javalib.util.concurrent
 
 import org.junit.Test
-import org.junit.Assert._
-import org.junit.Assume._
+import org.junit.Assert.*
+import org.junit.Assume.*
 import org.junit.BeforeClass
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
@@ -26,8 +26,8 @@ import org.scalanative.testsuite.utils.Platform
 
 import scala.scalanative.buildinfo.ScalaNativeBuildInfo
 
-import java.{lang => jl}
-import java.{util => ju}
+import java.lang as jl
+import java.util as ju
 import java.util.ArrayList
 import java.util.Arrays
 import java.util.Collection
@@ -38,7 +38,7 @@ import java.util.Map
 import java.util.Random
 import java.util.Set
 
-import java.util.{concurrent => juc}
+import java.util.concurrent as juc
 import java.util.concurrent.ConcurrentHashMap
 
 import java.util.stream.Collectors
@@ -46,7 +46,7 @@ import java.util.stream.Collectors
 import scala.annotation.tailrec
 
 object ConcurrentHashMapTest_JSR166 {
-  import JSR166Test._
+  import JSR166Test.*
 
   @BeforeClass def disableJvmJava8(): Unit = {
     /* Some version of JDK greater than 8 and less than 17 may
@@ -179,8 +179,8 @@ object ConcurrentHashMapTest_JSR166 {
 }
 
 class ConcurrentHashMapTest_JSR166 extends JSR166Test {
-  import JSR166Test._
-  import ConcurrentHashMapTest_JSR166._
+  import JSR166Test.*
+  import ConcurrentHashMapTest_JSR166.*
 
   /** Inserted elements that are subclasses of the same Comparable class are
    *  found.

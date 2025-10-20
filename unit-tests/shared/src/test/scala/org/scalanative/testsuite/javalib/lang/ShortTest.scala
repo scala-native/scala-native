@@ -1,9 +1,9 @@
 package org.scalanative.testsuite.javalib.lang
 
-import java.lang._
+import java.lang.*
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
@@ -118,7 +118,7 @@ class ShortTest {
   }
 
   @Test def parseShort(): Unit = {
-    import Short.{parseShort => parse}
+    import Short.parseShort as parse
 
     assertEquals(-1, parse("-1"))
     assertEquals(1, parse("+1"))
@@ -177,7 +177,7 @@ class ShortTest {
   }
 
   @Test def testToString(): Unit = {
-    import java.lang.Short.{toString => toStr}
+    import java.lang.Short.toString as toStr
 
     assertEquals("0", toStr(0.toShort))
     assertEquals("1", toStr(1.toShort))

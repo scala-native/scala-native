@@ -1,11 +1,11 @@
 package org.scalanative.testsuite.javalib.util
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
-import java.{util => ju}
+import java.util as ju
 
 /* The List.of static methods were introduced in Java 9.
  * The List.copyOf static method was introduced in Java 10.
@@ -140,7 +140,7 @@ class ListStaticMethodsTestOnJDK21 {
     assertThrows(
       "null variable argument should throw",
       classOf[NullPointerException],
-      ju.List.of(varArgs: _*)
+      ju.List.of(varArgs*)
     )
   }
 
@@ -151,7 +151,7 @@ class ListStaticMethodsTestOnJDK21 {
     for (j <- 0 until expectedSize)
       expected(j) = s"Unmodifiable_${j}"
 
-    val result = ju.List.of(expected: _*)
+    val result = ju.List.of(expected*)
 
     assertEquals("list size", expectedSize, result.size())
 
@@ -220,7 +220,7 @@ class ListStaticMethodsTestOnJDK21 {
       expected(j) = s"VarArgs_SmallN_${j}"
 
     // 'Normal' varargs usage
-    val result = ju.List.of(expected: _*)
+    val result = ju.List.of(expected*)
 
     assertEquals("list size", expectedSize, result.size())
 
@@ -240,7 +240,7 @@ class ListStaticMethodsTestOnJDK21 {
     for (j <- 0 until expectedSize)
       expected(j) = s"VarArgs_LargeN_${j}"
 
-    val result = ju.List.of(expected: _*)
+    val result = ju.List.of(expected*)
 
     assertEquals("list size", expectedSize, result.size())
 

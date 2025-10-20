@@ -1,9 +1,9 @@
 package scala.scalanative.windows
 
 import scala.scalanative.runtime.fromRawPtr
-import scala.scalanative.runtime.Intrinsics.{castLongToRawPtr}
-import scala.scalanative.unsafe._
-import scala.scalanative.unsigned._
+import scala.scalanative.runtime.Intrinsics.castLongToRawPtr
+import scala.scalanative.unsafe.*
+import scala.scalanative.unsigned.*
 import scala.scalanative.windows.HandleApi.Handle
 
 @extern

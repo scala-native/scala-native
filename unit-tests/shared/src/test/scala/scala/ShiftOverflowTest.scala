@@ -1,7 +1,7 @@
 package scala
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 @deprecated class ShiftOverflowTest {
   @noinline def noinlineByte42: Byte = 42.toByte

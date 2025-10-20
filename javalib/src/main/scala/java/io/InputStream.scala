@@ -1,6 +1,6 @@
 package java.io
 
-import java.{util => ju}
+import java.util as ju
 import java.util.concurrent.ConcurrentLinkedDeque
 import java.util.Arrays
 

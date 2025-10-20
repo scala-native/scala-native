@@ -77,7 +77,7 @@ private object SplittableRandom {
 final class SplittableRandom private (private var seed: Long, gamma: Long)
     extends RandomGenerator
     with AbstractSplittableRandomGenerator {
-  import SplittableRandom._
+  import SplittableRandom.*
 
   override def isDeprecated(): Boolean =
     SplittableRandomFactory.isDeprecated()

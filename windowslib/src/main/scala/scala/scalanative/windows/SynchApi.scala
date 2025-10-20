@@ -1,8 +1,8 @@
 package scala.scalanative.windows
 
-import scala.scalanative.unsafe._
-import scala.scalanative.unsigned._
-import scala.scalanative.windows.WinBaseApi._
+import scala.scalanative.unsafe.*
+import scala.scalanative.unsigned.*
+import scala.scalanative.windows.WinBaseApi.*
 import HandleApi.Handle
 
 @extern

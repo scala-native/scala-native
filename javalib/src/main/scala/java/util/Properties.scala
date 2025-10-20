@@ -1,14 +1,14 @@
 package java.util
 
-import java.io._
-import java.{lang => jl}
-import java.{util => ju}
+import java.io.*
+import java.lang as jl
+import java.util as ju
 import java.nio.charset.StandardCharsets
 
 import scala.annotation.switch
 import scala.annotation.tailrec
 
-import ScalaOps._
+import ScalaOps.*
 
 class Properties(protected val defaults: Properties)
     extends ju.Hashtable[AnyRef, AnyRef] {
@@ -39,7 +39,7 @@ class Properties(protected val defaults: Properties)
     }
   }
 
-  def propertyNames(): ju.Enumeration[_] = {
+  def propertyNames(): ju.Enumeration[?] = {
     val propNames = new ju.HashSet[String]
     foreachAncestor { ancestor =>
       ancestor.keySet().scalaOps.foreach { key =>

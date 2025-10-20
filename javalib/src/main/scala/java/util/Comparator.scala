@@ -2,7 +2,7 @@
 
 package java.util
 
-import java.util.function._
+import java.util.function.*
 
 // scalastyle:off equals.hash.code
 
@@ -19,7 +19,7 @@ import java.util.function._
  */
 
 trait Comparator[A] { self =>
-  import Comparator._
+  import Comparator.*
 
   def compare(o1: A, o2: A): Int
   def equals(obj: Any): Boolean
@@ -28,7 +28,7 @@ trait Comparator[A] { self =>
     Collections.reverseOrder(this)
 
   @inline
-  def thenComparing(other: Comparator[_ >: A]): Comparator[A] = {
+  def thenComparing(other: Comparator[? >: A]): Comparator[A] = {
     Objects.requireNonNull(other)
     new Comparator[A] with Serializable {
       def compare(o1: A, o2: A) = {
@@ -40,8 +40,8 @@ trait Comparator[A] { self =>
   }
 
   def thenComparing[U](
-      keyExtractor: Function[_ >: A, _ <: U],
-      keyComparator: Comparator[_ >: U]
+      keyExtractor: Function[? >: A, ? <: U],
+      keyComparator: Comparator[? >: U]
   ): Comparator[A] = {
     thenComparing(comparing[A, U](keyExtractor, keyComparator))
   }
@@ -50,19 +50,19 @@ trait Comparator[A] { self =>
    * > illegal cyclic reference involving type U
    */
   def thenComparing[U <: _Comparable[U]](
-      keyExtractor: Function[_ >: A, _ <: U]
+      keyExtractor: Function[? >: A, ? <: U]
   ): Comparator[A] = {
     thenComparing(comparing[A, U](keyExtractor))
   }
 
-  def thenComparingInt(keyExtractor: ToIntFunction[_ >: A]): Comparator[A] =
+  def thenComparingInt(keyExtractor: ToIntFunction[? >: A]): Comparator[A] =
     thenComparing(comparingInt(keyExtractor))
 
-  def thenComparingLong(keyExtractor: ToLongFunction[_ >: A]): Comparator[A] =
+  def thenComparingLong(keyExtractor: ToLongFunction[? >: A]): Comparator[A] =
     thenComparing(comparingLong(keyExtractor))
 
   def thenComparingDouble(
-      keyExtractor: ToDoubleFunction[_ >: A]
+      keyExtractor: ToDoubleFunction[? >: A]
   ): Comparator[A] =
     thenComparing(comparingDouble(keyExtractor))
 
@@ -93,7 +93,7 @@ object Comparator {
   }
 
   @inline
-  def nullsFirst[T](comparator: Comparator[_ >: T]): Comparator[T] =
+  def nullsFirst[T](comparator: Comparator[? >: T]): Comparator[T] =
     new Comparator[T] with Serializable {
       def compare(o1: T, o2: T): Int = {
         if (o1 == null && o2 == null) 0
@@ -105,7 +105,7 @@ object Comparator {
     }
 
   @inline
-  def nullsLast[T](comparator: Comparator[_ >: T]): Comparator[T] =
+  def nullsLast[T](comparator: Comparator[? >: T]): Comparator[T] =
     new Comparator[T] with Serializable {
       def compare(o1: T, o2: T): Int = {
         if (o1 == null && o2 == null) 0
@@ -118,8 +118,8 @@ object Comparator {
 
   @inline
   def comparing[T, U](
-      keyExtractor: Function[_ >: T, _ <: U],
-      keyComparator: Comparator[_ >: U]
+      keyExtractor: Function[? >: T, ? <: U],
+      keyComparator: Comparator[? >: U]
   ): Comparator[T] = {
     Objects.requireNonNull(keyExtractor)
     Objects.requireNonNull(keyComparator)
@@ -134,7 +134,7 @@ object Comparator {
    */
   @inline
   def comparing[T, U <: _Comparable[U]](
-      keyExtractor: Function[_ >: T, _ <: U]
+      keyExtractor: Function[? >: T, ? <: U]
   ): Comparator[T] = {
     Objects.requireNonNull(keyExtractor)
     new Comparator[T] with Serializable {
@@ -144,7 +144,7 @@ object Comparator {
   }
 
   @inline
-  def comparingInt[T](keyExtractor: ToIntFunction[_ >: T]): Comparator[T] = {
+  def comparingInt[T](keyExtractor: ToIntFunction[? >: T]): Comparator[T] = {
     Objects.requireNonNull(keyExtractor)
     new Comparator[T] with Serializable {
       def compare(o1: T, o2: T): Int =
@@ -156,7 +156,7 @@ object Comparator {
   }
 
   @inline
-  def comparingLong[T](keyExtractor: ToLongFunction[_ >: T]): Comparator[T] = {
+  def comparingLong[T](keyExtractor: ToLongFunction[? >: T]): Comparator[T] = {
     Objects.requireNonNull(keyExtractor)
     new Comparator[T] with Serializable {
       def compare(o1: T, o2: T): Int =
@@ -167,7 +167,7 @@ object Comparator {
 
   @inline
   def comparingDouble[T](
-      keyExtractor: ToDoubleFunction[_ >: T]
+      keyExtractor: ToDoubleFunction[? >: T]
   ): Comparator[T] = {
     Objects.requireNonNull(keyExtractor)
     new Comparator[T] with Serializable {

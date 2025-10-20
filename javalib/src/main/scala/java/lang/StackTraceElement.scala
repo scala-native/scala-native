@@ -1,8 +1,8 @@
 package java.lang
 
 import scalanative.unsafe.{CString, fromCString}
-import scalanative.unsigned._
-import scala.scalanative.unsafe._
+import scalanative.unsigned.*
+import scala.scalanative.unsafe.*
 import scala.scalanative.runtime.SymbolFormatter
 import scala.scalanative.runtime.Backtrace
 import scala.scalanative.meta.LinktimeInfo.isWindows

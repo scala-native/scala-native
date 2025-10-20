@@ -1,9 +1,9 @@
 package scala.scalanative.compiler
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
-import scala.scalanative.nir._
+import scala.scalanative.nir.*
 import scala.scalanative.util.Scope
 import scala.scalanative.linker.compileAndLoad
 import scala.scalanative.api.CompilationFailedException

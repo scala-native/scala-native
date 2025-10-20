@@ -3,11 +3,11 @@ package org.scalanative.testsuite.javalib.util.function
 
 import java.util.function.{Function, BiFunction}
 
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.junit.Test
 
 class BiFunctionTest {
-  import BiFunctionTest._
+  import BiFunctionTest.*
 
   @Test def createAndApply(): Unit = {
     assertEquals(3, addBiFunc(1, 2))

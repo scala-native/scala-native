@@ -1,6 +1,6 @@
 package java.lang
 
-import java.io._
+import java.io.*
 
 import AbstractStringBuilder.INITIAL_CAPACITY
 

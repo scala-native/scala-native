@@ -26,7 +26,7 @@ trait List[E] extends SequencedCollection[E] {
 
   def add(index: Int, element: E): Unit
 
-  def addAll(index: Int, c: Collection[_ <: E]): Boolean
+  def addAll(index: Int, c: Collection[? <: E]): Boolean
 
   override def addFirst(e: E): Unit = add(0, e)
 
@@ -83,7 +83,7 @@ trait List[E] extends SequencedCollection[E] {
 
   def set(index: Int, element: E): E
 
-  def sort(c: Comparator[_ >: E]): Unit = {
+  def sort(c: Comparator[? >: E]): Unit = {
     val arrayBuf = toArray()
     Arrays.sort[AnyRef with E](arrayBuf.asInstanceOf[Array[AnyRef with E]], c)
 
@@ -130,7 +130,7 @@ object List {
   }
 
   // Since: Java 10
-  def copyOf[E](coll: Collection[_ <: E]): List[E] = {
+  def copyOf[E](coll: Collection[? <: E]): List[E] = {
     Objects.requireNonNull(coll)
 
     /*  The JVM List.copyOf() doc _may_ be saying, obtusely, that if the

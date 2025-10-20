@@ -1,7 +1,7 @@
 package scala.scalanative
 package posix
 
-import scalanative.unsafe._
+import scalanative.unsafe.*
 
 @deprecated(
   "getopt is no longer part of POSIX 2018 and will be removed. Use unistd instead.",

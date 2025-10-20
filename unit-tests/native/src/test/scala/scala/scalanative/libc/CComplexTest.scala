@@ -1,14 +1,14 @@
 package scala.scalanative
 package libc
 
-import java.{lang => jl}
+import java.lang as jl
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
-import scalanative.unsafe._
-import scalanative.libc.complex._
-import scalanative.libc.complexOps._
+import scalanative.unsafe.*
+import scalanative.libc.complex.*
+import scalanative.libc.complexOps.*
 
 /** Reference http://en.cppreference.com/w/c/numeric/complex
  *

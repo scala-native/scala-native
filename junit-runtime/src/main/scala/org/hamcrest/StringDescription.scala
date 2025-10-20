@@ -4,7 +4,7 @@
 package org.hamcrest
 
 import java.io.IOException
-import java.{lang => jl}
+import java.lang as jl
 
 object StringDescription {
   def toString(selfDescribing: SelfDescribing): String =

@@ -1,17 +1,17 @@
 package java.io
 
-import java.io.FileDescriptor._
+import java.io.FileDescriptor.*
 import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.meta.LinktimeInfo.isWindows
 import scala.scalanative.posix.{fcntl, unistd}
 import scala.scalanative.runtime.{Intrinsics, fromRawPtr}
-import scala.scalanative.unsafe._
-import scala.scalanative.unsigned._
-import scala.scalanative.windows.FileApi._
-import scala.scalanative.windows.FileApiExt._
-import scala.scalanative.windows.HandleApi._
-import scala.scalanative.windows.HandleApiExt._
-import scala.scalanative.windows.winnt.AccessRights._
+import scala.scalanative.unsafe.*
+import scala.scalanative.unsigned.*
+import scala.scalanative.windows.FileApi.*
+import scala.scalanative.windows.FileApiExt.*
+import scala.scalanative.windows.HandleApi.*
+import scala.scalanative.windows.HandleApiExt.*
+import scala.scalanative.windows.winnt.AccessRights.*
 import scala.scalanative.windows.{ConsoleApiExt, DWord}
 
 final class FileDescriptor private[java] (

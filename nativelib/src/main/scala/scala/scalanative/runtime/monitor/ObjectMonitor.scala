@@ -2,19 +2,19 @@ package scala.scalanative.runtime.monitor
 
 import scala.annotation.{tailrec, switch}
 import scala.scalanative.annotation.alwaysinline
-import scala.scalanative.runtime.Intrinsics._
+import scala.scalanative.runtime.Intrinsics.*
 import scala.scalanative.runtime.{RawPtr, NativeThread, Intrinsics}
-import scala.scalanative.runtime.ffi._
-import scala.scalanative.runtime.ffi.stdatomic._
-import scala.scalanative.runtime.ffi.stdatomic.memory_order._
-import scala.scalanative.unsafe.{stackalloc => _, sizeOf => _, _}
+import scala.scalanative.runtime.ffi.*
+import scala.scalanative.runtime.ffi.stdatomic.*
+import scala.scalanative.runtime.ffi.stdatomic.memory_order.*
+import scala.scalanative.unsafe.{stackalloc as _, sizeOf as _, *}
 import java.util.concurrent.locks.LockSupport
 
 /** Heavy-weight monitor created only upon detection of access from multiple
  *  threads is inflated in ObjectMonitor
  */
 private[monitor] class ObjectMonitor() {
-  import ObjectMonitor._
+  import ObjectMonitor.*
 
   /** Thread currently locking ownership over given object */
   @volatile private var ownerThread: Thread = _

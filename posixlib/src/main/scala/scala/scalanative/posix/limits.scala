@@ -1,7 +1,7 @@
 package scala.scalanative
 package posix
 
-import scalanative.unsafe._
+import scalanative.unsafe.*
 
 @extern
 @define("__SCALANATIVE_POSIX_LIMITS")

@@ -9,15 +9,15 @@
 
 package org.scalanative.testsuite.javalib.util.concurrent
 
-import java.util.concurrent.TimeUnit._
-import java.io._
-import java.util._
-import java.util.concurrent._
+import java.util.concurrent.TimeUnit.*
+import java.io.*
+import java.util.*
+import java.util.concurrent.*
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 import java.util.regex.Pattern
 
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.junit.BeforeClass
 import scala.scalanative.junit.utils.AssumesHelper
 
@@ -28,7 +28,7 @@ import scala.scalanative.junit.utils.AssumesHelper
  *  rules for creating such tests are:
  */
 abstract class JSR166Test {
-  import JSR166Test._
+  import JSR166Test.*
 
   /** Returns a random element from given choices.
    */
@@ -316,12 +316,12 @@ abstract class JSR166Test {
   /** Checks that future.get times out, with the default timeout of {@code
    *  timeoutMillis()}.
    */
-  def assertFutureTimesOut(future: Future[_]): Unit =
+  def assertFutureTimesOut(future: Future[?]): Unit =
     assertFutureTimesOut(future, timeoutMillis())
 
   /** Checks that future.get times out, with the given millisecond timeout.
    */
-  def assertFutureTimesOut(future: Future[_], timeoutMillis: Long): Unit = {
+  def assertFutureTimesOut(future: Future[?], timeoutMillis: Long): Unit = {
     val startTime = System.nanoTime()
     try {
       future.get(timeoutMillis, MILLISECONDS)
@@ -345,7 +345,7 @@ abstract class JSR166Test {
       waitingForGodot: Callable[Boolean]
   ): Unit = {
     lazy val startTime = System.nanoTime()
-    import Thread.State._
+    import Thread.State.*
     while (true) {
       thread.getState() match {
         case BLOCKED | WAITING | TIMED_WAITING =>
@@ -555,7 +555,7 @@ abstract class JSR166Test {
     final val DONE = 2
   }
   class LatchAwaiter(latch: CountDownLatch) extends CheckedRunnable {
-    import LatchAwaiter._
+    import LatchAwaiter.*
     var state = NEW
     @throws[InterruptedException]
     def realRun(): Unit = {
@@ -691,7 +691,7 @@ abstract class JSR166Test {
     }
   }
 
-  def checkEmpty(q: BlockingQueue[_]): Unit = {
+  def checkEmpty(q: BlockingQueue[?]): Unit = {
     try {
       assertTrue(q.isEmpty())
       assertEquals(0, q.size())
@@ -730,7 +730,7 @@ abstract class JSR166Test {
   }
 
   def assertEachThrows(
-      expectedExceptionClass: Class[_ <: Throwable],
+      expectedExceptionClass: Class[? <: Throwable],
       throwingActions: Action*
   ): Unit = {
     for (throwingAction <- throwingActions) {
@@ -749,7 +749,7 @@ abstract class JSR166Test {
     }
   }
 
-  def assertIteratorExhausted(it: Iterator[_]): Unit = {
+  def assertIteratorExhausted(it: Iterator[?]): Unit = {
     try {
       it.next()
       shouldThrow()
@@ -894,35 +894,35 @@ abstract class JSR166Test {
 
       recorder.reset()
       assertFalse(p.submit(r).isDone())
-      if (stock) assertTrue(!(recorder.r.asInstanceOf[Future[_]]).isDone())
+      if (stock) assertTrue(!(recorder.r.asInstanceOf[Future[?]]).isDone())
       assertSame(p, recorder.p)
 
       recorder.reset()
       assertFalse(p.submit(r, java.lang.Boolean.TRUE).isDone())
-      if (stock) assertTrue(!(recorder.r.asInstanceOf[Future[_]]).isDone())
+      if (stock) assertTrue(!(recorder.r.asInstanceOf[Future[?]]).isDone())
       assertSame(p, recorder.p)
 
       recorder.reset()
       assertFalse(p.submit(c).isDone())
-      if (stock) assertTrue(!(recorder.r.asInstanceOf[Future[_]]).isDone())
+      if (stock) assertTrue(!(recorder.r.asInstanceOf[Future[?]]).isDone())
       assertSame(p, recorder.p)
 
       p match {
         case s: ScheduledExecutorService =>
-          var future: ScheduledFuture[_] = null
+          var future: ScheduledFuture[?] = null
 
           recorder.reset()
           future = s.schedule(r, randomTimeout(), randomTimeUnit())
           assertFalse(future.isDone())
           if (stock)
-            assertTrue(!(recorder.r.asInstanceOf[Future[_]]).isDone())
+            assertTrue(!(recorder.r.asInstanceOf[Future[?]]).isDone())
           assertSame(p, recorder.p)
 
           recorder.reset()
           future = s.schedule(c, randomTimeout(), randomTimeUnit())
           assertFalse(future.isDone())
           if (stock)
-            assertTrue(!(recorder.r.asInstanceOf[Future[_]]).isDone())
+            assertTrue(!(recorder.r.asInstanceOf[Future[?]]).isDone())
           assertSame(p, recorder.p)
 
           recorder.reset()
@@ -934,7 +934,7 @@ abstract class JSR166Test {
           )
           assertFalse(future.isDone())
           if (stock)
-            assertTrue(!(recorder.r.asInstanceOf[Future[_]]).isDone())
+            assertTrue(!(recorder.r.asInstanceOf[Future[?]]).isDone())
           assertSame(p, recorder.p)
 
           recorder.reset()
@@ -946,7 +946,7 @@ abstract class JSR166Test {
           )
           assertFalse(future.isDone())
           if (stock)
-            assertTrue(!(recorder.r.asInstanceOf[Future[_]]).isDone())
+            assertTrue(!(recorder.r.asInstanceOf[Future[?]]).isDone())
           assertSame(p, recorder.p)
 
         case _ => ()
@@ -984,18 +984,18 @@ abstract class JSR166Test {
     assertEquals(savedQueueSize, p.getQueue().size())
   }
 
-  def assertCollectionsEquals(x: Collection[_], y: Collection[_]): Unit = {
+  def assertCollectionsEquals(x: Collection[?], y: Collection[?]): Unit = {
     assertEquals(x, y)
     assertEquals(y, x)
     assertEquals(x.isEmpty(), y.isEmpty())
     assertEquals(x.size(), y.size())
-    if (x.isInstanceOf[List[_]]) {
+    if (x.isInstanceOf[List[?]]) {
       assertEquals(x.toString(), y.toString())
     }
-    if (x.isInstanceOf[List[_]] || x.isInstanceOf[Set[_]]) {
+    if (x.isInstanceOf[List[?]] || x.isInstanceOf[Set[?]]) {
       assertEquals(x.hashCode(), y.hashCode())
     }
-    if (x.isInstanceOf[List[_]] || x.isInstanceOf[Deque[_]]) {
+    if (x.isInstanceOf[List[?]] || x.isInstanceOf[Deque[?]]) {
       assertTrue(Arrays.equals(x.toArray(), y.toArray()))
       assertTrue(
         Arrays.equals(
@@ -1010,14 +1010,14 @@ abstract class JSR166Test {
    *  two collections satisfy Object#equals(Object), since they may use identity
    *  semantics as Deques do.
    */
-  def assertCollectionsEquivalent(x: Collection[_], y: Collection[_]): Unit = {
-    if (x.isInstanceOf[List[_]] || x.isInstanceOf[Set[_]])
+  def assertCollectionsEquivalent(x: Collection[?], y: Collection[?]): Unit = {
+    if (x.isInstanceOf[List[?]] || x.isInstanceOf[Set[?]])
       assertCollectionsEquals(x, y)
     else {
       assertEquals(x.isEmpty(), y.isEmpty())
       assertEquals(x.size(), y.size())
       assertEquals(new HashSet(x), new HashSet(y))
-      if (x.isInstanceOf[Deque[_]]) {
+      if (x.isInstanceOf[Deque[?]]) {
         assertTrue(Arrays.equals(x.toArray(), y.toArray()))
         assertTrue(
           Arrays.equals(

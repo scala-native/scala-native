@@ -2,11 +2,11 @@
 
 package org.scalanative.testsuite.javalib.util
 
-import java.util._
+import java.util.*
 
 import java.math.BigInteger
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 /** Additional tests for java.lang.String that require `java.util.Locale` as
  *  well as classes in `java.text.*`.
@@ -38,21 +38,21 @@ class FormatterTestEx {
     // Locale passed as constructor parameter
     val fmt1 = new Formatter(locale)
     val res1 =
-      fmt1.format(format, args.asInstanceOf[Seq[AnyRef]]: _*).toString()
+      fmt1.format(format, args.asInstanceOf[Seq[AnyRef]]*).toString()
     fmt1.close()
     assertEquals(expected, res1)
 
     // Locale passed as argument to `format`
     val fmt2 = new Formatter()
     val res2 =
-      fmt2.format(locale, format, args.asInstanceOf[Seq[AnyRef]]: _*).toString()
+      fmt2.format(locale, format, args.asInstanceOf[Seq[AnyRef]]*).toString()
     fmt2.close()
     assertEquals(expected, res2)
 
     // String.format
     assertEquals(
       expected,
-      String.format(locale, format, args.asInstanceOf[Seq[AnyRef]]: _*)
+      String.format(locale, format, args.asInstanceOf[Seq[AnyRef]]*)
     )
   }
 

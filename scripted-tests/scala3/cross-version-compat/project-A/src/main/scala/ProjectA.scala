@@ -1,5 +1,5 @@
-import scalanative.unsafe._
-import scalanative.unsigned._
+import scalanative.unsafe.*
+import scalanative.unsigned.*
 
 object ProjectA {
   def foo(n: Int): Unit = {

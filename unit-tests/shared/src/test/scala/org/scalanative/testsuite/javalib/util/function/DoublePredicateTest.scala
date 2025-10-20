@@ -3,11 +3,11 @@ package org.scalanative.testsuite.javalib.util.function
 
 import java.util.function.DoublePredicate
 
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.junit.Test
 
 class DoublePredicateTest {
-  import DoublePredicateTest._
+  import DoublePredicateTest.*
 
   private val largerThan10 = makePredicate(_ > 10.0d)
   private val even = makePredicate(_ % 2 == 0.0d)

@@ -2,15 +2,15 @@ package java.lang.process
 
 import java.io.{File, IOException}
 import java.util.concurrent.TimeUnit
-import java.util.ScalaOps._
+import java.util.ScalaOps.*
 import java.util.ArrayList
 
-import scala.scalanative.unsigned._
-import scala.scalanative.unsafe._
+import scala.scalanative.unsigned.*
+import scala.scalanative.unsafe.*
 import scala.scalanative.libc.errno.errno
-import scala.scalanative.posix.{fcntl, sys, time, unistd, errno => e}
-import time._
-import sys.time._
+import scala.scalanative.posix.{fcntl, sys, time, unistd, errno as e}
+import time.*
+import sys.time.*
 
 private[process] class UnixProcessHandleGen1(
     override protected val _pid: CInt,
@@ -209,7 +209,7 @@ private[process] object UnixProcessGen1 {
       redirect: ProcessBuilder.Redirect,
       procFd: CInt
   ): Unit = {
-    import fcntl.{open => _, _}
+    import fcntl.{open as _, *}
     redirect.`type`() match {
       case ProcessBuilder.Redirect.Type.INHERIT =>
       case ProcessBuilder.Redirect.Type.PIPE    =>

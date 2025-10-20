@@ -1,8 +1,8 @@
 package scala.scalanative
 package posix
 
-import scalanative.unsafe._
-import scalanative.unsafe.Nat._
+import scalanative.unsafe.*
+import scalanative.unsafe.Nat.*
 import posix.sys.types.pid_t
 
 @extern

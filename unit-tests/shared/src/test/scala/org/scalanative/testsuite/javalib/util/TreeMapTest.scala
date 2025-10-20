@@ -2,20 +2,20 @@
 
 package org.scalanative.testsuite.javalib.util
 
-import java.{util => ju}
+import java.util as ju
 import java.util.function.{BiConsumer, BiFunction, Function}
 
 import org.junit.Test
-import org.junit.Assert._
-import org.junit.Assume._
+import org.junit.Assert.*
+import org.junit.Assume.*
 
 import org.scalanative.testsuite.javalib.util.concurrent.ConcurrentMapFactory
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
-import org.scalanative.testsuite.utils.Platform._
+import org.scalanative.testsuite.utils.Platform.*
 
 import scala.reflect.ClassTag
 
-import Utils._
+import Utils.*
 
 abstract class TreeMapTest(val factory: TreeMapFactory)
     extends AbstractMapTest

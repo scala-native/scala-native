@@ -5,17 +5,17 @@ import scalanative.meta.LinktimeInfo.isWindows
 
 import scala.annotation.tailrec
 
-import scalanative.unsafe._
-import scalanative.unsigned._
+import scalanative.unsafe.*
+import scalanative.unsigned.*
 
 import scalanative.libc.string.{strlen, strncmp}
 
-import scalanative.posix.netdb._
-import scalanative.posix.netdbOps._
+import scalanative.posix.netdb.*
+import scalanative.posix.netdbOps.*
 import scalanative.posix.sys.socket.{AF_INET, AF_UNSPEC, SOCK_DGRAM}
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 class NetdbTest {
 

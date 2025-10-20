@@ -14,9 +14,9 @@
 
 package org.scalanative.testsuite.javalib.util
 
-import java.{util => ju}
+import java.util as ju
 
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
@@ -24,7 +24,7 @@ import org.scalanative.testsuite.utils.CollectionsTestBase
 
 import scala.reflect.ClassTag
 
-import Utils._
+import Utils.*
 
 class CollectionsTest extends CollectionsTestBase {
 
@@ -363,7 +363,7 @@ class CollectionsTest extends CollectionsTestBase {
   }
 
   @Test def enumeration(): Unit = {
-    val coll = TrivialImmutableCollection(range: _*)
+    val coll = TrivialImmutableCollection(range*)
     val enumeration = ju.Collections.enumeration(coll)
     for (elem <- range) {
       assertTrue(enumeration.hasMoreElements)
@@ -404,7 +404,7 @@ class CollectionsTest extends CollectionsTestBase {
 
   @Test def disjoint(): Unit = {
     def coll(range: Range): ju.Collection[Int] =
-      TrivialImmutableCollection(range: _*)
+      TrivialImmutableCollection(range*)
 
     assertFalse(ju.Collections.disjoint(coll(0 to 3), coll(0 to 3)))
     assertFalse(ju.Collections.disjoint(coll(0 to 3), coll(3 to 5)))

@@ -1,9 +1,9 @@
 package scala.scalanative.libc
-import scala.scalanative.unsafe._
-import scala.scalanative.libc._
+import scala.scalanative.unsafe.*
+import scala.scalanative.libc.*
 import scala.scalanative.meta.LinktimeInfo
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 class FEnvTest {
 
   @Test def exceptionFlagsAreUnique(): Unit = {

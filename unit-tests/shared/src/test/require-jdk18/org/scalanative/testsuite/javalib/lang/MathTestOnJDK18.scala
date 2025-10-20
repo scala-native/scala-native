@@ -14,7 +14,7 @@ import java.math.BigInteger
 import java.util.SplittableRandom
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 class MathTestOnJDK18 {
 

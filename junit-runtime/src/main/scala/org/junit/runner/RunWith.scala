@@ -3,11 +3,11 @@
  */
 package org.junit.runner
 
-import java.lang.annotation._
+import java.lang.annotation.*
 
-class RunWith(value: Class[_ <: Runner])
+class RunWith(value: Class[? <: Runner])
     extends scala.annotation.StaticAnnotation
     with Annotation {
 
-  override def annotationType(): Class[_ <: Annotation] = classOf[RunWith]
+  override def annotationType(): Class[? <: Annotation] = classOf[RunWith]
 }

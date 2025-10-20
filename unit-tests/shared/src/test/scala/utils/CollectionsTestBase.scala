@@ -14,7 +14,7 @@
 
 package org.scalanative.testsuite.utils
 
-import java.{lang => jl, util => ju}
+import java.{lang as jl, util as ju}
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
@@ -26,7 +26,7 @@ trait CollectionsTestBase {
   val range: Range = 0 to 30
 
   def rangeOfElems[A](toElem: Int => A): TrivialImmutableCollection[A] =
-    TrivialImmutableCollection(range.map(toElem): _*)
+    TrivialImmutableCollection(range.map(toElem)*)
 
   class A extends jl.Comparable[A] {
     def compareTo(o: A): Int = this.##.compareTo(o.##)
@@ -98,10 +98,10 @@ trait CollectionsTestBase {
     testListIteratorsUnmodifiability(() => list.listIterator(0), elem)
   }
 
-  def testOnFirstPositionOfIterator[Iter <: ju.Iterator[_]](
+  def testOnFirstPositionOfIterator[Iter <: ju.Iterator[?]](
       newIter: () => Iter,
       action: Iter => Unit,
-      expectedException: Option[Class[_ <: Throwable]]
+      expectedException: Option[Class[? <: Throwable]]
   ): Unit = {
     val it = newIter()
     if (it.hasNext) {

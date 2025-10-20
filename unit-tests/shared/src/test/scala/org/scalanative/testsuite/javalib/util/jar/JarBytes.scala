@@ -1,6 +1,6 @@
 package org.scalanative.testsuite.javalib.util.jar
 
-import java.util.jar._
+import java.util.jar.*
 
 import java.nio.file.Files
 

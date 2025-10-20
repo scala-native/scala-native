@@ -1,6 +1,6 @@
 package scala.scalanative.unsafe
 
-import scala.scalanative.runtime._
+import scala.scalanative.runtime.*
 import scala.scalanative.runtime.Intrinsics.{castRawSizeToInt as toInt, *}
 import scala.compiletime.*
 
@@ -122,7 +122,7 @@ private object UnsafePackageCompat {
         else size
       case _ =>
         '{
-          if ($size < 0)
+          if $size < 0 then
             throw new IllegalArgumentException(
               "Cannot allocate memory of negative size"
             )

@@ -96,18 +96,18 @@ package java.util.random
  *     need not be qualified.
  */
 
-import java.{lang => jl}
+import java.lang as jl
 
-import java.util._
-import java.util.Spliterators._
-import java.util.function._
-import java.util.stream._
+import java.util.*
+import java.util.Spliterators.*
+import java.util.function.*
+import java.util.stream.*
 
 import scala.scalanative.meta.LinktimeInfo
 
 import scala.scalanative.posix.unistd
 
-import scala.scalanative.unsafe._
+import scala.scalanative.unsafe.*
 import scala.scalanative.unsafe.Size.intToSize
 
 trait RandomGenerator {
@@ -136,7 +136,7 @@ trait RandomGenerator {
 // Begin Ported from Scala.js commit: 9cb865f dated: 2025-03-16
   import scala.annotation.tailrec
 
-  import java.util.ScalaOps._
+  import java.util.ScalaOps.*
 
   // Comments starting with `// >` are cited from the JavaDoc.
   def nextBoolean(): scala.Boolean =
@@ -855,7 +855,7 @@ object RandomGenerator {
           jl.Long.MAX_VALUE,
           Spliterator.IMMUTABLE //  0x400, decimal 1024
         ) {
-          def tryAdvance(action: Consumer[_ >: RandomGenerator]): Boolean =
+          def tryAdvance(action: Consumer[? >: RandomGenerator]): Boolean =
             upstreamSpliter.tryAdvance(e => action.accept(e))
         }
 
@@ -937,7 +937,7 @@ object RandomGenerator {
           var nSeen = 0L
 
           def tryAdvance(
-              action: Consumer[_ >: RandomGenerator.JumpableGenerator]
+              action: Consumer[? >: RandomGenerator.JumpableGenerator]
           ): Boolean = {
             upstreamSpliter.tryAdvance(e => action.accept(e))
           }

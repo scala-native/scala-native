@@ -2,10 +2,10 @@ package java.lang
 package impl
 
 import System.Logger
-import scalanative.posix.time._
-import scalanative.windows.crt.{time => winTime}
-import scalanative.unsafe._
-import scalanative.unsigned._
+import scalanative.posix.time.*
+import scalanative.windows.crt.time as winTime
+import scalanative.unsafe.*
+import scalanative.unsigned.*
 import scala.scalanative.meta.LinktimeInfo.isWindows
 import scala.scalanative.runtime.javalib.Proxy
 
@@ -27,9 +27,9 @@ private[lang] class SimpleLogger(name: String) extends Logger {
     if (isLoggable(level)) {
       val message = if (bundle != null && bundle.containsKey(format)) {
         val pattern = bundle.getString(format)
-        String.format(pattern, params: _*)
+        String.format(pattern, params*)
       } else {
-        String.format(format, params: _*)
+        String.format(format, params*)
       }
       doLog(level, message)
     }

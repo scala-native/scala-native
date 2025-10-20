@@ -10,7 +10,7 @@ package sys
 //   Method argument names come from Ubuntu 19.04 linux man pages.
 //   Open Group seems to no longer suggest them.
 
-import scalanative.unsafe._
+import scalanative.unsafe.*
 
 @extern
 @define("__SCALANATIVE_POSIX_SYS_RESOURCE")

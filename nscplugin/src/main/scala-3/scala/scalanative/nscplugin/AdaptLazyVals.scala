@@ -1,14 +1,14 @@
 package scala.scalanative.nscplugin
 
-import dotty.tools._
-import dotc._
-import dotc.ast.tpd._
-import core.Contexts._
-import core.Names._
-import core.Symbols._
-import core.StdNames._
+import dotty.tools.*
+import dotc.*
+import dotc.ast.tpd.*
+import core.Contexts.*
+import core.Names.*
+import core.Symbols.*
+import core.StdNames.*
 import core.Constants.{Constant, ClazzTag}
-import scala.annotation.{threadUnsafe => tu}
+import scala.annotation.threadUnsafe as tu
 import dotty.tools.dotc.config.*
 
 // This helper class is responsible for rewriting calls to scala.runtime.LazyVals with
@@ -54,7 +54,7 @@ class AdaptLazyVals(defnNir: NirDefinitions) {
   def prepareForTypeDef(td: TypeDef)(using Context): Unit = {
     val sym = td.symbol
 
-    if (hasLazyFields(sym)) {
+    if hasLazyFields(sym) then {
       val template @ Template(_, _, _, _) = td.rhs: @unchecked
       lazyFieldProxies ++= template.body.collect {
         case vd: ValDef if isLazyFieldStore(vd.name) =>
@@ -100,7 +100,7 @@ class AdaptLazyVals(defnNir: NirDefinitions) {
     // Remove LazyVals Offset fields assignments from static constructors,
     // as they're leading to reachability problems
     // Drop static constructor if empty after filtering
-    if (hasLazyFields && dd.symbol.isStaticConstructor) {
+    if hasLazyFields && dd.symbol.isStaticConstructor then {
       val DefDef(_, _, _, b @ Block(stats, expr)) = dd: @unchecked
       val newBlock = cpy.Block(b.asInstanceOf[Tree])(
         stats = b.stats
@@ -111,7 +111,7 @@ class AdaptLazyVals(defnNir: NirDefinitions) {
           .asInstanceOf[List[Tree]],
         expr = expr.asInstanceOf[Tree]
       )
-      if (newBlock.stats.isEmpty) EmptyTree
+      if newBlock.stats.isEmpty then EmptyTree
       else cpy.DefDef(dd)(dd.name, dd.paramss, dd.tpt, newBlock)
     } else dd
   }

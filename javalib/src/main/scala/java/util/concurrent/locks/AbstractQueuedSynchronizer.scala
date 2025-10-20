@@ -15,7 +15,7 @@ import java.util.concurrent.RejectedExecutionException
 import scala.annotation.tailrec
 import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
 import scala.scalanative.libc.stdatomic.{AtomicInt, AtomicRef}
-import scala.scalanative.libc.stdatomic.memory_order._
+import scala.scalanative.libc.stdatomic.memory_order.*
 
 @SerialVersionUID(7373984972572414691L)
 object AbstractQueuedSynchronizer { // Node status bits, also used as argument and return values
@@ -102,7 +102,7 @@ object AbstractQueuedSynchronizer { // Node status bits, also used as argument a
 abstract class AbstractQueuedSynchronizer protected ()
     extends AbstractOwnableSynchronizer
     with Serializable {
-  import AbstractQueuedSynchronizer._
+  import AbstractQueuedSynchronizer.*
 
   @volatile private var head: Node = _
   @volatile private var tail: Node = _

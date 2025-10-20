@@ -1,6 +1,6 @@
 package scala.scalanative.windows
 
-import scala.scalanative.unsigned._
+import scala.scalanative.unsigned.*
 
 // Subset of error codes 0-499 parsed from https://docs.microsoft.com/en-us/windows/win32/debug/system-error-codes--0-499-
 object ErrorCodes {

@@ -26,7 +26,7 @@ import java.util.List
 import java.util.Map
 import java.util.Queue
 import java.nio.charset.StandardCharsets
-import java.{lang => jl}
+import java.lang as jl
 
 // An RE2 class instance is a compiled representation of an RE2 regular
 // expression, independent of the public Java-like Pattern/Matcher API.
@@ -41,7 +41,7 @@ import java.{lang => jl}
 // API, and the <a href='package.html'>package-level
 // documentation</a> for an overview of how to use this API.
 class RE2 private {
-  import RE2._
+  import RE2.*
 
   var expr: String = _ // as passed to Compile
   var prog: Prog = _ // compiled program

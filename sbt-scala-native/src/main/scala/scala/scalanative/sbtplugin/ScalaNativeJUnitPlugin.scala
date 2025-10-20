@@ -1,16 +1,16 @@
 package scala.scalanative.sbtplugin
 
-import sbt._
-import sbt.Keys._
-import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
-import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport._
+import sbt.*
+import sbt.Keys.*
+import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport.*
+import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport.*
 
 object ScalaNativeJUnitPlugin extends AutoPlugin {
   override def requires: Plugins = ScalaNativePlugin
 
   val ScalaNativeTestPlugin = config("scala-native-test-plugin").hide
 
-  override def projectSettings: Seq[Setting[_]] = Seq(
+  override def projectSettings: Seq[Setting[?]] = Seq(
     /* The `scala-native-test-plugin` configuration adds a plugin only to the `test`
      * configuration. It is a refinement of the `plugin` configuration which adds
      * it to both `compile` and `test`.

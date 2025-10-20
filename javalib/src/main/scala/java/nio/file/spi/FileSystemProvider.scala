@@ -31,13 +31,13 @@ abstract class FileSystemProvider protected () {
 
   def getScheme(): String
 
-  def newFileSystem(uri: URI, env: Map[String, _]): FileSystem
+  def newFileSystem(uri: URI, env: Map[String, ?]): FileSystem
 
   def getFileSystem(uri: URI): FileSystem
 
   def getPath(uri: URI): Path
 
-  def newFileSystem(path: Path, env: Map[String, _]): FileSystem =
+  def newFileSystem(path: Path, env: Map[String, ?]): FileSystem =
     throw new UnsupportedOperationException()
 
   def newInputStream(path: Path, _options: Array[OpenOption]): InputStream = {
@@ -63,37 +63,37 @@ abstract class FileSystemProvider protected () {
 
   def newFileChannel(
       path: Path,
-      options: Set[_ <: OpenOption],
-      attrs: Array[FileAttribute[_]]
+      options: Set[? <: OpenOption],
+      attrs: Array[FileAttribute[?]]
   ): FileChannel =
     throw new UnsupportedOperationException
 
   def newAsynchronousFileChannel(
       path: Path,
-      options: Set[_ <: OpenOption],
+      options: Set[? <: OpenOption],
       executor: ExecutorService,
-      attrs: Array[FileAttribute[_]]
+      attrs: Array[FileAttribute[?]]
   ): AsynchronousFileChannel =
     throw new UnsupportedOperationException
 
   def newByteChannel(
       path: Path,
-      options: Set[_ <: OpenOption],
-      attrs: Array[FileAttribute[_]]
+      options: Set[? <: OpenOption],
+      attrs: Array[FileAttribute[?]]
   ): SeekableByteChannel =
     FileChannel.open(path, options, attrs)
 
   def newDirectoryStream(
       dir: Path,
-      filter: DirectoryStream.Filter[_ >: Path]
+      filter: DirectoryStream.Filter[? >: Path]
   ): DirectoryStream[Path]
 
-  def createDirectory(dir: Path, attrs: Array[FileAttribute[_]]): Unit
+  def createDirectory(dir: Path, attrs: Array[FileAttribute[?]]): Unit
 
   def createSymbolicLink(
       link: Path,
       target: Path,
-      attrs: Array[FileAttribute[_]]
+      attrs: Array[FileAttribute[?]]
   ): Unit =
     throw new UnsupportedOperationException()
 

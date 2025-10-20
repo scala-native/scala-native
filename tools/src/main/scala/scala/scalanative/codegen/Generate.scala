@@ -15,7 +15,7 @@ import scala.scalanative.build.Logger
 private[codegen] object Generate {
   private implicit val pos: nir.SourcePosition = nir.SourcePosition.NoPosition
   private implicit val scopeId: nir.ScopeId = nir.ScopeId.TopLevel
-  import Impl._
+  import Impl.*
 
   def apply(entry: Option[nir.Global.Top], defns: Seq[nir.Defn])(implicit
       meta: Metadata

@@ -3,11 +3,11 @@
 package java.util
 
 import java.lang.Cloneable
-import java.util.{RedBlackTree => RB}
+import java.util.RedBlackTree as RB
 import java.util.function.{Function, BiFunction}
 
 class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit
-    comp: Comparator[_ >: K]
+    comp: Comparator[? >: K]
 ) extends AbstractMap[K, V]
     with NavigableMap[K, V]
     with Cloneable
@@ -15,7 +15,7 @@ class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit
 
   def this() = this(RB.Tree.empty[K, V])(NaturalComparator)
 
-  def this(comparator: Comparator[_ >: K]) =
+  def this(comparator: Comparator[? >: K]) =
     this(RB.Tree.empty[K, V])(NaturalComparator.select(comparator))
 
   def this(m: Map[K, V]) = {
@@ -46,7 +46,7 @@ class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit
 
   override def get(key: Any): V = RB.get(tree, key)
 
-  def comparator(): Comparator[_ >: K] =
+  def comparator(): Comparator[? >: K] =
     NaturalComparator.unselect(comp)
 
   def firstKey(): K = {
@@ -61,7 +61,7 @@ class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit
     RB.maxKey(tree)
   }
 
-  override def putAll(map: Map[_ <: K, _ <: V]): Unit =
+  override def putAll(map: Map[? <: K, ? <: V]): Unit =
     map.forEach((k, v) => put(k, v))
 
   override def put(key: K, value: V): V =
@@ -69,7 +69,7 @@ class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit
 
   override def computeIfAbsent(
       key: K,
-      mappingFunction: Function[_ >: K, _ <: V]
+      mappingFunction: Function[? >: K, ? <: V]
   ): V = {
     val node = RB.getNode(tree, key)
 
@@ -90,7 +90,7 @@ class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit
 
   override def computeIfPresent(
       key: K,
-      remappingFunction: BiFunction[_ >: K, _ >: V, _ <: V]
+      remappingFunction: BiFunction[? >: K, ? >: V, ? <: V]
   ): V = {
     val node = RB.getNode(tree, key)
     if ((node ne null) && node.getValue() != null)
@@ -101,7 +101,7 @@ class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit
 
   override def compute(
       key: K,
-      remappingFunction: BiFunction[_ >: K, _ >: V, _ <: V]
+      remappingFunction: BiFunction[? >: K, ? >: V, ? <: V]
   ): V = {
     val node = RB.getNode(tree, key)
     if (node eq null) {
@@ -117,7 +117,7 @@ class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit
   override def merge(
       key: K,
       value: V,
-      remappingFunction: BiFunction[_ >: V, _ >: V, _ <: V]
+      remappingFunction: BiFunction[? >: V, ? >: V, ? <: V]
   ): V = {
     Objects.requireNonNull(value)
 
@@ -306,7 +306,7 @@ private object TreeMap {
       lowerKind: RB.BoundKind,
       upperBound: K,
       upperKind: RB.BoundKind
-  )(implicit protected val comp: Comparator[_ >: K])
+  )(implicit protected val comp: Comparator[? >: K])
       extends AbstractSet[Map.Entry[K, V]] {
 
     def iterator(): Iterator[Map.Entry[K, V]] =
@@ -316,7 +316,7 @@ private object TreeMap {
       RB.projectionSize(tree, lowerBound, lowerKind, upperBound, upperKind)
 
     override def contains(o: Any): Boolean = o match {
-      case o: Map.Entry[_, _] if isWithinBounds(o.getKey()) =>
+      case o: Map.Entry[?, ?] if isWithinBounds(o.getKey()) =>
         val node = RB.getNode(tree, o.getKey())
         (node ne null) && Objects.equals(node.getValue(), o.getValue())
       case _ =>
@@ -324,7 +324,7 @@ private object TreeMap {
     }
 
     override def remove(o: Any): Boolean = o match {
-      case o: Map.Entry[_, _] if isWithinBounds(o.getKey()) =>
+      case o: Map.Entry[?, ?] if isWithinBounds(o.getKey()) =>
         val node = RB.getNode(tree, o.getKey())
         if ((node ne null) && Objects.equals(node.getValue(), o.getValue())) {
           RB.deleteNode(tree, node)
@@ -347,7 +347,7 @@ private object TreeMap {
       protected val lowerKind: RB.BoundKind,
       protected val upperBound: K,
       protected val upperKind: RB.BoundKind
-  )(implicit protected val comp: Comparator[_ >: K])
+  )(implicit protected val comp: Comparator[? >: K])
       extends AbstractMap[K, V]
       with NavigableMap[K, V] {
 
@@ -530,7 +530,7 @@ private object TreeMap {
       fromBoundKind0: RB.BoundKind,
       toKey0: K,
       toBoundKind0: RB.BoundKind
-  )(implicit comp: Comparator[_ >: K])
+  )(implicit comp: Comparator[? >: K])
       extends AbstractProjection[K, V](
         tree0,
         fromKey0,
@@ -585,7 +585,7 @@ private object TreeMap {
 
     // Methods of the NavigableMap API that are not implemented in AbstractProjection
 
-    def comparator(): Comparator[_ >: K] =
+    def comparator(): Comparator[? >: K] =
       NaturalComparator.unselect(comp)
 
     def firstEntry(): Map.Entry[K, V] =
@@ -635,7 +635,7 @@ private object TreeMap {
       fromBoundKind0: RB.BoundKind,
       toKey0: K,
       toBoundKind0: RB.BoundKind
-  )(implicit comp: Comparator[_ >: K])
+  )(implicit comp: Comparator[? >: K])
       extends AbstractProjection[K, V](
         tree0,
         toKey0,
@@ -684,7 +684,7 @@ private object TreeMap {
 
     // Methods of the NavigableMap API that are not implemented in AbstractProjection
 
-    def comparator(): Comparator[_ >: K] =
+    def comparator(): Comparator[? >: K] =
       Collections.reverseOrder(NaturalComparator.unselect(comp))
 
     def firstEntry(): Map.Entry[K, V] =

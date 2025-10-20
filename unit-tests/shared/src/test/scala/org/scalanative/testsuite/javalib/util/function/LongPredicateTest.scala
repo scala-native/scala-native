@@ -3,11 +3,11 @@ package org.scalanative.testsuite.javalib.util.function
 
 import java.util.function.LongPredicate
 
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.junit.Test
 
 class LongPredicateTest {
-  import LongPredicateTest._
+  import LongPredicateTest.*
 
   private val largerThan10 = makePredicate(_ > 10L)
   private val even = makePredicate(_ % 2 == 0L)

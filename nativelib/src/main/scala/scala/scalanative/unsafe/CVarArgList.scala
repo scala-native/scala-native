@@ -2,10 +2,10 @@ package scala.scalanative
 package unsafe
 
 import scala.language.implicitConversions
-import scala.scalanative.unsigned._
-import scala.scalanative.runtime.{Array => _, _}
-import scala.scalanative.meta.LinktimeInfo._
-import scala.scalanative.runtime.Intrinsics._
+import scala.scalanative.unsigned.*
+import scala.scalanative.runtime.{Array as _, *}
+import scala.scalanative.meta.LinktimeInfo.*
+import scala.scalanative.runtime.Intrinsics.*
 
 /** Type of a C-style vararg list (va_list in C). */
 final class CVarArgList private[scalanative] (

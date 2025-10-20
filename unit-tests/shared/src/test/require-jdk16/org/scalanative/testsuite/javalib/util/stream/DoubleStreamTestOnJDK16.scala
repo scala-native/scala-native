@@ -1,11 +1,11 @@
 package org.scalanative.testsuite.javalib.util.stream
 
-import java.{lang => jl}
+import java.lang as jl
 import java.util.Arrays
-import java.util.stream._
+import java.util.stream.*
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 

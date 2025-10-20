@@ -2,8 +2,8 @@ package scala.scalanative.junit
 
 // Ported from Scala.js
 
-import org.junit.Assume._
-import org.junit._
+import org.junit.Assume.*
+import org.junit.*
 
 import scala.scalanative.junit.utils.JUnitTest
 

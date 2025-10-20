@@ -3,12 +3,12 @@ package nscplugin
 
 import scala.language.implicitConversions
 
-import dotty.tools.dotc.ast.tpd._
+import dotty.tools.dotc.ast.tpd.*
 import dotty.tools.dotc.core
-import core.Contexts._
-import core.Symbols._
-import core.StdNames._
-import core.Flags._
+import core.Contexts.*
+import core.Symbols.*
+import core.StdNames.*
+import core.Flags.*
 
 import scala.collection.mutable
 import scala.scalanative.util.ScopedVar
@@ -27,7 +27,7 @@ object GenReflectiveInstantisation {
 
 trait GenReflectiveInstantisation(using Context) {
   self: NirCodeGen =>
-  import GenReflectiveInstantisation._
+  import GenReflectiveInstantisation.*
   import positionsConversions.given
 
   protected val reflectiveInstantiationBuffers =
@@ -51,7 +51,7 @@ trait GenReflectiveInstantisation(using Context) {
           _.hasAnnotation(defnNir.EnableReflectiveInstantiationAnnotationClass)
         )
 
-    if (enableReflectiveInstantiation) {
+    if enableReflectiveInstantiation then {
       ScopedVar.scoped(
         curClassSym := sym,
         curFresh := nir.Fresh(),
@@ -71,11 +71,11 @@ trait GenReflectiveInstantisation(using Context) {
     val name = owner.member(nir.Sig.Clinit)
 
     val staticInitBody =
-      if (curClassSym.get.is(flag = Module, butNot = Lifted))
+      if curClassSym.get.is(flag = Module, butNot = Lifted) then
         Some(registerModuleClass(td))
-      else if (sym.is(Module))
+      else if sym.is(Module) then
         None // see: https://github.com/scala-js/scala-js/issues/3228
-      else if (sym.is(Lifted) && !sym.originalOwner.isClass)
+      else if sym.is(Lifted) && !sym.originalOwner.isClass then
         None // see: https://github.com/scala-js/scala-js/issues/3227
       else Some(registerNormalClass(td))
 
@@ -129,7 +129,7 @@ trait GenReflectiveInstantisation(using Context) {
 
     // Collect public constructors.
     val ctors =
-      if (curClassSym.get.isOneOf(AbstractOrTrait)) Nil
+      if curClassSym.get.isOneOf(AbstractOrTrait) then Nil
       else
         curClassSym.get.info
           .member(nme.CONSTRUCTOR)
@@ -139,7 +139,7 @@ trait GenReflectiveInstantisation(using Context) {
               denot.asSymDenotation.underlyingSymbol
           }
 
-    if (ctors.isEmpty) Nil
+    if ctors.isEmpty then Nil
     else
       withFreshExprBuffer { buf ?=>
         buf.label(curFresh(), Seq.empty)
@@ -227,7 +227,7 @@ trait GenReflectiveInstantisation(using Context) {
         buf.label(curFresh(), Seq(thisArg))
 
         val module =
-          if (enclosingClass.exists && !enclosingClass.is(ModuleClass))
+          if enclosingClass.exists && !enclosingClass.is(ModuleClass) then
             nir.Val.Null
           else buf.module(fqSymName, unwind(using curFresh))
         buf.ret(module)
@@ -288,10 +288,10 @@ trait GenReflectiveInstantisation(using Context) {
 
     // For each (public) constructor C, generate a lambda responsible for
     // initialising and returning an instance of the class, using C.
-    for ((ctor, ctorIdx) <- ctors.zipWithIndex) {
+    for (ctor, ctorIdx) <- ctors.zipWithIndex do {
       val ctorSig = genMethodSig(ctor)
       given nir.SourcePosition = ctor.span
-      val ctorSuffix = if (ctorIdx == 0) "" else s"$$$ctorIdx"
+      val ctorSuffix = if ctorIdx == 0 then "" else s"$$$ctorIdx"
       given reflInstBuffer: ReflectiveInstantiationBuffer =
         ReflectiveInstantiationBuffer(fqSymName.id + ctorSuffix)
 
@@ -374,7 +374,7 @@ trait GenReflectiveInstantisation(using Context) {
         nir.Val.Int(ctorSig.args.tail.length),
         unwind(using curFresh)
       )
-      for ((arg, argIdx) <- ctorSig.args.tail.zipWithIndex) {
+      for (arg, argIdx) <- ctorSig.args.tail.zipWithIndex do {
         // Store the runtime class in the array.
         buf.arraystore(
           nir.Rt.Class,

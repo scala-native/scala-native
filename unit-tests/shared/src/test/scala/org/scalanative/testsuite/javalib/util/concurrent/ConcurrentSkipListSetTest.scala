@@ -3,17 +3,17 @@
 package org.scalanative.testsuite.javalib.util.concurrent
 
 import java.util.concurrent.ConcurrentSkipListSet
-import java.{util => ju}
+import java.util as ju
 
-import org.junit.Assert._
-import org.junit.Assume._
+import org.junit.Assert.*
+import org.junit.Assume.*
 import org.junit.Test
 
 import org.scalanative.testsuite.javalib.util.NavigableSetFactory
 import org.scalanative.testsuite.javalib.util.TrivialImmutableCollection
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
-import org.scalanative.testsuite.utils.Platform._
+import org.scalanative.testsuite.utils.Platform.*
 
 import scala.reflect.ClassTag
 

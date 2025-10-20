@@ -1070,7 +1070,7 @@ private[math] object Division {
       modulus: BigInteger,
       n2: Int
   ): Unit = {
-    import Multiplication._
+    import Multiplication.*
 
     val modulusDigits = modulus.digits
     val modulusLen = modulus.numberLength

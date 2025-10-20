@@ -1,6 +1,6 @@
 package java.util
 
-import java.{util => ju}
+import java.util as ju
 
 abstract class ResourceBundle {
   def getKeys(): ju.Enumeration[String]

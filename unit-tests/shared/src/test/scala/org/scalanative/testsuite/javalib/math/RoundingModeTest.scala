@@ -12,7 +12,7 @@ package org.scalanative.testsuite.javalib.math
 import java.math.RoundingMode
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 class RoundingModeTest {
 

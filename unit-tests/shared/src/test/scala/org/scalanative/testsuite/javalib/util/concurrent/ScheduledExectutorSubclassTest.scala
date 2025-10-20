@@ -6,18 +6,18 @@
 
 package org.scalanative.testsuite.javalib.util.concurrent
 
-import java.util.concurrent.TimeUnit._
+import java.util.concurrent.TimeUnit.*
 import java.util
-import java.util._
-import java.util.concurrent._
-import java.util.concurrent.atomic._
+import java.util.*
+import java.util.concurrent.*
+import java.util.concurrent.atomic.*
 
 import java.util.stream.Stream
 
-import org.junit._
-import org.junit.Assert._
+import org.junit.*
+import org.junit.Assert.*
 
-import scala.util.control.Breaks._
+import scala.util.control.Breaks.*
 
 import org.scalanative.testsuite.utils.Platform
 
@@ -32,7 +32,7 @@ object ScheduledExecutorSubclassTest {
     }
     override def getDelay(unit: TimeUnit): Long = task.getDelay(unit)
     override def compareTo(t: Delayed): Int = task.compareTo(
-      t.asInstanceOf[CustomTask[_]].task
+      t.asInstanceOf[CustomTask[?]].task
     )
     override def cancel(mayInterruptIfRunning: Boolean): Boolean =
       task.cancel(mayInterruptIfRunning)
@@ -60,8 +60,8 @@ object ScheduledExecutorSubclassTest {
   }
 }
 class ScheduledExecutorSubclassTest extends JSR166Test {
-  import JSR166Test._
-  import ScheduledExecutorSubclassTest._
+  import JSR166Test.*
+  import ScheduledExecutorSubclassTest.*
 
   class CustomExecutor(
       corePoolSize: Int,
@@ -577,7 +577,7 @@ class ScheduledExecutorSubclassTest extends JSR166Test {
     val done = new CountDownLatch(1)
     usingWrappedPoolCleaner(new CustomExecutor(1))(cleaner(_, done)) { p =>
       val threadStarted = new CountDownLatch(1)
-      val tasks = new Array[ScheduledFuture[_]](5)
+      val tasks = new Array[ScheduledFuture[?]](5)
       for (i <- 0 until tasks.length) {
         val r = new CheckedRunnable() {
           @throws[InterruptedException]
@@ -601,7 +601,7 @@ class ScheduledExecutorSubclassTest extends JSR166Test {
   @Test def testRemove(): Unit = {
     val done = new CountDownLatch(1)
     usingWrappedPoolCleaner(new CustomExecutor(1))(cleaner(_, done)) { p =>
-      val tasks = new Array[ScheduledFuture[_]](5)
+      val tasks = new Array[ScheduledFuture[?]](5)
       val threadStarted = new CountDownLatch(1)
       for (i <- 0 until tasks.length) {
         val r = new CheckedRunnable() {
@@ -631,7 +631,7 @@ class ScheduledExecutorSubclassTest extends JSR166Test {
    */
   @throws[InterruptedException]
   @Test def testPurge(): Unit = {
-    val tasks = new Array[ScheduledFuture[_]](5)
+    val tasks = new Array[ScheduledFuture[?]](5)
     val releaser = new Runnable() {
       override def run(): Unit = {
         for (task <- tasks) { if (task != null) task.cancel(true) }
@@ -711,7 +711,7 @@ class ScheduledExecutorSubclassTest extends JSR166Test {
   @throws[InterruptedException]
   @Test def testShutdownNow_delayedTasks(): Unit = {
     val p = new CustomExecutor(1)
-    val tasks = new util.ArrayList[ScheduledFuture[_]]
+    val tasks = new util.ArrayList[ScheduledFuture[?]]
     for (i <- 0 until 3) {
       val r = new NoOpRunnable
       tasks.add(p.schedule(r, 9, SECONDS))
@@ -735,7 +735,7 @@ class ScheduledExecutorSubclassTest extends JSR166Test {
       assertEquals(tasks.size, queuedTasks.size)
       tasks.forEach { task =>
         assertFalse(
-          task.asInstanceOf[CustomTask[_]].ran
+          task.asInstanceOf[CustomTask[?]].ran
         )
         assertFalse(task.isDone)
         assertFalse(task.isCancelled)
@@ -821,9 +821,9 @@ class ScheduledExecutorSubclassTest extends JSR166Test {
       }
     }
     val task = new Task
-    val immediates = new util.ArrayList[Future[_]]
-    val delayeds = new util.ArrayList[Future[_]]
-    val periodics = new util.ArrayList[Future[_]]
+    val immediates = new util.ArrayList[Future[?]]
+    val delayeds = new util.ArrayList[Future[?]]
+    val periodics = new util.ArrayList[Future[?]]
     immediates.add(p.submit(task))
     delayeds.add(p.schedule(task, delay, MILLISECONDS))
     periodics.add(
@@ -854,11 +854,11 @@ class ScheduledExecutorSubclassTest extends JSR166Test {
     )
     assertEquals(poolSize, q.size)
     assertEquals(poolSize, ran.get)
-    immediates.forEach((f: Future[_]) =>
-      assertTrue(f.asInstanceOf[ScheduledFuture[_]].getDelay(NANOSECONDS) <= 0L)
+    immediates.forEach((f: Future[?]) =>
+      assertTrue(f.asInstanceOf[ScheduledFuture[?]].getDelay(NANOSECONDS) <= 0L)
     )
     Seq(immediates, delayeds, periodics).foreach {
-      _.forEach((f: Future[_]) => assertFalse(f.isDone))
+      _.forEach((f: Future[?]) => assertFalse(f.isDone))
     }
     try p.shutdown()
     catch {
@@ -881,11 +881,11 @@ class ScheduledExecutorSubclassTest extends JSR166Test {
     assertTrue(
       !effectivePeriodicPolicy ^ q.containsAll(periodics.subList(2, 4))
     )
-    immediates.forEach((f: Future[_]) => assertFalse(f.isDone))
+    immediates.forEach((f: Future[?]) => assertFalse(f.isDone))
     assertFalse(delayeds.get(0).isDone)
     if (effectiveDelayedPolicy) assertFalse(delayeds.get(1).isDone)
     else assertTrue(delayeds.get(1).isCancelled)
-    if (effectivePeriodicPolicy) periodics.forEach((f: Future[_]) => {
+    if (effectivePeriodicPolicy) periodics.forEach((f: Future[?]) => {
       assertFalse(f.isDone)
       if (!periodicTasksContinue) {
         assertTrue(f.cancel(false))
@@ -894,10 +894,10 @@ class ScheduledExecutorSubclassTest extends JSR166Test {
 
     })
     else {
-      periodics.subList(0, 2).forEach((f: Future[_]) => assertFalse(f.isDone))
+      periodics.subList(0, 2).forEach((f: Future[?]) => assertFalse(f.isDone))
       periodics
         .subList(2, 4)
-        .forEach((f: Future[_]) => assertTrue(f.isCancelled))
+        .forEach((f: Future[?]) => assertTrue(f.isCancelled))
     }
     unblock.countDown() // Release all pool threads
 
@@ -906,13 +906,13 @@ class ScheduledExecutorSubclassTest extends JSR166Test {
     assertTrue(p.isTerminated)
     assertTrue(q.isEmpty)
     Seq(immediates, delayeds, periodics).foreach {
-      _.forEach((f: Future[_]) => assertTrue(f.isDone))
+      _.forEach((f: Future[?]) => assertTrue(f.isDone))
     }
     immediates.forEach(f => assertNull(f.get()))
     assertNull(delayeds.get(0).get)
     if (effectiveDelayedPolicy) assertNull(delayeds.get(1).get)
     else assertTrue(delayeds.get(1).isCancelled)
-    if (periodicTasksContinue) periodics.forEach((f: Future[_]) => {
+    if (periodicTasksContinue) periodics.forEach((f: Future[?]) => {
       try f.get
       catch {
         case success: ExecutionException =>
@@ -922,7 +922,7 @@ class ScheduledExecutorSubclassTest extends JSR166Test {
       }
 
     })
-    else periodics.forEach((f: Future[_]) => assertTrue(f.isCancelled))
+    else periodics.forEach((f: Future[?]) => assertTrue(f.isCancelled))
     assertEquals(
       poolSize + 1 +
         (if (effectiveDelayedPolicy) 1 else 0) +

@@ -4,14 +4,14 @@ package scala.scalanative.testinterface.common
 
 import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent._
+import scala.concurrent.*
 import org.junit.Test
-import org.junit.Assert._
-import scala.scalanative.junit.async._
+import org.junit.Assert.*
+import scala.scalanative.junit.async.*
 
 class RPCCoreTest {
 
-  import RPCCoreTest._
+  import RPCCoreTest.*
 
   lazy val x: TestRPC = new TestRPC(y)
   lazy val y: TestRPC = new TestRPC(x)

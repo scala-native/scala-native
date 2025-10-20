@@ -9,23 +9,23 @@
 package org.scalanative.testsuite.javalib.util.concurrent
 package locks
 
-import java.util._
+import java.util.*
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.locks.AbstractQueuedSynchronizer
-import java.util.concurrent.TimeUnit._
+import java.util.concurrent.TimeUnit.*
 
-import org.junit._
-import org.junit.Assert._
-import org.junit.Assume._
+import org.junit.*
+import org.junit.Assert.*
+import org.junit.Assume.*
 
 import org.scalanative.testsuite.utils.Platform
 import scala.util.control.Breaks
 
 class AbstractQueuedSynchronizerTest extends JSR166Test {
-  import JSR166Test._
+  import JSR166Test.*
 
   class Mutex extends AbstractQueuedSynchronizer {
-    import Mutex._
+    import Mutex.*
 
     /** Owner thread is untracked, so this is really just isLocked(). */
     override def isHeldExclusively() = {
@@ -138,7 +138,7 @@ class AbstractQueuedSynchronizerTest extends JSR166Test {
       sync: AbstractQueuedSynchronizer,
       expected: Thread*
   ) = {
-    assertHasQueuedThreads(sync, expected: _*)
+    assertHasQueuedThreads(sync, expected*)
     assertEquals(
       new HashSet(sync.getExclusiveQueuedThreads()),
       new HashSet(sync.getQueuedThreads())
@@ -153,7 +153,7 @@ class AbstractQueuedSynchronizerTest extends JSR166Test {
       sync: AbstractQueuedSynchronizer,
       expected: Thread*
   ) = {
-    assertHasQueuedThreads(sync, expected: _*)
+    assertHasQueuedThreads(sync, expected*)
     assertEquals(
       new HashSet(sync.getSharedQueuedThreads()),
       new HashSet(sync.getQueuedThreads())
@@ -171,7 +171,7 @@ class AbstractQueuedSynchronizerTest extends JSR166Test {
       threads: Thread*
   ) = {
     sync.acquire()
-    assertHasWaitersLocked(sync, c, threads: _*)
+    assertHasWaitersLocked(sync, c, threads*)
     sync.release()
   }
 
@@ -206,7 +206,7 @@ class AbstractQueuedSynchronizerTest extends JSR166Test {
     case object awaitUntil extends AwaitMethod
     val values = Array(await, awaitTimed, awaitNanos, awaitUntil)
   }
-  import AwaitMethod._
+  import AwaitMethod.*
 
   /** Awaits condition using the specified AwaitMethod.
    */
@@ -388,9 +388,9 @@ class AbstractQueuedSynchronizerTest extends JSR166Test {
     val sync = new Mutex()
     val t1 = new Thread(new InterruptedSyncRunnable(sync))
     val t2 = new Thread(new InterruptibleSyncRunnable(sync))
-    assertHasExclusiveQueuedThreads(sync, NO_THREADS: _*)
+    assertHasExclusiveQueuedThreads(sync, NO_THREADS*)
     sync.acquire()
-    assertHasExclusiveQueuedThreads(sync, NO_THREADS: _*)
+    assertHasExclusiveQueuedThreads(sync, NO_THREADS*)
     t1.start()
     waitForQueuedThread(sync, t1)
     assertHasExclusiveQueuedThreads(sync, t1)
@@ -406,7 +406,7 @@ class AbstractQueuedSynchronizerTest extends JSR166Test {
     assertHasExclusiveQueuedThreads(sync, t2)
     sync.release()
     awaitTermination(t2)
-    assertHasExclusiveQueuedThreads(sync, NO_THREADS: _*)
+    assertHasExclusiveQueuedThreads(sync, NO_THREADS*)
   }
 
   /** getExclusiveQueuedThreads returns all exclusive waiting threads
@@ -415,9 +415,9 @@ class AbstractQueuedSynchronizerTest extends JSR166Test {
     val sync = new Mutex()
     val t1 = new Thread(new InterruptedSyncRunnable(sync))
     val t2 = new Thread(new InterruptibleSyncRunnable(sync))
-    assertHasExclusiveQueuedThreads(sync, NO_THREADS: _*)
+    assertHasExclusiveQueuedThreads(sync, NO_THREADS*)
     sync.acquire()
-    assertHasExclusiveQueuedThreads(sync, NO_THREADS: _*)
+    assertHasExclusiveQueuedThreads(sync, NO_THREADS*)
     t1.start()
     waitForQueuedThread(sync, t1)
     assertHasExclusiveQueuedThreads(sync, t1)
@@ -433,7 +433,7 @@ class AbstractQueuedSynchronizerTest extends JSR166Test {
     assertHasExclusiveQueuedThreads(sync, t2)
     sync.release()
     awaitTermination(t2)
-    assertHasExclusiveQueuedThreads(sync, NO_THREADS: _*)
+    assertHasExclusiveQueuedThreads(sync, NO_THREADS*)
   }
 
   /** getSharedQueuedThreads does not include exclusively waiting threads
@@ -461,7 +461,7 @@ class AbstractQueuedSynchronizerTest extends JSR166Test {
    */
   @Test def testGetSharedQueuedThreads_Shared(): Unit = {
     val l = new BooleanLatch()
-    assertHasSharedQueuedThreads(l, NO_THREADS: _*)
+    assertHasSharedQueuedThreads(l, NO_THREADS*)
     val t1 = newStartedThread(new CheckedInterruptedRunnable() {
       def realRun(): Unit = {
         l.acquireSharedInterruptibly(0)
@@ -481,7 +481,7 @@ class AbstractQueuedSynchronizerTest extends JSR166Test {
     assertHasSharedQueuedThreads(l, t2)
     assertTrue(l.releaseShared(0))
     awaitTermination(t2)
-    assertHasSharedQueuedThreads(l, NO_THREADS: _*)
+    assertHasSharedQueuedThreads(l, NO_THREADS*)
   }
 
   /** tryAcquireNanos is interruptible
@@ -617,7 +617,7 @@ class AbstractQueuedSynchronizerTest extends JSR166Test {
       c.signal()
       shouldThrow()
     } catch { case success: IllegalMonitorStateException => () }
-    assertHasWaitersUnlocked(sync, c, NO_THREADS: _*)
+    assertHasWaitersUnlocked(sync, c, NO_THREADS*)
   }
 
   /** Calling signalAll without holding sync throws IllegalMonitorStateException
@@ -673,9 +673,9 @@ class AbstractQueuedSynchronizerTest extends JSR166Test {
     acquired.acquireShared(0)
     sync.acquire()
     assertHasWaitersLocked(sync, c, t)
-    assertHasExclusiveQueuedThreads(sync, NO_THREADS: _*)
+    assertHasExclusiveQueuedThreads(sync, NO_THREADS*)
     c.signal()
-    assertHasWaitersLocked(sync, c, NO_THREADS: _*)
+    assertHasWaitersLocked(sync, c, NO_THREADS*)
     assertHasExclusiveQueuedThreads(sync, t)
     sync.release()
     awaitTermination(t)
@@ -721,7 +721,7 @@ class AbstractQueuedSynchronizerTest extends JSR166Test {
       sync2.hasWaiters(c)
       shouldThrow()
     } catch { case success: IllegalArgumentException => () }
-    assertHasWaitersUnlocked(sync, c, NO_THREADS: _*)
+    assertHasWaitersUnlocked(sync, c, NO_THREADS*)
   }
 
   /** hasWaiters throws IllegalMonitorStateException if not synced
@@ -733,7 +733,7 @@ class AbstractQueuedSynchronizerTest extends JSR166Test {
       sync.hasWaiters(c)
       shouldThrow()
     } catch { case success: IllegalMonitorStateException => () }
-    assertHasWaitersUnlocked(sync, c, NO_THREADS: _*)
+    assertHasWaitersUnlocked(sync, c, NO_THREADS*)
   }
 
   /** getWaitQueueLength throws IllegalArgumentException if not owned
@@ -746,7 +746,7 @@ class AbstractQueuedSynchronizerTest extends JSR166Test {
       sync2.getWaitQueueLength(c)
       shouldThrow()
     } catch { case success: IllegalArgumentException => () }
-    assertHasWaitersUnlocked(sync, c, NO_THREADS: _*)
+    assertHasWaitersUnlocked(sync, c, NO_THREADS*)
   }
 
   /** getWaitQueueLength throws IllegalMonitorStateException if not synced
@@ -758,7 +758,7 @@ class AbstractQueuedSynchronizerTest extends JSR166Test {
       sync.getWaitQueueLength(c)
       shouldThrow()
     } catch { case success: IllegalMonitorStateException => () }
-    assertHasWaitersUnlocked(sync, c, NO_THREADS: _*)
+    assertHasWaitersUnlocked(sync, c, NO_THREADS*)
   }
 
   /** getWaitingThreads throws IllegalArgumentException if not owned
@@ -771,7 +771,7 @@ class AbstractQueuedSynchronizerTest extends JSR166Test {
       sync2.getWaitingThreads(c)
       shouldThrow()
     } catch { case success: IllegalArgumentException => () }
-    assertHasWaitersUnlocked(sync, c, NO_THREADS: _*)
+    assertHasWaitersUnlocked(sync, c, NO_THREADS*)
   }
 
   /** getWaitingThreads throws IllegalMonitorStateException if not synced
@@ -783,7 +783,7 @@ class AbstractQueuedSynchronizerTest extends JSR166Test {
       sync.getWaitingThreads(c)
       shouldThrow()
     } catch { case success: IllegalMonitorStateException => () }
-    assertHasWaitersUnlocked(sync, c, NO_THREADS: _*)
+    assertHasWaitersUnlocked(sync, c, NO_THREADS*)
   }
 
   /** hasWaiters returns true when a thread is waiting, else false
@@ -795,7 +795,7 @@ class AbstractQueuedSynchronizerTest extends JSR166Test {
     val t = newStartedThread(new CheckedRunnable() {
       def realRun(): Unit = {
         sync.acquire()
-        assertHasWaitersLocked(sync, c, NO_THREADS: _*)
+        assertHasWaitersLocked(sync, c, NO_THREADS*)
         assertFalse(sync.hasWaiters(c))
         assertTrue(acquired.releaseShared(0))
         c.await()
@@ -806,16 +806,16 @@ class AbstractQueuedSynchronizerTest extends JSR166Test {
     acquired.acquireShared(0)
     sync.acquire()
     assertHasWaitersLocked(sync, c, t)
-    assertHasExclusiveQueuedThreads(sync, NO_THREADS: _*)
+    assertHasExclusiveQueuedThreads(sync, NO_THREADS*)
     assertTrue(sync.hasWaiters(c))
     c.signal()
-    assertHasWaitersLocked(sync, c, NO_THREADS: _*)
+    assertHasWaitersLocked(sync, c, NO_THREADS*)
     assertHasExclusiveQueuedThreads(sync, t)
     assertFalse(sync.hasWaiters(c))
     sync.release()
 
     awaitTermination(t)
-    assertHasWaitersUnlocked(sync, c, NO_THREADS: _*)
+    assertHasWaitersUnlocked(sync, c, NO_THREADS*)
   }
 
   /** getWaitQueueLength returns number of waiting threads
@@ -828,7 +828,7 @@ class AbstractQueuedSynchronizerTest extends JSR166Test {
     val t1 = newStartedThread(new CheckedRunnable() {
       def realRun(): Unit = {
         sync.acquire()
-        assertHasWaitersLocked(sync, c, NO_THREADS: _*)
+        assertHasWaitersLocked(sync, c, NO_THREADS*)
         assertEquals(0, sync.getWaitQueueLength(c))
         assertTrue(acquired1.releaseShared(0))
         c.await()
@@ -854,17 +854,17 @@ class AbstractQueuedSynchronizerTest extends JSR166Test {
     acquired2.acquireShared(0)
     sync.acquire()
     assertHasWaitersLocked(sync, c, t1, t2)
-    assertHasExclusiveQueuedThreads(sync, NO_THREADS: _*)
+    assertHasExclusiveQueuedThreads(sync, NO_THREADS*)
     assertEquals(2, sync.getWaitQueueLength(c))
     c.signalAll()
-    assertHasWaitersLocked(sync, c, NO_THREADS: _*)
+    assertHasWaitersLocked(sync, c, NO_THREADS*)
     assertHasExclusiveQueuedThreads(sync, t1, t2)
     assertEquals(0, sync.getWaitQueueLength(c))
     sync.release()
 
     awaitTermination(t1)
     awaitTermination(t2)
-    assertHasWaitersUnlocked(sync, c, NO_THREADS: _*)
+    assertHasWaitersUnlocked(sync, c, NO_THREADS*)
   }
 
   /** getWaitingThreads returns only and all waiting threads
@@ -877,7 +877,7 @@ class AbstractQueuedSynchronizerTest extends JSR166Test {
     val t1 = new Thread(new CheckedRunnable() {
       def realRun(): Unit = {
         sync.acquire()
-        assertHasWaitersLocked(sync, c, NO_THREADS: _*)
+        assertHasWaitersLocked(sync, c, NO_THREADS*)
         assertTrue(sync.getWaitingThreads(c).isEmpty())
         assertTrue(acquired1.releaseShared(0))
         c.await()
@@ -899,7 +899,7 @@ class AbstractQueuedSynchronizerTest extends JSR166Test {
     })
 
     sync.acquire()
-    assertHasWaitersLocked(sync, c, NO_THREADS: _*)
+    assertHasWaitersLocked(sync, c, NO_THREADS*)
     assertFalse(sync.getWaitingThreads(c).contains(t1))
     assertFalse(sync.getWaitingThreads(c).contains(t2))
     assertTrue(sync.getWaitingThreads(c).isEmpty())
@@ -920,13 +920,13 @@ class AbstractQueuedSynchronizerTest extends JSR166Test {
     acquired2.acquireShared(0)
     sync.acquire()
     assertHasWaitersLocked(sync, c, t1, t2)
-    assertHasExclusiveQueuedThreads(sync, NO_THREADS: _*)
+    assertHasExclusiveQueuedThreads(sync, NO_THREADS*)
     assertTrue(sync.getWaitingThreads(c).contains(t1))
     assertTrue(sync.getWaitingThreads(c).contains(t2))
     assertFalse(sync.getWaitingThreads(c).isEmpty())
     assertEquals(2, sync.getWaitingThreads(c).size())
     c.signalAll()
-    assertHasWaitersLocked(sync, c, NO_THREADS: _*)
+    assertHasWaitersLocked(sync, c, NO_THREADS*)
     assertHasExclusiveQueuedThreads(sync, t1, t2)
     assertFalse(sync.getWaitingThreads(c).contains(t1))
     assertFalse(sync.getWaitingThreads(c).contains(t2))
@@ -936,7 +936,7 @@ class AbstractQueuedSynchronizerTest extends JSR166Test {
 
     awaitTermination(t1)
     awaitTermination(t2)
-    assertHasWaitersUnlocked(sync, c, NO_THREADS: _*)
+    assertHasWaitersUnlocked(sync, c, NO_THREADS*)
   }
 
   /** awaitUninterruptibly is uninterruptible
@@ -951,7 +951,7 @@ class AbstractQueuedSynchronizerTest extends JSR166Test {
         assertTrue(pleaseInterrupt.releaseShared(0))
         condition.awaitUninterruptibly()
         assertTrue(Thread.interrupted())
-        assertHasWaitersLocked(sync, condition, NO_THREADS: _*)
+        assertHasWaitersLocked(sync, condition, NO_THREADS*)
         sync.release()
       }
     })
@@ -965,9 +965,9 @@ class AbstractQueuedSynchronizerTest extends JSR166Test {
     assertThreadBlocks(t, Thread.State.WAITING)
     sync.acquire()
     assertHasWaitersLocked(sync, condition, t)
-    assertHasExclusiveQueuedThreads(sync, NO_THREADS: _*)
+    assertHasExclusiveQueuedThreads(sync, NO_THREADS*)
     condition.signal()
-    assertHasWaitersLocked(sync, condition, NO_THREADS: _*)
+    assertHasWaitersLocked(sync, condition, NO_THREADS*)
     assertHasExclusiveQueuedThreads(sync, t)
     sync.release()
     awaitTermination(t)
@@ -1043,9 +1043,9 @@ class AbstractQueuedSynchronizerTest extends JSR166Test {
     acquired2.acquireShared(0)
     sync.acquire()
     assertHasWaitersLocked(sync, c, t1, t2)
-    assertHasExclusiveQueuedThreads(sync, NO_THREADS: _*)
+    assertHasExclusiveQueuedThreads(sync, NO_THREADS*)
     c.signalAll()
-    assertHasWaitersLocked(sync, c, NO_THREADS: _*)
+    assertHasWaitersLocked(sync, c, NO_THREADS*)
     assertHasExclusiveQueuedThreads(sync, t1, t2)
     sync.release()
     awaitTermination(t1)

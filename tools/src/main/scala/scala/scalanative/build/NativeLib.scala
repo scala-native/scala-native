@@ -4,9 +4,9 @@ package build
 import java.io.File
 import java.nio.file.{Files, Path}
 import java.util.Arrays
-import java.util.regex._
+import java.util.regex.*
 
-import scala.concurrent._
+import scala.concurrent.*
 import scala.util.Failure
 import scala.util.Success
 

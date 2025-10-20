@@ -15,13 +15,13 @@ import java.util.regex.PatternSyntaxException
 
 import scala.annotation.switch
 
-import Regexp.{Op => ROP}
+import Regexp.Op as ROP
 
 // A parser of regular expression patterns.
 //
 // The only public entry point is {@link #parse(String pattern, int flags)}.
 class Parser(wholeRegexp: String, _flags: Int) {
-  import Parser._
+  import Parser.*
 
   // Flags control the behavior of the parser and record information about
   // regexp context.

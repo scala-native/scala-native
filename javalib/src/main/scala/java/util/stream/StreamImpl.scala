@@ -1,9 +1,9 @@
 package java.util.stream
 
-import java.{util => ju}
-import java.util._
-import java.util.function._
-import java.util.stream.Collector._
+import java.util as ju
+import java.util.*
+import java.util.function.*
+import java.util.stream.Collector.*
 
 private[stream] class StreamImpl[T](
     val pipeline: ArrayDeque[StreamImpl[T]]
@@ -38,7 +38,7 @@ private[stream] class StreamImpl[T](
   def this(
       spliterator: Spliterator[T],
       parallel: Boolean,
-      parent: Stream[_ <: T]
+      parent: Stream[? <: T]
   ) = {
     this(parent.asInstanceOf[StreamImpl[T]].pipeline)
     _spliterArg = spliterator
@@ -177,7 +177,7 @@ private[stream] class StreamImpl[T](
         _spliter.estimateSize(),
         purifiedBits
       ) {
-        def tryAdvance(action: Consumer[_ >: T]): Boolean =
+        def tryAdvance(action: Consumer[? >: T]): Boolean =
           _spliter.tryAdvance((e) => action.accept(e))
       }
 
@@ -187,7 +187,7 @@ private[stream] class StreamImpl[T](
 
 // Methods specified in interface Stream --------------------------------
 
-  def allMatch(pred: Predicate[_ >: T]): Boolean = {
+  def allMatch(pred: Predicate[? >: T]): Boolean = {
     commenceOperation()
 
     // Be careful with documented "true" return for empty stream.
@@ -201,7 +201,7 @@ private[stream] class StreamImpl[T](
     !mismatchFound
   }
 
-  def anyMatch(pred: Predicate[_ >: T]): Boolean = {
+  def anyMatch(pred: Predicate[? >: T]): Boolean = {
     commenceOperation()
 
     var matchFound = false
@@ -214,7 +214,7 @@ private[stream] class StreamImpl[T](
     matchFound
   }
 
-  def collect[R, A](collector: Collector[_ >: T, A, R]): R = {
+  def collect[R, A](collector: Collector[? >: T, A, R]): R = {
     // Loosely following the example in the JDK 8 stream.Collector doc.
     commenceOperation()
 
@@ -240,7 +240,7 @@ private[stream] class StreamImpl[T](
 
   def collect[R](
       supplier: Supplier[R],
-      accumulator: BiConsumer[R, _ >: T],
+      accumulator: BiConsumer[R, ? >: T],
       combiner: BiConsumer[R, R]
   ): R = {
     commenceOperation()
@@ -273,7 +273,7 @@ private[stream] class StreamImpl[T](
         estimatedSize,
         _spliter.characteristics()
       ) {
-        def tryAdvance(action: Consumer[_ >: T]): Boolean = {
+        def tryAdvance(action: Consumer[? >: T]): Boolean = {
           var success = false
           var done = false
           while (!done) {
@@ -297,7 +297,7 @@ private[stream] class StreamImpl[T](
     new StreamImpl[T](spl, _parallel, pipeline)
   }
 
-  def filter(pred: Predicate[_ >: T]): Stream[T] = {
+  def filter(pred: Predicate[? >: T]): Stream[T] = {
     commenceOperation()
 
     // Some items may be filtered out, so the estimated size is a high bound.
@@ -307,7 +307,7 @@ private[stream] class StreamImpl[T](
       estimatedSize,
       _spliter.characteristics()
     ) {
-      def tryAdvance(action: Consumer[_ >: T]): Boolean = {
+      def tryAdvance(action: Consumer[? >: T]): Boolean = {
         var success = false
         var done = false
         while (!done) {
@@ -346,7 +346,7 @@ private[stream] class StreamImpl[T](
   }
 
   def flatMap[R](
-      mapper: Function[_ >: T, _ <: Stream[_ <: R]]
+      mapper: Function[? >: T, ? <: Stream[? <: R]]
   ): Stream[R] = {
     commenceOperation()
 
@@ -363,7 +363,7 @@ private[stream] class StreamImpl[T](
   }
 
   def flatMapToDouble(
-      mapper: Function[_ >: T, _ <: DoubleStream]
+      mapper: Function[? >: T, ? <: DoubleStream]
   ): DoubleStream = {
     commenceOperation()
 
@@ -381,7 +381,7 @@ private[stream] class StreamImpl[T](
   }
 
   def flatMapToInt(
-      mapper: Function[_ >: T, _ <: IntStream]
+      mapper: Function[? >: T, ? <: IntStream]
   ): IntStream = {
     commenceOperation()
 
@@ -399,7 +399,7 @@ private[stream] class StreamImpl[T](
   }
 
   def flatMapToLong(
-      mapper: Function[_ >: T, _ <: LongStream]
+      mapper: Function[? >: T, ? <: LongStream]
   ): LongStream = {
     commenceOperation()
 
@@ -416,11 +416,11 @@ private[stream] class StreamImpl[T](
     new LongStreamImpl(supplier.get(), _parallel, coercedPriorStages)
   }
 
-  def forEach(action: Consumer[_ >: T]): Unit = {
+  def forEach(action: Consumer[? >: T]): Unit = {
     _spliter.forEachRemaining(action)
   }
 
-  def forEachOrdered(action: Consumer[_ >: T]): Unit = {
+  def forEachOrdered(action: Consumer[? >: T]): Unit = {
     commenceOperation()
     _spliter.forEachRemaining(action)
   }
@@ -455,7 +455,7 @@ private[stream] class StreamImpl[T](
       Long.MaxValue,
       newStreamCharacteristics
     ) {
-      def tryAdvance(action: Consumer[_ >: T]): Boolean =
+      def tryAdvance(action: Consumer[? >: T]): Boolean =
         if (nSeen >= maxSize) false
         else {
           var advanced =
@@ -472,7 +472,7 @@ private[stream] class StreamImpl[T](
   }
 
   def map[R](
-      mapper: Function[_ >: T, _ <: R]
+      mapper: Function[? >: T, ? <: R]
   ): Stream[R] = {
     commenceOperation()
 
@@ -480,7 +480,7 @@ private[stream] class StreamImpl[T](
       _spliter.estimateSize(),
       _spliter.characteristics()
     ) {
-      def tryAdvance(action: Consumer[_ >: R]): Boolean =
+      def tryAdvance(action: Consumer[? >: R]): Boolean =
         _spliter.tryAdvance((e) => action.accept(mapper(e)))
     }
 
@@ -496,7 +496,7 @@ private[stream] class StreamImpl[T](
       .asInstanceOf[Stream[R]]
   }
 
-  def mapToDouble(mapper: ToDoubleFunction[_ >: T]): DoubleStream = {
+  def mapToDouble(mapper: ToDoubleFunction[? >: T]): DoubleStream = {
     commenceOperation()
 
     val spl = new Spliterators.AbstractDoubleSpliterator(
@@ -517,7 +517,7 @@ private[stream] class StreamImpl[T](
     )
   }
 
-  def mapToInt(mapper: ToIntFunction[_ >: T]): IntStream = {
+  def mapToInt(mapper: ToIntFunction[? >: T]): IntStream = {
     commenceOperation()
 
     val spl = new Spliterators.AbstractIntSpliterator(
@@ -538,7 +538,7 @@ private[stream] class StreamImpl[T](
     )
   }
 
-  def mapToLong(mapper: ToLongFunction[_ >: T]): LongStream = {
+  def mapToLong(mapper: ToLongFunction[? >: T]): LongStream = {
     commenceOperation()
 
     val spl = new Spliterators.AbstractLongSpliterator(
@@ -559,7 +559,7 @@ private[stream] class StreamImpl[T](
     )
   }
 
-  def max(comparator: Comparator[_ >: T]): Optional[T] = {
+  def max(comparator: Comparator[? >: T]): Optional[T] = {
     commenceOperation()
 
     var maxOpt = Optional.empty[T]()
@@ -578,7 +578,7 @@ private[stream] class StreamImpl[T](
     maxOpt
   }
 
-  def min(comparator: Comparator[_ >: T]): Optional[T] = {
+  def min(comparator: Comparator[? >: T]): Optional[T] = {
     commenceOperation()
 
     var minOpt = Optional.empty[T]()
@@ -597,12 +597,12 @@ private[stream] class StreamImpl[T](
     minOpt
   }
 
-  def noneMatch(pred: Predicate[_ >: T]): Boolean = {
+  def noneMatch(pred: Predicate[? >: T]): Boolean = {
     // anyMatch() will call commenceOperation()
     !this.anyMatch(pred)
   }
 
-  def peek(action: Consumer[_ >: T]): Stream[T] = {
+  def peek(action: Consumer[? >: T]): Stream[T] = {
     commenceOperation()
 
     val peekAction = action
@@ -612,7 +612,7 @@ private[stream] class StreamImpl[T](
       _spliter.characteristics()
     ) {
 
-      def tryAdvance(action: Consumer[_ >: T]): Boolean =
+      def tryAdvance(action: Consumer[? >: T]): Boolean =
         _spliter.tryAdvance((e) => {
           peekAction.accept(e)
           action.accept(e)
@@ -652,7 +652,7 @@ private[stream] class StreamImpl[T](
 
   def reduce[U](
       identity: U,
-      accumulator: BiFunction[U, _ >: T, U],
+      accumulator: BiFunction[U, ? >: T, U],
       combiner: BinaryOperator[U]
   ): U = {
     commenceOperation()
@@ -693,7 +693,7 @@ private[stream] class StreamImpl[T](
             preSkipSize - nSkipped,
             _spliter.characteristics()
           ) {
-            def tryAdvance(action: Consumer[_ >: T]): Boolean =
+            def tryAdvance(action: Consumer[? >: T]): Boolean =
               _spliter.tryAdvance((e) => action.accept(e))
           }
         }
@@ -725,7 +725,7 @@ private[stream] class StreamImpl[T](
     sorted(comparator)
   }
 
-  def sorted(comparator: Comparator[_ >: T]): Stream[T] = {
+  def sorted(comparator: Comparator[? >: T]): Stream[T] = {
     // No commenceOperation() here. This is an intermediate operation.
 
     /* Someday figure out the types for the much cleaner 'toArray(generator)'
@@ -749,7 +749,7 @@ private[stream] class StreamImpl[T](
 
     class SortingSpliterSupplier[T](
         srcSpliter: Spliterator[T],
-        comparator: Comparator[_ >: T]
+        comparator: Comparator[? >: T]
     ) extends Supplier[Spliterator[T]] {
 
       def get(): Spliterator[T] = {
@@ -774,7 +774,7 @@ private[stream] class StreamImpl[T](
           Arrays
             .sort[Object](
               buffer,
-              comparator.asInstanceOf[Comparator[_ >: Object]]
+              comparator.asInstanceOf[Comparator[? >: Object]]
             )
 
           val startingBits = _spliter.characteristics()
@@ -977,7 +977,7 @@ object StreamImpl {
 
   private class CompoundSpliteratorFactory[T, R](
       spliter: Spliterator[T],
-      mapper: Function[_ >: T, _ <: Stream[_ <: R]],
+      mapper: Function[? >: T, ? <: Stream[? <: R]],
       closeOnFirstTouch: Boolean
   ) {
     /* Design note:
@@ -996,7 +996,7 @@ object StreamImpl {
           Long.MaxValue,
           spliter.characteristics()
         ) {
-          def tryAdvance(action: Consumer[_ >: Stream[T]]): Boolean = {
+          def tryAdvance(action: Consumer[? >: Stream[T]]): Boolean = {
             spliter.tryAdvance(e =>
               action.accept(mapper(e).asInstanceOf[Stream[T]])
             )
@@ -1009,12 +1009,12 @@ object StreamImpl {
         def estimateSize(): Long = Long.MaxValue
         def trySplit(): Spliterator[R] = null.asInstanceOf[Spliterator[R]]
 
-        private var currentSpliter: ju.Spliterator[_ <: R] =
+        private var currentSpliter: ju.Spliterator[? <: R] =
           Spliterators.emptySpliterator[R]()
 
         var currentStream = Optional.empty[StreamImpl[R]]()
 
-        def tryAdvance(action: Consumer[_ >: R]): Boolean = {
+        def tryAdvance(action: Consumer[? >: R]): Boolean = {
           var advanced = false
           var done = false
 
@@ -1061,7 +1061,7 @@ object StreamImpl {
 
   private class DoublePrimitiveCompoundSpliteratorFactory[T](
       spliter: Spliterator[T],
-      mapper: Function[_ >: T, _ <: DoubleStream],
+      mapper: Function[? >: T, ? <: DoubleStream],
       closeOnFirstTouch: Boolean
   ) {
 
@@ -1071,7 +1071,7 @@ object StreamImpl {
           Long.MaxValue,
           spliter.characteristics()
         ) {
-          def tryAdvance(action: Consumer[_ >: DoubleStream]): Boolean = {
+          def tryAdvance(action: Consumer[? >: DoubleStream]): Boolean = {
             spliter.tryAdvance(e => action.accept(mapper(e)))
           }
         }
@@ -1135,7 +1135,7 @@ object StreamImpl {
 
   private class IntPrimitiveCompoundSpliteratorFactory[T](
       spliter: Spliterator[T],
-      mapper: Function[_ >: T, _ <: IntStream],
+      mapper: Function[? >: T, ? <: IntStream],
       closeOnFirstTouch: Boolean
   ) {
 
@@ -1145,7 +1145,7 @@ object StreamImpl {
           Long.MaxValue,
           spliter.characteristics()
         ) {
-          def tryAdvance(action: Consumer[_ >: IntStream]): Boolean = {
+          def tryAdvance(action: Consumer[? >: IntStream]): Boolean = {
             spliter.tryAdvance(e => action.accept(mapper(e)))
           }
         }
@@ -1209,7 +1209,7 @@ object StreamImpl {
 
   private class LongPrimitiveCompoundSpliteratorFactory[T](
       spliter: Spliterator[T],
-      mapper: Function[_ >: T, _ <: LongStream],
+      mapper: Function[? >: T, ? <: LongStream],
       closeOnFirstTouch: Boolean
   ) {
 
@@ -1219,7 +1219,7 @@ object StreamImpl {
           Long.MaxValue,
           spliter.characteristics()
         ) {
-          def tryAdvance(action: Consumer[_ >: LongStream]): Boolean = {
+          def tryAdvance(action: Consumer[? >: LongStream]): Boolean = {
             spliter.tryAdvance(e => action.accept(mapper(e)))
           }
         }
@@ -1281,7 +1281,7 @@ object StreamImpl {
     }
   }
 
-  def concat[T](a: Stream[_ <: T], b: Stream[_ <: T]): Stream[T] = {
+  def concat[T](a: Stream[? <: T], b: Stream[? <: T]): Stream[T] = {
     /* Design Note:
      *  This implementation may not comply with the following section
      *  of the JVM description of the Stream#concat method.

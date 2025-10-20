@@ -1,8 +1,8 @@
 package org.scalanative.testsuite.posixlib
 
 import org.junit.Test
-import org.junit.Assert._
-import org.junit.Assume._
+import org.junit.Assert.*
+import org.junit.Assume.*
 import org.junit.{BeforeClass, AfterClass}
 
 import scala.scalanative.meta.LinktimeInfo.{
@@ -13,15 +13,15 @@ import scala.scalanative.meta.LinktimeInfo.{
   isNetBSD
 }
 
-import scala.scalanative.unsafe._
-import scala.scalanative.unsigned._
+import scala.scalanative.unsafe.*
+import scala.scalanative.unsigned.*
 
-import scala.scalanative.posix.langinfo._
+import scala.scalanative.posix.langinfo.*
 import scala.scalanative.posix.locale.{setlocale, LC_ALL}
 import scala.scalanative.posix.stdlib
 import scala.scalanative.posix.string
 
-import java.{util => ju}
+import java.util as ju
 
 object LanginfoTest {
   private var savedLocale: Option[CString] = None

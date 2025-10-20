@@ -2,10 +2,10 @@ package scala.scalanative
 package regex
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 class RE2MatchTest {
-  import FindTest._
+  import FindTest.*
 
   @Test def testMatch(): Unit = {
     for (test <- FIND_TESTS) {

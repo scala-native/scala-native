@@ -1,11 +1,11 @@
 // leave in this package for now - does not work on jvm
 package java.util
 
-import java.util._
+import java.util.*
 
 import org.junit.Test
-import org.junit.Assert._
-import scala.scalanative.junit.utils.CollectionConverters._
+import org.junit.Assert.*
+import scala.scalanative.junit.utils.CollectionConverters.*
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 class ArrayListTest {

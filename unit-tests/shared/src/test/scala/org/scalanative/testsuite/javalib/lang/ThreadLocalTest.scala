@@ -8,11 +8,11 @@
 package org.scalanative.testsuite.javalib.lang
 
 import org.junit.{Test, Ignore, BeforeClass}
-import org.junit.Assert._
+import org.junit.Assert.*
 import scala.scalanative.junit.utils.AssumesHelper
 import org.scalanative.testsuite.javalib.util.concurrent.JSR166Test
 
-import JSR166Test._
+import JSR166Test.*
 
 object ThreadLocalTest {
   val tl = new ThreadLocal[Integer]() {
@@ -24,7 +24,7 @@ object ThreadLocalTest {
   }
 }
 class ThreadLocalTest extends JSR166Test {
-  import ThreadLocalTest._
+  import ThreadLocalTest.*
 
   /** remove causes next access to return initial value
    */

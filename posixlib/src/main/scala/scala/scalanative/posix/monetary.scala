@@ -1,7 +1,7 @@
 package scala.scalanative
 package posix
 
-import scalanative.unsafe._
+import scalanative.unsafe.*
 
 import scalanative.posix.sys.types.{ssize_t, size_t}
 

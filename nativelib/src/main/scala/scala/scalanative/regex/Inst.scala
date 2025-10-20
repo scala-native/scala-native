@@ -8,12 +8,12 @@
 package scala.scalanative
 package regex
 
-import java.{lang => jl}
+import java.lang as jl
 
 // A single instruction in the regular expression virtual machine.
 // @see http://swtch.com/~rsc/regexp/regexp2.html
 class Inst(var op: Inst.Op) {
-  import Inst._, Op._
+  import Inst.*, Op.*
 
   var out: Int = _ // all but MATCH, FAIL
   var arg: Int = _ // ALT, ALT_MATCH, CAPTURE, EMPTY_WIDTH

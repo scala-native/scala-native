@@ -1,6 +1,6 @@
 package java.lang
 
-import scala.scalanative.runtime.{Throwable => NativeThrowable}
+import scala.scalanative.runtime.Throwable as NativeThrowable
 
 class Throwable protected (
     s: String,
@@ -327,9 +327,9 @@ class CloneNotSupportedException(s: String) extends Exception(s) {
   def this() = this(null)
 }
 
-class EnumConstantNotPresentException(e: Class[_ <: Enum[_]], c: String)
+class EnumConstantNotPresentException(e: Class[? <: Enum[?]], c: String)
     extends RuntimeException(e.getName() + "." + c) {
-  def enumType(): Class[_ <: Enum[_]] = e
+  def enumType(): Class[? <: Enum[?]] = e
   def constantName(): String = c
 }
 

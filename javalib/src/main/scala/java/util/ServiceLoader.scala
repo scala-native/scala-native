@@ -1,16 +1,16 @@
 package java.util
 
 import java.lang.Iterable
-import java.{util => ju}
+import java.util as ju
 
-import scala.scalanative.unsafe._
+import scala.scalanative.unsafe.*
 import scala.scalanative.reflect.Reflect
 import scala.scalanative.runtime.{UndefinedBehaviorError, RawPtr, Boxes}
-import java.{util => ju}
+import java.util as ju
 
 final class ServiceLoader[S <: AnyRef] private[util] (
     serviceClass: Class[S],
-    serviceProviders: Array[ServiceLoader.Provider[_ <: S]]
+    serviceProviders: Array[ServiceLoader.Provider[? <: S]]
 ) extends Iterable[S] {
   import ServiceLoader.Provider
 
@@ -24,7 +24,7 @@ final class ServiceLoader[S <: AnyRef] private[util] (
     .asInstanceOf[ju.Iterator[S]]
 
   def stream(): ju.stream.Stream[Provider[S]] = {
-    import Spliterator._
+    import Spliterator.*
     val characteristcs = DISTINCT | NONNULL | IMMUTABLE
     ju.stream.StreamSupport.stream(
       /*supplier*/ () =>
@@ -46,22 +46,22 @@ final class ServiceLoader[S <: AnyRef] private[util] (
 object ServiceLoader {
   trait Provider[S <: AnyRef] {
     def get(): S
-    def `type`(): Class[_ <: S]
+    def `type`(): Class[? <: S]
   }
 
   // Used in intrinsic transformation to create an instance of provider
   // based on raw function pointer `loadFn` used to allocate and instanitate Provider lazily
   private[util] def createIntrinsicProvider[S <: AnyRef](
-      cls: Class[_ <: S],
+      cls: Class[? <: S],
       loadFn: RawPtr
   ): Provider[S] = new IntrinsicProvider(cls, Boxes.boxToCFuncPtr0(loadFn))
 
   private class IntrinsicProvider[S <: AnyRef](
-      cls: Class[_ <: S],
+      cls: Class[? <: S],
       loadFn: CFuncPtr0[S]
   ) extends Provider[S] {
     def get(): S = loadFn()
-    def `type`(): Class[_ <: S] = cls
+    def `type`(): Class[? <: S] = cls
   }
 
   private def intrinsic = throw new UndefinedBehaviorError(

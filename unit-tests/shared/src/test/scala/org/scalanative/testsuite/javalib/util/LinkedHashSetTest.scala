@@ -13,10 +13,10 @@
 
 package org.scalanative.testsuite.javalib.util
 
-import java.{util => ju}
+import java.util as ju
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 import scala.reflect.ClassTag
 

@@ -1,9 +1,9 @@
 package scala.scalanative
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
-import scalanative.unsafe._
+import scalanative.unsafe.*
 
 var topLevelExternVariable: Int = extern
 def topLevelExternFunction: Int = extern

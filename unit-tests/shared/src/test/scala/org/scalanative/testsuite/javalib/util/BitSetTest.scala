@@ -5,12 +5,12 @@ package org.scalanative.testsuite.javalib.util
 
 import java.nio.{ByteBuffer, LongBuffer}
 
-import java.{util => ju}
+import java.util as ju
 import java.util.{BitSet, Spliterator, TreeSet}
 import java.util.stream.IntStream
 
-import org.junit.Assert.{assertThrows => junitAssertThrows, _}
-import org.junit.Assume._
+import org.junit.Assert.{assertThrows as junitAssertThrows, *}
+import org.junit.Assume.*
 import org.junit.Test
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 

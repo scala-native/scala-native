@@ -2,7 +2,7 @@ package java.util
 
 trait SortedMap[K, V] extends Map[K, V] with SequencedMap[K, V] {
   def firstKey(): K
-  def comparator(): Comparator[_ >: K]
+  def comparator(): Comparator[? >: K]
   def lastKey(): K
   def subMap(fromKey: K, toKey: K): SortedMap[K, V]
   def headMap(toKey: K): SortedMap[K, V]

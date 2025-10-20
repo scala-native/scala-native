@@ -158,7 +158,7 @@ object BigInteger {
 }
 
 class BigInteger extends Number with Comparable[BigInteger] {
-  import BigInteger._
+  import BigInteger.*
 
   /** The magnitude of this big integer.
    *

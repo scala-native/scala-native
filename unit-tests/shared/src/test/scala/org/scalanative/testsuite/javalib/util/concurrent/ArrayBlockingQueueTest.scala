@@ -7,14 +7,14 @@
  */
 package org.scalanative.testsuite.javalib.util.concurrent
 
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.junit.{Test, Ignore}
 
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util
-import java.util._
-import java.util.concurrent._
-import JSR166Test._
+import java.util.*
+import java.util.concurrent.*
+import JSR166Test.*
 
 class ArrayBlockingQueueFairTest extends BlockingQueueTest {
   override protected def emptyCollection(): BlockingQueue[Any] =
@@ -30,7 +30,7 @@ class ArrayBlockingQueueNonFairTest extends BlockingQueueTest {
 }
 
 object ArrayBlockingQueueTest {
-  import JSR166Test._
+  import JSR166Test.*
 
   /** Returns a new queue of given size containing consecutive Integers 0 ... n
    *  \- 1.
@@ -67,7 +67,7 @@ object ArrayBlockingQueueTest {
 }
 
 class ArrayBlockingQueueTest extends JSR166Test {
-  import JSR166Test._
+  import JSR166Test.*
 
   /** A new queue has the indicated capacity
    */
@@ -115,7 +115,7 @@ class ArrayBlockingQueueTest extends JSR166Test {
    */
   @Test def testConstructor4(): Unit = {
     val elements: Collection[Integer] =
-      Arrays.asList(new Array[Integer](SIZE): _*)
+      Arrays.asList(new Array[Integer](SIZE)*)
     try {
       new ArrayBlockingQueue[Any](SIZE, false, elements)
       shouldThrow()
@@ -130,7 +130,7 @@ class ArrayBlockingQueueTest extends JSR166Test {
   @Test def testConstructor5(): Unit = {
     val ints: Array[Integer] = new Array[Integer](SIZE)
     for (i <- 0 until SIZE - 1) { ints(i) = i }
-    val elements: Collection[Integer] = Arrays.asList(ints: _*)
+    val elements: Collection[Integer] = Arrays.asList(ints*)
     try {
       new ArrayBlockingQueue[Any](SIZE, false, elements)
       shouldThrow()
@@ -163,7 +163,7 @@ class ArrayBlockingQueueTest extends JSR166Test {
   @Test def testConstructor7(): Unit = {
     val ints: Array[Integer] = new Array[Integer](SIZE)
     for (i <- 0 until SIZE) { ints(i) = i }
-    val elements: Collection[Integer] = Arrays.asList(ints: _*)
+    val elements: Collection[Integer] = Arrays.asList(ints*)
     val q: ArrayBlockingQueue[Any] =
       new ArrayBlockingQueue[Any](SIZE, true, elements)
     for (i <- 0 until SIZE) { assertEquals(ints(i), q.poll) }
@@ -249,7 +249,7 @@ class ArrayBlockingQueueTest extends JSR166Test {
     val ints: Array[Integer] = new Array[Integer](SIZE)
     for (i <- 0 until SIZE - 1) { ints(i) = Integer.valueOf(i) }
     try {
-      q.addAll(Arrays.asList(ints: _*))
+      q.addAll(Arrays.asList(ints*))
       shouldThrow()
     } catch {
       case success: NullPointerException =>
@@ -285,8 +285,8 @@ class ArrayBlockingQueueTest extends JSR166Test {
     val ints: Array[Integer] = new Array[Integer](SIZE)
     for (i <- 0 until SIZE) { ints(i) = Integer.valueOf(i) }
     val q = new ArrayBlockingQueue[Any](SIZE)
-    assertFalse(q.addAll(Arrays.asList(empty: _*)))
-    assertTrue(q.addAll(Arrays.asList(ints: _*)))
+    assertFalse(q.addAll(Arrays.asList(empty*)))
+    assertTrue(q.addAll(Arrays.asList(ints*)))
     for (i <- 0 until SIZE) { assertEquals(ints(i), q.poll) }
   }
 
@@ -684,7 +684,7 @@ class ArrayBlockingQueueTest extends JSR166Test {
       if (a.length > size) { assertNull(a(size)) }
       if (a.length > size + 1) { assertEquals(42, a(size + 1)) }
     }
-    val it: Iterator[_] = q.iterator
+    val it: Iterator[?] = q.iterator
     val s: Integer = q.peek
     for (i <- 0 until size) {
       val x: Integer = it.next.asInstanceOf[Integer]
@@ -743,7 +743,7 @@ class ArrayBlockingQueueTest extends JSR166Test {
   @throws[InterruptedException]
   @Test def testIterator(): Unit = {
     val q = ArrayBlockingQueueTest.populatedQueue(SIZE)
-    var it: Iterator[_] = q.iterator
+    var it: Iterator[?] = q.iterator
     var i: Int = 0
     i = 0
     while ({ it.hasNext }) {
@@ -775,7 +775,7 @@ class ArrayBlockingQueueTest extends JSR166Test {
     q.add(two)
     q.add(one)
     q.add(three)
-    var it: Iterator[_] = q.iterator
+    var it: Iterator[?] = q.iterator
     it.next
     it.remove()
     it = q.iterator
@@ -793,7 +793,7 @@ class ArrayBlockingQueueTest extends JSR166Test {
     q.add(three)
     assertEquals("queue should be full", 0, q.remainingCapacity)
     var k: Int = 0
-    val it: Iterator[_] = q.iterator
+    val it: Iterator[?] = q.iterator
     while ({ it.hasNext }) { assertEquals({ k += 1; k }, it.next) }
     assertEquals(3, k)
   }
@@ -805,7 +805,7 @@ class ArrayBlockingQueueTest extends JSR166Test {
     q.add(one)
     q.add(two)
     q.add(three)
-    val it: Iterator[_] = q.iterator
+    val it: Iterator[?] = q.iterator
     while ({ it.hasNext }) {
       q.remove()
       it.next
@@ -937,7 +937,7 @@ class ArrayBlockingQueueTest extends JSR166Test {
   /** remove(null), contains(null) always return false
    */
   @Test def testNeverContainsNull(): Unit = {
-    val qs: Array[Collection[_]] = Array(
+    val qs: Array[Collection[?]] = Array(
       ArrayBlockingQueueTest.populatedQueue(0, 1, 10, false),
       ArrayBlockingQueueTest.populatedQueue(2, 2, 10, true)
     )

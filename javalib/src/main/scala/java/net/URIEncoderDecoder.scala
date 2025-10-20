@@ -2,7 +2,7 @@ package java.net
 
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets
-import java.{lang => jl}
+import java.lang as jl
 
 // ScalaNative specific
 private[net] object URIEncoderDecoder {

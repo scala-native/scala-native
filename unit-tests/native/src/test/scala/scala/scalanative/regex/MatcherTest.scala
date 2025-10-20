@@ -3,11 +3,11 @@ package regex
 
 import org.junit.Ignore
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
-import TestUtils._
+import TestUtils.*
 
 // Tests are inspired by those projects under Apache2 License:
 // j2objc: https://github.com/google/j2objc/blob/master/jre_emul/Tests/java/util/regex/MatcherTest.java#L1
@@ -34,7 +34,7 @@ class MatcherTest {
 
   @Test def testGroup(): Unit = {
     val m = matcher("a(\\d)(\\d)z", "_a12z_a34z_")
-    import m._
+    import m.*
 
     assertTrue(groupCount() == 2)
 
@@ -66,7 +66,7 @@ class MatcherTest {
 
   @Test def startIndexEndIndex(): Unit = {
     val m = matcher("a(\\d)(\\d)z", "012345_a12z_012345")
-    import m._
+    import m.*
 
     assertThrows(
       "No match found",
@@ -110,7 +110,7 @@ class MatcherTest {
 
   @Test def startEnd(): Unit = {
     val m = matcher("a(\\d)(\\d)z", "_a12z_a34z_")
-    import m._
+    import m.*
 
     assertTrue(find())
     assertTrue(start() == 1)
@@ -127,7 +127,7 @@ class MatcherTest {
     val buf = new StringBuffer()
 
     val m = matcher("a(\\d)(\\d)z", "_a12z_a34z_")
-    import m._
+    import m.*
 
     while (find()) {
       appendReplacement(buf, "{" + group() + "}")
@@ -139,7 +139,7 @@ class MatcherTest {
   @Test def appendReplacementAppendTailWithGroupReplacementByIndex(): Unit = {
     val buf = new StringBuffer()
     val m = matcher("a(\\d)(\\d)z", "_a12z_a34z_")
-    import m._
+    import m.*
     while (find()) {
       appendReplacement(buf, "{$0}")
     }
@@ -149,7 +149,7 @@ class MatcherTest {
 
   @Test def testReset(): Unit = {
     val m = matcher("a(\\d)(\\d)z", "_a12z_a34z_")
-    import m._
+    import m.*
 
     assertTrue(find())
     assertTrue(start() == 1)

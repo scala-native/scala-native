@@ -6,19 +6,19 @@ import scala.scalanative.annotation.alwaysinline
 
 import scala.scalanative.libc.errno
 import scala.scalanative.libc.string
-import scala.scalanative.posix.sys.mman._
+import scala.scalanative.posix.sys.mman.*
 import scala.scalanative.posix.unistd.{sysconf, _SC_PAGESIZE}
 
-import scala.scalanative.unsafe._
-import scala.scalanative.unsigned._
+import scala.scalanative.unsafe.*
+import scala.scalanative.unsigned.*
 
 import scala.scalanative.windows.WinBaseApi.CreateFileMappingA
-import scala.scalanative.windows.WinBaseApiExt._
-import scala.scalanative.windows.MemoryApi._
+import scala.scalanative.windows.WinBaseApiExt.*
+import scala.scalanative.windows.MemoryApi.*
 import scala.scalanative.windows.ErrorHandlingApi.GetLastError
-import scala.scalanative.windows.SysInfoApi._
-import scala.scalanative.windows.SysInfoApiOps._
-import scala.scalanative.windows._
+import scala.scalanative.windows.SysInfoApi.*
+import scala.scalanative.windows.SysInfoApiOps.*
+import scala.scalanative.windows.*
 
 import java.io.IOException
 import java.io.FileDescriptor

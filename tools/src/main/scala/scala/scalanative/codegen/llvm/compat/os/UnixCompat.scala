@@ -10,7 +10,7 @@ import scala.scalanative.codegen.llvm.Metadata.DILocation
 private[codegen] class UnixCompat(codegen: AbstractCodeGen)
     extends OsCompat(codegen) {
 
-  import codegen.{pointerType => ptrT}
+  import codegen.pointerType as ptrT
 
   val excRecTy = s"{ $ptrT, i32 }"
 
@@ -41,7 +41,7 @@ private[codegen] class UnixCompat(codegen: AbstractCodeGen)
       metaCtx: MetadataCodeGen.Context,
       scopes: MetadataCodeGen.DefnScopes
   ): Unit = {
-    import sb._
+    import sb.*
     val nir.Next.Unwind(nir.Val.Local(excname, _), next) = unwind
 
     val excpad = "_" + excname.id + ".landingpad"
@@ -115,7 +115,7 @@ private[codegen] class UnixCompat(codegen: AbstractCodeGen)
   }
 
   def genPrelude()(implicit builder: ShowBuilder): Unit = {
-    import builder._
+    import builder.*
     line(s"declare i32 $osPersonalityType(...)")
     if (usingCppExceptions) {
       line(s"declare i32 @llvm.eh.typeid.for($ptrT)")

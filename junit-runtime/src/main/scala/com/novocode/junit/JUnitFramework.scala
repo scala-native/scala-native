@@ -2,7 +2,7 @@ package com.novocode.junit
 
 // Ported from Scala.js
 
-import sbt.testing._
+import sbt.testing.*
 
 /** Forwarder framework so no additional framework name is needed in sbt.
  *

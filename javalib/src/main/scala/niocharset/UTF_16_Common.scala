@@ -10,8 +10,8 @@ package niocharset
 
 import scala.annotation.tailrec
 
-import java.nio._
-import java.nio.charset._
+import java.nio.*
+import java.nio.charset.*
 
 /** This is a very specific common implementation for UTF_16BE and UTF_16LE.
  */
@@ -22,7 +22,7 @@ private[niocharset] abstract class UTF_16_Common protected (
     private val endianness: Int
 ) extends Charset(name, aliases) {
 
-  import UTF_16_Common._
+  import UTF_16_Common.*
 
   def contains(that: Charset): Boolean = true
 

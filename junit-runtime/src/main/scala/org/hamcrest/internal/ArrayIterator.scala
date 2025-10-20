@@ -3,15 +3,15 @@
  */
 package org.hamcrest.internal
 
-import java.{util => ju}
+import java.util as ju
 
-class ArrayIterator private (array: Array[_], private var currentIndex: Int = 0)
+class ArrayIterator private (array: Array[?], private var currentIndex: Int = 0)
     extends ju.Iterator[AnyRef] {
 
   def this(array: AnyRef) = {
     this(
       array match {
-        case arr: Array[_] => arr
+        case arr: Array[?] => arr
         case _             => throw new IllegalArgumentException("not an array")
       },
       0

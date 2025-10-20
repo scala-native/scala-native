@@ -30,11 +30,11 @@ object ThreadLocal {
   private lazy val hashCounterAtomic = new AtomicInteger(0)
   private var hashCounter = 0
 
-  def withInitial[T <: AnyRef](supplier: Supplier[_ <: T]): ThreadLocal[T] =
+  def withInitial[T <: AnyRef](supplier: Supplier[? <: T]): ThreadLocal[T] =
     new SuppliedThreadLocal(supplier)
 
   private[lang] class SuppliedThreadLocal[T <: AnyRef](
-      supplier: Supplier[_ <: T]
+      supplier: Supplier[? <: T]
   ) extends ThreadLocal[T] {
     Objects.requireNonNull(supplier)
     override protected def initialValue(): T = supplier.get()
@@ -149,7 +149,7 @@ object ThreadLocal {
       var counter = table.length
       while (counter > 0) {
         table(index) match {
-          case reference: Reference[ThreadLocal[_]] @unchecked =>
+          case reference: Reference[ThreadLocal[?]] @unchecked =>
             if (reference.get() == null) { // This thread local was reclaimed by the garbage collector.
               table(index) = Values.TOMBSTONE
               table(index + 1) = null
@@ -198,7 +198,7 @@ object ThreadLocal {
       var i = oldTable.length - 2
       while (i >= 0) {
         oldTable(i) match {
-          case reference: Reference[ThreadLocal[_]] @unchecked =>
+          case reference: Reference[ThreadLocal[?]] @unchecked =>
             val key = reference.get()
             if (key != null) {
               // Entry is still live. Move it over.
@@ -215,7 +215,7 @@ object ThreadLocal {
      *  have to clean up, check for existing entries, account for tombstones,
      *  etc.
      */
-    private[lang] def add(key: ThreadLocal[_], value: AnyRef): Unit = {
+    private[lang] def add(key: ThreadLocal[?], value: AnyRef): Unit = {
       var index = key.hash & mask
       while (true) {
         val k = table(index)
@@ -231,7 +231,7 @@ object ThreadLocal {
     /** Sets entry for given ThreadLocal to given value, creating an entry if
      *  necessary.
      */
-    private[lang] def put(key: ThreadLocal[_], value: AnyRef): Unit = {
+    private[lang] def put(key: ThreadLocal[?], value: AnyRef): Unit = {
       cleanUp()
       // Keep track of first tombstone. That's where we want to go back
       // and add an entry if necessary.
@@ -267,7 +267,7 @@ object ThreadLocal {
 
     /** Gets value for given ThreadLocal after not finding it in the first slot.
      */
-    private[lang] def getAfterMiss(key: ThreadLocal[_ <: AnyRef]): AnyRef = {
+    private[lang] def getAfterMiss(key: ThreadLocal[? <: AnyRef]): AnyRef = {
       val table = this.table
       var index = key.hash & mask
       // If the first slot is empty, the search is over.
@@ -330,7 +330,7 @@ object ThreadLocal {
 
     /** Removes entry for the given ThreadLocal.
      */
-    private[lang] def remove(key: ThreadLocal[_]): Unit = {
+    private[lang] def remove(key: ThreadLocal[?]): Unit = {
       cleanUp()
       var index = key.hash & mask
       while ({ true }) {

@@ -11,10 +11,10 @@ import java.io.{
 
 import java.nio.charset.Charset
 
-import scala.scalanative.posix.time._
+import scala.scalanative.posix.time.*
 import scala.scalanative.posix.timeOps.tmOps
 
-import scala.scalanative.unsafe._
+import scala.scalanative.unsafe.*
 
 class ZipEntry private (
     private[zip] val name: String, // immutable for safety

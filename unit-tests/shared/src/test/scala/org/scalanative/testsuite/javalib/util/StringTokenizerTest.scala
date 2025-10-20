@@ -1,11 +1,11 @@
 package org.scalanative.testsuite.javalib.util
 
-import java.util._
+import java.util.*
 
 // Ported from Apache Harmony
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 

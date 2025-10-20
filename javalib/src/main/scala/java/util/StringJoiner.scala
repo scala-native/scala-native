@@ -2,7 +2,7 @@
 // Extensively re-written for Scala Native.
 
 package java.util
-import java.{lang => jl}
+import java.lang as jl
 
 final class StringJoiner private (
     delimiter: String,

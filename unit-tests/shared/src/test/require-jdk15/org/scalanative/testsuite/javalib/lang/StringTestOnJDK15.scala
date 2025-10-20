@@ -4,7 +4,7 @@
 package org.scalanative.testsuite.javalib.lang
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 

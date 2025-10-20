@@ -5,9 +5,9 @@ import java.io.File
 import java.nio.file.{Files, Path, Paths}
 import scalanative.build.{Config, NativeConfig, Logger, ScalaNative, Discover}
 import scalanative.util.Scope
-import scala.concurrent._
+import scala.concurrent.*
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 import scala.scalanative.buildinfo.ScalaNativeBuildInfo
 import scala.scalanative.linker.ReachabilityAnalysis
 

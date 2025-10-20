@@ -2,9 +2,9 @@ package scala.scalanative
 package unsafe
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
-import scalanative.unsigned._
+import scalanative.unsigned.*
 import scala.scalanative.meta.LinktimeInfo.is32BitPlatform
 
 class SizeofTest {
@@ -42,7 +42,7 @@ class SizeofTest {
   }
 
   @Test def testPtr(): Unit = {
-    assertTrue(sizeof[Ptr[_]] == sizeof[Size])
+    assertTrue(sizeof[Ptr[?]] == sizeof[Size])
   }
 
   @Test def testCStruct1Byte(): Unit = {

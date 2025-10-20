@@ -1,11 +1,11 @@
 package org.scalanative.testsuite.javalib.net
 
-import java.net._
+import java.net.*
 
 // Ported from Scala.js and Apache Harmony
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 

@@ -3,7 +3,7 @@ package sbtplugin
 
 // based Scala.js sbt plugin: ScalaJSCrossVersion
 
-import sbt._
+import sbt.*
 
 object ScalaNativeCrossVersion {
   val currentBinaryVersion = nir.Versions.currentBinaryVersion

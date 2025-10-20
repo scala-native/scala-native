@@ -2,10 +2,10 @@ package scala.scalanative.testinterface
 
 // Ported from Scala.js
 
-import sbt.testing._
-import scala.scalanative.testinterface.common.JVMEndpoints._
-import scala.scalanative.testinterface.common.NativeEndpoints._
-import scala.scalanative.testinterface.common._
+import sbt.testing.*
+import scala.scalanative.testinterface.common.JVMEndpoints.*
+import scala.scalanative.testinterface.common.NativeEndpoints.*
+import scala.scalanative.testinterface.common.*
 
 private[testinterface] class TestAdapterBridge(rpcClient: NativeRPC) {
 

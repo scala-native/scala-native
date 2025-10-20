@@ -1,12 +1,12 @@
 package java.nio.file.attribute
 
-import scalanative.unsigned._
-import scalanative.unsafe._
+import scalanative.unsigned.*
+import scalanative.unsafe.*
 
-import scalanative.posix._
+import scalanative.posix.*
 
 // Import posix name errno as variable, not class or type.
-import scala.scalanative.posix.{errno => posixErrno}, posixErrno.errno
+import scala.scalanative.posix.errno as posixErrno, posixErrno.errno
 
 import scalanative.posix.sys.stat
 

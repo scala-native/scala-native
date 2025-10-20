@@ -1,14 +1,14 @@
 package scala.scalanative
 
 import scalanative.annotation.alwaysinline
-import scalanative.unsafe._
+import scalanative.unsafe.*
 import scalanative.unsigned.USize
-import scalanative.runtime.Intrinsics._
-import scalanative.runtime.monitor._
+import scalanative.runtime.Intrinsics.*
+import scalanative.runtime.monitor.*
 import scalanative.runtime.ffi.stdatomic.{atomic_thread_fence, memory_order}
 import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
 import java.util.concurrent.locks.LockSupport
-import java.{lang => jl}
+import java.lang as jl
 
 package object runtime {
   def filename = ExecInfo.filename
@@ -91,7 +91,7 @@ package object runtime {
    * Ensures that all scheduled tasks / non-deamon threads would finish before exit.
    */
   @noinline private[runtime] def onShutdown(): Unit = {
-    import MainThreadShutdownContext._
+    import MainThreadShutdownContext.*
     if (isMultithreadingEnabled) {
       shutdownThread = Thread.currentThread()
       atomic_thread_fence(memory_order.memory_order_seq_cst)
@@ -235,7 +235,7 @@ package object runtime {
       ctor: unsafe.CFuncPtr1[AnyRef, Unit],
       moduleInstance: AnyRef,
       moduleSlot: unsafe.Ptr[AnyRef],
-      cls: Class[_]
+      cls: Class[?]
   ): AnyRef = cls.synchronized {
     @alwaysinline def saveResult(instanceOrError: AnyRef): Unit =
       ffi.stdatomic.atomic_store_intptr(
@@ -263,7 +263,7 @@ package object runtime {
   @exported("scalanative_awaitForInitialization")
   private[runtime] def waitForModuleInitialization(
       moduleSlot: unsafe.Ptr[AnyRef],
-      cls: Class[_]
+      cls: Class[?]
   ): AnyRef = cls.synchronized {
     var spins = 32
     while (spins > 0) {

@@ -6,11 +6,11 @@ import scalanative.io.VirtualDirectory
 import scalanative.build.{Config, ScalaNative}
 import scala.scalanative.linker.ReachabilityAnalysis
 import scalanative.util.Scope
-import scala.concurrent._
+import scala.concurrent.*
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
-import org.junit.Assert._
+import org.junit.Assert.*
 import scala.scalanative.build.NativeConfig
 import java.nio.file.Files
 

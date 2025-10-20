@@ -2,7 +2,7 @@
 
 package org.scalanative.testsuite.javalib.util
 
-import java.{util => ju}
+import java.util as ju
 import java.util.Map.Entry
 
 final class TrivialImmutableMap[K, V] private (contents: List[Entry[K, V]])

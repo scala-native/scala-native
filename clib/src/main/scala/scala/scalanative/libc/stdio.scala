@@ -1,7 +1,7 @@
 package scala.scalanative
 package libc
 
-import scalanative.unsafe._
+import scalanative.unsafe.*
 import stddef.size_t
 
 @extern object stdio extends stdio

@@ -1,5 +1,5 @@
-import scala.scalanative.unsafe._
-import scala.scalanative.libc.stdio._
+import scala.scalanative.unsafe.*
+import scala.scalanative.libc.stdio.*
 import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
 
 object SingleThreaded {

@@ -34,7 +34,7 @@ private[util] object NaturalComparator
   /** Selects the given comparator if it is non-null, otherwise the natural
    *  comparator.
    */
-  def select[A](comparator: Comparator[A]): Comparator[_ >: A] =
+  def select[A](comparator: Comparator[A]): Comparator[? >: A] =
     if (comparator eq null) this
     else comparator
 

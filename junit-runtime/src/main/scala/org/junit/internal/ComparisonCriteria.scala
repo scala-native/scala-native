@@ -52,7 +52,7 @@ abstract class ComparisonCriteria {
   }
 
   private def isArray(expected: AnyRef): Boolean =
-    expected.isInstanceOf[Array[_]]
+    expected.isInstanceOf[Array[?]]
 
   private def assertArraysAreSameLength(
       expecteds: AnyRef,
@@ -63,8 +63,8 @@ abstract class ComparisonCriteria {
       Assert.fail(header + "expected array was null")
     if (actuals == null)
       Assert.fail(header + "actual array was null")
-    val actualsLength = actuals.asInstanceOf[Array[_]].length
-    val expectedsLength = expecteds.asInstanceOf[Array[_]].length
+    val actualsLength = actuals.asInstanceOf[Array[?]].length
+    val expectedsLength = expecteds.asInstanceOf[Array[?]].length
     if (actualsLength != expectedsLength) {
       Assert.fail(
         header +
@@ -77,10 +77,10 @@ abstract class ComparisonCriteria {
 
   @inline
   private def get(arr: AnyRef, i: Int): AnyRef =
-    arr.asInstanceOf[Array[_]](i).asInstanceOf[AnyRef]
+    arr.asInstanceOf[Array[?]](i).asInstanceOf[AnyRef]
 
   private def length(arr: AnyRef): Int =
-    arr.asInstanceOf[Array[_]].length
+    arr.asInstanceOf[Array[?]].length
 
   protected def assertElementsEqual(expected: AnyRef, actual: AnyRef): Unit
 }

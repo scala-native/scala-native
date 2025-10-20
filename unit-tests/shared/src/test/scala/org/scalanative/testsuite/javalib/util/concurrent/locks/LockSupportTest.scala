@@ -10,9 +10,9 @@
 package org.scalanative.testsuite.javalib.util.concurrent
 package locks
 
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.junit.{Test, Ignore}
-import JSR166Test._
+import JSR166Test.*
 
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util.concurrent.CountDownLatch
@@ -76,7 +76,7 @@ object LockSupportTest {
 
 }
 class LockSupportTest extends JSR166Test {
-  import LockSupportTest._
+  import LockSupportTest.*
   def repeat(times: Int)(code: => Unit) =
     0.until(times).foreach(_ => code)
 

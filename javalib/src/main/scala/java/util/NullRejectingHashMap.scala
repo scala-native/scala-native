@@ -19,7 +19,7 @@ private[util] class NullRejectingHashMap[K, V](
   def this(initialCapacity: Int) =
     this(initialCapacity, HashMap.DEFAULT_LOAD_FACTOR)
 
-  def this(m: Map[_ <: K, _ <: V]) = {
+  def this(m: Map[? <: K, ? <: V]) = {
     this(m.size())
     putAll(m)
   }
@@ -63,7 +63,7 @@ private[util] class NullRejectingHashMap[K, V](
   }
 
   @noinline
-  override def putAll(m: Map[_ <: K, _ <: V]): Unit = {
+  override def putAll(m: Map[? <: K, ? <: V]): Unit = {
     /* The only purpose of `impl` is to capture the wildcards as named types,
      * so that we prevent type inference from inferring deprecated existential
      * types.

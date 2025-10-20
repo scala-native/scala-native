@@ -1,7 +1,7 @@
 package scala.scalanative
 package linker
 
-import org.junit._
+import org.junit.*
 
 class IdentifiersSuite extends ReachabilitySuite {
 

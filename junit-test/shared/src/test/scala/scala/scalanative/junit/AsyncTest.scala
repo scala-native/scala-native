@@ -6,8 +6,8 @@ import org.junit.Test
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.scalanative.junit.async._
-import scala.scalanative.junit.utils._
+import scala.scalanative.junit.async.*
+import scala.scalanative.junit.utils.*
 
 class AsyncTest {
   @Test

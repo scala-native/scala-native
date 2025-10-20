@@ -1,8 +1,8 @@
 package org.scalanative.testsuite.javalib.util.stream
 
-import java.{lang => jl}
-import java.{util => ju}
-import java.util._
+import java.lang as jl
+import java.util as ju
+import java.util.*
 
 import java.util.concurrent.ConcurrentMap
 import java.util.concurrent.ConcurrentHashMap
@@ -10,11 +10,11 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.function.Function
 import java.util.function.BinaryOperator
 
-import java.util.stream._
+import java.util.stream.*
 import java.util.stream.Collector.Characteristics
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
@@ -926,7 +926,7 @@ class CollectorsTest {
     )
 
     students.forEach(s => {
-      if (s.grade >= passThreshold)
+      if s.grade >= passThreshold then
         assertTrue(
           s"missing passing student: ${s.name}",
           passingStudents.contains(s)
@@ -1587,7 +1587,7 @@ class CollectorsTest {
     assertEquals("list size", nElements, collected.size())
 
     // Proper elements, in encounter order
-    for (j <- 0 until nElements)
+    for j <- 0 until nElements do
       assertEquals("list element", sisters.get(j), collected.get(j))
   }
 
@@ -1613,7 +1613,7 @@ class CollectorsTest {
     assertEquals("set size", nElements, collected.size())
 
     // Proper elements
-    for (j <- 0 until nElements) {
+    for j <- 0 until nElements do {
       val expected = sisters.get(j)
       assertTrue(
         "set element not in Set: ${expected}",

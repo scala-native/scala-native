@@ -1,5 +1,5 @@
 object LengthTest {
-  import Files._
+  import Files.*
 
   def main(args: Array[String]): Unit = {
     assert(fileWith3Bytes.exists())

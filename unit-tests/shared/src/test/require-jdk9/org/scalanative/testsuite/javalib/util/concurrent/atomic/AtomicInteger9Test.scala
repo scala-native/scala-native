@@ -9,7 +9,7 @@ package org.scalanative.testsuite.javalib.util.concurrent
 import java.util.concurrent.atomic.AtomicInteger
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 class AtomicInteger9Test extends JSR166Test {
 

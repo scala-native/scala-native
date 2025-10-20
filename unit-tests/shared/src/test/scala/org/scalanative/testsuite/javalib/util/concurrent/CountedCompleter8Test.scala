@@ -7,12 +7,12 @@
 
 package org.scalanative.testsuite.javalib.util.concurrent
 
-import java.util.concurrent._
+import java.util.concurrent.*
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.function._
+import java.util.function.*
 
-import org.junit._
-import org.junit.Assert._
+import org.junit.*
+import org.junit.Assert.*
 
 object CountedCompleter8Test {
 

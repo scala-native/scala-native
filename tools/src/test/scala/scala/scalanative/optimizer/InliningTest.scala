@@ -3,8 +3,8 @@ package optimizer
 
 import scala.scalanative.OptimizerSpec
 
-import org.junit._
-import org.junit.Assert._
+import org.junit.*
+import org.junit.Assert.*
 import _root_.scala.scalanative.nir.Attr
 
 class InliningTest extends OptimizerSpec {

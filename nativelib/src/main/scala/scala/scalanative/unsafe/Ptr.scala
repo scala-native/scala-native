@@ -3,10 +3,10 @@ package unsafe
 
 import scala.language.implicitConversions
 import scala.scalanative.annotation.alwaysinline
-import scala.scalanative.runtime.Intrinsics._
+import scala.scalanative.runtime.Intrinsics.*
 import scala.scalanative.meta.LinktimeInfo.is32BitPlatform
-import scala.scalanative.runtime._
-import scala.scalanative.unsigned._
+import scala.scalanative.runtime.*
+import scala.scalanative.unsigned.*
 import scala.scalanative.meta.LinktimeInfo.is32BitPlatform
 
 final class Ptr[T] private[scalanative] (
@@ -17,7 +17,7 @@ final class Ptr[T] private[scalanative] (
 
   @alwaysinline override def equals(other: Any): Boolean =
     (this eq other.asInstanceOf[AnyRef]) || (other match {
-      case other: Ptr[_] => other.rawptr == rawptr
+      case other: Ptr[?] => other.rawptr == rawptr
       case _             => false
     })
 
@@ -110,7 +110,7 @@ final class Ptr[T] private[scalanative] (
 }
 
 object Ptr {
-  @alwaysinline implicit def ptrToCArray[T <: CArray[_, _]](ptr: Ptr[T])(
+  @alwaysinline implicit def ptrToCArray[T <: CArray[?, ?]](ptr: Ptr[T])(
       implicit tag: Tag[T]
   ): T = !ptr
 

@@ -1,7 +1,7 @@
 package scala.scalanative
 package junit
 
-import sbt.testing._
+import sbt.testing.*
 
 import scala.annotation.tailrec
 import scala.scalanative.reflect.Reflect
@@ -172,7 +172,7 @@ private[junit] final class JUnitTask(
   }
 
   private def handleExpected(
-      expectedException: Class[_ <: Throwable]
+      expectedException: Class[? <: Throwable]
   )(body: => Try[Unit]): Try[Unit] = {
     val wantException = expectedException != classOf[org.junit.Test.None]
 

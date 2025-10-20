@@ -1,9 +1,9 @@
 package java.util.stream
 
-import java.{lang => jl}
-import java.{util => ju}
-import java.util._
-import java.util.function._
+import java.lang as jl
+import java.util as ju
+import java.util.*
+import java.util.function.*
 
 /* See "Design Note" at top of DoubleStream.scala for jl.Double & scala.Double
  * TL;DR - later is explicitly used where a primitive is desired.
@@ -346,7 +346,7 @@ private[stream] class LongStreamImpl(
   }
 
   def flatMap(
-      mapper: LongFunction[_ <: LongStream]
+      mapper: LongFunction[? <: LongStream]
   ): LongStream = {
     commenceOperation()
 
@@ -475,13 +475,13 @@ private[stream] class LongStreamImpl(
     )
   }
 
-  def mapToObj[U](mapper: LongFunction[_ <: U]): Stream[U] = {
+  def mapToObj[U](mapper: LongFunction[? <: U]): Stream[U] = {
 
     val spl = new Spliterators.AbstractSpliterator[U](
       _spliter.estimateSize(),
       _spliter.characteristics()
     ) {
-      def tryAdvance(action: Consumer[_ >: U]): Boolean =
+      def tryAdvance(action: Consumer[? >: U]): Boolean =
         _spliter.tryAdvance((e: scala.Long) => action.accept(mapper(e)))
     }
 
@@ -772,7 +772,7 @@ object LongStreamImpl {
 
   private class LongPrimitiveCompoundSpliteratorFactory(
       spliter: Spliterator.OfLong,
-      mapper: LongFunction[_ <: LongStream],
+      mapper: LongFunction[? <: LongStream],
       closeOnFirstTouch: Boolean
   ) {
 
@@ -782,7 +782,7 @@ object LongStreamImpl {
           Long.MaxValue,
           spliter.characteristics()
         ) {
-          def tryAdvance(action: Consumer[_ >: LongStream]): Boolean = {
+          def tryAdvance(action: Consumer[? >: LongStream]): Boolean = {
             spliter.tryAdvance((e: scala.Long) => action.accept(mapper(e)))
           }
         }

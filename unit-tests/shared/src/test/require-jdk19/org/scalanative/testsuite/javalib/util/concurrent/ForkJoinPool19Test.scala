@@ -1,10 +1,10 @@
 package org.scalanative.testsuite.javalib.util.concurrent
 
-import java.util.concurrent._
+import java.util.concurrent.*
 import java.util.concurrent.TimeUnit.MILLISECONDS
 
-import org.junit._
-import org.junit.Assert._
+import org.junit.*
+import org.junit.Assert.*
 
 object ForkJoinPool19Test {
   final class FJException(cause: Throwable) extends RuntimeException(cause) {
@@ -26,8 +26,8 @@ object ForkJoinPool19Test {
   }
 }
 class ForkJoinPool19Test extends JSR166Test {
-  import ForkJoinPool19Test._
-  import JSR166Test._
+  import ForkJoinPool19Test.*
+  import JSR166Test.*
 
   /** SetParallelism sets reported parallellism and returns previous value
    */
@@ -67,12 +67,12 @@ class ForkJoinPool19Test extends JSR166Test {
       checkCompletedNormally(a)
     }
 
-  private def checkInvoke(a: ForkJoinTask[_]): Unit = {
+  private def checkInvoke(a: ForkJoinTask[?]): Unit = {
     checkNotDone(a)
     assertNull(a.invoke)
     checkCompletedNormally(a)
   }
-  def checkNotDone(a: ForkJoinTask[_]): Unit = {
+  def checkNotDone(a: ForkJoinTask[?]): Unit = {
     assertFalse(a.isDone())
     assertFalse(a.isCompletedNormally())
     assertFalse(a.isCompletedAbnormally())
@@ -109,7 +109,7 @@ class ForkJoinPool19Test extends JSR166Test {
     }
   }
 
-  def checkCompletedNormally(a: ForkJoinTask[_]): Unit = {
+  def checkCompletedNormally(a: ForkJoinTask[?]): Unit = {
     assertTrue(a.isDone)
     assertFalse(a.isCancelled)
     assertTrue(a.isCompletedNormally)
@@ -132,7 +132,7 @@ class ForkJoinPool19Test extends JSR166Test {
     assertNull(v2)
   }
 
-  def checkCancelled(a: ForkJoinTask[_]): Unit = {
+  def checkCancelled(a: ForkJoinTask[?]): Unit = {
     assertTrue(a.isDone)
     assertTrue(a.isCancelled)
     assertFalse(a.isCompletedNormally)
@@ -166,7 +166,7 @@ class ForkJoinPool19Test extends JSR166Test {
         threadUnexpectedException(fail)
     }
   }
-  def checkCompletedAbnormally(a: ForkJoinTask[_], t: Throwable): Unit = {
+  def checkCompletedAbnormally(a: ForkJoinTask[?], t: Throwable): Unit = {
     assertTrue(a.isDone)
     assertFalse(a.isCancelled)
     assertFalse(a.isCompletedNormally)

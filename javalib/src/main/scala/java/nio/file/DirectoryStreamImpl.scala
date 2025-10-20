@@ -6,7 +6,7 @@ import java.util.stream.Stream
 
 class DirectoryStreamImpl[T](
     stream: Stream[T],
-    filter: DirectoryStream.Filter[_ >: T]
+    filter: DirectoryStream.Filter[? >: T]
 ) extends DirectoryStream[T] {
   private var iteratorCalled: Boolean = false
   private var closed: Boolean = false

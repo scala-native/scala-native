@@ -1,6 +1,6 @@
 package org.scalanative.testsuite.niobuffer
 
-import scala.scalanative.memory._
+import scala.scalanative.memory.*
 
 import org.scalanative.testsuite.javalib.nio.BufferFactory.ByteBufferFactory
 import org.scalanative.testsuite.javalib.nio.ByteBufferTest

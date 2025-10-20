@@ -2,11 +2,11 @@ package scala.scalanative
 package linker
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 import scala.scalanative.OptimizerSpec
 import scala.scalanative.build.{Config, NativeConfig}
-import scala.util._
+import scala.util.*
 
 class LinktimeConditionsSpec extends OptimizerSpec {
 
@@ -108,7 +108,7 @@ class LinktimeConditionsSpec extends OptimizerSpec {
     linkWithProps(
       "props.scala" -> props,
       "main.scala" -> allPropsUsage
-    )(defaultProperties: _*) { (_, result) =>
+    )(defaultProperties*) { (_, result) =>
       def normalized(seq: Iterable[String]): Set[String] =
         seq.toSet.filterNot(isIgnoredLinktimeProperty)
       shouldContainAll(
@@ -124,7 +124,7 @@ class LinktimeConditionsSpec extends OptimizerSpec {
     linkWithProps(
       "props.scala" -> props,
       "main.scala" -> allPropsUsage
-    )(defaultProperties: _*) { (_, result) =>
+    )(defaultProperties*) { (_, result) =>
       def normalized(elems: Map[String, nir.Val]): Map[String, nir.Val] =
         elems.filter { case (key, _) => !isIgnoredLinktimeProperty(key) }
       val expected =
@@ -243,7 +243,7 @@ class LinktimeConditionsSpec extends OptimizerSpec {
     )
 
     for (((doubleValue, stringValue, longValue), pathNumber) <- cases)
-      doesNotLinkWithProps(compilationUnit.toSeq: _*)(
+      doesNotLinkWithProps(compilationUnit.toSeq*)(
         "secret.performance.multiplier" -> doubleValue,
         "prop.string" -> stringValue,
         "inner.countFrom" -> longValue
@@ -292,7 +292,7 @@ class LinktimeConditionsSpec extends OptimizerSpec {
     )
 
     for (((bool1, bool2), pathNumber) <- cases)
-      doesNotLinkWithProps(compilationUnit.toSeq: _*)(
+      doesNotLinkWithProps(compilationUnit.toSeq*)(
         "prop.bool.1" -> bool1,
         "prop.bool.2" -> bool2
       ) {
@@ -470,7 +470,7 @@ class LinktimeConditionsSpec extends OptimizerSpec {
   )(
       props: (String, Any)*
   )(body: (Config, ReachabilityAnalysis.Result) => Unit): Unit = {
-    mayLinkWithProps(sources: _*)(props: _*) {
+    mayLinkWithProps(sources*)(props*) {
       case (config, analysis: ReachabilityAnalysis.Result) =>
         body(config, analysis)
       case _ => fail("Failed to link"); scala.scalanative.util.unreachable
@@ -482,7 +482,7 @@ class LinktimeConditionsSpec extends OptimizerSpec {
   )(props: (String, Any)*)(
       body: (Config, ReachabilityAnalysis.Failure) => Unit
   ): Unit = {
-    mayLinkWithProps(sources: _*)(props: _*) {
+    mayLinkWithProps(sources*)(props*) {
       case (config, analysis: ReachabilityAnalysis.Failure) =>
         body(config, analysis)
       case _ =>

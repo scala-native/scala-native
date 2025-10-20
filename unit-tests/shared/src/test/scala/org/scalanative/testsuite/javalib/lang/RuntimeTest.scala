@@ -1,18 +1,18 @@
 package org.scalanative.testsuite.javalib.lang
 
-import java.lang._
+import java.lang.*
 
 import java.util.concurrent.TimeUnit
 import java.io.File
 
 import org.junit.Test
-import org.junit.Assert._
-import org.junit.Assume._
-import org.scalanative.testsuite.utils.Platform._
-import scala.scalanative.junit.utils.AssumesHelper._
+import org.junit.Assert.*
+import org.junit.Assume.*
+import org.scalanative.testsuite.utils.Platform.*
+import scala.scalanative.junit.utils.AssumesHelper.*
 
 class RuntimeTest {
-  import ProcessUtils._
+  import ProcessUtils.*
   private val EOL = System.lineSeparator()
 
   /* See Issues #2649 & #2652 re use of 'ls'.

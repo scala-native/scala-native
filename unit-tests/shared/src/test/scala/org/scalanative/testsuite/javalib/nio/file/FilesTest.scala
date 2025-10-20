@@ -1,26 +1,26 @@
 package org.scalanative.testsuite.javalib.nio.file
 
-import java.io._
+import java.io.*
 
 import java.nio.ByteBuffer
-import java.nio.file._
-import java.nio.file.attribute._
-import java.nio.file.attribute.PosixFilePermission._
-import java.nio.file.StandardCopyOption._
+import java.nio.file.*
+import java.nio.file.attribute.*
+import java.nio.file.attribute.PosixFilePermission.*
+import java.nio.file.StandardCopyOption.*
 
 import java.util.{Arrays, TreeSet, Collections}
 import java.util.EnumSet
 import java.util.function.{BiPredicate, IntFunction}
 
 import org.junit.Test
-import org.junit.Assert._
-import org.junit.Assume._
+import org.junit.Assert.*
+import org.junit.Assume.*
 import org.junit.Ignore
 
 import scala.util.{Try, Failure}
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
-import scala.scalanative.junit.utils.CollectionConverters._
+import scala.scalanative.junit.utils.CollectionConverters.*
 import scala.scalanative.junit.utils.AssumesHelper.assumeNotJVMCompliant
 import org.scalanative.testsuite.utils.Platform.{isWindows, executingInJVM}
 
@@ -33,7 +33,7 @@ import java.nio.file.attribute.PosixFilePermissions
  */
 
 class FilesTest {
-  import FilesTest._
+  import FilesTest.*
 
   def assumeShouldTestSymlinks(): Unit = {
     assumeFalse(
@@ -322,7 +322,7 @@ class FilesTest {
       // access to the source file: that is, no other thread or process
       // touches it in this window.
 
-      val attrsCls: Class[_ <: BasicFileAttributes] =
+      val attrsCls: Class[? <: BasicFileAttributes] =
         if (isWindows) classOf[DosFileAttributes]
         else classOf[PosixFileAttributes]
 
@@ -2114,7 +2114,7 @@ class FilesTest {
 
       val permissions = Files.getPosixFilePermissions(f0)
 
-      import PosixFilePermission._
+      import PosixFilePermission.*
       assertTrue("a1", permissions.contains(OWNER_READ))
       assertFalse("a2", permissions.contains(OWNER_WRITE))
       assertTrue("a3", permissions.contains(OWNER_EXECUTE))
@@ -2197,7 +2197,7 @@ class FilesTest {
         Files.createFile(target.resolve("ergoSum"))
       }
 
-      Files.move(dir, target, options: _*)
+      Files.move(dir, target, options*)
       assertFalse("a1", Files.exists(dir))
       assertFalse("a2", Files.exists(f0))
 

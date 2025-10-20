@@ -1,9 +1,9 @@
 package org.scalanative.testsuite.javalib.lang
 
-import java.lang._
+import java.lang.*
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
@@ -122,7 +122,7 @@ class LongTest {
   }
 
   @Test def parseLong(): Unit = {
-    import Long.{parseLong => parse}
+    import Long.parseLong as parse
 
     assertEquals(-1L, parse("-1"))
     assertEquals(1L, parse("+1"))
@@ -181,7 +181,7 @@ class LongTest {
   }
 
   @Test def parseUnsignedLong(): Unit = {
-    import Long.{parseUnsignedLong => parse}
+    import Long.parseUnsignedLong as parse
 
     assertEquals(1L, parse("1"))
     assertEquals(1L, parse("+1"))
@@ -236,7 +236,7 @@ class LongTest {
   }
 
   @Test def testToString(): Unit = {
-    import java.lang.Long.{toString => toStr}
+    import java.lang.Long.toString as toStr
 
     assertEquals("0", toStr(0L))
     assertEquals("1", toStr(1L))
@@ -261,7 +261,7 @@ class LongTest {
   }
 
   @Test def toUnsignedString(): Unit = {
-    import java.lang.Long.{toUnsignedString => toStr}
+    import java.lang.Long.toUnsignedString as toStr
 
     assertEquals("0", toStr(0L))
     assertEquals("1", toStr(1L))

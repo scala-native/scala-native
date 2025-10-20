@@ -5,10 +5,10 @@ package org.scalanative.testsuite.javalib.util.concurrent
 import scala.collection.mutable
 import scala.reflect.ClassTag
 
-import java.{util => ju}
-import java.util.concurrent.{ConcurrentHashMap => CHM}
+import java.util as ju
+import java.util.concurrent.ConcurrentHashMap as CHM
 
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.junit.Test
 
 import org.scalanative.testsuite.javalib.util.MapTest

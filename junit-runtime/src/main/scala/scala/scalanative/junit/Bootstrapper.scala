@@ -4,7 +4,7 @@ package junit
 // Ported from Scala.js
 
 import scala.concurrent.Future
-import scala.scalanative.reflect.annotation._
+import scala.scalanative.reflect.annotation.*
 import scala.util.Try
 
 /** Scala Native internal JUnit bootstrapper.

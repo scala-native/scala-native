@@ -5,16 +5,16 @@
  */
 package org.scalanative.testsuite.javalib.util.concurrent
 
-import org.junit.Assert._
-import org.junit.Assume._
+import org.junit.Assert.*
+import org.junit.Assume.*
 import org.junit.{Test, Ignore}
-import JSR166Test._
+import JSR166Test.*
 
-import java.util.concurrent.TimeUnit._
+import java.util.concurrent.TimeUnit.*
 import java.util
-import java.util._
-import java.util.concurrent._
-import java.util.concurrent.atomic._
+import java.util.*
+import java.util.concurrent.*
+import java.util.concurrent.atomic.*
 import org.scalanative.testsuite.utils.Platform
 
 object ForkJoinTaskTest {
@@ -184,7 +184,7 @@ object ForkJoinTaskTest {
 }
 
 class ForkJoinTaskTest extends JSR166Test {
-  import ForkJoinTaskTest._
+  import ForkJoinTaskTest.*
   private def testInvokeOnPool(pool: ForkJoinPool, a: RecursiveAction): Unit =
     usingPoolCleaner(pool) { pool =>
       assertFalse("isDone", a.isDone())
@@ -204,7 +204,7 @@ class ForkJoinTaskTest extends JSR166Test {
       assertNull("getRawResult 2", a.getRawResult())
     }
 
-  def checkNotDone(a: ForkJoinTask[_]): Unit = {
+  def checkNotDone(a: ForkJoinTask[?]): Unit = {
     assertFalse(a.isDone)
     assertFalse(a.isCompletedNormally)
     assertFalse(a.isCompletedAbnormally)
@@ -258,7 +258,7 @@ class ForkJoinTaskTest extends JSR166Test {
     }
   }
 
-  def checkCancelled(a: ForkJoinTask[_]): Unit = {
+  def checkCancelled(a: ForkJoinTask[?]): Unit = {
     assertTrue("isDone", a.isDone)
     assertTrue("isCanceled", a.isCancelled)
     assertFalse("isCompletedNormally", a.isCompletedNormally)
@@ -298,7 +298,7 @@ class ForkJoinTaskTest extends JSR166Test {
       case fail: Throwable                => threadUnexpectedException(fail)
     }
   }
-  def checkCompletedAbnormally(a: ForkJoinTask[_], t: Throwable): Unit = {
+  def checkCompletedAbnormally(a: ForkJoinTask[?], t: Throwable): Unit = {
     assertTrue(a.isDone)
     assertFalse(a.isCancelled)
     assertFalse(a.isCompletedNormally)
@@ -845,7 +845,7 @@ class ForkJoinTaskTest extends JSR166Test {
         val f = new AsyncFib(8)
         val g = new AsyncFib(9)
         val h = new AsyncFib(7)
-        val set = new HashSet[ForkJoinTask[_]]
+        val set = new HashSet[ForkJoinTask[?]]
         set.add(f)
         set.add(g)
         set.add(h)
@@ -891,7 +891,7 @@ class ForkJoinTaskTest extends JSR166Test {
         val tasks = Array(f, g)
         shuffle(tasks)
         try {
-          ForkJoinTask.invokeAll(tasks: _*)
+          ForkJoinTask.invokeAll(tasks*)
           shouldThrow()
         } catch {
           case success: FJException =>
@@ -934,7 +934,7 @@ class ForkJoinTaskTest extends JSR166Test {
         val tasks = Array(f, g, h)
         shuffle(tasks)
         try {
-          ForkJoinTask.invokeAll(tasks: _*)
+          ForkJoinTask.invokeAll(tasks*)
           shouldThrow()
         } catch {
           case success: FJException =>
@@ -957,7 +957,7 @@ class ForkJoinTaskTest extends JSR166Test {
         val tasks = Array(f, g, h)
         shuffle(tasks)
         try {
-          ForkJoinTask.invokeAll(Arrays.asList(tasks: _*))
+          ForkJoinTask.invokeAll(Arrays.asList(tasks*))
           shouldThrow()
         } catch {
           case success: FJException =>
@@ -1492,7 +1492,7 @@ class ForkJoinTaskTest extends JSR166Test {
         val f = new AsyncFib(8)
         val g = new AsyncFib(9)
         val h = new AsyncFib(7)
-        val set = new HashSet[ForkJoinTask[_]]
+        val set = new HashSet[ForkJoinTask[?]]
         set.add(f)
         set.add(g)
         set.add(h)
@@ -1533,7 +1533,7 @@ class ForkJoinTaskTest extends JSR166Test {
         val tasks = Array(f, g)
         shuffle(tasks)
         try {
-          ForkJoinTask.invokeAll(tasks: _*)
+          ForkJoinTask.invokeAll(tasks*)
           shouldThrow()
         } catch {
           case success: FJException =>
@@ -1570,7 +1570,7 @@ class ForkJoinTaskTest extends JSR166Test {
         val tasks = Array(f, g, h)
         shuffle(tasks)
         try {
-          ForkJoinTask.invokeAll(tasks: _*)
+          ForkJoinTask.invokeAll(tasks*)
           shouldThrow()
         } catch {
           case success: FJException =>
@@ -1590,7 +1590,7 @@ class ForkJoinTaskTest extends JSR166Test {
         val tasks = Array(f, g, h)
         shuffle(tasks)
         try {
-          ForkJoinTask.invokeAll(Arrays.asList(tasks: _*))
+          ForkJoinTask.invokeAll(Arrays.asList(tasks*))
           shouldThrow()
         } catch {
           case success: FJException =>

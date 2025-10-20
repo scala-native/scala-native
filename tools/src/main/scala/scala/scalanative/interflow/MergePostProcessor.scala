@@ -3,7 +3,7 @@ package interflow
 
 import scala.collection.mutable
 import scalanative.util.unreachable
-import scalanative.linker._
+import scalanative.linker.*
 
 private[interflow] object MergePostProcessor {
   def postProcess(blocks: Seq[MergeBlock]): Seq[MergeBlock] = {

@@ -1,6 +1,6 @@
 object IsHiddenTest {
-  import Files._
-  import Utils._
+  import Files.*
+  import Utils.*
 
   def main(args: Array[String]): Unit = {
     assert(currentDirectory.isHidden())

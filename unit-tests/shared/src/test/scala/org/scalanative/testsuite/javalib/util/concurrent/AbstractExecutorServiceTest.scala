@@ -7,13 +7,13 @@
  */
 package org.scalanative.testsuite.javalib.util.concurrent
 
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.junit.Test
 
 import java.util
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util.{ArrayList, Collection, Collections, List}
-import java.util.concurrent._
+import java.util.concurrent.*
 import java.util.concurrent.atomic.AtomicBoolean
 
 object AbstractExecutorServiceTest {
@@ -37,7 +37,7 @@ object AbstractExecutorServiceTest {
 }
 
 class AbstractExecutorServiceTest extends JSR166Test {
-  import JSR166Test._
+  import JSR166Test.*
 
   /** execute(runnable) runs it to completion
    */

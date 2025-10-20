@@ -1,47 +1,47 @@
 package java.io
 
-import java.{lang => jl}
+import java.lang as jl
 import java.net.URI
 import java.nio.charset.StandardCharsets
 import java.nio.file.{FileSystems, Path}
 import java.nio.file.WindowsException
-import java.util.ScalaOps._
-import java.util.WindowsHelperMethods._
+import java.util.ScalaOps.*
+import java.util.WindowsHelperMethods.*
 import scala.annotation.tailrec
 import scala.scalanative.annotation.alwaysinline
-import scala.scalanative.libc._
-import scala.scalanative.libc.stdio._
-import scala.scalanative.libc.string._
+import scala.scalanative.libc.*
+import scala.scalanative.libc.stdio.*
+import scala.scalanative.libc.string.*
 import scala.scalanative.nio.fs.FileHelpers
-import scala.scalanative.posix.stdlib._
+import scala.scalanative.posix.stdlib.*
 import scala.scalanative.posix.sys.stat
-import scala.scalanative.posix.unistd._
+import scala.scalanative.posix.unistd.*
 import scala.scalanative.posix.{limits, unistd, utime}
 import scala.scalanative.meta.LinktimeInfo.isWindows
 import scala.scalanative.runtime.{DeleteOnExit, Platform}
-import scala.scalanative.unsafe._
-import scala.scalanative.unsigned._
+import scala.scalanative.unsafe.*
+import scala.scalanative.unsigned.*
 import scala.scalanative.windows
-import windows._
-import windows.MinWinBaseApi.{FileTime => WinFileTime}
-import windows.MinWinBaseApiOps.FileTimeOps._
-import windows.WinBaseApi._
-import windows.WinBaseApiExt._
-import windows.SecurityBaseApi._
-import windows.SecurityBaseApiOps._
-import windows.AclApi._
-import windows.HandleApi._
-import windows.HandleApiExt._
-import windows.FileApi._
-import windows.FileApiExt._
-import windows.winnt.{HelperMethods => WinNtHelperMethods, _}
-import windows.winnt.AccessRights._
-import windows.winnt.AccessToken._
+import windows.*
+import windows.MinWinBaseApi.FileTime as WinFileTime
+import windows.MinWinBaseApiOps.FileTimeOps.*
+import windows.WinBaseApi.*
+import windows.WinBaseApiExt.*
+import windows.SecurityBaseApi.*
+import windows.SecurityBaseApiOps.*
+import windows.AclApi.*
+import windows.HandleApi.*
+import windows.HandleApiExt.*
+import windows.FileApi.*
+import windows.FileApiExt.*
+import windows.winnt.{HelperMethods as WinNtHelperMethods, *}
+import windows.winnt.AccessRights.*
+import windows.winnt.AccessToken.*
 import windows.winnt.TokenInformationClass
-import windows.accctrl._
+import windows.accctrl.*
 
 class File(_path: String) extends Serializable with Comparable[File] {
-  import File._
+  import File.*
 
   if (_path == null) throw new NullPointerException()
   private val path: String = fixSlashes(_path)
@@ -95,7 +95,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
         updatePermissionsWindows(accessRights, executable, ownerOnly)
       }
     } else {
-      import stat._
+      import stat.*
       val mask = if (!ownerOnly) S_IXUSR | S_IXGRP | S_IXOTH else S_IXUSR
       updatePermissionsUnix(mask, executable)
     }
@@ -109,7 +109,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
       val accessRights = FILE_GENERIC_READ
       updatePermissionsWindows(accessRights, readable, ownerOnly)
     } else {
-      import stat._
+      import stat.*
       val mask = if (!ownerOnly) S_IRUSR | S_IRGRP | S_IROTH else S_IRUSR
       updatePermissionsUnix(mask, readable)
     }
@@ -123,7 +123,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
       val accessRights = FILE_GENERIC_WRITE
       updatePermissionsWindows(accessRights, writable, ownerOnly)
     } else {
-      import stat._
+      import stat.*
       val mask = if (!ownerOnly) S_IWUSR | S_IWGRP | S_IWOTH else S_IWUSR
       updatePermissionsUnix(mask, writable)
     }
@@ -169,7 +169,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
         ) == 0
 
       def setupNewAclEntry() = {
-        import accctrl.ops._
+        import accctrl.ops.*
         val ea = alloc[ExplicitAccessW]()
         ea.accessPermisions = accessRights
         ea.accessMode = accessMode
@@ -489,7 +489,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
     Zone.acquire { implicit z =>
       if (isWindows) setReadOnlyWindows(enabled = true)
       else {
-        import stat._
+        import stat.*
         val mask =
           S_ISUID | S_ISGID | S_ISVTX | S_IRUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH
         val newMode = accessMode() & mask

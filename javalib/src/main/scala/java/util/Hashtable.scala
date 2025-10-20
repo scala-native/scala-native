@@ -1,9 +1,9 @@
 package java.util
 
-import java.{util => ju}
+import java.util as ju
 
 import scala.collection.mutable
-import ScalaOps._
+import ScalaOps.*
 
 class Hashtable[K, V] private (inner: mutable.HashMap[Box[Any], V])
     extends ju.Dictionary[K, V]
@@ -18,7 +18,7 @@ class Hashtable[K, V] private (inner: mutable.HashMap[Box[Any], V])
 
   def this(initialCapacity: Int, loadFactor: Float) = this()
 
-  def this(t: ju.Map[_ <: K, _ <: V]) = {
+  def this(t: ju.Map[? <: K, ? <: V]) = {
     this()
     putAll(t)
   }
@@ -69,7 +69,7 @@ class Hashtable[K, V] private (inner: mutable.HashMap[Box[Any], V])
     inner.remove(Box(key)).getOrElse(null.asInstanceOf[V])
   }
 
-  def putAll(m: ju.Map[_ <: K, _ <: V]): Unit =
+  def putAll(m: ju.Map[? <: K, ? <: V]): Unit =
     m.entrySet().scalaOps.foreach { e =>
       inner.put(Box(e.getKey()), e.getValue())
     }

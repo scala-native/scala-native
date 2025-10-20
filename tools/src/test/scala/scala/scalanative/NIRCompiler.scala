@@ -163,7 +163,7 @@ class NIRCompiler(outDir: Path) {
       ScalaNativeBuildInfo.compileClasspath + File.pathSeparator + ScalaNativeBuildInfo.nativeRuntimeClasspath,
       s"-Xplugin:${ScalaNativeBuildInfo.pluginJar}"
     ) ++ fileArgs
-    val procBuilder = new ProcessBuilder(args: _*)
+    val procBuilder = new ProcessBuilder(args*)
     val cmd = args.mkString(" ")
     val proc = procBuilder.start()
     val res = proc.waitFor()

@@ -1,11 +1,11 @@
 package scala.scalanative
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
-import scalanative.unsigned._
-import scalanative.unsafe._
+import scalanative.unsigned.*
+import scalanative.unsafe.*
 
 class IssuesTestScala3 {
   @Test def issue2485(): Unit = {

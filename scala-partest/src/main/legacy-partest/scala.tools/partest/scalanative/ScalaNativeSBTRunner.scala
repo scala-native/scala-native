@@ -3,10 +3,10 @@
 package scala.tools.partest
 package scalanative
 
-import _root_.sbt.testing._
+import _root_.sbt.testing.*
 import java.io.File
 import java.net.URLClassLoader
-import scala.tools.partest.nest._
+import scala.tools.partest.nest.*
 import scala.tools.partest.sbt.SBTRunner
 
 /* Pre-mixin ScalaNativeSuiteRunner in SBTRunner, because this is looked up

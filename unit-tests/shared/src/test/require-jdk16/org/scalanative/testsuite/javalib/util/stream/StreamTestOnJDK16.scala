@@ -1,13 +1,13 @@
 package org.scalanative.testsuite.javalib.util.stream
 
-import java.{lang => jl}
+import java.lang as jl
 
 import java.util.Arrays
 import java.util.function.Consumer
-import java.util.stream._
+import java.util.stream.*
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.junit.Ignore
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
@@ -36,7 +36,7 @@ class StreamTestOnJDK16 {
     // Here the result type matches the element type.
     // Next challenge, make the types differ.
     val mappedMulti =
-      s.mapMulti((element: String, consumer: Consumer[_ >: String]) =>
+      s.mapMulti((element: String, consumer: Consumer[? >: String]) =>
         if (element == "Rabbit") {
           for (j <- 1 to 3)
             consumer.accept(s"Rabbit_${j}")
@@ -71,7 +71,7 @@ class StreamTestOnJDK16 {
 
     // By design & intent, the element and result types differ.
     val mappedMulti =
-      s.mapMulti((element: Item, consumer: Consumer[_ >: String]) =>
+      s.mapMulti((element: Item, consumer: Consumer[? >: String]) =>
         if (element.upc == 6) {
           for (j <- 1 to 2)
             consumer.accept(s"${element.name}_${j}")

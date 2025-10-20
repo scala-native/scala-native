@@ -1,7 +1,7 @@
 package org.scalanative.testsuite.javalib.io
 
-import java.io._
-import java.nio.charset._
+import java.io.*
+import java.nio.charset.*
 
 import org.junit.Test
 

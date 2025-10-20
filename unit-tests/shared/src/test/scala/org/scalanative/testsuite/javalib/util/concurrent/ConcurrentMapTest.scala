@@ -2,7 +2,7 @@
 
 package org.scalanative.testsuite.javalib.util.concurrent
 
-import java.{util => ju}
+import java.util as ju
 
 import org.scalanative.testsuite.javalib.util.MapFactory
 

@@ -20,7 +20,7 @@ abstract class AbstractQueue[E] protected ()
     while (poll() != null) {}
   }
 
-  override def addAll(c: Collection[_ <: E]): Boolean = {
+  override def addAll(c: Collection[? <: E]): Boolean = {
     if (c == null) throw new NullPointerException()
     if (c == this) throw new IllegalArgumentException()
     val iter = c.iterator()

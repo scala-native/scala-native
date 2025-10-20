@@ -1,11 +1,11 @@
 package scala.scalanative.libc
 
-import scala.scalanative.unsafe._
+import scala.scalanative.unsafe.*
 
 @extern object inttypes extends inttypes
 
 @extern private[scalanative] trait inttypes {
-  import scala.scalanative.libc.stdint._
+  import scala.scalanative.libc.stdint.*
 
   /** See also https://en.cppreference.com/w/cpp/numeric/math/abs */
   type imaxdiv_t = CStruct2[intmax_t, intmax_t]

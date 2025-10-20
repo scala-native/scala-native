@@ -4,15 +4,15 @@ package scala.scalanative.junit.utils
 
 import org.junit.Assert.fail
 import org.junit.Test
-import sbt.testing._
+import sbt.testing.*
 
 import scala.annotation.tailrec
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent._
-import scala.scalanative.junit.async._
+import scala.concurrent.*
+import scala.scalanative.junit.async.*
 
 abstract class JUnitTest {
-  import JUnitTest._
+  import JUnitTest.*
 
   // appropriate class loader for platform, needs platform extension
   private val classLoader: ClassLoader = JUnitTestPlatformImpl.getClassLoader

@@ -2,11 +2,11 @@ package scala.scalanative.nio.fs.unix
 
 import java.io.File
 import java.net.URI
-import java.nio.file._
+import java.nio.file.*
 import java.util.Iterator
 
 class UnixPath(private val fs: UnixFileSystem, rawPath: String) extends Path {
-  import UnixPath._
+  import UnixPath.*
 
   private lazy val path: String = removeRedundantSlashes(rawPath)
   private lazy val offsets =
@@ -191,13 +191,13 @@ class UnixPath(private val fs: UnixFileSystem, rawPath: String) extends Path {
 
   def register(
       watcher: WatchService,
-      events: Array[WatchEvent.Kind[_]]
+      events: Array[WatchEvent.Kind[?]]
   ): WatchKey =
     register(watcher, events, Array.empty)
 
   def register(
       watcher: WatchService,
-      events: Array[WatchEvent.Kind[_]],
+      events: Array[WatchEvent.Kind[?]],
       modifiers: Array[WatchEvent.Modifier]
   ): WatchKey =
     throw new ProviderMismatchException

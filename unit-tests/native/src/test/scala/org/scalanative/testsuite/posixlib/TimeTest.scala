@@ -1,11 +1,11 @@
 package org.scalanative.testsuite.posixlib
 
 import org.junit.Test
-import org.junit.Assert._
-import org.junit.Assume._
+import org.junit.Assert.*
+import org.junit.Assume.*
 import org.junit.BeforeClass
 
-import java.{lang => jl}
+import java.lang as jl
 import java.io.IOException
 
 import org.scalanative.testsuite.utils.Platform
@@ -13,18 +13,18 @@ import scala.scalanative.meta.LinktimeInfo.{isWindows, is32BitPlatform}
 import scala.scalanative.runtime.PlatformExt
 
 // libc.string is hidden by posix.string
-import scala.scalanative.libc.{string => libcString}
+import scala.scalanative.libc.string as libcString
 
 /* Scala 2.11.n & 2.12.n complain about import of posixErrno.errno.
  * To span many Scala versions with same code used as
  * qualified posixErrno.errno below.
  */
-import scala.scalanative.posix.{errno => posixErrno}, posixErrno._
+import scala.scalanative.posix.errno as posixErrno, posixErrno.*
 
-import scala.scalanative.unsafe._
-import scala.scalanative.unsigned._
+import scala.scalanative.unsafe.*
+import scala.scalanative.unsigned.*
 
-import scala.scalanative.posix.time, time._
+import scala.scalanative.posix.time, time.*
 import scala.scalanative.posix.timeOps.{timespecOps, tmOps}
 
 object TimeTest {

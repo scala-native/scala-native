@@ -2,12 +2,12 @@ package scala.scalanative
 package linker
 
 import scala.collection.mutable
-import scala.scalanative.build._
+import scala.scalanative.build.*
 import scala.scalanative.util.unsupported
 
 private[linker] trait LinktimeValueResolver { self: Reach =>
 
-  import LinktimeValueResolver._
+  import LinktimeValueResolver.*
 
   private final val linktimeInfo =
     "scala.scalanative.meta.linktimeinfo"
@@ -181,7 +181,7 @@ private[linker] trait LinktimeValueResolver { self: Reach =>
   private def resolveCondition(
       cond: nir.LinktimeCondition
   )(implicit pos: nir.SourcePosition): Boolean = {
-    import nir.LinktimeCondition._
+    import nir.LinktimeCondition.*
 
     cond match {
       case ComplexCondition(nir.Bin.And, left, right) =>
@@ -309,7 +309,7 @@ private[linker] object LinktimeValueResolver {
   }
 
   object ComparableVal {
-    def fromAny(value: Any): ComparableVal[_] = {
+    def fromAny(value: Any): ComparableVal[?] = {
       value match {
         case v: Boolean =>
           ComparableVal(v, if (v) nir.Val.True else nir.Val.False)
@@ -352,9 +352,9 @@ private[linker] object LinktimeValueResolver {
   object ComparableTuple {
     type ComparableTupleType =
       (Ordering[Any], ComparableVal[Any], ComparableVal[Any])
-    def unapply(vals: (ComparableVal[_], ComparableVal[_])) = {
+    def unapply(vals: (ComparableVal[?], ComparableVal[?])) = {
       vals match {
-        case (l: ComparableVal[_], r: ComparableVal[_])
+        case (l: ComparableVal[?], r: ComparableVal[?])
             if l.ordering == r.ordering =>
           Some((l.ordering, l, r))
 

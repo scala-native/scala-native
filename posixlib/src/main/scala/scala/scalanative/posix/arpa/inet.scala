@@ -2,8 +2,8 @@ package scala.scalanative
 package posix
 package arpa
 
-import scalanative.unsafe._
-import scalanative.posix.inttypes._
+import scalanative.unsafe.*
+import scalanative.posix.inttypes.*
 import scalanative.posix.sys.socket.socklen_t
 import scalanative.posix.netinet.in.{in_addr, in_addr_t}
 

@@ -7,12 +7,12 @@
  */
 package org.scalanative.testsuite.javalib.util.concurrent
 
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.junit.{Test, Ignore}
-import JSR166Test._
+import JSR166Test.*
 
 import java.util.concurrent.TimeUnit.MILLISECONDS
-import java.util.concurrent._
+import java.util.concurrent.*
 import java.util.concurrent.atomic.AtomicInteger
 
 class CyclicBarrierTest extends JSR166Test {

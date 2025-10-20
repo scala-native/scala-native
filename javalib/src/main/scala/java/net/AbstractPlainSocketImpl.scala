@@ -1,33 +1,33 @@
 package java.net
 
-import scala.scalanative.unsigned._
-import scala.scalanative.unsafe._
+import scala.scalanative.unsigned.*
+import scala.scalanative.unsafe.*
 import scalanative.libc.string.memcpy
 import scala.scalanative.posix.arpa.inet
 // Import posix name errno as variable, not class or type.
-import scala.scalanative.posix.{errno => posixErrno}, posixErrno._
+import scala.scalanative.posix.errno as posixErrno, posixErrno.*
 import scala.scalanative.posix.netinet.in
-import scala.scalanative.posix.netinet.inOps._
+import scala.scalanative.posix.netinet.inOps.*
 import scala.scalanative.posix.netinet.tcp
-import scala.scalanative.posix.netdb._
-import scala.scalanative.posix.netdbOps._
+import scala.scalanative.posix.netdb.*
+import scala.scalanative.posix.netdbOps.*
 import scala.scalanative.posix.string.strerror
-import scala.scalanative.posix.sys.ioctl._
+import scala.scalanative.posix.sys.ioctl.*
 import scala.scalanative.posix.sys.socket
-import scala.scalanative.posix.sys.socketOps._
-import scala.scalanative.posix.sys.time._
-import scala.scalanative.posix.sys.timeOps._
+import scala.scalanative.posix.sys.socketOps.*
+import scala.scalanative.posix.sys.time.*
+import scala.scalanative.posix.sys.timeOps.*
 import scala.scalanative.posix.unistd
 
 import scala.scalanative.meta.LinktimeInfo.isWindows
 import java.io.{FileDescriptor, IOException, OutputStream, InputStream}
-import scala.scalanative.windows._
-import scala.scalanative.windows.WinSocketApi._
-import scala.scalanative.windows.WinSocketApiExt._
+import scala.scalanative.windows.*
+import scala.scalanative.windows.WinSocketApi.*
+import scala.scalanative.windows.WinSocketApiExt.*
 import scala.scalanative.posix.sys.socket.{SHUT_RDWR, SHUT_WR, SHUT_RD}
 
 private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
-  import AbstractPlainSocketImpl._
+  import AbstractPlainSocketImpl.*
 
   protected def setSocketFdBlocking(fd: FileDescriptor, blocking: Boolean): Unit
   protected def tryPollOnConnect(timeout: Int): Unit

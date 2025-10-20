@@ -1,6 +1,6 @@
 package scala.scalanative.windows.winnt
 
-import scala.scalanative.unsafe._
+import scala.scalanative.unsafe.*
 
 @extern
 object AccessToken {

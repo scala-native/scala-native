@@ -16,13 +16,13 @@ import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.locks.LockSupport
 import java.util.concurrent.locks.ReentrantLock
 import java.util.concurrent.locks.Condition
-import scala.scalanative.annotation._
-import scala.scalanative.unsafe._
+import scala.scalanative.annotation.*
+import scala.scalanative.unsafe.*
 import scala.scalanative.libc.stdatomic.{AtomicInt, AtomicLongLong, AtomicRef}
 import scala.scalanative.runtime.{fromRawPtr, Intrinsics, ObjectArray}
 
-import scala.scalanative.libc.stdatomic.memory_order._
-import ForkJoinPool._
+import scala.scalanative.libc.stdatomic.memory_order.*
+import ForkJoinPool.*
 
 class ForkJoinPool private (
     factory: ForkJoinPool.ForkJoinWorkerThreadFactory,
@@ -33,7 +33,7 @@ class ForkJoinPool private (
     bounds: Long,
     config: Int
 ) extends AbstractExecutorService {
-  import WorkQueue._
+  import WorkQueue.*
 
   @volatile var runState: Int = 0 // SHUTDOWN, STOP, TERMINATED bits
   @volatile var stealCount: Long = 0
@@ -118,7 +118,7 @@ class ForkJoinPool private (
     val lock = registrationLock
     var cfg = config & FIFO
     if (w != null && lock != null) {
-      w.array = new Array[ForkJoinTask[_]](INITIAL_QUEUE_CAPACITY)
+      w.array = new Array[ForkJoinTask[?]](INITIAL_QUEUE_CAPACITY)
       cfg |= w.config | SRC
       w.stackPred = seed // stash for runWorker
 
@@ -356,7 +356,7 @@ class ForkJoinPool private (
         val k = (cap - 1) & b
         val nb = b + 1
         val nk = (cap - 1) & nb
-        val t: ForkJoinTask[_] = a(k)
+        val t: ForkJoinTask[?] = a(k)
         VarHandle.acquireFence()
         if (q.base != b) { // inconsistent
           return prevSrc
@@ -457,7 +457,7 @@ class ForkJoinPool private (
     true
   }
 
-  private def pollScan(submissionsOnly: Boolean): ForkJoinTask[_] = {
+  private def pollScan(submissionsOnly: Boolean): ForkJoinTask[?] = {
     var r = ThreadLocalRandom.nextSecondarySeed()
     if (submissionsOnly)
       r &= ~1
@@ -525,7 +525,7 @@ class ForkJoinPool private (
   }
 
   private[concurrent] final def helpJoin(
-      task: ForkJoinTask[_],
+      task: ForkJoinTask[?],
       w: WorkQueue,
       timed: Boolean
   ): Int = {
@@ -616,7 +616,7 @@ class ForkJoinPool private (
   }
 
   private[concurrent] final def helpComplete(
-      task: ForkJoinTask[_],
+      task: ForkJoinTask[?],
       w: WorkQueue,
       owned: Boolean,
       timed: Boolean
@@ -672,8 +672,8 @@ class ForkJoinPool private (
               }
             } else
               t match {
-                case t: CountedCompleter[_] =>
-                  var f: CountedCompleter[_] = t
+                case t: CountedCompleter[?] =>
+                  var f: CountedCompleter[?] = t
                   var break = false
                   while (!break) {
                     if (f eq task) break = true
@@ -724,7 +724,7 @@ class ForkJoinPool private (
         return 1
       }
       if (locals) {
-        var u = null: ForkJoinTask[_]
+        var u = null: ForkJoinTask[?]
         while ({
           u = w.nextLocalTask()
           u != null
@@ -834,8 +834,8 @@ class ForkJoinPool private (
     -1 // unreachable
   }
 
-  private[concurrent] final def nextTaskFor(w: WorkQueue): ForkJoinTask[_] = {
-    var t: ForkJoinTask[_] = null.asInstanceOf[ForkJoinTask[_]]
+  private[concurrent] final def nextTaskFor(w: WorkQueue): ForkJoinTask[?] = {
+    var t: ForkJoinTask[?] = null.asInstanceOf[ForkJoinTask[?]]
     if (w == null || { t = w.nextLocalTask(); t == null })
       t = pollScan(false)
     t
@@ -866,7 +866,7 @@ class ForkJoinPool private (
           val q = qs(i)
           if (q == null) {
             val w = new WorkQueue(null, id | SRC)
-            w.array = new Array[ForkJoinTask[_]](INITIAL_QUEUE_CAPACITY)
+            w.array = new Array[ForkJoinTask[?]](INITIAL_QUEUE_CAPACITY)
             lock.lock()
             if ((queues eq qs) && qs(i) == null)
               qs(i) = w // else lost race; discard
@@ -1058,7 +1058,7 @@ class ForkJoinPool private (
     task.join()
   }
 
-  def execute(task: ForkJoinTask[_]): Unit = {
+  def execute(task: ForkJoinTask[?]): Unit = {
     poolSubmit(true, task)
   }
 
@@ -1066,8 +1066,8 @@ class ForkJoinPool private (
 
   override def execute(task: Runnable): Unit = {
     // Scala3 compiler has problems with type intererenfe when passed to externalSubmit directlly
-    val taskToUse: ForkJoinTask[_] = task match {
-      case task: ForkJoinTask[_] => task // avoid re-wrap
+    val taskToUse: ForkJoinTask[?] = task match {
+      case task: ForkJoinTask[?] => task // avoid re-wrap
       case _                     => new ForkJoinTask.RunnableExecuteAction(task)
     }
     poolSubmit(true, taskToUse)
@@ -1085,10 +1085,10 @@ class ForkJoinPool private (
     poolSubmit(true, new ForkJoinTask.AdaptedRunnable[T](task, result))
   }
 
-  override def submit(task: Runnable): ForkJoinTask[_] = {
+  override def submit(task: Runnable): ForkJoinTask[?] = {
     val taskToUse = task match {
-      case task: ForkJoinTask[_] => task // avoid re-wrap
-      case _ => new ForkJoinTask.AdaptedRunnableAction(task): ForkJoinTask[_]
+      case task: ForkJoinTask[?] => task // avoid re-wrap
+      case _ => new ForkJoinTask.AdaptedRunnableAction(task): ForkJoinTask[?]
     }
     poolSubmit(true, taskToUse)
   }
@@ -1106,7 +1106,7 @@ class ForkJoinPool private (
   }
 
   override def invokeAll[T](
-      tasks: Collection[_ <: Callable[T]]
+      tasks: Collection[? <: Callable[T]]
   ): List[Future[T]] = {
     val futures = new ArrayList[Future[T]](tasks.size())
     try {
@@ -1117,7 +1117,7 @@ class ForkJoinPool private (
         poolSubmit(true, f)
       }
       for (i <- futures.size() - 1 to 0 by -1) {
-        futures.get(i).asInstanceOf[ForkJoinTask[_]].quietlyJoin()
+        futures.get(i).asInstanceOf[ForkJoinTask[?]].quietlyJoin()
       }
       futures
     } catch {
@@ -1130,7 +1130,7 @@ class ForkJoinPool private (
 
   @throws[InterruptedException]
   override def invokeAll[T](
-      tasks: Collection[_ <: Callable[T]],
+      tasks: Collection[? <: Callable[T]],
       timeout: Long,
       unit: TimeUnit
   ): List[Future[T]] = {
@@ -1167,7 +1167,7 @@ class ForkJoinPool private (
 
   @throws[InterruptedException]
   @throws[ExecutionException]
-  override def invokeAny[T](tasks: Collection[_ <: Callable[T]]): T = {
+  override def invokeAny[T](tasks: Collection[? <: Callable[T]]): T = {
     if (tasks.isEmpty()) throw new IllegalArgumentException()
     val n = tasks.size()
     val root = new InvokeAnyRoot[T](n, this)
@@ -1194,7 +1194,7 @@ class ForkJoinPool private (
   @throws[ExecutionException]
   @throws[TimeoutException]
   override def invokeAny[T](
-      tasks: Collection[_ <: Callable[T]],
+      tasks: Collection[? <: Callable[T]],
       timeout: Long,
       unit: TimeUnit
   ): T = {
@@ -1285,9 +1285,9 @@ class ForkJoinPool private (
 
   def hasQueuedSubmissions(): Boolean = hasTasks(true)
 
-  protected[concurrent] def pollSubmission(): ForkJoinTask[_] = pollScan(true)
+  protected[concurrent] def pollSubmission(): ForkJoinTask[?] = pollScan(true)
 
-  protected def drainTasksTo(c: Collection[_ >: ForkJoinTask[_]]): Int = {
+  protected def drainTasksTo(c: Collection[? >: ForkJoinTask[?]]): Int = {
     var count = 0
     while ({
       val t = pollScan(false)
@@ -1524,7 +1524,7 @@ object ForkJoinPool {
 
   private[concurrent] object WorkQueue {
     // Support for atomic operations
-    import scala.scalanative.libc.stdatomic.memory_order._
+    import scala.scalanative.libc.stdatomic.memory_order.*
     @alwaysinline
     private def arraySlotAtomicAccess[T <: AnyRef](
         a: Array[T],
@@ -1540,27 +1540,27 @@ object ForkJoinPool {
 
     @alwaysinline
     private[concurrent] def getAndClearSlot(
-        a: Array[ForkJoinTask[_]],
+        a: Array[ForkJoinTask[?]],
         i: Int
-    ): ForkJoinTask[_] =
+    ): ForkJoinTask[?] =
       arraySlotAtomicAccess(a, i)
-        .exchange(null: ForkJoinTask[_])
+        .exchange(null: ForkJoinTask[?])
 
     @alwaysinline
     private[concurrent] def casSlotToNull(
-        a: Array[ForkJoinTask[_]],
+        a: Array[ForkJoinTask[?]],
         i: Int,
-        c: ForkJoinTask[_]
+        c: ForkJoinTask[?]
     ): Boolean =
       arraySlotAtomicAccess(a, i)
-        .compareExchangeWeak(c, null: ForkJoinTask[_])
+        .compareExchangeWeak(c, null: ForkJoinTask[?])
   }
 
   final class WorkQueue private (
       val owner: ForkJoinWorkerThread
   ) {
     var config: Int = _ // index, mode, ORed with SRC after init
-    var array: Array[ForkJoinTask[_]] = _ // the queued tasks power of 2 size
+    var array: Array[ForkJoinTask[?]] = _ // the queued tasks power of 2 size
     var stackPred: Int = 0 // pool stack (ctl) predecessor link
     var base: Int = _ // index of next slot for poll
     @Contended("w") var top: Int = _ // index of next slot for push
@@ -1605,7 +1605,7 @@ object ForkJoinPool {
     }
 
     final def push(
-        _task: ForkJoinTask[_],
+        _task: ForkJoinTask[?],
         pool: ForkJoinPool,
         signalIfEmpty: Boolean
     ): Unit = {
@@ -1622,7 +1622,7 @@ object ForkJoinPool {
           resize = true // rapidly grow until large
           val newCap = if (cap < (1 << 24)) cap << 2 else cap << 1
           val newArray =
-            try new Array[ForkJoinTask[_]](newCap)
+            try new Array[ForkJoinTask[?]](newCap)
             catch {
               case ex: Throwable =>
                 top = s
@@ -1649,8 +1649,8 @@ object ForkJoinPool {
       }
     }
 
-    final def nextLocalTask(fifo: Int): ForkJoinTask[_] = {
-      var t: ForkJoinTask[_] = null.asInstanceOf[ForkJoinTask[_]]
+    final def nextLocalTask(fifo: Int): ForkJoinTask[?] = {
+      var t: ForkJoinTask[?] = null.asInstanceOf[ForkJoinTask[?]]
       val a = array
       val p = top
       val s = p - 1
@@ -1681,9 +1681,9 @@ object ForkJoinPool {
       t
     }
 
-    final def nextLocalTask(): ForkJoinTask[_] = nextLocalTask(config & FIFO)
+    final def nextLocalTask(): ForkJoinTask[?] = nextLocalTask(config & FIFO)
 
-    final def tryUnpush(task: ForkJoinTask[_], owned: Boolean): Boolean = {
+    final def tryUnpush(task: ForkJoinTask[?], owned: Boolean): Boolean = {
       val a = array
       val p = top
       val cap = if (a != null) a.length else 0
@@ -1703,7 +1703,7 @@ object ForkJoinPool {
       false
     }
 
-    final def peek(): ForkJoinTask[_] = {
+    final def peek(): ForkJoinTask[?] = {
       val a = array
       val cfg = config
       val p = top
@@ -1725,7 +1725,7 @@ object ForkJoinPool {
       null
     }
 
-    final def poll(pool: ForkJoinPool): ForkJoinTask[_] = {
+    final def poll(pool: ForkJoinPool): ForkJoinTask[?] = {
       var b = base
       var break = false
       while (!break) {
@@ -1753,7 +1753,7 @@ object ForkJoinPool {
       null
     }
 
-    final def tryPool(): ForkJoinTask[_] = {
+    final def tryPool(): ForkJoinTask[?] = {
       var b = base
       val a = array
       val cap = if (a != null) a.length else 0
@@ -1781,7 +1781,7 @@ object ForkJoinPool {
 
     // specialized execution methods
 
-    final def topLevelExec(_task: ForkJoinTask[_], src: WorkQueue): Unit = {
+    final def topLevelExec(_task: ForkJoinTask[?], src: WorkQueue): Unit = {
       var task = _task
       val cfg = config
       val fifo = cfg & FIFO
@@ -1801,7 +1801,7 @@ object ForkJoinPool {
       }
     }
 
-    final def tryRemoveAndExec(task: ForkJoinTask[_], owned: Boolean): Int = {
+    final def tryRemoveAndExec(task: ForkJoinTask[?], owned: Boolean): Int = {
       val a = array
       val p = top
       val s = p - 1
@@ -1842,7 +1842,7 @@ object ForkJoinPool {
     }
 
     private[concurrent] final def helpComplete(
-        task: ForkJoinTask[_],
+        task: ForkJoinTask[?],
         owned: Boolean,
         _limit: Int
     ): Int = {
@@ -1861,8 +1861,8 @@ object ForkJoinPool {
           val k = (cap - 1) & s
           val t = if (cap > 0) a(k) else null
           t match {
-            case t: CountedCompleter[_] =>
-              var f: CountedCompleter[_] = t
+            case t: CountedCompleter[?] =>
+              var f: CountedCompleter[?] = t
               var break = false
               while (!break) {
                 if (f eq task)

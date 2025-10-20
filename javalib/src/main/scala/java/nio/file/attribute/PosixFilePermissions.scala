@@ -1,7 +1,7 @@
 package java.nio.file.attribute
 
 import java.util.{HashSet, Set}
-import java.{lang => jl}
+import java.lang as jl
 
 object PosixFilePermissions {
   def asFileAttribute(
@@ -29,7 +29,7 @@ object PosixFilePermissions {
     }
 
   def toString(perms: Set[PosixFilePermission]): String = {
-    import PosixFilePermission._
+    import PosixFilePermission.*
     val builder = new jl.StringBuilder
     if (perms.contains(OWNER_READ)) builder.append('r')
     else builder.append('-')

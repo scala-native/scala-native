@@ -174,7 +174,7 @@ abstract class Buffer private[nio] (
   }
 
   @inline private[nio] def validateArrayIndexRange(
-      array: Array[_],
+      array: Array[?],
       offset: Int,
       length: Int
   ): Unit = {

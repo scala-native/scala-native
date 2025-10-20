@@ -117,7 +117,7 @@ object CompletableFuture {
       fromRawPtr(classFieldRawPtr(this, "next"))
     )
 
-    private[concurrent] def tryFire(mode: Int): CompletableFuture[_ <: AnyRef]
+    private[concurrent] def tryFire(mode: Int): CompletableFuture[? <: AnyRef]
     private[concurrent] def isLive(): Boolean
     override final def run(): Unit = tryFire(ASYNC)
     override final def exec(): Boolean = {
@@ -152,13 +152,13 @@ object CompletableFuture {
       _executor: Executor,
       _dep: CompletableFuture[V],
       _src: CompletableFuture[T],
-      var fn: Function[_ >: T, _ <: V]
+      var fn: Function[? >: T, ? <: V]
   ) extends UniCompletion[T, V](_executor, _dep, _src) {
     override private[concurrent] final def tryFire(mode: Int): CompletableFuture[V] = {
       var a: CompletableFuture[T] = null
       var d: CompletableFuture[V] = null
       var r: AnyRef = null
-      var f: Function[_ >: T, _ <: V] = null
+      var f: Function[? >: T, ? <: V] = null
       if ({ a = src; a == null } || { r = a.result; r == null } || { d = dep; d == null } || { f = fn; f == null })
         return null
 
@@ -189,13 +189,13 @@ object CompletableFuture {
       _executor: Executor,
       _dep: CompletableFuture[Void],
       _src: CompletableFuture[T],
-      var fn: Consumer[_ >: T]
+      var fn: Consumer[? >: T]
   ) extends UniCompletion[T, Void](_executor, _dep, _src) {
     override private[concurrent] final def tryFire(mode: Int): CompletableFuture[Void] = {
       var a: CompletableFuture[T] = null
       var d: CompletableFuture[Void] = null
       var r: AnyRef = null
-      var f: Consumer[_ >: T] = null
+      var f: Consumer[? >: T] = null
       if ({ a = src; a == null } || { r = a.result; r == null } || { d = dep; d == null } || { f = fn; f == null })
         return null
 
@@ -264,13 +264,13 @@ object CompletableFuture {
       _executor: Executor,
       _dep: CompletableFuture[T],
       _src: CompletableFuture[T],
-      var fn: BiConsumer[_ >: T, _ >: Throwable]
+      var fn: BiConsumer[? >: T, ? >: Throwable]
   ) extends UniCompletion[T, T](_executor, _dep, _src) {
     override private[concurrent] final def tryFire(mode: Int): CompletableFuture[T] = {
       var d: CompletableFuture[T] = null
       var a: CompletableFuture[T] = null
       var r: AnyRef = null
-      var f: BiConsumer[_ >: T, _ >: Throwable] = null
+      var f: BiConsumer[? >: T, ? >: Throwable] = null
       if ({ a = src; a == null } || { r = a.result; r == null } || { d = dep; d == null } ||
           { f = fn; f == null } || !d.uniWhenComplete(r, f, if (mode > 0) null else this)) return null
 
@@ -283,13 +283,13 @@ object CompletableFuture {
       _executor: Executor,
       _dep: CompletableFuture[V],
       _src: CompletableFuture[T],
-      var fn: BiFunction[_ >: T, Throwable, _ <: V]
+      var fn: BiFunction[? >: T, Throwable, ? <: V]
   ) extends UniCompletion[T, V](_executor, _dep, _src) {
     override private[concurrent] final def tryFire(mode: Int): CompletableFuture[V] = {
       var d: CompletableFuture[V] = null
       var a: CompletableFuture[T] = null
       var r: AnyRef = null
-      var f: BiFunction[_ >: T, Throwable, _ <: V] = null
+      var f: BiFunction[? >: T, Throwable, ? <: V] = null
       if ({ a = src; a == null } || { r = a.result; r == null } || { d = dep; d == null } ||
           { f = fn; f == null } || !d.uniHandle[T](r, f, if (mode > 0) null else this)) return null
 
@@ -302,13 +302,13 @@ object CompletableFuture {
       _executor: Executor,
       _dep: CompletableFuture[T],
       _src: CompletableFuture[T],
-      var fn: Function[_ >: Throwable, _ <: T]
+      var fn: Function[? >: Throwable, ? <: T]
   ) extends UniCompletion[T, T](_executor, _dep, _src) {
     override private[concurrent] final def tryFire(mode: Int): CompletableFuture[T] = {
       var d: CompletableFuture[T] = null
       var a: CompletableFuture[T] = null
       var r: AnyRef = null
-      var f: Function[_ >: Throwable, _ <: T] = null
+      var f: Function[? >: Throwable, ? <: T] = null
       if ({ a = src; a == null } || { r = a.result; r == null } || { d = dep; d == null } ||
           { f = fn; f == null } || !(d.uniExceptionally(r, f, if (mode > 0) null else this))) return null
 
@@ -321,12 +321,12 @@ object CompletableFuture {
       _executor: Executor,
       _dep: CompletableFuture[T],
       _src: CompletableFuture[T],
-      var fn: Function[Throwable, _ <: CompletionStage[T]]
+      var fn: Function[Throwable, ? <: CompletionStage[T]]
   ) extends UniCompletion[T, T](_executor, _dep, _src) {
     override private[concurrent] final def tryFire(mode: Int): CompletableFuture[T] = {
       var d: CompletableFuture[T] = null
       var a: CompletableFuture[T] = null
-      var f: Function[Throwable, _ <: CompletionStage[T]] = null
+      var f: Function[Throwable, ? <: CompletionStage[T]] = null
       var r: AnyRef = null
       var x: Throwable = null
       if ({ a = src; a == null } || { r = a.result; r == null } || { d = dep; d == null } || { f = fn; f == null })
@@ -381,12 +381,12 @@ object CompletableFuture {
       _executor: Executor,
       _dep: CompletableFuture[V],
       _src: CompletableFuture[T],
-      var fn: Function[_ >: T, _ <: CompletionStage[V]]
+      var fn: Function[? >: T, ? <: CompletionStage[V]]
   ) extends UniCompletion[T, V](_executor, _dep, _src) {
     override private[concurrent] final def tryFire(mode: Int): CompletableFuture[V] = {
       var d: CompletableFuture[V] = null
       var a: CompletableFuture[T] = null
-      var f: Function[_ >: T, _ <: CompletionStage[V]] = null
+      var f: Function[? >: T, ? <: CompletionStage[V]] = null
       var r: AnyRef = null
       var x: Throwable = null
       if ({ a = src; a == null } || { r = a.result; r == null } || { d = dep; d == null } || { f = fn; f == null })
@@ -426,10 +426,10 @@ object CompletableFuture {
       var snd: CompletableFuture[U] // second source for action
   ) extends UniCompletion[T, V](_executor, _dep, _src) {}
 
-  private[concurrent] final class CoCompletion(var base: BiCompletion[_, _, _]) extends Completion {
-    override private[concurrent] final def tryFire(mode: Int): CompletableFuture[_ <: AnyRef] = {
-      val c: BiCompletion[_, _, _] = base
-      var d: CompletableFuture[_ <: AnyRef] = null
+  private[concurrent] final class CoCompletion(var base: BiCompletion[?, ?, ?]) extends Completion {
+    override private[concurrent] final def tryFire(mode: Int): CompletableFuture[? <: AnyRef] = {
+      val c: BiCompletion[?, ?, ?] = base
+      var d: CompletableFuture[? <: AnyRef] = null
       if (c == null || { d = c.tryFire(mode); d == null })
         return null
       base = null // detach
@@ -437,7 +437,7 @@ object CompletableFuture {
     }
 
     override private[concurrent] final def isLive(): Boolean = {
-      var c: BiCompletion[_, _, _] = null
+      var c: BiCompletion[?, ?, ?] = null
       return { c = base; c != null } && c.dep != null
     }
   }
@@ -447,7 +447,7 @@ object CompletableFuture {
       _dep: CompletableFuture[V],
       _src: CompletableFuture[T],
       _snd: CompletableFuture[U],
-      var fn: BiFunction[_ >: T, _ >: U, _ <: V]
+      var fn: BiFunction[? >: T, ? >: U, ? <: V]
   ) extends BiCompletion[T, U, V](_executor, _dep, _src, _snd) {
     override private[concurrent] final def tryFire(mode: Int): CompletableFuture[V] = {
       var d: CompletableFuture[V] = null
@@ -455,7 +455,7 @@ object CompletableFuture {
       var b: CompletableFuture[U] = null
       var r: AnyRef = null
       var s: AnyRef = null
-      var f: BiFunction[_ >: T, _ >: U, _ <: V] = null
+      var f: BiFunction[? >: T, ? >: U, ? <: V] = null
       if ({ a = src; a == null } || { r = a.result; r == null } || { b = snd; b == null } ||
           { s = b.result; s == null } || { d = dep; d == null } || { f = fn; f == null } ||
           !d.biApply[T, U](r, s, f, if (mode > 0) null else this)) return null
@@ -470,7 +470,7 @@ object CompletableFuture {
       _dep: CompletableFuture[Void],
       _src: CompletableFuture[T],
       _snd: CompletableFuture[U],
-      var fn: BiConsumer[_ >: T, _ >: U]
+      var fn: BiConsumer[? >: T, ? >: U]
   ) extends BiCompletion[T, U, Void](_executor, _dep, _src, _snd) {
     override private[concurrent] final def tryFire(mode: Int): CompletableFuture[Void] = {
       var d: CompletableFuture[Void] = null
@@ -478,7 +478,7 @@ object CompletableFuture {
       var b: CompletableFuture[U] = null
       var r: AnyRef = null
       var s: AnyRef = null
-      var f: BiConsumer[_ >: T, _ >: U] = null
+      var f: BiConsumer[? >: T, ? >: U] = null
       if ({ a = src; a == null } || { r = a.result; r == null } || { b = snd; b == null } ||
           { s = b.result; s == null } || { d = dep; d == null } || { f = fn; f == null } ||
           !(d.biAccept[T, U](r, s, f, if (mode > 0) null else this)))
@@ -541,7 +541,7 @@ object CompletableFuture {
   }
 
   private[concurrent] def andTree(
-      cfs: Array[CompletableFuture[_ <: AnyRef]],
+      cfs: Array[CompletableFuture[? <: AnyRef]],
       lo: Int,
       hi: Int
   ): CompletableFuture[Void] = {
@@ -549,8 +549,8 @@ object CompletableFuture {
     if (lo > hi) // empty
       d.result = NIL
     else {
-      var a: CompletableFuture[_ <: AnyRef] = null
-      var b: CompletableFuture[_ <: AnyRef] = null
+      var a: CompletableFuture[? <: AnyRef] = null
+      var b: CompletableFuture[? <: AnyRef] = null
       var r: AnyRef = null
       var s: AnyRef = null
       var z: AnyRef = null
@@ -583,15 +583,15 @@ object CompletableFuture {
       _dep: CompletableFuture[V],
       _src: CompletableFuture[T],
       _snd: CompletableFuture[U],
-      var fn: Function[_ >: T, _ <: V]
+      var fn: Function[? >: T, ? <: V]
   ) extends BiCompletion[T, U, V](_executor, _dep, _src, _snd) {
     override private[concurrent] final def tryFire(mode: Int): CompletableFuture[V] = {
       var d: CompletableFuture[V] = null
-      var a: CompletableFuture[_ <: T] = null
-      var b: CompletableFuture[_ <: T] = null
+      var a: CompletableFuture[? <: T] = null
+      var b: CompletableFuture[? <: T] = null
       var r: AnyRef = null
       var x: Throwable = null
-      var f: Function[_ >: T, _ <: V] = null
+      var f: Function[? >: T, ? <: V] = null
       if ({ a = src; a == null } || { b = snd; b == null } || ({ r = a.result; r == null } &&
           { r = b.result; r == null }) || { d = dep; d == null } || { f = fn; f == null })
         return null
@@ -620,15 +620,15 @@ object CompletableFuture {
       _dep: CompletableFuture[Void],
       _src: CompletableFuture[T],
       _snd: CompletableFuture[U],
-      var fn: Consumer[_ >: T]
+      var fn: Consumer[? >: T]
   ) extends BiCompletion[T, U, Void](_executor, _dep, _src, _snd) {
     override private[concurrent] final def tryFire(mode: Int): CompletableFuture[Void] = {
       var d: CompletableFuture[Void] = null
-      var a: CompletableFuture[_ <: T] = null
-      var b: CompletableFuture[_ <: T] = null
+      var a: CompletableFuture[? <: T] = null
+      var b: CompletableFuture[? <: T] = null
       var r: AnyRef = null
       var x: Throwable = null
-      var f: Consumer[_ >: T] = null
+      var f: Consumer[? >: T] = null
       if ({ a = src; a == null } || { b = snd; b == null } || ({ r = a.result; r == null } &&
           { r = b.result; r == null }) || { d = dep; d == null } || { f = fn; f == null }) return null
 
@@ -661,8 +661,8 @@ object CompletableFuture {
   ) extends BiCompletion[T, U, Void](_executor, _dep, _src, _snd) {
     override private[concurrent] final def tryFire(mode: Int): CompletableFuture[Void] = {
       var d: CompletableFuture[Void] = null
-      var a: CompletableFuture[_ <: AnyRef] = null
-      var b: CompletableFuture[_ <: AnyRef] = null
+      var a: CompletableFuture[? <: AnyRef] = null
+      var b: CompletableFuture[? <: AnyRef] = null
       var r: AnyRef = null
       var x: Throwable = null
       var f: Runnable = null
@@ -689,14 +689,14 @@ object CompletableFuture {
 
   private[concurrent] class AnyOf(
       var dep: CompletableFuture[AnyRef],
-      var src: CompletableFuture[_ <: AnyRef],
-      var srcs: Array[CompletableFuture[_ <: AnyRef]]
+      var src: CompletableFuture[? <: AnyRef],
+      var srcs: Array[CompletableFuture[? <: AnyRef]]
   ) extends Completion {
     override private[concurrent] final def tryFire(mode: Int): CompletableFuture[AnyRef] = {
       // assert mode != ASYNC;
       var d: CompletableFuture[AnyRef] = null
-      var a: CompletableFuture[_ <: AnyRef] = null
-      var as: Array[CompletableFuture[_ <: AnyRef]] = null
+      var a: CompletableFuture[? <: AnyRef] = null
+      var as: Array[CompletableFuture[? <: AnyRef]] = null
       var r: AnyRef = null
       if ({ a = src; a == null } || { r = a.result; r == null } || { d = dep; d == null } || { as = srcs; as == null })
         return null
@@ -721,7 +721,7 @@ object CompletableFuture {
   /* ------------- Zero-input Async forms -------------- */
   private[concurrent] final class AsyncSupply[T <: AnyRef](
       var dep: CompletableFuture[T],
-      var fn: Supplier[_ <: T]
+      var fn: Supplier[? <: T]
   ) extends ForkJoinTask[Void]
       with Runnable
       with AsynchronousCompletionTask {
@@ -736,7 +736,7 @@ object CompletableFuture {
 
     override def run(): Unit = {
       var d: CompletableFuture[T] = null
-      var f: Supplier[_ <: T] = null
+      var f: Supplier[? <: T] = null
       if ({ d = dep; d != null } && { f = fn; f != null }) {
         dep = null
         fn = null
@@ -807,7 +807,7 @@ object CompletableFuture {
     var interrupted: Boolean = false
     @volatile var thread: Thread = Thread.currentThread()
 
-    override private[concurrent] final def tryFire(ignore: Int): CompletableFuture[_ <: AnyRef] = {
+    override private[concurrent] final def tryFire(ignore: Int): CompletableFuture[? <: AnyRef] = {
       var w: Thread = null // no need to atomically claim()
 
       if ({ w = thread; w != null }) {
@@ -850,8 +850,8 @@ object CompletableFuture {
   // TODO: check
   // def allOf(cfs: CompletableFuture[_ <: AnyRef]*): CompletableFuture[Void] = andTree(cfs, 0, cfs.length - 1)
   // def anyOf(cfs: CompletableFuture[_ <: AnyRef]*): CompletableFuture[AnyRef] = {
-  def allOf(cfs: Array[CompletableFuture[_ <: AnyRef]]): CompletableFuture[Void] = andTree(cfs, 0, cfs.length - 1)
-  def anyOf(_cfs: Array[CompletableFuture[_ <: AnyRef]]): CompletableFuture[AnyRef] = {
+  def allOf(cfs: Array[CompletableFuture[? <: AnyRef]]): CompletableFuture[Void] = andTree(cfs, 0, cfs.length - 1)
+  def anyOf(_cfs: Array[CompletableFuture[? <: AnyRef]]): CompletableFuture[AnyRef] = {
     val n: Int = _cfs.length
     var r: AnyRef = null
     if (n <= 1)
@@ -916,7 +916,7 @@ object CompletableFuture {
   }
 
   private[concurrent] object Delayer {
-    private[concurrent] def delay(command: Runnable, delay: Long, unit: TimeUnit): ScheduledFuture[_ <: AnyRef] =
+    private[concurrent] def delay(command: Runnable, delay: Long, unit: TimeUnit): ScheduledFuture[? <: AnyRef] =
       return delayer.schedule(command, delay, unit)
 
     private[concurrent] final class DaemonThreadFactory extends ThreadFactory {
@@ -953,7 +953,7 @@ object CompletableFuture {
     }
   }
 
-  private[concurrent] final class Timeout(private[concurrent] val f: CompletableFuture[_ <: AnyRef]) extends Runnable {
+  private[concurrent] final class Timeout(private[concurrent] val f: CompletableFuture[? <: AnyRef]) extends Runnable {
     override def run(): Unit = {
       if (f != null && !f.isDone()) f.completeExceptionally(new TimeoutException)
     }
@@ -968,7 +968,7 @@ object CompletableFuture {
     }
   }
 
-  private[concurrent] final class Canceller(private[concurrent] val f: Future[_ <: AnyRef])
+  private[concurrent] final class Canceller(private[concurrent] val f: Future[? <: AnyRef])
       extends BiConsumer[AnyRef, Throwable] {
     override def accept(ignore: AnyRef, ex: Throwable): Unit = {
       if (ex == null && f != null && !f.isDone()) f.cancel(false)
@@ -1012,10 +1012,10 @@ object CompletableFuture {
 
     override def getNumberOfDependents(): Int = throw new UnsupportedOperationException
 
-    override def completeAsync(supplier: Supplier[_ <: T], executor: Executor): CompletableFuture[T] =
+    override def completeAsync(supplier: Supplier[? <: T], executor: Executor): CompletableFuture[T] =
       throw new UnsupportedOperationException
 
-    override def completeAsync(supplier: Supplier[_ <: T]): CompletableFuture[T] =
+    override def completeAsync(supplier: Supplier[? <: T]): CompletableFuture[T] =
       throw new UnsupportedOperationException
 
     override def orTimeout(timeout: Long, unit: TimeUnit): CompletableFuture[T] =
@@ -1048,7 +1048,7 @@ object CompletableFuture {
 }
 
 class CompletableFuture[T <: AnyRef] extends Future[T] with CompletionStage[T] {
-  import CompletableFuture._
+  import CompletableFuture.*
 
   @volatile private[concurrent] var result: AnyRef = null // Either the result or boxed AltResult
   @volatile private[concurrent] var stack: Completion = null // Top of Treiber stack of dependent actions
@@ -1108,10 +1108,10 @@ class CompletableFuture[T <: AnyRef] extends Future[T] with CompletionStage[T] {
     this.resultAtomic.compareExchangeStrong(null: AnyRef, encodeRelay(r))
 
   private[concurrent] final def postComplete(): Unit = {
-    var f: CompletableFuture[_ <: AnyRef] = this
+    var f: CompletableFuture[? <: AnyRef] = this
     var h: Completion = null
     while ({ h = f.stack; h != null } || { (f ne this) && { f = this; h = f.stack; h != null } }) {
-      var d: CompletableFuture[_ <: AnyRef] = null
+      var d: CompletableFuture[? <: AnyRef] = null
       var t: Completion = null
       var restart = false
       // if (STACK.compareAndSet(f, h, t = h.next)) {
@@ -1174,7 +1174,7 @@ class CompletableFuture[T <: AnyRef] extends Future[T] with CompletionStage[T] {
     }
   }
 
-  private[concurrent] final def postFire(a: CompletableFuture[_ <: AnyRef], mode: Int): CompletableFuture[T] = {
+  private[concurrent] final def postFire(a: CompletableFuture[? <: AnyRef], mode: Int): CompletableFuture[T] = {
     if (a != null && a.stack != null) {
       var r: AnyRef = null
       if ({ r = a.result; r == null }) a.cleanStack()
@@ -1186,7 +1186,7 @@ class CompletableFuture[T <: AnyRef] extends Future[T] with CompletionStage[T] {
     null
   }
 
-  private def uniApplyStage[V <: AnyRef](e: Executor, f: Function[_ >: T, _ <: V]): CompletableFuture[V] = {
+  private def uniApplyStage[V <: AnyRef](e: Executor, f: Function[? >: T, ? <: V]): CompletableFuture[V] = {
     if (f == null) throw new NullPointerException
     var r: AnyRef = null
     if ({ r = result; r != null }) return uniApplyNow(r, e, f)
@@ -1195,7 +1195,7 @@ class CompletableFuture[T <: AnyRef] extends Future[T] with CompletionStage[T] {
     d
   }
 
-  private def uniApplyNow[V <: AnyRef](_r: AnyRef, e: Executor, f: Function[_ >: T, _ <: V]): CompletableFuture[V] = {
+  private def uniApplyNow[V <: AnyRef](_r: AnyRef, e: Executor, f: Function[? >: T, ? <: V]): CompletableFuture[V] = {
     var r = _r
     var x: Throwable = null
     val d: CompletableFuture[V] = newIncompleteFuture
@@ -1218,7 +1218,7 @@ class CompletableFuture[T <: AnyRef] extends Future[T] with CompletionStage[T] {
     d
   }
 
-  private def uniAcceptStage(e: Executor, f: Consumer[_ >: T]): CompletableFuture[Void] = {
+  private def uniAcceptStage(e: Executor, f: Consumer[? >: T]): CompletableFuture[Void] = {
     if (f == null) throw new NullPointerException
     var r: AnyRef = null
     if ({ r = result; r != null }) return uniAcceptNow(r, e, f)
@@ -1227,7 +1227,7 @@ class CompletableFuture[T <: AnyRef] extends Future[T] with CompletionStage[T] {
     d
   }
 
-  private def uniAcceptNow(_r: AnyRef, e: Executor, f: Consumer[_ >: T]): CompletableFuture[Void] = {
+  private def uniAcceptNow(_r: AnyRef, e: Executor, f: Consumer[? >: T]): CompletableFuture[Void] = {
     var r = _r
     var x: Throwable = null
     val d: CompletableFuture[Void] = newIncompleteFuture
@@ -1282,7 +1282,7 @@ class CompletableFuture[T <: AnyRef] extends Future[T] with CompletionStage[T] {
 
   private[concurrent] final def uniWhenComplete(
       r: AnyRef,
-      f: BiConsumer[_ >: T, _ >: Throwable],
+      f: BiConsumer[? >: T, ? >: Throwable],
       c: UniWhenComplete[T]
   ): Boolean = {
     var t: T = null.asInstanceOf[T]
@@ -1312,7 +1312,7 @@ class CompletableFuture[T <: AnyRef] extends Future[T] with CompletionStage[T] {
     true
   }
 
-  private def uniWhenCompleteStage(e: Executor, f: BiConsumer[_ >: T, _ >: Throwable]): CompletableFuture[T] = {
+  private def uniWhenCompleteStage(e: Executor, f: BiConsumer[? >: T, ? >: Throwable]): CompletableFuture[T] = {
     if (f == null) throw new NullPointerException
     val d: CompletableFuture[T] = newIncompleteFuture
     var r: AnyRef = null
@@ -1329,7 +1329,7 @@ class CompletableFuture[T <: AnyRef] extends Future[T] with CompletionStage[T] {
 
   private[concurrent] final def uniHandle[S <: AnyRef](
       r: AnyRef,
-      f: BiFunction[_ >: S, Throwable, _ <: T],
+      f: BiFunction[? >: S, Throwable, ? <: T],
       c: UniHandle[S, T]
   ): Boolean = {
     var s: S = null.asInstanceOf[S]
@@ -1354,7 +1354,7 @@ class CompletableFuture[T <: AnyRef] extends Future[T] with CompletionStage[T] {
 
   private def uniHandleStage[V <: AnyRef](
       e: Executor,
-      f: BiFunction[_ >: T, Throwable, _ <: V]
+      f: BiFunction[? >: T, Throwable, ? <: V]
   ): CompletableFuture[V] = {
     if (f == null) throw new NullPointerException
     val d: CompletableFuture[V] = newIncompleteFuture
@@ -1372,7 +1372,7 @@ class CompletableFuture[T <: AnyRef] extends Future[T] with CompletionStage[T] {
 
   private[concurrent] final def uniExceptionally(
       r: AnyRef,
-      f: Function[_ >: Throwable, _ <: T],
+      f: Function[? >: Throwable, ? <: T],
       c: UniExceptionally[T]
   ): Boolean = {
     var x: Throwable = null
@@ -1387,7 +1387,7 @@ class CompletableFuture[T <: AnyRef] extends Future[T] with CompletionStage[T] {
     true
   }
 
-  private def uniExceptionallyStage(e: Executor, f: Function[Throwable, _ <: T]): CompletableFuture[T] = {
+  private def uniExceptionallyStage(e: Executor, f: Function[Throwable, ? <: T]): CompletableFuture[T] = {
     if (f == null) throw new NullPointerException
     val d: CompletableFuture[T] = newIncompleteFuture
     var r: AnyRef = null
@@ -1404,7 +1404,7 @@ class CompletableFuture[T <: AnyRef] extends Future[T] with CompletionStage[T] {
 
   private def uniComposeExceptionallyStage(
       e: Executor,
-      f: Function[Throwable, _ <: CompletionStage[T]]
+      f: Function[Throwable, ? <: CompletionStage[T]]
   ): CompletableFuture[T] = {
     if (f == null) throw new NullPointerException
     val d: CompletableFuture[T] = newIncompleteFuture
@@ -1438,7 +1438,7 @@ class CompletableFuture[T <: AnyRef] extends Future[T] with CompletionStage[T] {
 
   private def uniComposeStage[V <: AnyRef](
       e: Executor,
-      f: Function[_ >: T, _ <: CompletionStage[V]]
+      f: Function[? >: T, ? <: CompletionStage[V]]
   ): CompletableFuture[V] = {
     if (f == null) throw new NullPointerException
     val d: CompletableFuture[V] = newIncompleteFuture
@@ -1470,7 +1470,7 @@ class CompletableFuture[T <: AnyRef] extends Future[T] with CompletionStage[T] {
     d
   }
 
-  private[concurrent] final def bipush(b: CompletableFuture[_ <: AnyRef], c: BiCompletion[_, _, _]): Unit = {
+  private[concurrent] final def bipush(b: CompletableFuture[? <: AnyRef], c: BiCompletion[?, ?, ?]): Unit = {
     if (c != null) {
       while (result == null) if (tryPushStack(c)) {
         if (b.result == null) b.unipush(new CoCompletion(c))
@@ -1482,8 +1482,8 @@ class CompletableFuture[T <: AnyRef] extends Future[T] with CompletionStage[T] {
   }
 
   private[concurrent] final def postFire(
-      a: CompletableFuture[_ <: AnyRef],
-      b: CompletableFuture[_ <: AnyRef],
+      a: CompletableFuture[? <: AnyRef],
+      b: CompletableFuture[? <: AnyRef],
       mode: Int
   ): CompletableFuture[T] = {
     if (b != null && b.stack != null) { // clean second source
@@ -1497,7 +1497,7 @@ class CompletableFuture[T <: AnyRef] extends Future[T] with CompletionStage[T] {
   private[concurrent] final def biApply[R <: AnyRef, S <: AnyRef](
       _r: AnyRef,
       _s: AnyRef,
-      f: BiFunction[_ >: R, _ >: S, _ <: T],
+      f: BiFunction[? >: R, ? >: S, ? <: T],
       c: BiApply[R, S, T]
   ): Boolean = {
     var r = _r
@@ -1531,7 +1531,7 @@ class CompletableFuture[T <: AnyRef] extends Future[T] with CompletionStage[T] {
   private def biApplyStage[U <: AnyRef, V <: AnyRef](
       e: Executor,
       o: CompletionStage[U],
-      f: BiFunction[_ >: T, _ >: U, _ <: V]
+      f: BiFunction[? >: T, ? >: U, ? <: V]
   ): CompletableFuture[V] = {
     var b: CompletableFuture[U] = null
     var r: AnyRef = null
@@ -1552,7 +1552,7 @@ class CompletableFuture[T <: AnyRef] extends Future[T] with CompletionStage[T] {
   private[concurrent] final def biAccept[R <: AnyRef, S <: AnyRef](
       _r: AnyRef,
       _s: AnyRef,
-      f: BiConsumer[_ >: R, _ >: S],
+      f: BiConsumer[? >: R, ? >: S],
       c: BiAccept[R, S]
   ): Boolean = {
     var r = _r
@@ -1587,7 +1587,7 @@ class CompletableFuture[T <: AnyRef] extends Future[T] with CompletionStage[T] {
   private def biAcceptStage[U <: AnyRef](
       e: Executor,
       o: CompletionStage[U],
-      f: BiConsumer[_ >: T, _ >: U]
+      f: BiConsumer[? >: T, ? >: U]
   ): CompletableFuture[Void] = {
     var b: CompletableFuture[U] = null
     var r: AnyRef = null
@@ -1605,7 +1605,7 @@ class CompletableFuture[T <: AnyRef] extends Future[T] with CompletionStage[T] {
     d
   }
 
-  private[concurrent] final def biRun(r: AnyRef, s: AnyRef, f: Runnable, c: BiRun[_, _]): Boolean = {
+  private[concurrent] final def biRun(r: AnyRef, s: AnyRef, f: Runnable, c: BiRun[?, ?]): Boolean = {
     var x: Throwable = null
     var z: AnyRef = null
     if (result == null)
@@ -1620,8 +1620,8 @@ class CompletableFuture[T <: AnyRef] extends Future[T] with CompletionStage[T] {
     true
   }
 
-  private def biRunStage(e: Executor, o: CompletionStage[_ <: AnyRef], f: Runnable): CompletableFuture[Void] = {
-    var b: CompletableFuture[_ <: AnyRef] = null
+  private def biRunStage(e: Executor, o: CompletionStage[? <: AnyRef], f: Runnable): CompletableFuture[Void] = {
+    var b: CompletableFuture[? <: AnyRef] = null
     var r: AnyRef = null
     var s: AnyRef = null
     if (f == null || { b = o.toCompletableFuture(); b == null }) throw new NullPointerException
@@ -1638,7 +1638,7 @@ class CompletableFuture[T <: AnyRef] extends Future[T] with CompletionStage[T] {
   }
 
   /* ------------- Projected (Ored) BiCompletions -------------- */
-  private[concurrent] final def orpush(b: CompletableFuture[_ <: AnyRef], c: BiCompletion[_, _, _]): Unit = {
+  private[concurrent] final def orpush(b: CompletableFuture[? <: AnyRef], c: BiCompletion[?, ?, ?]): Unit = {
     if (c != null) {
       var break = false
       while (!break && !tryPushStack(c)) if (result != null) {
@@ -1654,12 +1654,12 @@ class CompletableFuture[T <: AnyRef] extends Future[T] with CompletionStage[T] {
   private def orApplyStage[U <: T, V <: AnyRef](
       e: Executor,
       o: CompletionStage[U],
-      f: Function[_ >: T, _ <: V]
+      f: Function[? >: T, ? <: V]
   ): CompletableFuture[V] = {
     var b: CompletableFuture[U] = null
     if (f == null || { b = o.toCompletableFuture(); b == null }) throw new NullPointerException
     var r: AnyRef = null
-    var z: CompletableFuture[_ <: T] = null
+    var z: CompletableFuture[? <: T] = null
     if ({ z = this; r = z.result; r != null } || { z = b; r = z.result; r != null }) return z.uniApplyNow[V](r, e, f)
     val d: CompletableFuture[V] = newIncompleteFuture[V]
     orpush(b, new OrApply[T, U, V](e, d, this, b, f))
@@ -1669,23 +1669,23 @@ class CompletableFuture[T <: AnyRef] extends Future[T] with CompletionStage[T] {
   private def orAcceptStage[U <: T](
       e: Executor,
       o: CompletionStage[U],
-      f: Consumer[_ >: T]
+      f: Consumer[? >: T]
   ): CompletableFuture[Void] = {
     var b: CompletableFuture[U] = null
     if (f == null || { b = o.toCompletableFuture(); b == null }) throw new NullPointerException
     var r: AnyRef = null
-    var z: CompletableFuture[_ <: T] = null
+    var z: CompletableFuture[? <: T] = null
     if ({ z = this; r = z.result; r != null } || { z = b; r = z.result; r != null }) return z.uniAcceptNow(r, e, f)
     val d: CompletableFuture[Void] = newIncompleteFuture
     orpush(b, new OrAccept[T, U](e, d, this, b, f))
     d
   }
 
-  private def orRunStage(e: Executor, o: CompletionStage[_ <: AnyRef], f: Runnable): CompletableFuture[Void] = {
-    var b: CompletableFuture[_ <: AnyRef] = null
+  private def orRunStage(e: Executor, o: CompletionStage[? <: AnyRef], f: Runnable): CompletableFuture[Void] = {
+    var b: CompletableFuture[? <: AnyRef] = null
     if (f == null || { b = o.toCompletableFuture(); b == null }) throw new NullPointerException
     var r: AnyRef = null
-    var z: CompletableFuture[_ <: AnyRef] = null
+    var z: CompletableFuture[? <: AnyRef] = null
     if ({ z = this; r = z.result; r != null } || { z = b; r = z.result; r != null }) return z.uniRunNow(r, e, f)
     val d: CompletableFuture[Void] = newIncompleteFuture
     orpush(b, new OrRun(e, d, this, b, f))
@@ -1821,27 +1821,27 @@ class CompletableFuture[T <: AnyRef] extends Future[T] with CompletionStage[T] {
     triggered
   }
 
-  override def thenApply[U <: AnyRef](fn: Function[_ >: T, _ <: U]): CompletableFuture[U] = {
+  override def thenApply[U <: AnyRef](fn: Function[? >: T, ? <: U]): CompletableFuture[U] = {
     return uniApplyStage(null, fn)
   }
 
-  override def thenApplyAsync[U <: AnyRef](fn: Function[_ >: T, _ <: U]): CompletableFuture[U] = {
+  override def thenApplyAsync[U <: AnyRef](fn: Function[? >: T, ? <: U]): CompletableFuture[U] = {
     return uniApplyStage(defaultExecutor(), fn)
   }
 
-  override def thenApplyAsync[U <: AnyRef](fn: Function[_ >: T, _ <: U], executor: Executor): CompletableFuture[U] = {
+  override def thenApplyAsync[U <: AnyRef](fn: Function[? >: T, ? <: U], executor: Executor): CompletableFuture[U] = {
     return uniApplyStage(screenExecutor(executor), fn)
   }
 
-  override def thenAccept(action: Consumer[_ >: T]): CompletableFuture[Void] = {
+  override def thenAccept(action: Consumer[? >: T]): CompletableFuture[Void] = {
     return uniAcceptStage(null, action)
   }
 
-  override def thenAcceptAsync(action: Consumer[_ >: T]): CompletableFuture[Void] = {
+  override def thenAcceptAsync(action: Consumer[? >: T]): CompletableFuture[Void] = {
     return uniAcceptStage(defaultExecutor(), action)
   }
 
-  override def thenAcceptAsync(action: Consumer[_ >: T], executor: Executor): CompletableFuture[Void] = {
+  override def thenAcceptAsync(action: Consumer[? >: T], executor: Executor): CompletableFuture[Void] = {
     return uniAcceptStage(screenExecutor(executor), action)
   }
 
@@ -1858,59 +1858,59 @@ class CompletableFuture[T <: AnyRef] extends Future[T] with CompletionStage[T] {
   }
 
   override def thenCombine[U <: AnyRef, V <: AnyRef](
-      other: CompletionStage[_ <: U],
-      fn: BiFunction[_ >: T, _ >: U, _ <: V]
+      other: CompletionStage[? <: U],
+      fn: BiFunction[? >: T, ? >: U, ? <: V]
   ): CompletableFuture[V] = {
     return biApplyStage[U, V](null, other.asInstanceOf[CompletionStage[U]], fn)
   }
 
   override def thenCombineAsync[U <: AnyRef, V <: AnyRef](
-      other: CompletionStage[_ <: U],
-      fn: BiFunction[_ >: T, _ >: U, _ <: V]
+      other: CompletionStage[? <: U],
+      fn: BiFunction[? >: T, ? >: U, ? <: V]
   ): CompletableFuture[V] = {
     return biApplyStage[U, V](defaultExecutor(), other.asInstanceOf[CompletionStage[U]], fn)
   }
 
   override def thenCombineAsync[U <: AnyRef, V <: AnyRef](
-      other: CompletionStage[_ <: U],
-      fn: BiFunction[_ >: T, _ >: U, _ <: V],
+      other: CompletionStage[? <: U],
+      fn: BiFunction[? >: T, ? >: U, ? <: V],
       executor: Executor
   ): CompletableFuture[V] = {
     return biApplyStage[U, V](screenExecutor(executor), other.asInstanceOf[CompletionStage[U]], fn)
   }
 
   override def thenAcceptBoth[U <: AnyRef](
-      other: CompletionStage[_ <: U],
-      action: BiConsumer[_ >: T, _ >: U]
+      other: CompletionStage[? <: U],
+      action: BiConsumer[? >: T, ? >: U]
   ): CompletableFuture[Void] = {
     return biAcceptStage[U](null, other.asInstanceOf[CompletionStage[U]], action)
   }
 
   override def thenAcceptBothAsync[U <: AnyRef](
-      other: CompletionStage[_ <: U],
-      action: BiConsumer[_ >: T, _ >: U]
+      other: CompletionStage[? <: U],
+      action: BiConsumer[? >: T, ? >: U]
   ): CompletableFuture[Void] = {
     return biAcceptStage[U](defaultExecutor(), other.asInstanceOf[CompletionStage[U]], action)
   }
 
   override def thenAcceptBothAsync[U <: AnyRef](
-      other: CompletionStage[_ <: U],
-      action: BiConsumer[_ >: T, _ >: U],
+      other: CompletionStage[? <: U],
+      action: BiConsumer[? >: T, ? >: U],
       executor: Executor
   ): CompletableFuture[Void] = {
     return biAcceptStage[U](screenExecutor(executor), other.asInstanceOf[CompletionStage[U]], action)
   }
 
-  override def runAfterBoth(other: CompletionStage[_ <: AnyRef], action: Runnable): CompletableFuture[Void] = {
+  override def runAfterBoth(other: CompletionStage[? <: AnyRef], action: Runnable): CompletableFuture[Void] = {
     return biRunStage(null, other, action)
   }
 
-  override def runAfterBothAsync(other: CompletionStage[_ <: AnyRef], action: Runnable): CompletableFuture[Void] = {
+  override def runAfterBothAsync(other: CompletionStage[? <: AnyRef], action: Runnable): CompletableFuture[Void] = {
     return biRunStage(defaultExecutor(), other, action)
   }
 
   override def runAfterBothAsync(
-      other: CompletionStage[_ <: AnyRef],
+      other: CompletionStage[? <: AnyRef],
       action: Runnable,
       executor: Executor
   ): CompletableFuture[Void] = {
@@ -1918,92 +1918,92 @@ class CompletableFuture[T <: AnyRef] extends Future[T] with CompletionStage[T] {
   }
 
   override def applyToEither[U <: AnyRef](
-      other: CompletionStage[_ <: T],
-      fn: Function[_ >: T, U]
+      other: CompletionStage[? <: T],
+      fn: Function[? >: T, U]
   ): CompletableFuture[U] = {
     return orApplyStage(null, other, fn)
   }
 
   override def applyToEitherAsync[U <: AnyRef](
-      other: CompletionStage[_ <: T],
-      fn: Function[_ >: T, U]
+      other: CompletionStage[? <: T],
+      fn: Function[? >: T, U]
   ): CompletableFuture[U] = {
     return orApplyStage(defaultExecutor(), other, fn)
   }
 
   override def applyToEitherAsync[U <: AnyRef](
-      other: CompletionStage[_ <: T],
-      fn: Function[_ >: T, U],
+      other: CompletionStage[? <: T],
+      fn: Function[? >: T, U],
       executor: Executor
   ): CompletableFuture[U] = {
     return orApplyStage(screenExecutor(executor), other, fn)
   }
 
-  override def acceptEither(other: CompletionStage[_ <: T], action: Consumer[_ >: T]): CompletableFuture[Void] = {
+  override def acceptEither(other: CompletionStage[? <: T], action: Consumer[? >: T]): CompletableFuture[Void] = {
     return orAcceptStage(null, other, action)
   }
 
-  override def acceptEitherAsync(other: CompletionStage[_ <: T], action: Consumer[_ >: T]): CompletableFuture[Void] = {
+  override def acceptEitherAsync(other: CompletionStage[? <: T], action: Consumer[? >: T]): CompletableFuture[Void] = {
     return orAcceptStage(defaultExecutor(), other, action)
   }
 
   override def acceptEitherAsync(
-      other: CompletionStage[_ <: T],
-      action: Consumer[_ >: T],
+      other: CompletionStage[? <: T],
+      action: Consumer[? >: T],
       executor: Executor
   ): CompletableFuture[Void] =
     orAcceptStage(screenExecutor(executor), other, action)
 
-  override def runAfterEither(other: CompletionStage[_ <: AnyRef], action: Runnable): CompletableFuture[Void] =
+  override def runAfterEither(other: CompletionStage[? <: AnyRef], action: Runnable): CompletableFuture[Void] =
     orRunStage(null, other, action)
 
-  override def runAfterEitherAsync(other: CompletionStage[_ <: AnyRef], action: Runnable): CompletableFuture[Void] =
+  override def runAfterEitherAsync(other: CompletionStage[? <: AnyRef], action: Runnable): CompletableFuture[Void] =
     orRunStage(defaultExecutor(), other, action)
 
   override def runAfterEitherAsync(
-      other: CompletionStage[_ <: AnyRef],
+      other: CompletionStage[? <: AnyRef],
       action: Runnable,
       executor: Executor
   ): CompletableFuture[Void] = orRunStage(screenExecutor(executor), other, action)
 
-  override def thenCompose[U <: AnyRef](fn: Function[_ >: T, _ <: CompletionStage[U]]): CompletableFuture[U] =
+  override def thenCompose[U <: AnyRef](fn: Function[? >: T, ? <: CompletionStage[U]]): CompletableFuture[U] =
     uniComposeStage(null, fn)
 
-  override def thenComposeAsync[U <: AnyRef](fn: Function[_ >: T, _ <: CompletionStage[U]]): CompletableFuture[U] =
+  override def thenComposeAsync[U <: AnyRef](fn: Function[? >: T, ? <: CompletionStage[U]]): CompletableFuture[U] =
     uniComposeStage(defaultExecutor(), fn)
 
   override def thenComposeAsync[U <: AnyRef](
-      fn: Function[_ >: T, _ <: CompletionStage[U]],
+      fn: Function[? >: T, ? <: CompletionStage[U]],
       executor: Executor
   ): CompletableFuture[U] = {
     return uniComposeStage(screenExecutor(executor), fn)
   }
 
-  override def whenComplete(action: BiConsumer[_ >: T, _ >: Throwable]): CompletableFuture[T] = {
+  override def whenComplete(action: BiConsumer[? >: T, ? >: Throwable]): CompletableFuture[T] = {
     return uniWhenCompleteStage(null, action)
   }
 
-  override def whenCompleteAsync(action: BiConsumer[_ >: T, _ >: Throwable]): CompletableFuture[T] = {
+  override def whenCompleteAsync(action: BiConsumer[? >: T, ? >: Throwable]): CompletableFuture[T] = {
     return uniWhenCompleteStage(defaultExecutor(), action)
   }
 
   override def whenCompleteAsync(
-      action: BiConsumer[_ >: T, _ >: Throwable],
+      action: BiConsumer[? >: T, ? >: Throwable],
       executor: Executor
   ): CompletableFuture[T] = {
     return uniWhenCompleteStage(screenExecutor(executor), action)
   }
 
-  override def handle[U <: AnyRef](fn: BiFunction[_ >: T, Throwable, _ <: U]): CompletableFuture[U] = {
+  override def handle[U <: AnyRef](fn: BiFunction[? >: T, Throwable, ? <: U]): CompletableFuture[U] = {
     return uniHandleStage(null, fn)
   }
 
-  override def handleAsync[U <: AnyRef](fn: BiFunction[_ >: T, Throwable, _ <: U]): CompletableFuture[U] = {
+  override def handleAsync[U <: AnyRef](fn: BiFunction[? >: T, Throwable, ? <: U]): CompletableFuture[U] = {
     return uniHandleStage(defaultExecutor(), fn)
   }
 
   override def handleAsync[U <: AnyRef](
-      fn: BiFunction[_ >: T, Throwable, _ <: U],
+      fn: BiFunction[? >: T, Throwable, ? <: U],
       executor: Executor
   ): CompletableFuture[U] = {
     return uniHandleStage(screenExecutor(executor), fn)
@@ -2011,28 +2011,28 @@ class CompletableFuture[T <: AnyRef] extends Future[T] with CompletionStage[T] {
 
   override def toCompletableFuture(): CompletableFuture[T] = this
 
-  override def exceptionally(fn: Function[Throwable, _ <: T]): CompletableFuture[T] = {
+  override def exceptionally(fn: Function[Throwable, ? <: T]): CompletableFuture[T] = {
     return uniExceptionallyStage(null, fn)
   }
 
-  override def exceptionallyAsync(fn: Function[Throwable, _ <: T]): CompletableFuture[T] = {
+  override def exceptionallyAsync(fn: Function[Throwable, ? <: T]): CompletableFuture[T] = {
     return uniExceptionallyStage(defaultExecutor(), fn)
   }
 
-  override def exceptionallyAsync(fn: Function[Throwable, _ <: T], executor: Executor): CompletableFuture[T] = {
+  override def exceptionallyAsync(fn: Function[Throwable, ? <: T], executor: Executor): CompletableFuture[T] = {
     return uniExceptionallyStage(screenExecutor(executor), fn)
   }
 
-  override def exceptionallyCompose(fn: Function[Throwable, _ <: CompletionStage[T]]): CompletableFuture[T] = {
+  override def exceptionallyCompose(fn: Function[Throwable, ? <: CompletionStage[T]]): CompletableFuture[T] = {
     return uniComposeExceptionallyStage(null, fn)
   }
 
-  override def exceptionallyComposeAsync(fn: Function[Throwable, _ <: CompletionStage[T]]): CompletableFuture[T] = {
+  override def exceptionallyComposeAsync(fn: Function[Throwable, ? <: CompletionStage[T]]): CompletableFuture[T] = {
     return uniComposeExceptionallyStage(defaultExecutor(), fn)
   }
 
   override def exceptionallyComposeAsync(
-      fn: Function[Throwable, _ <: CompletionStage[T]],
+      fn: Function[Throwable, ? <: CompletionStage[T]],
       executor: Executor
   ): CompletableFuture[T] = {
     return uniComposeExceptionallyStage(screenExecutor(executor), fn)
@@ -2111,13 +2111,13 @@ class CompletableFuture[T <: AnyRef] extends Future[T] with CompletionStage[T] {
 
   def minimalCompletionStage(): CompletionStage[T] = uniAsMinimalStage()
 
-  def completeAsync(supplier: Supplier[_ <: T], executor: Executor): CompletableFuture[T] = {
+  def completeAsync(supplier: Supplier[? <: T], executor: Executor): CompletableFuture[T] = {
     if (supplier == null || executor == null) throw new NullPointerException()
     executor.execute(new AsyncSupply[T](this, supplier))
     this
   }
 
-  def completeAsync(supplier: Supplier[_ <: T]): CompletableFuture[T] = completeAsync(supplier, defaultExecutor())
+  def completeAsync(supplier: Supplier[? <: T]): CompletableFuture[T] = completeAsync(supplier, defaultExecutor())
 
   def orTimeout(timeout: Long, unit: TimeUnit): CompletableFuture[T] = {
     if (unit == null) {

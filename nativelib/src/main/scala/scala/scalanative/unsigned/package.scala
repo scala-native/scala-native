@@ -1,6 +1,6 @@
 package scala.scalanative
 
-import scala.scalanative.runtime.Intrinsics._
+import scala.scalanative.runtime.Intrinsics.*
 import scala.scalanative.unsafe.CSize
 
 package object unsigned {

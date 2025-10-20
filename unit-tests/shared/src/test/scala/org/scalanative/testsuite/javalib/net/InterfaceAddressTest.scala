@@ -1,10 +1,10 @@
 package org.scalanative.testsuite.javalib.net
 
-import java.net._
+import java.net.*
 
 import org.junit.Test
-import org.junit.Assert._
-import org.junit.Assume._
+import org.junit.Assert.*
+import org.junit.Assume.*
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform

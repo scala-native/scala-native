@@ -1,14 +1,14 @@
 package org.scalanative.testsuite.javalib.util.stream
 
-import java.util.stream._
+import java.util.stream.*
 
-import java.{util => ju}
+import java.util as ju
 import java.util.ArrayList
 
 import java.util.stream.Collector.Characteristics
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
@@ -60,7 +60,7 @@ class CollectorsTestOnJDK10 {
     assertThrows(classOf[UnsupportedOperationException], collected.remove(0))
 
     // Proper elements, in encounter order
-    for (j <- 0 until nElements)
+    for j <- 0 until nElements do
       assertEquals("list element", sisters.get(j), collected.get(j))
   }
 
@@ -190,7 +190,7 @@ class CollectorsTestOnJDK10 {
     )
 
     // Proper elements
-    for (j <- 0 until nElements) {
+    for j <- 0 until nElements do {
       val expected = sisters.get(j)
       assertTrue(
         "set element not in Set: ${expected}",

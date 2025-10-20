@@ -3,11 +3,11 @@ package org.scalanative.testsuite.javalib.util.function
 
 import java.util.function.Predicate
 
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.junit.Test
 
 class PredicateTestOnJDK11 {
-  import PredicateTestOnJDK11._
+  import PredicateTestOnJDK11.*
 
   private val largerThan10 = makePredicate[Int](_ > 10)
 

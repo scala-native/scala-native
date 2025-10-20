@@ -1,11 +1,11 @@
 package scala.scalanative
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 import java.io.{File, PrintWriter}
 import java.nio.file.{Files, Path, Paths}
-import scala.scalanative.build.{Config, NativeConfig, _}
+import scala.scalanative.build.{Config, NativeConfig, *}
 import scala.scalanative.util.Scope
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Await, duration}

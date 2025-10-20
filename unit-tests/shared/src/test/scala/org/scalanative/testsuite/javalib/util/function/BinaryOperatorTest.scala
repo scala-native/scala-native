@@ -3,7 +3,7 @@ package org.scalanative.testsuite.javalib.util.function
 
 import java.util.function.BinaryOperator
 
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.junit.Test
 
 class BinaryOperatorTest {

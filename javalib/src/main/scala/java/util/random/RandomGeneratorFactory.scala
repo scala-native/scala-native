@@ -2,9 +2,9 @@ package java.util.random
 
 import java.math.BigInteger
 
-import java.{lang => jl}
+import java.lang as jl
 
-import java.{util => ju}
+import java.util as ju
 import java.util.{HashMap, Random, SplittableRandom}
 import java.util.stream.Stream
 

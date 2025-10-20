@@ -7,7 +7,7 @@
 package org.scalanative.testsuite.javalib.util
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 import java.util.LinkedList
 import java.util.Spliterator
@@ -206,7 +206,7 @@ class LinkedListTest extends AbstractListTest {
     val expectedSize = expectedElements.size
 
     val coll =
-      factory.fromElements[String](expectedElements: _*)
+      factory.fromElements[String](expectedElements*)
 
     assertEquals(expectedSize, coll.size())
 

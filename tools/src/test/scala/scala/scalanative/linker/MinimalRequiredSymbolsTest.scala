@@ -4,7 +4,7 @@ package linker
 import scala.scalanative.LinkerSpec
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 import scala.scalanative.build.{NativeConfig, Config}
 import scala.scalanative.buildinfo.ScalaNativeBuildInfo
 

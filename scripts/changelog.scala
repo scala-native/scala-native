@@ -3,7 +3,7 @@
 //> using toolkit latest
 
 import scala.collection.mutable.ListBuffer
-import scala.collection.JavaConverters._
+import scala.collection.JavaConverters.*
 import scala.collection.mutable
 
 import org.kohsuke.github.GitHubBuilder

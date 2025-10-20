@@ -1,15 +1,15 @@
 package org.scalanative.testsuite.javalib.util.stream
 
-import java.util.stream._
+import java.util.stream.*
 
-import java.{util => ju}
+import java.util as ju
 import java.util.ArrayList
 import java.util.Map
 
 import java.util.stream.Collector.Characteristics
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 class CollectorsTestOnJDK9 {
 

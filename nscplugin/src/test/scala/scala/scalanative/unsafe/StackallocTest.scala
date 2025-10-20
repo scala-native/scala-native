@@ -2,13 +2,13 @@ package scala.scalanative.unsafe
 
 import java.nio.file.Files
 
-import org.junit._
-import org.junit.Assert._
-import org.junit.Assume._
+import org.junit.*
+import org.junit.Assert.*
+import org.junit.Assume.*
 
 import scala.scalanative.api.CompilationFailedException
 import scala.scalanative.linker.compileAndLoad
-import scala.scalanative.buildinfo.ScalaNativeBuildInfo._
+import scala.scalanative.buildinfo.ScalaNativeBuildInfo.*
 import scala.scalanative.NIRCompiler
 
 class StackallocTest {

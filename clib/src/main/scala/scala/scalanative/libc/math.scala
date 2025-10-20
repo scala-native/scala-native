@@ -1,7 +1,7 @@
 package scala.scalanative
 package libc
 
-import scalanative.unsafe._
+import scalanative.unsafe.*
 
 /** C definitions for math.h
  *

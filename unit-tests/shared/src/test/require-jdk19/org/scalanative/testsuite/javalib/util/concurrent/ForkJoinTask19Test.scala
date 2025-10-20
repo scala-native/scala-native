@@ -5,12 +5,12 @@
  */
 package org.scalanative.testsuite.javalib.util.concurrent
 
-import org.junit.Assert._
-import org.junit.Assume._
+import org.junit.Assert.*
+import org.junit.Assume.*
 import org.junit.{Test, Ignore}
-import JSR166Test._
+import JSR166Test.*
 
-import java.util.concurrent._
+import java.util.concurrent.*
 
 class ForkJoinTask19Test extends JSR166Test {
 

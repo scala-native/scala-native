@@ -2,8 +2,8 @@
 
 package org.scalanative.testsuite.javalib.io
 
-import java.io._
-import org.junit.Assert._
+import java.io.*
+import org.junit.Assert.*
 import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows

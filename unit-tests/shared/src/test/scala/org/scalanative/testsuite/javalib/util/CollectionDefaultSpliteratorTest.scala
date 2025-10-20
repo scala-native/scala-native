@@ -3,7 +3,7 @@ package org.scalanative.testsuite.javalib.util
 import java.util.Spliterator
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
@@ -22,7 +22,7 @@ class CollectionDefaultSpliteratorTest {
     val expectedSize = expectedElements.size
     val foundElements = new Array[String](expectedSize)
 
-    val coll = TrivialImmutableCollection(expectedElements: _*)
+    val coll = TrivialImmutableCollection(expectedElements*)
     assertEquals(expectedSize, coll.size())
 
     val spliter = coll.spliterator()

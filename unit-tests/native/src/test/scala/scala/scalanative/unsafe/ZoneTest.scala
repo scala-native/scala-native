@@ -2,13 +2,13 @@ package scala.scalanative
 package unsafe
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
-import scalanative.unsigned._
+import scalanative.unsigned.*
 
 class ZoneTest {
-  private def assertAccessible(bptr: Ptr[_], n: Int): Unit = {
+  private def assertAccessible(bptr: Ptr[?], n: Int): Unit = {
     val ptr = bptr.asInstanceOf[Ptr[Int]]
     var i = 0
     while (i < n) {

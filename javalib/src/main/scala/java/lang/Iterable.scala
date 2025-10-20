@@ -10,7 +10,7 @@ import java.util.{Spliterator, Spliterators}
 trait Iterable[T] {
   def iterator(): Iterator[T]
 
-  def forEach(action: Consumer[_ >: T]): Unit = {
+  def forEach(action: Consumer[? >: T]): Unit = {
     val iter = iterator()
     while (iter.hasNext())
       action.accept(iter.next())

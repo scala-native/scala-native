@@ -1,6 +1,6 @@
 package org.scalanative.testsuite.javalib.util.concurrent
 
-import java.util.concurrent._
+import java.util.concurrent.*
 import java.util.{List, Collection, LinkedList}
 
 class DelegatingExecutorService(delegate: ExecutorService)
@@ -28,18 +28,18 @@ class DelegatingExecutorService(delegate: ExecutorService)
   override def submit[T](task: Runnable, result: T): Future[T] = wrap(
     delegate.submit(task, result)
   )
-  override def submit(task: Runnable): Future[_] = wrap(
-    delegate.submit(task): Future[_]
+  override def submit(task: Runnable): Future[?] = wrap(
+    delegate.submit(task): Future[?]
   )
   override def invokeAll[T](
-      tasks: Collection[_ <: Callable[T]]
+      tasks: Collection[? <: Callable[T]]
   ): List[Future[T]] = {
     val result = new LinkedList[Future[T]]()
     delegate.invokeAll(tasks).forEach { f => result.add(wrap(f)) }
     result
   }
   override def invokeAll[T](
-      tasks: Collection[_ <: Callable[T]],
+      tasks: Collection[? <: Callable[T]],
       timeout: Long,
       unit: TimeUnit
   ): List[Future[T]] = {
@@ -50,10 +50,10 @@ class DelegatingExecutorService(delegate: ExecutorService)
     result
   }
 
-  override def invokeAny[T](tasks: Collection[_ <: Callable[T]]): T =
+  override def invokeAny[T](tasks: Collection[? <: Callable[T]]): T =
     delegate.invokeAny(tasks)
   override def invokeAny[T](
-      tasks: Collection[_ <: Callable[T]],
+      tasks: Collection[? <: Callable[T]],
       timeout: Long,
       unit: TimeUnit
   ): T = delegate.invokeAny(tasks, timeout, unit)

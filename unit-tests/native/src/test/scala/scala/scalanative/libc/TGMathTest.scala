@@ -2,10 +2,10 @@ package scala.scalanative
 package libc
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
-import scalanative.unsafe._
-import scalanative.libc._
+import scalanative.unsafe.*
+import scalanative.libc.*
 import scalanative.runtime.Platform
 import scalanative.runtime.PlatformExt
 

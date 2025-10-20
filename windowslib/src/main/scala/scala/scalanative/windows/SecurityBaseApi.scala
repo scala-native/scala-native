@@ -1,6 +1,6 @@
 package scala.scalanative.windows
 
-import scala.scalanative.unsafe.{Word => _, _}
+import scala.scalanative.unsafe.{Word as _, *}
 import scala.scalanative.windows.HandleApi.Handle
 
 @link("advapi32")
@@ -80,7 +80,7 @@ object SecurityBaseApi {
 }
 
 object SecurityBaseApiOps {
-  import SecurityBaseApi._
+  import SecurityBaseApi.*
   implicit class SecurityDescriptorOps(ref: Ptr[SecurityDescriptor]) {
     def revision: Byte = ref._1
     def sbz1: Byte = ref._2

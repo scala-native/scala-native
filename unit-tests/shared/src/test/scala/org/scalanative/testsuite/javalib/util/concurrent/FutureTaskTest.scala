@@ -7,16 +7,16 @@
  */
 package org.scalanative.testsuite.javalib.util.concurrent
 
-import org.junit.Assert._
-import org.junit.Assume._
+import org.junit.Assert.*
+import org.junit.Assume.*
 import org.junit.{Test, Ignore}
 import org.scalanative.testsuite.utils.Platform
-import JSR166Test._
+import JSR166Test.*
 
-import java.util.concurrent.TimeUnit._
+import java.util.concurrent.TimeUnit.*
 import java.util
-import java.util._
-import java.util.concurrent._
+import java.util.*
+import java.util.concurrent.*
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.FutureTask
 
@@ -188,7 +188,7 @@ class FutureTaskTest extends JSR166Test {
   def checkIsRunning(f: Future[AnyRef]): Unit = {
     checkNotDone(f)
     f match {
-      case ft: FutureTask[_] =>
+      case ft: FutureTask[?] =>
         // Check that run methods do nothing
         ft.run()
         f match {

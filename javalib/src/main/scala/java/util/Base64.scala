@@ -4,7 +4,7 @@ package java.util
 
 import scala.annotation.tailrec
 
-import java.io._
+import java.io.*
 import java.nio.charset.StandardCharsets
 import java.nio.ByteBuffer
 
@@ -248,7 +248,7 @@ object Base64 {
       ignoreInvalid: Boolean
   ) extends FilterInputStream(in) {
 
-    import DecodingInputStream._
+    import DecodingInputStream.*
 
     private val oneBuf = new Array[Byte](1)
 

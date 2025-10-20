@@ -4,18 +4,18 @@ package regex
 import java.io.InputStreamReader
 import java.io.File
 import java.io.FileInputStream
-import java.{util => ju}
+import java.util as ju
 import java.util.regex.PatternSyntaxException
 import java.util.zip.GZIPInputStream
 import java.util.{Arrays, Collections}
 
 import scala.util.control.NonFatal
-import scala.util.control.Breaks._
+import scala.util.control.Breaks.*
 import scala.scalanative.runtime.Platform.isWindows
 
 import org.junit.Ignore
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 // TestRE2 tests this package's regexp API against test cases
 // considered during (C++) RE2's exhaustive tests, which run all possible

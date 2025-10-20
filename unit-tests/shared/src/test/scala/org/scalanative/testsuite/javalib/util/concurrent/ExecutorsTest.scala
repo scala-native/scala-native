@@ -8,16 +8,16 @@
 
 package org.scalanative.testsuite.javalib.util.concurrent
 
-import java.util._
-import java.util.concurrent._
-import java.util.concurrent.TimeUnit._
+import java.util.*
+import java.util.concurrent.*
+import java.util.concurrent.TimeUnit.*
 
 import org.junit.Test
-import org.junit.Assert._
-import org.junit.Assume._
+import org.junit.Assert.*
+import org.junit.Assume.*
 
 import org.scalanative.testsuite.utils.Platform
-import JSR166Test._
+import JSR166Test.*
 
 class ExecutorsTest extends JSR166Test {
 

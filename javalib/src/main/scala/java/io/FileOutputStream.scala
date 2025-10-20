@@ -1,12 +1,12 @@
 package java.io
-import scala.scalanative.libc._
+import scala.scalanative.libc.*
 import scala.scalanative.meta.LinktimeInfo.isWindows
-import scala.scalanative.unsafe._
-import scala.scalanative.unsigned._
-import scala.scalanative.windows.FileApi._
-import scala.scalanative.windows.FileApiExt._
-import scala.scalanative.windows.HandleApiExt._
-import scala.scalanative.windows.winnt.AccessRights._
+import scala.scalanative.unsafe.*
+import scala.scalanative.unsigned.*
+import scala.scalanative.windows.FileApi.*
+import scala.scalanative.windows.FileApiExt.*
+import scala.scalanative.windows.HandleApiExt.*
+import scala.scalanative.windows.winnt.AccessRights.*
 import java.nio.channels.{FileChannelImpl, FileChannel}
 
 class FileOutputStream(fd: FileDescriptor, file: Option[File])
@@ -72,8 +72,8 @@ object FileOutputStream {
         }
         new FileDescriptor(FileDescriptor.FileHandle(handle), readOnly = false)
       } else {
-        import scala.scalanative.posix.sys.stat._
-        import scala.scalanative.posix.fcntl._
+        import scala.scalanative.posix.sys.stat.*
+        import scala.scalanative.posix.fcntl.*
         val flags = O_CREAT | O_WRONLY | (if (append) O_APPEND else O_TRUNC)
         val mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH
         val fd = open(toCString(file.getPath()), flags, mode)

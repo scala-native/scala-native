@@ -5,7 +5,7 @@ import java.util.{Arrays, Objects}
 
 import scala.scalanative.libc
 
-import scala.scalanative.runtime.ieee754tostring.ryu._
+import scala.scalanative.runtime.ieee754tostring.ryu.*
 
 import scala.scalanative.unsafe.Size.intToSize
 import scala.scalanative.unsafe.UnsafeRichArray
@@ -31,7 +31,7 @@ import scala.scalanative.unsafe.UnsafeRichArray
  */
 
 protected abstract class AbstractStringBuilder private (unit: Unit) {
-  import AbstractStringBuilder._
+  import AbstractStringBuilder.*
 
   protected var value: Array[scala.Char] = _
   protected var count: scala.Int = _

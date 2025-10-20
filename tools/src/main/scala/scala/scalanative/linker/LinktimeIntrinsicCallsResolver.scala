@@ -1,7 +1,7 @@
 package scala.scalanative.linker
 
 import scala.collection.mutable
-import scala.scalanative.nir._
+import scala.scalanative.nir.*
 import scala.scalanative.util.unsupported
 import scala.scalanative.build.NativeConfig.{ServiceName, ServiceProviderName}
 import scala.scalanative.build.Logger
@@ -107,7 +107,7 @@ private[scala] object LinktimeIntrinsicCallsResolver {
      */
     def asTable(noColor: Boolean): Seq[String] = {
       import scala.io.AnsiColor.{RESET, RED, YELLOW, GREEN}
-      import ServiceProviderStatus._
+      import ServiceProviderStatus.*
 
       type Entry = (String, String, String)
       val builder = Seq.newBuilder[String]
@@ -130,7 +130,7 @@ private[scala] object LinktimeIntrinsicCallsResolver {
       }
       def addEntry(entry: Entry, statusColor: String, skipServiceName: Boolean) = {
         val (serviceName, providerName, status) = entry
-        import ServiceProviderStatus._
+        import ServiceProviderStatus.*
         val serviceNameOrBlank = if (skipServiceName) "" else serviceName
         val servicePadded = serviceNameOrBlank.padTo(serviceNameWidth, ' ')
         val providerPadded = providerName.padTo(provideNameWidth, ' ')
@@ -172,8 +172,8 @@ private[scala] object LinktimeIntrinsicCallsResolver {
 }
 
 private[linker] trait LinktimeIntrinsicCallsResolver { self: Reach =>
-  import self._
-  import LinktimeIntrinsicCallsResolver._
+  import self.*
+  import LinktimeIntrinsicCallsResolver.*
 
   private val foundServices = mutable.Map.empty[ServiceName, mutable.Map[ServiceProviderName, FoundServiceProvider]]
   def foundServiceProviders: FoundServiceProviders = new FoundServiceProviders(

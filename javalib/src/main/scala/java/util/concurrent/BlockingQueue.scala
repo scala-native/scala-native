@@ -26,8 +26,8 @@ trait BlockingQueue[E] extends Queue[E] {
 
   def contains(o: Any): Boolean
 
-  def drainTo(c: Collection[_ >: E]): Int
+  def drainTo(c: Collection[? >: E]): Int
 
-  def drainTo(c: Collection[_ >: E], maxElements: Int): Int
+  def drainTo(c: Collection[? >: E], maxElements: Int): Int
 
 }

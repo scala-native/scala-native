@@ -1,13 +1,13 @@
 // Ported from Scala.js, commit SHA: 7b4e8a80b dated: 2022-12-06
 package java.util.function
 
-import java.{util => ju}
+import java.util as ju
 
 @FunctionalInterface
 trait Predicate[T] { self =>
   def test(t: T): Boolean
 
-  def and(other: Predicate[_ >: T]): Predicate[T] = {
+  def and(other: Predicate[? >: T]): Predicate[T] = {
     new Predicate[T] {
       def test(t: T): Boolean =
         self.test(t) && other.test(t) // the order and short-circuit are by-spec
@@ -21,7 +21,7 @@ trait Predicate[T] { self =>
     }
   }
 
-  def or(other: Predicate[_ >: T]): Predicate[T] = {
+  def or(other: Predicate[? >: T]): Predicate[T] = {
     new Predicate[T] {
       def test(t: T): Boolean =
         self.test(t) || other.test(t) // the order and short-circuit are by-spec
@@ -37,7 +37,7 @@ object Predicate {
     }
   }
 
-  def not[T](target: Predicate[_ >: T]): Predicate[T] = {
+  def not[T](target: Predicate[? >: T]): Predicate[T] = {
     new Predicate[T] {
       def test(t: T): Boolean =
         !target.test(t)

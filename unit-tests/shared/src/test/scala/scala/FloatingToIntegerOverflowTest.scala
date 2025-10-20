@@ -1,7 +1,7 @@
 package scala
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 class FloatingToIntegerOverflowTest {
   @noinline def tooSmallFloatToInt = java.lang.Integer.MIN_VALUE.toFloat - 42

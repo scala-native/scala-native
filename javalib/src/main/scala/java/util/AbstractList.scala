@@ -48,7 +48,7 @@ abstract class AbstractList[E] protected ()
   override def clear(): Unit =
     removeRange(0, size())
 
-  def addAll(index: Int, c: Collection[_ <: E]): Boolean = {
+  def addAll(index: Int, c: Collection[? <: E]): Boolean = {
     checkIndexOnBounds(index)
     var i = index
     val iter = c.iterator()
@@ -122,7 +122,7 @@ abstract class AbstractList[E] protected ()
       true
     } else {
       o match {
-        case o: List[_] =>
+        case o: List[?] =>
           val oIter = o.listIterator()
           val iter = listIterator()
           var result = true
@@ -182,7 +182,7 @@ private abstract class AbstractListView[E](
     changeViewSize(1)
   }
 
-  override def addAll(index: Int, c: Collection[_ <: E]): Boolean = {
+  override def addAll(index: Int, c: Collection[? <: E]): Boolean = {
     checkIndexOnBounds(index)
     list.addAll(fromIndex + index, c)
     val elementsAdded = c.size()
@@ -190,7 +190,7 @@ private abstract class AbstractListView[E](
     elementsAdded != 0
   }
 
-  override def addAll(c: Collection[_ <: E]): Boolean =
+  override def addAll(c: Collection[? <: E]): Boolean =
     addAll(size(), c)
 
   def get(index: Int): E = {

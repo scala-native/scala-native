@@ -5,7 +5,7 @@ package java.util.function
 trait Consumer[T] { self =>
   def accept(t: T): Unit
 
-  def andThen(after: Consumer[_ >: T]): Consumer[T] = {
+  def andThen(after: Consumer[? >: T]): Consumer[T] = {
     new Consumer[T] {
       def accept(t: T): Unit = {
         self.accept(t)

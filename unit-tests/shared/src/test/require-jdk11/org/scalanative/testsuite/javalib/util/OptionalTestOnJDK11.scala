@@ -2,11 +2,11 @@ package org.scalanative.testsuite.javalib.util
 
 // Ported from Scala.js commit: 9c79cb9 dated: 2022-03-18
 
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.junit.Test
 
 import java.util.Optional
-import java.util.function._
+import java.util.function.*
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 

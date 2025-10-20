@@ -8,16 +8,16 @@
 
 package org.scalanative.testsuite.javalib.util.concurrent
 
-import java.util._
-import java.util.concurrent._
-import java.util.concurrent.TimeUnit._
+import java.util.*
+import java.util.concurrent.*
+import java.util.concurrent.TimeUnit.*
 import java.util.concurrent.atomic.AtomicBoolean
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 class ExecutorCompletionServiceTest extends JSR166Test {
-  import JSR166Test._
+  import JSR166Test.*
 
   /** new ExecutorCompletionService(null) throws NullPointerException
    */
@@ -214,7 +214,7 @@ class ExecutorCompletionServiceTest extends JSR166Test {
       val f1 = cs.submit(c)
       assertTrue(
         "submit must return MyCallableFuture",
-        f1.isInstanceOf[MyCallableFuture[_]]
+        f1.isInstanceOf[MyCallableFuture[?]]
       )
       val f2 = cs.take
       assertEquals("submit and take must return same objects", f1, f2)
@@ -252,7 +252,7 @@ class ExecutorCompletionServiceTest extends JSR166Test {
       val f1 = cs.submit(r, null)
       assertTrue(
         "submit must return MyRunnableFuture",
-        f1.isInstanceOf[MyRunnableFuture[_]]
+        f1.isInstanceOf[MyRunnableFuture[?]]
       )
       val f2 = cs.take
       assertEquals("submit and take must return same objects", f1, f2)

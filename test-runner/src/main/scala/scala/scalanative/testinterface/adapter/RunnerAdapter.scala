@@ -2,7 +2,7 @@ package scala.scalanative.testinterface.adapter
 
 // Ported from Scala.js
 
-import sbt.testing._
+import sbt.testing.*
 import scala.collection.concurrent.TrieMap
 import scala.concurrent.ExecutionContext
 import scala.scalanative.testinterface.adapter.TestAdapter.ManagedRunner

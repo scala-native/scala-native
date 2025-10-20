@@ -4,7 +4,7 @@ package codegen
 
 import scala.collection.mutable
 import scalanative.util.{ScopedVar, unsupported}
-import scalanative.linker._
+import scalanative.linker.*
 import scalanative.interflow.UseDef.eliminateDeadCode
 import scalanative.nir.ControlFlow.{Graph, Block}
 
@@ -16,7 +16,7 @@ private[scalanative] object Lower {
     (new Impl).onDefns(defns)
 
   private final class Impl(implicit meta: Metadata, logger: build.Logger) extends nir.Transform {
-    import meta._
+    import meta.*
     import meta.config
     import meta.layouts.{Rtti, ClassRtti, ArrayHeader, ITable}
 
@@ -623,7 +623,7 @@ private[scalanative] object Lower {
 
         case _ if !isNullGuarded(currentBlock, obj) =>
           getCurrentBlockInfo.nullGuardedVals += obj
-          import buf._
+          import buf.*
           val v = genVal(buf, obj)
 
           val notNullL = fresh()
@@ -642,7 +642,7 @@ private[scalanative] object Lower {
         idx: nir.Val,
         len: nir.Val
     )(implicit srcPosition: nir.SourcePosition, scopeId: nir.ScopeId): Unit = {
-      import buf._
+      import buf.*
 
       val inBoundsL = fresh()
       val outOfBoundsL =
@@ -664,7 +664,7 @@ private[scalanative] object Lower {
         obj: nir.Val,
         name: nir.Global.Member
     )(implicit srcPosition: nir.SourcePosition, scopeId: nir.ScopeId) = {
-      import buf._
+      import buf.*
       val v = genVal(buf, obj)
       val FieldRef(cls: Class, fld) = name: @unchecked
 
@@ -861,7 +861,7 @@ private[scalanative] object Lower {
 
     // Cached function
     private object shouldGenerateGCYieldPoints {
-      import scalanative.build.GC._
+      import scalanative.build.GC.*
       private var lastDefn: nir.Defn.Define = _
       private var lastResult: Boolean = false
 
@@ -908,7 +908,7 @@ private[scalanative] object Lower {
         srcPosition: nir.SourcePosition,
         scopeId: nir.ScopeId
     ): nir.Val = {
-      import buf._
+      import buf.*
       val itablesPtr = let(nir.Op.Elem(ClassRtti.layout, rtti, ClassRttiItablesPath), unwind)
       val itables = let(nir.Op.Load(nir.Type.Ptr, itablesPtr), unwind)
       val itableIdx = let(nir.Op.Bin(nir.Bin.And, nir.Type.Int, traitId, itableSize), unwind)
@@ -928,7 +928,7 @@ private[scalanative] object Lower {
         srcPosition: nir.SourcePosition,
         scopeId: nir.ScopeId
     ): nir.Val.Local = {
-      import buf._
+      import buf.*
       val traitId = nir.Val.Int(meta.ids(trt))
       val itableSizePtr = let(nir.Op.Elem(ClassRtti.layout, rtti, ClassRttiITableSizePath), unwind)
       val itableSize = let(nir.Op.Load(nir.Type.Int, itableSizePtr), unwind)
@@ -1063,7 +1063,7 @@ private[scalanative] object Lower {
         n: nir.Local,
         op: nir.Op.Method
     )(implicit srcPosition: nir.SourcePosition, scopeId: nir.ScopeId): Unit = {
-      import buf._
+      import buf.*
       op match {
         case IntrinsicCall(intrinsic) =>
           // Don't emit if that's intrinsic call
@@ -1182,7 +1182,7 @@ private[scalanative] object Lower {
         n: nir.Local,
         op: nir.Op.Dynmethod
     )(implicit srcPosition: nir.SourcePosition, scopeId: nir.ScopeId): Unit = {
-      import buf._
+      import buf.*
 
       val nir.Op.Dynmethod(v, sig) = op
       val obj = genVal(buf, v)
@@ -1234,7 +1234,7 @@ private[scalanative] object Lower {
         n: nir.Local,
         op: nir.Op.Is
     )(implicit srcPosition: nir.SourcePosition, scopeId: nir.ScopeId): Unit = {
-      import buf._
+      import buf.*
 
       op match {
         case nir.Op.Is(_, nir.Val.Null | nir.Val.Zero(_)) =>
@@ -1273,7 +1273,7 @@ private[scalanative] object Lower {
         srcPosition: nir.SourcePosition,
         scopeId: nir.ScopeId
     ): nir.Val = {
-      import buf._
+      import buf.*
       val obj = genVal(buf, v)
 
       ty match {
@@ -1321,7 +1321,7 @@ private[scalanative] object Lower {
         n: nir.Local,
         op: nir.Op.As
     )(implicit srcPosition: nir.SourcePosition, scopeId: nir.ScopeId): Unit = {
-      import buf._
+      import buf.*
 
       op match {
         case nir.Op.As(ty: nir.Type.RefKind, v) if v.ty == nir.Type.Null =>
@@ -1431,7 +1431,7 @@ private[scalanative] object Lower {
         n: nir.Local,
         op: nir.Op.Conv
     )(implicit srcPosition: nir.SourcePosition, scopeId: nir.ScopeId): Unit = {
-      import buf._
+      import buf.*
 
       op match {
         // Fptosi is undefined behaviour on LLVM if the resulting
@@ -1531,7 +1531,7 @@ private[scalanative] object Lower {
         n: nir.Local,
         op: nir.Op.Bin
     )(implicit srcPosition: nir.SourcePosition, scopeId: nir.ScopeId): Unit = {
-      import buf._
+      import buf.*
 
       // LLVM's division by zero is undefined behaviour. We guard
       // the case when the divisor is zero and fail gracefully
@@ -1964,7 +1964,7 @@ private[scalanative] object Lower {
     ) = {
       def usesValue(expected: nir.Val): Boolean = {
         var wasUsed = false
-        import scala.util.control.Breaks._
+        import scala.util.control.Breaks.*
         breakable {
           new nir.Traverse {
             override def onVal(value: nir.Val): Unit = {

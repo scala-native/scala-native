@@ -3,11 +3,11 @@ package nscplugin
 
 import scala.language.implicitConversions
 
-import dotty.tools.dotc.ast.tpd._
+import dotty.tools.dotc.ast.tpd.*
 import dotty.tools.dotc.core
-import core.Contexts._
-import core.Symbols._
-import core.Flags._
+import core.Contexts.*
+import core.Symbols.*
+import core.Flags.*
 import core.Annotations.*
 import dotty.tools.dotc.report
 import scala.scalanative.nscplugin.CompilerCompat.SymUtilsCompat.*

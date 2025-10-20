@@ -1,12 +1,12 @@
 package org.scalanative.testsuite.niobuffer
 
-import scala.scalanative.memory._
+import scala.scalanative.memory.*
 
 import org.scalanative.testsuite.niobuffer.ByteBufferNativeFactories.WrappedPointerByteBufferFactory
 import org.scalanative.testsuite.javalib.nio.BufferFactory
 import org.scalanative.testsuite.javalib.nio.BaseBufferTest
 
-import java.nio._
+import java.nio.*
 
 // scalafmt: { maxColumn = 200}
 

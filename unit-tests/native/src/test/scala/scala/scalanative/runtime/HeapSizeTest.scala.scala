@@ -1,7 +1,7 @@
 package scala.scalanative.runtime
 import org.junit.Test
 import org.junit.Before
-import org.junit.Assert._
+import org.junit.Assert.*
 import scala.scalanative.unsafe.CSize
 import scalanative.unsigned.{ULong, UnsignedRichInt}
 

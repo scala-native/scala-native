@@ -2,21 +2,21 @@ package scala.scalanative.codegen
 package llvm
 
 import java.nio.file.{Path, Paths}
-import java.{lang => jl}
+import java.lang as jl
 import scala.collection.mutable
 import scala.scalanative.build.Discover
 import scala.scalanative.codegen.llvm.compat.os.OsCompat
 import scala.scalanative.io.VirtualDirectory
-import scala.scalanative.nir.ControlFlow.{Block, Graph => CFG}
+import scala.scalanative.nir.ControlFlow.{Block, Graph as CFG}
 import scala.scalanative.nir.Defn.Define.DebugInfo
 import scala.scalanative.util.ShowBuilder.FileShowBuilder
 import scala.scalanative.util.{ShowBuilder, unreachable, unsupported}
 import scala.scalanative.{build, linker, nir}
 import scala.util.control.NonFatal
-import scala.scalanative.codegen.{Metadata => CodeGenMetadata}
+import scala.scalanative.codegen.Metadata as CodeGenMetadata
 
 import scala.language.implicitConversions
-import scala.scalanative.codegen.llvm.Metadata.conversions._
+import scala.scalanative.codegen.llvm.Metadata.conversions.*
 import scala.scalanative.util.ScopedVar
 import MetadataCodeGen.DefnScopes
 
@@ -27,7 +27,7 @@ private[codegen] abstract class AbstractCodeGen(
     extends MetadataCodeGen {
   import meta.platform
   import meta.config
-  import platform._
+  import platform.*
 
   val pointerType = if (useOpaquePointers) "ptr" else "i8*"
 
@@ -45,7 +45,7 @@ private[codegen] abstract class AbstractCodeGen(
   }
 
   final val os: OsCompat = {
-    import scala.scalanative.codegen.llvm.compat.os._
+    import scala.scalanative.codegen.llvm.compat.os.*
     if (meta.platform.targetsWindows)
       if (isGnu)
         new WindowsGnuCompat(this)
@@ -77,7 +77,7 @@ private[codegen] abstract class AbstractCodeGen(
       }
 
       // Need to be generated after traversing all compilation units
-      dbg("llvm.dbg.cu")(this.compilationUnits: _*)
+      dbg("llvm.dbg.cu")(this.compilationUnits*)
     }
 
     dir.merge(Seq(body, metadata), headers)
@@ -86,8 +86,8 @@ private[codegen] abstract class AbstractCodeGen(
   private def genDebugMetadata()(implicit
       ctx: MetadataCodeGen.Context
   ): Unit = {
-    import Metadata.Constants._
-    import Metadata.ModFlagBehavior._
+    import Metadata.Constants.*
+    import Metadata.ModFlagBehavior.*
     dbg("llvm.module.flags")(
       tuple(Max, "Dwarf Version", DWARF_VERSION),
       tuple(Warning, "Debug Info Version", DEBUG_INFO_VERSION)
@@ -127,7 +127,7 @@ private[codegen] abstract class AbstractCodeGen(
       sb: ShowBuilder,
       metaCtx: MetadataCodeGen.Context
   ): Unit = {
-    import sb._
+    import sb.*
     def onDefn(defn: nir.Defn): Unit = {
       val mn = mangled(defn.name)
       if (!generated.contains(mn)) {
@@ -168,7 +168,7 @@ private[codegen] abstract class AbstractCodeGen(
   }
 
   private def genPrelude()(implicit sb: ShowBuilder): Unit = {
-    import sb._
+    import sb.*
     targetTriple.foreach { target =>
       str("target triple = \"")
       str(target)
@@ -184,7 +184,7 @@ private[codegen] abstract class AbstractCodeGen(
   }
 
   private def genConsts()(implicit sb: ShowBuilder): Unit = {
-    import sb._
+    import sb.*
     constMap.toSeq.sortBy(_._2.show).foreach {
       case (v, name) =>
         newline()
@@ -218,7 +218,7 @@ private[codegen] abstract class AbstractCodeGen(
       ty: nir.Type,
       rhs: nir.Val
   )(implicit sb: ShowBuilder): Unit = {
-    import sb._
+    import sb.*
     str("@")
     genGlobal(name)
     str(" = ")
@@ -241,7 +241,7 @@ private[codegen] abstract class AbstractCodeGen(
       sb: ShowBuilder,
       metaCtx: MetadataCodeGen.Context
   ): Unit = {
-    import sb._
+    import sb.*
     import defn.{name, attrs, pos}
 
     val nir.Type.Function(argtys, retty) = defn match {
@@ -329,7 +329,7 @@ private[codegen] abstract class AbstractCodeGen(
   private[codegen] def genReferenceTypeAttribute(
       refty: nir.Type.RefKind
   )(implicit sb: ShowBuilder): Unit = {
-    import sb._
+    import sb.*
     val (nonnull, deref, size) = toDereferenceable(refty)
 
     if (nonnull) {
@@ -368,7 +368,7 @@ private[codegen] abstract class AbstractCodeGen(
       defnScopes: DefnScopes,
       metaCtx: MetadataCodeGen.Context
   ): Unit = {
-    import sb._
+    import sb.*
     val Block(name, params, insts, isEntry) = block
     currentBlockName = name
     currentBlockSplit = 0
@@ -382,14 +382,14 @@ private[codegen] abstract class AbstractCodeGen(
   }
 
   private[codegen] def genBlockHeader()(implicit sb: ShowBuilder): Unit = {
-    import sb._
+    import sb.*
     newline()
     genBlockSplitName()
     str(":")
   }
 
   private[codegen] def genBlockSplitName()(implicit sb: ShowBuilder): Unit = {
-    import sb._
+    import sb.*
     genLocal(currentBlockName)
     str(".")
     str(currentBlockSplit)
@@ -405,7 +405,7 @@ private[codegen] abstract class AbstractCodeGen(
       metadataCtx: MetadataCodeGen.Context,
       defnScopes: DefnScopes
   ): Unit = {
-    import sb._
+    import sb.*
     val params = block.params.zipWithIndex
     if (!block.isEntry) {
       params.foreach {
@@ -487,7 +487,7 @@ private[codegen] abstract class AbstractCodeGen(
   }
 
   private[codegen] def genType(ty: nir.Type)(implicit sb: ShowBuilder): Unit = {
-    import sb._
+    import sb.*
     ty match {
       case nir.Type.Vararg => str("...")
       case nir.Type.Unit   => str("void")
@@ -549,7 +549,7 @@ private[codegen] abstract class AbstractCodeGen(
   private[codegen] def genJustVal(
       v: nir.Val
   )(implicit sb: ShowBuilder): Unit = {
-    import sb._
+    import sb.*
 
     deconstify(v) match {
       case nir.Val.True     => str("true")
@@ -603,7 +603,7 @@ private[codegen] abstract class AbstractCodeGen(
   private[codegen] def genByteString(
       bytes: Seq[scala.Byte]
   )(implicit sb: ShowBuilder): Unit = {
-    import sb._
+    import sb.*
 
     str("c\"")
     bytes.foreach {
@@ -622,7 +622,7 @@ private[codegen] abstract class AbstractCodeGen(
   private[codegen] def genFloatHex(
       value: Float
   )(implicit sb: ShowBuilder): Unit = {
-    import sb._
+    import sb.*
     str("0x")
     str(jl.Long.toHexString(jl.Double.doubleToRawLongBits(value.toDouble)))
   }
@@ -630,7 +630,7 @@ private[codegen] abstract class AbstractCodeGen(
   private[codegen] def genDoubleHex(
       value: Double
   )(implicit sb: ShowBuilder): Unit = {
-    import sb._
+    import sb.*
     str("0x")
     str(jl.Long.toHexString(jl.Double.doubleToRawLongBits(value)))
   }
@@ -638,7 +638,7 @@ private[codegen] abstract class AbstractCodeGen(
   private[codegen] def genVal(
       value: nir.Val
   )(implicit sb: ShowBuilder): Unit = {
-    import sb._
+    import sb.*
     if (value != nir.Val.Unit) {
       genType(value.ty)
       str(" ")
@@ -659,7 +659,7 @@ private[codegen] abstract class AbstractCodeGen(
   private[codegen] def genGlobal(
       g: nir.Global
   )(implicit sb: ShowBuilder): Unit = {
-    import sb._
+    import sb.*
     str("\"")
     str(mangled(g))
     str("\"")
@@ -668,7 +668,7 @@ private[codegen] abstract class AbstractCodeGen(
   private[codegen] def genLocal(
       local: nir.Local
   )(implicit sb: ShowBuilder): Unit = {
-    import sb._
+    import sb.*
     local match {
       case nir.Local(id) =>
         str("_")
@@ -683,7 +683,7 @@ private[codegen] abstract class AbstractCodeGen(
       defnScopes: DefnScopes,
       metaCtx: MetadataCodeGen.Context
   ): Unit = {
-    import sb._
+    import sb.*
     inst match {
       case inst: nir.Inst.Let =>
         genLet(inst)
@@ -768,7 +768,7 @@ private[codegen] abstract class AbstractCodeGen(
       defnScopes: DefnScopes,
       metaCtx: MetadataCodeGen.Context
   ): Unit = {
-    import sb._
+    import sb.*
     def isVoid(ty: nir.Type): Boolean =
       ty == nir.Type.Unit || ty == nir.Type.Nothing
 
@@ -994,7 +994,7 @@ private[codegen] abstract class AbstractCodeGen(
       metaCtx: MetadataCodeGen.Context,
       defnScopes: DefnScopes
   ): Unit = {
-    import sb._
+    import sb.*
 
     /** There are situations where the position is empty, for example in
      *  situations where a null check is generated (and the function call is
@@ -1124,7 +1124,7 @@ private[codegen] abstract class AbstractCodeGen(
   private[codegen] def genCallArgument(
       v: nir.Val
   )(implicit sb: ShowBuilder): Unit = {
-    import sb._
+    import sb.*
     v match {
       case nir.Val.Local(_, refty: nir.Type.RefKind) =>
         val (nonnull, deref, size) = toDereferenceable(refty)
@@ -1147,7 +1147,7 @@ private[codegen] abstract class AbstractCodeGen(
   }
 
   private[codegen] def genOp(op: nir.Op)(implicit sb: ShowBuilder): Unit = {
-    import sb._
+    import sb.*
     op match {
       case nir.Op.Extract(aggr, indexes) =>
         str("extractvalue ")
@@ -1215,7 +1215,7 @@ private[codegen] abstract class AbstractCodeGen(
   private def genMemoryOrder(
       value: nir.MemoryOrder
   )(implicit sb: ShowBuilder): Unit = {
-    import sb._
+    import sb.*
     str(value match {
       case nir.MemoryOrder.Unordered => "unordered"
       case nir.MemoryOrder.Monotonic => "monotonic"
@@ -1229,7 +1229,7 @@ private[codegen] abstract class AbstractCodeGen(
   private[codegen] def genNext(
       next: nir.Next
   )(implicit sb: ShowBuilder): Unit = {
-    import sb._
+    import sb.*
     next match {
       case nir.Next.Case(v, next) =>
         genVal(v)

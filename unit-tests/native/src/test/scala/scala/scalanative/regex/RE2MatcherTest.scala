@@ -3,9 +3,9 @@ package regex
 
 import org.junit.Ignore
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
-import ApiTestUtils._
+import ApiTestUtils.*
 
 class RE2MatcherTest {
 

@@ -1,10 +1,10 @@
 // Ported from Scala.js, commit: 54648372, dated: 2020-09-24
 package org.scalanative.testsuite.javalib.time
 
-import java.time._
+import java.time.*
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 

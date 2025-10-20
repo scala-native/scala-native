@@ -15,7 +15,7 @@ import scala.scalanative.unsafe.Tag
 import scala.scalanative.unsafe.UnsafeRichArray
 import scala.scalanative.unsafe.Zone
 import scala.scalanative.unsigned.UInt
-import scalanative.unsigned._
+import scalanative.unsigned.*
 
 import scala.annotation.tailrec
 

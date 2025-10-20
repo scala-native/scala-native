@@ -7,7 +7,7 @@ import java.nio.channels.{WritableByteChannel, Channels}
 import java.io.{DataOutputStream, ByteArrayOutputStream, OutputStream}
 import scala.collection.mutable
 import java.nio.charset.StandardCharsets
-import serialization.{Tags => T}
+import serialization.Tags as T
 
 // scalafmt: { maxColumn = 120}
 final class BinarySerializer(channel: WritableByteChannel) {

@@ -2,11 +2,11 @@ package scala.scalanative.runtime
 
 import org.junit.Test
 import org.junit.Assert
-import org.junit.Assert._
-import scala.scalanative.meta.LinktimeInfo._
+import org.junit.Assert.*
+import scala.scalanative.meta.LinktimeInfo.*
 import scala.language.implicitConversions
-import scala.scalanative.unsigned._
-import scala.scalanative.unsafe._
+import scala.scalanative.unsigned.*
+import scala.scalanative.unsafe.*
 
 private object IntrinsicsTest {
   object sizeOfClassTypes {
@@ -126,7 +126,7 @@ class IntrinsicsTest {
     assertEquals("long", 8, sizeOf[Long])
     assertEquals("float", 4, sizeOf[Float])
     assertEquals("double", 8, sizeOf[Double])
-    assertEquals("ptr", sizeOfPtr, sizeOf[Ptr[_]])
+    assertEquals("ptr", sizeOfPtr, sizeOf[Ptr[?]])
     assertEquals("ubyte", 1, sizeOf[UByte])
     assertEquals("ushort", 2, sizeOf[UShort])
     assertEquals("uint", 4, sizeOf[UInt])
@@ -152,7 +152,7 @@ class IntrinsicsTest {
     @struct class SC3(val a: Byte, val b: Short, val c: Int, val d: Int)
     assertEquals("sc3", 12, sizeOf[SC3])
 
-    import scala.scalanative.unsafe.Nat._
+    import scala.scalanative.unsafe.Nat.*
     type A1 = CArray[Short, _1]
     assertEquals("a1", 2, sizeOf[A1])
 
@@ -170,8 +170,8 @@ class IntrinsicsTest {
   }
 
   @Test def sizeOfClassTest(): Unit = {
-    import scala.scalanative.runtime.Intrinsics._
-    import IntrinsicsTest.sizeOfClassTypes._
+    import scala.scalanative.runtime.Intrinsics.*
+    import IntrinsicsTest.sizeOfClassTypes.*
     init()
 
     implicit def rawSizeToInt(size: RawSize): Int = castRawSizeToInt(size)
@@ -184,7 +184,7 @@ class IntrinsicsTest {
 
     assertEquals(4, sizeOf[Int]: Int)
     assertEquals(8, sizeOf[Long]: Int)
-    assertEquals(SizeOfPtr, sizeOf[Ptr[_]]: Int)
+    assertEquals(SizeOfPtr, sizeOf[Ptr[?]]: Int)
 
     for {
       Entry(actual, fieldsSize64, fieldsSize32) <- Seq(
@@ -215,7 +215,7 @@ class IntrinsicsTest {
         expected,
         Intrinsics.castRawSizeToInt(actual)
       )
-    val sizeOfPtr = Intrinsics.castRawSizeToInt(Intrinsics.sizeOf[Ptr[_]])
+    val sizeOfPtr = Intrinsics.castRawSizeToInt(Intrinsics.sizeOf[Ptr[?]])
 
     assertEquals("byte", 1, alignmentOf[Byte])
     assertEquals("short", 2, alignmentOf[Short])
@@ -224,7 +224,7 @@ class IntrinsicsTest {
     assertEquals("long", sizeOfPtr, alignmentOf[Long])
     assertEquals("float", 4, alignmentOf[Float])
     assertEquals("double", sizeOfPtr, alignmentOf[Double])
-    assertEquals("ptr", sizeOfPtr, alignmentOf[Ptr[_]])
+    assertEquals("ptr", sizeOfPtr, alignmentOf[Ptr[?]])
     assertEquals("ubyte", 1, alignmentOf[UByte])
     assertEquals("ushort", 2, alignmentOf[UShort])
     assertEquals("uint", 4, alignmentOf[UInt])
@@ -251,7 +251,7 @@ class IntrinsicsTest {
     @struct class SC3(val a: Byte, val b: Short, val c: Int, val d: Int)
     assertEquals("sc3", 4, alignmentOf[SC3])
 
-    import scala.scalanative.unsafe.Nat._
+    import scala.scalanative.unsafe.Nat.*
     type A1 = CArray[Short, _1]
     assertEquals("a1", 2, alignmentOf[A1])
 

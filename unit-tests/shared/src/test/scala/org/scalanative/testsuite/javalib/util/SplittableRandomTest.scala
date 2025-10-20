@@ -14,7 +14,7 @@
 
 package org.scalanative.testsuite.javalib.util
 
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.junit.Test
 
 import java.util.SplittableRandom

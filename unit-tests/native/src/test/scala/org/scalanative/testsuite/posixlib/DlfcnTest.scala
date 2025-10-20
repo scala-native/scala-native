@@ -1,17 +1,17 @@
 package org.scalanative.testsuite.posixlib
 
 import org.junit.Test
-import org.junit.Assert._
-import org.junit.Assume._
+import org.junit.Assert.*
+import org.junit.Assume.*
 
 import scala.scalanative.meta.LinktimeInfo.{isLinux, isMac, is32BitPlatform}
 import scala.scalanative.runtime.PlatformExt
 
 import java.io.File
 
-import scala.scalanative.unsafe._
+import scala.scalanative.unsafe.*
 
-import scala.scalanative.posix.dlfcn._
+import scala.scalanative.posix.dlfcn.*
 
 class DlfcnTest {
 

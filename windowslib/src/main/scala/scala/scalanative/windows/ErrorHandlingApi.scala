@@ -1,7 +1,7 @@
 package scala.scalanative.windows
 
-import scala.scalanative.unsafe._
-import scala.scalanative.unsigned._
+import scala.scalanative.unsafe.*
+import scala.scalanative.unsigned.*
 import java.nio.charset.StandardCharsets
 
 @extern()
@@ -11,8 +11,8 @@ object ErrorHandlingApi {
 
 object ErrorHandlingApiOps {
   def errorMessage(errCode: DWord): String = {
-    import WinBaseApi._
-    import WinBaseApiExt._
+    import WinBaseApi.*
+    import WinBaseApiExt.*
 
     val msgBuffer = stackalloc[CWString]()
     FormatMessageW(

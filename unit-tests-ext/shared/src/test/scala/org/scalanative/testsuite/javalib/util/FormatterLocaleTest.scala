@@ -1,6 +1,6 @@
 package org.scalanative.testsuite.javalib.util
 
-import java.util._
+import java.util.*
 
 // Extracted from port of Apache Harmony tests.
 // All actual formatting tests are in core `DefaultFormatterTest` and `FormatterExtTest`
@@ -20,7 +20,7 @@ import java.lang.StringBuilder
 import org.junit.Test
 import org.junit.Before
 import org.junit.After
-import org.junit.Assert._
+import org.junit.Assert.*
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 

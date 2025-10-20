@@ -1,28 +1,28 @@
 // scalafmt: { maxColumn = 120}
 package build
 
-import sbt._
-import Keys._
+import sbt.*
+import Keys.*
 
 import scala.language.implicitConversions
 
 import java.io.File.pathSeparator
 import sbtbuildinfo.BuildInfoPlugin
 
-import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
+import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport.*
 import pl.project13.scala.sbt.JmhPlugin
-import JmhPlugin.JmhKeys._
-import sbtbuildinfo._
-import sbtbuildinfo.BuildInfoKeys._
-import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport._
+import JmhPlugin.JmhKeys.*
+import sbtbuildinfo.*
+import sbtbuildinfo.BuildInfoKeys.*
+import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport.*
 import com.jsuereth.sbtpgp.PgpKeys.publishSigned
-import scala.scalanative.build._
-import ScriptedPlugin.autoImport._
+import scala.scalanative.build.*
+import ScriptedPlugin.autoImport.*
 
 object Build {
-  import ScalaVersions._
-  import Settings._
-  import Deps._
+  import ScalaVersions.*
+  import Settings.*
+  import Deps.*
   import NoIDEExport.noIDEExportSettings
   import MyScalaNativePlugin.{isGeneratingForIDE, ideScalaVersion}
 
@@ -60,7 +60,7 @@ object Build {
   lazy val allProjects = publishedProjects ::: testProjects
 
   private def setDependency[T](key: TaskKey[T], projects: Seq[Project]) = {
-    key := key.dependsOn(projects.map(_ / key): _*).value
+    key := key.dependsOn(projects.map(_ / key)*).value
   }
 
   private def setDependencyForCurrentBinVersion[T](
@@ -79,7 +79,7 @@ object Build {
       val prev = key.value
       Def
         .task { prev }
-        .dependsOn(dependencies.map(_ / key): _*)
+        .dependsOn(dependencies.map(_ / key)*)
     }.value
   }
 
@@ -916,7 +916,7 @@ object Build {
         fetchScalaSource / artifactPath :=
           baseDirectory.value.getParentFile / "fetchedSources" / scalaVersion.value,
         fetchScalaSource := {
-          import org.eclipse.jgit.api._
+          import org.eclipse.jgit.api.*
 
           val s = streams.value
           val ver = scalaVersion.value

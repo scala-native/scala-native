@@ -45,7 +45,7 @@ private[nio] object GenMappedBufferView {
 
 private[nio] final class GenMappedBufferView[B <: Buffer](val self: B)
     extends AnyVal {
-  import self._
+  import self.*
 
   type NewThisMappedBufferView =
     GenMappedBufferView.NewMappedBufferView[BufferType]

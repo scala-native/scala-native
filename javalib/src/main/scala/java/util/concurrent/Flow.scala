@@ -12,7 +12,7 @@ object Flow {
 
   @FunctionalInterface
   trait Publisher[T] {
-    def subscribe(subscriber: Subscriber[_ >: T]): Unit
+    def subscribe(subscriber: Subscriber[? >: T]): Unit
   }
 
   trait Subscriber[T] {

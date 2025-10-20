@@ -1,12 +1,12 @@
 package scala.scalanative
 package nscplugin
 
-import dotty.tools.dotc.ast.tpd._
+import dotty.tools.dotc.ast.tpd.*
 import dotty.tools.dotc.core
-import core.Contexts._
-import core.Symbols._
-import core.Flags._
-import core.StdNames._
+import core.Contexts.*
+import core.Symbols.*
+import core.Flags.*
+import core.StdNames.*
 import scala.scalanative.nscplugin.CompilerCompat.SymUtilsCompat.*
 import scalanative.util.unreachable
 import scala.language.implicitConversions
@@ -16,19 +16,19 @@ trait NirGenName(using Context) {
   self: NirCodeGen =>
 
   def genName(sym: Symbol): nir.Global =
-    if (sym.isType) genTypeName(sym)
-    else if (sym.is(Method)) genMethodName(sym)
+    if sym.isType then genTypeName(sym)
+    else if sym.is(Method) then genMethodName(sym)
     else genFieldName(sym)
 
   private lazy val ObjectTypeSyms =
     Seq(defn.ObjectClass, defn.AnyClass, defn.AnyRefAlias)
   def genTypeName(sym: Symbol): nir.Global.Top = {
     val sym1 =
-      if (sym.isAllOf(ModuleClass | JavaDefined) && sym.linkedClass.exists)
+      if sym.isAllOf(ModuleClass | JavaDefined) && sym.linkedClass.exists then
         sym.linkedClass
       else sym
 
-    if (ObjectTypeSyms.contains(sym1)) nir.Rt.Object.name.top
+    if ObjectTypeSyms.contains(sym1) then nir.Rt.Object.name.top
     else {
       val id = {
         val fullName = sym1.javaClassName
@@ -42,26 +42,25 @@ trait NirGenName(using Context) {
 
   def genModuleName(sym: Symbol): nir.Global.Top = {
     val typeName = genTypeName(sym)
-    if (typeName.id.endsWith("$")) typeName
+    if typeName.id.endsWith("$") then typeName
     else nir.Global.Top(typeName.id + "$")
   }
 
   def genFieldName(sym: Symbol): nir.Global.Member = {
     val owner =
-      if (sym.isScalaStatic) genModuleName(sym.owner)
+      if sym.isScalaStatic then genModuleName(sym.owner)
       else genTypeName(sym.owner)
     val id = nativeIdOf(sym)
     val scope = {
       /* Variables are internally private, but with public setter/getter.
        * Removing this check would cause problems with reachability
        */
-      if (sym.isPrivate && !sym.is(Mutable))
-        nir.Sig.Scope.Private(owner)
+      if sym.isPrivate && !sym.is(Mutable) then nir.Sig.Scope.Private(owner)
       else nir.Sig.Scope.Public
     }
 
     owner.member {
-      if (sym.isExtern) nir.Sig.Extern(id)
+      if sym.isExtern then nir.Sig.Extern(id)
       else nir.Sig.Field(id, scope)
     }
   }
@@ -70,20 +69,20 @@ trait NirGenName(using Context) {
     def owner = genTypeName(sym.owner)
     def id = nativeIdOf(sym)
     def scope =
-      if (sym.isPrivate)
-        if (sym.isStaticMethod) nir.Sig.Scope.PrivateStatic(owner)
+      if sym.isPrivate then
+        if sym.isStaticMethod then nir.Sig.Scope.PrivateStatic(owner)
         else nir.Sig.Scope.Private(owner)
-      else if (sym.isStaticMethod) nir.Sig.Scope.PublicStatic
+      else if sym.isStaticMethod then nir.Sig.Scope.PublicStatic
       else nir.Sig.Scope.Public
 
     def paramTypes = sym.info.paramInfoss.flatten
       .map(genType(_))
 
-    if (sym == defn.`String_+`) genMethodName(defnNir.String_concat)
-    else if (sym.isExtern) owner.member(genExternSigImpl(sym, id))
-    else if (sym.isClassConstructor) owner.member(nir.Sig.Ctor(paramTypes))
-    else if (sym.isStaticConstructor) owner.member(nir.Sig.Clinit)
-    else if (sym.name == nme.TRAIT_CONSTRUCTOR)
+    if sym == defn.`String_+` then genMethodName(defnNir.String_concat)
+    else if sym.isExtern then owner.member(genExternSigImpl(sym, id))
+    else if sym.isClassConstructor then owner.member(nir.Sig.Ctor(paramTypes))
+    else if sym.isStaticConstructor then owner.member(nir.Sig.Clinit)
+    else if sym.name == nme.TRAIT_CONSTRUCTOR then
       owner.member(nir.Sig.Method(id, Seq(nir.Type.Unit), scope))
     else
       val retType = genType(sym.info.resultType)
@@ -118,12 +117,12 @@ trait NirGenName(using Context) {
       val typeName = genTypeName(ownerSym)
       val ownerIsScalaModule = ownerSym.is(Module, butNot = JavaDefined)
       def haveNoForwarders = sym.isOneOf(ExcludedForwarder, butNot = Enum)
-      if (ownerIsScalaModule && haveNoForwarders) typeName
+      if ownerIsScalaModule && haveNoForwarders then typeName
       else nir.Global.Top(typeName.id.stripSuffix("$"))
     }
     val id = nativeIdOf(sym)
     val scope =
-      if (sym.isPrivate) nir.Sig.Scope.PrivateStatic(owner)
+      if sym.isPrivate then nir.Sig.Scope.PrivateStatic(owner)
       else nir.Sig.Scope.PublicStatic
 
     val paramTypes = sym.info.paramInfoss.flatten
@@ -143,11 +142,11 @@ trait NirGenName(using Context) {
         val id: String =
           // Don't use encoded names for externs
           // LLVM intrinisc methods are using dots
-          if (sym.isExtern) sym.name.decode.toString
-          else if (sym.isField) name
-          else if (sym.is(Method))
+          if sym.isExtern then sym.name.decode.toString
+          else if sym.isField then name
+          else if sym.is(Method) then
             val isScalaHashOrEquals = name.startsWith("__scala_")
-            if (sym.owner == defnNir.NObjectClass || isScalaHashOrEquals)
+            if sym.owner == defnNir.NObjectClass || isScalaHashOrEquals then
               name.substring(2) // strip the __
             else name
           else scalanative.util.unreachable

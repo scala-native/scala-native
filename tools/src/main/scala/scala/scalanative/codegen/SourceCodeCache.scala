@@ -2,7 +2,7 @@ package scala.scalanative
 package codegen
 
 import scala.scalanative.io.VirtualDirectory
-import java.nio.file._
+import java.nio.file.*
 import java.nio.file.attribute.BasicFileAttributes
 import scala.collection.mutable
 import scala.collection.concurrent.TrieMap
@@ -182,7 +182,7 @@ private[codegen] class SourceCodeCache(config: build.Config) {
       )
       @nowarn
       val pathElements = {
-        import scala.collection.JavaConverters._
+        import scala.collection.JavaConverters.*
         jarPath.iterator().asScala.toSeq.map(_.toString)
       }
       if (pathElements.contains("target")) outputFileName

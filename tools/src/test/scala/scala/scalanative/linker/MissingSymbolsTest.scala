@@ -5,11 +5,11 @@ import scala.scalanative.checker.Check
 import scala.scalanative.LinkerSpec
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
-import scala.concurrent._
+import scala.concurrent.*
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 import scala.scalanative.optimizer.assertContainsAll
 import java.sql.Time
 

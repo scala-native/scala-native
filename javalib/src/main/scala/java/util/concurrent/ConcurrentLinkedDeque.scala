@@ -38,7 +38,7 @@ import java.util.{Spliterator, Spliterators}
 
 import java.util.function.Consumer
 
-import scala.scalanative.unsafe._
+import scala.scalanative.unsafe.*
 import scala.scalanative.runtime.fromRawPtr
 import scala.scalanative.runtime.Intrinsics.classFieldRawPtr
 import scala.scalanative.libc.stdatomic.{AtomicRef, PtrToAtomicRef}
@@ -207,7 +207,7 @@ object ConcurrentLinkedDeque {
       null
     }
 
-    override def forEachRemaining(action: Consumer[_ >: E]): Unit = {
+    override def forEachRemaining(action: Consumer[? >: E]): Unit = {
       var p: Node[E] = null
       if (action == null) throw new NullPointerException
       val q = this.queue
@@ -223,7 +223,7 @@ object ConcurrentLinkedDeque {
       }
     }
 
-    override def tryAdvance(action: Consumer[_ >: E]): Boolean = {
+    override def tryAdvance(action: Consumer[? >: E]): Boolean = {
       var p: Node[E] = null
       if (action == null) throw new NullPointerException
       val q = this.queue
@@ -261,7 +261,7 @@ class ConcurrentLinkedDeque[E <: AnyRef]
     with util.Deque[E]
     with Serializable {
 
-  import ConcurrentLinkedDeque._
+  import ConcurrentLinkedDeque.*
 
   /** A node from which the first node on list (that is, the unique node p with
    *  p.prev == null && p.next != p) can be reached in O(1) time. Invariants:
@@ -647,7 +647,7 @@ class ConcurrentLinkedDeque[E <: AnyRef]
   }
 
   private def skipDeletedPredecessors(x: Node[E]): Unit = {
-    import SkipDeletedStates._
+    import SkipDeletedStates.*
 
     // A Finite State Machine (FSM) to closely follow Java break/continue logic
     var state = State_BEGIN
@@ -708,7 +708,7 @@ class ConcurrentLinkedDeque[E <: AnyRef]
   }
 
   private def skipDeletedSuccessors(x: Node[E]): Unit = {
-    import SkipDeletedStates._
+    import SkipDeletedStates.*
 
     // A Finite State Machine (FSM) to closely follow Java break/continue logic
     var state = State_BEGIN
@@ -875,7 +875,7 @@ class ConcurrentLinkedDeque[E <: AnyRef]
    *    are null
    */
 
-  def this(c: util.Collection[_ <: E]) = {
+  def this(c: util.Collection[? <: E]) = {
     this()
     var h, t: Node[E] = null
 
@@ -1218,7 +1218,7 @@ class ConcurrentLinkedDeque[E <: AnyRef]
    *    NullPointerException if the specified collection or any of its elements
    *    are null throws IllegalArgumentException if the collection is this deque
    */
-  override def addAll(c: util.Collection[_ <: E]): Boolean = {
+  override def addAll(c: util.Collection[? <: E]): Boolean = {
     if (c eq this)
       throw new IllegalArgumentException // As historically specified in AbstractQueue#addAll
     // Copy c into a private chain of Nodes

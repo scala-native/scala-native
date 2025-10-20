@@ -7,13 +7,13 @@
  */
 package java.util.concurrent.atomic
 
-import java.lang.Double._
+import java.lang.Double.*
 import java.util.Arrays;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.DoubleBinaryOperator;
 import java.util.function.LongBinaryOperator;
-import scala.scalanative.annotation._
-import scala.scalanative.unsafe._
+import scala.scalanative.annotation.*
+import scala.scalanative.unsafe.*
 import scala.scalanative.libc.stdatomic.{
   AtomicInt,
   AtomicLongLong,
@@ -84,7 +84,7 @@ private[atomic] object Striped64 {
 
 @SuppressWarnings(Array("serial"))
 private[atomic] abstract class Striped64 private[atomic] () extends Number {
-  import Striped64._
+  import Striped64.*
 
   @transient @volatile private[atomic] var cells: Array[Striped64.Cell] = _
 

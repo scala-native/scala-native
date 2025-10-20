@@ -7,14 +7,14 @@ package org.scalanative.testsuite.javalib.util
 
 import language.implicitConversions
 
-import org.junit.Assert._
-import org.junit.Assume._
+import org.junit.Assert.*
+import org.junit.Assume.*
 import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
-import org.scalanative.testsuite.utils.Platform._
+import org.scalanative.testsuite.utils.Platform.*
 
-import java.{lang => jl}
+import java.lang as jl
 import java.util.{Arrays, Comparator}
 
 import scala.reflect.ClassTag
@@ -1000,7 +1000,7 @@ class ArraysTest {
   }
 
   @Test def equals_AnyRefs(): Unit = {
-    import EqualsAnyRefs._
+    import EqualsAnyRefs.*
     def A(x: Int): A = new A(x)
 
     val a1 = Array[AnyRef](A(1), A(-7), A(10))

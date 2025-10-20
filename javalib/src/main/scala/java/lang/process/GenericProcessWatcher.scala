@@ -1,6 +1,6 @@
 package java.lang.process
 
-import java.util.concurrent._
+import java.util.concurrent.*
 
 private[process] object GenericProcessWatcher {
   private val watchedProcesses = ConcurrentHashMap.newKeySet[GenericProcess]

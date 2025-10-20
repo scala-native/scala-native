@@ -2,10 +2,10 @@ package java.util
 
 import java.time.Instant
 
-import scalanative.posix.time._
-import scalanative.windows.crt.{time => winTime}
-import scalanative.unsafe._
-import scalanative.unsigned._
+import scalanative.posix.time.*
+import scalanative.windows.crt.time as winTime
+import scalanative.unsafe.*
+import scalanative.unsigned.*
 import scala.scalanative.meta.LinktimeInfo.isWindows
 
 /** Ported from Scala JS and Apache Harmony

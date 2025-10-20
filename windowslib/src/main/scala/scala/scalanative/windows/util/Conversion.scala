@@ -1,8 +1,8 @@
 package scala.scalanative.windows.util
 
-import scala.scalanative.unsafe._
-import scala.scalanative.unsigned._
-import scala.scalanative.windows.{Word => WinWord, _}
+import scala.scalanative.unsafe.*
+import scala.scalanative.unsigned.*
+import scala.scalanative.windows.{Word as WinWord, *}
 
 private[windows] object Conversion {
   def wordToBytes(word: WinWord): (Byte, Byte) = {

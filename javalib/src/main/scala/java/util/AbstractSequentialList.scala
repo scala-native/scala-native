@@ -29,7 +29,7 @@ abstract class AbstractSequentialList[E] protected () extends AbstractList[E] {
     ret
   }
 
-  override def addAll(index: Int, c: Collection[_ <: E]): Boolean = {
+  override def addAll(index: Int, c: Collection[? <: E]): Boolean = {
     val iter = listIterator(index)
     val citer = c.iterator()
     val changed = citer.hasNext()

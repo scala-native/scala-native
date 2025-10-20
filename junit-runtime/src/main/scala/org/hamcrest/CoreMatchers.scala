@@ -3,7 +3,7 @@
  */
 package org.hamcrest
 
-import org.hamcrest.core._
+import org.hamcrest.core.*
 
 object CoreMatchers {
   // Commented matchers where implemented using reflection. It is possible that
@@ -70,7 +70,7 @@ object CoreMatchers {
   def any[T](typ: Class[T]): Matcher[T] =
     core.IsInstanceOf.any(typ)
 
-  def instanceOf[T](typ: Class[_]): Matcher[T] =
+  def instanceOf[T](typ: Class[?]): Matcher[T] =
     core.IsInstanceOf.instanceOf(typ)
 
   def not[T](matcher: Matcher[T]): Matcher[T] =

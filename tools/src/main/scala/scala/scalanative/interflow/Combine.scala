@@ -1,12 +1,12 @@
 package scala.scalanative
 package interflow
 
-import java.{lang => jl}
-import scalanative.linker._
+import java.lang as jl
+import scalanative.linker.*
 import scalanative.util.{unreachable, And}
-import nir.Bin.{And => Iand, _}
-import nir.Comp._
-import nir.Conv._
+import nir.Bin.{And as Iand, *}
+import nir.Comp.*
+import nir.Conv.*
 
 private[interflow] trait Combine { self: Interflow =>
 

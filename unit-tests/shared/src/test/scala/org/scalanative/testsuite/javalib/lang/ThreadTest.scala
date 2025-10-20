@@ -8,13 +8,13 @@
 
 package org.scalanative.testsuite.javalib.lang
 
-import java.lang._
+import java.lang.*
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
-import org.scalanative.testsuite.utils.Platform._
-import scala.scalanative.junit.utils.AssumesHelper._
+import org.scalanative.testsuite.utils.Platform.*
+import scala.scalanative.junit.utils.AssumesHelper.*
 
 class ThreadTest {
 

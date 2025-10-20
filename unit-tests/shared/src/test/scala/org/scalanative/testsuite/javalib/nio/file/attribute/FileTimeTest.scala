@@ -1,10 +1,10 @@
 package org.scalanative.testsuite.javalib.nio.file.attribute
 
-import java.nio.file.attribute._
+import java.nio.file.attribute.*
 
 import java.util.concurrent.TimeUnit
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 class FileTimeTest {
 

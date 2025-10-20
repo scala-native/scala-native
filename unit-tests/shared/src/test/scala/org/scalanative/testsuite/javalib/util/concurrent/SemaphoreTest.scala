@@ -8,12 +8,12 @@
 package org.scalanative.testsuite.javalib.util.concurrent
 
 import java.util.concurrent.TimeUnit.MILLISECONDS
-import java.util.concurrent._
-import java.util._
+import java.util.concurrent.*
+import java.util.*
 import java.lang.Thread.State
 
-import org.junit._
-import org.junit.Assert._
+import org.junit.*
+import org.junit.Assert.*
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 object SemaphoreTest {
@@ -81,8 +81,8 @@ object SemaphoreTest {
   }
 }
 class SemaphoreTest extends JSR166Test {
-  import SemaphoreTest._
-  import JSR166Test._
+  import SemaphoreTest.*
+  import JSR166Test.*
 
   /** A runnable calling acquire
    */

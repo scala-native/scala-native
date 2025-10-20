@@ -2,21 +2,21 @@
 
 package org.scalajs.testsuite.javalib.nio.charset
 
-import java.nio.charset._
-import java.nio.charset.StandardCharsets._
+import java.nio.charset.*
+import java.nio.charset.StandardCharsets.*
 
 import scala.annotation.tailrec
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 import org.scalanative.testsuite.javalib.util.TrivialImmutableCollection
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
-import org.scalanative.testsuite.utils.Platform._
+import org.scalanative.testsuite.utils.Platform.*
 
 class CharsetTest {
   def javaSet[A](elems: A*): java.util.Set[A] =
-    new java.util.HashSet(TrivialImmutableCollection(elems: _*))
+    new java.util.HashSet(TrivialImmutableCollection(elems*))
 
   val USASCIICharsetIsDefaultAlias =
     !executingInJVM || (executingInJVMOnJDK17 || executingInJVMOnLowerThanJDK17)

@@ -1,10 +1,10 @@
 // Ported from Scala.js commit: 9dc4d5b dated: 2018-10-11
 package org.scalanative.testsuite.javalib.io
 
-import java.io._
+import java.io.*
 
-import org.junit._
-import org.junit.Assert._
+import org.junit.*
+import org.junit.Assert.*
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
@@ -35,7 +35,7 @@ object DataOutputStreamTest {
 }
 
 class DataOutputStreamTest {
-  import DataOutputStreamTest._
+  import DataOutputStreamTest.*
 
   private def newStream(): (DataOutputStream, CheckerOutputStream) = {
     val checker = new CheckerOutputStream

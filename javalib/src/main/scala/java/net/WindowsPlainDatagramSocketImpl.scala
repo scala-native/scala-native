@@ -1,17 +1,17 @@
 package java.net
 
 import java.io.{FileDescriptor, IOException}
-import scala.scalanative.posix.sys.{socket => unixSocket}
-import scala.scalanative.posix.errno._
-import scala.scalanative.unsafe._
-import scala.scalanative.unsigned._
-import scala.scalanative.windows._
+import scala.scalanative.posix.sys.socket as unixSocket
+import scala.scalanative.posix.errno.*
+import scala.scalanative.unsafe.*
+import scala.scalanative.unsigned.*
+import scala.scalanative.windows.*
 import scala.annotation.tailrec
 private[net] class WindowsPlainDatagramSocketImpl
     extends AbstractPlainDatagramSocketImpl {
-  import WinSocketApi._
-  import WinSocketApiExt._
-  import WinSocketApiOps._
+  import WinSocketApi.*
+  import WinSocketApiExt.*
+  import WinSocketApiOps.*
 
   override def create(): Unit = {
     WinSocketApiOps.init()

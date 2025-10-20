@@ -1,6 +1,6 @@
 package scala.scalanative.libc
 
-import scala.scalanative.unsafe._
+import scala.scalanative.unsafe.*
 
 @extern object stdint extends stdint
 

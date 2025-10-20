@@ -8,11 +8,11 @@
 package java.util
 // Ported from Scala.js, commit: 0383e9f, dated: 2021-03-07
 
-import java.io._
+import java.io.*
 import java.lang.{
-  Double => JDouble,
-  Boolean => JBoolean,
-  StringBuilder => JStringBuilder
+  Double as JDouble,
+  Boolean as JBoolean,
+  StringBuilder as JStringBuilder
 }
 import java.math.{BigDecimal, BigInteger}
 import java.nio.CharBuffer
@@ -24,9 +24,9 @@ private[util] abstract class FormatterImpl protected (
 ) extends Closeable
     with Flushable {
   self: Formatter =>
-  import FormatterImpl._
+  import FormatterImpl.*
 
-  import Flags._
+  import Flags.*
 
   if (dest == null) {
     dest = new JStringBuilder()
@@ -1050,7 +1050,7 @@ object FormatterImpl extends FormatterCompanionImpl {
    * not add non-inlineable methods in this class.
    */
   private final class Flags(val bits: Int) extends AnyVal {
-    import Flags._
+    import Flags.*
 
     @inline def leftAlign: Boolean = (bits & LeftAlign) != 0
     @inline def altFormat: Boolean = (bits & AltFormat) != 0
@@ -1085,7 +1085,7 @@ object FormatterImpl extends FormatterCompanionImpl {
   }
 
   private val ConversionsIllegalFlags: Array[Int] = {
-    import Flags._
+    import Flags.*
 
     val NumericOnlyFlags =
       PositivePlus | PositiveSpace | ZeroPad | UseGroupingSeps | NegativeParen
@@ -1337,7 +1337,7 @@ object FormatterImpl extends FormatterCompanionImpl {
    */
   private class ParserStateMachine(format: CharBuffer) {
 
-    import ParserStateMachine._
+    import ParserStateMachine.*
 
     def nextFormatToken(): FormatToken = {
       var currentChar = FormatToken.UnsetChar
@@ -1523,7 +1523,7 @@ object FormatterImpl extends FormatterCompanionImpl {
   }
 
   private class FormatToken(val formatStringStartIndex: Int) {
-    import FormatToken._
+    import FormatToken.*
 
     var formatSpecifierIndex: Int = _
     var plainText: String = _
@@ -1538,7 +1538,7 @@ object FormatterImpl extends FormatterCompanionImpl {
     def setFlag(flag: Int): Unit = flags |= flag
 
     def setFlag(c: Char): Boolean = {
-      import Flags._
+      import Flags.*
       val flag = (c: @switch) match {
         case '-' => LeftAlign
         case '#' => AltFormat
@@ -1571,7 +1571,7 @@ object FormatterImpl extends FormatterCompanionImpl {
 }
 
 abstract class FormatterCompanionImpl {
-  import FormatterImpl._
+  import FormatterImpl.*
 
   /* A proxy for a `java.util.Locale` or for the root locale that provides
    * the info required by `Formatter`.
@@ -1622,7 +1622,7 @@ abstract class FormatterCompanionImpl {
   private[util] final class LocaleLocaleInfo(val locale: Locale)
       extends LocaleInfo {
 
-    import java.text._
+    import java.text.*
 
     private def actualLocale: Locale =
       if (locale == null) Locale.ROOT

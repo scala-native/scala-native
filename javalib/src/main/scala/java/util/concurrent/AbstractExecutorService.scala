@@ -8,7 +8,7 @@ package java.util.concurrent
 
 import java.util
 import java.lang
-import java.util.concurrent.TimeUnit._
+import java.util.concurrent.TimeUnit.*
 import scala.annotation.tailrec
 
 abstract class AbstractExecutorService() extends ExecutorService {
@@ -26,7 +26,7 @@ abstract class AbstractExecutorService() extends ExecutorService {
 
   @throws[NullPointerException]
   @throws[java.lang.RejectedExecutionException]
-  override def submit(task: Runnable): Future[_] = {
+  override def submit(task: Runnable): Future[?] = {
     if (task == null) throw new NullPointerException()
     val ftask: RunnableFuture[Object] = newTaskFor(task, null)
     execute(ftask)
@@ -55,7 +55,7 @@ abstract class AbstractExecutorService() extends ExecutorService {
   @throws[TimeoutException]
   @throws[ExecutionException]
   private def doInvokeAny[T <: AnyRef](
-      tasks: util.Collection[_ <: Callable[T]],
+      tasks: util.Collection[? <: Callable[T]],
       timed: Boolean,
       n: Long
   ): T = {
@@ -129,7 +129,7 @@ abstract class AbstractExecutorService() extends ExecutorService {
   @throws[InterruptedException]
   @throws[ExecutionException]
   override def invokeAny[T <: AnyRef](
-      tasks: util.Collection[_ <: Callable[T]]
+      tasks: util.Collection[? <: Callable[T]]
   ): T =
     doInvokeAny(tasks, false, 0)
 
@@ -137,14 +137,14 @@ abstract class AbstractExecutorService() extends ExecutorService {
   @throws[ExecutionException]
   @throws[TimeoutException]
   override def invokeAny[T <: AnyRef](
-      tasks: java.util.Collection[_ <: Callable[T]],
+      tasks: java.util.Collection[? <: Callable[T]],
       timeout: Long,
       unit: TimeUnit
   ): T = doInvokeAny(tasks, true, unit.toNanos(timeout))
 
   @throws[InterruptedException]
   override def invokeAll[T <: AnyRef](
-      tasks: java.util.Collection[_ <: Callable[T]]
+      tasks: java.util.Collection[? <: Callable[T]]
   ): java.util.List[Future[T]] = {
     if (tasks == null) throw new NullPointerException()
     val futures: util.List[Future[T]] =
@@ -177,7 +177,7 @@ abstract class AbstractExecutorService() extends ExecutorService {
 
   @throws[InterruptedException]
   override def invokeAll[T <: AnyRef](
-      tasks: util.Collection[_ <: Callable[T]],
+      tasks: util.Collection[? <: Callable[T]],
       timeout: Long,
       unit: TimeUnit
   ): util.List[Future[T]] = {

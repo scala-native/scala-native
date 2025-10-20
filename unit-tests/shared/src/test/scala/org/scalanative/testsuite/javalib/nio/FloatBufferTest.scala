@@ -1,10 +1,10 @@
 package org.scalanative.testsuite.javalib.nio
 
-import java.nio._
+import java.nio.*
 
 // Ported from Scala.js
 
-import ByteBufferFactories._
+import ByteBufferFactories.*
 
 abstract class FloatBufferTest extends BaseBufferTest {
   type Factory = BufferFactory.FloatBufferFactory

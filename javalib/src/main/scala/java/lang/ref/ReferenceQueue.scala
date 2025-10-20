@@ -20,14 +20,14 @@ class ReferenceQueue[T] {
     }
   }
 
-  def remove(): Reference[_ <: T] = remove(None)
-  def remove(timeout: Long): Reference[_ <: T] = {
+  def remove(): Reference[? <: T] = remove(None)
+  def remove(timeout: Long): Reference[? <: T] = {
     if (timeout < 0) throw new IllegalArgumentException()
     remove(Some(timeout))
   }
 
-  private def remove(timeout: Option[Long]): Reference[_ <: T] =
-    synchronized[Reference[_ <: T]] {
+  private def remove(timeout: Option[Long]): Reference[? <: T] =
+    synchronized[Reference[? <: T]] {
       def now() = System.currentTimeMillis()
       val hasTimeout = timeout.isDefined
       val deadline = now() + timeout.getOrElse(0L)

@@ -1,7 +1,7 @@
 package scala.scalanative
 package posix
 
-import scalanative.unsafe._
+import scalanative.unsafe.*
 import scalanative.posix.sys.types.{uid_t, gid_t}
 
 @extern
@@ -24,7 +24,7 @@ object pwd {
 }
 
 object pwdOps {
-  import pwd._
+  import pwd.*
 
   implicit class passwdOps(val ptr: Ptr[passwd]) extends AnyVal {
     def pw_name: CString = ptr._1

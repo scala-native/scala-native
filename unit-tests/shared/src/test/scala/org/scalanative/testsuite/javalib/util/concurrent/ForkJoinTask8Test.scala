@@ -8,14 +8,14 @@ package org.scalanative.testsuite.javalib.util.concurrent
 
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util
-import java.util.concurrent._
+import java.util.concurrent.*
 
-import org.junit._
-import org.junit.Assert._
+import org.junit.*
+import org.junit.Assert.*
 import scala.scalanative.junit.utils.AssumesHelper
-import JSR166Test._
+import JSR166Test.*
 
-import scala.util.control.Breaks._
+import scala.util.control.Breaks.*
 
 object ForkJoinTask8Test {
   /*
@@ -164,8 +164,8 @@ object ForkJoinTask8Test {
 }
 
 class ForkJoinTask8Test extends JSR166Test {
-  import ForkJoinTask._
-  import ForkJoinTask8Test._
+  import ForkJoinTask.*
+  import ForkJoinTask8Test.*
 
   // Compute fib naively and efficiently
   final val fib: Array[Int] = {
@@ -195,7 +195,7 @@ class ForkJoinTask8Test extends JSR166Test {
       assertNull(a.getRawResult)
     }
 
-  def checkNotDone(a: ForkJoinTask[_]): Unit = {
+  def checkNotDone(a: ForkJoinTask[?]): Unit = {
     assertFalse(a.isDone)
     assertFalse(a.isCompletedNormally)
     assertFalse(a.isCompletedAbnormally)
@@ -259,7 +259,7 @@ class ForkJoinTask8Test extends JSR166Test {
     }
   }
 
-  def checkCompletedAbnormally(a: ForkJoinTask[_], t: Throwable): Unit = {
+  def checkCompletedAbnormally(a: ForkJoinTask[?], t: Throwable): Unit = {
     assertTrue(a.isDone)
     assertFalse(a.isCancelled)
     assertFalse(a.isCompletedNormally)
@@ -823,7 +823,7 @@ class ForkJoinTask8Test extends JSR166Test {
           new AsyncFib(9),
           new AsyncFib(7)
         )
-        invokeAll(util.Arrays.asList(tasks: _*))
+        invokeAll(util.Arrays.asList(tasks*))
         for (task <- tasks) { assertTrue(task.isDone) }
         for (task <- tasks) { task.checkCompletedNormally() }
       }
@@ -967,7 +967,7 @@ class ForkJoinTask8Test extends JSR166Test {
         val tasks: Array[BinaryAsyncAction] = Array(f, g, h)
         shuffle(tasks)
         try {
-          ForkJoinTask.invokeAll(util.Arrays.asList(tasks: _*))
+          ForkJoinTask.invokeAll(util.Arrays.asList(tasks*))
           shouldThrow()
         } catch {
           case success: FJException =>

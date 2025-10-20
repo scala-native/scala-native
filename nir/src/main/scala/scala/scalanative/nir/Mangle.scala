@@ -1,7 +1,7 @@
 package scala.scalanative
 package nir
 
-import scala.scalanative.nir.Sig.Scope._
+import scala.scalanative.nir.Sig.Scope.*
 import scala.scalanative.util.ShowBuilder.InMemoryShowBuilder
 
 object Mangle {
@@ -25,7 +25,7 @@ object Mangle {
 
   private class Impl {
     val sb = new InMemoryShowBuilder
-    import sb._
+    import sb.*
 
     def mangleGlobal(name: Global): Unit = name match {
       case name: Global.Top =>

@@ -2,9 +2,9 @@ package scala.scalanative
 package unsafe
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
-import scalanative.unsafe.Nat._
+import scalanative.unsafe.Nat.*
 // Scala 2.13.7 needs explicit import for implicit conversions
 import scalanative.unsafe.Ptr.ptrToCArray
 

@@ -1,7 +1,7 @@
 package scala.scalanative.runtime.dwarf
 
-import java.lang.{Long => JLong}
-import java.io._
+import java.lang.Long as JLong
+import java.io.*
 
 import scala.annotation.tailrec
 

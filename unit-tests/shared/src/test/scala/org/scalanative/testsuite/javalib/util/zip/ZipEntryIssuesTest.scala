@@ -1,7 +1,7 @@
 package org.scalanative.testsuite.javalib.util.zip
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.junit.BeforeClass
 import org.junit.Ignore
 
@@ -112,7 +112,7 @@ object ZipEntryIssuesTest {
 }
 
 class ZipEntryIssuesTest {
-  import ZipEntryIssuesTest._
+  import ZipEntryIssuesTest.*
 
   // Issue 3755
   @Test def readEntryComment(): Unit = {

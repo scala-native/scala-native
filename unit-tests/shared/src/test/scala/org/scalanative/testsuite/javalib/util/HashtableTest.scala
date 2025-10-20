@@ -1,6 +1,6 @@
 package org.scalanative.testsuite.javalib.util
 
-import java.util._
+import java.util.*
 
 import org.junit.Test
 

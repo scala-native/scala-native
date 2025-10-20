@@ -1,6 +1,6 @@
 package scala.scalanative.meta
 
-import scala.scalanative.unsafe._
+import scala.scalanative.unsafe.*
 
 /** Constants resolved at link-time from NativeConfig, can be conditionally
  *  discard some parts of NIR instructions when linking

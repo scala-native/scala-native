@@ -1,12 +1,12 @@
 package org.scalanative.testsuite.javalib.lang
 
-import java.util.concurrent._
+import java.util.concurrent.*
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.locks.LockSupport
 
-import org.junit._
-import org.junit.Assert._
+import org.junit.*
+import org.junit.Assert.*
 import org.junit.{Ignore, BeforeClass}
 
 import scala.scalanative.junit.utils.AssumesHelper
@@ -23,7 +23,7 @@ object ThreadBuilderTestOnJDK19 {
 }
 
 class ThreadBuilderTestOnJDK19 {
-  import ThreadBuilderTestOnJDK19._
+  import ThreadBuilderTestOnJDK19.*
 
   @Test def testPlatformThread(): Unit = {
     val parent = Thread.currentThread()

@@ -3,9 +3,9 @@ package scala.scalanative.junit.utils
 // Ported from Scala.js
 
 import java.nio.charset.StandardCharsets.UTF_8
-import java.nio.file._
+import java.nio.file.*
 import java.util.LinkedList
-import sbt.testing._
+import sbt.testing.*
 import scala.annotation.tailrec
 import scala.concurrent.Future
 

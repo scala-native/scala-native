@@ -3,11 +3,11 @@ package org.scalanative.testsuite.javalib.util.function
 
 import java.util.function.Function
 
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.junit.Test
 
 class FunctionTest {
-  import FunctionTest._
+  import FunctionTest.*
 
   @Test def identity(): Unit = {
     assertEquals(10, identityFunc(10))

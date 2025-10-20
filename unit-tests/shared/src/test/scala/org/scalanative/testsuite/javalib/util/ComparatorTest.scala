@@ -2,14 +2,14 @@
 
 package org.scalanative.testsuite.javalib.util
 
-import java.{util => ju}
-import java.util.{function => juf}
+import java.util as ju
+import java.util.function as juf
 
 import org.junit.Test
-import org.junit.Assert._
-import org.junit.Assume._
+import org.junit.Assert.*
+import org.junit.Assume.*
 
-import org.scalanative.testsuite.utils.AssertThrows._
+import org.scalanative.testsuite.utils.AssertThrows.*
 import org.scalanative.testsuite.utils.Platform
 
 class ComparatorTest {

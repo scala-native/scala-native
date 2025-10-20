@@ -18,7 +18,7 @@ trait ScalaNativeSuiteRunner extends SuiteRunner {
   // Stuff we provide
 
   override def banner: String = {
-    import scala.scalanative.nir.Versions.{current => currentVersion}
+    import scala.scalanative.nir.Versions.current as currentVersion
 
     super.banner.trim + s"""
     |Scala Native version is: $currentVersion
@@ -81,7 +81,7 @@ trait ScalaNativeSuiteRunner extends SuiteRunner {
   }
 
   private lazy val testFilter: File => Boolean = {
-    import ScalaNativePartestOptions._
+    import ScalaNativePartestOptions.*
     options.testFilter match {
       case DenylistedTests  => denylistedTests
       case AllowlistedTests => n => !denylistedTests.contains(n)

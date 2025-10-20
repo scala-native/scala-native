@@ -3,7 +3,7 @@ package posix
 
 import scalanative.posix.sys.types.ino_t
 
-import scala.scalanative.unsafe._, Nat._
+import scala.scalanative.unsafe.*, Nat.*
 
 private[scalanative] object DirentTypes {
   type _256 = Digit3[_2, _5, _6] // see comment above 'type dirent' below.
@@ -59,7 +59,7 @@ private[scalanative] object DirentTypes {
 @define("__SCALANATIVE_POSIX_DIRENT")
 @extern
 private[scalanative] object DirentImpl {
-  import DirentTypes._
+  import DirentTypes.*
 
   type DIR = DirentTypes.DIR
 
@@ -84,7 +84,7 @@ private[scalanative] object DirentImpl {
 }
 
 object dirent {
-  import DirentImpl._
+  import DirentImpl.*
 
   type DIR = DirentTypes.DIR
   type dirent = DirentTypes.dirent

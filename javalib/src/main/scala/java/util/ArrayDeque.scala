@@ -15,7 +15,7 @@ import java.util.function.Consumer
 import java.util.function.Predicate
 import java.util.function.UnaryOperator
 
-import ArrayDeque._
+import ArrayDeque.*
 
 object ArrayDeque {
 
@@ -213,7 +213,7 @@ class ArrayDeque[E](
    *  @throws java.lang.NullPointerException
    *    if the specified collection is null
    */
-  def this(c: Collection[_ <: E]) = {
+  def this(c: Collection[? <: E]) = {
     this(c.size())
     copyElements(c)
   }
@@ -328,7 +328,7 @@ class ArrayDeque[E](
    *  @throws java.lang.NullPointerException
    *    if the specified collection or any of its elements are null
    */
-  override def addAll(c: Collection[_ <: E]): Boolean = {
+  override def addAll(c: Collection[? <: E]): Boolean = {
     val s = size()
     val needed = s + c.size() + 1 - elements.length
     if (needed > 0)
@@ -337,7 +337,7 @@ class ArrayDeque[E](
     return size() > s
   }
 
-  private def copyElements(c: Collection[_ <: E]): Unit = {
+  private def copyElements(c: Collection[? <: E]): Unit = {
     c.forEach(addLast(_))
   }
 
@@ -745,7 +745,7 @@ class ArrayDeque[E](
       lastRet = -1
     }
 
-    override def forEachRemaining(action: Consumer[_ >: E]): Unit = {
+    override def forEachRemaining(action: Consumer[? >: E]): Unit = {
       Objects.requireNonNull(action)
       val r = remaining
       if (r <= 0)
@@ -793,7 +793,7 @@ class ArrayDeque[E](
         cursor = inc(cursor, elements.length)
     }
 
-    override final def forEachRemaining(action: Consumer[_ >: E]): Unit = {
+    override final def forEachRemaining(action: Consumer[? >: E]): Unit = {
       Objects.requireNonNull(action)
       val r = remaining
       if (r <= 0)
@@ -876,7 +876,7 @@ class ArrayDeque[E](
       }
     }
 
-    override def forEachRemaining(action: Consumer[_ >: E]): Unit = {
+    override def forEachRemaining(action: Consumer[? >: E]): Unit = {
       if (action == null)
         throw new NullPointerException()
       val end = getFence()
@@ -901,7 +901,7 @@ class ArrayDeque[E](
       }
     }
 
-    def tryAdvance(action: Consumer[_ >: E]): Boolean = {
+    def tryAdvance(action: Consumer[? >: E]): Boolean = {
       Objects.requireNonNull(action)
       val es = elements
       if (fence < 0) { fence = tail; cursor = head; } // late-binding
@@ -924,7 +924,7 @@ class ArrayDeque[E](
   }
 
   /** @throws java.lang.NullPointerException */
-  override def forEach(action: Consumer[_ >: E]): Unit = {
+  override def forEach(action: Consumer[? >: E]): Unit = {
     Objects.requireNonNull(action)
     val es = elements
     var i = head
@@ -972,25 +972,25 @@ class ArrayDeque[E](
   }
 
   /** @throws java.lang.NullPointerException */
-  override def removeIf(filter: Predicate[_ >: E]): Boolean = {
+  override def removeIf(filter: Predicate[? >: E]): Boolean = {
     Objects.requireNonNull(filter)
     return bulkRemove(filter)
   }
 
   /** @throws java.lang.NullPointerException */
-  override def removeAll(c: Collection[_]): Boolean = {
+  override def removeAll(c: Collection[?]): Boolean = {
     Objects.requireNonNull(c)
     return bulkRemove(c.contains(_))
   }
 
   /** @throws java.lang.NullPointerException */
-  override def retainAll(c: Collection[_]): Boolean = {
+  override def retainAll(c: Collection[?]): Boolean = {
     Objects.requireNonNull(c)
     return bulkRemove(!c.contains(_))
   }
 
   /** Implementation of bulk remove methods. */
-  def bulkRemove(filter: Predicate[_ >: E]): Boolean = {
+  def bulkRemove(filter: Predicate[? >: E]): Boolean = {
     val es = elements
     // Optimize for initial run of survivors
     var i = head
@@ -1033,7 +1033,7 @@ class ArrayDeque[E](
    *    valid index of first element to be deleted
    */
   private def bulkRemoveModified(
-      filter: Predicate[_ >: E],
+      filter: Predicate[? >: E],
       beg: Int
   ): Boolean = {
     val es = elements

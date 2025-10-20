@@ -2,13 +2,13 @@ package java.net
 
 // Ported from Apache Harmony & extensively re-worked for Scala Native.
 
-import scalanative.unsafe._
-import scalanative.unsigned._
+import scalanative.unsafe.*
+import scalanative.unsigned.*
 
-import java.{util => ju}
-import java.{lang => jl}
+import java.util as ju
+import java.lang as jl
 
-import scala.scalanative.posix.net.`if`._
+import scala.scalanative.posix.net.`if`.*
 import scala.scalanative.posix.stddef
 
 final class Inet6Address private (

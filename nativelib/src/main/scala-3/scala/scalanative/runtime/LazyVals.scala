@@ -1,12 +1,12 @@
 package scala.scalanative.runtime
 
-import scala.scalanative.annotation._
+import scala.scalanative.annotation.*
 import scala.runtime.LazyVals.{BITS_PER_LAZY_VAL, STATE}
-import scala.scalanative.runtime.ffi._
-import scala.scalanative.runtime.ffi.stdatomic._
-import scala.scalanative.runtime.ffi.stdatomic.memory_order._
+import scala.scalanative.runtime.ffi.*
+import scala.scalanative.runtime.ffi.stdatomic.*
+import scala.scalanative.runtime.ffi.stdatomic.memory_order.*
 import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
-import scala.scalanative.runtime.Intrinsics._
+import scala.scalanative.runtime.Intrinsics.*
 
 // Factored out LazyVals immutable state, allowing to treat LazyVals as constant module,
 // alowing to skip loading of the module on each call to its methods
@@ -25,9 +25,9 @@ private object LazyValsState {
 private object LazyVals {
 
   private def getMonitor(bitMap: RawPtr, fieldId: Int = 0) = {
-    import LazyValsState._
+    import LazyValsState.*
     var id = (castRawPtrToInt(bitMap) + fieldId) % base
-    if (id < 0) id += base
+    if id < 0 then id += base
     monitors(id)
   }
 
@@ -39,14 +39,14 @@ private object LazyVals {
   def CAS(bitmap: RawPtr, e: Long, v: Int, ord: Int): Boolean = {
     val mask = ~(LAZY_VAL_MASK << ord * BITS_PER_LAZY_VAL)
     val n = (e & mask) | (v.toLong << (ord * BITS_PER_LAZY_VAL))
-    if (isMultithreadingEnabled) {
+    if isMultithreadingEnabled then {
       // multi-threaded
       val expected = stackalloc[Long]()
       storeLong(expected, e)
       atomic_compare_exchange_llong(bitmap, expected, n)
     } else {
       // single-threaded
-      if (get(bitmap) != e) false
+      if get(bitmap) != e then false
       else {
         storeLong(bitmap, n)
         true
@@ -55,13 +55,13 @@ private object LazyVals {
   }
 
   def objCAS(objPtr: RawPtr, exp: Object, n: Object): Boolean = {
-    if (isMultithreadingEnabled) {
+    if isMultithreadingEnabled then {
       // multi-threaded
       val expected = stackalloc[RawPtr]()
       storeObject(expected, exp)
       atomic_compare_exchange_intptr(objPtr, expected, castObjectToRawPtr(n))
     } else {
-      if (loadObject(objPtr) ne exp) false
+      if loadObject(objPtr) ne exp then false
       else {
         storeObject(objPtr, n)
         true
@@ -71,19 +71,19 @@ private object LazyVals {
 
   @`inline`
   def setFlag(bitmap: RawPtr, v: Int, ord: Int): Unit =
-    if (!isMultithreadingEnabled) {
+    if !isMultithreadingEnabled then {
       // single-threaded
       val cur = get(bitmap)
       CAS(bitmap, cur, v, ord)
     } else {
       // multi-threaded
       var retry = true
-      while (retry) {
+      while retry do {
         val cur = get(bitmap)
-        if (STATE(cur, ord) == 1) retry = !CAS(bitmap, cur, v, ord)
+        if STATE(cur, ord) == 1 then retry = !CAS(bitmap, cur, v, ord)
         else {
           // cur == 2, somebody is waiting on monitor
-          if (CAS(bitmap, cur, v, ord)) {
+          if CAS(bitmap, cur, v, ord) then {
             val monitor = getMonitor(bitmap, ord)
             monitor.synchronized {
               monitor.notifyAll()
@@ -95,22 +95,21 @@ private object LazyVals {
     }
 
   def wait4Notification(bitmap: RawPtr, cur: Long, ord: Int): Unit = {
-    if (!isMultithreadingEnabled)
+    if !isMultithreadingEnabled then
       throw new IllegalStateException(
         "wait4Notification not supported in single-threaded Scala Native runtime"
       )
 
     var retry = true
-    while (retry) {
+    while retry do {
       val cur = get(bitmap)
       val state = STATE(cur, ord)
-      if (state == 1) CAS(bitmap, cur, 2, ord)
-      else if (state == 2) {
+      if state == 1 then CAS(bitmap, cur, 2, ord)
+      else if state == 2 then {
         val monitor = getMonitor(bitmap, ord)
         monitor.synchronized {
           // make sure notification did not happen yet.
-          if (STATE(get(bitmap), ord) == 2)
-            monitor.wait()
+          if STATE(get(bitmap), ord) == 2 then monitor.wait()
         }
       } else retry = false
     }
@@ -118,7 +117,7 @@ private object LazyVals {
 
   @alwaysinline
   def get(bitmap: RawPtr): Long = {
-    if (!isMultithreadingEnabled) Intrinsics.loadLong(bitmap)
+    if !isMultithreadingEnabled then Intrinsics.loadLong(bitmap)
     else atomic_load_llong(bitmap, memory_order_acquire)
   }
 

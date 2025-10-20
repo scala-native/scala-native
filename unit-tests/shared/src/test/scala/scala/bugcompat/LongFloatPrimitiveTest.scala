@@ -1,7 +1,7 @@
 package scala.bugcompat
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 class LongFloatPrimitiveTest {
   @inline def inlineFloat(): Float =

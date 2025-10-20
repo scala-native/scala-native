@@ -1,8 +1,8 @@
 package java.lang.invoke
 
-import scala.scalanative.libc.stdatomic._
-import scala.scalanative.libc.stdatomic.memory_order._
-import scala.scalanative.annotation._
+import scala.scalanative.libc.stdatomic.*
+import scala.scalanative.libc.stdatomic.memory_order.*
+import scala.scalanative.annotation.*
 import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
 
 class VarHandle {

@@ -4,7 +4,7 @@ package java.util.random
  * attributions and algorithm hints.
  */
 
-import java.{lang => jl}
+import java.lang as jl
 
 import java.nio.ByteBuffer
 

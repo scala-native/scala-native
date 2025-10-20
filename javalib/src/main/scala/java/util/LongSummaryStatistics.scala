@@ -1,6 +1,6 @@
 package java.util
 
-import java.{lang => jl}
+import java.lang as jl
 
 class LongSummaryStatistics() {
   private var count: Long = 0L

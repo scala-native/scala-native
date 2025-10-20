@@ -1,6 +1,6 @@
 package scala.scalanative.runtime.dwarf
 
-import scalanative.unsigned._
+import scalanative.unsigned.*
 
 private[runtime] case class ELF private (
     header: ELF.Header,
@@ -10,7 +10,7 @@ private[runtime] case class ELF private (
 }
 
 private[runtime] object ELF {
-  import CommonParsers._
+  import CommonParsers.*
 
   def parse(ds: BinaryFile): ELF = {
     implicit val stream = ds

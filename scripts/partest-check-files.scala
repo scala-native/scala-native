@@ -2,7 +2,7 @@
 //> using lib "com.lihaoyi::os-lib:0.11.5"
 
 import java.io.File
-import os._
+import os.*
 
 val partestSourcesDirs = pwd / "scala-partest" / "fetchedSources"
 
@@ -36,7 +36,7 @@ def checkFiles(scalaVersion: String): Unit = {
              |Partest sources dir: ${showRelPath(partestSourcesDir)}
              |""".stripMargin)
 
-  if (Seq(partestTestsDir, partestSourcesDir).forall(exists(_))) ()
+  if Seq(partestTestsDir, partestSourcesDir).forall(exists(_)) then ()
   else {
     println("Abort: Some paths are missing!")
     sys.exit(1)
@@ -51,11 +51,11 @@ def checkFiles(scalaVersion: String): Unit = {
     if denylisted.nonEmpty && !denylisted.startsWith("#")
     testName = {
       val lastDot = denylisted.lastIndexOf(".")
-      if (lastDot > 0) denylisted.substring(0, lastDot)
+      if lastDot > 0 then denylisted.substring(0, lastDot)
       else denylisted
     }
     _ =
-      if (testNames.contains(testName)) {
+      if testNames.contains(testName) then {
         println(s"Duplicated denylisted test $testName at line $line")
       } else {
         testNames += testName
@@ -65,9 +65,9 @@ def checkFiles(scalaVersion: String): Unit = {
     asFile = testFiles / RelPath(testName + ".scala")
   } {
     println {
-      if (asDir != source && exists(asDir)) {
+      if asDir != source && exists(asDir) then {
         s"Denylisted $denylisted should refer to directory ${asDir.relativeTo(testFiles)}"
-      } else if (asFile != source && exists(asFile)) {
+      } else if asFile != source && exists(asFile) then {
         s"Denylisted $denylisted should refer to file ${asFile.relativeTo(testFiles)}"
       } else {
         s"Denylisted $denylisted does not exist"

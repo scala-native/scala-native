@@ -1,11 +1,11 @@
 package org.scalanative.testsuite.javalib.util
 
-import java.util._
+import java.util.*
 
 import org.junit.Test
-import org.junit.Assert._
-import org.junit.Assume._
-import org.scalanative.testsuite.utils.Platform._
+import org.junit.Assert.*
+import org.junit.Assume.*
+import org.scalanative.testsuite.utils.Platform.*
 
 class DateTest {
   // now : java.util.Date = Fri Mar 31 14:47:44 EDT 2017

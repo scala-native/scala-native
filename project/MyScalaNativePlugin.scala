@@ -1,17 +1,17 @@
 package build
 
-import sbt._
-import sbt.Keys._
+import sbt.*
+import sbt.Keys.*
 
-import scala.scalanative.sbtplugin.Utilities._
+import scala.scalanative.sbtplugin.Utilities.*
 import scala.scalanative.sbtplugin.ScalaNativePlugin
-import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport._
+import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport.*
 import scala.sys.env
-import complete.DefaultParsers._
+import complete.DefaultParsers.*
 
 import one.profiler.AsyncProfilerLoader
 import one.profiler.AsyncProfiler
-import build.OutputType._
+import build.OutputType.*
 
 object MyScalaNativePlugin extends AutoPlugin {
   override def requires: Plugins = ScalaNativePlugin
@@ -138,7 +138,7 @@ object MyScalaNativePlugin extends AutoPlugin {
     }
   }
 
-  override def projectSettings: Seq[Setting[_]] = Def.settings(
+  override def projectSettings: Seq[Setting[?]] = Def.settings(
     /* Remove libraryDependencies on ourselves; we use .dependsOn() instead
      * inside this build.
      */

@@ -1,9 +1,9 @@
 package scala.scalanative.runtime
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
-import Continuations._
+import Continuations.*
 import scala.scalanative.meta.LinktimeInfo.{
   isContinuationsSupported,
   is32BitPlatform
@@ -40,7 +40,7 @@ class ContinuationsTest:
       case class Iter(n: Int, nx: Int => Iter)
       val r0 = boundary[Iter] {
         var r = 0
-        while (true) {
+        while true do {
           r += suspend[Int, Iter](cb => Iter(r, cb))
         }
         ???
@@ -62,9 +62,9 @@ class ContinuationsTest:
         // these get boxed, so it's not really working different from a generator
         var a = 1
         var b = 1
-        while (true) {
+        while true do {
           val steps = suspend[Int, Seqn[Int]](c => Seqnt(a, c))
-          for (i <- 1 to steps) {
+          for i <- 1 to steps do {
             val c = a + b
             a = b
             b = c
@@ -74,7 +74,7 @@ class ContinuationsTest:
       }
 
       val fibs = ArrayBuffer(fib)
-      for (step <- 1 to 10) {
+      for step <- 1 to 10 do {
         fibs += fibs(step - 1).nx(1)
       }
 

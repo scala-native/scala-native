@@ -1,9 +1,9 @@
 // Ported from Scala.js, commit: ac38a148, dated: 2020-09-25
 package org.scalanative.testsuite.javalib.lang
 
-import java.lang._
+import java.lang.*
 
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.junit.Test
 import java.util.Locale
 

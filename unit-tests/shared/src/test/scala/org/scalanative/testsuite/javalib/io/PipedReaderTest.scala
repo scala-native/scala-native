@@ -17,8 +17,8 @@
 
 package org.scalanative.testsuite.javalib.io
 
-import org.junit._
-import org.junit.Assert._
+import org.junit.*
+import org.junit.Assert.*
 
 import java.io.{IOException, PipedReader, PipedWriter}
 

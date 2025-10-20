@@ -9,24 +9,24 @@ package org.scalanative.testsuite.javalib.util.stream
  * Use ju.ArrayList surgically at the points of use.
  */
 
-import java.{lang => jl}
+import java.lang as jl
 
-import java.{util => ju}
+import java.util as ju
 import java.util.Arrays
 import java.util.LongSummaryStatistics
 import java.util.OptionalLong
 import java.util.{Spliterator, Spliterators}
 
 import java.util.concurrent.{CountDownLatch, TimeUnit}
-import java.util.concurrent.CountDownLatch._
+import java.util.concurrent.CountDownLatch.*
 
 import java.util.function.{LongConsumer, LongFunction, LongSupplier}
 import java.util.function.Supplier
 
-import java.util.stream._
+import java.util.stream.*
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.junit.Ignore
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
@@ -663,7 +663,7 @@ class LongStreamTest {
 
     val expectedAverage = 3364.875 // test against known value, not calculated.
 
-    val s = LongStream.of(wild: _*)
+    val s = LongStream.of(wild*)
 
     val optional = s.average()
 
@@ -697,7 +697,7 @@ class LongStreamTest {
 
     assertTrue(
       "resultant stream should be boxed Stream[Long]",
-      sBoxed.isInstanceOf[Stream[_]]
+      sBoxed.isInstanceOf[Stream[?]]
     )
 
     assertFalse(
@@ -824,7 +824,7 @@ class LongStreamTest {
       expectedSet.add(expectedElements(j))
 
     val s = LongStream
-      .of(expectedElements: _*)
+      .of(expectedElements*)
       .flatMap((e) => LongStream.of(e, e, e))
       .distinct()
 
@@ -835,7 +835,7 @@ class LongStreamTest {
     // count() exhausted s1, so create second stream, s2
 
     val s2 = LongStream
-      .of(expectedElements: _*)
+      .of(expectedElements*)
       .flatMap((e) => LongStream.of(e, e, e))
       .distinct()
 
@@ -1371,7 +1371,7 @@ class LongStreamTest {
       .peek((e: Long) =>
         printf(s"composite peek - before: <${e}>|\n")
       ) // simple str
-      .flatMap((e: Long) => LongStream.of((1L to e): _*))
+      .flatMap((e: Long) => LongStream.of((1L to e)*))
       .peek((e: Long) =>
         printf(s"composite peek - after: <${e}>|\n")
       ) // composite
@@ -1475,7 +1475,7 @@ class LongStreamTest {
     ordered(6) = 6144
     ordered(7) = 6816L
 
-    val s = LongStream.of(wild: _*)
+    val s = LongStream.of(wild*)
 
     val sorted = s.sorted()
 
@@ -1509,7 +1509,7 @@ class LongStreamTest {
     wild(6) = 6144
     wild(7) = 960
 
-    val seqLongStream = LongStream.of(wild: _*)
+    val seqLongStream = LongStream.of(wild*)
     assertFalse(
       "Expected sequential stream",
       seqLongStream.isParallel()
@@ -1540,7 +1540,7 @@ class LongStreamTest {
       seqIntSpliter.characteristics()
     )
 
-    val sortedSeqLongStream = LongStream.of(wild: _*).sorted()
+    val sortedSeqLongStream = LongStream.of(wild*).sorted()
     val sortedSeqSpliter = sortedSeqLongStream.spliterator()
 
     assertEquals(
@@ -1706,7 +1706,7 @@ class LongStreamTest {
 
     val expectedSum = 19470
 
-    val s = LongStream.of(wild: _*)
+    val s = LongStream.of(wild*)
 
     val sum = s.sum()
 
@@ -1732,7 +1732,7 @@ class LongStreamTest {
     val expectedSum = 19470
     val expectedAverage = expectedSum.toDouble / nElements
 
-    val s = LongStream.of(wild: _*)
+    val s = LongStream.of(wild*)
 
     val stats = s.summaryStatistics()
 
@@ -1765,7 +1765,7 @@ class LongStreamTest {
     wild(6) = 6144
     wild(7) = 960
 
-    val s = LongStream.of(wild: _*)
+    val s = LongStream.of(wild*)
 
     val resultantArray = s.toArray()
 

@@ -1,16 +1,16 @@
 package org.scalanative.testsuite.javalib.nio.channels
 
 import org.junit.Test
-import org.junit.Assert._
-import org.junit.Assume._
+import org.junit.Assert.*
+import org.junit.Assume.*
 import org.junit.BeforeClass
 import org.junit.Ignore
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform
-import scala.scalanative.junit.utils.AssumesHelper._
+import scala.scalanative.junit.utils.AssumesHelper.*
 
-import java.{lang => jl}
+import java.lang as jl
 
 import java.io.File
 import java.io.{FileInputStream, FileOutputStream}
@@ -18,7 +18,7 @@ import java.io.RandomAccessFile
 
 import java.nio.ByteBuffer
 
-import java.nio.channels._
+import java.nio.channels.*
 
 import java.nio.file.AccessDeniedException
 import java.nio.file.{Files, StandardOpenOption}
@@ -107,7 +107,7 @@ object FileChannelTest {
 }
 
 class FileChannelTest {
-  import FileChannelTest._
+  import FileChannelTest.*
 
   def withTemporaryDirectory(fn: Path => Unit): Unit = {
     val file = File.createTempFile("test", ".tmp")

@@ -1,6 +1,6 @@
 package scala.scalanative.junit
 
-import org.junit._
+import org.junit.*
 
 import scala.scalanative.junit.utils.JUnitTest
 

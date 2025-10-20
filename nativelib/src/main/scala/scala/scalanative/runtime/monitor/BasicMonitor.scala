@@ -1,15 +1,15 @@
 package scala.scalanative.runtime
 package monitor
 
-import LockWord._
+import LockWord.*
 import scala.annotation.tailrec
 import scala.scalanative.annotation.alwaysinline
-import scala.scalanative.unsafe.{stackalloc => _, _}
-import scala.scalanative.runtime.Intrinsics._
-import scala.scalanative.runtime.ffi._
-import scala.scalanative.runtime.ffi.stdatomic._
-import scala.scalanative.runtime.ffi.stdatomic.memory_order._
-import scala.scalanative.meta.LinktimeInfo.{is32BitPlatform => is32bit}
+import scala.scalanative.unsafe.{stackalloc as _, *}
+import scala.scalanative.runtime.Intrinsics.*
+import scala.scalanative.runtime.ffi.*
+import scala.scalanative.runtime.ffi.stdatomic.*
+import scala.scalanative.runtime.ffi.stdatomic.memory_order.*
+import scala.scalanative.meta.LinktimeInfo.is32BitPlatform as is32bit
 
 /** Lightweight monitor used for single-threaded execution, upon detection of
  *  access from multiple threads is inflated in ObjectMonitor
@@ -20,7 +20,7 @@ import scala.scalanative.meta.LinktimeInfo.{is32BitPlatform => is32bit}
 @inline
 private[runtime] final class BasicMonitor(val lockWordRef: RawPtr)
     extends AnyVal {
-  import BasicMonitor._
+  import BasicMonitor.*
   type ThreadId = RawPtr
 
   @alwaysinline def _notify(): Unit = {
@@ -53,7 +53,7 @@ private[runtime] final class BasicMonitor(val lockWordRef: RawPtr)
   }
 
   private def enterMonitor(thread: Thread, threadId: ThreadId) = {
-    import NativeThread._
+    import NativeThread.*
     currentNativeThread.state = State.WaitingOnMonitorEnter
     val current = lockWord
     if (current.isInflated) current.getObjectMonitor.enter(thread)

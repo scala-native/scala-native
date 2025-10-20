@@ -1,6 +1,6 @@
 package org.scalanative.testsuite.javalib.util.stream
 
-import org.junit.Assume._
+import org.junit.Assume.*
 
 import java.util.Spliterator
 

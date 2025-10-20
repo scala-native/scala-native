@@ -2,11 +2,11 @@
 
 package org.scalanative.testsuite.javalib.net
 
-import org.scalanative.testsuite.utils.Platform._
+import org.scalanative.testsuite.utils.Platform.*
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 import java.net.URLDecoder
 import java.io.UnsupportedEncodingException

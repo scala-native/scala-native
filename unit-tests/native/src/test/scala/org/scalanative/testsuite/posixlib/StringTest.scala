@@ -1,8 +1,8 @@
 package org.scalanative.testsuite.posixlib
 
 import org.junit.Test
-import org.junit.Assert._
-import org.junit.Assume._
+import org.junit.Assert.*
+import org.junit.Assume.*
 
 import scala.scalanative.meta.LinktimeInfo.isWindows
 
@@ -12,9 +12,9 @@ import scala.scalanative.posix
  * To span many Scala versions with same code used as
  * qualified posixErrno.errno below.
  */
-import scala.scalanative.posix.{errno => posixErrno}, posixErrno._
+import scala.scalanative.posix.errno as posixErrno, posixErrno.*
 
-import scala.scalanative.unsafe._
+import scala.scalanative.unsafe.*
 
 class StringTest {
   /* This class tests only strtok_r(). This to exercise the declaration

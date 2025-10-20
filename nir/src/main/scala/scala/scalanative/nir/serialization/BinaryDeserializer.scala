@@ -10,7 +10,7 @@ import scala.collection.mutable
 import scala.collection.immutable
 import scala.util.control.NonFatal
 
-import scala.scalanative.nir.serialization.{Tags => T}
+import scala.scalanative.nir.serialization.Tags as T
 import scala.scalanative.util.TypeOps.TypeNarrowing
 import scala.scalanative.util.ScalaStdlibCompat.ArraySeqCompat
 
@@ -30,7 +30,7 @@ class DeserializationException(
 
 // scalafmt: { maxColumn = 120}
 final class BinaryDeserializer(buffer: ByteBuffer, nirSource: NIRSource) {
-  import buffer._
+  import buffer.*
 
   lazy val prelude = Prelude.readFrom(buffer, nirSource.debugName)
 

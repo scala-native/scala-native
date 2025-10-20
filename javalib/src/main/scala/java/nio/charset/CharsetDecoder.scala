@@ -2,7 +2,7 @@ package java.nio.charset
 
 import scala.annotation.{switch, tailrec}
 
-import java.nio._
+import java.nio.*
 
 abstract class CharsetDecoder protected (
     cs: Charset,
@@ -10,7 +10,7 @@ abstract class CharsetDecoder protected (
     _maxCharsPerByte: Float
 ) {
 
-  import CharsetDecoder._
+  import CharsetDecoder.*
 
   // Config
 

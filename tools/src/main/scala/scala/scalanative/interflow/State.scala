@@ -3,7 +3,7 @@ package interflow
 
 import scala.collection.mutable
 import scalanative.util.unreachable
-import scalanative.linker._
+import scalanative.linker.*
 import scalanative.codegen.Lower
 
 private[interflow] final class State(val blockId: nir.Local)(

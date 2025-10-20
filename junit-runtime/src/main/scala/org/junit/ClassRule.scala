@@ -1,7 +1,7 @@
 package org.junit
 
-import java.lang.annotation._
+import java.lang.annotation.*
 
 trait ClassRule extends Annotation {
-  def annotationType(): Class[_ <: Annotation] = classOf[ClassRule]
+  def annotationType(): Class[? <: Annotation] = classOf[ClassRule]
 }

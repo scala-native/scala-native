@@ -1,15 +1,15 @@
 package org.scalanative.testsuite.javalib.nio
 
-import java.nio._
+import java.nio.*
 import java.nio.channels.FileChannel.MapMode
 import java.nio.channels.NonWritableChannelException
 
 import org.junit.{Test, Before}
-import org.junit.Assert._
+import org.junit.Assert.*
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
-import java.io._
+import java.io.*
 
 class MappedByteBufferTest {
 

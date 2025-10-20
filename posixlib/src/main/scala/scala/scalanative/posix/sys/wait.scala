@@ -2,7 +2,7 @@ package scala.scalanative
 package posix
 package sys
 
-import scalanative.unsafe._
+import scalanative.unsafe.*
 
 /** POSIX wait.h for Scala
  *

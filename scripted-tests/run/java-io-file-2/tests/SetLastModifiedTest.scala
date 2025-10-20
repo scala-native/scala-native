@@ -1,5 +1,5 @@
 object SetLastModifiedTest {
-  import Files._
+  import Files.*
 
   def main(args: Array[String]): Unit = {
     assert(!nonexistentFile.exists())

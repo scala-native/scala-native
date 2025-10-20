@@ -2,7 +2,7 @@ package scala.scalanative.testinterface
 
 // Ported from Scala.js
 
-import sbt.testing._
+import sbt.testing.*
 import scala.scalanative.testinterface.common.{Serializer, TaskInfo}
 
 private[testinterface] object TaskInfoBuilder {

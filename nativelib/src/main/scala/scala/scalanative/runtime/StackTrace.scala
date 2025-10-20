@@ -2,8 +2,8 @@ package scala.scalanative.runtime
 
 import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
 import scala.collection.mutable
-import scala.scalanative.unsafe._
-import scala.scalanative.unsigned._
+import scala.scalanative.unsafe.*
+import scala.scalanative.unsigned.*
 import scala.scalanative.meta.LinktimeInfo
 import java.util.Arrays
 
@@ -219,7 +219,7 @@ private[runtime] object StackTrace {
     }
 
     def withNameFromUnwind() = {
-      import Context._
+      import Context.*
       val symbol = tlContext.freshSymbolBuffer
       val offset = Intrinsics.stackalloc[Long]()
       unwind.get_proc_name(
@@ -313,7 +313,7 @@ private[runtime] object StackTrace {
       )
       data.atUnsafe(offset)
     }
-    import Context._
+    import Context.*
     def freshSymbolBuffer = freshAt(SymbolBufferOffset, SymbolMaxLength)
     def freshClassNameBuffer =
       freshAt(ClassNameBufferOffset, ClassNameMaxLength)

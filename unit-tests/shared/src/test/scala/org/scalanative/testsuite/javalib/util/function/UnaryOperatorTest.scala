@@ -3,11 +3,11 @@ package org.scalanative.testsuite.javalib.util.function
 
 import java.util.function.UnaryOperator
 
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.junit.Test
 
 class UnaryOperatorTest {
-  import UnaryOperatorTest._
+  import UnaryOperatorTest.*
 
   @Test def identity(): Unit = {
     val unaryOperatorString: UnaryOperator[String] = UnaryOperator.identity()

@@ -11,17 +11,17 @@ package regex
 import java.util.ArrayList
 import java.util.Arrays
 import java.util.List
-import java.{lang => jl}
-import scala.util.control.Breaks._
+import java.lang as jl
+import scala.util.control.Breaks.*
 
-import Inst.{Op => IOP}
+import Inst.Op as IOP
 
 // A Machine matches an input string of Unicode characters against an
 // RE2 instance using a simple NFA.
 //
 // Called by RE2.doExecute.
 class Machine(re2: RE2) {
-  import Machine._
+  import Machine.*
 
   // Compiled program.
   private val prog = re2.prog

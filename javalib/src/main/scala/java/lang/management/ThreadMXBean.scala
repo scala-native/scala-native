@@ -1,6 +1,6 @@
 package java.lang.management
 
-import java.util.ScalaOps._
+import java.util.ScalaOps.*
 
 import scala.scalanative.runtime.NativeThread
 

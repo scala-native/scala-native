@@ -2,7 +2,7 @@ package scala.scalanative
 package interflow
 
 import scala.scalanative.nir.Defn.Define.DebugInfo
-import scala.scalanative.linker._
+import scala.scalanative.linker.*
 import scala.scalanative.util.unreachable
 
 private[interflow] trait Inline { self: Interflow =>

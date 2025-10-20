@@ -4,7 +4,7 @@ package linker
 import scala.scalanative.NativePlatform
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 class TraitReachabilitySuite extends ReachabilitySuite {
   val TestClsName = "Test"

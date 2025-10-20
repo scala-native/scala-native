@@ -2,8 +2,8 @@ package scala.scalanative.testinterface.adapter
 
 // Ported from Scala.js
 
-import scala.scalanative.testinterface.common._
-import sbt.testing._
+import scala.scalanative.testinterface.common.*
+import sbt.testing.*
 
 private[adapter] final class FrameworkAdapter(
     info: FrameworkInfo,

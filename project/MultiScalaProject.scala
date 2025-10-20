@@ -1,7 +1,7 @@
 package build
 
-import sbt._
-import Keys._
+import sbt.*
+import Keys.*
 import Def.SettingsDefinition
 import scala.language.implicitConversions
 import MyScalaNativePlugin.{ideScalaVersion, enableExperimentalCompiler}
@@ -11,7 +11,7 @@ final case class MultiScalaProject private (
     private val projects: Map[String, Project],
     val dependsOnSourceInIDE: Boolean
 ) extends CompositeProject {
-  import MultiScalaProject._
+  import MultiScalaProject.*
 
   def project(v: String) = projects.getOrElse(
     v,
@@ -45,10 +45,10 @@ final case class MultiScalaProject private (
   def forBinaryVersion(version: String): Project = project(version)
 
   def settings(ss: SettingsDefinition*): MultiScalaProject =
-    transform(_.settings(ss: _*))
+    transform(_.settings(ss*))
 
   def enablePlugins(ns: Plugins*): MultiScalaProject =
-    transform(_.enablePlugins(ns: _*))
+    transform(_.enablePlugins(ns*))
 
   def dependsOn(deps: ScopedMultiScalaProject*): MultiScalaProject = {
     if (MyScalaNativePlugin.isGeneratingForIDE && dependsOnSourceInIDE) {
@@ -75,12 +75,12 @@ final case class MultiScalaProject private (
         strictMapValues(deps.flatMap(classpathDependency).groupBy(_._1))(
           _.map(_._2)
         )
-      zipped(depsByVersion)(_.dependsOn(_: _*))
+      zipped(depsByVersion)(_.dependsOn(_*))
     }
   }
 
   def configs(cs: Configuration*): MultiScalaProject =
-    transform(_.configs(cs: _*))
+    transform(_.configs(cs*))
 
   def zippedSettings(that: MultiScalaProject)(
       ss: Project => SettingsDefinition

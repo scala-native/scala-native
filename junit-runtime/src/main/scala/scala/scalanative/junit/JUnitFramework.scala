@@ -3,7 +3,7 @@ package junit
 
 // Ported from Scala.js
 
-import sbt.testing._
+import sbt.testing.*
 
 final class JUnitFramework extends Framework {
 

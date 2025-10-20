@@ -1,6 +1,6 @@
 package scala.scalanative.runtime
 
-import scala.scalanative.unsafe._
+import scala.scalanative.unsafe.*
 import scala.scalanative.meta.LinktimeInfo
 import java.nio.charset.{Charset, StandardCharsets}
 

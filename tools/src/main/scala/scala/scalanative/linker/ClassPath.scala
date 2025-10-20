@@ -9,7 +9,7 @@ import java.io.InputStreamReader
 import scala.collection.mutable
 import scala.scalanative.io.VirtualDirectory
 import scala.scalanative.nir.serialization.deserializeBinary
-import scala.scalanative.nir.serialization.{Prelude => NirPrelude}
+import scala.scalanative.nir.serialization.Prelude as NirPrelude
 import scala.scalanative.nir.serialization.NirDeserializationException
 import scala.scalanative.build.Logger
 

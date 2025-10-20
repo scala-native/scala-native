@@ -7,14 +7,14 @@
 package org.scalanative.testsuite.javalib.util.concurrent
 
 import java.util.concurrent.TimeUnit.MILLISECONDS
-import java.util._
-import java.util.concurrent._
+import java.util.*
+import java.util.concurrent.*
 
-import org.junit._
-import org.junit.Assert._
+import org.junit.*
+import org.junit.Assert.*
 import scala.scalanative.junit.utils.AssumesHelper
 
-import JSR166Test._
+import JSR166Test.*
 
 object ForkJoinPool8Test {
   final class FJException(cause: Throwable) extends RuntimeException {
@@ -36,11 +36,11 @@ object ForkJoinPool8Test {
     }
   }
   // CountedCompleter versions
-  abstract class CCF(parent: CountedCompleter[_], var number: Int)
+  abstract class CCF(parent: CountedCompleter[?], var number: Int)
       extends CountedCompleter[AnyRef](parent, 1) {
     var rnumber = 0
     override final def compute(): Unit = {
-      var p: CountedCompleter[_] = null
+      var p: CountedCompleter[?] = null
       var f = this
       var n = number
       while (n >= 2) {
@@ -54,18 +54,18 @@ object ForkJoinPool8Test {
       else f.quietlyComplete()
     }
   }
-  final class LCCF(parent: CountedCompleter[_], n: Int)
+  final class LCCF(parent: CountedCompleter[?], n: Int)
       extends ForkJoinPool8Test.CCF(parent, n) {
-    override final def onCompletion(caller: CountedCompleter[_]): Unit = {
+    override final def onCompletion(caller: CountedCompleter[?]): Unit = {
       val p = getCompleter.asInstanceOf[ForkJoinPool8Test.CCF]
       val n = number + rnumber
       if (p != null) p.number = n
       else number = n
     }
   }
-  final class RCCF(parent: CountedCompleter[_], n: Int)
+  final class RCCF(parent: CountedCompleter[?], n: Int)
       extends ForkJoinPool8Test.CCF(parent, n) {
-    override final def onCompletion(caller: CountedCompleter[_]): Unit = {
+    override final def onCompletion(caller: CountedCompleter[?]): Unit = {
       val p = getCompleter.asInstanceOf[ForkJoinPool8Test.CCF]
       val n = number + rnumber
       if (p != null) p.rnumber = n
@@ -74,11 +74,11 @@ object ForkJoinPool8Test {
   }
 
   /** Version of CCF with forced failure in left completions. */
-  abstract class FailingCCF(parent: CountedCompleter[_], var number: Int)
+  abstract class FailingCCF(parent: CountedCompleter[?], var number: Int)
       extends CountedCompleter[AnyRef](parent, 1) {
     val rnumber = 0
     override final def compute(): Unit = {
-      var p: CountedCompleter[_] = null
+      var p: CountedCompleter[?] = null
       var f = this
       var n = number
       while (n >= 2) {
@@ -92,25 +92,25 @@ object ForkJoinPool8Test {
       else f.quietlyComplete()
     }
   }
-  final class LFCCF(parent: CountedCompleter[_], n: Int)
+  final class LFCCF(parent: CountedCompleter[?], n: Int)
       extends ForkJoinPool8Test.FailingCCF(parent, n) {
-    override final def onCompletion(caller: CountedCompleter[_]): Unit = {
+    override final def onCompletion(caller: CountedCompleter[?]): Unit = {
       val p = getCompleter.asInstanceOf[ForkJoinPool8Test.FailingCCF]
       val n = number + rnumber
       if (p != null) p.number = n
       else number = n
     }
   }
-  final class RFCCF(parent: CountedCompleter[_], n: Int)
+  final class RFCCF(parent: CountedCompleter[?], n: Int)
       extends ForkJoinPool8Test.FailingCCF(parent, n) {
-    override final def onCompletion(caller: CountedCompleter[_]): Unit = {
+    override final def onCompletion(caller: CountedCompleter[?]): Unit = {
       completeExceptionally(new ForkJoinPool8Test.FJException)
     }
   }
 }
 
 class ForkJoinPool8Test extends JSR166Test {
-  import ForkJoinPool8Test._
+  import ForkJoinPool8Test.*
 
   /** Common pool exists and has expected parallelism.
    */
@@ -142,12 +142,12 @@ class ForkJoinPool8Test extends JSR166Test {
    * executed in the common pool, generally implicitly via
    * checkInvoke.
    */
-  private def checkInvoke(a: ForkJoinTask[_]): Unit = {
+  private def checkInvoke(a: ForkJoinTask[?]): Unit = {
     checkNotDone(a)
     assertNull(a.invoke)
     checkCompletedNormally(a)
   }
-  def checkNotDone(a: ForkJoinTask[_]): Unit = {
+  def checkNotDone(a: ForkJoinTask[?]): Unit = {
     assertFalse(a.isDone)
     assertFalse(a.isCompletedNormally)
     assertFalse(a.isCompletedAbnormally)
@@ -185,7 +185,7 @@ class ForkJoinPool8Test extends JSR166Test {
     }
   }
 
-  def checkCompletedNormally(a: ForkJoinTask[_]): Unit = {
+  def checkCompletedNormally(a: ForkJoinTask[?]): Unit = {
     assertTrue(a.isDone)
     assertFalse(a.isCancelled)
     assertTrue(a.isCompletedNormally)
@@ -204,7 +204,7 @@ class ForkJoinPool8Test extends JSR166Test {
     }
   }
 
-  def checkCancelled(a: ForkJoinTask[_]): Unit = {
+  def checkCancelled(a: ForkJoinTask[?]): Unit = {
     assertTrue(a.isDone)
     assertTrue(a.isCancelled)
     assertFalse(a.isCompletedNormally)
@@ -237,7 +237,7 @@ class ForkJoinPool8Test extends JSR166Test {
     }
   }
 
-  def checkCompletedAbnormally(a: ForkJoinTask[_], t: Throwable): Unit = {
+  def checkCompletedAbnormally(a: ForkJoinTask[?], t: Throwable): Unit = {
     assertTrue(a.isDone)
     assertFalse(a.isCancelled)
     assertFalse(a.isCompletedNormally)
@@ -1374,7 +1374,7 @@ class ForkJoinPool8Test extends JSR166Test {
         val f = new ForkJoinPool8Test.LCCF(null, 8)
         val g = new ForkJoinPool8Test.LCCF(null, 9)
         val h = new ForkJoinPool8Test.LCCF(null, 7)
-        val set = new HashSet[CountedCompleter[_]]
+        val set = new HashSet[CountedCompleter[?]]
         set.add(f)
         set.add(g)
         set.add(h)
@@ -1474,7 +1474,7 @@ class ForkJoinPool8Test extends JSR166Test {
         val f = new ForkJoinPool8Test.LFCCF(null, 8)
         val g = new ForkJoinPool8Test.LCCF(null, 9)
         val h = new ForkJoinPool8Test.LCCF(null, 7)
-        val set = new HashSet[CountedCompleter[_]]
+        val set = new HashSet[CountedCompleter[?]]
         set.add(f)
         set.add(g)
         set.add(h)

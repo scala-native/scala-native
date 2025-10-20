@@ -1,7 +1,7 @@
 package java.lang
 
 import java.util.{Arrays, Map, HashMap, List, ArrayList}
-import java.util.ScalaOps._
+import java.util.ScalaOps.*
 import java.io.PrintStream
 import java.lang.Thread.UncaughtExceptionHandler
 import java.lang.ref.WeakReference

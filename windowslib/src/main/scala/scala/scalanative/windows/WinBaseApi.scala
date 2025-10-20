@@ -1,14 +1,14 @@
 package scala.scalanative.windows
 
-import scala.scalanative.unsafe._
-import scala.scalanative.unsigned._
+import scala.scalanative.unsafe.*
+import scala.scalanative.unsigned.*
 import HandleApi.Handle
-import scala.scalanative.windows.winnt._
+import scala.scalanative.windows.winnt.*
 
 @link("advapi32")
 @extern()
 object WinBaseApi {
-  import SecurityBaseApi._
+  import SecurityBaseApi.*
 
   type SecurityInformation = DWord
   type SecurityAttributes = CStruct3[DWord, CVoidPtr, Boolean]
@@ -191,7 +191,7 @@ object WinBaseApiExt {
 }
 
 object WinBaseApiOps {
-  import WinBaseApi._
+  import WinBaseApi.*
   implicit class SecurityAttributesOps(val ref: Ptr[SecurityAttributes])
       extends AnyVal {
     def length: DWord = ref._1

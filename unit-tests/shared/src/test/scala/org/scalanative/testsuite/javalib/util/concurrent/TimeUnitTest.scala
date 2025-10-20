@@ -2,11 +2,11 @@
 
 package org.scalanative.testsuite.javalib.util.concurrent
 
-import java.util._
-import java.util.concurrent._
+import java.util.*
+import java.util.concurrent.*
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 class TimeUnitTest {
 

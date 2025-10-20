@@ -1,8 +1,8 @@
 package java.lang
 
-import scalanative.unsafe._
-import scalanative.unsigned._
-import scalanative.libc.errno._
+import scalanative.unsafe.*
+import scalanative.unsigned.*
+import scalanative.libc.errno.*
 
 private[java] object IEEE754Helpers {
   // Java parseDouble() and parseFloat() allow characters at and after

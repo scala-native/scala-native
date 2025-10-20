@@ -2,20 +2,20 @@
 
 package org.scalanative.testsuite.javalib.util
 
-import java.util._
-import java.{util => ju}
+import java.util.*
+import java.util as ju
 
 import scala.reflect.ClassTag
 
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.junit.Test
 
-import org.scalanative.testsuite.utils.Platform._
+import org.scalanative.testsuite.utils.Platform.*
 
-import Utils._
+import Utils.*
 
 class IdentityHashMapTest extends MapTest {
-  import MapTest._
+  import MapTest.*
 
   override def factory: IdentityHashMapFactory = new IdentityHashMapFactory
 

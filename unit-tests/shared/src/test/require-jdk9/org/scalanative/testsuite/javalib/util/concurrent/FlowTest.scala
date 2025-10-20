@@ -5,10 +5,10 @@ package org.scalanative.testsuite.javalib.util.concurrent
 import java.util.concurrent.Flow
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 class FlowTest {
-  import FlowTest._
+  import FlowTest.*
 
   @Test def testDefaultBufferSize(): Unit =
     assertEquals(256, Flow.defaultBufferSize())
@@ -47,7 +47,7 @@ object FlowTest {
 
   def makeProcessor[T, R](): Flow.Processor[T, R] = {
     new Flow.Processor[T, R] {
-      def subscribe(subscriber: Flow.Subscriber[_ >: R]): Unit = ()
+      def subscribe(subscriber: Flow.Subscriber[? >: R]): Unit = ()
       def onSubscribe(subscription: Flow.Subscription): Unit = ()
       def onNext(item: T): Unit = ()
       def onError(throwable: Throwable): Unit = ()
@@ -57,7 +57,7 @@ object FlowTest {
 
   def makePublisher[T](): Flow.Publisher[T] = {
     new Flow.Publisher[T] {
-      def subscribe(subscriber: Flow.Subscriber[_ >: T]): Unit = ()
+      def subscribe(subscriber: Flow.Subscriber[? >: T]): Unit = ()
     }
   }
 

@@ -2,7 +2,7 @@ package scala.scalanative
 package posix
 package net
 
-import scalanative.unsafe._
+import scalanative.unsafe.*
 
 /** POSIX if.h for Scala
  *

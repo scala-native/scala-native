@@ -2,7 +2,7 @@ package scala.scalanative
 package interflow
 
 import scala.scalanative.nir.Defn.Define.DebugInfo
-import scala.scalanative.linker._
+import scala.scalanative.linker.*
 import scala.collection.mutable
 import scala.scalanative.util.ScopedVar.scopedPushIf
 

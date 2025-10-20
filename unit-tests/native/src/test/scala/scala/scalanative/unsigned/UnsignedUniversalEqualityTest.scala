@@ -1,8 +1,8 @@
 package scala.scalanative.unsigned
 
 import org.junit.Test
-import org.junit.Assert._
-import scala.scalanative.unsafe._
+import org.junit.Assert.*
+import scala.scalanative.unsafe.*
 import scala.reflect.ClassTag
 import scala.scalanative.meta.LinktimeInfo.is32BitPlatform
 

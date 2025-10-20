@@ -1,7 +1,7 @@
 package scala.scalanative
 package runtime
 
-import scalanative.unsafe._
+import scalanative.unsafe.*
 import scala.scalanative.annotation.alwaysinline
 
 /** The Boehm GC conservative garbage collector
@@ -12,13 +12,13 @@ import scala.scalanative.annotation.alwaysinline
 @extern
 object GC {
   @name("scalanative_GC_alloc")
-  private[runtime] def alloc(cls: Class[_], size: Int): RawPtr = extern
+  private[runtime] def alloc(cls: Class[?], size: Int): RawPtr = extern
   @name("scalanative_GC_alloc_small")
-  private[runtime] def alloc_small(cls: Class[_], size: Int): RawPtr = extern
+  private[runtime] def alloc_small(cls: Class[?], size: Int): RawPtr = extern
   @name("scalanative_GC_alloc_large")
-  private[runtime] def alloc_large(cls: Class[_], size: Int): RawPtr = extern
+  private[runtime] def alloc_large(cls: Class[?], size: Int): RawPtr = extern
   @name("scalanative_GC_alloc_array")
-  private[runtime] def alloc_array[T <: Array[_]](
+  private[runtime] def alloc_array[T <: Array[?]](
       cls: Class[T],
       length: Int,
       stride: Int

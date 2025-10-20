@@ -9,9 +9,9 @@ package scala.scalanative
 package regex
 
 import java.util.ArrayList
-import java.{lang => jl}
+import java.lang as jl
 
-import Inst.{Op => IOP}
+import Inst.Op as IOP
 
 // A Prog is a compiled regular expression program.
 class Prog {

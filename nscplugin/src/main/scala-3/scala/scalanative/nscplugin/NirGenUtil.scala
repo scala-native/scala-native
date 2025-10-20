@@ -2,10 +2,10 @@ package scala.scalanative
 package nscplugin
 
 import dotty.tools.dotc.ast.tpd
-import tpd._
+import tpd.*
 import dotty.tools.dotc.core
-import core.Contexts._
-import core.Types._
+import core.Contexts.*
+import core.Types.*
 import scala.scalanative.util.ScopedVar
 import scala.collection.mutable
 import dotty.tools.dotc.core.Names.Name
@@ -50,7 +50,7 @@ trait NirGenUtil(using Context) { self: NirCodeGen =>
     val blockScope = nir.ScopeId.of(curFreshScope.get())
     // Parent of top level points to itself
     val parentScope =
-      if (blockScope.isTopLevel) blockScope
+      if blockScope.isTopLevel then blockScope
       else curScopeId.get
 
     curScopes.get += nir.Defn.Define.DebugInfo.LexicalScope(
@@ -80,7 +80,7 @@ trait NirGenUtil(using Context) { self: NirCodeGen =>
 
   private def cachedDesugarIdent(i: Ident): Option[tpd.Select] = {
     var found = desugared.get(i.tpe)
-    if (found == null) {
+    if found == null then {
       tpd.desugarIdent(i) match {
         case sel: tpd.Select =>
           desugared.put(i.tpe, sel)
@@ -88,7 +88,7 @@ trait NirGenUtil(using Context) { self: NirCodeGen =>
         case _ =>
       }
     }
-    if (found == null) None else Some(found)
+    if found == null then None else Some(found)
   }
 
   object DesugaredSelect extends DeconstructorCommon[tpd.Tree] {
@@ -133,7 +133,7 @@ object NirGenUtil {
     private var cached: T = uninitialized
 
     def get(using Context): T = {
-      if (lastContext != ctx) {
+      if lastContext != ctx then {
         cached = init
         lastContext = ctx
       }

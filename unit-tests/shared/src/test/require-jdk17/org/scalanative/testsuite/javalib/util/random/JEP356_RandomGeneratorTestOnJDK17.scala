@@ -6,7 +6,7 @@ package org.scalanative.testsuite.javalib.util.random
  */
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 import java.util.random.RandomGenerator
 

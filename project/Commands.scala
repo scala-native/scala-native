@@ -1,10 +1,10 @@
 package build
 
-import sbt._
-import Keys._
-import Build._
-import com.typesafe.tools.mima.plugin.MimaPlugin.autoImport._
-import ScriptedPlugin.autoImport._
+import sbt.*
+import Keys.*
+import Build.*
+import com.typesafe.tools.mima.plugin.MimaPlugin.autoImport.*
+import ScriptedPlugin.autoImport.*
 
 object Commands {
   lazy val values = Seq(

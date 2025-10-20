@@ -9,7 +9,7 @@
 
 package java.util
 
-import java.{lang => jl}
+import java.lang as jl
 import java.util.function.Supplier
 
 object Objects {
@@ -58,7 +58,7 @@ object Objects {
     else o.toString
 
   @inline
-  def compare[T](a: T, b: T, c: Comparator[_ >: T]): Int =
+  def compare[T](a: T, b: T, c: Comparator[? >: T]): Int =
     if (a.asInstanceOf[AnyRef] eq b.asInstanceOf[AnyRef]) 0
     else c.compare(a, b)
 
@@ -166,7 +166,7 @@ object Objects {
   }
 
   /** @since JDK 9 */
-  def requireNonNullElseGet[T](obj: T, supplier: Supplier[_ <: T]): T = {
+  def requireNonNullElseGet[T](obj: T, supplier: Supplier[? <: T]): T = {
     if (obj != null) obj
     else {
       Objects.requireNonNull(supplier, "supplier")

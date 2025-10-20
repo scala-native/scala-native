@@ -9,7 +9,7 @@ class FilteredClassLoader(allow: String => Boolean, parent: ClassLoader)
     extends ClassLoader(parent) {
 
   @nowarn("msg=`_` is deprecated for wildcard arguments of types")
-  override def loadClass(className: String, resolve: Boolean): Class[_] =
+  override def loadClass(className: String, resolve: Boolean): Class[?] =
     if (allow(className))
       super.loadClass(className, resolve)
     else

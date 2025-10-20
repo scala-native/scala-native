@@ -1,7 +1,7 @@
 package scala.scalanative.nscplugin
 
-import dotty.tools.dotc.core._
-import Contexts._
+import dotty.tools.dotc.core.*
+import Contexts.*
 
 import dotty.tools.dotc.util.{SourceFile, SourcePosition}
 import dotty.tools.dotc.util.Spans.Span
@@ -23,7 +23,7 @@ class NirPositions(positionRelativizationPaths: Seq[Path])(using Context) {
       span: Span
   ): nir.SourcePosition = {
     def nirSource = conversionCache.toNIRSourceFile(source)
-    if (span.exists && source.exists)
+    if span.exists && source.exists then
       val point = span.point
       val line = source.offsetToLine(point)
       val column = source.column(point)
@@ -32,12 +32,12 @@ class NirPositions(positionRelativizationPaths: Seq[Path])(using Context) {
   }
 
   private object conversionCache {
-    import dotty.tools.dotc.util._
+    import dotty.tools.dotc.util.*
     private var lastDotcSource: SourceFile = uninitialized
     private var lastNIRSource: nir.SourceFile = uninitialized
 
     def toNIRSourceFile(dotcSource: SourceFile): nir.SourceFile = {
-      if (dotcSource != lastDotcSource) {
+      if dotcSource != lastDotcSource then {
         lastNIRSource = convert(dotcSource)
         lastDotcSource = dotcSource
       }

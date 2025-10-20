@@ -9,24 +9,24 @@ package org.scalanative.testsuite.javalib.util.stream
  * Use ju.ArrayList surgically at the points of use.
  */
 
-import java.{lang => jl}
+import java.lang as jl
 
-import java.{util => ju}
+import java.util as ju
 import java.util.Arrays
 import java.util.IntSummaryStatistics
 import java.util.OptionalInt
 import java.util.{Spliterator, Spliterators}
 
 import java.util.concurrent.{CountDownLatch, TimeUnit}
-import java.util.concurrent.CountDownLatch._
+import java.util.concurrent.CountDownLatch.*
 
 import java.util.function.{IntConsumer, IntFunction, IntSupplier}
 import java.util.function.Supplier
 
-import java.util.stream._
+import java.util.stream.*
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.junit.Ignore
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
@@ -691,7 +691,7 @@ class IntStreamTest {
 
     val expectedAverage = 3364.875 // test against known value, not calculated.
 
-    val s = IntStream.of(wild: _*)
+    val s = IntStream.of(wild*)
 
     val optional = s.average()
 
@@ -725,7 +725,7 @@ class IntStreamTest {
 
     assertTrue(
       "resultant stream should be boxed Stream[Int]",
-      sBoxed.isInstanceOf[Stream[_]]
+      sBoxed.isInstanceOf[Stream[?]]
     )
 
     assertFalse(
@@ -852,7 +852,7 @@ class IntStreamTest {
       expectedSet.add(expectedElements(j))
 
     val s = IntStream
-      .of(expectedElements: _*)
+      .of(expectedElements*)
       .flatMap((e) => IntStream.of(e, e, e))
       .distinct()
 
@@ -863,7 +863,7 @@ class IntStreamTest {
     // count() exhausted s1, so create second stream, s2
 
     val s2 = IntStream
-      .of(expectedElements: _*)
+      .of(expectedElements*)
       .flatMap((e) => IntStream.of(e, e, e))
       .distinct()
 
@@ -1400,7 +1400,7 @@ class IntStreamTest {
       .peek((e: Int) =>
         printf(s"composite peek - before: <${e}>|\n")
       ) // simple str
-      .flatMap((e: Int) => IntStream.of((1 to e): _*))
+      .flatMap((e: Int) => IntStream.of((1 to e)*))
       .peek((e: Int) =>
         printf(s"composite peek - after: <${e}>|\n")
       ) // composite
@@ -1504,7 +1504,7 @@ class IntStreamTest {
     ordered(6) = 6144
     ordered(7) = 6816
 
-    val s = IntStream.of(wild: _*)
+    val s = IntStream.of(wild*)
 
     val sorted = s.sorted()
 
@@ -1538,7 +1538,7 @@ class IntStreamTest {
     wild(6) = 6144
     wild(7) = 960
 
-    val seqIntStream = IntStream.of(wild: _*)
+    val seqIntStream = IntStream.of(wild*)
     assertFalse(
       "Expected sequential stream",
       seqIntStream.isParallel()
@@ -1569,7 +1569,7 @@ class IntStreamTest {
       seqIntSpliter.characteristics()
     )
 
-    val sortedSeqIntStream = IntStream.of(wild: _*).sorted()
+    val sortedSeqIntStream = IntStream.of(wild*).sorted()
     val sortedSeqSpliter = sortedSeqIntStream.spliterator()
 
     assertEquals(
@@ -1735,7 +1735,7 @@ class IntStreamTest {
 
     val expectedSum = 19470
 
-    val s = IntStream.of(wild: _*)
+    val s = IntStream.of(wild*)
 
     val sum = s.sum()
 
@@ -1761,7 +1761,7 @@ class IntStreamTest {
     val expectedSum = 19470
     val expectedAverage = expectedSum.toDouble / nElements
 
-    val s = IntStream.of(wild: _*)
+    val s = IntStream.of(wild*)
 
     val stats = s.summaryStatistics()
 
@@ -1794,7 +1794,7 @@ class IntStreamTest {
     wild(6) = 6144
     wild(7) = 960
 
-    val s = IntStream.of(wild: _*)
+    val s = IntStream.of(wild*)
 
     val resultantArray = s.toArray()
 

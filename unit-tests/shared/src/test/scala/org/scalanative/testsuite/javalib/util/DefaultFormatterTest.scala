@@ -1,15 +1,15 @@
 package org.scalanative.testsuite.javalib.util
 
-import java.util._
+import java.util.*
 
 // Ported from Harmony, modified to test without locale.
 
-import java.io._
+import java.io.*
 import java.math.{BigDecimal, BigInteger, MathContext}
 import java.nio.charset.Charset
 import java.lang.StringBuilder
 import java.util.Formatter.BigDecimalLayoutForm
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.junit.{After, Before, Ignore, Test}
 import org.scalanative.testsuite.utils.Platform.executingInJVM
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows

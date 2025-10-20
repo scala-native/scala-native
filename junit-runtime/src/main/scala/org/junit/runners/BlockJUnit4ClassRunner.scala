@@ -9,5 +9,5 @@ import org.junit.runners.model.FrameworkMethod
  * For this we need only a dummy implementation because we just need to
  * identify the runner using classOf[...].
  */
-class BlockJUnit4ClassRunner(testClass: Class[_])
+class BlockJUnit4ClassRunner(testClass: Class[?])
     extends ParentRunner[FrameworkMethod](testClass)

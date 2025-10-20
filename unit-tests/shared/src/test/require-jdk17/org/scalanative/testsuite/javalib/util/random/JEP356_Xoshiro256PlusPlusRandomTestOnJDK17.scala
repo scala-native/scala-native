@@ -11,12 +11,12 @@ package org.scalanative.testsuite.javalib.util.random
  */
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.junit.Ignore
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
-import java.{lang => jl}
+import java.lang as jl
 
 import java.util.{Arrays, Spliterator}
 

@@ -1,6 +1,6 @@
 package scala.scalanative
 package libc
-import scalanative.unsafe._
+import scalanative.unsafe.*
 
 /** tgmath.h binding ISO/IEC 9899:1999(C99)
  */

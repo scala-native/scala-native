@@ -1,11 +1,11 @@
 package org.scalanative.testsuite.javalib.util
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
-import java.{util => ju}
+import java.util as ju
 import java.util.{ArrayList, HashSet}
 
 /* The Set.of static methods were introduced in Java 9.
@@ -160,14 +160,14 @@ class SetStaticMethodsTestOnJDK21 {
     assertThrows(
       "null variable argument should throw",
       classOf[NullPointerException],
-      ju.Set.of(varArgs: _*)
+      ju.Set.of(varArgs*)
     )
 
     varArgs(2) = "va_4"
     assertThrows(
       "duplicate elements in constructor should throw",
       classOf[IllegalArgumentException],
-      ju.Set.of(varArgs: _*)
+      ju.Set.of(varArgs*)
     )
   }
 
@@ -183,7 +183,7 @@ class SetStaticMethodsTestOnJDK21 {
       expected(j) = s"VarArgs_SmallN_${j}"
 
     // 'Normal' varargs usage
-    val result = ju.Set.of(expected: _*)
+    val result = ju.Set.of(expected*)
 
     assertEquals("set size", expectedSize, result.size())
 
@@ -208,7 +208,7 @@ class SetStaticMethodsTestOnJDK21 {
     for (j <- 0 until expectedSize)
       expected(j) = s"VarArgs_LargeN_${j}"
 
-    val result = ju.Set.of(expected: _*)
+    val result = ju.Set.of(expected*)
 
     assertEquals("set size", expectedSize, result.size())
 

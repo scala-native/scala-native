@@ -1,8 +1,8 @@
 package scala.scalanative.libc
 import org.junit.Test
-import org.junit.Assert._
-import scala.scalanative.unsafe._
-import scala.scalanative.libc.inttypes._
+import org.junit.Assert.*
+import scala.scalanative.unsafe.*
+import scala.scalanative.libc.inttypes.*
 class IntTypesTest {
   @Test def testImaxabs(): Unit = {
     val ns = List.fill(100)(scala.util.Random.nextInt(1000) - 500)

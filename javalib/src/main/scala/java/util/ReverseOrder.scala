@@ -1,8 +1,8 @@
 package java.util
 
-import java.{lang => jl}
+import java.lang as jl
 
-import java.{util => ju}
+import java.util as ju
 import java.util.function.UnaryOperator
 
 // ReverseOrderDequeView ------------------------------------------------
@@ -102,7 +102,7 @@ private[util] class ReverseOrderDequeView[E](forward: Deque[E])
 
 // ReverseOrderListView -------------------------------------------------
 private[util] trait ReverseOrderListViewTrait[E] extends AbstractList[E] {
-  import ReverseOrderListView._
+  import ReverseOrderListView.*
 
   val underlying: List[E]
 
@@ -146,7 +146,7 @@ private[util] trait ReverseOrderListViewTrait[E] extends AbstractList[E] {
     underlying.size() > sizeAtEntry
   }
 
-  override def addAll(index: Int, c: java.util.Collection[_ <: E]): Boolean = {
+  override def addAll(index: Int, c: java.util.Collection[? <: E]): Boolean = {
     val startSize = this.size()
     val colIterator = c.iterator()
 
@@ -161,7 +161,7 @@ private[util] trait ReverseOrderListViewTrait[E] extends AbstractList[E] {
     this.size() > startSize
   }
 
-  override def addAll(c: java.util.Collection[_ <: E]): Boolean =
+  override def addAll(c: java.util.Collection[? <: E]): Boolean =
     this.addAll(size(), c)
 
   override def addFirst(e: E): Unit =
@@ -176,7 +176,7 @@ private[util] trait ReverseOrderListViewTrait[E] extends AbstractList[E] {
   override def contains(o: Any): Boolean =
     underlying.contains(o)
 
-  override def containsAll(c: java.util.Collection[_]): Boolean =
+  override def containsAll(c: java.util.Collection[?]): Boolean =
     underlying.containsAll(c)
 
   override def get(index: Int): E =
@@ -237,7 +237,7 @@ private[util] trait ReverseOrderListViewTrait[E] extends AbstractList[E] {
     removed
   }
 
-  override def removeAll(c: java.util.Collection[_]): Boolean =
+  override def removeAll(c: java.util.Collection[?]): Boolean =
     underlying.removeAll(c)
 
   override def removeFirst(): E = {
@@ -257,7 +257,7 @@ private[util] trait ReverseOrderListViewTrait[E] extends AbstractList[E] {
   override def replaceAll(operator: UnaryOperator[E]): Unit =
     underlying.replaceAll(operator)
 
-  override def retainAll(c: java.util.Collection[_]): Boolean =
+  override def retainAll(c: java.util.Collection[?]): Boolean =
     underlying.retainAll(c)
 
   override def set(index: Int, element: E): E =
@@ -266,7 +266,7 @@ private[util] trait ReverseOrderListViewTrait[E] extends AbstractList[E] {
   def size(): Int =
     underlying.size()
 
-  override def sort(c: Comparator[_ >: E]): Unit =
+  override def sort(c: Comparator[? >: E]): Unit =
     underlying.sort(c.reversed())
 
   // Use default implementation in Collection.scala
@@ -542,11 +542,11 @@ private[util] class ReverseOrderSortedSetView[E](underlying: SortedSet[E])
   override def add(e: E): Boolean =
     underlying.add(e)
 
-  def comparator(): java.util.Comparator[_ >: E] = {
+  def comparator(): java.util.Comparator[? >: E] = {
     val ulCmp = underlying.comparator()
 
     // explicit type required by at least Scala 2.12.20, Scala 3 does not need.
-    val cmp: ju.Comparator[_ >: E] =
+    val cmp: ju.Comparator[? >: E] =
       if (ulCmp != null) ulCmp
       else NaturalComparator
 

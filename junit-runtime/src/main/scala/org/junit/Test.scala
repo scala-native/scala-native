@@ -3,17 +3,17 @@
  */
 package org.junit
 
-import java.lang.annotation._
+import java.lang.annotation.*
 
-class Test(val expected: Class[_ <: Throwable], val timeout: Long)
+class Test(val expected: Class[? <: Throwable], val timeout: Long)
     extends scala.annotation.StaticAnnotation
     with Annotation {
 
-  def this(expected: Class[_ <: Throwable]) = this(expected, 0L)
+  def this(expected: Class[? <: Throwable]) = this(expected, 0L)
   def this(timeout: Long) = this(classOf[Test.None], timeout)
   def this() = this(0L)
 
-  def annotationType(): Class[_ <: Annotation] =
+  def annotationType(): Class[? <: Annotation] =
     classOf[Test]
 }
 

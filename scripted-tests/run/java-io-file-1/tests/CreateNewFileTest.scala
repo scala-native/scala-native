@@ -1,7 +1,7 @@
 import java.io.{File, IOException}
 
 object CreateNewFileTest {
-  import Files._
+  import Files.*
 
   def main(args: Array[String]): Unit = {
     assert(!willBeCreatedFile.exists())

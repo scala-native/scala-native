@@ -1,7 +1,7 @@
 package org.scalanative.testsuite.javalib.util.zip
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.junit.BeforeClass
 
 import java.io.FileOutputStream
@@ -39,7 +39,7 @@ object ZipFileStreamMethodTest {
 }
 
 class ZipFileStreamMethodTest {
-  import ZipFileStreamMethodTest._
+  import ZipFileStreamMethodTest.*
 
   private def createZipFile(
       location: String,

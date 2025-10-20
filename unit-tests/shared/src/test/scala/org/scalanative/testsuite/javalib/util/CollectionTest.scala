@@ -3,10 +3,10 @@
 
 package org.scalanative.testsuite.javalib.util
 
-import java.{util => ju, lang => jl}
+import java.{util as ju, lang as jl}
 import java.util.Spliterator
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 import org.scalanative.testsuite.javalib.lang.IterableFactory
 import org.scalanative.testsuite.javalib.lang.IterableTest
@@ -14,7 +14,7 @@ import org.scalanative.testsuite.javalib.lang.IterableTest
 import scala.reflect.ClassTag
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
-import Utils._
+import Utils.*
 
 /* Design Note:
  *     Note the "trait" keyword and not the "class" keyword. That
@@ -249,7 +249,7 @@ trait CollectionTest extends IterableTest {
     // JavaScript displays n.0 as n, so one trailing digit must be non-zero.
     val elements = Seq(88.42, -23.36, 60.173)
 
-    val coll = factory.fromElements[Double](elements: _*)
+    val coll = factory.fromElements[Double](elements*)
 
     val result = coll.toString()
 
@@ -268,7 +268,7 @@ trait CollectionTest extends IterableTest {
     if (factory.allowsNullElement) {
       val elements = Seq(-1, -2, null, -3)
 
-      val coll = factory.fromElements[Any](elements: _*)
+      val coll = factory.fromElements[Any](elements*)
 
       val result = coll.toString()
 
@@ -287,7 +287,7 @@ trait CollectionTest extends IterableTest {
 
     val elements = Seq(Custom("A", 1), Custom("b", 2), Custom("C", 3))
 
-    val coll = factory.fromElements[Custom](elements: _*)
+    val coll = factory.fromElements[Custom](elements*)
 
     val result = coll.toString()
     val expected = elements.permutations.map(_.mkString("[", ", ", "]")).toSet
@@ -331,7 +331,7 @@ trait CollectionFactory extends IterableFactory {
 
   override def fromElements[E: ClassTag](elems: E*): ju.Collection[E] = {
     val coll = empty[E]
-    coll.addAll(TrivialImmutableCollection(elems: _*))
+    coll.addAll(TrivialImmutableCollection(elems*))
     coll
   }
 }

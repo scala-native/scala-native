@@ -4,11 +4,11 @@ package regex
 import scala.util.Random
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
-import TestUtils._
+import TestUtils.*
 
 import scala.collection.mutable
 
@@ -34,7 +34,7 @@ class NamedGroupTest {
       "from (?<S>.*) to (?<D>.*)",
       "from Montreal, Canada to Lausanne, Switzerland"
     )
-    import m._
+    import m.*
 
     assertTrue(find())
     assertTrue(group("S") == "Montreal, Canada")
@@ -46,7 +46,7 @@ class NamedGroupTest {
       "from (?<S>.*) to (?<D>.*)",
       "from Montreal, Canada to Lausanne, Switzerland"
     )
-    import m._
+    import m.*
 
     assertTrue(find())
     assertTrue(start("S") == 5)
@@ -62,7 +62,7 @@ class NamedGroupTest {
       "from (?<S>.*) to (?<D>.*)",
       "from Montreal, Canada to Lausanne, Switzerland"
     )
-    import m._
+    import m.*
     while (find()) {
       appendReplacement(buf, "such ${S}, wow ${D}")
     }
@@ -80,7 +80,7 @@ class NamedGroupTest {
       "from (?<S>.*) to (?<D>.*)",
       "from Montreal, Canada to Lausanne, Switzerland"
     )
-    import m._
+    import m.*
     find()
     assertThrows(
       "No match available",

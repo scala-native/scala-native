@@ -8,11 +8,11 @@
 package org.scalanative.testsuite.javalib.util.concurrent
 package locks
 
-import org.junit.Assert._
-import org.junit.Assume._
+import org.junit.Assert.*
+import org.junit.Assume.*
 import org.junit.{Test, Ignore}
 import org.scalanative.testsuite.javalib.util.concurrent.JSR166Test
-import JSR166Test._
+import JSR166Test.*
 import ReentrantLockTest.AwaitMethod
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform
@@ -24,7 +24,7 @@ import java.util.concurrent.{
   ThreadLocalRandom,
   TimeUnit
 }
-import java.util.concurrent.TimeUnit._
+import java.util.concurrent.TimeUnit.*
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.Date
 import java.util
@@ -132,7 +132,7 @@ class ReentrantLockTest extends JSR166Test {
   def assertHasNoWaiters(
       lock: ReentrantLockTest.PublicReentrantLock,
       c: Condition
-  ): Unit = { assertHasWaiters(lock, c, Array.empty[Thread]: _*) }
+  ): Unit = { assertHasWaiters(lock, c, Array.empty[Thread]*) }
 
   /** Checks that condition c has exactly the given waiter threads.
    */
@@ -148,7 +148,7 @@ class ReentrantLockTest extends JSR166Test {
     assertEquals(threads.length, lock.getWaitingThreads(c).size)
     assertEquals(
       new util.HashSet[Thread](lock.getWaitingThreads(c)),
-      new util.HashSet[Thread](util.Arrays.asList(threads: _*))
+      new util.HashSet[Thread](util.Arrays.asList(threads*))
     )
     lock.unlock()
   }
@@ -158,7 +158,7 @@ class ReentrantLockTest extends JSR166Test {
   @throws[InterruptedException]
   def await(c: Condition, awaitMethod: ReentrantLockTest.AwaitMethod): Unit = {
     val timeoutMillis = 2 * LONG_DELAY_MS
-    import AwaitMethod._
+    import AwaitMethod.*
     awaitMethod match {
       case AwaitMethod.`await` =>
         c.await()

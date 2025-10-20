@@ -4,10 +4,10 @@ import scala.annotation.switch
 
 import scala.collection.mutable
 
-import java.nio._
+import java.nio.*
 
 class CoderResult private (kind: Int, _length: Int) {
-  import CoderResult._
+  import CoderResult.*
 
   @inline def isUnderflow(): Boolean = kind == Underflow
   @inline def isOverflow(): Boolean = kind == Overflow

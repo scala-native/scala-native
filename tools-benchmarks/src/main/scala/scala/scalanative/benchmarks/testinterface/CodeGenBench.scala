@@ -6,13 +6,13 @@ import java.nio.file.{Path, Files}
 import java.util.Comparator
 import java.util.concurrent.TimeUnit
 
-import org.openjdk.jmh.annotations._
-import org.openjdk.jmh.annotations.Mode._
+import org.openjdk.jmh.annotations.*
+import org.openjdk.jmh.annotations.Mode.*
 
-import scala.scalanative.build._
-import scala.concurrent._
+import scala.scalanative.build.*
+import scala.concurrent.*
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 import scala.scalanative.linker.ReachabilityAnalysis
 
 @Fork(1)

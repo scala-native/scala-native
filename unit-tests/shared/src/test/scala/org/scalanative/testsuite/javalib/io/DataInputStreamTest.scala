@@ -5,14 +5,14 @@
 //   DataInputStream.readUTF() does not have that static method.
 package org.scalanative.testsuite.javalib.io
 
-import java.io._
+import java.io.*
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
-import scala.scalanative.junit.utils.AssumesHelper._
+import scala.scalanative.junit.utils.AssumesHelper.*
 
-import org.junit._
-import org.junit.Assert._
-import org.junit.Assume._
+import org.junit.*
+import org.junit.Assert.*
+import org.junit.Assume.*
 
 trait DataInputStreamTest {
 
@@ -23,7 +23,7 @@ trait DataInputStreamTest {
 
   @Test def readBoolean(): Unit = {
     val data = Seq(0x00, 0x01, 0xf1, 0x00, 0x01)
-    val stream = newStream(data: _*)
+    val stream = newStream(data*)
 
     for (d <- data)
       assertEquals(d != 0, stream.readBoolean())
@@ -33,7 +33,7 @@ trait DataInputStreamTest {
 
   @Test def readByte(): Unit = {
     val data = Seq(0x00, 0x01, 0xf1, 0x7d, 0x35)
-    val stream = newStream(data: _*)
+    val stream = newStream(data*)
 
     for (d <- data)
       assertEquals(d.toByte, stream.readByte())
@@ -159,7 +159,7 @@ trait DataInputStreamTest {
 
   @Test def readUnsignedByte(): Unit = {
     val data = Seq(0x00, 0x01, 0xf1, 0x7d, 0x35)
-    val stream = newStream(data: _*)
+    val stream = newStream(data*)
 
     for (d <- data)
       assertEquals(d, stream.readUnsignedByte())
@@ -288,7 +288,7 @@ trait DataInputStreamTest {
 
   @deprecated @Test def readLine(): Unit = {
     val stream = newStream(
-      "Hello World\nUNIX\nWindows\r\nMac (old)\rStuff".map(_.toInt): _*
+      "Hello World\nUNIX\nWindows\r\nMac (old)\rStuff".map(_.toInt)*
     )
 
     assertEquals("Hello World", stream.readLine())
@@ -303,7 +303,7 @@ trait DataInputStreamTest {
     assumeNotJVMCompliant()
 
     val stream = newStream(
-      "Hello World\nUNIX\nWindows\r\nMac (old)\rStuff".map(_.toInt): _*
+      "Hello World\nUNIX\nWindows\r\nMac (old)\rStuff".map(_.toInt)*
     )
 
     assertEquals("Hello World", stream.readLine())

@@ -1,10 +1,10 @@
 package scala.scalanative.windows
 
 import scala.language.implicitConversions
-import scala.scalanative.unsafe.{Word => _, _}
-import scala.scalanative.unsigned._
+import scala.scalanative.unsafe.{Word as _, *}
+import scala.scalanative.unsigned.*
 import scala.scalanative.windows.HandleApi.Handle
-import MinWinBaseApi._
+import MinWinBaseApi.*
 import WinBaseApi.SecurityAttributes
 
 @extern
@@ -297,9 +297,9 @@ object FileApiExt {
 }
 
 object FileApiOps {
-  import FileApi._
-  import MinWinBaseApiOps._
-  import util.Conversion._
+  import FileApi.*
+  import MinWinBaseApiOps.*
+  import util.Conversion.*
   import scalanative.libc.string.strcpy
   import scala.scalanative.libc.wchar.wcscpy
 

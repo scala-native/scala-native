@@ -4,9 +4,9 @@ package unsafe
 import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
-import org.junit.Assert._
+import org.junit.Assert.*
 
-import scalanative.libc._
+import scalanative.libc.*
 
 class CFuncPtrOpsTest {
 

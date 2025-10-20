@@ -4,7 +4,7 @@ package build
 import java.io.File
 import java.nio.file.{Files, Path, Paths}
 import scala.util.Try
-import scala.sys.process._
+import scala.sys.process.*
 import scala.reflect.ClassTag
 import scala.scalanative.build.IO.RichPath
 
@@ -249,7 +249,7 @@ object Discover {
   private object cache extends ContextBasedCache[NativeConfig, String, AnyRef]
 
   private[scalanative] object features {
-    import FeatureSupport._
+    import FeatureSupport.*
 
     def opaquePointers(implicit config: NativeConfig): FeatureSupport =
       cache("opaque-pointers") { _ =>

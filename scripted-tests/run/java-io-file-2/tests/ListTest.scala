@@ -1,5 +1,5 @@
 object ListTest {
-  import Files._
+  import Files.*
 
   def main(args: Array[String]): Unit = {
     val listedFiles = nonEmptyDirectory.list().sorted

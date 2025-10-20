@@ -9,7 +9,7 @@ private[codegen] class RuntimeTypeInformation(info: ScopeInfo)(implicit
 ) {
   import meta.platform
 
-  import RuntimeTypeInformation._
+  import RuntimeTypeInformation.*
   private def isScalaNativeRuntimeType =
     info.name.id.startsWith("scala.scalanative.runtime.")
   private def isPrimitiveType = isScalaNativeRuntimeType && {

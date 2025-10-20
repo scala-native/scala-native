@@ -7,10 +7,10 @@
 package java.util.concurrent
 
 import java.util
-import java.util._
-import java.util.concurrent.locks._
+import java.util.*
+import java.util.concurrent.locks.*
 import scala.scalanative.libc.stdatomic.AtomicRef
-import scala.scalanative.libc.stdatomic.memory_order._
+import scala.scalanative.libc.stdatomic.memory_order.*
 import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
 import scala.scalanative.annotation.safePublish
 
@@ -141,7 +141,7 @@ object SynchronousQueue {
 
   private[concurrent] final class TransferStack[E]
       extends SynchronousQueue.Transferer[E] {
-    import TransferStack._
+    import TransferStack.*
 
     @volatile private[concurrent] var head: SNode = _
     private val atomicHead = new AtomicRef[SNode](
@@ -568,7 +568,7 @@ class SynchronousQueue[E <: AnyRef](@safePublish val fair: Boolean)
     extends util.AbstractQueue[E]
     with BlockingQueue[E]
     with Serializable {
-  import SynchronousQueue._
+  import SynchronousQueue.*
   @safePublish private val transferer =
     if (fair) new SynchronousQueue.TransferQueue[E]
     else new SynchronousQueue.TransferStack[E]
@@ -628,10 +628,10 @@ class SynchronousQueue[E <: AnyRef](@safePublish val fair: Boolean)
 
   override def remove(o: Any) = false
 
-  override def containsAll(c: util.Collection[_]): Boolean = c.isEmpty()
+  override def containsAll(c: util.Collection[?]): Boolean = c.isEmpty()
 
-  override def removeAll(c: util.Collection[_]) = false
-  override def retainAll(c: util.Collection[_]) = false
+  override def removeAll(c: util.Collection[?]) = false
+  override def retainAll(c: util.Collection[?]) = false
 
   override def peek(): E = null.asInstanceOf[E]
 
@@ -652,7 +652,7 @@ class SynchronousQueue[E <: AnyRef](@safePublish val fair: Boolean)
    */
   override def toString = "[]"
 
-  override def drainTo(c: util.Collection[_ >: E]): Int = {
+  override def drainTo(c: util.Collection[? >: E]): Int = {
     Objects.requireNonNull(c)
     if (c eq this) throw new IllegalArgumentException
     var n = 0
@@ -664,7 +664,7 @@ class SynchronousQueue[E <: AnyRef](@safePublish val fair: Boolean)
     n
   }
 
-  override def drainTo(c: util.Collection[_ >: E], maxElements: Int): Int = {
+  override def drainTo(c: util.Collection[? >: E], maxElements: Int): Int = {
     Objects.requireNonNull(c)
     if (c eq this) throw new IllegalArgumentException
     var n = 0

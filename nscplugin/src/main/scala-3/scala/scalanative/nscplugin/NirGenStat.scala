@@ -4,19 +4,19 @@ package nscplugin
 import scala.language.implicitConversions
 
 import dotty.tools.dotc.ast.tpd
-import dotty.tools.dotc.ast.tpd._
+import dotty.tools.dotc.ast.tpd.*
 import dotty.tools.dotc.core
-import core.Contexts._
-import core.Symbols._
-import core.Constants._
-import core.StdNames._
-import core.Flags._
-import core.Phases._
-import scala.scalanative.nscplugin.CompilerCompat.SymUtilsCompat._
+import core.Contexts.*
+import core.Symbols.*
+import core.Constants.*
+import core.StdNames.*
+import core.Flags.*
+import core.Phases.*
+import scala.scalanative.nscplugin.CompilerCompat.SymUtilsCompat.*
 
 import scala.collection.mutable
 import scala.scalanative.nir.Defn.Define.DebugInfo
-import scala.scalanative.nir.Defn.Define.DebugInfo._
+import scala.scalanative.nir.Defn.Define.DebugInfo.*
 import scala.scalanative.util.ScopedVar
 import scala.scalanative.util.ScopedVar.{scoped, toValue}
 import scala.scalanative.util.unsupported
@@ -44,7 +44,7 @@ trait NirGenStat(using Context) {
       curClassSym := sym,
       curClassFresh := nir.Fresh()
     ) {
-      if (sym.isStruct) genStruct(td)
+      if sym.isStruct then genStruct(td)
       else genNormalClass(td)
     }
   }
@@ -59,8 +59,8 @@ trait NirGenStat(using Context) {
     def parent = genClassParent(sym)
     def traits = genClassInterfaces(sym)
     generatedDefns += {
-      if (sym.isStaticModule) nir.Defn.Module(attrs, name, parent, traits)
-      else if (sym.isTraitOrInterface) nir.Defn.Trait(attrs, name, traits)
+      if sym.isStaticModule then nir.Defn.Module(attrs, name, parent, traits)
+      else if sym.isTraitOrInterface then nir.Defn.Trait(attrs, name, traits)
       else nir.Defn.Class(attrs, name, parent, traits)
     }
     genClassFields(td)
@@ -188,7 +188,7 @@ trait NirGenStat(using Context) {
       val isStatic = f.is(JavaStatic) || f.isScalaStatic
       val isExtern = f.isExtern
       val mutable = isStatic || f.is(Mutable)
-      if (isExtern && !mutable) {
+      if isExtern && !mutable then {
         report.error("`extern` cannot be used in val definition")
       }
       // That what JVM backend does
@@ -210,7 +210,7 @@ trait NirGenStat(using Context) {
       ): @unchecked
       generatedDefns += nir.Defn.Var(attrs, fieldName, ty, nir.Val.Zero(ty))
 
-      if (isStatic) {
+      if isStatic then {
         // Here we are generating a public static getter for the static field,
         // this is its API for other units. This is necessary for singleton
         // enum values, which are backed by static fields.
@@ -305,7 +305,7 @@ trait NirGenStat(using Context) {
             val body = genMethodBody(dd, rhs, isExtern)
             val env = curMethodEnv.get
             val methodAttrs =
-              if (env.isUsingLinktimeResolvedValue || env.isUsingIntrinsics)
+              if env.isUsingLinktimeResolvedValue || env.isUsingIntrinsics then
                 attrs
                   .withIsLinktimeResolved(env.isUsingLinktimeResolvedValue)
                   .withIsUsingIntrinsics(env.isUsingIntrinsics)
@@ -333,9 +333,8 @@ trait NirGenStat(using Context) {
   ): nir.Attrs = {
     val attrs = Seq.newBuilder[nir.Attr]
 
-    if (sym.is(Bridge) || sym.is(Accessor))
-      attrs += nir.Attr.AlwaysInline
-    if (isExtern)
+    if sym.is(Bridge) || sym.is(Accessor) then attrs += nir.Attr.AlwaysInline
+    if isExtern then
       attrs += nir.Attr.Extern(sym.isBlocking || sym.owner.isBlocking)
 
     def requireLiteralStringAnnotation(annotation: Annotation): Option[String] =
@@ -426,7 +425,7 @@ trait NirGenStat(using Context) {
     }
 
     def withOptSynchronized(bodyGen: ExprBuffer => nir.Val): nir.Val = {
-      if (!isSynchronized) bodyGen(buf)
+      if !isSynchronized then bodyGen(buf)
       else {
         val syncedIn = curMethodThis.getOrElse {
           unsupported(
@@ -437,7 +436,7 @@ trait NirGenStat(using Context) {
       }
     }
     def genBody(): Unit = {
-      if (curMethodSym.get == defnNir.NObject_init)
+      if curMethodSym.get == defnNir.NObject_init then
         scoped(
           curMethodIsExtern := isExtern
         ) {
@@ -476,7 +475,7 @@ trait NirGenStat(using Context) {
       externDef: ValOrDefDef,
       methodKind: String
   ): Unit = {
-    if (externDef.tpt.symbol == defn.NothingClass)
+    if externDef.tpt.symbol == defn.NothingClass then
       report.error(
         s"$methodKind ${externDef.name} needs result type",
         externDef.sourcePos
@@ -486,7 +485,7 @@ trait NirGenStat(using Context) {
   protected def genLinktimeResolved(dd: DefDef, name: nir.Global.Member)(using
       nir.SourcePosition
   ): Option[nir.Defn] = {
-    if (dd.symbol.isField) {
+    if dd.symbol.isField then {
       report.error(
         "Link-time property cannot be constant value, it would be inlined by scalac compiler",
         dd.sourcePos
@@ -494,20 +493,21 @@ trait NirGenStat(using Context) {
     }
     val retty = genType(dd.tpt.tpe)
 
-    import LinktimeProperty.Type._
+    import LinktimeProperty.Type.*
     dd match {
       case LinktimeProperty(propertyName, Provided, _) =>
-        if (dd.rhs.symbol == defnNir.UnsafePackage_resolved) Some {
-          checkExplicitReturnTypeAnnotation(dd, "value resolved at link-time")
-          genLinktimeResolvedMethod(dd, retty, name) {
-            _.call(
-              nir.Linktime.PropertyResolveFunctionTy(retty),
-              nir.Linktime.PropertyResolveFunction(retty),
-              nir.Val.String(propertyName) :: Nil,
-              nir.Next.None
-            )
+        if dd.rhs.symbol == defnNir.UnsafePackage_resolved then
+          Some {
+            checkExplicitReturnTypeAnnotation(dd, "value resolved at link-time")
+            genLinktimeResolvedMethod(dd, retty, name) {
+              _.call(
+                nir.Linktime.PropertyResolveFunctionTy(retty),
+                nir.Linktime.PropertyResolveFunction(retty),
+                nir.Val.String(propertyName) :: Nil,
+                nir.Next.None
+              )
+            }
           }
-        }
         else {
           report.error(
             s"Link-time resolved property must have ${defnNir.UnsafePackage_resolved.fullName} as body",
@@ -646,10 +646,9 @@ trait NirGenStat(using Context) {
           val usesVarArgs =
             externArgs.nonEmpty && externArgs.last == nir.Type.Vararg
           val argsMatch =
-            if (usesVarArgs)
+            if usesVarArgs then
               externArgs.size == origArgs.size && externArgs.init == origArgs.init
-            else
-              externArgs == origArgs
+            else externArgs == origArgs
           val retTyMatch =
             externRet == origRet || nir.Type.isBoxOf(externRet)(origRet)
           argsMatch && retTyMatch
@@ -723,7 +722,7 @@ trait NirGenStat(using Context) {
     for f <- classSym.info.decls
     do {
       // Exclude fields derived from extern trait
-      if (f.isField && !isInheritedField(f) && !f.is(Module)) {
+      if f.isField && !isInheritedField(f) && !f.is(Module) then {
         if !(externs.contains(f) || externs.contains(f.setter)) then
           report.error(
             s"extern objects may only contain extern fields",
@@ -784,10 +783,10 @@ trait NirGenStat(using Context) {
       sym: Symbol
   ): Seq[nir.Defn.Define] = {
     val module = sym.companionModule
-    if (!module.exists) Nil
+    if !module.exists then Nil
     else {
       val moduleClass = module.moduleClass
-      if (moduleClass.isExternType) Nil
+      if moduleClass.isExternType then Nil
       else genStaticForwardersFromModuleClass(existingMembers, moduleClass)
     }
   }
@@ -834,7 +833,7 @@ trait NirGenStat(using Context) {
       val forwarderParamTypes = paramTypes
       val forwarderType = nir.Type.Function(forwarderParamTypes, retType)
 
-      if (existingStaticMethodNames.contains(forwarderName)) {
+      if existingStaticMethodNames.contains(forwarderName) then {
         report.error(
           "Unexpected situation: found existing public static method " +
             s"${sym.show} in the companion class of " +
@@ -945,7 +944,7 @@ trait NirGenStat(using Context) {
       case Provided, Calculated
 
     def unapply(tree: Tree): Option[(String, Type, nir.SourcePosition)] = {
-      if (tree.symbol == null) None
+      if tree.symbol == null then None
       else {
         tree.symbol
           .getAnnotation(defnNir.ResolvedAtLinktimeClass)

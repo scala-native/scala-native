@@ -5,11 +5,11 @@ import java.nio.file.{Path, Files}
 import java.util.Comparator
 import java.util.concurrent.TimeUnit
 
-import org.openjdk.jmh.annotations._
-import org.openjdk.jmh.annotations.Mode._
-import scala.concurrent._
+import org.openjdk.jmh.annotations.*
+import org.openjdk.jmh.annotations.Mode.*
+import scala.concurrent.*
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 @Fork(1)
 @State(Scope.Benchmark)

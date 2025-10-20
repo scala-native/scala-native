@@ -1,11 +1,11 @@
 package org.scalanative.testsuite
 package javalib.nio.file
 
-import java.nio.file._
+import java.nio.file.*
 
 import org.junit.Test
-import org.junit.Assert._
-import org.junit.Assume._
+import org.junit.Assert.*
+import org.junit.Assume.*
 
 import java.util.regex.PatternSyntaxException
 

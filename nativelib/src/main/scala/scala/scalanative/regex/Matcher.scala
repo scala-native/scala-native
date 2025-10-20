@@ -4,7 +4,7 @@ package scala.scalanative
 package regex
 
 import java.util.Map
-import java.{lang => jl}
+import java.lang as jl
 
 // A stateful iterator that interprets a regex {@code Pattern} on a
 // specific input.  Its interface mimics the JDK 1.4.2

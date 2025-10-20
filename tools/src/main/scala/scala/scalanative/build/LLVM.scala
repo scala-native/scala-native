@@ -3,12 +3,12 @@ package build
 
 import java.io.{File, PrintWriter}
 import java.nio.file.{Files, Path, Paths, StandardCopyOption}
-import scala.sys.process._
+import scala.sys.process.*
 import scala.scalanative.build.IO.RichPath
 import scala.scalanative.linker.ReachabilityAnalysis
 import scala.scalanative.nir.Attr.Link
 
-import scala.concurrent._
+import scala.concurrent.*
 import scala.util.Failure
 import scala.util.Success
 import _root_.java.io.IOException

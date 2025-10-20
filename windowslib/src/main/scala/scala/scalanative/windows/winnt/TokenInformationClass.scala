@@ -1,6 +1,6 @@
 package scala.scalanative.windows.winnt
 
-import scalanative.unsafe._
+import scalanative.unsafe.*
 
 @link("advapi32")
 @extern

@@ -1,6 +1,6 @@
 package scala.scalanative.posix
 
-import scalanative.unsafe._
+import scalanative.unsafe.*
 
 import scalanative.posix.sys.socket
 
@@ -147,7 +147,7 @@ object netdb {
 /** Allow using C names to access 'addrinfo' structure fields.
  */
 object netdbOps {
-  import netdb._
+  import netdb.*
 
   @resolvedAtLinktime
   def useBsdAddrinfo = (LinktimeInfo.isMac ||

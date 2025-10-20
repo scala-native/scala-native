@@ -1,15 +1,15 @@
 package org.scalanative.testsuite.javalib.util
 
-import java.util._
+import java.util.*
 
 // Ported from Scala.js
 
-import java.{lang => jl, util => ju}
+import java.{lang as jl, util as ju}
 import org.junit.Test
-import org.junit.Assert._
-import scala.collection.{immutable => im}
+import org.junit.Assert.*
+import scala.collection.immutable as im
 import scala.reflect.ClassTag
-import scala.scalanative.junit.utils.CollectionConverters._
+import scala.scalanative.junit.utils.CollectionConverters.*
 
 class LinkedHashMapInsertionOrderTest extends LinkedHashMapTest
 

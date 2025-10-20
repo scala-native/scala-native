@@ -3,8 +3,8 @@ package java.util
 // New work for Scala Native. Based on Scala Native Optional.scala:
 //   Ported from Scala.js commit SHA1: 9c79cb9 dated: 2022-03-18
 
-import java.util.function._
-import java.util.{stream => jus}
+import java.util.function.*
+import java.util.stream as jus
 
 final class OptionalInt private (hasValue: Boolean, value: Int) {
 
@@ -46,7 +46,7 @@ final class OptionalInt private (hasValue: Boolean, value: Int) {
     if (isPresent()) value
     else throw new NoSuchElementException()
 
-  def orElseThrow[X <: Throwable](exceptionSupplier: Supplier[_ <: X]): Int =
+  def orElseThrow[X <: Throwable](exceptionSupplier: Supplier[? <: X]): Int =
     if (isPresent()) value
     else throw exceptionSupplier.get()
 

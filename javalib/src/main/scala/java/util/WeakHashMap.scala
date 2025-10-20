@@ -21,7 +21,7 @@ class WeakHashMap[K, V] protected (inner: mutable.Map[Box[K], V])
   def this(initialCapacity: Int) =
     this(initialCapacity, WeakHashMap.DEFAULT_LOAD_FACTOR)
 
-  def this(m: Map[_ <: K, _ <: V]) = {
+  def this(m: Map[? <: K, ? <: V]) = {
     this()
     putAll(m)
   }

@@ -7,9 +7,9 @@ object ScalaStdlibCompat {
   }
 
   private[scalanative] object ArraySeqCompatSelect {
-    import ArraySeqCompatDef._
+    import ArraySeqCompatDef.*
     object Inner {
-      import scala.collection.immutable._
+      import scala.collection.immutable.*
       val ArraySeqAlias = ArraySeq
       type ArraySeqAlias[T] = ArraySeq[T]
     }

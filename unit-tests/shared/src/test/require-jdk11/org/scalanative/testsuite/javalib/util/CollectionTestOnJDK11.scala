@@ -1,7 +1,7 @@
 package org.scalanative.testsuite.javalib.util
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 import java.util.ArrayList
 
@@ -20,7 +20,7 @@ class CollectionTestOnJDK11 {
     expected(1) = "Helios"
     expected(2) = "Eos"
 
-    val collection = TrivialImmutableCollection(expected: _*)
+    val collection = TrivialImmutableCollection(expected*)
 
     val result = collection.toArray((n) => new T(n))
 

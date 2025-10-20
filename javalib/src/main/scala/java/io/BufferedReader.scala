@@ -1,6 +1,6 @@
 package java.io
 
-import java.{lang => jl}
+import java.lang as jl
 import java.util.Spliterators
 import java.util.function.Consumer
 import java.util.stream.{Stream, StreamSupport}
@@ -132,7 +132,7 @@ class BufferedReader(in: Reader, sz: Int) extends Reader {
   private[java] def lines(closeAtEnd: Boolean): Stream[String] = {
     val spliter =
       new Spliterators.AbstractSpliterator[String](Long.MaxValue, 0) {
-        def tryAdvance(action: Consumer[_ >: String]): Boolean = {
+        def tryAdvance(action: Consumer[? >: String]): Boolean = {
           readLine() match {
             case null =>
               if (closeAtEnd)

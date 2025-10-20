@@ -3,11 +3,11 @@ package unsafe
 
 import org.junit.Ignore
 import org.junit.Test
-import org.junit.Assert._
-import org.junit.Assume._
+import org.junit.Assert.*
+import org.junit.Assume.*
 
-import scalanative.unsafe._
-import scalanative.unsigned._
+import scalanative.unsafe.*
+import scalanative.unsigned.*
 import scalanative.meta.LinktimeInfo.isWindows
 
 object ExternTest {

@@ -9,10 +9,10 @@
 
 package org.scalanative.testsuite.javalib.math
 
-import java.math._
+import java.math.*
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 class BigDecimalScaleOperationsTest {
 

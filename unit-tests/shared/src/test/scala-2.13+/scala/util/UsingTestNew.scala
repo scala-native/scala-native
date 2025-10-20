@@ -14,14 +14,14 @@
 package scala.util
 
 import org.junit.{Test, Assume, BeforeClass}
-import org.junit.Assert._
+import org.junit.Assert.*
 import scala.annotation.unused
 import scala.reflect.ClassTag
 import scala.util.control.ControlThrowable
 
 @deprecated("ThreadDeath is deprecated on JDK 20", "")
 class UsingTestNew {
-  import UsingTestNew._
+  import UsingTestNew.*
 
   /* `Using.resource` exception preference */
 

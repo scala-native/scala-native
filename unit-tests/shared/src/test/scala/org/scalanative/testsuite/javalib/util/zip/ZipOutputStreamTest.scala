@@ -1,7 +1,7 @@
 package org.scalanative.testsuite.javalib.util.zip
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.junit.BeforeClass
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
@@ -83,7 +83,7 @@ object ZipOutputStreamTest {
 }
 
 class ZipOutputStreamTest {
-  import ZipOutputStreamTest._
+  import ZipOutputStreamTest.*
 
   // Issue 3754
   @Test def zipOutputStreamFinishThenClose(): Unit = {

@@ -4,10 +4,10 @@ package regex
 import java.util
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 class FindTest {
-  import FindTest._
+  import FindTest.*
 
   // First the simple cases.
 

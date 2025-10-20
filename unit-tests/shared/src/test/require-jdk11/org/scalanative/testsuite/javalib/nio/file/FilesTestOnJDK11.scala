@@ -1,8 +1,8 @@
 package org.scalanative.testsuite
 package javalib.nio.file
 
-import java.{lang => jl}
-import java.{util => ju}
+import java.lang as jl
+import java.util as ju
 
 import java.nio.charset.StandardCharsets
 import java.nio.CharBuffer
@@ -11,14 +11,14 @@ import java.nio.file.{Path, Paths}
 import java.nio.file.{FileAlreadyExistsException, StandardOpenOption}
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.junit.{BeforeClass, AfterClass}
 import org.junit.Ignore
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 class FilesTestOnJDK11 {
-  import FilesTestOnJDK11._
+  import FilesTestOnJDK11.*
 
   /* Design Notes:
    *

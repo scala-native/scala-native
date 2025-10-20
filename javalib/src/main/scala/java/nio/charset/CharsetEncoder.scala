@@ -2,7 +2,7 @@ package java.nio.charset
 
 import scala.annotation.{switch, tailrec}
 
-import java.nio._
+import java.nio.*
 
 abstract class CharsetEncoder protected (
     cs: Charset,
@@ -11,7 +11,7 @@ abstract class CharsetEncoder protected (
     private var _replacement: Array[Byte]
 ) {
 
-  import CharsetEncoder._
+  import CharsetEncoder.*
 
   protected def this(
       cs: Charset,

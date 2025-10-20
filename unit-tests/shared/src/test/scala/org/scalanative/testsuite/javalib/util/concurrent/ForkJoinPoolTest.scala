@@ -6,14 +6,14 @@
 
 package org.scalanative.testsuite.javalib.util.concurrent
 
-import java.util._
-import java.util.concurrent._
-import java.util.concurrent.TimeUnit._
-import java.util.concurrent.atomic._
-import java.util.concurrent.locks._
+import java.util.*
+import java.util.concurrent.*
+import java.util.concurrent.TimeUnit.*
+import java.util.concurrent.atomic.*
+import java.util.concurrent.locks.*
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 object ForkJoinPoolTest {
@@ -38,7 +38,7 @@ object ForkJoinPoolTest {
 
   class SubFJP() extends ForkJoinPool(1) {
     // to expose protected
-    def drainTasks[T](c: Collection[_ >: ForkJoinTask[_]]) =
+    def drainTasks[T](c: Collection[? >: ForkJoinTask[?]]) =
       super.drainTasksTo(c)
     // def drainTasksTo(c: Collection[ForkJoinTask[_]]) = super.drainTasksTo(c)
     override def pollSubmission() = super.pollSubmission()
@@ -103,8 +103,8 @@ object ForkJoinPoolTest {
 }
 
 class ForkJoinPoolTest extends JSR166Test {
-  import JSR166Test._
-  import ForkJoinPoolTest._
+  import JSR166Test.*
+  import ForkJoinPoolTest.*
   /*
    * Testing coverage notes:
    *
@@ -337,7 +337,7 @@ class ForkJoinPoolTest extends JSR166Test {
     val a = p.submit(awaiter(done))
     val b = p.submit(awaiter(done))
     val c = p.submit(awaiter(done))
-    val al = new ArrayList[ForkJoinTask[_]]()
+    val al = new ArrayList[ForkJoinTask[?]]()
     p.drainTasks(al)
     assertTrue("was empty", al.size() > 0)
     al.forEach { r =>
@@ -408,7 +408,7 @@ class ForkJoinPoolTest extends JSR166Test {
    */
   @Test def testSubmitNullCallable(): Unit =
     usingPoolCleaner(new ForkJoinPool(1)) { (e: ExecutorService) =>
-      val callable: Callable[_] = null
+      val callable: Callable[?] = null
       assertThrows(
         classOf[NullPointerException],
         e.submit(callable)

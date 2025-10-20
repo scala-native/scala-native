@@ -12,9 +12,9 @@ import java.io.{
 
 import java.nio.charset.{Charset, StandardCharsets}
 
-import java.{util => ju}
+import java.util as ju
 import java.util.Enumeration
-import java.util.{stream => jus}
+import java.util.stream as jus
 
 class ZipFile(file: File, mode: Int, charset: Charset) extends Closeable {
   def this(file: File, mode: Int) = this(file, mode, StandardCharsets.UTF_8)
@@ -101,7 +101,7 @@ class ZipFile(file: File, mode: Int, charset: Charset) extends Closeable {
       throw new IllegalStateException("Zip file closed.")
     }
 
-  def entries(): Enumeration[_ <: ZipEntry] = {
+  def entries(): Enumeration[? <: ZipEntry] = {
     checkNotClosed()
     val iterator = mEntries.values().iterator()
 

@@ -1,7 +1,7 @@
 package scala.scalanative.nir
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 class VersionsSuite {
   @Test def crossBinaryVersion(): Unit = {

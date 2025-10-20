@@ -6,7 +6,7 @@ import scalanative.meta.LinktimeInfo
 import java.net.Socket
 import scala.scalanative.runtime.testinterface.signalhandling.SignalConfig
 
-import scalanative.posix.sys.socket._
+import scalanative.posix.sys.socket.*
 import scalanative.posix.netinet.in
 import scalanative.posix.unistd
 import scala.concurrent.ExecutionContext

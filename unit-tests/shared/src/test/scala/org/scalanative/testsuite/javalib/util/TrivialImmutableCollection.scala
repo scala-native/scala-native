@@ -2,7 +2,7 @@
 
 package org.scalanative.testsuite.javalib.util
 
-import java.{util => ju}
+import java.util as ju
 
 /** A trivial, "obviously correct" implementation of an immutable
  *  `java.util.Collection[A]`.
@@ -59,7 +59,7 @@ final class TrivialImmutableCollection[A] private (contents: Array[AnyRef])
       "TrivialImmutableCollection.remove()"
     )
 
-  def containsAll(c: ju.Collection[_]): Boolean = {
+  def containsAll(c: ju.Collection[?]): Boolean = {
     // scalastyle:off return
     val iter = c.iterator()
     while (iter.hasNext()) {
@@ -70,17 +70,17 @@ final class TrivialImmutableCollection[A] private (contents: Array[AnyRef])
     // scalastyle:on return
   }
 
-  def addAll(c: ju.Collection[_ <: A]): Boolean =
+  def addAll(c: ju.Collection[? <: A]): Boolean =
     throw new UnsupportedOperationException(
       "TrivialImmutableCollection.addAll()"
     )
 
-  def removeAll(c: ju.Collection[_]): Boolean =
+  def removeAll(c: ju.Collection[?]): Boolean =
     throw new UnsupportedOperationException(
       "TrivialImmutableCollection.removeAll()"
     )
 
-  def retainAll(c: ju.Collection[_]): Boolean =
+  def retainAll(c: ju.Collection[?]): Boolean =
     throw new UnsupportedOperationException(
       "TrivialImmutableCollection.retainAll()"
     )

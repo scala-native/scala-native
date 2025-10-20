@@ -1,6 +1,6 @@
 package org.scalanative.testsuite.javalib.lang
 
-import java.lang._
+import java.lang.*
 
 /** Test suite for [[java.lang.Character]]
  *
@@ -12,12 +12,12 @@ import java.lang._
  *  code points are in the gap and U+FFFF is the max value for [[scala.Char]].
  */
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 class CharacterTest {
-  import java.lang.Character._
+  import java.lang.Character.*
 
   // codePointAt tests
   @Test def codePointAtInvalidValues(): Unit = {

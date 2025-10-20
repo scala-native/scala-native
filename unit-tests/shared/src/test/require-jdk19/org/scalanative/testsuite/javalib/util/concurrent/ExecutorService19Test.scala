@@ -5,13 +5,13 @@
  */
 package org.scalanative.testsuite.javalib.util.concurrent
 
-import org.junit.Assert._
-import org.junit.Assume._
+import org.junit.Assert.*
+import org.junit.Assume.*
 import org.junit.{Test, Ignore}
-import JSR166Test._
+import JSR166Test.*
 
-import java.util.concurrent._
-import Future.State._
+import java.util.concurrent.*
+import Future.State.*
 
 class ExecutorService19Test extends JSR166Test {
 
@@ -181,7 +181,7 @@ class ExecutorService19Test extends JSR166Test {
   /** Test close with tasks running.
    */
   @Test def testCloseWithRunningTasks(): Unit = testExecutors { executor =>
-    val future: Future[_] = executor.submit(() => {
+    val future: Future[?] = executor.submit(() => {
       Thread.sleep(1000)
       "foo"
 
@@ -256,7 +256,7 @@ class ExecutorService19Test extends JSR166Test {
   /** Test interrupting thread blocked in close.
    */
   @Test def testInterruptDuringClose(): Unit = testExecutors { executor =>
-    val future: Future[_] = executor.submit(() => {
+    val future: Future[?] = executor.submit(() => {
       Thread.sleep(Int.MaxValue)
       null
 
@@ -287,7 +287,7 @@ class ExecutorService19Test extends JSR166Test {
 
   /** Waits for the future to be done.
    */
-  private def awaitDone(future: Future[_]): Unit = {
+  private def awaitDone(future: Future[?]): Unit = {
     var interrupted = false
     while (!future.isDone()) {
       try Thread.sleep(10)

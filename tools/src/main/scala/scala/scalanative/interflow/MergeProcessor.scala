@@ -4,7 +4,7 @@ package interflow
 import scala.collection.mutable
 import scala.scalanative.util.unreachable
 import scala.scalanative.nir.Defn.Define.DebugInfo
-import scala.scalanative.linker._
+import scala.scalanative.linker.*
 
 private[interflow] final class MergeProcessor(
     insts: Array[nir.Inst],

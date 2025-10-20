@@ -7,11 +7,11 @@
 package java.util
 // Ported from Scala.js, commit: 0383e9f, dated: 2021-03-07
 
-import java.io._
+import java.io.*
 import java.lang.{
-  Double => JDouble,
-  Boolean => JBoolean,
-  StringBuilder => JStringBuilder
+  Double as JDouble,
+  Boolean as JBoolean,
+  StringBuilder as JStringBuilder
 }
 import java.math.{BigDecimal, BigInteger}
 import java.nio.CharBuffer
@@ -22,7 +22,7 @@ final class Formatter private (
     dest: Appendable,
     formatterLocaleInfo: Formatter.LocaleInfo
 ) extends FormatterImpl(dest, formatterLocaleInfo) {
-  import Formatter._
+  import Formatter.*
 
   def this() =
     this(new JStringBuilder(), Formatter.RootLocaleInfo)

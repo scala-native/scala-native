@@ -1,7 +1,7 @@
 package build
 
-import sbt._
-import Keys._
+import sbt.*
+import Keys.*
 
 /** Settings to prevent projects from being exported to IDEs. */
 object NoIDEExport {
@@ -10,7 +10,7 @@ object NoIDEExport {
    * irrelevant projects.
    */
   private lazy val bloopGenerateKey: Option[TaskKey[Option[File]]] = {
-    val optBloopKeysClass: Option[Class[_]] =
+    val optBloopKeysClass: Option[Class[?]] =
       try Some(Class.forName("bloop.integrations.sbt.BloopKeys"))
       catch { case _: ClassNotFoundException => None }
 
@@ -21,7 +21,7 @@ object NoIDEExport {
   }
 
   /** Settings to prevent the project from being exported to IDEs. */
-  lazy val noIDEExportSettings: Seq[Setting[_]] = {
+  lazy val noIDEExportSettings: Seq[Setting[?]] = {
     bloopGenerateKey match {
       case None      => Nil
       case Some(key) =>

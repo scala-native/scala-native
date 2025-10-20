@@ -1,9 +1,9 @@
 package scala.scalanative.build
 
-import java.lang.System.{err, out, lineSeparator => nl}
+import java.lang.System.{err, out, lineSeparator as nl}
 
 import scala.sys.process.ProcessLogger
-import scala.concurrent._
+import scala.concurrent.*
 
 /** Interface to report and/or collect messages given by the toolchain. */
 trait Logger {

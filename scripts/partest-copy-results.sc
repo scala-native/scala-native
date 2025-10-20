@@ -1,4 +1,4 @@
-import $ivy.`com.lihaoyi::ammonite-ops:2.3.8`, ammonite.ops._, mainargs._
+import $ivy.`com.lihaoyi::ammonite-ops:2.3.8`, ammonite.ops.*, mainargs.*
 import java.io.File
 
 val kinds = List("neg", "run", "pos")
@@ -26,7 +26,7 @@ def main(
   val testFiles = partestSourcesDir / "test" / "files"
 
   def showRelPath(p: os.Path): String =
-    s"${p.relativeTo(wd)} ${if (exists(p)) "" else "missing!!!"}"
+    s"${p.relativeTo(wd)} ${if exists(p) then "" else "missing!!!"}"
 
   println(s"""
              |Scala version:       $scalaVersion
@@ -49,7 +49,7 @@ def main(
     kind <- kinds
     outputDir = resultsDir / kind
     _ =
-      if (!(exists(outputDir))) mkdir(outputDir)
+      if !(exists(outputDir)) then mkdir(outputDir)
       else ls(outputDir).foreach(rm)
     logFile <- ls(testFiles / kind) if logFile.ext == "log"
 
@@ -58,7 +58,7 @@ def main(
 
     _ = cp.over(logFile, resultsDir / relPath)
     _ = {
-      if (!denylisted.contains(name)) {
+      if !denylisted.contains(name) then {
         failedNotDenylisted += name
       }
       println(s"${name} failed")

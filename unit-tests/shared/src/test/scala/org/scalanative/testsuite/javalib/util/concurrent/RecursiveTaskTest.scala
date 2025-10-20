@@ -5,16 +5,16 @@
  */
 package org.scalanative.testsuite.javalib.util.concurrent
 
-import java.util.concurrent.TimeUnit._
-import java.util.concurrent._
+import java.util.concurrent.TimeUnit.*
+import java.util.concurrent.*
 import java.util.HashSet
 
 import org.junit.{Test, Ignore}
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 class RecursiveTaskTest extends JSR166Test {
-  import JSR166Test._
+  import JSR166Test.*
 
   final class FJException() extends RuntimeException()
 
@@ -39,7 +39,7 @@ class RecursiveTaskTest extends JSR166Test {
       result
     }
 
-  def checkNotDone(a: RecursiveTask[_]) = {
+  def checkNotDone(a: RecursiveTask[?]) = {
     assertFalse("isDone", a.isDone())
     assertFalse("isCompletedNormally", a.isCompletedNormally())
     assertFalse("isCompletedAbnormally", a.isCompletedAbnormally())
@@ -117,7 +117,7 @@ class RecursiveTaskTest extends JSR166Test {
     checkCompletedNormally(a, r: Integer)
   }
 
-  def checkCancelled(a: RecursiveTask[_]) = {
+  def checkCancelled(a: RecursiveTask[?]) = {
     assertTrue(a.isDone())
     assertTrue(a.isCancelled())
     assertFalse(a.isCompletedNormally())
@@ -147,7 +147,7 @@ class RecursiveTaskTest extends JSR166Test {
     }
   }
 
-  def checkCompletedAbnormally(a: RecursiveTask[_], t: Throwable) = {
+  def checkCompletedAbnormally(a: RecursiveTask[?], t: Throwable) = {
     assertTrue(a.isDone())
     assertFalse(a.isCancelled())
     assertFalse(a.isCompletedNormally())

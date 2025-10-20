@@ -1,10 +1,10 @@
 package scala.scalanative.reflect
 
 import scala.collection.mutable
-import java.{lang => jl}
+import java.lang as jl
 
 final class LoadableModuleClass private[reflect] (
-    val runtimeClass: Class[_],
+    val runtimeClass: Class[?],
     loadModuleFun: Function0[Any]
 ) {
 
@@ -13,7 +13,7 @@ final class LoadableModuleClass private[reflect] (
 }
 
 final class InstantiatableClass private[reflect] (
-    val runtimeClass: Class[_],
+    val runtimeClass: Class[?],
     val declaredConstructors: List[InvokableConstructor]
 ) {
 
@@ -37,12 +37,12 @@ final class InstantiatableClass private[reflect] (
    *
    *  If no such public constructor exists, returns `None`.
    */
-  def getConstructor(parameterTypes: Class[_]*): Option[InvokableConstructor] =
+  def getConstructor(parameterTypes: Class[?]*): Option[InvokableConstructor] =
     declaredConstructors.find(_.parameterTypes.sameElements(parameterTypes))
 }
 
 final class InvokableConstructor private[reflect] (
-    val parameterTypes: Array[Class[_]],
+    val parameterTypes: Array[Class[?]],
     newInstanceFun: Function1[Array[Any], Any]
 ) {
   def newInstance(args: Any*): Any = {
@@ -66,7 +66,7 @@ final class InvokableConstructor private[reflect] (
    */
   private def wideningPrimConversionIfRequired(
       arg: Any,
-      paramType: Class[_]
+      paramType: Class[?]
   ): Any = {
     paramType match {
       case java.lang.Short.TYPE =>
@@ -148,7 +148,7 @@ object Reflect {
   protected[reflect] def registerInstantiatableClass[T](
       fqcn: String,
       runtimeClass: Class[T],
-      constructors: Array[(Array[Class[_]], Function1[Array[Any], Any])]
+      constructors: Array[(Array[Class[?]], Function1[Array[Any], Any])]
   ): Unit = {
     val invokableConstructors = constructors.map { c =>
       new InvokableConstructor(c._1, c._2)

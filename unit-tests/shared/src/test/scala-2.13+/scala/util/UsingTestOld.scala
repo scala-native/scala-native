@@ -14,7 +14,7 @@
 package scala.util
 
 import org.junit.{Test, Assume, BeforeClass}
-import org.junit.Assert._
+import org.junit.Assert.*
 import scala.reflect.ClassTag
 import scala.runtime.NonLocalReturnControl
 
@@ -24,7 +24,7 @@ import scala.runtime.NonLocalReturnControl
 )
 class UsingTestOld {
 
-  import UsingTestOld._
+  import UsingTestOld.*
 
   /* `Using.resource` exception preference */
 

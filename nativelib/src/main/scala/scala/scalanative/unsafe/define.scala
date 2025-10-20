@@ -1,7 +1,7 @@
 package scala.scalanative
 package unsafe
 
-import scala.annotation.meta._
+import scala.annotation.meta.*
 
 /** An annotation that is used to automatically define a macro when the
  *  annotated symbol is used.

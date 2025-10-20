@@ -9,7 +9,7 @@ import org.hamcrest.Matcher
 class AssumptionViolatedException protected (
     fAssumption: String,
     fValueMatcher: Boolean,
-    fMatcher: Matcher[_],
+    fMatcher: Matcher[?],
     fValue: AnyRef
 ) extends org.junit.internal.AssumptionViolatedException(
       fAssumption,
@@ -19,11 +19,11 @@ class AssumptionViolatedException protected (
     ) {
 
   @Deprecated
-  def this(actual: Any, matcher: Matcher[_]) =
+  def this(actual: Any, matcher: Matcher[?]) =
     this(null, true, fMatcher = matcher, fValue = actual.asInstanceOf[AnyRef])
 
   @Deprecated
-  def this(message: String, expected: Any, matcher: Matcher[_]) =
+  def this(message: String, expected: Any, matcher: Matcher[?]) =
     this(
       message,
       true,

@@ -1,7 +1,7 @@
 package scala.issues
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 class Scala3IssuesTest:
 
@@ -54,7 +54,7 @@ class Scala3IssuesTest:
 
   @Test def issue2543(): Unit = {
     import scala.reflect.Selectable.reflectiveSelectable
-    def collectionClassName(i: Iterable[_]): String =
+    def collectionClassName(i: Iterable[?]): String =
       i.asInstanceOf[{ def collectionClassName: String }].collectionClassName
 
     assertEquals("List", collectionClassName(List(1, 2, 3)))
@@ -77,7 +77,7 @@ class Scala3IssuesTest:
   }
 
   @Test def issue3014(): Unit = {
-    import scala.issues.issue3014._
+    import scala.issues.issue3014.*
     def useUnit(unit: TimeUnit): Long = {
       // Was throwing `MatchError` when calling `toNanos`
       unit.toNanos(1L)

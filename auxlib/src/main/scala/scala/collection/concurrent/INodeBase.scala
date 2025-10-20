@@ -9,7 +9,7 @@ import scala.scalanative.runtime.fromRawPtr
 
 object INodeBase {
   final val updater
-      : AtomicReferenceFieldUpdater[INodeBase[_, _], MainNode[_, _]] =
+      : AtomicReferenceFieldUpdater[INodeBase[?, ?], MainNode[?, ?]] =
     new IntrinsicAtomicReferenceFieldUpdater(obj =>
       fromRawPtr(
         classFieldRawPtr(

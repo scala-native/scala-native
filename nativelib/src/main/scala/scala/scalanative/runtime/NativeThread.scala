@@ -1,24 +1,24 @@
 package scala.scalanative
 package runtime
 
-import java.{lang => jl}
+import java.lang as jl
 
-import scala.scalanative.runtime.Intrinsics._
+import scala.scalanative.runtime.Intrinsics.*
 import scala.scalanative.runtime.GC.{ThreadRoutineArg, ThreadStartRoutine}
 import scala.scalanative.annotation.alwaysinline
-import scala.scalanative.unsafe._
+import scala.scalanative.unsafe.*
 import scala.scalanative.meta.LinktimeInfo.{isMultithreadingEnabled, isWindows}
 import scala.scalanative.runtime.ffi.stdatomic.atomic_thread_fence
-import scala.scalanative.runtime.ffi.stdatomic.memory_order._
+import scala.scalanative.runtime.ffi.stdatomic.memory_order.*
 import scala.annotation.nowarn
 
 import java.util.concurrent.ConcurrentHashMap
-import java.{util => ju}
+import java.util as ju
 import scala.scalanative.concurrent.NativeExecutionContext
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 trait NativeThread {
-  import NativeThread._
+  import NativeThread.*
 
   val thread: Thread
 
@@ -196,7 +196,7 @@ object NativeThread {
 
     @nowarn
     def aliveThreads: Iterable[NativeThread] = {
-      import scala.collection.JavaConverters._
+      import scala.collection.JavaConverters.*
       _aliveThreads.values.asScala
     }
   }

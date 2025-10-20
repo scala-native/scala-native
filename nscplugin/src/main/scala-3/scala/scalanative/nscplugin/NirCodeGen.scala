@@ -7,10 +7,10 @@ import scalanative.nir.serialization.serializeBinary
 
 import dotty.tools.dotc.{CompilationUnit, report}
 import dotty.tools.dotc.ast.tpd
-import dotty.tools.dotc.ast.Trees._
+import dotty.tools.dotc.ast.Trees.*
 import dotty.tools.dotc.core
-import core.Contexts._
-import core.Symbols._
+import core.Contexts.*
+import core.Symbols.*
 
 import java.nio.channels.Channels
 
@@ -25,7 +25,7 @@ class NirCodeGen(val settings: GenNIR.Settings)(using ctx: Context)
     with NirGenUtil
     with GenReflectiveInstantisation
     with GenNativeExports:
-  import tpd._
+  import tpd.*
 
   protected val defnNir = NirDefinitions.get
   protected val nirPrimitives = new NirPrimitives()
@@ -108,7 +108,7 @@ class NirCodeGen(val settings: GenNIR.Settings)(using ctx: Context)
       .groupMapReduce(buf => getFileFor(buf.name.top))(_.toSeq)(_ ++ _)
       .foreach(genIRFile(_, _))
 
-    if (generatedMirrorClasses.nonEmpty) {
+    if generatedMirrorClasses.nonEmpty then {
       // Ported from Scala.js
       /* #4148 Add generated static forwarder classes, except those that
        * would collide with regular classes on case-insensitive file systems.
@@ -132,10 +132,10 @@ class NirCodeGen(val settings: GenNIR.Settings)(using ctx: Context)
           case cls: nir.Defn.Class => caseInsensitiveNameOf(cls)
         }.toSet
 
-      for ((site, staticCls) <- generatedMirrorClasses) {
+      for (site, staticCls) <- generatedMirrorClasses do {
         val MirrorClass(classDef, forwarders) = staticCls
         val caseInsensitiveName = caseInsensitiveNameOf(classDef)
-        if (!generatedCaseInsensitiveNames.contains(caseInsensitiveName)) {
+        if !generatedCaseInsensitiveNames.contains(caseInsensitiveName) then {
           val file = getFileFor(classDef.name)
           val defs = classDef +: forwarders
           genIRFile(file, defs)

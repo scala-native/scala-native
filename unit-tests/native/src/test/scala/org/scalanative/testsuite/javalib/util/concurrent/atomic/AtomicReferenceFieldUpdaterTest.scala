@@ -13,8 +13,8 @@ package atomic
 
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater
 
-import org.junit._
-import org.junit.Assert._
+import org.junit.*
+import org.junit.Assert.*
 
 import scala.scalanative.runtime.Intrinsics.classFieldRawPtr
 import scala.scalanative.runtime.{RawPtr, fromRawPtr}
@@ -40,8 +40,8 @@ object AtomicReferenceFieldUpdaterTest {
 }
 
 class AtomicReferenceFieldUpdaterTest extends JSR166Test {
-  import AtomicReferenceFieldUpdaterTest._
-  import JSR166Test._
+  import AtomicReferenceFieldUpdaterTest.*
+  import JSR166Test.*
 
   @volatile var x: Integer = null
   @volatile protected var protectedField: Integer = null

@@ -3,11 +3,11 @@ package org.scalanative.testsuite.javalib.util.function
 
 import java.util.function.DoubleSupplier
 
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.junit.Test
 
 class DoubleSupplierTest {
-  import DoubleSupplierTest._
+  import DoubleSupplierTest.*
 
   @Test def getAsDouble(): Unit = {
     assertEquals(1.234d, makeSupplier(1.234d).getAsDouble(), 0.0d)

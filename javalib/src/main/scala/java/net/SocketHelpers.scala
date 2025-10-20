@@ -1,17 +1,17 @@
 package java.net
 
-import scala.scalanative.unsigned._
-import scala.scalanative.unsafe._
+import scala.scalanative.unsigned.*
+import scala.scalanative.unsafe.*
 
 import java.io.IOException
 import java.io.FileDescriptor
 
 import scala.scalanative.posix.arpa.inet
-import scala.scalanative.posix.{netdb, netdbOps}, netdb._, netdbOps._
-import scala.scalanative.posix.netinet.{in, inOps}, in._, inOps._
+import scala.scalanative.posix.{netdb, netdbOps}, netdb.*, netdbOps.*
+import scala.scalanative.posix.netinet.{in, inOps}, in.*, inOps.*
 import scala.scalanative.posix.sys.socket
-import scala.scalanative.posix.sys.socket._
-import scala.scalanative.posix.sys.socketOps._
+import scala.scalanative.posix.sys.socket.*
+import scala.scalanative.posix.sys.socketOps.*
 import scala.scalanative.posix.string.memcpy
 
 import scala.scalanative.meta.LinktimeInfo
@@ -462,7 +462,7 @@ private[net] object ip {
 }
 
 private[net] object ipOps {
-  import ip._
+  import ip.*
   implicit class ip_mreqOps(val ptr: Ptr[ip_mreq]) extends AnyVal {
     def imr_multiaddr: in_addr = ptr._1
     def imr_address: in_addr = ptr._2

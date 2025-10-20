@@ -1,11 +1,11 @@
 package org.scalanative.testsuite.javalib.lang
 
-import java.lang._
+import java.lang.*
 
 // Ported from Scala.js. Additional code added for Scala Native.
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 

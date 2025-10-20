@@ -3,7 +3,7 @@ package regex
 
 import java.util
 
-import org.junit.Assert._
+import org.junit.Assert.*
 
 object ApiTestUtils {
 

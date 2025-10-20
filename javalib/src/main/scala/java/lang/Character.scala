@@ -779,7 +779,7 @@ object Character {
   }
 
   def toUpperCase(codePoint: Int): Int = {
-    import CaseUtil._
+    import CaseUtil.*
     toCase(codePoint, a, z, lowerBeta, lowerRanges, lowerDeltas, lowerSteps)
   }
 
@@ -788,7 +788,7 @@ object Character {
   }
 
   def toLowerCase(codePoint: Int): Int = {
-    import CaseUtil._
+    import CaseUtil.*
     toCase(codePoint, A, Z, upperMu, upperRanges, upperDeltas, upperSteps)
   }
 
@@ -1520,7 +1520,7 @@ object Character {
       deltas: Array[scala.Int],
       steps: Array[scala.Byte]
   ): Int = {
-    import CaseUtil._
+    import CaseUtil.*
     if (asciiLow <= codePoint && codePoint <= asciiHigh)
       convert(codePoint, deltas(0)) // ascii
     else if (codePoint < lowFilter) codePoint // whitespace, punctuation, etc.

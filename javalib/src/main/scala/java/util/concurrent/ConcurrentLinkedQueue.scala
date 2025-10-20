@@ -8,7 +8,7 @@ package java.util.concurrent
 
 import java.lang.invoke.MethodHandles
 import java.lang.invoke.VarHandle
-import java.util._
+import java.util.*
 import java.util.NoSuchElementException
 import java.util.Objects
 import java.util.Spliterator
@@ -17,10 +17,10 @@ import java.util.function.Consumer
 import java.util.function.Predicate
 import java.io.{ObjectInputStream, ObjectOutputStream}
 
-import scala.scalanative.unsafe._
+import scala.scalanative.unsafe.*
 import scala.scalanative.runtime.fromRawPtr
 import scala.scalanative.runtime.Intrinsics.classFieldRawPtr
-import scala.scalanative.libc.stdatomic._
+import scala.scalanative.libc.stdatomic.*
 import scala.scalanative.libc.stdatomic.memory_order.memory_order_release
 import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.libc.stdatomic.memory_order.memory_order_relaxed
@@ -69,7 +69,7 @@ class ConcurrentLinkedQueue[E <: AnyRef]
     extends AbstractQueue[E]
     with Queue[E]
     with Serializable {
-  import ConcurrentLinkedQueue._
+  import ConcurrentLinkedQueue.*
 
   @volatile
   @transient private[concurrent] var head: Node[E] = new Node[E]
@@ -82,7 +82,7 @@ class ConcurrentLinkedQueue[E <: AnyRef]
   @alwaysinline private def TAIL: AtomicRef[Node[E]] =
     fromRawPtr[Node[E]](classFieldRawPtr(this, "tail")).atomic
 
-  def this(c: Collection[_ <: E]) = {
+  def this(c: Collection[? <: E]) = {
     this()
     var h, t: Node[E] = head
     c.forEach { e =>
@@ -340,7 +340,7 @@ class ConcurrentLinkedQueue[E <: AnyRef]
     false
   }
 
-  override def addAll(c: Collection[_ <: E]): Boolean = {
+  override def addAll(c: Collection[? <: E]): Boolean = {
     if (c eq this)
       throw new IllegalArgumentException // As historically specified in AbstractQueue#addAll
 
@@ -600,7 +600,7 @@ class ConcurrentLinkedQueue[E <: AnyRef]
         )
     }
 
-    override def forEachRemaining(action: Consumer[_ >: E]): Unit = {
+    override def forEachRemaining(action: Consumer[? >: E]): Unit = {
       Objects.requireNonNull(action)
       val p: Node[E] = getCurrent()
       if (p != null) {
@@ -610,7 +610,7 @@ class ConcurrentLinkedQueue[E <: AnyRef]
       }
     }
 
-    override def tryAdvance(action: Consumer[_ >: E]): Boolean = {
+    override def tryAdvance(action: Consumer[? >: E]): Boolean = {
       Objects.requireNonNull(action)
       var p: Node[E] = getCurrent()
       if (p != null) {
@@ -647,17 +647,17 @@ class ConcurrentLinkedQueue[E <: AnyRef]
 
   override def spliterator(): Spliterator[E] = new CLQSpliterator
 
-  override def removeIf(filter: Predicate[_ >: E]): Boolean = {
+  override def removeIf(filter: Predicate[? >: E]): Boolean = {
     Objects.requireNonNull(filter)
     bulkRemove(filter)
   }
 
-  override def removeAll(c: Collection[_]): Boolean = {
+  override def removeAll(c: Collection[?]): Boolean = {
     Objects.requireNonNull(c)
     bulkRemove((e: E) => c.contains(e))
   }
 
-  override def retainAll(c: Collection[_]): Boolean = {
+  override def retainAll(c: Collection[?]): Boolean = {
     Objects.requireNonNull(c)
     bulkRemove((e: E) => !c.contains(e))
   }
@@ -666,7 +666,7 @@ class ConcurrentLinkedQueue[E <: AnyRef]
     bulkRemove((e: E) => true)
   }
 
-  private def bulkRemove(filter: Predicate[_ >: E]): Boolean = {
+  private def bulkRemove(filter: Predicate[? >: E]): Boolean = {
     var removed = false
     var restartFromHead = true
     while (restartFromHead) {
@@ -708,7 +708,7 @@ class ConcurrentLinkedQueue[E <: AnyRef]
    *  is null, the action is not run.
    */
   private[concurrent] def forEachFrom(
-      action: Consumer[_ >: E],
+      action: Consumer[? >: E],
       _p: Node[E]
   ): Unit = {
     var p = _p
@@ -739,7 +739,7 @@ class ConcurrentLinkedQueue[E <: AnyRef]
     }
   }
 
-  override def forEach(action: Consumer[_ >: E]): Unit = {
+  override def forEach(action: Consumer[? >: E]): Unit = {
     Objects.requireNonNull(action)
     forEachFrom(action, head)
   }

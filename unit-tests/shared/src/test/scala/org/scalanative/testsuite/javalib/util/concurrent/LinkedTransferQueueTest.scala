@@ -7,14 +7,14 @@
  */
 package org.scalanative.testsuite.javalib.util.concurrent
 
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.junit.{Test, Ignore}
 
-import JSR166Test._
+import JSR166Test.*
 
 import java.util.concurrent.TimeUnit.MILLISECONDS
-import java.util._
-import java.util.concurrent._
+import java.util.*
+import java.util.concurrent.*
 import java.util.concurrent.LinkedTransferQueue
 import scala.collection.mutable.ArrayBuffer
 
@@ -59,7 +59,7 @@ class LinkedTransferQueueTest extends JSR166Test {
 
   @Test def testConstructor5() = {
     val items = defaultItems
-    val intList = Arrays.asList(items: _*)
+    val intList = Arrays.asList(items*)
     val q = new LinkedTransferQueue(intList)
     mustEqual(q.size(), intList.size())
     mustEqual(q.toString(), intList.toString())
@@ -115,7 +115,7 @@ class LinkedTransferQueueTest extends JSR166Test {
     val items = new Array[Item](2)
     items(0) = new Item(zero)
     try {
-      q.addAll(Arrays.asList(items: _*))
+      q.addAll(Arrays.asList(items*))
       shouldThrow()
     } catch {
       case _: NullPointerException => {}
@@ -128,8 +128,8 @@ class LinkedTransferQueueTest extends JSR166Test {
     val empty = new Array[Item](0)
     val items = defaultItems
     val q = new LinkedTransferQueue[Item]()
-    assertFalse(q.addAll(Arrays.asList(empty: _*)))
-    assertTrue(q.addAll(Arrays.asList(items: _*)))
+    assertFalse(q.addAll(Arrays.asList(empty*)))
+    assertTrue(q.addAll(Arrays.asList(items*)))
     for (i <- 0 until SIZE) {
       mustEqual(items(i), q.poll())
     }

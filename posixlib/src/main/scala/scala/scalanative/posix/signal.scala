@@ -1,7 +1,7 @@
 package scala.scalanative
 package posix
 
-import scala.scalanative.unsafe._
+import scala.scalanative.unsafe.*
 
 @extern object signal extends signal
 
@@ -377,7 +377,7 @@ import scala.scalanative.unsafe._
 }
 
 object signalOps {
-  import signal._
+  import signal.*
 
   // sigset_t - platform specific
 

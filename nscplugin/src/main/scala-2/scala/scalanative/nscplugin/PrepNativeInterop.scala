@@ -411,7 +411,7 @@ abstract class PrepNativeInterop[G <: Global with Singleton](
     //   // etc.
     //   fresh
     //
-    val stream = classOf[Option[_]].getResourceAsStream(libraryFileName)
+    val stream = classOf[Option[?]].getResourceAsStream(libraryFileName)
     val props = new java.util.Properties()
     try props.load(stream)
     finally stream.close()

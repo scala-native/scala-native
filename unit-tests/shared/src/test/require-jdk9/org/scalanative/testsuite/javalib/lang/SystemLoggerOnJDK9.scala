@@ -1,8 +1,8 @@
 package org.scalanative.testsuite.javalib.lang
 
-import java.{lang => jl}
+import java.lang as jl
 
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.junit.Test
 import org.scalanative.testsuite.utils.Platform
 

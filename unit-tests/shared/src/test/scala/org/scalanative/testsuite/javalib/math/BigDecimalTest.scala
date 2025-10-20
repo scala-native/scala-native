@@ -6,7 +6,7 @@ import java.math.BigDecimal
 import java.math.RoundingMode
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 class BigDecimalTest {
 

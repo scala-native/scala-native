@@ -1,33 +1,33 @@
 package java.lang.impl
 
-import scala.annotation._
-import scala.scalanative.annotation._
+import scala.annotation.*
+import scala.scalanative.annotation.*
 
-import scala.scalanative.unsafe._
-import scala.scalanative.unsigned._
-import scala.scalanative.runtime._
+import scala.scalanative.unsafe.*
+import scala.scalanative.unsigned.*
+import scala.scalanative.runtime.*
 import scala.scalanative.runtime.Intrinsics.{elemRawPtr, classFieldRawPtr}
 import scala.scalanative.runtime.GC
-import scala.scalanative.meta.LinktimeInfo._
+import scala.scalanative.meta.LinktimeInfo.*
 
-import scala.scalanative.posix.sys.types._
-import scala.scalanative.posix.time._
-import scala.scalanative.posix.timeOps._
-import scala.scalanative.posix.sched._
-import scala.scalanative.posix.schedOps._
-import scala.scalanative.posix.pthread._
-import scala.scalanative.posix.errno._
-import scala.scalanative.posix.poll._
-import scala.scalanative.posix.unistd._
-import scala.scalanative.libc.stdatomic._
+import scala.scalanative.posix.sys.types.*
+import scala.scalanative.posix.time.*
+import scala.scalanative.posix.timeOps.*
+import scala.scalanative.posix.sched.*
+import scala.scalanative.posix.schedOps.*
+import scala.scalanative.posix.pthread.*
+import scala.scalanative.posix.errno.*
+import scala.scalanative.posix.poll.*
+import scala.scalanative.posix.unistd.*
+import scala.scalanative.libc.stdatomic.*
 import scala.scalanative.libc.stdatomic.memory_order.memory_order_seq_cst
 
 private[java] class PosixThread(
     val thread: Thread,
     userDefinedStackSize: scala.Long
 ) extends NativeThread {
-  import NativeThread._
-  import PosixThread._
+  import NativeThread.*
+  import PosixThread.*
 
   override def companion: NativeThread.Companion = PosixThread
 
@@ -197,8 +197,8 @@ private[java] class PosixThread(
     if (millis <= 0) return
     val deadline = System.currentTimeMillis() + millis
 
-    import scala.scalanative.posix.pollOps._
-    import scala.scalanative.posix.pollEvents._
+    import scala.scalanative.posix.pollOps.*
+    import scala.scalanative.posix.pollEvents.*
 
     type PipeFDs = CArray[CInt, Nat._2]
     val pipefd = stackalloc[PipeFDs](1)

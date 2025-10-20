@@ -52,7 +52,7 @@ private[nio] object GenHeapBuffer {
 
 private[nio] final class GenHeapBuffer[B <: Buffer](val self: B)
     extends AnyVal {
-  import self._
+  import self.*
 
   type NewThisHeapBuffer = GenHeapBuffer.NewHeapBuffer[BufferType, ElementType]
 

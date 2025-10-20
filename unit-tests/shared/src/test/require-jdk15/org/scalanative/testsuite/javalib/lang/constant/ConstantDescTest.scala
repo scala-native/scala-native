@@ -2,7 +2,7 @@
 package org.scalanative.testsuite.javalib.lang.constant
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 import java.lang.constant.ConstantDesc
 

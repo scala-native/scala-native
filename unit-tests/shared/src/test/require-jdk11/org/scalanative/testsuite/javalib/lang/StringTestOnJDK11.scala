@@ -4,12 +4,12 @@
 package org.scalanative.testsuite.javalib.lang
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
-import java.{util => ju}
-import java.util.{stream => jus}
+import java.util as ju
+import java.util.stream as jus
 
 class StringTestOnJDK11 {
   @Test def repeat(): Unit = {

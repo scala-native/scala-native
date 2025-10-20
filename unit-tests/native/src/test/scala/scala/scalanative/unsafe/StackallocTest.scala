@@ -2,8 +2,8 @@ package scala.scalanative
 package unsafe
 
 import org.junit.Test
-import org.junit.Assert._
-import scalanative.unsigned._
+import org.junit.Assert.*
+import scalanative.unsigned.*
 
 class StackallocTest {
 
@@ -73,7 +73,7 @@ class StackallocTest {
   }
 
   @Test def stackallocLinkedList(): Unit = {
-    import CList._
+    import CList.*
     var i = 0
     var head: Ptr[Node] = null
     while (i < 4) {
@@ -85,7 +85,7 @@ class StackallocTest {
 }
 
 object CList {
-  type Node = CStruct2[Int, Ptr[_]]
+  type Node = CStruct2[Int, Ptr[?]]
 
   implicit class NodeOps(val self: Ptr[Node]) extends AnyVal {
     def init(value: Int, next: Ptr[Node]) = {

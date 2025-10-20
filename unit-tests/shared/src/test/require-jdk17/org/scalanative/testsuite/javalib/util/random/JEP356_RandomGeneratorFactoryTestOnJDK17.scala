@@ -6,8 +6,8 @@ package org.scalanative.testsuite.javalib.util.random
  */
 
 import org.junit.Test
-import org.junit.Assert._
-import org.junit.Assume._
+import org.junit.Assert.*
+import org.junit.Assume.*
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform
@@ -64,7 +64,7 @@ class JEP356_RandomGeneratorFactoryTestOnJDK17 {
     val foundAlgNames = new HashSet[String]()
     RandomGeneratorFactory
       .all()
-      .forEach((rgf: RandomGeneratorFactory[_]) =>
+      .forEach((rgf: RandomGeneratorFactory[?]) =>
         foundAlgNames.add(rgf.name())
       )
 

@@ -6,7 +6,7 @@ import java.io.File
 import java.net.ServerSocket
 import scala.concurrent.ExecutionContext
 import scala.scalanative.build.Logger
-import scala.scalanative.testinterface.common._
+import scala.scalanative.testinterface.common.*
 
 /** RPC Core for use with native rpc. */
 private[testinterface] final class NativeRunnerRPC(

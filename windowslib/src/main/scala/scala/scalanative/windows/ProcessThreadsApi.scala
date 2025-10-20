@@ -1,7 +1,7 @@
 package scala.scalanative.windows
 
-import scala.scalanative.unsafe.{Word => _, _}
-import scalanative.unsigned._
+import scala.scalanative.unsafe.{Word as _, *}
+import scalanative.unsigned.*
 import HandleApi.Handle
 import MinWinBaseApi.FileTimeStruct
 import WinBaseApi.SecurityAttributes
@@ -148,7 +148,7 @@ object ProcessThreadsApiExt {
   final val THREAD_PRIORITY_TIME_CRITICAL = 15
 }
 object ProcessThreadsApiOps {
-  import ProcessThreadsApi._
+  import ProcessThreadsApi.*
   implicit class StartupInfoWOps(ref: Ptr[StartupInfoW])(implicit
       tag: Tag[StartupInfoW]
   ) {

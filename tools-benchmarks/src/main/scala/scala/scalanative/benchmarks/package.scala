@@ -1,6 +1,6 @@
 package scala.scalanative
 
-import scala.scalanative.build._
+import scala.scalanative.build.*
 
 package object benchmarks {
   lazy val defaultNativeConfig = NativeConfig.empty

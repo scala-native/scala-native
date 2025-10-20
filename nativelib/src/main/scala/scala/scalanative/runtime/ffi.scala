@@ -1,7 +1,7 @@
 package scala.scalanative
 package runtime
 
-import scalanative.unsafe._
+import scalanative.unsafe.*
 
 // Minimal bindings for the subset of libc/Posix/WindowsAPI used by the nativelib.
 // This is done purely to avoid circular dependency between clib

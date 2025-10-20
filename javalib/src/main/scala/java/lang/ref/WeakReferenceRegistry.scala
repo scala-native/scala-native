@@ -1,10 +1,10 @@
 package java.lang.ref
 
-import scala.scalanative.unsafe._
+import scala.scalanative.unsafe.*
 import scala.scalanative.meta.LinktimeInfo.isWeakReferenceSupported
 import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
 import scala.scalanative.runtime.javalib.Proxy
-import scala.scalanative.libc.stdatomic._
+import scala.scalanative.libc.stdatomic.*
 import scala.scalanative.runtime.fromRawPtr
 import scala.scalanative.runtime.Intrinsics.classFieldRawPtr
 import scala.scalanative.annotation.alwaysinline
@@ -17,16 +17,16 @@ import scala.annotation.tailrec
  * by the internals of the immix and commix GC.
  */
 private[java] object WeakReferenceRegistry {
-  @volatile private var weakRefsHead: WeakReference[_] = _
+  @volatile private var weakRefsHead: WeakReference[?] = _
 
-  @alwaysinline private def weakRefsHeadPtr = fromRawPtr[WeakReference[_]](
+  @alwaysinline private def weakRefsHeadPtr = fromRawPtr[WeakReference[?]](
     classFieldRawPtr(this, "weakRefsHead")
   )
 
   @tailrec private def enqueueCollectedReferences(
-      head: WeakReference[_],
-      current: WeakReference[_],
-      prev: WeakReference[_]
+      head: WeakReference[?],
+      current: WeakReference[?],
+      prev: WeakReference[?]
   ): (WeakReference[Any], WeakReference[Any]) =
     if (current == null) {
       val tail = if (prev != null) prev else head
@@ -70,8 +70,8 @@ private[java] object WeakReferenceRegistry {
       enqueueCollectedReferences(weakRefsHead, weakRefsHead, null)
     } else {
       // Detach current weak refs linked-list to allow for unsynchronized updated
-      val expected = stackalloc[WeakReference[_]]()
-      var detached = null.asInstanceOf[WeakReference[_]]
+      val expected = stackalloc[WeakReference[?]]()
+      var detached = null.asInstanceOf[WeakReference[?]]
       while ({
         detached = weakRefsHead
         !expected = detached
@@ -115,7 +115,7 @@ private[java] object WeakReferenceRegistry {
     }
   }
 
-  private[ref] def add(weakRef: WeakReference[_]): Unit =
+  private[ref] def add(weakRef: WeakReference[?]): Unit =
     if (isWeakReferenceSupported) {
       assert(weakRef.nextReference == null)
       var head = weakRefsHead
@@ -123,7 +123,7 @@ private[java] object WeakReferenceRegistry {
         weakRef.nextReference = head
         weakRefsHead = weakRef
       } else {
-        val expected = stackalloc[WeakReference[_]]()
+        val expected = stackalloc[WeakReference[?]]()
         !expected = null
         if (atomic_compare_exchange_weak(weakRefsHeadPtr, expected, weakRef)) ()
         else
@@ -139,7 +139,7 @@ private[java] object WeakReferenceRegistry {
   // Scala Native javalib exclusive functionality.
   // Can be used to emulate finalize for javalib classes where necessary.
   private[java] def addHandler(
-      weakRef: WeakReference[_],
+      weakRef: WeakReference[?],
       handler: Function0[Unit]
   ): Unit =
     if (isWeakReferenceSupported) { weakRef.postGCHandler = handler }

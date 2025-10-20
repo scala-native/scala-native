@@ -2,14 +2,14 @@ package scala.scalanative
 package unsafe
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
-import scalanative.unsigned._
+import scalanative.unsigned.*
 
 class TagTest {
 
   @Test def tagSize(): Unit = {
-    assertTrue(tagof[Ptr[_]].size == sizeof[Size])
+    assertTrue(tagof[Ptr[?]].size == sizeof[Size])
     assertTrue(tagof[Object].size == sizeof[Size])
     assertTrue(tagof[Array[Any]].size == sizeof[Size])
     assertTrue(tagof[Unit].size == sizeof[Size])
@@ -35,7 +35,7 @@ class TagTest {
   }
 
   @Test def tagSizeShouldBeConsistentWithSizeof(): Unit = {
-    assertTrue(tagof[Ptr[_]].size == sizeof[Ptr[_]])
+    assertTrue(tagof[Ptr[?]].size == sizeof[Ptr[?]])
     assertTrue(tagof[Unit].size == sizeof[Unit])
     assertTrue(tagof[Boolean].size == sizeof[Boolean])
     assertTrue(tagof[Char].size == sizeof[Char])
@@ -65,9 +65,9 @@ class TagTest {
   }
 
   @Test def tagAlignment(): Unit = {
-    assertTrue(tagof[Ptr[_]].alignment == sizeof[Size])
+    assertTrue(tagof[Ptr[?]].alignment == sizeof[Size])
     assertTrue(tagof[Object].alignment == sizeof[Size])
-    assertTrue(tagof[Array[_]].alignment == sizeof[Size])
+    assertTrue(tagof[Array[?]].alignment == sizeof[Size])
     assertTrue(tagof[Unit].alignment == sizeof[Size])
     assertTrue(tagof[Boolean].alignment == 1)
     assertTrue(tagof[Char].alignment == 2)
@@ -91,9 +91,9 @@ class TagTest {
   }
 
   @Test def tagAlignmentShouldBeConsistentWithAlignmentof(): Unit = {
-    assertTrue(tagof[Ptr[_]].alignment == alignmentof[Ptr[_]])
+    assertTrue(tagof[Ptr[?]].alignment == alignmentof[Ptr[?]])
     assertTrue(tagof[Object].alignment == alignmentof[Object])
-    assertTrue(tagof[Array[_]].alignment == alignmentof[Array[_]])
+    assertTrue(tagof[Array[?]].alignment == alignmentof[Array[?]])
     assertTrue(tagof[Unit].alignment == alignmentof[Unit])
     assertTrue(tagof[Boolean].alignment == alignmentof[Boolean])
     assertTrue(tagof[Char].alignment == alignmentof[Char])
@@ -253,7 +253,7 @@ class TagTest {
       type Foo
     }
     assertEquals(PtrAnyClassTag, tagof[Ptr[abstractTagWrapper.Foo]])
-    assertEquals(PtrAnyClassTag, tagof[Ptr[_]])
+    assertEquals(PtrAnyClassTag, tagof[Ptr[?]])
     assertEquals(
       Tag.Ptr(PtrAnyClassTag),
       tagof[Ptr[Ptr[abstractTagWrapper.Foo]]]

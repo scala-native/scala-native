@@ -2,7 +2,7 @@ package java.net
 
 // Ported from Apache Harmony
 
-import java.lang.{StringBuilder => JStringBuilder}
+import java.lang.StringBuilder as JStringBuilder
 import java.io.Serializable
 import java.io.UnsupportedEncodingException
 import java.util.StringTokenizer
@@ -31,7 +31,7 @@ object URI {
 
 final class URI private () extends Comparable[URI] with Serializable {
 
-  import URI._
+  import URI.*
 
   private var string: String = _
 

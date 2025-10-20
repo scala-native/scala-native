@@ -2,16 +2,16 @@ package org.scalanative.testsuite.posixlib
 package sys
 
 import org.junit.Test
-import org.junit.Assert._
-import org.junit.Assume._
+import org.junit.Assert.*
+import org.junit.Assume.*
 import org.junit.BeforeClass
 
 import scala.scalanative.meta.LinktimeInfo
 
 import java.nio.file.{Files, Path}
 
-import scala.scalanative.unsafe._
-import scala.scalanative.unsigned._
+import scala.scalanative.unsafe.*
+import scala.scalanative.unsigned.*
 
 import scala.scalanative.posix.errno.errno
 import scala.scalanative.posix.stdlib.mkstemp

@@ -13,7 +13,7 @@ final class UUID private (
     with java.io.Serializable
     with Comparable[UUID] {
 
-  import UUID._
+  import UUID.*
 
   /* Most significant long:
    *

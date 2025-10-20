@@ -1,6 +1,6 @@
 package scala.scalanative.nscplugin
 
-import dotty.tools.dotc.plugins._
+import dotty.tools.dotc.plugins.*
 import dotty.tools.dotc.report
 import dotty.tools.dotc.core.Contexts.ContextBase
 import java.net.URI

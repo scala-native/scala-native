@@ -1,8 +1,8 @@
 package org.scalanative.testsuite.javalib.lang
 
 import org.junit.Test
-import org.junit.Assert._
-import org.junit.Assume._
+import org.junit.Assert.*
+import org.junit.Assume.*
 import org.junit.BeforeClass
 
 import org.scalanative.testsuite.utils.Platform

@@ -1,7 +1,7 @@
 package scala.scalanative.memory
 
 import language.experimental.captureChecking
-import scalanative.unsigned._
+import scalanative.unsigned.*
 import scala.annotation.implicitNotFound
 import scala.scalanative.unsafe.CSize
 import scala.scalanative.unsigned.USize
@@ -24,7 +24,7 @@ trait SafeZone {
 
   /** Require this zone to be open. */
   def checkOpen(): Unit = {
-    if (!isOpen)
+    if !isOpen then
       throw new IllegalStateException(s"Zone ${this} is already closed.")
   }
 

@@ -8,15 +8,15 @@
 package scala.scalanative
 package regex
 
-import Inst.{Op => IOP}
-import Regexp.{Op => ROP}
+import Inst.Op as IOP
+import Regexp.Op as ROP
 
 // Compiler from {@code Regexp} (RE2 abstract syntax) to {@code RE2}
 // (compiled regular expression).
 //
 // The only entry point is {@link #compileRegexp}.
 class Compiler private () {
-  import Compiler._
+  import Compiler.*
 
   private val prog = new Prog() // Program being built
   newInst(IOP.FAIL)

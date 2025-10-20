@@ -12,7 +12,7 @@ class Attributes private (protected var map: Map[Object, Object])
   def this(attributes: Attributes) =
     this(
       attributes.map
-        .asInstanceOf[HashMap[_, _]]
+        .asInstanceOf[HashMap[?, ?]]
         .clone()
         .asInstanceOf[Map[Object, Object]]
     )
@@ -41,7 +41,7 @@ class Attributes private (protected var map: Map[Object, Object])
   override def put(key: Object, value: Object): Object =
     map.put(key.asInstanceOf[Attributes.Name], value.asInstanceOf[String])
 
-  override def putAll(attrib: Map[_ <: Object, _ <: Object]): Unit =
+  override def putAll(attrib: Map[? <: Object, ? <: Object]): Unit =
     if (attrib == null || !attrib.isInstanceOf[Attributes]) {
       throw new ClassCastException()
     } else {
@@ -65,7 +65,7 @@ class Attributes private (protected var map: Map[Object, Object])
     if (clone == null) null
     else {
       clone.map = (map
-        .asInstanceOf[HashMap[_, _]]
+        .asInstanceOf[HashMap[?, ?]]
         .clone())
         .asInstanceOf[Map[Object, Object]]
       clone

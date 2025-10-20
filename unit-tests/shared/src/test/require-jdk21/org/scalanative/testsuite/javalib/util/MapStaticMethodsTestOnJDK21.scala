@@ -1,11 +1,11 @@
 package org.scalanative.testsuite.javalib.util
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
-import java.{util => ju}
+import java.util as ju
 
 import java.util.{Map, HashMap}
 

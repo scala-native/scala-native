@@ -3,7 +3,7 @@ package scala.scalanative
 import nir.Global
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 class FrameworkTest extends codegen.CodeGenSpec {
 

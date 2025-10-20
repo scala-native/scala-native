@@ -1,6 +1,6 @@
 package java.lang.process
 
-import scala.scalanative.unsafe._
+import scala.scalanative.unsafe.*
 import scala.scalanative.posix.time.timespec
 
 object BsdOsSpecific {

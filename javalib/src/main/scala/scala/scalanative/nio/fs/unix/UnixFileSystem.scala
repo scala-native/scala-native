@@ -2,7 +2,7 @@ package scala.scalanative.nio.fs.unix
 
 import java.io.IOException
 import java.lang.Iterable
-import java.{lang => jl}
+import java.lang as jl
 import java.nio.file.{
   FileStore,
   FileSystem,
@@ -14,10 +14,10 @@ import java.nio.file.{
 import java.nio.file.spi.FileSystemProvider
 import java.nio.file.attribute.UserPrincipalLookupService
 import java.nio.file.attribute.PosixUserPrincipalLookupService
-import java.{util => ju}
+import java.util as ju
 
 import scala.scalanative.annotation.stub
-import scala.scalanative.unsafe._
+import scala.scalanative.unsafe.*
 
 import scala.scalanative.posix.sys.statvfs
 

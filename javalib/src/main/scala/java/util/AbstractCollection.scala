@@ -4,9 +4,9 @@ package java.util
 
 import scala.annotation.tailrec
 
-import ScalaOps._
+import ScalaOps.*
 
-import java.lang.{reflect => jlr}
+import java.lang.reflect as jlr
 
 abstract class AbstractCollection[E] protected () extends Collection[E] {
   def iterator(): Iterator[E]
@@ -56,19 +56,19 @@ abstract class AbstractCollection[E] protected () extends Collection[E] {
     findAndRemove(iterator())
   }
 
-  def containsAll(c: Collection[_]): Boolean = {
+  def containsAll(c: Collection[?]): Boolean = {
     var it = c.iterator()
     while (it.hasNext()) if (!contains(it.next())) return false
     true
   }
 
-  def addAll(c: Collection[_ <: E]): Boolean =
+  def addAll(c: Collection[? <: E]): Boolean =
     c.scalaOps.foldLeft(false)((prev, elem) => add(elem) || prev)
 
-  def removeAll(c: Collection[_]): Boolean =
+  def removeAll(c: Collection[?]): Boolean =
     removeWhere(c.contains(_))
 
-  def retainAll(c: Collection[_]): Boolean =
+  def retainAll(c: Collection[?]): Boolean =
     removeWhere(!c.contains(_))
 
   def clear(): Unit =

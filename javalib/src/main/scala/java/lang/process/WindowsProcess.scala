@@ -4,26 +4,26 @@ package java.lang.process
 import scala.language.existentials
 
 import java.io.FileDescriptor
-import java.lang.ProcessBuilder._
+import java.lang.ProcessBuilder.*
 
 import java.util.ArrayList
-import java.util.ScalaOps._
+import java.util.ScalaOps.*
 import java.util.concurrent.TimeUnit
 import java.nio.file.WindowsException
-import scala.scalanative.unsafe._
-import scala.scalanative.unsigned._
-import scala.scalanative.windows._
+import scala.scalanative.unsafe.*
+import scala.scalanative.unsigned.*
+import scala.scalanative.windows.*
 
-import HandleApi._
-import HandleApiExt._
-import ProcessThreadsApi._
-import ProcessThreadsApiExt._
-import ProcessThreadsApiOps._
-import FileApiExt._
-import NamedPipeApi._
-import WinBaseApi._
-import WinBaseApiOps._
-import winnt.AccessRights._
+import HandleApi.*
+import HandleApiExt.*
+import ProcessThreadsApi.*
+import ProcessThreadsApiExt.*
+import ProcessThreadsApiOps.*
+import FileApiExt.*
+import NamedPipeApi.*
+import WinBaseApi.*
+import WinBaseApiOps.*
+import winnt.AccessRights.*
 
 private[process] class WindowsProcessHandle(
     handle: Handle,

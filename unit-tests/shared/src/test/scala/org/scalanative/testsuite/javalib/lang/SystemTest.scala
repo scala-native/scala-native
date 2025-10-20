@@ -1,8 +1,8 @@
 package org.scalanative.testsuite.javalib.lang
 
 import org.junit.Test
-import org.junit.Assert._
-import org.scalanative.testsuite.utils.Platform._
+import org.junit.Assert.*
+import org.scalanative.testsuite.utils.Platform.*
 import java.nio.file.Paths
 
 class SystemTest {

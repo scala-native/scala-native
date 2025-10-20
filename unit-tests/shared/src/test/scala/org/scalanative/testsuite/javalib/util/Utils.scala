@@ -2,18 +2,18 @@
 
 package org.scalanative.testsuite.javalib.util
 
-import java.{util => ju}
+import java.util as ju
 
-import org.junit.Assert._
+import org.junit.Assert.*
 
 object Utils {
   def SIE[K, V](key: K, value: V): ju.Map.Entry[K, V] =
     new ju.AbstractMap.SimpleImmutableEntry(key, value)
 
-  def iteratorIsEmpty(iter: ju.Iterator[_]): Boolean =
+  def iteratorIsEmpty(iter: ju.Iterator[?]): Boolean =
     !iter.hasNext()
 
-  def iteratorSize(iter: ju.Iterator[_]): Int = {
+  def iteratorSize(iter: ju.Iterator[?]): Int = {
     var result = 0
     while (iter.hasNext()) {
       iter.next()
@@ -30,10 +30,10 @@ object Utils {
     }
   }
 
-  def enumerationIsEmpty(enumeration: ju.Enumeration[_]): Boolean =
+  def enumerationIsEmpty(enumeration: ju.Enumeration[?]): Boolean =
     !enumeration.hasMoreElements()
 
-  def enumerationSize(enumeration: ju.Enumeration[_]): Int = {
+  def enumerationSize(enumeration: ju.Enumeration[?]): Int = {
     var result = 0
     while (enumeration.hasMoreElements()) {
       enumeration.nextElement()
@@ -44,8 +44,8 @@ object Utils {
 
   def assertEnumSameElementsAsSet[A](
       expected: A*
-  )(enumeration: ju.Enumeration[_ <: A]): Unit = {
-    assertIteratorSameElementsAsSet(expected: _*)(new ju.Iterator[A] {
+  )(enumeration: ju.Enumeration[? <: A]): Unit = {
+    assertIteratorSameElementsAsSet(expected*)(new ju.Iterator[A] {
       def hasNext(): Boolean = enumeration.hasMoreElements()
       def next(): A = enumeration.nextElement()
     })
@@ -54,7 +54,7 @@ object Utils {
   def assertCollSameElementsAsSet[A](
       expected: A*
   )(coll: ju.Collection[A]): Unit = {
-    assertIteratorSameElementsAsSet(expected: _*)(coll.iterator())
+    assertIteratorSameElementsAsSet(expected*)(coll.iterator())
   }
 
   def assertIteratorSameElementsAsSet[A](
@@ -74,7 +74,7 @@ object Utils {
       expected: A*
   )(iter: ju.Iterator[A]): Unit = {
     val expectedSet = expected.toSet
-    val notSeen = scala.collection.mutable.HashSet[A](expected: _*)
+    val notSeen = scala.collection.mutable.HashSet[A](expected*)
     while (iter.hasNext()) {
       val value = iter.next()
       assertTrue(

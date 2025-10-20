@@ -12,7 +12,7 @@ import scala.annotation.tailrec
 import scala.scalanative.annotation.safePublish
 
 abstract class CountedCompleter[T] protected (
-    @safePublish private[concurrent] final val completer: CountedCompleter[_],
+    @safePublish private[concurrent] final val completer: CountedCompleter[?],
     initialPendingCount: Int
 ) extends ForkJoinTask[T] {
 
@@ -21,20 +21,20 @@ abstract class CountedCompleter[T] protected (
     fromRawPtr(Intrinsics.classFieldRawPtr(this, "pending"))
   )
 
-  protected def this(completer: CountedCompleter[_]) = this(completer, 0)
+  protected def this(completer: CountedCompleter[?]) = this(completer, 0)
 
   protected def this() = this(null, 0)
 
   def compute(): Unit
 
-  def onCompletion(caller: CountedCompleter[_]): Unit = {}
+  def onCompletion(caller: CountedCompleter[?]): Unit = {}
 
   def onExceptionalCompletion(
       ex: Throwable,
-      caller: CountedCompleter[_]
+      caller: CountedCompleter[?]
   ) = true
 
-  final def getCompleter(): CountedCompleter[_] = completer
+  final def getCompleter(): CountedCompleter[?] = completer
 
   final def getPendingCount(): Int = pending
 
@@ -60,8 +60,8 @@ abstract class CountedCompleter[T] protected (
     c
   }
 
-  final def getRoot(): CountedCompleter[_] = {
-    @tailrec def loop(a: CountedCompleter[_]): CountedCompleter[_] =
+  final def getRoot(): CountedCompleter[?] = {
+    @tailrec def loop(a: CountedCompleter[?]): CountedCompleter[?] =
       a.completer match {
         case null => a
         case p    => loop(p)
@@ -70,7 +70,7 @@ abstract class CountedCompleter[T] protected (
   }
 
   final def tryComplete(): Unit = {
-    var a: CountedCompleter[_] = this
+    var a: CountedCompleter[?] = this
     var s = a
     var c = 0
     while (true) {
@@ -88,8 +88,8 @@ abstract class CountedCompleter[T] protected (
   }
 
   final def propagateCompletion(): Unit = {
-    var a: CountedCompleter[_] = this
-    var s = null: CountedCompleter[_]
+    var a: CountedCompleter[?] = this
+    var s = null: CountedCompleter[?]
     var c = 0
     while (true) {
       c = a.pending
@@ -112,7 +112,7 @@ abstract class CountedCompleter[T] protected (
     if (p != null) p.tryComplete()
   }
 
-  final def firstComplete(): CountedCompleter[_] = {
+  final def firstComplete(): CountedCompleter[?] = {
     var c = 0
     while (true) {
       c = pending
@@ -122,14 +122,14 @@ abstract class CountedCompleter[T] protected (
     null // unreachable
   }
 
-  final def nextComplete(): CountedCompleter[_] =
+  final def nextComplete(): CountedCompleter[?] =
     completer match {
       case null => quietlyComplete(); null
       case p    => p.firstComplete()
     }
 
   final def quietlyCompleteRoot(): Unit = {
-    var a: CountedCompleter[_] = this
+    var a: CountedCompleter[?] = this
     while (true) {
       a.completer match {
         case null => a.quietlyComplete(); return
@@ -149,7 +149,7 @@ abstract class CountedCompleter[T] protected (
   }
 
   override private[concurrent] final def trySetException(ex: Throwable): Int = {
-    var a: CountedCompleter[_] = this
+    var a: CountedCompleter[?] = this
     var p = a
     while ({
       ForkJoinTask.isExceptionalStatus(a.trySetThrown(ex)) &&

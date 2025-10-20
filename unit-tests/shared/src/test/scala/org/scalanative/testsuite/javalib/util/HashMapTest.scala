@@ -1,10 +1,10 @@
 package org.scalanative.testsuite.javalib.util
 
-import java.util._
+import java.util.*
 
 // Ported from Scala.js
 
-import java.{util => ju}
+import java.util as ju
 
 import scala.reflect.ClassTag
 

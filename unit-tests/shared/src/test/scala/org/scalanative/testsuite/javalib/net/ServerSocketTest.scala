@@ -1,6 +1,6 @@
 package org.scalanative.testsuite.javalib.net
 
-import java.net._
+import java.net.*
 import java.util.concurrent.TimeUnit
 
 import scala.annotation.tailrec
@@ -8,7 +8,7 @@ import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.DurationInt
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 

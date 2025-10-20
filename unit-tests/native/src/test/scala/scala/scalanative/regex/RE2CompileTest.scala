@@ -4,7 +4,7 @@ package regex
 import java.util.regex.PatternSyntaxException
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 class RE2CompileTest {
 

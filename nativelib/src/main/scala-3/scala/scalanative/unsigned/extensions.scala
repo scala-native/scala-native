@@ -1,6 +1,6 @@
 package scala.scalanative.unsigned
 
-import scala.scalanative.runtime.Intrinsics._
+import scala.scalanative.runtime.Intrinsics.*
 import scala.scalanative.unsafe.CSize
 
 /** Scala Native unsigned extensions to the standard Byte. */

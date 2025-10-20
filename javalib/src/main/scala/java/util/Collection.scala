@@ -22,11 +22,11 @@ trait Collection[E] extends java.lang.Iterable[E] {
   def toArray[T <: AnyRef](a: Array[T]): Array[T]
   def add(e: E): Boolean
   def remove(o: Any): Boolean
-  def containsAll(c: Collection[_]): Boolean
-  def addAll(c: Collection[_ <: E]): Boolean
-  def removeAll(c: Collection[_]): Boolean
+  def containsAll(c: Collection[?]): Boolean
+  def addAll(c: Collection[? <: E]): Boolean
+  def removeAll(c: Collection[?]): Boolean
 
-  def removeIf(filter: Predicate[_ >: E]): Boolean = {
+  def removeIf(filter: Predicate[? >: E]): Boolean = {
     var result = false
     val iter = iterator()
     while (iter.hasNext()) {
@@ -38,7 +38,7 @@ trait Collection[E] extends java.lang.Iterable[E] {
     result
   }
 
-  def retainAll(c: Collection[_]): Boolean
+  def retainAll(c: Collection[?]): Boolean
   def clear(): Unit
   def equals(o: Any): Boolean
   def hashCode(): Int

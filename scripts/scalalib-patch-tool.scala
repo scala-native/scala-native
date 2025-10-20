@@ -3,10 +3,10 @@
 //> using dep "com.lihaoyi::mainargs:0.7.6"
 
 import com.github.difflib.{DiffUtils, UnifiedDiffUtils}
-import os._
-import mainargs._
+import os.*
+import mainargs.*
 
-import scala.util._
+import scala.util.*
 
 val ignoredFiles = {
   val scala = os.rel / "scala"
@@ -82,7 +82,7 @@ def main(
         if !ignoredFiles.contains(relativePath)
         sourcePath = sourcesDir / relativePath if os.exists(sourcePath)
         patchPath = overridePath / up / s"${overridePath.last}.patch"
-        _ = if (os.exists(patchPath)) os.remove(patchPath)
+        _ = if os.exists(patchPath) then os.remove(patchPath)
       } {
         val originalLines = fileToLines(sourcePath)
         val diff = DiffUtils.diff(
@@ -99,7 +99,7 @@ def main(
           contextLines
         )
 
-        if (unifiedDiff.isEmpty()) {
+        if unifiedDiff.isEmpty() then {
           System.err.println(
             s"File $relativePath has identical content as original source"
           )
@@ -128,7 +128,7 @@ def main(
         if !ignoredFiles.contains(relativePath)
         sourcePath = sourcesDir / relativePath
 
-        _ = if (exists(overridePath)) os.remove(overridePath)
+        _ = if exists(overridePath) then os.remove(overridePath)
 
       } {
         // There is no JVM library working with diffs which can apply fuzzy
@@ -173,7 +173,7 @@ def main(
         shallPrune = exists(overridePath) &&
           !ignoredFiles.contains(relativePath)
       } {
-        if (shallPrune) {
+        if shallPrune then {
           os.remove(overridePath)
         }
       }
@@ -212,7 +212,7 @@ def scalalibProject(scalaVersion: String): String = scalaVersion
 def sourcesExistsOrFetch(scalaVersion: String, sourcesDir: os.Path)(implicit
     wd: os.Path
 ) = {
-  if (!exists(sourcesDir)) {
+  if !exists(sourcesDir) then {
     println(s"Fetching Scala $scalaVersion sources")
     val suffix = scalaVersion match {
       case s"2.12.${patch}"       => "2_12"

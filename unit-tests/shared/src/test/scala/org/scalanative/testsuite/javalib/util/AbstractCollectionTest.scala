@@ -2,7 +2,7 @@
 
 package org.scalanative.testsuite.javalib.util
 
-import java.{util => ju}
+import java.util as ju
 
 import scala.reflect.ClassTag
 
@@ -11,7 +11,7 @@ class AbstractCollectionTest extends CollectionTest {
 }
 
 class AbstractCollectionFactory extends CollectionFactory {
-  import AbstractCollectionFactory._
+  import AbstractCollectionFactory.*
 
   override def implementationName: String =
     "java.util.AbstractCollection"

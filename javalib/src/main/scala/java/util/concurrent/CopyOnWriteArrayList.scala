@@ -4,8 +4,8 @@
 package java.util.concurrent
 
 import java.lang.Cloneable
-import java.lang.{reflect => jlr}
-import java.util._
+import java.lang.reflect as jlr
+import java.util.*
 import java.util.function.{Predicate, UnaryOperator}
 
 import scala.annotation.tailrec
@@ -26,7 +26,7 @@ class CopyOnWriteArrayList[E <: AnyRef] private (
     this(new ArrayList[E])
   }
 
-  def this(c: Collection[_ <: E]) = {
+  def this(c: Collection[? <: E]) = {
     this()
     addAll(c)
   }
@@ -141,20 +141,20 @@ class CopyOnWriteArrayList[E <: AnyRef] private (
     }
   }
 
-  def containsAll(c: Collection[_]): Boolean =
+  def containsAll(c: Collection[?]): Boolean =
     inner.containsAll(c)
 
-  def removeAll(c: Collection[_]): Boolean = {
+  def removeAll(c: Collection[?]): Boolean = {
     copyIfNeeded()
     inner.removeAll(c)
   }
 
-  def retainAll(c: Collection[_]): Boolean = {
+  def retainAll(c: Collection[?]): Boolean = {
     copyIfNeeded()
     inner.retainAll(c)
   }
 
-  def addAllAbsent(c: Collection[_ <: E]): Int = {
+  def addAllAbsent(c: Collection[? <: E]): Int = {
     var added = 0
     c.forEach { e =>
       if (addIfAbsent(e))
@@ -168,10 +168,10 @@ class CopyOnWriteArrayList[E <: AnyRef] private (
     requiresCopyOnWrite = false
   }
 
-  def addAll(c: Collection[_ <: E]): Boolean =
+  def addAll(c: Collection[? <: E]): Boolean =
     addAll(size(), c)
 
-  def addAll(index: Int, c: Collection[_ <: E]): Boolean = {
+  def addAll(index: Int, c: Collection[? <: E]): Boolean = {
     checkIndexOnBounds(index)
     copyIfNeeded()
     innerInsertMany(index, c)
@@ -181,7 +181,7 @@ class CopyOnWriteArrayList[E <: AnyRef] private (
   /* Override Collection.removeIf() because our iterators do not support
    * the `remove()` method.
    */
-  override def removeIf(filter: Predicate[_ >: E]): Boolean = {
+  override def removeIf(filter: Predicate[? >: E]): Boolean = {
     // scalastyle:off return
     /* The outer loop iterates as long as no element passes the filter (and
      * hence no modification is required).
@@ -266,7 +266,7 @@ class CopyOnWriteArrayList[E <: AnyRef] private (
   protected def innerInsert(index: Int, elem: E): Unit =
     inner.add(index, elem)
 
-  protected def innerInsertMany(index: Int, items: Collection[_ <: E]): Unit =
+  protected def innerInsertMany(index: Int, items: Collection[? <: E]): Unit =
     inner.addAll(index, items)
 
   protected def innerRemove(index: Int): E =
@@ -351,7 +351,7 @@ class CopyOnWriteArrayList[E <: AnyRef] private (
 
     override protected def innerInsertMany(
         index: Int,
-        items: Collection[_ <: E]
+        items: Collection[? <: E]
     ): Unit = {
       changeSize(items.size())
       self.innerInsertMany(fromIndex + index, items)

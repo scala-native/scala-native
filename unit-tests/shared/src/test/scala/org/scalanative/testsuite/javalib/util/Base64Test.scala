@@ -1,6 +1,6 @@
 package org.scalanative.testsuite.javalib.util
 
-import java.util._
+import java.util.*
 
 // Ported from Scala.js
 
@@ -14,7 +14,7 @@ import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets.ISO_8859_1
 import java.util.Base64.Decoder
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 

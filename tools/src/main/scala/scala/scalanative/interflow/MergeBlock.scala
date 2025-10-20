@@ -26,7 +26,7 @@ private[interflow] final class MergeBlock(
 
   def toInsts(): Seq[nir.Inst] = toInstsCached
   private lazy val toInstsCached: Seq[nir.Inst] = {
-    import Interflow.LLVMIntrinsics._
+    import Interflow.LLVMIntrinsics.*
     val block = this
     val result = new nir.InstructionBuilder()(nir.Fresh(0))
 

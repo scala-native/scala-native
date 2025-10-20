@@ -1,8 +1,8 @@
 package scala.scalanative.runtime
 
-import scala.scalanative.runtime._
-import scala.scalanative.runtime.Intrinsics._
-import scala.scalanative.unsigned._
+import scala.scalanative.runtime.*
+import scala.scalanative.runtime.Intrinsics.*
+import scala.scalanative.unsigned.*
 import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
 
 // emmited as java.lang.Object
@@ -18,10 +18,10 @@ private[runtime] class _Object {
   @inline def __toString(): String =
     getClass.getName + "@" + Integer.toHexString(hashCode)
 
-  @inline def __getClass(): _Class[_] = {
+  @inline def __getClass(): _Class[?] = {
     val ptr = castObjectToRawPtr(this)
     val rtti = loadRawPtr(ptr)
-    castRawPtrToObject(rtti).asInstanceOf[_Class[_]]
+    castRawPtrToObject(rtti).asInstanceOf[_Class[?]]
   }
 
   @inline def __notify(): Unit = if (isMultithreadingEnabled) {
@@ -49,7 +49,7 @@ private[runtime] class _Object {
     case _: java.lang.Cloneable =>
       val cls = __getClass()
       val size = cls.size
-      val clone = GC.alloc(cls.asInstanceOf[Class[_]], size)
+      val clone = GC.alloc(cls.asInstanceOf[Class[?]], size)
       val src = castObjectToRawPtr(this)
       ffi.memcpy(clone, src, Intrinsics.castIntToRawSize(size))
       if (isMultithreadingEnabled) {

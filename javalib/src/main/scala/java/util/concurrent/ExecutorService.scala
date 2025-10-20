@@ -23,22 +23,22 @@ trait ExecutorService extends Executor with AutoCloseable {
 
   def submit[T <: AnyRef](task: Runnable, result: T): Future[T]
 
-  def submit(task: Runnable): Future[_]
+  def submit(task: Runnable): Future[?]
 
   def invokeAll[T <: AnyRef](
-      tasks: java.util.Collection[_ <: Callable[T]]
+      tasks: java.util.Collection[? <: Callable[T]]
   ): java.util.List[Future[T]]
 
   def invokeAll[T <: AnyRef](
-      tasks: java.util.Collection[_ <: Callable[T]],
+      tasks: java.util.Collection[? <: Callable[T]],
       timeout: Long,
       unit: TimeUnit
   ): java.util.List[Future[T]]
 
-  def invokeAny[T <: AnyRef](tasks: java.util.Collection[_ <: Callable[T]]): T
+  def invokeAny[T <: AnyRef](tasks: java.util.Collection[? <: Callable[T]]): T
 
   def invokeAny[T <: AnyRef](
-      tasks: java.util.Collection[_ <: Callable[T]],
+      tasks: java.util.Collection[? <: Callable[T]],
       timeout: Long,
       unit: TimeUnit
   ): T

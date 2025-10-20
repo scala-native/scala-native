@@ -2,30 +2,30 @@ package java.lang.process
 
 import java.io.{File, IOException}
 
-import java.lang.process.BsdOsSpecific._
+import java.lang.process.BsdOsSpecific.*
 import java.lang.process.BsdOsSpecific.Extern.{kevent, kqueue}
 import java.lang.process.LinuxOsSpecific.Extern.{pidfd_open, ppoll}
 
-import java.{util => ju}
+import java.util as ju
 import ju.concurrent.TimeUnit
 import ju.ArrayList
-import ju.ScalaOps._
+import ju.ScalaOps.*
 
 import scala.annotation.tailrec
 
 import scalanative.meta.LinktimeInfo
 
-import scalanative.unsafe._
-import scalanative.unsigned._
-import scalanative.posix.errno._
+import scalanative.unsafe.*
+import scalanative.unsigned.*
+import scalanative.posix.errno.*
 import scalanative.posix.fcntl
 
-import scalanative.posix.poll._
-import scalanative.posix.pollOps._
+import scalanative.posix.poll.*
+import scalanative.posix.pollOps.*
 import scalanative.posix.pollEvents
-import scalanative.posix.spawn._
+import scalanative.posix.spawn.*
 import scalanative.posix.string.strerror
-import scalanative.posix.sys.wait._
+import scalanative.posix.sys.wait.*
 
 import scalanative.posix.time.timespec
 import scalanative.posix.timeOps.timespecOps
@@ -687,7 +687,7 @@ private[process] object UnixProcessGen2 {
       redirect: ProcessBuilder.Redirect,
       procFd: CInt
   ): Unit = {
-    import fcntl.{open => _, _}
+    import fcntl.{open as _, *}
     redirect.`type`() match {
       case ProcessBuilder.Redirect.Type.INHERIT =>
       case ProcessBuilder.Redirect.Type.PIPE    =>
@@ -726,7 +726,7 @@ private[process] object UnixProcessGen2 {
       redirect: ProcessBuilder.Redirect,
       procFd: CInt
   ): Unit = {
-    import fcntl.{open => _, _}
+    import fcntl.{open as _, *}
     redirect.`type`() match {
       case ProcessBuilder.Redirect.Type.INHERIT =>
 

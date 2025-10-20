@@ -9,7 +9,7 @@ import scala.scalanative.util.ShowBuilder
 private[codegen] class WindowsGnuCompat(codegen: AbstractCodeGen)
     extends OsCompat(codegen) {
 
-  import codegen.{pointerType => ptrT}
+  import codegen.pointerType as ptrT
 
   val ehWrapperTy = "@_ZTIN11scalanative16ExceptionWrapperE"
   val excRecTy = s"{ $ptrT, i32 }"
@@ -44,7 +44,7 @@ private[codegen] class WindowsGnuCompat(codegen: AbstractCodeGen)
       metaCtx: MetadataCodeGen.Context,
       scopes: MetadataCodeGen.DefnScopes
   ): Unit = {
-    import sb._
+    import sb.*
     val nir.Next.Unwind(nir.Val.Local(excname, _), next) = unwind
 
     val excpad = "_" + excname.id + ".landingpad"
@@ -90,7 +90,7 @@ private[codegen] class WindowsGnuCompat(codegen: AbstractCodeGen)
   }
 
   def genPrelude()(implicit builder: ShowBuilder): Unit = {
-    import builder._
+    import builder.*
     line(s"declare i32 @llvm.eh.typeid.for($ptrT)")
     line(s"declare dso_local i32 $osPersonalityType(...)")
     line(s"declare dso_local $ptrT $beginCatch($ptrT)")

@@ -9,7 +9,7 @@ class DatagramSocket protected (
     private[net] var localAddr: InetAddress,
     shouldStartup: Boolean
 ) extends Closeable {
-  import DatagramSocket._
+  import DatagramSocket.*
 
   private[net] var connectState: Int = ST_NOT_CONNECTED
   private[net] var connectedAddress: InetAddress = _

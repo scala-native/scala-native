@@ -1,7 +1,7 @@
 package java.io
 
 import java.nio.ByteBuffer
-import java.{lang => jl}
+import java.lang as jl
 
 import scala.annotation.tailrec
 

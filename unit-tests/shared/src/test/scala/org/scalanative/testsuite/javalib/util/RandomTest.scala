@@ -1,15 +1,15 @@
 package org.scalanative.testsuite.javalib.util
 
-import java.{lang => jl}
+import java.lang as jl
 
-import java.util._
+import java.util.*
 import java.util.function.{DoubleConsumer, IntConsumer, LongConsumer}
 
 import org.junit.Test
-import org.junit.Assert._
-import org.junit.Assume._
+import org.junit.Assert.*
+import org.junit.Assume.*
 
-import scala.scalanative.junit.utils.AssumesHelper._
+import scala.scalanative.junit.utils.AssumesHelper.*
 
 /* Design note:
  *   The content, characteristics, and when appropriate the size of

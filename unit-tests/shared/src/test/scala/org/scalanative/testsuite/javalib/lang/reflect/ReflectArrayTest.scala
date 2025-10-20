@@ -15,7 +15,7 @@ package org.scalanative.testsuite.javalib.lang.reflect
 import scala.runtime.BoxedUnit
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.scalanative.testsuite.utils.Platform.executingInJVM
 
 class ReflectArrayTest {
@@ -96,8 +96,8 @@ class ReflectArrayTest {
 
   @inline
   def testNewInstanceMultipleDims(
-      clazz: Class[_],
-      expectedClazz: Class[_],
+      clazz: Class[?],
+      expectedClazz: Class[?],
       sampleElem: Any
   ): Unit = {
     for {
@@ -115,15 +115,15 @@ class ReflectArrayTest {
 
   @inline
   private def testBase(
-      clazz: Class[_],
+      clazz: Class[?],
       length: Int,
-      expectedClazz: Class[_],
+      expectedClazz: Class[?],
       sampleElem: Any
   ): Unit = {
     val array =
       java.lang.reflect.Array
         .newInstance(clazz, length)
-        .asInstanceOf[Array[_]]
+        .asInstanceOf[Array[?]]
     assertEquals(expectedClazz, array.getClass)
     assertTrue(array.getClass.isArray)
     assertEquals(length, array.length)
@@ -133,9 +133,9 @@ class ReflectArrayTest {
 
   @noinline
   private def testNewInstanceNoInline(
-      clazz: Class[_],
+      clazz: Class[?],
       length: Int,
-      expectedClazz: Class[_],
+      expectedClazz: Class[?],
       sampleElem: Any
   ): Unit = {
     testBase(clazz, length, expectedClazz, sampleElem)
@@ -143,8 +143,8 @@ class ReflectArrayTest {
 
   @inline
   def testNewInstance(
-      clazz: Class[_],
-      expectedClazz: Class[_],
+      clazz: Class[?],
+      expectedClazz: Class[?],
       sampleElem: Any
   ): Unit = {
     testNewInstanceNoInline(clazz, length = 2, expectedClazz, sampleElem)
@@ -156,9 +156,9 @@ class ReflectArrayTest {
 
   @noinline
   private def testNewInstanceNoInline(
-      clazz: Class[_],
+      clazz: Class[?],
       dimensions: Seq[Int],
-      expectedClazz: Class[_],
+      expectedClazz: Class[?],
       sampleElem: Any
   ): Unit = {
     testBase(clazz, dimensions, expectedClazz, sampleElem)
@@ -166,17 +166,17 @@ class ReflectArrayTest {
 
   @inline
   private def testBase(
-      clazz: Class[_],
+      clazz: Class[?],
       dimensions: Seq[Int],
-      expectedClazz: Class[_],
+      expectedClazz: Class[?],
       sampleElem: Any
   ): Unit = {
     val array =
       java.lang.reflect.Array
-        .newInstance(clazz, dimensions: _*)
-        .asInstanceOf[Array[_]]
+        .newInstance(clazz, dimensions*)
+        .asInstanceOf[Array[?]]
     // non tail recursive
-    def check(dimensions: List[Int], array: Array[_]): Unit = {
+    def check(dimensions: List[Int], array: Array[?]): Unit = {
       assertTrue(array.getClass.isArray)
       dimensions match {
         case Nil            => ()
@@ -194,7 +194,7 @@ class ReflectArrayTest {
           }
           for (i <- 0 until array.length) {
             assertEquals("incorrect array size", current, array.length)
-            check(next, array(i).asInstanceOf[Array[_]])
+            check(next, array(i).asInstanceOf[Array[?]])
           }
       }
     }

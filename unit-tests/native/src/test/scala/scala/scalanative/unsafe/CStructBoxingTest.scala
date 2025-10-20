@@ -2,11 +2,11 @@ package scala.scalanative
 package unsafe
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
-import scalanative.unsigned._
+import scalanative.unsigned.*
 import scalanative.libc.stdlib.malloc
 import java.lang.Long.toHexString
 
@@ -153,7 +153,7 @@ class CStructBoxingTest {
 
   @Test def boxedStructGetClass(): Unit = {
     val boxed: Any = struct
-    assertTrue(boxed.getClass == classOf[CStruct2[_, _]])
+    assertTrue(boxed.getClass == classOf[CStruct2[?, ?]])
   }
 
   @Test def testToString(): Unit = {

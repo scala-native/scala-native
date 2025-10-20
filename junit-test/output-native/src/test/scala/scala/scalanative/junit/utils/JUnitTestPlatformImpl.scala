@@ -6,8 +6,8 @@ import java.nio.file.{Files, Paths}
 import java.nio.charset.StandardCharsets.UTF_8
 import java.util.LinkedList
 
-import sbt.testing._
-import scala.concurrent._
+import sbt.testing.*
+import scala.concurrent.*
 import scala.concurrent.ExecutionContext.Implicits.global
 
 object JUnitTestPlatformImpl {

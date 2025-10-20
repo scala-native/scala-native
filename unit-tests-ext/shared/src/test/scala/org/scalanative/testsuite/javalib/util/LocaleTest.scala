@@ -1,9 +1,9 @@
 // Ported from Scala.js, commit: ac38a148, dated: 2020-09-25
 package org.scalanative.testsuite.javalib.util
 
-import java.util._
+import java.util.*
 
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.junit.Test
 
 /** Sanity tests for the dummy implemenation of `java.util.Locale`.

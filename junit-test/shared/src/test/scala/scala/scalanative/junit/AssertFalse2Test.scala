@@ -2,7 +2,7 @@ package scala.scalanative.junit
 
 // Ported from Scala.js
 
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.junit.Test
 
 import scala.scalanative.junit.utils.JUnitTest

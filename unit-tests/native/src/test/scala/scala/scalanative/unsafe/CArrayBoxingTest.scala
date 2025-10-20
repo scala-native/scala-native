@@ -2,12 +2,12 @@ package scala.scalanative
 package unsafe
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
-import scalanative.unsafe.Nat._
-import scalanative.unsigned._
+import scalanative.unsafe.Nat.*
+import scalanative.unsigned.*
 import scalanative.libc.stdlib.malloc
 import java.lang.Long.toHexString
 
@@ -154,7 +154,7 @@ class CArrayBoxingTest {
 
   @Test def boxedArrGetClass(): Unit = {
     val boxed: Any = arr
-    assertTrue(boxed.getClass == classOf[CArray[_, _]])
+    assertTrue(boxed.getClass == classOf[CArray[?, ?]])
   }
 
   @Test def testToString(): Unit = {

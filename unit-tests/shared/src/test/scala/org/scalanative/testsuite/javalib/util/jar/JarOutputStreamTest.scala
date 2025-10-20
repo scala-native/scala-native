@@ -2,7 +2,7 @@ package org.scalanative.testsuite.javalib.util.jar
 
 // Ported from Apache Harmony
 
-import java.util.jar._
+import java.util.jar.*
 import java.io.{File, FileOutputStream, IOException}
 import java.util.zip.ZipEntry
 

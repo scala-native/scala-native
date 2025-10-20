@@ -2,7 +2,7 @@ package scala.scalanative.testinterface.common
 
 // Ported from Scala.js
 
-import sbt.testing._
+import sbt.testing.*
 
 private[testinterface] final class TaskInfo(
     val serializedTask: String,

@@ -2,20 +2,20 @@
 
 package org.scalanative.testsuite.javalib.util
 
-import java.util._
+import java.util.*
 
-import java.io._
-import java.{util => ju}
+import java.io.*
+import java.util as ju
 import java.nio.charset.StandardCharsets
 
 import org.junit.Test
-import org.junit.Assert._
-import org.junit.Assume._
+import org.junit.Assert.*
+import org.junit.Assume.*
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
-import Utils._
+import Utils.*
 
-import org.scalanative.testsuite.utils.Platform._
+import org.scalanative.testsuite.utils.Platform.*
 
 class PropertiesTest {
   // ported from Scala.js
@@ -74,7 +74,7 @@ class PropertiesTest {
   @Test def propertyNamesIsNotAffectedByOverriddenPropertyNamesInDefaults()
       : Unit = {
     val defaults = new java.util.Properties {
-      override def propertyNames(): ju.Enumeration[_] =
+      override def propertyNames(): ju.Enumeration[?] =
         ju.Collections.emptyEnumeration[String]()
     }
     defaults.setProperty("foo", "bar")

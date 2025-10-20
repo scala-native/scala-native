@@ -3,11 +3,11 @@ package org.scalanative.testsuite.javalib.util.function
 
 import java.util.function.Supplier
 
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.junit.Test
 
 class SupplierTest {
-  import SupplierTest._
+  import SupplierTest.*
 
   @Test def get(): Unit = {
     val supplier: Supplier[String] = makeSupplier("scala")

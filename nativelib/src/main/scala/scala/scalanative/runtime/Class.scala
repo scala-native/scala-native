@@ -3,9 +3,9 @@ package scala.scalanative.runtime
 import java.lang.reflect.{Field, Method}
 import scala.language.implicitConversions
 
-import scala.scalanative.annotation._
-import scala.scalanative.unsafe._
-import scala.scalanative.runtime.{Array => RuntimeArray, _}
+import scala.scalanative.annotation.*
+import scala.scalanative.unsafe.*
+import scala.scalanative.runtime.{Array as RuntimeArray, *}
 import scala.scalanative.runtime.resource.EmbeddedResourceInputStream
 import scala.scalanative.runtime.resource.EmbeddedResourceHelper
 import java.io.InputStream
@@ -29,14 +29,14 @@ private[runtime] final class _Class[A] {
   var refFieldOffsets: RawPtr = _ // Ptr[Int]
   var itablesCount: Int = _ // actually size - 1 - stores ready to use mask
   var itables: RawPtr = _ // Ptr[CArray[ITableEntry, up to 32]]
-  var superClass: Class[_ >: A] = _
+  var superClass: Class[? >: A] = _
 
-  type ITableEntry = CStruct2[Int, Ptr[_]] // {id: Int, vtable: void*}
+  type ITableEntry = CStruct2[Int, Ptr[?]] // {id: Int, vtable: void*}
 
   def cast(obj: Object): A =
     obj.asInstanceOf[A]
 
-  def getComponentType(): _Class[_] = if (isArray()) {
+  def getComponentType(): _Class[?] = if (isArray()) {
     if (is(classOf[ObjectArray])) classOf[java.lang.Object] // hot path
     else if (is(classOf[ByteArray])) classOf[scala.Byte]
     else if (is(classOf[CharArray])) classOf[scala.Char]
@@ -66,16 +66,16 @@ private[runtime] final class _Class[A] {
   // ids 13-22 runtime.Array implementations
   def isArray(): scala.Boolean = id >= 12 && id <= 22
 
-  def isAssignableFrom(that: Class[_]): scala.Boolean =
-    is(that.asInstanceOf[_Class[_]], this)
+  def isAssignableFrom(that: Class[?]): scala.Boolean =
+    is(that.asInstanceOf[_Class[?]], this)
 
   def isInstance(obj: Object): scala.Boolean =
-    is(obj.getClass.asInstanceOf[_Class[_]], this)
+    is(obj.getClass.asInstanceOf[_Class[?]], this)
 
-  @alwaysinline private def is(cls: Class[_]): Boolean =
+  @alwaysinline private def is(cls: Class[?]): Boolean =
     this eq cls.asInstanceOf[_Class[A]]
 
-  private def is(left: _Class[_], right: _Class[_]): Boolean = {
+  private def is(left: _Class[?], right: _Class[?]): Boolean = {
     // This replicates the logic of the compiler-generated instance check
     // that you would normally get if you do (obj: L).isInstanceOf[R],
     // where rtti for L and R are `left` and `right`.
@@ -108,7 +108,7 @@ private[runtime] final class _Class[A] {
 
   @inline override def equals(other: Any): scala.Boolean =
     other match {
-      case other: _Class[_] => this eq other
+      case other: _Class[?] => this eq other
       case _                => false
     }
 
@@ -124,13 +124,13 @@ private[runtime] final class _Class[A] {
     prefix + name
   }
 
-  def getInterfaces(): scala.Array[Class[_]] = {
+  def getInterfaces(): scala.Array[Class[?]] = {
     val array =
       if (interfacesCount == 0) scala.Array.emptyObjectArray
       else ObjectArray.snapshot(interfacesCount, interfaces)
-    array.asInstanceOf[scala.Array[Class[_]]]
+    array.asInstanceOf[scala.Array[Class[?]]]
   }
-  def getSuperclass(): Class[_ >: A] =
+  def getSuperclass(): Class[? >: A] =
     if (isInterface()) null
     else superClass
 
@@ -195,7 +195,7 @@ private[runtime] object _Class {
   ): _Class[A] =
     cls.asInstanceOf[_Class[A]]
 
-  private def checkHasTrait(left: _Class[_], right: _Class[_]): Boolean = {
+  private def checkHasTrait(left: _Class[?], right: _Class[?]): Boolean = {
     var low = 0
     var high = left.interfacesCount - 1
     if (high == -1) return false
@@ -205,10 +205,10 @@ private[runtime] object _Class {
       val idx = (low + high) / 2
       val interfacePtr = Intrinsics.elemRawPtr(
         interfaces,
-        Intrinsics.castRawSizeToInt(Intrinsics.sizeOf[Ptr[_]]) * idx
+        Intrinsics.castRawSizeToInt(Intrinsics.sizeOf[Ptr[?]]) * idx
       )
       val interface =
-        Intrinsics.loadObject(interfacePtr).asInstanceOf[_Class[_]]
+        Intrinsics.loadObject(interfacePtr).asInstanceOf[_Class[?]]
       val interfaceId = interface.id
       if (interfaceId == rightId) return true
       if (interfaceId < rightId) low = idx + 1
@@ -217,20 +217,20 @@ private[runtime] object _Class {
     false
   }
 
-  def forName(name: String): Class[_] =
+  def forName(name: String): Class[?] =
     LinkedClassesRepository.byName
       .get(name)
       .getOrElse(throw new ClassNotFoundException(name))
-      .asInstanceOf[Class[_]]
+      .asInstanceOf[Class[?]]
 
   def forName(
       name: String,
       init: scala.Boolean,
       loader: ClassLoader
-  ): Class[_] = forName(name)
+  ): Class[?] = forName(name)
 
   /** @since JDK 22 */
-  def forPrimitiveName(primitiveName: String): Class[_] =
+  def forPrimitiveName(primitiveName: String): Class[?] =
     primitiveName match {
       case "boolean" => java.lang.Boolean.TYPE
       case "byte"    => java.lang.Byte.TYPE
@@ -247,8 +247,8 @@ private[runtime] object _Class {
 }
 
 private object LinkedClassesRepository {
-  private def loadAll(): scala.Array[_Class[_]] = intrinsic
-  val byName: Map[String, _Class[_]] = loadAll().map { cls =>
+  private def loadAll(): scala.Array[_Class[?]] = intrinsic
+  val byName: Map[String, _Class[?]] = loadAll().map { cls =>
     cls.name -> cls
   }.toMap
 }

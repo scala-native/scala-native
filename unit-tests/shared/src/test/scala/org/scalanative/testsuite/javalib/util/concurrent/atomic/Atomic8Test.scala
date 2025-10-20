@@ -7,11 +7,11 @@
 package org.scalanative.testsuite.javalib.util.concurrent
 package atomic
 
-import java.util.concurrent.atomic._
-import java.lang.{Long => jlLong}
+import java.util.concurrent.atomic.*
+import java.lang.Long as jlLong
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 object Atomic8Test {
   def addLong17(x: Long): Long = x + 17
@@ -23,7 +23,7 @@ object Atomic8Test {
 /** Tests of atomic class methods accepting lambdas introduced in JDK8.
  */
 class Atomic8Test extends JSR166Test {
-  import JSR166Test._
+  import JSR166Test.*
 
   /** AtomicLong getAndUpdate returns previous value and updates result of
    *  supplied function

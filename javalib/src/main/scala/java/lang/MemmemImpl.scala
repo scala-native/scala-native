@@ -1,7 +1,7 @@
 package java.lang
 
-import scalanative.meta.LinktimeInfo._
-import scalanative.unsafe._
+import scalanative.meta.LinktimeInfo.*
+import scalanative.unsafe.*
 
 private[java] object MemmemImpl {
   /* The central idea is to use a memmem() provided by the operating system

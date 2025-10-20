@@ -10,7 +10,7 @@ package regex
 
 import java.util.Arrays
 import java.util.Map
-import java.{lang => jl}
+import java.lang as jl
 
 import scala.annotation.switch
 
@@ -19,7 +19,7 @@ import scala.annotation.switch
 // NB, this corresponds to {@code syntax.regexp} in the Go implementation
 // Go's {@code regexp} is called {@code RE2} in Java.
 class Regexp {
-  import Regexp._
+  import Regexp.*
 
   var op: Op = _ // operator
   var flags: Int = _ // bitmap of parse flags

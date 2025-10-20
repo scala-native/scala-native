@@ -3,7 +3,7 @@ package java.net
 // Ported from Harmony
 
 import scala.annotation.tailrec
-import java.{lang => jl}
+import java.lang as jl
 
 object URLEncoder {
   private val digits = "0123456789ABCDEF".toCharArray

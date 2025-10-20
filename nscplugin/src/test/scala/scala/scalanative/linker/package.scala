@@ -1,7 +1,7 @@
 package scala.scalanative
 
 import java.nio.file.{Files, Path, Paths}
-import scala.scalanative.io._
+import scala.scalanative.io.*
 import scala.scalanative.util.Scope
 
 package object linker {

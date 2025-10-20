@@ -1,6 +1,6 @@
 package scala.scalanative.runtime.resource
 
-import scala.scalanative.unsafe._
+import scala.scalanative.unsafe.*
 import scala.scalanative.runtime.RawPtr
 
 @extern

@@ -1,6 +1,6 @@
 package scala.scalanative.windows.crt
 
-import scala.scalanative.unsafe._
+import scala.scalanative.unsafe.*
 
 @extern
 object time {

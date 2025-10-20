@@ -1,7 +1,7 @@
 package scala.scalanative
 package posix
 
-import scala.scalanative.unsafe._
+import scala.scalanative.unsafe.*
 
 /** POSIX langinfo.h for Scala
  *

@@ -4,7 +4,7 @@ package scala.scalanative.junit
 
 import java.io.IOException
 
-import org.junit._
+import org.junit.*
 
 import scala.scalanative.junit.utils.JUnitTest
 

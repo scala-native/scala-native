@@ -1,9 +1,9 @@
 package build
 
-import sbt._
-import sbt.Keys._
-import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
-import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport._
+import sbt.*
+import sbt.Keys.*
+import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport.*
+import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport.*
 
 object Deps {
 // scalafmt: { align.preset = more, maxColumn = 120 }

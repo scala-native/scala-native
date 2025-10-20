@@ -1,7 +1,7 @@
 package java.lang.process
 
 import java.io.FileDescriptor
-import scala.scalanative.libc.{signal => sig}
+import scala.scalanative.libc.signal as sig
 import scala.scalanative.meta.LinktimeInfo
 import scala.scalanative.posix.signal
 import scala.scalanative.unsafe.{CInt, Ptr}

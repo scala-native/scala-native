@@ -1,7 +1,7 @@
 package scala.scalanative.unsafe
 
-import scala.scalanative.unsafe._
-import scala.scalanative.unsigned._
+import scala.scalanative.unsafe.*
+import scala.scalanative.unsigned.*
 import scala.scalanative.meta.LinktimeInfo.asanEnabled
 import scala.scalanative.runtime.{RawPtr, fromRawPtr}
 import scala.scalanative.runtime.ffi

@@ -1,8 +1,8 @@
 package org.scalanative.testsuite.posixlib
 package sys
 
-import scalanative.unsafe._
-import scalanative.unsigned._
+import scalanative.unsafe.*
+import scalanative.unsigned.*
 
 import scalanative.libc.string.strerror
 
@@ -10,26 +10,26 @@ import scalanative.posix.arpa.inet.{inet_addr, inet_pton}
 import scalanative.posix.errno.errno
 import scalanative.posix.fcntl
 import scalanative.posix.fcntl.{F_SETFL, O_NONBLOCK}
-import scalanative.posix.netinet.inOps._
-import scalanative.posix.netdb._
-import scalanative.posix.netdbOps._
-import scalanative.posix.netinet.in._
-import scalanative.posix.poll._
+import scalanative.posix.netinet.inOps.*
+import scalanative.posix.netdb.*
+import scalanative.posix.netdbOps.*
+import scalanative.posix.netinet.in.*
+import scalanative.posix.poll.*
 import scalanative.posix.pollEvents
-import scalanative.posix.pollOps._
-import scalanative.posix.sys.socket._
+import scalanative.posix.pollOps.*
+import scalanative.posix.sys.socket.*
 import scalanative.posix.unistd
 
 import scalanative.meta.LinktimeInfo.isWindows
 
-import scala.scalanative.windows._
-import scala.scalanative.windows.WinSocketApi._
-import scala.scalanative.windows.WinSocketApiExt._
-import scala.scalanative.windows.WinSocketApiOps._
-import scala.scalanative.windows.ErrorHandlingApi._
+import scala.scalanative.windows.*
+import scala.scalanative.windows.WinSocketApi.*
+import scala.scalanative.windows.WinSocketApiExt.*
+import scala.scalanative.windows.WinSocketApiOps.*
+import scala.scalanative.windows.ErrorHandlingApi.*
 
-import org.junit.Assert._
-import org.junit.Assume._
+import org.junit.Assert.*
+import org.junit.Assume.*
 
 object SocketTestHelpers {
 

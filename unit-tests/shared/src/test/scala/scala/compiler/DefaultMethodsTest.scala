@@ -3,9 +3,9 @@
 package org.scalanative.testsuite.compiler
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
-import java.{util => ju}
+import java.util as ju
 
 class DefaultMethodsTest {
 

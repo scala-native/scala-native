@@ -3,11 +3,11 @@ package org.scalanative.testsuite.javalib.util.function
 
 import java.util.function.BooleanSupplier
 
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.junit.Test
 
 class BooleanSupplierTest {
-  import BooleanSupplierTest._
+  import BooleanSupplierTest.*
 
   @Test def getAsBoolean(): Unit = {
     assertEquals(true, makeSupplier(true).getAsBoolean())

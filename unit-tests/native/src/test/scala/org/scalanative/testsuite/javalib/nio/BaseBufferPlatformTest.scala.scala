@@ -1,17 +1,17 @@
 package org.scalanative.testsuite.javalib.nio
 
-import java.nio._
+import java.nio.*
 
 // Ported from Scala.js
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 import scala.scalanative.memory.PointerBuffer
-import scala.scalanative.memory.PointerBufferOps._
+import scala.scalanative.memory.PointerBufferOps.*
 
 trait BaseBufferPlatformTest { self: BaseBufferTest =>
-  import factory._
+  import factory.*
 
   // Extended Scala Native API
   @Test def hasPointer(): Unit = {

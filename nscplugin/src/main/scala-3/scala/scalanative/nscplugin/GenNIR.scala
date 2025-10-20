@@ -1,10 +1,10 @@
 package scala.scalanative.nscplugin
 
-import dotty.tools._
-import dotc._
-import plugins._
-import core._
-import Contexts._
+import dotty.tools.*
+import dotc.*
+import plugins.*
+import core.*
+import Contexts.*
 
 import java.net.URI
 import java.nio.file.Path

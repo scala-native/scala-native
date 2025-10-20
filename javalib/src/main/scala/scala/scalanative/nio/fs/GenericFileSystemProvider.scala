@@ -1,17 +1,17 @@
 package scala.scalanative.nio.fs
 
-import scala.scalanative.unsigned._
-import scala.collection.immutable.{Map => SMap}
+import scala.scalanative.unsigned.*
+import scala.collection.immutable.Map as SMap
 
 import java.nio.channels.FileChannel
-import java.nio.file._
-import java.nio.file.attribute._
+import java.nio.file.*
+import java.nio.file.attribute.*
 import java.nio.file.spi.FileSystemProvider
 import java.net.URI
 import java.util.{Map, Set}
 
 abstract class GenericFileSystemProvider extends FileSystemProvider {
-  type AttributeViewClass = Class[_ <: FileAttributeView]
+  type AttributeViewClass = Class[? <: FileAttributeView]
   type GenericViewCtor = (Path, Array[LinkOption]) => FileAttributeView
   type AttributeViewMapping = SMap[AttributeViewClass, GenericViewCtor]
 
@@ -20,7 +20,7 @@ abstract class GenericFileSystemProvider extends FileSystemProvider {
 
   override def getScheme(): String = "file"
 
-  override def newFileSystem(uri: URI, env: Map[String, _]): FileSystem =
+  override def newFileSystem(uri: URI, env: Map[String, ?]): FileSystem =
     if (uri.getPath() != "/") {
       throw new IllegalArgumentException("Path component should be '/'")
     } else if (uri.getScheme() != "file") {
@@ -47,32 +47,32 @@ abstract class GenericFileSystemProvider extends FileSystemProvider {
       fs.getPath(uri.getPath(), Array.empty)
     }
 
-  override def newFileSystem(path: Path, env: Map[String, _]): FileSystem =
+  override def newFileSystem(path: Path, env: Map[String, ?]): FileSystem =
     newFileSystem(path.toUri(), env)
 
   override def newFileChannel(
       path: Path,
-      options: Set[_ <: OpenOption],
-      attrs: Array[FileAttribute[_]]
+      options: Set[? <: OpenOption],
+      attrs: Array[FileAttribute[?]]
   ): FileChannel =
     FileChannel.open(path, options, attrs)
 
   override def newDirectoryStream(
       dir: Path,
-      filter: DirectoryStream.Filter[_ >: Path]
+      filter: DirectoryStream.Filter[? >: Path]
   ): DirectoryStream[Path] =
     new DirectoryStreamImpl[Path](Files.list(dir), filter)
 
   override def createDirectory(
       dir: Path,
-      attrs: Array[FileAttribute[_]]
+      attrs: Array[FileAttribute[?]]
   ): Unit =
     Files.createDirectory(dir, attrs)
 
   override def createSymbolicLink(
       link: Path,
       target: Path,
-      attrs: Array[FileAttribute[_]]
+      attrs: Array[FileAttribute[?]]
   ): Unit =
     Files.createSymbolicLink(link, target, attrs)
 

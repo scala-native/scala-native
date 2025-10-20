@@ -41,20 +41,20 @@ import java.util.function.Predicate
 import java.util.function.Supplier
 import java.util.ArrayList
 
-import org.junit._
-import org.junit.Assert._
+import org.junit.*
+import org.junit.Assert.*
 
-import CompletableFutureTest._
+import CompletableFutureTest.*
 object CompletableFutureTestOnJDK17 {
 
   /** Permits the testing of parallel code for the 3 different execution modes without copy/pasting all the test
    *  methods.
    */
   trait ExecutionMode extends CompletableFutureTest.ExecutionMode {
-    def exceptionally[T <: AnyRef](f: CompletableFuture[T], fn: Function[Throwable, _ <: T]): CompletableFuture[T]
+    def exceptionally[T <: AnyRef](f: CompletableFuture[T], fn: Function[Throwable, ? <: T]): CompletableFuture[T]
     def exceptionallyCompose[T <: AnyRef](
         f: CompletableFuture[T],
-        fn: Function[Throwable, _ <: CompletionStage[T]]
+        fn: Function[Throwable, ? <: CompletionStage[T]]
     ): CompletableFuture[T]
   }
   object ExecutionMode {
@@ -129,7 +129,7 @@ object CompletableFutureTestOnJDK17 {
         case ex: Throwable =>
           gex = ex
       }
-      if (fex != null || gex != null) assertSame(fex.getClass(), gex.getClass())
+      if fex != null || gex != null then assertSame(fex.getClass(), gex.getClass())
       else assertEquals(fval, gval)
     }
 
@@ -138,17 +138,14 @@ object CompletableFutureTestOnJDK17 {
     }
 
     /** Implements "monadic plus". */
-    def plus[T <: AnyRef](f: CompletableFuture[_ <: T], g: CompletableFuture[_ <: T]): CompletableFuture[T] = {
+    def plus[T <: AnyRef](f: CompletableFuture[? <: T], g: CompletableFuture[? <: T]): CompletableFuture[T] = {
       val plus = new Monad.PlusFuture[T]
       val action: BiConsumer[T, Throwable] = (result: T, ex: Throwable) => {
         try
-          if (ex == null) {
-            if (plus.complete(result))
-              if (plus.firstFailure.get() != null)
-                plus.firstFailure.set(null)
-          } else if (plus.firstFailure.compareAndSet(null, ex)) {
-            if (plus.isDone)
-              plus.firstFailure.set(null)
+          if ex == null then {
+            if plus.complete(result) then if plus.firstFailure.get() != null then plus.firstFailure.set(null)
+          } else if plus.firstFailure.compareAndSet(null, ex) then {
+            if plus.isDone then plus.firstFailure.set(null)
           } else {
             // first failure has precedence
             val first = plus.firstFailure.getAndSet(null)
@@ -167,19 +164,19 @@ object CompletableFutureTestOnJDK17 {
 }
 
 class CompletableFutureTestOnJDK17 extends CompletableFutureTest {
-  import JSR166Test._
-  import CompletableFutureTest.{ExecutionMode => _, _}
-  import CompletableFutureTestOnJDK17._
+  import JSR166Test.*
+  import CompletableFutureTest.{ExecutionMode as _, *}
+  import CompletableFutureTestOnJDK17.*
 
   /** exceptionally action is not invoked() when source completes normally, and source result is propagated
    */
   @Test def testExceptionally_normalCompletion(): Unit = {
-    for (m <- ExecutionMode.values) {
-      for (createIncomplete <- Array[Boolean](true, false)) {
-        for (v1 <- Array[Item](one, null)) {
+    for m <- ExecutionMode.values do {
+      for createIncomplete <- Array[Boolean](true, false) do {
+        for v1 <- Array[Item](one, null) do {
           val ran = new AtomicInteger(0)
           val f = new CompletableFuture[Item]
-          if (!createIncomplete) assertTrue(f.complete(v1))
+          if !createIncomplete then assertTrue(f.complete(v1))
           val g = m.exceptionally(
             f,
             (t: Throwable) => {
@@ -188,7 +185,7 @@ class CompletableFutureTestOnJDK17 extends CompletableFutureTest {
 
             }
           )
-          if (createIncomplete) assertTrue(f.complete(v1))
+          if createIncomplete then assertTrue(f.complete(v1))
           checkCompletedNormally(g, v1)
           checkCompletedNormally(f, v1)
           assertEquals(0, ran.get())
@@ -200,13 +197,13 @@ class CompletableFutureTestOnJDK17 extends CompletableFutureTest {
   /** exceptionally action completes with function value on source exception
    */
   @Test def testExceptionally_exceptionalCompletion(): Unit = {
-    for (m <- ExecutionMode.values) {
-      for (createIncomplete <- Array[Boolean](true, false)) {
-        for (v1 <- Array[Item](one, null)) {
+    for m <- ExecutionMode.values do {
+      for createIncomplete <- Array[Boolean](true, false) do {
+        for v1 <- Array[Item](one, null) do {
           val ran = new AtomicInteger(0)
           val ex = new CFException
           val f = new CompletableFuture[Item]
-          if (!createIncomplete) f.completeExceptionally(ex)
+          if !createIncomplete then f.completeExceptionally(ex)
           val g = m.exceptionally(
             f,
             (t: Throwable) => {
@@ -217,7 +214,7 @@ class CompletableFutureTestOnJDK17 extends CompletableFutureTest {
 
             }
           )
-          if (createIncomplete) f.completeExceptionally(ex)
+          if createIncomplete then f.completeExceptionally(ex)
           checkCompletedNormally(g, v1)
           assertEquals(1, ran.get())
         }
@@ -228,13 +225,13 @@ class CompletableFutureTestOnJDK17 extends CompletableFutureTest {
   /** If an "exceptionally action" throws an exception, it completes exceptionally with that exception
    */
   @Test def testExceptionally_exceptionalCompletionActionFailed(): Unit = {
-    for (m <- ExecutionMode.values) {
-      for (createIncomplete <- Array[Boolean](true, false)) {
+    for m <- ExecutionMode.values do {
+      for createIncomplete <- Array[Boolean](true, false) do {
         val ran = new AtomicInteger(0)
         val ex1 = new CFException
         val ex2 = new CFException
         val f = new CompletableFuture[Item]
-        if (!createIncomplete) f.completeExceptionally(ex1)
+        if !createIncomplete then f.completeExceptionally(ex1)
         val g = m.exceptionally(
           f,
           (t: Throwable) => {
@@ -245,7 +242,7 @@ class CompletableFutureTestOnJDK17 extends CompletableFutureTest {
 
           }
         )
-        if (createIncomplete) f.completeExceptionally(ex1)
+        if createIncomplete then f.completeExceptionally(ex1)
         checkCompletedWithWrappedException(g, ex2)
         checkCompletedExceptionally(f, ex1)
         assertEquals(1, ran.get())
@@ -256,14 +253,14 @@ class CompletableFutureTestOnJDK17 extends CompletableFutureTest {
   /** exceptionallyCompose result completes normally after normal completion of source
    */
   @Test def testExceptionallyCompose_normalCompletion(): Unit = {
-    for (m <- ExecutionMode.values) {
-      for (createIncomplete <- Array[Boolean](true, false)) {
-        for (v1 <- Array[Item](one, null)) {
+    for m <- ExecutionMode.values do {
+      for createIncomplete <- Array[Boolean](true, false) do {
+        for v1 <- Array[Item](one, null) do {
           val f = new CompletableFuture[Item]
           val r = new ExceptionalCompletableFutureFunction(m)
-          if (!createIncomplete) assertTrue(f.complete(v1))
+          if !createIncomplete then assertTrue(f.complete(v1))
           val g = m.exceptionallyCompose(f, r)
-          if (createIncomplete) assertTrue(f.complete(v1))
+          if createIncomplete then assertTrue(f.complete(v1))
           checkCompletedNormally(f, v1)
           checkCompletedNormally(g, v1)
           r.assertNotinvoked()
@@ -275,14 +272,14 @@ class CompletableFutureTestOnJDK17 extends CompletableFutureTest {
   /** exceptionallyCompose result completes normally after exceptional completion of source
    */
   @Test def testExceptionallyCompose_exceptionalCompletion(): Unit = {
-    for (m <- ExecutionMode.values) {
-      for (createIncomplete <- Array[Boolean](true, false)) {
+    for m <- ExecutionMode.values do {
+      for createIncomplete <- Array[Boolean](true, false) do {
         val ex = new CFException
         val r = new ExceptionalCompletableFutureFunction(m)
         val f = new CompletableFuture[Item]
-        if (!createIncomplete) f.completeExceptionally(ex)
+        if !createIncomplete then f.completeExceptionally(ex)
         val g = m.exceptionallyCompose(f, r)
-        if (createIncomplete) f.completeExceptionally(ex)
+        if createIncomplete then f.completeExceptionally(ex)
         checkCompletedExceptionally[Item](f, ex)
         checkCompletedNormally[Item](g, r.value)
         r.assertinvoked()
@@ -293,14 +290,14 @@ class CompletableFutureTestOnJDK17 extends CompletableFutureTest {
   /** exceptionallyCompose completes exceptionally on exception if action does
    */
   @Test def testExceptionallyCompose_actionFailed(): Unit = {
-    for (m <- ExecutionMode.values) {
-      for (createIncomplete <- Array[Boolean](true, false)) {
+    for m <- ExecutionMode.values do {
+      for createIncomplete <- Array[Boolean](true, false) do {
         val ex = new CFException
         val f = new CompletableFuture[Item]
         val r = new FailingExceptionalCompletableFutureFunction(m)
-        if (!createIncomplete) f.completeExceptionally(ex)
+        if !createIncomplete then f.completeExceptionally(ex)
         val g = m.exceptionallyCompose(f, r)
-        if (createIncomplete) f.completeExceptionally(ex)
+        if createIncomplete then f.completeExceptionally(ex)
         checkCompletedExceptionally(f, ex)
         checkCompletedWithWrappedException(g, r.ex)
         r.assertinvoked()
@@ -311,8 +308,8 @@ class CompletableFutureTestOnJDK17 extends CompletableFutureTest {
   /** exceptionallyCompose result completes exceptionally if the result of the action does
    */
   @Test def testExceptionallyCompose_actionReturnsFailingFuture(): Unit = {
-    for (m <- ExecutionMode.values) {
-      for (order <- 0 until 6) {
+    for m <- ExecutionMode.values do {
+      for order <- 0 until 6 do {
         val ex0 = new CFException
         val ex = new CFException
         val f = new CompletableFuture[Item]
@@ -384,7 +381,7 @@ class CompletableFutureTestOnJDK17 extends CompletableFutureTest {
    */
   // jdk9
   @Test def testNewIncompleteFuture(): Unit = {
-    for (v1 <- Array[Item](one, null)) {
+    for v1 <- Array[Item](one, null) do {
       val f = new CompletableFuture[Item]
       val g = f.newIncompleteFuture[Item]
       checkIncomplete(f)
@@ -394,7 +391,7 @@ class CompletableFutureTestOnJDK17 extends CompletableFutureTest {
       checkIncomplete(g)
       g.complete(v1)
       checkCompletedNormally(g, v1)
-      assertSame(g.getClass(), classOf[CompletableFuture[_ <: AnyRef]])
+      assertSame(g.getClass(), classOf[CompletableFuture[? <: AnyRef]])
     }
   }
 
@@ -405,7 +402,7 @@ class CompletableFutureTestOnJDK17 extends CompletableFutureTest {
     val r = new AtomicReference[Throwable]
     val f = CompletableFuture.completedStage(one: Item)
     f.whenComplete((v: Item, e: Throwable) => {
-      if (e != null) r.set(e)
+      if e != null then r.set(e)
       else x.set(v.value)
     })
     assertEquals(x.get(), 1)
@@ -418,7 +415,7 @@ class CompletableFutureTestOnJDK17 extends CompletableFutureTest {
     val f = new CompletableFuture[Item]
     val e = f.defaultExecutor
     val c = ForkJoinPool.commonPool
-    if (ForkJoinPool.getCommonPoolParallelism() > 1) assertSame(e, c)
+    if ForkJoinPool.getCommonPoolParallelism() > 1 then assertSame(e, c)
     else assertNotSame(e, c)
   }
 
@@ -433,12 +430,12 @@ class CompletableFutureTestOnJDK17 extends CompletableFutureTest {
   /** copy returns a CompletableFuture that is completed normally, with the same value, when source is.
    */
   @Test def testCopy_normalCompletion(): Unit = {
-    for (createIncomplete <- Array[Boolean](true, false)) {
-      for (v1 <- Array[Item](one, null)) {
+    for createIncomplete <- Array[Boolean](true, false) do {
+      for v1 <- Array[Item](one, null) do {
         val f = new CompletableFuture[Item]
-        if (!createIncomplete) assertTrue(f.complete(v1))
+        if !createIncomplete then assertTrue(f.complete(v1))
         val g = f.copy
-        if (createIncomplete) {
+        if createIncomplete then {
           checkIncomplete(f)
           checkIncomplete(g)
           assertTrue(f.complete(v1))
@@ -452,12 +449,12 @@ class CompletableFutureTestOnJDK17 extends CompletableFutureTest {
   /** copy returns a CompletableFuture that is completed exceptionally when source is.
    */
   @Test def testCopy_exceptionalCompletion(): Unit = {
-    for (createIncomplete <- Array[Boolean](true, false)) {
+    for createIncomplete <- Array[Boolean](true, false) do {
       val ex = new CFException
       val f = new CompletableFuture[Item]
-      if (!createIncomplete) f.completeExceptionally(ex)
+      if !createIncomplete then f.completeExceptionally(ex)
       val g = f.copy
-      if (createIncomplete) {
+      if createIncomplete then {
         checkIncomplete(f)
         checkIncomplete(g)
         f.completeExceptionally(ex)
@@ -489,7 +486,7 @@ class CompletableFutureTestOnJDK17 extends CompletableFutureTest {
     val r = new AtomicReference[Throwable]
     checkIncomplete(f)
     g.whenComplete((v: Item, e: Throwable) => {
-      if (e != null) r.set(e)
+      if e != null then r.set(e)
       else x.set(v.value)
 
     })
@@ -507,7 +504,7 @@ class CompletableFutureTestOnJDK17 extends CompletableFutureTest {
     val x = new AtomicInteger(0)
     val r = new AtomicReference[Throwable]
     g.whenComplete((v: Item, e: Throwable) => {
-      if (e != null) r.set(e)
+      if e != null then r.set(e)
       else x.set(v.value)
 
     })
@@ -527,7 +524,7 @@ class CompletableFutureTestOnJDK17 extends CompletableFutureTest {
     val x = new AtomicInteger(0)
     val r = new AtomicReference[Throwable]
     f.whenComplete((v: Item, e: Throwable) => {
-      if (e != null) r.set(e)
+      if e != null then r.set(e)
       else x.set(v.value)
 
     })
@@ -538,7 +535,7 @@ class CompletableFutureTestOnJDK17 extends CompletableFutureTest {
   /** completeAsync completes with value of given supplier
    */
   @Test def testCompleteAsync(): Unit = {
-    for (v1 <- Array[Item](one, null)) {
+    for v1 <- Array[Item](one, null) do {
       val f = new CompletableFuture[Item]
       f.completeAsync(() => v1)
       f.join()
@@ -568,7 +565,7 @@ class CompletableFutureTestOnJDK17 extends CompletableFutureTest {
   /** completeAsync with given executor completes with value of given supplier
    */
   @Test def testCompleteAsync3(): Unit = {
-    for (v1 <- Array[Item](one, null)) {
+    for v1 <- Array[Item](one, null) do {
       val f = new CompletableFuture[Item]
       val executor = new ThreadExecutor
       f.completeAsync(() => v1, executor)
@@ -616,7 +613,7 @@ class CompletableFutureTestOnJDK17 extends CompletableFutureTest {
   /** orTimeout completes normally if completed before timeout
    */
   @Test def testOrTimeout_completed(): Unit = {
-    for (v1 <- Array[Item](one, null)) {
+    for v1 <- Array[Item](one, null) do {
       val f = new CompletableFuture[Item]
       val g = new CompletableFuture[Item]
       val startTime = System.nanoTime
@@ -653,7 +650,7 @@ class CompletableFutureTestOnJDK17 extends CompletableFutureTest {
   /** completeOnTimeout has no effect if completed within timeout
    */
   @Test def testCompleteOnTimeout_completed(): Unit = {
-    for (v1 <- Array[Item](one, null)) {
+    for v1 <- Array[Item](one, null) do {
       val f = new CompletableFuture[Item]
       val g = new CompletableFuture[Item]
       val startTime = System.nanoTime
@@ -685,7 +682,7 @@ class CompletableFutureTestOnJDK17 extends CompletableFutureTest {
     val longTimeoutMillis = 1000 * 60 * 60 * 24
     var delayer: Executor = null
     var longDelayer: Executor = null
-    if (executor == null) {
+    if executor == null then {
       delayer = CompletableFuture.delayedExecutor(timeoutMillis, MILLISECONDS)
       longDelayer = CompletableFuture.delayedExecutor(longTimeoutMillis, MILLISECONDS)
     } else {
@@ -709,13 +706,13 @@ class CompletableFutureTestOnJDK17 extends CompletableFutureTest {
    *  when source is.
    */
   @Test def testMinimalCompletionStage_toCompletableFuture_normalCompletion(): Unit = {
-    for (createIncomplete <- Array[Boolean](true, false)) {
-      for (v1 <- Array[Item](one, null)) {
+    for createIncomplete <- Array[Boolean](true, false) do {
+      for v1 <- Array[Item](one, null) do {
         val f = new CompletableFuture[Item]
         val minimal = f.minimalCompletionStage
-        if (!createIncomplete) assertTrue(f.complete(v1))
+        if !createIncomplete then assertTrue(f.complete(v1))
         val g = minimal.toCompletableFuture
-        if (createIncomplete) {
+        if createIncomplete then {
           checkIncomplete(f)
           checkIncomplete(g)
           assertTrue(f.complete(v1))
@@ -729,13 +726,13 @@ class CompletableFutureTestOnJDK17 extends CompletableFutureTest {
   /** minimalStage.toCompletableFuture() returns a CompletableFuture that is completed exceptionally when source is.
    */
   @Test def testMinimalCompletionStage_toCompletableFuture_exceptionalCompletion(): Unit = {
-    for (createIncomplete <- Array[Boolean](true, false)) {
+    for createIncomplete <- Array[Boolean](true, false) do {
       val ex = new CFException
       val f = new CompletableFuture[Item]
       val minimal = f.minimalCompletionStage
-      if (!createIncomplete) f.completeExceptionally(ex)
+      if !createIncomplete then f.completeExceptionally(ex)
       val g = minimal.toCompletableFuture
-      if (createIncomplete) {
+      if createIncomplete then {
         checkIncomplete(f)
         checkIncomplete(g)
         f.completeExceptionally(ex)
@@ -748,7 +745,7 @@ class CompletableFutureTestOnJDK17 extends CompletableFutureTest {
   /** minimalStage.toCompletableFuture() gives mutable CompletableFuture
    */
   @Test def testMinimalCompletionStage_toCompletableFuture_mutable(): Unit = {
-    for (v1 <- Array[Item](one, null)) {
+    for v1 <- Array[Item](one, null) do {
       val f = new CompletableFuture[Item]
       val minimal = f.minimalCompletionStage
       val g = minimal.toCompletableFuture
@@ -763,12 +760,12 @@ class CompletableFutureTestOnJDK17 extends CompletableFutureTest {
    */
   @throws[Exception]
   @Test def testMinimalCompletionStage_toCompletableFutureJoin(): Unit = {
-    for (createIncomplete <- Array[Boolean](true, false)) {
-      for (v1 <- Array[Item](one, null)) {
+    for createIncomplete <- Array[Boolean](true, false) do {
+      for v1 <- Array[Item](one, null) do {
         val f = new CompletableFuture[Item]
-        if (!createIncomplete) assertTrue(f.complete(v1))
+        if !createIncomplete then assertTrue(f.complete(v1))
         val minimal = f.minimalCompletionStage
-        if (createIncomplete) assertTrue(f.complete(v1))
+        if createIncomplete then assertTrue(f.complete(v1))
         assertEquals(v1, minimal.toCompletableFuture.join())
         assertEquals(v1, minimal.toCompletableFuture.get())
         checkCompletedNormally(minimal.toCompletableFuture, v1)
@@ -794,14 +791,14 @@ class CompletableFutureTestOnJDK17 extends CompletableFutureTest {
   /** joining a minimal stage "by hand" works
    */
   @Test def testMinimalCompletionStage_join_by_hand(): Unit = {
-    for (createIncomplete <- Array[Boolean](true, false)) {
-      for (v1 <- Array[Item](one, null)) {
+    for createIncomplete <- Array[Boolean](true, false) do {
+      for v1 <- Array[Item](one, null) do {
         val f = new CompletableFuture[Item]
         val minimal = f.minimalCompletionStage
         val g = new CompletableFuture[Item]
-        if (!createIncomplete) assertTrue(f.complete(v1))
+        if !createIncomplete then assertTrue(f.complete(v1))
         minimal.thenAccept((x: Item) => g.complete(x))
-        if (createIncomplete) assertTrue(f.complete(v1))
+        if createIncomplete then assertTrue(f.complete(v1))
         g.join()
         checkCompletedNormally(g, v1)
         checkCompletedNormally(f, v1)
@@ -815,7 +812,7 @@ class CompletableFutureTestOnJDK17 extends CompletableFutureTest {
    */
   @throws[Throwable]
   @Test def testAdditiveMonad(): Unit = {
-    import java.lang.{Long => jlLong}
+    import java.lang.Long as jlLong
     val unit: Function[jlLong, CompletableFuture[jlLong]] = Monad.unit
     val zero: CompletableFuture[jlLong] = Monad.zero()
     // Some mutually non-commutative functions
@@ -870,20 +867,20 @@ class CompletableFutureTestOnJDK17 extends CompletableFutureTest {
   @SuppressWarnings(Array("FutureReturnValueIgnored"))
   @throws[Throwable]
   @Test def testRecursiveChains(): Unit = {
-    for (m <- ExecutionMode.values) {
-      for (addDeadEnds <- Array[Boolean](true, false)) {
+    for m <- ExecutionMode.values do {
+      for addDeadEnds <- Array[Boolean](true, false) do {
         val `val` = 42
         val n =
-          if (expensiveTests) 1000
+          if expensiveTests then 1000
           else 2
         val head = new CompletableFuture[Item]
         var tail = head
-        for (i <- 0 until n) {
-          if (addDeadEnds) m.thenApply(tail, (v: Item) => new Item(v.value + 1))
+        for i <- 0 until n do {
+          if addDeadEnds then m.thenApply(tail, (v: Item) => new Item(v.value + 1))
           tail = m.thenApply(tail, (v: Item) => new Item(v.value + 1))
-          if (addDeadEnds) m.applyToEither(tail, tail, (v: Item) => new Item(v.value + 1))
+          if addDeadEnds then m.applyToEither(tail, tail, (v: Item) => new Item(v.value + 1))
           tail = m.applyToEither(tail, tail, (v: Item) => new Item(v.value + 1))
-          if (addDeadEnds) m.thenCombine(tail, tail, (v: Item, w: Item) => new Item(v.value + 1))
+          if addDeadEnds then m.thenCombine(tail, tail, (v: Item, w: Item) => new Item(v.value + 1))
           tail = m.thenCombine(tail, tail, (v: Item, w: Item) => new Item(v.value + 1))
         }
         head.complete(itemFor(`val`))
@@ -898,12 +895,12 @@ class CompletableFutureTestOnJDK17 extends CompletableFutureTest {
   @throws[Throwable]
   @Test def testManyDependents(): Unit = {
     val n =
-      if (expensiveTests) 1000000
+      if expensiveTests then 1000000
       else 10
     val head = new CompletableFuture[Void]
     val complete = CompletableFuture.completedFuture(null.asInstanceOf[Void])
     val count = new AtomicInteger(0)
-    for (i <- 0 until n) {
+    for i <- 0 until n do {
       head.thenRun(() => count.getAndIncrement())
       head.thenAccept((x: Void) => count.getAndIncrement())
       head.thenApply((x: Void) => count.getAndIncrement())
@@ -929,11 +926,11 @@ class CompletableFutureTestOnJDK17 extends CompletableFutureTest {
   @throws[Throwable]
   @Test def testCoCompletionGarbageRetention(): Unit = {
     val n =
-      if (expensiveTests) 1000000
+      if expensiveTests then 1000000
       else 10
     val incomplete = new CompletableFuture[Item]
     var f: CompletableFuture[Item] = null
-    for (i <- 0 until n) {
+    for i <- 0 until n do {
       f = new CompletableFuture[Item]
       f.runAfterEither(incomplete, () => {})
       f.complete(null)
@@ -947,7 +944,7 @@ class CompletableFutureTestOnJDK17 extends CompletableFutureTest {
       CompletableFuture.anyOf(f, incomplete)
       f.complete(null)
     }
-    for (i <- 0 until n) {
+    for i <- 0 until n do {
       f = new CompletableFuture[Item]
       incomplete.runAfterEither(f, () => {})
       f.complete(null)
@@ -969,18 +966,18 @@ class CompletableFutureTestOnJDK17 extends CompletableFutureTest {
    */
   @throws[Throwable]
   @Test def testAnyOfGarbageRetention(): Unit = {
-    for (v <- Array[Item](one, null)) {
+    for v <- Array[Item](one, null) do {
       val n =
-        if (expensiveTests) 100000
+        if expensiveTests then 100000
         else 10
       @SuppressWarnings(Array("unchecked")) val fs =
-        new Array[CompletableFuture[_ <: AnyRef]](100).asInstanceOf[Array[CompletableFuture[Item]]]
-      for (i <- 0 until fs.length) {
+        new Array[CompletableFuture[? <: AnyRef]](100).asInstanceOf[Array[CompletableFuture[Item]]]
+      for i <- 0 until fs.length do {
         fs(i) = new CompletableFuture[Item]
       }
       fs(fs.length - 1).complete(v)
-      for (i <- 0 until n) {
-        checkCompletedNormally(CompletableFuture.anyOf(fs: _*), v)
+      for i <- 0 until n do {
+        checkCompletedNormally(CompletableFuture.anyOf(fs*), v)
       }
     }
   }
@@ -993,15 +990,15 @@ class CompletableFutureTestOnJDK17 extends CompletableFutureTest {
   @throws[Throwable]
   @Test def testCancelledAllOfGarbageRetention(): Unit = {
     val n =
-      if (expensiveTests) 100000
+      if expensiveTests then 100000
       else 10
     @SuppressWarnings(Array("unchecked")) val fs =
-      new Array[CompletableFuture[_ <: AnyRef]](100).asInstanceOf[Array[CompletableFuture[Item]]]
-    for (i <- 0 until fs.length) {
+      new Array[CompletableFuture[? <: AnyRef]](100).asInstanceOf[Array[CompletableFuture[Item]]]
+    for i <- 0 until fs.length do {
       fs(i) = new CompletableFuture[Item]
     }
-    for (i <- 0 until n) {
-      assertTrue(CompletableFuture.allOf(fs: _*).cancel(false))
+    for i <- 0 until n do {
+      assertTrue(CompletableFuture.allOf(fs*).cancel(false))
     }
   }
 
@@ -1014,10 +1011,10 @@ class CompletableFutureTestOnJDK17 extends CompletableFutureTest {
   @throws[Throwable]
   @Test def testCancelledGarbageRetention(): Unit = {
     val n =
-      if (expensiveTests) 100000
+      if expensiveTests then 100000
       else 10
     val neverCompleted = new CompletableFuture[Item]
-    for (i <- 0 until n) {
+    for i <- 0 until n do {
       assertTrue(neverCompleted.thenRun(() => {}).cancel(true))
     }
   }
@@ -1031,11 +1028,11 @@ class CompletableFutureTestOnJDK17 extends CompletableFutureTest {
   @throws[Throwable]
   @Test def testToCompletableFutureGarbageRetention(): Unit = {
     val n =
-      if (expensiveTests) 900000
+      if expensiveTests then 900000
       else 10
     val neverCompleted = new CompletableFuture[Item]
     val minimal = neverCompleted.minimalCompletionStage
-    for (i <- 0 until n) {
+    for i <- 0 until n do {
       assertTrue(minimal.toCompletableFuture.cancel(true))
     }
   }
@@ -1044,18 +1041,18 @@ class CompletableFutureTestOnJDK17 extends CompletableFutureTest {
    *  is propagated
    */
   @Test def testDefaultExceptionallyAsync_normalCompletion(): Unit = {
-    for (createIncomplete <- Array[Boolean](true, false)) {
-      for (v1 <- Array[Item](one, null)) {
+    for createIncomplete <- Array[Boolean](true, false) do {
+      for v1 <- Array[Item](one, null) do {
         val ran = new AtomicInteger(0)
         val f = new CompletableFuture[Item]
         val d = new DelegatedCompletionStage[Item](f)
-        if (!createIncomplete) assertTrue(f.complete(v1))
+        if !createIncomplete then assertTrue(f.complete(v1))
         val g = d.exceptionallyAsync((t: Throwable) => {
           ran.getAndIncrement()
           throw new AssertionError("should not be called")
 
         })
-        if (createIncomplete) assertTrue(f.complete(v1))
+        if createIncomplete then assertTrue(f.complete(v1))
         checkCompletedNormally(g.toCompletableFuture, v1)
         checkCompletedNormally(f, v1)
         assertEquals(0, ran.get())
@@ -1066,20 +1063,20 @@ class CompletableFutureTestOnJDK17 extends CompletableFutureTest {
   /** default-implemented exceptionallyAsync action completes with function value on source exception
    */
   @Test def testDefaultExceptionallyAsync_exceptionalCompletion(): Unit = {
-    for (createIncomplete <- Array[Boolean](true, false)) {
-      for (v1 <- Array[Item](one, null)) {
+    for createIncomplete <- Array[Boolean](true, false) do {
+      for v1 <- Array[Item](one, null) do {
         val ran = new AtomicInteger(0)
         val ex = new CFException
         val f = new CompletableFuture[Item]
         val d = new DelegatedCompletionStage[Item](f)
-        if (!createIncomplete) f.completeExceptionally(ex)
+        if !createIncomplete then f.completeExceptionally(ex)
         val g = d.exceptionallyAsync((t: Throwable) => {
           assertSame(t, ex)
           ran.getAndIncrement()
           v1
 
         })
-        if (createIncomplete) f.completeExceptionally(ex)
+        if createIncomplete then f.completeExceptionally(ex)
         checkCompletedNormally(g.toCompletableFuture, v1)
         checkCompletedExceptionally(f, ex)
         assertEquals(1, ran.get())
@@ -1091,20 +1088,20 @@ class CompletableFutureTestOnJDK17 extends CompletableFutureTest {
    *  that exception
    */
   @Test def testDefaultExceptionallyAsync_exceptionalCompletionActionFailed(): Unit = {
-    for (createIncomplete <- Array[Boolean](true, false)) {
+    for createIncomplete <- Array[Boolean](true, false) do {
       val ran = new AtomicInteger(0)
       val ex1 = new CFException
       val ex2 = new CFException
       val f = new CompletableFuture[Item]
       val d = new DelegatedCompletionStage[Item](f)
-      if (!createIncomplete) f.completeExceptionally(ex1)
+      if !createIncomplete then f.completeExceptionally(ex1)
       val g = d.exceptionallyAsync((t: Throwable) => {
         assertSame(t, ex1)
         ran.getAndIncrement()
         throw ex2
 
       })
-      if (createIncomplete) f.completeExceptionally(ex1)
+      if createIncomplete then f.completeExceptionally(ex1)
       checkCompletedWithWrappedException(g.toCompletableFuture, ex2)
       checkCompletedExceptionally(f, ex1)
       checkCompletedExceptionally(d.toCompletableFuture, ex1)
@@ -1115,14 +1112,14 @@ class CompletableFutureTestOnJDK17 extends CompletableFutureTest {
   /** default-implemented exceptionallyCompose result completes normally after normal completion of source
    */
   @Test def testDefaultExceptionallyCompose_normalCompletion(): Unit = {
-    for (createIncomplete <- Array[Boolean](true, false)) {
-      for (v1 <- Array[Item](one, null)) {
+    for createIncomplete <- Array[Boolean](true, false) do {
+      for v1 <- Array[Item](one, null) do {
         val f = new CompletableFuture[Item]
         val r = new ExceptionalCompletableFutureFunction(ExecutionMode.SYNC)
         val d = new DelegatedCompletionStage[Item](f)
-        if (!createIncomplete) assertTrue(f.complete(v1))
+        if !createIncomplete then assertTrue(f.complete(v1))
         val g = d.exceptionallyCompose(r)
-        if (createIncomplete) assertTrue(f.complete(v1))
+        if createIncomplete then assertTrue(f.complete(v1))
         checkCompletedNormally(f, v1)
         checkCompletedNormally(g.toCompletableFuture, v1)
         r.assertNotinvoked()
@@ -1133,14 +1130,14 @@ class CompletableFutureTestOnJDK17 extends CompletableFutureTest {
   /** default-implemented exceptionallyCompose result completes normally after exceptional completion of source
    */
   @Test def testDefaultExceptionallyCompose_exceptionalCompletion(): Unit = {
-    for (createIncomplete <- Array[Boolean](true, false)) {
+    for createIncomplete <- Array[Boolean](true, false) do {
       val ex = new CFException
       val r = new ExceptionalCompletableFutureFunction(ExecutionMode.SYNC)
       val f = new CompletableFuture[Item]
       val d = new DelegatedCompletionStage[Item](f)
-      if (!createIncomplete) f.completeExceptionally(ex)
+      if !createIncomplete then f.completeExceptionally(ex)
       val g = d.exceptionallyCompose(r)
-      if (createIncomplete) f.completeExceptionally(ex)
+      if createIncomplete then f.completeExceptionally(ex)
       checkCompletedExceptionally[Item](f, ex)
       checkCompletedNormally[Item](g.toCompletableFuture, r.value)
       r.assertinvoked()
@@ -1150,15 +1147,15 @@ class CompletableFutureTestOnJDK17 extends CompletableFutureTest {
   /** default-implemented exceptionallyCompose completes exceptionally on exception if action does
    */
   @Test def testDefaultExceptionallyCompose_actionFailed(): Unit = {
-    for (createIncomplete <- Array[Boolean](true, false)) {
+    for createIncomplete <- Array[Boolean](true, false) do {
       val ex = new CFException
       val f = new CompletableFuture[Item]
       val r =
         new FailingExceptionalCompletableFutureFunction(ExecutionMode.SYNC)
       val d = new DelegatedCompletionStage[Item](f)
-      if (!createIncomplete) f.completeExceptionally(ex)
+      if !createIncomplete then f.completeExceptionally(ex)
       val g = d.exceptionallyCompose(r)
-      if (createIncomplete) f.completeExceptionally(ex)
+      if createIncomplete then f.completeExceptionally(ex)
       checkCompletedExceptionally(f, ex)
       checkCompletedWithWrappedException(g.toCompletableFuture, r.ex)
       r.assertinvoked()
@@ -1168,15 +1165,15 @@ class CompletableFutureTestOnJDK17 extends CompletableFutureTest {
   /** default-implemented exceptionallyComposeAsync result completes normally after normal completion of source
    */
   @Test def testDefaultExceptionallyComposeAsync_normalCompletion(): Unit = {
-    for (createIncomplete <- Array[Boolean](true, false)) {
-      for (v1 <- Array[Item](one, null)) {
+    for createIncomplete <- Array[Boolean](true, false) do {
+      for v1 <- Array[Item](one, null) do {
         val f = new CompletableFuture[Item]
         val r =
           new ExceptionalCompletableFutureFunction(ExecutionMode.ASYNC)
         val d = new DelegatedCompletionStage[Item](f)
-        if (!createIncomplete) assertTrue(f.complete(v1))
+        if !createIncomplete then assertTrue(f.complete(v1))
         val g = d.exceptionallyComposeAsync(r)
-        if (createIncomplete) assertTrue(f.complete(v1))
+        if createIncomplete then assertTrue(f.complete(v1))
         checkCompletedNormally(f, v1)
         checkCompletedNormally(g.toCompletableFuture, v1)
         r.assertNotinvoked()
@@ -1187,14 +1184,14 @@ class CompletableFutureTestOnJDK17 extends CompletableFutureTest {
   /** default-implemented exceptionallyComposeAsync result completes normally after exceptional completion of source
    */
   @Test def testDefaultExceptionallyComposeAsync_exceptionalCompletion(): Unit = {
-    for (createIncomplete <- Array[Boolean](true, false)) {
+    for createIncomplete <- Array[Boolean](true, false) do {
       val ex = new CFException
       val r = new ExceptionalCompletableFutureFunction(ExecutionMode.ASYNC)
       val f = new CompletableFuture[Item]
       val d = new DelegatedCompletionStage[Item](f)
-      if (!createIncomplete) f.completeExceptionally(ex)
+      if !createIncomplete then f.completeExceptionally(ex)
       val g = d.exceptionallyComposeAsync(r)
-      if (createIncomplete) f.completeExceptionally(ex)
+      if createIncomplete then f.completeExceptionally(ex)
       checkCompletedExceptionally(f, ex)
       checkCompletedNormally[Item](g.toCompletableFuture, r.value)
       r.assertinvoked()
@@ -1204,15 +1201,15 @@ class CompletableFutureTestOnJDK17 extends CompletableFutureTest {
   /** default-implemented exceptionallyComposeAsync completes exceptionally on exception if action does
    */
   @Test def testDefaultExceptionallyComposeAsync_actionFailed(): Unit = {
-    for (createIncomplete <- Array[Boolean](true, false)) {
+    for createIncomplete <- Array[Boolean](true, false) do {
       val ex = new CFException
       val f = new CompletableFuture[Item]
       val r =
         new FailingExceptionalCompletableFutureFunction(ExecutionMode.ASYNC)
       val d = new DelegatedCompletionStage[Item](f)
-      if (!createIncomplete) f.completeExceptionally(ex)
+      if !createIncomplete then f.completeExceptionally(ex)
       val g = d.exceptionallyComposeAsync(r)
-      if (createIncomplete) f.completeExceptionally(ex)
+      if createIncomplete then f.completeExceptionally(ex)
       checkCompletedExceptionally(f, ex)
       checkCompletedWithWrappedException(g.toCompletableFuture, r.ex)
       r.assertinvoked()
@@ -1222,15 +1219,15 @@ class CompletableFutureTestOnJDK17 extends CompletableFutureTest {
   /** default-implemented exceptionallyComposeAsync result completes normally after normal completion of source
    */
   @Test def testDefaultExceptionallyComposeAsyncExecutor_normalCompletion(): Unit = {
-    for (createIncomplete <- Array[Boolean](true, false)) {
-      for (v1 <- Array[Item](one, null)) {
+    for createIncomplete <- Array[Boolean](true, false) do {
+      for v1 <- Array[Item](one, null) do {
         val f = new CompletableFuture[Item]
         val r =
           new ExceptionalCompletableFutureFunction(ExecutionMode.EXECUTOR)
         val d = new DelegatedCompletionStage[Item](f)
-        if (!createIncomplete) assertTrue(f.complete(v1))
+        if !createIncomplete then assertTrue(f.complete(v1))
         val g = d.exceptionallyComposeAsync(r, new ThreadExecutor)
-        if (createIncomplete) assertTrue(f.complete(v1))
+        if createIncomplete then assertTrue(f.complete(v1))
         checkCompletedNormally(f, v1)
         checkCompletedNormally(g.toCompletableFuture, v1)
         r.assertNotinvoked()
@@ -1241,15 +1238,15 @@ class CompletableFutureTestOnJDK17 extends CompletableFutureTest {
   /** default-implemented exceptionallyComposeAsync result completes normally after exceptional completion of source
    */
   @Test def testDefaultExceptionallyComposeAsyncExecutor_exceptionalCompletion(): Unit = {
-    for (createIncomplete <- Array[Boolean](true, false)) {
+    for createIncomplete <- Array[Boolean](true, false) do {
       val ex = new CFException
       val r =
         new ExceptionalCompletableFutureFunction(ExecutionMode.EXECUTOR)
       val f = new CompletableFuture[Item]
       val d = new DelegatedCompletionStage[Item](f)
-      if (!createIncomplete) f.completeExceptionally(ex)
+      if !createIncomplete then f.completeExceptionally(ex)
       val g = d.exceptionallyComposeAsync(r, new ThreadExecutor)
-      if (createIncomplete) f.completeExceptionally(ex)
+      if createIncomplete then f.completeExceptionally(ex)
       checkCompletedExceptionally(f, ex)
       checkCompletedNormally[Item](g.toCompletableFuture, r.value)
       r.assertinvoked()
@@ -1259,16 +1256,16 @@ class CompletableFutureTestOnJDK17 extends CompletableFutureTest {
   /** default-implemented exceptionallyComposeAsync completes exceptionally on exception if action does
    */
   @Test def testDefaultExceptionallyComposeAsyncExecutor_actionFailed(): Unit = {
-    for (createIncomplete <- Array[Boolean](true, false)) {
+    for createIncomplete <- Array[Boolean](true, false) do {
       val ex = new CFException
       val f = new CompletableFuture[Item]
       val r = new FailingExceptionalCompletableFutureFunction(
         ExecutionMode.EXECUTOR
       )
       val d = new DelegatedCompletionStage[Item](f)
-      if (!createIncomplete) f.completeExceptionally(ex)
+      if !createIncomplete then f.completeExceptionally(ex)
       val g = d.exceptionallyComposeAsync(r, new ThreadExecutor)
-      if (createIncomplete) f.completeExceptionally(ex)
+      if createIncomplete then f.completeExceptionally(ex)
       checkCompletedExceptionally(f, ex)
       checkCompletedWithWrappedException(g.toCompletableFuture, r.ex)
       r.assertinvoked()

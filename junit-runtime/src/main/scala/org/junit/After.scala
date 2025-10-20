@@ -3,10 +3,10 @@
  */
 package org.junit
 
-import java.lang.annotation._
+import java.lang.annotation.*
 
 class After
     extends scala.annotation.StaticAnnotation
     with java.lang.annotation.Annotation {
-  def annotationType(): Class[_ <: Annotation] = classOf[After]
+  def annotationType(): Class[? <: Annotation] = classOf[After]
 }

@@ -4,7 +4,7 @@ package scala.scalanative.testinterface
 
 import java.io.InputStream
 import java.net.URL
-import java.{util => ju}
+import java.util as ju
 
 private[testinterface] final class ScalaNativeClassLoader
     extends ClassLoader(null) {
@@ -18,7 +18,7 @@ private[testinterface] final class ScalaNativeClassLoader
   override def getResource(name: String): URL = nimp
   override def getResourceAsStream(name: String): InputStream = nimp
   override def getResources(name: String): ju.Enumeration[URL] = nimp
-  override def loadClass(name: String): Class[_] = nimp
+  override def loadClass(name: String): Class[?] = nimp
   override def setClassAssertionStatus(
       className: String,
       enabled: Boolean

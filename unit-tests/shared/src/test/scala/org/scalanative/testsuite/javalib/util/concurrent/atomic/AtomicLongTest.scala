@@ -12,10 +12,10 @@ package atomic
 import java.util.concurrent.atomic.AtomicLong
 
 import org.junit.{Test, Ignore}
-import org.junit.Assert._
+import org.junit.Assert.*
 
 class AtomicLongTest extends JSR166Test {
-  import JSR166Test._
+  import JSR166Test.*
 
   final val VALUES = Array(
     java.lang.Long.MIN_VALUE,

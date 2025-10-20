@@ -208,7 +208,7 @@ class ArrayList[E] private (
       private var cursor = 0
       private lazy val limit = _size // late binding
 
-      def tryAdvance(action: Consumer[_ >: E]): Boolean = {
+      def tryAdvance(action: Consumer[? >: E]): Boolean = {
         if (cursor >= limit) false
         else {
           action.accept(inner(cursor).asInstanceOf[E])

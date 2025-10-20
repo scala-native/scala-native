@@ -1,8 +1,8 @@
 package org.scalanative.testsuite.niobuffer
 
-import scala.scalanative.unsafe._
+import scala.scalanative.unsafe.*
 import scala.scalanative.memory.PointerBuffer
-import java.nio._
+import java.nio.*
 
 import org.scalanative.testsuite.javalib.nio.BufferFactory.{
   ByteBufferFactory,

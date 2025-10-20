@@ -2,15 +2,15 @@ package org.scalanative.testsuite.javalib.util.jar
 
 // Ported from Apache Harmony
 
-import java.util.jar._
-import java.io._
+import java.util.jar.*
+import java.io.*
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
-import JarBytes._
+import JarBytes.*
 
 class ManifestTest {
 

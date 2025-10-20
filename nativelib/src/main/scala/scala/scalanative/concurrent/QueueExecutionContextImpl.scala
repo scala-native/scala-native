@@ -1,11 +1,11 @@
 package scala.scalanative.concurrent
 
 import scala.concurrent.{ExecutionContextExecutor, ExecutionContext}
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 import scala.collection.mutable
 
 import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
-import scala.scalanative.concurrent.NativeExecutionContext._
+import scala.scalanative.concurrent.NativeExecutionContext.*
 import scala.scalanative.runtime.MainThreadShutdownContext
 
 import java.util.{AbstractQueue, ArrayDeque, Comparator, Deque, PriorityQueue}

@@ -1,6 +1,6 @@
 package java.util
 
-import java.lang.{_Enum => Enum}
+import java.lang._Enum as Enum
 
 final class EnumSet[E <: Enum[E]] private (values: Set[E])
     extends AbstractSet[E]
@@ -17,10 +17,10 @@ final class EnumSet[E <: Enum[E]] private (values: Set[E])
   override def toArray[T <: AnyRef](a: Array[T]): Array[T] = values.toArray(a)
   override def add(e: E): Boolean = values.add(e)
   override def remove(o: Any): Boolean = values.remove(o)
-  override def containsAll(c: Collection[_]): Boolean = values.containsAll(c)
-  override def addAll(c: Collection[_ <: E]): Boolean = values.addAll(c)
-  override def removeAll(c: Collection[_]): Boolean = values.removeAll(c)
-  override def retainAll(c: Collection[_]): Boolean = values.retainAll(c)
+  override def containsAll(c: Collection[?]): Boolean = values.containsAll(c)
+  override def addAll(c: Collection[? <: E]): Boolean = values.addAll(c)
+  override def removeAll(c: Collection[?]): Boolean = values.removeAll(c)
+  override def retainAll(c: Collection[?]): Boolean = values.retainAll(c)
   override def clear(): Unit = values.clear()
   override def equals(o: Any): Boolean = values.equals(o)
   override def hashCode(): Int = values.hashCode()

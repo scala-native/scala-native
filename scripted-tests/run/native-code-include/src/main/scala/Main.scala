@@ -1,4 +1,4 @@
-import scalanative.unsafe._
+import scalanative.unsafe.*
 
 @extern
 object myapi {
@@ -6,7 +6,7 @@ object myapi {
 }
 
 object Main {
-  import myapi._
+  import myapi.*
   def main(args: Array[String]): Unit = {
     val res = add3(-3L)
     assert(res == 0L)

@@ -7,15 +7,15 @@ import java.nio.file.Paths
 import sbt.testing.Framework
 import scala.annotation.nowarn
 import scala.collection.concurrent.TrieMap
-import scala.concurrent._
+import scala.concurrent.*
 import scala.scalanative.build.Logger
 import scala.scalanative.testinterface.NativeRunnerRPC
-import scala.scalanative.testinterface.common._
+import scala.scalanative.testinterface.common.*
 import scala.annotation.nowarn
 
 final class TestAdapter(config: TestAdapter.Config) {
 
-  import TestAdapter._
+  import TestAdapter.*
 
   require(
     config.binaryFile.exists(),

@@ -25,7 +25,7 @@ class WeakReference[T](
   if (_gc_modified_referent != null) WeakReferenceRegistry.add(this)
 
   // A next weak reference in the form linked-list used by WeakReferenceRegistry
-  @volatile private[ref] var nextReference: WeakReference[_] = _
+  @volatile private[ref] var nextReference: WeakReference[?] = _
   // Callback registered for given WeakReference, called after WeakReference pointee would be garbage collected
   @volatile private[java] var postGCHandler: () => Unit = _
 

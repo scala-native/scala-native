@@ -3,11 +3,11 @@ package org.scalanative.testsuite.javalib.util.function
 
 import java.util.function.IntSupplier
 
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.junit.Test
 
 class IntSupplierTest {
-  import IntSupplierTest._
+  import IntSupplierTest.*
 
   @Test def getAsInt(): Unit = {
     assertEquals(Int.MinValue, makeSupplier(Int.MinValue).getAsInt())

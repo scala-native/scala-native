@@ -1,6 +1,6 @@
 package test
 
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.junit.Test
 
 class LibTest {

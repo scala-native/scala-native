@@ -1,15 +1,15 @@
 package scala.scalanative.runtime
 package testinterface.signalhandling
 
-import scala.scalanative.meta.LinktimeInfo._
-import scala.scalanative.libc.stdlib._
-import scala.scalanative.libc.signal._
-import scala.scalanative.libc.string._
-import scala.scalanative.posix.unistd._
+import scala.scalanative.meta.LinktimeInfo.*
+import scala.scalanative.libc.stdlib.*
+import scala.scalanative.libc.signal.*
+import scala.scalanative.libc.string.*
+import scala.scalanative.posix.unistd.*
 import scala.scalanative.runtime.unwind
-import scala.scalanative.unsafe._
-import scalanative.unsigned._
-import scala.scalanative.windows._
+import scala.scalanative.unsafe.*
+import scalanative.unsigned.*
+import scala.scalanative.windows.*
 import scala.scalanative.runtime.SymbolFormatter
 
 private[scalanative] object SignalConfig {
@@ -161,7 +161,7 @@ private[scalanative] object SignalConfig {
     }
 
     if (!isWindows) {
-      import scala.scalanative.posix.signal._
+      import scala.scalanative.posix.signal.*
       if (!isMultithreadingEnabled || !isMac) {
         // Used in Immix GC traps on MacOS
         setHandler(SIGBUS)

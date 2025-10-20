@@ -3,7 +3,7 @@ package java.nio.file
 import java.io.IOException
 
 import scalanative.libc.string
-import scalanative.posix.errno._
+import scalanative.posix.errno.*
 import scalanative.unsafe.{CInt, fromCString}
 
 object PosixException {

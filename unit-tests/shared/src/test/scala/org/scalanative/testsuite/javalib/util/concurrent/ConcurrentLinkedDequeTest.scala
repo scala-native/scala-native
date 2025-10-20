@@ -13,15 +13,15 @@ package org.scalanative.testsuite.javalib.util.concurrent
 
 import java.util
 import java.util.{Arrays, Collection, NoSuchElementException}
-import java.util.{Random}
+import java.util.Random
 import java.util.concurrent.ConcurrentLinkedDeque
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.junit.Ignore
 
 class ConcurrentLinkedDequeTest extends JSR166Test {
-  import JSR166Test._
+  import JSR166Test.*
 
   /** Returns a new deque of given size containing consecutive Integers 0 ... n.
    */
@@ -70,7 +70,7 @@ class ConcurrentLinkedDequeTest extends JSR166Test {
   @Test def testConstructor4(): Unit = {
     try {
       new ConcurrentLinkedDeque[AnyRef](
-        Arrays.asList(new Array[AnyRef](SIZE): _*)
+        Arrays.asList(new Array[AnyRef](SIZE)*)
       )
       shouldThrow()
     } catch {
@@ -84,7 +84,7 @@ class ConcurrentLinkedDequeTest extends JSR166Test {
     val items: Array[Item] = new Array[Item](5)
     items(0) = zero
     try {
-      new ConcurrentLinkedDeque[Item](Arrays.asList(items: _*))
+      new ConcurrentLinkedDeque[Item](Arrays.asList(items*))
       shouldThrow()
     } catch {
       case success: NullPointerException =>
@@ -97,7 +97,7 @@ class ConcurrentLinkedDequeTest extends JSR166Test {
     val items: Array[Item] = defaultItems
     val q: ConcurrentLinkedDeque[Item] =
       new ConcurrentLinkedDeque(
-        Arrays.asList(items: _*)
+        Arrays.asList(items*)
       )
 
     val expectedSize = SIZE // SIZE is defined in JSR166Test.scala as 20
@@ -339,7 +339,7 @@ class ConcurrentLinkedDequeTest extends JSR166Test {
   @Test def testAddAll2(): Unit = {
     val q = new ConcurrentLinkedDeque[Item]
     try {
-      q.addAll(Arrays.asList(new Array[Item](SIZE): _*))
+      q.addAll(Arrays.asList(new Array[Item](SIZE)*))
       shouldThrow()
     } catch {
       case success: NullPointerException =>
@@ -354,7 +354,7 @@ class ConcurrentLinkedDequeTest extends JSR166Test {
     val items = new Array[Item](SIZE)
     items(0) = zero
     try {
-      q.addAll(Arrays.asList(items: _*))
+      q.addAll(Arrays.asList(items*))
       shouldThrow()
     } catch {
       case success: NullPointerException =>
@@ -368,8 +368,8 @@ class ConcurrentLinkedDequeTest extends JSR166Test {
     val items: Array[Item] = defaultItems
 
     val q = new ConcurrentLinkedDeque[Item]
-    assertFalse(q.addAll(Arrays.asList(empty: _*)))
-    assertTrue(q.addAll(Arrays.asList(items: _*)))
+    assertFalse(q.addAll(Arrays.asList(empty*)))
+    assertTrue(q.addAll(Arrays.asList(items*)))
 
     var i = 0
     while (i < SIZE) {

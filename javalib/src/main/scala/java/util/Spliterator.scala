@@ -1,8 +1,8 @@
 package java.util
 
-import java.util.function._
+import java.util.function.*
 
-import Spliterator._
+import Spliterator.*
 
 object Spliterator {
   final val DISTINCT = 0x00000001
@@ -32,12 +32,12 @@ object Spliterator {
     override def tryAdvance(action: IntConsumer): Boolean
     override def forEachRemaining(action: IntConsumer): Unit =
       while (tryAdvance(action)) ()
-    override def tryAdvance(action: Consumer[_ >: Integer]): Boolean =
+    override def tryAdvance(action: Consumer[? >: Integer]): Boolean =
       action match {
         case action: IntConsumer => tryAdvance(action: IntConsumer)
         case _                   => tryAdvance((action.accept(_)): IntConsumer)
       }
-    override def forEachRemaining(action: Consumer[_ >: Integer]): Unit =
+    override def forEachRemaining(action: Consumer[? >: Integer]): Unit =
       action match {
         case action: IntConsumer => forEachRemaining(action: IntConsumer)
         case _ => forEachRemaining((action.accept(_)): IntConsumer)
@@ -50,12 +50,12 @@ object Spliterator {
     override def tryAdvance(action: LongConsumer): Boolean
     override def forEachRemaining(action: LongConsumer): Unit =
       while (tryAdvance(action)) ()
-    override def tryAdvance(action: Consumer[_ >: java.lang.Long]): Boolean =
+    override def tryAdvance(action: Consumer[? >: java.lang.Long]): Boolean =
       action match {
         case action: LongConsumer => tryAdvance(action: LongConsumer)
         case _ => tryAdvance((action.accept(_)): LongConsumer)
       }
-    override def forEachRemaining(action: Consumer[_ >: java.lang.Long]): Unit =
+    override def forEachRemaining(action: Consumer[? >: java.lang.Long]): Unit =
       action match {
         case action: LongConsumer => forEachRemaining(action: LongConsumer)
         case _ => forEachRemaining((action.accept(_)): LongConsumer)
@@ -71,13 +71,13 @@ object Spliterator {
     override def tryAdvance(action: DoubleConsumer): Boolean
     override def forEachRemaining(action: DoubleConsumer): Unit =
       while (tryAdvance(action)) ()
-    override def tryAdvance(action: Consumer[_ >: java.lang.Double]): Boolean =
+    override def tryAdvance(action: Consumer[? >: java.lang.Double]): Boolean =
       action match {
         case action: DoubleConsumer => tryAdvance(action: DoubleConsumer)
         case _ => tryAdvance((action.accept(_)): DoubleConsumer)
       }
     override def forEachRemaining(
-        action: Consumer[_ >: java.lang.Double]
+        action: Consumer[? >: java.lang.Double]
     ): Unit =
       action match {
         case action: DoubleConsumer => forEachRemaining(action: DoubleConsumer)
@@ -93,10 +93,10 @@ trait Spliterator[T] {
 
   def estimateSize(): Long
 
-  def forEachRemaining(action: Consumer[_ >: T]): Unit =
+  def forEachRemaining(action: Consumer[? >: T]): Unit =
     while (tryAdvance(action)) {}
 
-  def getComparator(): Comparator[_ >: T] = throw new IllegalStateException()
+  def getComparator(): Comparator[? >: T] = throw new IllegalStateException()
 
   def getExactSizeIfKnown(): Long =
     if (hasCharacteristics(SIZED)) estimateSize() else -1L
@@ -104,7 +104,7 @@ trait Spliterator[T] {
   def hasCharacteristics(chars: Int): Boolean =
     (characteristics() & chars) == chars
 
-  def tryAdvance(action: Consumer[_ >: T]): Boolean
+  def tryAdvance(action: Consumer[? >: T]): Boolean
 
   def trySplit(): Spliterator[T]
 

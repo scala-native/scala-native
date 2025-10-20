@@ -1,34 +1,34 @@
 package scala.scalanative.nio.fs
 
-import scalanative.unsigned._
-import scalanative.libc._
-import scalanative.posix.dirent._
+import scalanative.unsigned.*
+import scalanative.libc.*
+import scalanative.posix.dirent.*
 import scalanative.posix.DirentImpl.scalanative_readdirImpl
 
 // Import posix name errno as variable, not class or type.
-import scalanative.posix.{errno => posixErrno}, posixErrno._
+import scalanative.posix.errno as posixErrno, posixErrno.*
 import scalanative.posix.stdlib
 import scalanative.posix.unistd, unistd.access
 
-import scalanative.unsafe._, stdio._
+import scalanative.unsafe.*, stdio.*
 import scalanative.meta.LinktimeInfo.isWindows
 import scala.collection.mutable.UnrolledBuffer
 import scala.reflect.ClassTag
 
 import java.io.{File, IOException}
 
-import java.{lang => jl}
+import java.lang as jl
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Path, PosixException}
-import java.{util => ju}
+import java.util as ju
 
-import scala.scalanative.windows._
+import scala.scalanative.windows.*
 import scala.scalanative.windows.HandleApiExt.INVALID_HANDLE_VALUE
-import scala.scalanative.windows.FileApi._
-import scala.scalanative.windows.FileApiExt._
-import scala.scalanative.windows.FileApiOps._
-import scala.scalanative.windows.ErrorHandlingApi._
-import scala.scalanative.windows.winnt.AccessRights._
+import scala.scalanative.windows.FileApi.*
+import scala.scalanative.windows.FileApiExt.*
+import scala.scalanative.windows.FileApiOps.*
+import scala.scalanative.windows.ErrorHandlingApi.*
+import scala.scalanative.windows.winnt.AccessRights.*
 
 import java.nio.file.WindowsException
 import scala.scalanative.nio.fs.unix.UnixException
@@ -242,7 +242,7 @@ object FileHelpers {
   def exists(path: String): Boolean =
     Zone.acquire { implicit z =>
       if (isWindows) {
-        import ErrorCodes._
+        import ErrorCodes.*
         def canAccessAttributes = // fast-path
           GetFileAttributesW(
             toCWideStringUTF16LE(path)

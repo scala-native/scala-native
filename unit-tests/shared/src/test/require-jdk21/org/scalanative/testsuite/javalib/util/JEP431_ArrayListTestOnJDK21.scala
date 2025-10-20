@@ -1,11 +1,11 @@
 package org.scalanative.testsuite.javalib.util
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
-import java.{lang => jl}
+import java.lang as jl
 import java.util.ArrayList
 
 /* Test only the JEP431 methods of a time-honored and frequently used

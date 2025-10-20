@@ -1,17 +1,17 @@
 package scala.scalanative.nscplugin
 
 import dotty.tools.dotc.plugins.PluginPhase
-import dotty.tools._
-import dotc._
-import dotc.ast.tpd._
+import dotty.tools.*
+import dotc.*
+import dotc.ast.tpd.*
 import scala.scalanative.nscplugin.CompilerCompat.SymUtilsCompat.setter
-import core.Contexts._
+import core.Contexts.*
 import core.Definitions
-import core.Names._
-import core.Symbols._
-import core.Types._
-import core.Flags._
-import core.StdNames._
+import core.Names.*
+import core.Symbols.*
+import core.Types.*
+import core.Flags.*
+import core.StdNames.*
 import core.Constants.Constant
 import NirGenUtil.ContextCached
 import dotty.tools.dotc.transform.SeqLiterals
@@ -84,8 +84,8 @@ class PostInlineNativeInterop extends PluginPhase with NativeInteropUtil {
           case TypeApply(_, Seq(argTpe)) => dealiasTypeMapper(argTpe.tpe)
         }
         val tpeSym = tpe.typeSymbol
-        if (tpe.isAny || tpe.isNothingType || tpe.isNullType ||
-            tpeSym.is(DeferredType, butNot = TypeParam))
+        if tpe.isAny || tpe.isNothingType || tpe.isNullType ||
+            tpeSym.is(DeferredType, butNot = TypeParam) then
           report.error(
             s"Stackalloc requires concrete type but ${tpe.show} found",
             tree.srcPos

@@ -2,22 +2,22 @@
 
 package org.scalanative.testsuite.javalib.util
 
-import java.{util => ju}
+import java.util as ju
 import java.util.function.{BiConsumer, BiFunction, Function}
 
 import org.junit.Test
-import org.junit.Assert._
-import org.junit.Assume._
+import org.junit.Assert.*
+import org.junit.Assume.*
 
-import org.scalanative.testsuite.utils.AssertThrows.{assertThrows, _}
-import org.scalanative.testsuite.utils.Platform._
+import org.scalanative.testsuite.utils.AssertThrows.{assertThrows, *}
+import org.scalanative.testsuite.utils.Platform.*
 
 import scala.reflect.ClassTag
 
-import Utils._
+import Utils.*
 
 trait MapTest {
-  import MapTest._
+  import MapTest.*
 
   def factory: MapFactory
 
@@ -1525,7 +1525,7 @@ trait MapTest {
       assumeFalse(
         "affected by JDK-8259622",
         executingInJVMOnLowerThanJDK17 && !executingInJVMOnLowerThanJDK15 &&
-          mp.isInstanceOf[ju.TreeMap[_, _]]
+          mp.isInstanceOf[ju.TreeMap[?, ?]]
       )
 
       mp.put("nullable", null)

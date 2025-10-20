@@ -4,14 +4,14 @@ package reflect
 // Ported from Scala.js
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
-import scala.scalanative.reflect._
-import scala.scalanative.reflect.annotation._
-import scala.scalanative.unsafe._
-import scala.scalanative.unsigned._
+import scala.scalanative.reflect.*
+import scala.scalanative.reflect.annotation.*
+import scala.scalanative.unsafe.*
+import scala.scalanative.unsigned.*
 
 class ReflectiveInstantiationTest {
   import ReflectTest.{Accessors, PtrAccessors, VC}

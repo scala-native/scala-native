@@ -34,7 +34,7 @@ private[scalanative] object IO {
 
   /** Write bytes to given file. */
   def write(file: Path, bytes: Array[Byte]): Unit = {
-    import java.nio.file.StandardOpenOption._
+    import java.nio.file.StandardOpenOption.*
     Files.createDirectories(file.getParent)
     Files.write(file, bytes, CREATE, WRITE)
   }

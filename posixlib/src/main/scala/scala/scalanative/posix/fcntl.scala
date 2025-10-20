@@ -1,7 +1,7 @@
 package scala.scalanative
 package posix
 
-import scalanative.unsafe._
+import scalanative.unsafe.*
 import scalanative.posix.sys.stat.mode_t
 import scala.scalanative.posix.unistd.off_t
 import scala.scalanative.posix.sys.types.pid_t
@@ -106,7 +106,7 @@ object fcntl {
 }
 
 object fcntlOps {
-  import fcntl._
+  import fcntl.*
 
   implicit class flockOps(val ptr: Ptr[flock]) extends AnyVal {
     def l_start: off_t = ptr._1

@@ -1,11 +1,11 @@
 package scala.scalanative.windows
 
-import scala.scalanative.unsafe._
-import scala.scalanative.unsigned._
-import scala.scalanative.windows._
+import scala.scalanative.unsafe.*
+import scala.scalanative.unsigned.*
+import scala.scalanative.windows.*
 
-import AclApi._
-import SecurityBaseApi._
+import AclApi.*
+import SecurityBaseApi.*
 
 package object accctrl {
   type AccessMode = CInt

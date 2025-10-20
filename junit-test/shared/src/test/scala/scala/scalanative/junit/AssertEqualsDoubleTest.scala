@@ -2,10 +2,10 @@ package scala.scalanative.junit
 
 // Ported from Scala.js
 
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.junit.Test
 
-import scala.scalanative.junit.utils._
+import scala.scalanative.junit.utils.*
 
 class AssertEqualsDoubleTest {
   @Test def failsWithDouble(): Unit = {

@@ -2,7 +2,7 @@ package scala.scalanative
 package annotation
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 class NoOptTest {
   class A { def foo: String = "A" }

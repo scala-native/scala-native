@@ -1,6 +1,6 @@
 package scala.scalanative.posix
 
-import scala.scalanative.unsafe._
+import scala.scalanative.unsafe.*
 import scala.scalanative.posix.time.timespec
 import scala.scalanative.posix.sys.types.pid_t
 
@@ -74,7 +74,7 @@ object sched {
 }
 
 object schedOps {
-  import sched._
+  import sched.*
   implicit class SchedParamOps(ref: Ptr[sched_param]) {
     def priority: CInt = ref._1
     def priority_=(value: CInt): Unit = ref._1 = value

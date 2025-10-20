@@ -12,10 +12,10 @@ package atomic
 import java.util.concurrent.atomic.AtomicStampedReference
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 class AtomicStampedReferenceTest extends JSR166Test {
-  import JSR166Test._
+  import JSR166Test.*
 
   /** constructor initializes to given reference and stamp
    */

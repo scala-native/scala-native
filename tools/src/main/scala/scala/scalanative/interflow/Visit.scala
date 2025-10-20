@@ -1,8 +1,8 @@
 package scala.scalanative
 package interflow
 
-import scalanative.linker._
-import scala.concurrent._
+import scalanative.linker.*
+import scala.concurrent.*
 import scala.annotation.tailrec
 
 private[interflow] trait Visit { self: Interflow =>

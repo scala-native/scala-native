@@ -2,7 +2,7 @@ package scala.scalanative
 package posix
 package sys
 
-import scalanative.unsafe._
+import scalanative.unsafe.*
 
 @extern object sysinfo {
   /* Return number of available processors.  */

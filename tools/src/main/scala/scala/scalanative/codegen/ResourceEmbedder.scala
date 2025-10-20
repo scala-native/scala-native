@@ -5,9 +5,9 @@ import java.io.File
 import java.io.IOException
 import java.nio.ByteBuffer
 import java.nio.file.FileVisitResult
-import java.nio.file.FileVisitResult._
+import java.nio.file.FileVisitResult.*
 import java.nio.file.Files
-import java.nio.file.Files._
+import java.nio.file.Files.*
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.SimpleFileVisitor

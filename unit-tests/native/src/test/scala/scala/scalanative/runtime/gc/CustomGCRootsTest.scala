@@ -1,7 +1,7 @@
 package scala.scalanative.runtime.gc
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 import org.scalanative.testsuite.utils
 
@@ -9,11 +9,11 @@ import scala.scalanative.libc.stdlib.{malloc, free}
 import scala.scalanative.libc.string.memset
 import scala.scalanative.runtime.toRawPtr
 import scala.scalanative.runtime.{GC, Intrinsics}
-import scala.scalanative.unsigned._
-import scala.scalanative.unsafe._
+import scala.scalanative.unsigned.*
+import scala.scalanative.unsafe.*
 
 class CustomGCRootsTest {
-  import CustomGCRootsTest._
+  import CustomGCRootsTest.*
   @Test def `can mark objects referenced from non GC managed memory regions`()
       : Unit = {
     case class Node(var v: Int, var next: Node)
@@ -122,7 +122,7 @@ object CustomGCRootsTest {
       if (cursor.toLong > limit.toLong)
         throw new OutOfMemoryError()
 
-      !(ptr.asInstanceOf[Ptr[Class[_]]]) = cls
+      !(ptr.asInstanceOf[Ptr[Class[?]]]) = cls
       Intrinsics.castRawPtrToObject(toRawPtr(ptr)).asInstanceOf[T]
     }
   }

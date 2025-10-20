@@ -1,7 +1,7 @@
 package scala.scalanative
 package runtime
 
-import scalanative.unsafe._
+import scalanative.unsafe.*
 
 /** @see
  *    [[http://llvm.org/releases/3.7.0/docs/LangRef.html#intrinsic-functions LLVM intrinsics functions]]

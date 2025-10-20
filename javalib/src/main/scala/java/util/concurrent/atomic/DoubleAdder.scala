@@ -17,7 +17,7 @@
 
 package java.util.concurrent.atomic
 
-import java.{lang => jl}
+import java.lang as jl
 
 /** One or more variables that together maintain an initially zero
  *  {@code double} sum. When updates (method {@code add}) are contended across

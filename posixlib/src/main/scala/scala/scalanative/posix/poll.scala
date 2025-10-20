@@ -1,7 +1,7 @@
 package scala.scalanative
 package posix
 
-import scalanative.unsafe._
+import scalanative.unsafe.*
 
 @extern
 object poll {
@@ -84,7 +84,7 @@ object pollEvents {
 }
 
 object pollOps {
-  import poll._
+  import poll.*
 
   implicit class pollOps(val ptr: Ptr[struct_pollfd]) extends AnyVal {
     def fd: CInt = ptr._1

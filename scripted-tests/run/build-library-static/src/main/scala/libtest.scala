@@ -1,5 +1,5 @@
 import scala.scalanative.libc.stdlib.malloc
-import scala.scalanative.unsafe._
+import scala.scalanative.unsafe.*
 
 object libtest {
   @exportAccessors("native_number", "native_set_number")

@@ -5,9 +5,9 @@ import Endianness.BIG
 import java.io.DataInputStream
 import java.io.RandomAccessFile
 import java.nio.channels.Channels
-import MachO._
-import scalanative.unsafe._
-import scalanative.unsigned._
+import MachO.*
+import scalanative.unsafe.*
+import scalanative.unsigned.*
 
 private[runtime] object CommonParsers {
   final val BYTE = 1

@@ -11,7 +11,7 @@ private[linker] class Reach(
     protected val loader: ClassLoader
 ) extends LinktimeValueResolver
     with LinktimeIntrinsicCallsResolver {
-  import Reach._
+  import Reach.*
 
   val loaded =
     mutable.Map.empty[nir.Global.Top, mutable.Map[nir.Global, nir.Defn]]
@@ -1074,7 +1074,7 @@ private[linker] class Reach(
   }
 
   protected object UnsupportedFeatureExtractor {
-    import UnsupportedFeature._
+    import UnsupportedFeature.*
     val UnsupportedSymbol =
       nir.Global.Top("scala.scalanative.runtime.UnsupportedFeature")
 

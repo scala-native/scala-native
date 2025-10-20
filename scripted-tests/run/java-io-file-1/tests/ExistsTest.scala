@@ -1,7 +1,7 @@
 import java.io.File
 
 object ExistsTest {
-  import Files._
+  import Files.*
 
   def main(args: Array[String]): Unit = {
     assert(executableFile.exists())

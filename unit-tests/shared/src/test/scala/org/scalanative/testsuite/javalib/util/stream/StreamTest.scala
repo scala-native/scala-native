@@ -1,19 +1,19 @@
 package org.scalanative.testsuite.javalib.util.stream
 
-import java.{lang => jl}
-import java.{util => ju}
-import java.util._
+import java.lang as jl
+import java.util as ju
+import java.util.*
 
 import java.util.concurrent.{CountDownLatch, TimeUnit}
-import java.util.concurrent.CountDownLatch._
+import java.util.concurrent.CountDownLatch.*
 
-import java.util.function._
+import java.util.function.*
 
-import java.util.{stream => jus}
-import java.util.stream._
+import java.util.stream as jus
+import java.util.stream.*
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.junit.Ignore
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
@@ -317,7 +317,7 @@ class StreamTest {
     val s = Stream.of(1, 2, 3)
     val mapper = new Function[Int, Stream[Int]] {
       override def apply(v: Int): Stream[Int] =
-        Stream.of((1 to v): _*)
+        Stream.of((1 to v)*)
     }
     val s2 = s.flatMap(mapper)
     val it = s2.iterator()
@@ -345,11 +345,11 @@ class StreamTest {
     val stream = Stream.of(1, 2, 3)
     val mapper1 = new Function[Int, Stream[Int]] {
       override def apply(v: Int): Stream[Int] =
-        Stream.of((v to 3): _*)
+        Stream.of((v to 3)*)
     }
     val mapper2 = new Function[Int, Stream[Int]] {
       override def apply(v: Int): Stream[Int] =
-        Stream.of((5 to v by -1): _*)
+        Stream.of((5 to v by -1)*)
     }
     val s2 = stream.flatMap(mapper1).flatMap(mapper2)
     val expected =
@@ -674,7 +674,7 @@ class StreamTest {
 
     val n = Stream
       .of(1, 2, 3, 4, 5)
-      .flatMap((e) => Stream.of((1 to e): _*))
+      .flatMap((e) => Stream.of((1 to e)*))
       .count()
 
     assertEquals(s"unexpected count", expectedCount, n)
@@ -693,8 +693,8 @@ class StreamTest {
       expectedSet.add(expectedElements(j))
 
     val s = jus.Stream
-      .of(expectedElements: _*)
-      .flatMap((e) => Stream.of((1 to e): _*))
+      .of(expectedElements*)
+      .flatMap((e) => Stream.of((1 to e)*))
       .distinct()
 
     assertEquals(s"unexpected count", expectedCount, s.count())
@@ -702,8 +702,8 @@ class StreamTest {
     // Count is good, now did we get expected elements and only them?
 
     val s2 = jus.Stream
-      .of(expectedElements: _*)
-      .flatMap((e) => Stream.of((1 to e): _*))
+      .of(expectedElements*)
+      .flatMap((e) => Stream.of((1 to e)*))
       .distinct()
 
     s2.forEach((e) => {
@@ -893,7 +893,7 @@ class StreamTest {
 
     val zeroCharacteristicsSpliter =
       new Spliterators.AbstractSpliterator[Object](Long.MaxValue, 0x0) {
-        def tryAdvance(action: Consumer[_ >: Object]): Boolean = true
+        def tryAdvance(action: Consumer[? >: Object]): Boolean = true
       }
 
     val sZero = StreamSupport.stream(zeroCharacteristicsSpliter, false)
@@ -918,7 +918,7 @@ class StreamTest {
      */
     val allCharacteristicsSpliter =
       new Spliterators.AbstractSpliterator[Object](Long.MaxValue, 0x5551) {
-        def tryAdvance(action: Consumer[_ >: Object]): Boolean = true
+        def tryAdvance(action: Consumer[? >: Object]): Boolean = true
       }
 
     val sAll = StreamSupport.stream(allCharacteristicsSpliter, false)
@@ -948,7 +948,7 @@ class StreamTest {
      */
     val allCharacteristicsSpliter =
       new Spliterators.AbstractSpliterator[Object](0, 0x5551) {
-        def tryAdvance(action: Consumer[_ >: Object]): Boolean = false
+        def tryAdvance(action: Consumer[? >: Object]): Boolean = false
       }
 
     val sAll = StreamSupport.stream(allCharacteristicsSpliter, false)
@@ -1276,7 +1276,7 @@ class StreamTest {
     val n = Stream
       .of(1, 2, 3, 4)
       .peek((e) => printf(s"composite peek - before: <${e}>|\n")) // simple str
-      .flatMap((e) => Stream.of((1 to e): _*))
+      .flatMap((e) => Stream.of((1 to e)*))
       .peek((e) => printf(s"composite peek - after: <${e}>|\n")) // composite
       .count()
 

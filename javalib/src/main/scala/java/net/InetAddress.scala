@@ -6,24 +6,24 @@ package java.net
  *   https://github.com/armanbilge/epollcat (and other repositories).
  */
 
-import scala.scalanative.unsafe._
-import scala.scalanative.unsigned._
+import scala.scalanative.unsafe.*
+import scala.scalanative.unsigned.*
 
 import scala.annotation.tailrec
 
 import java.io.IOException
 
-import java.{util => ju}
+import java.util as ju
 
-import scala.scalanative.posix.arpa.inet._
+import scala.scalanative.posix.arpa.inet.*
 import scala.scalanative.posix.errno.errno
-import scala.scalanative.posix.netinet.in._
-import scala.scalanative.posix.netinet.inOps._
-import scala.scalanative.posix.netdb._
-import scala.scalanative.posix.netdbOps._
+import scala.scalanative.posix.netinet.in.*
+import scala.scalanative.posix.netinet.inOps.*
+import scala.scalanative.posix.netdb.*
+import scala.scalanative.posix.netdbOps.*
 import scala.scalanative.posix.string.{memcpy, strerror}
-import scala.scalanative.posix.sys.socket._
-import scala.scalanative.posix.sys.socketOps._
+import scala.scalanative.posix.sys.socket.*
+import scala.scalanative.posix.sys.socketOps.*
 import scala.scalanative.posix.time.{time_t, time, difftime}
 import scala.scalanative.posix.unistd
 
@@ -41,7 +41,7 @@ import scala.scalanative.meta.LinktimeInfo.{isLinux, isMac}
 
 class InetAddress protected (ipAddress: Array[Byte], originalHost: String)
     extends Serializable {
-  import InetAddress._
+  import InetAddress.*
 
   private def this(ipAddress: Array[Byte]) = this(ipAddress, null)
 

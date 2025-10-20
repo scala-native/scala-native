@@ -1,19 +1,19 @@
 package java.lang
 
 import java.io.File
-import java.util.{Set => juSet}
+import java.util.Set as juSet
 import java.util.Comparator
 import scala.scalanative.libc.signal
 import scala.scalanative.libc.stdlib
-import scala.scalanative.posix.unistd._
-import scala.scalanative.windows.SysInfoApi._
-import scala.scalanative.windows.SysInfoApiOps._
-import scala.scalanative.unsafe._
+import scala.scalanative.posix.unistd.*
+import scala.scalanative.windows.SysInfoApi.*
+import scala.scalanative.windows.SysInfoApiOps.*
+import scala.scalanative.unsafe.*
 import scala.scalanative.meta.LinktimeInfo
 import scala.scalanative.runtime.javalib.Proxy
 
 class Runtime private () {
-  import Runtime._
+  import Runtime.*
   @volatile private var shutdownStarted = false
   private lazy val hooks: juSet[Thread] = new java.util.HashSet()
 

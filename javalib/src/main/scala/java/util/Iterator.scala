@@ -11,7 +11,7 @@ trait Iterator[E] {
   def remove(): Unit =
     throw new UnsupportedOperationException("remove")
 
-  def forEachRemaining(action: Consumer[_ >: E]): Unit = {
+  def forEachRemaining(action: Consumer[? >: E]): Unit = {
     while (hasNext())
       action.accept(next())
   }

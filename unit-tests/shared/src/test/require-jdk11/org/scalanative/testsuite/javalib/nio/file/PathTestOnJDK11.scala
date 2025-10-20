@@ -1,12 +1,12 @@
 package org.scalanative.testsuite
 package javalib.nio.file
 
-import java.nio.file._
+import java.nio.file.*
 import java.io.File
 import java.net.URI
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform.isWindows

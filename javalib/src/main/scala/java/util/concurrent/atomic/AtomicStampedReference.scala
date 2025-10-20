@@ -8,7 +8,7 @@ package java.util.concurrent.atomic
 
 import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.libc.stdatomic.AtomicRef
-import scala.scalanative.libc.stdatomic.memory_order._
+import scala.scalanative.libc.stdatomic.memory_order.*
 import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
 
 object AtomicStampedReference {
@@ -18,7 +18,7 @@ object AtomicStampedReference {
   )
 }
 
-import AtomicStampedReference._
+import AtomicStampedReference.*
 
 class AtomicStampedReference[V <: AnyRef] private (
     private var value: StampedReference[V]

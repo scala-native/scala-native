@@ -4,7 +4,7 @@ package junit
 // Ported from Scala.js
 
 import scala.util.Try
-import RunSettings._
+import RunSettings.*
 
 private[junit] final class RunSettings(
     val color: Boolean,

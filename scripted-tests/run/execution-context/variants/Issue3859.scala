@@ -1,5 +1,5 @@
-import scala.concurrent._
-import scala.concurrent.duration._
+import scala.concurrent.*
+import scala.concurrent.duration.*
 
 // Issue https://github.com/scala-native/scala-native/issues/3859
 object Test {

@@ -15,16 +15,16 @@
 package java.util
 
 import java.lang.Cloneable
-import java.util.{RedBlackTree => RB}
+import java.util.RedBlackTree as RB
 
 class TreeSet[E] private (tree: RB.Tree[E, Any])(implicit
-    comp: Comparator[_ >: E]
+    comp: Comparator[? >: E]
 ) extends AbstractSet[E]
     with NavigableSet[E]
     with Cloneable
     with Serializable {
 
-  import TreeSet._
+  import TreeSet.*
 
   /* Note: in practice, the values of `tree` are always `()` (aka `undefined`).
    * We use `Any` because we need to deal with `null`s, and referencing
@@ -34,10 +34,10 @@ class TreeSet[E] private (tree: RB.Tree[E, Any])(implicit
   def this() =
     this(RB.Tree.empty[E, Any])(NaturalComparator)
 
-  def this(comparator: Comparator[_ >: E]) =
+  def this(comparator: Comparator[? >: E]) =
     this(RB.Tree.empty[E, Any])(NaturalComparator.select(comparator))
 
-  def this(collection: Collection[_ <: E]) = {
+  def this(collection: Collection[? <: E]) = {
     this()
     addAll(collection)
   }
@@ -130,7 +130,7 @@ class TreeSet[E] private (tree: RB.Tree[E, Any])(implicit
   def tailSet(fromElement: E): SortedSet[E] =
     tailSet(fromElement, true)
 
-  def comparator(): Comparator[_ >: E] =
+  def comparator(): Comparator[? >: E] =
     NaturalComparator.unselect(comp)
 
   def first(): E = {
@@ -189,7 +189,7 @@ private[util] object TreeSet {
       protected val upperBound: E,
       protected val upperKind: RB.BoundKind,
       private val valueForAdd: V
-  )(implicit protected val comp: Comparator[_ >: E])
+  )(implicit protected val comp: Comparator[? >: E])
       extends AbstractSet[E]
       with NavigableSet[E] {
 
@@ -337,7 +337,7 @@ private[util] object TreeSet {
       toElement0: E,
       toBoundKind0: RB.BoundKind,
       valueForAdd: V
-  )(implicit comp: Comparator[_ >: E])
+  )(implicit comp: Comparator[? >: E])
       extends AbstractProjection[E, V](
         tree0,
         fromElement0,
@@ -403,7 +403,7 @@ private[util] object TreeSet {
         toBoundKind
       )
 
-    def comparator(): Comparator[_ >: E] =
+    def comparator(): Comparator[? >: E] =
       NaturalComparator.unselect(comp)
 
     def first(): E = {
@@ -455,7 +455,7 @@ private[util] object TreeSet {
       toElement0: E,
       toBoundKind0: RB.BoundKind,
       valueForAdd: V
-  )(implicit comp: Comparator[_ >: E])
+  )(implicit comp: Comparator[? >: E])
       extends AbstractProjection[E, V](
         tree0,
         toElement0,
@@ -515,7 +515,7 @@ private[util] object TreeSet {
         toBoundKind
       )
 
-    def comparator(): Comparator[_ >: E] =
+    def comparator(): Comparator[? >: E] =
       Collections.reverseOrder(NaturalComparator.unselect(comp))
 
     def first(): E = {

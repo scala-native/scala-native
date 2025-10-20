@@ -1,7 +1,7 @@
 package scala.scalanative
 package nir
 
-import Type._
+import Type.*
 
 private[scalanative] object Rt {
   val Object = Ref(Global.Top("java.lang.Object"))

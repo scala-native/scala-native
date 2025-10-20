@@ -1,7 +1,7 @@
 package scala.partest
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 class DigitIdentifiersTest {
 
@@ -27,7 +27,7 @@ class DigitIdentifiersTest {
 
   @Test def handlesIdentifiersStartingWithDigit(): Unit = {
 
-    import `1Test`._
+    import `1Test`.*
 
     val x = new `1Foo`(2.0, -2.0f)
     x.`3` = 0

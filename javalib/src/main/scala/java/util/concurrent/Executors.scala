@@ -136,14 +136,14 @@ object Executors {
     new Executors.RunnableAdapter[AnyRef](task, null)
   }
 
-  def callable(action: PrivilegedAction[_]): Callable[Any] = {
+  def callable(action: PrivilegedAction[?]): Callable[Any] = {
     if (action == null) throw new NullPointerException
     new Callable[Any]() {
       override def call(): Any = { action.run() }
     }
   }
 
-  def callable(action: PrivilegedExceptionAction[_]): Callable[Any] = {
+  def callable(action: PrivilegedExceptionAction[?]): Callable[Any] = {
     if (action == null) { throw new NullPointerException }
     new Callable[Any]() {
       @throws[Exception]
@@ -270,7 +270,7 @@ object Executors {
         reachabilityFence(this)
       }
     }
-    override def submit(task: Runnable): Future[_] = {
+    override def submit(task: Runnable): Future[?] = {
       try return executor.submit(task)
       finally {
         reachabilityFence(this)
@@ -290,7 +290,7 @@ object Executors {
     }
     @throws[InterruptedException]
     override def invokeAll[T <: AnyRef](
-        tasks: Collection[_ <: Callable[T]]
+        tasks: Collection[? <: Callable[T]]
     ): List[Future[T]] = {
       try return executor.invokeAll(tasks)
       finally {
@@ -299,7 +299,7 @@ object Executors {
     }
     @throws[InterruptedException]
     override def invokeAll[T <: AnyRef](
-        tasks: Collection[_ <: Callable[T]],
+        tasks: Collection[? <: Callable[T]],
         timeout: Long,
         unit: TimeUnit
     ): List[Future[T]] = {
@@ -311,7 +311,7 @@ object Executors {
     @throws[InterruptedException]
     @throws[ExecutionException]
     override def invokeAny[T <: AnyRef](
-        tasks: Collection[_ <: Callable[T]]
+        tasks: Collection[? <: Callable[T]]
     ): T = {
       try return executor.invokeAny(tasks)
       finally {
@@ -322,7 +322,7 @@ object Executors {
     @throws[ExecutionException]
     @throws[TimeoutException]
     override def invokeAny[T <: AnyRef](
-        tasks: Collection[_ <: Callable[T]],
+        tasks: Collection[? <: Callable[T]],
         timeout: Long,
         unit: TimeUnit
     ): T = {

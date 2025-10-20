@@ -5,10 +5,10 @@ package org.hamcrest.core
 
 import org.hamcrest.{Description, DiagnosingMatcher, Matcher}
 
-class IsInstanceOf private (expectedClass: Class[_], matchableClass: Class[_])
+class IsInstanceOf private (expectedClass: Class[?], matchableClass: Class[?])
     extends DiagnosingMatcher[AnyRef] {
 
-  def this(expectedClass: Class[_]) =
+  def this(expectedClass: Class[?]) =
     this(expectedClass, IsInstanceOf.matchableClass(expectedClass))
 
   override protected def matches(
@@ -31,8 +31,8 @@ class IsInstanceOf private (expectedClass: Class[_], matchableClass: Class[_])
 object IsInstanceOf {
 
   private[IsInstanceOf] def matchableClass(
-      expectedClass: Class[_]
-  ): Class[_] = {
+      expectedClass: Class[?]
+  ): Class[?] = {
     expectedClass match {
       case java.lang.Byte.TYPE      => classOf[java.lang.Byte]
       case java.lang.Boolean.TYPE   => classOf[java.lang.Boolean]
@@ -47,10 +47,10 @@ object IsInstanceOf {
   }
 
   // @SuppressWarnings("unchecked")
-  def instanceOf[T](typ: Class[_]): Matcher[T] =
+  def instanceOf[T](typ: Class[?]): Matcher[T] =
     new IsInstanceOf(typ).asInstanceOf[Matcher[T]]
 
   // @SuppressWarnings("unchecked")
-  def any[T](typ: Class[_]): Matcher[T] =
+  def any[T](typ: Class[?]): Matcher[T] =
     new IsInstanceOf(typ).asInstanceOf[Matcher[T]]
 }

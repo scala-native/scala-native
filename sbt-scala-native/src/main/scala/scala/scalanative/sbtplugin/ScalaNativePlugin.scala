@@ -1,7 +1,7 @@
 package scala.scalanative
 package sbtplugin
 
-import sbt._
+import sbt.*
 
 object ScalaNativePlugin extends AutoPlugin {
   override def requires: Plugins = plugins.JvmPlugin
@@ -52,9 +52,9 @@ object ScalaNativePlugin extends AutoPlugin {
 
   }
 
-  override def globalSettings: Seq[Setting[_]] =
+  override def globalSettings: Seq[Setting[?]] =
     ScalaNativePluginInternal.scalaNativeGlobalSettings
 
-  override def projectSettings: Seq[Setting[_]] =
+  override def projectSettings: Seq[Setting[?]] =
     ScalaNativePluginInternal.scalaNativeProjectSettings
 }

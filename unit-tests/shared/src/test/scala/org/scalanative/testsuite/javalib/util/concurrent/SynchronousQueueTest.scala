@@ -7,14 +7,14 @@
  */
 package org.scalanative.testsuite.javalib.util.concurrent
 
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.junit.{Test, Ignore}
-import JSR166Test._
+import JSR166Test.*
 
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util
-import java.util._
-import java.util.concurrent._
+import java.util.*
+import java.util.concurrent.*
 
 class SynchronousQueueFairTest extends BlockingQueueTest {
   override protected def emptyCollection() = new SynchronousQueue[Any](true)
@@ -75,7 +75,7 @@ class SynchronousQueueTest extends JSR166Test {
     val q = new SynchronousQueue[Any](fair)
     val ints = new Array[Integer](1)
     for (i <- 0 until ints.length) { ints(i) = i }
-    val coll = Arrays.asList(ints: _*)
+    val coll = Arrays.asList(ints*)
     try {
       q.addAll(coll)
       shouldThrow()
@@ -333,10 +333,10 @@ class SynchronousQueueTest extends JSR166Test {
   def testContainsAll(fair: Boolean): Unit = {
     val q = new SynchronousQueue[Any](fair)
     val empty = new Array[Integer](0)
-    assertTrue(q.containsAll(Arrays.asList(empty: _*)))
+    assertTrue(q.containsAll(Arrays.asList(empty*)))
     val ints = new Array[Integer](1)
     ints(0) = zero
-    assertFalse(q.containsAll(Arrays.asList(ints: _*)))
+    assertFalse(q.containsAll(Arrays.asList(ints*)))
   }
 
   @Test def testRetainAll(): Unit = testRetainAll(false)

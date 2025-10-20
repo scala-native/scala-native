@@ -429,7 +429,7 @@ object Assert {
     }
   }
 
-  private def formatClass(value: Class[_]) =
+  private def formatClass(value: Class[?]) =
     value.getName()
 
   private def formatClassAndValue(value: Any, valueString: String): String = {

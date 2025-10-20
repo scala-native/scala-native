@@ -7,19 +7,19 @@
 package java.util.concurrent
 
 import java.io.Serializable
-import java.util._
+import java.util.*
 import java.util.RandomAccess
 import java.util.concurrent.locks.LockSupport
 import java.lang.invoke.VarHandle
 
-import scala.scalanative.libc.stdatomic._
+import scala.scalanative.libc.stdatomic.*
 import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
 import scala.scalanative.annotation.{alwaysinline, safePublish}
 
 import scala.annotation.tailrec
 
 abstract class ForkJoinTask[V]() extends Future[V] with Serializable {
-  import ForkJoinTask._
+  import ForkJoinTask.*
 
   // Fields
   // accessed directly by pool and workers
@@ -135,7 +135,7 @@ abstract class ForkJoinTask[V]() extends Future[V] with Serializable {
           q = p.externalQueue()
     }
     if (q != null && p != null) { // try helping
-      if (isInstanceOf[CountedCompleter[_]])
+      if (isInstanceOf[CountedCompleter[?]])
         s = p.helpComplete(this, q, owned, timed)
       else if ((how & RAN) != 0 || {
             s = q.tryRemoveAndExec(this, owned); s >= 0
@@ -478,7 +478,7 @@ object ForkJoinTask {
 
   private[concurrent] def isExceptionalStatus(s: Int) = (s & THROWN) != 0
 
-  private[concurrent] def cancelIgnoringExceptions(t: Future[_]): Unit = {
+  private[concurrent] def cancelIgnoringExceptions(t: Future[?]): Unit = {
     if (t != null)
       try t.cancel(true)
       catch { case _: Throwable => () }
@@ -499,7 +499,7 @@ object ForkJoinTask {
     }
   }
 
-  def invokeAll(t1: ForkJoinTask[_], t2: ForkJoinTask[_]): Unit = {
+  def invokeAll(t1: ForkJoinTask[?], t2: ForkJoinTask[?]): Unit = {
     if (t1 == null || t2 == null) throw new NullPointerException
     t2.fork()
     var s1 = t1.doExec()
@@ -517,7 +517,7 @@ object ForkJoinTask {
     }
   }
 
-  def invokeAll(tasks: Array[ForkJoinTask[_]]): Unit = {
+  def invokeAll(tasks: Array[ForkJoinTask[?]]): Unit = {
     var ex = null: Throwable
     val last = tasks.length - 1
     var i = last
@@ -560,8 +560,8 @@ object ForkJoinTask {
     }
   }
 
-  def invokeAll[T <: ForkJoinTask[_]](tasks: Collection[T]): Collection[T] = {
-    def invokeAllImpl(ts: java.util.List[_ <: ForkJoinTask[_]]): Unit = {
+  def invokeAll[T <: ForkJoinTask[?]](tasks: Collection[T]): Collection[T] = {
+    def invokeAllImpl(ts: java.util.List[? <: ForkJoinTask[?]]): Unit = {
       var ex: Throwable = null
       val last = ts.size() - 1 // nearly same as array version
       var i = last
@@ -608,7 +608,7 @@ object ForkJoinTask {
       case list: java.util.List[T] with RandomAccess @unchecked =>
         invokeAllImpl(list)
       case _ =>
-        invokeAll(tasks.toArray(Array.empty[ForkJoinTask[_]]))
+        invokeAll(tasks.toArray(Array.empty[ForkJoinTask[?]]))
     }
     tasks
   }
@@ -641,7 +641,7 @@ object ForkJoinTask {
   // does not make a lot of sense in Scala. The most similar access would be `protected[concurrent]`
   // Scala Native frontend does not emit static forwards for protected methods for compliance with the Scala JVM backend
   // The usecase of `protected static` in ported Scala code shall be replaced with public access instead.
-  def peekNextLocalTask(): ForkJoinTask[_] = {
+  def peekNextLocalTask(): ForkJoinTask[?] = {
     val q = Thread.currentThread() match {
       case t: ForkJoinWorkerThread => t.workQueue
       case _                       => ForkJoinPool.commonQueue()
@@ -649,20 +649,20 @@ object ForkJoinTask {
     if (q == null) null else q.peek()
   }
 
-  def pollNextLocalTask(): ForkJoinTask[_] = {
+  def pollNextLocalTask(): ForkJoinTask[?] = {
     Thread.currentThread() match {
       case t: ForkJoinWorkerThread => t.workQueue.nextLocalTask()
       case _                       => null
     }
   }
 
-  def pollTask(): ForkJoinTask[_] =
+  def pollTask(): ForkJoinTask[?] =
     Thread.currentThread() match {
       case wt: ForkJoinWorkerThread => wt.pool.nextTaskFor(wt.workQueue)
       case _                        => null
     }
 
-  def pollSubmission(): ForkJoinTask[_] =
+  def pollSubmission(): ForkJoinTask[?] =
     Thread.currentThread() match {
       case t: ForkJoinWorkerThread => t.pool.pollSubmission()
       case _                       => null
@@ -788,7 +788,7 @@ object ForkJoinTask {
       super.toString + "[Wrapped task = " + callable + "]"
   }
 
-  def adapt(runnable: Runnable): ForkJoinTask[_] =
+  def adapt(runnable: Runnable): ForkJoinTask[?] =
     new AdaptedRunnableAction(runnable)
 
   def adapt[T](runnable: Runnable, result: T): ForkJoinTask[T] =

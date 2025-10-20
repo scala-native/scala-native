@@ -1,7 +1,7 @@
 package scala.tools.partest.scalanative
 
 import java.nio.file.{Files, Path, Paths}
-import scala.scalanative.build._
+import scala.scalanative.build.*
 import scala.scalanative.nir.Attr.Link
 import scala.scalanative.build.Platform
 

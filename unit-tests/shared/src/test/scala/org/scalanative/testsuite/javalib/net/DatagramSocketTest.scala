@@ -11,16 +11,16 @@ import java.net.SocketAddress
 import java.net.SocketException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
-import java.{util => ju}
+import java.util as ju
 
 import org.junit.Test
-import org.junit.Assert._
-import org.junit.Assume._
+import org.junit.Assert.*
+import org.junit.Assume.*
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform
-import scala.collection.JavaConverters._
-import scala.scalanative.junit.utils.AssumesHelper._
+import scala.collection.JavaConverters.*
+import scala.scalanative.junit.utils.AssumesHelper.*
 
 class DatagramSocketTest {
 

@@ -1,5 +1,5 @@
 object GetParentTest {
-  import Files._
+  import Files.*
   def main(args: Array[String]): Unit = {
     assert(children0.getParent == expectedParent0)
     assert(children1.getParent == expectedParent1)

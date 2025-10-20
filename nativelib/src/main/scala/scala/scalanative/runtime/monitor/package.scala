@@ -1,8 +1,8 @@
 package scala.scalanative.runtime
 
-import scala.scalanative.runtime.Intrinsics._
+import scala.scalanative.runtime.Intrinsics.*
 import scala.scalanative.annotation.alwaysinline
-import scala.scalanative.meta.LinktimeInfo.{is32BitPlatform => is32bit}
+import scala.scalanative.meta.LinktimeInfo.is32BitPlatform as is32bit
 
 package object monitor {
 
@@ -64,7 +64,7 @@ package object monitor {
   }
 
   private[runtime] object LockWord32 {
-    import LockWord._
+    import LockWord.*
     @alwaysinline def ThreadIdBits = 24
     @alwaysinline def ThreadIdMax = (1 << ThreadIdBits) - 1
     @alwaysinline def ThreadIdMask = ThreadIdMax << ThreadIdOffset
@@ -85,7 +85,7 @@ package object monitor {
       if (is32bit) intValue == other.intValue
       else longValue == other.longValue
 
-    import LockWord._
+    import LockWord.*
 
     @alwaysinline def isDefalted =
       if (is32bit) (intValue & LockTypeMask) == LockType.Deflated

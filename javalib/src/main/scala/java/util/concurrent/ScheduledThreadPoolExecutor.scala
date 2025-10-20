@@ -6,11 +6,11 @@
 
 package java.util.concurrent
 
-import java.util.concurrent.TimeUnit._
+import java.util.concurrent.TimeUnit.*
 import java.util
-import java.util._
+import java.util.*
 import java.util.concurrent.atomic.AtomicLong
-import java.util.concurrent.locks._
+import java.util.concurrent.locks.*
 import scala.annotation.tailrec
 import scala.scalanative.annotation.safePublish
 
@@ -26,7 +26,7 @@ object ScheduledThreadPoolExecutor {
 
     private def setIndex(f: RunnableScheduledFuture[AnyRef], idx: Int): Unit =
       f match {
-        case f: ScheduledThreadPoolExecutor#ScheduledFutureTask[_] =>
+        case f: ScheduledThreadPoolExecutor#ScheduledFutureTask[?] =>
           f.heapIndex = idx
         case _ => ()
       }
@@ -112,7 +112,7 @@ object ScheduledThreadPoolExecutor {
 
     private def indexOf(x: Any): Int = x match {
       case null                                                  => -1
-      case t: ScheduledThreadPoolExecutor#ScheduledFutureTask[_] =>
+      case t: ScheduledThreadPoolExecutor#ScheduledFutureTask[?] =>
         val i = t.heapIndex
         // Sanity check; x could conceivably be a
         // ScheduledFutureTask from some other pool.
@@ -301,11 +301,11 @@ object ScheduledThreadPoolExecutor {
       } finally lock.unlock()
     }
 
-    override def drainTo(c: util.Collection[_ >: Runnable]): Int =
+    override def drainTo(c: util.Collection[? >: Runnable]): Int =
       drainTo(c, Integer.MAX_VALUE)
 
     override def drainTo(
-        c: util.Collection[_ >: Runnable],
+        c: util.Collection[? >: Runnable],
         maxElements: Int
     ): Int = {
       Objects.requireNonNull(c)
@@ -431,9 +431,9 @@ class ScheduledThreadPoolExecutor(
         return 0
       }
       if (other
-            .isInstanceOf[ScheduledFutureTask[_]]) {
+            .isInstanceOf[ScheduledFutureTask[?]]) {
         val x =
-          other.asInstanceOf[ScheduledFutureTask[_]]
+          other.asInstanceOf[ScheduledFutureTask[?]]
         val diff = time - x.time
         if (diff < 0) return -1
         else if (diff > 0) return 1
@@ -524,7 +524,7 @@ class ScheduledThreadPoolExecutor(
   }
 
   private[concurrent] def canRunInCurrentRunState(
-      task: RunnableScheduledFuture[_]
+      task: RunnableScheduledFuture[?]
   ): Boolean = {
     if (!isShutdown()) return true
     if (isStopped()) return false
@@ -534,7 +534,7 @@ class ScheduledThreadPoolExecutor(
         task.getDelay(NANOSECONDS) <= 0
   }
 
-  private def delayedExecute(task: RunnableScheduledFuture[_]): Unit = {
+  private def delayedExecute(task: RunnableScheduledFuture[?]): Unit = {
     if (isShutdown()) reject(task)
     else {
       super.getQueue().add(task)
@@ -544,7 +544,7 @@ class ScheduledThreadPoolExecutor(
   }
 
   private[concurrent] def reExecutePeriodic(
-      task: RunnableScheduledFuture[_]
+      task: RunnableScheduledFuture[?]
   ): Unit = {
     if (canRunInCurrentRunState(task)) {
       super.getQueue().add(task)
@@ -565,7 +565,7 @@ class ScheduledThreadPoolExecutor(
     // super.getQueue().removeIf(...);
     for (e <- q.toArray()) {
       e match {
-        case t: RunnableScheduledFuture[_] =>
+        case t: RunnableScheduledFuture[?] =>
           def check =
             if (t.isPeriodic()) !keepPeriodic
             else !keepDelayed && t.getDelay(NANOSECONDS) > 0
@@ -703,7 +703,7 @@ class ScheduledThreadPoolExecutor(
     schedule(command, 0, NANOSECONDS)
   }
 
-  override def submit(task: Runnable): Future[_] =
+  override def submit(task: Runnable): Future[?] =
     schedule(task, 0, NANOSECONDS)
 
   override def submit[T <: AnyRef](task: Runnable, result: T): Future[T] =

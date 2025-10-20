@@ -1,7 +1,7 @@
 package org.scalanative.testsuite.javalib.util.zip
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.junit.BeforeClass
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
@@ -107,7 +107,7 @@ object ZipCharsetUtf8Test {
 }
 
 class ZipCharsetUtf8Test {
-  import ZipCharsetUtf8Test._
+  import ZipCharsetUtf8Test.*
 
   @Test def readZfArchiveComment_utf8(): Unit = {
     val srcName =

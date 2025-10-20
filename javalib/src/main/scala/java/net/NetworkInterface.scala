@@ -1,31 +1,31 @@
 package java.net
 
-import scala.scalanative.unsafe._
-import scala.scalanative.unsigned._
+import scala.scalanative.unsafe.*
+import scala.scalanative.unsigned.*
 
 import scala.annotation.tailrec
 
 import java.net.SocketHelpers.sockaddrToByteArray
 
-import java.{util => ju}
+import java.util as ju
 import ju.Objects
 import ju.stream.Stream
 
 import scala.scalanative.posix.errno.{errno, ENXIO}
-import scala.scalanative.posix.net.`if`._
-import scala.scalanative.posix.net.ifOps._
-import scala.scalanative.posix.netinet.in._
-import scala.scalanative.posix.netinet.inOps._
+import scala.scalanative.posix.net.`if`.*
+import scala.scalanative.posix.net.ifOps.*
+import scala.scalanative.posix.netinet.in.*
+import scala.scalanative.posix.netinet.inOps.*
 import scala.scalanative.posix.sys.ioctl.ioctl
-import scala.scalanative.posix.sys.socket._
-import scala.scalanative.posix.sys.socketOps._
-import scala.scalanative.posix.string._
+import scala.scalanative.posix.sys.socket.*
+import scala.scalanative.posix.sys.socketOps.*
+import scala.scalanative.posix.string.*
 import scala.scalanative.posix.unistd
 
 import scala.scalanative.meta.LinktimeInfo
 
-import macOsIf._
-import macOsIfDl._
+import macOsIf.*
+import macOsIfDl.*
 
 /* Design Notes:
  *   1) This code is Unix only. On Windows, "empty" values are returned.
@@ -207,8 +207,8 @@ class NetworkInterface private (ifName: String) {
 }
 
 object NetworkInterface {
-  import unixIfaddrs._
-  import unixIfaddrsOps._
+  import unixIfaddrs.*
+  import unixIfaddrsOps.*
 
   def getByIndex(index: Int): NetworkInterface = {
     if (index < 0)
@@ -896,7 +896,7 @@ private object unixIfaddrs {
 }
 
 private object unixIfaddrsOps {
-  import unixIfaddrs._
+  import unixIfaddrs.*
 
   implicit class unixIfaddrOps(val ptr: Ptr[ifaddrs]) extends AnyVal {
     def ifa_next: Ptr[ifaddrs] = ptr._1.asInstanceOf[Ptr[ifaddrs]]

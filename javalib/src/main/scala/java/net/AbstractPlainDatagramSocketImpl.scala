@@ -1,31 +1,31 @@
 package java.net
 
-import java.net.ipOps._
+import java.net.ipOps.*
 import java.io.{FileDescriptor, IOException}
 import scala.scalanative.libc.string.memcpy
 import scala.scalanative.meta.LinktimeInfo.{isLinux, isWindows}
 import scala.scalanative.posix
 import scala.scalanative.posix.arpa.inet
-import scala.scalanative.posix.errno._
-import scala.scalanative.posix.netdb._
-import scala.scalanative.posix.netdbOps._
+import scala.scalanative.posix.errno.*
+import scala.scalanative.posix.netdb.*
+import scala.scalanative.posix.netdbOps.*
 import scala.scalanative.posix.netinet.in
-import scala.scalanative.posix.netinet.inOps._
+import scala.scalanative.posix.netinet.inOps.*
 import scala.scalanative.posix.sys.ioctl.{FIONREAD, ioctl}
-import scala.scalanative.posix.sys.socketOps._
-import scala.scalanative.posix.sys.time._
-import scala.scalanative.posix.sys.timeOps._
+import scala.scalanative.posix.sys.socketOps.*
+import scala.scalanative.posix.sys.time.*
+import scala.scalanative.posix.sys.timeOps.*
 import scala.scalanative.posix.unistd
-import scala.scalanative.unsafe._
-import scala.scalanative.unsigned._
+import scala.scalanative.unsafe.*
+import scala.scalanative.unsigned.*
 import scala.scalanative.windows.WinSocketApi.WSAGetLastError
-import scala.scalanative.windows._
-import scala.scalanative.windows.WinSocketApi._
-import scala.scalanative.windows.WinSocketApiExt._
+import scala.scalanative.windows.*
+import scala.scalanative.windows.WinSocketApi.*
+import scala.scalanative.windows.WinSocketApiExt.*
 
 private[net] abstract class AbstractPlainDatagramSocketImpl
     extends DatagramSocketImpl {
-  import AbstractPlainDatagramSocketImpl._
+  import AbstractPlainDatagramSocketImpl.*
 
   protected def tryPoll(op: String): Unit
 

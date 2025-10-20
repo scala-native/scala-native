@@ -8,7 +8,7 @@ import org.hamcrest.{Description, Matcher, SelfDescribing, StringDescription}
 class AssumptionViolatedException protected (
     fAssumption: String,
     fValueMatcher: Boolean,
-    fMatcher: Matcher[_],
+    fMatcher: Matcher[?],
     fValue: AnyRef
 ) extends RuntimeException
     with SelfDescribing {

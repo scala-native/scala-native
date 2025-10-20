@@ -2,7 +2,7 @@ package scala.scalanative
 package regex
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 class RE2NumSubexpsTest {
   private val NUM_SUBEXP_CASES = Array(

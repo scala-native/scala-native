@@ -1,11 +1,11 @@
 package org.scalanative.testsuite.posixlib
 
 import org.junit.Test
-import org.junit.Assert._
-import org.junit.Assume._
+import org.junit.Assert.*
+import org.junit.Assume.*
 import org.junit.BeforeClass
 
-import scala.scalanative.meta.LinktimeInfo._
+import scala.scalanative.meta.LinktimeInfo.*
 
 /* Using both LinktimeInfo & runtime.Platform looks strange.
  * It is a workaround to let this test run whilst a suspected bug
@@ -13,12 +13,12 @@ import scala.scalanative.meta.LinktimeInfo._
  */
 import scalanative.runtime.Platform
 
-import scala.scalanative.unsafe._
-import scala.scalanative.unsigned._
+import scala.scalanative.unsafe.*
+import scala.scalanative.unsigned.*
 
 import scala.scalanative.posix.errno.errno
-import scala.scalanative.posix.locale._
-import scala.scalanative.posix.monetary._
+import scala.scalanative.posix.locale.*
+import scala.scalanative.posix.monetary.*
 
 object MonetaryTest {
 

@@ -5,16 +5,16 @@
  */
 package org.scalanative.testsuite.javalib.util.concurrent
 
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.junit.{Test, Ignore}
-import JSR166Test._
+import JSR166Test.*
 
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util
-import java.util._
-import java.util.concurrent._
-import java.util.concurrent.atomic._
-import java.util.function._
+import java.util.*
+import java.util.concurrent.*
+import java.util.concurrent.atomic.*
+import java.util.function.*
 
 object CountedCompleterTest {
   // Runs with "mainPool" use > 1 thread. singletonPool tests use 1
@@ -30,7 +30,7 @@ object CountedCompleterTest {
   final class FJException() extends RuntimeException {}
 }
 class CountedCompleterTest extends JSR166Test {
-  private def testInvokeOnPool(pool: ForkJoinPool, a: ForkJoinTask[_]): Unit =
+  private def testInvokeOnPool(pool: ForkJoinPool, a: ForkJoinTask[?]): Unit =
     usingPoolCleaner(pool) { pool =>
       assertFalse(a.isDone)
       assertFalse(a.isCompletedNormally)
@@ -217,14 +217,14 @@ class CountedCompleterTest extends JSR166Test {
       .toString() + s"[$n, ${computeNAtomic.get()}, ${onCompletionNAtomic.get()}, ${onExceptionalCompletionNAtomic
         .get()}, ${setRawResultNAtomic.get()}, ${rawResultAtomic.get()}]"
 
-    override def onCompletion(caller: CountedCompleter[_]): Unit = {
+    override def onCompletion(caller: CountedCompleter[?]): Unit = {
       onCompletionNAtomic.incrementAndGet
       super.onCompletion(caller)
     }
 
     override def onExceptionalCompletion(
         ex: Throwable,
-        caller: CountedCompleter[_]
+        caller: CountedCompleter[?]
     ): Boolean = {
       onExceptionalCompletionNAtomic.incrementAndGet
       assertNotNull(ex)
@@ -521,7 +521,7 @@ class CountedCompleterTest extends JSR166Test {
   final class LCCF(parent: CountedCompleter[Any], val n: Int)
       extends CCF(parent, n) {
     def this(n: Int) = this(null, n)
-    override final def onCompletion(caller: CountedCompleter[_]): Unit = {
+    override final def onCompletion(caller: CountedCompleter[?]): Unit = {
       super.onCompletion(caller)
       val p = getCompleter.asInstanceOf[CCF]
       val n = number + rnumber
@@ -531,7 +531,7 @@ class CountedCompleterTest extends JSR166Test {
   }
   final class RCCF(parent: CountedCompleter[Any], val n: Int)
       extends CCF(parent, n) {
-    override final def onCompletion(caller: CountedCompleter[_]): Unit = {
+    override final def onCompletion(caller: CountedCompleter[?]): Unit = {
       super.onCompletion(caller)
       val p = getCompleter.asInstanceOf[CCF]
       val n = number + rnumber
@@ -557,7 +557,7 @@ class CountedCompleterTest extends JSR166Test {
       extends FailingCCF(parent, n) {
     def this(n: Int) = this(null, n)
 
-    override final def onCompletion(caller: CountedCompleter[_]): Unit = {
+    override final def onCompletion(caller: CountedCompleter[?]): Unit = {
       super.onCompletion(caller)
       val p = getCompleter.asInstanceOf[FailingCCF]
       val n = number + rnumber
@@ -567,7 +567,7 @@ class CountedCompleterTest extends JSR166Test {
   }
   final class RFCCF(val parent: CountedCompleter[Any], val n: Int)
       extends FailingCCF(parent, n) {
-    override final def onCompletion(caller: CountedCompleter[_]): Unit = {
+    override final def onCompletion(caller: CountedCompleter[?]): Unit = {
       super.onCompletion(caller)
       completeExceptionally(new CountedCompleterTest.FJException)
     }
@@ -691,7 +691,7 @@ class CountedCompleterTest extends JSR166Test {
    *  when quiescent
    */
   @Test def testForkHelpQuiesce(): Unit = {
-    import ForkJoinTask._
+    import ForkJoinTask.*
     val a = new CheckedRecursiveAction() {
       override protected def realCompute(): Unit = {
         val f = new LCCF(8)
@@ -921,7 +921,7 @@ class CountedCompleterTest extends JSR166Test {
   /** getPool of executing task returns its pool
    */
   @Test def testGetPool(): Unit = {
-    import ForkJoinTask._
+    import ForkJoinTask.*
     val mainPool = CountedCompleterTest.mainPool
     val a = new CheckedRecursiveAction() {
       override protected def realCompute(): Unit = {
@@ -937,7 +937,7 @@ class CountedCompleterTest extends JSR166Test {
     "Test-infrastructure limitation, all tests are executed in ForkJoinPool due to usage of Future in RPCCore"
   )
   @Test def testGetPool2(): Unit = {
-    import ForkJoinTask._
+    import ForkJoinTask.*
     val a = new CheckedRecursiveAction() {
       override protected def realCompute(): Unit = { assertNull(getPool) }
     }
@@ -947,7 +947,7 @@ class CountedCompleterTest extends JSR166Test {
   /** inForkJoinPool of executing task returns true
    */
   @Test def testInForkJoinPool(): Unit = {
-    import ForkJoinTask._
+    import ForkJoinTask.*
     val a = new CheckedRecursiveAction() {
       override protected def realCompute(): Unit = {
         assertTrue(inForkJoinPool)
@@ -962,7 +962,7 @@ class CountedCompleterTest extends JSR166Test {
     "Test-infrastructure limitation, all tests are executed in ForkJoinPool due to usage of Future in RPCCore"
   )
   @Test def testInForkJoinPool2(): Unit = {
-    import ForkJoinTask._
+    import ForkJoinTask.*
     val a = new CheckedRecursiveAction() {
       override protected def realCompute(): Unit = {
         assertFalse(inForkJoinPool)
@@ -974,7 +974,7 @@ class CountedCompleterTest extends JSR166Test {
   /** setRawResult(null) succeeds
    */
   @Test def testSetRawResult(): Unit = {
-    import ForkJoinTask._
+    import ForkJoinTask.*
     val a = new CheckedRecursiveAction() {
       override protected def realCompute(): Unit = {
         setRawResult(null.asInstanceOf[Void])
@@ -987,7 +987,7 @@ class CountedCompleterTest extends JSR166Test {
   /** invoke task throws exception after invoking completeExceptionally
    */
   @Test def testCompleteExceptionally2(): Unit = {
-    import ForkJoinTask._
+    import ForkJoinTask.*
     val a = new CheckedRecursiveAction() {
       override protected def realCompute(): Unit = {
         val n = new LCCF(8)
@@ -1004,7 +1004,7 @@ class CountedCompleterTest extends JSR166Test {
   /** invokeAll(t1, t2) invokes all task arguments
    */
   @Test def testInvokeAll2(): Unit = {
-    import ForkJoinTask._
+    import ForkJoinTask.*
     val a = new CheckedRecursiveAction() {
       override protected def realCompute(): Unit = {
         val f = new LCCF(8)
@@ -1022,7 +1022,7 @@ class CountedCompleterTest extends JSR166Test {
   /** invokeAll(tasks) with 1 argument invokes task
    */
   @Test def testInvokeAll1(): Unit = {
-    import ForkJoinTask._
+    import ForkJoinTask.*
     val a = new CheckedRecursiveAction() {
       override protected def realCompute(): Unit = {
         val f = new LCCF(8)
@@ -1037,7 +1037,7 @@ class CountedCompleterTest extends JSR166Test {
   /** invokeAll(tasks) with > 2 argument invokes tasks
    */
   @Test def testInvokeAll3(): Unit = {
-    import ForkJoinTask._
+    import ForkJoinTask.*
     val a = new CheckedRecursiveAction() {
       override protected def realCompute(): Unit = {
         val f = new LCCF(8)
@@ -1058,13 +1058,13 @@ class CountedCompleterTest extends JSR166Test {
   /** invokeAll(collection) invokes all tasks in the collection
    */
   @Test def testInvokeAllCollection(): Unit = {
-    import ForkJoinTask._
+    import ForkJoinTask.*
     val a = new CheckedRecursiveAction() {
       override protected def realCompute(): Unit = {
         val f = new LCCF(8)
         val g = new LCCF(9)
         val h = new LCCF(7)
-        val set = new HashSet[ForkJoinTask[_]]
+        val set = new HashSet[ForkJoinTask[?]]
         set.add(f)
         set.add(g)
         set.add(h)
@@ -1083,7 +1083,7 @@ class CountedCompleterTest extends JSR166Test {
   /** invokeAll(tasks) with any null task throws NPE
    */
   @Test def testInvokeAllNPE(): Unit = {
-    import ForkJoinTask._
+    import ForkJoinTask.*
     val a = new CheckedRecursiveAction() {
       override protected def realCompute(): Unit = {
         val f = new LCCF(8)
@@ -1103,7 +1103,7 @@ class CountedCompleterTest extends JSR166Test {
   /** invokeAll(t1, t2) throw exception if any task does
    */
   @Test def testAbnormalInvokeAll2(): Unit = {
-    import ForkJoinTask._
+    import ForkJoinTask.*
     val a = new CheckedRecursiveAction() {
       override protected def realCompute(): Unit = {
         val f = new LCCF(8)
@@ -1123,7 +1123,7 @@ class CountedCompleterTest extends JSR166Test {
   /** invokeAll(tasks) with 1 argument throws exception if task does
    */
   @Test def testAbnormalInvokeAll1(): Unit = {
-    import ForkJoinTask._
+    import ForkJoinTask.*
     val a = new CheckedRecursiveAction() {
       override protected def realCompute(): Unit = {
         val g = new LFCCF(9)
@@ -1142,7 +1142,7 @@ class CountedCompleterTest extends JSR166Test {
   /** invokeAll(tasks) with > 2 argument throws exception if any task does
    */
   @Test def testAbnormalInvokeAll3(): Unit = {
-    import ForkJoinTask._
+    import ForkJoinTask.*
     val a = new CheckedRecursiveAction() {
       override protected def realCompute(): Unit = {
         val f = new LCCF(8)
@@ -1163,13 +1163,13 @@ class CountedCompleterTest extends JSR166Test {
   /** invokeAll(collection) throws exception if any task does
    */
   @Test def testAbnormalInvokeAllCollection(): Unit = {
-    import ForkJoinTask._
+    import ForkJoinTask.*
     val a = new CheckedRecursiveAction() {
       override protected def realCompute(): Unit = {
         val f = new LFCCF(8)
         val g = new LCCF(9)
         val h = new LCCF(7)
-        val set = new HashSet[ForkJoinTask[_]]
+        val set = new HashSet[ForkJoinTask[?]]
         set.add(f)
         set.add(g)
         set.add(h)
@@ -1189,7 +1189,7 @@ class CountedCompleterTest extends JSR166Test {
    *  execution
    */
   @Test def testTryUnfork(): Unit = {
-    import ForkJoinTask._
+    import ForkJoinTask.*
     val a = new CheckedRecursiveAction() {
       override protected def realCompute(): Unit = {
         val g = new LCCF(9)
@@ -1209,7 +1209,7 @@ class CountedCompleterTest extends JSR166Test {
    *  threads
    */
   @Test def testGetSurplusQueuedTaskCount(): Unit = {
-    import ForkJoinTask._
+    import ForkJoinTask.*
     val a = new CheckedRecursiveAction() {
       override protected def realCompute(): Unit = {
         val h = new LCCF(7)
@@ -1233,7 +1233,7 @@ class CountedCompleterTest extends JSR166Test {
   /** peekNextLocalTask returns most recent unexecuted task.
    */
   @Test def testPeekNextLocalTask(): Unit = {
-    import ForkJoinTask._
+    import ForkJoinTask.*
     val a = new CheckedRecursiveAction() {
       override protected def realCompute(): Unit = {
         val g = new LCCF(9)
@@ -1253,7 +1253,7 @@ class CountedCompleterTest extends JSR166Test {
   /** pollNextLocalTask returns most recent unexecuted task without executing it
    */
   @Test def testPollNextLocalTask(): Unit = {
-    import ForkJoinTask._
+    import ForkJoinTask.*
     val a = new CheckedRecursiveAction() {
       override protected def realCompute(): Unit = {
         val g = new LCCF(9)
@@ -1273,7 +1273,7 @@ class CountedCompleterTest extends JSR166Test {
   /** pollTask returns an unexecuted task without executing it
    */
   @Test def testPollTask(): Unit = {
-    import ForkJoinTask._
+    import ForkJoinTask.*
     val a = new CheckedRecursiveAction() {
       override protected def realCompute(): Unit = {
         val g = new LCCF(9)
@@ -1292,7 +1292,7 @@ class CountedCompleterTest extends JSR166Test {
   /** peekNextLocalTask returns least recent unexecuted task in async mode
    */
   @Test def testPeekNextLocalTaskAsync(): Unit = {
-    import ForkJoinTask._
+    import ForkJoinTask.*
     val a = new CheckedRecursiveAction() {
       override protected def realCompute(): Unit = {
         val g = new LCCF(9)
@@ -1314,7 +1314,7 @@ class CountedCompleterTest extends JSR166Test {
    *  it, in async mode
    */
   @Test def testPollNextLocalTaskAsync(): Unit = {
-    import ForkJoinTask._
+    import ForkJoinTask.*
     val a = new CheckedRecursiveAction() {
       override protected def realCompute(): Unit = {
         val g = new LCCF(9)
@@ -1334,7 +1334,7 @@ class CountedCompleterTest extends JSR166Test {
   /** pollTask returns an unexecuted task without executing it, in async mode
    */
   @Test def testPollTaskAsync(): Unit = {
-    import ForkJoinTask._
+    import ForkJoinTask.*
     val a = new CheckedRecursiveAction() {
       override protected def realCompute(): Unit = {
         val g = new LCCF(9)
@@ -1352,7 +1352,7 @@ class CountedCompleterTest extends JSR166Test {
   }
   // versions for singleton pools
   @Test def testInvokeSingleton(): Unit = {
-    import ForkJoinTask._
+    import ForkJoinTask.*
     val a = new CheckedRecursiveAction() {
       override protected def realCompute(): Unit = {
         val f = new LCCF(8)
@@ -1364,7 +1364,7 @@ class CountedCompleterTest extends JSR166Test {
     testInvokeOnPool(CountedCompleterTest.singletonPool, a)
   }
   @Test def testQuietlyInvokeSingleton(): Unit = {
-    import ForkJoinTask._
+    import ForkJoinTask.*
     val a = new CheckedRecursiveAction() {
       override protected def realCompute(): Unit = {
         val f = new LCCF(8)
@@ -1376,7 +1376,7 @@ class CountedCompleterTest extends JSR166Test {
     testInvokeOnPool(CountedCompleterTest.singletonPool, a)
   }
   @Test def testForkJoinSingleton(): Unit = {
-    import ForkJoinTask._
+    import ForkJoinTask.*
     val a = new CheckedRecursiveAction() {
       override protected def realCompute(): Unit = {
         val f = new LCCF(8)
@@ -1389,7 +1389,7 @@ class CountedCompleterTest extends JSR166Test {
     testInvokeOnPool(CountedCompleterTest.singletonPool, a)
   }
   @Test def testForkGetSingleton(): Unit = {
-    import ForkJoinTask._
+    import ForkJoinTask.*
     val a = new CheckedRecursiveAction() {
       @throws[Exception]
       override protected def realCompute(): Unit = {
@@ -1403,7 +1403,7 @@ class CountedCompleterTest extends JSR166Test {
     testInvokeOnPool(CountedCompleterTest.singletonPool, a)
   }
   @Test def testForkTimedGetSingleton(): Unit = {
-    import ForkJoinTask._
+    import ForkJoinTask.*
     val a = new CheckedRecursiveAction() {
       @throws[Exception]
       override protected def realCompute(): Unit = {
@@ -1417,7 +1417,7 @@ class CountedCompleterTest extends JSR166Test {
     testInvokeOnPool(CountedCompleterTest.singletonPool, a)
   }
   @Test def testForkTimedGetNPESingleton(): Unit = {
-    import ForkJoinTask._
+    import ForkJoinTask.*
     val a = new CheckedRecursiveAction() {
       @throws[Exception]
       override protected def realCompute(): Unit = {
@@ -1435,7 +1435,7 @@ class CountedCompleterTest extends JSR166Test {
     testInvokeOnPool(CountedCompleterTest.singletonPool, a)
   }
   @Test def testForkQuietlyJoinSingleton(): Unit = {
-    import ForkJoinTask._
+    import ForkJoinTask.*
     val a = new CheckedRecursiveAction() {
       override protected def realCompute(): Unit = {
         val f = new LCCF(8)
@@ -1448,7 +1448,7 @@ class CountedCompleterTest extends JSR166Test {
     testInvokeOnPool(CountedCompleterTest.singletonPool, a)
   }
   @Test def testForkHelpQuiesceSingleton(): Unit = {
-    import ForkJoinTask._
+    import ForkJoinTask.*
     val a = new CheckedRecursiveAction() {
       override protected def realCompute(): Unit = {
         val f = new LCCF(8)
@@ -1462,7 +1462,7 @@ class CountedCompleterTest extends JSR166Test {
     testInvokeOnPool(CountedCompleterTest.singletonPool, a)
   }
   @Test def testAbnormalInvokeSingleton(): Unit = {
-    import ForkJoinTask._
+    import ForkJoinTask.*
     val a = new CheckedRecursiveAction() {
       override protected def realCompute(): Unit = {
         val f = new LFCCF(8)
@@ -1478,7 +1478,7 @@ class CountedCompleterTest extends JSR166Test {
     testInvokeOnPool(CountedCompleterTest.singletonPool, a)
   }
   @Test def testAbnormalQuietlyInvokeSingleton(): Unit = {
-    import ForkJoinTask._
+    import ForkJoinTask.*
     val a = new CheckedRecursiveAction() {
       override protected def realCompute(): Unit = {
         val f = new LFCCF(8)
@@ -1493,7 +1493,7 @@ class CountedCompleterTest extends JSR166Test {
   }
 
   @Test def testAbnormalForkJoinSingleton(): Unit = {
-    import ForkJoinTask._
+    import ForkJoinTask.*
     val a = new CheckedRecursiveAction() {
       override protected def realCompute(): Unit = {
         val f = new LFCCF(8)
@@ -1510,7 +1510,7 @@ class CountedCompleterTest extends JSR166Test {
     testInvokeOnPool(CountedCompleterTest.singletonPool, a)
   }
   @Test def testAbnormalForkGetSingleton(): Unit = {
-    import ForkJoinTask._
+    import ForkJoinTask.*
     val a = new CheckedRecursiveAction() {
       @throws[Exception]
       override protected def realCompute(): Unit = {
@@ -1550,7 +1550,7 @@ class CountedCompleterTest extends JSR166Test {
     testInvokeOnPool(CountedCompleterTest.singletonPool, a)
   }
   @Test def testAbnormalForkQuietlyJoinSingleton(): Unit = {
-    import ForkJoinTask._
+    import ForkJoinTask.*
     val a = new CheckedRecursiveAction() {
       override protected def realCompute(): Unit = {
         val f = new LFCCF(8)
@@ -1565,7 +1565,7 @@ class CountedCompleterTest extends JSR166Test {
     testInvokeOnPool(CountedCompleterTest.singletonPool, a)
   }
   @Test def testCancelledInvokeSingleton(): Unit = {
-    import ForkJoinTask._
+    import ForkJoinTask.*
     val a = new CheckedRecursiveAction() {
       override protected def realCompute(): Unit = {
         val f = new LCCF(8)
@@ -1582,7 +1582,7 @@ class CountedCompleterTest extends JSR166Test {
     testInvokeOnPool(CountedCompleterTest.singletonPool, a)
   }
   @Test def testCancelledForkJoinSingleton(): Unit = {
-    import ForkJoinTask._
+    import ForkJoinTask.*
     val a = new CheckedRecursiveAction() {
       override protected def realCompute(): Unit = {
         val f = new LCCF(8)
@@ -1600,7 +1600,7 @@ class CountedCompleterTest extends JSR166Test {
     testInvokeOnPool(CountedCompleterTest.singletonPool, a)
   }
   @Test def testCancelledForkGetSingleton(): Unit = {
-    import ForkJoinTask._
+    import ForkJoinTask.*
     val a = new CheckedRecursiveAction() {
       @throws[Exception]
       override protected def realCompute(): Unit = {
@@ -1620,7 +1620,7 @@ class CountedCompleterTest extends JSR166Test {
   }
   @throws[Exception]
   @Test def testCancelledForkTimedGetSingleton(): Unit = {
-    import ForkJoinTask._
+    import ForkJoinTask.*
     val a = new CheckedRecursiveAction() {
       @throws[Exception]
       override protected def realCompute(): Unit = {
@@ -1639,7 +1639,7 @@ class CountedCompleterTest extends JSR166Test {
     testInvokeOnPool(CountedCompleterTest.singletonPool, a)
   }
   @Test def testCancelledForkQuietlyJoinSingleton(): Unit = {
-    import ForkJoinTask._
+    import ForkJoinTask.*
     val a = new CheckedRecursiveAction() {
       override protected def realCompute(): Unit = {
         val f = new LCCF(8)
@@ -1652,7 +1652,7 @@ class CountedCompleterTest extends JSR166Test {
     testInvokeOnPool(CountedCompleterTest.singletonPool, a)
   }
   @Test def testCompleteExceptionallySingleton(): Unit = {
-    import ForkJoinTask._
+    import ForkJoinTask.*
     val a = new CheckedRecursiveAction() {
       override protected def realCompute(): Unit = {
         val n = new LCCF(8)
@@ -1666,7 +1666,7 @@ class CountedCompleterTest extends JSR166Test {
     testInvokeOnPool(CountedCompleterTest.singletonPool, a)
   }
   @Test def testInvokeAll2Singleton(): Unit = {
-    import ForkJoinTask._
+    import ForkJoinTask.*
     val a = new CheckedRecursiveAction() {
       override protected def realCompute(): Unit = {
         val f = new LCCF(8)
@@ -1681,7 +1681,7 @@ class CountedCompleterTest extends JSR166Test {
     testInvokeOnPool(CountedCompleterTest.singletonPool, a)
   }
   @Test def testInvokeAll1Singleton(): Unit = {
-    import ForkJoinTask._
+    import ForkJoinTask.*
     val a = new CheckedRecursiveAction() {
       override protected def realCompute(): Unit = {
         val f = new LCCF(8)
@@ -1693,7 +1693,7 @@ class CountedCompleterTest extends JSR166Test {
     testInvokeOnPool(CountedCompleterTest.singletonPool, a)
   }
   @Test def testInvokeAll3Singleton(): Unit = {
-    import ForkJoinTask._
+    import ForkJoinTask.*
     val a = new CheckedRecursiveAction() {
       override protected def realCompute(): Unit = {
         val f = new LCCF(8)
@@ -1711,13 +1711,13 @@ class CountedCompleterTest extends JSR166Test {
     testInvokeOnPool(CountedCompleterTest.singletonPool, a)
   }
   @Test def testInvokeAllCollectionSingleton(): Unit = {
-    import ForkJoinTask._
+    import ForkJoinTask.*
     val a = new CheckedRecursiveAction() {
       override protected def realCompute(): Unit = {
         val f = new LCCF(8)
         val g = new LCCF(9)
         val h = new LCCF(7)
-        val set = new HashSet[ForkJoinTask[_]]
+        val set = new HashSet[ForkJoinTask[?]]
         set.add(f)
         set.add(g)
         set.add(h)
@@ -1733,7 +1733,7 @@ class CountedCompleterTest extends JSR166Test {
     testInvokeOnPool(CountedCompleterTest.singletonPool, a)
   }
   @Test def testInvokeAllNPESingleton(): Unit = {
-    import ForkJoinTask._
+    import ForkJoinTask.*
     val a = new CheckedRecursiveAction() {
       override protected def realCompute(): Unit = {
         val f = new LCCF(8)
@@ -1752,7 +1752,7 @@ class CountedCompleterTest extends JSR166Test {
   }
 
   @Test def testAbnormalInvokeAll2Singleton(): Unit = {
-    import ForkJoinTask._
+    import ForkJoinTask.*
     val a = new CheckedRecursiveAction() {
       override protected def realCompute(): Unit = {
         val f = new LCCF(8)
@@ -1769,7 +1769,7 @@ class CountedCompleterTest extends JSR166Test {
     testInvokeOnPool(CountedCompleterTest.singletonPool, a)
   }
   @Test def testAbnormalInvokeAll1Singleton(): Unit = {
-    import ForkJoinTask._
+    import ForkJoinTask.*
     val a = new CheckedRecursiveAction() {
       override protected def realCompute(): Unit = {
         val g = new LFCCF(9)
@@ -1785,7 +1785,7 @@ class CountedCompleterTest extends JSR166Test {
     testInvokeOnPool(CountedCompleterTest.singletonPool, a)
   }
   @Test def testAbnormalInvokeAll3Singleton(): Unit = {
-    import ForkJoinTask._
+    import ForkJoinTask.*
     val a = new CheckedRecursiveAction() {
       override protected def realCompute(): Unit = {
         val f = new LCCF(8)
@@ -1803,13 +1803,13 @@ class CountedCompleterTest extends JSR166Test {
     testInvokeOnPool(CountedCompleterTest.singletonPool, a)
   }
   @Test def testAbnormalInvokeAllCollectionSingleton(): Unit = {
-    import ForkJoinTask._
+    import ForkJoinTask.*
     val a = new CheckedRecursiveAction() {
       override protected def realCompute(): Unit = {
         val f = new LFCCF(8)
         val g = new LCCF(9)
         val h = new LCCF(7)
-        val set = new HashSet[ForkJoinTask[_]]
+        val set = new HashSet[ForkJoinTask[?]]
         set.add(f)
         set.add(g)
         set.add(h)

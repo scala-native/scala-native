@@ -6,9 +6,9 @@
  */
 package java.util.concurrent
 
-import java.util._
+import java.util.*
 import java.util.function.{BiFunction, Function, BiConsumer}
-import java.{util => ju}
+import java.util as ju
 
 trait ConcurrentMap[K, V] extends Map[K, V] {
   def putIfAbsent(key: K, value: V): V
@@ -23,13 +23,13 @@ trait ConcurrentMap[K, V] extends Map[K, V] {
     case v    => v
   }
 
-  override def forEach(action: BiConsumer[_ >: K, _ >: V]): Unit = {
+  override def forEach(action: BiConsumer[? >: K, ? >: V]): Unit = {
     Objects.requireNonNull(action)
     entrySet().forEach(usingEntry(_)(action.accept))
   }
 
   override def replaceAll(
-      function: BiFunction[_ >: K, _ >: V, _ <: V]
+      function: BiFunction[? >: K, ? >: V, ? <: V]
   ): Unit = {
     Objects.requireNonNull(function)
     forEach { (k, _v) =>
@@ -44,7 +44,7 @@ trait ConcurrentMap[K, V] extends Map[K, V] {
 
   override def computeIfAbsent(
       key: K,
-      mappingFunction: Function[_ >: K, _ <: V]
+      mappingFunction: Function[? >: K, ? <: V]
   ): V = {
     Objects.requireNonNull(mappingFunction)
 
@@ -64,7 +64,7 @@ trait ConcurrentMap[K, V] extends Map[K, V] {
 
   override def computeIfPresent(
       key: K,
-      remappingFunction: BiFunction[_ >: K, _ >: V, _ <: V]
+      remappingFunction: BiFunction[? >: K, ? >: V, ? <: V]
   ): V = {
     Objects.requireNonNull(remappingFunction)
     while ({
@@ -85,7 +85,7 @@ trait ConcurrentMap[K, V] extends Map[K, V] {
 
   override def compute(
       key: K,
-      remappingFunction: BiFunction[_ >: K, _ >: V, _ <: V]
+      remappingFunction: BiFunction[? >: K, ? >: V, ? <: V]
   ): V = {
     var oldValue = get(key)
     while (true) { // haveOldValue
@@ -110,7 +110,7 @@ trait ConcurrentMap[K, V] extends Map[K, V] {
   override def merge(
       key: K,
       value: V,
-      remappingFunction: BiFunction[_ >: V, _ >: V, _ <: V]
+      remappingFunction: BiFunction[? >: V, ? >: V, ? <: V]
   ): V = {
     Objects.requireNonNull(remappingFunction)
     Objects.requireNonNull(value)

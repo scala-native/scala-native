@@ -1,11 +1,11 @@
 package org.scalanative.testsuite.javalib.util
 
-import java.{lang => jl}
+import java.lang as jl
 
-import java.util._
+import java.util.*
 
-import org.junit._
-import org.junit.Assert._
+import org.junit.*
+import org.junit.Assert.*
 import org.scalanative.testsuite.utils.Platform.executingInJVM
 
 trait MyService {

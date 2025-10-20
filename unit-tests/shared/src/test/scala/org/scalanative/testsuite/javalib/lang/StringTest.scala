@@ -1,6 +1,6 @@
 package org.scalanative.testsuite.javalib.lang
 
-import java.lang._
+import java.lang.*
 
 import java.nio.CharBuffer
 import java.nio.charset.{Charset, StandardCharsets}
@@ -8,7 +8,7 @@ import java.nio.charset.{Charset, StandardCharsets}
 
 import org.junit.Ignore
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform.executingInJVM
@@ -389,7 +389,7 @@ class StringTest {
 
     val bytes = text.getBytes(charset)
     val expectedBytes = expectedInts.map(i => java.lang.Byte.valueOf(i.toByte))
-    val expected = Array[java.lang.Byte](expectedBytes: _*)
+    val expected = Array[java.lang.Byte](expectedBytes*)
     assertTrue("result != expected}", bytes.sameElements(expected))
   }
 

@@ -1,14 +1,14 @@
 package org.scalanative.testsuite.javalib.util.jar
 
-import java.util.jar._
+import java.util.jar.*
 
 // Ported from Apache Harmony
 
 import org.junit.Ignore
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
-import JarBytes._
+import JarBytes.*
 
 class JarEntryTest {
 

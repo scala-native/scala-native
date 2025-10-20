@@ -1,8 +1,8 @@
 package java.io
 
 import scala.annotation.tailrec
-import java.nio._
-import java.nio.charset._
+import java.nio.*
+import java.nio.charset.*
 import java.util.Objects
 
 class OutputStreamWriter(

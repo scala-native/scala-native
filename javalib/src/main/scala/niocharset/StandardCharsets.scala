@@ -8,7 +8,7 @@
 
 package niocharset
 
-import java.nio.charset._
+import java.nio.charset.*
 
 /** Standard charsets. This is basically the same as
  *  [[java.nio.charset.StandardCharsets]], but it is also available when

@@ -6,9 +6,9 @@
 
 package java.util.concurrent
 import java.util
-import java.util._
-import java.util.concurrent.locks._
-import java.util.function._
+import java.util.*
+import java.util.concurrent.locks.*
+import java.util.function.*
 import scala.annotation.tailrec
 import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
 import scala.scalanative.libc.stdatomic.AtomicInt
@@ -25,7 +25,7 @@ object PriorityBlockingQueue {
 
   private def siftUpComparable[T](_k: Int, x: T, es: Array[T]): Unit = {
     var k = _k
-    val key = x.asInstanceOf[Comparable[_ >: T]]
+    val key = x.asInstanceOf[Comparable[? >: T]]
     @tailrec def loop(): Unit = {
       if (k > 0) {
         val parent = (k - 1) >>> 1
@@ -46,7 +46,7 @@ object PriorityBlockingQueue {
       _k: Int,
       x: T,
       es: Array[T],
-      cmp: Comparator[_ >: T]
+      cmp: Comparator[? >: T]
   ): Unit = {
     var k = _k
     @tailrec def loop(): Unit = {
@@ -71,7 +71,7 @@ object PriorityBlockingQueue {
       es: Array[T],
       n: Int
   ): Unit = { // assert n > 0;
-    val key = x.asInstanceOf[Comparable[_ >: T]]
+    val key = x.asInstanceOf[Comparable[? >: T]]
     val half = n >>> 1 // loop while a non-leaf
     var k = _k
     @tailrec def loop(): Unit = {
@@ -80,7 +80,7 @@ object PriorityBlockingQueue {
         var c = es(child)
         val right = child + 1
         if (right < n && c
-              .asInstanceOf[Comparable[_ >: T]]
+              .asInstanceOf[Comparable[? >: T]]
               .compareTo(es(right).asInstanceOf[T]) > 0) {
           child = right
           c = es(child)
@@ -102,7 +102,7 @@ object PriorityBlockingQueue {
       x: T,
       es: Array[T],
       n: Int,
-      cmp: Comparator[_ >: T]
+      cmp: Comparator[? >: T]
   ): Unit = {
     val half = n >>> 1
     var k = _k
@@ -149,11 +149,11 @@ class PriorityBlockingQueue[E <: AnyRef] private (
      *  the queue is nonempty.
      */
     private var queue: Array[E],
-    elemComparator: Comparator[_ >: E]
+    elemComparator: Comparator[? >: E]
 ) extends util.AbstractQueue[E]
     with BlockingQueue[E]
     with Serializable {
-  import PriorityBlockingQueue._
+  import PriorityBlockingQueue.*
 
   private var curSize = 0
 
@@ -169,7 +169,7 @@ class PriorityBlockingQueue[E <: AnyRef] private (
     fromRawPtr(Intrinsics.classFieldRawPtr(this, "allocationSpinLock"))
   )
 
-  def this(initialCapacity: Int, comparator: Comparator[_ >: E]) = {
+  def this(initialCapacity: Int, comparator: Comparator[? >: E]) = {
     this(
       queue = {
         if (initialCapacity < 1)
@@ -181,7 +181,7 @@ class PriorityBlockingQueue[E <: AnyRef] private (
   }
   def this(initialCapacity: Int) = this(initialCapacity, null)
   def this() = this(PriorityBlockingQueue.DEFAULT_INITIAL_CAPACITY, null)
-  def this(c: util.Collection[_ <: E]) = {
+  def this(c: util.Collection[? <: E]) = {
     this(
       elemComparator = c match {
         case s: SortedSet[E] @unchecked =>
@@ -192,16 +192,16 @@ class PriorityBlockingQueue[E <: AnyRef] private (
       queue = {
         var screen = true // true if must screen for nulls
         val hasComparator = c match {
-          case s: SortedSet[_] =>
+          case s: SortedSet[?] =>
             s.comparator() != null
-          case p: PriorityBlockingQueue[_] =>
+          case p: PriorityBlockingQueue[?] =>
             screen = false
             p.comparator() != null
           case _ => false
         }
         var es = c.toArray()
         val n = es.length
-        if (c.getClass() != classOf[java.util.ArrayList[_]])
+        if (c.getClass() != classOf[java.util.ArrayList[?]])
           es = Arrays.copyOf(es, n)
         if (screen && (n == 1 || hasComparator)) {
           if (es.contains(null)) throw new NullPointerException()
@@ -212,9 +212,9 @@ class PriorityBlockingQueue[E <: AnyRef] private (
 
     this.curSize = this.queue.length
     val heapify = c match {
-      case s: SortedSet[_]             => false
-      case p: PriorityBlockingQueue[_] =>
-        p.getClass() != classOf[PriorityBlockingQueue[_]]
+      case s: SortedSet[?]             => false
+      case p: PriorityBlockingQueue[?] =>
+        p.getClass() != classOf[PriorityBlockingQueue[?]]
       case _ => true
     }
     if (heapify) this.heapify()
@@ -360,7 +360,7 @@ class PriorityBlockingQueue[E <: AnyRef] private (
     finally lock.unlock()
   }
 
-  def comparator(): Comparator[_ >: E] = this.elemComparator
+  def comparator(): Comparator[? >: E] = this.elemComparator
 
   override def size(): Int = {
     val lock = this.lock
@@ -440,9 +440,9 @@ class PriorityBlockingQueue[E <: AnyRef] private (
   }
   override def toString = Helpers.collectionToString(this)
 
-  override def drainTo(c: util.Collection[_ >: E]) =
+  override def drainTo(c: util.Collection[? >: E]) =
     drainTo(c, Integer.MAX_VALUE)
-  override def drainTo(c: util.Collection[_ >: E], maxElements: Int): Int = {
+  override def drainTo(c: util.Collection[? >: E], maxElements: Int): Int = {
     Objects.requireNonNull(c)
     if (c eq this) throw new IllegalArgumentException
     if (maxElements <= 0) return 0
@@ -519,7 +519,7 @@ class PriorityBlockingQueue[E <: AnyRef] private (
       removeEq(array(lastRet))
       lastRet = -1
     }
-    override def forEachRemaining(action: Consumer[_ >: E]): Unit = {
+    override def forEachRemaining(action: Consumer[? >: E]): Unit = {
       Objects.requireNonNull(action)
       val es = array
       var i = cursor
@@ -557,7 +557,7 @@ class PriorityBlockingQueue[E <: AnyRef] private (
         new PBQSpliterator(array, lo, index)
       }
     }
-    override def forEachRemaining(action: Consumer[_ >: E]): Unit = {
+    override def forEachRemaining(action: Consumer[? >: E]): Unit = {
       Objects.requireNonNull(action)
       val hi = fence
       val lo = index
@@ -567,7 +567,7 @@ class PriorityBlockingQueue[E <: AnyRef] private (
       for (i <- lo until hi) { action.accept(es(i).asInstanceOf[E]) }
     }
 
-    override def tryAdvance(action: Consumer[_ >: E]): Boolean = {
+    override def tryAdvance(action: Consumer[? >: E]): Boolean = {
       Objects.requireNonNull(action)
       if (fence > index && index >= 0) {
         val idx = index
@@ -584,20 +584,20 @@ class PriorityBlockingQueue[E <: AnyRef] private (
 
   override def spliterator(): Spliterator[E] = new PBQSpliterator
 
-  override def removeIf(filter: Predicate[_ >: E]) = {
+  override def removeIf(filter: Predicate[? >: E]) = {
     Objects.requireNonNull(filter)
     bulkRemove(filter)
   }
-  override def removeAll(c: util.Collection[_]) = {
+  override def removeAll(c: util.Collection[?]) = {
     Objects.requireNonNull(c)
     bulkRemove((e: E) => c.contains(e))
   }
-  override def retainAll(c: util.Collection[_]) = {
+  override def retainAll(c: util.Collection[?]) = {
     Objects.requireNonNull(c)
     bulkRemove((e: E) => !c.contains(e))
   }
 
-  private def bulkRemove(filter: Predicate[_ >: E]): Boolean = {
+  private def bulkRemove(filter: Predicate[? >: E]): Boolean = {
     val lock = this.lock
     lock.lock()
     try {
@@ -639,7 +639,7 @@ class PriorityBlockingQueue[E <: AnyRef] private (
       true
     } finally lock.unlock()
   }
-  override def forEach(action: Consumer[_ >: E]): Unit = {
+  override def forEach(action: Consumer[? >: E]): Unit = {
     Objects.requireNonNull(action)
     val lock = this.lock
     lock.lock()

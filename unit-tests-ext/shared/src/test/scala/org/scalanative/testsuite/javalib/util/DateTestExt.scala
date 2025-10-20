@@ -1,10 +1,10 @@
 // Ported from Scala.js, commit: 54648372, dated: 2020-09-24
 package org.scalanative.testsuite.javalib.util
 
-import java.util._
+import java.util.*
 
 import java.time.Instant
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.junit.Test
 
 /** Additional tests for `java.util.Date` that require javalib extension

@@ -3,10 +3,10 @@ package regex
 
 import java.util
 import java.util.regex.PatternSyntaxException
-import scala.scalanative.junit.utils.CollectionConverters._
+import scala.scalanative.junit.utils.CollectionConverters.*
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.junit.Ignore
 
 import RE2.{
@@ -21,7 +21,7 @@ import RE2.{
   WAS_DOLLAR
 }
 
-import Regexp.Op._
+import Regexp.Op.*
 
 /* ParserTest is a focused specialist test.  It is priceless to two groups
  * of developers.

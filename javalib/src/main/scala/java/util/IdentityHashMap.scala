@@ -2,11 +2,11 @@
 
 package java.util
 
-import java.{util => ju}
+import java.util as ju
 
 import scala.annotation.tailrec
 
-import ScalaOps._
+import ScalaOps.*
 
 /* The additional `internal` parameter works around
  * https://github.com/scala/bug/issues/11755
@@ -20,7 +20,7 @@ class IdentityHashMap[K, V] private (
     with Cloneable {
   self =>
 
-  import IdentityHashMap._
+  import IdentityHashMap.*
 
   def this(expectedMaxSize: Int) = {
     this(
@@ -35,7 +35,7 @@ class IdentityHashMap[K, V] private (
   def this() =
     this(HashMap.DEFAULT_INITIAL_CAPACITY)
 
-  def this(initialMap: java.util.Map[_ <: K, _ <: V]) = {
+  def this(initialMap: java.util.Map[? <: K, ? <: V]) = {
     this(initialMap.size())
     putAll(initialMap)
   }
@@ -103,10 +103,10 @@ class IdentityHashMap[K, V] private (
       findAndRemove(iterator())
     }
 
-    override def removeAll(c: Collection[_]): Boolean =
+    override def removeAll(c: Collection[?]): Boolean =
       c.scalaOps.foldLeft(false)((prev, elem) => this.remove(elem) || prev)
 
-    override def retainAll(c: Collection[_]): Boolean = {
+    override def retainAll(c: Collection[?]): Boolean = {
       val iter = iterator()
       var changed = false
       while (iter.hasNext()) {
@@ -152,7 +152,7 @@ class IdentityHashMap[K, V] private (
       hasKey
     }
 
-    override def removeAll(c: Collection[_]): Boolean = {
+    override def removeAll(c: Collection[?]): Boolean = {
       if (size() > c.size()) {
         c.scalaOps.foldLeft(false)((prev, elem) => this.remove(elem) || prev)
       } else {
@@ -173,7 +173,7 @@ class IdentityHashMap[K, V] private (
       }
     }
 
-    override def retainAll(c: Collection[_]): Boolean = {
+    override def retainAll(c: Collection[?]): Boolean = {
       val iter = iterator()
       var changed = false
       while (iter.hasNext()) {
@@ -211,7 +211,7 @@ class IdentityHashMap[K, V] private (
 
     override def contains(value: Any): Boolean = {
       value match {
-        case value: Map.Entry[_, _] =>
+        case value: Map.Entry[?, ?] =>
           val thatKey = value.getKey()
           self.containsKey(thatKey) && same(self.get(thatKey), value.getValue())
         case _ =>
@@ -221,7 +221,7 @@ class IdentityHashMap[K, V] private (
 
     override def remove(value: Any): Boolean = {
       value match {
-        case value: Map.Entry[_, _] =>
+        case value: Map.Entry[?, ?] =>
           val thatKey = value.getKey()
           val thatValue = value.getValue()
           if (self.containsKey(thatKey) && same(self.get(thatKey), thatValue)) {
@@ -244,7 +244,7 @@ object IdentityHashMap {
   private final case class IdentityBox[+K](inner: K) {
     override def equals(o: Any): Boolean = {
       o match {
-        case o: IdentityBox[_] =>
+        case o: IdentityBox[?] =>
           same(inner, o.inner)
         case _ =>
           false
@@ -258,7 +258,7 @@ object IdentityHashMap {
   @inline private def same(v1: Any, v2: Any): Boolean =
     v1.asInstanceOf[AnyRef] eq v2.asInstanceOf[AnyRef]
 
-  private def findSame[K](elem: K, c: Collection[_]): Boolean = {
+  private def findSame[K](elem: K, c: Collection[?]): Boolean = {
     val iter = c.iterator()
     while (iter.hasNext()) {
       if (same(elem, iter.next()))
@@ -272,7 +272,7 @@ object IdentityHashMap {
 
     override def equals(other: Any): Boolean =
       other match {
-        case other: Map.Entry[_, _] =>
+        case other: Map.Entry[?, ?] =>
           same(this.getKey(), other.getKey()) &&
             same(this.getValue(), other.getValue())
         case _ =>

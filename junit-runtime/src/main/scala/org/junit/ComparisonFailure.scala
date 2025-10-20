@@ -95,7 +95,7 @@ object ComparisonFailure {
 class ComparisonFailure(message: String, fExpected: String, fActual: String)
     extends AssertionError(message) {
 
-  import ComparisonFailure._
+  import ComparisonFailure.*
 
   override def getMessage: String = {
     val cc = new ComparisonCompactor(fExpected, fActual)

@@ -1,8 +1,8 @@
 package scala.scalanative
 package posix
 
-import scala.scalanative.unsafe._
-import scala.scalanative.posix.sys.types, types._
+import scala.scalanative.unsafe.*
+import scala.scalanative.posix.sys.types, types.*
 import scala.scalanative.posix.signal.sigevent
 
 import scalanative.meta.LinktimeInfo.isFreeBSD

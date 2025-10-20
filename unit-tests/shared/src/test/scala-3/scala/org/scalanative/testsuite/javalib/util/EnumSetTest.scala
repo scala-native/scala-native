@@ -1,10 +1,10 @@
 package org.scalanative.testsuite.javalib.util
 
-import java.lang._
+import java.lang.*
 import java.util.EnumSet
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 // Tested only in Scala 3 becouse we cannot create Java enums in Scala 2
 
@@ -84,7 +84,7 @@ class EnumSetTest {
 
   @Test def ofVarArg2(): Unit = {
     val s =
-      EnumSet.of(Value.A, Seq(Value.B, Value.C, Value.D, Value.E, Value.F): _*)
+      EnumSet.of(Value.A, Seq(Value.B, Value.C, Value.D, Value.E, Value.F)*)
     assertFalse(s.isEmpty())
     assertEquals(6, s.size())
     assertTrue(s.contains(Value.A))

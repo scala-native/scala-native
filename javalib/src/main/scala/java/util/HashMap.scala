@@ -4,10 +4,10 @@ package java.util
 
 import scala.annotation.tailrec
 
-import java.{util => ju}
+import java.util as ju
 import java.util.function.{BiConsumer, BiFunction, Function}
 
-import ScalaOps._
+import ScalaOps.*
 
 class HashMap[K, V](initialCapacity: Int, loadFactor: Float)
     extends AbstractMap[K, V]
@@ -15,7 +15,7 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Float)
     with Cloneable {
   self =>
 
-  import HashMap._
+  import HashMap.*
 
   if (initialCapacity < 0)
     throw new IllegalArgumentException("initialCapacity < 0")
@@ -28,7 +28,7 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Float)
   def this(initialCapacity: Int) =
     this(initialCapacity, HashMap.DEFAULT_LOAD_FACTOR)
 
-  def this(m: Map[_ <: K, _ <: V]) = {
+  def this(m: Map[? <: K, ? <: V]) = {
     this(m.size())
     putAll(m)
   }
@@ -87,9 +87,9 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Float)
   override def put(key: K, value: V): V =
     put0(key, value, ifAbsent = false)
 
-  override def putAll(m: Map[_ <: K, _ <: V]): Unit = {
+  override def putAll(m: Map[? <: K, ? <: V]): Unit = {
     m match {
-      case m: ju.HashMap[_, _] =>
+      case m: ju.HashMap[?, ?] =>
         val iter = m.nodeIterator()
         while (iter.hasNext()) {
           val next = iter.next()
@@ -184,7 +184,7 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Float)
 
   override def computeIfAbsent(
       key: K,
-      mappingFunction: Function[_ >: K, _ <: V]
+      mappingFunction: Function[? >: K, ? <: V]
   ): V = {
     val (node, hash, idx, oldValue) = getNode0(key)
     if (oldValue != null) {
@@ -199,7 +199,7 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Float)
 
   override def computeIfPresent(
       key: K,
-      remappingFunction: BiFunction[_ >: K, _ >: V, _ <: V]
+      remappingFunction: BiFunction[? >: K, ? >: V, ? <: V]
   ): V = {
     val (node, hash, idx, oldValue) = getNode0(key)
     if (oldValue == null) {
@@ -212,7 +212,7 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Float)
 
   override def compute(
       key: K,
-      remappingFunction: BiFunction[_ >: K, _ >: V, _ <: V]
+      remappingFunction: BiFunction[? >: K, ? >: V, ? <: V]
   ): V = {
     val (node, hash, idx, oldValue) = getNode0(key)
     val newValue = remappingFunction.apply(key, oldValue)
@@ -222,7 +222,7 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Float)
   override def merge(
       key: K,
       value: V,
-      remappingFunction: BiFunction[_ >: V, _ >: V, _ <: V]
+      remappingFunction: BiFunction[? >: V, ? >: V, ? <: V]
   ): V = {
     Objects.requireNonNull(value)
 
@@ -233,7 +233,7 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Float)
     putOrRemove0(key, hash, idx, node, newValue)
   }
 
-  override def forEach(action: BiConsumer[_ >: K, _ >: V]): Unit = {
+  override def forEach(action: BiConsumer[? >: K, ? >: V]): Unit = {
     val len = table.length
     var i = 0
     while (i != len) {
@@ -658,7 +658,7 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Float)
       self.size()
 
     override def contains(o: Any): Boolean = o match {
-      case o: Map.Entry[_, _] =>
+      case o: Map.Entry[?, ?] =>
         val node = findNode(o.getKey())
         (node ne null) && Objects.equals(node.getValue(), o.getValue())
       case _ =>
@@ -666,7 +666,7 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Float)
     }
 
     override def remove(o: Any): Boolean = o match {
-      case o: Map.Entry[_, _] =>
+      case o: Map.Entry[?, ?] =>
         val key = o.getKey()
         val (node, idx) = findNodeAndIndexForRemoval(key)
         if ((node ne null) && Objects.equals(node.getValue(), o.getValue())) {
@@ -733,7 +733,7 @@ object HashMap {
     }
 
     override def equals(that: Any): Boolean = that match {
-      case that: Map.Entry[_, _] =>
+      case that: Map.Entry[?, ?] =>
         Objects.equals(getKey(), that.getKey()) &&
           Objects.equals(getValue(), that.getValue())
       case _ =>

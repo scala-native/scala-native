@@ -3,13 +3,13 @@ package org.scalanative.testsuite.javalib.util.function
 
 import java.util.function.Consumer
 
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 class ConsumerTest {
-  import ConsumerTest._
+  import ConsumerTest.*
 
   @Test def accept(): Unit = {
     // Side-effects

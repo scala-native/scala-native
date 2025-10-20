@@ -4,7 +4,7 @@ package java.util
 
 import java.util.function.{BiConsumer, BiFunction, Function}
 import scala.scalanative.annotation.alwaysinline
-import ScalaOps._
+import ScalaOps.*
 
 trait Map[K, V] {
   def size(): Int
@@ -14,7 +14,7 @@ trait Map[K, V] {
   def get(key: Any): V
   def put(key: K, value: V): V
   def remove(key: Any): V
-  def putAll(m: Map[_ <: K, _ <: V]): Unit
+  def putAll(m: Map[? <: K, ? <: V]): Unit
   def clear(): Unit
   def keySet(): Set[K]
   def values(): Collection[V]
@@ -26,12 +26,12 @@ trait Map[K, V] {
     if (containsKey(key)) get(key)
     else defaultValue
 
-  def forEach(action: BiConsumer[_ >: K, _ >: V]): Unit = {
+  def forEach(action: BiConsumer[? >: K, ? >: V]): Unit = {
     Objects.requireNonNull(action)
     entrySet().forEach(usingEntry(_)(action.accept))
   }
 
-  def replaceAll(function: BiFunction[_ >: K, _ >: V, _ <: V]): Unit = {
+  def replaceAll(function: BiFunction[? >: K, ? >: V, ? <: V]): Unit = {
     Objects.requireNonNull(function)
     entrySet().forEach(entry =>
       usingEntry(entry) { (k, v) =>
@@ -75,7 +75,7 @@ trait Map[K, V] {
     if (containsKey(key)) put(key, value)
     else null.asInstanceOf[V]
 
-  def computeIfAbsent(key: K, mappingFunction: Function[_ >: K, _ <: V]): V = {
+  def computeIfAbsent(key: K, mappingFunction: Function[? >: K, ? <: V]): V = {
     val oldValue = get(key)
     if (oldValue != null) {
       oldValue
@@ -89,7 +89,7 @@ trait Map[K, V] {
 
   def computeIfPresent(
       key: K,
-      remappingFunction: BiFunction[_ >: K, _ >: V, _ <: V]
+      remappingFunction: BiFunction[? >: K, ? >: V, ? <: V]
   ): V = {
     val oldValue = get(key)
     if (oldValue == null) {
@@ -103,7 +103,7 @@ trait Map[K, V] {
 
   def compute(
       key: K,
-      remappingFunction: BiFunction[_ >: K, _ >: V, _ <: V]
+      remappingFunction: BiFunction[? >: K, ? >: V, ? <: V]
   ): V = {
     val oldValue = get(key)
     val newValue = remappingFunction.apply(key, oldValue)
@@ -127,7 +127,7 @@ trait Map[K, V] {
   def merge(
       key: K,
       value: V,
-      remappingFunction: BiFunction[_ >: V, _ >: V, _ <: V]
+      remappingFunction: BiFunction[? >: V, ? >: V, ? <: V]
   ): V = {
     Objects.requireNonNull(value)
 
@@ -178,7 +178,7 @@ object Map {
   }
 
   // Since: Java 10
-  def copyOf[K, V](map: Map[_ <: K, _ <: V]): Map[K, V] = {
+  def copyOf[K, V](map: Map[? <: K, ? <: V]): Map[K, V] = {
     Objects.requireNonNull(map)
 
     val mapSize = map.size()
@@ -207,7 +207,7 @@ object Map {
         throw new UnsupportedOperationException("not supported")
 
       override def equals(o: Any): Boolean = o match {
-        case o: Map.Entry[_, _] =>
+        case o: Map.Entry[?, ?] =>
           Objects.equals(getKey(), o.getKey()) &&
             Objects.equals(getValue(), o.getValue())
         case _ =>

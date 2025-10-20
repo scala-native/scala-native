@@ -1,10 +1,10 @@
 package java.nio.file
 
-import scala.scalanative.unsigned._
-import scala.scalanative.posix.errno._
-import scala.scalanative.windows._
+import scala.scalanative.unsigned.*
+import scala.scalanative.posix.errno.*
+import scala.scalanative.windows.*
 import java.io.IOException
-import scala.scalanative.windows.ErrorHandlingApi._
+import scala.scalanative.windows.ErrorHandlingApi.*
 import scala.scalanative.windows.ErrorHandlingApiOps.errorMessage
 
 trait WindowsException extends Exception
@@ -19,7 +19,7 @@ object WindowsException {
   }
 
   def onPath(file: String): IOException = {
-    import ErrorCodes._
+    import ErrorCodes.*
     lazy val e = errno
     val winError = GetLastError()
     winError match {

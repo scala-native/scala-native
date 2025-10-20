@@ -11,11 +11,11 @@ import java.util
 import java.util.{Arrays, Collection, NoSuchElementException, Queue}
 import java.util.concurrent.ConcurrentLinkedQueue
 
-import org.junit.Assert._
-import org.junit._
+import org.junit.Assert.*
+import org.junit.*
 
 object ConcurrentLinkedQueueTest {
-  import JSR166Test._
+  import JSR166Test.*
 
   /** Returns a new queue of given size containing consecutive Items 0 ... n -
    *  \1.
@@ -34,7 +34,7 @@ object ConcurrentLinkedQueueTest {
 }
 
 class ConcurrentLinkedQueueTest extends JSR166Test {
-  import JSR166Test._
+  import JSR166Test.*
 
   /** new queue is empty
    */
@@ -57,7 +57,7 @@ class ConcurrentLinkedQueueTest extends JSR166Test {
    */
   @Test def testConstructor4(): Unit = {
     try {
-      new ConcurrentLinkedQueue[Item](Arrays.asList(new Array[Item](SIZE): _*))
+      new ConcurrentLinkedQueue[Item](Arrays.asList(new Array[Item](SIZE)*))
       shouldThrow()
     } catch {
       case success: NullPointerException =>
@@ -71,7 +71,7 @@ class ConcurrentLinkedQueueTest extends JSR166Test {
     val items: Array[Item] = new Array[Item](2)
     items(0) = zero
     try {
-      new ConcurrentLinkedQueue[Item](Arrays.asList(items: _*))
+      new ConcurrentLinkedQueue[Item](Arrays.asList(items*))
       shouldThrow()
     } catch {
       case success: NullPointerException =>
@@ -84,7 +84,7 @@ class ConcurrentLinkedQueueTest extends JSR166Test {
   @Test def testConstructor6(): Unit = {
     val items: Array[Item] = defaultItems
     val q: ConcurrentLinkedQueue[Item] = new ConcurrentLinkedQueue(
-      Arrays.asList(items: _*)
+      Arrays.asList(items*)
     )
     var i: Int = 0
     while (i < SIZE) {
@@ -206,7 +206,7 @@ class ConcurrentLinkedQueueTest extends JSR166Test {
   @Test def testAddAll2(): Unit = {
     val q: ConcurrentLinkedQueue[Item] = new ConcurrentLinkedQueue[Item]
     try {
-      q.addAll(Arrays.asList(new Array[Item](SIZE): _*))
+      q.addAll(Arrays.asList(new Array[Item](SIZE)*))
       shouldThrow()
     } catch {
       case success: NullPointerException =>
@@ -222,7 +222,7 @@ class ConcurrentLinkedQueueTest extends JSR166Test {
     val items: Array[Item] = new Array[Item](2)
     items(0) = zero
     try {
-      q.addAll(Arrays.asList(items: _*))
+      q.addAll(Arrays.asList(items*))
       shouldThrow()
     } catch {
       case success: NullPointerException =>
@@ -236,8 +236,8 @@ class ConcurrentLinkedQueueTest extends JSR166Test {
     val empty: Array[Item] = new Array[Item](0)
     val items: Array[Item] = defaultItems
     val q: ConcurrentLinkedQueue[Item] = new ConcurrentLinkedQueue[Item]
-    assertFalse(q.addAll(Arrays.asList(empty: _*)))
-    assertTrue(q.addAll(Arrays.asList(items: _*)))
+    assertFalse(q.addAll(Arrays.asList(empty*)))
+    assertTrue(q.addAll(Arrays.asList(items*)))
     var i: Int = 0
     while (i < SIZE) {
       mustEqual(items(i), q.poll)
@@ -492,7 +492,7 @@ class ConcurrentLinkedQueueTest extends JSR166Test {
   @Test def testIterator(): Unit = {
     val q: ConcurrentLinkedQueue[Item] =
       ConcurrentLinkedQueueTest.populatedQueue(SIZE)
-    val it: java.util.Iterator[_ <: Item] = q.iterator()
+    val it: java.util.Iterator[? <: Item] = q.iterator()
     var i: Int = 0
     i = 0
     while (it.hasNext) {
@@ -517,7 +517,7 @@ class ConcurrentLinkedQueueTest extends JSR166Test {
     q.add(two)
     q.add(three)
     var k: Int = 0
-    val it: java.util.Iterator[_ <: Item] = q.iterator
+    val it: java.util.Iterator[? <: Item] = q.iterator
     while (it.hasNext) {
       mustEqual(
         {
@@ -536,7 +536,7 @@ class ConcurrentLinkedQueueTest extends JSR166Test {
     q.add(one)
     q.add(two)
     q.add(three)
-    val it: java.util.Iterator[_ <: Item] = q.iterator
+    val it: java.util.Iterator[? <: Item] = q.iterator
     while (it.hasNext) {
       q.remove()
       it.next
@@ -551,7 +551,7 @@ class ConcurrentLinkedQueueTest extends JSR166Test {
     q.add(itemFor(one))
     q.add(itemFor(two))
     q.add(itemFor(three))
-    var it: java.util.Iterator[_ <: Item] = q.iterator
+    var it: java.util.Iterator[? <: Item] = q.iterator
     it.next
     it.remove()
     it = q.iterator
@@ -596,7 +596,7 @@ class ConcurrentLinkedQueueTest extends JSR166Test {
   /** remove(null), contains(null) always return false
    */
   @Test def testNeverContainsNull(): Unit = {
-    val qs: Array[Collection[_]] = Array(
+    val qs: Array[Collection[?]] = Array(
       new ConcurrentLinkedQueue[AnyRef],
       ConcurrentLinkedQueueTest.populatedQueue(2)
     )

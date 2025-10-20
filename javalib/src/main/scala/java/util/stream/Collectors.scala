@@ -2,11 +2,11 @@ package java.util.stream
 
 import java.lang.StringBuilder
 
-import java.util._
+import java.util.*
 
 import java.util.concurrent.{ConcurrentMap, ConcurrentHashMap}
 
-import java.util.function._
+import java.util.function.*
 
 import java.util.stream.Collector.Characteristics
 
@@ -32,7 +32,7 @@ import java.util.stream.Collector.Characteristics
 object Collectors {
 
   def averagingDouble[T](
-      mapper: ToDoubleFunction[_ >: T]
+      mapper: ToDoubleFunction[? >: T]
   ): Collector[T, AnyRef, Double] = {
     type A = DoubleSummaryStatistics
 
@@ -50,7 +50,7 @@ object Collectors {
   }
 
   def averagingInt[T](
-      mapper: ToIntFunction[_ >: T]
+      mapper: ToIntFunction[? >: T]
   ): Collector[T, AnyRef, Double] = {
     type A = IntSummaryStatistics
 
@@ -68,7 +68,7 @@ object Collectors {
   }
 
   def averagingLong[T](
-      mapper: ToLongFunction[_ >: T]
+      mapper: ToLongFunction[? >: T]
   ): Collector[T, AnyRef, Double] = {
     type A = LongSummaryStatistics
 
@@ -158,8 +158,8 @@ object Collectors {
 
   // Since: Java 9
   def filtering[T, A, R](
-      predicate: Predicate[_ >: T],
-      downstream: Collector[_ >: T, A, R]
+      predicate: Predicate[? >: T],
+      downstream: Collector[? >: T, A, R]
   ): Collector[T, AnyRef, R] = {
 
     val dsAccumulator = downstream.accumulator()
@@ -183,8 +183,8 @@ object Collectors {
 
   // Since: Java 9
   def flatMapping[T, U, A, R](
-      mapper: Function[_ >: T, _ <: Stream[U]],
-      downstream: Collector[_ >: U, A, R]
+      mapper: Function[? >: T, ? <: Stream[U]],
+      downstream: Collector[? >: U, A, R]
   ): Collector[T, AnyRef, R] = {
 
     val dsAccumulator = downstream.accumulator()
@@ -206,7 +206,7 @@ object Collectors {
   }
 
   def groupingBy[T, K](
-      classifier: Function[_ >: T, _ <: K]
+      classifier: Function[? >: T, ? <: K]
   ): Collector[T, AnyRef, Map[K, List[T]]] = {
     type A = HashMap[K, ArrayList[T]]
 
@@ -250,9 +250,9 @@ object Collectors {
   }
 
   def groupingBy[T, K, D, A, M <: Map[K, D]](
-      classifier: Function[_ >: T, _ <: K],
+      classifier: Function[? >: T, ? <: K],
       mapFactory: Supplier[M],
-      downstream: Collector[_ >: T, A, D]
+      downstream: Collector[? >: T, A, D]
   ): Collector[T, AnyRef, M] = {
 
     // The type of the workspace need not be the type A of downstream container
@@ -313,8 +313,8 @@ object Collectors {
   }
 
   def groupingBy[T, K, A, D](
-      classifier: Function[_ >: T, _ <: K],
-      downstream: Collector[_ >: T, A, D]
+      classifier: Function[? >: T, ? <: K],
+      downstream: Collector[? >: T, A, D]
   ): Collector[T, AnyRef, Map[K, D]] = {
 
     val supplier = new Supplier[HashMap[K, ArrayList[T]]] {
@@ -374,7 +374,7 @@ object Collectors {
   }
 
   def groupingByConcurrent[T <: AnyRef, K <: AnyRef](
-      classifier: Function[_ >: T, _ <: K]
+      classifier: Function[? >: T, ? <: K]
   ): Collector[T, AnyRef, ConcurrentMap[K, List[T]]] = {
     type A = ConcurrentHashMap[K, ArrayList[T]]
 
@@ -429,9 +429,9 @@ object Collectors {
     K,
     D
   ]](
-      classifier: Function[_ >: T, _ <: K],
+      classifier: Function[? >: T, ? <: K],
       mapFactory: Supplier[M],
-      downstream: Collector[_ >: T, A, D]
+      downstream: Collector[? >: T, A, D]
   ): Collector[T, AnyRef, M] = {
 
     // The type of the workspace need not be the type A of downstream container
@@ -497,8 +497,8 @@ object Collectors {
   }
 
   def groupingByConcurrent[T <: AnyRef, K <: AnyRef, A, D <: AnyRef](
-      classifier: Function[_ >: T, _ <: K],
-      downstream: Collector[_ >: T, A, D]
+      classifier: Function[? >: T, ? <: K],
+      downstream: Collector[? >: T, A, D]
   ): Collector[T, AnyRef, ConcurrentMap[K, D]] = {
 
     // The type of the workspace need not be the type A of downstream container
@@ -618,8 +618,8 @@ object Collectors {
   }
 
   def mapping[T, U, A, R](
-      mapper: Function[_ >: T, _ <: U],
-      downstream: Collector[_ >: U, A, R]
+      mapper: Function[? >: T, ? <: U],
+      downstream: Collector[? >: U, A, R]
   ): Collector[T, AnyRef, R] = {
 
     val dsAccumulator = downstream.accumulator()
@@ -641,7 +641,7 @@ object Collectors {
   }
 
   def maxBy[T](
-      comparator: Comparator[_ >: T]
+      comparator: Comparator[? >: T]
   ): Collector[T, AnyRef, Optional[T]] = {
     type A = Array[Optional[T]]
 
@@ -677,7 +677,7 @@ object Collectors {
   }
 
   def minBy[T](
-      comparator: Comparator[_ >: T]
+      comparator: Comparator[? >: T]
   ): Collector[T, AnyRef, Optional[T]] = {
     type A = Array[Optional[T]]
 
@@ -713,7 +713,7 @@ object Collectors {
   }
 
   def partitioningBy[T](
-      predicate: Predicate[_ >: T]
+      predicate: Predicate[? >: T]
   ): Collector[T, AnyRef, Map[Boolean, List[T]]] = {
     type A = HashMap[Boolean, ArrayList[T]]
 
@@ -749,8 +749,8 @@ object Collectors {
   }
 
   def partitioningBy[T, D, A](
-      predicate: Predicate[_ >: T],
-      downstream: Collector[_ >: T, A, D]
+      predicate: Predicate[? >: T],
+      downstream: Collector[? >: T, A, D]
   ): Collector[T, AnyRef, Map[Boolean, D]] = {
 
     val supplier = new Supplier[HashMap[Boolean, ArrayList[T]]] {
@@ -876,7 +876,7 @@ object Collectors {
 
   def reducing[T, U](
       identity: U,
-      mapper: Function[_ >: T, _ <: U],
+      mapper: Function[? >: T, ? <: U],
       op: BinaryOperator[U]
   ): Collector[T, AnyRef, U] = {
     type A = Array[U]
@@ -912,7 +912,7 @@ object Collectors {
   }
 
   def summarizingDouble[T](
-      mapper: ToDoubleFunction[_ >: T]
+      mapper: ToDoubleFunction[? >: T]
   ): Collector[T, AnyRef, DoubleSummaryStatistics] = {
     type A = DoubleSummaryStatistics
 
@@ -929,7 +929,7 @@ object Collectors {
   }
 
   def summarizingInt[T](
-      mapper: ToIntFunction[_ >: T]
+      mapper: ToIntFunction[? >: T]
   ): Collector[T, AnyRef, IntSummaryStatistics] = {
     type A = IntSummaryStatistics
 
@@ -946,7 +946,7 @@ object Collectors {
   }
 
   def summarizingLong[T](
-      mapper: ToLongFunction[_ >: T]
+      mapper: ToLongFunction[? >: T]
   ): Collector[T, AnyRef, LongSummaryStatistics] = {
     type A = LongSummaryStatistics
 
@@ -963,7 +963,7 @@ object Collectors {
   }
 
   def summingDouble[T](
-      mapper: ToDoubleFunction[_ >: T]
+      mapper: ToDoubleFunction[? >: T]
   ): Collector[T, AnyRef, Double] = {
     type A = Array[Double]
 
@@ -999,7 +999,7 @@ object Collectors {
   }
 
   def summingInt[T](
-      mapper: ToIntFunction[_ >: T]
+      mapper: ToIntFunction[? >: T]
   ): Collector[T, AnyRef, Int] = {
     type A = Array[Int]
 
@@ -1035,7 +1035,7 @@ object Collectors {
   }
 
   def summingLong[T](
-      mapper: ToLongFunction[_ >: T]
+      mapper: ToLongFunction[? >: T]
   ): Collector[T, AnyRef, Long] = {
     type A = Array[Long]
 
@@ -1073,7 +1073,7 @@ object Collectors {
   def teeing[T, R1, R2, R](
       downstream1: Collector[T, AnyRef, R1],
       downstream2: Collector[T, AnyRef, R2],
-      merger: BiFunction[_ >: R1, _ >: R2, R]
+      merger: BiFunction[? >: R1, ? >: R2, R]
   ): Collector[T, AnyRef, R] = {
     type A = Tuple2[AnyRef, AnyRef]
 
@@ -1165,8 +1165,8 @@ object Collectors {
   }
 
   def toConcurrentMap[T <: AnyRef, K <: AnyRef, U <: AnyRef](
-      keyMapper: Function[_ >: T, _ <: K],
-      valueMapper: Function[_ >: T, _ <: U]
+      keyMapper: Function[? >: T, ? <: K],
+      valueMapper: Function[? >: T, ? <: U]
   ): Collector[T, AnyRef, ConcurrentMap[K, U]] = {
     type A = ConcurrentHashMap[K, U]
 
@@ -1186,8 +1186,8 @@ object Collectors {
   }
 
   def toConcurrentMap[T <: AnyRef, K <: AnyRef, U <: AnyRef](
-      keyMapper: Function[_ >: T, _ <: K],
-      valueMapper: Function[_ >: T, _ <: U],
+      keyMapper: Function[? >: T, ? <: K],
+      valueMapper: Function[? >: T, ? <: U],
       mergeFunction: BinaryOperator[U]
   ): Collector[T, AnyRef, ConcurrentMap[K, U]] = {
     type A = ConcurrentHashMap[K, U]
@@ -1211,8 +1211,8 @@ object Collectors {
   }
 
   def toConcurrentMap[T, K, U, M <: ConcurrentMap[K, U]](
-      keyMapper: Function[_ >: T, _ <: K],
-      valueMapper: Function[_ >: T, _ <: U],
+      keyMapper: Function[? >: T, ? <: K],
+      valueMapper: Function[? >: T, ? <: U],
       mergeFunction: BinaryOperator[U],
       mapFactory: Supplier[M]
   ): Collector[T, AnyRef, M] = {
@@ -1250,8 +1250,8 @@ object Collectors {
   }
 
   def toMap[T, K, U](
-      keyMapper: Function[_ >: T, _ <: K],
-      valueMapper: Function[_ >: T, _ <: U]
+      keyMapper: Function[? >: T, ? <: K],
+      valueMapper: Function[? >: T, ? <: U]
   ): Collector[T, AnyRef, Map[K, U]] = {
     type A = HashMap[K, U]
 
@@ -1268,8 +1268,8 @@ object Collectors {
   }
 
   def toMap[T, K, U](
-      keyMapper: Function[_ >: T, _ <: K],
-      valueMapper: Function[_ >: T, _ <: U],
+      keyMapper: Function[? >: T, ? <: K],
+      valueMapper: Function[? >: T, ? <: U],
       mergeFunction: BinaryOperator[U]
   ): Collector[T, AnyRef, Map[K, U]] = {
     type A = HashMap[K, U]
@@ -1290,8 +1290,8 @@ object Collectors {
   }
 
   def toMap[T, K, U, M <: Map[K, U]](
-      keyMapper: Function[_ >: T, _ <: K],
-      valueMapper: Function[_ >: T, _ <: U],
+      keyMapper: Function[? >: T, ? <: K],
+      valueMapper: Function[? >: T, ? <: U],
       mergeFunction: BinaryOperator[U],
       mapFactory: Supplier[M]
   ): Collector[T, AnyRef, M] = {
@@ -1338,8 +1338,8 @@ object Collectors {
 
   // Since: Java 10
   def toUnmodifiableMap[T, K, U](
-      keyMapper: Function[_ >: T, _ <: K],
-      valueMapper: Function[_ >: T, _ <: U]
+      keyMapper: Function[? >: T, ? <: K],
+      valueMapper: Function[? >: T, ? <: U]
   ): Collector[T, AnyRef, Map[K, U]] = {
     Collectors.collectingAndThen(
       Collectors.toMap[T, K, U](keyMapper, valueMapper),
@@ -1349,8 +1349,8 @@ object Collectors {
 
   // Since: Java 10
   def toUnmodifiableMap[T, K, U](
-      keyMapper: Function[_ >: T, _ <: K],
-      valueMapper: Function[_ >: T, _ <: U],
+      keyMapper: Function[? >: T, ? <: K],
+      valueMapper: Function[? >: T, ? <: U],
       mergeFunction: BinaryOperator[U]
   ): Collector[T, AnyRef, Map[K, U]] = {
     Collectors.collectingAndThen(

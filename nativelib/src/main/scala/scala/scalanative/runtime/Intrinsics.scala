@@ -1,14 +1,14 @@
 package scala.scalanative
 package runtime
 
-import scalanative.unsafe._
-import scala.scalanative.unsigned._
+import scalanative.unsafe.*
+import scala.scalanative.unsigned.*
 
 object Intrinsics {
   private[runtime] object internal {
-    def stackalloc(cls: Class[_], size: Any): RawPtr = intrinsic
-    def alignmentOf(cls: Class[_]): RawSize = intrinsic
-    def sizeOf(cls: Class[_]): RawSize = intrinsic
+    def stackalloc(cls: Class[?], size: Any): RawPtr = intrinsic
+    def alignmentOf(cls: Class[?]): RawSize = intrinsic
+    def sizeOf(cls: Class[?]): RawSize = intrinsic
   }
 
   /** Intrinsified stack allocation of sizeOf[T] bytes. */

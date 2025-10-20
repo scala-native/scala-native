@@ -4,8 +4,8 @@ package java.util.random
  * attributions and algorithm hints.
  */
 
-import java.{lang => jl}
-import java.util.{stream => jus}
+import java.lang as jl
+import java.util.stream as jus
 
 import java.nio.ByteBuffer
 

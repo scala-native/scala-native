@@ -1,8 +1,8 @@
 package scala.scalanative.windows
 
-import scala.scalanative.unsafe._
-import scala.scalanative.unsigned._
-import scalanative.windows.{Word => WinWord}
+import scala.scalanative.unsafe.*
+import scala.scalanative.unsigned.*
+import scalanative.windows.Word as WinWord
 
 @link("ws2_32")
 @extern
@@ -181,9 +181,9 @@ object WinSocketApiExt {
 }
 
 object WinSocketApiOps {
-  import WinSocketApi._
-  import WinSocketApiExt._
-  import util.Conversion._
+  import WinSocketApi.*
+  import WinSocketApiExt.*
+  import util.Conversion.*
 
   private var winSocketsInitialized = false
 

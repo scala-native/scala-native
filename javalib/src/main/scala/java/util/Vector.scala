@@ -17,9 +17,9 @@
 
 package java.util
 
-import java.io._
-import java.util._
-import java.{lang => jl}
+import java.io.*
+import java.util.*
+import java.lang as jl
 
 @SerialVersionUID(-2767605614048989439L)
 object Vector {
@@ -44,7 +44,7 @@ class Vector[E <: AnyRef](
 
   def this(capacity: Int) = this(capacity, 0)
 
-  def this(collection: Collection[_ <: E]) = {
+  def this(collection: Collection[? <: E]) = {
     this(collection.size(), 0)
     val it = collection.iterator()
     while (it.hasNext()) {
@@ -68,7 +68,7 @@ class Vector[E <: AnyRef](
 
   override def addAll(
       _location: Int,
-      collection: Collection[_ <: E]
+      collection: Collection[? <: E]
   ): Boolean = synchronized {
     var location = _location
     if (0 <= location && location <= elementCount) {
@@ -96,7 +96,7 @@ class Vector[E <: AnyRef](
     throw new ArrayIndexOutOfBoundsException(location)
   }
 
-  override def addAll(collection: Collection[_ <: E]): Boolean = synchronized {
+  override def addAll(collection: Collection[? <: E]): Boolean = synchronized {
     addAll(elementCount, collection)
   }
 
@@ -123,7 +123,7 @@ class Vector[E <: AnyRef](
   override def contains(obj: Any): Boolean =
     indexOf(obj.asInstanceOf[AnyRef], 0) != -1
 
-  override def containsAll(collection: Collection[_]): Boolean = synchronized {
+  override def containsAll(collection: Collection[?]): Boolean = synchronized {
     super.containsAll(collection)
   }
 
@@ -162,10 +162,10 @@ class Vector[E <: AnyRef](
   }
 
   override def equals(obj: Any): Boolean = obj match {
-    case obj: List[_] =>
+    case obj: List[?] =>
       if (this eq obj) return true
       synchronized {
-        val list = obj.asInstanceOf[List[_]]
+        val list = obj.asInstanceOf[List[?]]
         if (list.size() != elementCount) return false
         var index = 0
         val it = list.iterator()
@@ -299,7 +299,7 @@ class Vector[E <: AnyRef](
 
   override def remove(obj: Any): Boolean = removeElement(obj)
 
-  override def removeAll(collection: Collection[_]): Boolean = synchronized {
+  override def removeAll(collection: Collection[?]): Boolean = synchronized {
     super.removeAll(collection)
   }
 
@@ -360,7 +360,7 @@ class Vector[E <: AnyRef](
     } else throw new IndexOutOfBoundsException
   }
 
-  override def retainAll(collection: Collection[_]): Boolean = synchronized {
+  override def retainAll(collection: Collection[?]): Boolean = synchronized {
     super.retainAll(collection)
   }
 

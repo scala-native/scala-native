@@ -2,8 +2,8 @@ package scala.scalanative.testinterface.common
 
 // Ported from Scala.js
 
-import sbt.testing._
-import java.io._
+import sbt.testing.*
+import java.io.*
 
 private[testinterface] trait Serializer[T] {
   def serialize(x: T, out: Serializer.SerializeState): Unit

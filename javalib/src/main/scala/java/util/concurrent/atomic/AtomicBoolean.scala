@@ -8,8 +8,8 @@ package java.util.concurrent.atomic
 
 import scala.language.implicitConversions
 import scala.scalanative.annotation.alwaysinline
-import scala.scalanative.unsafe._
-import scala.scalanative.libc.stdatomic.memory_order._
+import scala.scalanative.unsafe.*
+import scala.scalanative.libc.stdatomic.memory_order.*
 import scala.scalanative.libc.stdatomic.AtomicByte
 import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
 

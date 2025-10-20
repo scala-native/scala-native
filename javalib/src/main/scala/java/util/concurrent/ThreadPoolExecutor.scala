@@ -8,7 +8,7 @@ package java.util.concurrent
 import java.util
 import java.util.ConcurrentModificationException
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.locks._
+import java.util.concurrent.locks.*
 import scala.annotation.tailrec
 import scala.scalanative.annotation.safePublish
 
@@ -82,7 +82,7 @@ class ThreadPoolExecutor(
     @volatile private var threadFactory: ThreadFactory,
     @volatile private var handler: RejectedExecutionHandler
 ) extends AbstractExecutorService {
-  import ThreadPoolExecutor._
+  import ThreadPoolExecutor.*
 
   if (corePoolSize < 0 || maximumPoolSize <= 0 || maximumPoolSize < corePoolSize || keepAliveTime < 0)
     throw new IllegalArgumentException
@@ -735,7 +735,7 @@ class ThreadPoolExecutor(
       val it: util.Iterator[Runnable] = q.iterator()
       while (it.hasNext()) {
         it.next() match {
-          case r: Future[_] if r.isCancelled() => it.remove()
+          case r: Future[?] if r.isCancelled() => it.remove()
           case _                               => ()
         }
       }
@@ -746,7 +746,7 @@ class ThreadPoolExecutor(
         // The slow path is more likely to be O(N*N).
         for (r <- q.toArray()) {
           r match {
-            case r: Future[_] if r.isCancelled() => q.remove(r)
+            case r: Future[?] if r.isCancelled() => q.remove(r)
             case _                               => ()
           }
         }

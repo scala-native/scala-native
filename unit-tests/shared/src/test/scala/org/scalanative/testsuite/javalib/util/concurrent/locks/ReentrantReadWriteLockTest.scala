@@ -8,16 +8,16 @@
 package org.scalanative.testsuite.javalib.util.concurrent
 package locks
 
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.junit.{Test, Ignore}
 import org.scalanative.testsuite.javalib.util.concurrent.JSR166Test
-import JSR166Test._
+import JSR166Test.*
 
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util
-import java.util.concurrent._
+import java.util.concurrent.*
 import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.locks._
+import java.util.concurrent.locks.*
 
 import java.util.{Arrays, Collection, HashSet, Date}
 
@@ -133,7 +133,7 @@ class ReentrantReadWriteLockTest extends JSR166Test {
   def assertHasNoWaiters(
       lock: ReentrantReadWriteLockTest.PublicReentrantReadWriteLock,
       c: Condition
-  ): Unit = { assertHasWaiters(lock, c, Array.empty[Thread]: _*) }
+  ): Unit = { assertHasWaiters(lock, c, Array.empty[Thread]*) }
 
   /** Checks that condition c has exactly the given waiter threads.
    */
@@ -149,7 +149,7 @@ class ReentrantReadWriteLockTest extends JSR166Test {
     assertEquals(threads.length, lock.getWaitingThreads(c).size)
     assertEquals(
       new util.HashSet[Thread](lock.getWaitingThreads(c)),
-      new util.HashSet[Thread](util.Arrays.asList(threads: _*))
+      new util.HashSet[Thread](util.Arrays.asList(threads*))
     )
     lock.writeLock.unlock()
   }
@@ -162,7 +162,7 @@ class ReentrantReadWriteLockTest extends JSR166Test {
       awaitMethod: ReentrantReadWriteLockTest.AwaitMethod
   ): Unit = {
     val timeoutMillis = 2 * LONG_DELAY_MS
-    import ReentrantReadWriteLockTest.AwaitMethod._
+    import ReentrantReadWriteLockTest.AwaitMethod.*
     awaitMethod match {
       case ReentrantReadWriteLockTest.AwaitMethod.`await` =>
         c.await()

@@ -1,6 +1,6 @@
 package java.util.random
 
-import java.{lang => jl}
+import java.lang as jl
 
 import java.util.{Spliterator, Spliterators}
 import java.util.Spliterators.AbstractSpliterator
@@ -39,7 +39,7 @@ private[util] trait AbstractSplittableRandomGenerator
         var nSeen = 0L
 
         def tryAdvance(
-            action: Consumer[_ >: RandomGenerator.SplittableGenerator]
+            action: Consumer[? >: RandomGenerator.SplittableGenerator]
         ): Boolean = {
           if (nSeen >= streamSize) false
           else {

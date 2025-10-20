@@ -1,23 +1,23 @@
 // ported from Scala.js
 package org.scalanative.testsuite.javalib.util
 
-import java.util._
+import java.util.*
 
 import java.math.{BigDecimal, BigInteger}
 
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
-import org.scalanative.testsuite.utils.Platform._
+import org.scalanative.testsuite.utils.Platform.*
 
 class FormatterTest {
-  import FormatterTest._
+  import FormatterTest.*
 
   @noinline
   def assertF(expected: String, format: String, args: Any*): Unit = {
     val fmt = new Formatter()
-    val res = fmt.format(format, args.asInstanceOf[Seq[AnyRef]]: _*).toString()
+    val res = fmt.format(format, args.asInstanceOf[Seq[AnyRef]]*).toString()
     fmt.close()
     assertEquals(expected, res)
   }
@@ -31,7 +31,7 @@ class FormatterTest {
       acceptUpperCase: Boolean = true
   ): Unit = {
 
-    import Double.{NaN, PositiveInfinity => PosInf, NegativeInfinity => NegInf}
+    import Double.{NaN, PositiveInfinity as PosInf, NegativeInfinity as NegInf}
 
     assertF("Infinity", "%" + conversion, PosInf)
     assertF("-Infinity", "%" + conversion, NegInf)
@@ -116,7 +116,7 @@ class FormatterTest {
     val fmt = new Formatter()
     assertThrows(
       exeption,
-      fmt.format(format, args.asInstanceOf[Seq[AnyRef]]: _*)
+      fmt.format(format, args.asInstanceOf[Seq[AnyRef]]*)
     )
   }
 
@@ -249,7 +249,7 @@ class FormatterTest {
   }
 
   @Test def formatSWithFormattable(): Unit = {
-    import FormattableFlags._
+    import FormattableFlags.*
 
     class FormattableClass extends Formattable {
       private var flags: Int = _

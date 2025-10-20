@@ -25,9 +25,9 @@ import scala.scalanative.nir.SourceFile.Relative
 
 // scalafmt: { maxColumn = 100}
 private[codegen] trait MetadataCodeGen { self: AbstractCodeGen =>
-  import MetadataCodeGen._
-  import Metadata._
-  import Writer._
+  import MetadataCodeGen.*
+  import Metadata.*
+  import Writer.*
   import self.meta.platform
 
   final val generateDebugMetadata = self.meta.config.sourceLevelDebuggingConfig.enabled
@@ -40,7 +40,7 @@ private[codegen] trait MetadataCodeGen { self: AbstractCodeGen =>
   def dbg(name: => String)(values: Metadata.Node*)(implicit ctx: Context): Unit =
     if (generateDebugMetadata) {
       // Named metadata is always stored in metadata section
-      import ctx.sb._
+      import ctx.sb.*
       values.foreach(Writer.ofNode.intern)
       newline()
       str(s"!$name = ")
@@ -121,7 +121,7 @@ private[codegen] trait MetadataCodeGen { self: AbstractCodeGen =>
     implicit def _srcPosition: nir.SourcePosition = srcPosition
     implicit def _scopeId: nir.ScopeId = scopeId
     implicit def analysis: linker.ReachabilityAnalysis.Result = meta.analysis
-    import Metadata.DIExpression._
+    import Metadata.DIExpression.*
 
     debugInfo.localNames.get(id).foreach { localName =>
       val variableTy = if (isVar) nir.Type.Ptr else ty
@@ -232,7 +232,7 @@ private[codegen] trait MetadataCodeGen { self: AbstractCodeGen =>
   )
 
   private val DIBasicTypes: Map[nir.Type, Metadata.Type] = {
-    import nir.Type._
+    import nir.Type.*
     Seq(Byte, Char, Short, Int, Long, Size, Float, Double, Bool, Ptr).map { tpe =>
       val name = tpe.show
       val nameCapitalize = name.head.toUpper + name.tail
@@ -262,7 +262,7 @@ private[codegen] trait MetadataCodeGen { self: AbstractCodeGen =>
       ty: nir.Type,
       underlyingType: Boolean = false
   )(implicit metaCtx: Context): Metadata.Type = {
-    import metaCtx.{typeGeneratatorBacktrace => backtrace, diTypesCache => cache}
+    import metaCtx.{typeGeneratatorBacktrace as backtrace, diTypesCache as cache}
     val tpe = nir.Type.normalize(ty)
     val metadataType = cache
       .get(tpe)
@@ -323,7 +323,7 @@ private[codegen] trait MetadataCodeGen { self: AbstractCodeGen =>
 
   private def ObjectHeaderType(implicit metaCtx: MetadataCodeGen.Context) =
     metaCtx.cachedByName[DICompositeType]("scala.scalanative.runtime.ObjectHeader") { name =>
-      import meta.layouts.ObjectHeader.{layout, size, _}
+      import meta.layouts.ObjectHeader.{layout, size, *}
       DICompositeType(
         DWTag.Structure,
         name = name,
@@ -354,7 +354,7 @@ private[codegen] trait MetadataCodeGen { self: AbstractCodeGen =>
 
   private def ArrayHeaderType(implicit metaCtx: MetadataCodeGen.Context) =
     metaCtx.cachedByName[DICompositeType]("scala.scalanative.runtime.ArrayHeader") { name =>
-      import meta.layouts.ArrayHeader.{layout, size, _}
+      import meta.layouts.ArrayHeader.{layout, size, *}
       DICompositeType(
         DWTag.Structure,
         name = name,
@@ -391,7 +391,7 @@ private[codegen] trait MetadataCodeGen { self: AbstractCodeGen =>
     metaCtx.cachedByName[DICompositeType]("java.lang.Class") { name =>
       implicit def analysis: ReachabilityAnalysis.Result = meta.analysis
       val ClassRef(jlClass) = nir.Rt.Class: @unchecked
-      import meta.layouts.Rtti.{layout, size, _}
+      import meta.layouts.Rtti.{layout, size, *}
 
       DICompositeType(
         DWTag.Class,
@@ -429,7 +429,7 @@ private[codegen] trait MetadataCodeGen { self: AbstractCodeGen =>
     }
 
   private def generateMetadataType(ty: nir.Type)(implicit metaCtx: Context): Metadata.Type = {
-    import nir.Type._
+    import nir.Type.*
     implicit def analysis: ReachabilityAnalysis.Result = metaCtx.codeGen.meta.analysis
     ty match {
       case nir.Type.Unit    => toMetadataType(nir.Rt.BoxedUnit)
@@ -548,7 +548,7 @@ private[codegen] trait MetadataCodeGen { self: AbstractCodeGen =>
                 case (field, offset) =>
                   val ty = field.ty
                   val (name, flags) = field.name.sig.unmangled match {
-                    case nir.Sig.Field(id, scope) => id -> DIFlags(sigAccessibilityFlags(scope): _*)
+                    case nir.Sig.Field(id, scope) => id -> DIFlags(sigAccessibilityFlags(scope)*)
                     case nir.Sig.Generated(id)    => id -> DIFlags(DIFlag.DIFlagArtificial)
                     case nir.Sig.Extern(id)       => id -> DIFlags()
                     case other                    => scala.scalanative.util.unsupported(other)
@@ -590,10 +590,10 @@ private[codegen] object MetadataCodeGen {
   case class Context(codeGen: AbstractCodeGen, sb: ShowBuilder) {
     type WriterCache[T <: Metadata.Node] = mutable.Map[T, Metadata.Id]
     private[MetadataCodeGen] val writersCache
-        : mutable.Map[Class[_ <: Metadata.Node], WriterCache[Metadata.Node]] =
+        : mutable.Map[Class[? <: Metadata.Node], WriterCache[Metadata.Node]] =
       mutable.Map.empty
 
-    private[MetadataCodeGen] val specializedBuilder: Specialized.Builder[_] =
+    private[MetadataCodeGen] val specializedBuilder: Specialized.Builder[?] =
       new Specialized.Builder[Any]()(this)
     private[MetadataCodeGen] val fresh: nir.Fresh = nir.Fresh()
     private[MetadataCodeGen] val diTypesCache = mutable.Map.empty[nir.Type, Metadata.Type]
@@ -609,8 +609,8 @@ private[codegen] object MetadataCodeGen {
   class DefnScopes(val defn: nir.Defn.Define, codeGen: AbstractCodeGen)(implicit
       metadataCtx: MetadataCodeGen.Context
   ) {
-    import codeGen._
-    import Metadata._
+    import codeGen.*
+    import Metadata.*
 
     private val scopes = mutable.Map.empty[nir.ScopeId, Metadata.Scope]
 
@@ -646,7 +646,7 @@ private[codegen] object MetadataCodeGen {
       def methodNameInfo(sig: nir.Sig.Unmangled): (String, DIFlags) = sig match {
         case nir.Sig.Extern(id)           => id -> DIFlags()
         case nir.Sig.Method(id, _, scope) =>
-          maybeFQCName(id) -> DIFlags(sigAccessibilityFlags(scope): _*)
+          maybeFQCName(id) -> DIFlags(sigAccessibilityFlags(scope)*)
         case nir.Sig.Duplicate(of, _) => methodNameInfo(of.unmangled)
         case nir.Sig.Clinit           => "<clinit>" -> DIFlags(DIFlag.DIFlagPrivate)
         case nir.Sig.Generated(id)    => maybeFQCName(id) -> DIFlags(DIFlag.DIFlagArtificial)
@@ -707,7 +707,7 @@ private[codegen] object MetadataCodeGen {
   }
 
   trait InternedWriter[T <: Metadata.Node] extends Writer[T] {
-    import Writer._
+    import Writer.*
     private def asssignedId(v: T)(implicit ctx: Context): Option[Metadata.Id] =
       v.assignedId.orElse(cache(v).get(v))
 
@@ -770,11 +770,11 @@ private[codegen] object MetadataCodeGen {
 
     private def delegate(v: T): InternedWriter[T] = dispatch(v).asInstanceOf[InternedWriter[T]]
 
-    def dispatch(v: T): InternedWriter[_ <: T]
+    def dispatch(v: T): InternedWriter[? <: T]
   }
 
   object Writer {
-    import Metadata._
+    import Metadata.*
 
     implicit class MetadataWriterOps[T <: Metadata](val value: T) extends AnyVal {
       def write()(implicit
@@ -899,7 +899,7 @@ private[codegen] object MetadataCodeGen {
 
       }
       class Builder[T](implicit ctx: Context) {
-        import Builder._
+        import Builder.*
         private var isEmpty = true
 
         private def reset(): this.type = {

@@ -1,6 +1,6 @@
 package org.scalanative.testsuite.javalib.lang
 
-import java.lang._
+import java.lang.*
 
 // Three tests ported from Scala.js javalib/lang/DoubleTest.scala
 // commit: 0f25c8c dated: 2021-02-17
@@ -13,7 +13,7 @@ import java.lang._
 // with that intent. Scala.js JDouble is introduced to minimize changes
 // in ported Scala.js tests. Existing usages of unqualified Double
 // are not changed. Joys of blending code bases.
-import java.lang.{Double => JDouble}
+import java.lang.Double as JDouble
 
 import java.lang.Double.{
   doubleToLongBits,
@@ -23,7 +23,7 @@ import java.lang.Double.{
 }
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 

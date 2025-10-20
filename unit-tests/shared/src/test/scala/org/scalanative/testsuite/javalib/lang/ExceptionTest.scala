@@ -1,10 +1,10 @@
 package org.scalanative.testsuite.javalib.lang
 
 import org.junit.Test
-import org.junit.Assert._
-import org.junit.Assume._
+import org.junit.Assert.*
+import org.junit.Assume.*
 
-import scala.scalanative.junit.utils.AssumesHelper._
+import scala.scalanative.junit.utils.AssumesHelper.*
 import org.scalanative.testsuite.utils.Platform
 
 class DummyNoStackTraceException extends scala.util.control.NoStackTrace

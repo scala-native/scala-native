@@ -1,7 +1,7 @@
 package scala.scalanative.ffi
 
 import scala.scalanative.annotation.alwaysinline
-import scala.scalanative.unsafe._
+import scala.scalanative.unsafe.*
 import scala.scalanative.meta.LinktimeInfo.isWindows
 import scala.scalanative.runtime.{fromRawUSize, Intrinsics}
 

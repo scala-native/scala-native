@@ -2,12 +2,12 @@ package org.scalanative.testsuite.javalib.util.jar
 
 // Ported from Apache Harmony
 
-import java.util.jar._
+import java.util.jar.*
 import java.util.HashSet
 
 import org.junit.Before
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
@@ -104,7 +104,7 @@ class AttributesTest {
     b.putValue("4", "shi")
     b.putValue("5", "go")
     b.putValue("6", "roku")
-    a.putAll(b.asInstanceOf[java.util.Map[_, _]])
+    a.putAll(b.asInstanceOf[java.util.Map[?, ?]])
     assertTrue(a.getValue("1") == "one")
     assertTrue(a.getValue("3") == "san")
     assertTrue(a.getValue("5") == "go")
@@ -114,7 +114,7 @@ class AttributesTest {
     assertTrue(atts.put(Attributes.Name.MANIFEST_VERSION, "1") == null)
 
     val atts2 = new Attributes()
-    atts2.putAll(atts.asInstanceOf[java.util.Map[_, _]])
+    atts2.putAll(atts.asInstanceOf[java.util.Map[?, ?]])
     assertTrue(atts2.get(Attributes.Name.CLASS_PATH) == "tools.jar")
     assertTrue(atts2.get(Attributes.Name.MANIFEST_VERSION) == "1")
 

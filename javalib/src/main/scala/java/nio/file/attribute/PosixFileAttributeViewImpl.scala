@@ -1,19 +1,19 @@
 package java.nio.file.attribute
 
-import java.{lang => jl}
-import java.{util => ju}
+import java.lang as jl
+import java.util as ju
 import java.util.{HashMap, HashSet, Set}
 import java.util.concurrent.TimeUnit
 import java.nio.file.{LinkOption, Path, PosixException}
-import java.nio.file.attribute._
+import java.nio.file.attribute.*
 
-import scalanative.unsigned._
-import scalanative.unsafe._
+import scalanative.unsigned.*
+import scalanative.unsafe.*
 
-import scalanative.posix._
+import scalanative.posix.*
 
 // Import posix name errno as variable, not class or type.
-import scala.scalanative.posix.{errno => posixErrno}, posixErrno.errno
+import scala.scalanative.posix.errno as posixErrno, posixErrno.errno
 
 import scalanative.posix.sys.stat
 

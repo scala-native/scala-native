@@ -1,5 +1,5 @@
 import java.io.File
-import Utils._
+import Utils.*
 
 object Files {
 

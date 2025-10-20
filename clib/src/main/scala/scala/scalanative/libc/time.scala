@@ -1,7 +1,7 @@
 package scala.scalanative
 package libc
 
-import scalanative.unsafe._
+import scalanative.unsafe.*
 
 @extern object time extends time
 

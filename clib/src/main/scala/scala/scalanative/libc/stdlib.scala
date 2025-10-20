@@ -1,8 +1,8 @@
 package scala.scalanative
 package libc
 
-import scala.scalanative.unsafe._
-import scala.scalanative.unsigned._
+import scala.scalanative.unsafe.*
+import scala.scalanative.unsigned.*
 
 @extern object stdlib extends stdlib
 

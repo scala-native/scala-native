@@ -5,15 +5,15 @@
 package org.scalanative.testsuite.javalib.util
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
-import java.{util => ju, lang => jl}
+import java.{util as ju, lang as jl}
 
 import scala.reflect.ClassTag
 
-import Utils._
+import Utils.*
 
 trait SetTest extends CollectionTest {
 
@@ -185,10 +185,10 @@ trait SetTest extends CollectionTest {
       else
         List("ONE", "TWO", "THREE")
     }
-    assertTrue(hs.addAll(TrivialImmutableCollection(l: _*)))
+    assertTrue(hs.addAll(TrivialImmutableCollection(l*)))
     assertEquals(3, hs.size)
 
-    assertIteratorSameElementsAsSet(l: _*)(hs.iterator())
+    assertIteratorSameElementsAsSet(l*)(hs.iterator())
   }
 
   @Test def equalsOnlyOtherSets(): Unit = {
@@ -203,7 +203,7 @@ trait SetTest extends CollectionTest {
         List("ONE", "TWO", "THREE")
     }
 
-    val coll = TrivialImmutableCollection(l: _*)
+    val coll = TrivialImmutableCollection(l*)
     assertTrue(hsUut.addAll(coll))
     assertEquals(3, hsUut.size)
 

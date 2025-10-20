@@ -3,10 +3,10 @@
 package org.scalanative.testsuite.javalib.util
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
-import java.{lang => jl}
-import java.{util => ju}
+import java.lang as jl
+import java.util as ju
 import java.util.function.UnaryOperator
 
 import scala.reflect.ClassTag
@@ -374,7 +374,7 @@ trait ListTest extends CollectionTest with CollectionsTestBase {
     assertEquals("nine", al1.get(0))
     for (i <- 0 until 3) {
       assertEquals(al.get(2 + i), al1.get(i))
-      if (!al.isInstanceOf[ju.concurrent.CopyOnWriteArrayList[_]]) {
+      if (!al.isInstanceOf[ju.concurrent.CopyOnWriteArrayList[?]]) {
         /* For CopyOnWriteArrayList, accessing al0 after al has been modified
          * through al1 (i.e., through anything bug al0 itself) is undefined
          * behavior.
@@ -529,7 +529,7 @@ trait ListTest extends CollectionTest with CollectionsTestBase {
     testIfSorted(true)
 
     list.clear()
-    list.addAll(TrivialImmutableCollection(range.reverse.map(toElem): _*))
+    list.addAll(TrivialImmutableCollection(range.reverse.map(toElem)*))
     list.sort(null)
     testIfSorted(true)
 
@@ -537,7 +537,7 @@ trait ListTest extends CollectionTest with CollectionsTestBase {
       val rnd = new scala.util.Random(seed)
       list.clear()
       list.addAll(
-        TrivialImmutableCollection(range.map(_ => toElem(rnd.nextInt())): _*)
+        TrivialImmutableCollection(range.map(_ => toElem(rnd.nextInt()))*)
       )
       list.sort(null)
       testIfSorted(false)
@@ -570,7 +570,7 @@ trait ListTest extends CollectionTest with CollectionsTestBase {
     testIfSorted(true)
 
     list.clear()
-    list.addAll(TrivialImmutableCollection(range.reverse.map(toElem): _*))
+    list.addAll(TrivialImmutableCollection(range.reverse.map(toElem)*))
     list.sort(cmp)
     testIfSorted(true)
 
@@ -578,7 +578,7 @@ trait ListTest extends CollectionTest with CollectionsTestBase {
       val rnd = new scala.util.Random(seed)
       list.clear()
       list.addAll(
-        TrivialImmutableCollection(range.map(_ => toElem(rnd.nextInt())): _*)
+        TrivialImmutableCollection(range.map(_ => toElem(rnd.nextInt()))*)
       )
       list.sort(cmp)
       testIfSorted(false)
@@ -592,7 +592,7 @@ trait ListFactory extends CollectionFactory {
   // Refines the result type of CollectionFactory.fromElements
   override def fromElements[E: ClassTag](elems: E*): ju.List[E] = {
     val coll = empty[E]
-    coll.addAll(TrivialImmutableCollection(elems: _*))
+    coll.addAll(TrivialImmutableCollection(elems*))
     coll
   }
 }

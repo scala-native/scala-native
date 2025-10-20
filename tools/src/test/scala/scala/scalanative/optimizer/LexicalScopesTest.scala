@@ -2,7 +2,7 @@ package scala.scalanative
 package optimizer
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 import scala.collection.mutable
 import scala.scalanative.build.NativeConfig

@@ -37,8 +37,8 @@ import java.nio.file.attribute.{
 import java.util.SplittableRandom
 
 import org.junit.Test
-import org.junit.Assert._
-import org.junit.Assume._
+import org.junit.Assert.*
+import org.junit.Assume.*
 import org.junit.BeforeClass
 import org.junit.Ignore
 
@@ -57,7 +57,7 @@ object FilesCopyTest {
 }
 
 class FilesCopyTest {
-  import FilesTest._
+  import FilesTest.*
 
   private def createOsFile(
       path: Path,

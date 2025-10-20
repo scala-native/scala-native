@@ -1,7 +1,7 @@
 package scala.scalanative
 
-import scala.scalanative.unsafe._
-import scala.scalanative.unsigned._
+import scala.scalanative.unsafe.*
+import scala.scalanative.unsigned.*
 
 package object windows {
   type Word = UShort // uint_16

@@ -9,10 +9,10 @@ package java.util.concurrent.atomic
 import java.io.Serializable
 import scala.annotation.tailrec
 import scala.scalanative.annotation.alwaysinline
-import scala.scalanative.unsafe._
+import scala.scalanative.unsafe.*
 import scala.scalanative.libc.stdatomic.AtomicInt
-import scala.scalanative.libc.stdatomic.memory_order._
-import scala.scalanative.runtime.{fromRawPtr}
+import scala.scalanative.libc.stdatomic.memory_order.*
+import scala.scalanative.runtime.fromRawPtr
 import java.util.function.IntBinaryOperator
 import java.util.function.IntUnaryOperator
 import scala.scalanative.runtime.Intrinsics

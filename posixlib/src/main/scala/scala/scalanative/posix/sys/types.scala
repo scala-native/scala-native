@@ -2,8 +2,8 @@ package scala.scalanative
 package posix
 package sys
 
-import scala.scalanative.unsigned._
-import scala.scalanative.unsafe._
+import scala.scalanative.unsigned.*
+import scala.scalanative.unsafe.*
 
 import scala.scalanative
 

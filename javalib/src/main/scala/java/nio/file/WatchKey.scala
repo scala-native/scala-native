@@ -5,7 +5,7 @@ import java.util.List
 trait WatchKey {
   def cancel(): Unit
   def isValid(): Boolean
-  def pollEvents(): List[WatchEvent[_]]
+  def pollEvents(): List[WatchEvent[?]]
   def reset(): Boolean
   def watchable(): Watchable
 }

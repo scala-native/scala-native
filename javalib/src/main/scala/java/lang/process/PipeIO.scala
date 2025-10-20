@@ -1,13 +1,13 @@
 package java.lang.process
 
-import java.io._
+import java.io.*
 
 import scala.scalanative.annotation.stub
-import scala.scalanative.posix.sys.ioctl._
+import scala.scalanative.posix.sys.ioctl.*
 import scala.scalanative.meta.LinktimeInfo.isWindows
 
-import scala.scalanative.unsafe._
-import scala.scalanative.unsigned._
+import scala.scalanative.unsafe.*
+import scala.scalanative.unsigned.*
 
 import scala.scalanative.windows.DWord
 import scala.scalanative.windows.NamedPipeApi.PeekNamedPipe

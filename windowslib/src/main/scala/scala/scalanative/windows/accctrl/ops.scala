@@ -1,11 +1,11 @@
 package scala.scalanative.windows.accctrl
 
-import scala.scalanative.unsafe._
-import scala.scalanative.windows._
+import scala.scalanative.unsafe.*
+import scala.scalanative.windows.*
 
-import AclApi._
-import SecurityBaseApi._
-import WinBaseApi._
+import AclApi.*
+import SecurityBaseApi.*
+import WinBaseApi.*
 
 object ops {
   implicit class ExplicitAccessOps(ref: Ptr[ExplicitAccessW]) {

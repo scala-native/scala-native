@@ -1,6 +1,6 @@
 package java.io
 
-import java.{lang => jl}
+import java.lang as jl
 import java.nio.channels.{FileChannelImpl, FileChannel}
 
 import scalanative.unsafe.{Zone, toCString, toCWideStringUTF16LE}
@@ -9,8 +9,8 @@ import scalanative.posix.fcntl
 import scalanative.posix.sys.stat
 import scalanative.meta.LinktimeInfo.isWindows
 import scala.scalanative.windows
-import windows._
-import windows.FileApiExt._
+import windows.*
+import windows.FileApiExt.*
 import windows.HandleApiExt
 
 class RandomAccessFile private (
@@ -247,8 +247,8 @@ private object RandomAccessFile {
       )
 
     def unixFileDescriptor() = Zone.acquire { implicit z =>
-      import fcntl._
-      import stat._
+      import fcntl.*
+      import stat.*
 
       val flags = _flags match {
         case "r"                  => O_RDONLY
@@ -266,7 +266,7 @@ private object RandomAccessFile {
     }
 
     def windowsFileDescriptor() = Zone.acquire { implicit z =>
-      import windows.winnt.AccessRights._
+      import windows.winnt.AccessRights.*
       val (access, dispostion) = _flags match {
         case "r"                  => FILE_GENERIC_READ -> OPEN_EXISTING
         case "rw" | "rws" | "rwd" =>

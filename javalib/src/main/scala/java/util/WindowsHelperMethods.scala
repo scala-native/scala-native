@@ -1,16 +1,16 @@
 package java.util
 
-import scala.scalanative.unsafe._
-import scala.scalanative.unsigned._
-import scala.scalanative.windows.ProcessThreadsApi._
-import scala.scalanative.windows.HandleApi._
-import scala.scalanative.windows.HandleApiExt._
-import scala.scalanative.windows.FileApiExt._
-import scala.scalanative.windows.ErrorHandlingApi._
-import scala.scalanative.windows._
-import scala.scalanative.windows.winnt._
-import winnt.AccessToken._
-import scala.scalanative.windows.SecurityBaseApi._
+import scala.scalanative.unsafe.*
+import scala.scalanative.unsigned.*
+import scala.scalanative.windows.ProcessThreadsApi.*
+import scala.scalanative.windows.HandleApi.*
+import scala.scalanative.windows.HandleApiExt.*
+import scala.scalanative.windows.FileApiExt.*
+import scala.scalanative.windows.ErrorHandlingApi.*
+import scala.scalanative.windows.*
+import scala.scalanative.windows.winnt.*
+import winnt.AccessToken.*
+import scala.scalanative.windows.SecurityBaseApi.*
 import java.nio.file.WindowsException
 
 /** Windows implementation specific helper methods, not available in public API

@@ -8,18 +8,18 @@
  */
 package org.scalanative.testsuite.javalib.util.concurrent
 
-import org.junit._
-import org.junit.Assert._
+import org.junit.*
+import org.junit.Assert.*
 
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util
-import java.util._
-import java.util.concurrent._
+import java.util.*
+import java.util.concurrent.*
 
 /** Contains "contract" tests applicable to all BlockingQueue implementations.
  */
 abstract class BlockingQueueTest extends JSR166Test {
-  import JSR166Test._
+  import JSR166Test.*
 
   /** Returns an empty instance of the implementation class. */
   protected def emptyCollection(): BlockingQueue[Any]
@@ -103,7 +103,7 @@ abstract class BlockingQueueTest extends JSR166Test {
    */
   @Test def testAddAllNullElements(): Unit = {
     val q = emptyCollection()
-    val elements = Arrays.asList(new Array[Integer](SIZE): _*)
+    val elements = Arrays.asList(new Array[Integer](SIZE)*)
     try {
       q.addAll(elements)
       shouldThrow()

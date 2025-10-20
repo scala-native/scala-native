@@ -1,14 +1,14 @@
 package scala.scalanative.test
 // Based on https://github.com/scala-native/scala-native-loop
-import LibUV._
+import LibUV.*
 import scala.scalanative.libc.stdlib
-import scala.scalanative.unsafe._
+import scala.scalanative.unsafe.*
 import scala.scalanative.concurrent.NativeExecutionContext
-import scala.scalanative.runtime.Intrinsics._
+import scala.scalanative.runtime.Intrinsics.*
 import EventLoop.loop
 import scala.util.{Success, Try}
-import scala.concurrent._
-import scala.concurrent.duration._
+import scala.concurrent.*
+import scala.concurrent.duration.*
 import scala.concurrent.ExecutionContext
 
 object Test {
@@ -153,7 +153,7 @@ object LibUV {
 }
 
 private object HandleUtils {
-  import scala.scalanative.runtime._
+  import scala.scalanative.runtime.*
   private val references = new java.util.IdentityHashMap[Object, Int]()
 
   @inline def getData[T <: Object](handle: CVoidPtr): T = {

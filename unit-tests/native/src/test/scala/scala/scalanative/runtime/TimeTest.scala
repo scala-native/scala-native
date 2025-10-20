@@ -1,8 +1,8 @@
 package scala.scalanative.runtime
 
 import org.junit.Test
-import org.junit.Assert._
-import scala.scalanative.unsafe._
+import org.junit.Assert.*
+import scala.scalanative.unsafe.*
 
 @extern object TimeTestFFI {
   def scalanative_time_zone_offset(): CLongLong = extern

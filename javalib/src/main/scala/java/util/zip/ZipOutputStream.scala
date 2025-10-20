@@ -15,7 +15,7 @@ class ZipOutputStream(_out: OutputStream, charset: Charset)
       new Deflater(Deflater.DEFAULT_COMPRESSION, true)
     )
     with ZipConstants {
-  import ZipOutputStream._
+  import ZipOutputStream.*
 
   def this(out: OutputStream) = this(out, StandardCharsets.UTF_8)
 

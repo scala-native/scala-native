@@ -1,7 +1,7 @@
 import java.io.{File, IOException}
 
 object CreateTempFileTest {
-  import Files._
+  import Files.*
   def main(args: Array[String]): Unit = {
     assert(existingTempTarget.exists)
     assert(existingTempTarget.isDirectory)

@@ -1,13 +1,13 @@
 package org.scalanative.testsuite.javalib.util
 
-import java.util._
+import java.util.*
 
 import org.junit.Ignore
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
-import scala.scalanative.junit.utils.CollectionConverters._
+import scala.scalanative.junit.utils.CollectionConverters.*
 
 class ArrayDequeTest {
 
@@ -1106,7 +1106,7 @@ class ArrayDequeJSR166Test {
   @Test def testConstructor4(): Unit = {
     assertThrows(
       classOf[NullPointerException],
-      new ArrayDeque[Integer](Arrays.asList(new Array[Integer](SIZE): _*))
+      new ArrayDeque[Integer](Arrays.asList(new Array[Integer](SIZE)*))
     )
   }
 
@@ -1117,7 +1117,7 @@ class ArrayDequeJSR166Test {
     items(0) = 0
     assertThrows(
       classOf[NullPointerException],
-      new ArrayDeque(Arrays.asList(items: _*))
+      new ArrayDeque(Arrays.asList(items*))
     )
   }
 
@@ -1125,7 +1125,7 @@ class ArrayDequeJSR166Test {
    */
   @Test def testConstructor6(): Unit = {
     val items = defaultItems
-    val q = new ArrayDeque(Arrays.asList(items: _*))
+    val q = new ArrayDeque(Arrays.asList(items*))
     for (i <- 0 until SIZE)
       mustEqual(items(i), q.pollFirst())
   }
@@ -1322,7 +1322,7 @@ class ArrayDequeJSR166Test {
     val q = new ArrayDeque[Integer]()
     assertThrows(
       classOf[NullPointerException],
-      q.addAll(Arrays.asList(new Array[Integer](SIZE): _*))
+      q.addAll(Arrays.asList(new Array[Integer](SIZE)*))
     )
   }
 
@@ -1335,7 +1335,7 @@ class ArrayDequeJSR166Test {
     items(0) = 0
     assertThrows(
       classOf[NullPointerException],
-      q.addAll(Arrays.asList(new Array[Integer](SIZE): _*))
+      q.addAll(Arrays.asList(new Array[Integer](SIZE)*))
     )
   }
 
@@ -1345,8 +1345,8 @@ class ArrayDequeJSR166Test {
     val empty = new Array[Int](0)
     val items = defaultItems
     val q = new ArrayDeque[Int]()
-    assertFalse(q.addAll(Arrays.asList(empty: _*)))
-    assertTrue(q.addAll(Arrays.asList(items: _*)))
+    assertFalse(q.addAll(Arrays.asList(empty*)))
+    assertTrue(q.addAll(Arrays.asList(items*)))
     for (i <- 0 until SIZE)
       mustEqual(items(i), q.pollFirst())
   }

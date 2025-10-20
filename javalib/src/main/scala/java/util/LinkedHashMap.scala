@@ -6,7 +6,7 @@
 
 package java.util
 
-import java.{util => ju}
+import java.util as ju
 import java.util.function.BiConsumer
 
 class LinkedHashMap[K, V](
@@ -17,7 +17,7 @@ class LinkedHashMap[K, V](
     with SequencedMap[K, V] {
   self =>
 
-  import LinkedHashMap._
+  import LinkedHashMap.*
 
   /** Node that was least recently created (or accessed under access-order). */
   private var eldest: Node[K, V] = _
@@ -34,7 +34,7 @@ class LinkedHashMap[K, V](
   def this() =
     this(HashMap.DEFAULT_INITIAL_CAPACITY)
 
-  def this(m: Map[_ <: K, _ <: V]) = {
+  def this(m: Map[? <: K, ? <: V]) = {
     this(m.size())
     putAll(m)
   }
@@ -108,7 +108,7 @@ class LinkedHashMap[K, V](
 
   protected def removeEldestEntry(eldest: Map.Entry[K, V]): Boolean = false
 
-  override def forEach(action: BiConsumer[_ >: K, _ >: V]): Unit = {
+  override def forEach(action: BiConsumer[? >: K, ? >: V]): Unit = {
     var node = eldest
     while (node ne null) {
       action.accept(node.key, node.value)

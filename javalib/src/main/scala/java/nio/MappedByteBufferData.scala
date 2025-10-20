@@ -2,21 +2,21 @@ package java.nio
 
 import scala.scalanative.meta.LinktimeInfo.isWindows
 
-import scala.scalanative.posix.sys.mman._
+import scala.scalanative.posix.sys.mman.*
 
-import scala.scalanative.unsafe._
-import scala.scalanative.unsigned._
+import scala.scalanative.unsafe.*
+import scala.scalanative.unsigned.*
 
 import java.lang.ref.{WeakReference, WeakReferenceRegistry}
 
-import scala.scalanative.windows.HandleApi._
-import scala.scalanative.windows.MemoryApi._
+import scala.scalanative.windows.HandleApi.*
+import scala.scalanative.windows.MemoryApi.*
 import java.nio.channels.FileChannel.MapMode
 import java.io.IOException
 
 // Finalization object used to unmap file after GC.
 private class MappedByteBufferFinalizer(
-    weakRef: WeakReference[_ >: Null <: AnyRef],
+    weakRef: WeakReference[? >: Null <: AnyRef],
     ptr: Ptr[Byte],
     size: Int,
     windowsMappingHandle: Option[Handle]

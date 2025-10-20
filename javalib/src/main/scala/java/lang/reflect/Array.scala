@@ -1,10 +1,10 @@
 package java.lang.reflect
 
-import scalanative.runtime.{Array => _, _}
+import scalanative.runtime.{Array as _, *}
 import scala.annotation.tailrec
 
 object Array {
-  def newInstance(componentType: Class[_], length: Int): AnyRef = {
+  def newInstance(componentType: Class[?], length: Int): AnyRef = {
     val ty = componentType
 
     if (ty.isPrimitive()) {
@@ -24,24 +24,24 @@ object Array {
   }
 
   def newInstance(
-      componentType: Class[_],
+      componentType: Class[?],
       dimensions: scala.Array[scala.Int]
   ): AnyRef = {
-    import scala.scalanative.runtime.{Array => NativeArray, ObjectArray}
+    import scala.scalanative.runtime.{Array as NativeArray, ObjectArray}
     if (componentType eq null)
       throw new NullPointerException()
     if (dimensions.length == 0 || dimensions.length > 255)
       throw new IllegalArgumentException()
 
     // Recursively build nested arrays
-    def fill(idx: Int): NativeArray[_] = {
+    def fill(idx: Int): NativeArray[?] = {
       val length = dimensions(idx)
       if (length < 0) throw new NegativeArraySizeException()
 
       if (idx == dimensions.length - 1) {
         // Create base array
         newInstance(componentType, length)
-          .asInstanceOf[NativeArray[_]]
+          .asInstanceOf[NativeArray[?]]
       } else {
         // Create subarrays recursively
         val arr = ObjectArray.alloc(length)

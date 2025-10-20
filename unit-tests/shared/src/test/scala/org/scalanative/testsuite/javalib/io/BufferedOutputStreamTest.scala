@@ -1,14 +1,14 @@
 // Ported from Apache Harmony
 package org.scalanative.testsuite.javalib.io
 
-import java.io._
+import java.io.*
 
 import org.junit.Test
-import org.junit.Assert._
-import org.junit.Assume._
+import org.junit.Assert.*
+import org.junit.Assume.*
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
-import scalanative.junit.utils.AssumesHelper._
+import scalanative.junit.utils.AssumesHelper.*
 
 class BufferedOutputStreamTest {
 

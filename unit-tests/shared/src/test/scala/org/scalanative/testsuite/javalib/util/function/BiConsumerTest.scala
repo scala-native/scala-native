@@ -3,13 +3,13 @@ package org.scalanative.testsuite.javalib.util.function
 
 import java.util.function.BiConsumer
 
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 class BiConsumerTest {
-  import BiConsumerTest._
+  import BiConsumerTest.*
 
   @Test def accept(): Unit = {
     // Side-effects

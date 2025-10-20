@@ -1,9 +1,9 @@
 package org.scalanative.testsuite.javalib.nio
 
-import java.nio._
+import java.nio.*
 
 import scala.language.implicitConversions
-import scala.reflect._
+import scala.reflect.*
 
 // Ported from Scala.js
 sealed abstract class BufferFactory {
@@ -44,7 +44,7 @@ sealed abstract class BufferFactory {
     (start until end).map(elemFromInt).toArray
 
   def withContent(capacity: Int, content: ElementType*): BufferType =
-    withContent(0, capacity, capacity, content: _*)
+    withContent(0, capacity, capacity, content*)
 
   def withContent(
       pos: Int,
@@ -233,7 +233,7 @@ object BufferFactory {
         capacity: Int,
         content: ElementType*
     ): BufferType =
-      super.withContent(pos, limit, capacity, content: _*).asReadOnlyBuffer()
+      super.withContent(pos, limit, capacity, content*).asReadOnlyBuffer()
   }
 
   trait SlicedBufferFactory extends BufferFactory {

@@ -4,8 +4,8 @@ package io
 import java.io.Writer
 import java.net.URI
 import java.nio.ByteBuffer
-import java.nio.file._
-import java.nio.channels._
+import java.nio.file.*
+import java.nio.channels.*
 import java.util.HashMap
 import scalanative.util.{Scope, acquire, defer}
 

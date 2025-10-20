@@ -3,8 +3,8 @@ package scala.scalanative
 import java.nio.charset.{Charset, StandardCharsets}
 import scalanative.annotation.alwaysinline
 import scalanative.runtime.{Platform, fromRawPtr, intrinsic, ffi}
-import scalanative.runtime.Intrinsics._
-import scalanative.unsigned._
+import scalanative.runtime.Intrinsics.*
+import scalanative.unsigned.*
 import scala.scalanative.meta.LinktimeInfo
 import scala.scalanative.memory.PointerBuffer
 
@@ -85,7 +85,7 @@ package object unsafe extends unsafe.UnsafePackageCompat {
   type CPtrDiff = Size
 
   /** The C/C++ 'void *' type; by convention, not declaration. */
-  type CVoidPtr = Ptr[_]
+  type CVoidPtr = Ptr[?]
 
   /** C-style string with trailing 0. */
   type CString = Ptr[CChar]

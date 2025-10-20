@@ -1,9 +1,9 @@
 package scala.scalanative.windows.winnt
 
 import scala.scalanative.unsafe.extern
-import scala.scalanative.unsafe._
+import scala.scalanative.unsafe.*
 
-import scala.scalanative.windows.SecurityBaseApi._
+import scala.scalanative.windows.SecurityBaseApi.*
 
 @link("advapi32")
 @extern

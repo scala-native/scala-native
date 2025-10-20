@@ -1,7 +1,7 @@
 package scala.runtime
 
-import scala.scalanative.libc.stdatomic._
-import scala.scalanative.libc.stdatomic.memory_order._
+import scala.scalanative.libc.stdatomic.*
+import scala.scalanative.libc.stdatomic.memory_order.*
 import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
 
 /** Not for public consumption. Usage by the runtime only.

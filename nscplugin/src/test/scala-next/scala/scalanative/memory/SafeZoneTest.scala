@@ -3,7 +3,7 @@ package scala.scalanative.memory
 import java.nio.file.Files
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 import scala.scalanative.NIRCompiler
 import scala.scalanative.api.CompilationFailedException

@@ -13,7 +13,7 @@ class LinkedHashSet[E]
   def this(initialCapacity: Int) =
     this()
 
-  def this(c: java.util.Collection[_ <: E]) = {
+  def this(c: java.util.Collection[? <: E]) = {
     this()
     addAll(c)
   }

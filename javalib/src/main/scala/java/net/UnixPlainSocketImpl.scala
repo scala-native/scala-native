@@ -1,12 +1,12 @@
 package java.net
 
-import scala.scalanative.unsigned._
-import scala.scalanative.unsafe._
-import scala.scalanative.posix.errno._
-import scala.scalanative.posix.fcntl._
-import scala.scalanative.posix.poll._
-import scala.scalanative.posix.pollEvents._
-import scala.scalanative.posix.pollOps._
+import scala.scalanative.unsigned.*
+import scala.scalanative.unsafe.*
+import scala.scalanative.posix.errno.*
+import scala.scalanative.posix.fcntl.*
+import scala.scalanative.posix.poll.*
+import scala.scalanative.posix.pollEvents.*
+import scala.scalanative.posix.pollOps.*
 import scala.scalanative.posix.sys.socket
 
 import java.io.{FileDescriptor, IOException}

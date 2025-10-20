@@ -1,9 +1,9 @@
 package org.scalanative.testsuite.javalib.lang
 
-import java.lang._
+import java.lang.*
 
 import org.junit.{Ignore, Test}
-import org.junit.Assert._
+import org.junit.Assert.*
 
 class ClassTest {
 
@@ -156,7 +156,7 @@ class ClassTest {
   @Test def testToString(): Unit = {
     assertEquals(
       "class java.lang.Class",
-      classOf[java.lang.Class[_]].toString()
+      classOf[java.lang.Class[?]].toString()
     )
     assertEquals(
       "interface java.lang.Runnable",
@@ -175,12 +175,12 @@ class ClassTest {
   }
 
   @Test def isInterface(): Unit = {
-    assertFalse(classOf[java.lang.Class[_]].isInterface)
+    assertFalse(classOf[java.lang.Class[?]].isInterface)
     assertTrue(classOf[java.lang.Runnable].isInterface)
   }
 
   @Test def getInterfaces(): Unit = {
-    def hasInterfaces(cls: Class[_], expected: Set[Class[_]]) = {
+    def hasInterfaces(cls: Class[?], expected: Set[Class[?]]) = {
       val interfaces = cls.getInterfaces().toSet
       val diff = interfaces.diff(expected)
       assertTrue(
@@ -196,7 +196,7 @@ class ClassTest {
   }
 
   @Test def getSuperClass(): Unit = {
-    def checkSuperClassOf(cls: Class[_], expected: Class[_]) =
+    def checkSuperClassOf(cls: Class[?], expected: Class[?]) =
       assertEquals(cls.toString(), expected, cls.getSuperclass())
     checkSuperClassOf(classOf[A], classOf[AnyRef])
     checkSuperClassOf(classOf[B], classOf[A])
@@ -206,15 +206,15 @@ class ClassTest {
   }
 
   private def assertDiffClass(
-      l: java.lang.Class[_],
-      r: java.lang.Class[_]
+      l: java.lang.Class[?],
+      r: java.lang.Class[?]
   ): Unit = {
     assertTrue(s"$l eq $r", l ne r)
   }
 
   private def assertEqualClass(
-      l: java.lang.Class[_],
-      r: java.lang.Class[_]
+      l: java.lang.Class[?],
+      r: java.lang.Class[?]
   ): Unit = {
     assertTrue(s"$l ne $r", l eq r)
   }

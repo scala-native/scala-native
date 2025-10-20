@@ -1,21 +1,21 @@
 package org.scalanative.testsuite.javalib.lang
 
-import java.io._
+import java.io.*
 import java.nio.file.Files
 
 import java.util.concurrent.TimeUnit
-import scala.scalanative.unsigned._
-import scala.scalanative.unsafe._
+import scala.scalanative.unsigned.*
+import scala.scalanative.unsafe.*
 import scala.scalanative.posix.{fcntl, unistd}
 import scala.scalanative.meta.LinktimeInfo.isWindows
 
 import scala.io.Source
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 class ProcessInheritTest {
-  import ProcessUtils._
+  import ProcessUtils.*
 
   @Test def inherit(): Unit = {
     def unixImpl() = {
@@ -39,15 +39,15 @@ class ProcessInheritTest {
     }
 
     def windowsImpl() = {
-      import scala.scalanative.windows._
-      import NamedPipeApi._
-      import HandleApi._
-      import HandleApiExt._
-      import ConsoleApi._
-      import ConsoleApiExt._
-      import FileApi._
-      import FileApiExt._
-      import winnt.AccessRights._
+      import scala.scalanative.windows.*
+      import NamedPipeApi.*
+      import HandleApi.*
+      import HandleApiExt.*
+      import ConsoleApi.*
+      import ConsoleApiExt.*
+      import FileApi.*
+      import FileApiExt.*
+      import winnt.AccessRights.*
       val f = Files.createTempFile("tmp", "out")
       val readEnd, writeEnd, stdOutDup = stackalloc[Handle]()
 

@@ -7,10 +7,10 @@
 package org.scalanative.testsuite.javalib.util.concurrent
 package atomic
 
-import JSR166Test._
+import JSR166Test.*
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 import java.util.concurrent.atomic.AtomicIntegerArray
 

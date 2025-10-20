@@ -8,7 +8,7 @@ trait SortedSet[E] extends Set[E] with SequencedSet[E] {
   override def addLast(e: E): Unit =
     throw new UnsupportedOperationException()
 
-  def comparator(): Comparator[_ >: E]
+  def comparator(): Comparator[? >: E]
 
   def first(): E
 

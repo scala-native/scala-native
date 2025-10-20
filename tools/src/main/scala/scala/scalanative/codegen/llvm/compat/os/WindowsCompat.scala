@@ -9,7 +9,7 @@ import scala.scalanative.util.ShowBuilder
 private[codegen] class WindowsCompat(codegen: AbstractCodeGen)
     extends OsCompat(codegen) {
 
-  import codegen.{pointerType => ptrT}
+  import codegen.pointerType as ptrT
 
   val ehWrapperTy = "\"??_R0?AVExceptionWrapper@scalanative@@@8\""
   val ehWrapperName = "c\".?AVExceptionWrapper@scalanative@@\\00\""
@@ -25,7 +25,7 @@ private[codegen] class WindowsCompat(codegen: AbstractCodeGen)
   override def genBlockAlloca(
       block: nir.ControlFlow.Block
   )(implicit sb: ShowBuilder): Unit = {
-    import sb._
+    import sb.*
     if (block.pred.isEmpty) {
       newline()
       str(s"$ehVar = alloca $ehClass*, align 8")
@@ -33,7 +33,7 @@ private[codegen] class WindowsCompat(codegen: AbstractCodeGen)
   }
 
   override def genPrelude()(implicit sb: ShowBuilder): Unit = {
-    import sb._
+    import sb.*
     def PtrRef = if (useOpaquePointers) ptrT else s"$ptrT*"
     line(s"declare i32 @llvm.eh.typeid.for($ptrT)")
     line(s"declare i32 $osPersonalityType(...)")
@@ -61,8 +61,8 @@ private[codegen] class WindowsCompat(codegen: AbstractCodeGen)
       metaCtx: MetadataCodeGen.Context,
       scopes: MetadataCodeGen.DefnScopes
   ): Unit = {
-    import codegen._
-    import sb._
+    import codegen.*
+    import sb.*
     val nir.Next.Unwind(nir.Val.Local(excname, _), next) = unwind
 
     val excpad = s"_${excname.id}.landingpad"

@@ -5,8 +5,8 @@ import Endianness.LITTLE
 import Endianness.BIG
 import java.io.RandomAccessFile
 import java.nio.channels.Channels
-import scalanative.unsigned._
-import MachO._
+import scalanative.unsigned.*
+import MachO.*
 import scala.collection.mutable.ArrayBuffer
 import java.io.File
 import java.io.BufferedInputStream

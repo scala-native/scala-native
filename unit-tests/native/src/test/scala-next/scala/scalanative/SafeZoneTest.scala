@@ -1,14 +1,14 @@
 package scala.scalanative
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 import scala.util.{Try, Success, Failure}
 import scala.language.experimental.captureChecking
 import scala.scalanative.runtime.SafeZoneAllocator.allocate
 import scala.scalanative.memory.SafeZone
-import scala.scalanative.memory.SafeZone._
+import scala.scalanative.memory.SafeZone.*
 
 /* Test safe zone operations which are private to package `scala.scalanative`. */
 class SafeZoneTest {

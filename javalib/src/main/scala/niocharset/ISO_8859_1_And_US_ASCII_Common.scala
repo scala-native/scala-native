@@ -11,8 +11,8 @@ package niocharset
 import scala.annotation.tailrec
 import scala.scalanative.unsafe.UnsafeRichArray
 
-import java.nio._
-import java.nio.charset._
+import java.nio.*
+import java.nio.charset.*
 
 /** This is a very specific common implementation for ISO_8859_1 and US_ASCII.
  *  Only a single constant changes between the two algorithms (`maxValue`). No

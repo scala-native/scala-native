@@ -9,9 +9,9 @@ package java.util.concurrent.atomic
 import scala.annotation.tailrec
 import scala.language.implicitConversions
 import scala.scalanative.annotation.alwaysinline
-import scala.scalanative.unsafe._
+import scala.scalanative.unsafe.*
 import scala.scalanative.libc.stdatomic.AtomicInt
-import scala.scalanative.libc.stdatomic.memory_order._
+import scala.scalanative.libc.stdatomic.memory_order.*
 import java.util.function.IntBinaryOperator
 import java.util.function.IntUnaryOperator
 import scala.scalanative.runtime.IntArray

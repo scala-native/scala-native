@@ -3,7 +3,7 @@ package java.util.jar
 // Ported from Apache Harmony
 
 import java.io.{ByteArrayOutputStream, File, FilterInputStream, InputStream}
-import java.util.{Enumeration}
+import java.util.Enumeration
 import java.util.zip.{ZipConstants, ZipEntry, ZipFile}
 
 class JarFile(file: File, verify: Boolean, mode: Int)
@@ -22,7 +22,7 @@ class JarFile(file: File, verify: Boolean, mode: Int)
   readMetaEntries()
 
   override def entries(): Enumeration[JarEntry] = {
-    class JarFileEnumerator(ze: Enumeration[_ <: ZipEntry], jf: JarFile)
+    class JarFileEnumerator(ze: Enumeration[? <: ZipEntry], jf: JarFile)
         extends Enumeration[JarEntry] {
       override def hasMoreElements(): Boolean =
         ze.hasMoreElements()

@@ -9,7 +9,7 @@ import scala.scalanative.codegen.llvm.CodeGen
 import scala.scalanative.interflow.Interflow
 import scala.scalanative.linker.{ReachabilityAnalysis, Reach, Link}
 import scala.scalanative.util.Scope
-import scala.concurrent._
+import scala.concurrent.*
 import scala.util.Success
 import scala.scalanative.linker.LinkingException
 
@@ -106,12 +106,12 @@ private[scalanative] object ScalaNative {
     def showFailureDetails(
         analysis: ReachabilityAnalysis.Failure
     ): Unit = {
-      import config.{logger => log, noColor}
+      import config.{logger as log, noColor}
       def appendBackTrace(
           buf: StringBuilder,
           backtrace: List[Reach.BackTraceElement]
       ): Unit = {
-        import scala.io.AnsiColor._
+        import scala.io.AnsiColor.*
         // Build stacktrace in memory to prevent its spliting when logging asynchronously
         val elems = backtrace.map {
           case elem @ Reach.BackTraceElement(_, symbol, filename, line) =>
@@ -172,7 +172,7 @@ private[scalanative] object ScalaNative {
     }
 
     def showFoundServices() = if (analysis.foundServiceProviders.nonEmpty) {
-      import config.{logger => log}
+      import config.logger as log
       val servicesFound = analysis.foundServiceProviders.serviceProviders.size
       val serviceProvidersLoaded = analysis.foundServiceProviders.loaded
       log.info(

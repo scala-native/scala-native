@@ -9,24 +9,24 @@ package org.scalanative.testsuite.javalib.util.stream
  * Use ju.ArrayList surgically at the points of use.
  */
 
-import java.{lang => jl}
+import java.lang as jl
 
-import java.{util => ju}
+import java.util as ju
 import java.util.{Arrays, ArrayList}
 import java.util.{OptionalDouble, DoubleSummaryStatistics}
 import java.util.Spliterator
 import java.util.Spliterators
 
 import java.util.concurrent.{CountDownLatch, TimeUnit}
-import java.util.concurrent.CountDownLatch._
+import java.util.concurrent.CountDownLatch.*
 
 import java.util.function.{DoubleConsumer, DoubleFunction, DoubleSupplier}
 import java.util.function.Supplier
 
-import java.util.stream._
+import java.util.stream.*
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.junit.BeforeClass
 import org.junit.Ignore
 
@@ -588,7 +588,7 @@ class DoubleStreamTest {
 
     val expectedAverage = 49.19625
 
-    val s = DoubleStream.of(wild: _*)
+    val s = DoubleStream.of(wild*)
 
     val optional = s.average()
 
@@ -622,7 +622,7 @@ class DoubleStreamTest {
 
     assertTrue(
       "resultant stream should be boxed Stream[Double]",
-      sBoxed.isInstanceOf[Stream[_]]
+      sBoxed.isInstanceOf[Stream[?]]
     )
 
     assertFalse(
@@ -749,7 +749,7 @@ class DoubleStreamTest {
       expectedSet.add(expectedElements(j))
 
     val s = DoubleStream
-      .of(expectedElements: _*)
+      .of(expectedElements*)
       .flatMap((e) => DoubleStream.of(e, e, e))
       .distinct()
 
@@ -760,7 +760,7 @@ class DoubleStreamTest {
     // count() exhausted s1, so create second stream, s2
 
     val s2 = DoubleStream
-      .of(expectedElements: _*)
+      .of(expectedElements*)
       .flatMap((e) => DoubleStream.of(e, e, e))
       .distinct()
 
@@ -1435,7 +1435,7 @@ class DoubleStreamTest {
     ordered(6) = 61.44
     ordered(7) = 68.16
 
-    val s = DoubleStream.of(wild: _*)
+    val s = DoubleStream.of(wild*)
 
     val sorted = s.sorted()
 
@@ -1469,7 +1469,7 @@ class DoubleStreamTest {
     wild(6) = 61.44
     wild(7) = 9.60
 
-    val seqDoubleStream = DoubleStream.of(wild: _*)
+    val seqDoubleStream = DoubleStream.of(wild*)
     assertFalse(
       "Expected sequential stream",
       seqDoubleStream.isParallel()
@@ -1500,7 +1500,7 @@ class DoubleStreamTest {
       seqDoubleSpliter.characteristics()
     )
 
-    val sortedSeqDoubleStream = DoubleStream.of(wild: _*).sorted()
+    val sortedSeqDoubleStream = DoubleStream.of(wild*).sorted()
     val sortedSeqSpliter = sortedSeqDoubleStream.spliterator()
 
     assertEquals(
@@ -1667,7 +1667,7 @@ class DoubleStreamTest {
 
     val expectedSum = 252.39
 
-    val s = DoubleStream.of(wild: _*)
+    val s = DoubleStream.of(wild*)
 
     val sum = s.sum()
 
@@ -1693,7 +1693,7 @@ class DoubleStreamTest {
     val expectedMin = 3.77
     val expectedSum = 252.39
 
-    val s = DoubleStream.of(wild: _*)
+    val s = DoubleStream.of(wild*)
 
     val stats = s.summaryStatistics()
 
@@ -1726,7 +1726,7 @@ class DoubleStreamTest {
     wild(6) = 61.44
     wild(7) = 9.60
 
-    val s = DoubleStream.of(wild: _*)
+    val s = DoubleStream.of(wild*)
 
     val resultantArray = s.toArray()
 

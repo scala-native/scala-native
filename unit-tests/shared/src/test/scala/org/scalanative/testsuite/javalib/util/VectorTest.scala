@@ -19,8 +19,8 @@ package org.scalanative.testsuite.javalib.util
 import java.util.{Vector, Collection, LinkedList, List, HashSet, Arrays}
 import java.util.NoSuchElementException
 
-import org.junit._
-import org.junit.Assert._
+import org.junit.*
+import org.junit.Assert.*
 import scala.scalanative.junit.utils.AssumesHelper
 
 class VectorTest {

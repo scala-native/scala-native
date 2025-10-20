@@ -1,12 +1,12 @@
 package org.scalanative.testsuite.windowslib
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 import scala.scalanative.meta.LinktimeInfo.isWindows
-import scala.scalanative.unsafe._
+import scala.scalanative.unsafe.*
 import scala.scalanative.windows.MinWinBaseApi.FileTimeStruct
-import scala.scalanative.windows.MinWinBaseApiOps._
+import scala.scalanative.windows.MinWinBaseApiOps.*
 import scala.scalanative.windows.ProcessThreadsApi
 
 class ProcessThreadsApiTest {

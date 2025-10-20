@@ -1,6 +1,6 @@
 package java.util
 
-import ScalaOps._
+import ScalaOps.*
 
 class LinkedList[E]()
     extends AbstractSequentialList[E]
@@ -9,12 +9,12 @@ class LinkedList[E]()
     with Cloneable
     with Serializable {
 
-  def this(c: Collection[_ <: E]) = {
+  def this(c: Collection[? <: E]) = {
     this()
     addAll(c)
   }
 
-  import LinkedList._
+  import LinkedList.*
 
   private var head: Node[E] = null
   private var last: Node[E] = null
@@ -112,7 +112,7 @@ class LinkedList[E]()
   override def remove(o: Any): Boolean =
     _removeOccurrence(listIterator(), o)
 
-  override def addAll(c: Collection[_ <: E]): Boolean = {
+  override def addAll(c: Collection[? <: E]): Boolean = {
     val iter = c.iterator()
     val changed = iter.hasNext()
     while (iter.hasNext()) addLast(iter.next())

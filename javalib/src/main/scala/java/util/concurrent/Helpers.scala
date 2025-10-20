@@ -17,7 +17,7 @@ object Helpers {
    *  the collection) and follows the maxim "Never call foreign code while
    *  holding a lock".
    */
-  private[concurrent] def collectionToString(c: util.Collection[_]): String = {
+  private[concurrent] def collectionToString(c: util.Collection[?]): String = {
     val a = c.toArray()
     val size = a.length
     if (size == 0) return "[]"

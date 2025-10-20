@@ -3,7 +3,7 @@
 package java.util.concurrent
 
 import java.lang.Cloneable
-import java.util._
+import java.util.*
 
 class ConcurrentSkipListSet[E] private (inner: TreeSet[E])
     extends AbstractSet[E]
@@ -11,13 +11,13 @@ class ConcurrentSkipListSet[E] private (inner: TreeSet[E])
     with Cloneable
     with Serializable {
 
-  def this(collection: Collection[_ <: E]) =
+  def this(collection: Collection[? <: E]) =
     this(new TreeSet[E](collection))
 
   def this() =
     this(new TreeSet[E]())
 
-  def this(comparator: Comparator[_ >: E]) =
+  def this(comparator: Comparator[? >: E]) =
     this(new TreeSet[E](comparator))
 
   def this(sortedSet: SortedSet[E]) =
@@ -53,7 +53,7 @@ class ConcurrentSkipListSet[E] private (inner: TreeSet[E])
   def descendingIterator(): Iterator[E] =
     inner.descendingIterator()
 
-  override def removeAll(c: Collection[_]): Boolean =
+  override def removeAll(c: Collection[?]): Boolean =
     inner.removeAll(c)
 
   def lower(e: E): E =
@@ -74,7 +74,7 @@ class ConcurrentSkipListSet[E] private (inner: TreeSet[E])
   def pollLast(): E =
     inner.pollLast()
 
-  def comparator(): Comparator[_ >: E] =
+  def comparator(): Comparator[? >: E] =
     inner.comparator()
 
   def first(): E =

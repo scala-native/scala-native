@@ -5,7 +5,7 @@ import java.nio.file.{Path, Paths}
 
 /** An object describing how to configure the Scala Native toolchain. */
 sealed trait NativeConfig {
-  import NativeConfig._
+  import NativeConfig.*
 
   /** The path to the `clang` executable. */
   def clang: Path
@@ -135,7 +135,7 @@ sealed trait NativeConfig {
    *    true if 32 bit, false if 64 bit, unknown, or 16 bit
    */
   def is32BitPlatform = {
-    import TargetTriple._
+    import TargetTriple.*
     val arch = configuredOrDetectedTriple.arch
     if (isArch32Bit(arch)) true
     else if (isArch64Bit(arch)) false
@@ -493,7 +493,7 @@ object NativeConfig {
             .map {
               case (key, value) =>
                 val valueString = value match {
-                  case seq: Iterable[_] => showSeq(seq)
+                  case seq: Iterable[?] => showSeq(seq)
                   case v                => v.toString()
                 }
                 s"$indentPad- ${key.padTo(keyPadSize, ' ')}: $valueString"

@@ -3,8 +3,8 @@ package scala.scalanative.testinterface.common
 // Ported from Scala.js
 
 import org.junit.Test
-import org.junit.Assert._
-import scala.scalanative.junit.async._
+import org.junit.Assert.*
+import scala.scalanative.junit.async.*
 
 class SerializerTest {
   def roundTrip[T: Serializer](x: T): T =

@@ -1,6 +1,6 @@
 package scala.scalanative
 
-import org.junit.Assert._
+import org.junit.Assert.*
 import scala.scalanative.linker.ReachabilityAnalysis
 
 package object optimizer {
@@ -81,9 +81,9 @@ package object optimizer {
   )(
       fn: Seq[nir.Defn] => Unit
   ): Unit = {
-    import scala.scalanative.codegen._
+    import scala.scalanative.codegen.*
     import scala.concurrent.ExecutionContext.Implicits.global
-    import scala.concurrent._
+    import scala.concurrent.*
     val defns = optimized.defns
     implicit def logger: build.Logger = config.logger
     implicit val platform: PlatformInfo = PlatformInfo(config)

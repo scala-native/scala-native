@@ -4,17 +4,17 @@ package scala.tools.nsc
 
 /* Super hacky overriding of the MainGenericRunner used by partest */
 
-import java.nio.file._
+import java.nio.file.*
 import java.util.function.BinaryOperator
 import java.util.{Comparator, function}
-import scala.scalanative.build._
+import scala.scalanative.build.*
 import scala.scalanative.util.Scope
-import scala.tools.nsc.GenericRunnerCommand._
+import scala.tools.nsc.GenericRunnerCommand.*
 import scala.tools.partest.scalanative.Defaults
 import scala.tools.nsc.Properties.{copyrightString, versionString}
-import scala.concurrent._
+import scala.concurrent.*
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 class MainGenericRunner {
   private def errorFn(str: String) = Defaults.errorFn(str)

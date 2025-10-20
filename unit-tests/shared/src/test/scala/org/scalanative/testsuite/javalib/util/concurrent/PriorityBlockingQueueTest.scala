@@ -7,14 +7,14 @@
  */
 package org.scalanative.testsuite.javalib.util.concurrent
 
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.junit.{Test, Ignore}
-import JSR166Test._
+import JSR166Test.*
 
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util
-import java.util._
-import java.util.concurrent._
+import java.util.*
+import java.util.concurrent.*
 
 class PriorityBlockingQueueGenericTest extends BlockingQueueTest {
   override protected def emptyCollection(): BlockingQueue[Any] =
@@ -88,7 +88,7 @@ class PriorityBlockingQueueTest extends JSR166Test {
 
   @Test def testConstructor4(): Unit = {
     val elements: Collection[Integer] =
-      Arrays.asList(new Array[Integer](SIZE): _*)
+      Arrays.asList(new Array[Integer](SIZE)*)
     try {
       new PriorityBlockingQueue[Integer](elements)
       shouldThrow()
@@ -101,7 +101,7 @@ class PriorityBlockingQueueTest extends JSR166Test {
   @Test def testConstructor5(): Unit = {
     val ints: Array[Integer] = new Array[Integer](SIZE)
     for (i <- 0 until SIZE - 1) { ints(i) = i }
-    val elements: Collection[Integer] = Arrays.asList(ints: _*)
+    val elements: Collection[Integer] = Arrays.asList(ints*)
     try {
       new PriorityBlockingQueue[Integer](elements)
       shouldThrow()
@@ -115,7 +115,7 @@ class PriorityBlockingQueueTest extends JSR166Test {
     val ints: Array[Integer] = new Array[Integer](SIZE)
     for (i <- 0 until SIZE) { ints(i) = i }
     val q =
-      new PriorityBlockingQueue[Integer](Arrays.asList(ints: _*))
+      new PriorityBlockingQueue[Integer](Arrays.asList(ints*))
     for (i <- 0 until SIZE) { assertEquals(ints(i), q.poll) }
   }
 
@@ -126,7 +126,7 @@ class PriorityBlockingQueueTest extends JSR166Test {
     assertEquals(cmp, q.comparator)
     val ints: Array[Integer] = new Array[Integer](SIZE)
     for (i <- 0 until SIZE) { ints(i) = Integer.valueOf(i) }
-    q.addAll(Arrays.asList(ints: _*))
+    q.addAll(Arrays.asList(ints*))
     for (i <- SIZE - 1 to 0 by -1) { assertEquals(ints(i), q.poll) }
   }
 
@@ -200,7 +200,7 @@ class PriorityBlockingQueueTest extends JSR166Test {
     val ints: Array[Integer] = new Array[Integer](SIZE)
     for (i <- 0 until SIZE - 1) { ints(i) = Integer.valueOf(i) }
     try {
-      q.addAll(Arrays.asList(ints: _*))
+      q.addAll(Arrays.asList(ints*))
       shouldThrow()
     } catch {
       case success: NullPointerException =>
@@ -213,8 +213,8 @@ class PriorityBlockingQueueTest extends JSR166Test {
     val ints: Array[Integer] = new Array[Integer](SIZE)
     for (i <- SIZE - 1 to 0 by -1) { ints(i) = Integer.valueOf(i) }
     val q = new PriorityBlockingQueue[Integer](SIZE)
-    assertFalse(q.addAll(Arrays.asList(empty: _*)))
-    assertTrue(q.addAll(Arrays.asList(ints: _*)))
+    assertFalse(q.addAll(Arrays.asList(empty*)))
+    assertTrue(q.addAll(Arrays.asList(ints*)))
     for (i <- 0 until SIZE) { assertEquals(ints(i), q.poll) }
   }
 
@@ -491,7 +491,7 @@ class PriorityBlockingQueueTest extends JSR166Test {
   @Test def testIterator(): Unit = {
     val q =
       PriorityBlockingQueueTest.populatedQueue(SIZE)
-    val it: Iterator[_] = q.iterator
+    val it: Iterator[?] = q.iterator
     var i: Int = 0
     i = 0
     while ({ it.hasNext }) {
@@ -511,7 +511,7 @@ class PriorityBlockingQueueTest extends JSR166Test {
     q.add(Integer.valueOf(2))
     q.add(Integer.valueOf(1))
     q.add(Integer.valueOf(3))
-    var it: Iterator[_] = q.iterator
+    var it: Iterator[?] = q.iterator
     it.next
     it.remove()
     it = q.iterator
@@ -616,7 +616,7 @@ class PriorityBlockingQueueTest extends JSR166Test {
   }
 
   @Test def testNeverContainsNull(): Unit = {
-    val qs: Array[Collection[_]] = Array(
+    val qs: Array[Collection[?]] = Array(
       new PriorityBlockingQueue[AnyRef],
       PriorityBlockingQueueTest.populatedQueue(2)
     )

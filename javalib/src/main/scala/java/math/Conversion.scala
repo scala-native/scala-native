@@ -69,7 +69,7 @@
 
 package java.math
 
-import java.{lang => jl}
+import java.lang as jl
 import jl.Character
 
 import scala.annotation.tailrec

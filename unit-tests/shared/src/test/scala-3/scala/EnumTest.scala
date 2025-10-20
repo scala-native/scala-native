@@ -1,7 +1,7 @@
 package scala
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 private enum Command extends Enum[Command] { case Sit, Stay }
 private enum Animal(val sound: String):

@@ -1,7 +1,7 @@
 package java.util
 package regex
 
-import scalanative.{regex => snRegex}
+import scalanative.regex as snRegex
 
 import java.util.Arrays
 import java.util.function.Predicate

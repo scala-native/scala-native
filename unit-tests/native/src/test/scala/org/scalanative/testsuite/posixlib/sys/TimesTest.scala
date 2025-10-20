@@ -2,8 +2,8 @@ package org.scalanative.testsuite.posixlib
 package sys
 
 import org.junit.Test
-import org.junit.Assert._
-import org.junit.Assume._
+import org.junit.Assert.*
+import org.junit.Assume.*
 
 import scala.scalanative.meta.LinktimeInfo.{
   is32BitPlatform,
@@ -12,14 +12,14 @@ import scala.scalanative.meta.LinktimeInfo.{
   isWindows
 }
 
-import scala.scalanative.unsafe._
-import scala.scalanative.unsigned._
+import scala.scalanative.unsafe.*
+import scala.scalanative.unsigned.*
 
 import scala.scalanative.posix.stdlib
 import scala.scalanative.posix.string.memset
 
-import scala.scalanative.posix.sys.times._
-import scala.scalanative.posix.sys.timesOps._
+import scala.scalanative.posix.sys.times.*
+import scala.scalanative.posix.sys.timesOps.*
 
 class TimesTest {
 

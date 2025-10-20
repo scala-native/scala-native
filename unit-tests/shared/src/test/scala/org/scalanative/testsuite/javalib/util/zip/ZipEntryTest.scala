@@ -3,18 +3,18 @@ package org.scalanative.testsuite.javalib.util.zip
 // Ported from Apache Harmony. Contains extensive changes for Scala Native.
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.junit.AfterClass
 import org.junit.Ignore
 
-import scala.scalanative.junit.utils.AssumesHelper._
+import scala.scalanative.junit.utils.AssumesHelper.*
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform
 
-import java.{lang => jl}
+import java.lang as jl
 
 import java.util.Arrays
-import java.util.zip._
+import java.util.zip.*
 
 /* Note: JDK 23 non-compliance
  *
@@ -70,7 +70,7 @@ object ZipEntryTest {
 }
 
 class ZipEntryTest {
-  import ZipEntryTest._
+  import ZipEntryTest.*
 
   private final val maxZipNameLen = 0xffff // decimal 65535.
 

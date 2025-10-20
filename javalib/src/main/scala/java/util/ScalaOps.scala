@@ -15,7 +15,7 @@
 
 package java.util
 
-import java.{lang => jl}
+import java.lang as jl
 
 /** Make some Scala collection APIs available on Java collections. */
 private[java] object ScalaOps {

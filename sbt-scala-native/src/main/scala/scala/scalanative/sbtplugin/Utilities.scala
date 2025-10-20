@@ -1,11 +1,11 @@
 package scala.scalanative
 package sbtplugin
 
-import java.lang.System.{lineSeparator => nl}
+import java.lang.System.lineSeparator as nl
 
 import scala.language.postfixOps
 
-import sbt._
+import sbt.*
 
 object Utilities {
   implicit class RichLogger(logger: Logger) {

@@ -11,10 +11,10 @@
 package org.scalanative.testsuite.javalib.util.concurrent
 package atomic
 
-import org.junit.Assert._
-import JSR166Test._
+import org.junit.Assert.*
+import JSR166Test.*
 
-import java.util.concurrent.atomic._
+import java.util.concurrent.atomic.*
 import scala.scalanative.runtime.Intrinsics.classFieldRawPtr
 import scala.scalanative.runtime.fromRawPtr
 import scala.scalanative.libc.stdatomic.{AtomicInt, AtomicLongLong, AtomicRef}

@@ -8,9 +8,9 @@ package java.util.concurrent.atomic
 
 import scala.annotation.tailrec
 import scala.scalanative.annotation.alwaysinline
-import scala.scalanative.unsafe._
+import scala.scalanative.unsafe.*
 import scala.scalanative.libc.stdatomic.AtomicRef
-import scala.scalanative.libc.stdatomic.memory_order._
+import scala.scalanative.libc.stdatomic.memory_order.*
 import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
 import java.util.function.{BinaryOperator, UnaryOperator}
 

@@ -2,9 +2,9 @@
 
 package org.scalanative.testsuite.javalib.util.concurrent
 
-import java.{util => ju}
+import java.util as ju
 
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.junit.Test
 
 import org.scalanative.testsuite.javalib.util.{ListFactory, ListTest}
@@ -38,7 +38,7 @@ class CopyOnWriteArrayListTest extends ListTest {
 
     assertEquals(
       3,
-      list.addAllAbsent(TrivialImmutableCollection((0 until 3): _*))
+      list.addAllAbsent(TrivialImmutableCollection((0 until 3)*))
     )
     assertEquals(3, list.size)
     for (i <- 0 until 3)
@@ -46,7 +46,7 @@ class CopyOnWriteArrayListTest extends ListTest {
 
     assertEquals(
       0,
-      list.addAllAbsent(TrivialImmutableCollection((0 until 2): _*))
+      list.addAllAbsent(TrivialImmutableCollection((0 until 2)*))
     )
     assertEquals(3, list.size)
     for (i <- 0 until 3)
@@ -54,7 +54,7 @@ class CopyOnWriteArrayListTest extends ListTest {
 
     assertEquals(
       3,
-      list.addAllAbsent(TrivialImmutableCollection((3 until 6): _*))
+      list.addAllAbsent(TrivialImmutableCollection((3 until 6)*))
     )
     assertEquals(6, list.size)
     for (i <- 0 until 6)
@@ -62,7 +62,7 @@ class CopyOnWriteArrayListTest extends ListTest {
 
     assertEquals(
       4,
-      list.addAllAbsent(TrivialImmutableCollection((0 until 10): _*))
+      list.addAllAbsent(TrivialImmutableCollection((0 until 10)*))
     )
     assertEquals(10, list.size)
     for (i <- 0 until 10)
@@ -77,12 +77,12 @@ class CopyOnWriteArrayListTest extends ListTest {
 
   @Test def iteratorInt(): Unit = {
     val list = factory.empty[Int]
-    list.addAll(TrivialImmutableCollection((0 to 10): _*))
+    list.addAll(TrivialImmutableCollection((0 to 10)*))
 
     val iter = list.iterator()
     list.clear()
     val iter2 = list.iterator()
-    list.addAll(TrivialImmutableCollection((0 to 5): _*))
+    list.addAll(TrivialImmutableCollection((0 to 5)*))
 
     for (i <- 0 to 10) {
       assertTrue(iter.hasNext)

@@ -1,9 +1,9 @@
 package org.scalanative.testsuite
 package javalib.nio.file
 
-import java.{util => ju}
+import java.util as ju
 import java.util.function.Consumer
-import java.util.{stream => jus}
+import java.util.stream as jus
 
 import java.io.ByteArrayInputStream
 
@@ -11,13 +11,13 @@ import java.nio.file.Files
 import java.nio.file.Path
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.junit.{BeforeClass, AfterClass}
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 class FilesTestOnJDK12 {
-  import FilesTestOnJDK12._
+  import FilesTestOnJDK12.*
 
   @Test def mismatch_EqualPaths: Unit = {
     val commonFileName = "JohnSmith.txt"

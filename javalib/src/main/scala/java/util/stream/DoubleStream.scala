@@ -1,9 +1,9 @@
 package java.util.stream
 
-import java.{lang => jl}
+import java.lang as jl
 
-import java.util._
-import java.util.function._
+import java.util.*
+import java.util.function.*
 
 /* Design Note:
  *
@@ -92,7 +92,7 @@ trait DoubleStream extends BaseStream[jl.Double, DoubleStream] {
 
   def findFirst(): OptionalDouble
 
-  def flatMap(mapper: DoubleFunction[_ <: DoubleStream]): DoubleStream
+  def flatMap(mapper: DoubleFunction[? <: DoubleStream]): DoubleStream
 
   def forEach(action: DoubleConsumer): Unit
 
@@ -165,7 +165,7 @@ trait DoubleStream extends BaseStream[jl.Double, DoubleStream] {
 
   def mapToLong(mapper: DoubleToLongFunction): LongStream
 
-  def mapToObj[U](mapper: DoubleFunction[_ <: U]): Stream[U]
+  def mapToObj[U](mapper: DoubleFunction[? <: U]): Stream[U]
 
   def max(): OptionalDouble
 

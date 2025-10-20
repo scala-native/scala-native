@@ -1,13 +1,13 @@
 package org.scalanative
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 import scala.language.experimental.captureChecking
 import scala.scalanative.runtime.SafeZoneAllocator.allocate
 import scala.scalanative.memory.SafeZone
-import scala.scalanative.memory.SafeZone._
+import scala.scalanative.memory.SafeZone.*
 import scala.util.{Try, Success, Failure}
 
 class SafeZoneTest {
@@ -87,7 +87,7 @@ class SafeZoneTest {
       val kArraySize = 500000
       val array = allocate(sz, new Array[DoubleWrapper^{sz}](kArraySize))
       var i = 0
-      while (i < kArraySize / 2) {
+      while i < kArraySize / 2 do {
         array(i) = allocate(sz, new DoubleWrapper(1.0 / i))
         i += 1
       }

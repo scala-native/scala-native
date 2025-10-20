@@ -9,7 +9,7 @@ import scalanative.runtime.Intrinsics.{
   castLongToRawSize,
   unsignedOf
 }
-import java.lang.{Long => JLong}
+import java.lang.Long as JLong
 
 /** `ULong`, a 64-bit unsigned integer. */
 final class ULong private[scalanative] (

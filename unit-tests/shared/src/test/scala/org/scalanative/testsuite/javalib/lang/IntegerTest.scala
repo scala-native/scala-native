@@ -1,9 +1,9 @@
 package org.scalanative.testsuite.javalib.lang
 
-import java.lang._
+import java.lang.*
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
@@ -122,7 +122,7 @@ class IntegerTest {
   }
 
   @Test def parseInt(): Unit = {
-    import Integer.{parseInt => parse}
+    import Integer.parseInt as parse
 
     assertEquals(-1, parse("-1"))
     assertEquals(1, parse("+1"))
@@ -181,7 +181,7 @@ class IntegerTest {
   }
 
   @Test def parseUnsignedInt(): Unit = {
-    import Integer.{parseUnsignedInt => parse}
+    import Integer.parseUnsignedInt as parse
 
     assertEquals(1, parse("1"))
     assertEquals(1, parse("+1"))
@@ -236,7 +236,7 @@ class IntegerTest {
   }
 
   @Test def testToString(): Unit = {
-    import java.lang.Integer.{toString => toStr}
+    import java.lang.Integer.toString as toStr
 
     assertEquals("0", toStr(0))
     assertEquals("1", toStr(1))
@@ -261,7 +261,7 @@ class IntegerTest {
   }
 
   @Test def toUnsignedString(): Unit = {
-    import java.lang.Integer.{toUnsignedString => toStr}
+    import java.lang.Integer.toUnsignedString as toStr
 
     assertEquals("0", toStr(0))
     assertEquals("1", toStr(1))

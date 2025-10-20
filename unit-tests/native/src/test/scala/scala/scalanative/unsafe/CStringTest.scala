@@ -2,11 +2,11 @@ package scala.scalanative
 package unsafe
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 import java.nio.charset.Charset
-import scalanative.libc.string._
-import scalanative.unsigned._
+import scalanative.libc.string.*
+import scalanative.unsigned.*
 // Scala 2.13.7 needs explicit import for implicit conversions
 import scalanative.unsafe.Ptr.ptrToCArray
 

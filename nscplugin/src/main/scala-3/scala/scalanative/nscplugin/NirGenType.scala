@@ -4,15 +4,15 @@ package nscplugin
 import scala.language.implicitConversions
 
 import dotty.tools.dotc.ast.tpd
-import dotty.tools.dotc.ast.Trees._
+import dotty.tools.dotc.ast.Trees.*
 import dotty.tools.dotc.core
-import core.Contexts._
-import core.Flags._
-import core.Names._
-import core.Types._
-import core.Symbols._
-import core.StdNames._
-import core.TypeErasure._
+import core.Contexts.*
+import core.Flags.*
+import core.Names.*
+import core.Types.*
+import core.Symbols.*
+import core.StdNames.*
+import core.TypeErasure.*
 import core.TypeError
 import dotty.tools.dotc.report
 import dotty.tools.dotc.typer.TyperPhase
@@ -143,8 +143,7 @@ trait NirGenType(using Context) {
     .toMap
 
   def genExternType(tpe: Type): nir.Type = {
-    if (tpe.widenDealias.typeSymbol.isCFuncPtrClass)
-      nir.Type.Ptr
+    if tpe.widenDealias.typeSymbol.isCFuncPtrClass then nir.Type.Ptr
     else
       genType(tpe) match {
         case refty: nir.Type.Ref if nir.Type.boxClasses.contains(refty.name) =>
@@ -214,7 +213,7 @@ trait NirGenType(using Context) {
 
       case t: TypeRef =>
         // See comment on nonClassTypeRefToBType in Scala JVM backend BCodeHelpers
-        if (!t.symbol.isClass) nir.Rt.Object
+        if !t.symbol.isClass then nir.Rt.Object
         else fromSymbol(t.symbol)
 
       case ClassInfo(_, sym, _, _, _) => fromSymbol(sym)
@@ -326,8 +325,8 @@ trait NirGenType(using Context) {
       }
       val resultType = sym.info.resultType
       val retty =
-        if (sym.isConstructor) nir.Type.Unit
-        else if (isExtern) genExternType(resultType)
+        if sym.isConstructor then nir.Type.Unit
+        else if isExtern then genExternType(resultType)
         else genType(resultType)
       nir.Type.Function(selfty ++: paramtys, retty)
     }
@@ -339,9 +338,9 @@ trait NirGenType(using Context) {
       sym: Symbol,
       isExternHint: Boolean
   )(using Context): Seq[nir.Type] = {
-    import core.Phases._
+    import core.Phases.*
     val isExtern = isExternHint || sym.isExtern
-    val repeatedParams = if (isExtern) {
+    val repeatedParams = if isExtern then {
       atPhase(typerPhase) {
         sym.paramInfo.stripPoly match {
           // @extern def foo(a: Int): Int
@@ -365,8 +364,8 @@ trait NirGenType(using Context) {
       (paramType, paramName) <- paramTypes zip paramNames
     } yield {
       def isRepeated = repeatedParams.getOrElse(paramName, false)
-      if (isExtern && isRepeated) nir.Type.Vararg
-      else if (isExtern) genExternType(paramType)
+      if isExtern && isRepeated then nir.Type.Vararg
+      else if isExtern then genExternType(paramType)
       else genType(paramType)
     }
   }

@@ -11,15 +11,15 @@ package scalanative
 
 import scala.language.reflectiveCalls
 
-import _root_.sbt.testing._
+import _root_.sbt.testing.*
 import java.net.URLClassLoader
 import java.io.File
 import scala.scalanative.build.Build
 import scala.scalanative.linker.ReachabilityAnalysis
 import scala.scalanative.linker.LinktimeIntrinsicCallsResolver.FoundServiceProviders
-import scala.concurrent._
+import scala.concurrent.*
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 /** Run partest in this VM. Assumes we're running in a forked VM! */
 case class PartestTask(taskDef: TaskDef, args: Array[String]) extends Task {

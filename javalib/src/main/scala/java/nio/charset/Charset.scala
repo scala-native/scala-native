@@ -64,7 +64,7 @@ abstract class Charset protected (
 }
 
 object Charset {
-  import StandardCharsets._
+  import StandardCharsets.*
 
   def defaultCharset(): Charset = UTF_8
 

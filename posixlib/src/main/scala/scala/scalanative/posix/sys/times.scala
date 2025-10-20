@@ -2,7 +2,7 @@ package scala.scalanative
 package posix
 package sys
 
-import scalanative.unsafe._
+import scalanative.unsafe.*
 
 import scalanative.meta.LinktimeInfo.{is32BitPlatform, isFreeBSD, isNetBSD}
 
@@ -46,7 +46,7 @@ object times {
 /** Allow using C names to access tms structure fields.
  */
 object timesOps {
-  import times._
+  import times.*
 
   private def use32BitGetLowBits(bits: clock_t): clock_t =
     (bits.toLong & 0x00000000ffffffffL).toSize

@@ -7,7 +7,7 @@
 package java.util.concurrent
 import java.util.concurrent.locks.LockSupport
 import scalanative.libc.stdatomic.{AtomicInt, AtomicRef}
-import scalanative.libc.stdatomic.memory_order._
+import scalanative.libc.stdatomic.memory_order.*
 
 import scalanative.runtime.{fromRawPtr, Intrinsics}
 
@@ -29,7 +29,7 @@ object FutureTask {
 class FutureTask[V <: AnyRef](private var callable: Callable[V])
     extends RunnableFuture[V] {
   if (callable == null) throw new NullPointerException()
-  import FutureTask._
+  import FutureTask.*
 
   @volatile private var _state = NEW
 

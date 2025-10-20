@@ -29,7 +29,7 @@ private[codegen] object TraitsUniverse {
 }
 
 private[codegen] class TraitsUniverse(traits: Seq[Trait]) {
-  import TraitsUniverse._
+  import TraitsUniverse.*
 
   private val adjacencyList = mutable.Map.empty[Trait, mutable.Set[Trait]]
 

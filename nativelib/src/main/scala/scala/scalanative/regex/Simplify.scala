@@ -9,7 +9,7 @@ package scala.scalanative
 package regex
 
 import java.util.ArrayList
-import Regexp.{Op => ROP}
+import Regexp.Op as ROP
 
 object Simplify {
 

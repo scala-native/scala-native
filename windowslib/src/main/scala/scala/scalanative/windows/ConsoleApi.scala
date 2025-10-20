@@ -1,6 +1,6 @@
 package scala.scalanative.windows
 
-import scala.scalanative.unsafe._
+import scala.scalanative.unsafe.*
 import scala.scalanative.windows.HandleApi.Handle
 
 @extern()
@@ -19,7 +19,7 @@ object ConsoleApi {
 }
 
 object ConsoleApiExt {
-  import ConsoleApi._
+  import ConsoleApi.*
 
   def stdIn: Handle = GetStdHandle(STD_INPUT_HANDLE)
   def stdOut: Handle = GetStdHandle(STD_OUTPUT_HANDLE)

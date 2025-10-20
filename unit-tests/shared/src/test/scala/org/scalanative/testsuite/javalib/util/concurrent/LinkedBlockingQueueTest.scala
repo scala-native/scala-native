@@ -7,15 +7,15 @@
  */
 package org.scalanative.testsuite.javalib.util.concurrent
 
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.junit.{Test, Ignore}
 
-import JSR166Test._
+import JSR166Test.*
 
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util
-import java.util._
-import java.util.concurrent._
+import java.util.*
+import java.util.concurrent.*
 
 class LinkedBlockingQueueUnboundedTest extends BlockingQueueTest {
   override protected def emptyCollection(): BlockingQueue[Any] =
@@ -83,7 +83,7 @@ class LinkedBlockingQueueTest extends JSR166Test {
    */
   @Test def testConstructor4(): Unit = {
     val elements: Collection[Integer] =
-      Arrays.asList(new Array[Integer](SIZE): _*)
+      Arrays.asList(new Array[Integer](SIZE)*)
     try {
       new LinkedBlockingQueue[Integer](elements)
       shouldThrow()
@@ -99,7 +99,7 @@ class LinkedBlockingQueueTest extends JSR166Test {
   @Test def testConstructor5(): Unit = {
     val ints: Array[Integer] = new Array[Integer](SIZE)
     for (i <- 0 until SIZE - 1) { ints(i) = Integer.valueOf(i) }
-    val elements: Collection[Integer] = Arrays.asList(ints: _*)
+    val elements: Collection[Integer] = Arrays.asList(ints*)
     try {
       new LinkedBlockingQueue[Integer](elements)
       shouldThrow()
@@ -114,8 +114,8 @@ class LinkedBlockingQueueTest extends JSR166Test {
   @Test def testConstructor6(): Unit = {
     val ints: Array[Integer] = new Array[Integer](SIZE)
     for (i <- 0 until SIZE) { ints(i) = Integer.valueOf(i) }
-    val q: LinkedBlockingQueue[_] =
-      new LinkedBlockingQueue[Integer](Arrays.asList(ints: _*))
+    val q: LinkedBlockingQueue[?] =
+      new LinkedBlockingQueue[Integer](Arrays.asList(ints*))
     for (i <- 0 until SIZE) { assertEquals(ints(i), q.poll) }
   }
 
@@ -192,7 +192,7 @@ class LinkedBlockingQueueTest extends JSR166Test {
     val q = new LinkedBlockingQueue[Integer](SIZE)
     val ints: Array[Integer] = new Array[Integer](SIZE)
     for (i <- 0 until SIZE - 1) { ints(i) = Integer.valueOf(i) }
-    val elements: Collection[Integer] = Arrays.asList(ints: _*)
+    val elements: Collection[Integer] = Arrays.asList(ints*)
     try {
       q.addAll(elements)
       shouldThrow()
@@ -208,7 +208,7 @@ class LinkedBlockingQueueTest extends JSR166Test {
     val q = new LinkedBlockingQueue[Integer](SIZE - 1)
     val ints: Array[Integer] = new Array[Integer](SIZE)
     for (i <- 0 until SIZE) { ints(i) = Integer.valueOf(i) }
-    val elements: Collection[Integer] = Arrays.asList(ints: _*)
+    val elements: Collection[Integer] = Arrays.asList(ints*)
     try {
       q.addAll(elements)
       shouldThrow()
@@ -225,8 +225,8 @@ class LinkedBlockingQueueTest extends JSR166Test {
     val ints: Array[Integer] = new Array[Integer](SIZE)
     for (i <- 0 until SIZE) { ints(i) = Integer.valueOf(i) }
     val q = new LinkedBlockingQueue[Integer](SIZE)
-    assertFalse(q.addAll(Arrays.asList(empty: _*)))
-    assertTrue(q.addAll(Arrays.asList(ints: _*)))
+    assertFalse(q.addAll(Arrays.asList(empty*)))
+    assertTrue(q.addAll(Arrays.asList(ints*)))
     for (i <- 0 until SIZE) { assertEquals(ints(i), q.poll) }
   }
 
@@ -571,7 +571,7 @@ class LinkedBlockingQueueTest extends JSR166Test {
    */
   @Test def testRetainAll(): Unit = {
     val q = LinkedBlockingQueueTest.populatedQueue(SIZE)
-    val p: LinkedBlockingQueue[_] = LinkedBlockingQueueTest.populatedQueue(SIZE)
+    val p: LinkedBlockingQueue[?] = LinkedBlockingQueueTest.populatedQueue(SIZE)
     for (i <- 0 until SIZE) {
       val changed: Boolean = q.retainAll(p)
       if (i == 0) { assertFalse(changed) }
@@ -586,9 +586,9 @@ class LinkedBlockingQueueTest extends JSR166Test {
    */
   @Test def testRemoveAll(): Unit = {
     for (i <- 1 until SIZE) {
-      val q: LinkedBlockingQueue[_] =
+      val q: LinkedBlockingQueue[?] =
         LinkedBlockingQueueTest.populatedQueue(SIZE)
-      val p: LinkedBlockingQueue[_] = LinkedBlockingQueueTest.populatedQueue(i)
+      val p: LinkedBlockingQueue[?] = LinkedBlockingQueueTest.populatedQueue(i)
       assertTrue(q.removeAll(p))
       assertEquals(SIZE - i, q.size)
       for (j <- 0 until i) {
@@ -640,7 +640,7 @@ class LinkedBlockingQueueTest extends JSR166Test {
   @throws[InterruptedException]
   @Test def testIterator(): Unit = {
     val q = LinkedBlockingQueueTest.populatedQueue(SIZE)
-    var it: Iterator[_] = q.iterator
+    var it: Iterator[?] = q.iterator
     var i: Int = 0
     i = 0
     while ({ it.hasNext }) {
@@ -672,7 +672,7 @@ class LinkedBlockingQueueTest extends JSR166Test {
     q.add(two)
     q.add(one)
     q.add(three)
-    var it: Iterator[_] = q.iterator
+    var it: Iterator[?] = q.iterator
     it.next
     it.remove()
     it = q.iterator
@@ -690,7 +690,7 @@ class LinkedBlockingQueueTest extends JSR166Test {
     q.add(three)
     assertEquals(0, q.remainingCapacity)
     var k: Int = 0
-    val it: Iterator[_] = q.iterator
+    val it: Iterator[?] = q.iterator
     while ({ it.hasNext }) { assertEquals({ k += 1; k }, it.next) }
     assertEquals(3, k)
   }
@@ -702,7 +702,7 @@ class LinkedBlockingQueueTest extends JSR166Test {
     q.add(one)
     q.add(two)
     q.add(three)
-    val it: Iterator[_] = q.iterator
+    val it: Iterator[?] = q.iterator
     while ({ it.hasNext }) {
       q.remove()
       it.next
@@ -835,7 +835,7 @@ class LinkedBlockingQueueTest extends JSR166Test {
   /** remove(null), contains(null) always return false
    */
   @Test def testNeverContainsNull(): Unit = {
-    val qs: Array[Collection[_]] = Array(
+    val qs: Array[Collection[?]] = Array(
       new LinkedBlockingQueue[AnyRef],
       LinkedBlockingQueueTest.populatedQueue(2)
     )

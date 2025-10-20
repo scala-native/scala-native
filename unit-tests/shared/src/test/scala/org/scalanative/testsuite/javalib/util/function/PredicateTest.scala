@@ -3,13 +3,13 @@ package org.scalanative.testsuite.javalib.util.function
 
 import java.util.function.Predicate
 
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 class PredicateTest {
-  import PredicateTest._
+  import PredicateTest.*
 
   private val largerThan10 = makePredicate[Int](_ > 10)
   private val even = makePredicate[Int](_ % 2 == 0)

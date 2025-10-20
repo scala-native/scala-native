@@ -5,5 +5,5 @@ import scala.concurrent.{Await, Future}
 
 package object async {
   type AsyncResult = Unit
-  def await(f: Future[_]): AsyncResult = Await.result(f, Duration.Inf)
+  def await(f: Future[?]): AsyncResult = Await.result(f, Duration.Inf)
 }

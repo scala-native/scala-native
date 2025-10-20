@@ -6,11 +6,11 @@ import java.io.{File, RandomAccessFile}
 import java.nio.channels.{FileChannel, FileLock}
 
 import org.junit.{Test, Before, After}
-import org.junit.Assert._
-import org.junit.Assume._
+import org.junit.Assert.*
+import org.junit.Assume.*
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
-import scala.scalanative.junit.utils.AssumesHelper._
+import scala.scalanative.junit.utils.AssumesHelper.*
 import org.scalanative.testsuite.utils.Platform.{
   executingInJVM,
   executingInJVMOnJDK8OrLower

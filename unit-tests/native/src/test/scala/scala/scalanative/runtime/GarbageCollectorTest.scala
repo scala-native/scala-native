@@ -3,7 +3,7 @@ package scala.scalanative.runtime
 import java.lang.Runtime
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 import scala.scalanative.junit.utils.AssumesHelper
 
 class GarbageCollectorTest {

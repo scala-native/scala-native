@@ -1,19 +1,19 @@
 package java.util.stream
 
-import java.util._
-import java.util.function._
+import java.util.*
+import java.util.function.*
 
 trait Stream[T] extends BaseStream[T, Stream[T]] {
 
-  def allMatch(pred: Predicate[_ >: T]): Boolean
+  def allMatch(pred: Predicate[? >: T]): Boolean
 
-  def anyMatch(pred: Predicate[_ >: T]): Boolean
+  def anyMatch(pred: Predicate[? >: T]): Boolean
 
-  def collect[R, A](collector: Collector[_ >: T, A, R]): R
+  def collect[R, A](collector: Collector[? >: T, A, R]): R
 
   def collect[R](
       supplier: Supplier[R],
-      accumulator: BiConsumer[R, _ >: T],
+      accumulator: BiConsumer[R, ? >: T],
       combiner: BiConsumer[R, R]
   ): R
 
@@ -22,7 +22,7 @@ trait Stream[T] extends BaseStream[T, Stream[T]] {
   def distinct(): Stream[T]
 
   // Since: Java 9
-  def dropWhile(pred: Predicate[_ >: T]): Stream[T] = {
+  def dropWhile(pred: Predicate[? >: T]): Stream[T] = {
     Objects.requireNonNull(pred)
 
     val spliter = this.spliterator() //  also marks this stream "operated upon"
@@ -42,7 +42,7 @@ trait Stream[T] extends BaseStream[T, Stream[T]] {
 
       var doneDropping = false
 
-      def tryAdvance(action: Consumer[_ >: T]): Boolean = {
+      def tryAdvance(action: Consumer[? >: T]): Boolean = {
         if (doneDropping) {
           spliter.tryAdvance((e) => action.accept(e))
         } else {
@@ -68,36 +68,36 @@ trait Stream[T] extends BaseStream[T, Stream[T]] {
     new StreamImpl[T](spl, parallel = false, parent = this)
   }
 
-  def filter(pred: Predicate[_ >: T]): Stream[T]
+  def filter(pred: Predicate[? >: T]): Stream[T]
 
   def findAny(): Optional[T]
 
   def findFirst(): Optional[T]
 
-  def flatMap[R](mapper: Function[_ >: T, _ <: Stream[_ <: R]]): Stream[R]
+  def flatMap[R](mapper: Function[? >: T, ? <: Stream[? <: R]]): Stream[R]
 
   def flatMapToDouble(
-      mapper: Function[_ >: T, _ <: DoubleStream]
+      mapper: Function[? >: T, ? <: DoubleStream]
   ): DoubleStream
 
   def flatMapToInt(
-      mapper: Function[_ >: T, _ <: IntStream]
+      mapper: Function[? >: T, ? <: IntStream]
   ): IntStream
 
   def flatMapToLong(
-      mapper: Function[_ >: T, _ <: LongStream]
+      mapper: Function[? >: T, ? <: LongStream]
   ): LongStream
 
-  def forEach(action: Consumer[_ >: T]): Unit
+  def forEach(action: Consumer[? >: T]): Unit
 
-  def forEachOrdered(action: Consumer[_ >: T]): Unit
+  def forEachOrdered(action: Consumer[? >: T]): Unit
 
   def limit(maxSize: Long): Stream[T]
 
-  def map[R](mapper: Function[_ >: T, _ <: R]): Stream[R]
+  def map[R](mapper: Function[? >: T, ? <: R]): Stream[R]
 
   // Since: Java 16
-  def mapMulti[R](mapper: BiConsumer[_ >: T, Consumer[_ >: R]]): Stream[R] = {
+  def mapMulti[R](mapper: BiConsumer[? >: T, Consumer[? >: R]]): Stream[R] = {
     /* Design Note:
      *  This implementation differs from the reference default implementation
      *  described in the Java Stream#mapMulti documentation.
@@ -126,7 +126,7 @@ trait Stream[T] extends BaseStream[T, Stream[T]] {
 
     val spl = new Spliterators.AbstractSpliterator[R](Long.MaxValue, unSized) {
 
-      def tryAdvance(action: Consumer[_ >: R]): Boolean = {
+      def tryAdvance(action: Consumer[? >: R]): Boolean = {
         var advanced = false
 
         var done = false
@@ -155,7 +155,7 @@ trait Stream[T] extends BaseStream[T, Stream[T]] {
 
   // Since: Java 16
   def mapMultiToDouble(
-      mapper: BiConsumer[_ >: T, _ >: DoubleConsumer]
+      mapper: BiConsumer[? >: T, ? >: DoubleConsumer]
   ): DoubleStream = {
     // See implementation notes in mapMulti[R]()
 
@@ -205,7 +205,7 @@ trait Stream[T] extends BaseStream[T, Stream[T]] {
 
   // Since: Java 16
   def mapMultiToInt(
-      mapper: BiConsumer[_ >: T, _ >: IntConsumer]
+      mapper: BiConsumer[? >: T, ? >: IntConsumer]
   ): IntStream = {
     // See implementation notes in mapMulti[R]()
 
@@ -255,7 +255,7 @@ trait Stream[T] extends BaseStream[T, Stream[T]] {
 
   // Since: Java 16
   def mapMultiToLong(
-      mapper: BiConsumer[_ >: T, _ >: LongConsumer]
+      mapper: BiConsumer[? >: T, ? >: LongConsumer]
   ): LongStream = {
     // See implementation notes in mapMulti[R]()
 
@@ -303,19 +303,19 @@ trait Stream[T] extends BaseStream[T, Stream[T]] {
     ))
   }
 
-  def mapToDouble(mapper: ToDoubleFunction[_ >: T]): DoubleStream
+  def mapToDouble(mapper: ToDoubleFunction[? >: T]): DoubleStream
 
-  def mapToInt(mapper: ToIntFunction[_ >: T]): IntStream
+  def mapToInt(mapper: ToIntFunction[? >: T]): IntStream
 
-  def mapToLong(mapper: ToLongFunction[_ >: T]): LongStream
+  def mapToLong(mapper: ToLongFunction[? >: T]): LongStream
 
-  def max(comparator: Comparator[_ >: T]): Optional[T]
+  def max(comparator: Comparator[? >: T]): Optional[T]
 
-  def min(comparator: Comparator[_ >: T]): Optional[T]
+  def min(comparator: Comparator[? >: T]): Optional[T]
 
-  def noneMatch(pred: Predicate[_ >: T]): Boolean
+  def noneMatch(pred: Predicate[? >: T]): Boolean
 
-  def peek(action: Consumer[_ >: T]): Stream[T]
+  def peek(action: Consumer[? >: T]): Stream[T]
 
   def reduce(accumulator: BinaryOperator[T]): Optional[T]
 
@@ -323,7 +323,7 @@ trait Stream[T] extends BaseStream[T, Stream[T]] {
 
   def reduce[U](
       identity: U,
-      accumulator: BiFunction[U, _ >: T, U],
+      accumulator: BiFunction[U, ? >: T, U],
       combiner: BinaryOperator[U]
   ): U
 
@@ -331,10 +331,10 @@ trait Stream[T] extends BaseStream[T, Stream[T]] {
 
   def sorted(): Stream[T]
 
-  def sorted(comparator: Comparator[_ >: T]): Stream[T]
+  def sorted(comparator: Comparator[? >: T]): Stream[T]
 
   // Since: Java 9
-  def takeWhile(pred: Predicate[_ >: T]): Stream[T] = {
+  def takeWhile(pred: Predicate[? >: T]): Stream[T] = {
     Objects.requireNonNull(pred)
 
     val spliter = this.spliterator() //  also marks this stream "operated upon"
@@ -353,7 +353,7 @@ trait Stream[T] extends BaseStream[T, Stream[T]] {
       override def trySplit(): Spliterator[T] =
         null.asInstanceOf[Spliterator[T]]
 
-      def tryAdvance(action: Consumer[_ >: T]): Boolean = {
+      def tryAdvance(action: Consumer[? >: T]): Boolean = {
         if (done) false
         else
           spliter.tryAdvance((e) =>
@@ -396,7 +396,7 @@ object Stream {
 
   def builder[T](): Builder[T] = new StreamImpl.Builder[T]
 
-  def concat[T](a: Stream[_ <: T], b: Stream[_ <: T]): Stream[T] =
+  def concat[T](a: Stream[? <: T], b: Stream[? <: T]): Stream[T] =
     StreamImpl.concat(a, b)
 
   def empty[T](): Stream[T] =
@@ -405,7 +405,7 @@ object Stream {
   def generate[T](s: Supplier[T]): Stream[T] = {
     val spliter =
       new Spliterators.AbstractSpliterator[T](Long.MaxValue, 0) {
-        def tryAdvance(action: Consumer[_ >: T]): Boolean = {
+        def tryAdvance(action: Consumer[? >: T]): Boolean = {
           action.accept(s.get())
           true
         }
@@ -429,7 +429,7 @@ object Stream {
         Long.MaxValue,
         Spliterator.ORDERED | Spliterator.IMMUTABLE
       ) {
-        def tryAdvance(action: Consumer[_ >: T]): Boolean = {
+        def tryAdvance(action: Consumer[? >: T]): Boolean = {
           val current =
             if (seedUsed) next(previous)
             else {
@@ -458,7 +458,7 @@ object Stream {
         Long.MaxValue,
         Spliterator.ORDERED | Spliterator.IMMUTABLE
       ) {
-        def tryAdvance(action: Consumer[_ >: T]): Boolean = {
+        def tryAdvance(action: Consumer[? >: T]): Boolean = {
           val current =
             if (seedUsed) f(previous)
             else {

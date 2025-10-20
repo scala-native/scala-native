@@ -69,8 +69,8 @@ package java.math
 
 import scala.annotation.tailrec
 
-import java.{lang => jl}
-import java.lang.{Double => JDouble}
+import java.lang as jl
+import java.lang.Double as JDouble
 import java.util.Arrays
 
 object BigDecimal {
@@ -258,7 +258,7 @@ object BigDecimal {
       scale: Int,
       roundingMode: RoundingMode
   ): BigDecimal = {
-    import java.lang.{Long => JLong}
+    import java.lang.Long as JLong
 
     val remainder = scaledDividend % scaledDivisor
     val sign = JLong.signum(scaledDividend) * JLong.signum(scaledDivisor)
@@ -310,7 +310,7 @@ object BigDecimal {
       fraction: Int,
       roundingMode: RoundingMode
   ): Int = {
-    import RoundingMode._
+    import RoundingMode.*
 
     val absFraction = Math.abs(fraction)
     val sigFraction = java.lang.Integer.signum(fraction)
@@ -394,8 +394,8 @@ object BigDecimal {
 }
 
 class BigDecimal() extends Number with Comparable[BigDecimal] {
-  import BigDecimal._
-  import Multiplication._
+  import BigDecimal.*
+  import Multiplication.*
 
   /** The <code>String</code> representation is cached. */
   private var _toStringImage: String = null

@@ -1,21 +1,21 @@
 package org.scalanative.testsuite.javalib.lang
 
 import java.util.concurrent.TimeUnit
-import java.io._
-import java.nio.file._
+import java.io.*
+import java.nio.file.*
 import java.nio.charset.StandardCharsets
 
 import scala.io.Source
 
-import org.junit._
-import org.junit.Assert._
-import org.junit.Assume._
+import org.junit.*
+import org.junit.Assert.*
+import org.junit.Assume.*
 import org.junit.Ignore
 
-import org.scalanative.testsuite.utils.Platform, Platform._
-import scala.scalanative.junit.utils.AssumesHelper._
-import scala.concurrent._
-import scala.concurrent.duration._
+import org.scalanative.testsuite.utils.Platform, Platform.*
+import scala.scalanative.junit.utils.AssumesHelper.*
+import scala.concurrent.*
+import scala.concurrent.duration.*
 import scala.concurrent.ExecutionContext.Implicits.global
 
 object ProcessTestOnJDK9 {
@@ -26,7 +26,7 @@ object ProcessTestOnJDK9 {
 }
 
 class ProcessTestOnJDK9 {
-  import ProcessUtils._
+  import ProcessUtils.*
 
   @Test def onExitHandles(): Unit = {
     val proc = processSleep(0.1).start()

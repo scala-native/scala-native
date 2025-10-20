@@ -1,10 +1,10 @@
 package org.scalanative.testsuite.javalib.nio
 
-import java.nio._
+import java.nio.*
 
 // Ported from Scala.js
 object ByteBufferFactories {
-  import BufferFactory._
+  import BufferFactory.*
 
   class AllocByteBufferFactory extends ByteBufferFactory {
     def allocBuffer(capacity: Int): ByteBuffer =

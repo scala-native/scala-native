@@ -1,14 +1,14 @@
 package org.scalanative.testsuite.javalib.net
 
-import java.net._
+import java.net.*
 
 /* Originally ported from Apache Harmony.
  * Extensively modified for Scala Native. Additional test cases added.
  */
 
 import org.junit.Test
-import org.junit.Assert._
-import org.junit.Assume._
+import org.junit.Assert.*
+import org.junit.Assume.*
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 

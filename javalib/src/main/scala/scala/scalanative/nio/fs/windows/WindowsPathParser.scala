@@ -5,7 +5,7 @@ import java.nio.file.InvalidPathException
 import scala.annotation.tailrec
 
 object WindowsPathParser {
-  import WindowsPath.PathType._
+  import WindowsPath.PathType.*
 
   def apply(rawPath: String)(implicit fs: WindowsFileSystem): WindowsPath = {
     @alwaysinline

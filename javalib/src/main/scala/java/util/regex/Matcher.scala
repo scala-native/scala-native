@@ -1,7 +1,7 @@
 package java.util
 package regex
 
-import scalanative.regex.{Matcher => rMatcher}
+import scalanative.regex.Matcher as rMatcher
 
 // Inspired & informed by:
 // https://github.com/google/re2j/blob/master/java/com/google/re2j/Matcher.java

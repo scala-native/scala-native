@@ -1,6 +1,6 @@
 package org.scalanative.testsuite.javalib.lang
 
-import java.lang._
+import java.lang.*
 
 // Three tests ported from Scala.js javalib/lang/FloatTest.scala
 // commit: 217f3a3 dated: 2021-02-19
@@ -13,12 +13,12 @@ import java.lang._
 // with that intent.  Scala.js JFloat is introduced to minimize changes
 // in ported Scala.js tests. Existing usages of unqualified Double
 // are not changed. Joys of blending code bases.
-import java.lang.{Float => JFloat}
+import java.lang.Float as JFloat
 
 import java.lang.Float.{floatToIntBits, floatToRawIntBits, intBitsToFloat}
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 

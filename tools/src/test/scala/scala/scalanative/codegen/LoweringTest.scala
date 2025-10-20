@@ -1,7 +1,7 @@
 package scala.scalanative.codegen
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 class LoweringTest extends CodeGenSpec {
 

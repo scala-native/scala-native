@@ -6,7 +6,7 @@ import scala.scalanative.runtime.Intrinsics.{
   unsignedOf,
   castIntToRawSizeUnsigned
 }
-import scala.scalanative.unsigned._
+import scala.scalanative.unsigned.*
 
 /** Zone allocator which manages memory allocations. */
 @implicitNotFound("Given method requires an implicit zone.")

@@ -1,12 +1,12 @@
 package org.scalanative.testsuite.runtime
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 class NullGuardsTest {
   @Test def issue3939(): Unit = {
-    import NullGuardsTest.issue3939._
+    import NullGuardsTest.issue3939.*
     val sample = Month.JANUARY
     val field = JulianFields.JULIAN_DAY
     assertNotNull(sample.range(field))

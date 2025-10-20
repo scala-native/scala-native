@@ -4,9 +4,9 @@ package sys
 
 import scalanative.runtime.Platform
 
-import scalanative.unsafe._
-import scalanative.unsigned._
-import scalanative.meta.LinktimeInfo._
+import scalanative.unsafe.*
+import scalanative.unsigned.*
+import scalanative.meta.LinktimeInfo.*
 
 /** socket.h for Scala
  *  @see
@@ -391,7 +391,7 @@ object socket {
 /** Allow using C names to access socket structure fields.
  */
 object socketOps {
-  import socket._
+  import socket.*
   import posix.inttypes.uint8_t
 
   // Also used by posixlib netinet/in.scala

@@ -3,13 +3,13 @@ package org.scalanative.testsuite.javalib.util.function
 
 import java.util.function.BiPredicate
 
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 class BiPredicateTest {
-  import BiPredicateTest._
+  import BiPredicateTest.*
 
   @Test def and(): Unit = {
     val evenAndInRange = largerThan10LessThan30.and(even)

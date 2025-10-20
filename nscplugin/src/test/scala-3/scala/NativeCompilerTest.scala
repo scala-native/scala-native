@@ -1,9 +1,9 @@
 package org.scalanative
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
-import scala.scalanative.api._
+import scala.scalanative.api.*
 import scala.scalanative.util.Scope
 import scala.scalanative.io.VirtualDirectory
 import scalanative.NIRCompiler

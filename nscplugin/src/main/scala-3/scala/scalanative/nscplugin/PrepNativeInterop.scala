@@ -1,18 +1,18 @@
 package scala.scalanative.nscplugin
 
 import dotty.tools.dotc.plugins.PluginPhase
-import dotty.tools._
-import dotc._
-import dotc.ast.tpd._
+import dotty.tools.*
+import dotc.*
+import dotc.ast.tpd.*
 import scala.scalanative.nscplugin.CompilerCompat.SymUtilsCompat.*
-import core.Contexts._
+import core.Contexts.*
 import core.Definitions
-import core.Names._
-import core.Symbols._
-import core.Types._
-import core.StdNames._
+import core.Names.*
+import core.Symbols.*
+import core.Types.*
+import core.StdNames.*
 import core.Constants.Constant
-import core.Flags._
+import core.Flags.*
 import dotty.tools.dotc.config.*
 import NirGenUtil.ContextCached
 
@@ -55,11 +55,11 @@ class PrepNativeInterop extends PluginPhase with NativeInteropUtil {
   override def transformDefDef(dd: DefDef)(using Context): Tree = {
     val sym = dd.symbol
     // Set `@extern` annotation for top-level extern functions
-    if (isTopLevelExtern(dd) && !sym.hasAnnotation(defnNir.ExternClass)) {
+    if isTopLevelExtern(dd) && !sym.hasAnnotation(defnNir.ExternClass) then {
       sym.addAnnotation(defnNir.ExternClass)
     }
 
-    if (sym.owner.isExternType) {
+    if sym.owner.isExternType then {
       def isImplicitClassCtor = sym.paramInfo.stripPoly.stripped match {
         case core.Types.MethodTpe(_, _, resultTpe) =>
           resultTpe.typeSymbol.isClass && resultTpe.typeSymbol.is(Implicit) &&
@@ -111,7 +111,7 @@ class PrepNativeInterop extends PluginPhase with NativeInteropUtil {
 
   override def transformValDef(vd: ValDef)(using Context): Tree = {
     val enumsCtx = EnumerationsContext.get
-    import enumsCtx._
+    import enumsCtx.*
     val sym = vd.symbol
     vd match {
       case ValDef(_, tpt, ScalaEnumValue.NoName(optIntParam)) =>
@@ -124,10 +124,10 @@ class PrepNativeInterop extends PluginPhase with NativeInteropUtil {
 
       case _ =>
         // Set `@extern` annotation for top-level extern variables
-        if (isTopLevelExtern(vd) &&
-            !sym.hasAnnotation(defnNir.ExternClass)) {
+        if isTopLevelExtern(vd) &&
+            !sym.hasAnnotation(defnNir.ExternClass) then {
           sym.addAnnotation(defnNir.ExternClass)
-          if (vd.symbol.is(Mutable)) {
+          if vd.symbol.is(Mutable) then {
             sym.setter.addAnnotation(defnNir.ExternClass)
           }
         }

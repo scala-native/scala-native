@@ -2,9 +2,9 @@ package scala.scalanative
 package nir
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
-import Sig.Scope._
+import Sig.Scope.*
 class SigManglingSuite {
   val fieldNames =
     Seq("f", "len", "field", "-field", "2", "-", "-2field", "2-field")

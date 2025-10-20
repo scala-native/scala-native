@@ -20,7 +20,7 @@ class ZipInputStream(_in: InputStream, charset: Charset)
       new Inflater(true)
     )
     with ZipConstants {
-  import ZipInputStream._
+  import ZipInputStream.*
 
   def this(in: InputStream) = this(in, StandardCharsets.UTF_8)
 

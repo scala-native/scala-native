@@ -1,7 +1,7 @@
 package scala.scalanative
 package nir
 
-import nir.Attr._
+import nir.Attr.*
 
 sealed abstract class Attr {
   final def show: String = nir.Show(this)
@@ -207,7 +207,7 @@ final class Attrs private (
        |)""".stripMargin
 
   override def hashCode(): Int = {
-    import scala.util.hashing.MurmurHash3._
+    import scala.util.hashing.MurmurHash3.*
     var acc = Attrs.HashSeed
     acc = mix(acc, inlineHint.##)
     acc = mix(acc, specialize.##)

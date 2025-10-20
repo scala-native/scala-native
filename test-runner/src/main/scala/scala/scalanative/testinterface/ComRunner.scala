@@ -3,7 +3,7 @@ package testinterface
 
 // Ported from Scala.js
 
-import java.io._
+import java.io.*
 import java.net.{ServerSocket, Socket}
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.scalanative.build.Logger
@@ -21,7 +21,7 @@ private[testinterface] class ComRunner(
     handleMessage: String => Unit
 )(implicit ec: ExecutionContext)
     extends AutoCloseable {
-  import ComRunner._
+  import ComRunner.*
 
   processRunner.future.onComplete {
     case Failure(exception) => forceClose(exception)

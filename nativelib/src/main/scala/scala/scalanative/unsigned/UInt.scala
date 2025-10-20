@@ -9,7 +9,7 @@ import scalanative.runtime.Intrinsics.{
   castIntToRawSizeUnsigned,
   unsignedOf
 }
-import java.lang.{Integer => JInteger}
+import java.lang.Integer as JInteger
 
 /** `UInt`, a 32-bit unsigned integer. */
 final class UInt private[scalanative] (

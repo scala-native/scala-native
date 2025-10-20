@@ -1,7 +1,7 @@
 package scala.scalanative
 package runtime
 
-import scalanative.unsafe._
+import scalanative.unsafe.*
 
 @extern
 private[runtime] object unwind {

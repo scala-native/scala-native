@@ -2,12 +2,12 @@ package scala.scalanative.runtime.dwarf
 
 import scala.collection.mutable
 
-import scalanative.unsigned._
-import scalanative.unsafe._
+import scalanative.unsigned.*
+import scalanative.unsafe.*
 
 private[runtime] object DWARF {
   implicit val endi: Endianness = Endianness.LITTLE
-  import CommonParsers._
+  import CommonParsers.*
 
   case class DIE(
       header: DWARF.Header,
@@ -353,7 +353,7 @@ private[runtime] object DWARF {
      *  values we are not interested in keep in sync with `parse`
      */
     def skip(header: Header, form: Form)(implicit ds: BinaryFile): Unit = {
-      import Form._
+      import Form.*
       form match {
         case DW_FORM_strp =>
           if (header.is64) skipBytes(LONG)

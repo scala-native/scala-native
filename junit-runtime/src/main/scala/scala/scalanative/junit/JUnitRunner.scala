@@ -3,7 +3,7 @@ package junit
 
 // Ported from Scala.js
 
-import sbt.testing._
+import sbt.testing.*
 
 private[junit] final class JUnitRunner(
     val args: Array[String],

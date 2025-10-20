@@ -8,7 +8,7 @@
 package scala.scalanative
 package regex
 
-import java.{lang => jl}
+import java.lang as jl
 
 // A "builder"-style helper class for manipulating character classes
 // represented as an array of pairs of runes [lo, hi], each denoting an
@@ -22,7 +22,7 @@ class CharClass(
     // inclusive ranges, pairs of [lo,hi].  r.length is even.
     private var r: Array[Int]
 ) {
-  import CharClass._
+  import CharClass.*
 
   // prefix of |r| that is defined.  Even.
   private var len: Int = r.length

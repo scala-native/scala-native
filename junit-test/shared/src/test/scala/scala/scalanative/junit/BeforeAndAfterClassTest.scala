@@ -1,8 +1,8 @@
 package scala.scalanative.junit
 
-import org.junit._
-import org.junit.Assert._
-import org.junit.Assume._
+import org.junit.*
+import org.junit.Assert.*
+import org.junit.Assume.*
 
 import scala.scalanative.junit.utils.JUnitTest
 

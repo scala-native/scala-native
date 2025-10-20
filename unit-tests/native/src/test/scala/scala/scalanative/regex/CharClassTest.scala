@@ -2,9 +2,9 @@ package scala.scalanative
 package regex
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
-import regex.Utils._
+import regex.Utils.*
 
 class CharClassTest {
   private def cc(arr: Array[Int]): CharClass = new CharClass(arr)

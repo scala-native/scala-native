@@ -1,13 +1,13 @@
 package org.scalanative.testsuite.javalib.lang
 
-import java.lang._
+import java.lang.*
 import java.io.InputStream
 import java.nio.file.Paths
 import java.util.concurrent.TimeUnit
 import scala.io.Source
 
-import org.junit.Assert._
-import org.scalanative.testsuite.utils.Platform._
+import org.junit.Assert.*
+import org.scalanative.testsuite.utils.Platform.*
 
 object ProcessUtils {
   def readInputStream(s: InputStream) = Source.fromInputStream(s).mkString
@@ -32,9 +32,9 @@ object ProcessUtils {
 
   def processForCommand(args: String*): ProcessBuilder = {
     if (isWindows)
-      new ProcessBuilder((Seq("cmd", "/c") ++ args): _*)
+      new ProcessBuilder((Seq("cmd", "/c") ++ args)*)
     else
-      new ProcessBuilder(args: _*)
+      new ProcessBuilder(args*)
   }
 
   def processSleep(seconds: Double): ProcessBuilder = {
@@ -42,18 +42,18 @@ object ProcessUtils {
       // Use Powershell Start-Sleep, cmd timeout can cause problems and
       // does support only integer seconds arguments
       new ProcessBuilder(
-        Seq("powershell", "Start-Sleep", "-Seconds", seconds.toString()): _*
+        Seq("powershell", "Start-Sleep", "-Seconds", seconds.toString())*
       )
     else processForCommand("sleep", seconds.toString())
   }
 
   def processForScript(script: Scripts.Entry, args: String*): ProcessBuilder =
     processForCommand(
-      (Paths.get(resourceDir, script.filename).toString +: args): _*
+      (Paths.get(resourceDir, script.filename).toString +: args)*
     )
 
   def processForCommand(script: Scripts.Entry, args: String*): ProcessBuilder =
-    processForCommand((script.cmd +: args): _*)
+    processForCommand((script.cmd +: args)*)
 
   def assertProcessExitOrTimeout(process: Process): Unit = {
     // Suspend execution of the test until either the specified

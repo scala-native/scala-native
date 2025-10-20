@@ -2,19 +2,19 @@ package scala.scalanative.junit.plugin
 
 import scala.annotation.tailrec
 
-import dotty.tools.dotc.ast.tpd._
+import dotty.tools.dotc.ast.tpd.*
 import dotty.tools.dotc.core
-import core.Constants._
-import core.Contexts._
-import core.Decorators._
-import core.Flags._
-import core.Names._
-import core.NameOps._
-import core.Phases._
-import core.Scopes._
-import core.Symbols._
-import core.StdNames._
-import core.Types._
+import core.Constants.*
+import core.Contexts.*
+import core.Decorators.*
+import core.Flags.*
+import core.Names.*
+import core.NameOps.*
+import core.Phases.*
+import core.Scopes.*
+import core.Symbols.*
+import core.StdNames.*
+import core.Types.*
 import dotty.tools.dotc.plugins.PluginPhase
 import dotty.tools.dotc.transform
 import dotty.tools.dotc.report
@@ -65,7 +65,7 @@ class ScalaNativeJUnitBootstrappers extends PluginPhase {
         genBootstrapper(clDef.symbol.asClass)
     }
 
-    if (bootstrappers.isEmpty) tree
+    if bootstrappers.isEmpty then tree
     else cpy.PackageDef(tree)(tree.pid, tree.stats ::: bootstrappers)
   }
 
@@ -194,7 +194,7 @@ class ScalaNativeJUnitBootstrappers extends PluginPhase {
             .flatMap(s => annotatedMethods(s.moduleClass.asClass, annot))
             .partition(_.isPublic)
 
-        if (nonPublicCalls.nonEmpty) {
+        if nonPublicCalls.nonEmpty then {
           val module = testClass.companionModule.orElse(testClass)
           report.error(
             s"Methods marked with ${annot.showName} annotation in $module must be public",
@@ -380,14 +380,14 @@ class ScalaNativeJUnitBootstrappers extends PluginPhase {
       resultType.isRef(defn.UnitClass) || resultType.isRef(defn.BoxedUnitClass)
     def returnsFuture = resultType.isRef(junitdefn.FutureClass)
 
-    if (returnsUnit) {
+    if returnsUnit then {
       val newSuccess =
         ref(junitdefn.SuccessModule_apply).appliedTo(ref(defn.BoxedUnit_UNIT))
       Block(
         instance.select(testMethod).appliedToNone :: Nil,
         ref(junitdefn.FutureModule_successful).appliedTo(newSuccess)
       )
-    } else if (returnsFuture) {
+    } else if returnsFuture then {
       instance.select(testMethod).appliedToNone
     } else {
       // We lie in the error message to not expose that we support async testing.

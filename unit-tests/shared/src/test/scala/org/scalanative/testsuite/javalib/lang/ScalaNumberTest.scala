@@ -1,11 +1,11 @@
 package org.scalanative.testsuite.javalib.lang
 
-import java.lang._
+import java.lang.*
 
 //  Exercise __scala_==
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 @deprecated class ScalaNumberTest {
 

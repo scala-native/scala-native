@@ -5,7 +5,7 @@ package org.scalanative.testsuite.javalib.math
 import java.math.{BigInteger, BigDecimal}
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 class BigDecimalToStringTest {
 
@@ -65,7 +65,7 @@ class BigDecimalToStringTest {
 
   @Test def testToStringWithRoundingMode(): Unit = {
     import java.math.RoundingMode
-    import RoundingMode._
+    import RoundingMode.*
     import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
     val group1: Seq[RoundingMode] = Seq(UP, CEILING, HALF_UP)

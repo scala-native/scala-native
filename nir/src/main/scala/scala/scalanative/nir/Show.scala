@@ -56,7 +56,7 @@ object Show {
   }
 
   final class NirShowBuilder(val builder: ShowBuilder) extends AnyVal {
-    import builder._
+    import builder.*
 
     def onAttrs(attrs: Attrs): Unit =
       if (attrs == Attrs.None) {
@@ -718,7 +718,7 @@ object Show {
     }
 
     def linktimeCondition(cond: LinktimeCondition): Unit = {
-      import LinktimeCondition._
+      import LinktimeCondition.*
       cond match {
         case SimpleCondition(propertyName, comparison, value) =>
           str(propertyName + " ")

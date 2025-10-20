@@ -16,15 +16,15 @@
 package java.util
 
 import scala.annotation.tailrec
-import java.{lang => jl}
+import java.lang as jl
 
-import ScalaOps._
+import ScalaOps.*
 
 object AbstractMap {
 
   private def entryEquals[K, V](entry: Map.Entry[K, V], other: Any): Boolean = {
     other match {
-      case other: Map.Entry[_, _] =>
+      case other: Map.Entry[?, ?] =>
         Objects.equals(entry.getKey(), other.getKey()) &&
           Objects.equals(entry.getValue(), other.getValue())
       case _ => false
@@ -38,7 +38,7 @@ object AbstractMap {
       extends Map.Entry[K, V]
       with Serializable {
 
-    def this(entry: Map.Entry[_ <: K, _ <: V]) =
+    def this(entry: Map.Entry[? <: K, ? <: V]) =
       this(entry.getKey(), entry.getValue())
 
     def getKey(): K = key
@@ -72,7 +72,7 @@ object AbstractMap {
       extends Map.Entry[K, V]
       with Serializable {
 
-    def this(entry: Map.Entry[_ <: K, _ <: V]) =
+    def this(entry: Map.Entry[? <: K, ? <: V]) =
       this(entry.getKey(), entry.getValue())
 
     def getKey(): K = key
@@ -140,7 +140,7 @@ abstract class AbstractMap[K, V] protected () extends java.util.Map[K, V] {
     findAndRemove(entrySet().iterator())
   }
 
-  def putAll(m: Map[_ <: K, _ <: V]): Unit =
+  def putAll(m: Map[? <: K, ? <: V]): Unit =
     m.entrySet().scalaOps.foreach(e => put(e.getKey(), e.getValue()))
 
   def clear(): Unit =
@@ -188,7 +188,7 @@ abstract class AbstractMap[K, V] protected () extends java.util.Map[K, V] {
     if (o.asInstanceOf[AnyRef] eq this) true
     else {
       o match {
-        case m: Map[_, _] =>
+        case m: Map[?, ?] =>
           self.size() == m.size() &&
             entrySet().scalaOps.forall(item =>
               Objects.equals(m.get(item.getKey()), item.getValue())

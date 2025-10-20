@@ -1,20 +1,20 @@
 package scala.scalanative.nio.fs.windows
 
 import java.nio.file.{LinkOption, Path}
-import java.nio.file.attribute._
+import java.nio.file.attribute.*
 
 import scalanative.annotation.stub
-import scalanative.unsigned._
-import scalanative.unsafe._
-import scala.scalanative.windows._
+import scalanative.unsigned.*
+import scalanative.unsafe.*
+import scala.scalanative.windows.*
 import java.nio.file.WindowsException
-import java.{util => ju}
+import java.util as ju
 
 class WindowsAclFileAttributeView(path: Path, options: Array[LinkOption])
     extends AclFileAttributeView {
-  import SecurityBaseApi._
-  import WinBaseApiExt._
-  import AclApi._
+  import SecurityBaseApi.*
+  import WinBaseApiExt.*
+  import AclApi.*
 
   def name(): String = "acl"
 

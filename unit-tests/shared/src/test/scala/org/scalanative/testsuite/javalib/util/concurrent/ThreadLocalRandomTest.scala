@@ -11,11 +11,11 @@ import java.util.concurrent.ThreadLocalRandom
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
 
-import JSR166Test._
-import org.scalanative.testsuite.utils.Platform._
+import JSR166Test.*
+import org.scalanative.testsuite.utils.Platform.*
 
 import org.junit.{Test, Ignore}
-import org.junit.Assert._
+import org.junit.Assert.*
 
 import scala.math.{max, min}
 
@@ -385,7 +385,7 @@ class ThreadLocalRandomTest extends JSR166Test {
    *  every byte
    */
   @Test def testNextBytes(): Unit = {
-    import scala.util.control.Breaks._
+    import scala.util.control.Breaks.*
     val rnd = ThreadLocalRandom.current
     val n = rnd.nextInt(1, 20)
     val bytes = new Array[Byte](n)

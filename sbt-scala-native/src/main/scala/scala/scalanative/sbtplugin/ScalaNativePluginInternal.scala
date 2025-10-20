@@ -1,27 +1,27 @@
 package scala.scalanative
 package sbtplugin
 
-import java.util.concurrent.atomic._
-import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
-import sbt.Keys._
-import sbt._
-import sbt.complete.DefaultParsers._
+import java.util.concurrent.atomic.*
+import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport.*
+import sbt.Keys.*
+import sbt.*
+import sbt.complete.DefaultParsers.*
 import scala.annotation.tailrec
 import scala.scalanative.util.Scope
-import scala.scalanative.build._
+import scala.scalanative.build.*
 import scala.scalanative.linker.LinkingException
 import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport.{
-  ScalaNativeCrossVersion => _,
-  _
+  ScalaNativeCrossVersion as _,
+  *
 }
-import scala.scalanative.sbtplugin.Utilities._
+import scala.scalanative.sbtplugin.Utilities.*
 import scala.scalanative.testinterface.adapter.TestAdapter
 import scala.sys.process.Process
 import scala.util.Try
-import scala.concurrent._
+import scala.concurrent.*
 import scala.concurrent.duration.Duration
 import scala.scalanative.build.Platform
-import sjsonnew.BasicJsonProtocol._
+import sjsonnew.BasicJsonProtocol.*
 import java.nio.file.{Files, Path}
 import java.lang.Runtime
 import java.util.concurrent.locks.ReentrantLock
@@ -51,7 +51,7 @@ object ScalaNativePluginInternal {
   val nativeWarnOldJVM =
     taskKey[Unit]("Warn if JVM 7 or older is used.")
 
-  lazy val scalaNativeDependencySettings: Seq[Setting[_]] = {
+  lazy val scalaNativeDependencySettings: Seq[Setting[?]] = {
     val nativeStandardLibraries =
       Seq("nativelib", "clib", "posixlib", "windowslib", "javalib", "auxlib")
 
@@ -91,7 +91,7 @@ object ScalaNativePluginInternal {
     )
   }
 
-  lazy val scalaNativeBaseSettings: Seq[Setting[_]] = Seq(
+  lazy val scalaNativeBaseSettings: Seq[Setting[?]] = Seq(
     crossVersion := ScalaNativeCrossVersion.binary,
     platformDepsCrossVersion := ScalaNativeCrossVersion.binary
   )
@@ -105,7 +105,7 @@ object ScalaNativePluginInternal {
    *  @see
    *    [[ScalaNativePlugin#globalSettings]]
    */
-  lazy val scalaNativeGlobalSettings: Seq[Setting[_]] = Seq(
+  lazy val scalaNativeGlobalSettings: Seq[Setting[?]] = Seq(
     nativeConfig := build.NativeConfig.empty
       .withClang(interceptBuildException(Discover.clang()))
       .withClangPP(interceptBuildException(Discover.clangpp()))
@@ -173,7 +173,7 @@ object ScalaNativePluginInternal {
    *  for test and app configurations. The total with 3 Scala versions equals 6
    *  times per project.
    */
-  def scalaNativeConfigSettings(testConfig: Boolean): Seq[Setting[_]] = Seq(
+  def scalaNativeConfigSettings(testConfig: Boolean): Seq[Setting[?]] = Seq(
     scalacOptions ++= {
       if (isGeneratingForIDE) None
       else
@@ -283,7 +283,7 @@ object ScalaNativePluginInternal {
         // to possible ignoring of inherited IO and termination of wrapper
         // thread with an exception. We use java.lang ProcessBuilder instead
         val proc = new ProcessBuilder()
-          .command((Seq(binary) ++ args): _*)
+          .command((Seq(binary) ++ args)*)
           .inheritIO()
         env.foreach((proc.environment().put(_, _)).tupled)
         proc.start().waitFor()
@@ -302,11 +302,11 @@ object ScalaNativePluginInternal {
     }
   )
 
-  lazy val scalaNativeCompileSettings: Seq[Setting[_]] = {
+  lazy val scalaNativeCompileSettings: Seq[Setting[?]] = {
     scalaNativeConfigSettings(false)
   }
 
-  lazy val scalaNativeTestSettings: Seq[Setting[_]] =
+  lazy val scalaNativeTestSettings: Seq[Setting[?]] =
     scalaNativeConfigSettings(true) ++
       Seq(
         mainClass := Some("scala.scalanative.testinterface.TestMain"),
@@ -360,7 +360,7 @@ object ScalaNativePluginInternal {
    *  @see
    *    [[ScalaNativePlugin#projectSettings]]
    */
-  lazy val scalaNativeProjectSettings: Seq[Setting[_]] =
+  lazy val scalaNativeProjectSettings: Seq[Setting[?]] =
     scalaNativeDependencySettings ++
       scalaNativeBaseSettings ++
       inConfig(Compile)(scalaNativeCompileSettings) ++

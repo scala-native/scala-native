@@ -4,12 +4,12 @@ package scala.scalanative.testinterface.common
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import org.junit.Test
-import org.junit.Assert._
-import scala.scalanative.junit.async._
-import scala.concurrent._
+import org.junit.Assert.*
+import scala.scalanative.junit.async.*
+import scala.concurrent.*
 
 class RunMuxRPCTest {
-  import RPCCoreTest._
+  import RPCCoreTest.*
 
   lazy val baseX: TestRPC = new TestRPC(baseY)
   lazy val baseY: TestRPC = new TestRPC(baseX)

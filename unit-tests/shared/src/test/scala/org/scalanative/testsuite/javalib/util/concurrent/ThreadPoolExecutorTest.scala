@@ -8,23 +8,23 @@
 
 package org.scalanative.testsuite.javalib.util.concurrent
 
-import java.util.concurrent.TimeUnit._
+import java.util.concurrent.TimeUnit.*
 import java.util
-import java.util._
+import java.util.*
 import java.util.Collections
-import java.util.concurrent._
-import java.util.concurrent.ThreadPoolExecutor._
-import java.util.concurrent.atomic._
+import java.util.concurrent.*
+import java.util.concurrent.ThreadPoolExecutor.*
+import java.util.concurrent.atomic.*
 
-import scala.util.control.Breaks._
+import scala.util.control.Breaks.*
 
-import org.junit._
-import org.junit.Assert._
+import org.junit.*
+import org.junit.Assert.*
 
 import org.scalanative.testsuite.utils.Platform
 
 object ThreadPoolExecutorTest {
-  import JSR166Test._
+  import JSR166Test.*
 
   class ExtendedTPE()
       extends ThreadPoolExecutor(
@@ -61,7 +61,7 @@ object ThreadPoolExecutorTest {
   }
 }
 class ThreadPoolExecutorTest extends JSR166Test {
-  import JSR166Test._
+  import JSR166Test.*
 
   def defaltExecutor(
       queue: ArrayBlockingQueue[Runnable] = new ArrayBlockingQueue[Runnable](10)
@@ -626,7 +626,7 @@ class ThreadPoolExecutorTest extends JSR166Test {
       new ThreadPoolExecutor(1, 1, LONG_DELAY_MS, MILLISECONDS, q)
     usingWrappedPoolCleaner(p)(cleaner(_, done)) { p =>
       val threadStarted = new CountDownLatch(1)
-      val tasks = new Array[FutureTask[_]](5)
+      val tasks = new Array[FutureTask[?]](5)
       for (i <- 0 until tasks.length) {
         val task =
           new CheckedCallable[java.lang.Boolean]() {
@@ -695,7 +695,7 @@ class ThreadPoolExecutorTest extends JSR166Test {
     val p =
       new ThreadPoolExecutor(1, 1, LONG_DELAY_MS, MILLISECONDS, q)
     usingWrappedPoolCleaner(p)(cleaner(_, done)) { p =>
-      val tasks = new Array[FutureTask[_]](5)
+      val tasks = new Array[FutureTask[?]](5)
       for (i <- 0 until tasks.length) {
         val task =
           new CheckedCallable[java.lang.Boolean]() {
@@ -2385,7 +2385,7 @@ class ThreadPoolExecutorTest extends JSR166Test {
     )
     usingWrappedPoolCleaner(e)(cleaner(_, done)) { e =>
       val blockerStarted = new CountDownLatch(1)
-      val futures = new ArrayList[Future[_]]
+      val futures = new ArrayList[Future[?]]
       for (i <- 0 until 2) {
         val r = new CheckedRunnable() {
           @throws[Throwable]

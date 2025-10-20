@@ -2,7 +2,7 @@ package scala.scalanative.nio.fs.windows
 
 import java.lang.Iterable
 import java.lang.StringBuilder
-import java.{lang => jl}
+import java.lang as jl
 import java.nio.charset.StandardCharsets
 import java.nio.file.{
   FileStore,
@@ -17,9 +17,9 @@ import java.nio.file.attribute.UserPrincipalLookupService
 import java.util.{LinkedList, Set}
 
 import scalanative.annotation.stub
-import scalanative.unsafe._
-import scalanative.unsigned._
-import scalanative.windows.FileApi._
+import scalanative.unsafe.*
+import scalanative.unsigned.*
+import scalanative.windows.FileApi.*
 import scala.annotation.tailrec
 
 class WindowsFileSystem(fsProvider: WindowsFileSystemProvider)

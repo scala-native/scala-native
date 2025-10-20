@@ -17,7 +17,7 @@ import scala.annotation.tailrec
 import scala.annotation.nowarn
 
 class PriorityQueue[E] private (
-    private val comp: Comparator[_ >: E],
+    private val comp: Comparator[? >: E],
     internal: Boolean
 ) extends AbstractQueue[E]
     with Serializable {
@@ -31,24 +31,24 @@ class PriorityQueue[E] private (
       throw new IllegalArgumentException()
   }
 
-  def this(comparator: Comparator[_ >: E]) = {
+  def this(comparator: Comparator[? >: E]) = {
     this(NaturalComparator.select(comparator), internal = true)
   }
 
-  def this(initialCapacity: Int, comparator: Comparator[_ >: E]) = {
+  def this(initialCapacity: Int, comparator: Comparator[? >: E]) = {
     this(comparator)
     if (initialCapacity < 1)
       throw new IllegalArgumentException()
   }
 
-  def this(c: Collection[_ <: E]) = {
+  def this(c: Collection[? <: E]) = {
     this(
       c match {
-        case c: PriorityQueue[_] =>
-          c.comp.asInstanceOf[Comparator[_ >: E]]
-        case c: SortedSet[_] =>
+        case c: PriorityQueue[?] =>
+          c.comp.asInstanceOf[Comparator[? >: E]]
+        case c: SortedSet[?] =>
           NaturalComparator.select(
-            c.comparator().asInstanceOf[Comparator[_ >: E]]
+            c.comparator().asInstanceOf[Comparator[? >: E]]
           )
         case _ =>
           NaturalComparator
@@ -58,15 +58,15 @@ class PriorityQueue[E] private (
     addAll(c)
   }
 
-  def this(c: PriorityQueue[_ <: E]) = {
-    this(c.comp.asInstanceOf[Comparator[_ >: E]], internal = true)
+  def this(c: PriorityQueue[? <: E]) = {
+    this(c.comp.asInstanceOf[Comparator[? >: E]], internal = true)
     addAll(c)
   }
 
-  def this(sortedSet: SortedSet[_ <: E]) = {
+  def this(sortedSet: SortedSet[? <: E]) = {
     this(
       NaturalComparator.select(
-        sortedSet.comparator().asInstanceOf[Comparator[_ >: E]]
+        sortedSet.comparator().asInstanceOf[Comparator[? >: E]]
       ),
       internal = true
     )
@@ -230,7 +230,7 @@ class PriorityQueue[E] private (
     }
   }
 
-  def comparator(): Comparator[_ >: E] =
+  def comparator(): Comparator[? >: E] =
     NaturalComparator.unselect(comp)
 
   // Heavy lifting: heap fixup

@@ -42,7 +42,7 @@ object ScopedVar {
   implicit def toValue[T](scVar: ScopedVar[T]): T = scVar.get
 
   @nowarn("msg=`_` is deprecated for wildcard arguments of types")
-  def scoped[T](ass: Assignment[_]*)(body: => T): T = {
+  def scoped[T](ass: Assignment[?]*)(body: => T): T = {
     val stack = ass.map(_.push())
     try body
     finally stack.reverse.foreach(_.pop())
@@ -52,8 +52,8 @@ object ScopedVar {
   @nowarn() // Cannot define multiple @nowarn annottations in Scala 2.12
   def scopedPushIf[T](
       shouldPushAssignments: Boolean
-  )(lazyAssignments: => Seq[Assignment[_]])(body: => T): T = {
-    if (shouldPushAssignments) scoped(lazyAssignments: _*)(body)
+  )(lazyAssignments: => Seq[Assignment[?]])(body: => T): T = {
+    if (shouldPushAssignments) scoped(lazyAssignments*)(body)
     else body
   }
 }

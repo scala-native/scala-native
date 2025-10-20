@@ -1,10 +1,10 @@
 package org.scalanative.testsuite.javalib.lang.ref
 
-import java.lang.ref._
+import java.lang.ref.*
 
 import org.junit.Test
-import org.junit.Assert._
-import org.junit.Assume._
+import org.junit.Assert.*
+import org.junit.Assume.*
 
 import scala.scalanative.meta.LinktimeInfo.isWeakReferenceSupported
 import scala.scalanative.annotation.nooptimize
@@ -12,7 +12,7 @@ import scala.scalanative.buildinfo.ScalaNativeBuildInfo
 
 import scala.scalanative.runtime.GC
 import org.scalanative.testsuite.utils.Platform
-import scala.scalanative.unsafe._
+import scala.scalanative.unsafe.*
 
 // "AfterGC" tests are very sensitive to optimizations,
 // both by Scala Native and LLVM.
@@ -47,7 +47,7 @@ class WeakReferenceTest {
 
     @noinline def assertEventuallyIsCollected(
         clue: String,
-        ref: WeakReference[_],
+        ref: WeakReference[?],
         deadline: Long
     ): Unit = {
       ref.get() match {
@@ -104,7 +104,7 @@ class WeakReferenceTest {
     assertTrue("!contains a", weakRefList.contains(a))
     assertTrue("!contains b", weakRefList.contains(b))
     assertTrue("!contains c", weakRefList.contains(c))
-    def allDistinct(list: List[_]): Unit = list match {
+    def allDistinct(list: List[?]): Unit = list match {
       case head :: next =>
         next.foreach(assertNotEquals(_, head)); allDistinct(next)
       case Nil => ()

@@ -1,7 +1,7 @@
 package java.lang
 
-import java.lang.impl._
-import java.lang.Thread._
+import java.lang.impl.*
+import java.lang.Thread.*
 import java.util.concurrent.locks.LockSupport
 import java.util.concurrent.ThreadFactory
 import java.time.Duration
@@ -9,15 +9,15 @@ import java.time.Duration
 import scala.scalanative.meta.LinktimeInfo.{isWindows, isMultithreadingEnabled}
 
 import scala.scalanative.annotation.alwaysinline
-import scala.scalanative.runtime.Intrinsics._
+import scala.scalanative.runtime.Intrinsics.*
 import scala.scalanative.runtime.{fromRawPtr, NativeThread}
-import scala.scalanative.runtime.NativeThread.{State => _, _}
-import scala.scalanative.runtime.NativeThread.State._
+import scala.scalanative.runtime.NativeThread.{State as _, *}
+import scala.scalanative.runtime.NativeThread.State.*
 import scala.scalanative.libc.stdatomic.{AtomicLongLong, atomic_thread_fence}
-import scala.scalanative.libc.stdatomic.memory_order._
+import scala.scalanative.libc.stdatomic.memory_order.*
 import scala.scalanative.runtime.UnsupportedFeature
 import scala.scalanative.runtime.javalib.Proxy
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 import scala.scalanative.concurrent.NativeExecutionContext
 
 class Thread private[lang] (
@@ -192,7 +192,7 @@ class Thread private[lang] (
 
   def getState(): State = {
     assert(!isVirtual(), "should be overriden by virtual threads")
-    import NativeThread.State._
+    import NativeThread.State.*
     val nativeThread = platformCtx.nativeThread
     if (nativeThread == null) State.NEW
     else

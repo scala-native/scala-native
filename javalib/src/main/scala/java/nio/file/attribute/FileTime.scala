@@ -7,7 +7,7 @@ final class FileTime private (
     private val epochDays: Long,
     private val dayNanos: Long
 ) extends Comparable[FileTime] {
-  import FileTime._
+  import FileTime.*
 
   assert(dayNanos <= FileTime.NanosInDay)
 

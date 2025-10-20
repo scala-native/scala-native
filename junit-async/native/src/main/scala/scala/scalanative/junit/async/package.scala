@@ -7,7 +7,7 @@ import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
 
 package object async {
   type AsyncResult = Unit
-  def await(future: Future[_]): AsyncResult = {
+  def await(future: Future[?]): AsyncResult = {
     if (isMultithreadingEnabled)
       Await.result(future, Duration.Inf)
     else {

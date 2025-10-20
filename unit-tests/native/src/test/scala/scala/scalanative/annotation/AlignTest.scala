@@ -4,8 +4,8 @@ package annotation
 
 import scala.scalanative.annotation.align
 import org.junit.{Test, Assume, BeforeClass}
-import org.junit.Assert._
-import org.junit.Assume._
+import org.junit.Assert.*
+import org.junit.Assume.*
 
 import scala.scalanative.unsafe.{sizeOf, Ptr}
 import scala.scalanative.runtime.MemoryLayout.Object.FieldsOffset
@@ -73,7 +73,7 @@ object AlignTest {
   )
 }
 class AlignTest {
-  import AlignTestCases._
+  import AlignTestCases.*
   private def checkClassSize(expected: Int, classSize: Int) = assertEquals(
     "class fields size size",
     expected,

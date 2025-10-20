@@ -1,6 +1,6 @@
 object SetExecutableTest {
-  import Files._
-  import Utils._
+  import Files.*
+  import Utils.*
 
   def main(args: Array[String]): Unit = {
     assert(willBeSetExecutableFile.exists())

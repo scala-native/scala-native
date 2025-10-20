@@ -1,13 +1,13 @@
 package org.scalanative.testsuite.posixlib.sys
 
-import scalanative.unsafe._
+import scalanative.unsafe.*
 import scala.scalanative.meta.LinktimeInfo.isWindows
-import scala.scalanative.posix.sys.utsname._
-import scala.scalanative.posix.sys.utsnameOps._
-import scala.scalanative.unsafe._
+import scala.scalanative.posix.sys.utsname.*
+import scala.scalanative.posix.sys.utsnameOps.*
+import scala.scalanative.unsafe.*
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.junit.Ignore
 
 class UtsnameTest {

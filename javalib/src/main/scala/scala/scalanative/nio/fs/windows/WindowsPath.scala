@@ -22,7 +22,7 @@ class WindowsPath private[windows] (
     val segments: List[String]
 )(implicit private val fs: WindowsFileSystem)
     extends Path {
-  import WindowsPath._
+  import WindowsPath.*
 
   private def this(segments: List[String])(implicit fs: WindowsFileSystem) = {
     this(WindowsPath.PathType.Relative, None, segments)
@@ -205,13 +205,13 @@ class WindowsPath private[windows] (
 
   def register(
       watcher: WatchService,
-      events: Array[WatchEvent.Kind[_]]
+      events: Array[WatchEvent.Kind[?]]
   ): WatchKey =
     register(watcher, events, Array.empty)
 
   def register(
       watcher: WatchService,
-      events: Array[WatchEvent.Kind[_]],
+      events: Array[WatchEvent.Kind[?]],
       modifiers: Array[WatchEvent.Modifier]
   ): WatchKey =
     throw new ProviderMismatchException

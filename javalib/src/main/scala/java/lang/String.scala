@@ -1,20 +1,20 @@
 package java.lang
 
-import scalanative.unsafe._
-import scalanative.unsigned._
+import scalanative.unsafe.*
+import scalanative.unsigned.*
 import scalanative.libc.string.memcmp
 
-import java.{lang => jl}
+import java.lang as jl
 import java.lang.constant.{Constable, ConstantDesc}
 import java.io.Serializable
-import java.nio._
-import java.nio.charset._
-import java.util._
+import java.nio.*
+import java.nio.charset.*
+import java.util.*
 import java.util.Objects
-import java.util.ScalaOps._
+import java.util.ScalaOps.*
 import java.util.function.Consumer
-import java.util.regex._
-import java.util.{stream => jus}
+import java.util.regex.*
+import java.util.stream as jus
 
 import scala.annotation.{switch, tailrec}
 import _String.{string2_string, _string2string}
@@ -692,7 +692,7 @@ final class _String()
     // "this.count" - high guess for maximum possible lines not an exact number
     val spliter =
       new java.util.Spliterators.AbstractSpliterator[_String](this.count, 0) {
-        def tryAdvance(action: Consumer[_ >: _String]): scala.Boolean = {
+        def tryAdvance(action: Consumer[? >: _String]): scala.Boolean = {
           lineSrc.readLine() match {
             case null =>
               false
@@ -956,7 +956,7 @@ final class _String()
      * - Regex, after C: [^\p{ccc=230}\p{ccc=0}]*[\p{ccc=230}]
      */
     def moreAbove(i: Int): scala.Boolean = {
-      import Character._
+      import Character.*
       val len = length()
 
       @tailrec def loop(j: Int): scala.Boolean = {
@@ -1060,7 +1060,7 @@ final class _String()
        *     after C:  !((\p{case-ignorable})*\p{cased})
        */
       def isFinalSigma(idx: Int): scala.Boolean = {
-        import Character._
+        import Character.*
 
         val hasCasedBefore = {
           val j = skipCaseIgnorableCharsBackwards(idx)
@@ -1304,7 +1304,7 @@ for (cp <- 0 to Character.MAX_CODE_POINT) {
       i: Int
   ): Int = {
     skipConditionalCharsForwards(i) { cp =>
-      import Character._
+      import Character.*
       combiningClassNoneOrAboveOrOther(cp) == CombiningClassIsOther
     }
   }
@@ -1313,21 +1313,21 @@ for (cp <- 0 to Character.MAX_CODE_POINT) {
       i: Int
   ): Int = {
     skipConditionalCharsBackwards(i) { cp =>
-      import Character._
+      import Character.*
       combiningClassNoneOrAboveOrOther(cp) == CombiningClassIsOther
     }
   }
 
   private def skipCaseIgnorableCharsForwards(i: Int): Int = {
     skipConditionalCharsForwards(i) { cp =>
-      import Character._
+      import Character.*
       isCaseIgnorable(cp)
     }
   }
 
   private def skipCaseIgnorableCharsBackwards(i: Int): Int = {
     skipConditionalCharsBackwards(i) { cp =>
-      import Character._
+      import Character.*
       isCaseIgnorable(cp)
     }
   }
@@ -1556,7 +1556,7 @@ for (cp <- 0 to Character.MAX_CODE_POINT) {
     if (isEmpty()) {
       ""
     } else {
-      import Character.{isWhitespace => isWS}
+      import Character.isWhitespace as isWS
       // splitLines discards the last NL if it's empty so we identify it here first
       val trailingNL = charAt(length() - 1) match {
         // this also covers the \r\n case via the last \n
@@ -1674,7 +1674,7 @@ for (cp <- 0 to Character.MAX_CODE_POINT) {
   }
 
   /** @since Java 12 */
-  def transform[R](f: java.util.function.Function[_ >: String, _ <: R]): R =
+  def transform[R](f: java.util.function.Function[? >: String, ? <: R]): R =
     f.apply(thisString)
 }
 

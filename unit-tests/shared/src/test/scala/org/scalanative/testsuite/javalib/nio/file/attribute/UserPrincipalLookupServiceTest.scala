@@ -1,11 +1,11 @@
 package org.scalanative.testsuite.javalib.nio.file.attribute
 
-import java.nio.file.attribute._
+import java.nio.file.attribute.*
 import java.nio.file.FileSystems
 
 import org.junit.Test
-import org.junit.Assert._
-import org.junit.Assume._
+import org.junit.Assert.*
+import org.junit.Assume.*
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform.isWindows
@@ -36,7 +36,7 @@ class UserPrincipalLookupServiceTest {
   }
 
   @Test def lookupPrincipalByNameSucceedsForCurrentDirOwner(): Unit = {
-    import java.nio.file._
+    import java.nio.file.*
     val currentDirOwner = Files.getOwner(Paths.get("."))
     assertEquals(
       currentDirOwner,

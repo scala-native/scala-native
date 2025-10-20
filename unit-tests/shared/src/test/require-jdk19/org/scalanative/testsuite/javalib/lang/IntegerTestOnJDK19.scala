@@ -5,7 +5,7 @@
 package org.scalanative.testsuite.javalib.lang
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 class IntegerTestOnJDK19 {
 

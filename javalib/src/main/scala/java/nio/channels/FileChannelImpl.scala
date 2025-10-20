@@ -15,29 +15,29 @@ import java.util.Objects
 
 import scala.scalanative.meta.LinktimeInfo.isWindows
 
-import scala.scalanative.unsafe._
+import scala.scalanative.unsafe.*
 
-import scala.scalanative.posix.fcntl._
-import scala.scalanative.posix.fcntlOps._
+import scala.scalanative.posix.fcntl.*
+import scala.scalanative.posix.fcntlOps.*
 import scala.scalanative.posix.string
 
 import scala.scalanative.posix.sys.stat
-import scala.scalanative.posix.sys.statOps._
+import scala.scalanative.posix.sys.statOps.*
 
 import scala.scalanative.posix.unistd
 
-import scala.scalanative.unsigned._
+import scala.scalanative.unsigned.*
 import scala.scalanative.windows
 import scalanative.libc.stdio
 import scala.scalanative.libc.errno.errno
 
 import scala.scalanative.windows.ErrorHandlingApi
-import scala.scalanative.windows.FileApi._
-import scala.scalanative.windows.FileApiExt._
+import scala.scalanative.windows.FileApi.*
+import scala.scalanative.windows.FileApiExt.*
 import scala.scalanative.windows.ErrorCodes
-import scala.scalanative.windows.MinWinBaseApi._
-import scala.scalanative.windows.MinWinBaseApiOps._
-import scala.scalanative.windows._
+import scala.scalanative.windows.MinWinBaseApi.*
+import scala.scalanative.windows.MinWinBaseApiOps.*
+import scala.scalanative.windows.*
 
 private[java] final class FileChannelImpl(
     fd: FileDescriptor,

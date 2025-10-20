@@ -2,10 +2,10 @@ package scala.scalanative.memory
 
 import scala.language.implicitConversions
 
-import java.nio._
+import java.nio.*
 
-import scala.scalanative.unsafe._
-import scala.scalanative.javalibintf.{PointerBuffer => Intf}
+import scala.scalanative.unsafe.*
+import scala.scalanative.javalibintf.PointerBuffer as Intf
 
 /** Factory methods to create direct buffers from valid memory pointers.
  *
@@ -51,7 +51,7 @@ final class PointerBufferOps[ElementType] private (private val buffer: Buffer)
  *  ScalaNative pointers.
  */
 object PointerBufferOps {
-  implicit def bufferOps(buffer: Buffer): PointerBufferOps[_] =
+  implicit def bufferOps(buffer: Buffer): PointerBufferOps[?] =
     new PointerBufferOps(buffer)
 
   implicit def byteBufferOps(buffer: ByteBuffer): PointerBufferOps[Byte] =

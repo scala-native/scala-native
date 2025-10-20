@@ -2,15 +2,15 @@ package scala.scalanative.nscplugin
 
 import scala.collection.mutable
 import dotty.tools.backend.jvm.DottyPrimitives
-import dotty.tools.dotc.ast.tpd._
+import dotty.tools.dotc.ast.tpd.*
 import dotty.tools.dotc.util.ReadOnlyMap
-import dotty.tools.dotc.core._
+import dotty.tools.dotc.core.*
 import Names.TermName
-import StdNames._
-import Types._
-import Contexts._
-import Symbols._
-import Names._
+import StdNames.*
+import Types.*
+import Contexts.*
+import Symbols.*
+import Names.*
 import scala.scalanative.nscplugin.NirPrimitives
 
 object NirPrimitives {
@@ -124,7 +124,7 @@ object NirPrimitives {
 }
 
 class NirPrimitives(using ctx: Context) extends DottyPrimitives(ctx) {
-  import NirPrimitives._
+  import NirPrimitives.*
   private lazy val nirPrimitives: ReadOnlyMap[Symbol, Int] = initNirPrimitives
 
   override def getPrimitive(sym: Symbol): Int =

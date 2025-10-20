@@ -8,7 +8,7 @@ package java.util.concurrent
 
 import java.util.{AbstractQueue, Collection, Iterator, Spliterator, function}
 import java.util.{Arrays, Objects, Spliterators}
-import java.util.{NoSuchElementException}
+import java.util.NoSuchElementException
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.locks.LockSupport
 import scala.scalanative.libc.stdatomic.AtomicRef
@@ -22,7 +22,7 @@ import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
     extends AbstractQueue[E]
     with TransferQueue[E]
     with Serializable {
-  import LinkedTransferQueue._
+  import LinkedTransferQueue.*
 
   /*
    * *** Overview of Dual Queues with Slack ***
@@ -726,7 +726,7 @@ import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
     }
 
     override def forEachRemaining(
-        action: function.Consumer[_ >: E]
+        action: function.Consumer[? >: E]
     ): Unit = {
       Objects.requireNonNull(action)
       var q: Node = null
@@ -853,7 +853,7 @@ import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
     }
 
     override def forEachRemaining(
-        action: function.Consumer[_ >: E]
+        action: function.Consumer[? >: E]
     ): Unit = {
       Objects.requireNonNull(action)
       val p = current()
@@ -864,7 +864,7 @@ import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
       }
     }
 
-    override def tryAdvance(action: function.Consumer[_ >: E]): Boolean = {
+    override def tryAdvance(action: function.Consumer[? >: E]): Boolean = {
       Objects.requireNonNull(action)
       var p = current()
       while (p != null) {
@@ -989,7 +989,7 @@ import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
 
   /* -------------- Constructors -------------- */
 
-  def this(c: Collection[_ <: E]) = {
+  def this(c: Collection[? <: E]) = {
     this()
     var h: Node = null
     var t: Node = null
@@ -1073,7 +1073,7 @@ import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
 
   override def poll(): E = xfer(null.asInstanceOf[E], false, NOW, 0L)
 
-  override def drainTo(c: Collection[_ >: E]): Int = {
+  override def drainTo(c: Collection[? >: E]): Int = {
     Objects.requireNonNull(c)
     if (c == this)
       throw new IllegalArgumentException()
@@ -1087,7 +1087,7 @@ import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
     n
   }
 
-  override def drainTo(c: Collection[_ >: E], maxElements: Int): Int = {
+  override def drainTo(c: Collection[? >: E], maxElements: Int): Int = {
     Objects.requireNonNull(c)
     if (c == this)
       throw new IllegalArgumentException()
@@ -1274,17 +1274,17 @@ import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
   // private def writeObject(s: java.io.ObjectOutputStream): Unit
   // private def readObject(s: java.io.ObjectInputStream): Unit
 
-  override def removeIf(filter: function.Predicate[_ >: E]): Boolean = {
+  override def removeIf(filter: function.Predicate[? >: E]): Boolean = {
     Objects.requireNonNull(filter)
     bulkRemove(filter)
   }
 
-  override def removeAll(c: Collection[_]): Boolean = {
+  override def removeAll(c: Collection[?]): Boolean = {
     Objects.requireNonNull(c)
     bulkRemove(e => c.contains(e))
   }
 
-  override def retainAll(c: Collection[_]): Boolean = {
+  override def retainAll(c: Collection[?]): Boolean = {
     Objects.requireNonNull(c)
     bulkRemove(e => !c.contains(e))
   }
@@ -1292,7 +1292,7 @@ import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
   override def clear(): Unit = bulkRemove(_ => true)
 
   /** Implementation of bulk remove methods. */
-  private def bulkRemove(filter: function.Predicate[_ >: E]): Boolean = {
+  private def bulkRemove(filter: function.Predicate[? >: E]): Boolean = {
     var removed = false
 
     var restartFromHead = true
@@ -1346,7 +1346,7 @@ import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
   /** Runs action on each element found during a traversal starting at p. If p
    *  is null, the action is not run.
    */
-  def forEachFrom(action: function.Consumer[_ >: E], p: Node): Unit = {
+  def forEachFrom(action: function.Consumer[? >: E], p: Node): Unit = {
     var _p = p
     var pred: Node = null
     var continueLoop = true
@@ -1383,7 +1383,7 @@ import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
     }
   }
 
-  override def forEach(action: function.Consumer[_ >: E]): Unit = {
+  override def forEach(action: function.Consumer[? >: E]): Unit = {
     Objects.requireNonNull(action)
     forEachFrom(action, head)
   }

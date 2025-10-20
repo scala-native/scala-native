@@ -50,14 +50,14 @@ object FileSystems {
     fs.getOrElse(throw new ProviderNotFoundException)
   }
 
-  def newFileSystem(uri: URI, env: Map[String, _]): FileSystem = {
+  def newFileSystem(uri: URI, env: Map[String, ?]): FileSystem = {
     val provider = findProvider(uri)
     provider.newFileSystem(uri, env)
   }
 
   def newFileSystem(
       uri: URI,
-      env: Map[String, _],
+      env: Map[String, ?],
       loader: ClassLoader
   ): FileSystem =
     newFileSystem(uri, env)

@@ -1,7 +1,7 @@
 package scala.scalanative.windows
 
-import scala.scalanative.unsafe._
-import scala.scalanative.windows.SecurityBaseApi._
+import scala.scalanative.unsafe.*
+import scala.scalanative.windows.SecurityBaseApi.*
 
 package object winnt {
   type AccessRights = DWord

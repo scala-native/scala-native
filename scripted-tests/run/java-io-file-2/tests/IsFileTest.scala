@@ -1,5 +1,5 @@
 object IsFileTest {
-  import Files._
+  import Files.*
 
   def main(args: Array[String]): Unit = {
     assert(executableFile.isFile())

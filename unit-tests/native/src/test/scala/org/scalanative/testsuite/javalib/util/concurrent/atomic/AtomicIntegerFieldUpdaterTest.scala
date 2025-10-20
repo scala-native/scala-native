@@ -13,8 +13,8 @@ package atomic
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater
 
-import org.junit._
-import org.junit.Assert._
+import org.junit.*
+import org.junit.Assert.*
 
 import scala.scalanative.runtime.Intrinsics.classFieldRawPtr
 import scala.scalanative.runtime.{RawPtr, fromRawPtr}
@@ -39,8 +39,8 @@ object AtomicIntegerFieldUpdaterTest {
 }
 
 class AtomicIntegerFieldUpdaterTest extends JSR166Test {
-  import JSR166Test._
-  import AtomicIntegerFieldUpdaterTest._
+  import JSR166Test.*
+  import AtomicIntegerFieldUpdaterTest.*
 
   @volatile var x = 0
   @volatile protected var protectedField = 0

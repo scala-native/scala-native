@@ -10,7 +10,7 @@ private[concurrent] abstract class CNodeBase[K <: AnyRef, V <: AnyRef]
     extends MainNode[K, V] {
   @volatile var csize: Int = -1
 
-  final val updater: AtomicIntegerFieldUpdater[CNodeBase[_, _]] =
+  final val updater: AtomicIntegerFieldUpdater[CNodeBase[?, ?]] =
     new IntrinsicAtomicIntegerFieldUpdater(obj =>
       fromRawPtr(
         classFieldRawPtr(obj.asInstanceOf[CNodeBase[AnyRef, AnyRef]], "csize")

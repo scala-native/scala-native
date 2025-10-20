@@ -40,8 +40,8 @@ object IoTestHelpers {
 
   // This variant takes "Temporary" to mean: clean up after yourself.
   def withTemporaryDirectory(f: File => Unit): Unit = {
-    import java.nio.file._
-    import attribute._
+    import java.nio.file.*
+    import attribute.*
     val tmpdir = Files.createTempDirectory("scala-native-test")
     try {
       f(tmpdir.toFile())

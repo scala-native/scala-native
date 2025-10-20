@@ -1,5 +1,5 @@
 object SetReadOnlyTest {
-  import Files._
+  import Files.*
   def main(args: Array[String]): Unit = {
     assert(willBeSetReadOnlyFile.exists())
     assert(willBeSetReadOnlyFile.canRead())

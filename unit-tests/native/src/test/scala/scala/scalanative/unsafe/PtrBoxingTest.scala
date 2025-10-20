@@ -2,16 +2,16 @@ package scala.scalanative
 package unsafe
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
-import scalanative.unsigned._
+import scalanative.unsigned.*
 import scalanative.libc.stdlib.malloc
 import java.lang.Long.toHexString
 
 class PtrBoxingTest {
-  import PtrBoxingTest._
+  import PtrBoxingTest.*
   var any: Any = null
 
   @noinline lazy val nullPtr: Ptr[Byte] = null

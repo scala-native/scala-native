@@ -1,7 +1,7 @@
 package scala.scalanative
 package libc
 
-import scalanative.unsafe._
+import scalanative.unsafe.*
 
 /** All functions take complex but Scala Native does not support pass by value
  *  so we pass a pointer to an Array of length 2 and have a small wrapper in C
@@ -254,7 +254,7 @@ private[scalanative] trait complex {
 }
 
 object complexOps {
-  import complex._
+  import complex.*
 
   implicit class complexOpsFloat(val ptr: Ptr[CFloatComplex]) extends AnyVal {
     def re: CFloat = ptr._1

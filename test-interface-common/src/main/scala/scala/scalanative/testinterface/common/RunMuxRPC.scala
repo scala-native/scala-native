@@ -18,7 +18,7 @@ import scala.util.Try
  */
 private[testinterface] final class RunMuxRPC(rpc: RPCCore) {
   import RunMux.RunID
-  import RunMuxRPC._
+  import RunMuxRPC.*
 
   /** Multiplexer map.
    *
@@ -26,7 +26,7 @@ private[testinterface] final class RunMuxRPC(rpc: RPCCore) {
    *  only needs to be synchronized for writing.
    */
   private val mux =
-    mutable.Map.empty[RPCCore.OpCode, java.util.HashMap[RunID, _]]
+    mutable.Map.empty[RPCCore.OpCode, java.util.HashMap[RunID, ?]]
 
   def call[Req](ep: MuxRPCEndpoint[Req], runId: RunID)(
       req: Req

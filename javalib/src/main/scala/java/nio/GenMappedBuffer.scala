@@ -1,8 +1,8 @@
 package java.nio
 
 import scala.scalanative.runtime.ByteArray
-import scala.scalanative.unsigned._
-import scala.scalanative.unsafe._
+import scala.scalanative.unsigned.*
+import scala.scalanative.unsafe.*
 import scala.scalanative.libc.string
 import java.util.Objects
 
@@ -26,7 +26,7 @@ private[nio] object GenMappedBuffer {
 
 private[nio] final class GenMappedBuffer[B <: Buffer](val self: B)
     extends AnyVal {
-  import self._
+  import self.*
 
   type NewThisMappedBuffer =
     GenMappedBuffer.NewMappedBuffer[BufferType, ElementType]

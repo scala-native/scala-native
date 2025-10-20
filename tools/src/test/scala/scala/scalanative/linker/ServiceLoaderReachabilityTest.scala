@@ -1,7 +1,7 @@
 package scala.scalanative.linker
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 import scalanative.nir.{Sig, Type, Global, Rt}
 import scala.scalanative.LinkerSpec

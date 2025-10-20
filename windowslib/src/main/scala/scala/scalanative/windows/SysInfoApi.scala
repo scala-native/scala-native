@@ -1,10 +1,10 @@
 package scala.scalanative.windows
 
-import scala.scalanative.unsafe.{Word => _, _}
+import scala.scalanative.unsafe.{Word as _, *}
 
 @extern
 object SysInfoApi {
-  import MinWinBaseApi._
+  import MinWinBaseApi.*
 
   type SystemInfo = CStruct10[
     DWord, // oemId
@@ -29,7 +29,7 @@ object SysInfoApi {
 }
 
 object SysInfoApiOps {
-  import SysInfoApi._
+  import SysInfoApi.*
   implicit class SystemInfoOps(val ref: Ptr[SystemInfo]) extends AnyVal {
     def oemId: DWord = ref._1
     def pagesSize: DWord = ref._2

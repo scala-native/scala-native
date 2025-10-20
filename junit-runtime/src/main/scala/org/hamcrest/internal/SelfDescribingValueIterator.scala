@@ -3,7 +3,7 @@
  */
 package org.hamcrest.internal
 
-import java.{util => ju}
+import java.util as ju
 
 import org.hamcrest.SelfDescribing
 

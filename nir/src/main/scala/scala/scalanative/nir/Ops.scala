@@ -94,7 +94,7 @@ sealed abstract class Op {
 
   final def isCommutative: Boolean = this match {
     case Op.Bin(bin, _, _, _) =>
-      import Bin._
+      import Bin.*
       bin match {
         case Iadd | Imul | And | Or | Xor | Fadd | Fmul =>
           true
@@ -103,7 +103,7 @@ sealed abstract class Op {
           false
       }
     case Op.Comp(comp, _, _, _) =>
-      import Comp._
+      import Comp.*
       comp match {
         case Ieq | Ine => true
         case _         => false

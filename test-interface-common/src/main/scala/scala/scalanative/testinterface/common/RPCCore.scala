@@ -3,7 +3,7 @@ package scala.scalanative.testinterface.common
 // Ported from Scala.js
 
 import java.util.concurrent.atomic.AtomicLong
-import scala.concurrent._
+import scala.concurrent.*
 import scala.scalanative.testinterface.common.Serializer.{
   deserialize,
   serialize
@@ -23,7 +23,7 @@ import scala.util.{Failure, Success, Try}
  *  [[handleMessage]] is called, so closing can be performed race-free.
  */
 private[testinterface] abstract class RPCCore()(implicit ec: ExecutionContext) {
-  import RPCCore._
+  import RPCCore.*
 
   /** Pending calls. */
   private val pending =
@@ -58,7 +58,7 @@ private[testinterface] abstract class RPCCore()(implicit ec: ExecutionContext) {
       opCode match {
         case RPCCore.ReplyOK =>
           getPending().foreach { p =>
-            import p._
+            import p.*
             promise.complete(Try(deserialize[Resp](in)))
           }
 
@@ -97,7 +97,7 @@ private[testinterface] abstract class RPCCore()(implicit ec: ExecutionContext) {
 
             case bep: BoundMsgEndpoint =>
               val ep: bep.endpoint.type = bep.endpoint
-              import ep._
+              import ep.*
               val arg = deserialize[Msg](in)
               bep.exec(arg)
 
@@ -105,7 +105,7 @@ private[testinterface] abstract class RPCCore()(implicit ec: ExecutionContext) {
               val callID = in.readLong()
 
               val ep: bep.endpoint.type = bep.endpoint
-              import ep._
+              import ep.*
 
               Future
                 .fromTry(Try(deserialize[Req](in)))
@@ -125,13 +125,13 @@ private[testinterface] abstract class RPCCore()(implicit ec: ExecutionContext) {
 
   /** Used to send a message to the other end. */
   final def send(ep: MsgEndpoint)(msg: ep.Msg): Unit = {
-    import ep._
+    import ep.*
     send(makeMsgMsg(opCode, msg))
   }
 
   /** Used to make an actual call to the other end. */
   final def call(ep: RPCEndpoint)(req: ep.Req): Future[ep.Resp] = {
-    import ep._
+    import ep.*
 
     // Reserve an id for this call.
     val id = nextID.incrementAndGet()
@@ -214,7 +214,7 @@ private[testinterface] abstract class RPCCore()(implicit ec: ExecutionContext) {
     /* Fix for #3128: explicitly upcast to java.util.Map so that the keySet()
      * method is binary compatible on JDK7.
      */
-    val pendingCallIDs = (pending: java.util.Map[Long, _]).keySet()
+    val pendingCallIDs = (pending: java.util.Map[Long, ?]).keySet()
     val exception = new ClosedException(closeReason)
 
     /* Directly use the Java Iterator because Scala's JavaConverters are

@@ -1,27 +1,27 @@
 package org.scalanative.testsuite.posixlib
 package sys
 
-import scalanative.unsafe._
-import scalanative.unsigned._
+import scalanative.unsafe.*
+import scalanative.unsigned.*
 
 import scalanative.posix.errno.errno
-import scalanative.posix.netinet.in._
-import scalanative.posix.netinet.inOps._
-import scalanative.posix.sys.socket._
+import scalanative.posix.netinet.in.*
+import scalanative.posix.netinet.inOps.*
+import scalanative.posix.sys.socket.*
 
-import org.scalanative.testsuite.posixlib.sys.SocketTestHelpers._
+import org.scalanative.testsuite.posixlib.sys.SocketTestHelpers.*
 
 import scalanative.meta.LinktimeInfo.isWindows
 
-import scala.scalanative.windows._
-import scala.scalanative.windows.WinSocketApi._
-import scala.scalanative.windows.WinSocketApiExt._
-import scala.scalanative.windows.WinSocketApiOps._
-import scala.scalanative.windows.ErrorHandlingApi._
+import scala.scalanative.windows.*
+import scala.scalanative.windows.WinSocketApi.*
+import scala.scalanative.windows.WinSocketApiExt.*
+import scala.scalanative.windows.WinSocketApiOps.*
+import scala.scalanative.windows.ErrorHandlingApi.*
 
 import org.junit.Test
-import org.junit.Assert._
-import org.junit.Assume._
+import org.junit.Assert.*
+import org.junit.Assume.*
 import org.junit.BeforeClass
 
 object UdpSocketTest {

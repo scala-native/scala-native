@@ -15,8 +15,8 @@ import scala.scalanative.linker.ReachabilityAnalysis
 import scala.scalanative.util.{Scope, partitionBy, procs}
 import java.nio.file.StandardCopyOption
 
-import scala.scalanative.codegen.{Metadata => CodeGenMetadata}
-import scala.concurrent._
+import scala.scalanative.codegen.Metadata as CodeGenMetadata
+import scala.concurrent.*
 import scala.util.Success
 import scala.scalanative.codegen.llvm.compat.os.OsCompat
 import scala.scalanative.util.ShowBuilder

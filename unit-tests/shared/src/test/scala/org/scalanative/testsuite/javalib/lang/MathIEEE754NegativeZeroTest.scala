@@ -1,14 +1,14 @@
 package org.scalanative.testsuite.javalib.lang
 
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.junit.Assume.assumeTrue
 import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform
 
-import java.{lang => jl}
-import java.lang._
+import java.lang as jl
+import java.lang.*
 
 /* Most Tests in this suite use 'AssertEquals' because it displays
  * the arguments when they do not match.

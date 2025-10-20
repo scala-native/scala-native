@@ -11,11 +11,11 @@ import java.nio.file.StandardOpenOption
 import java.util.Optional
 import java.nio.file.attribute.FileTime
 import java.util.concurrent.Executors
-import scala.concurrent._
+import scala.concurrent.*
 import scala.concurrent.duration.Duration
 import scala.util.{Success, Properties}
 import scala.collection.immutable
-import ScalaNative._
+import ScalaNative.*
 
 /** Utility methods for building code using Scala Native. */
 object Build {

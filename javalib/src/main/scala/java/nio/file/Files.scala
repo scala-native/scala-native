@@ -1,31 +1,31 @@
 package java.nio.file
 
-import java.io._
+import java.io.*
 
-import java.{lang => jl}
+import java.lang as jl
 import java.lang.Iterable
 
 import java.nio.charset.{Charset, StandardCharsets}
 import java.nio.channels.{FileChannel, SeekableByteChannel}
 
-import java.nio.file.attribute._
-import java.nio.file.attribute.PosixFilePermission._
+import java.nio.file.attribute.*
+import java.nio.file.attribute.PosixFilePermission.*
 
 import java.nio.file.StandardCopyOption.{COPY_ATTRIBUTES, REPLACE_EXISTING}
 
-import java.util._
+import java.util.*
 import java.util.function.{BiPredicate, Consumer, Supplier}
 import java.util.stream.{Stream, StreamSupport}
 
-import scalanative.unsigned._
-import scalanative.unsafe._
-import scalanative.libc._
+import scalanative.unsigned.*
+import scalanative.unsafe.*
+import scalanative.libc.*
 
-import scalanative.posix.dirent._
-import scalanative.posix.direntOps._
+import scalanative.posix.dirent.*
+import scalanative.posix.direntOps.*
 
 import scalanative.posix.errno.errno // avoid libc conflict in import errno._
-import scalanative.posix.errno._
+import scalanative.posix.errno.*
 
 import scalanative.posix.{fcntl, limits, unistd}
 import scalanative.posix.sys.stat
@@ -35,13 +35,13 @@ import scalanative.meta.LinktimeInfo.isWindows
 import scalanative.nio.fs.FileHelpers
 import scalanative.nio.fs.unix.UnixException
 
-import scalanative.windows._
-import scalanative.windows.WinBaseApi._
-import scalanative.windows.WinBaseApiExt._
-import scalanative.windows.FileApiExt._
-import scalanative.windows.ErrorHandlingApi._
-import scalanative.windows.winnt.AccessRights._
-import java.util.WindowsHelperMethods._
+import scalanative.windows.*
+import scalanative.windows.WinBaseApi.*
+import scalanative.windows.WinBaseApiExt.*
+import scalanative.windows.FileApiExt.*
+import scalanative.windows.ErrorHandlingApi.*
+import scalanative.windows.winnt.AccessRights.*
+import java.util.WindowsHelperMethods.*
 
 object Files {
   private final val emptyPath = Paths.get("", Array.empty)
@@ -415,7 +415,7 @@ object Files {
     target
   }
 
-  def createDirectories(dir: Path, attrs: Array[FileAttribute[_]]): Path =
+  def createDirectories(dir: Path, attrs: Array[FileAttribute[?]]): Path =
     if (exists(dir, Array.empty) && !isDirectory(dir, Array.empty))
       throw new FileAlreadyExistsException(dir.toString)
     else if (exists(dir, Array.empty)) dir
@@ -426,7 +426,7 @@ object Files {
       dir
     }
 
-  def createDirectory(dir: Path, attrs: Array[FileAttribute[_]]): Path =
+  def createDirectory(dir: Path, attrs: Array[FileAttribute[?]]): Path =
     if (exists(dir, Array.empty)) {
       if (!isDirectory(dir, Array.empty)) {
         throw new FileAlreadyExistsException(dir.toString)
@@ -441,7 +441,7 @@ object Files {
       throw new IOException()
     }
 
-  def createFile(path: Path, attrs: Array[FileAttribute[_]]): Path = {
+  def createFile(path: Path, attrs: Array[FileAttribute[?]]): Path = {
     if (exists(path, Array.empty))
       throw new FileAlreadyExistsException(path.toString)
     else if (FileHelpers.createNewFile(path.toString, throwOnError = true)) {
@@ -496,12 +496,12 @@ object Files {
   def createSymbolicLink(
       link: Path,
       target: Path,
-      attrs: Array[FileAttribute[_]]
+      attrs: Array[FileAttribute[?]]
   ): Path = {
 
     def tryCreateLink() = Zone.acquire { implicit z =>
       if (isWindows) {
-        import WinBaseApiExt._
+        import WinBaseApiExt.*
         val targetFilename = toCWideStringUTF16LE(target.toString())
         val linkFilename = toCWideStringUTF16LE(link.toString())
         val flags =
@@ -549,7 +549,7 @@ object Files {
   private def createTempDirectoryImpl(
       dir: Path,
       prefix: String,
-      attrs: Array[FileAttribute[_]]
+      attrs: Array[FileAttribute[?]]
   ): Path = {
 
     if (!isWindows) {
@@ -582,13 +582,13 @@ object Files {
   def createTempDirectory(
       dir: Path,
       prefix: String,
-      attrs: Array[FileAttribute[_]]
+      attrs: Array[FileAttribute[?]]
   ): Path =
     createTempDirectoryImpl(dir, prefix, attrs)
 
   def createTempDirectory(
       prefix: String,
-      attrs: Array[FileAttribute[_]]
+      attrs: Array[FileAttribute[?]]
   ): Path = {
     val dirPath = Path.of(FileHelpers.tempDir, Array.empty)
     createTempDirectoryImpl(dirPath, prefix, attrs)
@@ -598,7 +598,7 @@ object Files {
       dir: File,
       prefix: String,
       suffix: String,
-      attrs: Array[FileAttribute[_]]
+      attrs: Array[FileAttribute[?]]
   ): Path = {
     val p = if (prefix == null) "" else prefix
     val temp = FileHelpers.createTempFile(
@@ -617,14 +617,14 @@ object Files {
       dir: Path,
       prefix: String,
       suffix: String,
-      attrs: Array[FileAttribute[_]]
+      attrs: Array[FileAttribute[?]]
   ): Path =
     createTempFile(dir.toFile(), prefix, suffix, attrs)
 
   def createTempFile(
       prefix: String,
       suffix: String,
-      attrs: Array[FileAttribute[_]]
+      attrs: Array[FileAttribute[?]]
   ): Path =
     createTempFile(null: File, prefix, suffix, attrs)
 
@@ -840,7 +840,7 @@ object Files {
         new Spliterators.AbstractSpliterator[T](Long.MaxValue, 0) {
           private def appendToStream(
               cName: CString,
-              action: Consumer[_ >: T]
+              action: Consumer[? >: T]
           ): Boolean = {
             val entryPath = dir.resolve(fromCString(cName))
 
@@ -855,7 +855,7 @@ object Files {
            */
           override def trySplit(): Spliterator[T] = null
 
-          def tryAdvance(action: Consumer[_ >: T]): Boolean = {
+          def tryAdvance(action: Consumer[? >: T]): Boolean = {
             if (posixDirClosed) false // Issue #4431
             else {
               val entry = { errno = 0; readdir(posixDir) }
@@ -1090,8 +1090,8 @@ object Files {
 
   def newByteChannel(
       path: Path,
-      options: Set[_ <: OpenOption],
-      attrs: Array[FileAttribute[_]]
+      options: Set[? <: OpenOption],
+      attrs: Array[FileAttribute[?]]
   ): SeekableByteChannel =
     path.getFileSystem().provider().newByteChannel(path, options, attrs)
 
@@ -1104,7 +1104,7 @@ object Files {
 
   def newDirectoryStream(
       dir: Path,
-      filter: DirectoryStream.Filter[_ >: Path]
+      filter: DirectoryStream.Filter[? >: Path]
   ): DirectoryStream[Path] =
     dir.getFileSystem().provider().newDirectoryStream(dir, filter)
 
@@ -1381,7 +1381,7 @@ object Files {
     FileTreeWalker(start, maxDepth, followLinks).stream()
   }
 
-  def walkFileTree(start: Path, visitor: FileVisitor[_ >: Path]): Path =
+  def walkFileTree(start: Path, visitor: FileVisitor[? >: Path]): Path =
     walkFileTree(
       start,
       EnumSet.noneOf(classOf[FileVisitOption]),
@@ -1393,7 +1393,7 @@ object Files {
       start: Path,
       options: Set[FileVisitOption],
       maxDepth: Int,
-      visitor: FileVisitor[_ >: Path]
+      visitor: FileVisitor[? >: Path]
   ): Path = {
     Objects.requireNonNull(start, "start is null")
     if (maxDepth < 0)
@@ -1429,7 +1429,7 @@ object Files {
 
   def write(
       path: Path,
-      lines: Iterable[_ <: CharSequence],
+      lines: Iterable[? <: CharSequence],
       cs: Charset,
       _options: Array[OpenOption]
   ): Path = {
@@ -1453,22 +1453,22 @@ object Files {
 
   def write(
       path: Path,
-      lines: Iterable[_ <: CharSequence],
+      lines: Iterable[? <: CharSequence],
       options: Array[OpenOption]
   ): Path =
     write(path, lines, StandardCharsets.UTF_8, options)
 
-  private def setAttributes(path: Path, attrs: Array[FileAttribute[_]]): Unit =
+  private def setAttributes(path: Path, attrs: Array[FileAttribute[?]]): Unit =
     attrs.map(a => (a.name(), a.value())).toMap.foreach {
       case (name, value) =>
         setAttribute(path, name, value.asInstanceOf[AnyRef], Array.empty)
     }
 
   private val attributesClassesToViews: Map[Class[
-    _ <: BasicFileAttributes
-  ], Class[_ <: BasicFileAttributeView]] = {
-    type HMK = Class[_ <: BasicFileAttributes]
-    type HMV = Class[_ <: BasicFileAttributeView]
+    ? <: BasicFileAttributes
+  ], Class[? <: BasicFileAttributeView]] = {
+    type HMK = Class[? <: BasicFileAttributes]
+    type HMV = Class[? <: BasicFileAttributeView]
 
     val map = new HashMap[HMK, HMV]()
     map.put(classOf[BasicFileAttributes], classOf[BasicFileAttributeView])
@@ -1478,8 +1478,8 @@ object Files {
     map
   }
 
-  private val viewNamesToClasses: Map[String, Class[_ <: FileAttributeView]] = {
-    val map = new HashMap[String, Class[_ <: FileAttributeView]]()
+  private val viewNamesToClasses: Map[String, Class[? <: FileAttributeView]] = {
+    val map = new HashMap[String, Class[? <: FileAttributeView]]()
 
     map.put("acl", classOf[AclFileAttributeView])
     map.put("basic", classOf[BasicFileAttributeView])

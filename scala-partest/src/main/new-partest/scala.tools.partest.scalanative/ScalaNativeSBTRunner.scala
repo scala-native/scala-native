@@ -3,11 +3,11 @@
 package scala.tools.partest
 package scalanative
 
-import _root_.sbt.testing._
+import _root_.sbt.testing.*
 import java.io.File
 import java.net.URLClassLoader
 import java.util.concurrent.TimeUnit
-import scala.tools.partest.nest._
+import scala.tools.partest.nest.*
 import scala.tools.partest.sbt.SBTRunner
 
 /* Pre-mixin ScalaNativeSuiteRunner in SBTRunner, because this is looked up
@@ -50,7 +50,7 @@ class ScalaNativeSBTRunner(
   // Stuff we provide
 
   override def banner: String = {
-    import scala.scalanative.nir.Versions.{current => currentVersion}
+    import scala.scalanative.nir.Versions.current as currentVersion
 
     super.banner.trim + s"""
    |Scala Native version is: $currentVersion
@@ -132,7 +132,7 @@ class ScalaNativeSBTRunner(
   }
 
   private lazy val testFilter: File => Boolean = {
-    import ScalaNativePartestOptions._
+    import ScalaNativePartestOptions.*
     options.testFilter match {
       case DenylistedTests  => denylistedTests
       case AllowlistedTests => n => !denylistedTests.contains(n)

@@ -1,6 +1,6 @@
 package org.scalanative.testsuite.javalib.nio.charset
 
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.junit.Test
 
 import java.nio.charset.CoderResult

@@ -1,9 +1,9 @@
 package org.scalanative.testsuite.javalib.net
 
-import java.net._
+import java.net.*
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 import scala.annotation.nowarn
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows

@@ -1,9 +1,9 @@
 package scala.scalanative
 
 import scala.scalanative.build.{Config, NativeConfig, Mode, ScalaNative}
-import scala.concurrent._
+import scala.concurrent.*
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 import scala.scalanative.linker.ReachabilityAnalysis
 
 /** Base class to test the optimizer */
@@ -37,7 +37,7 @@ abstract class OptimizerSpec extends LinkerSpec {
     }
 
   protected def findEntry(linked: Seq[nir.Defn]): Option[nir.Defn.Define] = {
-    import OptimizerSpec._
+    import OptimizerSpec.*
     val companionMethod = linked
       .collectFirst {
         case defn @ nir.Defn.Define(_, TestMain(), _, _, _) => defn

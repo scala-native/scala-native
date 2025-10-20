@@ -8,10 +8,10 @@ package org.scalanative.testsuite.javalib.util.concurrent
 
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util
-import java.util.concurrent._
+import java.util.concurrent.*
 
-import org.junit._
-import org.junit.Assert._
+import org.junit.*
+import org.junit.Assert.*
 
 object RecursiveActionTest {
   private def mainPool = new ForkJoinPool
@@ -77,9 +77,9 @@ object RecursiveActionTest {
   }
 }
 class RecursiveActionTest extends JSR166Test {
-  import RecursiveActionTest._
-  import JSR166Test._
-  import ForkJoinTask._
+  import RecursiveActionTest.*
+  import JSR166Test.*
+  import ForkJoinTask.*
 
   private def testInvokeOnPool(pool: ForkJoinPool, a: RecursiveAction): Unit = {
     usingPoolCleaner(pool) { p =>

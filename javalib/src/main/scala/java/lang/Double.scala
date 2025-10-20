@@ -7,7 +7,7 @@ import scalanative.runtime.Intrinsics
 
 import java.lang.IEEE754Helpers.parseIEEE754
 import java.lang.constant.{Constable, ConstantDesc}
-import java.{lang => jl}
+import java.lang as jl
 
 final class Double(val _value: scala.Double)
     extends Number

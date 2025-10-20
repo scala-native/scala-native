@@ -1,20 +1,20 @@
 // this should be shared - some failures on JVM
 package org.scalanative.testsuite.javalib.util.regex
 
-import java.util._
-import java.util.regex._
+import java.util.*
+import java.util.regex.*
 
-import java.util.stream.{Stream => jStream}
+import java.util.stream.Stream as jStream
 
 import scala.collection.immutable.List
 import org.junit.Ignore
 import org.junit.Test
-import org.junit.Assert._
-import org.junit.Assume._
+import org.junit.Assert.*
+import org.junit.Assume.*
 
-import scala.scalanative.junit.utils.CollectionConverters._
+import scala.scalanative.junit.utils.CollectionConverters.*
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
-import org.scalanative.testsuite.utils.Platform._
+import org.scalanative.testsuite.utils.Platform.*
 
 /* assumeFalse executingInJVM should either be fixed or moved to a Scala Native
  * re2 specific test

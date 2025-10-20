@@ -24,7 +24,7 @@ private[codegen] final case class MemoryLayout(
   private[codegen] def referenceFieldsOffsets(implicit
       meta: Metadata
   ): Seq[nir.Val.Int] = {
-    import nir.Type._
+    import nir.Type.*
     val offsets =
       tys.collect {
         // offset in words without object header

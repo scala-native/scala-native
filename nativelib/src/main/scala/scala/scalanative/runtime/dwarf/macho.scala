@@ -3,9 +3,9 @@ package scala.scalanative.runtime.dwarf
 import Endianness.LITTLE
 import Endianness.BIG
 import java.nio.channels.Channels
-import scalanative.unsigned._
+import scalanative.unsigned.*
 
-import MachO._
+import MachO.*
 
 private[runtime] case class MachO private (
     header: Header,
@@ -14,7 +14,7 @@ private[runtime] case class MachO private (
 ) {}
 
 private[runtime] object MachO {
-  import CommonParsers._
+  import CommonParsers.*
 
   def parse(ds: BinaryFile): MachO = {
     implicit val stream = ds

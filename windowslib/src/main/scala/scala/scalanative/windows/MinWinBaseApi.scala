@@ -1,10 +1,10 @@
 package scala.scalanative.windows
 
-import scala.scalanative.unsafe.{Word => _, _}
-import scala.scalanative.unsigned._
+import scala.scalanative.unsafe.{Word as _, *}
+import scala.scalanative.unsigned.*
 import scala.language.implicitConversions
 import scala.scalanative.windows.util.Conversion
-import HandleApi._
+import HandleApi.*
 
 object MinWinBaseApi {
   type FileTime = ULargeInteger
@@ -15,7 +15,7 @@ object MinWinBaseApi {
 }
 
 object MinWinBaseApiOps {
-  import MinWinBaseApi._
+  import MinWinBaseApi.*
   implicit class FileTimeStructOps(ref: Ptr[FileTimeStruct]) {
     def lowFileTime: DWord = ref._1
     def highFileTime: DWord = ref._2

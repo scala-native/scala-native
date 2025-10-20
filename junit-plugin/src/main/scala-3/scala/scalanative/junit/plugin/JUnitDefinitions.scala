@@ -1,11 +1,11 @@
 package scala.scalanative.junit.plugin
 
 import dotty.tools.dotc.core
-import core.Symbols._
+import core.Symbols.*
 import core.Symbols.given
-import core.Contexts._
-import core.Types._
-import core.StdNames._
+import core.Contexts.*
+import core.Types.*
+import core.StdNames.*
 import scala.annotation.threadUnsafe
 import scala.compiletime.uninitialized
 
@@ -13,7 +13,7 @@ object JUnitDefinitions {
   private var cached: JUnitDefinitions = uninitialized
   private var lastContext: Context = uninitialized
   def defnJUnit(using ctx: Context): JUnitDefinitions = {
-    if (lastContext != ctx) {
+    if lastContext != ctx then {
       cached = JUnitDefinitions()
       lastContext = ctx
     }

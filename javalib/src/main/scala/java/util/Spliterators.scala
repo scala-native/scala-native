@@ -1,8 +1,8 @@
 package java.util
 
-import java.util.function._
+import java.util.function.*
 
-import Spliterator._
+import Spliterator.*
 
 /** This is a basic, limit implementation of Spliterators. It is a basis for
  *  further Scala Native development, especially in the java.util.concurrent
@@ -301,7 +301,7 @@ object Spliterators {
        * The Scala Native compiler checks the signature of "action"
        * against the JDK, so that signature can not be modified.
        */
-      val action: Consumer[_ >: T] =
+      val action: Consumer[? >: T] =
         (e: T) => { buf(count) = e.asInstanceOf[Object]; count += 1 }
 
       while ((count < batchSize) && tryAdvance(action)) { /* side-effect */ }
@@ -346,7 +346,7 @@ object Spliterators {
 
   def emptySpliterator[T](): Spliterator[T] = {
     new AbstractSpliterator[T](0, sizedCharacteristicsMask) {
-      def tryAdvance(action: Consumer[_ >: T]): Boolean = false
+      def tryAdvance(action: Consumer[? >: T]): Boolean = false
     }
   }
 
@@ -433,7 +433,7 @@ object Spliterators {
     }
   }
 
-  def iterator[T](spliterator: Spliterator[_ <: T]): Iterator[T] = {
+  def iterator[T](spliterator: Spliterator[? <: T]): Iterator[T] = {
     Objects.requireNonNull(spliterator)
 
     new Iterator[T] {
@@ -461,7 +461,7 @@ object Spliterators {
   }
 
   def spliterator[T](
-      c: Collection[_ <: T],
+      c: Collection[? <: T],
       characteristics: Int
   ): Spliterator[T] = {
     Objects.requireNonNull(c)
@@ -470,7 +470,7 @@ object Spliterators {
     new AbstractSpliterator[T](c.size(), harmonized) {
       lazy val it = c.iterator()
 
-      def tryAdvance(action: Consumer[_ >: T]): Boolean = {
+      def tryAdvance(action: Consumer[? >: T]): Boolean = {
         Objects.requireNonNull(action)
         if (!it.hasNext()) false
         else {
@@ -634,14 +634,14 @@ object Spliterators {
   }
 
   def spliterator[T](
-      iterator: Iterator[_ <: T],
+      iterator: Iterator[? <: T],
       size: Long,
       characteristics: Int
   ): Spliterator[T] = {
     Objects.requireNonNull(iterator)
     val harmonized = maybeSetSizedCharacteristics(characteristics)
     new AbstractSpliterator[T](size, harmonized) {
-      def tryAdvance(action: Consumer[_ >: T]): Boolean = {
+      def tryAdvance(action: Consumer[? >: T]): Boolean = {
         Objects.requireNonNull(action)
         if (!iterator.hasNext()) false
         else {
@@ -742,7 +742,7 @@ object Spliterators {
       }
     }
 
-    def tryAdvance(action: Consumer[_ >: T]): Boolean = {
+    def tryAdvance(action: Consumer[? >: T]): Boolean = {
       Objects.requireNonNull(action)
       if (cursor == toIndex) false
       else {
@@ -852,7 +852,7 @@ object Spliterators {
   }
 
   def spliteratorUnknownSize[T](
-      iterator: Iterator[_ <: T],
+      iterator: Iterator[? <: T],
       characteristics: Int
   ): Spliterator[T] = {
     Objects.requireNonNull(iterator)
@@ -861,7 +861,7 @@ object Spliterators {
       Long.MaxValue,
       maskOff(characteristics, sizedCharacteristicsMask)
     ) {
-      def tryAdvance(action: Consumer[_ >: T]): Boolean = {
+      def tryAdvance(action: Consumer[? >: T]): Boolean = {
         Objects.requireNonNull(action)
         if (!iterator.hasNext()) false
         else {

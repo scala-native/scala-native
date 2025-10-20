@@ -4,7 +4,7 @@ import scala.math.ScalaNumber
 import scala.annotation.{nowarn, switch}
 
 import scala.scalanative.meta.LinktimeInfo
-import scala.scalanative.unsigned._
+import scala.scalanative.unsigned.*
 import scala.scalanative.unsafe.Size
 
 class BoxesRunTime

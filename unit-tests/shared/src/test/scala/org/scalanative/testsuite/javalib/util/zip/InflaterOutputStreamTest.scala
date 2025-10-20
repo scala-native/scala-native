@@ -1,13 +1,13 @@
 package org.scalanative.testsuite.javalib.util.zip
 
-import java.util.zip._
-import java.io._
+import java.util.zip.*
+import java.io.*
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
-import scala.scalanative.junit.utils.AssumesHelper._
+import scala.scalanative.junit.utils.AssumesHelper.*
 
 class InflaterOutputStreamTest {
 

@@ -1,15 +1,15 @@
 package org.scalanative.testsuite.javalib.nio
 
-import java.nio._
+import java.nio.*
 
 // Ported from Scala.js
 
 import org.junit.Test
-import org.junit.Assert._
-import org.junit.Assume._
+import org.junit.Assert.*
+import org.junit.Assume.*
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
-import org.scalanative.testsuite.utils.Platform._
+import org.scalanative.testsuite.utils.Platform.*
 
 abstract class BaseBufferTest extends BaseBufferPlatformTest {
 
@@ -17,7 +17,7 @@ abstract class BaseBufferTest extends BaseBufferPlatformTest {
 
   val factory: Factory
 
-  import factory._
+  import factory.*
 
   @Test def allocate(): Unit = {
     val buf = allocBuffer(10)
@@ -170,7 +170,7 @@ abstract class BaseBufferTest extends BaseBufferPlatformTest {
   }
 
   @Test def absoluteGet(): Unit = {
-    val buf = withContent(10, elemRange(0, 10): _*)
+    val buf = withContent(10, elemRange(0, 10)*)
     assertEquals(elemFromInt(0), buf.get(0))
     assertEquals(0, buf.position())
     assertEquals(elemFromInt(3), buf.get(3))
@@ -209,7 +209,7 @@ abstract class BaseBufferTest extends BaseBufferPlatformTest {
   }
 
   @Test def relativeGet(): Unit = {
-    val buf = withContent(10, elemRange(0, 10): _*)
+    val buf = withContent(10, elemRange(0, 10)*)
     assertEquals(elemFromInt(0), buf.get())
     assertEquals(1, buf.position())
     buf.position(3)
@@ -245,7 +245,7 @@ abstract class BaseBufferTest extends BaseBufferPlatformTest {
   }
 
   @Test def relativeBulkGet(): Unit = {
-    val buf = withContent(10, elemRange(0, 10): _*)
+    val buf = withContent(10, elemRange(0, 10)*)
     val a = new Array[ElementType](4)
     buf.get(a)
     (boxedElemsFromInt(0, 1, 2, 3) zip boxed(a))
@@ -312,7 +312,7 @@ abstract class BaseBufferTest extends BaseBufferPlatformTest {
     )
 
     if (!createsReadOnly) {
-      val buf = withContent(10, elemRange(0, 10): _*)
+      val buf = withContent(10, elemRange(0, 10)*)
       buf.position(6)
       buf.mark()
 
@@ -330,7 +330,7 @@ abstract class BaseBufferTest extends BaseBufferPlatformTest {
   }
 
   @Test def slice(): Unit = {
-    val buf1 = withContent(10, elemRange(0, 10): _*)
+    val buf1 = withContent(10, elemRange(0, 10)*)
     buf1.position(3)
     buf1.limit(7)
     buf1.mark()
@@ -365,7 +365,7 @@ abstract class BaseBufferTest extends BaseBufferPlatformTest {
   }
 
   @Test def duplicate(): Unit = {
-    val buf1 = withContent(10, elemRange(0, 10): _*)
+    val buf1 = withContent(10, elemRange(0, 10)*)
     buf1.position(3)
     buf1.limit(7)
     buf1.mark()

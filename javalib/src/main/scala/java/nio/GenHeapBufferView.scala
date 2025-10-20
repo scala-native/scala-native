@@ -1,6 +1,6 @@
 package java.nio
 
-import scala.scalanative.unsafe._
+import scala.scalanative.unsafe.*
 import java.util.Objects
 
 // Ported from Scala.js
@@ -43,7 +43,7 @@ private[nio] object GenHeapBufferView {
 
 private[nio] final class GenHeapBufferView[B <: Buffer](val self: B)
     extends AnyVal {
-  import self._
+  import self.*
 
   type NewThisHeapBufferView = GenHeapBufferView.NewHeapBufferView[BufferType]
 

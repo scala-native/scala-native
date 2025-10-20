@@ -4,9 +4,9 @@ import java.io.{RandomAccessFile, FileNotFoundException}
 
 import java.nio.{ByteBuffer, MappedByteBuffer}
 import java.nio.channels.spi.AbstractInterruptibleChannel
-import java.nio.file._
+import java.nio.file.*
 import java.nio.file.attribute.FileAttribute
-import java.{lang => jl}
+import java.lang as jl
 
 import java.util.{HashSet, Set}
 
@@ -86,10 +86,10 @@ object FileChannel {
 
   def open(
       path: Path,
-      options: Set[_ <: OpenOption],
-      attrs: Array[FileAttribute[_]]
+      options: Set[? <: OpenOption],
+      attrs: Array[FileAttribute[?]]
   ): FileChannel = {
-    import StandardOpenOption._
+    import StandardOpenOption.*
 
     val appending = options.contains(APPEND)
     val writing = options.contains(WRITE) || appending

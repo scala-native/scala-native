@@ -3,9 +3,9 @@
 package org.scalanative.testsuite.javalib.util
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
-import java.{util => ju}
+import java.util as ju
 import java.util.function.Consumer
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows

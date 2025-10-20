@@ -1,7 +1,7 @@
 package java.util.stream
 
 import java.util.{Collections, HashSet, Set}
-import java.util.function._
+import java.util.function.*
 
 trait Collector[T, A, R] {
 
@@ -67,7 +67,7 @@ object Collector {
       def accumulator(): BiConsumer[A, T] = _accumulator
 
       def characteristics(): Set[Collector.Characteristics] =
-        createCharacteristicsSet(false, _characteristics: _*)
+        createCharacteristicsSet(false, _characteristics*)
 
       def combiner(): BinaryOperator[A] = _combiner
 
@@ -87,7 +87,7 @@ object Collector {
       def accumulator(): BiConsumer[R, T] = _accumulator
 
       def characteristics(): Set[Collector.Characteristics] =
-        createCharacteristicsSet(true, _characteristics: _*)
+        createCharacteristicsSet(true, _characteristics*)
 
       def combiner(): BinaryOperator[R] = _combiner
 

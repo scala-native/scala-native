@@ -1,6 +1,6 @@
 package java.lang
 
-import java.util.{Set => JSet}
+import java.util.Set as JSet
 import java.io.{InputStream, IOException}
 import java.lang.annotation.Annotation
 import java.lang.reflect.AnnotatedElement

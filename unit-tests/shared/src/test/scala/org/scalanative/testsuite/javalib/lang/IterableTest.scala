@@ -2,14 +2,14 @@
 
 package org.scalanative.testsuite.javalib.lang
 
-import java.lang.{Iterable => JIterable}
-import java.{util => ju}
+import java.lang.Iterable as JIterable
+import java.util as ju
 import java.util.function.Consumer
 
 import scala.reflect.ClassTag
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 /** Tests the implementation of the java standard library Iterable
  */

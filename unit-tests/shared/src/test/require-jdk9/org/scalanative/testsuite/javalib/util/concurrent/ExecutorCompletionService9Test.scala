@@ -7,11 +7,11 @@
 
 package org.scalanative.testsuite.javalib.util.concurrent
 
-import org.junit.Assert._
+import org.junit.Assert.*
 import org.junit.Test
 
 import java.util.{Collection, ArrayList, Set, Comparator, List}
-import java.util.concurrent._
+import java.util.concurrent.*
 
 class ExecutorCompletionService9Test extends JSR166Test {
   @throws[InterruptedException]
@@ -35,7 +35,7 @@ class ExecutorCompletionService9Test extends JSR166Test {
       solvers.forEach((solver: Callable[Integer]) =>
         futures.add(cs.submit(solver))
       )
-      import scala.util.control.Breaks._
+      import scala.util.control.Breaks.*
       breakable {
         for (i <- n until 0 by -1) {
           try {

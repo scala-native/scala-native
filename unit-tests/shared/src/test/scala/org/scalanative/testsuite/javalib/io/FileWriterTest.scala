@@ -1,9 +1,9 @@
 package org.scalanative.testsuite.javalib.io
 
-import java.io._
+import java.io.*
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.*
 
 class FileWriterTest {
 

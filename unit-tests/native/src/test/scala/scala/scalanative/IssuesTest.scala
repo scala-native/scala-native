@@ -1,12 +1,12 @@
 package scala.scalanative
 
 import org.junit.Test
-import org.junit.Assert._
-import org.junit.Assume._
+import org.junit.Assert.*
+import org.junit.Assume.*
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
-import scalanative.unsigned._
-import scalanative.unsafe._
+import scalanative.unsigned.*
+import scalanative.unsafe.*
 import scala.annotation.nowarn
 import scala.scalanative.annotation.alwaysinline
 
@@ -135,7 +135,7 @@ class IssuesTest {
   @deprecated @Test def test_Issue382(): Unit = {
     /// that gave NPE
 
-    import scala.scalanative.unsafe._
+    import scala.scalanative.unsafe.*
     intIdent(fptr())
     assertTrue(fptr() == 1)
 
@@ -392,12 +392,12 @@ class IssuesTest {
   }
 
   @Test def test_Issue1909(): Unit = {
-    import issue1909._
+    import issue1909.*
     assertNotNull(new RandomWrapper().nextInt())
   }
 
   @Test def test_Issue1950(): Unit = {
-    import issue1950._
+    import issue1950.*
     List(new ValueClass(1.0f))
       .map(_.value)
       .foreach(assertEquals(1.0f, _, 0.00001))
@@ -510,7 +510,7 @@ class IssuesTest {
   }
 
   @Test def test_Issue2520(): Unit = {
-    import issue2520._
+    import issue2520.*
     import issue2520.Kleisli.KleisliOpt
     implicit def instance: Strong[Function1] = new Strong[Function1] {
       override def first[A, B, C](f: A => B): Function1[(A, C), (B, C)] = {
@@ -552,7 +552,7 @@ class IssuesTest {
   }
 
   @Test def test_Issue2552() = {
-    import issue2552._
+    import issue2552.*
     // Test that methods (lambdas) as reachable, issue reported missing symbols
     assertEquals("case 0", 0, issue2552.foo(0))
     assertEquals("case 1", 0, baz())
@@ -560,7 +560,7 @@ class IssuesTest {
   }
 
   @Test def test_Issue2712() = {
-    import issue2712._
+    import issue2712.*
     def f[A]: Refined[A] => Refined[A] =
       x => new Refined(x.value)
 
@@ -607,7 +607,7 @@ class IssuesTest {
     // Otherwise calls to functions allocating on stack in loop might lead to stack overflow
     @alwaysinline def allocatingFunction(): CSize = {
       import scala.scalanative.unsafe.{CArray, Nat}
-      import Nat._
+      import Nat.*
       def `64KB` = (64 * 1024).toUSize
       val chunk = stackalloc[Byte](`64KB`)
       assertNotNull("stackalloc was null", chunk)
@@ -628,7 +628,7 @@ class IssuesTest {
     val ptr1 = stackalloc[Ptr[ctx.Foo]]()
     println(!ptr1) // segfault
 
-    val ptr2 = stackalloc[Ptr[_]]()
+    val ptr2 = stackalloc[Ptr[?]]()
     println(!ptr2) // segfault
   }
 
@@ -638,8 +638,8 @@ class IssuesTest {
   }
 
   @Test def issue3799(): Unit = if (isMultithreadingEnabled) {
-    import scala.concurrent._
-    import scala.concurrent.duration._
+    import scala.concurrent.*
+    import scala.concurrent.duration.*
     // Use a dedicated thread pool with threads of limited stack size for easier stack overflow detection
     val executor = Executors.newFixedThreadPool(
       2,
@@ -679,7 +679,7 @@ class IssuesTest {
         catch { case ex: Throwable => throw ex }
         finally { () }
     }
-    assertTrue(SomeClass.get.isInstanceOf[ServiceLoader[_]])
+    assertTrue(SomeClass.get.isInstanceOf[ServiceLoader[?]])
   }
 
   @Test def issue4087_original(): Unit = {
@@ -688,7 +688,7 @@ class IssuesTest {
     object SomeClass {
       lazy val get = ServiceLoader.load(classOf[SomeClass])
     }
-    assertTrue(SomeClass.get.isInstanceOf[ServiceLoader[_]])
+    assertTrue(SomeClass.get.isInstanceOf[ServiceLoader[?]])
   }
 
   @Test def dottyIssue15402(): Unit = {

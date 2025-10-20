@@ -1,18 +1,18 @@
 package org.scalanative.testsuite.posixlib
 
 import org.junit.Test
-import org.junit.Assert._
-import org.junit.Assume._
+import org.junit.Assert.*
+import org.junit.Assume.*
 import org.junit.{BeforeClass, AfterClass}
 
 import scala.scalanative.meta.LinktimeInfo
 
-import scala.scalanative.unsafe._
-import scala.scalanative.unsigned._
+import scala.scalanative.unsafe.*
+import scala.scalanative.unsigned.*
 
 import scala.scalanative.posix.errno.errno
-import scala.scalanative.posix.locale._
-import scala.scalanative.posix.localeOps._
+import scala.scalanative.posix.locale.*
+import scala.scalanative.posix.localeOps.*
 import scala.scalanative.posix.stdlib
 import scala.scalanative.posix.string
 

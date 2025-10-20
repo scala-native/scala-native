@@ -10,11 +10,11 @@ import scala.annotation.tailrec
 
 import scala.reflect.ClassTag
 
-import scala.scalanative.unsafe._
-import scala.scalanative.unsigned._
+import scala.scalanative.unsafe.*
+import scala.scalanative.unsigned.*
 
-import java.{util => ju}
-import java.util.function._
+import java.util as ju
+import java.util.function.*
 import java.util.stream.StreamSupport
 
 object Arrays extends ArraysJDK9Methods {
@@ -86,7 +86,7 @@ object Arrays extends ArraysJDK9Methods {
   @noinline
   def sort[T <: AnyRef](
       array: Array[T],
-      comparator: Comparator[_ >: T]
+      comparator: Comparator[? >: T]
   ): Unit = {
     implicit val ord = toOrdering(comparator).asInstanceOf[Ordering[AnyRef]]
     sortAnyRefImpl(array.asInstanceOf[Array[AnyRef]])
@@ -97,7 +97,7 @@ object Arrays extends ArraysJDK9Methods {
       array: Array[T],
       fromIndex: Int,
       toIndex: Int,
-      comparator: Comparator[_ >: T]
+      comparator: Comparator[? >: T]
   ): Unit = {
     implicit val ord = toOrdering(comparator).asInstanceOf[Ordering[AnyRef]]
     sortRangeAnyRefImpl(array.asInstanceOf[Array[AnyRef]], fromIndex, toIndex)
@@ -443,7 +443,7 @@ object Arrays extends ArraysJDK9Methods {
   }
 
   @noinline
-  def binarySearch[T](a: Array[T], key: T, c: Comparator[_ >: T]): Int =
+  def binarySearch[T](a: Array[T], key: T, c: Comparator[? >: T]): Int =
     binarySearchImpl[T](a, 0, a.length, key, (a, b) => c.compare(a, b) < 0)
 
   @noinline
@@ -452,7 +452,7 @@ object Arrays extends ArraysJDK9Methods {
       startIndex: Int,
       endIndex: Int,
       key: T,
-      c: Comparator[_ >: T]
+      c: Comparator[? >: T]
   ): Int = {
     checkRangeIndices(a, startIndex, endIndex)
     binarySearchImpl[T](
@@ -682,7 +682,7 @@ object Arrays extends ArraysJDK9Methods {
   def copyOf[T <: AnyRef, U <: AnyRef](
       original: Array[U],
       newLength: Int,
-      newType: Class[_ <: Array[T]]
+      newType: Class[? <: Array[T]]
   ): Array[T] = {
     implicit val tag = ClassTag[T](newType.getComponentType)
     copyOfImpl(original, newLength)
@@ -742,7 +742,7 @@ object Arrays extends ArraysJDK9Methods {
       original: Array[U],
       from: Int,
       to: Int,
-      newType: Class[_ <: Array[T]]
+      newType: Class[? <: Array[T]]
   ): Array[T] = {
     implicit def tag: ClassTag[T] = ClassTag(original.getClass.getComponentType)
     copyOfRangeImpl[AnyRef](original.asInstanceOf[Array[AnyRef]], from, to)
@@ -999,7 +999,7 @@ object Arrays extends ArraysJDK9Methods {
   }
 
   @inline
-  private def toOrdering[T <: AnyRef](cmp: Comparator[_ >: T]): Ordering[T] = {
+  private def toOrdering[T <: AnyRef](cmp: Comparator[? >: T]): Ordering[T] = {
     if (cmp == null) {
       naturalOrdering[T]
     } else {
@@ -1131,7 +1131,7 @@ object Arrays extends ArraysJDK9Methods {
 
   def parallelSetAll[T <: AnyRef](
       array: Array[T],
-      generator: IntFunction[_ <: T]
+      generator: IntFunction[? <: T]
   ): Unit = {
     setAll(array, generator)
   }
@@ -1204,7 +1204,7 @@ object Arrays extends ArraysJDK9Methods {
 
   def parallelSort(a: Array[AnyRef]): Unit = sort(a)
 
-  def parallelSort[T <: _Comparable[_ <: AnyRef]](
+  def parallelSort[T <: _Comparable[? <: AnyRef]](
       array: Array[T]
   ): Unit = {
     sort(array.asInstanceOf[Array[AnyRef]])
@@ -1212,12 +1212,12 @@ object Arrays extends ArraysJDK9Methods {
 
   def parallelSort[T <: AnyRef](
       array: Array[T],
-      comparator: Comparator[_ >: T]
+      comparator: Comparator[? >: T]
   ): Unit = {
     sort[T](array, comparator)
   }
 
-  def parallelSort[T <: _Comparable[_ <: AnyRef]](
+  def parallelSort[T <: _Comparable[? <: AnyRef]](
       array: Array[T],
       fromIndex: Int,
       toIndex: Int
@@ -1228,7 +1228,7 @@ object Arrays extends ArraysJDK9Methods {
       array: Array[T],
       fromIndex: Int,
       toIndex: Int,
-      comparator: Comparator[_ >: T]
+      comparator: Comparator[? >: T]
   ): Unit = {
     sort[T](array, fromIndex, toIndex, comparator)
   }
@@ -1250,7 +1250,7 @@ object Arrays extends ArraysJDK9Methods {
 
   def setAll[T <: AnyRef](
       array: Array[T],
-      generator: IntFunction[_ <: T]
+      generator: IntFunction[? <: T]
   ): Unit = {
     for (j <- 0 until array.size)
       array(j) = generator.apply(j)

@@ -5,12 +5,12 @@ import dotty.tools.dotc.core.Contexts.Context
 import dotty.tools.dotc.core.Contexts.ctx
 import dotty.tools.dotc.core.Definitions
 import dotty.tools.dotc.core.Symbols
-import dotty.tools.dotc.core.Flags._
+import dotty.tools.dotc.core.Flags.*
 import scala.scalanative.nscplugin.CompilerCompat.SymUtilsCompat.*
-import dotty.tools.dotc.ast.tpd._
-import dotty.tools.dotc.core.Names._
-import dotty.tools.dotc.core.Types._
-import dotty.tools.dotc.core.Flags._
+import dotty.tools.dotc.ast.tpd.*
+import dotty.tools.dotc.core.Names.*
+import dotty.tools.dotc.core.Types.*
+import dotty.tools.dotc.core.Flags.*
 import NirGenUtil.ContextCached
 
 trait NativeInteropUtil { self: PluginPhase =>

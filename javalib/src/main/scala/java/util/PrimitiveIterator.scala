@@ -1,14 +1,14 @@
 package java.util
 
-import java.{lang => jl}
+import java.lang as jl
 
-import java.util.function._
+import java.util.function.*
 
-import Spliterator._
+import Spliterator.*
 
 object PrimitiveIterator {
   trait OfDouble extends PrimitiveIterator[jl.Double, DoubleConsumer] {
-    override def forEachRemaining(action: Consumer[_ >: jl.Double]): Unit = {
+    override def forEachRemaining(action: Consumer[? >: jl.Double]): Unit = {
       Objects.requireNonNull(action)
 
       if (action.isInstanceOf[DoubleConsumer]) {
@@ -41,7 +41,7 @@ object PrimitiveIterator {
   }
 
   trait OfInt extends PrimitiveIterator[jl.Integer, IntConsumer] {
-    override def forEachRemaining(action: Consumer[_ >: jl.Integer]): Unit = {
+    override def forEachRemaining(action: Consumer[? >: jl.Integer]): Unit = {
       Objects.requireNonNull(action)
 
       if (action.isInstanceOf[IntConsumer]) {
@@ -67,7 +67,7 @@ object PrimitiveIterator {
   }
 
   trait OfLong extends PrimitiveIterator[jl.Long, LongConsumer] {
-    override def forEachRemaining(action: Consumer[_ >: jl.Long]): Unit = {
+    override def forEachRemaining(action: Consumer[? >: jl.Long]): Unit = {
       Objects.requireNonNull(action)
       if (action.isInstanceOf[LongConsumer]) {
         forEachRemaining(action.asInstanceOf[LongConsumer])

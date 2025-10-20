@@ -1,13 +1,13 @@
 package scala.scalanative.windows
 
-import scala.scalanative.unsafe._
-import scala.scalanative.unsigned._
+import scala.scalanative.unsafe.*
+import scala.scalanative.unsigned.*
 
 @extern()
 object AclApi {
-  import SecurityBaseApi._
-  import WinBaseApi._
-  import accctrl._
+  import SecurityBaseApi.*
+  import WinBaseApi.*
+  import accctrl.*
 
   type SecurityObjectType = CInt
 

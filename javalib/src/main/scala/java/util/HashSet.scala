@@ -1,7 +1,7 @@
 package java.util
 
 import scala.collection.mutable
-import ScalaOps._
+import ScalaOps.*
 
 class HashSet[E]
     extends AbstractSet[E]
@@ -14,7 +14,7 @@ class HashSet[E]
   def this(initialCapacity: Int) =
     this()
 
-  def this(c: Collection[_ <: E]) = {
+  def this(c: Collection[? <: E]) = {
     this()
     addAll(c)
   }
@@ -27,17 +27,17 @@ class HashSet[E]
   override def remove(o: Any): Boolean =
     inner.remove(Box(o.asInstanceOf[E]))
 
-  override def containsAll(c: Collection[_]): Boolean =
+  override def containsAll(c: Collection[?]): Boolean =
     c.iterator().scalaOps.forall(contains)
 
-  override def removeAll(c: Collection[_]): Boolean = {
+  override def removeAll(c: Collection[?]): Boolean = {
     val iter = c.iterator()
     var changed = false
     while (iter.hasNext()) changed = remove(iter.next()) || changed
     changed
   }
 
-  override def retainAll(c: Collection[_]): Boolean = {
+  override def retainAll(c: Collection[?]): Boolean = {
     val iter = iterator()
     var changed = false
     while (iter.hasNext()) {
@@ -51,7 +51,7 @@ class HashSet[E]
   override def add(e: E): Boolean =
     inner.add(Box(e))
 
-  override def addAll(c: Collection[_ <: E]): Boolean = {
+  override def addAll(c: Collection[? <: E]): Boolean = {
     val iter = c.iterator()
     var changed = false
     while (iter.hasNext()) changed = add(iter.next()) || changed

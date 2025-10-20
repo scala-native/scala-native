@@ -1,18 +1,18 @@
 package build
 
-import sbt._
-import sbt.Keys._
+import sbt.*
+import sbt.Keys.*
 import sbt.nio.Keys.fileTreeView
-import com.typesafe.tools.mima.core._
-import com.typesafe.tools.mima.plugin.MimaPlugin.autoImport._
+import com.typesafe.tools.mima.core.*
+import com.typesafe.tools.mima.plugin.MimaPlugin.autoImport.*
 import com.jsuereth.sbtpgp.PgpKeys.publishSigned
-import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport._
-import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
+import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport.*
+import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport.*
 
 // Hack warning: special object mimicking build-info plugin outputs, defined in project/ScalaNativeBuildInfo
 import scala.scalanative.ScalaNativeBuildInfo
-import sbtbuildinfo.BuildInfoPlugin.autoImport._
-import ScriptedPlugin.autoImport._
+import sbtbuildinfo.BuildInfoPlugin.autoImport.*
+import ScriptedPlugin.autoImport.*
 import com.jsuereth.sbtpgp.PgpKeys
 
 import scala.collection.mutable
@@ -51,7 +51,7 @@ object Settings {
     },
     Global / onLoad ~= { prev =>
       if (!scala.util.Properties.isWin) {
-        import java.nio.file._
+        import java.nio.file.*
         val prePush = Paths.get(".git", "hooks", "pre-push")
         Files.createDirectories(prePush.getParent)
         Files.write(
@@ -154,7 +154,7 @@ object Settings {
   )
 
   // Docs and API settings
-  lazy val docsSettings: Seq[Setting[_]] = {
+  lazy val docsSettings: Seq[Setting[?]] = {
     val javaDocBaseURL: String = "https://docs.oracle.com/javase/8/docs/api/"
     // partially ported from Scala.js
     Def.settings(
@@ -244,7 +244,7 @@ object Settings {
   )
 
   // Publishing
-  lazy val basePublishSettings: Seq[Setting[_]] = Seq(
+  lazy val basePublishSettings: Seq[Setting[?]] = Seq(
     homepage := Some(url("http://www.scala-native.org")),
     startYear := Some(2015),
     licenses := Seq(
@@ -280,7 +280,7 @@ object Settings {
     Test / publishArtifact := false
   ) ++ mimaSettings
 
-  def publishSettings(verScheme: Option[String]): Seq[Setting[_]] =
+  def publishSettings(verScheme: Option[String]): Seq[Setting[?]] =
     Def.settings(
       basePublishSettings,
       mavenPublishSettings,
@@ -549,7 +549,7 @@ object Settings {
     }.taskValue
   )
 
-  lazy val testInterfaceCommonSourcesSettings: Seq[Setting[_]] = {
+  lazy val testInterfaceCommonSourcesSettings: Seq[Setting[?]] = {
     def unmanagedSources(baseDirectory: File, dir: String) = baseDirectory
       .getParentFile()
       .getParentFile() / s"test-interface-common/src/$dir/scala"
@@ -565,7 +565,7 @@ object Settings {
     )
   }
 
-  lazy val experimentalScalaSources: Seq[Setting[_]] = {
+  lazy val experimentalScalaSources: Seq[Setting[?]] = {
     val baseDir = "scala-next"
     def setSourceDirectory(scope: Configuration) = Def.settings(
       // scope / unmanagedSourceDirectories += (scope / sourceDirectory).value / baseDir,
@@ -640,7 +640,7 @@ object Settings {
     }
   )
 
-  lazy val toolSettings: Seq[Setting[_]] =
+  lazy val toolSettings: Seq[Setting[?]] =
     Def.settings(
       publishSettings(None),
       javacOptions ++= Seq("-encoding", "utf8")
@@ -740,7 +740,7 @@ object Settings {
   def commonScalalibSettings(
       scalaStdLibraryName: String,
       shouldAddDependencyForVersion: String => Boolean = { _ => true }
-  ): Seq[Setting[_]] = {
+  ): Seq[Setting[?]] = {
     Def.settings(
       version := scalalibVersion(scalaVersion.value, version.value),
       mavenPublishSettings,
@@ -797,7 +797,7 @@ object Settings {
         val cacheDir = s.cacheDirectory
         val report = (fetchScalaSource / update).value
         lazy val lm = {
-          import sbt.librarymanagement.ivy._
+          import sbt.librarymanagement.ivy.*
           val ivyConfig = InlineIvyConfiguration()
             .withLog(s.log)
             .withResolvers(
@@ -901,7 +901,7 @@ object Settings {
 
           def copy(source: File, destination: File) = {
             import java.nio.file.Files
-            import java.nio.file.StandardCopyOption._
+            import java.nio.file.StandardCopyOption.*
             Files.copy(
               source.toPath(),
               destination.toPath(),
@@ -932,7 +932,7 @@ object Settings {
             // patched file to allow for recompilation of sources (re-applying patches)
             // git apply command needs to be used from within fetchedScalaSource directory.
             try {
-              import scala.sys.process._
+              import scala.sys.process.*
               copy(scalaSourcePath, scalaSourceCopyPath)
               var hasErrors = false
               Process(
@@ -1022,7 +1022,7 @@ object Settings {
   )
 
 // Partests
-  def shouldPartestSetting: Seq[Def.Setting[_]] = {
+  def shouldPartestSetting: Seq[Def.Setting[?]] = {
     Def.settings(
       shouldPartest := {
         baseDirectory.value.getParentFile.getParentFile / "scala-partest-tests" / "src" / "test" / "resources" /

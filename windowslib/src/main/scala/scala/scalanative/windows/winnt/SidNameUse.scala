@@ -1,6 +1,6 @@
 package scala.scalanative.windows.winnt
 
-import scalanative.unsafe._
+import scalanative.unsafe.*
 @extern
 object SidNameUse {
   @name("scalanative_sidtypeuser")

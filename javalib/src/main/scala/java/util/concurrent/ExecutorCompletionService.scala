@@ -11,7 +11,7 @@ class ExecutorCompletionService[V <: AnyRef](
     @safePublish val executor: Executor,
     @safePublish val completionQueue: BlockingQueue[Future[V]]
 ) extends CompletionService[V] {
-  import ExecutorCompletionService._
+  import ExecutorCompletionService.*
 
   if (executor == null || completionQueue == null)
     throw new NullPointerException()

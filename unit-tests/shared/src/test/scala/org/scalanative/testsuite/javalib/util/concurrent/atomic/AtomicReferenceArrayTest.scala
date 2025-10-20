@@ -13,10 +13,10 @@ import java.util.concurrent.atomic.AtomicReferenceArray
 import java.util.Arrays
 
 import org.junit.{Test, Ignore}
-import org.junit.Assert._
+import org.junit.Assert.*
 
 class AtomicReferenceArrayTest extends JSR166Test {
-  import JSR166Test._
+  import JSR166Test.*
 
   /** constructor creates array of given size with all elements null
    */
