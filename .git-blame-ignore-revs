@@ -22,3 +22,21 @@ e8cbc084d65364d8c179e18d591daace7b31b968
 
 # Scala Steward: Reformat with scalafmt 3.9.8
 905811dbb8047c6404bbc0a78deaa61f8b5db884
+
+# scalafmt: un-exclude scala-next, use scala3future (#4515)
+3aa206edaae829fabb5fb85dc2bcb26169613dfb
+
+# scalafmt: update to v3.10.1 (#4530)
+d28d0dc115835ef610c05c865b341c689ddc1fef
+
+# scalafmt: adjust dialects (scala212 as default) (#4507)
+65f1e8db0e417c6b4006d60ef48a541e27bab72a
+
+# scalafmt: rewrite with SortModifiers (#4534)
+a4771d42fcad9635f3a837bf181a96b704f73202
+
+# scalafmt: remove actual scalalib, not spurious (#4532)
+e4adc94d8a1805a00fcc2b3aee8c089fbde954ef
+
+# scalafmt: rewrite and sort imports (#4533)
+89998701011afca723af08cebca345d7aac94a72
