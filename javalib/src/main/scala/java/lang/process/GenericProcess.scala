@@ -13,14 +13,16 @@ private[process] abstract class GenericProcess(val handle: GenericProcessHandle)
   protected def fdOut: FileDescriptor
   protected def fdErr: FileDescriptor
 
-  handle.onExitHandleSync((_, _) => closeProcessStreams())
-
   private val outputStream =
     PipeIO[OutputStream](handle, fdIn, handle.builder.redirectInput())
   private val inputStream =
     PipeIO[PipeIO.Stream](handle, fdOut, handle.builder.redirectOutput())
   private val errorStream =
     PipeIO[PipeIO.Stream](handle, fdErr, handle.builder.redirectError())
+
+  handle.onExitHandleSync((_, _) => { outputStream.close(); null })
+  handle.onExitHandleAsync((_, _) => { inputStream.drain(); null })
+  handle.onExitHandleAsync((_, _) => { errorStream.drain(); null })
 
   override def getInputStream(): InputStream = inputStream
   override def getErrorStream(): InputStream = errorStream
@@ -38,13 +40,6 @@ private[process] abstract class GenericProcess(val handle: GenericProcessHandle)
     handle.onExitApply(_ => this: Process)
 
   override def info(): ProcessHandle.Info = handle.info()
-
-  def closeProcessStreams(): GenericProcess = {
-    outputStream.close()
-    inputStream.drain()
-    errorStream.drain()
-    this
-  }
 
   override final def pid(): Long = handle.pid()
   override final def children(): Stream[ProcessHandle] = handle.children()
@@ -125,6 +120,11 @@ private[process] abstract class GenericProcessHandle extends ProcessHandle {
       fn: function.BiFunction[java.lang.Integer, Throwable, A]
   ): CompletableFuture[A] =
     completion.handle(fn)
+
+  def onExitHandleAsync[A <: AnyRef](
+      fn: function.BiFunction[java.lang.Integer, Throwable, A]
+  ): CompletableFuture[A] =
+    completion.handleAsync(fn)
 
   override def parent(): Optional[ProcessHandle] = Optional.empty()
 
