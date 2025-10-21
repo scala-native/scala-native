@@ -1,8 +1,8 @@
 package scala.scalanative
 package unsafe
 
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 
 class SizeTest {
   @Test def bitwiseInverse: Unit = {

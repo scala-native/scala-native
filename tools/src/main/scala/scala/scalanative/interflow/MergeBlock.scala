@@ -1,8 +1,8 @@
 package scala.scalanative
 package interflow
 
-import scala.collection.mutable
 import scala.annotation.tailrec
+import scala.collection.mutable
 
 private[interflow] final class MergeBlock(
     val label: nir.Inst.Label,

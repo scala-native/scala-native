@@ -2,6 +2,7 @@ package scala.scalanative
 package nir
 
 import scala.collection.mutable
+
 import util.unsupported
 
 /** Analysis that's used to answer following questions:

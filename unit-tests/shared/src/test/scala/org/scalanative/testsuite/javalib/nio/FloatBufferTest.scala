@@ -2,8 +2,6 @@ package org.scalanative.testsuite.javalib.nio
 
 import java.nio._
 
-// Ported from Scala.js
-
 import ByteBufferFactories._
 
 abstract class FloatBufferTest extends BaseBufferTest {

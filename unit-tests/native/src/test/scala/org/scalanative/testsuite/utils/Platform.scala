@@ -3,7 +3,6 @@ package org.scalanative.testsuite.utils
 // See also the scala.scalanative.runtime.Platform package.
 
 import scala.scalanative.buildinfo.ScalaNativeBuildInfo
-
 import scala.scalanative.runtime
 
 object Platform {

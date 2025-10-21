@@ -16,10 +16,10 @@ package org.scalanative.testsuite.utils
 
 import java.{lang => jl, util => ju}
 
+import org.scalanative.testsuite.javalib.util.{
+  TrivialImmutableCollection, TrivialImmutableMap
+}
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
-
-import org.scalanative.testsuite.javalib.util.TrivialImmutableCollection
-import org.scalanative.testsuite.javalib.util.TrivialImmutableMap
 
 trait CollectionsTestBase {
 

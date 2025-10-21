@@ -181,9 +181,10 @@ object WinSocketApiExt {
 }
 
 object WinSocketApiOps {
+  import util.Conversion._
+
   import WinSocketApi._
   import WinSocketApiExt._
-  import util.Conversion._
 
   private var winSocketsInitialized = false
 

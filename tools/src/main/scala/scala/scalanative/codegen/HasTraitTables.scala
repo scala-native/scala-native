@@ -1,7 +1,7 @@
 package scala.scalanative
 package codegen
 
-import scalanative.linker.{Trait, Class}
+import scalanative.linker.{Class, Trait}
 
 private[codegen] class HasTraitTables(meta: Metadata) {
 

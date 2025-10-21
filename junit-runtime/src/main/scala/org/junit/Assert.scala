@@ -4,9 +4,11 @@
 package org.junit
 
 import java.util.Objects
-import org.hamcrest.{Matcher, MatcherAssert}
-import org.junit.internal.{ExactComparisonCriteria, InexactComparisonCriteria}
+
 import org.junit.function.ThrowingRunnable
+import org.junit.internal.{ExactComparisonCriteria, InexactComparisonCriteria}
+
+import org.hamcrest.{Matcher, MatcherAssert}
 
 object Assert {
   @noinline

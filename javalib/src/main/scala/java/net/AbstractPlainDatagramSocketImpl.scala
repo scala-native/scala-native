@@ -1,7 +1,8 @@
 package java.net
 
-import java.net.ipOps._
 import java.io.{FileDescriptor, IOException}
+import java.net.ipOps._
+
 import scala.scalanative.libc.string.memcpy
 import scala.scalanative.meta.LinktimeInfo.{isLinux, isWindows}
 import scala.scalanative.posix
@@ -18,10 +19,9 @@ import scala.scalanative.posix.sys.timeOps._
 import scala.scalanative.posix.unistd
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
-import scala.scalanative.windows.WinSocketApi.WSAGetLastError
-import scala.scalanative.windows._
 import scala.scalanative.windows.WinSocketApi._
 import scala.scalanative.windows.WinSocketApiExt._
+import scala.scalanative.windows._
 
 private[net] abstract class AbstractPlainDatagramSocketImpl
     extends DatagramSocketImpl {

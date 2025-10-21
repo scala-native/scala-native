@@ -1,7 +1,8 @@
 package java.nio
 
-import scala.scalanative.unsafe._
 import java.util.Objects
+
+import scala.scalanative.unsafe._
 
 // Ported from Scala.js
 private[nio] object GenHeapBufferView {

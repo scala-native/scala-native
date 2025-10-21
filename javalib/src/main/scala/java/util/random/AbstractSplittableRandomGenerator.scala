@@ -1,13 +1,10 @@
 package java.util.random
 
-import java.{lang => jl}
-
-import java.util.{Spliterator, Spliterators}
 import java.util.Spliterators.AbstractSpliterator
-
 import java.util.function.{Consumer, Supplier}
-
 import java.util.stream.{Stream, StreamSupport}
+import java.util.{Spliterator, Spliterators}
+import java.{lang => jl}
 
 private[util] trait AbstractSplittableRandomGenerator
     extends RandomGenerator.SplittableGenerator {

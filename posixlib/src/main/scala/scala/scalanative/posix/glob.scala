@@ -1,11 +1,10 @@
 package scala.scalanative
 package posix
 
-import scalanative.unsafe._
-import scalanative.unsafe.Nat._
 import scalanative.meta.LinktimeInfo.isLinux
-
 import scalanative.posix.sys.types
+import scalanative.unsafe.Nat._
+import scalanative.unsafe._
 
 /** POSIX glob.h for Scala
  *
@@ -93,7 +92,7 @@ object glob {
 }
 
 object globOps {
-  import glob.{glob_t, unixGlob_t, size_t}
+  import glob.{glob_t, size_t, unixGlob_t}
 
   implicit class glob_tOps(val ptr: Ptr[glob_t]) extends AnyVal {
     def gl_pathc: size_t = ptr._1 // Count of paths matched by pattern.

@@ -1,18 +1,14 @@
 package org.scalanative.testsuite
 package javalib.nio.file
 
-import java.{util => ju}
+import java.io.ByteArrayInputStream
+import java.nio.file.{Files, Path}
 import java.util.function.Consumer
 import java.util.{stream => jus}
+import java.{util => ju}
 
-import java.io.ByteArrayInputStream
-
-import java.nio.file.Files
-import java.nio.file.Path
-
-import org.junit.Test
 import org.junit.Assert._
-import org.junit.{BeforeClass, AfterClass}
+import org.junit.{AfterClass, BeforeClass, Test}
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 

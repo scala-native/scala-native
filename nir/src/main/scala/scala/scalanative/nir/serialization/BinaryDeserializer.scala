@@ -6,16 +6,14 @@ import java.net.URI
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
 
-import scala.collection.mutable
-import scala.collection.immutable
+import scala.annotation.{switch, tailrec}
+import scala.collection.{immutable, mutable}
+import scala.reflect.ClassTag
 import scala.util.control.NonFatal
 
 import scala.scalanative.nir.serialization.{Tags => T}
-import scala.scalanative.util.TypeOps.TypeNarrowing
 import scala.scalanative.util.ScalaStdlibCompat.ArraySeqCompat
-
-import scala.annotation.{tailrec, switch}
-import scala.reflect.ClassTag
+import scala.scalanative.util.TypeOps.TypeNarrowing
 
 class DeserializationException(
     global: nir.Global,

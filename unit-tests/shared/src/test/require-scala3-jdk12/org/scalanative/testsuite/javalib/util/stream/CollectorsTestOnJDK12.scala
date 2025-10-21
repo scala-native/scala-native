@@ -1,13 +1,11 @@
 package org.scalanative.testsuite.javalib.util.stream
 
 import java.util.stream._
-
+import java.util.{ArrayList, Arrays}
 import java.{util => ju}
-import java.util.ArrayList
-import java.util.Arrays
 
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 
 class CollectorsTestOnJDK12 {
 

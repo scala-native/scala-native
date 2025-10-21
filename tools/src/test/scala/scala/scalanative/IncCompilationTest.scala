@@ -1,15 +1,17 @@
 package scala.scalanative
 
-import org.junit.Test
-import org.junit.Assert._
-
 import java.io.{File, PrintWriter}
 import java.nio.file.{Files, Path, Paths}
-import scala.scalanative.build.{Config, NativeConfig, _}
-import scala.scalanative.util.Scope
+
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Await, duration}
+
+import org.junit.Assert._
+import org.junit.Test
+
+import scala.scalanative.build._
 import scala.scalanative.buildinfo.ScalaNativeBuildInfo
+import scala.scalanative.util.Scope
 
 // The test is used for incremental compilation
 

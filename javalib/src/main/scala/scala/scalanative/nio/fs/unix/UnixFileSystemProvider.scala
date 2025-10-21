@@ -1,13 +1,15 @@
 package scala.scalanative.nio.fs.unix
 
+import java.nio.file.FileSystem
+import java.nio.file.attribute._
+
+import scala.collection.immutable.{Map => SMap}
+
+import scala.scalanative.libc.errno.errno
+import scala.scalanative.nio.fs.GenericFileSystemProvider
+import scala.scalanative.posix.unistd
 import scala.scalanative.unsafe.{CChar, Ptr, fromCString, stackalloc}
 import scala.scalanative.unsigned._
-import scala.scalanative.posix.unistd
-import scala.scalanative.libc.errno.errno
-import scala.collection.immutable.{Map => SMap}
-import scala.scalanative.nio.fs.GenericFileSystemProvider
-import java.nio.file.attribute._
-import java.nio.file.FileSystem
 
 class UnixFileSystemProvider extends GenericFileSystemProvider {
 

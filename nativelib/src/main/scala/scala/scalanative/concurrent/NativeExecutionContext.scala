@@ -1,8 +1,8 @@
 package scala.scalanative
 package concurrent
 
-import scala.concurrent.{ExecutionContextExecutor, ExecutionContext}
 import scala.concurrent.duration._
+import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
 
 object NativeExecutionContext {
 

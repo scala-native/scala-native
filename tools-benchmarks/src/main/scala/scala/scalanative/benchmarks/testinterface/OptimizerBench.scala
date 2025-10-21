@@ -1,17 +1,18 @@
 package scala.scalanative
 package benchmarks
 
-import java.nio.file.{Path, Files}
+import java.nio.file.{Files, Path}
 import java.util.Comparator
 import java.util.concurrent.TimeUnit
 
-import org.openjdk.jmh.annotations._
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent._
+import scala.concurrent.duration._
+
 import org.openjdk.jmh.annotations.Mode._
+import org.openjdk.jmh.annotations._
 
 import scala.scalanative.build._
-import scala.concurrent._
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration._
 import scala.scalanative.linker.ReachabilityAnalysis
 
 @Fork(1)

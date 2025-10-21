@@ -42,6 +42,7 @@
 package java.math
 
 import scala.annotation.tailrec
+
 import BigInteger.QuotAndRem
 
 /** Provides BigInteger division and modular arithmetic.

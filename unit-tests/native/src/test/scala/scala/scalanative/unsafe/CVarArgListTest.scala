@@ -1,17 +1,16 @@
 package scala.scalanative
 package unsafe
 
-import org.junit.{Test, BeforeClass}
 import org.junit.Assert._
 import org.junit.Assume._
-
-import scalanative.unsigned._
-import scalanative.unsafe._
-import scalanative.libc.{stdio, stdlib, string}
-import scalanative.windows
-import scalanative.meta.LinktimeInfo.isWindows
+import org.junit.{BeforeClass, Test}
 
 import scala.scalanative.junit.utils.AssumesHelper._
+import scalanative.libc.{stdio, stdlib, string}
+import scalanative.meta.LinktimeInfo.isWindows
+import scalanative.unsafe._
+import scalanative.unsigned._
+import scalanative.windows
 
 class CVarArgListTest {
   def vatest(cstr: CString, varargs: Seq[CVarArg], output: String): Unit =

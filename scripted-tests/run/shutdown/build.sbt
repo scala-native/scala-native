@@ -1,7 +1,7 @@
-import java.util.concurrent.TimeUnit
-import java.nio.file.Files
 import java.io.File
+import java.nio.file.Files
 import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 val osName = System
   .getProperty("os.name", "unknown")

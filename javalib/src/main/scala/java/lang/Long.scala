@@ -1,8 +1,9 @@
 package java.lang
 
+import java.lang.constant.{Constable, ConstantDesc}
+
 import scalanative.runtime.Intrinsics.{divULong, remULong}
 import scalanative.runtime.LLVMIntrinsics
-import java.lang.constant.{Constable, ConstantDesc}
 
 final class Long(val _value: scala.Long)
     extends Number

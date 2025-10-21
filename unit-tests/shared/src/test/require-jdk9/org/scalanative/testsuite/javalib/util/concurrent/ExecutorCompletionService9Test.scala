@@ -7,11 +7,11 @@
 
 package org.scalanative.testsuite.javalib.util.concurrent
 
+import java.util.concurrent._
+import java.util.{ArrayList, Collection, Comparator, List, Set}
+
 import org.junit.Assert._
 import org.junit.Test
-
-import java.util.{Collection, ArrayList, Set, Comparator, List}
-import java.util.concurrent._
 
 class ExecutorCompletionService9Test extends JSR166Test {
   @throws[InterruptedException]

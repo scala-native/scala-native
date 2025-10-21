@@ -1,9 +1,11 @@
 package scala.scalanative.nio.fs.windows
 
-import scala.collection.immutable.{Map => SMap}
-import scala.scalanative.nio.fs.GenericFileSystemProvider
-import java.nio.file.attribute._
 import java.nio.file.FileSystem
+import java.nio.file.attribute._
+
+import scala.collection.immutable.{Map => SMap}
+
+import scala.scalanative.nio.fs.GenericFileSystemProvider
 
 class WindowsFileSystemProvider extends GenericFileSystemProvider {
 

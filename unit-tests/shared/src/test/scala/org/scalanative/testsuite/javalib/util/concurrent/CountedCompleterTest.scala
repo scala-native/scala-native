@@ -5,16 +5,17 @@
  */
 package org.scalanative.testsuite.javalib.util.concurrent
 
-import org.junit.Assert._
-import org.junit.{Test, Ignore}
-import JSR166Test._
-
-import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util
 import java.util._
+import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util.concurrent._
 import java.util.concurrent.atomic._
 import java.util.function._
+
+import org.junit.Assert._
+import org.junit.{Ignore, Test}
+
+import JSR166Test._
 
 object CountedCompleterTest {
   // Runs with "mainPool" use > 1 thread. singletonPool tests use 1

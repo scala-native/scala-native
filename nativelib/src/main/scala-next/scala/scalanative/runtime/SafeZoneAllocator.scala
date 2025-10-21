@@ -1,8 +1,9 @@
 package scala.scalanative.runtime
 
-import language.experimental.captureChecking
 import scala.scalanative.memory.SafeZone
 import scala.scalanative.unsafe._
+
+import language.experimental.captureChecking
 
 /** We can move SafeZoneAllocator to package `memory` and make it
  *  `private[scalanative]` after dotty supports using `new {sz} T(...)` to

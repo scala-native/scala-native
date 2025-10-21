@@ -1,18 +1,20 @@
 package scala.scalanative
 
-import scala.language.implicitConversions
 import java.io.File
 import java.nio.file.{Files, Path, Paths}
-import scalanative.build.{Config, NativeConfig, Logger, ScalaNative, Discover}
-import scalanative.util.Scope
-import scala.concurrent._
+
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent._
 import scala.concurrent.duration._
-import scala.scalanative.buildinfo.ScalaNativeBuildInfo
-import scala.scalanative.linker.ReachabilityAnalysis
+import scala.language.implicitConversions
 
 import org.junit.Assert.fail
+
+import scala.scalanative.buildinfo.ScalaNativeBuildInfo
+import scala.scalanative.linker.ReachabilityAnalysis
 import scala.scalanative.util.unreachable
+import scalanative.build.{Config, Discover, Logger, NativeConfig, ScalaNative}
+import scalanative.util.Scope
 
 /** Base class to test the linker. */
 abstract class LinkerSpec {

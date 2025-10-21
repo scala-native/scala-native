@@ -1,8 +1,9 @@
 package scala.scalanative.javalibintf
 
 import java.nio._
-import scala.scalanative.unsafe._
+
 import scala.scalanative.annotation.alwaysinline
+import scala.scalanative.unsafe._
 
 object PointerBuffer {
 

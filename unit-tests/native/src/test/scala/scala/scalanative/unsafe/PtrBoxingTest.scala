@@ -1,14 +1,15 @@
 package scala.scalanative
 package unsafe
 
-import org.junit.Test
+import java.lang.Long.toHexString
+
 import org.junit.Assert._
+import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
-import scalanative.unsigned._
 import scalanative.libc.stdlib.malloc
-import java.lang.Long.toHexString
+import scalanative.unsigned._
 
 class PtrBoxingTest {
   import PtrBoxingTest._

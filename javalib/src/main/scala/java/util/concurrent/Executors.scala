@@ -5,11 +5,11 @@
  */
 
 package java.util.concurrent
-import java.util.Collection
-import java.util.List
-import java.util.concurrent.atomic.AtomicInteger
-import scala.scalanative.annotation.{alwaysinline, safePublish}
 import java.security.{PrivilegedAction, PrivilegedExceptionAction}
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.{Collection, List}
+
+import scala.scalanative.annotation.{alwaysinline, safePublish}
 
 object Executors {
   def newWorkStealingPool(parallelism: Int): ExecutorService =

@@ -3,24 +3,16 @@ package regex
 
 import java.util
 import java.util.regex.PatternSyntaxException
+
+import org.junit.Assert._
+import org.junit.{Ignore, Test}
+
 import scala.scalanative.junit.utils.CollectionConverters._
 
-import org.junit.Test
-import org.junit.Assert._
-import org.junit.Ignore
-
 import RE2.{
-  FOLD_CASE,
-  LITERAL,
-  MATCH_NL,
-  NON_GREEDY,
-  PERL,
-  PERL_X,
-  POSIX,
-  UNICODE_GROUPS,
+  FOLD_CASE, LITERAL, MATCH_NL, NON_GREEDY, PERL, PERL_X, POSIX, UNICODE_GROUPS,
   WAS_DOLLAR
 }
-
 import Regexp.Op._
 
 /* ParserTest is a focused specialist test.  It is priceless to two groups

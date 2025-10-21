@@ -1,10 +1,10 @@
 package scala.scalanative
 package posix
 
-import scala.scalanative.unsafe._
 import scala.scalanative.posix.sched.sched_param
-import scala.scalanative.posix.time.timespec
 import scala.scalanative.posix.sys.types._
+import scala.scalanative.posix.time.timespec
+import scala.scalanative.unsafe._
 
 // SUSv2 version is used for compatibility
 // see http://pubs.opengroup.org/onlinepubs/007908799/xsh/threads.html

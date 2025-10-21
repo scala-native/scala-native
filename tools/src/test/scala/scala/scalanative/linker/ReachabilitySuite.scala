@@ -1,17 +1,19 @@
 package scala.scalanative
 package linker
 
-import org.junit.Test
-import org.junit.Assert._
-
 import java.io.File
 import java.nio.file.{Files, Path, Paths}
-import scalanative.util.Scope
-import scalanative.build.{ScalaNative, Logger, Discover}
-import scala.concurrent._
+
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent._
 import scala.concurrent.duration._
+
+import org.junit.Assert._
+import org.junit.Test
+
 import scala.scalanative.buildinfo.ScalaNativeBuildInfo
+import scalanative.build.{Discover, Logger, ScalaNative}
+import scalanative.util.Scope
 
 trait ReachabilitySuite {
 

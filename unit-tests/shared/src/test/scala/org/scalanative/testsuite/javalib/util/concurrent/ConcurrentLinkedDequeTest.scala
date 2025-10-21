@@ -12,13 +12,11 @@
 package org.scalanative.testsuite.javalib.util.concurrent
 
 import java.util
-import java.util.{Arrays, Collection, NoSuchElementException}
-import java.util.{Random}
 import java.util.concurrent.ConcurrentLinkedDeque
+import java.util.{Arrays, Collection, NoSuchElementException, Random}
 
-import org.junit.Test
 import org.junit.Assert._
-import org.junit.Ignore
+import org.junit.{Ignore, Test}
 
 class ConcurrentLinkedDequeTest extends JSR166Test {
   import JSR166Test._

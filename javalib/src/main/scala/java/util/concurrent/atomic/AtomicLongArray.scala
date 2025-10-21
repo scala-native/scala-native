@@ -6,16 +6,17 @@
 
 package java.util.concurrent.atomic
 
+import java.util.Arrays
+import java.util.function.{LongBinaryOperator, LongUnaryOperator}
+
 import scala.annotation.tailrec
 import scala.language.implicitConversions
+
 import scala.scalanative.annotation.alwaysinline
-import scala.scalanative.unsafe._
 import scala.scalanative.libc.stdatomic.AtomicLongLong
 import scala.scalanative.libc.stdatomic.memory_order._
-
-import java.util.function.{LongBinaryOperator, LongUnaryOperator}
-import java.util.Arrays
 import scala.scalanative.runtime.LongArray
+import scala.scalanative.unsafe._
 
 @SerialVersionUID(-2308431214976778248L)
 class AtomicLongArray extends Serializable {

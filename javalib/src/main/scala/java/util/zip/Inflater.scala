@@ -1,11 +1,12 @@
 package java.util.zip
 
-import scala.scalanative.unsigned._
-import scala.scalanative.unsafe._
-import scala.scalanative.libc._
+import java.nio.charset.StandardCharsets
+
 import scala.scalanative.ffi.zlib
 import scala.scalanative.ffi.zlibOps._
-import java.nio.charset.StandardCharsets
+import scala.scalanative.libc._
+import scala.scalanative.unsafe._
+import scala.scalanative.unsigned._
 
 // Ported from Apache Harmony
 

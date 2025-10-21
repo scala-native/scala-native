@@ -2,8 +2,8 @@ package scala.scalanative.runtime.dwarf
 
 import scala.collection.mutable
 
-import scalanative.unsigned._
 import scalanative.unsafe._
+import scalanative.unsigned._
 
 private[runtime] object DWARF {
   implicit val endi: Endianness = Endianness.LITTLE

@@ -1,14 +1,15 @@
 package scala.scalanative
 package unsafe
 
-import org.junit.Test
-import org.junit.Assert._
-
 import java.nio.charset.Charset
+
+import org.junit.Assert._
+import org.junit.Test
+
 import scalanative.libc.string._
-import scalanative.unsigned._
 // Scala 2.13.7 needs explicit import for implicit conversions
 import scalanative.unsafe.Ptr.ptrToCArray
+import scalanative.unsigned._
 
 class CStringTest {
 

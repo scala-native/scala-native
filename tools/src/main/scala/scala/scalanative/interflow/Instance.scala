@@ -2,6 +2,7 @@ package scala.scalanative
 package interflow
 
 import java.util.Arrays
+
 import scalanative.linker.Class
 
 private[interflow] sealed abstract class Instance(implicit

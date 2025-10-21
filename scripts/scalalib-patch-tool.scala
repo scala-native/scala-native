@@ -2,11 +2,12 @@
 //> using dep "com.lihaoyi::os-lib:0.11.5"
 //> using dep "com.lihaoyi::mainargs:0.7.6"
 
-import com.github.difflib.{DiffUtils, UnifiedDiffUtils}
-import os._
-import mainargs._
-
 import scala.util._
+
+import com.github.difflib.{DiffUtils, UnifiedDiffUtils}
+
+import mainargs._
+import os._
 
 val ignoredFiles = {
   val scala = os.rel / "scala"

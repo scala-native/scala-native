@@ -13,13 +13,13 @@ package atomic
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater
 
-import org.junit._
 import org.junit.Assert._
+import org.junit._
 
-import scala.scalanative.runtime.Intrinsics.classFieldRawPtr
-import scala.scalanative.runtime.{RawPtr, fromRawPtr}
 import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.libc.stdatomic.{AtomicInt, memory_order}
+import scala.scalanative.runtime.Intrinsics.classFieldRawPtr
+import scala.scalanative.runtime.{RawPtr, fromRawPtr}
 
 object AtomicIntegerFieldUpdaterTest {
   class IntrinsicBasedImpl[T <: AnyRef](atomicRef: T => AtomicInt)
@@ -39,8 +39,8 @@ object AtomicIntegerFieldUpdaterTest {
 }
 
 class AtomicIntegerFieldUpdaterTest extends JSR166Test {
-  import JSR166Test._
   import AtomicIntegerFieldUpdaterTest._
+  import JSR166Test._
 
   @volatile var x = 0
   @volatile protected var protectedField = 0

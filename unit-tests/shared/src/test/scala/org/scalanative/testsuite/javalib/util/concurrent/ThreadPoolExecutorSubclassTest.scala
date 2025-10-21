@@ -8,16 +8,15 @@
 
 package org.scalanative.testsuite.javalib.util.concurrent
 
-import java.util.concurrent.TimeUnit._
 import java.util
 import java.util._
-import java.util.Collections
+import java.util.concurrent.TimeUnit._
 import java.util.concurrent._
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.locks._
 
-import org.junit._
 import org.junit.Assert._
+import org.junit._
 
 import JSR166Test._
 

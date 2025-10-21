@@ -1,25 +1,28 @@
 package build
 
-import sbt._
 import sbt.Keys._
+import sbt._
 import sbt.nio.Keys.fileTreeView
+
+import java.io.File
+import java.util.Locale
+
+import scala.collection.mutable
+
+import com.jsuereth.sbtpgp.PgpKeys
+import com.jsuereth.sbtpgp.PgpKeys.publishSigned
 import com.typesafe.tools.mima.core._
 import com.typesafe.tools.mima.plugin.MimaPlugin.autoImport._
-import com.jsuereth.sbtpgp.PgpKeys.publishSigned
-import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport._
 import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
 
 // Hack warning: special object mimicking build-info plugin outputs, defined in project/ScalaNativeBuildInfo
 import scala.scalanative.ScalaNativeBuildInfo
+import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport._
+
 import sbtbuildinfo.BuildInfoPlugin.autoImport._
-import ScriptedPlugin.autoImport._
-import com.jsuereth.sbtpgp.PgpKeys
 
-import scala.collection.mutable
 import MyScalaNativePlugin.isGeneratingForIDE
-
-import java.io.File
-import java.util.Locale
+import ScriptedPlugin.autoImport._
 
 object Settings {
   lazy val fetchScalaSource = taskKey[File](

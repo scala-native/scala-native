@@ -5,7 +5,10 @@
 
 package org.scalanative.testsuite.javalib.util
 
-import language.implicitConversions
+import java.util.{Arrays, Comparator}
+import java.{lang => jl}
+
+import scala.reflect.ClassTag
 
 import org.junit.Assert._
 import org.junit.Assume._
@@ -14,10 +17,7 @@ import org.junit.Test
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform._
 
-import java.{lang => jl}
-import java.util.{Arrays, Comparator}
-
-import scala.reflect.ClassTag
+import language.implicitConversions
 
 object ArraysTest extends ArraysTest
 

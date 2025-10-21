@@ -3,10 +3,12 @@ package codegen
 
 import java.io.{ByteArrayOutputStream, File, ObjectOutputStream, PrintWriter}
 import java.nio.ByteBuffer
-import java.nio.file.{Path, Paths, Files}
+import java.nio.file.{Files, Path, Paths}
+
 import scala.collection.concurrent.TrieMap
 import scala.io.Source
 import scala.language.implicitConversions
+
 import scala.scalanative.build.Build
 
 private[codegen] class IncrementalCodeGenContext(config: build.Config) {

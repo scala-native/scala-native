@@ -1,13 +1,15 @@
 package scala.scalanative
 package codegen
 
-import scala.scalanative.io.VirtualDirectory
+import java.io.IOException
 import java.nio.file._
 import java.nio.file.attribute.BasicFileAttributes
-import scala.collection.mutable
-import scala.collection.concurrent.TrieMap
+
 import scala.annotation.nowarn
-import java.io.IOException
+import scala.collection.concurrent.TrieMap
+import scala.collection.mutable
+
+import scala.scalanative.io.VirtualDirectory
 
 private[codegen] class SourceCodeCache(config: build.Config) {
   lazy val sourceCodeDir = {

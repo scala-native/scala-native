@@ -1,15 +1,14 @@
 package scala.scalanative
 package unsafe
 
-import org.junit.{Test, BeforeClass}
 import org.junit.Assert._
 import org.junit.Assume._
-
-import scalanative.unsigned._
-import scalanative.unsafe._
-import scalanative.libc.{stdio, stdlib, string}
+import org.junit.{BeforeClass, Test}
 
 import scala.scalanative.junit.utils.AssumesHelper._
+import scalanative.libc.{stdio, stdlib, string}
+import scalanative.unsafe._
+import scalanative.unsigned._
 
 class CVarArgTest {
   def vatest(cstr: CString, output: String)(

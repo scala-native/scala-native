@@ -1,14 +1,12 @@
 package java.nio.channels
 
-import java.io.{RandomAccessFile, FileNotFoundException}
-
-import java.nio.{ByteBuffer, MappedByteBuffer}
+import java.io.{FileNotFoundException, RandomAccessFile}
 import java.nio.channels.spi.AbstractInterruptibleChannel
 import java.nio.file._
 import java.nio.file.attribute.FileAttribute
-import java.{lang => jl}
-
+import java.nio.{ByteBuffer, MappedByteBuffer}
 import java.util.{HashSet, Set}
+import java.{lang => jl}
 
 abstract class FileChannel protected ()
     extends AbstractInterruptibleChannel

@@ -2,15 +2,15 @@ package org.scalanative.testsuite.javalib.util.zip
 
 // Ported from Apache Harmony
 
-import org.junit.Before
-import org.junit.Test
-import org.junit.Assert._
-
-import org.scalanative.testsuite.utils.AssertThrows.assertThrows
-import scala.scalanative.junit.utils.AssumesHelper._
-
 import java.io._
 import java.util.zip._
+
+import org.junit.Assert._
+import org.junit.{Before, Test}
+
+import org.scalanative.testsuite.utils.AssertThrows.assertThrows
+
+import scala.scalanative.junit.utils.AssumesHelper._
 
 import ZipBytes.{brokenManifestBytes, zipFile}
 

@@ -6,12 +6,14 @@
 
 package java.util.concurrent
 
-import java.util.concurrent.TimeUnit._
 import java.util
 import java.util._
+import java.util.concurrent.TimeUnit._
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.locks._
+
 import scala.annotation.tailrec
+
 import scala.scalanative.annotation.safePublish
 
 object ScheduledThreadPoolExecutor {

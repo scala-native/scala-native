@@ -1,27 +1,19 @@
 package org.scalanative.testsuite.posixlib
 
-import org.junit.Test
+import java.{util => ju}
+
 import org.junit.Assert._
 import org.junit.Assume._
-import org.junit.{BeforeClass, AfterClass}
+import org.junit.{AfterClass, BeforeClass, Test}
 
 import scala.scalanative.meta.LinktimeInfo.{
-  isLinux,
-  isMac,
-  isWindows,
-  isOpenBSD,
-  isNetBSD
+  isLinux, isMac, isNetBSD, isOpenBSD, isWindows
 }
-
+import scala.scalanative.posix.langinfo._
+import scala.scalanative.posix.locale.{LC_ALL, setlocale}
+import scala.scalanative.posix.{stdlib, string}
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
-
-import scala.scalanative.posix.langinfo._
-import scala.scalanative.posix.locale.{setlocale, LC_ALL}
-import scala.scalanative.posix.stdlib
-import scala.scalanative.posix.string
-
-import java.{util => ju}
 
 object LanginfoTest {
   private var savedLocale: Option[CString] = None

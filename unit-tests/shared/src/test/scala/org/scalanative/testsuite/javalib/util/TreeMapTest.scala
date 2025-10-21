@@ -2,18 +2,18 @@
 
 package org.scalanative.testsuite.javalib.util
 
-import java.{util => ju}
 import java.util.function.{BiConsumer, BiFunction, Function}
+import java.{util => ju}
 
-import org.junit.Test
+import scala.reflect.ClassTag
+
 import org.junit.Assert._
 import org.junit.Assume._
+import org.junit.Test
 
 import org.scalanative.testsuite.javalib.util.concurrent.ConcurrentMapFactory
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform._
-
-import scala.reflect.ClassTag
 
 import Utils._
 

@@ -2,8 +2,8 @@ package scala.scalanative
 package unsafe
 
 import scalanative.annotation.alwaysinline
-import scalanative.runtime.RawPtr
 import scalanative.runtime.Intrinsics._
+import scalanative.runtime.RawPtr
 
 final class CArray[T, N <: Nat] private[scalanative] (
     private[scalanative] val rawptr: RawPtr

@@ -3,8 +3,8 @@ package java.net
 // Ported from Scala.js, commit: 617fc8e, dated 2022-03-07
 
 import java.io.UnsupportedEncodingException
-import java.nio.{CharBuffer, ByteBuffer}
 import java.nio.charset.{Charset, CharsetDecoder}
+import java.nio.{ByteBuffer, CharBuffer}
 
 object URLDecoder {
 

@@ -2,17 +2,17 @@
 
 package org.scalanative.testsuite.javalib.util
 
-import java.{util => ju}
 import java.util.function.{BiConsumer, BiFunction, Function}
-
-import org.junit.Test
-import org.junit.Assert._
-import org.junit.Assume._
-
-import org.scalanative.testsuite.utils.AssertThrows.{assertThrows, _}
-import org.scalanative.testsuite.utils.Platform._
+import java.{util => ju}
 
 import scala.reflect.ClassTag
+
+import org.junit.Assert.{assertThrows => _, _}
+import org.junit.Assume._
+import org.junit.Test
+
+import org.scalanative.testsuite.utils.AssertThrows._
+import org.scalanative.testsuite.utils.Platform._
 
 import Utils._
 

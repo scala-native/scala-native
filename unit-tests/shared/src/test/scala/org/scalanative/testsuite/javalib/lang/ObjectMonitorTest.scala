@@ -1,12 +1,15 @@
 package org.scalanative.testsuite.javalib.lang
 
-import org.junit.{BeforeClass, Test}
+import java.util.concurrent.atomic.AtomicInteger
+
 import org.junit.Assert._
 import org.junit.Assume._
+import org.junit.{BeforeClass, Test}
+
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform
+
 import scala.scalanative.junit.utils.AssumesHelper
-import java.util.concurrent.atomic.AtomicInteger
 
 object ObjectMonitorTest {
   @BeforeClass def checkRuntime(): Unit = {

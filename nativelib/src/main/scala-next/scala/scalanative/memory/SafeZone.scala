@@ -1,17 +1,16 @@
 package scala.scalanative.memory
 
-import language.experimental.captureChecking
-import scalanative.unsigned._
 import scala.annotation.implicitNotFound
+
+import scala.scalanative.runtime.SafeZoneAllocator.allocate
+import scala.scalanative.runtime.{
+  Intrinsics, RawPtr, RawSize, SafeZoneAllocator
+}
 import scala.scalanative.unsafe.CSize
 import scala.scalanative.unsigned.USize
-import scala.scalanative.runtime.{
-  RawPtr,
-  RawSize,
-  SafeZoneAllocator,
-  Intrinsics
-}
-import scala.scalanative.runtime.SafeZoneAllocator.allocate
+import scalanative.unsigned._
+
+import language.experimental.captureChecking
 
 @implicitNotFound("Given method requires an implicit zone.")
 trait SafeZone {

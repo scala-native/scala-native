@@ -1,11 +1,12 @@
 package scala.scalanative
 
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
+
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
-import scalanative.unsigned._
 import scalanative.unsafe._
+import scalanative.unsigned._
 
 class IssuesTestScala2 {
 

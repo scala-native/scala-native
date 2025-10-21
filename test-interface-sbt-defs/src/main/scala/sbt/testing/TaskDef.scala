@@ -1,7 +1,7 @@
 package sbt.testing
 
-import java.util.Arrays
 import java.io.Serializable
+import java.util.Arrays
 
 /** A bundle of information used to request a <code>Task</code> from a test
  *  framework.

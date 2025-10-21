@@ -7,11 +7,11 @@
 package org.scalanative.testsuite.javalib.util.concurrent
 package atomic
 
-import java.util.concurrent.atomic._
 import java.lang.{Long => jlLong}
+import java.util.concurrent.atomic._
 
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 
 object Atomic8Test {
   def addLong17(x: Long): Long = x + 17

@@ -1,10 +1,8 @@
 package scala.scalanative.posix
 
-import scalanative.unsafe._
-
-import scalanative.posix.sys.socket
-
 import scala.scalanative.meta.LinktimeInfo
+import scalanative.posix.sys.socket
+import scalanative.unsafe._
 
 /** netdb.h for Scala
  *  @see

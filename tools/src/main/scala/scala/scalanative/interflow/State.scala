@@ -2,9 +2,10 @@ package scala.scalanative
 package interflow
 
 import scala.collection.mutable
-import scalanative.util.unreachable
-import scalanative.linker._
+
 import scalanative.codegen.Lower
+import scalanative.linker._
+import scalanative.util.unreachable
 
 private[interflow] final class State(val blockId: nir.Local)(
     preserveDebugInfo: Boolean

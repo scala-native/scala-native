@@ -1,22 +1,24 @@
 package org.scalanative.testsuite.javalib.lang
 
-import java.util.concurrent.TimeUnit
 import java.io._
-import java.nio.file._
 import java.nio.charset.StandardCharsets
+import java.nio.file._
+import java.util.concurrent.TimeUnit
 
-import scala.io.Source
-
-import org.junit._
-import org.junit.Assert._
-import org.junit.Assume._
-import org.junit.Ignore
-
-import org.scalanative.testsuite.utils.Platform, Platform._
-import scala.scalanative.junit.utils.AssumesHelper._
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent._
 import scala.concurrent.duration._
-import scala.concurrent.ExecutionContext.Implicits.global
+import scala.io.Source
+
+import org.junit.Assert._
+import org.junit.Assume._
+import org.junit._
+
+import org.scalanative.testsuite.utils.Platform
+
+import scala.scalanative.junit.utils.AssumesHelper._
+
+import Platform._
 
 object ProcessTestOnJDK9 {
   @BeforeClass

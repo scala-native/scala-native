@@ -10,14 +10,15 @@
 package org.scalanative.testsuite.javalib.util.concurrent
 package locks
 
-import org.junit.Assert._
-import org.junit.{Test, Ignore}
-import JSR166Test._
-
-import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.locks.LockSupport
+
+import org.junit.Assert._
+import org.junit.{Ignore, Test}
+
+import JSR166Test._
 
 object LockSupportTest {
 

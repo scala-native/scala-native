@@ -1,7 +1,7 @@
 package java.nio.file
 
-import java.util.regex.Pattern
 import java.nio.file.glob.GlobPattern
+import java.util.regex.Pattern
 
 object PathMatcherImpl {
   def apply(syntaxAndPattern: String): PathMatcher = {

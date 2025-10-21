@@ -1,12 +1,13 @@
 package java.lang
 
-import java.util.{Arrays, Map, HashMap, List, ArrayList}
-import java.util.ScalaOps._
 import java.io.PrintStream
 import java.lang.Thread.UncaughtExceptionHandler
 import java.lang.ref.WeakReference
+import java.util.ScalaOps._
+import java.util.{ArrayList, Arrays, HashMap, List, Map}
 
 import scala.annotation.tailrec
+
 import scala.scalanative.runtime.NativeThread
 import scala.scalanative.runtime.javalib.Proxy
 

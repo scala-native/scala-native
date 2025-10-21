@@ -8,6 +8,7 @@ package java.util.concurrent.locks
 
 import java.util
 import java.util.concurrent.TimeUnit
+
 import scala.scalanative.annotation.safePublish
 
 object ReentrantReadWriteLock {

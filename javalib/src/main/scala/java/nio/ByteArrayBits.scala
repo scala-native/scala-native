@@ -1,7 +1,7 @@
 package java.nio
 
+import scala.scalanative.runtime.Intrinsics.{castIntToRawSize, elemRawPtr}
 import scala.scalanative.runtime.{Intrinsics, toRawPtr}
-import scala.scalanative.runtime.Intrinsics.{elemRawPtr, castIntToRawSize}
 import scala.scalanative.unsafe._
 
 private[nio] object ByteArrayBits {

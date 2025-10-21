@@ -1,8 +1,8 @@
 package scala.scalanative
 package nir
 
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 
 import Sig.Scope.Private
 

@@ -2,14 +2,13 @@ package org.scalanative.testsuite.javalib.util.jar
 
 // Ported from Apache Harmony
 
-import java.util.jar._
 import java.io.{ByteArrayOutputStream, FileOutputStream, InputStream}
 import java.nio.file.Files
+import java.util.jar._
 import java.util.zip.ZipEntry
 
-import org.junit.Ignore
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.{Ignore, Test}
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 

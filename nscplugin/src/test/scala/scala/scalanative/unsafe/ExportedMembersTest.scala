@@ -2,11 +2,11 @@ package scala.scalanative.unsafe
 
 import java.nio.file.Files
 
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 
-import scala.scalanative.api.CompilationFailedException
 import scala.scalanative.NIRCompiler
+import scala.scalanative.api.CompilationFailedException
 
 class ExportedMembersTest {
 

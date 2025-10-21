@@ -7,10 +7,12 @@
  */
 package org.scalanative.testsuite.javalib.lang
 
-import org.junit.{Test, Ignore, BeforeClass}
 import org.junit.Assert._
-import scala.scalanative.junit.utils.AssumesHelper
+import org.junit.{BeforeClass, Ignore, Test}
+
 import org.scalanative.testsuite.javalib.util.concurrent.JSR166Test
+
+import scala.scalanative.junit.utils.AssumesHelper
 
 import JSR166Test._
 

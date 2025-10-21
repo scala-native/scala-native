@@ -4,16 +4,12 @@ package java.util.random
  * attributions and algorithm hints.
  */
 
-import java.{lang => jl}
-
 import java.nio.ByteBuffer
-
-import java.util.{Spliterator, Spliterators}
 import java.util.Spliterators.AbstractSpliterator
-
 import java.util.function.{Consumer, Supplier}
-
 import java.util.stream.{Stream, StreamSupport}
+import java.util.{Spliterator, Spliterators}
+import java.{lang => jl}
 
 private final class Xoshiro256PlusPlus private[random] (
     // XBG state, Blacknam & Vigna: "not everwhere zero"

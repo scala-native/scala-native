@@ -2,11 +2,11 @@
 
 package org.scalanative.testsuite.javalib.util.concurrent
 
+import java.util.concurrent.{ConcurrentHashMap => CHM}
+import java.{util => ju}
+
 import scala.collection.mutable
 import scala.reflect.ClassTag
-
-import java.{util => ju}
-import java.util.concurrent.{ConcurrentHashMap => CHM}
 
 import org.junit.Assert._
 import org.junit.Test

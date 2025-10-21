@@ -2,8 +2,8 @@ package scala.scalanative
 
 package posix
 
-import scalanative.unsafe._
 import scalanative.posix.stdio.va_list
+import scalanative.unsafe._
 
 /* Open Group 2018 (X/Open System Interfaces (XSI)
  * Reference:

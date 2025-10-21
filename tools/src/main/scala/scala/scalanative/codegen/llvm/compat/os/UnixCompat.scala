@@ -3,9 +3,9 @@ package codegen.llvm
 package compat.os
 
 import scala.scalanative.codegen.llvm.AbstractCodeGen
+import scala.scalanative.codegen.llvm.Metadata.DILocation
 import scala.scalanative.nir.Defn.Define.DebugInfo
 import scala.scalanative.util.ShowBuilder
-import scala.scalanative.codegen.llvm.Metadata.DILocation
 
 private[codegen] class UnixCompat(codegen: AbstractCodeGen)
     extends OsCompat(codegen) {

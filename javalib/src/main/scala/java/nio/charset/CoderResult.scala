@@ -1,10 +1,9 @@
 package java.nio.charset
 
-import scala.annotation.switch
-
-import scala.collection.mutable
-
 import java.nio._
+
+import scala.annotation.switch
+import scala.collection.mutable
 
 class CoderResult private (kind: Int, _length: Int) {
   import CoderResult._

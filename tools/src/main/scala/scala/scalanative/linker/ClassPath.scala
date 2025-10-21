@@ -1,17 +1,16 @@
 package scala.scalanative
 package linker
 
+import java.io.{BufferedReader, ByteArrayInputStream, InputStreamReader}
 import java.nio.file.Path
-import java.io.ByteArrayInputStream
-import java.io.BufferedReader
-import java.io.InputStreamReader
 
 import scala.collection.mutable
-import scala.scalanative.io.VirtualDirectory
-import scala.scalanative.nir.serialization.deserializeBinary
-import scala.scalanative.nir.serialization.{Prelude => NirPrelude}
-import scala.scalanative.nir.serialization.NirDeserializationException
+
 import scala.scalanative.build.Logger
+import scala.scalanative.io.VirtualDirectory
+import scala.scalanative.nir.serialization.{
+  NirDeserializationException, Prelude => NirPrelude, deserializeBinary
+}
 
 sealed trait ClassPath {
 

@@ -1,6 +1,7 @@
 package scala.scalanative
 
 import org.junit.Assert._
+
 import scala.scalanative.linker.ReachabilityAnalysis
 
 package object optimizer {

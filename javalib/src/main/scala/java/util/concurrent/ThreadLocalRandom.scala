@@ -22,8 +22,8 @@
 package java.util.concurrent
 
 import java.util._
-import java.util.function._
 import java.util.concurrent.atomic._
+import java.util.function._
 
 import scala.scalanative.annotation.safePublish
 import scala.scalanative.meta.LinktimeInfo

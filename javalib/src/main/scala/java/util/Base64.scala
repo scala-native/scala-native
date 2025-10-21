@@ -2,11 +2,11 @@ package java.util
 
 // Ported from Scala.js
 
-import scala.annotation.tailrec
-
 import java.io._
-import java.nio.charset.StandardCharsets
 import java.nio.ByteBuffer
+import java.nio.charset.StandardCharsets
+
+import scala.annotation.tailrec
 
 object Base64 {
 

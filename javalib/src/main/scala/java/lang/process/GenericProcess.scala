@@ -1,12 +1,11 @@
 package java.lang.process
 
-import scala.scalanative.meta.LinktimeInfo
-
 import java.io.{FileDescriptor, InputStream, OutputStream}
-import java.util.Optional
 import java.util.concurrent.{CompletableFuture, TimeUnit}
-import java.util.function
 import java.util.stream.Stream
+import java.util.{Optional, function}
+
+import scala.scalanative.meta.LinktimeInfo
 
 private[process] abstract class GenericProcess(val handle: GenericProcessHandle)
     extends Process {

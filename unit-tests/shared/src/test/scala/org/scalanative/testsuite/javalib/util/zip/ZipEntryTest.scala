@@ -2,19 +2,17 @@ package org.scalanative.testsuite.javalib.util.zip
 
 // Ported from Apache Harmony. Contains extensive changes for Scala Native.
 
-import org.junit.Test
-import org.junit.Assert._
-import org.junit.AfterClass
-import org.junit.Ignore
+import java.util.Arrays
+import java.util.zip._
+import java.{lang => jl}
 
-import scala.scalanative.junit.utils.AssumesHelper._
+import org.junit.Assert._
+import org.junit.{AfterClass, Ignore, Test}
+
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform
 
-import java.{lang => jl}
-
-import java.util.Arrays
-import java.util.zip._
+import scala.scalanative.junit.utils.AssumesHelper._
 
 /* Note: JDK 23 non-compliance
  *

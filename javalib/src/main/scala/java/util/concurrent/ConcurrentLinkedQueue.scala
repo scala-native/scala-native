@@ -6,24 +6,19 @@
 
 package java.util.concurrent
 
-import java.lang.invoke.MethodHandles
-import java.lang.invoke.VarHandle
-import java.util._
-import java.util.NoSuchElementException
-import java.util.Objects
-import java.util.Spliterator
-import java.util.Spliterators
-import java.util.function.Consumer
-import java.util.function.Predicate
 import java.io.{ObjectInputStream, ObjectOutputStream}
+import java.lang.invoke.{MethodHandles, VarHandle}
+import java.util._
+import java.util.function.{Consumer, Predicate}
 
-import scala.scalanative.unsafe._
-import scala.scalanative.runtime.fromRawPtr
-import scala.scalanative.runtime.Intrinsics.classFieldRawPtr
-import scala.scalanative.libc.stdatomic._
-import scala.scalanative.libc.stdatomic.memory_order.memory_order_release
 import scala.scalanative.annotation.alwaysinline
-import scala.scalanative.libc.stdatomic.memory_order.memory_order_relaxed
+import scala.scalanative.libc.stdatomic._
+import scala.scalanative.libc.stdatomic.memory_order.{
+  memory_order_relaxed, memory_order_release
+}
+import scala.scalanative.runtime.Intrinsics.classFieldRawPtr
+import scala.scalanative.runtime.fromRawPtr
+import scala.scalanative.unsafe._
 
 @SerialVersionUID(196745693267521676L)
 object ConcurrentLinkedQueue {

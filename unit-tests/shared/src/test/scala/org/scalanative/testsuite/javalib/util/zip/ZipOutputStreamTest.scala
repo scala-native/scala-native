@@ -1,17 +1,15 @@
 package org.scalanative.testsuite.javalib.util.zip
 
-import org.junit.Test
+import java.io.{BufferedOutputStream, FileOutputStream, IOException}
+import java.nio.file.Files
+import java.util.Arrays
+import java.util.zip.{ZipEntry, ZipFile, ZipOutputStream}
+
 import org.junit.Assert._
-import org.junit.BeforeClass
+import org.junit.{BeforeClass, Test}
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform
-
-import java.io.{BufferedOutputStream, IOException, FileOutputStream}
-import java.nio.file.Files
-import java.util.Arrays
-
-import java.util.zip.{ZipEntry, ZipFile, ZipOutputStream}
 
 object ZipOutputStreamTest {
 

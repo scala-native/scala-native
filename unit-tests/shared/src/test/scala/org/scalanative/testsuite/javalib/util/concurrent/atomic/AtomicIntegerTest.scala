@@ -11,8 +11,8 @@ package atomic
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import org.junit.{Test, Ignore}
 import org.junit.Assert._
+import org.junit.{Ignore, Test}
 
 class AtomicIntegerTest extends JSR166Test {
   final val VALUES =

@@ -2,11 +2,11 @@
 
 package org.scalanative.testsuite.javalib.util
 
-import org.junit.Test
-import org.junit.Assert._
-
-import java.{util => ju}
 import java.util.function.Consumer
+import java.{util => ju}
+
+import org.junit.Assert._
+import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 

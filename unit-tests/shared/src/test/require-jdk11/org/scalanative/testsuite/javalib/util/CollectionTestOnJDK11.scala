@@ -1,9 +1,9 @@
 package org.scalanative.testsuite.javalib.util
 
-import org.junit.Test
-import org.junit.Assert._
-
 import java.util.ArrayList
+
+import org.junit.Assert._
+import org.junit.Test
 
 class CollectionTestOnJDK11 {
   /* Test the documented Collections#toArray(IntFunction),

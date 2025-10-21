@@ -1,14 +1,15 @@
 package scala.scalanative
 
 import java.io._
-import java.nio.file.{Files, Path}
 import java.nio.charset.StandardCharsets
-import dotty.tools.io.AbstractFile
+import java.nio.file.{Files, Path}
+
 import dotty.tools.dotc._
-import dotty.tools.dotc.util._
-import dotty.tools.dotc.reporting._
 import dotty.tools.dotc.config._
 import dotty.tools.dotc.core.Contexts._
+import dotty.tools.dotc.reporting._
+import dotty.tools.dotc.util._
+import dotty.tools.io.AbstractFile
 
 /** Helper class to compile snippets of code.
  */

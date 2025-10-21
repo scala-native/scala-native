@@ -11,13 +11,15 @@
 package org.scalanative.testsuite.javalib.util.concurrent
 package atomic
 
-import org.junit.Assert._
-import JSR166Test._
-
 import java.util.concurrent.atomic._
+
+import org.junit.Assert._
+
+import scala.scalanative.libc.stdatomic.{AtomicInt, AtomicLongLong, AtomicRef}
 import scala.scalanative.runtime.Intrinsics.classFieldRawPtr
 import scala.scalanative.runtime.fromRawPtr
-import scala.scalanative.libc.stdatomic.{AtomicInt, AtomicLongLong, AtomicRef}
+
+import JSR166Test._
 
 /** This source file contains test code deliberately not contained in the same
  *  source file as the tests that use them, to avoid making them nestmates,

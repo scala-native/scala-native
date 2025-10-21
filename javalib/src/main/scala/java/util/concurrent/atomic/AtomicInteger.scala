@@ -7,15 +7,15 @@
 package java.util.concurrent.atomic
 
 import java.io.Serializable
+import java.util.function.{IntBinaryOperator, IntUnaryOperator}
+
 import scala.annotation.tailrec
+
 import scala.scalanative.annotation.alwaysinline
-import scala.scalanative.unsafe._
 import scala.scalanative.libc.stdatomic.AtomicInt
 import scala.scalanative.libc.stdatomic.memory_order._
-import scala.scalanative.runtime.{fromRawPtr}
-import java.util.function.IntBinaryOperator
-import java.util.function.IntUnaryOperator
-import scala.scalanative.runtime.Intrinsics
+import scala.scalanative.runtime.{Intrinsics, fromRawPtr}
+import scala.scalanative.unsafe._
 
 @SerialVersionUID(6214790243416807050L)
 class AtomicInteger(private var value: Int) extends Number with Serializable {

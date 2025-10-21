@@ -1,31 +1,23 @@
 package java.nio
 
-import scala.scalanative.meta.LinktimeInfo.isWindows
+import java.io.{FileDescriptor, IOException}
+import java.nio.channels.FileChannel
+import java.nio.channels.FileChannel.MapMode
 
 import scala.scalanative.annotation.alwaysinline
-
-import scala.scalanative.libc.errno
-import scala.scalanative.libc.string
+import scala.scalanative.libc.{errno, string}
+import scala.scalanative.meta.LinktimeInfo.isWindows
 import scala.scalanative.posix.sys.mman._
-import scala.scalanative.posix.unistd.{sysconf, _SC_PAGESIZE}
-
+import scala.scalanative.posix.unistd.{_SC_PAGESIZE, sysconf}
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
-
-import scala.scalanative.windows.WinBaseApi.CreateFileMappingA
-import scala.scalanative.windows.WinBaseApiExt._
-import scala.scalanative.windows.MemoryApi._
 import scala.scalanative.windows.ErrorHandlingApi.GetLastError
+import scala.scalanative.windows.MemoryApi._
 import scala.scalanative.windows.SysInfoApi._
 import scala.scalanative.windows.SysInfoApiOps._
+import scala.scalanative.windows.WinBaseApi.CreateFileMappingA
+import scala.scalanative.windows.WinBaseApiExt._
 import scala.scalanative.windows._
-
-import java.io.IOException
-import java.io.FileDescriptor
-
-import java.nio.channels.FileChannel.MapMode
-import java.nio.channels.FileChannel
-import scala.scalanative.windows.SysInfoApi.GetSystemInfo
 
 private class MappedByteBufferImpl(
     _capacity: Int,

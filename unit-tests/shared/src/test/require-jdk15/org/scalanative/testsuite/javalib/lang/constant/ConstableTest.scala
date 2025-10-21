@@ -2,10 +2,10 @@
 
 package org.scalanative.testsuite.javalib.lang.constant
 
-import org.junit.Test
-import org.junit.Assert._
-
 import java.lang.constant.Constable
+
+import org.junit.Assert._
+import org.junit.Test
 
 class ConstableTest {
 

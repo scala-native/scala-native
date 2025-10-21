@@ -2,8 +2,8 @@ package scala.scalanative
 package codegen
 package llvm
 
-import scala.language.implicitConversions
 import scala.collection.mutable
+import scala.language.implicitConversions
 private[codegen] sealed trait Metadata
 private[codegen] object Metadata {
   case class Id(value: Int) extends AnyVal {

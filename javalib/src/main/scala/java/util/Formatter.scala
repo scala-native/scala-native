@@ -9,13 +9,12 @@ package java.util
 
 import java.io._
 import java.lang.{
-  Double => JDouble,
-  Boolean => JBoolean,
-  StringBuilder => JStringBuilder
+  Boolean => JBoolean, Double => JDouble, StringBuilder => JStringBuilder
 }
 import java.math.{BigDecimal, BigInteger}
 import java.nio.CharBuffer
 import java.nio.charset.Charset
+
 import scala.annotation.{switch, tailrec}
 
 final class Formatter private (

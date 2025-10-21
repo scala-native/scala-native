@@ -1,10 +1,12 @@
 package scala.scalanative.unsigned
 
-import org.junit.Test
-import org.junit.Assert._
-import scala.scalanative.unsafe._
 import scala.reflect.ClassTag
+
+import org.junit.Assert._
+import org.junit.Test
+
 import scala.scalanative.meta.LinktimeInfo.is32BitPlatform
+import scala.scalanative.unsafe._
 
 class UnsignedUniversalEqualityTest {
   private def testUniversalEquality[Signed: ClassTag, Unsigned: ClassTag](

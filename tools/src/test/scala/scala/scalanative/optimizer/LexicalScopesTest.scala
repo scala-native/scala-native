@@ -1,10 +1,11 @@
 package scala.scalanative
 package optimizer
 
-import org.junit.Test
-import org.junit.Assert._
-
 import scala.collection.mutable
+
+import org.junit.Assert._
+import org.junit.Test
+
 import scala.scalanative.build.NativeConfig
 import scala.scalanative.linker.ReachabilityAnalysis
 import scala.scalanative.nir.Defn.Define.DebugInfo.LexicalScope

@@ -1,19 +1,14 @@
 package org.scalanative.testsuite.javalib.util
 
-import org.junit.Test
+import java.util.{ArrayList, Arrays, Collections, LinkedList, Random}
+
 import org.junit.Assert._
-import org.junit.Ignore // FIXME
+import org.junit.{
+  Ignore, // FIXME
+  Test
+} // FIXME
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
-
-/* Keep Test import environment minimal. Import only the classes that are used.
- * Fewer chances for hidden and/or unintended interactions.
- */
-
-import java.util.Collections
-
-import java.util.{ArrayList, LinkedList}
-import java.util.{Arrays, Random}
 
 class CollectionsShuffleTest {
 

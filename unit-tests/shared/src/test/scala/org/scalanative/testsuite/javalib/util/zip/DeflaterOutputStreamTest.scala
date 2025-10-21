@@ -3,10 +3,11 @@ package org.scalanative.testsuite.javalib.util.zip
 import java.io._
 import java.util.zip._
 
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
+
 import scala.scalanative.junit.utils.AssumesHelper._
 
 class DeflaterOutputStreamTest {

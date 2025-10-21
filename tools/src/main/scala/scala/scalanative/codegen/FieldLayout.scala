@@ -5,7 +5,7 @@ import scalanative.linker.{Class, Field}
 
 private[codegen] class FieldLayout(cls: Class)(implicit meta: Metadata) {
 
-  import meta.layouts.{Object, ObjectHeader, ArrayHeader}
+  import meta.layouts.{ArrayHeader, Object, ObjectHeader}
   import meta.platform
 
   def index(fld: Field) = entries.indexOf(fld) + Object.ValuesOffset

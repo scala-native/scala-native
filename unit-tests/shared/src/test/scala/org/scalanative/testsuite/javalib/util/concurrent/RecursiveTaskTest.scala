@@ -5,12 +5,13 @@
  */
 package org.scalanative.testsuite.javalib.util.concurrent
 
+import java.util.HashSet
 import java.util.concurrent.TimeUnit._
 import java.util.concurrent._
-import java.util.HashSet
 
-import org.junit.{Test, Ignore}
 import org.junit.Assert._
+import org.junit.{Ignore, Test}
+
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 class RecursiveTaskTest extends JSR166Test {

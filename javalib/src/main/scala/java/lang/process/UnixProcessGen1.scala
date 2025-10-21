@@ -1,16 +1,17 @@
 package java.lang.process
 
 import java.io.{File, IOException}
-import java.util.concurrent.TimeUnit
-import java.util.ScalaOps._
 import java.util.ArrayList
+import java.util.ScalaOps._
+import java.util.concurrent.TimeUnit
 
-import scala.scalanative.unsigned._
-import scala.scalanative.unsafe._
 import scala.scalanative.libc.errno.errno
-import scala.scalanative.posix.{fcntl, sys, time, unistd, errno => e}
-import time._
+import scala.scalanative.posix.{errno => e, fcntl, sys, time, unistd}
+import scala.scalanative.unsafe._
+import scala.scalanative.unsigned._
+
 import sys.time._
+import time._
 
 private[process] class UnixProcessHandleGen1(
     override protected val _pid: CInt,

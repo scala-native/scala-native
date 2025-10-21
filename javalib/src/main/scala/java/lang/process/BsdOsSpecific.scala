@@ -1,7 +1,7 @@
 package java.lang.process
 
-import scala.scalanative.unsafe._
 import scala.scalanative.posix.time.timespec
+import scala.scalanative.unsafe._
 
 object BsdOsSpecific {
   // Beware: FreeBSD and other BSD layouts have not been tested.

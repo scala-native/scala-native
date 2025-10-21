@@ -1,13 +1,7 @@
 package org.scalanative.testsuite.javalib.lang
 
+import java.lang.Float.{floatToIntBits, floatToRawIntBits, intBitsToFloat}
 import java.lang._
-
-// Three tests ported from Scala.js javalib/lang/FloatTest.scala
-// commit: 217f3a3 dated: 2021-02-19
-//   isFinite()
-//   isInfinite()
-//   isNanTest()
-
 // Because this test is the java.lang package, an unqualified Float
 // is a java.lang.Float. Prior art used unqualified Float freely,
 // with that intent.  Scala.js JFloat is introduced to minimize changes
@@ -15,13 +9,10 @@ import java.lang._
 // are not changed. Joys of blending code bases.
 import java.lang.{Float => JFloat}
 
-import java.lang.Float.{floatToIntBits, floatToRawIntBits, intBitsToFloat}
-
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
-
 import org.scalanative.testsuite.utils.Platform.is32BitPlatform
 
 class FloatTest {

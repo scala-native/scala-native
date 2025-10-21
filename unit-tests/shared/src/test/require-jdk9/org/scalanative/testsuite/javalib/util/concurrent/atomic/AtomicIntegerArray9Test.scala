@@ -7,12 +7,12 @@
 package org.scalanative.testsuite.javalib.util.concurrent
 package atomic
 
-import JSR166Test._
-
-import org.junit.Test
-import org.junit.Assert._
-
 import java.util.concurrent.atomic.AtomicIntegerArray
+
+import org.junit.Assert._
+import org.junit.Test
+
+import JSR166Test._
 
 class AtomicIntegerArray9Test extends JSR166Test {
 

@@ -6,16 +6,15 @@
 
 package java.util
 
-import scala.annotation.tailrec
+import java.util.function._
+import java.util.stream.StreamSupport
+import java.{util => ju}
 
+import scala.annotation.tailrec
 import scala.reflect.ClassTag
 
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
-
-import java.{util => ju}
-import java.util.function._
-import java.util.stream.StreamSupport
 
 object Arrays extends ArraysJDK9Methods {
   @inline

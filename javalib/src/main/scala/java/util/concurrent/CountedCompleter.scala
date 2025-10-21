@@ -6,10 +6,11 @@
 // revision 1.72
 package java.util.concurrent
 
-import scala.scalanative.runtime.{Intrinsics, fromRawPtr}
-import scala.scalanative.libc.stdatomic.AtomicInt
 import scala.annotation.tailrec
+
 import scala.scalanative.annotation.safePublish
+import scala.scalanative.libc.stdatomic.AtomicInt
+import scala.scalanative.runtime.{Intrinsics, fromRawPtr}
 
 abstract class CountedCompleter[T] protected (
     @safePublish private[concurrent] final val completer: CountedCompleter[_],

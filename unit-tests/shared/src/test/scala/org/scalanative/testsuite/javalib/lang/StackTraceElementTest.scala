@@ -2,9 +2,9 @@ package org.scalanative.testsuite.javalib.lang
 
 import java.lang._
 
-import org.junit.{Test, BeforeClass}
 import org.junit.Assert._
 import org.junit.Assume._
+import org.junit.{BeforeClass, Test}
 
 import scala.scalanative.junit.utils.AssumesHelper
 

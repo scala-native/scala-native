@@ -31,19 +31,15 @@ package java.util.concurrent
  */
 
 import java.util
-
-import java.util.Objects
-import java.util.Iterator
-import java.util.{Spliterator, Spliterators}
-
 import java.util.function.Consumer
+import java.util.{Iterator, Objects, Spliterator, Spliterators}
 
-import scala.scalanative.unsafe._
-import scala.scalanative.runtime.fromRawPtr
-import scala.scalanative.runtime.Intrinsics.classFieldRawPtr
-import scala.scalanative.libc.stdatomic.{AtomicRef, PtrToAtomicRef}
 import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.libc.stdatomic.memory_order.memory_order_relaxed
+import scala.scalanative.libc.stdatomic.{AtomicRef, PtrToAtomicRef}
+import scala.scalanative.runtime.Intrinsics.classFieldRawPtr
+import scala.scalanative.runtime.fromRawPtr
+import scala.scalanative.unsafe._
 
 /** An unbounded concurrent {@linkplain Deque deque} based on linked nodes.
  *  Concurrent insertion, removal, and access operations execute safely across

@@ -8,8 +8,7 @@
 package scala.scalanative
 package regex
 
-import java.util.Arrays
-import java.util.Map
+import java.util.{Arrays, Map}
 import java.{lang => jl}
 
 import scala.annotation.switch

@@ -6,10 +6,10 @@
 
 package java.util.concurrent
 import java.util.concurrent.locks.LockSupport
-import scalanative.libc.stdatomic.{AtomicInt, AtomicRef}
-import scalanative.libc.stdatomic.memory_order._
 
-import scalanative.runtime.{fromRawPtr, Intrinsics}
+import scalanative.libc.stdatomic.memory_order._
+import scalanative.libc.stdatomic.{AtomicInt, AtomicRef}
+import scalanative.runtime.{Intrinsics, fromRawPtr}
 
 object FutureTask {
   private final val NEW = 0

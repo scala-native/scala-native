@@ -1,10 +1,10 @@
 // Ported form Scala.js, revision: 38cf515, dated 26 Aug 2021
 package org.scalanative.testsuite.javalib.lang.constant
 
-import org.junit.Test
-import org.junit.Assert._
-
 import java.lang.constant.ConstantDesc
+
+import org.junit.Assert._
+import org.junit.Test
 
 import org.scalanative.testsuite.utils.Platform.executingInJVM
 

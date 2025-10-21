@@ -1,12 +1,10 @@
 package java.lang.process
 
-import scala.scalanative.unsafe._
-
 import scala.scalanative.posix.poll._
 import scala.scalanative.posix.signal.sigset_t
-import scala.scalanative.posix.time.timespec
 import scala.scalanative.posix.sys.types.pid_t
-
+import scala.scalanative.posix.time.timespec
+import scala.scalanative.unsafe._
 import scalanative.meta.LinktimeInfo.isLinux
 
 object LinuxOsSpecific {

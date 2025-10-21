@@ -1,8 +1,8 @@
 package java.nio.charset
 
-import scala.annotation.{switch, tailrec}
-
 import java.nio._
+
+import scala.annotation.{switch, tailrec}
 
 abstract class CharsetDecoder protected (
     cs: Charset,

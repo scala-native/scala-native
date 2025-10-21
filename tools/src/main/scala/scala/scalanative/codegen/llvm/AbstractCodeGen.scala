@@ -3,21 +3,22 @@ package llvm
 
 import java.nio.file.{Path, Paths}
 import java.{lang => jl}
+
 import scala.collection.mutable
+import scala.language.implicitConversions
+import scala.util.control.NonFatal
+
 import scala.scalanative.build.Discover
+import scala.scalanative.codegen.llvm.Metadata.conversions._
 import scala.scalanative.codegen.llvm.compat.os.OsCompat
+import scala.scalanative.codegen.{Metadata => CodeGenMetadata}
 import scala.scalanative.io.VirtualDirectory
 import scala.scalanative.nir.ControlFlow.{Block, Graph => CFG}
 import scala.scalanative.nir.Defn.Define.DebugInfo
 import scala.scalanative.util.ShowBuilder.FileShowBuilder
-import scala.scalanative.util.{ShowBuilder, unreachable, unsupported}
+import scala.scalanative.util.{ScopedVar, ShowBuilder, unreachable, unsupported}
 import scala.scalanative.{build, linker, nir}
-import scala.util.control.NonFatal
-import scala.scalanative.codegen.{Metadata => CodeGenMetadata}
 
-import scala.language.implicitConversions
-import scala.scalanative.codegen.llvm.Metadata.conversions._
-import scala.scalanative.util.ScopedVar
 import MetadataCodeGen.DefnScopes
 
 private[codegen] abstract class AbstractCodeGen(
@@ -25,8 +26,7 @@ private[codegen] abstract class AbstractCodeGen(
     defns: Seq[nir.Defn]
 )(implicit val meta: CodeGenMetadata)
     extends MetadataCodeGen {
-  import meta.platform
-  import meta.config
+  import meta.{config, platform}
   import platform._
 
   val pointerType = if (useOpaquePointers) "ptr" else "i8*"

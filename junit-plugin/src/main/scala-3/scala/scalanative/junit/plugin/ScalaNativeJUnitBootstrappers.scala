@@ -1,24 +1,21 @@
 package scala.scalanative.junit.plugin
 
+import dotty.tools.dotc.ast.tpd._
+import dotty.tools.dotc.plugins.PluginPhase
+import dotty.tools.dotc.{core, report, sbt, transform}
 import scala.annotation.tailrec
 
-import dotty.tools.dotc.ast.tpd._
-import dotty.tools.dotc.core
 import core.Constants._
 import core.Contexts._
 import core.Decorators._
 import core.Flags._
-import core.Names._
 import core.NameOps._
+import core.Names._
 import core.Phases._
 import core.Scopes._
-import core.Symbols._
 import core.StdNames._
+import core.Symbols._
 import core.Types._
-import dotty.tools.dotc.plugins.PluginPhase
-import dotty.tools.dotc.transform
-import dotty.tools.dotc.report
-import dotty.tools.dotc.sbt
 
 /** Generates JUnit bootstrapper objects for Scala Native
  *

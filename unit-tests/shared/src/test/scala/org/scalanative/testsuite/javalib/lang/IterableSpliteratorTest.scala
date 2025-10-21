@@ -1,10 +1,10 @@
 package org.scalanative.testsuite.javalib.lang
 
-import java.util.Spliterator
 import java.nio.file.{Path, Paths}
+import java.util.Spliterator
 
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 

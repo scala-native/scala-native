@@ -1,9 +1,8 @@
 package java.util.stream
 
-import java.{lang => jl}
-
 import java.util._
 import java.util.function._
+import java.{lang => jl}
 
 /* Design Note:
  *

@@ -16,34 +16,24 @@
 
 package org.scalanative.testsuite.javalib.util.concurrent
 
-import org.junit.Test
+import java.util.concurrent.ConcurrentHashMap
+import java.util.stream.Collectors
+import java.util.{
+  ArrayList, Arrays, Collection, Collections, Enumeration, Iterator, Map,
+  Random, Set, concurrent => juc
+}
+import java.{lang => jl, util => ju}
+
+import scala.annotation.tailrec
+
 import org.junit.Assert._
 import org.junit.Assume._
-import org.junit.BeforeClass
+import org.junit.{BeforeClass, Test}
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform
 
 import scala.scalanative.buildinfo.ScalaNativeBuildInfo
-
-import java.{lang => jl}
-import java.{util => ju}
-import java.util.ArrayList
-import java.util.Arrays
-import java.util.Collection
-import java.util.Collections
-import java.util.Enumeration
-import java.util.Iterator
-import java.util.Map
-import java.util.Random
-import java.util.Set
-
-import java.util.{concurrent => juc}
-import java.util.concurrent.ConcurrentHashMap
-
-import java.util.stream.Collectors
-
-import scala.annotation.tailrec
 
 object ConcurrentHashMapTest_JSR166 {
   import JSR166Test._
@@ -179,8 +169,8 @@ object ConcurrentHashMapTest_JSR166 {
 }
 
 class ConcurrentHashMapTest_JSR166 extends JSR166Test {
-  import JSR166Test._
   import ConcurrentHashMapTest_JSR166._
+  import JSR166Test._
 
   /** Inserted elements that are subclasses of the same Comparable class are
    *  found.

@@ -3,8 +3,9 @@
 
 package java.util
 
-import java.util.random.{AbstractSplittableRandomGenerator, RandomGenerator}
-import java.util.random.SplittableRandomFactory
+import java.util.random.{
+  AbstractSplittableRandomGenerator, RandomGenerator, SplittableRandomFactory
+}
 
 /*
  * This is a clean room implementation derived from the original paper

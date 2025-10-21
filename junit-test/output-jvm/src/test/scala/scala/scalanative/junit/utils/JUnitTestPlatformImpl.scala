@@ -2,10 +2,12 @@ package scala.scalanative.junit.utils
 
 // Ported from Scala.js
 
+import sbt.testing._
+
 import java.nio.charset.StandardCharsets.UTF_8
 import java.nio.file._
 import java.util.LinkedList
-import sbt.testing._
+
 import scala.annotation.tailrec
 import scala.concurrent.Future
 

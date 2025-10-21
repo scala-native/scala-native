@@ -1,6 +1,7 @@
 package java.util
 
 import scala.collection.mutable
+
 import ScalaOps._
 
 class HashSet[E]

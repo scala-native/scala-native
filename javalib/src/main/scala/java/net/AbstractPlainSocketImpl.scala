@@ -1,30 +1,30 @@
 package java.net
 
-import scala.scalanative.unsigned._
-import scala.scalanative.unsafe._
-import scalanative.libc.string.memcpy
+import java.io.{FileDescriptor, IOException, InputStream, OutputStream}
+
+import scala.scalanative.meta.LinktimeInfo.isWindows
 import scala.scalanative.posix.arpa.inet
-// Import posix name errno as variable, not class or type.
-import scala.scalanative.posix.{errno => posixErrno}, posixErrno._
-import scala.scalanative.posix.netinet.in
-import scala.scalanative.posix.netinet.inOps._
-import scala.scalanative.posix.netinet.tcp
 import scala.scalanative.posix.netdb._
 import scala.scalanative.posix.netdbOps._
+import scala.scalanative.posix.netinet.inOps._
+import scala.scalanative.posix.netinet.{in, tcp}
 import scala.scalanative.posix.string.strerror
 import scala.scalanative.posix.sys.ioctl._
 import scala.scalanative.posix.sys.socket
+import scala.scalanative.posix.sys.socket.{SHUT_RD, SHUT_RDWR, SHUT_WR}
 import scala.scalanative.posix.sys.socketOps._
 import scala.scalanative.posix.sys.time._
 import scala.scalanative.posix.sys.timeOps._
-import scala.scalanative.posix.unistd
-
-import scala.scalanative.meta.LinktimeInfo.isWindows
-import java.io.{FileDescriptor, IOException, OutputStream, InputStream}
-import scala.scalanative.windows._
+// Import posix name errno as variable, not class or type.
+import scala.scalanative.posix.{errno => posixErrno, unistd}
+import scala.scalanative.unsafe._
+import scala.scalanative.unsigned._
 import scala.scalanative.windows.WinSocketApi._
 import scala.scalanative.windows.WinSocketApiExt._
-import scala.scalanative.posix.sys.socket.{SHUT_RDWR, SHUT_WR, SHUT_RD}
+import scala.scalanative.windows._
+import scalanative.libc.string.memcpy
+
+import posixErrno._
 
 private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
   import AbstractPlainSocketImpl._

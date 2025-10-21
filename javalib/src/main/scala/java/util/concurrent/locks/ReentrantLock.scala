@@ -8,6 +8,7 @@ package java.util
 package concurrent.locks
 
 import java.util.concurrent.TimeUnit
+
 import scala.scalanative.annotation.safePublish
 
 @SerialVersionUID(7373984872572414699L)

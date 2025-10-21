@@ -1,9 +1,8 @@
 package java.lang
 
 import java.io.{InputStream, OutputStream}
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.{CompletableFuture, TimeUnit}
 import java.util.stream.Stream
-import java.util.concurrent.CompletableFuture
 
 abstract class Process {
 

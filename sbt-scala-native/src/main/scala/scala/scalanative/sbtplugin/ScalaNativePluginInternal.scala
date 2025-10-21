@@ -1,35 +1,36 @@
 package scala.scalanative
 package sbtplugin
 
-import java.util.concurrent.atomic._
-import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
 import sbt.Keys._
 import sbt._
 import sbt.complete.DefaultParsers._
+import sbt.librarymanagement.{
+  DependencyResolution, UnresolvedWarningConfiguration, UpdateConfiguration
+}
+
+import java.lang.Runtime
+import java.nio.file.{Files, Path}
+import java.util.concurrent.atomic._
+import java.util.concurrent.locks.ReentrantLock
+
 import scala.annotation.tailrec
-import scala.scalanative.util.Scope
+import scala.concurrent._
+import scala.concurrent.duration.Duration
+import scala.sys.process.Process
+import scala.util.Try
+
+import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
+
 import scala.scalanative.build._
 import scala.scalanative.linker.LinkingException
 import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport.{
-  ScalaNativeCrossVersion => _,
-  _
+  ScalaNativeCrossVersion => _, _
 }
 import scala.scalanative.sbtplugin.Utilities._
 import scala.scalanative.testinterface.adapter.TestAdapter
-import scala.sys.process.Process
-import scala.util.Try
-import scala.concurrent._
-import scala.concurrent.duration.Duration
-import scala.scalanative.build.Platform
+import scala.scalanative.util.Scope
+
 import sjsonnew.BasicJsonProtocol._
-import java.nio.file.{Files, Path}
-import java.lang.Runtime
-import java.util.concurrent.locks.ReentrantLock
-import sbt.librarymanagement.{
-  DependencyResolution,
-  UpdateConfiguration,
-  UnresolvedWarningConfiguration
-}
 
 /** ScalaNativePlugin delegates to this object
  *

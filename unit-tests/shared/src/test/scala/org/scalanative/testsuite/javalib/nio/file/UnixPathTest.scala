@@ -3,9 +3,9 @@ package org.scalanative.testsuite.javalib.nio.file
 import java.nio.file._
 import java.{util => ju}
 
-import org.junit.{Test, BeforeClass}
 import org.junit.Assert._
 import org.junit.Assume._
+import org.junit.{BeforeClass, Test}
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform.isWindows

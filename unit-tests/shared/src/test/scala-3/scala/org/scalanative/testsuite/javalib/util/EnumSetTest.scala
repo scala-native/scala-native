@@ -3,8 +3,8 @@ package org.scalanative.testsuite.javalib.util
 import java.lang._
 import java.util.EnumSet
 
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 
 // Tested only in Scala 3 becouse we cannot create Java enums in Scala 2
 

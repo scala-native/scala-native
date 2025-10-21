@@ -1,11 +1,11 @@
 package java.util
 package regex
 
-import scalanative.{regex => snRegex}
-
 import java.util.Arrays
 import java.util.function.Predicate
 import java.util.stream.Stream
+
+import scalanative.{regex => snRegex}
 
 // Inspired & informed by:
 // https://github.com/google/re2j/blob/master/java/com/google/re2j/Pattern.java

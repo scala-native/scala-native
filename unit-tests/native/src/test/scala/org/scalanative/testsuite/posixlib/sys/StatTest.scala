@@ -1,22 +1,19 @@
 package org.scalanative.testsuite.posixlib
 package sys
 
-import org.junit.Test
-import org.junit.Assert._
-import org.junit.Assume._
-import org.junit.BeforeClass
-
-import scala.scalanative.meta.LinktimeInfo
-
 import java.nio.file.{Files, Path}
 
-import scala.scalanative.unsafe._
-import scala.scalanative.unsigned._
+import org.junit.Assert._
+import org.junit.Assume._
+import org.junit.{BeforeClass, Test}
 
+import scala.scalanative.meta.LinktimeInfo
 import scala.scalanative.posix.errno.errno
 import scala.scalanative.posix.stdlib.mkstemp
 import scala.scalanative.posix.string.strerror
 import scala.scalanative.posix.sys.stat
+import scala.scalanative.unsafe._
+import scala.scalanative.unsigned._
 
 object StatTest {
   private var workDirString: String = _

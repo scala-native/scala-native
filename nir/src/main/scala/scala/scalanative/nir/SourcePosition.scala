@@ -1,8 +1,8 @@
 package scala.scalanative.nir
 
-import java.nio.file.Paths
+import java.nio.file.{Path, Paths}
+
 import scala.util.Try
-import java.nio.file.Path
 
 sealed case class NIRSource(directory: Path, path: Path) {
   def debugName = s"${directory}:${path}"

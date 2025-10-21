@@ -8,16 +8,16 @@
 package org.scalanative.testsuite.javalib.util.concurrent
 
 import java.util.concurrent.ThreadLocalRandom
-import java.util.concurrent.atomic.AtomicLong
-import java.util.concurrent.atomic.AtomicReference
-
-import JSR166Test._
-import org.scalanative.testsuite.utils.Platform._
-
-import org.junit.{Test, Ignore}
-import org.junit.Assert._
+import java.util.concurrent.atomic.{AtomicLong, AtomicReference}
 
 import scala.math.{max, min}
+
+import org.junit.Assert._
+import org.junit.{Ignore, Test}
+
+import org.scalanative.testsuite.utils.Platform._
+
+import JSR166Test._
 
 object ThreadLocalRandomTest {
   // max numbers of calls to detect getting stuck on one value

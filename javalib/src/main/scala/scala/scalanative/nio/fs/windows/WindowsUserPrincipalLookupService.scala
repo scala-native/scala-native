@@ -1,14 +1,16 @@
 package scala.scalanative.nio.fs.windows
 
-import scalanative.unsigned._
-import scalanative.unsafe._
-import scalanative.windows._
-import scalanative.windows.WinBaseApi._
-import scalanative.windows.winnt.SidNameUse
-import scalanative.windows.SecurityBaseApi._
-import java.nio.file.attribute._
 import java.nio.file.WindowsException
+import java.nio.file.attribute._
+
 import scala.util._
+
+import scalanative.unsafe._
+import scalanative.unsigned._
+import scalanative.windows.SecurityBaseApi._
+import scalanative.windows.WinBaseApi._
+import scalanative.windows._
+import scalanative.windows.winnt.SidNameUse
 
 object WindowsUserPrincipalLookupService extends UserPrincipalLookupService {
   override def lookupPrincipalByName(

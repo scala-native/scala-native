@@ -2,9 +2,10 @@ package scala.scalanative
 package checker
 
 import scala.collection.mutable
+import scala.concurrent._
+
 import scalanative.linker._
 import scalanative.util.partitionBy
-import scala.concurrent._
 
 private[scalanative] sealed abstract class NIRCheck(implicit
     analysis: ReachabilityAnalysis.Result

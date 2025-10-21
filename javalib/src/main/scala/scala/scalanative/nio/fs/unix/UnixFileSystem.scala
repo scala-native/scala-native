@@ -2,24 +2,18 @@ package scala.scalanative.nio.fs.unix
 
 import java.io.IOException
 import java.lang.Iterable
-import java.{lang => jl}
-import java.nio.file.{
-  FileStore,
-  FileSystem,
-  Path,
-  PathMatcher,
-  PathMatcherImpl,
-  WatchService
+import java.nio.file.attribute.{
+  PosixUserPrincipalLookupService, UserPrincipalLookupService
 }
 import java.nio.file.spi.FileSystemProvider
-import java.nio.file.attribute.UserPrincipalLookupService
-import java.nio.file.attribute.PosixUserPrincipalLookupService
-import java.{util => ju}
+import java.nio.file.{
+  FileStore, FileSystem, Path, PathMatcher, PathMatcherImpl, WatchService
+}
+import java.{lang => jl, util => ju}
 
 import scala.scalanative.annotation.stub
-import scala.scalanative.unsafe._
-
 import scala.scalanative.posix.sys.statvfs
+import scala.scalanative.unsafe._
 
 class UnixFileSystem(
     fsProvider: FileSystemProvider,

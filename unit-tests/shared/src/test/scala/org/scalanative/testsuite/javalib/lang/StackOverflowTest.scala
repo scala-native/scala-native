@@ -1,13 +1,12 @@
 package org.scalanative.testsuite.javalib.lang
 
-import org.junit.Test
+import java.io.{File, PrintStream}
+
 import org.junit.Assert._
 import org.junit.Assume._
-import org.junit.BeforeClass
+import org.junit.{BeforeClass, Test}
 
 import org.scalanative.testsuite.utils.Platform
-
-import java.io.{PrintStream, File}
 
 class StackOverflowTest {
   // Simple 1 + stackoverflow() would be optimized to be tail recursive(!?) by LLVM

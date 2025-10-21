@@ -9,7 +9,9 @@ import java.util
 import java.util.ConcurrentModificationException
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.locks._
+
 import scala.annotation.tailrec
+
 import scala.scalanative.annotation.safePublish
 
 object ThreadPoolExecutor {

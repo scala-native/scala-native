@@ -1,12 +1,11 @@
 package org.scalanative.testsuite.javalib.util.stream
 
-import java.util.stream._
-import java.util.Spliterator
-import java.util.List
 import java.util.function.{Predicate, UnaryOperator}
+import java.util.stream._
+import java.util.{List, Spliterator}
 
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 
 class StreamTestOnJDK9 {
 

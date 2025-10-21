@@ -9,21 +9,17 @@
 
 package java.util.concurrent
 
+import java.util.Objects
+import java.util.concurrent.locks.LockSupport
+import java.util.function.{BiConsumer, BiFunction, Consumer, Function, Supplier}
+
+import scala.scalanative.annotation.alwaysinline
 // import java.lang.invoke.MethodHandles
 // import java.lang.invoke.VarHandle
 import scala.scalanative.libc.stdatomic.AtomicRef
 import scala.scalanative.libc.stdatomic.memory_order.memory_order_release
-import scala.scalanative.runtime.fromRawPtr
 import scala.scalanative.runtime.Intrinsics.classFieldRawPtr
-import scala.scalanative.annotation.alwaysinline
-
-import java.util.concurrent.locks.LockSupport
-import java.util.function.BiConsumer
-import java.util.function.BiFunction
-import java.util.function.Consumer
-import java.util.function.Function
-import java.util.function.Supplier
-import java.util.Objects
+import scala.scalanative.runtime.fromRawPtr
 
 object CompletableFuture {
   /* ------------- Encoding and decoding outcomes -------------- */

@@ -1,7 +1,7 @@
 package scala.scalanative.posix
 
-import scala.scalanative.unsafe._
 import scala.scalanative.posix.sys.types
+import scala.scalanative.unsafe._
 
 /** POSIX strings.h for Scala
  *

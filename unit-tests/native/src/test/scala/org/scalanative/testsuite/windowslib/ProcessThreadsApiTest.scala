@@ -1,7 +1,7 @@
 package org.scalanative.testsuite.windowslib
 
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 
 import scala.scalanative.meta.LinktimeInfo.isWindows
 import scala.scalanative.unsafe._

@@ -1,6 +1,6 @@
-import java.net.{Socket, InetSocketAddress, InetAddress}
-import java.io.{PrintWriter, BufferedReader, InputStreamReader}
-import java.nio.file.{Paths, Files}
+import java.io.{BufferedReader, InputStreamReader, PrintWriter}
+import java.net.{InetAddress, InetSocketAddress, Socket}
+import java.nio.file.{Files, Paths}
 
 // In this test we manually do the connecting (and binding when implemented)
 object EchoManualClientTest {

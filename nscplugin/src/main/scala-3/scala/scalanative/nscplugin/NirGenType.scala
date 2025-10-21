@@ -1,24 +1,23 @@
 package scala.scalanative
 package nscplugin
 
+import dotty.tools.dotc.ast.Trees._
+import dotty.tools.dotc.ast.tpd
+import dotty.tools.dotc.typer.TyperPhase
+import dotty.tools.dotc.{core, report}
 import scala.language.implicitConversions
 
-import dotty.tools.dotc.ast.tpd
-import dotty.tools.dotc.ast.Trees._
-import dotty.tools.dotc.core
+import scala.scalanative.nscplugin.CompilerCompat.SymUtilsCompat.*
+import scala.scalanative.util.unsupported
+
 import core.Contexts._
 import core.Flags._
 import core.Names._
-import core.Types._
-import core.Symbols._
 import core.StdNames._
+import core.Symbols._
 import core.TypeErasure._
 import core.TypeError
-import dotty.tools.dotc.report
-import dotty.tools.dotc.typer.TyperPhase
-import scala.scalanative.nscplugin.CompilerCompat.SymUtilsCompat.*
-
-import scala.scalanative.util.unsupported
+import core.Types._
 
 trait NirGenType(using Context) {
   self: NirCodeGen =>

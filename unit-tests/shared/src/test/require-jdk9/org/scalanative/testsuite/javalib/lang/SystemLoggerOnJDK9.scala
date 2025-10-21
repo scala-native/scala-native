@@ -1,14 +1,14 @@
 package org.scalanative.testsuite.javalib.lang
 
+import java.io.{ByteArrayOutputStream, PrintStream}
+import java.lang.System.Logger
+import java.util.{MissingResourceException, ResourceBundle}
 import java.{lang => jl}
 
 import org.junit.Assert._
 import org.junit.Test
-import org.scalanative.testsuite.utils.Platform
 
-import java.io.{ByteArrayOutputStream, PrintStream}
-import java.lang.System.Logger
-import java.util.{ResourceBundle, MissingResourceException}
+import org.scalanative.testsuite.utils.Platform
 
 class SystemLoggerTestOnJDK9 {
 

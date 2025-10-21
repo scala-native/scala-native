@@ -1,12 +1,13 @@
 package scala.scalanative
 package linker
 
-import org.junit.Test
+import scala.util._
+
 import org.junit.Assert._
+import org.junit.Test
 
 import scala.scalanative.OptimizerSpec
 import scala.scalanative.build.{Config, NativeConfig}
-import scala.util._
 
 class LinktimeConditionsSpec extends OptimizerSpec {
 

@@ -16,13 +16,13 @@ package org.scalanative.testsuite.javalib.util
 
 import java.{util => ju}
 
+import scala.reflect.ClassTag
+
 import org.junit.Assert._
 import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.CollectionsTestBase
-
-import scala.reflect.ClassTag
 
 import Utils._
 

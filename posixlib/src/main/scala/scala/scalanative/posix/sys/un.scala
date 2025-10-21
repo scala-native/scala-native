@@ -2,10 +2,9 @@ package scala.scalanative
 package posix
 package sys
 
+import scalanative.meta.LinktimeInfo._
 import scalanative.unsafe._
 import scalanative.unsigned._
-
-import scalanative.meta.LinktimeInfo._
 
 /** POSIX sys/un.h for Scala
  */
@@ -31,8 +30,8 @@ object un {
 /** Allow using C names to access socket_un structure fields.
  */
 object unOps {
-  import un._
   import posix.inttypes.uint8_t
+  import un._
 
   @resolvedAtLinktime
   def useSinXLen = !isLinux &&

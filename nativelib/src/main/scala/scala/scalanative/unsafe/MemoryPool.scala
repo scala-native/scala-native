@@ -1,11 +1,9 @@
 package scala.scalanative.unsafe
 
+import scala.scalanative.meta.LinktimeInfo.asanEnabled
+import scala.scalanative.runtime.{Intrinsics, RawPtr, ffi, fromRawPtr}
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
-import scala.scalanative.meta.LinktimeInfo.asanEnabled
-import scala.scalanative.runtime.{RawPtr, fromRawPtr}
-import scala.scalanative.runtime.ffi
-import scala.scalanative.runtime.Intrinsics
 
 /** Efficient pool of fixed-size memory pages. Allocations from underlying
  *  allocator are performed in big chunks of memory that are sliced into pages

@@ -1,18 +1,16 @@
 package org.scalanative.testsuite.posixlib
 package netinet
 
-import scalanative.posix.netinet.in._
-import scalanative.posix.netinet.inOps._
+import org.junit.Assert._
+import org.junit.Test
 
 import scalanative.posix.inttypes._
+import scalanative.posix.netinet.in._
+import scalanative.posix.netinet.inOps._
 import scalanative.posix.sys.socket._
 import scalanative.posix.sys.socketOps._
-
 import scalanative.unsafe._
 import scalanative.unsigned._
-
-import org.junit.Test
-import org.junit.Assert._
 
 class InTest {
 

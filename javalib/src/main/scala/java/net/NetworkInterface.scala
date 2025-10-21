@@ -1,28 +1,26 @@
 package java.net
 
-import scala.scalanative.unsafe._
-import scala.scalanative.unsigned._
+import java.net.SocketHelpers.sockaddrToByteArray
+import java.{util => ju}
 
 import scala.annotation.tailrec
 
-import java.net.SocketHelpers.sockaddrToByteArray
-
-import java.{util => ju}
-import ju.Objects
-import ju.stream.Stream
-
-import scala.scalanative.posix.errno.{errno, ENXIO}
+import scala.scalanative.meta.LinktimeInfo
+import scala.scalanative.posix.errno.{ENXIO, errno}
 import scala.scalanative.posix.net.`if`._
 import scala.scalanative.posix.net.ifOps._
 import scala.scalanative.posix.netinet.in._
 import scala.scalanative.posix.netinet.inOps._
+import scala.scalanative.posix.string._
 import scala.scalanative.posix.sys.ioctl.ioctl
 import scala.scalanative.posix.sys.socket._
 import scala.scalanative.posix.sys.socketOps._
-import scala.scalanative.posix.string._
 import scala.scalanative.posix.unistd
+import scala.scalanative.unsafe._
+import scala.scalanative.unsigned._
 
-import scala.scalanative.meta.LinktimeInfo
+import ju.Objects
+import ju.stream.Stream
 
 import macOsIf._
 import macOsIfDl._

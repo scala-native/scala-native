@@ -1,6 +1,7 @@
 package java.nio.file.glob
 
 import scala.annotation.tailrec
+
 import scala.scalanative.meta.LinktimeInfo.isWindows
 
 class GlobMatcher(glob: GlobNode, inputPath: String) {

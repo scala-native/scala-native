@@ -1,9 +1,9 @@
-import java.nio.file.{Files, Paths}
+import java.io.{BufferedReader, InputStreamReader, PrintWriter}
 import java.net.ServerSocket
-import java.io.{PrintWriter, BufferedReader, InputStreamReader}
+import java.nio.file.{Files, Paths}
 
-import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 object ServerTest {
 

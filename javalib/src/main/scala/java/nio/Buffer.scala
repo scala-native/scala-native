@@ -1,8 +1,8 @@
 package java.nio
 
+import scala.scalanative.runtime.{fromRawPtr, toRawPtr}
 // Ported from Scala.js
 import scala.scalanative.unsafe
-import scala.scalanative.runtime.{toRawPtr, fromRawPtr}
 
 abstract class Buffer private[nio] (
     val _capacity: Int,

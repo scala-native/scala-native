@@ -3,9 +3,8 @@
 
 package java.lang
 
-import java.util.Iterator
 import java.util.function.Consumer
-import java.util.{Spliterator, Spliterators}
+import java.util.{Iterator, Spliterator, Spliterators}
 
 trait Iterable[T] {
   def iterator(): Iterator[T]

@@ -12,37 +12,20 @@
 
 package org.scalanative.testsuite.javalib.util.concurrent
 
-import java.util.concurrent.TimeUnit.MILLISECONDS
-import java.util.concurrent.TimeUnit.SECONDS
-import java.util.concurrent.CompletableFuture.completedFuture
-import java.util.concurrent.CompletableFuture.failedFuture
-import java.util.stream.Collectors
-import java.util.stream.Stream
 import java.util
-import java.util.Objects
-import java.util.concurrent.Callable
-import java.util.concurrent.CancellationException
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.CompletionException
-import java.util.concurrent.CompletionStage
-import java.util.concurrent.ExecutionException
-import java.util.concurrent.Executor
-import java.util.concurrent.ForkJoinPool
-import java.util.concurrent.ForkJoinTask
-import java.util.concurrent.RejectedExecutionException
-import java.util.concurrent.TimeoutException
-import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.atomic.AtomicReference
-import java.util.function.BiConsumer
-import java.util.function.BiFunction
-import java.util.function.Consumer
-import java.util.function.Function
-import java.util.function.Predicate
-import java.util.function.Supplier
-import java.util.ArrayList
+import java.util.concurrent.CompletableFuture.{completedFuture, failedFuture}
+import java.util.concurrent.TimeUnit.{MILLISECONDS, SECONDS}
+import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
+import java.util.concurrent.{
+  Callable, CancellationException, CompletableFuture, CompletionException, CompletionStage, ExecutionException,
+  Executor, ForkJoinPool, ForkJoinTask, RejectedExecutionException, TimeoutException
+}
+import java.util.function.{BiConsumer, BiFunction, Consumer, Function, Predicate, Supplier}
+import java.util.stream.{Collectors, Stream}
+import java.util.{ArrayList, Objects}
 
-import org.junit._
 import org.junit.Assert._
+import org.junit._
 
 import CompletableFutureTest._
 object CompletableFutureTestOnJDK17 {
@@ -167,9 +150,9 @@ object CompletableFutureTestOnJDK17 {
 }
 
 class CompletableFutureTestOnJDK17 extends CompletableFutureTest {
-  import JSR166Test._
   import CompletableFutureTest.{ExecutionMode => _, _}
   import CompletableFutureTestOnJDK17._
+  import JSR166Test._
 
   /** exceptionally action is not invoked() when source completes normally, and source result is propagated
    */

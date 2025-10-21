@@ -1,11 +1,11 @@
 package scala.runtime
 
-import scala.math.ScalaNumber
 import scala.annotation.{nowarn, switch}
+import scala.math.ScalaNumber
 
 import scala.scalanative.meta.LinktimeInfo
-import scala.scalanative.unsigned._
 import scala.scalanative.unsafe.Size
+import scala.scalanative.unsigned._
 
 class BoxesRunTime
 

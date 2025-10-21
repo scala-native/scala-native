@@ -11,19 +11,16 @@
 
 package org.scalanative.testsuite.javalib.util.concurrent.atomic
 
-import org.junit.Test
+import java.util.concurrent.atomic.DoubleAdder
+import java.util.concurrent.{CyclicBarrier, ExecutorService, Executors}
+import java.{lang => jl}
+
 import org.junit.Assert._
+import org.junit.Test
 
 import org.scalanative.testsuite.javalib.util.concurrent.JSR166Test
 
 import JSR166Test._
-
-import java.{lang => jl}
-
-import java.util.concurrent.CyclicBarrier
-import java.util.concurrent.Executors
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.atomic.DoubleAdder
 
 class DoubleAdderTest extends JSR166Test {
   import JSR166Test._

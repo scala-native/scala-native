@@ -2,9 +2,10 @@ package scala.scalanative
 package linker
 
 import scala.collection.mutable
+
+import scala.scalanative.build.Logger
 import scalanative.io.VirtualDirectory
 import scalanative.util.Scope
-import scala.scalanative.build.Logger
 
 sealed abstract class ClassLoader {
 

@@ -6,16 +6,14 @@
 
 package java.util.concurrent.locks
 
-import java.util.ArrayList
-import java.util.Collection
-import java.util.Date
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.ForkJoinPool
-import java.util.concurrent.RejectedExecutionException
+import java.util.concurrent.{ForkJoinPool, RejectedExecutionException, TimeUnit}
+import java.util.{ArrayList, Collection, Date}
+
 import scala.annotation.tailrec
-import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
-import scala.scalanative.libc.stdatomic.{AtomicInt, AtomicLongLong, AtomicRef}
+
 import scala.scalanative.libc.stdatomic.memory_order._
+import scala.scalanative.libc.stdatomic.{AtomicInt, AtomicLongLong, AtomicRef}
+import scala.scalanative.runtime.{Intrinsics, fromRawPtr}
 
 @SerialVersionUID(7373984972572414692L)
 object AbstractQueuedLongSynchronizer { // Node status bits, also used as argument and return values

@@ -1,8 +1,9 @@
 package java.lang
 
-import scalanative.runtime.Intrinsics.{divUInt, remUInt, intToULong}
-import scalanative.runtime.LLVMIntrinsics
 import java.lang.constant.{Constable, ConstantDesc}
+
+import scalanative.runtime.Intrinsics.{divUInt, intToULong, remUInt}
+import scalanative.runtime.LLVMIntrinsics
 
 final class Integer(val _value: scala.Int)
     extends Number

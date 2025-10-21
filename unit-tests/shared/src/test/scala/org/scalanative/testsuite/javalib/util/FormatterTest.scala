@@ -1,9 +1,8 @@
 // ported from Scala.js
 package org.scalanative.testsuite.javalib.util
 
-import java.util._
-
 import java.math.{BigDecimal, BigInteger}
+import java.util._
 
 import org.junit.Assert._
 import org.junit.Test

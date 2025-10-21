@@ -1,8 +1,8 @@
 package scala.scalanative
 package nscplugin
 
-import scala.tools.nsc._
 import scala.collection.mutable
+import scala.tools.nsc._
 
 object NirPrimitives {
   final val BOXED_UNIT = 301
@@ -91,12 +91,13 @@ abstract class NirPrimitives {
   val nirAddons: ThisNirGlobalAddons
 
   import global._
-  import definitions._
-  import rootMirror._
-  import scalaPrimitives._
+  import global.definitions._
+
+  import NirPrimitives._
   import nirAddons._
   import nirDefinitions._
-  import NirPrimitives._
+  import rootMirror._
+  import scalaPrimitives._
 
   def init(): Unit =
     initWithPrimitives(addPrimitive)

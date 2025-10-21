@@ -5,10 +5,10 @@ package org.scalanative.testsuite.javalib.util.random
  * Introduced in Java 17.
  */
 
-import org.junit.Test
-import org.junit.Assert._
-
 import java.util.random.RandomGenerator
+
+import org.junit.Assert._
+import org.junit.Test
 
 class JEP356_RandomGeneratorTestOnJDK17 {
 

@@ -1,7 +1,7 @@
 package java.util.stream
 
-import java.util.function.Supplier
 import java.util.Spliterator
+import java.util.function.Supplier
 
 object StreamSupport {
 

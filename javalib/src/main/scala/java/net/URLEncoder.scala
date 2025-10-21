@@ -2,8 +2,9 @@ package java.net
 
 // Ported from Harmony
 
-import scala.annotation.tailrec
 import java.{lang => jl}
+
+import scala.annotation.tailrec
 
 object URLEncoder {
   private val digits = "0123456789ABCDEF".toCharArray

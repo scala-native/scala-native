@@ -2,9 +2,12 @@ package scala.scalanative
 package nir
 
 import java.nio.charset.StandardCharsets
+
 import scala.collection.mutable
+
 import scala.scalanative.util.ShowBuilder.InMemoryShowBuilder
 import scalanative.util.{ShowBuilder, unreachable}
+
 import nir.Defn.Define.DebugInfo
 
 object Show {

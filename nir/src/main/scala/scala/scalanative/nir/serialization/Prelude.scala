@@ -1,8 +1,9 @@
 package scala.scalanative.nir
 package serialization
 
-import java.nio.ByteBuffer
 import java.io.DataOutputStream
+import java.nio.ByteBuffer
+
 import Prelude.Offsets
 import Versions.Version
 

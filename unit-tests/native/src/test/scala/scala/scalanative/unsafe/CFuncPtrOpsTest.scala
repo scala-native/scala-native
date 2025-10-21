@@ -1,10 +1,10 @@
 package scala.scalanative
 package unsafe
 
+import org.junit.Assert._
 import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
-import org.junit.Assert._
 
 import scalanative.libc._
 

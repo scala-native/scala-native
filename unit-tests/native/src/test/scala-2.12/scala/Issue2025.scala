@@ -1,9 +1,10 @@
 package scala
 
-import org.junit.Test
-import org.junit.Assert._
-import scala.language.implicitConversions
 import scala.collection.mutable.ArraySeq
+import scala.language.implicitConversions
+
+import org.junit.Assert._
+import org.junit.Test
 
 // Collection Compat Issues
 class Issue2025 {

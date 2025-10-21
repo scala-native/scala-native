@@ -1,13 +1,13 @@
 package scala.scalanative.compiler
 
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 
+import scala.scalanative.NIRCompiler
+import scala.scalanative.api.CompilationFailedException
+import scala.scalanative.linker.compileAndLoad
 import scala.scalanative.nir._
 import scala.scalanative.util.Scope
-import scala.scalanative.linker.compileAndLoad
-import scala.scalanative.api.CompilationFailedException
-import scala.scalanative.NIRCompiler
 
 class MethodCallTest {
 

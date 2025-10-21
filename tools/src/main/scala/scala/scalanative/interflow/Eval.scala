@@ -2,10 +2,11 @@ package scala.scalanative
 package interflow
 
 import scala.collection.mutable
-import scala.scalanative.nir.Defn.Define.DebugInfo
-import scala.scalanative.linker._
+
 import scala.scalanative.codegen.MemoryLayout
-import scala.scalanative.util.{unreachable, And}
+import scala.scalanative.linker._
+import scala.scalanative.nir.Defn.Define.DebugInfo
+import scala.scalanative.util.{And, unreachable}
 
 private[interflow] trait Eval { self: Interflow =>
   def interflow: Interflow = self

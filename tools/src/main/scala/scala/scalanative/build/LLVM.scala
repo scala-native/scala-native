@@ -3,14 +3,15 @@ package build
 
 import java.io.{File, PrintWriter}
 import java.nio.file.{Files, Path, Paths, StandardCopyOption}
+
+import scala.concurrent._
 import scala.sys.process._
+import scala.util.{Failure, Success}
+
 import scala.scalanative.build.IO.RichPath
 import scala.scalanative.linker.ReachabilityAnalysis
 import scala.scalanative.nir.Attr.Link
 
-import scala.concurrent._
-import scala.util.Failure
-import scala.util.Success
 import _root_.java.io.IOException
 
 /** Internal utilities to interact with LLVM command-line tools. */

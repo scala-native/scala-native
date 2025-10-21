@@ -1,15 +1,12 @@
 package scala.scalanative
 package unsigned
 
+import java.lang.{Integer => JInteger}
+
 import scalanative.runtime.Intrinsics.{
-  divUInt,
-  remUInt,
-  uintToFloat,
-  uintToDouble,
-  castIntToRawSizeUnsigned,
+  castIntToRawSizeUnsigned, divUInt, remUInt, uintToDouble, uintToFloat,
   unsignedOf
 }
-import java.lang.{Integer => JInteger}
 
 /** `UInt`, a 32-bit unsigned integer. */
 final class UInt private[scalanative] (

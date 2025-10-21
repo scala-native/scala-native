@@ -1,8 +1,8 @@
 package scala.scalanative
 package posix
 
-import scalanative.unsafe._
 import scalanative.posix.sys.types
+import scalanative.unsafe._
 
 /** unistd.h for Scala
  *  @see

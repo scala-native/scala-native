@@ -3,10 +3,9 @@ package java.util
 import java.lang.Iterable
 import java.{util => ju}
 
-import scala.scalanative.unsafe._
 import scala.scalanative.reflect.Reflect
-import scala.scalanative.runtime.{UndefinedBehaviorError, RawPtr, Boxes}
-import java.{util => ju}
+import scala.scalanative.runtime.{Boxes, RawPtr, UndefinedBehaviorError}
+import scala.scalanative.unsafe._
 
 final class ServiceLoader[S <: AnyRef] private[util] (
     serviceClass: Class[S],

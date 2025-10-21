@@ -1,16 +1,13 @@
 package org.scalanative.testsuite.javalib.nio.file.attribute
 
-import java.nio.file.Files
-import java.nio.file.Path
+import java.nio.file.attribute.{
+  PosixFileAttributeView, PosixFileAttributes, PosixFilePermission
+}
+import java.nio.file.{Files, Path}
 
-import java.nio.file.attribute.PosixFileAttributes
-import java.nio.file.attribute.PosixFileAttributeView
-import java.nio.file.attribute.PosixFilePermission
-
-import org.junit.Test
 import org.junit.Assert._
 import org.junit.Assume._
-import org.junit.BeforeClass
+import org.junit.{BeforeClass, Test}
 
 import org.scalanative.testsuite.utils.Platform
 

@@ -1,5 +1,9 @@
-import $ivy.`com.lihaoyi::ammonite-ops:2.3.8`, ammonite.ops._, mainargs._
 import java.io.File
+
+import ammonite.ops._
+import mainargs._
+
+import $ivy.`com.lihaoyi::ammonite-ops:2.3.8`
 
 val kinds = List("neg", "run", "pos")
 

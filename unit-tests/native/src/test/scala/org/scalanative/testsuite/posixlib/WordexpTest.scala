@@ -1,18 +1,15 @@
 package org.scalanative.testsuite.posixlib
 
-import org.junit.Test
 import org.junit.Assert._
 import org.junit.Assume._
+import org.junit.Test
 
 import scala.scalanative.meta.LinktimeInfo._
-
-import scala.scalanative.unsafe._
-import scala.scalanative.unsigned._
-
 import scala.scalanative.posix.stdlib
-
 import scala.scalanative.posix.wordexp._
 import scala.scalanative.posix.wordexpOps._
+import scala.scalanative.unsafe._
+import scala.scalanative.unsigned._
 
 class WordexpTest {
 

@@ -1,12 +1,9 @@
 package java.util.random
 
 import java.math.BigInteger
-
-import java.{lang => jl}
-
-import java.{util => ju}
-import java.util.{HashMap, Random, SplittableRandom}
 import java.util.stream.Stream
+import java.util.{HashMap, Random, SplittableRandom}
+import java.{lang => jl, util => ju}
 
 private object L32X64MixRandomFactory
     extends RandomGeneratorFactory[RandomGenerator.SplittableGenerator] {

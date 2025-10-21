@@ -15,10 +15,10 @@ abstract class PrepNativeInterop[G <: Global with Singleton](
     override val global: G
 ) extends NirPhase[G](global)
     with transform.Transform {
-  import PrepNativeInterop._
-
   import global._
-  import definitions._
+  import global.definitions._
+
+  import PrepNativeInterop._
   import nirAddons.nirDefinitions._
 
   val phaseName: String = "scalanative-prepareInterop"

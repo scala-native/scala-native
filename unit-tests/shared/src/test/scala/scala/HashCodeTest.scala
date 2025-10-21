@@ -1,7 +1,8 @@
 package scala
 
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
+
 import scala.scalanative.buildinfo.ScalaNativeBuildInfo.scalaVersion
 
 class HashCodeTest {

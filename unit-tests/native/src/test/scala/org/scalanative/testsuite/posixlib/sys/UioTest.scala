@@ -1,11 +1,14 @@
 package org.scalanative.testsuite.posixlib
 package sys
 
-import scalanative.unsafe._
-import scalanative.unsigned._
+import org.junit.Assert._
+import org.junit.Assume._
+import org.junit.{BeforeClass, Test}
+
+import org.scalanative.testsuite.posixlib.sys.SocketTestHelpers._
 
 import scalanative.libc.string.memcmp
-
+import scalanative.meta.LinktimeInfo.isWindows
 import scalanative.posix.arpa.inet.inet_addr
 import scalanative.posix.errno.errno
 import scalanative.posix.netinet.in._
@@ -13,15 +16,8 @@ import scalanative.posix.netinet.inOps._
 import scalanative.posix.sys.socket._
 import scalanative.posix.sys.uio._
 import scalanative.posix.sys.uioOps._
-
-import org.scalanative.testsuite.posixlib.sys.SocketTestHelpers._
-
-import scalanative.meta.LinktimeInfo.isWindows
-
-import org.junit.Test
-import org.junit.Assert._
-import org.junit.Assume._
-import org.junit.BeforeClass
+import scalanative.unsafe._
+import scalanative.unsigned._
 
 object UioTest {
 

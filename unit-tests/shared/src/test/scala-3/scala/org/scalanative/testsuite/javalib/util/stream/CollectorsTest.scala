@@ -1,20 +1,14 @@
 package org.scalanative.testsuite.javalib.util.stream
 
-import java.{lang => jl}
-import java.{util => ju}
 import java.util._
-
-import java.util.concurrent.ConcurrentMap
-import java.util.concurrent.ConcurrentHashMap
-
-import java.util.function.Function
-import java.util.function.BinaryOperator
-
-import java.util.stream._
+import java.util.concurrent.{ConcurrentHashMap, ConcurrentMap}
+import java.util.function.{BinaryOperator, Function}
 import java.util.stream.Collector.Characteristics
+import java.util.stream._
+import java.{lang => jl, util => ju}
 
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 

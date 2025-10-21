@@ -1,17 +1,17 @@
 package scala.scalanative
 package nscplugin
 
-import scala.language.implicitConversions
-
 import dotty.tools.dotc.ast.tpd._
 import dotty.tools.dotc.core
-import core.Contexts._
-import core.Symbols._
-import core.StdNames._
-import core.Flags._
-
 import scala.collection.mutable
+import scala.language.implicitConversions
+
 import scala.scalanative.util.ScopedVar
+
+import core.Contexts._
+import core.Flags._
+import core.StdNames._
+import core.Symbols._
 
 object GenReflectiveInstantisation {
   object nirSymbols {

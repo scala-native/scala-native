@@ -4,11 +4,11 @@ import java.net._
 import java.util.concurrent.TimeUnit
 
 import scala.annotation.tailrec
-import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.DurationInt
+import scala.concurrent.{Await, Future}
 
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 

@@ -4,7 +4,9 @@ package scala.scalanative.testinterface
 
 import java.io.File
 import java.net.ServerSocket
+
 import scala.concurrent.ExecutionContext
+
 import scala.scalanative.build.Logger
 import scala.scalanative.testinterface.common._
 

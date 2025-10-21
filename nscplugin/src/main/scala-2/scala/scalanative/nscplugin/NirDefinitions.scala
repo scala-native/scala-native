@@ -6,7 +6,8 @@ import scala.tools.nsc._
 trait NirDefinitions {
   val global: Global
   import global._
-  import definitions._
+  import global.definitions._
+
   import rootMirror._
 
   object nirDefinitions {

@@ -7,12 +7,13 @@
  */
 package org.scalanative.testsuite.javalib.util.concurrent
 
+import java.util.concurrent.TimeUnit.MILLISECONDS
+import java.util.concurrent._
+
 import org.junit.Assert._
 import org.junit.Test
-import JSR166Test._
 
-import java.util.concurrent._
-import java.util.concurrent.TimeUnit.MILLISECONDS
+import JSR166Test._
 
 class CountDownLatchTest extends JSR166Test {
 

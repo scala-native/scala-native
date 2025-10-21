@@ -1,10 +1,10 @@
 package scala.scalanative.runtime.dwarf
 
-import Endianness.LITTLE
-import Endianness.BIG
 import java.nio.channels.Channels
+
 import scalanative.unsigned._
 
+import Endianness.{BIG, LITTLE}
 import MachO._
 
 private[runtime] case class MachO private (

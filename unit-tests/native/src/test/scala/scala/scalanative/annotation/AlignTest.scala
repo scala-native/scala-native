@@ -2,19 +2,18 @@
 package scala.scalanative.runtime
 package annotation
 
-import scala.scalanative.annotation.align
-import org.junit.{Test, Assume, BeforeClass}
 import org.junit.Assert._
 import org.junit.Assume._
+import org.junit.{Assume, BeforeClass, Test}
 
-import scala.scalanative.unsafe.{sizeOf, Ptr}
-import scala.scalanative.runtime.MemoryLayout.Object.FieldsOffset
-import scala.scalanative.runtime.Intrinsics.{
-  castObjectToRawPtr,
-  classFieldRawPtr
-}
-import scala.scalanative.runtime.fromRawPtr
+import scala.scalanative.annotation.align
 import scala.scalanative.meta.LinktimeInfo
+import scala.scalanative.runtime.Intrinsics.{
+  castObjectToRawPtr, classFieldRawPtr
+}
+import scala.scalanative.runtime.MemoryLayout.Object.FieldsOffset
+import scala.scalanative.runtime.fromRawPtr
+import scala.scalanative.unsafe.{Ptr, sizeOf}
 
 package AlignTestCases {
   class NoAlign {

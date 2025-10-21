@@ -3,10 +3,12 @@ package java.util
 
 import java.util._
 
-import org.junit.Test
 import org.junit.Assert._
-import scala.scalanative.junit.utils.CollectionConverters._
+import org.junit.Test
+
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
+
+import scala.scalanative.junit.utils.CollectionConverters._
 
 class ArrayListTest {
 

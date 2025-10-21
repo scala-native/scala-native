@@ -2,8 +2,8 @@ package org.scalanative.testsuite.javalib.math
 
 import java.math.BigDecimal
 
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 
 class BigDecimalConstructorsTestOnJDK19 {
 

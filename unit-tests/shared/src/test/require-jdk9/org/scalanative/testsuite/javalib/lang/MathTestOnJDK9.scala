@@ -1,10 +1,10 @@
 package org.scalanative.testsuite.javalib.lang
 
-import org.junit.Test
-import org.junit.Assert._
-
 import java.math.BigInteger
 import java.util.SplittableRandom
+
+import org.junit.Assert._
+import org.junit.Test
 
 class MathTestOnJDK9 {
 

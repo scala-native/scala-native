@@ -1,5 +1,4 @@
-import java.io.File
-import java.io.FileOutputStream
+import java.io.{File, FileOutputStream}
 
 enablePlugins(ScalaNativePlugin)
 

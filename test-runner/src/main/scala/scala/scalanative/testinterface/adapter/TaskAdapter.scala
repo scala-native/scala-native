@@ -2,8 +2,9 @@ package scala.scalanative.testinterface.adapter
 
 // Ported from Scala.js
 
-import scala.scalanative.testinterface.common._
 import sbt.testing._
+
+import scala.scalanative.testinterface.common._
 
 private[adapter] final class TaskAdapter(
     taskInfo: TaskInfo,

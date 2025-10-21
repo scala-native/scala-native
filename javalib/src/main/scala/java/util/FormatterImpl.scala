@@ -10,12 +10,11 @@ package java.util
 
 import java.io._
 import java.lang.{
-  Double => JDouble,
-  Boolean => JBoolean,
-  StringBuilder => JStringBuilder
+  Boolean => JBoolean, Double => JDouble, StringBuilder => JStringBuilder
 }
 import java.math.{BigDecimal, BigInteger}
 import java.nio.CharBuffer
+
 import scala.annotation.{switch, tailrec}
 
 private[util] abstract class FormatterImpl protected (
@@ -24,9 +23,8 @@ private[util] abstract class FormatterImpl protected (
 ) extends Closeable
     with Flushable {
   self: Formatter =>
+  import FormatterImpl.Flags._
   import FormatterImpl._
-
-  import Flags._
 
   if (dest == null) {
     dest = new JStringBuilder()

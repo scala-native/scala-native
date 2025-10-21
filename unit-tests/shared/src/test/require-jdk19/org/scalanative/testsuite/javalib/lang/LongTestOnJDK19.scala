@@ -6,8 +6,8 @@ package org.scalanative.testsuite.javalib.lang
 
 import java.lang.{Long => JLong}
 
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 
 class LongTestOnJDK19 {
 

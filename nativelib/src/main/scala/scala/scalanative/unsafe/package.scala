@@ -1,12 +1,13 @@
 package scala.scalanative
 
 import java.nio.charset.{Charset, StandardCharsets}
-import scalanative.annotation.alwaysinline
-import scalanative.runtime.{Platform, fromRawPtr, intrinsic, ffi}
-import scalanative.runtime.Intrinsics._
-import scalanative.unsigned._
-import scala.scalanative.meta.LinktimeInfo
+
 import scala.scalanative.memory.PointerBuffer
+import scala.scalanative.meta.LinktimeInfo
+import scalanative.annotation.alwaysinline
+import scalanative.runtime.Intrinsics._
+import scalanative.runtime.{Platform, ffi, fromRawPtr, intrinsic}
+import scalanative.unsigned._
 
 package object unsafe extends unsafe.UnsafePackageCompat {
 

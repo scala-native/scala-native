@@ -2,11 +2,11 @@
 
 package java.util
 
+import java.lang.{reflect => jlr}
+
 import scala.annotation.tailrec
 
 import ScalaOps._
-
-import java.lang.{reflect => jlr}
 
 abstract class AbstractCollection[E] protected () extends Collection[E] {
   def iterator(): Iterator[E]

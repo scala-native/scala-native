@@ -1,20 +1,12 @@
 package scala.scalanative.nscplugin
 
-import dotty.tools.dotc.plugins.PluginPhase
 import dotty.tools._
-import dotc._
-import dotc.ast.tpd._
-import scala.scalanative.nscplugin.CompilerCompat.SymUtilsCompat.*
-import core.Contexts._
-import core.Definitions
-import core.Names._
-import core.Symbols._
-import core.Types._
-import core.StdNames._
-import core.Constants.Constant
-import core.Flags._
+import dotty.tools.dotc._
+import dotty.tools.dotc.ast.tpd._
 import dotty.tools.dotc.config.*
-import NirGenUtil.ContextCached
+import dotty.tools.dotc.plugins.PluginPhase
+
+import scala.scalanative.nscplugin.CompilerCompat.SymUtilsCompat.*
 
 /** This phase does:
  *    - Rewrite calls to scala.Enumeration.Value (include name string) (Ported
@@ -25,6 +17,18 @@ object PrepNativeInterop {
 }
 
 class PrepNativeInterop extends PluginPhase with NativeInteropUtil {
+
+  import core.Constants.Constant
+  import core.Contexts._
+  import core.Definitions
+  import core.Flags._
+  import core.Names._
+  import core.StdNames._
+  import core.Symbols._
+  import core.Types._
+
+  import NirGenUtil.ContextCached
+
   override val runsAfter = Set(transform.PostTyper.name)
   override val runsBefore = Set(transform.Pickler.name)
   val phaseName = PrepNativeInterop.name

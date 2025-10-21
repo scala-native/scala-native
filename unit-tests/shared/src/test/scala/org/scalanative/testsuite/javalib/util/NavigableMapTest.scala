@@ -4,12 +4,12 @@ package org.scalanative.testsuite.javalib.util
 
 import java.{util => ju}
 
-import org.junit.Test
-import org.junit.Assert._
-
 import scala.reflect.ClassTag
 
-import org.scalanative.testsuite.utils.AssertThrows.{assertThrows, _}
+import org.junit.Assert.{assertThrows => _, _}
+import org.junit.Test
+
+import org.scalanative.testsuite.utils.AssertThrows._
 
 trait NavigableMapTest extends SortedMapTest {
 

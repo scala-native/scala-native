@@ -2,13 +2,13 @@
 
 package org.scalajs.testsuite.javalib.nio.charset
 
-import java.nio.charset._
 import java.nio.charset.StandardCharsets._
+import java.nio.charset._
 
 import scala.annotation.tailrec
 
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 
 import org.scalanative.testsuite.javalib.util.TrivialImmutableCollection
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows

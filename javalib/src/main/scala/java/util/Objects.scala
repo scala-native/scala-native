@@ -9,8 +9,8 @@
 
 package java.util
 
-import java.{lang => jl}
 import java.util.function.Supplier
+import java.{lang => jl}
 
 object Objects {
 

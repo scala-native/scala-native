@@ -2,8 +2,8 @@ package org.scalanative.testsuite.javalib.lang
 
 import java.lang._
 
-import org.junit.{Ignore, Test}
 import org.junit.Assert._
+import org.junit.{Ignore, Test}
 
 class ClassTest {
 

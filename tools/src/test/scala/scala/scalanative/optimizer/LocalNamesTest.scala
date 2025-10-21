@@ -1,13 +1,13 @@
 package scala.scalanative
 package optimizer
 
-import org.junit.Test
-import org.junit.Assert._
-
 import scala.collection.mutable
+import scala.reflect.ClassTag
+
+import org.junit.Assert._
+import org.junit.Test
 
 import scala.scalanative.buildinfo.ScalaNativeBuildInfo._
-import scala.reflect.ClassTag
 import scala.scalanative.linker.ReachabilityAnalysis
 
 class LocalNamesTest extends OptimizerSpec {

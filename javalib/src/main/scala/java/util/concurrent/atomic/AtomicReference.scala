@@ -6,13 +6,15 @@
 
 package java.util.concurrent.atomic
 
+import java.util.function.{BinaryOperator, UnaryOperator}
+
 import scala.annotation.tailrec
+
 import scala.scalanative.annotation.alwaysinline
-import scala.scalanative.unsafe._
 import scala.scalanative.libc.stdatomic.AtomicRef
 import scala.scalanative.libc.stdatomic.memory_order._
-import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
-import java.util.function.{BinaryOperator, UnaryOperator}
+import scala.scalanative.runtime.{Intrinsics, fromRawPtr}
+import scala.scalanative.unsafe._
 
 @SerialVersionUID(-1848883965231344442L)
 class AtomicReference[V <: AnyRef](@volatile private var value: V)

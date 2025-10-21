@@ -1,9 +1,10 @@
 package scala.scalanative
 package linker
 
-import org.junit.Test
-import org.junit.Assert._
 import scala.io.AnsiColor
+
+import org.junit.Assert._
+import org.junit.Test
 
 class FoundServiceProvidersTableTest extends LinkerSpec {
   @Test def correctFormatting(): Unit = {

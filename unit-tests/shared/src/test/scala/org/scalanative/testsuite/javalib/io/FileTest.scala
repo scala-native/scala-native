@@ -1,14 +1,14 @@
 package org.scalanative.testsuite.javalib.io
 
 import java.io._
-
 import java.net.URI
 
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform.isWindows
+
 import scala.scalanative.junit.utils.AssumesHelper._
 
 class FileTest {

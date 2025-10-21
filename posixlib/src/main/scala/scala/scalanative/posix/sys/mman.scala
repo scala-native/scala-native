@@ -2,9 +2,8 @@ package scala.scalanative
 package posix
 package sys
 
-import scala.scalanative.unsafe._
-import scala.scalanative.unsafe.extern
 import scala.scalanative.posix.sys.types._
+import scala.scalanative.unsafe._
 
 @extern
 @define("__SCALANATIVE_POSIX_SYS_MMAN")

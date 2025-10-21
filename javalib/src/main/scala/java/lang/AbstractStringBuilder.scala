@@ -4,9 +4,7 @@ package java.lang
 import java.util.{Arrays, Objects}
 
 import scala.scalanative.libc
-
 import scala.scalanative.runtime.ieee754tostring.ryu._
-
 import scala.scalanative.unsafe.Size.intToSize
 import scala.scalanative.unsafe.UnsafeRichArray
 

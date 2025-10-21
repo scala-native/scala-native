@@ -2,11 +2,11 @@
 
 package org.scalanative.testsuite.javalib.util
 
+import java.util.UUID
+
 import org.junit.Assert._
 import org.junit.Assume._
 import org.junit.Test
-
-import java.util.UUID
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform._

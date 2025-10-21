@@ -1,6 +1,7 @@
 package java.io
 
 import java.io.FileDescriptor._
+
 import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.meta.LinktimeInfo.isWindows
 import scala.scalanative.posix.{fcntl, unistd}

@@ -1,16 +1,18 @@
 package java.net
 
-import scala.scalanative.unsigned._
-import scala.scalanative.unsafe._
+import java.io.{FileDescriptor, IOException}
+
+import scala.annotation.tailrec
+
+import scala.scalanative.posix
 import scala.scalanative.posix.errno._
 import scala.scalanative.posix.fcntl._
 import scala.scalanative.posix.poll._
 import scala.scalanative.posix.pollEvents._
 import scala.scalanative.posix.pollOps._
-import scala.scalanative.posix
-import java.io.{FileDescriptor, IOException}
-import scala.annotation.tailrec
 import scala.scalanative.posix.unistd
+import scala.scalanative.unsafe._
+import scala.scalanative.unsigned._
 
 private[net] class UnixPlainDatagramSocketImpl
     extends AbstractPlainDatagramSocketImpl {

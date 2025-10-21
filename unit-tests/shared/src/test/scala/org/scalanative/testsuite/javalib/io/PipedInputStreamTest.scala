@@ -17,8 +17,9 @@
 package org.scalanative.testsuite.javalib.io
 
 import java.io.{IOException, PipedInputStream, PipedOutputStream}
-import org.junit._
+
 import org.junit.Assert._
+import org.junit._
 
 object PipedInputStreamTest {
   @BeforeClass def checkRuntime(): Unit =

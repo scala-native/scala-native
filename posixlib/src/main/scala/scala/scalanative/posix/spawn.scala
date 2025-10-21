@@ -1,9 +1,8 @@
 package scala.scalanative.posix
 
-import scalanative.unsafe._
-import scalanative.unsafe.Nat._
-
 import scala.scalanative.posix.sys.types
+import scalanative.unsafe.Nat._
+import scalanative.unsafe._
 
 /** POSIX spawn.h for Scala
  *

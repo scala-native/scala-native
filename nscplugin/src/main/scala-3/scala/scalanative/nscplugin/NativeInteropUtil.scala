@@ -1,16 +1,15 @@
 package scala.scalanative.nscplugin
 
-import dotty.tools.dotc.plugins.PluginPhase
-import dotty.tools.dotc.core.Contexts.Context
-import dotty.tools.dotc.core.Contexts.ctx
-import dotty.tools.dotc.core.Definitions
-import dotty.tools.dotc.core.Symbols
-import dotty.tools.dotc.core.Flags._
-import scala.scalanative.nscplugin.CompilerCompat.SymUtilsCompat.*
 import dotty.tools.dotc.ast.tpd._
+import dotty.tools.dotc.core.Contexts.{Context, ctx}
+import dotty.tools.dotc.core.Flags._
 import dotty.tools.dotc.core.Names._
 import dotty.tools.dotc.core.Types._
-import dotty.tools.dotc.core.Flags._
+import dotty.tools.dotc.core.{Definitions, Symbols}
+import dotty.tools.dotc.plugins.PluginPhase
+
+import scala.scalanative.nscplugin.CompilerCompat.SymUtilsCompat.*
+
 import NirGenUtil.ContextCached
 
 trait NativeInteropUtil { self: PluginPhase =>

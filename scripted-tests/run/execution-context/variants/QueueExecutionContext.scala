@@ -1,4 +1,5 @@
 import scala.concurrent.Future
+
 import scala.scalanative.concurrent.NativeExecutionContext.Implicits.queue
 
 object Test {

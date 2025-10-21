@@ -2,10 +2,10 @@ package java.net
 
 // Ported from Apache Harmony
 
+import java.io.{Serializable, UnsupportedEncodingException}
 import java.lang.{StringBuilder => JStringBuilder}
-import java.io.Serializable
-import java.io.UnsupportedEncodingException
 import java.util.StringTokenizer
+
 import scala.annotation.nowarn
 
 object URI {

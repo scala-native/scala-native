@@ -1,12 +1,15 @@
 package scala.scalanative
 
-import scala.reflect.internal.util.{BatchSourceFile, NoFile, SourceFile}
-import scala.reflect.internal.util.Position
-import scala.scalanative.compat.ParserCompat.parser
-import scala.tools.nsc.{CompilerCommand, Global, Settings}
-import scala.tools.nsc.io.AbstractFile
-import java.nio.file.{Files, Path}
 import java.io.File
+import java.nio.file.{Files, Path}
+
+import scala.reflect.internal.util.{
+  BatchSourceFile, NoFile, Position, SourceFile
+}
+import scala.tools.nsc.io.AbstractFile
+import scala.tools.nsc.{CompilerCommand, Global, Settings}
+
+import scala.scalanative.compat.ParserCompat.parser
 import scala.scalanative.compiler.CompatReporter
 
 /** Helper class to compile snippets of code.

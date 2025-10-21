@@ -1,16 +1,18 @@
 package scala.scalanative.runtime
 
+import java.io.InputStream
+import java.lang.ClassLoader
 import java.lang.reflect.{Field, Method}
+import java.nio.file.Paths
+
 import scala.language.implicitConversions
 
 import scala.scalanative.annotation._
-import scala.scalanative.unsafe._
+import scala.scalanative.runtime.resource.{
+  EmbeddedResourceHelper, EmbeddedResourceInputStream
+}
 import scala.scalanative.runtime.{Array => RuntimeArray, _}
-import scala.scalanative.runtime.resource.EmbeddedResourceInputStream
-import scala.scalanative.runtime.resource.EmbeddedResourceHelper
-import java.io.InputStream
-import java.lang.ClassLoader
-import java.nio.file.Paths
+import scala.scalanative.unsafe._
 
 // Emitted as java.lang.Class
 private[runtime] final class _Class[A] {

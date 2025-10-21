@@ -2,12 +2,15 @@ package scala.scalanative
 package nscplugin
 
 import scala.tools.nsc.Global
+
 import scalanative.util.unreachable
 
 trait NirGenName[G <: Global with Singleton] {
   self: NirGenPhase[G] =>
 
-  import global.{Name => _, _}, definitions._
+  import global.definitions._
+  import global.{Name => _, _}
+
   import nirAddons.nirDefinitions._
 
   def genAnonName(owner: Symbol, anon: Symbol) =

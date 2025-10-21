@@ -8,11 +8,12 @@
 
 package niocharset
 
-import scala.annotation.tailrec
-import scala.scalanative.unsafe.UnsafeRichArray
-
 import java.nio._
 import java.nio.charset._
+
+import scala.annotation.tailrec
+
+import scala.scalanative.unsafe.UnsafeRichArray
 
 private[niocharset] object UTF_8
     extends Charset("UTF-8", Array("UTF8", "unicode-1-1-utf-8")) {

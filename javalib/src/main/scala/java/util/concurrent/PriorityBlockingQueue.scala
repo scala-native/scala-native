@@ -9,10 +9,12 @@ import java.util
 import java.util._
 import java.util.concurrent.locks._
 import java.util.function._
+
 import scala.annotation.tailrec
-import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
-import scala.scalanative.libc.stdatomic.AtomicInt
+
 import scala.scalanative.annotation.safePublish
+import scala.scalanative.libc.stdatomic.AtomicInt
+import scala.scalanative.runtime.{Intrinsics, fromRawPtr}
 
 @SerialVersionUID(5595510919245408276L)
 object PriorityBlockingQueue {

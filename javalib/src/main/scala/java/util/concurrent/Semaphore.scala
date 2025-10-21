@@ -7,7 +7,9 @@
 package java.util.concurrent
 import java.util.Collection
 import java.util.concurrent.locks.AbstractQueuedSynchronizer
+
 import scala.annotation.tailrec
+
 import scala.scalanative.annotation.safePublish
 
 object Semaphore {

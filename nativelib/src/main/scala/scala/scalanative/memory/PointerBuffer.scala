@@ -1,11 +1,11 @@
 package scala.scalanative.memory
 
-import scala.language.implicitConversions
-
 import java.nio._
 
-import scala.scalanative.unsafe._
+import scala.language.implicitConversions
+
 import scala.scalanative.javalibintf.{PointerBuffer => Intf}
+import scala.scalanative.unsafe._
 
 /** Factory methods to create direct buffers from valid memory pointers.
  *

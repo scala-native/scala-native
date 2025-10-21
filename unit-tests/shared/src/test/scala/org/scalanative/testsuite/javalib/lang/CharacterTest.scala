@@ -2,17 +2,8 @@ package org.scalanative.testsuite.javalib.lang
 
 import java.lang._
 
-/** Test suite for [[java.lang.Character]]
- *
- *  To be consistent the implementations should be based on Unicode 7.0.
- *  @see
- *    [[http://www.unicode.org/Public/7.0.0 Unicode 7.0]]
- *
- *  Overall code point range U+0000 - U+D7FF and U+E000 - U+10FFF. Surrogate
- *  code points are in the gap and U+FFFF is the max value for [[scala.Char]].
- */
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 

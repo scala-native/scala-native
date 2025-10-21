@@ -1,18 +1,17 @@
 package scala.scalanative
 package nscplugin
 
+import dotty.tools.dotc.ast.tpd._
+import dotty.tools.dotc.{core, report}
 import scala.language.implicitConversions
 
-import dotty.tools.dotc.ast.tpd._
-import dotty.tools.dotc.core
-import core.Contexts._
-import core.Symbols._
-import core.Flags._
-import core.Annotations.*
-import dotty.tools.dotc.report
 import scala.scalanative.nscplugin.CompilerCompat.SymUtilsCompat.*
-
 import scala.scalanative.util.ScopedVar.scoped
+
+import core.Annotations.*
+import core.Contexts._
+import core.Flags._
+import core.Symbols._
 
 trait GenNativeExports(using Context):
   self: NirCodeGen =>

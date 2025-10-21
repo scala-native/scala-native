@@ -1,9 +1,9 @@
 package scala.scalanative.ffi
 
 import scala.scalanative.annotation.alwaysinline
-import scala.scalanative.unsafe._
 import scala.scalanative.meta.LinktimeInfo.isWindows
-import scala.scalanative.runtime.{fromRawUSize, Intrinsics}
+import scala.scalanative.runtime.{Intrinsics, fromRawUSize}
+import scala.scalanative.unsafe._
 
 private[ffi] object zlibPlatformCompat {
   @extern @link("zlib")
@@ -21,7 +21,7 @@ private[ffi] object zlibPlatformCompat {
 @define("__SCALANATIVE_JAVALIB_Z")
 @extern
 trait zlib {
-  import zlibOps.{z_stream, gz_header}
+  import zlibOps.{gz_header, z_stream}
   type voidpf = CVoidPtr
   type voidp = CVoidPtr
   type voidpc = CVoidPtr

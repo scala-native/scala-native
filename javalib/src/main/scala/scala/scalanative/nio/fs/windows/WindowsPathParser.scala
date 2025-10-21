@@ -1,8 +1,10 @@
 package scala.scalanative.nio.fs.windows
 
-import scalanative.annotation.alwaysinline
 import java.nio.file.InvalidPathException
+
 import scala.annotation.tailrec
+
+import scalanative.annotation.alwaysinline
 
 object WindowsPathParser {
   import WindowsPath.PathType._

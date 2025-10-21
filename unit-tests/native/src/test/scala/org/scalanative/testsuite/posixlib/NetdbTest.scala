@@ -1,21 +1,19 @@
 package org.scalanative.testsuite.posixlib
 
-import org.scalanative.testsuite.utils.Platform
-import scalanative.meta.LinktimeInfo.isWindows
-
 import scala.annotation.tailrec
 
-import scalanative.unsafe._
-import scalanative.unsigned._
+import org.junit.Assert._
+import org.junit.Test
+
+import org.scalanative.testsuite.utils.Platform
 
 import scalanative.libc.string.{strlen, strncmp}
-
+import scalanative.meta.LinktimeInfo.isWindows
 import scalanative.posix.netdb._
 import scalanative.posix.netdbOps._
 import scalanative.posix.sys.socket.{AF_INET, AF_UNSPEC, SOCK_DGRAM}
-
-import org.junit.Test
-import org.junit.Assert._
+import scalanative.unsafe._
+import scalanative.unsigned._
 
 class NetdbTest {
 

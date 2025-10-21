@@ -8,10 +8,8 @@
 package scala.scalanative
 package regex
 
-import java.util.ArrayList
-import java.util.HashMap
-
 import java.util.regex.PatternSyntaxException
+import java.util.{ArrayList, HashMap}
 
 import scala.annotation.switch
 

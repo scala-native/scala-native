@@ -1,18 +1,19 @@
 package scala.scalanative
 package codegen
 
-import java.nio.file.{Path, Paths}
-import scalanative.io.VirtualDirectory
-import scalanative.build.{Config, ScalaNative}
-import scala.scalanative.linker.ReachabilityAnalysis
-import scalanative.util.Scope
-import scala.concurrent._
+import java.nio.file.{Files, Path, Paths}
+
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent._
 import scala.concurrent.duration._
 
 import org.junit.Assert._
+
 import scala.scalanative.build.NativeConfig
-import java.nio.file.Files
+import scala.scalanative.linker.ReachabilityAnalysis
+import scalanative.build.{Config, ScalaNative}
+import scalanative.io.VirtualDirectory
+import scalanative.util.Scope
 
 /** Base class to test code generation */
 abstract class CodeGenSpec extends OptimizerSpec {

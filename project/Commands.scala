@@ -1,9 +1,11 @@
 package build
 
 import sbt._
-import Keys._
-import Build._
+
 import com.typesafe.tools.mima.plugin.MimaPlugin.autoImport._
+
+import Build._
+import Keys._
 import ScriptedPlugin.autoImport._
 
 object Commands {

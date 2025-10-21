@@ -1,37 +1,34 @@
 package scala.scalanative.nio.fs
 
-import scalanative.unsigned._
-import scalanative.libc._
-import scalanative.posix.dirent._
-import scalanative.posix.DirentImpl.scalanative_readdirImpl
+import java.io.{File, IOException}
+import java.nio.charset.StandardCharsets
+import java.nio.file.{Path, PosixException, WindowsException}
+import java.{lang => jl, util => ju}
 
-// Import posix name errno as variable, not class or type.
-import scalanative.posix.{errno => posixErrno}, posixErrno._
-import scalanative.posix.stdlib
-import scalanative.posix.unistd, unistd.access
-
-import scalanative.unsafe._, stdio._
-import scalanative.meta.LinktimeInfo.isWindows
 import scala.collection.mutable.UnrolledBuffer
 import scala.reflect.ClassTag
 
-import java.io.{File, IOException}
-
-import java.{lang => jl}
-import java.nio.charset.StandardCharsets
-import java.nio.file.{Path, PosixException}
-import java.{util => ju}
-
-import scala.scalanative.windows._
-import scala.scalanative.windows.HandleApiExt.INVALID_HANDLE_VALUE
+import scala.scalanative.nio.fs.unix.UnixException
+import scala.scalanative.windows.ErrorHandlingApi._
 import scala.scalanative.windows.FileApi._
 import scala.scalanative.windows.FileApiExt._
 import scala.scalanative.windows.FileApiOps._
-import scala.scalanative.windows.ErrorHandlingApi._
+import scala.scalanative.windows.HandleApiExt.INVALID_HANDLE_VALUE
+import scala.scalanative.windows._
 import scala.scalanative.windows.winnt.AccessRights._
+import scalanative.libc._
+import scalanative.meta.LinktimeInfo.isWindows
+import scalanative.posix.DirentImpl.scalanative_readdirImpl
+import scalanative.posix.dirent._
+// Import posix name errno as variable, not class or type.
+import scalanative.posix.{errno => posixErrno, stdlib, unistd}
+import scalanative.unsafe._
+import scalanative.unsigned._
 
-import java.nio.file.WindowsException
-import scala.scalanative.nio.fs.unix.UnixException
+import stdio._
+import unistd.access
+
+import posixErrno._
 
 object FileHelpers {
   sealed trait FileType

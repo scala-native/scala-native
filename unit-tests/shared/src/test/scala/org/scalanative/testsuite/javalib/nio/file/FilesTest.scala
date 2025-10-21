@@ -1,31 +1,26 @@
 package org.scalanative.testsuite.javalib.nio.file
 
 import java.io._
-
 import java.nio.ByteBuffer
-import java.nio.file._
-import java.nio.file.attribute._
-import java.nio.file.attribute.PosixFilePermission._
+import java.nio.charset.StandardCharsets
 import java.nio.file.StandardCopyOption._
-
-import java.util.{Arrays, TreeSet, Collections}
-import java.util.EnumSet
+import java.nio.file._
+import java.nio.file.attribute.PosixFilePermission._
+import java.nio.file.attribute._
 import java.util.function.{BiPredicate, IntFunction}
+import java.util.{Arrays, Collections, EnumSet, TreeSet}
 
-import org.junit.Test
+import scala.util.{Failure, Try}
+
 import org.junit.Assert._
 import org.junit.Assume._
-import org.junit.Ignore
-
-import scala.util.{Try, Failure}
+import org.junit.{Ignore, Test}
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
-import scala.scalanative.junit.utils.CollectionConverters._
-import scala.scalanative.junit.utils.AssumesHelper.assumeNotJVMCompliant
-import org.scalanative.testsuite.utils.Platform.{isWindows, executingInJVM}
+import org.scalanative.testsuite.utils.Platform.{executingInJVM, isWindows}
 
-import java.nio.charset.StandardCharsets
-import java.nio.file.attribute.PosixFilePermissions
+import scala.scalanative.junit.utils.AssumesHelper.assumeNotJVMCompliant
+import scala.scalanative.junit.utils.CollectionConverters._
 
 /* See also FilesCopyTest.scala. It provides additional Tests for
  * Files.copy(), including some advanced Tests for use by developer

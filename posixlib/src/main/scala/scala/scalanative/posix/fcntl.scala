@@ -1,10 +1,10 @@
 package scala.scalanative
 package posix
 
-import scalanative.unsafe._
-import scalanative.posix.sys.stat.mode_t
-import scala.scalanative.posix.unistd.off_t
 import scala.scalanative.posix.sys.types.pid_t
+import scala.scalanative.posix.unistd.off_t
+import scalanative.posix.sys.stat.mode_t
+import scalanative.unsafe._
 
 @extern
 @define("__SCALANATIVE_POSIX_FCNTL")

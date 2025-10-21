@@ -1,15 +1,15 @@
 package scala.scalanative
 package testinterface
 
-import scalanative.meta.LinktimeInfo
-
 import java.net.Socket
-import scala.scalanative.runtime.testinterface.signalhandling.SignalConfig
 
-import scalanative.posix.sys.socket._
-import scalanative.posix.netinet.in
-import scalanative.posix.unistd
 import scala.concurrent.ExecutionContext
+
+import scala.scalanative.runtime.testinterface.signalhandling.SignalConfig
+import scalanative.meta.LinktimeInfo
+import scalanative.posix.netinet.in
+import scalanative.posix.sys.socket._
+import scalanative.posix.unistd
 
 object TestMain {
 

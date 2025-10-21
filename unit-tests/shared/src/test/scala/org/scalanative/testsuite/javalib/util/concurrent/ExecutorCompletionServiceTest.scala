@@ -9,12 +9,12 @@
 package org.scalanative.testsuite.javalib.util.concurrent
 
 import java.util._
-import java.util.concurrent._
 import java.util.concurrent.TimeUnit._
+import java.util.concurrent._
 import java.util.concurrent.atomic.AtomicBoolean
 
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 
 class ExecutorCompletionServiceTest extends JSR166Test {
   import JSR166Test._

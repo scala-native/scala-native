@@ -1,5 +1,7 @@
 import java.nio.file.{Path, Paths}
+
 import scala.sys.process.Process
+
 import scala.scalanative.build.Discover
 
 enablePlugins(ScalaNativePlugin)

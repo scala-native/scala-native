@@ -1,8 +1,8 @@
 package scala.scalanative
 package posix
 
+import scalanative.posix.sys.types.{gid_t, uid_t}
 import scalanative.unsafe._
-import scalanative.posix.sys.types.{uid_t, gid_t}
 
 @extern
 @define("__SCALANATIVE_POSIX_PWD")

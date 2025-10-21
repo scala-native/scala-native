@@ -6,8 +6,8 @@
 
 package java.util
 
-import java.{util => ju}
 import java.util.function.BiConsumer
+import java.{util => ju}
 
 class LinkedHashMap[K, V](
     initialCapacity: Int,

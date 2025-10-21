@@ -1,7 +1,7 @@
 package java.net
 
-import java.nio.file.{Paths, Files}
 import java.io.{BufferedReader, InputStreamReader}
+import java.nio.file.{Files, Paths}
 
 object TimeoutTest {
 

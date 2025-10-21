@@ -1,13 +1,13 @@
 package org.scalanative.testsuite.niobuffer
 
-import scala.scalanative.unsafe._
-import scala.scalanative.memory.PointerBuffer
 import java.nio._
 
 import org.scalanative.testsuite.javalib.nio.BufferFactory.{
-  ByteBufferFactory,
-  WrappedPointerBufferFactory
+  ByteBufferFactory, WrappedPointerBufferFactory
 }
+
+import scala.scalanative.memory.PointerBuffer
+import scala.scalanative.unsafe._
 
 object ByteBufferNativeFactories {
   class WrappedPointerByteBufferFactory

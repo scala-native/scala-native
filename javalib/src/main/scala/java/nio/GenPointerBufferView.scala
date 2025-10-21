@@ -1,9 +1,10 @@
 package java.nio
 
+import java.util.Objects
+
+import scala.scalanative.libc.string
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
-import scala.scalanative.libc.string
-import java.util.Objects
 
 // Based on the code ported from Scala.js,
 // see GenHeapBufferView.scala

@@ -1,14 +1,16 @@
 package scala.scalanative.runtime.monitor
 
-import scala.annotation.{tailrec, switch}
+import java.util.concurrent.locks.LockSupport
+
+import scala.annotation.{switch, tailrec}
+
 import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.runtime.Intrinsics._
-import scala.scalanative.runtime.{RawPtr, NativeThread, Intrinsics}
 import scala.scalanative.runtime.ffi._
 import scala.scalanative.runtime.ffi.stdatomic._
 import scala.scalanative.runtime.ffi.stdatomic.memory_order._
-import scala.scalanative.unsafe.{stackalloc => _, sizeOf => _, _}
-import java.util.concurrent.locks.LockSupport
+import scala.scalanative.runtime.{Intrinsics, NativeThread, RawPtr}
+import scala.scalanative.unsafe.{sizeOf => _, stackalloc => _, _}
 
 /** Heavy-weight monitor created only upon detection of access from multiple
  *  threads is inflated in ObjectMonitor

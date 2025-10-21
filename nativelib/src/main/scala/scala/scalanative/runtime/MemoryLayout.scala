@@ -1,8 +1,8 @@
 package scala.scalanative.runtime
 
 import scala.scalanative.annotation.alwaysinline
-import scala.scalanative.runtime.Intrinsics.{castRawSizeToInt, sizeOf}
 import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
+import scala.scalanative.runtime.Intrinsics.{castRawSizeToInt, sizeOf}
 
 private[runtime] object MemoryLayout {
 

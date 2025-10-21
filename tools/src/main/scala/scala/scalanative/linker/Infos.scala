@@ -2,6 +2,7 @@ package scala.scalanative
 package linker
 
 import scala.collection.mutable
+
 import scala.scalanative.linker.LinktimeIntrinsicCallsResolver.FoundServiceProviders
 
 sealed abstract class Info {

@@ -1,9 +1,8 @@
 package java.util.stream
 
-import java.{lang => jl}
-import java.{util => ju}
 import java.util._
 import java.util.function._
+import java.{lang => jl, util => ju}
 
 /* See "Design Note" at top of DoubleStream.scala for jl.Double & scala.Double
  * TL;DR - later is explicitly used where a primitive is desired.

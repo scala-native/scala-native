@@ -1,19 +1,21 @@
 package scala.scalanative
 package nscplugin
 
-import scala.annotation.{tailrec, switch}
+import scala.annotation.{switch, tailrec}
 import scala.collection.mutable
 import scala.tools.nsc
-import scalanative.util.{StringUtils, unsupported}
-import scalanative.util.ScopedVar.scoped
+
 import scalanative.nscplugin.NirPrimitives._
+import scalanative.util.ScopedVar.scoped
+import scalanative.util.{StringUtils, unsupported}
 
 trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
+  import global.definitions._
   import global.{definitions => defn, _}
-  import defn._
-  import treeInfo.{hasSynthCaseSymbol, StripCast}
+
   import nirAddons._
   import nirDefinitions._
+  import treeInfo.{StripCast, hasSynthCaseSymbol}
 
   sealed case class ValTree(value: nir.Val)(
       pos: global.Position = global.NoPosition

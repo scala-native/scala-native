@@ -96,19 +96,16 @@ package java.util.random
  *     need not be qualified.
  */
 
-import java.{lang => jl}
-
-import java.util._
 import java.util.Spliterators._
+import java.util._
 import java.util.function._
 import java.util.stream._
+import java.{lang => jl}
 
 import scala.scalanative.meta.LinktimeInfo
-
 import scala.scalanative.posix.unistd
-
-import scala.scalanative.unsafe._
 import scala.scalanative.unsafe.Size.intToSize
+import scala.scalanative.unsafe._
 
 trait RandomGenerator {
 
@@ -133,10 +130,10 @@ trait RandomGenerator {
    * The Scala Native work which does follows the Scala.js section.
    */
 
+  import java.util.ScalaOps._
+
 // Begin Ported from Scala.js commit: 9cb865f dated: 2025-03-16
   import scala.annotation.tailrec
-
-  import java.util.ScalaOps._
 
   // Comments starting with `// >` are cited from the JavaDoc.
   def nextBoolean(): scala.Boolean =

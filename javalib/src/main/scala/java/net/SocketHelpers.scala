@@ -1,23 +1,25 @@
 package java.net
 
-import scala.scalanative.unsigned._
-import scala.scalanative.unsafe._
-
-import java.io.IOException
-import java.io.FileDescriptor
-
-import scala.scalanative.posix.arpa.inet
-import scala.scalanative.posix.{netdb, netdbOps}, netdb._, netdbOps._
-import scala.scalanative.posix.netinet.{in, inOps}, in._, inOps._
-import scala.scalanative.posix.sys.socket
-import scala.scalanative.posix.sys.socket._
-import scala.scalanative.posix.sys.socketOps._
-import scala.scalanative.posix.string.memcpy
+import java.io.{FileDescriptor, IOException}
 
 import scala.scalanative.meta.LinktimeInfo
 import scala.scalanative.meta.LinktimeInfo.isWindows
-
+import scala.scalanative.posix.arpa.inet
+import scala.scalanative.posix.netinet.{in, inOps}
+import scala.scalanative.posix.string.memcpy
+import scala.scalanative.posix.sys.socket
+import scala.scalanative.posix.sys.socket._
+import scala.scalanative.posix.sys.socketOps._
+import scala.scalanative.posix.{netdb, netdbOps}
+import scala.scalanative.unsafe._
+import scala.scalanative.unsigned._
 import scala.scalanative.windows.WinSocketApiOps
+
+import in._
+import netdb._
+
+import inOps._
+import netdbOps._
 
 object SocketHelpers {
   if (isWindows) {

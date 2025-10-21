@@ -2,10 +2,8 @@ package org.scalanative.testsuite.javalib.net
 
 import java.net._
 
-// Ported from Apache Harmony
-
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform

@@ -4,15 +4,12 @@ package java.util.random
  * attributions and algorithm hints.
  */
 
-import java.{lang => jl}
-import java.util.{stream => jus}
-
 import java.nio.ByteBuffer
-
-import java.util.{Spliterator, Spliterators}
 import java.util.Spliterators.AbstractSpliterator
 import java.util.function.{Consumer, Supplier}
 import java.util.stream.{Stream, StreamSupport}
+import java.util.{Spliterator, Spliterators, stream => jus}
+import java.{lang => jl}
 
 private final class L32X64MixRandom private[random] (
     private var a: Int, // Per-instance additive parameter (must be odd)

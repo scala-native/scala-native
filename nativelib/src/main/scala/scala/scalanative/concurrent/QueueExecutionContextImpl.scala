@@ -1,15 +1,15 @@
 package scala.scalanative.concurrent
 
-import scala.concurrent.{ExecutionContextExecutor, ExecutionContext}
-import scala.concurrent.duration._
-import scala.collection.mutable
-
-import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
-import scala.scalanative.concurrent.NativeExecutionContext._
-import scala.scalanative.runtime.MainThreadShutdownContext
-
-import java.util.{AbstractQueue, ArrayDeque, Comparator, Deque, PriorityQueue}
 import java.util.concurrent.{ConcurrentLinkedQueue, RejectedExecutionException}
+import java.util.{AbstractQueue, ArrayDeque, Comparator, Deque, PriorityQueue}
+
+import scala.collection.mutable
+import scala.concurrent.duration._
+import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
+
+import scala.scalanative.concurrent.NativeExecutionContext._
+import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
+import scala.scalanative.runtime.MainThreadShutdownContext
 
 private[concurrent] class QueueExecutionContextImpl()
     extends InternalQueueExecutionContext {

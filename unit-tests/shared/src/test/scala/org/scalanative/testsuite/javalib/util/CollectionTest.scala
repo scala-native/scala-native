@@ -3,17 +3,17 @@
 
 package org.scalanative.testsuite.javalib.util
 
-import java.{util => ju, lang => jl}
 import java.util.Spliterator
-import org.junit.Test
-import org.junit.Assert._
-
-import org.scalanative.testsuite.javalib.lang.IterableFactory
-import org.scalanative.testsuite.javalib.lang.IterableTest
+import java.{lang => jl, util => ju}
 
 import scala.reflect.ClassTag
 
+import org.junit.Assert._
+import org.junit.Test
+
+import org.scalanative.testsuite.javalib.lang.{IterableFactory, IterableTest}
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
+
 import Utils._
 
 /* Design Note:

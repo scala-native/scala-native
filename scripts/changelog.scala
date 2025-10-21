@@ -2,14 +2,14 @@
 //> using dep org.kohsuke:github-api:1.330
 //> using toolkit latest
 
-import scala.collection.mutable.ListBuffer
-import scala.collection.JavaConverters._
-import scala.collection.mutable
-
-import org.kohsuke.github.GitHubBuilder
-
 import java.text.SimpleDateFormat
 import java.util.Date
+
+import scala.collection.JavaConverters._
+import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
+
+import org.kohsuke.github.GitHubBuilder
 
 val defaultToken = sys.env.get("GITHUB_TOKEN")
 

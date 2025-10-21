@@ -1,8 +1,8 @@
 package java.lang
 
-import scalanative.runtime.LLVMIntrinsics._
-import scalanative.libc.{math => cmath}
 import scalanative.annotation.alwaysinline
+import scalanative.libc.{math => cmath}
+import scalanative.runtime.LLVMIntrinsics._
 
 private[lang] object MathRand {
   val rand = new java.util.Random

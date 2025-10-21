@@ -1,13 +1,13 @@
 package scala.scalanative.junit.plugin
 
 import dotty.tools.dotc.core
-import core.Symbols._
-import core.Symbols.given
-import core.Contexts._
-import core.Types._
-import core.StdNames._
 import scala.annotation.threadUnsafe
 import scala.compiletime.uninitialized
+
+import core.Contexts._
+import core.StdNames._
+import core.Symbols.{_, given}
+import core.Types._
 
 object JUnitDefinitions {
   private var cached: JUnitDefinitions = uninitialized

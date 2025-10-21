@@ -1,10 +1,10 @@
 package org.scalanative.testsuite.javalib.util.zip
 
-import java.util.zip._
 import java.io.ByteArrayOutputStream
+import java.util.zip._
 
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 
 class DeflaterTest {
 

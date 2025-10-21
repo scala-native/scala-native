@@ -1,15 +1,10 @@
 package java.util.zip
 
 import java.io.{
-  EOFException,
-  IOException,
-  InputStream,
-  PushbackInputStream,
+  EOFException, IOException, InputStream, PushbackInputStream,
   UTFDataFormatException
 }
-
 import java.nio.charset.{Charset, StandardCharsets}
-
 import java.util.jar.JarEntry
 
 // Ported from Apache Harmony. Updated, especially Charset, for Scala Native.

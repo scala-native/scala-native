@@ -2,16 +2,16 @@ package org.scalanative.testsuite.javalib.lang.ref
 
 import java.lang.ref._
 
-import org.junit.Test
 import org.junit.Assert._
 import org.junit.Assume._
+import org.junit.Test
 
-import scala.scalanative.meta.LinktimeInfo.isWeakReferenceSupported
+import org.scalanative.testsuite.utils.Platform
+
 import scala.scalanative.annotation.nooptimize
 import scala.scalanative.buildinfo.ScalaNativeBuildInfo
-
+import scala.scalanative.meta.LinktimeInfo.isWeakReferenceSupported
 import scala.scalanative.runtime.GC
-import org.scalanative.testsuite.utils.Platform
 import scala.scalanative.unsafe._
 
 // "AfterGC" tests are very sensitive to optimizations,

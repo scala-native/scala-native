@@ -1,12 +1,11 @@
 package java.lang
 
-import scalanative.libc
-import scalanative.runtime.Intrinsics
-
-import scalanative.runtime.ieee754tostring.ryu.{RyuRoundingMode, RyuFloat}
-
 import java.lang.IEEE754Helpers.parseIEEE754
 import java.lang.constant.{Constable, ConstantDesc}
+
+import scalanative.libc
+import scalanative.runtime.Intrinsics
+import scalanative.runtime.ieee754tostring.ryu.{RyuFloat, RyuRoundingMode}
 
 final class Float(val _value: scala.Float)
     extends Number

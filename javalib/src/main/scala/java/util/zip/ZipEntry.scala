@@ -3,17 +3,12 @@ package java.util.zip
 // Ported from Apache Harmony. Extensive changes for Scala Native.
 
 import java.io.{
-  EOFException,
-  InputStream,
-  RandomAccessFile,
-  UnsupportedEncodingException
+  EOFException, InputStream, RandomAccessFile, UnsupportedEncodingException
 }
-
 import java.nio.charset.Charset
 
 import scala.scalanative.posix.time._
 import scala.scalanative.posix.timeOps.tmOps
-
 import scala.scalanative.unsafe._
 
 class ZipEntry private (

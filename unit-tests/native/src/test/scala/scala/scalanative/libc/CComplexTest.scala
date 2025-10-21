@@ -3,12 +3,12 @@ package libc
 
 import java.{lang => jl}
 
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 
-import scalanative.unsafe._
 import scalanative.libc.complex._
 import scalanative.libc.complexOps._
+import scalanative.unsafe._
 
 /** Reference http://en.cppreference.com/w/c/numeric/complex
  *

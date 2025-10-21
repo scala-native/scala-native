@@ -1,7 +1,6 @@
 package org.scalanative.testsuite.utils
 
 import java.util.Locale
-// Ported from Scala.js
 
 import scala.scalanative.buildinfo.ScalaNativeBuildInfo
 

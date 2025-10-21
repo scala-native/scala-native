@@ -17,15 +17,12 @@
 
 package org.scalanative.testsuite.javalib.io
 
-import org.junit._
-import org.junit.Assert._
-
 import java.io.{
-  IOException,
-  PipedInputStream,
-  PipedOutputStream,
-  UnsupportedEncodingException
+  IOException, PipedInputStream, PipedOutputStream, UnsupportedEncodingException
 }
+
+import org.junit.Assert._
+import org.junit._
 
 object PipedOutputStreamTest {
   @BeforeClass def checkRuntime(): Unit =

@@ -1,9 +1,9 @@
 package scala.scalanative.runtime
 
-import scala.scalanative.runtime._
-import scala.scalanative.runtime.Intrinsics._
-import scala.scalanative.unsigned._
 import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
+import scala.scalanative.runtime.Intrinsics._
+import scala.scalanative.runtime._
+import scala.scalanative.unsigned._
 
 // emmited as java.lang.Object
 private[runtime] class _Object {

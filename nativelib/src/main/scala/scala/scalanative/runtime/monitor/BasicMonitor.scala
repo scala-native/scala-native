@@ -1,15 +1,17 @@
 package scala.scalanative.runtime
 package monitor
 
-import LockWord._
 import scala.annotation.tailrec
+
 import scala.scalanative.annotation.alwaysinline
-import scala.scalanative.unsafe.{stackalloc => _, _}
+import scala.scalanative.meta.LinktimeInfo.{is32BitPlatform => is32bit}
 import scala.scalanative.runtime.Intrinsics._
 import scala.scalanative.runtime.ffi._
 import scala.scalanative.runtime.ffi.stdatomic._
 import scala.scalanative.runtime.ffi.stdatomic.memory_order._
-import scala.scalanative.meta.LinktimeInfo.{is32BitPlatform => is32bit}
+import scala.scalanative.unsafe.{stackalloc => _, _}
+
+import LockWord._
 
 /** Lightweight monitor used for single-threaded execution, upon detection of
  *  access from multiple threads is inflated in ObjectMonitor

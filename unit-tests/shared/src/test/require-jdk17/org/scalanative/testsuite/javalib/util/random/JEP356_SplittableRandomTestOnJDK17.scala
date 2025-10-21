@@ -7,17 +7,15 @@ package org.scalanative.testsuite.javalib.util.random
 
 // Credit & thanks to https://www.random.org/ for the arbitrary seeds.
 
-import org.junit.Test
+import java.util.random.{RandomGenerator, RandomGeneratorFactory}
+import java.util.{Arrays, Spliterator}
+import java.{lang => jl}
+
 import org.junit.Assert._
+import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform
-
-import java.{lang => jl}
-
-import java.util.{Arrays, Spliterator}
-
-import java.util.random.{RandomGenerator, RandomGeneratorFactory}
 
 class JEP356_SplittableRandomTestOnJDK17 {
 

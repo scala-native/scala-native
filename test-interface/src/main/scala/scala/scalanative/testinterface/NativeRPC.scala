@@ -3,12 +3,14 @@ package testinterface
 
 import java.io.{DataInputStream, DataOutputStream, EOFException}
 import java.net.Socket
+import java.nio.charset.StandardCharsets
+
 import scala.annotation.tailrec
 import scala.concurrent.ExecutionContext
-import scala.scalanative.testinterface.common.RPCCore
 import scala.util.{Failure, Success, Try}
-import java.nio.charset.StandardCharsets
+
 import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
+import scala.scalanative.testinterface.common.RPCCore
 
 /** Native RPC Core. */
 private[testinterface] class NativeRPC(clientSocket: Socket)(implicit

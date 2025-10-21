@@ -1,22 +1,18 @@
 package org.scalanative.testsuite.javalib.util.zip
 
-import org.junit.Test
+import java.io.{
+  BufferedInputStream, BufferedOutputStream, FileInputStream, FileOutputStream
+}
+import java.nio.charset.{Charset, StandardCharsets}
+import java.nio.file.{Files, Paths}
+import java.util.stream.Stream
+import java.util.zip.{ZipEntry, ZipFile, ZipInputStream, ZipOutputStream}
+
 import org.junit.Assert._
-import org.junit.BeforeClass
+import org.junit.{BeforeClass, Test}
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform
-
-import java.io.{BufferedInputStream, FileInputStream}
-import java.io.{BufferedOutputStream, FileOutputStream}
-
-import java.nio.charset.{Charset, StandardCharsets}
-import java.nio.file.{Files, Paths}
-
-import java.util.stream.Stream
-
-import java.util.zip.{ZipEntry, ZipFile}
-import java.util.zip.{ZipInputStream, ZipOutputStream}
 
 /* Selected Tests of the use of UTF-8 characters in Scala Native
  * for java.util.zip.

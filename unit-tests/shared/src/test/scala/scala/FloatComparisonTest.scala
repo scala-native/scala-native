@@ -1,7 +1,7 @@
 package scala
 
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 
 class FloatComparisonTest {
   @Test def fcmp(): Unit = {

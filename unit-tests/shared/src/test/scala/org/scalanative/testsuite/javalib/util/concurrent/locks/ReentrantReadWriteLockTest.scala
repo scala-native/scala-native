@@ -8,18 +8,19 @@
 package org.scalanative.testsuite.javalib.util.concurrent
 package locks
 
-import org.junit.Assert._
-import org.junit.{Test, Ignore}
-import org.scalanative.testsuite.javalib.util.concurrent.JSR166Test
-import JSR166Test._
-
-import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util
+import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util.concurrent._
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.locks._
+import java.util.{Arrays, Collection, Date, HashSet}
 
-import java.util.{Arrays, Collection, HashSet, Date}
+import org.junit.Assert._
+import org.junit.{Ignore, Test}
+
+import org.scalanative.testsuite.javalib.util.concurrent.JSR166Test
+
+import JSR166Test._
 
 object ReentrantReadWriteLockTest {
 

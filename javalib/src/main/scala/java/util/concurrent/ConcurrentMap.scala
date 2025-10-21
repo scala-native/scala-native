@@ -7,7 +7,7 @@
 package java.util.concurrent
 
 import java.util._
-import java.util.function.{BiFunction, Function, BiConsumer}
+import java.util.function.{BiConsumer, BiFunction, Function}
 import java.{util => ju}
 
 trait ConcurrentMap[K, V] extends Map[K, V] {

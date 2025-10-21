@@ -1,15 +1,15 @@
 package org.scalanative.testsuite.javalib.nio.file.attribute
 
-import java.nio.file.attribute._
 import java.nio.file.FileSystems
+import java.nio.file.attribute._
 
-import org.junit.Test
 import org.junit.Assert._
 import org.junit.Assume._
+import org.junit.Test
 
+import org.scalanative.testsuite
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform.isWindows
-import org.scalanative.testsuite
 
 class UserPrincipalLookupServiceTest {
 

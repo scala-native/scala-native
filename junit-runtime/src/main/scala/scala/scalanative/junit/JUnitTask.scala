@@ -4,9 +4,11 @@ package junit
 import sbt.testing._
 
 import scala.annotation.tailrec
-import scala.scalanative.reflect.Reflect
 import scala.util.{Failure, Success, Try}
+
 import org.junit.TestCouldNotBeSkippedException
+
+import scala.scalanative.reflect.Reflect
 
 private[junit] final class JUnitTask(
     _taskDef: TaskDef,

@@ -3,8 +3,8 @@ package reflect
 
 // Ported from Scala.js
 
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 

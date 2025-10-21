@@ -1,8 +1,9 @@
 package java.lang
 
+import java.lang.Thread.{Builder, Characteristics}
 import java.util.Objects
 import java.util.concurrent.ThreadFactory
-import java.lang.Thread.{Builder, Characteristics}
+
 import scala.scalanative.libc.stdatomic.AtomicLongLong
 import scala.scalanative.runtime.{Intrinsics, fromRawPtr}
 

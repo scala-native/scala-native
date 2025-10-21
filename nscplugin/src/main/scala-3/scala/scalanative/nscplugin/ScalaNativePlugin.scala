@@ -1,12 +1,11 @@
 package scala.scalanative.nscplugin
 
+import java.net.{URI, URISyntaxException}
+import java.nio.file.Paths
+
+import dotty.tools.dotc.core.Contexts.{Context, ContextBase}
 import dotty.tools.dotc.plugins._
 import dotty.tools.dotc.report
-import dotty.tools.dotc.core.Contexts.ContextBase
-import java.net.URI
-import java.net.URISyntaxException
-import dotty.tools.dotc.core.Contexts.Context
-import java.nio.file.Paths
 import scala.annotation.nowarn
 
 class ScalaNativePlugin extends StandardPlugin:

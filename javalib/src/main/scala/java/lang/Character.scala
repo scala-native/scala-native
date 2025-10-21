@@ -1,7 +1,8 @@
 package java.lang
 
-import java.util.Arrays
 import java.lang.constant.Constable
+import java.util.Arrays
+
 import scala.scalanative.runtime.LLVMIntrinsics
 
 class Character(val _value: scala.Char)

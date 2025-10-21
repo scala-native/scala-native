@@ -2,7 +2,8 @@ package scala.scalanative
 package codegen
 
 import scala.collection.mutable
-import scalanative.linker.{Trait, Class, ReachabilityAnalysis}
+
+import scalanative.linker.{Class, ReachabilityAnalysis, Trait}
 
 private[scalanative] class Metadata(
     val analysis: ReachabilityAnalysis.Result,

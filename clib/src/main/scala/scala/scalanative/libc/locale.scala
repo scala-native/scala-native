@@ -1,8 +1,8 @@
 package scala.scalanative
 package libc
 
-import scalanative.unsafe._
 import scalanative.meta.LinktimeInfo.{isLinux, isOpenBSD}
+import scalanative.unsafe._
 
 /** ISO/IEC C definitions for locale.h
  *

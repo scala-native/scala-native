@@ -11,9 +11,9 @@ package org.scalanative.testsuite.javalib.math
 
 import java.math.BigInteger
 
-import org.junit.{Test, Ignore}
 import org.junit.Assert._
 import org.junit.Assume._
+import org.junit.{Ignore, Test}
 
 // import org.scalajs.testsuite.utils.Platform._
 

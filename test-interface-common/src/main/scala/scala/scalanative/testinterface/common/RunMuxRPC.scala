@@ -2,10 +2,9 @@ package scala.scalanative.testinterface.common
 
 // Ported from Scala.js
 
-import scala.language.higherKinds
-
 import scala.collection.mutable
 import scala.concurrent.Future
+import scala.language.higherKinds
 import scala.util.Try
 
 /** Helper above an [[RPCCore]] that allows to multiplex between runs.

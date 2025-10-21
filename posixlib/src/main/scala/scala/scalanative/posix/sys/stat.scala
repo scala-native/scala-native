@@ -2,9 +2,9 @@ package scala.scalanative
 package posix
 package sys
 
-import scalanative.unsafe._
-import scalanative.posix.time._
 import scalanative.posix.sys.types._
+import scalanative.posix.time._
+import scalanative.unsafe._
 
 @extern
 @define("__SCALANATIVE_POSIX_SYS_STAT")

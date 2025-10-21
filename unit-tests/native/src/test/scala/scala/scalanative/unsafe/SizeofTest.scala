@@ -1,11 +1,11 @@
 package scala.scalanative
 package unsafe
 
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 
-import scalanative.unsigned._
 import scala.scalanative.meta.LinktimeInfo.is32BitPlatform
+import scalanative.unsigned._
 
 class SizeofTest {
 

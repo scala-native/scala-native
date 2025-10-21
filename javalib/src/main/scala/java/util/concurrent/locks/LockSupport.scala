@@ -7,8 +7,8 @@
 package java.util.concurrent.locks
 
 import scala.scalanative.annotation.alwaysinline
-import scala.scalanative.runtime.{NativeThread, fromRawPtr}
 import scala.scalanative.runtime.Intrinsics.classFieldRawPtr
+import scala.scalanative.runtime.{NativeThread, fromRawPtr}
 import scala.scalanative.unsafe.Ptr
 
 object LockSupport {

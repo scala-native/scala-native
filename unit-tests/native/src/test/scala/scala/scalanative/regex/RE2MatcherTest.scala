@@ -1,9 +1,8 @@
 package scala.scalanative
 package regex
 
-import org.junit.Ignore
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.{Ignore, Test}
 
 import ApiTestUtils._
 

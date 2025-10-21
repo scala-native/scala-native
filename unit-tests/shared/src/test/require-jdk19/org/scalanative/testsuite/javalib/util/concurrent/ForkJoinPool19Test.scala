@@ -1,10 +1,10 @@
 package org.scalanative.testsuite.javalib.util.concurrent
 
-import java.util.concurrent._
 import java.util.concurrent.TimeUnit.MILLISECONDS
+import java.util.concurrent._
 
-import org.junit._
 import org.junit.Assert._
+import org.junit._
 
 object ForkJoinPool19Test {
   final class FJException(cause: Throwable) extends RuntimeException(cause) {

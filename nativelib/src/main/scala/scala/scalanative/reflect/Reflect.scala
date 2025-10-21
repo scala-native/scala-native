@@ -1,7 +1,8 @@
 package scala.scalanative.reflect
 
-import scala.collection.mutable
 import java.{lang => jl}
+
+import scala.collection.mutable
 
 final class LoadableModuleClass private[reflect] (
     val runtimeClass: Class[_],

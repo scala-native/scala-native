@@ -1,14 +1,14 @@
 package scala.scalanative
 package unsafe
 
-import scala.scalanative.unsigned.ULong
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 
+import scala.scalanative.unsigned.ULong
 import scalanative.libc._
-import scalanative.unsigned._
 // Scala 2.13.7 needs explicit import for implicit conversions
 import scalanative.unsafe.Ptr.ptrToCArray
+import scalanative.unsigned._
 
 class PtrOpsTest {
 

@@ -5,10 +5,12 @@ package testinterface
 
 import java.io._
 import java.net.{ServerSocket, Socket}
+
 import scala.concurrent.{ExecutionContext, Future, Promise}
-import scala.scalanative.build.Logger
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success}
+
+import scala.scalanative.build.Logger
 
 /** Represents a distant program with whom we communicate over the network.
  *  @param logger

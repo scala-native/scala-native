@@ -3,15 +3,15 @@ package nscplugin
 
 import java.nio.file.{Path => JPath, Paths => JPaths}
 import java.util.stream.{Stream => JStream}
-import java.util.function.{Consumer => JConsumer}
+
 import scala.collection.mutable
 import scala.language.implicitConversions
-import nir.Defn.Define.DebugInfo
-import scala.scalanative.util.ScopedVar.scoped
-import scala.tools.nsc.plugins._
-import scala.tools.nsc.{Global, util => _, _}
 import scala.reflect.internal.util.{SourceFile => CompilerSourceFile}
-import scala.tools.nsc
+import scala.tools.nsc.{util => _, _}
+
+import scala.scalanative.util.ScopedVar.scoped
+
+import nir.Defn.Define.DebugInfo
 
 abstract class NirGenPhase[G <: Global with Singleton](override val global: G)
     extends NirPhase[G](global)
@@ -25,7 +25,8 @@ abstract class NirGenPhase[G <: Global with Singleton](override val global: G)
     with NirGenExports[G] {
 
   import global._
-  import definitions._
+  import global.definitions._
+
   import nirAddons._
 
   val phaseName = "scalanative-genNIR"

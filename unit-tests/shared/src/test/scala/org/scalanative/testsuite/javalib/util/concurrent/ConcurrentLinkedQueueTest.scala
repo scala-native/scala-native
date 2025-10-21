@@ -8,8 +8,8 @@
 package org.scalanative.testsuite.javalib.util.concurrent
 
 import java.util
-import java.util.{Arrays, Collection, NoSuchElementException, Queue}
 import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.{Arrays, Collection, NoSuchElementException, Queue}
 
 import org.junit.Assert._
 import org.junit._

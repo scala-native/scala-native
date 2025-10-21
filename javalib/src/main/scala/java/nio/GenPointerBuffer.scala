@@ -1,10 +1,11 @@
 package java.nio
 
-import scala.scalanative.runtime.ByteArray
-import scala.scalanative.unsigned._
-import scala.scalanative.unsafe._
-import scala.scalanative.libc.string
 import java.util.Objects
+
+import scala.scalanative.libc.string
+import scala.scalanative.runtime.ByteArray
+import scala.scalanative.unsafe._
+import scala.scalanative.unsigned._
 
 private[nio] object GenPointerBuffer {
   def apply[B <: Buffer](self: B): GenPointerBuffer[B] =

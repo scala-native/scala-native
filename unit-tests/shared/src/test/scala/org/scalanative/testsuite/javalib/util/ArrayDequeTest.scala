@@ -2,11 +2,11 @@ package org.scalanative.testsuite.javalib.util
 
 import java.util._
 
-import org.junit.Ignore
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.{Ignore, Test}
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
+
 import scala.scalanative.junit.utils.CollectionConverters._
 
 class ArrayDequeTest {

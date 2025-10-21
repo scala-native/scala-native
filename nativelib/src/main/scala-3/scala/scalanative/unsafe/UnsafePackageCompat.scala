@@ -1,8 +1,9 @@
 package scala.scalanative.unsafe
 
-import scala.scalanative.runtime._
-import scala.scalanative.runtime.Intrinsics.{castRawSizeToInt as toInt, *}
 import scala.compiletime.*
+
+import scala.scalanative.runtime.Intrinsics.{castRawSizeToInt as toInt, *}
+import scala.scalanative.runtime._
 
 private[scalanative] trait UnsafePackageCompat {
   private[scalanative] given reflect.ClassTag[Array[?]] =

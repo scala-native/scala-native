@@ -1,9 +1,10 @@
 package scala.scalanative
 package nscplugin
 
+import java.nio.file.{Path, Paths}
+
 import scala.tools.nsc._
 import scala.tools.nsc.plugins._
-import java.nio.file.{Path, Paths}
 
 class ScalaNativePlugin(val global: Global) extends Plugin {
   val name = "scalanative"

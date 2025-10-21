@@ -13,13 +13,13 @@ package atomic
 
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater
 
-import org.junit._
 import org.junit.Assert._
+import org.junit._
 
-import scala.scalanative.runtime.Intrinsics.classFieldRawPtr
-import scala.scalanative.runtime.{RawPtr, fromRawPtr}
 import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.libc.stdatomic.{AtomicRef, memory_order}
+import scala.scalanative.runtime.Intrinsics.classFieldRawPtr
+import scala.scalanative.runtime.{RawPtr, fromRawPtr}
 
 object AtomicReferenceFieldUpdaterTest {
   class IntrinsicBasedImpl[T <: AnyRef, V <: AnyRef](

@@ -1,13 +1,9 @@
 package org.scalanative.testsuite.javalib.lang
 
+import java.lang.Double.{
+  doubleToLongBits, doubleToRawLongBits, longBitsToDouble, toHexString
+}
 import java.lang._
-
-// Three tests ported from Scala.js javalib/lang/DoubleTest.scala
-// commit: 0f25c8c dated: 2021-02-17
-//   isFinite()
-//   isInfinite()
-//   isNanTest()
-
 // Because this test is the java.lang package, an unqualified Double
 // is a java.lang.Double. Prior art used unqualified Double freely,
 // with that intent. Scala.js JDouble is introduced to minimize changes
@@ -15,18 +11,10 @@ import java.lang._
 // are not changed. Joys of blending code bases.
 import java.lang.{Double => JDouble}
 
-import java.lang.Double.{
-  doubleToLongBits,
-  doubleToRawLongBits,
-  longBitsToDouble,
-  toHexString
-}
-
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
-
 import org.scalanative.testsuite.utils.Platform.is32BitPlatform
 
 class DoubleTest {

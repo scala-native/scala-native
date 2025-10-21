@@ -1,12 +1,11 @@
 package scala.scalanative.build
 
-import java.io.FileReader
+import java.io.{FileReader, Reader}
 import java.nio.file.Path
 import java.util.Properties
 
-import scala.util.Try
-import java.io.Reader
 import scala.annotation.tailrec
+import scala.util.Try
 
 private[build] final case class Descriptor(
     organization: Option[String],

@@ -1,12 +1,12 @@
 package scala.scalanative.runtime
 
-import scala.scalanative.unsafe.*
-import scala.scalanative.runtime.ffi.{malloc, free}
-import scala.scalanative.runtime.Intrinsics.*
 import scala.collection.mutable
-
 import scala.util.Try
+
 import scala.scalanative.meta.LinktimeInfo.isContinuationsSupported
+import scala.scalanative.runtime.Intrinsics.*
+import scala.scalanative.runtime.ffi.{free, malloc}
+import scala.scalanative.unsafe.*
 
 object Continuations:
   import Impl.*

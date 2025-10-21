@@ -1,10 +1,12 @@
 package scala.scalanative
 package nscplugin
+
 import scala.tools.nsc.Global
 
 trait NirGenType[G <: Global with Singleton] { self: NirGenPhase[G] =>
   import global._
-  import definitions._
+  import global.definitions._
+
   import nirAddons._
   import nirDefinitions._
 

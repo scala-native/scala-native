@@ -6,15 +6,16 @@
 
 package java.util.concurrent.atomic
 
+import java.util.function.{IntBinaryOperator, IntUnaryOperator}
+
 import scala.annotation.tailrec
 import scala.language.implicitConversions
+
 import scala.scalanative.annotation.alwaysinline
-import scala.scalanative.unsafe._
 import scala.scalanative.libc.stdatomic.AtomicInt
 import scala.scalanative.libc.stdatomic.memory_order._
-import java.util.function.IntBinaryOperator
-import java.util.function.IntUnaryOperator
 import scala.scalanative.runtime.IntArray
+import scala.scalanative.unsafe._
 
 @SerialVersionUID(2862133569453604235L)
 class AtomicIntegerArray extends Serializable {

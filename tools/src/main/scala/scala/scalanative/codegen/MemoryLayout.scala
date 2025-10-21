@@ -1,15 +1,14 @@
 package scala.scalanative
 package codegen
 
-import scala.collection.mutable
-import scalanative.util.unsupported
-import scalanative.codegen.MemoryLayout.PositionedType
-import scala.scalanative.build.Config
-import scala.scalanative.linker.ClassRef
-import scala.scalanative.linker.Field
-import scala.scalanative.nir.Attr.Alignment
-import scala.scalanative.build.BuildException
 import scala.annotation.tailrec
+import scala.collection.mutable
+
+import scala.scalanative.build.{BuildException, Config}
+import scala.scalanative.linker.{ClassRef, Field}
+import scala.scalanative.nir.Attr.Alignment
+import scalanative.codegen.MemoryLayout.PositionedType
+import scalanative.util.unsupported
 
 private[codegen] final case class MemoryLayout(
     size: Long,

@@ -1,7 +1,8 @@
 package java.lang.process
 
-import java.time.{Instant, Duration}
+import java.time.{Duration, Instant}
 import java.{util => ju}
+
 import ju.Optional
 
 private[process] object GenericProcessInfo {

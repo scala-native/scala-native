@@ -18,13 +18,12 @@
 
 package java.util
 
-import java.{lang => jl}
 import java.io.Serializable
 import java.util.random.RandomGenerator
-
-import scala.language.implicitConversions
+import java.{lang => jl}
 
 import scala.annotation.tailrec
+import scala.language.implicitConversions
 
 import ScalaOps._
 

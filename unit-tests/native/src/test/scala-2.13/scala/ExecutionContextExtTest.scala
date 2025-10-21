@@ -1,8 +1,10 @@
 package scala
 
-import org.junit.Test
-import org.junit.Assert._
 import scala.concurrent.{ExecutionContext, Future}
+
+import org.junit.Assert._
+import org.junit.Test
+
 import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
 
 /* Dummy test used determinate if scala.concurrent.ExecutionContext was correctly overridden

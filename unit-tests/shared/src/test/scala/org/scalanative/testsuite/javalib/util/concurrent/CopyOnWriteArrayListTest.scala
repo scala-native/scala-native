@@ -4,13 +4,14 @@ package org.scalanative.testsuite.javalib.util.concurrent
 
 import java.{util => ju}
 
+import scala.reflect.ClassTag
+
 import org.junit.Assert._
 import org.junit.Test
 
-import org.scalanative.testsuite.javalib.util.{ListFactory, ListTest}
-import org.scalanative.testsuite.javalib.util.TrivialImmutableCollection
-
-import scala.reflect.ClassTag
+import org.scalanative.testsuite.javalib.util.{
+  ListFactory, ListTest, TrivialImmutableCollection
+}
 
 class CopyOnWriteArrayListTest extends ListTest {
 

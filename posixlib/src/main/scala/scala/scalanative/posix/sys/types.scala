@@ -2,10 +2,10 @@ package scala.scalanative
 package posix
 package sys
 
-import scala.scalanative.unsigned._
-import scala.scalanative.unsafe._
-
 import scala.scalanative
+
+import scala.scalanative.unsafe._
+import scala.scalanative.unsigned._
 
 @extern
 object types {

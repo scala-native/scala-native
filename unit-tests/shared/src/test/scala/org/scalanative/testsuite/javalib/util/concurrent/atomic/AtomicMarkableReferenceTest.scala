@@ -11,8 +11,8 @@ package atomic
 
 import java.util.concurrent.atomic.AtomicMarkableReference
 
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 
 class AtomicMarkableReferenceTest extends JSR166Test {
   import JSR166Test._

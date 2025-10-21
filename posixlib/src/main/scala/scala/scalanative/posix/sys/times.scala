@@ -2,9 +2,8 @@ package scala.scalanative
 package posix
 package sys
 
-import scalanative.unsafe._
-
 import scalanative.meta.LinktimeInfo.{is32BitPlatform, isFreeBSD, isNetBSD}
+import scalanative.unsafe._
 
 /** POSIX sys/times.h for Scala
  *

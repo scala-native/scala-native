@@ -2,11 +2,11 @@ package org.scalanative.testsuite.javalib.util.zip
 
 // Ported from Apache Harmony
 
-import java.util.zip._
 import java.io.ByteArrayInputStream
+import java.util.zip._
 
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 
 class CheckedInputStreamTest {
 

@@ -11,9 +11,7 @@
 package java.util
 
 import java.io.Serializable
-import java.util.function.Consumer
-import java.util.function.Predicate
-import java.util.function.UnaryOperator
+import java.util.function.{Consumer, Predicate, UnaryOperator}
 
 import ArrayDeque._
 

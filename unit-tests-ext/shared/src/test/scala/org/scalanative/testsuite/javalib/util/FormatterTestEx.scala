@@ -2,11 +2,11 @@
 
 package org.scalanative.testsuite.javalib.util
 
+import java.math.BigInteger
 import java.util._
 
-import java.math.BigInteger
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 
 /** Additional tests for java.lang.String that require `java.util.Locale` as
  *  well as classes in `java.text.*`.

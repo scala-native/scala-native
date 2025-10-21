@@ -9,26 +9,20 @@ package org.scalanative.testsuite.javalib.util.stream
  * Use ju.ArrayList surgically at the points of use.
  */
 
-import java.{lang => jl}
-
-import java.{util => ju}
-import java.util.{Arrays, ArrayList}
-import java.util.{OptionalDouble, DoubleSummaryStatistics}
-import java.util.Spliterator
-import java.util.Spliterators
-
-import java.util.concurrent.{CountDownLatch, TimeUnit}
 import java.util.concurrent.CountDownLatch._
-
-import java.util.function.{DoubleConsumer, DoubleFunction, DoubleSupplier}
-import java.util.function.Supplier
-
+import java.util.concurrent.{CountDownLatch, TimeUnit}
+import java.util.function.{
+  DoubleConsumer, DoubleFunction, DoubleSupplier, Supplier
+}
 import java.util.stream._
+import java.util.{
+  ArrayList, Arrays, DoubleSummaryStatistics, OptionalDouble, Spliterator,
+  Spliterators
+}
+import java.{lang => jl, util => ju}
 
-import org.junit.Test
 import org.junit.Assert._
-import org.junit.BeforeClass
-import org.junit.Ignore
+import org.junit.{BeforeClass, Ignore, Test}
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 

@@ -1,9 +1,10 @@
 package java.io
 
-import scala.annotation.tailrec
 import java.nio._
 import java.nio.charset._
 import java.util.Objects
+
+import scala.annotation.tailrec
 
 class InputStreamReader(
     private var in: InputStream,

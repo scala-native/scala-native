@@ -19,13 +19,8 @@
 package scala.scalanative
 package regex
 
-import java.util.ArrayDeque
-import java.util.ArrayList
-import java.util.Arrays
-import java.util.List
-import java.util.Map
-import java.util.Queue
 import java.nio.charset.StandardCharsets
+import java.util.{ArrayDeque, ArrayList, Arrays, List, Map, Queue}
 import java.{lang => jl}
 
 // An RE2 class instance is a compiled representation of an RE2 regular

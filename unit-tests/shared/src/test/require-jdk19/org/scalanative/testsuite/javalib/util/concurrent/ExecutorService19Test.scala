@@ -5,13 +5,14 @@
  */
 package org.scalanative.testsuite.javalib.util.concurrent
 
+import java.util.concurrent._
+
 import org.junit.Assert._
 import org.junit.Assume._
-import org.junit.{Test, Ignore}
-import JSR166Test._
+import org.junit.{Ignore, Test}
 
-import java.util.concurrent._
 import Future.State._
+import JSR166Test._
 
 class ExecutorService19Test extends JSR166Test {
 

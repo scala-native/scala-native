@@ -3,8 +3,8 @@ package regex
 
 import java.util.regex.PatternSyntaxException
 
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 
 class RE2PatternTest {
   @Test def compile(): Unit = {

@@ -2,10 +2,10 @@
 
 package java.util
 
-import scala.annotation.tailrec
-
-import java.{util => ju}
 import java.util.function.{BiConsumer, BiFunction, Function}
+import java.{util => ju}
+
+import scala.annotation.tailrec
 
 import ScalaOps._
 

@@ -9,16 +9,16 @@
 
 package org.scalanative.testsuite.javalib.util.concurrent
 
-import java.util.concurrent.TimeUnit._
 import java.io._
 import java.util._
+import java.util.concurrent.TimeUnit._
 import java.util.concurrent._
-import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.atomic.{AtomicBoolean, AtomicReference}
 import java.util.regex.Pattern
 
 import org.junit.Assert._
 import org.junit.BeforeClass
+
 import scala.scalanative.junit.utils.AssumesHelper
 
 /** Base class for JSR166 Junit TCK tests. Defines some constants, utility

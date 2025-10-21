@@ -1,7 +1,7 @@
 package scala.scalanative.posix.sys
 
-import scala.scalanative.unsafe._
 import scala.scalanative.unsafe.Nat._
+import scala.scalanative.unsafe._
 
 @extern
 @define("__SCALANATIVE_POSIX_SYS_UTSNAME")

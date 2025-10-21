@@ -4,6 +4,7 @@ package junit
 // Ported from Scala.js
 
 import scala.util.Try
+
 import RunSettings._
 
 private[junit] final class RunSettings(

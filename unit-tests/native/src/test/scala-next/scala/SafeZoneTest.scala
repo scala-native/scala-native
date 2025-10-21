@@ -1,14 +1,16 @@
 package org.scalanative
 
-import org.junit.Test
+import scala.language.experimental.captureChecking
+import scala.util.{Failure, Success, Try}
+
 import org.junit.Assert._
+import org.junit.Test
+
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
-import scala.language.experimental.captureChecking
-import scala.scalanative.runtime.SafeZoneAllocator.allocate
 import scala.scalanative.memory.SafeZone
 import scala.scalanative.memory.SafeZone._
-import scala.util.{Try, Success, Failure}
+import scala.scalanative.runtime.SafeZoneAllocator.allocate
 
 class SafeZoneTest {
   @Test def `correctly open and close a safe zone`(): Unit = {
