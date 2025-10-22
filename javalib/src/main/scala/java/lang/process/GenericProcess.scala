@@ -16,11 +16,11 @@ private[process] abstract class GenericProcess(val handle: GenericProcessHandle)
   handle.onExitHandleSync((_, _) => closeProcessStreams())
 
   private val outputStream =
-    PipeIO[OutputStream](handle, fdIn, handle.builder.redirectInput())
+    PipeIO[OutputStream](fdIn, handle.builder.redirectInput())
   private val inputStream =
-    PipeIO[PipeIO.Stream](handle, fdOut, handle.builder.redirectOutput())
+    PipeIO[PipeIO.Stream](fdOut, handle.builder.redirectOutput())
   private val errorStream =
-    PipeIO[PipeIO.Stream](handle, fdErr, handle.builder.redirectError())
+    PipeIO[PipeIO.Stream](fdErr, handle.builder.redirectError())
 
   override def getInputStream(): InputStream = inputStream
   override def getErrorStream(): InputStream = errorStream

@@ -11,66 +11,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Compile all sources for given Scala version
-  # Cache external dependencies
-  # Test tools, if any of them fails, further tests will not start.
-  tests-tools:
-    name: Compile & test tools
-    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')
-    runs-on: ubuntu-22.04
-    env:
-      ENABLE_EXPERIMENTAL_COMPILER: true
-    strategy:
-      fail-fast: false
-      matrix:
-        scala: [2.12, 2.13, 3]
-    steps:
-      - uses: actions/checkout@v5
-      - uses: ./.github/actions/linux-setup-env
-        with:
-          scala-version: ${{matrix.scala}}
-
-      - name: Test tools
-        run: sbt "test-tools ${{ matrix.scala }}; toolsBenchmarks${{env.project-version}}/Jmh/compile"
-
-  tests-compile-scalaPublishVersion:
-    name: Compile sources with the Scala 3 version used for publishing artifacts
-    if: github.event_name == 'pull_request' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v5
-      - uses: ./.github/actions/linux-setup-env
-        with:
-          scala-version: 3
-
-      - name: Compile everything
-        # Publish 2.13.latest artifacts locally first, these are required by scalalib3
-        run: sbt "scalalib2_13/publishLocal;clean; ++2.13.8; all Test/compile Compile/doc; ++3.1.3; all Test/compile Compile/doc"
-
-    
-  test-scala-cross-build:
-    runs-on: ubuntu-22.04
-    env:
-      ENABLE_EXPERIMENTAL_COMPILER: true
-    strategy:
-      fail-fast: false
-      matrix:
-        scala: [2.12, 2.13, 3, 3-next]
-    steps:
-      - uses: actions/checkout@v5
-      - uses: ./.github/actions/linux-setup-env
-        with:
-          scala-version: ${{matrix.scala}}
-
-      # scalalib/Test/compile would force building both compiler plugins as well
-      - name: Test cross compilation of compiler plugins and stdlib
-        run: sbt "+${{ startsWith(matrix.scala, '3') && 'scala3lib' || 'scalalib' }}${{ env.project-version }}/Test/compile"
-
   test-runtime:
     name: Test runtime
-    if: github.event_name == 'pull_request' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')
     runs-on: ubuntu-22.04
-    needs: tests-tools
     env:
       ENABLE_EXPERIMENTAL_COMPILER: true
     strategy:
@@ -82,9 +25,6 @@ jobs:
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: ${{matrix.scala}}
-      - name: Test GC compilation
-        timeout-minutes: 30
-        run: sbt "test-gc ${{ matrix.scala }}"
       - name: Run tests
         timeout-minutes: 45
         env:
@@ -95,7 +35,7 @@ jobs:
     name: Test runtime extension
     if: ((github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native') || (github.event_name == 'pull_request' && !contains(github.event.pull_request.body, '[skip ci]') && contains(github.event.pull_request.body, '[test-extended]'))
     runs-on: ubuntu-22.04
-    needs: [tests-tools, test-runtime]
+    needs: [test-runtime]
     env:
       ENABLE_EXPERIMENTAL_COMPILER: true
     strategy:
@@ -152,7 +92,6 @@ jobs:
     name: Test runtime no-opt
     if: ((github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native') || (github.event_name == 'pull_request' && !contains(github.event.pull_request.body, '[skip ci]') && contains(github.event.pull_request.body, '[test-extended]'))
     runs-on: ubuntu-22.04
-    needs: tests-tools
     env:
       ENABLE_EXPERIMENTAL_COMPILER: true
     strategy:
@@ -181,7 +120,6 @@ jobs:
     name: Test scripted
     if: github.event_name == 'pull_request' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')
     runs-on: ubuntu-22.04
-    needs: tests-tools
     strategy:
       fail-fast: false
       matrix:

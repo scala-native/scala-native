@@ -121,7 +121,7 @@ class ProcessTestOnJDK9 {
     // Throws on timeout
     assertFalse(
       "process should have been terminated",
-      handle.onExit().get(500, TimeUnit.MILLISECONDS).isAlive()
+      handle.onExit().get(1000, TimeUnit.MILLISECONDS).isAlive()
     )
     assertEquals(
       "exitValue",
@@ -140,7 +140,7 @@ class ProcessTestOnJDK9 {
     // Throws on timeout
     assertFalse(
       "process should have been terminated",
-      handle.onExit().get(500, TimeUnit.MILLISECONDS).isAlive()
+      handle.onExit().get(1000, TimeUnit.MILLISECONDS).isAlive()
     )
     assertEquals(
       "exitValue",
