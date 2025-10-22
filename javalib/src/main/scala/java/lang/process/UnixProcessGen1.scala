@@ -69,11 +69,16 @@ private[process] object UnixProcessGen1 {
   }
   ProcessMonitor.init()
 
+  private implicit object HandleFactory extends UnixProcessHandleFactory {
+    override def create(pid: CInt, builder: ProcessBuilder): UnixProcessHandle =
+      new UnixProcessHandleGen1(pid, builder)
+  }
+
   def apply(
       builder: ProcessBuilder
   ): GenericProcess = Zone.acquire { implicit z =>
     try {
-      UnixProcessGen2.forkChild(builder)(new UnixProcessHandleGen1(_, _))
+      UnixProcessGen2.forkChild(builder)
     } finally {
       /* Being here, we know that a child process exists, or existed.
        * ProcessMonitor needs to know about it. It is _far_ better
