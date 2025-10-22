@@ -367,14 +367,14 @@ private[process] object UnixProcessGen2 {
 
     val dir = builder.directory()
     if ((dir != null) && (dir.toString != ".")) {
-      forkChild(builder)
+      forkChild(builder)(new UnixProcessHandleGen2(_, _))
     } else {
       spawnChild(builder)
     }
   }
 
-  private def forkChild(
-      builder: ProcessBuilder
+  def forkChild(builder: ProcessBuilder)(
+      f: (Int, ProcessBuilder) => UnixProcessHandle
   )(implicit z: Zone): GenericProcess = {
     val infds: Ptr[CInt] = stackalloc[CInt](2)
     val outfds: Ptr[CInt] = stackalloc[CInt](2)
@@ -451,7 +451,7 @@ private[process] object UnixProcessGen2 {
 
         childFds.forEach { fd => unistd.close(fd) }
 
-        apply(pid, builder, infds, outfds, errfds)
+        UnixProcess(f(pid, builder), infds, outfds, errfds)
     }
   }
 

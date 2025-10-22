@@ -1,12 +1,10 @@
 package java.lang.process
 
 import java.io.{File, IOException}
-import java.util.ArrayList
-import java.util.ScalaOps._
 import java.util.concurrent.TimeUnit
 
 import scala.scalanative.libc.errno.errno
-import scala.scalanative.posix.{errno => e, fcntl, sys, time, unistd}
+import scala.scalanative.posix.{errno => e, fcntl, sys, time}
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
 
@@ -87,101 +85,22 @@ private[process] object UnixProcessGen1 {
   def apply(
       builder: ProcessBuilder
   ): GenericProcess = Zone.acquire { implicit z =>
-    val infds: Ptr[CInt] = stackalloc[CInt](2)
-    val outfds: Ptr[CInt] = stackalloc[CInt](2)
-    val errfds =
-      if (builder.redirectErrorStream()) outfds else stackalloc[CInt](2)
+    try {
+      UnixProcessGen2.forkChild(builder)(new UnixProcessHandleGen1(_, _))
+    } finally {
+      /* Being here, we know that a child process exists, or existed.
+       * ProcessMonitor needs to know about it. It is _far_ better
+       * to do the notification in this parent.
+       *
+       * Implementations of 'fork' can be very restrictive about what
+       * can run in the child before it calls one of the 'exec*' methods.
+       * 'notifyMonitor' may or may not follow those rules. Even if it
+       * currently does, that could easily change with future maintenance
+       * make it no longer compliant, leading to shrapnel & wasted
+       * developer time.
+       */
 
-    throwOnError(unistd.pipe(infds), s"Couldn't create pipe.")
-    throwOnError(unistd.pipe(outfds), s"Couldn't create pipe.")
-    if (!builder.redirectErrorStream())
-      throwOnError(unistd.pipe(errfds), s"Couldn't create pipe.")
-    val cmd = builder.command()
-    val binaries = binaryPaths(builder.environment(), cmd.get(0))
-    val dir = builder.directory()
-    val argv = nullTerminate(cmd)
-    val envp = nullTerminate {
-      val list = new ArrayList[String]
-      builder
-        .environment()
-        .entrySet()
-        .iterator()
-        .scalaOps
-        .foreach(e => list.add(s"${e.getKey()}=${e.getValue()}"))
-      list
-    }
-
-    unistd.fork() match {
-      case -1 =>
-        throw new IOException("Unable to fork process")
-
-      case 0 =>
-        if ((dir != null) && (dir.toString != "."))
-          unistd.chdir(toCString(dir.toString))
-
-        setupChildFDS(!infds, builder.redirectInput(), unistd.STDIN_FILENO)
-        setupChildFDS(
-          !(outfds + 1),
-          builder.redirectOutput(),
-          unistd.STDOUT_FILENO
-        )
-        setupChildFDS(
-          !(errfds + 1),
-          if (builder.redirectErrorStream()) ProcessBuilder.Redirect.PIPE
-          else builder.redirectError(),
-          unistd.STDERR_FILENO
-        )
-
-        val parentFds = new ArrayList[CInt] // No Scala Collections in javalib
-        parentFds.add(!(infds + 1)) // parent's stdout - write, in child
-        parentFds.add(!outfds) // parent's stdin - read, in child
-        if (!builder.redirectErrorStream())
-          parentFds.add(!errfds) // parent's stderr - read, in child
-
-        parentFds.forEach { fd => unistd.close(fd) }
-
-        binaries.foreach { b =>
-          val bin = toCString(b)
-          if (unistd.execve(bin, argv, envp) == -1 && errno == e.ENOEXEC) {
-            val al = new ArrayList[String](3)
-            al.add("/bin/sh"); al.add("-c");
-            al.add(cmd.scalaOps.mkString(sep = " "))
-            val newArgv = nullTerminate(al)
-            unistd.execve(c"/bin/sh", newArgv, envp)
-          }
-        }
-
-        /* execve failed. FreeBSD "man" recommends fast exit.
-         * Linux says nada.
-         * Code 127 is "Command not found", the convention for exec failure.
-         */
-        unistd._exit(127)
-        throw new IOException(s"Failed to create process for command: $cmd")
-
-      case pid =>
-        /* Being here, we know that a child process exists, or existed.
-         * ProcessMonitor needs to know about it. It is _far_ better
-         * to do the notification in this parent.
-         *
-         * Implementations of 'fork' can be very restrictive about what
-         * can run in the child before it calls one of the 'exec*' methods.
-         * 'notifyMonitor' may or may not follow those rules. Even if it
-         * currently does, that could easily change with future maintenance
-         * make it no longer compliant, leading to shrapnel & wasted
-         * developer time.
-         */
-
-        ProcessMonitor.notifyMonitor()
-
-        val childFds = new ArrayList[CInt] // No Scala Collections in javalib
-        childFds.add(!infds) // child's stdin read, in parent
-        childFds.add(!(outfds + 1)) // child's stdout write, in parent
-        if (!builder.redirectErrorStream())
-          childFds.add(!(errfds + 1)) // child's stderr write, in parent
-
-        childFds.forEach { fd => unistd.close(fd) }
-
-        apply(pid, builder, infds, outfds, errfds)
+      ProcessMonitor.notifyMonitor()
     }
   }
 
@@ -191,55 +110,6 @@ private[process] object UnixProcessGen1 {
       throw new IOException(s"$msg Error code: $rc, Error number: $errno")
     } else {
       rc
-    }
-  }
-
-  @inline private def nullTerminate(
-      list: java.util.List[String]
-  )(implicit z: Zone) = {
-    val res: Ptr[CString] = alloc[CString]((list.size() + 1))
-    val li = list.listIterator()
-    while (li.hasNext()) {
-      !(res + li.nextIndex()) = toCString(li.next())
-    }
-    res
-  }
-
-  @inline private def setupChildFDS(
-      childFd: CInt,
-      redirect: ProcessBuilder.Redirect,
-      procFd: CInt
-  ): Unit = {
-    import fcntl.{open => _, _}
-    redirect.`type`() match {
-      case ProcessBuilder.Redirect.Type.INHERIT =>
-      case ProcessBuilder.Redirect.Type.PIPE    =>
-        if (unistd.dup2(childFd, procFd) == -1) {
-          throw new IOException(
-            s"Couldn't duplicate pipe file descriptor $errno"
-          )
-        }
-      case r @ ProcessBuilder.Redirect.Type.READ =>
-        val fd = open(redirect.file(), O_RDONLY)
-        if (unistd.dup2(fd, procFd) == -1) {
-          throw new IOException(
-            s"Couldn't duplicate read file descriptor $errno"
-          )
-        }
-      case r @ ProcessBuilder.Redirect.Type.WRITE =>
-        val fd = open(redirect.file(), O_CREAT | O_WRONLY | O_TRUNC)
-        if (unistd.dup2(fd, procFd) == -1) {
-          throw new IOException(
-            s"Couldn't duplicate write file descriptor $errno"
-          )
-        }
-      case r @ ProcessBuilder.Redirect.Type.APPEND =>
-        val fd = open(redirect.file(), O_CREAT | O_WRONLY | O_APPEND)
-        if (unistd.dup2(fd, procFd) == -1) {
-          throw new IOException(
-            s"Couldn't duplicate append file descriptor $errno"
-          )
-        }
     }
   }
 
