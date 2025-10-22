@@ -770,18 +770,13 @@ class ProcessTest {
       ProcessTest.runArgv(10.seconds, githubWorkspace)(argv: _*)
     res match {
       case Success(x) =>
-        if (Platform.executingInScalaNative)
-          fail(s"$prefix`git ls-files` succeeded: $x")
         assertEquals(prefix + "`git ls-files` exit code", 0, x)
         assertTrue(
           s"$prefix`git ls-files` stdout: <${stdout.substring(0, Math.min(100, stdout.length))}...>",
           stdout.length > 100
         )
         assertEquals(s"$prefix`git ls-files` stderr: <$stderr>", "", stderr)
-      case Failure(x) =>
-        if (!Platform.executingInScalaNative ||
-            !x.isInstanceOf[TimeoutException])
-          fail(s"$prefix`git ls-files` failed: $x")
+      case Failure(x) => fail(s"$prefix`git ls-files` failed: $x")
     }
   }
 
@@ -875,18 +870,13 @@ class ProcessTest {
       ProcessTest.runArgvWithBang(60.seconds, githubWorkspace)(argv: _*)
     res match {
       case Success(x) =>
-        if (Platform.executingInScalaNative)
-          fail(s"$prefix`git ls-files` succeeded: $x")
         assertEquals(prefix + "`git ls-files` exit code", 0, x)
         assertTrue(
           s"$prefix`git ls-files` stdout: <${stdout.substring(0, Math.min(100, stdout.length))}...>",
           stdout.length > 100
         )
         assertEquals(s"$prefix`git ls-files` stderr: <$stderr>", "", stderr)
-      case Failure(x) =>
-        if (!Platform.executingInScalaNative ||
-            !x.isInstanceOf[TimeoutException])
-          fail(s"$prefix`git ls-files` failed: $x")
+      case Failure(x) => fail(s"$prefix`git ls-files` failed: $x")
     }
   }
 
@@ -983,19 +973,12 @@ class ProcessTest {
       ProcessTest.runArgvWithBangBang(60.seconds, githubWorkspace)(argv: _*)
     res match {
       case Success(x) =>
-        if (Platform.executingInScalaNative)
-          fail(
-            s"$prefix`git ls-files` succeeded: <${x.substring(0, Math.min(100, x.length))}>"
-          )
         assertTrue(
           s"$prefix`git ls-files` stdout: <${x.substring(0, Math.min(100, x.length))}...>",
           x.length > 100
         )
         assertEquals(s"$prefix`git ls-files` stderr: <$stderr>", "", stderr)
-      case Failure(x) =>
-        if (!Platform.executingInScalaNative ||
-            !x.isInstanceOf[TimeoutException])
-          fail(s"$prefix`git ls-files` failed: $x")
+      case Failure(x) => fail(s"$prefix`git ls-files` failed: $x")
     }
   }
 
