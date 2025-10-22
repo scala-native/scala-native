@@ -20,17 +20,26 @@ private[process] abstract class UnixProcessHandle extends GenericProcessHandle {
 
 private[process] object UnixProcess {
   def apply(
+      stdin: FileDescriptor,
+      stdout: FileDescriptor,
+      stderr: FileDescriptor
+  )(handle: UnixProcessHandle): GenericProcess = new GenericProcess(handle) {
+    override protected def fdIn: FileDescriptor = stdin
+    override protected def fdOut: FileDescriptor = stdout
+    override protected def fdErr: FileDescriptor = stderr
+  }
+
+  def apply(
       handle: UnixProcessHandle,
       infds: Ptr[CInt],
       outfds: Ptr[CInt],
       errfds: Ptr[CInt]
-  ): GenericProcess = new GenericProcess(handle) {
-    override protected def fdIn = new FileDescriptor(!(infds + 1))
-    override protected def fdOut = new FileDescriptor(!outfds, readOnly = true)
-    override protected def fdErr =
-      if (null == errfds) new FileDescriptor()
-      else new FileDescriptor(!errfds, readOnly = true)
-  }
+  ): GenericProcess = apply(
+    new FileDescriptor(!(infds + 1)),
+    new FileDescriptor(!outfds, readOnly = true),
+    if (null == errfds) new FileDescriptor()
+    else new FileDescriptor(!errfds, readOnly = true)
+  )(handle)
 
   def apply(pb: ProcessBuilder): GenericProcess = {
     val useGen2 = if (LinktimeInfo.is32BitPlatform) {
