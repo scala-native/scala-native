@@ -70,19 +70,6 @@ private[process] object UnixProcessGen1 {
   ProcessMonitor.init()
 
   def apply(
-      pid: CInt,
-      builder: ProcessBuilder,
-      infds: Ptr[CInt],
-      outfds: Ptr[CInt],
-      errfds: Ptr[CInt]
-  ): GenericProcess = UnixProcess(
-    new UnixProcessHandleGen1(pid, builder),
-    infds,
-    outfds,
-    errfds
-  )
-
-  def apply(
       builder: ProcessBuilder
   ): GenericProcess = Zone.acquire { implicit z =>
     try {

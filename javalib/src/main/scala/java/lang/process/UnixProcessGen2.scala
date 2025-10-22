@@ -338,19 +338,6 @@ private[process] class UnixProcessHandleGen2(
 private[process] object UnixProcessGen2 {
 
   def apply(
-      pid: CInt,
-      builder: ProcessBuilder,
-      infds: Ptr[CInt],
-      outfds: Ptr[CInt],
-      errfds: Ptr[CInt]
-  ): GenericProcess = UnixProcess(
-    new UnixProcessHandleGen2(pid, builder),
-    infds,
-    outfds,
-    errfds
-  )
-
-  def apply(
       builder: ProcessBuilder
   ): GenericProcess = Zone.acquire { implicit z =>
     /* If builder.directory is not null, it specifies a new working
@@ -553,7 +540,8 @@ private[process] object UnixProcessGen2 {
           throw new IOException(s"Unable to posix_spawn process: $msg")
         }
 
-        apply(!pidPtr, builder, infds, outfds, errfds)
+        val handle = new UnixProcessHandleGen2(!pidPtr, builder)
+        UnixProcess(handle, infds, outfds, errfds)
       } finally {
         val childFds = new ArrayList[CInt] // No Scala Collections in javalib
         childFds.add(!infds) // child's stdin read, in parent
