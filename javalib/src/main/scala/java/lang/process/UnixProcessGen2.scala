@@ -458,19 +458,6 @@ private[process] object UnixProcessGen2 {
   private def spawnChild(
       builder: ProcessBuilder
   )(implicit z: Zone): GenericProcess = {
-    val cmd = builder.command()
-    if (cmd.get(0).indexOf('/') >= 0) {
-      spawnCommand(builder, cmd, attempt = 1)
-    } else {
-      spawnFollowPath(builder)
-    }
-  }
-
-  private def spawnCommand(
-      builder: ProcessBuilder,
-      localCmd: ju.List[String],
-      attempt: Int
-  )(implicit z: Zone): GenericProcess = {
     val pidPtr = stackalloc[pid_t]()
 
     val infds: Ptr[CInt] = stackalloc[CInt](2)
@@ -484,8 +471,8 @@ private[process] object UnixProcessGen2 {
     if (!builder.redirectErrorStream())
       throwOnError(unistd.pipe(errfds), s"Couldn't create errfds pipe.")
 
-    val exec = localCmd.get(0)
-    val argv = nullTerminate(localCmd)
+    val cmd = builder.command()
+    val argv = nullTerminate(cmd)
     val envp = nullTerminate(builder.getEnvironmentAsList())
 
     /* Maintainers:
@@ -550,7 +537,7 @@ private[process] object UnixProcessGen2 {
          * Some shells (bash, ???) will also execute scripts with initial
          * shebang (#!).
          */
-        val status = posix_spawn(
+        def spawn(exec: String, argv: Ptr[CString]): CInt = posix_spawn(
           pidPtr,
           toCString(exec),
           fileActions,
@@ -559,19 +546,24 @@ private[process] object UnixProcessGen2 {
           envp
         )
 
-        if (status == 0) {
-          apply(!pidPtr, builder, infds, outfds, errfds)
-        } else if (!(status == ENOEXEC) && (attempt == 1)) {
-          val msg = fromCString(strerror(status))
-          throw new IOException(s"Unable to posix_spawn process: ${msg}")
-        } else { // try falling back to shell script
-          val fallbackCmd = new ArrayList[String](3)
-          fallbackCmd.add("/bin/sh")
-          fallbackCmd.add("-c")
-          fallbackCmd.add(localCmd.scalaOps.mkString(sep = " "))
+        var status = ENOEXEC
+        val execIter = binaryPaths(builder.environment(), cmd.get(0))
 
-          spawnCommand(builder, fallbackCmd, attempt = 2)
+        while (status == ENOEXEC && execIter.hasNext)
+          status = spawn(execIter.next(), argv)
+
+        if (status == ENOEXEC) { // try falling back to shell script
+          val shCmd = "/bin/sh"
+          val fallbackCmd = Array(shCmd, "-c", cmd.scalaOps.mkString(sep = " "))
+          status = spawn(shCmd, nullTerminate(ju.Arrays.asList(fallbackCmd)))
         }
+
+        if (status != 0) {
+          val msg = fromCString(strerror(status))
+          throw new IOException(s"Unable to posix_spawn process: $msg")
+        }
+
+        apply(!pidPtr, builder, infds, outfds, errfds)
       } finally {
         val childFds = new ArrayList[CInt] // No Scala Collections in javalib
         childFds.add(!infds) // child's stdin read, in parent
@@ -588,55 +580,6 @@ private[process] object UnixProcessGen2 {
       }
 
     unixProcess
-  }
-
-  private def spawnFollowPath(
-      builder: ProcessBuilder
-  )(implicit z: Zone): GenericProcess = {
-
-    @tailrec
-    def walkPath(iter: UnixPathIterator): GenericProcess = {
-      val cmd = builder.command()
-      val cmd0 = cmd.get(0)
-
-      if (!iter.hasNext()) {
-        val errnoText = fromCString(strerror(errno))
-        val msg = s"Cannot run program '${cmd0}': error=${errno}, ${errnoText}"
-        throw new IOException(msg)
-      } else {
-        /* Maintainers:
-         *     Please see corresponding note in method spawnCommand().
-         *
-         *     Checking that the fully qualified file exists and is
-         *     executable a performance optimization.
-         *
-         *     posix_spawn() is the ultimate arbiter of which files
-         *     the child can and can not execute. posix_spawn() is
-         *     relatively expensive to be called on files "known" to
-         *     either not exist or not be executable.
-         *
-         *    The "canExecute()" test required/assumes that the parent
-         *    can see and execute the same set of files.  This is a
-         *    reasonable precondition. Java 19 has no way to change child
-         *    id or group. spawnCommand() takes care to not specify
-         *    posix_spawn() options for changes which Java 19 does not
-         *    specify.
-         */
-
-        val fName = s"${iter.next()}/${cmd0}"
-        val f = new File(fName)
-        if (!f.canExecute()) {
-          walkPath(iter)
-        } else {
-          val newCmdList = new ArrayList[String](cmd)
-          newCmdList.set(0, fName)
-
-          spawnCommand(builder, newCmdList, attempt = 1)
-        }
-      }
-    }
-
-    walkPath(new UnixPathIterator(builder.environment()))
   }
 
   private def throwOnError(rc: CInt, msg: => String): CInt = {
@@ -766,52 +709,19 @@ private[process] object UnixProcessGen2 {
   private def binaryPaths(
       environment: java.util.Map[String, String],
       bin: String
-  ): Seq[String] = {
-    if ((bin.startsWith("/")) || (bin.startsWith("."))) {
-      Seq(bin)
+  ): Iterator[String] = {
+    if (bin.indexOf('/') >= 0 || bin.startsWith(".")) {
+      Iterator(bin)
     } else {
       val path = environment.get("PATH") match {
         case null => "/bin:/usr/bin:/usr/local/bin"
         case p    => p
       }
-
-      path
-        .split(':')
-        .toIndexedSeq
-        .map { absPath => new File(s"$absPath/$bin") }
-        .collect {
-          case f if f.canExecute() => f.toString
-        }
-    }
-  }
-  private class UnixPathIterator(
-      environment: java.util.Map[String, String]
-  ) extends ju.Iterator[String] {
-    /* The default path here is passing strange Scala Native prior art.
-     * It is preserved to keep compatability  with UnixProcessGen1 and prior
-     * versions of Scala Native.
-     *
-     * For example, Ubuntu Linux bash compiles in:
-     *   PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-     *   // Note that "/usr/local/" comes before (left of) "/usr/".
-     */
-    val path = environment.getOrDefault("PATH", "/bin:/usr/bin:/usr/local/bin")
-
-    val pathElements = path.split(':')
-    val nElements = pathElements.length
-    var lookingAt = 0
-
-    override def hasNext(): Boolean = (lookingAt < nElements)
-
-    override def next(): String = {
-      if (lookingAt >= nElements) {
-        throw new NoSuchElementException()
-      } else {
-        val d = pathElements(lookingAt)
-        lookingAt += 1
-        // "" == "." is a poorly documented Unix PATH quirk/corner_case.
-        if (d.length == 0) "." else d
+      path.split(File.pathSeparator).iterator.flatMap { absPath =>
+        val f = if (absPath.isEmpty) new File(bin) else new File(absPath, bin)
+        if (f.canExecute()) Some(f.toString()) else None
       }
     }
   }
+
 }
