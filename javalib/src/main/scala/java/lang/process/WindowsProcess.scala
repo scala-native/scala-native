@@ -101,16 +101,7 @@ private[process] object WindowsProcess {
     val cmd = builder.command()
     val dir = toCWideStringUTF16LE(builder.directory().getAbsolutePath())
     val argv = toCWideStringUTF16LE(WindowsUtils.argvToCommand(cmd.iterator()))
-    val envp = nullTerminatedBlock {
-      val list = new ArrayList[String]
-      builder
-        .environment()
-        .entrySet()
-        .iterator()
-        .scalaOps
-        .foreach(e => list.add(s"${e.getKey()}=${e.getValue()}"))
-      list
-    }.asInstanceOf[Ptr[Byte]]
+    val envp = nullTerminatedBlock(builder.getEnvironmentAsList())
 
     // stackalloc is documented as returning zeroed memory
     val processInfo = stackalloc[ProcessInformation]()
@@ -128,7 +119,7 @@ private[process] object WindowsProcess {
       threadAttributes = null,
       inheritHandle = true,
       creationFlags = CREATE_UNICODE_ENVIRONMENT | CREATE_NO_WINDOW,
-      environment = envp,
+      environment = envp.asInstanceOf[Ptr[Byte]],
       currentDirectory = dir,
       startupInfo = startupInfo,
       processInformation = processInfo
