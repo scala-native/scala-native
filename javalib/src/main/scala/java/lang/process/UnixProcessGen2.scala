@@ -376,16 +376,11 @@ private[process] object UnixProcessGen2 {
   def forkChild(builder: ProcessBuilder)(
       f: (Int, ProcessBuilder) => UnixProcessHandle
   )(implicit z: Zone): GenericProcess = {
-    val infds: Ptr[CInt] = stackalloc[CInt](2)
-    val outfds: Ptr[CInt] = stackalloc[CInt](2)
+    val infds: Ptr[CInt] = createPipe(stackalloc[CInt](2), "input")
+    val outfds: Ptr[CInt] = createPipe(stackalloc[CInt](2), "output")
     val errfds =
       if (builder.redirectErrorStream()) outfds
-      else stackalloc[CInt](2)
-
-    throwOnError(unistd.pipe(infds), s"Couldn't create infds pipe.")
-    throwOnError(unistd.pipe(outfds), s"Couldn't create outfds pipe.")
-    if (!builder.redirectErrorStream())
-      throwOnError(unistd.pipe(errfds), s"Couldn't create errfds pipe.")
+      else createPipe(stackalloc[CInt](2), "error")
 
     val cmd = builder.command()
     val binaries = binaryPaths(builder.environment(), cmd.get(0))
@@ -460,16 +455,11 @@ private[process] object UnixProcessGen2 {
   )(implicit z: Zone): GenericProcess = {
     val pidPtr = stackalloc[pid_t]()
 
-    val infds: Ptr[CInt] = stackalloc[CInt](2)
-    val outfds: Ptr[CInt] = stackalloc[CInt](2)
+    val infds: Ptr[CInt] = createPipe(stackalloc[CInt](2), "input")
+    val outfds: Ptr[CInt] = createPipe(stackalloc[CInt](2), "output")
     val errfds =
       if (builder.redirectErrorStream()) outfds
-      else stackalloc[CInt](2)
-
-    throwOnError(unistd.pipe(infds), s"Couldn't create infds pipe.")
-    throwOnError(unistd.pipe(outfds), s"Couldn't create outfds pipe.")
-    if (!builder.redirectErrorStream())
-      throwOnError(unistd.pipe(errfds), s"Couldn't create errfds pipe.")
+      else createPipe(stackalloc[CInt](2), "error")
 
     val cmd = builder.command()
     val argv = nullTerminate(cmd)
@@ -601,6 +591,20 @@ private[process] object UnixProcessGen2 {
     res
   }
 
+  private def createPipe(fds: Ptr[CInt], what: String): Ptr[CInt] = {
+    throwOnError(unistd.pipe(fds), s"Couldn't create $what pipe.")
+    fds
+  }
+
+  private def dup2(
+      oldfd: CInt,
+      newfd: CInt,
+      what: String
+  ): Unit = {
+    if (unistd.dup2(oldfd, newfd) == -1)
+      throw new IOException(s"Couldn't duplicate $what file descriptor $errno")
+  }
+
   private def setupChildFDS(
       childFd: CInt,
       redirect: ProcessBuilder.Redirect,
@@ -610,33 +614,30 @@ private[process] object UnixProcessGen2 {
     redirect.`type`() match {
       case ProcessBuilder.Redirect.Type.INHERIT =>
       case ProcessBuilder.Redirect.Type.PIPE    =>
-        if (unistd.dup2(childFd, procFd) == -1) {
-          throw new IOException(
-            s"Couldn't duplicate pipe file descriptor $errno"
-          )
-        }
-      case r @ ProcessBuilder.Redirect.Type.READ =>
+        dup2(childFd, procFd, "pipe")
+      case ProcessBuilder.Redirect.Type.READ =>
         val fd = open(redirect.file(), O_RDONLY)
-        if (unistd.dup2(fd, procFd) == -1) {
-          throw new IOException(
-            s"Couldn't duplicate read file descriptor $errno"
-          )
-        }
-      case r @ ProcessBuilder.Redirect.Type.WRITE =>
+        dup2(fd, procFd, "read")
+      case ProcessBuilder.Redirect.Type.WRITE =>
         val fd = open(redirect.file(), O_CREAT | O_WRONLY | O_TRUNC)
-        if (unistd.dup2(fd, procFd) == -1) {
-          throw new IOException(
-            s"Couldn't duplicate write file descriptor $errno"
-          )
-        }
-      case r @ ProcessBuilder.Redirect.Type.APPEND =>
+        dup2(fd, procFd, "write")
+      case ProcessBuilder.Redirect.Type.APPEND =>
         val fd = open(redirect.file(), O_CREAT | O_WRONLY | O_APPEND)
-        if (unistd.dup2(fd, procFd) == -1) {
-          throw new IOException(
-            s"Couldn't duplicate append file descriptor $errno"
-          )
-        }
+        dup2(fd, procFd, "append")
     }
+  }
+
+  private def dup2Spawn(
+      fileActions: Ptr[posix_spawn_file_actions_t],
+      oldfd: CInt,
+      newfd: CInt,
+      what: String
+  ): Unit = {
+    val status = posix_spawn_file_actions_adddup2(fileActions, oldfd, newfd)
+    if (status != 0)
+      throw new IOException(
+        s"Could not adddup2 $what file descriptor $newfd: $status"
+      )
   }
 
   private def setupSpawnFDS(
@@ -650,46 +651,22 @@ private[process] object UnixProcessGen2 {
       case ProcessBuilder.Redirect.Type.INHERIT =>
 
       case ProcessBuilder.Redirect.Type.PIPE =>
-        val status =
-          posix_spawn_file_actions_adddup2(fileActions, childFd, procFd)
-        if (status != 0) {
-          throw new IOException(
-            s"Could not adddup2 pipe file descriptor ${procFd}: ${status}"
-          )
-        }
+        dup2Spawn(fileActions, childFd, procFd, "pipe")
 
-      case r @ ProcessBuilder.Redirect.Type.READ =>
+      case ProcessBuilder.Redirect.Type.READ =>
         val fd = open(redirect.file(), O_RDONLY)
         // result is error checked in inline open() below.
+        dup2Spawn(fileActions, fd, procFd, "read")
 
-        val status = posix_spawn_file_actions_adddup2(fileActions, fd, procFd)
-        if (status != 0) {
-          throw new IOException(
-            s"Could not adddup2 read file ${redirect.file()}: ${status}"
-          )
-        }
-
-      case r @ ProcessBuilder.Redirect.Type.WRITE =>
+      case ProcessBuilder.Redirect.Type.WRITE =>
         val fd = open(redirect.file(), O_CREAT | O_WRONLY | O_TRUNC)
         // result is error checked in inline open() below.
+        dup2Spawn(fileActions, fd, procFd, "write")
 
-        val status = posix_spawn_file_actions_adddup2(fileActions, fd, procFd)
-        if (status != 0) {
-          throw new IOException(
-            s"Could not adddup2 write file ${redirect.file()}: ${status}"
-          )
-        }
-
-      case r @ ProcessBuilder.Redirect.Type.APPEND =>
+      case ProcessBuilder.Redirect.Type.APPEND =>
         val fd = open(redirect.file(), O_CREAT | O_WRONLY | O_APPEND)
         // result is error checked in inline open() below.
-
-        val status = posix_spawn_file_actions_adddup2(fileActions, fd, procFd)
-        if (status != 0) {
-          throw new IOException(
-            s"Could not adddup2 append file ${redirect.file()}: ${status}"
-          )
-        }
+        dup2Spawn(fileActions, fd, procFd, "append")
     }
   }
 
