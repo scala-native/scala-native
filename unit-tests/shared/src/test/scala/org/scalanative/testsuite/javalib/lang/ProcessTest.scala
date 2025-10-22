@@ -772,14 +772,10 @@ class ProcessTest {
       ProcessTest.runArgv(10.seconds, githubWorkspace)(argv: _*)
     res match {
       case Success(x) =>
-        if (Platform.executingInScalaNative) fail(s"$prefix succeeded: $x")
         assertEquals(s"$prefix exit; stderr: ${trunc(stderr)}", 0, x)
         assertTrue(s"$prefix stdout: <${trunc(stdout)}>", stdout.length > 100)
         assertEquals(s"$prefix stderr: <${trunc(stderr)}>", "", stderr)
-      case Failure(x) =>
-        if (!Platform.executingInScalaNative ||
-            !x.isInstanceOf[TimeoutException])
-          fail(s"$prefix failed: $x")
+      case Failure(x) => fail(s"$prefix failed: $x")
     }
   }
 
@@ -874,14 +870,10 @@ class ProcessTest {
       ProcessTest.runArgvWithBang(60.seconds, githubWorkspace)(argv: _*)
     res match {
       case Success(x) =>
-        if (Platform.executingInScalaNative) fail(s"$prefix succeeded: $x")
         assertEquals(s"$prefix exit; stderr: ${trunc(stderr)}", 0, x)
         assertTrue(s"$prefix stdout: <${trunc(stdout)}>", stdout.length > 100)
         assertEquals(s"$prefix stderr: <${trunc(stderr)}>", "", stderr)
-      case Failure(x) =>
-        if (!Platform.executingInScalaNative ||
-            !x.isInstanceOf[TimeoutException])
-          fail(s"$prefix failed: $x")
+      case Failure(x) => fail(s"$prefix failed: $x")
     }
   }
 
@@ -979,14 +971,9 @@ class ProcessTest {
       ProcessTest.runArgvWithBangBang(60.seconds, githubWorkspace)(argv: _*)
     res match {
       case Success(x) =>
-        if (Platform.executingInScalaNative)
-          fail(s"$prefix succeeded: ${trunc(x)}")
         assertTrue(s"$prefix stdout: <${trunc(x)}>", x.length > 100)
         assertEquals(s"$prefix stderr: <${trunc(stderr)}>", "", stderr)
-      case Failure(x) =>
-        if (!Platform.executingInScalaNative ||
-            !x.isInstanceOf[TimeoutException])
-          fail(s"$prefix failed: $x")
+      case Failure(x) => fail(s"$prefix failed: $x")
     }
   }
 

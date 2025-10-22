@@ -116,31 +116,28 @@ import scala.scalanative.windows.NamedPipeApi.PeekNamedPipe
 
 private[process] final class PipeIO[T](
     val nullStream: T,
-    val fdStream: (GenericProcessHandle, FileDescriptor) => T
+    val fdStream: FileDescriptor => T
 )
 
 private[process] object PipeIO {
   def apply[T](
-      process: GenericProcessHandle,
       childFd: => FileDescriptor,
       redirect: ProcessBuilder.Redirect
   )(implicit ioStream: PipeIO[T]): T = {
     redirect.`type`() match {
       case ProcessBuilder.Redirect.Type.PIPE =>
         val fd = childFd // could specify INVALID if PIPE is not needed
-        if (fd.valid()) ioStream.fdStream(process, fd) else ioStream.nullStream
+        if (fd.valid()) ioStream.fdStream(fd) else ioStream.nullStream
       case _ =>
         ioStream.nullStream
     }
   }
 
   trait Stream extends InputStream {
-    def process: GenericProcessHandle
     def drain(): Unit = {}
   }
 
-  class StreamImpl(val process: GenericProcessHandle, is: FileInputStream)
-      extends Stream {
+  class StreamImpl(is: FileInputStream) extends Stream {
 
     private var src: InputStream = is
 
@@ -153,12 +150,10 @@ private[process] object PipeIO {
     }
 
     override def available(): Int =
-      try synchronized(availableUnSync())
-      finally process.checkIfExited()
+      synchronized(availableUnSync())
 
     override def read(): Int =
-      try synchronized(src.read())
-      finally process.checkIfExited()
+      synchronized(src.read())
 
     override def read(buf: Array[scala.Byte], offset: Int, len: Int): Int = {
 
@@ -170,39 +165,36 @@ private[process] object PipeIO {
       }
 
       if (len == 0) 0
-      else {
-        try {
-          synchronized {
-            val avail = availableUnSync()
+      else
+        synchronized {
+          val avail = availableUnSync()
 
-            if (avail > 0) {
-              val nToRead = Math.min(len, avail)
-              src.read(buf, offset, nToRead)
-            } else {
-              src match {
-                case fis: FileInputStream =>
-                  val nRead = src.read(buf, offset, 1)
+          if (avail > 0) {
+            val nToRead = Math.min(len, avail)
+            src.read(buf, offset, nToRead)
+          } else {
+            src match {
+              case fis: FileInputStream =>
+                val nRead = src.read(buf, offset, 1)
 
-                  if (nRead == -1) -1
-                  else {
+                if (nRead == -1) -1
+                else {
 
-                    val nToRead =
-                      Math.min(len - 1, availableUnSync()) // possibly zero
+                  val nToRead =
+                    Math.min(len - 1, availableUnSync()) // possibly zero
 
-                    val nSecondRead =
-                      if (nToRead == 0) 0
-                      else src.read(buf, offset + 1, nToRead)
+                  val nSecondRead =
+                    if (nToRead == 0) 0
+                    else src.read(buf, offset + 1, nToRead)
 
-                    if (nSecondRead == -1) 1
-                    else nSecondRead + 1
-                  }
+                  if (nSecondRead == -1) 1
+                  else nSecondRead + 1
+                }
 
-                case _ => -1 // EOF
-              }
+              case _ => -1 // EOF
             }
           }
-        } finally process.checkIfExited()
-      }
+        }
     }
 
     /* Switch horses, or at least InputStreams, "in media res".
@@ -250,14 +242,12 @@ private[process] object PipeIO {
   }
 
   implicit val InputPipeIO: PipeIO[Stream] =
-    new PipeIO(NullInput, (p, fd) => new StreamImpl(p, new FileInputStream(fd)))
+    new PipeIO(NullInput, fd => new StreamImpl(new FileInputStream(fd)))
 
   implicit val OutputPipeIO: PipeIO[OutputStream] =
-    new PipeIO(NullOutput, (_, fd) => new FileOutputStream(fd))
+    new PipeIO(NullOutput, fd => new FileOutputStream(fd))
 
   private object NullInput extends Stream {
-    @stub
-    override def process: GenericProcessHandle = ???
     override def available(): Int = 0
     override def close(): Unit = {}
     override def read(): Int = 0
