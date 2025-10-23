@@ -63,7 +63,7 @@ object spawn {
       newfiledes: CInt
   ): CInt = extern
 
-  def posix_spawn_file_actions_open(
+  def posix_spawn_file_actions_addopen(
       file_actions: Ptr[posix_spawn_file_actions_t],
       filedes: CInt,
       path: CString,
