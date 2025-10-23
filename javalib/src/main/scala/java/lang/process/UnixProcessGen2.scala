@@ -382,7 +382,7 @@ private[process] object UnixProcessGen2 {
           builder.redirectOutput(),
           unistd.STDOUT_FILENO
         )
-        if (null eq errfds)
+        if (builder.redirectErrorStream())
           dup2(unistd.STDOUT_FILENO, unistd.STDERR_FILENO, "pipe")
         else
           setupChildFDS(
@@ -394,8 +394,10 @@ private[process] object UnixProcessGen2 {
         // No sense closing stuff either active or already closed!
         // dup2() will close() what is not INHERITed.
         val parentFds = new ArrayList[CInt] // No Scala Collections in javalib
-        parentFds.add(!(infds + 1)) // parent's stdout - write, in child
-        parentFds.add(!outfds) // parent's stdin - read, in child
+        if (null ne infds)
+          parentFds.add(!(infds + 1)) // parent's stdout - write, in child
+        if (null ne outfds)
+          parentFds.add(!outfds) // parent's stdin - read, in child
         if (null ne errfds)
           parentFds.add(!errfds) // parent's stderr - read, in child
 
@@ -421,8 +423,10 @@ private[process] object UnixProcessGen2 {
 
       case pid =>
         val childFds = new ArrayList[CInt] // No Scala Collections in javalib
-        childFds.add(!infds) // child's stdin read, in parent
-        childFds.add(!(outfds + 1)) // child's stdout write, in parent
+        if (null ne infds)
+          childFds.add(!infds) // child's stdin read, in parent
+        if (null ne outfds)
+          childFds.add(!(outfds + 1)) // child's stdout write, in parent
         if (null ne errfds)
           childFds.add(!(errfds + 1)) // child's stderr write, in parent
 
@@ -479,7 +483,7 @@ private[process] object UnixProcessGen2 {
           unistd.STDOUT_FILENO
         )
 
-        if (null eq errfds)
+        if (builder.redirectErrorStream())
           dup2Spawn(
             fileActions,
             unistd.STDOUT_FILENO,
@@ -496,8 +500,10 @@ private[process] object UnixProcessGen2 {
 
         // No Scala Collections in javalib
         val parentFds = new ArrayList[CInt](3)
-        parentFds.add(!(infds + 1)) // parent's stdout - write, in child
-        parentFds.add(!outfds) // parent's stdin - read, in child
+        if (null ne infds)
+          parentFds.add(!(infds + 1)) // parent's stdout - write, in child
+        if (null ne outfds)
+          parentFds.add(!outfds) // parent's stdin - read, in child
         if (null ne errfds)
           parentFds.add(!errfds) // parent's stderr - read, in child
 
@@ -542,8 +548,10 @@ private[process] object UnixProcessGen2 {
         UnixProcess(handle, infds, outfds, errfds)
       } finally {
         val childFds = new ArrayList[CInt] // No Scala Collections in javalib
-        childFds.add(!infds) // child's stdin read, in parent
-        childFds.add(!(outfds + 1)) // child's stdout write, in parent
+        if (null ne infds)
+          childFds.add(!infds) // child's stdin read, in parent
+        if (null ne outfds)
+          childFds.add(!(outfds + 1)) // child's stdout write, in parent
         if (null ne errfds)
           childFds.add(!(errfds + 1)) // child's stderr write, in parent
 
@@ -577,22 +585,24 @@ private[process] object UnixProcessGen2 {
     res
   }
 
-  private def createPipe(what: String)(implicit
-      z: Zone
-  ): Ptr[CInt] = {
-    val fds = alloc[CInt](2)
-    throwOnError(unistd.pipe(fds), s"Couldn't create $what pipe.")
-    fds
-  }
+  private def createPipe(what: String, redirect: ProcessBuilder.Redirect)(
+      implicit z: Zone
+  ): Ptr[CInt] =
+    if (redirect.`type`() != ProcessBuilder.Redirect.Type.PIPE) null
+    else {
+      val fds = alloc[CInt](2)
+      throwOnError(unistd.pipe(fds), s"Couldn't create $what pipe.")
+      fds
+    }
 
   private def createPipes(
       pb: ProcessBuilder
   )(implicit z: Zone): (Ptr[CInt], Ptr[CInt], Ptr[CInt]) = {
-    val infds: Ptr[CInt] = createPipe("input")
-    val outfds: Ptr[CInt] = createPipe("output")
+    val infds: Ptr[CInt] = createPipe("input", pb.redirectInput())
+    val outfds: Ptr[CInt] = createPipe("output", pb.redirectOutput())
     val errfds =
       if (pb.redirectErrorStream()) null
-      else createPipe("error")
+      else createPipe("error", pb.redirectError())
     (infds, outfds, errfds)
   }
 
@@ -606,7 +616,7 @@ private[process] object UnixProcessGen2 {
   }
 
   private def setupChildFDS(
-      childFd: CInt,
+      childFd: => CInt,
       redirect: ProcessBuilder.Redirect,
       procFd: CInt
   )(implicit z: Zone): Unit = {
@@ -647,7 +657,7 @@ private[process] object UnixProcessGen2 {
 
   private def setupSpawnFDS(
       fileActions: Ptr[posix_spawn_file_actions_t],
-      childFd: CInt,
+      childFd: => CInt,
       redirect: ProcessBuilder.Redirect,
       procFd: CInt
   )(implicit z: Zone): Unit = {

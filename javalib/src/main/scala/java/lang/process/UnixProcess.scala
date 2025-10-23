@@ -29,16 +29,22 @@ private[process] object UnixProcess {
     override protected def fdErr: FileDescriptor = stderr
   }
 
+  private def getFileDescriptor(fds: Ptr[CInt], read: Boolean): FileDescriptor =
+    if (null == fds) FileDescriptor.none
+    else {
+      val idx = if (read) 0 else 1
+      new FileDescriptor(!(fds + idx), readOnly = read)
+    }
+
   def apply(
       handle: UnixProcessHandle,
       infds: Ptr[CInt],
       outfds: Ptr[CInt],
       errfds: Ptr[CInt]
   ): GenericProcess = apply(
-    new FileDescriptor(!(infds + 1)),
-    new FileDescriptor(!outfds, readOnly = true),
-    if (null == errfds) new FileDescriptor()
-    else new FileDescriptor(!errfds, readOnly = true)
+    getFileDescriptor(infds, read = false),
+    getFileDescriptor(outfds, read = true),
+    getFileDescriptor(errfds, read = true)
   )(handle)
 
   def apply(pb: ProcessBuilder): GenericProcess = {
