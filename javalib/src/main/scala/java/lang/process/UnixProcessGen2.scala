@@ -379,7 +379,7 @@ private[process] object UnixProcessGen2 {
     val infds: Ptr[CInt] = createPipe(stackalloc[CInt](2), "input")
     val outfds: Ptr[CInt] = createPipe(stackalloc[CInt](2), "output")
     val errfds =
-      if (builder.redirectErrorStream()) outfds
+      if (builder.redirectErrorStream()) null
       else createPipe(stackalloc[CInt](2), "error")
 
     val cmd = builder.command()
@@ -402,19 +402,21 @@ private[process] object UnixProcessGen2 {
           builder.redirectOutput(),
           unistd.STDOUT_FILENO
         )
-        setupChildFDS(
-          !(errfds + 1),
-          if (builder.redirectErrorStream()) ProcessBuilder.Redirect.PIPE
-          else builder.redirectError(),
-          unistd.STDERR_FILENO
-        )
+        if (null eq errfds)
+          dup2(unistd.STDOUT_FILENO, unistd.STDERR_FILENO, "pipe")
+        else
+          setupChildFDS(
+            !(errfds + 1),
+            builder.redirectError(),
+            unistd.STDERR_FILENO
+          )
 
         // No sense closing stuff either active or already closed!
         // dup2() will close() what is not INHERITed.
         val parentFds = new ArrayList[CInt] // No Scala Collections in javalib
         parentFds.add(!(infds + 1)) // parent's stdout - write, in child
         parentFds.add(!outfds) // parent's stdin - read, in child
-        if (!builder.redirectErrorStream())
+        if (null ne errfds)
           parentFds.add(!errfds) // parent's stderr - read, in child
 
         parentFds.forEach { fd => unistd.close(fd) }
@@ -441,7 +443,7 @@ private[process] object UnixProcessGen2 {
         val childFds = new ArrayList[CInt] // No Scala Collections in javalib
         childFds.add(!infds) // child's stdin read, in parent
         childFds.add(!(outfds + 1)) // child's stdout write, in parent
-        if (!builder.redirectErrorStream())
+        if (null ne errfds)
           childFds.add(!(errfds + 1)) // child's stderr write, in parent
 
         childFds.forEach { fd => unistd.close(fd) }
@@ -458,7 +460,7 @@ private[process] object UnixProcessGen2 {
     val infds: Ptr[CInt] = createPipe(stackalloc[CInt](2), "input")
     val outfds: Ptr[CInt] = createPipe(stackalloc[CInt](2), "output")
     val errfds =
-      if (builder.redirectErrorStream()) outfds
+      if (builder.redirectErrorStream()) null
       else createPipe(stackalloc[CInt](2), "error")
 
     val cmd = builder.command()
@@ -501,19 +503,26 @@ private[process] object UnixProcessGen2 {
           unistd.STDOUT_FILENO
         )
 
-        setupSpawnFDS(
-          fileActions,
-          !(errfds + 1),
-          if (builder.redirectErrorStream()) ProcessBuilder.Redirect.PIPE
-          else builder.redirectError(),
-          unistd.STDERR_FILENO
-        )
+        if (null eq errfds)
+          dup2Spawn(
+            fileActions,
+            unistd.STDOUT_FILENO,
+            unistd.STDERR_FILENO,
+            "pipe"
+          )
+        else
+          setupSpawnFDS(
+            fileActions,
+            !(errfds + 1),
+            builder.redirectError(),
+            unistd.STDERR_FILENO
+          )
 
         // No Scala Collections in javalib
         val parentFds = new ArrayList[CInt](3)
         parentFds.add(!(infds + 1)) // parent's stdout - write, in child
         parentFds.add(!outfds) // parent's stdin - read, in child
-        if (!builder.redirectErrorStream())
+        if (null ne errfds)
           parentFds.add(!errfds) // parent's stderr - read, in child
 
         parentFds.forEach { fd =>
@@ -558,7 +567,7 @@ private[process] object UnixProcessGen2 {
         val childFds = new ArrayList[CInt] // No Scala Collections in javalib
         childFds.add(!infds) // child's stdin read, in parent
         childFds.add(!(outfds + 1)) // child's stdout write, in parent
-        if (!builder.redirectErrorStream())
+        if (null ne errfds)
           childFds.add(!(errfds + 1)) // child's stderr write, in parent
 
         childFds.forEach(unistd.close(_))

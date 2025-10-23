@@ -27,7 +27,9 @@ private[process] object UnixProcess {
   ): GenericProcess = new GenericProcess(handle) {
     override protected def fdIn = new FileDescriptor(!(infds + 1))
     override protected def fdOut = new FileDescriptor(!outfds, readOnly = true)
-    override protected def fdErr = new FileDescriptor(!errfds, readOnly = true)
+    override protected def fdErr =
+      if (null == errfds) new FileDescriptor()
+      else new FileDescriptor(!errfds, readOnly = true)
   }
 
   def apply(pb: ProcessBuilder): GenericProcess = {
