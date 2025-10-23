@@ -88,9 +88,6 @@ private[process] abstract class GenericProcessHandle extends ProcessHandle {
 
   override final def isAlive(): Boolean = !hasExited
 
-  final def checkIfExited(): Boolean =
-    hasExited || checkAndSetExitCode() || hasExited
-
   final def hasExited: Boolean = completion.isDone()
 
   final def getCachedExitCode: Option[Int] = {
@@ -166,12 +163,7 @@ private[process] abstract class GenericProcessHandle extends ProcessHandle {
 
 private[lang] object GenericProcess {
 
-  def apply(pb: ProcessBuilder): GenericProcess = {
-    val process =
-      if (LinktimeInfo.isWindows) WindowsProcess(pb) else UnixProcess(pb)
-    if (LinktimeInfo.isMultithreadingEnabled)
-      GenericProcessWatcher.watchForTermination(process)
-    process
-  }
-
+  def apply(pb: ProcessBuilder): GenericProcess =
+    if (LinktimeInfo.isWindows) WindowsProcess(pb)
+    else UnixProcess(pb)
 }
