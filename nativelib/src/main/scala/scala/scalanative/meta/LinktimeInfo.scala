@@ -52,6 +52,9 @@ object LinktimeInfo {
     (isLinux || isMac || isFreeBSD || isOpenBSD || isNetBSD) &&
       (target.arch != "arm" && !is32BitPlatform)
 
+  @resolvedAtLinktime()
+  def isMacOrFreeBSD: Boolean = isMac || isFreeBSD
+
   @resolvedAtLinktime(
     "scala.scalanative.meta.linktimeinfo.isMultithreadingEnabled"
   )
