@@ -103,4 +103,7 @@ object ProcessUtils {
     val values = Set(echo, err, hello, ls)
   }
 
+  def trunc(str: String, len: Int = 100): String =
+    str.substring(0, Math.min(len, str.length))
+
 }
