@@ -89,6 +89,12 @@ object spawn {
       file_actions: Ptr[posix_spawn_file_actions_t]
   ): CInt = extern
 
+  // MacOS/FreeBSD
+  def posix_spawn_file_actions_addchdir_np(
+      file_actions: Ptr[posix_spawn_file_actions_t],
+      path: CString
+  ): CInt = extern
+
   def posix_spawnattr_destroy(
       attr: Ptr[posix_spawnattr_t]
   ): CInt = extern

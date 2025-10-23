@@ -366,7 +366,9 @@ private[process] object UnixProcessGen2 {
      * directory.
      */
 
-    if (builder.isCwd)
+    if (LinktimeInfo.isMacOrFreeBSD)
+      spawnChild(builder)
+    else if (builder.isCwd)
       spawnChild(builder)
     else
       forkChild(builder)(createHandle)
@@ -471,6 +473,14 @@ private[process] object UnixProcessGen2 {
 
     val unixProcess =
       try {
+        if (LinktimeInfo.isMacOrFreeBSD) if (!builder.isCwd) {
+          val dir = toCString(builder.directory().toString())
+          throwOnError(
+            posix_spawn_file_actions_addchdir_np(fileActions, dir),
+            "posix_spawn_file_actions_addchdir_np"
+          )
+        }
+
         setupSpawnFDS(
           fileActions,
           !infds,
