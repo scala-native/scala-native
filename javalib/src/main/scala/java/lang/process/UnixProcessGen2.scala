@@ -391,17 +391,15 @@ private[process] object UnixProcessGen2 {
             unistd.STDERR_FILENO
           )
 
-        // No sense closing stuff either active or already closed!
-        // dup2() will close() what is not INHERITed.
-        val parentFds = new ArrayList[CInt] // No Scala Collections in javalib
-        if (null ne infds)
-          parentFds.add(!(infds + 1)) // parent's stdout - write, in child
-        if (null ne outfds)
-          parentFds.add(!outfds) // parent's stdin - read, in child
-        if (null ne errfds)
-          parentFds.add(!errfds) // parent's stderr - read, in child
+        def closePipe(pipe: Ptr[CInt]): Unit =
+          if (pipe ne null) {
+            unistd.close(!(pipe + 0))
+            unistd.close(!(pipe + 1))
+          }
 
-        parentFds.forEach { fd => unistd.close(fd) }
+        closePipe(infds)
+        closePipe(outfds)
+        closePipe(errfds)
 
         binaries.foreach { b =>
           val bin = toCString(b)
@@ -488,21 +486,20 @@ private[process] object UnixProcessGen2 {
             unistd.STDERR_FILENO
           )
 
-        // No Scala Collections in javalib
-        val parentFds = new ArrayList[CInt](3)
-        if (null ne infds)
-          parentFds.add(!(infds + 1)) // parent's stdout - write, in child
-        if (null ne outfds)
-          parentFds.add(!outfds) // parent's stdin - read, in child
-        if (null ne errfds)
-          parentFds.add(!errfds) // parent's stderr - read, in child
+        def closeSpawn(fd: CInt): Unit = throwOnError(
+          posix_spawn_file_actions_addclose(fileActions, fd),
+          s"posix_spawn_file_actions_addclose fd: $fd"
+        )
 
-        parentFds.forEach { fd =>
-          throwOnError(
-            posix_spawn_file_actions_addclose(fileActions, fd),
-            s"posix_spawn_file_actions_addclose fd: ${fd}"
-          )
-        }
+        def closePipe(pipe: Ptr[CInt]): Unit =
+          if (pipe ne null) {
+            closeSpawn(!(pipe + 0))
+            closeSpawn(!(pipe + 1))
+          }
+
+        closePipe(infds)
+        closePipe(outfds)
+        closePipe(errfds)
 
         /* This will exec binary executables.
          * Some shells (bash, ???) will also execute scripts with initial
@@ -607,6 +604,7 @@ private[process] object UnixProcessGen2 {
       if (fd < 0)
         throw new IOException(s"Unable to open $what file $file ($errno)")
       dup2(fd, procFd, what)
+      unistd.close(fd)
     }
     import fcntl.{open => _, _}
     redirect.`type`() match {
