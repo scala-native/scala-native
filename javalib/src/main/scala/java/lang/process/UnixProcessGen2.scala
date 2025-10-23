@@ -422,16 +422,6 @@ private[process] object UnixProcessGen2 {
         throw new IOException(s"Failed to create process for command: $cmd")
 
       case pid =>
-        val childFds = new ArrayList[CInt] // No Scala Collections in javalib
-        if (null ne infds)
-          childFds.add(!infds) // child's stdin read, in parent
-        if (null ne outfds)
-          childFds.add(!(outfds + 1)) // child's stdout write, in parent
-        if (null ne errfds)
-          childFds.add(!(errfds + 1)) // child's stderr write, in parent
-
-        childFds.forEach { fd => unistd.close(fd) }
-
         UnixProcess(f(pid, builder), infds, outfds, errfds)
     }
   }
@@ -547,16 +537,6 @@ private[process] object UnixProcessGen2 {
         val handle = new UnixProcessHandleGen2(!pidPtr, builder)
         UnixProcess(handle, infds, outfds, errfds)
       } finally {
-        val childFds = new ArrayList[CInt] // No Scala Collections in javalib
-        if (null ne infds)
-          childFds.add(!infds) // child's stdin read, in parent
-        if (null ne outfds)
-          childFds.add(!(outfds + 1)) // child's stdout write, in parent
-        if (null ne errfds)
-          childFds.add(!(errfds + 1)) // child's stderr write, in parent
-
-        childFds.forEach(unistd.close(_))
-
         throwOnError(
           posix_spawn_file_actions_destroy(fileActions),
           "posix_spawn_file_actions_destroy"
