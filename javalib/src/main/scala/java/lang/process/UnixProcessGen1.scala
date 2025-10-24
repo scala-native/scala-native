@@ -1,12 +1,9 @@
 package java.lang.process
 
-import java.io.{File, IOException}
 import java.util.concurrent.TimeUnit
 
-import scala.scalanative.libc.errno.errno
-import scala.scalanative.posix.{errno => e, fcntl, sys, time}
+import scala.scalanative.posix.{errno => e, sys, time}
 import scala.scalanative.unsafe._
-import scala.scalanative.unsigned._
 
 import sys.time._
 import time._
@@ -22,7 +19,7 @@ private[process] class UnixProcessHandleGen1(
   override protected def waitForImpl(timeout: Long, unit: TimeUnit): Boolean = {
     val ts = stackalloc[timespec]()
     val tv = stackalloc[timeval]()
-    UnixProcessGen1.throwOnError(
+    UnixProcessGen2.throwOnError(
       gettimeofday(tv, null),
       "Failed to set time of day."
     )
@@ -91,47 +88,4 @@ private[process] object UnixProcessGen1 {
     }
   }
 
-  @inline
-  def throwOnError(rc: CInt, msg: => String): CInt = {
-    if (rc != 0) {
-      throw new IOException(s"$msg Error code: $rc, Error number: $errno")
-    } else {
-      rc
-    }
-  }
-
-  @inline def open(f: File, flags: CInt) = Zone.acquire { implicit z =>
-    def defaultCreateMode = 0x1a4.toUInt // 0644, no octal literal in Scala
-    val mode: CUnsignedInt =
-      if ((flags & fcntl.O_CREAT) != 0) defaultCreateMode
-      else 0.toUInt
-    fcntl.open(toCString(f.getAbsolutePath()), flags, mode) match {
-      case -1 => throw new IOException(s"Unable to open file $f ($errno)")
-      case fd => fd
-    }
-  }
-
-  // The execvpe function isn't available on all platforms so find the
-  // possible binaries to exec.
-  private def binaryPaths(
-      environment: java.util.Map[String, String],
-      bin: String
-  ): Seq[String] = {
-    if ((bin.startsWith("/")) || (bin.startsWith("."))) {
-      Seq(bin)
-    } else {
-      val path = environment.get("PATH") match {
-        case null => "/bin:/usr/bin:/usr/local/bin"
-        case p    => p
-      }
-
-      path
-        .split(':')
-        .toIndexedSeq
-        .map { absPath => new File(s"$absPath/$bin") }
-        .collect {
-          case f if f.canExecute() => f.toString
-        }
-    }
-  }
 }
