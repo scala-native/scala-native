@@ -47,6 +47,17 @@ int scalanative_posix_spawn_setscheduler() {
 #endif // !__APPLE__
 }
 
+int scalanative_posix_spawn_setsid() {
+#if defined(POSIX_SPAWN_SETSID)
+    return POSIX_SPAWN_SETSID;
+#elif defined(__linux__)
+    return 0x80; // HACK, __USE_GNU value
+#else
+#warning "POSIX_SPAWN_SETSID is not defined on this platform, using 0"
+    return 0x0;
+#endif
+}
+
 int scalanative_posix_spawn_setsigdef() { return POSIX_SPAWN_SETSIGDEF; }
 
 int scalanative_posix_spawn_setsigmask() { return POSIX_SPAWN_SETSIGMASK; }

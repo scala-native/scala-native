@@ -7,7 +7,7 @@ import scalanative.unsafe._
 /** POSIX spawn.h for Scala
  *
  *  The Open Group Base Specifications
- *  [[https://pubs.opengroup.org/onlinepubs/9699919799 Issue 7, 2018]] edition.
+ *  [[https://pubs.opengroup.org/onlinepubs/9799919799 Issue 8, 2024]] edition.
  *
  *  A method with a PS comment indicates it is defined in POSIX extension
  *  "Process Scheduling", not base POSIX.
@@ -52,6 +52,11 @@ object spawn {
       envp: Ptr[CString]
   ): CInt = extern
 
+  def posix_spawn_file_actions_addchdir(
+      file_actions: Ptr[posix_spawn_file_actions_t],
+      path: Ptr[CString]
+  ): CInt = extern
+
   def posix_spawn_file_actions_addclose(
       file_actions: Ptr[posix_spawn_file_actions_t],
       filedes: CInt
@@ -61,6 +66,11 @@ object spawn {
       file_actions: Ptr[posix_spawn_file_actions_t],
       filedes: CInt,
       newfiledes: CInt
+  ): CInt = extern
+
+  def posix_spawn_file_actions_addfchdir(
+      file_actions: Ptr[posix_spawn_file_actions_t],
+      filedes: CInt
   ): CInt = extern
 
   def posix_spawn_file_actions_addopen(
@@ -175,6 +185,9 @@ object spawn {
   /** PS - Unsupported (zero) on Apple */
   @name("scalanative_posix_spawn_setscheduler")
   def POSIX_SPAWN_SETSCHEDULER: CInt = extern
+
+  @name("scalanative_posix_spawn_setsid")
+  def POSIX_SPAWN_SETSID: CInt = extern
 
   @name("scalanative_posix_spawn_setsigdef")
   def POSIX_SPAWN_SETSIGDEF: CInt = extern
