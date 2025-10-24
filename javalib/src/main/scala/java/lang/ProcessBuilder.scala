@@ -30,11 +30,16 @@ final class ProcessBuilder(private var _command: List[String]) {
 
   def directory(dir: File): ProcessBuilder =
     set {
-      _directory = dir match {
-        case null => defaultDirectory
-        case _    => dir
+      if (dir == null) {
+        _directory = ProcessBuilder.cwd
+        _isCwd = true
+      } else {
+        _directory = dir
+        _isCwd = dir.getCanonicalFile() == ProcessBuilder.cwd
       }
     }
+
+  private[java] def isCwd: Boolean = _isCwd
 
   def inheritIO(): ProcessBuilder = {
     redirectInput(Redirect.INHERIT)
@@ -113,11 +118,8 @@ final class ProcessBuilder(private var _command: List[String]) {
     f
     this
   }
-  private def defaultDirectory = System.getenv("user.dir") match {
-    case null => new File(".")
-    case f    => new File(f)
-  }
-  private var _directory = defaultDirectory
+  private var _isCwd = true
+  private var _directory = ProcessBuilder.cwd
   private val _environment = {
     val env = System.getenv()
     new java.util.HashMap[String, String](env)
@@ -130,6 +132,11 @@ final class ProcessBuilder(private var _command: List[String]) {
 }
 
 object ProcessBuilder {
+
+  private[java] lazy val cwd =
+    new File(System.getProperty(SystemProperties.CurrentDirectoryKey))
+      .getCanonicalFile()
+
   abstract class Redirect {
     def file(): File = null
 

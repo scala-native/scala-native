@@ -352,12 +352,10 @@ private[process] object UnixProcessGen2 {
      * directory.
      */
 
-    val dir = builder.directory()
-    if ((dir != null) && (dir.toString != ".")) {
-      forkChild(builder)(new UnixProcessHandleGen2(_, _))
-    } else {
+    if (builder.isCwd)
       spawnChild(builder)
-    }
+    else
+      forkChild(builder)(new UnixProcessHandleGen2(_, _))
   }
 
   def forkChild(builder: ProcessBuilder)(
@@ -371,7 +369,6 @@ private[process] object UnixProcessGen2 {
 
     val cmd = builder.command()
     val binaries = binaryPaths(builder.environment(), cmd.get(0))
-    val dir = builder.directory()
     val argv = nullTerminate(cmd)
     val envp = nullTerminate(builder.getEnvironmentAsList())
 
@@ -380,8 +377,8 @@ private[process] object UnixProcessGen2 {
         throw new IOException("Unable to fork process")
 
       case 0 =>
-        if ((dir != null) && (dir.toString != "."))
-          unistd.chdir(toCString(dir.toString))
+        if (!builder.isCwd)
+          unistd.chdir(toCString(builder.directory().toString()))
 
         setupChildFDS(!infds, builder.redirectInput(), unistd.STDIN_FILENO)
         setupChildFDS(

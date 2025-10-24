@@ -281,7 +281,7 @@ private object Streams {
   var err: PrintStream = new PrintStream(new FileOutputStream(stderr))
 }
 
-private object SystemProperties {
+private[java] object SystemProperties {
   import System.{getenv, lineSeparator}
 
   private val systemProperties0 = loadProperties()
@@ -293,7 +293,7 @@ private object SystemProperties {
     systemProperties0
   }
 
-  private final val CurrentDirectoryKey = "user.dir"
+  final val CurrentDirectoryKey = "user.dir"
   private lazy val initializeCurrentDirectory =
     getCurrentDirectory().foreach(
       systemProperties.setProperty(CurrentDirectoryKey, _)
