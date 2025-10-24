@@ -40,10 +40,21 @@ import ju.concurrent.TimeUnit
  * efficient nor a short code path" you are probably right.
  */
 
-private[process] class UnixProcessHandleGen2(
+private[process] class UnixProcessHandleGen2(pidFd: CInt)(
     override protected val _pid: CInt,
     override val builder: ProcessBuilder
 ) extends UnixProcessHandle {
+
+  /** Closes [[pidFd]], if any, used to monitor if the process has exited.
+   *
+   *  Guaranteed to be called once, after the process has been reaped, so
+   *  [[pidFd]] is no longer in use.
+   *
+   *  @see
+   *    [[GenericProcessHandle.close]] for more details.
+   */
+  override protected final def close(): Unit =
+    if (pidFd != -1) unistd.close(pidFd)
 
   override protected def getExitCodeImpl: Option[Int] =
     waitpidImplNoECHILD(_pid, options = WNOHANG)
@@ -235,28 +246,12 @@ private[process] class UnixProcessHandleGen2(
   private def linuxWaitForImpl(timeout: Option[Ptr[timespec]]): Unit = {
     // epoll() is not used in this method since only one fd is involved.
 
-    // close-on-exec is automatically set on the pidFd.
-    val pidFd = pidfd_open(_pid, 0.toUInt)
-
-    if (pidFd == -1) {
-      if (errno == EINTR) throw new InterruptedException()
-      else if (errno == ECHILD || errno == ESRCH || errno == EINVAL)
-        setCachedExitCode(1)
-      else
-        throw new IOException(
-          s"pidfd_open(${_pid}) failed: ${fromCString(strerror(errno))}"
-        )
-      return
-    }
-
     val fds = stackalloc[struct_pollfd](1)
     (fds + 0).fd = pidFd
     (fds + 0).events = (pollEvents.POLLIN | pollEvents.POLLRDNORM).toShort
 
     // 'null' sigmask will retain all current signals.
     val ppollStatus = ppoll(fds, 1.toUSize, timeout.orNull, null)
-
-    unistd.close(pidFd) // ensure fd does not leak away.
 
     if (ppollStatus < 0) {
       // handled in the caller
@@ -337,6 +332,25 @@ private[process] class UnixProcessHandleGen2(
 
 private[process] object UnixProcessGen2 {
 
+  private def createHandle(
+      pid: CInt,
+      builder: ProcessBuilder
+  ): UnixProcessHandleGen2 = {
+    val pidFd =
+      if (LinktimeInfo.isLinux) {
+        val fd = pidfd_open(pid, 0.toUInt)
+        if (fd == -1) {
+          val msg = s"pidfd_open($pid) failed: ${fromCString(strerror(errno))}"
+          throw new IOException(msg)
+        }
+        fd
+      } else {
+        -1
+      }
+
+    new UnixProcessHandleGen2(pidFd)(pid, builder)
+  }
+
   def apply(
       builder: ProcessBuilder
   ): GenericProcess = Zone.acquire { implicit z =>
@@ -355,7 +369,7 @@ private[process] object UnixProcessGen2 {
     if (builder.isCwd)
       spawnChild(builder)
     else
-      forkChild(builder)(new UnixProcessHandleGen2(_, _))
+      forkChild(builder)(createHandle)
   }
 
   def forkChild(builder: ProcessBuilder)(
@@ -538,8 +552,7 @@ private[process] object UnixProcessGen2 {
           throw new IOException(s"Unable to posix_spawn process: $msg")
         }
 
-        val handle = new UnixProcessHandleGen2(!pidPtr, builder)
-        UnixProcess(handle, infds, outfds, errfds)
+        UnixProcess(createHandle(!pidPtr, builder), infds, outfds, errfds)
       } finally {
         val childFds = new ArrayList[CInt] // No Scala Collections in javalib
         childFds.add(!infds) // child's stdin read, in parent

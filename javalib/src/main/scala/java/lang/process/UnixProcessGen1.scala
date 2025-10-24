@@ -13,6 +13,8 @@ private[process] class UnixProcessHandleGen1(
     override val builder: ProcessBuilder
 ) extends UnixProcessHandle {
 
+  override protected final def close(): Unit = {}
+
   override protected def waitForImpl(): Boolean =
     osWaitForImpl(null)
 
