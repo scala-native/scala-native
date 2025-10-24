@@ -3,9 +3,12 @@ package java.lang
 import java.io.File
 import java.util.{ArrayList, Arrays, List, Map}
 
-import ProcessBuilder.Redirect
+import scala.scalanative.meta.LinktimeInfo
 
 final class ProcessBuilder(private var _command: List[String]) {
+
+  import ProcessBuilder.Redirect
+
   def this(command: Array[String]) = {
     this(Arrays.asList(command))
   }
@@ -137,6 +140,8 @@ object ProcessBuilder {
     new File(System.getProperty(SystemProperties.CurrentDirectoryKey))
       .getCanonicalFile()
 
+  val nullFile = new File(if (LinktimeInfo.isWindows) "NUL" else "/dev/null")
+
   abstract class Redirect {
     def file(): File = null
 
@@ -169,6 +174,8 @@ object ProcessBuilder {
     val INHERIT: Redirect = new RedirectImpl(Type.INHERIT, null)
 
     val PIPE: Redirect = new RedirectImpl(Type.PIPE, null)
+
+    val DISCARD: Redirect = new RedirectImpl(Type.WRITE, nullFile)
 
     def appendTo(file: File): Redirect = {
       if (file == null) throw new NullPointerException()
