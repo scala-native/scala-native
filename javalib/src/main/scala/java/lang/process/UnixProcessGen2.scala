@@ -337,6 +337,11 @@ private[process] class UnixProcessHandleGen2(
 
 private[process] object UnixProcessGen2 {
 
+  private implicit object HandleFactory extends UnixProcessHandleFactory {
+    override def create(pid: CInt, builder: ProcessBuilder): UnixProcessHandle =
+      new UnixProcessHandleGen2(pid, builder)
+  }
+
   def apply(
       builder: ProcessBuilder
   ): GenericProcess = Zone.acquire { implicit z =>
@@ -355,12 +360,12 @@ private[process] object UnixProcessGen2 {
     if (builder.isCwd)
       spawnChild(builder)
     else
-      forkChild(builder)(new UnixProcessHandleGen2(_, _))
+      forkChild(builder)
   }
 
-  def forkChild(builder: ProcessBuilder)(
-      f: (Int, ProcessBuilder) => UnixProcessHandle
-  )(implicit z: Zone): GenericProcess = {
+  def forkChild(
+      builder: ProcessBuilder
+  )(implicit z: Zone, factory: UnixProcessHandleFactory): GenericProcess = {
     val (infds, outfds, errfds) = createPipes(builder)
 
     val cmd = builder.command()
@@ -428,7 +433,7 @@ private[process] object UnixProcessGen2 {
 
         childFds.forEach { fd => unistd.close(fd) }
 
-        UnixProcess(f(pid, builder), infds, outfds, errfds)
+        UnixProcess(infds, outfds, errfds)(pid, builder)
     }
   }
 
@@ -538,8 +543,7 @@ private[process] object UnixProcessGen2 {
           throw new IOException(s"Unable to posix_spawn process: $msg")
         }
 
-        val handle = new UnixProcessHandleGen2(!pidPtr, builder)
-        UnixProcess(handle, infds, outfds, errfds)
+        UnixProcess(infds, outfds, errfds)(!pidPtr, builder)
       } finally {
         val childFds = new ArrayList[CInt] // No Scala Collections in javalib
         childFds.add(!infds) // child's stdin read, in parent

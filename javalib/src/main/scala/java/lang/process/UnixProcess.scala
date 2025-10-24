@@ -18,6 +18,10 @@ private[process] abstract class UnixProcessHandle extends GenericProcessHandle {
     signal.kill(_pid, if (force) signal.SIGKILL else sig.SIGTERM) == 0
 }
 
+private[process] trait UnixProcessHandleFactory {
+  def create(pid: CInt, builder: ProcessBuilder): UnixProcessHandle
+}
+
 private[process] object UnixProcess {
   def apply(
       stdin: FileDescriptor,
@@ -30,16 +34,17 @@ private[process] object UnixProcess {
   }
 
   def apply(
-      handle: UnixProcessHandle,
       infds: Ptr[CInt],
       outfds: Ptr[CInt],
       errfds: Ptr[CInt]
+  )(pid: CInt, pb: ProcessBuilder)(implicit
+      factory: UnixProcessHandleFactory
   ): GenericProcess = apply(
     new FileDescriptor(!(infds + 1)),
     new FileDescriptor(!outfds, readOnly = true),
     if (null == errfds) new FileDescriptor()
     else new FileDescriptor(!errfds, readOnly = true)
-  )(handle)
+  )(factory.create(pid, pb))
 
   def apply(pb: ProcessBuilder): GenericProcess = {
     val useGen2 = if (LinktimeInfo.is32BitPlatform) {
