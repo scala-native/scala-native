@@ -609,21 +609,26 @@ private[process] object UnixProcessGen2 {
       childFd: CInt,
       redirect: ProcessBuilder.Redirect,
       procFd: CInt
-  ): Unit = {
+  )(implicit z: Zone): Unit = {
+    def openWith(flags: CInt, what: String): Unit = {
+      val file = redirect.file()
+      val mode = getModeFromOpenFlags(flags)
+      val fd = fcntl.open(getFileNameCString(file), flags, mode)
+      if (fd < 0)
+        throw new IOException(s"Unable to open $what file $file ($errno)")
+      dup2(fd, procFd, what)
+    }
     import fcntl.{open => _, _}
     redirect.`type`() match {
       case ProcessBuilder.Redirect.Type.INHERIT =>
       case ProcessBuilder.Redirect.Type.PIPE    =>
         dup2(childFd, procFd, "pipe")
       case ProcessBuilder.Redirect.Type.READ =>
-        val fd = open(redirect.file(), O_RDONLY)
-        dup2(fd, procFd, "read")
+        openWith(O_RDONLY, "read")
       case ProcessBuilder.Redirect.Type.WRITE =>
-        val fd = open(redirect.file(), O_CREAT | O_WRONLY | O_TRUNC)
-        dup2(fd, procFd, "write")
+        openWith(O_CREAT | O_WRONLY | O_TRUNC, "write")
       case ProcessBuilder.Redirect.Type.APPEND =>
-        val fd = open(redirect.file(), O_CREAT | O_WRONLY | O_APPEND)
-        dup2(fd, procFd, "append")
+        openWith(O_CREAT | O_WRONLY | O_APPEND, "append")
     }
   }
 
@@ -645,8 +650,20 @@ private[process] object UnixProcessGen2 {
       childFd: CInt,
       redirect: ProcessBuilder.Redirect,
       procFd: CInt
-  ): Unit = {
+  )(implicit z: Zone): Unit = {
     import fcntl.{open => _, _}
+    @inline def addopen(flags: CInt, what: String): Unit = {
+      val file = redirect.file()
+      val f = getFileNameCString(file)
+      val mode = getModeFromOpenFlags(flags)
+      val status =
+        posix_spawn_file_actions_addopen(fileActions, procFd, f, flags, mode)
+      if (status != 0)
+        throw new IOException(
+          s"Could not addopen $what fd=$procFd file=$file: $status"
+        )
+    }
+
     redirect.`type`() match {
       case ProcessBuilder.Redirect.Type.INHERIT =>
 
@@ -654,32 +671,23 @@ private[process] object UnixProcessGen2 {
         dup2Spawn(fileActions, childFd, procFd, "pipe")
 
       case ProcessBuilder.Redirect.Type.READ =>
-        val fd = open(redirect.file(), O_RDONLY)
-        // result is error checked in inline open() below.
-        dup2Spawn(fileActions, fd, procFd, "read")
+        addopen(O_RDONLY, "read")
 
       case ProcessBuilder.Redirect.Type.WRITE =>
-        val fd = open(redirect.file(), O_CREAT | O_WRONLY | O_TRUNC)
-        // result is error checked in inline open() below.
-        dup2Spawn(fileActions, fd, procFd, "write")
+        addopen(O_CREAT | O_WRONLY | O_TRUNC, "write")
 
       case ProcessBuilder.Redirect.Type.APPEND =>
-        val fd = open(redirect.file(), O_CREAT | O_WRONLY | O_APPEND)
-        // result is error checked in inline open() below.
-        dup2Spawn(fileActions, fd, procFd, "append")
+        addopen(O_CREAT | O_WRONLY | O_APPEND, "append")
     }
   }
 
-  def open(f: File, flags: CInt) = Zone.acquire { implicit z =>
-    def defaultCreateMode = 0x1a4.toUInt // 0644, no octal literal in Scala
-    val mode: CUnsignedInt =
-      if ((flags & fcntl.O_CREAT) != 0) defaultCreateMode
-      else 0.toUInt
-    fcntl.open(toCString(f.getAbsolutePath()), flags, mode) match {
-      case -1 => throw new IOException(s"Unable to open file $f ($errno)")
-      case fd => fd
-    }
+  private def getModeFromOpenFlags(flags: CInt): CUnsignedInt = {
+    def defaultCreateMode = 0x1a4 // 0644, no octal literal in Scala
+    (if ((flags & fcntl.O_CREAT) == 0) 0 else defaultCreateMode).toUInt
   }
+
+  private def getFileNameCString(f: File)(implicit z: Zone) =
+    toCString(f.getAbsolutePath())
 
   // The execvpe function isn't available on all platforms so find the
   // possible binaries to exec.
