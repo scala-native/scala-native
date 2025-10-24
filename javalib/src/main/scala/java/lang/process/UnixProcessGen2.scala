@@ -361,11 +361,7 @@ private[process] object UnixProcessGen2 {
   def forkChild(builder: ProcessBuilder)(
       f: (Int, ProcessBuilder) => UnixProcessHandle
   )(implicit z: Zone): GenericProcess = {
-    val infds: Ptr[CInt] = createPipe(stackalloc[CInt](2), "input")
-    val outfds: Ptr[CInt] = createPipe(stackalloc[CInt](2), "output")
-    val errfds =
-      if (builder.redirectErrorStream()) null
-      else createPipe(stackalloc[CInt](2), "error")
+    val (infds, outfds, errfds) = createPipes(builder)
 
     val cmd = builder.command()
     val binaries = binaryPaths(builder.environment(), cmd.get(0))
@@ -441,11 +437,7 @@ private[process] object UnixProcessGen2 {
   )(implicit z: Zone): GenericProcess = {
     val pidPtr = stackalloc[pid_t]()
 
-    val infds: Ptr[CInt] = createPipe(stackalloc[CInt](2), "input")
-    val outfds: Ptr[CInt] = createPipe(stackalloc[CInt](2), "output")
-    val errfds =
-      if (builder.redirectErrorStream()) null
-      else createPipe(stackalloc[CInt](2), "error")
+    val (infds, outfds, errfds) = createPipes(builder)
 
     val cmd = builder.command()
     val argv = nullTerminate(cmd)
@@ -585,9 +577,23 @@ private[process] object UnixProcessGen2 {
     res
   }
 
-  private def createPipe(fds: Ptr[CInt], what: String): Ptr[CInt] = {
+  private def createPipe(what: String)(implicit
+      z: Zone
+  ): Ptr[CInt] = {
+    val fds = alloc[CInt](2)
     throwOnError(unistd.pipe(fds), s"Couldn't create $what pipe.")
     fds
+  }
+
+  private def createPipes(
+      pb: ProcessBuilder
+  )(implicit z: Zone): (Ptr[CInt], Ptr[CInt], Ptr[CInt]) = {
+    val infds: Ptr[CInt] = createPipe("input")
+    val outfds: Ptr[CInt] = createPipe("output")
+    val errfds =
+      if (pb.redirectErrorStream()) null
+      else createPipe("error")
+    (infds, outfds, errfds)
   }
 
   private def dup2(
