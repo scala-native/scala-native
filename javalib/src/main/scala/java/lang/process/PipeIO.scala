@@ -127,10 +127,7 @@ private[process] object PipeIO {
 
     // By convention, caller is synchronized on 'this'.
     private def availableUnSync() = {
-      src match {
-        case fis: FileInputStream => availableFD()
-        case _                    => src.available()
-      }
+      if (src eq is) availableFD() else src.available()
     }
 
     override def available(): Int =
@@ -174,29 +171,25 @@ private[process] object PipeIO {
           if (avail > 0) {
             val nToRead = Math.min(len, avail)
             readSome(buf, offset, nToRead)
-          } else {
-            src match {
-              case fis: FileInputStream =>
-                val nRead = readSome(buf, offset, 1)
+          } else if (src eq is) {
+            val nRead = readSome(buf, offset, 1)
 
-                if (nRead == -1) -1
-                else {
+            if (nRead == -1) -1
+            else {
 
-                  val nToRead =
-                    Math.min(len - 1, availableUnSync()) // possibly zero
+              val nToRead =
+                Math.min(len - 1, availableUnSync()) // possibly zero
 
-                  val nSecondRead =
-                    if (nToRead == 0) 0
-                    else readSome(buf, offset + 1, nToRead)
+              val nSecondRead =
+                if (nToRead == 0) 0
+                else readSome(buf, offset + 1, nToRead)
 
-                  if (nSecondRead == -1) 1
-                  else nSecondRead + 1
-                }
-
-              case _ =>
-                switchToNullInput()
-                -1 // EOF
+              if (nSecondRead == -1) 1
+              else nSecondRead + 1
             }
+          } else {
+            switchToNullInput()
+            -1 // EOF
           }
         }
     }
@@ -204,18 +197,17 @@ private[process] object PipeIO {
     /* Switch horses, or at least InputStreams, "in media res".
      * See Design Note at top of file.
      */
-    override def drain(): Unit = synchronized {
+    override def drain(): Unit = if (src eq is) synchronized {
+      if (src eq is) { // not yet drained
+        val avail = availableFD()
 
-      val avail = availableUnSync()
+        src =
+          if (avail <= 0) PipeIO.NullInput
+          else new ByteArrayInputStream(is.readNBytes(avail))
 
-      val newSrc =
-        if (avail <= 0) PipeIO.NullInput
-        else new ByteArrayInputStream(src.readNBytes(avail))
-
-      // release JVM FileDescriptor and, especially, its OS fd.
-      src.close()
-
-      src = newSrc
+        // release JVM FileDescriptor and, especially, its OS fd.
+        is.close()
+      }
     }
 
     private def availableFD(): Int = {
