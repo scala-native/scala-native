@@ -96,22 +96,6 @@ import scala.scalanative.windows.NamedPipeApi.PeekNamedPipe
  *     has copied the in-flight os pipe data and switched the 'src' variable to
  *     read from that saved data. This is accomplished by using
  *     synchronized methods.
- *
- *     - UnixProcess* and WindowProcess check if the child process has exited
- *       at different places in the code. This can have a major effect on
- *       the timing of events, including the number of bytes available at
- *       an I/O event.
- *
- *       - UnixProcess* checks in the public "waitfor(*)" method.
- *         That method is usually called once by user of PipeIO.
- *
- *       - WindowsProcess checks in the private "checkResult()" method.
- *         That method is usually called once per PipeIO public method call.
- *         This means that it is called at least once per I/O.
- *
- *   - UnixProcessGen2 and WindowsProcess are well exercised.
- *     UnixProcessGen1 is less well exercised and may retain
- *     unfortunate timing interactions.
  */
 
 private[process] final class PipeIO[T](
