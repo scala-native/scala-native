@@ -4,7 +4,7 @@ import java.io.FileDescriptor
 
 import scala.scalanative.libc.{signal => sig}
 import scala.scalanative.meta.LinktimeInfo
-import scala.scalanative.posix.signal
+import scala.scalanative.posix.{signal, unistd}
 import scala.scalanative.unsafe.{CInt, Ptr}
 
 private[process] abstract class UnixProcessHandle extends GenericProcessHandle {
@@ -29,16 +29,23 @@ private[process] object UnixProcess {
     override protected def fdErr: FileDescriptor = stderr
   }
 
+  private def getFileDescriptor(fds: Ptr[CInt], read: Boolean): FileDescriptor =
+    if (null == fds) FileDescriptor.none
+    else {
+      val idx = if (read) 0 else 1
+      unistd.close(!(fds + 1 - idx)) // close the other one
+      new FileDescriptor(!(fds + idx), readOnly = read)
+    }
+
   def apply(
       handle: UnixProcessHandle,
       infds: Ptr[CInt],
       outfds: Ptr[CInt],
       errfds: Ptr[CInt]
   ): GenericProcess = apply(
-    new FileDescriptor(!(infds + 1)),
-    new FileDescriptor(!outfds, readOnly = true),
-    if (null == errfds) new FileDescriptor()
-    else new FileDescriptor(!errfds, readOnly = true)
+    getFileDescriptor(infds, read = false),
+    getFileDescriptor(outfds, read = true),
+    getFileDescriptor(errfds, read = true)
   )(handle)
 
   def apply(pb: ProcessBuilder): GenericProcess = {

@@ -382,7 +382,7 @@ private[process] object UnixProcessGen2 {
           builder.redirectOutput(),
           unistd.STDOUT_FILENO
         )
-        if (null eq errfds)
+        if (builder.redirectErrorStream())
           dup2(unistd.STDOUT_FILENO, unistd.STDERR_FILENO, "pipe")
         else
           setupChildFDS(
@@ -391,15 +391,15 @@ private[process] object UnixProcessGen2 {
             unistd.STDERR_FILENO
           )
 
-        // No sense closing stuff either active or already closed!
-        // dup2() will close() what is not INHERITed.
-        val parentFds = new ArrayList[CInt] // No Scala Collections in javalib
-        parentFds.add(!(infds + 1)) // parent's stdout - write, in child
-        parentFds.add(!outfds) // parent's stdin - read, in child
-        if (null ne errfds)
-          parentFds.add(!errfds) // parent's stderr - read, in child
+        def closePipe(pipe: Ptr[CInt]): Unit =
+          if (pipe ne null) {
+            unistd.close(!(pipe + 0))
+            unistd.close(!(pipe + 1))
+          }
 
-        parentFds.forEach { fd => unistd.close(fd) }
+        closePipe(infds)
+        closePipe(outfds)
+        closePipe(errfds)
 
         binaries.foreach { b =>
           val bin = toCString(b)
@@ -420,14 +420,6 @@ private[process] object UnixProcessGen2 {
         throw new IOException(s"Failed to create process for command: $cmd")
 
       case pid =>
-        val childFds = new ArrayList[CInt] // No Scala Collections in javalib
-        childFds.add(!infds) // child's stdin read, in parent
-        childFds.add(!(outfds + 1)) // child's stdout write, in parent
-        if (null ne errfds)
-          childFds.add(!(errfds + 1)) // child's stderr write, in parent
-
-        childFds.forEach { fd => unistd.close(fd) }
-
         UnixProcess(f(pid, builder), infds, outfds, errfds)
     }
   }
@@ -479,7 +471,7 @@ private[process] object UnixProcessGen2 {
           unistd.STDOUT_FILENO
         )
 
-        if (null eq errfds)
+        if (builder.redirectErrorStream())
           dup2Spawn(
             fileActions,
             unistd.STDOUT_FILENO,
@@ -494,19 +486,20 @@ private[process] object UnixProcessGen2 {
             unistd.STDERR_FILENO
           )
 
-        // No Scala Collections in javalib
-        val parentFds = new ArrayList[CInt](3)
-        parentFds.add(!(infds + 1)) // parent's stdout - write, in child
-        parentFds.add(!outfds) // parent's stdin - read, in child
-        if (null ne errfds)
-          parentFds.add(!errfds) // parent's stderr - read, in child
+        def closeSpawn(fd: CInt): Unit = throwOnError(
+          posix_spawn_file_actions_addclose(fileActions, fd),
+          s"posix_spawn_file_actions_addclose fd: $fd"
+        )
 
-        parentFds.forEach { fd =>
-          throwOnError(
-            posix_spawn_file_actions_addclose(fileActions, fd),
-            s"posix_spawn_file_actions_addclose fd: ${fd}"
-          )
-        }
+        def closePipe(pipe: Ptr[CInt]): Unit =
+          if (pipe ne null) {
+            closeSpawn(!(pipe + 0))
+            closeSpawn(!(pipe + 1))
+          }
+
+        closePipe(infds)
+        closePipe(outfds)
+        closePipe(errfds)
 
         /* This will exec binary executables.
          * Some shells (bash, ???) will also execute scripts with initial
@@ -541,14 +534,6 @@ private[process] object UnixProcessGen2 {
         val handle = new UnixProcessHandleGen2(!pidPtr, builder)
         UnixProcess(handle, infds, outfds, errfds)
       } finally {
-        val childFds = new ArrayList[CInt] // No Scala Collections in javalib
-        childFds.add(!infds) // child's stdin read, in parent
-        childFds.add(!(outfds + 1)) // child's stdout write, in parent
-        if (null ne errfds)
-          childFds.add(!(errfds + 1)) // child's stderr write, in parent
-
-        childFds.forEach(unistd.close(_))
-
         throwOnError(
           posix_spawn_file_actions_destroy(fileActions),
           "posix_spawn_file_actions_destroy"
@@ -577,22 +562,24 @@ private[process] object UnixProcessGen2 {
     res
   }
 
-  private def createPipe(what: String)(implicit
-      z: Zone
-  ): Ptr[CInt] = {
-    val fds = alloc[CInt](2)
-    throwOnError(unistd.pipe(fds), s"Couldn't create $what pipe.")
-    fds
-  }
+  private def createPipe(what: String, redirect: ProcessBuilder.Redirect)(
+      implicit z: Zone
+  ): Ptr[CInt] =
+    if (redirect.`type`() != ProcessBuilder.Redirect.Type.PIPE) null
+    else {
+      val fds = alloc[CInt](2)
+      throwOnError(unistd.pipe(fds), s"Couldn't create $what pipe.")
+      fds
+    }
 
   private def createPipes(
       pb: ProcessBuilder
   )(implicit z: Zone): (Ptr[CInt], Ptr[CInt], Ptr[CInt]) = {
-    val infds: Ptr[CInt] = createPipe("input")
-    val outfds: Ptr[CInt] = createPipe("output")
+    val infds: Ptr[CInt] = createPipe("input", pb.redirectInput())
+    val outfds: Ptr[CInt] = createPipe("output", pb.redirectOutput())
     val errfds =
       if (pb.redirectErrorStream()) null
-      else createPipe("error")
+      else createPipe("error", pb.redirectError())
     (infds, outfds, errfds)
   }
 
@@ -606,7 +593,7 @@ private[process] object UnixProcessGen2 {
   }
 
   private def setupChildFDS(
-      childFd: CInt,
+      childFd: => CInt,
       redirect: ProcessBuilder.Redirect,
       procFd: CInt
   )(implicit z: Zone): Unit = {
@@ -617,6 +604,7 @@ private[process] object UnixProcessGen2 {
       if (fd < 0)
         throw new IOException(s"Unable to open $what file $file ($errno)")
       dup2(fd, procFd, what)
+      unistd.close(fd)
     }
     import fcntl.{open => _, _}
     redirect.`type`() match {
@@ -647,7 +635,7 @@ private[process] object UnixProcessGen2 {
 
   private def setupSpawnFDS(
       fileActions: Ptr[posix_spawn_file_actions_t],
-      childFd: CInt,
+      childFd: => CInt,
       redirect: ProcessBuilder.Redirect,
       procFd: CInt
   )(implicit z: Zone): Unit = {

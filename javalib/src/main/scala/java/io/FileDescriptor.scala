@@ -95,6 +95,8 @@ object FileDescriptor {
       else FileHandle(-1)
   }
 
+  private[java] val none: FileDescriptor = new FileDescriptor()
+
   val in: FileDescriptor = {
     val handle =
       if (isWindows) FileHandle(ConsoleApiExt.stdIn)
