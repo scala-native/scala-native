@@ -102,6 +102,17 @@ private[testinterface] abstract class RPCCore()(implicit ec: ExecutionContext) {
               val arg = deserialize[Msg](in)
               bep.exec(arg)
 
+            case bep: BoundRPCSyncEndpoint =>
+              val callID = in.readLong()
+              val ep: bep.endpoint.type = bep.endpoint
+              import ep._
+
+              val repl = Try {
+                val req = deserialize[Req](in)
+                bep.exec(req)
+              }
+              send(makeReply(callID, repl))
+
             case bep: BoundRPCEndpoint =>
               val callID = in.readLong()
 
@@ -172,7 +183,10 @@ private[testinterface] abstract class RPCCore()(implicit ec: ExecutionContext) {
 
   /* Attaches the given method to the given (local) endpoint. */
   final def attach(ep: RPCEndpoint)(ex: ep.Req => ep.Resp): Unit = {
-    attachAsync(ep)(x => Future.fromTry(Try(ex(x))))
+    attach(new BoundRPCSyncEndpoint {
+      val endpoint: ep.type = ep
+      val exec = ex
+    })
   }
 
   /* Attaches the given method to the given (local) endpoint. */
@@ -283,6 +297,11 @@ private[testinterface] object RPCCore {
   private sealed trait BoundRPCEndpoint extends BoundEndpoint {
     val endpoint: RPCEndpoint
     val exec: endpoint.Req => Future[endpoint.Resp]
+  }
+
+  private sealed trait BoundRPCSyncEndpoint extends BoundEndpoint {
+    val endpoint: RPCEndpoint
+    val exec: endpoint.Req => endpoint.Resp
   }
 
   private trait PendingCall {
