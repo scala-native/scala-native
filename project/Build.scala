@@ -1158,6 +1158,7 @@ object Build {
       else
         project.mapBinaryVersions { version =>
           _.settings(
+            Test / testOptions += Tests.Argument(TestFrameworks.JUnit, "--verbosity=1"),
             Test / scalacOptions += Def.taskDyn {
               val pluginProject = junitPlugin.forBinaryVersion(version)
               (pluginProject / Compile / packageBin).map { jar =>
