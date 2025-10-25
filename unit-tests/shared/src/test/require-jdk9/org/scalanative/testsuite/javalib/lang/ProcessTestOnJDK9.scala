@@ -1,6 +1,7 @@
 package org.scalanative.testsuite.javalib.lang
 
 import java.io._
+import java.lang.ProcessBuilder
 import java.nio.charset.StandardCharsets
 import java.nio.file._
 import java.util.concurrent.TimeUnit
@@ -148,6 +149,30 @@ class ProcessTestOnJDK9 {
       if (isWindows) 1 else 0x80 + 9,
       proc.exitValue
     )
+  }
+
+  private def runPingWith(redirect: ProcessBuilder.Redirect): String = {
+    val argv =
+      if (Platform.isWindows) Seq("ping", "-n", "2", "127.0.0.1")
+      else Seq("ping", "-c", "2", "-i", "10", "127.0.0.1")
+    val proc: Process =
+      processForCommand(argv: _*).redirectOutput(redirect).start()
+    val stdout =
+      new String(proc.getInputStream.readAllBytes(), StandardCharsets.UTF_8)
+    proc.waitFor()
+    stdout
+  }
+
+  @Test def redirectPIPE(): Unit = {
+    val stdout = runPingWith(ProcessBuilder.Redirect.PIPE)
+    val expected =
+      if (Platform.isWindows) "\r\nPinging 127.0.0.1 " else "PING 127.0.0.1 "
+    assertEquals("ping stdout", expected, stdout.take(expected.length))
+  }
+
+  @Test def redirectDISCARD(): Unit = {
+    val stdout = runPingWith(ProcessBuilder.Redirect.DISCARD)
+    assertEquals("ping stdout", "", stdout)
   }
 
 }
