@@ -668,7 +668,7 @@ class JEP356_ThreadLocalRandomTestOnJDK17 {
     val L2: scala.Long = rng.nextLong()
 
     // They _could_ match by chance, but that is highly unlikely.
-    assertNotEquals("unlikely match", L1, L2, 0.0)
+    assertNotEquals("unlikely match", L1, L2)
   }
 
   @Test def nextLong_Bound(): Unit = {
