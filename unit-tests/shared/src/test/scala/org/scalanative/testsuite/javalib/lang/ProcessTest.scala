@@ -112,7 +112,7 @@ class ProcessTest {
       }
       assertProcessExitOrTimeout(proc)
       // both streams are empty; stdout to file, and stderr is empty
-      assertEquals(0, proc.getInputStream.read()) // null input
+      assertEquals(-1, proc.getInputStream.read()) // null input
       assertEquals(-1, proc.getErrorStream.read()) // pipe input
       val out = Source.fromFile(file.toString).getLines().mkString
 

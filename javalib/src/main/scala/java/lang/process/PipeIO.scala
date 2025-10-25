@@ -250,8 +250,9 @@ private[process] object PipeIO {
   private object NullInput extends Stream {
     override def available(): Int = 0
     override def close(): Unit = {}
-    override def read(): Int = 0
-    override def read(buf: Array[scala.Byte], offset: Int, len: Int) = -1
+    override def read(): Int = -1
+    override def read(buf: Array[scala.Byte], offset: Int, len: Int) =
+      if (len == 0) 0 else -1
   }
 
   private object NullOutput extends OutputStream {
