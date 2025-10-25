@@ -75,11 +75,20 @@ private[process] abstract class GenericProcess(val handle: GenericProcessHandle)
 // Represents ProcessHandle for process started by Scala Native runtime
 // Cannot be used with processes started by other programs
 private[process] abstract class GenericProcessHandle extends ProcessHandle {
-  protected def close(): Unit
   protected def getExitCodeImpl: Option[Int]
   protected def destroyImpl(force: Boolean): Boolean
   protected def waitForImpl(): Boolean
   protected def waitForImpl(timeout: scala.Long, unit: TimeUnit): Boolean
+
+  /** Closes any resources associated with a running process.
+   *
+   *  After this call completes, no attempts should be made to call [[close]]
+   *  itself, or any of the `Impl` methods above.
+   *
+   *  Currently, [[close]] is called only by [[setCachedExitCode]] upon
+   *  successful reaping of the terminated child.
+   */
+  protected def close(): Unit
 
   val builder: ProcessBuilder
 

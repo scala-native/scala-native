@@ -13,7 +13,6 @@ private[process] abstract class UnixProcessHandle extends GenericProcessHandle {
   override final def pid(): Long = _pid.toLong
   override final def supportsNormalTermination(): Boolean = true
 
-  override protected final def close(): Unit = {}
   override protected final def destroyImpl(force: Boolean): Boolean =
     signal.kill(_pid, if (force) signal.SIGKILL else sig.SIGTERM) == 0
 }
