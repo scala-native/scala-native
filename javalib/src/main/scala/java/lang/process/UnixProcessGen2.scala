@@ -558,7 +558,7 @@ private[process] object UnixProcessGen2 {
     unixProcess
   }
 
-  private def throwOnError(rc: CInt, msg: => String): CInt = {
+  private[process] def throwOnError(rc: CInt, msg: => String): CInt = {
     if (rc != 0) {
       throw new IOException(s"$msg Error code: $rc, Error number: $errno")
     } else {
