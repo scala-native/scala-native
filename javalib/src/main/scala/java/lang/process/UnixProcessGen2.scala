@@ -375,7 +375,20 @@ private[process] object UnixProcessGen2 {
   def forkChild(builder: ProcessBuilder)(
       f: (Int, ProcessBuilder) => UnixProcessHandle
   )(implicit z: Zone): GenericProcess = {
+    var success = false
     val (infds, outfds, errfds) = createPipes(builder)
+
+    def closePipe(pipe: Ptr[CInt]): Unit =
+      if (pipe ne null) {
+        unistd.close(!(pipe + 0))
+        unistd.close(!(pipe + 1))
+      }
+
+    def closePipes(): Unit = {
+      closePipe(infds)
+      closePipe(outfds)
+      closePipe(errfds)
+    }
 
     def runChild(): Nothing = {
       val cmd = builder.command()
@@ -401,15 +414,7 @@ private[process] object UnixProcessGen2 {
           unistd.STDERR_FILENO
         )
 
-      def closePipe(pipe: Ptr[CInt]): Unit =
-        if (pipe ne null) {
-          unistd.close(!(pipe + 0))
-          unistd.close(!(pipe + 1))
-        }
-
-      closePipe(infds)
-      closePipe(outfds)
-      closePipe(errfds)
+      closePipes()
 
       binaries.foreach { b =>
         val bin = toCString(b)
@@ -430,20 +435,24 @@ private[process] object UnixProcessGen2 {
       throw new IOException(s"Failed to create process for command: $cmd")
     }
 
-    val pid = unistd.fork()
-    if (pid == -1)
-      throw new IOException("Unable to fork process")
-    if (pid == 0) runChild()
-    else
-      UnixProcess(f(pid, builder), infds, outfds, errfds)
+    try {
+      val pid = unistd.fork()
+      if (pid == -1)
+        throw new IOException("Unable to fork process")
+      if (pid == 0) runChild()
+      else {
+        success = true
+        UnixProcess(f(pid, builder), infds, outfds, errfds)
+      }
+    } finally {
+      if (!success) closePipes()
+    }
   }
 
   private def spawnChild(
       builder: ProcessBuilder
   )(implicit z: Zone): GenericProcess = {
     val pidPtr = stackalloc[pid_t]()
-
-    val (infds, outfds, errfds) = createPipes(builder)
 
     val cmd = builder.command()
     val argv = nullTerminate(cmd)
@@ -468,6 +477,9 @@ private[process] object UnixProcessGen2 {
       posix_spawn_file_actions_init(fileActions),
       "posix_spawn_file_actions_init"
     )
+
+    var success = false
+    val (infds, outfds, errfds) = createPipes(builder)
 
     try {
       setupSpawnFDS(
@@ -544,8 +556,19 @@ private[process] object UnixProcessGen2 {
         throw new IOException(s"Unable to posix_spawn process: $msg")
       }
 
+      success = true
       UnixProcess(createHandle(!pidPtr, builder), infds, outfds, errfds)
     } finally {
+      if (!success) {
+        def closePipe(pipe: Ptr[CInt]): Unit =
+          if (pipe ne null) {
+            unistd.close(!(pipe + 0))
+            unistd.close(!(pipe + 1))
+          }
+        closePipe(infds)
+        closePipe(outfds)
+        closePipe(errfds)
+      }
       throwOnError(
         posix_spawn_file_actions_destroy(fileActions),
         "posix_spawn_file_actions_destroy"
