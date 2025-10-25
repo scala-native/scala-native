@@ -227,7 +227,7 @@ private[process] class UnixProcessHandleGen2(pidFd: CInt)(
       // Another waitFor() has reaped exitValue; nothing to do here.
     } else if (LinktimeInfo.isLinux) {
       linuxWaitForImpl(timeout)
-    } else if (LinktimeInfo.isMac || LinktimeInfo.isFreeBSD) {
+    } else if (LinktimeInfo.isMacOrFreeBSD) {
       bsdWaitForImpl(timeout)
     } else {
       /* Should never get here. Earlier dispatch should have called

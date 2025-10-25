@@ -52,7 +52,7 @@ private[process] object UnixProcess {
       false
     } else if (LinktimeInfo.isLinux) {
       LinuxOsSpecific.hasPidfdOpen()
-    } else if ((LinktimeInfo.isMac) || (LinktimeInfo.isFreeBSD)) {
+    } else if (LinktimeInfo.isMacOrFreeBSD) {
       // Other BSDs should work but have not been exercised.
       true
     } else {
