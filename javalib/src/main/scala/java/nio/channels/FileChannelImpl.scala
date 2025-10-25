@@ -11,8 +11,8 @@ import scala.scalanative.meta.LinktimeInfo.isWindows
 import scala.scalanative.nio.fs.unix.UnixException
 import scala.scalanative.posix.fcntl._
 import scala.scalanative.posix.fcntlOps._
-import scala.scalanative.posix.sys.stat
 import scala.scalanative.posix.sys.statOps._
+import scala.scalanative.posix.sys.{ioctl, stat}
 import scala.scalanative.posix.{string, unistd}
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
@@ -21,6 +21,7 @@ import scala.scalanative.windows.FileApi._
 import scala.scalanative.windows.FileApiExt._
 import scala.scalanative.windows.MinWinBaseApi._
 import scala.scalanative.windows.MinWinBaseApiOps._
+import scala.scalanative.windows.NamedPipeApi.PeekNamedPipe
 import scala.scalanative.windows._
 import scalanative.libc.stdio
 
@@ -288,6 +289,9 @@ private[java] final class FileChannelImpl(
     read(buffer, position())
   }
 
+  private def getFileName(orElse: => String = ""): String =
+    file.fold(orElse)(_.toString())
+
   private[java] def read(buffer: Array[Byte], offset: Int, count: Int): Int = {
     if (buffer == null) {
       throw new NullPointerException
@@ -301,41 +305,37 @@ private[java] final class FileChannelImpl(
 
     // we use the runtime knowledge of the array layout to avoid
     // intermediate buffer, and write straight into the array memory
-    val buf = buffer.at(offset)
     if (isWindows) {
-      def fail() = throw WindowsException.onPath(file.fold("")(_.toString))
+      val readBytes = stackalloc[windows.DWord]()
 
-      def tryRead(count: Int)(fallback: => Int) = {
-        val readBytes = stackalloc[windows.DWord]()
-        if (ReadFile(fd.handle, buf, count.toUInt, readBytes, null)) {
-          (!readBytes).toInt match {
-            case 0     => -1 // EOF
-            case bytes => bytes
-          }
-        } else fallback
+      def readAll(off: Int, len: Int): Int = {
+        if (!ReadFile(fd.handle, buffer.at(off), len.toUInt, readBytes, null))
+          throw WindowsException.onPath(getFileName())
+        (!readBytes).toInt
       }
 
-      tryRead(count)(fallback = {
-        ErrorHandlingApi.GetLastError() match {
-          case ErrorCodes.ERROR_BROKEN_PIPE =>
-            // Pipe was closed, but it still can contain some unread data
-            available() match {
-              case 0     => -1 // EOF
-              case count => tryRead(count)(fallback = fail())
-            }
-
-          case _ =>
-            fail()
+      // readAll blocks until everything is read
+      // but we are OK with less so we need to see what's available
+      val avail = available()
+      if (avail > 0) {
+        val readCount = readAll(offset, avail.min(count))
+        if (readCount == 0) -1 else readCount
+      } else {
+        val readCount = readAll(offset, 1)
+        if (readCount == 0) -1 // EOF
+        else {
+          val toRead = if (count == 1) 0 else available()
+          if (toRead <= 0) 1
+          else 1 + readAll(offset + 1, toRead.min(count - 1))
         }
-      })
-
+      }
     } else {
-      val readCount = unistd.read(fd.fd, buf, count.toUInt)
+      val readCount = unistd.read(fd.fd, buffer.at(offset), count.toUInt)
       if (readCount == 0) {
         -1 // end of file
       } else if (readCount < 0) {
         // negative value (typically -1) indicates that read failed
-        throw UnixException(file.fold("")(_.toString), errno)
+        throw UnixException(getFileName(), errno)
       } else {
         // successfully read readCount bytes
         readCount
@@ -604,9 +604,7 @@ private[java] final class FileChannelImpl(
           val hasSucceded =
             WriteFile(fd.handle, buf, count.toUInt, null, null)
           if (!hasSucceded) {
-            throw WindowsException.onPath(
-              file.fold("<file descriptor>")(_.toString)
-            )
+            throw WindowsException.onPath(getFileName("<file descriptor>"))
           }
 
           count // Windows will fail on partial write, so nWritten == count
@@ -616,7 +614,7 @@ private[java] final class FileChannelImpl(
 
           if (writeCount < 0) {
             // negative value (typically -1) indicates that write failed
-            throw UnixException(file.fold("")(_.toString), errno)
+            throw UnixException(getFileName(), errno)
           }
 
           writeCount // may be < requested count
@@ -774,13 +772,22 @@ private[java] final class FileChannelImpl(
   private[java] def available(): Int = {
     ensureOpen()
 
-    val currentPosition = position()
-    val lastPosition = size()
-
-    val nAvailable =
-      if (currentPosition >= lastPosition) 0
-      else lastPosition - currentPosition
-
-    nAvailable.toInt
+    if (isWindows) {
+      val availableTotal = stackalloc[DWord]()
+      val hasPeaked = PeekNamedPipe(
+        pipe = fd.handle,
+        buffer = null,
+        bufferSize = 0.toUInt,
+        bytesRead = null,
+        totalBytesAvailable = availableTotal,
+        bytesLeftThisMessage = null
+      )
+      if (hasPeaked) (!availableTotal).toInt else 0
+    } else {
+      val res = stackalloc[CInt]()
+      val resByte = res.asInstanceOf[Ptr[scala.Byte]]
+      val ok = ioctl.ioctl(fd.fd, ioctl.FIONREAD, resByte) != -1
+      if (ok) !res else 0
+    }
   }
 }
