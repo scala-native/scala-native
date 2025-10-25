@@ -10,8 +10,8 @@ import scala.scalanative.meta.LinktimeInfo.isWindows
 import scala.scalanative.nio.fs.unix.UnixException
 import scala.scalanative.posix.fcntl._
 import scala.scalanative.posix.fcntlOps._
-import scala.scalanative.posix.sys.stat
 import scala.scalanative.posix.sys.statOps._
+import scala.scalanative.posix.sys.{ioctl, stat}
 import scala.scalanative.posix.{string, unistd}
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
@@ -20,6 +20,7 @@ import scala.scalanative.windows.FileApi._
 import scala.scalanative.windows.FileApiExt._
 import scala.scalanative.windows.MinWinBaseApi._
 import scala.scalanative.windows.MinWinBaseApiOps._
+import scala.scalanative.windows.NamedPipeApi.PeekNamedPipe
 import scala.scalanative.windows._
 import scalanative.libc.stdio
 
@@ -303,36 +304,36 @@ private[java] final class FileChannelImpl(
 
     // we use the runtime knowledge of the array layout to avoid
     // intermediate buffer, and write straight into the array memory
-    val buf = buffer.at(offset)
     if (isWindows) {
-      def fail() = throw WindowsException.onPath(getFileName())
+      val readBytes = stackalloc[windows.DWord]()
 
-      def tryRead(count: Int)(fallback: => Int) = {
-        val readBytes = stackalloc[windows.DWord]()
-        if (ReadFile(fd.handle, buf, count.toUInt, readBytes, null)) {
-          (!readBytes).toInt match {
-            case 0     => -1 // EOF
-            case bytes => bytes
-          }
-        } else fallback
+      def readAll(off: Int, len: Int): Int = {
+        if (ReadFile(fd.handle, buffer.at(off), len.toUInt, readBytes, null))
+          (!readBytes).toInt
+        else {
+          val error = ErrorHandlingApi.GetLastError()
+          if (error == ErrorCodes.ERROR_BROKEN_PIPE) 0
+          else throw WindowsException.onPathWithLastEror(getFileName(), error)
+        }
       }
 
-      tryRead(count)(fallback = {
-        ErrorHandlingApi.GetLastError() match {
-          case ErrorCodes.ERROR_BROKEN_PIPE =>
-            // Pipe was closed, but it still can contain some unread data
-            available() match {
-              case 0     => -1 // EOF
-              case count => tryRead(count)(fallback = fail())
-            }
-
-          case _ =>
-            fail()
+      // readAll blocks until everything is read
+      // but we are OK with less so we need to see what's available
+      val avail = if (file.isEmpty) available() else count
+      if (avail > 0) {
+        val readCount = readAll(offset, avail.min(count))
+        if (readCount == 0) -1 else readCount
+      } else {
+        val readCount = readAll(offset, 1)
+        if (readCount == 0) -1 // EOF
+        else {
+          val toRead = if (count == 1) 0 else available()
+          if (toRead <= 0) 1
+          else 1 + readAll(offset + 1, toRead.min(count - 1))
         }
-      })
-
+      }
     } else {
-      val readCount = unistd.read(fd.fd, buf, count.toUInt)
+      val readCount = unistd.read(fd.fd, buffer.at(offset), count.toUInt)
       if (readCount == 0) {
         -1 // end of file
       } else if (readCount < 0) {
@@ -752,6 +753,9 @@ private[java] final class FileChannelImpl(
    *    3) The value returned is exactly the "estimate" portion of the JDK
    *       description:
    *
+   *       - If the current position is past EOF, the result could be negative
+   *         reflecting the number of extra bytes.
+   *
    *       - All bets are off is somebody, even this thread, decreases
    *         size of the file in the interval between when "available()"
    *         returns and "read()" is called.
@@ -761,26 +765,31 @@ private[java] final class FileChannelImpl(
    *         implementation of the private method
    *         "read(buffer: Array[Byte], offset: Int, count: Int)"
    *         Trace the count argument logic.
-   *
-   *         FileChannel defines "position()" and "size()" as Long values.
-   *         For large files and positions < Integer.MAX_VALUE,
-   *         The Long difference "lastPosition - currentPosition" might well
-   *         be greater than Integer.MAX_VALUE. In that case, the .toInt
-   *         truncation will return the low estimate of Integer.MAX_VALUE
-   *         not the true (Long) value. Matches the specification, but gotcha!
    */
 
   // local API extension
   private[java] def available(): Int = {
     ensureOpen()
 
-    val currentPosition = position()
-    val lastPosition = size()
-
-    val nAvailable =
-      if (currentPosition >= lastPosition) 0
-      else lastPosition - currentPosition
-
-    nAvailable.toInt
+    if (!isWindows) {
+      val res = stackalloc[CInt]()
+      val resByte = res.asInstanceOf[Ptr[scala.Byte]]
+      val failed = ioctl.ioctl(fd.fd, ioctl.FIONREAD, resByte) == -1
+      if (failed) 0 else !res
+    } else if (file.isEmpty) { // pipe
+      val availableTotal = stackalloc[DWord]()
+      val failed = !PeekNamedPipe(
+        pipe = fd.handle,
+        buffer = null,
+        bufferSize = 0.toUInt,
+        bytesRead = null,
+        totalBytesAvailable = availableTotal,
+        bytesLeftThisMessage = null
+      )
+      if (failed) 0
+      else Math.min((!availableTotal).toLong, Int.MaxValue).toInt
+    } else {
+      Math.min(Math.max(size() - position(), Int.MinValue), Int.MaxValue).toInt
+    }
   }
 }

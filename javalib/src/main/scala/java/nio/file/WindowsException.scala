@@ -20,9 +20,12 @@ object WindowsException {
   }
 
   def onPath(file: String): IOException = {
+    onPathWithLastEror(file, GetLastError())
+  }
+
+  def onPathWithLastEror(file: String, winError: UInt): IOException = {
     import ErrorCodes._
     lazy val e = errno
-    val winError = GetLastError()
     winError match {
       case _ if e == ENOTDIR   => new NotDirectoryException(file)
       case ERROR_ACCESS_DENIED => new AccessDeniedException(file)
