@@ -1,7 +1,6 @@
 package java.nio.channels
 
 import java.io.{File, FileDescriptor, IOException}
-import java.nio.channels.FileChannel.MapMode
 import java.nio.file.{Files, WindowsException}
 import java.nio.{ByteBuffer, MappedByteBuffer, MappedByteBufferImpl}
 import java.util.Objects
@@ -177,7 +176,7 @@ private[java] final class FileChannelImpl(
 
     ensureOpen()
 
-    if (mode ne MapMode.READ_ONLY) {
+    if (mode ne FileChannel.MapMode.READ_ONLY) {
       // FileChannel.open() has previously rejected READ + APPEND combination.
       if (!openForWriting)
         throw new NonWritableChannelException
@@ -288,6 +287,9 @@ private[java] final class FileChannelImpl(
     read(buffer, position())
   }
 
+  private def getFileName(orElse: => String = ""): String =
+    file.fold(orElse)(_.toString())
+
   private[java] def read(buffer: Array[Byte], offset: Int, count: Int): Int = {
     if (buffer == null) {
       throw new NullPointerException
@@ -303,7 +305,7 @@ private[java] final class FileChannelImpl(
     // intermediate buffer, and write straight into the array memory
     val buf = buffer.at(offset)
     if (isWindows) {
-      def fail() = throw WindowsException.onPath(file.fold("")(_.toString))
+      def fail() = throw WindowsException.onPath(getFileName())
 
       def tryRead(count: Int)(fallback: => Int) = {
         val readBytes = stackalloc[windows.DWord]()
@@ -335,7 +337,7 @@ private[java] final class FileChannelImpl(
         -1 // end of file
       } else if (readCount < 0) {
         // negative value (typically -1) indicates that read failed
-        throw UnixException(file.fold("")(_.toString), errno)
+        throw UnixException(getFileName(), errno)
       } else {
         // successfully read readCount bytes
         readCount
@@ -604,9 +606,7 @@ private[java] final class FileChannelImpl(
           val hasSucceded =
             WriteFile(fd.handle, buf, count.toUInt, null, null)
           if (!hasSucceded) {
-            throw WindowsException.onPath(
-              file.fold("<file descriptor>")(_.toString)
-            )
+            throw WindowsException.onPath(getFileName("<file descriptor>"))
           }
 
           count // Windows will fail on partial write, so nWritten == count
@@ -616,7 +616,7 @@ private[java] final class FileChannelImpl(
 
           if (writeCount < 0) {
             // negative value (typically -1) indicates that write failed
-            throw UnixException(file.fold("")(_.toString), errno)
+            throw UnixException(getFileName(), errno)
           }
 
           writeCount // may be < requested count
