@@ -4,12 +4,12 @@ package sys
 import org.junit.Assert._
 import org.junit.Assume._
 
+import scala.scalanative.libc.LibcExt
 import scala.scalanative.windows.ErrorHandlingApi._
 import scala.scalanative.windows.WinSocketApi._
 import scala.scalanative.windows.WinSocketApiExt._
 import scala.scalanative.windows.WinSocketApiOps._
 import scala.scalanative.windows._
-import scalanative.libc.string.strerror
 import scalanative.meta.LinktimeInfo.isWindows
 import scalanative.posix.arpa.inet.{inet_addr, inet_pton}
 import scalanative.posix.errno.errno
@@ -30,8 +30,8 @@ object SocketTestHelpers {
   def checkIoResult(v: CSSize, label: String): Unit = {
     if (v.toInt < 0) {
       val reason =
-        if (isWindows) ErrorHandlingApiOps.errorMessage(GetLastError())
-        else fromCString(strerror(errno))
+        if (isWindows) ErrorHandlingApiOps.lastErrorMessage()
+        else LibcExt.strError()
       fail(s"$label failed - $reason")
     }
   }
@@ -300,7 +300,7 @@ object SocketTestHelpers {
       if (ret == 0) {
         fail(s"poll timed out after ${timeout} milliseconds")
       } else if (ret < 0) {
-        val reason = ErrorHandlingApiOps.errorMessage(GetLastError())
+        val reason = ErrorHandlingApiOps.lastErrorMessage()
         fail(s"poll for input failed - $reason")
       }
     } else {
@@ -319,7 +319,7 @@ object SocketTestHelpers {
       if (ret == 0) {
         fail(s"poll timed out after ${timeout} milliseconds")
       } else if (ret < 0) {
-        val reason = fromCString(strerror(errno))
+        val reason = LibcExt.strError()
         fail(s"poll for input failed - $reason")
       }
       // else good to go

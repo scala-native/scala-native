@@ -80,11 +80,8 @@ object FileOutputStream {
         val mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH
         val fd = open(toCString(file.getPath()), flags, mode)
         if (fd == -1)
-          throw new FileNotFoundException(
-            s"$file (${fromCString(string.strerror(errno.errno))})"
-          )
-        else
-          new FileDescriptor(fd, readOnly = false)
+          throw new FileNotFoundException(s"$file (${LibcExt.strError()})")
+        new FileDescriptor(fd, readOnly = false)
       }
     }
 }

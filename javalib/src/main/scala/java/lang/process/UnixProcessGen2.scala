@@ -8,12 +8,12 @@ import java.{util => ju}
 
 import scala.annotation.tailrec
 
+import scalanative.libc.LibcExt
 import scalanative.meta.LinktimeInfo
 import scalanative.posix.errno._
 import scalanative.posix.poll._
 import scalanative.posix.pollOps._
 import scalanative.posix.spawn._
-import scalanative.posix.string.strerror
 import scalanative.posix.sys.wait._
 import scalanative.posix.time.timespec
 import scalanative.posix.timeOps.timespecOps
@@ -108,7 +108,7 @@ private[process] class UnixProcessHandleGen2(pidFd: CInt)(
         // OK if no exchange, someone else already reaped the process.
         Some(1)
       } else {
-        val msg = s"waitpid failed: ${fromCString(strerror(errno))}"
+        val msg = s"waitpid failed: ${LibcExt.strError()}"
         throw new IOException(msg)
       }
     } else if (waitStatus > 0) {
@@ -257,7 +257,7 @@ private[process] class UnixProcessHandleGen2(pidFd: CInt)(
       // handled in the caller
       if (errno == EINTR) throw new InterruptedException()
       throw new IOException(
-        s"waitFor pid=${_pid}, ppoll failed: ${fromCString(strerror(errno))}"
+        s"waitFor pid=${_pid}, ppoll failed: ${LibcExt.strError()}"
       )
     } else if (ppollStatus > 0) {
       askZombiesForTheirExitStatus()
@@ -282,7 +282,7 @@ private[process] class UnixProcessHandleGen2(pidFd: CInt)(
     if (kq == -1) {
       if (errno == EINTR) throw new InterruptedException()
       throw new IOException(
-        s"waitFor pid=${_pid} kqueue failed: ${fromCString(strerror(errno))}"
+        s"waitFor pid=${_pid} kqueue failed: ${LibcExt.strError()}"
       )
     }
 
@@ -322,7 +322,7 @@ private[process] class UnixProcessHandleGen2(pidFd: CInt)(
     if (status < 0) {
       if (errno == EINTR) throw new InterruptedException()
       throw new IOException(
-        s"wait pid=${_pid}, kevent failed: ${fromCString(strerror(errno))}"
+        s"wait pid=${_pid}, kevent failed: ${LibcExt.strError()}"
       )
     } else if (status > 0) {
       askZombiesForTheirExitStatus()
@@ -340,7 +340,7 @@ private[process] object UnixProcessGen2 {
       if (LinktimeInfo.isLinux) {
         val fd = pidfd_open(pid, 0.toUInt)
         if (fd == -1) {
-          val msg = s"pidfd_open($pid) failed: ${fromCString(strerror(errno))}"
+          val msg = s"pidfd_open($pid) failed: ${LibcExt.strError()}"
           throw new IOException(msg)
         }
         fd
@@ -552,7 +552,7 @@ private[process] object UnixProcessGen2 {
       }
 
       if (status != 0) {
-        val msg = fromCString(strerror(status))
+        val msg = LibcExt.strError(status)
         throw new IOException(s"Unable to posix_spawn process: $msg")
       }
 
