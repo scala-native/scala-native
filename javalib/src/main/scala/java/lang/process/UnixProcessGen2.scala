@@ -227,7 +227,7 @@ private[process] class UnixProcessHandleGen2(pidFd: CInt)(
       // Another waitFor() has reaped exitValue; nothing to do here.
     } else if (LinktimeInfo.isLinux) {
       linuxWaitForImpl(timeout)
-    } else if (LinktimeInfo.isMac || LinktimeInfo.isFreeBSD) {
+    } else if (LinktimeInfo.isMacOrFreeBSD) {
       bsdWaitForImpl(timeout)
     } else {
       /* Should never get here. Earlier dispatch should have called
@@ -366,7 +366,9 @@ private[process] object UnixProcessGen2 {
      * directory.
      */
 
-    if (builder.isCwd)
+    if (LinktimeInfo.isMacOrFreeBSD)
+      spawnChild(builder)
+    else if (builder.isCwd)
       spawnChild(builder)
     else
       forkChild(builder)(createHandle)
@@ -471,6 +473,14 @@ private[process] object UnixProcessGen2 {
 
     val unixProcess =
       try {
+        if (LinktimeInfo.isMacOrFreeBSD) if (!builder.isCwd) {
+          val dir = toCString(builder.directory().toString())
+          throwOnError(
+            posix_spawn_file_actions_addchdir_np(fileActions, dir),
+            "posix_spawn_file_actions_addchdir_np"
+          )
+        }
+
         setupSpawnFDS(
           fileActions,
           !infds,

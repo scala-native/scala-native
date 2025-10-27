@@ -388,7 +388,7 @@ private[lang] object PosixThread extends NativeThread.Companion {
 
   // MacOS does not define `pthread_condattr_setclock`, use realtime (default) clocks instead
   val usesClockMonotonicCondAttr =
-    if (isMac || isFreeBSD) false
+    if (isMacOrFreeBSD) false
     else {
       if (isMultithreadingEnabled) {
         checkStatus("relative-time conditions attrs - set clock") {
