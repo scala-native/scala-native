@@ -142,6 +142,7 @@ private[process] object WindowsProcess {
         processInfo.process,
         builder
       )
+      registerProcessMonitoring(processInfo)
       new GenericProcess(handle) {
         override protected def fdIn =
           toFileDescriptor(inWrite, readOnly = false)
@@ -275,4 +276,23 @@ private[process] object WindowsProcess {
 
     block
   }
+
+  import ProcessMonitorApi._
+
+  private lazy val iocp: Handle = ProcessMonitorQueueCreate()
+
+  private def registerProcessMonitoring(processInfo: Ptr[ProcessInformation]) =
+    ProcessMonitorQueueRegister(
+      iocp = iocp,
+      process = processInfo.process,
+      pid = processInfo.processId
+    )
+
+  def reapSomeProcesses(): Boolean = {
+    val pid = ProcessMonitorQueuePull(iocp = iocp, timeoutMillis = Infinite)
+    val ok = pid != -1
+    if (ok) GenericProcessWatcher.claimCompleted(pid.toLong)
+    ok
+  }
+
 }

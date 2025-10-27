@@ -47,7 +47,7 @@ private[process] object GenericProcessWatcher {
 
   // return true if something has been reaped
   private val reapSomeProcesses: () => Boolean =
-    if (LinktimeInfo.isWindows) claimAllCompleted
+    if (LinktimeInfo.isWindows) WindowsProcess.reapSomeProcesses
     else if (UnixProcess.useGen2) claimAllCompleted
     else UnixProcessGen1.waitpidAny
 
@@ -58,6 +58,19 @@ private[process] object GenericProcessWatcher {
       ok ||= remove
       remove
     }
+    ok
+  }
+
+  // return true if pid is under our supervision
+  def claimCompleted(pid: Long): Boolean = {
+    var ok = false
+    processes.computeIfPresent(
+      pid,
+      (_, ref) => {
+        ok = true
+        if (ref.checkIfExited()) null else ref
+      }
+    )
     ok
   }
 
