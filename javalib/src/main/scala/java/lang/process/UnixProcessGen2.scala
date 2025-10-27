@@ -1,9 +1,6 @@
 package java.lang.process
 
 import java.io.{File, IOException}
-import java.lang.process.BsdOsSpecific.Extern.{kevent, kqueue}
-import java.lang.process.BsdOsSpecific._
-import java.lang.process.LinuxOsSpecific.Extern.{pidfd_open, ppoll}
 import java.{util => ju}
 
 import scala.annotation.tailrec
@@ -244,6 +241,8 @@ private[process] class UnixProcessHandleGen2(pidFd: CInt)(
   /* Linux - ppoll()
    */
   private def linuxWaitForImpl(timeout: Option[Ptr[timespec]]): Unit = {
+    import LinuxOsSpecific.Extern._
+
     // epoll() is not used in this method since only one fd is involved.
 
     val fds = stackalloc[struct_pollfd](1)
@@ -267,6 +266,8 @@ private[process] class UnixProcessHandleGen2(pidFd: CInt)(
   /* macOS & FreeBSD -- kevent
    */
   private def bsdWaitForImpl(timeout: Option[Ptr[timespec]]): Unit = {
+    import BsdOsSpecific._
+    import BsdOsSpecific.Extern._
 
     /* Design Note:
      *     This first implementation creates a kqueue() on each & every
@@ -338,6 +339,7 @@ private[process] object UnixProcessGen2 {
   ): UnixProcessHandleGen2 = {
     val pidFd =
       if (LinktimeInfo.isLinux) {
+        import LinuxOsSpecific.Extern._
         val fd = pidfd_open(pid, 0.toUInt)
         if (fd == -1) {
           val msg = s"pidfd_open($pid) failed: ${LibcExt.strError()}"

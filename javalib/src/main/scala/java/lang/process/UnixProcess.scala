@@ -2,10 +2,11 @@ package java.lang.process
 
 import java.io.FileDescriptor
 
-import scala.scalanative.libc.{signal => sig}
+import scala.scalanative.libc.{signal => csig}
 import scala.scalanative.meta.LinktimeInfo
-import scala.scalanative.posix.{signal, unistd}
-import scala.scalanative.unsafe.{CInt, Ptr}
+import scala.scalanative.posix
+import scala.scalanative.posix.{signal => psig}
+import scala.scalanative.unsafe._
 
 private[process] abstract class UnixProcessHandle extends GenericProcessHandle {
   protected val _pid: CInt
@@ -14,7 +15,7 @@ private[process] abstract class UnixProcessHandle extends GenericProcessHandle {
   override final def supportsNormalTermination(): Boolean = true
 
   override protected final def destroyImpl(force: Boolean): Boolean =
-    signal.kill(_pid, if (force) signal.SIGKILL else sig.SIGTERM) == 0
+    psig.kill(_pid, if (force) psig.SIGKILL else csig.SIGTERM) == 0
 }
 
 private[process] object UnixProcess {
@@ -32,7 +33,7 @@ private[process] object UnixProcess {
     if (null == fds) FileDescriptor.none
     else {
       val idx = if (read) 0 else 1
-      unistd.close(!(fds + 1 - idx)) // close the other one
+      posix.unistd.close(!(fds + 1 - idx)) // close the other one
       new FileDescriptor(!(fds + idx), readOnly = read)
     }
 
