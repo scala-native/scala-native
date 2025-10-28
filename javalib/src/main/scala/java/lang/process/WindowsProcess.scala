@@ -3,7 +3,6 @@ package java.lang.process
 import java.io.FileDescriptor
 import java.lang.ProcessBuilder._
 import java.nio.file.WindowsException
-import java.util.ArrayList
 import java.util.ScalaOps._
 import java.util.concurrent.TimeUnit
 
@@ -27,11 +26,10 @@ import WinBaseApi._
 import WinBaseApiOps._
 
 private[process] class WindowsProcessHandle(
+    _pid: DWord,
     handle: Handle,
     override val builder: ProcessBuilder
 ) extends GenericProcessHandle {
-  private val _pid = ProcessThreadsApi.GetProcessId(handle)
-
   override final def pid(): Long = _pid.toLong
 
   override def supportsNormalTermination(): Boolean = false
@@ -51,7 +49,9 @@ private[process] class WindowsProcessHandle(
     SynchApi.WaitForSingleObject(handle, timeoutMillis) match {
       case SynchApiExt.WAIT_TIMEOUT => false
       case SynchApiExt.WAIT_FAILED  =>
-        throw WindowsException("Failed to wait on process handle")
+        if (!hasExited)
+          throw WindowsException("Failed to wait on process handle")
+        true // someone may have closed the handle
       case _ => checkAndSetExitCode(); true
     }
 
@@ -137,7 +137,11 @@ private[process] object WindowsProcess {
       CloseHandle(errWrite)
       CloseHandle(processInfo.thread)
 
-      val handle = new WindowsProcessHandle(processInfo.process, builder)
+      val handle = new WindowsProcessHandle(
+        processInfo.processId,
+        processInfo.process,
+        builder
+      )
       new GenericProcess(handle) {
         override protected def fdIn =
           toFileDescriptor(inWrite, readOnly = false)
