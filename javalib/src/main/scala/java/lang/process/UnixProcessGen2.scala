@@ -375,66 +375,77 @@ private[process] object UnixProcessGen2 {
   def forkChild(builder: ProcessBuilder)(
       f: (Int, ProcessBuilder) => UnixProcessHandle
   )(implicit z: Zone): GenericProcess = {
+    var success = false
     val (infds, outfds, errfds) = createPipes(builder)
 
-    val cmd = builder.command()
-    val binaries = binaryPaths(builder.environment(), cmd.get(0))
-    val argv = nullTerminate(cmd)
-    val envp = nullTerminate(builder.getEnvironmentAsList())
+    def closePipe(pipe: Ptr[CInt]): Unit =
+      if (pipe ne null) {
+        unistd.close(!(pipe + 0))
+        unistd.close(!(pipe + 1))
+      }
 
-    unistd.fork() match {
-      case -1 =>
-        throw new IOException("Unable to fork process")
+    def closePipes(): Unit = {
+      closePipe(infds)
+      closePipe(outfds)
+      closePipe(errfds)
+    }
 
-      case 0 =>
-        if (!builder.isCwd)
-          unistd.chdir(toCString(builder.directory().toString()))
+    def runChild(): Nothing = {
+      val cmd = builder.command()
+      val binaries = binaryPaths(builder.environment(), cmd.get(0))
+      val argv = nullTerminate(cmd)
+      val envp = nullTerminate(builder.getEnvironmentAsList())
 
-        setupChildFDS(!infds, builder.redirectInput(), unistd.STDIN_FILENO)
+      if (!builder.isCwd)
+        unistd.chdir(toCString(builder.directory().toString()))
+
+      setupChildFDS(!infds, builder.redirectInput(), unistd.STDIN_FILENO)
+      setupChildFDS(
+        !(outfds + 1),
+        builder.redirectOutput(),
+        unistd.STDOUT_FILENO
+      )
+      if (builder.redirectErrorStream())
+        dup2(unistd.STDOUT_FILENO, unistd.STDERR_FILENO, "pipe")
+      else
         setupChildFDS(
-          !(outfds + 1),
-          builder.redirectOutput(),
-          unistd.STDOUT_FILENO
+          !(errfds + 1),
+          builder.redirectError(),
+          unistd.STDERR_FILENO
         )
-        if (builder.redirectErrorStream())
-          dup2(unistd.STDOUT_FILENO, unistd.STDERR_FILENO, "pipe")
-        else
-          setupChildFDS(
-            !(errfds + 1),
-            builder.redirectError(),
-            unistd.STDERR_FILENO
-          )
 
-        def closePipe(pipe: Ptr[CInt]): Unit =
-          if (pipe ne null) {
-            unistd.close(!(pipe + 0))
-            unistd.close(!(pipe + 1))
-          }
+      closePipes()
 
-        closePipe(infds)
-        closePipe(outfds)
-        closePipe(errfds)
-
-        binaries.foreach { b =>
-          val bin = toCString(b)
-          if (unistd.execve(bin, argv, envp) == -1 && errno == ENOEXEC) {
-            val al = new ArrayList[String](3)
-            al.add("/bin/sh"); al.add("-c")
-            al.add(cmd.scalaOps.mkString(sep = " "))
-            val newArgv = nullTerminate(al)
-            unistd.execve(c"/bin/sh", newArgv, envp)
-          }
+      binaries.foreach { b =>
+        val bin = toCString(b)
+        if (unistd.execve(bin, argv, envp) == -1 && errno == ENOEXEC) {
+          val al = new ArrayList[String](3)
+          al.add("/bin/sh"); al.add("-c")
+          al.add(cmd.scalaOps.mkString(sep = " "))
+          val newArgv = nullTerminate(al)
+          unistd.execve(c"/bin/sh", newArgv, envp)
         }
+      }
 
-        /* execve failed. FreeBSD "man" recommends fast exit.
-         * Linux says nada.
-         * Code 127 is "Command not found", the convention for exec failure.
-         */
-        unistd._exit(127)
-        throw new IOException(s"Failed to create process for command: $cmd")
+      /* execve failed. FreeBSD "man" recommends fast exit.
+       * Linux says nada.
+       * Code 127 is "Command not found", the convention for exec failure.
+       */
+      unistd._exit(127)
+      throw new IOException(s"Failed to create process for command: $cmd")
+    }
 
-      case pid =>
+    try {
+      val pid = unistd.fork()
+      if (pid == -1)
+        throw new IOException("Unable to fork process")
+      if (pid == 0) runChild()
+      else {
+        success = true
         UnixProcess(f(pid, builder), infds, outfds, errfds)
+      }
+    } finally {
+      if (!success) closePipes()
     }
   }
 
@@ -442,8 +453,6 @@ private[process] object UnixProcessGen2 {
       builder: ProcessBuilder
   )(implicit z: Zone): GenericProcess = {
     val pidPtr = stackalloc[pid_t]()
-
-    val (infds, outfds, errfds) = createPipes(builder)
 
     val cmd = builder.command()
     val argv = nullTerminate(cmd)
@@ -469,91 +478,102 @@ private[process] object UnixProcessGen2 {
       "posix_spawn_file_actions_init"
     )
 
-    val unixProcess =
-      try {
+    var success = false
+    val (infds, outfds, errfds) = createPipes(builder)
+
+    try {
+      setupSpawnFDS(
+        fileActions,
+        !infds,
+        builder.redirectInput(),
+        unistd.STDIN_FILENO
+      )
+
+      setupSpawnFDS(
+        fileActions,
+        !(outfds + 1),
+        builder.redirectOutput(),
+        unistd.STDOUT_FILENO
+      )
+
+      if (builder.redirectErrorStream())
+        dup2Spawn(
+          fileActions,
+          unistd.STDOUT_FILENO,
+          unistd.STDERR_FILENO,
+          "pipe"
+        )
+      else
         setupSpawnFDS(
           fileActions,
-          !infds,
-          builder.redirectInput(),
-          unistd.STDIN_FILENO
+          !(errfds + 1),
+          builder.redirectError(),
+          unistd.STDERR_FILENO
         )
 
-        setupSpawnFDS(
-          fileActions,
-          !(outfds + 1),
-          builder.redirectOutput(),
-          unistd.STDOUT_FILENO
-        )
+      def closeSpawn(fd: CInt): Unit = throwOnError(
+        posix_spawn_file_actions_addclose(fileActions, fd),
+        s"posix_spawn_file_actions_addclose fd: $fd"
+      )
 
-        if (builder.redirectErrorStream())
-          dup2Spawn(
-            fileActions,
-            unistd.STDOUT_FILENO,
-            unistd.STDERR_FILENO,
-            "pipe"
-          )
-        else
-          setupSpawnFDS(
-            fileActions,
-            !(errfds + 1),
-            builder.redirectError(),
-            unistd.STDERR_FILENO
-          )
+      def closePipe(pipe: Ptr[CInt]): Unit =
+        if (pipe ne null) {
+          closeSpawn(!(pipe + 0))
+          closeSpawn(!(pipe + 1))
+        }
 
-        def closeSpawn(fd: CInt): Unit = throwOnError(
-          posix_spawn_file_actions_addclose(fileActions, fd),
-          s"posix_spawn_file_actions_addclose fd: $fd"
-        )
+      closePipe(infds)
+      closePipe(outfds)
+      closePipe(errfds)
 
+      /* This will exec binary executables.
+       * Some shells (bash, ???) will also execute scripts with initial
+       * shebang (#!).
+       */
+      def spawn(exec: String, argv: Ptr[CString]): CInt = posix_spawn(
+        pidPtr,
+        toCString(exec),
+        fileActions,
+        null, // attrp
+        argv,
+        envp
+      )
+
+      var status = ENOEXEC
+      val execIter = binaryPaths(builder.environment(), cmd.get(0))
+
+      while (status == ENOEXEC && execIter.hasNext)
+        status = spawn(execIter.next(), argv)
+
+      if (status == ENOEXEC) { // try falling back to shell script
+        val shCmd = "/bin/sh"
+        val fallbackCmd = Array(shCmd, "-c", cmd.scalaOps.mkString(sep = " "))
+        status = spawn(shCmd, nullTerminate(ju.Arrays.asList(fallbackCmd)))
+      }
+
+      if (status != 0) {
+        val msg = fromCString(strerror(status))
+        throw new IOException(s"Unable to posix_spawn process: $msg")
+      }
+
+      success = true
+      UnixProcess(createHandle(!pidPtr, builder), infds, outfds, errfds)
+    } finally {
+      if (!success) {
         def closePipe(pipe: Ptr[CInt]): Unit =
           if (pipe ne null) {
-            closeSpawn(!(pipe + 0))
-            closeSpawn(!(pipe + 1))
+            unistd.close(!(pipe + 0))
+            unistd.close(!(pipe + 1))
           }
-
         closePipe(infds)
         closePipe(outfds)
         closePipe(errfds)
-
-        /* This will exec binary executables.
-         * Some shells (bash, ???) will also execute scripts with initial
-         * shebang (#!).
-         */
-        def spawn(exec: String, argv: Ptr[CString]): CInt = posix_spawn(
-          pidPtr,
-          toCString(exec),
-          fileActions,
-          null, // attrp
-          argv,
-          envp
-        )
-
-        var status = ENOEXEC
-        val execIter = binaryPaths(builder.environment(), cmd.get(0))
-
-        while (status == ENOEXEC && execIter.hasNext)
-          status = spawn(execIter.next(), argv)
-
-        if (status == ENOEXEC) { // try falling back to shell script
-          val shCmd = "/bin/sh"
-          val fallbackCmd = Array(shCmd, "-c", cmd.scalaOps.mkString(sep = " "))
-          status = spawn(shCmd, nullTerminate(ju.Arrays.asList(fallbackCmd)))
-        }
-
-        if (status != 0) {
-          val msg = fromCString(strerror(status))
-          throw new IOException(s"Unable to posix_spawn process: $msg")
-        }
-
-        UnixProcess(createHandle(!pidPtr, builder), infds, outfds, errfds)
-      } finally {
-        throwOnError(
-          posix_spawn_file_actions_destroy(fileActions),
-          "posix_spawn_file_actions_destroy"
-        )
       }
-
-    unixProcess
+      throwOnError(
+        posix_spawn_file_actions_destroy(fileActions),
+        "posix_spawn_file_actions_destroy"
+      )
+    }
   }
 
   private[process] def throwOnError(rc: CInt, msg: => String): CInt = {
