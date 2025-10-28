@@ -24,6 +24,9 @@ private[process] abstract class GenericProcess(val handle: GenericProcessHandle)
   handle.onExitHandleAsync((_, _) => { inputStream.drain(); null })
   handle.onExitHandleAsync((_, _) => { errorStream.drain(); null })
 
+  if (LinktimeInfo.isMultithreadingEnabled)
+    GenericProcessWatcher.watchForTermination(handle)
+
   override def getInputStream(): InputStream = inputStream
   override def getErrorStream(): InputStream = errorStream
   override def getOutputStream(): OutputStream = outputStream
@@ -176,11 +179,7 @@ private[process] abstract class GenericProcessHandle extends ProcessHandle {
 private[lang] object GenericProcess {
 
   def apply(pb: ProcessBuilder): GenericProcess = {
-    val process =
-      if (LinktimeInfo.isWindows) WindowsProcess(pb) else UnixProcess(pb)
-    if (LinktimeInfo.isMultithreadingEnabled)
-      GenericProcessWatcher.watchForTermination(process)
-    process
+    if (LinktimeInfo.isWindows) WindowsProcess(pb) else UnixProcess(pb)
   }
 
 }
