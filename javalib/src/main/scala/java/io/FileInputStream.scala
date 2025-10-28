@@ -26,7 +26,7 @@ class FileInputStream(fd: FileDescriptor, file: Option[File])
       openForWriting = false
     )
 
-  override def available(): Int = channel.available().max(0)
+  override def available(): Int = channel.available()
 
   override def close(): Unit = {
     channel.close()

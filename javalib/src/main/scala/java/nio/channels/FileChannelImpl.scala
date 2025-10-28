@@ -20,7 +20,6 @@ import scala.scalanative.windows.FileApi._
 import scala.scalanative.windows.FileApiExt._
 import scala.scalanative.windows.MinWinBaseApi._
 import scala.scalanative.windows.MinWinBaseApiOps._
-import scala.scalanative.windows.NamedPipeApi.PeekNamedPipe
 import scala.scalanative.windows._
 import scalanative.libc.stdio
 
@@ -305,7 +304,7 @@ private[java] final class FileChannelImpl(
     // we use the runtime knowledge of the array layout to avoid
     // intermediate buffer, and write straight into the array memory
     if (isWindows) {
-      val readBytes = stackalloc[windows.DWord]()
+      val readBytes = stackalloc[DWord]()
 
       def readAll(off: Int, len: Int): Int = {
         if (ReadFile(fd.handle, buffer.at(off), len.toUInt, readBytes, null))
@@ -775,10 +774,10 @@ private[java] final class FileChannelImpl(
       val res = stackalloc[CInt]()
       val resByte = res.asInstanceOf[Ptr[scala.Byte]]
       val failed = ioctl.ioctl(fd.fd, ioctl.FIONREAD, resByte) == -1
-      if (failed) 0 else !res
+      if (failed) 0 else Math.max(!res, 0)
     } else if (file.isEmpty) { // pipe
       val availableTotal = stackalloc[DWord]()
-      val failed = !PeekNamedPipe(
+      val failed = !NamedPipeApi.PeekNamedPipe(
         pipe = fd.handle,
         buffer = null,
         bufferSize = 0.toUInt,
@@ -789,7 +788,7 @@ private[java] final class FileChannelImpl(
       if (failed) 0
       else Math.min((!availableTotal).toLong, Int.MaxValue).toInt
     } else {
-      Math.min(Math.max(size() - position(), Int.MinValue), Int.MaxValue).toInt
+      Math.min(Math.max(size() - position(), 0), Int.MaxValue).toInt
     }
   }
 }
