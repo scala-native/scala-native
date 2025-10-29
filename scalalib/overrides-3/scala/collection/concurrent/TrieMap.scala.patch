@@ -1,4 +1,4 @@
---- 3.8.0-RC1-bin-20251017-96aff06-NIGHTLY/scala/collection/concurrent/TrieMap.scala
+--- 3.8.0-RC1-bin-20251029-840804f-NIGHTLY/scala/collection/concurrent/TrieMap.scala
 +++ overrides-3/scala/collection/concurrent/TrieMap.scala
 @@ -26,6 +26,8 @@
  import scala.collection.mutable.GrowableBuilder
@@ -60,8 +60,8 @@
    def newBuilder[K, V]: mutable.GrowableBuilder[(K, V), TrieMap[K, V]] = new GrowableBuilder(empty[K, V])
  
    @transient
--  val inodeupdater: AtomicReferenceFieldUpdater[INodeBase[_, _], MainNode[_, _]] = AtomicReferenceFieldUpdater.newUpdater(classOf[INodeBase[_, _]], classOf[MainNode[_, _]], "mainnode")
-+  val inodeupdater: AtomicReferenceFieldUpdater[INodeBase[_, _], MainNode[_, _]] = new IntrinsicAtomicReferenceFieldUpdater[INodeBase[_,_], MainNode[_,_]](obj => fromRawPtr(classFieldRawPtr(obj, "mainnode")))
+-  val inodeupdater: AtomicReferenceFieldUpdater[INodeBase[?, ?], MainNode[?, ?]] = AtomicReferenceFieldUpdater.newUpdater(classOf[INodeBase[?, ?]], classOf[MainNode[?, ?]], "mainnode")
++  val inodeupdater: AtomicReferenceFieldUpdater[INodeBase[?, ?], MainNode[?, ?]] = new IntrinsicAtomicReferenceFieldUpdater[INodeBase[?, ?], MainNode[?,?]](obj => fromRawPtr(classFieldRawPtr(obj, "mainnode")))
  
    class MangledHashing[K] extends Hashing[K] {
      def hash(k: K): Int = scala.util.hashing.byteswap32(k.##)
