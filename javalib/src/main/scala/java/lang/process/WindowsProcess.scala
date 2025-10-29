@@ -9,6 +9,7 @@ import java.util.concurrent.TimeUnit
 // Required only for cross-compilation with Scala 2
 import scala.language.existentials
 
+import scala.scalanative.libc
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
 import scala.scalanative.windows._
@@ -279,20 +280,67 @@ private[process] object WindowsProcess {
 
   import ProcessMonitorApi._
 
-  private lazy val iocp: Handle = ProcessMonitorQueueCreate()
+  private type ProcessMonitorQueueEntry = CStruct2[
+    Handle, // wait
+    DWord // pid
+  ]
 
-  private def registerProcessMonitoring(processInfo: Ptr[ProcessInformation]) =
-    ProcessMonitorQueueRegister(
-      iocp = iocp,
-      process = processInfo.process,
-      pid = processInfo.processId
+  private lazy val iocp: Handle =
+    CreateIoCompletionPort(INVALID_HANDLE_VALUE, null, 0.toPtr[ULong], 0.toUInt)
+
+  private def processMonitorQueueEntryCallback(
+      lpParameter: CVoidPtr,
+      timerOrWaitFired: Boolean
+  ): Unit = {
+    val pw = lpParameter.asInstanceOf[Ptr[ProcessMonitorQueueEntry]]
+    PostQueuedCompletionStatus(
+      iocp,
+      0.toUInt,
+      (!pw.at2).toUSize.toPtr[Byte],
+      null
     )
+    val wait = !pw.at1
+    if (null ne wait) UnregisterWait(wait)
+    libc.stdlib.free(pw)
+  }
+
+  private def registerProcessMonitoring(
+      processInfo: Ptr[ProcessInformation]
+  ): Boolean = {
+    val pw: Ptr[ProcessMonitorQueueEntry] = libc.stdlib
+      .malloc(sizeof[ProcessMonitorQueueEntry])
+      .asInstanceOf[Ptr[ProcessMonitorQueueEntry]];
+    (pw ne null) && {
+
+      //      pw->iocp = iocp;
+      val waitPtr: Ptr[Handle] = pw.at1
+      !waitPtr = null
+      !pw.at2 = processInfo.processId
+
+      val ok = RegisterWaitForSingleObject(
+        waitPtr,
+        processInfo.process,
+        CFuncPtr2.fromScalaFunction(processMonitorQueueEntryCallback),
+        pw,
+        Infinite,
+        WinBaseApiExt.WT_EXECUTEONLYONCE
+      )
+      if (!ok)
+        libc.stdlib.free(pw)
+      ok
+    }
+  }
 
   def reapSomeProcesses(): Boolean = {
-    val pid = ProcessMonitorQueuePull(iocp = iocp, timeoutMillis = Infinite)
-    val ok = pid != -1
-    if (ok) GenericProcessWatcher.claimCompleted(pid.toLong)
-    ok
+    val bytes = stackalloc[DWord]()
+    val pid = stackalloc[CVoidPtr]()
+    val overlapped = stackalloc[Ptr[MinWinBaseApi.OVERLAPPED]]()
+
+    val ok = GetQueuedCompletionStatus(iocp, bytes, pid, overlapped, Infinite)
+    if (ok || (overlapped ne null)) // could be partial message
+      GenericProcessWatcher.claimCompleted((!pid).toLong)
+
+    true
   }
 
 }
