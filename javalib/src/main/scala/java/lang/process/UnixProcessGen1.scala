@@ -2,16 +2,15 @@ package java.lang.process
 
 import java.util.concurrent.TimeUnit
 
-import scala.scalanative.posix.{errno => e, sys, time}
+import scala.scalanative.posix
 import scala.scalanative.unsafe._
-
-import sys.time._
-import time._
 
 private[process] class UnixProcessHandleGen1(
     override protected val _pid: CInt,
     override val builder: ProcessBuilder
 ) extends UnixProcessHandle {
+
+  import posix.time.timespec
 
   override protected final def close(): Unit = {}
 
@@ -19,6 +18,7 @@ private[process] class UnixProcessHandleGen1(
     osWaitForImpl(null)
 
   override protected def waitForImpl(timeout: Long, unit: TimeUnit): Boolean = {
+    import posix.sys.time._
     val ts = stackalloc[timespec]()
     val tv = stackalloc[timeval]()
     UnixProcessGen2.throwOnError(
@@ -46,13 +46,14 @@ private[process] class UnixProcessHandleGen1(
       if (res == 0) {
         setCachedExitCode(!exitCode)
         return true
-      } else if (res == e.ETIMEDOUT) return false
+      } else if (res == posix.errno.ETIMEDOUT) return false
     }
     false
   }
 }
 
 private[process] object UnixProcessGen1 {
+  import posix.time._
   @link("pthread")
   @extern
   @define("__SCALANATIVE_JAVALIB_PROCESS_MONITOR")

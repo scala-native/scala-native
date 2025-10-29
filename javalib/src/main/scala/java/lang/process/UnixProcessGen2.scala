@@ -1,9 +1,6 @@
 package java.lang.process
 
 import java.io.{File, IOException}
-import java.lang.process.BsdOsSpecific.Extern.{kevent, kqueue}
-import java.lang.process.BsdOsSpecific._
-import java.lang.process.LinuxOsSpecific.Extern.{pidfd_open, ppoll}
 import java.{util => ju}
 
 import scala.annotation.tailrec
@@ -14,7 +11,6 @@ import scalanative.posix.errno._
 import scalanative.posix.poll._
 import scalanative.posix.pollOps._
 import scalanative.posix.spawn._
-import scalanative.posix.sys.wait._
 import scalanative.posix.time.timespec
 import scalanative.posix.timeOps.timespecOps
 import scalanative.posix.{fcntl, pollEvents, unistd}
@@ -57,7 +53,7 @@ private[process] class UnixProcessHandleGen2(pidFd: CInt)(
     if (pidFd != -1) unistd.close(pidFd)
 
   override protected def getExitCodeImpl: Option[Int] =
-    waitpidImplNoECHILD(_pid, options = WNOHANG)
+    UnixProcess.waitpidNowNoECHILD(_pid)
 
   override protected def waitForImpl(): Boolean = {
     /* wait until process exits, is interrupted in OS wait,  or forever,
@@ -92,40 +88,6 @@ private[process] class UnixProcessHandleGen2(pidFd: CInt)(
     waitWithRepeat()
   }
 
-  private def waitpidImplNoECHILD(pid: pid_t, options: Int): Option[Int] = {
-    val wstatus = stackalloc[Int]()
-
-    val waitStatus = waitpid(pid, wstatus, options)
-
-    if (waitStatus == -1) {
-      if (errno == EINTR) {
-        throw new InterruptedException()
-      } else if (errno == ECHILD) {
-        /* See extensive discussion in SN Issue #4208 and identical
-         * closely related #4208.
-         */
-
-        // OK if no exchange, someone else already reaped the process.
-        Some(1)
-      } else {
-        val msg = s"waitpid failed: ${LibcExt.strError()}"
-        throw new IOException(msg)
-      }
-    } else if (waitStatus > 0) {
-      // Cache exitStatus as long as we already have it in hand.
-      val decoded =
-        if (WIFEXITED(!wstatus)) WEXITSTATUS(!wstatus)
-        else if (WIFSIGNALED(!wstatus)) 128 + WTERMSIG(!wstatus)
-        else {
-          1 // Catchall for general errors
-          // https://tldp.org/LDP/abs/html/exitcodes.html
-        }
-
-      // OK if no exchange, someone else already reaped the process.
-      Some(decoded)
-    } else None
-  }
-
   private def askZombiesForTheirExitStatus(): Unit = {
     /* This method is simple, but the __long__ explanation it requires
      * belongs in one place, not in each of its callers.
@@ -143,7 +105,7 @@ private[process] class UnixProcessHandleGen2(pidFd: CInt)(
      *  just reported as having exited is a fussy busy-wait timing loop.
      */
 
-    val ec = waitpidImplNoECHILD(_pid, options = 0)
+    val ec = UnixProcess.waitpidNoECHILD(_pid, options = 0)
     setCachedExitCode(ec.getOrElse(1))
   }
 
@@ -244,6 +206,8 @@ private[process] class UnixProcessHandleGen2(pidFd: CInt)(
   /* Linux - ppoll()
    */
   private def linuxWaitForImpl(timeout: Option[Ptr[timespec]]): Unit = {
+    import LinuxOsSpecific.Extern._
+
     // epoll() is not used in this method since only one fd is involved.
 
     val fds = stackalloc[struct_pollfd](1)
@@ -267,6 +231,8 @@ private[process] class UnixProcessHandleGen2(pidFd: CInt)(
   /* macOS & FreeBSD -- kevent
    */
   private def bsdWaitForImpl(timeout: Option[Ptr[timespec]]): Unit = {
+    import BsdOsSpecific._
+    import BsdOsSpecific.Extern._
 
     /* Design Note:
      *     This first implementation creates a kqueue() on each & every
@@ -338,6 +304,7 @@ private[process] object UnixProcessGen2 {
   ): UnixProcessHandleGen2 = {
     val pidFd =
       if (LinktimeInfo.isLinux) {
+        import LinuxOsSpecific.Extern._
         val fd = pidfd_open(pid, 0.toUInt)
         if (fd == -1) {
           val msg = s"pidfd_open($pid) failed: ${LibcExt.strError()}"

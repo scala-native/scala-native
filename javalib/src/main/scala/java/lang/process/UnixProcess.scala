@@ -1,11 +1,12 @@
 package java.lang.process
 
-import java.io.FileDescriptor
+import java.io.{FileDescriptor, IOException}
 
-import scala.scalanative.libc.{signal => sig}
+import scala.scalanative.libc.{LibcExt, signal => csig}
 import scala.scalanative.meta.LinktimeInfo
-import scala.scalanative.posix.{signal, unistd}
-import scala.scalanative.unsafe.{CInt, Ptr}
+import scala.scalanative.posix
+import scala.scalanative.posix.{signal => psig}
+import scala.scalanative.unsafe._
 
 private[process] abstract class UnixProcessHandle extends GenericProcessHandle {
   protected val _pid: CInt
@@ -14,10 +15,12 @@ private[process] abstract class UnixProcessHandle extends GenericProcessHandle {
   override final def supportsNormalTermination(): Boolean = true
 
   override protected final def destroyImpl(force: Boolean): Boolean =
-    signal.kill(_pid, if (force) signal.SIGKILL else sig.SIGTERM) == 0
+    psig.kill(_pid, if (force) psig.SIGKILL else csig.SIGTERM) == 0
 }
 
 private[process] object UnixProcess {
+  import posix.sys.wait._
+
   def apply(
       stdin: FileDescriptor,
       stdout: FileDescriptor,
@@ -32,7 +35,7 @@ private[process] object UnixProcess {
     if (null == fds) FileDescriptor.none
     else {
       val idx = if (read) 0 else 1
-      unistd.close(!(fds + 1 - idx)) // close the other one
+      posix.unistd.close(!(fds + 1 - idx)) // close the other one
       new FileDescriptor(!(fds + idx), readOnly = read)
     }
 
@@ -61,4 +64,28 @@ private[process] object UnixProcess {
 
     if (useGen2) UnixProcessGen2(pb) else UnixProcessGen1(pb)
   }
+
+  def getExitCodeFromWaitStatus(wstatus: Int): Int = {
+    // https://tldp.org/LDP/abs/html/exitcodes.html
+    if (WIFEXITED(wstatus)) WEXITSTATUS(wstatus)
+    else if (WIFSIGNALED(wstatus)) 128 + WTERMSIG(wstatus)
+    else 1 // Catchall for general errors
+  }
+
+  def waitpidNoECHILD(pid: pid_t, options: Int): Option[Int] = {
+    val wstatus = stackalloc[Int]()
+    waitpid(pid, wstatus, options) match {
+      case 0  => None
+      case -1 =>
+        import posix.errno._
+        if (errno == EINTR) throw new InterruptedException()
+        else if (errno == ECHILD) Some(1) // see SN issues #4208 and #4348
+        else throw new IOException(s"waitpid failed: ${LibcExt.strError()}")
+      case _ => Some(getExitCodeFromWaitStatus(!wstatus))
+    }
+  }
+
+  def waitpidNowNoECHILD(pid: pid_t): Option[Int] =
+    waitpidNoECHILD(pid, WNOHANG)
+
 }
