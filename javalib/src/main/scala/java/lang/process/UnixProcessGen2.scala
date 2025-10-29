@@ -108,7 +108,7 @@ private[process] class UnixProcessHandleGen2(pidFd: CInt)(
     val ok = UnixProcessHandleGen2.osWaitForImpl(this, timeout)
     if (ok) {
       val ec = UnixProcess.waitpidNoECHILD(_pid, options = 0)
-      setCachedExitCode(ec.getOrElse(1))
+      ec.foreach(setCachedExitCode)
     }
     ok
   } catch {
