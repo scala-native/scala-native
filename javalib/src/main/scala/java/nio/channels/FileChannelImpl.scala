@@ -6,13 +6,14 @@ import java.nio.{ByteBuffer, MappedByteBuffer, MappedByteBufferImpl}
 import java.util.Objects
 
 import scala.scalanative.libc.errno.errno
+import scala.scalanative.libc.{LibcExt, stdio}
 import scala.scalanative.meta.LinktimeInfo.isWindows
 import scala.scalanative.nio.fs.unix.UnixException
 import scala.scalanative.posix.fcntl._
 import scala.scalanative.posix.fcntlOps._
 import scala.scalanative.posix.sys.statOps._
 import scala.scalanative.posix.sys.{ioctl, stat}
-import scala.scalanative.posix.{string, unistd}
+import scala.scalanative.posix.unistd
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
 import scala.scalanative.windows
@@ -22,7 +23,6 @@ import scala.scalanative.windows.MinWinBaseApi._
 import scala.scalanative.windows.MinWinBaseApiOps._
 import scala.scalanative.windows.NamedPipeApi.PeekNamedPipe
 import scala.scalanative.windows._
-import scalanative.libc.stdio
 
 private[java] final class FileChannelImpl(
     fd: FileDescriptor,
@@ -67,7 +67,7 @@ private[java] final class FileChannelImpl(
 
   private def throwPosixException(functionName: String): Unit = {
     if (!isWindows) {
-      val errnoString = fromCString(string.strerror(errno))
+      val errnoString = LibcExt.strError()
       throw new IOException(s"${functionName} failed: ${errnoString}")
     }
   }

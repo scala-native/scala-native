@@ -19,7 +19,7 @@ import scala.scalanative.posix.stdlib._
 import scala.scalanative.posix.sys.stat
 import scala.scalanative.posix.unistd._
 import scala.scalanative.posix.{limits, unistd, utime}
-import scala.scalanative.runtime.{DeleteOnExit, Platform}
+import scala.scalanative.runtime.DeleteOnExit
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
 import scala.scalanative.windows
@@ -303,7 +303,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
       val resolvedName: Ptr[Byte] = alloc[Byte](limits.PATH_MAX)
       if (realpath(toCString(path), resolvedName) == null) {
         throw new IOException(
-          s"realpath can't resolve: ${path}, errno=${fromCString(string.strerror(errno.errno))}"
+          s"realpath can't resolve: ${path}, errno=${LibcExt.strError()}"
         )
       }
       fromCString(resolvedName)
@@ -730,7 +730,7 @@ object File {
       } else {
         val buff: CString = alloc[CChar](4096)
         if (getcwd(buff, 4095.toUInt) == null) {
-          val errMsg = fromCString(string.strerror(errno.errno))
+          val errMsg = LibcExt.strError()
           throw new IOException(
             s"error in trying to get user directory - $errMsg"
           )

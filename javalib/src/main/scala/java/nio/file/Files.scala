@@ -2,7 +2,7 @@ package java.nio.file
 
 import java.io._
 import java.lang.Iterable
-import java.nio.channels.{FileChannel, SeekableByteChannel}
+import java.nio.channels.SeekableByteChannel
 import java.nio.charset.{Charset, StandardCharsets}
 import java.nio.file.StandardCopyOption.{COPY_ATTRIBUTES, REPLACE_EXISTING}
 import java.nio.file.attribute.PosixFilePermission._
@@ -247,7 +247,7 @@ object Files {
             unistd.unlink(cTarget) // Handle error later.
             openTarget(cTarget, replaceExisting = false, cPerms)
           } else {
-            val msg = fromCString(string.strerror(errno))
+            val msg = LibcExt.strError()
             throw new IOException(
               s"error opening target path '${cTarget}': ${msg}"
             )
@@ -273,7 +273,7 @@ object Files {
             val nRead = unistd.read(inFd, buffer, limit.toCSize)
 
             if (nRead < 0) {
-              val msg = fromCString(string.strerror(errno))
+              val msg = LibcExt.strError()
               throw new IOException(
                 s"error reading copy source file: ${msg}"
               )
@@ -285,7 +285,7 @@ object Files {
               while ((nRemaining > 0) && errno == 0) {
                 val nWritten = unistd.write(outFd, buffer, nRemaining.toCSize)
                 if (nWritten < 0) {
-                  val msg = fromCString(string.strerror(errno))
+                  val msg = LibcExt.strError()
                   throw new IOException(
                     s"error writing copy target file: ${msg}"
                   )
@@ -319,7 +319,7 @@ object Files {
           val inFd = fcntl.open(cSource, fcntl.O_RDONLY, 0.toUInt)
 
           if (inFd == -1) {
-            val msg = fromCString(string.strerror(errno))
+            val msg = LibcExt.strError()
             throw new IOException(
               s"error opening source path '${absSource}': ${msg}"
             )
@@ -475,7 +475,7 @@ object Files {
               null
             )
           else
-            throw new IOException(fromCString(string.strerror(e)))
+            throw new IOException(LibcExt.strError(e))
         }
 
       }
@@ -1159,7 +1159,7 @@ object Files {
         val fd = fcntl.open(pathCString, fcntl.O_RDONLY, 0.toUInt)
 
         if (fd == -1) {
-          val msg = fromCString(string.strerror(errno))
+          val msg = LibcExt.strError()
           throw new IOException(s"error opening path '${path}': ${msg}")
         }
 

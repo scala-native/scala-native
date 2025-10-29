@@ -11,6 +11,13 @@ object ErrorHandlingApi {
 }
 
 object ErrorHandlingApiOps {
+
+  /** Obtain an error message for a given error code.
+   *  @param errCode
+   *    error code
+   *  @return
+   *    error message
+   */
   def errorMessage(errCode: DWord): String = {
     import WinBaseApi._
     import WinBaseApiExt._
@@ -30,4 +37,13 @@ object ErrorHandlingApiOps {
     fromCWideString(!msgBuffer, StandardCharsets.UTF_16LE)
       .stripSuffix(System.lineSeparator())
   }
+
+  /** Obtain an error message for the current
+   *  [[ErrorHandlingApi.GetLastError GetLastError]] code.
+   *  @return
+   *    error message
+   */
+  def lastErrorMessage(): String =
+    errorMessage(ErrorHandlingApi.GetLastError())
+
 }
