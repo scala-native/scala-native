@@ -770,8 +770,8 @@ private[java] final class FileChannelImpl(
     if (!isWindows) {
       val res = stackalloc[CInt]()
       val resByte = res.asInstanceOf[Ptr[scala.Byte]]
-      val failed = ioctl.ioctl(fd.fd, ioctl.FIONREAD, resByte) < 0
-      if (failed) 0 else !res
+      val failed = ioctl.ioctl(fd.fd, ioctl.FIONREAD, resByte) == -1
+      if (failed) 0 else Math.max(!res, 0)
     } else if (file.isEmpty) { // pipe
       val availableTotal = stackalloc[DWord]()
       val failed = !NamedPipeApi.PeekNamedPipe(
