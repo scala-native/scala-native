@@ -252,33 +252,25 @@ private[process] class UnixProcessHandleGen2(pidFd: CInt)(
       )
     }
 
-    /* Some Scala non-idiomatic sleight of hand is going on here to
-     * ease implementation. Scala 3 has union types, but other versions
-     * do not.  "struct kevent" and "struct kevent64_s" overlay exactly in
-     * the fields of interest here. In C and Scala 3 they could be a union.
-     * Here the former is declared as the latter and later cast because
-     * it is easier to access the field names of the latter; fewer casts
-     * and contortions.
-     */
-    val childExitEvent = stackalloc[kevent64_s]()
-    val eventResult = stackalloc[kevent64_s]()
+    val childExitEvent = stackalloc[kevent]()
+    val eventResult = stackalloc[kevent]()
 
     /* event will eventually be deleted when child pid closes.
      * EV_DISPATCH hints that the event can be deleted immediately after
      * delivery.
      */
 
-    childExitEvent._1 = _pid.toUSize
-    childExitEvent._2 = EVFILT_PROC.toShort
-    childExitEvent._3 = (EV_ADD | EV_DISPATCH).toUShort
-    childExitEvent._4 = (NOTE_EXIT | NOTE_EXITSTATUS).toUInt
+    childExitEvent.ident = _pid.toUSize
+    childExitEvent.filter = EVFILT_PROC.toShort
+    childExitEvent.flags = (EV_ADD | EV_DISPATCH).toUShort
+    childExitEvent.fflags = (NOTE_EXIT | NOTE_EXITSTATUS).toUInt
 
     val status =
       kevent(
         kq,
-        childExitEvent.asInstanceOf[Ptr[kevent]],
+        childExitEvent,
         1,
-        eventResult.asInstanceOf[Ptr[kevent]],
+        eventResult,
         1,
         timeout.orNull
       )
