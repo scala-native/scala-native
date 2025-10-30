@@ -46,7 +46,9 @@ private[process] class UnixProcessHandleGen1(
       if (res == 0) {
         setCachedExitCode(!exitCode)
         return true
-      } else if (res == posix.errno.ETIMEDOUT) return false
+      }
+      if (hasExited) return true
+      if (res == posix.errno.ETIMEDOUT) return false
     }
     false
   }

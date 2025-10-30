@@ -79,7 +79,7 @@ private[process] object UnixProcess {
       case -1 =>
         import posix.errno._
         if (errno == EINTR) throw new InterruptedException()
-        else if (errno == ECHILD) Some(1) // see SN issues #4208 and #4348
+        else if (errno == ECHILD) None // see SN issues #4208 and #4348
         else throw new IOException(s"waitpid failed: ${LibcExt.strError()}")
       case _ => Some(getExitCodeFromWaitStatus(!wstatus))
     }

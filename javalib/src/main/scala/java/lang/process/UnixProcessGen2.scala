@@ -59,7 +59,7 @@ private[process] class UnixProcessHandleGen2(pidFd: CInt)(
     /* wait until process exits, is interrupted in OS wait,  or forever,
      * whichever comes first.
      */
-    while (!osWaitForImpl(None) && !hasExited) {}
+    while (!waitAndReapChild(None) && !hasExited) {}
     true
   }
 
@@ -76,7 +76,7 @@ private[process] class UnixProcessHandleGen2(pidFd: CInt)(
     fillTimespec(timeout, unit, ts)
     @tailrec
     def waitWithRepeat(): Boolean = {
-      val ok = osWaitForImpl(Some(ts))
+      val ok = waitAndReapChild(Some(ts))
       hasExited || !ok && {
         val remainingNanos = deadline - System.nanoTime()
         remainingNanos >= 0 && {
@@ -88,7 +88,7 @@ private[process] class UnixProcessHandleGen2(pidFd: CInt)(
     waitWithRepeat()
   }
 
-  private def askZombiesForTheirExitStatus(): Unit = {
+  private def waitAndReapChild(timeout: Option[Ptr[timespec]]): Boolean = try {
     /* This method is simple, but the __long__ explanation it requires
      * belongs in one place, not in each of its callers.
      *
@@ -105,8 +105,15 @@ private[process] class UnixProcessHandleGen2(pidFd: CInt)(
      *  just reported as having exited is a fussy busy-wait timing loop.
      */
 
-    val ec = UnixProcess.waitpidNoECHILD(_pid, options = 0)
-    setCachedExitCode(ec.getOrElse(1))
+    val ok = UnixProcessHandleGen2.osWaitForImpl(this, timeout)
+    if (ok) {
+      val ec = UnixProcess.waitpidNoECHILD(_pid, options = 0)
+      ec.foreach(setCachedExitCode)
+    }
+    ok
+  } catch {
+    case _: InterruptedException if !Thread.currentThread().isInterrupted() =>
+      false
   }
 
   // corral handling timevalue conversion details, fill ts.
@@ -183,29 +190,10 @@ private[process] class UnixProcessHandleGen2(pidFd: CInt)(
     }
   }
 
-  private def osWaitForImpl(timeout: Option[Ptr[timespec]]): Boolean = try {
-    // caller should have returned before here if cachedExitValue is known.
-    if (hasExited) {
-      // Another waitFor() has reaped exitValue; nothing to do here.
-    } else if (LinktimeInfo.isLinux) {
-      linuxWaitForImpl(timeout)
-    } else if (LinktimeInfo.isMac || LinktimeInfo.isFreeBSD) {
-      bsdWaitForImpl(timeout)
-    } else {
-      /* Should never get here. Earlier dispatch should have called
-       * UnixProcessGen1.
-       */
-      throw new IOException("unsuported Platform")
-    }
-    true
-  } catch {
-    case _: InterruptedException if !Thread.currentThread().isInterrupted() =>
-      false
-  }
-
   /* Linux - ppoll()
+   * Return true if the call shouldn't be tried again.
    */
-  private def linuxWaitForImpl(timeout: Option[Ptr[timespec]]): Unit = {
+  private def linuxWaitForImpl(timeout: Option[Ptr[timespec]]): Boolean = {
     import LinuxOsSpecific.Extern._
 
     // epoll() is not used in this method since only one fd is involved.
@@ -220,17 +208,18 @@ private[process] class UnixProcessHandleGen2(pidFd: CInt)(
     if (ppollStatus < 0) {
       // handled in the caller
       if (errno == EINTR) throw new InterruptedException()
-      throw new IOException(
-        s"waitFor pid=${_pid}, ppoll failed: ${LibcExt.strError()}"
-      )
-    } else if (ppollStatus > 0) {
-      askZombiesForTheirExitStatus()
-    }
+      if (errno != EBADF)
+        throw new IOException(
+          s"waitFor pid=${_pid}, ppoll failed: ${LibcExt.strError()}"
+        )
+      true // not really but someone closed it so we shouldn't poll again
+    } else ppollStatus > 0
   }
 
   /* macOS & FreeBSD -- kevent
+   * Return true if the call shouldn't be tried again.
    */
-  private def bsdWaitForImpl(timeout: Option[Ptr[timespec]]): Unit = {
+  private def bsdWaitForImpl(timeout: Option[Ptr[timespec]]): Boolean = {
     import BsdOsSpecific._
     import BsdOsSpecific.Extern._
 
@@ -290,10 +279,25 @@ private[process] class UnixProcessHandleGen2(pidFd: CInt)(
       throw new IOException(
         s"wait pid=${_pid}, kevent failed: ${LibcExt.strError()}"
       )
-    } else if (status > 0) {
-      askZombiesForTheirExitStatus()
-    }
+    } else status > 0
   }
+}
+
+private[process] object UnixProcessHandleGen2 {
+
+  private val osWaitForImpl
+      : (UnixProcessHandleGen2, Option[Ptr[timespec]]) => Boolean =
+    if (LinktimeInfo.isLinux) {
+      { (ref, to) => ref.linuxWaitForImpl(to) }
+    } else if (LinktimeInfo.isMac || LinktimeInfo.isFreeBSD) {
+      { (ref, to) => ref.bsdWaitForImpl(to) }
+    } else {
+      /* Should never get here. Earlier dispatch should have called
+       * UnixProcessGen1.
+       */
+      throw new IOException("unsuported Platform")
+    }
+
 }
 
 private[process] object UnixProcessGen2 {
