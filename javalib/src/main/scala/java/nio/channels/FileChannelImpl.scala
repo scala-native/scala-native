@@ -746,27 +746,24 @@ private[java] final class FileChannelImpl(
    *
    *       A "skip()" should be a fast update of existing memory. Conceptually,
    *       and by JDK definition FileChannel "read()"s may block transferring
-   *       bytes from slow storage to memory. Where is io_uring() when
-   *       you need it?
+   *       bytes from slow storage to memory.
    *
    *    3) The value returned is exactly the "estimate" portion of the JDK
    *       description:
-   *
-   *       - If the current position is past EOF, the result could be negative
-   *         reflecting the number of extra bytes.
    *
    *       - All bets are off is somebody, even this thread, decreases
    *         size of the file in the interval between when "available()"
    *         returns and "read()" is called.
    *
-   *       - This method is defined in FileChannel#available as returning
-   *         an Int. This also matches the use above in the Windows
-   *         implementation of the private method
-   *         "read(buffer: Array[Byte], offset: Int, count: Int)"
-   *         Trace the count argument logic.
+   *         FileChannel reads() after such truncation may violate the
+   *         description & contract by blocking for significant amounts
+   *         of time
+   * 
+   *         Lifting this restriction is not easy and is left as an
+   *         exercise for the reader.
    */
 
-  // local API extension
+  // local API extension, but follows description of FileInputStream#available
   private[java] def available(): Int = {
     ensureOpen()
 
@@ -788,7 +785,7 @@ private[java] final class FileChannelImpl(
       if (failed) 0
       else Math.min((!availableTotal).toLong, Int.MaxValue).toInt
     } else {
-      Math.min(Math.max(size() - position(), 0), Int.MaxValue).toInt
+      Math.clamp((size() - position()), 0, Int.MaxValue)
     }
   }
 }
