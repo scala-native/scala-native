@@ -30,7 +30,7 @@ Scala Native is distributed under the Apache License.
 
 [<img src="https://www.epfl.ch/wp/5.5/wp-content/themes/wp-theme-2018/assets/svg/epfl-logo.svg?refresh=now" width=200>][EPFL-Link]
 
-[The École polytechnique fédérale de Lausanne (EPFL)][EPFL-Link] and [LAMP][EPFL_LAMP-Link] are funding the development of Scala Native as part of Martin Odersky's research program for [Capatibilies for Resources and Effects (Caprese)][Caprese-Link] in Scala.
+[The École polytechnique fédérale de Lausanne (EPFL)][EPFL-Link] and [LAMP][EPFL_LAMP-Link] are funding the development of Scala Native as part of Martin Odersky's research program for [Capabilities for Resources and Effects (Caprese)][Caprese-Link] in Scala.
 
 
 [<img src="https://raw.githubusercontent.com/VirtusLab/scala-cli/main/website/static/img/vl_logo_small.png" width=200>][VirtusLab-Link]
