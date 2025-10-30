@@ -1,4 +1,4 @@
---- 3.8.0-RC1-bin-20251017-96aff06-NIGHTLY/scala/Enumeration.scala
+--- 3.8.0-RC1-bin-20251029-840804f-NIGHTLY/scala/Enumeration.scala
 +++ overrides-3/scala/Enumeration.scala
 @@ -94,7 +94,7 @@
  
@@ -9,12 +9,12 @@
  
    /** The name of this enumeration.
     */
-@@ -189,38 +189,7 @@
+@@ -193,38 +193,7 @@
     */
    protected final def Value(i: Int, name: String | Null): Value = new Val(i, name)
  
 -  private def populateNameMap(): Unit = {
--    @tailrec def getFields(clazz: Class[_] | Null, acc: Array[JField]): Array[JField] = {
+-    @tailrec def getFields(clazz: Class[?] | Null, acc: Array[JField]): Array[JField] = {
 -      if (clazz == null)
 -        acc
 -      else
@@ -48,7 +48,7 @@
    /** The type of the enumerated values. */
    @SerialVersionUID(7091335633555234129L)
    abstract class Value extends Ordered[Value] with Serializable {
-@@ -262,8 +231,8 @@
+@@ -266,8 +235,8 @@
      def id: Int = i
      override def toString(): String =
        if (name != null) name

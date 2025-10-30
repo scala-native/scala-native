@@ -1,22 +1,22 @@
---- 3.8.0-RC1-bin-20251017-96aff06-NIGHTLY/scala/reflect/ClassTag.scala
+--- 3.8.0-RC1-bin-20251029-840804f-NIGHTLY/scala/reflect/ClassTag.scala
 +++ overrides-3/scala/reflect/ClassTag.scala
 @@ -116,11 +116,7 @@
    val Nothing : ClassTag[scala.Nothing]    = Manifest.Nothing
    val Null    : ClassTag[scala.Null]       = Manifest.Null
  
 -  private val cacheDisabled = java.lang.Boolean.getBoolean("scala.reflect.classtag.cache.disable")
--  private[this] object cache extends ClassValueCompat[jWeakReference[ClassTag[_]]] {
--    override def computeValue(runtimeClass: jClass[_]): jWeakReference[ClassTag[_]] =
+-  private object cache extends ClassValueCompat[jWeakReference[ClassTag[?]]] {
+-    override def computeValue(runtimeClass: jClass[?]): jWeakReference[ClassTag[?]] =
 -      new jWeakReference(computeTag(runtimeClass))
 -
-+  private[this] object cache  {
-     def computeTag(runtimeClass: jClass[_]): ClassTag[_] =
++  private object cache  {
+     def computeTag(runtimeClass: jClass[?]): ClassTag[?] =
        runtimeClass match {
          case x if x.isPrimitive => primitiveClassTag(runtimeClass)
 @@ -152,18 +148,9 @@
    }
  
-   def apply[T](runtimeClass1: jClass[_]): ClassTag[T] = {
+   def apply[T](runtimeClass1: jClass[?]): ClassTag[T] = {
 -    if (cacheDisabled) {
 -      cache.computeTag(runtimeClass1).asInstanceOf[ClassTag[T]]
 -    } else {
@@ -32,5 +32,5 @@
    }
  
 +
-   def unapply[T](ctag: ClassTag[T]): Option[Class[_]] = Some(ctag.runtimeClass)
+   def unapply[T](ctag: ClassTag[T]): Option[Class[?]] = Some(ctag.runtimeClass)
  }
