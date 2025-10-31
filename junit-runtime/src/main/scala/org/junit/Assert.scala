@@ -12,10 +12,9 @@ import org.hamcrest.{Matcher, MatcherAssert}
 
 object Assert {
   @noinline
-  def assertTrue(message: String, condition: Boolean): Unit = {
+  def assertTrue(message: String, condition: Boolean): Unit =
     if (!condition)
-      fail(message)
-  }
+      fail(format(message, true, false))
 
   @noinline
   def assertTrue(condition: Boolean): Unit =
@@ -23,7 +22,8 @@ object Assert {
 
   @noinline
   def assertFalse(message: String, condition: Boolean): Unit =
-    assertTrue(message, !condition)
+    if (condition)
+      fail(format(message, false, true))
 
   @noinline
   def assertFalse(condition: Boolean): Unit =
