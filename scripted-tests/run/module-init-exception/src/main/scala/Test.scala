@@ -1,14 +1,14 @@
 import java.util.concurrent.CountDownLatch
 
-class Boom extends RuntimeException("BOOM")
-object Boom {
-  val t: String = {
-    println(s"throw in ${Thread.currentThread()}")
-    throw new Boom()
-  }
-}
-
 object Test {
+  class Boom extends RuntimeException("BOOM")
+  object Boom {
+    val t: String = {
+      println(s"throw in ${Thread.currentThread()}")
+      throw new Boom()
+    }
+  }
+
   private final def doWork(cdl: CountDownLatch): Unit = {
     cdl.await()
     Boom.t.##
