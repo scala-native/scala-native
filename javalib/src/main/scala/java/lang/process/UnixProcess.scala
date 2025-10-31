@@ -50,8 +50,8 @@ private[process] object UnixProcess {
     getFileDescriptor(errfds, read = true)
   )(handle)
 
-  def apply(pb: ProcessBuilder): GenericProcess = {
-    val useGen2 = if (LinktimeInfo.is32BitPlatform) {
+  private[process] val useGen2 =
+    if (LinktimeInfo.is32BitPlatform) {
       false
     } else if (LinktimeInfo.isLinux) {
       LinuxOsSpecific.hasPidfdOpen()
@@ -62,6 +62,7 @@ private[process] object UnixProcess {
       false
     }
 
+  def apply(pb: ProcessBuilder): GenericProcess = {
     if (useGen2) UnixProcessGen2(pb) else UnixProcessGen1(pb)
   }
 

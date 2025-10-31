@@ -96,7 +96,7 @@ private[process] abstract class GenericProcessHandle extends ProcessHandle {
   val builder: ProcessBuilder
 
   private val processInfo: GenericProcessInfo = GenericProcessInfo(builder)
-  private val completion = new CompletableFuture[java.lang.Integer]()
+  protected val completion = new CompletableFuture[java.lang.Integer]()
 
   override final def isAlive(): Boolean = !hasExited
 

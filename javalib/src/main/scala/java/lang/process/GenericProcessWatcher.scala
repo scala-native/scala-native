@@ -4,6 +4,8 @@ import java.{lang => jl, util => ju}
 
 import scala.util.Try
 
+import scala.scalanative.meta.LinktimeInfo
+
 private[process] object GenericProcessWatcher {
 
   import ju.concurrent._
@@ -45,7 +47,9 @@ private[process] object GenericProcessWatcher {
 
   // return true if something has been reaped
   private val reapSomeProcesses: () => Boolean =
-    claimAllCompleted
+    if (LinktimeInfo.isWindows) claimAllCompleted
+    else if (UnixProcess.useGen2) claimAllCompleted
+    else UnixProcessGen1.waitpidAny
 
   def claimAllCompleted(): Boolean = {
     var ok = false
@@ -55,6 +59,11 @@ private[process] object GenericProcessWatcher {
       remove
     }
     ok
+  }
+
+  def completeWith(pid: Long)(ec: => Int): Boolean = {
+    val ref = processes.remove(pid)
+    (ref ne null) && ref.setCachedExitCode(ec)
   }
 
   def removeCompleted(): Unit =
