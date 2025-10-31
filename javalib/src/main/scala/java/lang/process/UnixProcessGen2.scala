@@ -249,7 +249,9 @@ private[process] class UnixProcessHandleGen2(pidFd: CInt)(
      * delivery.
      */
 
-    childExitEvent.ident = _pid.toUSize
+//    childExitEvent.ident = _pid.toUSize
+    childExitEvent.ident = _pid
+
     childExitEvent.filter = EVFILT_PROC.toShort
     childExitEvent.flags = (EV_ADD | EV_DISPATCH).toUShort
     childExitEvent.fflags = (NOTE_EXIT | NOTE_EXITSTATUS).toUInt
