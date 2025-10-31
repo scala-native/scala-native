@@ -54,28 +54,23 @@ object BsdOsSpecific {
     def data   = ptr._5
     def udata  = ptr._6
 
+    def ident_=(v: uintptr_t): Unit      = ptr._1 = v
+    def filter_=(v: CShort): Unit        = ptr._2 = v
+    def flags_=(v: CUnsignedShort): Unit = ptr._3 = v
+    def fflags_=(v: CUnsignedInt): Unit  = ptr._4 = v
+    def data_=(v: intptr_t): Unit        = ptr._5 = v
+    def udata_=(v: CVoidPtr): Unit       = ptr._6 = v
+
     /* Convenience methods for common conversions hide and rely upon
      * some abstraction layer jumping illicit knowledge that CSSize is
      * a typedef for CSize.
      */
 
-    def ident_=(v: uintptr_t): Unit = ptr._1 = v
-
-    // Convenience methods for common conversions
     def ident_=(v: CInt): Unit         = ptr._1 = v.toCSize
     def ident_=(v: CUnsignedInt): Unit = ptr._1 = v.toInt.toCSize
 
-    def filter_=(v: CShort): Unit        = ptr._2 = v
-    def flags_=(v: CUnsignedShort): Unit = ptr._3 = v
-    def fflags_=(v: CUnsignedInt): Unit  = ptr._4 = v
-
-    def data_=(v: intptr_t): Unit = ptr._5 = v
-
-    // Convenience methods for common conversions
     def data_=(v: CInt): Unit         = ptr._1 = v.toCSize
     def data_=(v: CUnsignedInt): Unit = ptr._1 = v.toInt.toCSize
-
-    def udata_=(v: CVoidPtr): Unit = ptr._6 = v
   }
 
   type kevent64_s = CStruct8[
