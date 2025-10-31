@@ -54,14 +54,16 @@ object BsdOsSpecific {
     def data   = ptr._5
     def udata  = ptr._6
 
+    /* Convenience methods for common conversions hide and rely upon
+     * some abstraction layer jumping illicit knowledge that CSSize is
+     * a typedef for CSize.
+     */
+
     def ident_=(v: uintptr_t): Unit = ptr._1 = v
 
-    def ident_=(v: USize): Unit = {
-      // a wart, but correct & done, feel free to improve
-      val pv = stackalloc[USize]()
-      !pv = v
-      string.memcpy(ptr.at1, pv, sizeof[uintptr_t])
-    }
+    // Convenience methods for common conversions
+    def ident_=(v: CInt): Unit         = ptr._1 = v.toCSize
+    def ident_=(v: CUnsignedInt): Unit = ptr._1 = v.toInt.toCSize
 
     def filter_=(v: CShort): Unit        = ptr._2 = v
     def flags_=(v: CUnsignedShort): Unit = ptr._3 = v
@@ -69,11 +71,9 @@ object BsdOsSpecific {
 
     def data_=(v: intptr_t): Unit = ptr._5 = v
 
-    def data_=(v: Size): Unit = {
-      val pv = stackalloc[Size]()
-      !pv = v
-      string.memcpy(ptr.at5, pv, sizeof[intptr_t])
-    }
+    // Convenience methods for common conversions
+    def data_=(v: CInt): Unit         = ptr._1 = v.toCSize
+    def data_=(v: CUnsignedInt): Unit = ptr._1 = v.toInt.toCSize
 
     def udata_=(v: CVoidPtr): Unit = ptr._6 = v
   }

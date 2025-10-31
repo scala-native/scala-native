@@ -12,6 +12,18 @@ import scala.scalanative.unsafe._
   type intmax_t = CLongLong
   type uintmax_t = CUnsignedLongLong
 
-  type intptr_t = CLongLong
-  type uintptr_t = CUnsignedLongLong
+  /* Assume & implement a data model where the size of a C/C++ pointer is the
+   * same as the maximum size of a C/C++ data object.
+   * 
+   * C and C++ do not __require__ this match but it is empirically true
+   * for the most common data models. This is similar to the intmax_t/uintmax_t
+   * assumption above.
+   *
+   * Reference:
+   *   https://en.wikipedia.org/wiki/64-bit_computing#64-bit_data_models
+   *   Retrieved 2025-10-31
+   */
+
+  type intptr_t = CSSize
+  type uintptr_t = CSize
 }
