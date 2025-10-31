@@ -10,86 +10,60 @@ private[process] class UnixProcessHandleGen1(
     override val builder: ProcessBuilder
 ) extends UnixProcessHandle {
 
-  import posix.time.timespec
-
   override protected final def close(): Unit = {}
 
-  override protected def waitForImpl(): Boolean =
-    osWaitForImpl(null)
-
-  override protected def waitForImpl(timeout: Long, unit: TimeUnit): Boolean = {
-    import posix.sys.time._
-    val ts = stackalloc[timespec]()
-    val tv = stackalloc[timeval]()
-    UnixProcessGen2.throwOnError(
-      gettimeofday(tv, null),
-      "Failed to set time of day."
-    )
-    val nsec =
-      unit.toNanos(timeout) + TimeUnit.MICROSECONDS.toNanos(tv._2.toLong)
-    val sec = TimeUnit.NANOSECONDS.toSeconds(nsec)
-    ts._1 = tv._1 + sec.toSize
-    ts._2 = (if (sec > 0) nsec - TimeUnit.SECONDS.toNanos(sec) else nsec).toSize
-    osWaitForImpl(ts)
-  }
-
   override protected def getExitCodeImpl: Option[Int] = {
-    val res = UnixProcessGen1.ProcessMonitor.checkResult(_pid)
-    if (res == -1) None else Some(res)
+    UnixProcess.waitpidNowNoECHILD(_pid)
   }
 
-  private def osWaitForImpl(ts: Ptr[timespec]): Boolean = {
-    val exitCode = stackalloc[CInt]()
-    while (true) {
-      !exitCode = -1
-      val res = UnixProcessGen1.ProcessMonitor.waitForPid(_pid, ts, exitCode)
-      if (res == 0) {
-        setCachedExitCode(!exitCode)
-        return true
-      }
-      if (hasExited) return true
-      if (res == posix.errno.ETIMEDOUT) return false
-    }
+  override def waitFor(): Boolean =
+    waitForWith { completion.get() }
+
+  override def waitFor(timeout: scala.Long, unit: TimeUnit): Boolean =
+    waitForWith { if (timeout > 0L) completion.get(timeout, unit) }
+
+  override protected def waitForImpl(): Boolean = false
+
+  override protected def waitForImpl(timeout: Long, unit: TimeUnit): Boolean =
     false
-  }
+
+  private def waitForWith(body: => Unit): Boolean =
+    try {
+      body
+      true
+    } catch {
+      case ex: Throwable
+          if !ex.isInstanceOf[InterruptedException] ||
+            !Thread.currentThread().isInterrupted() =>
+        false
+    }
+
 }
 
 private[process] object UnixProcessGen1 {
-  import posix.time._
-  @link("pthread")
-  @extern
-  @define("__SCALANATIVE_JAVALIB_PROCESS_MONITOR")
-  object ProcessMonitor {
-    @name("scalanative_process_monitor_notify")
-    def notifyMonitor(): Unit = extern
-    @name("scalanative_process_monitor_check_result")
-    def checkResult(pid: Int): CInt = extern
-    @name("scalanative_process_monitor_init")
-    def init(): Unit = extern
-    @name("scalanative_process_monitor_wait_for_pid")
-    def waitForPid(pid: Int, ts: Ptr[timespec], res: Ptr[CInt]): CInt = extern
-  }
-  ProcessMonitor.init()
 
   def apply(
       builder: ProcessBuilder
   ): GenericProcess = Zone.acquire { implicit z =>
-    try {
-      UnixProcessGen2.forkChild(builder)(new UnixProcessHandleGen1(_, _))
-    } finally {
-      /* Being here, we know that a child process exists, or existed.
-       * ProcessMonitor needs to know about it. It is _far_ better
-       * to do the notification in this parent.
-       *
-       * Implementations of 'fork' can be very restrictive about what
-       * can run in the child before it calls one of the 'exec*' methods.
-       * 'notifyMonitor' may or may not follow those rules. Even if it
-       * currently does, that could easily change with future maintenance
-       * make it no longer compliant, leading to shrapnel & wasted
-       * developer time.
-       */
+    UnixProcessGen2.forkChild(builder)(new UnixProcessHandleGen1(_, _))
+  }
 
-      ProcessMonitor.notifyMonitor()
+  /** Reap a child and, if it's one of ours, mark it as completed in the
+   *  watcher.
+   *
+   *  Alas, if the child is not one of ours, we can't avoid reaping it, without
+   *  iterating over the heavy single-pid waitpid.
+   *
+   *  The only alternative was waitid(P_ALL, WNOWAIT) but if the pid returned by
+   *  it is not reaped, the next iteration of waitid will produce the same one
+   *  again... and again.
+   */
+  def waitpidAny(): Boolean = {
+    // no choice but to reap a child, whether it's ours or not
+    val wstatus = stackalloc[Int]()
+    val pid = posix.sys.wait.wait(wstatus)
+    pid != -1 && GenericProcessWatcher.completeWith(pid) {
+      UnixProcess.getExitCodeFromWaitStatus(!wstatus)
     }
   }
 
